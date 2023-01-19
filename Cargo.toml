@@ -1,8 +1,11 @@
 [workspace]
 
 members = [
+    "crates/crate_interface",
+
     "modules/axconfig",
     "modules/axhal",
     "modules/axruntime",
+
     "os/helloworld",
 ]

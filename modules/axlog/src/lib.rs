@@ -1,11 +1,12 @@
 #![no_std]
 
+#[macro_use]
+extern crate crate_interface;
 extern crate log;
 
 use core::fmt::{self, Write};
 use core::str::FromStr;
 
-use axhal::console::putchar;
 use log::{Level, LevelFilter, Log, Metadata, Record};
 
 pub use log::{debug, error, info, trace, warn};
@@ -52,19 +53,19 @@ enum ColorCode {
     BrightWhite = 97,
 }
 
+define_interface! {
+    /// Extern interfaces called in this crate.
+    pub trait LogIf {
+        /// write a string to the console.
+        fn console_write_str(&self, s: &str);
+    }
+}
+
 struct Logger;
 
 impl Write for Logger {
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        for c in s.chars() {
-            match c {
-                '\n' => {
-                    putchar(b'\r');
-                    putchar(b'\n');
-                }
-                _ => putchar(c as u8),
-            }
-        }
+        call_interface!(console_write_str, s);
         Ok(())
     }
 }

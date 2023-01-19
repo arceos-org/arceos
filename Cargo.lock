@@ -32,7 +32,7 @@ dependencies = [
 name = "axlog"
 version = "0.1.0"
 dependencies = [
- "axhal",
+ "crate_interface",
  "log",
 ]
 
@@ -55,6 +55,10 @@ name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
+
+[[package]]
+name = "crate_interface"
+version = "0.1.0"
 
 [[package]]
 name = "critical-section"

@@ -20,8 +20,26 @@ extern "Rust" {
     fn main();
 }
 
+struct LogIfImpl;
+
+impl axlog::LogIf for LogIfImpl {
+    fn console_write_str(&self, s: &str) {
+        use axhal::console::putchar;
+        for c in s.chars() {
+            match c {
+                '\n' => {
+                    putchar(b'\r');
+                    putchar(b'\n');
+                }
+                _ => putchar(c as u8),
+            }
+        }
+    }
+}
+
 #[no_mangle]
 pub fn rust_main() -> ! {
+    axlog::set_interface(&LogIfImpl);
     println!("{}", LOGO);
     println!(
         "\
