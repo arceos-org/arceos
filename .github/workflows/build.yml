@@ -1,0 +1,46 @@
+name: Build CI
+
+on: [push, pull_request]
+
+jobs:
+  clippy:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [riscv64]
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: nightly
+        override: true
+        components: rust-src, clippy, rustfmt
+    - name: Clippy
+      run: make clippy ARCH=${{ matrix.arch }}
+    - name: Check code format
+      run: cargo fmt --all -- --check
+
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        arch: [riscv64]
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: nightly
+        components: rust-src, llvm-tools-preview
+    - uses: actions-rs/install@v0.1
+      with:
+        crate: cargo-binutils
+        version: latest
+        use-tool-cache: true
+    - name: Build kernel
+      run: |
+        make ARCH=${{ matrix.arch }}

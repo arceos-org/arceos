@@ -1,0 +1,22 @@
+[package]
+name = "axhal"
+version = "0.1.0"
+edition = "2021"
+authors = ["Yuekai Jia <equation618@gmail.com>"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+platform-qemu-virt-riscv = ["axconfig/platform-qemu-virt-riscv"]
+default = []
+
+[dependencies]
+cfg-if = "1.0"
+axconfig = { path = "../axconfig" }
+
+[target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]
+riscv = "0.10"
+sbi-rt = { version = "0.0.2", features = ["legacy"] }
+
+[build-dependencies]
+axconfig = { path = "../axconfig" }
