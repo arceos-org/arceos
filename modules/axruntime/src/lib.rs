@@ -59,6 +59,17 @@ pub extern "C" fn rust_main() -> ! {
     axlog::set_max_level(option_env!("LOG").unwrap_or(""));
     info!("Logging is enabled.");
 
+    info!("Physcial memory regions:");
+    for r in axhal::mem::memory_regions() {
+        info!(
+            "[0x{:016x}, 0x{:#016x}) {} ({:?})",
+            r.paddr,
+            r.paddr + r.size,
+            r.name,
+            r.flags
+        );
+    }
+
     #[cfg(feature = "alloc")]
     init_heap();
 
@@ -69,10 +80,16 @@ pub extern "C" fn rust_main() -> ! {
 
 #[cfg(feature = "alloc")]
 fn init_heap() {
-    const KERNEL_HEAP_LEN: usize = axconfig::KERNEL_HEAP_SIZE / core::mem::size_of::<u64>();
-    static mut KERNEL_HEAP: [u64; KERNEL_HEAP_LEN] = [0; KERNEL_HEAP_LEN];
-    axalloc::init(
-        unsafe { KERNEL_HEAP.as_ptr() as usize },
-        axconfig::KERNEL_HEAP_SIZE,
-    );
+    use axhal::mem::{memory_regions, phys_to_virt, MemRegionFlags};
+    let mut initialized = false;
+    for r in memory_regions() {
+        if r.flags.contains(MemRegionFlags::FREE) {
+            if !initialized {
+                axalloc::init(phys_to_virt(r.paddr) as _, r.size);
+                initialized = true;
+            } else {
+                axalloc::add_mem_region(phys_to_virt(r.paddr) as _, r.size);
+            }
+        }
+    }
 }

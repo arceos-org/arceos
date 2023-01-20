@@ -18,7 +18,7 @@ fn rand() -> u64 {
 }
 
 fn test_vec() {
-    const N: usize = 100_000;
+    const N: usize = 1_000_000;
     let mut v = Vec::with_capacity(N);
     for _ in 0..N {
         v.push(rand());
