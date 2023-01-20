@@ -22,14 +22,14 @@ kernel_bin := $(kernel_elf).bin
 
 # Cargo features and build args
 
-features := axhal/platform-$(PLATFORM)
+features := axruntime/platform-$(PLATFORM)
 
 build_args := --no-default-features --features "$(features)" --target $(target) -Zbuild-std=core,alloc -Zbuild-std-features=compiler-builtins-mem
 ifeq ($(MODE), release)
   build_args += --release
 endif
 
-build_args += -p axruntime -p $(kernel_package)
+build_args += -p $(kernel_package)
 
 # Binutils
 OBJDUMP := rust-objdump -d --print-imm-hex --x86-asm-syntax=intel
@@ -74,6 +74,6 @@ fmt:
 	cargo fmt --all
 
 test:
-	cargo test --lib
+	cargo test --workspace --exclude "arceos-*"
 
 .PHONY: build kernel_elf disasm run justrun clean clippy fmt test

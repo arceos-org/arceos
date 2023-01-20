@@ -1,11 +1,16 @@
 [package]
-name = "arceos-helloworld"
+name = "axalloc"
 version = "0.1.0"
 edition = "2021"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+buddy = ["buddy_system_allocator"]
+default = ["buddy"]
+
 [dependencies]
-axlog = { path = "../../modules/axlog" }
-axruntime = { path = "../../modules/axruntime" }
+log = "0.4"
+cfg-if = "1.0"
+buddy_system_allocator = { version = "0.9", optional = true }

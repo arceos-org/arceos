@@ -1,5 +1,5 @@
 [package]
-name = "arceos-helloworld"
+name = "arceos-memtest"
 version = "0.1.0"
 edition = "2021"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
@@ -8,4 +8,4 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 
 [dependencies]
 axlog = { path = "../../modules/axlog" }
-axruntime = { path = "../../modules/axruntime" }
+axruntime = { path = "../../modules/axruntime", features = ["alloc"] }

@@ -59,7 +59,20 @@ pub extern "C" fn rust_main() -> ! {
     axlog::set_max_level(option_env!("LOG").unwrap_or(""));
     info!("Logging is enabled.");
 
+    #[cfg(feature = "alloc")]
+    init_heap();
+
     unsafe { main() };
 
     axhal::misc::terminate()
+}
+
+#[cfg(feature = "alloc")]
+fn init_heap() {
+    const KERNEL_HEAP_LEN: usize = axconfig::KERNEL_HEAP_SIZE / core::mem::size_of::<u64>();
+    static mut KERNEL_HEAP: [u64; KERNEL_HEAP_LEN] = [0; KERNEL_HEAP_LEN];
+    axalloc::init(
+        unsafe { KERNEL_HEAP.as_ptr() as usize },
+        axconfig::KERNEL_HEAP_SIZE,
+    );
 }

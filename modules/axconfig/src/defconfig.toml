@@ -1,4 +1,6 @@
 boot-kernel-stack-size = "0x4000"   # 16 K
 user-stack-size = "0x4000"          # 16 K
+kernel-stack-size = "0x4000"        # 16 K
+kernel-heap-size = "0x40_0000"      # 4M
 
 ticks-per-sec = "100"

@@ -3,9 +3,11 @@
 members = [
     "crates/crate_interface",
 
+    "modules/axalloc",
     "modules/axconfig",
     "modules/axhal",
     "modules/axruntime",
 
     "os/helloworld",
+    "os/memtest",
 ]
