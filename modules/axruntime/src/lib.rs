@@ -1,8 +1,9 @@
-#![no_std]
+#![cfg_attr(not(test), no_std)]
 
 #[macro_use]
 extern crate axlog;
 
+#[cfg(not(test))]
 mod lang_items;
 
 const LOGO: &str = r#"
@@ -37,8 +38,8 @@ impl axlog::LogIf for LogIfImpl {
     }
 }
 
-#[no_mangle]
-pub fn rust_main() -> ! {
+#[cfg_attr(not(test), no_mangle)]
+pub extern "C" fn rust_main() -> ! {
     axlog::set_interface(&LogIfImpl);
     println!("{}", LOGO);
     println!(

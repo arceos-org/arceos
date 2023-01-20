@@ -7,7 +7,8 @@ fn main() {
     let platform = if cfg!(feature = "platform-qemu-virt-riscv") {
         "qemu-virt-riscv"
     } else {
-        panic!("Unsupported platform!");
+        println!("Unsupported platform, use dummy config!");
+        "dummy"
     };
 
     gen_config_rs(&arch, platform).unwrap();

@@ -56,6 +56,14 @@ kernel_elf:
 $(kernel_bin): kernel_elf
 	@$(OBJCOPY) $(kernel_elf) --strip-all -O binary $@
 
+disasm:
+	$(OBJDUMP) $(kernel_elf) | less
+
+run: build justrun
+
+justrun:
+	$(qemu) $(qemu_args)
+
 clean:
 	cargo clean
 
@@ -65,12 +73,7 @@ clippy:
 fmt:
 	cargo fmt --all
 
-disasm:
-	$(OBJDUMP) $(kernel_elf) | less
+test:
+	cargo test --lib
 
-run: build justrun
-
-justrun:
-	$(qemu) $(qemu_args)
-
-.PHONY: build kernel_elf clean clippy fmt disasm run justrun
+.PHONY: build kernel_elf disasm run justrun clean clippy fmt test
