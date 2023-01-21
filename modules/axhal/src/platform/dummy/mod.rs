@@ -28,3 +28,42 @@ pub mod mem {
         None
     }
 }
+
+#[cfg(feature = "paging")]
+pub mod paging {
+    pub use page_table::MappingFlags;
+    use page_table::{PagingResult, PhysAddr, VirtAddr};
+
+    pub struct PageTable;
+
+    impl PageTable {
+        pub const fn new() -> PagingResult<Self> {
+            Ok(Self)
+        }
+
+        pub const fn root_paddr(&self) -> PhysAddr {
+            0
+        }
+
+        pub fn map_region(
+            &mut self,
+            vaddr: VirtAddr,
+            paddr: PhysAddr,
+            size: usize,
+            flags: MappingFlags,
+            allow_huge: bool,
+        ) -> PagingResult {
+            unimplemented!()
+        }
+
+        pub fn unmap_region(&mut self, vaddr: VirtAddr, size: usize) -> PagingResult {
+            unimplemented!()
+        }
+    }
+
+    pub fn read_page_table_root() -> PhysAddr {
+        0
+    }
+    pub unsafe fn write_page_table_root(root_paddr: PhysAddr) {}
+    pub fn flush_tlb(vaddr: Option<VirtAddr>) {}
+}

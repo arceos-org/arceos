@@ -3,9 +3,9 @@ bitflags::bitflags! {
         const READ          = 1 << 0;
         const WRITE         = 1 << 1;
         const EXECUTE       = 1 << 2;
-        const RESERVED      = 1 << 3;
-        const FREE          = 1 << 4;
-        const DEVICE        = 1 << 5;
+        const DEVICE        = 1 << 4;
+        const RESERVED      = 1 << 5;
+        const FREE          = 1 << 6;
     }
 }
 

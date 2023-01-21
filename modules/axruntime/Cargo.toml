@@ -8,6 +8,7 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 
 [features]
 alloc = ["axalloc"]
+paging = ["axhal/paging"]
 platform-qemu-virt-riscv = ["axhal/platform-qemu-virt-riscv"]
 default = []
 

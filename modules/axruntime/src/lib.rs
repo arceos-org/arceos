@@ -73,6 +73,9 @@ pub extern "C" fn rust_main() -> ! {
     #[cfg(feature = "alloc")]
     init_heap();
 
+    #[cfg(feature = "paging")]
+    remap_kernel_memory();
+
     unsafe { main() };
 
     axhal::misc::terminate()
@@ -92,4 +95,20 @@ fn init_heap() {
             }
         }
     }
+}
+
+#[cfg(feature = "paging")]
+fn remap_kernel_memory() {
+    use axhal::mem::{memory_regions, phys_to_virt};
+    use axhal::paging::{write_page_table_root, PageTable};
+
+    let mut kernel_page_table = PageTable::new().unwrap();
+    for r in memory_regions() {
+        kernel_page_table
+            .map_region(phys_to_virt(r.paddr), r.paddr, r.size, r.flags.into(), true)
+            .unwrap();
+    }
+
+    unsafe { write_page_table_root(kernel_page_table.root_paddr()) };
+    core::mem::forget(kernel_page_table);
 }

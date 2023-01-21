@@ -45,9 +45,12 @@ dependencies = [
 name = "axhal"
 version = "0.1.0"
 dependencies = [
+ "axalloc",
  "axconfig",
  "bitflags",
  "cfg-if",
+ "log",
+ "page_table",
  "riscv",
  "sbi-rt",
 ]
@@ -150,6 +153,14 @@ name = "nb"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "546c37ac5d9e56f55e73b677106873d9d9f5190605e41a856503623648488cae"
+
+[[package]]
+name = "page_table"
+version = "0.1.0"
+dependencies = [
+ "bitflags",
+ "log",
+]
 
 [[package]]
 name = "riscv"
