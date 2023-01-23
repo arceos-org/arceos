@@ -1,4 +1,5 @@
 #![no_std]
+#![feature(result_option_inspect)]
 
 mod bits64;
 mod pte;

@@ -5,8 +5,7 @@ use page_table::{PhysAddr, VirtAddr, PAGE_SIZE_4K};
 use riscv::{asm, register::satp};
 
 use crate::common::paging::PagingIfImpl;
-
-pub use page_table::MappingFlags;
+pub use crate::common::paging::*;
 
 bitflags::bitflags! {
     /// Page-table entry flags.

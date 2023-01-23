@@ -2,9 +2,10 @@ extern crate alloc;
 
 use alloc::alloc::{alloc, dealloc, Layout};
 
-use page_table::{MappingFlags, PagingIf, PhysAddr, VirtAddr, PAGE_SIZE_4K};
-
 use crate::mem::{phys_to_virt, virt_to_phys, MemRegionFlags};
+
+pub use page_table::{MappingFlags, PagingError, PagingIf, PagingResult};
+pub use page_table::{PhysAddr, VirtAddr, PAGE_SIZE_4K};
 
 impl From<MemRegionFlags> for MappingFlags {
     fn from(f: MemRegionFlags) -> Self {

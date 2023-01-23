@@ -115,12 +115,11 @@ impl<L: PageTableLevels, PTE: GenericPTE, IF: PagingIf> PageTable64<L, PTE, IF> 
                 PageSize::Size4K
             };
             let page = Page::new_aligned(vaddr, page_size);
-            self.map(page, paddr, flags).map_err(|e| {
+            self.map(page, paddr, flags).inspect_err(|e| {
                 error!(
                     "failed to map page: {:#x?}({:?}) -> {:#x?}, {:?}",
                     vaddr, page_size, paddr, e
-                );
-                e
+                )
             })?;
             vaddr += page_size as usize;
             paddr += page_size as usize;
@@ -139,10 +138,9 @@ impl<L: PageTableLevels, PTE: GenericPTE, IF: PagingIf> PageTable64<L, PTE, IF> 
         let mut vaddr = vaddr;
         let mut size = size;
         while size > 0 {
-            let (_, page_size) = self.unmap(vaddr).map_err(|e| {
-                error!("failed to unmap page: {:#x?}, {:?}", vaddr, e);
-                e
-            })?;
+            let (_, page_size) = self
+                .unmap(vaddr)
+                .inspect_err(|e| error!("failed to unmap page: {:#x?}, {:?}", vaddr, e))?;
             assert!(page_size.is_aligned(vaddr));
             assert!(page_size as usize <= size);
             vaddr += page_size as usize;

@@ -6,6 +6,7 @@ members = [
 
     "modules/axalloc",
     "modules/axconfig",
+    "modules/axerror",
     "modules/axhal",
     "modules/axruntime",
 

@@ -17,8 +17,7 @@ pub mod misc {
 }
 
 pub mod mem {
-    pub use crate::common::mem::{memory_regions, phys_to_virt, virt_to_phys};
-    pub use crate::common::mem::{MemRegion, MemRegionFlags};
+    pub use crate::common::mem::*;
 
     pub(crate) fn memory_regions_num() -> usize {
         0
@@ -31,8 +30,7 @@ pub mod mem {
 
 #[cfg(feature = "paging")]
 pub mod paging {
-    pub use page_table::MappingFlags;
-    use page_table::{PagingResult, PhysAddr, VirtAddr};
+    pub use crate::common::paging::*;
 
     pub struct PageTable;
 

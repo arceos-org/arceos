@@ -42,11 +42,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "axerror"
+version = "0.1.0"
+
+[[package]]
 name = "axhal"
 version = "0.1.0"
 dependencies = [
  "axalloc",
  "axconfig",
+ "axerror",
  "bitflags",
  "cfg-if",
  "log",
