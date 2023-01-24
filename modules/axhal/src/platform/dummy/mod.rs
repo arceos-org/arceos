@@ -26,6 +26,14 @@ pub mod mem {
     pub(crate) fn memory_region_at(idx: usize) -> Option<MemRegion> {
         None
     }
+
+    pub const fn paddr_is_valid(paddr: usize) -> bool {
+        true
+    }
+
+    pub const fn vaddr_is_valid(vaddr: usize) -> bool {
+        true
+    }
 }
 
 #[cfg(feature = "paging")]
@@ -40,7 +48,7 @@ pub mod paging {
         }
 
         pub const fn root_paddr(&self) -> PhysAddr {
-            0
+            unimplemented!()
         }
 
         pub fn map_region(
@@ -60,7 +68,7 @@ pub mod paging {
     }
 
     pub fn read_page_table_root() -> PhysAddr {
-        0
+        unimplemented!()
     }
     pub unsafe fn write_page_table_root(root_paddr: PhysAddr) {}
     pub fn flush_tlb(vaddr: Option<VirtAddr>) {}

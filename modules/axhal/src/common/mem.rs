@@ -1,3 +1,5 @@
+pub use memory_addr::{PhysAddr, VirtAddr, PAGE_SIZE_4K};
+
 bitflags::bitflags! {
     pub struct MemRegionFlags: usize {
         const READ          = 1 << 0;
@@ -11,7 +13,7 @@ bitflags::bitflags! {
 
 #[derive(Debug)]
 pub struct MemRegion {
-    pub paddr: usize,
+    pub paddr: PhysAddr,
     pub size: usize,
     pub flags: MemRegionFlags,
     pub name: &'static str,
@@ -36,12 +38,14 @@ impl Iterator for MemRegionIter {
     }
 }
 
-pub const fn virt_to_phys(vaddr: usize) -> usize {
-    vaddr - axconfig::PHYS_VIRT_OFFSET
+#[inline]
+pub const fn virt_to_phys(vaddr: VirtAddr) -> PhysAddr {
+    PhysAddr::from(vaddr.as_usize() - axconfig::PHYS_VIRT_OFFSET)
 }
 
-pub const fn phys_to_virt(paddr: usize) -> usize {
-    paddr + axconfig::PHYS_VIRT_OFFSET
+#[inline]
+pub const fn phys_to_virt(paddr: PhysAddr) -> VirtAddr {
+    VirtAddr::from(paddr.as_usize() + axconfig::PHYS_VIRT_OFFSET)
 }
 
 #[allow(dead_code)]
@@ -67,37 +71,37 @@ pub(crate) fn common_memory_region_at(idx: usize) -> Option<MemRegion> {
     let mmio_regions = axconfig::MMIO_REGIONS;
     let r = match idx {
         0 => MemRegion {
-            paddr: virt_to_phys(stext as usize),
+            paddr: virt_to_phys((stext as usize).into()),
             size: etext as usize - stext as usize,
             flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::EXECUTE,
             name: "text",
         },
         1 => MemRegion {
-            paddr: virt_to_phys(srodata as usize),
+            paddr: virt_to_phys((srodata as usize).into()),
             size: erodata as usize - srodata as usize,
             flags: MemRegionFlags::RESERVED | MemRegionFlags::READ,
             name: "rodata",
         },
         2 => MemRegion {
-            paddr: virt_to_phys(sdata as usize),
+            paddr: virt_to_phys((sdata as usize).into()),
             size: edata as usize - sdata as usize,
             flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
             name: "data",
         },
         3 => MemRegion {
-            paddr: virt_to_phys(sbss as usize),
+            paddr: virt_to_phys((sbss as usize).into()),
             size: ebss as usize - sbss as usize,
             flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
             name: "bss",
         },
         4 => MemRegion {
-            paddr: virt_to_phys(boot_stack as usize),
+            paddr: virt_to_phys((boot_stack as usize).into()),
             size: boot_stack_top as usize - boot_stack as usize,
             flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
             name: "boot stack",
         },
         i if i < 5 + mmio_regions.len() => MemRegion {
-            paddr: mmio_regions[i - 5].0,
+            paddr: mmio_regions[i - 5].0.into(),
             size: mmio_regions[i - 5].1,
             flags: MemRegionFlags::RESERVED
                 | MemRegionFlags::DEVICE

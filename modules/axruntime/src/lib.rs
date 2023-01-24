@@ -88,10 +88,10 @@ fn init_heap() {
     for r in memory_regions() {
         if r.flags.contains(MemRegionFlags::FREE) {
             if !initialized {
-                axalloc::init(phys_to_virt(r.paddr) as _, r.size);
+                axalloc::init(phys_to_virt(r.paddr).as_usize(), r.size);
                 initialized = true;
             } else {
-                axalloc::add_mem_region(phys_to_virt(r.paddr) as _, r.size);
+                axalloc::add_mem_region(phys_to_virt(r.paddr).as_usize(), r.size);
             }
         }
     }

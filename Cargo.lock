@@ -55,6 +55,7 @@ dependencies = [
  "bitflags",
  "cfg-if",
  "log",
+ "memory_addr",
  "page_table",
  "riscv",
  "sbi-rt",
@@ -145,6 +146,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "memory_addr"
+version = "0.1.0"
+
+[[package]]
 name = "nb"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -165,6 +170,7 @@ version = "0.1.0"
 dependencies = [
  "bitflags",
  "log",
+ "memory_addr",
 ]
 
 [[package]]

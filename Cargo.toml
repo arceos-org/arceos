@@ -2,6 +2,7 @@
 
 members = [
     "crates/crate_interface",
+    "crates/memory_addr",
     "crates/page_table",
 
     "modules/axalloc",

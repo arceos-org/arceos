@@ -1,20 +1,17 @@
 #![no_std]
+#![feature(const_trait_impl)]
 #![feature(result_option_inspect)]
+
+#[macro_use]
+extern crate log;
 
 mod bits64;
 mod pte;
 
-#[macro_use]
-extern crate log;
-extern crate alloc;
+use memory_addr::{PhysAddr, VirtAddr};
 
 pub use bits64::PageTable64;
 pub use pte::GenericPTE;
-
-pub type VirtAddr = usize;
-pub type PhysAddr = usize;
-
-pub const PAGE_SIZE_4K: usize = 0x1000;
 
 bitflags::bitflags! {
     pub struct MappingFlags: usize {
@@ -65,37 +62,14 @@ pub enum PageSize {
     Size1G = 0x4000_0000,
 }
 
-#[derive(Debug, Copy, Clone)]
-pub struct Page {
-    vaddr: VirtAddr,
-    size: PageSize,
-}
-
 impl PageSize {
-    pub const fn is_aligned(self, addr: usize) -> bool {
-        self.page_offset(addr) == 0
-    }
-
-    pub const fn align_up(self, addr: usize) -> usize {
-        (addr + self as usize - 1) & !(self as usize - 1)
-    }
-
-    pub const fn align_down(self, addr: usize) -> usize {
-        addr & !(self as usize - 1)
-    }
-
-    pub const fn page_offset(self, addr: usize) -> usize {
-        addr & (self as usize - 1)
-    }
-
     pub const fn is_huge(self) -> bool {
         matches!(self, Self::Size1G | Self::Size2M)
     }
 }
 
-impl Page {
-    pub fn new_aligned(vaddr: VirtAddr, size: PageSize) -> Self {
-        debug_assert!(size.is_aligned(vaddr));
-        Self { vaddr, size }
+impl const From<PageSize> for usize {
+    fn from(size: PageSize) -> usize {
+        size as usize
     }
 }

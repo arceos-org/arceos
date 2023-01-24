@@ -1,7 +1,6 @@
 use core::fmt;
 
 use page_table::{GenericPTE, PageTable64, PageTableLevels3};
-use page_table::{PhysAddr, VirtAddr, PAGE_SIZE_4K};
 use riscv::{asm, register::satp};
 
 use crate::common::paging::PagingIfImpl;
@@ -78,7 +77,7 @@ impl From<MappingFlags> for PTEFlags {
 pub struct Rv64PTE(u64);
 
 impl PageTableEntry {
-    const PHYS_ADDR_MASK: u64 = ((usize::MAX & !(PAGE_SIZE_4K - 1)) >> 2) as u64; // bits 10..54
+    const PHYS_ADDR_MASK: u64 = ((super::mem::PA_MAX_ADDR & !(PAGE_SIZE_4K - 1)) >> 2) as u64; // bits 10..54
 
     pub const fn empty() -> Self {
         Self(0)
@@ -89,13 +88,13 @@ impl GenericPTE for Rv64PTE {
     fn new_page(paddr: PhysAddr, flags: MappingFlags, _is_block: bool) -> Self {
         let flags = PTEFlags::from(flags) | PTEFlags::A | PTEFlags::D;
         debug_assert!(flags.intersects(PTEFlags::R | PTEFlags::X));
-        Self(flags.bits() as u64 | ((paddr >> 2) as u64 & Self::PHYS_ADDR_MASK))
+        Self(flags.bits() as u64 | ((paddr.as_usize() >> 2) as u64 & Self::PHYS_ADDR_MASK))
     }
     fn new_table(paddr: PhysAddr) -> Self {
-        Self(PTEFlags::V.bits() as u64 | ((paddr >> 2) as u64 & Self::PHYS_ADDR_MASK))
+        Self(PTEFlags::V.bits() as u64 | ((paddr.as_usize() >> 2) as u64 & Self::PHYS_ADDR_MASK))
     }
     fn paddr(&self) -> PhysAddr {
-        ((self.0 & Self::PHYS_ADDR_MASK) << 2) as PhysAddr
+        PhysAddr::from(((self.0 & Self::PHYS_ADDR_MASK) << 2) as usize)
     }
     fn flags(&self) -> MappingFlags {
         PTEFlags::from_bits_truncate(self.0 as usize).into()
@@ -131,14 +130,14 @@ pub type PageTableEntry = Rv64PTE;
 pub type PageTable = PageTable64<PageTableLevels3, PageTableEntry, PagingIfImpl>;
 
 pub fn read_page_table_root() -> PhysAddr {
-    satp::read().ppn() << 12
+    PhysAddr::from(satp::read().ppn() << 12)
 }
 
 pub unsafe fn write_page_table_root(root_paddr: PhysAddr) {
     let old_root = read_page_table_root();
     trace!("set page table root: {:#x} => {:#x}", old_root, root_paddr);
     if old_root != root_paddr {
-        satp::set(satp::Mode::Sv39, 0, root_paddr >> 12);
+        satp::set(satp::Mode::Sv39, 0, root_paddr.as_usize() >> 12);
         asm::sfence_vma_all();
     }
 }
@@ -146,7 +145,7 @@ pub unsafe fn write_page_table_root(root_paddr: PhysAddr) {
 pub fn flush_tlb(vaddr: Option<VirtAddr>) {
     unsafe {
         if let Some(vaddr) = vaddr {
-            asm::sfence_vma(0, vaddr)
+            asm::sfence_vma(0, vaddr.as_usize())
         } else {
             asm::sfence_vma_all();
         }

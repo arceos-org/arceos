@@ -19,6 +19,7 @@ axconfig = { path = "../axconfig" }
 axalloc = { path = "../axalloc", optional = true }
 axerror = { path = "../axerror" }
 page_table = { path = "../../crates/page_table", optional = true }
+memory_addr = { path = "../../crates/memory_addr" }
 
 [target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]
 riscv = "0.10"

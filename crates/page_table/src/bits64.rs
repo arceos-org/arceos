@@ -1,25 +1,29 @@
+extern crate alloc;
+
 use alloc::{vec, vec::Vec};
 use core::marker::PhantomData;
 
-use crate::{GenericPTE, MappingFlags, PagingError, PagingIf, PagingResult};
-use crate::{Page, PageSize, PageTableLevels, PhysAddr, VirtAddr, PAGE_SIZE_4K};
+use memory_addr::{PhysAddr, VirtAddr, PAGE_SIZE_4K};
+
+use crate::{GenericPTE, PageTableLevels, PagingIf};
+use crate::{MappingFlags, PageSize, PagingError, PagingResult};
 
 const ENTRY_COUNT: usize = 512;
 
 const fn p4_index(vaddr: VirtAddr) -> usize {
-    (vaddr >> (12 + 27)) & (ENTRY_COUNT - 1)
+    (vaddr.as_usize() >> (12 + 27)) & (ENTRY_COUNT - 1)
 }
 
 const fn p3_index(vaddr: VirtAddr) -> usize {
-    (vaddr >> (12 + 18)) & (ENTRY_COUNT - 1)
+    (vaddr.as_usize() >> (12 + 18)) & (ENTRY_COUNT - 1)
 }
 
 const fn p2_index(vaddr: VirtAddr) -> usize {
-    (vaddr >> (12 + 9)) & (ENTRY_COUNT - 1)
+    (vaddr.as_usize() >> (12 + 9)) & (ENTRY_COUNT - 1)
 }
 
 const fn p1_index(vaddr: VirtAddr) -> usize {
-    (vaddr >> 12) & (ENTRY_COUNT - 1)
+    (vaddr.as_usize() >> 12) & (ENTRY_COUNT - 1)
 }
 
 pub struct PageTable64<L: PageTableLevels, PTE: GenericPTE, IF: PagingIf> {
@@ -42,12 +46,18 @@ impl<L: PageTableLevels, PTE: GenericPTE, IF: PagingIf> PageTable64<L, PTE, IF> 
         self.root_paddr
     }
 
-    pub fn map(&mut self, page: Page, target: PhysAddr, flags: MappingFlags) -> PagingResult {
-        let entry = self.get_entry_mut_or_create(page)?;
+    pub fn map(
+        &mut self,
+        vaddr: VirtAddr,
+        target: PhysAddr,
+        page_size: PageSize,
+        flags: MappingFlags,
+    ) -> PagingResult {
+        let entry = self.get_entry_mut_or_create(vaddr, page_size)?;
         if !entry.is_unused() {
             return Err(PagingError::AlreadyMapped);
         }
-        *entry = GenericPTE::new_page(page.size.align_down(target), flags, page.size.is_huge());
+        *entry = GenericPTE::new_page(target.align_down(page_size), flags, page_size.is_huge());
         Ok(())
     }
 
@@ -66,7 +76,7 @@ impl<L: PageTableLevels, PTE: GenericPTE, IF: PagingIf> PageTable64<L, PTE, IF> 
         if entry.is_unused() {
             return Err(PagingError::NotMapped);
         }
-        let off = size.page_offset(vaddr.into());
+        let off = vaddr.page_offset(size);
         Ok((entry.paddr() + off, entry.flags(), size))
     }
 
@@ -78,9 +88,9 @@ impl<L: PageTableLevels, PTE: GenericPTE, IF: PagingIf> PageTable64<L, PTE, IF> 
         flags: MappingFlags,
         allow_huge: bool,
     ) -> PagingResult {
-        if !PageSize::Size4K.is_aligned(vaddr)
-            || !PageSize::Size4K.is_aligned(paddr)
-            || !PageSize::Size4K.is_aligned(size)
+        if !vaddr.is_aligned(PageSize::Size4K)
+            || !paddr.is_aligned(PageSize::Size4K)
+            || !memory_addr::is_aligned(size, PageSize::Size4K)
         {
             return Err(PagingError::NotAligned);
         }
@@ -98,13 +108,13 @@ impl<L: PageTableLevels, PTE: GenericPTE, IF: PagingIf> PageTable64<L, PTE, IF> 
         let mut size = size;
         while size > 0 {
             let page_size = if allow_huge {
-                if PageSize::Size1G.is_aligned(vaddr)
-                    && PageSize::Size1G.is_aligned(paddr)
+                if vaddr.is_aligned(PageSize::Size1G)
+                    && paddr.is_aligned(PageSize::Size1G)
                     && size >= PageSize::Size1G as usize
                 {
                     PageSize::Size1G
-                } else if PageSize::Size2M.is_aligned(vaddr)
-                    && PageSize::Size2M.is_aligned(paddr)
+                } else if vaddr.is_aligned(PageSize::Size2M)
+                    && paddr.is_aligned(PageSize::Size2M)
                     && size >= PageSize::Size2M as usize
                 {
                     PageSize::Size2M
@@ -114,8 +124,7 @@ impl<L: PageTableLevels, PTE: GenericPTE, IF: PagingIf> PageTable64<L, PTE, IF> 
             } else {
                 PageSize::Size4K
             };
-            let page = Page::new_aligned(vaddr, page_size);
-            self.map(page, paddr, flags).inspect_err(|e| {
+            self.map(vaddr, paddr, page_size, flags).inspect_err(|e| {
                 error!(
                     "failed to map page: {:#x?}({:?}) -> {:#x?}, {:?}",
                     vaddr, page_size, paddr, e
@@ -141,7 +150,7 @@ impl<L: PageTableLevels, PTE: GenericPTE, IF: PagingIf> PageTable64<L, PTE, IF> 
             let (_, page_size) = self
                 .unmap(vaddr)
                 .inspect_err(|e| error!("failed to unmap page: {:#x?}, {:?}", vaddr, e))?;
-            assert!(page_size.is_aligned(vaddr));
+            assert!(vaddr.is_aligned(page_size));
             assert!(page_size as usize <= size);
             vaddr += page_size as usize;
             size -= page_size as usize;
@@ -149,8 +158,17 @@ impl<L: PageTableLevels, PTE: GenericPTE, IF: PagingIf> PageTable64<L, PTE, IF> 
         Ok(())
     }
 
-    pub fn walk(&self, limit: usize, func: &impl Fn(usize, usize, VirtAddr, &PTE)) -> PagingResult {
-        self.walk_recursive(self.table_of(self.root_paddr()), 0, 0, limit, func)
+    pub fn walk<F>(&self, limit: usize, func: &F) -> PagingResult
+    where
+        F: Fn(usize, usize, VirtAddr, &PTE),
+    {
+        self.walk_recursive(
+            self.table_of(self.root_paddr()),
+            0,
+            VirtAddr::from(0),
+            limit,
+            func,
+        )
     }
 }
 
@@ -158,7 +176,7 @@ impl<L: PageTableLevels, PTE: GenericPTE, IF: PagingIf> PageTable64<L, PTE, IF> 
 impl<L: PageTableLevels, PTE: GenericPTE, IF: PagingIf> PageTable64<L, PTE, IF> {
     fn alloc_table() -> PagingResult<PhysAddr> {
         if let Some(paddr) = IF::alloc_frame() {
-            let ptr = IF::phys_to_virt(paddr) as *mut u8;
+            let ptr = IF::phys_to_virt(paddr).as_mut_ptr();
             unsafe { core::ptr::write_bytes(ptr, 0, PAGE_SIZE_4K) };
             Ok(paddr)
         } else {
@@ -167,12 +185,12 @@ impl<L: PageTableLevels, PTE: GenericPTE, IF: PagingIf> PageTable64<L, PTE, IF> 
     }
 
     fn table_of<'a>(&self, paddr: PhysAddr) -> &'a [PTE] {
-        let ptr = IF::phys_to_virt(paddr) as *const PTE;
+        let ptr = IF::phys_to_virt(paddr).as_ptr() as _;
         unsafe { core::slice::from_raw_parts(ptr, ENTRY_COUNT) }
     }
 
     fn table_of_mut<'a>(&self, paddr: PhysAddr) -> &'a mut [PTE] {
-        let ptr = IF::phys_to_virt(paddr) as *mut PTE;
+        let ptr = IF::phys_to_virt(paddr).as_mut_ptr() as _;
         unsafe { core::slice::from_raw_parts_mut(ptr, ENTRY_COUNT) }
     }
 
@@ -223,8 +241,11 @@ impl<L: PageTableLevels, PTE: GenericPTE, IF: PagingIf> PageTable64<L, PTE, IF> 
         Ok((p1e, PageSize::Size4K))
     }
 
-    fn get_entry_mut_or_create(&mut self, page: Page) -> PagingResult<&mut PTE> {
-        let vaddr = page.vaddr;
+    fn get_entry_mut_or_create(
+        &mut self,
+        vaddr: VirtAddr,
+        page_size: PageSize,
+    ) -> PagingResult<&mut PTE> {
         let p3 = if L::LEVELS == 3 {
             self.table_of_mut(self.root_paddr())
         } else if L::LEVELS == 4 {
@@ -235,13 +256,13 @@ impl<L: PageTableLevels, PTE: GenericPTE, IF: PagingIf> PageTable64<L, PTE, IF> 
             unreachable!()
         };
         let p3e = &mut p3[p3_index(vaddr)];
-        if page.size == PageSize::Size1G {
+        if page_size == PageSize::Size1G {
             return Ok(p3e);
         }
 
         let p2 = self.next_table_mut_or_create(p3e)?;
         let p2e = &mut p2[p2_index(vaddr)];
-        if page.size == PageSize::Size2M {
+        if page_size == PageSize::Size2M {
             return Ok(p2e);
         }
 
@@ -250,14 +271,17 @@ impl<L: PageTableLevels, PTE: GenericPTE, IF: PagingIf> PageTable64<L, PTE, IF> 
         Ok(p1e)
     }
 
-    fn walk_recursive(
+    fn walk_recursive<F>(
         &self,
         table: &[PTE],
         level: usize,
-        start_vaddr: usize,
+        start_vaddr: VirtAddr,
         limit: usize,
-        func: &impl Fn(usize, usize, VirtAddr, &PTE),
-    ) -> PagingResult {
+        func: &F,
+    ) -> PagingResult
+    where
+        F: Fn(usize, usize, VirtAddr, &PTE),
+    {
         let mut n = 0;
         for (i, entry) in table.iter().enumerate() {
             let vaddr = start_vaddr + (i << (12 + (L::LEVELS - 1 - level) * 9));
