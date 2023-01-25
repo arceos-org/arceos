@@ -8,6 +8,8 @@ APP ?= helloworld
 ifeq ($(ARCH), riscv64)
   PLATFORM ?= qemu-virt-riscv
   target := riscv64gc-unknown-none-elf
+else
+  $(error "ARCH" must be "riscv64")
 endif
 
 export ARCH
@@ -23,6 +25,12 @@ kernel_bin := $(kernel_elf).bin
 # Cargo features and build args
 
 features := axruntime/platform-$(PLATFORM)
+
+ifneq ($(filter $(LOG),off error warn info debug trace),)
+  features += axruntime/log-level-$(LOG)
+else
+  $(error "LOG" must be one of "off", "error", "warn", "info", "debug", "trace")
+endif
 
 build_args := --no-default-features --features "$(features)" --target $(target) -Zbuild-std=core,alloc -Zbuild-std-features=compiler-builtins-mem
 ifeq ($(MODE), release)

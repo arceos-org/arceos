@@ -6,6 +6,14 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+log-level-off = ["log/max_level_off"]
+log-level-error = ["log/max_level_error"]
+log-level-warn = ["log/max_level_warn"]
+log-level-info = ["log/max_level_info"]
+log-level-debug = ["log/max_level_debug"]
+log-level-trace = ["log/max_level_trace"]
+
 [dependencies]
 crate_interface = { path = "../../crates/crate_interface" }
-log = "0.4"
+log = { version="0.4" }

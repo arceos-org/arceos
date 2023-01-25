@@ -9,7 +9,16 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 [features]
 alloc = ["axalloc"]
 paging = ["axhal/paging"]
+
+log-level-off = ["axlog/log-level-off"]
+log-level-error = ["axlog/log-level-error"]
+log-level-warn = ["axlog/log-level-warn"]
+log-level-info = ["axlog/log-level-info"]
+log-level-debug = ["axlog/log-level-debug"]
+log-level-trace = ["axlog/log-level-trace"]
+
 platform-qemu-virt-riscv = ["axhal/platform-qemu-virt-riscv"]
+
 default = []
 
 [dependencies]

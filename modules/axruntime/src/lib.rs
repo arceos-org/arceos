@@ -56,7 +56,7 @@ pub extern "C" fn rust_main() -> ! {
     );
 
     axlog::init();
-    axlog::set_max_level(option_env!("LOG").unwrap_or(""));
+    axlog::set_max_level(option_env!("LOG").unwrap_or("")); // no effect if set `log-level-*` features
     info!("Logging is enabled.");
 
     info!("Physcial memory regions:");
