@@ -21,6 +21,9 @@ axerror = { path = "../axerror" }
 page_table = { path = "../../crates/page_table", optional = true }
 memory_addr = { path = "../../crates/memory_addr" }
 
+[target.'cfg(target_arch = "x86_64")'.dependencies]
+x86 = "0.52"
+
 [target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]
 riscv = "0.10"
 sbi-rt = { version = "0.0.2", features = ["legacy"] }

@@ -100,7 +100,7 @@ fn init_heap() {
 #[cfg(feature = "paging")]
 fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
     use axhal::mem::{memory_regions, phys_to_virt};
-    use axhal::paging::{write_page_table_root, PageTable};
+    use axhal::paging::PageTable;
 
     let mut kernel_page_table = PageTable::new()?;
     for r in memory_regions() {
@@ -113,7 +113,7 @@ fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
         )?;
     }
 
-    unsafe { write_page_table_root(kernel_page_table.root_paddr()) };
+    unsafe { axhal::arch::write_page_table_root(kernel_page_table.root_paddr()) };
     core::mem::forget(kernel_page_table);
     Ok(())
 }

@@ -5,7 +5,7 @@ use core::marker::PhantomData;
 
 use memory_addr::{PhysAddr, VirtAddr, PAGE_SIZE_4K};
 
-use crate::{GenericPTE, PageTableLevels, PagingIf};
+use crate::{GenericPTE, PagingIf, PagingMetaData};
 use crate::{MappingFlags, PageSize, PagingError, PagingResult};
 
 const ENTRY_COUNT: usize = 512;
@@ -26,13 +26,13 @@ const fn p1_index(vaddr: VirtAddr) -> usize {
     (vaddr.as_usize() >> 12) & (ENTRY_COUNT - 1)
 }
 
-pub struct PageTable64<L: PageTableLevels, PTE: GenericPTE, IF: PagingIf> {
+pub struct PageTable64<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> {
     root_paddr: PhysAddr,
     intrm_tables: Vec<PhysAddr>,
-    _phantom: PhantomData<(L, PTE, IF)>,
+    _phantom: PhantomData<(M, PTE, IF)>,
 }
 
-impl<L: PageTableLevels, PTE: GenericPTE, IF: PagingIf> PageTable64<L, PTE, IF> {
+impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
     pub fn new() -> PagingResult<Self> {
         let root_paddr = Self::alloc_table()?;
         Ok(Self {
@@ -173,7 +173,7 @@ impl<L: PageTableLevels, PTE: GenericPTE, IF: PagingIf> PageTable64<L, PTE, IF> 
 }
 
 // Private implements.
-impl<L: PageTableLevels, PTE: GenericPTE, IF: PagingIf> PageTable64<L, PTE, IF> {
+impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
     fn alloc_table() -> PagingResult<PhysAddr> {
         if let Some(paddr) = IF::alloc_frame() {
             let ptr = IF::phys_to_virt(paddr).as_mut_ptr();
@@ -216,9 +216,9 @@ impl<L: PageTableLevels, PTE: GenericPTE, IF: PagingIf> PageTable64<L, PTE, IF> 
     }
 
     fn get_entry_mut(&self, vaddr: VirtAddr) -> PagingResult<(&mut PTE, PageSize)> {
-        let p3 = if L::LEVELS == 3 {
+        let p3 = if M::LEVELS == 3 {
             self.table_of_mut(self.root_paddr())
-        } else if L::LEVELS == 4 {
+        } else if M::LEVELS == 4 {
             let p4 = self.table_of_mut(self.root_paddr());
             let p4e = &mut p4[p4_index(vaddr)];
             self.next_table_mut(p4e)?
@@ -246,9 +246,9 @@ impl<L: PageTableLevels, PTE: GenericPTE, IF: PagingIf> PageTable64<L, PTE, IF> 
         vaddr: VirtAddr,
         page_size: PageSize,
     ) -> PagingResult<&mut PTE> {
-        let p3 = if L::LEVELS == 3 {
+        let p3 = if M::LEVELS == 3 {
             self.table_of_mut(self.root_paddr())
-        } else if L::LEVELS == 4 {
+        } else if M::LEVELS == 4 {
             let p4 = self.table_of_mut(self.root_paddr());
             let p4e = &mut p4[p4_index(vaddr)];
             self.next_table_mut_or_create(p4e)?
@@ -284,10 +284,10 @@ impl<L: PageTableLevels, PTE: GenericPTE, IF: PagingIf> PageTable64<L, PTE, IF> 
     {
         let mut n = 0;
         for (i, entry) in table.iter().enumerate() {
-            let vaddr = start_vaddr + (i << (12 + (L::LEVELS - 1 - level) * 9));
+            let vaddr = start_vaddr + (i << (12 + (M::LEVELS - 1 - level) * 9));
             if entry.is_present() {
                 func(level, i, vaddr, entry);
-                if level < L::LEVELS - 1 && !entry.is_huge() {
+                if level < M::LEVELS - 1 && !entry.is_huge() {
                     let table_entry = self.next_table_mut(entry)?;
                     self.walk_recursive(table_entry, level + 1, vaddr, limit, func)?;
                 }
@@ -301,7 +301,7 @@ impl<L: PageTableLevels, PTE: GenericPTE, IF: PagingIf> PageTable64<L, PTE, IF> 
     }
 }
 
-impl<L: PageTableLevels, PTE: GenericPTE, IF: PagingIf> Drop for PageTable64<L, PTE, IF> {
+impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> Drop for PageTable64<M, PTE, IF> {
     fn drop(&mut self) {
         for frame in &self.intrm_tables {
             IF::dealloc_frame(*frame);

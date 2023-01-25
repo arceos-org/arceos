@@ -8,5 +8,9 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 
 [dependencies]
 log = "0.4"
+cfg-if = "1.0"
 bitflags = "1.3"
 memory_addr = { path = "../memory_addr" }
+
+[target.'cfg(target_arch = "x86_64")'.dependencies]
+x86_64 = "0.14"

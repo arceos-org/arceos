@@ -48,6 +48,10 @@ pub const fn phys_to_virt(paddr: PhysAddr) -> VirtAddr {
     VirtAddr::from(paddr.as_usize() + axconfig::PHYS_VIRT_OFFSET)
 }
 
+pub fn memory_regions() -> impl Iterator<Item = MemRegion> {
+    MemRegionIter { idx: 0 }
+}
+
 #[allow(dead_code)]
 pub(crate) const fn common_memory_regions_num() -> usize {
     5 + axconfig::MMIO_REGIONS.len()
@@ -112,8 +116,4 @@ pub(crate) fn common_memory_region_at(idx: usize) -> Option<MemRegion> {
         _ => return None,
     };
     Some(r)
-}
-
-pub fn memory_regions() -> impl Iterator<Item = MemRegion> {
-    MemRegionIter { idx: 0 }
 }

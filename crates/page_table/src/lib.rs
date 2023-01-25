@@ -5,11 +5,13 @@
 #[macro_use]
 extern crate log;
 
+mod arch;
 mod bits64;
 mod pte;
 
 use memory_addr::{PhysAddr, VirtAddr};
 
+pub use arch::*;
 pub use bits64::PageTable64;
 pub use pte::GenericPTE;
 
@@ -34,18 +36,25 @@ pub enum PagingError {
 
 pub type PagingResult<T = ()> = Result<T, PagingError>;
 
-pub trait PageTableLevels: Sync + Send {
+#[const_trait]
+pub trait PagingMetaData: Sync + Send + Sized {
     const LEVELS: usize;
-}
-pub struct PageTableLevels3;
-pub struct PageTableLevels4;
+    const PA_MAX_BITS: usize;
+    const VA_MAX_BITS: usize;
 
-impl PageTableLevels for PageTableLevels3 {
-    const LEVELS: usize = 3;
-}
+    const PA_MAX_ADDR: usize = (1 << Self::PA_MAX_BITS) - 1;
 
-impl PageTableLevels for PageTableLevels4 {
-    const LEVELS: usize = 4;
+    #[inline]
+    fn paddr_is_valid(paddr: usize) -> bool {
+        paddr <= Self::PA_MAX_ADDR // default
+    }
+
+    #[inline]
+    fn vaddr_is_valid(vaddr: usize) -> bool {
+        // default: top bits sign extended
+        let top_mask = usize::MAX << (Self::VA_MAX_BITS - 1);
+        (vaddr & top_mask) == 0 || (vaddr & top_mask) == top_mask
+    }
 }
 
 pub trait PagingIf: Sized {

@@ -1,10 +1,8 @@
 use core::fmt;
 
-use page_table::{GenericPTE, PageTable64, PageTableLevels3};
-use riscv::{asm, register::satp};
+use memory_addr::PhysAddr;
 
-use crate::common::paging::PagingIfImpl;
-pub use crate::common::paging::*;
+use crate::{GenericPTE, MappingFlags, PageTable64, PagingMetaData};
 
 bitflags::bitflags! {
     /// Page-table entry flags.
@@ -76,16 +74,12 @@ impl From<MappingFlags> for PTEFlags {
 #[repr(transparent)]
 pub struct Rv64PTE(u64);
 
-impl PageTableEntry {
-    const PHYS_ADDR_MASK: u64 = ((super::mem::PA_MAX_ADDR & !(PAGE_SIZE_4K - 1)) >> 2) as u64; // bits 10..54
-
-    pub const fn empty() -> Self {
-        Self(0)
-    }
+impl Rv64PTE {
+    const PHYS_ADDR_MASK: u64 = (1 << 54) - (1 << 10); // bits 10..54
 }
 
 impl GenericPTE for Rv64PTE {
-    fn new_page(paddr: PhysAddr, flags: MappingFlags, _is_block: bool) -> Self {
+    fn new_page(paddr: PhysAddr, flags: MappingFlags, _is_huge: bool) -> Self {
         let flags = PTEFlags::from(flags) | PTEFlags::A | PTEFlags::D;
         debug_assert!(flags.intersects(PTEFlags::R | PTEFlags::X));
         Self(flags.bits() as u64 | ((paddr.as_usize() >> 2) as u64 & Self::PHYS_ADDR_MASK))
@@ -123,31 +117,26 @@ impl fmt::Debug for Rv64PTE {
     }
 }
 
-/// Sv39 and Sv48 page table entry.
-pub type PageTableEntry = Rv64PTE;
+#[derive(Clone, Copy)]
+pub struct Sv39MetaData;
+
+#[derive(Clone, Copy)]
+pub struct Sv48MetaData;
+
+impl const PagingMetaData for Sv39MetaData {
+    const LEVELS: usize = 3;
+    const PA_MAX_BITS: usize = 56;
+    const VA_MAX_BITS: usize = 39;
+}
+
+impl const PagingMetaData for Sv48MetaData {
+    const LEVELS: usize = 4;
+    const PA_MAX_BITS: usize = 56;
+    const VA_MAX_BITS: usize = 48;
+}
 
 /// Sv39: Page-Based 39-bit (3 levels) Virtual-Memory System.
-pub type PageTable = PageTable64<PageTableLevels3, PageTableEntry, PagingIfImpl>;
+pub type Sv39PageTable<I> = PageTable64<Sv39MetaData, Rv64PTE, I>;
 
-pub fn read_page_table_root() -> PhysAddr {
-    PhysAddr::from(satp::read().ppn() << 12)
-}
-
-pub unsafe fn write_page_table_root(root_paddr: PhysAddr) {
-    let old_root = read_page_table_root();
-    trace!("set page table root: {:#x} => {:#x}", old_root, root_paddr);
-    if old_root != root_paddr {
-        satp::set(satp::Mode::Sv39, 0, root_paddr.as_usize() >> 12);
-        asm::sfence_vma_all();
-    }
-}
-
-pub fn flush_tlb(vaddr: Option<VirtAddr>) {
-    unsafe {
-        if let Some(vaddr) = vaddr {
-            asm::sfence_vma(0, vaddr.as_usize())
-        } else {
-            asm::sfence_vma_all();
-        }
-    }
-}
+/// Sv48: Page-Based 48-bit (4 levels) Virtual-Memory System.
+pub type Sv48PageTable<I> = PageTable64<Sv48MetaData, Rv64PTE, I>;

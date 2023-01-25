@@ -1,0 +1,45 @@
+use memory_addr::{PhysAddr, VirtAddr};
+use riscv::{asm, register::satp, register::sstatus};
+
+#[inline]
+pub fn enable_irqs() {
+    unsafe { sstatus::set_sie() }
+}
+
+#[inline]
+pub fn disable_irqs() {
+    unsafe { sstatus::clear_sie() }
+}
+
+#[inline]
+pub fn irqs_enabled() -> bool {
+    sstatus::read().sie()
+}
+
+#[inline]
+pub fn read_page_table_root() -> PhysAddr {
+    PhysAddr::from(satp::read().ppn() << 12)
+}
+
+/// # Safety
+///
+/// This function is unsafe as it changes the virtual memory address space.
+pub unsafe fn write_page_table_root(root_paddr: PhysAddr) {
+    let old_root = read_page_table_root();
+    trace!("set page table root: {:#x} => {:#x}", old_root, root_paddr);
+    if old_root != root_paddr {
+        satp::set(satp::Mode::Sv39, 0, root_paddr.as_usize() >> 12);
+        asm::sfence_vma_all();
+    }
+}
+
+#[inline]
+pub fn flush_tlb(vaddr: Option<VirtAddr>) {
+    unsafe {
+        if let Some(vaddr) = vaddr {
+            asm::sfence_vma(0, vaddr.as_usize())
+        } else {
+            asm::sfence_vma_all();
+        }
+    }
+}
