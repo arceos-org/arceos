@@ -1,6 +1,4 @@
-extern crate alloc;
-
-use alloc::alloc::{alloc, dealloc, Layout};
+use axalloc::global_allocator;
 use page_table::PagingIf;
 
 use crate::mem::{phys_to_virt, virt_to_phys, MemRegionFlags, PhysAddr, VirtAddr, PAGE_SIZE_4K};
@@ -30,23 +28,14 @@ pub struct PagingIfImpl;
 
 impl PagingIf for PagingIfImpl {
     fn alloc_frame() -> Option<PhysAddr> {
-        unsafe {
-            let layout = Layout::from_size_align_unchecked(PAGE_SIZE_4K, PAGE_SIZE_4K);
-            let ptr = alloc(layout);
-            if !ptr.is_null() {
-                Some(virt_to_phys((ptr as usize).into()))
-            } else {
-                None
-            }
-        }
+        global_allocator()
+            .alloc_pages(1, PAGE_SIZE_4K)
+            .map(|vaddr| virt_to_phys(vaddr.into()))
+            .ok()
     }
 
     fn dealloc_frame(paddr: PhysAddr) {
-        unsafe {
-            let layout = Layout::from_size_align_unchecked(PAGE_SIZE_4K, PAGE_SIZE_4K);
-            let ptr = phys_to_virt(paddr).as_mut_ptr();
-            dealloc(ptr, layout);
-        }
+        global_allocator().dealloc_pages(phys_to_virt(paddr).as_usize(), 1)
     }
 
     #[inline]

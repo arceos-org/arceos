@@ -28,7 +28,7 @@ pub enum AxError {
     Unsupported,
 }
 
-/// A [`Result`] type with [`RvmError`] as the error type.
+/// A [`Result`] type with [`AxError`] as the error type.
 pub type AxResult<T = ()> = Result<T, AxError>;
 
 #[macro_export]
