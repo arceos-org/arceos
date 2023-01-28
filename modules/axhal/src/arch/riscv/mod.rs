@@ -1,5 +1,13 @@
+#[macro_use]
+mod macros;
+
+mod context;
+mod trap;
+
 use memory_addr::{PhysAddr, VirtAddr};
 use riscv::{asm, register::satp, register::sstatus};
+
+pub use context::TrapFrame;
 
 #[inline]
 pub fn enable_irqs() {

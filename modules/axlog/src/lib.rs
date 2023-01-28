@@ -14,7 +14,7 @@ pub use log::{debug, error, info, trace, warn};
 #[macro_export]
 macro_rules! print {
     ($fmt: literal $(, $($arg: tt)+)?) => {
-        $crate::print(format_args!($fmt $(, $($arg)+)?));
+        $crate::__print_impl(format_args!($fmt $(, $($arg)+)?));
     }
 }
 
@@ -22,7 +22,7 @@ macro_rules! print {
 macro_rules! println {
     () => { print!("\n") };
     ($fmt: literal $(, $($arg: tt)+)?) => {
-        $crate::print(format_args!(concat!($fmt, "\n") $(, $($arg)+)?));
+        $crate::__print_impl(format_args!(concat!($fmt, "\n") $(, $($arg)+)?));
     }
 }
 
@@ -97,7 +97,7 @@ impl Log for Logger {
             Level::Debug => ColorCode::Cyan,
             Level::Trace => ColorCode::BrightBlack,
         };
-        print(with_color!(
+        __print_impl(with_color!(
             ColorCode::White,
             "[{} {} {}\n",
             with_color!(level_color, "{:<5}", level),
@@ -109,7 +109,7 @@ impl Log for Logger {
     fn flush(&self) {}
 }
 
-pub fn print(args: fmt::Arguments) {
+pub fn __print_impl(args: fmt::Arguments) {
     Logger.write_fmt(args).unwrap();
 }
 

@@ -2,7 +2,6 @@
 #![no_main]
 
 #[macro_use]
-extern crate axlog;
 extern crate axruntime;
 
 #[no_mangle]

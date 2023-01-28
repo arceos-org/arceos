@@ -11,10 +11,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "arceos-exception"
+version = "0.1.0"
+dependencies = [
+ "axruntime",
+]
+
+[[package]]
 name = "arceos-helloworld"
 version = "0.1.0"
 dependencies = [
- "axlog",
  "axruntime",
 ]
 
@@ -22,7 +28,6 @@ dependencies = [
 name = "arceos-memtest"
 version = "0.1.0"
 dependencies = [
- "axlog",
  "axruntime",
 ]
 

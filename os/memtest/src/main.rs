@@ -2,9 +2,8 @@
 #![no_main]
 
 #[macro_use]
-extern crate axlog;
-extern crate alloc;
 extern crate axruntime;
+extern crate alloc;
 
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
@@ -49,8 +48,7 @@ fn test_btree_map() {
 #[no_mangle]
 fn main() {
     println!("Running memory tests...");
-
     test_vec();
     test_btree_map();
-    println!("memtest run OK!");
+    println!("Memory tests run OK!");
 }

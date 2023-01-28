@@ -6,6 +6,8 @@ extern crate axlog;
 #[cfg(not(test))]
 mod lang_items;
 
+pub use axlog::{__print_impl, print, println};
+
 const LOGO: &str = r#"
        d8888                            .d88888b.   .d8888b.
       d88888                           d88P" "Y88b d88P  Y88b
@@ -59,10 +61,10 @@ pub extern "C" fn rust_main() -> ! {
     axlog::set_max_level(option_env!("LOG").unwrap_or("")); // no effect if set `log-level-*` features
     info!("Logging is enabled.");
 
-    info!("Physcial memory regions:");
+    info!("Found physcial memory regions:");
     for r in axhal::mem::memory_regions() {
         info!(
-            "[0x{:016x}, 0x{:#016x}) {} ({:?})",
+            "  [0x{:016x}, 0x{:#016x}) {} ({:?})",
             r.paddr,
             r.paddr + r.size,
             r.name,
@@ -71,7 +73,7 @@ pub extern "C" fn rust_main() -> ! {
     }
 
     #[cfg(feature = "alloc")]
-    init_heap();
+    init_allocator();
 
     #[cfg(feature = "paging")]
     remap_kernel_memory().expect("remap kernel memoy failed");
@@ -82,8 +84,10 @@ pub extern "C" fn rust_main() -> ! {
 }
 
 #[cfg(feature = "alloc")]
-fn init_heap() {
+fn init_allocator() {
     use axhal::mem::{memory_regions, phys_to_virt, MemRegionFlags};
+
+    info!("Initialize global memory allocator...");
     let mut max_region_size = 0;
     let mut max_region_paddr = 0.into();
     for r in memory_regions() {
@@ -111,6 +115,7 @@ fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
     use axhal::mem::{memory_regions, phys_to_virt};
     use axhal::paging::PageTable;
 
+    info!("Initialize kernel page table...");
     let mut kernel_page_table = PageTable::new()?;
     for r in memory_regions() {
         kernel_page_table.map_region(

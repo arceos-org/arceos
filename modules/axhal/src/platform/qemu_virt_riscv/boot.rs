@@ -53,7 +53,10 @@ unsafe extern "C" fn _start() -> ! {
         add     a1, a1, t0
         add     sp, sp, t0
 
-        mv      a0, s0                  // 5. call rust_main(hartid)
+        la      a0, trap_vector_base    // 5. set trap vector in Direct mode (defined in arch/riscv/strap.S)
+        csrw    stvec, a0
+
+        mv      a0, s0                  // 6. call rust_main(hartid)
         jalr    a1
         j       .",
         phys_virt_offset = const PHYS_VIRT_OFFSET,

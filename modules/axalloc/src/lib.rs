@@ -125,8 +125,8 @@ pub fn global_allocator() -> &'static GlobalAllocator {
 }
 
 pub fn global_init(start_vaddr: usize, size: usize) {
-    info!(
-        "Initializing global allocator at: [{:#x}, {:#x})",
+    debug!(
+        "initialize global allocator at: [{:#x}, {:#x})",
         start_vaddr,
         start_vaddr + size
     );
@@ -134,8 +134,8 @@ pub fn global_init(start_vaddr: usize, size: usize) {
 }
 
 pub fn global_add_memory(start_vaddr: usize, size: usize) -> AllocResult {
-    info!(
-        "Add a memory region to global allocator: [{:#x}, {:#x})",
+    debug!(
+        "add a memory region to global allocator: [{:#x}, {:#x})",
         start_vaddr,
         start_vaddr + size
     );

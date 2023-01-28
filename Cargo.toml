@@ -12,6 +12,7 @@ members = [
     "modules/axhal",
     "modules/axruntime",
 
+    "os/exception",
     "os/helloworld",
     "os/memtest",
 ]
