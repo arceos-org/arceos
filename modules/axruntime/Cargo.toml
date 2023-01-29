@@ -8,7 +8,7 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 
 [features]
 alloc = ["axalloc"]
-paging = ["axhal/paging"]
+paging = ["alloc", "axhal/paging"]
 
 log-level-off = ["axlog/log-level-off"]
 log-level-error = ["axlog/log-level-error"]

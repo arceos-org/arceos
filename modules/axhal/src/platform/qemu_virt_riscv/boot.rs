@@ -54,6 +54,7 @@ unsafe extern "C" fn _start() -> ! {
         add     sp, sp, t0
 
         la      a0, trap_vector_base    // 5. set trap vector in Direct mode (defined in arch/riscv/strap.S)
+        add     a0, a0, t0
         csrw    stvec, a0
 
         mv      a0, s0                  // 6. call rust_main(hartid)

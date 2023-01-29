@@ -87,7 +87,7 @@ pub trait IdAllocator: BaseAllocator {
     /// Returns the maximum number of supported IDs.
     fn size(&self) -> usize;
 
-    /// Returns the number if allocated IDs.
+    /// Returns the number of allocated IDs.
     fn used(&self) -> usize;
 
     /// Returns the number of available IDs.

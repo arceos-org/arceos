@@ -37,6 +37,7 @@
 .endm
 
 .section .text
+.global
 .balign 4
 trap_vector_base:
     // sscratch == 0: trap from S mode

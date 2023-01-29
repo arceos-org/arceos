@@ -1,7 +1,11 @@
+mod context;
+
 use core::arch::asm;
 
 use memory_addr::{PhysAddr, VirtAddr, PAGE_SIZE_4K};
 use x86::{bits64::rflags, bits64::rflags::RFlags, controlregs, tlb};
+
+pub use context::TrapFrame;
 
 #[inline]
 pub fn enable_irqs() {

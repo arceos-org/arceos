@@ -41,11 +41,11 @@ where
 }
 
 #[repr(transparent)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Copy, Clone, Default, Ord, PartialOrd, Eq, PartialEq)]
 pub struct PhysAddr(usize);
 
 #[repr(transparent)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Copy, Clone, Default, Ord, PartialOrd, Eq, PartialEq)]
 pub struct VirtAddr(usize);
 
 impl PhysAddr {
