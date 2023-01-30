@@ -194,9 +194,10 @@ impl Drop for TaskStack {
 }
 
 extern "C" fn idle_entry() {
+    unsafe { crate::RUN_QUEUE.force_unlock() };
     loop {
-        debug!("running idle task...");
         crate::resched();
+        debug!("idle task: waiting for IRQs...");
         axhal::arch::wait_for_irqs();
     }
 }

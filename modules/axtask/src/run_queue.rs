@@ -21,7 +21,7 @@ impl AxRunQueue {
     pub fn new() -> Self {
         let idle_task = AxTask::new_idle();
         let init_task = AxTask::new_init();
-        let gc_task = AxTask::new(gc_function, "gc");
+        let gc_task = AxTask::new(gc_entry, "gc");
         let mut scheduler = SchedulerImpl::new();
         scheduler.add_task(init_task.clone());
         scheduler.add_task(gc_task);
@@ -101,7 +101,7 @@ impl AxRunQueue {
     }
 }
 
-fn gc_function() {
+fn gc_entry() {
     loop {
         EXITED_TASKS.lock().clear(); // drop all exited tasks and recycle resources
         crate::yield_now(); // TODO: wait & notify
