@@ -60,11 +60,11 @@ unsafe impl Send for AxTask {}
 unsafe impl Sync for AxTask {}
 
 impl AxTask {
-    pub fn new<F>(entry: F, stack_size: usize, name: &'static str) -> Arc<Self>
+    pub fn new<F>(entry: F, name: &'static str) -> Arc<Self>
     where
         F: FnOnce() + Send + 'static,
     {
-        let mut t = Self::new_common(TaskId::new(), stack_size, name);
+        let mut t = Self::new_common(TaskId::new(), TASK_STACK_SIZE, name);
         debug!("new task: {}", t.id_name());
         t.entry = Some(Box::into_raw(Box::new(entry)));
         t.ctx.get_mut().init(task_entry as usize, t.kstack.top());
@@ -95,6 +95,11 @@ impl AxTask {
             kstack: TaskStack::alloc(stack_size),
             ctx: UnsafeCell::new(TaskContext::new()),
         }
+    }
+
+    pub(crate) fn new_init() -> Arc<Self> {
+        // init_task does not change PC and SP, so `entry` and `stack` fields are not used.
+        Arc::new(Self::new_common(TaskId::new(), 0, "init"))
     }
 
     pub(crate) fn new_idle() -> Arc<Self> {
@@ -188,7 +193,7 @@ impl Drop for TaskStack {
     }
 }
 
-fn idle_entry() {
+extern "C" fn idle_entry() {
     loop {
         debug!("running idle task...");
         crate::resched();
@@ -196,7 +201,7 @@ fn idle_entry() {
     }
 }
 
-fn task_entry() -> ! {
+extern "C" fn task_entry() -> ! {
     // release the lock that was implicitly held across the reschedule
     unsafe { crate::RUN_QUEUE.force_unlock() };
     // TODO: enable IRQ

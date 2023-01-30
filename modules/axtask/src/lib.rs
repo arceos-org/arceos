@@ -1,4 +1,4 @@
-#![no_std]
+#![cfg_attr(not(test), no_std)]
 #![feature(ptr_internals)]
 #![feature(const_trait_impl)]
 
@@ -8,6 +8,7 @@ extern crate alloc;
 
 mod run_queue;
 mod task;
+mod tests;
 
 use alloc::sync::Arc;
 use core::ops::DerefMut;
@@ -49,7 +50,7 @@ pub fn spawn<F>(f: F)
 where
     F: FnOnce() + Send + 'static,
 {
-    let task = AxTask::new(f, axconfig::TASK_STACK_SIZE, "");
+    let task = AxTask::new(f, "");
     RUN_QUEUE.lock().add_task(task);
 }
 

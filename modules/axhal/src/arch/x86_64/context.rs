@@ -50,8 +50,6 @@ struct ContextSwitchFrame {
 pub struct TaskContext {
     pub kstack_top: VirtAddr,
     pub rsp: u64,
-    pub fs_base: u64,
-    pub cr3: u64,
 }
 
 impl TaskContext {

@@ -20,10 +20,8 @@ pub(crate) struct AxRunQueue {
 impl AxRunQueue {
     pub fn new() -> Self {
         let idle_task = AxTask::new_idle();
-        // init_task does not change PC and SP, so use the dummy entry and do not alloc the stack.
-        let init_task = AxTask::new(|| {}, 0, "init");
-        let gc_task = AxTask::new(gc_function, axconfig::TASK_STACK_SIZE, "gc");
-
+        let init_task = AxTask::new_init();
+        let gc_task = AxTask::new(gc_function, "gc");
         let mut scheduler = SchedulerImpl::new();
         scheduler.add_task(init_task.clone());
         scheduler.add_task(gc_task);
