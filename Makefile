@@ -76,7 +76,7 @@ clean:
 	cargo clean
 
 clippy:
-	cargo clippy --target $(target)
+	cargo clippy --target $(target) --all-features
 
 fmt:
 	cargo fmt --all

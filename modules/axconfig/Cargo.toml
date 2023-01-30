@@ -11,6 +11,7 @@ platform-qemu-virt-riscv = []
 default = []
 
 [dependencies]
+cfg-if = "1.0"
 
 [build-dependencies]
 toml = "0.5"
