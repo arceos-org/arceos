@@ -9,6 +9,7 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 [features]
 alloc = ["axalloc"]
 paging = ["alloc", "axhal/paging"]
+multitask = ["alloc", "axtask"]
 
 log-level-off = ["axlog/log-level-off"]
 log-level-error = ["axlog/log-level-error"]
@@ -26,3 +27,4 @@ axalloc = { path = "../axalloc", optional = true }
 axconfig = { path = "../axconfig" }
 axhal = { path = "../axhal" }
 axlog = { path = "../axlog" }
+axtask = { path = "../axtask", optional = true }

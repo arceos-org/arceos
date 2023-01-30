@@ -7,7 +7,7 @@ mod trap;
 use memory_addr::{PhysAddr, VirtAddr};
 use riscv::{asm, register::satp, register::sstatus};
 
-pub use context::TrapFrame;
+pub use context::{TaskContext, TrapFrame};
 
 #[inline]
 pub fn enable_irqs() {
@@ -22,6 +22,13 @@ pub fn disable_irqs() {
 #[inline]
 pub fn irqs_enabled() -> bool {
     sstatus::read().sie()
+}
+
+#[inline]
+pub fn wait_for_irqs() {
+    enable_irqs();
+    unsafe { riscv::asm::wfi() }
+    disable_irqs();
 }
 
 #[inline]

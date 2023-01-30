@@ -1,0 +1,11 @@
+[package]
+name = "arceos-multitask"
+version = "0.1.0"
+edition = "2021"
+authors = ["Yuekai Jia <equation618@gmail.com>"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+axtask = { path = "../../modules/axtask", default-features = false, features = ["sched_fifo"] }
+axruntime = { path = "../../modules/axruntime", features = ["paging", "multitask"] }

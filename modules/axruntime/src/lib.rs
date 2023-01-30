@@ -78,6 +78,9 @@ pub extern "C" fn rust_main() -> ! {
     #[cfg(feature = "paging")]
     remap_kernel_memory().expect("remap kernel memoy failed");
 
+    #[cfg(feature = "multitask")]
+    init_scheduler();
+
     unsafe { main() };
 
     axhal::misc::terminate()
@@ -130,4 +133,10 @@ fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
     unsafe { axhal::arch::write_page_table_root(kernel_page_table.root_paddr()) };
     core::mem::forget(kernel_page_table);
     Ok(())
+}
+
+#[cfg(feature = "multitask")]
+fn init_scheduler() {
+    info!("Initialize scheduling...");
+    axtask::init_scheduler();
 }

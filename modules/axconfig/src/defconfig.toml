@@ -1,5 +1,3 @@
-boot-kernel-stack-size = "0x4000"   # 16 K
-user-stack-size = "0x4000"          # 16 K
-kernel-stack-size = "0x4000"        # 16 K
+task-stack-size = "0x10000"   # 64 K
 
 ticks-per-sec = "100"

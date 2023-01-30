@@ -5,7 +5,7 @@ use core::arch::asm;
 use memory_addr::{PhysAddr, VirtAddr, PAGE_SIZE_4K};
 use x86::{bits64::rflags, bits64::rflags::RFlags, controlregs, tlb};
 
-pub use context::TrapFrame;
+pub use context::{TaskContext, TrapFrame};
 
 #[inline]
 pub fn enable_irqs() {
@@ -20,6 +20,11 @@ pub fn disable_irqs() {
 #[inline]
 pub fn irqs_enabled() -> bool {
     !rflags::read().contains(RFlags::FLAGS_IF)
+}
+
+#[inline]
+pub fn wait_for_irqs() {
+    unsafe { asm!("sti; hlt; cli") };
 }
 
 #[inline]

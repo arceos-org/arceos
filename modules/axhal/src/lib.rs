@@ -2,6 +2,7 @@
 #![feature(asm_const)]
 #![feature(naked_functions)]
 #![feature(const_trait_impl)]
+#![feature(const_maybe_uninit_zeroed)]
 
 #[allow(unused_imports)]
 #[macro_use]
