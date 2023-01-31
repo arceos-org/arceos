@@ -1,4 +1,4 @@
-use core::arch::asm;
+use core::{arch::asm, fmt};
 use memory_addr::VirtAddr;
 
 #[repr(C)]
@@ -46,10 +46,38 @@ struct ContextSwitchFrame {
     rip: u64,
 }
 
+#[repr(align(16))]
+pub struct ExtentedState {
+    fxsave_area: [u8; 512],
+}
+
+impl ExtentedState {
+    #[inline]
+    fn save(&mut self) {
+        unsafe { core::arch::x86_64::_fxsave64(self.fxsave_area.as_mut_ptr()) }
+    }
+
+    #[inline]
+    fn restore(&self) {
+        unsafe { core::arch::x86_64::_fxrstor64(self.fxsave_area.as_ptr()) }
+    }
+}
+
+impl fmt::Debug for ExtentedState {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("ExtentedState")
+            .field("fxsave_area", unsafe {
+                &core::mem::transmute::<_, [u128; 32]>(self.fxsave_area)
+            })
+            .finish()
+    }
+}
+
 #[derive(Debug)]
 pub struct TaskContext {
     pub kstack_top: VirtAddr,
     pub rsp: u64,
+    pub ext_state: ExtentedState,
 }
 
 impl TaskContext {
@@ -59,7 +87,11 @@ impl TaskContext {
 
     pub fn init(&mut self, entry: usize, kstack_top: VirtAddr) {
         unsafe {
-            let frame_ptr = (kstack_top.as_mut_ptr() as *mut ContextSwitchFrame).sub(1);
+            // x86_64 calling convention: the stack must be 16-byte aligned before
+            // calling a function. That means when entering a new task (`ret` in `context_switch`
+            // is executed), (stack pointer + 8) should be 16-byte aligned.
+            let frame_ptr = (kstack_top.as_mut_ptr() as *mut u64).sub(1);
+            let frame_ptr = (frame_ptr as *mut ContextSwitchFrame).sub(1);
             core::ptr::write(
                 frame_ptr,
                 ContextSwitchFrame {
@@ -73,6 +105,10 @@ impl TaskContext {
     }
 
     pub fn switch_to(&mut self, next_ctx: &Self) {
+        if cfg!(target_feature = "sse") {
+            self.ext_state.save();
+            next_ctx.ext_state.restore();
+        }
         unsafe {
             // TODO: swtich tls
             context_switch(&mut self.rsp, &next_ctx.rsp)

@@ -82,6 +82,6 @@ fmt:
 	cargo fmt --all
 
 test:
-	cargo test --workspace --exclude "arceos-*"
+	cargo test --workspace --exclude "arceos-*" -- --nocapture
 
 .PHONY: build kernel_elf disasm run justrun clean clippy fmt test

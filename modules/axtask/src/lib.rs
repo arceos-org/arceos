@@ -8,6 +8,8 @@ extern crate alloc;
 
 mod run_queue;
 mod task;
+
+#[cfg(test)]
 mod tests;
 
 use alloc::sync::Arc;

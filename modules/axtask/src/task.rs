@@ -193,7 +193,7 @@ impl Drop for TaskStack {
     }
 }
 
-extern "C" fn idle_entry() {
+extern "C" fn idle_entry() -> ! {
     unsafe { crate::RUN_QUEUE.force_unlock() };
     loop {
         crate::resched();

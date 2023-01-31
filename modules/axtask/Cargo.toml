@@ -20,3 +20,6 @@ memory_addr = { path = "../../crates/memory_addr" }
 scheduler = { path = "../../crates/scheduler" }
 axconfig = { path = "../axconfig" }
 axhal = { path = "../axhal" }
+
+[dev-dependencies]
+spin = "0.9"
