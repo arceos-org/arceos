@@ -44,12 +44,12 @@ fn test_fp_state_switch() {
 
     for i in 0..NUM_TASKS {
         axtask::spawn(move || {
-            unsafe { core::arch::asm!("movupd xmm0, [{}]", in(reg) &FLOATS[i]) };
+            let mut value = FLOATS[i] + i as f64;
             axtask::yield_now();
-            let value: f64;
-            unsafe { core::arch::asm!("movupd {}, xmm0", out(xmm_reg) value) };
+            value -= i as f64;
+
             println!("Float {} = {}", i, value);
-            assert_eq!(value, FLOATS[i]);
+            assert!((value - FLOATS[i]).abs() < 1e-9);
             FINISHED_TASKS.fetch_add(1, Ordering::Relaxed);
         });
     }

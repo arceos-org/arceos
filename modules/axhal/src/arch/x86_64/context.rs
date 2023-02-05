@@ -46,29 +46,54 @@ struct ContextSwitchFrame {
     rip: u64,
 }
 
-#[repr(align(16))]
+#[repr(C, align(16))]
+#[derive(Debug)]
+pub struct FxsaveArea {
+    fcw: u16,
+    fsw: u16,
+    ftw: u16,
+    fop: u16,
+    fip: u64,
+    fdp: u64,
+    mxcsr: u32,
+    mxcsr_mask: u32,
+    st: [u64; 16],
+    xmm: [u64; 32],
+    _padding: [u64; 12],
+}
+
+static_assertions::const_assert_eq!(core::mem::size_of::<FxsaveArea>(), 512);
+
+impl const Default for FxsaveArea {
+    fn default() -> Self {
+        let mut area: FxsaveArea = unsafe { core::mem::MaybeUninit::zeroed().assume_init() };
+        area.fcw = 0x37f;
+        area.ftw = 0xffff;
+        area.mxcsr = 0x1f80;
+        area
+    }
+}
+
 pub struct ExtentedState {
-    fxsave_area: [u8; 512],
+    fxsave_area: FxsaveArea,
 }
 
 impl ExtentedState {
     #[inline]
     fn save(&mut self) {
-        unsafe { core::arch::x86_64::_fxsave64(self.fxsave_area.as_mut_ptr()) }
+        unsafe { core::arch::x86_64::_fxsave64(&mut self.fxsave_area as *mut _ as *mut u8) }
     }
 
     #[inline]
     fn restore(&self) {
-        unsafe { core::arch::x86_64::_fxrstor64(self.fxsave_area.as_ptr()) }
+        unsafe { core::arch::x86_64::_fxrstor64(&self.fxsave_area as *const _ as *const u8) }
     }
 }
 
 impl fmt::Debug for ExtentedState {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("ExtentedState")
-            .field("fxsave_area", unsafe {
-                &core::mem::transmute::<_, [u128; 32]>(self.fxsave_area)
-            })
+            .field("fxsave_area", &self.fxsave_area)
             .finish()
     }
 }
@@ -82,7 +107,13 @@ pub struct TaskContext {
 
 impl TaskContext {
     pub const fn new() -> Self {
-        unsafe { core::mem::MaybeUninit::zeroed().assume_init() }
+        Self {
+            kstack_top: VirtAddr::from(0),
+            rsp: 0,
+            ext_state: ExtentedState {
+                fxsave_area: FxsaveArea::default(),
+            },
+        }
     }
 
     pub fn init(&mut self, entry: usize, kstack_top: VirtAddr) {

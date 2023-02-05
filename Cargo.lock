@@ -83,6 +83,7 @@ dependencies = [
  "page_table",
  "riscv",
  "sbi-rt",
+ "static_assertions",
  "x86",
 ]
 
