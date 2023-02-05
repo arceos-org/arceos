@@ -4,6 +4,7 @@ members = [
     "crates/allocator",
     "crates/crate_interface",
     "crates/lazy_init",
+    "crates/linked_list",
     "crates/memory_addr",
     "crates/page_table",
     "crates/scheduler",
