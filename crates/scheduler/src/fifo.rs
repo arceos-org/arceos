@@ -1,44 +1,78 @@
-use alloc::{collections::VecDeque, sync::Arc};
+use alloc::sync::Arc;
+use core::ops::Deref;
 
-use crate::{BaseScheduler, Schedulable};
+use linked_list::{Adapter, Links, List};
 
-#[derive(Default)]
-pub struct FifoSchedState;
+use crate::BaseScheduler;
 
-pub struct FifoScheduler<T: Schedulable<FifoSchedState>> {
-    ready_queue: VecDeque<Arc<T>>,
+pub struct FifoTask<T> {
+    inner: T,
+    links: Links<Self>,
 }
 
-impl<T: Schedulable<FifoSchedState>> FifoScheduler<T> {
+unsafe impl<T> Adapter for FifoTask<T> {
+    type EntryType = Self;
+
+    #[inline]
+    fn to_links(t: &Self) -> &Links<Self> {
+        &t.links
+    }
+}
+
+impl<T> FifoTask<T> {
+    pub const fn new(inner: T) -> Self {
+        Self {
+            inner,
+            links: Links::new(),
+        }
+    }
+
+    pub const fn inner(&self) -> &T {
+        &self.inner
+    }
+}
+
+impl<T> const Deref for FifoTask<T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+pub struct FifoScheduler<T> {
+    ready_queue: List<Arc<FifoTask<T>>>,
+}
+
+impl<T> FifoScheduler<T> {
     pub const fn new() -> Self {
         Self {
-            ready_queue: VecDeque::new(),
+            ready_queue: List::new(),
         }
     }
 }
 
-impl<T: Schedulable<FifoSchedState>> BaseScheduler<FifoSchedState, T> for FifoScheduler<T> {
+impl<T> BaseScheduler for FifoScheduler<T> {
+    type SchedItem = Arc<FifoTask<T>>;
+
     fn init(&mut self) {}
 
-    fn add_task(&mut self, task: Arc<T>) {
+    fn add_task(&mut self, task: Self::SchedItem) {
         self.ready_queue.push_back(task);
     }
 
-    fn remove_task(&mut self, task: &Arc<T>) {
-        // TODO: more efficient
-        self.ready_queue.retain(|t| !Arc::ptr_eq(t, task));
+    fn remove_task(&mut self, task: &Self::SchedItem) -> Option<Self::SchedItem> {
+        unsafe { self.ready_queue.remove(task) }
     }
 
-    fn yield_task(&mut self, task: Arc<T>) {
-        self.remove_task(&task);
-        self.add_task(task);
+    fn pick_next_task(&mut self) -> Option<Self::SchedItem> {
+        self.ready_queue.pop_front()
     }
 
-    fn pick_next_task(&mut self, _prev: &Arc<T>) -> Option<&Arc<T>> {
-        self.ready_queue.front()
+    fn put_prev_task(&mut self, prev: Self::SchedItem) {
+        self.ready_queue.push_back(prev);
     }
 
-    fn task_tick(&mut self, _current: &Arc<T>) -> bool {
+    fn task_tick(&mut self, _current: &Self::SchedItem) -> bool {
         false // no reschedule
     }
 }

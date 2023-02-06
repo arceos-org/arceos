@@ -72,7 +72,7 @@ macro_rules! __impl_dummy_interface {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     define_interface! {
         trait SimpleIf {
             fn foo(&self) -> u32 {

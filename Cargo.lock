@@ -180,6 +180,10 @@ name = "lazy_init"
 version = "0.1.0"
 
 [[package]]
+name = "linked_list"
+version = "0.1.0"
+
+[[package]]
 name = "lock_api"
 version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -275,6 +279,9 @@ dependencies = [
 [[package]]
 name = "scheduler"
 version = "0.1.0"
+dependencies = [
+ "linked_list",
+]
 
 [[package]]
 name = "scopeguard"

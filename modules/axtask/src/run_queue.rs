@@ -4,25 +4,25 @@ use scheduler::BaseScheduler;
 use spin::Mutex;
 
 use crate::task::TaskState;
-use crate::{AxTask, SchedulerImpl};
+use crate::{AxTaskRef, Scheduler, TaskInner};
 
 // TODO: per-CPU and IRQ-disabled lock
 pub(crate) static RUN_QUEUE: LazyInit<Mutex<AxRunQueue>> = LazyInit::new();
 
-static EXITED_TASKS: Mutex<Vec<Arc<AxTask>>> = Mutex::new(Vec::new());
+static EXITED_TASKS: Mutex<Vec<AxTaskRef>> = Mutex::new(Vec::new());
 
 pub(crate) struct AxRunQueue {
-    idle_task: Arc<AxTask>,
-    init_task: Arc<AxTask>,
-    scheduler: SchedulerImpl<AxTask>,
+    idle_task: AxTaskRef,
+    init_task: AxTaskRef,
+    scheduler: Scheduler,
 }
 
 impl AxRunQueue {
     pub fn new() -> Self {
-        let idle_task = AxTask::new_idle();
-        let init_task = AxTask::new_init();
-        let gc_task = AxTask::new(gc_entry, "gc");
-        let mut scheduler = SchedulerImpl::new();
+        let idle_task = TaskInner::new_idle();
+        let init_task = TaskInner::new_init();
+        let gc_task = TaskInner::new(gc_entry, "gc");
+        let mut scheduler = Scheduler::new();
         scheduler.add_task(init_task.clone());
         scheduler.add_task(gc_task);
         Self {
@@ -32,11 +32,11 @@ impl AxRunQueue {
         }
     }
 
-    pub fn init_task(&self) -> &Arc<AxTask> {
+    pub fn init_task(&self) -> &AxTaskRef {
         &self.init_task
     }
 
-    pub fn add_task(&mut self, task: Arc<AxTask>) {
+    pub fn add_task(&mut self, task: AxTaskRef) {
         debug!("task spawn: {}", task.id_name());
         self.scheduler.add_task(task);
     }
@@ -45,8 +45,6 @@ impl AxRunQueue {
         let task = crate::current();
         debug!("task yield: {}", task.id_name());
         assert!(task.is_runnable());
-        assert!(!task.is_idle());
-        self.scheduler.yield_task(task.clone());
         self.resched();
     }
 
@@ -60,23 +58,25 @@ impl AxRunQueue {
         self.resched();
         unreachable!("task exited!");
     }
+}
 
-    pub fn resched(&mut self) {
+impl AxRunQueue {
+    fn resched(&mut self) {
         let prev = crate::current();
         if !prev.is_runnable() {
             self.scheduler.remove_task(prev);
         }
         let next = self
             .scheduler
-            .pick_next_task(prev)
-            .unwrap_or(&self.idle_task)
-            .clone();
+            .pick_next_task()
+            .unwrap_or_else(|| self.idle_task.clone());
+        if !next.is_idle() {
+            self.scheduler.put_prev_task(next.clone());
+        }
         self.switch_to(prev, next);
     }
-}
 
-impl AxRunQueue {
-    fn switch_to(&self, prev_task: &Arc<AxTask>, next_task: Arc<AxTask>) {
+    fn switch_to(&mut self, prev_task: &AxTaskRef, next_task: AxTaskRef) {
         trace!(
             "context switch: {} -> {}",
             prev_task.id_name(),
