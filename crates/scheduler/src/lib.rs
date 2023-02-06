@@ -1,28 +1,25 @@
-#![no_std]
+#![cfg_attr(not(test), no_std)]
+#![feature(const_trait_impl)]
+#![feature(const_mut_refs)]
 
 mod fifo;
 mod round_robin;
 
+#[cfg(test)]
+mod tests;
+
 extern crate alloc;
 
-use alloc::sync::Arc;
+pub use fifo::{FifoScheduler, FifoTask};
+pub use round_robin::{RRScheduler, RRTask};
 
-pub use fifo::{FifoSchedState, FifoScheduler};
-pub use round_robin::{RRSchedState, RRScheduler};
+pub trait BaseScheduler {
+    type SchedItem;
 
-pub trait Schedulable<S> {
-    fn sched_state(&self) -> &S;
-
-    fn update_sched_state<F, T>(&self, f: F) -> T
-    where
-        F: FnOnce(&S) -> T;
-}
-
-pub trait BaseScheduler<S, T: Schedulable<S>> {
     fn init(&mut self);
-    fn add_task(&mut self, task: Arc<T>);
-    fn remove_task(&mut self, task: &Arc<T>);
-    fn yield_task(&mut self, task: Arc<T>);
-    fn pick_next_task(&mut self, prev: &Arc<T>) -> Option<&Arc<T>>;
-    fn task_tick(&mut self, current: &Arc<T>) -> bool;
+    fn add_task(&mut self, task: Self::SchedItem);
+    fn remove_task(&mut self, task: &Self::SchedItem) -> Option<Self::SchedItem>;
+    fn pick_next_task(&mut self) -> Option<Self::SchedItem>;
+    fn put_prev_task(&mut self, prev: Self::SchedItem);
+    fn task_tick(&mut self, current: &Self::SchedItem) -> bool;
 }

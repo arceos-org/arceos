@@ -1,20 +1,41 @@
 use alloc::{collections::VecDeque, sync::Arc};
+use core::ops::Deref;
 use core::sync::atomic::{AtomicUsize, Ordering};
 
-use crate::{BaseScheduler, Schedulable};
+use crate::BaseScheduler;
 
 const MAX_TIME_SLICE: usize = 10;
 
-#[derive(Default)]
-pub struct RRSchedState {
+pub struct RRTask<T> {
+    inner: T,
     time_slice: AtomicUsize,
 }
 
-pub struct RRScheduler<T> {
-    ready_queue: VecDeque<Arc<T>>,
+impl<T> RRTask<T> {
+    pub const fn new(inner: T) -> Self {
+        Self {
+            inner,
+            time_slice: AtomicUsize::new(MAX_TIME_SLICE),
+        }
+    }
+
+    pub const fn inner(&self) -> &T {
+        &self.inner
+    }
 }
 
-impl<T: Schedulable<RRSchedState>> RRScheduler<T> {
+impl<T> const Deref for RRTask<T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+pub struct RRScheduler<T> {
+    ready_queue: VecDeque<Arc<RRTask<T>>>,
+}
+
+impl<T> RRScheduler<T> {
     pub const fn new() -> Self {
         Self {
             ready_queue: VecDeque::new(),
@@ -22,37 +43,38 @@ impl<T: Schedulable<RRSchedState>> RRScheduler<T> {
     }
 }
 
-impl<T: Schedulable<RRSchedState>> BaseScheduler<RRSchedState, T> for RRScheduler<T> {
+impl<T> BaseScheduler for RRScheduler<T> {
+    type SchedItem = Arc<RRTask<T>>;
+
     fn init(&mut self) {}
 
-    fn add_task(&mut self, task: Arc<T>) {
+    fn add_task(&mut self, task: Self::SchedItem) {
         self.ready_queue.push_back(task);
     }
 
-    fn remove_task(&mut self, task: &Arc<T>) {
+    fn remove_task(&mut self, task: &Self::SchedItem) -> Option<Self::SchedItem> {
         // TODO: more efficient
-        self.ready_queue.retain(|t| !Arc::ptr_eq(t, task));
+        self.ready_queue
+            .iter()
+            .position(|t| Arc::ptr_eq(t, task))
+            .and_then(|idx| self.ready_queue.remove(idx))
     }
 
-    fn yield_task(&mut self, task: Arc<T>) {
-        self.remove_task(&task);
-        self.add_task(task);
+    fn pick_next_task(&mut self) -> Option<Self::SchedItem> {
+        self.ready_queue.pop_front()
     }
 
-    fn pick_next_task(&mut self, _prev: &Arc<T>) -> Option<&Arc<T>> {
-        self.ready_queue.front()
+    fn put_prev_task(&mut self, prev: Self::SchedItem) {
+        self.ready_queue.push_back(prev)
     }
 
-    fn task_tick(&mut self, current: &Arc<T>) -> bool {
-        current.update_sched_state(|s| {
-            let old_slice = s.time_slice.fetch_sub(1, Ordering::Release);
-            if old_slice == 1 {
-                s.time_slice.store(MAX_TIME_SLICE, Ordering::Release);
-                self.yield_task(current.clone());
-                true
-            } else {
-                false
-            }
-        })
+    fn task_tick(&mut self, current: &Self::SchedItem) -> bool {
+        let old_slice = current.time_slice.fetch_sub(1, Ordering::Release);
+        if old_slice == 1 {
+            current.time_slice.store(MAX_TIME_SLICE, Ordering::Release);
+            true
+        } else {
+            false
+        }
     }
 }
