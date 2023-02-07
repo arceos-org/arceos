@@ -11,6 +11,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "arceos-echoserver"
+version = "0.1.0"
+dependencies = [
+ "axruntime",
+]
+
+[[package]]
 name = "arceos-exception"
 version = "0.1.0"
 dependencies = [
@@ -66,6 +73,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "axdriver"
+version = "0.1.0"
+dependencies = [
+ "axalloc",
+ "axhal",
+ "driver_common",
+ "driver_net",
+ "driver_virtio",
+ "lazy_init",
+ "log",
+]
+
+[[package]]
 name = "axerror"
 version = "0.1.0"
 
@@ -101,6 +121,7 @@ version = "0.1.0"
 dependencies = [
  "axalloc",
  "axconfig",
+ "axdriver",
  "axhal",
  "axlog",
  "axtask",
@@ -150,6 +171,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "byteorder"
+version = "1.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14c189c53d098945499cdfa7ecc63567cf3886b3332b312a5b4585d8d3a6a610"
+
+[[package]]
 name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -164,6 +191,29 @@ name = "critical-section"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6548a0ad5d2549e111e1f6a11a6c2e2d00ce6a3dafe22948d67c2b443f775e52"
+
+[[package]]
+name = "driver_common"
+version = "0.1.0"
+
+[[package]]
+name = "driver_net"
+version = "0.1.0"
+dependencies = [
+ "driver_common",
+]
+
+[[package]]
+name = "driver_virtio"
+version = "0.1.0"
+dependencies = [
+ "cfg-if",
+ "driver_common",
+ "driver_net",
+ "log",
+ "spin",
+ "virtio-drivers",
+]
 
 [[package]]
 name = "embedded-hal"
@@ -230,6 +280,24 @@ dependencies = [
  "log",
  "memory_addr",
  "x86_64",
+]
+
+[[package]]
+name = "proc-macro2"
+version = "1.0.51"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5d727cae5b39d21da60fa540906919ad737832fe0b1c165da3a34d6548c849d6"
+dependencies = [
+ "unicode-ident",
+]
+
+[[package]]
+name = "quote"
+version = "1.0.23"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8856d8364d252a14d474036ea1358d63c9e6965c8e5c1885c18f73d70bff9c7b"
+dependencies = [
+ "proc-macro2",
 ]
 
 [[package]]
@@ -311,12 +379,39 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
+name = "syn"
+version = "1.0.107"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1f4064b5b16e03ae50984a5a8ed5d4f8803e6bc1fd170a3cda91a1be4b18e3f5"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "unicode-ident",
+]
+
+[[package]]
 name = "toml"
 version = "0.5.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1333c76748e868a4d9d1017b5ab53171dfd095f70c712fdb4653a406547f598f"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "unicode-ident"
+version = "1.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "84a22b9f218b40614adcb3f4ff08b703773ad44fa9423e4e0d346d5db86e4ebc"
+
+[[package]]
+name = "virtio-drivers"
+version = "0.3.0"
+source = "git+https://github.com/rcore-os/virtio-drivers.git?rev=67183ee#67183ee2622d3c267763e235b116992b85b0671c"
+dependencies = [
+ "bitflags",
+ "log",
+ "zerocopy",
 ]
 
 [[package]]
@@ -352,4 +447,25 @@ dependencies = [
  "bitflags",
  "rustversion",
  "volatile",
+]
+
+[[package]]
+name = "zerocopy"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "332f188cc1bcf1fe1064b8c58d150f497e697f49774aa846f2dc949d9a25f236"
+dependencies = [
+ "byteorder",
+ "zerocopy-derive",
+]
+
+[[package]]
+name = "zerocopy-derive"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6505e6815af7de1746a08f69c69606bb45695a17149517680f3b2149713b19a3"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]

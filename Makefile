@@ -3,6 +3,7 @@ ARCH ?= riscv64
 MODE ?= release
 LOG ?= warn
 APP ?= helloworld
+NET ?= off
 
 # Platform
 ifeq ($(ARCH), riscv64)
@@ -53,6 +54,12 @@ ifeq ($(ARCH), riscv64)
     -machine virt \
     -bios default \
     -kernel $(kernel_bin)
+endif
+
+ifeq ($(NET), on)
+  qemu_args += \
+    -device virtio-net-device,netdev=net0 \
+    -netdev user,id=net0,hostfwd=tcp::5555-:5555
 endif
 
 build: $(kernel_bin)

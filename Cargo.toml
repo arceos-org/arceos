@@ -3,6 +3,9 @@
 members = [
     "crates/allocator",
     "crates/crate_interface",
+    "crates/driver_common",
+    "crates/driver_net",
+    "crates/driver_virtio",
     "crates/lazy_init",
     "crates/linked_list",
     "crates/memory_addr",
@@ -11,11 +14,13 @@ members = [
 
     "modules/axalloc",
     "modules/axconfig",
+    "modules/axdriver",
     "modules/axerror",
     "modules/axhal",
     "modules/axruntime",
     "modules/axtask",
 
+    "os/echoserver",
     "os/exception",
     "os/helloworld",
     "os/memtest",

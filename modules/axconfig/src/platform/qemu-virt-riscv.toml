@@ -9,6 +9,7 @@ phys-virt-offset = "0xffff_ffc0_0000_0000"
 mmio-regions = [
     ["0x0c00_0000", "0x21_0000"],   # PLIC
     ["0x1000_0000", "0x1000"],      # UART
+    ["0x1000_1000", "0x8000"],      # VirtIO
 ]
 
 timer_frequency = "10_000_000"      # 10MHz

@@ -78,6 +78,9 @@ pub extern "C" fn rust_main() -> ! {
     #[cfg(feature = "paging")]
     remap_kernel_memory().expect("remap kernel memoy failed");
 
+    #[cfg(any(feature = "net"))]
+    init_drivers();
+
     #[cfg(feature = "multitask")]
     init_scheduler();
 
@@ -119,7 +122,7 @@ fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
     use axhal::paging::PageTable;
 
     info!("Initialize kernel page table...");
-    let mut kernel_page_table = PageTable::new()?;
+    let mut kernel_page_table = PageTable::try_new()?;
     for r in memory_regions() {
         kernel_page_table.map_region(
             phys_to_virt(r.paddr),
@@ -133,6 +136,12 @@ fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
     unsafe { axhal::arch::write_page_table_root(kernel_page_table.root_paddr()) };
     core::mem::forget(kernel_page_table);
     Ok(())
+}
+
+#[cfg(any(feature = "net"))]
+fn init_drivers() {
+    info!("Initialize drivers...");
+    axdriver::init_drivers();
 }
 
 #[cfg(feature = "multitask")]

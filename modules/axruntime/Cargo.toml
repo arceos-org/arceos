@@ -10,6 +10,7 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 alloc = ["axalloc"]
 paging = ["alloc", "axhal/paging"]
 multitask = ["alloc", "axtask"]
+net = ["alloc", "axdriver/net"]
 
 log-level-off = ["axlog/log-level-off"]
 log-level-error = ["axlog/log-level-error"]
@@ -18,13 +19,14 @@ log-level-info = ["axlog/log-level-info"]
 log-level-debug = ["axlog/log-level-debug"]
 log-level-trace = ["axlog/log-level-trace"]
 
-platform-qemu-virt-riscv = ["axhal/platform-qemu-virt-riscv"]
+platform-qemu-virt-riscv = ["axhal/platform-qemu-virt-riscv", "axdriver?/virtio"]
 
 default = []
 
 [dependencies]
 axalloc = { path = "../axalloc", optional = true }
 axconfig = { path = "../axconfig" }
+axdriver = { path = "../axdriver", optional = true }
 axhal = { path = "../axhal" }
 axlog = { path = "../axlog" }
 axtask = { path = "../axtask", optional = true }

@@ -1,0 +1,20 @@
+[package]
+name = "axdriver"
+version = "0.1.0"
+edition = "2021"
+authors = ["Yuekai Jia <equation618@gmail.com>"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+virtio = ["driver_virtio"]
+net = ["driver_net", "driver_virtio?/net"]
+
+[dependencies]
+log = "0.4"
+lazy_init = { path = "../../crates/lazy_init" }
+driver_common = { path = "../../crates/driver_common" }
+driver_net = { path = "../../crates/driver_net", optional = true }
+driver_virtio = { path = "../../crates/driver_virtio", optional = true }
+axalloc = { path = "../axalloc" }
+axhal = { path = "../axhal" }
