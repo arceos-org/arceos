@@ -78,6 +78,7 @@ version = "0.1.0"
 dependencies = [
  "axalloc",
  "axhal",
+ "driver_block",
  "driver_common",
  "driver_net",
  "driver_virtio",
@@ -193,6 +194,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6548a0ad5d2549e111e1f6a11a6c2e2d00ce6a3dafe22948d67c2b443f775e52"
 
 [[package]]
+name = "driver_block"
+version = "0.1.0"
+dependencies = [
+ "driver_common",
+]
+
+[[package]]
 name = "driver_common"
 version = "0.1.0"
 
@@ -208,6 +216,7 @@ name = "driver_virtio"
 version = "0.1.0"
 dependencies = [
  "cfg-if",
+ "driver_block",
  "driver_common",
  "driver_net",
  "log",

@@ -7,6 +7,7 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
+block = ["driver_block"]
 net = ["driver_net"]
 
 [dependencies]
@@ -14,5 +15,6 @@ log = "0.4"
 cfg-if = "1.0"
 spin = "0.9"
 driver_common = { path = "../driver_common" }
+driver_block = { path = "../driver_block", optional = true }
 driver_net = { path = "../driver_net", optional = true }
 virtio-drivers = { git = "https://github.com/rcore-os/virtio-drivers.git", rev = "67183ee" }

@@ -1,13 +1,8 @@
 #![no_std]
 
-#[derive(Debug)]
-pub enum NetDevError {
-    Dummy,
-}
+use driver_common::{BaseDriverOps, DevResult};
 
-pub type NetDevResult<T = ()> = Result<T, NetDevError>;
-
-pub trait NetDriverOps: Send + Sync {
-    fn send(&self, buf: &[u8]) -> NetDevResult<usize>;
-    fn recv(&self, buf: &mut [u8]) -> NetDevResult<usize>;
+pub trait NetDriverOps: BaseDriverOps {
+    fn send(&self, buf: &[u8]) -> DevResult<usize>;
+    fn recv(&self, buf: &mut [u8]) -> DevResult<usize>;
 }

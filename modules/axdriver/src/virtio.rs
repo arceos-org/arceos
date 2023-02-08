@@ -3,6 +3,7 @@ use core::ptr::NonNull;
 
 use axalloc::global_allocator;
 use axhal::mem::{phys_to_virt, virt_to_phys};
+use driver_common::BaseDriverOps;
 use driver_virtio::{BufferDirection, PhysAddr, VirtIoDevice, VirtIoHal};
 
 use crate::AllDevices;
@@ -22,7 +23,11 @@ struct VirtIoHalImpl;
 
 unsafe impl VirtIoHal for VirtIoHalImpl {
     fn dma_alloc(pages: usize, _direction: BufferDirection) -> (PhysAddr, NonNull<u8>) {
-        let vaddr = global_allocator().alloc_pages(pages, 0x1000).unwrap();
+        let vaddr = if let Ok(vaddr) = global_allocator().alloc_pages(pages, 0x1000) {
+            vaddr
+        } else {
+            return (0, NonNull::dangling());
+        };
         let paddr = virt_to_phys(vaddr.into());
         let ptr = NonNull::new(vaddr as _).unwrap();
         (paddr.as_usize(), ptr)
@@ -33,15 +38,18 @@ unsafe impl VirtIoHal for VirtIoHalImpl {
         0
     }
 
+    #[inline]
     unsafe fn mmio_phys_to_virt(paddr: PhysAddr, _size: usize) -> NonNull<u8> {
         NonNull::new(phys_to_virt(paddr.into()).as_mut_ptr()).unwrap()
     }
 
+    #[inline]
     unsafe fn share(buffer: NonNull<[u8]>, _direction: BufferDirection) -> PhysAddr {
         let vaddr = buffer.as_ptr() as *mut u8 as usize;
         virt_to_phys(vaddr.into()).into()
     }
 
+    #[inline]
     unsafe fn unshare(_paddr: PhysAddr, _buffer: NonNull<[u8]>, _direction: BufferDirection) {}
 }
 
@@ -51,11 +59,10 @@ impl AllDevices {
             phys_to_virt(reg_base.into()).as_mut_ptr(),
             reg_size,
         ) {
+            #[cfg(feature = "block")]
+            Some(VirtIoDevice::Block(dev)) => self.block.add(Box::new(dev)),
             #[cfg(feature = "net")]
-            Some(VirtIoDevice::Net(dev)) => {
-                info!("Added new net device.");
-                self.net.push(Box::new(dev));
-            }
+            Some(VirtIoDevice::Net(dev)) => self.net.add(Box::new(dev)),
             _ => {}
         }
     }

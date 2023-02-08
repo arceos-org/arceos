@@ -8,12 +8,14 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 
 [features]
 virtio = ["driver_virtio"]
+block = ["driver_block", "driver_virtio?/block"]
 net = ["driver_net", "driver_virtio?/net"]
 
 [dependencies]
 log = "0.4"
 lazy_init = { path = "../../crates/lazy_init" }
 driver_common = { path = "../../crates/driver_common" }
+driver_block = { path = "../../crates/driver_block", optional = true }
 driver_net = { path = "../../crates/driver_net", optional = true }
 driver_virtio = { path = "../../crates/driver_virtio", optional = true }
 axalloc = { path = "../axalloc" }

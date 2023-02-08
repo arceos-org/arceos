@@ -78,7 +78,7 @@ pub extern "C" fn rust_main() -> ! {
     #[cfg(feature = "paging")]
     remap_kernel_memory().expect("remap kernel memoy failed");
 
-    #[cfg(any(feature = "net"))]
+    #[cfg(any(feature = "fs", feature = "net"))]
     init_drivers();
 
     #[cfg(feature = "multitask")]
@@ -138,7 +138,7 @@ fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
     Ok(())
 }
 
-#[cfg(any(feature = "net"))]
+#[cfg(any(feature = "fs", feature = "net"))]
 fn init_drivers() {
     info!("Initialize drivers...");
     axdriver::init_drivers();

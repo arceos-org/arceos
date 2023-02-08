@@ -1,4 +1,5 @@
 #![no_std]
+#![feature(const_trait_impl)]
 
 #[macro_use]
 extern crate cfg_if;
@@ -12,16 +13,25 @@ cfg_if! {
     }
 }
 
+cfg_if! {
+    if #[cfg(feature = "block")] {
+        mod blk;
+        pub use blk::VirtIoBlkDev;
+    }
+}
+
 use core::{convert::Infallible, marker::PhantomData, ptr::NonNull};
 
-use virtio_drivers::transport::mmio::{MmioTransport, VirtIOHeader};
-use virtio_drivers::transport::Transport;
+use driver_common::DevError;
+use virtio_drivers::transport::{mmio::MmioTransport, mmio::VirtIOHeader, Transport};
 use virtio_drivers::Hal;
 
-pub use virtio_drivers::{transport::DeviceType, BufferDirection, Hal as VirtIoHal, PhysAddr};
+pub use virtio_drivers::{BufferDirection, Hal as VirtIoHal, PhysAddr};
 
 #[allow(clippy::large_enum_variant)]
 pub enum VirtIoDevice<H: Hal, T: Transport> {
+    #[cfg(feature = "block")]
+    Block(VirtIoBlkDev<H, T>),
     #[cfg(feature = "net")]
     Net(VirtIoNetDev<H, T>),
     _Unknown(Infallible, PhantomData<(H, T)>),
@@ -40,7 +50,13 @@ pub fn new_from_mmio<H: Hal>(
                 transport.device_type(),
                 transport.version(),
             );
+            #[allow(unused_imports)]
+            use virtio_drivers::transport::DeviceType;
             match transport.device_type() {
+                #[cfg(feature = "block")]
+                DeviceType::Block => {
+                    Some(VirtIoDevice::Block(VirtIoBlkDev::try_new(transport).ok()?))
+                }
                 #[cfg(feature = "net")]
                 DeviceType::Network => {
                     Some(VirtIoDevice::Net(VirtIoNetDev::try_new(transport).ok()?))
@@ -52,5 +68,22 @@ pub fn new_from_mmio<H: Hal>(
             }
         }
         Err(_) => None,
+    }
+}
+
+#[allow(dead_code)]
+const fn as_dev_err(e: virtio_drivers::Error) -> DevError {
+    use virtio_drivers::Error::*;
+    match e {
+        QueueFull => DevError::BadState,
+        NotReady => DevError::ResourceBusy,
+        WrongToken => DevError::BadState,
+        AlreadyUsed => DevError::AlreadyExists,
+        InvalidParam => DevError::InvalidParam,
+        DmaError => DevError::NoMemory,
+        IoError => DevError::Io,
+        Unsupported => DevError::Unsupported,
+        ConfigSpaceTooSmall => DevError::BadState,
+        ConfigSpaceMissing => DevError::BadState,
     }
 }

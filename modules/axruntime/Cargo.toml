@@ -10,7 +10,9 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 alloc = ["axalloc"]
 paging = ["alloc", "axhal/paging"]
 multitask = ["alloc", "axtask"]
-net = ["alloc", "axdriver/net"]
+
+fs = ["alloc", "paging", "axdriver/block"] # TODO: remove "paging"
+net = ["alloc", "paging", "axdriver/net"]
 
 log-level-off = ["axlog/log-level-off"]
 log-level-error = ["axlog/log-level-error"]
