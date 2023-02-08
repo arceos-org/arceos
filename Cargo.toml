@@ -1,6 +1,12 @@
 [workspace]
 
 members = [
+    "apps/echoserver",
+    "apps/exception",
+    "apps/helloworld",
+    "apps/memtest",
+    "apps/multitask",
+
     "crates/allocator",
     "crates/crate_interface",
     "crates/driver_common",
@@ -19,10 +25,4 @@ members = [
     "modules/axhal",
     "modules/axruntime",
     "modules/axtask",
-
-    "os/echoserver",
-    "os/exception",
-    "os/helloworld",
-    "os/memtest",
-    "os/multitask",
 ]
