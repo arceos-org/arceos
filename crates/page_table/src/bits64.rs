@@ -33,7 +33,7 @@ pub struct PageTable64<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> {
 }
 
 impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
-    pub fn new() -> PagingResult<Self> {
+    pub fn try_new() -> PagingResult<Self> {
         let root_paddr = Self::alloc_table()?;
         Ok(Self {
             root_paddr,

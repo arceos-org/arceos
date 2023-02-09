@@ -1,6 +1,6 @@
 use alloc::{boxed::Box, sync::Arc};
 use core::sync::atomic::{AtomicU64, AtomicU8, Ordering};
-use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::Unique};
+use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 
 use axconfig::TASK_STACK_SIZE;
 use axhal::arch::TaskContext;
@@ -26,7 +26,7 @@ pub struct TaskInner {
     entry: Option<*mut dyn FnOnce()>,
     state: AtomicU8,
 
-    kstack: TaskStack,
+    kstack: Option<TaskStack>,
     ctx: UnsafeCell<TaskContext>,
 }
 
@@ -73,13 +73,13 @@ impl TaskInner {
 
 // private methods
 impl TaskInner {
-    fn new_common(id: TaskId, stack_size: usize, name: &'static str) -> Self {
+    fn new_common(id: TaskId, name: &'static str) -> Self {
         Self {
             id,
             name,
             entry: None,
             state: AtomicU8::new(TaskState::Runnable as u8),
-            kstack: TaskStack::alloc(stack_size),
+            kstack: None,
             ctx: UnsafeCell::new(TaskContext::new()),
         }
     }
@@ -88,21 +88,25 @@ impl TaskInner {
     where
         F: FnOnce() + Send + 'static,
     {
-        let mut t = Self::new_common(TaskId::new(), TASK_STACK_SIZE, name);
+        let mut t = Self::new_common(TaskId::new(), name);
         debug!("new task: {}", t.id_name());
+        let kstack = TaskStack::alloc(TASK_STACK_SIZE);
         t.entry = Some(Box::into_raw(Box::new(entry)));
-        t.ctx.get_mut().init(task_entry as usize, t.kstack.top());
+        t.ctx.get_mut().init(task_entry as usize, kstack.top());
+        t.kstack = Some(kstack);
         Arc::new(AxTask::new(t))
     }
 
     pub(crate) fn new_init() -> AxTaskRef {
         // init_task does not change PC and SP, so `entry` and `stack` fields are not used.
-        Arc::new(AxTask::new(Self::new_common(TaskId::new(), 0, "init")))
+        Arc::new(AxTask::new(Self::new_common(TaskId::new(), "init")))
     }
 
     pub(crate) fn new_idle() -> AxTaskRef {
-        let mut t = Self::new_common(TaskId::IDLE_TASK_ID, TASK_STACK_SIZE, "idle");
-        t.ctx.get_mut().init(idle_entry as usize, t.kstack.top());
+        let mut t = Self::new_common(TaskId::IDLE_TASK_ID, "idle");
+        let kstack = TaskStack::alloc(TASK_STACK_SIZE);
+        t.ctx.get_mut().init(idle_entry as usize, kstack.top());
+        t.kstack = Some(kstack);
         Arc::new(AxTask::new(t))
     }
 
@@ -144,35 +148,27 @@ impl Drop for TaskInner {
 }
 
 struct TaskStack {
-    ptr: Option<Unique<u8>>,
+    ptr: NonNull<u8>,
     layout: Layout,
 }
 
 impl TaskStack {
     pub fn alloc(size: usize) -> Self {
         let layout = Layout::from_size_align(size, 16).unwrap();
-        if size != 0 {
-            let ptr = Some(Unique::new(unsafe { alloc::alloc::alloc(layout) }).unwrap());
-            Self { ptr, layout }
-        } else {
-            Self { ptr: None, layout }
+        Self {
+            ptr: NonNull::new(unsafe { alloc::alloc::alloc(layout) }).unwrap(),
+            layout,
         }
     }
 
     pub const fn top(&self) -> VirtAddr {
-        if let Some(ptr) = self.ptr {
-            unsafe { core::mem::transmute(ptr.as_ptr().add(self.layout.size())) }
-        } else {
-            VirtAddr::from(0)
-        }
+        unsafe { core::mem::transmute(self.ptr.as_ptr().add(self.layout.size())) }
     }
 }
 
 impl Drop for TaskStack {
     fn drop(&mut self) {
-        if let Some(ptr) = self.ptr {
-            unsafe { alloc::alloc::dealloc(ptr.as_ptr(), self.layout) }
-        }
+        unsafe { alloc::alloc::dealloc(self.ptr.as_ptr(), self.layout) }
     }
 }
 

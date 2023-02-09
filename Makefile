@@ -4,6 +4,9 @@ MODE ?= release
 LOG ?= warn
 APP ?= helloworld
 
+FS ?= off
+NET ?= off
+
 # Platform
 ifeq ($(ARCH), riscv64)
   PLATFORM ?= qemu-virt-riscv
@@ -32,6 +35,13 @@ else
   $(error "LOG" must be one of "off", "error", "warn", "info", "debug", "trace")
 endif
 
+ifeq ($(FS), on)
+  features += axruntime/fs
+endif
+ifeq ($(NET), on)
+  features += axruntime/net
+endif
+
 build_args := --no-default-features --features "$(features)" --target $(target) -Zbuild-std=core,alloc -Zbuild-std-features=compiler-builtins-mem
 ifeq ($(MODE), release)
   build_args += --release
@@ -53,6 +63,18 @@ ifeq ($(ARCH), riscv64)
     -machine virt \
     -bios default \
     -kernel $(kernel_bin)
+endif
+
+ifeq ($(FS), on)
+  qemu_args += \
+    -device virtio-blk-device,drive=disk0 \
+    -drive id=disk0,if=none,format=raw,file=disk.img
+endif
+
+ifeq ($(NET), on)
+  qemu_args += \
+    -device virtio-net-device,netdev=net0 \
+    -netdev user,id=net0,hostfwd=tcp::5555-:5555
 endif
 
 build: $(kernel_bin)
