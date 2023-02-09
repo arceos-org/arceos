@@ -149,3 +149,8 @@ fn init_scheduler() {
     info!("Initialize scheduling...");
     axtask::init_scheduler();
 }
+
+#[no_mangle]
+pub extern "C" fn dummy_syscall(a0: i32, a1: i32) {
+    println!("pretended to be a syscall, {}, {}", a0, a1);
+}

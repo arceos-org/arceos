@@ -2,7 +2,7 @@
 ARCH ?= riscv64
 MODE ?= release
 LOG ?= warn
-APP ?= helloworld
+APP ?= hello-c
 
 FS ?= off
 NET ?= off

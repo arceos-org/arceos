@@ -6,6 +6,7 @@ members = [
     "apps/helloworld",
     "apps/memtest",
     "apps/multitask",
+    "apps/hello_c",
 
     "crates/allocator",
     "crates/crate_interface",
