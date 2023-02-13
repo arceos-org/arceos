@@ -23,6 +23,7 @@ members = [
     "modules/axdriver",
     "modules/axerror",
     "modules/axhal",
+    "modules/axnet",
     "modules/axruntime",
     "modules/axtask",
 ]

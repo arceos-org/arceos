@@ -78,6 +78,7 @@ version = "0.1.0"
 dependencies = [
  "axalloc",
  "axhal",
+ "cfg-if",
  "driver_block",
  "driver_common",
  "driver_net",
@@ -117,6 +118,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "axnet"
+version = "0.1.0"
+dependencies = [
+ "axdriver",
+ "driver_net",
+ "log",
+]
+
+[[package]]
 name = "axruntime"
 version = "0.1.0"
 dependencies = [
@@ -125,6 +135,7 @@ dependencies = [
  "axdriver",
  "axhal",
  "axlog",
+ "axnet",
  "axtask",
 ]
 

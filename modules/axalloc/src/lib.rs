@@ -107,10 +107,10 @@ unsafe impl GlobalAlloc for GlobalAllocator {
     }
 }
 
-#[cfg_attr(not(test), global_allocator)]
-static GLOBAL_ALLOCATOR: GlobalAllocator = GlobalAllocator::new();
+#[cfg_attr(all(target_os = "none", not(test)), global_allocator)]
+pub static GLOBAL_ALLOCATOR: GlobalAllocator = GlobalAllocator::new();
 
-#[cfg(not(test))]
+#[cfg(all(target_os = "none", not(test)))]
 #[alloc_error_handler]
 fn handle_alloc_error(layout: Layout) -> ! {
     panic!(

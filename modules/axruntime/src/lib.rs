@@ -73,16 +73,34 @@ pub extern "C" fn rust_main() -> ! {
     }
 
     #[cfg(feature = "alloc")]
-    init_allocator();
+    {
+        info!("Initialize global memory allocator...");
+        init_allocator();
+    }
 
     #[cfg(feature = "paging")]
-    remap_kernel_memory().expect("remap kernel memoy failed");
+    {
+        info!("Initialize kernel page table...");
+        remap_kernel_memory().expect("remap kernel memoy failed");
+    }
 
     #[cfg(any(feature = "fs", feature = "net"))]
-    init_drivers();
+    {
+        info!("Initialize device drivers...");
+        axdriver::init_drivers();
+    }
+
+    #[cfg(feature = "net")]
+    {
+        info!("Initialize network subsystem...");
+        axnet::init_network();
+    }
 
     #[cfg(feature = "multitask")]
-    init_scheduler();
+    {
+        info!("Initialize scheduling...");
+        axtask::init_scheduler();
+    }
 
     unsafe { main() };
 
@@ -93,7 +111,6 @@ pub extern "C" fn rust_main() -> ! {
 fn init_allocator() {
     use axhal::mem::{memory_regions, phys_to_virt, MemRegionFlags};
 
-    info!("Initialize global memory allocator...");
     let mut max_region_size = 0;
     let mut max_region_paddr = 0.into();
     for r in memory_regions() {
@@ -121,7 +138,6 @@ fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
     use axhal::mem::{memory_regions, phys_to_virt};
     use axhal::paging::PageTable;
 
-    info!("Initialize kernel page table...");
     let mut kernel_page_table = PageTable::try_new()?;
     for r in memory_regions() {
         kernel_page_table.map_region(
@@ -136,16 +152,4 @@ fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
     unsafe { axhal::arch::write_page_table_root(kernel_page_table.root_paddr()) };
     core::mem::forget(kernel_page_table);
     Ok(())
-}
-
-#[cfg(any(feature = "fs", feature = "net"))]
-fn init_drivers() {
-    info!("Initialize drivers...");
-    axdriver::init_drivers();
-}
-
-#[cfg(feature = "multitask")]
-fn init_scheduler() {
-    info!("Initialize scheduling...");
-    axtask::init_scheduler();
 }
