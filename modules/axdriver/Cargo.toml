@@ -12,8 +12,8 @@ bus-pci = ["driver_virtio?/bus-pci"]
 virtio = ["driver_virtio", "dep:axalloc", "dep:axhal"]
 
 # various types of drivers
-virtio-net = ["virtio", "dep:driver_net", "driver_virtio/net"]
 virtio-blk = ["virtio", "dep:driver_block", "driver_virtio/block"]
+virtio-net = ["virtio", "dep:driver_net", "driver_virtio/net"]
 # more device example: e1000 = ["driver_net/e1000"]
 
 default = ["bus-mmio"]
@@ -22,6 +22,7 @@ default = ["bus-mmio"]
 log = "0.4"
 cfg-if = "1.0"
 lazy_init = { path = "../../crates/lazy_init" }
+tuple_for_each = { path = "../../crates/tuple_for_each" }
 driver_common = { path = "../../crates/driver_common" }
 driver_block = { path = "../../crates/driver_block", optional = true }
 driver_net = { path = "../../crates/driver_net", optional = true }

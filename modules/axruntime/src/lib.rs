@@ -64,7 +64,7 @@ pub extern "C" fn rust_main() -> ! {
     info!("Found physcial memory regions:");
     for r in axhal::mem::memory_regions() {
         info!(
-            "  [0x{:016x}, 0x{:#016x}) {} ({:?})",
+            "  [{:x?}, {:x?}) {} ({:?})",
             r.paddr,
             r.paddr + r.size,
             r.name,

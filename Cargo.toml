@@ -17,6 +17,7 @@ members = [
     "crates/memory_addr",
     "crates/page_table",
     "crates/scheduler",
+    "crates/tuple_for_each",
 
     "modules/axalloc",
     "modules/axconfig",

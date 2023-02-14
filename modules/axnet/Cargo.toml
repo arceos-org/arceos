@@ -11,5 +11,6 @@ default = ["axdriver/virtio-net"]
 
 [dependencies]
 log = "0.4"
+driver_common = { path = "../../crates/driver_common" }
 driver_net = { path = "../../crates/driver_net" }
 axdriver = { path = "../axdriver" }
