@@ -52,7 +52,7 @@ pub extern "C" fn free(addr: *mut c_void) {
     };
     axalloc::global_allocator().dealloc(
         addr as usize - size_of::<MemoryControlBlock>(),
-        size,
+        size + size_of::<MemoryControlBlock>(),
         BYTES_OF_USIZE,
     )
 }
