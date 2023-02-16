@@ -1,0 +1,12 @@
+arch = "aarch64"
+platform = "qemu-virt-aarch64"
+
+phys-memory-base = "0x4000_0000"
+phys-memory-size = "0x800_0000"     # 128M
+kernel-base-paddr = "0x4008_0000"
+kernel-base-vaddr = "0xffff_0000_4008_0000"
+phys-virt-offset = "0xffff_0000_0000_0000"
+mmio-regions = [
+    ["0x0900_0000", "0x1000"],      # PL011 UART
+    ["0x0800_0000", "0x2_0000"],    # GICv2
+]

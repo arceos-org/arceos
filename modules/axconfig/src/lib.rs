@@ -5,6 +5,10 @@ cfg_if::cfg_if! {
         #[rustfmt::skip]
         #[path = "config_qemu_virt_riscv.rs"]
         mod config;
+    } else if #[cfg(feature = "platform-qemu-virt-aarch64")] {
+        #[rustfmt::skip]
+        #[path = "config_qemu_virt_aarch64.rs"]
+        mod config;
     } else {
         #[rustfmt::skip]
         #[path = "config_dummy.rs"]
