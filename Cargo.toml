@@ -6,7 +6,7 @@ members = [
     "apps/helloworld",
     "apps/memtest",
     "apps/multitask",
-    "apps/hello_c",
+    "apps/c_wrapper",
 
     "crates/allocator",
     "crates/crate_interface",
@@ -20,6 +20,7 @@ members = [
     "crates/scheduler",
 
     "modules/axalloc",
+    "modules/axalloc_c",
     "modules/axconfig",
     "modules/axdriver",
     "modules/axerror",

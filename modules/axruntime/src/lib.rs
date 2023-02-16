@@ -151,6 +151,6 @@ fn init_scheduler() {
 }
 
 #[no_mangle]
-pub extern "C" fn dummy_syscall(a0: i32, a1: i32) {
-    println!("pretended to be a syscall, {}, {}", a0, a1);
+pub extern "C" fn dummy_syscall(a0: u64, a1: i64) {
+    println!("pretended to be a syscall, a0=0x{:x}, a1={}", a0, a1);
 }

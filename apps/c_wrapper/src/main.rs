@@ -3,6 +3,7 @@
 
 #[macro_use]
 extern crate axruntime;
+extern crate axalloc_c;
 
 extern "C" {
     fn c_main() -> i32;

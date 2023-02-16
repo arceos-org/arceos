@@ -11,6 +11,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "arceos-c-wrapper"
+version = "0.1.0"
+dependencies = [
+ "axalloc_c",
+ "axruntime",
+]
+
+[[package]]
 name = "arceos-echoserver"
 version = "0.1.0"
 dependencies = [
@@ -19,13 +27,6 @@ dependencies = [
 
 [[package]]
 name = "arceos-exception"
-version = "0.1.0"
-dependencies = [
- "axruntime",
-]
-
-[[package]]
-name = "arceos-hello-c"
 version = "0.1.0"
 dependencies = [
  "axruntime",
@@ -68,6 +69,13 @@ dependencies = [
  "log",
  "memory_addr",
  "spin",
+]
+
+[[package]]
+name = "axalloc_c"
+version = "0.1.0"
+dependencies = [
+ "axalloc",
 ]
 
 [[package]]
