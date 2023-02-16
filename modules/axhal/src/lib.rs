@@ -12,6 +12,7 @@ mod platform;
 
 pub mod arch;
 pub mod mem;
+pub mod time;
 
 #[cfg(feature = "paging")]
 pub mod paging;

@@ -8,7 +8,6 @@ trait Base {
 }
 
 struct A;
-
 struct B;
 struct C;
 

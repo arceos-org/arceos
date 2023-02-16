@@ -20,4 +20,4 @@ spin = "0.9"
 driver_common = { path = "../driver_common" }
 driver_block = { path = "../driver_block", optional = true }
 driver_net = { path = "../driver_net", optional = true }
-virtio-drivers = { git = "https://github.com/rcore-os/virtio-drivers.git", rev = "67183ee" }
+virtio-drivers = { git = "https://github.com/rcore-os/virtio-drivers.git", rev = "af3c127" }
