@@ -9,6 +9,7 @@ members = [
 
     "crates/allocator",
     "crates/crate_interface",
+    "crates/driver_block",
     "crates/driver_common",
     "crates/driver_net",
     "crates/driver_virtio",
@@ -25,6 +26,7 @@ members = [
     "modules/axdriver",
     "modules/axerror",
     "modules/axhal",
+    "modules/axlog",
     "modules/axnet",
     "modules/axruntime",
     "modules/axtask",

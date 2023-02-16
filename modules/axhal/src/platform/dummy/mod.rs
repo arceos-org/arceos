@@ -25,3 +25,13 @@ pub mod mem {
         None
     }
 }
+
+pub mod time {
+    pub fn current_ticks() -> u64 {
+        0
+    }
+
+    pub fn ticks_to_nanos(ticks: u64) -> u64 {
+        ticks
+    }
+}

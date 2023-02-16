@@ -7,10 +7,24 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["axdriver/virtio-net"]
+smoltcp = ["dep:smoltcp"]
+default = ["axdriver/virtio-net", "smoltcp"]
 
 [dependencies]
 log = "0.4"
+spin = "0.9"
 driver_common = { path = "../../crates/driver_common" }
 driver_net = { path = "../../crates/driver_net" }
+axhal = { path = "../axhal" }
 axdriver = { path = "../axdriver" }
+
+[dependencies.smoltcp]
+version = "0.9.1"
+optional = true
+default-features = false
+features = [
+  "alloc", "log",   # no std
+  "medium-ethernet",
+  "proto-ipv4",
+  "socket-raw", "socket-icmp", "socket-udp", "socket-tcp",
+]

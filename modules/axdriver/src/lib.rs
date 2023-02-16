@@ -16,6 +16,7 @@ pub struct BlockDevices(
 
 #[derive(TupleForEach)]
 pub struct NetDevices(
+    // TODO: move Mutex here
     #[cfg(feature = "virtio-net")] pub self::virtio::VirtIoNetDev,
     // #[cfg(feature = "e1000")] pub e1000::E1000Dev,
 );
