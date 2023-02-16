@@ -49,5 +49,7 @@ cfg_if::cfg_if! {
         pub type PageTable = page_table::x86_64::X64PageTable<PagingIfImpl>;
     } else if #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))] {
         pub type PageTable = page_table::riscv::Sv39PageTable<PagingIfImpl>;
+    } else if #[cfg(target_arch = "aarch64")]{
+        pub type PageTable = page_table::aarch64::A64PageTable<PagingIfImpl>;
     }
 }

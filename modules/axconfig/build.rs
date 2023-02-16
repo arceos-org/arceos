@@ -6,6 +6,8 @@ fn main() {
     let arch = std::env::var("CARGO_CFG_TARGET_ARCH").unwrap();
     let platform = if cfg!(feature = "platform-qemu-virt-riscv") {
         "qemu-virt-riscv"
+    } else if cfg!(feature = "platform-qemu-virt-aarch64") {
+        "qemu-virt-aarch64"
     } else {
         println!("Unsupported platform, use dummy config!");
         "dummy"
