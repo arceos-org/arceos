@@ -73,7 +73,7 @@ impl TaskInner {
 
 // private methods
 impl TaskInner {
-    fn new_common(id: TaskId, name: &'static str) -> Self {
+    const fn new_common(id: TaskId, name: &'static str) -> Self {
         Self {
             id,
             name,
@@ -98,7 +98,7 @@ impl TaskInner {
     }
 
     pub(crate) fn new_init() -> AxTaskRef {
-        // init_task does not change PC and SP, so `entry` and `stack` fields are not used.
+        // init_task does not change PC and SP, so `entry` and `kstack` fields are not used.
         Arc::new(AxTask::new(Self::new_common(TaskId::new(), "init")))
     }
 
@@ -126,7 +126,7 @@ impl TaskInner {
         self.id.as_u64() == TaskId::IDLE_TASK_ID.as_u64()
     }
 
-    pub(crate) const fn ctx_mut_ptr(&self) -> *mut TaskContext {
+    pub(crate) const unsafe fn ctx_mut_ptr(&self) -> *mut TaskContext {
         self.ctx.get()
     }
 }

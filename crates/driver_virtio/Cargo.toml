@@ -7,8 +7,11 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
+bus-mmio = []
+bus-pci = []
 block = ["driver_block"]
 net = ["driver_net"]
+default = ["bus-mmio"]
 
 [dependencies]
 log = "0.4"
