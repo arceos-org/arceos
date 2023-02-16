@@ -1,12 +1,24 @@
-use alloc::boxed::Box;
 use core::ptr::NonNull;
 
 use axalloc::global_allocator;
 use axhal::mem::{phys_to_virt, virt_to_phys};
-use driver_common::BaseDriverOps;
-use driver_virtio::{BufferDirection, PhysAddr, VirtIoDevice, VirtIoHal};
+use driver_common::{BaseDriverOps, DeviceType};
+use driver_virtio::{BufferDirection, PhysAddr, VirtIoHal};
 
 use crate::AllDevices;
+
+cfg_if::cfg_if! {
+    if #[cfg(feature =  "bus-mmio")] {
+        type VirtIoTransport = driver_virtio::MmioTransport;
+    } else if #[cfg(feature = "bus-pci")] {
+        type VirtIoTransport = driver_virtio::PciTransport;
+    }
+}
+
+#[cfg(feature = "virtio-blk")]
+pub type VirtIoBlockDev = driver_virtio::VirtIoBlkDev<VirtIoHalImpl, VirtIoTransport>;
+#[cfg(feature = "virtio-net")]
+pub type VirtIoNetDev = driver_virtio::VirtIoNetDev<VirtIoHalImpl, VirtIoTransport>;
 
 const VIRTIO_MMIO_REGIONS: &[(usize, usize)] = &[
     (0x1000_1000, 0x1000),
@@ -19,7 +31,7 @@ const VIRTIO_MMIO_REGIONS: &[(usize, usize)] = &[
     (0x1000_8000, 0x1000),
 ];
 
-struct VirtIoHalImpl;
+pub struct VirtIoHalImpl;
 
 unsafe impl VirtIoHal for VirtIoHalImpl {
     fn dma_alloc(pages: usize, _direction: BufferDirection) -> (PhysAddr, NonNull<u8>) {
@@ -54,23 +66,38 @@ unsafe impl VirtIoHal for VirtIoHalImpl {
 }
 
 impl AllDevices {
-    fn prob_virtio_mmio_device(&mut self, reg_base: usize, reg_size: usize) {
-        match driver_virtio::new_from_mmio::<VirtIoHalImpl>(
-            phys_to_virt(reg_base.into()).as_mut_ptr(),
-            reg_size,
-        ) {
-            #[cfg(feature = "block")]
-            Some(VirtIoDevice::Block(dev)) => self.block.add(Box::new(dev)),
-            #[cfg(feature = "net")]
-            Some(VirtIoDevice::Net(dev)) => self.net.add(Box::new(dev)),
-            _ => {}
-        }
-    }
-
-    pub(crate) fn prob_virtio_devices(&mut self) {
+    #[cfg(feature = "bus-mmio")]
+    fn probe_devices_common<D, F>(dev_type: DeviceType, ret: F) -> Option<D>
+    where
+        D: BaseDriverOps,
+        F: FnOnce(VirtIoTransport) -> Option<D>,
+    {
         // TODO: parse device tree
         for reg in VIRTIO_MMIO_REGIONS {
-            self.prob_virtio_mmio_device(reg.0, reg.1);
+            if let Some(transport) = driver_virtio::probe_mmio_device(
+                phys_to_virt(reg.0.into()).as_mut_ptr(),
+                reg.1,
+                Some(dev_type),
+            ) {
+                let dev = ret(transport)?;
+                log::info!(
+                    "Added new {:?} device: {:?}",
+                    dev.device_type(),
+                    dev.device_name()
+                );
+                return Some(dev);
+            }
         }
+        None
+    }
+
+    #[cfg(feature = "virtio-blk")]
+    pub(crate) fn probe_virtio_blk() -> Option<VirtIoBlockDev> {
+        Self::probe_devices_common(DeviceType::Block, |t| VirtIoBlockDev::try_new(t).ok())
+    }
+
+    #[cfg(feature = "virtio-net")]
+    pub(crate) fn probe_virtio_net() -> Option<VirtIoNetDev> {
+        Self::probe_devices_common(DeviceType::Net, |t| VirtIoNetDev::try_new(t).ok())
     }
 }

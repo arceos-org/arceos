@@ -1,7 +1,7 @@
 #![no_std]
 #![feature(const_trait_impl)]
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum DeviceType {
     Block,
     Char,

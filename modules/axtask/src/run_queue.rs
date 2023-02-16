@@ -86,15 +86,15 @@ impl AxRunQueue {
             return;
         }
 
-        let prev_ctx_ptr = prev_task.ctx_mut_ptr();
-        let next_ctx_ptr = next_task.ctx_mut_ptr();
-
-        // The strong reference count of `prev_task` will be decremented by 1,
-        // but won't be dropped until `gc_function()` is called.
-        assert!(Arc::strong_count(prev_task) > 1);
-        assert!(Arc::strong_count(&next_task) > 1);
-
         unsafe {
+            let prev_ctx_ptr = prev_task.ctx_mut_ptr();
+            let next_ctx_ptr = next_task.ctx_mut_ptr();
+
+            // The strong reference count of `prev_task` will be decremented by 1,
+            // but won't be dropped until `gc_function()` is called.
+            assert!(Arc::strong_count(prev_task) > 1);
+            assert!(Arc::strong_count(&next_task) > 1);
+
             crate::set_current(next_task);
             (*prev_ctx_ptr).switch_to(&*next_ctx_ptr);
         }

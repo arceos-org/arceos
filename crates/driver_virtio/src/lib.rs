@@ -12,7 +12,6 @@ cfg_if! {
         pub use net::VirtIoNetDev;
     }
 }
-
 cfg_if! {
     if #[cfg(feature = "block")] {
         mod blk;
@@ -20,54 +19,49 @@ cfg_if! {
     }
 }
 
-use core::{convert::Infallible, marker::PhantomData, ptr::NonNull};
-
-use driver_common::DevError;
-use virtio_drivers::transport::{mmio::MmioTransport, mmio::VirtIOHeader, Transport};
-use virtio_drivers::Hal;
+use driver_common::{DevError, DeviceType};
+use virtio_drivers::transport::{self, Transport};
 
 pub use virtio_drivers::{BufferDirection, Hal as VirtIoHal, PhysAddr};
 
-#[allow(clippy::large_enum_variant)]
-pub enum VirtIoDevice<H: Hal, T: Transport> {
-    #[cfg(feature = "block")]
-    Block(VirtIoBlkDev<H, T>),
-    #[cfg(feature = "net")]
-    Net(VirtIoNetDev<H, T>),
-    _Unknown(Infallible, PhantomData<(H, T)>),
-}
+#[cfg(feature = "bus-mmio")]
+pub use transport::mmio::MmioTransport;
+#[cfg(feature = "bus-pci")]
+pub use transport::pci::PciTransport;
 
-pub fn new_from_mmio<H: Hal>(
+#[cfg(feature = "bus-mmio")]
+pub fn probe_mmio_device(
     reg_base: *mut u8,
     _reg_size: usize,
-) -> Option<VirtIoDevice<H, MmioTransport>> {
+    type_match: Option<DeviceType>,
+) -> Option<MmioTransport> {
+    use core::ptr::NonNull;
+    use transport::mmio::VirtIOHeader;
+
     let header = NonNull::new(reg_base as *mut VirtIOHeader).unwrap();
-    match unsafe { MmioTransport::new(header) } {
-        Ok(transport) => {
-            info!(
+    if let Ok(transport) = unsafe { MmioTransport::new(header) } {
+        if type_match.is_none() || as_dev_type(transport.device_type()) == type_match {
+            debug!(
                 "Detected virtio MMIO device with vendor id: {:#X}, device type: {:?}, version: {:?}",
                 transport.vendor_id(),
                 transport.device_type(),
                 transport.version(),
             );
-            #[allow(unused_imports)]
-            use virtio_drivers::transport::DeviceType;
-            match transport.device_type() {
-                #[cfg(feature = "block")]
-                DeviceType::Block => {
-                    Some(VirtIoDevice::Block(VirtIoBlkDev::try_new(transport).ok()?))
-                }
-                #[cfg(feature = "net")]
-                DeviceType::Network => {
-                    Some(VirtIoDevice::Net(VirtIoNetDev::try_new(transport).ok()?))
-                }
-                t => {
-                    debug!("Unsupported virtio device: {:?}", t);
-                    None
-                }
-            }
+            Some(transport)
+        } else {
+            None
         }
-        Err(_) => None,
+    } else {
+        None
+    }
+}
+
+const fn as_dev_type(t: transport::DeviceType) -> Option<DeviceType> {
+    use transport::DeviceType::*;
+    match t {
+        Block => Some(DeviceType::Block),
+        Network => Some(DeviceType::Net),
+        _ => None,
     }
 }
 
