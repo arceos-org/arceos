@@ -8,11 +8,13 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 
 [features]
 platform-qemu-virt-riscv = ["axconfig/platform-qemu-virt-riscv"]
+platform-qemu-virt-aarch64 = ["axconfig/platform-qemu-virt-aarch64", "page_table"]
 paging = ["axalloc", "page_table"]
 default = []
 
 [dependencies]
 log = "0.4"
+spin = "0.9"
 cfg-if = "1.0"
 bitflags = "1.3"
 static_assertions = "1.1.0"
@@ -28,6 +30,10 @@ x86 = "0.52"
 [target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]
 riscv = "0.10"
 sbi-rt = { version = "0.0.2", features = ["legacy"] }
+
+[target.'cfg(target_arch = "aarch64")'.dependencies]
+aarch64-cpu = "9.3"
+tock-registers = "0.8"
 
 [build-dependencies]
 axconfig = { path = "../axconfig" }

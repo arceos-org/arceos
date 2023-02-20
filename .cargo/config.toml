@@ -5,3 +5,8 @@ lto = true
 rustflags = [
     "-Clink-arg=-Tmodules/axhal/linker.lds"
 ]
+
+[target.aarch64-unknown-none-softfloat]
+rustflags = [
+    "-Clink-arg=-Tmodules/axhal/linker.lds"
+]

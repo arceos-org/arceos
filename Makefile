@@ -11,8 +11,11 @@ NET ?= off
 ifeq ($(ARCH), riscv64)
   PLATFORM ?= qemu-virt-riscv
   target := riscv64gc-unknown-none-elf
+else ifeq ($(ARCH), aarch64)
+  PLATFORM ?= qemu-virt-aarch64
+  target := aarch64-unknown-none-softfloat
 else
-  $(error "ARCH" must be "riscv64")
+  $(error "ARCH" must be "riscv64" or "aarch64")
 endif
 
 export ARCH
@@ -63,6 +66,11 @@ ifeq ($(ARCH), riscv64)
     -machine virt \
     -bios default \
     -kernel $(kernel_bin)
+else ifeq ($(ARCH), aarch64)
+  qemu_args += \
+    -cpu cortex-a72 \
+    -machine virt \
+    -kernel $(kernel_bin)
 endif
 
 ifeq ($(FS), on)
@@ -98,7 +106,7 @@ clean:
 	cargo clean
 
 clippy:
-	cargo clippy --target $(target) --all-features
+	cargo clippy --target $(target)
 
 fmt:
 	cargo fmt --all
