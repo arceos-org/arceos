@@ -41,6 +41,13 @@ jobs:
         crate: cargo-binutils
         version: latest
         use-tool-cache: true
-    - name: Build kernel
-      run: |
-        make ARCH=${{ matrix.arch }}
+    - name: Build helloworld
+      run: make ARCH=${{ matrix.arch }} APP=helloworld
+    - name: Build memtest
+      run: make ARCH=${{ matrix.arch }} APP=memtest
+    - name: Build exception
+      run: make ARCH=${{ matrix.arch }} APP=exception
+    - name: Build multitask
+      run: make ARCH=${{ matrix.arch }} APP=multitask
+    - name: Build echoserver
+      run: make ARCH=${{ matrix.arch }} APP=echoserver
