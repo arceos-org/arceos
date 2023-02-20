@@ -16,6 +16,7 @@ members = [
     "crates/linked_list",
     "crates/memory_addr",
     "crates/page_table",
+    "crates/page_table_entry",
     "crates/scheduler",
     "crates/tuple_for_each",
 

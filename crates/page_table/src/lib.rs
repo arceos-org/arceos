@@ -7,23 +7,12 @@ extern crate log;
 
 mod arch;
 mod bits64;
-mod pte;
 
 use memory_addr::{PhysAddr, VirtAddr};
 
 pub use arch::*;
 pub use bits64::PageTable64;
-pub use pte::GenericPTE;
-
-bitflags::bitflags! {
-    pub struct MappingFlags: usize {
-        const READ          = 1 << 0;
-        const WRITE         = 1 << 1;
-        const EXECUTE       = 1 << 2;
-        const USER          = 1 << 3;
-        const DEVICE        = 1 << 4;
-    }
-}
+pub use page_table_entry::{GenericPTE, MappingFlags};
 
 #[derive(Debug)]
 pub enum PagingError {

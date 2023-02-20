@@ -114,6 +114,7 @@ dependencies = [
  "log",
  "memory_addr",
  "page_table",
+ "page_table_entry",
  "riscv",
  "sbi-rt",
  "spin",
@@ -309,9 +310,18 @@ checksum = "546c37ac5d9e56f55e73b677106873d9d9f5190605e41a856503623648488cae"
 name = "page_table"
 version = "0.1.0"
 dependencies = [
- "bitflags",
  "cfg-if",
  "log",
+ "memory_addr",
+ "page_table_entry",
+]
+
+[[package]]
+name = "page_table_entry"
+version = "0.1.0"
+dependencies = [
+ "bitflags",
+ "cfg-if",
  "memory_addr",
  "x86_64",
 ]

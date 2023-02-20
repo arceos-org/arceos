@@ -1,6 +1,6 @@
 use aarch64_cpu::{asm, asm::barrier, registers::*};
 use memory_addr::PhysAddr;
-use page_table::{aarch64::A64PTE, GenericPTE, MappingFlags as MemFlags};
+use page_table_entry::{aarch64::A64PTE, GenericPTE, MappingFlags};
 use tock_registers::interfaces::{ReadWriteable, Readable, Writeable};
 
 use axconfig::TASK_STACK_SIZE;
@@ -58,13 +58,13 @@ unsafe fn init_boot_page_table() {
     // 0x0000_0000_0000..0x0000_4000_0000, 1G block, device memory
     BOOT_PT_L1[0] = A64PTE::new_page(
         PhysAddr::from(0),
-        MemFlags::READ | MemFlags::WRITE | MemFlags::DEVICE,
+        MappingFlags::READ | MappingFlags::WRITE | MappingFlags::DEVICE,
         true,
     );
     // 0x0000_4000_0000..0x0000_8000_0000, 1G block, normal memory
     BOOT_PT_L1[1] = A64PTE::new_page(
         PhysAddr::from(0x4000_0000),
-        MemFlags::READ | MemFlags::WRITE | MemFlags::EXECUTE,
+        MappingFlags::READ | MappingFlags::WRITE | MappingFlags::EXECUTE,
         true,
     );
 }

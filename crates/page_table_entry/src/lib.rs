@@ -1,6 +1,22 @@
-use core::fmt::Debug;
+#![no_std]
+#![feature(const_trait_impl)]
 
-use crate::{MappingFlags, PhysAddr};
+mod arch;
+
+use core::fmt::Debug;
+use memory_addr::PhysAddr;
+
+pub use arch::*;
+
+bitflags::bitflags! {
+    pub struct MappingFlags: usize {
+        const READ          = 1 << 0;
+        const WRITE         = 1 << 1;
+        const EXECUTE       = 1 << 2;
+        const USER          = 1 << 3;
+        const DEVICE        = 1 << 4;
+    }
+}
 
 pub trait GenericPTE: Debug + Clone + Copy + Sync + Send + Sized {
     // Create a page table entry point to a terminate page or block.
