@@ -1,4 +1,4 @@
-use crate::platform::pl011::{console_getchar, console_putchar};
+use super::pl011::{console_getchar, console_putchar};
 
 pub fn putchar(c: u8) {
     console_putchar(c);

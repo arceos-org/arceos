@@ -8,7 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [riscv64]
+        arch: [riscv64, aarch64]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -28,7 +28,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        arch: [riscv64]
+        arch: [riscv64, aarch64]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1

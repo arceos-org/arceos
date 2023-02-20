@@ -5,6 +5,5 @@ cfg_if::cfg_if! {
         pub mod riscv;
     } else if #[cfg(target_arch = "aarch64")] {
         pub mod aarch64;
-        pub use aarch64::A64PTE;
     }
 }

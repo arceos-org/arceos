@@ -52,7 +52,6 @@ impl Pl011Uart {
         unsafe { &*(self.base_vaddr.as_ptr() as *const _) }
     }
 
-    #[allow(unused)]
     fn init(&mut self) {
         // clear all irqs
         self.regs().icr.set(0x3ff);
@@ -89,10 +88,6 @@ pub fn console_getchar() -> Option<u8> {
     UART.lock().getchar()
 }
 
-#[allow(unused)]
-pub fn init_early() {}
-
-#[allow(unused)]
 pub fn init() {
     UART.lock().init();
 }

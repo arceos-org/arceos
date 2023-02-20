@@ -31,7 +31,6 @@ pub struct TaskContext {
     pub r28: u64,
     pub r29: u64,
     pub lr: u64, // r30
-    pub ttbr0_el1: u64,
 }
 
 impl TaskContext {

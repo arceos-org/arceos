@@ -1,20 +1,18 @@
-use cortex_a::{asm, asm::barrier, registers::*};
+use aarch64_cpu::{asm, asm::barrier, registers::*};
+use memory_addr::PhysAddr;
+use page_table::{aarch64::A64PTE, GenericPTE, MappingFlags as MemFlags};
 use tock_registers::interfaces::{ReadWriteable, Readable, Writeable};
 
-use crate::arch::flush_tlb_all;
-use memory_addr::PhysAddr;
-use page_table::{GenericPTE, MappingFlags as MemFlags, A64PTE as PageTableEntry};
-
-pub const BOOT_KERNEL_STACK_SIZE: usize = 4096 * 4; // 16K
+use axconfig::TASK_STACK_SIZE;
 
 #[link_section = ".bss.stack"]
-static mut BOOT_STACK: [u8; BOOT_KERNEL_STACK_SIZE] = [0; BOOT_KERNEL_STACK_SIZE];
+static mut BOOT_STACK: [u8; TASK_STACK_SIZE] = [0; TASK_STACK_SIZE];
 
 #[link_section = ".data.boot_page_table"]
-static mut BOOT_PT_L0: [PageTableEntry; 512] = [PageTableEntry::empty(); 512];
+static mut BOOT_PT_L0: [A64PTE; 512] = [A64PTE::empty(); 512];
 
 #[link_section = ".data.boot_page_table"]
-static mut BOOT_PT_L1: [PageTableEntry; 512] = [PageTableEntry::empty(); 512];
+static mut BOOT_PT_L1: [A64PTE; 512] = [A64PTE::empty(); 512];
 
 unsafe fn switch_to_el1() {
     SPSel.write(SPSel::SP::ELx);
@@ -55,19 +53,16 @@ unsafe fn switch_to_el1() {
 }
 
 unsafe fn init_boot_page_table() {
-    // Todo: solve this hard-code
-    let pa_max = (1 << 40) - 1;
     // 0x0000_0000_0000 ~ 0x0080_0000_0000, table
-    BOOT_PT_L0[0] =
-        PageTableEntry::new_table(PhysAddr::from(BOOT_PT_L1.as_ptr() as usize & pa_max));
+    BOOT_PT_L0[0] = A64PTE::new_table(PhysAddr::from(BOOT_PT_L1.as_ptr() as usize));
     // 0x0000_0000_0000..0x0000_4000_0000, 1G block, device memory
-    BOOT_PT_L1[0] = PageTableEntry::new_page(
+    BOOT_PT_L1[0] = A64PTE::new_page(
         PhysAddr::from(0),
         MemFlags::READ | MemFlags::WRITE | MemFlags::DEVICE,
         true,
     );
     // 0x0000_4000_0000..0x0000_8000_0000, 1G block, normal memory
-    BOOT_PT_L1[1] = PageTableEntry::new_page(
+    BOOT_PT_L1[1] = A64PTE::new_page(
         PhysAddr::from(0x4000_0000),
         MemFlags::READ | MemFlags::WRITE | MemFlags::EXECUTE,
         true,
@@ -103,16 +98,12 @@ unsafe fn init_mmu() {
     TTBR0_EL1.set(root_paddr);
     TTBR1_EL1.set(root_paddr);
 
-    // Flush TLB
-    flush_tlb_all();
+    // Flush the entire TLB
+    crate::arch::flush_tlb(None);
 
     // Enable the MMU and turn on I-cache and D-cache
     SCTLR_EL1.modify(SCTLR_EL1::M::Enable + SCTLR_EL1::C::Cacheable + SCTLR_EL1::I::Cacheable);
     barrier::isb(barrier::SY);
-}
-
-fn init_device() {
-    crate::platform::pl011::init();
 }
 
 #[naked]
@@ -129,16 +120,21 @@ unsafe extern "C" fn _start() -> ! {
         bl      {switch_to_el1}
         bl      {init_boot_page_table}
         bl      {init_mmu}
-        bl      {init_device}
+
+        // set SP to the high address
         ldr     x8, =boot_stack_top
         mov     sp, x8
+
+        // call functions at the high address
+        ldr     x8, ={platform_init}
+        blr     x8
         ldr     x8, ={rust_main}
         blr     x8
         b      .",
         switch_to_el1 = sym switch_to_el1,
         init_boot_page_table = sym init_boot_page_table,
         init_mmu = sym init_mmu,
-        init_device = sym init_device,
+        platform_init = sym super::platform_init,
         rust_main = sym rust_main,
         options(noreturn),
     )

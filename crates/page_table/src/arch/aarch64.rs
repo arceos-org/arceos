@@ -1,7 +1,8 @@
 use core::fmt;
 
-use crate::{GenericPTE, MappingFlags, PageSize, PageTable64, PagingMetaData};
 use memory_addr::PhysAddr;
+
+use crate::{GenericPTE, MappingFlags, PageSize, PageTable64, PagingMetaData};
 
 bitflags::bitflags! {
     /// Memory attribute fields in the VMSAv8-64 translation table format descriptors.
@@ -138,7 +139,7 @@ impl From<MappingFlags> for DescriptorAttr {
 pub struct A64PTE(u64);
 
 impl A64PTE {
-    const PHYS_ADDR_MASK: usize = ((1 << 40) - 1) & !(PageSize::Size4K as usize - 1);
+    const PHYS_ADDR_MASK: usize = A64PagingMetaData::PA_MAX_ADDR & !(PageSize::Size4K as usize - 1);
 
     pub const fn empty() -> Self {
         Self(0)
