@@ -60,22 +60,23 @@ fn gen_config_rs(arch: &str, platform: &str) -> Result<()> {
             } else {
                 writeln!(output, "pub const {var_name}: &str = \"{s}\";")?;
             }
+        } else if let Value::Array(regions) = value {
+            if key != "mmio-regions" && key != "virtio-mmio-regions" {
+                continue;
+            }
+            writeln!(output, "pub const {var_name}: &[(usize, usize)] = &[")?;
+            for r in regions {
+                let r = r.as_array().unwrap();
+                writeln!(
+                    output,
+                    "    ({}, {}),",
+                    r[0].as_str().unwrap(),
+                    r[1].as_str().unwrap()
+                )?;
+            }
+            writeln!(output, "];")?;
         }
     }
-
-    writeln!(output, "pub const MMIO_REGIONS: &[(usize, usize)] = &[")?;
-    if let Some(regions) = config["mmio-regions"].as_array() {
-        for r in regions {
-            let r = r.as_array().unwrap();
-            writeln!(
-                output,
-                "    ({}, {}),",
-                r[0].as_str().unwrap(),
-                r[1].as_str().unwrap()
-            )?;
-        }
-    }
-    writeln!(output, "];")?;
 
     let out_path = format!("src/config_{}.rs", platform.replace('-', "_"));
     fs::write(out_path, output)?;

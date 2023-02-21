@@ -7,5 +7,6 @@ kernel-base-paddr = "0"
 kernel-base-vaddr = "0"
 phys-virt-offset = "0"
 mmio-regions = []
+virtio-mmio-regions = []
 
 timer_frequency = "0"

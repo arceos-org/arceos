@@ -8,7 +8,10 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 
 [features]
 platform-qemu-virt-riscv = ["axconfig/platform-qemu-virt-riscv"]
-platform-qemu-virt-aarch64 = ["axconfig/platform-qemu-virt-aarch64", "dep:page_table_entry"]
+platform-qemu-virt-aarch64 = [
+    "axconfig/platform-qemu-virt-aarch64",
+    "dep:page_table_entry", "dep:lazy_init", "dep:ratio",
+]
 paging = ["axalloc", "page_table"]
 default = []
 
@@ -21,6 +24,8 @@ static_assertions = "1.1.0"
 axconfig = { path = "../axconfig" }
 axalloc = { path = "../axalloc", optional = true }
 axerror = { path = "../axerror" }
+ratio = { path = "../../crates/ratio", optional = true }
+lazy_init = { path = "../../crates/lazy_init", optional = true }
 page_table = { path = "../../crates/page_table", optional = true }
 page_table_entry = { path = "../../crates/page_table_entry", optional = true }
 memory_addr = { path = "../../crates/memory_addr" }

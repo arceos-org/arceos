@@ -54,7 +54,7 @@ pub fn flush_tlb(vaddr: Option<VirtAddr>) {
         if let Some(vaddr) = vaddr {
             asm!("tlbi vaae1is, {}; dsb sy; isb", in(reg) vaddr.as_usize())
         } else {
-            // flush the entire all
+            // flush the entire TLB
             asm!("tlbi vmalle1; dsb sy; isb")
         }
     }

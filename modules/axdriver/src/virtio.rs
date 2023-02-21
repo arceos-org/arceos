@@ -30,17 +30,6 @@ cfg_if! {
     }
 }
 
-const VIRTIO_MMIO_REGIONS: &[(usize, usize)] = &[
-    (0x1000_1000, 0x1000),
-    (0x1000_2000, 0x1000),
-    (0x1000_3000, 0x1000),
-    (0x1000_4000, 0x1000),
-    (0x1000_5000, 0x1000),
-    (0x1000_6000, 0x1000),
-    (0x1000_7000, 0x1000),
-    (0x1000_8000, 0x1000),
-];
-
 pub struct VirtIoHalImpl;
 
 unsafe impl VirtIoHal for VirtIoHalImpl {
@@ -83,7 +72,7 @@ impl AllDevices {
         F: FnOnce(VirtIoTransport) -> Option<D>,
     {
         // TODO: parse device tree
-        for reg in VIRTIO_MMIO_REGIONS {
+        for reg in axconfig::VIRTIO_MMIO_REGIONS {
             if let Some(transport) = driver_virtio::probe_mmio_device(
                 phys_to_virt(reg.0.into()).as_mut_ptr(),
                 reg.1,

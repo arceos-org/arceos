@@ -95,6 +95,7 @@ name = "axdriver"
 version = "0.1.0"
 dependencies = [
  "axalloc",
+ "axconfig",
  "axhal",
  "cfg-if",
  "driver_block",
@@ -120,10 +121,12 @@ dependencies = [
  "axerror",
  "bitflags",
  "cfg-if",
+ "lazy_init",
  "log",
  "memory_addr",
  "page_table",
  "page_table_entry",
+ "ratio",
  "riscv",
  "sbi-rt",
  "spin",
@@ -436,6 +439,10 @@ checksum = "8856d8364d252a14d474036ea1358d63c9e6965c8e5c1885c18f73d70bff9c7b"
 dependencies = [
  "proc-macro2",
 ]
+
+[[package]]
+name = "ratio"
+version = "0.1.0"
 
 [[package]]
 name = "raw-cpuid"

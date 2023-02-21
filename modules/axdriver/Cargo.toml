@@ -9,7 +9,7 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 [features]
 bus-mmio = ["driver_virtio?/bus-mmio"]
 bus-pci = ["driver_virtio?/bus-pci"]
-virtio = ["driver_virtio", "dep:axalloc", "dep:axhal"]
+virtio = ["driver_virtio", "dep:axalloc", "dep:axhal", "dep:axconfig"]
 
 # various types of drivers
 virtio-blk = ["virtio", "dep:driver_block", "driver_virtio/block"]
@@ -29,3 +29,4 @@ driver_net = { path = "../../crates/driver_net", optional = true }
 driver_virtio = { path = "../../crates/driver_virtio", optional = true }
 axalloc = { path = "../axalloc", optional = true }
 axhal = { path = "../axhal", optional = true }
+axconfig = { path = "../axconfig", optional = true }
