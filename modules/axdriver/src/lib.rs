@@ -6,18 +6,23 @@ mod virtio;
 use lazy_init::LazyInit;
 use tuple_for_each::TupleForEach;
 
+#[cfg(feature = "virtio-blk")]
+pub use self::virtio::VirtIoBlockDev;
+#[cfg(feature = "virtio-net")]
+pub use self::virtio::VirtIoNetDev;
+
 static DEVICES: LazyInit<AllDevices> = LazyInit::new();
 
 #[derive(TupleForEach)]
 pub struct BlockDevices(
-    #[cfg(feature = "virtio-blk")] pub self::virtio::VirtIoBlockDev,
+    #[cfg(feature = "virtio-blk")] pub VirtIoBlockDev,
     // #[cfg(feature = "nvme")] pub nvme::NVMeDev,
 );
 
 #[derive(TupleForEach)]
 pub struct NetDevices(
     // TODO: move Mutex here
-    #[cfg(feature = "virtio-net")] pub self::virtio::VirtIoNetDev,
+    #[cfg(feature = "virtio-net")] pub VirtIoNetDev,
     // #[cfg(feature = "e1000")] pub e1000::E1000Dev,
 );
 

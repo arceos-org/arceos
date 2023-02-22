@@ -12,12 +12,16 @@ pub enum AxError {
     AlreadyExists,
     /// Bad address.
     BadAddress,
+    /// The connection was refused by the remote server,
+    ConnectionRefused,
     /// Invalid parameter/argument.
     InvalidParam,
     /// Input/output error.
     Io,
     /// Not enough space/cannot allocate memory.
     NoMemory,
+    /// The network operation failed because it was not connected yet.
+    NotConnected,
     /// The requested entity is not found.
     NotFound,
     /// The operation lacked the necessary privileges to complete.
@@ -34,12 +38,12 @@ pub type AxResult<T = ()> = Result<T, AxError>;
 #[macro_export]
 macro_rules! ax_err_type {
     ($err: ident) => {{
-        use $crate::error::AxError::*;
+        use $crate::AxError::*;
         warn!("[AxError::{:?}]", $err);
         $err
     }};
     ($err: ident, $msg: expr) => {{
-        use $crate::error::AxError::*;
+        use $crate::AxError::*;
         warn!("[AxError::{:?}] {}", $err, $msg);
         $err
     }};
@@ -48,10 +52,10 @@ macro_rules! ax_err_type {
 #[macro_export]
 macro_rules! ax_err {
     ($err: ident) => {
-        Err(rvm_err_type!($err))
+        Err($crate::ax_err_type!($err))
     };
     ($err: ident, $msg: expr) => {
-        Err(rvm_err_type!($err, $msg))
+        Err($crate::ax_err_type!($err, $msg))
     };
 }
 
@@ -61,9 +65,11 @@ impl From<AxError> for LinuxError {
         match e {
             AlreadyExists => LinuxError::EEXIST,
             BadAddress => LinuxError::EFAULT,
+            ConnectionRefused => LinuxError::ECONNREFUSED,
             InvalidParam => LinuxError::EINVAL,
             Io => LinuxError::EIO,
             NoMemory => LinuxError::ENOMEM,
+            NotConnected => LinuxError::ENOTCONN,
             NotFound => LinuxError::ENOENT,
             PermissionDenied => LinuxError::EPERM,
             ResourceBusy => LinuxError::EBUSY,

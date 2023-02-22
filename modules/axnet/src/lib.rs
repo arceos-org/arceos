@@ -4,15 +4,22 @@
 extern crate log;
 extern crate alloc;
 
-#[cfg(feature = "smoltcp")]
-mod smoltcp_wrapper;
+pub mod io;
+mod tcp;
 
-#[cfg(feature = "smoltcp")]
-use smoltcp_wrapper as wrapper;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "smoltcp")] {
+        mod smoltcp_impl;
+        use smoltcp_impl as net_impl;
+    }
+}
 
-use driver_common::{BaseDriverOps, DeviceType};
+pub use self::tcp::{TcpListener, TcpStream};
+pub use smoltcp::wire::{IpAddress as IpAddr, IpEndpoint as SocketAddr, Ipv4Address as Ipv4Addr};
 
 pub fn init_network() {
+    use driver_common::{BaseDriverOps, DeviceType};
+
     let devices = axdriver::net_devices();
     info!("number of NICs: {}", devices.len());
     axdriver::net_devices_enumerate!((i, dev) in devices {
@@ -20,5 +27,5 @@ pub fn init_network() {
         info!("  NIC {}: {:?}", i, dev.device_name());
     });
 
-    wrapper::init();
+    net_impl::init();
 }

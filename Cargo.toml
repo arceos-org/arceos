@@ -1,11 +1,12 @@
 [workspace]
 
 members = [
-    "apps/echoserver",
     "apps/exception",
     "apps/helloworld",
     "apps/memtest",
     "apps/multitask",
+    "apps/net/echoserver",
+    "apps/net/httpclient",
 
     "crates/allocator",
     "crates/crate_interface",

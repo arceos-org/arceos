@@ -49,5 +49,7 @@ jobs:
       run: make ARCH=${{ matrix.arch }} APP=exception
     - name: Build multitask
       run: make ARCH=${{ matrix.arch }} APP=multitask
-    - name: Build echoserver
+    - name: Build net/echoserver
       run: make ARCH=${{ matrix.arch }} APP=echoserver
+    - name: Build net/httpclient
+      run: make ARCH=${{ matrix.arch }} APP=httpclient

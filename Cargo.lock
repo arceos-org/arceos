@@ -23,6 +23,8 @@ dependencies = [
 name = "arceos-echoserver"
 version = "0.1.0"
 dependencies = [
+ "axerror",
+ "axnet",
  "axruntime",
 ]
 
@@ -37,6 +39,15 @@ dependencies = [
 name = "arceos-helloworld"
 version = "0.1.0"
 dependencies = [
+ "axruntime",
+]
+
+[[package]]
+name = "arceos-httpclient"
+version = "0.1.0"
+dependencies = [
+ "axerror",
+ "axnet",
  "axruntime",
 ]
 
@@ -148,9 +159,12 @@ name = "axnet"
 version = "0.1.0"
 dependencies = [
  "axdriver",
+ "axerror",
  "axhal",
+ "cfg-if",
  "driver_common",
  "driver_net",
+ "lazy_init",
  "log",
  "smoltcp",
  "spin",
