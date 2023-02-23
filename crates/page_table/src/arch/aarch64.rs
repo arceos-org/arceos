@@ -6,7 +6,7 @@ pub struct A64PagingMetaData;
 
 impl const PagingMetaData for A64PagingMetaData {
     const LEVELS: usize = 4;
-    const PA_MAX_BITS: usize = 40;
+    const PA_MAX_BITS: usize = 48;
     const VA_MAX_BITS: usize = 48;
 
     fn vaddr_is_valid(vaddr: usize) -> bool {
