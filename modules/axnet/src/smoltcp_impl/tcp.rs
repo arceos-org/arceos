@@ -1,6 +1,6 @@
-use axerror::{ax_err, AxError, AxResult};
+use axerror::{ax_err, ax_err_type, AxError, AxResult};
 use smoltcp::iface::SocketHandle;
-use smoltcp::socket::tcp::{self, State};
+use smoltcp::socket::tcp::{self, ConnectError, ListenError, RecvError, State};
 use smoltcp::wire::IpAddress;
 use spin::Mutex;
 
@@ -39,7 +39,14 @@ impl TcpSocket {
             SOCKET_SET.with_socket_mut::<tcp::Socket, _, _>(self.handle, |socket| {
                 socket
                     .connect(iface.lock().context(), addr, local_port)
-                    .expect("TODO");
+                    .or_else(|e| match e {
+                        ConnectError::InvalidState => {
+                            ax_err!(AlreadyExists, "socket connect() failed")
+                        }
+                        ConnectError::Unaddressable => {
+                            ax_err!(InvalidParam, "socket connect() failed")
+                        }
+                    })?;
                 Ok((socket.local_endpoint(), socket.remote_endpoint()))
             })?;
 
@@ -78,7 +85,12 @@ impl TcpSocket {
         }
 
         SOCKET_SET.with_socket_mut::<tcp::Socket, _, _>(self.handle, |socket| {
-            socket.listen(self.local_addr.unwrap()).expect("TODO");
+            socket
+                .listen(self.local_addr.unwrap())
+                .or_else(|e| match e {
+                    ListenError::InvalidState => ax_err!(AlreadyExists, "socket listen() failed"),
+                    ListenError::Unaddressable => ax_err!(InvalidParam, "socket listen() failed"),
+                })?;
             debug!(
                 "socket {}: listening on {}",
                 self.handle,
@@ -116,7 +128,9 @@ impl TcpSocket {
 
                 // create a new socket for next connection
                 let mut socket = SocketSet::new_tcp_socket();
-                socket.listen(self.local_addr.unwrap()).expect("TODO");
+                socket
+                    .listen(self.local_addr.unwrap())
+                    .map_err(|_| AxError::BadState)?;
                 self.handle = SOCKET_SET.add(socket);
 
                 return Ok(ret);
@@ -146,8 +160,11 @@ impl TcpSocket {
                     Ok(0)
                 } else if socket.can_recv() {
                     // data available
-                    let len = socket.recv_slice(buf).expect("TODO");
-                    Ok(len)
+                    match socket.recv_slice(buf) {
+                        Ok(len) => Ok(len),
+                        Err(RecvError::Finished) => Ok(0),
+                        Err(_) => ax_err!(ConnectionRefused, "socket recv() failed"),
+                    }
                 } else {
                     // no more data
                     Err(AxError::ResourceBusy)
@@ -172,7 +189,9 @@ impl TcpSocket {
                     ax_err!(NotConnected, "socket send() failed")
                 } else if socket.can_send() {
                     // connected, and the tx buffer is not full
-                    let len = socket.send_slice(buf).expect("TODO");
+                    let len = socket
+                        .send_slice(buf)
+                        .map_err(|_| ax_err_type!(ConnectionRefused, "socket send() failed"))?;
                     Ok(len)
                 } else {
                     // tx buffer is full

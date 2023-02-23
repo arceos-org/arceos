@@ -12,6 +12,8 @@ pub enum AxError {
     AlreadyExists,
     /// Bad address.
     BadAddress,
+    /// Bad internal state.
+    BadState,
     /// The connection was refused by the remote server,
     ConnectionRefused,
     /// Invalid parameter/argument.
@@ -64,7 +66,7 @@ impl From<AxError> for LinuxError {
         use AxError::*;
         match e {
             AlreadyExists => LinuxError::EEXIST,
-            BadAddress => LinuxError::EFAULT,
+            BadAddress | BadState => LinuxError::EFAULT,
             ConnectionRefused => LinuxError::ECONNREFUSED,
             InvalidParam => LinuxError::EINVAL,
             Io => LinuxError::EIO,
