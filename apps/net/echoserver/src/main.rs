@@ -12,6 +12,9 @@ use axerror::AxResult;
 use axnet::io::{Read, Write};
 use axnet::{IpAddr, TcpListener, TcpStream};
 
+const LOCAL_IP: &str = "10.0.2.15";
+const LOCAL_PORT: u16 = 5555;
+
 fn reverse(buf: &[u8]) -> Vec<u8> {
     let mut lines = buf
         .split(|&b| b == b'\n')
@@ -35,7 +38,7 @@ fn echo_server(mut stream: TcpStream) -> AxResult {
 }
 
 fn accept_loop() -> AxResult {
-    let (addr, port) = (IpAddr::from_str("10.0.2.15").unwrap(), 5555);
+    let (addr, port) = (IpAddr::from_str(LOCAL_IP).unwrap(), LOCAL_PORT);
     let mut listener = TcpListener::bind((addr, port).into())?;
     println!("listen on: {}", listener.local_addr().unwrap());
 
