@@ -9,7 +9,7 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 [features]
 alloc = ["dep:axalloc"]
 paging = ["alloc", "axhal/paging"]
-multitask = ["alloc", "dep:axtask"]
+multitask = ["alloc", "axtask/multitask"]
 
 fs = ["alloc", "paging", "axdriver/virtio-blk"] # TODO: remove "paging"
 net = ["alloc", "paging", "axdriver/virtio-net", "dep:axnet"]

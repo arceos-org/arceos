@@ -8,5 +8,6 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 
 [dependencies]
 axnet = { path = "../../../modules/axnet" }
+axtask = { path = "../../../modules/axtask" }
 axerror = { path = "../../../modules/axerror" }
-axruntime = { path = "../../../modules/axruntime", features = ["paging", "net"] }
+axruntime = { path = "../../../modules/axruntime", features = ["paging", "multitask", "net"] }

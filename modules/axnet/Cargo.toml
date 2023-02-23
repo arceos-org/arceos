@@ -18,6 +18,7 @@ driver_common = { path = "../../crates/driver_common" }
 driver_net = { path = "../../crates/driver_net" }
 lazy_init = { path = "../../crates/lazy_init" }
 axhal = { path = "../axhal" }
+axtask = { path = "../axtask", default-features = false }
 axdriver = { path = "../axdriver" }
 axerror = { path = "../axerror" }
 

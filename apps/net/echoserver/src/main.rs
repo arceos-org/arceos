@@ -43,8 +43,10 @@ fn accept_loop() -> AxResult {
         match listener.accept() {
             Ok((stream, addr)) => {
                 println!("new client: {}", addr);
-                echo_server(stream)?;
-                println!("client closed");
+                axtask::spawn(|| match echo_server(stream) {
+                    Err(e) => println!("client connection error: {:?}", e),
+                    Ok(()) => println!("client closed successfully"),
+                });
             }
             Err(e) => return Err(e),
         }

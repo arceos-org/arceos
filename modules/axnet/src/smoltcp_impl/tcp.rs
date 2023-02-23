@@ -56,7 +56,7 @@ impl TcpSocket {
                 .with_socket_mut::<tcp::Socket, _, _>(self.handle, |socket| socket.state());
             // TODO: check host unreachable
             match state {
-                State::SynSent => continue,
+                State::SynSent => axtask::yield_now(),
                 State::Established => {
                     self.local_addr = local_addr;
                     self.peer_addr = peer_addr;
@@ -135,6 +135,7 @@ impl TcpSocket {
 
                 return Ok(ret);
             }
+            axtask::yield_now();
         }
     }
 
@@ -174,7 +175,7 @@ impl TcpSocket {
                     SOCKET_SET.poll_interfaces();
                     return Ok(n);
                 }
-                Err(AxError::ResourceBusy) => {}
+                Err(AxError::ResourceBusy) => axtask::yield_now(),
                 Err(e) => return Err(e),
             }
         }
@@ -202,7 +203,7 @@ impl TcpSocket {
                     SOCKET_SET.poll_interfaces();
                     return Ok(n);
                 }
-                Err(AxError::ResourceBusy) => {}
+                Err(AxError::ResourceBusy) => axtask::yield_now(),
                 Err(e) => return Err(e),
             }
         }

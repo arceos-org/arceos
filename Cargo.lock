@@ -26,6 +26,7 @@ dependencies = [
  "axerror",
  "axnet",
  "axruntime",
+ "axtask",
 ]
 
 [[package]]
@@ -161,6 +162,7 @@ dependencies = [
  "axdriver",
  "axerror",
  "axhal",
+ "axtask",
  "cfg-if",
  "driver_common",
  "driver_net",

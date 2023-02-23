@@ -7,8 +7,10 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-sched_fifo = []
-sched_rr = []
+multitask = []  # without the feature, can still use the empty yield_now()
+
+sched_fifo = ["multitask"]
+sched_rr = ["multitask"]
 default = ["sched_fifo"]
 
 [dependencies]
