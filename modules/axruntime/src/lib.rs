@@ -6,8 +6,6 @@ extern crate axlog;
 #[cfg(not(test))]
 mod lang_items;
 
-pub use axlog::{__print_impl, print, println};
-
 const LOGO: &str = r#"
        d8888                            .d88888b.   .d8888b.
       d88888                           d88P" "Y88b d88P  Y88b

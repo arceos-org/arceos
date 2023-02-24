@@ -4,9 +4,6 @@
 extern crate log;
 extern crate alloc;
 
-pub mod io;
-mod tcp;
-
 cfg_if::cfg_if! {
     if #[cfg(feature = "smoltcp")] {
         mod smoltcp_impl;
@@ -14,7 +11,7 @@ cfg_if::cfg_if! {
     }
 }
 
-pub use self::tcp::{TcpListener, TcpStream};
+pub use self::net_impl::TcpSocket;
 pub use smoltcp::wire::{IpAddress as IpAddr, IpEndpoint as SocketAddr, Ipv4Address as Ipv4Addr};
 
 pub fn init_network() {

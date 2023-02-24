@@ -14,6 +14,7 @@ pub struct TcpSocket {
 }
 
 impl TcpSocket {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         let socket = SocketSetWrapper::new_tcp_socket();
         let handle = SOCKET_SET.add(socket);

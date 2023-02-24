@@ -32,4 +32,6 @@ members = [
     "modules/axnet",
     "modules/axruntime",
     "modules/axtask",
+
+    "ulib/libax",
 ]

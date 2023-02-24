@@ -1,10 +1,8 @@
 #![no_std]
 #![no_main]
 
-#[macro_use]
-extern crate axruntime;
-
 use core::arch::asm;
+use libax::println;
 
 fn rasie_break_exception() {
     unsafe {

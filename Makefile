@@ -24,25 +24,25 @@ export MODE
 export LOG
 
 # Paths
-kernel_package := arceos-$(APP)
-kernel_elf := target/$(target)/$(MODE)/$(kernel_package)
+app_package := arceos-$(APP)
+kernel_elf := target/$(target)/$(MODE)/$(app_package)
 kernel_bin := $(kernel_elf).bin
 
 # Cargo features and build args
 
-features := axruntime/platform-$(PLATFORM)
+features := libax/platform-$(PLATFORM)
 
 ifneq ($(filter $(LOG),off error warn info debug trace),)
-  features += axruntime/log-level-$(LOG)
+  features += libax/log-level-$(LOG)
 else
   $(error "LOG" must be one of "off", "error", "warn", "info", "debug", "trace")
 endif
 
 ifeq ($(FS), on)
-  features += axruntime/fs
+  features += libax/fs
 endif
 ifeq ($(NET), on)
-  features += axruntime/net
+  features += libax/net
 endif
 
 build_args := --no-default-features --features "$(features)" --target $(target) -Zbuild-std=core,alloc -Zbuild-std-features=compiler-builtins-mem
@@ -50,7 +50,7 @@ ifeq ($(MODE), release)
   build_args += --release
 endif
 
-build_args += -p $(kernel_package)
+build_args += -p $(app_package)
 
 # Binutils
 OBJDUMP := rust-objdump -d --print-imm-hex --x86-asm-syntax=intel
@@ -78,7 +78,6 @@ ifeq ($(FS), on)
     -device virtio-blk-device,drive=disk0 \
     -drive id=disk0,if=none,format=raw,file=disk.img
 endif
-
 ifeq ($(NET), on)
   qemu_args += \
     -device virtio-net-device,netdev=net0 \

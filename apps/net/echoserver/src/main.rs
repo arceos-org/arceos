@@ -2,15 +2,15 @@
 #![no_main]
 
 #[macro_use]
-extern crate axruntime;
+extern crate libax;
 extern crate alloc;
 
 use alloc::vec::Vec;
 use core::str::FromStr;
 
-use axerror::AxResult;
-use axnet::io::{Read, Write};
-use axnet::{IpAddr, TcpListener, TcpStream};
+use libax::io::{self, prelude::*};
+use libax::net::{IpAddr, TcpListener, TcpStream};
+use libax::task;
 
 const LOCAL_IP: &str = "10.0.2.15";
 const LOCAL_PORT: u16 = 5555;
@@ -26,7 +26,7 @@ fn reverse(buf: &[u8]) -> Vec<u8> {
     lines.join(&b'\n')
 }
 
-fn echo_server(mut stream: TcpStream) -> AxResult {
+fn echo_server(mut stream: TcpStream) -> io::Result {
     let mut buf = [0u8; 1024];
     loop {
         let n = stream.read(&mut buf)?;
@@ -37,7 +37,7 @@ fn echo_server(mut stream: TcpStream) -> AxResult {
     }
 }
 
-fn accept_loop() -> AxResult {
+fn accept_loop() -> io::Result {
     let (addr, port) = (IpAddr::from_str(LOCAL_IP).unwrap(), LOCAL_PORT);
     let mut listener = TcpListener::bind((addr, port).into())?;
     println!("listen on: {}", listener.local_addr().unwrap());
@@ -46,7 +46,7 @@ fn accept_loop() -> AxResult {
         match listener.accept() {
             Ok((stream, addr)) => {
                 println!("new client: {}", addr);
-                axtask::spawn(|| match echo_server(stream) {
+                task::spawn(|| match echo_server(stream) {
                     Err(e) => println!("client connection error: {:?}", e),
                     Ok(()) => println!("client closed successfully"),
                 });

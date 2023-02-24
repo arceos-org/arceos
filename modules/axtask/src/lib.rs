@@ -51,6 +51,11 @@ pub fn init_scheduler() {
     let rq = AxRunQueue::new();
     unsafe { CURRENT_TASK.init_by(rq.init_task().clone()) };
     RUN_QUEUE.init_by(spin::Mutex::new(rq));
+    if cfg!(feature = "sched_fifo") {
+        info!("  use FIFO scheduler.");
+    } else if cfg!(feature = "sched_rr") {
+        info!("  use Round-robin scheduler.");
+    }
 }
 
 pub fn spawn<F>(f: F)

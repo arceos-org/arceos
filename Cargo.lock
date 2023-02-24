@@ -23,48 +23,42 @@ dependencies = [
 name = "arceos-echoserver"
 version = "0.1.0"
 dependencies = [
- "axerror",
- "axnet",
- "axruntime",
- "axtask",
+ "libax",
 ]
 
 [[package]]
 name = "arceos-exception"
 version = "0.1.0"
 dependencies = [
- "axruntime",
+ "libax",
 ]
 
 [[package]]
 name = "arceos-helloworld"
 version = "0.1.0"
 dependencies = [
- "axruntime",
+ "libax",
 ]
 
 [[package]]
 name = "arceos-httpclient"
 version = "0.1.0"
 dependencies = [
- "axerror",
- "axnet",
- "axruntime",
+ "libax",
 ]
 
 [[package]]
 name = "arceos-memtest"
 version = "0.1.0"
 dependencies = [
- "axruntime",
+ "libax",
 ]
 
 [[package]]
 name = "arceos-multitask"
 version = "0.1.0"
 dependencies = [
- "axruntime",
- "axtask",
+ "libax",
 ]
 
 [[package]]
@@ -345,6 +339,19 @@ dependencies = [
 [[package]]
 name = "lazy_init"
 version = "0.1.0"
+
+[[package]]
+name = "libax"
+version = "0.1.0"
+dependencies = [
+ "axdriver",
+ "axerror",
+ "axhal",
+ "axlog",
+ "axnet",
+ "axruntime",
+ "axtask",
+]
 
 [[package]]
 name = "linked_list"

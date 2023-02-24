@@ -1,0 +1,46 @@
+[package]
+name = "libax"
+version = "0.1.0"
+edition = "2021"
+authors = ["Yuekai Jia <equation618@gmail.com>"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+# Memory
+alloc = ["axruntime/alloc"]
+paging = ["axruntime/paging"]
+
+# Multi-task
+multitask = ["axruntime/multitask", "axtask/multitask"]
+sched_fifo = ["axtask/sched_fifo"]
+sched_rr = ["axtask/sched_rr"]
+
+# Networking
+net = ["axruntime/net", "dep:axnet"]
+
+# File system
+fs = ["axruntime/fs"]
+
+# Logging
+log-level-off = ["axlog/log-level-off"]
+log-level-error = ["axlog/log-level-error"]
+log-level-warn = ["axlog/log-level-warn"]
+log-level-info = ["axlog/log-level-info"]
+log-level-debug = ["axlog/log-level-debug"]
+log-level-trace = ["axlog/log-level-trace"]
+
+# Platform
+platform-qemu-virt-riscv = ["axhal/platform-qemu-virt-riscv", "axdriver?/bus-mmio"]
+platform-qemu-virt-aarch64 = ["axhal/platform-qemu-virt-aarch64", "axdriver?/bus-mmio"]
+
+default = ["axtask?/sched_fifo"]
+
+[dependencies]
+axdriver = { path = "../../modules/axdriver", optional = true }
+axerror = { path = "../../modules/axerror" }
+axhal = { path = "../../modules/axhal" }
+axlog = { path = "../../modules/axlog" }
+axnet = { path = "../../modules/axnet", optional = true }
+axruntime = { path = "../../modules/axruntime" }
+axtask = { path = "../../modules/axtask", default-features = false, optional = true }

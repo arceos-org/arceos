@@ -7,6 +7,4 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axnet = { path = "../../../modules/axnet" }
-axerror = { path = "../../../modules/axerror" }
-axruntime = { path = "../../../modules/axruntime", features = ["paging", "net"] }
+libax = { path = "../../../ulib/libax", features = ["paging", "net"] }

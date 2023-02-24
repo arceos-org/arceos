@@ -2,7 +2,7 @@
 #![no_main]
 
 #[macro_use]
-extern crate axruntime;
+extern crate libax;
 extern crate alloc;
 
 use alloc::collections::BTreeMap;
