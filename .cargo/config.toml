@@ -3,10 +3,10 @@ lto = true
 
 [target.riscv64gc-unknown-none-elf]
 rustflags = [
-    "-Clink-arg=-Tmodules/axhal/linker.lds"
+    "-Clink-arg=-Tmodules/axhal/linker_riscv64.lds"
 ]
 
 [target.aarch64-unknown-none-softfloat]
 rustflags = [
-    "-Clink-arg=-Tmodules/axhal/linker.lds"
+    "-Clink-arg=-Tmodules/axhal/linker_aarch64.lds"
 ]

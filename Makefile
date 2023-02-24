@@ -3,6 +3,7 @@ ARCH ?= riscv64
 MODE ?= release
 LOG ?= warn
 APP ?= helloworld
+APP_LANG ?= rust
 
 FS ?= off
 NET ?= off
@@ -87,8 +88,12 @@ endif
 build: $(kernel_bin)
 
 kernel_elf:
-	@echo Arch: $(ARCH), Platform: $(PLATFORM)
+	@echo Arch: $(ARCH), Platform: $(PLATFORM), Language: $(APP_LANG)
+ifeq ($(APP_LANG), rust)
 	cargo build $(build_args)
+else ifeq ($(APP_LANG), c)
+	make -C ulib/c_libax ARCH=$(ARCH) MODE=$(MODE) APP=$(APP) FEATURES="$(features)"
+endif
 
 $(kernel_bin): kernel_elf
 	@$(OBJCOPY) $(kernel_elf) --strip-all -O binary $@
@@ -103,6 +108,7 @@ justrun:
 
 clean:
 	cargo clean
+	make -C ulib/c_libax clean
 
 clippy:
 	cargo clippy --target $(target)
@@ -111,6 +117,6 @@ fmt:
 	cargo fmt --all
 
 test:
-	cargo test --workspace --exclude "arceos-*" -- --nocapture
+	cargo test --workspace --exclude "arceos-*" --exclude "libax_bindings" -- --nocapture
 
 .PHONY: build kernel_elf disasm run justrun clean clippy fmt test

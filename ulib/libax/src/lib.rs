@@ -1,6 +1,6 @@
 #![cfg_attr(not(test), no_std)]
 
-pub use axlog::{debug, error, info, println, trace, warn};
+pub use axlog::{debug, error, info, print, println, trace, warn};
 
 #[cfg(feature = "alloc")]
 extern crate alloc;

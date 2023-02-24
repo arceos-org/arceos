@@ -17,4 +17,4 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: test
-        args: --workspace --exclude "arceos-*" --no-fail-fast -- --nocapture
+        args: --workspace --exclude "arceos-*" --exclude "libax_bindings" --no-fail-fast -- --nocapture
