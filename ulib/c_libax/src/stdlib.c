@@ -18,6 +18,6 @@ int rand(void)
 
 _Noreturn void abort(void)
 {
-    panic();
+    ax_panic();
     __builtin_unreachable();
 }

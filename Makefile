@@ -92,7 +92,8 @@ kernel_elf:
 ifeq ($(APP_LANG), rust)
 	cargo build $(build_args)
 else ifeq ($(APP_LANG), c)
-	make -C ulib/c_libax ARCH=$(ARCH) MODE=$(MODE) APP=$(APP) FEATURES="$(features)"
+	@rm -f $(kernel_elf)
+	@make -C ulib/c_libax ARCH=$(ARCH) MODE=$(MODE) APP=$(APP) FEATURES="$(features)"
 endif
 
 $(kernel_bin): kernel_elf

@@ -14,11 +14,17 @@ else
 endif
 
 # Variables for Rust
+app_path := ../../apps/c/$(APP)
 rust_lib_name := libax_bindings
-rust_build_path := ../../target/$(target)/$(MODE)/
+rust_build_path := ../../target/$(target)/$(MODE)
 rust_lib := $(rust_build_path)/lib$(rust_lib_name).a
 
-crago_build_args := --no-default-features --features "$(FEATURES)" --target $(target) -Zbuild-std=core,alloc -Zbuild-std-features=compiler-builtins-mem
+features := $(FEATURES)
+ifneq (,$(wildcard $(app_path)/features.txt))	# check features.txt exists
+  features += $(addprefix libax/,$(shell cat $(app_path)/features.txt))
+endif
+
+crago_build_args := --no-default-features --features "$(features)" --target $(target) -Zbuild-std=core,alloc -Zbuild-std-features=compiler-builtins-mem
 ifeq ($(MODE), release)
   crago_build_args += --release
 endif
@@ -43,9 +49,14 @@ ifeq ($(MODE), release)
   CFLAGS += -O3
 endif
 
+ifeq ($(ARCH), riscv64)
+  CFLAGS += -march=rv64gc -mabi=lp64d -mcmodel=medany
+else ifeq ($(ARCH), aarch64)
+  CFLAGS += -mgeneral-regs-only
+endif
+
 # Variables for app
 app_package := arceos-$(APP)
-app_path := ../../apps/c/$(APP)
 app_src := $(app_path)/main.c
 app_obj := $(rust_build_path)/$(app_package).o
 app_elf := $(rust_build_path)/$(app_package)
@@ -88,7 +99,7 @@ app:
 endif
 
 clean:
-	rm -rf $(obj_dir)
-	cargo clean
+	rm -rf build_*
+	cargo clean -p $(rust_lib_name)
 
 .PHONY: all c_lib rust_lib app clean

@@ -21,7 +21,7 @@ static int __write_buffer()
 {
     if (buffer_len == 0)
         return 0;
-    int r = print_str(buffer, buffer_len);
+    int r = ax_print_str(buffer, buffer_len);
     return r;
 }
 

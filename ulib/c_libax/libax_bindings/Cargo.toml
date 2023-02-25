@@ -10,7 +10,7 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 crate-type = ["staticlib"]
 
 [dependencies]
-libax = { path = "../../libax" }
+libax = { path = "../../libax", default-features = false }
 
 [build-dependencies]
 cbindgen = "0.24"
