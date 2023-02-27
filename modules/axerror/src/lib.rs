@@ -10,6 +10,8 @@ pub use linux_errno::LinuxError;
 pub enum AxError {
     /// An entity already exists, often a file.
     AlreadyExists,
+    /// Try again, often for non-blocking APIs.
+    Again,
     /// Bad address.
     BadAddress,
     /// Bad internal state.
@@ -66,6 +68,7 @@ impl From<AxError> for LinuxError {
         use AxError::*;
         match e {
             AlreadyExists => LinuxError::EEXIST,
+            Again => LinuxError::EAGAIN,
             BadAddress | BadState => LinuxError::EFAULT,
             ConnectionRefused => LinuxError::ECONNREFUSED,
             InvalidParam => LinuxError::EINVAL,

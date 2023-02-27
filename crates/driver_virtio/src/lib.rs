@@ -70,7 +70,7 @@ const fn as_dev_err(e: virtio_drivers::Error) -> DevError {
     use virtio_drivers::Error::*;
     match e {
         QueueFull => DevError::BadState,
-        NotReady => DevError::ResourceBusy,
+        NotReady => DevError::Again,
         WrongToken => DevError::BadState,
         AlreadyUsed => DevError::AlreadyExists,
         InvalidParam => DevError::InvalidParam,

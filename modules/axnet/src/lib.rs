@@ -1,4 +1,5 @@
 #![no_std]
+#![feature(new_uninit)]
 
 #[macro_use]
 extern crate log;

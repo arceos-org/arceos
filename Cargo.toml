@@ -7,6 +7,7 @@ members = [
     "apps/multitask",
     "apps/net/echoserver",
     "apps/net/httpclient",
+    "apps/net/httpserver",
 
     "crates/allocator",
     "crates/crate_interface",

@@ -13,6 +13,8 @@ pub enum DeviceType {
 pub enum DevError {
     /// An entity already exists.
     AlreadyExists,
+    /// Try again, for non-blocking APIs.
+    Again,
     /// Bad internal state.
     BadState,
     /// Invalid parameter/argument.

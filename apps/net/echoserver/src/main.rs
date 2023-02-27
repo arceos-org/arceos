@@ -42,17 +42,19 @@ fn accept_loop() -> io::Result {
     let mut listener = TcpListener::bind((addr, port).into())?;
     println!("listen on: {}", listener.local_addr().unwrap());
 
+    let mut i = 0;
     loop {
         match listener.accept() {
             Ok((stream, addr)) => {
-                println!("new client: {}", addr);
-                task::spawn(|| match echo_server(stream) {
-                    Err(e) => println!("client connection error: {:?}", e),
-                    Ok(()) => println!("client closed successfully"),
+                info!("new client {}: {}", i, addr);
+                task::spawn(move || match echo_server(stream) {
+                    Err(e) => error!("client connection error: {:?}", e),
+                    Ok(()) => info!("client {} closed successfully", i),
                 });
             }
             Err(e) => return Err(e),
         }
+        i += 1;
     }
 }
 

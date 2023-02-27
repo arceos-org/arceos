@@ -48,6 +48,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "arceos-httpserver"
+version = "0.1.0"
+dependencies = [
+ "libax",
+]
+
+[[package]]
 name = "arceos-memtest"
 version = "0.1.0"
 dependencies = [
@@ -844,7 +851,7 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 [[package]]
 name = "virtio-drivers"
 version = "0.3.0"
-source = "git+https://github.com/rcore-os/virtio-drivers.git?rev=af3c127#af3c127b408673ed55c400bbed28b478e286648c"
+source = "git+https://github.com/rcore-os/virtio-drivers.git?rev=f04e19d#f04e19d3fa4b327554a5e5c609cac1133b8c4c40"
 dependencies = [
  "bitflags",
  "log",
