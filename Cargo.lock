@@ -142,7 +142,6 @@ dependencies = [
  "aarch64-cpu",
  "axalloc",
  "axconfig",
- "axerror",
  "bitflags",
  "cfg-if",
  "lazy_init",
@@ -851,7 +850,7 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 [[package]]
 name = "virtio-drivers"
 version = "0.3.0"
-source = "git+https://github.com/rcore-os/virtio-drivers.git?rev=f04e19d#f04e19d3fa4b327554a5e5c609cac1133b8c4c40"
+source = "git+https://github.com/rcore-os/virtio-drivers.git?rev=0491154#0491154bfc2f39a976ec77e6abec2844cdba6545"
 dependencies = [
  "bitflags",
  "log",

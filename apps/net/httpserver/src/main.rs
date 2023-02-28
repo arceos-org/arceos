@@ -63,7 +63,7 @@ fn http_server(mut stream: TcpStream) -> io::Result {
 fn accept_loop() -> io::Result {
     let (addr, port) = (IpAddr::from_str(LOCAL_IP).unwrap(), LOCAL_PORT);
     let mut listener = TcpListener::bind((addr, port).into())?;
-    println!("listen on: {}", listener.local_addr().unwrap());
+    println!("listen on: http://{}/", listener.local_addr().unwrap());
 
     let mut i = 0;
     loop {

@@ -53,6 +53,8 @@ jobs:
       run: make ARCH=${{ matrix.arch }} APP=echoserver
     - name: Build net/httpclient
       run: make ARCH=${{ matrix.arch }} APP=httpclient
+    - name: Build net/httpserver
+      run: make ARCH=${{ matrix.arch }} APP=httpserver
 
     - name: Install musl toolchain
       run: |
