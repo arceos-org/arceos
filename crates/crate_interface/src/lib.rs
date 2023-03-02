@@ -1,102 +1,158 @@
-#![cfg_attr(not(test), no_std)]
+#![feature(iter_next_chunk)]
 
-#[macro_export]
-macro_rules! define_interface {
-    (
-        $(#[$attr:ident $($args:tt)*])*
-        $vis:vis trait $if_name:ident {
-            $($fn:tt)*
-        }
-    ) => {
-        $(#[$attr $($args)*])*
-        $vis trait $if_name: Send + Sync {
-            $($fn)*
-        }
+use proc_macro::TokenStream;
+use proc_macro2::Span;
+use quote::{format_ident, quote};
+use syn::{Error, FnArg, ImplItem, ImplItemMethod, ItemImpl, ItemTrait, TraitItem, Type};
 
-        mod __crate_interface_private {
-            use super::$if_name;
-            struct __DummyInterface;
-            impl $if_name for __DummyInterface {
-                __impl_dummy_interface!($if_name, $($fn)*);
-            }
-
-            pub(super) static mut __IF_INSTANCE: &dyn $if_name = &__DummyInterface;
-
-            pub(super) fn __get_instance() -> &'static dyn $if_name {
-                unsafe{ __IF_INSTANCE }
-            }
-        }
-
-        $vis fn set_interface(i: &'static dyn $if_name) {
-            unsafe { __crate_interface_private::__IF_INSTANCE = i };
-        }
-
-    };
+fn compiler_error(err: Error) -> TokenStream {
+    err.to_compile_error().into()
 }
 
-#[macro_export]
-macro_rules! call_interface {
-    ($fn:ident $(, $($arg:tt)+)? ) => {
-        __crate_interface_private::__get_instance().$fn( $($($arg)+)? )
-    };
-}
+#[proc_macro_attribute]
+pub fn def_interface(attr: TokenStream, item: TokenStream) -> TokenStream {
+    if !attr.is_empty() {
+        return compiler_error(Error::new(
+            Span::call_site(),
+            "expect an empty attribute: `#[crate_interface_def]`",
+        ));
+    }
 
-#[doc(hidden)]
-#[macro_export]
-macro_rules! __impl_dummy_interface {
-    (
-        $if_name:ident,
-        $(#[$attr:ident $($args:tt)*])*
-        fn $fn:ident ( &self $(, $($arg:tt)+)? ) $( -> $ret:ty )?;
-        $($tail:tt)*
-    ) => {
-        $(#[$attr $($args)*])*
-        #[allow(unused_variables)]
-        fn $fn ( &self $(, $($arg)+)? ) $( -> $ret )? {
-            unimplemented!("{}::{}()", stringify!($if_name), stringify!($fn));
-        }
-        __impl_dummy_interface!($if_name, $($tail)*);
-    };
-    (
-        $if_name:ident,
-        $(#[$attr:ident $($args:tt)*])*
-        fn $fn:ident ( &self $(, $($arg:tt)+)? ) $( -> $ret:ty )? $body:block
-        $($tail:tt)*
-    ) => {
-        $(#[$attr $($args)*])*
-        #[allow(unused_variables)]
-        fn $fn ( &self $(, $($arg)+)? ) $( -> $ret )? $body
-        __impl_dummy_interface!($if_name, $($tail)*);
-    };
-    ( $if_name:ident, ) => {};
-}
+    let ast = syn::parse_macro_input!(item as ItemTrait);
+    let trait_name = &ast.ident;
 
-#[cfg(test)]
-mod tests {
-    define_interface! {
-        trait SimpleIf {
-            fn foo(&self) -> u32 {
-                123
+    let mut extern_fn_list = vec![];
+    for item in &ast.items {
+        if let TraitItem::Method(method) = item {
+            let mut sig = method.sig.clone();
+            let fn_name = &sig.ident;
+            sig.ident = format_ident!("__{}_{}", trait_name, fn_name);
+            sig.inputs = syn::punctuated::Punctuated::new();
+
+            for arg in &method.sig.inputs {
+                if let FnArg::Typed(_) = arg {
+                    sig.inputs.push(arg.clone());
+                }
             }
-            fn bar(&self, a: &[u8]);
+
+            let extern_fn = quote! {
+                #sig;
+            };
+            extern_fn_list.push(extern_fn);
         }
     }
 
-    struct SimpleIfImpl;
-
-    impl SimpleIf for SimpleIfImpl {
-        fn foo(&self) -> u32 {
-            456
+    quote! {
+        #ast
+        extern "Rust" {
+            #(#extern_fn_list)*
         }
-        fn bar(&self, a: &[u8]) {
-            assert_eq!(a[1], 0x24);
+    }
+    .into()
+}
+
+#[proc_macro_attribute]
+pub fn impl_interface(attr: TokenStream, item: TokenStream) -> TokenStream {
+    if !attr.is_empty() {
+        return compiler_error(Error::new(
+            Span::call_site(),
+            "expect an empty attribute: `#[crate_interface_impl]`",
+        ));
+    }
+
+    let mut ast = syn::parse_macro_input!(item as ItemImpl);
+    let trait_name = if let Some((_, path, _)) = &ast.trait_ {
+        &path.segments.last().unwrap().ident
+    } else {
+        return compiler_error(Error::new_spanned(ast, "expect a trait implementation"));
+    };
+    let impl_name = if let Type::Path(path) = &ast.self_ty.as_ref() {
+        path.path.get_ident().unwrap()
+    } else {
+        return compiler_error(Error::new_spanned(ast, "expect a trait implementation"));
+    };
+
+    for item in &mut ast.items {
+        if let ImplItem::Method(method) = item {
+            let (attrs, vis, sig, stmts) =
+                (&method.attrs, &method.vis, &method.sig, &method.block.stmts);
+            let fn_name = &sig.ident;
+            let extern_fn_name = format_ident!("__{}_{}", trait_name, fn_name).to_string();
+
+            let mut new_sig = sig.clone();
+            new_sig.ident = format_ident!("{}", extern_fn_name);
+            new_sig.inputs = syn::punctuated::Punctuated::new();
+
+            let mut args = vec![];
+            let mut has_self = false;
+            for arg in &sig.inputs {
+                match arg {
+                    FnArg::Receiver(_) => has_self = true,
+                    FnArg::Typed(ty) => {
+                        args.push(ty.pat.clone());
+                        new_sig.inputs.push(arg.clone());
+                    }
+                }
+            }
+
+            let call_impl = if has_self {
+                quote! {
+                    let IMPL: #impl_name = #impl_name;
+                    IMPL.#fn_name( #(#args),* )
+                }
+            } else {
+                quote! { #impl_name::#fn_name( #(#args),* ) }
+            };
+
+            let item = quote! {
+                #(#attrs)*
+                #vis
+                #sig
+                {
+                    {
+                        #[export_name = #extern_fn_name]
+                        extern "Rust" #new_sig {
+                            #call_impl
+                        }
+                    }
+                    #(#stmts)*
+                }
+            }
+            .into();
+            *method = syn::parse_macro_input!(item as ImplItemMethod);
         }
     }
 
-    #[test]
-    fn test_define_interface() {
-        set_interface(&SimpleIfImpl);
-        assert_eq!(call_interface!(foo), 456);
-        call_interface!(bar, &[0x23, 0x24, 0x25]);
+    quote! { #ast }.into()
+}
+
+#[proc_macro]
+pub fn call_interface(item: TokenStream) -> TokenStream {
+    parse_call_interface(item)
+        .unwrap_or_else(|msg| compiler_error(Error::new(Span::call_site(), msg)))
+}
+
+fn parse_call_interface(item: TokenStream) -> Result<TokenStream, String> {
+    let mut iter = item.into_iter();
+    let tt = iter
+        .next_chunk::<4>()
+        .or(Err("expect `Trait::func`"))?
+        .map(|t| t.to_string());
+
+    let trait_name = &tt[0];
+    if tt[1] != ":" || tt[2] != ":" {
+        return Err("misssing `::`".into());
     }
+    let fn_name = &tt[3];
+    let extern_fn_name = format!("__{}_{}", trait_name, fn_name);
+
+    let mut args = iter.map(|x| x.to_string()).collect::<Vec<_>>().join("");
+    if args.starts_with(',') {
+        args.remove(0);
+    }
+
+    let call = format!("unsafe {{ {}( {} ) }}", extern_fn_name, args);
+    Ok(call
+        .parse::<TokenStream>()
+        .or(Err("expect a correct argument list"))?)
 }

@@ -194,6 +194,7 @@ dependencies = [
  "axlog",
  "axnet",
  "axtask",
+ "crate_interface",
 ]
 
 [[package]]
@@ -297,6 +298,11 @@ dependencies = [
 [[package]]
 name = "crate_interface"
 version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "critical-section"

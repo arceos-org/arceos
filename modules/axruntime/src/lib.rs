@@ -23,8 +23,9 @@ extern "Rust" {
 
 struct LogIfImpl;
 
+#[crate_interface::impl_interface]
 impl axlog::LogIf for LogIfImpl {
-    fn console_write_str(&self, s: &str) {
+    fn console_write_str(s: &str) {
         use axhal::console::putchar;
         for c in s.chars() {
             match c {
@@ -36,11 +37,14 @@ impl axlog::LogIf for LogIfImpl {
             }
         }
     }
+
+    fn current_time() -> core::time::Duration {
+        axhal::time::current_time()
+    }
 }
 
 #[cfg_attr(not(test), no_mangle)]
 pub extern "C" fn rust_main() -> ! {
-    axlog::set_interface(&LogIfImpl);
     println!("{}", LOGO);
     println!(
         "\

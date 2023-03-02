@@ -1,8 +1,8 @@
 #![no_std]
 
-#[macro_use]
-extern crate crate_interface;
 extern crate log;
+
+use crate_interface::{call_interface, def_interface};
 
 use core::fmt::{self, Write};
 use core::str::FromStr;
@@ -53,19 +53,20 @@ enum ColorCode {
     BrightWhite = 97,
 }
 
-define_interface! {
-    /// Extern interfaces called in this crate.
-    pub trait LogIf {
-        /// write a string to the console.
-        fn console_write_str(&self, s: &str);
-    }
+/// Extern interfaces called in this crate.
+#[def_interface]
+pub trait LogIf {
+    /// write a string to the console.
+    fn console_write_str(s: &str);
+    /// get current time
+    fn current_time() -> core::time::Duration;
 }
 
 struct Logger;
 
 impl Write for Logger {
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        call_interface!(console_write_str, s);
+        call_interface!(LogIf::console_write_str, s);
         Ok(())
     }
 }
@@ -97,9 +98,12 @@ impl Log for Logger {
             Level::Debug => ColorCode::Cyan,
             Level::Trace => ColorCode::BrightBlack,
         };
+        let now = call_interface!(LogIf::current_time);
         __print_impl(with_color!(
             ColorCode::White,
-            "[{} {} {}\n",
+            "[{:>3}.{:06} {} {} {}\n",
+            now.as_secs(),
+            now.subsec_micros(),
             with_color!(level_color, "{:<5}", level),
             with_color!(ColorCode::White, "{}:{}]", target, line),
             with_color!(args_color, "{}", record.args()),
