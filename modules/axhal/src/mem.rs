@@ -59,19 +59,6 @@ pub(crate) const fn common_memory_regions_num() -> usize {
 
 #[allow(dead_code)]
 pub(crate) fn common_memory_region_at(idx: usize) -> Option<MemRegion> {
-    extern "C" {
-        fn stext();
-        fn etext();
-        fn srodata();
-        fn erodata();
-        fn sdata();
-        fn edata();
-        fn sbss();
-        fn ebss();
-        fn boot_stack();
-        fn boot_stack_top();
-    }
-
     let mmio_regions = axconfig::MMIO_REGIONS;
     let r = match idx {
         0 => MemRegion {
@@ -116,4 +103,25 @@ pub(crate) fn common_memory_region_at(idx: usize) -> Option<MemRegion> {
         _ => return None,
     };
     Some(r)
+}
+
+#[allow(dead_code)]
+pub(crate) fn clear_bss() {
+    unsafe {
+        core::slice::from_raw_parts_mut(sbss as usize as *mut u8, ebss as usize - sbss as usize)
+            .fill(0);
+    }
+}
+
+extern "C" {
+    fn stext();
+    fn etext();
+    fn srodata();
+    fn erodata();
+    fn sdata();
+    fn edata();
+    fn sbss();
+    fn ebss();
+    fn boot_stack();
+    fn boot_stack_top();
 }

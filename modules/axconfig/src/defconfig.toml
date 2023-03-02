@@ -1,3 +1,3 @@
-task-stack-size = "0x10000"   # 64 K
+task-stack-size = "0x40000"   # 256 K
 
 ticks-per-sec = "100"

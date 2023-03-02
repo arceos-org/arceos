@@ -108,7 +108,7 @@ unsafe impl GlobalAlloc for GlobalAllocator {
 }
 
 #[cfg_attr(all(target_os = "none", not(test)), global_allocator)]
-pub static GLOBAL_ALLOCATOR: GlobalAllocator = GlobalAllocator::new();
+static GLOBAL_ALLOCATOR: GlobalAllocator = GlobalAllocator::new();
 
 #[cfg(all(target_os = "none", not(test)))]
 #[alloc_error_handler]

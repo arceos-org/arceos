@@ -14,7 +14,6 @@ pub fn current_ticks() -> u64 {
     CNTPCT_EL0.get()
 }
 
-#[inline(never)]
 pub fn ticks_to_nanos(ticks: u64) -> u64 {
     CNTPCT_TO_NANOS_RATIO.mul_trunc(ticks)
 }

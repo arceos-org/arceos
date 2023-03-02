@@ -12,6 +12,7 @@ extern crate axlog;
 extern crate axruntime;
 
 pub mod io;
+pub mod rand;
 
 #[cfg(feature = "multitask")]
 pub mod task;

@@ -107,6 +107,11 @@ run: build justrun
 justrun:
 	$(qemu) $(qemu_args)
 
+debug: build
+	$(qemu) $(qemu_args) -s -S &
+	sleep 1
+	$(GDB) $(kernel_elf) -ex 'target remote localhost:1234'
+
 clean:
 	cargo clean
 	make -C ulib/c_libax clean

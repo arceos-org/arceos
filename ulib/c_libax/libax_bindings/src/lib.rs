@@ -7,6 +7,16 @@ use core::ffi::{c_char, c_int};
 extern crate libax;
 
 #[no_mangle]
+pub extern "C" fn ax_srand(seed: u32) {
+    libax::rand::srand(seed);
+}
+
+#[no_mangle]
+pub extern "C" fn ax_rand_u32() -> u32 {
+    libax::rand::rand_u32()
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn ax_print_str(buf: *const c_char, count: usize) -> c_int {
     let str = core::slice::from_raw_parts(buf as *const u8, count as _);
     print!("{}", core::str::from_utf8_unchecked(str));

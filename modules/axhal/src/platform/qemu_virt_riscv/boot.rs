@@ -19,17 +19,6 @@ unsafe fn init_mmu() {
     riscv::asm::sfence_vma_all();
 }
 
-fn clear_bss() {
-    extern "C" {
-        fn sbss();
-        fn ebss();
-    }
-    unsafe {
-        core::slice::from_raw_parts_mut(sbss as usize as *mut u8, ebss as usize - sbss as usize)
-            .fill(0);
-    }
-}
-
 #[naked]
 #[no_mangle]
 #[link_section = ".text.boot"]
@@ -64,7 +53,7 @@ unsafe extern "C" fn _start() -> ! {
         boot_stack_size = const TASK_STACK_SIZE,
         boot_stack = sym BOOT_STACK,
         init_mmu = sym init_mmu,
-        clear_bss = sym clear_bss,
+        clear_bss = sym crate::mem::clear_bss,
         rust_main = sym rust_main,
         options(noreturn),
     )

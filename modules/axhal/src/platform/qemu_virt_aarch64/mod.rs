@@ -14,6 +14,7 @@ pub fn platform_init() {
     extern "C" {
         fn exception_vector_base();
     }
+    crate::mem::clear_bss();
     crate::arch::set_exception_vector_base(exception_vector_base as usize);
     generic_timer::init();
     pl011::init();

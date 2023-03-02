@@ -3,29 +3,40 @@ macro_rules! include_asm_marcos {
         #[cfg(target_arch = "riscv32")]
         core::arch::global_asm!(
             r"
+        .ifndef XLENB
         .equ XLENB, 4
+
         .macro LDR rd, rs, off
             lw \rd, \off*XLENB(\rs)
         .endm
         .macro STR rs2, rs1, off
             sw \rs2, \off*XLENB(\rs1)
-        .endm"
+        .endm
+
+        .endif"
         );
 
         #[cfg(target_arch = "riscv64")]
         core::arch::global_asm!(
             r"
+        .ifndef XLENB
         .equ XLENB, 8
+
         .macro LDR rd, rs, off
             ld \rd, \off*XLENB(\rs)
         .endm
         .macro STR rs2, rs1, off
             sd \rs2, \off*XLENB(\rs1)
-        .endm",
+        .endm
+
+        .endif",
         );
 
         core::arch::global_asm!(
             r"
+        .ifndef .LPUSH_POP_GENERAL_REGS
+        .equ .LPUSH_POP_GENERAL_REGS, 0
+
         .macro PUSH_POP_GENERAL_REGS, op
             \op ra, sp, 0
             \op t0, sp, 4
@@ -60,10 +71,11 @@ macro_rules! include_asm_marcos {
         .macro PUSH_GENERAL_REGS
             PUSH_POP_GENERAL_REGS STR
         .endm
-
         .macro POP_GENERAL_REGS
             PUSH_POP_GENERAL_REGS LDR
-        .endm"
+        .endm
+
+        .endif"
         );
     };
 }

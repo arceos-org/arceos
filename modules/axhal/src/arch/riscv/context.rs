@@ -1,6 +1,8 @@
 use core::arch::asm;
 use memory_addr::VirtAddr;
 
+include_asm_marcos!();
+
 #[repr(C)]
 #[derive(Debug, Default, Clone)]
 pub struct GeneralRegisters {
