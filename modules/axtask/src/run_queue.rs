@@ -1,15 +1,16 @@
 use alloc::{sync::Arc, vec::Vec};
 use lazy_init::LazyInit;
 use scheduler::BaseScheduler;
-use spin::Mutex;
+use spinlock::SpinNoIrq;
 
 use crate::task::TaskState;
 use crate::{AxTaskRef, Scheduler, TaskInner};
 
-// TODO: per-CPU and IRQ-disabled lock
-pub(crate) static RUN_QUEUE: LazyInit<Mutex<AxRunQueue>> = LazyInit::new();
+// TODO: per-CPU
+pub(crate) static RUN_QUEUE: LazyInit<SpinNoIrq<AxRunQueue>> = LazyInit::new();
 
-static EXITED_TASKS: Mutex<Vec<AxTaskRef>> = Mutex::new(Vec::new());
+// TODO: per-CPU
+static EXITED_TASKS: SpinNoIrq<Vec<AxTaskRef>> = SpinNoIrq::new(Vec::new());
 
 pub(crate) struct AxRunQueue {
     idle_task: AxTaskRef,
@@ -18,18 +19,18 @@ pub(crate) struct AxRunQueue {
 }
 
 impl AxRunQueue {
-    pub fn new() -> Self {
+    pub fn new() -> SpinNoIrq<Self> {
         let idle_task = TaskInner::new_idle();
         let init_task = TaskInner::new_init();
         let gc_task = TaskInner::new(gc_entry, "gc");
         let mut scheduler = Scheduler::new();
         scheduler.add_task(init_task.clone());
         scheduler.add_task(gc_task);
-        Self {
+        SpinNoIrq::new(Self {
             idle_task,
             init_task,
             scheduler,
-        }
+        })
     }
 
     pub fn init_task(&self) -> &AxTaskRef {

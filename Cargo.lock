@@ -102,7 +102,7 @@ dependencies = [
  "axerror",
  "log",
  "memory_addr",
- "spin",
+ "spinlock",
 ]
 
 [[package]]
@@ -151,7 +151,7 @@ dependencies = [
  "ratio",
  "riscv",
  "sbi-rt",
- "spin",
+ "spinlock",
  "static_assertions",
  "tock-registers",
  "x86",
@@ -172,6 +172,7 @@ dependencies = [
  "axdriver",
  "axerror",
  "axhal",
+ "axsync",
  "axtask",
  "cfg-if",
  "driver_common",
@@ -179,7 +180,6 @@ dependencies = [
  "lazy_init",
  "log",
  "smoltcp",
- "spin",
 ]
 
 [[package]]
@@ -194,6 +194,15 @@ dependencies = [
  "axnet",
  "axtask",
  "crate_interface",
+ "spinlock",
+]
+
+[[package]]
+name = "axsync"
+version = "0.1.0"
+dependencies = [
+ "axtask",
+ "spinlock",
 ]
 
 [[package]]
@@ -208,6 +217,7 @@ dependencies = [
  "memory_addr",
  "scheduler",
  "spin",
+ "spinlock",
 ]
 
 [[package]]
@@ -756,6 +766,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7dccf47db1b41fa1573ed27ccf5e08e3ca771cb994f776668c5ebda893b248fc"
 dependencies = [
  "lock_api",
+]
+
+[[package]]
+name = "spinlock"
+version = "0.1.0"
+dependencies = [
+ "cfg-if",
+ "crate_interface",
 ]
 
 [[package]]

@@ -22,6 +22,7 @@ extern "Rust" {
 }
 
 struct LogIfImpl;
+struct SpinLockIfImpl;
 
 #[crate_interface::impl_interface]
 impl axlog::LogIf for LogIfImpl {
@@ -41,6 +42,11 @@ impl axlog::LogIf for LogIfImpl {
     fn current_time() -> core::time::Duration {
         axhal::time::current_time()
     }
+}
+
+#[crate_interface::impl_interface]
+impl spinlock::SpinLockIf for SpinLockIfImpl {
+    fn set_preemptible(_enabled: bool) {} // TODO
 }
 
 #[cfg_attr(not(test), no_mangle)]

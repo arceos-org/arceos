@@ -22,6 +22,7 @@ members = [
     "crates/page_table_entry",
     "crates/ratio",
     "crates/scheduler",
+    "crates/spinlock",
     "crates/tuple_for_each",
 
     "modules/axalloc",
@@ -32,6 +33,7 @@ members = [
     "modules/axlog",
     "modules/axnet",
     "modules/axruntime",
+    "modules/axsync",
     "modules/axtask",
 
     "ulib/libax",

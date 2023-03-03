@@ -17,6 +17,7 @@ net = ["alloc", "paging", "axdriver/virtio-net", "dep:axnet"]
 default = []
 
 [dependencies]
+spinlock = { path = "../../crates/spinlock" }
 crate_interface = { path = "../../crates/crate_interface" }
 axalloc = { path = "../axalloc", optional = true }
 axconfig = { path = "../axconfig" }

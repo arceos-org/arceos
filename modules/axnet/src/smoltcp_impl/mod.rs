@@ -7,6 +7,7 @@ use core::ops::DerefMut;
 
 use axdriver::NetDevices;
 use axhal::time::{current_time_nanos, NANOS_PER_MICROS};
+use axsync::Mutex;
 use driver_common::DevError;
 use driver_net::{NetBuffer, NetDriverOps};
 use lazy_init::LazyInit;
@@ -15,7 +16,6 @@ use smoltcp::phy::{Device, DeviceCapabilities, Medium, RxToken, TxToken};
 use smoltcp::socket::{self, AnySocket};
 use smoltcp::time::Instant;
 use smoltcp::wire::{EthernetAddress, HardwareAddress, IpAddress, IpCidr};
-use spin::Mutex;
 
 use self::listen_table::ListenTable;
 

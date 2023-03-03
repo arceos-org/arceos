@@ -10,7 +10,7 @@ mod page;
 use allocator::{AllocResult, BaseAllocator, ByteAllocator, PageAllocator};
 use allocator::{BitmapPageAllocator, BuddyByteAllocator};
 use core::alloc::{GlobalAlloc, Layout};
-use spin::Mutex;
+use spinlock::SpinNoIrq;
 
 const PAGE_SIZE: usize = 0x1000;
 const MIN_HEAP_SIZE: usize = 0x4000; // 16 K
@@ -18,15 +18,15 @@ const MIN_HEAP_SIZE: usize = 0x4000; // 16 K
 pub use page::GlobalPage;
 
 pub struct GlobalAllocator {
-    balloc: Mutex<BuddyByteAllocator>, // TODO: use IRQ-disabled lock
-    palloc: Mutex<BitmapPageAllocator<PAGE_SIZE>>,
+    balloc: SpinNoIrq<BuddyByteAllocator>, // TODO: use IRQ-disabled lock
+    palloc: SpinNoIrq<BitmapPageAllocator<PAGE_SIZE>>,
 }
 
 impl GlobalAllocator {
     pub const fn new() -> Self {
         Self {
-            balloc: Mutex::new(BuddyByteAllocator::new()),
-            palloc: Mutex::new(BitmapPageAllocator::new()),
+            balloc: SpinNoIrq::new(BuddyByteAllocator::new()),
+            palloc: SpinNoIrq::new(BitmapPageAllocator::new()),
         }
     }
 

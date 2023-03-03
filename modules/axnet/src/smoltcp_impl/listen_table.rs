@@ -2,9 +2,9 @@ use alloc::{boxed::Box, collections::VecDeque};
 use core::ops::DerefMut;
 
 use axerror::{ax_err, AxError, AxResult};
+use axsync::Mutex;
 use smoltcp::iface::SocketHandle;
 use smoltcp::socket::tcp::{self, State};
-use spin::Mutex;
 
 use super::{SocketSetWrapper, LISTEN_QUEUE_SIZE, SOCKET_SET};
 use crate::SocketAddr;

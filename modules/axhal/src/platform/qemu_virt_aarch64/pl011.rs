@@ -4,16 +4,17 @@ use tock_registers::interfaces::{Readable, Writeable};
 use tock_registers::register_structs;
 use tock_registers::registers::{ReadOnly, ReadWrite, WriteOnly};
 
+use crate::mem::phys_to_virt;
 use memory_addr::{PhysAddr, VirtAddr};
-use spin::Mutex;
+use spinlock::SpinNoIrq;
 
 const UART_BASE: PhysAddr = PhysAddr::from(0x0900_0000);
 #[allow(unused)]
 const UART_IRQ_NUM: usize = 33;
 
-static UART: Mutex<Pl011Uart> = Mutex::new(Pl011Uart::new(VirtAddr::from(
-    UART_BASE.as_usize() + axconfig::PHYS_VIRT_OFFSET,
-)));
+static UART: SpinNoIrq<Pl011Uart> = SpinNoIrq::new(Pl011Uart::new(phys_to_virt(PhysAddr::from(
+    UART_BASE.as_usize(),
+))));
 
 register_structs! {
     Pl011UartRegs {
