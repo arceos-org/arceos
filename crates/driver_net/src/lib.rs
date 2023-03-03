@@ -19,9 +19,9 @@ pub trait NetDriverOps: BaseDriverOps {
     fn can_send(&self) -> bool;
     fn can_recv(&self) -> bool;
 
-    fn new_tx_buffer(&self, buf_len: usize) -> DevResult<Self::TxBuffer>;
-    fn recycle_rx_buffer(&self, rx_buf: Self::RxBuffer) -> DevResult;
+    fn new_tx_buffer(&mut self, buf_len: usize) -> DevResult<Self::TxBuffer>;
+    fn recycle_rx_buffer(&mut self, rx_buf: Self::RxBuffer) -> DevResult;
 
-    fn send(&self, tx_buf: Self::TxBuffer) -> DevResult;
-    fn receive(&self) -> DevResult<Self::RxBuffer>;
+    fn send(&mut self, tx_buf: Self::TxBuffer) -> DevResult;
+    fn receive(&mut self) -> DevResult<Self::RxBuffer>;
 }

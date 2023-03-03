@@ -21,7 +21,6 @@ default = ["bus-mmio"]
 [dependencies]
 log = "0.4"
 cfg-if = "1.0"
-lazy_init = { path = "../../crates/lazy_init" }
 tuple_for_each = { path = "../../crates/tuple_for_each" }
 driver_common = { path = "../../crates/driver_common" }
 driver_block = { path = "../../crates/driver_block", optional = true }

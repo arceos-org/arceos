@@ -15,15 +15,17 @@ cfg_if::cfg_if! {
 pub use self::net_impl::TcpSocket;
 pub use smoltcp::wire::{IpAddress as IpAddr, IpEndpoint as SocketAddr, Ipv4Address as Ipv4Addr};
 
-pub fn init_network() {
-    use driver_common::{BaseDriverOps, DeviceType};
+use axdriver::NetDevices;
+use driver_common::{BaseDriverOps, DeviceType};
 
-    let devices = axdriver::net_devices();
-    info!("number of NICs: {}", devices.len());
-    axdriver::net_devices_enumerate!((i, dev) in devices {
+pub fn init_network(net_devs: NetDevices) {
+    info!("Initialize network subsystem...");
+
+    info!("number of NICs: {}", net_devs.len());
+    axdriver::net_devices_enumerate!((i, dev) in net_devs {
         assert_eq!(dev.device_type(), DeviceType::Net);
         info!("  NIC {}: {:?}", i, dev.device_name());
     });
 
-    net_impl::init();
+    net_impl::init(net_devs);
 }

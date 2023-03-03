@@ -126,7 +126,6 @@ dependencies = [
  "driver_common",
  "driver_net",
  "driver_virtio",
- "lazy_init",
  "log",
  "tuple_for_each",
 ]
@@ -366,7 +365,6 @@ dependencies = [
  "driver_common",
  "driver_net",
  "log",
- "spin",
  "virtio-drivers",
 ]
 

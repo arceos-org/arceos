@@ -88,21 +88,15 @@ pub extern "C" fn rust_main() -> ! {
 
     #[cfg(any(feature = "fs", feature = "net"))]
     {
-        info!("Initialize device drivers...");
-        axdriver::init_drivers();
-    }
+        #[allow(unused_variables)]
+        let all_devices = axdriver::init_drivers();
 
-    #[cfg(feature = "net")]
-    {
-        info!("Initialize network subsystem...");
-        axnet::init_network();
+        #[cfg(feature = "net")]
+        axnet::init_network(all_devices.net);
     }
 
     #[cfg(feature = "multitask")]
-    {
-        info!("Initialize scheduling...");
-        axtask::init_scheduler();
-    }
+    axtask::init_scheduler();
 
     unsafe { main() };
 

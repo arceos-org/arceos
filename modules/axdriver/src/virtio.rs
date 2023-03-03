@@ -79,8 +79,8 @@ impl AllDevices {
                 Some(dev_type),
             ) {
                 let dev = ret(transport)?;
-                log::info!(
-                    "Added new {:?} device: {:?}",
+                info!(
+                    "created a new {:?} device: {:?}",
                     dev.device_type(),
                     dev.device_name()
                 );
