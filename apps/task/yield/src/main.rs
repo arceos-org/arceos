@@ -24,5 +24,5 @@ fn main() {
     while FINISHED_TASKS.load(Ordering::Relaxed) < NUM_TASKS {
         task::yield_now();
     }
-    println!("Multitask tests run OK!");
+    println!("Task yielding tests run OK!");
 }

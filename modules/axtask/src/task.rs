@@ -1,10 +1,9 @@
 use alloc::{boxed::Box, sync::Arc};
-use core::sync::atomic::{AtomicU64, AtomicU8, Ordering};
+use core::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
 use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 
-use axconfig::TASK_STACK_SIZE;
 use axhal::arch::TaskContext;
-use memory_addr::VirtAddr;
+use memory_addr::{align_up_4k, VirtAddr};
 
 use crate::{AxTask, AxTaskRef};
 
@@ -25,6 +24,8 @@ pub struct TaskInner {
 
     entry: Option<*mut dyn FnOnce()>,
     state: AtomicU8,
+
+    in_wait_queue: AtomicBool,
 
     kstack: Option<TaskStack>,
     ctx: UnsafeCell<TaskContext>,
@@ -79,18 +80,19 @@ impl TaskInner {
             name,
             entry: None,
             state: AtomicU8::new(TaskState::Runnable as u8),
+            in_wait_queue: AtomicBool::new(false),
             kstack: None,
             ctx: UnsafeCell::new(TaskContext::new()),
         }
     }
 
-    pub(crate) fn new<F>(entry: F, name: &'static str) -> AxTaskRef
+    pub(crate) fn new<F>(entry: F, name: &'static str, stack_size: usize) -> AxTaskRef
     where
         F: FnOnce() + Send + 'static,
     {
         let mut t = Self::new_common(TaskId::new(), name);
         debug!("new task: {}", t.id_name());
-        let kstack = TaskStack::alloc(TASK_STACK_SIZE);
+        let kstack = TaskStack::alloc(align_up_4k(stack_size));
         t.entry = Some(Box::into_raw(Box::new(entry)));
         t.ctx.get_mut().init(task_entry as usize, kstack.top());
         t.kstack = Some(kstack);
@@ -102,9 +104,9 @@ impl TaskInner {
         Arc::new(AxTask::new(Self::new_common(TaskId::new(), "init")))
     }
 
-    pub(crate) fn new_idle() -> AxTaskRef {
+    pub(crate) fn new_idle(stack_size: usize) -> AxTaskRef {
         let mut t = Self::new_common(TaskId::IDLE_TASK_ID, "idle");
-        let kstack = TaskStack::alloc(TASK_STACK_SIZE);
+        let kstack = TaskStack::alloc(align_up_4k(stack_size));
         t.ctx.get_mut().init(idle_entry as usize, kstack.top());
         t.kstack = Some(kstack);
         Arc::new(AxTask::new(t))
@@ -122,8 +124,20 @@ impl TaskInner {
         matches!(self.state(), TaskState::Runnable)
     }
 
+    pub(crate) fn is_blocked(&self) -> bool {
+        matches!(self.state(), TaskState::Blocked)
+    }
+
     pub(crate) const fn is_idle(&self) -> bool {
         self.id.as_u64() == TaskId::IDLE_TASK_ID.as_u64()
+    }
+
+    pub(crate) fn in_wait_queue(&self) -> bool {
+        self.in_wait_queue.load(Ordering::SeqCst)
+    }
+
+    pub(crate) fn set_in_wait_queue(&self, val: bool) {
+        self.in_wait_queue.store(val, Ordering::SeqCst)
     }
 
     pub(crate) const unsafe fn ctx_mut_ptr(&self) -> *mut TaskContext {
@@ -174,6 +188,7 @@ impl Drop for TaskStack {
 
 extern "C" fn idle_entry() -> ! {
     unsafe { crate::RUN_QUEUE.force_unlock() };
+    // TODO: enable IRQ
     loop {
         crate::yield_now();
         debug!("idle task: waiting for IRQs...");

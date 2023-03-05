@@ -2,7 +2,7 @@ mod context;
 
 use core::arch::asm;
 
-use memory_addr::{PhysAddr, VirtAddr, PAGE_SIZE_4K};
+use memory_addr::{PhysAddr, VirtAddr};
 use x86::{bits64::rflags, bits64::rflags::RFlags, controlregs, tlb};
 
 pub use context::{TaskContext, TrapFrame};
@@ -29,7 +29,7 @@ pub fn wait_for_irqs() {
 
 #[inline]
 pub fn read_page_table_root() -> PhysAddr {
-    PhysAddr::from(unsafe { controlregs::cr3() } as usize).align_down(PAGE_SIZE_4K)
+    PhysAddr::from(unsafe { controlregs::cr3() } as usize).align_down_4k()
 }
 
 /// # Safety

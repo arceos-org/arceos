@@ -13,8 +13,8 @@ pub(crate) fn memory_region_at(idx: usize) -> Option<MemRegion> {
             extern "C" {
                 fn ekernel();
             }
-            let start = virt_to_phys((ekernel as usize).into()).align_up(PAGE_SIZE_4K);
-            let end = PhysAddr::from(axconfig::PHYS_MEMORY_END).align_down(PAGE_SIZE_4K);
+            let start = virt_to_phys((ekernel as usize).into()).align_up_4k();
+            let end = PhysAddr::from(axconfig::PHYS_MEMORY_END).align_down_4k();
             Some(MemRegion {
                 paddr: start,
                 size: end.as_usize() - start.as_usize(),

@@ -1,9 +1,9 @@
 use core::sync::atomic::{AtomicUsize, Ordering};
-use spin::{Mutex, Once};
+use std::sync::{Mutex, Once};
 
-use crate as axtask;
+use crate::{self as axtask, current, WaitQueue};
 
-static INIT: Once<()> = Once::new();
+static INIT: Once = Once::new();
 static SERIAL: Mutex<()> = Mutex::new(());
 
 #[test]
@@ -16,7 +16,7 @@ fn test_sched_fifo() {
 
     for i in 0..NUM_TASKS {
         axtask::spawn(move || {
-            println!("Hello, task {}! id = {:?}", i, axtask::current().id());
+            println!("Hello, task {}! id = {:?}", i, current().id());
             axtask::yield_now();
             let order = FINISHED_TASKS.fetch_add(1, Ordering::Relaxed);
             assert_eq!(order, i); // FIFO scheduler
@@ -56,4 +56,41 @@ fn test_fp_state_switch() {
     while FINISHED_TASKS.load(Ordering::Relaxed) < NUM_TASKS {
         axtask::yield_now();
     }
+}
+
+#[test]
+fn test_wait_queue() {
+    let _lock = SERIAL.lock();
+    INIT.call_once(|| axtask::init_scheduler());
+
+    const NUM_TASKS: usize = 10;
+
+    static WQ1: WaitQueue = WaitQueue::new();
+    static WQ2: WaitQueue = WaitQueue::new();
+    static COUNTER: AtomicUsize = AtomicUsize::new(0);
+
+    for _ in 0..NUM_TASKS {
+        axtask::spawn(move || {
+            COUNTER.fetch_add(1, Ordering::Relaxed);
+            println!("task {:?} started", current().id());
+            WQ1.notify_one(); // WQ1.wait_until()
+            WQ2.wait();
+
+            COUNTER.fetch_sub(1, Ordering::Relaxed);
+            println!("task {:?} finished", current().id());
+            WQ1.notify_one(); // WQ1.wait_until()
+        });
+    }
+
+    println!("task {:?} is waiting for tasks to start...", current().id());
+    WQ1.wait_until(|| COUNTER.load(Ordering::Relaxed) == NUM_TASKS);
+    assert_eq!(COUNTER.load(Ordering::Relaxed), NUM_TASKS);
+    WQ2.notify_all(); // WQ2.wait()
+
+    println!(
+        "task {:?} is waiting for tasks to finish...",
+        current().id()
+    );
+    WQ1.wait_until(|| COUNTER.load(Ordering::Relaxed) == 0);
+    assert_eq!(COUNTER.load(Ordering::Relaxed), 0);
 }

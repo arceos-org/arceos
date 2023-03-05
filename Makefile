@@ -125,4 +125,7 @@ fmt:
 test:
 	cargo test --workspace --exclude "arceos-*" --exclude "libax_bindings" -- --nocapture
 
-.PHONY: build kernel_elf disasm run justrun clean clippy fmt test
+test_no_fail_fast:
+	cargo test --workspace --exclude "arceos-*" --exclude "libax_bindings" --no-fail-fast -- --nocapture
+
+.PHONY: build kernel_elf disasm run justrun clean clippy fmt test test_no_fail_fast

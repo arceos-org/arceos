@@ -14,7 +14,4 @@ jobs:
         override: true
         components: rust-src, llvm-tools-preview
     - name: Run unit test
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --workspace --exclude "arceos-*" --exclude "libax_bindings" --no-fail-fast -- --nocapture
+      run: make test_no_fail_fast

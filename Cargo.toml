@@ -4,10 +4,11 @@ members = [
     "apps/exception",
     "apps/helloworld",
     "apps/memtest",
-    "apps/multitask",
     "apps/net/echoserver",
     "apps/net/httpclient",
     "apps/net/httpserver",
+    "apps/task/yield",
+    "apps/task/parallel",
 
     "crates/allocator",
     "crates/crate_interface",

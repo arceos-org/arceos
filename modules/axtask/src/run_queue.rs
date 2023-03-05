@@ -6,6 +6,8 @@ use spinlock::SpinNoIrq;
 use crate::task::TaskState;
 use crate::{AxTaskRef, Scheduler, TaskInner};
 
+const BUILTIN_TASK_STACK_SIZE: usize = 4096;
+
 // TODO: per-CPU
 pub(crate) static RUN_QUEUE: LazyInit<SpinNoIrq<AxRunQueue>> = LazyInit::new();
 
@@ -20,9 +22,9 @@ pub(crate) struct AxRunQueue {
 
 impl AxRunQueue {
     pub fn new() -> SpinNoIrq<Self> {
-        let idle_task = TaskInner::new_idle();
+        let idle_task = TaskInner::new_idle(BUILTIN_TASK_STACK_SIZE);
         let init_task = TaskInner::new_init();
-        let gc_task = TaskInner::new(gc_entry, "gc");
+        let gc_task = TaskInner::new(gc_entry, "gc", BUILTIN_TASK_STACK_SIZE);
         let mut scheduler = Scheduler::new();
         scheduler.add_task(init_task.clone());
         scheduler.add_task(gc_task);
@@ -54,19 +56,38 @@ impl AxRunQueue {
         debug!("task exit: {}, exit_code={}", task.id_name(), exit_code);
         assert!(task.is_runnable());
         assert!(!task.is_idle());
-        EXITED_TASKS.lock().push(task.clone());
         task.set_state(TaskState::Exited);
+        let task = self.scheduler.remove_task(task).expect("BUG");
+        EXITED_TASKS.lock().push(task);
         self.resched();
         unreachable!("task exited!");
+    }
+
+    pub fn block_current<F>(&mut self, wait_queue_push: F)
+    where
+        F: FnOnce(AxTaskRef),
+    {
+        let task = crate::current();
+        debug!("task block: {}", task.id_name());
+        assert!(task.is_runnable());
+        assert!(!task.is_idle());
+        task.set_state(TaskState::Blocked);
+        let task = self.scheduler.remove_task(task).expect("BUG");
+        wait_queue_push(task);
+        self.resched();
+    }
+
+    pub fn unblock_task(&mut self, task: AxTaskRef) {
+        debug!("task unblock: {}", task.id_name());
+        assert!(task.is_blocked());
+        task.set_state(TaskState::Runnable);
+        self.scheduler.add_task(task);
     }
 }
 
 impl AxRunQueue {
     fn resched(&mut self) {
         let prev = crate::current();
-        if !prev.is_runnable() {
-            self.scheduler.remove_task(prev);
-        }
         let next = self
             .scheduler
             .pick_next_task()

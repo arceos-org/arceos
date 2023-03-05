@@ -76,7 +76,7 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
         if entry.is_unused() {
             return Err(PagingError::NotMapped);
         }
-        let off = vaddr.page_offset(size);
+        let off = vaddr.align_offset(size);
         Ok((entry.paddr() + off, entry.flags(), size))
     }
 

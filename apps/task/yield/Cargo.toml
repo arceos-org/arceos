@@ -1,5 +1,5 @@
 [package]
-name = "arceos-multitask"
+name = "arceos-yield"
 version = "0.1.0"
 edition = "2021"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
@@ -7,4 +7,4 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-libax = { path = "../../ulib/libax", default-features = false, features = ["paging", "multitask", "sched_fifo"] }
+libax = { path = "../../../ulib/libax", default-features = false, features = ["paging", "multitask", "sched_fifo"] }

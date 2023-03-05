@@ -25,7 +25,7 @@ where
 }
 
 #[inline]
-pub const fn page_offset<U>(addr: usize, align: U) -> usize
+pub const fn align_offset<U>(addr: usize, align: U) -> usize
 where
     U: ~const Into<usize>,
 {
@@ -37,7 +37,27 @@ pub const fn is_aligned<U>(addr: usize, align: U) -> bool
 where
     U: ~const Into<usize>,
 {
-    page_offset(addr, align) == 0
+    align_offset(addr, align) == 0
+}
+
+#[inline]
+pub const fn align_down_4k(addr: usize) -> usize {
+    align_down(addr, PAGE_SIZE_4K)
+}
+
+#[inline]
+pub const fn align_up_4k(addr: usize) -> usize {
+    align_up(addr, PAGE_SIZE_4K)
+}
+
+#[inline]
+pub const fn align_offset_4k(addr: usize) -> usize {
+    align_offset(addr, PAGE_SIZE_4K)
+}
+
+#[inline]
+pub const fn is_aligned_4k(addr: usize) -> bool {
+    is_aligned(addr, PAGE_SIZE_4K)
 }
 
 #[repr(transparent)]
@@ -71,11 +91,11 @@ impl PhysAddr {
     }
 
     #[inline]
-    pub const fn page_offset<U>(&self, align: U) -> usize
+    pub const fn align_offset<U>(&self, align: U) -> usize
     where
         U: ~const Into<usize>,
     {
-        page_offset(self.0, align)
+        align_offset(self.0, align)
     }
 
     #[inline]
@@ -84,6 +104,26 @@ impl PhysAddr {
         U: ~const Into<usize>,
     {
         is_aligned(self.0, align)
+    }
+
+    #[inline]
+    pub const fn align_down_4k(&self) -> Self {
+        self.align_down(PAGE_SIZE_4K)
+    }
+
+    #[inline]
+    pub const fn align_up_4k(&self) -> Self {
+        self.align_up(PAGE_SIZE_4K)
+    }
+
+    #[inline]
+    pub const fn align_offset_4k(&self) -> usize {
+        self.align_offset(PAGE_SIZE_4K)
+    }
+
+    #[inline]
+    pub const fn is_aligned_4k(&self) -> bool {
+        self.is_aligned(PAGE_SIZE_4K)
     }
 }
 
@@ -120,11 +160,11 @@ impl VirtAddr {
     }
 
     #[inline]
-    pub const fn page_offset<U>(&self, align: U) -> usize
+    pub const fn align_offset<U>(&self, align: U) -> usize
     where
         U: ~const Into<usize>,
     {
-        page_offset(self.0, align)
+        align_offset(self.0, align)
     }
 
     #[inline]
@@ -133,6 +173,26 @@ impl VirtAddr {
         U: ~const Into<usize>,
     {
         is_aligned(self.0, align)
+    }
+
+    #[inline]
+    pub const fn align_down_4k(&self) -> Self {
+        self.align_down(PAGE_SIZE_4K)
+    }
+
+    #[inline]
+    pub const fn align_up_4k(&self) -> Self {
+        self.align_up(PAGE_SIZE_4K)
+    }
+
+    #[inline]
+    pub const fn align_offset_4k(&self) -> usize {
+        self.align_offset(PAGE_SIZE_4K)
+    }
+
+    #[inline]
+    pub const fn is_aligned_4k(&self) -> bool {
+        self.is_aligned(PAGE_SIZE_4K)
     }
 }
 

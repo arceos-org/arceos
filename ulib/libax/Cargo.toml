@@ -12,7 +12,7 @@ alloc = ["axruntime/alloc"]
 paging = ["axruntime/paging"]
 
 # Multi-task
-multitask = ["axruntime/multitask", "axtask/multitask"]
+multitask = ["axruntime/multitask", "axtask/multitask", "dep:axsync"]
 sched_fifo = ["axtask/sched_fifo"]
 sched_rr = ["axtask/sched_rr"]
 
@@ -43,4 +43,5 @@ axhal = { path = "../../modules/axhal" }
 axlog = { path = "../../modules/axlog" }
 axnet = { path = "../../modules/axnet", optional = true }
 axruntime = { path = "../../modules/axruntime" }
+axsync = { path = "../../modules/axsync", optional = true }
 axtask = { path = "../../modules/axtask", default-features = false, optional = true }

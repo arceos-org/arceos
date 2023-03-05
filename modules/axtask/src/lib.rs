@@ -10,6 +10,7 @@ extern crate alloc;
 
 mod run_queue;
 mod task;
+mod wait_queue;
 
 #[cfg(test)]
 mod tests;
@@ -17,10 +18,12 @@ mod tests;
 use alloc::sync::Arc;
 use core::ops::DerefMut;
 use lazy_init::LazyInit;
-use run_queue::{AxRunQueue, RUN_QUEUE};
-use task::TaskInner;
 
-pub use task::TaskId;
+use self::run_queue::{AxRunQueue, RUN_QUEUE};
+use self::task::TaskInner;
+
+pub use self::task::TaskId;
+pub use self::wait_queue::WaitQueue;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "sched_fifo")] {
@@ -65,7 +68,7 @@ pub fn spawn<F>(f: F)
 where
     F: FnOnce() + Send + 'static,
 {
-    let task = TaskInner::new(f, "");
+    let task = TaskInner::new(f, "", axconfig::TASK_STACK_SIZE);
     RUN_QUEUE.lock().add_task(task);
 }
 
