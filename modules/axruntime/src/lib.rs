@@ -42,6 +42,17 @@ impl axlog::LogIf for LogIfImpl {
     fn current_time() -> core::time::Duration {
         axhal::time::current_time()
     }
+
+    fn current_task_id() -> Option<u64> {
+        #[cfg(feature = "multitask")]
+        {
+            axtask::current_may_uninit().map(|curr| curr.id().as_u64())
+        }
+        #[cfg(not(feature = "multitask"))]
+        {
+            None
+        }
+    }
 }
 
 #[crate_interface::impl_interface]
@@ -92,6 +103,9 @@ pub extern "C" fn rust_main() -> ! {
         remap_kernel_memory().expect("remap kernel memoy failed");
     }
 
+    #[cfg(feature = "multitask")]
+    axtask::init_scheduler();
+
     #[cfg(any(feature = "fs", feature = "net"))]
     {
         #[allow(unused_variables)]
@@ -100,9 +114,6 @@ pub extern "C" fn rust_main() -> ! {
         #[cfg(feature = "net")]
         axnet::init_network(all_devices.net);
     }
-
-    #[cfg(feature = "multitask")]
-    axtask::init_scheduler();
 
     unsafe { main() };
 

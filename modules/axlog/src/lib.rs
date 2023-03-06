@@ -60,6 +60,8 @@ pub trait LogIf {
     fn console_write_str(s: &str);
     /// get current time
     fn current_time() -> core::time::Duration;
+    /// get current task ID.
+    fn current_task_id() -> Option<u64>;
 }
 
 struct Logger;
@@ -98,16 +100,30 @@ impl Log for Logger {
             Level::Debug => ColorCode::Cyan,
             Level::Trace => ColorCode::BrightBlack,
         };
+        let tid = call_interface!(LogIf::current_task_id);
         let now = call_interface!(LogIf::current_time);
-        __print_impl(with_color!(
-            ColorCode::White,
-            "[{:>3}.{:06} {} {} {}\n",
-            now.as_secs(),
-            now.subsec_micros(),
-            with_color!(level_color, "{:<5}", level),
-            with_color!(ColorCode::White, "{}:{}]", target, line),
-            with_color!(args_color, "{}", record.args()),
-        ));
+        if let Some(tid) = tid {
+            __print_impl(with_color!(
+                ColorCode::White,
+                "[{:>3}.{:06} {} {} {} {}\n",
+                now.as_secs(),
+                now.subsec_micros(),
+                with_color!(level_color, "{:<5}", level),
+                with_color!(ColorCode::BrightWhite, "{}", tid),
+                with_color!(ColorCode::White, "{}:{}]", target, line),
+                with_color!(args_color, "{}", record.args()),
+            ));
+        } else {
+            __print_impl(with_color!(
+                ColorCode::White,
+                "[{:>3}.{:06} {} {} {}\n",
+                now.as_secs(),
+                now.subsec_micros(),
+                with_color!(level_color, "{:<5}", level),
+                with_color!(ColorCode::White, "{}:{}]", target, line),
+                with_color!(args_color, "{}", record.args()),
+            ));
+        };
     }
 
     fn flush(&self) {}

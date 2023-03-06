@@ -46,6 +46,10 @@ pub(crate) fn set_current(task: AxTaskRef) {
     drop(old_task)
 }
 
+pub fn current_may_uninit<'a>() -> Option<&'a AxTaskRef> {
+    unsafe{ CURRENT_TASK.try_get() }
+}
+
 pub fn current<'a>() -> &'a AxTaskRef {
     unsafe { &CURRENT_TASK }
 }

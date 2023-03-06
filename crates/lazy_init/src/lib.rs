@@ -32,7 +32,7 @@ impl<T> LazyInit<T> {
         self.inited.load(Ordering::Acquire)
     }
 
-    fn try_get(&self) -> Option<&T> {
+    pub fn try_get(&self) -> Option<&T> {
         if self.is_init() {
             unsafe { Some(&*(*self.data.get()).as_ptr()) }
         } else {
