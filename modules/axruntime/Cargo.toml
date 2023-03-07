@@ -25,4 +25,4 @@ axdriver = { path = "../axdriver", optional = true }
 axhal = { path = "../axhal" }
 axlog = { path = "../axlog" }
 axnet = { path = "../axnet", optional = true }
-axtask = { path = "../axtask", default-features = false, optional = true }
+axtask = { path = "../axtask", default-features = false }

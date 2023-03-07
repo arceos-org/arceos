@@ -7,7 +7,10 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-multitask = []  # without the feature, can still use the empty yield_now()
+multitask = [ # without the feature, can still use the empty yield_now() and exit()
+    "dep:axconfig", "dep:spinlock", "dep:lazy_init",
+    "dep:memory_addr", "dep:scheduler",
+]
 
 sched_fifo = ["multitask"]
 sched_rr = ["multitask"]
@@ -16,12 +19,12 @@ default = ["sched_fifo"]
 [dependencies]
 cfg-if = "1.0"
 log = "0.4"
-spinlock = { path = "../../crates/spinlock" }
-lazy_init = { path = "../../crates/lazy_init" }
-memory_addr = { path = "../../crates/memory_addr" }
-scheduler = { path = "../../crates/scheduler" }
-axconfig = { path = "../axconfig" }
 axhal = { path = "../axhal" }
+axconfig = { path = "../axconfig", optional = true }
+spinlock = { path = "../../crates/spinlock", optional = true }
+lazy_init = { path = "../../crates/lazy_init", optional = true }
+memory_addr = { path = "../../crates/memory_addr", optional = true }
+scheduler = { path = "../../crates/scheduler", optional = true }
 
 [dev-dependencies]
 rand = "0.8"

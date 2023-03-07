@@ -4,7 +4,7 @@ use scheduler::BaseScheduler;
 use spinlock::SpinNoIrq;
 
 use crate::task::TaskState;
-use crate::{AxTaskRef, Scheduler, TaskInner};
+use crate::{AxTaskRef, Scheduler, TaskInner, WaitQueue};
 
 const BUILTIN_TASK_STACK_SIZE: usize = 4096;
 
@@ -13,6 +13,8 @@ pub(crate) static RUN_QUEUE: LazyInit<SpinNoIrq<AxRunQueue>> = LazyInit::new();
 
 // TODO: per-CPU
 static EXITED_TASKS: SpinNoIrq<Vec<AxTaskRef>> = SpinNoIrq::new(Vec::new());
+
+static WAIT_FOR_EXIT: WaitQueue = WaitQueue::new();
 
 pub(crate) struct AxRunQueue {
     idle_task: AxTaskRef,
@@ -56,10 +58,16 @@ impl AxRunQueue {
         debug!("task exit: {}, exit_code={}", task.id_name(), exit_code);
         assert!(task.is_runnable());
         assert!(!task.is_idle());
-        task.set_state(TaskState::Exited);
-        let task = self.scheduler.remove_task(task).expect("BUG");
-        EXITED_TASKS.lock().push(task);
-        self.resched();
+        if Arc::ptr_eq(task, &self.init_task) {
+            EXITED_TASKS.lock().clear();
+            axhal::misc::terminate();
+        } else {
+            task.set_state(TaskState::Exited);
+            let task = self.scheduler.remove_task(task).expect("BUG");
+            EXITED_TASKS.lock().push(task);
+            WAIT_FOR_EXIT.notify_one_locked(self);
+            self.resched();
+        }
         unreachable!("task exited!");
     }
 
@@ -126,6 +134,6 @@ impl AxRunQueue {
 fn gc_entry() {
     loop {
         EXITED_TASKS.lock().clear(); // drop all exited tasks and recycle resources
-        crate::yield_now(); // TODO: wait & notify
+        WAIT_FOR_EXIT.wait();
     }
 }

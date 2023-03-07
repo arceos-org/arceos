@@ -1,7 +1,8 @@
-#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate log;
 
+#[cfg(not(feature = "std"))]
 use crate_interface::{call_interface, def_interface};
 
 use core::fmt::{self, Write};
@@ -54,12 +55,15 @@ enum ColorCode {
 }
 
 /// Extern interfaces called in this crate.
+#[cfg(not(feature = "std"))]
 #[def_interface]
 pub trait LogIf {
     /// write a string to the console.
     fn console_write_str(s: &str);
+
     /// get current time
     fn current_time() -> core::time::Duration;
+
     /// get current task ID.
     fn current_task_id() -> Option<u64>;
 }
@@ -68,7 +72,13 @@ struct Logger;
 
 impl Write for Logger {
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        call_interface!(LogIf::console_write_str, s);
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "std")] {
+                std::print!("{}", s);
+            } else {
+                call_interface!(LogIf::console_write_str, s);
+            }
+        }
         Ok(())
     }
 }
@@ -100,30 +110,44 @@ impl Log for Logger {
             Level::Debug => ColorCode::Cyan,
             Level::Trace => ColorCode::BrightBlack,
         };
-        let tid = call_interface!(LogIf::current_task_id);
-        let now = call_interface!(LogIf::current_time);
-        if let Some(tid) = tid {
-            __print_impl(with_color!(
-                ColorCode::White,
-                "[{:>3}.{:06} {} {} {} {}\n",
-                now.as_secs(),
-                now.subsec_micros(),
-                with_color!(level_color, "{:<5}", level),
-                with_color!(ColorCode::BrightWhite, "{}", tid),
-                with_color!(ColorCode::White, "{}:{}]", target, line),
-                with_color!(args_color, "{}", record.args()),
-            ));
-        } else {
-            __print_impl(with_color!(
-                ColorCode::White,
-                "[{:>3}.{:06} {} {} {}\n",
-                now.as_secs(),
-                now.subsec_micros(),
-                with_color!(level_color, "{:<5}", level),
-                with_color!(ColorCode::White, "{}:{}]", target, line),
-                with_color!(args_color, "{}", record.args()),
-            ));
-        };
+
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "std")] {
+                __print_impl(with_color!(
+                    ColorCode::White,
+                    "[{time} {level} {path} {args}\n",
+                    time = chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.6f"),
+                    level = with_color!(level_color, "{:<5}", level),
+                    path = with_color!(ColorCode::White, "{}:{}]", target, line),
+                    args = with_color!(args_color, "{}", record.args()),
+                ));
+            } else {
+                let tid = call_interface!(LogIf::current_task_id);
+                let now = call_interface!(LogIf::current_time);
+                if let Some(tid) = tid {
+                    __print_impl(with_color!(
+                        ColorCode::White,
+                        "[{:>3}.{:06} {level} {tid} {path} {args}\n",
+                        now.as_secs(),
+                        now.subsec_micros(),
+                        level = with_color!(level_color, "{:<5}", level),
+                        tid = with_color!(ColorCode::BrightWhite, "{}", tid),
+                        path = with_color!(ColorCode::White, "{}:{}]", target, line),
+                        args = with_color!(args_color, "{}", record.args()),
+                    ));
+                } else {
+                    __print_impl(with_color!(
+                        ColorCode::White,
+                        "[{:>3}.{:06} {level} {path} {args}\n",
+                        now.as_secs(),
+                        now.subsec_micros(),
+                        level = with_color!(level_color, "{:<5}", level),
+                        path = with_color!(ColorCode::White, "{}:{}]", target, line),
+                        args =with_color!(args_color, "{}", record.args()),
+                    ));
+                };
+            }
+        }
     }
 
     fn flush(&self) {}

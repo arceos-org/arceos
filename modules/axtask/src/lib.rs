@@ -1,11 +1,12 @@
 #![cfg_attr(not(test), no_std)]
 #![feature(const_trait_impl)]
 
+#[macro_use]
+extern crate log;
+
 cfg_if::cfg_if! {
 if #[cfg(feature = "multitask")] {
 
-#[macro_use]
-extern crate log;
 extern crate alloc;
 
 mod run_queue;
@@ -87,6 +88,11 @@ pub fn exit(exit_code: i32) -> ! {
 } else { // if #[cfg(feature = "multitask")]
 
 pub fn yield_now() {}
+
+pub fn exit(exit_code: i32) -> ! {
+    debug!("main task exited: exit_code={}", exit_code);
+    axhal::misc::terminate()
+}
 
 } // else
 } // cfg_if::cfg_if!

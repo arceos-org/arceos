@@ -117,7 +117,7 @@ pub extern "C" fn rust_main() -> ! {
 
     unsafe { main() };
 
-    axhal::misc::terminate()
+    axtask::exit(0)
 }
 
 #[cfg(feature = "alloc")]
