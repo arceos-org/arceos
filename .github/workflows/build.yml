@@ -47,9 +47,9 @@ jobs:
       run: make ARCH=${{ matrix.arch }} APP=memtest
     - name: Build exception
       run: make ARCH=${{ matrix.arch }} APP=exception
-    - name: Build multitask/yield
+    - name: Build task/yield
       run: make ARCH=${{ matrix.arch }} APP=yield
-    - name: Build multitask/parallel
+    - name: Build task/parallel
       run: make ARCH=${{ matrix.arch }} APP=parallel
     - name: Build net/echoserver
       run: make ARCH=${{ matrix.arch }} APP=echoserver
@@ -74,9 +74,7 @@ jobs:
       run: |
         export PATH=$PATH:$PWD/musl/bin
         make ARCH=${{ matrix.arch }} APP=helloworld APP_LANG=c
-    
     - name: Build c/memtest
       run: |
-        make clean
         export PATH=$PATH:$PWD/musl/bin
-        make ARCH=${{ matrix.arch }} APP=memtest APP_LANG=c
+        make clean && make ARCH=${{ matrix.arch }} APP=memtest APP_LANG=c
