@@ -1,11 +1,13 @@
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
+use axhal::time::current_time;
+use core::time::Duration;
 use spinlock::SpinRaw;
 
 use crate::{AxRunQueue, AxTaskRef, RUN_QUEUE};
 
 pub struct WaitQueue {
-    queue: SpinRaw<VecDeque<AxTaskRef>>, // we already disabled IRQ when lock the `RUN_QUEUE
+    queue: SpinRaw<VecDeque<AxTaskRef>>, // we already disabled IRQs when lock the `RUN_QUEUE`
 }
 
 impl WaitQueue {
@@ -25,8 +27,13 @@ impl WaitQueue {
         // A task can be wake up only one events (timer or `notify()`), remove
         // the event from another queue.
         if task.in_wait_queue() {
-            // wake up by timer
+            // wake up by timer (timeout)
             self.queue.lock().retain(|t| Arc::ptr_eq(t, task));
+            task.set_in_wait_queue(false);
+        }
+        if task.in_timer_list() {
+            // timeout was set but not triggered (wake up by `WaitQueue::notify()`)
+            crate::timers::cancel_alarm(task);
         }
     }
 
@@ -35,7 +42,6 @@ impl WaitQueue {
             task.set_in_wait_queue(true);
             self.queue.lock().push_back(task)
         });
-        // may be woken up by other events rather than `notify_xxx()` (e.g. timer)
         self.cancel_events(crate::current());
     }
 
@@ -53,8 +59,55 @@ impl WaitQueue {
                 self.queue.lock().push_back(task);
             });
         }
-        // may be woken up by other events rather than `notify_xxx()` (e.g. timer)
         self.cancel_events(crate::current());
+    }
+
+    pub fn wait_timeout(&self, dur: Duration) -> bool {
+        let curr = crate::current();
+        let deadline = current_time() + dur;
+        debug!(
+            "task wait_timeout: {} deadline={:?}",
+            curr.id_name(),
+            deadline
+        );
+        crate::timers::set_alarm_wakeup(deadline, curr.clone());
+
+        RUN_QUEUE.lock().block_current(|task| {
+            task.set_in_wait_queue(true);
+            self.queue.lock().push_back(task)
+        });
+        let timeout = curr.in_wait_queue(); // still in the wait queue, must have timed out
+        self.cancel_events(curr);
+        timeout
+    }
+
+    pub fn wait_timeout_until<F>(&self, dur: Duration, condition: F) -> bool
+    where
+        F: Fn() -> bool,
+    {
+        let curr = crate::current();
+        let deadline = current_time() + dur;
+        debug!(
+            "task wait_timeout: {}, deadline={:?}",
+            curr.id_name(),
+            deadline
+        );
+        crate::timers::set_alarm_wakeup(deadline, curr.clone());
+
+        let mut timeout = true;
+        while current_time() < deadline {
+            let mut rq = RUN_QUEUE.lock();
+            if condition() {
+                timeout = false;
+                break;
+            }
+            rq.block_current(|task| {
+                task.set_in_wait_queue(true);
+                self.queue.lock().push_back(task);
+            });
+        }
+        self.cancel_events(curr);
+        timeout
     }
 
     pub fn notify_one(&self, resched: bool) -> bool {

@@ -118,12 +118,13 @@ impl AxRunQueue {
 
     pub fn unblock_task(&mut self, task: AxTaskRef, resched: bool) {
         debug!("task unblock: {}", task.id_name());
-        assert!(task.is_blocked());
-        task.set_state(TaskState::Ready);
-        self.scheduler.add_task(task); // TODO: priority
-        if resched {
-            #[cfg(feature = "preempt")]
-            crate::current().set_preempt_pending(true);
+        if task.is_blocked() {
+            task.set_state(TaskState::Ready);
+            self.scheduler.add_task(task); // TODO: priority
+            if resched {
+                #[cfg(feature = "preempt")]
+                crate::current().set_preempt_pending(true);
+            }
         }
     }
 
@@ -135,7 +136,7 @@ impl AxRunQueue {
 
         let now = axhal::time::current_time();
         if now < deadline {
-            crate::timers::set_wakeup(deadline, curr.clone());
+            crate::timers::set_alarm_wakeup(deadline, curr.clone());
             curr.set_state(TaskState::Blocked);
             self.resched_inner(false);
         }

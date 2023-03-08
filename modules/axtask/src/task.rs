@@ -30,6 +30,7 @@ pub struct TaskInner {
     state: AtomicU8,
 
     in_wait_queue: AtomicBool,
+    in_timer_list: AtomicBool,
 
     #[cfg(feature = "preempt")]
     need_resched: AtomicBool,
@@ -91,6 +92,7 @@ impl TaskInner {
             entry: None,
             state: AtomicU8::new(TaskState::Ready as u8),
             in_wait_queue: AtomicBool::new(false),
+            in_timer_list: AtomicBool::new(false),
             #[cfg(feature = "preempt")]
             need_resched: AtomicBool::new(false),
             #[cfg(feature = "preempt")]
@@ -128,12 +130,12 @@ impl TaskInner {
 
     #[inline]
     pub(crate) fn state(&self) -> TaskState {
-        self.state.load(Ordering::SeqCst).into()
+        self.state.load(Ordering::Acquire).into()
     }
 
     #[inline]
     pub(crate) fn set_state(&self, state: TaskState) {
-        self.state.store(state as u8, Ordering::SeqCst)
+        self.state.store(state as u8, Ordering::Release)
     }
 
     #[inline]
@@ -158,35 +160,45 @@ impl TaskInner {
 
     #[inline]
     pub(crate) fn in_wait_queue(&self) -> bool {
-        self.in_wait_queue.load(Ordering::SeqCst)
+        self.in_wait_queue.load(Ordering::Acquire)
     }
 
     #[inline]
-    pub(crate) fn set_in_wait_queue(&self, val: bool) {
-        self.in_wait_queue.store(val, Ordering::SeqCst)
+    pub(crate) fn set_in_wait_queue(&self, in_wait_queue: bool) {
+        self.in_wait_queue.store(in_wait_queue, Ordering::Release);
+    }
+
+    #[inline]
+    pub(crate) fn in_timer_list(&self) -> bool {
+        self.in_timer_list.load(Ordering::Acquire)
+    }
+
+    #[inline]
+    pub(crate) fn set_in_timer_list(&self, in_timer_list: bool) {
+        self.in_timer_list.store(in_timer_list, Ordering::Release);
     }
 
     #[inline]
     #[cfg(feature = "preempt")]
     pub(crate) fn set_preempt_pending(&self, pending: bool) {
-        self.need_resched.store(pending, Ordering::SeqCst)
+        self.need_resched.store(pending, Ordering::Release)
     }
 
     #[inline]
     #[cfg(feature = "preempt")]
     pub(crate) fn can_preempt(&self) -> bool {
-        self.preempt_disable_count.load(Ordering::SeqCst) == 0
+        self.preempt_disable_count.load(Ordering::Acquire) == 0
     }
 
     #[inline]
     #[cfg(feature = "preempt")]
     pub(crate) fn disable_preempt(&self) {
-        self.preempt_disable_count.fetch_add(1, Ordering::SeqCst);
+        self.preempt_disable_count.fetch_add(1, Ordering::Relaxed);
     }
 
     #[cfg(feature = "preempt")]
     pub(crate) fn enable_preempt(&self, resched: bool) {
-        if self.preempt_disable_count.fetch_sub(1, Ordering::SeqCst) == 1 && resched {
+        if self.preempt_disable_count.fetch_sub(1, Ordering::Relaxed) == 1 && resched {
             // If current task is pending to be preempted, do rescheduling.
             Self::current_check_preempt_pending();
         }
@@ -195,9 +207,9 @@ impl TaskInner {
     #[cfg(feature = "preempt")]
     fn current_check_preempt_pending() {
         let curr = crate::current();
-        if curr.need_resched.load(Ordering::SeqCst) && curr.can_preempt() {
+        if curr.need_resched.load(Ordering::Acquire) && curr.can_preempt() {
             let mut rq = crate::RUN_QUEUE.lock();
-            if curr.need_resched.load(Ordering::SeqCst) {
+            if curr.need_resched.load(Ordering::Acquire) {
                 rq.resched();
             }
         }
