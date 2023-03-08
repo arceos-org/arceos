@@ -21,7 +21,7 @@ rust_lib := $(rust_build_path)/lib$(rust_lib_name).a
 
 features := $(FEATURES)
 ifneq (,$(wildcard $(app_path)/features.txt))	# check features.txt exists
-  features += $(addprefix libax/,$(shell cat $(app_path)/features.txt))
+  features += $(addprefix $(rust_lib_name)/,$(shell cat $(app_path)/features.txt))
 endif
 
 crago_build_args := --no-default-features --features "$(features)" --target $(target) -Zbuild-std=core,alloc -Zbuild-std-features=compiler-builtins-mem
@@ -47,6 +47,10 @@ LDFLAGS := -nostdlib -T../../modules/axhal/linker_$(ARCH).lds
 
 ifeq ($(MODE), release)
   CFLAGS += -O3
+endif
+
+ifneq (,$(wildcard $(app_path)/features.txt))	# check features.txt exists
+  CFLAGS += $(addprefix -D AX_CONFIG_,$(shell cat $(app_path)/features.txt | tr 'a-z' 'A-Z'))
 endif
 
 ifeq ($(ARCH), riscv64)

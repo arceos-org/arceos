@@ -72,3 +72,9 @@ jobs:
       run: |
         export PATH=$PATH:$PWD/musl/bin
         make ARCH=${{ matrix.arch }} APP=helloworld APP_LANG=c
+    
+    - name: Build c/memtest
+      run: |
+        make clean
+        export PATH=$PATH:$PWD/musl/bin
+        make ARCH=${{ matrix.arch }} APP=memtest APP_LANG=c
