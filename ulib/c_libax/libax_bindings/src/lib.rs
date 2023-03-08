@@ -1,6 +1,9 @@
 #![no_std]
 #![allow(clippy::missing_safety_doc)]
 
+#[cfg(feature = "alloc")]
+mod malloc;
+
 use core::ffi::{c_char, c_int};
 
 #[macro_use]
@@ -27,3 +30,6 @@ pub unsafe extern "C" fn ax_print_str(buf: *const c_char, count: usize) -> c_int
 pub extern "C" fn ax_panic() -> ! {
     panic!()
 }
+
+#[cfg(feature = "alloc")]
+pub use malloc::{ax_free, ax_malloc};

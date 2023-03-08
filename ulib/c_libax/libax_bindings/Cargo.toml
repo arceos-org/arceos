@@ -9,8 +9,27 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 [lib]
 crate-type = ["staticlib"]
 
+[features]
+# Memory
+alloc = ["axalloc", "libax/alloc"]
+paging = ["libax/paging"]
+
+# Multi-task
+multitask = ["libax/multitask"]
+sched_fifo = ["libax/sched_fifo"]
+sched_rr = ["libax/sched_rr"]
+
+# Networking
+net = ["libax/net"]
+
+# File system
+fs = ["libax/fs"]
+
+default = ["libax/default"]
+
 [dependencies]
 libax = { path = "../../libax", default-features = false }
+axalloc = { path = "../../../modules/axalloc", optional = true }
 
 [build-dependencies]
 cbindgen = "0.24"

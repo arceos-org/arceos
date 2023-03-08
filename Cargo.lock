@@ -476,6 +476,7 @@ dependencies = [
 name = "libax_bindings"
 version = "0.1.0"
 dependencies = [
+ "axalloc",
  "cbindgen",
  "libax",
 ]
