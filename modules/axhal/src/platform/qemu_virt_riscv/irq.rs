@@ -58,7 +58,8 @@ pub(crate) fn platform_handle_irq(scause: usize) {
             TIMER_HANDLER();
         },
         @EXT => crate::irq::dispatch_irq(0), // TODO: get IRQ number from PLIC
-    )
+    );
+    crate::trap::task_try_preempt();
 }
 
 pub(super) fn init() {}

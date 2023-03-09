@@ -11,6 +11,7 @@ members = [
     "apps/task/parallel",
 
     "crates/allocator",
+    "crates/arm_gic",
     "crates/crate_interface",
     "crates/driver_block",
     "crates/driver_common",

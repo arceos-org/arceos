@@ -14,6 +14,7 @@ pub mod arch;
 pub mod irq;
 pub mod mem;
 pub mod time;
+pub mod trap;
 
 #[cfg(feature = "paging")]
 pub mod paging;

@@ -20,4 +20,5 @@ pub(crate) fn platform_init() {
     self::irq::init();
     self::pl011::init();
     self::generic_timer::init();
+    self::irq::init_percpu(0); // TODO
 }

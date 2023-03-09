@@ -140,7 +140,12 @@ impl AxRunQueue {
 
 fn gc_entry() {
     loop {
-        EXITED_TASKS.lock().clear(); // drop all exited tasks and recycle resources
+        // Drop all exited tasks and recycle resources.
+        // Do not do the slow drops in the critical section.
+        while !EXITED_TASKS.lock().is_empty() {
+            let task = EXITED_TASKS.lock().pop();
+            drop(task);
+        }
         WAIT_FOR_EXIT.wait();
     }
 }

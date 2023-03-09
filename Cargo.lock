@@ -85,6 +85,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "arm_gic"
+version = "0.1.0"
+dependencies = [
+ "tock-registers",
+]
+
+[[package]]
 name = "atomic-polyfill"
 version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -155,10 +162,12 @@ name = "axhal"
 version = "0.1.0"
 dependencies = [
  "aarch64-cpu",
+ "arm_gic",
  "axalloc",
  "axconfig",
  "bitflags",
  "cfg-if",
+ "crate_interface",
  "handler_table",
  "lazy_init",
  "log",

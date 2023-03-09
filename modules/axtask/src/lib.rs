@@ -74,8 +74,8 @@ pub fn on_timer_tick() {
     RUN_QUEUE.lock().scheduler_timer_tick();
 }
 
-/// If the current task need to be rescheduled, yield it, otherwise do nothing.
-pub fn try_yield_now() {
+/// If the current task need to be preempted, yield it, otherwise do nothing.
+pub fn try_preempt() {
     if current().check_and_clear_need_resched() {
         RUN_QUEUE.lock().yield_current();
     }

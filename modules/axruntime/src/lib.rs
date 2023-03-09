@@ -5,6 +5,7 @@ extern crate axlog;
 
 #[cfg(not(test))]
 mod lang_items;
+mod trap;
 
 const LOGO: &str = r#"
        d8888                            .d88888b.   .d8888b.
@@ -191,10 +192,7 @@ fn init_interrupt() {
     axhal::irq::register_handler(TIMER_IRQ_NUM, || {
         update_timer();
         #[cfg(feature = "multitask")]
-        {
-            axtask::on_timer_tick();
-            axtask::try_yield_now();
-        }
+        axtask::on_timer_tick();
     });
 
     // Enable IRQs before starting app
