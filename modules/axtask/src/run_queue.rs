@@ -46,6 +46,13 @@ impl AxRunQueue {
         self.scheduler.add_task(task);
     }
 
+    pub fn scheduler_timer_tick(&mut self) {
+        let curr = crate::current();
+        if self.scheduler.task_tick(curr) {
+            curr.set_need_resched();
+        }
+    }
+
     pub fn yield_current(&mut self) {
         let task = crate::current();
         debug!("task yield: {}", task.id_name());

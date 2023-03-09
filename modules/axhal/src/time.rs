@@ -1,6 +1,8 @@
 pub type TimeValue = core::time::Duration;
 
-pub use crate::platform::time::{current_ticks, ticks_to_nanos};
+pub use crate::platform::time::{
+    current_ticks, nanos_to_ticks, set_oneshot_timer, ticks_to_nanos, TIMER_IRQ_NUM,
+};
 
 pub const MILLIS_PER_SEC: u64 = 1_000;
 pub const MICROS_PER_SEC: u64 = 1_000_000;

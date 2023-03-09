@@ -35,25 +35,27 @@ unsafe extern "C" fn _start() -> ! {
         add     sp, sp, t0
 
         call    {init_mmu}              // 2. setup boot page table and enabel MMU
-        call    {clear_bss}             // 3. clear BSS section
 
-        la      a1, {rust_main}         // 4. fix up virtual high address
+
+        la      a1, {platform_init}     // 3. fix up virtual high address
         li      t0, {phys_virt_offset}
         add     a1, a1, t0
         add     sp, sp, t0
 
-        la      a0, trap_vector_base    // 5. set trap vector in Direct mode (defined in arch/riscv/strap.S)
-        add     a0, a0, t0
-        csrw    stvec, a0
+        jalr    a1                      // 4. call platform_init()
 
-        mv      a0, s0                  // 6. call rust_main(hartid)
+        la      a1, {rust_main}
+        li      t0, {phys_virt_offset}
+        add     a1, a1, t0
+
+        mv      a0, s0                  // 5. call rust_main(hartid)
         jalr    a1
         j       .",
         phys_virt_offset = const PHYS_VIRT_OFFSET,
         boot_stack_size = const TASK_STACK_SIZE,
         boot_stack = sym BOOT_STACK,
         init_mmu = sym init_mmu,
-        clear_bss = sym crate::mem::clear_bss,
+        platform_init = sym super::platform_init,
         rust_main = sym rust_main,
         options(noreturn),
     )

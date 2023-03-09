@@ -159,6 +159,7 @@ dependencies = [
  "axconfig",
  "bitflags",
  "cfg-if",
+ "handler_table",
  "lazy_init",
  "log",
  "memory_addr",
@@ -510,6 +511,10 @@ dependencies = [
  "libc",
  "wasi 0.11.0+wasi-snapshot-preview1",
 ]
+
+[[package]]
+name = "handler_table"
+version = "0.1.0"
 
 [[package]]
 name = "hash32"

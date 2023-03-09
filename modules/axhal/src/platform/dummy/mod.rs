@@ -1,4 +1,7 @@
 #![allow(unused_variables)]
+#![allow(dead_code)]
+
+pub(crate) fn handle_irq(_irq_num: usize) {}
 
 pub mod console {
     pub fn putchar(c: u8) {
@@ -27,6 +30,8 @@ pub mod mem {
 }
 
 pub mod time {
+    pub const TIMER_IRQ_NUM: usize = 0;
+
     pub fn current_ticks() -> u64 {
         0
     }
@@ -34,4 +39,22 @@ pub mod time {
     pub fn ticks_to_nanos(ticks: u64) -> u64 {
         ticks
     }
+
+    pub fn nanos_to_ticks(nanos: u64) -> u64 {
+        nanos
+    }
+
+    pub fn set_oneshot_timer(deadline_ns: u64) {}
+}
+
+pub mod irq {
+    pub const MAX_IRQ_COUNT: usize = 256;
+
+    pub fn set_enable(irq_num: usize, enabled: bool) {}
+
+    pub fn register_handler(irq_num: usize, handler: crate::irq::IrqHandler) -> bool {
+        false
+    }
+
+    pub(crate) fn platform_handle_irq(irq_num: usize) {}
 }

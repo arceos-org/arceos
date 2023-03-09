@@ -26,6 +26,7 @@ pub struct TaskInner {
     state: AtomicU8,
 
     in_wait_queue: AtomicBool,
+    need_resched: AtomicBool,
 
     kstack: Option<TaskStack>,
     ctx: UnsafeCell<TaskContext>,
@@ -81,6 +82,7 @@ impl TaskInner {
             entry: None,
             state: AtomicU8::new(TaskState::Runnable as u8),
             in_wait_queue: AtomicBool::new(false),
+            need_resched: AtomicBool::new(false),
             kstack: None,
             ctx: UnsafeCell::new(TaskContext::new()),
         }
@@ -140,6 +142,14 @@ impl TaskInner {
         self.in_wait_queue.store(val, Ordering::SeqCst)
     }
 
+    pub(crate) fn check_and_clear_need_resched(&self) -> bool {
+        self.need_resched.swap(false, Ordering::SeqCst)
+    }
+
+    pub(crate) fn set_need_resched(&self) {
+        self.need_resched.store(true, Ordering::SeqCst)
+    }
+
     pub(crate) const unsafe fn ctx_mut_ptr(&self) -> *mut TaskContext {
         self.ctx.get()
     }
@@ -188,7 +198,7 @@ impl Drop for TaskStack {
 
 extern "C" fn idle_entry() -> ! {
     unsafe { crate::RUN_QUEUE.force_unlock() };
-    // TODO: enable IRQ
+    axhal::arch::enable_irqs();
     loop {
         crate::yield_now();
         debug!("idle task: waiting for IRQs...");
@@ -199,7 +209,7 @@ extern "C" fn idle_entry() -> ! {
 extern "C" fn task_entry() -> ! {
     // release the lock that was implicitly held across the reschedule
     unsafe { crate::RUN_QUEUE.force_unlock() };
-    // TODO: enable IRQ
+    axhal::arch::enable_irqs();
     let task = crate::current();
     if let Some(entry) = task.entry {
         unsafe { Box::from_raw(entry)() };

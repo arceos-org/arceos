@@ -115,6 +115,8 @@ pub extern "C" fn rust_main() -> ! {
         axnet::init_network(all_devices.net);
     }
 
+    init_interrupt();
+
     unsafe { main() };
 
     axtask::exit(0)
@@ -165,4 +167,36 @@ fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
     unsafe { axhal::arch::write_page_table_root(kernel_page_table.root_paddr()) };
     core::mem::forget(kernel_page_table);
     Ok(())
+}
+
+fn init_interrupt() {
+    use axhal::time::TIMER_IRQ_NUM;
+    use core::sync::atomic::{AtomicU64, Ordering};
+
+    // Setup timer interrupt handler
+    const PERIODIC_INTERVAL_NANOS: u64 =
+        axhal::time::NANOS_PER_SEC / axconfig::TICKS_PER_SEC as u64;
+    static NEXT_DEADLINE: AtomicU64 = AtomicU64::new(0);
+
+    fn update_timer() {
+        let now_ns = axhal::time::current_time_nanos();
+        let mut next_deadline = NEXT_DEADLINE.fetch_add(PERIODIC_INTERVAL_NANOS, Ordering::Acquire);
+        if now_ns >= next_deadline {
+            next_deadline = now_ns + PERIODIC_INTERVAL_NANOS;
+            NEXT_DEADLINE.store(next_deadline + PERIODIC_INTERVAL_NANOS, Ordering::SeqCst);
+        }
+        axhal::time::set_oneshot_timer(next_deadline);
+    }
+
+    axhal::irq::register_handler(TIMER_IRQ_NUM, || {
+        update_timer();
+        #[cfg(feature = "multitask")]
+        {
+            axtask::on_timer_tick();
+            axtask::try_yield_now();
+        }
+    });
+
+    // Enable IRQs before starting app
+    axhal::arch::enable_irqs();
 }

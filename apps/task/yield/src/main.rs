@@ -15,13 +15,17 @@ fn main() {
     for i in 0..NUM_TASKS {
         task::spawn(move || {
             println!("Hello, task {}! id = {:?}", i, task::current().id());
+
+            #[cfg(not(feature = "preempt"))]
             task::yield_now();
+
             let order = FINISHED_TASKS.fetch_add(1, Ordering::Relaxed);
             assert!(order == i); // FIFO scheduler
         });
     }
     println!("Hello, main task!");
     while FINISHED_TASKS.load(Ordering::Relaxed) < NUM_TASKS {
+        #[cfg(not(feature = "preempt"))]
         task::yield_now();
     }
     println!("Task yielding tests run OK!");

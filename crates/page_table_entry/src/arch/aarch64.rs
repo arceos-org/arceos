@@ -61,6 +61,7 @@ enum MemType {
 }
 
 impl DescriptorAttr {
+    #[allow(clippy::unusual_byte_groupings)]
     const ATTR_INDEX_MASK: u64 = 0b111_00;
 
     const fn from_mem_type(mem_type: MemType) -> Self {

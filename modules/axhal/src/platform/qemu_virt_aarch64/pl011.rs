@@ -1,20 +1,18 @@
 //! PL011 UART.
 
+use memory_addr::{PhysAddr, VirtAddr};
+use spinlock::SpinNoIrq;
 use tock_registers::interfaces::{Readable, Writeable};
 use tock_registers::register_structs;
 use tock_registers::registers::{ReadOnly, ReadWrite, WriteOnly};
 
 use crate::mem::phys_to_virt;
-use memory_addr::{PhysAddr, VirtAddr};
-use spinlock::SpinNoIrq;
 
 const UART_BASE: PhysAddr = PhysAddr::from(0x0900_0000);
 #[allow(unused)]
-const UART_IRQ_NUM: usize = 33;
+const UART_IRQ_NUM: usize = 33; // type=SPI, id=1
 
-static UART: SpinNoIrq<Pl011Uart> = SpinNoIrq::new(Pl011Uart::new(phys_to_virt(PhysAddr::from(
-    UART_BASE.as_usize(),
-))));
+static UART: SpinNoIrq<Pl011Uart> = SpinNoIrq::new(Pl011Uart::new(phys_to_virt(UART_BASE)));
 
 register_structs! {
     Pl011UartRegs {
@@ -81,14 +79,14 @@ impl Pl011Uart {
     }
 }
 
-pub fn console_putchar(c: u8) {
+pub(super) fn console_putchar(c: u8) {
     UART.lock().putchar(c);
 }
 
-pub fn console_getchar() -> Option<u8> {
+pub(super) fn console_getchar() -> Option<u8> {
     UART.lock().getchar()
 }
 
-pub fn init() {
+pub(super) fn init() {
     UART.lock().init();
 }

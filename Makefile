@@ -4,6 +4,7 @@ MODE ?= release
 LOG ?= warn
 APP ?= helloworld
 APP_LANG ?= rust
+APP_FEATURES ?=
 
 FS ?= off
 NET ?= off
@@ -31,7 +32,7 @@ kernel_bin := $(kernel_elf).bin
 
 # Cargo features and build args
 
-features := libax/platform-$(PLATFORM)
+features := $(APP_FEATURES) libax/platform-$(PLATFORM)
 
 ifneq ($(filter $(LOG),off error warn info debug trace),)
   features += libax/log-level-$(LOG)
@@ -46,7 +47,10 @@ ifeq ($(NET), on)
   features += libax/net
 endif
 
-build_args := --no-default-features --features "$(features)" --target $(target) -Zbuild-std=core,alloc -Zbuild-std-features=compiler-builtins-mem
+build_args := --features "$(features)" --target $(target) -Zbuild-std=core,alloc -Zbuild-std-features=compiler-builtins-mem
+ifneq ($(APP_FEATURES),)
+  build_args += --no-default-features
+endif
 ifeq ($(MODE), release)
   build_args += --release
 endif

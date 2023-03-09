@@ -69,6 +69,18 @@ pub fn init_scheduler() {
     }
 }
 
+/// Handle periodic timer ticks for task manager, e.g. advance scheduler, update timer.
+pub fn on_timer_tick() {
+    RUN_QUEUE.lock().scheduler_timer_tick();
+}
+
+/// If the current task need to be rescheduled, yield it, otherwise do nothing.
+pub fn try_yield_now() {
+    if current().check_and_clear_need_resched() {
+        RUN_QUEUE.lock().yield_current();
+    }
+}
+
 pub fn spawn<F>(f: F)
 where
     F: FnOnce() + Send + 'static,

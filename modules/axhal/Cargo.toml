@@ -10,7 +10,7 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 platform-qemu-virt-riscv = ["axconfig/platform-qemu-virt-riscv"]
 platform-qemu-virt-aarch64 = [
     "axconfig/platform-qemu-virt-aarch64",
-    "dep:page_table_entry", "dep:lazy_init", "dep:ratio",
+    "dep:page_table_entry", "dep:ratio",
 ]
 paging = ["axalloc", "page_table"]
 default = []
@@ -24,10 +24,11 @@ axconfig = { path = "../axconfig" }
 axalloc = { path = "../axalloc", optional = true }
 spinlock = { path = "../../crates/spinlock" }
 ratio = { path = "../../crates/ratio", optional = true }
-lazy_init = { path = "../../crates/lazy_init", optional = true }
+lazy_init = { path = "../../crates/lazy_init" }
 page_table = { path = "../../crates/page_table", optional = true }
 page_table_entry = { path = "../../crates/page_table_entry", optional = true }
 memory_addr = { path = "../../crates/memory_addr" }
+handler_table = { path = "../../crates/handler_table" }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 x86 = "0.52"

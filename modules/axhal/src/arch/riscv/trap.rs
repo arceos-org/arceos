@@ -14,16 +14,12 @@ fn handle_breakpoint(sepc: &mut usize) {
     *sepc += 2
 }
 
-fn handle_irq(irq: scause::Interrupt) {
-    debug!("Interrupt({:?})", irq);
-}
-
 #[no_mangle]
 fn riscv_trap_handler(tf: &mut TrapFrame, _from_user: bool) {
     let scause = scause::read();
     match scause.cause() {
         Trap::Exception(E::Breakpoint) => handle_breakpoint(&mut tf.sepc),
-        Trap::Interrupt(irq) => handle_irq(irq),
+        Trap::Interrupt(_) => crate::platform::irq::platform_handle_irq(scause.bits()),
         _ => {
             panic!(
                 "Unhandled trap {:?} @ {:#x}:\n{:#x?}",

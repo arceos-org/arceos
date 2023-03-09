@@ -9,22 +9,36 @@ pub use context::{TaskContext, TrapFrame};
 
 #[inline]
 pub fn enable_irqs() {
-    unsafe { asm!("sti") };
+    #[cfg(target_os = "none")]
+    unsafe {
+        asm!("sti")
+    }
 }
 
 #[inline]
 pub fn disable_irqs() {
-    unsafe { asm!("cli") };
+    #[cfg(target_os = "none")]
+    unsafe {
+        asm!("cli")
+    }
 }
 
 #[inline]
 pub fn irqs_enabled() -> bool {
-    !rflags::read().contains(RFlags::FLAGS_IF)
+    if cfg!(target_os = "none") {
+        !rflags::read().contains(RFlags::FLAGS_IF)
+    } else {
+        false
+    }
 }
 
 #[inline]
 pub fn wait_for_irqs() {
-    unsafe { asm!("sti; hlt; cli") };
+    if cfg!(target_os = "none") {
+        unsafe { asm!("sti; hlt; cli") }
+    } else {
+        core::hint::spin_loop()
+    }
 }
 
 #[inline]
