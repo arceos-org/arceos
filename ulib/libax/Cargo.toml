@@ -22,6 +22,9 @@ net = ["axruntime/net", "dep:axnet"]
 # File system
 fs = ["axruntime/fs"]
 
+# VirtIOGpu
+virtio-gpu = ["axruntime/virtio-gpu", "dep:axgpu"]
+
 # Logging
 log-level-off = ["axlog/log-level-off"]
 log-level-error = ["axlog/log-level-error"]
@@ -42,6 +45,9 @@ axerror = { path = "../../modules/axerror" }
 axhal = { path = "../../modules/axhal" }
 axlog = { path = "../../modules/axlog" }
 axnet = { path = "../../modules/axnet", optional = true }
+axgpu = { path = "../../modules/axgpu", optional = true }
 axruntime = { path = "../../modules/axruntime" }
 axsync = { path = "../../modules/axsync", default-features = false, optional = true }
 axtask = { path = "../../modules/axtask", default-features = false, optional = true }
+driver_gpu = { path = "../../crates/driver_gpu"}
+embedded-graphics = "0.7.1"

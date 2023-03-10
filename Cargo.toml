@@ -9,6 +9,7 @@ members = [
     "apps/net/httpserver",
     "apps/task/yield",
     "apps/task/parallel",
+    "apps/virtiogpu",
 
     "crates/allocator",
     "crates/crate_interface",
@@ -25,11 +26,13 @@ members = [
     "crates/scheduler",
     "crates/spinlock",
     "crates/tuple_for_each",
+    "crates/driver_gpu",
 
     "modules/axalloc",
     "modules/axconfig",
     "modules/axdriver",
     "modules/axerror",
+    "modules/axgpu",
     "modules/axhal",
     "modules/axlog",
     "modules/axnet",

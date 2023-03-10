@@ -11,6 +11,7 @@ bus-mmio = []
 bus-pci = []
 block = ["driver_block"]
 net = ["driver_net"]
+gpu = ["driver_gpu"]
 default = ["bus-mmio"]
 
 [dependencies]
@@ -19,4 +20,7 @@ cfg-if = "1.0"
 driver_common = { path = "../driver_common" }
 driver_block = { path = "../driver_block", optional = true }
 driver_net = { path = "../driver_net", optional = true }
+driver_gpu = { path = "../driver_gpu", optional = true}
 virtio-drivers = { git = "https://github.com/rcore-os/virtio-drivers.git", rev = "0491154" }
+tinybmp = "0.4.0"
+embedded-graphics = "0.7.1"

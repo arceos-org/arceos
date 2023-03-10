@@ -30,6 +30,12 @@ cfg_if! {
     }
 }
 
+cfg_if! {
+    if #[cfg(feature = "virtio-gpu")] {
+        pub type VirtIoGpuDev = driver_virtio::VirtIoGpuDev<VirtIoHalImpl, VirtIoTransport>;
+    }
+}
+
 pub struct VirtIoHalImpl;
 
 unsafe impl VirtIoHal for VirtIoHalImpl {
@@ -99,6 +105,13 @@ impl AllDevices {
     pub(crate) fn probe_virtio_net() -> Option<VirtIoNetDev> {
         Self::probe_devices_common(DeviceType::Net, |t| {
             VirtIoNetDev::try_new(t, NET_BUFFER_SIZE).ok()
+        })
+    }
+
+    #[cfg(feature = "virtio-gpu")]
+    pub(crate) fn probe_virtio_gpu() -> Option<VirtIoGpuDev> {
+        Self::probe_devices_common(DeviceType::Gpu, |t| {
+            VirtIoGpuDev::try_new(t).ok()
         })
     }
 }

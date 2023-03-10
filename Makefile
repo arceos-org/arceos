@@ -7,6 +7,7 @@ APP_LANG ?= rust
 
 FS ?= off
 NET ?= off
+GPU ?= off
 
 # Platform
 ifeq ($(ARCH), riscv64)
@@ -45,6 +46,11 @@ endif
 ifeq ($(NET), on)
   features += libax/net
 endif
+ifeq ($(GPU), on)
+  features += libax/virtio-gpu
+else
+  GRAPHIC_OPTION := -nographic
+endif
 
 build_args := --no-default-features --features "$(features)" --target $(target) -Zbuild-std=core,alloc -Zbuild-std-features=compiler-builtins-mem
 ifeq ($(MODE), release)
@@ -60,7 +66,7 @@ GDB := gdb-multiarch
 
 # QEMU
 qemu := qemu-system-$(ARCH)
-qemu_args := -nographic -m 128M
+qemu_args := $(GRAPHIC_OPTION) -m 128M
 
 ifeq ($(ARCH), riscv64)
   qemu_args += \
@@ -83,6 +89,10 @@ ifeq ($(NET), on)
   qemu_args += \
     -device virtio-net-device,netdev=net0 \
     -netdev user,id=net0,hostfwd=tcp::5555-:5555
+endif
+ifeq ($(GPU), on)
+  qemu_args += \
+    -device virtio-gpu-device
 endif
 
 build: $(kernel_bin)
