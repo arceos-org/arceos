@@ -21,5 +21,5 @@ pub mod task;
 #[cfg(feature = "net")]
 pub mod net;
 
-#[cfg(feature = "virtio-gpu")]
-pub mod gpu;
+#[cfg(feature = "display")]
+pub mod display;

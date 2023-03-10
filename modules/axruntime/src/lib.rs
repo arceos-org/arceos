@@ -106,7 +106,7 @@ pub extern "C" fn rust_main() -> ! {
     #[cfg(feature = "multitask")]
     axtask::init_scheduler();
 
-    #[cfg(any(feature = "fs", feature = "net", feature = "virtio-gpu"))]
+    #[cfg(any(feature = "fs", feature = "net", feature = "display"))]
     {
         #[allow(unused_variables)]
         let all_devices = axdriver::init_drivers();
@@ -114,8 +114,8 @@ pub extern "C" fn rust_main() -> ! {
         #[cfg(feature = "net")]
         axnet::init_network(all_devices.net);
 
-        #[cfg(feature = "virtio-gpu")]
-        axgpu::init_gpu(all_devices.gpu);
+        #[cfg(feature = "display")]
+        axdisplay::init_display(all_devices.display);
     }
 
     unsafe { main() };

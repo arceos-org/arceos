@@ -2,15 +2,15 @@
 #![no_main]
 
 extern crate libax;
-use libax::gpu::display::*;
+mod display;
+
+use display::*;
 
 use embedded_graphics::{
     mono_font::{ascii::FONT_10X20, MonoTextStyle},
     pixelcolor::Rgb888,
     prelude::*,
-    primitives::{
-        Circle, PrimitiveStyle, Rectangle, Triangle,
-    },
+    primitives::{Circle, PrimitiveStyle, Rectangle, Triangle},
     text::{Alignment, Text},
 };
 
@@ -21,6 +21,12 @@ const RECT_SIZE: u32 = 150;
 pub struct DrawingBoard {
     disp: Display,
     latest_pos: Point,
+}
+
+impl Default for DrawingBoard {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl DrawingBoard {
@@ -39,10 +45,14 @@ impl DrawingBoard {
             .into_styled(PrimitiveStyle::with_fill(Rgb888::BLUE))
             .draw(&mut self.disp)
             .ok();
-        Triangle::new(self.latest_pos + Point::new(0, 150), self.latest_pos + Point::new(80, 200), self.latest_pos + Point::new(-120, 300))
-            .into_styled(PrimitiveStyle::with_stroke(Rgb888::GREEN, 10))
-            .draw(&mut self.disp)
-            .ok();
+        Triangle::new(
+            self.latest_pos + Point::new(0, 150),
+            self.latest_pos + Point::new(80, 200),
+            self.latest_pos + Point::new(-120, 300),
+        )
+        .into_styled(PrimitiveStyle::with_stroke(Rgb888::GREEN, 10))
+        .draw(&mut self.disp)
+        .ok();
         let text = "ArceOS";
         Text::with_alignment(
             text,
@@ -50,7 +60,8 @@ impl DrawingBoard {
             MonoTextStyle::new(&FONT_10X20, Rgb888::YELLOW),
             Alignment::Center,
         )
-        .draw(&mut self.disp).ok();
+        .draw(&mut self.disp)
+        .ok();
     }
     fn unpaint(&mut self) {
         Rectangle::with_center(self.latest_pos, Size::new(RECT_SIZE, RECT_SIZE))
@@ -68,7 +79,7 @@ impl DrawingBoard {
 
 fn test_gpu() -> i32 {
     let mut board = DrawingBoard::new();
-    let _ = board.disp.clear(Rgb888::BLACK).unwrap();
+    board.disp.clear(Rgb888::BLACK).unwrap();
     for _ in 0..5 {
         board.latest_pos.x += RECT_SIZE as i32 + 20;
         board.paint();
@@ -76,8 +87,7 @@ fn test_gpu() -> i32 {
     0
 }
 
-
-fn test_gpu_simple() -> ! {
+fn test_gpu_simple() -> i32 {
     let mut disp = Display::new(Size::new(VIRTGPU_XRES, VIRTGPU_YRES));
     disp.paint_on_framebuffer(|fb| {
         for y in 0..VIRTGPU_YRES as usize {
@@ -89,7 +99,7 @@ fn test_gpu_simple() -> ! {
             }
         }
     });
-    loop{};
+    0
 }
 
 #[no_mangle]

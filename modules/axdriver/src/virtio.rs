@@ -31,7 +31,7 @@ cfg_if! {
 }
 
 cfg_if! {
-    if #[cfg(feature = "virtio-gpu")] {
+    if #[cfg(feature = "display")] {
         pub type VirtIoGpuDev = driver_virtio::VirtIoGpuDev<VirtIoHalImpl, VirtIoTransport>;
     }
 }
@@ -108,10 +108,8 @@ impl AllDevices {
         })
     }
 
-    #[cfg(feature = "virtio-gpu")]
-    pub(crate) fn probe_virtio_gpu() -> Option<VirtIoGpuDev> {
-        Self::probe_devices_common(DeviceType::Gpu, |t| {
-            VirtIoGpuDev::try_new(t).ok()
-        })
+    #[cfg(feature = "display")]
+    pub(crate) fn probe_virtio_display() -> Option<VirtIoGpuDev> {
+        Self::probe_devices_common(DeviceType::Display, |t| VirtIoGpuDev::try_new(t).ok())
     }
 }

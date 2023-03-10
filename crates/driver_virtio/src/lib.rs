@@ -19,9 +19,9 @@ cfg_if! {
     }
 }
 cfg_if! {
-    if #[cfg(feature = "gpu")] {
-        mod gpu;
-        pub use gpu::VirtIoGpuDev;
+    if #[cfg(feature = "display")] {
+        mod display;
+        pub use display::VirtIoGpuDev;
     }
 }
 
@@ -44,8 +44,17 @@ pub fn probe_mmio_device(
     use core::ptr::NonNull;
     use transport::mmio::VirtIOHeader;
 
+    debug!(
+        "reg_base:{:x},type_match:{}",
+        reg_base as usize,
+        type_match.unwrap() as usize
+    );
     let header = NonNull::new(reg_base as *mut VirtIOHeader).unwrap();
     if let Ok(transport) = unsafe { MmioTransport::new(header) } {
+        debug!(
+            "header type:{}",
+            as_dev_type(transport.device_type()).unwrap() as usize
+        );
         if type_match.is_none() || as_dev_type(transport.device_type()) == type_match {
             debug!(
                 "Detected virtio MMIO device with vendor id: {:#X}, device type: {:?}, version: {:?}",
@@ -68,7 +77,7 @@ const fn as_dev_type(t: transport::DeviceType) -> Option<DeviceType> {
     match t {
         Block => Some(DeviceType::Block),
         Network => Some(DeviceType::Net),
-        GPU => Some(DeviceType::Gpu),
+        GPU => Some(DeviceType::Display),
         _ => None,
     }
 }

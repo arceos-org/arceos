@@ -29,6 +29,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "arceos-display"
+version = "0.1.0"
+dependencies = [
+ "embedded-graphics",
+ "libax",
+]
+
+[[package]]
 name = "arceos-echoserver"
 version = "0.1.0"
 dependencies = [
@@ -74,14 +82,6 @@ dependencies = [
 name = "arceos-parallel"
 version = "0.1.0"
 dependencies = [
- "libax",
-]
-
-[[package]]
-name = "arceos-virtiogpu"
-version = "0.1.0"
-dependencies = [
- "embedded-graphics",
  "libax",
 ]
 
@@ -139,6 +139,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "axdisplay"
+version = "0.1.0"
+dependencies = [
+ "axdriver",
+ "axsync",
+ "lazy_init",
+ "log",
+]
+
+[[package]]
 name = "axdriver"
 version = "0.1.0"
 dependencies = [
@@ -148,7 +158,7 @@ dependencies = [
  "cfg-if",
  "driver_block",
  "driver_common",
- "driver_gpu",
+ "driver_display",
  "driver_net",
  "driver_virtio",
  "log",
@@ -158,16 +168,6 @@ dependencies = [
 [[package]]
 name = "axerror"
 version = "0.1.0"
-
-[[package]]
-name = "axgpu"
-version = "0.1.0"
-dependencies = [
- "axdriver",
- "axsync",
- "lazy_init",
- "log",
-]
 
 [[package]]
 name = "axhal"
@@ -225,8 +225,8 @@ version = "0.1.0"
 dependencies = [
  "axalloc",
  "axconfig",
+ "axdisplay",
  "axdriver",
- "axgpu",
  "axhal",
  "axlog",
  "axnet",
@@ -489,7 +489,7 @@ name = "driver_common"
 version = "0.1.0"
 
 [[package]]
-name = "driver_gpu"
+name = "driver_display"
 version = "0.1.0"
 dependencies = [
  "driver_common",
@@ -509,11 +509,9 @@ dependencies = [
  "cfg-if",
  "driver_block",
  "driver_common",
- "driver_gpu",
+ "driver_display",
  "driver_net",
- "embedded-graphics",
  "log",
- "tinybmp",
  "virtio-drivers",
 ]
 
@@ -688,16 +686,16 @@ version = "0.1.0"
 name = "libax"
 version = "0.1.0"
 dependencies = [
+ "axdisplay",
  "axdriver",
  "axerror",
- "axgpu",
  "axhal",
  "axlog",
  "axnet",
  "axruntime",
  "axsync",
  "axtask",
- "driver_gpu",
+ "driver_display",
  "embedded-graphics",
 ]
 
@@ -1144,15 +1142,6 @@ dependencies = [
  "libc",
  "wasi 0.10.0+wasi-snapshot-preview1",
  "winapi",
-]
-
-[[package]]
-name = "tinybmp"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e959c507975d768a226a08227d56791f6e60bddcf714ad7ef67ae2d20bae743"
-dependencies = [
- "embedded-graphics",
 ]
 
 [[package]]

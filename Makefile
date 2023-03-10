@@ -7,7 +7,7 @@ APP_LANG ?= rust
 
 FS ?= off
 NET ?= off
-GPU ?= off
+GRAPHIC ?= off
 
 # Platform
 ifeq ($(ARCH), riscv64)
@@ -46,8 +46,8 @@ endif
 ifeq ($(NET), on)
   features += libax/net
 endif
-ifeq ($(GPU), on)
-  features += libax/virtio-gpu
+ifeq ($(GRAPHIC), on)
+  features += libax/display
 else
   GRAPHIC_OPTION := -nographic
 endif
@@ -90,7 +90,7 @@ ifeq ($(NET), on)
     -device virtio-net-device,netdev=net0 \
     -netdev user,id=net0,hostfwd=tcp::5555-:5555
 endif
-ifeq ($(GPU), on)
+ifeq ($(GRAPHIC), on)
   qemu_args += \
     -device virtio-gpu-device
 endif

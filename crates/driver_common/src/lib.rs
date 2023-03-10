@@ -7,7 +7,6 @@ pub enum DeviceType {
     Char,
     Net,
     Display,
-    Gpu,
 }
 
 #[derive(Debug)]
