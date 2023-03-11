@@ -17,6 +17,7 @@ version = "0.1.0"
 dependencies = [
  "bitmap-allocator",
  "buddy_system_allocator",
+ "slab_allocator",
 ]
 
 [[package]]
@@ -966,6 +967,13 @@ dependencies = [
  "itoa",
  "ryu",
  "serde",
+]
+
+[[package]]
+name = "slab_allocator"
+version = "0.3.1"
+dependencies = [
+ "buddy_system_allocator",
 ]
 
 [[package]]

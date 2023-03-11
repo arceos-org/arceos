@@ -8,24 +8,24 @@ extern crate alloc;
 mod page;
 
 use allocator::{AllocResult, BaseAllocator, ByteAllocator, PageAllocator};
-use allocator::{BitmapPageAllocator, BuddyByteAllocator};
+use allocator::{BitmapPageAllocator, SlabByteAllocator};
 use core::alloc::{GlobalAlloc, Layout};
 use spinlock::SpinNoIrq;
 
 const PAGE_SIZE: usize = 0x1000;
-const MIN_HEAP_SIZE: usize = 0x4000; // 16 K
+const MIN_HEAP_SIZE: usize = 0x8000; // 32 K
 
 pub use page::GlobalPage;
 
 pub struct GlobalAllocator {
-    balloc: SpinNoIrq<BuddyByteAllocator>, // TODO: use IRQ-disabled lock
+    balloc: SpinNoIrq<SlabByteAllocator>,
     palloc: SpinNoIrq<BitmapPageAllocator<PAGE_SIZE>>,
 }
 
 impl GlobalAllocator {
     pub const fn new() -> Self {
         Self {
-            balloc: SpinNoIrq::new(BuddyByteAllocator::new()),
+            balloc: SpinNoIrq::new(SlabByteAllocator::new()),
             palloc: SpinNoIrq::new(BitmapPageAllocator::new()),
         }
     }

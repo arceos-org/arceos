@@ -23,6 +23,7 @@ members = [
     "crates/page_table_entry",
     "crates/ratio",
     "crates/scheduler",
+    "crates/slab_allocator",
     "crates/spinlock",
     "crates/tuple_for_each",
 
