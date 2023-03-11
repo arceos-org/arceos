@@ -49,17 +49,15 @@ pub fn register_handler(scause: usize, handler: IrqHandler) -> bool {
     )
 }
 
-/// Platform-dependent IRQ handler
-pub(crate) fn platform_handle_irq(scause: usize) {
+pub fn dispatch_irq(scause: usize) {
     with_cause!(
         scause,
         @TIMER => {
             trace!("IRQ: timer");
             TIMER_HANDLER();
         },
-        @EXT => crate::irq::dispatch_irq(0), // TODO: get IRQ number from PLIC
+        @EXT => crate::irq::dispatch_irq_common(0), // TODO: get IRQ number from PLIC
     );
-    crate::trap::task_try_preempt();
 }
 
 pub(super) fn init() {}

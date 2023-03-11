@@ -1,7 +1,7 @@
 use alloc::{sync::Arc, vec::Vec};
 use lazy_init::LazyInit;
 use scheduler::BaseScheduler;
-use spinlock::SpinNoIrq;
+use spinlock::{SpinNoIrq, SpinNoPreempt};
 
 use crate::task::TaskState;
 use crate::{AxTaskRef, Scheduler, TaskInner, WaitQueue};
@@ -12,7 +12,7 @@ const BUILTIN_TASK_STACK_SIZE: usize = 4096;
 pub(crate) static RUN_QUEUE: LazyInit<SpinNoIrq<AxRunQueue>> = LazyInit::new();
 
 // TODO: per-CPU
-static EXITED_TASKS: SpinNoIrq<Vec<AxTaskRef>> = SpinNoIrq::new(Vec::new());
+static EXITED_TASKS: SpinNoPreempt<Vec<AxTaskRef>> = SpinNoPreempt::new(Vec::new());
 
 static WAIT_FOR_EXIT: WaitQueue = WaitQueue::new();
 
@@ -49,31 +49,57 @@ impl AxRunQueue {
     pub fn scheduler_timer_tick(&mut self) {
         let curr = crate::current();
         if self.scheduler.task_tick(curr) {
-            curr.set_need_resched();
+            #[cfg(feature = "preempt")]
+            curr.set_preempt_pending(true);
         }
     }
 
     pub fn yield_current(&mut self) {
-        let task = crate::current();
-        debug!("task yield: {}", task.id_name());
-        assert!(task.is_runnable());
-        self.resched();
+        let curr = crate::current();
+        debug!("task yield: {}", curr.id_name());
+        assert!(curr.is_runnable());
+        self.resched_inner(false);
+    }
+
+    #[cfg(feature = "preempt")]
+    pub fn resched(&mut self) {
+        let curr = crate::current();
+        assert!(curr.is_runnable());
+
+        // When we get the mutable reference of the run queue, we must
+        // have held the `SpinNoIrq` lock with both IRQs and preemption
+        // disabled. So we need to re-enable preemption once at this time to
+        // obtain the preemption permission before locking the run queue.
+        curr.enable_preempt(false);
+        let can_preempt = curr.can_preempt();
+        curr.disable_preempt();
+
+        debug!(
+            "current task is to be preempted: {}, allow={}",
+            curr.id_name(),
+            can_preempt
+        );
+        if can_preempt {
+            self.resched_inner(true);
+        } else {
+            curr.set_preempt_pending(true);
+        }
     }
 
     pub fn exit_current(&mut self, exit_code: i32) -> ! {
-        let task = crate::current();
-        debug!("task exit: {}, exit_code={}", task.id_name(), exit_code);
-        assert!(task.is_runnable());
-        assert!(!task.is_idle());
-        if Arc::ptr_eq(task, &self.init_task) {
+        let curr = crate::current();
+        debug!("task exit: {}, exit_code={}", curr.id_name(), exit_code);
+        assert!(curr.is_runnable());
+        assert!(!curr.is_idle());
+        if Arc::ptr_eq(curr, &self.init_task) {
             EXITED_TASKS.lock().clear();
             axhal::misc::terminate();
         } else {
-            task.set_state(TaskState::Exited);
-            let task = self.scheduler.remove_task(task).expect("BUG");
-            EXITED_TASKS.lock().push(task);
-            WAIT_FOR_EXIT.notify_one_locked(self);
-            self.resched();
+            curr.set_state(TaskState::Exited);
+            let curr = self.scheduler.remove_task(curr).expect("BUG");
+            EXITED_TASKS.lock().push(curr);
+            WAIT_FOR_EXIT.notify_one_locked(false, self);
+            self.resched_inner(false);
         }
         unreachable!("task exited!");
     }
@@ -82,26 +108,32 @@ impl AxRunQueue {
     where
         F: FnOnce(AxTaskRef),
     {
-        let task = crate::current();
-        debug!("task block: {}", task.id_name());
-        assert!(task.is_runnable());
-        assert!(!task.is_idle());
-        task.set_state(TaskState::Blocked);
-        let task = self.scheduler.remove_task(task).expect("BUG");
+        let curr = crate::current();
+        debug!("task block: {}", curr.id_name());
+        assert!(curr.is_runnable());
+        assert!(!curr.is_idle());
+        curr.set_state(TaskState::Blocked);
+        let task = self.scheduler.remove_task(curr).expect("BUG");
         wait_queue_push(task);
-        self.resched();
+        self.resched_inner(false);
     }
 
-    pub fn unblock_task(&mut self, task: AxTaskRef) {
+    pub fn unblock_task(&mut self, task: AxTaskRef, resched: bool) {
         debug!("task unblock: {}", task.id_name());
         assert!(task.is_blocked());
         task.set_state(TaskState::Runnable);
-        self.scheduler.add_task(task);
+        self.scheduler.add_task(task); // TODO: priority
+        if resched {
+            #[cfg(feature = "preempt")]
+            crate::current().set_preempt_pending(true);
+        }
     }
 }
 
 impl AxRunQueue {
-    fn resched(&mut self) {
+    /// Common reschedule subroutine. If `preempt`, keep current task's time
+    /// slice, otherwise reset it.
+    fn resched_inner(&mut self, _preempt: bool) {
         let prev = crate::current();
         let next = self
             .scheduler
@@ -110,6 +142,8 @@ impl AxRunQueue {
         if !next.is_idle() {
             self.scheduler.put_prev_task(next.clone());
         }
+        #[cfg(feature = "preempt")]
+        next.set_preempt_pending(false);
         self.switch_to(prev, next);
     }
 

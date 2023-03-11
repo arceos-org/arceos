@@ -19,7 +19,7 @@ fn riscv_trap_handler(tf: &mut TrapFrame, _from_user: bool) {
     let scause = scause::read();
     match scause.cause() {
         Trap::Exception(E::Breakpoint) => handle_breakpoint(&mut tf.sepc),
-        Trap::Interrupt(_) => crate::platform::irq::platform_handle_irq(scause.bits()),
+        Trap::Interrupt(_) => crate::trap::handle_irq_extern(scause.bits()),
         _ => {
             panic!(
                 "Unhandled trap {:?} @ {:#x}:\n{:#x?}",

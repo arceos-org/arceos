@@ -11,9 +11,10 @@ multitask = [ # without the feature, can still use the empty yield_now() and exi
     "dep:axconfig", "dep:spinlock", "dep:lazy_init",
     "dep:memory_addr", "dep:scheduler",
 ]
+preempt = []
 
 sched_fifo = ["multitask"]
-sched_rr = ["multitask"]
+sched_rr = ["multitask", "preempt"]
 default = ["sched_fifo"]
 
 [dependencies]
@@ -28,4 +29,3 @@ scheduler = { path = "../../crates/scheduler", optional = true }
 
 [dev-dependencies]
 rand = "0.8"
-spinlock = { path = "../../crates/spinlock", features = ["std"] }

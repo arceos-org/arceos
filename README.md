@@ -17,11 +17,11 @@ ArceOS was inspired a lot by [Unikraft](https://github.com/unikraft/unikraft).
 * [x] VirtIO net/blk drivers
 * [x] TCP net stack using [smoltcp](https://github.com/smoltcp-rs/smoltcp)
 * [x] Synchronization/Mutex
+* [x] Kernel preemption
 * [ ] File system
 * [ ] Compatible with Linux apps
 * [ ] Interrupt driven device I/O
 * [ ] Async I/O
-* [ ] Kernel preemption
 * [ ] SMP
 
 ## Example apps

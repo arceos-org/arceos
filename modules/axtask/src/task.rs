@@ -2,6 +2,9 @@ use alloc::{boxed::Box, sync::Arc};
 use core::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
 use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 
+#[cfg(feature = "preempt")]
+use core::sync::atomic::AtomicUsize;
+
 use axhal::arch::TaskContext;
 use memory_addr::{align_up_4k, VirtAddr};
 
@@ -26,7 +29,11 @@ pub struct TaskInner {
     state: AtomicU8,
 
     in_wait_queue: AtomicBool,
+
+    #[cfg(feature = "preempt")]
     need_resched: AtomicBool,
+    #[cfg(feature = "preempt")]
+    preempt_disable_count: AtomicUsize,
 
     kstack: Option<TaskStack>,
     ctx: UnsafeCell<TaskContext>,
@@ -82,7 +89,10 @@ impl TaskInner {
             entry: None,
             state: AtomicU8::new(TaskState::Runnable as u8),
             in_wait_queue: AtomicBool::new(false),
+            #[cfg(feature = "preempt")]
             need_resched: AtomicBool::new(false),
+            #[cfg(feature = "preempt")]
+            preempt_disable_count: AtomicUsize::new(0),
             kstack: None,
             ctx: UnsafeCell::new(TaskContext::new()),
         }
@@ -142,12 +152,38 @@ impl TaskInner {
         self.in_wait_queue.store(val, Ordering::SeqCst)
     }
 
-    pub(crate) fn check_and_clear_need_resched(&self) -> bool {
-        self.need_resched.swap(false, Ordering::SeqCst)
+    #[cfg(feature = "preempt")]
+    pub(crate) fn set_preempt_pending(&self, pending: bool) {
+        self.need_resched.store(pending, Ordering::SeqCst)
     }
 
-    pub(crate) fn set_need_resched(&self) {
-        self.need_resched.store(true, Ordering::SeqCst)
+    #[cfg(feature = "preempt")]
+    pub(crate) fn can_preempt(&self) -> bool {
+        self.preempt_disable_count.load(Ordering::SeqCst) == 0
+    }
+
+    #[cfg(feature = "preempt")]
+    pub(crate) fn disable_preempt(&self) {
+        self.preempt_disable_count.fetch_add(1, Ordering::SeqCst);
+    }
+
+    #[cfg(feature = "preempt")]
+    pub(crate) fn enable_preempt(&self, resched: bool) {
+        if self.preempt_disable_count.fetch_sub(1, Ordering::SeqCst) == 1 && resched {
+            // If current task is pending to be preempted, do rescheduling.
+            Self::current_check_preempt_pending();
+        }
+    }
+
+    #[cfg(feature = "preempt")]
+    fn current_check_preempt_pending() {
+        let curr = crate::current();
+        if curr.need_resched.load(Ordering::SeqCst) && curr.can_preempt() {
+            let mut rq = crate::RUN_QUEUE.lock();
+            if curr.need_resched.load(Ordering::SeqCst) {
+                rq.resched();
+            }
+        }
     }
 
     pub(crate) const unsafe fn ctx_mut_ptr(&self) -> *mut TaskContext {

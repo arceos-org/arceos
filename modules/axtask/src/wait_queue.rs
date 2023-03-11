@@ -57,34 +57,40 @@ impl WaitQueue {
         self.cancel_events(crate::current());
     }
 
-    pub fn notify_one(&self) -> bool {
-        self.notify_one_locked(&mut RUN_QUEUE.lock())
-    }
-
-    pub fn notify_all(&self) {
-        let mut rq = RUN_QUEUE.lock();
-        while let Some(task) = self.queue.lock().pop_front() {
-            task.set_in_wait_queue(false);
-            rq.unblock_task(task);
+    pub fn notify_one(&self, resched: bool) -> bool {
+        if !self.queue.lock().is_empty() {
+            self.notify_one_locked(resched, &mut RUN_QUEUE.lock())
+        } else {
+            false
         }
     }
 
-    pub fn notify_task(&mut self, task: &AxTaskRef) -> bool {
+    pub fn notify_all(&self, resched: bool) {
+        if !self.queue.lock().is_empty() {
+            let mut rq = RUN_QUEUE.lock();
+            while let Some(task) = self.queue.lock().pop_front() {
+                task.set_in_wait_queue(false);
+                rq.unblock_task(task, resched);
+            }
+        }
+    }
+
+    pub fn notify_task(&mut self, resched: bool, task: &AxTaskRef) -> bool {
         let mut rq = RUN_QUEUE.lock();
         let mut wq = self.queue.lock();
         if let Some(index) = wq.iter().position(|t| Arc::ptr_eq(t, task)) {
             task.set_in_wait_queue(false);
-            rq.unblock_task(wq.remove(index).unwrap());
+            rq.unblock_task(wq.remove(index).unwrap(), resched);
             true
         } else {
             false
         }
     }
 
-    pub(crate) fn notify_one_locked(&self, rq: &mut AxRunQueue) -> bool {
+    pub(crate) fn notify_one_locked(&self, resched: bool, rq: &mut AxRunQueue) -> bool {
         if let Some(task) = self.queue.lock().pop_front() {
             task.set_in_wait_queue(false);
-            rq.unblock_task(task);
+            rq.unblock_task(task, resched);
             true
         } else {
             false

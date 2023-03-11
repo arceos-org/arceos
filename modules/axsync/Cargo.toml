@@ -16,4 +16,3 @@ axtask = { path = "../axtask", default-features = false }
 
 [dev-dependencies]
 rand = "0.8"
-spinlock = { path = "../../crates/spinlock", features = ["std"] }

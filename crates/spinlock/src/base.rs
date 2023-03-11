@@ -13,14 +13,14 @@ use core::ops::{Deref, DerefMut};
 #[cfg(feature = "smp")]
 use core::sync::atomic::{AtomicBool, Ordering};
 
-use super::SpinLockStrategy;
+use crate::guard::BaseGuard;
 
 /// A [spin lock](https://en.m.wikipedia.org/wiki/Spinlock) providing mutually exclusive access to data.
 ///
 /// For single-core systems (without the "smp" feature), we remove the lock state,
 /// CPU can always get the lock if we follow the proper [`SpinLockStrategy`] in use.
-pub struct BaseSpinLock<S: SpinLockStrategy, T: ?Sized> {
-    _phantom: PhantomData<S>,
+pub struct BaseSpinLock<G: BaseGuard, T: ?Sized> {
+    _phantom: PhantomData<G>,
     #[cfg(feature = "smp")]
     lock: AtomicBool,
     data: UnsafeCell<T>,
@@ -29,19 +29,19 @@ pub struct BaseSpinLock<S: SpinLockStrategy, T: ?Sized> {
 /// A guard that provides mutable data access.
 ///
 /// When the guard falls out of scope it will release the lock.
-pub struct BaseSpinLockGuard<'a, S: SpinLockStrategy, T: ?Sized + 'a> {
-    _phantom: &'a PhantomData<S>,
-    flags: S::Flags,
+pub struct BaseSpinLockGuard<'a, G: BaseGuard, T: ?Sized + 'a> {
+    _phantom: &'a PhantomData<G>,
+    irq_state: G::State,
     data: *mut T,
     #[cfg(feature = "smp")]
     lock: &'a AtomicBool,
 }
 
 // Same unsafe impls as `std::sync::Mutex`
-unsafe impl<S: SpinLockStrategy, T: ?Sized + Send> Sync for BaseSpinLock<S, T> {}
-unsafe impl<S: SpinLockStrategy, T: ?Sized + Send> Send for BaseSpinLock<S, T> {}
+unsafe impl<G: BaseGuard, T: ?Sized + Send> Sync for BaseSpinLock<G, T> {}
+unsafe impl<G: BaseGuard, T: ?Sized + Send> Send for BaseSpinLock<G, T> {}
 
-impl<S: SpinLockStrategy, T> BaseSpinLock<S, T> {
+impl<G: BaseGuard, T> BaseSpinLock<G, T> {
     /// Creates a new [`BaseSpinLock`] wrapping the supplied data.
     #[inline(always)]
     pub const fn new(data: T) -> Self {
@@ -63,14 +63,14 @@ impl<S: SpinLockStrategy, T> BaseSpinLock<S, T> {
     }
 }
 
-impl<S: SpinLockStrategy, T: ?Sized> BaseSpinLock<S, T> {
+impl<G: BaseGuard, T: ?Sized> BaseSpinLock<G, T> {
     /// Locks the [`BaseSpinLock`] and returns a guard that permits access to the inner data.
     ///
     /// The returned value may be dereferenced for data access
     /// and the lock will be dropped when the guard falls out of scope.
     #[inline(always)]
-    pub fn lock(&self) -> BaseSpinLockGuard<S, T> {
-        let flags = S::acquire();
+    pub fn lock(&self) -> BaseSpinLockGuard<G, T> {
+        let irq_state = G::acquire();
         #[cfg(feature = "smp")]
         {
             // Can fail to lock even if the spinlock is not locked. May be more efficient than `try_lock`
@@ -88,7 +88,7 @@ impl<S: SpinLockStrategy, T: ?Sized> BaseSpinLock<S, T> {
         }
         BaseSpinLockGuard {
             _phantom: &PhantomData,
-            flags,
+            irq_state,
             data: unsafe { &mut *self.data.get() },
             #[cfg(feature = "smp")]
             lock: &self.lock,
@@ -114,8 +114,8 @@ impl<S: SpinLockStrategy, T: ?Sized> BaseSpinLock<S, T> {
 
     /// Try to lock this [`BaseSpinLock`], returning a lock guard if successful.
     #[inline(always)]
-    pub fn try_lock(&self) -> Option<BaseSpinLockGuard<S, T>> {
-        let flags = S::acquire();
+    pub fn try_lock(&self) -> Option<BaseSpinLockGuard<G, T>> {
+        let irq_state = G::acquire();
 
         cfg_if::cfg_if! {
             if #[cfg(feature = "smp")] {
@@ -133,7 +133,7 @@ impl<S: SpinLockStrategy, T: ?Sized> BaseSpinLock<S, T> {
         if is_unlocked {
             Some(BaseSpinLockGuard {
                 _phantom: &PhantomData,
-                flags,
+                irq_state,
                 data: unsafe { &mut *self.data.get() },
                 #[cfg(feature = "smp")]
                 lock: &self.lock,
@@ -169,14 +169,14 @@ impl<S: SpinLockStrategy, T: ?Sized> BaseSpinLock<S, T> {
     }
 }
 
-impl<S: SpinLockStrategy, T: ?Sized + ~const Default> const Default for BaseSpinLock<S, T> {
+impl<G: BaseGuard, T: ?Sized + ~const Default> const Default for BaseSpinLock<G, T> {
     #[inline(always)]
     fn default() -> Self {
         Self::new(Default::default())
     }
 }
 
-impl<S: SpinLockStrategy, T: ?Sized + fmt::Debug> fmt::Debug for BaseSpinLock<S, T> {
+impl<G: BaseGuard, T: ?Sized + fmt::Debug> fmt::Debug for BaseSpinLock<G, T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.try_lock() {
             Some(guard) => write!(f, "SpinLock {{ data: ")
@@ -187,7 +187,7 @@ impl<S: SpinLockStrategy, T: ?Sized + fmt::Debug> fmt::Debug for BaseSpinLock<S,
     }
 }
 
-impl<'a, S: SpinLockStrategy, T: ?Sized> Deref for BaseSpinLockGuard<'a, S, T> {
+impl<'a, G: BaseGuard, T: ?Sized> Deref for BaseSpinLockGuard<'a, G, T> {
     type Target = T;
     #[inline(always)]
     fn deref(&self) -> &T {
@@ -196,7 +196,7 @@ impl<'a, S: SpinLockStrategy, T: ?Sized> Deref for BaseSpinLockGuard<'a, S, T> {
     }
 }
 
-impl<'a, S: SpinLockStrategy, T: ?Sized> DerefMut for BaseSpinLockGuard<'a, S, T> {
+impl<'a, G: BaseGuard, T: ?Sized> DerefMut for BaseSpinLockGuard<'a, G, T> {
     #[inline(always)]
     fn deref_mut(&mut self) -> &mut T {
         // We know statically that only we are referencing data
@@ -204,20 +204,20 @@ impl<'a, S: SpinLockStrategy, T: ?Sized> DerefMut for BaseSpinLockGuard<'a, S, T
     }
 }
 
-impl<'a, S: SpinLockStrategy, T: ?Sized + fmt::Debug> fmt::Debug for BaseSpinLockGuard<'a, S, T> {
+impl<'a, G: BaseGuard, T: ?Sized + fmt::Debug> fmt::Debug for BaseSpinLockGuard<'a, G, T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         fmt::Debug::fmt(&**self, f)
     }
 }
 
-impl<'a, S: SpinLockStrategy, T: ?Sized> Drop for BaseSpinLockGuard<'a, S, T> {
+impl<'a, G: BaseGuard, T: ?Sized> Drop for BaseSpinLockGuard<'a, G, T> {
     /// The dropping of the [`BaseSpinLockGuard`] will release the lock it was
     /// created from.
     #[inline(always)]
     fn drop(&mut self) {
         #[cfg(feature = "smp")]
         self.lock.store(false, Ordering::Release);
-        S::release(self.flags);
+        G::release(self.irq_state);
     }
 }
 

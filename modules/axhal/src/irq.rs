@@ -2,14 +2,14 @@ use handler_table::HandlerTable;
 
 use crate::platform::irq::MAX_IRQ_COUNT;
 
-pub use crate::platform::irq::{register_handler, set_enable};
+pub use crate::platform::irq::{dispatch_irq, register_handler, set_enable};
 pub use handler_table::Handler as IrqHandler;
 
 static IRQ_HANDLER_TABLE: HandlerTable<MAX_IRQ_COUNT> = HandlerTable::new();
 
 /// Platform-independent IRQ handler
 #[allow(dead_code)]
-pub(crate) fn dispatch_irq(irq_num: usize) {
+pub(crate) fn dispatch_irq_common(irq_num: usize) {
     trace!("IRQ {}", irq_num);
     if !IRQ_HANDLER_TABLE.handle(irq_num) {
         warn!("Unhandled IRQ {}", irq_num);

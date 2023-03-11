@@ -73,19 +73,19 @@ fn test_wait_queue() {
         axtask::spawn(move || {
             COUNTER.fetch_add(1, Ordering::Relaxed);
             println!("task {:?} started", current().id());
-            WQ1.notify_one(); // WQ1.wait_until()
+            WQ1.notify_one(true); // WQ1.wait_until()
             WQ2.wait();
 
             COUNTER.fetch_sub(1, Ordering::Relaxed);
             println!("task {:?} finished", current().id());
-            WQ1.notify_one(); // WQ1.wait_until()
+            WQ1.notify_one(true); // WQ1.wait_until()
         });
     }
 
     println!("task {:?} is waiting for tasks to start...", current().id());
     WQ1.wait_until(|| COUNTER.load(Ordering::Relaxed) == NUM_TASKS);
     assert_eq!(COUNTER.load(Ordering::Relaxed), NUM_TASKS);
-    WQ2.notify_all(); // WQ2.wait()
+    WQ2.notify_all(true); // WQ2.wait()
 
     println!(
         "task {:?} is waiting for tasks to finish...",

@@ -179,7 +179,7 @@ impl<'a, T: ?Sized> Drop for MutexGuard<'a, T> {
             "{} tried to release mutex it doesn't own",
             current().id_name()
         );
-        self.lock.wq.notify_one();
+        self.lock.wq.notify_one(true);
     }
 }
 

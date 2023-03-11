@@ -56,5 +56,5 @@ pub mod irq {
         false
     }
 
-    pub(crate) fn platform_handle_irq(irq_num: usize) {}
+    pub fn dispatch_irq(irq_num: usize) {}
 }

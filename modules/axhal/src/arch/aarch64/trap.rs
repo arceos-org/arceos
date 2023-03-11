@@ -81,5 +81,5 @@ fn handle_sync_exception(tf: &mut TrapFrame) {
 
 #[no_mangle]
 fn handle_irq_exception(_tf: &mut TrapFrame) {
-    crate::platform::irq::platform_handle_irq(0)
+    crate::trap::handle_irq_extern(0)
 }

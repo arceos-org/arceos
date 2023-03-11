@@ -24,10 +24,8 @@ pub fn register_handler(irq_num: usize, handler: IrqHandler) -> bool {
     crate::irq::register_handler_common(irq_num, handler)
 }
 
-/// Platform-dependent IRQ handler
-pub(crate) fn platform_handle_irq(_unused: usize) {
-    GICC.handle_irq(|irq_num| crate::irq::dispatch_irq(irq_num as _));
-    crate::trap::task_try_preempt();
+pub fn dispatch_irq(_unused: usize) {
+    GICC.handle_irq(|irq_num| crate::irq::dispatch_irq_common(irq_num as _));
 }
 
 pub(super) fn init() {

@@ -24,7 +24,7 @@ fn barrier() {
     static BARRIER_COUNT: AtomicUsize = AtomicUsize::new(0);
     BARRIER_COUNT.fetch_add(1, Ordering::Relaxed);
     BARRIER_WQ.wait_until(|| BARRIER_COUNT.load(Ordering::Relaxed) == NUM_TASKS);
-    BARRIER_WQ.notify_all();
+    BARRIER_WQ.notify_all(true);
 }
 
 #[no_mangle]
@@ -56,7 +56,7 @@ fn main() {
             println!("part {}: {:?} finished", i, task::current().id());
             let n = FINISHED_TASKS.fetch_add(1, Ordering::Relaxed);
             if n == NUM_TASKS - 1 {
-                MAIN_WQ.notify_one();
+                MAIN_WQ.notify_one(true);
             }
         });
     }

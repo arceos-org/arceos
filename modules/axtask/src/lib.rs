@@ -48,7 +48,7 @@ pub(crate) fn set_current(task: AxTaskRef) {
 }
 
 pub fn current_may_uninit<'a>() -> Option<&'a AxTaskRef> {
-    unsafe{ CURRENT_TASK.try_get() }
+    unsafe { CURRENT_TASK.try_get() }
 }
 
 pub fn current<'a>() -> &'a AxTaskRef {
@@ -74,10 +74,14 @@ pub fn on_timer_tick() {
     RUN_QUEUE.lock().scheduler_timer_tick();
 }
 
-/// If the current task need to be preempted, yield it, otherwise do nothing.
-pub fn try_preempt() {
-    if current().check_and_clear_need_resched() {
-        RUN_QUEUE.lock().yield_current();
+pub fn set_preemptiable(_enabled: bool) {
+    #[cfg(feature = "preempt")]
+    if let Some(curr) = current_may_uninit() {
+        if _enabled {
+            curr.enable_preempt(true);
+        } else {
+            curr.disable_preempt();
+        }
     }
 }
 
