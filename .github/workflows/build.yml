@@ -51,6 +51,8 @@ jobs:
       run: make ARCH=${{ matrix.arch }} APP=yield
     - name: Build task/parallel
       run: make ARCH=${{ matrix.arch }} APP=parallel
+    - name: Build task/sleep
+      run: make ARCH=${{ matrix.arch }} APP=sleep
     - name: Build net/echoserver
       run: make ARCH=${{ matrix.arch }} APP=echoserver
     - name: Build net/httpclient

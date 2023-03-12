@@ -14,6 +14,7 @@ extern crate axruntime;
 pub mod io;
 pub mod rand;
 pub mod sync;
+pub mod time;
 
 #[cfg(feature = "multitask")]
 pub mod task;

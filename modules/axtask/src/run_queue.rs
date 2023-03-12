@@ -126,6 +126,20 @@ impl AxRunQueue {
             crate::current().set_preempt_pending(true);
         }
     }
+
+    pub fn sleep_until(&mut self, deadline: axhal::time::TimeValue) {
+        let curr = crate::current();
+        debug!("task sleep: {}, deadline={:?}", curr.id_name(), deadline);
+        assert!(curr.is_running());
+        assert!(!curr.is_idle());
+
+        let now = axhal::time::current_time();
+        if now < deadline {
+            crate::timers::set_wakeup(deadline, curr.clone());
+            curr.set_state(TaskState::Blocked);
+            self.resched_inner(false);
+        }
+    }
 }
 
 impl AxRunQueue {

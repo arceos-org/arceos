@@ -78,6 +78,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "arceos-sleep"
+version = "0.1.0"
+dependencies = [
+ "libax",
+]
+
+[[package]]
 name = "arceos-yield"
 version = "0.1.0"
 dependencies = [
@@ -247,6 +254,7 @@ dependencies = [
  "rand",
  "scheduler",
  "spinlock",
+ "timer_list",
 ]
 
 [[package]]
@@ -1082,6 +1090,10 @@ dependencies = [
  "wasi 0.10.0+wasi-snapshot-preview1",
  "winapi",
 ]
+
+[[package]]
+name = "timer_list"
+version = "0.1.0"
 
 [[package]]
 name = "tock-registers"

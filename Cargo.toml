@@ -7,8 +7,9 @@ members = [
     "apps/net/echoserver",
     "apps/net/httpclient",
     "apps/net/httpserver",
-    "apps/task/yield",
     "apps/task/parallel",
+    "apps/task/sleep",
+    "apps/task/yield",
 
     "crates/allocator",
     "crates/arm_gic",
@@ -26,6 +27,7 @@ members = [
     "crates/ratio",
     "crates/scheduler",
     "crates/spinlock",
+    "crates/timer_list",
     "crates/tuple_for_each",
 
     "modules/axalloc",

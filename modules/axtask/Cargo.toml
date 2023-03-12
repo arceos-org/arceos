@@ -9,7 +9,7 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 [features]
 multitask = [ # without the feature, can still use the empty yield_now() and exit()
     "dep:axconfig", "dep:spinlock", "dep:lazy_init",
-    "dep:memory_addr", "dep:scheduler",
+    "dep:memory_addr", "dep:scheduler", "dep:timer_list"
 ]
 preempt = []
 
@@ -26,6 +26,7 @@ spinlock = { path = "../../crates/spinlock", optional = true }
 lazy_init = { path = "../../crates/lazy_init", optional = true }
 memory_addr = { path = "../../crates/memory_addr", optional = true }
 scheduler = { path = "../../crates/scheduler", optional = true }
+timer_list = { path = "../../crates/timer_list", optional = true }
 
 [dev-dependencies]
 rand = "0.8"

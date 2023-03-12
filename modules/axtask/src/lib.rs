@@ -11,6 +11,7 @@ extern crate alloc;
 
 mod run_queue;
 mod task;
+mod timers;
 mod wait_queue;
 
 #[cfg(test)]
@@ -64,6 +65,8 @@ pub fn init_scheduler() {
     RUN_QUEUE.init_by(rq);
     current().set_state(task::TaskState::Running);
 
+    self::timers::init();
+
     if cfg!(feature = "sched_fifo") {
         info!("  use FIFO scheduler.");
     } else if cfg!(feature = "sched_rr") {
@@ -73,6 +76,7 @@ pub fn init_scheduler() {
 
 /// Handle periodic timer ticks for task manager, e.g. advance scheduler, update timer.
 pub fn on_timer_tick() {
+    self::timers::check_events();
     RUN_QUEUE.lock().scheduler_timer_tick();
 }
 
@@ -97,6 +101,15 @@ where
 
 pub fn yield_now() {
     RUN_QUEUE.lock().yield_current();
+}
+
+pub fn sleep(dur: core::time::Duration) {
+    let deadline = axhal::time::current_time() + dur;
+    RUN_QUEUE.lock().sleep_until(deadline);
+}
+
+pub fn sleep_until(deadline: axhal::time::TimeValue) {
+    RUN_QUEUE.lock().sleep_until(deadline);
 }
 
 pub fn exit(exit_code: i32) -> ! {
