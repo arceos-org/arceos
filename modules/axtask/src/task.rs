@@ -16,9 +16,10 @@ pub struct TaskId(u64);
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub(crate) enum TaskState {
-    Runnable = 1,
-    Blocked = 2,
-    Exited = 3,
+    Running = 1,
+    Ready = 2,
+    Blocked = 3,
+    Exited = 4,
 }
 
 pub struct TaskInner {
@@ -55,9 +56,10 @@ impl TaskId {
 impl const From<u8> for TaskState {
     fn from(state: u8) -> Self {
         match state {
-            1 => Self::Runnable,
-            2 => Self::Blocked,
-            3 => Self::Exited,
+            1 => Self::Running,
+            2 => Self::Ready,
+            3 => Self::Blocked,
+            4 => Self::Exited,
             _ => unreachable!(),
         }
     }
@@ -87,7 +89,7 @@ impl TaskInner {
             id,
             name,
             entry: None,
-            state: AtomicU8::new(TaskState::Runnable as u8),
+            state: AtomicU8::new(TaskState::Ready as u8),
             in_wait_queue: AtomicBool::new(false),
             #[cfg(feature = "preempt")]
             need_resched: AtomicBool::new(false),
@@ -124,44 +126,59 @@ impl TaskInner {
         Arc::new(AxTask::new(t))
     }
 
+    #[inline]
     pub(crate) fn state(&self) -> TaskState {
         self.state.load(Ordering::SeqCst).into()
     }
 
+    #[inline]
     pub(crate) fn set_state(&self, state: TaskState) {
         self.state.store(state as u8, Ordering::SeqCst)
     }
 
-    pub(crate) fn is_runnable(&self) -> bool {
-        matches!(self.state(), TaskState::Runnable)
+    #[inline]
+    pub(crate) fn is_running(&self) -> bool {
+        matches!(self.state(), TaskState::Running)
     }
 
+    #[inline]
+    pub(crate) fn is_ready(&self) -> bool {
+        matches!(self.state(), TaskState::Ready)
+    }
+
+    #[inline]
     pub(crate) fn is_blocked(&self) -> bool {
         matches!(self.state(), TaskState::Blocked)
     }
 
+    #[inline]
     pub(crate) const fn is_idle(&self) -> bool {
         self.id.as_u64() == TaskId::IDLE_TASK_ID.as_u64()
     }
 
+    #[inline]
     pub(crate) fn in_wait_queue(&self) -> bool {
         self.in_wait_queue.load(Ordering::SeqCst)
     }
 
+    #[inline]
     pub(crate) fn set_in_wait_queue(&self, val: bool) {
         self.in_wait_queue.store(val, Ordering::SeqCst)
     }
 
+    #[inline]
     #[cfg(feature = "preempt")]
     pub(crate) fn set_preempt_pending(&self, pending: bool) {
         self.need_resched.store(pending, Ordering::SeqCst)
     }
 
+    #[inline]
     #[cfg(feature = "preempt")]
     pub(crate) fn can_preempt(&self) -> bool {
         self.preempt_disable_count.load(Ordering::SeqCst) == 0
     }
 
+    #[inline]
     #[cfg(feature = "preempt")]
     pub(crate) fn disable_preempt(&self) {
         self.preempt_disable_count.fetch_add(1, Ordering::SeqCst);
@@ -186,6 +203,7 @@ impl TaskInner {
         }
     }
 
+    #[inline]
     pub(crate) const unsafe fn ctx_mut_ptr(&self) -> *mut TaskContext {
         self.ctx.get()
     }

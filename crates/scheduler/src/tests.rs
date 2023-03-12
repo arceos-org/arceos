@@ -1,5 +1,5 @@
 macro_rules! def_test_sched {
-    ($name: ident, $scheduler: ident, $task: ident) => {
+    ($name: ident, $scheduler: ty, $task: ty) => {
         mod $name {
             use crate::*;
             use alloc::sync::Arc;
@@ -8,15 +8,15 @@ macro_rules! def_test_sched {
             fn test_sched() {
                 const NUM_TASKS: usize = 11;
 
-                let mut scheduler = $scheduler::new();
+                let mut scheduler = <$scheduler>::new();
                 for i in 0..NUM_TASKS {
-                    scheduler.add_task(Arc::new($task::new(i)));
+                    scheduler.add_task(Arc::new(<$task>::new(i)));
                 }
 
                 for i in 0..NUM_TASKS * 10 - 1 {
                     let next = scheduler.pick_next_task().unwrap();
                     assert_eq!(*next.inner(), i % NUM_TASKS);
-                    scheduler.put_prev_task(next);
+                    scheduler.put_prev_task(next, false);
                 }
 
                 let mut n = 0;
@@ -31,15 +31,15 @@ macro_rules! def_test_sched {
                 const NUM_TASKS: usize = 1_000_000;
                 const COUNT: usize = NUM_TASKS * 3;
 
-                let mut scheduler = $scheduler::new();
+                let mut scheduler = <$scheduler>::new();
                 for i in 0..NUM_TASKS {
-                    scheduler.add_task(Arc::new($task::new(i)));
+                    scheduler.add_task(Arc::new(<$task>::new(i)));
                 }
 
                 let t0 = std::time::Instant::now();
                 for _ in 0..COUNT {
                     let next = scheduler.pick_next_task().unwrap();
-                    scheduler.put_prev_task(next);
+                    scheduler.put_prev_task(next, false);
                 }
                 let t1 = std::time::Instant::now();
                 println!(
@@ -53,10 +53,10 @@ macro_rules! def_test_sched {
             fn bench_remove() {
                 const NUM_TASKS: usize = 10_000;
 
-                let mut scheduler = $scheduler::new();
+                let mut scheduler = <$scheduler>::new();
                 let mut tasks = Vec::new();
                 for i in 0..NUM_TASKS {
-                    let t = Arc::new($task::new(i));
+                    let t = Arc::new(<$task>::new(i));
                     tasks.push(t.clone());
                     scheduler.add_task(t);
                 }
@@ -77,5 +77,5 @@ macro_rules! def_test_sched {
     };
 }
 
-def_test_sched!(fifo, FifoScheduler, FifoTask);
-def_test_sched!(rr, RRScheduler, RRTask);
+def_test_sched!(fifo, FifoScheduler::<usize>, FifoTask::<usize>);
+def_test_sched!(rr, RRScheduler::<usize, 5>, RRTask::<usize, 5>);

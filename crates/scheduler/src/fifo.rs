@@ -68,7 +68,7 @@ impl<T> BaseScheduler for FifoScheduler<T> {
         self.ready_queue.pop_front()
     }
 
-    fn put_prev_task(&mut self, prev: Self::SchedItem) {
+    fn put_prev_task(&mut self, prev: Self::SchedItem, _preempt: bool) {
         self.ready_queue.push_back(prev);
     }
 

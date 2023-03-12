@@ -31,8 +31,9 @@ cfg_if::cfg_if! {
         type AxTask = scheduler::FifoTask<TaskInner>;
         type Scheduler = scheduler::FifoScheduler<TaskInner>;
     } else if #[cfg(feature = "sched_rr")] {
-        type AxTask = scheduler::RRTask<TaskInner>;
-        type Scheduler = scheduler::RRScheduler<TaskInner>;
+        const MAX_TIME_SLICE: usize = 5;
+        type AxTask = scheduler::RRTask<TaskInner, MAX_TIME_SLICE>;
+        type Scheduler = scheduler::RRScheduler<TaskInner, MAX_TIME_SLICE>;
     }
 }
 
@@ -61,6 +62,7 @@ pub fn init_scheduler() {
     let mut rq = AxRunQueue::new();
     unsafe { CURRENT_TASK.init_by(rq.get_mut().init_task().clone()) };
     RUN_QUEUE.init_by(rq);
+    current().set_state(task::TaskState::Running);
 
     if cfg!(feature = "sched_fifo") {
         info!("  use FIFO scheduler.");

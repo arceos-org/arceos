@@ -28,7 +28,6 @@ impl AxRunQueue {
         let init_task = TaskInner::new_init();
         let gc_task = TaskInner::new(gc_entry, "gc", BUILTIN_TASK_STACK_SIZE);
         let mut scheduler = Scheduler::new();
-        scheduler.add_task(init_task.clone());
         scheduler.add_task(gc_task);
         SpinNoIrq::new(Self {
             idle_task,
@@ -43,12 +42,13 @@ impl AxRunQueue {
 
     pub fn add_task(&mut self, task: AxTaskRef) {
         debug!("task spawn: {}", task.id_name());
+        assert!(task.is_ready());
         self.scheduler.add_task(task);
     }
 
     pub fn scheduler_timer_tick(&mut self) {
         let curr = crate::current();
-        if self.scheduler.task_tick(curr) {
+        if !curr.is_idle() && self.scheduler.task_tick(curr) {
             #[cfg(feature = "preempt")]
             curr.set_preempt_pending(true);
         }
@@ -57,14 +57,14 @@ impl AxRunQueue {
     pub fn yield_current(&mut self) {
         let curr = crate::current();
         debug!("task yield: {}", curr.id_name());
-        assert!(curr.is_runnable());
+        assert!(curr.is_running());
         self.resched_inner(false);
     }
 
     #[cfg(feature = "preempt")]
     pub fn resched(&mut self) {
         let curr = crate::current();
-        assert!(curr.is_runnable());
+        assert!(curr.is_running());
 
         // When we get the mutable reference of the run queue, we must
         // have held the `SpinNoIrq` lock with both IRQs and preemption
@@ -89,15 +89,14 @@ impl AxRunQueue {
     pub fn exit_current(&mut self, exit_code: i32) -> ! {
         let curr = crate::current();
         debug!("task exit: {}, exit_code={}", curr.id_name(), exit_code);
-        assert!(curr.is_runnable());
+        assert!(curr.is_running());
         assert!(!curr.is_idle());
         if Arc::ptr_eq(curr, &self.init_task) {
             EXITED_TASKS.lock().clear();
             axhal::misc::terminate();
         } else {
             curr.set_state(TaskState::Exited);
-            let curr = self.scheduler.remove_task(curr).expect("BUG");
-            EXITED_TASKS.lock().push(curr);
+            EXITED_TASKS.lock().push(curr.clone());
             WAIT_FOR_EXIT.notify_one_locked(false, self);
             self.resched_inner(false);
         }
@@ -110,18 +109,17 @@ impl AxRunQueue {
     {
         let curr = crate::current();
         debug!("task block: {}", curr.id_name());
-        assert!(curr.is_runnable());
+        assert!(curr.is_running());
         assert!(!curr.is_idle());
         curr.set_state(TaskState::Blocked);
-        let task = self.scheduler.remove_task(curr).expect("BUG");
-        wait_queue_push(task);
+        wait_queue_push(curr.clone());
         self.resched_inner(false);
     }
 
     pub fn unblock_task(&mut self, task: AxTaskRef, resched: bool) {
         debug!("task unblock: {}", task.id_name());
         assert!(task.is_blocked());
-        task.set_state(TaskState::Runnable);
+        task.set_state(TaskState::Ready);
         self.scheduler.add_task(task); // TODO: priority
         if resched {
             #[cfg(feature = "preempt")]
@@ -133,17 +131,18 @@ impl AxRunQueue {
 impl AxRunQueue {
     /// Common reschedule subroutine. If `preempt`, keep current task's time
     /// slice, otherwise reset it.
-    fn resched_inner(&mut self, _preempt: bool) {
+    fn resched_inner(&mut self, preempt: bool) {
         let prev = crate::current();
+        if prev.is_running() {
+            prev.set_state(TaskState::Ready);
+            if !prev.is_idle() {
+                self.scheduler.put_prev_task(prev.clone(), preempt);
+            }
+        }
         let next = self
             .scheduler
             .pick_next_task()
             .unwrap_or_else(|| self.idle_task.clone());
-        if !next.is_idle() {
-            self.scheduler.put_prev_task(next.clone());
-        }
-        #[cfg(feature = "preempt")]
-        next.set_preempt_pending(false);
         self.switch_to(prev, next);
     }
 
@@ -153,6 +152,9 @@ impl AxRunQueue {
             prev_task.id_name(),
             next_task.id_name()
         );
+        #[cfg(feature = "preempt")]
+        next_task.set_preempt_pending(false);
+        next_task.set_state(TaskState::Running);
         if Arc::ptr_eq(prev_task, &next_task) {
             return;
         }
@@ -164,7 +166,7 @@ impl AxRunQueue {
             // The strong reference count of `prev_task` will be decremented by 1,
             // but won't be dropped until `gc_function()` is called.
             assert!(Arc::strong_count(prev_task) > 1);
-            assert!(Arc::strong_count(&next_task) > 1);
+            assert!(Arc::strong_count(&next_task) >= 1);
 
             crate::set_current(next_task);
             (*prev_ctx_ptr).switch_to(&*next_ctx_ptr);

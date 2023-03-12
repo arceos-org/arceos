@@ -20,6 +20,6 @@ pub trait BaseScheduler {
     fn add_task(&mut self, task: Self::SchedItem);
     fn remove_task(&mut self, task: &Self::SchedItem) -> Option<Self::SchedItem>;
     fn pick_next_task(&mut self) -> Option<Self::SchedItem>;
-    fn put_prev_task(&mut self, prev: Self::SchedItem);
+    fn put_prev_task(&mut self, prev: Self::SchedItem, preempt: bool);
     fn task_tick(&mut self, current: &Self::SchedItem) -> bool;
 }
