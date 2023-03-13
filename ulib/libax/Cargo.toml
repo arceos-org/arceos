@@ -22,6 +22,9 @@ net = ["axruntime/net", "dep:axnet"]
 # File system
 fs = ["axruntime/fs"]
 
+# Display
+display = ["axruntime/display", "dep:axdisplay"]
+
 # Logging
 log-level-off = ["axlog/log-level-off"]
 log-level-error = ["axlog/log-level-error"]
@@ -37,6 +40,7 @@ platform-qemu-virt-aarch64 = ["axhal/platform-qemu-virt-aarch64", "axdriver?/bus
 default = ["axtask?/sched_fifo"]
 
 [dependencies]
+axdisplay = { path = "../../modules/axdisplay", optional = true }
 axdriver = { path = "../../modules/axdriver", optional = true }
 axerror = { path = "../../modules/axerror" }
 axhal = { path = "../../modules/axhal" }

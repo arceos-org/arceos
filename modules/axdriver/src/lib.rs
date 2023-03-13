@@ -10,6 +10,8 @@ use tuple_for_each::TupleForEach;
 
 #[cfg(feature = "virtio-blk")]
 pub use self::virtio::VirtIoBlockDev;
+#[cfg(feature = "virtio-gpu")]
+pub use self::virtio::VirtIoGpuDev;
 #[cfg(feature = "virtio-net")]
 pub use self::virtio::VirtIoNetDev;
 
@@ -25,9 +27,13 @@ pub struct NetDevices(
     // e.g. #[cfg(feature = "e1000")] pub e1000::E1000Dev,
 );
 
+#[derive(TupleForEach)]
+pub struct DisplayDevices(#[cfg(feature = "virtio-gpu")] pub VirtIoGpuDev);
+
 pub struct AllDevices {
     pub block: BlockDevices,
     pub net: NetDevices,
+    pub display: DisplayDevices,
 }
 
 impl AllDevices {
@@ -40,6 +46,10 @@ impl AllDevices {
             net: NetDevices(
                 #[cfg(feature = "virtio-net")]
                 Self::probe_virtio_net().expect("no virtio-net device found"),
+            ),
+            display: DisplayDevices(
+                #[cfg(feature = "virtio-gpu")]
+                Self::probe_virtio_display().expect("no virtio-gpu device found"),
             ),
         }
     }
