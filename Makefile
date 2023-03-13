@@ -8,6 +8,7 @@ APP_FEATURES ?=
 
 FS ?= off
 NET ?= off
+GRAPHIC ?= off
 
 # Platform
 ifeq ($(ARCH), riscv64)
@@ -46,6 +47,11 @@ endif
 ifeq ($(NET), on)
   features += libax/net
 endif
+ifeq ($(GRAPHIC), on)
+  features += libax/display
+else
+  GRAPHIC_OPTION := -nographic
+endif
 
 build_args := --features "$(features)" --target $(target) -Zbuild-std=core,alloc -Zbuild-std-features=compiler-builtins-mem
 ifneq ($(APP_FEATURES),)
@@ -64,8 +70,7 @@ GDB := gdb-multiarch
 
 # QEMU
 qemu := qemu-system-$(ARCH)
-qemu_args := -nographic -m 128M
-
+qemu_args := $(GRAPHIC_OPTION) -m 128M
 ifeq ($(ARCH), riscv64)
   qemu_args += \
     -machine virt \
@@ -87,6 +92,10 @@ ifeq ($(NET), on)
   qemu_args += \
     -device virtio-net-device,netdev=net0 \
     -netdev user,id=net0,hostfwd=tcp::5555-:5555
+endif
+ifeq ($(GRAPHIC), on)
+  qemu_args += \
+    -device virtio-gpu-device
 endif
 
 build: $(kernel_bin)
