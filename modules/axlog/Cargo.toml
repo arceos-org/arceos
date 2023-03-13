@@ -19,5 +19,6 @@ default = []
 [dependencies]
 cfg-if = "1.0"
 log = "0.4"
+spinlock = { path = "../../crates/spinlock" }
 crate_interface = { path = "../../crates/crate_interface" }
 chrono = { version = "0.4", optional = true }

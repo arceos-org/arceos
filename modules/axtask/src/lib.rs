@@ -125,5 +125,16 @@ pub fn exit(exit_code: i32) -> ! {
     axhal::misc::terminate()
 }
 
+pub fn sleep(dur: core::time::Duration) {
+    let deadline = axhal::time::current_time() + dur;
+    sleep_until(deadline)
+}
+
+pub fn sleep_until(deadline: axhal::time::TimeValue) {
+    while axhal::time::current_time() < deadline {
+        core::hint::spin_loop();
+    }
+}
+
 } // else
 } // cfg_if::cfg_if!

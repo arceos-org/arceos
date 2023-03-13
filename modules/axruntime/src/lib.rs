@@ -7,6 +7,9 @@ extern crate axlog;
 mod lang_items;
 mod trap;
 
+#[cfg(feature = "smp")]
+mod mp;
+
 const LOGO: &str = r#"
        d8888                            .d88888b.   .d8888b.
       d88888                           d88P" "Y88b d88P  Y88b
@@ -44,6 +47,14 @@ impl axlog::LogIf for LogIfImpl {
         axhal::time::current_time()
     }
 
+    fn current_cpu_id() -> usize {
+        if cfg!(feature = "smp") {
+            axhal::arch::cpu_id()
+        } else {
+            0
+        }
+    }
+
     fn current_task_id() -> Option<u64> {
         #[cfg(feature = "multitask")]
         {
@@ -59,23 +70,29 @@ impl axlog::LogIf for LogIfImpl {
 #[crate_interface::impl_interface]
 impl spinlock::GuardIf for GuardIfImpl {
     fn set_preemptible(_enabled: bool) {
-        #[cfg(feature = "multitask")]
-        axtask::set_preemptiable(_enabled);
+        #[cfg(feature = "multitask")] // TODO
+        if axhal::arch::cpu_id() == unsafe { BSP_ID } {
+            axtask::set_preemptiable(_enabled);
+        }
     }
 }
 
+static mut BSP_ID: usize = 0; // TODO
+
 #[cfg_attr(not(test), no_mangle)]
-pub extern "C" fn rust_main() -> ! {
+pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     println!("{}", LOGO);
     println!(
         "\
         arch = {}\n\
         platform = {}\n\
+        smp = {}\n\
         build_mode = {}\n\
         log_level = {}\n\
         ",
         option_env!("ARCH").unwrap_or(""),
         option_env!("PLATFORM").unwrap_or(""),
+        option_env!("SMP").unwrap_or(""),
         option_env!("MODE").unwrap_or(""),
         option_env!("LOG").unwrap_or(""),
     );
@@ -83,6 +100,8 @@ pub extern "C" fn rust_main() -> ! {
     axlog::init();
     axlog::set_max_level(option_env!("LOG").unwrap_or("")); // no effect if set `log-level-*` features
     info!("Logging is enabled.");
+    info!("Primary CPU {} started, dtb = {:#x}.", cpu_id, dtb);
+    unsafe { BSP_ID = cpu_id };
 
     info!("Found physcial memory regions:");
     for r in axhal::mem::memory_regions() {
@@ -122,7 +141,11 @@ pub extern "C" fn rust_main() -> ! {
         axdisplay::init_display(all_devices.display);
     }
 
+    info!("Initialize interrupt handlers...");
     init_interrupt();
+
+    #[cfg(feature = "smp")]
+    self::mp::start_secondary_cpus(cpu_id);
 
     unsafe { main() };
 
@@ -177,28 +200,35 @@ fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
 }
 
 fn init_interrupt() {
+    use axconfig::SMP;
     use axhal::time::TIMER_IRQ_NUM;
     use core::sync::atomic::{AtomicU64, Ordering};
 
     // Setup timer interrupt handler
     const PERIODIC_INTERVAL_NANOS: u64 =
         axhal::time::NANOS_PER_SEC / axconfig::TICKS_PER_SEC as u64;
-    static NEXT_DEADLINE: AtomicU64 = AtomicU64::new(0);
+    #[allow(clippy::declare_interior_mutable_const)]
+    const ZERO: AtomicU64 = AtomicU64::new(0);
+    static NEXT_DEADLINE: [AtomicU64; SMP] = [ZERO; SMP];
 
     fn update_timer() {
+        let cpu_id = axhal::arch::cpu_id();
         let now_ns = axhal::time::current_time_nanos();
-        let mut next_deadline = NEXT_DEADLINE.fetch_add(PERIODIC_INTERVAL_NANOS, Ordering::Acquire);
+        let mut next_deadline =
+            NEXT_DEADLINE[cpu_id].fetch_add(PERIODIC_INTERVAL_NANOS, Ordering::Acquire);
         if now_ns >= next_deadline {
             next_deadline = now_ns + PERIODIC_INTERVAL_NANOS;
-            NEXT_DEADLINE.store(next_deadline + PERIODIC_INTERVAL_NANOS, Ordering::SeqCst);
+            NEXT_DEADLINE[cpu_id].store(next_deadline + PERIODIC_INTERVAL_NANOS, Ordering::SeqCst);
         }
         axhal::time::set_oneshot_timer(next_deadline);
     }
 
     axhal::irq::register_handler(TIMER_IRQ_NUM, || {
         update_timer();
-        #[cfg(feature = "multitask")]
-        axtask::on_timer_tick();
+        #[cfg(feature = "multitask")] // TODO
+        if axhal::arch::cpu_id() == unsafe { BSP_ID } {
+            axtask::on_timer_tick();
+        }
     });
 
     // Enable IRQs before starting app

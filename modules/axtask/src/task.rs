@@ -186,8 +186,8 @@ impl TaskInner {
 
     #[inline]
     #[cfg(feature = "preempt")]
-    pub(crate) fn can_preempt(&self) -> bool {
-        self.preempt_disable_count.load(Ordering::Acquire) == 0
+    pub(crate) fn can_preempt(&self, current_disable_count: usize) -> bool {
+        self.preempt_disable_count.load(Ordering::Acquire) == current_disable_count
     }
 
     #[inline]
@@ -207,7 +207,7 @@ impl TaskInner {
     #[cfg(feature = "preempt")]
     fn current_check_preempt_pending() {
         let curr = crate::current();
-        if curr.need_resched.load(Ordering::Acquire) && curr.can_preempt() {
+        if curr.need_resched.load(Ordering::Acquire) && curr.can_preempt(0) {
             let mut rq = crate::RUN_QUEUE.lock();
             if curr.need_resched.load(Ordering::Acquire) {
                 rq.resched();

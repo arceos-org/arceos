@@ -6,12 +6,13 @@ pub mod console;
 pub mod irq;
 pub mod mem;
 pub mod misc;
+pub mod mp;
 
 pub mod time {
     pub use super::generic_timer::*;
 }
 
-pub(crate) fn platform_init() {
+pub(crate) fn platform_init(_dtb: usize) {
     extern "C" {
         fn exception_vector_base();
     }

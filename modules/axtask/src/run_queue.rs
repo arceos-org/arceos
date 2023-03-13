@@ -68,11 +68,10 @@ impl AxRunQueue {
 
         // When we get the mutable reference of the run queue, we must
         // have held the `SpinNoIrq` lock with both IRQs and preemption
-        // disabled. So we need to re-enable preemption once at this time to
-        // obtain the preemption permission before locking the run queue.
-        curr.enable_preempt(false);
-        let can_preempt = curr.can_preempt();
-        curr.disable_preempt();
+        // disabled. So we need to set `current_disable_count` to 1 in
+        // `can_preempt()` to obtain the preemption permission before
+        //  locking the run queue.
+        let can_preempt = curr.can_preempt(1);
 
         debug!(
             "current task is to be preempted: {}, allow={}",
@@ -108,6 +107,11 @@ impl AxRunQueue {
         F: FnOnce(AxTaskRef),
     {
         let curr = crate::current();
+
+        // we must not block current task with preemption disabled.
+        #[cfg(feature = "preempt")]
+        assert!(curr.can_preempt(1));
+
         debug!("task block: {}", curr.id_name());
         assert!(curr.is_running());
         assert!(!curr.is_idle());

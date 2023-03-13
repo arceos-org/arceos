@@ -65,3 +65,12 @@ pub fn flush_tlb(vaddr: Option<VirtAddr>) {
         unsafe { tlb::flush_all() }
     }
 }
+
+#[inline]
+pub fn cpu_id() -> usize {
+    // TODO: use `current_cpu().id`
+    raw_cpuid::CpuId::new()
+        .get_feature_info()
+        .unwrap()
+        .initial_local_apic_id() as usize
+}

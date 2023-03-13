@@ -114,21 +114,29 @@ unsafe extern "C" fn _start() -> ! {
         fn rust_main();
     }
     // PC = 0x4008_0000
+    // X0 = dtb
     core::arch::asm!("
+        mov     x19, x0                 // save DTB pointer
+
         adrp    x8, boot_stack_top
-        mov     sp, x8
-        bl      {switch_to_el1}
+        mov     sp, x8                  // setup boot stack
+
+        bl      {switch_to_el1}         // switch to EL1
         bl      {init_boot_page_table}
-        bl      {init_mmu}
+        bl      {init_mmu}              // setup MMU
 
-        // set SP to the high address
-        ldr     x8, =boot_stack_top
+        ldr     x8, =boot_stack_top     // set SP to the high address
         mov     sp, x8
 
-        // call functions at the high address
-        ldr     x8, ={platform_init}
+        mov     x0, x19
+        ldr     x8, ={platform_init}    // call platform_init(dtb)
         blr     x8
-        ldr     x8, ={rust_main}
+
+        mrs     x0, mpidr_el1
+        and     x0, x0, #0xffffff       // get current CPU id
+        mov     x1, x19
+
+        ldr     x8, ={rust_main}        // call rust_main(cpu_id, dtb)
         blr     x8
         b      .",
         switch_to_el1 = sym switch_to_el1,
