@@ -19,7 +19,7 @@ cfg_if! {
     }
 }
 cfg_if! {
-    if #[cfg(feature = "display")] {
+    if #[cfg(feature = "gpu")] {
         mod display;
         pub use display::VirtIoGpuDev;
     }

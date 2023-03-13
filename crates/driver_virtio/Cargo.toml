@@ -11,7 +11,7 @@ bus-mmio = []
 bus-pci = []
 block = ["driver_block"]
 net = ["driver_net"]
-display = ["driver_display"]
+gpu = ["driver_display"]
 default = ["bus-mmio"]
 
 [dependencies]

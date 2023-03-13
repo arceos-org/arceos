@@ -22,7 +22,7 @@ net = ["axruntime/net", "dep:axnet"]
 # File system
 fs = ["axruntime/fs"]
 
-# VirtIOGpu
+# Display
 display = ["axruntime/display", "dep:axdisplay"]
 
 # Logging

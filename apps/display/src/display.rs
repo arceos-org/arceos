@@ -4,21 +4,18 @@ use embedded_graphics::{draw_target::DrawTarget, prelude::OriginDimensions};
 
 pub use libax::display::{framebuffer_flush, framebuffer_info, DisplayInfo};
 
-pub const VIRTGPU_XRES: u32 = 1280;
-pub const VIRTGPU_YRES: u32 = 800;
-
-pub const VIRTGPU_LEN: usize = (VIRTGPU_XRES * VIRTGPU_YRES * 4) as usize;
-
 pub struct Display {
     pub size: Size,
     pub fb: &'static mut [u8],
 }
 
+#[allow(dead_code)]
 impl Display {
-    pub fn new(size: Size) -> Self {
+    pub fn new() -> Self {
         let info = framebuffer_info();
         let fb =
-            unsafe { core::slice::from_raw_parts_mut(info.fb_base_vaddr as *mut u8, VIRTGPU_LEN) };
+            unsafe { core::slice::from_raw_parts_mut(info.fb_base_vaddr as *mut u8, info.fb_size) };
+        let size = Size::new(info.width, info.height);
         Self { size, fb }
     }
 
@@ -27,7 +24,7 @@ impl Display {
     }
 
     pub fn paint_on_framebuffer(&mut self, p: impl FnOnce(&mut [u8])) {
-        p(self.framebuffer());
+        p(self.fb);
         framebuffer_flush();
     }
 }
@@ -47,7 +44,7 @@ impl DrawTarget for Display {
         I: IntoIterator<Item = embedded_graphics::Pixel<Self::Color>>,
     {
         pixels.into_iter().for_each(|px| {
-            let idx = (px.0.y * VIRTGPU_XRES as i32 + px.0.x) as usize * 4;
+            let idx = (px.0.y * self.size.width as i32 + px.0.x) as usize * 4;
             if idx + 2 >= self.fb.len() {
                 return;
             }

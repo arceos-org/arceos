@@ -26,6 +26,7 @@ pub struct NetDevices(
     #[cfg(feature = "virtio-net")] pub VirtIoNetDev,
     // e.g. #[cfg(feature = "e1000")] pub e1000::E1000Dev,
 );
+
 #[derive(TupleForEach)]
 pub struct DisplayDevices(#[cfg(feature = "virtio-gpu")] pub VirtIoGpuDev);
 

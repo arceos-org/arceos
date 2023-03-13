@@ -49,8 +49,6 @@ ifeq ($(NET), on)
 endif
 ifeq ($(GRAPHIC), on)
   features += libax/display
-else
-  GRAPHIC_OPTION := -nographic
 endif
 
 build_args := --features "$(features)" --target $(target) -Zbuild-std=core,alloc -Zbuild-std-features=compiler-builtins-mem
@@ -70,7 +68,7 @@ GDB := gdb-multiarch
 
 # QEMU
 qemu := qemu-system-$(ARCH)
-qemu_args := $(GRAPHIC_OPTION) -m 128M
+qemu_args := -m 128M
 ifeq ($(ARCH), riscv64)
   qemu_args += \
     -machine virt \
@@ -95,7 +93,10 @@ ifeq ($(NET), on)
 endif
 ifeq ($(GRAPHIC), on)
   qemu_args += \
-    -device virtio-gpu-device
+    -device virtio-gpu-device \
+    -serial mon:stdio
+else
+  qemu_args += -nographic
 endif
 
 build: $(kernel_bin)

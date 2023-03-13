@@ -32,7 +32,7 @@ impl Default for DrawingBoard {
 impl DrawingBoard {
     pub fn new() -> Self {
         Self {
-            disp: Display::new(Size::new(VIRTGPU_XRES, VIRTGPU_YRES)),
+            disp: Display::new(),
             latest_pos: Point::new(INIT_X, INIT_Y),
         }
     }
@@ -87,25 +87,9 @@ fn test_gpu() -> i32 {
     0
 }
 
-fn test_gpu_simple() -> i32 {
-    let mut disp = Display::new(Size::new(VIRTGPU_XRES, VIRTGPU_YRES));
-    disp.paint_on_framebuffer(|fb| {
-        for y in 0..VIRTGPU_YRES as usize {
-            for x in 0..VIRTGPU_XRES as usize {
-                let idx = (y * VIRTGPU_XRES as usize + x) * 4;
-                fb[idx] = x as u8;
-                fb[idx + 1] = y as u8;
-                fb[idx + 2] = (x + y) as u8;
-            }
-        }
-    });
-    0
-}
-
 #[no_mangle]
 #[allow(clippy::empty_loop)]
 fn main() -> ! {
     test_gpu();
-    test_gpu_simple();
     loop {}
 }

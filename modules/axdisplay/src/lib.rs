@@ -22,12 +22,7 @@ pub fn init_display(display_devs: DisplayDevices) {
 
 pub fn framebuffer_info() -> DisplayInfo {
     let device = DISPLAYS.0.lock();
-    let info = device.0.info();
-    debug!(
-        "[kernel] FrameBuffer: addr 0x{:X}, len {}",
-        info.fb_base_vaddr, info.fb_size
-    );
-    info
+    device.0.info()
 }
 
 pub fn framebuffer_flush() -> isize {

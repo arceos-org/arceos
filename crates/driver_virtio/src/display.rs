@@ -6,8 +6,8 @@ use driver_display::{DisplayDriverOps, DisplayInfo, FrameBuffer};
 use virtio_drivers::{device::gpu::VirtIOGpu as InnerDev, transport::Transport, Hal};
 
 pub struct VirtIoGpuDev<H: Hal, T: Transport> {
-    pub inner: InnerDev<'static, H, T>,
-    pub info: DisplayInfo,
+    inner: InnerDev<'static, H, T>,
+    info: DisplayInfo,
 }
 
 unsafe impl<H: Hal, T: Transport> Send for VirtIoGpuDev<H, T> {}
