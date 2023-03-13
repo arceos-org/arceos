@@ -21,3 +21,6 @@ pub mod task;
 
 #[cfg(feature = "net")]
 pub mod net;
+
+#[cfg(feature = "display")]
+pub mod display;

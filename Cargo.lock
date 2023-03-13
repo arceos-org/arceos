@@ -29,6 +29,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "arceos-display"
+version = "0.1.0"
+dependencies = [
+ "embedded-graphics",
+ "libax",
+]
+
+[[package]]
 name = "arceos-echoserver"
 version = "0.1.0"
 dependencies = [
@@ -145,6 +153,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "axdisplay"
+version = "0.1.0"
+dependencies = [
+ "axdriver",
+ "axsync",
+ "driver_display",
+ "lazy_init",
+ "log",
+]
+
+[[package]]
 name = "axdriver"
 version = "0.1.0"
 dependencies = [
@@ -154,6 +173,7 @@ dependencies = [
  "cfg-if",
  "driver_block",
  "driver_common",
+ "driver_display",
  "driver_net",
  "driver_virtio",
  "log",
@@ -223,6 +243,7 @@ version = "0.1.0"
 dependencies = [
  "axalloc",
  "axconfig",
+ "axdisplay",
  "axdriver",
  "axhal",
  "axlog",
@@ -256,6 +277,12 @@ dependencies = [
  "spinlock",
  "timer_list",
 ]
+
+[[package]]
+name = "az"
+version = "1.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b7e4c2464d97fe331d41de9d5db0def0a96f4d823b8b32a2efd503578988973"
 
 [[package]]
 name = "bit_field"
@@ -481,6 +508,13 @@ name = "driver_common"
 version = "0.1.0"
 
 [[package]]
+name = "driver_display"
+version = "0.1.0"
+dependencies = [
+ "driver_common",
+]
+
+[[package]]
 name = "driver_net"
 version = "0.1.0"
 dependencies = [
@@ -494,9 +528,33 @@ dependencies = [
  "cfg-if",
  "driver_block",
  "driver_common",
+ "driver_display",
  "driver_net",
  "log",
  "virtio-drivers",
+]
+
+[[package]]
+name = "embedded-graphics"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "750082c65094fbcc4baf9ba31583ce9a8bb7f52cadfb96f6164b1bc7f922f32b"
+dependencies = [
+ "az",
+ "byteorder",
+ "embedded-graphics-core",
+ "float-cmp",
+ "micromath",
+]
+
+[[package]]
+name = "embedded-graphics-core"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8b1239db5f3eeb7e33e35bd10bd014e7b2537b17e071f726a09351431337cfa"
+dependencies = [
+ "az",
+ "byteorder",
 ]
 
 [[package]]
@@ -516,6 +574,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e51093e27b0797c359783294ca4f0a911c270184cb10f85783b118614a1501be"
 dependencies = [
  "instant",
+]
+
+[[package]]
+name = "float-cmp"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e1267f4ac4f343772758f7b1bdcbe767c218bbab93bb432acbf5162bbf85a6c4"
+dependencies = [
+ "num-traits",
 ]
 
 [[package]]
@@ -642,6 +709,7 @@ version = "0.1.0"
 name = "libax"
 version = "0.1.0"
 dependencies = [
+ "axdisplay",
  "axdriver",
  "axerror",
  "axhal",
@@ -708,6 +776,12 @@ checksum = "0ca88d725a0a943b096803bd34e73a4437208b6077654cc4ecb2947a5f91618d"
 [[package]]
 name = "memory_addr"
 version = "0.1.0"
+
+[[package]]
+name = "micromath"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc4010833aea396656c2f91ee704d51a6f1329ec2ab56ffd00bfd56f7481ea94"
 
 [[package]]
 name = "nb"

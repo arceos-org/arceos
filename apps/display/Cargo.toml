@@ -1,0 +1,11 @@
+[package]
+name = "arceos-display"
+version = "0.1.0"
+edition = "2021"
+authors = ["Shiping Yuan <robert_yuan@pku.edu.com>"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+libax = { path = "../../ulib/libax", features = ["alloc", "paging", "display"] }
+embedded-graphics = "0.7.1"

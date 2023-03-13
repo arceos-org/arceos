@@ -18,6 +18,12 @@ cfg_if! {
         pub use blk::VirtIoBlkDev;
     }
 }
+cfg_if! {
+    if #[cfg(feature = "gpu")] {
+        mod display;
+        pub use display::VirtIoGpuDev;
+    }
+}
 
 use driver_common::{DevError, DeviceType};
 use virtio_drivers::transport::{self, Transport};
@@ -61,6 +67,7 @@ const fn as_dev_type(t: transport::DeviceType) -> Option<DeviceType> {
     match t {
         Block => Some(DeviceType::Block),
         Network => Some(DeviceType::Net),
+        GPU => Some(DeviceType::Display),
         _ => None,
     }
 }

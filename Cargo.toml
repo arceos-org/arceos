@@ -1,6 +1,7 @@
 [workspace]
 
 members = [
+    "apps/display",
     "apps/exception",
     "apps/helloworld",
     "apps/memtest",
@@ -16,6 +17,7 @@ members = [
     "crates/crate_interface",
     "crates/driver_block",
     "crates/driver_common",
+    "crates/driver_display",
     "crates/driver_net",
     "crates/driver_virtio",
     "crates/handler_table",
@@ -32,6 +34,7 @@ members = [
 
     "modules/axalloc",
     "modules/axconfig",
+    "modules/axdisplay",
     "modules/axdriver",
     "modules/axerror",
     "modules/axhal",
