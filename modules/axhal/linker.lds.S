@@ -48,9 +48,22 @@ SECTIONS
         ebss = .;
     }
 
+    percpu_start = .;
+    .percpu 0x0 : AT(percpu_start) ALIGN(4K) {
+        __percpu_offset_start = .;
+        *(.percpu .percpu.*)
+        __percpu_offset_end = .;
+        . = ALIGN(4K);
+        __percpu_size_aligned = .;
+
+        . = __percpu_offset_start + __percpu_size_aligned * %SMP%;
+    }
+    . = percpu_start + SIZEOF(.percpu);
+    percpu_end = .;
+
     ekernel = .;
 
-    /DISCARD/ : {
-        *(.eh_frame) *(.eh_frame_hdr)
+	/DISCARD/ : {
+        *(.comment) *(.gnu*) *(.note*) *(.eh_frame*)
     }
 }

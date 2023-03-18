@@ -3,7 +3,7 @@
 #[macro_use]
 extern crate axlog;
 
-#[cfg(not(test))]
+#[cfg(all(target_os = "none", not(test)))]
 mod lang_items;
 mod trap;
 
@@ -47,21 +47,26 @@ impl axlog::LogIf for LogIfImpl {
         axhal::time::current_time()
     }
 
-    fn current_cpu_id() -> usize {
-        if cfg!(feature = "smp") {
-            axhal::arch::cpu_id()
+    fn current_cpu_id() -> Option<usize> {
+        #[cfg(feature = "smp")]
+        if is_init_ok() {
+            Some(axhal::cpu::this_cpu_id())
         } else {
-            0
+            None
         }
+        #[cfg(not(feature = "smp"))]
+        Some(0)
     }
 
     fn current_task_id() -> Option<u64> {
-        #[cfg(feature = "multitask")]
-        {
-            axtask::current_may_uninit().map(|curr| curr.id().as_u64())
-        }
-        #[cfg(not(feature = "multitask"))]
-        {
+        if is_init_ok() {
+            #[cfg(feature = "multitask")]
+            {
+                axtask::current_may_uninit().map(|curr| curr.id().as_u64())
+            }
+            #[cfg(not(feature = "multitask"))]
+            None
+        } else {
             None
         }
     }
@@ -71,13 +76,19 @@ impl axlog::LogIf for LogIfImpl {
 impl spinlock::GuardIf for GuardIfImpl {
     fn set_preemptible(_enabled: bool) {
         #[cfg(feature = "multitask")] // TODO
-        if axhal::arch::cpu_id() == unsafe { BSP_ID } {
+        if axhal::cpu::this_cpu_is_bsp() && axtask::current_may_uninit().is_some() {
             axtask::set_preemptiable(_enabled);
         }
     }
 }
 
-static mut BSP_ID: usize = 0; // TODO
+use core::sync::atomic::{AtomicUsize, Ordering};
+
+static INITED_CPUS: AtomicUsize = AtomicUsize::new(0);
+
+fn is_init_ok() -> bool {
+    INITED_CPUS.load(Ordering::Acquire) == axconfig::SMP
+}
 
 #[cfg_attr(not(test), no_mangle)]
 pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
@@ -101,7 +112,6 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     axlog::set_max_level(option_env!("LOG").unwrap_or("")); // no effect if set `log-level-*` features
     info!("Logging is enabled.");
     info!("Primary CPU {} started, dtb = {:#x}.", cpu_id, dtb);
-    unsafe { BSP_ID = cpu_id };
 
     info!("Found physcial memory regions:");
     for r in axhal::mem::memory_regions() {
@@ -146,6 +156,13 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
 
     #[cfg(feature = "smp")]
     self::mp::start_secondary_cpus(cpu_id);
+
+    info!("Primary CPU {} init OK.", cpu_id);
+    INITED_CPUS.fetch_add(1, Ordering::Relaxed);
+
+    while !is_init_ok() {
+        core::hint::spin_loop();
+    }
 
     unsafe { main() };
 
@@ -200,33 +217,30 @@ fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
 }
 
 fn init_interrupt() {
-    use axconfig::SMP;
     use axhal::time::TIMER_IRQ_NUM;
-    use core::sync::atomic::{AtomicU64, Ordering};
 
     // Setup timer interrupt handler
     const PERIODIC_INTERVAL_NANOS: u64 =
         axhal::time::NANOS_PER_SEC / axconfig::TICKS_PER_SEC as u64;
-    #[allow(clippy::declare_interior_mutable_const)]
-    const ZERO: AtomicU64 = AtomicU64::new(0);
-    static NEXT_DEADLINE: [AtomicU64; SMP] = [ZERO; SMP];
+
+    #[percpu::def_percpu]
+    static NEXT_DEADLINE: u64 = 0;
 
     fn update_timer() {
-        let cpu_id = axhal::arch::cpu_id();
         let now_ns = axhal::time::current_time_nanos();
-        let mut next_deadline =
-            NEXT_DEADLINE[cpu_id].fetch_add(PERIODIC_INTERVAL_NANOS, Ordering::Acquire);
-        if now_ns >= next_deadline {
-            next_deadline = now_ns + PERIODIC_INTERVAL_NANOS;
-            NEXT_DEADLINE[cpu_id].store(next_deadline + PERIODIC_INTERVAL_NANOS, Ordering::SeqCst);
+        // Safety: we have disabled preemption in IRQ handler.
+        let mut deadline = unsafe { NEXT_DEADLINE.read_current_raw() };
+        if now_ns >= deadline {
+            deadline = now_ns + PERIODIC_INTERVAL_NANOS;
         }
-        axhal::time::set_oneshot_timer(next_deadline);
+        unsafe { NEXT_DEADLINE.write_current_raw(deadline + PERIODIC_INTERVAL_NANOS) };
+        axhal::time::set_oneshot_timer(deadline);
     }
 
     axhal::irq::register_handler(TIMER_IRQ_NUM, || {
         update_timer();
         #[cfg(feature = "multitask")] // TODO
-        if axhal::arch::cpu_id() == unsafe { BSP_ID } {
+        if axhal::cpu::this_cpu_is_bsp() {
             axtask::on_timer_tick();
         }
     });

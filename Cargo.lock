@@ -201,6 +201,7 @@ dependencies = [
  "memory_addr",
  "page_table",
  "page_table_entry",
+ "percpu",
  "ratio",
  "raw-cpuid",
  "riscv",
@@ -252,6 +253,7 @@ dependencies = [
  "axnet",
  "axtask",
  "crate_interface",
+ "percpu",
  "spinlock",
 ]
 
@@ -849,6 +851,25 @@ dependencies = [
  "cfg-if",
  "memory_addr",
  "x86_64",
+]
+
+[[package]]
+name = "percpu"
+version = "0.1.0"
+dependencies = [
+ "cfg-if",
+ "percpu_macros",
+ "spin",
+ "x86",
+]
+
+[[package]]
+name = "percpu_macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

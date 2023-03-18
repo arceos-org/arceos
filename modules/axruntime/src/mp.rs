@@ -28,8 +28,21 @@ pub fn start_secondary_cpus(primary_cpu_id: usize) {
 pub extern "C" fn rust_main_secondary(cpu_id: usize) -> ! {
     info!("Secondary CPU {} started.", cpu_id);
 
+    #[cfg(feature = "paging")]
+    init_paging_secondary();
+
+    info!("Secondary CPU {} init OK.", cpu_id);
+    super::INITED_CPUS.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
+
+    while !super::is_init_ok() {
+        core::hint::spin_loop();
+    }
+
     axhal::arch::enable_irqs();
     loop {
         axhal::arch::wait_for_irqs(); // TODO
     }
 }
+
+#[cfg(feature = "paging")]
+fn init_paging_secondary() {}

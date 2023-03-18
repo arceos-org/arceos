@@ -19,6 +19,7 @@ display = ["alloc", "paging", "axdriver/virtio-gpu", "dep:axdisplay"]
 default = []
 
 [dependencies]
+percpu = { path = "../../crates/percpu" }
 spinlock = { path = "../../crates/spinlock" }
 crate_interface = { path = "../../crates/crate_interface" }
 axalloc = { path = "../axalloc", optional = true }

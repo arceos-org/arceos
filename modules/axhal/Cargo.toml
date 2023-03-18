@@ -28,6 +28,7 @@ ratio = { path = "../../crates/ratio", optional = true }
 lazy_init = { path = "../../crates/lazy_init" }
 page_table = { path = "../../crates/page_table", optional = true }
 page_table_entry = { path = "../../crates/page_table_entry", optional = true }
+percpu = { path = "../../crates/percpu" }
 memory_addr = { path = "../../crates/memory_addr" }
 handler_table = { path = "../../crates/handler_table" }
 crate_interface = { path = "../../crates/crate_interface" }

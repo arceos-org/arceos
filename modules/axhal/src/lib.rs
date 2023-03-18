@@ -11,6 +11,7 @@ extern crate log;
 mod platform;
 
 pub mod arch;
+pub mod cpu;
 pub mod irq;
 pub mod mem;
 pub mod time;
