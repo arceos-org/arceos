@@ -18,11 +18,9 @@ mod wait_queue;
 mod tests;
 
 use alloc::sync::Arc;
-use core::ops::DerefMut;
-use lazy_init::LazyInit;
 
 use self::run_queue::{AxRunQueue, RUN_QUEUE};
-use self::task::TaskInner;
+use self::task::{CurrentTask, TaskInner};
 
 pub use self::task::TaskId;
 pub use self::wait_queue::WaitQueue;
@@ -40,30 +38,23 @@ cfg_if::cfg_if! {
 
 type AxTaskRef = Arc<AxTask>;
 
-// TODO: per-CPU
-pub(crate) static mut CURRENT_TASK: LazyInit<AxTaskRef> = LazyInit::new();
-
-pub(crate) fn set_current(task: AxTaskRef) {
-    assert!(!axhal::arch::irqs_enabled());
-    let old_task = core::mem::replace(unsafe { CURRENT_TASK.deref_mut() }, task);
-    drop(old_task)
+pub fn current_may_uninit() -> Option<CurrentTask> {
+    CurrentTask::try_get()
 }
 
-pub fn current_may_uninit<'a>() -> Option<&'a AxTaskRef> {
-    unsafe { CURRENT_TASK.try_get() }
-}
-
-pub fn current<'a>() -> &'a AxTaskRef {
-    unsafe { &CURRENT_TASK }
+pub fn current() -> CurrentTask {
+    CurrentTask::get()
 }
 
 pub fn init_scheduler() {
     info!("Initialize scheduling...");
 
     let mut rq = AxRunQueue::new();
-    unsafe { CURRENT_TASK.init_by(rq.get_mut().init_task().clone()) };
+    let current = rq.get_mut().init_task().clone();
+    current.set_state(task::TaskState::Running);
+    unsafe { CurrentTask::init_current(current) };
+
     RUN_QUEUE.init_by(rq);
-    current().set_state(task::TaskState::Running);
 
     self::timers::init();
 

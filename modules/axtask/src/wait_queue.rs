@@ -4,7 +4,7 @@ use axhal::time::current_time;
 use core::time::Duration;
 use spinlock::SpinRaw;
 
-use crate::{AxRunQueue, AxTaskRef, RUN_QUEUE};
+use crate::{AxRunQueue, AxTaskRef, CurrentTask, RUN_QUEUE};
 
 pub struct WaitQueue {
     queue: SpinRaw<VecDeque<AxTaskRef>>, // we already disabled IRQs when lock the `RUN_QUEUE`
@@ -23,17 +23,17 @@ impl WaitQueue {
         }
     }
 
-    fn cancel_events(&self, task: &AxTaskRef) {
+    fn cancel_events(&self, curr: CurrentTask) {
         // A task can be wake up only one events (timer or `notify()`), remove
         // the event from another queue.
-        if task.in_wait_queue() {
+        if curr.in_wait_queue() {
             // wake up by timer (timeout)
-            self.queue.lock().retain(|t| Arc::ptr_eq(t, task));
-            task.set_in_wait_queue(false);
+            self.queue.lock().retain(|t| !curr.ptr_eq(t));
+            curr.set_in_wait_queue(false);
         }
-        if task.in_timer_list() {
+        if curr.in_timer_list() {
             // timeout was set but not triggered (wake up by `WaitQueue::notify()`)
-            crate::timers::cancel_alarm(task);
+            crate::timers::cancel_alarm(curr.as_task_ref());
         }
     }
 

@@ -49,6 +49,7 @@ impl<T> LazyInit<T> {
         }
     }
 
+    #[inline]
     fn get(&self) -> &T {
         self.check_init();
         unsafe { &*(*self.data.get()).as_ptr() }
@@ -73,12 +74,14 @@ impl<T: fmt::Debug> fmt::Debug for LazyInit<T> {
 
 impl<T> Deref for LazyInit<T> {
     type Target = T;
+    #[inline]
     fn deref(&self) -> &T {
         self.get()
     }
 }
 
 impl<T> DerefMut for LazyInit<T> {
+    #[inline]
     fn deref_mut(&mut self) -> &mut T {
         self.get_mut()
     }

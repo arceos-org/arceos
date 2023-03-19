@@ -1,4 +1,5 @@
 use alloc::{boxed::Box, sync::Arc};
+use core::ops::Deref;
 use core::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
 use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 
@@ -259,6 +260,56 @@ impl TaskStack {
 impl Drop for TaskStack {
     fn drop(&mut self) {
         unsafe { alloc::alloc::dealloc(self.ptr.as_ptr(), self.layout) }
+    }
+}
+
+use core::mem::ManuallyDrop;
+
+pub struct CurrentTask(ManuallyDrop<AxTaskRef>);
+
+impl CurrentTask {
+    pub(crate) fn try_get() -> Option<Self> {
+        let ptr: *const super::AxTask = axhal::cpu::current_task_ptr();
+        if !ptr.is_null() {
+            Some(Self(unsafe { ManuallyDrop::new(AxTaskRef::from_raw(ptr)) }))
+        } else {
+            None
+        }
+    }
+
+    pub(crate) fn get() -> Self {
+        Self::try_get().expect("current task is uninitialized")
+    }
+
+    pub(crate) fn as_task_ref(&self) -> &AxTaskRef {
+        &self.0
+    }
+
+    pub(crate) fn clone(&self) -> AxTaskRef {
+        self.0.deref().clone()
+    }
+
+    pub(crate) fn ptr_eq(&self, other: &AxTaskRef) -> bool {
+        Arc::ptr_eq(&self.0, other)
+    }
+
+    pub(crate) unsafe fn init_current(init_task: AxTaskRef) {
+        let ptr = Arc::into_raw(init_task);
+        axhal::cpu::set_current_task_ptr(ptr);
+    }
+
+    pub(crate) unsafe fn set_current(prev: Self, next: AxTaskRef) {
+        let Self(arc) = prev;
+        ManuallyDrop::into_inner(arc); // `call Arc::drop()` to decrease prev task reference count.
+        let ptr = Arc::into_raw(next);
+        axhal::cpu::set_current_task_ptr(ptr);
+    }
+}
+
+impl Deref for CurrentTask {
+    type Target = TaskInner;
+    fn deref(&self) -> &Self::Target {
+        self.0.deref()
     }
 }
 
