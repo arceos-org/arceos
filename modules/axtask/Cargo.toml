@@ -8,7 +8,7 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 
 [features]
 multitask = [ # without the feature, can still use the empty yield_now() and exit()
-    "dep:axconfig", "dep:spinlock", "dep:lazy_init",
+    "dep:axconfig", "dep:percpu", "dep:spinlock", "dep:lazy_init",
     "dep:memory_addr", "dep:scheduler", "dep:timer_list"
 ]
 preempt = []
@@ -22,6 +22,7 @@ cfg-if = "1.0"
 log = "0.4"
 axhal = { path = "../axhal" }
 axconfig = { path = "../axconfig", optional = true }
+percpu = { path = "../../crates/percpu", optional = true }
 spinlock = { path = "../../crates/spinlock", optional = true }
 lazy_init = { path = "../../crates/lazy_init", optional = true }
 memory_addr = { path = "../../crates/memory_addr", optional = true }

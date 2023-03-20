@@ -49,13 +49,7 @@ pub fn current() -> CurrentTask {
 pub fn init_scheduler() {
     info!("Initialize scheduling...");
 
-    let mut rq = AxRunQueue::new();
-    let current = rq.get_mut().init_task().clone();
-    current.set_state(task::TaskState::Running);
-    unsafe { CurrentTask::init_current(current) };
-
-    RUN_QUEUE.init_by(rq);
-
+    self::run_queue::init();
     self::timers::init();
 
     if cfg!(feature = "sched_fifo") {
@@ -63,6 +57,10 @@ pub fn init_scheduler() {
     } else if cfg!(feature = "sched_rr") {
         info!("  use Round-robin scheduler.");
     }
+}
+
+pub fn init_scheduler_secondary() {
+    self::run_queue::init_secondary();
 }
 
 /// Handle periodic timer ticks for task manager, e.g. advance scheduler, update timer.
@@ -129,3 +127,11 @@ pub fn sleep_until(deadline: axhal::time::TimeValue) {
 
 } // else
 } // cfg_if::cfg_if!
+
+pub fn run_idle() -> ! {
+    loop {
+        yield_now();
+        debug!("idle task: waiting for IRQs...");
+        axhal::arch::wait_for_irqs();
+    }
+}

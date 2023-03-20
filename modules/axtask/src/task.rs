@@ -26,6 +26,8 @@ pub(crate) enum TaskState {
 pub struct TaskInner {
     id: TaskId,
     name: &'static str,
+    is_idle: bool,
+    is_init: bool,
 
     entry: Option<*mut dyn FnOnce()>,
     state: AtomicU8,
@@ -43,8 +45,6 @@ pub struct TaskInner {
 }
 
 impl TaskId {
-    const IDLE_TASK_ID: Self = Self(0);
-
     fn new() -> Self {
         static ID_COUNTER: AtomicU64 = AtomicU64::new(1);
         Self(ID_COUNTER.fetch_add(1, Ordering::Relaxed))
@@ -90,6 +90,8 @@ impl TaskInner {
         Self {
             id,
             name,
+            is_idle: false,
+            is_init: false,
             entry: None,
             state: AtomicU8::new(TaskState::Ready as u8),
             in_wait_queue: AtomicBool::new(false),
@@ -113,19 +115,19 @@ impl TaskInner {
         t.entry = Some(Box::into_raw(Box::new(entry)));
         t.ctx.get_mut().init(task_entry as usize, kstack.top());
         t.kstack = Some(kstack);
+        if name == "idle" {
+            t.is_idle = true;
+        }
         Arc::new(AxTask::new(t))
     }
 
-    pub(crate) fn new_init() -> AxTaskRef {
+    pub(crate) fn new_init(name: &'static str) -> AxTaskRef {
         // init_task does not change PC and SP, so `entry` and `kstack` fields are not used.
-        Arc::new(AxTask::new(Self::new_common(TaskId::new(), "init")))
-    }
-
-    pub(crate) fn new_idle(stack_size: usize) -> AxTaskRef {
-        let mut t = Self::new_common(TaskId::IDLE_TASK_ID, "idle");
-        let kstack = TaskStack::alloc(align_up_4k(stack_size));
-        t.ctx.get_mut().init(idle_entry as usize, kstack.top());
-        t.kstack = Some(kstack);
+        let mut t = Self::new_common(TaskId::new(), name);
+        t.is_init = true;
+        if name == "idle" {
+            t.is_idle = true;
+        }
         Arc::new(AxTask::new(t))
     }
 
@@ -155,8 +157,13 @@ impl TaskInner {
     }
 
     #[inline]
+    pub(crate) const fn is_init(&self) -> bool {
+        self.is_init
+    }
+
+    #[inline]
     pub(crate) const fn is_idle(&self) -> bool {
-        self.id.as_u64() == TaskId::IDLE_TASK_ID.as_u64()
+        self.is_idle
     }
 
     #[inline]
@@ -310,16 +317,6 @@ impl Deref for CurrentTask {
     type Target = TaskInner;
     fn deref(&self) -> &Self::Target {
         self.0.deref()
-    }
-}
-
-extern "C" fn idle_entry() -> ! {
-    unsafe { crate::RUN_QUEUE.force_unlock() };
-    axhal::arch::enable_irqs();
-    loop {
-        crate::yield_now();
-        debug!("idle task: waiting for IRQs...");
-        axhal::arch::wait_for_irqs();
     }
 }
 

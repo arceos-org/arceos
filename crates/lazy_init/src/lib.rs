@@ -52,12 +52,29 @@ impl<T> LazyInit<T> {
     #[inline]
     fn get(&self) -> &T {
         self.check_init();
-        unsafe { &*(*self.data.get()).as_ptr() }
+        unsafe { self.get_unchecked() }
     }
 
+    #[inline]
     fn get_mut(&mut self) -> &mut T {
         self.check_init();
-        unsafe { &mut *(*self.data.get()).as_mut_ptr() }
+        unsafe { self.get_mut_unchecked() }
+    }
+
+    /// # Safety
+    ///
+    /// Must be called after initialization.
+    #[inline]
+    pub unsafe fn get_unchecked(&self) -> &T {
+        &*(*self.data.get()).as_ptr()
+    }
+
+    /// # Safety
+    ///
+    /// Must be called after initialization.
+    #[inline]
+    pub unsafe fn get_mut_unchecked(&mut self) -> &mut T {
+        &mut *(*self.data.get()).as_mut_ptr()
     }
 }
 

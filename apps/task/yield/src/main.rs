@@ -20,7 +20,9 @@ fn main() {
             task::yield_now();
 
             let order = FINISHED_TASKS.fetch_add(1, Ordering::Relaxed);
-            assert!(order == i); // FIFO scheduler
+            if option_env!("SMP") == Some("1") {
+                assert!(order == i); // FIFO scheduler
+            }
         });
     }
     println!("Hello, main task!");

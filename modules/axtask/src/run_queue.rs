@@ -1,7 +1,8 @@
-use alloc::{sync::Arc, vec::Vec};
+use alloc::collections::VecDeque;
+use alloc::sync::Arc;
 use lazy_init::LazyInit;
 use scheduler::BaseScheduler;
-use spinlock::{SpinNoIrq, SpinNoPreempt};
+use spinlock::SpinNoIrq;
 
 use crate::task::{CurrentTask, TaskState};
 use crate::{AxTaskRef, Scheduler, TaskInner, WaitQueue};
@@ -12,32 +13,23 @@ const BUILTIN_TASK_STACK_SIZE: usize = 4096;
 pub(crate) static RUN_QUEUE: LazyInit<SpinNoIrq<AxRunQueue>> = LazyInit::new();
 
 // TODO: per-CPU
-static EXITED_TASKS: SpinNoPreempt<Vec<AxTaskRef>> = SpinNoPreempt::new(Vec::new());
+static EXITED_TASKS: SpinNoIrq<VecDeque<AxTaskRef>> = SpinNoIrq::new(VecDeque::new());
 
 static WAIT_FOR_EXIT: WaitQueue = WaitQueue::new();
 
+#[percpu::def_percpu]
+static IDLE_TASK: LazyInit<AxTaskRef> = LazyInit::new();
+
 pub(crate) struct AxRunQueue {
-    idle_task: AxTaskRef,
-    init_task: AxTaskRef,
     scheduler: Scheduler,
 }
 
 impl AxRunQueue {
     pub fn new() -> SpinNoIrq<Self> {
-        let idle_task = TaskInner::new_idle(BUILTIN_TASK_STACK_SIZE);
-        let init_task = TaskInner::new_init();
         let gc_task = TaskInner::new(gc_entry, "gc", BUILTIN_TASK_STACK_SIZE);
         let mut scheduler = Scheduler::new();
         scheduler.add_task(gc_task);
-        SpinNoIrq::new(Self {
-            idle_task,
-            init_task,
-            scheduler,
-        })
-    }
-
-    pub fn init_task(&self) -> &AxTaskRef {
-        &self.init_task
+        SpinNoIrq::new(Self { scheduler })
     }
 
     pub fn add_task(&mut self, task: AxTaskRef) {
@@ -90,12 +82,12 @@ impl AxRunQueue {
         debug!("task exit: {}, exit_code={}", curr.id_name(), exit_code);
         assert!(curr.is_running());
         assert!(!curr.is_idle());
-        if curr.ptr_eq(&self.init_task) {
+        if curr.is_init() {
             EXITED_TASKS.lock().clear();
             axhal::misc::terminate();
         } else {
             curr.set_state(TaskState::Exited);
-            EXITED_TASKS.lock().push(curr.clone());
+            EXITED_TASKS.lock().push_back(curr.clone());
             WAIT_FOR_EXIT.notify_one_locked(false, self);
             self.resched_inner(false);
         }
@@ -107,14 +99,14 @@ impl AxRunQueue {
         F: FnOnce(AxTaskRef),
     {
         let curr = crate::current();
+        debug!("task block: {}", curr.id_name());
+        assert!(curr.is_running());
+        assert!(!curr.is_idle());
 
         // we must not block current task with preemption disabled.
         #[cfg(feature = "preempt")]
         assert!(curr.can_preempt(1));
 
-        debug!("task block: {}", curr.id_name());
-        assert!(curr.is_running());
-        assert!(!curr.is_idle());
         curr.set_state(TaskState::Blocked);
         wait_queue_push(curr.clone());
         self.resched_inner(false);
@@ -161,7 +153,7 @@ impl AxRunQueue {
         let next = self
             .scheduler
             .pick_next_task()
-            .unwrap_or_else(|| self.idle_task.clone());
+            .unwrap_or_else(|| unsafe { IDLE_TASK.current_ref_raw().get_unchecked().clone() });
         self.switch_to(prev, next);
     }
 
@@ -196,11 +188,35 @@ impl AxRunQueue {
 fn gc_entry() {
     loop {
         // Drop all exited tasks and recycle resources.
-        // Do not do the slow drops in the critical section.
         while !EXITED_TASKS.lock().is_empty() {
-            let task = EXITED_TASKS.lock().pop();
-            drop(task);
+            // Do not do the slow drops in the critical section.
+            let task = EXITED_TASKS.lock().pop_front();
+            if let Some(task) = task {
+                // wait for other threads to release the reference.
+                while Arc::strong_count(&task) > 1 {
+                    core::hint::spin_loop();
+                }
+                drop(task);
+            }
         }
         WAIT_FOR_EXIT.wait();
     }
+}
+
+pub(crate) fn init() {
+    let idle_task = TaskInner::new(|| crate::run_idle(), "idle", BUILTIN_TASK_STACK_SIZE);
+    IDLE_TASK.with_current(|i| i.init_by(idle_task.clone()));
+
+    let main_task = TaskInner::new_init("main");
+    main_task.set_state(TaskState::Running);
+
+    RUN_QUEUE.init_by(AxRunQueue::new());
+    unsafe { CurrentTask::init_current(main_task) }
+}
+
+pub(crate) fn init_secondary() {
+    let idle_task = TaskInner::new_init("idle");
+    idle_task.set_state(TaskState::Running);
+    IDLE_TASK.with_current(|i| i.init_by(idle_task.clone()));
+    unsafe { CurrentTask::init_current(idle_task) }
 }

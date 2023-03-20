@@ -75,8 +75,8 @@ impl axlog::LogIf for LogIfImpl {
 #[crate_interface::impl_interface]
 impl spinlock::GuardIf for GuardIfImpl {
     fn set_preemptible(_enabled: bool) {
-        #[cfg(feature = "multitask")] // TODO
-        if axhal::cpu::this_cpu_is_bsp() && axtask::current_may_uninit().is_some() {
+        #[cfg(feature = "multitask")]
+        if axtask::current_may_uninit().is_some() {
             axtask::set_preemptiable(_enabled);
         }
     }
@@ -199,20 +199,25 @@ fn init_allocator() {
 fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
     use axhal::mem::{memory_regions, phys_to_virt};
     use axhal::paging::PageTable;
+    use lazy_init::LazyInit;
 
-    let mut kernel_page_table = PageTable::try_new()?;
-    for r in memory_regions() {
-        kernel_page_table.map_region(
-            phys_to_virt(r.paddr),
-            r.paddr,
-            r.size,
-            r.flags.into(),
-            true,
-        )?;
+    static KERNEL_PAGE_TABLE: LazyInit<PageTable> = LazyInit::new();
+
+    if axhal::cpu::this_cpu_is_bsp() {
+        let mut kernel_page_table = PageTable::try_new()?;
+        for r in memory_regions() {
+            kernel_page_table.map_region(
+                phys_to_virt(r.paddr),
+                r.paddr,
+                r.size,
+                r.flags.into(),
+                true,
+            )?;
+        }
+        KERNEL_PAGE_TABLE.init_by(kernel_page_table);
     }
 
-    unsafe { axhal::arch::write_page_table_root(kernel_page_table.root_paddr()) };
-    core::mem::forget(kernel_page_table);
+    unsafe { axhal::arch::write_page_table_root(KERNEL_PAGE_TABLE.root_paddr()) };
     Ok(())
 }
 
@@ -239,10 +244,8 @@ fn init_interrupt() {
 
     axhal::irq::register_handler(TIMER_IRQ_NUM, || {
         update_timer();
-        #[cfg(feature = "multitask")] // TODO
-        if axhal::cpu::this_cpu_is_bsp() {
-            axtask::on_timer_tick();
-        }
+        #[cfg(feature = "multitask")]
+        axtask::on_timer_tick();
     });
 
     // Enable IRQs before starting app
