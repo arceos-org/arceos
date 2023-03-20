@@ -33,7 +33,8 @@ unsafe extern "C" fn _start() -> ! {
     // a1 = dtb
     core::arch::asm!("
         mv      tp, a0                  // save hartid
-        mv      s0, a1                  // save DTB pointer
+        mv      s0, a0
+        mv      s1, a1                  // save DTB pointer
         la      sp, {boot_stack}
         li      t0, {boot_stack_size}
         add     sp, sp, t0              // setup boot stack
@@ -41,19 +42,19 @@ unsafe extern "C" fn _start() -> ! {
         call    {init_boot_page_table}
         call    {init_mmu}              // setup boot page table and enabel MMU
 
-        li      s1, {phys_virt_offset}  // fix up virtual high address
-        add     a1, a1, s1
-        add     sp, sp, s1
+        li      s2, {phys_virt_offset}  // fix up virtual high address
+        add     sp, sp, s2
 
         mv      a0, s0
-        la      a1, {platform_init}
-        add     a1, a1, s1
-        jalr    a1                      // call platform_init(dtb)
+        mv      a1, s1
+        la      a2, {platform_init}
+        add     a2, a2, s2
+        jalr    a2                      // call platform_init(hartid, dtb)
 
-        mv      a0, tp
-        mv      a1, s0
+        mv      a0, s0
+        mv      a1, s1
         la      a2, {rust_main}
-        add     a2, a2, s1
+        add     a2, a2, s2
         jalr    a2                      // call rust_main(hartid, dtb)
         j       .",
         phys_virt_offset = const PHYS_VIRT_OFFSET,

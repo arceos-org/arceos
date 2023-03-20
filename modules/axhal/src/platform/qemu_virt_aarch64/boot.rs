@@ -1,4 +1,3 @@
-use crate::mem::phys_to_virt;
 use aarch64_cpu::{asm, asm::barrier, registers::*};
 use memory_addr::PhysAddr;
 use page_table_entry::{aarch64::A64PTE, GenericPTE, MappingFlags};
@@ -117,27 +116,29 @@ unsafe extern "C" fn _start() -> ! {
     // PC = 0x4008_0000
     // X0 = dtb
     core::arch::asm!("
-        mov     x19, x0                 // save DTB pointer
+        mrs     x19, mpidr_el1
+        and     x19, x19, #0xffffff     // get current CPU id
+        mov     x20, x0                 // save DTB pointer
 
-        adrp    x8, boot_stack_top
+        adrp    x8, {BOOT_STACK}
+        add     x8, x8, {TASK_STACK_SIZE}
         mov     sp, x8                  // setup boot stack
 
         bl      {switch_to_el1}         // switch to EL1
         bl      {init_boot_page_table}
         bl      {init_mmu}              // setup MMU
 
-        ldr     x8, ={BOOT_STACK}     // set SP to the high address
+        ldr     x8, ={BOOT_STACK}       // set SP to the high address
         add     x8, x8, {TASK_STACK_SIZE}
         mov     sp, x8
 
         mov     x0, x19
-        ldr     x8, ={platform_init}    // call platform_init(dtb)
+        mov     x1, x20
+        ldr     x8, ={platform_init}    // call platform_init(cpu_id, dtb)
         blr     x8
 
-        mrs     x0, mpidr_el1
-        and     x0, x0, #0xffffff       // get current CPU id
-        mov     x1, x19
-
+        mov     x0, x19
+        mov     x1, x20
         ldr     x8, ={rust_main}        // call rust_main(cpu_id, dtb)
         blr     x8
         b      .",
@@ -161,29 +162,27 @@ unsafe extern "C" fn _start_secondary() -> ! {
         fn rust_main_secondary();
     }
     core::arch::asm!("
-        // todo: x0 should be address of args
+        mrs     x19, mpidr_el1
+        and     x19, x19, #0xffffff     // get current CPU id
+
         mov     sp, x0
         bl      {switch_to_el1}
         bl      {init_mmu}
 
-        // set SP to the high address
-        ldr     x8, ={phys_to_virt}
-        mov     x0, sp
-        blr     x8
-        mov     sp, x0
+        mov     x8, {phys_virt_offset}
+        add     sp, sp, x8              // set SP to the high address
 
+        mov     x0, x19
         ldr     x8, ={platform_init_secondary}
-        blr     x8
+        blr     x8                      // call platform_init_secondary(cpu_id)
 
-        mrs     x0, mpidr_el1
-        and     x0, x0, #0xffffff       // get current CPU id
-
+        mov     x0, x19
         ldr     x8, ={rust_main_secondary}
-        blr     x8
+        blr     x8                      // call rust_main_secondary(cpu_id)
         b      .",
         switch_to_el1 = sym switch_to_el1,
         init_mmu = sym init_mmu,
-        phys_to_virt = sym phys_to_virt,
+        phys_virt_offset = const axconfig::PHYS_VIRT_OFFSET,
         platform_init_secondary = sym super::platform_init_secondary,
         rust_main_secondary = sym rust_main_secondary,
         options(noreturn),

@@ -41,4 +41,11 @@ pub(super) fn init() {
     NANOS_TO_CNTPCT_RATIO.init_by(CNTPCT_TO_NANOS_RATIO.inverse());
     CNTP_CTL_EL0.write(CNTP_CTL_EL0::ENABLE::SET);
     CNTP_TVAL_EL0.set(0);
+    super::irq::set_enable(TIMER_IRQ_NUM, true);
+}
+
+pub(super) fn init_secondary() {
+    CNTP_CTL_EL0.write(CNTP_CTL_EL0::ENABLE::SET);
+    CNTP_TVAL_EL0.set(0);
+    super::irq::set_enable(TIMER_IRQ_NUM, true);
 }

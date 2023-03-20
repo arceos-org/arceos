@@ -19,14 +19,14 @@ fn psci_hvc_call(func: u32, arg0: usize, arg1: usize, arg2: usize) -> usize {
     ret
 }
 
-pub fn terminate() -> ! {
+pub fn system_off() -> ! {
     info!("Shutting down...");
     psci_hvc_call(PSCI_SYSTEM_OFF, 0, 0, 0);
     unreachable!("It should shutdown!")
 }
 
-pub fn start(id: usize, entry: usize, arg: usize) {
-    info!("Starting core {}...", id);
+pub fn cpu_on(id: usize, entry: usize, arg: usize) {
+    debug!("Starting core {}...", id);
     assert_eq!(psci_hvc_call(PSCI_CPU_ON, id, entry, arg), 0);
-    info!("Started core {}!", id);
+    debug!("Started core {}!", id);
 }

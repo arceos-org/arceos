@@ -27,6 +27,8 @@ pub fn start_secondary_cpus(primary_cpu_id: usize) {
 #[no_mangle]
 pub extern "C" fn rust_main_secondary(cpu_id: usize) -> ! {
     info!("Secondary CPU {} started.", cpu_id);
+
+    axhal::arch::enable_irqs();
     loop {
         axhal::arch::wait_for_irqs(); // TODO
     }

@@ -116,6 +116,10 @@ impl GicDistributor {
         ((self.regs().TYPER.get() as usize >> 5) & 0b111) + 1
     }
 
+    pub fn max_irqs(&self) -> usize {
+        ((self.regs().TYPER.get() as usize & 0b11111) + 1) * 32
+    }
+
     pub fn configure_interrupt(&mut self, vector: usize, tm: TriggerMode, pol: Polarity) {
         // Only configurable for SPI interrupts
         if vector >= self.max_irqs || vector < SPI_BASE {
@@ -152,7 +156,7 @@ impl GicDistributor {
     }
 
     pub fn init(&mut self) {
-        let max_irqs = ((self.regs().TYPER.get() as usize & 0b11111) + 1) * 32;
+        let max_irqs = self.max_irqs();
         assert!(max_irqs <= MAX_IRQ_DEFAULT);
         self.max_irqs = max_irqs;
 
