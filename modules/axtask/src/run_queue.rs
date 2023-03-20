@@ -7,8 +7,6 @@ use spinlock::SpinNoIrq;
 use crate::task::{CurrentTask, TaskState};
 use crate::{AxTaskRef, Scheduler, TaskInner, WaitQueue};
 
-const BUILTIN_TASK_STACK_SIZE: usize = 4096;
-
 // TODO: per-CPU
 pub(crate) static RUN_QUEUE: LazyInit<SpinNoIrq<AxRunQueue>> = LazyInit::new();
 
@@ -26,7 +24,7 @@ pub(crate) struct AxRunQueue {
 
 impl AxRunQueue {
     pub fn new() -> SpinNoIrq<Self> {
-        let gc_task = TaskInner::new(gc_entry, "gc", BUILTIN_TASK_STACK_SIZE);
+        let gc_task = TaskInner::new(gc_entry, "gc", axconfig::TASK_STACK_SIZE);
         let mut scheduler = Scheduler::new();
         scheduler.add_task(gc_task);
         SpinNoIrq::new(Self { scheduler })
@@ -204,7 +202,8 @@ fn gc_entry() {
 }
 
 pub(crate) fn init() {
-    let idle_task = TaskInner::new(|| crate::run_idle(), "idle", BUILTIN_TASK_STACK_SIZE);
+    const IDLE_TASK_STACK_SIZE: usize = 4096;
+    let idle_task = TaskInner::new(|| crate::run_idle(), "idle", IDLE_TASK_STACK_SIZE);
     IDLE_TASK.with_current(|i| i.init_by(idle_task.clone()));
 
     let main_task = TaskInner::new_init("main");

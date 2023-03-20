@@ -27,7 +27,9 @@ impl WaitQueue {
         // A task can be wake up only one events (timer or `notify()`), remove
         // the event from another queue.
         if curr.in_wait_queue() {
-            // wake up by timer (timeout)
+            // wake up by timer (timeout).
+            // `RUN_QUEUE` is not locked here, so disable IRQs.
+            let _guard = spinlock::guard::IrqSave::new();
             self.queue.lock().retain(|t| !curr.ptr_eq(t));
             curr.set_in_wait_queue(false);
         }
@@ -111,20 +113,24 @@ impl WaitQueue {
     }
 
     pub fn notify_one(&self, resched: bool) -> bool {
+        let mut rq = RUN_QUEUE.lock();
         if !self.queue.lock().is_empty() {
-            self.notify_one_locked(resched, &mut RUN_QUEUE.lock())
+            self.notify_one_locked(resched, &mut rq)
         } else {
             false
         }
     }
 
     pub fn notify_all(&self, resched: bool) {
-        if !self.queue.lock().is_empty() {
+        loop {
             let mut rq = RUN_QUEUE.lock();
-            while let Some(task) = self.queue.lock().pop_front() {
+            if let Some(task) = self.queue.lock().pop_front() {
                 task.set_in_wait_queue(false);
                 rq.unblock_task(task, resched);
+            } else {
+                break;
             }
+            drop(rq); // we must `unlock RUN_QUEUE` after unlocking `self.queue`.
         }
     }
 

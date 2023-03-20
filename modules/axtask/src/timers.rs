@@ -32,7 +32,15 @@ pub fn cancel_alarm(task: &AxTaskRef) {
 }
 
 pub fn check_events() {
-    while TIMER_LIST.lock().expire_one(current_time()).is_some() {}
+    loop {
+        let now = current_time();
+        let event = TIMER_LIST.lock().expire_one(now);
+        if let Some((_deadline, event)) = event {
+            event.callback(now);
+        } else {
+            break;
+        }
+    }
 }
 
 pub fn init() {

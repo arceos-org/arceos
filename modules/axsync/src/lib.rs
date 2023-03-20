@@ -1,6 +1,9 @@
 #![cfg_attr(not(test), no_std)]
 #![feature(const_trait_impl)]
 
+pub use spinlock as spin;
+pub use spinlock::guard;
+
 #[cfg(feature = "multitask")]
 mod mutex;
 
