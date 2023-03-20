@@ -7,6 +7,7 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
+smp = []
 platform-qemu-virt-riscv = ["axconfig/platform-qemu-virt-riscv"]
 platform-qemu-virt-aarch64 = [
     "axconfig/platform-qemu-virt-aarch64",
@@ -33,6 +34,7 @@ crate_interface = { path = "../../crates/crate_interface" }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 x86 = "0.52"
+raw-cpuid = "10.7"
 
 [target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]
 riscv = "0.10"

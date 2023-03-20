@@ -7,6 +7,9 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
+# Multicore
+smp = ["axruntime/smp", "axhal/smp"]
+
 # Memory
 alloc = ["axruntime/alloc"]
 paging = ["axruntime/paging"]

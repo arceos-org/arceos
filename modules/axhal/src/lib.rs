@@ -26,3 +26,8 @@ pub mod console {
 pub mod misc {
     pub use super::platform::misc::*;
 }
+
+#[cfg(feature = "smp")]
+pub mod mp {
+    pub use super::platform::mp::*;
+}

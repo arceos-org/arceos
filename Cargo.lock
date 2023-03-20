@@ -202,6 +202,7 @@ dependencies = [
  "page_table",
  "page_table_entry",
  "ratio",
+ "raw-cpuid",
  "riscv",
  "sbi-rt",
  "spinlock",
@@ -218,6 +219,7 @@ dependencies = [
  "chrono",
  "crate_interface",
  "log",
+ "spinlock",
 ]
 
 [[package]]
@@ -933,9 +935,9 @@ version = "0.1.0"
 
 [[package]]
 name = "raw-cpuid"
-version = "10.6.1"
+version = "10.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c307f7aacdbab3f0adee67d52739a1d71112cc068d6fab169ddeb18e48877fad"
+checksum = "6c297679cb867470fa8c9f67dbba74a78d78e3e98d7cf2b08d6d71540f797332"
 dependencies = [
  "bitflags",
 ]

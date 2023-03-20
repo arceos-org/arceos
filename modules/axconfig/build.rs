@@ -14,6 +14,8 @@ fn main() {
     };
 
     gen_config_rs(&arch, platform).unwrap();
+
+    println!("cargo:rerun-if-env-changed=SMP");
 }
 
 fn parse_config_toml(result: &mut Table, path: impl AsRef<Path>) -> Result<()> {
@@ -44,6 +46,11 @@ fn gen_config_rs(arch: &str, platform: &str) -> Result<()> {
     let mut config = Table::new();
     parse_config_toml(&mut config, "src/defconfig.toml").unwrap();
     parse_config_toml(&mut config, format!("src/platform/{platform}.toml")).unwrap();
+
+    config.insert(
+        "smp".into(),
+        std::env::var("SMP").unwrap_or("1".into()).into(),
+    );
 
     println!("{config:#x?}");
 

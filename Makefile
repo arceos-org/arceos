@@ -1,7 +1,9 @@
 # Arguments
 ARCH ?= riscv64
+SMP ?= 1
 MODE ?= release
 LOG ?= warn
+
 APP ?= helloworld
 APP_LANG ?= rust
 APP_FEATURES ?=
@@ -23,6 +25,7 @@ endif
 
 export ARCH
 export PLATFORM
+export SMP
 export MODE
 export LOG
 
@@ -34,6 +37,10 @@ kernel_bin := $(kernel_elf).bin
 # Cargo features and build args
 
 features := $(APP_FEATURES) libax/platform-$(PLATFORM)
+
+ifeq ($(shell test $(SMP) -gt 1; echo $$?),0)
+  features += libax/smp
+endif
 
 ifneq ($(filter $(LOG),off error warn info debug trace),)
   features += libax/log-level-$(LOG)
@@ -68,7 +75,8 @@ GDB := gdb-multiarch
 
 # QEMU
 qemu := qemu-system-$(ARCH)
-qemu_args := -m 128M
+qemu_args := -m 128M  -smp $(SMP)
+
 ifeq ($(ARCH), riscv64)
   qemu_args += \
     -machine virt \
