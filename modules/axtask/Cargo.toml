@@ -30,3 +30,4 @@ timer_list = { path = "../../crates/timer_list", optional = true }
 
 [dev-dependencies]
 rand = "0.8"
+percpu = { path = "../../crates/percpu", features = ["sp-naive"] }

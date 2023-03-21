@@ -3,6 +3,7 @@ use proc_macro2::Span;
 use quote::{format_ident, quote};
 use syn::{Error, ItemStatic};
 
+#[cfg_attr(feature = "sp-naive", path = "naive.rs")]
 mod arch;
 
 fn compiler_error(err: Error) -> TokenStream {
@@ -32,6 +33,7 @@ pub fn def_percpu(attr: TokenStream, item: TokenStream) -> TokenStream {
     let ty_str = quote!(#ty).to_string();
     let is_primitive_int = ["bool", "u8", "u16", "u32", "u64", "usize"].contains(&ty_str.as_str());
 
+    // Do not generate `fn read_current()`, `fn write_current()`, etc for non primitive types.
     let read_write_methods = if is_primitive_int {
         let read_current_raw = arch::gen_read_current_raw(inner_symbol_name, ty);
         let write_current_raw =
@@ -81,7 +83,7 @@ pub fn def_percpu(attr: TokenStream, item: TokenStream) -> TokenStream {
     quote! {
         #[cfg_attr(not(target_os = "macos"), link_section = ".percpu")] // unimplemented on macos
         #(#attrs)*
-        static #inner_symbol_name: #ty = #init_expr;
+        static mut #inner_symbol_name: #ty = #init_expr;
 
         #[allow(non_camel_case_types)]
         #vis struct #struct_name {}
@@ -143,6 +145,7 @@ pub fn def_percpu(attr: TokenStream, item: TokenStream) -> TokenStream {
     .into()
 }
 
+#[cfg(not(feature = "sp-naive"))]
 #[proc_macro]
 pub fn percpu_symbol_offset(item: TokenStream) -> TokenStream {
     let symbol = &format_ident!("{}", item.to_string());

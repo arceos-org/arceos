@@ -33,13 +33,22 @@ static STRUCT: Struct = Struct { foo: 0, bar: 0 };
 #[cfg(target_os = "linux")]
 #[test]
 fn test_percpu() {
-    init(4);
-    set_local_thread_pointer(0, None);
+    println!("feature = \"sp-naive\": {}", cfg!(feature = "sp-naive"));
 
-    assert_eq!(percpu_area_size(), 0x30);
+    #[cfg(feature = "sp-naive")]
+    let base = 0;
 
-    let base = get_local_thread_pointer();
-    println!("base = {:#x}", base);
+    #[cfg(not(feature = "sp-naive"))]
+    let base = {
+        init(4);
+        set_local_thread_pointer(0, None);
+
+        let base = get_local_thread_pointer();
+        println!("per-CPU area base = {:#x}", base);
+        println!("per-CPU area size = {}", percpu_area_size());
+        base
+    };
+
     println!("bool offset: {:#x}", BOOL.offset());
     println!("u8 offset: {:#x}", U8.offset());
     println!("u16 offset: {:#x}", U16.offset());

@@ -6,6 +6,12 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+# For single CPU use, just make the per-CPU data a global variable.
+sp-naive = ["percpu_macros/sp-naive"]
+
+default = []
+
 [dependencies]
 cfg-if = "1.0"
 percpu_macros = { path = "../percpu_macros" }

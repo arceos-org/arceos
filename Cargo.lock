@@ -262,6 +262,7 @@ name = "axsync"
 version = "0.1.0"
 dependencies = [
  "axtask",
+ "percpu",
  "rand",
  "spinlock",
 ]
@@ -276,6 +277,7 @@ dependencies = [
  "lazy_init",
  "log",
  "memory_addr",
+ "percpu",
  "rand",
  "scheduler",
  "spinlock",
