@@ -109,3 +109,48 @@ int strncmp(const char *_l, const char *_r, size_t n)
     for (; *l && *r && n && *l == *r; l++, r++, n--);
     return *l - *r;
 }
+
+size_t strcspn(const char *s1, const char *s2)
+{
+    size_t len =0;
+    
+    if((s1 == NULL) || (s2 == NULL))
+        return len;
+    
+    while(*s1)
+    {
+        if(strchr(s2,*s1)) return len;
+
+        s1++;
+        len++;
+    }
+    return len;
+}
+
+char *strchr(const char *s, int c)
+{
+   while(*s != c && *s != '\0') s++;
+
+   if(*s == c) {
+      return s;
+   }else {
+      return NULL;
+   }
+}
+
+char *strrchr(const char *s, int c)
+{
+    char *isCharFind = NULL;
+    if(s != NULL)
+    {
+        do
+        {
+            if( *s == (char)c )
+            {
+                isCharFind=s;
+            }
+        }
+        while(*s++);
+    }
+    return isCharFind;
+}

@@ -61,9 +61,13 @@ endif
 
 # Variables for app
 app_package := arceos-$(APP)
-app_src := $(app_path)/main.c
-app_obj := $(rust_build_path)/$(app_package).o
+app_src := $(wildcard $(app_path)/*.c)
+app_obj := $(patsubst $(app_path)/%.c,$(obj_dir)/%.o,$(app_src))
 app_elf := $(rust_build_path)/$(app_package)
+
+ifneq (,$(wildcard $(app_path)/Makefile))	# check features.txt exists
+  sinclude $(app_path)/Makefile
+endif
 
 # Build commands
 all: rust_lib c_lib app
@@ -83,6 +87,9 @@ $(obj_dir):
 $(obj_dir)/%.o: $(src_dir)/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+$(obj_dir)/%.o: $(app_path)/%.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 $(c_lib): $(all_obj)
 	rm -f $@
 	$(AR) rc $@ $(all_obj)
@@ -90,9 +97,6 @@ $(c_lib): $(all_obj)
 
 ifneq ($(APP),)
 app: $(app_elf)
-
-$(app_obj): $(app_src)
-	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(app_elf): $(app_obj) $(c_lib) $(rust_lib)
 	@echo
