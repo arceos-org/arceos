@@ -204,6 +204,7 @@ impl TaskInner {
         self.preempt_disable_count.fetch_add(1, Ordering::Relaxed);
     }
 
+    #[inline]
     #[cfg(feature = "preempt")]
     pub(crate) fn enable_preempt(&self, resched: bool) {
         if self.preempt_disable_count.fetch_sub(1, Ordering::Relaxed) == 1 && resched {

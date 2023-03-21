@@ -10,10 +10,14 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 # For single CPU use, just make the per-CPU data a global variable.
 sp-naive = ["percpu_macros/sp-naive"]
 
+# Whether the system enables preemption.
+preempt = ["percpu_macros/preempt"]
+
 default = []
 
 [dependencies]
 cfg-if = "1.0"
+kernel_guard = { path = "../kernel_guard" }
 percpu_macros = { path = "../percpu_macros" }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]

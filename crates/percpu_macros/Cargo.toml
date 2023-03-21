@@ -10,6 +10,9 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 # For single CPU use, just make the per-CPU data a global variable.
 sp-naive = []
 
+# Whether the system enables preemption.
+preempt = []
+
 default = []
 
 [dependencies]

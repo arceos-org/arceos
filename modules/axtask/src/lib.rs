@@ -4,6 +4,25 @@
 #[macro_use]
 extern crate log;
 
+struct KernelGuardIfImpl;
+
+#[crate_interface::impl_interface]
+impl kernel_guard::KernelGuardIf for KernelGuardIfImpl {
+    fn disable_preempt() {
+        #[cfg(all(feature = "multitask", feature = "preempt"))]
+        if let Some(curr) = current_may_uninit() {
+            curr.disable_preempt();
+        }
+    }
+
+    fn enable_preempt() {
+        #[cfg(all(feature = "multitask", feature = "preempt"))]
+        if let Some(curr) = current_may_uninit() {
+            curr.enable_preempt(true);
+        }
+    }
+}
+
 cfg_if::cfg_if! {
 if #[cfg(feature = "multitask")] {
 
@@ -67,17 +86,6 @@ pub fn init_scheduler_secondary() {
 pub fn on_timer_tick() {
     self::timers::check_events();
     RUN_QUEUE.lock().scheduler_timer_tick();
-}
-
-pub fn set_preemptiable(_enabled: bool) {
-    #[cfg(feature = "preempt")]
-    if let Some(curr) = current_may_uninit() {
-        if _enabled {
-            curr.enable_preempt(true);
-        } else {
-            curr.disable_preempt();
-        }
-    }
 }
 
 pub fn spawn<F>(f: F)

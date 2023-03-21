@@ -148,10 +148,10 @@ impl AxRunQueue {
                 self.scheduler.put_prev_task(prev.clone(), preempt);
             }
         }
-        let next = self
-            .scheduler
-            .pick_next_task()
-            .unwrap_or_else(|| unsafe { IDLE_TASK.current_ref_raw().get_unchecked().clone() });
+        let next = self.scheduler.pick_next_task().unwrap_or_else(|| unsafe {
+            // Safety: IRQs must be disabled at this time.
+            IDLE_TASK.current_ref_raw().get_unchecked().clone()
+        });
         self.switch_to(prev, next);
     }
 

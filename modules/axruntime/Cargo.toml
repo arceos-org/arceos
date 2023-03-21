@@ -20,6 +20,7 @@ default = []
 
 [dependencies]
 percpu = { path = "../../crates/percpu" }
+kernel_guard = { path = "../../crates/kernel_guard" }
 spinlock = { path = "../../crates/spinlock" }
 lazy_init = { path = "../../crates/lazy_init", optional = true }
 crate_interface = { path = "../../crates/crate_interface" }

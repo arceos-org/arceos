@@ -1,15 +1,11 @@
 #![cfg_attr(not(test), no_std)]
-#![feature(asm_const)]
 #![feature(const_trait_impl)]
 
 mod base;
 
-pub mod guard;
-
-use guard::{NoOp, NoPreempt, NoPreemptIrqSave};
+use kernel_guard::{NoOp, NoPreempt, NoPreemptIrqSave};
 
 pub use self::base::{BaseSpinLock, BaseSpinLockGuard};
-pub use self::guard::GuardIf;
 
 /// A spin lock that disbales kernel preemption while trying to lock, and
 /// re-enables it after unlocking.

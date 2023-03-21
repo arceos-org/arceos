@@ -33,6 +33,12 @@ pub fn def_percpu(attr: TokenStream, item: TokenStream) -> TokenStream {
     let ty_str = quote!(#ty).to_string();
     let is_primitive_int = ["bool", "u8", "u16", "u32", "u64", "usize"].contains(&ty_str.as_str());
 
+    let no_preempt_guard = if cfg!(feature = "preempt") {
+        quote! { let _guard = percpu::__priv::NoPreemptGuard::new(); }
+    } else {
+        quote! {}
+    };
+
     // Do not generate `fn read_current()`, `fn write_current()`, etc for non primitive types.
     let read_write_methods = if is_primitive_int {
         let read_current_raw = arch::gen_read_current_raw(inner_symbol_name, ty);
@@ -63,14 +69,14 @@ pub fn def_percpu(attr: TokenStream, item: TokenStream) -> TokenStream {
             /// Returns the value of the per-CPU data on the current CPU. Preemption will
             /// be disabled during the call.
             pub fn read_current(&self) -> #ty {
-                // disbale preempt
+                #no_preempt_guard
                 unsafe { self.read_current_raw() }
             }
 
             /// Set the value of the per-CPU data on the current CPU. Preemption will
             /// be disabled during the call.
             pub fn write_current(&self, val: #ty) {
-                // disbale preempt
+                #no_preempt_guard
                 unsafe { self.write_current_raw(val) }
             }
         }
@@ -135,7 +141,7 @@ pub fn def_percpu(attr: TokenStream, item: TokenStream) -> TokenStream {
             where
                 F: FnOnce(&mut #ty) -> T,
             {
-                // disbale preempt
+                #no_preempt_guard
                 f(unsafe { self.current_ref_mut_raw() })
             }
 

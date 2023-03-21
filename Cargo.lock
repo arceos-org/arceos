@@ -196,6 +196,7 @@ dependencies = [
  "cfg-if",
  "crate_interface",
  "handler_table",
+ "kernel_guard",
  "lazy_init",
  "log",
  "memory_addr",
@@ -253,6 +254,7 @@ dependencies = [
  "axnet",
  "axtask",
  "crate_interface",
+ "kernel_guard",
  "lazy_init",
  "percpu",
  "spinlock",
@@ -275,6 +277,8 @@ dependencies = [
  "axconfig",
  "axhal",
  "cfg-if",
+ "crate_interface",
+ "kernel_guard",
  "lazy_init",
  "log",
  "memory_addr",
@@ -709,6 +713,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "kernel_guard"
+version = "0.1.0"
+dependencies = [
+ "cfg-if",
+ "crate_interface",
+]
+
+[[package]]
 name = "lazy_init"
 version = "0.1.0"
 
@@ -861,6 +873,7 @@ name = "percpu"
 version = "0.1.0"
 dependencies = [
  "cfg-if",
+ "kernel_guard",
  "percpu_macros",
  "spin",
  "x86",
@@ -1119,7 +1132,7 @@ name = "spinlock"
 version = "0.1.0"
 dependencies = [
  "cfg-if",
- "crate_interface",
+ "kernel_guard",
 ]
 
 [[package]]

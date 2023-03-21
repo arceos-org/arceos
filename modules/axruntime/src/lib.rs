@@ -26,7 +26,6 @@ extern "Rust" {
 }
 
 struct LogIfImpl;
-struct GuardIfImpl;
 
 #[crate_interface::impl_interface]
 impl axlog::LogIf for LogIfImpl {
@@ -68,16 +67,6 @@ impl axlog::LogIf for LogIfImpl {
             None
         } else {
             None
-        }
-    }
-}
-
-#[crate_interface::impl_interface]
-impl spinlock::GuardIf for GuardIfImpl {
-    fn set_preemptible(_enabled: bool) {
-        #[cfg(feature = "multitask")]
-        if axtask::current_may_uninit().is_some() {
-            axtask::set_preemptiable(_enabled);
         }
     }
 }

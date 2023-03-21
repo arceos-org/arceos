@@ -29,7 +29,7 @@ impl WaitQueue {
         if curr.in_wait_queue() {
             // wake up by timer (timeout).
             // `RUN_QUEUE` is not locked here, so disable IRQs.
-            let _guard = spinlock::guard::IrqSave::new();
+            let _guard = kernel_guard::IrqSave::new();
             self.queue.lock().retain(|t| !curr.ptr_eq(t));
             curr.set_in_wait_queue(false);
         }

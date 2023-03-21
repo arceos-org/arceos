@@ -7,3 +7,7 @@ mod imp;
 
 pub use self::imp::*;
 pub use percpu_macros::def_percpu;
+
+pub mod __priv {
+    pub use kernel_guard::NoPreempt as NoPreemptGuard;
+}
