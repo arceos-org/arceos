@@ -56,7 +56,7 @@ endif
 ifeq ($(ARCH), riscv64)
   CFLAGS += -march=rv64gc -mabi=lp64d -mcmodel=medany
 else ifeq ($(ARCH), aarch64)
-  CFLAGS += -mgeneral-regs-only
+  CFLAGS += 
 endif
 
 # Variables for app
@@ -83,7 +83,6 @@ $(obj_dir):
 	@echo
 	@echo Building C static library $(c_lib) ...
 	mkdir -p $@
-	mkdir -p $@/sys
 
 $(obj_dir)/%.o: $(src_dir)/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<

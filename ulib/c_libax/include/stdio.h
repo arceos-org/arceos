@@ -11,7 +11,7 @@ int puts(const char *s);
 void fprintf(int f, const char *fmt, ...);
 int fflush(int);
 
-#define EOF         (-1)
+#define EOF (-1)
 
 #define printf(...) fprintf(stdout, __VA_ARGS__)
 
@@ -52,17 +52,17 @@ struct _IO_FILE {
 
 typedef struct _IO_FILE FILE;
 
-#define S_IFMT      00170000
-#define S_IFSOCK    0140000
-#define S_IFLNK     0120000
-#define S_IFREG     0100000
-#define S_IFBLK     0060000
-#define S_IFDIR     0040000
-#define S_IFCHR     0020000
-#define S_IFIFO     0010000
-#define S_ISUID     0004000
-#define S_ISGID     0002000
-#define S_ISVTX     0001000
+#define S_IFMT   00170000
+#define S_IFSOCK 0140000
+#define S_IFLNK  0120000
+#define S_IFREG  0100000
+#define S_IFBLK  0060000
+#define S_IFDIR  0040000
+#define S_IFCHR  0020000
+#define S_IFIFO  0010000
+#define S_ISUID  0004000
+#define S_ISGID  0002000
+#define S_ISVTX  0001000
 
 #define S_ISLNK(m)  (((m)&S_IFMT) == S_IFLNK)
 #define S_ISREG(m)  (((m)&S_IFMT) == S_IFREG)
@@ -72,8 +72,8 @@ typedef struct _IO_FILE FILE;
 #define S_ISFIFO(m) (((m)&S_IFMT) == S_IFIFO)
 #define S_ISSOCK(m) (((m)&S_IFMT) == S_IFSOCK)
 
-#define SEEK_SET    0
-#define SEEK_CUR    1
-#define SEEK_END    2
+#define SEEK_SET 0
+#define SEEK_CUR 1
+#define SEEK_END 2
 
 #endif // __STDIO_H__

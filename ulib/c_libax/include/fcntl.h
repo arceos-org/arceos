@@ -150,11 +150,6 @@
 #define F_OWNER_PID  1
 #define F_OWNER_PGRP 2
 
-// struct f_owner_ex {
-//         int     type;
-//         __kernel_pid_t  pid;
-// };
-
 /* for F_[GET|SET]FL */
 #define FD_CLOEXEC 1 /* actually anything with low bit set goes */
 
@@ -183,10 +178,10 @@
  * LOCK_MAND support has been removed from the kernel. We leave the symbols
  * here to not break legacy builds, but these should not be used in new code.
  */
-#define LOCK_MAND             32  /* This is a mandatory flock ... */
-#define LOCK_READ             64  /* which allows concurrent read operations */
-#define LOCK_WRITE            128 /* which allows concurrent write operations */
-#define LOCK_RW               192 /* which allows concurrent read & write ops */
+#define LOCK_MAND  32  /* This is a mandatory flock ... */
+#define LOCK_READ  64  /* which allows concurrent read operations */
+#define LOCK_WRITE 128 /* which allows concurrent write operations */
+#define LOCK_RW    192 /* which allows concurrent read & write ops */
 
 #define F_LINUX_SPECIFIC_BASE 1024
 
@@ -208,17 +203,6 @@ struct flock {
     __ARCH_FLOCK_PAD
 #endif
 };
-
-// struct flock64 {
-//         short  l_type;
-//         short  l_whence;
-//         __kernel_loff_t l_start;
-//         __kernel_loff_t l_len;
-//         __kernel_pid_t  l_pid;
-// #ifdef  __ARCH_FLOCK64_PAD
-//         __ARCH_FLOCK64_PAD
-// #endif
-// };
 
 #define R_OK 4 /* Test for read permission.  */
 #define W_OK 2 /* Test for write permission.  */

@@ -7,7 +7,7 @@ AllowShortBlocksOnASingleLine: Empty
 AllowShortFunctionsOnASingleLine: Inline
 AllowShortLoopsOnASingleLine: true
 AllowShortIfStatementsOnASingleLine: Never
-AlignConsecutiveMacros: AcrossEmptyLines
+AlignConsecutiveMacros: true
 AlignEscapedNewlines: Left
 BreakBeforeBraces: Custom
 BraceWrapping:

@@ -35,7 +35,7 @@
 #define MAP_HUGE_SHIFT 26
 #define MAP_HUGE_MASK  0x3f
 
-#define MAP_FAILED     ((void *)-1)
+#define MAP_FAILED ((void *)-1)
 
 /* Flags for mremap.  */
 #define MREMAP_MAYMOVE   1

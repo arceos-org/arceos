@@ -145,7 +145,7 @@ fmt:
 	cargo fmt --all
 
 fmt_c:
-	clang-format --style=file:.clang-format -i $(shell find apps/c ulib/c_libax -iname *.c) $(shell find apps/c ulib/c_libax -iname *.h)
+	@clang-format --style=file -i $(shell find apps/c ulib/c_libax -iname *.c -o -iname *.h)
 
 test:
 	cargo test --workspace --exclude "arceos-*" --exclude "libax_bindings" -- --nocapture
