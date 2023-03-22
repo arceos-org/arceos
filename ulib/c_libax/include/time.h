@@ -24,4 +24,7 @@ size_t strftime(char *__restrict__ _Buf, size_t _SizeInBytes, const char *__rest
 
 struct tm *gmtime(const time_t *timer);
 
+struct tm *localtime(const time_t *timep);
+time_t time(time_t *t);
+
 #endif

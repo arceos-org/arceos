@@ -1,6 +1,8 @@
 #ifndef __SYS_MMAN_H__
 #define __SYS_MMAN_H__
 
+#include <sys/types.h>
+
 #define PROT_READ  0x1 /* Page can be read.  */
 #define PROT_WRITE 0x2 /* Page can be written.  */
 #define PROT_EXEC  0x4 /* Page can be executed.  */
@@ -34,5 +36,10 @@
 #define MAP_HUGE_MASK  0x3f
 
 #define MAP_FAILED     ((void *)-1)
+
+void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off);
+int munmap(void *addr, size_t length);
+void *mremap(void *old_address, size_t old_size, size_t new_size, int flags,
+             ... /* void *new_address */);
 
 #endif

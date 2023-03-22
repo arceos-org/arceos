@@ -229,4 +229,7 @@ struct flock {
 
 #define FILENAME_MAX 4096
 
+int fcntl(int fd, int cmd, ... /* arg */);
+int open(const char *filename, int flags, ...);
+
 #endif

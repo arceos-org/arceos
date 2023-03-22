@@ -20,4 +20,6 @@ size_t strcspn(const char *s1, const char *s2);
 char *strrchr(const char *str, int c);
 char *strchr(const char *str, int c);
 
+char *strerror(int n);
+
 #endif // __STRING_H__

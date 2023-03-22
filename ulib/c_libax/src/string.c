@@ -156,3 +156,9 @@ char *strrchr(const char *s, int c)
     }
     return isCharFind;
 }
+
+// TODO:
+char *strerror(int n)
+{
+    return "";
+}

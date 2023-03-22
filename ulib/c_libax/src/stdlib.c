@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include <libax.h>
@@ -44,4 +45,17 @@ _Noreturn void abort(void)
 {
     ax_panic();
     __builtin_unreachable();
+}
+
+// TODO:
+char *getenv(const char *name)
+{
+    printf("%s%s\n", "Error: no ax_call implementation for ", __func__);
+    return 0;
+}
+
+// TODO:
+int __clzdi2(int a)
+{
+    return 0;
 }

@@ -17,7 +17,6 @@ $(app_path)/sqlite3.%:
 	rm sqlite-amalgamation-3410100/shell.c sqlite-amalgamation-3410100/sqlite3ext.h
 	cp sqlite-amalgamation-3410100/* $(app_path)
 	rm -rf sqlite-amalgamation-3410100 sqlite-amalgamation-3410100.zip
-	cd $(app_path) && patch -R -p0 < sqlite3.patch
 
 $(obj_dir)/main.o: $(app_path)/main.c $(app_path)/sqlite3.h
 

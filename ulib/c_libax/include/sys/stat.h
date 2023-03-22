@@ -24,4 +24,7 @@ struct stat {
     time_t st_ctime;      /* time of last status change*/
 };
 
+int fchmod(int fd, mode_t mode);
+int mkdir(const char *pathname, mode_t mode);
+
 #endif
