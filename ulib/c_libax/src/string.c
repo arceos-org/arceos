@@ -116,21 +116,22 @@ int strncmp(const char *_l, const char *_r, size_t n)
     return *l - *r;
 }
 
+#define BITOP(a, b, op) a[(size_t)b / (8 * sizeof(size_t))] op 1 << (size_t)b % (8 * sizeof(size_t))
 size_t strcspn(const char *s1, const char *s2)
 {
-    size_t len = 0;
+    const char *a = s1;
+    size_t byteset[32 / sizeof(size_t)];
 
-    if ((s1 == NULL) || (s2 == NULL))
-        return len;
-
-    while (*s1) {
-        if (strchr(s2, *s1))
-            return len;
-
-        s1++;
-        len++;
+    if (!s2[0] || !s2[1]) {
+        for (; *s1 != *s2; s1++) return s1 - a;
     }
-    return len;
+    memset(byteset, 0, sizeof byteset);
+
+    for (; *s2 != '\0'; s2++) BITOP(byteset, *(unsigned char *)s2, |=);
+    for (; *s1 && !(BITOP(byteset, *(unsigned char *)s1, &)); s1++)
+        ;
+
+    return s1 - a;
 }
 
 char *strchr(const char *s, int c)
@@ -138,7 +139,7 @@ char *strchr(const char *s, int c)
     while (*s != c && *s != '\0') s++;
 
     if (*s == c) {
-        return s;
+        return (char *)s;
     } else {
         return NULL;
     }
@@ -150,7 +151,7 @@ char *strrchr(const char *s, int c)
     if (s != NULL) {
         do {
             if (*s == (char)c) {
-                isCharFind = s;
+                isCharFind = (char *)s;
             }
         } while (*s++);
     }

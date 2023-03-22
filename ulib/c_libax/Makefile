@@ -35,7 +35,7 @@ obj_dir := build_$(ARCH)
 inc_dir := include
 c_lib := $(obj_dir)/libc.a
 
-all_src := $(wildcard $(src_dir)/*.c wildcard $(src_dir)/*/*.c)
+all_src := $(wildcard $(src_dir)/*.c)
 all_obj := $(patsubst $(src_dir)/%.c,$(obj_dir)/%.o,$(all_src))
 
 CC := $(CROSS_COMPILE)gcc

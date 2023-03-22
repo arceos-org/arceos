@@ -72,4 +72,8 @@ typedef struct _IO_FILE FILE;
 #define S_ISFIFO(m) (((m)&S_IFMT) == S_IFIFO)
 #define S_ISSOCK(m) (((m)&S_IFMT) == S_IFSOCK)
 
+#define SEEK_SET    0
+#define SEEK_CUR    1
+#define SEEK_END    2
+
 #endif // __STDIO_H__

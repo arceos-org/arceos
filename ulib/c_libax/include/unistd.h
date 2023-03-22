@@ -5,6 +5,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#define _SC_PAGESIZE 30
+
 long int sysconf(int name);
 off_t lseek(int fd, off_t offset, int whence);
 unsigned int sleep(unsigned int seconds);

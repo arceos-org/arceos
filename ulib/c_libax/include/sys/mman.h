@@ -37,6 +37,11 @@
 
 #define MAP_FAILED     ((void *)-1)
 
+/* Flags for mremap.  */
+#define MREMAP_MAYMOVE   1
+#define MREMAP_FIXED     2
+#define MREMAP_DONTUNMAP 4
+
 void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off);
 int munmap(void *addr, size_t length);
 void *mremap(void *old_address, size_t old_size, size_t new_size, int flags,

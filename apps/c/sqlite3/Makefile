@@ -1,5 +1,5 @@
 # modify compile flags of gcc
-CFLAGS += -w
+CFLAGS +=
 
 # Keep it alive, don't modify it
 all:
@@ -22,4 +22,4 @@ $(obj_dir)/main.o: $(app_path)/main.c $(app_path)/sqlite3.h
 
 # compile sqlite3
 $(obj_dir)/sqlite3.o: $(app_path)/sqlite3.c
-	$(CC) $(CFLAGS) -DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_FLOATING_POINT -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DEBUG -c -o $@ $<
+	$(CC) $(CFLAGS) -DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_FLOATING_POINT -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DEBUG -w -c -o $@ $<
