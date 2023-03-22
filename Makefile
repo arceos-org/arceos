@@ -144,10 +144,13 @@ clippy:
 fmt:
 	cargo fmt --all
 
+fmt_c:
+	clang-format --style=file:.clang-format -i $(shell find apps/c ulib/c_libax -iname *.c) $(shell find apps/c ulib/c_libax -iname *.h)
+
 test:
 	cargo test --workspace --exclude "arceos-*" --exclude "libax_bindings" -- --nocapture
 
 test_no_fail_fast:
 	cargo test --workspace --exclude "arceos-*" --exclude "libax_bindings" --no-fail-fast -- --nocapture
 
-.PHONY: build kernel_elf disasm run justrun clean clippy fmt test test_no_fail_fast
+.PHONY: build kernel_elf disasm run justrun clean clippy fmt fmt_c test test_no_fail_fast

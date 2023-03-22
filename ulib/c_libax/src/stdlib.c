@@ -15,23 +15,26 @@ int rand(void)
 
 #ifdef AX_CONFIG_ALLOC
 
-void *malloc(size_t size) {
+void *malloc(size_t size)
+{
     return ax_malloc(size);
 }
 
-void *realloc(void* memblock, size_t size) {
+void *realloc(void *memblock, size_t size)
+{
     size_t o_size = *(size_t *)(memblock - 8);
-    
-    void * mem = ax_malloc(size);
 
-    for(int i = 0;i <( o_size < size? o_size : size);i++) ((char *)mem)[i] = ((char *)memblock)[i];
+    void *mem = ax_malloc(size);
+
+    for (int i = 0; i < (o_size < size ? o_size : size); i++)
+        ((char *)mem)[i] = ((char *)memblock)[i];
 
     ax_free(memblock);
     return mem;
-
 }
 
-void free(void *addr) {
+void free(void *addr)
+{
     return ax_free(addr);
 }
 

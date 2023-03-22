@@ -10,7 +10,7 @@ void srand(unsigned);
 void *malloc(size_t size);
 void free(void *addr);
 #endif
- 
+
 _Noreturn void abort(void);
 
 #endif //__STDLIB_H__

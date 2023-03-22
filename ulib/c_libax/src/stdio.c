@@ -1,14 +1,14 @@
 #include <assert.h>
 #include <stdarg.h>
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
 #include <libax.h>
 
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MAX(a, b)    ((a) > (b) ? (a) : (b))
+#define MIN(a, b)    ((a) < (b) ? (a) : (b))
 
 #define __LINE_WIDTH 256
 

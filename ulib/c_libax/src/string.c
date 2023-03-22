@@ -1,11 +1,12 @@
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 
 size_t strlen(const char *s)
 {
     const char *a = s;
-    for (; *s; s++);
+    for (; *s; s++)
+        ;
     return s - a;
 }
 
@@ -44,7 +45,8 @@ void *memchr(const void *src, int c, size_t n)
 {
     const unsigned char *s = src;
     c = (unsigned char)c;
-    for (; n && *s != c; s++, n--);
+    for (; n && *s != c; s++, n--)
+        ;
     return n ? (void *)s : 0;
 }
 
@@ -92,34 +94,38 @@ void *memset(void *dest, int c, size_t n)
 
 int strcmp(const char *l, const char *r)
 {
-    for (; *l == *r && *l; l++, r++);
+    for (; *l == *r && *l; l++, r++)
+        ;
     return *(unsigned char *)l - *(unsigned char *)r;
 }
 
 char *strncpy(char *restrict d, const char *restrict s, size_t n)
 {
-    for (; n && (*d = *s); n--, s++, d++);
+    for (; n && (*d = *s); n--, s++, d++)
+        ;
     return d;
 }
 
 int strncmp(const char *_l, const char *_r, size_t n)
 {
     const unsigned char *l = (void *)_l, *r = (void *)_r;
-    if (!n--) return 0;
-    for (; *l && *r && n && *l == *r; l++, r++, n--);
+    if (!n--)
+        return 0;
+    for (; *l && *r && n && *l == *r; l++, r++, n--)
+        ;
     return *l - *r;
 }
 
 size_t strcspn(const char *s1, const char *s2)
 {
-    size_t len =0;
-    
-    if((s1 == NULL) || (s2 == NULL))
+    size_t len = 0;
+
+    if ((s1 == NULL) || (s2 == NULL))
         return len;
-    
-    while(*s1)
-    {
-        if(strchr(s2,*s1)) return len;
+
+    while (*s1) {
+        if (strchr(s2, *s1))
+            return len;
 
         s1++;
         len++;
@@ -129,28 +135,24 @@ size_t strcspn(const char *s1, const char *s2)
 
 char *strchr(const char *s, int c)
 {
-   while(*s != c && *s != '\0') s++;
+    while (*s != c && *s != '\0') s++;
 
-   if(*s == c) {
-      return s;
-   }else {
-      return NULL;
-   }
+    if (*s == c) {
+        return s;
+    } else {
+        return NULL;
+    }
 }
 
 char *strrchr(const char *s, int c)
 {
     char *isCharFind = NULL;
-    if(s != NULL)
-    {
-        do
-        {
-            if( *s == (char)c )
-            {
-                isCharFind=s;
+    if (s != NULL) {
+        do {
+            if (*s == (char)c) {
+                isCharFind = s;
             }
-        }
-        while(*s++);
+        } while (*s++);
     }
     return isCharFind;
 }
