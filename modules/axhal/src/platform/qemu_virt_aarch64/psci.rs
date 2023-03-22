@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 //! ARM Power State Coordination Interface.
 
 use core::arch::asm;

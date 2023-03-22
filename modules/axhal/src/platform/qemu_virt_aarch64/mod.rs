@@ -6,6 +6,8 @@ mod psci;
 pub mod console;
 pub mod irq;
 pub mod mem;
+
+#[cfg(feature = "smp")]
 pub mod mp;
 
 pub mod time {

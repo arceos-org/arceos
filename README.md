@@ -13,16 +13,15 @@ ArceOS was inspired a lot by [Unikraft](https://github.com/unikraft/unikraft).
 * [x] Architecture: riscv64, aarch64
 * [x] Platform: QEMU virt riscv64/aarch64
 * [x] Multi-thread
-* [x] Cooperative FIFO scheduler
-* [x] VirtIO net/blk drivers
+* [x] Cooperative/preemptive scheduler
+* [x] VirtIO net/blk/gpu drivers
 * [x] TCP net stack using [smoltcp](https://github.com/smoltcp-rs/smoltcp)
 * [x] Synchronization/Mutex
-* [x] Kernel preemption
+* [x] SMP scheduling with single run queue
 * [ ] File system
 * [ ] Compatible with Linux apps
 * [ ] Interrupt driven device I/O
 * [ ] Async I/O
-* [ ] SMP
 
 ## Example apps
 
@@ -41,6 +40,7 @@ The currently supported applications (Rust), as well as their dependent modules 
 | [helloworld](apps/helloworld/) | | | A minimal app that just prints a string |
 | [exception](apps/exception/) | | paging | Exception handling test |
 | [memtest](apps/memtest/) | axalloc | alloc, paging | Dynamic memory allocation test |
+| [display](apps/display/) | axalloc, axdisplay | alloc, paging, display | Graphic/GUI test |
 | [yield](apps/task/yield/) | axalloc, axtask | alloc, paging, multitask, sched_fifo | Multi-threaded yielding test |
 | [parallel](apps/task/parallel/) | axalloc, axtask | alloc, paging, multitask, sched_fifo | Parallel computing test (to test synchronization & mutex) |
 | [sleep](apps/task/sleep/) | axalloc, axtask | alloc, paging, multitask, sched_fifo | Thread sleeping test |

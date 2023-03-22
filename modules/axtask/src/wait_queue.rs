@@ -130,7 +130,7 @@ impl WaitQueue {
             } else {
                 break;
             }
-            drop(rq); // we must `unlock RUN_QUEUE` after unlocking `self.queue`.
+            drop(rq); // we must unlock `RUN_QUEUE` after unlocking `self.queue`.
         }
     }
 
