@@ -1,0 +1,16 @@
+---
+Language: Cpp
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 100
+AllowShortBlocksOnASingleLine: Empty
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortLoopsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: Never
+AlignConsecutiveMacros: true
+AlignEscapedNewlines: Left
+BreakBeforeBraces: Custom
+BraceWrapping:
+    AfterFunction: true
+PointerAlignment: Right
+---

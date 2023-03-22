@@ -39,10 +39,9 @@ pub extern "C" fn ax_malloc(size: usize) -> *mut c_void {
 
 /// Release memory.
 ///
-/// (WARNING) If the address to be released does not match the allocated address, an error should occur,
-/// but it will NOT be checked out.
-/// This is due to the global allocator `Buddy_system` (currently used) does not check
-/// the validity of address to be released.
+/// (WARNING) If the address to be released does not match the allocated address, an error should
+/// occur, but it will NOT be checked out. This is due to the global allocator `Buddy_system`
+/// (currently used) does not check the validity of address to be released.
 #[no_mangle]
 pub extern "C" fn ax_free(addr: *mut c_void) {
     let size = {

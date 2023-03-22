@@ -80,3 +80,7 @@ jobs:
       run: |
         export PATH=$PATH:$PWD/musl/bin
         make clean && make ARCH=${{ matrix.arch }} APP=memtest APP_LANG=c
+    - name: Build c/sqlite3
+      run: |
+        export PATH=$PATH:$PWD/musl/bin
+        make clean && make ARCH=${{ matrix.arch }} APP=sqlite3 APP_LANG=c
