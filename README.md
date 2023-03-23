@@ -50,23 +50,73 @@ The currently supported applications (Rust), as well as their dependent modules 
 
 ## Build & Run
 
-### Rust apps
+### Example apps
 
 ```bash
-make ARCH=<arch> APP=<app> LOG=<log> NET=[on|off] FS=[on|off] run
+# in arceos directory
+make A=path/to/app ARCH=<arch> LOG=<log> NET=[y|n] FS=[y|n]
 ```
 
 Where `<arch>` should be one of `riscv64`, `aarch64`.
 
 `<log>` should be one of `off`, `error`, `warn`, `info`, `debug`, `trace`.
 
-`<app>` should be one of the application names. (as shown in the [apps/](apps/) directory)
+`path/to/app` is the relative path to the example application.
 
-### C apps
+More arguments and targets can be found in [Makefile](Makefile).
+
+For example, to run the [httpserver](apps/net/httpserver/) on `qemu-system-aarch64` with 4 cores:
 
 ```bash
-make ARCH=<arch> APP=<app> LOG=<log> NET=[on|off] FS=[on|off] APP_LANG=c run
+make A=apps/net/httpserver ARCH=aarch64 LOG=info NET=y SMP=4 run
 ```
+
+### You custom apps
+
+#### Rust
+
+1. Create a new rust package with `no_std` and `no_main` environment.
+2. Add the `libax` dependency to `Cargo.toml`:
+
+    ```toml
+    [dependencies]
+    libax = { path = "/path/to/arceos/ulib/libax", features = ["..."] }
+    ```
+
+3. Call library functions from `libax` in your code, like the [helloworld](apps/helloworld/) example.
+4. Build your application with ArceOS, by running the `make` command in the application directory:
+
+    ```bash
+    # in app directory
+    make -C /path/to/arceos A=$(pwd) ARCH=<arch> run
+    ```
+
+    All arguments and targets are the same as above.
+
+#### C
+
+1. Create a `axbuild.mk` file in your project:
+
+    ```
+    app/
+    ├── foo.c
+    ├── bar.c
+    └── axbuild.mk
+    ```
+
+2. Add build targets to `axbuild.mk` (see [this](apps/c/sqlite3/axbuild.mk) file for more advanced usage):
+
+    ```Makefile
+    # in axbuild.mk
+    app-objs := foo.o bar.o
+    ```
+
+3. Build your application with ArceOS, by running the `make` command in the application directory:
+
+    ```bash
+    # in app directory
+    make -C /path/to/arceos A=$(pwd) ARCH=<arch> run
+    ```
 
 ## Design
 

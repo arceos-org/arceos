@@ -1,11 +1,12 @@
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 
 size_t strlen(const char *s)
 {
     const char *a = s;
-    for (; *s; s++);
+    for (; *s; s++)
+        ;
     return s - a;
 }
 
@@ -44,7 +45,8 @@ void *memchr(const void *src, int c, size_t n)
 {
     const unsigned char *s = src;
     c = (unsigned char)c;
-    for (; n && *s != c; s++, n--);
+    for (; n && *s != c; s++, n--)
+        ;
     return n ? (void *)s : 0;
 }
 
@@ -92,20 +94,72 @@ void *memset(void *dest, int c, size_t n)
 
 int strcmp(const char *l, const char *r)
 {
-    for (; *l == *r && *l; l++, r++);
+    for (; *l == *r && *l; l++, r++)
+        ;
     return *(unsigned char *)l - *(unsigned char *)r;
 }
 
 char *strncpy(char *restrict d, const char *restrict s, size_t n)
 {
-    for (; n && (*d = *s); n--, s++, d++);
+    for (; n && (*d = *s); n--, s++, d++)
+        ;
     return d;
 }
 
 int strncmp(const char *_l, const char *_r, size_t n)
 {
     const unsigned char *l = (void *)_l, *r = (void *)_r;
-    if (!n--) return 0;
-    for (; *l && *r && n && *l == *r; l++, r++, n--);
+    if (!n--)
+        return 0;
+    for (; *l && *r && n && *l == *r; l++, r++, n--)
+        ;
     return *l - *r;
+}
+
+#define BITOP(a, b, op) a[(size_t)b / (8 * sizeof(size_t))] op 1 << (size_t)b % (8 * sizeof(size_t))
+size_t strcspn(const char *s1, const char *s2)
+{
+    const char *a = s1;
+    size_t byteset[32 / sizeof(size_t)];
+
+    if (!s2[0] || !s2[1]) {
+        for (; *s1 != *s2; s1++) return s1 - a;
+    }
+    memset(byteset, 0, sizeof byteset);
+
+    for (; *s2 != '\0'; s2++) BITOP(byteset, *(unsigned char *)s2, |=);
+    for (; *s1 && !(BITOP(byteset, *(unsigned char *)s1, &)); s1++)
+        ;
+
+    return s1 - a;
+}
+
+char *strchr(const char *s, int c)
+{
+    while (*s != c && *s != '\0') s++;
+
+    if (*s == c) {
+        return (char *)s;
+    } else {
+        return NULL;
+    }
+}
+
+char *strrchr(const char *s, int c)
+{
+    char *isCharFind = NULL;
+    if (s != NULL) {
+        do {
+            if (*s == (char)c) {
+                isCharFind = (char *)s;
+            }
+        } while (*s++);
+    }
+    return isCharFind;
+}
+
+// TODO:
+char *strerror(int n)
+{
+    return "";
 }
