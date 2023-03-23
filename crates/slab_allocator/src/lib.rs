@@ -13,9 +13,8 @@ mod tests;
 mod slab;
 use slab::Slab;
 
-pub const NUM_OF_SLABS: usize = 8;
-pub const MIN_SLAB_SIZE: usize = 4096;
-pub const MIN_HEAP_SIZE: usize = NUM_OF_SLABS * MIN_SLAB_SIZE;
+const SET_SIZE: usize = 64;
+const MIN_HEAP_SIZE: usize = 0x8000;
 
 pub enum HeapAllocator {
     Slab64Bytes,
@@ -31,13 +30,13 @@ pub enum HeapAllocator {
 /// A fixed size heap backed by multiple slabs with blocks of different sizes.
 /// Allocations over 4096 bytes are served by linked list allocator.
 pub struct Heap {
-    slab_64_bytes: Slab,
-    slab_128_bytes: Slab,
-    slab_256_bytes: Slab,
-    slab_512_bytes: Slab,
-    slab_1024_bytes: Slab,
-    slab_2048_bytes: Slab,
-    slab_4096_bytes: Slab,
+    slab_64_bytes: Slab<64>,
+    slab_128_bytes: Slab<128>,
+    slab_256_bytes: Slab<256>,
+    slab_512_bytes: Slab<512>,
+    slab_1024_bytes: Slab<1024>,
+    slab_2048_bytes: Slab<2048>,
+    slab_4096_bytes: Slab<4096>,
     buddy_allocator: buddy_system_allocator::Heap<32>,
 }
 
@@ -62,18 +61,17 @@ impl Heap {
             heap_size % MIN_HEAP_SIZE == 0,
             "Heap size should be a multiple of minimum heap size"
         );
-        let slab_size = heap_size / NUM_OF_SLABS;
         Heap {
-            slab_64_bytes: Slab::new(heap_start_addr, slab_size, 64),
-            slab_128_bytes: Slab::new(heap_start_addr + slab_size, slab_size, 128),
-            slab_256_bytes: Slab::new(heap_start_addr + 2 * slab_size, slab_size, 256),
-            slab_512_bytes: Slab::new(heap_start_addr + 3 * slab_size, slab_size, 512),
-            slab_1024_bytes: Slab::new(heap_start_addr + 4 * slab_size, slab_size, 1024),
-            slab_2048_bytes: Slab::new(heap_start_addr + 5 * slab_size, slab_size, 2048),
-            slab_4096_bytes: Slab::new(heap_start_addr + 6 * slab_size, slab_size, 4096),
+            slab_64_bytes: Slab::<64>::new(0, 0),
+            slab_128_bytes: Slab::<128>::new(0, 0),
+            slab_256_bytes: Slab::<256>::new(0, 0),
+            slab_512_bytes: Slab::<512>::new(0, 0),
+            slab_1024_bytes: Slab::<1024>::new(0, 0),
+            slab_2048_bytes: Slab::<2048>::new(0, 0),
+            slab_4096_bytes: Slab::<4096>::new(0, 0),
             buddy_allocator: {
                 let mut buddy = buddy_system_allocator::Heap::<32>::new();
-                buddy.init(heap_start_addr + 7 * slab_size, slab_size);
+                buddy.init(heap_start_addr, heap_size);
                 buddy
             },
         }
@@ -88,31 +86,11 @@ impl Heap {
             "Start address should be page aligned"
         );
         assert!(
-            heap_size >= MIN_HEAP_SIZE,
-            "Add Heap size should be greater or equal to minimum heap size"
+            heap_size % 4096 == 0,
+            "Add Heap size should be a multiple of page size"
         );
-        assert!(
-            heap_size % MIN_HEAP_SIZE == 0,
-            "Add Heap size should be a multiple of minimum heap size"
-        );
-        let slab_size = heap_size / NUM_OF_SLABS;
-        self.slab_64_bytes.grow(heap_start_addr, slab_size);
-        self.slab_128_bytes
-            .grow(heap_start_addr + slab_size, slab_size);
-        self.slab_256_bytes
-            .grow(heap_start_addr + 2 * slab_size, slab_size);
-        self.slab_512_bytes
-            .grow(heap_start_addr + 3 * slab_size, slab_size);
-        self.slab_1024_bytes
-            .grow(heap_start_addr + 4 * slab_size, slab_size);
-        self.slab_2048_bytes
-            .grow(heap_start_addr + 5 * slab_size, slab_size);
-        self.slab_4096_bytes
-            .grow(heap_start_addr + 6 * slab_size, slab_size);
-        self.buddy_allocator.add_to_heap(
-            heap_start_addr + 7 * slab_size,
-            heap_start_addr + 8 * slab_size,
-        );
+        self.buddy_allocator
+            .add_to_heap(heap_start_addr, heap_start_addr + heap_size);
     }
 
     /// Adds memory to the heap. The start address must be valid
@@ -144,13 +122,27 @@ impl Heap {
     /// The runtime is in `O(1)` for chunks of size <= 4096, and `O(n)` when chunk size is > 4096,
     pub fn allocate(&mut self, layout: Layout) -> Result<usize, AllocError> {
         match Heap::layout_to_allocator(&layout) {
-            HeapAllocator::Slab64Bytes => self.slab_64_bytes.allocate(layout),
-            HeapAllocator::Slab128Bytes => self.slab_128_bytes.allocate(layout),
-            HeapAllocator::Slab256Bytes => self.slab_256_bytes.allocate(layout),
-            HeapAllocator::Slab512Bytes => self.slab_512_bytes.allocate(layout),
-            HeapAllocator::Slab1024Bytes => self.slab_1024_bytes.allocate(layout),
-            HeapAllocator::Slab2048Bytes => self.slab_2048_bytes.allocate(layout),
-            HeapAllocator::Slab4096Bytes => self.slab_4096_bytes.allocate(layout),
+            HeapAllocator::Slab64Bytes => self
+                .slab_64_bytes
+                .allocate(layout, &mut self.buddy_allocator),
+            HeapAllocator::Slab128Bytes => self
+                .slab_128_bytes
+                .allocate(layout, &mut self.buddy_allocator),
+            HeapAllocator::Slab256Bytes => self
+                .slab_256_bytes
+                .allocate(layout, &mut self.buddy_allocator),
+            HeapAllocator::Slab512Bytes => self
+                .slab_512_bytes
+                .allocate(layout, &mut self.buddy_allocator),
+            HeapAllocator::Slab1024Bytes => self
+                .slab_1024_bytes
+                .allocate(layout, &mut self.buddy_allocator),
+            HeapAllocator::Slab2048Bytes => self
+                .slab_2048_bytes
+                .allocate(layout, &mut self.buddy_allocator),
+            HeapAllocator::Slab4096Bytes => self
+                .slab_4096_bytes
+                .allocate(layout, &mut self.buddy_allocator),
             HeapAllocator::BuddyAllocator => self
                 .buddy_allocator
                 .alloc(layout)

@@ -1,18 +1,16 @@
+use super::SET_SIZE;
 use alloc::alloc::{AllocError, Layout};
 
-pub struct Slab {
-    block_size: usize,
-    free_block_list: FreeBlockList,
-
+pub struct Slab<const BLK_SIZE: usize> {
+    free_block_list: FreeBlockList<BLK_SIZE>,
     total_blocks: usize,
 }
 
-impl Slab {
-    pub unsafe fn new(start_addr: usize, slab_size: usize, block_size: usize) -> Slab {
-        let num_of_blocks = slab_size / block_size;
+impl<const BLK_SIZE: usize> Slab<BLK_SIZE> {
+    pub unsafe fn new(start_addr: usize, slab_size: usize) -> Slab<BLK_SIZE> {
+        let num_of_blocks = slab_size / BLK_SIZE;
         Slab {
-            block_size,
-            free_block_list: FreeBlockList::new(start_addr, block_size, num_of_blocks),
+            free_block_list: FreeBlockList::new(start_addr, BLK_SIZE, num_of_blocks),
             total_blocks: num_of_blocks,
         }
     }
@@ -22,22 +20,37 @@ impl Slab {
     }
 
     pub fn used_blocks(&self) -> usize {
-        self.free_block_list.len()
+        self.total_blocks - self.free_block_list.len()
     }
 
     pub unsafe fn grow(&mut self, start_addr: usize, slab_size: usize) {
-        let num_of_blocks = slab_size / self.block_size;
+        let num_of_blocks = slab_size / BLK_SIZE;
         self.total_blocks += num_of_blocks;
-        let mut block_list = FreeBlockList::new(start_addr, self.block_size, num_of_blocks);
+        let mut block_list = FreeBlockList::<BLK_SIZE>::new(start_addr, BLK_SIZE, num_of_blocks);
         while let Some(block) = block_list.pop() {
             self.free_block_list.push(block);
         }
     }
 
-    pub fn allocate(&mut self, _layout: Layout) -> Result<usize, AllocError> {
+    pub fn allocate(
+        &mut self,
+        _layout: Layout,
+        buddy: &mut buddy_system_allocator::Heap<32>,
+    ) -> Result<usize, AllocError> {
         match self.free_block_list.pop() {
             Some(block) => Ok(block.addr()),
-            None => Err(AllocError),
+            None => {
+                let layout =
+                    unsafe { Layout::from_size_align_unchecked(SET_SIZE * BLK_SIZE, 4096) };
+                if let Ok(ptr) = buddy.alloc(layout) {
+                    unsafe {
+                        self.grow(ptr.as_ptr() as usize, SET_SIZE * BLK_SIZE);
+                    }
+                    Ok(self.free_block_list.pop().unwrap().addr())
+                } else {
+                    Err(AllocError)
+                }
+            }
         }
     }
 
@@ -49,13 +62,17 @@ impl Slab {
     }
 }
 
-struct FreeBlockList {
+struct FreeBlockList<const BLK_SIZE: usize> {
     len: usize,
     head: Option<&'static mut FreeBlock>,
 }
 
-impl FreeBlockList {
-    unsafe fn new(start_addr: usize, block_size: usize, num_of_blocks: usize) -> FreeBlockList {
+impl<const BLK_SIZE: usize> FreeBlockList<BLK_SIZE> {
+    unsafe fn new(
+        start_addr: usize,
+        block_size: usize,
+        num_of_blocks: usize,
+    ) -> FreeBlockList<BLK_SIZE> {
         let mut new_list = FreeBlockList::new_empty();
         for i in (0..num_of_blocks).rev() {
             let new_block = (start_addr + i * block_size) as *mut FreeBlock;
@@ -64,7 +81,7 @@ impl FreeBlockList {
         new_list
     }
 
-    fn new_empty() -> FreeBlockList {
+    fn new_empty() -> FreeBlockList<BLK_SIZE> {
         FreeBlockList { len: 0, head: None }
     }
 
@@ -92,7 +109,7 @@ impl FreeBlockList {
     }
 }
 
-impl Drop for FreeBlockList {
+impl<const BLK_SIZE: usize> Drop for FreeBlockList<BLK_SIZE> {
     fn drop(&mut self) {
         while self.pop().is_some() {}
     }
