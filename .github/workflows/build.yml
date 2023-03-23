@@ -42,23 +42,25 @@ jobs:
         version: latest
         use-tool-cache: true
     - name: Build helloworld
-      run: make ARCH=${{ matrix.arch }} APP=helloworld
+      run: make ARCH=${{ matrix.arch }} A=apps/helloworld
     - name: Build memtest
-      run: make ARCH=${{ matrix.arch }} APP=memtest
+      run: make ARCH=${{ matrix.arch }} A=apps/memtest
     - name: Build exception
-      run: make ARCH=${{ matrix.arch }} APP=exception
+      run: make ARCH=${{ matrix.arch }} A=apps/exception
+    - name: Build display
+      run: make ARCH=${{ matrix.arch }} A=apps/display GRAPHIC=y
     - name: Build task/yield
-      run: make ARCH=${{ matrix.arch }} APP=yield
+      run: make ARCH=${{ matrix.arch }} A=apps/task/yield
     - name: Build task/parallel
-      run: make ARCH=${{ matrix.arch }} APP=parallel
+      run: make ARCH=${{ matrix.arch }} A=apps/task/parallel
     - name: Build task/sleep
-      run: make ARCH=${{ matrix.arch }} APP=sleep
+      run: make ARCH=${{ matrix.arch }} A=apps/task/sleep
     - name: Build net/echoserver
-      run: make ARCH=${{ matrix.arch }} APP=echoserver
+      run: make ARCH=${{ matrix.arch }} A=apps/net/echoserver NET=y
     - name: Build net/httpclient
-      run: make ARCH=${{ matrix.arch }} APP=httpclient
+      run: make ARCH=${{ matrix.arch }} A=apps/net/httpclient NET=y
     - name: Build net/httpserver
-      run: make ARCH=${{ matrix.arch }} APP=httpserver
+      run: make ARCH=${{ matrix.arch }} A=apps/net/httpserver NET=y
 
     - name: Install musl toolchain
       run: |
@@ -73,14 +75,8 @@ jobs:
         tar -xf $MUSL_PATH.tgz
         mv $MUSL_PATH musl
     - name: Build c/helloworld
-      run: |
-        export PATH=$PATH:$PWD/musl/bin
-        make ARCH=${{ matrix.arch }} APP=helloworld APP_LANG=c
+      run: PATH=$PATH:$PWD/musl/bin make ARCH=${{ matrix.arch }} A=apps/c/helloworld
     - name: Build c/memtest
-      run: |
-        export PATH=$PATH:$PWD/musl/bin
-        make clean && make ARCH=${{ matrix.arch }} APP=memtest APP_LANG=c
+      run: PATH=$PATH:$PWD/musl/bin make ARCH=${{ matrix.arch }} A=apps/c/memtest
     - name: Build c/sqlite3
-      run: |
-        export PATH=$PATH:$PWD/musl/bin
-        make clean && make ARCH=${{ matrix.arch }} APP=sqlite3 APP_LANG=c
+      run: PATH=$PATH:$PWD/musl/bin make ARCH=${{ matrix.arch }} A=apps/c/sqlite3
