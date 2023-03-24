@@ -1,0 +1,12 @@
+[package]
+name = "axfs"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+vfs = {path = "../../crates/vfs"}
+lazy_init = {path = "../../crates/lazy_init"}
+spinlock = {path = "../../crates/spinlock"}
+axerror = {path = "../axerror"}

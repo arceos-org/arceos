@@ -24,3 +24,4 @@ pub mod net;
 
 #[cfg(feature = "display")]
 pub mod display;
+pub mod fs;
