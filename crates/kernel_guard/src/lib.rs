@@ -1,10 +1,13 @@
+#![no_std]
+#![feature(asm_const)]
 #![allow(clippy::new_without_default)]
 
 mod arch;
 
 #[crate_interface::def_interface]
-pub trait GuardIf {
-    fn set_preemptible(enabled: bool);
+pub trait KernelGuardIf {
+    fn enable_preempt();
+    fn disable_preempt();
 }
 
 pub trait BaseGuard {
@@ -47,9 +50,13 @@ mod imp {
 
     impl BaseGuard for IrqSave {
         type State = usize;
+
+        #[inline]
         fn acquire() -> Self::State {
             super::arch::local_irq_save_and_disable()
         }
+
+        #[inline]
         fn release(state: Self::State) {
             // restore IRQ states
             super::arch::local_irq_restore(state);
@@ -60,11 +67,11 @@ mod imp {
         type State = ();
         fn acquire() -> Self::State {
             // disable preempt
-            crate_interface::call_interface!(GuardIf::set_preemptible, false);
+            crate_interface::call_interface!(KernelGuardIf::disable_preempt);
         }
         fn release(_state: Self::State) {
             // enable preempt
-            crate_interface::call_interface!(GuardIf::set_preemptible, true);
+            crate_interface::call_interface!(KernelGuardIf::enable_preempt);
         }
     }
 
@@ -72,7 +79,7 @@ mod imp {
         type State = usize;
         fn acquire() -> Self::State {
             // disable preempt
-            crate_interface::call_interface!(GuardIf::set_preemptible, false);
+            crate_interface::call_interface!(KernelGuardIf::disable_preempt);
             // disable IRQs and save IRQ states
             super::arch::local_irq_save_and_disable()
         }
@@ -80,7 +87,7 @@ mod imp {
             // restore IRQ states
             super::arch::local_irq_restore(state);
             // enable preempt
-            crate_interface::call_interface!(GuardIf::set_preemptible, true);
+            crate_interface::call_interface!(KernelGuardIf::enable_preempt);
         }
     }
 

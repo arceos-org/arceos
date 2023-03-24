@@ -27,9 +27,7 @@ pub fn irqs_enabled() -> bool {
 
 #[inline]
 pub fn wait_for_irqs() {
-    enable_irqs();
     unsafe { riscv::asm::wfi() }
-    disable_irqs();
 }
 
 #[inline]
@@ -63,12 +61,4 @@ pub fn flush_tlb(vaddr: Option<VirtAddr>) {
 #[inline]
 pub fn set_tap_vector_base(stvec: usize) {
     unsafe { stvec::write(stvec, stvec::TrapMode::Direct) }
-}
-
-#[inline]
-pub fn cpu_id() -> usize {
-    // TODO: use `current_cpu().id`
-    let mut ret;
-    unsafe { core::arch::asm!("mv {}, tp", out(reg) ret) };
-    ret
 }

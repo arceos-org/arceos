@@ -197,11 +197,13 @@ dependencies = [
  "cfg-if",
  "crate_interface",
  "handler_table",
+ "kernel_guard",
  "lazy_init",
  "log",
  "memory_addr",
  "page_table",
  "page_table_entry",
+ "percpu",
  "ratio",
  "raw-cpuid",
  "riscv",
@@ -253,6 +255,9 @@ dependencies = [
  "axnet",
  "axtask",
  "crate_interface",
+ "kernel_guard",
+ "lazy_init",
+ "percpu",
  "spinlock",
 ]
 
@@ -261,6 +266,7 @@ name = "axsync"
 version = "0.1.0"
 dependencies = [
  "axtask",
+ "percpu",
  "rand",
  "spinlock",
 ]
@@ -272,9 +278,12 @@ dependencies = [
  "axconfig",
  "axhal",
  "cfg-if",
+ "crate_interface",
+ "kernel_guard",
  "lazy_init",
  "log",
  "memory_addr",
+ "percpu",
  "rand",
  "scheduler",
  "spinlock",
@@ -705,6 +714,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "kernel_guard"
+version = "0.1.0"
+dependencies = [
+ "cfg-if",
+ "crate_interface",
+]
+
+[[package]]
 name = "lazy_init"
 version = "0.1.0"
 
@@ -850,6 +867,26 @@ dependencies = [
  "cfg-if",
  "memory_addr",
  "x86_64",
+]
+
+[[package]]
+name = "percpu"
+version = "0.1.0"
+dependencies = [
+ "cfg-if",
+ "kernel_guard",
+ "percpu_macros",
+ "spin",
+ "x86",
+]
+
+[[package]]
+name = "percpu_macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -1103,7 +1140,7 @@ name = "spinlock"
 version = "0.1.0"
 dependencies = [
  "cfg-if",
- "crate_interface",
+ "kernel_guard",
 ]
 
 [[package]]

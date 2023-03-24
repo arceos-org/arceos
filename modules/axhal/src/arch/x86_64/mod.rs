@@ -34,8 +34,9 @@ pub fn irqs_enabled() -> bool {
 
 #[inline]
 pub fn wait_for_irqs() {
-    if cfg!(target_os = "none") {
-        unsafe { asm!("sti; hlt; cli") }
+    if cfg!(target_os = "none") && irqs_enabled() {
+        // don't halt if local interrupts are disabled
+        unsafe { asm!("hlt") }
     } else {
         core::hint::spin_loop()
     }
@@ -64,13 +65,4 @@ pub fn flush_tlb(vaddr: Option<VirtAddr>) {
     } else {
         unsafe { tlb::flush_all() }
     }
-}
-
-#[inline]
-pub fn cpu_id() -> usize {
-    // TODO: use `current_cpu().id`
-    raw_cpuid::CpuId::new()
-        .get_feature_info()
-        .unwrap()
-        .initial_local_apic_id() as usize
 }

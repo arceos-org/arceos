@@ -8,10 +8,10 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 
 [features]
 multitask = [ # without the feature, can still use the empty yield_now() and exit()
-    "dep:axconfig", "dep:spinlock", "dep:lazy_init",
+    "dep:axconfig", "dep:percpu", "dep:spinlock", "dep:lazy_init",
     "dep:memory_addr", "dep:scheduler", "dep:timer_list"
 ]
-preempt = []
+preempt = ["percpu?/preempt"]
 
 sched_fifo = ["multitask"]
 sched_rr = ["multitask", "preempt"]
@@ -22,11 +22,15 @@ cfg-if = "1.0"
 log = "0.4"
 axhal = { path = "../axhal" }
 axconfig = { path = "../axconfig", optional = true }
+percpu = { path = "../../crates/percpu", optional = true }
 spinlock = { path = "../../crates/spinlock", optional = true }
 lazy_init = { path = "../../crates/lazy_init", optional = true }
 memory_addr = { path = "../../crates/memory_addr", optional = true }
 scheduler = { path = "../../crates/scheduler", optional = true }
 timer_list = { path = "../../crates/timer_list", optional = true }
+kernel_guard = { path = "../../crates/kernel_guard" }
+crate_interface = { path = "../../crates/crate_interface" }
 
 [dev-dependencies]
 rand = "0.8"
+percpu = { path = "../../crates/percpu", features = ["sp-naive"] }

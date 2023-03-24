@@ -32,8 +32,7 @@ unsafe extern "C" fn _start() -> ! {
     // a0 = hartid
     // a1 = dtb
     core::arch::asm!("
-        mv      tp, a0                  // save hartid
-        mv      s0, a0
+        mv      s0, a0                  // save hartid
         mv      s1, a1                  // save DTB pointer
         la      sp, {boot_stack}
         li      t0, {boot_stack_size}
@@ -79,7 +78,7 @@ unsafe extern "C" fn _start_secondary() -> ! {
     // a0 = hartid
     // a1 = SP
     core::arch::asm!("
-        mv      tp, a0                  // save hartid
+        mv      s0, a0                  // save hartid
         mv      sp, a1                  // set SP
 
         call    {init_mmu}              // setup boot page table and enabel MMU
@@ -88,12 +87,12 @@ unsafe extern "C" fn _start_secondary() -> ! {
         add     a1, a1, s1
         add     sp, sp, s1
 
-        mv      a0, tp
+        mv      a0, s0
         la      a1, {platform_init_secondary}
         add     a1, a1, s1
         jalr    a1                      // call platform_init_secondary(hartid)
 
-        mv      a0, tp
+        mv      a0, s0
         la      a1, {rust_main_secondary}
         add     a1, a1, s1
         jalr    a1                      // call rust_main_secondary(hartid)

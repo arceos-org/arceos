@@ -65,7 +65,7 @@ pub trait LogIf {
     fn current_time() -> core::time::Duration;
 
     /// get current CPU ID.
-    fn current_cpu_id() -> usize;
+    fn current_cpu_id() -> Option<usize>;
 
     /// get current task ID.
     fn current_task_id() -> Option<u64>;
@@ -87,6 +87,7 @@ impl Write for Logger {
 }
 
 impl Log for Logger {
+    #[inline]
     fn enabled(&self, _metadata: &Metadata) -> bool {
         true
     }
@@ -118,28 +119,40 @@ impl Log for Logger {
                     args = with_color!(args_color, "{}", record.args()),
                 ));
             } else {
-                let cpuid = call_interface!(LogIf::current_cpu_id);
+                let cpu_id = call_interface!(LogIf::current_cpu_id);
                 let tid = call_interface!(LogIf::current_task_id);
                 let now = call_interface!(LogIf::current_time);
-                if let Some(tid) = tid {
-                    __print_impl(with_color!(
-                        ColorCode::White,
-                        "[{:>3}.{:06} {cpuid}:{tid} {path}:{line} {args}\n",
-                        now.as_secs(),
-                        now.subsec_micros(),
-                        cpuid = cpuid,
-                        tid = tid,
-                        path = path,
-                        line = line,
-                        args = with_color!(args_color, "{}", record.args()),
-                    ));
+                if let Some(cpu_id) = cpu_id {
+                    if let Some(tid) = tid {
+                        __print_impl(with_color!(
+                            ColorCode::White,
+                            "[{:>3}.{:06} {cpu_id}:{tid} {path}:{line}] {args}\n",
+                            now.as_secs(),
+                            now.subsec_micros(),
+                            cpu_id = cpu_id,
+                            tid = tid,
+                            path = path,
+                            line = line,
+                            args = with_color!(args_color, "{}", record.args()),
+                        ));
+                    } else {
+                        __print_impl(with_color!(
+                            ColorCode::White,
+                            "[{:>3}.{:06} {cpu_id} {path}:{line}] {args}\n",
+                            now.as_secs(),
+                            now.subsec_micros(),
+                            cpu_id = cpu_id,
+                            path = path,
+                            line = line,
+                            args = with_color!(args_color, "{}", record.args()),
+                        ));
+                    }
                 } else {
                     __print_impl(with_color!(
                         ColorCode::White,
-                        "[{:>3}.{:06} {cpuid} {path}:{line} {args}\n",
+                        "[{:>3}.{:06} {path}:{line}] {args}\n",
                         now.as_secs(),
                         now.subsec_micros(),
-                        cpuid = cpuid,
                         path = path,
                         line = line,
                         args = with_color!(args_color, "{}", record.args()),

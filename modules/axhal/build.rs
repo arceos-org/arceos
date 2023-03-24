@@ -13,10 +13,13 @@ fn gen_linker_script(arch: &str) -> Result<()> {
         arch
     };
     let ld_content = std::fs::read_to_string("linker.lds.S")?;
-    let ld_content = ld_content.replace("%ARCH%", output_arch).replace(
+    let ld_content = ld_content.replace("%ARCH%", output_arch);
+    let ld_content = ld_content.replace(
         "%KERNEL_BASE%",
         &format!("{:#x}", axconfig::KERNEL_BASE_VADDR),
     );
+    let ld_content = ld_content.replace("%SMP%", &format!("{}", axconfig::SMP));
+
     std::fs::write(fname, ld_content)?;
     Ok(())
 }

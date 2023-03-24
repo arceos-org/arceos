@@ -49,14 +49,32 @@ impl<T> LazyInit<T> {
         }
     }
 
+    #[inline]
     fn get(&self) -> &T {
         self.check_init();
-        unsafe { &*(*self.data.get()).as_ptr() }
+        unsafe { self.get_unchecked() }
     }
 
+    #[inline]
     fn get_mut(&mut self) -> &mut T {
         self.check_init();
-        unsafe { &mut *(*self.data.get()).as_mut_ptr() }
+        unsafe { self.get_mut_unchecked() }
+    }
+
+    /// # Safety
+    ///
+    /// Must be called after initialization.
+    #[inline]
+    pub unsafe fn get_unchecked(&self) -> &T {
+        &*(*self.data.get()).as_ptr()
+    }
+
+    /// # Safety
+    ///
+    /// Must be called after initialization.
+    #[inline]
+    pub unsafe fn get_mut_unchecked(&mut self) -> &mut T {
+        &mut *(*self.data.get()).as_mut_ptr()
     }
 }
 
@@ -73,12 +91,14 @@ impl<T: fmt::Debug> fmt::Debug for LazyInit<T> {
 
 impl<T> Deref for LazyInit<T> {
     type Target = T;
+    #[inline]
     fn deref(&self) -> &T {
         self.get()
     }
 }
 
 impl<T> DerefMut for LazyInit<T> {
+    #[inline]
     fn deref_mut(&mut self) -> &mut T {
         self.get_mut()
     }

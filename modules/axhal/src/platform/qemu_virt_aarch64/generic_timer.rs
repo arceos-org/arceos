@@ -44,6 +44,7 @@ pub(super) fn init() {
     super::irq::set_enable(TIMER_IRQ_NUM, true);
 }
 
+#[cfg(feature = "smp")]
 pub(super) fn init_secondary() {
     CNTP_CTL_EL0.write(CNTP_CTL_EL0::ENABLE::SET);
     CNTP_TVAL_EL0.set(0);

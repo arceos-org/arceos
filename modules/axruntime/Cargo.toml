@@ -8,7 +8,7 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 
 [features]
 alloc = ["dep:axalloc"]
-paging = ["alloc", "axhal/paging"]
+paging = ["alloc", "axhal/paging", "dep:lazy_init"]
 multitask = ["alloc", "axtask/multitask"]
 smp = ["axhal/smp", "spinlock/smp"]
 
@@ -19,7 +19,10 @@ display = ["alloc", "paging", "axdriver/virtio-gpu", "dep:axdisplay"]
 default = []
 
 [dependencies]
+percpu = { path = "../../crates/percpu" }
+kernel_guard = { path = "../../crates/kernel_guard" }
 spinlock = { path = "../../crates/spinlock" }
+lazy_init = { path = "../../crates/lazy_init", optional = true }
 crate_interface = { path = "../../crates/crate_interface" }
 axalloc = { path = "../axalloc", optional = true }
 axconfig = { path = "../axconfig" }
@@ -29,3 +32,6 @@ axlog = { path = "../axlog" }
 axnet = { path = "../axnet", optional = true }
 axdisplay = { path = "../axdisplay", optional = true }
 axtask = { path = "../axtask", default-features = false }
+
+[dev-dependencies]
+percpu = { path = "../../crates/percpu", features = ["sp-naive"] }

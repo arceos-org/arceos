@@ -13,7 +13,7 @@ use core::ops::{Deref, DerefMut};
 #[cfg(feature = "smp")]
 use core::sync::atomic::{AtomicBool, Ordering};
 
-use crate::guard::BaseGuard;
+use kernel_guard::BaseGuard;
 
 /// A [spin lock](https://en.m.wikipedia.org/wiki/Spinlock) providing mutually exclusive access to data.
 ///

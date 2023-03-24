@@ -73,12 +73,10 @@ impl<E: TimerEvent> TimerList<E> {
         self.events.peek().map(|e| e.deadline)
     }
 
-    pub fn expire_one(&mut self, now: TimeValue) -> Option<TimeValue> {
+    pub fn expire_one(&mut self, now: TimeValue) -> Option<(TimeValue, E)> {
         if let Some(e) = self.events.peek() {
             if e.deadline <= now {
-                let e = self.events.pop().unwrap();
-                e.event.callback(now);
-                return Some(e.deadline);
+                return self.events.pop().map(|e| (e.deadline, e.event));
             }
         }
         None
@@ -153,7 +151,9 @@ mod tests {
             if now.as_secs() > 3 {
                 timer_list.cancel(|e| e.0 == 2);
             }
-            while timer_list.expire_one(now).is_some() {}
+            while let Some((_deadline, event)) = timer_list.expire_one(now) {
+                event.callback(now);
+            }
             std::thread::sleep(Duration::from_millis(10)); // sleep 10 ms
         }
 
@@ -178,7 +178,9 @@ mod tests {
 
         while !timer_list.is_empty() {
             let now = Instant::now().duration_since(start_time);
-            while timer_list.expire_one(now).is_some() {}
+            while let Some((_deadline, event)) = timer_list.expire_one(now) {
+                event.callback(now);
+            }
         }
     }
 }

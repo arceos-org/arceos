@@ -13,16 +13,15 @@ ArceOS was inspired a lot by [Unikraft](https://github.com/unikraft/unikraft).
 * [x] Architecture: riscv64, aarch64
 * [x] Platform: QEMU virt riscv64/aarch64
 * [x] Multi-thread
-* [x] Cooperative FIFO scheduler
-* [x] VirtIO net/blk drivers
+* [x] Cooperative/preemptive scheduler
+* [x] VirtIO net/blk/gpu drivers
 * [x] TCP net stack using [smoltcp](https://github.com/smoltcp-rs/smoltcp)
 * [x] Synchronization/Mutex
-* [x] Kernel preemption
+* [x] SMP scheduling with single run queue
 * [ ] File system
 * [ ] Compatible with Linux apps
 * [ ] Interrupt driven device I/O
 * [ ] Async I/O
-* [ ] SMP
 
 ## Example apps
 
@@ -41,6 +40,7 @@ The currently supported applications (Rust), as well as their dependent modules 
 | [helloworld](apps/helloworld/) | | | A minimal app that just prints a string |
 | [exception](apps/exception/) | | paging | Exception handling test |
 | [memtest](apps/memtest/) | axalloc | alloc, paging | Dynamic memory allocation test |
+| [display](apps/display/) | axalloc, axdisplay | alloc, paging, display | Graphic/GUI test |
 | [yield](apps/task/yield/) | axalloc, axtask | alloc, paging, multitask, sched_fifo | Multi-threaded yielding test |
 | [parallel](apps/task/parallel/) | axalloc, axtask | alloc, paging, multitask, sched_fifo | Parallel computing test (to test synchronization & mutex) |
 | [sleep](apps/task/sleep/) | axalloc, axtask | alloc, paging, multitask, sched_fifo | Thread sleeping test |
@@ -71,12 +71,12 @@ For example, to run the [httpserver](apps/net/httpserver/) on `qemu-system-aarch
 make A=apps/net/httpserver ARCH=aarch64 LOG=info NET=y SMP=4 run
 ```
 
-### You custom apps
+### Your custom apps
 
 #### Rust
 
 1. Create a new rust package with `no_std` and `no_main` environment.
-2. Add the `libax` dependency to `Cargo.toml`:
+2. Add `libax` dependency and features to enable to `Cargo.toml`:
 
     ```toml
     [dependencies]
@@ -89,26 +89,36 @@ make A=apps/net/httpserver ARCH=aarch64 LOG=info NET=y SMP=4 run
     ```bash
     # in app directory
     make -C /path/to/arceos A=$(pwd) ARCH=<arch> run
+    # more args: LOG=<log> SMP=<smp> NET=[y|n] ...
     ```
 
     All arguments and targets are the same as above.
 
 #### C
 
-1. Create a `axbuild.mk` file in your project:
+1. Create `axbuild.mk` and `features.txt` in your project:
 
-    ```
+    ```bash
     app/
     ├── foo.c
     ├── bar.c
-    └── axbuild.mk
+    ├── axbuild.mk      # (optional, if there is only one `main.c`)
+    └── features.txt    # (optional, if only use default features)
     ```
 
-2. Add build targets to `axbuild.mk` (see [this](apps/c/sqlite3/axbuild.mk) file for more advanced usage):
+2. Add build targets to `axbuild.mk`, add features to enable to `features.txt` (see this [example](apps/c/sqlite3/)):
 
-    ```Makefile
+    ```bash
     # in axbuild.mk
     app-objs := foo.o bar.o
+    ```
+
+    ```bash
+    # in features.txt
+    default
+    alloc
+    paging
+    net
     ```
 
 3. Build your application with ArceOS, by running the `make` command in the application directory:
@@ -116,6 +126,7 @@ make A=apps/net/httpserver ARCH=aarch64 LOG=info NET=y SMP=4 run
     ```bash
     # in app directory
     make -C /path/to/arceos A=$(pwd) ARCH=<arch> run
+    # more args: LOG=<log> SMP=<smp> NET=[y|n] ...
     ```
 
 ## Design
