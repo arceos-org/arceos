@@ -71,12 +71,12 @@ For example, to run the [httpserver](apps/net/httpserver/) on `qemu-system-aarch
 make A=apps/net/httpserver ARCH=aarch64 LOG=info NET=y SMP=4 run
 ```
 
-### You custom apps
+### Your custom apps
 
 #### Rust
 
 1. Create a new rust package with `no_std` and `no_main` environment.
-2. Add the `libax` dependency to `Cargo.toml`:
+2. Add `libax` dependency and features to enable to `Cargo.toml`:
 
     ```toml
     [dependencies]
@@ -89,26 +89,36 @@ make A=apps/net/httpserver ARCH=aarch64 LOG=info NET=y SMP=4 run
     ```bash
     # in app directory
     make -C /path/to/arceos A=$(pwd) ARCH=<arch> run
+    # more args: LOG=<log> SMP=<smp> NET=[y|n] ...
     ```
 
     All arguments and targets are the same as above.
 
 #### C
 
-1. Create a `axbuild.mk` file in your project:
+1. Create `axbuild.mk` and `features.txt` in your project:
 
-    ```
+    ```bash
     app/
     ├── foo.c
     ├── bar.c
-    └── axbuild.mk
+    ├── axbuild.mk      # (optional, if there is only one `main.c`)
+    └── features.txt    # (optional, if only use default features)
     ```
 
-2. Add build targets to `axbuild.mk` (see [this](apps/c/sqlite3/axbuild.mk) file for more advanced usage):
+2. Add build targets to `axbuild.mk`, add features to enable to `features.txt` (see this [example](apps/c/sqlite3/)):
 
-    ```Makefile
+    ```bash
     # in axbuild.mk
     app-objs := foo.o bar.o
+    ```
+
+    ```bash
+    # in features.txt
+    default
+    alloc
+    paging
+    net
     ```
 
 3. Build your application with ArceOS, by running the `make` command in the application directory:
@@ -116,6 +126,7 @@ make A=apps/net/httpserver ARCH=aarch64 LOG=info NET=y SMP=4 run
     ```bash
     # in app directory
     make -C /path/to/arceos A=$(pwd) ARCH=<arch> run
+    # more args: LOG=<log> SMP=<smp> NET=[y|n] ...
     ```
 
 ## Design
