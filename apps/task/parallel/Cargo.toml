@@ -11,4 +11,4 @@ preempt = ["libax/sched_rr"]
 default = ["libax/default"]
 
 [dependencies]
-libax = { path = "../../../ulib/libax", default_features = false, features = ["alloc", "paging", "multitask"] }
+libax = { path = "../../../ulib/libax", default-features = false, features = ["alloc", "paging", "multitask"] }

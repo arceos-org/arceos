@@ -35,19 +35,6 @@ SECTIONS
         edata = .;
     }
 
-    .bss : ALIGN(4K) {
-        boot_stack = .;
-        *(.bss.stack)
-        . = ALIGN(4K);
-        boot_stack_top = .;
-
-        sbss = .;
-        *(.bss .bss.*)
-        *(.sbss .sbss.*)
-        . = ALIGN(4K);
-        ebss = .;
-    }
-
     percpu_start = .;
     .percpu 0x0 : AT(percpu_start) ALIGN(4K) {
         __percpu_offset_start = .;
@@ -60,6 +47,19 @@ SECTIONS
     }
     . = percpu_start + SIZEOF(.percpu);
     percpu_end = .;
+
+    .bss : ALIGN(4K) {
+        boot_stack = .;
+        *(.bss.stack)
+        . = ALIGN(4K);
+        boot_stack_top = .;
+
+        sbss = .;
+        *(.bss .bss.*)
+        *(.sbss .sbss.*)
+        . = ALIGN(4K);
+        ebss = .;
+    }
 
     ekernel = .;
 

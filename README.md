@@ -102,8 +102,8 @@ make A=apps/net/httpserver ARCH=aarch64 LOG=info NET=y SMP=4 run
     app/
     ├── foo.c
     ├── bar.c
-    ├── axbuild.mk      # (optional, if there is only one `main.c`)
-    └── features.txt    # (optional, if only use default features)
+    ├── axbuild.mk      # optional, if there is only one `main.c`
+    └── features.txt    # optional, if only use default features
     ```
 
 2. Add build targets to `axbuild.mk`, add features to enable to `features.txt` (see this [example](apps/c/sqlite3/)):

@@ -15,4 +15,4 @@ SECTIONS
     . = percpu_start + SIZEOF(.percpu);
     percpu_end = .;
 }
-INSERT AFTER .bss;
+INSERT BEFORE .bss;

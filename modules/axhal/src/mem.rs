@@ -80,22 +80,22 @@ pub(crate) fn common_memory_region_at(idx: usize) -> Option<MemRegion> {
             name: ".data",
         },
         3 => MemRegion {
+            paddr: virt_to_phys((percpu_start as usize).into()),
+            size: percpu_end as usize - percpu_start as usize,
+            flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
+            name: ".percpu",
+        },
+        4 => MemRegion {
             paddr: virt_to_phys((boot_stack as usize).into()),
             size: boot_stack_top as usize - boot_stack as usize,
             flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
             name: "boot stack",
         },
-        4 => MemRegion {
+        5 => MemRegion {
             paddr: virt_to_phys((sbss as usize).into()),
             size: ebss as usize - sbss as usize,
             flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
             name: ".bss",
-        },
-        5 => MemRegion {
-            paddr: virt_to_phys((percpu_start as usize).into()),
-            size: percpu_end as usize - percpu_start as usize,
-            flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
-            name: ".percpu",
         },
         i if i < 6 + mmio_regions.len() => MemRegion {
             paddr: mmio_regions[i - 6].0.into(),
