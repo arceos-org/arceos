@@ -1,6 +1,7 @@
 pub use memory_addr::{PhysAddr, VirtAddr, PAGE_SIZE_4K};
 
 bitflags::bitflags! {
+    #[derive(Debug)]
     pub struct MemRegionFlags: usize {
         const READ          = 1 << 0;
         const WRITE         = 1 << 1;

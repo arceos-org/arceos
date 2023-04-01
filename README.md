@@ -31,7 +31,6 @@ Example applications can be found in the [apps/](apps/) directory. All applicati
 * [axhal](modules/axhal/): Hardware abstraction layer, provides unified APIs for cross-platform.
 * [axconfig](modules/axconfig/): Platform constants and kernel parameters, such as physical memory base, kernel load addresses, stack size, etc.
 * [axlog](modules/axlog/): Multi-level log definition and printing.
-* [axerror](modules/axerror/): Error code definition.
 
 The currently supported applications (Rust), as well as their dependent modules and features, are shown in the following table:
 

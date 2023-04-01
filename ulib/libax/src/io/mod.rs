@@ -30,7 +30,7 @@ pub trait Read {
         let buf = unsafe { buf.as_mut_vec() };
         let ret = self.read_to_end(buf)?;
         if core::str::from_utf8(&buf[old_len..]).is_err() {
-            ax_err!(Io, "stream did not contain valid UTF-8")
+            ax_err!(InvalidData, "stream did not contain valid UTF-8")
         } else {
             Ok(ret)
         }
@@ -48,7 +48,7 @@ pub trait Read {
             }
         }
         if !buf.is_empty() {
-            ax_err!(Io, "failed to fill whole buffer")
+            ax_err!(UnexpectedEof, "failed to fill whole buffer")
         } else {
             Ok(())
         }
@@ -62,7 +62,7 @@ pub trait Write {
     fn write_all(&mut self, mut buf: &[u8]) -> Result {
         while !buf.is_empty() {
             match self.write(buf) {
-                Ok(0) => return ax_err!(Io, "failed to write whole buffer"),
+                Ok(0) => return ax_err!(WriteZero, "failed to write whole buffer"),
                 Ok(n) => buf = &buf[n..],
                 Err(e) => return Err(e),
             }

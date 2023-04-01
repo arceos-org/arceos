@@ -52,6 +52,7 @@
  * implementations should refrain from returning -ENOSYS.
  */
 #define	ENOSYS		38	/* Invalid system call number */
+#define ENOTEMPTY	39	/* Directory not empty */
 
 #define	ENOTCONN	107	/* Transport endpoint is not connected */
 #define	ECONNREFUSED	111	/* Connection refused */

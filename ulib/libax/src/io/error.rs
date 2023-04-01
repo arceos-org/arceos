@@ -1,4 +1,4 @@
-pub use axerror::AxError as Error;
-pub use axerror::AxResult as Result;
+pub use axerrno::AxError as Error;
+pub use axerrno::AxResult as Result;
 
-pub(crate) use axerror::ax_err;
+pub(crate) use axerrno::ax_err;

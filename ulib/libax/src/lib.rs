@@ -4,8 +4,6 @@ pub use axlog::{debug, error, info, print, println, trace, warn};
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
-
-#[macro_use]
 extern crate axlog;
 
 #[cfg(not(test))]

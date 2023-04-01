@@ -1,4 +1,4 @@
-use axerror::{ax_err, ax_err_type, AxError, AxResult};
+use axerrno::{ax_err, ax_err_type, AxError, AxResult};
 use axsync::Mutex;
 use smoltcp::iface::SocketHandle;
 use smoltcp::socket::tcp::{self, ConnectError, RecvError, State};
@@ -56,7 +56,7 @@ impl TcpSocket {
                             ax_err!(AlreadyExists, "socket connect() failed")
                         }
                         ConnectError::Unaddressable => {
-                            ax_err!(InvalidParam, "socket connect() failed")
+                            ax_err!(InvalidInput, "socket connect() failed")
                         }
                     })?;
                 Ok((socket.local_endpoint(), socket.remote_endpoint()))
@@ -81,7 +81,7 @@ impl TcpSocket {
 
     pub fn bind(&mut self, addr: SocketAddr) -> AxResult {
         if self.local_addr.is_some() {
-            return ax_err!(InvalidParam, "socket bind() failed: already bound");
+            return ax_err!(InvalidInput, "socket bind() failed: already bound");
         }
 
         // TODO: check addr is valid
@@ -116,12 +116,12 @@ impl TcpSocket {
 
     pub fn accept(&mut self) -> AxResult<TcpSocket> {
         if !self.is_listening() {
-            return ax_err!(InvalidParam, "socket accept() failed: not listen");
+            return ax_err!(InvalidInput, "socket accept() failed: not listen");
         }
 
         let local_port = self
             .local_addr
-            .ok_or_else(|| ax_err_type!(InvalidParam, "socket accept() failed: no address bound"))?
+            .ok_or_else(|| ax_err_type!(InvalidInput, "socket accept() failed: no address bound"))?
             .port;
 
         loop {

@@ -1,7 +1,7 @@
 use alloc::{boxed::Box, collections::VecDeque};
 use core::ops::DerefMut;
 
-use axerror::{ax_err, AxError, AxResult};
+use axerrno::{ax_err, AxError, AxResult};
 use axsync::Mutex;
 use smoltcp::iface::SocketHandle;
 use smoltcp::socket::tcp::{self, State};
@@ -53,7 +53,7 @@ impl ListenTable {
 
     pub fn listen(&self, port: u16) -> AxResult {
         if port == 0 {
-            return ax_err!(InvalidParam, "socket listen() failed");
+            return ax_err!(InvalidInput, "socket listen() failed");
         }
         let mut entry = self.tcp[port as usize].lock();
         if entry.is_none() {
@@ -123,7 +123,7 @@ impl ListenTable {
                 Err(AxError::Again)
             }
         } else {
-            ax_err!(InvalidParam, "socket accept() failed: not listen")
+            ax_err!(InvalidInput, "socket accept() failed: not listen")
         }
     }
 

@@ -6,6 +6,7 @@ pub use linux_errno::LinuxError;
 
 /// The error type used by ArceOS.
 #[repr(i32)]
+#[non_exhaustive]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum AxError {
     /// An entity already exists, often a file.
@@ -18,12 +19,29 @@ pub enum AxError {
     BadState,
     /// The connection was refused by the remote server,
     ConnectionRefused,
+    /// A non-empty directory was specified where an empty directory was expected.
+    DirectoryNotEmpty,
+    /// Data not valid for the operation were encountered.
+    ///
+    /// Unlike [`InvalidInput`], this typically means that the operation
+    /// parameters were valid, however the error was caused by malformed
+    /// input data.
+    ///
+    /// For example, a function that reads a file into a string will error with
+    /// `InvalidData` if the file's contents are not valid UTF-8.
+    ///
+    /// [`InvalidInput`]: AxError::InvalidInput
+    InvalidData,
     /// Invalid parameter/argument.
-    InvalidParam,
+    InvalidInput,
     /// Input/output error.
     Io,
+    /// The filesystem object is, unexpectedly, a directory.
+    IsADirectory,
     /// Not enough space/cannot allocate memory.
     NoMemory,
+    /// A filesystem object is, unexpectedly, not a directory.
+    NotADirectory,
     /// The network operation failed because it was not connected yet.
     NotConnected,
     /// The requested entity is not found.
@@ -32,8 +50,16 @@ pub enum AxError {
     PermissionDenied,
     /// Device or resource is busy.
     ResourceBusy,
+    /// The underlying storage (typically, a filesystem) is full.
+    StorageFull,
+    /// An error returned when an operation could not be completed because an
+    /// "end of file" was reached prematurely.
+    UnexpectedEof,
     /// This operation is unsupported or unimplemented.
     Unsupported,
+    /// An error returned when an operation could not be completed because a
+    /// call to [`write`] returned [`Ok(0)`].
+    WriteZero,
 }
 
 /// A [`Result`] type with [`AxError`] as the error type.
@@ -43,12 +69,12 @@ pub type AxResult<T = ()> = Result<T, AxError>;
 macro_rules! ax_err_type {
     ($err: ident) => {{
         use $crate::AxError::*;
-        warn!("[AxError::{:?}]", $err);
+        $crate::__priv::warn!("[AxError::{:?}]", $err);
         $err
     }};
     ($err: ident, $msg: expr) => {{
         use $crate::AxError::*;
-        warn!("[AxError::{:?}] {}", $err, $msg);
+        $crate::__priv::warn!("[AxError::{:?}] {}", $err, $msg);
         $err
     }};
 }
@@ -71,14 +97,23 @@ impl From<AxError> for LinuxError {
             Again => LinuxError::EAGAIN,
             BadAddress | BadState => LinuxError::EFAULT,
             ConnectionRefused => LinuxError::ECONNREFUSED,
-            InvalidParam => LinuxError::EINVAL,
+            DirectoryNotEmpty => LinuxError::ENOTEMPTY,
+            InvalidInput | InvalidData => LinuxError::EINVAL,
             Io => LinuxError::EIO,
+            IsADirectory => LinuxError::EISDIR,
             NoMemory => LinuxError::ENOMEM,
+            NotADirectory => LinuxError::ENOTDIR,
             NotConnected => LinuxError::ENOTCONN,
             NotFound => LinuxError::ENOENT,
             PermissionDenied => LinuxError::EPERM,
             ResourceBusy => LinuxError::EBUSY,
+            StorageFull => LinuxError::ENOSPC,
             Unsupported => LinuxError::ENOSYS,
+            UnexpectedEof | WriteZero => LinuxError::EIO,
         }
     }
+}
+
+pub mod __priv {
+    pub use log::warn;
 }

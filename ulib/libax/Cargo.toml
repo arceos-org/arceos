@@ -43,9 +43,9 @@ platform-qemu-virt-aarch64 = ["axhal/platform-qemu-virt-aarch64", "axdriver?/bus
 default = ["axtask?/sched_fifo"]
 
 [dependencies]
+axerrno = { path = "../../crates/axerrno" }
 axdisplay = { path = "../../modules/axdisplay", optional = true }
 axdriver = { path = "../../modules/axdriver", optional = true }
-axerror = { path = "../../modules/axerror" }
 axhal = { path = "../../modules/axhal" }
 axlog = { path = "../../modules/axlog" }
 axnet = { path = "../../modules/axnet", optional = true }
