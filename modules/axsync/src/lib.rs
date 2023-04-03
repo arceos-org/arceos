@@ -7,7 +7,7 @@ pub use spinlock as spin;
 mod mutex;
 
 #[cfg(feature = "multitask")]
-pub use self::mutex::Mutex;
+pub use self::mutex::{Mutex, MutexGuard};
 
 #[cfg(not(feature = "multitask"))]
-pub type Mutex<T> = spinlock::SpinNoIrq<T>;
+pub use spinlock::{SpinNoIrq as Mutex, SpinNoIrqGuard as MutexGuard};

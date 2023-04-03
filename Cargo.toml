@@ -15,6 +15,7 @@ members = [
     "crates/allocator",
     "crates/arm_gic",
     "crates/axerrno",
+    "crates/axio",
     "crates/crate_interface",
     "crates/driver_block",
     "crates/driver_common",

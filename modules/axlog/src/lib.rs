@@ -13,15 +13,15 @@ use log::{Level, LevelFilter, Log, Metadata, Record};
 pub use log::{debug, error, info, trace, warn};
 
 #[macro_export]
-macro_rules! print {
+macro_rules! ax_print {
     ($fmt: literal $(, $($arg: tt)+)?) => {
         $crate::__print_impl(format_args!($fmt $(, $($arg)+)?));
     }
 }
 
 #[macro_export]
-macro_rules! println {
-    () => { print!("\n") };
+macro_rules! ax_println {
+    () => { ax_print!("\n") };
     ($fmt: literal $(, $($arg: tt)+)?) => {
         $crate::__print_impl(format_args!(concat!($fmt, "\n") $(, $($arg)+)?));
     }

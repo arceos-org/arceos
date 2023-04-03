@@ -11,7 +11,7 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 smp = ["axruntime/smp", "axhal/smp"]
 
 # Memory
-alloc = ["axruntime/alloc"]
+alloc = ["axruntime/alloc", "axio/alloc"]
 paging = ["axruntime/paging"]
 
 # Multi-task
@@ -43,6 +43,8 @@ platform-qemu-virt-aarch64 = ["axhal/platform-qemu-virt-aarch64", "axdriver?/bus
 default = ["axtask?/sched_fifo"]
 
 [dependencies]
+spinlock = { path = "../../crates/spinlock" }
+axio = { path = "../../crates/axio" }
 axerrno = { path = "../../crates/axerrno" }
 axdisplay = { path = "../../modules/axdisplay", optional = true }
 axdriver = { path = "../../modules/axdriver", optional = true }

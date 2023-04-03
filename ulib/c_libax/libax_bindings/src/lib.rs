@@ -5,9 +5,7 @@
 mod malloc;
 
 use core::ffi::{c_char, c_int};
-
-#[macro_use]
-extern crate libax;
+use libax::io::Write;
 
 #[no_mangle]
 pub extern "C" fn ax_srand(seed: u32) {
@@ -21,9 +19,8 @@ pub extern "C" fn ax_rand_u32() -> u32 {
 
 #[no_mangle]
 pub unsafe extern "C" fn ax_print_str(buf: *const c_char, count: usize) -> c_int {
-    let str = core::slice::from_raw_parts(buf as *const u8, count as _);
-    print!("{}", core::str::from_utf8_unchecked(str));
-    str.len() as _
+    let bytes = core::slice::from_raw_parts(buf as *const u8, count as _);
+    libax::io::stdout().write(bytes).unwrap() as _
 }
 
 #[no_mangle]

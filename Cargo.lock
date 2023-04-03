@@ -218,6 +218,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "axio"
+version = "0.1.0"
+dependencies = [
+ "axerrno",
+]
+
+[[package]]
 name = "axlog"
 version = "0.1.0"
 dependencies = [
@@ -783,11 +790,13 @@ dependencies = [
  "axdriver",
  "axerrno",
  "axhal",
+ "axio",
  "axlog",
  "axnet",
  "axruntime",
  "axsync",
  "axtask",
+ "spinlock",
 ]
 
 [[package]]
