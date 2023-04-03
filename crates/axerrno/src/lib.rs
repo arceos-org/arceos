@@ -89,6 +89,20 @@ macro_rules! ax_err {
     };
 }
 
+impl AxError {
+    pub fn as_str(&self) -> &'static str {
+        use AxError::*;
+        match *self {
+            BadState => "Bad internal state",
+            InvalidData => "Invalid data",
+            Unsupported => "Operation not supported",
+            UnexpectedEof => "unexpected end of file",
+            WriteZero => "write zero",
+            _ => LinuxError::from(*self).as_str(),
+        }
+    }
+}
+
 impl From<AxError> for LinuxError {
     fn from(e: AxError) -> Self {
         use AxError::*;

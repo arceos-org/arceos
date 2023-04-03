@@ -116,7 +116,7 @@ pub fn exit(exit_code: i32) -> ! {
 } else { // if #[cfg(feature = "multitask")]
 
 pub fn yield_now() {
-    core::hint::spin_loop()
+    axhal::arch::wait_for_irqs();
 }
 
 pub fn exit(exit_code: i32) -> ! {
@@ -140,6 +140,7 @@ pub fn sleep_until(deadline: axhal::time::TimeValue) {
 
 pub fn run_idle() -> ! {
     loop {
+        #[cfg(feature = "multitask")]
         yield_now();
         debug!("idle task: waiting for IRQs...");
         axhal::arch::wait_for_irqs();

@@ -16,7 +16,7 @@ pub enum LinuxError {{
 }}
 
 impl LinuxError {{
-    pub fn detail(&self) -> &str {{
+    pub fn as_str(&self) -> &'static str {{
         use self::LinuxError::*;
         match self {{
 {1}        }}

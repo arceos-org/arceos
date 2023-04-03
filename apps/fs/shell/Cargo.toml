@@ -1,5 +1,5 @@
 [package]
-name = "arceos-fsshell"
+name = "arceos-shell"
 version = "0.1.0"
 edition = "2021"
 authors = ["Yuekai Jia <equation618@gmail.com>"]

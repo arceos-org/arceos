@@ -93,6 +93,7 @@ impl VfsNodeOps for DirWrapper<'static> {
             return self.lookup(rest);
         }
 
+        // TODO: use `fatfs::Dir::find_entry`, but it's not public.
         if let Ok(file) = self.0.open_file(path) {
             Ok(FatFileSystem::new_file(file))
         } else if let Ok(dir) = self.0.open_dir(path) {

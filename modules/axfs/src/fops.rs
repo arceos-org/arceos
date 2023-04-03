@@ -6,6 +6,7 @@ use axfs_vfs::VfsNodeRef;
 pub type FileType = axfs_vfs::VfsNodeType;
 pub type DirEntry = axfs_vfs::VfsDirEntry;
 pub type FileAttr = axfs_vfs::VfsNodeAttr;
+pub type FilePerm = axfs_vfs::VfsNodePerm;
 
 pub struct File {
     node: VfsNodeRef,
@@ -68,6 +69,7 @@ impl OpenOptions {
 
 impl File {
     pub fn open(path: &str, _opts: &OpenOptions) -> AxResult<Self> {
+        debug!("open file: {}", path);
         let node = crate::root::lookup(path)?;
         node.open()?;
         Ok(Self { node, offset: 0 })
@@ -108,6 +110,7 @@ impl Drop for File {
 
 impl Directory {
     pub fn open_dir(path: &str, opts: &OpenOptions) -> AxResult<Self> {
+        debug!("open dir: {}", path);
         if opts.create || opts.create_new || opts.write || opts.append || opts.truncate {
             return ax_err!(InvalidInput);
         }

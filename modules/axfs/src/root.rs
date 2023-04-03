@@ -1,9 +1,13 @@
+use axerrno::ax_err;
 use axerrno::AxResult;
 use axfs_vfs::{VfsNodeRef, VfsOps};
+use axsync::Mutex;
 use lazy_init::LazyInit;
 
 use crate::fs;
-use alloc::{sync::Arc, vec::Vec};
+use alloc::{string::String, sync::Arc, vec::Vec};
+
+static CURRENT_DIR: Mutex<String> = Mutex::new(String::new());
 
 #[cfg(feature = "fatfs")]
 type MainFileSystem = fs::fatfs::FatFileSystem;
@@ -48,26 +52,34 @@ impl RootFileSystem {
     }
 
     pub fn lookup(&self, path: &str) -> AxResult<VfsNodeRef> {
+        let abs_path = absolute_path(path);
+        debug!("lookup: {}", abs_path);
+
         let mut idx = 0;
         let mut max_len = 0;
 
         // Find the filesystem that has the longest mounted path match
         // TODO: more efficient, e.g. trie
         for (i, mp) in self.0.iter().enumerate() {
-            if path.starts_with(mp.path) && mp.path.len() > max_len {
+            if abs_path.starts_with(mp.path) && mp.path.len() > max_len {
                 max_len = mp.path.len();
                 idx = i;
             }
         }
+        if max_len == 0 {
+            return ax_err!(NotFound);
+        }
 
         let mp = &self.0[idx];
-        let rest = path.strip_prefix(mp.path).unwrap();
+        let rest = abs_path.strip_prefix(mp.path).unwrap();
         let node = mp.fs.root_dir().lookup(rest)?;
         Ok(node)
     }
 }
 
 pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
+    *CURRENT_DIR.lock() = "/".into();
+
     #[cfg(feature = "fatfs")]
     let main_fs = fs::fatfs::FatFileSystem::new(disk);
 
@@ -97,4 +109,35 @@ pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
 
 pub(crate) fn lookup(path: &str) -> AxResult<VfsNodeRef> {
     ROOT_FS.lookup(path)
+}
+
+pub(crate) fn absolute_path(path: &str) -> String {
+    if path.starts_with('/') {
+        path.into()
+    } else {
+        CURRENT_DIR.lock().clone() + path
+    }
+}
+
+pub(crate) fn current_dir() -> AxResult<String> {
+    Ok(CURRENT_DIR.lock().clone())
+}
+
+pub(crate) fn set_current_dir(path: &str) -> AxResult {
+    let mut path = path.trim_end_matches('/');
+    if path.is_empty() {
+        path = "/";
+    }
+    lookup(path).and_then(|node| {
+        if node.get_attr()?.is_dir() {
+            let mut path = absolute_path(path);
+            if !path.ends_with('/') {
+                path += "/";
+            }
+            *CURRENT_DIR.lock() = path;
+            Ok(())
+        } else {
+            ax_err!(NotADirectory)
+        }
+    })
 }

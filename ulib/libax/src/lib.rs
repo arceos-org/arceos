@@ -10,8 +10,9 @@ extern crate axlog;
 extern crate axruntime;
 
 #[cfg(feature = "alloc")]
-pub use alloc::{boxed, string, vec};
+pub use alloc::{boxed, format, string, vec};
 
+pub mod env;
 pub mod io;
 pub mod rand;
 pub mod sync;

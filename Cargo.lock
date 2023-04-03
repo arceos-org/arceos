@@ -52,13 +52,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "arceos-fsshell"
-version = "0.1.0"
-dependencies = [
- "libax",
-]
-
-[[package]]
 name = "arceos-helloworld"
 version = "0.1.0"
 dependencies = [
@@ -88,6 +81,13 @@ dependencies = [
 
 [[package]]
 name = "arceos-parallel"
+version = "0.1.0"
+dependencies = [
+ "libax",
+]
+
+[[package]]
+name = "arceos-shell"
 version = "0.1.0"
 dependencies = [
  "libax",
