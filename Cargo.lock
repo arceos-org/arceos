@@ -52,6 +52,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "arceos-fstest"
+version = "0.1.0"
+dependencies = [
+ "libax",
+]
+
+[[package]]
 name = "arceos-helloworld"
 version = "0.1.0"
 dependencies = [
@@ -189,6 +196,40 @@ dependencies = [
 ]
 
 [[package]]
+name = "axfs"
+version = "0.1.0"
+dependencies = [
+ "axdriver",
+ "axerrno",
+ "axfs_devfs",
+ "axfs_vfs",
+ "axio",
+ "axsync",
+ "cfg-if",
+ "driver_block",
+ "driver_common",
+ "fatfs",
+ "lazy_init",
+ "log",
+]
+
+[[package]]
+name = "axfs_devfs"
+version = "0.1.0"
+dependencies = [
+ "axfs_vfs",
+]
+
+[[package]]
+name = "axfs_vfs"
+version = "0.1.0"
+dependencies = [
+ "axerrno",
+ "bitflags 2.0.2",
+ "log",
+]
+
+[[package]]
 name = "axhal"
 version = "0.1.0"
 dependencies = [
@@ -260,6 +301,7 @@ dependencies = [
  "axconfig",
  "axdisplay",
  "axdriver",
+ "axfs",
  "axhal",
  "axlog",
  "axnet",
@@ -629,6 +671,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "fatfs"
+version = "0.4.0"
+source = "git+https://github.com/rafalh/rust-fatfs?rev=a3a834e#a3a834ef92d94dd227c316c0887654dab00ae085"
+dependencies = [
+ "bitflags 1.3.2",
+ "log",
+]
+
+[[package]]
 name = "float-cmp"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -789,6 +840,7 @@ dependencies = [
  "axdisplay",
  "axdriver",
  "axerrno",
+ "axfs",
  "axhal",
  "axio",
  "axlog",

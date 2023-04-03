@@ -1,0 +1,24 @@
+use axfs_vfs::{VfsNodeAttr, VfsNodeOps, VfsNodePerm, VfsNodeType, VfsResult};
+
+pub struct NullDev;
+
+impl VfsNodeOps for NullDev {
+    fn get_attr(&self) -> VfsResult<VfsNodeAttr> {
+        Ok(VfsNodeAttr::new(
+            VfsNodePerm::default_file(),
+            VfsNodeType::CharDevice,
+            0,
+            0,
+        ))
+    }
+
+    fn read_at(&self, _offset: u64, _buf: &mut [u8]) -> VfsResult<usize> {
+        Ok(0)
+    }
+
+    fn write_at(&self, _offset: u64, buf: &[u8]) -> VfsResult<usize> {
+        Ok(buf.len())
+    }
+
+    axfs_vfs::impl_vfs_non_dir_default! {}
+}
