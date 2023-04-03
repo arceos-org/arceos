@@ -16,4 +16,4 @@ axtask = { path = "../axtask", default-features = false }
 
 [dev-dependencies]
 rand = "0.8"
-percpu = { path = "../../crates/percpu", features = ["sp-naive"] }
+axtask = { path = "../axtask", default-features = false, features = ["test"] }

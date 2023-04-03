@@ -1,3 +1,5 @@
+//! Low-level filesystem operations.
+
 use axerrno::{ax_err, AxResult};
 use axfs_vfs::VfsNodeRef;
 

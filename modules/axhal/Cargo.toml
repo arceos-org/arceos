@@ -49,6 +49,3 @@ arm_gic = { path = "../../crates/arm_gic" }
 
 [build-dependencies]
 axconfig = { path = "../axconfig" }
-
-[dev-dependencies]
-percpu = { path = "../../crates/percpu", features = ["sp-naive"] }

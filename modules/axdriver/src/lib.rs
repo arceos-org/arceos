@@ -14,9 +14,12 @@ pub use self::virtio::VirtIoBlockDev;
 pub use self::virtio::VirtIoGpuDev;
 #[cfg(feature = "virtio-net")]
 pub use self::virtio::VirtIoNetDev;
+#[cfg(feature = "ramdisk")]
+pub use driver_block::ramdisk::RamDisk;
 
 #[derive(TupleForEach)]
 pub struct BlockDevices(
+    #[cfg(feature = "ramdisk")] pub RamDisk,
     #[cfg(feature = "virtio-blk")] pub VirtIoBlockDev,
     // e.g. #[cfg(feature = "nvme")] pub nvme::NVMeDev,
 );
@@ -40,6 +43,8 @@ impl AllDevices {
     fn probe() -> Self {
         Self {
             block: BlockDevices(
+                #[cfg(feature = "ramdisk")] // TODO: format RAM disk
+                RamDisk::new(0x100_0000), // 16 MiB
                 #[cfg(feature = "virtio-blk")]
                 Self::probe_virtio_blk().expect("no virtio-blk device found"),
             ),

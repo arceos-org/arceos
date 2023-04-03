@@ -1,5 +1,8 @@
 #![no_std]
 
+#[cfg(feature = "ramdisk")]
+pub mod ramdisk;
+
 use driver_common::{BaseDriverOps, DevResult};
 
 pub trait BlockDriverOps: BaseDriverOps {

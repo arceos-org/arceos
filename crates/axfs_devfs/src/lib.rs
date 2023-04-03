@@ -1,10 +1,13 @@
-#![no_std]
+#![cfg_attr(not(test), no_std)]
 
 extern crate alloc;
 
 mod dir;
 mod null;
 mod zero;
+
+#[cfg(test)]
+mod tests;
 
 pub use self::dir::DirNode;
 pub use self::null::NullDev;
