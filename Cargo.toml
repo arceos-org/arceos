@@ -5,7 +5,7 @@ members = [
     "apps/exception",
     "apps/helloworld",
     "apps/memtest",
-    "apps/fs/fstest",
+    "apps/fs/shell",
     "apps/net/echoserver",
     "apps/net/httpclient",
     "apps/net/httpserver",

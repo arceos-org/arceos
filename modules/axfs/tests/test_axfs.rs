@@ -1,14 +1,21 @@
-#![no_std]
-#![no_main]
+#![cfg(not(feature = "use-virtio-blk"))]
 
-#[macro_use]
-extern crate libax;
-extern crate alloc;
+use axfs::api as fs;
+use axio as io;
 
-use alloc::{string::String, vec::Vec};
+use driver_block::ramdisk::RamDisk;
+use fs::{File, FileType};
+use io::{prelude::*, Result};
 
-use libax::fs::{self, File, FileType};
-use libax::io::{prelude::*, Result};
+const IMG_PATH: &str = "resources/fat16.img";
+
+fn make_disk() -> std::io::Result<RamDisk> {
+    let path = std::env::current_dir()?.join(IMG_PATH);
+    println!("Loading disk image from {:?} ...", path);
+    let data = std::fs::read(path)?;
+    println!("size = {} bytes", data.len());
+    Ok(RamDisk::from(&data))
+}
 
 fn test_read_write_file() -> Result<()> {
     let fname = "///very/long//.././long//./path/./test.txt";
@@ -86,13 +93,14 @@ fn test_devfs() -> Result<()> {
     Ok(())
 }
 
-#[no_mangle]
-fn main() {
-    println!("Running filesystem tests...");
+#[test]
+fn test_axfs() {
+    axtask::init_scheduler(); // call this to use `axsync::Mutex`.
+
+    let disk = make_disk().expect("failed to load disk image");
+    axfs::init_filesystems(disk);
 
     test_read_write_file().expect("test_read_write_file() failed");
     test_read_dir().expect("test_read_dir() failed");
     test_devfs().expect("test_devfs() failed");
-
-    println!("Filesystem tests OK!");
 }

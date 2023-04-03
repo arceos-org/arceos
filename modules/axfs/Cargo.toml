@@ -7,11 +7,14 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
+use-ramdisk = ["driver_block/ramdisk"]
+use-virtio-blk = ["axdriver/virtio-blk"]
+
 devfs = ["dep:axfs_devfs"]
 ramfs = []
 fatfs = ["dep:fatfs", "dep:axsync"]
 
-default = ["axdriver/virtio-blk", "devfs", "ramfs", "fatfs"]
+default = ["use-ramdisk", "devfs", "ramfs", "fatfs"]
 
 [dependencies]
 log = "0.4"
@@ -23,7 +26,7 @@ axio = { path = "../../crates/axio", features = ["alloc"] }
 axerrno = { path = "../../crates/axerrno" }
 axfs_vfs = { path = "../../crates/axfs_vfs" }
 axfs_devfs = { path = "../../crates/axfs_devfs", optional = true }
-axdriver = { path = "../axdriver" }
+axdriver = { path = "../axdriver", optional = true }
 axsync = { path = "../axsync", optional = true, default-features = false }
 
 [dependencies.fatfs]
@@ -37,3 +40,6 @@ features = [ # no std
     "log_level_trace",
     "unicode",
 ]
+
+[dev-dependencies]
+axtask = { path = "../axtask", features = ["test"] }

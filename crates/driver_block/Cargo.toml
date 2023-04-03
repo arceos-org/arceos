@@ -6,5 +6,9 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+ramdisk = []
+default = []
+
 [dependencies]
 driver_common = { path = "../driver_common" }
