@@ -67,6 +67,7 @@ pub trait Read {
     }
 }
 
+/// A trait for objects which are byte-oriented sinks.
 pub trait Write {
     /// Write a buffer into this writer, returning how many bytes were written.
     fn write(&mut self, buf: &[u8]) -> Result<usize>;
