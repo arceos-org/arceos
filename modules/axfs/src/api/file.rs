@@ -7,6 +7,9 @@ use crate::fops;
 /// It is returned by [`Metadata::file_type`] method.
 pub type FileType = fops::FileType;
 
+/// Representation of the various permissions on a file.
+pub type Permissions = fops::FilePerm;
+
 /// An object providing access to an open file on the filesystem.
 pub struct File {
     inner: fops::File,
@@ -91,6 +94,11 @@ impl Metadata {
     #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> u64 {
         self.0.size()
+    }
+
+    /// Returns the permissions of the file this metadata is for.
+    pub fn permissions(&self) -> Permissions {
+        self.0.perm()
     }
 }
 

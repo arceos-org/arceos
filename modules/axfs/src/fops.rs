@@ -7,6 +7,7 @@ use core::fmt;
 pub type FileType = axfs_vfs::VfsNodeType;
 pub type DirEntry = axfs_vfs::VfsDirEntry;
 pub type FileAttr = axfs_vfs::VfsNodeAttr;
+pub type FilePerm = axfs_vfs::VfsNodePerm;
 
 pub struct File {
     node: VfsNodeRef,

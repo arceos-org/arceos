@@ -75,6 +75,38 @@ impl VfsNodePerm {
     pub const fn default_dir() -> Self {
         Self::from_bits_truncate(0o755)
     }
+
+    pub const fn rwx_buf(&self) -> [u8; 9] {
+        let mut perm = [b'-'; 9];
+        if self.contains(Self::OWNER_READ) {
+            perm[0] = b'r';
+        }
+        if self.contains(Self::OWNER_WRITE) {
+            perm[1] = b'w';
+        }
+        if self.contains(Self::OWNER_EXEC) {
+            perm[2] = b'x';
+        }
+        if self.contains(Self::GROUP_READ) {
+            perm[3] = b'r';
+        }
+        if self.contains(Self::GROUP_WRITE) {
+            perm[4] = b'w';
+        }
+        if self.contains(Self::GROUP_EXEC) {
+            perm[5] = b'x';
+        }
+        if self.contains(Self::OTHER_READ) {
+            perm[6] = b'r';
+        }
+        if self.contains(Self::OTHER_WRITE) {
+            perm[7] = b'w';
+        }
+        if self.contains(Self::OTHER_EXEC) {
+            perm[8] = b'x';
+        }
+        perm
+    }
 }
 
 impl VfsNodeType {
@@ -84,6 +116,18 @@ impl VfsNodeType {
 
     pub const fn is_dir(self) -> bool {
         matches!(self, Self::Dir)
+    }
+
+    pub const fn as_char(self) -> char {
+        match self {
+            Self::Fifo => 'p',
+            Self::CharDevice => 'c',
+            Self::Dir => 'd',
+            Self::BlockDevice => 'b',
+            Self::File => '-',
+            Self::SymLink => 'l',
+            Self::Socket => 's',
+        }
     }
 }
 
@@ -117,6 +161,14 @@ impl VfsNodeAttr {
 
     pub const fn size(&self) -> u64 {
         self.size
+    }
+
+    pub const fn perm(&self) -> VfsNodePerm {
+        self.mode
+    }
+
+    pub fn set_perm(&mut self, perm: VfsNodePerm) {
+        self.mode = perm
     }
 
     pub const fn file_type(&self) -> VfsNodeType {
