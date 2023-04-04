@@ -1,7 +1,7 @@
 //! Low-level filesystem operations.
 
 use axerrno::{ax_err, AxResult};
-use axfs_vfs::VfsNodeRef;
+use axfs_vfs::{VfsError, VfsNodeRef};
 use core::fmt;
 
 pub type FileType = axfs_vfs::VfsNodeType;
@@ -11,6 +11,7 @@ pub type FilePerm = axfs_vfs::VfsNodePerm;
 
 pub struct File {
     node: VfsNodeRef,
+    is_append: bool,
     offset: u64,
 }
 
@@ -66,14 +67,70 @@ impl OpenOptions {
     pub fn create_new(&mut self, create_new: bool) {
         self.create_new = create_new;
     }
+
+    const fn is_valid(&self) -> bool {
+        if !self.read && !self.write && !self.append {
+            return false;
+        }
+        match (self.write, self.append) {
+            (true, false) => {}
+            (false, false) => {
+                if self.truncate || self.create || self.create_new {
+                    return false;
+                }
+            }
+            (_, true) => {
+                if self.truncate && !self.create_new {
+                    return false;
+                }
+            }
+        }
+        true
+    }
 }
 
 impl File {
     pub fn open(path: &str, opts: &OpenOptions) -> AxResult<Self> {
         debug!("open file: {} {:?}", path, opts);
-        let node = crate::root::lookup(path)?;
+        if !opts.is_valid() {
+            return ax_err!(InvalidInput);
+        }
+
+        let node_option = crate::root::lookup(path);
+        let node = if opts.create || opts.create_new {
+            match node_option {
+                Ok(node) => {
+                    // already exists
+                    if opts.create_new {
+                        return ax_err!(AlreadyExists);
+                    }
+                    node
+                }
+                // not exists, create new
+                Err(VfsError::NotFound) => crate::root::create_file(path)?,
+                Err(e) => return Err(e),
+            }
+        } else {
+            // just open the existing
+            node_option?
+        };
+
+        let attr = node.get_attr()?;
+        if attr.is_dir()
+            && (opts.create || opts.create_new || opts.write || opts.append || opts.truncate)
+        {
+            return ax_err!(IsADirectory);
+        }
         node.open()?;
-        Ok(Self { node, offset: 0 })
+        if opts.truncate {
+            node.truncate(0)?;
+        }
+
+        Ok(Self {
+            node,
+            is_append: opts.append,
+            offset: 0,
+        })
     }
 
     pub fn truncate(&self, size: u64) -> AxResult {
@@ -88,6 +145,9 @@ impl File {
     }
 
     pub fn write(&mut self, buf: &[u8]) -> AxResult<usize> {
+        if self.is_append {
+            self.offset = self.node.get_attr()?.size();
+        };
         let write_len = self.node.write_at(self.offset, buf)?;
         self.offset += write_len as u64;
         Ok(write_len)
@@ -106,6 +166,9 @@ impl File {
 impl Directory {
     pub fn open_dir(path: &str, opts: &OpenOptions) -> AxResult<Self> {
         debug!("open dir: {}", path);
+        if !opts.read {
+            return ax_err!(InvalidInput);
+        }
         if opts.create || opts.create_new || opts.write || opts.append || opts.truncate {
             return ax_err!(InvalidInput);
         }

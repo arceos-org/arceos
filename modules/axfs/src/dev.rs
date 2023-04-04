@@ -66,6 +66,28 @@ impl Disk {
 
     /// Write within one block, returns the number of bytes written.
     pub fn write_one(&mut self, buf: &[u8]) -> DevResult<usize> {
-        Ok(buf.len()) // TODO
+        let write_size = if self.offset == 0 && buf.len() >= BLOCK_SIZE {
+            // whole block
+            self.dev.write_block(self.block_id, &buf[0..BLOCK_SIZE])?;
+            self.block_id += 1;
+            BLOCK_SIZE
+        } else {
+            // partial block
+            let mut data = [0u8; BLOCK_SIZE];
+            let start = self.offset;
+            let count = buf.len().min(BLOCK_SIZE - self.offset);
+
+            self.dev.read_block(self.block_id, &mut data)?;
+            data[start..start + count].copy_from_slice(&buf[..count]);
+            self.dev.write_block(self.block_id, &data)?;
+
+            self.offset += count;
+            if self.offset >= BLOCK_SIZE {
+                self.block_id += 1;
+                self.offset -= BLOCK_SIZE;
+            }
+            count
+        };
+        Ok(write_size)
     }
 }

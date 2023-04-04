@@ -4,7 +4,7 @@
 
 use alloc::{string::String, sync::Arc, vec::Vec};
 use axerrno::{ax_err, AxResult};
-use axfs_vfs::{VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsOps, VfsResult};
+use axfs_vfs::{VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsNodeType, VfsOps, VfsResult};
 use axsync::Mutex;
 use lazy_init::LazyInit;
 
@@ -109,6 +109,16 @@ impl VfsNodeOps for RootDirectory {
     fn lookup(self: Arc<Self>, path: &str) -> VfsResult<VfsNodeRef> {
         self.lookup_mounted_fs(path, |fs, rest_path| fs.root_dir().lookup(rest_path))
     }
+
+    fn create(&self, path: &str, ty: VfsNodeType) -> VfsResult {
+        self.lookup_mounted_fs(path, |fs, rest_path| {
+            if rest_path.is_empty() {
+                Ok(()) // already exists
+            } else {
+                fs.root_dir().create(rest_path, ty)
+            }
+        })
+    }
 }
 
 pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
@@ -160,6 +170,12 @@ pub(crate) fn lookup(path: &str) -> AxResult<VfsNodeRef> {
     } else {
         Ok(node)
     }
+}
+
+pub(crate) fn create_file(path: &str) -> AxResult<VfsNodeRef> {
+    let parent = parent_node_of(path);
+    parent.create(path, VfsNodeType::File)?;
+    parent.lookup(path)
 }
 
 pub(crate) fn current_dir() -> AxResult<String> {

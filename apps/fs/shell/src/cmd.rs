@@ -115,7 +115,34 @@ fn do_cat(args: &str) {
 }
 
 fn do_echo(args: &str) {
-    println!("{}", args);
+    fn echo_file(fname: &str, text_list: &[&str]) -> io::Result<()> {
+        let mut file = File::create(fname)?;
+        for text in text_list {
+            file.write_all(text.as_bytes())?;
+        }
+        Ok(())
+    }
+
+    if let Some(pos) = args.rfind('>') {
+        let text_before = args[..pos].trim();
+        let (fname, text_after) = split_whitespace(&args[pos + 1..]);
+        if fname.is_empty() {
+            print_err!("echo", "no file specified");
+            return;
+        };
+
+        let text_list = [
+            text_before,
+            if !text_after.is_empty() { " " } else { "" },
+            text_after,
+            "\n",
+        ];
+        if let Err(e) = echo_file(fname, &text_list) {
+            print_err!("echo", fname, e.as_str());
+        }
+    } else {
+        println!("{}", args)
+    }
 }
 
 fn do_mkdir(_args: &str) {
