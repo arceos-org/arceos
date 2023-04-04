@@ -96,8 +96,8 @@ impl AxError {
             BadState => "Bad internal state",
             InvalidData => "Invalid data",
             Unsupported => "Operation not supported",
-            UnexpectedEof => "unexpected end of file",
-            WriteZero => "write zero",
+            UnexpectedEof => "Unexpected end of file",
+            WriteZero => "Write zero",
             _ => LinuxError::from(*self).as_str(),
         }
     }

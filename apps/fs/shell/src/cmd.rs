@@ -1,4 +1,4 @@
-use libax::fs::{read_dir, File, FileType};
+use libax::fs::{self, File, FileType};
 use libax::io::{self, prelude::*};
 use libax::{string::String, vec::Vec};
 
@@ -42,7 +42,7 @@ fn do_ls(args: &str) {
     let name_count = args.split_whitespace().count();
 
     fn show_entry_info(path: &str, entry: &str) -> io::Result {
-        let metadata = File::open(path)?.metadata()?;
+        let metadata = fs::metadata(path)?;
         let size = metadata.len();
         let file_type = metadata.file_type();
         let file_type_char = match file_type {
@@ -60,7 +60,7 @@ fn do_ls(args: &str) {
     }
 
     let list_one = |name: &str| -> io::Result {
-        let is_dir = File::open(name)?.metadata()?.is_dir();
+        let is_dir = fs::metadata(name)?.is_dir();
         if !is_dir {
             return show_entry_info(name, name);
         }
@@ -68,7 +68,7 @@ fn do_ls(args: &str) {
         if name_count > 1 {
             println!("{}:", name);
         }
-        let mut entries = read_dir(name)?
+        let mut entries = fs::read_dir(name)?
             .filter_map(|e| e.ok())
             .map(|e| e.file_name())
             .collect::<Vec<_>>();
@@ -121,7 +121,34 @@ fn do_cat(args: &str) {
 }
 
 fn do_echo(args: &str) {
-    println!("{}", args.trim());
+    fn echo_file(fname: &str, text_list: &[&str]) -> io::Result {
+        let mut file = File::create(fname)?;
+        for text in text_list {
+            file.write_all(text.as_bytes())?;
+        }
+        Ok(())
+    }
+
+    if let Some(pos) = args.rfind('>') {
+        let text_before = args[..pos].trim();
+        let (fname, text_after) = split_whitespace(&args[pos + 1..]);
+        if fname.is_empty() {
+            print_err!("echo", "no file specified");
+            return;
+        };
+
+        let text_list = [
+            text_before,
+            if !text_after.is_empty() { " " } else { "" },
+            text_after,
+            "\n",
+        ];
+        if let Err(e) = echo_file(fname, &text_list) {
+            print_err!("echo", fname, e.as_str());
+        }
+    } else {
+        println!("{}", args)
+    }
 }
 
 fn do_mkdir(_args: &str) {
@@ -168,7 +195,7 @@ fn do_uname(_args: &str) {
 }
 
 fn do_help(_args: &str) {
-    println!("Available command:");
+    println!("Available commands:");
     for (name, _) in CMD_TABLE {
         println!("  {}", name);
     }
@@ -179,11 +206,8 @@ fn do_exit(_args: &str) {
 }
 
 pub fn run_cmd(line: &[u8]) {
-    let line_str = unsafe { core::str::from_utf8_unchecked(line) }.trim();
-    let (cmd, args) = line_str
-        .find(' ')
-        .map_or((line_str, ""), |n| (&line_str[..n], &line_str[n + 1..]));
-
+    let line_str = unsafe { core::str::from_utf8_unchecked(line) };
+    let (cmd, args) = split_whitespace(line_str);
     if !cmd.is_empty() {
         for (name, func) in CMD_TABLE {
             if cmd == *name {
@@ -193,4 +217,10 @@ pub fn run_cmd(line: &[u8]) {
         }
         println!("{}: command not found", cmd);
     }
+}
+
+fn split_whitespace(str: &str) -> (&str, &str) {
+    let str = str.trim();
+    str.find(char::is_whitespace)
+        .map_or((str, ""), |n| (&str[..n], str[n + 1..].trim()))
 }

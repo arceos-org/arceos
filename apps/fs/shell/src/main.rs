@@ -31,7 +31,7 @@ fn main() {
     print_prompt();
 
     loop {
-        if stdin.read(&mut buf[cursor..cursor + 1]) != Ok(1) {
+        if stdin.read(&mut buf[cursor..cursor + 1]).ok() != Some(1) {
             continue;
         }
         if buf[cursor] == b'\x1b' {

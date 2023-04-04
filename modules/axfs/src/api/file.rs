@@ -91,6 +91,7 @@ impl Metadata {
     }
 
     /// Returns the size of the file, in bytes, this metadata is for.
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> u64 {
         self.0.size()
     }

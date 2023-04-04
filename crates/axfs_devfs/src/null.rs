@@ -20,5 +20,9 @@ impl VfsNodeOps for NullDev {
         Ok(buf.len())
     }
 
+    fn truncate(&self, _size: u64) -> VfsResult {
+        Ok(())
+    }
+
     axfs_vfs::impl_vfs_non_dir_default! {}
 }

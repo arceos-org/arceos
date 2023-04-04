@@ -69,19 +69,19 @@ pub trait VfsNodeOps: Send + Sync {
     // directory operations:
 
     fn lookup(self: Arc<Self>, _path: &str) -> VfsResult<VfsNodeRef> {
-        ax_err!(NotADirectory)
+        ax_err!(Unsupported)
     }
 
     fn create(&self, _path: &str, _ty: VfsNodeType) -> VfsResult<VfsNodeRef> {
-        ax_err!(NotADirectory)
+        ax_err!(Unsupported)
     }
 
     fn remove(&self, _path: &str) -> VfsResult {
-        ax_err!(NotADirectory)
+        ax_err!(Unsupported)
     }
 
     fn read_dir(&self, _start_idx: usize, _dirents: &mut [VfsDirEntry]) -> VfsResult<usize> {
-        ax_err!(NotADirectory)
+        ax_err!(Unsupported)
     }
 }
 

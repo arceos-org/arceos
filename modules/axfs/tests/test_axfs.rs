@@ -4,8 +4,8 @@ use axfs::api as fs;
 use axio as io;
 
 use driver_block::ramdisk::RamDisk;
-use fs::{File, FileType};
-use io::prelude::*;
+use fs::{File, FileType, OpenOptions};
+use io::{prelude::*, Error, Result};
 
 const IMG_PATH: &str = "resources/fat16.img";
 
@@ -17,26 +17,42 @@ fn make_disk() -> std::io::Result<RamDisk> {
     Ok(RamDisk::from(&data))
 }
 
-fn test_read_write_file() -> io::Result {
+fn test_read_write_file() -> Result<()> {
     let fname = "///very/long//.././long//./path/./test.txt";
-    println!("read file {:?}:", fname);
+    println!("read and write file {:?}:", fname);
 
-    let mut file = File::open(fname)?;
+    // read and write
+    let mut file = File::options().read(true).write(true).open(fname)?;
     let file_size = file.metadata()?.len();
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
     print!("{}", contents);
     assert_eq!(contents.len(), file_size as usize);
+    assert_eq!(file.write(b"Hello, world!\n")?, 14); // append
+    drop(file);
 
-    file.write(b"Hello, world!")?;
-    file.read_to_string(&mut contents)?;
-    print!("{}", contents);
+    // read again and check
+    let new_contents = fs::read_to_string(fname)?;
+    print!("{}", new_contents);
+    assert_eq!(new_contents, contents + "Hello, world!\n");
+
+    // append and check
+    let mut file = OpenOptions::new().append(true).open(fname)?;
+    assert_eq!(file.write(b"new line\n")?, 9);
+    drop(file);
+
+    let new_contents2 = fs::read_to_string(fname)?;
+    print!("{}", new_contents2);
+    assert_eq!(new_contents2, new_contents + "new line\n");
+
+    // open a non-exist file
+    assert_eq!(File::open("/not/exist/file").err(), Some(Error::NotFound));
 
     println!("test_read_write_file() OK!");
     Ok(())
 }
 
-fn test_read_dir() -> io::Result {
+fn test_read_dir() -> Result<()> {
     let dir = "/././//./";
     println!("list directory {:?}:", dir);
     for entry in fs::read_dir(dir)? {
@@ -47,18 +63,23 @@ fn test_read_dir() -> io::Result {
     Ok(())
 }
 
-fn test_devfs() -> io::Result {
+fn test_devfs() -> Result<()> {
     const N: usize = 32;
     let mut buf = [1; N];
 
-    let mut file = File::open("/dev/./null")?;
+    let mut file = File::options().read(true).write(true).open("/dev/./null")?;
     assert_eq!(file.read_to_end(&mut Vec::new())?, 0);
     assert_eq!(file.write(&buf)?, N);
     assert_eq!(buf, [1; N]);
 
-    let mut file = File::open("/dev/zero")?;
+    let mut file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open("/dev/zero")?;
     assert_eq!(file.read(&mut buf)?, N);
-    assert_eq!(file.write_all(&buf), Ok(()));
+    assert!(file.write_all(&buf).is_ok());
     assert_eq!(buf, [0; N]);
 
     let dirents = fs::read_dir("/dev")?

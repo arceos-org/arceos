@@ -85,11 +85,12 @@ impl VfsNodeOps for DirWrapper<'static> {
     }
 
     fn lookup(self: Arc<Self>, path: &str) -> VfsResult<Arc<dyn VfsNodeOps>> {
+        debug!("lookup at fatfs: {}", path);
         let path = path.trim_matches('/');
-        if path.is_empty() {
+        if path.is_empty() || path == "." {
             return Ok(self.clone());
         }
-        if let Some(rest) = path.strip_prefix('.') {
+        if let Some(rest) = path.strip_prefix("./") {
             return self.lookup(rest);
         }
 
