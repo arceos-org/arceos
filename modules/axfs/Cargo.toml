@@ -20,6 +20,7 @@ default = ["use-ramdisk", "devfs", "ramfs", "fatfs"]
 log = "0.4"
 cfg-if = "1.0"
 lazy_init = { path = "../../crates/lazy_init" }
+capability = { path = "../../crates/capability" }
 driver_common = { path = "../../crates/driver_common" }
 driver_block = { path = "../../crates/driver_block" }
 axio = { path = "../../crates/axio", features = ["alloc"] }

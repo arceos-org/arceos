@@ -2,6 +2,7 @@
 
 use axerrno::{ax_err, AxResult};
 use axfs_vfs::{VfsError, VfsNodeRef};
+use capability::{Cap, WithCap};
 use core::fmt;
 
 pub type FileType = axfs_vfs::VfsNodeType;
@@ -10,13 +11,13 @@ pub type FileAttr = axfs_vfs::VfsNodeAttr;
 pub type FilePerm = axfs_vfs::VfsNodePerm;
 
 pub struct File {
-    node: VfsNodeRef,
+    node: WithCap<VfsNodeRef>,
     is_append: bool,
     offset: u64,
 }
 
 pub struct Directory {
-    node: VfsNodeRef,
+    node: WithCap<VfsNodeRef>,
     entry_idx: usize,
 }
 
@@ -121,45 +122,51 @@ impl File {
         {
             return ax_err!(IsADirectory);
         }
+        let access_cap = opts.into();
+        if !perm_to_cap(attr.perm()).contains(access_cap) {
+            return ax_err!(PermissionDenied);
+        }
+
         node.open()?;
         if opts.truncate {
             node.truncate(0)?;
         }
-
         Ok(Self {
-            node,
+            node: WithCap::new(node, access_cap),
             is_append: opts.append,
             offset: 0,
         })
     }
 
     pub fn truncate(&self, size: u64) -> AxResult {
-        self.node.truncate(size)?;
+        self.node.access(Cap::WRITE)?.truncate(size)?;
         Ok(())
     }
 
     pub fn read(&mut self, buf: &mut [u8]) -> AxResult<usize> {
-        let read_len = self.node.read_at(self.offset, buf)?;
+        let node = self.node.access(Cap::READ)?;
+        let read_len = node.read_at(self.offset, buf)?;
         self.offset += read_len as u64;
         Ok(read_len)
     }
 
     pub fn write(&mut self, buf: &[u8]) -> AxResult<usize> {
+        let node = self.node.access(Cap::WRITE)?;
         if self.is_append {
-            self.offset = self.node.get_attr()?.size();
+            self.offset = self.get_attr()?.size();
         };
-        let write_len = self.node.write_at(self.offset, buf)?;
+        let write_len = node.write_at(self.offset, buf)?;
         self.offset += write_len as u64;
         Ok(write_len)
     }
 
     pub fn flush(&self) -> AxResult {
-        self.node.fsync()?;
+        self.node.access(Cap::WRITE)?.fsync()?;
         Ok(())
     }
 
     pub fn get_attr(&self) -> AxResult<FileAttr> {
-        self.node.get_attr()
+        self.node.access(Cap::empty())?.get_attr()
     }
 }
 
@@ -174,16 +181,27 @@ impl Directory {
         }
 
         let node = crate::root::lookup(path)?;
-        if node.get_attr()?.is_dir() {
-            node.open()?;
-            Ok(Self { node, entry_idx: 0 })
-        } else {
-            ax_err!(NotADirectory)
+        let attr = node.get_attr()?;
+        if !attr.is_dir() {
+            return ax_err!(NotADirectory);
         }
+        let access_cap = opts.into();
+        if !perm_to_cap(attr.perm()).contains(access_cap) {
+            return ax_err!(PermissionDenied);
+        }
+
+        node.open()?;
+        Ok(Self {
+            node: WithCap::new(node, access_cap),
+            entry_idx: 0,
+        })
     }
 
     pub fn read_dir(&mut self, dirents: &mut [DirEntry]) -> AxResult<usize> {
-        let n = self.node.read_dir(self.entry_idx, dirents)?;
+        let n = self
+            .node
+            .access(Cap::READ)?
+            .read_dir(self.entry_idx, dirents)?;
         self.entry_idx += n;
         Ok(n)
     }
@@ -191,13 +209,13 @@ impl Directory {
 
 impl Drop for File {
     fn drop(&mut self) {
-        self.node.release().ok();
+        unsafe { self.node.access_unchecked().release().ok() };
     }
 }
 
 impl Drop for Directory {
     fn drop(&mut self) {
-        self.node.release().ok();
+        unsafe { self.node.access_unchecked().release().ok() };
     }
 }
 
@@ -224,4 +242,31 @@ impl fmt::Debug for OpenOptions {
         fmt_opt!(create_new, "CREATE_NEW");
         Ok(())
     }
+}
+
+impl From<&OpenOptions> for Cap {
+    fn from(opts: &OpenOptions) -> Cap {
+        let mut cap = Cap::empty();
+        if opts.read {
+            cap |= Cap::READ;
+        }
+        if opts.write | opts.append {
+            cap |= Cap::WRITE;
+        }
+        cap
+    }
+}
+
+fn perm_to_cap(perm: FilePerm) -> Cap {
+    let mut cap = Cap::empty();
+    if perm.owner_readable() {
+        cap |= Cap::READ;
+    }
+    if perm.owner_writable() {
+        cap |= Cap::WRITE;
+    }
+    if perm.owner_executable() {
+        cap |= Cap::EXECUTE;
+    }
+    cap
 }

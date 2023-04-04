@@ -107,6 +107,18 @@ impl VfsNodePerm {
         }
         perm
     }
+
+    pub const fn owner_readable(&self) -> bool {
+        self.contains(Self::OWNER_READ)
+    }
+
+    pub const fn owner_writable(&self) -> bool {
+        self.contains(Self::OWNER_WRITE)
+    }
+
+    pub const fn owner_executable(&self) -> bool {
+        self.contains(Self::OWNER_EXEC)
+    }
 }
 
 impl VfsNodeType {

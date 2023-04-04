@@ -19,6 +19,7 @@ members = [
     "crates/axfs_devfs",
     "crates/axfs_vfs",
     "crates/axio",
+    "crates/capability",
     "crates/crate_interface",
     "crates/driver_block",
     "crates/driver_common",

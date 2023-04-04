@@ -173,6 +173,11 @@ pub(crate) fn lookup(path: &str) -> AxResult<VfsNodeRef> {
 }
 
 pub(crate) fn create_file(path: &str) -> AxResult<VfsNodeRef> {
+    if path.is_empty() {
+        return ax_err!(NotFound);
+    } else if path.ends_with('/') {
+        return ax_err!(NotADirectory);
+    }
     let parent = parent_node_of(path);
     parent.create(path, VfsNodeType::File)?;
     parent.lookup(path)
@@ -187,6 +192,8 @@ pub(crate) fn set_current_dir(path: &str) -> AxResult {
     let attr = node.get_attr()?;
     if !attr.is_dir() {
         ax_err!(NotADirectory)
+    } else if !attr.perm().owner_executable() {
+        ax_err!(PermissionDenied)
     } else {
         let mut path = if path.starts_with('/') {
             path.into()

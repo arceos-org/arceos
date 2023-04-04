@@ -9,6 +9,15 @@ use io::{prelude::*, Error, Result};
 
 const IMG_PATH: &str = "resources/fat16.img";
 
+macro_rules! assert_err {
+    ($expr: expr) => {
+        assert!(($expr).is_err())
+    };
+    ($expr: expr, $err: ident) => {
+        assert_eq!(($expr).err(), Some(Error::$err))
+    };
+}
+
 fn make_disk() -> std::io::Result<RamDisk> {
     let path = std::env::current_dir()?.join(IMG_PATH);
     println!("Loading disk image from {:?} ...", path);
@@ -46,7 +55,7 @@ fn test_read_write_file() -> Result<()> {
     assert_eq!(new_contents2, new_contents + "new line\n");
 
     // open a non-exist file
-    assert_eq!(File::open("/not/exist/file").err(), Some(Error::NotFound));
+    assert_err!(File::open("/not/exist/file"), NotFound);
 
     println!("test_read_write_file() OK!");
     Ok(())
@@ -60,6 +69,44 @@ fn test_read_dir() -> Result<()> {
         println!("   {}", entry.file_name());
     }
     println!("test_read_dir() OK!");
+    Ok(())
+}
+
+fn test_file_permission() -> Result<()> {
+    let fname = "./short.txt";
+    println!("test permission {:?}:", fname);
+
+    // write a file that open with read-only mode
+    let mut buf = [0; 256];
+    let mut file = File::open(fname)?;
+    let n = file.read(&mut buf)?;
+    assert_err!(file.write(&mut buf), PermissionDenied);
+    drop(file);
+
+    // read a file that open with write-only mode
+    let mut file = File::create(fname)?;
+    assert_err!(file.read(&mut buf), PermissionDenied);
+    assert!(file.write(&buf[..n]).is_ok());
+    drop(file);
+
+    // open with empty options
+    assert_err!(OpenOptions::new().open(fname), InvalidInput);
+
+    // read as a directory
+    assert_err!(fs::read_dir(fname), NotADirectory);
+    assert_err!(fs::read("short.txt/"), NotADirectory);
+    assert_err!(fs::metadata("/short.txt/"), NotADirectory);
+
+    // create as a directory
+    assert_err!(fs::write("error/", "should not create"), NotADirectory);
+    assert_err!(fs::metadata("error/"), NotFound);
+    assert_err!(fs::metadata("error"), NotFound);
+
+    // read/write a directory
+    assert_err!(fs::read_to_string("/dev"), IsADirectory);
+    assert_err!(fs::write(".", "test"), IsADirectory);
+
+    println!("test_file_permisson() OK!");
     Ok(())
 }
 
@@ -121,5 +168,6 @@ fn test_axfs() {
 
     test_read_write_file().expect("test_read_write_file() failed");
     test_read_dir().expect("test_read_dir() failed");
+    test_file_permission().expect("test_file_permission() failed");
     test_devfs().expect("test_devfs() failed");
 }
