@@ -24,7 +24,9 @@ pub struct DirEntry<'a> {
 
 impl<'a> ReadDir<'a> {
     pub(super) fn new(path: &'a str) -> Result<Self> {
-        let inner = fops::Directory::open_dir(path, &fops::OpenOptions::new())?;
+        let mut opts = fops::OpenOptions::new();
+        opts.read(true);
+        let inner = fops::Directory::open_dir(path, &opts)?;
         const EMPTY: fops::DirEntry = fops::DirEntry::default();
         let dirent_buf = [EMPTY; 31];
         Ok(ReadDir {
@@ -57,7 +59,10 @@ impl<'a> Iterator for ReadDir<'a> {
                         self.buf_pos = 0;
                         self.buf_end = n;
                     }
-                    Err(e) => return Some(Err(e)),
+                    Err(e) => {
+                        self.end_of_stream = true;
+                        return Some(Err(e));
+                    }
                 }
             }
             let entry = &self.dirent_buf[self.buf_pos];

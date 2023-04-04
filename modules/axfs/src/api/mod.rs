@@ -49,8 +49,8 @@ pub fn read_to_string(path: &str) -> Result<String> {
 }
 
 /// Write a slice as the entire contents of a file.
-pub fn write(path: &str, contents: &[u8]) -> Result {
-    File::create(path)?.write_all(contents)
+pub fn write<C: AsRef<[u8]>>(path: &str, contents: C) -> Result {
+    File::create(path)?.write_all(contents.as_ref())
 }
 
 /// Given a path, query the file system to get information about a file,

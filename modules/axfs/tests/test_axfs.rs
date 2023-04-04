@@ -52,6 +52,40 @@ fn test_read_write_file() -> Result<()> {
     Ok(())
 }
 
+fn test_file_permission() -> Result<()> {
+    let fname = "./short.txt";
+    println!("test permission {:?}:", fname);
+
+    // write a file that open with read-only mode
+    let mut buf = [0; 256];
+    let mut file = File::open(fname)?;
+    let n = file.read(&mut buf)?;
+    assert_eq!(file.write(&mut buf).err(), Some(Error::PermissionDenied));
+    drop(file);
+
+    // read a file that open with write-only mode
+    let mut file = File::create(fname)?;
+    assert_eq!(file.read(&mut buf).err(), Some(Error::PermissionDenied));
+    assert!(file.write(&buf[..n]).is_ok());
+    drop(file);
+
+    // open with empty options
+    assert_eq!(
+        OpenOptions::new().open(fname).err(),
+        Some(Error::InvalidInput)
+    );
+
+    // read as a directory
+    assert_eq!(fs::read_dir(fname).err(), Some(Error::NotADirectory));
+
+    // read/write a directory
+    assert_eq!(fs::read_to_string("/dev").err(), Some(Error::IsADirectory));
+    assert_eq!(fs::write(".", "test").err(), Some(Error::IsADirectory));
+
+    println!("test_file_permisson() OK!");
+    Ok(())
+}
+
 fn test_read_dir() -> Result<()> {
     let dir = "/././//./";
     println!("list directory {:?}:", dir);
@@ -114,6 +148,7 @@ fn test_axfs() {
     axfs::init_filesystems(disk);
 
     test_read_write_file().expect("test_read_write_file() failed");
+    test_file_permission().expect("test_file_permission() failed");
     test_read_dir().expect("test_read_dir() failed");
     test_devfs().expect("test_devfs() failed");
 }

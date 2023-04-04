@@ -1,7 +1,7 @@
 use alloc::sync::Arc;
 use core::cell::UnsafeCell;
 
-use axfs_vfs::{VfsDirEntry, VfsError, VfsResult};
+use axfs_vfs::{VfsDirEntry, VfsError, VfsNodePerm, VfsResult};
 use axfs_vfs::{VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsNodeType, VfsOps};
 use axsync::Mutex;
 use fatfs::{Dir, File, LossyOemCpConverter, NullTimeProvider, Read, Seek, SeekFrom, Write};
@@ -55,7 +55,9 @@ impl VfsNodeOps for FileWrapper<'_> {
     fn get_attr(&self) -> VfsResult<VfsNodeAttr> {
         let size = self.0.lock().seek(SeekFrom::End(0)).map_err(as_vfs_err)?;
         let blocks = (size + BLOCK_SIZE as u64 - 1) / BLOCK_SIZE as u64;
-        Ok(VfsNodeAttr::new_file(size, blocks))
+        // FAT fs doesn't support permissions, we just set everything to 755
+        let perm = VfsNodePerm::from_bits_truncate(0o755);
+        Ok(VfsNodeAttr::new(perm, VfsNodeType::File, size, blocks))
     }
 
     fn read_at(&self, offset: u64, buf: &mut [u8]) -> VfsResult<usize> {
@@ -81,7 +83,13 @@ impl VfsNodeOps for DirWrapper<'static> {
     axfs_vfs::impl_vfs_dir_default! {}
 
     fn get_attr(&self) -> VfsResult<VfsNodeAttr> {
-        Ok(VfsNodeAttr::new_dir(BLOCK_SIZE as u64, 1))
+        // FAT fs doesn't support permissions, we just set everything to 755
+        Ok(VfsNodeAttr::new(
+            VfsNodePerm::from_bits_truncate(0o755),
+            VfsNodeType::Dir,
+            BLOCK_SIZE as u64,
+            1,
+        ))
     }
 
     fn lookup(self: Arc<Self>, path: &str) -> VfsResult<Arc<dyn VfsNodeOps>> {

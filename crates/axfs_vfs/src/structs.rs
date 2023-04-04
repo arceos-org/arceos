@@ -69,7 +69,7 @@ pub struct VfsDirEntry {
 
 impl VfsNodePerm {
     pub const fn default_file() -> Self {
-        Self::from_bits_truncate(0o644)
+        Self::from_bits_truncate(0o666)
     }
 
     pub const fn default_dir() -> Self {
@@ -106,6 +106,18 @@ impl VfsNodePerm {
             perm[8] = b'x';
         }
         perm
+    }
+
+    pub const fn owner_readable(&self) -> bool {
+        self.contains(Self::OWNER_READ)
+    }
+
+    pub const fn owner_writable(&self) -> bool {
+        self.contains(Self::OWNER_WRITE)
+    }
+
+    pub const fn owner_executable(&self) -> bool {
+        self.contains(Self::OWNER_EXEC)
     }
 }
 
@@ -151,8 +163,12 @@ impl VfsNodeAttr {
         self.size
     }
 
-    pub fn perm(&self) -> VfsNodePerm {
+    pub const fn perm(&self) -> VfsNodePerm {
         self.mode
+    }
+
+    pub fn set_perm(&mut self, perm: VfsNodePerm) {
+        self.mode = perm
     }
 
     pub const fn file_type(&self) -> VfsNodeType {
