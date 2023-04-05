@@ -28,16 +28,16 @@
 * [lazy_init](../crates/lazy_init): Global static variable instance OPs.
 * [linked_list](../crates/linked_list): Based on linux/rust/kernel/linked_list.rs, but use [`unsafe_list::List`](../crates/linked_list/src/unsafe_list.rs) as the inner implementation..
 * [memory_addr](../crates/memory_addr): PhyAddr/VirtAddr related OPs.
-* [page_table](../crates/page_table): . 
-* [page_table_entry](../crates/page_table_entry): .
-* [percpu](../crates/percpu): .
-* [percpu_macros](../crates/percpu_macros): .
-* [ratio](../crates/ratio): .
-* [scheduler](../crates/scheduler): .
-* [slab_allocator](../crates/slab_allocator): .
-* [spinlock](../crates/spinlock): . 
-* [timer_list](../crates/timer_list): . 
-* [tuple_for_each](../crates/tuple_for_each): . 
+* [page_table](../crates/page_table): Generic page table. 
+* [page_table_entry](../crates/page_table_entry): Generic page table entry.
+* [percpu](../crates/percpu): Framework for per-cpu data.
+* [percpu_macros](../crates/percpu_macros): Macros for per-cpu data.
+* [ratio](../crates/ratio): Convert `numerator / denominator` to `mult / (1 << shift)` to avoid `u128` division.
+* [scheduler](../crates/scheduler): FIFO/RR schedulers.
+* [slab_allocator](../crates/slab_allocator): Memory: slab allocator.
+* [spinlock](../crates/spinlock): Sync: spin lock. 
+* [timer_list](../crates/timer_list): Timer event/list & OPs. 
+* [tuple_for_each](../crates/tuple_for_each): tuple_for_each to traverse devices. 
 ## Dependencies
 
 ```mermaid
