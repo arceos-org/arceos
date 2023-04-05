@@ -1,3 +1,7 @@
+# INTRODUCTION
+| App | Extra modules | Enabled features | Description |
+|-|-|-|-|
+| [memtest](apps/memtest/) | axalloc | alloc, paging | Dynamic memory allocation test |
 # RUN
 ```
 make A=apps/memtest SMP=4 LOG=debug run

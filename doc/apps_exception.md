@@ -1,3 +1,8 @@
+# INTRODUCTION
+| App | Extra modules | Enabled features | Description |
+|-|-|-|-|
+| [exception](apps/exception/) | | paging | Exception handling test |
+
 # RUN
 ```
 make A=apps/exception SMP=4 LOG=debug run

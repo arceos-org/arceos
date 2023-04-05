@@ -1,3 +1,8 @@
+# INTRODUCTION
+| App | Extra modules | Enabled features | Description |
+|-|-|-|-|
+| [helloworld](apps/helloworld/) | | | A minimal app that just prints a string |
+
 # RUN
 ```
 make A=apps/helloworld SMP=4 LOG=debug run
