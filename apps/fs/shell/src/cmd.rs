@@ -145,8 +145,25 @@ fn do_echo(args: &str) {
     }
 }
 
-fn do_mkdir(_args: &str) {
-    print_err!("mkdir", Unsupported);
+fn do_mkdir(args: &str) {
+    if args.is_empty() {
+        print_err!("mkdir", "missing operand");
+        return;
+    }
+
+    fn mkdir_one(path: &str) -> io::Result<()> {
+        fs::create_dir(path)
+    }
+
+    for path in args.split_whitespace() {
+        if let Err(e) = mkdir_one(path) {
+            print_err!(
+                "mkdir",
+                format_args!("cannot create directory '{path}'"),
+                e.as_str()
+            );
+        }
+    }
 }
 
 fn do_rm(_args: &str) {

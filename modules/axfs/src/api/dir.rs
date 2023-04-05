@@ -22,6 +22,12 @@ pub struct DirEntry<'a> {
     entry_type: FileType,
 }
 
+/// A builder used to create directories in various manners.
+#[derive(Default, Debug)]
+pub struct DirBuilder {
+    recursive: bool,
+}
+
 impl<'a> ReadDir<'a> {
     pub(super) fn new(path: &'a str) -> Result<Self> {
         let mut opts = fops::OpenOptions::new();
@@ -107,5 +113,38 @@ impl<'a> DirEntry<'a> {
 impl fmt::Debug for DirEntry<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("DirEntry").field(&self.path()).finish()
+    }
+}
+
+impl DirBuilder {
+    /// Creates a new set of options with default mode/security settings for all
+    /// platforms and also non-recursive.
+    pub fn new() -> Self {
+        Self { recursive: false }
+    }
+
+    /// Indicates that directories should be created recursively, creating all
+    /// parent directories. Parents that do not exist are created with the same
+    /// security and permissions settings.
+    pub fn recursive(&mut self, recursive: bool) -> &mut Self {
+        self.recursive = recursive;
+        self
+    }
+
+    /// Creates the specified directory with the options configured in this
+    /// builder.
+    pub fn create(&self, path: &str) -> Result<()> {
+        if self.recursive {
+            self.create_dir_all(path)
+        } else {
+            crate::root::create_dir(path)
+        }
+    }
+
+    fn create_dir_all(&self, _path: &str) -> Result<()> {
+        axerrno::ax_err!(
+            Unsupported,
+            "Recursive directory creation is not supported yet"
+        )
     }
 }

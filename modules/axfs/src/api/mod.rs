@@ -3,7 +3,7 @@
 mod dir;
 mod file;
 
-pub use self::dir::{DirEntry, ReadDir};
+pub use self::dir::{DirBuilder, DirEntry, ReadDir};
 pub use self::file::{File, FileType, Metadata, OpenOptions, Permissions};
 
 use alloc::{string::String, vec::Vec};
@@ -57,4 +57,15 @@ pub fn write<C: AsRef<[u8]>>(path: &str, contents: C) -> io::Result<()> {
 /// directory, etc.
 pub fn metadata(path: &str) -> io::Result<Metadata> {
     File::open(path)?.metadata()
+}
+
+/// Creates a new, empty directory at the provided path.
+pub fn create_dir(path: &str) -> io::Result<()> {
+    DirBuilder::new().create(path)
+}
+
+/// Recursively create a directory and all of its parent components if they
+/// are missing.
+pub fn create_dir_all(path: &str) -> io::Result<()> {
+    DirBuilder::new().recursive(true).create(path)
 }

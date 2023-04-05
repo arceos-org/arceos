@@ -112,6 +112,29 @@ impl VfsNodeOps for DirWrapper<'static> {
         }
     }
 
+    fn create(&self, path: &str, ty: VfsNodeType) -> VfsResult {
+        debug!("create {:?} at fatfs: {}", ty, path);
+        let path = path.trim_matches('/');
+        if path.is_empty() || path == "." {
+            return Ok(());
+        }
+        if let Some(rest) = path.strip_prefix("./") {
+            return self.create(rest, ty);
+        }
+
+        match ty {
+            VfsNodeType::File => {
+                self.0.create_file(path).map_err(as_vfs_err)?;
+                Ok(())
+            }
+            VfsNodeType::Dir => {
+                self.0.create_dir(path).map_err(as_vfs_err)?;
+                Ok(())
+            }
+            _ => Err(VfsError::Unsupported),
+        }
+    }
+
     fn read_dir(&self, start_idx: usize, dirents: &mut [VfsDirEntry]) -> VfsResult<usize> {
         let mut iter = self.0.iter().skip(start_idx);
         for (i, out_entry) in dirents.iter_mut().enumerate() {

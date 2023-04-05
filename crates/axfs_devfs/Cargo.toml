@@ -8,3 +8,4 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 
 [dependencies]
 axfs_vfs = { path = "../axfs_vfs" }
+log = "0.4"

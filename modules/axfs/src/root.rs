@@ -3,12 +3,12 @@
 //! TODO: it doesn't work very well if the mount points have containment relationships.
 
 use alloc::{string::String, sync::Arc, vec::Vec};
-use axerrno::{ax_err, AxResult};
+use axerrno::{ax_err, AxError, AxResult};
 use axfs_vfs::{VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsNodeType, VfsOps, VfsResult};
 use axsync::Mutex;
 use lazy_init::LazyInit;
 
-use crate::fs;
+use crate::{api::FileType, fs};
 
 static CURRENT_DIR_PATH: Mutex<String> = Mutex::new(String::new());
 static CURRENT_DIR: LazyInit<Mutex<VfsNodeRef>> = LazyInit::new();
@@ -59,6 +59,8 @@ impl RootDirectory {
         if self.mounts.iter().any(|mp| mp.path == path) {
             return ax_err!(InvalidInput, "mount point already exists");
         }
+        // create the mount point in the main filesystem if it does not exist
+        MAIN_FS.root_dir().create(path, FileType::Dir)?;
         fs.mount(path)?;
         self.mounts.push(MountPoint::new(path, fs));
         Ok(())
@@ -181,6 +183,14 @@ pub(crate) fn create_file(path: &str) -> AxResult<VfsNodeRef> {
     let parent = parent_node_of(path);
     parent.create(path, VfsNodeType::File)?;
     parent.lookup(path)
+}
+
+pub(crate) fn create_dir(path: &str) -> AxResult {
+    match lookup(path) {
+        Ok(_) => ax_err!(AlreadyExists),
+        Err(AxError::NotFound) => parent_node_of(path).create(path, VfsNodeType::Dir),
+        Err(e) => Err(e),
+    }
 }
 
 pub(crate) fn current_dir() -> AxResult<String> {

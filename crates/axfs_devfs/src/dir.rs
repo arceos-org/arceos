@@ -58,6 +58,16 @@ impl VfsNodeOps for DirNode {
         Ok(dirents.len())
     }
 
+    fn create(&self, path: &str, ty: VfsNodeType) -> VfsResult {
+        log::debug!("create {:?} at devfs: {}", ty, path);
+        Err(VfsError::PermissionDenied) // do not support to create nodes dynamically
+    }
+
+    fn remove(&self, path: &str) -> VfsResult {
+        log::debug!("remove at devfs: {}", path);
+        Err(VfsError::PermissionDenied) // do not support to remove nodes dynamically
+    }
+
     axfs_vfs::impl_vfs_dir_default! {}
 }
 

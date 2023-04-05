@@ -110,9 +110,49 @@ fn test_file_permission() -> Result<()> {
     Ok(())
 }
 
+fn test_create_file_dir() -> Result<()> {
+    // create a file and test existence
+    let fname = "././/very-long-dir-name/..///new-file.txt";
+    println!("test create file {:?}:", fname);
+    assert_err!(fs::metadata(fname), NotFound);
+    let contents = "create a new file!\n";
+    fs::write(fname, contents)?;
+
+    let dirents = fs::read_dir(".")?
+        .map(|e| e.unwrap().file_name())
+        .collect::<Vec<_>>();
+    println!("dirents = {:?}", dirents);
+    assert!(dirents.contains(&"new-file.txt".into()));
+    assert_eq!(fs::read_to_string(fname)?, contents);
+    assert_err!(File::create_new(fname), AlreadyExists);
+
+    // create a directory and test existence
+    let dirname = "///././/very//.//long/./new-dir";
+    println!("test create dir {:?}:", dirname);
+    assert_err!(fs::metadata(dirname), NotFound);
+    fs::create_dir(dirname)?;
+
+    let dirents = fs::read_dir("./very/long")?
+        .map(|e| e.unwrap().file_name())
+        .collect::<Vec<_>>();
+    println!("dirents = {:?}", dirents);
+    assert!(dirents.contains(&"new-dir".into()));
+    assert!(fs::metadata(dirname)?.is_dir());
+    assert_err!(fs::create_dir(dirname), AlreadyExists);
+
+    println!("test_create_file_dir() OK!");
+    Ok(())
+}
+
 fn test_devfs() -> Result<()> {
     const N: usize = 32;
     let mut buf = [1; N];
+
+    // list '/' and check if /dev exists
+    let dirents = fs::read_dir("././//.//")?
+        .map(|e| e.unwrap().file_name())
+        .collect::<Vec<_>>();
+    assert!(dirents.contains(&"dev".into()));
 
     // read and write /dev/null
     let mut file = File::options().read(true).write(true).open("/dev/./null")?;
@@ -169,5 +209,6 @@ fn test_axfs() {
     test_read_write_file().expect("test_read_write_file() failed");
     test_read_dir().expect("test_read_dir() failed");
     test_file_permission().expect("test_file_permission() failed");
+    test_create_file_dir().expect("test_create_file_dir() failed");
     test_devfs().expect("test_devfs() failed");
 }
