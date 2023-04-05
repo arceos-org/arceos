@@ -87,7 +87,7 @@ clippy:
 	cargo clippy --target $(TARGET)
 
 doc:
-	cargo doc --target $(TARGET)
+	cargo doc --no-deps --target $(TARGET)
 
 
 fmt:
