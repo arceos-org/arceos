@@ -2,7 +2,17 @@
 ## step1 
 [init](./init.md)
 
+After executed all initial actions, then arceos calls `main` function in `helloworld` app.
+
 ## step2
+
+```Rust
+fn main() {
+    libax::println!("Hello, world!");
+}
+```
+
+**flow chart**
 
 ```mermaid
 graph TD;
