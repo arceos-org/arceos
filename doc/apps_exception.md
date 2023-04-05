@@ -1,4 +1,11 @@
-# STEPS:
+# RUN
+```
+make A=apps/exception SMP=4 LOG=debug run
+...
+[  0.249873 0 axhal::arch::riscv::trap:13] Exception(Breakpoint) @ 0xffffffc08020021c
+...
+```
+# STEPS
 ## step1 
 [init](./init.md)
 

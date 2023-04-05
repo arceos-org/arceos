@@ -1,4 +1,8 @@
-# STEPS:
+# RUN
+```
+make A=apps/helloworld SMP=4 LOG=debug run
+```
+# STEPS
 ## step1 
 [init](./init.md)
 
