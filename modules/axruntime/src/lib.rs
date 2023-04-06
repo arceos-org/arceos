@@ -10,6 +10,11 @@ mod trap;
 #[cfg(feature = "smp")]
 mod mp;
 
+#[cfg(feature = "user")]
+mod syscall;
+#[cfg(feature = "user")]
+pub use syscall::sys_number;
+
 const LOGO: &str = r#"
        d8888                            .d88888b.   .d8888b.
       d88888                           d88P" "Y88b d88P  Y88b
@@ -20,10 +25,6 @@ const LOGO: &str = r#"
  d8888888888 888     Y88b.    Y8b.     Y88b. .d88P Y88b  d88P
 d88P     888 888      "Y8888P  "Y8888   "Y88888P"   "Y8888P"
 "#;
-
-extern "Rust" {
-    fn main();
-}
 
 struct LogIfImpl;
 
@@ -153,9 +154,17 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         core::hint::spin_loop();
     }
 
-    unsafe { main() };
-
-    axtask::exit(0)
+    #[cfg(feature = "user")]
+    trap::user_space_entry();
+    
+    #[cfg(not(feature = "user"))]
+    {
+        extern "Rust" {
+            fn main();
+        }        
+        unsafe { main() };        
+        axtask::exit(0)
+    }
 }
 
 #[cfg(feature = "alloc")]

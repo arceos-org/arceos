@@ -79,9 +79,9 @@ justrun:
 	$(call run_qemu)
 
 debug: build
-	$(call run_qemu,-s -S) &
-	sleep 1
-	$(GDB) $(OUT_ELF) -ex 'target remote localhost:1234'
+	$(call run_qemu,-s -S) #&
+	#sleep 1
+	#$(GDB) $(OUT_ELF) -ex 'target remote localhost:1234'
 
 clippy:
 	cargo clippy --target $(TARGET)

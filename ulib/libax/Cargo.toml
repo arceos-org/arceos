@@ -10,6 +10,9 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 # Multicore
 smp = ["axruntime/smp", "axhal/smp"]
 
+# User mode
+user = ["axruntime/user", "axhal/user", "dep:log"]
+
 # Memory
 alloc = ["axruntime/alloc"]
 paging = ["axruntime/paging"]
@@ -43,6 +46,8 @@ platform-qemu-virt-aarch64 = ["axhal/platform-qemu-virt-aarch64", "axdriver?/bus
 default = ["axtask?/sched_fifo"]
 
 [dependencies]
+cfg-if = "1.0.0"
+log = { version = "0.4", optional = true }
 axdisplay = { path = "../../modules/axdisplay", optional = true }
 axdriver = { path = "../../modules/axdriver", optional = true }
 axerror = { path = "../../modules/axerror" }

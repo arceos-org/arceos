@@ -738,6 +738,8 @@ dependencies = [
  "axruntime",
  "axsync",
  "axtask",
+ "cfg-if",
+ "log",
 ]
 
 [[package]]

@@ -15,6 +15,7 @@ smp = ["axhal/smp", "spinlock/smp"]
 fs = ["alloc", "paging", "axdriver/virtio-blk"] # TODO: remove "paging"
 net = ["alloc", "paging", "axdriver/virtio-net", "dep:axnet"]
 display = ["alloc", "paging", "axdriver/virtio-gpu", "dep:axdisplay"]
+user = ["axhal/user"]
 
 default = []
 
