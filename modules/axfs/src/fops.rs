@@ -91,13 +91,13 @@ impl OpenOptions {
 }
 
 impl File {
-    pub fn open(path: &str, opts: &OpenOptions) -> AxResult<Self> {
+    fn _open_at(dir: Option<&VfsNodeRef>, path: &str, opts: &OpenOptions) -> AxResult<Self> {
         debug!("open file: {} {:?}", path, opts);
         if !opts.is_valid() {
             return ax_err!(InvalidInput);
         }
 
-        let node_option = crate::root::lookup(path);
+        let node_option = crate::root::lookup(dir, path);
         let node = if opts.create || opts.create_new {
             match node_option {
                 Ok(node) => {
@@ -108,7 +108,7 @@ impl File {
                     node
                 }
                 // not exists, create new
-                Err(VfsError::NotFound) => crate::root::create_file(path)?,
+                Err(VfsError::NotFound) => crate::root::create_file(dir, path)?,
                 Err(e) => return Err(e),
             }
         } else {
@@ -136,6 +136,10 @@ impl File {
             is_append: opts.append,
             offset: 0,
         })
+    }
+
+    pub fn open(path: &str, opts: &OpenOptions) -> AxResult<Self> {
+        Self::_open_at(None, path, opts)
     }
 
     pub fn truncate(&self, size: u64) -> AxResult {
@@ -171,7 +175,7 @@ impl File {
 }
 
 impl Directory {
-    pub fn open_dir(path: &str, opts: &OpenOptions) -> AxResult<Self> {
+    fn _open_dir_at(dir: Option<&VfsNodeRef>, path: &str, opts: &OpenOptions) -> AxResult<Self> {
         debug!("open dir: {}", path);
         if !opts.read {
             return ax_err!(InvalidInput);
@@ -180,7 +184,7 @@ impl Directory {
             return ax_err!(InvalidInput);
         }
 
-        let node = crate::root::lookup(path)?;
+        let node = crate::root::lookup(dir, path)?;
         let attr = node.get_attr()?;
         if !attr.is_dir() {
             return ax_err!(NotADirectory);
@@ -195,6 +199,42 @@ impl Directory {
             node: WithCap::new(node, access_cap),
             entry_idx: 0,
         })
+    }
+
+    fn access_at(&self, path: &str) -> AxResult<Option<&VfsNodeRef>> {
+        if path.starts_with('/') {
+            Ok(None)
+        } else {
+            Ok(Some(self.node.access(Cap::EXECUTE)?))
+        }
+    }
+
+    pub fn open_dir(path: &str, opts: &OpenOptions) -> AxResult<Self> {
+        Self::_open_dir_at(None, path, opts)
+    }
+
+    pub fn open_dir_at(&self, path: &str, opts: &OpenOptions) -> AxResult<Self> {
+        Self::_open_dir_at(self.access_at(path)?, path, opts)
+    }
+
+    pub fn open_file_at(&self, path: &str, opts: &OpenOptions) -> AxResult<File> {
+        File::_open_at(self.access_at(path)?, path, opts)
+    }
+
+    pub fn create_file(&self, path: &str) -> AxResult<VfsNodeRef> {
+        crate::root::create_file(self.access_at(path)?, path)
+    }
+
+    pub fn create_dir(&self, path: &str) -> AxResult {
+        crate::root::create_dir(self.access_at(path)?, path)
+    }
+
+    pub fn remove_file(&self, path: &str) -> AxResult {
+        crate::root::remove_file(self.access_at(path)?, path)
+    }
+
+    pub fn remove_dir(&self, path: &str) -> AxResult {
+        crate::root::remove_dir(self.access_at(path)?, path)
     }
 
     pub fn read_dir(&mut self, dirents: &mut [DirEntry]) -> AxResult<usize> {

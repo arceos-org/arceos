@@ -137,7 +137,7 @@ impl DirBuilder {
         if self.recursive {
             self.create_dir_all(path)
         } else {
-            crate::root::create_dir(path)
+            crate::root::create_dir(None, path)
         }
     }
 

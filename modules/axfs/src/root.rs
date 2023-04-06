@@ -164,19 +164,19 @@ pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
     *CURRENT_DIR_PATH.lock() = "/".into();
 }
 
-fn parent_node_of(path: &str) -> VfsNodeRef {
+fn parent_node_of(dir: Option<&VfsNodeRef>, path: &str) -> VfsNodeRef {
     if path.starts_with('/') {
         ROOT_DIR.clone()
     } else {
-        CURRENT_DIR.lock().clone()
+        dir.cloned().unwrap_or_else(|| CURRENT_DIR.lock().clone())
     }
 }
 
-pub(crate) fn lookup(path: &str) -> AxResult<VfsNodeRef> {
+pub(crate) fn lookup(dir: Option<&VfsNodeRef>, path: &str) -> AxResult<VfsNodeRef> {
     if path.is_empty() {
         return ax_err!(NotFound);
     }
-    let node = parent_node_of(path).lookup(path)?;
+    let node = parent_node_of(dir, path).lookup(path)?;
     if path.ends_with('/') && !node.get_attr()?.is_dir() {
         ax_err!(NotADirectory)
     } else {
@@ -184,38 +184,38 @@ pub(crate) fn lookup(path: &str) -> AxResult<VfsNodeRef> {
     }
 }
 
-pub(crate) fn create_file(path: &str) -> AxResult<VfsNodeRef> {
+pub(crate) fn create_file(dir: Option<&VfsNodeRef>, path: &str) -> AxResult<VfsNodeRef> {
     if path.is_empty() {
         return ax_err!(NotFound);
     } else if path.ends_with('/') {
         return ax_err!(NotADirectory);
     }
-    let parent = parent_node_of(path);
+    let parent = parent_node_of(dir, path);
     parent.create(path, VfsNodeType::File)?;
     parent.lookup(path)
 }
 
-pub(crate) fn create_dir(path: &str) -> AxResult {
-    match lookup(path) {
+pub(crate) fn create_dir(dir: Option<&VfsNodeRef>, path: &str) -> AxResult {
+    match lookup(dir, path) {
         Ok(_) => ax_err!(AlreadyExists),
-        Err(AxError::NotFound) => parent_node_of(path).create(path, VfsNodeType::Dir),
+        Err(AxError::NotFound) => parent_node_of(dir, path).create(path, VfsNodeType::Dir),
         Err(e) => Err(e),
     }
 }
 
-pub(crate) fn remove_file(path: &str) -> AxResult {
-    let node = lookup(path)?;
+pub(crate) fn remove_file(dir: Option<&VfsNodeRef>, path: &str) -> AxResult {
+    let node = lookup(dir, path)?;
     let attr = node.get_attr()?;
     if attr.is_dir() {
         ax_err!(IsADirectory)
     } else if !attr.perm().owner_writable() {
         ax_err!(PermissionDenied)
     } else {
-        parent_node_of(path).remove(path)
+        parent_node_of(dir, path).remove(path)
     }
 }
 
-pub(crate) fn remove_dir(path: &str) -> AxResult {
+pub(crate) fn remove_dir(dir: Option<&VfsNodeRef>, path: &str) -> AxResult {
     // TODO: canonicalize path to avoid bypassing checks for removeing mount points
     if path.is_empty() {
         return ax_err!(NotFound);
@@ -231,14 +231,14 @@ pub(crate) fn remove_dir(path: &str) -> AxResult {
         return ax_err!(InvalidInput);
     }
 
-    let node = lookup(path)?;
+    let node = lookup(dir, path)?;
     let attr = node.get_attr()?;
     if !attr.is_dir() {
         ax_err!(NotADirectory)
     } else if !attr.perm().owner_writable() {
         ax_err!(PermissionDenied)
     } else {
-        parent_node_of(path).remove(path)
+        parent_node_of(dir, path).remove(path)
     }
 }
 
@@ -247,7 +247,7 @@ pub(crate) fn current_dir() -> AxResult<String> {
 }
 
 pub(crate) fn set_current_dir(path: &str) -> AxResult {
-    let node = lookup(path)?;
+    let node = lookup(None, path)?;
     let attr = node.get_attr()?;
     if !attr.is_dir() {
         ax_err!(NotADirectory)
