@@ -121,6 +121,16 @@ impl VfsNodeOps for RootDirectory {
             }
         })
     }
+
+    fn remove(&self, path: &str) -> VfsResult {
+        self.lookup_mounted_fs(path, |fs, rest_path| {
+            if rest_path.is_empty() {
+                ax_err!(PermissionDenied) // cannot remove mount points
+            } else {
+                fs.root_dir().remove(rest_path)
+            }
+        })
+    }
 }
 
 pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
@@ -190,6 +200,45 @@ pub(crate) fn create_dir(path: &str) -> AxResult {
         Ok(_) => ax_err!(AlreadyExists),
         Err(AxError::NotFound) => parent_node_of(path).create(path, VfsNodeType::Dir),
         Err(e) => Err(e),
+    }
+}
+
+pub(crate) fn remove_file(path: &str) -> AxResult {
+    let node = lookup(path)?;
+    let attr = node.get_attr()?;
+    if attr.is_dir() {
+        ax_err!(IsADirectory)
+    } else if !attr.perm().owner_writable() {
+        ax_err!(PermissionDenied)
+    } else {
+        parent_node_of(path).remove(path)
+    }
+}
+
+pub(crate) fn remove_dir(path: &str) -> AxResult {
+    // TODO: canonicalize path to avoid bypassing checks for removeing mount points
+    if path.is_empty() {
+        return ax_err!(NotFound);
+    }
+    let path_check = path.trim_matches('/');
+    if path_check.is_empty() {
+        return ax_err!(DirectoryNotEmpty); // rm -d '/'
+    } else if path_check == "."
+        || path_check == ".."
+        || path_check.ends_with("/.")
+        || path_check.ends_with("/..")
+    {
+        return ax_err!(InvalidInput);
+    }
+
+    let node = lookup(path)?;
+    let attr = node.get_attr()?;
+    if !attr.is_dir() {
+        ax_err!(NotADirectory)
+    } else if !attr.perm().owner_writable() {
+        ax_err!(PermissionDenied)
+    } else {
+        parent_node_of(path).remove(path)
     }
 }
 

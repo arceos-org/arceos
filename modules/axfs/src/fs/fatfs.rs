@@ -135,6 +135,16 @@ impl VfsNodeOps for DirWrapper<'static> {
         }
     }
 
+    fn remove(&self, path: &str) -> VfsResult {
+        debug!("remove at fatfs: {}", path);
+        let path = path.trim_matches('/');
+        assert!(!path.is_empty()); // already check at `root.rs`
+        if let Some(rest) = path.strip_prefix("./") {
+            return self.remove(rest);
+        }
+        self.0.remove(path).map_err(as_vfs_err)
+    }
+
     fn read_dir(&self, start_idx: usize, dirents: &mut [VfsDirEntry]) -> VfsResult<usize> {
         let mut iter = self.0.iter().skip(start_idx);
         for (i, out_entry) in dirents.iter_mut().enumerate() {

@@ -69,3 +69,13 @@ pub fn create_dir(path: &str) -> io::Result<()> {
 pub fn create_dir_all(path: &str) -> io::Result<()> {
     DirBuilder::new().recursive(true).create(path)
 }
+
+/// Removes an empty directory.
+pub fn remove_dir(path: &str) -> io::Result<()> {
+    crate::root::remove_dir(path)
+}
+
+/// Removes a file from the filesystem.
+pub fn remove_file(path: &str) -> io::Result<()> {
+    crate::root::remove_file(path)
+}

@@ -144,6 +144,39 @@ fn test_create_file_dir() -> Result<()> {
     Ok(())
 }
 
+fn test_remove_file_dir() -> Result<()> {
+    // remove a file and test existence
+    let fname = "//very-long-dir-name/..///new-file.txt";
+    println!("test remove file {:?}:", fname);
+    assert_err!(fs::remove_dir(fname), NotADirectory);
+    assert!(fs::remove_file(fname).is_ok());
+    assert_err!(fs::metadata(fname), NotFound);
+    assert_err!(fs::remove_file(fname), NotFound);
+
+    // remove a directory and test existence
+    let dirname = "very//.//long/../long/.//./new-dir////";
+    println!("test remove dir {:?}:", dirname);
+    assert_err!(fs::remove_file(dirname), IsADirectory);
+    assert!(fs::remove_dir(dirname).is_ok());
+    assert_err!(fs::metadata(dirname), NotFound);
+    assert_err!(fs::remove_dir(fname), NotFound);
+
+    // error cases
+    assert_err!(fs::remove_file(""), NotFound);
+    assert_err!(fs::remove_dir("/"), DirectoryNotEmpty);
+    assert_err!(fs::remove_dir("."), InvalidInput);
+    assert_err!(fs::remove_dir("../"), InvalidInput);
+    assert_err!(fs::remove_dir("./././/"), InvalidInput);
+    assert_err!(fs::remove_file("///very/./"), IsADirectory);
+    assert_err!(fs::remove_file("short.txt/"), NotADirectory);
+    assert_err!(fs::remove_dir(".///"), InvalidInput);
+    assert_err!(fs::remove_dir("/./very///"), DirectoryNotEmpty);
+    assert_err!(fs::remove_dir("very/long/.."), InvalidInput);
+
+    println!("test_remove_file_dir() OK!");
+    Ok(())
+}
+
 fn test_devfs() -> Result<()> {
     const N: usize = 32;
     let mut buf = [1; N];
@@ -188,12 +221,25 @@ fn test_devfs() -> Result<()> {
     assert!(md.is_dir());
 
     // stat /dev/foo/bar
-    let fname = "/dev/.//./foo//./././bar";
+    let fname = ".//.///././/./dev///.///./foo//././bar";
     let file = File::open(fname)?;
     let md = file.metadata()?;
     println!("metadata of {:?}: {:?}", fname, md);
     assert_eq!(md.file_type(), FileType::CharDevice);
     assert!(!md.is_dir());
+
+    // error cases
+    assert_err!(fs::metadata("/dev/null/"), NotADirectory);
+    assert_err!(fs::create_dir("dev"), AlreadyExists);
+    assert_err!(File::create_new("/dev/"), AlreadyExists);
+    assert_err!(fs::create_dir("/dev/zero"), AlreadyExists);
+    assert_err!(fs::write("/dev/stdout", "test"), PermissionDenied);
+    assert_err!(fs::create_dir("/dev/test"), PermissionDenied);
+    assert_err!(fs::remove_file("/dev/null"), PermissionDenied);
+    assert_err!(fs::remove_dir("./dev"), PermissionDenied);
+    assert_err!(fs::remove_dir("./dev/."), InvalidInput);
+    assert_err!(fs::remove_dir("///dev//..//"), InvalidInput);
+    // assert_err!(fs::remove_dir("very/../dev//"), PermissionDenied); // TODO
 
     println!("test_devfs() OK!");
     Ok(())
@@ -210,5 +256,6 @@ fn test_axfs() {
     test_read_dir().expect("test_read_dir() failed");
     test_file_permission().expect("test_file_permission() failed");
     test_create_file_dir().expect("test_create_file_dir() failed");
+    test_remove_file_dir().expect("test_remove_file_dir() failed");
     test_devfs().expect("test_devfs() failed");
 }

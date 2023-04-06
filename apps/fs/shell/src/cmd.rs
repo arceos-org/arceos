@@ -166,8 +166,34 @@ fn do_mkdir(args: &str) {
     }
 }
 
-fn do_rm(_args: &str) {
-    print_err!("rm", Unsupported);
+fn do_rm(args: &str) {
+    if args.is_empty() {
+        print_err!("rm", "missing operand");
+        return;
+    }
+    let mut rm_dir = false;
+    for arg in args.split_whitespace() {
+        if arg == "-d" {
+            rm_dir = true;
+        }
+    }
+
+    fn rm_one(path: &str, rm_dir: bool) -> io::Result<()> {
+        if rm_dir && fs::metadata(path)?.is_dir() {
+            fs::remove_dir(path)
+        } else {
+            fs::remove_file(path)
+        }
+    }
+
+    for path in args.split_whitespace() {
+        if path == "-d" {
+            continue;
+        }
+        if let Err(e) = rm_one(path, rm_dir) {
+            print_err!("rm", format_args!("cannot remove '{path}'"), e.as_str());
+        }
+    }
 }
 
 fn do_cd(mut args: &str) {
