@@ -246,7 +246,7 @@ fn test_devfs() -> Result<()> {
     assert_err!(fs::remove_file("./dev//../..//233//.///test.txt"), NotFound);
     assert_eq!(fs::remove_file("./dev//..//233//../233/./test.txt"), Ok(()));
     assert_eq!(fs::remove_dir("dev//foo/../foo/../.././/233"), Ok(()));
-    // assert_err!(fs::remove_dir("very/../dev//"), PermissionDenied); // TODO
+    assert_err!(fs::remove_dir("very/../dev//"), PermissionDenied);
 
     println!("test_devfs() OK!");
     Ok(())

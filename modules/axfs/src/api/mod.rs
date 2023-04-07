@@ -15,9 +15,9 @@ pub fn read_dir(path: &str) -> io::Result<ReadDir> {
 }
 
 /// Returns the canonical, absolute form of a path with all intermediate
-/// components normalized and symbolic links resolved.
+/// components normalized.
 pub fn canonicalize(path: &str) -> io::Result<String> {
-    Ok(path.into()) // TODO
+    crate::root::absolute_path(path)
 }
 
 /// Returns the current working directory as a [`String`].

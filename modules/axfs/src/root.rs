@@ -70,6 +70,10 @@ impl RootDirectory {
         self.mounts.retain(|mp| mp.path != path);
     }
 
+    pub fn contains(&self, path: &str) -> bool {
+        self.mounts.iter().any(|mp| mp.path == path)
+    }
+
     fn lookup_mounted_fs<F, T>(&self, path: &str, f: F) -> AxResult<T>
     where
         F: FnOnce(Arc<dyn VfsOps>, &str) -> AxResult<T>,
@@ -171,6 +175,15 @@ fn parent_node_of(dir: Option<&VfsNodeRef>, path: &str) -> VfsNodeRef {
     }
 }
 
+pub(crate) fn absolute_path(path: &str) -> AxResult<String> {
+    if path.starts_with('/') {
+        Ok(axfs_vfs::path::canonicalize(path))
+    } else {
+        let path = CURRENT_DIR_PATH.lock().clone() + path;
+        Ok(axfs_vfs::path::canonicalize(&path))
+    }
+}
+
 pub(crate) fn lookup(dir: Option<&VfsNodeRef>, path: &str) -> AxResult<VfsNodeRef> {
     if path.is_empty() {
         return ax_err!(NotFound);
@@ -215,7 +228,6 @@ pub(crate) fn remove_file(dir: Option<&VfsNodeRef>, path: &str) -> AxResult {
 }
 
 pub(crate) fn remove_dir(dir: Option<&VfsNodeRef>, path: &str) -> AxResult {
-    // TODO: canonicalize path to avoid bypassing checks for removeing mount points
     if path.is_empty() {
         return ax_err!(NotFound);
     }
@@ -228,6 +240,9 @@ pub(crate) fn remove_dir(dir: Option<&VfsNodeRef>, path: &str) -> AxResult {
         || path_check.ends_with("/..")
     {
         return ax_err!(InvalidInput);
+    }
+    if ROOT_DIR.contains(&absolute_path(path)?) {
+        return ax_err!(PermissionDenied);
     }
 
     let node = lookup(dir, path)?;
@@ -246,23 +261,25 @@ pub(crate) fn current_dir() -> AxResult<String> {
 }
 
 pub(crate) fn set_current_dir(path: &str) -> AxResult {
-    let node = lookup(None, path)?;
+    let mut abs_path = absolute_path(path)?;
+    if !abs_path.ends_with('/') {
+        abs_path += "/";
+    }
+    if abs_path == "/" {
+        *CURRENT_DIR.lock() = ROOT_DIR.clone();
+        *CURRENT_DIR_PATH.lock() = "/".into();
+        return Ok(());
+    }
+
+    let node = lookup(None, &abs_path)?;
     let attr = node.get_attr()?;
     if !attr.is_dir() {
         ax_err!(NotADirectory)
     } else if !attr.perm().owner_executable() {
         ax_err!(PermissionDenied)
     } else {
-        let mut path = if path.starts_with('/') {
-            path.into()
-        } else {
-            CURRENT_DIR_PATH.lock().clone() + path // TODO: canonicalize
-        };
-        if !path.ends_with('/') {
-            path += "/";
-        }
         *CURRENT_DIR.lock() = node;
-        *CURRENT_DIR_PATH.lock() = path;
+        *CURRENT_DIR_PATH.lock() = abs_path;
         Ok(())
     }
 }

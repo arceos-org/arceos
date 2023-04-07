@@ -7,6 +7,8 @@ extern crate alloc;
 mod macros;
 mod structs;
 
+pub mod path;
+
 use alloc::sync::Arc;
 use axerrno::{ax_err, AxError, AxResult};
 
