@@ -92,7 +92,13 @@ impl VfsNodeOps for DirWrapper<'static> {
         ))
     }
 
-    fn lookup(self: Arc<Self>, path: &str) -> VfsResult<Arc<dyn VfsNodeOps>> {
+    fn parent(&self) -> Option<VfsNodeRef> {
+        self.0
+            .open_dir("..")
+            .map_or(None, |dir| Some(FatFileSystem::new_dir(dir)))
+    }
+
+    fn lookup(self: Arc<Self>, path: &str) -> VfsResult<VfsNodeRef> {
         debug!("lookup at fatfs: {}", path);
         let path = path.trim_matches('/');
         if path.is_empty() || path == "." {

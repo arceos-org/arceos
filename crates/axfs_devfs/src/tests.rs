@@ -4,7 +4,7 @@ use axfs_vfs::{VfsError, VfsNodeType, VfsResult};
 
 use crate::*;
 
-fn test_devfs_ops(devfs: DeviceFileSystem) -> VfsResult {
+fn test_devfs_ops(devfs: &DeviceFileSystem) -> VfsResult {
     const N: usize = 32;
     let mut buf = [1; N];
 
@@ -59,6 +59,38 @@ fn test_devfs_ops(devfs: DeviceFileSystem) -> VfsResult {
     Ok(())
 }
 
+fn test_get_parent(devfs: &DeviceFileSystem) -> VfsResult {
+    let root = devfs.root_dir();
+    assert!(root.parent().is_none());
+
+    let node = root.clone().lookup("null")?;
+    assert!(node.parent().is_none());
+
+    let node = root.clone().lookup(".//foo/bar")?;
+    assert!(node.parent().is_some());
+    let parent = node.parent().unwrap();
+    assert!(Arc::ptr_eq(&parent, &root.clone().lookup("foo")?));
+    assert!(parent.lookup("bar").is_ok());
+
+    let node = root.clone().lookup("foo/..")?;
+    assert!(Arc::ptr_eq(&node, &root.clone().lookup(".")?));
+
+    assert!(Arc::ptr_eq(
+        &root.clone().lookup("/foo/..")?,
+        &devfs.root_dir().lookup(".//./foo/././bar/../..")?,
+    ));
+    assert!(Arc::ptr_eq(
+        &root.clone().lookup("././/foo//./../foo//bar///..//././")?,
+        &devfs.root_dir().lookup(".//./foo/")?,
+    ));
+    assert!(Arc::ptr_eq(
+        &root.clone().lookup("///foo//bar///../f2")?,
+        &root.lookup("foo/.//f2")?,
+    ));
+
+    Ok(())
+}
+
 #[test]
 fn test_devfs() {
     // .
@@ -69,16 +101,15 @@ fn test_devfs() {
     // ├── null
     // └── zero
 
-    let mut devfs = DeviceFileSystem::new();
+    let devfs = DeviceFileSystem::new();
     devfs.add("null", Arc::new(NullDev));
     devfs.add("zero", Arc::new(ZeroDev));
 
-    let mut dir_foo = DirNode::new();
-    let mut dir_bar = DirNode::new();
-    dir_bar.add("f1", Arc::new(NullDev));
-    dir_foo.add("bar", Arc::new(dir_bar));
+    let dir_foo = devfs.mkdir("foo");
     dir_foo.add("f2", Arc::new(ZeroDev));
-    devfs.add("foo", Arc::new(dir_foo));
+    let dir_bar = dir_foo.mkdir("bar");
+    dir_bar.add("f1", Arc::new(NullDev));
 
-    test_devfs_ops(devfs).unwrap();
+    test_devfs_ops(&devfs).unwrap();
+    test_get_parent(&devfs).unwrap();
 }

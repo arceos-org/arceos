@@ -8,4 +8,5 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 
 [dependencies]
 axfs_vfs = { path = "../axfs_vfs" }
+spin = "0.9"
 log = "0.4"

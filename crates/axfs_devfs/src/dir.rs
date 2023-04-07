@@ -1,21 +1,36 @@
-use alloc::{collections::BTreeMap, sync::Arc};
+use alloc::collections::BTreeMap;
+use alloc::sync::{Arc, Weak};
 use axfs_vfs::{VfsDirEntry, VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsNodeType};
 use axfs_vfs::{VfsError, VfsResult};
+use spin::RwLock;
 
-#[derive(Default)]
 pub struct DirNode {
-    children: BTreeMap<&'static str, VfsNodeRef>,
+    parent: RwLock<Weak<dyn VfsNodeOps>>,
+    children: RwLock<BTreeMap<&'static str, VfsNodeRef>>,
 }
 
 impl DirNode {
-    pub const fn new() -> Self {
-        Self {
-            children: BTreeMap::new(),
-        }
+    pub(super) fn new(parent: Option<&VfsNodeRef>) -> Arc<Self> {
+        let parent = parent.map_or(Weak::<Self>::new() as _, Arc::downgrade);
+        Arc::new(Self {
+            parent: RwLock::new(parent),
+            children: RwLock::new(BTreeMap::new()),
+        })
     }
 
-    pub fn add(&mut self, name: &'static str, node: VfsNodeRef) {
-        self.children.insert(name, node);
+    pub(super) fn set_parent(&self, parent: Option<&VfsNodeRef>) {
+        *self.parent.write() = parent.map_or(Weak::<Self>::new() as _, Arc::downgrade);
+    }
+
+    pub fn mkdir(self: &Arc<Self>, name: &'static str) -> Arc<Self> {
+        let parent = self.clone() as VfsNodeRef;
+        let node = Self::new(Some(&parent));
+        self.children.write().insert(name, node.clone());
+        node
+    }
+
+    pub fn add(&self, name: &'static str, node: VfsNodeRef) {
+        self.children.write().insert(name, node);
     }
 }
 
@@ -24,14 +39,22 @@ impl VfsNodeOps for DirNode {
         Ok(VfsNodeAttr::new_dir(4096, 0))
     }
 
+    fn parent(&self) -> Option<VfsNodeRef> {
+        self.parent.read().upgrade()
+    }
+
     fn lookup(self: Arc<Self>, path: &str) -> VfsResult<VfsNodeRef> {
-        // TODO: parent
         let (name, rest) = split_path(path);
-        let node = if name == "." || name.is_empty() {
-            self.clone()
-        } else {
-            self.children.get(name).ok_or(VfsError::NotFound)?.clone()
-        };
+        let node = match name {
+            "" | "." => Ok(self.clone() as VfsNodeRef),
+            ".." => self.parent().ok_or(VfsError::NotFound),
+            _ => self
+                .children
+                .read()
+                .get(name)
+                .cloned()
+                .ok_or(VfsError::NotFound),
+        }?;
 
         if let Some(rest) = rest {
             node.lookup(rest)
@@ -41,7 +64,8 @@ impl VfsNodeOps for DirNode {
     }
 
     fn read_dir(&self, start_idx: usize, dirents: &mut [VfsDirEntry]) -> VfsResult<usize> {
-        let mut children = self.children.iter().skip(start_idx.max(2) - 2);
+        let children = self.children.read();
+        let mut children = children.iter().skip(start_idx.max(2) - 2);
         for (i, ent) in dirents.iter_mut().enumerate() {
             match i + start_idx {
                 0 => *ent = VfsDirEntry::new(".", VfsNodeType::Dir),
@@ -60,12 +84,42 @@ impl VfsNodeOps for DirNode {
 
     fn create(&self, path: &str, ty: VfsNodeType) -> VfsResult {
         log::debug!("create {:?} at devfs: {}", ty, path);
-        Err(VfsError::PermissionDenied) // do not support to create nodes dynamically
+        let (name, rest) = split_path(path);
+        if let Some(rest) = rest {
+            match name {
+                "" | "." => self.create(rest, ty),
+                ".." => self.parent().ok_or(VfsError::NotFound)?.create(rest, ty),
+                _ => self
+                    .children
+                    .read()
+                    .get(name)
+                    .ok_or(VfsError::NotFound)?
+                    .create(rest, ty),
+            }
+        } else if name.is_empty() || name == "." || name == ".." {
+            Ok(()) // already exists
+        } else {
+            Err(VfsError::PermissionDenied) // do not support to create nodes dynamically
+        }
     }
 
     fn remove(&self, path: &str) -> VfsResult {
         log::debug!("remove at devfs: {}", path);
-        Err(VfsError::PermissionDenied) // do not support to remove nodes dynamically
+        let (name, rest) = split_path(path);
+        if let Some(rest) = rest {
+            match name {
+                "" | "." => self.remove(rest),
+                ".." => self.parent().ok_or(VfsError::NotFound)?.remove(rest),
+                _ => self
+                    .children
+                    .read()
+                    .get(name)
+                    .ok_or(VfsError::NotFound)?
+                    .remove(rest),
+            }
+        } else {
+            Err(VfsError::PermissionDenied) // do not support to remove nodes dynamically
+        }
     }
 
     axfs_vfs::impl_vfs_dir_default! {}

@@ -61,7 +61,7 @@ impl RootDirectory {
         }
         // create the mount point in the main filesystem if it does not exist
         MAIN_FS.root_dir().create(path, FileType::Dir)?;
-        fs.mount(path)?;
+        fs.mount(path, MAIN_FS.root_dir().lookup(path)?)?;
         self.mounts.push(MountPoint::new(path, fs));
         Ok(())
     }
@@ -147,13 +147,12 @@ pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
         let null = fs::devfs::NullDev;
         let zero = fs::devfs::ZeroDev;
         let bar = fs::devfs::ZeroDev;
-        let mut foo_dir = fs::devfs::DirNode::new();
-        foo_dir.add("bar", Arc::new(bar));
-
-        let mut devfs = fs::devfs::DeviceFileSystem::new();
+        let devfs = fs::devfs::DeviceFileSystem::new();
+        let foo_dir = devfs.mkdir("foo");
         devfs.add("null", Arc::new(null));
         devfs.add("zero", Arc::new(zero));
-        devfs.add("foo", Arc::new(foo_dir));
+        foo_dir.add("bar", Arc::new(bar));
+
         root_dir
             .mount("/dev", Arc::new(devfs))
             .expect("failed to mount devfs at /dev");

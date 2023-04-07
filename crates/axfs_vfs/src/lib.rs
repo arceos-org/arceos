@@ -1,3 +1,5 @@
+//! Virtual filesystem interfaces.
+
 #![no_std]
 
 extern crate alloc;
@@ -18,7 +20,7 @@ pub type VfsResult<T = ()> = AxResult<T>;
 /// Filesystem operations.
 pub trait VfsOps: Send + Sync {
     /// Do something when the filesystem is mounted.
-    fn mount(&self, _path: &str) -> VfsResult {
+    fn mount(&self, _path: &str, _mount_point: VfsNodeRef) -> VfsResult {
         Ok(())
     }
 
@@ -79,6 +81,11 @@ pub trait VfsNodeOps: Send + Sync {
     }
 
     // directory operations:
+
+    /// Get the parent directory of this directory. Return `None` if the node is a file.
+    fn parent(&self) -> Option<VfsNodeRef> {
+        None
+    }
 
     /// Lookup the node with given `path` in the directory, return the node if found.
     fn lookup(self: Arc<Self>, _path: &str) -> VfsResult<VfsNodeRef> {

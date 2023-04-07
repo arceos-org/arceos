@@ -239,6 +239,13 @@ fn test_devfs() -> Result<()> {
     assert_err!(fs::remove_dir("./dev"), PermissionDenied);
     assert_err!(fs::remove_dir("./dev/."), InvalidInput);
     assert_err!(fs::remove_dir("///dev//..//"), InvalidInput);
+
+    // parent of '/dev'
+    assert_eq!(fs::create_dir("///dev//..//233//"), Ok(()));
+    assert_eq!(fs::write(".///dev//..//233//.///test.txt", "test"), Ok(()));
+    assert_err!(fs::remove_file("./dev//../..//233//.///test.txt"), NotFound);
+    assert_eq!(fs::remove_file("./dev//..//233//../233/./test.txt"), Ok(()));
+    assert_eq!(fs::remove_dir("dev//foo/../foo/../.././/233"), Ok(()));
     // assert_err!(fs::remove_dir("very/../dev//"), PermissionDenied); // TODO
 
     println!("test_devfs() OK!");
