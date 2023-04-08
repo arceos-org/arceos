@@ -20,7 +20,7 @@ CPU：`13th Gen Intel(R) Core(TM) i5-13600K`
 
 QEMU：`QEMU emulator version 7.0.0`
 
-**注意：**大小核 CPU，WSL 环境，QEMU 模拟，未绑核，睿频开启，测试环境可控性较差，测试结果仅供初步参考
+**注意：** 大小核 CPU，WSL 环境，QEMU 模拟，未绑核，睿频开启，测试环境可控性较差，测试结果仅供初步参考
 
 启动 `httpserver`： `make A=apps/net/httpserver/ ARCH=riscv64 LOG=warn NET=y SMP=$SMP run`
 
