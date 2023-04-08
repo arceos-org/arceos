@@ -20,7 +20,7 @@ unsafe impl<T> Adapter for FifoTask<T> {
 }
 
 impl<T> FifoTask<T> {
-    pub const fn new(inner: T) -> Self {
+    pub const fn new(inner: T, _nice: isize) -> Self {
         Self {
             inner,
             links: Links::new(),

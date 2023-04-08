@@ -52,6 +52,9 @@ cfg_if::cfg_if! {
         const MAX_TIME_SLICE: usize = 5;
         type AxTask = scheduler::RRTask<TaskInner, MAX_TIME_SLICE>;
         type Scheduler = scheduler::RRScheduler<TaskInner, MAX_TIME_SLICE>;
+    } else if #[cfg(feature = "sched_cfs")] {
+        type AxTask = scheduler::CFTask<TaskInner>;
+        type Scheduler = scheduler::CFScheduler<TaskInner>;
     }
 }
 

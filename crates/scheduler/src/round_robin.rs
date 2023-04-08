@@ -10,7 +10,7 @@ pub struct RRTask<T, const MAX_TIME_SLICE: usize> {
 }
 
 impl<T, const S: usize> RRTask<T, S> {
-    pub const fn new(inner: T) -> Self {
+    pub const fn new(inner: T, _nice: isize) -> Self {
         Self {
             inner,
             time_slice: AtomicIsize::new(S as isize),

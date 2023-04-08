@@ -4,6 +4,7 @@
 
 mod fifo;
 mod round_robin;
+mod cfs;
 
 #[cfg(test)]
 mod tests;
@@ -12,6 +13,7 @@ extern crate alloc;
 
 pub use fifo::{FifoScheduler, FifoTask};
 pub use round_robin::{RRScheduler, RRTask};
+pub use cfs::{CFScheduler, CFTask};
 
 pub trait BaseScheduler {
     type SchedItem;

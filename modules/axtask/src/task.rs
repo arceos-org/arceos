@@ -118,7 +118,8 @@ impl TaskInner {
         if name == "idle" {
             t.is_idle = true;
         }
-        Arc::new(AxTask::new(t))
+        // 暂时还没实现 nice 优先级设置
+        Arc::new(AxTask::new(t, 0))
     }
 
     pub(crate) fn new_init(name: &'static str) -> AxTaskRef {
@@ -128,7 +129,8 @@ impl TaskInner {
         if name == "idle" {
             t.is_idle = true;
         }
-        Arc::new(AxTask::new(t))
+        // 暂时还没实现 nice 优先级设置
+        Arc::new(AxTask::new(t, 0))
     }
 
     #[inline]
