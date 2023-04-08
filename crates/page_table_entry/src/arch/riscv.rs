@@ -5,6 +5,7 @@ use crate::{GenericPTE, MappingFlags};
 
 bitflags::bitflags! {
     /// Page-table entry flags.
+    #[derive(Debug)]
     pub struct PTEFlags: usize {
         /// Whether the PTE is valid.
         const V =   1 << 0;

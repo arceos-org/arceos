@@ -3,7 +3,7 @@
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::{format_ident, quote};
-use syn::{Error, FnArg, ImplItem, ImplItemMethod, ItemImpl, ItemTrait, TraitItem, Type};
+use syn::{Error, FnArg, ImplItem, ImplItemFn, ItemImpl, ItemTrait, TraitItem, Type};
 
 fn compiler_error(err: Error) -> TokenStream {
     err.to_compile_error().into()
@@ -23,7 +23,7 @@ pub fn def_interface(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let mut extern_fn_list = vec![];
     for item in &ast.items {
-        if let TraitItem::Method(method) = item {
+        if let TraitItem::Fn(method) = item {
             let mut sig = method.sig.clone();
             let fn_name = &sig.ident;
             sig.ident = format_ident!("__{}_{}", trait_name, fn_name);
@@ -73,7 +73,7 @@ pub fn impl_interface(attr: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     for item in &mut ast.items {
-        if let ImplItem::Method(method) = item {
+        if let ImplItem::Fn(method) = item {
             let (attrs, vis, sig, stmts) =
                 (&method.attrs, &method.vis, &method.sig, &method.block.stmts);
             let fn_name = &sig.ident;
@@ -119,7 +119,7 @@ pub fn impl_interface(attr: TokenStream, item: TokenStream) -> TokenStream {
                 }
             }
             .into();
-            *method = syn::parse_macro_input!(item as ImplItemMethod);
+            *method = syn::parse_macro_input!(item as ImplItemFn);
         }
     }
 

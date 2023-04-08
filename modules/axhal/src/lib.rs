@@ -22,6 +22,18 @@ pub mod paging;
 
 pub mod console {
     pub use super::platform::console::*;
+
+    pub fn write_bytes(bytes: &[u8]) {
+        for c in bytes {
+            match *c {
+                b'\n' => {
+                    putchar(b'\r');
+                    putchar(b'\n');
+                }
+                c => putchar(c),
+            }
+        }
+    }
 }
 
 pub mod misc {

@@ -11,4 +11,4 @@ log = "0.4"
 spinlock = { path = "../../crates/spinlock" }
 memory_addr = { path = "../../crates/memory_addr" }
 allocator = { path = "../../crates/allocator" }
-axerror = { path = "../axerror" }
+axerrno = { path = "../../crates/axerrno" }

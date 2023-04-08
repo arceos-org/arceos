@@ -1,5 +1,5 @@
 use allocator::AllocError;
-use axerror::{AxError, AxResult};
+use axerrno::{AxError, AxResult};
 use memory_addr::{PhysAddr, VirtAddr};
 
 use crate::{global_allocator, PAGE_SIZE};
@@ -99,7 +99,7 @@ impl Drop for GlobalPage {
 const fn alloc_err_to_ax_err(e: AllocError) -> AxError {
     match e {
         AllocError::InvalidParam | AllocError::MemoryOverlap | AllocError::NotAllocated => {
-            AxError::InvalidParam
+            AxError::InvalidInput
         }
         AllocError::NoMemory => AxError::NoMemory,
     }

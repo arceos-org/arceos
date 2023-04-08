@@ -16,11 +16,11 @@ cfg-if = "1.0"
 driver_common = { path = "../../crates/driver_common" }
 driver_net = { path = "../../crates/driver_net" }
 lazy_init = { path = "../../crates/lazy_init" }
+axerrno = { path = "../../crates/axerrno" }
 axhal = { path = "../axhal" }
 axsync = { path = "../axsync", default-features = false }
 axtask = { path = "../axtask", default-features = false }
 axdriver = { path = "../axdriver" }
-axerror = { path = "../axerror" }
 
 [dependencies.smoltcp]
 version = "0.9.1"

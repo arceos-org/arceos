@@ -30,16 +30,7 @@ struct LogIfImpl;
 #[crate_interface::impl_interface]
 impl axlog::LogIf for LogIfImpl {
     fn console_write_str(s: &str) {
-        use axhal::console::putchar;
-        for c in s.chars() {
-            match c {
-                '\n' => {
-                    putchar(b'\r');
-                    putchar(b'\n');
-                }
-                _ => putchar(c as u8),
-            }
-        }
+        axhal::console::write_bytes(s.as_bytes());
     }
 
     fn current_time() -> core::time::Duration {
@@ -81,8 +72,8 @@ fn is_init_ok() -> bool {
 
 #[cfg_attr(not(test), no_mangle)]
 pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
-    println!("{}", LOGO);
-    println!(
+    ax_println!("{}", LOGO);
+    ax_println!(
         "\
         arch = {}\n\
         platform = {}\n\
