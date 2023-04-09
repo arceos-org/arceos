@@ -1,6 +1,7 @@
 # ArceOS
 
 [![CI](https://github.com/rcore-os/arceos/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/rcore-os/arceos/actions)
+[![Docs](https://img.shields.io/badge/docs-pages-green)](https://rcore-os.github.io/arceos/)
 
 An experimental modular operating system (or unikernel) written in Rust.
 
@@ -49,6 +50,14 @@ The currently supported applications (Rust), as well as their dependent modules 
 | [httpserver](apps/net/httpserver/) | axalloc, axdriver, axnet, axtask | alloc, paging, net, multitask | A multi-threaded HTTP server that serves a static web page |
 
 ## Build & Run
+
+### Install build dependencies
+
+Install [cargo-binutils](https://github.com/rust-embedded/cargo-binutils) to use `rust-objcopy` and `rust-objdump` tools:
+
+```bash
+cargo install cargo-binutils
+```
 
 ### Example apps
 
