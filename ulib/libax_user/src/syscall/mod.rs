@@ -1,22 +1,16 @@
-mod entry;
-
-#[macro_use]
-pub mod logging;
-pub use logging::__print_impl;
 pub mod task;
+pub mod io;
 
-use core::panic::PanicInfo;
-
-//#[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
-    error!("{}", info);
-    task::exit(1);
+pub mod sys_number {
+    pub const SYS_WRITE: usize = 1;
+    pub const SYS_EXIT: usize = 10;
 }
 
 /// Copied from rcore
 pub fn syscall(id: usize, args: [usize; 6]) -> isize {
     let mut ret: isize;
     unsafe {
+        #[cfg(any(target_arch = "riscv64", target_arch = "riscv32"))]
         core::arch::asm!("ecall",
             inlateout("x10") args[0] => ret,
             in("x11") args[1],
@@ -29,8 +23,6 @@ pub fn syscall(id: usize, args: [usize; 6]) -> isize {
     }
     ret
 }
-
-pub use logging::{debug, error, info, trace, warn};
 
 
 

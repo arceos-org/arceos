@@ -1,4 +1,4 @@
-use axruntime::sys_number::SYS_EXIT;
+use super::sys_number::SYS_EXIT;
 
 
 pub fn exit(exitcode: usize) -> ! {

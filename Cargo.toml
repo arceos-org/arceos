@@ -46,7 +46,9 @@ members = [
     "modules/axruntime",
     "modules/axsync",
     "modules/axtask",
+    "modules/axuser",
 
     "ulib/libax",
+    "ulib/libax_user",
     "ulib/c_libax/libax_bindings",
 ]

@@ -55,7 +55,7 @@ dependencies = [
 name = "arceos-helloworld"
 version = "0.1.0"
 dependencies = [
- "libax",
+ "libax_user",
 ]
 
 [[package]]
@@ -288,6 +288,17 @@ dependencies = [
  "scheduler",
  "spinlock",
  "timer_list",
+]
+
+[[package]]
+name = "axuser"
+version = "0.1.0"
+dependencies = [
+ "axdriver",
+ "axerror",
+ "axhal",
+ "axlog",
+ "axruntime",
 ]
 
 [[package]]
@@ -739,7 +750,6 @@ dependencies = [
  "axsync",
  "axtask",
  "cfg-if",
- "log",
 ]
 
 [[package]]
@@ -749,6 +759,13 @@ dependencies = [
  "axalloc",
  "cbindgen",
  "libax",
+]
+
+[[package]]
+name = "libax_user"
+version = "0.1.0"
+dependencies = [
+ "log",
 ]
 
 [[package]]

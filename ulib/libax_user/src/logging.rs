@@ -3,7 +3,6 @@ extern crate log;
 use core::fmt::{self, Write};
 use core::str::FromStr;
 
-use axruntime::sys_number::SYS_WRITE;
 use log::{Level, LevelFilter, Log, Metadata, Record};
 
 pub use log::{debug, error, info, trace, warn};
@@ -54,7 +53,7 @@ struct Logger;
 
 impl Write for Logger {
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        crate::syscall(SYS_WRITE, [s.as_ptr() as usize, s.len(), 0, 0, 0, 0]);
+        crate::syscall::io::write(s);
         Ok(())
     }
 }

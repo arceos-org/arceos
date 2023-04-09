@@ -20,10 +20,7 @@ unsafe fn init_boot_page_table() {
 unsafe fn init_mmu() {
     let page_table_root = BOOT_PT_SV39.as_ptr() as usize;
     
-    satp::set(satp::Mode::Sv39, 0, page_table_root >> 12);
-    // TODO: temporarily enable U
-    //riscv::register::sstatus::set_sum();
-
+    satp::set(satp::Mode::Sv39, 0, page_table_root >> 12);   
     riscv::asm::sfence_vma_all();
 }
 
@@ -44,8 +41,8 @@ unsafe extern "C" fn _start() -> ! {
         li      t0, {boot_stack_size}
         add     sp, sp, t0              // setup boot stack
 
-        //call    {init_boot_page_table}
-        //call    {init_mmu}              // setup boot page table and enabel MMU
+        call    {init_boot_page_table}
+        call    {init_mmu}              // setup boot page table and enabel MMU
 
         li      s2, {phys_virt_offset}  // fix up virtual high address
         add     sp, sp, s2
