@@ -1,8 +1,12 @@
 #![no_std]
 #![allow(clippy::missing_safety_doc)]
 
+#[cfg(feature = "fs")]
+mod fs;
 #[cfg(feature = "alloc")]
 mod malloc;
+#[cfg(feature = "fs")]
+extern crate alloc;
 
 use core::ffi::{c_char, c_int};
 use libax::io::Write;

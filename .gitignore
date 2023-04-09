@@ -3,3 +3,4 @@
 .DS_Store
 *.asm
 *.img
+modules/axerror/src/linux_errno.rs

@@ -151,6 +151,11 @@ impl File {
     pub fn metadata(&self) -> Result<Metadata> {
         self.inner.get_attr().map(Metadata)
     }
+
+    /// Change the offset of the file.
+    pub fn lseek(&mut self, offset: isize, whence: usize) -> Result<usize> {
+        self.inner.lseek(offset, whence)
+    }
 }
 
 impl Read for File {

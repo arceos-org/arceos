@@ -164,6 +164,16 @@ impl File {
         Ok(write_len)
     }
 
+    pub fn lseek(&mut self, offset: isize, whence: usize) -> AxResult<usize> {
+        match whence {
+            0 => self.offset = offset as u64,
+            1 => self.offset += offset as u64,
+            2 => self.offset = self.get_attr().unwrap().size() + offset as u64,
+            _ => unreachable!(),
+        };
+        Ok(self.offset as usize)
+    }
+
     pub fn flush(&self) -> AxResult {
         self.node.access(Cap::WRITE)?.fsync()?;
         Ok(())
