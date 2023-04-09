@@ -1,4 +1,4 @@
-use axio::{prelude::*, Result};
+use axio::{prelude::*, Result, SeekFrom};
 use core::fmt;
 
 use crate::fops;
@@ -166,5 +166,11 @@ impl Write for File {
 
     fn flush(&mut self) -> Result<()> {
         self.inner.flush()
+    }
+}
+
+impl Seek for File {
+    fn seek(&mut self, pos: SeekFrom) -> Result<u64> {
+        self.inner.seek(pos)
     }
 }

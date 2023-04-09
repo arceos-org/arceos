@@ -1,7 +1,8 @@
 //! Low-level filesystem operations.
 
-use axerrno::{ax_err, AxResult};
+use axerrno::{ax_err, ax_err_type, AxResult};
 use axfs_vfs::{VfsError, VfsNodeRef};
+use axio::SeekFrom;
 use capability::{Cap, WithCap};
 use core::fmt;
 
@@ -167,6 +168,21 @@ impl File {
     pub fn flush(&self) -> AxResult {
         self.node.access(Cap::WRITE)?.fsync()?;
         Ok(())
+    }
+
+    pub fn seek(&mut self, pos: SeekFrom) -> AxResult<u64> {
+        let size = self.get_attr()?.size();
+        let new_offset = match pos {
+            SeekFrom::Start(pos) => Some(pos),
+            SeekFrom::Current(off) => self.offset.checked_add_signed(off),
+            SeekFrom::End(off) => size.checked_add_signed(off),
+        }
+        .ok_or(ax_err_type!(InvalidInput))?;
+        if new_offset > size {
+            return ax_err!(InvalidInput);
+        }
+        self.offset = new_offset;
+        Ok(new_offset)
     }
 
     pub fn get_attr(&self) -> AxResult<FileAttr> {

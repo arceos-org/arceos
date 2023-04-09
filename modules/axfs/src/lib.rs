@@ -13,11 +13,13 @@ pub mod fops;
 
 use driver_common::BaseDriverOps;
 
-#[cfg(feature = "use-virtio-blk")]
-type BlockDevice = axdriver::VirtIoBlockDev;
-
-#[cfg(all(not(feature = "use-virtio-blk"), feature = "use-ramdisk"))]
-type BlockDevice = driver_block::ramdisk::RamDisk;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "use-virtio-blk")] {
+        type BlockDevice = axdriver::VirtIoBlockDev;
+    } else if #[cfg(feature = "use-ramdisk")] {
+        type BlockDevice = driver_block::ramdisk::RamDisk;
+    }
+}
 
 pub fn init_filesystems(blk_dev: BlockDevice) {
     info!("Initialize filesystems...");

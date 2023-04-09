@@ -224,22 +224,18 @@ impl Write for Disk {
 
 impl Seek for Disk {
     fn seek(&mut self, pos: SeekFrom) -> Result<u64, Self::Error> {
-        match pos {
-            SeekFrom::Start(pos) => {
-                self.set_position(pos);
-                Ok(pos)
-            }
-            SeekFrom::Current(off) => {
-                let pos = (self.position() as i64 + off) as u64;
-                self.set_position(pos);
-                Ok(pos)
-            }
-            SeekFrom::End(off) => {
-                let pos = (self.size() as i64 + off) as u64;
-                self.set_position(pos);
-                Ok(pos)
-            }
+        let size = self.size();
+        let new_pos = match pos {
+            SeekFrom::Start(pos) => Some(pos),
+            SeekFrom::Current(off) => self.position().checked_add_signed(off),
+            SeekFrom::End(off) => size.checked_add_signed(off),
         }
+        .ok_or(())?;
+        if new_pos > size {
+            warn!("Seek beyond the end of the block device");
+        }
+        self.set_position(new_pos);
+        Ok(new_pos)
     }
 }
 

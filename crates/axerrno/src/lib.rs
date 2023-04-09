@@ -1,4 +1,5 @@
 #![no_std]
+#![feature(const_trait_impl)]
 
 mod linux_errno;
 
@@ -103,7 +104,7 @@ impl AxError {
     }
 }
 
-impl From<AxError> for LinuxError {
+impl const From<AxError> for LinuxError {
     fn from(e: AxError) -> Self {
         use AxError::*;
         match e {
