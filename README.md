@@ -18,7 +18,7 @@ ArceOS was inspired a lot by [Unikraft](https://github.com/unikraft/unikraft).
 * [x] TCP net stack using [smoltcp](https://github.com/smoltcp-rs/smoltcp)
 * [x] Synchronization/Mutex
 * [x] SMP scheduling with single run queue
-* [ ] File system
+* [x] File system
 * [ ] Compatible with Linux apps
 * [ ] Interrupt driven device I/O
 * [ ] Async I/O
@@ -43,6 +43,7 @@ The currently supported applications (Rust), as well as their dependent modules 
 | [yield](apps/task/yield/) | axalloc, axtask | alloc, paging, multitask, sched_fifo | Multi-threaded yielding test |
 | [parallel](apps/task/parallel/) | axalloc, axtask | alloc, paging, multitask, sched_fifo | Parallel computing test (to test synchronization & mutex) |
 | [sleep](apps/task/sleep/) | axalloc, axtask | alloc, paging, multitask, sched_fifo | Thread sleeping test |
+| [shell](apps/fs/shell/) | axalloc, axdriver, axfs | alloc, paging, fs | A simple shell that responds to filesystem operations |
 | [httpclient](apps/net/httpclient/) | axalloc, axdriver, axnet | alloc, paging, net | A simple client that sends an HTTP request and then prints the response |
 | [echoserver](apps/net/echoserver/) | axalloc, axdriver, axnet, axtask | alloc, paging, net, multitask | A multi-threaded TCP server that reverses messages sent by the client  |
 | [httpserver](apps/net/httpserver/) | axalloc, axdriver, axnet, axtask | alloc, paging, net, multitask | A multi-threaded HTTP server that serves a static web page |
