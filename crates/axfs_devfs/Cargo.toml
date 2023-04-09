@@ -1,0 +1,12 @@
+[package]
+name = "axfs_devfs"
+version = "0.1.0"
+edition = "2021"
+authors = ["Yuekai Jia <equation618@gmail.com>"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+axfs_vfs = { path = "../axfs_vfs" }
+spin = "0.9"
+log = "0.4"
