@@ -29,12 +29,26 @@ impl<H: Hal, T: Transport> const BaseDriverOps for VirtIoBlkDev<H, T> {
 }
 
 impl<H: Hal, T: Transport> BlockDriverOps for VirtIoBlkDev<H, T> {
-    fn read_block(&mut self, block_id: usize, buf: &mut [u8]) -> DevResult {
-        self.inner.read_block(block_id, buf).map_err(as_dev_err)
+    #[inline]
+    fn num_blocks(&self) -> u64 {
+        self.inner.capacity()
     }
 
-    fn write_block(&mut self, block_id: usize, buf: &[u8]) -> DevResult {
-        self.inner.write_block(block_id, buf).map_err(as_dev_err)
+    #[inline]
+    fn block_size(&self) -> usize {
+        virtio_drivers::device::blk::SECTOR_SIZE
+    }
+
+    fn read_block(&mut self, block_id: u64, buf: &mut [u8]) -> DevResult {
+        self.inner
+            .read_block(block_id as _, buf)
+            .map_err(as_dev_err)
+    }
+
+    fn write_block(&mut self, block_id: u64, buf: &[u8]) -> DevResult {
+        self.inner
+            .write_block(block_id as _, buf)
+            .map_err(as_dev_err)
     }
 
     fn flush(&mut self) -> DevResult {

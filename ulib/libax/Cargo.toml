@@ -19,11 +19,11 @@ multitask = ["axruntime/multitask", "axtask/multitask", "axsync/multitask"]
 sched_fifo = ["axtask/sched_fifo"]
 sched_rr = ["axtask/sched_rr"]
 
+# File system
+fs = ["alloc", "axruntime/fs", "dep:axfs"]
+
 # Networking
 net = ["axruntime/net", "dep:axnet"]
-
-# File system
-fs = ["axruntime/fs"]
 
 # Display
 display = ["axruntime/display", "dep:axdisplay"]
@@ -50,6 +50,7 @@ axdisplay = { path = "../../modules/axdisplay", optional = true }
 axdriver = { path = "../../modules/axdriver", optional = true }
 axhal = { path = "../../modules/axhal" }
 axlog = { path = "../../modules/axlog" }
+axfs = { path = "../../modules/axfs", optional = true }
 axnet = { path = "../../modules/axnet", optional = true }
 axruntime = { path = "../../modules/axruntime" }
 axsync = { path = "../../modules/axsync", default-features = false, optional = true }

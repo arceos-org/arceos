@@ -12,7 +12,7 @@ paging = ["alloc", "axhal/paging", "dep:lazy_init"]
 multitask = ["alloc", "axtask/multitask"]
 smp = ["axhal/smp", "spinlock/smp"]
 
-fs = ["alloc", "paging", "axdriver/virtio-blk"] # TODO: remove "paging"
+fs = ["alloc", "paging", "axdriver/virtio-blk", "axfs/use-virtio-blk"] # TODO: remove "paging"
 net = ["alloc", "paging", "axdriver/virtio-net", "dep:axnet"]
 display = ["alloc", "paging", "axdriver/virtio-gpu", "dep:axdisplay"]
 
@@ -29,9 +29,7 @@ axconfig = { path = "../axconfig" }
 axdriver = { path = "../axdriver", optional = true }
 axhal = { path = "../axhal" }
 axlog = { path = "../axlog" }
+axfs = { path = "../axfs", optional = true }
 axnet = { path = "../axnet", optional = true }
 axdisplay = { path = "../axdisplay", optional = true }
 axtask = { path = "../axtask", default-features = false }
-
-[dev-dependencies]
-percpu = { path = "../../crates/percpu", features = ["sp-naive"] }

@@ -7,6 +7,7 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
+test = ["percpu?/sp-naive"]
 multitask = [ # without the feature, can still use the empty yield_now() and exit()
     "dep:axconfig", "dep:percpu", "dep:spinlock", "dep:lazy_init",
     "dep:memory_addr", "dep:scheduler", "dep:timer_list"
@@ -33,4 +34,4 @@ crate_interface = { path = "../../crates/crate_interface" }
 
 [dev-dependencies]
 rand = "0.8"
-percpu = { path = "../../crates/percpu", features = ["sp-naive"] }
+axtask = { path = ".", features = ["test"] }
