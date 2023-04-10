@@ -1,9 +1,17 @@
 #ifndef __SYS_TIME_H__
 #define __SYS_TIME_H__
+#include <stdint.h>
 
+/// <div rustbindgen replaces="TimeVal"></div>
 struct timeval {
-    long tv_sec;  /* seconds */
-    long tv_usec; /* microseconds */
+    uint64_t tv_sec;  /* seconds */
+    uint64_t tv_usec; /* microseconds */
+};
+
+/// <div rustbindgen replaces="TimeSepc"></div>
+struct timespec {
+    uint64_t tv_sec;  /* seconds */
+    uint64_t tv_nsec; /* nanoseconds */
 };
 
 struct timezone {

@@ -20,9 +20,8 @@ void exec(sqlite3 *db, char *sql)
     printf("\nsqlite exec\n%s\n", sql);
     char *errmsg = NULL;
     int rc = sqlite3_exec(db, sql, NULL, NULL, &errmsg);
-
     if (rc != SQLITE_OK) {
-        printf("%s\n", errmsg);
+        printf("sqlite exec error: %s\n", errmsg);
     }
 }
 
@@ -37,13 +36,8 @@ void query(sqlite3 *db, char *sql)
     }
 }
 
-int main()
+void query_test(sqlite3 *db)
 {
-    printf("sqlite version%s\n", sqlite3_libversion());
-    sqlite3 *db;
-    int ret = sqlite3_open(":memory:", &db);
-    printf("sqlite open memory status %d \n", ret);
-
     printf("init user table\n");
     exec(db, "create table user("
              "id INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -61,6 +55,35 @@ int main()
 
     printf("select id = 2");
     query(db, "select * from user where id = 2");
+}
 
+void memory()
+{
+    sqlite3 *db;
+    int ret = sqlite3_open(":memory:", &db);
+    printf("sqlite open memory status %d \n", ret);
+
+    query_test(db);
+}
+
+void file() {
+    sqlite3 *db;
+    int ret = sqlite3_open("file.sqlite", &db);
+    printf("sqlite open /file.sqlite status %d \n", ret);
+
+    if(ret != 0) {
+        printf("sqlite open error");
+        return;
+    }
+    
+    query_test(db);
+    sqlite3_close(db);
+}
+
+int main() {
+    printf("sqlite version: %s\n", sqlite3_libversion());
+
+    memory();
+    file();
     return 0;
 }

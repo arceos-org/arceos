@@ -1,2 +1,3 @@
 build_*/
 libax.h
+bindings.rs

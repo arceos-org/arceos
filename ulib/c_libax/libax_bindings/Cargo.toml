@@ -30,6 +30,8 @@ default = ["libax/default"]
 [dependencies]
 libax = { path = "../../libax", default-features = false }
 axalloc = { path = "../../../modules/axalloc", optional = true }
+axerrno = { path = "../../../crates/axerrno", optional = false }
 
 [build-dependencies]
 cbindgen = "0.24"
+bindgen = "0.64"
