@@ -49,3 +49,8 @@ endif
 define cargo_build
   cargo build $(build_args) $(1)
 endef
+
+define cargo_doc
+  RUSTDOCFLAGS="--enable-index-page -Zunstable-options" \
+  cargo doc --no-deps --target $(TARGET) --workspace --exclude "arceos-*"
+endef

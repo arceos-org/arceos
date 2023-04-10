@@ -1,3 +1,6 @@
+//! RAII wrappers to create a critical section with local IRQs or preemption
+//! disabled, used to implement spin locks in kernel.
+
 #![no_std]
 #![feature(asm_const)]
 #![allow(clippy::new_without_default)]

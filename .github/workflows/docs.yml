@@ -1,0 +1,38 @@
+name: Deploy docs
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  doc:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [riscv64]
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: nightly
+        override: true
+    - name: Build docs
+      run: |
+        make doc ARCH=${{ matrix.arch }}
+        if [ "${{ matrix.arch }}" = "x86_64" ]; then
+          cp -r target/x86_64-unknown-none/doc gh-pages
+        elif [ "${{ matrix.arch }}" = "aarch64" ]; then
+          cp -r target/aarch64-unknown-none-softfloat/doc gh-pages
+        elif [ "${{ matrix.arch }}" = "riscv64" ]; then
+          cp -r target/riscv64gc-unknown-none-elf/doc gh-pages
+        fi
+    - name: Deploy to Github Pages
+      uses: JamesIves/github-pages-deploy-action@v4
+      with:
+        single-commit: true
+        branch: gh-pages-${{ matrix.arch }}
+        folder: gh-pages

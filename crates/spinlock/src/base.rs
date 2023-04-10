@@ -18,7 +18,7 @@ use kernel_guard::BaseGuard;
 /// A [spin lock](https://en.m.wikipedia.org/wiki/Spinlock) providing mutually exclusive access to data.
 ///
 /// For single-core systems (without the "smp" feature), we remove the lock state,
-/// CPU can always get the lock if we follow the proper [`SpinLockStrategy`] in use.
+/// CPU can always get the lock if we follow the proper guard in use.
 pub struct BaseSpinLock<G: BaseGuard, T: ?Sized> {
     _phantom: PhantomData<G>,
     #[cfg(feature = "smp")]
