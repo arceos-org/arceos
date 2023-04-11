@@ -204,9 +204,6 @@ pub extern "C" fn ax_fstat(fd: c_int, buf: *mut ctypes::stat) -> ctypes::ssize_t
 }
 
 /// get the path of the current directory
-///
-/// Returns 0 on failure.
-/// Use assert! to ensure the buffer have the enough space.
 #[no_mangle]
 pub extern "C" fn ax_getcwd(buf: *mut c_char, size: usize) -> *mut c_char {
     debug!("ax_getcwd <= {:#x} {}", buf as usize, size);
