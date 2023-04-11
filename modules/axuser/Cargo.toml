@@ -26,6 +26,6 @@ platform-qemu-virt-aarch64 = ["axhal/platform-qemu-virt-aarch64", "axdriver?/bus
 # only including necessary modules for now.
 axdriver = { path = "../axdriver", optional = true }
 axerror = { path = "../axerror" }
-axhal = { path = "../axhal", features = ["user"] }
+axhal = { path = "../axhal", features = ["user", "paging"] }
 axlog = { path = "../axlog" }
-axruntime = { path = "../axruntime", features = ["user"] }
+axruntime = { path = "../axruntime", features = ["user", "alloc", "paging"] }

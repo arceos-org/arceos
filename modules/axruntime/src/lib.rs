@@ -15,6 +15,13 @@ mod syscall;
 #[cfg(feature = "user")]
 pub use syscall::sys_number;
 
+#[cfg(feature = "user")]
+const USER_START: usize = 0x0400_0000;
+#[cfg(feature = "user")]
+const USTACK_START: usize = 0xf_ffff_f000;
+#[cfg(feature = "user")]
+const USTACK_SIZE: usize = 4096;
+
 const LOGO: &str = r#"
        d8888                            .d88888b.   .d8888b.
       d88888                           d88P" "Y88b d88P  Y88b
@@ -212,8 +219,66 @@ fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
                 true,
             )?;
         }
+
+        #[cfg(feature = "user")]
+        // Set up user state memory
+        {
+            use axalloc::GlobalPage;
+            use axhal::mem::{PAGE_SIZE_4K, virt_to_phys};
+            use axhal::paging::MappingFlags;
+            
+            extern "C" {
+                fn ustart();
+                fn uend();
+            }
+            
+            let user_bin: &[u8] = unsafe {
+                let len = (uend as usize) - (ustart as usize);
+                core::slice::from_raw_parts(ustart as *const _, len)
+            };
+
+            debug!("{:x} {:x}", ustart as usize, user_bin.len());
+
+            // Temporarily add 1 for bss section.
+            let user_pages = (user_bin.len() + PAGE_SIZE_4K - 1) / PAGE_SIZE_4K + 1;
+            
+            let mut user_phy_page =
+                GlobalPage::alloc_contiguous(user_pages, PAGE_SIZE_4K).expect("Alloc page error!");
+
+            debug!("{:?}", user_phy_page);
+            
+            // init
+            user_phy_page.zero();
+
+            // copy user content
+            user_phy_page.as_slice_mut()[..user_bin.len()].copy_from_slice(user_bin);
+
+            // text + data
+            kernel_page_table.map_region(
+                USER_START.into(),
+                user_phy_page.start_paddr(virt_to_phys),
+                user_phy_page.size(),
+                MappingFlags::EXECUTE | MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
+                false)?;
+
+            assert!(USTACK_SIZE % PAGE_SIZE_4K == 0);
+            let user_stack_page =
+                GlobalPage::alloc_contiguous(USTACK_SIZE / PAGE_SIZE_4K, PAGE_SIZE_4K).expect("Alloc page error!");
+            debug!("{:?}", user_stack_page);            
+            // stack allocation
+            kernel_page_table.map_region(
+                USTACK_START.into(),
+                user_stack_page.start_paddr(virt_to_phys),
+                user_stack_page.size(),
+                MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
+                false)?
+            
+        }
+
+        
         KERNEL_PAGE_TABLE.init_by(kernel_page_table);
     }
+
 
     unsafe { axhal::arch::write_page_table_root(KERNEL_PAGE_TABLE.root_paddr()) };
     Ok(())

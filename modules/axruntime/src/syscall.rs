@@ -11,7 +11,7 @@ pub fn syscall_handler(id: usize, params: [usize; 6]) -> isize {
         SYS_WRITE => {
             use axhal::console::putchar;
             let print_str = unsafe {
-                core::slice::from_raw_parts(params[0] as *const u8 , params[1])
+                core::slice::from_raw_parts(params[1] as *const u8 , params[2])
             };
             for c in print_str {
                 putchar(*c);

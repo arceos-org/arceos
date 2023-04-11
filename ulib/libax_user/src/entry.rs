@@ -2,6 +2,7 @@ use crate::task;
 
 
 #[no_mangle]
+#[link_section = ".text.start"]
 extern "C" fn _start() {
     extern "Rust" {
         fn main();
