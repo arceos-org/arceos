@@ -106,6 +106,11 @@ unsafe fn init_mmu() {
     barrier::isb(barrier::SY);
 }
 
+unsafe fn enable_fp() {
+    CPACR_EL1.write(CPACR_EL1::FPEN::TrapNothing);
+    barrier::isb(barrier::SY);
+}
+
 #[naked]
 #[no_mangle]
 #[link_section = ".text.boot"]
@@ -127,6 +132,7 @@ unsafe extern "C" fn _start() -> ! {
         bl      {switch_to_el1}         // switch to EL1
         bl      {init_boot_page_table}
         bl      {init_mmu}              // setup MMU
+        bl      {enable_fp}             // enable fp/neon
 
         ldr     x8, ={BOOT_STACK}       // set SP to the high address
         add     x8, x8, {TASK_STACK_SIZE}
@@ -145,6 +151,7 @@ unsafe extern "C" fn _start() -> ! {
         switch_to_el1 = sym switch_to_el1,
         init_boot_page_table = sym init_boot_page_table,
         init_mmu = sym init_mmu,
+        enable_fp = sym enable_fp,
         BOOT_STACK = sym BOOT_STACK,
         TASK_STACK_SIZE = const TASK_STACK_SIZE,
         platform_init = sym super::platform_init,
