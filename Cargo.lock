@@ -938,6 +938,7 @@ dependencies = [
  "bindgen",
  "cbindgen",
  "libax",
+ "log",
 ]
 
 [[package]]

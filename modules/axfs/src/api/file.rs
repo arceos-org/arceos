@@ -100,6 +100,10 @@ impl Metadata {
     pub fn permissions(&self) -> Permissions {
         self.0.perm()
     }
+
+    pub const fn raw_metadata(&self) -> &fops::FileAttr {
+        &self.0
+    }
 }
 
 impl fmt::Debug for Metadata {

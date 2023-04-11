@@ -50,7 +50,7 @@ _Noreturn void abort(void)
 // TODO:
 char *getenv(const char *name)
 {
-    printf("%s%s\n", "Error: no ax_call implementation for ", __func__);
+    unimplemented();
     return 0;
 }
 

@@ -6,28 +6,28 @@
 // TODO:
 uid_t geteuid(void)
 {
-    printf("%s%s\n", "Error: no ax_call implementation for ", __func__);
+    unimplemented();
     return 0;
 }
 
 // TODO:
 pid_t getpid(void)
 {
-    printf("%s%s\n", "Error: no ax_call implementation for ", __func__);
+    unimplemented();
     return -1;
 }
 
 // TODO:
 unsigned int sleep(unsigned int seconds)
 {
-    printf("%s%s\n", "Error: no ax_call implementation for ", __func__);
+    unimplemented();
     return 0;
 }
 
 // TODO:
 long int sysconf(int name)
 {
-    printf("%s%s\n", "Error: no ax_call implementation for ", __func__);
+    unimplemented();
     return 0;
 }
 
@@ -41,7 +41,7 @@ off_t lseek(int fd, off_t offset, int whence)
 // TODO:
 int fsync(int fd)
 {
-    printf("%s%s\n", "Error: no ax_call implementation for ", __func__);
+    unimplemented();
     return 0;
 }
 
@@ -53,7 +53,7 @@ int close(int fd)
 // TODO:
 int access(const char *pathname, int mode)
 {
-    printf("%s%s\n", "Error: no ax_call implementation for ", __func__);
+    unimplemented();
     return 0;
 }
 
@@ -62,11 +62,9 @@ char *getcwd(char *buf, size_t size)
     return ax_getcwd(buf, size);
 }
 
-// TODO:
 int lstat(const char *path, struct stat *buf)
 {
-    printf("%s%s\n", "Error: no ax_call implementation for ", __func__);
-    return 0;
+    return ax_lstat(path, buf);
 }
 
 int stat(const char *path, struct stat *buf)
@@ -82,7 +80,7 @@ int fstat(int fd, struct stat *buf)
 // TODO:
 int ftruncate(int fd, off_t length)
 {
-    printf("%s%s\n", "Error: no ax_call implementation for ", __func__);
+    unimplemented();
     return 0;
 }
 
@@ -99,29 +97,28 @@ ssize_t write(int fd, const void *buf, size_t count)
 // TODO:
 int unlink(const char *pathname)
 {
-    printf("%s%s\n", "Error: no ax_call implementation for ", __func__);
+    unimplemented();
     return 0;
 }
 
 // TODO:
 int rmdir(const char *pathname)
 {
-    printf("%s%s\n", "Error: no ax_call implementation for ", __func__);
+    unimplemented();
     return 0;
 }
 
 // TODO:
 int fchown(int fd, uid_t owner, gid_t group)
 {
-    printf("%s%s owner: %x group: %x\n", "Error: no ax_call implementation for ", __func__, owner,
-           group);
+    unimplemented("owner: %x group: %x", owner, group);
     return 0;
 }
 
 // TODO:
 ssize_t readlink(const char *path, char *buf, size_t bufsiz)
 {
-    printf("%s%s\n", "Error: no ax_call implementation for ", __func__);
+    unimplemented();
     return 0;
 }
 

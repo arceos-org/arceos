@@ -177,10 +177,7 @@ impl File {
             SeekFrom::Current(off) => self.offset.checked_add_signed(off),
             SeekFrom::End(off) => size.checked_add_signed(off),
         }
-        .ok_or(ax_err_type!(InvalidInput))?;
-        if new_offset > size {
-            return ax_err!(InvalidInput);
-        }
+        .ok_or_else(|| ax_err_type!(InvalidInput))?;
         self.offset = new_offset;
         Ok(new_offset)
     }

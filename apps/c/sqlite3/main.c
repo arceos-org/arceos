@@ -45,7 +45,7 @@ void query_test(sqlite3 *db)
              "password TEXT"
              ")");
 
-    printf("insert user 1、2、3 into user table");
+    printf("insert user 1, 2, 3 into user table");
 
     exec(db, "insert into user (username, password) VALUES ('1', 'password1'), ('2', 'password2'), "
              "('3', 'password3')");
@@ -75,7 +75,7 @@ void file() {
         printf("sqlite open error");
         return;
     }
-    
+
     query_test(db);
     sqlite3_close(db);
 }

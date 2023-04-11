@@ -1,199 +1,228 @@
-use core::ffi::{c_char, CStr};
-
-use crate::AxStat;
 use alloc::sync::Arc;
-use axerrno::LinuxError;
-use libax::{
-    fs::File,
-    io::{Read, Seek, SeekFrom, Write},
-    sync::Mutex,
-};
+use core::ffi::{c_char, c_int, c_void};
+
+use axerrno::{LinuxError, LinuxResult};
+use libax::fs::{File, OpenOptions};
+use libax::io::{self, prelude::*, SeekFrom};
+use libax::sync::Mutex;
+
+use crate::ctypes;
+use crate::utils::char_ptr_to_str;
+
+const FILE_LIMIT: usize = 256;
+const FD_NONE: Option<Arc<Mutex<File>>> = None;
+
+/// File Descriptor Table
+static FD_TABLE: Mutex<[Option<Arc<Mutex<File>>>; FILE_LIMIT]> = Mutex::new([FD_NONE; FILE_LIMIT]);
+
+/// Get the [`File`] structure from `FD_TABLE` by `fd`.
+fn get_file_by_fd(fd: c_int) -> LinuxResult<Arc<Mutex<File>>> {
+    FD_TABLE
+        .lock()
+        .get(fd as usize)
+        .and_then(|f| f.as_ref())
+        .cloned()
+        .ok_or(LinuxError::EBADF)
+}
+
+/// Add a new file into `FD_TABLE` and return its fd.
+fn add_new_fd(file: File) -> Option<usize> {
+    let mut fd_table = FD_TABLE.lock();
+    for fd in 3..FILE_LIMIT {
+        if fd_table[fd].is_none() {
+            fd_table[fd] = Some(Arc::new(Mutex::new(file)));
+            return Some(fd);
+        }
+    }
+    None
+}
+
+/// Convert open flags to [`OpenOptions`].
+fn flags_to_options(flags: c_int, _mode: ctypes::mode_t) -> OpenOptions {
+    let flags = flags as u32;
+    let mut options = OpenOptions::new();
+    match flags & 0b11 {
+        ctypes::O_RDONLY => options.read(true),
+        ctypes::O_WRONLY => options.write(true),
+        _ => options.read(true).write(true),
+    };
+    if flags & ctypes::O_APPEND != 0 {
+        options.append(true);
+    }
+    if flags & ctypes::O_TRUNC != 0 {
+        options.truncate(true);
+    }
+    if flags & ctypes::O_CREAT != 0 {
+        options.create(true);
+    }
+    if flags & ctypes::O_EXEC != 0 {
+        options.create_new(true);
+    }
+    options
+}
+
+/// Open a file by `filename` and insert it into `FD_TABLE`, and return its
+/// `FD_TABLE` index. Return `ENFILE` if file table overflow.
+#[no_mangle]
+pub extern "C" fn ax_open(filename: *const c_char, flags: c_int, mode: ctypes::mode_t) -> c_int {
+    let filename = char_ptr_to_str(filename);
+    debug!("ax_open <= {:?} {:#o} {:#o}", filename, flags, mode);
+    ax_call_body!(ax_open, {
+        let options = flags_to_options(flags, mode);
+        let file = options.open(filename?)?;
+        add_new_fd(file).ok_or(LinuxError::ENFILE)
+    })
+}
+
+/// Close a file by `fd`.
+#[no_mangle]
+pub extern "C" fn ax_close(fd: c_int) -> c_int {
+    debug!("ax_close <= {}", fd);
+    if (0..2).contains(&fd) {
+        return 0; // stdin, stdout, stderr
+    }
+    ax_call_body!(ax_close, {
+        FD_TABLE
+            .lock()
+            .get_mut(fd as usize)
+            .and_then(|file| file.take())
+            .ok_or(LinuxError::EBADF)?;
+        Ok(0)
+    })
+}
+
+/// Seek the position of the file, return its position after seek.
+#[no_mangle]
+pub extern "C" fn ax_lseek(fd: c_int, offset: ctypes::off_t, whence: c_int) -> ctypes::off_t {
+    debug!("ax_lseek <= {} {} {}", fd, offset, whence);
+    ax_call_body!(ax_lseek, {
+        let pos = match whence {
+            0 => SeekFrom::Start(offset as _),
+            1 => SeekFrom::Current(offset as _),
+            2 => SeekFrom::End(offset as _),
+            _ => return Err(LinuxError::EINVAL),
+        };
+        let file = get_file_by_fd(fd)?;
+        let off = file.lock().seek(pos)?;
+        Ok(off)
+    })
+}
+
+/// Read data from file by `fd`, return read size if success.
+#[no_mangle]
+pub extern "C" fn ax_read(fd: c_int, buf: *mut c_void, count: usize) -> ctypes::ssize_t {
+    debug!("ax_read <= {} {:#x} {}", fd, buf as usize, count);
+    ax_call_body!(ax_read, {
+        if buf.is_null() {
+            return Err(LinuxError::EFAULT);
+        }
+        let dst = unsafe { core::slice::from_raw_parts_mut(buf as *mut u8, count) };
+        let file = get_file_by_fd(fd)?;
+        let len = file.lock().read(dst)?;
+        Ok(len)
+    })
+}
+
+/// Write data through `fd`, return written size if success.
+#[no_mangle]
+pub extern "C" fn ax_write(fd: c_int, buf: *const c_void, count: usize) -> ctypes::ssize_t {
+    debug!("ax_write <= {} {:#x} {}", fd, buf as usize, count);
+    ax_call_body!(ax_write, {
+        if buf.is_null() {
+            return Err(LinuxError::EFAULT);
+        }
+        let src = unsafe { core::slice::from_raw_parts(buf as *const u8, count) };
+        let file = get_file_by_fd(fd)?;
+        let len = file.lock().write(src)?;
+        Ok(len)
+    })
+}
+
+fn stat_file(file: &File) -> io::Result<ctypes::stat> {
+    let metadata = file.metadata()?;
+    let metadata = metadata.raw_metadata();
+    let ty = metadata.file_type() as u8;
+    let perm = metadata.perm().bits() as u32;
+    let st_mode = ((ty as u32) << 12) | perm;
+    Ok(ctypes::stat {
+        st_ino: 1,
+        st_nlink: 1,
+        st_mode,
+        st_uid: 1000,
+        st_gid: 1000,
+        st_size: metadata.size() as _,
+        st_blocks: metadata.blocks() as _,
+        st_blksize: 512,
+        ..Default::default()
+    })
+}
+
+/// Get file info by `path` and write to `buf`, return 0 if success.
+#[no_mangle]
+pub extern "C" fn ax_stat(path: *const c_char, buf: *mut ctypes::stat) -> ctypes::ssize_t {
+    let path = char_ptr_to_str(path);
+    debug!("ax_stat <= {:?} {:#x}", path, buf as usize);
+    ax_call_body!(ax_stat, {
+        if buf.is_null() {
+            return Err(LinuxError::EFAULT);
+        }
+        let file = File::open(path?)?;
+        let st = stat_file(&file)?;
+        drop(file);
+        unsafe { *buf = st };
+        Ok(0)
+    })
+}
+
+/// Get symbolic link info and write to `buf`, return 0 if success.
+#[no_mangle]
+pub extern "C" fn ax_lstat(path: *const c_char, buf: *mut ctypes::stat) -> ctypes::ssize_t {
+    let path = char_ptr_to_str(path);
+    debug!("ax_lstat <= {:?} {:#x}", path, buf as usize);
+    ax_call_body!(ax_lstat, {
+        if buf.is_null() {
+            return Err(LinuxError::EFAULT);
+        }
+        unsafe { *buf = Default::default() }; // TODO
+        Ok(0)
+    })
+}
+
+/// Get file info by `fd` and write to `buf`, return 0 if success.
+#[no_mangle]
+pub extern "C" fn ax_fstat(fd: c_int, buf: *mut ctypes::stat) -> ctypes::ssize_t {
+    debug!("ax_fstat <= {} {:#x}", fd, buf as usize);
+    ax_call_body!(ax_fstat, {
+        if buf.is_null() {
+            return Err(LinuxError::EFAULT);
+        }
+        let file = get_file_by_fd(fd)?;
+        let st = stat_file(&file.lock())?;
+        unsafe { *buf = st };
+        Ok(0)
+    })
+}
 
 /// get the path of the current directory
 ///
 /// Returns 0 on failure.
 /// Use assert! to ensure the buffer have the enough space.
 #[no_mangle]
-pub unsafe extern "C" fn ax_getcwd(buf: *const c_char, size: usize) -> *const c_char {
-    let dst = core::slice::from_raw_parts_mut(buf as *mut u8, size as _);
-    match libax::env::current_dir() {
-        Ok(path) => {
-            let source = path.as_bytes();
-            assert!(source.len() < dst.len(), "getcwd buffer too small");
-            dst[..source.len()].copy_from_slice(source);
-            dst[source.len()] = 0;
-            buf
+pub extern "C" fn ax_getcwd(buf: *mut c_char, size: usize) -> *mut c_char {
+    debug!("ax_getcwd <= {:#x} {}", buf as usize, size);
+    ax_call_body!(ax_getcwd, {
+        if buf.is_null() {
+            return Ok(core::ptr::null::<c_char>() as _);
         }
-        Err(_err) => 0 as _,
-    }
-}
-
-const FILE_LIMIT: usize = 256;
-const FD_NONE: Option<Arc<Mutex<File>>> = None;
-
-/// File Descriptor Table
-static mut FD_TABLE: Mutex<[Option<Arc<Mutex<File>>>; FILE_LIMIT]> =
-    Mutex::new([FD_NONE; FILE_LIMIT]);
-
-/// add a new fd
-///
-/// Add a file into FD_TABLE and return its fd.
-pub fn add_new_fd(file: File) -> Option<usize> {
-    let mut fd_table = unsafe { FD_TABLE.lock() };
-    fd_table
-        .iter_mut()
-        .enumerate()
-        .find(|(_i, file)| *_i >= 3 && file.is_none())
-        .map(|(x, fd)| {
-            *fd = Some(Arc::new(Mutex::new(file)));
-            x
-        })
-}
-
-/// open a file
-///
-/// open a file by filename and insert it into FD_TABLE.
-/// return its FD_TABLE index. return ENFILE if file table overflow
-#[no_mangle]
-pub unsafe extern "C" fn ax_open(filename: *const c_char, _flags: i32) -> isize {
-    let filename = CStr::from_ptr(filename).to_str().unwrap();
-
-    match libax::fs::File::options()
-        .create(true)
-        .read(true)
-        .write(true)
-        .open(filename)
-    {
-        Ok(file) => add_new_fd(file).map_or(LinuxError::ENFILE.code() as _, |x| x as _),
-        Err(_) => -1,
-    }
-}
-
-/// Close a fd
-#[no_mangle]
-pub unsafe extern "C" fn ax_close(fd: usize) -> i32 {
-    if fd >= FILE_LIMIT {
-        return LinuxError::EBADF.code() as _;
-    }
-    FD_TABLE.lock()[fd] = None;
-    0
-}
-
-/// seek the position of the file
-///
-/// return its position after seek
-#[no_mangle]
-pub unsafe extern "C" fn ax_lseek(fd: usize, offset: isize, whence: usize) -> i32 {
-    if fd >= FILE_LIMIT || FD_TABLE.lock()[fd].is_none() {
-        return LinuxError::EBADF.code() as _;
-    }
-    if whence >= 3 {
-        return LinuxError::EINVAL.code() as _;
-    }
-
-    let pos = match whence {
-        0 => SeekFrom::Start(offset as _),
-        1 => SeekFrom::Current(offset as _),
-        2 => SeekFrom::End(offset as _),
-        _ => unreachable!(),
-    };
-    FD_TABLE.lock()[fd]
-        .as_ref()
-        .unwrap()
-        .lock()
-        .seek(pos)
-        .map_or(LinuxError::ESPIPE.code() as _, |x| x as _)
-}
-
-/// write data through fd
-///
-/// return write size if success.
-#[no_mangle]
-pub unsafe extern "C" fn ax_write(fd: usize, buf: *const u8, count: usize) -> isize {
-    if fd >= FILE_LIMIT || FD_TABLE.lock()[fd].is_none() {
-        return LinuxError::EBADF.code() as _;
-    }
-    let src = core::slice::from_raw_parts_mut(buf as *mut u8, count as _);
-    FD_TABLE.lock()[fd]
-        .as_ref()
-        .unwrap()
-        .lock()
-        .write(src)
-        .map_or(LinuxError::EIO.code() as _, |x| x as _)
-}
-
-/// read data from file by fd
-///
-/// return read size if success.
-#[no_mangle]
-pub unsafe extern "C" fn ax_read(fd: usize, buf: *const u8, count: usize) -> isize {
-    if fd >= FILE_LIMIT || FD_TABLE.lock()[fd].is_none() {
-        return LinuxError::EBADF.code() as _;
-    }
-    let src = core::slice::from_raw_parts_mut(buf as *mut u8, count as _);
-    FD_TABLE.lock()[fd]
-        .as_ref()
-        .unwrap()
-        .lock()
-        .read(src)
-        .map_or(LinuxError::EIO.code() as _, |x| x as _)
-}
-
-/// get file info by path
-///
-/// return 0 if success.
-#[no_mangle]
-pub unsafe extern "C" fn ax_stat(path: *const c_char, stat_ptr: usize) -> isize {
-    let stat_ref = (stat_ptr as *mut AxStat).as_mut();
-    if stat_ref.is_none() {
-        return LinuxError::EINVAL.code() as _;
-    }
-    let stat = stat_ref.unwrap();
-
-    let path = CStr::from_ptr(path).to_str().unwrap();
-    match libax::fs::File::open(path) {
-        Ok(file) => {
-            stat.st_mode = 0;
-            stat.st_ino = 13;
-            stat.st_nlink = 13;
-
-            stat.st_uid = 1000;
-            stat.st_gid = 1000;
-            stat.st_size = file.metadata().unwrap().len() as _;
-            stat.st_blksize = 512;
-
-            0
+        let dst = unsafe { core::slice::from_raw_parts_mut(buf as *mut u8, size as _) };
+        let cwd = libax::env::current_dir()?;
+        let cwd = cwd.as_bytes();
+        if cwd.len() < size {
+            dst[..cwd.len()].copy_from_slice(cwd);
+            dst[cwd.len()] = 0;
+            Ok(buf)
+        } else {
+            Err(LinuxError::ERANGE)
         }
-        Err(_) => LinuxError::EPERM.code() as _,
-    }
-}
-
-/// get file info by fd
-///
-/// return 0 if success.
-#[no_mangle]
-pub unsafe extern "C" fn ax_fstat(fd: usize, stat_ptr: usize) -> isize {
-    let stat_ref = (stat_ptr as *mut AxStat).as_mut();
-    if stat_ref.is_none() {
-        return LinuxError::EINVAL.code() as _;
-    }
-    let stat = stat_ref.unwrap();
-
-    if fd >= FILE_LIMIT || FD_TABLE.lock()[fd].is_none() {
-        return LinuxError::EBADF.code() as _;
-    }
-    let file = &FD_TABLE.lock()[fd];
-
-    stat.st_mode = 0;
-    stat.st_ino = 13;
-    stat.st_nlink = 1;
-
-    stat.st_uid = 1000;
-    stat.st_gid = 1000;
-    stat.st_size = file.as_ref().unwrap().lock().metadata().unwrap().len() as _;
-    stat.st_blksize = 4096;
-    stat.st_rdev = 0;
-    stat.st_dev = 1;
-
-    0
+    })
 }
