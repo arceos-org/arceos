@@ -160,6 +160,7 @@ pub trait Seek {
 /// Enumeration of possible methods to seek within an I/O object.
 ///
 /// It is used by the [`Seek`] trait.
+#[derive(Copy, PartialEq, Eq, Clone, Debug)]
 pub enum SeekFrom {
     /// Sets the offset to the provided number of bytes.
     Start(u64),

@@ -66,6 +66,9 @@ pub enum AxError {
 /// A [`Result`] type with [`AxError`] as the error type.
 pub type AxResult<T = ()> = Result<T, AxError>;
 
+/// A [`Result`] type with [`LinuxError`] as the error type.
+pub type LinuxResult<T = ()> = Result<T, LinuxError>;
+
 #[macro_export]
 macro_rules! ax_err_type {
     ($err: ident) => {{
@@ -129,6 +132,7 @@ impl const From<AxError> for LinuxError {
     }
 }
 
+#[doc(hidden)]
 pub mod __priv {
     pub use log::warn;
 }

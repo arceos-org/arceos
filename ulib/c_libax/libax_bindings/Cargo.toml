@@ -23,13 +23,16 @@ sched_rr = ["libax/sched_rr"]
 net = ["libax/net"]
 
 # File system
-fs = ["libax/fs"]
+fs = ["libax/fs", "alloc"]
 
 default = ["libax/default"]
 
 [dependencies]
+log = "0.4"
 libax = { path = "../../libax", default-features = false }
 axalloc = { path = "../../../modules/axalloc", optional = true }
+axerrno = { path = "../../../crates/axerrno", optional = false }
 
 [build-dependencies]
 cbindgen = "0.24"
+bindgen = "0.64"

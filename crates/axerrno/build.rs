@@ -1,5 +1,3 @@
-#![feature(is_some_and)]
-
 use std::fs::{self, File};
 use std::io::{BufRead, BufReader, Result, Write};
 
@@ -16,14 +14,14 @@ pub enum LinuxError {{
 }}
 
 impl LinuxError {{
-    pub fn as_str(&self) -> &'static str {{
+    pub const fn as_str(&self) -> &'static str {{
         use self::LinuxError::*;
         match self {{
 {1}        }}
     }}
 
-    pub fn code(self) -> i32 {{
-        -(self as i32)
+    pub const fn code(self) -> i32 {{
+        self as i32
     }}
 }}
 "
