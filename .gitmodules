@@ -1,3 +1,3 @@
-[submodule "crates/lwip-rust/depend/lwip"]
-	path = crates/lwip-rust/depend/lwip
+[submodule "crates/lwip_rust/depend/lwip"]
+	path = crates/lwip_rust/depend/lwip
 	url = https://github.com/lwip-tcpip/lwip.git

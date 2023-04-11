@@ -1,5 +1,5 @@
 [package]
-name = "lwip-rust"
+name = "lwip_rust"
 version = "0.1.0"
 edition = "2021"
 
