@@ -11,13 +11,13 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 sp-naive = ["percpu_macros/sp-naive"]
 
 # Whether the system enables preemption.
-preempt = ["percpu_macros/preempt"]
+preempt = ["percpu_macros/preempt", "dep:kernel_guard"]
 
 default = []
 
 [dependencies]
 cfg-if = "1.0"
-kernel_guard = { path = "../kernel_guard" }
+kernel_guard = { path = "../kernel_guard", optional = true }
 percpu_macros = { path = "../percpu_macros" }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]

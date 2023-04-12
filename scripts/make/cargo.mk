@@ -54,7 +54,17 @@ define cargo_build
   cargo rustc $(build_args) $(1) -- $(rustc_flags)
 endef
 
+all_packages := \
+  $(shell ls $(CURDIR)/crates) \
+  $(shell ls $(CURDIR)/modules) \
+  libax
+
 define cargo_doc
-  RUSTDOCFLAGS="--enable-index-page -Zunstable-options" \
-  cargo doc --no-deps --target $(TARGET) --workspace --exclude "arceos-*"
+  RUSTDOCFLAGS="--enable-index-page -Zunstable-options" cargo doc --no-deps --all-features --workspace --exclude "arceos-*"
+  @# run twice to fix broken hyperlinks
+  $(foreach p,$(all_packages), \
+     cargo rustdoc --all-features -p $(p)
+  )
+  @# for some crates, re-generate without `--all-features`
+  cargo doc --no-deps -p percpu -p kernel_guard
 endef

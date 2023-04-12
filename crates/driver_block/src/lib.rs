@@ -1,4 +1,5 @@
 #![no_std]
+#![feature(doc_auto_cfg)]
 
 #[cfg(feature = "ramdisk")]
 pub mod ramdisk;

@@ -7,7 +7,6 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-cfg-if = "1.0"
 bitflags = "2.1"
 memory_addr = { path = "../memory_addr" }
 

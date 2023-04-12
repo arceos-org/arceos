@@ -59,7 +59,7 @@ axhal = { path = "../../modules/axhal" }
 axlog = { path = "../../modules/axlog" }
 axfs = { path = "../../modules/axfs", optional = true }
 axnet = { path = "../../modules/axnet", optional = true }
-axruntime = { path = "../../modules/axruntime" }
+axruntime = { path = "../../modules/axruntime", default-features = false }
 axsync = { path = "../../modules/axsync", default-features = false, optional = true }
 axtask = { path = "../../modules/axtask", default-features = false, optional = true }
 

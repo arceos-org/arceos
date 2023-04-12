@@ -16,7 +16,7 @@ fs = ["alloc", "paging", "axdriver/virtio-blk", "axfs/use-virtio-blk"] # TODO: r
 net = ["alloc", "paging", "axdriver/virtio-net", "dep:axnet"]
 display = ["alloc", "paging", "axdriver/virtio-gpu", "dep:axdisplay"]
 
-default = []
+default = ["axtask/default"]
 
 [dependencies]
 percpu = { path = "../../crates/percpu" }

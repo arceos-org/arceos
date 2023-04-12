@@ -1,4 +1,5 @@
 #![cfg_attr(not(test), no_std)]
+#![feature(doc_auto_cfg)]
 
 pub use axlog::{debug, error, info, trace, warn};
 
@@ -9,6 +10,7 @@ extern crate axruntime;
 extern crate alloc;
 
 #[cfg(feature = "alloc")]
+#[doc(no_inline)]
 pub use alloc::{boxed, format, string, vec};
 
 pub mod env;

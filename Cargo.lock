@@ -652,7 +652,6 @@ dependencies = [
 name = "driver_virtio"
 version = "0.1.0"
 dependencies = [
- "cfg-if",
  "driver_block",
  "driver_common",
  "driver_display",
@@ -1074,7 +1073,6 @@ checksum = "ceedf44fb00f2d1984b0bc98102627ce622e083e49a5bacdb3e514fa4238e267"
 name = "page_table"
 version = "0.1.0"
 dependencies = [
- "cfg-if",
  "log",
  "memory_addr",
  "page_table_entry",
@@ -1085,7 +1083,6 @@ name = "page_table_entry"
 version = "0.1.0"
 dependencies = [
  "bitflags 2.1.0",
- "cfg-if",
  "memory_addr",
  "x86_64",
 ]

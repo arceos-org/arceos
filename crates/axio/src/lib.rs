@@ -1,6 +1,7 @@
 //! `std`-like traits, helpers, and type definitions for core I/O functionality.
 
 #![no_std]
+#![feature(doc_auto_cfg)]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;

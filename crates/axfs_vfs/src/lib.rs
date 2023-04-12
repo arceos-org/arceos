@@ -111,6 +111,7 @@ pub trait VfsNodeOps: Send + Sync {
     }
 }
 
+#[doc(hidden)]
 pub mod __priv {
     pub use alloc::sync::Arc;
     pub use axerrno::ax_err;
