@@ -8,6 +8,7 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 
 [features]
 smp = []
+fp_simd = []
 platform-qemu-virt-riscv = ["axconfig/platform-qemu-virt-riscv"]
 platform-qemu-virt-aarch64 = [
     "axconfig/platform-qemu-virt-aarch64",

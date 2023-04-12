@@ -34,4 +34,5 @@ crate_interface = { path = "../../crates/crate_interface" }
 
 [dev-dependencies]
 rand = "0.8"
+axhal = { path = "../axhal", features = ["fp_simd"] }
 axtask = { path = ".", features = ["test"] }

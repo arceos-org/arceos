@@ -10,6 +10,9 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 # Multicore
 smp = ["axruntime/smp", "axhal/smp"]
 
+# Floating point/SIMD
+fp_simd = ["axhal/fp_simd"]
+
 # Memory
 alloc = ["axruntime/alloc", "axio/alloc"]
 paging = ["axruntime/paging"]

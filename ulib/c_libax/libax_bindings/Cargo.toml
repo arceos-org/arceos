@@ -10,6 +10,9 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 crate-type = ["staticlib"]
 
 [features]
+# Floating point/SIMD
+fp_simd = ["libax/fp_simd"]
+
 # Memory
 alloc = ["axalloc", "libax/alloc"]
 paging = ["libax/paging"]

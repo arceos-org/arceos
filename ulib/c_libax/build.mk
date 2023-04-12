@@ -21,13 +21,19 @@ ifeq ($(MODE), release)
   CFLAGS += -O3
 endif
 
+ifneq ($(wildcard $(in_feat)),)	# check if features.txt contains "fp_simd"
+  fp_simd := $(shell grep "fp_simd" < $(in_feat))
+endif
+
 ifeq ($(ARCH), riscv64)
   CFLAGS += -march=rv64gc -mabi=lp64d -mcmodel=medany
 else ifeq ($(ARCH), aarch64)
-  CFLAGS += # -mgeneral-regs-only
+  ifeq ($(fp_simd),)
+    CFLAGS += -mgeneral-regs-only
+  endif
 endif
 
-ifneq ($(wildcard $(in_feat)),)    # features.txt exists
+ifneq ($(wildcard $(in_feat)),)
 _gen_feat: $(obj_dir)
   ifneq ($(shell diff -Nq $(in_feat) $(out_feat)),)
 	$(shell cp $(in_feat) $(out_feat))

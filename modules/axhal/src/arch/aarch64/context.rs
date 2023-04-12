@@ -22,6 +22,7 @@ pub struct FpState {
     pub fpsr: u32,
 }
 
+#[cfg(feature = "fp_simd")]
 impl FpState {
     fn switch_to(&mut self, next_fpstate: &FpState) {
         unsafe { fpstate_switch(self, next_fpstate) }
@@ -45,6 +46,7 @@ pub struct TaskContext {
     pub r28: u64,
     pub r29: u64,
     pub lr: u64, // r30
+    #[cfg(feature = "fp_simd")]
     pub fp_state: FpState,
 }
 
@@ -59,6 +61,7 @@ impl TaskContext {
     }
 
     pub fn switch_to(&mut self, next_ctx: &Self) {
+        #[cfg(feature = "fp_simd")]
         self.fp_state.switch_to(&next_ctx.fp_state);
         unsafe { context_switch(self, next_ctx) }
     }
@@ -96,10 +99,13 @@ unsafe extern "C" fn context_switch(_current_task: &mut TaskContext, _next_task:
 }
 
 #[naked]
+#[cfg(feature = "fp_simd")]
 unsafe extern "C" fn fpstate_switch(_current_fpstate: &mut FpState, _next_fpstate: &FpState) {
     asm!(
         "
         // save fp/neon context
+        mrs     x9, fpcr
+        mrs     x10, fpsr
         stp     q0, q1, [x0, 0 * 16]
         stp     q2, q3, [x0, 2 * 16]
         stp     q4, q5, [x0, 4 * 16]
@@ -116,11 +122,9 @@ unsafe extern "C" fn fpstate_switch(_current_fpstate: &mut FpState, _next_fpstat
         stp     q26, q27, [x0, 26 * 16]
         stp     q28, q29, [x0, 28 * 16]
         stp     q30, q31, [x0, 30 * 16]
-        mrs     x9, fpcr
-        mrs     x10, fpsr
         str     x9, [x0, 64 *  8]
         str     x10, [x0, 65 * 8]
-        
+
         // restore fp/neon context
         ldp     q0, q1, [x1, 0 * 16]
         ldp     q2, q3, [x1, 2 * 16]
