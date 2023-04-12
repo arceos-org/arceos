@@ -20,12 +20,11 @@ default_features := y
 
 ifeq ($(APP_LANG),c)
   default_features := n
-  features-$(FS) += libax_bindings/fs
-  features-$(NET) += libax_bindings/net
   ifneq ($(wildcard $(APP)/features.txt),)    # check features.txt exists
-    features-y += $(addprefix libax_bindings/,$(shell cat $(APP)/features.txt))
+    features-y += $(addprefix libax/,$(shell cat $(APP)/features.txt))
     CFLAGS += $(addprefix -DAX_CONFIG_,$(shell cat $(APP)/features.txt | tr 'a-z' 'A-Z'))
   endif
+  features-y += libax/cbindings
 else ifeq ($(APP_LANG),rust)
   features-y += $(APP_FEATURES)
   ifneq ($(APP_FEATURES),)
@@ -33,23 +32,26 @@ else ifeq ($(APP_LANG),rust)
   endif
 endif
 
+build_args-release := --release
+build_args-c := --crate-type staticlib
+build_args-rust :=
+
 build_args := \
   -Zbuild-std=core,alloc -Zbuild-std-features=compiler-builtins-mem \
-  --config "build.rustflags='-Clink-arg=-T$(LD_SCRIPT)'" \
   --target $(TARGET) \
   --target-dir $(CURDIR)/target \
+  $(build_args-$(MODE)) \
+  $(build_args-$(APP_LANG)) \
   --features "$(features-y)" \
 
 ifeq ($(default_features),n)
   build_args += --no-default-features
 endif
 
-ifeq ($(MODE), release)
-  build_args += --release
-endif
+rustc_flags := -Clink-arg=-T$(LD_SCRIPT)
 
 define cargo_build
-  cargo build $(build_args) $(1)
+  cargo rustc $(build_args) $(1) -- $(rustc_flags)
 endef
 
 define cargo_doc

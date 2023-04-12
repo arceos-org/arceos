@@ -1,4 +1,4 @@
-rust_lib_name := libax_bindings
+rust_lib_name := libax
 rust_lib := target/$(TARGET)/$(MODE)/lib$(rust_lib_name).a
 
 ulib_dir := ulib/c_libax
@@ -14,7 +14,7 @@ ulib_src := $(wildcard $(src_dir)/*.c)
 ulib_obj := $(patsubst $(src_dir)/%.c,$(obj_dir)/%.o,$(ulib_src))
 
 CFLAGS += -static -no-pie -fno-builtin -ffreestanding -nostdinc -Wall
-CFLAGS += -I$(inc_dir) -I$(ulib_dir)/$(rust_lib_name)
+CFLAGS += -I$(inc_dir) -I$(ulib_dir)/../libax
 LDFLAGS += -nostdlib -T$(LD_SCRIPT)
 
 ifeq ($(MODE), release)

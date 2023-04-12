@@ -2,12 +2,11 @@
 
 pub use axlog::{debug, error, info, trace, warn};
 
-#[cfg(feature = "alloc")]
-extern crate alloc;
-extern crate axlog;
-
 #[cfg(not(test))]
 extern crate axruntime;
+
+#[cfg(feature = "alloc")]
+extern crate alloc;
 
 #[cfg(feature = "alloc")]
 pub use alloc::{boxed, format, string, vec};
@@ -27,3 +26,6 @@ pub mod net;
 
 #[cfg(feature = "display")]
 pub mod display;
+
+#[cfg(feature = "cbindings")]
+pub mod cbindings;

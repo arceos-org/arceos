@@ -1,13 +1,3 @@
-#![no_std]
-#![allow(clippy::missing_safety_doc)]
-
-#[cfg(feature = "alloc")]
-extern crate alloc;
-
-#[macro_use]
-#[allow(unused_imports)]
-extern crate log;
-
 #[macro_use]
 mod utils;
 
@@ -17,30 +7,31 @@ mod fs;
 mod malloc;
 
 /// cbindgen:ignore
-#[path = "../ctypes_gen.rs"]
+#[rustfmt::skip]
+#[path = "./ctypes_gen.rs"]
 #[allow(dead_code, non_camel_case_types)]
 mod ctypes;
 
+use crate::io::Write;
 use core::ffi::{c_char, c_int};
-use libax::io::Write;
 
 #[no_mangle]
 pub extern "C" fn ax_srand(seed: u32) {
-    libax::rand::srand(seed);
+    crate::rand::srand(seed);
 }
 
 #[no_mangle]
 pub extern "C" fn ax_rand_u32() -> u32 {
-    libax::rand::rand_u32()
+    crate::rand::rand_u32()
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn ax_print_str(buf: *const c_char, count: usize) -> c_int {
+pub extern "C" fn ax_print_str(buf: *const c_char, count: usize) -> c_int {
     if buf.is_null() {
         return -axerrno::LinuxError::EFAULT.code();
     }
-    let bytes = core::slice::from_raw_parts(buf as *const u8, count as _);
-    libax::io::stdout().write(bytes).unwrap() as _
+    let bytes = unsafe { core::slice::from_raw_parts(buf as *const u8, count as _) };
+    crate::io::stdout().write(bytes).unwrap() as _
 }
 
 #[no_mangle]

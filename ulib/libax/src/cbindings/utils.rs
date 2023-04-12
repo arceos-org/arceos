@@ -18,9 +18,9 @@ macro_rules! ax_call_body {
     ($fn: ident, $($stmt: tt)*) => {{
         let res = (|| -> LinuxResult<_> { $($stmt)* })();
         if res.is_err() {
-            info!(concat!(stringify!($fn), " => {:?}"),  res);
+            $crate::info!(concat!(stringify!($fn), " => {:?}"),  res);
         } else {
-            debug!(concat!(stringify!($fn), " => {:?}"), res);
+            $crate::debug!(concat!(stringify!($fn), " => {:?}"), res);
         }
         match res {
             Ok(v) => v as _,

@@ -37,7 +37,7 @@ fn gen_linux_errno() -> Result<()> {
     let mut detail_info = Vec::new();
 
     let file = File::open("src/errno.h")?;
-    for line in BufReader::new(file).lines().filter_map(|l| l.ok()) {
+    for line in BufReader::new(file).lines().map_while(Result::ok) {
         if line.starts_with("#define") {
             let mut iter = line.split_whitespace();
             if let Some(name) = iter.nth(1) {

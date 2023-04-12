@@ -1,13 +1,12 @@
 use alloc::sync::Arc;
+use axerrno::{LinuxError, LinuxResult};
 use core::ffi::{c_char, c_int, c_void};
 
-use axerrno::{LinuxError, LinuxResult};
-use libax::fs::{File, OpenOptions};
-use libax::io::{self, prelude::*, SeekFrom};
-use libax::sync::Mutex;
-
-use crate::ctypes;
-use crate::utils::char_ptr_to_str;
+use super::{ctypes, utils::char_ptr_to_str};
+use crate::debug;
+use crate::fs::{File, OpenOptions};
+use crate::io::{self, prelude::*, SeekFrom};
+use crate::sync::Mutex;
 
 const FILE_LIMIT: usize = 256;
 const FD_NONE: Option<Arc<Mutex<File>>> = None;
@@ -212,7 +211,7 @@ pub extern "C" fn ax_getcwd(buf: *mut c_char, size: usize) -> *mut c_char {
             return Ok(core::ptr::null::<c_char>() as _);
         }
         let dst = unsafe { core::slice::from_raw_parts_mut(buf as *mut u8, size as _) };
-        let cwd = libax::env::current_dir()?;
+        let cwd = crate::env::current_dir()?;
         let cwd = cwd.as_bytes();
         if cwd.len() < size {
             dst[..cwd.len()].copy_from_slice(cwd);
