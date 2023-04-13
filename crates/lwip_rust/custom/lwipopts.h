@@ -1,8 +1,14 @@
 #ifndef __LWIPOPTS_H__
 #define __LWIPOPTS_H__
 
-#define NO_SYS      1
-#define LWIP_TIMERS 1
+#define NO_SYS 1
+// #define LWIP_TIMERS 1
+#define NO_SYS_NO_TIMERS 1
+
+#include "lwipmem.h"
+#define MEMCPY(dst, src, len)  lwip_memcpy(dst, src, len)
+#define SMEMCPY(dst, src, len) lwip_memcpy(dst, src, len)
+#define MEMMOVE(dst, src, len) lwip_memmove(dst, src, len)
 
 #define IP_DEFAULT_TTL       64
 #define LWIP_ARP             0

@@ -44,6 +44,16 @@
 - `cc.h`
 - `sys_arch.h`
 
+### 移植 LwIP
+
+在 `crate` 中创建模块 `lwip_rust`，目录组织如下：
+
+- `custom/`：移植需要的文件
+- `depend/`：以 git submodule 的形式导入的 lwip 库
+- `src/`：包装为 rust 模块
+- `build.rs`：编译和生成接口脚本，参考 https://github.com/eycorsican/leaf/blob/b0779107921683204a65bb1d41edc07a52688613/leaf/src/proxy/tun/netstack/bindings.rs
+- `wrapper.h`：所有需要生成接口的头文件
+
 ## 下周计划
 
 - 

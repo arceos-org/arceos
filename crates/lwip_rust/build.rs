@@ -13,6 +13,7 @@ fn generate_lwip_bindings() {
         .header("wrapper.h")
         .clang_arg("-I./depend/lwip/src/include")
         .clang_arg("-I./custom")
+        .clang_arg("-Wno-everything")
         .layout_tests(false)
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         .generate()
@@ -28,7 +29,8 @@ fn compile_lwip() {
     let mut base_config = cc::Build::new();
     base_config
         .include("depend/lwip/src/include")
-        .include("custom");
+        .include("custom")
+        .include("../../ulib/c_libax/include");
 
     base_config
         .file("depend/lwip/src/core/init.c")
@@ -71,5 +73,14 @@ fn compile_lwip() {
         .file("depend/lwip/src/core/ipv6/nd6.c")
         .file("custom/sys_arch.c");
 
-    base_config.warnings(false).compile("liblwip.a");
+    base_config.target("riscv64gc-unknown-none-elf");
+
+    base_config
+        .warnings(false)
+        .flag("-static")
+        .flag("-no-pie")
+        .flag("-fno-builtin")
+        .flag("-ffreestanding")
+        .flag("-nostdinc")
+        .compile("liblwip.a");
 }
