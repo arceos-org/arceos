@@ -3,7 +3,6 @@
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
-
 #[macro_use]
 #[allow(unused_imports)]
 extern crate log;
@@ -44,6 +43,7 @@ pub unsafe extern "C" fn ax_print_str(buf: *const c_char, count: usize) -> c_int
 }
 
 #[no_mangle]
+#[panic_handler]
 pub extern "C" fn ax_panic() -> ! {
     panic!()
 }

@@ -3,5 +3,9 @@
 
 #[no_mangle]
 fn main() {
-    libax::println!("Hello, world!");
+    // libax::println!("!!!");
+    let output = "hello world!\n".as_bytes();
+    // libax::sys_write(0, output);
+    libax::sys_write(1, output);
+    libax::sys_exit(0);
 }

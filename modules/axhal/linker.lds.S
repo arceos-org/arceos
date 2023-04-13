@@ -60,7 +60,7 @@ SECTIONS
         . = ALIGN(4K);
         ebss = .;
     }
-
+    . = ALIGN(4K);
     ekernel = .;
 
 	/DISCARD/ : {

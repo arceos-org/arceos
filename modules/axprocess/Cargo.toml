@@ -1,0 +1,16 @@
+[package]
+name = "axprocess"
+version = "0.1.0"
+edition = "2021"
+authors = ["Youjie Zheng <zyj578335934@gmail.com>"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+user = ["axhal/user", "axtask/user"]
+default = ["user"]
+[dependencies]
+axhal = { path = "../axhal" }
+axtask = { path = "../axtask", default-features = false }
+axconfig = { path = "../axconfig" }
+axlog = { path = "../axlog" }

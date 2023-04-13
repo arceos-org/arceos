@@ -1,9 +1,8 @@
 #![cfg_attr(not(test), no_std)]
 #![feature(const_trait_impl)]
-
 #[macro_use]
 extern crate log;
-
+pub mod syscall;
 struct KernelGuardIfImpl;
 
 #[crate_interface::impl_interface]
@@ -32,7 +31,6 @@ mod run_queue;
 mod task;
 mod timers;
 mod wait_queue;
-
 #[cfg(test)]
 mod tests;
 

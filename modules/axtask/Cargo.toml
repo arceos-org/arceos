@@ -13,12 +13,13 @@ multitask = [ # without the feature, can still use the empty yield_now() and exi
     "dep:memory_addr", "dep:scheduler", "dep:timer_list"
 ]
 preempt = ["percpu?/preempt"]
-
+user = ["axhal/user"]
 sched_fifo = ["multitask"]
 sched_rr = ["multitask", "preempt"]
 default = ["sched_fifo"]
 
 [dependencies]
+axlog = { path = "../axlog" }
 cfg-if = "1.0"
 log = "0.4"
 axhal = { path = "../axhal" }

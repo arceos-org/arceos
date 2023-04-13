@@ -21,10 +21,6 @@ const LOGO: &str = r#"
 d88P     888 888      "Y8888P  "Y8888   "Y88888P"   "Y8888P"
 "#;
 
-extern "Rust" {
-    fn main();
-}
-
 struct LogIfImpl;
 
 #[crate_interface::impl_interface]
@@ -70,6 +66,8 @@ fn is_init_ok() -> bool {
     INITED_CPUS.load(Ordering::Acquire) == axconfig::SMP
 }
 
+// #[cfg_attr(not(test))]
+/// 内核初始入口函数
 #[cfg_attr(not(test), no_mangle)]
 pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     ax_println!("{}", LOGO);
@@ -110,11 +108,11 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         init_allocator();
     }
 
-    #[cfg(feature = "paging")]
-    {
-        info!("Initialize kernel page table...");
-        remap_kernel_memory().expect("remap kernel memoy failed");
-    }
+    // #[cfg(feature = "paging")]
+    // {
+    //     info!("Initialize kernel page table...");
+    //     remap_kernel_memory().expect("remap kernel memoy failed");
+    // }
 
     #[cfg(feature = "multitask")]
     axtask::init_scheduler();
@@ -146,10 +144,7 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     while !is_init_ok() {
         core::hint::spin_loop();
     }
-
-    unsafe { main() };
-
-    axtask::exit(0)
+    axprocess::init::init_process()
 }
 
 #[cfg(feature = "alloc")]

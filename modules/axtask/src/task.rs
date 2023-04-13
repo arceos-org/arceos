@@ -115,6 +115,8 @@ impl TaskInner {
         t.entry = Some(Box::into_raw(Box::new(entry)));
         t.ctx.get_mut().init(task_entry as usize, kstack.top());
         t.kstack = Some(kstack);
+        // 这里新建任务时就可以直接写入初始化的trap_context
+
         if name == "idle" {
             t.is_idle = true;
         }
@@ -321,6 +323,7 @@ impl Deref for CurrentTask {
     }
 }
 
+/// 本线程将会执行的函数
 extern "C" fn task_entry() -> ! {
     // release the lock that was implicitly held across the reschedule
     unsafe { crate::RUN_QUEUE.force_unlock() };
@@ -328,6 +331,8 @@ extern "C" fn task_entry() -> ! {
     let task = crate::current();
     if let Some(entry) = task.entry {
         unsafe { Box::from_raw(entry)() };
+        // 继续执行对应的函数
     }
+    // 任务执行完成，释放自我
     crate::exit(0);
 }
