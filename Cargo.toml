@@ -20,6 +20,7 @@ members = [
     "crates/driver_display",
     "crates/driver_net",
     "crates/driver_virtio",
+    "crates/elf_loader",
     "crates/handler_table",
     "crates/lazy_init",
     "crates/linked_list",

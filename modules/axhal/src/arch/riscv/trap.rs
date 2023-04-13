@@ -37,10 +37,11 @@ fn riscv_trap_handler(tf: &mut TrapFrame, _from_user: bool) {
         
         _ => {
             panic!(
-                "Unhandled trap {:?} @ {:#x}:\n{:#x?}",
+                "Unhandled trap {:?} @ {:#x}:\n{:#x?}\nstval = {:x}",
                 scause.cause(),
                 tf.sepc,
-                tf
+                tf,
+                riscv::register::stval::read(),
             );
         }
     }

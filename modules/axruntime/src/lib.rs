@@ -201,9 +201,11 @@ fn init_allocator() {
 }
 
 #[cfg(feature = "paging")]
+use axhal::paging::PageTable;
+#[cfg(feature = "paging")]
 fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
     use axhal::mem::{memory_regions, phys_to_virt};
-    use axhal::paging::PageTable;
+
     use lazy_init::LazyInit;
 
     static KERNEL_PAGE_TABLE: LazyInit<PageTable> = LazyInit::new();
@@ -221,59 +223,7 @@ fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
         }
 
         #[cfg(feature = "user")]
-        // Set up user state memory
-        {
-            use axalloc::GlobalPage;
-            use axhal::mem::{PAGE_SIZE_4K, virt_to_phys};
-            use axhal::paging::MappingFlags;
-            
-            extern "C" {
-                fn ustart();
-                fn uend();
-            }
-            
-            let user_bin: &[u8] = unsafe {
-                let len = (uend as usize) - (ustart as usize);
-                core::slice::from_raw_parts(ustart as *const _, len)
-            };
-
-            debug!("{:x} {:x}", ustart as usize, user_bin.len());
-
-            // Temporarily add 1 for bss section.
-            let user_pages = (user_bin.len() + PAGE_SIZE_4K - 1) / PAGE_SIZE_4K + 1;
-            
-            let mut user_phy_page =
-                GlobalPage::alloc_contiguous(user_pages, PAGE_SIZE_4K).expect("Alloc page error!");
-
-            debug!("{:?}", user_phy_page);
-            
-            // init
-            user_phy_page.zero();
-
-            // copy user content
-            user_phy_page.as_slice_mut()[..user_bin.len()].copy_from_slice(user_bin);
-
-            // text + data
-            kernel_page_table.map_region(
-                USER_START.into(),
-                user_phy_page.start_paddr(virt_to_phys),
-                user_phy_page.size(),
-                MappingFlags::EXECUTE | MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
-                false)?;
-
-            assert!(USTACK_SIZE % PAGE_SIZE_4K == 0);
-            let user_stack_page =
-                GlobalPage::alloc_contiguous(USTACK_SIZE / PAGE_SIZE_4K, PAGE_SIZE_4K).expect("Alloc page error!");
-            debug!("{:?}", user_stack_page);            
-            // stack allocation
-            kernel_page_table.map_region(
-                USTACK_START.into(),
-                user_stack_page.start_paddr(virt_to_phys),
-                user_stack_page.size(),
-                MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
-                false)?
-            
-        }
+        init_user_space(&mut kernel_page_table)?;
 
         
         KERNEL_PAGE_TABLE.init_by(kernel_page_table);
@@ -313,4 +263,75 @@ fn init_interrupt() {
 
     // Enable IRQs before starting app
     axhal::arch::enable_irqs();
+}
+
+
+#[cfg(feature = "user")]
+/// Set up user state memory
+fn init_user_space(page_table: &mut PageTable) -> Result<(), axhal::paging::PagingError> {
+    use axalloc::GlobalPage;
+    use axhal::mem::{PAGE_SIZE_4K, virt_to_phys};
+    use axhal::paging::MappingFlags;
+    extern crate alloc;
+    
+    extern "C" {
+        fn ustart();
+        fn uend();
+    }
+    
+    let user_elf: &[u8] = unsafe {
+        let len = (uend as usize) - (ustart as usize);
+        core::slice::from_raw_parts(ustart as *const _, len)
+    };
+    
+    debug!("{:x} {:x}", ustart as usize, user_elf.len());
+
+    let segments = elf_loader::SegmentEntry::new(user_elf).expect("Corrupted elf file!");
+
+    fn align_up(size: usize) -> usize {
+        (size + PAGE_SIZE_4K - 1) / PAGE_SIZE_4K
+    }
+
+    // as user_phy_page is used in RAII style
+    // we need to store them during allocation.
+    // TODO: make it persistent, 
+    let mut user_segments: alloc::vec::Vec<GlobalPage> = alloc::vec![];
+    
+    for segment in &segments {
+        let mut user_phy_page =
+            GlobalPage::alloc_contiguous(align_up(segment.size), PAGE_SIZE_4K)
+            .expect("Alloc page error!");
+        // init
+        user_phy_page.zero();
+        
+        
+        // copy user content
+        user_phy_page.as_slice_mut()[..segment.data.len()].copy_from_slice(segment.data);
+        debug!("{:x} {:x}", user_phy_page.as_slice()[0], user_phy_page.as_slice()[1]);
+        
+        page_table.map_region(
+            segment.start_addr,
+            user_phy_page.start_paddr(virt_to_phys),
+            user_phy_page.size(),
+            segment.flags | MappingFlags::USER,
+            false)?;
+        user_segments.push(user_phy_page);
+    }
+   
+
+    // stack allocation
+    assert!(USTACK_SIZE % PAGE_SIZE_4K == 0);
+    let user_stack_page =
+        GlobalPage::alloc_contiguous(USTACK_SIZE / PAGE_SIZE_4K, PAGE_SIZE_4K).expect("Alloc page error!");
+    debug!("{:?}", user_stack_page);            
+    
+    page_table.map_region(
+        USTACK_START.into(),
+        user_stack_page.start_paddr(virt_to_phys),
+        user_stack_page.size(),
+        MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
+        false)?;
+    user_segments.push(user_stack_page);
+
+    Ok(())
 }

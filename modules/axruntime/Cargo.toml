@@ -15,7 +15,7 @@ smp = ["axhal/smp", "spinlock/smp"]
 fs = ["alloc", "paging", "axdriver/virtio-blk"] # TODO: remove "paging"
 net = ["alloc", "paging", "axdriver/virtio-net", "dep:axnet"]
 display = ["alloc", "paging", "axdriver/virtio-gpu", "dep:axdisplay"]
-user = ["axhal/user"]
+user = ["axhal/user", "dep:elf_loader"]
 
 default = []
 
@@ -25,6 +25,7 @@ kernel_guard = { path = "../../crates/kernel_guard" }
 spinlock = { path = "../../crates/spinlock" }
 lazy_init = { path = "../../crates/lazy_init", optional = true }
 crate_interface = { path = "../../crates/crate_interface" }
+elf_loader = { path = "../../crates/elf_loader", optional = true}
 axalloc = { path = "../axalloc", optional = true }
 axconfig = { path = "../axconfig" }
 axdriver = { path = "../axdriver", optional = true }

@@ -7,7 +7,7 @@ core::arch::global_asm!(r#"
     .section .rodata
     .globl ustart
     ustart:
-    .incbin "./modules/axuser/user.bin"
+    .incbin "./modules/axuser/user.elf"
     .globl uend
     uend:
 "#
