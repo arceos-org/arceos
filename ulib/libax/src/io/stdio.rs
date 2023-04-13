@@ -111,7 +111,11 @@ macro_rules! println {
 
 #[doc(hidden)]
 pub fn __print_impl(args: core::fmt::Arguments) {
-    static INLINE_LOCK: Mutex<()> = Mutex::new(()); // not break in one line
-    let _guard = INLINE_LOCK.lock();
-    stdout().write_fmt(args).unwrap();
+    if cfg!(feature = "smp") {
+        axlog::__print_impl(args); // synchronize using the lock in axlog
+    } else {
+        static INLINE_LOCK: Mutex<()> = Mutex::new(()); // not break in one line
+        let _guard = INLINE_LOCK.lock();
+        stdout().write_fmt(args).unwrap();
+    }
 }
