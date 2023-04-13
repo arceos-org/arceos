@@ -27,6 +27,8 @@ sched_rr = ["axtask/sched_rr"]
 
 # File system
 fs = ["alloc", "axruntime/fs", "dep:axfs"]
+fs_easyfs = ["axfs?/easyfs"]
+fs_fatfs = ["axfs?/fatfs"]
 
 # Networking
 net = ["axruntime/net", "dep:axnet"]

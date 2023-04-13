@@ -210,6 +210,7 @@ dependencies = [
  "cfg-if",
  "driver_block",
  "driver_common",
+ "easy_fs",
  "fatfs",
  "lazy_init",
  "log",
@@ -221,7 +222,7 @@ version = "0.1.0"
 dependencies = [
  "axfs_vfs",
  "log",
- "spin",
+ "spin 0.9.8",
 ]
 
 [[package]]
@@ -661,6 +662,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "easy_fs"
+version = "0.1.0"
+dependencies = [
+ "axfs_vfs",
+ "lazy_static",
+ "spin 0.7.1",
+]
+
+[[package]]
 name = "either"
 version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -792,7 +802,7 @@ dependencies = [
  "atomic-polyfill",
  "hash32",
  "rustc_version",
- "spin",
+ "spin 0.9.8",
  "stable_deref_trait",
 ]
 
@@ -903,6 +913,9 @@ name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
+dependencies = [
+ "spin 0.5.2",
+]
 
 [[package]]
 name = "lazycell"
@@ -1100,7 +1113,7 @@ dependencies = [
  "cfg-if",
  "kernel_guard",
  "percpu_macros",
- "spin",
+ "spin 0.9.8",
  "x86",
 ]
 
@@ -1381,6 +1394,18 @@ dependencies = [
  "log",
  "managed",
 ]
+
+[[package]]
+name = "spin"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
+
+[[package]]
+name = "spin"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "13287b4da9d1207a4f4929ac390916d64eacfe236a487e9a9f5b3be392be5162"
 
 [[package]]
 name = "spin"

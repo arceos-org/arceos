@@ -13,8 +13,9 @@ use-virtio-blk = ["axdriver/virtio-blk"]
 devfs = ["dep:axfs_devfs"]
 ramfs = []
 fatfs = ["dep:fatfs"]
+easyfs = ["dep:easy_fs"]
 
-default = ["use-ramdisk", "devfs", "ramfs", "fatfs"]
+default = ["devfs", "use-virtio-blk", "fatfs"]
 
 [dependencies]
 log = "0.4"
@@ -29,6 +30,7 @@ axfs_vfs = { path = "../../crates/axfs_vfs" }
 axfs_devfs = { path = "../../crates/axfs_devfs", optional = true }
 axdriver = { path = "../axdriver", optional = true }
 axsync = { path = "../axsync", default-features = false }
+easy_fs = { path = "../../crates/easy_fs", optional = true }
 
 [dependencies.fatfs]
 git = "https://github.com/rafalh/rust-fatfs"

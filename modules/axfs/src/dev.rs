@@ -5,9 +5,9 @@ use driver_common::DevResult;
 const BLOCK_SIZE: usize = 512;
 
 pub struct Disk {
-    block_id: u64,
-    offset: usize,
-    dev: BlockDevice,
+    pub block_id: u64,
+    pub offset: usize,
+    pub dev: BlockDevice,
 }
 
 impl Disk {

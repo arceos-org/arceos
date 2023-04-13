@@ -13,8 +13,15 @@ use crate::{api::FileType, fs};
 static CURRENT_DIR_PATH: Mutex<String> = Mutex::new(String::new());
 static CURRENT_DIR: LazyInit<Mutex<VfsNodeRef>> = LazyInit::new();
 
-#[cfg(feature = "fatfs")]
-type MainFileSystem = fs::fatfs::FatFileSystem;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "easyfs")] {
+        type MainFileSystem = fs::easyfs::EasyFileSystem;
+    } else if #[cfg(feature = "fatfs")] {
+        type MainFileSystem = fs::fatfs::FatFileSystem;
+    } else {
+        compile_error!("no filesystem is enabled");
+    }
+}
 
 struct MountPoint {
     path: &'static str,
@@ -138,15 +145,32 @@ impl VfsNodeOps for RootDirectory {
 }
 
 pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
-    #[cfg(feature = "fatfs")]
-    let main_fs = fs::fatfs::FatFileSystem::new(disk);
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "easyfs")] {
+            let main_fs = fs::easyfs::EasyFileSystem::new(disk);
+        } else if #[cfg(feature = "fatfs")] {
+            let main_fs = fs::fatfs::FatFileSystem::new(disk);
+        } else {
+            compile_error!("no filesystem is enabled")
+        }
+
+    }
 
     MAIN_FS.init_by(Arc::new(main_fs));
     MAIN_FS.init();
 
-    let mut root_dir = RootDirectory::new(MAIN_FS.clone());
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "easyfs")] {
+            let root_dir = RootDirectory::new(MAIN_FS.clone());
+        } else if #[cfg(feature = "fatfs")] {
+            let mut root_dir = RootDirectory::new(MAIN_FS.clone());
+        } else {
+            compile_error!("no filesystem is enabled")
+        }
+    }
 
     #[cfg(feature = "devfs")]
+    #[cfg(not(feature = "easyfs"))]
     {
         let null = fs::devfs::NullDev;
         let zero = fs::devfs::ZeroDev;
