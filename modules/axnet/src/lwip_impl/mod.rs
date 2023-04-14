@@ -1,7 +1,9 @@
 mod cbindings;
-use axdriver::NetDevices;
+mod driver;
+
+pub use driver::init;
+
 use axerrno::{ax_err, AxResult};
-use lwip_rust::lwip_rust_init;
 
 pub struct IpAddr {}
 pub struct SocketAddr {}
@@ -52,8 +54,4 @@ impl TcpSocket {
 
 impl Drop for TcpSocket {
     fn drop(&mut self) {}
-}
-
-pub(crate) fn init(_net_devs: NetDevices) {
-    lwip_rust_init();
 }

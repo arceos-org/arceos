@@ -36,7 +36,7 @@
 - [ ] `lwipopts.h`：协议栈的各种参数，先将 `NO_SYS` 设为 1 以裸机形式运行
 - [ ] `arch/cc.h`：编译器与体系结构相关的设置
 
-- [ ] ``arch/sys_arch.h``：用于适配系统的相关设置
+- [ ] `arch/sys_arch.h`：用于适配系统的相关设置
 
 #### 需要实现的函数
 
@@ -45,7 +45,7 @@
 - [ ] `err_t myif_output(struct netif *netif, struct pbuf *p, ip_addr_t *ipaddr)`：网络层发包函数，作为 `netif->output`。该函数被 `ip_output` 调用，函数内最终会使用 `myif_link_output` 进行发包。若支持 ARP，则该函数可以直接设为 `etharp_output`。
 - [ ] `myif_input()`：收包函数。当网卡收到包的时候，通过这个函数调用 `netif->input`，将包送入协议栈。对于以太网网卡，`netif->input` 将被设为 `ethernet_input`，故调用 `netif->input` 时需要传递含有数据链路层头部信息的以太网帧。
 - [ ] `u32_t sys_now(void)`：获取当前时钟，用于实现定时器。
-- [ ] `main()`：裸机运行的主函数，依次初始化协议栈（`lwip_init()`），添加网卡（`netif_add()`，添加时会初始化），然后进入循环，不断检查收包（收到则调用 `myif_input()`），检查定时器（`sys_check_timeouts()`）
+- [x] `main()`：裸机运行的主函数，依次初始化协议栈（`lwip_init()`），添加网卡（`netif_add()`，添加时会初始化），然后进入循环，不断检查收包（收到则调用 `myif_input()`），检查定时器（`sys_check_timeouts()`）
 
 #### netif 初始化时需要设置的字段
 
@@ -69,7 +69,7 @@
 - `custom/`：移植需要的文件
 - `depend/`：以 git submodule 的形式导入的 lwip 库
 - `src/`：包装为 rust 模块
-- `build.rs`：编译和生成接口脚本，参考 https://github.com/eycorsican/leaf/blob/b0779107921683204a65bb1d41edc07a52688613/leaf/build.rs
+- `build.rs`：编译和生成接口脚本，参考 <https://github.com/eycorsican/leaf/blob/b0779107921683204a65bb1d41edc07a52688613/leaf/build.rs>
 - `wrapper.h`：所有需要生成接口的头文件
 
 #### 编译与链接
@@ -285,9 +285,9 @@ ebss = .;
 
 在 no_std 情况下使用 `printf-compat` crate 需要指定 `default-features = false`，然后也需要保证它的依赖 也都不启用 std 的 feature。然而它的依赖 `memchr` 在构建模块 `bindgen` 中被使用，于是被开启了 std feature，导致 cargo build 出错。
 
-问题同：https://github.com/rust-lang/cargo/issues/5730
+问题同：<https://github.com/rust-lang/cargo/issues/5730>
 
-该问题实际上已被解决，可以在 build 参数中添加 `-Z features=build_dep`（https://github.com/rust-lang/cargo/issues/7915），或者在 `[workspace]` 中指定 `resolver = "2"`（https://doc.rust-lang.org/cargo/reference/features.html#feature-resolver-version-2），即可将 `dependencies` 和 `build-dependencies` 的 features 分开。
+该问题实际上已被解决，可以在 build 参数中添加 `-Z features=build_dep`（<https://github.com/rust-lang/cargo/issues/7915>），或者在 `[workspace]` 中指定 `resolver = "2"`（<https://doc.rust-lang.org/cargo/reference/features.html#feature-resolver-version-2>），即可将 `dependencies` 和 `build-dependencies` 的 features 分开。
 
 ## 下周计划
 
