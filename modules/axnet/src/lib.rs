@@ -1,4 +1,5 @@
 #![no_std]
+#![feature(c_variadic)]
 #![feature(new_uninit)]
 
 #[macro_use]

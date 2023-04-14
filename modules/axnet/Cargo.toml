@@ -8,7 +8,7 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 
 [features]
 smoltcp = []
-lwip = ["dep:lwip_rust"]
+lwip = ["dep:printf-compat", "dep:lwip_rust" ]
 default = ["axdriver/virtio-net", "lwip"]
 
 [dependencies]
@@ -18,6 +18,7 @@ driver_common = { path = "../../crates/driver_common" }
 driver_net = { path = "../../crates/driver_net" }
 lazy_init = { path = "../../crates/lazy_init" }
 lwip_rust = { path = "../../crates/lwip_rust", optional = true }
+printf-compat = { version = "0.1", default-features = false, optional = true }
 axerrno = { path = "../../crates/axerrno" }
 axhal = { path = "../axhal" }
 axsync = { path = "../axsync", default-features = false }

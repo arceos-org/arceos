@@ -1,3 +1,4 @@
+mod cbindings;
 use axdriver::NetDevices;
 use axerrno::{ax_err, AxResult};
 use lwip_rust::lwip_rust_init;
@@ -8,7 +9,6 @@ pub struct Ipv4Addr {}
 pub struct TcpSocket {}
 
 impl TcpSocket {
-    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {}
     }
