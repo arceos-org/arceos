@@ -3,7 +3,6 @@
 
 #[macro_use]
 extern crate libax;
-use libax::net::TcpSocket;
 
 #[no_mangle]
 fn main() {
