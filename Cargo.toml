@@ -1,5 +1,7 @@
 [workspace]
 
+resolver = "2"
+
 members = [
     "apps/display",
     "apps/exception",
