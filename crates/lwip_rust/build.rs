@@ -72,6 +72,7 @@ fn compile_lwip() {
         .file("depend/lwip/src/core/ipv6/ip6_frag.c")
         .file("depend/lwip/src/core/ipv6/mld6.c")
         .file("depend/lwip/src/core/ipv6/nd6.c")
+        .file("depend/lwip/src/netif/ethernet.c")
         .file("custom/sys_arch.c");
 
     // base_config.target("riscv64gc-unknown-none-elf");

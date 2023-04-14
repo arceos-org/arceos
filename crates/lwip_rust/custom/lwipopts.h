@@ -6,7 +6,8 @@
 #define NO_SYS_NO_TIMERS 1
 
 #define IP_DEFAULT_TTL       64
-#define LWIP_ARP             0
+#define LWIP_ETHERNET        1
+#define LWIP_ARP             1
 #define ARP_QUEUEING         0
 #define IP_FORWARD           0
 #define LWIP_ICMP            1
