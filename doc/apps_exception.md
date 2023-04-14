@@ -1,17 +1,25 @@
 # INTRODUCTION
+
 | App | Extra modules | Enabled features | Description |
 |-|-|-|-|
-| [exception](apps/exception/) | | paging | Exception handling test |
+| [exception](../apps/exception/) | | paging | Exception handling test |
 
 # RUN
-```
-make A=apps/exception SMP=4 LOG=debug run
+
+```console
+$ make A=apps/exception LOG=debug run
 ...
-[  0.249873 0 axhal::arch::riscv::trap:13] Exception(Breakpoint) @ 0xffffffc08020021c
-...
+Running exception tests...
+[  0.249873 0 axhal::arch::riscv::trap:13] Exception(Breakpoint) @ 0xffffffc0802001e8
+Exception tests run OK!
+[  0.068358 0 axtask::api:6] main task exited: exit_code=0
+[  0.069128 0 axhal::platform::qemu_virt_riscv::misc:2] Shutting down...
 ```
+
 # STEPS
-## step1 
+
+## step1
+
 [init](./init.md)
 
 After executed all initial actions, then arceos calls `main` function in `exception` app.

@@ -141,4 +141,4 @@ make A=apps/net/httpserver ARCH=aarch64 LOG=info NET=y SMP=4 run
 
 ## Design
 
-![](doc/ArceOS.svg)
+![](doc/figures/ArceOS.svg)

@@ -1,7 +1,7 @@
 # INTRODUCTION
 
-| App                        | Extra modules           | Enabled features  | Description                                           |
-| -------------------------- | ----------------------- | ----------------- | ----------------------------------------------------- |
+| App | Extra modules | Enabled features | Description |
+|-|-|-|-|
 | [shell](../apps/fs/shell/) | axalloc, axdriver, axfs | alloc, paging, fs | A simple shell that responds to filesystem operations |
 
 # RUN
@@ -9,13 +9,13 @@
 Before running the app, make an image of FAT32:
 
 ```shell
-modules/axfs/resources/create_test_img.sh # create disk image
+make disk_img
 ```
 
 Run the app:
 
 ```shell
-make A=apps/fs/shell ARCH=aarch64 LOG=debug FS=y DISK_IMG=modules/axfs/resources/fat32.img run
+make A=apps/fs/shell ARCH=aarch64 LOG=debug FS=y run
 ```
 
 # RESULT
@@ -48,7 +48,7 @@ Available commands:
   pwd
   rm
   uname
-arceos:/$ 
+arceos:/$
 ```
 
 # STEPS
@@ -132,7 +132,7 @@ pub fn run_cmd(line: &[u8]) {
 ```mermaid
 graph TD
 	run_cmd["cmd::run_cmd"]
-	
+
 	cat["cmd::do_cat"]
 	cd["cmd:do_cd"]
 	echo["cmd::do_echo"]
@@ -143,7 +143,7 @@ graph TD
 	pwd["cmd::do_pwd"]
 	rm["cmd::do_rm"]
 	uname["cmd::do_uname"]
-	
+
 	run_cmd --> cat
 	run_cmd --> cd
 	run_cmd --> echo
@@ -154,7 +154,7 @@ graph TD
 	run_cmd --> pwd
 	run_cmd --> rm
 	run_cmd --> uname
-	
+
   stdout_w["libax::io::stdout().write()"]
 	fopen["libax::fs::File::open"]
 	fread["libax::fs::file::File::read"]
@@ -165,7 +165,7 @@ graph TD
 	fs_createdir[libax::fs::create_dir]
 	fs_rmdir[libax::fs::remove_dir]
 	fs_rmfile[libax::fs::remove_file]
-	
+
 	cat --> fopen
 	cat --> fread
 	cat --> stdout_w
@@ -212,7 +212,7 @@ graph TD
 	create_file --> vfs_create
 	create_file --> vfs_truncate
 	create_file --> vfs_open
-	
+
 	vfs_lookup["axfs_vfs::VfsNodeOps::lookup"] --> fs_impl
 	vfs_create["axfs_vfs::VfsNodeOps::create"] --> fs_impl
 	vfs_getattr["axfs_vfs::VfsNodeOps::get_attr"] --> fs_impl
@@ -231,7 +231,7 @@ graph TD
 	builder_create --> root_create[axfs::root::create_dir] --> lookup[axfs::root::lookup]
 	lookup -..-> |exists/other error| err(Return error)
 	builder_create -->|type=VfsNodeType::Dir| node_create[axfs_vfs::VfsNodeOps::create] --> fs_impl[[FS implementation]]
-	
+
 	lookup --> vfs_lookup["axfs_vfs::VfsNodeOps::lookup"] --> fs_impl[[FS implementation]]
 ```
 
@@ -244,11 +244,11 @@ graph LR
   lib_read[libax::fs::File::read] --> fops_read
   fops_read[axfs::fops::File::read] ---> |w/ read permission| vfs_read_at
   vfs_read_at[axfs_vfs::VfsNodeOps::read] --> fs_impl[[FS implementation]]
-	
+
 	lib_write[libax::fs::File::write] --> fops_write
   fops_write[axfs::fops::File::write] ---> |w/ write permission| vfs_write_at
   vfs_write_at[axfs_vfs::VfsNodeOps::write] --> fs_impl[[FS implementation]]
-  
+
   fops_read -.-> |else| err1(Return error)
   fops_write -.-> |else| err(Return error)
 ```
@@ -266,10 +266,10 @@ graph LR
 ```mermaid
 graph TD
   lib_cd[libax::fs::set_current_dir] --> root_cd[axfs::root::set_current_dir]
-  
+
   root_cd -..-> |is root| change[Set CURRENT_DIR and CURRENT_DIR_PATH]
   root_cd --> |else| lookup["axfs::root::lookup"]
-  
+
   vfs_lookup["axfs_vfs::VfsNodeOps::lookup"]
   lookup --> vfs_lookup --> fs_impl[[FS implementation]]
   lookup -..-> |found & is directory & has permission| change
@@ -281,7 +281,7 @@ graph TD
 ```mermaid
 graph TD
 	lib_rmdir[libax::fs::remove_dir] --> root_rmdir[axfs::root::remove_dir]
-	
+
   root_rmdir -.-> |empty/is root/invalid/permission denied| ret_err(Return error)
 
   root_rmdir --> lookup[axfs::root::lookup] --> vfs_lookup["axfs_vfs::VfsNodeOps::lookup"]
@@ -296,7 +296,7 @@ graph TD
 ```mermaid
 graph TD
 	lib_rm[libax::fs::remove_file] --> root_rm[axfs::root::remove_file]
-	
+
   root_rm --> lookup[axfs::root::lookup] --> vfs_lookup["axfs_vfs::VfsNodeOps::lookup"]
   	---> fs_impl[[FS implementation]]
   lookup -.-> |not found| ret_err
