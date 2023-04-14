@@ -1,4 +1,5 @@
 #![no_std]
+#![feature(const_trait_impl)]
 
 mod linux_errno;
 
@@ -65,6 +66,9 @@ pub enum AxError {
 /// A [`Result`] type with [`AxError`] as the error type.
 pub type AxResult<T = ()> = Result<T, AxError>;
 
+/// A [`Result`] type with [`LinuxError`] as the error type.
+pub type LinuxResult<T = ()> = Result<T, LinuxError>;
+
 #[macro_export]
 macro_rules! ax_err_type {
     ($err: ident) => {{
@@ -89,7 +93,21 @@ macro_rules! ax_err {
     };
 }
 
-impl From<AxError> for LinuxError {
+impl AxError {
+    pub fn as_str(&self) -> &'static str {
+        use AxError::*;
+        match *self {
+            BadState => "Bad internal state",
+            InvalidData => "Invalid data",
+            Unsupported => "Operation not supported",
+            UnexpectedEof => "Unexpected end of file",
+            WriteZero => "Write zero",
+            _ => LinuxError::from(*self).as_str(),
+        }
+    }
+}
+
+impl const From<AxError> for LinuxError {
     fn from(e: AxError) -> Self {
         use AxError::*;
         match e {
@@ -105,7 +123,7 @@ impl From<AxError> for LinuxError {
             NotADirectory => LinuxError::ENOTDIR,
             NotConnected => LinuxError::ENOTCONN,
             NotFound => LinuxError::ENOENT,
-            PermissionDenied => LinuxError::EPERM,
+            PermissionDenied => LinuxError::EACCES,
             ResourceBusy => LinuxError::EBUSY,
             StorageFull => LinuxError::ENOSPC,
             Unsupported => LinuxError::ENOSYS,
@@ -114,6 +132,7 @@ impl From<AxError> for LinuxError {
     }
 }
 
+#[doc(hidden)]
 pub mod __priv {
     pub use log::warn;
 }

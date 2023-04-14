@@ -16,7 +16,7 @@ qemu_args-y := -m 128M -smp $(SMP) $(qemu_args-$(ARCH))
 
 qemu_args-$(FS) += \
   -device virtio-blk-device,drive=disk0 \
-  -drive id=disk0,if=none,format=raw,file=disk.img
+  -drive id=disk0,if=none,format=raw,file=$(DISK_IMG)
 
 qemu_args-$(NET) += \
   -device virtio-net-device,netdev=net0 \

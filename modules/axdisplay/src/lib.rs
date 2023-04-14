@@ -3,10 +3,12 @@
 #[macro_use]
 extern crate log;
 
-pub use driver_display::{DisplayDriverOps, DisplayInfo};
+#[doc(no_inline)]
+pub use driver_display::DisplayInfo;
 
 use axdriver::DisplayDevices;
 use axsync::Mutex;
+use driver_display::DisplayDriverOps;
 use lazy_init::LazyInit;
 
 struct DisplayDevicesWrapper(Mutex<DisplayDevices>);

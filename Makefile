@@ -7,6 +7,7 @@ LOG ?= warn
 A ?= apps/helloworld
 APP ?= $(A)
 APP_FEATURES ?=
+DISK_IMG ?= disk.img
 
 FS ?= n
 NET ?= n
@@ -87,8 +88,7 @@ clippy:
 	cargo clippy --target $(TARGET)
 
 doc:
-	cargo doc --no-deps --target $(TARGET)
-
+	$(call cargo_doc)
 
 fmt:
 	cargo fmt --all
@@ -97,10 +97,20 @@ fmt_c:
 	@clang-format --style=file -i $(shell find ulib/c_libax -iname '*.c' -o -iname '*.h')
 
 test:
-	$(call unittest)
+	$(call app_test)
 
-test_no_fail_fast:
-	$(call unittest,--no-fail-fast)
+unit_test:
+	$(call unit_test)
+
+unit_test_no_fail_fast:
+	$(call unit_test,--no-fail-fast)
+
+disk_img:
+ifneq ($(wildcard $(DISK_IMG)),)
+	@echo "$(YELLOW_C)warning$(END_C): disk image \"$(DISK_IMG)\" already exists!"
+else
+	$(call make_disk_image,fat32,$(DISK_IMG))
+endif
 
 clean: clean_c
 	rm -rf $(APP)/*.bin $(APP)/*.elf
@@ -110,4 +120,4 @@ clean_c:
 	rm -rf ulib/c_libax/build_*
 	rm -rf $(APP)/*.o
 
-.PHONY: all build disasm run justrun debug clippy fmt fmt_c test test_no_fail_fast clean clean_c doc
+.PHONY: all build disasm run justrun debug clippy fmt fmt_c test test_no_fail_fast clean clean_c doc disk_image

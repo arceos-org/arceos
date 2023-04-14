@@ -5,6 +5,7 @@ members = [
     "apps/exception",
     "apps/helloworld",
     "apps/memtest",
+    "apps/fs/shell",
     "apps/net/echoserver",
     "apps/net/httpclient",
     "apps/net/httpserver",
@@ -16,7 +17,10 @@ members = [
     "crates/allocator",
     "crates/arm_gic",
     "crates/axerrno",
+    "crates/axfs_devfs",
+    "crates/axfs_vfs",
     "crates/axio",
+    "crates/capability",
     "crates/crate_interface",
     "crates/driver_block",
     "crates/driver_common",
@@ -43,6 +47,7 @@ members = [
     "modules/axconfig",
     "modules/axdisplay",
     "modules/axdriver",
+    "modules/axfs",
     "modules/axhal",
     "modules/axlog",
     "modules/axnet",
@@ -51,5 +56,4 @@ members = [
     "modules/axtask",
 
     "ulib/libax",
-    "ulib/c_libax/libax_bindings",
 ]

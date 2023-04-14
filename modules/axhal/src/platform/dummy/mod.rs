@@ -19,6 +19,16 @@ pub mod misc {
     }
 }
 
+#[cfg(feature = "smp")]
+pub mod mp {
+    pub fn start_secondary_cpu(
+        hardid: usize,
+        entry: crate::mem::PhysAddr,
+        stack_top: crate::mem::PhysAddr,
+    ) {
+    }
+}
+
 pub mod mem {
     pub(crate) fn memory_regions_num() -> usize {
         0

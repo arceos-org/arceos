@@ -1,4 +1,5 @@
 #![cfg_attr(not(test), no_std)]
+#![feature(doc_auto_cfg)]
 
 #[macro_use]
 extern crate axlog;
@@ -9,6 +10,9 @@ mod trap;
 
 #[cfg(feature = "smp")]
 mod mp;
+
+#[cfg(feature = "smp")]
+pub use self::mp::rust_main_secondary;
 
 const LOGO: &str = r#"
        d8888                            .d88888b.   .d8888b.
@@ -123,6 +127,9 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     {
         #[allow(unused_variables)]
         let all_devices = axdriver::init_drivers();
+
+        #[cfg(feature = "fs")]
+        axfs::init_filesystems(all_devices.block.0);
 
         #[cfg(feature = "net")]
         axnet::init_network(all_devices.net);

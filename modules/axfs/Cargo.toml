@@ -1,0 +1,46 @@
+[package]
+name = "axfs"
+version = "0.1.0"
+edition = "2021"
+authors = ["Yuekai Jia <equation618@gmail.com>"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+use-ramdisk = ["driver_block/ramdisk"]
+use-virtio-blk = ["axdriver/virtio-blk"]
+
+devfs = ["dep:axfs_devfs"]
+ramfs = []
+fatfs = ["dep:fatfs"]
+
+default = ["use-ramdisk", "devfs", "ramfs", "fatfs"]
+
+[dependencies]
+log = "0.4"
+cfg-if = "1.0"
+lazy_init = { path = "../../crates/lazy_init" }
+capability = { path = "../../crates/capability" }
+driver_common = { path = "../../crates/driver_common" }
+driver_block = { path = "../../crates/driver_block" }
+axio = { path = "../../crates/axio", features = ["alloc"] }
+axerrno = { path = "../../crates/axerrno" }
+axfs_vfs = { path = "../../crates/axfs_vfs" }
+axfs_devfs = { path = "../../crates/axfs_devfs", optional = true }
+axdriver = { path = "../axdriver", optional = true }
+axsync = { path = "../axsync", default-features = false }
+
+[dependencies.fatfs]
+git = "https://github.com/rafalh/rust-fatfs"
+rev = "a3a834e"
+optional = true
+default-features = false
+features = [ # no std
+    "alloc",
+    "lfn",
+    "log_level_trace",
+    "unicode",
+]
+
+[dev-dependencies]
+axtask = { path = "../axtask", features = ["test"] }

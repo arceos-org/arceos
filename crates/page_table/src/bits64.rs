@@ -95,7 +95,7 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
             return Err(PagingError::NotAligned);
         }
         trace!(
-            "map_region({:#x}): [{:#x}, {:#x}) -> [{:#x}, {:#x}) ({:#?})",
+            "map_region({:#x}): [{:#x}, {:#x}) -> [{:#x}, {:#x}) {:?}",
             self.root_paddr(),
             vaddr,
             vaddr + size,
