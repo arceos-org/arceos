@@ -178,9 +178,14 @@ unsafe extern "C" fn lwip_print(str: *const c_uchar, mut args: ...) -> c_int {
     ax_print!("{}", s);
     bytes_written
 }
+
+#[no_mangle]
+extern "C" fn lwip_abort() {
+    panic!("lwip_abort");
+}
 ```
 
-在 `cc.h` 中补充 printf 所需的宏：
+在 `cc.h` 中补充 printf 所需的宏和用于自定义输出的宏：
 
 ```c
 #define lwip_NO_INTTYPES_H 1
@@ -194,7 +199,27 @@ unsafe extern "C" fn lwip_print(str: *const c_uchar, mut args: ...) -> c_int {
 #define S32_F              "d"
 #define X32_F              "x"
 #define SZT_F              "zu"
+
+extern int lwip_print(const char *fmt, ...);
+extern void lwip_abort();
+
+#define LWIP_PLATFORM_DIAG(x) \
+    do {                      \
+        lwip_print x;         \
+    } while (0)
+
+#define LWIP_PLATFORM_ASSERT(x)                                                       \
+    do {                                                                              \
+        lwip_print("Assert \"%s\" failed at line %d in %s\n", x, __LINE__, __FILE__); \
+        lwip_abort();                                                                 \
+    } while (0)
 ```
+
+效果：
+
+![](./pic/week8_lwip_message.png)
+
+![](./pic/week8_assert_failed.png)
 
 ### 踩坑
 

@@ -20,10 +20,17 @@
 #define LWIP_NO_UNISTD_H 1
 
 extern int lwip_print(const char *fmt, ...);
+extern void lwip_abort();
+
 #define LWIP_PLATFORM_DIAG(x) \
     do {                      \
         lwip_print x;         \
     } while (0)
-#define LWIP_PLATFORM_ASSERT(x)
+
+#define LWIP_PLATFORM_ASSERT(x)                                                       \
+    do {                                                                              \
+        lwip_print("Assert \"%s\" failed at line %d in %s\n", x, __LINE__, __FILE__); \
+        lwip_abort();                                                                 \
+    } while (0)
 
 #endif /* __ARCH_CC_H__ */

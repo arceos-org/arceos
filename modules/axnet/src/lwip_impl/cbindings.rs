@@ -10,3 +10,8 @@ unsafe extern "C" fn lwip_print(str: *const c_uchar, mut args: ...) -> c_int {
     ax_print!("{}", s);
     bytes_written
 }
+
+#[no_mangle]
+extern "C" fn lwip_abort() {
+    panic!("lwip_abort");
+}

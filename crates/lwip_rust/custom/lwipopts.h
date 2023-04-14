@@ -27,6 +27,7 @@
 #define LWIP_NETCONN         0
 #define LWIP_SOCKET          0
 #define PPP_SUPPORT          0
+#define LWIP_IPV4            1
 #define LWIP_IPV6            1
 #define LWIP_IPV6_MLD        0
 #define LWIP_IPV6_AUTOCONFIG 1
