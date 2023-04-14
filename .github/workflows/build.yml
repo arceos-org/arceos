@@ -63,7 +63,7 @@ jobs:
     - name: Build net/httpserver
       run: make ARCH=${{ matrix.arch }} A=apps/net/httpserver NET=y
 
-    - name: Install musl toolchain
+    - name: Download musl toolchain
       run: |
         if [ "${{ matrix.arch }}" = "x86_64" ]; then
           export MUSL_PATH="x86_64-linux-musl-cross"

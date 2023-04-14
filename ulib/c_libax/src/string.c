@@ -92,11 +92,11 @@ void *memset(void *dest, int c, size_t n)
     return dest;
 }
 
-int strcmp(const char *l, const char *r)
+char *strcpy(char *restrict d, const char *restrict s)
 {
-    for (; *l == *r && *l; l++, r++)
+    for (; (*d = *s); s++, d++)
         ;
-    return *(unsigned char *)l - *(unsigned char *)r;
+    return d;
 }
 
 char *strncpy(char *restrict d, const char *restrict s, size_t n)
@@ -104,6 +104,28 @@ char *strncpy(char *restrict d, const char *restrict s, size_t n)
     for (; n && (*d = *s); n--, s++, d++)
         ;
     return d;
+}
+
+char *strcat(char *restrict d, const char *restrict s)
+{
+    strcpy(d + strlen(d), s);
+    return d;
+}
+
+char *strncat(char *restrict d, const char *restrict s, size_t n)
+{
+    char *a = d;
+    d += strlen(d);
+    while (n && *s) n--, *d++ = *s++;
+    *d++ = 0;
+    return a;
+}
+
+int strcmp(const char *l, const char *r)
+{
+    for (; *l == *r && *l; l++, r++)
+        ;
+    return *(unsigned char *)l - *(unsigned char *)r;
 }
 
 int strncmp(const char *_l, const char *_r, size_t n)
