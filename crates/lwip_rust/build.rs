@@ -1,4 +1,4 @@
-use std::{env, path::PathBuf};
+use std::path::PathBuf;
 
 fn main() {
     compile_lwip();
@@ -10,6 +10,7 @@ fn generate_lwip_bindings() {
     println!("cargo:include=depend/lwip/src/include/");
 
     let bindings = bindgen::Builder::default()
+        .use_core()
         .header("wrapper.h")
         .clang_arg("-I./depend/lwip/src/include")
         .clang_arg("-I./custom")
@@ -19,7 +20,7 @@ fn generate_lwip_bindings() {
         .generate()
         .expect("Unable to generate bindings");
 
-    let mut out_path = PathBuf::from("src");
+    let out_path = PathBuf::from("src");
     bindings
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Couldn't write bindings!");
@@ -73,7 +74,11 @@ fn compile_lwip() {
         .file("depend/lwip/src/core/ipv6/nd6.c")
         .file("custom/sys_arch.c");
 
-    base_config.target("riscv64gc-unknown-none-elf");
+    // base_config.target("riscv64gc-unknown-none-elf");
+    base_config
+        .flag("-march=rv64gc")
+        .flag("-mabi=lp64d")
+        .flag("-mcmodel=medany");
 
     base_config
         .warnings(false)
