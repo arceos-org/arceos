@@ -37,7 +37,7 @@ jobs:
         crate: cargo-binutils
         version: latest
         use-tool-cache: true
-    - name: Install musl toolchain
+    - name: Download musl toolchain
       run: |
         if [ "${{ matrix.arch }}" = "x86_64" ]; then
           export MUSL_PATH="x86_64-linux-musl-cross"
@@ -75,4 +75,5 @@ jobs:
     - name: Run app tests
       run: |
         export PATH=$PATH:$PWD/musl/bin
+        make disk_img
         make test ARCH=${{ matrix.arch }}

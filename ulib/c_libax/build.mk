@@ -40,7 +40,7 @@ _gen_feat: $(obj_dir)
   endif
 else
 _gen_feat: $(obj_dir)
-  ifneq ($(shell cat $(out_feat)),default)
+  ifneq ($(shell cat $(out_feat) 2> /dev/null),default)
 	@echo default > $(out_feat)
   endif
 endif

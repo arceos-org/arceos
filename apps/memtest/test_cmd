@@ -1,1 +1,1 @@
-run_and_compare "LOG=trace" "expect_trace.out"
+test_one "LOG=trace" "expect_trace.out"
