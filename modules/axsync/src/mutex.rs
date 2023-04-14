@@ -200,7 +200,7 @@ mod tests {
 
     #[test]
     fn lots_and_lots() {
-        INIT.call_once(|| axtask::init_scheduler());
+        INIT.call_once(axtask::init_scheduler);
 
         const NUM_TASKS: u32 = 10;
         const NUM_ITERS: u32 = 10_000;

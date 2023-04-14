@@ -1,3 +1,7 @@
+//! ArceOS user library, with an interface similar to rust
+//! [std](https://doc.rust-lang.org/std/), but calling the functions directly
+//! in ArceOS modules, instead of using libc and system calls.
+
 #![cfg_attr(not(test), no_std)]
 #![feature(doc_auto_cfg)]
 

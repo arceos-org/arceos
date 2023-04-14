@@ -85,7 +85,7 @@ debug: build
 	$(GDB) $(OUT_ELF) -ex 'target remote localhost:1234'
 
 clippy:
-	cargo clippy --target $(TARGET)
+	$(call cargo_clippy)
 
 doc:
 	$(call cargo_doc)
