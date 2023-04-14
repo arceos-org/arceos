@@ -7,6 +7,7 @@ const fn align_up(val: usize) -> usize {
 static PERCPU_AREA_BASE: spin::once::Once<usize> = spin::once::Once::new();
 
 /// Returns the base address for all per-CPU data.
+#[doc(cfg(not(feature = "sp-naive")))]
 pub fn percpu_area_base() -> usize {
     #[cfg(target_os = "none")]
     {
@@ -20,6 +21,7 @@ pub fn percpu_area_base() -> usize {
 }
 
 /// Returns the per-CPU data area size for each CPUs.
+#[doc(cfg(not(feature = "sp-naive")))]
 pub fn percpu_area_size() -> usize {
     extern "C" {
         fn __percpu_offset_start();
@@ -30,6 +32,7 @@ pub fn percpu_area_size() -> usize {
 }
 
 /// Returns the base address of the per-CPU data area on the current CPU.
+#[doc(cfg(not(feature = "sp-naive")))]
 pub fn percpu_area_base_at(cpu_id: usize) -> usize {
     let size = percpu_area_size();
     let size_aligned = align_up(size);
@@ -113,6 +116,11 @@ pub fn set_local_thread_pointer(cpu_id: usize, tp_forced: Option<usize>) {
         }
     }
 }
+
+/// To use `percpu::__priv::NoPreemptGuard::new()` in macro expansion.
+#[allow(unused_imports)]
+#[cfg(feature = "preempt")]
+use crate as percpu;
 
 /// On x86, we use `gs:SELF_PTR` to store the address of the per-CPU data area base.
 #[cfg(target_arch = "x86_64")]

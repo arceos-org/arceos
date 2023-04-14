@@ -6,9 +6,6 @@
 //! order to maintain consistency, C user programs also choose to share the kernel heap,
 //! skipping the sys_brk step.
 
-extern crate alloc;
-extern crate axalloc;
-
 use core::result::Result::{Err, Ok};
 use core::{ffi::c_void, mem::size_of};
 

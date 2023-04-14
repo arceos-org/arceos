@@ -1,6 +1,7 @@
 #![no_std]
 #![feature(const_trait_impl)]
 #![feature(result_option_inspect)]
+#![feature(doc_auto_cfg)]
 
 #[macro_use]
 extern crate log;
@@ -10,8 +11,10 @@ mod bits64;
 
 use memory_addr::{PhysAddr, VirtAddr};
 
-pub use arch::*;
-pub use bits64::PageTable64;
+pub use self::arch::*;
+pub use self::bits64::PageTable64;
+
+#[doc(no_inline)]
 pub use page_table_entry::{GenericPTE, MappingFlags};
 
 #[derive(Debug)]

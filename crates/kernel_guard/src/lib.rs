@@ -1,3 +1,6 @@
+//! RAII wrappers to create a critical section with local IRQs or preemption
+//! disabled, used to implement spin locks in kernel.
+
 #![no_std]
 #![feature(asm_const)]
 #![allow(clippy::new_without_default)]
@@ -21,7 +24,7 @@ pub struct NoOp;
 cfg_if::cfg_if! {
     // For user-mode std apps, we use the alias of [`NoOp`] for all guards,
     // since we can not disable IRQs or preemption in user-mode.
-    if #[cfg(target_os = "none")] {
+    if #[cfg(any(target_os = "none", doc))] {
         pub struct IrqSave(usize);
         pub struct NoPreempt;
         pub struct NoPreemptIrqSave(usize);
@@ -44,7 +47,7 @@ impl NoOp {
     }
 }
 
-#[cfg(target_os = "none")]
+#[cfg(any(target_os = "none", doc))]
 mod imp {
     use super::*;
 

@@ -1,0 +1,106 @@
+#!/bin/bash
+
+APP=
+ROOT=$(realpath $(dirname $0))/../../
+FINAL_RES=0
+
+if [ -z "$ARCH" ]; then
+    ARCH=riscv64
+fi
+if [ "$ARCH" != "riscv64" ] && [ "$ARCH" != "aarch64" ]; then
+    echo "Unknown architecture: $ARCH"
+    exit 3
+fi
+
+RED_C="\x1b[31;1m"
+GREEN_C="\x1b[32;1m"
+YELLOW_C="\x1b[33;1m"
+CYAN_C="\x1b[36;1m"
+BLOD_C="\x1b[1m"
+END_C="\x1b[0m"
+
+MSG=
+function compare() {
+    local actual=$1
+    local expect=$2
+    if [ ! -f "$expect" ]; then
+        MSG="expected output file \"${BLOD_C}$expect${END_C}\" not found!"
+        return 1
+    fi
+    IFS=''
+    while read -r line; do
+        local matched=$(grep -m1 "$line" < "$actual")
+        if [ -z "$matched" ]; then
+            MSG="pattern \"${BLOD_C}$line${END_C}\" not matched!"
+            unset IFS
+            return 1
+        fi
+    done < "$expect"
+    unset IFS
+    return 0
+}
+
+function run_and_compare() {
+    local args=$1
+    local expect="$APP/$2"
+    local actual="$APP/actual.out"
+    args="$args ARCH=$ARCH"
+    rm -f "$actual"
+
+    echo -ne "    run with \"${BLOD_C}$args${END_C}\": "
+    make -C "$ROOT" A="$APP" $args > /dev/null 2> /dev/null
+
+    TIMEFORMAT='%3Rs'
+    run_time=$( { time { timeout --foreground 30s make -C "$ROOT" A="$APP" $args justrun > "$actual" 2>&1; }; } 2>&1 )
+
+    local res=$?
+    if [ $res -ne 0 ]; then
+        FINAL_RES=2
+        echo -e "${YELLOW_C}timeout!${END_C} $run_time"
+        echo -e "        ${RED_C}actual output${END_C}:"
+        cat "$actual"
+        return
+    fi
+
+    compare "$actual" "$expect"
+    res=$?
+    if [ $res -ne 0 ]; then
+        FINAL_RES=1
+        echo -e "${RED_C}failed!${END_C} $run_time"
+        echo -e "        $MSG"
+        echo -e "        ${RED_C}actual output${END_C}:"
+        cat "$actual"
+    else
+        echo -e "${GREEN_C}passed!${END_C} $run_time"
+        rm -f "$actual"
+    fi
+}
+
+if [ -z "$1" ]; then
+    test_list=(
+        "apps/helloworld"
+        "apps/memtest"
+        "apps/exception"
+        "apps/c/helloworld"
+        "apps/c/memtest"
+        "apps/task/yield"
+        "apps/task/parallel"
+        "apps/task/sleep"
+        "apps/net/httpclient"
+    )
+else
+    test_list="$@"
+fi
+
+for t in ${test_list[@]}; do
+    if [ -z "$1" ]; then
+        APP=$(realpath "$ROOT/$t")
+    else
+        APP=$(realpath "$(pwd)/$t")
+    fi
+    echo -e "${CYAN_C}Testing${END_C} $t:"
+    source "$APP/test_cmd"
+done
+
+echo -e "test script exited with: $FINAL_RES"
+exit $FINAL_RES

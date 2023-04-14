@@ -1,3 +1,5 @@
+#![feature(doc_cfg)]
+
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::{format_ident, quote};
@@ -151,7 +153,8 @@ pub fn def_percpu(attr: TokenStream, item: TokenStream) -> TokenStream {
     .into()
 }
 
-#[cfg(not(feature = "sp-naive"))]
+#[cfg(any(not(feature = "sp-naive"), doc))]
+#[doc(cfg(not(feature = "sp-naive")))]
 #[proc_macro]
 pub fn percpu_symbol_offset(item: TokenStream) -> TokenStream {
     let symbol = &format_ident!("{}", item.to_string());

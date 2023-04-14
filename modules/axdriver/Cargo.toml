@@ -12,9 +12,10 @@ bus-pci = ["driver_virtio?/bus-pci"]
 virtio = ["driver_virtio", "dep:axalloc", "dep:axhal", "dep:axconfig"]
 
 # various types of drivers
-virtio-blk = ["virtio", "dep:driver_block", "driver_virtio/block"]
+virtio-blk = ["virtio", "driver_block", "driver_virtio/block"]
 virtio-net = ["virtio", "dep:driver_net", "driver_virtio/net"]
 virtio-gpu = ["virtio", "dep:driver_display", "driver_virtio/gpu"]
+ramdisk = ["driver_block/ramdisk"]
 # more device example: e1000 = ["driver_net/e1000"]
 
 default = ["bus-mmio"]

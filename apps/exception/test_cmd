@@ -1,0 +1,1 @@
+run_and_compare "LOG=debug" "expect_debug_${ARCH}.out"

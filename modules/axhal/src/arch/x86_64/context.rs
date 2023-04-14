@@ -78,6 +78,7 @@ pub struct ExtentedState {
     fxsave_area: FxsaveArea,
 }
 
+#[cfg(feature = "fp_simd")]
 impl ExtentedState {
     #[inline]
     fn save(&mut self) {
@@ -102,6 +103,7 @@ impl fmt::Debug for ExtentedState {
 pub struct TaskContext {
     pub kstack_top: VirtAddr,
     pub rsp: u64,
+    #[cfg(feature = "fp_simd")]
     pub ext_state: ExtentedState,
 }
 
@@ -110,6 +112,7 @@ impl TaskContext {
         Self {
             kstack_top: VirtAddr::from(0),
             rsp: 0,
+            #[cfg(feature = "fp_simd")]
             ext_state: ExtentedState {
                 fxsave_area: FxsaveArea::default(),
             },
@@ -136,7 +139,8 @@ impl TaskContext {
     }
 
     pub fn switch_to(&mut self, next_ctx: &Self) {
-        if cfg!(target_feature = "sse") {
+        #[cfg(all(feature = "fp_simd", target_feature = "sse"))]
+        {
             self.ext_state.save();
             next_ctx.ext_state.restore();
         }

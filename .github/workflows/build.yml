@@ -15,7 +15,6 @@ jobs:
       with:
         profile: minimal
         toolchain: nightly
-        override: true
         components: rust-src, clippy, rustfmt
     - name: Clippy
       run: make clippy ARCH=${{ matrix.arch }}
@@ -55,6 +54,8 @@ jobs:
       run: make ARCH=${{ matrix.arch }} A=apps/task/parallel
     - name: Build task/sleep
       run: make ARCH=${{ matrix.arch }} A=apps/task/sleep
+    - name: Build fs/shell
+      run: make ARCH=${{ matrix.arch }} A=apps/fs/shell FS=y
     - name: Build net/echoserver
       run: make ARCH=${{ matrix.arch }} A=apps/net/echoserver NET=y
     - name: Build net/httpclient

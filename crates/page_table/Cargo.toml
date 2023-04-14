@@ -8,6 +8,5 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 
 [dependencies]
 log = "0.4"
-cfg-if = "1.0"
 memory_addr = { path = "../memory_addr" }
 page_table_entry = { path = "../page_table_entry" }
