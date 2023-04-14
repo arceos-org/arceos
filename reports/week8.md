@@ -10,7 +10,7 @@
 
 - `lwip` 对于网卡的抽象数据结构
 - 多网卡组织为 `netif` 的链表，名为 `netif_list`
-- 通过 `netif_add` 函数将网卡挂载到 `netif_list` 链表上，需要提供IP地址、子网掩码、默认网关、初始化网卡回调函数 `ethernetif_init`、收包回调函数等参数。在挂载前，`ethernetif_init` 会被调用。
+- 通过 `netif_add` 函数将网卡挂载到 `netif_list` 链表上，需要提供IP地址、子网掩码、默认网关、初始化网卡回调函数 `myif_init`、收包回调函数等参数。在挂载前，`myif_init` 会被调用。
 
 #### 内存管理
 
@@ -27,22 +27,38 @@
 - `PBUF_ROM`：内存池中分配，分配时不包含数据区域，数据区位于 ROM
 - `PBUF_RAM`：内存池中分配，分配时不包含数据区域，数据区位于 RAM
 
-### 移植 lwip
+### 移植 lwip 分析
 
 先主要完成驱动的适配，以类似裸机的形式运行。
 
-#### 需要实现的函数
-
-- `low_level_init()`：网卡初始化函数，供 `ethernetif_init` 调用
-- `low_level_output()`：网卡的发送函数，将 pbuf 数据结构解包并发出
-- `low_level_input()`：网卡的接收函数，将收到的数据封装为 pbuf 数据结构
-- `sys_now()`：时钟
-
 #### 需要移植的头文件
 
-- `lwipopts.h`
-- `cc.h`
-- `sys_arch.h`
+- [ ] `lwipopts.h`：协议栈的各种参数，先将 `NO_SYS` 设为 1 以裸机形式运行
+- [ ] `arch/cc.h`：编译器与体系结构相关的设置
+
+- [ ] ``arch/sys_arch.h``：用于适配系统的相关设置
+
+#### 需要实现的函数
+
+- [ ] `err_t myif_init(struct netif *netif)`：网卡初始化函数，作为 `netif_add` 的参数，在添加网卡时初始化
+- [ ] `err_t myif_link_output(struct netif *netif, struct pbuf *p)`：链路层发包函数，作为 `netif->linkoutput`
+- [ ] `err_t myif_output(struct netif *netif, struct pbuf *p, ip_addr_t *ipaddr)`：网络层发包函数，作为 `netif->output`。该函数被 `ip_output` 调用，函数内最终会使用 `myif_link_output` 进行发包。若支持 ARP，则该函数可以直接设为 `etharp_output`。
+- [ ] `myif_input()`：收包函数。当网卡收到包的时候，通过这个函数调用 `netif->input`，将包送入协议栈。对于以太网网卡，`netif->input` 将被设为 `ethernet_input`，故调用 `netif->input` 时需要传递含有数据链路层头部信息的以太网帧。
+- [ ] `u32_t sys_now(void)`：获取当前时钟，用于实现定时器。
+- [ ] `main()`：裸机运行的主函数，依次初始化协议栈（`lwip_init()`），添加网卡（`netif_add()`，添加时会初始化），然后进入循环，不断检查收包（收到则调用 `myif_input()`），检查定时器（`sys_check_timeouts()`）
+
+#### netif 初始化时需要设置的字段
+
+- `state`：自定义数据
+- `hwaddr_len`：链路层地址长度
+- `hwaddr[]`：链路层地址
+- `mtu`：MTU
+- `name[2]`：网卡名，如 `en`
+- `num`：可选数字，网卡名相同时通过该数字区分
+- `output`：设为 `etharp_output`
+- `link_output`：设为 `myif_link_output`
+- `input`：设为 `ethernet_input`
+- `flags`：网卡 flag
 
 ### 移植 lwip 实操
 
