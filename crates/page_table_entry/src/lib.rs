@@ -1,12 +1,14 @@
 #![no_std]
 #![feature(const_trait_impl)]
+#![feature(doc_auto_cfg)]
+#![feature(doc_cfg)]
 
 mod arch;
 
 use core::fmt::Debug;
 use memory_addr::PhysAddr;
 
-pub use arch::*;
+pub use self::arch::*;
 
 bitflags::bitflags! {
     #[derive(Debug, Clone, Copy)]

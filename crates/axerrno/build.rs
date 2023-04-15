@@ -1,5 +1,3 @@
-#![feature(is_some_and)]
-
 use std::fs::{self, File};
 use std::io::{BufRead, BufReader, Result, Write};
 
@@ -16,14 +14,14 @@ pub enum LinuxError {{
 }}
 
 impl LinuxError {{
-    pub fn detail(&self) -> &str {{
+    pub const fn as_str(&self) -> &'static str {{
         use self::LinuxError::*;
         match self {{
 {1}        }}
     }}
 
-    pub fn code(self) -> i32 {{
-        -(self as i32)
+    pub const fn code(self) -> i32 {{
+        self as i32
     }}
 }}
 "
@@ -39,7 +37,7 @@ fn gen_linux_errno() -> Result<()> {
     let mut detail_info = Vec::new();
 
     let file = File::open("src/errno.h")?;
-    for line in BufReader::new(file).lines().filter_map(|l| l.ok()) {
+    for line in BufReader::new(file).lines().map_while(Result::ok) {
         if line.starts_with("#define") {
             let mut iter = line.split_whitespace();
             if let Some(name) = iter.nth(1) {

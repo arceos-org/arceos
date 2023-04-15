@@ -1,3 +1,6 @@
+//! A `no_std` spin lock implementation, can disable kernel local IRQs or
+//! preemption on locking.
+
 #![cfg_attr(not(test), no_std)]
 #![feature(const_trait_impl)]
 
@@ -32,5 +35,5 @@ pub type SpinNoIrqGuard<'a, T> = BaseSpinLockGuard<'a, NoPreemptIrqSave, T>;
 /// or never be used in interrupt handlers.
 pub type SpinRaw<T> = BaseSpinLock<NoOp, T>;
 
-/// A guard that provides mutable data access for [`SpinLockRaw`].
+/// A guard that provides mutable data access for [`SpinRaw`].
 pub type SpinRawGuard<'a, T> = BaseSpinLockGuard<'a, NoOp, T>;

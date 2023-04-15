@@ -1,1 +1,1 @@
-pub use super::{BufRead, Read, Write};
+pub use super::{BufRead, Read, Seek, Write};

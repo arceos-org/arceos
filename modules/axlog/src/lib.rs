@@ -2,13 +2,13 @@
 
 extern crate log;
 
-#[cfg(not(feature = "std"))]
-use crate_interface::{call_interface, def_interface};
-
 use core::fmt::{self, Write};
 use core::str::FromStr;
 
 use log::{Level, LevelFilter, Log, Metadata, Record};
+
+#[cfg(not(feature = "std"))]
+use crate_interface::call_interface;
 
 pub use log::{debug, error, info, trace, warn};
 
@@ -55,8 +55,7 @@ enum ColorCode {
 }
 
 /// Extern interfaces called in this crate.
-#[cfg(not(feature = "std"))]
-#[def_interface]
+#[crate_interface::def_interface]
 pub trait LogIf {
     /// write a string to the console.
     fn console_write_str(s: &str);
@@ -165,6 +164,7 @@ impl Log for Logger {
     fn flush(&self) {}
 }
 
+#[doc(hidden)]
 pub fn __print_impl(args: fmt::Arguments) {
     use spinlock::SpinNoIrq; // TODO: more efficient
     static LOCK: SpinNoIrq<()> = SpinNoIrq::new(());

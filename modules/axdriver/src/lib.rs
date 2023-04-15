@@ -1,4 +1,5 @@
 #![no_std]
+#![feature(doc_auto_cfg)]
 
 #[macro_use]
 extern crate log;
@@ -15,9 +16,13 @@ pub use self::virtio::VirtIoGpuDev;
 #[cfg(feature = "virtio-net")]
 pub use self::virtio::VirtIoNetDev;
 
+#[cfg(feature = "ramdisk")]
+pub type RamDisk = driver_block::ramdisk::RamDisk;
+
 #[derive(TupleForEach)]
 pub struct BlockDevices(
     #[cfg(feature = "virtio-blk")] pub VirtIoBlockDev,
+    #[cfg(feature = "ramdisk")] pub RamDisk,
     // e.g. #[cfg(feature = "nvme")] pub nvme::NVMeDev,
 );
 
@@ -42,6 +47,8 @@ impl AllDevices {
             block: BlockDevices(
                 #[cfg(feature = "virtio-blk")]
                 Self::probe_virtio_blk().expect("no virtio-blk device found"),
+                #[cfg(feature = "ramdisk")] // TODO: format RAM disk
+                RamDisk::new(0x100_0000), // 16 MiB
             ),
             net: NetDevices(
                 #[cfg(feature = "virtio-net")]

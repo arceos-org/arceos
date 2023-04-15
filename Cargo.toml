@@ -1,13 +1,17 @@
 [workspace]
 
+resolver = "2"
+
 members = [
     "apps/display",
     "apps/exception",
     "apps/helloworld",
     "apps/memtest",
+    "apps/fs/shell",
     "apps/net/echoserver",
     "apps/net/httpclient",
     "apps/net/httpserver",
+    "apps/net/lwip_test",
     "apps/task/parallel",
     "apps/task/sleep",
     "apps/task/yield",
@@ -15,7 +19,10 @@ members = [
     "crates/allocator",
     "crates/arm_gic",
     "crates/axerrno",
+    "crates/axfs_devfs",
+    "crates/axfs_vfs",
     "crates/axio",
+    "crates/capability",
     "crates/crate_interface",
     "crates/driver_block",
     "crates/driver_common",
@@ -25,6 +32,7 @@ members = [
     "crates/handler_table",
     "crates/lazy_init",
     "crates/linked_list",
+    "crates/lwip_rust",
     "crates/memory_addr",
     "crates/page_table",
     "crates/page_table_entry",
@@ -41,6 +49,7 @@ members = [
     "modules/axconfig",
     "modules/axdisplay",
     "modules/axdriver",
+    "modules/axfs",
     "modules/axhal",
     "modules/axlog",
     "modules/axnet",
@@ -49,5 +58,4 @@ members = [
     "modules/axtask",
 
     "ulib/libax",
-    "ulib/c_libax/libax_bindings",
 ]

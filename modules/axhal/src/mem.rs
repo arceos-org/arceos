@@ -1,7 +1,9 @@
+use core::fmt;
+
+#[doc(no_inline)]
 pub use memory_addr::{PhysAddr, VirtAddr, PAGE_SIZE_4K};
 
 bitflags::bitflags! {
-    #[derive(Debug)]
     pub struct MemRegionFlags: usize {
         const READ          = 1 << 0;
         const WRITE         = 1 << 1;
@@ -9,6 +11,12 @@ bitflags::bitflags! {
         const DEVICE        = 1 << 4;
         const RESERVED      = 1 << 5;
         const FREE          = 1 << 6;
+    }
+}
+
+impl fmt::Debug for MemRegionFlags {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Debug::fmt(&self.0, f)
     }
 }
 

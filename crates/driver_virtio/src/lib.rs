@@ -1,34 +1,28 @@
 #![no_std]
 #![feature(const_trait_impl)]
+#![feature(doc_auto_cfg)]
 
-#[macro_use]
-extern crate cfg_if;
 #[macro_use]
 extern crate log;
 
-cfg_if! {
-    if #[cfg(feature = "net")] {
-        mod net;
-        pub use net::VirtIoNetDev;
-    }
-}
-cfg_if! {
-    if #[cfg(feature = "block")] {
-        mod blk;
-        pub use blk::VirtIoBlkDev;
-    }
-}
-cfg_if! {
-    if #[cfg(feature = "gpu")] {
-        mod display;
-        pub use display::VirtIoGpuDev;
-    }
-}
+#[cfg(feature = "block")]
+mod blk;
+#[cfg(feature = "gpu")]
+mod gpu;
+#[cfg(feature = "net")]
+mod net;
+
+#[cfg(feature = "block")]
+pub use self::blk::VirtIoBlkDev;
+#[cfg(feature = "gpu")]
+pub use self::gpu::VirtIoGpuDev;
+#[cfg(feature = "net")]
+pub use self::net::VirtIoNetDev;
 
 use driver_common::{DevError, DeviceType};
-use virtio_drivers::transport::{self, Transport};
+use virtio_drivers::transport;
 
-pub use virtio_drivers::{BufferDirection, Hal as VirtIoHal, PhysAddr};
+pub use virtio_drivers::{transport::Transport, BufferDirection, Hal as VirtIoHal, PhysAddr};
 
 #[cfg(feature = "bus-mmio")]
 pub use transport::mmio::MmioTransport;

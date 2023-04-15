@@ -7,11 +7,17 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
+# Generate bindings for C code
+cbindings = ["cbindgen", "bindgen"]
+
 # Multicore
 smp = ["axruntime/smp", "axhal/smp"]
 
+# Floating point/SIMD
+fp_simd = ["axhal/fp_simd"]
+
 # Memory
-alloc = ["axruntime/alloc", "axio/alloc"]
+alloc = ["dep:axalloc", "axruntime/alloc", "axio/alloc"]
 paging = ["axruntime/paging"]
 
 # Multi-task
@@ -19,11 +25,11 @@ multitask = ["axruntime/multitask", "axtask/multitask", "axsync/multitask"]
 sched_fifo = ["axtask/sched_fifo"]
 sched_rr = ["axtask/sched_rr"]
 
+# File system
+fs = ["alloc", "axruntime/fs", "dep:axfs"]
+
 # Networking
 net = ["axruntime/net", "dep:axnet"]
-
-# File system
-fs = ["axruntime/fs"]
 
 # Display
 display = ["axruntime/display", "dep:axdisplay"]
@@ -46,11 +52,17 @@ default = ["axtask?/sched_fifo"]
 spinlock = { path = "../../crates/spinlock" }
 axio = { path = "../../crates/axio" }
 axerrno = { path = "../../crates/axerrno" }
+axalloc = { path = "../../modules/axalloc", optional = true }
 axdisplay = { path = "../../modules/axdisplay", optional = true }
 axdriver = { path = "../../modules/axdriver", optional = true }
 axhal = { path = "../../modules/axhal" }
 axlog = { path = "../../modules/axlog" }
+axfs = { path = "../../modules/axfs", optional = true }
 axnet = { path = "../../modules/axnet", optional = true }
-axruntime = { path = "../../modules/axruntime" }
+axruntime = { path = "../../modules/axruntime", default-features = false }
 axsync = { path = "../../modules/axsync", default-features = false, optional = true }
 axtask = { path = "../../modules/axtask", default-features = false, optional = true }
+
+[build-dependencies]
+cbindgen = { version = "0.24", optional = true }
+bindgen ={ version = "0.64", optional = true }

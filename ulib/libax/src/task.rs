@@ -1,9 +1,9 @@
 #[cfg(feature = "multitask")]
-pub use axtask::{current, sleep, sleep_until, spawn, yield_now, TaskId};
+pub use axtask::{current, exit, sleep, sleep_until, spawn, yield_now, TaskId};
 
 #[cfg(not(feature = "multitask"))]
 pub fn yield_now() {
-    core::hint::spin_loop()
+    axhal::arch::wait_for_irqs();
 }
 
 #[cfg(not(feature = "multitask"))]

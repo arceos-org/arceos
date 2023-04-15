@@ -3,6 +3,7 @@
 #![feature(naked_functions)]
 #![feature(const_trait_impl)]
 #![feature(const_maybe_uninit_zeroed)]
+#![feature(doc_auto_cfg)]
 
 #[allow(unused_imports)]
 #[macro_use]
@@ -25,13 +26,7 @@ pub mod console {
 
     pub fn write_bytes(bytes: &[u8]) {
         for c in bytes {
-            match *c {
-                b'\n' => {
-                    putchar(b'\r');
-                    putchar(b'\n');
-                }
-                c => putchar(c),
-            }
+            putchar(*c);
         }
     }
 }

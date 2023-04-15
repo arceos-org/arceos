@@ -3,3 +3,5 @@
 .DS_Store
 *.asm
 *.img
+actual.out
+*.pcap
