@@ -14,6 +14,7 @@ fn generate_lwip_bindings() {
         .header("wrapper.h")
         .clang_arg("-I./depend/lwip/src/include")
         .clang_arg("-I./custom")
+        .clang_arg("-I../../ulib/c_libax/include")
         .clang_arg("-Wno-everything")
         .layout_tests(false)
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
