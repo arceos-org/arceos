@@ -11,7 +11,7 @@ authors = [
 description = "ArceOS user library with an interface similar to rust std"
 license = "GPL-3.0-or-later OR Apache-2.0"
 homepage = "https://github.com/rcore-os/arceos"
-repository = "https://github.com/rcore-os/arceos"
+repository = "https://github.com/rcore-os/arceos/tree/main/ulib/ibax"
 documentation = "https://rcore-os.github.io/arceos/libax/index.html"
 
 [features]

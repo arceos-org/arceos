@@ -90,6 +90,9 @@ clippy:
 doc:
 	$(call cargo_doc)
 
+doc_check_missing:
+	$(call cargo_doc,-D missing-docs)
+
 fmt:
 	cargo fmt --all
 

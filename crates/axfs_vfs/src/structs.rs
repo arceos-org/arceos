@@ -1,6 +1,10 @@
-pub struct FileSystemInfo; // TODO
+/// Filesystem attributes.
+///
+/// Currently not used.
+#[non_exhaustive]
+pub struct FileSystemInfo;
 
-/// File (inode) attribute
+/// Node (file/directory) attributes.
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
 pub struct VfsNodeAttr {
@@ -15,7 +19,7 @@ pub struct VfsNodeAttr {
 }
 
 bitflags::bitflags! {
-    /// File (inode) permission mode.
+    /// Node (file/directory) permission mode.
     #[derive(Debug, Clone, Copy)]
     pub struct VfsNodePerm: u16 {
         /// Owner has read permission.
@@ -41,7 +45,7 @@ bitflags::bitflags! {
     }
 }
 
-/// File (inode) type.
+/// Node (file/directory) type.
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum VfsNodeType {
@@ -68,14 +72,24 @@ pub struct VfsDirEntry {
 }
 
 impl VfsNodePerm {
+    /// Returns the default permission for a file.
+    ///
+    /// The default permission is `0o666` (owner/group/others can read and write).
     pub const fn default_file() -> Self {
         Self::from_bits_truncate(0o666)
     }
 
+    /// Returns the default permission for a directory.
+    ///
+    /// The default permission is `0o755` (owner can read, write and execute,
+    /// group/others can read and execute).
     pub const fn default_dir() -> Self {
         Self::from_bits_truncate(0o755)
     }
 
+    /// Returns a 9-bytes string representation of the permission.
+    ///
+    /// For example, `0o755` is represented as `rwxr-xr-x`.
     pub const fn rwx_buf(&self) -> [u8; 9] {
         let mut perm = [b'-'; 9];
         if self.contains(Self::OWNER_READ) {
@@ -108,28 +122,36 @@ impl VfsNodePerm {
         perm
     }
 
+    /// Whether the owner has read permission.
     pub const fn owner_readable(&self) -> bool {
         self.contains(Self::OWNER_READ)
     }
 
+    /// Whether the owner has write permission.
     pub const fn owner_writable(&self) -> bool {
         self.contains(Self::OWNER_WRITE)
     }
 
+    /// Whether the owner has execute permission.
     pub const fn owner_executable(&self) -> bool {
         self.contains(Self::OWNER_EXEC)
     }
 }
 
 impl VfsNodeType {
+    /// Whether the node is a file.
     pub const fn is_file(self) -> bool {
         matches!(self, Self::File)
     }
 
+    /// Whether the node is a directory.
     pub const fn is_dir(self) -> bool {
         matches!(self, Self::Dir)
     }
 
+    /// Returns a character representation of the node type.
+    ///
+    /// For example, `d` for directory, `-` for regular file, etc.
     pub const fn as_char(self) -> char {
         match self {
             Self::Fifo => 'p',
@@ -144,6 +166,8 @@ impl VfsNodeType {
 }
 
 impl VfsNodeAttr {
+    /// Creates a new `VfsNodeAttr` with the given permission mode, type, size
+    /// and number of blocks.
     pub const fn new(mode: VfsNodePerm, ty: VfsNodeType, size: u64, blocks: u64) -> Self {
         Self {
             mode,
@@ -153,6 +177,7 @@ impl VfsNodeAttr {
         }
     }
 
+    /// Creates a new `VfsNodeAttr` for a file, with the default file permission.
     pub const fn new_file(size: u64, blocks: u64) -> Self {
         Self {
             mode: VfsNodePerm::default_file(),
@@ -162,6 +187,8 @@ impl VfsNodeAttr {
         }
     }
 
+    /// Creates a new `VfsNodeAttr` for a directory, with the default directory
+    /// permission.
     pub const fn new_dir(size: u64, blocks: u64) -> Self {
         Self {
             mode: VfsNodePerm::default_dir(),
@@ -171,36 +198,44 @@ impl VfsNodeAttr {
         }
     }
 
+    /// Returns the size of the node.
     pub const fn size(&self) -> u64 {
         self.size
     }
 
+    /// Returns the number of blocks the node occupies on the disk.
     pub const fn blocks(&self) -> u64 {
         self.blocks
     }
 
+    /// Returns the permission of the node.
     pub const fn perm(&self) -> VfsNodePerm {
         self.mode
     }
 
+    /// Sets the permission of the node.
     pub fn set_perm(&mut self, perm: VfsNodePerm) {
         self.mode = perm
     }
 
+    /// Returns the type of the node.
     pub const fn file_type(&self) -> VfsNodeType {
         self.ty
     }
 
+    /// Whether the node is a file.
     pub const fn is_file(&self) -> bool {
         self.ty.is_file()
     }
 
+    /// Whether the node is a directory.
     pub const fn is_dir(&self) -> bool {
         self.ty.is_dir()
     }
 }
 
 impl VfsDirEntry {
+    /// Creates an empty `VfsDirEntry`.
     pub const fn default() -> Self {
         Self {
             d_type: VfsNodeType::File,
@@ -208,6 +243,7 @@ impl VfsDirEntry {
         }
     }
 
+    /// Creates a new `VfsDirEntry` with the given name and type.
     pub fn new(name: &str, ty: VfsNodeType) -> Self {
         let mut d_name = [0; 63];
         if name.len() > d_name.len() {
@@ -221,10 +257,12 @@ impl VfsDirEntry {
         Self { d_type: ty, d_name }
     }
 
+    /// Returns the type of the entry.
     pub fn entry_type(&self) -> VfsNodeType {
         self.d_type
     }
 
+    /// Converts the name of the entry to a byte slice.
     pub fn name_as_bytes(&self) -> &[u8] {
         let len = self
             .d_name

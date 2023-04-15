@@ -2,8 +2,12 @@
 name = "kernel_guard"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors = ["Yuekai Jia <equation618@gmail.com>"]
+description = "RAII wrappers to create a critical section with local IRQs or preemption disabled"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+repository = "https://github.com/rcore-os/arceos/tree/main/crates/kernel_guard"
+documentation = "https://rcore-os.github.io/arceos/kernel_guard/index.html"
 
 [dependencies]
 cfg-if = "1.0"

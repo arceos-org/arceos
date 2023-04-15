@@ -1,5 +1,5 @@
-//! A `no_std` spin lock implementation, can disable kernel local IRQs or
-//! preemption on locking.
+//! `no_std` spin lock implementation that can disable kernel local IRQs or
+//! preemption while locking.
 
 #![cfg_attr(not(test), no_std)]
 #![feature(const_trait_impl)]

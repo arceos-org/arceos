@@ -65,10 +65,11 @@ all_packages := \
   libax
 
 define cargo_doc
-  RUSTDOCFLAGS="--enable-index-page -Zunstable-options" cargo doc --no-deps --all-features --workspace --exclude "arceos-*"
+  RUSTDOCFLAGS="--enable-index-page -Zunstable-options -D rustdoc::broken_intra_doc_links $(1)" \
+    cargo doc --no-deps --all-features --workspace --exclude "arceos-*"
   @# run twice to fix broken hyperlinks
   $(foreach p,$(all_packages), \
-     cargo rustdoc --all-features -p $(p)
+    cargo rustdoc --all-features -p $(p)
   )
   @# for some crates, re-generate without `--all-features`
   cargo doc --no-deps -p percpu -p kernel_guard

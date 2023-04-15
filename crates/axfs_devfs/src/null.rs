@@ -1,5 +1,8 @@
 use axfs_vfs::{VfsNodeAttr, VfsNodeOps, VfsNodePerm, VfsNodeType, VfsResult};
 
+/// A null device behaves like `/dev/null`.
+///
+/// Nothing can be read and all writes are discarded.
 pub struct NullDev;
 
 impl VfsNodeOps for NullDev {
