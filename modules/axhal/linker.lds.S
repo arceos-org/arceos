@@ -12,17 +12,17 @@ SECTIONS
         stext = .;
         *(.text.boot)
         *(.text .text.*)
-        . = ALIGN(4K);
-        etext = .;
     }
+    . = ALIGN(4K);
+    etext = .;
 
     .rodata : ALIGN(4K) {
         srodata = .;
         *(.rodata .rodata.*)
         *(.srodata .srodata.*)
-        . = ALIGN(4K);
-        erodata = .;
     }
+    . = ALIGN(4K);
+    erodata = .;
 
     .data : ALIGN(4K) {
         sdata = .;
@@ -31,9 +31,9 @@ SECTIONS
         *(.data .data.*)
         *(.sdata .sdata.*)
         *(.got .got.*)
-        . = ALIGN(4K);
-        edata = .;
     }
+    . = ALIGN(4K);
+    edata = .;
 
     percpu_start = .;
     .percpu 0x0 : AT(percpu_start) ALIGN(4K) {
