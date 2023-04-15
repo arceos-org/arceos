@@ -2,8 +2,13 @@
 graph TD;
     A[axhal::platform::qemu_virt_riscv::boot.rs::_boot] --> init_boot_page_table;
     A --> init_mmu;
-    A --> platform_init;
+    A --> P[platform_init];
     A --> B[axruntime::rust_main];
+    P --> P1["axhal::mem::clear_bss()"];
+    P --> P2["axhal::arch::riscv::set_tap_vector_base()"];
+    P --> P3["axhal::cpu::init_percpu()"];
+    P --> P4["axhal::platform::qemu_virt_riscv::irq.rs::init()"];
+    P --> P5["axhal::platform::qemu_virt_riscv::time.rs::init()"];
     B --> axlog::init;
     B --> D[init_allocator];
     B --> remap_kernel_memory;
@@ -24,5 +29,6 @@ graph TD;
     I --> M["allocator::bitmap::BitmapPageAllocator::init()"];
     J -->L["allocator::slab::SlabByteAllocator::init() self.inner = unsafe { Some(Heap::new(start, size))"];
     K --> N["allocator::slab::SlabByteAllocator::add_memory:  self.inner_mut().add_memory(start, size);"];
+
 ```
 
