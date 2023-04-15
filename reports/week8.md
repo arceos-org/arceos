@@ -237,6 +237,254 @@ extern void lwip_abort();
 
 ![](./pic/week8_assert_failed.png)
 
+#### 适配网卡驱动
+
+##### 网卡初始化函数
+
+```rust
+extern "C" fn ethif_init(netif: *mut netif) -> err_t {
+    debug!("ethif_init");
+    unsafe {
+        (*netif).name[0] = 'e' as i8;
+        (*netif).name[1] = 'n' as i8;
+        (*netif).num = 0;
+
+        (*netif).output = Some(etharp_output);
+        (*netif).output_ip6 = Some(ethip6_output);
+        (*netif).linkoutput = Some(ethif_output);
+
+        (*netif).mtu = 1500;
+        (*netif).flags = 0;
+        (*netif).flags = (NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_ETHERNET) as u8;
+    }
+    err_enum_t_ERR_OK as err_t
+}
+```
+
+##### 网卡收发包
+
+学习 `smoltcp_impl` 对 `NetDevices` 的使用。
+
+于是先实现两个包装：
+
+```rust
+struct DeviceWrapper<D: NetDriverOps> {
+    inner: RefCell<D>,
+    rx_buf_queue: VecDeque<D::RxBuffer>,
+}
+
+struct InterfaceWrapper<D: NetDriverOps> {
+    dev: Mutex<DeviceWrapper<D>>,
+    netif: Mutex<NetifWrapper>,
+}
+```
+
+`DeviceWrapper` 复用 `smoltcp_impl` 的实现，然后对 `InterfaceWrapper` 实现 `poll` 函数，用于处理收包，复制到 `pbuf` 中并调用 `netif->input`：
+
+```rust
+impl<D: NetDriverOps> InterfaceWrapper<D> {
+    fn poll(&self) {
+        self.dev.lock().poll();
+        loop {
+            let buf_receive = self.dev.lock().receive();
+            if let Some(buf) = buf_receive {
+                trace!("RECV {} bytes: {:02X?}", buf.packet_len(), buf.packet());
+
+                // Copy buf to pbuf
+                let len = buf.packet_len();
+                let p = unsafe { pbuf_alloc(pbuf_layer_PBUF_RAW, len as u16, pbuf_type_PBUF_POOL) };
+                if p.is_null() {
+                    warn!("pbuf_alloc failed");
+                    continue;
+                }
+                let payload = unsafe { (*p).payload };
+                let payload = unsafe { core::slice::from_raw_parts_mut(payload as *mut u8, len) };
+                payload.copy_from_slice(buf.packet());
+                let res = self.dev.lock().inner.borrow_mut().recycle_rx_buffer(buf);
+                match res {
+                    Ok(_) => (),
+                    Err(err) => {
+                        warn!("recycle_rx_buffer failed: {:?}", err);
+                    }
+                }
+
+                debug!("ethernet_input");
+                let mut netif = self.netif.lock();
+                unsafe {
+                    netif.0.input.unwrap()(p, &mut netif.0);
+                }
+            } else {
+                break;
+            }
+        }
+    }
+}
+```
+
+`netif` 的发包函数，将 `pbuf` 复制为 `TxBuffer` 然后发包：
+
+```rust
+extern "C" fn ethif_output(netif: *mut netif, p: *mut pbuf) -> err_t {
+    debug!("ethif_output");
+    let ethif = unsafe {
+        &mut *((*netif).state as *mut _ as *mut InterfaceWrapper<axdriver::VirtIoNetDev>)
+    };
+    let dev_wrapper = ethif.dev.lock();
+    let mut dev = dev_wrapper.inner.borrow_mut();
+
+    if dev.can_send() {
+        let tot_len = unsafe { (*p).tot_len };
+        let mut tx_buf = dev.new_tx_buffer(tot_len.into()).unwrap();
+
+        // Copy pbuf chain to tx_buf
+        let mut offset = 0;
+        let mut q = p;
+        while !q.is_null() {
+            let len = unsafe { (*q).len } as usize;
+            let payload = unsafe { (*q).payload };
+            let payload = unsafe { core::slice::from_raw_parts(payload as *const u8, len) };
+            tx_buf.packet_mut()[offset..offset + len].copy_from_slice(payload);
+            offset += len;
+            q = unsafe { (*q).next };
+        }
+
+        trace!(
+            "SEND {} bytes: {:02X?}",
+            tx_buf.packet_len(),
+            tx_buf.packet()
+        );
+        dev.send(tx_buf).unwrap();
+        err_enum_t_ERR_OK as err_t
+    } else {
+        err_enum_t_ERR_WOULDBLOCK as err_t
+    }
+}
+```
+
+##### 测试用的主函数
+
+主函数中先对网卡进行包装和设置 mac 地址：
+
+```rust
+let mut ipaddr: ip4_addr_t = ip4_addr_gen(10, 0, 2, 15); // QEMU user networking default IP
+let mut netmask: ip4_addr_t = ip4_addr_gen(255, 255, 255, 0);
+let mut gw: ip4_addr_t = ip4_addr_gen(10, 0, 2, 2); // QEMU user networking gateway
+
+let dev = net_devs.0;
+let mut netif: netif = unsafe { core::mem::zeroed() };
+netif.hwaddr_len = 6;
+netif.hwaddr = dev.mac_address().0;
+
+unsafe {
+    ETH0.init_by(InterfaceWrapper {
+        dev: Mutex::new(DeviceWrapper::new(dev)),
+        netif: Mutex::new(NetifWrapper(netif)),
+    });
+}
+```
+
+然后初始化协议栈，添加网卡并初始化：
+
+```rust
+unsafe {
+    lwip_init();
+    netif_add(
+        &mut ETH0.netif.lock().0,
+        &mut ipaddr,
+        &mut netmask,
+        &mut gw,
+        &mut ETH0 as *mut _ as *mut c_void,
+        Some(ethif_init),
+        Some(ethernet_input),
+    );
+    netif_set_link_up(&mut ETH0.netif.lock().0);
+    netif_set_up(&mut ETH0.netif.lock().0);
+    netif_set_default(&mut ETH0.netif.lock().0);
+}
+```
+
+最后循环收包：
+
+```rust
+loop {
+    unsafe {
+        ETH0.poll();
+    }
+    // sys_check_timeouts();
+}
+```
+
+#### 添加 lwiperf 应用
+
+lwip 用 raw API 实现了一些应用，添加一个小应用 `lwiperf` 试试。
+
+在 `wrapper.h` 和 `build.rs` 里添加上对应的头文件和源文件，即可在 axnet 中调用 `lwiperf` 的函数。
+
+```rust
+let ipaddr: ip_addr_t = ip_addr_t {
+    u_addr: ip_addr__bindgen_ty_1 { ip4: ipaddr },
+    type_: lwip_ip_addr_type_IPADDR_TYPE_V4 as u8,
+};
+unsafe {
+    lwiperf_start_tcp_server(&ipaddr, 5555, None, core::ptr::null_mut());
+}
+```
+
+### 目前移植的效果
+
+#### 运行与调试信息
+
+运行，并用 `nc` 发 TCP 和 UDP 包简单测试一下
+
+- `nc 127.0.0.1 5555`
+- `nc 127.0.0.1 5555 -u`
+
+初始化：
+
+![](./pic/week8_demo1.png)
+
+收发 TCP 包：
+
+![](./pic/week8_demo2.png)
+
+收 UDP 包（图略）
+
+抓包结果：
+
+![](./pic/week8_demo3.png)
+
+#### iperf 测试
+
+`make A=apps/net/lwip_test/ ARCH=riscv64 LOG=info NET=y MODE=??? run`
+
+`iperf -c 127.0.0.1 -p 5555 -e`
+
+##### MODE=debug
+
+```
+------------------------------------------------------------
+Client connecting to 127.0.0.1, TCP port 5555 with pid 17732
+Write buffer size:  128 KByte
+TCP window size: 2.50 MByte (default)
+------------------------------------------------------------
+[  3] local 127.0.0.1 port 41878 connected with 127.0.0.1 port 5555 (ct=0.03 ms)
+[ ID] Interval            Transfer    Bandwidth       Write/Err  Rtry     Cwnd/RTT        NetPwr
+[  3] 0.0000-10.0507 sec   117 MBytes  97.3 Mbits/sec  933/0          0       -1K/19 us  640384.86
+```
+
+##### MODE=release
+
+```
+------------------------------------------------------------
+Client connecting to 127.0.0.1, TCP port 5555 with pid 17081
+Write buffer size:  128 KByte
+TCP window size: 2.50 MByte (default)
+------------------------------------------------------------
+[  3] local 127.0.0.1 port 58100 connected with 127.0.0.1 port 5555 (ct=0.07 ms)
+[ ID] Interval            Transfer    Bandwidth       Write/Err  Rtry     Cwnd/RTT        NetPwr
+[  3] 0.0000-10.0216 sec   472 MBytes   395 Mbits/sec  3776/0          0       -1K/17 us  2905054.76
+```
+
 ### 踩坑
 
 调试：`make A=apps/net/lwip_test/ ARCH=riscv64 LOG=trace NET=y MODE=debug debug`
