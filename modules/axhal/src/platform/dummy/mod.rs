@@ -1,6 +1,7 @@
 #![allow(unused_variables)]
 #![allow(dead_code)]
 
+
 pub(crate) fn handle_irq(_irq_num: usize) {}
 
 pub mod console {
@@ -30,10 +31,16 @@ pub mod mem {
 }
 
 pub mod time {
+    extern crate std;
+    use std::time::{SystemTime, UNIX_EPOCH};
     pub const TIMER_IRQ_NUM: usize = 0;
 
     pub fn current_ticks() -> u64 {
-        0
+        let start = SystemTime::now();
+        let since_the_epoch = start
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards");
+        since_the_epoch.as_nanos() as u64
     }
 
     pub fn ticks_to_nanos(ticks: u64) -> u64 {

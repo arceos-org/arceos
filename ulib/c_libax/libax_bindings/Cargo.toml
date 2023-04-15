@@ -18,6 +18,9 @@ paging = ["libax/paging"]
 multitask = ["libax/multitask"]
 sched_fifo = ["libax/sched_fifo"]
 sched_rr = ["libax/sched_rr"]
+#sched_cfs = ["libax/sched_cfs"]
+#sched_sjf = ["libax/sched_sjf"]
+#sched_mlfq = ["libax/sched_mlfq"]
 
 # Networking
 net = ["libax/net"]

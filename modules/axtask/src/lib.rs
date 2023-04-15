@@ -55,6 +55,17 @@ cfg_if::cfg_if! {
     } else if #[cfg(feature = "sched_cfs")] {
         type AxTask = scheduler::CFTask<TaskInner>;
         type Scheduler = scheduler::CFScheduler<TaskInner>;
+    } else if #[cfg(feature = "sched_sjf")] {
+        const alpha_a: usize = 1;
+        const alpha_log_b: usize = 4; // 1/16
+        type AxTask = scheduler::SJFTask<TaskInner, alpha_a, alpha_log_b>;
+        type Scheduler = scheduler::SJFScheduler<TaskInner, alpha_a, alpha_log_b>;
+    } else if #[cfg(feature = "sched_mlfq")] {
+        const QNUM: usize = 8;
+        const BASTTICK: usize = 1;
+        const RESETTICK: usize = 100_000;
+        type AxTask = scheduler::MLFQTask<TaskInner, QNUM, BASTTICK, RESETTICK>;
+        type Scheduler = scheduler::MLFQScheduler<TaskInner, QNUM, BASTTICK, RESETTICK>;
     }
 }
 
@@ -78,6 +89,12 @@ pub fn init_scheduler() {
         info!("  use FIFO scheduler.");
     } else if cfg!(feature = "sched_rr") {
         info!("  use Round-robin scheduler.");
+    } else if cfg!(feature = "sched_cfs") {
+        info!("  use CFS.");
+    } else if cfg!(feature = "sched_sjf") {
+        info!("  use short job first scheduler.");
+    } else if cfg!(feature = "sched_mlfq") {
+        info!("  use Multi-Level Feedback Queue scheduler.");
     }
 }
 

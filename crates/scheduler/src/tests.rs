@@ -3,9 +3,12 @@ macro_rules! def_test_sched {
         mod $name {
             use crate::*;
             use alloc::sync::Arc;
+            use core::time::Duration;
 
             #[test]
             fn test_sched() {
+                //axlog::init();
+                //axlog::set_max_level("info");
                 const NUM_TASKS: usize = 11;
 
                 let mut scheduler = <$scheduler>::new();
@@ -17,6 +20,7 @@ macro_rules! def_test_sched {
                     let next = scheduler.pick_next_task().unwrap();
                     assert_eq!(*next.inner(), i % NUM_TASKS);
                     // 理论上需要过一个时间片，否则顺序不对
+                    std::thread::sleep(Duration::from_micros(100 + (i * 500) as u64));
                     scheduler.task_tick(&next);
                     scheduler.put_prev_task(next, false);
                 }
@@ -115,3 +119,5 @@ macro_rules! def_test_sched {
 def_test_sched!(fifo, FifoScheduler::<usize>, FifoTask::<usize>);
 def_test_sched!(rr, RRScheduler::<usize, 5>, RRTask::<usize, 5>);
 def_test_sched!(cfs, CFScheduler::<usize>, CFTask::<usize>);
+def_test_sched!(sjf, SJFScheduler::<usize, 1, 4>, SJFTask::<usize, 1, 4>); // alpha=1/16
+def_test_sched!(mlfq, MLFQScheduler::<usize, 8, 1, 100_000>, MLFQTask::<usize, 8, 1, 100_000>); // alpha=1/16

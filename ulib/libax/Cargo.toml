@@ -18,6 +18,9 @@ paging = ["axruntime/paging"]
 multitask = ["axruntime/multitask", "axtask/multitask", "axsync/multitask"]
 sched_fifo = ["axtask/sched_fifo"]
 sched_rr = ["axtask/sched_rr"]
+sched_cfs = ["axtask/sched_cfs"]
+sched_sjf = ["axtask/sched_sjf"]
+sched_mlfq = ["axtask/sched_mlfq"]
 
 # Networking
 net = ["axruntime/net", "dep:axnet"]
@@ -40,7 +43,7 @@ log-level-trace = ["axlog/log-level-trace"]
 platform-qemu-virt-riscv = ["axhal/platform-qemu-virt-riscv", "axdriver?/bus-mmio"]
 platform-qemu-virt-aarch64 = ["axhal/platform-qemu-virt-aarch64", "axdriver?/bus-mmio"]
 
-default = ["axtask?/sched_fifo"]
+default = ["axtask?/sched_sjf"]
 
 [dependencies]
 axdisplay = { path = "../../modules/axdisplay", optional = true }

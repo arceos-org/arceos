@@ -87,6 +87,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "arceos-sched-test1-1-fairness-equal"
+version = "0.1.0"
+dependencies = [
+ "libax",
+]
+
+[[package]]
+name = "arceos-sched-test1-2-fairness-unequal"
+version = "0.1.0"
+dependencies = [
+ "libax",
+]
+
+[[package]]
+name = "arceos-sched-test1-3-yield-speed"
+version = "0.1.0"
+dependencies = [
+ "libax",
+]
+
+[[package]]
+name = "arceos-sched-test2-realtime"
+version = "0.1.0"
+dependencies = [
+ "libax",
+]
+
+[[package]]
+name = "arceos-sched-test3-occupy"
+version = "0.1.0"
+dependencies = [
+ "libax",
+]
+
+[[package]]
 name = "arceos-sleep"
 version = "0.1.0"
 dependencies = [
@@ -1052,7 +1087,14 @@ dependencies = [
 name = "scheduler"
 version = "0.1.0"
 dependencies = [
+ "axhal",
+ "axlog",
+ "cfg-if",
+ "chrono",
+ "crate_interface",
  "linked_list",
+ "log",
+ "spinlock",
 ]
 
 [[package]]

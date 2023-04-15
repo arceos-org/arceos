@@ -11,6 +11,11 @@ members = [
     "apps/task/parallel",
     "apps/task/sleep",
     "apps/task/yield",
+    "apps/task/sched-fairness-equal",
+    "apps/task/sched-fairness-unequal",
+    "apps/task/sched-yield-speed",
+    "apps/task/sched-realtime",
+    "apps/task/sched-occupy",
 
     "crates/allocator",
     "crates/arm_gic",

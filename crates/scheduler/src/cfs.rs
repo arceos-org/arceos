@@ -173,8 +173,8 @@ impl<T> BaseScheduler for CFScheduler<T> {
     }
 
     fn pick_next_task(&mut self) -> Option<Self::SchedItem> {
-        if let Some((K, _)) = self.ready_queue.pop_first() {
-            Some(K)
+        if let Some((k, _)) = self.ready_queue.pop_first() {
+            Some(k)
         } else {
             None
         }

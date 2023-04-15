@@ -5,15 +5,24 @@
 mod fifo;
 mod round_robin;
 mod cfs;
+mod sjf;
+mod mlfq;
+
+mod utils;
+pub use utils::timer::current_ticks;
 
 #[cfg(test)]
 mod tests;
 
 extern crate alloc;
+extern crate crate_interface;
 
 pub use fifo::{FifoScheduler, FifoTask};
 pub use round_robin::{RRScheduler, RRTask};
 pub use cfs::{CFScheduler, CFTask};
+pub use sjf::{SJFScheduler, SJFTask};
+pub use mlfq::{MLFQScheduler, MLFQTask};
+
 
 pub trait BaseScheduler {
     type SchedItem;

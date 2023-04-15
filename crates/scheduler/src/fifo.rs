@@ -2,7 +2,7 @@ use alloc::sync::Arc;
 use core::ops::Deref;
 
 use linked_list::{Adapter, Links, List};
-
+ use log::info;
 use crate::BaseScheduler;
 
 pub struct FifoTask<T> {
@@ -65,6 +65,7 @@ impl<T> BaseScheduler for FifoScheduler<T> {
     }
 
     fn pick_next_task(&mut self) -> Option<Self::SchedItem> {
+        //info!("qwq");
         self.ready_queue.pop_front()
     }
 
