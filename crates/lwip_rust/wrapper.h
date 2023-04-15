@@ -9,3 +9,6 @@
 #include "depend/lwip/src/include/lwip/timeouts.h"
 #include "depend/lwip/src/include/lwip/udp.h"
 #include "depend/lwip/src/include/netif/ethernet.h"
+
+// APP
+#include "depend/lwip/src/include/lwip/apps/lwiperf.h"

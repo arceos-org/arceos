@@ -66,8 +66,10 @@
 // is used regardless of the platform
 #define IPV6_FRAG_COPYHEADER 1
 
-#define LWIP_DEBUG        1
-#define LWIP_DBG_TYPES_ON LWIP_DBG_ON
+#define LWIP_DEBUG        0
+
+#define LWIP_DBG_TYPES_ON LWIP_DBG_OFF
+
 #define INET_DEBUG        LWIP_DBG_ON
 #define IP_DEBUG          LWIP_DBG_ON
 #define RAW_DEBUG         LWIP_DBG_ON

@@ -1,6 +1,6 @@
 use alloc::string::String;
 use axlog::ax_print;
-use core::ffi::{c_int, c_uchar};
+use core::ffi::{c_int, c_uchar, c_uint};
 
 #[no_mangle]
 unsafe extern "C" fn lwip_print(str: *const c_uchar, mut args: ...) -> c_int {
@@ -14,4 +14,10 @@ unsafe extern "C" fn lwip_print(str: *const c_uchar, mut args: ...) -> c_int {
 #[no_mangle]
 extern "C" fn lwip_abort() {
     panic!("lwip_abort");
+}
+
+#[no_mangle]
+extern "C" fn sys_now() -> c_uint {
+    info!("sys_now called");
+    0
 }
