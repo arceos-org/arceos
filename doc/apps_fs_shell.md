@@ -227,10 +227,10 @@ graph TD
 
 ```mermaid
 graph TD
-	lib_mkdir[libax::fs::create_dir] --> builder_create["DirBuilder::create"]
+	lib_mkdir[libax::fs::create_dir] --> builder_create["axfs::api::DirBuilder::create"]
 	builder_create --> root_create[axfs::root::create_dir] --> lookup[axfs::root::lookup]
 	lookup -..-> |exists/other error| err(Return error)
-	builder_create -->|type=VfsNodeType::Dir| node_create[axfs_vfs::VfsNodeOps::create] --> fs_impl[[FS implementation]]
+	root_create -->|type=VfsNodeType::Dir| node_create[axfs_vfs::VfsNodeOps::create] --> fs_impl[[FS implementation]]
 
 	lookup --> vfs_lookup["axfs_vfs::VfsNodeOps::lookup"] --> fs_impl[[FS implementation]]
 ```
