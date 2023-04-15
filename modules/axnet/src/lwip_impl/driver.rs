@@ -8,8 +8,8 @@ use lazy_init::LazyInit;
 use lwip_rust::bindings::{
     err_enum_t_ERR_OK, err_enum_t_ERR_WOULDBLOCK, err_t, etharp_output, ethernet_input,
     ethip6_output, ip4_addr_t, lwip_htonl, lwip_init, netif, netif_add, netif_set_default,
-    netif_set_link_up, netif_set_up, pbuf, NETIF_FLAG_BROADCAST, NETIF_FLAG_ETHARP,
-    NETIF_FLAG_ETHERNET,
+    netif_set_link_up, netif_set_up, pbuf, pbuf_alloc, pbuf_layer_PBUF_RAW, pbuf_type_PBUF_POOL,
+    NETIF_FLAG_BROADCAST, NETIF_FLAG_ETHARP, NETIF_FLAG_ETHERNET,
 };
 
 const RX_BUF_QUEUE_SIZE: usize = 64;
@@ -30,14 +30,10 @@ impl<D: NetDriverOps> DeviceWrapper<D> {
         }
     }
 
-    fn poll<F>(&mut self, f: F)
-    where
-        F: Fn(&[u8]),
-    {
+    fn poll(&mut self) {
         while self.rx_buf_queue.len() < RX_BUF_QUEUE_SIZE {
             match self.inner.borrow_mut().receive() {
                 Ok(buf) => {
-                    f(buf.packet());
                     self.rx_buf_queue.push_back(buf);
                 }
                 Err(DevError::Again) => break, // TODO: better method to avoid error type conversion
@@ -59,12 +55,41 @@ struct InterfaceWrapper<D: NetDriverOps> {
     netif: Mutex<NetifWrapper>,
 }
 
-fn ip4_addr_gen(a: u8, b: u8, c: u8, d: u8) -> ip4_addr_t {
-    ip4_addr_t {
-        addr: unsafe {
-            lwip_htonl(((a as u32) << 24) | ((b as u32) << 16) | ((c as u32) << 8) | (d as u32))
-                as u32
-        },
+impl<D: NetDriverOps> InterfaceWrapper<D> {
+    fn poll(&self) {
+        self.dev.lock().poll();
+        loop {
+            let buf_receive = self.dev.lock().receive();
+            if let Some(buf) = buf_receive {
+                trace!("RECV {} bytes: {:02X?}", buf.packet_len(), buf.packet());
+
+                // Copy buf to pbuf
+                let len = buf.packet_len();
+                let p = unsafe { pbuf_alloc(pbuf_layer_PBUF_RAW, len as u16, pbuf_type_PBUF_POOL) };
+                if p.is_null() {
+                    warn!("pbuf_alloc failed");
+                    continue;
+                }
+                let payload = unsafe { (*p).payload };
+                let payload = unsafe { core::slice::from_raw_parts_mut(payload as *mut u8, len) };
+                payload.copy_from_slice(buf.packet());
+                let res = self.dev.lock().inner.borrow_mut().recycle_rx_buffer(buf);
+                match res {
+                    Ok(_) => (),
+                    Err(err) => {
+                        warn!("recycle_rx_buffer failed: {:?}", err);
+                    }
+                }
+
+                debug!("ethernet_input");
+                let mut netif = self.netif.lock();
+                unsafe {
+                    netif.0.input.unwrap()(p, &mut netif.0);
+                }
+            } else {
+                break;
+            }
+        }
     }
 }
 
@@ -83,11 +108,6 @@ extern "C" fn ethif_init(netif: *mut netif) -> err_t {
         (*netif).flags = 0;
         (*netif).flags = (NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_ETHERNET) as u8;
     }
-    err_enum_t_ERR_OK as err_t
-}
-
-extern "C" fn ethif_input(netif: *mut netif) -> err_t {
-    info!("ethif_input");
     err_enum_t_ERR_OK as err_t
 }
 
@@ -129,6 +149,15 @@ extern "C" fn ethif_output(netif: *mut netif, p: *mut pbuf) -> err_t {
 
 static mut ETH0: LazyInit<InterfaceWrapper<axdriver::VirtIoNetDev>> = LazyInit::new();
 
+fn ip4_addr_gen(a: u8, b: u8, c: u8, d: u8) -> ip4_addr_t {
+    ip4_addr_t {
+        addr: unsafe {
+            lwip_htonl(((a as u32) << 24) | ((b as u32) << 16) | ((c as u32) << 8) | (d as u32))
+                as u32
+        },
+    }
+}
+
 pub fn init(net_devs: NetDevices) {
     let mut ipaddr: ip4_addr_t = ip4_addr_gen(10, 0, 2, 15); // QEMU user networking default IP
     let mut netmask: ip4_addr_t = ip4_addr_gen(255, 255, 255, 0);
@@ -162,8 +191,10 @@ pub fn init(net_devs: NetDevices) {
         netif_set_default(&mut ETH0.netif.lock().0);
     }
 
-    // while true {
-    //     ethif_input(&mut *netif);
-    //     sys_check_timeouts();
-    // }
+    loop {
+        unsafe {
+            ETH0.poll();
+        }
+        // sys_check_timeouts();
+    }
 }
