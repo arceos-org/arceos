@@ -41,15 +41,15 @@
 #### 需要实现的函数
 
 - [x] `err_t myif_init(struct netif *netif)`：网卡初始化函数，作为 `netif_add` 的参数，在添加网卡时初始化
-- [ ] `err_t myif_link_output(struct netif *netif, struct pbuf *p)`：链路层发包函数，作为 `netif->linkoutput`
-- [ ] `err_t myif_output(struct netif *netif, struct pbuf *p, ip_addr_t *ipaddr)`：网络层发包函数，作为 `netif->output`。该函数被 `ip_output` 调用，函数内最终会使用 `myif_link_output` 进行发包。若支持 ARP，则该函数可以直接设为 `etharp_output`。
+- [x] `err_t myif_link_output(struct netif *netif, struct pbuf *p)`：链路层发包函数，作为 `netif->linkoutput`
+- [x] `err_t myif_output(struct netif *netif, struct pbuf *p, ip_addr_t *ipaddr)`：网络层发包函数，作为 `netif->output`。该函数被 `ip_output` 调用，函数内最终会使用 `myif_link_output` 进行发包。若支持 ARP，则该函数可以直接设为 `etharp_output`。
 - [ ] `myif_input()`：收包函数。当网卡收到包的时候，通过这个函数调用 `netif->input`，将包送入协议栈。对于以太网网卡，`netif->input` 将被设为 `ethernet_input`，故调用 `netif->input` 时需要传递含有数据链路层头部信息的以太网帧。
 - [ ] `u32_t sys_now(void)`：获取当前时钟，用于实现定时器。
 - [x] `main()`：裸机运行的主函数，依次初始化协议栈（`lwip_init()`），添加网卡（`netif_add()`，添加时会初始化），然后进入循环，不断检查收包（收到则调用 `myif_input()`），检查定时器（`sys_check_timeouts()`）
 
 #### netif 初始化时需要设置的字段
 
-- `state`：可选，自定义数据
+- `state`：可选，自定义数据，可用来指向驱动中对网卡的包装结构的地址
 - `hwaddr_len`：链路层地址长度
 - `hwaddr[]`：链路层地址
 - `mtu`：MTU
