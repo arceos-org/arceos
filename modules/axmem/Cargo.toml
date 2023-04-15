@@ -1,0 +1,14 @@
+[package]
+name = "axmem"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+memory_addr = { path = "../../crates/memory_addr"}
+lazy_init = { path = "../../crates/lazy_init"}
+axhal = { path = "../axhal" }
+axalloc = { path = "../axalloc"}
+axlog = { path = "../axlog" }
+elf_loader = { path = "../../crates/elf_loader"}

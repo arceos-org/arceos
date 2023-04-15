@@ -9,6 +9,7 @@ use riscv::asm;
 use riscv::register::{satp, sstatus, stvec};
 
 pub use context::{TaskContext, TrapFrame};
+pub use trap::enter_uspace;
 
 #[inline]
 pub fn enable_irqs() {

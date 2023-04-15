@@ -16,11 +16,7 @@ mod syscall;
 pub use syscall::sys_number;
 
 #[cfg(feature = "user")]
-const USER_START: usize = 0x0400_0000;
-#[cfg(feature = "user")]
-const USTACK_START: usize = 0xf_ffff_f000;
-#[cfg(feature = "user")]
-const USTACK_SIZE: usize = 4096;
+use axmem::{USER_START, USTACK_SIZE, USTACK_START};
 
 const LOGO: &str = r#"
        d8888                            .d88888b.   .d8888b.
@@ -131,6 +127,8 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     {
         info!("Initialize kernel page table...");
         remap_kernel_memory().expect("remap kernel memoy failed");
+        #[cfg(feature = "user-paging")]
+        axmem::init_global_addr_space();
     }
 
     #[cfg(feature = "multitask")]
@@ -204,7 +202,7 @@ fn init_allocator() {
 use axhal::paging::PageTable;
 #[cfg(feature = "paging")]
 fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
-    use axhal::mem::{memory_regions, phys_to_virt};
+    use axhal::{mem::{memory_regions, phys_to_virt, virt_to_phys}, paging::MappingFlags};
 
     use lazy_init::LazyInit;
 
@@ -222,12 +220,28 @@ fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
             )?;
         }
 
-        #[cfg(feature = "user")]
+        #[cfg(all(feature = "user", not(feature = "user-paging")))]
         init_user_space(&mut kernel_page_table)?;
+
+        #[cfg(feature = "user-paging")]
+        {
+            extern "C" {
+                fn strampoline();
+            }
+            use axhal::paging::MappingFlags;
+            kernel_page_table.map_region(
+                0xffff_ffc0_0000_0000.into(),
+                virt_to_phys((strampoline as usize).into()),
+                axhal::mem::PAGE_SIZE_4K,
+                MappingFlags::READ | MappingFlags::EXECUTE,
+                false
+            );
+        }
 
         
         KERNEL_PAGE_TABLE.init_by(kernel_page_table);
     }
+
 
 
     unsafe { axhal::arch::write_page_table_root(KERNEL_PAGE_TABLE.root_paddr()) };
@@ -266,12 +280,13 @@ fn init_interrupt() {
 }
 
 
-#[cfg(feature = "user")]
+#[cfg(all(feature = "user", not(feature = "user-paging")))]
 /// Set up user state memory
 fn init_user_space(page_table: &mut PageTable) -> Result<(), axhal::paging::PagingError> {
     use axalloc::GlobalPage;
     use axhal::mem::{PAGE_SIZE_4K, virt_to_phys};
     use axhal::paging::MappingFlags;
+    use axmem::AddrSpace;
     extern crate alloc;
     
     extern "C" {
@@ -291,11 +306,8 @@ fn init_user_space(page_table: &mut PageTable) -> Result<(), axhal::paging::Pagi
     fn align_up(size: usize) -> usize {
         (size + PAGE_SIZE_4K - 1) / PAGE_SIZE_4K
     }
-
-    // as user_phy_page is used in RAII style
-    // we need to store them during allocation.
-    // TODO: make it persistent, 
-    let mut user_segments: alloc::vec::Vec<GlobalPage> = alloc::vec![];
+    
+    let mut phy_pages: alloc::vec::Vec<GlobalPage> = alloc::vec![];
     
     for segment in &segments {
         let mut user_phy_page =
@@ -315,7 +327,7 @@ fn init_user_space(page_table: &mut PageTable) -> Result<(), axhal::paging::Pagi
             user_phy_page.size(),
             segment.flags | MappingFlags::USER,
             false)?;
-        user_segments.push(user_phy_page);
+        phy_pages.push(phy_pages);
     }
    
 
@@ -331,7 +343,6 @@ fn init_user_space(page_table: &mut PageTable) -> Result<(), axhal::paging::Pagi
         user_stack_page.size(),
         MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
         false)?;
-    user_segments.push(user_stack_page);
-
+    phy_pages.push(phy_pages);
     Ok(())
 }

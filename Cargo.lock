@@ -226,6 +226,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "axmem"
+version = "0.1.0"
+dependencies = [
+ "axalloc",
+ "axhal",
+ "axlog",
+ "elf_loader",
+ "lazy_init",
+ "memory_addr",
+]
+
+[[package]]
 name = "axnet"
 version = "0.1.0"
 dependencies = [
@@ -252,6 +264,7 @@ dependencies = [
  "axdriver",
  "axhal",
  "axlog",
+ "axmem",
  "axnet",
  "axtask",
  "crate_interface",
@@ -276,8 +289,10 @@ dependencies = [
 name = "axtask"
 version = "0.1.0"
 dependencies = [
+ "axalloc",
  "axconfig",
  "axhal",
+ "axmem",
  "cfg-if",
  "crate_interface",
  "kernel_guard",
@@ -300,6 +315,7 @@ dependencies = [
  "axhal",
  "axlog",
  "axruntime",
+ "axtask",
 ]
 
 [[package]]

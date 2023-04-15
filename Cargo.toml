@@ -43,6 +43,7 @@ members = [
     "modules/axerror",
     "modules/axhal",
     "modules/axlog",
+    "modules/axmem",
     "modules/axnet",
     "modules/axruntime",
     "modules/axsync",

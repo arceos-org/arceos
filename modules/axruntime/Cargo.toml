@@ -15,7 +15,9 @@ smp = ["axhal/smp", "spinlock/smp"]
 fs = ["alloc", "paging", "axdriver/virtio-blk"] # TODO: remove "paging"
 net = ["alloc", "paging", "axdriver/virtio-net", "dep:axnet"]
 display = ["alloc", "paging", "axdriver/virtio-gpu", "dep:axdisplay"]
-user = ["axhal/user", "dep:elf_loader"]
+user = ["axhal/user", "dep:elf_loader", "dep:axmem"]
+
+user-paging = ["user", "paging", "axhal/user-paging", "axtask/user-paging"]
 
 default = []
 
@@ -34,6 +36,7 @@ axlog = { path = "../axlog" }
 axnet = { path = "../axnet", optional = true }
 axdisplay = { path = "../axdisplay", optional = true }
 axtask = { path = "../axtask", default-features = false }
+axmem = { path = "../axmem", optional = true}
 
 [dev-dependencies]
 percpu = { path = "../../crates/percpu", features = ["sp-naive"] }

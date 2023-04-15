@@ -45,6 +45,12 @@ pub struct TrapFrame {
     pub regs: GeneralRegisters,
     pub sepc: usize,
     pub sstatus: usize,
+    #[cfg(feature = "user-paging")]
+    pub kstack: usize,
+    #[cfg(feature = "user-paging")]
+    pub satp: usize,
+    #[cfg(feature = "user-paging")]
+    pub trap_handler: usize,
 }
 
 impl TrapFrame {
@@ -54,6 +60,7 @@ impl TrapFrame {
     /// specified
     pub fn new(entry: usize, ustack: usize) -> TrapFrame {
         use riscv::register::sstatus::{self, Sstatus};
+
         
         let mut trap_frame = TrapFrame::default();
         trap_frame.regs.sp = ustack;
@@ -64,6 +71,18 @@ impl TrapFrame {
         trap_frame.sstatus = unsafe {
             *(&sstatus_reg as *const Sstatus as *const usize) & !(1 << 8)
         };
+        #[cfg(feature = "user-paging")]
+        {
+            use riscv::register::satp::{self, Satp};
+            let satp_reg = satp::read();
+            trap_frame.satp = unsafe {
+                *(&satp_reg as *const Satp as *const usize)
+            };
+            extern "Rust" {
+                fn riscv_trap_handler();
+            }
+            trap_frame.trap_handler = riscv_trap_handler as usize
+        }
         
         trap_frame    
     }
@@ -74,10 +93,10 @@ impl TrapFrame {
         unsafe {
             core::arch::asm!(r"
                 mv      sp, {tf}
-                LDR     gp, sp, 2                   // load user gp and tp
-                LDR     t0, sp, 3
-                STR     tp, sp, 3                   // save supervisor tp
-                mv      tp, t0
+                //LDR     gp, sp, 2                   // load user gp and tp
+                //LDR     t0, sp, 3
+                //STR     tp, sp, 3                   // save supervisor tp
+                //mv      tp, t0
                 csrw    sscratch, {sp}
 
                 LDR     t0, sp, 31
