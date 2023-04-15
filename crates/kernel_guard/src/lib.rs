@@ -47,6 +47,10 @@ impl NoOp {
     }
 }
 
+impl Drop for NoOp {
+    fn drop(&mut self) {}
+}
+
 #[cfg(any(target_os = "none", doc))]
 mod imp {
     use super::*;

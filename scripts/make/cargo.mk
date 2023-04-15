@@ -54,6 +54,11 @@ define cargo_build
   cargo rustc $(build_args) $(1) -- $(rustc_flags)
 endef
 
+define cargo_clippy
+  cargo clippy --target $(TARGET) --all-features --workspace --exclude axlog
+  cargo clippy --target $(TARGET) -p axlog -p percpu -p percpu_macros
+endef
+
 all_packages := \
   $(shell ls $(CURDIR)/crates) \
   $(shell ls $(CURDIR)/modules) \

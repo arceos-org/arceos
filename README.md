@@ -1,6 +1,7 @@
 # ArceOS
 
-[![CI](https://github.com/rcore-os/arceos/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/rcore-os/arceos/actions)
+[![CI](https://github.com/rcore-os/arceos/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/rcore-os/arceos/actions/workflows/build.yml)
+[![CI](https://github.com/rcore-os/arceos/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/rcore-os/arceos/actions/workflows/test.yml)
 [![Docs](https://img.shields.io/badge/docs-pages-green)](https://rcore-os.github.io/arceos/)
 
 An experimental modular operating system (or unikernel) written in Rust.
@@ -140,4 +141,4 @@ make A=apps/net/httpserver ARCH=aarch64 LOG=info NET=y SMP=4 run
 
 ## Design
 
-![](doc/ArceOS.svg)
+![](doc/figures/ArceOS.svg)

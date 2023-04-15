@@ -7,18 +7,19 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        arch: [riscv64, aarch64]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
         toolchain: nightly
-        override: true
         components: rust-src, clippy, rustfmt
-    - name: Clippy
-      run: make clippy ARCH=${{ matrix.arch }}
+    - name: Clippy for the default target
+      run: cargo clippy --all-features
+    - name: Clippy for other targets
+      run: |
+        make clippy ARCH=riscv64
+        make clippy ARCH=aarch64
     - name: Check code format
       run: cargo fmt --all -- --check
 
@@ -66,7 +67,7 @@ jobs:
     - name: Build net/httpserver
       run: make ARCH=${{ matrix.arch }} A=apps/net/httpserver NET=y
 
-    - name: Install musl toolchain
+    - name: Download musl toolchain
       run: |
         if [ "${{ matrix.arch }}" = "x86_64" ]; then
           export MUSL_PATH="x86_64-linux-musl-cross"

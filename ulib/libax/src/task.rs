@@ -1,3 +1,5 @@
+//! Native threads.
+
 #[cfg(feature = "multitask")]
 pub use axtask::{current, exit, sleep, sleep_until, spawn, yield_now, TaskId};
 
