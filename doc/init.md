@@ -1,6 +1,6 @@
 ```mermaid
 graph TD;
-    A[axhal::arch::platform::qemu_virt_riscv::boot.rs::_boot] --> init_boot_page_table;
+    A[axhal::platform::qemu_virt_riscv::boot.rs::_boot] --> init_boot_page_table;
     A --> init_mmu;
     A --> platform_init;
     A --> B[axruntime::rust_main];
