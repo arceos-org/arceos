@@ -91,24 +91,31 @@ fn main() {
         let i = PAYLOAD_KIND - 1 - ii; 
         let vec: Arc<Vec<u64>>;
         let datalen: usize;
+        let nice: isize;
         if i == 0 {
             vec = vec_short1.clone();
             datalen = NUM_DATA_SHORT_1;
+            nice = 5;
         } else if i == 1 {
             vec = vec_short2.clone();
             datalen = NUM_DATA_SHORT_2;
+            nice = 5;
         } else if i == 2 {
             vec = vec_short3.clone();
             datalen = NUM_DATA_SHORT_3;
+            nice = 5;
         } else if i == 3 {
             vec = vec_short4.clone();
             datalen = NUM_DATA_SHORT_4;
+            nice = 5;
         } else if i == 4 {
             vec = vec_long1.clone();
             datalen = NUM_DATA_LONG_1;
+            nice = -5;
         } else {
             vec = Arc::new(Vec::new());
             datalen = 0;
+            nice = 0;
         }
         task::spawn(move || {
             let start_time = libax::time::Instant::now();
@@ -132,7 +139,7 @@ fn main() {
             if n == PAYLOAD_KIND - 1 {
                 MAIN_WQ.notify_one(true);
             }
-        });
+        }, nice);
     }
 
     let timeout = MAIN_WQ.wait_timeout(Duration::from_millis(20000));

@@ -108,10 +108,6 @@ macro_rules! def_test_sched {
                     )
                 }
             }
-            #[test]
-            fn bench_real_time() {
-                // TODO: 测试实时性
-            }
         }
     };
 }

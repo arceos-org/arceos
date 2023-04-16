@@ -5,10 +5,29 @@
 | [sched-realtime](../apps/task/sched-realtime/) | axalloc, axtask | alloc, paging, multitask, sched_rr, sched_fifo, sched_mlfq, sched_sjf, sched_cfs | schedule test short payload & yield|
 
 # RUN
+## CFS
+First, modify the dependencies in Cargo.toml:
+```
+...
+[dependencies]
+libax = { path = "../../../ulib/libax", default-features = false, features = ["alloc", "paging", "multitask", "sched_cfs"] }
+```
+Then make the code.
 ```shell
 make A=apps/task/sched-realtime LOG=info APP_FEATURES=sched_cfs run
+```
+## Other choises
 
-Other choises of APP_FEATURES: sched_rr, sched_fifo, sched_mlfq, sched_sjf
+First, modify the dependencies in Cargo.toml:
+```
+...
+[dependencies]
+libax = { path = "../../../ulib/libax", default-features = false, features = ["alloc", "paging", "multitask"] }
+```
+Then make the code.
+```shell
+make A=apps/task/sched-realtime LOG=info APP_FEATURES=sched_rr run
+Other choises of APP_FEATURES: sched_fifo, sched_mlfq, sched_sjf
 ```
 
 ## Using multicore
@@ -72,3 +91,32 @@ Parallel summation tests run OK!
 - cfs 忠实地按照公平分配原则。由于 yield 实际上相比不超过 10 次的循环占主要时间，所以几个短任务的时间大致和 yield 次数成正比（其实预期也不完全是正比，推一下式子本来就是大致正比）。得到了较好的实时性。
 - sjf 按照谁快谁先的原则，因为这几个论速度差不多快，所以最早结束的短任务时间略晚于 cfs。不过短任务总的结束时间比 cfs 早，体现了较好的实时性。
 - mlfq 短任务会有更高的优先级，抢占式调度，有较好的实时性。
+
+#### 针对 cfs nice 值的设置
+- 全部设置为 0：同上
+  
+|      | 长任务完成时间 | 短任务1完成时间 | 短任务2完成时间 | 短任务3完成时间 | 短任务4完成时间 |
+| ---- | -------------- | --------------- | --------------- | --------------- | --------------- |
+| cfs0 | 2805           | 168             | 311             | 496             | 1038            |
+
+- 将短任务全部设为 5，长任务设为 -5，如下
+  
+|      | 长任务完成时间 | 短任务1完成时间 | 短任务2完成时间 | 短任务3完成时间 | 短任务4完成时间 |
+| ---- | -------------- | --------------- | --------------- | --------------- | --------------- |
+| cfs1  | 2407           | 403             | 1008             | 1887             | 2372            |
+
+- 可以看到，这样的设置可以让 cfs 调度算法更早完成长任务，同时实时性下降
+- 将短任务全部设为 5，长任务设为 -5，如下
+
+|      | 长任务完成时间 | 短任务1完成时间 | 短任务2完成时间 | 短任务3完成时间 | 短任务4完成时间 |
+| ---- | -------------- | --------------- | --------------- | --------------- | --------------- |
+| cfs2  | 2821           | 136             | 248             | 455             | 779            |
+
+- 此时 cfs 具有非常高的实时性。
+- 将 2,3,4 号短任务设为 -5, 1 号短任务和长任务都设为 5，如下
+
+|      | 长任务完成时间 | 短任务1完成时间 | 短任务2完成时间 | 短任务3完成时间 | 短任务4完成时间 |
+| ---- | -------------- | --------------- | --------------- | --------------- | --------------- |
+| cfs3  | 2660           | 575             | 214             | 428             | 738            |
+
+- 此时短任务 1 的实时性下降，其他短任务的实时性上升。

@@ -105,6 +105,24 @@ impl TaskInner {
         }
     }
 
+cfg_if::cfg_if! {
+if #[cfg(feature = "sched_cfs")] {
+    pub(crate) fn new<F>(entry: F, name: &'static str, stack_size: usize, _nice: isize) -> AxTaskRef
+    where
+        F: FnOnce() + Send + 'static,
+    {
+        let mut t = Self::new_common(TaskId::new(), name);
+        debug!("new task: {}", t.id_name());
+        let kstack = TaskStack::alloc(align_up_4k(stack_size));
+        t.entry = Some(Box::into_raw(Box::new(entry)));
+        t.ctx.get_mut().init(task_entry as usize, kstack.top());
+        t.kstack = Some(kstack);
+        if name == "idle" {
+            t.is_idle = true;
+        }
+        Arc::new(AxTask::new(t, _nice as isize))
+    }
+} else {
     pub(crate) fn new<F>(entry: F, name: &'static str, stack_size: usize) -> AxTaskRef
     where
         F: FnOnce() + Send + 'static,
@@ -118,9 +136,11 @@ impl TaskInner {
         if name == "idle" {
             t.is_idle = true;
         }
-        // 暂时还没实现 nice 优先级设置
-        Arc::new(AxTask::new(t, 0))
+        Arc::new(AxTask::new(t, 0 as isize))
     }
+}
+}
+    
 
     pub(crate) fn new_init(name: &'static str) -> AxTaskRef {
         // init_task does not change PC and SP, so `entry` and `kstack` fields are not used.

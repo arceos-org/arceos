@@ -108,12 +108,24 @@ pub fn on_timer_tick() {
     RUN_QUEUE.lock().scheduler_timer_tick();
 }
 
-pub fn spawn<F>(f: F)
-where
-    F: FnOnce() + Send + 'static,
-{
-    let task = TaskInner::new(f, "", axconfig::TASK_STACK_SIZE);
-    RUN_QUEUE.lock().add_task(task);
+cfg_if::cfg_if! {
+if #[cfg(feature = "sched_cfs")] {
+    pub fn spawn<F>(f: F, _nice: isize)
+    where
+        F: FnOnce() + Send + 'static,
+    {
+        let task = TaskInner::new(f, "", axconfig::TASK_STACK_SIZE, _nice);
+        RUN_QUEUE.lock().add_task(task);
+    }
+} else {
+    pub fn spawn<F>(f: F)
+    where
+        F: FnOnce() + Send + 'static,
+    {
+        let task = TaskInner::new(f, "", axconfig::TASK_STACK_SIZE, );
+        RUN_QUEUE.lock().add_task(task);
+    }
+}
 }
 
 pub fn yield_now() {
