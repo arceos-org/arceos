@@ -4,6 +4,8 @@
 
 ## 本周进展
 
+本周初步完成 NO_SYS 模式的 lwip 移植。
+
 ### 分析 lwip 
 
 #### netif 数据结构
@@ -15,6 +17,8 @@
 #### 内存管理
 
 - `lwip` 可以自行管理内存。它的内存管理策略有两种：内存堆和内存池。
+- 内存池：每个池用于分配固定大小的内存块，速度块
+- 内存堆：分配不固定大小的内存
 
 #### pbuf 数据结构
 
@@ -71,6 +75,51 @@
 - `src/`：包装为 rust 模块
 - `build.rs`：编译和生成接口脚本，参考 <https://github.com/eycorsican/leaf/blob/b0779107921683204a65bb1d41edc07a52688613/leaf/build.rs>
 - `wrapper.h`：所有需要生成接口的头文件
+
+#### 编写移植所需头文件
+
+##### `lwipopts.h`
+
+参考：
+
+- <https://github.com/eycorsican/lwip-leaf/blob/12db774b78541b16d448ac58354d326536b79003/custom/lwipopts.h>
+- <https://lwip.fandom.com/wiki/Porting_For_Bare_Metal>
+
+主要内容：
+
+- `NO_SYS`
+- `NO_SYS_NO_TIMERS`（暂时）
+- 各项功能是否开启
+- 各项参数（内存、TCP 等）
+- 调试开关
+- 数据统计开关
+
+##### `arch/cc.h`
+
+- 若 libc 缺少一些头文件，则在这里关闭对应宏
+- 调试信息输出函数的相关定义（见下文）
+
+##### `arch/sys_arch.h`
+
+目前为 NO_SYS 模式，做一些定义即可
+
+```c
+#ifndef __ARCH_SYS_ARCH_H__
+#define __ARCH_SYS_ARCH_H__
+
+#define SYS_MBOX_NULL NULL
+#define SYS_SEM_NULL  NULL
+
+typedef void *sys_prot_t;
+
+typedef void *sys_sem_t;
+
+typedef void *sys_mbox_t;
+
+typedef void *sys_thread_t;
+
+#endif /* __ARCH_SYS_ARCH_H__ */
+```
 
 #### 编译与链接
 
@@ -542,6 +591,32 @@ ebss = .;
 问题同：<https://github.com/rust-lang/cargo/issues/5730>
 
 该问题实际上已被解决，可以在 build 参数中添加 `-Z features=build_dep`（<https://github.com/rust-lang/cargo/issues/7915>），或者在 `[workspace]` 中指定 `resolver = "2"`（<https://doc.rust-lang.org/cargo/reference/features.html#feature-resolver-version-2>），即可将 `dependencies` 和 `build-dependencies` 的 features 分开。
+
+### lwip 优化初探
+
+- 官方优化指南：<https://lwip.fandom.com/wiki/Maximizing_throughput>
+  - 大端系统优于小端系统
+  - 驱动程序可能是瓶颈
+  - TCP / UDP 校验和计算很可能是瓶颈，建议硬件计算
+  - memcpy 可以优化（尽可能增加复制时的字长）
+  - 提高内存大小，尽可能使用内存池
+  - 若无法硬件计算校验和，则启用 `LWIP_CHECKSUM_ON_COPY` 在 memcpy 时计算校验和
+  - ……
+- 官方 TCP 调参指南：<https://lwip.fandom.com/wiki/Tuning_TCP>
+  - TCP_MSS 尽可能高（目前已设为 1460）
+  - TCP_WND 尽可能高，受内存限制
+  - 启用 `TCP_QUEUE_OOSEQ` 乱序收包
+  - TCP_SND_BUF 应设为 TCP_WND 相同值
+  - TCP_OVERSIZE 设为 TCP_MSS，发送时只申请一个 pbuf，效率更高
+  - ……
+- 其他优化：
+  - 内存分配优化：[Improvement and Optimization of LwIP](https://ieeexplore.ieee.org/document/7867431)
+    - 针对嵌入式场景，应用简单，CPU 和内存资源极其有限
+    - 使用一个内存池和一个内存堆，统一管理，内存池的分配大小和容量预先根据对应用的测量数据进行调整
+    - 参考意义不大
+  - 协议栈设计
+    - 大量相关文献
+    - 进一步移植后根据 lwip 和 arceos 的特征进行调研
 
 ## 下周计划
 
