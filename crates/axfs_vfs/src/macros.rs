@@ -1,5 +1,5 @@
 /// When implement [`VfsNodeOps`] on a directory node, add dummy file operations
-/// that just returns an error.
+/// that just return an error.
 ///
 /// [`VfsNodeOps`]: crate::VfsNodeOps
 #[macro_export]
@@ -24,7 +24,7 @@ macro_rules! impl_vfs_dir_default {
 }
 
 /// When implement [`VfsNodeOps`] on a non-directory node, add dummy directory
-/// operations that just returns an error.
+/// operations that just return an error.
 ///
 /// [`VfsNodeOps`]: crate::VfsNodeOps
 #[macro_export]

@@ -80,11 +80,16 @@ cfg_if::cfg_if! {
         /// A guard that disables/enables local IRQs around the critical section.
         pub struct IrqSave(usize);
 
-        /// A guard that disables/enables kernel preemption around the critical.
+        /// A guard that disables/enables kernel preemption around the critical
+        /// section.
         pub struct NoPreempt;
 
         /// A guard that disables/enables both kernel preemption and local IRQs
         /// around the critical section.
+        ///
+        /// When entering the critical section, it disables kernel preemption
+        /// first, followed by local IRQs. When leaving the critical section, it
+        /// re-enables local IRQs first, followed by kernel preemption.
         pub struct NoPreemptIrqSave(usize);
     } else {
         /// Alias of [`NoOp`].

@@ -1,3 +1,5 @@
+//! RISC-V page table entries.
+
 use core::fmt;
 use memory_addr::PhysAddr;
 
@@ -69,7 +71,7 @@ impl From<MappingFlags> for PTEFlags {
     }
 }
 
-/// Sv39 and Sv48 page table entry.
+/// Sv39 and Sv48 page table entry for RV64 systems.
 #[derive(Clone, Copy)]
 #[repr(transparent)]
 pub struct Rv64PTE(u64);

@@ -1,4 +1,4 @@
-//! ArceOS user library, with an interface similar to rust
+//! ArceOS user program library, with an interface similar to rust
 //! [std](https://doc.rust-lang.org/std/), but calling the functions directly
 //! in ArceOS modules, instead of using libc and system calls.
 
