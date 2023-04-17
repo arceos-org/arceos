@@ -1,4 +1,4 @@
-//! ARM Generic Interrupt Controller v2.
+//! Types and definitions for GICv2.
 
 use core::ptr::NonNull;
 

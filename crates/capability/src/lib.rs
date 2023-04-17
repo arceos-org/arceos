@@ -80,6 +80,8 @@ impl<T> WithCap<T> {
         self.cap.contains(cap)
     }
 
+    /// Access the inner value without capability check.
+    ///
     /// # Safety
     ///
     /// Caller must ensure not to violate the capability.

@@ -178,7 +178,7 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
 
     /// Unmap a contiguous virtual memory region.
     ///
-    /// The region must be mapped before using [`PageTable64::map_region()`], or
+    /// The region must be mapped before using [`PageTable64::map_region`], or
     /// unexpected behaviors may occur.
     pub fn unmap_region(&mut self, vaddr: VirtAddr, size: usize) -> PagingResult {
         trace!(

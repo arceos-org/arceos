@@ -3,8 +3,11 @@ name = "arm_gic"
 version = "0.1.0"
 edition = "2021"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "ARM Generic Interrupt Controller (GIC) driver"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+repository = "https://github.com/rcore-os/arceos/tree/main/crates/arm_gic"
+documentation = "https://rcore-os.github.io/arceos/arm_gic/index.html"
 
 [dependencies]
 tock-registers = "0.8"

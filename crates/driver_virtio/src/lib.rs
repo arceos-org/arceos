@@ -1,3 +1,15 @@
+//! Wrappers of some devices in the [`virtio-drivers`][1] crate, that implement
+//! traits in the [`driver_common`][2] series crates.
+//!
+//! Like the [`virtio-drivers`][1] crate, you must implement the [`VirtIoHal`]
+//! trait (alias of [`virtio-drivers::Hal`][3]), to allocate DMA regions and
+//! translate between physical addresses (as seen by devices) and virtual
+//! addresses (as seen by your program).
+//!
+//! [1]: https://docs.rs/virtio-drivers/latest/virtio_drivers/
+//! [2]: ../driver_common/index.html
+//! [3]: https://docs.rs/virtio-drivers/latest/virtio_drivers/trait.Hal.html
+
 #![no_std]
 #![feature(const_trait_impl)]
 #![feature(doc_auto_cfg)]
@@ -29,6 +41,13 @@ pub use transport::mmio::MmioTransport;
 #[cfg(feature = "bus-pci")]
 pub use transport::pci::PciTransport;
 
+/// Try to probe a VirtIO MMIO device from the given base address.
+///
+/// If the device exists, [`Some(MmioTransport)`][MmioTransport] is returned.
+/// Otherwise, [`None`] is returned.
+///
+/// If `type_match` is [`None`], the device type is not considered. Otherwise,
+/// [`Some`] is returned only if the device type also matches.
 #[cfg(feature = "bus-mmio")]
 pub fn probe_mmio_device(
     reg_base: *mut u8,
@@ -80,5 +99,6 @@ const fn as_dev_err(e: virtio_drivers::Error) -> DevError {
         Unsupported => DevError::Unsupported,
         ConfigSpaceTooSmall => DevError::BadState,
         ConfigSpaceMissing => DevError::BadState,
+        _ => DevError::BadState,
     }
 }

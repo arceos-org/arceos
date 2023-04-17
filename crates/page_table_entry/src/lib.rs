@@ -44,9 +44,9 @@ bitflags::bitflags! {
 ///
 /// All architecture-specific page table entry types implement this trait.
 pub trait GenericPTE: Debug + Clone + Copy + Sync + Send + Sized {
-    /// Create a page table entry point to a terminate page or block.
+    /// Creates a page table entry point to a terminate page or block.
     fn new_page(paddr: PhysAddr, flags: MappingFlags, is_huge: bool) -> Self;
-    /// Create a page table entry point to a next level page table.
+    /// Creates a page table entry point to a next level page table.
     fn new_table(paddr: PhysAddr) -> Self;
 
     /// Returns the physical address mapped by this entry.

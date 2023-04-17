@@ -3,8 +3,11 @@ name = "driver_virtio"
 version = "0.1.0"
 edition = "2021"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "Wrappers of some devices in the `virtio-drivers` crate, that implement traits in the `driver_common` series crates"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+repository = "https://github.com/rcore-os/arceos/tree/main/crates/driver_virtio"
+documentation = "https://rcore-os.github.io/arceos/driver_virtio/index.html"
 
 [features]
 bus-mmio = []
@@ -20,4 +23,4 @@ driver_common = { path = "../driver_common" }
 driver_block = { path = "../driver_block", optional = true }
 driver_net = { path = "../driver_net", optional = true }
 driver_display = { path = "../driver_display", optional = true}
-virtio-drivers = { git = "https://github.com/rcore-os/virtio-drivers.git", rev = "0491154" }
+virtio-drivers = "0.4"
