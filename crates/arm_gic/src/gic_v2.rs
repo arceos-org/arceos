@@ -1,17 +1,16 @@
 //! Types and definitions for GICv2.
+//!
+//! The official documentation: <https://developer.arm.com/documentation/ihi0048/latest/>
 
 use core::ptr::NonNull;
 
+use crate::{TriggerMode, GIC_MAX_IRQ, SPI_RANGE};
 use tock_registers::interfaces::{Readable, Writeable};
 use tock_registers::register_structs;
 use tock_registers::registers::{ReadOnly, ReadWrite, WriteOnly};
 
-pub const PPI_BASE: usize = 16;
-pub const SPI_BASE: usize = 32;
-
-const MAX_IRQ_DEFAULT: usize = 1024;
-
 register_structs! {
+    /// GIC Distributor registers.
     #[allow(non_snake_case)]
     GicDistributorRegs {
         /// Distributor Control Register.
@@ -49,6 +48,7 @@ register_structs! {
 }
 
 register_structs! {
+    /// GIC CPU Interface registers.
     #[allow(non_snake_case)]
     GicCpuInterfaceRegs {
         /// CPU Interface Control Register.
@@ -75,21 +75,42 @@ register_structs! {
     }
 }
 
-pub enum TriggerMode {
-    Edge = 0,
-    Level = 1,
-}
-
-pub enum Polarity {
-    ActiveHigh = 0,
-    ActiveLow = 1,
-}
-
+/// The GIC distributor.
+///
+/// The Distributor block performs interrupt prioritization and distribution
+/// to the CPU interface blocks that connect to the processors in the system.
+///
+/// The Distributor provides a programming interface for:
+/// - Globally enabling the forwarding of interrupts to the CPU interfaces.
+/// - Enabling or disabling each interrupt.
+/// - Setting the priority level of each interrupt.
+/// - Setting the target processor list of each interrupt.
+/// - Setting each peripheral interrupt to be level-sensitive or edge-triggered.
+/// - Setting each interrupt as either Group 0 or Group 1.
+/// - Forwarding an SGI to one or more target processors.
+///
+/// In addition, the Distributor provides:
+/// - visibility of the state of each interrupt
+/// - a mechanism for software to set or clear the pending state of a peripheral
+///   interrupt.
 pub struct GicDistributor {
     base: NonNull<GicDistributorRegs>,
     max_irqs: usize,
 }
 
+/// The GIC CPU interface.
+///
+/// Each CPU interface block performs priority masking and preemption
+/// handling for a connected processor in the system.
+///
+/// Each CPU interface provides a programming interface for:
+///
+/// - enabling the signaling of interrupt requests to the processor
+/// - acknowledging an interrupt
+/// - indicating completion of the processing of an interrupt
+/// - setting an interrupt priority mask for the processor
+/// - defining the preemption policy for the processor
+/// - determining the highest priority pending interrupt for the processor.
 pub struct GicCpuInterface {
     base: NonNull<GicCpuInterfaceRegs>,
 }
@@ -101,10 +122,11 @@ unsafe impl Send for GicCpuInterface {}
 unsafe impl Sync for GicCpuInterface {}
 
 impl GicDistributor {
+    /// Construct a new GIC distributor instance from the base address.
     pub const fn new(base: *mut u8) -> Self {
         Self {
             base: NonNull::new(base).unwrap().cast(),
-            max_irqs: MAX_IRQ_DEFAULT,
+            max_irqs: GIC_MAX_IRQ,
         }
     }
 
@@ -112,21 +134,20 @@ impl GicDistributor {
         unsafe { self.base.as_ref() }
     }
 
+    /// The number of implemented CPU interfaces.
     pub fn cpu_num(&self) -> usize {
         ((self.regs().TYPER.get() as usize >> 5) & 0b111) + 1
     }
 
+    /// The maximum number of interrupts that the GIC supports
     pub fn max_irqs(&self) -> usize {
         ((self.regs().TYPER.get() as usize & 0b11111) + 1) * 32
     }
 
-    pub fn configure_interrupt(&mut self, vector: usize, tm: TriggerMode, pol: Polarity) {
+    /// Configures the trigger mode for the given interrupt.
+    pub fn configure_interrupt(&mut self, vector: usize, tm: TriggerMode) {
         // Only configurable for SPI interrupts
-        if vector >= self.max_irqs || vector < SPI_BASE {
-            return;
-        }
-        // TODO: polarity should actually be configure through a GPIO controller
-        if !matches!(pol, Polarity::ActiveHigh) {
+        if vector >= self.max_irqs || vector < SPI_RANGE.start {
             return;
         }
 
@@ -142,6 +163,7 @@ impl GicDistributor {
         self.regs().ICFGR[reg_idx].set(reg_val);
     }
 
+    /// Enables or disables the given interrupt.
     pub fn set_enable(&mut self, vector: usize, enable: bool) {
         if vector >= self.max_irqs {
             return;
@@ -155,25 +177,31 @@ impl GicDistributor {
         }
     }
 
+    /// Initializes the GIC distributor.
+    ///
+    /// It disables all interrupts, sets the target of all SPIs to CPU 0,
+    /// configures all SPIs to be edge-triggered, and finally enables the GICD.
+    ///
+    /// This function should be called only once.
     pub fn init(&mut self) {
         let max_irqs = self.max_irqs();
-        assert!(max_irqs <= MAX_IRQ_DEFAULT);
+        assert!(max_irqs <= GIC_MAX_IRQ);
         self.max_irqs = max_irqs;
 
-        // Disable all interrputs
+        // Disable all interrupts
         for i in (0..max_irqs).step_by(32) {
             self.regs().ICENABLER[i / 32].set(u32::MAX);
             self.regs().ICPENDR[i / 32].set(u32::MAX);
         }
         if self.cpu_num() > 1 {
-            for i in (SPI_BASE..max_irqs).step_by(4) {
+            for i in (SPI_RANGE.start..max_irqs).step_by(4) {
                 // Set external interrupts to target cpu 0
                 self.regs().ITARGETSR[i / 4].set(0x01_01_01_01);
             }
         }
         // Initialize all the SPIs to edge triggered
-        for i in SPI_BASE..max_irqs {
-            self.configure_interrupt(i, TriggerMode::Edge, Polarity::ActiveHigh);
+        for i in SPI_RANGE.start..max_irqs {
+            self.configure_interrupt(i, TriggerMode::Edge);
         }
 
         // enable GIC0
@@ -182,6 +210,7 @@ impl GicDistributor {
 }
 
 impl GicCpuInterface {
+    /// Construct a new GIC CPU interface instance from the base address.
     pub const fn new(base: *mut u8) -> Self {
         Self {
             base: NonNull::new(base).unwrap().cast(),
@@ -192,14 +221,32 @@ impl GicCpuInterface {
         unsafe { self.base.as_ref() }
     }
 
+    /// Returns the interrupt ID of the highest priority pending interrupt for
+    /// the CPU interface. (read GICC_IAR)
+    ///
+    /// The read returns a spurious interrupt ID of `1023` if the distributor
+    /// or the CPU interface are disabled, or there is no pending interrupt on
+    /// the CPU interface.
     pub fn iar(&self) -> u32 {
         self.regs().IAR.get()
     }
 
+    /// Informs the CPU interface that it has completed the processing of the
+    /// specified interrupt. (write GICC_EOIR)
+    ///
+    /// The value written must be the value returns from [`Self::iar`].
     pub fn eoi(&self, iar: u32) {
         self.regs().EOIR.set(iar);
     }
 
+    /// handles the signaled interrupt.
+    ///
+    /// It first reads GICC_IAR to obtain the pending interrupt ID and then
+    /// calls the given handler. After the handler returns, it writes GICC_EOIR
+    /// to acknowledge the interrupt.
+    ///
+    /// If read GICC_IAR returns a spurious interrupt ID of `1023`, it does
+    /// nothing.
     pub fn handle_irq<F>(&self, handler: F)
     where
         F: FnOnce(u32),
@@ -214,6 +261,11 @@ impl GicCpuInterface {
         }
     }
 
+    /// Initializes the GIC CPU interface.
+    ///
+    /// It unmask interrupts at all priority levels and enables the GICC.
+    ///
+    /// This function should be called only once.
     pub fn init(&self) {
         // enable GIC0
         self.regs().CTLR.set(1);

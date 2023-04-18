@@ -72,5 +72,5 @@ define cargo_doc
     cargo rustdoc --all-features -p $(p)
   )
   @# for some crates, re-generate without `--all-features`
-  cargo doc --no-deps -p percpu -p kernel_guard
+  cargo doc --no-deps -p percpu
 endef

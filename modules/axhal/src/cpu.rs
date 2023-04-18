@@ -22,7 +22,7 @@ pub fn this_cpu_is_bsp() -> bool {
 pub fn current_task_ptr<T>() -> *const T {
     #[cfg(target_arch = "x86_64")]
     unsafe {
-        // on x86, only instruction is needed to read the per-CPU task pointer from `gs:[off]`.
+        // on x86, only one instruction is needed to read the per-CPU task pointer from `gs:[off]`.
         CURRENT_TASK_PTR.read_current_raw() as _
     }
     #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
@@ -67,7 +67,7 @@ pub(crate) fn init_percpu(cpu_id: usize, is_bsp: bool) {
     if is_bsp {
         percpu::init(axconfig::SMP);
     }
-    percpu::set_local_thread_pointer(cpu_id, None);
+    percpu::set_local_thread_pointer(cpu_id);
     unsafe {
         // preemption is disabled on initialization.
         CPU_ID.write_current_raw(cpu_id);

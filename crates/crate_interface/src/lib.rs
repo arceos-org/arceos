@@ -1,3 +1,38 @@
+//! Provides a way to **define** an interface (trait) in a crate, but can
+//! **implement** or **use** it in any crate. It 's usually used to solve
+//! the problem of *circular dependencies* between crates.
+//!
+//! # Example
+//!
+//! ```
+//! // Define the interface
+//! #[crate_interface::def_interface]
+//! pub trait HelloIf {
+//!     fn hello(&self, name: &str, id: usize) -> String;
+//! }
+//!
+//! // Implement the interface in any crate
+//! struct HelloIfImpl;
+//!
+//! #[crate_interface::impl_interface]
+//! impl HelloIf for HelloIfImpl {
+//!     fn hello(&self, name: &str, id: usize) -> String {
+//!         format!("Hello, {} {}!", name, id)
+//!     }
+//! }
+//!
+//! // Call `HelloIfImpl::hello` in any crate
+//! use crate_interface::call_interface;
+//! assert_eq!(
+//!     call_interface!(HelloIf::hello("world", 123)),
+//!     "Hello, world 123!"
+//! );
+//! assert_eq!(
+//!     call_interface!(HelloIf::hello, "rust", 456), // another calling style
+//!     "Hello, rust 456!"
+//! );
+//! ```
+
 #![feature(iter_next_chunk)]
 
 use proc_macro::TokenStream;
@@ -9,6 +44,15 @@ fn compiler_error(err: Error) -> TokenStream {
     err.to_compile_error().into()
 }
 
+/// Define an interface.
+///
+/// This attribute should be added above the definition of a trait. All traits
+/// that use the attribute cannot have the same name.
+///
+/// It is not necessary to define it in the same crate as the implementation,
+/// but it is required that these crates are linked together.
+///
+/// See the [crate-level documentation](crate) for more details.
 #[proc_macro_attribute]
 pub fn def_interface(attr: TokenStream, item: TokenStream) -> TokenStream {
     if !attr.is_empty() {
@@ -51,6 +95,16 @@ pub fn def_interface(attr: TokenStream, item: TokenStream) -> TokenStream {
     .into()
 }
 
+/// Implement the interface for a struct.
+///
+/// This attribute should be added above the implementation of a trait for a
+/// struct, and the trait must be defined with
+/// [`#[def_interface]`](macro@crate::def_interface).
+///
+/// It is not necessary to implement it in the same crate as the definition, but
+/// it is required that these crates are linked together.
+///
+/// See the [crate-level documentation](crate) for more details.
 #[proc_macro_attribute]
 pub fn impl_interface(attr: TokenStream, item: TokenStream) -> TokenStream {
     if !attr.is_empty() {
@@ -126,6 +180,12 @@ pub fn impl_interface(attr: TokenStream, item: TokenStream) -> TokenStream {
     quote! { #ast }.into()
 }
 
+/// Call a function in the interface.
+///
+/// It is not necessary to call it in the same crate as the implementation, but
+/// it is required that these crates are linked together.
+///
+/// See the [crate-level documentation](crate) for more details.
 #[proc_macro]
 pub fn call_interface(item: TokenStream) -> TokenStream {
     parse_call_interface(item)
@@ -141,7 +201,7 @@ fn parse_call_interface(item: TokenStream) -> Result<TokenStream, String> {
 
     let trait_name = &tt[0];
     if tt[1] != ":" || tt[2] != ":" {
-        return Err("misssing `::`".into());
+        return Err("missing `::`".into());
     }
     let fn_name = &tt[3];
     let extern_fn_name = format!("__{}_{}", trait_name, fn_name);
@@ -149,6 +209,9 @@ fn parse_call_interface(item: TokenStream) -> Result<TokenStream, String> {
     let mut args = iter.map(|x| x.to_string()).collect::<Vec<_>>().join("");
     if args.starts_with(',') {
         args.remove(0);
+    } else if args.starts_with('(') && args.ends_with(')') {
+        args.remove(0);
+        args.pop();
     }
 
     let call = format!("unsafe {{ {}( {} ) }}", extern_fn_name, args);
