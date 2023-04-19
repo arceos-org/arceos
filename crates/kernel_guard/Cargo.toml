@@ -9,6 +9,10 @@ homepage = "https://github.com/rcore-os/arceos"
 repository = "https://github.com/rcore-os/arceos/tree/main/crates/kernel_guard"
 documentation = "https://rcore-os.github.io/arceos/kernel_guard/index.html"
 
+[features]
+preempt = []
+default = []
+
 [dependencies]
 cfg-if = "1.0"
 crate_interface = { path = "../crate_interface" }

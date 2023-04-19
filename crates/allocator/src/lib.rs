@@ -1,4 +1,4 @@
-//! Various allocator algorithms in an unified interface.
+//! Various allocator algorithms in a unified interface.
 //!
 //! There are three types of allocators:
 //!

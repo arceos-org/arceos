@@ -3,8 +3,11 @@ name = "axconfig"
 version = "0.1.0"
 edition = "2021"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "Platform-specific constants and parameters for ArceOS"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+repository = "https://github.com/rcore-os/arceos/tree/main/modules/axconfig"
+documentation = "https://rcore-os.github.io/arceos/axconfig/index.html"
 
 [features]
 platform-qemu-virt-riscv = []
@@ -15,5 +18,5 @@ default = []
 cfg-if = "1.0"
 
 [build-dependencies]
-toml = "0.5"
+toml_edit = "0.19"
 serde = "1.0"

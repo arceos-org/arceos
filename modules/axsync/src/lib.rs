@@ -1,4 +1,4 @@
-//! ArceOS synchronization primitives.
+//! [ArceOS](https://github.com/rcore-os/arceos) synchronization primitives.
 //!
 //! Currently supported primitives:
 //!

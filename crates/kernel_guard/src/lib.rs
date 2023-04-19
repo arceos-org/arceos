@@ -6,7 +6,8 @@
 //!
 //! The crate user must implement the [`KernelGuardIf`] trait using
 //! [`crate_interface::impl_interface`] to provide the low-level implementantion
-//! of how to enable/disable kernel preemption.
+//! of how to enable/disable kernel preemption, if the feature `preempt` is
+//! enabled.
 //!
 //! Available guards:
 //!
@@ -16,6 +17,13 @@
 //!   section.
 //! - [`NoPreemptIrqSave`]: Disables/enables both kernel preemption and local
 //!   IRQs around the critical section.
+//!
+//! # Crate features
+//!
+//! - `preempt`: Use in the preemptive system. If this feature is enabled, you
+//!    need to implement the [`KernelGuardIf`] trait in other crates. Otherwise
+//!    the preemption enable/disable operations will be no-ops. This feature is
+//!    disabled by default.
 //!
 //! # Examples
 //!
@@ -143,10 +151,12 @@ mod imp {
         type State = ();
         fn acquire() -> Self::State {
             // disable preempt
+            #[cfg(feature = "preempt")]
             crate_interface::call_interface!(KernelGuardIf::disable_preempt);
         }
         fn release(_state: Self::State) {
             // enable preempt
+            #[cfg(feature = "preempt")]
             crate_interface::call_interface!(KernelGuardIf::enable_preempt);
         }
     }
@@ -155,6 +165,7 @@ mod imp {
         type State = usize;
         fn acquire() -> Self::State {
             // disable preempt
+            #[cfg(feature = "preempt")]
             crate_interface::call_interface!(KernelGuardIf::disable_preempt);
             // disable IRQs and save IRQ states
             super::arch::local_irq_save_and_disable()
@@ -163,6 +174,7 @@ mod imp {
             // restore IRQ states
             super::arch::local_irq_restore(state);
             // enable preempt
+            #[cfg(feature = "preempt")]
             crate_interface::call_interface!(KernelGuardIf::enable_preempt);
         }
     }
