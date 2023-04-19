@@ -1,3 +1,20 @@
+//! Runtime library of [ArceOS](https://github.com/rcore-os/arceos).
+//!
+//! Any application uses ArceOS should link this library. It does some
+//! initialization work before entering the application's `main` function.
+//!
+//! # Cargo Features
+//!
+//! - `alloc`: Enable global memory allocator.
+//! - `paging`: Enable page table manipulation support.
+//! - `multitask`: Enable multi-threading support.
+//! - `smp`: Enable SMP (symmetric multiprocessing) support.
+//! - `fs`: Enable filesystem support.
+//! - `net`: Enable networking support.
+//! - `display`: Enable graphics support.
+//!
+//! All the features are optional and disabled by default.
+
 #![cfg_attr(not(test), no_std)]
 #![feature(doc_auto_cfg)]
 
@@ -74,6 +91,15 @@ fn is_init_ok() -> bool {
     INITED_CPUS.load(Ordering::Acquire) == axconfig::SMP
 }
 
+/// The main entry point of the ArceOS runtime.
+///
+/// It is called from the bootstrapping code in [axhal]. `cpu_id` is the ID of
+/// the current CPU, and `dtb` is the address of the device tree blob. It
+/// finally calls the application's `main` function after all initialization
+/// work is done.
+///
+/// In multi-core environment, this function is called on the primary CPU,
+/// and the secondary CPUs call [`rust_main_secondary`].
 #[cfg_attr(not(test), no_mangle)]
 pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     ax_println!("{}", LOGO);

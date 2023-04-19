@@ -51,10 +51,10 @@ pub use self::structs::{FileSystemInfo, VfsDirEntry, VfsNodeAttr, VfsNodePerm, V
 /// A wrapper of [`Arc<dyn VfsNodeOps>`].
 pub type VfsNodeRef = Arc<dyn VfsNodeOps>;
 
-/// Alias for [`AxError`].
+/// Alias of [`AxError`].
 pub type VfsError = AxError;
 
-/// Alias for [`AxResult`].
+/// Alias of [`AxResult`].
 pub type VfsResult<T = ()> = AxResult<T>;
 
 /// Filesystem operations.

@@ -29,10 +29,10 @@ ArceOS was inspired a lot by [Unikraft](https://github.com/unikraft/unikraft).
 
 Example applications can be found in the [apps/](apps/) directory. All applications must at least depend on the following modules, while other modules are optional:
 
-* [axruntime](modules/axruntime/): Bootstraping from the bare-metal environment, and initialization.
+* [axruntime](modules/axruntime/): Bootstrapping from the bare-metal environment, and initialization.
 * [axhal](modules/axhal/): Hardware abstraction layer, provides unified APIs for cross-platform.
 * [axconfig](modules/axconfig/): Platform constants and kernel parameters, such as physical memory base, kernel load addresses, stack size, etc.
-* [axlog](modules/axlog/): Multi-level log definition and printing.
+* [axlog](modules/axlog/): Multi-level formatted logging.
 
 The currently supported applications (Rust), as well as their dependent modules and features, are shown in the following table:
 

@@ -2,7 +2,8 @@
 
 #![no_std]
 
-use driver_common::{BaseDriverOps, DevResult};
+#[doc(no_inline)]
+pub use driver_common::{BaseDriverOps, DevError, DevResult, DeviceType};
 
 /// The information of the graphics device.
 #[derive(Debug, Clone, Copy)]

@@ -6,7 +6,8 @@
 #[cfg(feature = "ramdisk")]
 pub mod ramdisk;
 
-use driver_common::{BaseDriverOps, DevResult};
+#[doc(no_inline)]
+pub use driver_common::{BaseDriverOps, DevError, DevResult, DeviceType};
 
 /// Operations that require a block storage device driver to implement.
 pub trait BlockDriverOps: BaseDriverOps {

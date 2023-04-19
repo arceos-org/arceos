@@ -30,7 +30,8 @@
 //! # Cargo Features
 //!
 //! - `sp-naive`: For **single-core** use. In this case, each per-CPU data is
-//!    just a global variable.
+//!    just a global variable, architecture-specific thread pointer register is
+//!    not used.
 //! - `preempt`: For **preemptible** system use. In this case, we need to disable
 //!    preemption when accessing per-CPU data. Otherwise, the data may be corrupted
 //!    when it's being accessing and the current thread happens to be preempted.
@@ -54,7 +55,7 @@ pub mod __priv {
 
 cfg_if::cfg_if! {
     if #[cfg(doc)] {
-        /// Example per-CPU data for documentation.
+        /// Example per-CPU data for documentation only.
         #[doc(cfg(doc))]
         #[def_percpu]
         pub static EXAMPLE_PERCPU_DATA: usize = 0;

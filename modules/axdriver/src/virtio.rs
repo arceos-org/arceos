@@ -18,6 +18,7 @@ cfg_if! {
 
 cfg_if! {
     if #[cfg(feature = "virtio-blk")] {
+        /// Alias of [`driver_virtio::VirtIoBlkDev`].
         pub type VirtIoBlockDev = driver_virtio::VirtIoBlkDev<VirtIoHalImpl, VirtIoTransport>;
     }
 }
@@ -26,12 +27,15 @@ cfg_if! {
     if #[cfg(feature = "virtio-net")] {
         const NET_QUEUE_SIZE: usize = 64;
         const NET_BUFFER_SIZE: usize = 2048;
+        /// Alias of [`driver_virtio::VirtIoNetDev`], with the queue size of 64
+        /// and the buffer size of 2048.
         pub type VirtIoNetDev = driver_virtio::VirtIoNetDev<VirtIoHalImpl, VirtIoTransport, NET_QUEUE_SIZE>;
     }
 }
 
 cfg_if! {
     if #[cfg(feature = "virtio-gpu")] {
+        /// Alias of [`driver_virtio::VirtIoGpuDev`].
         pub type VirtIoGpuDev = driver_virtio::VirtIoGpuDev<VirtIoHalImpl, VirtIoTransport>;
     }
 }
