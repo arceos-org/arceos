@@ -1,3 +1,5 @@
+//! Page table manipulation.
+
 use axalloc::global_allocator;
 use page_table::PagingIf;
 
@@ -25,6 +27,8 @@ impl From<MemRegionFlags> for MappingFlags {
     }
 }
 
+/// Implementation of [`PagingIf`], to provide physical memory manipulation to
+/// the [page_table] crate.
 pub struct PagingIfImpl;
 
 impl PagingIf for PagingIfImpl {
@@ -47,10 +51,13 @@ impl PagingIf for PagingIfImpl {
 
 cfg_if::cfg_if! {
     if #[cfg(target_arch = "x86_64")] {
+        /// The architecture-specific page table.
         pub type PageTable = page_table::x86_64::X64PageTable<PagingIfImpl>;
     } else if #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))] {
+        /// The architecture-specific page table.
         pub type PageTable = page_table::riscv::Sv39PageTable<PagingIfImpl>;
     } else if #[cfg(target_arch = "aarch64")]{
+        /// The architecture-specific page table.
         pub type PageTable = page_table::aarch64::A64PageTable<PagingIfImpl>;
     }
 }

@@ -1,15 +1,24 @@
+//! Physical memory management.
+
 use core::fmt;
 
 #[doc(no_inline)]
 pub use memory_addr::{PhysAddr, VirtAddr, PAGE_SIZE_4K};
 
 bitflags::bitflags! {
+    /// The flags of a physical memory region.
     pub struct MemRegionFlags: usize {
+        /// Readable.
         const READ          = 1 << 0;
+        /// Writable.
         const WRITE         = 1 << 1;
+        /// Executable.
         const EXECUTE       = 1 << 2;
+        /// Device memory.
         const DEVICE        = 1 << 4;
+        /// Reserved memory, do not use for allocation.
         const RESERVED      = 1 << 5;
+        /// Free memory for allocation.
         const FREE          = 1 << 6;
     }
 }
@@ -20,14 +29,20 @@ impl fmt::Debug for MemRegionFlags {
     }
 }
 
+/// A physical memory region.
 #[derive(Debug)]
 pub struct MemRegion {
+    /// The start physical address of the region.
     pub paddr: PhysAddr,
+    /// The size in bytes of the region.
     pub size: usize,
+    /// The region flags, see [`MemRegionFlags`].
     pub flags: MemRegionFlags,
+    /// The region name, used for identification.
     pub name: &'static str,
 }
 
+/// The iterator over all physical memory regions.
 struct MemRegionIter {
     idx: usize,
 }
@@ -47,25 +62,45 @@ impl Iterator for MemRegionIter {
     }
 }
 
+/// Converts a virtual address to a physical address.
+///
+/// It assumes that there is a linear mapping with the offset
+/// [`PHYS_VIRT_OFFSET`], that maps all the physical memory to the virtual
+/// space at the address plus the offset. So we have
+/// `paddr = vaddr - PHYS_VIRT_OFFSET`.
+///
+/// [`PHYS_VIRT_OFFSET`]: axconfig::PHYS_VIRT_OFFSET
 #[inline]
 pub const fn virt_to_phys(vaddr: VirtAddr) -> PhysAddr {
     PhysAddr::from(vaddr.as_usize() - axconfig::PHYS_VIRT_OFFSET)
 }
 
+/// Converts a physical address to a virtual address.
+///
+/// It assumes that there is a linear mapping with the offset
+/// [`PHYS_VIRT_OFFSET`], that maps all the physical memory to the virtual
+/// space at the address plus the offset. So we have
+/// `vaddr = paddr + PHYS_VIRT_OFFSET`.
+///
+/// [`PHYS_VIRT_OFFSET`]: axconfig::PHYS_VIRT_OFFSET
 #[inline]
 pub const fn phys_to_virt(paddr: PhysAddr) -> VirtAddr {
     VirtAddr::from(paddr.as_usize() + axconfig::PHYS_VIRT_OFFSET)
 }
 
+/// Returns an iterator over all physical memory regions.
 pub fn memory_regions() -> impl Iterator<Item = MemRegion> {
     MemRegionIter { idx: 0 }
 }
 
+/// Number of common physical memory regions for all platforms.
 #[allow(dead_code)]
 pub(crate) const fn common_memory_regions_num() -> usize {
     6 + axconfig::MMIO_REGIONS.len()
 }
 
+/// Returns the common physical memory region at the given index, or [`None`] if
+/// out of bounds.
 #[allow(dead_code)]
 pub(crate) fn common_memory_region_at(idx: usize) -> Option<MemRegion> {
     let mmio_regions = axconfig::MMIO_REGIONS;
@@ -120,6 +155,7 @@ pub(crate) fn common_memory_region_at(idx: usize) -> Option<MemRegion> {
     Some(r)
 }
 
+/// Fills the `.bss` section with zeros.
 #[allow(dead_code)]
 pub(crate) fn clear_bss() {
     unsafe {

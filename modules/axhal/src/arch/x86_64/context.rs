@@ -1,6 +1,8 @@
 use core::{arch::asm, fmt};
 use memory_addr::VirtAddr;
 
+/// Saved registers when a trap (interrupt or exception) occurs.
+#[allow(missing_docs)]
 #[repr(C)]
 #[derive(Debug, Default, Clone)]
 pub struct TrapFrame {
@@ -46,19 +48,24 @@ struct ContextSwitchFrame {
     rip: u64,
 }
 
+/// A 512-byte memory region for the FXSAVE/FXRSTOR instruction to save and
+/// restore the x87 FPU, MMX, XMM, and MXCSR registers.
+///
+/// See <https://www.felixcloutier.com/x86/fxsave> for more details.
+#[allow(missing_docs)]
 #[repr(C, align(16))]
 #[derive(Debug)]
 pub struct FxsaveArea {
-    fcw: u16,
-    fsw: u16,
-    ftw: u16,
-    fop: u16,
-    fip: u64,
-    fdp: u64,
-    mxcsr: u32,
-    mxcsr_mask: u32,
-    st: [u64; 16],
-    xmm: [u64; 32],
+    pub fcw: u16,
+    pub fsw: u16,
+    pub ftw: u16,
+    pub fop: u16,
+    pub fip: u64,
+    pub fdp: u64,
+    pub mxcsr: u32,
+    pub mxcsr_mask: u32,
+    pub st: [u64; 16],
+    pub xmm: [u64; 32],
     _padding: [u64; 12],
 }
 
@@ -74,12 +81,14 @@ impl const Default for FxsaveArea {
     }
 }
 
-pub struct ExtentedState {
-    fxsave_area: FxsaveArea,
+/// Extended state of a task, such as FP/SIMD states.
+pub struct ExtendedState {
+    /// Memory region for the FXSAVE/FXRSTOR instruction.
+    pub fxsave_area: FxsaveArea,
 }
 
 #[cfg(feature = "fp_simd")]
-impl ExtentedState {
+impl ExtendedState {
     #[inline]
     fn save(&mut self) {
         unsafe { core::arch::x86_64::_fxsave64(&mut self.fxsave_area as *mut _ as *mut u8) }
@@ -91,34 +100,59 @@ impl ExtentedState {
     }
 }
 
-impl fmt::Debug for ExtentedState {
+impl fmt::Debug for ExtendedState {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_struct("ExtentedState")
+        f.debug_struct("ExtendedState")
             .field("fxsave_area", &self.fxsave_area)
             .finish()
     }
 }
 
+/// Saved hardware states of a task.
+///
+/// The context usually includes:
+///
+/// - Callee-saved registers
+/// - Stack pointer register
+/// - Thread pointer register (for thread-local storage, currently unsupported)
+/// - FP/SIMD registers
+///
+/// On context switch, current task saves its context from CPU to memory,
+/// and the next task restores its context from memory to CPU.
+///
+/// On x86_64, callee-saved registers are saved to the kernel stack by the
+/// `PUSH` instruction. So that [`rsp`] is the `RSP` after callee-saved
+/// registers are pushed, and [`kstack_top`] is the top of the kernel stack
+/// (`RSP` before any push).
+///
+/// [`rsp`]: TaskContext::rsp
+/// [`kstack_top`]: TaskContext::kstack_top
 #[derive(Debug)]
 pub struct TaskContext {
+    /// The kernel stack top of the task.
     pub kstack_top: VirtAddr,
+    /// `RSP` after all callee-saved registers are pushed.
     pub rsp: u64,
+    /// Extended states, i.e., FP/SIMD states.
     #[cfg(feature = "fp_simd")]
-    pub ext_state: ExtentedState,
+    pub ext_state: ExtendedState,
 }
 
 impl TaskContext {
+    /// Creates a new default context for a new task.
     pub const fn new() -> Self {
         Self {
             kstack_top: VirtAddr::from(0),
             rsp: 0,
             #[cfg(feature = "fp_simd")]
-            ext_state: ExtentedState {
+            ext_state: ExtendedState {
                 fxsave_area: FxsaveArea::default(),
             },
         }
     }
 
+    /// Initializes the context for a new task, with the given entry point and
+    /// kernel stack.
     pub fn init(&mut self, entry: usize, kstack_top: VirtAddr) {
         unsafe {
             // x86_64 calling convention: the stack must be 16-byte aligned before
@@ -138,6 +172,10 @@ impl TaskContext {
         self.kstack_top = kstack_top;
     }
 
+    /// Switches to another task.
+    ///
+    /// It first saves the current task's context from CPU to this place, and then
+    /// restores the next task's context from `next_ctx` to CPU.
     pub fn switch_to(&mut self, next_ctx: &Self) {
         #[cfg(all(feature = "fp_simd", target_feature = "sse"))]
         {

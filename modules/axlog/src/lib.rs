@@ -86,7 +86,7 @@ pub trait LogIf {
     /// Writes a string to the console.
     fn console_write_str(s: &str);
 
-    /// Gets current time.
+    /// Gets current clock time.
     fn current_time() -> core::time::Duration;
 
     /// Gets current CPU ID.

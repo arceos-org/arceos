@@ -18,7 +18,7 @@ jobs:
         profile: minimal
         toolchain: nightly
     - name: Build docs
-      run: make doc
+      run: make doc_check_missing
     - name: Deploy to Github Pages
       uses: JamesIves/github-pages-deploy-action@v4
       with:
