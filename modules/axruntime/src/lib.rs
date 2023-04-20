@@ -228,14 +228,13 @@ fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
             extern "C" {
                 fn strampoline();
             }
-            use axhal::paging::MappingFlags;
             kernel_page_table.map_region(
-                0xffff_ffc0_0000_0000.into(),
+                axmem::TRAMPOLINE_START.into(),
                 virt_to_phys((strampoline as usize).into()),
                 axhal::mem::PAGE_SIZE_4K,
                 MappingFlags::READ | MappingFlags::EXECUTE,
                 false
-            );
+            )?;
         }
 
         

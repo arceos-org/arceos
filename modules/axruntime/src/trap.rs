@@ -18,10 +18,7 @@ impl axhal::trap::TrapHandler for TrapHandlerImpl {
 pub fn user_space_entry() -> ! {
     if cfg!(feature = "user-paging") {
         info!("Into User State");
-        axhal::arch::enter_uspace(
-            0xffff_ffff_fff0_0000,
-            axmem::get_satp()
-        )
+        axhal::arch::first_uentry()
     } else {
         extern "Rust" {
             fn __user_start();

@@ -15,6 +15,7 @@ use axhal::{paging::{PageTable, MappingFlags}, mem::{virt_to_phys, phys_to_virt}
 pub const USER_START: usize = 0x0400_0000;
 pub const USTACK_START: usize = 0xf_ffff_f000;
 pub const USTACK_SIZE: usize = 4096;
+pub const TRAMPOLINE_START: usize = 0xffff_ffc0_0000_0000;
 
 
 pub struct MapSegment {
@@ -139,7 +140,7 @@ pub fn init_global_addr_space() {
         fn strampoline();
     }
     user_space.add_region_shadow(
-        0xffff_ffc0_0000_0000.into(),
+        TRAMPOLINE_START.into(),
         virt_to_phys((strampoline as usize).into()),
         PAGE_SIZE_4K,
         MappingFlags::READ | MappingFlags::EXECUTE,

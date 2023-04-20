@@ -74,6 +74,13 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
 }
 
 #[cfg(feature = "user-paging")]
+pub fn first_uentry() -> ! {
+    let tf = crate::trap::get_current_trap_frame_virt_addr();
+    let satp = crate::trap::get_current_satp();
+    enter_uspace(tf, satp);    
+}
+
+#[cfg(feature = "user-paging")]
 pub fn enter_uspace(tf: usize, satp: usize) -> ! {
     extern "C" {
         fn strampoline();

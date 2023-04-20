@@ -1,5 +1,4 @@
 use alloc::{boxed::Box, sync::Arc};
-use axhal::paging::MappingFlags;
 use core::ops::Deref;
 use core::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
 use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
@@ -8,7 +7,7 @@ use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 use core::sync::atomic::AtomicUsize;
 
 use axhal::arch::TaskContext;
-use memory_addr::{align_up_4k, VirtAddr, PhysAddr};
+use memory_addr::{align_up_4k, VirtAddr};
 extern crate axalloc;
 
 use crate::{AxTask, AxTaskRef};
@@ -130,7 +129,7 @@ impl TaskInner {
             // TODO: add trap frame
         }
         Arc::new(AxTask::new(t))
-    }
+    }     
 
     pub(crate) fn new_init(name: &'static str) -> AxTaskRef {
         // init_task does not change PC and SP, so `entry` and `kstack` fields are not used.
@@ -142,18 +141,20 @@ impl TaskInner {
         debug!("init task: {}", t.id_name());
         #[cfg(feature = "user-paging")]
         {
-            let kstack = TaskStack::alloc(axhal::mem::PAGE_SIZE_4K);
+            let kstack = TaskStack::alloc(TRAP_FRAME_SIZE);
             t.kstack = Some(kstack);
             use axhal::paging::MappingFlags;
             let trap_frame = axmem::alloc_user_page(
-                0xffff_ffff_fff0_0000.into(),
-                axhal::mem::PAGE_SIZE_4K,
+                get_trap_frame_vaddr(t.id),
+                TRAP_FRAME_SIZE,
                 MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
             );
             unsafe {
                 let trap_frame = &mut *(trap_frame.as_ptr() as *mut axhal::arch::TrapFrame);
-                core::mem::replace(trap_frame,
-                                   axhal::arch::TrapFrame::new(axmem::USER_START, axmem::USTACK_START + axmem::USTACK_SIZE));
+                *trap_frame = axhal::arch::TrapFrame::new(
+                    axmem::USER_START,
+                    axmem::USTACK_START + axmem::USTACK_SIZE
+                );                                   
                 trap_frame.kstack = t.kstack.as_ref().unwrap().top().into();
             }
             t.trap_frame = Some(trap_frame);
@@ -362,19 +363,26 @@ extern "C" fn task_entry() -> ! {
     crate::exit(0);
 }
 
-#[cfg(feature = "user-paging")]
-struct CurrentTaskIf;
-#[cfg(feature = "user-paging")]
-#[crate_interface::impl_interface]
-impl axhal::trap::CurrentTask for CurrentTaskIf {
-    fn current_trap_frame() -> *mut axhal::arch::TrapFrame {
-        crate::current().trap_frame.as_ref().unwrap().as_ptr()
-            as *mut axhal::arch::TrapFrame        
+cfg_if::cfg_if! {
+if #[cfg(feature = "user-paging")] {
+    struct CurrentTaskIf;
+    #[crate_interface::impl_interface]
+    impl axhal::trap::CurrentTask for CurrentTaskIf {
+        fn current_trap_frame() -> *mut axhal::arch::TrapFrame {
+            crate::current().trap_frame.as_ref().unwrap().as_ptr()
+                as *mut axhal::arch::TrapFrame        
+        }
+        fn current_satp() -> usize {
+            axmem::get_satp()
+        }
+        fn current_trap_frame_virt_addr() -> usize {
+            get_trap_frame_vaddr(crate::current().id).into()
+        }
     }
-    fn current_satp() -> usize {
-        axmem::get_satp()
+    const TRAP_FRAME_BASE: usize = 0xffff_ffff_ffff_f000;
+    const TRAP_FRAME_SIZE: usize = axhal::mem::PAGE_SIZE_4K;
+    fn get_trap_frame_vaddr(id: TaskId) -> VirtAddr {
+        (TRAP_FRAME_BASE - id.0 as usize * TRAP_FRAME_SIZE).into()
     }
-    fn current_trap_frame_virt_addr() -> usize {
-        0xffff_ffff_fff0_0000
-    }
+}
 }
