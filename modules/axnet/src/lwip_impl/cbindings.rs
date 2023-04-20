@@ -1,4 +1,5 @@
 use alloc::string::String;
+use axhal::time::current_time;
 use axlog::ax_print;
 use core::ffi::{c_int, c_uchar, c_uint};
 
@@ -18,6 +19,5 @@ extern "C" fn lwip_abort() {
 
 #[no_mangle]
 extern "C" fn sys_now() -> c_uint {
-    info!("sys_now called");
-    0
+    current_time().as_millis() as c_uint
 }
