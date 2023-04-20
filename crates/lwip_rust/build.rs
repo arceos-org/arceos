@@ -35,6 +35,7 @@ fn compile_lwip() {
         .include("../../ulib/c_libax/include");
 
     base_config
+        .file("depend/lwip/src/api/err.c")
         .file("depend/lwip/src/core/init.c")
         .file("depend/lwip/src/core/def.c")
         .file("depend/lwip/src/core/dns.c")

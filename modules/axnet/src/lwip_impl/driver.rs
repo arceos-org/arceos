@@ -9,7 +9,8 @@ use lwip_rust::bindings::{
     ethip6_output, ip4_addr_t, ip_addr__bindgen_ty_1, ip_addr_t, lwip_htonl, lwip_init,
     lwip_ip_addr_type_IPADDR_TYPE_V4, lwiperf_start_tcp_server, netif, netif_add,
     netif_set_default, netif_set_link_up, netif_set_up, pbuf, pbuf_alloc, pbuf_layer_PBUF_RAW,
-    pbuf_type_PBUF_POOL, NETIF_FLAG_BROADCAST, NETIF_FLAG_ETHARP, NETIF_FLAG_ETHERNET,
+    pbuf_type_PBUF_POOL, sys_check_timeouts, NETIF_FLAG_BROADCAST, NETIF_FLAG_ETHARP,
+    NETIF_FLAG_ETHERNET,
 };
 
 const RX_BUF_QUEUE_SIZE: usize = 64;
@@ -202,7 +203,7 @@ pub fn init(net_devs: NetDevices) {
     loop {
         unsafe {
             ETH0.poll();
+            sys_check_timeouts();
         }
-        // sys_check_timeouts();
     }
 }
