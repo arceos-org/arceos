@@ -6,7 +6,19 @@
 
 ### 上周遗留问题
 
+#### Timer 适配
+
 - [x] `u32_t sys_now(void)`：获取当前时钟，用于实现定时器。使用 `axhal::time::current_time`
+
+#### 链接脚本问题
+
+使用 readelf 读取编译得的文件。
+
+左为原来有问题的；右为修正后的。
+
+![](./pic/week9_diff1.png)
+
+![](./pic/week9_diff2.png)
 
 ### 上层接口适配
 
