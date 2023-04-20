@@ -127,17 +127,20 @@ pub fn init_global_addr_space() {
 
     // stack allocation
     assert!(USTACK_SIZE % PAGE_SIZE_4K == 0);
-    let user_stack_page = GlobalPage::alloc_contiguous(USTACK_SIZE / PAGE_SIZE_4K, PAGE_SIZE_4K)
-        .expect("Alloc page error!");
-    debug!("{:?}", user_stack_page);
-
-    user_space.add_region(
-        USTACK_START.into(),
-        user_stack_page.start_paddr(virt_to_phys),
-        Arc::new(user_stack_page),
-        MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
-        false,
-    );
+    #[cfg(not(feature = "multitask"))]
+    {
+        let user_stack_page = GlobalPage::alloc_contiguous(USTACK_SIZE / PAGE_SIZE_4K, PAGE_SIZE_4K)
+            .expect("Alloc page error!");
+        debug!("{:?}", user_stack_page);
+        
+        user_space.add_region(
+            USTACK_START.into(),
+            user_stack_page.start_paddr(virt_to_phys),
+            Arc::new(user_stack_page),
+            MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
+            false,
+        );
+    }
 
     extern "C" {
         fn strampoline();

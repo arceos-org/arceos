@@ -30,7 +30,11 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
     }
 
     #[cfg(feature = "user-paging")]
-    let tf: &mut TrapFrame = unsafe { &mut *(crate::trap::get_current_trap_frame()) };
+    let tf: &mut TrapFrame = if from_user {
+        unsafe { &mut *(crate::trap::get_current_trap_frame()) }
+    } else {
+        tf
+    };
 
     let scause = scause::read();
     match scause.cause() {

@@ -1,6 +1,9 @@
 pub mod sys_number {
     pub const SYS_WRITE: usize = 1;
     pub const SYS_EXIT: usize = 10;
+    pub const SYS_SPAWN: usize = 11;
+    pub const SYS_YIELD: usize = 12;
+    pub const SYS_SLEEP: usize = 13;
 }
 
 use sys_number::*;
@@ -31,6 +34,22 @@ pub fn syscall_handler(id: usize, params: [usize; 6]) -> isize {
             axlog::info!("task exit with code {}", params[0] as isize);
             axtask::exit(0);
         }
+        #[cfg(feature = "user-paging")]
+        SYS_SPAWN => {
+            axtask::spawn(params[0], params[1]);
+            0
+        }
+        #[cfg(feature = "user-paging")]
+        SYS_YIELD => {
+            axtask::yield_now();
+            0
+        }
+        #[cfg(feature = "user-paging")]
+        SYS_SLEEP => {
+            axtask::sleep(core::time::Duration::new(params[0] as u64, params[1] as u32));
+            0
+        }
+
         _ => -1,
     }
 }

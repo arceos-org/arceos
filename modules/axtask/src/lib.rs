@@ -88,6 +88,13 @@ pub fn on_timer_tick() {
     RUN_QUEUE.lock().scheduler_timer_tick();
 }
 
+cfg_if::cfg_if! {
+if #[cfg(feature = "user-paging")] {
+pub fn spawn(f: usize, arg: usize) {
+    let task = TaskInner::new_user(f, axconfig::TASK_STACK_SIZE, arg);
+    RUN_QUEUE.lock().add_task(task);
+}       
+} else {
 pub fn spawn<F>(f: F)
 where
     F: FnOnce() + Send + 'static,
@@ -95,7 +102,9 @@ where
     let task = TaskInner::new(f, "", axconfig::TASK_STACK_SIZE);
     RUN_QUEUE.lock().add_task(task);
 }
-
+}
+}
+    
 pub fn yield_now() {
     RUN_QUEUE.lock().yield_current();
 }
