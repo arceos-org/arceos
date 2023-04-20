@@ -21,6 +21,7 @@ sched_rr = ["axtask/sched_rr"]
 sched_cfs = ["axtask/sched_cfs"]
 sched_sjf = ["axtask/sched_sjf"]
 sched_mlfq = ["axtask/sched_mlfq"]
+sched_rms = ["axtask/sched_rms"]
 
 # Networking
 net = ["axruntime/net", "dep:axnet"]

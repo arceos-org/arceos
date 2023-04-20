@@ -1,0 +1,13 @@
+[package]
+name = "arceos-sched-test5-static"
+version = "0.1.0"
+edition = "2021"
+authors = ["Haoxing Ye <yehx20@mails.tsinghua.edu.cn>"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = ["libax/sched_rms"]
+
+[dependencies]
+libax = { path = "../../../ulib/libax", default-features = false, features = ["alloc", "paging", "multitask", "sched_rms"] }

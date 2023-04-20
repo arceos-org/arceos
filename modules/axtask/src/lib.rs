@@ -66,6 +66,9 @@ cfg_if::cfg_if! {
         const RESETTICK: usize = 100_000;
         type AxTask = scheduler::MLFQTask<TaskInner, QNUM, BASTTICK, RESETTICK>;
         type Scheduler = scheduler::MLFQScheduler<TaskInner, QNUM, BASTTICK, RESETTICK>;
+    } else if #[cfg(feature = "sched_rms")] {
+        type AxTask = scheduler::RMSTask<TaskInner>;
+        type Scheduler = scheduler::RMScheduler<TaskInner>;
     }
 }
 
@@ -117,12 +120,20 @@ if #[cfg(feature = "sched_cfs")] {
         let task = TaskInner::new(f, "", axconfig::TASK_STACK_SIZE, _nice);
         RUN_QUEUE.lock().add_task(task);
     }
+} else if #[cfg(feature = "sched_rms")] {
+    pub fn spawn<F>(f: F, runtime: usize, period: usize)
+    where
+        F: FnOnce() + Send + 'static,
+    {
+        let task = TaskInner::new(f, "", axconfig::TASK_STACK_SIZE, runtime, period);
+        RUN_QUEUE.lock().add_task(task);
+    }
 } else {
     pub fn spawn<F>(f: F)
     where
         F: FnOnce() + Send + 'static,
     {
-        let task = TaskInner::new(f, "", axconfig::TASK_STACK_SIZE, );
+        let task = TaskInner::new(f, "", axconfig::TASK_STACK_SIZE);
         RUN_QUEUE.lock().add_task(task);
     }
 }

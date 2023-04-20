@@ -7,6 +7,7 @@ mod round_robin;
 mod cfs;
 mod sjf;
 mod mlfq;
+mod rms;
 
 mod utils;
 pub use utils::timer::current_ticks;
@@ -22,6 +23,7 @@ pub use round_robin::{RRScheduler, RRTask};
 pub use cfs::{CFScheduler, CFTask};
 pub use sjf::{SJFScheduler, SJFTask};
 pub use mlfq::{MLFQScheduler, MLFQTask};
+pub use rms::{RMScheduler, RMSTask};
 
 
 pub trait BaseScheduler {

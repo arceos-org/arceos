@@ -32,6 +32,13 @@ cfg_if::cfg_if! {
         scheduler.add_task(gc_task);
         SpinNoIrq::new(Self { scheduler })
     }
+} else if #[cfg(feature = "sched_rms")] {
+    pub fn new(runtime: usize, period: usize) -> SpinNoIrq<Self> {
+        let gc_task = TaskInner::new(gc_entry, "gc", axconfig::TASK_STACK_SIZE, runtime, period);
+        let mut scheduler = Scheduler::new();
+        scheduler.add_task(gc_task);
+        SpinNoIrq::new(Self { scheduler })
+    }
 } else {
     pub fn new() -> SpinNoIrq<Self> {
         let gc_task = TaskInner::new(gc_entry, "gc", axconfig::TASK_STACK_SIZE);
@@ -224,6 +231,18 @@ if #[cfg(feature = "sched_cfs")] {
         main_task.set_state(TaskState::Running);
 
         RUN_QUEUE.init_by(AxRunQueue::new(0));
+        unsafe { CurrentTask::init_current(main_task) }
+    }
+} else if #[cfg(feature = "sched_rms")] {
+    pub(crate) fn init() {
+        const IDLE_TASK_STACK_SIZE: usize = 4096;
+        let idle_task = TaskInner::new(|| crate::run_idle(), "idle", IDLE_TASK_STACK_SIZE, 0, 1);
+        IDLE_TASK.with_current(|i| i.init_by(idle_task.clone()));
+    
+        let main_task = TaskInner::new_init("main");
+        main_task.set_state(TaskState::Running);
+    
+        RUN_QUEUE.init_by(AxRunQueue::new(0, 1));
         unsafe { CurrentTask::init_current(main_task) }
     }
 } else {

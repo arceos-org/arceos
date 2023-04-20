@@ -78,7 +78,7 @@ fn main() {
             if n == NUM_TASKS - 1 {
                 MAIN_WQ.notify_one(true);
             }
-        });
+        }, 0);
     }
     let timeout = MAIN_WQ.wait_timeout(Duration::from_millis(20000));
     println!("main task woken up! timeout={}", timeout);

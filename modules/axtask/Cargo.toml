@@ -18,6 +18,7 @@ sched_rr = ["multitask", "preempt"]
 sched_cfs = ["multitask"]
 sched_sjf = ["multitask"]
 sched_mlfq = ["multitask"]
+sched_rms = ["multitask"]
 default = ["sched_mlfq"]
 
 [dependencies]

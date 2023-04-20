@@ -122,6 +122,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "arceos-sched-test5-static"
+version = "0.1.0"
+dependencies = [
+ "libax",
+]
+
+[[package]]
 name = "arceos-sleep"
 version = "0.1.0"
 dependencies = [

@@ -16,6 +16,7 @@ members = [
     "apps/task/sched-yield-speed",
     "apps/task/sched-realtime",
     "apps/task/sched-occupy",
+    "apps/task/sched-static",
 
     "crates/allocator",
     "crates/arm_gic",
