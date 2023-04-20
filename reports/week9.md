@@ -8,7 +8,14 @@
 
 #### Timer 适配
 
-- [x] `u32_t sys_now(void)`：获取当前时钟，用于实现定时器。使用 `axhal::time::current_time`
+- `u32_t sys_now(void)`：获取当前时钟，用于实现定时器。使用 `axhal::time::current_time`
+
+- 循环中添加 `sys_check_timeouts();`
+
+#### 优化调试信息输出
+
+- 添加输出时间戳和 CPU ID
+- `lwipopts.h` 中完善调试开关模板
 
 #### 链接脚本问题
 
