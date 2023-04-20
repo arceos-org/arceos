@@ -80,14 +80,13 @@ impl Log for Logger {
             Level::Trace => ColorCode::BrightBlack,
         };
 
-
         __print_impl(with_color!(
             ColorCode::White,
             "[{path}:{line}] {args}\n",
             path = path,
             line = line,
             args = with_color!(args_color, "{}", record.args()),
-        ));        
+        ));
     }
 
     fn flush(&self) {}

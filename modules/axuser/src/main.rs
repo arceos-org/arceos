@@ -3,7 +3,8 @@
 
 extern crate axruntime;
 
-core::arch::global_asm!(r#"
+core::arch::global_asm!(
+    r#"
     .section .rodata
     .globl ustart
     ustart:

@@ -54,42 +54,38 @@ pub struct TrapFrame {
 }
 
 impl TrapFrame {
-
     #[cfg(feature = "user")]
     /// Create a trap frame with entry (sepc) and user stack
     /// specified
     pub fn new(entry: usize, ustack: usize) -> TrapFrame {
         use riscv::register::sstatus::{self, Sstatus};
 
-        
         let mut trap_frame = TrapFrame::default();
         trap_frame.regs.sp = ustack;
         trap_frame.sepc = entry;
-        
+
         let sstatus_reg = sstatus::read();
         // set up SPP (8th bit) to 0 (User)
-        trap_frame.sstatus = unsafe {
-            *(&sstatus_reg as *const Sstatus as *const usize) & !(1 << 8)
-        };
+        trap_frame.sstatus =
+            unsafe { *(&sstatus_reg as *const Sstatus as *const usize) & !(1 << 8) };
         #[cfg(feature = "user-paging")]
         {
             use riscv::register::satp::{self, Satp};
             let satp_reg = satp::read();
-            trap_frame.satp = unsafe {
-                *(&satp_reg as *const Satp as *const usize)
-            };
+            trap_frame.satp = unsafe { *(&satp_reg as *const Satp as *const usize) };
             extern "Rust" {
                 fn riscv_trap_handler();
             }
             trap_frame.trap_handler = riscv_trap_handler as usize
         }
-        
-        trap_frame    
+
+        trap_frame
     }
 
     #[cfg(feature = "user")]
     /// Enter user space, with kstack specified
-    pub fn enter_uspace(&self, sp: usize) -> ! { // sp: kernel trap space 
+    pub fn enter_uspace(&self, sp: usize) -> ! {
+        // sp: kernel trap space
         unsafe {
             core::arch::asm!(r"
                 mv      sp, {tf}

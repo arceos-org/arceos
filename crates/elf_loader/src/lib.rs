@@ -8,14 +8,14 @@ use page_table_entry::MappingFlags;
 
 pub struct SegmentEntry<'a> {
     pub start_addr: VirtAddr,
-    pub size: usize, 
+    pub size: usize,
     pub data: &'a [u8],
     pub flags: MappingFlags,
 }
 
 impl<'a> SegmentEntry<'a> {
     // copied from rCore
-    pub fn new(data: &'a[u8]) -> Option<alloc::vec::Vec<SegmentEntry<'a>>> {
+    pub fn new(data: &'a [u8]) -> Option<alloc::vec::Vec<SegmentEntry<'a>>> {
         let elf = xmas_elf::ElfFile::new(data).ok()?;
         let elf_header = elf.header;
         let magic = elf_header.pt1.magic;
@@ -40,14 +40,12 @@ impl<'a> SegmentEntry<'a> {
                 if ph_flags.is_execute() {
                     flags |= MappingFlags::EXECUTE;
                 }
-                result.push(
-                    SegmentEntry {
-                        start_addr: start_va,
-                        size,
-                        data: &elf.input[ph.offset() as usize..(ph.offset() + ph.file_size()) as usize],
-                        flags,
-                    }
-                );
+                result.push(SegmentEntry {
+                    start_addr: start_va,
+                    size,
+                    data: &elf.input[ph.offset() as usize..(ph.offset() + ph.file_size()) as usize],
+                    flags,
+                });
             }
         }
         Some(result)

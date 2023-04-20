@@ -1,5 +1,5 @@
-pub mod task;
 pub mod io;
+pub mod task;
 
 pub mod sys_number {
     pub const SYS_WRITE: usize = 1;
@@ -23,6 +23,3 @@ pub fn syscall(id: usize, args: [usize; 6]) -> isize {
     }
     ret
 }
-
-
-

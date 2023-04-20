@@ -161,13 +161,13 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
 
     #[cfg(feature = "user")]
     trap::user_space_entry();
-    
+
     #[cfg(not(feature = "user"))]
     {
         extern "Rust" {
             fn main();
-        }        
-        unsafe { main() };        
+        }
+        unsafe { main() };
         axtask::exit(0)
     }
 }
@@ -202,7 +202,10 @@ fn init_allocator() {
 use axhal::paging::PageTable;
 #[cfg(feature = "paging")]
 fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
-    use axhal::{mem::{memory_regions, phys_to_virt, virt_to_phys}, paging::MappingFlags};
+    use axhal::{
+        mem::{memory_regions, phys_to_virt, virt_to_phys},
+        paging::MappingFlags,
+    };
 
     use lazy_init::LazyInit;
 
@@ -233,15 +236,12 @@ fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
                 virt_to_phys((strampoline as usize).into()),
                 axhal::mem::PAGE_SIZE_4K,
                 MappingFlags::READ | MappingFlags::EXECUTE,
-                false
+                false,
             )?;
         }
 
-        
         KERNEL_PAGE_TABLE.init_by(kernel_page_table);
     }
-
-
 
     unsafe { axhal::arch::write_page_table_root(KERNEL_PAGE_TABLE.root_paddr()) };
     Ok(())
@@ -278,26 +278,25 @@ fn init_interrupt() {
     axhal::arch::enable_irqs();
 }
 
-
 #[cfg(all(feature = "user", not(feature = "user-paging")))]
 /// Set up user state memory
 fn init_user_space(page_table: &mut PageTable) -> Result<(), axhal::paging::PagingError> {
     use axalloc::GlobalPage;
-    use axhal::mem::{PAGE_SIZE_4K, virt_to_phys};
+    use axhal::mem::{virt_to_phys, PAGE_SIZE_4K};
     use axhal::paging::MappingFlags;
     use axmem::AddrSpace;
     extern crate alloc;
-    
+
     extern "C" {
         fn ustart();
         fn uend();
     }
-    
+
     let user_elf: &[u8] = unsafe {
         let len = (uend as usize) - (ustart as usize);
         core::slice::from_raw_parts(ustart as *const _, len)
     };
-    
+
     debug!("{:x} {:x}", ustart as usize, user_elf.len());
 
     let segments = elf_loader::SegmentEntry::new(user_elf).expect("Corrupted elf file!");
@@ -305,43 +304,46 @@ fn init_user_space(page_table: &mut PageTable) -> Result<(), axhal::paging::Pagi
     fn align_up(size: usize) -> usize {
         (size + PAGE_SIZE_4K - 1) / PAGE_SIZE_4K
     }
-    
+
     let mut phy_pages: alloc::vec::Vec<GlobalPage> = alloc::vec![];
-    
+
     for segment in &segments {
-        let mut user_phy_page =
-            GlobalPage::alloc_contiguous(align_up(segment.size), PAGE_SIZE_4K)
+        let mut user_phy_page = GlobalPage::alloc_contiguous(align_up(segment.size), PAGE_SIZE_4K)
             .expect("Alloc page error!");
         // init
         user_phy_page.zero();
-        
-        
+
         // copy user content
         user_phy_page.as_slice_mut()[..segment.data.len()].copy_from_slice(segment.data);
-        debug!("{:x} {:x}", user_phy_page.as_slice()[0], user_phy_page.as_slice()[1]);
-        
+        debug!(
+            "{:x} {:x}",
+            user_phy_page.as_slice()[0],
+            user_phy_page.as_slice()[1]
+        );
+
         page_table.map_region(
             segment.start_addr,
             user_phy_page.start_paddr(virt_to_phys),
             user_phy_page.size(),
             segment.flags | MappingFlags::USER,
-            false)?;
+            false,
+        )?;
         phy_pages.push(phy_pages);
     }
-   
 
     // stack allocation
     assert!(USTACK_SIZE % PAGE_SIZE_4K == 0);
-    let user_stack_page =
-        GlobalPage::alloc_contiguous(USTACK_SIZE / PAGE_SIZE_4K, PAGE_SIZE_4K).expect("Alloc page error!");
-    debug!("{:?}", user_stack_page);            
-    
+    let user_stack_page = GlobalPage::alloc_contiguous(USTACK_SIZE / PAGE_SIZE_4K, PAGE_SIZE_4K)
+        .expect("Alloc page error!");
+    debug!("{:?}", user_stack_page);
+
     page_table.map_region(
         USTACK_START.into(),
         user_stack_page.start_paddr(virt_to_phys),
         user_stack_page.size(),
         MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
-        false)?;
+        false,
+    )?;
     phy_pages.push(phy_pages);
     Ok(())
 }

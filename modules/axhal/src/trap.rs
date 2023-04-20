@@ -1,7 +1,5 @@
 use crate_interface::{call_interface, def_interface};
 
-
-
 #[def_interface]
 pub trait TrapHandler {
     fn handle_irq(irq_num: usize);

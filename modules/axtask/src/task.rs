@@ -107,7 +107,7 @@ impl TaskInner {
             kstack: None,
             ctx: UnsafeCell::new(TaskContext::new()),
             #[cfg(feature = "user-paging")]
-            trap_frame: None
+            trap_frame: None,
         }
     }
 
@@ -129,7 +129,7 @@ impl TaskInner {
             // TODO: add trap frame
         }
         Arc::new(AxTask::new(t))
-    }     
+    }
 
     pub(crate) fn new_init(name: &'static str) -> AxTaskRef {
         // init_task does not change PC and SP, so `entry` and `kstack` fields are not used.
@@ -153,8 +153,8 @@ impl TaskInner {
                 let trap_frame = &mut *(trap_frame.as_ptr() as *mut axhal::arch::TrapFrame);
                 *trap_frame = axhal::arch::TrapFrame::new(
                     axmem::USER_START,
-                    axmem::USTACK_START + axmem::USTACK_SIZE
-                );                                   
+                    axmem::USTACK_START + axmem::USTACK_SIZE,
+                );
                 trap_frame.kstack = t.kstack.as_ref().unwrap().top().into();
             }
             t.trap_frame = Some(trap_frame);
@@ -302,7 +302,7 @@ impl Drop for TaskStack {
     }
 }
 
-use core::mem::{ManuallyDrop, self};
+use core::mem::{self, ManuallyDrop};
 
 pub struct CurrentTask(ManuallyDrop<AxTaskRef>);
 
@@ -370,7 +370,7 @@ if #[cfg(feature = "user-paging")] {
     impl axhal::trap::CurrentTask for CurrentTaskIf {
         fn current_trap_frame() -> *mut axhal::arch::TrapFrame {
             crate::current().trap_frame.as_ref().unwrap().as_ptr()
-                as *mut axhal::arch::TrapFrame        
+                as *mut axhal::arch::TrapFrame
         }
         fn current_satp() -> usize {
             axmem::get_satp()
