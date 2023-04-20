@@ -1,3 +1,11 @@
+//! Platform-specific constants and parameters for
+//! [ArceOS](https://github.com/rcore-os/arceos).
+//!
+//! Currently supported platforms (corresponding cargo features):
+//!
+//! - `platform-qemu-virt-riscv`: QEMU virt machine with RISC-V ISA.
+//! - `platform-qemu-virt-aarch64`: QEMU virt machine with AArch64 ISA.
+
 #![no_std]
 
 cfg_if::cfg_if! {
@@ -18,4 +26,5 @@ cfg_if::cfg_if! {
 
 pub use config::*;
 
+/// End address of the whole physical memory.
 pub const PHYS_MEMORY_END: usize = PHYS_MEMORY_BASE + PHYS_MEMORY_SIZE;

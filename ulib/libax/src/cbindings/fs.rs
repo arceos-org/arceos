@@ -60,10 +60,16 @@ fn flags_to_options(flags: c_int, _mode: ctypes::mode_t) -> OpenOptions {
     options
 }
 
-/// Open a file by `filename` and insert it into `FD_TABLE`, and return its
-/// `FD_TABLE` index. Return `ENFILE` if file table overflow.
+/// Open a file by `filename` and insert it into the file descriptor table.
+///
+/// Return its index in the file table (`fd`). Return `ENFILE` if the file
+/// table overflows.
 #[no_mangle]
-pub extern "C" fn ax_open(filename: *const c_char, flags: c_int, mode: ctypes::mode_t) -> c_int {
+pub unsafe extern "C" fn ax_open(
+    filename: *const c_char,
+    flags: c_int,
+    mode: ctypes::mode_t,
+) -> c_int {
     let filename = char_ptr_to_str(filename);
     debug!("ax_open <= {:?} {:#o} {:#o}", filename, flags, mode);
     ax_call_body!(ax_open, {
@@ -75,7 +81,7 @@ pub extern "C" fn ax_open(filename: *const c_char, flags: c_int, mode: ctypes::m
 
 /// Close a file by `fd`.
 #[no_mangle]
-pub extern "C" fn ax_close(fd: c_int) -> c_int {
+pub unsafe extern "C" fn ax_close(fd: c_int) -> c_int {
     debug!("ax_close <= {}", fd);
     if (0..2).contains(&fd) {
         return 0; // stdin, stdout, stderr
@@ -90,9 +96,15 @@ pub extern "C" fn ax_close(fd: c_int) -> c_int {
     })
 }
 
-/// Seek the position of the file, return its position after seek.
+/// Set the position of the file indicated by `fd`.
+///
+/// Return its position after seek.
 #[no_mangle]
-pub extern "C" fn ax_lseek(fd: c_int, offset: ctypes::off_t, whence: c_int) -> ctypes::off_t {
+pub unsafe extern "C" fn ax_lseek(
+    fd: c_int,
+    offset: ctypes::off_t,
+    whence: c_int,
+) -> ctypes::off_t {
     debug!("ax_lseek <= {} {} {}", fd, offset, whence);
     ax_call_body!(ax_lseek, {
         let pos = match whence {
@@ -107,9 +119,11 @@ pub extern "C" fn ax_lseek(fd: c_int, offset: ctypes::off_t, whence: c_int) -> c
     })
 }
 
-/// Read data from file by `fd`, return read size if success.
+/// Read data from the file indicated by `fd`.
+///
+/// Return the read size if success.
 #[no_mangle]
-pub extern "C" fn ax_read(fd: c_int, buf: *mut c_void, count: usize) -> ctypes::ssize_t {
+pub unsafe extern "C" fn ax_read(fd: c_int, buf: *mut c_void, count: usize) -> ctypes::ssize_t {
     debug!("ax_read <= {} {:#x} {}", fd, buf as usize, count);
     ax_call_body!(ax_read, {
         if buf.is_null() {
@@ -122,9 +136,11 @@ pub extern "C" fn ax_read(fd: c_int, buf: *mut c_void, count: usize) -> ctypes::
     })
 }
 
-/// Write data through `fd`, return written size if success.
+/// Write data to the file indicated by `fd`.
+///
+/// Return the written size if success.
 #[no_mangle]
-pub extern "C" fn ax_write(fd: c_int, buf: *const c_void, count: usize) -> ctypes::ssize_t {
+pub unsafe extern "C" fn ax_write(fd: c_int, buf: *const c_void, count: usize) -> ctypes::ssize_t {
     debug!("ax_write <= {} {:#x} {}", fd, buf as usize, count);
     ax_call_body!(ax_write, {
         if buf.is_null() {
@@ -156,9 +172,11 @@ fn stat_file(file: &File) -> io::Result<ctypes::stat> {
     })
 }
 
-/// Get file info by `path` and write to `buf`, return 0 if success.
+/// Get the file metadata by `path` and write into `buf`.
+///
+/// Return 0 if success.
 #[no_mangle]
-pub extern "C" fn ax_stat(path: *const c_char, buf: *mut ctypes::stat) -> ctypes::ssize_t {
+pub unsafe extern "C" fn ax_stat(path: *const c_char, buf: *mut ctypes::stat) -> ctypes::ssize_t {
     let path = char_ptr_to_str(path);
     debug!("ax_stat <= {:?} {:#x}", path, buf as usize);
     ax_call_body!(ax_stat, {
@@ -173,9 +191,11 @@ pub extern "C" fn ax_stat(path: *const c_char, buf: *mut ctypes::stat) -> ctypes
     })
 }
 
-/// Get symbolic link info and write to `buf`, return 0 if success.
+/// Get the metadata of the symbolic link and write into `buf`.
+///
+/// Return 0 if success.
 #[no_mangle]
-pub extern "C" fn ax_lstat(path: *const c_char, buf: *mut ctypes::stat) -> ctypes::ssize_t {
+pub unsafe extern "C" fn ax_lstat(path: *const c_char, buf: *mut ctypes::stat) -> ctypes::ssize_t {
     let path = char_ptr_to_str(path);
     debug!("ax_lstat <= {:?} {:#x}", path, buf as usize);
     ax_call_body!(ax_lstat, {
@@ -187,9 +207,11 @@ pub extern "C" fn ax_lstat(path: *const c_char, buf: *mut ctypes::stat) -> ctype
     })
 }
 
-/// Get file info by `fd` and write to `buf`, return 0 if success.
+/// Get file metadata by `fd` and write into `buf`.
+///
+/// Return 0 if success.
 #[no_mangle]
-pub extern "C" fn ax_fstat(fd: c_int, buf: *mut ctypes::stat) -> ctypes::ssize_t {
+pub unsafe extern "C" fn ax_fstat(fd: c_int, buf: *mut ctypes::stat) -> ctypes::ssize_t {
     debug!("ax_fstat <= {} {:#x}", fd, buf as usize);
     ax_call_body!(ax_fstat, {
         if buf.is_null() {
@@ -202,9 +224,9 @@ pub extern "C" fn ax_fstat(fd: c_int, buf: *mut ctypes::stat) -> ctypes::ssize_t
     })
 }
 
-/// get the path of the current directory
+/// Get the path of the current directory.
 #[no_mangle]
-pub extern "C" fn ax_getcwd(buf: *mut c_char, size: usize) -> *mut c_char {
+pub unsafe extern "C" fn ax_getcwd(buf: *mut c_char, size: usize) -> *mut c_char {
     debug!("ax_getcwd <= {:#x} {}", buf as usize, size);
     ax_call_body!(ax_getcwd, {
         if buf.is_null() {

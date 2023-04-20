@@ -1,7 +1,7 @@
 # INTRODUCTION
 | App | Extra modules | Enabled features | Description |
 |-|-|-|-|
-| [display](apps/display/) | axnet, axdriver | paging, net | Detect the current public IP address |
+| [httpclient](../apps/net/httpclient/) | axalloc, axdriver, axnet | alloc, paging, net | A simple client that sends an HTTP request and then prints the response |
 
 # RUN
 ```bash
@@ -51,7 +51,7 @@ Cache-Control: no-cache, no-store, must-revalidate
 
 # STEPS
 
-## step1 
+## step1
 ``` rust
 let (addr, port) = (IpAddr::from_str(DEST_IP).unwrap(), 80);
 let mut stream = TcpStream::connect((addr, port).into())?;

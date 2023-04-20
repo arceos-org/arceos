@@ -1,4 +1,4 @@
-//! `std::fs`-like high-level filesystem manipulation operations.
+//! [`std::fs`]-like high-level filesystem manipulation operations.
 
 mod dir;
 mod file;

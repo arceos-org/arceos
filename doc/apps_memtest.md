@@ -1,22 +1,25 @@
 # INTRODUCTION
 | App | Extra modules | Enabled features | Description |
 |-|-|-|-|
-| [memtest](apps/memtest/) | axalloc | alloc, paging | Dynamic memory allocation test |
+| [memtest](../apps/memtest/) | axalloc | alloc, paging | Dynamic memory allocation test |
+
 # RUN
-```
-make A=apps/memtest SMP=4 LOG=debug run
+
+```console
+$ make A=apps/memtest SMP=4 LOG=info run
 ...
-[  0.264343 0 axalloc:57] expand heap memory: [0xffffffc080347000, 0xffffffc080747000)
-[  0.262811 1 axtask:144] idle task: waiting for IRQs...
-[  0.267706 0 axalloc:57] expand heap memory: [0xffffffc080747000, 0xffffffc080f47000)
+Running memory tests...
 test_vec() OK!
-...
+test_btree_map() OK!
 Memory tests run OK!
+[  0.523323 3 axhal::platform::qemu_virt_riscv::misc:2] Shutting down...
 ...
 ```
 
 # STEPS
-## step1 
+
+## step1
+
 [init](./init.md)
 
 After executed all initial actions, then arceos calls `main` function in `memtest` app.

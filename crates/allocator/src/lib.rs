@@ -1,3 +1,13 @@
+//! Various allocator algorithms in a unified interface.
+//!
+//! There are three types of allocators:
+//!
+//! - [`ByteAllocator`]: Byte-granularity memory allocator. (e.g.,
+//!   [`BuddyByteAllocator`], [`SlabByteAllocator`])
+//! - [`PageAllocator`]: Page-granularity memory allocator. (e.g.,
+//!   [`BitmapPageAllocator`])
+//! - [`IdAllocator`]: Used to allocate unique IDs.
+
 #![no_std]
 #![feature(result_option_inspect)]
 
@@ -54,6 +64,7 @@ pub trait ByteAllocator: BaseAllocator {
 
 /// Page-granularity allocator.
 pub trait PageAllocator: BaseAllocator {
+    /// The size of a memory page.
     const PAGE_SIZE: usize;
 
     /// Allocate contiguous memory pages with given count and alignment.
@@ -72,7 +83,7 @@ pub trait PageAllocator: BaseAllocator {
     fn available_pages(&self) -> usize;
 }
 
-/// Used to allocate unique IDs.
+/// Used to allocate unique IDs (e.g., thread ID).
 pub trait IdAllocator: BaseAllocator {
     /// Allocate contiguous IDs with given count and alignment.
     fn alloc_id(&mut self, count: usize, align_pow2: usize) -> AllocResult<usize>;

@@ -1,3 +1,5 @@
+//! Networking primitives for TCP/UDP communication.
+
 mod tcp;
 
 pub use self::tcp::{TcpListener, TcpStream};

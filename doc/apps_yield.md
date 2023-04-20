@@ -1,21 +1,25 @@
-# arceos应用汇报：yield
+# INTRODUCTION
+| App | Extra modules | Enabled features | Description |
+|-|-|-|-|
+| [yield](../apps/task/yield/) | axalloc, axtask | alloc, paging, multitask, sched_fifo | Multi-threaded yielding test |
 
----
-# 运行环境
-## 文件目录
-应用程序`yield`源代码存储在目录`arceos/apps/task/yield/src/main.rs`下。
+# RUN
 
-## 运行指令
-假设在riscv64环境下运行，以单核形式运行，指令为：
+## Without preemption (FIFO scheduler)
+
 ```shell
 make A=apps/task/yield ARCH=riscv64 LOG=info NET=y SMP=1 run
 ```
-## 运行配置
-不允许抢占发生，即`feature: preempt`为`false`。
 
----
-## Output
+## With preemption (RR scheduler)
+
 ```shell
+make A=apps/task/yield ARCH=riscv64 LOG=info NET=y SMP=1 APP_FEATURES=preempt run
+```
+
+## RESULT
+
+```
 Hello, main task!
 Hello, task 0! id = TaskId(4)
 Hello, task 1! id = TaskId(5)
@@ -30,14 +34,21 @@ Hello, task 9! id = TaskId(13)
 Task yielding tests run OK!
 ```
 
----
-# 程序流程
-## STEP 1
+# STEPS
+
+## step1
+
 * OS init
 * After executed all initial actions, then arceos call main function in `yield` app.
 
----
-## STEP2
+## step2
+
+* Use the `task::spawn` cycle to generate `NUM_TASKS` tasks (similar to threads).
+* Each task executes a function, just print its ID.
+* If preemption is disabled, the task voluntarily executes `yield` to give up the CPU.
+* If SMP is not enabled, the execution order of tasks must be FIFO.
+* `main task` will wait for all other tasks to complete. If not, continue to execute `yield` and wait.
+
 ```rust
 fn main() {
     for i in 0..NUM_TASKS {
@@ -63,17 +74,7 @@ fn main() {
 }
 ```
 
----
-## 运行流程
-**（大家可以对照自己电脑上的源代码了解大体逻辑。）**
-1. 进入`main`函数，`main task`执行。
-2. 利用`task::spawn`循环产生`NUM_TASKS`个任务，类似于线程的思想。
-3. 每一个任务执行一个函数。若环境不允许抢占发生，则自身执行`yield`让出CPU。当重新运行时，获取自身运行的顺序，在单核情况下检查是否符合FIFO调度策略。
-4. `main task`会在输出自身信息后，等待所有子任务完成。若未完全完成，则继续`yield`等待。
-
-
----
-## Flow Chart
+**flow chart**
 
 ```mermaid
 graph TD;
@@ -88,5 +89,3 @@ graph TD;
     G -- "repeat n times" --> D;
     G -- "all n subtask finished" --> H["finished"]
 ```
-
-

@@ -15,10 +15,15 @@ use core::sync::atomic::{AtomicBool, Ordering};
 
 use kernel_guard::BaseGuard;
 
-/// A [spin lock](https://en.m.wikipedia.org/wiki/Spinlock) providing mutually exclusive access to data.
+/// A [spin lock](https://en.m.wikipedia.org/wiki/Spinlock) providing mutually
+/// exclusive access to data.
 ///
-/// For single-core systems (without the "smp" feature), we remove the lock state,
-/// CPU can always get the lock if we follow the proper guard in use.
+/// This is a base struct, the specific behavior depends on the generic
+/// parameter `G` that implements [`BaseGuard`], such as whether to disable
+/// local IRQs or kernel preemption before acquiring the lock.
+///
+/// For single-core environment (without the "smp" feature), we remove the lock
+/// state, CPU can always get the lock if we follow the proper guard in use.
 pub struct BaseSpinLock<G: BaseGuard, T: ?Sized> {
     _phantom: PhantomData<G>,
     #[cfg(feature = "smp")]
@@ -347,7 +352,7 @@ mod tests {
     fn test_mutex_arc_access_in_unwind() {
         let arc = Arc::new(SpinMutex::<_>::new(1));
         let arc2 = arc.clone();
-        let _ = thread::spawn(move || -> () {
+        let _ = thread::spawn(move || {
             struct Unwinder {
                 i: Arc<SpinMutex<i32>>,
             }

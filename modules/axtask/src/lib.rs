@@ -1,74 +1,46 @@
+//! [ArceOS](https://github.com/rcore-os/arceos) task management module.
+//!
+//! This module provides primitives for task management, including task
+//! creation, scheduling, sleeping, termination, etc. The scheduler algorithm
+//! is configurable by cargo features.
+//!
+//! # Cargo Features
+//!
+//! - `multitask`: Enable multi-task support. If this feature is disabled,
+//!   complex task management will not be available, only a few simple APIs
+//!   can be used such as [`yield_now()`].
+//! - `preempt`: Enable preemptive scheduling.
+//! - `sched_fifo`: Use the [FIFO cooperative scheduler][1]. It also enables the
+//!   `multitask` feature if it is enabled. This feature is enabled by default.
+//! - `sched_rr`: Use the [Round-robin preemptive scheduler][2]. It also enables
+//!   the `multitask` and `preempt` features if it is enabled.
+//!
+//! [1]: scheduler::FifoScheduler
+//! [2]: scheduler::RRScheduler
+
 #![cfg_attr(not(test), no_std)]
 #![feature(const_trait_impl)]
-#![feature(doc_auto_cfg)]
 #![feature(doc_cfg)]
 
 #[macro_use]
 extern crate log;
 
-struct KernelGuardIfImpl;
-
-#[crate_interface::impl_interface]
-impl kernel_guard::KernelGuardIf for KernelGuardIfImpl {
-    fn disable_preempt() {
-        #[cfg(all(feature = "multitask", feature = "preempt"))]
-        if let Some(curr) = current_may_uninit() {
-            curr.disable_preempt();
-        }
-    }
-
-    fn enable_preempt() {
-        #[cfg(all(feature = "multitask", feature = "preempt"))]
-        if let Some(curr) = current_may_uninit() {
-            curr.enable_preempt(true);
-        }
+cfg_if::cfg_if! {
+    if #[cfg(feature = "multitask")] {
+        extern crate alloc;
+        mod run_queue;
+        mod task;
+        mod timers;
+        mod wait_queue;
     }
 }
-
-#[cfg(test)]
-mod tests;
 
 #[cfg_attr(not(feature = "multitask"), path = "api_s.rs")]
 mod api;
 
+#[cfg(test)]
+mod tests;
+
+pub use self::api::yield_now;
 #[doc(cfg(feature = "multitask"))]
 pub use self::api::*;
-pub use self::api::{exit, sleep, sleep_until, yield_now};
-
-cfg_if::cfg_if! {
-if #[cfg(feature = "multitask")] {
-
-extern crate alloc;
-
-mod run_queue;
-mod task;
-mod timers;
-mod wait_queue;
-
-use self::run_queue::{AxRunQueue, RUN_QUEUE};
-use self::task::{CurrentTask, TaskInner};
-
-type AxTaskRef = alloc::sync::Arc<AxTask>;
-
-cfg_if::cfg_if! {
-    if #[cfg(feature = "sched_fifo")] {
-        type AxTask = scheduler::FifoTask<TaskInner>;
-        type Scheduler = scheduler::FifoScheduler<TaskInner>;
-    } else if #[cfg(feature = "sched_rr")] {
-        const MAX_TIME_SLICE: usize = 5;
-        type AxTask = scheduler::RRTask<TaskInner, MAX_TIME_SLICE>;
-        type Scheduler = scheduler::RRScheduler<TaskInner, MAX_TIME_SLICE>;
-    }
-}
-
-}
-} // cfg_if::cfg_if!
-
-pub fn run_idle() -> ! {
-    loop {
-        #[cfg(feature = "multitask")]
-        yield_now();
-        debug!("idle task: waiting for IRQs...");
-        axhal::arch::wait_for_irqs();
-    }
-}

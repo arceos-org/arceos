@@ -11,9 +11,11 @@ use memory_addr::{align_up_4k, VirtAddr};
 
 use crate::{AxTask, AxTaskRef};
 
+/// A unique identifier for a thread.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct TaskId(u64);
 
+/// The possible states of a task.
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub(crate) enum TaskState {
@@ -23,6 +25,7 @@ pub(crate) enum TaskState {
     Exited = 4,
 }
 
+/// The inner task structure.
 pub struct TaskInner {
     id: TaskId,
     name: &'static str,
@@ -50,6 +53,7 @@ impl TaskId {
         Self(ID_COUNTER.fetch_add(1, Ordering::Relaxed))
     }
 
+    /// Convert the task ID to a `u64`.
     pub const fn as_u64(&self) -> u64 {
         self.0
     }
@@ -71,14 +75,17 @@ unsafe impl Send for TaskInner {}
 unsafe impl Sync for TaskInner {}
 
 impl TaskInner {
+    /// Gets the ID of the task.
     pub const fn id(&self) -> TaskId {
         self.id
     }
 
+    /// Gets the name of the task.
     pub const fn name(&self) -> &str {
         self.name
     }
 
+    /// Get a combined string of the task ID and name.
     pub fn id_name(&self) -> alloc::string::String {
         alloc::format!("Task({}, {:?})", self.id.as_u64(), self.name)
     }
@@ -273,6 +280,7 @@ impl Drop for TaskStack {
 
 use core::mem::ManuallyDrop;
 
+/// A wrapper of [`AxTaskRef`] as the current task.
 pub struct CurrentTask(ManuallyDrop<AxTaskRef>);
 
 impl CurrentTask {

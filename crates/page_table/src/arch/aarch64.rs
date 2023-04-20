@@ -1,6 +1,9 @@
+//! AArch64 specific page table structures.
+
 use crate::{PageTable64, PagingMetaData};
 use page_table_entry::aarch64::A64PTE;
 
+/// Metadata of AArch64 page tables.
 #[derive(Copy, Clone)]
 pub struct A64PagingMetaData;
 
@@ -15,4 +18,5 @@ impl const PagingMetaData for A64PagingMetaData {
     }
 }
 
+/// AArch64 VMSAv8-64 translation table.
 pub type A64PageTable<I> = PageTable64<A64PagingMetaData, A64PTE, I>;

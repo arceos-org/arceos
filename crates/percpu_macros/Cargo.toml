@@ -3,8 +3,11 @@ name = "percpu_macros"
 version = "0.1.0"
 edition = "2021"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "Macros to define and access a per-CPU data structure"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+repository = "https://github.com/rcore-os/arceos/tree/main/crates/percpu_macros"
+documentation = "https://rcore-os.github.io/arceos/percpu_macros/index.html"
 
 [features]
 # For single CPU use, just make the per-CPU data a global variable.
