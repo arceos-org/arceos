@@ -71,16 +71,6 @@ pub struct FxsaveArea {
 
 static_assertions::const_assert_eq!(core::mem::size_of::<FxsaveArea>(), 512);
 
-impl const Default for FxsaveArea {
-    fn default() -> Self {
-        let mut area: FxsaveArea = unsafe { core::mem::MaybeUninit::zeroed().assume_init() };
-        area.fcw = 0x37f;
-        area.ftw = 0xffff;
-        area.mxcsr = 0x1f80;
-        area
-    }
-}
-
 /// Extended state of a task, such as FP/SIMD states.
 pub struct ExtendedState {
     /// Memory region for the FXSAVE/FXRSTOR instruction.
@@ -97,6 +87,14 @@ impl ExtendedState {
     #[inline]
     fn restore(&self) {
         unsafe { core::arch::x86_64::_fxrstor64(&self.fxsave_area as *const _ as *const u8) }
+    }
+
+    const fn default() -> Self {
+        let mut area: FxsaveArea = unsafe { core::mem::MaybeUninit::zeroed().assume_init() };
+        area.fcw = 0x37f;
+        area.ftw = 0xffff;
+        area.mxcsr = 0x1f80;
+        Self { fxsave_area: area }
     }
 }
 
@@ -145,9 +143,7 @@ impl TaskContext {
             kstack_top: VirtAddr::from(0),
             rsp: 0,
             #[cfg(feature = "fp_simd")]
-            ext_state: ExtendedState {
-                fxsave_area: FxsaveArea::default(),
-            },
+            ext_state: ExtendedState::default(),
         }
     }
 

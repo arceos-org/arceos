@@ -10,7 +10,6 @@
 //! [`std::io::ErrorKind`]: https://doc.rust-lang.org/std/io/enum.ErrorKind.html
 
 #![no_std]
-#![feature(const_trait_impl)]
 
 mod linux_errno {
     include!(concat!(env!("OUT_DIR"), "/linux_errno.rs"));
@@ -167,7 +166,7 @@ impl AxError {
     }
 }
 
-impl const From<AxError> for LinuxError {
+impl From<AxError> for LinuxError {
     fn from(e: AxError) -> Self {
         use AxError::*;
         match e {

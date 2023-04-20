@@ -116,7 +116,8 @@ impl PageSize {
     }
 }
 
-impl const From<PageSize> for usize {
+impl From<PageSize> for usize {
+    #[inline]
     fn from(size: PageSize) -> usize {
         size as usize
     }

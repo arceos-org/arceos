@@ -35,8 +35,9 @@ impl<T, const S: usize> RRTask<T, S> {
     }
 }
 
-impl<T, const S: usize> const Deref for RRTask<T, S> {
+impl<T, const S: usize> Deref for RRTask<T, S> {
     type Target = T;
+    #[inline]
     fn deref(&self) -> &Self::Target {
         &self.inner
     }

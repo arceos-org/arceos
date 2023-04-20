@@ -2,6 +2,7 @@
 
 #![no_std]
 #![feature(doc_auto_cfg)]
+#![feature(const_trait_impl)]
 
 #[cfg(feature = "ramdisk")]
 pub mod ramdisk;

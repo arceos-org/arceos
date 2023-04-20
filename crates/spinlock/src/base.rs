@@ -174,7 +174,7 @@ impl<G: BaseGuard, T: ?Sized> BaseSpinLock<G, T> {
     }
 }
 
-impl<G: BaseGuard, T: ?Sized + ~const Default> const Default for BaseSpinLock<G, T> {
+impl<G: BaseGuard, T: ?Sized + Default> Default for BaseSpinLock<G, T> {
     #[inline(always)]
     fn default() -> Self {
         Self::new(Default::default())

@@ -6,7 +6,6 @@
 //! - [`RRScheduler`]: Round-robin scheduler (preemptive).
 
 #![cfg_attr(not(test), no_std)]
-#![feature(const_trait_impl)]
 #![feature(const_mut_refs)]
 
 mod fifo;

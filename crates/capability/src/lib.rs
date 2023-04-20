@@ -27,7 +27,6 @@
 //!
 
 #![no_std]
-#![feature(const_trait_impl)]
 
 bitflags::bitflags! {
     /// Capabilities (access rights).
@@ -132,7 +131,8 @@ impl<T> WithCap<T> {
     }
 }
 
-impl const From<CapError> for axerrno::AxError {
+impl From<CapError> for axerrno::AxError {
+    #[inline]
     fn from(_: CapError) -> Self {
         Self::PermissionDenied
     }

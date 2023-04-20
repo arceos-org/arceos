@@ -5,7 +5,6 @@
 //! [1]: https://github.com/Rust-for-Linux/linux/blob/rust/rust/kernel/linked_list.rs
 
 #![no_std]
-#![feature(const_trait_impl)]
 
 mod linked_list;
 

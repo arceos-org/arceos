@@ -19,7 +19,6 @@
 //! [2]: scheduler::RRScheduler
 
 #![cfg_attr(not(test), no_std)]
-#![feature(const_trait_impl)]
 #![feature(doc_cfg)]
 
 cfg_if::cfg_if! {
