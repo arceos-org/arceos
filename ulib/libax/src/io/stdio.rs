@@ -7,10 +7,12 @@ use crate::sync::Mutex;
 struct StdinRaw;
 struct StdoutRaw;
 
+/// A handle to the standard input stream of a process.
 pub struct Stdin {
     inner: &'static Mutex<BufReader<StdinRaw>>,
 }
 
+/// A handle to the global standard output stream of the current process.
 pub struct Stdout {
     inner: &'static Mutex<StdoutRaw>,
 }
@@ -88,12 +90,18 @@ pub fn stdin() -> Stdin {
     Stdin { inner: &INSTANCE }
 }
 
-/// A handle to the global standard output stream of the current process.
+/// Constructs a new handle to the standard output of the current process.
 pub fn stdout() -> Stdout {
     static INSTANCE: Mutex<StdoutRaw> = Mutex::new(StdoutRaw);
     Stdout { inner: &INSTANCE }
 }
 
+/// Prints to the standard output.
+///
+/// Equivalent to the [`println!`] macro except that a newline is not printed at
+/// the end of the message.
+///
+/// [`println!`]: crate::println
 #[macro_export]
 macro_rules! print {
     ($fmt: literal $(, $($arg: tt)+)?) => {
@@ -101,6 +109,7 @@ macro_rules! print {
     }
 }
 
+/// Prints to the standard output, with a newline.
 #[macro_export]
 macro_rules! println {
     () => { $crate::print!("\n") };

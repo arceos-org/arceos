@@ -1,3 +1,5 @@
+//! Temporal quantification.
+
 pub use core::time::Duration;
 
 /// A measurement of a monotonically nondecreasing clock.

@@ -8,6 +8,7 @@
 * [axalloc](../modules/axalloc/): Dynamic memory allocation.
 * [axdriver](../modules/axdriver/): Device driver framework.
 * [axdisplay](../modules/axdisplay/): Graphic display framework.
+* [axfs](../modules/axfs/): File system framework with low/high level filesystem manipulation operations.
 * [axnet](../modules/axnet/): Network stack.
 * [axsync](../modules/axsync/): Synchronization primitives.
 * [axtask](../modules/axtask/): Task management.
@@ -17,6 +18,8 @@
 * [arm_gic](../crates/arm_gic): ARM GIC(Generic Interrupt Controller) registers & ops.
 * [axerrno](../crates/axerrno): Error number in linux.
 * [axio](../crates/axio): `std`-like traits, helpers, and type definitions for core I/O functionality.
+* [axfs_devfs](../crates/axfs_devfs): Device file system.
+* [axfs_vfs](../crates/axfs_vfs): Virtual filesystem interfaces.
 * [crate_interface](../crates/crate_interface): crate interface macros for OPs between crates.
 * [driver_block](../crates/driver_block): trait(read_block/write_block/flush) of BlockDriver.
 * [driver_common](../crates/driver_common): trait(device_name/device_type) of BaseDriver, types of drivers.
@@ -76,6 +79,7 @@ O[axtask]
 P[axdriver]
 Q[axnet]
 Q1[axdisplay]
+M1[axfs]
 end
 G --> I;
 H --> I;
@@ -143,56 +147,64 @@ O --> S;
 O --> IN10;
 O --> IN3;
 O --> IN15;
+M1 --> IN4;
+M1 --> F3;
+M1 --> T0;
+M1 --> T1;
+M1 --> IN14;
+M1 --> IN13;
+M1 --> F1;
+M1 --> F2;
+M1 --> P;
+M1 --> K;
 subgraph "ArceOS crates"
 R[allocator]
-S[scheduler]
-T0[driver_common]
+IN12[arm_gic]
+IN13[axerrno]
+F1[axfs_devfs]
+F2[axfs_vfs]
+IN14[axio]
+F3[capability]
+IN15[crate_interface]
 T1[driver_blk]
+T0[driver_common]
+T5[driver_display]
 T2[driver_net]
 T3[driver_virtio]
-T4(e1000)
-T5[driver_display]
-V[smoltcp]
-W[lwip_rust]
-OUT2[bitmap-allocator]
-Y[slab_allocator]
-S1[FIFO]
-S2[RR]
-Z[linked_list]
-P1[page_table]
-P11[page_table_entry]
-OUT1[buddy_system_allocator]
-IN1[slab_allocator]
-OUT3[virtio-drivers]
 IN2[handler_table]
 IN3[kernel_guard]
 IN4[lazy_init]
+Z[linked_list]
 IN5[memory_addr]
+P1[page_table]
+P11[page_table_entry]
 IN6[percpu]
 IN7[percpu_macros]
 IN8[ratio]
+S[scheduler-FIFO_RR]
+IN1[slab_allocator]
 IN9[spinlock]
 IN10[timer_list]
 IN11[tuple_for_each]
-IN12[arm_gic]
-IN13[axerrno]
-IN14[axio]
-IN15[crate_interface]
+T4(e1000)
+V(smoltcp)
+W(lwip_rust)
+OUT2(bitmap-allocator)
+Y(slab_allocator)
+S1(FIFO)
+S2(RR)
+OUT1(buddy_system_allocator)
+OUT3(virtio-drivers)
 end
 R --> OUT1;
 R --> OUT2;
 R --> Y;
 IN4 --> IN13;
-S --> S1;
-S --> S2;
-S1 --> Z;
-S2 --> Z;
+S --> Z;
 OUT1 --> Z;
 OUT2 --> Z;
 IN1 --> OUT1;
 Y --> Z;
-S1 --> Z;
-S2 --> Z;
 T3 --> T1;
 T3 --> T2;
 T3 --> T5;
@@ -209,4 +221,7 @@ P11 --> IN5;
 IN6 --> IN3;
 IN6 --> IN7;
 IN9 --> IN3;
+F3 --> IN13;
+F2 --> IN13;
+F1 --> F2;
 ```

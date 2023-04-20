@@ -1,9 +1,9 @@
 use crate::BlockDevice;
-use driver_block::BlockDriverOps;
-use driver_common::DevResult;
+use driver_block::{BlockDriverOps, DevResult};
 
 const BLOCK_SIZE: usize = 512;
 
+/// A disk device with a cursor.
 pub struct Disk {
     block_id: u64,
     offset: usize,

@@ -7,4 +7,4 @@ pub fn get_local_thread_pointer() -> usize {
 }
 
 /// No effect for "sp-naive" use.
-pub fn set_local_thread_pointer(_cpu_id: usize, _tp_forced: Option<usize>) {}
+pub fn set_local_thread_pointer(_cpu_id: usize) {}

@@ -1,5 +1,21 @@
+//! Utilities for path manipulation.
+
 use alloc::string::String;
 
+/// Returns the canonical form of the path with all intermediate components
+/// normalized.
+///
+/// It won't force convert the path to an absolute form.
+///
+/// # Examples
+///
+/// ```
+/// use axfs_vfs::path::canonicalize;
+///
+/// assert_eq!(canonicalize("/path/./to//foo"), "/path/to/foo");
+/// assert_eq!(canonicalize("/./path/to/../bar.rs"), "/path/bar.rs");
+/// assert_eq!(canonicalize("./foo/./bar"), "foo/bar");
+/// ```
 pub fn canonicalize(path: &str) -> String {
     let mut buf = String::new();
     let is_absolute = path.starts_with('/');

@@ -4,6 +4,9 @@ use axfs_vfs::{VfsDirEntry, VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsNodeType};
 use axfs_vfs::{VfsError, VfsResult};
 use spin::RwLock;
 
+/// The directory node in the device filesystem.
+///
+/// It implements [`axfs_vfs::VfsNodeOps`].
 pub struct DirNode {
     parent: RwLock<Weak<dyn VfsNodeOps>>,
     children: RwLock<BTreeMap<&'static str, VfsNodeRef>>,
@@ -22,6 +25,7 @@ impl DirNode {
         *self.parent.write() = parent.map_or(Weak::<Self>::new() as _, Arc::downgrade);
     }
 
+    /// Create a subdirectory at this directory.
     pub fn mkdir(self: &Arc<Self>, name: &'static str) -> Arc<Self> {
         let parent = self.clone() as VfsNodeRef;
         let node = Self::new(Some(&parent));
@@ -29,6 +33,7 @@ impl DirNode {
         node
     }
 
+    /// Add a node to this directory.
     pub fn add(&self, name: &'static str, node: VfsNodeRef) {
         self.children.write().insert(name, node);
     }

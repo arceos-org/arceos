@@ -26,6 +26,10 @@ const fn p1_index(vaddr: VirtAddr) -> usize {
     (vaddr.as_usize() >> 12) & (ENTRY_COUNT - 1)
 }
 
+/// A generic page table struct for 64-bit platform.
+///
+/// It also tracks all intermediate level tables. They will be deallocated
+/// When the [`PageTable64`] itself is dropped.
 pub struct PageTable64<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> {
     root_paddr: PhysAddr,
     intrm_tables: Vec<PhysAddr>,
@@ -33,6 +37,9 @@ pub struct PageTable64<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> {
 }
 
 impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
+    /// Creates a new page table instance or returns the error.
+    ///
+    /// It will allocate a new page for the root page table.
     pub fn try_new() -> PagingResult<Self> {
         let root_paddr = Self::alloc_table()?;
         Ok(Self {
@@ -42,10 +49,20 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
         })
     }
 
+    /// Returns the physical address of the root page table.
     pub const fn root_paddr(&self) -> PhysAddr {
         self.root_paddr
     }
 
+    /// Maps a virtual page to a physical frame with the given `page_size`
+    /// and mapping `flags`.
+    ///
+    /// The virtual page starts with `vaddr`, amd the physical frame starts with
+    /// `target`. If the addresses is not aligned to the page size, they will be
+    /// aligned down automatically.
+    ///
+    /// Returns [`Err(PagingError::AlreadyMapped)`](PagingError::AlreadyMapped)
+    /// if the mapping is already present.
     pub fn map(
         &mut self,
         vaddr: VirtAddr,
@@ -61,6 +78,10 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
         Ok(())
     }
 
+    /// Unmaps the mapping starts with `vaddr`.
+    ///
+    /// Returns [`Err(PagingError::NotMapped)`](PagingError::NotMapped) if the
+    /// mapping is not present.
     pub fn unmap(&mut self, vaddr: VirtAddr) -> PagingResult<(PhysAddr, PageSize)> {
         let (entry, size) = self.get_entry_mut(vaddr)?;
         if entry.is_unused() {
@@ -71,6 +92,13 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
         Ok((paddr, size))
     }
 
+    /// Query the result of the mapping starts with `vaddr`.
+    ///
+    /// Returns the physical address of the target frame, mapping flags, and
+    /// the page size.
+    ///
+    /// Returns [`Err(PagingError::NotMapped)`](PagingError::NotMapped) if the
+    /// mapping is not present.
     pub fn query(&self, vaddr: VirtAddr) -> PagingResult<(PhysAddr, MappingFlags, PageSize)> {
         let (entry, size) = self.get_entry_mut(vaddr)?;
         if entry.is_unused() {
@@ -80,6 +108,17 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
         Ok((entry.paddr() + off, entry.flags(), size))
     }
 
+    /// Map a contiguous virtual memory region to a contiguous physical memory
+    /// region with the given mapping `flags`.
+    ///
+    /// The virtual and physical memory regions start with `vaddr` and `paddr`
+    /// respectively. The region size is `size`. The addresses and `size` must
+    /// be aligned to 4K, otherwise it will return [`Err(PagingError::NotAligned)`].
+    ///
+    /// When `allow_huge` is true, it will try to map the region with huge pages
+    /// if possible. Otherwise, it will map the region with 4K pages.
+    ///
+    /// [`Err(PagingError::NotAligned)`]: PagingError::NotAligned
     pub fn map_region(
         &mut self,
         vaddr: VirtAddr,
@@ -137,6 +176,10 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
         Ok(())
     }
 
+    /// Unmap a contiguous virtual memory region.
+    ///
+    /// The region must be mapped before using [`PageTable64::map_region`], or
+    /// unexpected behaviors may occur.
     pub fn unmap_region(&mut self, vaddr: VirtAddr, size: usize) -> PagingResult {
         trace!(
             "unmap_region({:#x}) [{:#x}, {:#x})",
@@ -158,6 +201,16 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
         Ok(())
     }
 
+    /// Walk the page table recursively.
+    ///
+    /// When reaching the leaf page table, call `func` on the current page table
+    /// entry. The max number of enumerations in one table is limited by `limit`.
+    ///
+    /// The arguments of `func` are:
+    /// - Current level (starts with `0`): `usize`
+    /// - The index of the entry in the current-level table: `usize`
+    /// - The virtual address that is mapped to the entry: [`VirtAddr`]
+    /// - The reference of the entry: [`&PTE`](GenericPTE)
     pub fn walk<F>(&self, limit: usize, func: &F) -> PagingResult
     where
         F: Fn(usize, usize, VirtAddr, &PTE),

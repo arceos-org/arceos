@@ -2,8 +2,7 @@ use alloc::collections::VecDeque;
 use axdriver::NetDevices;
 use axsync::Mutex;
 use core::{cell::RefCell, ffi::c_void};
-use driver_common::DevError;
-use driver_net::{NetBuffer, NetDriverOps};
+use driver_net::{DevError, NetBuffer, NetDriverOps};
 use lazy_init::LazyInit;
 use lwip_rust::bindings::{
     err_enum_t_ERR_OK, err_enum_t_ERR_WOULDBLOCK, err_t, etharp_output, ethernet_input,

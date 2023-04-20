@@ -14,6 +14,7 @@ pub struct BufReader<R> {
 }
 
 impl<R: Read> BufReader<R> {
+    /// Creates a new `BufReader<R>` with a default buffer capacity (1 KB).
     pub const fn new(inner: R) -> BufReader<R> {
         Self {
             inner,

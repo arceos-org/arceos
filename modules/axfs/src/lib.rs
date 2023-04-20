@@ -1,4 +1,22 @@
-#![cfg_attr(not(test), no_std)]
+//! [ArceOS](https://github.com/rcore-os/arceos) filesystem module.
+//!
+//! It provides unified filesystem operations for various filesystems.
+//!
+//! # Cargo Features
+//!
+//! - `use-ramdisk`: Use [`driver_block::ramdisk::RamDisk`] as the block device.
+//!    This feature is enabled by default.
+//! - `use-virtio-blk`: Use [`axdriver::VirtIoBlockDev`] as the block device.
+//!    This feature is disabled by default, but it will override `use-ramdisk`
+//!    if both are enabled.
+//! - `fatfs`: Use [FAT] as the main filesystem and mount it on `/`. This feature
+//!    is enabled by default.
+//! - `devfs`: Mount [`axfs_devfs::DeviceFileSystem`] on `/dev`. This feature is
+//!    enabled by default.
+//!
+//! [FAT]: https://en.wikipedia.org/wiki/File_Allocation_Table
+
+#![cfg_attr(all(not(test), not(doc)), no_std)]
 
 #[macro_use]
 extern crate log;
@@ -11,16 +29,23 @@ mod root;
 pub mod api;
 pub mod fops;
 
-use driver_common::BaseDriverOps;
-
 cfg_if::cfg_if! {
     if #[cfg(feature = "use-virtio-blk")] {
-        type BlockDevice = axdriver::VirtIoBlockDev;
+        use axdriver::VirtIoBlockDev as BlockDevice;
     } else if #[cfg(feature = "use-ramdisk")] {
-        type BlockDevice = driver_block::ramdisk::RamDisk;
+        use driver_block::ramdisk::RamDisk as BlockDevice;
     }
 }
 
+use driver_block::BaseDriverOps;
+
+/// Initializes filesystems by the given block device.
+///
+/// If the feature `use-virtio-blk` is enabled, `BlockDevice` is an alias of
+/// [`axdriver::VirtIoBlockDev`].
+///
+/// Otherwise, if the feature `use-ramdisk` is enabled, `BlockDevice` is an
+/// alias of [`driver_block::ramdisk::RamDisk`].
 pub fn init_filesystems(blk_dev: BlockDevice) {
     info!("Initialize filesystems...");
     info!("  use block device: {:?}", blk_dev.device_name());

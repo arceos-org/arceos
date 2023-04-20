@@ -7,9 +7,12 @@ use core::sync::atomic::{AtomicU64, Ordering};
 
 use axtask::{current, WaitQueue};
 
-/// A mutual exclusion primitive useful for protecting shared data.
+/// A mutual exclusion primitive useful for protecting shared data, similar to
+/// [`std::sync::Mutex`].
 ///
-/// This mutex will block threads waiting for the lock to become available.
+/// When the mutex is locked, the current task will block and be put into the
+/// wait queue. When the mutex is unlocked, all tasks waiting on the queue
+/// will be woken up.
 pub struct Mutex<T: ?Sized> {
     wq: WaitQueue,
     owner_id: AtomicU64,
@@ -200,7 +203,7 @@ mod tests {
 
     #[test]
     fn lots_and_lots() {
-        INIT.call_once(|| axtask::init_scheduler());
+        INIT.call_once(axtask::init_scheduler);
 
         const NUM_TASKS: u32 = 10;
         const NUM_ITERS: u32 = 10_000;

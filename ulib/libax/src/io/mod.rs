@@ -1,3 +1,5 @@
+//! Traits, helpers, and type definitions for core I/O functionality.
+
 mod stdio;
 
 pub use axio::prelude;

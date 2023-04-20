@@ -34,7 +34,7 @@ impl OpenOptions {
         self
     }
 
-    /// sets the option for write access.
+    /// Sets the option for write access.
     pub fn write(&mut self, write: bool) -> &mut Self {
         self.0.write(write);
         self
@@ -101,6 +101,7 @@ impl Metadata {
         self.0.perm()
     }
 
+    /// Returns the inner raw metadata [`fops::FileAttr`].
     pub const fn raw_metadata(&self) -> &fops::FileAttr {
         &self.0
     }

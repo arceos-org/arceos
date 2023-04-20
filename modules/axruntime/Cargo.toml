@@ -3,8 +3,11 @@ name = "axruntime"
 version = "0.1.0"
 edition = "2021"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "Runtime library of ArceOS"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+repository = "https://github.com/rcore-os/arceos/tree/main/modules/axruntime"
+documentation = "https://rcore-os.github.io/arceos/axruntime/index.html"
 
 [features]
 alloc = ["dep:axalloc"]
@@ -16,7 +19,7 @@ fs = ["alloc", "paging", "axdriver/virtio-blk", "axfs/use-virtio-blk"] # TODO: r
 net = ["alloc", "paging", "axdriver/virtio-net", "dep:axnet"]
 display = ["alloc", "paging", "axdriver/virtio-gpu", "dep:axdisplay"]
 
-default = ["axtask/default"]
+default = ["axtask?/default"]
 
 [dependencies]
 percpu = { path = "../../crates/percpu" }
@@ -32,4 +35,4 @@ axlog = { path = "../axlog" }
 axfs = { path = "../axfs", optional = true }
 axnet = { path = "../axnet", optional = true }
 axdisplay = { path = "../axdisplay", optional = true }
-axtask = { path = "../axtask", default-features = false }
+axtask = { path = "../axtask", default-features = false, optional = true }

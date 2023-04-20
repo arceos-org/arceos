@@ -4,7 +4,9 @@ use memory_addr::{PhysAddr, VirtAddr};
 
 use crate::{global_allocator, PAGE_SIZE};
 
-/// A safe wrapper of contiguous 4K-sized pages.
+/// A RAII wrapper of contiguous 4K-sized pages.
+///
+/// It will automatically deallocate the pages when dropped.
 #[derive(Debug)]
 pub struct GlobalPage {
     start_vaddr: VirtAddr,

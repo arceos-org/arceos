@@ -1,10 +1,10 @@
 [package]
 name = "slab_allocator"
 version = "0.3.1"
-authors = ["Robert Węcławski <r.weclawski@gmail.com>"]
+authors = ["Robert Węcławski <r.weclawski@gmail.com>", "Yiren Zhang <zyr_ms@outlook.com>"]
 license = "MIT"
 
-description = "Slab allocator for no_std systems. Uses multiple slabs with blocks of different sizes and a linked list for blocks larger than 4096 bytes"
+description = "Slab allocator for `no_std` systems. Uses multiple slabs with blocks of different sizes and a linked list for blocks larger than 4096 bytes"
 keywords = ["slab", "allocator", "no_std", "heap", "kernel"]
 
 [dependencies]
