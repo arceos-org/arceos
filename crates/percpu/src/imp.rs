@@ -6,20 +6,6 @@ const fn align_up(val: usize) -> usize {
 #[cfg(not(target_os = "none"))]
 static PERCPU_AREA_BASE: spin::once::Once<usize> = spin::once::Once::new();
 
-/// Returns the base address for all per-CPU data.
-#[doc(cfg(not(feature = "sp-naive")))]
-pub fn percpu_area_base() -> usize {
-    #[cfg(target_os = "none")]
-    {
-        extern "C" {
-            fn percpu_start();
-        }
-        percpu_start as usize
-    }
-    #[cfg(not(target_os = "none"))]
-    *PERCPU_AREA_BASE.get().unwrap()
-}
-
 /// Returns the per-CPU data area size for each CPUs.
 #[doc(cfg(not(feature = "sp-naive")))]
 pub fn percpu_area_size() -> usize {
@@ -31,12 +17,22 @@ pub fn percpu_area_size() -> usize {
     percpu_symbol_offset!(__percpu_offset_end) - percpu_symbol_offset!(__percpu_offset_start)
 }
 
-/// Returns the base address of the per-CPU data area on the current CPU.
+/// Returns the base address of the per-CPU data area on the given CPU.
+///
+/// if `cpu_id` is 0, it returns the base address of all per-CPU data areas.
 #[doc(cfg(not(feature = "sp-naive")))]
-pub fn percpu_area_base_at(cpu_id: usize) -> usize {
-    let size = percpu_area_size();
-    let size_aligned = align_up(size);
-    percpu_area_base() + cpu_id * size_aligned
+pub fn percpu_area_base(cpu_id: usize) -> usize {
+    cfg_if::cfg_if! {
+        if #[cfg(target_os = "none")] {
+            extern "C" {
+                fn percpu_start();
+            }
+            let base = percpu_start as usize;
+        } else {
+            let base = *PERCPU_AREA_BASE.get().unwrap();
+        }
+    }
+    base + cpu_id * align_up(percpu_area_size())
 }
 
 /// Initialize the per-CPU data area for `max_cpu_num` CPUs.
@@ -51,9 +47,9 @@ pub fn init(max_cpu_num: usize) {
         PERCPU_AREA_BASE.call_once(|| unsafe { std::alloc::alloc(layout) as usize });
     }
 
-    let base = percpu_area_base();
+    let base = percpu_area_base(0);
     for i in 1..max_cpu_num {
-        let secondary_base = percpu_area_base_at(i);
+        let secondary_base = percpu_area_base(i);
         // copy per-cpu data of the primary CPU to other CPUs.
         unsafe {
             core::ptr::copy_nonoverlapping(base as *const u8, secondary_base as *mut u8, size);
@@ -61,8 +57,7 @@ pub fn init(max_cpu_num: usize) {
     }
 }
 
-/// Read the architecture-dependent thread pointer register on the current CPU,
-/// as the per-CPU data area base.
+/// Read the architecture-specific thread pointer register on the current CPU.
 pub fn get_local_thread_pointer() -> usize {
     let tp;
     unsafe {
@@ -85,11 +80,12 @@ pub fn get_local_thread_pointer() -> usize {
     tp
 }
 
-/// Write the per-CPU data area base to the architecture-dependent thread pointer
-/// register on the current CPU. If `tp_forced` is `None`, calculate the area base
-/// automatically according to the `cpu_id` of current CPU.
-pub fn set_local_thread_pointer(cpu_id: usize, tp_forced: Option<usize>) {
-    let tp = tp_forced.unwrap_or_else(|| percpu_area_base_at(cpu_id));
+/// Set the architecture-specific thread pointer register to the per-CPU data
+/// area base on the current CPU.
+///
+/// `cpu_id` indicates which per-CPU data area to use.
+pub fn set_local_thread_pointer(cpu_id: usize) {
+    let tp = percpu_area_base(cpu_id);
     unsafe {
         cfg_if::cfg_if! {
             if #[cfg(target_arch = "x86_64")] {

@@ -24,6 +24,9 @@ pub fn start_secondary_cpus(primary_cpu_id: usize) {
     }
 }
 
+/// The main entry point of the ArceOS runtime for secondary CPUs.
+///
+/// It is called from the bootstrapping code in [axhal].
 #[no_mangle]
 pub extern "C" fn rust_main_secondary(cpu_id: usize) -> ! {
     info!("Secondary CPU {} started.", cpu_id);
@@ -42,5 +45,11 @@ pub extern "C" fn rust_main_secondary(cpu_id: usize) -> ! {
     }
 
     axhal::arch::enable_irqs();
+
+    #[cfg(feature = "multitask")]
     axtask::run_idle();
+    #[cfg(not(feature = "multitask"))]
+    loop {
+        axhal::arch::wait_for_irqs();
+    }
 }

@@ -1,16 +1,26 @@
+# Architecture identifier.
 arch = "aarch64"
+# Platform identifier.
 platform = "qemu-virt-aarch64"
 
+# Base address of the whole physical memory.
 phys-memory-base = "0x4000_0000"
+# Size of the whole physical memory.
 phys-memory-size = "0x800_0000"     # 128M
+# Base physical address of the kernel image.
 kernel-base-paddr = "0x4008_0000"
+# Base virtual address of the kernel image.
 kernel-base-vaddr = "0xffff_0000_4008_0000"
+# Linear mapping offset, for quick conversions between physical and virtual
+# addresses.
 phys-virt-offset = "0xffff_0000_0000_0000"
+# MMIO regions with format (`base_paddr`, `size`).
 mmio-regions = [
     ["0x0900_0000", "0x1000"],      # PL011 UART
     ["0x0800_0000", "0x2_0000"],    # GICv2
     ["0x0a00_0000", "0x4000"],      # VirtIO
 ]
+# VirtIO MMIO regions with format (`base_paddr`, `size`).
 virtio-mmio-regions = [
     ["0x0a00_0000", "0x200"],
     ["0x0a00_0200", "0x200"],

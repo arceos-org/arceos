@@ -1,52 +1,56 @@
 # ArceOS Architecture
 
 ## ArceOS Modules
-* [axruntime](../modules/axruntime/): Bootstraping from the bare-metal environment, and initialization.
-* [axhal](../modules/axhal/): Hardware abstraction layer, provides unified APIs for cross-platform.
-* [axconfig](../modules/axconfig/): Platform constants and kernel parameters, such as physical memory base, kernel load addresses, stack size, etc.
-* [axlog](../modules/axlog/): Multi-level log definition and printing.
-* [axalloc](../modules/axalloc/): Dynamic memory allocation.
-* [axdriver](../modules/axdriver/): Device driver framework.
-* [axdisplay](../modules/axdisplay/): Graphic display framework.
-* [axfs](../modules/axfs/): File system framework with low/high level filesystem manipulation operations.
-* [axnet](../modules/axnet/): Network stack.
-* [axsync](../modules/axsync/): Synchronization primitives.
-* [axtask](../modules/axtask/): Task management.
+
+* [axalloc](../modules/axalloc): ArceOS global memory allocator.
+* [axconfig](../modules/axconfig): Platform-specific constants and parameters for ArceOS.
+* [axdisplay](../modules/axdisplay): ArceOS graphics module.
+* [axdriver](../modules/axdriver): ArceOS device drivers.
+* [axfs](../modules/axfs): ArceOS filesystem module.
+* [axhal](../modules/axhal): ArceOS hardware abstraction layer, provides unified APIs for platform-specific operations.
+* [axlog](../modules/axlog): Macros for multi-level formatted logging used by ArceOS.
+* [axnet](../modules/axnet): ArceOS network module.
+* [axruntime](../modules/axruntime): Runtime library of ArceOS.
+* [axsync](../modules/axsync): ArceOS synchronization primitives.
+* [axtask](../modules/axtask): ArceOS task management module.
 
 ## Crates
-* [allocator](../crates/allocator): Memory allocation: bitmap&buddy allocator in page size,  slab allocator in byte size.
-* [arm_gic](../crates/arm_gic): ARM GIC(Generic Interrupt Controller) registers & ops.
-* [axerrno](../crates/axerrno): Error number in linux.
-* [axio](../crates/axio): `std`-like traits, helpers, and type definitions for core I/O functionality.
-* [axfs_devfs](../crates/axfs_devfs): Device file system.
-* [axfs_vfs](../crates/axfs_vfs): Virtual filesystem interfaces.
-* [crate_interface](../crates/crate_interface): crate interface macros for OPs between crates.
-* [driver_block](../crates/driver_block): trait(read_block/write_block/flush) of BlockDriver.
-* [driver_common](../crates/driver_common): trait(device_name/device_type) of BaseDriver, types of drivers.
-* [driver_display](../crates/driver_display):  FrameBuffer, DisplayInfo, trait of DisplayDriver on virtio-gpu.
-* [driver_net](../crates/driver_net): trait of NetBuffer & NetDriver.
-* [driver_virtio](../crates/driver_virtio): config & probe for VirtioDevice(Block/Net/GPU).
-* [handler_table](../crates/handler_table): Exception/Interrupt Handler Table for Hardware abstraction layer -- [axhal](../modules/axhal/).
-* [kernel_guard](../crates/kernel_guard): IRQ OPs.
-* [lazy_init](../crates/lazy_init): Global static variable instance OPs.
-* [linked_list](../crates/linked_list): Based on linux/rust/kernel/linked_list.rs, but use [`unsafe_list::List`](../crates/linked_list/src/unsafe_list.rs) as the inner implementation..
-* [memory_addr](../crates/memory_addr): PhyAddr/VirtAddr related OPs.
-* [page_table](../crates/page_table): Generic page table. 
-* [page_table_entry](../crates/page_table_entry): Generic page table entry.
-* [percpu](../crates/percpu): Framework for per-cpu data.
-* [percpu_macros](../crates/percpu_macros): Macros for per-cpu data.
-* [ratio](../crates/ratio): Convert `numerator / denominator` to `mult / (1 << shift)` to avoid `u128` division.
-* [scheduler](../crates/scheduler): FIFO/RR schedulers.
-* [slab_allocator](../crates/slab_allocator): Memory: slab allocator.
-* [spinlock](../crates/spinlock): Sync: spin lock. 
-* [timer_list](../crates/timer_list): Timer event/list & OPs. 
-* [tuple_for_each](../crates/tuple_for_each): tuple_for_each to traverse devices. 
+
+* [allocator](../crates/allocator): Various allocator algorithms in a unified interface.
+* [arm_gic](../crates/arm_gic): ARM Generic Interrupt Controller (GIC) register definitions and basic operations.
+* [axerrno](../crates/axerrno): Error code definition used by ArceOS.
+* [axfs_devfs](../crates/axfs_devfs): Device filesystem used by ArceOS.
+* [axfs_vfs](../crates/axfs_vfs): Virtual filesystem interfaces used by ArceOS.
+* [axio](../crates/axio): `std::io`-like I/O traits for `no_std` environment.
+* [capability](../crates/capability): Provide basic capability-based security.
+* [crate_interface](../crates/crate_interface): Provides a way to define an interface (trait) in a crate, but can implement or use it in any crate.
+* [driver_block](../crates/driver_block): Common traits and types for block storage drivers.
+* [driver_common](../crates/driver_common): Device driver interfaces used by ArceOS.
+* [driver_display](../crates/driver_display): Common traits and types for graphics device drivers.
+* [driver_net](../crates/driver_net): Common traits and types for network device (NIC) drivers.
+* [driver_virtio](../crates/driver_virtio): Wrappers of some devices in the `virtio-drivers` crate, that implement traits in the `driver_common` series crates.
+* [handler_table](../crates/handler_table): A lock-free table of event handlers.
+* [kernel_guard](../crates/kernel_guard): RAII wrappers to create a critical section with local IRQs or preemption disabled.
+* [lazy_init](../crates/lazy_init): A wrapper for lazy initialized values without concurrency safety but more efficient.
+* [linked_list](../crates/linked_list): Linked lists that supports arbitrary removal in constant time.
+* [memory_addr](../crates/memory_addr): Wrappers and helper functions for physical and virtual addresses.
+* [page_table](../crates/page_table): Generic page table structures for various hardware architectures.
+* [page_table_entry](../crates/page_table_entry): Page table entry definition for various hardware architectures.
+* [percpu](../crates/percpu): Define and access per-CPU data structures.
+* [percpu_macros](../crates/percpu_macros): Macros to define and access a per-CPU data structure.
+* [ratio](../crates/ratio): The type of ratios and related operations.
+* [scheduler](../crates/scheduler): Various scheduler algorithms in a unified interface.
+* [slab_allocator](../crates/slab_allocator): Slab allocator for `no_std` systems. Uses multiple slabs with blocks of different sizes and a linked list for blocks larger than 4096 bytes.
+* [spinlock](../crates/spinlock): `no_std` spin lock implementation that can disable kernel local IRQs or preemption while locking.
+* [timer_list](../crates/timer_list): A list of timed events that will be triggered sequentially when the timer expires.
+* [tuple_for_each](../crates/tuple_for_each): Provides macros and methods to iterate over the fields of a tuple struct.
+
 ## Dependencies
 
 ```mermaid
 graph TD;
 subgraph "User Apps"
-A["Rust App"] 
+A["Rust App"]
 C["C App"]
 end
 subgraph "ArceOS ulib"

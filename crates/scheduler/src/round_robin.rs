@@ -4,12 +4,16 @@ use core::sync::atomic::{AtomicIsize, Ordering};
 
 use crate::BaseScheduler;
 
+/// A task wrapper for the [`RRScheduler`].
+///
+/// It add a time slice counter to use in round-robin scheduling.
 pub struct RRTask<T, const MAX_TIME_SLICE: usize> {
     inner: T,
     time_slice: AtomicIsize,
 }
 
 impl<T, const S: usize> RRTask<T, S> {
+    /// Creates a new [`RRTask`] from the inner task struct.
     pub const fn new(inner: T) -> Self {
         Self {
             inner,
@@ -25,23 +29,37 @@ impl<T, const S: usize> RRTask<T, S> {
         self.time_slice.store(S as isize, Ordering::Release);
     }
 
+    /// Returns a reference to the inner task struct.
     pub const fn inner(&self) -> &T {
         &self.inner
     }
 }
 
-impl<T, const S: usize> const Deref for RRTask<T, S> {
+impl<T, const S: usize> Deref for RRTask<T, S> {
     type Target = T;
+    #[inline]
     fn deref(&self) -> &Self::Target {
         &self.inner
     }
 }
 
+/// A simple Round-Robin (RR) preemptive scheduler.
+///
+/// It's very similar to the [`FifoScheduler`], but every task has a time slice
+/// counter that is decremented each time a timer tick occurs. When the current
+/// task's time slice counter reaches zero, the task is preempted and needs to
+/// be rescheduled.
+///
+/// Unlike [`FifoScheduler`], it uses [`VecDeque`] as the ready queue. So it may
+/// take O(n) time to remove a task from the ready queue.
+///
+/// [`FifoScheduler`]: crate::FifoScheduler
 pub struct RRScheduler<T, const MAX_TIME_SLICE: usize> {
     ready_queue: VecDeque<Arc<RRTask<T, MAX_TIME_SLICE>>>,
 }
 
 impl<T, const S: usize> RRScheduler<T, S> {
+    /// Creates a new empty [`RRScheduler`].
     pub const fn new() -> Self {
         Self {
             ready_queue: VecDeque::new(),

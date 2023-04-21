@@ -3,10 +3,14 @@ name = "spinlock"
 version = "0.1.0"
 edition = "2021"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "`no_std` spin lock implementation that can disable kernel local IRQs or preemption while locking"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+repository = "https://github.com/rcore-os/arceos/tree/main/crates/spinlock"
+documentation = "https://rcore-os.github.io/arceos/spinlock/index.html"
 
 [features]
+# To use in the multi-core environment
 smp = []
 default = []
 

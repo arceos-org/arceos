@@ -1,3 +1,24 @@
+//! Macros for multi-level formatted logging used by
+//! [ArceOS](https://github.com/rcore-os/arceos).
+//!
+//! The log macros, in descending order of level, are: [`error!`], [`warn!`],
+//! [`info!`], [`debug!`], and [`trace!`].
+//!
+//! If it is used in `no_std` environment, the users need to implement the
+//! [`LogIf`] to provide external functions such as console output.
+//!
+//! # Cargo features:
+//!
+//! - `std`: Use in the `std` environment. If it is enabled, you can use console
+//!   output without implementing the [`LogIf`] trait. This is disabled by default.
+//! - `log-level-off`: Disable all logging. If it is enabled, all log macros
+//!   (e.g. [`info!`]) will be optimized out to a no-op in compilation time.
+//! - `log-level-error`: Set the maximum log level to `error`. Any macro
+//!   with a level lower than [`error!`] (e.g, [`warn!`], [`info!`], ...) will be
+//!   optimized out to a no-op.
+//! - `log-level-warn`, `log-level-info`, `log-level-debug`, `log-level-trace`:
+//!   Similar to `log-level-error`.
+
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate log;
@@ -12,6 +33,10 @@ use crate_interface::call_interface;
 
 pub use log::{debug, error, info, trace, warn};
 
+/// Prints to the console.
+///
+/// Equivalent to the [`ax_println!`] macro except that a newline is not printed at
+/// the end of the message.
 #[macro_export]
 macro_rules! ax_print {
     ($fmt: literal $(, $($arg: tt)+)?) => {
@@ -19,6 +44,7 @@ macro_rules! ax_print {
     }
 }
 
+/// Prints to the console, with a newline.
 #[macro_export]
 macro_rules! ax_println {
     () => { ax_print!("\n") };
@@ -54,19 +80,23 @@ enum ColorCode {
     BrightWhite = 97,
 }
 
-/// Extern interfaces called in this crate.
+/// Extern interfaces that must be implemented in other crates.
 #[crate_interface::def_interface]
 pub trait LogIf {
-    /// write a string to the console.
+    /// Writes a string to the console.
     fn console_write_str(s: &str);
 
-    /// get current time
+    /// Gets current clock time.
     fn current_time() -> core::time::Duration;
 
-    /// get current CPU ID.
+    /// Gets current CPU ID.
+    ///
+    /// Returns [`None`] if you don't want to show the CPU ID in the log.
     fn current_cpu_id() -> Option<usize>;
 
-    /// get current task ID.
+    /// Gets current task ID.
+    ///
+    /// Returns [`None`] if you don't want to show the task ID in the log.
     fn current_task_id() -> Option<u64>;
 }
 
@@ -123,6 +153,7 @@ impl Log for Logger {
                 let now = call_interface!(LogIf::current_time);
                 if let Some(cpu_id) = cpu_id {
                     if let Some(tid) = tid {
+                        // show CPU ID and task ID
                         __print_impl(with_color!(
                             ColorCode::White,
                             "[{:>3}.{:06} {cpu_id}:{tid} {path}:{line}] {args}\n",
@@ -135,6 +166,7 @@ impl Log for Logger {
                             args = with_color!(args_color, "{}", record.args()),
                         ));
                     } else {
+                        // show CPU ID only
                         __print_impl(with_color!(
                             ColorCode::White,
                             "[{:>3}.{:06} {cpu_id} {path}:{line}] {args}\n",
@@ -147,6 +179,7 @@ impl Log for Logger {
                         ));
                     }
                 } else {
+                    // neither CPU ID nor task ID is shown
                     __print_impl(with_color!(
                         ColorCode::White,
                         "[{:>3}.{:06} {path}:{line}] {args}\n",
@@ -173,11 +206,22 @@ pub fn __print_impl(args: fmt::Arguments) {
     Logger.write_fmt(args).unwrap();
 }
 
+/// Initializes the logger.
+///
+/// This function should be called before any log macros are used, otherwise
+/// nothing will be printed.
 pub fn init() {
     log::set_logger(&Logger).unwrap();
     log::set_max_level(LevelFilter::Warn);
 }
 
+/// Set the maximum log level.
+///
+/// Unlike the features such as `log-level-error`, setting the logging level in
+/// this way incurs runtime overhead. In addition, this function is no effect
+/// when those features are enabled.
+///
+/// `level` should be one of `off`, `error`, `warn`, `info`, `debug`, `trace`.
 pub fn set_max_level(level: &str) {
     let lf = LevelFilter::from_str(level)
         .ok()

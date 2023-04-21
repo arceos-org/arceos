@@ -1,4 +1,4 @@
-// Exported C bindings, to call ArceOS funtions from C code.
+//! Exported C bindings, to call ArceOS funtions from C code.
 
 #![allow(clippy::missing_safety_doc)]
 

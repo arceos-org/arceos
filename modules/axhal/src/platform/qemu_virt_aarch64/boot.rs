@@ -113,6 +113,7 @@ unsafe fn enable_fp() {
     }
 }
 
+/// The earliest entry point for the primary CPU.
 #[naked]
 #[no_mangle]
 #[link_section = ".text.boot"]
@@ -162,6 +163,7 @@ unsafe extern "C" fn _start() -> ! {
     )
 }
 
+/// The earliest entry point for the secondary CPUs.
 #[cfg(feature = "smp")]
 #[naked]
 #[no_mangle]

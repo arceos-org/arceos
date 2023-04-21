@@ -1,3 +1,5 @@
+//! AArch64 VMSAv8-64 translation table format descriptors.
+
 use core::fmt;
 use memory_addr::PhysAddr;
 
@@ -135,6 +137,11 @@ impl From<MappingFlags> for DescriptorAttr {
     }
 }
 
+/// A VMSAv8-64 translation table descriptor.
+///
+/// Note that the **AttrIndx\[2:0\]** (bit\[4:2\]) field is set to `0` for device
+/// memory, and `1` for normal memory. The system must configure the MAIR_ELx
+/// system register accordingly.
 #[derive(Clone, Copy)]
 #[repr(transparent)]
 pub struct A64PTE(u64);
@@ -142,6 +149,7 @@ pub struct A64PTE(u64);
 impl A64PTE {
     const PHYS_ADDR_MASK: usize = 0x0000_ffff_ffff_f000; // bits 12..48
 
+    /// Creates an empty descriptor with all bits set to zero.
     pub const fn empty() -> Self {
         Self(0)
     }

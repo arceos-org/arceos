@@ -1,6 +1,7 @@
 use core::arch::asm;
 use memory_addr::VirtAddr;
 
+/// Saved registers when a trap (exception) occurs.
 #[repr(C)]
 #[derive(Debug, Default, Clone, Copy)]
 pub struct TrapFrame {
@@ -14,11 +15,15 @@ pub struct TrapFrame {
     pub spsr: u64,
 }
 
+/// FP & SIMD registers.
 #[repr(C, align(16))]
 #[derive(Debug, Default)]
 pub struct FpState {
+    /// 128-bit SIMD & FP registers (V0..V31)
     pub regs: [u128; 32],
+    /// Floating-point Control Register (FPCR)
     pub fpcr: u32,
+    /// Floating-point Status Register (FPSR)
     pub fpsr: u32,
 }
 
@@ -29,6 +34,18 @@ impl FpState {
     }
 }
 
+/// Saved hardware states of a task.
+///
+/// The context usually includes:
+///
+/// - Callee-saved registers
+/// - Stack pointer register
+/// - Thread pointer register (for thread-local storage, currently unsupported)
+/// - FP/SIMD registers
+///
+/// On context switch, current task saves its context from CPU to memory,
+/// and the next task restores its context from memory to CPU.
+#[allow(missing_docs)]
 #[repr(C)]
 #[derive(Debug)]
 pub struct TaskContext {
@@ -51,15 +68,22 @@ pub struct TaskContext {
 }
 
 impl TaskContext {
+    /// Creates a new default context for a new task.
     pub const fn new() -> Self {
         unsafe { core::mem::MaybeUninit::zeroed().assume_init() }
     }
 
+    /// Initializes the context for a new task, with the given entry point and
+    /// kernel stack.
     pub fn init(&mut self, entry: usize, kstack_top: VirtAddr) {
         self.sp = kstack_top.as_usize() as u64;
         self.lr = entry as u64;
     }
 
+    /// Switches to another task.
+    ///
+    /// It first saves the current task's context from CPU to this place, and then
+    /// restores the next task's context from `next_ctx` to CPU.
     pub fn switch_to(&mut self, next_ctx: &Self) {
         #[cfg(feature = "fp_simd")]
         self.fp_state.switch_to(&next_ctx.fp_state);

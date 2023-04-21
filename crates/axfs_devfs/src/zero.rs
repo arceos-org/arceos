@@ -1,5 +1,8 @@
 use axfs_vfs::{VfsNodeAttr, VfsNodeOps, VfsNodePerm, VfsNodeType, VfsResult};
 
+/// A zero device behaves like `/dev/zero`.
+///
+/// It always returns a chunk of `\0` bytes when read, and all writes are discarded.
 pub struct ZeroDev;
 
 impl VfsNodeOps for ZeroDev {

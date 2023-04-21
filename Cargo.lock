@@ -157,7 +157,7 @@ version = "0.1.0"
 dependencies = [
  "cfg-if",
  "serde",
- "toml",
+ "toml_edit",
 ]
 
 [[package]]
@@ -209,7 +209,6 @@ dependencies = [
  "capability",
  "cfg-if",
  "driver_block",
- "driver_common",
  "fatfs",
  "lazy_init",
  "log",
@@ -290,7 +289,6 @@ dependencies = [
  "axsync",
  "axtask",
  "cfg-if",
- "driver_common",
  "driver_net",
  "lazy_init",
  "log",
@@ -1518,6 +1516,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "toml_datetime"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ab8ed2edee10b50132aed5f331333428b011c99402b5a534154ed15746f9622"
+
+[[package]]
+name = "toml_edit"
+version = "0.19.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "239410c8609e8125456927e6707163a3b1fdb40561e4b803bc041f466ccfdc13"
+dependencies = [
+ "indexmap",
+ "toml_datetime",
+ "winnow",
+]
+
+[[package]]
 name = "tuple_for_each"
 version = "0.1.0"
 dependencies = [
@@ -1546,8 +1561,9 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
 name = "virtio-drivers"
-version = "0.3.0"
-source = "git+https://github.com/rcore-os/virtio-drivers.git?rev=0491154#0491154bfc2f39a976ec77e6abec2844cdba6545"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "42299957c6f61af586fe3eae398c16ec07f33a02579fa1d41ae96156ce437029"
 dependencies = [
  "bitflags 1.3.2",
  "log",
@@ -1814,6 +1830,15 @@ name = "windows_x86_64_msvc"
 version = "0.48.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1a515f5799fe4961cb532f983ce2b23082366b898e52ffbce459c86f67c8378a"
+
+[[package]]
+name = "winnow"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ae8970b36c66498d8ff1d66685dc86b91b29db0c7739899012f63a63814b4b28"
+dependencies = [
+ "memchr",
+]
 
 [[package]]
 name = "x86"

@@ -3,8 +3,11 @@ name = "axdriver"
 version = "0.1.0"
 edition = "2021"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "ArceOS device drivers"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+repository = "https://github.com/rcore-os/arceos/tree/main/modules/axdriver"
+documentation = "https://rcore-os.github.io/arceos/axdriver/index.html"
 
 [features]
 bus-mmio = ["driver_virtio?/bus-mmio"]

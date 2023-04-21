@@ -16,10 +16,10 @@ jobs:
         components: rust-src, clippy, rustfmt
     - name: Clippy for the default target
       run: cargo clippy --all-features
-    - name: Clippy for other targets
-      run: |
-        make clippy ARCH=riscv64
-        make clippy ARCH=aarch64
+    - name: Clippy for riscv64
+      run: make clippy ARCH=riscv64
+    - name: Clippy for aarch64
+      run: make clippy ARCH=aarch64
     - name: Check code format
       run: cargo fmt --all -- --check
 

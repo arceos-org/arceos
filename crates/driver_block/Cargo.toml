@@ -3,8 +3,11 @@ name = "driver_block"
 version = "0.1.0"
 edition = "2021"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "Common traits and types for block storage drivers"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+repository = "https://github.com/rcore-os/arceos/tree/main/crates/driver_common"
+documentation = "https://rcore-os.github.io/arceos/driver_common/index.html"
 
 [features]
 ramdisk = []

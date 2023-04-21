@@ -3,6 +3,7 @@ use driver_block::BlockDriverOps;
 use driver_common::{BaseDriverOps, DevResult, DeviceType};
 use virtio_drivers::{device::blk::VirtIOBlk as InnerDev, transport::Transport, Hal};
 
+/// The VirtIO block device driver.
 pub struct VirtIoBlkDev<H: Hal, T: Transport> {
     inner: InnerDev<H, T>,
 }
@@ -11,6 +12,8 @@ unsafe impl<H: Hal, T: Transport> Send for VirtIoBlkDev<H, T> {}
 unsafe impl<H: Hal, T: Transport> Sync for VirtIoBlkDev<H, T> {}
 
 impl<H: Hal, T: Transport> VirtIoBlkDev<H, T> {
+    /// Creates a new driver instance and initializes the device, or returns
+    /// an error if any step fails.
     pub fn try_new(transport: T) -> DevResult<Self> {
         Ok(Self {
             inner: InnerDev::new(transport).map_err(as_dev_err)?,

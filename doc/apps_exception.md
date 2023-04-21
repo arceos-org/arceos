@@ -27,7 +27,7 @@ After executed all initial actions, then arceos calls `main` function in `except
 ## step2
 
 ``` Rust
-fn rasie_break_exception() {
+fn raise_break_exception() {
     unsafe {
         #[cfg(target_arch = "x86_64")]
         asm!("int3");
@@ -41,7 +41,7 @@ fn rasie_break_exception() {
 #[no_mangle]
 fn main() {
     println!("Running exception tests...");
-    rasie_break_exception();
+    raise_break_exception();
     println!("Exception tests run OK!");
 }
 ```
