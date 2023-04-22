@@ -21,12 +21,17 @@ fn psci_hvc_call(func: u32, arg0: usize, arg1: usize, arg2: usize) -> usize {
     ret
 }
 
+/// Shutdown the whole system, including all CPUs.
 pub fn system_off() -> ! {
     info!("Shutting down...");
     psci_hvc_call(PSCI_SYSTEM_OFF, 0, 0, 0);
     unreachable!("It should shutdown!")
 }
 
+/// Starts a secondary CPU with the given ID.
+///
+/// When the CPU is started, it will jump to the given entry and set the
+/// corresponding register to the given argument.
 pub fn cpu_on(id: usize, entry: usize, arg: usize) {
     debug!("Starting core {}...", id);
     assert_eq!(psci_hvc_call(PSCI_CPU_ON, id, entry, arg), 0);

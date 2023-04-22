@@ -1,3 +1,5 @@
+//! Platform-specific operations.
+
 cfg_if::cfg_if! {
     if #[cfg(all(
         any(target_arch = "riscv32", target_arch = "riscv64"),

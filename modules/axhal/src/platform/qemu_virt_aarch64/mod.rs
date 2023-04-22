@@ -22,6 +22,7 @@ extern "C" {
     fn exception_vector_base();
 }
 
+/// Initializes the platform for the primary CPU.
 pub(crate) fn platform_init(cpu_id: usize, _dtb: *const u8) {
     crate::mem::clear_bss();
     crate::arch::set_exception_vector_base(exception_vector_base as usize);
@@ -32,6 +33,7 @@ pub(crate) fn platform_init(cpu_id: usize, _dtb: *const u8) {
     self::generic_timer::init();
 }
 
+/// Initializes the platform for secondary CPUs.
 #[cfg(feature = "smp")]
 pub(crate) fn platform_init_secondary(cpu_id: usize, _dtb: *const u8) {
     crate::arch::set_exception_vector_base(exception_vector_base as usize);

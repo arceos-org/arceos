@@ -1,31 +1,33 @@
 # INTRODUCTION
 
 | App | Extra modules | Enabled features | Description |
-| [echoserver](apps/net/echoserver/) | axalloc, axdriver, axnet, axtask | alloc, paging, net, multitask | A multi-threaded TCP server that reverses messages sent by the client |
+|-|-|-|-|
+| [echoserver](../apps/net/echoserver/) | axalloc, axdriver, axnet, axtask | alloc, paging, net, multitask | A multi-threaded TCP server that reverses messages sent by the client |
 
 # RUN
 
-**You might need to change the ip address (`LOCAL_TP`) in `apps/net/echoserver/src/main.rs`.**
-
-The following example changes it to `127.0.0.1`.
-
-```
-make A=apps/net/echoserver NET=y run
+```console
+$ make A=apps/net/echoserver NET=y run
 ...
 Hello, echo server!
-listen on: 127.0.0.1:5555
+listen on: 10.0.2.15:5555
 ```
 
-In another shell, use `telnet` to view the reversed echo message:
+In another shell, use `telnet` (or `nc`) to connect to localhost (`127.0.0.1`) to view the reversed echo message:
 
-```
-> telnet localhost 5555
-
-Trying ::1...
-telnet: connect to address ::1: Connection refused
+```console
+$ telnet localhost 5555
 Trying 127.0.0.1...
 Connected to localhost.
 Escape character is '^]'.
+hello
+olleh
+12345
+54321
+```
+
+```console
+$ nc 127.0.0.1 5555
 hello
 olleh
 12345

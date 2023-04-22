@@ -5,6 +5,7 @@ use driver_common::{BaseDriverOps, DevResult, DeviceType};
 use driver_display::{DisplayDriverOps, DisplayInfo, FrameBuffer};
 use virtio_drivers::{device::gpu::VirtIOGpu as InnerDev, transport::Transport, Hal};
 
+/// The VirtIO GPU device driver.
 pub struct VirtIoGpuDev<H: Hal, T: Transport> {
     inner: InnerDev<'static, H, T>,
     info: DisplayInfo,
@@ -14,6 +15,8 @@ unsafe impl<H: Hal, T: Transport> Send for VirtIoGpuDev<H, T> {}
 unsafe impl<H: Hal, T: Transport> Sync for VirtIoGpuDev<H, T> {}
 
 impl<H: Hal, T: Transport> VirtIoGpuDev<H, T> {
+    /// Creates a new driver instance and initializes the device, or returns
+    /// an error if any step fails.
     pub fn try_new(transport: T) -> DevResult<Self> {
         let mut virtio = InnerDev::new(transport).unwrap();
 

@@ -1,20 +1,17 @@
 # INTRODUCTION
 | App | Extra modules | Enabled features | Description |
 |-|-|-|-|
-| [httpserver](apps/net/httpserver) | axalloc, axnet, axdriver, axtask | alloc, paging, net, multitask | A multi-threaded HTTP server that serves a static web page |
-
+| [httpserver](../apps/net/httpserver) | axalloc, axnet, axdriver, axtask | alloc, paging, net, multitask | A multi-threaded HTTP server that serves a static web page |
 
 # RUN
 
+```shell
+make A=apps/net/httpserver SMP=4 NET=y LOG=info run
 ```
-make A=apps/net/httpserver SMP=4 NET=y LOG=debug run
-```
-
-
 
 # RESULT
 
-```Rust
+```
 ...
 [  0.101078 axtask:75]   use FIFO scheduler.
 [  0.102733 axdriver:59] Initialize device drivers...
@@ -41,11 +38,29 @@ Hello, ArceOS HTTP server!
 listen on: http://10.0.2.15:5555/
 ```
 
+Open http://127.0.0.1:5555/ in your browser, or use command lines in another shell to view the web page:
 
+```console
+$ curl http://127.0.0.1:5555/
+<html>
+<head>
+  <title>Hello, ArceOS</title>
+</head>
+<body>
+  <center>
+    <h1>Hello, <a href="https://github.com/rcore-os/arceos">ArceOS</a></h1>
+  </center>
+  <hr>
+  <center>
+    <i>Powered by <a href="https://github.com/rcore-os/arceos/tree/main/apps/net/httpserver">ArceOS example HTTP server</a> v0.1.0</i>
+  </center>
+</body>
+</html>
+```
 
 # STEPS
 
-## step 1 
+## step 1
 [init](./init.md)
 
 After executed all initial actions, then arceos calls `main` function in `memtest` app.

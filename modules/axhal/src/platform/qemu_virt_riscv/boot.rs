@@ -21,6 +21,7 @@ unsafe fn init_mmu() {
     riscv::asm::sfence_vma_all();
 }
 
+/// The earliest entry point for the primary CPU.
 #[naked]
 #[no_mangle]
 #[link_section = ".text.boot"]
@@ -67,6 +68,7 @@ unsafe extern "C" fn _start() -> ! {
     )
 }
 
+/// The earliest entry point for secondary CPUs.
 #[cfg(feature = "smp")]
 #[naked]
 #[no_mangle]

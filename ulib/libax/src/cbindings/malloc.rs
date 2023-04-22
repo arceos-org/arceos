@@ -19,7 +19,7 @@ struct MemoryControlBlock {
 ///
 /// Returns 0 on failure (the current implementation does not trigger an exception)
 #[no_mangle]
-pub extern "C" fn ax_malloc(size: usize) -> *mut c_void {
+pub unsafe extern "C" fn ax_malloc(size: usize) -> *mut c_void {
     // Allocate `(actual length) + 8`. The lowest 8 Bytes are stored in the actual allocated space size.
     // This is because free(uintptr_t) has only one parameter representing the address,
     // So we need to save in advance to know the size of the memory space that needs to be released
@@ -30,17 +30,17 @@ pub extern "C" fn ax_malloc(size: usize) -> *mut c_void {
             control_block.size = size;
             (addr + 8) as *mut c_void
         }
-        Err(_) => 0 as *mut c_void,
+        Err(_) => core::ptr::null_mut(),
     }
 }
 
-/// Release memory.
+/// Deallocate memory.
 ///
 /// (WARNING) If the address to be released does not match the allocated address, an error should
 /// occur, but it will NOT be checked out. This is due to the global allocator `Buddy_system`
 /// (currently used) does not check the validity of address to be released.
 #[no_mangle]
-pub extern "C" fn ax_free(addr: *mut c_void) {
+pub unsafe extern "C" fn ax_free(addr: *mut c_void) {
     let size = {
         let control_block = unsafe {
             &mut *((addr as usize - size_of::<MemoryControlBlock>()) as *mut MemoryControlBlock)

@@ -1,16 +1,15 @@
+use super::LWIP_MUTEX;
 use alloc::collections::VecDeque;
 use axdriver::NetDevices;
 use axsync::Mutex;
 use core::{cell::RefCell, ffi::c_void};
-use driver_common::DevError;
-use driver_net::{NetBuffer, NetDriverOps};
+use driver_net::{DevError, NetBuffer, NetDriverOps};
 use lazy_init::LazyInit;
 use lwip_rust::bindings::{
     err_enum_t_ERR_OK, err_enum_t_ERR_WOULDBLOCK, err_t, etharp_output, ethernet_input,
-    ethip6_output, ip4_addr_t, ip_addr__bindgen_ty_1, ip_addr_t, lwip_htonl, lwip_init,
-    lwip_ip_addr_type_IPADDR_TYPE_V4, lwiperf_start_tcp_server, netif, netif_add,
-    netif_set_default, netif_set_link_up, netif_set_up, pbuf, pbuf_alloc, pbuf_layer_PBUF_RAW,
-    pbuf_type_PBUF_POOL, NETIF_FLAG_BROADCAST, NETIF_FLAG_ETHARP, NETIF_FLAG_ETHERNET,
+    ethip6_output, ip4_addr_t, lwip_htonl, lwip_init, netif, netif_add, netif_set_default,
+    netif_set_link_up, netif_set_up, pbuf, pbuf_alloc, pbuf_layer_PBUF_RAW, pbuf_type_PBUF_POOL,
+    sys_check_timeouts, NETIF_FLAG_BROADCAST, NETIF_FLAG_ETHARP, NETIF_FLAG_ETHERNET,
 };
 
 const RX_BUF_QUEUE_SIZE: usize = 64;
@@ -160,6 +159,9 @@ fn ip4_addr_gen(a: u8, b: u8, c: u8, d: u8) -> ip4_addr_t {
 }
 
 pub fn init(net_devs: NetDevices) {
+    LWIP_MUTEX.init_by(Mutex::new(()));
+    let _guard = LWIP_MUTEX.lock();
+
     let mut ipaddr: ip4_addr_t = ip4_addr_gen(10, 0, 2, 15); // QEMU user networking default IP
     let mut netmask: ip4_addr_t = ip4_addr_gen(255, 255, 255, 0);
     let mut gw: ip4_addr_t = ip4_addr_gen(10, 0, 2, 2); // QEMU user networking gateway
@@ -192,18 +194,26 @@ pub fn init(net_devs: NetDevices) {
         netif_set_default(&mut ETH0.netif.lock().0);
     }
 
-    let ipaddr: ip_addr_t = ip_addr_t {
-        u_addr: ip_addr__bindgen_ty_1 { ip4: ipaddr },
-        type_: lwip_ip_addr_type_IPADDR_TYPE_V4 as u8,
-    };
-    unsafe {
-        lwiperf_start_tcp_server(&ipaddr, 5555, None, core::ptr::null_mut());
-    }
+    // let ipaddr: ip_addr_t = ip_addr_t {
+    //     u_addr: ip_addr__bindgen_ty_1 { ip4: ipaddr },
+    //     type_: lwip_ip_addr_type_IPADDR_TYPE_V4 as u8,
+    // };
+    // unsafe {
+    //     lwiperf_start_tcp_server(&ipaddr, 5555, None, core::ptr::null_mut());
+    // }
+    drop(_guard);
 
-    loop {
-        unsafe {
-            ETH0.poll();
-        }
-        // sys_check_timeouts();
+    // loop {
+    //     lwip_loop_once();
+    // }
+}
+
+pub fn lwip_loop_once() {
+    debug!("lwip_loop_once");
+    let guard = LWIP_MUTEX.lock();
+    unsafe {
+        ETH0.poll();
+        sys_check_timeouts();
     }
+    drop(guard);
 }

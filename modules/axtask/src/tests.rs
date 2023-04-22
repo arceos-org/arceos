@@ -9,7 +9,7 @@ static SERIAL: Mutex<()> = Mutex::new(());
 #[test]
 fn test_sched_fifo() {
     let _lock = SERIAL.lock();
-    INIT.call_once(|| axtask::init_scheduler());
+    INIT.call_once(axtask::init_scheduler);
 
     const NUM_TASKS: usize = 10;
     static FINISHED_TASKS: AtomicUsize = AtomicUsize::new(0);
@@ -30,7 +30,7 @@ fn test_sched_fifo() {
 #[test]
 fn test_fp_state_switch() {
     let _lock = SERIAL.lock();
-    INIT.call_once(|| axtask::init_scheduler());
+    INIT.call_once(axtask::init_scheduler);
 
     const NUM_TASKS: usize = 5;
     const FLOATS: [f64; NUM_TASKS] = [
@@ -42,14 +42,14 @@ fn test_fp_state_switch() {
     ];
     static FINISHED_TASKS: AtomicUsize = AtomicUsize::new(0);
 
-    for i in 0..NUM_TASKS {
+    for (i, float) in FLOATS.iter().enumerate() {
         axtask::spawn(move || {
-            let mut value = FLOATS[i] + i as f64;
+            let mut value = float + i as f64;
             axtask::yield_now();
             value -= i as f64;
 
             println!("Float {} = {}", i, value);
-            assert!((value - FLOATS[i]).abs() < 1e-9);
+            assert!((value - float).abs() < 1e-9);
             FINISHED_TASKS.fetch_add(1, Ordering::Relaxed);
         });
     }
@@ -61,7 +61,7 @@ fn test_fp_state_switch() {
 #[test]
 fn test_wait_queue() {
     let _lock = SERIAL.lock();
-    INIT.call_once(|| axtask::init_scheduler());
+    INIT.call_once(axtask::init_scheduler);
 
     const NUM_TASKS: usize = 10;
 

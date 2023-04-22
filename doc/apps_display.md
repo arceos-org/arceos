@@ -1,17 +1,18 @@
 # INTRODUCTION
 | App | Extra modules | Enabled features | Description |
 |-|-|-|-|
-| [display](apps/display/) | embedded-graphics, axdisplay, axdriver | alloc, paging, display | Display some graphics in a new window |
+| [display](../apps/display/) | embedded-graphics, axdisplay, axdriver | alloc, paging, display | Display some graphics in a new window |
 
 # RUN
+
 ```bash
-make A=apps/display SMP=4 GRAPHIC=y LOG=debug run
+make A=apps/display GRAPHIC=y LOG=debug run
 ```
 
 # RESULT
+
 ```text
 ...
-[  0.249873 0 axhal::arch::riscv::trap:13] Exception(Breakpoint) @ 0xffffffc08020021c
 [  0.408067 axdriver:59] Initialize device drivers...
 [  0.410941 driver_virtio:50] Detected virtio MMIO device with vendor id: 0x554D4551, device type: GPU, version: Legacy
 [  0.414473 virtio_drivers::device::gpu:47] Device features EDID | NOTIFY_ON_EMPTY | ANY_LAYOUT | RING_INDIRECT_DESC | RING_EVENT_IDX
@@ -25,11 +26,12 @@ make A=apps/display SMP=4 GRAPHIC=y LOG=debug run
 ...
 (never end)
 ```
-![display](display.png)
+![display](figures/display.png)
 
 # STEPS
 
-## step1 
+## step1
+
 ``` rust
 let mut board = DrawingBoard::new();
 board.disp.clear(Rgb888::BLACK).unwrap();
@@ -96,7 +98,7 @@ graph TD;
     C --> D
 ```
 
-## step3 
+## step3
 ``` rust
 loop {
     core::hint::spin_loop();

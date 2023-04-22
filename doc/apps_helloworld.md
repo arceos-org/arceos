@@ -1,14 +1,17 @@
 # INTRODUCTION
 | App | Extra modules | Enabled features | Description |
 |-|-|-|-|
-| [helloworld](apps/helloworld/) | | | A minimal app that just prints a string |
+| [helloworld](../apps/helloworld/) | | | A minimal app that just prints a string |
 
 # RUN
-```
+
+```shell
 make A=apps/helloworld SMP=4 LOG=debug run
 ```
+
 # STEPS
-## step1 
+
+## step1
 [init](./init.md)
 
 After executed all initial actions, then arceos calls `main` function in `helloworld` app.
@@ -29,14 +32,14 @@ graph TD;
     B --> C[libax:io::__print_impl];
     C --> D[INLINE_LOCK=Mutex::new];
     C --> _guard=INLINE_LOCK.lock;
-    C --> E["stdout().write_fmt(args)"]; 
+    C --> E["stdout().write_fmt(args)"];
 ```
 
 ### step2.1
 
 ```mermaid
 graph TD;
-    T["stdout()"] --> A["libax::io::stdio.rs::stdout()"]; 
+    T["stdout()"] --> A["libax::io::stdio.rs::stdout()"];
     A --> B["INSTANCE: Mutex<StdoutRaw> = Mutex::new(StdoutRaw)"];
     A --> C["return Stdout { inner: &INSTANCE }"];
 ```

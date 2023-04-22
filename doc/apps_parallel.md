@@ -1,33 +1,70 @@
 # INTRODUCTION
 
 | App | Extra modules | Enabled features | Description |
-| [parallel](apps/task/parallel/) | axalloc, axtask | alloc, paging, multitask, sched_fifo | Parallel computing test (to test synchronization & mutex) |
+|-|-|-|-|
+| [parallel](../apps/task/parallel/) | axalloc, axtask | alloc, paging, multitask, sched_fifo | Parallel computing test (to test synchronization & mutex) |
 
 # RUN
 
+## Without preemption (FIFO scheduler)
+
+```shell
+make A=apps/task/parallel LOG=info run
 ```
-make A=apps/task/parallel run 
+
+## With preemption (RR scheduler)
+
+```shell
+make A=apps/task/parallel LOG=info APP_FEATURES=preempt run
+```
+
+## Using multicore
+
+```shell
+make A=apps/task/parallel LOG=info SMP=4 run
+```
+
+# RESULT
+
+```console
+$ make A=apps/task/parallel APP_FEATURES=preempt SMP=4 run
 ...
-part 0: TaskId(4) [0, 125000)
-part 1: TaskId(5) [125000, 250000)
-part 2: TaskId(6) [250000, 375000)
-part 3: TaskId(7) [375000, 500000)
-part 4: TaskId(8) [500000, 625000)
-part 5: TaskId(9) [625000, 750000)
-part 6: TaskId(10) [750000, 875000)
-part 7: TaskId(11) [875000, 1000000)
-part 8: TaskId(12) [1000000, 1125000)
-part 9: TaskId(13) [1125000, 1250000)
-part 10: TaskId(14) [1250000, 1375000)
-part 11: TaskId(15) [1375000, 1500000)
-part 12: TaskId(16) [1500000, 1625000)
-part 13: TaskId(17) [1625000, 1750000)
-part 14: TaskId(18) [1750000, 1875000)
-part 15: TaskId(19) [1875000, 2000000)
-part 15: TaskId(19) finished
-main task woken up! timeout=true
+part 0: TaskId(7) [0, 125000)
+part 3: TaskId(10) [375000, 500000)
+part 1: TaskId(8) [125000, 250000)
+part 2: TaskId(9) [250000, 375000)
+part 4: TaskId(11) [500000, 625000)
+part 5: TaskId(12) [625000, 750000)
+part 6: TaskId(13) [750000, 875000)
+part 7: TaskId(14) [875000, 1000000)
+part 8: TaskId(15) [1000000, 1125000)
+part 9: TaskId(16) [1125000, 1250000)
+part 10: TaskId(17) [1250000, 1375000)
+part 11: TaskId(18) [1375000, 1500000)
+part 12: TaskId(19) [1500000, 1625000)
+part 13: TaskId(20) [1625000, 1750000)
+part 14: TaskId(21) [1750000, 1875000)
+part 15: TaskId(22) [1875000, 2000000)
+part 15: TaskId(22) finished
+part 3: TaskId(10) finished
+part 2: TaskId(9) finished
+part 1: TaskId(8) finished
+part 0: TaskId(7) finished
+part 7: TaskId(14) finished
+part 4: TaskId(11) finished
+part 6: TaskId(13) finished
+part 5: TaskId(12) finished
+part 8: TaskId(15) finished
+part 10: TaskId(17) finished
+part 9: TaskId(16) finished
+part 11: TaskId(18) finished
+part 13: TaskId(20) finished
+part 14: TaskId(21) finished
+part 12: TaskId(19) finished
+main task woken up! timeout=false
 sum = 61783189038
 Parallel summation tests run OK!
+[  1.219708 3:2 axhal::platform::qemu_virt_aarch64::psci:25] Shutting down...
 ```
 
 # PROCESS

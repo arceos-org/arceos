@@ -3,18 +3,21 @@ name = "axhal"
 version = "0.1.0"
 edition = "2021"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "ArceOS hardware abstraction layer, provides unified APIs for platform-specific operations"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+repository = "https://github.com/rcore-os/arceos/tree/main/modules/axhal"
+documentation = "https://rcore-os.github.io/arceos/axhal/index.html"
 
 [features]
 smp = []
 fp_simd = []
+paging = ["axalloc", "page_table"]
 platform-qemu-virt-riscv = ["axconfig/platform-qemu-virt-riscv"]
 platform-qemu-virt-aarch64 = [
     "axconfig/platform-qemu-virt-aarch64",
     "dep:page_table_entry", "dep:ratio",
 ]
-paging = ["axalloc", "page_table"]
 default = []
 
 [dependencies]
