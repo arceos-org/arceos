@@ -4,6 +4,8 @@
 
 ## 本周进展
 
+初步完成上层接口适配，代码量约 400 行。
+
 ### 上周遗留问题
 
 #### Timer 适配
@@ -34,30 +36,36 @@
 
 - [x] `Ipv4Addr`
 - [x] `SocketAddr`
-- [ ] `TcpSocket`
+- [x] `TcpSocket`
   - [x] `pub fn new() -> Self`
-  - [ ] `pub fn local_addr(&self) -> AxResult<SocketAddr>`
-  - [ ] `pub fn peer_addr(&self) -> AxResult<SocketAddr>`
+  - [x] `pub fn local_addr(&self) -> AxResult<SocketAddr>`
+  - [x] `pub fn peer_addr(&self) -> AxResult<SocketAddr>`
   - [x] `pub fn connect(&mut self, _addr: SocketAddr) -> AxResult`
-  - [ ] `pub fn bind(&mut self, _addr: SocketAddr) -> AxResult`
-  - [ ] `pub fn listen(&mut self) -> AxResult`
-  - [ ] `pub fn accept(&mut self) -> AxResult<TcpSocket>`
-  - [ ] `pub fn shutdown(&self) -> AxResult`
+  - [x] `pub fn bind(&mut self, _addr: SocketAddr) -> AxResult`
+  - [x] `pub fn listen(&mut self) -> AxResult`
+  - [x] `pub fn accept(&mut self) -> AxResult<TcpSocket>`
+  - [x] `pub fn shutdown(&self) -> AxResult`
   - [x] `pub fn recv(&self, _buf: &mut [u8]) -> AxResult<usize>`
   - [x] `pub fn send(&self, _buf: &[u8]) -> AxResult<usize>`
-  - [ ] `fn drop(&mut self) {}`
+  - [x] `fn drop(&mut self) {}`
 - [x] `pub(crate) fn init(_net_devs: NetDevices)`
 
 #### 关于 `TcpSocket` 的实现
 
 ```rust
+struct TcpPcbPointer(*mut tcp_pcb);
+unsafe impl Send for TcpPcbPointer {}
+struct PbuffPointer(*mut pbuf);
+unsafe impl Send for PbuffPointer {}
+
 struct TcpSocketInner {
     remote_closed: bool,
     connect_result: i8,
-    recv_queue: VecDeque<*mut pbuf>,
+    recv_queue: VecDeque<PbuffPointer>,
+    accept_queue: VecDeque<TcpSocket>,
 }
 pub struct TcpSocket {
-    pcb: *mut tcp_pcb,
+    pcb: TcpPcbPointer,
     inner: Pin<Box<TcpSocketInner>>,
 }
 ```
@@ -126,7 +134,22 @@ pub fn connect(&mut self, addr: SocketAddr) -> AxResult {
 
 ![](./pic/week9_demo2.png)
 
+#### httpserver
+
+`make A=apps/net/httpserver/ ARCH=riscv64 LOG=trace NET=y MODE=debug run`
+
+![](./pic/week9_demo3.png)
+
+#### ab 测速
+
+`Requests per second:    4675.87 [#/sec] (mean)`
+
+低于 `week7.md` 中 `smoltcp` 的 `7753.343`
+
+容易卡死，待查错。
+
 ## 下周计划
 
-- 
+- 进一步完善接口，并 debug
+- 学习 lwip 如何做系统层适配
 
