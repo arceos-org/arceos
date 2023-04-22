@@ -9,7 +9,6 @@
 //!   in use. By default, this feature is disabled.
 
 #![cfg_attr(not(test), no_std)]
-#![feature(const_trait_impl)]
 
 mod base;
 

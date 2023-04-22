@@ -5,7 +5,7 @@ graph TD;
     A --> P[platform_init];
     A --> B[axruntime::rust_main];
     P --> P1["axhal::mem::clear_bss()"];
-    P --> P2["axhal::arch::riscv::set_tap_vector_base()"];
+    P --> P2["axhal::arch::riscv::set_trap_vector_base()"];
     P --> P3["axhal::cpu::init_percpu()"];
     P --> P4["axhal::platform::qemu_virt_riscv::irq.rs::init()"];
     P --> P5["axhal::platform::qemu_virt_riscv::time.rs::init()"];

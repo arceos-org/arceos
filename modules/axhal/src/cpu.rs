@@ -1,3 +1,5 @@
+//! CPU-related operations.
+
 #[percpu::def_percpu]
 static CPU_ID: usize = 0;
 
@@ -7,17 +9,23 @@ static IS_BSP: bool = false;
 #[percpu::def_percpu]
 static CURRENT_TASK_PTR: usize = 0;
 
+/// Returns the ID of the current CPU.
 #[inline]
 pub fn this_cpu_id() -> usize {
     CPU_ID.read_current()
 }
 
+/// Returns whether the current CPU is the primary CPU (aka the bootstrap
+/// processor or BSP)
 #[inline]
 pub fn this_cpu_is_bsp() -> bool {
     IS_BSP.read_current()
 }
 
-/// Get the current task pointer without preemption.
+/// Gets the pointer to the current task with preemption-safety.
+///
+/// Preemption may be enabled when calling this function. This function will
+/// guarantee the correctness even the current task is preempted.
 #[inline]
 pub fn current_task_ptr<T>() -> *const T {
     #[cfg(target_arch = "x86_64")]
@@ -39,11 +47,14 @@ pub fn current_task_ptr<T>() -> *const T {
     }
 }
 
-/// Set the current task pointer without preemption.
+/// Sets the pointer to the current task with preemption-safety.
+///
+/// Preemption may be enabled when calling this function. This function will
+/// guarantee the correctness even the current task is preempted.
 ///
 /// # Safety
 ///
-/// The given `ptr` must be poninted to a valid task structure.
+/// The given `ptr` must be pointed to a valid task structure.
 #[inline]
 pub unsafe fn set_current_task_ptr<T>(ptr: *const T) {
     #[cfg(target_arch = "x86_64")]

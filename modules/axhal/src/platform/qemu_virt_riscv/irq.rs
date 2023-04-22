@@ -18,6 +18,7 @@ pub(super) const S_EXT: usize = INTC_IRQ_BASE + 9;
 
 static TIMER_HANDLER: LazyInit<IrqHandler> = LazyInit::new();
 
+/// The maximum number of IRQs.
 pub const MAX_IRQ_COUNT: usize = 1024;
 
 macro_rules! with_cause {
@@ -30,12 +31,14 @@ macro_rules! with_cause {
     };
 }
 
+/// Enables or disables the given IRQ.
 pub fn set_enable(scause: usize, _enabled: bool) {
     if scause == S_EXT {
         // TODO: set enable in PLIC
     }
 }
 
+/// Registers an IRQ handler for the given IRQ.
 pub fn register_handler(scause: usize, handler: IrqHandler) -> bool {
     with_cause!(
         scause,
@@ -49,6 +52,11 @@ pub fn register_handler(scause: usize, handler: IrqHandler) -> bool {
     )
 }
 
+/// Dispatches the IRQ.
+///
+/// This function is called by the common interrupt handler. It looks
+/// up in the IRQ handler table and calls the corresponding handler. If
+/// necessary, it also acknowledges the interrupt controller after handling.
 pub fn dispatch_irq(scause: usize) {
     with_cause!(
         scause,

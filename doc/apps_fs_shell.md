@@ -227,10 +227,10 @@ graph TD
 
 ```mermaid
 graph TD
-	lib_mkdir[libax::fs::create_dir] --> builder_create["DirBuilder::create"]
+	lib_mkdir[libax::fs::create_dir] --> builder_create["axfs::api::DirBuilder::create"]
 	builder_create --> root_create[axfs::root::create_dir] --> lookup[axfs::root::lookup]
 	lookup -..-> |exists/other error| err(Return error)
-	builder_create -->|type=VfsNodeType::Dir| node_create[axfs_vfs::VfsNodeOps::create] --> fs_impl[[FS implementation]]
+	root_create -->|type=VfsNodeType::Dir| node_create[axfs_vfs::VfsNodeOps::create] --> fs_impl[[FS implementation]]
 
 	lookup --> vfs_lookup["axfs_vfs::VfsNodeOps::lookup"] --> fs_impl[[FS implementation]]
 ```
@@ -284,11 +284,14 @@ graph TD
 
   root_rmdir -.-> |empty/is root/invalid/permission denied| ret_err(Return error)
 
-  root_rmdir --> lookup[axfs::root::lookup] --> vfs_lookup["axfs_vfs::VfsNodeOps::lookup"]
-  	--> fs_impl1[[FS implementation]]
+  root_rmdir --> lookup[axfs::root::lookup] --> vfs_lookup["axfs_vfs::VfsNodeOps::lookup"] ---> fs_impl[[FS implementation]]
   lookup -...-> |not found| ret_err
-  root_rmdir --> meta[axfs_vfs::VfsNodeOps::get_attr] --> fs_impl2[[FS implementation]]
+
+  root_rmdir --> meta[axfs_vfs::VfsNodeOps::get_attr] --> fs_impl
   meta -..-> |not a dir/permission denied| ret_err
+
+  root_rmdir --> remove_[axfs_vfs::VfsNodeOps::remove] ---> fs_impl
+
 ```
 
 ### Remove file
@@ -302,5 +305,6 @@ graph TD
   lookup -.-> |not found| ret_err
   root_rm ---> meta[axfs_vfs::VfsNodeOps::get_attr] ---> fs_impl
   meta -..-> |not a file/permission denied| ret_err(Return error)
+  root_rm --> remove_[axfs_vfs::VfsNodeOps::remove] ---> fs_impl
 
 ```

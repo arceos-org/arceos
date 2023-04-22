@@ -129,7 +129,7 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
     ) -> PagingResult {
         if !vaddr.is_aligned(PageSize::Size4K)
             || !paddr.is_aligned(PageSize::Size4K)
-            || !memory_addr::is_aligned(size, PageSize::Size4K)
+            || !memory_addr::is_aligned(size, PageSize::Size4K.into())
         {
             return Err(PagingError::NotAligned);
         }

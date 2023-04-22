@@ -37,8 +37,9 @@ impl<T> FifoTask<T> {
     }
 }
 
-impl<T> const Deref for FifoTask<T> {
+impl<T> Deref for FifoTask<T> {
     type Target = T;
+    #[inline]
     fn deref(&self) -> &Self::Target {
         &self.inner
     }

@@ -44,7 +44,7 @@ impl RamDisk {
     }
 }
 
-impl BaseDriverOps for RamDisk {
+impl const BaseDriverOps for RamDisk {
     fn device_type(&self) -> DeviceType {
         DeviceType::Block
     }

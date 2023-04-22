@@ -19,14 +19,12 @@
 //! [2]: scheduler::RRScheduler
 
 #![cfg_attr(not(test), no_std)]
-#![feature(const_trait_impl)]
 #![feature(doc_cfg)]
-
-#[macro_use]
-extern crate log;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "multitask")] {
+        #[macro_use]
+        extern crate log;
         extern crate alloc;
         mod run_queue;
         mod task;

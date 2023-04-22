@@ -12,7 +12,6 @@
 //!   feature is enabled by default.
 
 #![cfg_attr(all(not(test), not(doc)), no_std)]
-#![feature(const_trait_impl)]
 #![feature(doc_cfg)]
 
 pub use spinlock as spin;

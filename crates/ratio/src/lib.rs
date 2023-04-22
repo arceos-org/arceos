@@ -15,7 +15,6 @@
 //! ```
 
 #![cfg_attr(not(test), no_std)]
-#![feature(const_trait_impl)]
 
 use core::{cmp::PartialEq, fmt};
 
@@ -139,7 +138,8 @@ impl fmt::Debug for Ratio {
     }
 }
 
-impl const PartialEq<Ratio> for Ratio {
+impl PartialEq<Ratio> for Ratio {
+    #[inline]
     fn eq(&self, other: &Ratio) -> bool {
         self.mult == other.mult && self.shift == other.shift
     }
