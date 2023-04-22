@@ -5,18 +5,24 @@ use alloc::{boxed::Box, collections::VecDeque};
 use axerrno::{ax_err, AxResult};
 use axtask::yield_now;
 use lwip_rust::bindings::{
-    err_t, ip_addr_t, pbuf, pbuf_free, tcp_arg, tcp_close, tcp_connect, tcp_new, tcp_output,
-    tcp_pcb, tcp_recv, tcp_recved, tcp_write,
+    err_t, ip_addr_t, pbuf, pbuf_free, tcp_arg, tcp_bind, tcp_close, tcp_connect, tcp_new,
+    tcp_output, tcp_pcb, tcp_recv, tcp_recved, tcp_write,
 };
 
 use super::LWIP_MUTEX;
+
+struct TcpPcbPointer(*mut tcp_pcb);
+unsafe impl Send for TcpPcbPointer {}
+struct PbuffPointer(*mut pbuf);
+unsafe impl Send for PbuffPointer {}
+
 struct TcpSocketInner {
     remote_closed: bool,
     connect_result: i8,
-    recv_queue: VecDeque<*mut pbuf>,
+    recv_queue: VecDeque<PbuffPointer>,
 }
 pub struct TcpSocket {
-    pcb: *mut tcp_pcb,
+    pcb: TcpPcbPointer,
     inner: Pin<Box<TcpSocketInner>>,
 }
 
@@ -47,7 +53,7 @@ extern "C" fn recv_callback(
             unsafe { (*p).len },
             unsafe { (*p).tot_len }
         );
-        socket_inner.recv_queue.push_back(p);
+        socket_inner.recv_queue.push_back(PbuffPointer(p));
     }
     0
 }
@@ -57,7 +63,7 @@ impl TcpSocket {
         debug!("[TcpSocket] new");
         let guard = LWIP_MUTEX.lock();
         let mut socket = Self {
-            pcb: unsafe { tcp_new() },
+            pcb: TcpPcbPointer(unsafe { tcp_new() }),
             inner: Box::pin(TcpSocketInner {
                 remote_closed: false,
                 connect_result: 0,
@@ -66,10 +72,10 @@ impl TcpSocket {
         };
         unsafe {
             tcp_arg(
-                socket.pcb,
+                socket.pcb.0,
                 socket.inner.as_mut().get_mut() as *mut _ as *mut c_void,
             );
-            tcp_recv(socket.pcb, Some(recv_callback));
+            tcp_recv(socket.pcb.0, Some(recv_callback));
         }
         drop(guard);
         socket
@@ -92,7 +98,7 @@ impl TcpSocket {
         let guard = LWIP_MUTEX.lock();
         unsafe {
             debug!("[TcpSocket] tcp_connect");
-            match tcp_connect(self.pcb, &ip_addr, addr.port, Some(connect_callback)) {
+            match tcp_connect(self.pcb.0, &ip_addr, addr.port, Some(connect_callback)) {
                 0 => {}
                 _ => {
                     return ax_err!(Unsupported, "LWIP Unsupported");
@@ -117,8 +123,15 @@ impl TcpSocket {
         }
     }
 
-    pub fn bind(&mut self, _addr: SocketAddr) -> AxResult {
-        ax_err!(Unsupported, "LWIP Unimplemented")
+    pub fn bind(&mut self, addr: SocketAddr) -> AxResult {
+        debug!("[TcpSocket] bind to {:#?}", addr);
+        // TODO: check if already bound
+        let guard = LWIP_MUTEX.lock();
+        unsafe {
+            tcp_bind(self.pcb.0, &addr.addr.into(), addr.port);
+        }
+        drop(guard);
+        Ok(())
     }
 
     pub fn listen(&mut self) -> AxResult {
@@ -145,7 +158,7 @@ impl TcpSocket {
             } else {
                 // TODO: len > buf.len()
                 // TODO: pbuf chain
-                let p: *mut pbuf = self.inner.recv_queue.pop_front().unwrap();
+                let p: *mut pbuf = self.inner.recv_queue.pop_front().unwrap().0;
                 let len = unsafe { (*p).len as usize };
                 let payload = unsafe { (*p).payload };
                 let payload = unsafe { core::slice::from_raw_parts_mut(payload as *mut u8, len) };
@@ -153,7 +166,7 @@ impl TcpSocket {
                 let guard = LWIP_MUTEX.lock();
                 unsafe {
                     pbuf_free(p);
-                    tcp_recved(self.pcb, len as u16);
+                    tcp_recved(self.pcb.0, len as u16);
                 }
                 drop(guard);
                 Ok(len)
@@ -177,14 +190,14 @@ impl TcpSocket {
         let guard = LWIP_MUTEX.lock();
         unsafe {
             debug!("[TcpSocket] tcp_write");
-            match tcp_write(self.pcb, buf.as_ptr() as *const _, buf.len() as u16, 0) {
+            match tcp_write(self.pcb.0, buf.as_ptr() as *const _, buf.len() as u16, 0) {
                 0 => {}
                 _ => {
                     return ax_err!(Unsupported, "LWIP Unsupported");
                 }
             }
             debug!("[TcpSocket] tcp_output");
-            match tcp_output(self.pcb) {
+            match tcp_output(self.pcb.0) {
                 0 => {}
                 _ => {
                     return ax_err!(Unsupported, "LWIP Unsupported");
@@ -202,9 +215,9 @@ impl Drop for TcpSocket {
         debug!("[TcpSocket] drop");
         let guard = LWIP_MUTEX.lock();
         unsafe {
-            tcp_arg(self.pcb, 0 as *mut c_void);
-            tcp_recv(self.pcb, None);
-            match tcp_close(self.pcb) {
+            tcp_arg(self.pcb.0, 0 as *mut c_void);
+            tcp_recv(self.pcb.0, None);
+            match tcp_close(self.pcb.0) {
                 0 => {}
                 e => {
                     error!("LWIP tcp_close failed: {}", e);
