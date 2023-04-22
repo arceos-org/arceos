@@ -94,6 +94,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "arceos-test"
+version = "0.1.0"
+dependencies = [
+ "libax_user",
+]
+
+[[package]]
 name = "arceos-yield"
 version = "0.1.0"
 dependencies = [

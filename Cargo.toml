@@ -11,6 +11,7 @@ members = [
     "apps/task/parallel",
     "apps/task/sleep",
     "apps/task/yield",
+    "apps/test",
 
     "crates/allocator",
     "crates/arm_gic",
