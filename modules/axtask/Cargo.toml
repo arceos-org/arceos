@@ -12,16 +12,19 @@ multitask = [ # without the feature, can still use the empty yield_now() and exi
     "dep:axconfig", "dep:percpu", "dep:spinlock", "dep:lazy_init",
     "dep:memory_addr", "dep:scheduler", "dep:timer_list"
 ]
+paging = []
 preempt = ["percpu?/preempt"]
 user = ["axhal/user"]
 sched_fifo = ["multitask"]
 sched_rr = ["multitask", "preempt"]
-default = ["sched_fifo"]
+default = ["sched_fifo", "user", "multitask", "paging"]
 
 [dependencies]
+bitflags = "= 2.1.0"
 axlog = { path = "../axlog" }
 cfg-if = "1.0"
 log = "0.4"
+axalloc = { path = "../axalloc" }
 axhal = { path = "../axhal" }
 axconfig = { path = "../axconfig", optional = true }
 percpu = { path = "../../crates/percpu", optional = true }
@@ -32,7 +35,8 @@ scheduler = { path = "../../crates/scheduler", optional = true }
 timer_list = { path = "../../crates/timer_list", optional = true }
 kernel_guard = { path = "../../crates/kernel_guard" }
 crate_interface = { path = "../../crates/crate_interface" }
-
+xmas-elf = "0.9.0"
 [dev-dependencies]
+log = "0.4.0"
 rand = "0.8"
 axtask = { path = ".", features = ["test"] }

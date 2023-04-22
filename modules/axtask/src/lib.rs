@@ -1,7 +1,9 @@
 #![cfg_attr(not(test), no_std)]
 #![feature(const_trait_impl)]
+#![feature(drain_filter)]
 #[macro_use]
 extern crate log;
+pub mod signal;
 pub mod syscall;
 struct KernelGuardIfImpl;
 
@@ -24,9 +26,10 @@ impl kernel_guard::KernelGuardIf for KernelGuardIfImpl {
 
 cfg_if::cfg_if! {
 if #[cfg(feature = "multitask")] {
-
+mod copy;
 extern crate alloc;
-
+pub mod mem;
+mod process;
 mod run_queue;
 mod task;
 mod timers;
@@ -90,7 +93,7 @@ pub fn spawn<F>(f: F)
 where
     F: FnOnce() + Send + 'static,
 {
-    let task = TaskInner::new(f, "", axconfig::TASK_STACK_SIZE);
+    let task = TaskInner::new(f, "", axconfig::TASK_STACK_SIZE, current().process.pid);
     RUN_QUEUE.lock().add_task(task);
 }
 

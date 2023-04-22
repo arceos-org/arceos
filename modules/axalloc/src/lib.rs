@@ -30,18 +30,18 @@ impl GlobalAllocator {
         }
     }
 
-    pub fn init(&self, start_vaddr: usize, size: usize) {
+    pub fn init(&self, start: usize, size: usize) {
         assert!(size > MIN_HEAP_SIZE);
         let init_heap_size = MIN_HEAP_SIZE;
-        self.palloc.lock().init(start_vaddr, size);
+        self.palloc.lock().init(start, size);
         let heap_ptr = self
             .alloc_pages(init_heap_size / PAGE_SIZE, PAGE_SIZE)
             .unwrap();
         self.balloc.lock().init(heap_ptr, init_heap_size);
     }
 
-    pub fn add_memory(&self, start_vaddr: usize, size: usize) -> AllocResult {
-        self.balloc.lock().add_memory(start_vaddr, size)
+    pub fn add_memory(&self, start: usize, size: usize) -> AllocResult {
+        self.balloc.lock().add_memory(start, size)
     }
 
     pub fn alloc(&self, size: usize, align_pow2: usize) -> AllocResult<usize> {
@@ -120,6 +120,7 @@ fn handle_alloc_error(layout: Layout) -> ! {
     );
 }
 
+/// 物理页帧分配器
 pub fn global_allocator() -> &'static GlobalAllocator {
     &GLOBAL_ALLOCATOR
 }

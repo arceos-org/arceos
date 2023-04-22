@@ -15,10 +15,16 @@ unsafe fn init_boot_page_table() {
     BOOT_PT_SV39[0x102] = (0x80000 << 10) | 0xef;
 }
 
+pub unsafe fn sfence_vma() {
+    riscv::asm::sfence_vma_all();
+}
+
 unsafe fn init_mmu() {
     let page_table_root = BOOT_PT_SV39.as_ptr() as usize;
-    // satp::set(satp::Mode::Sv39, 0, page_table_root >> 12);
-    // riscv::asm::sfence_vma_all();
+    // 启用页表，并且规定使用唯一的根页表
+    satp::set(satp::Mode::Sv39, 0, page_table_root >> 12);
+    riscv::asm::sfence_vma_all();
+    riscv::register::sstatus::set_sum();
 }
 
 #[naked]
@@ -38,6 +44,9 @@ unsafe extern "C" fn _start() -> ! {
         li      t0, {boot_stack_size}
         add     sp, sp, t0              // setup boot stack
 
+        call    {init_boot_page_table}
+        call    {init_mmu}              // setup boot page table and enabel MMU
+
         li      s2, {phys_virt_offset}  // fix up virtual high address
         add     sp, sp, s2
 
@@ -56,6 +65,8 @@ unsafe extern "C" fn _start() -> ! {
         phys_virt_offset = const PHYS_VIRT_OFFSET,
         boot_stack_size = const TASK_STACK_SIZE,
         boot_stack = sym BOOT_STACK,
+        init_boot_page_table = sym init_boot_page_table,
+        init_mmu = sym init_mmu,
         platform_init = sym super::platform_init,
         rust_main = sym rust_main,
         options(noreturn),

@@ -40,7 +40,7 @@ log-level-trace = ["axlog/log-level-trace"]
 platform-qemu-virt-riscv = ["axhal/platform-qemu-virt-riscv", "axdriver?/bus-mmio"]
 platform-qemu-virt-aarch64 = ["axhal/platform-qemu-virt-aarch64", "axdriver?/bus-mmio"]
 user = ["axruntime/user", "axhal/user", "dep:log"]
-default = ["axtask?/sched_fifo"]
+default = ["axtask?/sched_fifo", "user", "multitask"]
 
 [dependencies]
 log = { version = "0.4", optional = true }

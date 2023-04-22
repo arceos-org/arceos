@@ -8,7 +8,7 @@ use memory_addr::{PhysAddr, VirtAddr, PAGE_SIZE_4K};
 use crate::{GenericPTE, PagingIf, PagingMetaData};
 use crate::{MappingFlags, PageSize, PagingError, PagingResult};
 
-const ENTRY_COUNT: usize = 512;
+pub const ENTRY_COUNT: usize = 512;
 
 const fn p4_index(vaddr: VirtAddr) -> usize {
     (vaddr.as_usize() >> (12 + 27)) & (ENTRY_COUNT - 1)
@@ -265,7 +265,6 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
         if page_size == PageSize::Size2M {
             return Ok(p2e);
         }
-
         let p1 = self.next_table_mut_or_create(p2e)?;
         let p1e = &mut p1[p1_index(vaddr)];
         Ok(p1e)

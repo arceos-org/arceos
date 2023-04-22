@@ -44,7 +44,7 @@ trap_vector_base:
     // sscratch == 0: trap from S mode
     // sscratch != 0: trap from U mode
     csrrw   sp, sscratch, sp            // switch sscratch and sp
-    // 此时sscratch指向了用户栈，sp指向了应用地址空间中trap上下文所在的位置
+    // 此时sscratch指向了用户栈高地址，sp指向了应用地址空间中trap上下文所在的位置
     bnez    sp, .Ltrap_entry_u
 
     csrr    sp, sscratch                // put supervisor sp back

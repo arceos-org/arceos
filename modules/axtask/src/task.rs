@@ -6,9 +6,11 @@ use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 #[cfg(feature = "preempt")]
 use core::sync::atomic::AtomicUsize;
 
-use axhal::arch::TaskContext;
+use axhal::arch::{TaskContext, TrapFrame};
 use memory_addr::{align_up_4k, VirtAddr};
 
+use crate::copy::__copy;
+use crate::process::{first_into_user, Process, KERNEL_PROCESS_ID, PID2PC};
 use crate::{AxTask, AxTaskRef};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -28,6 +30,10 @@ pub struct TaskInner {
     name: &'static str,
     is_idle: bool,
     is_init: bool,
+    /// 所属进程
+    pub process: Arc<Process>,
+    /// 是否是所属进程下的主线程
+    is_leader: AtomicBool,
 
     entry: Option<*mut dyn FnOnce()>,
     state: AtomicU8,
@@ -39,13 +45,14 @@ pub struct TaskInner {
     need_resched: AtomicBool,
     #[cfg(feature = "preempt")]
     preempt_disable_count: AtomicUsize,
-
+    /// 存储当前线程的TrapContext
+    pub trap_frame: UnsafeCell<TrapFrame>,
     kstack: Option<TaskStack>,
     ctx: UnsafeCell<TaskContext>,
 }
 
 impl TaskId {
-    fn new() -> Self {
+    pub fn new() -> Self {
         static ID_COUNTER: AtomicU64 = AtomicU64::new(1);
         Self(ID_COUNTER.fetch_add(1, Ordering::Relaxed))
     }
@@ -86,12 +93,14 @@ impl TaskInner {
 
 // private methods
 impl TaskInner {
-    const fn new_common(id: TaskId, name: &'static str) -> Self {
+    fn new_common(id: TaskId, name: &'static str, process: Arc<Process>) -> Self {
         Self {
             id,
             name,
             is_idle: false,
             is_init: false,
+            process,
+            is_leader: AtomicBool::new(false),
             entry: None,
             state: AtomicU8::new(TaskState::Ready as u8),
             in_wait_queue: AtomicBool::new(false),
@@ -100,16 +109,26 @@ impl TaskInner {
             need_resched: AtomicBool::new(false),
             #[cfg(feature = "preempt")]
             preempt_disable_count: AtomicUsize::new(0),
+            trap_frame: UnsafeCell::new(TrapFrame::default()),
             kstack: None,
             ctx: UnsafeCell::new(TaskContext::new()),
         }
     }
 
-    pub(crate) fn new<F>(entry: F, name: &'static str, stack_size: usize) -> AxTaskRef
+    pub(crate) fn new<F>(
+        entry: F,
+        name: &'static str,
+        stack_size: usize,
+        process_id: u64,
+    ) -> AxTaskRef
     where
         F: FnOnce() + Send + 'static,
     {
-        let mut t = Self::new_common(TaskId::new(), name);
+        let pid2pc = PID2PC.lock();
+        let process = Arc::clone(pid2pc.get(&process_id).unwrap());
+        drop(pid2pc);
+        let mut t = Self::new_common(TaskId::new(), name, process);
+        t.set_leader(true);
         debug!("new task: {}", t.id_name());
         let kstack = TaskStack::alloc(align_up_4k(stack_size));
         t.entry = Some(Box::into_raw(Box::new(entry)));
@@ -125,12 +144,47 @@ impl TaskInner {
 
     pub(crate) fn new_init(name: &'static str) -> AxTaskRef {
         // init_task does not change PC and SP, so `entry` and `kstack` fields are not used.
-        let mut t = Self::new_common(TaskId::new(), name);
+        let pid2pc = PID2PC.lock();
+        let process = Arc::clone(pid2pc.get(&KERNEL_PROCESS_ID).unwrap());
+        drop(pid2pc);
+        let mut t = Self::new_common(TaskId::new(), name, process);
         t.is_init = true;
         if name == "idle" {
             t.is_idle = true;
         }
         Arc::new(AxTask::new(t))
+    }
+
+    /// 获取内核栈栈顶
+    #[inline]
+    pub(crate) fn get_kernel_stack_top(&self) -> Option<usize> {
+        if let Some(kstack) = &self.kstack {
+            return Some(kstack.top().as_usize());
+        }
+        None
+    }
+
+    pub(crate) fn set_leader(&self, is_lead: bool) {
+        self.is_leader.store(is_lead, Ordering::Release);
+    }
+
+    /// 设置Trap上下文
+    pub(crate) fn set_trap_context(&self, app_entry: usize, user_sp: usize) {
+        let now_trap_frame = self.trap_frame.get();
+        unsafe {
+            *now_trap_frame = TrapFrame::app_init_context(app_entry, user_sp);
+        }
+    }
+
+    /// 将trap上下文直接写入到内核栈上
+    /// 注意此时保持sp不变
+    pub(crate) fn set_trap_in_kernel_stack(&self) {
+        let trap_frame_size = core::mem::size_of::<TrapFrame>();
+        let frame_address = self.trap_frame.get();
+        let kernel_base = self.get_kernel_stack_top().unwrap() - trap_frame_size;
+        unsafe {
+            __copy(frame_address, kernel_base);
+        }
     }
 
     #[inline]
@@ -141,6 +195,11 @@ impl TaskInner {
     #[inline]
     pub(crate) fn set_state(&self, state: TaskState) {
         self.state.store(state as u8, Ordering::Release)
+    }
+
+    #[inline]
+    pub(crate) fn is_leader(&self) -> bool {
+        self.is_leader.load(Ordering::Acquire)
     }
 
     #[inline]
@@ -322,16 +381,27 @@ impl Deref for CurrentTask {
         self.0.deref()
     }
 }
-
+#[no_mangle]
 /// 本线程将会执行的函数
 extern "C" fn task_entry() -> ! {
     // release the lock that was implicitly held across the reschedule
     unsafe { crate::RUN_QUEUE.force_unlock() };
     axhal::arch::enable_irqs();
-    let task = crate::current();
+    let task: CurrentTask = crate::current();
     if let Some(entry) = task.entry {
-        unsafe { Box::from_raw(entry)() };
-        // 继续执行对应的函数
+        if task.process.pid == KERNEL_PROCESS_ID {
+            // 是初始调度进程，直接执行即可
+            unsafe { Box::from_raw(entry)() };
+            // 继续执行对应的函数
+        } else {
+            info!("exec task: {}", task.name());
+            // 需要通过切换特权级进入到对应的应用程序
+            let kernel_sp = task.get_kernel_stack_top().unwrap();
+            let frame_address = task.trap_frame.get();
+            // 切换页表已经在switch实现了
+            first_into_user(kernel_sp, frame_address as usize);
+            // 问题：能否回来?
+        }
     }
     // 任务执行完成，释放自我
     crate::exit(0);

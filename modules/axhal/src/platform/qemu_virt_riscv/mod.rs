@@ -1,4 +1,4 @@
-mod boot;
+pub mod boot;
 
 pub mod console;
 pub mod irq;

@@ -2,9 +2,7 @@ use axalloc::global_allocator;
 use page_table::PagingIf;
 
 use crate::mem::{phys_to_virt, virt_to_phys, MemRegionFlags, PhysAddr, VirtAddr, PAGE_SIZE_4K};
-
-pub use page_table::{MappingFlags, PageSize, PagingError, PagingResult};
-
+pub use page_table::{MappingFlags, PageSize, PagingError, PagingResult, ENTRY_COUNT};
 impl From<MemRegionFlags> for MappingFlags {
     fn from(f: MemRegionFlags) -> Self {
         let mut ret = Self::empty();

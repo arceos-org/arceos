@@ -7,7 +7,7 @@ extern crate log;
 
 mod arch;
 mod bits64;
-
+pub use bits64::ENTRY_COUNT;
 use memory_addr::{PhysAddr, VirtAddr};
 
 pub use arch::*;

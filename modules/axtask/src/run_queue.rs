@@ -4,6 +4,7 @@ use lazy_init::LazyInit;
 use scheduler::BaseScheduler;
 use spinlock::SpinNoIrq;
 
+use crate::process::{Process, KERNEL_PROCESS_ID, PID2PC};
 use crate::task::{CurrentTask, TaskState};
 use crate::{AxTaskRef, Scheduler, TaskInner, WaitQueue};
 
@@ -24,9 +25,11 @@ pub(crate) struct AxRunQueue {
 
 impl AxRunQueue {
     pub fn new() -> SpinNoIrq<Self> {
-        let gc_task = TaskInner::new(gc_entry, "gc", axconfig::TASK_STACK_SIZE);
-        let mut scheduler = Scheduler::new();
-        scheduler.add_task(gc_task);
+        let gc_task = TaskInner::new(gc_entry, "gc", axconfig::TASK_STACK_SIZE, KERNEL_PROCESS_ID);
+        gc_task.set_state(TaskState::Running);
+        unsafe { CurrentTask::init_current(gc_task) }
+        let scheduler = Scheduler::new();
+        // scheduler.add_task(gc_task);
         SpinNoIrq::new(Self { scheduler })
     }
 
@@ -34,6 +37,16 @@ impl AxRunQueue {
         debug!("task spawn: {}", task.id_name());
         assert!(task.is_ready());
         self.scheduler.add_task(task);
+    }
+    /// 仅用于exec时清除其他后台线程
+    pub fn remove_task(&mut self, task: &AxTaskRef) {
+        debug!("task remove: {}", task.id_name());
+        // 当前任务不予清除
+        assert!(task.is_running());
+        assert!(!task.is_idle());
+        self.scheduler.remove_task(task);
+        task.set_state(TaskState::Exited);
+        EXITED_TASKS.lock().push_back(task.clone());
     }
 
     pub fn scheduler_timer_tick(&mut self) {
@@ -74,7 +87,8 @@ impl AxRunQueue {
             curr.set_preempt_pending(true);
         }
     }
-
+    /// 线程的退出，需要判断当前线程是否为调度线程。
+    /// 若是调度线程，则需要退出进程内所有程序
     pub fn exit_current(&mut self, exit_code: i32) -> ! {
         let curr = crate::current();
         debug!("task exit: {}, exit_code={}", curr.id_name(), exit_code);
@@ -87,6 +101,27 @@ impl AxRunQueue {
             curr.set_state(TaskState::Exited);
             EXITED_TASKS.lock().push_back(curr.clone());
             WAIT_FOR_EXIT.notify_one_locked(false, self);
+            // 进程回收
+            if curr.is_leader() {
+                let mut inner = curr.process.inner.lock();
+                inner.exit_code = exit_code;
+                inner.is_zombie = true;
+                {
+                    let pid2pc = PID2PC.lock();
+                    let kernel_process = Arc::clone(pid2pc.get(&KERNEL_PROCESS_ID).unwrap());
+                    drop(pid2pc);
+                    // 回收子进程到内核进程下
+                    for child in inner.children.iter() {
+                        child.inner.lock().parent = Some(Arc::clone(&kernel_process));
+                        kernel_process.inner.lock().children.push(Arc::clone(child));
+                    }
+                }
+                // 回收物理页帧
+                inner.memory_set.areas.clear();
+                // 页表不用特意解除，因为整个对象都将被析构
+                drop(inner);
+            }
+            // 当前的进程回收是比较简单的
             self.resched_inner(false);
         }
         unreachable!("task exited!");
@@ -176,7 +211,14 @@ impl AxRunQueue {
             // but won't be dropped until `gc_entry()` is called.
             assert!(Arc::strong_count(prev_task.as_task_ref()) > 1);
             assert!(Arc::strong_count(&next_task) >= 1);
-
+            let page_table_token = if next_task.process.pid == KERNEL_PROCESS_ID {
+                0
+            } else {
+                next_task.process.inner.lock().memory_set.page_table_token()
+            };
+            if page_table_token != 0 {
+                axhal::arch::write_page_table_root(page_table_token.into());
+            }
             CurrentTask::set_current(prev_task, next_task);
             (*prev_ctx_ptr).switch_to(&*next_ctx_ptr);
         }
@@ -202,17 +244,17 @@ fn gc_entry() {
 }
 
 pub(crate) fn init() {
-    const IDLE_TASK_STACK_SIZE: usize = 4096;
-    let idle_task = TaskInner::new(|| crate::run_idle(), "idle", IDLE_TASK_STACK_SIZE);
+    let idle_task = Process::new_kernel();
     IDLE_TASK.with_current(|i| i.init_by(idle_task.clone()));
-
-    let main_task = TaskInner::new_init("main");
-    main_task.set_state(TaskState::Running);
+    let main_task = Process::new("helloworld");
+    main_task.set_state(TaskState::Ready);
 
     RUN_QUEUE.init_by(AxRunQueue::new());
-    unsafe { CurrentTask::init_current(main_task) }
+    RUN_QUEUE.lock().add_task(main_task);
+    // unsafe { CurrentTask::init_current(main_task) }
 }
 
+/// 副核启动
 pub(crate) fn init_secondary() {
     let idle_task = TaskInner::new_init("idle");
     idle_task.set_state(TaskState::Running);
