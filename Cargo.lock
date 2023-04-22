@@ -90,6 +90,10 @@ dependencies = [
 name = "arceos-shell"
 version = "0.1.0"
 dependencies = [
+ "axfs",
+ "axfs_ramfs",
+ "axfs_vfs",
+ "crate_interface",
  "libax",
 ]
 
@@ -216,6 +220,7 @@ dependencies = [
  "axtask",
  "capability",
  "cfg-if",
+ "crate_interface",
  "driver_block",
  "fatfs",
  "lazy_init",
