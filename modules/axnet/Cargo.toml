@@ -31,5 +31,5 @@ features = [
   "alloc", "log",   # no std
   "medium-ethernet",
   "proto-ipv4",
-  "socket-raw", "socket-icmp", "socket-udp", "socket-tcp",
+  "socket-raw", "socket-icmp", "socket-udp", "socket-tcp", "socket-dns"
 ]

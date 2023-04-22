@@ -8,6 +8,7 @@ members = [
     "apps/fs/shell",
     "apps/net/echoserver",
     "apps/net/httpclient",
+    "apps/net/udpserver",
     "apps/net/httpserver",
     "apps/task/parallel",
     "apps/task/sleep",
