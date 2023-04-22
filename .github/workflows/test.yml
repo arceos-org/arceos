@@ -16,7 +16,7 @@ jobs:
         toolchain: nightly
         components: rust-src, llvm-tools-preview
     - name: Run unit tests
-      run: make unit_test_no_fail_fast
+      run: make unittest_no_fail_fast
 
   app-test:
     runs-on: ${{ matrix.os }}

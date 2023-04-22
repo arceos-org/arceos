@@ -102,10 +102,10 @@ fmt_c:
 test:
 	$(call app_test)
 
-unit_test:
+unittest:
 	$(call unit_test)
 
-unit_test_no_fail_fast:
+unittest_no_fail_fast:
 	$(call unit_test,--no-fail-fast)
 
 disk_img:

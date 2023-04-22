@@ -13,6 +13,8 @@
 //!    is enabled by default.
 //! - `devfs`: Mount [`axfs_devfs::DeviceFileSystem`] on `/dev`. This feature is
 //!    enabled by default.
+//! - `ramfs`: Mount [`axfs_ramfs::RamFileSystem`] on `/tmp`. This feature is
+//!    enabled by default.
 //!
 //! [FAT]: https://en.wikipedia.org/wiki/File_Allocation_Table
 

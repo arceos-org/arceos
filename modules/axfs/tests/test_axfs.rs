@@ -177,15 +177,16 @@ fn test_remove_file_dir() -> Result<()> {
     Ok(())
 }
 
-fn test_devfs() -> Result<()> {
+fn test_devfs_ramfs() -> Result<()> {
     const N: usize = 32;
     let mut buf = [1; N];
 
-    // list '/' and check if /dev exists
+    // list '/' and check if /dev and /tmp exist
     let dirents = fs::read_dir("././//.//")?
         .map(|e| e.unwrap().file_name())
         .collect::<Vec<_>>();
     assert!(dirents.contains(&"dev".into()));
+    assert!(dirents.contains(&"tmp".into()));
 
     // read and write /dev/null
     let mut file = File::options().read(true).write(true).open("/dev/./null")?;
@@ -248,6 +249,18 @@ fn test_devfs() -> Result<()> {
     assert_eq!(fs::remove_dir("dev//foo/../foo/../.././/233"), Ok(()));
     assert_err!(fs::remove_dir("very/../dev//"), PermissionDenied);
 
+    // tests in /tmp
+    assert_eq!(fs::metadata("tmp")?.file_type(), FileType::Dir);
+    assert_eq!(fs::create_dir(".///tmp///././dir"), Ok(()));
+    assert_eq!(fs::read_dir("tmp").unwrap().count(), 1);
+    assert_eq!(fs::write(".///tmp///dir//.///test.txt", "test"), Ok(()));
+    assert_eq!(fs::read("tmp//././/dir//.///test.txt"), Ok("test".into()));
+    // assert_err!(fs::remove_dir("dev/../tmp//dir"), DirectoryNotEmpty); // TODO
+    assert_err!(fs::remove_dir("/tmp/dir/../dir"), DirectoryNotEmpty);
+    assert_eq!(fs::remove_file("./tmp//dir//test.txt"), Ok(()));
+    assert_eq!(fs::remove_dir("tmp/dir/.././dir///"), Ok(()));
+    assert_eq!(fs::read_dir("tmp").unwrap().count(), 0);
+
     println!("test_devfs() OK!");
     Ok(())
 }
@@ -264,5 +277,5 @@ fn test_axfs() {
     test_file_permission().expect("test_file_permission() failed");
     test_create_file_dir().expect("test_create_file_dir() failed");
     test_remove_file_dir().expect("test_remove_file_dir() failed");
-    test_devfs().expect("test_devfs() failed");
+    test_devfs_ramfs().expect("test_devfs_ramfs() failed");
 }

@@ -18,6 +18,7 @@ members = [
     "crates/arm_gic",
     "crates/axerrno",
     "crates/axfs_devfs",
+    "crates/axfs_ramfs",
     "crates/axfs_vfs",
     "crates/axio",
     "crates/capability",

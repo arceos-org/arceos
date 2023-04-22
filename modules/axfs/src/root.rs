@@ -162,6 +162,14 @@ pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
             .expect("failed to mount devfs at /dev");
     }
 
+    #[cfg(feature = "ramfs")]
+    {
+        let ramfs = fs::ramfs::RamFileSystem::new();
+        root_dir
+            .mount("/tmp", Arc::new(ramfs))
+            .expect("failed to mount ramfs at /tmp");
+    }
+
     ROOT_DIR.init_by(Arc::new(root_dir));
     CURRENT_DIR.init_by(Mutex::new(ROOT_DIR.clone()));
     *CURRENT_DIR_PATH.lock() = "/".into();

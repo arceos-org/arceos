@@ -209,6 +209,7 @@ dependencies = [
  "axdriver",
  "axerrno",
  "axfs_devfs",
+ "axfs_ramfs",
  "axfs_vfs",
  "axio",
  "axsync",
@@ -223,6 +224,15 @@ dependencies = [
 
 [[package]]
 name = "axfs_devfs"
+version = "0.1.0"
+dependencies = [
+ "axfs_vfs",
+ "log",
+ "spin",
+]
+
+[[package]]
+name = "axfs_ramfs"
 version = "0.1.0"
 dependencies = [
  "axfs_vfs",
