@@ -44,6 +44,17 @@ impl Into<ip_addr_t> for IpAddr {
     }
 }
 
+impl From<ip_addr_t> for IpAddr {
+    fn from(addr: ip_addr_t) -> IpAddr {
+        match addr.type_ as u32 {
+            lwip_ip_addr_type_IPADDR_TYPE_V4 => {
+                IpAddr::Ipv4(Ipv4Addr(unsafe { addr.u_addr.ip4.addr }))
+            }
+            _ => panic!("unsupported ip type"),
+        }
+    }
+}
+
 impl From<(IpAddr, u16)> for SocketAddr {
     fn from((addr, port): (IpAddr, u16)) -> SocketAddr {
         SocketAddr { addr, port }
