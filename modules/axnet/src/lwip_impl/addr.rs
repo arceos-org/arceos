@@ -1,3 +1,5 @@
+use core::fmt;
+
 use lwip_rust::bindings::{
     ip4_addr_t, ip_addr__bindgen_ty_1, ip_addr_t, lwip_ip_addr_type_IPADDR_TYPE_V4,
 };
@@ -38,7 +40,6 @@ impl Into<ip_addr_t> for IpAddr {
                 },
                 type_: lwip_ip_addr_type_IPADDR_TYPE_V4 as u8,
             },
-            _ => unimplemented!(),
         }
     }
 }
@@ -46,5 +47,33 @@ impl Into<ip_addr_t> for IpAddr {
 impl From<(IpAddr, u16)> for SocketAddr {
     fn from((addr, port): (IpAddr, u16)) -> SocketAddr {
         SocketAddr { addr, port }
+    }
+}
+
+impl fmt::Display for IpAddr {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            IpAddr::Ipv4(addr) => write!(f, "{addr}"),
+        }
+    }
+}
+
+impl fmt::Display for Ipv4Addr {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let bytes = self.0;
+        write!(
+            f,
+            "{}.{}.{}.{}",
+            (bytes >> 24) & 0xff,
+            (bytes >> 16) & 0xff,
+            (bytes >> 8) & 0xff,
+            bytes & 0xff
+        )
+    }
+}
+
+impl fmt::Display for SocketAddr {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}:{}", self.addr, self.port)
     }
 }
