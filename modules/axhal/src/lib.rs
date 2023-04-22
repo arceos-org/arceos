@@ -8,17 +8,17 @@
 #[macro_use]
 extern crate log;
 
-mod platform;
+pub mod platform;
 
 pub mod arch;
 pub mod cpu;
 pub mod irq;
 pub mod mem;
-pub mod time;
-pub mod trap;
-
 #[cfg(feature = "paging")]
 pub mod paging;
+
+pub mod time;
+pub mod trap;
 
 pub mod console {
     pub use super::platform::console::*;

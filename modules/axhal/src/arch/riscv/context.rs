@@ -1,5 +1,6 @@
 use core::arch::asm;
 use memory_addr::VirtAddr;
+use riscv::register::sstatus::{self, Sstatus};
 
 include_asm_marcos!();
 
@@ -41,10 +42,28 @@ pub struct GeneralRegisters {
 
 #[repr(C)]
 #[derive(Debug, Default, Clone)]
+// 类似之前的trap context
 pub struct TrapFrame {
     pub regs: GeneralRegisters,
-    pub sepc: usize,
-    pub sstatus: usize,
+    pub sepc: usize,    // 存储最后一条指令的位置
+    pub sstatus: usize, // 存储当前优先级信息
+}
+
+impl TrapFrame {
+    fn set_user_sp(&mut self, user_sp: usize) {
+        self.regs.sp = user_sp;
+    }
+    /// 用于第一次进入应用程序时的初始化
+    pub fn app_init_context(app_entry: usize, user_sp: usize) -> Self {
+        let sstatus = sstatus::read();
+        // 当前版本的riscv不支持使用set_spp函数，需要手动修改
+        // 修改当前的sstatus为User，即是第8位置0
+        let mut trap_frame = TrapFrame::default();
+        trap_frame.set_user_sp(user_sp);
+        trap_frame.sepc = app_entry;
+        trap_frame.sstatus = unsafe { *(&sstatus as *const Sstatus as *const usize) & !(1 << 8) };
+        trap_frame
+    }
 }
 
 #[repr(C)]

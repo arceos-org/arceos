@@ -133,4 +133,6 @@ extern "C" {
     fn boot_stack_top();
     fn percpu_start();
     fn percpu_end();
+    #[allow(unused)]
+    fn ekernel();
 }

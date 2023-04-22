@@ -1,5 +1,5 @@
+use axlog::error;
 use core::panic::PanicInfo;
-
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     error!("{}", info);

@@ -3,9 +3,13 @@
 #[macro_use]
 extern crate axlog;
 
-#[cfg(all(target_os = "none", not(test)))]
+// #[cfg(all(target_os = "none", not(test)))]
 mod lang_items;
 mod trap;
+
+use core::arch::global_asm;
+use core::include_str;
+global_asm!(include_str!("link_app.S"));
 
 #[cfg(feature = "smp")]
 mod mp;
@@ -20,10 +24,6 @@ const LOGO: &str = r#"
  d8888888888 888     Y88b.    Y8b.     Y88b. .d88P Y88b  d88P
 d88P     888 888      "Y8888P  "Y8888   "Y88888P"   "Y8888P"
 "#;
-
-extern "Rust" {
-    fn main();
-}
 
 struct LogIfImpl;
 
@@ -70,6 +70,8 @@ fn is_init_ok() -> bool {
     INITED_CPUS.load(Ordering::Acquire) == axconfig::SMP
 }
 
+// #[cfg_attr(not(test))]
+/// 内核初始入口函数
 #[cfg_attr(not(test), no_mangle)]
 pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     ax_println!("{}", LOGO);
@@ -146,10 +148,8 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     while !is_init_ok() {
         core::hint::spin_loop();
     }
-
-    unsafe { main() };
-
-    axtask::exit(0)
+    axtask::yield_now();
+    unreachable!("can not reach!");
 }
 
 #[cfg(feature = "alloc")]
@@ -180,28 +180,7 @@ fn init_allocator() {
 
 #[cfg(feature = "paging")]
 fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
-    use axhal::mem::{memory_regions, phys_to_virt};
-    use axhal::paging::PageTable;
-    use lazy_init::LazyInit;
-
-    static KERNEL_PAGE_TABLE: LazyInit<PageTable> = LazyInit::new();
-
-    if axhal::cpu::this_cpu_is_bsp() {
-        let mut kernel_page_table = PageTable::try_new()?;
-        for r in memory_regions() {
-            kernel_page_table.map_region(
-                phys_to_virt(r.paddr),
-                r.paddr,
-                r.size,
-                r.flags.into(),
-                true,
-            )?;
-        }
-        KERNEL_PAGE_TABLE.init_by(kernel_page_table);
-    }
-
-    unsafe { axhal::arch::write_page_table_root(KERNEL_PAGE_TABLE.root_paddr()) };
-    Ok(())
+    axtask::mem::paging::remap_kernel_memory()
 }
 
 fn init_interrupt() {

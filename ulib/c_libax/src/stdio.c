@@ -48,7 +48,7 @@ static int out(int f, const char *s, size_t l)
         buffer[buffer_len++] = c;
         if (buffer_len == __LINE_WIDTH || c == '\n') {
             int r = __write_buffer();
-            __clear_buffer(f);
+            __clear_buffer();
             if (r < 0)
                 return r;
             if (r < buffer_len)
@@ -108,7 +108,7 @@ static void printptr(uint64_t value)
 
 int fflush(int fd)
 {
-    if (fd == 1)
+    if (fd == stdout || fd == stderr)
         return __fflush();
     return 0;
 }

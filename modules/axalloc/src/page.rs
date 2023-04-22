@@ -71,7 +71,7 @@ impl GlobalPage {
 
     /// Fill `self` with `byte`.
     pub fn fill(&mut self, byte: u8) {
-        unsafe { core::ptr::write_bytes(self.as_mut_ptr(), byte, self.size()) }
+        unsafe { core::ptr::write_bytes(self.as_mut_ptr(), byte, self.size()) };
     }
 
     /// Fill `self` with zero.

@@ -175,6 +175,10 @@ impl VfsNodeAttr {
         self.size
     }
 
+    pub const fn blocks(&self) -> u64 {
+        self.blocks
+    }
+
     pub const fn perm(&self) -> VfsNodePerm {
         self.mode
     }

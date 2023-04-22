@@ -58,6 +58,7 @@ pub fn flush_tlb(vaddr: Option<VirtAddr>) {
     }
 }
 
+/// 设置trap入口
 #[inline]
 pub fn set_tap_vector_base(stvec: usize) {
     unsafe { stvec::write(stvec, stvec::TrapMode::Direct) }

@@ -3,7 +3,7 @@ use alloc::string::String;
 
 use crate::io::{prelude::*, BufReader, Result};
 use crate::sync::Mutex;
-
+use crate::task;
 struct StdinRaw;
 struct StdoutRaw;
 
@@ -68,7 +68,7 @@ impl Read for Stdin {
             if read_len > 0 {
                 return Ok(read_len);
             }
-            crate::task::yield_now();
+            task::yield_now();
         }
     }
 }

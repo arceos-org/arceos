@@ -20,6 +20,8 @@ default_features := y
 
 ifeq ($(APP_LANG),c)
   default_features := n
+  features-$(FS) += libax_bindings/fs
+  features-$(NET) += libax_bindings/net
   ifneq ($(wildcard $(APP)/features.txt),)    # check features.txt exists
     features-y += $(addprefix libax_bindings/,$(shell cat $(APP)/features.txt))
     CFLAGS += $(addprefix -DAX_CONFIG_,$(shell cat $(APP)/features.txt | tr 'a-z' 'A-Z'))

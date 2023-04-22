@@ -20,27 +20,27 @@ struct tm *gmtime(const time_t *timer)
 // TODO:
 struct tm *localtime(const time_t *timep)
 {
-    printf("%s%s\n", "Error: no ax_call implementation for ", __func__);
+    unimplemented();
     return 0;
 }
 
 // TODO:
 time_t time(time_t *t)
 {
-    printf("%s%s\n", "Error: no ax_call implementation for ", __func__);
+    unimplemented();
     return 0;
 }
 
 // TODO:
 int gettimeofday(struct timeval *tv, struct timezone *tz)
 {
-    printf("%s%s\n", "Error: no ax_call implementation for ", __func__);
+    unimplemented();
     return 0;
 }
 
 // TODO:
 int utimes(const char *filename, const struct timeval times[2])
 {
-    printf("%s%s\n", "Error: no ax_call implementation for ", __func__);
+    unimplemented();
     return 0;
 }

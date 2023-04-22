@@ -15,10 +15,16 @@ unsafe fn init_boot_page_table() {
     BOOT_PT_SV39[0x102] = (0x80000 << 10) | 0xef;
 }
 
+pub unsafe fn sfence_vma() {
+    riscv::asm::sfence_vma_all();
+}
+
 unsafe fn init_mmu() {
     let page_table_root = BOOT_PT_SV39.as_ptr() as usize;
+    // 启用页表，并且规定使用唯一的根页表
     satp::set(satp::Mode::Sv39, 0, page_table_root >> 12);
     riscv::asm::sfence_vma_all();
+    riscv::register::sstatus::set_sum();
 }
 
 #[naked]

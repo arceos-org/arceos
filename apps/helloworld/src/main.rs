@@ -3,5 +3,5 @@
 
 #[no_mangle]
 fn main() {
-    libax::println!("Hello, world!");
+    libax::task::exit(0);
 }

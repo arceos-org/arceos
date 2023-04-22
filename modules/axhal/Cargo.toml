@@ -13,8 +13,10 @@ platform-qemu-virt-aarch64 = [
     "axconfig/platform-qemu-virt-aarch64",
     "dep:page_table_entry", "dep:ratio",
 ]
-paging = ["axalloc", "page_table"]
-default = []
+user = []
+paging = ["axalloc", "page_table", "dep:page_table_entry"]
+# 默认启动用户态
+default = ["user", "paging"]
 
 [dependencies]
 log = "0.4"
@@ -22,6 +24,7 @@ cfg-if = "1.0"
 bitflags = "2.0"
 static_assertions = "1.1.0"
 axconfig = { path = "../axconfig" }
+axlog = { path = "../axlog" }
 axalloc = { path = "../axalloc", optional = true }
 kernel_guard = { path = "../../crates/kernel_guard" }
 spinlock = { path = "../../crates/spinlock" }
@@ -33,7 +36,7 @@ percpu = { path = "../../crates/percpu" }
 memory_addr = { path = "../../crates/memory_addr" }
 handler_table = { path = "../../crates/handler_table" }
 crate_interface = { path = "../../crates/crate_interface" }
-
+riscv = "0.10"
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 x86 = "0.52"
 raw-cpuid = "10.7"
