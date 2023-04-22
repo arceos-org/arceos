@@ -25,7 +25,7 @@ created net interface "eth0":
 Initialize interrupt handlers...
 Primary CPU 0 init OK.
 Hello, simple http client!
-IP:
+ident.me IP:
 
 HTTP/1.1 200 OK
 Server: nginx

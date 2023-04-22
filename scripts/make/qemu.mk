@@ -20,7 +20,7 @@ qemu_args-$(FS) += \
 
 qemu_args-$(NET) += \
   -device virtio-net-device,netdev=net0 \
-  -netdev user,id=net0,hostfwd=tcp::5555-:5555
+  -netdev user,id=net0,hostfwd=tcp::5555-:5555,hostfwd=udp::5555-:5555
 
 qemu_args-$(GRAPHIC) += \
   -device virtio-gpu-device \
