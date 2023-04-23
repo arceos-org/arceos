@@ -52,6 +52,12 @@
 
 #### 关于 `TcpSocket` 的实现
 
+##### 学习 lwip 的 tcp 操作
+
+主要参考：<https://www.nongnu.org/lwip/2_1_x/group__tcp__raw.html>
+
+##### 定义 `TcpSocket` 的结构
+
 ```rust
 struct TcpPcbPointer(*mut tcp_pcb);
 unsafe impl Send for TcpPcbPointer {}
@@ -75,6 +81,13 @@ lwip 以回调函数的形式执行各种操作。
 为了可以在回调函数中获取到对应的 `TcpSocket` 里的内容，在初始化时将自定义的传给回调函数的参数设为 `inner` 的地址。
 
 `TcpSocket` 本身地址可能发生变化，故使用 `Pin<Box<T>>` 创建 `inner`，将地址固定住。
+
+##### 实现 `TcpSocket`
+
+以 `connect` 为例：
+
+- 在做任何 lwip 协议栈操作之前，获取 `LWIP_MUTEX` 协议栈锁
+- 使用 `inner` 中存储的状态判断操作是否完成，若无法完成则 `lwip_loop_once` 并 `yield_now`，直到协议栈调用回调函数修改 `inner`
 
 ```rust
 extern "C" fn connect_callback(arg: *mut c_void, _tpcb: *mut tcp_pcb, err: err_t) -> err_t {
@@ -119,10 +132,7 @@ pub fn connect(&mut self, addr: SocketAddr) -> AxResult {
 }
 ```
 
-以 `connect` 为例：
-
-- 在做任何 lwip 协议栈操作之前，获取 `LWIP_MUTEX` 协议栈锁
-- 使用 `inner` 中存储的状态判断操作是否完成，若无法完成则 `lwip_loop_once` 并 `yield_now`，直到协议栈调用回调函数修改 `inner` 
+其余操作也类似，如果需要提供阻塞的接口，则根据 `inner` 中的结果 / 队列进行阻塞，直到回调函数将 `inner` 中的对应部分进行修改。
 
 ### 效果
 
@@ -152,4 +162,3 @@ pub fn connect(&mut self, addr: SocketAddr) -> AxResult {
 
 - 进一步完善接口，并 debug
 - 学习 lwip 如何做系统层适配
-
