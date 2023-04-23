@@ -103,6 +103,7 @@ impl Process {
         let mut inner = new_process.inner.lock();
         inner.tasks.push(Arc::clone(&new_task));
         drop(inner);
+        new_task.set_trap_in_kernel_stack();
         new_task
         // let kernel_sp = new_task.get_kernel_stack_top();
     }
@@ -181,7 +182,6 @@ impl Process {
     /// 实现简易的clone系统调用
     pub fn clone(&self, flags: usize, stack: usize, ptid: usize, tls: usize, ctid: usize) {
         // 当前默认生成新的进程
-        
     }
 }
 

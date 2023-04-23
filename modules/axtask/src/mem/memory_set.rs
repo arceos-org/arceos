@@ -88,7 +88,6 @@ impl MemorySet {
                     map_perm,
                     Some(&elf.input[ph.offset() as usize..(ph.offset() + ph.file_size()) as usize]),
                 );
-                axlog::info!("finish mapping");
             }
         }
         // map user stack with U flags
