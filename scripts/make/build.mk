@@ -12,7 +12,7 @@ else
 endif
 
 _cargo_build:
-	@echo "    $(GREEN_C)Building$(END_C) App: $(APP_NAME), Arch: $(ARCH), Platform: $(PLATFORM), Language: $(APP_LANG)"
+	@echo -e "    $(GREEN_C)Building$(END_C) App: $(APP_NAME), Arch: $(ARCH), Platform: $(PLATFORM), Language: $(APP_LANG)"
 ifeq ($(APP_LANG), rust)
 	$(call cargo_build,--manifest-path $(APP)/Cargo.toml)
 	@cp $(rust_elf) $(OUT_ELF)
