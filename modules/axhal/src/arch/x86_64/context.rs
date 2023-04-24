@@ -173,7 +173,7 @@ impl TaskContext {
     /// It first saves the current task's context from CPU to this place, and then
     /// restores the next task's context from `next_ctx` to CPU.
     pub fn switch_to(&mut self, next_ctx: &Self) {
-        #[cfg(all(feature = "fp_simd", target_feature = "sse"))]
+        #[cfg(feature = "fp_simd")]
         {
             self.ext_state.save();
             next_ctx.ext_state.restore();

@@ -2,6 +2,10 @@
 
 QEMU := qemu-system-$(ARCH)
 
+qemu_args-x86_64 := \
+  -machine q35 \
+  -kernel $(OUT_ELF)
+
 qemu_args-riscv64 := \
   -machine virt \
   -bios default \
@@ -30,7 +34,25 @@ ifeq ($(GRAPHIC), n)
   qemu_args-y += -nographic
 endif
 
+ifeq ($(QEMU_LOG), y)
+  qemu_args-y += -D qemu.log -d in_asm,int,mmu,pcall,cpu_reset,guest_errors
+endif
+
+qemu_args-debug := $(qemu_args-y) -s -S
+
+# Do not use KVM for debugging
+ifeq ($(shell uname), Darwin)
+  qemu_args-$(ACCEL) += -cpu host -accel hvf
+else
+  qemu_args-$(ACCEL) += -cpu host -accel kvm
+endif
+
 define run_qemu
   @printf "    $(CYAN_C)Running$(END_C) $(QEMU) $(qemu_args-y) $(1)\n"
-  @$(QEMU) $(qemu_args-y) $(1)
+  @$(QEMU) $(qemu_args-y)
+endef
+
+define run_qemu_debug
+  @printf "    $(CYAN_C)Running$(END_C) $(QEMU) $(qemu_args-debug) $(1)\n"
+  @$(QEMU) $(qemu_args-debug)
 endef
