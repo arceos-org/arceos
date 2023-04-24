@@ -2,6 +2,7 @@
 #![allow(unused_variables)]
 
 mod boot;
+mod dtables;
 mod uart16550;
 
 pub mod mem;
@@ -34,6 +35,7 @@ unsafe extern "C" fn rust_entry(magic: usize, mbi: usize) {
         crate::mem::clear_bss();
         crate::cpu::init_primary(current_cpu_id());
         self::uart16550::init();
+        self::dtables::init_primary();
         rust_main(current_cpu_id(), 0);
     }
 }
