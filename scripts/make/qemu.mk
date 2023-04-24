@@ -31,6 +31,6 @@ ifeq ($(GRAPHIC), n)
 endif
 
 define run_qemu
-  @echo "    $(CYAN_C)Running$(END_C) $(QEMU) $(qemu_args-y) $(1)"
+  @echo -e "    $(CYAN_C)Running$(END_C) $(QEMU) $(qemu_args-y) $(1)"
   @$(QEMU) $(qemu_args-y) $(1)
 endef

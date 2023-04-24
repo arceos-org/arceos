@@ -110,7 +110,7 @@ unittest_no_fail_fast:
 
 disk_img:
 ifneq ($(wildcard $(DISK_IMG)),)
-	@echo "$(YELLOW_C)warning$(END_C): disk image \"$(DISK_IMG)\" already exists!"
+	@echo -e "$(YELLOW_C)warning$(END_C): disk image \"$(DISK_IMG)\" already exists!"
 else
 	$(call make_disk_image,fat32,$(DISK_IMG))
 endif

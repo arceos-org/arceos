@@ -6,7 +6,7 @@ YELLOW_C := \033[93;1m
 END_C := \033[0m
 
 define make_disk_image_fat32
-  @echo "    $(GREEN_C)Creating$(END_C) FAT32 disk image \"$(1)\" ..."
+  @echo -e "    $(GREEN_C)Creating$(END_C) FAT32 disk image \"$(1)\" ..."
   @dd if=/dev/zero of=$(1) bs=1M count=64
   @mkfs.fat -F 32 $(1)
 endef
