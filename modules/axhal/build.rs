@@ -7,7 +7,9 @@ fn main() {
 
 fn gen_linker_script(arch: &str) -> Result<()> {
     let fname = format!("linker_{}.lds", arch);
-    let output_arch = if arch.contains("riscv") {
+    let output_arch = if arch == "x86_64" {
+        "i386:x86-64"
+    } else if arch.contains("riscv") {
         "riscv" // OUTPUT_ARCH of both riscv32/riscv64 is "riscv"
     } else {
         arch

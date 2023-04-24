@@ -288,6 +288,7 @@ dependencies = [
  "static_assertions",
  "tock-registers",
  "x86",
+ "x86_64",
 ]
 
 [[package]]

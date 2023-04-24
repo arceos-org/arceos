@@ -3,36 +3,29 @@ mod context;
 use core::arch::asm;
 
 use memory_addr::{PhysAddr, VirtAddr};
-use x86::{bits64::rflags, bits64::rflags::RFlags, controlregs, tlb};
+use x86::{controlregs, tlb};
+use x86_64::instructions::interrupts;
 
-pub use context::{ExtendedState, FxsaveArea, TaskContext, TrapFrame};
+pub use self::context::{ExtendedState, FxsaveArea, TaskContext, TrapFrame};
 
 /// Allows the current CPU to respond to interrupts.
 #[inline]
 pub fn enable_irqs() {
     #[cfg(target_os = "none")]
-    unsafe {
-        asm!("sti")
-    }
+    interrupts::enable()
 }
 
 /// Makes the current CPU to ignore interrupts.
 #[inline]
 pub fn disable_irqs() {
     #[cfg(target_os = "none")]
-    unsafe {
-        asm!("cli")
-    }
+    interrupts::disable()
 }
 
 /// Returns whether the current CPU is allowed to respond to interrupts.
 #[inline]
 pub fn irqs_enabled() -> bool {
-    if cfg!(target_os = "none") {
-        !rflags::read().contains(RFlags::FLAGS_IF)
-    } else {
-        false
-    }
+    interrupts::are_enabled()
 }
 
 /// Relaxes the current CPU and waits for interrupts.

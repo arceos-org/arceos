@@ -1,5 +1,9 @@
 SQLITE3_CFLAGS := -DSQLITE_THREADSAFE=0 -DSQLITE_OMIT_FLOATING_POINT -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_DEBUG
 
+ifeq ($(ARCH), riscv64)
+  LDFLAGS += --no-relax
+endif
+
 app-objs := main.o sqlite3.o
 
 $(APP)/main.o: $(APP)/sqlite3.c
