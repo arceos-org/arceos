@@ -72,6 +72,7 @@ pub mod time {
     pub fn set_oneshot_timer(deadline_ns: u64) {}
 }
 
+#[cfg(feature = "irq")]
 pub mod irq {
     /// The maximum number of IRQs.
     pub const MAX_IRQ_COUNT: usize = 256;

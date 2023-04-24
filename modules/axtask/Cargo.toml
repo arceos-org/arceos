@@ -15,7 +15,8 @@ multitask = [
     "dep:axconfig", "dep:percpu", "dep:spinlock", "dep:lazy_init",
     "dep:memory_addr", "dep:scheduler", "dep:timer_list"
 ]
-preempt = ["percpu?/preempt", "kernel_guard/preempt"]
+irq = []
+preempt = ["irq", "percpu?/preempt", "kernel_guard/preempt"]
 
 sched_fifo = ["multitask"]
 sched_rr = ["multitask", "preempt"]

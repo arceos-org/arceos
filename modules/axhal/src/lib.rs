@@ -17,6 +17,7 @@
 //! - `smp`: Enable SMP (symmetric multiprocessing) support.
 //! - `fp_simd`: Enable floating-point and SIMD support.
 //! - `paging`: Enable page table manipulation.
+//! - `irq`: Enable interrupt handling support.
 //! - `platform-qemu-virt-riscv`: Specify for use on the corresponding platform.
 //! - `platform-qemu-virt-aarch64`: Specify for use on the corresponding platform.
 //!
@@ -37,10 +38,12 @@ mod platform;
 
 pub mod arch;
 pub mod cpu;
-pub mod irq;
 pub mod mem;
 pub mod time;
 pub mod trap;
+
+#[cfg(feature = "irq")]
+pub mod irq;
 
 #[cfg(feature = "paging")]
 pub mod paging;

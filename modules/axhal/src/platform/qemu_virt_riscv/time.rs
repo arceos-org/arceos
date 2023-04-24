@@ -1,9 +1,9 @@
-use riscv::register::{sie, time};
+use riscv::register::time;
 
 const NANOS_PER_TICK: u64 = crate::time::NANOS_PER_SEC / axconfig::TIMER_FREQUENCY as u64;
 
-/// The timer IRQ number.
-pub const TIMER_IRQ_NUM: usize = super::irq::S_TIMER;
+/// The timer IRQ number (supervisor timer interrupt in `scause`).
+pub const TIMER_IRQ_NUM: usize = (1 << (usize::BITS - 1)) + 5;
 
 /// Returns the current clock time in hardware ticks.
 #[inline]
@@ -31,10 +31,5 @@ pub fn set_oneshot_timer(deadline_ns: u64) {
 }
 
 pub(super) fn init() {
-    unsafe {
-        sie::set_ssoft();
-        sie::set_stimer();
-        sie::set_sext();
-    }
     sbi_rt::set_timer(0);
 }

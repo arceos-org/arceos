@@ -20,13 +20,13 @@ Accept: */*\r\n\
 
 fn get_addr() -> SocketAddr {
     let dest = if cfg!(feature = "dns") {
-        print!("{} ", DEST_HOST);
+        println!("dest domain: {}", DEST_HOST);
         DEST_HOST
     } else {
         DEST_IP
     };
     let addr_iter = (dest, 80).to_socket_addrs().unwrap().collect::<Vec<_>>();
-    println!("IP:{}\n", addr_iter[0].addr);
+    println!("dest IP: {}\n", addr_iter[0].addr);
     addr_iter[0]
 }
 

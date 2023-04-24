@@ -4,8 +4,10 @@ mod pl011;
 mod psci;
 
 pub mod console;
-pub mod irq;
 pub mod mem;
+
+#[cfg(feature = "irq")]
+pub mod irq;
 
 #[cfg(feature = "smp")]
 pub mod mp;
@@ -27,8 +29,12 @@ pub(crate) fn platform_init(cpu_id: usize, _dtb: *const u8) {
     crate::mem::clear_bss();
     crate::arch::set_exception_vector_base(exception_vector_base as usize);
     crate::cpu::init_percpu(cpu_id, true);
+
+    #[cfg(feature = "irq")]
     self::irq::init();
+    #[cfg(feature = "irq")]
     self::irq::init_percpu(cpu_id);
+
     self::pl011::init();
     self::generic_timer::init();
 }
@@ -38,6 +44,7 @@ pub(crate) fn platform_init(cpu_id: usize, _dtb: *const u8) {
 pub(crate) fn platform_init_secondary(cpu_id: usize, _dtb: *const u8) {
     crate::arch::set_exception_vector_base(exception_vector_base as usize);
     crate::cpu::init_percpu(cpu_id, false);
+    #[cfg(feature = "irq")]
     self::irq::init_percpu(cpu_id);
     self::generic_timer::init_secondary();
 }

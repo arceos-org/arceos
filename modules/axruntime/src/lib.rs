@@ -7,6 +7,7 @@
 //!
 //! - `alloc`: Enable global memory allocator.
 //! - `paging`: Enable page table manipulation support.
+//! - `irq`: Enable interrupt handling support.
 //! - `multitask`: Enable multi-threading support.
 //! - `smp`: Enable SMP (symmetric multiprocessing) support.
 //! - `fs`: Enable filesystem support.
@@ -164,8 +165,11 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         axdisplay::init_display(all_devices.display);
     }
 
-    info!("Initialize interrupt handlers...");
-    init_interrupt();
+    #[cfg(feature = "irq")]
+    {
+        info!("Initialize interrupt handlers...");
+        init_interrupt();
+    }
 
     #[cfg(feature = "smp")]
     self::mp::start_secondary_cpus(cpu_id);
@@ -240,6 +244,7 @@ fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
     Ok(())
 }
 
+#[cfg(feature = "irq")]
 fn init_interrupt() {
     use axhal::time::TIMER_IRQ_NUM;
 

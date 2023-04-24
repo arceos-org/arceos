@@ -23,7 +23,6 @@ map_region(PA:0x[0-9a-f]\+): \[VA:0x[0-9a-f]\+, VA:0x[0-9a-f]\+) -> \[PA:0x[0-9a
 map_region(PA:0x[0-9a-f]\+): \[VA:0x[0-9a-f]\+, VA:0x[0-9a-f]\+) -> \[PA:0x[0-9a-f]\+, PA:0x[0-9a-f]\+) MappingFlags(READ | WRITE | DEVICE)
 map_region(PA:0x[0-9a-f]\+): \[VA:0x[0-9a-f]\+, VA:0x[0-9a-f]\+) -> \[PA:0x[0-9a-f]\+, PA:0x[0-9a-f]\+) MappingFlags(READ | WRITE)
 set page table root: PA:0x[0-9a-f]\+ => PA:0x[0-9a-f]\+
-Initialize interrupt handlers...
 Primary CPU 0 init OK.
 Running memory tests...
 expand heap memory:

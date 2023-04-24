@@ -22,10 +22,9 @@ created net interface "eth0":
   ether:    52-54-00-12-34-56
   ip:       10.0.2.15/24
   gateway:  10.0.2.2
-Initialize interrupt handlers...
 Primary CPU 0 init OK.
 Hello, simple http client!
-IP:
+dest IP: [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+
 
 HTTP/1.1 200 OK
 Server: nginx
