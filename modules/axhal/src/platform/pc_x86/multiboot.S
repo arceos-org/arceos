@@ -98,6 +98,7 @@ entry64:
     # 0xffff_ff80_0000_0000 ~ 0xffff_ff80_ffff_ffff
     .quad .Ltmp_pdpt_high - {offset} + 0x3  # PRESENT | WRITABLE | paddr(tmp_pdpt)
 
+# FIXME: may not work on macOS using hvf as the CPU does not support 1GB page (pdpe1gb)
 .Ltmp_pdpt_low:
     .quad 0x0000 | 0x83         # PRESENT | WRITABLE | HUGE_PAGE | paddr(0x0)
     .quad 0x40000000 | 0x83     # PRESENT | WRITABLE | HUGE_PAGE | paddr(0x4000_0000)

@@ -22,3 +22,6 @@ mmio-regions = [
 ]
 # VirtIO MMIO regions with format (`base_paddr`, `size`).
 virtio-mmio-regions = []
+
+# Timer interrupt frequencyin Hz.
+timer_frequency = "4_000_000_000"   # 4.0GHz
