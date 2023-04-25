@@ -1,6 +1,4 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
-
+mod apic;
 mod boot;
 mod dtables;
 mod uart16550;
@@ -9,11 +7,13 @@ pub mod mem;
 pub mod misc;
 pub mod time;
 
-#[cfg(feature = "irq")]
-pub mod irq;
-
 #[cfg(feature = "smp")]
 pub mod mp;
+
+#[cfg(feature = "irq")]
+pub mod irq {
+    pub use super::apic::*;
+}
 
 pub mod console {
     pub use super::uart16550::*;
@@ -30,19 +30,27 @@ fn current_cpu_id() -> usize {
     }
 }
 
-unsafe extern "C" fn rust_entry(magic: usize, mbi: usize) {
+unsafe extern "C" fn rust_entry(magic: usize, _mbi: usize) {
+    // TODO: handle multiboot info
     if magic == self::boot::MULTIBOOT_BOOTLOADER_MAGIC {
         crate::mem::clear_bss();
         crate::cpu::init_primary(current_cpu_id());
         self::uart16550::init();
         self::dtables::init_primary();
+        self::time::init_early();
         rust_main(current_cpu_id(), 0);
     }
 }
 
 /// Initializes the platform devices for the primary CPU.
-pub fn platform_init() {}
+pub fn platform_init() {
+    self::apic::init_primary();
+    self::time::init_primary();
+}
 
 /// Initializes the platform devices for secondary CPUs.
 #[cfg(feature = "smp")]
-pub fn platform_init_secondary() {}
+pub fn platform_init_secondary() {
+    self::apic::init_secondary();
+    self::time::init_secondary();
+}

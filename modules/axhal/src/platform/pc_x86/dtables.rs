@@ -25,6 +25,7 @@ fn init_percpu() {
 
 /// Initializes IDT, GDT on the primary CPU.
 pub(super) fn init_primary() {
+    axlog::ax_println!("\nInitialize IDT & GDT...");
     IDT.init_by(IdtStruct::new());
     init_percpu();
 }
