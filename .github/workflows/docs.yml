@@ -16,6 +16,7 @@ jobs:
         profile: minimal
         toolchain: nightly
     - name: Build docs
+      continue-on-error: ${{ github.ref != 'refs/heads/main' && github.event_name != 'pull_request' }}
       run: make doc_check_missing
     - name: Deploy to Github Pages
       if: ${{ github.ref == 'refs/heads/main' }}
