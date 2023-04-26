@@ -35,9 +35,11 @@ static mut BOOT_STACK: [u8; TASK_STACK_SIZE] = [0; TASK_STACK_SIZE];
 
 global_asm!(
     include_str!("multiboot.S"),
+    mb_magic = const MULTIBOOT_BOOTLOADER_MAGIC,
     mb_hdr_magic = const MULTIBOOT_HEADER_MAGIC,
     mb_hdr_flags = const MULTIBOOT_HEADER_FLAGS,
     entry = sym super::rust_entry,
+    entry_secondary = sym super::rust_entry_secondary,
 
     offset = const PHYS_VIRT_OFFSET,
     boot_stack_size = const TASK_STACK_SIZE,

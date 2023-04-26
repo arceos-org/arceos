@@ -7,7 +7,7 @@
 _start:
     mov     edi, eax        # arg1: magic: 0x2BADB002
     mov     esi, ebx        # arg2: multiboot info
-    jmp     entry32
+    jmp     bsp_entry32
 
 .balign 4
 .type multiboot_header, STT_OBJECT
@@ -21,10 +21,8 @@ multiboot_header:
     .int    ebss - {offset}                     # bss_end_addr
     .int    _start - {offset}                   # entry_addr
 
-.code32
-entry32:
-    lgdt    [.Ltmp_gdt_desc - {offset}] # load the temporary GDT
-
+# Common code in 32-bit, prepare states to enter 64-bit.
+.macro ENTRY32_COMMON
     # set data segment selectors
     mov     ax, 0x18
     mov     ss, ax
@@ -50,11 +48,10 @@ entry32:
     # set protected mode, write protect, paging bit in CR0
     mov     eax, {cr0}
     mov     cr0, eax
+.endm
 
-    ljmp    0x10, offset entry64 - {offset}    # 0x10 is code64 segment
-
-.code64
-entry64:
+# Common code in 64-bit
+.macro ENTRY64_COMMON
     # clear segment selectors
     xor     ax, ax
     mov     ss, ax
@@ -62,6 +59,23 @@ entry64:
     mov     es, ax
     mov     fs, ax
     mov     gs, ax
+.endm
+
+.code32
+bsp_entry32:
+    lgdt    [.Ltmp_gdt_desc - {offset}]             # load the temporary GDT
+    ENTRY32_COMMON
+    ljmp    0x10, offset bsp_entry64 - {offset}    # 0x10 is code64 segment
+
+.code32
+.global ap_entry32
+ap_entry32:
+    ENTRY32_COMMON
+    ljmp    0x10, offset ap_entry64 - {offset}     # 0x10 is code64 segment
+
+.code64
+bsp_entry64:
+    ENTRY64_COMMON
 
     # set RSP to boot stack
     movabs  rsp, offset {boot_stack}
@@ -70,6 +84,21 @@ entry64:
     # call rust_entry(magic, mbi)
     movabs  rax, offset {entry}
     call    rax
+    jmp     .Lhlt
+
+.code64
+ap_entry64:
+    ENTRY64_COMMON
+
+    # set RSP to high address (already set in ap_start.S)
+    mov     rax, {offset}
+    add     rsp, rax
+
+    # call rust_entry_secondary(magic)
+    mov     rdi, {mb_magic}
+    movabs  rax, offset {entry_secondary}
+    call    rax
+    jmp     .Lhlt
 
 .Lhlt:
     hlt
