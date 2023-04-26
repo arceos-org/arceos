@@ -68,6 +68,14 @@ pub(super) fn local_apic<'a>() -> &'a mut LocalApic {
     unsafe { LOCAL_APIC.as_mut().unwrap() }
 }
 
+pub(super) fn raw_apic_id(id_u8: u8) -> u32 {
+    if unsafe { IS_X2APIC } {
+        id_u8 as u32
+    } else {
+        (id_u8 as u32) << 24
+    }
+}
+
 fn cpu_has_x2apic() -> bool {
     match raw_cpuid::CpuId::new().get_feature_info() {
         Some(finfo) => finfo.has_x2apic(),

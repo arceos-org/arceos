@@ -18,9 +18,9 @@ BLOD_C="\x1b[1m"
 END_C="\x1b[0m"
 
 if [ -z "$ARCH" ]; then
-    ARCH=riscv64
+    ARCH=x86_64
 fi
-if [ "$ARCH" != "riscv64" ] && [ "$ARCH" != "aarch64" ]; then
+if [ "$ARCH" != "x86_64" ] && [ "$ARCH" != "riscv64" ] && [ "$ARCH" != "aarch64" ]; then
     echo "Unknown architecture: $ARCH"
     exit $S_FAILED
 fi
@@ -77,7 +77,7 @@ function test_one() {
     local args=$1
     local expect="$APP/$2"
     local actual="$APP/actual.out"
-    args="$args ARCH=$ARCH"
+    args="$args ARCH=$ARCH ACCEL=n"
     rm -f "$actual"
 
     MSG=
