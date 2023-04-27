@@ -3,7 +3,6 @@
 
 #include <stddef.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 
 #define _SC_PAGESIZE 30
 
@@ -27,6 +26,7 @@ char *getcwd(char *buf, size_t size);
 #endif
 
 unsigned sleep(unsigned seconds);
+int usleep(unsigned int useconds);
 
 uid_t geteuid(void);
 pid_t getpid(void);
