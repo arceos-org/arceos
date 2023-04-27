@@ -43,7 +43,7 @@ const LOGO: &str = r#"
 d88P     888 888      "Y8888P  "Y8888   "Y88888P"   "Y8888P"
 "#;
 
-extern "Rust" {
+extern "C" {
     fn main();
 }
 
@@ -147,6 +147,9 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         remap_kernel_memory().expect("remap kernel memoy failed");
     }
 
+    info!("Initialize platform devices...");
+    axhal::platform_init();
+
     #[cfg(feature = "multitask")]
     axtask::init_scheduler();
 
@@ -165,14 +168,14 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         axdisplay::init_display(all_devices.display);
     }
 
+    #[cfg(feature = "smp")]
+    self::mp::start_secondary_cpus(cpu_id);
+
     #[cfg(feature = "irq")]
     {
         info!("Initialize interrupt handlers...");
         init_interrupt();
     }
-
-    #[cfg(feature = "smp")]
-    self::mp::start_secondary_cpus(cpu_id);
 
     info!("Primary CPU {} init OK.", cpu_id);
     INITED_CPUS.fetch_add(1, Ordering::Relaxed);

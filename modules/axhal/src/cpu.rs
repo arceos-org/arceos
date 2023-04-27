@@ -74,14 +74,20 @@ pub unsafe fn set_current_task_ptr<T>(ptr: *const T) {
 }
 
 #[allow(dead_code)]
-pub(crate) fn init_percpu(cpu_id: usize, is_bsp: bool) {
-    if is_bsp {
-        percpu::init(axconfig::SMP);
-    }
+pub(crate) fn init_primary(cpu_id: usize) {
+    percpu::init(axconfig::SMP);
     percpu::set_local_thread_pointer(cpu_id);
     unsafe {
-        // preemption is disabled on initialization.
         CPU_ID.write_current_raw(cpu_id);
-        IS_BSP.write_current_raw(is_bsp);
+        IS_BSP.write_current_raw(true);
+    }
+}
+
+#[allow(dead_code)]
+pub(crate) fn init_secondary(cpu_id: usize) {
+    percpu::set_local_thread_pointer(cpu_id);
+    unsafe {
+        CPU_ID.write_current_raw(cpu_id);
+        IS_BSP.write_current_raw(false);
     }
 }

@@ -8,9 +8,11 @@ pub use core::time::Duration;
 /// represent a duration, but a clock time.
 pub type TimeValue = Duration;
 
-pub use crate::platform::time::{
-    current_ticks, nanos_to_ticks, set_oneshot_timer, ticks_to_nanos, TIMER_IRQ_NUM,
-};
+#[cfg(feature = "irq")]
+pub use crate::platform::irq::TIMER_IRQ_NUM;
+#[cfg(feature = "irq")]
+pub use crate::platform::time::set_oneshot_timer;
+pub use crate::platform::time::{current_ticks, nanos_to_ticks, ticks_to_nanos};
 
 /// Number of milliseconds in a second.
 pub const MILLIS_PER_SEC: u64 = 1_000;

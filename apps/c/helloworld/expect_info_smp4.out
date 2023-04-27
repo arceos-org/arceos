@@ -11,6 +11,7 @@ Found physcial memory regions:
  boot stack (READ | WRITE | RESERVED)
  .bss (READ | WRITE | RESERVED)
  free memory (READ | WRITE | FREE)
+Initialize platform devices...
 CPU 0 init OK
 CPU 1 started
 CPU 2 started

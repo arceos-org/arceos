@@ -70,3 +70,8 @@ pub mod misc {
 pub mod mp {
     pub use super::platform::mp::*;
 }
+
+pub use self::platform::platform_init;
+
+#[cfg(feature = "smp")]
+pub use self::platform::platform_init_secondary;
