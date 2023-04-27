@@ -66,7 +66,7 @@ $(APP)/%.o: $(APP)/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(OUT_ELF): $(app-objs) $(c_lib) $(rust_lib)
-	@echo -e "    $(CYAN_C)Linking$(END_C) $(OUT_ELF)"
+	@printf "    $(CYAN_C)Linking$(END_C) $(OUT_ELF)\n"
 	$(LD) $(LDFLAGS) $^ -o $@
 
 .PHONY: _gen_feat
