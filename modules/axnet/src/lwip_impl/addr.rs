@@ -72,10 +72,10 @@ impl fmt::Display for Ipv4Addr {
         write!(
             f,
             "{}.{}.{}.{}",
-            (bytes >> 24) & 0xff,
-            (bytes >> 16) & 0xff,
+            bytes & 0xff,
             (bytes >> 8) & 0xff,
-            bytes & 0xff
+            (bytes >> 16) & 0xff,
+            (bytes >> 24) & 0xff
         )
     }
 }
