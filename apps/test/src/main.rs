@@ -10,6 +10,6 @@ mod test_sleep;
 #[no_mangle]
 fn main() {
     libax::println!("Hello, testcases!");
-    //test_sleep::main();
+    test_sleep::main();
     test_mem::main();
 }
