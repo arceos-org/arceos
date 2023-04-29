@@ -60,6 +60,7 @@ pub fn init_scheduler() {
     info!("Initialize scheduling...");
 
     crate::run_queue::init();
+    #[cfg(feature = "irq")]
     crate::timers::init();
 
     if cfg!(feature = "sched_fifo") {
@@ -77,6 +78,8 @@ pub fn init_scheduler_secondary() {
 /// Handles periodic timer ticks for the task manager.
 ///
 /// For example, advance scheduler states, checks timed events, etc.
+#[cfg(feature = "irq")]
+#[doc(cfg(feature = "irq"))]
 pub fn on_timer_tick() {
     crate::timers::check_events();
     RUN_QUEUE.lock().scheduler_timer_tick();
@@ -101,14 +104,20 @@ pub fn yield_now() {
 }
 
 /// Current task is going to sleep for the given duration.
+///
+/// If the feature `irq` is not enabled, it uses busy-wait instead.
 pub fn sleep(dur: core::time::Duration) {
-    let deadline = axhal::time::current_time() + dur;
-    RUN_QUEUE.lock().sleep_until(deadline);
+    sleep_until(axhal::time::current_time() + dur);
 }
 
 /// Current task is going to sleep, it will be woken up at the given deadline.
+///
+/// If the feature `irq` is not enabled, it uses busy-wait instead.
 pub fn sleep_until(deadline: axhal::time::TimeValue) {
+    #[cfg(feature = "irq")]
     RUN_QUEUE.lock().sleep_until(deadline);
+    #[cfg(not(feature = "irq"))]
+    axhal::time::busy_wait_until(deadline);
 }
 
 /// Exits the current task.

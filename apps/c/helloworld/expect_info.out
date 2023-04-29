@@ -11,6 +11,7 @@ Found physcial memory regions:
  boot stack (READ | WRITE | RESERVED)
  .bss (READ | WRITE | RESERVED)
  free memory (READ | WRITE | FREE)
+Initialize platform devices...
 Primary CPU 0 init OK.
 Hello, C app!
 Shutting down...

@@ -7,6 +7,9 @@ use spinlock::SpinNoIrq;
 /// The maximum number of IRQs.
 pub const MAX_IRQ_COUNT: usize = 1024;
 
+/// The timer IRQ number.
+pub const TIMER_IRQ_NUM: usize = 30; // physical timer, type=PPI, id=14
+
 const GIC_BASE: usize = 0x0800_0000;
 const GICD_BASE: PhysAddr = PhysAddr::from(GIC_BASE);
 const GICC_BASE: PhysAddr = PhysAddr::from(GIC_BASE + 0x10000);
@@ -23,6 +26,9 @@ pub fn set_enable(irq_num: usize, enabled: bool) {
 }
 
 /// Registers an IRQ handler for the given IRQ.
+///
+/// It also enables the IRQ if the registration succeeds. It returns `false` if
+/// the registration failed.
 pub fn register_handler(irq_num: usize, handler: IrqHandler) -> bool {
     crate::irq::register_handler_common(irq_num, handler)
 }
@@ -36,10 +42,15 @@ pub fn dispatch_irq(_unused: usize) {
     GICC.handle_irq(|irq_num| crate::irq::dispatch_irq_common(irq_num as _));
 }
 
-pub(super) fn init() {
+/// Initializes GICD, GICC on the primary CPU.
+pub(super) fn init_primary() {
+    info!("Initialize GICv2...");
     GICD.lock().init();
+    GICC.init();
 }
 
-pub(super) fn init_percpu(_cpu_id: usize) {
+/// Initializes GICC on secondary CPUs.
+#[cfg(feature = "smp")]
+pub(super) fn init_secondary() {
     GICC.init();
 }

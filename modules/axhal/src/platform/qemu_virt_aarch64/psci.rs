@@ -25,7 +25,10 @@ fn psci_hvc_call(func: u32, arg0: usize, arg1: usize, arg2: usize) -> usize {
 pub fn system_off() -> ! {
     info!("Shutting down...");
     psci_hvc_call(PSCI_SYSTEM_OFF, 0, 0, 0);
-    unreachable!("It should shutdown!")
+    warn!("It should shutdown!");
+    loop {
+        crate::arch::halt();
+    }
 }
 
 /// Starts a secondary CPU with the given ID.

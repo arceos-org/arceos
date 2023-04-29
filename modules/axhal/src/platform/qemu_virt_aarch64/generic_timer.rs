@@ -1,13 +1,11 @@
+#![allow(unused_imports)]
+
 use aarch64_cpu::registers::{CNTFRQ_EL0, CNTPCT_EL0, CNTP_CTL_EL0, CNTP_TVAL_EL0};
-use lazy_init::LazyInit;
 use ratio::Ratio;
 use tock_registers::interfaces::{Readable, Writeable};
 
-/// The timer IRQ number.
-pub const TIMER_IRQ_NUM: usize = 30; // physical timer, type=PPI, id=14
-
-static CNTPCT_TO_NANOS_RATIO: LazyInit<Ratio> = LazyInit::new();
-static NANOS_TO_CNTPCT_RATIO: LazyInit<Ratio> = LazyInit::new();
+static mut CNTPCT_TO_NANOS_RATIO: Ratio = Ratio::zero();
+static mut NANOS_TO_CNTPCT_RATIO: Ratio = Ratio::zero();
 
 /// Returns the current clock time in hardware ticks.
 #[inline]
@@ -18,18 +16,19 @@ pub fn current_ticks() -> u64 {
 /// Converts hardware ticks to nanoseconds.
 #[inline]
 pub fn ticks_to_nanos(ticks: u64) -> u64 {
-    CNTPCT_TO_NANOS_RATIO.mul_trunc(ticks)
+    unsafe { CNTPCT_TO_NANOS_RATIO.mul_trunc(ticks) }
 }
 
 /// Converts nanoseconds to hardware ticks.
 #[inline]
 pub fn nanos_to_ticks(nanos: u64) -> u64 {
-    NANOS_TO_CNTPCT_RATIO.mul_trunc(nanos)
+    unsafe { NANOS_TO_CNTPCT_RATIO.mul_trunc(nanos) }
 }
 
 /// Set a one-shot timer.
 ///
 /// A timer interrupt will be triggered at the given deadline (in nanoseconds).
+#[cfg(feature = "irq")]
 pub fn set_oneshot_timer(deadline_ns: u64) {
     let cnptct = CNTPCT_EL0.get();
     let cnptct_deadline = nanos_to_ticks(deadline_ns);
@@ -42,18 +41,20 @@ pub fn set_oneshot_timer(deadline_ns: u64) {
     }
 }
 
-pub(super) fn init() {
+/// Early stage initialization: stores the timer frequency.
+pub(super) fn init_early() {
     let freq = CNTFRQ_EL0.get();
-    CNTPCT_TO_NANOS_RATIO.init_by(Ratio::new(crate::time::NANOS_PER_SEC as u32, freq as u32));
-    NANOS_TO_CNTPCT_RATIO.init_by(CNTPCT_TO_NANOS_RATIO.inverse());
-    CNTP_CTL_EL0.write(CNTP_CTL_EL0::ENABLE::SET);
-    CNTP_TVAL_EL0.set(0);
-    super::irq::set_enable(TIMER_IRQ_NUM, true);
+    unsafe {
+        CNTPCT_TO_NANOS_RATIO = Ratio::new(crate::time::NANOS_PER_SEC as u32, freq as u32);
+        NANOS_TO_CNTPCT_RATIO = CNTPCT_TO_NANOS_RATIO.inverse();
+    }
 }
 
-#[cfg(feature = "smp")]
-pub(super) fn init_secondary() {
-    CNTP_CTL_EL0.write(CNTP_CTL_EL0::ENABLE::SET);
-    CNTP_TVAL_EL0.set(0);
-    super::irq::set_enable(TIMER_IRQ_NUM, true);
+pub(super) fn init_percpu() {
+    #[cfg(feature = "irq")]
+    {
+        CNTP_CTL_EL0.write(CNTP_CTL_EL0::ENABLE::SET);
+        CNTP_TVAL_EL0.set(0);
+        super::irq::set_enable(super::irq::TIMER_IRQ_NUM, true);
+    }
 }

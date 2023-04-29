@@ -79,11 +79,20 @@ impl Pl011Uart {
     }
 }
 
-pub(super) fn console_putchar(c: u8) {
-    UART.lock().putchar(c);
+/// Writes a byte to the console.
+pub fn putchar(c: u8) {
+    let mut uart = UART.lock();
+    match c {
+        b'\n' => {
+            uart.putchar(b'\r');
+            uart.putchar(b'\n');
+        }
+        c => uart.putchar(c),
+    }
 }
 
-pub(super) fn console_getchar() -> Option<u8> {
+/// Reads a byte from the console, or returns [`None`] if no input is available.
+pub fn getchar() -> Option<u8> {
     UART.lock().getchar()
 }
 

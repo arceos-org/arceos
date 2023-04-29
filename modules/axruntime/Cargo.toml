@@ -12,6 +12,7 @@ documentation = "https://rcore-os.github.io/arceos/axruntime/index.html"
 [features]
 alloc = ["dep:axalloc"]
 paging = ["alloc", "axhal/paging", "dep:lazy_init"]
+irq = ["axhal/irq", "axtask?/irq"]
 multitask = ["alloc", "axtask/multitask"]
 smp = ["axhal/smp", "spinlock/smp"]
 

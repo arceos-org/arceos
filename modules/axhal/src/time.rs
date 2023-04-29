@@ -1,14 +1,18 @@
 //! Time-related operations.
 
+pub use core::time::Duration;
+
 /// A measurement of the system clock.
 ///
 /// Currently, it reuses the [`core::time::Duration`] type. But it does not
 /// represent a duration, but a clock time.
-pub type TimeValue = core::time::Duration;
+pub type TimeValue = Duration;
 
-pub use crate::platform::time::{
-    current_ticks, nanos_to_ticks, set_oneshot_timer, ticks_to_nanos, TIMER_IRQ_NUM,
-};
+#[cfg(feature = "irq")]
+pub use crate::platform::irq::TIMER_IRQ_NUM;
+#[cfg(feature = "irq")]
+pub use crate::platform::time::set_oneshot_timer;
+pub use crate::platform::time::{current_ticks, nanos_to_ticks, ticks_to_nanos};
 
 /// Number of milliseconds in a second.
 pub const MILLIS_PER_SEC: u64 = 1_000;
@@ -29,4 +33,16 @@ pub fn current_time_nanos() -> u64 {
 /// Returns the current clock time in [`TimeValue`].
 pub fn current_time() -> TimeValue {
     TimeValue::from_nanos(current_time_nanos())
+}
+
+/// Busy waiting for the given duration.
+pub fn busy_wait(dur: Duration) {
+    busy_wait_until(current_time() + dur);
+}
+
+/// Busy waiting until reaching the given deadline.
+pub fn busy_wait_until(deadline: TimeValue) {
+    while current_time() < deadline {
+        core::hint::spin_loop();
+    }
 }

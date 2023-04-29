@@ -10,6 +10,10 @@
 //! - Memory
 //!     - `alloc`: Enable dynamic memory allocation.
 //!     - `paging`: Enable page table manipulation.
+//! - Interrupts:
+//!     - `irq`: Enable interrupt handling support. This feature is required for
+//!       some multitask operations, such as [`sync::WaitQueue::wait_timeout`] and
+//!       non-spinning [`task::sleep`].
 //! - Task management
 //!     - `multitask`: Enable multi-threading support.
 //!     - `sched_fifo`: Use the FIFO cooperative scheduler.
