@@ -22,6 +22,7 @@ fn test_sched_fifo() {
             assert_eq!(order, i); // FIFO scheduler
         });
     }
+
     while FINISHED_TASKS.load(Ordering::Relaxed) < NUM_TASKS {
         axtask::yield_now();
     }

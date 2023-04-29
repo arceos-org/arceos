@@ -87,6 +87,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "arceos-priority"
+version = "0.1.0"
+dependencies = [
+ "libax",
+]
+
+[[package]]
 name = "arceos-shell"
 version = "0.1.0"
 dependencies = [
