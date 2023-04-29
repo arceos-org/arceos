@@ -1,11 +1,15 @@
 mod addr;
 mod cbindings;
+mod dns;
 mod driver;
 mod tcp;
+mod udp;
 
-pub use addr::{IpAddr, Ipv4Addr, SocketAddr};
-pub use driver::init;
-pub use tcp::TcpSocket;
+pub use self::addr::{IpAddr, Ipv4Addr, SocketAddr};
+pub use self::dns::resolve_socket_addr;
+pub use self::driver::init;
+pub use self::tcp::TcpSocket;
+pub use self::udp::UdpSocket;
 
 use axsync::Mutex;
 use lazy_init::LazyInit;
