@@ -60,7 +60,7 @@
 // #define MEMP_MEM_MALLOC 1
 
 #define SYS_LIGHTWEIGHT_PROT 0
-#define LWIP_DONT_PROVIDE_BYTEORDER_FUNCTIONS
+// #define LWIP_DONT_PROVIDE_BYTEORDER_FUNCTIONS
 
 // needed on 64-bit systems, enable it always so that the same configuration
 // is used regardless of the platform
