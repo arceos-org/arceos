@@ -19,7 +19,7 @@ documentation = "https://rcore-os.github.io/arceos/libax/index.html"
 cbindings = ["cbindgen", "bindgen"]
 
 # Multicore
-smp = ["axruntime/smp", "axhal/smp"]
+smp = ["axruntime/smp"]
 
 # Floating point/SIMD
 fp_simd = ["axhal/fp_simd"]
@@ -28,10 +28,13 @@ fp_simd = ["axhal/fp_simd"]
 alloc = ["dep:axalloc", "axruntime/alloc", "axio/alloc"]
 paging = ["axruntime/paging"]
 
+# Interrupts
+irq = ["axruntime/irq"]
+
 # Multi-task
-multitask = ["axruntime/multitask", "axtask/multitask", "axsync/multitask"]
+multitask = ["axtask", "axruntime/multitask", "axsync/multitask"]
 sched_fifo = ["axtask/sched_fifo"]
-sched_rr = ["axtask/sched_rr"]
+sched_rr = ["axtask/sched_rr", "irq"]
 
 # File system
 fs = ["alloc", "axruntime/fs", "dep:axfs"]

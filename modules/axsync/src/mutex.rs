@@ -8,7 +8,7 @@ use core::sync::atomic::{AtomicU64, Ordering};
 use axtask::{current, WaitQueue};
 
 /// A mutual exclusion primitive useful for protecting shared data, similar to
-/// [`std::sync::Mutex`].
+/// [`std::sync::Mutex`](https://doc.rust-lang.org/std/sync/struct.Mutex.html).
 ///
 /// When the mutex is locked, the current task will block and be put into the
 /// wait queue. When the mutex is unlocked, all tasks waiting on the queue

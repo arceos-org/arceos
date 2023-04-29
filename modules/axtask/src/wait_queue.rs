@@ -1,7 +1,5 @@
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
-use axhal::time::current_time;
-use core::time::Duration;
 use spinlock::SpinRaw;
 
 use crate::{AxRunQueue, AxTaskRef, CurrentTask, RUN_QUEUE};
@@ -57,6 +55,7 @@ impl WaitQueue {
             self.queue.lock().retain(|t| !curr.ptr_eq(t));
             curr.set_in_wait_queue(false);
         }
+        #[cfg(feature = "irq")]
         if curr.in_timer_list() {
             // timeout was set but not triggered (wake up by `WaitQueue::notify()`)
             crate::timers::cancel_alarm(curr.as_task_ref());
@@ -97,9 +96,10 @@ impl WaitQueue {
 
     /// Blocks the current task and put it into the wait queue, until other tasks
     /// notify it, or the given duration has elapsed.
-    pub fn wait_timeout(&self, dur: Duration) -> bool {
+    #[cfg(feature = "irq")]
+    pub fn wait_timeout(&self, dur: core::time::Duration) -> bool {
         let curr = crate::current();
-        let deadline = current_time() + dur;
+        let deadline = axhal::time::current_time() + dur;
         debug!(
             "task wait_timeout: {} deadline={:?}",
             curr.id_name(),
@@ -121,12 +121,13 @@ impl WaitQueue {
     ///
     /// Note that even other tasks notify this task, it will not wake up until
     /// the above conditions are met.
-    pub fn wait_timeout_until<F>(&self, dur: Duration, condition: F) -> bool
+    #[cfg(feature = "irq")]
+    pub fn wait_timeout_until<F>(&self, dur: core::time::Duration, condition: F) -> bool
     where
         F: Fn() -> bool,
     {
         let curr = crate::current();
-        let deadline = current_time() + dur;
+        let deadline = axhal::time::current_time() + dur;
         debug!(
             "task wait_timeout: {}, deadline={:?}",
             curr.id_name(),
@@ -135,7 +136,7 @@ impl WaitQueue {
         crate::timers::set_alarm_wakeup(deadline, curr.clone());
 
         let mut timeout = true;
-        while current_time() < deadline {
+        while axhal::time::current_time() < deadline {
             let mut rq = RUN_QUEUE.lock();
             if condition() {
                 timeout = false;

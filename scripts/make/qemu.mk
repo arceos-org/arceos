@@ -20,7 +20,7 @@ qemu_args-$(FS) += \
 
 qemu_args-$(NET) += \
   -device virtio-net-device,netdev=net0 \
-  -netdev user,id=net0,hostfwd=tcp::5555-:5555
+  -netdev user,id=net0,hostfwd=tcp::5555-:5555,hostfwd=udp::5555-:5555
 
 ifeq ($(MODE), debug)
   qemu_args-$(NET) += \
@@ -36,6 +36,6 @@ ifeq ($(GRAPHIC), n)
 endif
 
 define run_qemu
-  @echo "    $(CYAN_C)Running$(END_C) $(QEMU) $(qemu_args-y) $(1)"
+  @printf "    $(CYAN_C)Running$(END_C) $(QEMU) $(qemu_args-y) $(1)\n"
   @$(QEMU) $(qemu_args-y) $(1)
 endef

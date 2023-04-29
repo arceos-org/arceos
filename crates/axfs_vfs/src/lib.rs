@@ -96,7 +96,9 @@ pub trait VfsNodeOps: Send + Sync {
     }
 
     /// Get the attributes of the node.
-    fn get_attr(&self) -> VfsResult<VfsNodeAttr>;
+    fn get_attr(&self) -> VfsResult<VfsNodeAttr> {
+        ax_err!(Unsupported)
+    }
 
     // file operations:
 
@@ -151,6 +153,15 @@ pub trait VfsNodeOps: Send + Sync {
     /// Read directory entries into `dirents`, starting from `start_idx`.
     fn read_dir(&self, _start_idx: usize, _dirents: &mut [VfsDirEntry]) -> VfsResult<usize> {
         ax_err!(Unsupported)
+    }
+
+    /// Convert `&self` to [`&dyn Any`][1] that can use
+    /// [`Any::downcast_ref`][2].
+    ///
+    /// [1]: core::any::Any
+    /// [2]: core::any::Any#method.downcast_ref
+    fn as_any(&self) -> &dyn core::any::Any {
+        unimplemented!()
     }
 }
 

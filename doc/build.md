@@ -2,7 +2,7 @@
 
 We will provide an example to illustrate the process of building and running ArceOS:
 
-**Examples:**  
+**Examples:**
 
 What happens when "make A=apps/net/httpserver ARCH=aarch64 LOG=info NET=y SMP=1 run" is executed?
 
@@ -44,7 +44,7 @@ What happens when "make A=apps/net/httpserver ARCH=aarch64 LOG=info NET=y SMP=1 
     #[no_mangle]
     #[link_section = ".text.boot"]
     unsafe extern "C" fn _start() -> ! {
-        extern "Rust" {
+        extern "C" {
             fn rust_main();
         }
         // PC = 0x8020_0000

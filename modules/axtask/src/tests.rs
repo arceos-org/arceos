@@ -76,7 +76,6 @@ fn test_wait_queue() {
             WQ1.notify_one(true); // WQ1.wait_until()
             WQ2.wait();
 
-            assert!(!current().in_timer_list());
             assert!(!current().in_wait_queue());
 
             COUNTER.fetch_sub(1, Ordering::Relaxed);
@@ -88,7 +87,6 @@ fn test_wait_queue() {
     println!("task {:?} is waiting for tasks to start...", current().id());
     WQ1.wait_until(|| COUNTER.load(Ordering::Relaxed) == NUM_TASKS);
     assert_eq!(COUNTER.load(Ordering::Relaxed), NUM_TASKS);
-    assert!(!current().in_timer_list());
     assert!(!current().in_wait_queue());
     WQ2.notify_all(true); // WQ2.wait()
 
@@ -98,6 +96,5 @@ fn test_wait_queue() {
     );
     WQ1.wait_until(|| COUNTER.load(Ordering::Relaxed) == 0);
     assert_eq!(COUNTER.load(Ordering::Relaxed), 0);
-    assert!(!current().in_timer_list());
     assert!(!current().in_wait_queue());
 }

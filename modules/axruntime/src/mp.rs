@@ -4,12 +4,7 @@ use axhal::mem::{virt_to_phys, VirtAddr};
 #[link_section = ".bss.stack"]
 static mut SECONDARY_BOOT_STACK: [[u8; TASK_STACK_SIZE]; SMP - 1] = [[0; TASK_STACK_SIZE]; SMP - 1];
 
-extern "C" {
-    fn _start_secondary();
-}
-
 pub fn start_secondary_cpus(primary_cpu_id: usize) {
-    let entry = virt_to_phys(VirtAddr::from(_start_secondary as usize));
     let mut logic_cpu_id = 0;
     for i in 0..SMP {
         if i != primary_cpu_id {
@@ -18,7 +13,7 @@ pub fn start_secondary_cpus(primary_cpu_id: usize) {
             }));
 
             debug!("starting CPU {}...", i);
-            axhal::mp::start_secondary_cpu(i, entry, stack_top);
+            axhal::mp::start_secondary_cpu(i, stack_top);
             logic_cpu_id += 1;
         }
     }
@@ -33,6 +28,8 @@ pub extern "C" fn rust_main_secondary(cpu_id: usize) -> ! {
 
     #[cfg(feature = "paging")]
     super::remap_kernel_memory().unwrap();
+
+    axhal::platform_init_secondary();
 
     #[cfg(feature = "multitask")]
     axtask::init_scheduler_secondary();
