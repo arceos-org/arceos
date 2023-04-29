@@ -41,10 +41,11 @@ extern "C" fn recv_callback(
     err: err_t,
 ) -> err_t {
     debug!("[TcpSocket] recv_callback: {:#?}", err);
-    let socket_inner = unsafe { &mut *(arg as *mut TcpSocketInner) };
     if err != 0 {
+        error!("[TcpSocket][recv_callback] err: {:#?}", err);
         return err;
     }
+    let socket_inner = unsafe { &mut *(arg as *mut TcpSocketInner) };
     if p.is_null() {
         debug!("[TcpSocket][recv_callback] p is null, remote close");
         socket_inner.remote_closed = true;
@@ -61,10 +62,11 @@ extern "C" fn recv_callback(
 
 extern "C" fn accept_callback(arg: *mut c_void, newpcb: *mut tcp_pcb, err: err_t) -> err_t {
     debug!("[TcpSocket] accept_callback: {:#?}", err);
-    let socket_inner = unsafe { &mut *(arg as *mut TcpSocketInner) };
     if err != 0 {
+        error!("[TcpSocket][accept_callback] err: {:#?}", err);
         return err;
     }
+    let socket_inner = unsafe { &mut *(arg as *mut TcpSocketInner) };
     let mut socket = TcpSocket {
         pcb: TcpPcbPointer(newpcb),
         inner: Box::pin(TcpSocketInner {
@@ -116,7 +118,7 @@ impl TcpSocket {
             let addr = unsafe { (*self.pcb.0).local_ip };
             let port = unsafe { (*self.pcb.0).local_port };
             drop(guard);
-            debug!(
+            trace!(
                 "[TcpSocket] local_addr: {:#?}:{:#?}",
                 IpAddr::from(addr),
                 port
@@ -136,7 +138,7 @@ impl TcpSocket {
             let addr = unsafe { (*self.pcb.0).remote_ip };
             let port = unsafe { (*self.pcb.0).remote_port };
             drop(guard);
-            debug!(
+            trace!(
                 "[TcpSocket] peer_addr: {:#?}:{:#?}",
                 IpAddr::from(addr),
                 port
@@ -249,7 +251,7 @@ impl TcpSocket {
     }
 
     pub fn recv(&mut self, buf: &mut [u8]) -> AxResult<usize> {
-        debug!("[TcpSocket] recv");
+        trace!("[TcpSocket] recv");
         if self.inner.remote_closed {
             return Ok(0);
         }
@@ -288,17 +290,17 @@ impl TcpSocket {
     }
 
     pub fn send(&self, buf: &[u8]) -> AxResult<usize> {
-        debug!("[TcpSocket] send: {:?}", buf);
+        trace!("[TcpSocket] send: {:?}", buf);
         let guard = LWIP_MUTEX.lock();
         unsafe {
-            debug!("[TcpSocket] tcp_write");
+            trace!("[TcpSocket] tcp_write");
             match tcp_write(self.pcb.0, buf.as_ptr() as *const _, buf.len() as u16, 0) {
                 0 => {}
                 _ => {
                     return ax_err!(Unsupported, "LWIP Unsupported");
                 }
             }
-            debug!("[TcpSocket] tcp_output");
+            trace!("[TcpSocket] tcp_output");
             match tcp_output(self.pcb.0) {
                 0 => {}
                 _ => {
@@ -307,7 +309,7 @@ impl TcpSocket {
             }
         }
         drop(guard);
-        debug!("[TcpSocket] send done");
+        trace!("[TcpSocket] send done");
         Ok(buf.len())
     }
 }
