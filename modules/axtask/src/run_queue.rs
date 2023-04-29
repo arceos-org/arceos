@@ -52,6 +52,11 @@ impl AxRunQueue {
         self.resched_inner(false);
     }
 
+    pub fn set_priority(&mut self, prio: isize) -> bool {
+        self.scheduler
+            .set_priority(crate::current().as_task_ref(), prio)
+    }
+
     #[cfg(feature = "preempt")]
     pub fn resched(&mut self) {
         let curr = crate::current();

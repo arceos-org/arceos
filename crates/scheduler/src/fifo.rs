@@ -65,6 +65,10 @@ impl<T> FifoScheduler<T> {
             ready_queue: List::new(),
         }
     }
+    /// get the name of scheduler
+    pub fn scheduler_name() -> &'static str {
+        "FIFO"
+    }
 }
 
 impl<T> BaseScheduler for FifoScheduler<T> {
@@ -90,5 +94,9 @@ impl<T> BaseScheduler for FifoScheduler<T> {
 
     fn task_tick(&mut self, _current: &Self::SchedItem) -> bool {
         false // no reschedule
+    }
+
+    fn set_priority(&mut self, _task: &Self::SchedItem, _prio: isize) -> bool {
+        false
     }
 }

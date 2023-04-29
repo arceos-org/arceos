@@ -112,6 +112,7 @@ if [ -z "$1" ]; then
         "apps/task/yield"
         "apps/task/parallel"
         "apps/task/sleep"
+        "apps/task/priority"
         "apps/net/httpclient"
         "apps/c/helloworld"
         "apps/c/memtest"
