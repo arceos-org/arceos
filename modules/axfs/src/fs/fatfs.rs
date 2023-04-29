@@ -49,7 +49,7 @@ impl FatFileSystem {
     }
 }
 
-impl VfsNodeOps for FileWrapper<'_> {
+impl VfsNodeOps for FileWrapper<'static> {
     axfs_vfs::impl_vfs_non_dir_default! {}
 
     fn get_attr(&self) -> VfsResult<VfsNodeAttr> {

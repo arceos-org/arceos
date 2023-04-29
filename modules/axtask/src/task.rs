@@ -36,6 +36,7 @@ pub struct TaskInner {
     state: AtomicU8,
 
     in_wait_queue: AtomicBool,
+    #[cfg(feature = "irq")]
     in_timer_list: AtomicBool,
 
     #[cfg(feature = "preempt")]
@@ -103,6 +104,7 @@ impl TaskInner {
             entry: None,
             state: AtomicU8::new(TaskState::Ready as u8),
             in_wait_queue: AtomicBool::new(false),
+            #[cfg(feature = "irq")]
             in_timer_list: AtomicBool::new(false),
             #[cfg(feature = "preempt")]
             need_resched: AtomicBool::new(false),
@@ -185,11 +187,13 @@ impl TaskInner {
     }
 
     #[inline]
+    #[cfg(feature = "irq")]
     pub(crate) fn in_timer_list(&self) -> bool {
         self.in_timer_list.load(Ordering::Acquire)
     }
 
     #[inline]
+    #[cfg(feature = "irq")]
     pub(crate) fn set_in_timer_list(&self, in_timer_list: bool) {
         self.in_timer_list.store(in_timer_list, Ordering::Release);
     }
@@ -333,6 +337,7 @@ impl Deref for CurrentTask {
 extern "C" fn task_entry() -> ! {
     // release the lock that was implicitly held across the reschedule
     unsafe { crate::RUN_QUEUE.force_unlock() };
+    #[cfg(feature = "irq")]
     axhal::arch::enable_irqs();
     let task = crate::current();
     if let Some(entry) = task.entry {

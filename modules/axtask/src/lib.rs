@@ -6,9 +6,12 @@
 //!
 //! # Cargo Features
 //!
-//! - `multitask`: Enable multi-task support. If this feature is disabled,
-//!   complex task management will not be available, only a few simple APIs
-//!   can be used such as [`yield_now()`].
+//! - `multitask`: Enable multi-task support. If it's enabled, complex task
+//!   management and scheduling is used, as well as more task-related APIs.
+//!   Otherwise, only a few APIs with naive implementation is available.
+//! - `irq`: Interrupts are enabled. If this feature is enabled, timer-based
+//!    APIs can be used, such as [`sleep`], [`sleep_until`], and
+//!    [`WaitQueue::wait_timeout`].
 //! - `preempt`: Enable preemptive scheduling.
 //! - `sched_fifo`: Use the [FIFO cooperative scheduler][1]. It also enables the
 //!   `multitask` feature if it is enabled. This feature is enabled by default.
@@ -20,6 +23,7 @@
 
 #![cfg_attr(not(test), no_std)]
 #![feature(doc_cfg)]
+#![feature(doc_auto_cfg)]
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "multitask")] {
@@ -28,8 +32,10 @@ cfg_if::cfg_if! {
         extern crate alloc;
         mod run_queue;
         mod task;
-        mod timers;
         mod wait_queue;
+
+        #[cfg(feature = "irq")]
+        mod timers;
     }
 }
 
@@ -39,6 +45,6 @@ mod api;
 #[cfg(test)]
 mod tests;
 
-pub use self::api::yield_now;
 #[doc(cfg(feature = "multitask"))]
 pub use self::api::*;
+pub use self::api::{sleep, sleep_until, yield_now};

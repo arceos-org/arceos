@@ -20,6 +20,11 @@ macro_rules! impl_vfs_dir_default {
         fn truncate(&self, _size: u64) -> $crate::VfsResult {
             $crate::__priv::ax_err!(IsADirectory)
         }
+
+        #[inline]
+        fn as_any(&self) -> &dyn core::any::Any {
+            self
+        }
     };
 }
 
@@ -51,6 +56,11 @@ macro_rules! impl_vfs_non_dir_default {
             _dirents: &mut [$crate::VfsDirEntry],
         ) -> $crate::VfsResult<usize> {
             $crate::__priv::ax_err!(NotADirectory)
+        }
+
+        #[inline]
+        fn as_any(&self) -> &dyn core::any::Any {
+            self
         }
     };
 }

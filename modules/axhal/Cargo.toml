@@ -13,6 +13,7 @@ documentation = "https://rcore-os.github.io/arceos/axhal/index.html"
 smp = []
 fp_simd = []
 paging = ["axalloc", "page_table"]
+irq = []
 platform-qemu-virt-riscv = ["axconfig/platform-qemu-virt-riscv"]
 platform-qemu-virt-aarch64 = [
     "axconfig/platform-qemu-virt-aarch64",

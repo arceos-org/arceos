@@ -209,7 +209,7 @@ pub fn init(net_devs: NetDevices) {
 }
 
 pub fn lwip_loop_once() {
-    debug!("lwip_loop_once");
+    trace!("lwip_loop_once");
     let guard = LWIP_MUTEX.lock();
     unsafe {
         ETH0.poll();

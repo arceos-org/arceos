@@ -102,15 +102,15 @@ fmt_c:
 test:
 	$(call app_test)
 
-unit_test:
+unittest:
 	$(call unit_test)
 
-unit_test_no_fail_fast:
+unittest_no_fail_fast:
 	$(call unit_test,--no-fail-fast)
 
 disk_img:
 ifneq ($(wildcard $(DISK_IMG)),)
-	@echo "$(YELLOW_C)warning$(END_C): disk image \"$(DISK_IMG)\" already exists!"
+	@printf "$(YELLOW_C)warning$(END_C): disk image \"$(DISK_IMG)\" already exists!\n"
 else
 	$(call make_disk_image,fat32,$(DISK_IMG))
 endif

@@ -17,7 +17,7 @@ ArceOS was inspired a lot by [Unikraft](https://github.com/unikraft/unikraft).
 * [x] Multi-thread
 * [x] Cooperative/preemptive scheduler
 * [x] VirtIO net/blk/gpu drivers
-* [x] TCP net stack using [smoltcp](https://github.com/smoltcp-rs/smoltcp)
+* [x] TCP/UDP net stack using [smoltcp](https://github.com/smoltcp-rs/smoltcp)
 * [x] Synchronization/Mutex
 * [x] SMP scheduling with single run queue
 * [x] File system

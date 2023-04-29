@@ -1,9 +1,10 @@
-use crate::mem::PhysAddr;
+use crate::mem::{virt_to_phys, PhysAddr, VirtAddr};
 
-/// Start a secondary CPU with the given ID.
-///
-/// When the CPU is started, it will jump to the given `entry` and set the
-/// stack pointer registers to `stack_top`.
-pub fn start_secondary_cpu(cpu_id: usize, entry: PhysAddr, stack_top: PhysAddr) {
+/// Starts the given secondary CPU with its boot stack.
+pub fn start_secondary_cpu(cpu_id: usize, stack_top: PhysAddr) {
+    extern "C" {
+        fn _start_secondary();
+    }
+    let entry = virt_to_phys(VirtAddr::from(_start_secondary as usize));
     super::psci::cpu_on(cpu_id, entry.as_usize(), stack_top.as_usize());
 }

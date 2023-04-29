@@ -2,6 +2,7 @@
 
 use crate::irq::IrqHandler;
 use lazy_init::LazyInit;
+use riscv::register::sie;
 
 /// `Interrupt` bit in `scause`
 pub(super) const INTC_IRQ_BASE: usize = 1 << (usize::BITS - 1);
@@ -21,6 +22,9 @@ static TIMER_HANDLER: LazyInit<IrqHandler> = LazyInit::new();
 /// The maximum number of IRQs.
 pub const MAX_IRQ_COUNT: usize = 1024;
 
+/// The timer IRQ number (supervisor timer interrupt in `scause`).
+pub const TIMER_IRQ_NUM: usize = S_TIMER;
+
 macro_rules! with_cause {
     ($cause: expr, @TIMER => $timer_op: expr, @EXT => $ext_op: expr $(,)?) => {
         match $cause {
@@ -39,6 +43,9 @@ pub fn set_enable(scause: usize, _enabled: bool) {
 }
 
 /// Registers an IRQ handler for the given IRQ.
+///
+/// It also enables the IRQ if the registration succeeds. It returns `false` if
+/// the registration failed.
 pub fn register_handler(scause: usize, handler: IrqHandler) -> bool {
     with_cause!(
         scause,
@@ -68,4 +75,11 @@ pub fn dispatch_irq(scause: usize) {
     );
 }
 
-pub(super) fn init() {}
+pub(super) fn init_percpu() {
+    // enable soft interrupts, timer interrupts, and external interrupts
+    unsafe {
+        sie::set_ssoft();
+        sie::set_stimer();
+        sie::set_sext();
+    }
+}

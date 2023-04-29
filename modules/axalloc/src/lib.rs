@@ -6,7 +6,6 @@
 //! be registered as the standard library’s default allocator.
 
 #![no_std]
-#![feature(alloc_error_handler)]
 
 #[macro_use]
 extern crate log;
@@ -167,16 +166,6 @@ unsafe impl GlobalAlloc for GlobalAllocator {
 
 #[cfg_attr(all(target_os = "none", not(test)), global_allocator)]
 static GLOBAL_ALLOCATOR: GlobalAllocator = GlobalAllocator::new();
-
-#[cfg(all(target_os = "none", not(test)))]
-#[alloc_error_handler]
-fn handle_alloc_error(layout: Layout) -> ! {
-    panic!(
-        "Heap allocation error: available_bytes = {}, request = {:?}",
-        global_allocator().available_bytes(),
-        layout
-    );
-}
 
 /// Returns the reference to the global allocator.
 pub fn global_allocator() -> &'static GlobalAllocator {

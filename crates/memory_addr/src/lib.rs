@@ -223,7 +223,7 @@ impl VirtAddr {
         align_offset(self.0, align.into())
     }
 
-    ///Checks whether the address has the demanded alignment.
+    /// Checks whether the address has the demanded alignment.
     ///
     /// See the [`is_aligned`] function for more information.
     #[inline]

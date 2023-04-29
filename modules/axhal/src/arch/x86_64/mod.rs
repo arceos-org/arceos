@@ -36,14 +36,22 @@ pub fn irqs_enabled() -> bool {
 }
 
 /// Relaxes the current CPU and waits for interrupts.
+///
+/// It must be called with interrupts enabled, otherwise it will never return.
 #[inline]
 pub fn wait_for_irqs() {
-    if cfg!(target_os = "none") && irqs_enabled() {
-        // don't halt if local interrupts are disabled
+    if cfg!(target_os = "none") {
         unsafe { asm!("hlt") }
     } else {
         core::hint::spin_loop()
     }
+}
+
+/// Halt the current CPU.
+#[inline]
+pub fn halt() {
+    disable_irqs();
+    wait_for_irqs(); // should never return
 }
 
 /// Reads the register that stores the current page table root.

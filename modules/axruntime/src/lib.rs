@@ -7,6 +7,7 @@
 //!
 //! - `alloc`: Enable global memory allocator.
 //! - `paging`: Enable page table manipulation support.
+//! - `irq`: Enable interrupt handling support.
 //! - `multitask`: Enable multi-threading support.
 //! - `smp`: Enable SMP (symmetric multiprocessing) support.
 //! - `fs`: Enable filesystem support.
@@ -42,7 +43,7 @@ const LOGO: &str = r#"
 d88P     888 888      "Y8888P  "Y8888   "Y88888P"   "Y8888P"
 "#;
 
-extern "Rust" {
+extern "C" {
     fn main();
 }
 
@@ -146,6 +147,9 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         remap_kernel_memory().expect("remap kernel memoy failed");
     }
 
+    info!("Initialize platform devices...");
+    axhal::platform_init();
+
     #[cfg(feature = "multitask")]
     axtask::init_scheduler();
 
@@ -164,11 +168,14 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         axdisplay::init_display(all_devices.display);
     }
 
-    info!("Initialize interrupt handlers...");
-    init_interrupt();
-
     #[cfg(feature = "smp")]
     self::mp::start_secondary_cpus(cpu_id);
+
+    #[cfg(feature = "irq")]
+    {
+        info!("Initialize interrupt handlers...");
+        init_interrupt();
+    }
 
     info!("Primary CPU {} init OK.", cpu_id);
     INITED_CPUS.fetch_add(1, Ordering::Relaxed);
@@ -240,6 +247,7 @@ fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
     Ok(())
 }
 
+#[cfg(feature = "irq")]
 fn init_interrupt() {
     use axhal::time::TIMER_IRQ_NUM;
 

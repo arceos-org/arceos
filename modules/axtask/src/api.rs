@@ -18,6 +18,9 @@ cfg_if::cfg_if! {
         const MAX_TIME_SLICE: usize = 5;
         pub(crate) type AxTask = scheduler::RRTask<TaskInner, MAX_TIME_SLICE>;
         pub(crate) type Scheduler = scheduler::RRScheduler<TaskInner, MAX_TIME_SLICE>;
+    } else if #[cfg(feature = "sched_cfs")] {
+        pub(crate) type AxTask = scheduler::CFSTask<TaskInner>;
+        pub(crate) type Scheduler = scheduler::CFScheduler<TaskInner>;
     }
 }
 
@@ -60,13 +63,10 @@ pub fn init_scheduler() {
     info!("Initialize scheduling...");
 
     crate::run_queue::init();
+    #[cfg(feature = "irq")]
     crate::timers::init();
 
-    if cfg!(feature = "sched_fifo") {
-        info!("  use FIFO scheduler.");
-    } else if cfg!(feature = "sched_rr") {
-        info!("  use Round-robin scheduler.");
-    }
+    info!("  use {} scheduler.", Scheduler::scheduler_name());
 }
 
 /// Initializes the task scheduler for secondary CPUs.
@@ -77,6 +77,8 @@ pub fn init_scheduler_secondary() {
 /// Handles periodic timer ticks for the task manager.
 ///
 /// For example, advance scheduler states, checks timed events, etc.
+#[cfg(feature = "irq")]
+#[doc(cfg(feature = "irq"))]
 pub fn on_timer_tick() {
     crate::timers::check_events();
     RUN_QUEUE.lock().scheduler_timer_tick();
@@ -94,6 +96,12 @@ where
     RUN_QUEUE.lock().add_task(task);
 }
 
+/// set priority for current task.
+/// In CFS, priority is the nice value, ranging from -20 to 19.
+pub fn set_priority(prio: isize) -> bool {
+    RUN_QUEUE.lock().set_priority(prio)
+}
+
 /// Current task gives up the CPU time voluntarily, and switches to another
 /// ready task.
 pub fn yield_now() {
@@ -101,14 +109,20 @@ pub fn yield_now() {
 }
 
 /// Current task is going to sleep for the given duration.
+///
+/// If the feature `irq` is not enabled, it uses busy-wait instead.
 pub fn sleep(dur: core::time::Duration) {
-    let deadline = axhal::time::current_time() + dur;
-    RUN_QUEUE.lock().sleep_until(deadline);
+    sleep_until(axhal::time::current_time() + dur);
 }
 
 /// Current task is going to sleep, it will be woken up at the given deadline.
+///
+/// If the feature `irq` is not enabled, it uses busy-wait instead.
 pub fn sleep_until(deadline: axhal::time::TimeValue) {
+    #[cfg(feature = "irq")]
     RUN_QUEUE.lock().sleep_until(deadline);
+    #[cfg(not(feature = "irq"))]
+    axhal::time::busy_wait_until(deadline);
 }
 
 /// Exits the current task.

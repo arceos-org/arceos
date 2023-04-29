@@ -87,14 +87,32 @@ dependencies = [
 ]
 
 [[package]]
-name = "arceos-shell"
+name = "arceos-priority"
 version = "0.1.0"
 dependencies = [
  "libax",
 ]
 
 [[package]]
+name = "arceos-shell"
+version = "0.1.0"
+dependencies = [
+ "axfs",
+ "axfs_ramfs",
+ "axfs_vfs",
+ "crate_interface",
+ "libax",
+]
+
+[[package]]
 name = "arceos-sleep"
+version = "0.1.0"
+dependencies = [
+ "libax",
+]
+
+[[package]]
+name = "arceos-udpserver"
 version = "0.1.0"
 dependencies = [
  "libax",
@@ -202,12 +220,14 @@ dependencies = [
  "axdriver",
  "axerrno",
  "axfs_devfs",
+ "axfs_ramfs",
  "axfs_vfs",
  "axio",
  "axsync",
  "axtask",
  "capability",
  "cfg-if",
+ "crate_interface",
  "driver_block",
  "fatfs",
  "lazy_init",
@@ -216,6 +236,15 @@ dependencies = [
 
 [[package]]
 name = "axfs_devfs"
+version = "0.1.0"
+dependencies = [
+ "axfs_vfs",
+ "log",
+ "spin",
+]
+
+[[package]]
+name = "axfs_ramfs"
 version = "0.1.0"
 dependencies = [
  "axfs_vfs",

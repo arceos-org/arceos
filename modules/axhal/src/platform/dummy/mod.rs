@@ -22,16 +22,8 @@ pub mod misc {
 
 #[cfg(feature = "smp")]
 pub mod mp {
-    /// Starts a secondary CPU with the given ID.
-    ///
-    /// When the CPU is started, it will jump to the given entry and set the
-    /// corresponding register to the given argument.
-    pub fn start_secondary_cpu(
-        hardid: usize,
-        entry: crate::mem::PhysAddr,
-        stack_top: crate::mem::PhysAddr,
-    ) {
-    }
+    /// Starts the given secondary CPU with its boot stack.
+    pub fn start_secondary_cpu(cpu_id: usize, stack_top: crate::mem::PhysAddr) {}
 }
 
 pub mod mem {
@@ -48,9 +40,6 @@ pub mod mem {
 }
 
 pub mod time {
-    /// The timer IRQ number.
-    pub const TIMER_IRQ_NUM: usize = 0;
-
     /// Returns the current clock time in hardware ticks.
     pub fn current_ticks() -> u64 {
         0
@@ -72,9 +61,13 @@ pub mod time {
     pub fn set_oneshot_timer(deadline_ns: u64) {}
 }
 
+#[cfg(feature = "irq")]
 pub mod irq {
     /// The maximum number of IRQs.
     pub const MAX_IRQ_COUNT: usize = 256;
+
+    /// The timer IRQ number.
+    pub const TIMER_IRQ_NUM: usize = 0;
 
     /// Enables or disables the given IRQ.
     pub fn set_enable(irq_num: usize, enabled: bool) {}
@@ -91,3 +84,10 @@ pub mod irq {
     /// necessary, it also acknowledges the interrupt controller after handling.
     pub fn dispatch_irq(irq_num: usize) {}
 }
+
+/// Initializes the platform devices for the primary CPU.
+pub fn platform_init() {}
+
+/// Initializes the platform devices for secondary CPUs.
+#[cfg(feature = "smp")]
+pub fn platform_init_secondary() {}

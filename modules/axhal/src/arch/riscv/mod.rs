@@ -29,9 +29,18 @@ pub fn irqs_enabled() -> bool {
 }
 
 /// Relaxes the current CPU and waits for interrupts.
+///
+/// It must be called with interrupts enabled, otherwise it will never return.
 #[inline]
 pub fn wait_for_irqs() {
     unsafe { riscv::asm::wfi() }
+}
+
+/// Halt the current CPU.
+#[inline]
+pub fn halt() {
+    disable_irqs();
+    unsafe { riscv::asm::wfi() } // should never return
 }
 
 /// Reads the register that stores the current page table root.
