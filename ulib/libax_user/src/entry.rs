@@ -8,6 +8,7 @@ extern "C" fn _start() {
     }
     super::logging::init();
     super::logging::set_max_level(option_env!("LOG").unwrap_or(""));
+    super::allocate::init();
     unsafe {
         main();
     }

@@ -1,6 +1,6 @@
 use core::sync::atomic::{AtomicUsize, Ordering};
-use libax::task;
 use core::time::Duration;
+use libax::task;
 
 const NUM_TASKS: usize = 5;
 
@@ -25,8 +25,6 @@ fn test2() {
     task::exit(0);
 }
 
-
-
 pub fn main() {
     println!("Hello, main task!");
     task::sleep(Duration::from_secs(1));
@@ -34,7 +32,6 @@ pub fn main() {
 
     // backgroud ticks, 0.5s x 30 = 15s
     task::spawn_fn(test1);
-
 
     // task n: sleep 3 x n (sec)
     for i in 0..NUM_TASKS {

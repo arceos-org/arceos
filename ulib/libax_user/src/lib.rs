@@ -8,7 +8,9 @@ pub mod logging;
 pub use logging::__print_impl;
 pub use logging::{debug, error, info, trace, warn};
 
+mod allocate;
 mod entry;
+pub mod rand;
 
 use core::panic::PanicInfo;
 

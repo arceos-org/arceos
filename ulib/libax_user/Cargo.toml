@@ -17,3 +17,5 @@ log-level-trace = ["log/max_level_trace"]
 
 [dependencies]
 log = "0.4"
+allocator = { path = "../../crates/allocator" }
+spinlock = { path = "../../crates/spinlock" }

@@ -13,7 +13,7 @@ use axhal::{
     paging::{MappingFlags, PageTable},
 };
 use lazy_init::LazyInit;
-use memory_addr::{align_up, align_up_4k, PhysAddr, VirtAddr};
+use memory_addr::{align_up, align_up_4k, PhysAddr, VirtAddr, PAGE_SIZE_4K};
 
 pub const USER_START: usize = 0x0400_0000;
 pub const USTACK_START: usize = 0xf_ffff_f000;
@@ -26,9 +26,15 @@ pub struct MapSegment {
     phy_mem: Vec<Arc<GlobalPage>>,
 }
 
+pub struct HeapSegment {
+    start_vaddr: VirtAddr,
+    actual_size: usize,
+}
+
 pub struct AddrSpace {
     segments: alloc::vec::Vec<MapSegment>,
     page_table: PageTable,
+    heap: Option<HeapSegment>,
 }
 
 impl AddrSpace {
@@ -36,6 +42,7 @@ impl AddrSpace {
         AddrSpace {
             segments: vec![],
             page_table: PageTable::try_new().expect("Creating page table failed!"),
+            heap: None,
         }
     }
 
@@ -77,6 +84,79 @@ impl AddrSpace {
     pub fn page_table_addr(&self) -> PhysAddr {
         self.page_table.root_paddr()
     }
+
+    pub fn init_heap(&mut self, vaddr: VirtAddr) {
+        if self.heap.is_some() {
+            return;
+        }
+        self.heap = Some(HeapSegment {
+            start_vaddr: vaddr,
+            actual_size: 0,
+        });
+        let page = GlobalPage::alloc_zero().expect("Alloc error!");
+        self.page_table
+            .map_region(
+                vaddr,
+                page.start_paddr(virt_to_phys),
+                page.size(),
+                MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
+                false,
+            )
+            .expect("Mapping Segment Error");
+        self.segments.push(MapSegment {
+            start_vaddr: vaddr,
+            size: page.size(),
+            phy_mem: vec![page.into()],
+        });
+        info!("User heap inited @ {:x}", vaddr);
+    }
+
+    pub fn sbrk(&mut self, size: isize) -> Option<usize> {
+        if let Some(heap) = &mut self.heap {
+            let old_brk: usize = (heap.start_vaddr + heap.actual_size).into();
+            info!("user sbrk: {} bytes", size);
+            if size == 0 {
+                return Some(old_brk);
+            } else if size < 0 {
+                if (-size) as usize > heap.actual_size {
+                    return None;
+                }
+                heap.actual_size -= -size as usize
+            } else {
+                heap.actual_size += size as usize;
+                let heap_seg = self
+                    .segments
+                    .iter_mut()
+                    .find(|x| x.start_vaddr == heap.start_vaddr)
+                    .unwrap();
+                if heap.actual_size > heap_seg.size {
+                    let delta = align_up_4k(heap.actual_size - heap_seg.size);
+                    while heap.actual_size > heap_seg.size {
+                        if let Ok(page) =
+                            GlobalPage::alloc_contiguous(delta / PAGE_SIZE_4K, PAGE_SIZE_4K)
+                        {
+                            self.page_table
+                                .map_region(
+                                    heap.start_vaddr + heap_seg.size,
+                                    page.start_paddr(virt_to_phys),
+                                    page.size(),
+                                    MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
+                                    false,
+                                )
+                                .expect("Mapping Error");
+                            heap_seg.size += page.size();
+                            heap_seg.phy_mem.push(page.into());
+                        } else {
+                            return None;
+                        }
+                    }
+                }
+            }
+            Some(old_brk)
+        } else {
+            None
+        }
+    }
 }
 
 static mut GLOBAL_USER_ADDR_SPACE: LazyInit<AddrSpace> = LazyInit::new();
@@ -101,6 +181,8 @@ pub fn init_global_addr_space() {
 
     let mut user_space = AddrSpace::new();
 
+    let mut data_end: VirtAddr = 0.into();
+
     for segment in &segments {
         let mut user_phy_page =
             GlobalPage::alloc_contiguous(align_up_4k(segment.size) / PAGE_SIZE_4K, PAGE_SIZE_4K)
@@ -123,16 +205,20 @@ pub fn init_global_addr_space() {
             segment.flags | MappingFlags::USER,
             false,
         );
+        data_end = data_end.max(segment.start_addr + align_up_4k(segment.size))
     }
+
+    user_space.init_heap(data_end);
 
     // stack allocation
     assert!(USTACK_SIZE % PAGE_SIZE_4K == 0);
     #[cfg(not(feature = "multitask"))]
     {
-        let user_stack_page = GlobalPage::alloc_contiguous(USTACK_SIZE / PAGE_SIZE_4K, PAGE_SIZE_4K)
-            .expect("Alloc page error!");
+        let user_stack_page =
+            GlobalPage::alloc_contiguous(USTACK_SIZE / PAGE_SIZE_4K, PAGE_SIZE_4K)
+                .expect("Alloc page error!");
         debug!("{:?}", user_stack_page);
-        
+
         user_space.add_region(
             USTACK_START.into(),
             user_stack_page.start_paddr(virt_to_phys),
@@ -175,6 +261,10 @@ pub fn alloc_user_page(vaddr: VirtAddr, size: usize, flags: MappingFlags) -> Arc
         );
     }
     user_phy_page
+}
+
+pub fn global_sbrk(size: isize) -> Option<usize> {
+    unsafe { GLOBAL_USER_ADDR_SPACE.get_mut_unchecked().sbrk(size) }
 }
 
 pub fn get_satp() -> usize {

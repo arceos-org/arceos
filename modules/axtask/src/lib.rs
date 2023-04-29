@@ -93,7 +93,7 @@ if #[cfg(feature = "user-paging")] {
 pub fn spawn(f: usize, arg: usize) {
     let task = TaskInner::new_user(f, axconfig::TASK_STACK_SIZE, arg);
     RUN_QUEUE.lock().add_task(task);
-}       
+}
 } else {
 pub fn spawn<F>(f: F)
 where
@@ -104,7 +104,7 @@ where
 }
 }
 }
-    
+
 pub fn yield_now() {
     RUN_QUEUE.lock().yield_current();
 }
