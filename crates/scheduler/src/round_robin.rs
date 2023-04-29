@@ -65,6 +65,10 @@ impl<T, const S: usize> RRScheduler<T, S> {
             ready_queue: VecDeque::new(),
         }
     }
+    /// get the name of scheduler
+    pub fn scheduler_name() -> &'static str {
+        "Round-robin"
+    }
 }
 
 impl<T, const S: usize> BaseScheduler for RRScheduler<T, S> {
@@ -100,5 +104,9 @@ impl<T, const S: usize> BaseScheduler for RRScheduler<T, S> {
     fn task_tick(&mut self, current: &Self::SchedItem) -> bool {
         let old_slice = current.time_slice.fetch_sub(1, Ordering::Release);
         old_slice <= 1
+    }
+
+    fn set_priority(&mut self, _task: &Self::SchedItem, _prio: isize) -> bool {
+        false
     }
 }

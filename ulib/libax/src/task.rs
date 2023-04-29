@@ -1,7 +1,7 @@
 //! Native threads.
 
 #[cfg(feature = "multitask")]
-pub use axtask::{current, spawn, TaskId};
+pub use axtask::{current, set_priority, spawn, TaskId};
 
 /// Current task gives up the CPU time voluntarily, and switches to another
 /// ready task.
