@@ -74,9 +74,23 @@ Wireshark 打开后，时不时有一大片黑包（重传），最后有一大�
 
 （通过筛选 59980 端口，发现 Qemu 中一个对应的包都没有😓）
 
-结合 log 中最后只到 `new client 370`，怀疑 `accept` 出现问题。
+统计发现 driver 层收发包数和 Qemu 抓包结果相一致，怀疑 ab 和 Qemu 交互时出现问题。
 
+Qemu 使用 `-netdev user,id=net0,hostfwd=tcp::5555-:5555,hostfwd=udp::5555-:5555` 进行包转发，TCP 包需要经过 Qemu 的处理，怀疑在此处出现问题。
+
+由于对 Qemu 不是很了解，就不做进一步的 debug 了。
+
+#### TAP
+
+计划之后换用 tap netdev 进行实验。
+
+简略学习了一下 TUN / TAP。
+
+由于 WSL2 中无法创建 tun/tap（<https://github.com/microsoft/WSL/issues/874>），之后将更换开发平台，并重新进行环境配置。
 
 ## 下周计划
 
-- 进行系统层适配
+- 更换开发平台，配置 TAP
+
+- 学习进行系统层适配
+
