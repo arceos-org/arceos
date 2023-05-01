@@ -12,10 +12,10 @@ ArceOS was inspired a lot by [Unikraft](https://github.com/unikraft/unikraft).
 
 ## Features & TODOs
 
-* [x] Architecture: riscv64, aarch64
-* [x] Platform: QEMU virt riscv64/aarch64
+* [x] Architecture: x86_64, riscv64, aarch64
+* [x] Platform: QEMU pc-q35 (x86_64), virt (riscv64/aarch64)
 * [x] Multi-thread
-* [x] Cooperative/preemptive scheduler
+* [x] FIFO/RR/CFS scheduler
 * [x] VirtIO net/blk/gpu drivers
 * [x] TCP/UDP net stack using [smoltcp](https://github.com/smoltcp-rs/smoltcp)
 * [x] Synchronization/Mutex
