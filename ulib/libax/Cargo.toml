@@ -2,28 +2,46 @@
 name = "libax"
 version = "0.1.0"
 edition = "2021"
-authors = ["Yuekai Jia <equation618@gmail.com>"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors = [
+    "Yuekai Jia <equation618@gmail.com>",
+    "yfblock <321353225@qq.com>",
+    "scPointer <bhy18@mails.tsinghua.edu.cn>",
+    "Shiping Yuan <robert_yuan@pku.edu.com>",
+]
+description = "ArceOS user library with an interface similar to rust std"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+repository = "https://github.com/rcore-os/arceos/tree/main/ulib/ibax"
+documentation = "https://rcore-os.github.io/arceos/libax/index.html"
 
 [features]
+# Generate bindings for C code
+cbindings = ["cbindgen", "bindgen"]
+
 # Multicore
-smp = ["axruntime/smp", "axhal/smp"]
+smp = ["axruntime/smp"]
+
+# Floating point/SIMD
+fp_simd = ["axhal/fp_simd"]
 
 # Memory
-alloc = ["axruntime/alloc"]
+alloc = ["dep:axalloc", "axruntime/alloc", "axio/alloc"]
 paging = ["axruntime/paging"]
 
+# Interrupts
+irq = ["axruntime/irq"]
+
 # Multi-task
-multitask = ["axruntime/multitask", "axtask/multitask", "axsync/multitask"]
+multitask = ["axtask", "axruntime/multitask", "axsync/multitask"]
 sched_fifo = ["axtask/sched_fifo"]
-sched_rr = ["axtask/sched_rr"]
+sched_rr = ["axtask/sched_rr", "irq"]
+sched_cfs = ["axtask/sched_cfs", "irq"]
+
+# File system
+fs = ["alloc", "axruntime/fs", "dep:axfs"]
 
 # Networking
 net = ["axruntime/net", "dep:axnet"]
-
-# File system
-fs = ["axruntime/fs"]
 
 # Display
 display = ["axruntime/display", "dep:axdisplay"]
@@ -37,19 +55,27 @@ log-level-debug = ["axlog/log-level-debug"]
 log-level-trace = ["axlog/log-level-trace"]
 
 # Platform
+platform-pc-x86 = ["axhal/platform-pc-x86", "axdriver?/bus-pci"]
 platform-qemu-virt-riscv = ["axhal/platform-qemu-virt-riscv", "axdriver?/bus-mmio"]
 platform-qemu-virt-aarch64 = ["axhal/platform-qemu-virt-aarch64", "axdriver?/bus-mmio"]
 
 default = ["axtask?/sched_fifo"]
 
 [dependencies]
-cfg-if = "1.0.0"
+spinlock = { path = "../../crates/spinlock" }
+axio = { path = "../../crates/axio" }
+axerrno = { path = "../../crates/axerrno" }
+axalloc = { path = "../../modules/axalloc", optional = true }
 axdisplay = { path = "../../modules/axdisplay", optional = true }
 axdriver = { path = "../../modules/axdriver", optional = true }
-axerror = { path = "../../modules/axerror" }
 axhal = { path = "../../modules/axhal" }
 axlog = { path = "../../modules/axlog" }
+axfs = { path = "../../modules/axfs", optional = true }
 axnet = { path = "../../modules/axnet", optional = true }
-axruntime = { path = "../../modules/axruntime" }
+axruntime = { path = "../../modules/axruntime", default-features = false }
 axsync = { path = "../../modules/axsync", default-features = false, optional = true }
 axtask = { path = "../../modules/axtask", default-features = false, optional = true }
+
+[build-dependencies]
+cbindgen = { version = "0.24", optional = true }
+bindgen ={ version = "0.64", optional = true }

@@ -24,13 +24,11 @@ unsafe fn init_mmu() {
     riscv::register::sstatus::set_sum();
 }
 
+/// The earliest entry point for the primary CPU.
 #[naked]
 #[no_mangle]
 #[link_section = ".text.boot"]
 unsafe extern "C" fn _start() -> ! {
-    extern "Rust" {
-        fn rust_main();
-    }
     // PC = 0x8020_0000
     // a0 = hartid
     // a1 = dtb
@@ -49,35 +47,26 @@ unsafe extern "C" fn _start() -> ! {
 
         mv      a0, s0
         mv      a1, s1
-        la      a2, {platform_init}
+        la      a2, {entry}
         add     a2, a2, s2
-        jalr    a2                      // call platform_init(hartid, dtb)
-
-        mv      a0, s0
-        mv      a1, s1
-        la      a2, {rust_main}
-        add     a2, a2, s2
-        jalr    a2                      // call rust_main(hartid, dtb)
+        jalr    a2                      // call rust_entry(hartid, dtb)
         j       .",
         phys_virt_offset = const PHYS_VIRT_OFFSET,
         boot_stack_size = const TASK_STACK_SIZE,
         boot_stack = sym BOOT_STACK,
         init_boot_page_table = sym init_boot_page_table,
         init_mmu = sym init_mmu,
-        platform_init = sym super::platform_init,
-        rust_main = sym rust_main,
+        entry = sym super::rust_entry,
         options(noreturn),
     )
 }
 
+/// The earliest entry point for secondary CPUs.
 #[cfg(feature = "smp")]
 #[naked]
 #[no_mangle]
 #[link_section = ".text.boot"]
 unsafe extern "C" fn _start_secondary() -> ! {
-    extern "Rust" {
-        fn rust_main_secondary();
-    }
     // a0 = hartid
     // a1 = SP
     core::arch::asm!("
@@ -91,19 +80,13 @@ unsafe extern "C" fn _start_secondary() -> ! {
         add     sp, sp, s1
 
         mv      a0, s0
-        la      a1, {platform_init_secondary}
+        la      a1, {entry}
         add     a1, a1, s1
-        jalr    a1                      // call platform_init_secondary(hartid)
-
-        mv      a0, s0
-        la      a1, {rust_main_secondary}
-        add     a1, a1, s1
-        jalr    a1                      // call rust_main_secondary(hartid)
+        jalr    a1                      // call rust_entry_secondary(hartid)
         j       .",
         phys_virt_offset = const PHYS_VIRT_OFFSET,
         init_mmu = sym init_mmu,
-        platform_init_secondary = sym super::platform_init_secondary,
-        rust_main_secondary = sym rust_main_secondary,
+        entry = sym super::rust_entry_secondary,
         options(noreturn),
     )
 }

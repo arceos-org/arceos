@@ -1,22 +1,44 @@
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
-use axhal::time::current_time;
-use core::time::Duration;
 use spinlock::SpinRaw;
 
 use crate::{AxRunQueue, AxTaskRef, CurrentTask, RUN_QUEUE};
 
+/// A queue to store sleeping tasks.
+///
+/// # Examples
+///
+/// ```
+/// use axtask::WaitQueue;
+/// use core::sync::atomic::{AtomicU32, Ordering};
+///
+/// static VALUE: AtomicU32 = AtomicU32::new(0);
+/// static WQ: WaitQueue = WaitQueue::new();
+///
+/// axtask::init_scheduler();
+/// // spawn a new task that updates `VALUE` and notifies the main task
+/// axtask::spawn(|| {
+///     assert_eq!(VALUE.load(Ordering::Relaxed), 0);
+///     VALUE.fetch_add(1, Ordering::Relaxed);
+///     WQ.notify_one(true); // wake up the main task
+/// });
+///
+/// WQ.wait(); // block until `notify()` is called
+/// assert_eq!(VALUE.load(Ordering::Relaxed), 1);
+/// ```
 pub struct WaitQueue {
     queue: SpinRaw<VecDeque<AxTaskRef>>, // we already disabled IRQs when lock the `RUN_QUEUE`
 }
 
 impl WaitQueue {
+    /// Creates an empty wait queue.
     pub const fn new() -> Self {
         Self {
             queue: SpinRaw::new(VecDeque::new()),
         }
     }
 
+    /// Creates an empty wait queue with space for at least `capacity` elements.
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             queue: SpinRaw::new(VecDeque::with_capacity(capacity)),
@@ -33,12 +55,15 @@ impl WaitQueue {
             self.queue.lock().retain(|t| !curr.ptr_eq(t));
             curr.set_in_wait_queue(false);
         }
+        #[cfg(feature = "irq")]
         if curr.in_timer_list() {
             // timeout was set but not triggered (wake up by `WaitQueue::notify()`)
             crate::timers::cancel_alarm(curr.as_task_ref());
         }
     }
 
+    /// Blocks the current task and put it into the wait queue, until other task
+    /// notifies it.
     pub fn wait(&self) {
         RUN_QUEUE.lock().block_current(|task| {
             task.set_in_wait_queue(true);
@@ -47,6 +72,11 @@ impl WaitQueue {
         self.cancel_events(crate::current());
     }
 
+    /// Blocks the current task and put it into the wait queue, until the given
+    /// `condition` becomes true.
+    ///
+    /// Note that even other tasks notify this task, it will not wake up until
+    /// the condition becomes true.
     pub fn wait_until<F>(&self, condition: F)
     where
         F: Fn() -> bool,
@@ -64,9 +94,12 @@ impl WaitQueue {
         self.cancel_events(crate::current());
     }
 
-    pub fn wait_timeout(&self, dur: Duration) -> bool {
+    /// Blocks the current task and put it into the wait queue, until other tasks
+    /// notify it, or the given duration has elapsed.
+    #[cfg(feature = "irq")]
+    pub fn wait_timeout(&self, dur: core::time::Duration) -> bool {
         let curr = crate::current();
-        let deadline = current_time() + dur;
+        let deadline = axhal::time::current_time() + dur;
         debug!(
             "task wait_timeout: {} deadline={:?}",
             curr.id_name(),
@@ -83,12 +116,18 @@ impl WaitQueue {
         timeout
     }
 
-    pub fn wait_timeout_until<F>(&self, dur: Duration, condition: F) -> bool
+    /// Blocks the current task and put it into the wait queue, until the given
+    /// `condition` becomes true, or the given duration has elapsed.
+    ///
+    /// Note that even other tasks notify this task, it will not wake up until
+    /// the above conditions are met.
+    #[cfg(feature = "irq")]
+    pub fn wait_timeout_until<F>(&self, dur: core::time::Duration, condition: F) -> bool
     where
         F: Fn() -> bool,
     {
         let curr = crate::current();
-        let deadline = current_time() + dur;
+        let deadline = axhal::time::current_time() + dur;
         debug!(
             "task wait_timeout: {}, deadline={:?}",
             curr.id_name(),
@@ -97,7 +136,7 @@ impl WaitQueue {
         crate::timers::set_alarm_wakeup(deadline, curr.clone());
 
         let mut timeout = true;
-        while current_time() < deadline {
+        while axhal::time::current_time() < deadline {
             let mut rq = RUN_QUEUE.lock();
             if condition() {
                 timeout = false;
@@ -112,6 +151,10 @@ impl WaitQueue {
         timeout
     }
 
+    /// Wakes up one task in the wait queue, usually the first one.
+    ///
+    /// If `resched` is true, the current task will be preempted when the
+    /// preemption is enabled.
     pub fn notify_one(&self, resched: bool) -> bool {
         let mut rq = RUN_QUEUE.lock();
         if !self.queue.lock().is_empty() {
@@ -121,6 +164,10 @@ impl WaitQueue {
         }
     }
 
+    /// Wakes all tasks in the wait queue.
+    ///
+    /// If `resched` is true, the current task will be preempted when the
+    /// preemption is enabled.
     pub fn notify_all(&self, resched: bool) {
         loop {
             let mut rq = RUN_QUEUE.lock();
@@ -134,6 +181,10 @@ impl WaitQueue {
         }
     }
 
+    /// Wake up the given task in the wait queue.
+    ///
+    /// If `resched` is true, the current task will be preempted when the
+    /// preemption is enabled.
     pub fn notify_task(&mut self, resched: bool, task: &AxTaskRef) -> bool {
         let mut rq = RUN_QUEUE.lock();
         let mut wq = self.queue.lock();

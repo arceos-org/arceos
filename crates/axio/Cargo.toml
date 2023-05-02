@@ -1,0 +1,17 @@
+[package]
+name = "axio"
+version = "0.1.0"
+edition = "2021"
+authors = ["Yuekai Jia <equation618@gmail.com>"]
+description = "`std::io`-like I/O traits for `no_std` environment"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+repository = "https://github.com/rcore-os/arceos/tree/main/crates/axio"
+documentation = "https://rcore-os.github.io/arceos/axio/index.html"
+
+[features]
+alloc = []
+default = []
+
+[dependencies]
+axerrno = { path = "../axerrno" }

@@ -1,5 +1,7 @@
+mod dns;
 mod listen_table;
 mod tcp;
+mod udp;
 
 use alloc::{collections::VecDeque, vec};
 use core::cell::RefCell;
@@ -8,8 +10,7 @@ use core::ops::DerefMut;
 use axdriver::NetDevices;
 use axhal::time::{current_time_nanos, NANOS_PER_MICROS};
 use axsync::Mutex;
-use driver_common::DevError;
-use driver_net::{NetBuffer, NetDriverOps};
+use driver_net::{DevError, NetBuffer, NetDriverOps};
 use lazy_init::LazyInit;
 use smoltcp::iface::{Config, Interface, SocketHandle, SocketSet};
 use smoltcp::phy::{Device, DeviceCapabilities, Medium, RxToken, TxToken};
@@ -19,17 +20,21 @@ use smoltcp::wire::{EthernetAddress, HardwareAddress, IpAddress, IpCidr};
 
 use self::listen_table::ListenTable;
 
+pub use self::dns::resolve_socket_addr;
 pub use self::tcp::TcpSocket;
+pub use self::udp::UdpSocket;
 
 const IP: IpAddress = IpAddress::v4(10, 0, 2, 15); // QEMU user networking default IP
 const GATEWAY: IpAddress = IpAddress::v4(10, 0, 2, 2); // QEMU user networking gateway
+const DNS_SEVER: IpAddress = IpAddress::v4(8, 8, 8, 8);
 const IP_PREFIX: u8 = 24;
 
 const RANDOM_SEED: u64 = 0xA2CE_05A2_CE05_A2CE;
 
 const TCP_RX_BUF_LEN: usize = 4096;
 const TCP_TX_BUF_LEN: usize = 4096;
-
+const UDP_RX_BUF_LEN: usize = 4096;
+const UDP_TX_BUF_LEN: usize = 4096;
 const RX_BUF_QUEUE_SIZE: usize = 64;
 const LISTEN_QUEUE_SIZE: usize = 512;
 
@@ -60,6 +65,22 @@ impl<'a> SocketSetWrapper<'a> {
         let tcp_rx_buffer = socket::tcp::SocketBuffer::new(vec![0; TCP_RX_BUF_LEN]);
         let tcp_tx_buffer = socket::tcp::SocketBuffer::new(vec![0; TCP_TX_BUF_LEN]);
         socket::tcp::Socket::new(tcp_rx_buffer, tcp_tx_buffer)
+    }
+
+    pub fn new_udp_socket() -> socket::udp::Socket<'a> {
+        let udp_rx_buffer = socket::udp::PacketBuffer::new(
+            vec![socket::udp::PacketMetadata::EMPTY; 8],
+            vec![0; UDP_RX_BUF_LEN],
+        );
+        let udp_tx_buffer = socket::udp::PacketBuffer::new(
+            vec![socket::udp::PacketMetadata::EMPTY; 8],
+            vec![0; UDP_TX_BUF_LEN],
+        );
+        socket::udp::Socket::new(udp_rx_buffer, udp_tx_buffer)
+    }
+
+    pub fn new_dns_socket() -> socket::dns::Socket<'a> {
+        socket::dns::Socket::new(&[DNS_SEVER], vec![])
     }
 
     pub fn add<T: AnySocket<'a>>(&self, socket: T) -> SocketHandle {

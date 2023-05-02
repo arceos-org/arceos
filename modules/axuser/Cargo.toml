@@ -27,10 +27,9 @@ user-paging = ["axtask/user-paging", "axruntime/user-paging"]
 
 # only including necessary modules for now.
 axdriver = { path = "../axdriver", optional = true }
-axerror = { path = "../axerror" }
 axhal = { path = "../axhal", features = ["user", "paging"] }
 axlog = { path = "../axlog" }
 axruntime = { path = "../axruntime", features = ["user", "alloc", "paging"
-  , "multitask"
+  , "multitask", "irq"
   ] }
-axtask = { path = "../axtask" }
+axtask = { path = "../axtask" , features = ["irq"]}

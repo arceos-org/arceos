@@ -12,12 +12,12 @@ else
 endif
 
 _cargo_build:
-	@echo "    $(GREEN_C)Building$(END_C) App: $(APP_NAME), Arch: $(ARCH), Platform: $(PLATFORM), Language: $(APP_LANG)"
+	@printf "    $(GREEN_C)Building$(END_C) App: $(APP_NAME), Arch: $(ARCH), Platform: $(PLATFORM), Language: $(APP_LANG)\n"
 ifeq ($(APP_LANG), rust)
 	$(call cargo_build,--manifest-path $(APP)/Cargo.toml)
 	@cp $(rust_elf) $(OUT_ELF)
 else ifeq ($(APP_LANG), c)
-	$(call cargo_build,-p libax_bindings)
+	$(call cargo_build,-p libax)
 endif
 
 $(OUT_BIN): _cargo_build $(OUT_ELF)

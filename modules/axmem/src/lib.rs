@@ -286,7 +286,7 @@ pub fn translate_buffer(vaddr: VirtAddr, size: usize) -> Vec<&'static mut [u8]> 
     while read_size < size {
         let (paddr, _, page_size) = addr_space.page_table.query(vaddr).expect("Invalid vaddr!");
 
-        let nxt_vaddr = align_up(vaddr.as_usize() + 1, page_size);
+        let nxt_vaddr = align_up(vaddr.as_usize() + 1, page_size.into());
         let len = (nxt_vaddr - vaddr.as_usize()).min(size - read_size);
         let data =
             unsafe { core::slice::from_raw_parts_mut(phys_to_virt(paddr).as_mut_ptr(), len) };

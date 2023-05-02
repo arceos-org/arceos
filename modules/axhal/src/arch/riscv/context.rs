@@ -3,6 +3,8 @@ use memory_addr::VirtAddr;
 
 include_asm_marcos!();
 
+/// General registers of RISC-V.
+#[allow(missing_docs)]
 #[repr(C)]
 #[derive(Debug, Default, Clone)]
 pub struct GeneralRegisters {
@@ -39,11 +41,15 @@ pub struct GeneralRegisters {
     pub t6: usize,
 }
 
+/// Saved registers when a trap (interrupt or exception) occurs.
 #[repr(C)]
 #[derive(Debug, Default, Clone)]
 pub struct TrapFrame {
+    /// All general registers.
     pub regs: GeneralRegisters,
+    /// Supervisor Exception Program Counter.
     pub sepc: usize,
+    /// Supervisor Status Register.
     pub sstatus: usize,
     #[cfg(feature = "user-paging")]
     pub kstack: usize,
@@ -112,6 +118,18 @@ impl TrapFrame {
     }
 }
 
+/// Saved hardware states of a task.
+///
+/// The context usually includes:
+///
+/// - Callee-saved registers
+/// - Stack pointer register
+/// - Thread pointer register (for thread-local storage, currently unsupported)
+/// - FP/SIMD registers
+///
+/// On context switch, current task saves its context from CPU to memory,
+/// and the next task restores its context from memory to CPU.
+#[allow(missing_docs)]
 #[repr(C)]
 #[derive(Debug, Default)]
 pub struct TaskContext {
@@ -131,18 +149,26 @@ pub struct TaskContext {
     pub s9: usize,
     pub s10: usize,
     pub s11: usize,
+    // TODO: FP states
 }
 
 impl TaskContext {
+    /// Creates a new default context for a new task.
     pub const fn new() -> Self {
         unsafe { core::mem::MaybeUninit::zeroed().assume_init() }
     }
 
+    /// Initializes the context for a new task, with the given entry point and
+    /// kernel stack.
     pub fn init(&mut self, entry: usize, kstack_top: VirtAddr) {
         self.sp = kstack_top.as_usize();
         self.ra = entry;
     }
 
+    /// Switches to another task.
+    ///
+    /// It first saves the current task's context from CPU to this place, and then
+    /// restores the next task's context from `next_ctx` to CPU.
     pub fn switch_to(&mut self, next_ctx: &Self) {
         unsafe {
             // TODO: switch TLS

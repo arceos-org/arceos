@@ -1,0 +1,51 @@
+[package]
+name = "axfs"
+version = "0.1.0"
+edition = "2021"
+authors = ["Yuekai Jia <equation618@gmail.com>"]
+description = "ArceOS filesystem module"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+repository = "https://github.com/rcore-os/arceos/tree/main/modules/axfs"
+documentation = "https://rcore-os.github.io/arceos/axfs/index.html"
+
+[features]
+use-ramdisk = ["driver_block/ramdisk"]
+use-virtio-blk = ["axdriver/virtio-blk"]
+
+devfs = ["dep:axfs_devfs"]
+ramfs = ["dep:axfs_ramfs"]
+fatfs = ["dep:fatfs"]
+myfs = ["dep:crate_interface"]
+
+default = ["use-ramdisk", "devfs", "ramfs", "fatfs"]
+
+[dependencies]
+log = "0.4"
+cfg-if = "1.0"
+lazy_init = { path = "../../crates/lazy_init" }
+capability = { path = "../../crates/capability" }
+driver_block = { path = "../../crates/driver_block" }
+axio = { path = "../../crates/axio", features = ["alloc"] }
+axerrno = { path = "../../crates/axerrno" }
+axfs_vfs = { path = "../../crates/axfs_vfs" }
+axfs_devfs = { path = "../../crates/axfs_devfs", optional = true }
+axfs_ramfs = { path = "../../crates/axfs_ramfs", optional = true }
+axdriver = { path = "../axdriver", optional = true }
+axsync = { path = "../axsync", default-features = false }
+crate_interface = { path = "../../crates/crate_interface", optional = true }
+
+[dependencies.fatfs]
+git = "https://github.com/rafalh/rust-fatfs"
+rev = "a3a834e"
+optional = true
+default-features = false
+features = [ # no std
+    "alloc",
+    "lfn",
+    "log_level_trace",
+    "unicode",
+]
+
+[dev-dependencies]
+axtask = { path = "../axtask", features = ["test"] }

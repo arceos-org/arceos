@@ -1,0 +1,5 @@
+if [ "$ARCH" != "x86_64" ]; then
+    test_one "LOG=info FS=y" "expect_info.out"
+    test_one "LOG=info FS=y" "expect_info_again.out"
+    rm -f $APP/*.o
+fi

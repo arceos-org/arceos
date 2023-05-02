@@ -1,3 +1,11 @@
+//! Slab allocator for `no_std` systems. It uses multiple slabs with blocks of
+//! different sizes and a [buddy_system_allocator] for blocks larger than 4096
+//! bytes.
+//!
+//! It's based on <https://github.com/weclaw1/slab_allocator>.
+//!
+//! [buddy_system_allocator]: https://docs.rs/buddy_system_allocator/latest/buddy_system_allocator/
+
 #![feature(allocator_api)]
 #![no_std]
 
@@ -16,7 +24,7 @@ use slab::Slab;
 const SET_SIZE: usize = 64;
 const MIN_HEAP_SIZE: usize = 0x8000;
 
-pub enum HeapAllocator {
+enum HeapAllocator {
     Slab64Bytes,
     Slab128Bytes,
     Slab256Bytes,
@@ -77,6 +85,10 @@ impl Heap {
         }
     }
 
+    /// Adds memory to the heap. The start address must be valid
+    /// and the memory in the `[mem_start_addr, mem_start_addr + heap_size)` range must not be used for
+    /// anything else.
+    ///
     /// # Safety
     /// This function is unsafe because it can cause undefined behavior if the
     /// given address is invalid.
@@ -101,7 +113,7 @@ impl Heap {
     /// # Safety
     /// This function is unsafe because it can cause undefined behavior if the
     /// given address is invalid.
-    pub unsafe fn grow(&mut self, mem_start_addr: usize, mem_size: usize, slab: HeapAllocator) {
+    unsafe fn _grow(&mut self, mem_start_addr: usize, mem_size: usize, slab: HeapAllocator) {
         match slab {
             HeapAllocator::Slab64Bytes => self.slab_64_bytes.grow(mem_start_addr, mem_size),
             HeapAllocator::Slab128Bytes => self.slab_128_bytes.grow(mem_start_addr, mem_size),
@@ -118,7 +130,7 @@ impl Heap {
 
     /// Allocates a chunk of the given size with the given alignment. Returns a pointer to the
     /// beginning of that chunk if it was successful. Else it returns `Err`.
-    /// This function finds the slab of lowest size which can still accomodate the given chunk.
+    /// This function finds the slab of lowest size which can still accommodate the given chunk.
     /// The runtime is in `O(1)` for chunks of size <= 4096, and `O(n)` when chunk size is > 4096,
     pub fn allocate(&mut self, layout: Layout) -> Result<usize, AllocError> {
         match Heap::layout_to_allocator(&layout) {
@@ -192,8 +204,8 @@ impl Heap {
         }
     }
 
-    ///Finds allocator to use based on layout size and alignment
-    pub fn layout_to_allocator(layout: &Layout) -> HeapAllocator {
+    /// Finds allocator to use based on layout size and alignment
+    fn layout_to_allocator(layout: &Layout) -> HeapAllocator {
         if layout.size() > 4096 {
             HeapAllocator::BuddyAllocator
         } else if layout.size() <= 64 && layout.align() <= 64 {
@@ -213,6 +225,7 @@ impl Heap {
         }
     }
 
+    /// Returns total memory size in bytes of the heap.
     pub fn total_bytes(&self) -> usize {
         self.slab_64_bytes.total_blocks() * 64
             + self.slab_128_bytes.total_blocks() * 128
@@ -224,6 +237,7 @@ impl Heap {
             + self.buddy_allocator.stats_total_bytes()
     }
 
+    /// Returns allocated memory size in bytes.
     pub fn used_bytes(&self) -> usize {
         self.slab_64_bytes.used_blocks() * 64
             + self.slab_128_bytes.used_blocks() * 128
@@ -235,6 +249,7 @@ impl Heap {
             + self.buddy_allocator.stats_alloc_actual()
     }
 
+    /// Returns available memory size in bytes.
     pub fn available_bytes(&self) -> usize {
         self.total_bytes() - self.used_bytes()
     }

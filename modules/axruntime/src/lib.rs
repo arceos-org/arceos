@@ -1,4 +1,23 @@
+//! Runtime library of [ArceOS](https://github.com/rcore-os/arceos).
+//!
+//! Any application uses ArceOS should link this library. It does some
+//! initialization work before entering the application's `main` function.
+//!
+//! # Cargo Features
+//!
+//! - `alloc`: Enable global memory allocator.
+//! - `paging`: Enable page table manipulation support.
+//! - `irq`: Enable interrupt handling support.
+//! - `multitask`: Enable multi-threading support.
+//! - `smp`: Enable SMP (symmetric multiprocessing) support.
+//! - `fs`: Enable filesystem support.
+//! - `net`: Enable networking support.
+//! - `display`: Enable graphics support.
+//!
+//! All the features are optional and disabled by default.
+
 #![cfg_attr(not(test), no_std)]
+#![feature(doc_auto_cfg)]
 
 #[macro_use]
 extern crate axlog;
@@ -17,6 +36,8 @@ pub use syscall::sys_number;
 
 #[cfg(feature = "user")]
 use axmem::{USER_START, USTACK_SIZE, USTACK_START};
+#[cfg(feature = "smp")]
+pub use self::mp::rust_main_secondary;
 
 const LOGO: &str = r#"
        d8888                            .d88888b.   .d8888b.
@@ -29,21 +50,16 @@ const LOGO: &str = r#"
 d88P     888 888      "Y8888P  "Y8888   "Y88888P"   "Y8888P"
 "#;
 
+extern "C" {
+    fn main();
+}
+
 struct LogIfImpl;
 
 #[crate_interface::impl_interface]
 impl axlog::LogIf for LogIfImpl {
     fn console_write_str(s: &str) {
-        use axhal::console::putchar;
-        for c in s.chars() {
-            match c {
-                '\n' => {
-                    putchar(b'\r');
-                    putchar(b'\n');
-                }
-                _ => putchar(c as u8),
-            }
-        }
+        axhal::console::write_bytes(s.as_bytes());
     }
 
     fn current_time() -> core::time::Duration {
@@ -83,10 +99,19 @@ fn is_init_ok() -> bool {
     INITED_CPUS.load(Ordering::Acquire) == axconfig::SMP
 }
 
+/// The main entry point of the ArceOS runtime.
+///
+/// It is called from the bootstrapping code in [axhal]. `cpu_id` is the ID of
+/// the current CPU, and `dtb` is the address of the device tree blob. It
+/// finally calls the application's `main` function after all initialization
+/// work is done.
+///
+/// In multi-core environment, this function is called on the primary CPU,
+/// and the secondary CPUs call [`rust_main_secondary`].
 #[cfg_attr(not(test), no_mangle)]
 pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
-    println!("{}", LOGO);
-    println!(
+    ax_println!("{}", LOGO);
+    ax_println!(
         "\
         arch = {}\n\
         platform = {}\n\
@@ -131,6 +156,9 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         axmem::init_global_addr_space();
     }
 
+    info!("Initialize platform devices...");
+    axhal::platform_init();
+
     #[cfg(feature = "multitask")]
     axtask::init_scheduler();
 
@@ -139,6 +167,9 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         #[allow(unused_variables)]
         let all_devices = axdriver::init_drivers();
 
+        #[cfg(feature = "fs")]
+        axfs::init_filesystems(all_devices.block.0);
+
         #[cfg(feature = "net")]
         axnet::init_network(all_devices.net);
 
@@ -146,11 +177,14 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         axdisplay::init_display(all_devices.display);
     }
 
-    info!("Initialize interrupt handlers...");
-    init_interrupt();
-
     #[cfg(feature = "smp")]
     self::mp::start_secondary_cpus(cpu_id);
+
+    #[cfg(feature = "irq")]
+    {
+        info!("Initialize interrupt handlers...");
+        init_interrupt();
+    }
 
     info!("Primary CPU {} init OK.", cpu_id);
     INITED_CPUS.fetch_add(1, Ordering::Relaxed);
@@ -162,13 +196,20 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     #[cfg(feature = "user")]
     trap::user_space_entry();
 
+
     #[cfg(not(feature = "user"))]
     {
         extern "Rust" {
             fn main();
         }
-        unsafe { main() };
-        axtask::exit(0)
+        unsafe { main() };        
+        #[cfg(feature = "multitask")]
+        axtask::exit(0);
+        #[cfg(not(feature = "multitask"))]
+        {
+            debug!("main task exited: exit_code={}", 0);
+            axhal::misc::terminate();
+        }
     }
 }
 
@@ -247,6 +288,7 @@ fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
     Ok(())
 }
 
+#[cfg(feature = "irq")]
 fn init_interrupt() {
     use axhal::time::TIMER_IRQ_NUM;
 

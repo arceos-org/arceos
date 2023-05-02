@@ -3,18 +3,24 @@ name = "axtask"
 version = "0.1.0"
 edition = "2021"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "ArceOS task management module"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+repository = "https://github.com/rcore-os/arceos/tree/main/modules/axtask"
+documentation = "https://rcore-os.github.io/arceos/axtask/index.html"
 
 [features]
-multitask = [ # without the feature, can still use the empty yield_now() and exit()
+test = ["percpu?/sp-naive"]
+multitask = [
     "dep:axconfig", "dep:percpu", "dep:spinlock", "dep:lazy_init",
     "dep:memory_addr", "dep:scheduler", "dep:timer_list"
 ]
-preempt = ["percpu?/preempt"]
+irq = []
+preempt = ["irq", "percpu?/preempt", "kernel_guard/preempt"]
 
 sched_fifo = ["multitask"]
 sched_rr = ["multitask", "preempt"]
+sched_cfs = ["multitask", "preempt"]
 default = ["sched_fifo"]
 
 user-paging = ["dep:axmem", "dep:axalloc"]
@@ -37,4 +43,5 @@ crate_interface = { path = "../../crates/crate_interface" }
 
 [dev-dependencies]
 rand = "0.8"
-percpu = { path = "../../crates/percpu", features = ["sp-naive"] }
+axhal = { path = "../axhal", features = ["fp_simd"] }
+axtask = { path = ".", features = ["test"] }

@@ -12,9 +12,11 @@ extern crate axalloc;
 
 use crate::{AxTask, AxTaskRef};
 
+/// A unique identifier for a thread.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct TaskId(u64);
 
+/// The possible states of a task.
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub(crate) enum TaskState {
@@ -24,6 +26,7 @@ pub(crate) enum TaskState {
     Exited = 4,
 }
 
+/// The inner task structure.
 pub struct TaskInner {
     id: TaskId,
     name: &'static str,
@@ -34,6 +37,7 @@ pub struct TaskInner {
     state: AtomicU8,
 
     in_wait_queue: AtomicBool,
+    #[cfg(feature = "irq")]
     in_timer_list: AtomicBool,
 
     #[cfg(feature = "preempt")]
@@ -54,12 +58,14 @@ impl TaskId {
         Self(ID_COUNTER.fetch_add(1, Ordering::Relaxed))
     }
 
+    /// Convert the task ID to a `u64`.
     pub const fn as_u64(&self) -> u64 {
         self.0
     }
 }
 
-impl const From<u8> for TaskState {
+impl From<u8> for TaskState {
+    #[inline]
     fn from(state: u8) -> Self {
         match state {
             1 => Self::Running,
@@ -75,14 +81,17 @@ unsafe impl Send for TaskInner {}
 unsafe impl Sync for TaskInner {}
 
 impl TaskInner {
+    /// Gets the ID of the task.
     pub const fn id(&self) -> TaskId {
         self.id
     }
 
+    /// Gets the name of the task.
     pub const fn name(&self) -> &str {
         self.name
     }
 
+    /// Get a combined string of the task ID and name.
     pub fn id_name(&self) -> alloc::string::String {
         alloc::format!("Task({}, {:?})", self.id.as_u64(), self.name)
     }
@@ -99,6 +108,7 @@ impl TaskInner {
             entry: None,
             state: AtomicU8::new(TaskState::Ready as u8),
             in_wait_queue: AtomicBool::new(false),
+            #[cfg(feature = "irq")]
             in_timer_list: AtomicBool::new(false),
             #[cfg(feature = "preempt")]
             need_resched: AtomicBool::new(false),
@@ -244,11 +254,13 @@ impl TaskInner {
     }
 
     #[inline]
+    #[cfg(feature = "irq")]
     pub(crate) fn in_timer_list(&self) -> bool {
         self.in_timer_list.load(Ordering::Acquire)
     }
 
     #[inline]
+    #[cfg(feature = "irq")]
     pub(crate) fn set_in_timer_list(&self, in_timer_list: bool) {
         self.in_timer_list.store(in_timer_list, Ordering::Release);
     }
@@ -340,6 +352,7 @@ impl Drop for TaskStack {
 
 use core::mem::{self, ManuallyDrop};
 
+/// A wrapper of [`AxTaskRef`] as the current task.
 pub struct CurrentTask(ManuallyDrop<AxTaskRef>);
 
 impl CurrentTask {
@@ -391,6 +404,7 @@ impl Deref for CurrentTask {
 extern "C" fn task_entry() -> ! {
     // release the lock that was implicitly held across the reschedule
     unsafe { crate::RUN_QUEUE.force_unlock() };
+    #[cfg(feature = "irq")]
     axhal::arch::enable_irqs();
     let task = crate::current();
     if let Some(entry) = task.entry {

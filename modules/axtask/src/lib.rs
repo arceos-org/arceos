@@ -1,154 +1,50 @@
+//! [ArceOS](https://github.com/rcore-os/arceos) task management module.
+//!
+//! This module provides primitives for task management, including task
+//! creation, scheduling, sleeping, termination, etc. The scheduler algorithm
+//! is configurable by cargo features.
+//!
+//! # Cargo Features
+//!
+//! - `multitask`: Enable multi-task support. If it's enabled, complex task
+//!   management and scheduling is used, as well as more task-related APIs.
+//!   Otherwise, only a few APIs with naive implementation is available.
+//! - `irq`: Interrupts are enabled. If this feature is enabled, timer-based
+//!    APIs can be used, such as [`sleep`], [`sleep_until`], and
+//!    [`WaitQueue::wait_timeout`].
+//! - `preempt`: Enable preemptive scheduling.
+//! - `sched_fifo`: Use the [FIFO cooperative scheduler][1]. It also enables the
+//!   `multitask` feature if it is enabled. This feature is enabled by default.
+//! - `sched_rr`: Use the [Round-robin preemptive scheduler][2]. It also enables
+//!   the `multitask` and `preempt` features if it is enabled.
+//!
+//! [1]: scheduler::FifoScheduler
+//! [2]: scheduler::RRScheduler
+
 #![cfg_attr(not(test), no_std)]
-#![feature(const_trait_impl)]
+#![feature(doc_cfg)]
+#![feature(doc_auto_cfg)]
 
-#[macro_use]
-extern crate log;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "multitask")] {
+        #[macro_use]
+        extern crate log;
+        extern crate alloc;
+        mod run_queue;
+        mod task;
+        mod wait_queue;
 
-struct KernelGuardIfImpl;
-
-#[crate_interface::impl_interface]
-impl kernel_guard::KernelGuardIf for KernelGuardIfImpl {
-    fn disable_preempt() {
-        #[cfg(all(feature = "multitask", feature = "preempt"))]
-        if let Some(curr) = current_may_uninit() {
-            curr.disable_preempt();
-        }
-    }
-
-    fn enable_preempt() {
-        #[cfg(all(feature = "multitask", feature = "preempt"))]
-        if let Some(curr) = current_may_uninit() {
-            curr.enable_preempt(true);
-        }
+        #[cfg(feature = "irq")]
+        mod timers;
     }
 }
 
-cfg_if::cfg_if! {
-if #[cfg(feature = "multitask")] {
-
-extern crate alloc;
-
-mod run_queue;
-mod task;
-mod timers;
-mod wait_queue;
+#[cfg_attr(not(feature = "multitask"), path = "api_s.rs")]
+mod api;
 
 #[cfg(test)]
 mod tests;
 
-use alloc::sync::Arc;
-
-use self::run_queue::{AxRunQueue, RUN_QUEUE};
-use self::task::{CurrentTask, TaskInner};
-
-pub use self::task::TaskId;
-pub use self::wait_queue::WaitQueue;
-
-cfg_if::cfg_if! {
-    if #[cfg(feature = "sched_fifo")] {
-        type AxTask = scheduler::FifoTask<TaskInner>;
-        type Scheduler = scheduler::FifoScheduler<TaskInner>;
-    } else if #[cfg(feature = "sched_rr")] {
-        const MAX_TIME_SLICE: usize = 5;
-        type AxTask = scheduler::RRTask<TaskInner, MAX_TIME_SLICE>;
-        type Scheduler = scheduler::RRScheduler<TaskInner, MAX_TIME_SLICE>;
-    }
-}
-
-type AxTaskRef = Arc<AxTask>;
-
-pub fn current_may_uninit() -> Option<CurrentTask> {
-    CurrentTask::try_get()
-}
-
-pub fn current() -> CurrentTask {
-    CurrentTask::get()
-}
-
-pub fn init_scheduler() {
-    info!("Initialize scheduling...");
-
-    self::run_queue::init();
-    self::timers::init();
-
-    if cfg!(feature = "sched_fifo") {
-        info!("  use FIFO scheduler.");
-    } else if cfg!(feature = "sched_rr") {
-        info!("  use Round-robin scheduler.");
-    }
-}
-
-pub fn init_scheduler_secondary() {
-    self::run_queue::init_secondary();
-}
-
-/// Handle periodic timer ticks for task manager, e.g. advance scheduler, update timer.
-pub fn on_timer_tick() {
-    self::timers::check_events();
-    RUN_QUEUE.lock().scheduler_timer_tick();
-}
-
-cfg_if::cfg_if! {
-if #[cfg(feature = "user-paging")] {
-pub fn spawn(f: usize, arg: usize) {
-    let task = TaskInner::new_user(f, axconfig::TASK_STACK_SIZE, arg);
-    RUN_QUEUE.lock().add_task(task);
-}
-} else {
-pub fn spawn<F>(f: F)
-where
-    F: FnOnce() + Send + 'static,
-{
-    let task = TaskInner::new(f, "", axconfig::TASK_STACK_SIZE);
-    RUN_QUEUE.lock().add_task(task);
-}
-}
-}
-
-pub fn yield_now() {
-    RUN_QUEUE.lock().yield_current();
-}
-
-pub fn sleep(dur: core::time::Duration) {
-    let deadline = axhal::time::current_time() + dur;
-    RUN_QUEUE.lock().sleep_until(deadline);
-}
-
-pub fn sleep_until(deadline: axhal::time::TimeValue) {
-    RUN_QUEUE.lock().sleep_until(deadline);
-}
-
-pub fn exit(exit_code: i32) -> ! {
-    RUN_QUEUE.lock().exit_current(exit_code)
-}
-
-} else { // if #[cfg(feature = "multitask")]
-
-pub fn yield_now() {}
-
-pub fn exit(exit_code: i32) -> ! {
-    debug!("main task exited: exit_code={}", exit_code);
-    axhal::misc::terminate()
-}
-
-pub fn sleep(dur: core::time::Duration) {
-    let deadline = axhal::time::current_time() + dur;
-    sleep_until(deadline)
-}
-
-pub fn sleep_until(deadline: axhal::time::TimeValue) {
-    while axhal::time::current_time() < deadline {
-        core::hint::spin_loop();
-    }
-}
-
-} // else
-} // cfg_if::cfg_if!
-
-pub fn run_idle() -> ! {
-    loop {
-        yield_now();
-        debug!("idle task: waiting for IRQs...");
-        axhal::arch::wait_for_irqs();
-    }
-}
+#[doc(cfg(feature = "multitask"))]
+pub use self::api::*;
+pub use self::api::{sleep, sleep_until, yield_now};

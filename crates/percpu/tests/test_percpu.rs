@@ -41,7 +41,7 @@ fn test_percpu() {
     #[cfg(not(feature = "sp-naive"))]
     let base = {
         init(4);
-        set_local_thread_pointer(0, None);
+        set_local_thread_pointer(0);
 
         let base = get_local_thread_pointer();
         println!("per-CPU area base = {:#x}", base);

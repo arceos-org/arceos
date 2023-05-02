@@ -1,9 +1,12 @@
 use crate::mem::*;
 
+/// Number of physical memory regions.
 pub(crate) fn memory_regions_num() -> usize {
     common_memory_regions_num() + 1
 }
 
+/// Returns the physical memory region at the given index, or [`None`] if the
+/// index is out of bounds.
 pub(crate) fn memory_region_at(idx: usize) -> Option<MemRegion> {
     use core::cmp::Ordering;
     match idx.cmp(&common_memory_regions_num()) {

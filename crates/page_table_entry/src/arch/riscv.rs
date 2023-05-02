@@ -1,3 +1,5 @@
+//! RISC-V page table entries.
+
 use core::fmt;
 use memory_addr::PhysAddr;
 
@@ -5,6 +7,7 @@ use crate::{GenericPTE, MappingFlags};
 
 bitflags::bitflags! {
     /// Page-table entry flags.
+    #[derive(Debug)]
     pub struct PTEFlags: usize {
         /// Whether the PTE is valid.
         const V =   1 << 0;
@@ -68,7 +71,7 @@ impl From<MappingFlags> for PTEFlags {
     }
 }
 
-/// Sv39 and Sv48 page table entry.
+/// Sv39 and Sv48 page table entry for RV64 systems.
 #[derive(Clone, Copy)]
 #[repr(transparent)]
 pub struct Rv64PTE(u64);
