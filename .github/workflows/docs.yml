@@ -1,4 +1,4 @@
-name: Deploy docs
+name: Build & Deploy docs
 
 on: [push, pull_request]
 

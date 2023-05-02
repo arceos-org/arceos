@@ -1,5 +1,5 @@
 # Arguments
-ARCH ?= riscv64
+ARCH ?= x86_64
 SMP ?= 1
 MODE ?= release
 LOG ?= warn
@@ -13,6 +13,8 @@ FS ?= n
 NET ?= n
 GRAPHIC ?= n
 
+QEMU_LOG ?= n
+
 ifeq ($(wildcard $(APP)),)
   $(error Application path "$(APP)" is not valid)
 endif
@@ -24,14 +26,20 @@ else
 endif
 
 # Platform
-ifeq ($(ARCH), riscv64)
+ifeq ($(ARCH), x86_64)
+  ACCEL ?= y
+  PLATFORM ?= pc-x86
+  TARGET := x86_64-unknown-none
+else ifeq ($(ARCH), riscv64)
+  ACCEL ?= n
   PLATFORM ?= qemu-virt-riscv
   TARGET := riscv64gc-unknown-none-elf
 else ifeq ($(ARCH), aarch64)
+  ACCEL ?= n
   PLATFORM ?= qemu-virt-aarch64
   TARGET := aarch64-unknown-none-softfloat
 else
-  $(error "ARCH" must be "riscv64" or "aarch64")
+  $(error "ARCH" must be one of "x86_64", "riscv64", or "aarch64")
 endif
 
 export ARCH
@@ -44,9 +52,9 @@ export LOG
 ifeq ($(APP_LANG), c)
   CROSS_COMPILE ?= $(ARCH)-linux-musl-
   CC := $(CROSS_COMPILE)gcc
-  LD := $(CROSS_COMPILE)ld
   AR := $(CROSS_COMPILE)ar
   RANLIB := $(CROSS_COMPILE)ranlib
+  LD := rust-lld -flavor gnu
 endif
 
 OBJDUMP ?= rust-objdump -d --print-imm-hex --x86-asm-syntax=intel
@@ -80,9 +88,13 @@ justrun:
 	$(call run_qemu)
 
 debug: build
-	$(call run_qemu,-s -S) &
+	$(call run_qemu_debug) &
 	sleep 1
-	$(GDB) $(OUT_ELF) -ex 'target remote localhost:1234'
+	$(GDB) $(OUT_ELF) \
+	  -ex 'target remote localhost:1234' \
+	  -ex 'b rust_entry' \
+	  -ex 'continue' \
+	  -ex 'disp /16i $$pc'
 
 clippy:
 	$(call cargo_clippy)

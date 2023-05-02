@@ -13,9 +13,9 @@ out_feat := $(obj_dir)/.features.txt
 ulib_src := $(wildcard $(src_dir)/*.c)
 ulib_obj := $(patsubst $(src_dir)/%.c,$(obj_dir)/%.o,$(ulib_src))
 
-CFLAGS += -static -no-pie -fno-builtin -ffreestanding -nostdinc -Wall
+CFLAGS += -nostdinc -static -no-pie -fno-builtin -ffreestanding -Wall
 CFLAGS += -I$(inc_dir) -I$(ulib_dir)/../libax
-LDFLAGS += -nostdlib -T$(LD_SCRIPT)
+LDFLAGS += -nostdlib -static -no-pie --gc-sections -T$(LD_SCRIPT)
 
 ifeq ($(MODE), release)
   CFLAGS += -O3
@@ -27,8 +27,12 @@ endif
 
 ifeq ($(ARCH), riscv64)
   CFLAGS += -march=rv64gc -mabi=lp64d -mcmodel=medany
-else ifeq ($(ARCH), aarch64)
-  ifeq ($(fp_simd),)
+endif
+
+ifeq ($(fp_simd),)
+  ifeq ($(ARCH), x86_64)
+    CFLAGS += -mno-sse
+  else ifeq ($(ARCH), aarch64)
     CFLAGS += -mgeneral-regs-only
   endif
 endif

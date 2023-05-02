@@ -2,6 +2,7 @@
 //!
 //! Currently supported platforms (specify by cargo features):
 //!
+//! - `platform-pc-x86`: Standard PC with x86_64 ISA.
 //! - `platform-qemu-virt-riscv`: QEMU virt machine with RISC-V ISA.
 //! - `platform-qemu-virt-aarch64`: QEMU virt machine with AArch64 ISA.
 //! - `dummy`: If none of the above platform is selected, the dummy platform
@@ -14,11 +15,25 @@
 #![no_std]
 
 cfg_if::cfg_if! {
-    if #[cfg(feature = "platform-qemu-virt-riscv")] {
+    // add `not(target_os = "none")` check to use in `build.rs`
+    if #[cfg(all(
+        any(target_arch = "x86_64", not(target_os = "none")),
+        feature = "platform-pc-x86"
+    ))] {
+        #[rustfmt::skip]
+        #[path = "config_pc_x86.rs"]
+        mod config;
+    } else if #[cfg(all(
+        any(target_arch = "riscv32", target_arch = "riscv64", not(target_os = "none")),
+        feature = "platform-qemu-virt-riscv"
+    ))] {
         #[rustfmt::skip]
         #[path = "config_qemu_virt_riscv.rs"]
         mod config;
-    } else if #[cfg(feature = "platform-qemu-virt-aarch64")] {
+    } else if #[cfg(all(
+        any(target_arch = "aarch64", not(target_os = "none")),
+        feature = "platform-qemu-virt-aarch64"
+    ))] {
         #[rustfmt::skip]
         #[path = "config_qemu_virt_aarch64.rs"]
         mod config;

@@ -16,6 +16,8 @@ jobs:
         components: rust-src, clippy, rustfmt
     - name: Clippy for the default target
       run: cargo clippy --all-features
+    - name: Clippy for x86_64
+      run: make clippy ARCH=x86_64
     - name: Clippy for riscv64
       run: make clippy ARCH=riscv64
     - name: Clippy for aarch64
@@ -29,7 +31,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        arch: [riscv64, aarch64]
+        arch: [x86_64, riscv64, aarch64]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1

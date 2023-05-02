@@ -22,7 +22,7 @@ pub struct TrapFrame {
     pub r14: u64,
     pub r15: u64,
 
-    // Pushed by 'vector.S'
+    // Pushed by `trap.S`
     pub vector: u64,
     pub error_code: u64,
 
@@ -30,10 +30,15 @@ pub struct TrapFrame {
     pub rip: u64,
     pub cs: u64,
     pub rflags: u64,
+    pub rsp: u64,
+    pub ss: u64,
+}
 
-    // Pushed by CPU when trap from ring-3
-    pub user_rsp: u64,
-    pub user_ss: u64,
+impl TrapFrame {
+    /// Whether the trap is from userspace.
+    pub const fn is_user(&self) -> bool {
+        self.cs & 0b11 == 3
+    }
 }
 
 #[repr(C)]
@@ -173,7 +178,7 @@ impl TaskContext {
     /// It first saves the current task's context from CPU to this place, and then
     /// restores the next task's context from `next_ctx` to CPU.
     pub fn switch_to(&mut self, next_ctx: &Self) {
-        #[cfg(all(feature = "fp_simd", target_feature = "sse"))]
+        #[cfg(feature = "fp_simd")]
         {
             self.ext_state.save();
             next_ctx.ext_state.restore();
