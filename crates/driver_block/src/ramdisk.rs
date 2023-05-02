@@ -1,3 +1,5 @@
+//! Mock block devices that store data in RAM.
+
 extern crate alloc;
 
 use crate::BlockDriverOps;
@@ -6,12 +8,17 @@ use driver_common::{BaseDriverOps, DevError, DevResult, DeviceType};
 
 const BLOCK_SIZE: usize = 512;
 
+/// A RAM disk that stores data in a vector.
 pub struct RamDisk {
     size: usize,
     data: Vec<u8>,
 }
 
 impl RamDisk {
+    /// Creates a new RAM disk with the given size hint.
+    ///
+    /// The actual size of the RAM disk will be aligned upwards to the block
+    /// size (512 bytes).
     pub fn new(size_hint: usize) -> Self {
         let size = align_up(size_hint);
         Self {
@@ -20,6 +27,10 @@ impl RamDisk {
         }
     }
 
+    /// Creates a new RAM disk from the exiting data.
+    ///
+    /// The actual size of the RAM disk will be aligned upwards to the block
+    /// size (512 bytes).
     pub fn from(buf: &[u8]) -> Self {
         let size = align_up(buf.len());
         let mut data = vec![0; size];
@@ -27,12 +38,13 @@ impl RamDisk {
         Self { size, data }
     }
 
+    /// Returns the size of the RAM disk in bytes.
     pub const fn size(&self) -> usize {
         self.size
     }
 }
 
-impl BaseDriverOps for RamDisk {
+impl const BaseDriverOps for RamDisk {
     fn device_type(&self) -> DeviceType {
         DeviceType::Block
     }

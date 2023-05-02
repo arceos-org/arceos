@@ -74,8 +74,8 @@ pub enum SignalNo {
     SIGRT31 = 63,
 }
 
-impl From<usize> for SignalNo {
-    fn from(num: usize) -> Self {
-        Self::try_from(num as u8).unwrap_or(Self::ERR)
-    }
-}
+// impl From<usize> for SignalNo {
+//     fn from(num: usize) -> Self {
+//         Self::try_from(num as u8).unwrap_or(Self::ERR)
+//     }
+// }

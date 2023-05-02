@@ -16,6 +16,8 @@ macro_rules! def_test_sched {
                 for i in 0..NUM_TASKS * 10 - 1 {
                     let next = scheduler.pick_next_task().unwrap();
                     assert_eq!(*next.inner(), i % NUM_TASKS);
+                    // pass a tick to ensure the order of tasks
+                    scheduler.task_tick(&next);
                     scheduler.put_prev_task(next, false);
                 }
 
@@ -79,3 +81,4 @@ macro_rules! def_test_sched {
 
 def_test_sched!(fifo, FifoScheduler::<usize>, FifoTask::<usize>);
 def_test_sched!(rr, RRScheduler::<usize, 5>, RRTask::<usize, 5>);
+def_test_sched!(cfs, CFScheduler::<usize>, CFSTask::<usize>);

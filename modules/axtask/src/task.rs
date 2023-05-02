@@ -62,7 +62,7 @@ impl TaskId {
     }
 }
 
-impl const From<u8> for TaskState {
+impl From<u8> for TaskState {
     fn from(state: u8) -> Self {
         match state {
             1 => Self::Running,

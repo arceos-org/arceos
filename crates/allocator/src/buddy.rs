@@ -7,11 +7,15 @@ use core::alloc::Layout;
 
 use crate::{AllocError, AllocResult, BaseAllocator, ByteAllocator};
 
+/// A byte-granularity memory allocator based on the [buddy_system_allocator].
+///
+/// [buddy_system_allocator]: https://docs.rs/buddy_system_allocator/latest/buddy_system_allocator/
 pub struct BuddyByteAllocator {
     inner: Heap<32>,
 }
 
 impl BuddyByteAllocator {
+    /// Creates a new empty `BuddyByteAllocator`.
     pub const fn new() -> Self {
         Self {
             inner: Heap::<32>::new(),

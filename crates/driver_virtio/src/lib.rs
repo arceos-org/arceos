@@ -1,40 +1,53 @@
+//! Wrappers of some devices in the [`virtio-drivers`][1] crate, that implement
+//! traits in the [`driver_common`][2] series crates.
+//!
+//! Like the [`virtio-drivers`][1] crate, you must implement the [`VirtIoHal`]
+//! trait (alias of [`virtio-drivers::Hal`][3]), to allocate DMA regions and
+//! translate between physical addresses (as seen by devices) and virtual
+//! addresses (as seen by your program).
+//!
+//! [1]: https://docs.rs/virtio-drivers/latest/virtio_drivers/
+//! [2]: ../driver_common/index.html
+//! [3]: https://docs.rs/virtio-drivers/latest/virtio_drivers/trait.Hal.html
+
 #![no_std]
 #![feature(const_trait_impl)]
+#![feature(doc_auto_cfg)]
 
-#[macro_use]
-extern crate cfg_if;
 #[macro_use]
 extern crate log;
 
-cfg_if! {
-    if #[cfg(feature = "net")] {
-        mod net;
-        pub use net::VirtIoNetDev;
-    }
-}
-cfg_if! {
-    if #[cfg(feature = "block")] {
-        mod blk;
-        pub use blk::VirtIoBlkDev;
-    }
-}
-cfg_if! {
-    if #[cfg(feature = "gpu")] {
-        mod display;
-        pub use display::VirtIoGpuDev;
-    }
-}
+#[cfg(feature = "block")]
+mod blk;
+#[cfg(feature = "gpu")]
+mod gpu;
+#[cfg(feature = "net")]
+mod net;
+
+#[cfg(feature = "block")]
+pub use self::blk::VirtIoBlkDev;
+#[cfg(feature = "gpu")]
+pub use self::gpu::VirtIoGpuDev;
+#[cfg(feature = "net")]
+pub use self::net::VirtIoNetDev;
 
 use driver_common::{DevError, DeviceType};
-use virtio_drivers::transport::{self, Transport};
+use virtio_drivers::transport;
 
-pub use virtio_drivers::{BufferDirection, Hal as VirtIoHal, PhysAddr};
+pub use virtio_drivers::{transport::Transport, BufferDirection, Hal as VirtIoHal, PhysAddr};
 
 #[cfg(feature = "bus-mmio")]
 pub use transport::mmio::MmioTransport;
 #[cfg(feature = "bus-pci")]
 pub use transport::pci::PciTransport;
 
+/// Try to probe a VirtIO MMIO device from the given base address.
+///
+/// If the device exists, [`Some(MmioTransport)`][MmioTransport] is returned.
+/// Otherwise, [`None`] is returned.
+///
+/// If `type_match` is [`None`], the device type is not considered. Otherwise,
+/// [`Some`] is returned only if the device type also matches.
 #[cfg(feature = "bus-mmio")]
 pub fn probe_mmio_device(
     reg_base: *mut u8,
@@ -86,5 +99,6 @@ const fn as_dev_err(e: virtio_drivers::Error) -> DevError {
         Unsupported => DevError::Unsupported,
         ConfigSpaceTooSmall => DevError::BadState,
         ConfigSpaceMissing => DevError::BadState,
+        _ => DevError::BadState,
     }
 }

@@ -1,11 +1,27 @@
-#![no_std]
-#![feature(const_trait_impl)]
+//! Error code definition used by [ArceOS](https://github.com/rcore-os/arceos).
+//!
+//! It provides two error types and the corresponding result types:
+//!
+//! - [`AxError`] and [`AxResult`]: A generic error type similar to
+//!   [`std::io::ErrorKind`].
+//! - [`LinuxError`] and [`LinuxResult`]: Linux specific error codes defined in
+//!   `errno.h`. It can be converted from [`AxError`].
+//!
+//! [`std::io::ErrorKind`]: https://doc.rust-lang.org/std/io/enum.ErrorKind.html
 
-mod linux_errno;
+#![no_std]
+
+mod linux_errno {
+    include!(concat!(env!("OUT_DIR"), "/linux_errno.rs"));
+}
 
 pub use linux_errno::LinuxError;
 
 /// The error type used by ArceOS.
+///
+/// Similar to [`std::io::ErrorKind`].
+///
+/// [`std::io::ErrorKind`]: https://doc.rust-lang.org/std/io/enum.ErrorKind.html
 #[repr(i32)]
 #[non_exhaustive]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -59,16 +75,37 @@ pub enum AxError {
     /// This operation is unsupported or unimplemented.
     Unsupported,
     /// An error returned when an operation could not be completed because a
-    /// call to [`write`] returned [`Ok(0)`].
+    /// call to `write()` returned [`Ok(0)`](Ok).
     WriteZero,
 }
 
-/// A [`Result`] type with [`AxError`] as the error type.
+/// A specialized [`Result`] type with [`AxError`] as the error type.
 pub type AxResult<T = ()> = Result<T, AxError>;
 
-/// A [`Result`] type with [`LinuxError`] as the error type.
+/// A specialized [`Result`] type with [`LinuxError`] as the error type.
 pub type LinuxResult<T = ()> = Result<T, LinuxError>;
 
+/// Convenience method to construct an [`AxError`] type while printing a warning
+/// message.
+///
+/// # Examples
+///
+/// ```
+/// # use axerrno::{ax_err_type, AxError};
+/// #
+/// // Also print "[AxError::AlreadyExists]" if the `log` crate is enabled.
+/// assert_eq!(
+///     ax_err_type!(AlreadyExists),
+///     AxError::AlreadyExists,
+/// );
+///
+/// // Also print "[AxError::BadAddress] the address is 0!" if the `log` crate
+/// // is enabled.
+/// assert_eq!(
+///     ax_err_type!(BadAddress, "the address is 0!"),
+///     AxError::BadAddress,
+/// );
+/// ```
 #[macro_export]
 macro_rules! ax_err_type {
     ($err: ident) => {{
@@ -83,6 +120,27 @@ macro_rules! ax_err_type {
     }};
 }
 
+/// Convenience method to construct an [`Err(AxError)`] type while printing a
+/// warning message.
+///
+/// # Examples
+///
+/// ```
+/// # use axerrno::{ax_err, AxResult, AxError};
+/// #
+/// // Also print "[AxError::AlreadyExists]" if the `log` crate is enabled.
+/// assert_eq!(
+///     ax_err!(AlreadyExists),
+///     AxResult::<()>::Err(AxError::AlreadyExists),
+/// );
+///
+/// // Also print "[AxError::BadAddress] the address is 0!" if the `log` crate is enabled.
+/// assert_eq!(
+///     ax_err!(BadAddress, "the address is 0!"),
+///     AxResult::<()>::Err(AxError::BadAddress),
+/// );
+/// ```
+/// [`Err(AxError)`]: Err
 #[macro_export]
 macro_rules! ax_err {
     ($err: ident) => {
@@ -94,6 +152,7 @@ macro_rules! ax_err {
 }
 
 impl AxError {
+    /// Returns the error description.
     pub fn as_str(&self) -> &'static str {
         use AxError::*;
         match *self {
@@ -107,7 +166,7 @@ impl AxError {
     }
 }
 
-impl const From<AxError> for LinuxError {
+impl From<AxError> for LinuxError {
     fn from(e: AxError) -> Self {
         use AxError::*;
         match e {

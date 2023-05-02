@@ -36,6 +36,7 @@ timer_list = { path = "../../crates/timer_list", optional = true }
 kernel_guard = { path = "../../crates/kernel_guard" }
 crate_interface = { path = "../../crates/crate_interface" }
 xmas-elf = "0.9.0"
+riscv = "0.10"
 [dev-dependencies]
 log = "0.4.0"
 rand = "0.8"

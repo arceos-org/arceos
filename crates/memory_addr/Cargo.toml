@@ -3,7 +3,10 @@ name = "memory_addr"
 version = "0.1.0"
 edition = "2021"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "Wrappers and helper functions for physical and virtual addresses"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+repository = "https://github.com/rcore-os/arceos/tree/main/crates/memory_addr"
+documentation = "https://rcore-os.github.io/arceos/memory_addr/index.html"
 
 [dependencies]

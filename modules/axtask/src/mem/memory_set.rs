@@ -104,7 +104,7 @@ impl MemorySet {
     pub fn unmap_user_areas(&mut self) {
         for area in &self.areas {
             self.page_table
-                .unmap_region(area.pages.start_vaddr(), area.pages.size())
+                .unmap_region(area.start_va, area.pages.size())
                 .unwrap();
         }
     }
@@ -135,7 +135,7 @@ impl MemorySet {
                 false,
             )
             .expect("Error when mapping!");
-        self.areas.push(MapArea::new(pages, map_perm));
+        self.areas.push(MapArea::new(pages, map_perm, start_va.align_down_4k()));
     }
     pub fn translate(
         &self,

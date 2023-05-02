@@ -1,6 +1,5 @@
 use alloc::{collections::BTreeMap, string::String, sync::Arc, vec::Vec};
 use axhal::arch::{write_page_table_root, TrapFrame};
-
 pub const USER_STACK_SIZE: usize = 4096;
 const KERNEL_STACK_SIZE: usize = 4096;
 use crate::{
@@ -13,7 +12,7 @@ use crate::{
 };
 use spinlock::SpinNoIrq;
 const IDLE_TASK_STACK_SIZE: usize = 4096;
-
+use riscv::asm;
 pub(crate) static PID2PC: SpinNoIrq<BTreeMap<u64, Arc<Process>>> = SpinNoIrq::new(BTreeMap::new());
 pub const KERNEL_PROCESS_ID: u64 = 1;
 /// 进程的的数据结构
@@ -114,12 +113,15 @@ impl Process {
         // 处理分配的页帧
         let mut inner = self.inner.lock();
 
-        // inner.memory_set.unmap_user_areas();
+        inner.memory_set.unmap_user_areas();
         // inner.memory_set.areas.clear();
-        let mut new_memory_set = MemorySet::new_from_kernel();
+        // let mut new_memory_set = MemorySet::new_from_kernel();
         // 之后加入额外的东西之后再处理其他的包括信号等因素
         // 不是直接删除原有地址空间，否则构建成本较高。
         // 再考虑手动结束其他所有的task
+        unsafe {
+            asm::sfence_vma_all();
+        }
         let curr = current();
         let _ = inner
             .tasks
@@ -128,8 +130,8 @@ impl Process {
         // 当前任务被设置为主线程
         curr.set_leader(true);
         assert!(inner.tasks.len() == 1);
-        let (entry, user_stack_bottom) = MemorySet::from_elf(&mut new_memory_set, elf_data);
-        inner.memory_set = new_memory_set;
+        let (entry, user_stack_bottom) = MemorySet::from_elf(&mut inner.memory_set, elf_data);
+        // inner.memory_set = new_memory_set;
         // 切换了地址空间， 需要切换token
         let page_table_token = if self.pid == KERNEL_PROCESS_ID {
             0

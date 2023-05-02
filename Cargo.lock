@@ -345,6 +345,7 @@ dependencies = [
  "memory_addr",
  "percpu",
  "rand",
+ "riscv",
  "scheduler",
  "spinlock",
  "timer_list",
@@ -657,7 +658,6 @@ dependencies = [
 name = "driver_virtio"
 version = "0.1.0"
 dependencies = [
- "cfg-if",
  "driver_block",
  "driver_common",
  "driver_display",
@@ -1089,7 +1089,6 @@ checksum = "ceedf44fb00f2d1984b0bc98102627ce622e083e49a5bacdb3e514fa4238e267"
 name = "page_table"
 version = "0.1.0"
 dependencies = [
- "cfg-if",
  "log",
  "memory_addr",
  "page_table_entry",
@@ -1100,7 +1099,6 @@ name = "page_table_entry"
 version = "0.1.0"
 dependencies = [
  "bitflags 2.1.0",
- "cfg-if",
  "memory_addr",
  "x86_64",
 ]
@@ -1564,8 +1562,9 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
 name = "virtio-drivers"
-version = "0.3.0"
-source = "git+https://github.com/rcore-os/virtio-drivers.git?rev=0491154#0491154bfc2f39a976ec77e6abec2844cdba6545"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "42299957c6f61af586fe3eae398c16ec07f33a02579fa1d41ae96156ce437029"
 dependencies = [
  "bitflags 1.3.2",
  "log",

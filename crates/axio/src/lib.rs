@@ -1,6 +1,7 @@
-//! `std`-like traits, helpers, and type definitions for core I/O functionality.
+//! [`std::io`]-like I/O traits for `no_std` environment.
 
-#![no_std]
+#![cfg_attr(not(doc), no_std)]
+#![feature(doc_auto_cfg)]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;

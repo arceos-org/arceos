@@ -1,3 +1,7 @@
+/// When implement [`VfsNodeOps`] on a directory node, add dummy file operations
+/// that just return an error.
+///
+/// [`VfsNodeOps`]: crate::VfsNodeOps
 #[macro_export]
 macro_rules! impl_vfs_dir_default {
     () => {
@@ -16,9 +20,18 @@ macro_rules! impl_vfs_dir_default {
         fn truncate(&self, _size: u64) -> $crate::VfsResult {
             $crate::__priv::ax_err!(IsADirectory)
         }
+
+        #[inline]
+        fn as_any(&self) -> &dyn core::any::Any {
+            self
+        }
     };
 }
 
+/// When implement [`VfsNodeOps`] on a non-directory node, add dummy directory
+/// operations that just return an error.
+///
+/// [`VfsNodeOps`]: crate::VfsNodeOps
 #[macro_export]
 macro_rules! impl_vfs_non_dir_default {
     () => {
@@ -43,6 +56,11 @@ macro_rules! impl_vfs_non_dir_default {
             _dirents: &mut [$crate::VfsDirEntry],
         ) -> $crate::VfsResult<usize> {
             $crate::__priv::ax_err!(NotADirectory)
+        }
+
+        #[inline]
+        fn as_any(&self) -> &dyn core::any::Any {
+            self
         }
     };
 }

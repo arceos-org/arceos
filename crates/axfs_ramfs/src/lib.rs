@@ -1,4 +1,4 @@
-//! Device filesystem used by [ArceOS](https://github.com/rcore-os/arceos).
+//! RAM filesystem used by [ArceOS](https://github.com/rcore-os/arceos).
 //!
 //! The implementation is based on [`axfs_vfs`].
 
@@ -7,27 +7,25 @@
 extern crate alloc;
 
 mod dir;
-mod null;
-mod zero;
+mod file;
 
 #[cfg(test)]
 mod tests;
 
 pub use self::dir::DirNode;
-pub use self::null::NullDev;
-pub use self::zero::ZeroDev;
+pub use self::file::FileNode;
 
 use alloc::sync::Arc;
 use axfs_vfs::{VfsNodeRef, VfsOps, VfsResult};
 use spin::once::Once;
 
-/// A device filesystem that implements [`axfs_vfs::VfsOps`].
-pub struct DeviceFileSystem {
+/// A RAM filesystem that implements [`axfs_vfs::VfsOps`].
+pub struct RamFileSystem {
     parent: Once<VfsNodeRef>,
     root: Arc<DirNode>,
 }
 
-impl DeviceFileSystem {
+impl RamFileSystem {
     /// Create a new instance.
     pub fn new() -> Self {
         Self {
@@ -36,20 +34,13 @@ impl DeviceFileSystem {
         }
     }
 
-    /// Create a subdirectory at the root directory.
-    pub fn mkdir(&self, name: &'static str) -> Arc<DirNode> {
-        self.root.mkdir(name)
-    }
-
-    /// Add a node to the root directory.
-    ///
-    /// The node must implement [`axfs_vfs::VfsNodeOps`], and be wrapped in [`Arc`].
-    pub fn add(&self, name: &'static str, node: VfsNodeRef) {
-        self.root.add(name, node);
+    /// Returns the root directory node in [`Arc<DirNode>`](DirNode).
+    pub fn root_dir_node(&self) -> Arc<DirNode> {
+        self.root.clone()
     }
 }
 
-impl VfsOps for DeviceFileSystem {
+impl VfsOps for RamFileSystem {
     fn mount(&self, _path: &str, mount_point: VfsNodeRef) -> VfsResult {
         if let Some(parent) = mount_point.parent() {
             self.root.set_parent(Some(self.parent.call_once(|| parent)));
@@ -64,7 +55,7 @@ impl VfsOps for DeviceFileSystem {
     }
 }
 
-impl Default for DeviceFileSystem {
+impl Default for RamFileSystem {
     fn default() -> Self {
         Self::new()
     }

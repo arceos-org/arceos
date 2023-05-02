@@ -1,22 +1,27 @@
 use alloc::collections::BTreeMap;
 use alloc::sync::{Arc, Weak};
+use alloc::{string::String, vec::Vec};
+
 use axfs_vfs::{VfsDirEntry, VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsNodeType};
 use axfs_vfs::{VfsError, VfsResult};
 use spin::RwLock;
 
-/// The directory node in the device filesystem.
+use crate::file::FileNode;
+
+/// The directory node in the RAM filesystem.
 ///
 /// It implements [`axfs_vfs::VfsNodeOps`].
 pub struct DirNode {
+    this: Weak<DirNode>,
     parent: RwLock<Weak<dyn VfsNodeOps>>,
-    children: RwLock<BTreeMap<&'static str, VfsNodeRef>>,
+    children: RwLock<BTreeMap<String, VfsNodeRef>>,
 }
 
 impl DirNode {
-    pub(super) fn new(parent: Option<&VfsNodeRef>) -> Arc<Self> {
-        let parent = parent.map_or(Weak::<Self>::new() as _, Arc::downgrade);
-        Arc::new(Self {
-            parent: RwLock::new(parent),
+    pub(super) fn new(parent: Option<Weak<dyn VfsNodeOps>>) -> Arc<Self> {
+        Arc::new_cyclic(|this| Self {
+            this: this.clone(),
+            parent: RwLock::new(parent.unwrap_or_else(|| Weak::<Self>::new())),
             children: RwLock::new(BTreeMap::new()),
         })
     }
@@ -25,17 +30,42 @@ impl DirNode {
         *self.parent.write() = parent.map_or(Weak::<Self>::new() as _, Arc::downgrade);
     }
 
-    /// Create a subdirectory at this directory.
-    pub fn mkdir(self: &Arc<Self>, name: &'static str) -> Arc<Self> {
-        let parent = self.clone() as VfsNodeRef;
-        let node = Self::new(Some(&parent));
-        self.children.write().insert(name, node.clone());
-        node
+    /// Returns a string list of all entries in this directory.
+    pub fn get_entries(&self) -> Vec<String> {
+        self.children.read().keys().cloned().collect()
     }
 
-    /// Add a node to this directory.
-    pub fn add(&self, name: &'static str, node: VfsNodeRef) {
-        self.children.write().insert(name, node);
+    /// Checks whether a node with the given name exists in this directory.
+    pub fn exist(&self, name: &str) -> bool {
+        self.children.read().contains_key(name)
+    }
+
+    /// Creates a new node with the given name and type in this directory.
+    pub fn create_node(&self, name: &str, ty: VfsNodeType) -> VfsResult {
+        if self.exist(name) {
+            log::error!("AlreadyExists {}", name);
+            return Err(VfsError::AlreadyExists);
+        }
+        let node: VfsNodeRef = match ty {
+            VfsNodeType::File => Arc::new(FileNode::new()),
+            VfsNodeType::Dir => Self::new(Some(self.this.clone())),
+            _ => return Err(VfsError::Unsupported),
+        };
+        self.children.write().insert(name.into(), node);
+        Ok(())
+    }
+
+    /// Removes a node by the given name in this directory.
+    pub fn remove_node(&self, name: &str) -> VfsResult {
+        let mut children = self.children.write();
+        let node = children.get(name).ok_or(VfsError::NotFound)?;
+        if let Some(dir) = node.as_any().downcast_ref::<DirNode>() {
+            if !dir.children.read().is_empty() {
+                return Err(VfsError::DirectoryNotEmpty);
+            }
+        }
+        children.remove(name);
+        Ok(())
     }
 }
 
@@ -88,42 +118,50 @@ impl VfsNodeOps for DirNode {
     }
 
     fn create(&self, path: &str, ty: VfsNodeType) -> VfsResult {
-        log::debug!("create {:?} at devfs: {}", ty, path);
+        log::debug!("create {:?} at ramfs: {}", ty, path);
         let (name, rest) = split_path(path);
         if let Some(rest) = rest {
             match name {
                 "" | "." => self.create(rest, ty),
                 ".." => self.parent().ok_or(VfsError::NotFound)?.create(rest, ty),
-                _ => self
-                    .children
-                    .read()
-                    .get(name)
-                    .ok_or(VfsError::NotFound)?
-                    .create(rest, ty),
+                _ => {
+                    let subdir = self
+                        .children
+                        .read()
+                        .get(name)
+                        .ok_or(VfsError::NotFound)?
+                        .clone();
+                    subdir.create(rest, ty)
+                }
             }
         } else if name.is_empty() || name == "." || name == ".." {
             Ok(()) // already exists
         } else {
-            Err(VfsError::PermissionDenied) // do not support to create nodes dynamically
+            self.create_node(name, ty)
         }
     }
 
     fn remove(&self, path: &str) -> VfsResult {
-        log::debug!("remove at devfs: {}", path);
+        log::debug!("remove at ramfs: {}", path);
         let (name, rest) = split_path(path);
         if let Some(rest) = rest {
             match name {
                 "" | "." => self.remove(rest),
                 ".." => self.parent().ok_or(VfsError::NotFound)?.remove(rest),
-                _ => self
-                    .children
-                    .read()
-                    .get(name)
-                    .ok_or(VfsError::NotFound)?
-                    .remove(rest),
+                _ => {
+                    let subdir = self
+                        .children
+                        .read()
+                        .get(name)
+                        .ok_or(VfsError::NotFound)?
+                        .clone();
+                    subdir.remove(rest)
+                }
             }
+        } else if name.is_empty() || name == "." || name == ".." {
+            Err(VfsError::InvalidInput) // remove '.' or '..
         } else {
-            Err(VfsError::PermissionDenied) // do not support to remove nodes dynamically
+            self.remove_node(name)
         }
     }
 
