@@ -1,17 +1,14 @@
 use alloc::{collections::BTreeMap, string::String, sync::Arc, vec::Vec};
 use axhal::arch::{write_page_table_root, TrapFrame};
+use axlog::info;
 pub const USER_STACK_SIZE: usize = 4096;
 const KERNEL_STACK_SIZE: usize = 4096;
-use crate::{
-    current,
-    mem::memory_set::{get_app_data, MemorySet},
-    run_idle,
-    run_queue::RUN_QUEUE,
-    task::TaskInner,
-    AxTaskRef, TaskId, clone_flags::CloneFlags,
+use crate::mem::memory_set::{get_app_data, MemorySet};
+use axtask::{
+    clone_flags::CloneFlags, current, task::TaskInner, AxTaskRef, TaskId, IDLE_TASK, RUN_QUEUE,
 };
 use spinlock::SpinNoIrq;
-const IDLE_TASK_STACK_SIZE: usize = 4096;
+
 use riscv::asm;
 pub static PID2PC: SpinNoIrq<BTreeMap<u64, Arc<Process>>> = SpinNoIrq::new(BTreeMap::new());
 pub const KERNEL_PROCESS_ID: u64 = 1;
@@ -48,35 +45,12 @@ impl ProcessInner {
             exit_code: 0,
         }
     }
+    pub fn get_page_table_token(&self) -> usize {
+        self.memory_set.lock().page_table_token()
+    }
 }
 
 impl Process {
-    /// 初始化内核调度任务的进程
-    pub fn new_kernel() -> AxTaskRef {
-        // 内核进程的ID必定为1
-        let kernel_process = Arc::new(Self {
-            pid: TaskId::new().as_u64(),
-            inner: SpinNoIrq::new(ProcessInner::new(0, Arc::new(SpinNoIrq::new(MemorySet::new_empty())))),
-        });
-        PID2PC
-            .lock()
-            .insert(kernel_process.pid, Arc::clone(&kernel_process));
-        let new_task = TaskInner::new(
-            || run_idle(),
-            "idle",
-            IDLE_TASK_STACK_SIZE,
-            KERNEL_PROCESS_ID,
-        );
-        kernel_process
-            .inner
-            .lock()
-            .tasks
-            .push(Arc::clone(&new_task));
-        // 不用为内核任务设立trap上下文
-        new_task.set_leader(true);
-        new_task
-    }
-
     /// 根据name新建一个进程
     /// 此时应当是初始化的主进程，所以其父亲应当是内核进程
     pub fn new(name: &'static str) -> AxTaskRef {
@@ -84,22 +58,33 @@ impl Process {
         // let mut page_table = copy_from_kernel_memory();
         // let (entry, user_stack_bottom) = load_from_elf(&mut page_table, get_app_data(name));
         let mut memory_set = MemorySet::new_from_kernel();
+        let page_table_token = memory_set.page_table_token();
         let (entry, user_stack_bottom) = MemorySet::from_elf(&mut memory_set, get_app_data(name));
         // 以这种方式建立的线程，不通过某一个具体的函数开始，而是通过地址来运行函数，所以entry不会被用到
         let new_process = Arc::new(Self {
             pid: TaskId::new().as_u64(),
-            inner: SpinNoIrq::new(ProcessInner::new(KERNEL_PROCESS_ID, Arc::new(SpinNoIrq::new(memory_set)))),
+            inner: SpinNoIrq::new(ProcessInner::new(
+                KERNEL_PROCESS_ID,
+                Arc::new(SpinNoIrq::new(memory_set)),
+            )),
         });
         // 记录该进程，防止被回收
         PID2PC
             .lock()
             .insert(new_process.pid, Arc::clone(&new_process));
         // 创立一个新的线程，初始化时进入
-        let new_task = TaskInner::new(|| {}, name, KERNEL_STACK_SIZE, new_process.pid);
+        let new_task = TaskInner::new(
+            || {},
+            name,
+            KERNEL_STACK_SIZE,
+            new_process.pid,
+            page_table_token,
+        );
         new_task.set_leader(true);
         // 初始化线程的trap上下文
-        let new_trap_frame = TrapFrame::app_init_context(entry, user_stack_bottom + USER_STACK_SIZE);
-        new_task.set_trap_context(new_trap_frame) ;
+        let new_trap_frame =
+            TrapFrame::app_init_context(entry, user_stack_bottom + USER_STACK_SIZE);
+        new_task.set_trap_context(new_trap_frame);
         // 设立父子关系
         let mut inner = new_process.inner.lock();
         inner.tasks.push(Arc::clone(&new_task));
@@ -126,12 +111,13 @@ impl Process {
         let curr = current();
         let _ = inner
             .tasks
-            .drain_filter(|task: &mut Arc<scheduler::FifoTask<TaskInner>>| task.id() != curr.id())
+            .drain_filter(|task: &mut AxTaskRef| task.id() != curr.id())
             .map(|task| RUN_QUEUE.lock().remove_task(&task));
         // 当前任务被设置为主线程
         curr.set_leader(true);
         assert!(inner.tasks.len() == 1);
-        let (entry, user_stack_bottom) = MemorySet::from_elf(&mut inner.memory_set.lock(), elf_data);
+        let (entry, user_stack_bottom) =
+            MemorySet::from_elf(&mut inner.memory_set.lock(), elf_data);
         // inner.memory_set = new_memory_set;
         // 切换了地址空间， 需要切换token
         let page_table_token = if self.pid == KERNEL_PROCESS_ID {
@@ -185,7 +171,14 @@ impl Process {
     }
     /// 实现简易的clone系统调用
     /// 返回值为新产生的任务的id
-    pub fn clone(&self, flags: CloneFlags, stack: Option<usize>, ptid: usize, tls: usize, ctid: usize) -> u64 {
+    pub fn clone_task(
+        &self,
+        flags: CloneFlags,
+        stack: Option<usize>,
+        ptid: usize,
+        tls: usize,
+        ctid: usize,
+    ) -> u64 {
         let mut inner = self.inner.lock();
         // 是否共享虚拟地址空间
         let new_memory_set = if flags.contains(CloneFlags::CLONE_VM) {
@@ -193,7 +186,9 @@ impl Process {
             Arc::clone(&inner.memory_set)
         } else {
             // 否则复制地址空间
-            Arc::new(SpinNoIrq::new(MemorySet::new_from_task(&(inner.memory_set.lock())))) 
+            Arc::new(SpinNoIrq::new(MemorySet::new_from_task(
+                &(inner.memory_set.lock()),
+            )))
         };
 
         // 在生成新的进程前，需要决定其所属进程是谁
@@ -209,25 +204,30 @@ impl Process {
             // 创建兄弟关系，此时以self的父进程作为自己的父进程
             // 理论上不应该创建内核进程的兄弟进程，所以可以直接unwrap
             inner.parent
-        }
-        else {
+        } else {
             // 创建父子关系，此时以self作为父进程
             self.pid
         };
-        // let new_process = 
-        let new_task = TaskInner::new(|| {}, "", KERNEL_STACK_SIZE, process_id);
+        // let new_process =
+        let new_task = TaskInner::new(
+            || {},
+            "",
+            KERNEL_STACK_SIZE,
+            process_id,
+            new_memory_set.lock().page_table_token(),
+        );
         // 决定是创建线程还是进程
         if flags.contains(CloneFlags::CLONE_THREAD) {
             // 若创建的是进程，那么不用新建进程
             inner.tasks.push(Arc::clone(&new_task));
-        }
-        else {
+        } else {
             // 若创建的是进程，那么需要新建进程
-            let new_process = Arc::new(Self{pid: process_id, inner: SpinNoIrq::new(ProcessInner::new(parent_id, new_memory_set))});
+            let new_process = Arc::new(Self {
+                pid: process_id,
+                inner: SpinNoIrq::new(ProcessInner::new(parent_id, new_memory_set)),
+            });
             // 记录该进程，防止被回收
-            PID2PC
-            .lock()
-            .insert(process_id, Arc::clone(&new_process));
+            PID2PC.lock().insert(process_id, Arc::clone(&new_process));
             new_process.inner.lock().tasks.push(Arc::clone(&new_task));
         };
         drop(inner);
@@ -235,9 +235,7 @@ impl Process {
             new_task.set_leader(true);
         }
         let curr = current();
-        let mut trap_frame = unsafe {
-            *(curr.get_first_trap_frame())
-        };
+        let mut trap_frame = unsafe { *(curr.get_first_trap_frame()) };
         drop(curr);
         // 新开的进程/线程返回值为0
         trap_frame.regs.a0 = 0;
@@ -250,7 +248,11 @@ impl Process {
         // 没有给定用户栈的时候，只能是共享了地址空间，且原先调用clone的有用户栈，此时已经在之前的trap clone时复制了
         if let Some(stack) = stack {
             trap_frame.regs.sp = stack;
-            info!("New user stack: sepc:{:X}, stack:{:X}", trap_frame.sepc, trap_frame.regs.sp);
+            axlog::info!(
+                "New user stack: sepc:{:X}, stack:{:X}",
+                trap_frame.sepc,
+                trap_frame.regs.sp
+            );
         }
         new_task.set_trap_context(trap_frame);
         new_task.set_trap_in_kernel_stack();
@@ -258,12 +260,59 @@ impl Process {
     }
 }
 
-// #[cfg(not(feature = "user"))]
-// pub fn first_into_user(_kernel_sp: usize, _frame_base: usize) -> ! {
-//     extern "Rust" {
-//         fn main();
-//     }
+pub fn init_process() {
+    let kernel_process = Arc::new(Process {
+        pid: TaskId::new().as_u64(),
+        inner: SpinNoIrq::new(ProcessInner::new(
+            0,
+            Arc::new(SpinNoIrq::new(MemorySet::new_empty())),
+        )),
+    });
+    axtask::init_scheduler();
+    PID2PC
+        .lock()
+        .insert(kernel_process.pid, Arc::clone(&kernel_process));
+    kernel_process.inner.lock().tasks.push(Arc::clone(unsafe {
+        &IDLE_TASK.current_ref_raw().get_unchecked()
+    }));
+    let main_task = Process::new("helloworld");
+    main_task.set_ready_state();
+    RUN_QUEUE.lock().add_task(main_task);
+}
 
-//     unsafe { main() };
-//     crate::exit(0)
-// }
+pub fn exit(exit_code: i32) -> isize {
+    let curr = current();
+    let is_leader = curr.is_leader();
+    let process_id = curr.get_process_id();
+    drop(curr);
+    RUN_QUEUE.lock().exit_current(exit_code);
+    // 若退出的是内核线程，就没有必要考虑后续了，否则此时调度队列重新调度的操作拿到进程这里来
+    // 先进行资源的回收
+    // 不可以回收内核任务
+    if is_leader {
+        assert!(process_id != 0);
+        let pid2pc_inner = PID2PC.lock();
+        let process = Arc::clone(&pid2pc_inner.get(&process_id).unwrap());
+        drop(pid2pc_inner);
+        let mut inner = process.inner.lock();
+        inner.exit_code = exit_code;
+        inner.is_zombie = true;
+        {
+            let pid2pc = PID2PC.lock();
+            let kernel_process = Arc::clone(pid2pc.get(&KERNEL_PROCESS_ID).unwrap());
+            drop(pid2pc);
+            // 回收子进程到内核进程下
+            for child in inner.children.iter() {
+                child.inner.lock().parent = KERNEL_PROCESS_ID;
+                kernel_process.inner.lock().children.push(Arc::clone(child));
+            }
+        }
+        // 回收物理页帧
+        inner.memory_set.lock().areas.clear();
+        // 页表不用特意解除，因为整个对象都将被析构
+        drop(inner);
+    }
+    // 当前的进程回收是比较简单的
+    RUN_QUEUE.lock().resched_inner(false);
+    0
+}

@@ -118,8 +118,9 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         remap_kernel_memory().expect("remap kernel memoy failed");
     }
 
-    #[cfg(feature = "multitask")]
-    axtask::init_scheduler();
+    // #[cfg(feature = "multitask")]
+    // axtask::init_scheduler();
+    axprocess::process::init_process();
 
     #[cfg(any(feature = "fs", feature = "net", feature = "display"))]
     {
@@ -180,7 +181,7 @@ fn init_allocator() {
 
 #[cfg(feature = "paging")]
 fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
-    axtask::mem::paging::remap_kernel_memory()
+    axprocess::mem::paging::remap_kernel_memory()
 }
 
 fn init_interrupt() {

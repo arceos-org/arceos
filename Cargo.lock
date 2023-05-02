@@ -299,6 +299,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "axprocess"
+version = "0.1.0"
+dependencies = [
+ "axalloc",
+ "axhal",
+ "axlog",
+ "axtask",
+ "lazy_init",
+ "memory_addr",
+ "riscv",
+ "spinlock",
+ "xmas-elf",
+]
+
+[[package]]
 name = "axruntime"
 version = "0.1.0"
 dependencies = [
@@ -310,6 +325,7 @@ dependencies = [
  "axhal",
  "axlog",
  "axnet",
+ "axprocess",
  "axsyscall",
  "axtask",
  "crate_interface",
@@ -335,6 +351,7 @@ dependencies = [
  "axalloc",
  "axhal",
  "axlog",
+ "axprocess",
  "axtask",
  "log",
 ]
@@ -361,7 +378,6 @@ dependencies = [
  "scheduler",
  "spinlock",
  "timer_list",
- "xmas-elf",
 ]
 
 [[package]]

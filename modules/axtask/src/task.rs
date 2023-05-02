@@ -10,7 +10,7 @@ use axhal::arch::{TaskContext, TrapFrame};
 use memory_addr::{align_up_4k, VirtAddr};
 
 use crate::copy::__copy;
-const KERNEL_PROCESS_ID:u64 = 1;
+const KERNEL_PROCESS_ID: u64 = 1;
 use crate::{AxTask, AxTaskRef};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -34,6 +34,8 @@ pub struct TaskInner {
     process_id: u64,
     /// 是否是所属进程下的主线程
     is_leader: AtomicBool,
+    /// 所包含的页表的token，内核的token统一为0
+    page_table_token: usize,
 
     entry: Option<*mut dyn FnOnce()>,
     state: AtomicU8,
@@ -93,18 +95,23 @@ impl TaskInner {
     pub fn get_process_id(&self) -> u64 {
         self.process_id
     }
-
 }
 
 // private methods
 impl TaskInner {
-    fn new_common(id: TaskId, name: &'static str, process_id: u64) -> Self {
+    fn new_common(
+        id: TaskId,
+        name: &'static str,
+        process_id: u64,
+        page_table_token: usize,
+    ) -> Self {
         Self {
             id,
             name,
             is_idle: false,
             is_init: false,
             process_id,
+            page_table_token,
             is_leader: AtomicBool::new(false),
             entry: None,
             state: AtomicU8::new(TaskState::Ready as u8),
@@ -120,16 +127,18 @@ impl TaskInner {
         }
     }
 
-    pub(crate) fn new<F>(
+    pub fn new<F>(
         entry: F,
         name: &'static str,
         stack_size: usize,
         process_id: u64,
+        page_table_token: usize,
     ) -> AxTaskRef
     where
         F: FnOnce() + Send + 'static,
     {
-        let mut t = Self::new_common(TaskId::new(), name, process_id);
+        let mut t = Self::new_common(TaskId::new(), name, process_id, page_table_token);
+        info!("kernel id: {}", t.id.as_u64());
         t.set_leader(true);
         debug!("new task: {}", t.id_name());
         let kstack = TaskStack::alloc(align_up_4k(stack_size));
@@ -144,7 +153,7 @@ impl TaskInner {
 
     pub(crate) fn new_init(name: &'static str) -> AxTaskRef {
         // init_task does not change PC and SP, so `entry` and `kstack` fields are not used.
-        let mut t = Self::new_common(TaskId::new(), name, KERNEL_PROCESS_ID);
+        let mut t = Self::new_common(TaskId::new(), name, KERNEL_PROCESS_ID, 0);
         t.is_init = true;
         if name == "idle" {
             t.is_idle = true;
@@ -154,7 +163,7 @@ impl TaskInner {
 
     /// 获取内核栈栈顶
     #[inline]
-    pub(crate) fn get_kernel_stack_top(&self) -> Option<usize> {
+    pub fn get_kernel_stack_top(&self) -> Option<usize> {
         if let Some(kstack) = &self.kstack {
             return Some(kstack.top().as_usize());
         }
@@ -163,19 +172,19 @@ impl TaskInner {
 
     /// 获取内核栈的第一个trap上下文
     #[inline]
-    pub(crate) fn get_first_trap_frame(&self) -> *mut TrapFrame {
+    pub fn get_first_trap_frame(&self) -> *mut TrapFrame {
         if let Some(kstack) = &self.kstack {
             return kstack.get_first_trap_frame();
         }
         unreachable!("get_first_trap_frame: kstack is None");
     }
 
-    pub(crate) fn set_leader(&self, is_lead: bool) {
+    pub fn set_leader(&self, is_lead: bool) {
         self.is_leader.store(is_lead, Ordering::Release);
     }
 
     /// 设置Trap上下文
-    pub(crate) fn set_trap_context(&self, trap_frame: TrapFrame) {
+    pub fn set_trap_context(&self, trap_frame: TrapFrame) {
         let now_trap_frame = self.trap_frame.get();
         unsafe {
             *now_trap_frame = trap_frame;
@@ -185,7 +194,7 @@ impl TaskInner {
     /// 将trap上下文直接写入到内核栈上
     /// 注意此时保持sp不变
     /// 返回值为压入了trap之后的内核栈的栈顶，可以用于多层trap压入
-    pub(crate) fn set_trap_in_kernel_stack(&self) -> usize {
+    pub fn set_trap_in_kernel_stack(&self) -> usize {
         let trap_frame_size = core::mem::size_of::<TrapFrame>();
         let frame_address = self.trap_frame.get();
         let kernel_base = self.get_kernel_stack_top().unwrap() - trap_frame_size;
@@ -206,7 +215,12 @@ impl TaskInner {
     }
 
     #[inline]
-    pub(crate) fn is_leader(&self) -> bool {
+    pub fn set_ready_state(&self) {
+        self.state.store(TaskState::Ready as u8, Ordering::Release)
+    }
+
+    #[inline]
+    pub fn is_leader(&self) -> bool {
         self.is_leader.load(Ordering::Acquire)
     }
 
@@ -255,7 +269,6 @@ impl TaskInner {
         self.in_timer_list.store(in_timer_list, Ordering::Release);
     }
 
-
     #[inline]
     #[cfg(feature = "preempt")]
     pub(crate) fn set_preempt_pending(&self, pending: bool) {
@@ -292,6 +305,11 @@ impl TaskInner {
                 rq.resched();
             }
         }
+    }
+
+    #[inline]
+    pub(crate) const fn page_table_token(&self) -> usize {
+        self.page_table_token
     }
 
     #[inline]
@@ -396,7 +414,6 @@ impl Deref for CurrentTask {
     }
 }
 
-
 /// 初始化主进程的trap上下文
 #[no_mangle]
 // #[cfg(feature = "user")]
@@ -429,7 +446,6 @@ fn first_into_user(kernel_sp: usize, frame_base: usize) -> ! {
     core::panic!("already in user mode!")
 }
 
-
 #[no_mangle]
 /// 本线程将会执行的函数
 extern "C" fn task_entry() -> ! {
@@ -453,5 +469,6 @@ extern "C" fn task_entry() -> ! {
         }
     }
     // 任务执行完成，释放自我
-    crate::exit(0);
+    unreachable!("test!");
+    // crate::exit(0);
 }

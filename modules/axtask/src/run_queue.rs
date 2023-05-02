@@ -4,28 +4,36 @@ use lazy_init::LazyInit;
 use scheduler::BaseScheduler;
 use spinlock::SpinNoIrq;
 
-use crate::process::{Process, KERNEL_PROCESS_ID, PID2PC};
 use crate::task::{CurrentTask, TaskState};
-use crate::{AxTaskRef, Scheduler, TaskInner, WaitQueue};
+use crate::{run_idle, AxTaskRef, Scheduler, TaskInner, WaitQueue};
+
+const KERNEL_PROCESS_ID: u64 = 1;
 
 // TODO: per-CPU
-pub(crate) static RUN_QUEUE: LazyInit<SpinNoIrq<AxRunQueue>> = LazyInit::new();
+pub static RUN_QUEUE: LazyInit<SpinNoIrq<AxRunQueue>> = LazyInit::new();
 
 // TODO: per-CPU
 static EXITED_TASKS: SpinNoIrq<VecDeque<AxTaskRef>> = SpinNoIrq::new(VecDeque::new());
 
 static WAIT_FOR_EXIT: WaitQueue = WaitQueue::new();
-
+const IDLE_TASK_STACK_SIZE: usize = 4096;
 #[percpu::def_percpu]
-static IDLE_TASK: LazyInit<AxTaskRef> = LazyInit::new();
+pub static IDLE_TASK: LazyInit<AxTaskRef> = LazyInit::new();
 
-pub(crate) struct AxRunQueue {
+pub struct AxRunQueue {
     scheduler: Scheduler,
 }
 
 impl AxRunQueue {
     pub fn new() -> SpinNoIrq<Self> {
-        let gc_task = TaskInner::new(gc_entry, "gc", axconfig::TASK_STACK_SIZE, KERNEL_PROCESS_ID);
+        // 内核线程的page_table_token默认为0
+        let gc_task = TaskInner::new(
+            gc_entry,
+            "gc",
+            axconfig::TASK_STACK_SIZE,
+            KERNEL_PROCESS_ID,
+            0,
+        );
         gc_task.set_state(TaskState::Running);
         unsafe { CurrentTask::init_current(gc_task) }
         let scheduler = Scheduler::new();
@@ -89,7 +97,7 @@ impl AxRunQueue {
     }
     /// 线程的退出，需要判断当前线程是否为调度线程。
     /// 若是调度线程，则需要退出进程内所有程序
-    pub fn exit_current(&mut self, exit_code: i32) -> ! {
+    pub fn exit_current(&mut self, exit_code: i32) {
         let curr = crate::current();
         debug!("task exit: {}, exit_code={}", curr.id_name(), exit_code);
         assert!(curr.is_running());
@@ -101,35 +109,7 @@ impl AxRunQueue {
             curr.set_state(TaskState::Exited);
             EXITED_TASKS.lock().push_back(curr.clone());
             WAIT_FOR_EXIT.notify_one_locked(false, self);
-            // 进程回收
-            if curr.is_leader() {
-                // 不可以回收内核任务
-                assert!(curr.get_process_id() != 0);
-                let pid2pc_inner = PID2PC.lock();
-                let process = Arc::clone(&pid2pc_inner.get(&curr.get_process_id()).unwrap());
-                drop(pid2pc_inner);
-                let mut inner = process.inner.lock();
-                inner.exit_code = exit_code;
-                inner.is_zombie = true;
-                {
-                    let pid2pc = PID2PC.lock();
-                    let kernel_process = Arc::clone(pid2pc.get(&KERNEL_PROCESS_ID).unwrap());
-                    drop(pid2pc);
-                    // 回收子进程到内核进程下
-                    for child in inner.children.iter() {
-                        child.inner.lock().parent = KERNEL_PROCESS_ID;
-                        kernel_process.inner.lock().children.push(Arc::clone(child));
-                    }
-                }
-                // 回收物理页帧
-                inner.memory_set.lock().areas.clear();
-                // 页表不用特意解除，因为整个对象都将被析构
-                drop(inner);
-            }
-            // 当前的进程回收是比较简单的
-            self.resched_inner(false);
         }
-        unreachable!("task exited!");
     }
 
     pub fn block_current<F>(&mut self, wait_queue_push: F)
@@ -180,7 +160,7 @@ impl AxRunQueue {
 impl AxRunQueue {
     /// Common reschedule subroutine. If `preempt`, keep current task's time
     /// slice, otherwise reset it.
-    fn resched_inner(&mut self, preempt: bool) {
+    pub fn resched_inner(&mut self, preempt: bool) {
         let prev = crate::current();
         if prev.is_running() {
             prev.set_state(TaskState::Ready);
@@ -211,16 +191,11 @@ impl AxRunQueue {
         unsafe {
             let prev_ctx_ptr = prev_task.ctx_mut_ptr();
             let next_ctx_ptr = next_task.ctx_mut_ptr();
-
             // The strong reference count of `prev_task` will be decremented by 1,
             // but won't be dropped until `gc_entry()` is called.
             assert!(Arc::strong_count(prev_task.as_task_ref()) > 1);
             assert!(Arc::strong_count(&next_task) >= 1);
-            let page_table_token = if next_task.get_process_id()== KERNEL_PROCESS_ID {
-                0
-            } else {
-                PID2PC.lock().get(&next_task.get_process_id()).unwrap().inner.lock().memory_set.lock().page_table_token()
-            };
+            let page_table_token = next_task.page_table_token();
             if page_table_token != 0 {
                 axhal::arch::write_page_table_root(page_table_token.into());
             }
@@ -249,13 +224,16 @@ fn gc_entry() {
 }
 
 pub(crate) fn init() {
-    let idle_task = Process::new_kernel();
+    let idle_task = TaskInner::new(
+        || run_idle(),
+        "idle",
+        IDLE_TASK_STACK_SIZE,
+        KERNEL_PROCESS_ID,
+        0,
+    );
+    idle_task.set_leader(true);
     IDLE_TASK.with_current(|i| i.init_by(idle_task.clone()));
-    let main_task = Process::new("helloworld");
-    main_task.set_state(TaskState::Ready);
-
     RUN_QUEUE.init_by(AxRunQueue::new());
-    RUN_QUEUE.lock().add_task(main_task);
     // unsafe { CurrentTask::init_current(main_task) }
 }
 
