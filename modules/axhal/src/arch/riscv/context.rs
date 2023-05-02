@@ -5,7 +5,7 @@ use riscv::register::sstatus::{self, Sstatus};
 include_asm_marcos!();
 
 #[repr(C)]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone,Copy)]
 pub struct GeneralRegisters {
     pub ra: usize,
     pub sp: usize,
@@ -41,7 +41,7 @@ pub struct GeneralRegisters {
 }
 
 #[repr(C)]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Copy)]
 // 类似之前的trap context
 pub struct TrapFrame {
     pub regs: GeneralRegisters,
@@ -95,6 +95,10 @@ impl TaskContext {
     pub fn init(&mut self, entry: usize, kstack_top: VirtAddr) {
         self.sp = kstack_top.as_usize();
         self.ra = entry;
+    }
+
+    pub fn set_sp(&mut self, sp: usize) {
+        self.sp = sp;
     }
 
     pub fn switch_to(&mut self, next_ctx: &Self) {

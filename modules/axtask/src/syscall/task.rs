@@ -10,7 +10,7 @@ pub fn syscall_exit() -> isize {
 pub fn syscall_exec(path: *const u8, mut args: *const usize) -> isize {
     let curr = current();
     let inner = curr.process.inner.lock();
-    let path = inner.memory_set.translate_str(path);
+    let path = inner.memory_set.lock().translate_str(path);
     axlog::info!("path: {}", path);
     axlog::info!("Syscall to exec {}", path);
     let mut args_vec = Vec::new();
@@ -19,7 +19,7 @@ pub fn syscall_exec(path: *const u8, mut args: *const usize) -> isize {
         if args_str_ptr == 0 {
             break;
         }
-        args_vec.push(inner.memory_set.translate_str(args_str_ptr as *const u8));
+        args_vec.push(inner.memory_set.lock().translate_str(args_str_ptr as *const u8));
         unsafe {
             args = args.add(1);
         }

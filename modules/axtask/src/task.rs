@@ -134,8 +134,6 @@ impl TaskInner {
         t.entry = Some(Box::into_raw(Box::new(entry)));
         t.ctx.get_mut().init(task_entry as usize, kstack.top());
         t.kstack = Some(kstack);
-        // 这里新建任务时就可以直接写入初始化的trap_context
-
         if name == "idle" {
             t.is_idle = true;
         }
@@ -164,27 +162,38 @@ impl TaskInner {
         None
     }
 
+    /// 获取内核栈的第一个trap上下文
+    #[inline]
+    pub(crate) fn get_first_trap_frame(&self) -> *mut TrapFrame {
+        if let Some(kstack) = &self.kstack {
+            return kstack.get_first_trap_frame();
+        }
+        unreachable!("get_first_trap_frame: kstack is None");
+    }
+
     pub(crate) fn set_leader(&self, is_lead: bool) {
         self.is_leader.store(is_lead, Ordering::Release);
     }
 
     /// 设置Trap上下文
-    pub(crate) fn set_trap_context(&self, app_entry: usize, user_sp: usize) {
+    pub(crate) fn set_trap_context(&self, trap_frame: TrapFrame) {
         let now_trap_frame = self.trap_frame.get();
         unsafe {
-            *now_trap_frame = TrapFrame::app_init_context(app_entry, user_sp);
+            *now_trap_frame = trap_frame;
         }
     }
 
     /// 将trap上下文直接写入到内核栈上
     /// 注意此时保持sp不变
-    pub(crate) fn set_trap_in_kernel_stack(&self) {
+    /// 返回值为压入了trap之后的内核栈的栈顶，可以用于多层trap压入
+    pub(crate) fn set_trap_in_kernel_stack(&self) -> usize {
         let trap_frame_size = core::mem::size_of::<TrapFrame>();
         let frame_address = self.trap_frame.get();
         let kernel_base = self.get_kernel_stack_top().unwrap() - trap_frame_size;
         unsafe {
             __copy(frame_address, kernel_base);
         }
+        kernel_base
     }
 
     #[inline]
@@ -320,9 +329,14 @@ impl TaskStack {
             layout,
         }
     }
-
+    /// top是内核栈的最高地址
+    /// 获取栈底，也即刚初始化时的栈顶
     pub const fn top(&self) -> VirtAddr {
         unsafe { core::mem::transmute(self.ptr.as_ptr().add(self.layout.size())) }
+    }
+    /// 获取内核栈第一个压入的trap上下文，防止出现内核trap嵌套
+    pub fn get_first_trap_frame(&self) -> *mut TrapFrame {
+        (self.top().as_usize() - core::mem::size_of::<TrapFrame>()) as *mut TrapFrame
     }
 }
 

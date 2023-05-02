@@ -50,6 +50,18 @@ impl MemorySet {
             areas: Vec::new(),
         }
     }
+    /// 从已有任务复制完整的地址空间过来
+    /// 1. 对内核的地址段，所有虚拟地址与物理地址的映射相同
+    /// 2. 对用户的地址段，所有虚拟地址和其中的数据相同，但对应的物理地址与 self 中的不同
+    pub fn new_from_task(others: &Self) -> Self {
+        let mut new_memory_set = Self::new_from_kernel();
+        for area in others.areas.iter() {
+            let data = area.pages.as_slice();
+            // 为新的地址空间复制原先地址空间的内容
+            new_memory_set.map_region_4k(area.start_va, area.pages.size(), area.flags, Some(data));
+        }
+        new_memory_set
+    }
     /// 获取页表token
     pub fn page_table_token(&self) -> usize {
         self.page_table.root_paddr().as_usize()

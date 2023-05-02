@@ -2,7 +2,7 @@ use self::{
     fs::syscall_write,
     task::{syscall_exec, syscall_exit},
 };
-mod clone_flags;
+pub mod clone_flags;
 /// 处理系统调用
 /// 负责系统调用的分发与处理
 mod fs;

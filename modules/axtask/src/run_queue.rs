@@ -112,12 +112,12 @@ impl AxRunQueue {
                     drop(pid2pc);
                     // 回收子进程到内核进程下
                     for child in inner.children.iter() {
-                        child.inner.lock().parent = Some(Arc::clone(&kernel_process));
+                        child.inner.lock().parent = KERNEL_PROCESS_ID;
                         kernel_process.inner.lock().children.push(Arc::clone(child));
                     }
                 }
                 // 回收物理页帧
-                inner.memory_set.areas.clear();
+                inner.memory_set.lock().areas.clear();
                 // 页表不用特意解除，因为整个对象都将被析构
                 drop(inner);
             }
@@ -214,7 +214,7 @@ impl AxRunQueue {
             let page_table_token = if next_task.process.pid == KERNEL_PROCESS_ID {
                 0
             } else {
-                next_task.process.inner.lock().memory_set.page_table_token()
+                next_task.process.inner.lock().memory_set.lock().page_table_token()
             };
             if page_table_token != 0 {
                 axhal::arch::write_page_table_root(page_table_token.into());
