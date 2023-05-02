@@ -10,7 +10,7 @@ use axhal::arch::{TaskContext, TrapFrame};
 use memory_addr::{align_up_4k, VirtAddr};
 
 use crate::copy::__copy;
-use crate::process::{first_into_user, Process, KERNEL_PROCESS_ID, PID2PC};
+const KERNEL_PROCESS_ID:u64 = 1;
 use crate::{AxTask, AxTaskRef};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -31,7 +31,7 @@ pub struct TaskInner {
     is_idle: bool,
     is_init: bool,
     /// 所属进程
-    pub process: Arc<Process>,
+    process_id: u64,
     /// 是否是所属进程下的主线程
     is_leader: AtomicBool,
 
@@ -89,17 +89,22 @@ impl TaskInner {
     pub fn id_name(&self) -> alloc::string::String {
         alloc::format!("Task({}, {:?})", self.id.as_u64(), self.name)
     }
+
+    pub fn get_process_id(&self) -> u64 {
+        self.process_id
+    }
+
 }
 
 // private methods
 impl TaskInner {
-    fn new_common(id: TaskId, name: &'static str, process: Arc<Process>) -> Self {
+    fn new_common(id: TaskId, name: &'static str, process_id: u64) -> Self {
         Self {
             id,
             name,
             is_idle: false,
             is_init: false,
-            process,
+            process_id,
             is_leader: AtomicBool::new(false),
             entry: None,
             state: AtomicU8::new(TaskState::Ready as u8),
@@ -124,10 +129,7 @@ impl TaskInner {
     where
         F: FnOnce() + Send + 'static,
     {
-        let pid2pc = PID2PC.lock();
-        let process = Arc::clone(pid2pc.get(&process_id).unwrap());
-        drop(pid2pc);
-        let mut t = Self::new_common(TaskId::new(), name, process);
+        let mut t = Self::new_common(TaskId::new(), name, process_id);
         t.set_leader(true);
         debug!("new task: {}", t.id_name());
         let kstack = TaskStack::alloc(align_up_4k(stack_size));
@@ -142,10 +144,7 @@ impl TaskInner {
 
     pub(crate) fn new_init(name: &'static str) -> AxTaskRef {
         // init_task does not change PC and SP, so `entry` and `kstack` fields are not used.
-        let pid2pc = PID2PC.lock();
-        let process = Arc::clone(pid2pc.get(&KERNEL_PROCESS_ID).unwrap());
-        drop(pid2pc);
-        let mut t = Self::new_common(TaskId::new(), name, process);
+        let mut t = Self::new_common(TaskId::new(), name, KERNEL_PROCESS_ID);
         t.is_init = true;
         if name == "idle" {
             t.is_idle = true;
@@ -255,6 +254,7 @@ impl TaskInner {
     pub(crate) fn set_in_timer_list(&self, in_timer_list: bool) {
         self.in_timer_list.store(in_timer_list, Ordering::Release);
     }
+
 
     #[inline]
     #[cfg(feature = "preempt")]
@@ -395,6 +395,41 @@ impl Deref for CurrentTask {
         self.0.deref()
     }
 }
+
+
+/// 初始化主进程的trap上下文
+#[no_mangle]
+// #[cfg(feature = "user")]
+fn first_into_user(kernel_sp: usize, frame_base: usize) -> ! {
+    let trap_frame_size = core::mem::size_of::<TrapFrame>();
+    let kernel_base = kernel_sp - trap_frame_size;
+    unsafe {
+        core::arch::asm!(
+            r"
+            mv      sp, {frame_base}
+            LDR     gp, sp, 2                   // load user gp and tp
+            LDR     t0, sp, 3
+            mv      t1, {kernel_base}
+            STR     tp, t1, 3                   // save supervisor tp，注意是存储到内核栈上而不是sp中
+            mv      tp, t0                      // tp：线程指针
+            csrw    sscratch, {kernel_sp}       // put supervisor sp to scratch
+            LDR     t0, sp, 31
+            LDR     t1, sp, 32
+            csrw    sepc, t0
+            csrw    sstatus, t1
+            POP_GENERAL_REGS
+            LDR     sp, sp, 1
+            sret
+        ",
+            frame_base = in(reg) frame_base,
+            kernel_sp = in(reg) kernel_sp,
+            kernel_base = in(reg) kernel_base,
+        );
+    };
+    core::panic!("already in user mode!")
+}
+
+
 #[no_mangle]
 /// 本线程将会执行的函数
 extern "C" fn task_entry() -> ! {
@@ -403,7 +438,7 @@ extern "C" fn task_entry() -> ! {
     axhal::arch::enable_irqs();
     let task: CurrentTask = crate::current();
     if let Some(entry) = task.entry {
-        if task.process.pid == KERNEL_PROCESS_ID {
+        if task.process_id == KERNEL_PROCESS_ID {
             // 是初始调度进程，直接执行即可
             unsafe { Box::from_raw(entry)() };
             // 继续执行对应的函数

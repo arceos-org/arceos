@@ -9,6 +9,6 @@ impl axhal::trap::TrapHandler for TrapHandlerImpl {
     }
     #[cfg(feature = "user")]
     fn handle_syscall(syscall_id: usize, args: [usize; 6]) -> isize {
-        axtask::syscall::syscall(syscall_id, args)
+        axsyscall::syscall(syscall_id, args)
     }
 }

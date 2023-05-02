@@ -103,7 +103,12 @@ impl AxRunQueue {
             WAIT_FOR_EXIT.notify_one_locked(false, self);
             // 进程回收
             if curr.is_leader() {
-                let mut inner = curr.process.inner.lock();
+                // 不可以回收内核任务
+                assert!(curr.get_process_id() != 0);
+                let pid2pc_inner = PID2PC.lock();
+                let process = Arc::clone(&pid2pc_inner.get(&curr.get_process_id()).unwrap());
+                drop(pid2pc_inner);
+                let mut inner = process.inner.lock();
                 inner.exit_code = exit_code;
                 inner.is_zombie = true;
                 {
@@ -211,10 +216,10 @@ impl AxRunQueue {
             // but won't be dropped until `gc_entry()` is called.
             assert!(Arc::strong_count(prev_task.as_task_ref()) > 1);
             assert!(Arc::strong_count(&next_task) >= 1);
-            let page_table_token = if next_task.process.pid == KERNEL_PROCESS_ID {
+            let page_table_token = if next_task.get_process_id()== KERNEL_PROCESS_ID {
                 0
             } else {
-                next_task.process.inner.lock().memory_set.lock().page_table_token()
+                PID2PC.lock().get(&next_task.get_process_id()).unwrap().inner.lock().memory_set.lock().page_table_token()
             };
             if page_table_token != 0 {
                 axhal::arch::write_page_table_root(page_table_token.into());

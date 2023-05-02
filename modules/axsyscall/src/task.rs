@@ -1,15 +1,19 @@
-use crate::{current, mem::memory_set::get_app_data};
-use alloc::vec::Vec;
+use axtask::{current, mem::memory_set::get_app_data, process::PID2PC};
+extern crate alloc;
+use alloc::{vec::Vec, sync::Arc};
 /// 处理与任务（线程）有关的系统调用
 
 pub fn syscall_exit() -> isize {
     axlog::info!("Syscall to exit!");
-    crate::exit(0)
+    axtask::exit(0)
 }
 
 pub fn syscall_exec(path: *const u8, mut args: *const usize) -> isize {
     let curr = current();
-    let inner = curr.process.inner.lock();
+    let pid2pc_inner = PID2PC.lock();
+    let curr_process = Arc::clone(&pid2pc_inner.get(&curr.get_process_id()).unwrap());
+    drop(pid2pc_inner);
+    let inner = curr_process.inner.lock();
     let path = inner.memory_set.lock().translate_str(path);
     axlog::info!("path: {}", path);
     axlog::info!("Syscall to exec {}", path);
@@ -27,6 +31,6 @@ pub fn syscall_exec(path: *const u8, mut args: *const usize) -> isize {
     drop(inner);
     let elf_data = get_app_data(&path);
     let argc = args_vec.len();
-    curr.process.exec(elf_data, args_vec);
+    curr_process.exec(elf_data, args_vec);
     argc as isize
 }

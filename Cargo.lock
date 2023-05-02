@@ -310,6 +310,7 @@ dependencies = [
  "axhal",
  "axlog",
  "axnet",
+ "axsyscall",
  "axtask",
  "crate_interface",
  "kernel_guard",
@@ -325,6 +326,17 @@ dependencies = [
  "axtask",
  "rand",
  "spinlock",
+]
+
+[[package]]
+name = "axsyscall"
+version = "0.1.0"
+dependencies = [
+ "axalloc",
+ "axhal",
+ "axlog",
+ "axtask",
+ "log",
 ]
 
 [[package]]

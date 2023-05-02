@@ -1,10 +1,12 @@
+#![cfg_attr(not(test), no_std)]
 use self::{
     fs::syscall_write,
     task::{syscall_exec, syscall_exit},
 };
-pub mod clone_flags;
-/// 处理系统调用
-/// 负责系统调用的分发与处理
+extern crate log;
+extern crate axlog;
+
+extern crate alloc;
 mod fs;
 mod task;
 pub const SYSCALL_WRITE: usize = 64;

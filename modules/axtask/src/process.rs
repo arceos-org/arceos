@@ -8,12 +8,12 @@ use crate::{
     run_idle,
     run_queue::RUN_QUEUE,
     task::TaskInner,
-    AxTaskRef, TaskId, syscall::clone_flags::CloneFlags,
+    AxTaskRef, TaskId, clone_flags::CloneFlags,
 };
 use spinlock::SpinNoIrq;
 const IDLE_TASK_STACK_SIZE: usize = 4096;
 use riscv::asm;
-pub(crate) static PID2PC: SpinNoIrq<BTreeMap<u64, Arc<Process>>> = SpinNoIrq::new(BTreeMap::new());
+pub static PID2PC: SpinNoIrq<BTreeMap<u64, Arc<Process>>> = SpinNoIrq::new(BTreeMap::new());
 pub const KERNEL_PROCESS_ID: u64 = 1;
 /// 进程的的数据结构
 pub struct Process {
@@ -256,38 +256,6 @@ impl Process {
         new_task.set_trap_in_kernel_stack();
         new_task.id().as_u64()
     }
-}
-
-/// 初始化进程的trap上下文
-#[no_mangle]
-// #[cfg(feature = "user")]
-pub fn first_into_user(kernel_sp: usize, frame_base: usize) -> ! {
-    let trap_frame_size = core::mem::size_of::<TrapFrame>();
-    let kernel_base = kernel_sp - trap_frame_size;
-    unsafe {
-        core::arch::asm!(
-            r"
-            mv      sp, {frame_base}
-            LDR     gp, sp, 2                   // load user gp and tp
-            LDR     t0, sp, 3
-            mv      t1, {kernel_base}
-            STR     tp, t1, 3                   // save supervisor tp，注意是存储到内核栈上而不是sp中
-            mv      tp, t0                      // tp：线程指针
-            csrw    sscratch, {kernel_sp}       // put supervisor sp to scratch
-            LDR     t0, sp, 31
-            LDR     t1, sp, 32
-            csrw    sepc, t0
-            csrw    sstatus, t1
-            POP_GENERAL_REGS
-            LDR     sp, sp, 1
-            sret
-        ",
-            frame_base = in(reg) frame_base,
-            kernel_sp = in(reg) kernel_sp,
-            kernel_base = in(reg) kernel_base,
-        );
-    };
-    core::panic!("already in user mode!")
 }
 
 // #[cfg(not(feature = "user"))]
