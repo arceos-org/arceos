@@ -60,6 +60,27 @@ Install [cargo-binutils](https://github.com/rust-embedded/cargo-binutils) to use
 cargo install cargo-binutils
 ```
 
+#### for build&run C apps
+Install `libclang-dev`:
+
+```bash
+sudo apt install libclang-dev
+```
+
+Download&Install `cross-musl-based toolchains`:
+```
+# download
+wget https://musl.cc/aarch64-linux-musl-cross.tgz
+wget https://musl.cc/riscv64-linux-musl-cross.tgz
+wget https://musl.cc/x86_64-linux-musl-cross.tgz
+# install
+tar zxf aarch64-linux-musl-cross.tgz
+tar zxf riscv64-linux-musl-cross.tgz
+tar zxf x86_64-linux-musl-cross.tgz
+# exec below command in bash OR add below info in ~/.bashrc
+export PATH=`pwd`/x86_64-linux-musl-cross/bin:`pwd`/aarch64-linux-musl-cross/bin:`pwd`/riscv64-linux-musl-cross/bin:$PATH
+```
+
 ### Example apps
 
 ```bash
@@ -67,7 +88,7 @@ cargo install cargo-binutils
 make A=path/to/app ARCH=<arch> LOG=<log> NET=[y|n] FS=[y|n]
 ```
 
-Where `<arch>` should be one of `riscv64`, `aarch64`.
+Where `<arch>` should be one of `riscv64`, `aarch64`，`x86_64`.
 
 `<log>` should be one of `off`, `error`, `warn`, `info`, `debug`, `trace`.
 
