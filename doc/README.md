@@ -1,4 +1,4 @@
-# ArceOS Architecture
+# ArceOS Architecture Overview
 
 ## ArceOS Modules
 
@@ -23,7 +23,7 @@
 * [axfs_vfs](../crates/axfs_vfs): Virtual filesystem interfaces used by ArceOS.
 * [axio](../crates/axio): `std::io`-like I/O traits for `no_std` environment.
 * [capability](../crates/capability): Provide basic capability-based security.
-* [crate_interface](../crates/crate_interface): Provides a way to define an interface (trait) in a crate, but can implement or use it in any crate.
+* [crate_interface](../crates/crate_interface): Provides a way to define an interface (trait) in a crate, but can implement or use it in any crate. [![Crates.io](https://img.shields.io/crates/v/crate_interface)](https://crates.io/crates/crate_interface)
 * [driver_block](../crates/driver_block): Common traits and types for block storage drivers.
 * [driver_common](../crates/driver_common): Device driver interfaces used by ArceOS.
 * [driver_display](../crates/driver_display): Common traits and types for graphics device drivers.
@@ -44,6 +44,31 @@
 * [spinlock](../crates/spinlock): `no_std` spin lock implementation that can disable kernel local IRQs or preemption while locking.
 * [timer_list](../crates/timer_list): A list of timed events that will be triggered sequentially when the timer expires.
 * [tuple_for_each](../crates/tuple_for_each): Provides macros and methods to iterate over the fields of a tuple struct.
+
+## Applications (Rust)
+
+| App | Extra modules | Enabled features | Description |
+|-|-|-|-|
+| [helloworld](../apps/helloworld/) | | | A minimal app that just prints a string |
+| [exception](../apps/exception/) | | paging | Exception handling test |
+| [memtest](../apps/memtest/) | axalloc | alloc, paging | Dynamic memory allocation test |
+| [display](../apps/display/) | axalloc, axdisplay | alloc, paging, display | Graphic/GUI test |
+| [yield](../apps/task/yield/) | axalloc, axtask | alloc, paging, multitask, sched_fifo | Multi-threaded yielding test |
+| [parallel](../apps/task/parallel/) | axalloc, axtask | alloc, paging, multitask, sched_fifo, irq | Parallel computing test (to test synchronization & mutex) |
+| [sleep](../apps/task/sleep/) | axalloc, axtask | alloc, paging, multitask, sched_fifo, irq | Thread sleeping test |
+| [priority](../apps/task/priority/) | axalloc, axtask | alloc, paging, multitask, sched_cfs | Thread priority test |
+| [shell](../apps/fs/shell/) | axalloc, axdriver, axfs | alloc, paging, fs | A simple shell that responds to filesystem operations |
+| [httpclient](../apps/net/httpclient/) | axalloc, axdriver, axnet | alloc, paging, net | A simple client that sends an HTTP request and then prints the response |
+| [echoserver](../apps/net/echoserver/) | axalloc, axdriver, axnet, axtask | alloc, paging, net, multitask | A multi-threaded TCP server that reverses messages sent by the client  |
+| [httpserver](../apps/net/httpserver/) | axalloc, axdriver, axnet, axtask | alloc, paging, net, multitask | A multi-threaded HTTP server that serves a static web page |
+| [udpserver](../apps/net/udpserver/) | axalloc, axdriver, axnet | alloc, paging, net | A simple echo server using UDP protocol |
+
+## Applications (C)
+| App | Extra modules | Enabled features | Description |
+|-|-|-|-|
+| [helloworld](../apps/c/helloworld/) | | | A minimal C app that just prints a string |
+| [memtest](../apps/c/memtest/) | axalloc | alloc, paging | Dynamic memory allocation test in C |
+| [sqlite3](../apps/c/sqlite3/) | axalloc, axdriver, axfs | alloc, paging, fp_simd, fs | Porting of [SQLite3](https://sqlite.org/index.html) |
 
 ## Dependencies
 
