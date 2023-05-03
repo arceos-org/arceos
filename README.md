@@ -142,9 +142,3 @@ make A=apps/net/httpserver ARCH=aarch64 LOG=info NET=y SMP=4 run
 ## Design
 
 ![](doc/figures/ArceOS.svg)
-
-## Crates available in [crates.io](https://crates.io)
-
-| Crate | Badge | Description |
-|-|-|-|
-| [crate_interface](crates/crate_interface/) | [![Crates.io](https://img.shields.io/crates/v/crate_interface)](https://crates.io/crates/crate_interface) | Provides a way to define an interface (trait) in a crate, but can implement or use it in any crate. |
