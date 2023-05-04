@@ -141,3 +141,37 @@ make A=apps/net/httpserver ARCH=aarch64 LOG=info NET=y SMP=4 run
 ## Design
 
 ![](doc/ArceOS.svg)
+
+
+
+## 进程支持下的应用程序启动
+
+1. 应用程序文件准备：
+
+   若仅有应用程序源码，则需要将准备运行的应用程序与用户库进行联合编译，生成可执行文件。编译方式可以参考`rCore`（[rcore-os/rCore: Rust version of THU uCore OS. Linux compatible. (github.com)](https://github.com/rcore-os/rCore)）的`user`库编译方式。
+
+   比赛中测例通过联合编译之后也会生成可执行文件。
+
+   生成流程如下：
+
+   1. 在`rCore`的`user`库下`bin`文件夹新建一个名为`helloworld.rs`的文件
+   2. 在该文件中编写您想运行的应用程序源码。
+   3. 在`user`路径下执行`make build`指令。
+   4. `user/target/riscv64-unknown-none-elf/release/helloworld`即为所生成的可执行文件。
+
+   由于当前未引入文件系统支持，因此采用固定路径链接可执行文件。请将预备执行的可执行文件拷贝在`arceos`的`apps/helloworld`路径下，由于后续不打算在固定路径链接上做拓展，因此写死初始化运行程序的文件名必须为`helloworld`。
+
+   若需要引入多个文件，在将多个文件放入到对应目录下后，还需要修改`axruntime/src/link_app.S`与源码中某些部分。由于不打算后续扩展，因此当前写死仅支持两个文件同时链接加载。初始化应用为`helloworld`，另一个应用为`second`。
+
+2. 启动应用程序运行指令：
+
+   在根目录下运行
+
+   ```rust
+   make A=apps/helloworld ARCH=riscv64 LOG=info SMP=1 run
+   ```
+
+   即可启动任务调度器，反复检查当前是否有可执行的任务。在执行完所有任务之后，任务调度器不会退出，而是继续循环，类似于`shell`的执行逻辑。
+
+3. 若想运行其他内容的应用程序，请在原先`helloworld`的源码上进行修改，引入其他系统调用之后再次编译生成可执行文件并且拷贝到对应目录。
+4. 当前由于未支持文件系统，上述操作略显冗余。之后会引入文件系统支持，使得流程更为简便。
