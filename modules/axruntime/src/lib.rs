@@ -149,7 +149,8 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     while !is_init_ok() {
         core::hint::spin_loop();
     }
-    axtask::yield_now();
+    // 初始化为main，但是通过yield转移到gc身上。
+    axprocess::start_schedule();
     unreachable!("can not reach!");
 }
 

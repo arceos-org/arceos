@@ -1,6 +1,6 @@
 use alloc::{boxed::Box, sync::Arc};
 use core::ops::Deref;
-use core::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
+use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, AtomicU8, Ordering};
 use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 
 #[cfg(feature = "preempt")]
@@ -36,7 +36,7 @@ pub struct TaskInner {
     is_leader: AtomicBool,
     /// 所包含的页表的token，内核的token统一为0
     page_table_token: usize,
-
+    exit_code: AtomicI32,
     entry: Option<*mut dyn FnOnce()>,
     state: AtomicU8,
 
@@ -111,6 +111,7 @@ impl TaskInner {
             is_idle: false,
             is_init: false,
             process_id,
+            exit_code: AtomicI32::new(0),
             page_table_token,
             is_leader: AtomicBool::new(false),
             entry: None,
@@ -138,7 +139,7 @@ impl TaskInner {
         F: FnOnce() + Send + 'static,
     {
         let mut t = Self::new_common(TaskId::new(), name, process_id, page_table_token);
-        info!("kernel id: {}", t.id.as_u64());
+        info!("new task in kernel: id: {}", t.id.as_u64());
         t.set_leader(true);
         debug!("new task: {}", t.id_name());
         let kstack = TaskStack::alloc(align_up_4k(stack_size));
@@ -215,8 +216,8 @@ impl TaskInner {
     }
 
     #[inline]
-    pub fn set_ready_state(&self) {
-        self.state.store(TaskState::Ready as u8, Ordering::Release)
+    pub(crate) fn set_exit_code(&self, exit_code: i32) {
+        self.exit_code.store(exit_code, Ordering::Release)
     }
 
     #[inline]
@@ -262,6 +263,12 @@ impl TaskInner {
     #[inline]
     pub(crate) fn in_timer_list(&self) -> bool {
         self.in_timer_list.load(Ordering::Acquire)
+    }
+
+    #[inline]
+    pub fn set_state_running(&self) {
+        self.state
+            .store(TaskState::Running as u8, Ordering::Release);
     }
 
     #[inline]
@@ -313,7 +320,7 @@ impl TaskInner {
     }
 
     #[inline]
-    pub(crate) const unsafe fn ctx_mut_ptr(&self) -> *mut TaskContext {
+    pub const unsafe fn ctx_mut_ptr(&self) -> *mut TaskContext {
         self.ctx.get()
     }
 }
@@ -394,12 +401,12 @@ impl CurrentTask {
         Arc::ptr_eq(&self.0, other)
     }
 
-    pub(crate) unsafe fn init_current(init_task: AxTaskRef) {
+    pub unsafe fn init_current(init_task: AxTaskRef) {
         let ptr = Arc::into_raw(init_task);
         axhal::cpu::set_current_task_ptr(ptr);
     }
 
-    pub(crate) unsafe fn set_current(prev: Self, next: AxTaskRef) {
+    pub unsafe fn set_current(prev: Self, next: AxTaskRef) {
         let Self(arc) = prev;
         ManuallyDrop::into_inner(arc); // `call Arc::drop()` to decrease prev task reference count.
         let ptr = Arc::into_raw(next);

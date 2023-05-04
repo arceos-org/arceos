@@ -306,6 +306,7 @@ dependencies = [
  "axhal",
  "axlog",
  "axtask",
+ "bitflags 2.1.0",
  "lazy_init",
  "memory_addr",
  "riscv",
@@ -353,6 +354,7 @@ dependencies = [
  "axlog",
  "axprocess",
  "axtask",
+ "bitflags 2.1.0",
  "log",
 ]
 
@@ -365,7 +367,6 @@ dependencies = [
  "axhal",
  "axlog",
  "axtask",
- "bitflags 2.1.0",
  "cfg-if",
  "crate_interface",
  "kernel_guard",

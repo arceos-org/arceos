@@ -5,7 +5,7 @@ use riscv::register::sstatus::{self, Sstatus};
 include_asm_marcos!();
 
 #[repr(C)]
-#[derive(Debug, Default, Clone,Copy)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct GeneralRegisters {
     pub ra: usize,
     pub sp: usize,
@@ -92,6 +92,12 @@ impl TaskContext {
         unsafe { core::mem::MaybeUninit::zeroed().assume_init() }
     }
 
+    pub fn new_empty() -> *mut TaskContext {
+        let task_ctx = TaskContext::new();
+        let task_ctx_ptr = &task_ctx as *const TaskContext as *mut TaskContext;
+        task_ctx_ptr
+    }
+
     pub fn init(&mut self, entry: usize, kstack_top: VirtAddr) {
         self.sp = kstack_top.as_usize();
         self.ra = entry;
@@ -110,6 +116,7 @@ impl TaskContext {
 }
 
 #[naked]
+#[no_mangle]
 unsafe extern "C" fn context_switch(_current_task: &mut TaskContext, _next_task: &TaskContext) {
     asm!(
         "

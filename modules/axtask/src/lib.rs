@@ -28,7 +28,6 @@ mod copy;
 mod run_queue;
 pub mod task;
 mod timers;
-pub mod clone_flags;
 mod wait_queue;
 #[cfg(test)]
 mod tests;

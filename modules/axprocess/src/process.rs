@@ -1,11 +1,16 @@
 use alloc::{collections::BTreeMap, string::String, sync::Arc, vec::Vec};
-use axhal::arch::{write_page_table_root, TrapFrame};
+use axhal::arch::{write_page_table_root, TaskContext, TrapFrame};
 use axlog::info;
 pub const USER_STACK_SIZE: usize = 4096;
 const KERNEL_STACK_SIZE: usize = 4096;
-use crate::mem::memory_set::{get_app_data, MemorySet};
+use crate::{
+    flags::{CloneFlags, WaitStatus},
+    mem::memory_set::{get_app_data, MemorySet},
+};
 use axtask::{
-    clone_flags::CloneFlags, current, task::TaskInner, AxTaskRef, TaskId, IDLE_TASK, RUN_QUEUE,
+    current,
+    task::{CurrentTask, TaskInner},
+    AxTaskRef, TaskId, IDLE_TASK, RUN_QUEUE,
 };
 use spinlock::SpinNoIrq;
 
@@ -216,10 +221,15 @@ impl Process {
             process_id,
             new_memory_set.lock().page_table_token(),
         );
+        // 返回的值
+        // 若创建的是进程，则返回进程的id
+        // 若创建的是线程，则返回线程的id
+        let mut return_id: u64 = 0;
         // 决定是创建线程还是进程
         if flags.contains(CloneFlags::CLONE_THREAD) {
             // 若创建的是进程，那么不用新建进程
             inner.tasks.push(Arc::clone(&new_task));
+            return_id = new_task.id().as_u64();
         } else {
             // 若创建的是进程，那么需要新建进程
             let new_process = Arc::new(Self {
@@ -229,6 +239,10 @@ impl Process {
             // 记录该进程，防止被回收
             PID2PC.lock().insert(process_id, Arc::clone(&new_process));
             new_process.inner.lock().tasks.push(Arc::clone(&new_task));
+            // 若是新建了进程，那么需要把进程的父子关系进行记录
+            // info!("new process id:{}", new_process.pid);
+            return_id = new_process.pid;
+            inner.children.push(new_process);
         };
         drop(inner);
         if !flags.contains(CloneFlags::CLONE_THREAD) {
@@ -256,7 +270,17 @@ impl Process {
         }
         new_task.set_trap_context(trap_frame);
         new_task.set_trap_in_kernel_stack();
-        new_task.id().as_u64()
+        RUN_QUEUE.lock().add_task(new_task);
+        return_id
+    }
+    /// 若进程运行完成，则获取其返回码
+    /// 若正在运行（可能上锁或没有上锁），则返回None
+    fn get_code_if_exit(&self) -> Option<i32> {
+        let inner = self.inner.try_lock()?;
+        if inner.is_zombie {
+            return Some(inner.exit_code);
+        }
+        None
     }
 }
 
@@ -276,7 +300,6 @@ pub fn init_process() {
         &IDLE_TASK.current_ref_raw().get_unchecked()
     }));
     let main_task = Process::new("helloworld");
-    main_task.set_ready_state();
     RUN_QUEUE.lock().add_task(main_task);
 }
 
@@ -296,6 +319,7 @@ pub fn exit(exit_code: i32) -> isize {
         drop(pid2pc_inner);
         let mut inner = process.inner.lock();
         inner.exit_code = exit_code;
+        info!("process {} exit with code {}", process_id, exit_code);
         inner.is_zombie = true;
         {
             let pid2pc = PID2PC.lock();
@@ -314,5 +338,58 @@ pub fn exit(exit_code: i32) -> isize {
     }
     // 当前的进程回收是比较简单的
     RUN_QUEUE.lock().resched_inner(false);
-    0
+    exit_code as isize
+}
+
+/// 在当前进程找对应的子进程，并等待子进程结束
+/// 若找到了则返回对应的pid
+/// 否则返回一个状态
+pub fn wait_pid(pid: isize, exit_code_ptr: *mut i32) -> Result<u64, WaitStatus> {
+    // 获取当前进程
+    let curr = current();
+    let pid2pc_inner = PID2PC.lock();
+    let curr_process = Arc::clone(&pid2pc_inner.get(&curr.get_process_id()).unwrap());
+    drop(pid2pc_inner);
+    let mut inner = curr_process.inner.lock();
+    let mut exit_task_id: usize = 0;
+    let mut answer_id: u64 = 0;
+    let mut answer_status = WaitStatus::NotExist;
+    for (index, child) in inner.children.iter().enumerate() {
+        if pid == -1 {
+            // 任意一个进程结束都可以的
+            answer_status = WaitStatus::Running;
+            if let Some(exit_code) = child.get_code_if_exit() {
+                answer_status = WaitStatus::Exited;
+                exit_task_id = index;
+                if !exit_code_ptr.is_null() {
+                    unsafe {
+                        *exit_code_ptr = exit_code;
+                    }
+                }
+                answer_id = child.pid;
+                break;
+            }
+        } else if child.pid == pid as u64 {
+            // 找到了对应的进程
+            if let Some(exit_code) = child.get_code_if_exit() {
+                answer_status = WaitStatus::Exited;
+                exit_task_id = index;
+                if !exit_code_ptr.is_null() {
+                    unsafe {
+                        *exit_code_ptr = exit_code;
+                    }
+                }
+                answer_id = child.pid;
+            } else {
+                answer_status = WaitStatus::Running;
+            }
+            break;
+        }
+    }
+    // 若进程成功结束，需要将其从父进程的children中删除
+    if answer_status == WaitStatus::Exited {
+        inner.children.remove(exit_task_id as usize);
+        return Ok(answer_id);
+    }
+    Err(answer_status)
 }

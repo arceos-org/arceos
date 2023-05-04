@@ -34,9 +34,9 @@ impl AxRunQueue {
             KERNEL_PROCESS_ID,
             0,
         );
-        gc_task.set_state(TaskState::Running);
+        info!("gc task id: {}", gc_task.id().as_u64());
         unsafe { CurrentTask::init_current(gc_task) }
-        let scheduler = Scheduler::new();
+        let mut scheduler = Scheduler::new();
         // scheduler.add_task(gc_task);
         SpinNoIrq::new(Self { scheduler })
     }
@@ -67,7 +67,7 @@ impl AxRunQueue {
 
     pub fn yield_current(&mut self) {
         let curr = crate::current();
-        debug!("task yield: {}", curr.id_name());
+        info!("task yield: {}", curr.id_name());
         assert!(curr.is_running());
         self.resched_inner(false);
     }
@@ -106,6 +106,7 @@ impl AxRunQueue {
             EXITED_TASKS.lock().clear();
             axhal::misc::terminate();
         } else {
+            curr.set_exit_code(exit_code);
             curr.set_state(TaskState::Exited);
             EXITED_TASKS.lock().push_back(curr.clone());
             WAIT_FOR_EXIT.notify_one_locked(false, self);
@@ -172,6 +173,7 @@ impl AxRunQueue {
             // Safety: IRQs must be disabled at this time.
             IDLE_TASK.current_ref_raw().get_unchecked().clone()
         });
+        info!("next task id:{}", next.id().as_u64());
         self.switch_to(prev, next);
     }
 
@@ -234,7 +236,6 @@ pub(crate) fn init() {
     idle_task.set_leader(true);
     IDLE_TASK.with_current(|i| i.init_by(idle_task.clone()));
     RUN_QUEUE.init_by(AxRunQueue::new());
-    // unsafe { CurrentTask::init_current(main_task) }
 }
 
 /// 副核启动

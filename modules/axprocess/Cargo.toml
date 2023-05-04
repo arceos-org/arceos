@@ -16,3 +16,4 @@ memory_addr = { path = "../../crates/memory_addr" }
 lazy_init = { path = "../../crates/lazy_init"}
 riscv = "0.10"
 xmas-elf = "0.9.0"
+bitflags = "= 2.1.0"
