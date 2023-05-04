@@ -23,7 +23,7 @@ pub unsafe extern "C" fn ax_clock_gettime(ts: *mut ctypes::timespec) -> c_int {
         unsafe {
             *ts = ret;
         }
-        debug!("ax_clock_gettime: {}s, {}ns", now.as_secs(), now.as_nanos());
+        debug!("ax_clock_gettime: {}.{:09}s", ret.tv_sec, ret.tv_nsec);
         return Ok(0);
     })
 }
@@ -41,6 +41,7 @@ pub unsafe extern "C" fn ax_nanosleep(
             return Err(LinuxError::EINVAL);
         }
 
+        debug!("ax_nanosleep <= {}.{:09}s", (*req).tv_sec, (*req).tv_nsec);
         let total_nano = (*req).tv_sec as u64 * NANOS_PER_SEC + (*req).tv_nsec as u64;
         let before = current_time().as_nanos() as u64;
 

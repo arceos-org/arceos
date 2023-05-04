@@ -215,6 +215,8 @@ void fprintf(int f, const char *restrict fmt, ...)
     va_end(ap);
 }
 
+#if defined(AX_CONFIG_ALLOC) && defined(AX_CONFIG_FS)
+
 int __fmodeflags(const char *mode)
 {
     int flags;
@@ -237,8 +239,6 @@ int __fmodeflags(const char *mode)
     return flags;
 }
 
-#if defined(AX_CONFIG_ALLOC) && defined(AX_CONFIG_FS)
-
 FILE *fopen(const char *filename, const char *mode)
 {
     FILE *f;
@@ -252,7 +252,10 @@ FILE *fopen(const char *filename, const char *mode)
     f = (FILE *)malloc(sizeof(FILE));
 
     flags = __fmodeflags(mode);
-    int fd = ax_open(filename, flags, mode);
+    // TODO: currently mode is unused in ax_open
+    int fd = ax_open(filename, flags, 0666);
+    if (fd < 0)
+        return NULL;
     f->fd = fd;
 
     return f;

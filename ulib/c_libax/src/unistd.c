@@ -38,7 +38,7 @@ int usleep(unsigned int usec)
     struct timespec ts;
 
     ts.tv_sec = (long int)(usec / 1000000);
-    ts.tv_nsec = (long int)ax_time_usec_to_nsec(usec % 1000000);
+    ts.tv_nsec = (long int)usec % 1000;
     if (nanosleep(&ts, &ts))
         return -1;
 

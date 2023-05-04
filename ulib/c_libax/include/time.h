@@ -10,8 +10,6 @@ typedef long time_t;
 #define CLOCK_MONOTONIC 1
 #define CLOCKS_PER_SEC  1000000L
 
-#define ax_time_usec_to_nsec(usec) ((usec)*1000UL)
-
 struct tm {
     int tm_sec;   /* seconds of minute */
     int tm_min;   /* minutes of hour */
