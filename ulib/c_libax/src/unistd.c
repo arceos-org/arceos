@@ -1,6 +1,7 @@
 #include <libax.h>
 #include <stdio.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
 // TODO:
@@ -10,17 +11,37 @@ uid_t geteuid(void)
     return 0;
 }
 
-// TODO:
 pid_t getpid(void)
 {
-    unimplemented();
-    return -1;
+#ifdef AX_CONFIG_MULTITASK
+    return ax_getpid();
+#else
+    // return 'main' task Id
+    return 2;
+#endif
 }
 
-// TODO:
 unsigned int sleep(unsigned int seconds)
 {
-    unimplemented();
+    struct timespec ts;
+
+    ts.tv_sec = seconds;
+    ts.tv_nsec = 0;
+    if (nanosleep(&ts, &ts))
+        return ts.tv_sec;
+
+    return 0;
+}
+
+int usleep(unsigned int usec)
+{
+    struct timespec ts;
+
+    ts.tv_sec = (long int)(usec / 1000000);
+    ts.tv_nsec = (long int)usec % 1000;
+    if (nanosleep(&ts, &ts))
+        return -1;
+
     return 0;
 }
 
