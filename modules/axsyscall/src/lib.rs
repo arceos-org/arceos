@@ -13,6 +13,7 @@ extern crate log;
 extern crate alloc;
 mod flags;
 mod fs;
+mod mem;
 mod task;
 pub const SYSCALL_WRITE: usize = 64;
 pub const SYSCALL_EXIT: usize = 93;

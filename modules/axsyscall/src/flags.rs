@@ -11,3 +11,9 @@ bitflags! {
         const WCONTINUED = 1 << 3;
     }
 }
+
+#[derive(Clone, Copy)]
+pub struct TimeSecs {
+    pub tv_sec: usize,  /* 秒 */
+    pub tv_nsec: usize, /* 纳秒, 范围在0~999999999 */
+}

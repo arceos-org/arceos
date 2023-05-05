@@ -79,7 +79,7 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
     }
 
     /// Unmaps the mapping starts with `vaddr`.
-    ///
+    /// 将vaddr与其对应的页表项解映射，标记对应的物理页面已经被释放
     /// Returns [`Err(PagingError::NotMapped)`](PagingError::NotMapped) if the
     /// mapping is not present.
     pub fn unmap(&mut self, vaddr: VirtAddr) -> PagingResult<(PhysAddr, PageSize)> {

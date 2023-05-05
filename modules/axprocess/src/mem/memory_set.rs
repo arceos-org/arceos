@@ -1,6 +1,6 @@
 use crate::{
     mem::{areas::MapArea, paging::copy_from_kernel_memory},
-    process::USER_STACK_SIZE,
+    process::{MAX_HEAP_SIZE, USER_STACK_SIZE},
 };
 use alloc::{string::String, vec::Vec};
 use axalloc::GlobalPage;
@@ -66,7 +66,8 @@ impl MemorySet {
     pub fn page_table_token(&self) -> usize {
         self.page_table.root_paddr().as_usize()
     }
-    pub fn from_elf(memory_set: &mut MemorySet, elf_data: &[u8]) -> (usize, usize) {
+    /// return (entry_point, user_stack_bottom, heap_bottom)
+    pub fn from_elf(memory_set: &mut MemorySet, elf_data: &[u8]) -> (usize, usize, usize) {
         let elf = xmas_elf::ElfFile::new(elf_data).unwrap();
         let elf_header = elf.header;
         let magic = elf_header.pt1.magic;
@@ -102,15 +103,28 @@ impl MemorySet {
                 );
             }
         }
+        // 设置用户堆
+        let mut heap_bottom = (max_end_va + PAGE_SIZE_4K - 1) / PAGE_SIZE_4K * PAGE_SIZE_4K;
+        // guard page
+        heap_bottom += PAGE_SIZE_4K;
+        let map_perm = MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER;
+        memory_set.map_region_4k(heap_bottom.into(), MAX_HEAP_SIZE, map_perm, None);
+
+        let heap_top = heap_bottom + MAX_HEAP_SIZE;
+
         // map user stack with U flags
         // 向上取整4K
-        let mut user_stack_bottom = (max_end_va + PAGE_SIZE_4K - 1) / PAGE_SIZE_4K * PAGE_SIZE_4K;
+        let mut user_stack_bottom = heap_top + MAX_HEAP_SIZE;
         // guard page
         user_stack_bottom += PAGE_SIZE_4K;
 
         let map_perm = MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER;
         memory_set.map_region_4k(user_stack_bottom.into(), USER_STACK_SIZE, map_perm, None);
-        (elf_header.pt2.entry_point() as usize, user_stack_bottom)
+        (
+            elf_header.pt2.entry_point() as usize,
+            user_stack_bottom,
+            heap_bottom,
+        )
     }
     /// 将用户分配的页面从页表中直接解映射，内核分配的页面依然保留
     pub fn unmap_user_areas(&mut self) {
@@ -147,8 +161,30 @@ impl MemorySet {
                 false,
             )
             .expect("Error when mapping!");
-        self.areas.push(MapArea::new(pages, map_perm, start_va.align_down_4k()));
+        self.areas
+            .push(MapArea::new(pages, map_perm, start_va.align_down_4k()));
     }
+
+    /// 将地址空间中某一段独立出来，用于进行mmap
+    /// 由于访问权限可能发送改变，因此需要分割或缩小原有的area
+    pub fn split_for_area(&mut self, start_va: VirtAddr, size: usize, map_perm: MappingFlags) {
+        let end_va = start_va + size;
+        let ares_to_modified: Vec<MapArea> = self
+            .areas
+            .drain_filter(|area| area.overlap_with(start_va, end_va))
+            .collect();
+        for area in ares_to_modified {
+            // 进行分割，需要包括很多种情况，并不是暴力的
+            let area_start_va = area.start_va;
+            let area_end_va = area_start_va + area.pages.size();
+            if start_va <= area_start_va && area_end_va <= end_va {
+                // 完全包含，直接删除
+                continue;
+            } else if start_va <= area_start_va && area_start_va < end_va && end_va <= area_end_va {
+            }
+        }
+    }
+
     pub fn translate(
         &self,
         start_va: VirtAddr,

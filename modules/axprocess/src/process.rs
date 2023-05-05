@@ -2,6 +2,7 @@ use alloc::{collections::BTreeMap, string::String, sync::Arc, vec::Vec};
 use axhal::arch::{write_page_table_root, TaskContext, TrapFrame};
 use axlog::info;
 pub const USER_STACK_SIZE: usize = 4096;
+pub const MAX_HEAP_SIZE: usize = 4096;
 const KERNEL_STACK_SIZE: usize = 4096;
 use crate::{
     flags::{CloneFlags, WaitStatus},
@@ -33,6 +34,10 @@ pub struct ProcessInner {
     pub tasks: Vec<AxTaskRef>,
     /// 地址空间，由于存在地址空间共享，因此设计为Arc类型
     pub memory_set: Arc<SpinNoIrq<MemorySet>>,
+    /// 用户堆基址，任何时候堆顶都不能比这个值小，理论上讲是一个常量
+    pub heap_bottom: usize,
+    /// 当前用户堆的堆顶，不能小于基址，不能大于基址加堆的最大大小
+    pub heap_top: usize,
     /// 进程状态
     pub is_zombie: bool,
     /// 退出状态码
@@ -40,12 +45,14 @@ pub struct ProcessInner {
 }
 
 impl ProcessInner {
-    pub fn new(parent: u64, memory_set: Arc<SpinNoIrq<MemorySet>>) -> Self {
+    pub fn new(parent: u64, memory_set: Arc<SpinNoIrq<MemorySet>>, heap_bottom: usize) -> Self {
         Self {
             parent,
             children: Vec::new(),
             tasks: Vec::new(),
             memory_set,
+            heap_bottom,
+            heap_top: heap_bottom,
             is_zombie: false,
             exit_code: 0,
         }
@@ -64,13 +71,15 @@ impl Process {
         // let (entry, user_stack_bottom) = load_from_elf(&mut page_table, get_app_data(name));
         let mut memory_set = MemorySet::new_from_kernel();
         let page_table_token = memory_set.page_table_token();
-        let (entry, user_stack_bottom) = MemorySet::from_elf(&mut memory_set, get_app_data(name));
+        let (entry, user_stack_bottom, heap_bottom) =
+            MemorySet::from_elf(&mut memory_set, get_app_data(name));
         // 以这种方式建立的线程，不通过某一个具体的函数开始，而是通过地址来运行函数，所以entry不会被用到
         let new_process = Arc::new(Self {
             pid: TaskId::new().as_u64(),
             inner: SpinNoIrq::new(ProcessInner::new(
                 KERNEL_PROCESS_ID,
                 Arc::new(SpinNoIrq::new(memory_set)),
+                heap_bottom,
             )),
         });
         // 记录该进程，防止被回收
@@ -104,16 +113,15 @@ impl Process {
         // 首先要处理原先进程的资源
         // 处理分配的页帧
         let mut inner = self.inner.lock();
-        inner.memory_set.lock().unmap_user_areas();
-        // inner.memory_set.areas.clear();
-        // let mut new_memory_set = MemorySet::new_from_kernel();
         // 之后加入额外的东西之后再处理其他的包括信号等因素
         // 不是直接删除原有地址空间，否则构建成本较高。
-        // 再考虑手动结束其他所有的task
+        inner.memory_set.lock().unmap_user_areas();
+        // 清空用户堆，重置堆顶
         unsafe {
             asm::sfence_vma_all();
         }
         let curr = current();
+        // 再考虑手动结束其他所有的task
         let _ = inner
             .tasks
             .drain_filter(|task: &mut AxTaskRef| task.id() != curr.id())
@@ -121,9 +129,8 @@ impl Process {
         // 当前任务被设置为主线程
         curr.set_leader(true);
         assert!(inner.tasks.len() == 1);
-        let (entry, user_stack_bottom) =
+        let (entry, user_stack_bottom, heap_bottom) =
             MemorySet::from_elf(&mut inner.memory_set.lock(), elf_data);
-        // inner.memory_set = new_memory_set;
         // 切换了地址空间， 需要切换token
         let page_table_token = if self.pid == KERNEL_PROCESS_ID {
             0
@@ -134,6 +141,9 @@ impl Process {
             // axhal::arch::write_page_table_root(page_table_token.into());
             unsafe { write_page_table_root(page_table_token.into()) };
         }
+        // 重置用户堆
+        inner.heap_bottom = heap_bottom;
+        inner.heap_top = inner.heap_bottom;
         drop(inner);
         let mut user_stack_top = user_stack_bottom + USER_STACK_SIZE;
         user_stack_top -= (args.len() + 1) * core::mem::size_of::<usize>();
@@ -232,9 +242,14 @@ impl Process {
             return_id = new_task.id().as_u64();
         } else {
             // 若创建的是进程，那么需要新建进程
+            // 由于地址空间是复制的，所以堆底的地址也一定相同
             let new_process = Arc::new(Self {
                 pid: process_id,
-                inner: SpinNoIrq::new(ProcessInner::new(parent_id, new_memory_set)),
+                inner: SpinNoIrq::new(ProcessInner::new(
+                    parent_id,
+                    new_memory_set,
+                    inner.heap_bottom,
+                )),
             });
             // 记录该进程，防止被回收
             PID2PC.lock().insert(process_id, Arc::clone(&new_process));
@@ -285,11 +300,13 @@ impl Process {
 }
 
 pub fn init_process() {
+    // 内核的堆不重要，或者说当前未考虑内核堆的问题
     let kernel_process = Arc::new(Process {
         pid: TaskId::new().as_u64(),
         inner: SpinNoIrq::new(ProcessInner::new(
             0,
             Arc::new(SpinNoIrq::new(MemorySet::new_empty())),
+            0,
         )),
     });
     axtask::init_scheduler();
@@ -363,6 +380,7 @@ pub fn wait_pid(pid: isize, exit_code_ptr: *mut i32) -> Result<u64, WaitStatus> 
                 exit_task_id = index;
                 if !exit_code_ptr.is_null() {
                     unsafe {
+                        // 因为没有切换页表，所以可以直接填写
                         *exit_code_ptr = exit_code;
                     }
                 }

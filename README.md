@@ -148,7 +148,7 @@ make A=apps/net/httpserver ARCH=aarch64 LOG=info NET=y SMP=4 run
 
 1. 应用程序文件准备：
 
-   若仅有应用程序源码，则需要将准备运行的应用程序与用户库进行联合编译，生成可执行文件。编译方式可以参考`rCore`（[rcore-os/rCore: Rust version of THU uCore OS. Linux compatible. (github.com)](https://github.com/rcore-os/rCore)）的`user`库编译方式。
+   若仅有应用程序源码，则需要将准备运行的应用程序与用户库进行联合编译，生成可执行文件。编译方式可以参考`rCore`（[rcore-os/rCore-Tutorial-v3: Let's write an OS which can run on RISC-V in Rust from scratch! (github.com)](https://github.com/rcore-os/rCore-Tutorial-v3)）的`user`库编译方式。
 
    比赛中测例通过联合编译之后也会生成可执行文件。
 

@@ -12,7 +12,14 @@ pub struct MapArea {
 }
 
 impl MapArea {
-    pub fn new(pages: GlobalPage, flags: MappingFlags, start_va:VirtAddr) -> Self {
-        Self { start_va, pages, flags }
+    pub fn new(pages: GlobalPage, flags: MappingFlags, start_va: VirtAddr) -> Self {
+        Self {
+            start_va,
+            pages,
+            flags,
+        }
+    }
+    pub fn overlap_with(&self, start_va: VirtAddr, end_va: VirtAddr) -> bool {
+        return self.start_va <= end_va && self.start_va + self.pages.size() >= start_va;
     }
 }

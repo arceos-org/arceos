@@ -1,14 +1,17 @@
+use core::time::Duration;
+
+use axhal::time::current_time;
 use axprocess::{
     flags::{CloneFlags, WaitStatus},
     mem::memory_set::get_app_data,
     process::{wait_pid, PID2PC},
 };
-use axtask::current;
+use axtask::{current, sleep, yield_now, RUN_QUEUE};
 extern crate alloc;
 use alloc::{sync::Arc, vec::Vec};
 use log::info;
 
-use crate::flags::WaitFlags;
+use crate::flags::{TimeSecs, WaitFlags};
 /// 处理与任务（线程）有关的系统调用
 
 pub fn syscall_exit(exit_code: i32) -> isize {
@@ -120,5 +123,37 @@ pub fn syscall_wait4(pid: isize, exit_code_ptr: *mut i32, option: WaitFlags) -> 
                 }
             }
         };
+    }
+}
+
+pub fn syscall_yield() -> isize {
+    yield_now();
+    0
+}
+
+///
+pub fn syscall_sleep(req: *const TimeSecs, rem: *mut TimeSecs) -> isize {
+    let req_time = unsafe { *req };
+    let start_to_sleep = current_time();
+    let dur = Duration::new(req_time.tv_sec as u64, req_time.tv_nsec as u32);
+    sleep(dur);
+    // 若被唤醒时时间小于请求时间，则将剩余时间写入rem
+    let sleep_time = current_time() - start_to_sleep;
+    if sleep_time < dur {
+        unsafe {
+            *rem = TimeSecs {
+                tv_sec: (dur - sleep_time).as_secs() as usize,
+                tv_nsec: (dur - sleep_time).as_nanos() as usize,
+            }
+        };
+        return -1;
+    } else {
+        unsafe {
+            *rem = TimeSecs {
+                tv_sec: 0,
+                tv_nsec: 0,
+            }
+        };
+        return 0;
     }
 }
