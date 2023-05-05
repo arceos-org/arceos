@@ -3,8 +3,8 @@
 
 use axhal::arch::TaskContext;
 use axtask::{current, task::CurrentTask};
+use process::current_process;
 extern crate alloc;
-
 pub mod flags;
 pub mod process;
 
@@ -23,4 +23,23 @@ pub fn start_schedule() {
         // but won't be dropped until `gc_entry()` is called.
         (*prev_ctx_ptr).switch_to(&*next_ctx_ptr);
     }
+}
+
+/// 当从内核态到用户态时，统计对应进程的时间信息
+pub fn time_stat_from_kernel_to_user() {
+    let curr_task = current();
+    curr_task.time_stat_from_kernel_to_user();
+}
+
+/// 当从用户态到内核态时，统计对应进程的时间信息
+pub fn time_stat_from_user_to_kernel() {
+    let curr_task = current();
+    curr_task.time_stat_from_user_to_kernel();
+}
+
+/// 统计时间输出
+/// (用户态秒，用户态微妙，内核态秒，内核态微妙)
+pub fn time_stat_output() -> (usize, usize, usize, usize) {
+    let curr_task = current();
+    curr_task.time_stat_output()
 }

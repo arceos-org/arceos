@@ -382,6 +382,7 @@ dependencies = [
  "axprocess",
  "bitflags 2.1.0",
  "log",
+ "memory_addr",
 ]
 
 [[package]]

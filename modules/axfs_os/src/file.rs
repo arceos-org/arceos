@@ -70,20 +70,6 @@ impl FileDesc {
     }
 }
 
-/// 读取path文件的内容，但不新建文件描述符
-/// 用于内核读取代码文件初始化
-pub fn get_file_data(path: &str) -> Vec<u8> {
-    // 从fat32.img中读取elf文件
-    let mut file = OpenOptions::new()
-        .read(true)
-        .open(path)
-        .expect("failed to open file");
-    let mut elf_data = Vec::new();
-    file.read_to_end(&mut elf_data)
-        .expect("failed to read file");
-    elf_data
-}
-
 /// 新建一个文件描述符
 pub fn new_fd(path: &str, flags: u8) -> AxResult<FileDesc> {
     let file = File::options()

@@ -1,16 +1,17 @@
 use core::time::Duration;
 
-use axfs_os::file::get_file_data;
-use axhal::time::current_time;
+use axfs_os::read_file;
+use axhal::time::{current_time, current_time_nanos, nanos_to_ticks};
 use axprocess::{
     flags::{CloneFlags, WaitStatus},
-    process::{current_process, current_task, sleep_now_dur, wait_pid, yield_now_task},
+    process::{current_process, current_task, sleep_now_task, wait_pid, yield_now_task},
+    time_stat_output,
 };
 extern crate alloc;
 use alloc::vec::Vec;
 use log::info;
 
-use crate::flags::{TimeSecs, WaitFlags};
+use crate::flags::{TimeSecs, TimeVal, UtsName, WaitFlags, TMS};
 /// 处理与任务（线程）有关的系统调用
 
 pub fn syscall_exit(exit_code: i32) -> isize {
@@ -41,7 +42,7 @@ pub fn syscall_exec(path: *const u8, mut args: *const usize) -> isize {
         }
     }
     drop(inner);
-    let elf_data = get_file_data(path.as_str());
+    let elf_data = read_file(path.as_str()).unwrap();
     let argc = args_vec.len();
     curr_process.exec(elf_data.as_slice(), args_vec);
     argc as isize
@@ -125,17 +126,17 @@ pub fn syscall_sleep(req: *const TimeSecs, rem: *mut TimeSecs) -> isize {
     let req_time = unsafe { *req };
     let start_to_sleep = current_time();
     let dur = Duration::new(req_time.tv_sec as u64, req_time.tv_nsec as u32);
-    sleep_now_dur(dur);
+    sleep_now_task(dur);
     // 若被唤醒时时间小于请求时间，则将剩余时间写入rem
     let sleep_time = current_time() - start_to_sleep;
     if sleep_time < dur {
+        let delta = (dur - sleep_time).as_nanos() as usize;
         unsafe {
             *rem = TimeSecs {
-                tv_sec: (dur - sleep_time).as_secs() as usize,
-                tv_nsec: (dur - sleep_time).as_nanos() as usize,
+                tv_sec: delta / 1000_000_000,
+                tv_nsec: delta % 1000_000_000,
             }
         };
-        return -1;
     } else {
         unsafe {
             *rem = TimeSecs {
@@ -143,6 +144,40 @@ pub fn syscall_sleep(req: *const TimeSecs, rem: *mut TimeSecs) -> isize {
                 tv_nsec: 0,
             }
         };
-        return 0;
     }
+    0
+}
+
+/// 返回值为当前经过的时钟中断数
+pub fn syscall_time(tms: *mut TMS) -> isize {
+    let (_, utime_us, _, stime_us) = time_stat_output();
+    unsafe {
+        *tms = TMS {
+            tms_utime: utime_us,
+            tms_stime: stime_us,
+            tms_cutime: utime_us,
+            tms_cstime: stime_us,
+        }
+    }
+    nanos_to_ticks(current_time_nanos()) as isize
+}
+
+/// 获取当前系统时间并且存储在给定结构体中
+pub fn syscall_get_time_of_day(ts: *mut TimeVal) -> isize {
+    let current_us = current_time_nanos() as usize / 1000;
+    unsafe {
+        *ts = TimeVal {
+            sec: current_us / 1000_000,
+            usec: current_us % 1000_000,
+        }
+    }
+    0
+}
+
+/// 获取系统信息
+pub fn syscall_uname(uts: *mut UtsName) -> isize {
+    unsafe {
+        *uts = UtsName::default();
+    }
+    0
 }

@@ -1,9 +1,10 @@
 #![cfg_attr(not(test), no_std)]
-use flags::{TimeSecs, WaitFlags};
+use flags::{TimeSecs, TimeVal, UtsName, WaitFlags, TMS};
 use fs::{syscall_close, syscall_open, syscall_read};
 use mem::syscall_brk;
 use task::{
-    syscall_clone, syscall_getpid, syscall_getppid, syscall_sleep, syscall_wait4, syscall_yield,
+    syscall_clone, syscall_get_time_of_day, syscall_getpid, syscall_getppid, syscall_sleep,
+    syscall_time, syscall_uname, syscall_wait4, syscall_yield,
 };
 
 use self::{
@@ -32,6 +33,11 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         SYSCALL_EXIT => syscall_exit(args[0] as i32),
         SYSCALL_EXECVE => syscall_exec(args[0] as *const u8, args[1] as *const usize),
         SYSCALL_CLONE => syscall_clone(args[0], args[1], args[2], args[3], args[4]),
+        SYSCALL_NANO_SLEEP => syscall_sleep(args[0] as *const TimeSecs, args[1] as *mut TimeSecs),
+        SYSCALL_SCHED_YIELD => syscall_yield(),
+        SYSCALL_TIMES => syscall_time(args[0] as *mut TMS),
+        SYSCALL_UNAME => syscall_uname(args[0] as *mut UtsName),
+        SYSCALL_GETTIMEOFDAY => syscall_get_time_of_day(args[0] as *mut TimeVal),
         SYSCALL_GETPID => syscall_getpid(),
         SYSCALL_GETPPID => syscall_getppid(),
         SYSCALL_WAIT4 => syscall_wait4(
@@ -40,8 +46,6 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             WaitFlags::from_bits(args[2] as u32).unwrap(),
         ),
         SYSCALL_BRK => syscall_brk(args[0] as usize),
-        SYSCALL_NANO_SLEEP => syscall_sleep(args[0] as *const TimeSecs, args[1] as *mut TimeSecs),
-        SYSCALL_SCHED_YIELD => syscall_yield(),
         _ => {
             panic!("Invalid Syscall Id: {}!", syscall_id);
         }

@@ -143,22 +143,59 @@ impl MemorySet {
             .push(MapArea::new(pages, map_perm, start_va.align_down_4k()));
     }
 
-    /// 将地址空间中某一段独立出来，用于进行mmap
+    /// 将地址空间中某一段[start_va, end_va)独立出来，用于进行mmap
     /// 由于访问权限可能发送改变，因此需要分割或缩小原有的area
     pub fn split_for_area(&mut self, start_va: VirtAddr, size: usize, map_perm: MappingFlags) {
         let end_va = start_va + size;
         let ares_to_modified: Vec<MapArea> = self
             .areas
-            .drain_filter(|area| area.overlap_with(start_va, end_va))
+            .drain_filter(|area: &mut MapArea| area.overlap_with(start_va, end_va))
             .collect();
         for area in ares_to_modified {
             // 进行分割，需要包括很多种情况，并不是暴力的
+            // 此处进行暴力回收重分配操作
             let area_start_va = area.start_va;
             let area_end_va = area_start_va + area.pages.size();
+            let map_perm = area.flags;
+            let data = area.pages.as_slice();
+            // 抛弃原先的区域
+            // 页表解映射
+            self.page_table
+                .unmap_region(area_start_va, area.pages.size());
             if start_va <= area_start_va && area_end_va <= end_va {
-                // 完全包含，直接删除
+                // 原有的区间被完全征用，直接删除
                 continue;
             } else if start_va <= area_start_va && area_start_va < end_va && end_va <= area_end_va {
+                // 需要去掉左半部分
+                let new_start = end_va;
+                let new_size = (area_end_va - end_va.as_usize()).as_usize();
+                self.map_region_4k(
+                    new_start,
+                    new_size,
+                    map_perm,
+                    Some(&data[(new_start - area_start_va.as_usize()).as_usize()..]),
+                )
+            } else if area_start_va < start_va && start_va < area_end_va && area_end_va <= end_va {
+                // 需要去掉右半部分
+                let new_start = area_start_va;
+                let new_size = (start_va - area_start_va.as_usize()).as_usize();
+                self.map_region_4k(new_start, new_size, map_perm, Some(&data[..new_size]));
+            } else if area_start_va < start_va && end_va < area_end_va {
+                // 需要去掉中间部分，即两边保留
+                let left_start = area_start_va;
+                let left_size = (start_va - area_start_va.as_usize()).as_usize();
+                let right_start = end_va;
+                let right_size = (area_end_va - end_va.as_usize()).as_usize();
+                self.map_region_4k(left_start, left_size, map_perm, Some(&data[..left_size]));
+                self.map_region_4k(
+                    right_start,
+                    right_size,
+                    map_perm,
+                    Some(&data[(right_start - area_start_va.as_usize()).as_usize()..]),
+                );
+            } else {
+                // 两个区间不相交，直接保留
+                // 但是这种情况是不会出现的
             }
         }
     }

@@ -193,6 +193,9 @@ axdriver-->axfs
 axsync-->axfs
 axtask-.dev.->axfs
 
+axtask-->axfs_os
+axfs-->axfs_os
+
 axconfig-->axhal
 axalloc-->axhal
 axlog-->axhal
@@ -213,7 +216,7 @@ axtask-->axruntime
 axprocess-->axruntime
 axtask-->axsync
 axtask-->axprocess
-axfs-->axprocess
+axfs_os-->axprocess
 axhal-->axprocess
 
 axprocess-->axsyscall

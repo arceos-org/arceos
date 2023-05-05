@@ -1,6 +1,6 @@
 use alloc::vec;
 use alloc::{collections::BTreeMap, string::String, sync::Arc, vec::Vec};
-use axfs_os::file::get_file_data;
+use axfs_os::read_file;
 use axfs_os::{file_io::FileIO, Stderr, Stdin, Stdout};
 use axhal::arch::{write_page_table_root, TrapFrame};
 use axmem::memory_set::USER_STACK_SIZE;
@@ -88,7 +88,7 @@ impl Process {
         // let (entry, user_stack_bottom) = load_from_elf(&mut page_table, get_app_data(name));
         let mut memory_set = MemorySet::new_from_kernel();
         let page_table_token = memory_set.page_table_token();
-        let elf_data = get_file_data(path);
+        let elf_data = read_file(path).unwrap();
         let (entry, user_stack_bottom, heap_bottom) =
             MemorySet::from_elf(&mut memory_set, elf_data.as_slice());
         // 以这种方式建立的线程，不通过某一个具体的函数开始，而是通过地址来运行函数，所以entry不会被用到
@@ -127,6 +127,7 @@ impl Process {
     }
     /// 将当前进程替换为指定的用户程序
     /// args为传入的参数
+    /// 任务的统计时间会被重置
     pub fn exec(&self, elf_data: &[u8], args: Vec<String>) {
         // 首先要处理原先进程的资源
         // 处理分配的页帧
@@ -146,6 +147,8 @@ impl Process {
             .map(|task| RUN_QUEUE.lock().remove_task(&task));
         // 当前任务被设置为主线程
         curr.set_leader(true);
+        // 重置统计时间
+        curr.time_stat_clear();
         assert!(inner.tasks.len() == 1);
         let (entry, user_stack_bottom, heap_bottom) =
             MemorySet::from_elf(&mut inner.memory_set.lock(), elf_data);
@@ -443,7 +446,7 @@ pub fn yield_now_task() {
     axtask::yield_now();
 }
 
-pub fn sleep_now_dur(dur: core::time::Duration) {
+pub fn sleep_now_task(dur: core::time::Duration) {
     axtask::sleep(dur);
 }
 

@@ -25,6 +25,7 @@ impl kernel_guard::KernelGuardIf for KernelGuardIfImpl {
 cfg_if::cfg_if! {
 if #[cfg(feature = "multitask")] {
 mod copy;
+mod time;
 mod run_queue;
 pub mod task;
 mod timers;
@@ -130,6 +131,10 @@ pub fn sleep_until(deadline: axhal::time::TimeValue) {
     while axhal::time::current_time() < deadline {
         core::hint::spin_loop();
     }
+}
+
+pub fn time_stat_from_kernel_to_user() {
+    let curr = current();
 }
 
 } // else

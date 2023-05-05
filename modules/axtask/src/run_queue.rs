@@ -187,7 +187,9 @@ impl AxRunQueue {
         if prev_task.ptr_eq(&next_task) {
             return;
         }
-
+        // 当任务进行切换时，更新两个任务的时间统计信息
+        next_task.time_stat_when_switch_to();
+        prev_task.time_stat_when_switch_from();
         unsafe {
             let prev_ctx_ptr = prev_task.ctx_mut_ptr();
             let next_ctx_ptr = next_task.ctx_mut_ptr();

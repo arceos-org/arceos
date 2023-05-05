@@ -11,6 +11,7 @@ use memory_addr::{align_up_4k, VirtAddr};
 
 use crate::copy::__copy;
 const KERNEL_PROCESS_ID: u64 = 1;
+use crate::time::TimeStat;
 use crate::{AxTask, AxTaskRef};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -51,6 +52,7 @@ pub struct TaskInner {
     pub trap_frame: UnsafeCell<TrapFrame>,
     kstack: Option<TaskStack>,
     ctx: UnsafeCell<TaskContext>,
+    time: UnsafeCell<TimeStat>,
 }
 
 impl TaskId {
@@ -125,6 +127,7 @@ impl TaskInner {
             trap_frame: UnsafeCell::new(TrapFrame::default()),
             kstack: None,
             ctx: UnsafeCell::new(TaskContext::new()),
+            time: UnsafeCell::new(TimeStat::new()),
         }
     }
 
@@ -258,6 +261,55 @@ impl TaskInner {
     #[inline]
     pub(crate) fn set_in_wait_queue(&self, in_wait_queue: bool) {
         self.in_wait_queue.store(in_wait_queue, Ordering::Release);
+    }
+
+    #[inline]
+    pub fn time_stat_from_user_to_kernel(&self) {
+        let time = self.time.get();
+        unsafe {
+            (*time).into_kernel_mode();
+        }
+    }
+
+    #[inline]
+    pub fn time_stat_from_kernel_to_user(&self) {
+        let time = self.time.get();
+        unsafe {
+            (*time).into_user_mode();
+        }
+    }
+
+    #[inline]
+    pub fn time_stat_when_switch_from(&self) {
+        let time = self.time.get();
+        unsafe {
+            (*time).swtich_from();
+        }
+    }
+
+    #[inline]
+    pub fn time_stat_when_switch_to(&self) {
+        let time = self.time.get();
+        unsafe {
+            (*time).switch_to();
+        }
+    }
+
+    #[inline]
+    /// 将时间转为秒与微妙的形式输出，方便进行sys_time
+    /// (用户态秒，用户态微妙，内核态秒，内核态微妙)
+    pub fn time_stat_output(&self) -> (usize, usize, usize, usize) {
+        let time = self.time.get();
+        unsafe { (*time).output_as_us() }
+    }
+
+    #[inline]
+    /// 重置统计时间
+    pub fn time_stat_clear(&self) {
+        let time = self.time.get();
+        unsafe {
+            (*time).clear();
+        }
     }
 
     #[inline]
