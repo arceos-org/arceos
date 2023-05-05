@@ -7,10 +7,6 @@ extern crate axlog;
 mod lang_items;
 mod trap;
 
-use core::arch::global_asm;
-use core::include_str;
-global_asm!(include_str!("link_app.S"));
-
 #[cfg(feature = "smp")]
 mod mp;
 
@@ -120,7 +116,7 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
 
     // #[cfg(feature = "multitask")]
     // axtask::init_scheduler();
-    axprocess::process::init_process();
+    axprocess::process::init_kernel_process();
 
     #[cfg(any(feature = "fs", feature = "net", feature = "display"))]
     {
@@ -128,7 +124,10 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         let all_devices = axdriver::init_drivers();
 
         #[cfg(feature = "fs")]
-        axfs::init_filesystems(all_devices.block.0);
+        {
+            axfs::init_filesystems(all_devices.block.0);
+            info!("Filesystems initialized.");
+        }
 
         #[cfg(feature = "net")]
         axnet::init_network(all_devices.net);
@@ -136,6 +135,8 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         #[cfg(feature = "display")]
         axdisplay::init_display(all_devices.display);
     }
+
+    axprocess::process::init_user_process();
 
     info!("Initialize interrupt handlers...");
     init_interrupt();

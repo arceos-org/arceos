@@ -1,14 +1,16 @@
+use alloc::vec;
 use alloc::{collections::BTreeMap, string::String, sync::Arc, vec::Vec};
-use axhal::arch::{write_page_table_root, TaskContext, TrapFrame};
-use axlog::info;
+use axfs_os::file::get_file_data;
+use axfs_os::{file_io::FileIO, Stderr, Stdin, Stdout};
+use axhal::arch::{write_page_table_root, TrapFrame};
 use axmem::memory_set::USER_STACK_SIZE;
 const KERNEL_STACK_SIZE: usize = 4096;
 use crate::flags::{CloneFlags, WaitStatus};
-use axmem::memory_set::{get_app_data, MemorySet};
+use axmem::memory_set::MemorySet;
 use axtask::{
     current,
     task::{CurrentTask, TaskInner},
-    yield_now, AxTaskRef, TaskId, IDLE_TASK, RUN_QUEUE,
+    AxTaskRef, TaskId, IDLE_TASK, RUN_QUEUE,
 };
 use spinlock::SpinNoIrq;
 
@@ -39,6 +41,8 @@ pub struct ProcessInner {
     pub is_zombie: bool,
     /// 退出状态码
     pub exit_code: i32,
+    /// 文件描述符表
+    pub fd_table: Vec<Option<Arc<dyn FileIO + Send + Sync>>>,
 }
 
 impl ProcessInner {
@@ -52,24 +56,41 @@ impl ProcessInner {
             heap_top: heap_bottom,
             is_zombie: false,
             exit_code: 0,
+            fd_table: vec![
+                // 标准输入
+                Some(Arc::new(Stdin)),
+                // 标准输出
+                Some(Arc::new(Stdout)),
+                // 标准错误
+                Some(Arc::new(Stderr)),
+            ],
         }
     }
     pub fn get_page_table_token(&self) -> usize {
         self.memory_set.lock().page_table_token()
     }
+    pub fn alloc_fd(&mut self) -> usize {
+        for (i, fd) in self.fd_table.iter().enumerate() {
+            if fd.is_none() {
+                return i;
+            }
+        }
+        self.fd_table.push(None);
+        self.fd_table.len() - 1
+    }
 }
 
 impl Process {
-    /// 根据name新建一个进程
-    /// 此时应当是初始化的主进程，所以其父亲应当是内核进程
-    pub fn new(name: &'static str) -> AxTaskRef {
+    /// 根据应用名寻找文件，作为初始化主进程启动
+    pub fn new(path: &'static str) -> AxTaskRef {
         // 接下来是加载自己的内容
         // let mut page_table = copy_from_kernel_memory();
         // let (entry, user_stack_bottom) = load_from_elf(&mut page_table, get_app_data(name));
         let mut memory_set = MemorySet::new_from_kernel();
         let page_table_token = memory_set.page_table_token();
+        let elf_data = get_file_data(path);
         let (entry, user_stack_bottom, heap_bottom) =
-            MemorySet::from_elf(&mut memory_set, get_app_data(name));
+            MemorySet::from_elf(&mut memory_set, elf_data.as_slice());
         // 以这种方式建立的线程，不通过某一个具体的函数开始，而是通过地址来运行函数，所以entry不会被用到
         let new_process = Arc::new(Self {
             pid: TaskId::new().as_u64(),
@@ -86,7 +107,7 @@ impl Process {
         // 创立一个新的线程，初始化时进入
         let new_task = TaskInner::new(
             || {},
-            name,
+            path,
             KERNEL_STACK_SIZE,
             new_process.pid,
             page_table_token,
@@ -231,7 +252,7 @@ impl Process {
         // 返回的值
         // 若创建的是进程，则返回进程的id
         // 若创建的是线程，则返回线程的id
-        let mut return_id: u64 = 0;
+        let return_id: u64;
         // 决定是创建线程还是进程
         if flags.contains(CloneFlags::CLONE_THREAD) {
             // 若创建的是进程，那么不用新建进程
@@ -296,7 +317,8 @@ impl Process {
     }
 }
 
-pub fn init_process() {
+/// 初始化内核调度进程
+pub fn init_kernel_process() {
     // 内核的堆不重要，或者说当前未考虑内核堆的问题
     let kernel_process = Arc::new(Process {
         pid: TaskId::new().as_u64(),
@@ -313,8 +335,21 @@ pub fn init_process() {
     kernel_process.inner.lock().tasks.push(Arc::clone(unsafe {
         &IDLE_TASK.current_ref_raw().get_unchecked()
     }));
+}
+
+/// 读取初始化应用程序，作为用户态初始进程
+pub fn init_user_process() {
     let main_task = Process::new("helloworld");
     RUN_QUEUE.lock().add_task(main_task);
+}
+
+/// 获取当前任务对应的进程
+pub fn current_process() -> Arc<Process> {
+    let curr = current();
+    let pid2pc_inner = PID2PC.lock();
+    let curr_process = Arc::clone(&pid2pc_inner.get(&curr.get_process_id()).unwrap());
+    drop(pid2pc_inner);
+    curr_process
 }
 
 pub fn exit(exit_code: i32) -> isize {
@@ -328,12 +363,9 @@ pub fn exit(exit_code: i32) -> isize {
     // 不可以回收内核任务
     if is_leader {
         assert!(process_id != 0);
-        let pid2pc_inner = PID2PC.lock();
-        let process = Arc::clone(&pid2pc_inner.get(&process_id).unwrap());
-        drop(pid2pc_inner);
+        let process = current_process();
         let mut inner = process.inner.lock();
         inner.exit_code = exit_code;
-        info!("process {} exit with code {}", process_id, exit_code);
         inner.is_zombie = true;
         {
             let pid2pc = PID2PC.lock();
@@ -360,10 +392,7 @@ pub fn exit(exit_code: i32) -> isize {
 /// 否则返回一个状态
 pub fn wait_pid(pid: isize, exit_code_ptr: *mut i32) -> Result<u64, WaitStatus> {
     // 获取当前进程
-    let curr = current();
-    let pid2pc_inner = PID2PC.lock();
-    let curr_process = Arc::clone(&pid2pc_inner.get(&curr.get_process_id()).unwrap());
-    drop(pid2pc_inner);
+    let curr_process = current_process();
     let mut inner = curr_process.inner.lock();
     let mut exit_task_id: usize = 0;
     let mut answer_id: u64 = 0;

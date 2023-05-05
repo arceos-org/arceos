@@ -36,7 +36,7 @@ impl AxRunQueue {
         );
         info!("gc task id: {}", gc_task.id().as_u64());
         unsafe { CurrentTask::init_current(gc_task) }
-        let mut scheduler = Scheduler::new();
+        let scheduler = Scheduler::new();
         // scheduler.add_task(gc_task);
         SpinNoIrq::new(Self { scheduler })
     }
@@ -67,7 +67,6 @@ impl AxRunQueue {
 
     pub fn yield_current(&mut self) {
         let curr = crate::current();
-        info!("task yield: {}", curr.id_name());
         assert!(curr.is_running());
         self.resched_inner(false);
     }
@@ -173,7 +172,6 @@ impl AxRunQueue {
             // Safety: IRQs must be disabled at this time.
             IDLE_TASK.current_ref_raw().get_unchecked().clone()
         });
-        info!("next task id:{}", next.id().as_u64());
         self.switch_to(prev, next);
     }
 

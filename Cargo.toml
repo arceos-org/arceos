@@ -55,6 +55,7 @@ members = [
     "modules/axsyscall",
     "modules/axmem",
     "modules/axprocess",
+    "modules/axfs_os",
 
     "ulib/libax",
     "ulib/c_libax/libax_bindings",

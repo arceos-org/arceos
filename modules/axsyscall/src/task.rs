@@ -1,13 +1,13 @@
 use core::time::Duration;
 
+use axfs_os::file::get_file_data;
 use axhal::time::current_time;
-use axmem::memory_set::get_app_data;
 use axprocess::{
     flags::{CloneFlags, WaitStatus},
-    process::{current_task, sleep_now_dur, wait_pid, yield_now_task, PID2PC},
+    process::{current_process, current_task, sleep_now_dur, wait_pid, yield_now_task},
 };
 extern crate alloc;
-use alloc::{sync::Arc, vec::Vec};
+use alloc::vec::Vec;
 use log::info;
 
 use crate::flags::{TimeSecs, WaitFlags};
@@ -19,10 +19,7 @@ pub fn syscall_exit(exit_code: i32) -> isize {
 }
 
 pub fn syscall_exec(path: *const u8, mut args: *const usize) -> isize {
-    let curr = current_task();
-    let pid2pc_inner = PID2PC.lock();
-    let curr_process = Arc::clone(&pid2pc_inner.get(&curr.get_process_id()).unwrap());
-    drop(pid2pc_inner);
+    let curr_process = current_process();
     let inner = curr_process.inner.lock();
     let path = inner.memory_set.lock().translate_str(path);
     axlog::info!("path: {}", path);
@@ -44,9 +41,9 @@ pub fn syscall_exec(path: *const u8, mut args: *const usize) -> isize {
         }
     }
     drop(inner);
-    let elf_data = get_app_data(&path);
+    let elf_data = get_file_data(path.as_str());
     let argc = args_vec.len();
-    curr_process.exec(elf_data, args_vec);
+    curr_process.exec(elf_data.as_slice(), args_vec);
     argc as isize
 }
 
@@ -63,10 +60,7 @@ pub fn syscall_clone(
     } else {
         Some(user_stack)
     };
-    let curr = current_task();
-    let pid2pc_inner = PID2PC.lock();
-    let curr_process = Arc::clone(&pid2pc_inner.get(&curr.get_process_id()).unwrap());
-    drop(pid2pc_inner);
+    let curr_process = current_process();
     let new_task_id = curr_process.clone_task(clone_flags, stack, ptid, tls, ctid);
     new_task_id as isize
 }
@@ -79,10 +73,7 @@ pub fn syscall_getpid() -> isize {
 }
 
 pub fn syscall_getppid() -> isize {
-    let curr = current_task();
-    let pid2pc_inner = PID2PC.lock();
-    let curr_process = Arc::clone(&pid2pc_inner.get(&curr.get_process_id()).unwrap());
-    drop(pid2pc_inner);
+    let curr_process = current_process();
     let inner = curr_process.inner.lock();
     let parent_id = inner.parent;
     drop(inner);
@@ -96,7 +87,6 @@ pub fn syscall_wait4(pid: isize, exit_code_ptr: *mut i32, option: WaitFlags) -> 
         let answer = wait_pid(pid, exit_code_ptr);
         match answer {
             Ok(pid) => {
-                info!("sub task finish: {}", pid);
                 return pid as isize;
             }
             Err(status) => {

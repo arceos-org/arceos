@@ -12,5 +12,6 @@ axtask = { path = "../axtask" }
 axhal = { path = "../axhal" }
 axlog = { path = "../axlog" }
 axmem = { path = "../axmem" }
+axfs_os = { path = "../axfs_os" }
 riscv = "0.10"
 bitflags = "= 2.1.0"

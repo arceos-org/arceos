@@ -225,6 +225,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "axfs_os"
+version = "0.1.0"
+dependencies = [
+ "axerrno",
+ "axfs",
+ "axhal",
+ "axio",
+ "axsync",
+ "axtask",
+ "bitflags 2.1.0",
+]
+
+[[package]]
 name = "axfs_vfs"
 version = "0.1.0"
 dependencies = [
@@ -286,6 +299,7 @@ name = "axmem"
 version = "0.1.0"
 dependencies = [
  "axalloc",
+ "axfs_os",
  "axhal",
  "axlog",
  "lazy_init",
@@ -314,6 +328,7 @@ dependencies = [
 name = "axprocess"
 version = "0.1.0"
 dependencies = [
+ "axfs_os",
  "axhal",
  "axlog",
  "axmem",
@@ -360,6 +375,7 @@ name = "axsyscall"
 version = "0.1.0"
 dependencies = [
  "axalloc",
+ "axfs_os",
  "axhal",
  "axlog",
  "axmem",

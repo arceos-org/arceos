@@ -1,13 +1,18 @@
+//!总体来说,这个结构表示一个块设备,内部维护当前的块ID和块内偏移来跟踪光标位置。它提供了读写一个块内数据、设置光标位置、获取磁盘大小等方法。
+//! 通过块设备(BlockDevice)读取和写入整个块或块的一部分。对块设备的操作由底层具体设备的driver负责,这个结构只关注于以块为单位的数据存取。
+//! 所以这是一个抽象出来的表示块设备的结构,通过它可以统一地访问不同类型的块设备(如virtio块设备、ramdisk等)。这属于操作系统中设备管理方面的内容。
+
+
 use crate::BlockDevice;
 use driver_block::BlockDriverOps;
 use driver_common::DevResult;
 
-const BLOCK_SIZE: usize = 512;
+const BLOCK_SIZE: usize = 512;  // 块大小为512字节
 
 pub struct Disk {
-    block_id: u64,
-    offset: usize,
-    dev: BlockDevice,
+    block_id: u64,   // 当前块ID
+    offset: usize,   // 块内偏移
+    dev: BlockDevice,  // 块设备
 }
 
 impl Disk {

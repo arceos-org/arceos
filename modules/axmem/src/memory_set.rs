@@ -15,28 +15,6 @@ pub struct MemorySet {
     pub areas: Vec<MapArea>,
 }
 
-pub fn get_app_data(_name: &str) -> &'static [u8] {
-    extern "C" {
-        fn app0_start();
-        fn app0_end();
-        fn app1_start();
-        fn app1_end();
-    }
-    unsafe {
-        if _name == "helloworld" {
-            core::slice::from_raw_parts(
-                app0_start as usize as *const u8,
-                app0_end as usize - app0_start as usize,
-            )
-        } else {
-            core::slice::from_raw_parts(
-                app1_start as usize as *const u8,
-                app1_end as usize - app1_start as usize,
-            )
-        }
-    }
-}
-
 impl MemorySet {
     pub fn new_from_kernel() -> Self {
         Self {

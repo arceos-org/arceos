@@ -1,3 +1,5 @@
+//! 目录操作相关功能。
+
 use alloc::string::String;
 use axio::Result;
 use core::fmt;
@@ -8,27 +10,28 @@ use crate::fops;
 /// Iterator over the entries in a directory.
 pub struct ReadDir<'a> {
     path: &'a str,
-    inner: fops::Directory,
-    buf_pos: usize,
-    buf_end: usize,
+    inner: fops::Directory, // 底层Directory对象
+    buf_pos: usize,         // 缓冲区读取位置
+    buf_end: usize,         // 缓冲区结尾位置
     end_of_stream: bool,
-    dirent_buf: [fops::DirEntry; 31],
+    dirent_buf: [fops::DirEntry; 31], // 目录条目缓冲区
 }
 
 /// Entries returned by the [`ReadDir`] iterator.
 pub struct DirEntry<'a> {
-    dir_path: &'a str,
-    entry_name: String,
-    entry_type: FileType,
+    dir_path: &'a str,    // 所在目录路径
+    entry_name: String,   // 条目名称
+    entry_type: FileType, // 条目类型
 }
 
 /// A builder used to create directories in various manners.
 #[derive(Default, Debug)]
 pub struct DirBuilder {
-    recursive: bool,
+    recursive: bool, // 是否递归创建上级目录
 }
 
 impl<'a> ReadDir<'a> {
+    /// 新建ReadDir目录迭代器。
     pub(super) fn new(path: &'a str) -> Result<Self> {
         let mut opts = fops::OpenOptions::new();
         opts.read(true);
@@ -50,6 +53,7 @@ impl<'a> Iterator for ReadDir<'a> {
     type Item = Result<DirEntry<'a>>;
 
     fn next(&mut self) -> Option<Result<DirEntry<'a>>> {
+        // 迭代Directory,返回DirEntry
         if self.end_of_stream {
             return None;
         }
@@ -141,6 +145,7 @@ impl DirBuilder {
         }
     }
 
+    /// todo: 递归创建目录
     fn create_dir_all(&self, _path: &str) -> Result<()> {
         axerrno::ax_err!(
             Unsupported,
