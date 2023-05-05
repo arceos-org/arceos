@@ -32,4 +32,5 @@ axlog = { path = "../axlog" }
 axruntime = { path = "../axruntime", features = ["user", "alloc", "paging"
   , "multitask", "irq"
   ] }
-axtask = { path = "../axtask" , features = ["irq"]}
+axtask = { path = "../axtask", features = ["irq"]}
+axsync = { path = "../axsync", feature = ["futex"]}

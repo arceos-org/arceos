@@ -11,11 +11,13 @@ documentation = "https://rcore-os.github.io/arceos/axsync/index.html"
 
 [features]
 multitask = ["axtask/multitask"]
-default = ["multitask", "axtask/default"]
+default = ["multitask", "axtask/default", "futex"]
+futex = ["dep:memory_addr"]
 
 [dependencies]
 spinlock = { path = "../../crates/spinlock" }
 axtask = { path = "../axtask", default-features = false }
+memory_addr = { path = "../../crates/memory_addr", optional = true}
 
 [dev-dependencies]
 rand = "0.8"
