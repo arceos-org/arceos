@@ -1,13 +1,10 @@
 use alloc::{collections::BTreeMap, string::String, sync::Arc, vec::Vec};
 use axhal::arch::{write_page_table_root, TaskContext, TrapFrame};
 use axlog::info;
-pub const USER_STACK_SIZE: usize = 4096;
-pub const MAX_HEAP_SIZE: usize = 4096;
+use axmem::memory_set::USER_STACK_SIZE;
 const KERNEL_STACK_SIZE: usize = 4096;
-use crate::{
-    flags::{CloneFlags, WaitStatus},
-    mem::memory_set::{get_app_data, MemorySet},
-};
+use crate::flags::{CloneFlags, WaitStatus};
+use axmem::memory_set::{get_app_data, MemorySet};
 use axtask::{
     current,
     task::{CurrentTask, TaskInner},

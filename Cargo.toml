@@ -53,6 +53,7 @@ members = [
     "modules/axsync",
     "modules/axtask",
     "modules/axsyscall",
+    "modules/axmem",
     "modules/axprocess",
 
     "ulib/libax",

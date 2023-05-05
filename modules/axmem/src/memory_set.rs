@@ -1,7 +1,4 @@
-use crate::{
-    mem::{areas::MapArea, paging::copy_from_kernel_memory},
-    process::{MAX_HEAP_SIZE, USER_STACK_SIZE},
-};
+use crate::{areas::MapArea, paging::copy_from_kernel_memory};
 use alloc::{string::String, vec::Vec};
 use axalloc::GlobalPage;
 use axhal::{
@@ -9,6 +6,9 @@ use axhal::{
     paging::{MappingFlags, PageSize, PageTable, PagingResult},
 };
 use memory_addr::PhysAddr;
+pub const USER_STACK_SIZE: usize = 4096;
+pub const MAX_HEAP_SIZE: usize = 4096;
+
 /// 地址空间实现
 pub struct MemorySet {
     pub page_table: PageTable,

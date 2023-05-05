@@ -282,6 +282,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "axmem"
+version = "0.1.0"
+dependencies = [
+ "axalloc",
+ "axhal",
+ "axlog",
+ "lazy_init",
+ "memory_addr",
+ "xmas-elf",
+]
+
+[[package]]
 name = "axnet"
 version = "0.1.0"
 dependencies = [
@@ -302,16 +314,13 @@ dependencies = [
 name = "axprocess"
 version = "0.1.0"
 dependencies = [
- "axalloc",
  "axhal",
  "axlog",
+ "axmem",
  "axtask",
  "bitflags 2.1.0",
- "lazy_init",
- "memory_addr",
  "riscv",
  "spinlock",
- "xmas-elf",
 ]
 
 [[package]]
@@ -325,6 +334,7 @@ dependencies = [
  "axfs",
  "axhal",
  "axlog",
+ "axmem",
  "axnet",
  "axprocess",
  "axsyscall",
@@ -352,6 +362,7 @@ dependencies = [
  "axalloc",
  "axhal",
  "axlog",
+ "axmem",
  "axprocess",
  "axtask",
  "bitflags 2.1.0",

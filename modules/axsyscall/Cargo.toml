@@ -12,5 +12,6 @@ axtask = { path = "../axtask" }
 axalloc = { path = "../axalloc" }
 axlog = { path = "../axlog" }
 axprocess = { path = "../axprocess" }
+axmem = { path = "../axmem" }
 log = "0.4.0"
 bitflags = "= 2.1.0"

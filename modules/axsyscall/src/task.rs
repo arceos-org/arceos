@@ -1,9 +1,9 @@
 use core::time::Duration;
 
 use axhal::time::current_time;
+use axmem::memory_set::get_app_data;
 use axprocess::{
     flags::{CloneFlags, WaitStatus},
-    mem::memory_set::get_app_data,
     process::{wait_pid, PID2PC},
 };
 use axtask::{current, sleep, yield_now, RUN_QUEUE};

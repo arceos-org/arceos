@@ -1,7 +1,7 @@
 use alloc::sync::Arc;
-use axprocess::process::{MAX_HEAP_SIZE, PID2PC};
+use axprocess::process::PID2PC;
 use axtask::current;
-
+const MAX_HEAP_SIZE: usize = 4096;
 /// 修改用户堆大小，
 ///
 /// - 如输入 brk 为 0 ，则返回堆顶地址

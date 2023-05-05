@@ -1,5 +1,5 @@
 [package]
-name = "axprocess"
+name = "axmem"
 version = "0.1.0"
 edition = "2021"
 authors = ["Youjie Zheng <zyj578335934@gmail.com>"]
@@ -7,10 +7,9 @@ authors = ["Youjie Zheng <zyj578335934@gmail.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-spinlock = { path = "../../crates/spinlock" }
-axtask = { path = "../axtask" }
 axhal = { path = "../axhal" }
 axlog = { path = "../axlog" }
-axmem = { path = "../axmem" }
-riscv = "0.10"
-bitflags = "= 2.1.0"
+axalloc = { path = "../axalloc" }
+memory_addr = { path = "../../crates/memory_addr" }
+lazy_init = { path = "../../crates/lazy_init" }
+xmas-elf = "0.9.0"

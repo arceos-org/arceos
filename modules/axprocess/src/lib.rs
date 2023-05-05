@@ -6,9 +6,7 @@ use axtask::{current, task::CurrentTask};
 extern crate alloc;
 
 pub mod flags;
-pub mod mem;
 pub mod process;
-pub mod signal;
 
 /// 开始进行调度，我们先执行gc任务，通过gc任务逐个执行并收集RUN_QUEUE中的任务
 /// 所以先切换到gc对应的任务上下文即可

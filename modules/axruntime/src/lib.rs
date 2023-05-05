@@ -182,7 +182,7 @@ fn init_allocator() {
 
 #[cfg(feature = "paging")]
 fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
-    axprocess::mem::paging::remap_kernel_memory()
+    axmem::paging::remap_kernel_memory()
 }
 
 fn init_interrupt() {

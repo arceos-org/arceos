@@ -35,3 +35,4 @@ axdisplay = { path = "../axdisplay", optional = true }
 axtask = { path = "../axtask", default-features = false }
 axsyscall = { path = "../axsyscall" }
 axprocess = { path = "../axprocess" }
+axmem = { path = "../axmem" }
