@@ -8,7 +8,6 @@ authors = ["Youjie Zheng <zyj578335934@gmail.com>"]
 
 [dependencies]
 axhal = { path = "../axhal" }
-axtask = { path = "../axtask" }
 axalloc = { path = "../axalloc" }
 axlog = { path = "../axlog" }
 axprocess = { path = "../axprocess" }

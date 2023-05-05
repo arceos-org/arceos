@@ -8,7 +8,7 @@ use axmem::memory_set::{get_app_data, MemorySet};
 use axtask::{
     current,
     task::{CurrentTask, TaskInner},
-    AxTaskRef, TaskId, IDLE_TASK, RUN_QUEUE,
+    yield_now, AxTaskRef, TaskId, IDLE_TASK, RUN_QUEUE,
 };
 use spinlock::SpinNoIrq;
 
@@ -407,4 +407,17 @@ pub fn wait_pid(pid: isize, exit_code_ptr: *mut i32) -> Result<u64, WaitStatus> 
         return Ok(answer_id);
     }
     Err(answer_status)
+}
+
+/// 以进程作为中转调用task的yield
+pub fn yield_now_task() {
+    axtask::yield_now();
+}
+
+pub fn sleep_now_dur(dur: core::time::Duration) {
+    axtask::sleep(dur);
+}
+
+pub fn current_task() -> CurrentTask {
+    axtask::current()
 }

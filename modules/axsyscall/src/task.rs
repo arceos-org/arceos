@@ -4,9 +4,8 @@ use axhal::time::current_time;
 use axmem::memory_set::get_app_data;
 use axprocess::{
     flags::{CloneFlags, WaitStatus},
-    process::{wait_pid, PID2PC},
+    process::{current_task, sleep_now_dur, wait_pid, yield_now_task, PID2PC},
 };
-use axtask::{current, sleep, yield_now, RUN_QUEUE};
 extern crate alloc;
 use alloc::{sync::Arc, vec::Vec};
 use log::info;
@@ -20,7 +19,7 @@ pub fn syscall_exit(exit_code: i32) -> isize {
 }
 
 pub fn syscall_exec(path: *const u8, mut args: *const usize) -> isize {
-    let curr = current();
+    let curr = current_task();
     let pid2pc_inner = PID2PC.lock();
     let curr_process = Arc::clone(&pid2pc_inner.get(&curr.get_process_id()).unwrap());
     drop(pid2pc_inner);
@@ -64,7 +63,7 @@ pub fn syscall_clone(
     } else {
         Some(user_stack)
     };
-    let curr = current();
+    let curr = current_task();
     let pid2pc_inner = PID2PC.lock();
     let curr_process = Arc::clone(&pid2pc_inner.get(&curr.get_process_id()).unwrap());
     drop(pid2pc_inner);
@@ -74,13 +73,13 @@ pub fn syscall_clone(
 
 /// 当前不涉及多核情况
 pub fn syscall_getpid() -> isize {
-    let curr = current();
+    let curr = current_task();
     let pid = curr.get_process_id();
     pid as isize
 }
 
 pub fn syscall_getppid() -> isize {
-    let curr = current();
+    let curr = current_task();
     let pid2pc_inner = PID2PC.lock();
     let curr_process = Arc::clone(&pid2pc_inner.get(&curr.get_process_id()).unwrap());
     drop(pid2pc_inner);
@@ -113,8 +112,8 @@ pub fn syscall_wait4(pid: isize, exit_code_ptr: *mut i32, option: WaitFlags) -> 
                             return 0;
                         } else {
                             // 执行yield操作，切换任务
-                            info!("wait4: yield_now");
-                            axtask::yield_now();
+                            info!("wait4: yield_now_task");
+                            yield_now_task();
                         }
                     }
                     _ => {
@@ -127,7 +126,7 @@ pub fn syscall_wait4(pid: isize, exit_code_ptr: *mut i32, option: WaitFlags) -> 
 }
 
 pub fn syscall_yield() -> isize {
-    yield_now();
+    yield_now_task();
     0
 }
 
@@ -136,7 +135,7 @@ pub fn syscall_sleep(req: *const TimeSecs, rem: *mut TimeSecs) -> isize {
     let req_time = unsafe { *req };
     let start_to_sleep = current_time();
     let dur = Duration::new(req_time.tv_sec as u64, req_time.tv_nsec as u32);
-    sleep(dur);
+    sleep_now_dur(dur);
     // 若被唤醒时时间小于请求时间，则将剩余时间写入rem
     let sleep_time = current_time() - start_to_sleep;
     if sleep_time < dur {

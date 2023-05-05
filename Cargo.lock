@@ -364,7 +364,6 @@ dependencies = [
  "axlog",
  "axmem",
  "axprocess",
- "axtask",
  "bitflags 2.1.0",
  "log",
 ]

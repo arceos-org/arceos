@@ -175,3 +175,58 @@ make A=apps/net/httpserver ARCH=aarch64 LOG=info NET=y SMP=4 run
 
 3. 若想运行其他内容的应用程序，请在原先`helloworld`的源码上进行修改，引入其他系统调用之后再次编译生成可执行文件并且拷贝到对应目录。
 4. 当前由于未支持文件系统，上述操作略显冗余。之后会引入文件系统支持，使得流程更为简便。
+
+
+
+## modules 关系图
+
+```mermaid
+graph TD;
+axsync-->axdisplay
+axdriver-->axdisplay
+
+axhal-->axdriver
+axalloc-->axdriver
+axconfig-->axdriver
+
+axdriver-->axfs
+axsync-->axfs
+axtask-.dev.->axfs
+
+axconfig-->axhal
+axalloc-->axhal
+axlog-->axhal
+
+axhal-->axnet
+axsync-->axnet
+axtask-->axnet
+axdriver-->axnet
+
+axalloc-->axruntime
+axconfig-->axruntime
+axdriver-->axruntime
+axhal-->axruntime
+axlog-->axruntime
+axnet-->axruntime
+axdisplay-->axruntime
+axtask-->axruntime
+axprocess-->axruntime
+axtask-->axsync
+axtask-->axprocess
+axfs-->axprocess
+axhal-->axprocess
+
+axprocess-->axsyscall
+axsyscall-->axruntime
+axalloc-->axtask
+axhal-->axtask
+axconfig-->axtask
+axlog-->axtask
+
+axhal-->axmem
+axalloc-->axmem
+
+axmem-->axprocess
+
+```
+
