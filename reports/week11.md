@@ -168,6 +168,25 @@ char 是否有符号取决于实现。
 
 ### IPv6 支持
 
+创建 `Ipv6Addr` 结构体，以及相关的类型转换和输出。
+
+在 init 时输出地址，然后主机来 ping：
+
+``` plain
+thx@ubuntu181:~$ ping fe80::5054:ff:fe12:3456 -I qemu-tap0 -c 5
+ping: Warning: source address might be selected on device other than: qemu-tap0
+PING fe80::5054:ff:fe12:3456(fe80::5054:ff:fe12:3456) from :: qemu-tap0: 56 data bytes
+64 bytes from fe80::5054:ff:fe12:3456%qemu-tap0: icmp_seq=1 ttl=255 time=1.60 ms
+64 bytes from fe80::5054:ff:fe12:3456%qemu-tap0: icmp_seq=2 ttl=255 time=0.184 ms
+64 bytes from fe80::5054:ff:fe12:3456%qemu-tap0: icmp_seq=3 ttl=255 time=0.181 ms
+64 bytes from fe80::5054:ff:fe12:3456%qemu-tap0: icmp_seq=4 ttl=255 time=0.350 ms
+64 bytes from fe80::5054:ff:fe12:3456%qemu-tap0: icmp_seq=5 ttl=255 time=0.177 ms
+
+--- fe80::5054:ff:fe12:3456 ping statistics ---
+5 packets transmitted, 5 received, 0% packet loss, time 4058ms
+rtt min/avg/max/mdev = 0.177/0.498/1.599/0.554 ms
+```
+
 ### 重测性能
 
 系统版本：`Ubuntu 20.04.3 LTS`
@@ -315,4 +334,4 @@ Percentage of the requests served within a certain time (ms)
 
 ## 下周计划
 
-- 
+- 开始进行系统层适配
