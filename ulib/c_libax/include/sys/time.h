@@ -15,6 +15,8 @@ struct timespec {
     long tv_nsec;  /* nanoseconds */
 };
 
+typedef struct timespec timespec;
+
 struct timezone {
     int tz_minuteswest; /* (minutes west of Greenwich) */
     int tz_dsttime;     /* (type of DST correction) */

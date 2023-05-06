@@ -8,7 +8,7 @@ use memory_addr::{PhysAddr, VirtAddr};
 use riscv::asm;
 use riscv::register::{satp, sstatus, stvec};
 
-pub use context::{GeneralRegisters, TaskContext, TrapFrame};
+pub use self::context::{GeneralRegisters, TaskContext, TrapFrame};
 
 /// Allows the current CPU to respond to interrupts.
 #[inline]

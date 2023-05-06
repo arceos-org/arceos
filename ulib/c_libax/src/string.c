@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -14,16 +15,6 @@ size_t strnlen(const char *s, size_t n)
 {
     const char *p = memchr(s, 0, n);
     return p ? p - s : n;
-}
-
-int isspace(int c)
-{
-    return c == ' ' || (unsigned)c - '\t' < 5;
-}
-
-int isdigit(int c)
-{
-    return (unsigned)c - '0' < 10;
 }
 
 int atoi(const char *s)

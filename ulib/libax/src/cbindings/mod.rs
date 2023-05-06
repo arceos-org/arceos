@@ -10,6 +10,9 @@ mod fs;
 #[cfg(feature = "alloc")]
 mod malloc;
 
+mod thread;
+mod time;
+
 /// cbindgen:ignore
 #[rustfmt::skip]
 #[path = "./ctypes_gen.rs"]
@@ -54,3 +57,9 @@ pub use self::malloc::{ax_free, ax_malloc};
 pub use self::fs::{
     ax_close, ax_fstat, ax_getcwd, ax_lseek, ax_lstat, ax_open, ax_read, ax_stat, ax_write,
 };
+
+#[cfg(feature = "multitask")]
+pub use self::thread::ax_getpid;
+
+pub use self::thread::ax_exit;
+pub use self::time::{ax_clock_gettime, ax_nanosleep};

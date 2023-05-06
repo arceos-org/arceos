@@ -4,4 +4,5 @@
 *.asm
 *.img
 actual.out
+qemu.log
 *.pcap
