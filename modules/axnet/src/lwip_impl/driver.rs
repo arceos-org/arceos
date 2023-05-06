@@ -7,9 +7,10 @@ use driver_net::{DevError, NetBuffer, NetDriverOps};
 use lazy_init::LazyInit;
 use lwip_rust::bindings::{
     err_enum_t_ERR_OK, err_enum_t_ERR_WOULDBLOCK, err_t, etharp_output, ethernet_input,
-    ethip6_output, ip4_addr_t, lwip_htonl, lwip_init, netif, netif_add, netif_set_default,
-    netif_set_link_up, netif_set_up, pbuf, pbuf_alloc, pbuf_layer_PBUF_RAW, pbuf_type_PBUF_POOL,
-    sys_check_timeouts, NETIF_FLAG_BROADCAST, NETIF_FLAG_ETHARP, NETIF_FLAG_ETHERNET,
+    ethip6_output, ip4_addr_t, lwip_htonl, lwip_init, netif, netif_add,
+    netif_create_ip6_linklocal_address, netif_set_default, netif_set_link_up, netif_set_up, pbuf,
+    pbuf_alloc, pbuf_layer_PBUF_RAW, pbuf_type_PBUF_POOL, sys_check_timeouts, NETIF_FLAG_BROADCAST,
+    NETIF_FLAG_ETHARP, NETIF_FLAG_ETHERNET,
 };
 
 const RX_BUF_QUEUE_SIZE: usize = 64;
@@ -189,6 +190,7 @@ pub fn init(net_devs: NetDevices) {
             Some(ethif_init),
             Some(ethernet_input),
         );
+        netif_create_ip6_linklocal_address(&mut ETH0.netif.lock().0, 1);
         netif_set_link_up(&mut ETH0.netif.lock().0);
         netif_set_up(&mut ETH0.netif.lock().0);
         netif_set_default(&mut ETH0.netif.lock().0);
