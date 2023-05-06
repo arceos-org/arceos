@@ -1,13 +1,15 @@
 [package]
 name = "crate_interface"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
-description = "Provides a way to define an interface (trait) in a crate, but can implement or use it in any crate"
+description = "Provides a way to define an interface (trait) in a crate, but can implement or use it in any crate."
 license = "GPL-3.0-or-later OR Apache-2.0"
 homepage = "https://github.com/rcore-os/arceos"
 repository = "https://github.com/rcore-os/arceos/tree/main/crates/crate_interface"
 documentation = "https://rcore-os.github.io/arceos/crate_interface/index.html"
+keywords = ["arceos", "api", "macro"]
+categories = ["development-tools::procedural-macro-helpers", "no-std"]
 
 [dependencies]
 proc-macro2 = "1.0"

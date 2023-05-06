@@ -14,6 +14,7 @@ smp = []
 fp_simd = []
 paging = ["axalloc", "page_table"]
 irq = []
+platform-pc-x86 = ["axconfig/platform-pc-x86", "dep:ratio"]
 platform-qemu-virt-riscv = ["axconfig/platform-qemu-virt-riscv"]
 platform-qemu-virt-aarch64 = [
     "axconfig/platform-qemu-virt-aarch64",
@@ -26,6 +27,7 @@ log = "0.4"
 cfg-if = "1.0"
 bitflags = "2.0"
 static_assertions = "1.1.0"
+axlog = { path = "../axlog" }
 axconfig = { path = "../axconfig" }
 axalloc = { path = "../axalloc", optional = true }
 kernel_guard = { path = "../../crates/kernel_guard" }
@@ -41,6 +43,8 @@ crate_interface = { path = "../../crates/crate_interface" }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 x86 = "0.52"
+x86_64 = "0.14"
+x2apic = "0.4"
 raw-cpuid = "10.7"
 
 [target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]

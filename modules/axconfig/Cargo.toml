@@ -10,6 +10,7 @@ repository = "https://github.com/rcore-os/arceos/tree/main/modules/axconfig"
 documentation = "https://rcore-os.github.io/arceos/axconfig/index.html"
 
 [features]
+platform-pc-x86 = []
 platform-qemu-virt-riscv = []
 platform-qemu-virt-aarch64 = []
 default = []

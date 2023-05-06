@@ -2,8 +2,13 @@
 #define __TIME_H__
 
 #include <stddef.h>
+#include <sys/time.h>
 
 typedef long time_t;
+
+#define CLOCK_REALTIME  0
+#define CLOCK_MONOTONIC 1
+#define CLOCKS_PER_SEC  1000000L
 
 struct tm {
     int tm_sec;   /* seconds of minute */
@@ -26,5 +31,7 @@ struct tm *gmtime(const time_t *timer);
 
 struct tm *localtime(const time_t *timep);
 time_t time(time_t *t);
+int clock_gettime(clockid_t _clk, struct timespec *ts);
+int nanosleep(const struct timespec *requested_time, struct timespec *remaining);
 
 #endif

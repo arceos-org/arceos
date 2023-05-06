@@ -32,5 +32,5 @@ virtio-mmio-regions = [
     ["0x1000_8000", "0x1000"],
 ]
 
-# Timer interrupt frequency.
+# Timer interrupt frequency in Hz.
 timer_frequency = "10_000_000"      # 10MHz

@@ -27,6 +27,7 @@
 //!     - `log-level-error`, `log-level-warn`, `log-level-info`, `log-level-debug`,
 //!       `log-level-trace`: Keep logging only at the specified level or higher.
 //! - Platform
+//!     - `platform-pc-x86`: Specify for use on the corresponding platform.
 //!     - `platform-qemu-virt-riscv`: Specify for use on the corresponding platform.
 //!     - `platform-qemu-virt-aarch64`: Specify for use on the corresponding platform.
 //! - Other
