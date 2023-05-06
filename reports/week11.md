@@ -204,7 +204,9 @@ QEMU：`QEMU emulator version 8.0.0`
 
 测试参数：`ab -n 100000 -c 100 http://10.0.2.15:5555/`
 
-测试结果均很稳定，netdev 为 user 时的 bug 也不再复现。
+测试结果均很稳定，netdev 为 user 时的 bug 也不再复现（Updated: 有时会出现，但重开 ab 就好了，不能稳定复现）。
+
+SMP 数量不太影响性能，较大时 lwip 性能有所下降。
 
 #### lwip
 
@@ -331,6 +333,50 @@ Percentage of the requests served within a certain time (ms)
   99%     41
  100%     48 (longest request)
 ```
+
+### 系统层适配初探
+
+学习：
+
+- <https://lwip.fandom.com/wiki/Porting_for_an_OS>
+- <https://doc.embedfire.com/net/lwip/i.mx_rt1052/zh/latest/doc/chapter8/chapter8.html>
+
+需要实现的一部分内容：
+
+| 名称                     | 属性     | 功能                     | 所在文件   |
+| ------------------------ | -------- | ------------------------ | ---------- |
+| sys_sem_t                | 数据类型 | 指针类型，指向系统信号量 | sys_arch.h |
+| sys_mutex_t              | 数据类型 | 指针类型，指向系统互斥量 | sys_arch.h |
+| sys_mbox_t               | 数据类型 | 指针类型，指向系统邮箱   | sys_arch.h |
+| sys_thread_t             | 数据类型 | 指针类型，指向系统任务   | sys_arch.h |
+| SYS_MBOX_NULL            | 宏定义   | 系统邮箱的空值           | sys_arch.h |
+| SYS_SEM_NULL             | 宏定义   | 系统信号量的空值         | sys_arch.h |
+| SYS_MRTEX_NULL           | 宏定义   | 系统互斥量的空值         | sys_arch.h |
+| sys_now                  | 函数     | 内核时钟                 | sys_arch.c |
+| sys_init                 | 函数     | 初始化系统               | sys_arch.c |
+| sys_arch_protect         | 函数     | 进入临界段               | sys_arch.c |
+| sys_arch_unprotect       | 函数     | 退出临界段               | sys_arch.c |
+| sys_sem_new              | 函数     | 创建一个信号量           | sys_arch.c |
+| sys_sem_free             | 函数     | 删除一个信号量           | sys_arch.c |
+| sys_sem_valid            | 函数     | 判断信号量是否有效       | sys_arch.c |
+| sys_sem_set_invalid      | 函数     | 将信号量设置无效状态     | sys_arch.c |
+| sys_arch_sem_wait        | 函数     | 等待一个信号量           | sys_arch.c |
+| sys_sem_signal           | 函数     | 释放一个信号量           | sys_arch.c |
+| sys_mutex_new            | 函数     | 创建一个互斥量           | sys_arch.c |
+| sys_mutex_free           | 函数     | 删除一个互斥量           | sys_arch.c |
+| sys_mutex_set_invalid    | 函数     | 设置互斥量为无效状态     | sys_arch.c |
+| sys_mutex_lock           | 函数     | 获取一个互斥量           | sys_arch.c |
+| sys_mutex_unlock         | 函数     | 释放一个互斥量           | sys_arch.c |
+| sys_mbox_new             | 函数     | 创建一个邮箱             | sys_arch.c |
+| sys_mbox_free            | 函数     | 删除一个邮箱             | sys_arch.c |
+| sys_mbox_valid           | 函数     | 判断邮箱是否有效         | sys_arch.c |
+| sys_mbox_set_invalid     | 函数     | 设置邮箱为无效状态       | sys_arch.c |
+| sys_mbox_post            | 函数     | 向邮箱发送消息，一直阻塞 | sys_arch.c |
+| sys_mbox_trypost         | 函数     | 向邮箱发送消息，非阻塞   | sys_arch.c |
+| sys_mbox_trypost_fromisr | 函数     | 在中断中向邮箱发送消息   | sys_arch.c |
+| sys_arch_mbox_fetch      | 函数     | 从邮箱中获取消息，阻塞   | sys_arch.c |
+| sys_arch_mbox_tryfetch   | 函数     | 从邮箱中获取消息，非阻塞 | sys_arch.c |
+| sys_thread_new           | 函数     | 创建一个线程             | sys_arch.c |
 
 ## 下周计划
 
