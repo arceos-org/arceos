@@ -22,9 +22,14 @@ qemu_args-$(FS) += \
   -device virtio-blk-device,drive=disk0 \
   -drive id=disk0,if=none,format=raw,file=$(DISK_IMG)
 
-qemu_args-$(NET) += \
-  -device virtio-net-device,netdev=net0 \
-  -netdev user,id=net0,hostfwd=tcp::5555-:5555,hostfwd=udp::5555-:5555
+qemu_args-$(NET) += -device virtio-net-device,netdev=net0
+ifeq ($(NETDEV), user)
+  qemu_args-$(NET) += \
+    -netdev user,id=net0,hostfwd=tcp::5555-:5555,hostfwd=udp::5555-:5555
+else ifeq ($(NETDEV), tap)
+  qemu_args-$(NET) += \
+    -netdev tap,id=net0,ifname=qemu-tap0,script=no,downscript=no
+endif
 
 ifeq ($(MODE), debug)
   qemu_args-$(NET) += \
