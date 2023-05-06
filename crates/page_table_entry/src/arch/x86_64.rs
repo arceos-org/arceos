@@ -1,6 +1,9 @@
+//! x86 page table entries on 64-bit paging.
+
 use core::fmt;
 use memory_addr::PhysAddr;
-use x86_64::structures::paging::page_table::PageTableFlags as PTF;
+
+pub use x86_64::structures::paging::page_table::PageTableFlags as PTF;
 
 use crate::{GenericPTE, MappingFlags};
 
@@ -48,6 +51,7 @@ impl From<MappingFlags> for PTF {
     }
 }
 
+/// An x86_64 page table entry.
 #[derive(Clone, Copy)]
 #[repr(transparent)]
 pub struct X64PTE(u64);

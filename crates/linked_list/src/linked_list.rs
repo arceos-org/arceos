@@ -207,7 +207,7 @@ impl<G: AdapterWrapped> List<G> {
     }
 }
 
-impl<G: AdapterWrapped> const Default for List<G> {
+impl<G: AdapterWrapped> Default for List<G> {
     fn default() -> Self {
         Self::new()
     }

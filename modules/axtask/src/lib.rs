@@ -3,8 +3,6 @@
 #![feature(drain_filter)]
 #[macro_use]
 extern crate log;
-pub mod signal;
-pub mod syscall;
 struct KernelGuardIfImpl;
 
 #[crate_interface::impl_interface]
@@ -27,19 +25,17 @@ impl kernel_guard::KernelGuardIf for KernelGuardIfImpl {
 cfg_if::cfg_if! {
 if #[cfg(feature = "multitask")] {
 mod copy;
-extern crate alloc;
-pub mod mem;
-mod process;
+mod time;
 mod run_queue;
-mod task;
+pub mod task;
 mod timers;
 mod wait_queue;
 #[cfg(test)]
 mod tests;
-
+extern crate alloc;
 use alloc::sync::Arc;
 
-use self::run_queue::{AxRunQueue, RUN_QUEUE};
+pub use self::run_queue::{AxRunQueue, RUN_QUEUE, IDLE_TASK};
 use self::task::{CurrentTask, TaskInner};
 
 pub use self::task::TaskId;
@@ -56,7 +52,7 @@ cfg_if::cfg_if! {
     }
 }
 
-type AxTaskRef = Arc<AxTask>;
+pub type AxTaskRef = Arc<AxTask>;
 
 pub fn current_may_uninit() -> Option<CurrentTask> {
     CurrentTask::try_get()
@@ -93,7 +89,7 @@ pub fn spawn<F>(f: F)
 where
     F: FnOnce() + Send + 'static,
 {
-    let task = TaskInner::new(f, "", axconfig::TASK_STACK_SIZE, current().process.pid);
+    let task = TaskInner::new(f, "", axconfig::TASK_STACK_SIZE, current().get_process_id(), 0);
     RUN_QUEUE.lock().add_task(task);
 }
 
@@ -111,7 +107,8 @@ pub fn sleep_until(deadline: axhal::time::TimeValue) {
 }
 
 pub fn exit(exit_code: i32) -> ! {
-    RUN_QUEUE.lock().exit_current(exit_code)
+    RUN_QUEUE.lock().exit_current(exit_code);
+    unreachable!("exit_current() should not return!");
 }
 
 } else { // if #[cfg(feature = "multitask")]
@@ -134,6 +131,10 @@ pub fn sleep_until(deadline: axhal::time::TimeValue) {
     while axhal::time::current_time() < deadline {
         core::hint::spin_loop();
     }
+}
+
+pub fn time_stat_from_kernel_to_user() {
+    let curr = current();
 }
 
 } // else

@@ -1,3 +1,6 @@
+//! fatfs模块定义了FAT32文件系统相关的结构和实现。它基于fatfs库实现axfs_vfs的抽象,
+//! 使ArceOS可以使用FAT32文件系统
+
 use alloc::sync::Arc;
 use core::cell::UnsafeCell;
 
@@ -5,17 +8,26 @@ use axfs_vfs::{VfsDirEntry, VfsError, VfsNodePerm, VfsResult};
 use axfs_vfs::{VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsNodeType, VfsOps};
 use axsync::Mutex;
 use fatfs::{Dir, File, LossyOemCpConverter, NullTimeProvider, Read, Seek, SeekFrom, Write};
+// LossyOemCpConverter表示OEM代码页到UTF-16的不可逆转换。这用于fatfs库将FAT32文件系统中的文件名从OEM代码页转换为UTF-16。
+// NullTimeProvider表示不提供时间相关信息。fatfs库在某些操作中需要时间相关信息,此处通过NullTimeProvider表示不提供。
+// Read、Write和Seek trait分别表示读、写和寻址操作。fatfs库通过这些trait来对抽象的Io设备进行操作。
+
 
 use crate::dev::Disk;
 
 const BLOCK_SIZE: usize = 512;
 
+/// FAT文件系统结构体,封装fatfs库的FileSystem。
 pub struct FatFileSystem {
+    // fatfs库的FileSystem
     inner: fatfs::FileSystem<Disk, NullTimeProvider, LossyOemCpConverter>,
+    // FAT文件系统的根目录
     root_dir: UnsafeCell<Option<VfsNodeRef>>,
 }
 
+/// 封装fatfs库的File,实现Send和Sync以用于多线程环境。
 pub struct FileWrapper<'a>(Mutex<File<'a, Disk, NullTimeProvider, LossyOemCpConverter>>);
+/// 封装fatfs库的Dir,实现Send和Sync以用于多线程环境。
 pub struct DirWrapper<'a>(Dir<'a, Disk, NullTimeProvider, LossyOemCpConverter>);
 
 unsafe impl Sync for FatFileSystem {}
@@ -26,6 +38,7 @@ unsafe impl<'a> Send for DirWrapper<'a> {}
 unsafe impl<'a> Sync for DirWrapper<'a> {}
 
 impl FatFileSystem {
+    /// 初始化一个FatFileSystem
     pub fn new(disk: Disk) -> Self {
         let inner = fatfs::FileSystem::new(disk, fatfs::FsOptions::new())
             .expect("failed to initialize FAT filesystem");
@@ -35,21 +48,25 @@ impl FatFileSystem {
         }
     }
 
+    /// 设置root_dir,必须在其他操作前调用
     pub fn init(&'static self) {
         // must be called before later operations
         unsafe { *self.root_dir.get() = Some(Self::new_dir(self.inner.root_dir())) }
     }
 
+    /// 从fatfs库的File创建一个FileWrapper
     fn new_file(file: File<'_, Disk, NullTimeProvider, LossyOemCpConverter>) -> Arc<FileWrapper> {
         Arc::new(FileWrapper(Mutex::new(file)))
     }
 
+    /// 从fatfs库的Dir创建一个DirWrapper
     fn new_dir(dir: Dir<'_, Disk, NullTimeProvider, LossyOemCpConverter>) -> Arc<DirWrapper> {
         Arc::new(DirWrapper(dir))
     }
 }
 
-impl VfsNodeOps for FileWrapper<'_> {
+/// 实现VfsNodeOps trait以提供文件相关操作的抽象接口
+impl VfsNodeOps for FileWrapper<'static> {
     axfs_vfs::impl_vfs_non_dir_default! {}
 
     fn get_attr(&self) -> VfsResult<VfsNodeAttr> {
@@ -79,9 +96,13 @@ impl VfsNodeOps for FileWrapper<'_> {
     }
 }
 
+/// 实现VfsNodeOps trait以提供目录相关操作的抽象接口
 impl VfsNodeOps for DirWrapper<'static> {
-    axfs_vfs::impl_vfs_dir_default! {}
+    axfs_vfs::impl_vfs_dir_default! {}  //实现默认的目录操作
+    // 包括 read_at() write_at() fsync() truncate(), 这些操作在目录中是无效的,所以直接返回错误
 
+    /// 获取目录属性
+    /// FAT文件系统不支持权限,所以设置为755
     fn get_attr(&self) -> VfsResult<VfsNodeAttr> {
         // FAT fs doesn't support permissions, we just set everything to 755
         Ok(VfsNodeAttr::new(
@@ -92,12 +113,14 @@ impl VfsNodeOps for DirWrapper<'static> {
         ))
     }
 
+    /// 获取父目录
     fn parent(&self) -> Option<VfsNodeRef> {
         self.0
             .open_dir("..")
             .map_or(None, |dir| Some(FatFileSystem::new_dir(dir)))
     }
 
+    /// 查找目录中的文件或子目录
     fn lookup(self: Arc<Self>, path: &str) -> VfsResult<VfsNodeRef> {
         debug!("lookup at fatfs: {}", path);
         let path = path.trim_matches('/');
@@ -118,6 +141,7 @@ impl VfsNodeOps for DirWrapper<'static> {
         }
     }
 
+    /// 在目录中创建文件或子目录
     fn create(&self, path: &str, ty: VfsNodeType) -> VfsResult {
         debug!("create {:?} at fatfs: {}", ty, path);
         let path = path.trim_matches('/');
@@ -141,6 +165,7 @@ impl VfsNodeOps for DirWrapper<'static> {
         }
     }
 
+    /// 从目录中删除文件或子目录
     fn remove(&self, path: &str) -> VfsResult {
         debug!("remove at fatfs: {}", path);
         let path = path.trim_matches('/');
@@ -151,6 +176,7 @@ impl VfsNodeOps for DirWrapper<'static> {
         self.0.remove(path).map_err(as_vfs_err)
     }
 
+    /// 读取目录项
     fn read_dir(&self, start_idx: usize, dirents: &mut [VfsDirEntry]) -> VfsResult<usize> {
         let mut iter = self.0.iter().skip(start_idx);
         for (i, out_entry) in dirents.iter_mut().enumerate() {
@@ -174,11 +200,13 @@ impl VfsNodeOps for DirWrapper<'static> {
 }
 
 impl VfsOps for FatFileSystem {
+    /// 实现VfsOps trait以提供根目录相关操作
     fn root_dir(&self) -> VfsNodeRef {
         let root_dir = unsafe { (*self.root_dir.get()).as_ref().unwrap() };
         root_dir.clone()
     }
 }
+
 
 impl fatfs::IoBase for Disk {
     type Error = ();
@@ -230,7 +258,7 @@ impl Seek for Disk {
             SeekFrom::Current(off) => self.position().checked_add_signed(off),
             SeekFrom::End(off) => size.checked_add_signed(off),
         }
-        .ok_or(())?;
+            .ok_or(())?;
         if new_pos > size {
             warn!("Seek beyond the end of the block device");
         }
@@ -239,6 +267,7 @@ impl Seek for Disk {
     }
 }
 
+/// 将fatfs库的Error映射为VfsError
 const fn as_vfs_err(err: fatfs::Error<()>) -> VfsError {
     use fatfs::Error::*;
     match err {

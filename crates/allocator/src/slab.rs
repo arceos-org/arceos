@@ -6,11 +6,15 @@ use super::{AllocError, AllocResult, BaseAllocator, ByteAllocator};
 use core::alloc::Layout;
 use slab_allocator::Heap;
 
+/// A byte-granularity memory allocator based on the [slab allocator].
+///
+/// [slab allocator]: ../slab_allocator/index.html
 pub struct SlabByteAllocator {
     inner: Option<Heap>,
 }
 
 impl SlabByteAllocator {
+    /// Creates a new empty `SlabByteAllocator`.
     pub const fn new() -> Self {
         Self { inner: None }
     }

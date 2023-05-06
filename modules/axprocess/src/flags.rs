@@ -43,3 +43,11 @@ bitflags! {
         const CLONE_CHILD_SETTID = 1 << 24;
     }
 }
+
+/// sys_wait4 的返回值
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WaitStatus {
+    Exited,
+    Running,
+    NotExist,
+}

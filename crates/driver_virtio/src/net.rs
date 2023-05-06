@@ -4,6 +4,9 @@ use driver_net::{EthernetAddress, NetBuffer, NetDriverOps};
 use virtio_drivers::device::net::{self, VirtIONet as InnerDev};
 use virtio_drivers::{transport::Transport, Hal};
 
+/// The VirtIO network device driver.
+///
+/// `QS` is the VirtIO queue size.
 pub struct VirtIoNetDev<H: Hal, T: Transport, const QS: usize> {
     inner: InnerDev<H, T, QS>,
 }
@@ -49,6 +52,10 @@ impl NetBuffer for TxBufferWrapper {
 }
 
 impl<H: Hal, T: Transport, const QS: usize> VirtIoNetDev<H, T, QS> {
+    /// Creates a new driver instance and initializes the device, or returns
+    /// an error if any step fails.
+    ///
+    /// `buf_len` is the length of the transmit and receive buffer.
     pub fn try_new(transport: T, buf_len: usize) -> DevResult<Self> {
         Ok(Self {
             inner: InnerDev::new(transport, buf_len).map_err(as_dev_err)?,

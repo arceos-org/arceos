@@ -67,7 +67,7 @@ pub(crate) fn init_percpu(cpu_id: usize, is_bsp: bool) {
     if is_bsp {
         percpu::init(axconfig::SMP);
     }
-    percpu::set_local_thread_pointer(cpu_id, None);
+    percpu::set_local_thread_pointer(cpu_id);
     unsafe {
         // preemption is disabled on initialization.
         CPU_ID.write_current_raw(cpu_id);
