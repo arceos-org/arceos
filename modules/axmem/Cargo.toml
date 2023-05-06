@@ -11,6 +11,8 @@ axhal = { path = "../axhal" }
 axlog = { path = "../axlog" }
 axalloc = { path = "../axalloc" }
 memory_addr = { path = "../../crates/memory_addr" }
+axconfig = { path = "../axconfig" }
 axfs_os = { path = "../axfs_os" }
 lazy_init = { path = "../../crates/lazy_init" }
 xmas-elf = "0.9.0"
+riscv = "0.10"

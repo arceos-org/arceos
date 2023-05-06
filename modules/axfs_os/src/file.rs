@@ -2,9 +2,9 @@ use super::file_io::FileIO;
 use crate::flags::OpenFlags;
 use alloc::sync::Arc;
 use alloc::vec::Vec;
-use axerrno::AxResult;
+use axerrno::{AxError, AxResult};
 use axfs::api::{File, OpenOptions};
-use axio::{Read, Write};
+use axio::{Read, Seek, SeekFrom, Write};
 use axsync::Mutex;
 /// 文件描述符
 pub struct FileDesc {
@@ -32,11 +32,9 @@ impl FileIO for FileDesc {
         self.file.lock().write(buf)
     }
 
-    // fn seek(&self, offset: isize, whence: usize) -> isize {
-    //     unsafe {
-    //         (*self.file.get()).seek(offset, whence)
-    //     }
-    // }
+    fn seek(&self, offset: usize) -> AxResult<u64> {
+        self.file.lock().seek(SeekFrom::Start(offset as u64))
+    }
     // fn flush(&self) {
     //     unsafe {
     //         (*self.file.get()).flush()
@@ -68,6 +66,16 @@ impl FileDesc {
             flags: OpenFlags::from_bits(flags as u32).unwrap(),
         }
     }
+    // /// 从文件描述符对应的文件进行读取，指定了开始的偏移量与读取的长度
+    // pub fn read_file(&self, offset: usize, len: usize) -> AxResult<Vec<u8>, AxError> {
+    //     let mut buf = [0u8; len];
+    //     self.file
+    //         .lock()
+    //         .seek(SeekFrom::Start(offset as u64))
+    //         .unwrap();
+    //     self.file.lock().read_exact(&mut buf)?;
+    //     Ok(buf.to_vec())
+    // }
 }
 
 /// 新建一个文件描述符

@@ -299,11 +299,13 @@ name = "axmem"
 version = "0.1.0"
 dependencies = [
  "axalloc",
+ "axconfig",
  "axfs_os",
  "axhal",
  "axlog",
  "lazy_init",
  "memory_addr",
+ "riscv",
  "xmas-elf",
 ]
 

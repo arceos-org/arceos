@@ -8,7 +8,7 @@ use axhal::{
 use memory_addr::PhysAddr;
 pub const USER_STACK_SIZE: usize = 4096;
 pub const MAX_HEAP_SIZE: usize = 4096;
-
+use riscv::asm;
 /// 地址空间实现
 pub struct MemorySet {
     pub page_table: PageTable,
@@ -125,6 +125,12 @@ impl MemorySet {
         let mut pages = GlobalPage::alloc_contiguous(num_pages, PAGE_SIZE_4K)
             .expect("Failed to get physical pages!");
         pages.zero();
+        axlog::info!(
+            "start_va: {:X}, size: {:X}, start_align:{:X}",
+            start_va.as_usize(),
+            size,
+            start_va.align_down_4k().as_usize()
+        );
         if let Some(x) = data {
             // 由于是连续的页面，所以可以直接拷贝数据进去
             pages.as_slice_mut()[..x.len()].copy_from_slice(x);
@@ -145,7 +151,7 @@ impl MemorySet {
 
     /// 将地址空间中某一段[start_va, end_va)独立出来，用于进行mmap
     /// 由于访问权限可能发送改变，因此需要分割或缩小原有的area
-    pub fn split_for_area(&mut self, start_va: VirtAddr, size: usize, map_perm: MappingFlags) {
+    pub fn split_for_area(&mut self, start_va: VirtAddr, size: usize) {
         let end_va = start_va + size;
         let ares_to_modified: Vec<MapArea> = self
             .areas
@@ -214,29 +220,6 @@ impl MemorySet {
             Err(x) => None,
         }
     }
-    // pub fn translate_ref<T>(&self, ptr: *const T) -> PagingResult<&'static T> {
-    //     let start_va: VirtAddr = (ptr as usize).into();
-    //     if start_va.align_down_4k().as_usize() == 0x80202000 {
-    //         let x = 0x8020200D;
-    //         axlog::info!(
-    //             "{:X}",
-    //             self.page_table.query(x.into()).unwrap().0.as_usize()
-    //         );
-    //     }
-    //     axlog::info!("now virt addr: {:X}", start_va.as_usize());
-    //     match self.page_table.query(start_va) {
-    //         Ok((paddr, _, _)) => {
-    //             let x = unsafe { (paddr.as_usize() as *const T).as_ref().unwrap() };
-    //             // axlog::info!("{:X}", )
-    //             return Ok(unsafe { (paddr.as_usize() as *const T).as_ref().unwrap() });
-    //         }
-    //         Err(x) => {
-    //             axlog::info!("Error in va: {}", start_va.as_usize());
-    //             return Err(x);
-    //         }
-    //     }
-    // }
-
     pub fn translate_refmut<T>(&self, ptr: *mut T) -> PagingResult<&'static mut T> {
         let start_va: VirtAddr = (ptr as usize).into();
         match self.page_table.query(start_va) {
@@ -258,5 +241,66 @@ impl MemorySet {
             va += 1;
         }
         string
+    }
+    /// start_va和size均已按页对齐
+    pub fn mmap(
+        &mut self,
+        start_va: VirtAddr,
+        size: usize,
+        flags: MappingFlags,
+        random_pos: bool,
+        data: Option<&[u8]>,
+    ) -> isize {
+        let end_va = start_va + size;
+        if !random_pos && end_va.as_usize() >= axconfig::USER_MEMORY_LIMIT {
+            // 越界，分配失败
+            return -1;
+        }
+        if random_pos {
+            // 任意分配地点，则随意找个地方插进去就好，不用释放原有内存区间
+            // 先找一个空闲的区间
+            let mut last_end: VirtAddr = axconfig::USER_MEMORY_START.into();
+            let mut result_va = None;
+            for area in self.areas.iter() {
+                if (area.start_va - last_end.as_usize()).as_usize() >= size {
+                    // 找到了区间
+                    // 左闭右开，一点不慌
+                    result_va = Some(last_end);
+                    break;
+                } else {
+                    // 找不到区间，继续找
+                    last_end = area.start_va + area.pages.size();
+                }
+            }
+            if let Some(new_start_va) = result_va {
+                self.map_region_4k(new_start_va, size, flags, data);
+                unsafe {
+                    asm::sfence_vma_all();
+                }
+                0
+            } else {
+                -1
+            }
+        } else {
+            // 固定地址分配
+            // 先检查对应地点是否有物理区间，若有则进行拆分
+            self.split_for_area(start_va, size);
+            // 之后进行分配
+            self.map_region_4k(start_va, size, flags, data);
+            // 由于修改了页表，需要清空TLB
+            unsafe {
+                asm::sfence_vma_all();
+            }
+            0
+        }
+    }
+    /// 解除一段内存的映射，其实某种意义上它被mmap包含了
+    pub fn munmap(&mut self, start_va: VirtAddr, size: usize) -> isize {
+        self.split_for_area(start_va, size);
+        // 由于修改了页表，需要清空TLB
+        unsafe {
+            asm::sfence_vma_all();
+        }
+        0
     }
 }

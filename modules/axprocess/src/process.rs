@@ -3,6 +3,8 @@ use alloc::{collections::BTreeMap, string::String, sync::Arc, vec::Vec};
 use axfs_os::read_file;
 use axfs_os::{file_io::FileIO, Stderr, Stdin, Stdout};
 use axhal::arch::{write_page_table_root, TrapFrame};
+use axhal::mem::VirtAddr;
+use axhal::paging::MappingFlags;
 use axmem::memory_set::USER_STACK_SIZE;
 const KERNEL_STACK_SIZE: usize = 4096;
 use crate::flags::{CloneFlags, WaitStatus};
@@ -91,6 +93,7 @@ impl Process {
         let elf_data = read_file(path).unwrap();
         let (entry, user_stack_bottom, heap_bottom) =
             MemorySet::from_elf(&mut memory_set, elf_data.as_slice());
+        axlog::info!("entry: {}", entry);
         // 以这种方式建立的线程，不通过某一个具体的函数开始，而是通过地址来运行函数，所以entry不会被用到
         let new_process = Arc::new(Self {
             pid: TaskId::new().as_u64(),
@@ -317,6 +320,16 @@ impl Process {
             return Some(inner.exit_code);
         }
         None
+    }
+    /// 将数据映射到对应的段
+    pub fn mmap(
+        &self,
+        start: VirtAddr,
+        end: VirtAddr,
+        flags: MappingFlags,
+        random_pos: bool,
+        data: Option<&[u8]>,
+    ) {
     }
 }
 

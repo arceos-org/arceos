@@ -121,7 +121,8 @@ pub fn syscall_yield() -> isize {
     0
 }
 
-///
+/// 当前任务进入睡眠，req指定了睡眠的时间
+/// rem存储当睡眠完成时，真实睡眠时间和预期睡眠时间之间的差值
 pub fn syscall_sleep(req: *const TimeSecs, rem: *mut TimeSecs) -> isize {
     let req_time = unsafe { *req };
     let start_to_sleep = current_time();

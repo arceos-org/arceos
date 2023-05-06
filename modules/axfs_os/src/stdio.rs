@@ -1,5 +1,5 @@
 use super::file_io::FileIO;
-use axerrno::AxResult;
+use axerrno::{AxError, AxResult};
 use axhal::console::{getchar, write_bytes};
 use axtask::yield_now;
 
@@ -41,6 +41,9 @@ impl FileIO for Stdin {
     fn write(&self, _buf: &[u8]) -> AxResult<usize> {
         panic!("Cannot write to stdin!");
     }
+    fn seek(&self, _pos: usize) -> AxResult<u64> {
+        Err(AxError::Unsupported) // 如果没有实现seek, 则返回Unsupported
+    }
 }
 
 impl FileIO for Stdout {
@@ -60,6 +63,9 @@ impl FileIO for Stdout {
         write_bytes(_buf);
         Ok(_buf.len())
     }
+    fn seek(&self, _pos: usize) -> AxResult<u64> {
+        Err(AxError::Unsupported) // 如果没有实现seek, 则返回Unsupported
+    }
 }
 
 impl FileIO for Stderr {
@@ -75,5 +81,8 @@ impl FileIO for Stderr {
     fn write(&self, _buf: &[u8]) -> AxResult<usize> {
         write_bytes(_buf);
         Ok(_buf.len())
+    }
+    fn seek(&self, _pos: usize) -> AxResult<u64> {
+        Err(AxError::Unsupported) // 如果没有实现seek, 则返回Unsupported
     }
 }

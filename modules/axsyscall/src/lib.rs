@@ -1,7 +1,7 @@
 #![cfg_attr(not(test), no_std)]
-use flags::{TimeSecs, TimeVal, UtsName, WaitFlags, TMS};
+use flags::{MMAPFlags, TimeSecs, TimeVal, UtsName, WaitFlags, MMAPPROT, TMS};
 use fs::{syscall_close, syscall_open, syscall_read};
-use mem::syscall_brk;
+use mem::{syscall_brk, syscall_mmap, syscall_munmap};
 use task::{
     syscall_clone, syscall_get_time_of_day, syscall_getpid, syscall_getppid, syscall_sleep,
     syscall_time, syscall_uname, syscall_wait4, syscall_yield,
@@ -25,6 +25,7 @@ mod task;
 #[no_mangle]
 // #[cfg(feature = "user")]
 pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
+    axlog::info!("syscall: {}", syscall_id);
     match syscall_id {
         SYSCALL_OPENAT => syscall_open(args[0], args[1] as *const u8, args[2] as u8, args[3] as u8), // args[0] is fd, args[1] is filename, args[2] is flags, args[3] is mode
         SYSCALL_CLOSE => syscall_close(args[0]), // args[0] is fd
@@ -46,6 +47,15 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             WaitFlags::from_bits(args[2] as u32).unwrap(),
         ),
         SYSCALL_BRK => syscall_brk(args[0] as usize),
+        SYSCALL_MUNMAP => syscall_munmap(args[0], args[1]),
+        SYSCALL_MMAP => syscall_mmap(
+            args[0],
+            args[1],
+            MMAPPROT::from_bits_truncate(args[2] as u32),
+            MMAPFlags::from_bits_truncate(args[3] as u32),
+            args[4] as i32,
+            args[5],
+        ),
         _ => {
             panic!("Invalid Syscall Id: {}!", syscall_id);
         }
