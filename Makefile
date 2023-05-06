@@ -11,6 +11,7 @@ DISK_IMG ?= disk.img
 
 FS ?= n
 NET ?= n
+NETDEV ?= user
 GRAPHIC ?= n
 
 QEMU_LOG ?= n
