@@ -25,7 +25,7 @@ mod task;
 #[no_mangle]
 // #[cfg(feature = "user")]
 pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
-    axlog::info!("syscall: {}", syscall_id);
+    // axlog::info!("syscall: {}", syscall_id);
     match syscall_id {
         SYSCALL_OPENAT => syscall_open(args[0], args[1] as *const u8, args[2] as u8, args[3] as u8), // args[0] is fd, args[1] is filename, args[2] is flags, args[3] is mode
         SYSCALL_CLOSE => syscall_close(args[0]), // args[0] is fd

@@ -1,5 +1,6 @@
 use axhal::mem::{memory_regions, phys_to_virt};
 use axhal::paging::{PageTable, ENTRY_COUNT};
+use axlog::info;
 use lazy_init::LazyInit;
 use memory_addr::PAGE_SIZE_4K;
 
@@ -12,6 +13,12 @@ pub fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
         // 映射内核代码
         let mut kernel_page_table = PageTable::try_new()?;
         for r in memory_regions() {
+            // info!(
+            //     "now_vaddr: {}, now_paddr: {:X}, name: {}",
+            //     phys_to_virt(r.paddr).as_usize(),
+            //     r.paddr.as_usize(),
+            //     r.name
+            // );
             kernel_page_table.map_region(
                 phys_to_virt(r.paddr),
                 r.paddr,

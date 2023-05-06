@@ -93,7 +93,38 @@ impl Process {
         let elf_data = read_file(path).unwrap();
         let (entry, user_stack_bottom, heap_bottom) =
             MemorySet::from_elf(&mut memory_set, elf_data.as_slice());
-        axlog::info!("entry: {}", entry);
+        // 切换页表
+        let page_table_token = memory_set.page_table_token();
+        if page_table_token != 0 {
+            unsafe {
+                write_page_table_root(page_table_token.into());
+            };
+        }
+        let mut user_stack_top = user_stack_bottom + USER_STACK_SIZE;
+        // 注意要压入argc和argv，初赛阶段默认压入文件名
+        let name = path.as_bytes();
+        user_stack_top -= 2 * core::mem::size_of::<usize>();
+        let argv_base = user_stack_top;
+        unsafe {
+            *((argv_base + core::mem::size_of::<usize>()) as *mut usize) = 0;
+        }
+        user_stack_top -= name.len() + 1;
+        unsafe {
+            *(argv_base as *mut usize) = user_stack_top;
+        }
+        let mut p = user_stack_top;
+        for c in name {
+            unsafe {
+                *(p as *mut u8) = *c;
+            }
+            p += 1;
+        }
+        unsafe {
+            *(p as *mut u8) = 0;
+        }
+        user_stack_top -= user_stack_top % core::mem::size_of::<usize>();
+        axlog::info!("entry: {:X}", entry);
+
         // 以这种方式建立的线程，不通过某一个具体的函数开始，而是通过地址来运行函数，所以entry不会被用到
         let new_process = Arc::new(Self {
             pid: TaskId::new().as_u64(),
@@ -117,8 +148,10 @@ impl Process {
         );
         new_task.set_leader(true);
         // 初始化线程的trap上下文
-        let new_trap_frame =
-            TrapFrame::app_init_context(entry, user_stack_bottom + USER_STACK_SIZE);
+        let mut new_trap_frame = TrapFrame::app_init_context(entry, user_stack_top);
+        // argc为1
+        new_trap_frame.regs.a0 = 1;
+        new_trap_frame.regs.a1 = argv_base;
         new_task.set_trap_context(new_trap_frame);
         // 设立父子关系
         let mut inner = new_process.inner.lock();
@@ -163,15 +196,20 @@ impl Process {
         };
         if page_table_token != 0 {
             // axhal::arch::write_page_table_root(page_table_token.into());
-            unsafe { write_page_table_root(page_table_token.into()) };
+            unsafe {
+                write_page_table_root(page_table_token.into());
+                asm::sfence_vma_all();
+            };
+            // 清空用户堆，重置堆顶
         }
         // 重置用户堆
         inner.heap_bottom = heap_bottom;
         inner.heap_top = inner.heap_bottom;
         drop(inner);
         let mut user_stack_top = user_stack_bottom + USER_STACK_SIZE;
+        // 将参数写入即将执行的应用程序的用户栈
         user_stack_top -= (args.len() + 1) * core::mem::size_of::<usize>();
-        let argv_base = user_stack_top;
+        let argv_base = user_stack_top; // argv的地址
         let mut argv: Vec<_> = (0..=args.len())
             .map(|arg| (argv_base + arg * core::mem::size_of::<usize>()) as *mut usize)
             .collect();
@@ -180,6 +218,7 @@ impl Process {
         }
         for i in 0..args.len() {
             user_stack_top -= args[i].len() + 1;
+            user_stack_top -= user_stack_top % core::mem::size_of::<usize>();
             unsafe {
                 *argv[i] = user_stack_top;
             }
@@ -194,7 +233,7 @@ impl Process {
                 *(p as *mut u8) = 0;
             }
         }
-        // 对齐到4K
+        // 对齐到usize
         user_stack_top -= user_stack_top % core::mem::size_of::<usize>();
         // user_stack_top = user_stack_top / PAGE_SIZE_4K * PAGE_SIZE_4K;
         let new_trap_frame = TrapFrame::app_init_context(entry, user_stack_top);
@@ -355,7 +394,7 @@ pub fn init_kernel_process() {
 
 /// 读取初始化应用程序，作为用户态初始进程
 pub fn init_user_process() {
-    let main_task = Process::new("helloworld");
+    let main_task = Process::new("getpid");
     RUN_QUEUE.lock().add_task(main_task);
 }
 

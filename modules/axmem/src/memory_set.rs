@@ -58,7 +58,7 @@ impl MemorySet {
                 let start_va: VirtAddr = (ph.virtual_addr() as usize).into();
                 let mem_size = ph.mem_size() as usize;
                 let end_va: usize = (ph.virtual_addr() + ph.mem_size()) as usize;
-                axlog::info!("start: {:X}, end: {:X}", start_va.as_usize(), end_va);
+                // axlog::info!("start: {:X}, end: {:X}", start_va.as_usize(), end_va);
                 if end_va > max_end_va {
                     max_end_va = end_va;
                 }
@@ -112,6 +112,7 @@ impl MemorySet {
                 .unwrap();
         }
     }
+    /// 注意: start_va不一定是4K对齐的
     pub fn map_region_4k(
         &mut self,
         start_va: VirtAddr,
@@ -119,21 +120,26 @@ impl MemorySet {
         map_perm: MappingFlags,
         data: Option<&[u8]>,
     ) {
+        // 先处理start_va未对齐的情况
+        let offset = start_va.align_offset_4k();
+        // 真实大小应该加上偏移量
+        let size = size + offset;
         // 为每一个新的区域都要进行页面的分配
         // 每一个区域直接连续分配页面
         let num_pages: usize = (size as usize + PAGE_SIZE_4K - 1) / PAGE_SIZE_4K;
         let mut pages = GlobalPage::alloc_contiguous(num_pages, PAGE_SIZE_4K)
             .expect("Failed to get physical pages!");
         pages.zero();
-        axlog::info!(
-            "start_va: {:X}, size: {:X}, start_align:{:X}",
-            start_va.as_usize(),
-            size,
-            start_va.align_down_4k().as_usize()
-        );
+        // axlog::info!(
+        //     "start_va: {:X}, size: {:X}, start_align:{:X}",
+        //     start_va.as_usize(),
+        //     size,
+        //     start_va.align_down_4k().as_usize()
+        // );
         if let Some(x) = data {
             // 由于是连续的页面，所以可以直接拷贝数据进去
-            pages.as_slice_mut()[..x.len()].copy_from_slice(x);
+            // 注意从offset处开始填入数据
+            pages.as_slice_mut()[offset..x.len() + offset].copy_from_slice(x);
         }
         // 进行页表的映射
         self.page_table

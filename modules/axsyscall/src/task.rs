@@ -23,9 +23,8 @@ pub fn syscall_exec(path: *const u8, mut args: *const usize) -> isize {
     let curr_process = current_process();
     let inner = curr_process.inner.lock();
     let path = inner.memory_set.lock().translate_str(path);
-    axlog::info!("path: {}", path);
-    axlog::info!("Syscall to exec {}", path);
     let mut args_vec = Vec::new();
+    // args相当于argv，指向了参数所在的地址
     loop {
         let args_str_ptr = unsafe { *args };
         if args_str_ptr == 0 {
@@ -55,7 +54,8 @@ pub fn syscall_clone(
     tls: usize,
     ctid: usize,
 ) -> isize {
-    let clone_flags = CloneFlags::from_bits(flags as u32).unwrap();
+    axlog::info!("flags: {}", flags);
+    let clone_flags = CloneFlags::from_bits((flags & !0x3f) as u32).unwrap();
     let stack = if user_stack == 0 {
         None
     } else {

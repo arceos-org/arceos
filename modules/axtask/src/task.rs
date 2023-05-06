@@ -6,10 +6,10 @@ use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 #[cfg(feature = "preempt")]
 use core::sync::atomic::AtomicUsize;
 
+use crate::copy::__copy;
 use axhal::arch::{TaskContext, TrapFrame};
 use memory_addr::{align_up_4k, VirtAddr};
-
-use crate::copy::__copy;
+use riscv::asm;
 const KERNEL_PROCESS_ID: u64 = 1;
 use crate::time::TimeStat;
 use crate::{AxTask, AxTaskRef};
@@ -480,6 +480,7 @@ fn first_into_user(kernel_sp: usize, frame_base: usize) -> ! {
     let trap_frame_size = core::mem::size_of::<TrapFrame>();
     let kernel_base = kernel_sp - trap_frame_size;
     unsafe {
+        asm::sfence_vma_all();
         core::arch::asm!(
             r"
             mv      sp, {frame_base}
@@ -520,6 +521,10 @@ extern "C" fn task_entry() -> ! {
         } else {
             info!("exec task: {}", task.name());
             // 需要通过切换特权级进入到对应的应用程序
+            unsafe {
+                let ans: u64 = *(0x1000 as *const u64);
+                axlog::info!("ans: {:X}", ans);
+            }
             let kernel_sp = task.get_kernel_stack_top().unwrap();
             let frame_address = task.trap_frame.get();
             // 切换页表已经在switch实现了
