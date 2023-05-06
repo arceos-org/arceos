@@ -1,4 +1,5 @@
 use super::LWIP_MUTEX;
+use crate::IpAddr;
 use alloc::collections::VecDeque;
 use axdriver::NetDevices;
 use axsync::Mutex;
@@ -195,6 +196,15 @@ pub fn init(net_devs: NetDevices) {
         netif_set_up(&mut ETH0.netif.lock().0);
         netif_set_default(&mut ETH0.netif.lock().0);
     }
+
+    info!(
+        "ETH0 IPv4 address: {}",
+        IpAddr::from(unsafe { ETH0.netif.lock().0.ip_addr })
+    );
+    info!(
+        "ETH0 IPv6 address: {}",
+        IpAddr::from(unsafe { ETH0.netif.lock().0.ip6_addr[0] })
+    );
 
     // let ipaddr: ip_addr_t = ip_addr_t {
     //     u_addr: ip_addr__bindgen_ty_1 { ip4: ipaddr },
