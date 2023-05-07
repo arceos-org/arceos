@@ -381,3 +381,9 @@ Percentage of the requests served within a certain time (ms)
 ## 下周计划
 
 - 开始进行系统层适配
+
+交流补充：
+
+- 调研 VirtIO 多线程驱动
+- 最终展示时可以接上 UDP Socket
+- ab 测试卡住的 bug 有空再调
