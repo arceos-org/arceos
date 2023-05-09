@@ -38,16 +38,16 @@
 //!         // Your implementation here
 //!     }
 //!     fn disable_preempt() {
-//!        // Your implementation here
+//!         // Your implementation here
 //!     }
 //! }
 //!
 //! let guard = NoPreempt::new();
-//! // The critical section starts here
+//! /* The critical section starts here
 //!
-//! // Do something that requires preemption to be disabled
+//! Do something that requires preemption to be disabled
 //!
-//! // The critical section ends here
+//! The critical section ends here */
 //! drop(guard);
 //! ```
 

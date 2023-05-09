@@ -100,7 +100,7 @@ dependencies = [
  "axfs",
  "axfs_ramfs",
  "axfs_vfs",
- "crate_interface",
+ "crate_interface 0.1.1",
  "libax",
 ]
 
@@ -227,7 +227,7 @@ dependencies = [
  "axtask",
  "capability",
  "cfg-if",
- "crate_interface",
+ "crate_interface 0.1.1",
  "driver_block",
  "fatfs",
  "lazy_init",
@@ -272,7 +272,7 @@ dependencies = [
  "axlog",
  "bitflags 2.1.0",
  "cfg-if",
- "crate_interface",
+ "crate_interface 0.1.1",
  "handler_table",
  "kernel_guard",
  "lazy_init",
@@ -306,7 +306,7 @@ version = "0.1.0"
 dependencies = [
  "cfg-if",
  "chrono",
- "crate_interface",
+ "crate_interface 0.1.1",
  "log",
  "spinlock",
 ]
@@ -340,7 +340,7 @@ dependencies = [
  "axlog",
  "axnet",
  "axtask",
- "crate_interface",
+ "crate_interface 0.1.1",
  "kernel_guard",
  "lazy_init",
  "percpu",
@@ -364,7 +364,7 @@ dependencies = [
  "axhal",
  "axtask",
  "cfg-if",
- "crate_interface",
+ "crate_interface 0.1.1",
  "kernel_guard",
  "lazy_init",
  "log",
@@ -571,6 +571,17 @@ checksum = "e496a50fda8aacccc86d7529e2c1e0892dbd0f898a6b5645b5561b89c3210efa"
 [[package]]
 name = "crate_interface"
 version = "0.1.1"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.14",
+]
+
+[[package]]
+name = "crate_interface"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d54b79db793871881b52a1eb5dc6fd869743122e34795f12db8e183dcb6a4f28"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -927,7 +938,7 @@ name = "kernel_guard"
 version = "0.1.0"
 dependencies = [
  "cfg-if",
- "crate_interface",
+ "crate_interface 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

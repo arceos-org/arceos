@@ -8,5 +8,7 @@ license = "GPL-3.0-or-later OR Apache-2.0"
 homepage = "https://github.com/rcore-os/arceos"
 repository = "https://github.com/rcore-os/arceos/tree/main/crates/handler_table"
 documentation = "https://rcore-os.github.io/arceos/handler_table/index.html"
+keywords = ["arceos", "event", "lock-free"]
+categories = ["no-std"]
 
 [dependencies]

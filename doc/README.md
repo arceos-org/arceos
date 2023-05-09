@@ -29,11 +29,11 @@
 * [driver_display](../crates/driver_display): Common traits and types for graphics device drivers.
 * [driver_net](../crates/driver_net): Common traits and types for network device (NIC) drivers.
 * [driver_virtio](../crates/driver_virtio): Wrappers of some devices in the `virtio-drivers` crate, that implement traits in the `driver_common` series crates.
-* [handler_table](../crates/handler_table): A lock-free table of event handlers.
-* [kernel_guard](../crates/kernel_guard): RAII wrappers to create a critical section with local IRQs or preemption disabled.
+* [handler_table](../crates/handler_table): A lock-free table of event handlers. [![Crates.io](https://img.shields.io/crates/v/handler_table)](https://crates.io/crates/handler_table)
+* [kernel_guard](../crates/kernel_guard): RAII wrappers to create a critical section with local IRQs or preemption disabled. [![Crates.io](https://img.shields.io/crates/v/kernel_guard)](https://crates.io/crates/kernel_guard)
 * [lazy_init](../crates/lazy_init): A wrapper for lazy initialized values without concurrency safety but more efficient.
 * [linked_list](../crates/linked_list): Linked lists that supports arbitrary removal in constant time.
-* [memory_addr](../crates/memory_addr): Wrappers and helper functions for physical and virtual addresses.
+* [memory_addr](../crates/memory_addr): Wrappers and helper functions for physical and virtual addresses. [![Crates.io](https://img.shields.io/crates/v/memory_addr)](https://crates.io/crates/memory_addr)
 * [page_table](../crates/page_table): Generic page table structures for various hardware architectures.
 * [page_table_entry](../crates/page_table_entry): Page table entry definition for various hardware architectures.
 * [percpu](../crates/percpu): Define and access per-CPU data structures.
