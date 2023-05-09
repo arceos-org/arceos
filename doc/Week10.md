@@ -209,8 +209,9 @@ axmem-->axprocess
 
 1. 不同OS运行busybox的方式：Maturin，kerla，aero。
 
+areo: https://github.com/Andy-Python-Programmer/aero
+kerla: https://github.com/nuta/kerla
 2. kerla跑ssh的方式
-
 3. aero运行图形化界面的方式
 4. 批量通过初赛测例
 5. 图形与网络
