@@ -206,3 +206,12 @@ axmem-->axprocess
    2. 学习更多OS，如kerla，aero内核系统
    3. 尝试复赛的系统调用
    4. 泛用化思想实现
+
+1. 不同OS运行busybox的方式：Maturin，kerla，aero。
+
+2. kerla跑ssh的方式
+
+3. aero运行图形化界面的方式
+4. 批量通过初赛测例
+5. 图形与网络
+6. 继承往年优秀项目的特性，如GCC
