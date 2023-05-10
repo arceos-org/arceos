@@ -16,7 +16,7 @@ mod time;
 /// cbindgen:ignore
 #[rustfmt::skip]
 #[path = "./ctypes_gen.rs"]
-#[allow(dead_code, non_camel_case_types)]
+#[allow(dead_code, non_camel_case_types, clippy::upper_case_acronyms)]
 mod ctypes;
 
 use crate::io::Write;

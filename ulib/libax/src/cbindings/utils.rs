@@ -16,6 +16,7 @@ pub fn char_ptr_to_str<'a>(str: *const c_char) -> LinuxResult<&'a str> {
 
 macro_rules! ax_call_body {
     ($fn: ident, $($stmt: tt)*) => {{
+        #[allow(clippy::redundant_closure_call)]
         let res = (|| -> LinuxResult<_> { $($stmt)* })();
         if res.is_err() {
             $crate::info!(concat!(stringify!($fn), " => {:?}"),  res);
