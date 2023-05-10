@@ -2,8 +2,10 @@ use super::file_io::FileIO;
 use crate::flags::OpenFlags;
 use alloc::sync::Arc;
 use alloc::vec::Vec;
+use alloc::string::String;
 use axerrno::{AxError, AxResult};
-use axfs::api::{File, OpenOptions};
+use axfs::api::{DirEntry, File, OpenOptions};
+use axfs::fops::Directory;
 use axio::{Read, Seek, SeekFrom, Write};
 use axsync::Mutex;
 /// 文件描述符
@@ -93,78 +95,38 @@ pub fn new_fd(path: &str, flags: u8) -> AxResult<FileDesc> {
     Ok(fd)
 }
 
-// /// 文件描述符表
-// struct FileTable {
-//     table: Vec<FileDesc>,
-// }
-//
-// /// 文件描述符表的实现
-// impl FileTable {
-//     /// 创建一个新的文件描述符表
-//     pub fn new() -> Self {
-//         let res = Self {
-//             table: Vec::new(),
-//         };
-//         // 将标准输入输出错误流添加到文件描述符表中
-//         // 由于标准输入输出错误流是在内核中创建的, 因此不需要释放
-//         table.push(FileDesc {
-//             file: axfs::File::new(0),
-//             flags: 0b0000_0001,
-//         });
-//         table.push(FileDesc {
-//             file: axfs::File::new(1),
-//             flags: 0b0000_0010,
-//         });
-//         table.push(FileDesc {
-//             file: axfs::File::new(2),
-//             flags: 0b0000_0010,
-//         });
-//         res
-//     }
-//
-//     /// 为文件描述符表添加一个文件描述符
-//     pub fn add(&mut self, file: fs::File, flags: u8) -> usize {
-//         let fd = FileDesc { file, flags };
-//         self.table.push(fd);
-//         self.table.len() - 1
-//     }
-//
-//     /// 通过文件描述符获取文件
-//     pub fn get(&self, fd: usize) -> Option<&fs::File> {
-//         self.table.get(fd).map(|fd| &fd.file)
-//     }
-//
-//     /// 通过文件描述符获取文件的可变引用
-//     pub fn get_mut(&mut self, fd: usize) -> Option<&mut fs::File> {
-//         self.table.get_mut(fd).map(|fd| &mut fd.file)
-//     }
-//
-//     /// 通过文件描述符获取文件的标志位
-//     pub fn get_flags(&self, fd: usize) -> Option<u8> {
-//         self.table.get(fd).map(|fd| fd.flags)
-//     }
-//
-//     /// 通过文件描述符获取文件的标志位的可变引用
-//     pub fn get_flags_mut(&mut self, fd: usize) -> Option<&mut u8> {
-//         self.table.get_mut(fd).map(|fd| &mut fd.flags)
-//     }
-//
-//     /// 通过文件描述符删除文件
-//     pub fn remove(&mut self, fd: usize) -> Option<fs::File> {
-//         self.table.remove(fd).map(|fd| fd.file)
-//     }
-//
-//     /// 获取标准输入流
-//     fn get_stdin(&self) -> &File {
-//         let fd = 0;
-//         &self.table[fd].file
-//     }
-//
-//     /// 获取标准输出流
-//     fn get_stdout(&self) -> &File {
-//         let fd = 1;
-//         &self.table[fd].file
-//     }
-//
-//
-// }
+/// 工作目录描述符
+pub struct CurWorkDirDesc {
+    /// 工作目录
+    //TODO: work_dir: Arc<Mutex<Directory>>, 支持更复杂的操作
+    work_dir: String,
+}
+/// 工作目录描述符的实现
+impl CurWorkDirDesc{
+    pub fn new(work_dir: String) -> Self {
+        Self { work_dir }
+    }
+    /// 获取工作目录
+    pub fn get_path(&self) -> String {
+        self.work_dir.clone()
+    }
+}
+
+/// 为WorkDirDesc实现FileIO trait
+impl FileIO for CurWorkDirDesc {
+    fn readable(&self) -> bool {
+        false
+    }
+
+    fn writable(&self) -> bool {
+        false
+    }
+
+    fn read(&self, buf: &mut [u8]) -> AxResult<usize> {
+        Err(AxError::IsADirectory)
+    }
+
+    fn write(&self, buf: &[u8]) -> AxResult<usize> {
+        Err(AxError::IsADirectory)
+    }
+}

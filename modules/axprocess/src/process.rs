@@ -1,12 +1,15 @@
 use alloc::vec;
 use alloc::{collections::BTreeMap, string::String, sync::Arc, vec::Vec};
+use alloc::string::ToString;
 use axfs_os::read_file;
 use axfs_os::{file_io::FileIO, Stderr, Stdin, Stdout};
 use axhal::arch::{write_page_table_root, TrapFrame};
 use axhal::mem::VirtAddr;
 use axhal::paging::MappingFlags;
 use axmem::memory_set::USER_STACK_SIZE;
+
 const KERNEL_STACK_SIZE: usize = 4096;
+
 use crate::flags::{CloneFlags, WaitStatus};
 use axmem::memory_set::MemorySet;
 use axtask::{
@@ -17,8 +20,11 @@ use axtask::{
 use spinlock::SpinNoIrq;
 
 use riscv::asm;
+use axfs_os::file::{CurWorkDirDesc, new_cwd};
+
 pub static PID2PC: SpinNoIrq<BTreeMap<u64, Arc<Process>>> = SpinNoIrq::new(BTreeMap::new());
 pub const KERNEL_PROCESS_ID: u64 = 1;
+
 /// 进程的的数据结构
 pub struct Process {
     /// 进程的pid和初始化的线程的tid是一样的
@@ -65,6 +71,8 @@ impl ProcessInner {
                 Some(Arc::new(Stdout)),
                 // 标准错误
                 Some(Arc::new(Stderr)),
+                // 工作目录, fd_table[3]固定用来存放工作目录
+                Some(Arc::new(CurWorkDirDesc::new('/'.to_string()))),   // 这里的工作目录是根目录
             ],
         }
     }
@@ -79,6 +87,9 @@ impl ProcessInner {
         }
         self.fd_table.push(None);
         self.fd_table.len() - 1
+    }
+    pub fn get_cwd(&self) -> String {
+        self.fd_table[3].as_ref().unwrap().get_path()
     }
 }
 
@@ -368,8 +379,7 @@ impl Process {
         flags: MappingFlags,
         random_pos: bool,
         data: Option<&[u8]>,
-    ) {
-    }
+    ) {}
 }
 
 /// 初始化内核调度进程

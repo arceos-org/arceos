@@ -1,4 +1,5 @@
 use alloc::sync::Arc;
+use log::debug;
 /// 处理关于输出输入的系统调用
 use axfs_os::new_fd;
 use axprocess::process::current_process;
@@ -68,6 +69,7 @@ pub fn syscall_open(_dir_fd: usize, path: *const u8, flags: u8, _mode: u8) -> is
         process_inner.fd_table[fd_num] = Some(Arc::new(file));
         fd_num as isize
     } else {
+        debug!("open file failed");
         -1
     }
 }
@@ -91,11 +93,25 @@ pub fn syscall_close(fd: usize) -> isize {
     let process = current_process();
     let mut process_inner = process.inner.lock();
     if fd >= process_inner.fd_table.len() {
+        debug!("fd {} is out of range", fd);
+        return -1;
+    }
+    if fd == 3 {
+        debug!("fd {} is reserved for cwd", fd);
         return -1;
     }
     if process_inner.fd_table[fd].is_none() {
+        debug!("fd {} is not opened", fd);
         return -1;
     }
     process_inner.fd_table[fd].take();
     0
+}
+
+
+pub fn syscall_getcwd(buf: *mut u8, len: usize) -> isize {
+    let process = current_process();
+    let process_inner = process.inner.lock();
+    let cwd = process_inner.get_cwd();
+
 }
