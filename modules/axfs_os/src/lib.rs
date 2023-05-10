@@ -6,6 +6,7 @@ pub mod stdio;
 extern crate alloc;
 use alloc::vec::Vec;
 pub mod flags;
+pub mod pipe;
 
 use axerrno::AxResult;
 use axfs::api::OpenOptions;

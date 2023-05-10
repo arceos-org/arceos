@@ -51,6 +51,8 @@ pub struct ProcessInner {
     pub exit_code: i32,
     /// 文件描述符表
     pub fd_table: Vec<Option<Arc<dyn FileIO + Send + Sync>>>,
+    /// 当前工作目录
+    pub cwd: String,
 }
 
 impl ProcessInner {
@@ -71,9 +73,10 @@ impl ProcessInner {
                 Some(Arc::new(Stdout)),
                 // 标准错误
                 Some(Arc::new(Stderr)),
-                // 工作目录, fd_table[3]固定用来存放工作目录
-                Some(Arc::new(CurWorkDirDesc::new('/'.to_string()))),   // 这里的工作目录是根目录
+                // // 工作目录, fd_table[3]固定用来存放工作目录
+                // Some(Arc::new(CurWorkDirDesc::new('/'.to_string()))),   // 这里的工作目录是根目录
             ],
+            cwd: "/".to_string(),   // 这里的工作目录是根目录
         }
     }
     pub fn get_page_table_token(&self) -> usize {
@@ -89,7 +92,7 @@ impl ProcessInner {
         self.fd_table.len() - 1
     }
     pub fn get_cwd(&self) -> String {
-        self.fd_table[3].as_ref().unwrap().get_path()
+        self.cwd.clone()
     }
 }
 
