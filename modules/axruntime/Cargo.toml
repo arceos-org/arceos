@@ -22,6 +22,7 @@ display = ["alloc", "paging", "axdriver/virtio-gpu", "dep:axdisplay"]
 user = ["axhal/user", "dep:elf_loader", "dep:axmem"]
 
 user-paging = ["user", "paging", "axhal/user-paging", "axtask/user-paging"]
+futex = ["axsync/futex"]
 
 default = ["axtask?/default"]
 
@@ -42,6 +43,7 @@ axnet = { path = "../axnet", optional = true }
 axdisplay = { path = "../axdisplay", optional = true }
 axtask = { path = "../axtask", default-features = false, optional = true }
 axmem = { path = "../axmem", optional = true}
+axsync = { path = "../axsync", optional = true}
 
 [dev-dependencies]
 percpu = { path = "../../crates/percpu", features = ["sp-naive"] }

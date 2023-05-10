@@ -328,6 +328,7 @@ dependencies = [
  "elf_loader",
  "lazy_init",
  "memory_addr",
+ "spinlock",
 ]
 
 [[package]]
@@ -359,6 +360,7 @@ dependencies = [
  "axlog",
  "axmem",
  "axnet",
+ "axsync",
  "axtask",
  "crate_interface",
  "elf_loader",
@@ -372,7 +374,9 @@ dependencies = [
 name = "axsync"
 version = "0.1.0"
 dependencies = [
+ "axalloc",
  "axtask",
+ "lazy_init",
  "memory_addr",
  "rand",
  "spinlock",

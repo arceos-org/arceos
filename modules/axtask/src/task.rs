@@ -248,6 +248,7 @@ impl TaskInner {
         self.in_wait_queue.load(Ordering::Acquire)
     }
 
+    // Used in futex
     #[inline]
     pub(crate) fn set_in_wait_queue(&self, in_wait_queue: bool) {
         self.in_wait_queue.store(in_wait_queue, Ordering::Release);

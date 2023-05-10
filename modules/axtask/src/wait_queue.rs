@@ -166,7 +166,7 @@ impl WaitQueue {
 
     /// Wakes all tasks in the wait queue.
     ///
-    /// If `resched` is true, the current task will be preempted when the
+    /// If `resched` is true, the current taskaxalloc = {path = "../axalloc", optional = true} will be preempted when the
     /// preemption is enabled.
     pub fn notify_all(&self, resched: bool) {
         loop {
@@ -205,5 +205,9 @@ impl WaitQueue {
         } else {
             false
         }
+    }
+
+    pub fn len(&self) -> usize {
+        self.queue.lock().len()
     }
 }

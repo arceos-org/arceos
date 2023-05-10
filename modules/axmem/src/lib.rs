@@ -14,6 +14,7 @@ use axhal::{
 };
 use lazy_init::LazyInit;
 use memory_addr::{align_up, align_up_4k, PhysAddr, VirtAddr, PAGE_SIZE_4K};
+use spinlock::SpinNoIrq;
 
 pub const USER_START: usize = 0x0400_0000;
 pub const USTACK_START: usize = 0xf_ffff_f000;
@@ -159,7 +160,7 @@ impl AddrSpace {
     }
 }
 
-static mut GLOBAL_USER_ADDR_SPACE: LazyInit<AddrSpace> = LazyInit::new();
+static mut GLOBAL_USER_ADDR_SPACE: LazyInit<SpinNoIrq<AddrSpace>> = LazyInit::new();
 
 pub fn init_global_addr_space() {
     use axhal::mem::PAGE_SIZE_4K;
@@ -239,20 +240,20 @@ pub fn init_global_addr_space() {
         false,
     );
     unsafe {
-        GLOBAL_USER_ADDR_SPACE.init_by(user_space);
+        GLOBAL_USER_ADDR_SPACE.init_by(SpinNoIrq::new(user_space));
     }
 }
 
 pub fn alloc_user_page(vaddr: VirtAddr, size: usize, flags: MappingFlags) -> Arc<GlobalPage> {
-    use axhal::mem::PAGE_SIZE_4K;
     let mut user_phy_page =
         GlobalPage::alloc_contiguous(align_up_4k(size) / PAGE_SIZE_4K, PAGE_SIZE_4K)
             .expect("Alloc page error!");
     // init
     user_phy_page.zero();
     let user_phy_page = Arc::new(user_phy_page);
+
     unsafe {
-        GLOBAL_USER_ADDR_SPACE.get_mut_unchecked().add_region(
+        GLOBAL_USER_ADDR_SPACE.lock().add_region(
             vaddr,
             user_phy_page.start_paddr(virt_to_phys),
             user_phy_page.clone(),
@@ -260,25 +261,27 @@ pub fn alloc_user_page(vaddr: VirtAddr, size: usize, flags: MappingFlags) -> Arc
             false,
         );
     }
+
     user_phy_page
 }
 
 pub fn global_sbrk(size: isize) -> Option<usize> {
-    unsafe { GLOBAL_USER_ADDR_SPACE.get_mut_unchecked().sbrk(size) }
+    unsafe {
+        GLOBAL_USER_ADDR_SPACE.lock().sbrk(size)
+    }
 }
 
 pub fn get_satp() -> usize {
     unsafe {
         GLOBAL_USER_ADDR_SPACE
-            .try_get()
-            .unwrap()
+            .lock()
             .page_table_addr()
             .into()
     }
 }
 
 pub fn translate_buffer(vaddr: VirtAddr, size: usize) -> Vec<&'static mut [u8]> {
-    let addr_space = unsafe { GLOBAL_USER_ADDR_SPACE.try_get().unwrap() };
+    let addr_space = unsafe {GLOBAL_USER_ADDR_SPACE.lock()};
 
     let mut read_size = 0usize;
     let mut vaddr = vaddr;
@@ -296,6 +299,12 @@ pub fn translate_buffer(vaddr: VirtAddr, size: usize) -> Vec<&'static mut [u8]> 
         result.push(data);
     }
     result
+}
+
+pub fn translate_addr(vaddr: VirtAddr) -> Option<PhysAddr> {
+    unsafe {
+        GLOBAL_USER_ADDR_SPACE.lock().page_table.query(vaddr).ok().map(|x| x.0)
+    }
 }
 
 /// Copy a [u8] array `data' from current memory space into position `ptr' of the userspace `token'

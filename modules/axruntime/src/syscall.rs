@@ -5,6 +5,7 @@ pub mod sys_number {
     pub const SYS_YIELD: usize = 12;
     pub const SYS_SLEEP: usize = 13;
     pub const SYS_SBRK: usize = 20;
+    pub const SYS_FUTEX: usize = 30;
 }
 
 use lazy_init::LazyInit;
@@ -94,6 +95,14 @@ pub fn syscall_handler(id: usize, params: [usize; 6]) -> isize {
         SYS_SBRK => {
             if let Some(value) = axmem::global_sbrk(params[0] as isize) {
                 value as isize
+            } else {
+                -1
+            }
+        }
+        #[cfg(feature = "futex")]
+        SYS_FUTEX => {
+            if let Some(phy_addr) = axmem::translate_addr(params[0].into()) {
+                axsync::futex::futex_op(params[0], params[1], params[2].into())
             } else {
                 -1
             }

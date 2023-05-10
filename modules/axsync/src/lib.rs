@@ -24,7 +24,7 @@ mod mutex;
 pub use self::mutex::{Mutex, MutexGuard};
 
 #[cfg(feature = "futex")]
-mod futex;
+pub mod futex;
 
 #[cfg(not(feature = "multitask"))]
 #[doc(cfg(not(feature = "multitask")))]
