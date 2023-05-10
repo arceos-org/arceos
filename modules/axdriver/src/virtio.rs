@@ -26,10 +26,8 @@ cfg_if! {
 cfg_if! {
     if #[cfg(feature = "virtio-net")] {
         const NET_QUEUE_SIZE: usize = 64;
-        const NET_BUFFER_SIZE: usize = 2048;
-        /// Alias of [`driver_virtio::VirtIoNetDev`], with the queue size of 64
-        /// and the buffer size of 2048.
-        pub type VirtIoNetDev = driver_virtio::VirtIoNetDev<VirtIoHalImpl, VirtIoTransport, NET_QUEUE_SIZE>;
+        /// Alias of [`driver_virtio::VirtIoNetDev`], with the queue size of 64.
+        pub type VirtIoNetDev = driver_virtio::VirtIoNetDev<'static, VirtIoHalImpl, VirtIoTransport, NET_QUEUE_SIZE>;
     }
 }
 
@@ -107,9 +105,7 @@ impl AllDevices {
 
     #[cfg(feature = "virtio-net")]
     pub(crate) fn probe_virtio_net() -> Option<VirtIoNetDev> {
-        Self::probe_devices_common(DeviceType::Net, |t| {
-            VirtIoNetDev::try_new(t, NET_BUFFER_SIZE).ok()
-        })
+        Self::probe_devices_common(DeviceType::Net, |t| VirtIoNetDev::try_new(t).ok())
     }
 
     #[cfg(feature = "virtio-gpu")]

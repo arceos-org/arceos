@@ -10,7 +10,7 @@ use core::ops::DerefMut;
 use axdriver::NetDevices;
 use axhal::time::{current_time_nanos, NANOS_PER_MICROS};
 use axsync::Mutex;
-use driver_net::{DevError, NetBuffer, NetDriverOps};
+use driver_net::{DevError, NetBufferBox, NetBufferPool, NetDriverOps};
 use lazy_init::LazyInit;
 use smoltcp::iface::{Config, Interface, SocketHandle, SocketSet};
 use smoltcp::phy::{Device, DeviceCapabilities, Medium, RxToken, TxToken};
@@ -38,18 +38,23 @@ const UDP_TX_BUF_LEN: usize = 4096;
 const RX_BUF_QUEUE_SIZE: usize = 64;
 const LISTEN_QUEUE_SIZE: usize = 512;
 
+const NET_BUF_LEN: usize = 1526;
+const NET_BUF_POOL_SIZE: usize = 128;
+
+static NET_BUF_POOL: LazyInit<NetBufferPool> = LazyInit::new();
+
 static LISTEN_TABLE: LazyInit<ListenTable> = LazyInit::new();
 static SOCKET_SET: LazyInit<SocketSetWrapper> = LazyInit::new();
 static ETH0: LazyInit<InterfaceWrapper<axdriver::VirtIoNetDev>> = LazyInit::new();
 
 struct SocketSetWrapper<'a>(Mutex<SocketSet<'a>>);
 
-struct DeviceWrapper<D: NetDriverOps> {
+struct DeviceWrapper<D: NetDriverOps<'static>> {
     inner: RefCell<D>, // use `RefCell` is enough since it's wrapped in `Mutex` in `InterfaceWrapper`.
-    rx_buf_queue: VecDeque<D::RxBuffer>,
+    rx_buf_queue: VecDeque<NetBufferBox<'static>>,
 }
 
-struct InterfaceWrapper<D: NetDriverOps> {
+struct InterfaceWrapper<D: NetDriverOps<'static>> {
     name: &'static str,
     ether_addr: Option<EthernetAddress>,
     dev: Mutex<DeviceWrapper<D>>,
@@ -117,7 +122,7 @@ impl<'a> SocketSetWrapper<'a> {
     }
 }
 
-impl<D: NetDriverOps> InterfaceWrapper<D> {
+impl<D: NetDriverOps<'static>> InterfaceWrapper<D> {
     fn new(name: &'static str, dev: D, ether_addr: Option<EthernetAddress>) -> Self {
         let mut config = Config::new();
         config.random_seed = RANDOM_SEED;
@@ -169,7 +174,7 @@ impl<D: NetDriverOps> InterfaceWrapper<D> {
     }
 }
 
-impl<D: NetDriverOps> DeviceWrapper<D> {
+impl<D: NetDriverOps<'static>> DeviceWrapper<D> {
     fn new(inner: D) -> Self {
         Self {
             inner: RefCell::new(inner),
@@ -196,21 +201,18 @@ impl<D: NetDriverOps> DeviceWrapper<D> {
         }
     }
 
-    fn receive(&mut self) -> Option<D::RxBuffer> {
+    fn receive(&mut self) -> Option<NetBufferBox<'static>> {
         self.rx_buf_queue.pop_front()
     }
 }
 
-impl<D: NetDriverOps> Device for DeviceWrapper<D> {
+impl<D: NetDriverOps<'static>> Device for DeviceWrapper<D> {
     type RxToken<'a> = AxNetRxToken<'a, D> where Self: 'a;
     type TxToken<'a> = AxNetTxToken<'a, D> where Self: 'a;
 
     fn receive(&mut self, _timestamp: Instant) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
-        if let Some(buf) = self.receive() {
-            Some((AxNetRxToken(&self.inner, buf), AxNetTxToken(&self.inner)))
-        } else {
-            None
-        }
+        let rx_buf = self.receive()?;
+        Some((AxNetRxToken(&self.inner, rx_buf), AxNetTxToken(&self.inner)))
     }
 
     fn transmit(&mut self, _timestamp: Instant) -> Option<Self::TxToken<'_>> {
@@ -226,10 +228,10 @@ impl<D: NetDriverOps> Device for DeviceWrapper<D> {
     }
 }
 
-struct AxNetRxToken<'a, D: NetDriverOps>(&'a RefCell<D>, D::RxBuffer);
-struct AxNetTxToken<'a, D: NetDriverOps>(&'a RefCell<D>);
+struct AxNetRxToken<'a, D: NetDriverOps<'static>>(&'a RefCell<D>, NetBufferBox<'static>);
+struct AxNetTxToken<'a, D: NetDriverOps<'static>>(&'a RefCell<D>);
 
-impl<'a, D: NetDriverOps> RxToken for AxNetRxToken<'a, D> {
+impl<'a, D: NetDriverOps<'static>> RxToken for AxNetRxToken<'a, D> {
     fn consume<R, F>(self, f: F) -> R
     where
         F: FnOnce(&mut [u8]) -> R,
@@ -237,7 +239,7 @@ impl<'a, D: NetDriverOps> RxToken for AxNetRxToken<'a, D> {
         let mut rx_buf = self.1;
         trace!(
             "RECV {} bytes: {:02X?}",
-            rx_buf.packet_len(),
+            rx_buf.packet().len(),
             rx_buf.packet()
         );
         let result = f(rx_buf.packet_mut());
@@ -246,16 +248,17 @@ impl<'a, D: NetDriverOps> RxToken for AxNetRxToken<'a, D> {
     }
 }
 
-impl<'a, D: NetDriverOps> TxToken for AxNetTxToken<'a, D> {
+impl<'a, D: NetDriverOps<'static>> TxToken for AxNetTxToken<'a, D> {
     fn consume<R, F>(self, len: usize, f: F) -> R
     where
         F: FnOnce(&mut [u8]) -> R,
     {
         let mut dev = self.0.borrow_mut();
-        let mut tx_buf = dev.new_tx_buffer(len).unwrap();
+        let mut tx_buf = NET_BUF_POOL.alloc().unwrap();
+        dev.prepare_tx_buffer(&mut tx_buf, len).unwrap();
         let result = f(tx_buf.packet_mut());
         trace!("SEND {} bytes: {:02X?}", len, tx_buf.packet());
-        dev.send(tx_buf).unwrap();
+        dev.transmit(&tx_buf).unwrap();
         result
     }
 }
@@ -281,7 +284,12 @@ fn snoop_tcp_packet(buf: &[u8]) -> Result<(), smoltcp::wire::Error> {
 }
 
 pub(crate) fn init(net_devs: NetDevices) {
-    let dev = net_devs.0;
+    let pool = NetBufferPool::new(NET_BUF_POOL_SIZE, NET_BUF_LEN).unwrap();
+    NET_BUF_POOL.init_by(pool);
+
+    let mut dev = net_devs.0;
+    dev.fill_rx_buffers(&NET_BUF_POOL).unwrap();
+
     let ether_addr = EthernetAddress(dev.mac_address().0);
     let eth0 = InterfaceWrapper::new("eth0", dev, Some(ether_addr));
     eth0.setup_ip_addr(IP, IP_PREFIX);
