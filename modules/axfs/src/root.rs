@@ -165,7 +165,7 @@ impl VfsNodeOps for RootDirectory {
 /// 初始化根文件系统。
 ///
 /// 这个函数会做以下工作:
-/// 1. 根据配置选择主文件系统,如fatfs。
+/// 1. 根据配置选择主文件系统fatfs。
 /// 2. 初始化一个`RootDirectory`作为根目录。
 /// 3. 如果启用了"devfs"特征,则会:
 ///     - 创建一个`DeviceFileSystem`作为device文件系统

@@ -1,6 +1,5 @@
 use axhal::mem::{memory_regions, phys_to_virt};
 use axhal::paging::{PageTable, ENTRY_COUNT};
-use axlog::info;
 use lazy_init::LazyInit;
 use memory_addr::PAGE_SIZE_4K;
 

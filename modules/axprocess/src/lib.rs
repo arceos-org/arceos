@@ -3,7 +3,7 @@
 
 use axhal::arch::TaskContext;
 use axtask::{current, task::CurrentTask};
-use process::current_process;
+// use process::current_process;
 extern crate alloc;
 pub mod flags;
 pub mod process;

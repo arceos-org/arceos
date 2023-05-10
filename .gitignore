@@ -4,3 +4,4 @@
 *.asm
 *.img
 /testcases
+.idea/

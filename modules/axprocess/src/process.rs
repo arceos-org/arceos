@@ -20,7 +20,6 @@ use axtask::{
 use spinlock::SpinNoIrq;
 
 use riscv::asm;
-use axfs_os::file::{CurWorkDirDesc, new_cwd};
 
 pub static PID2PC: SpinNoIrq<BTreeMap<u64, Arc<Process>>> = SpinNoIrq::new(BTreeMap::new());
 pub const KERNEL_PROCESS_ID: u64 = 1;
@@ -51,7 +50,7 @@ pub struct ProcessInner {
     pub exit_code: i32,
     /// 文件描述符表
     pub fd_table: Vec<Option<Arc<dyn FileIO + Send + Sync>>>,
-    /// 当前工作目录
+    /// 进程工作目录
     pub cwd: String,
 }
 
@@ -407,7 +406,7 @@ pub fn init_kernel_process() {
 
 /// 读取初始化应用程序，作为用户态初始进程
 pub fn init_user_process() {
-    let main_task = Process::new("waitpid");
+    let main_task = Process::new("init/user_shell");
     RUN_QUEUE.lock().add_task(main_task);
 }
 
