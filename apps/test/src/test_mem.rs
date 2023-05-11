@@ -1,3 +1,4 @@
+#![allow(unused)]
 extern crate alloc;
 
 use alloc::boxed::Box;

@@ -1,5 +1,6 @@
 pub mod io;
 pub mod task;
+pub mod sync;
 
 pub mod sys_number {
     pub const SYS_WRITE: usize = 1;
@@ -8,6 +9,7 @@ pub mod sys_number {
     pub const SYS_YIELD: usize = 12;
     pub const SYS_SLEEP: usize = 13;
     pub const SYS_SBRK: usize = 20;
+    pub const SYS_FUTEX: usize = 30;
 }
 
 /// Copied from rcore

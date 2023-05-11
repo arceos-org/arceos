@@ -1,3 +1,4 @@
+#![allow(unused)]
 use core::sync::atomic::{AtomicUsize, Ordering};
 use core::time::Duration;
 use libax::task;

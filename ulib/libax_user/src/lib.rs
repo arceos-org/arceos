@@ -11,6 +11,8 @@ pub use logging::{debug, error, info, trace, warn};
 mod allocate;
 mod entry;
 pub mod rand;
+mod sync;
+pub use sync::{Mutex, MutexGuard};
 
 use core::panic::PanicInfo;
 
