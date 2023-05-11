@@ -1,4 +1,4 @@
-use crate::BlockDevice;
+use axdriver::AxBlockDevice;
 use driver_block::{BlockDriverOps, DevResult};
 
 const BLOCK_SIZE: usize = 512;
@@ -7,12 +7,12 @@ const BLOCK_SIZE: usize = 512;
 pub struct Disk {
     block_id: u64,
     offset: usize,
-    dev: BlockDevice,
+    dev: AxBlockDevice,
 }
 
 impl Disk {
     /// Create a new disk.
-    pub fn new(dev: BlockDevice) -> Self {
+    pub fn new(dev: AxBlockDevice) -> Self {
         assert_eq!(BLOCK_SIZE, dev.block_size());
         Self {
             block_id: 0,

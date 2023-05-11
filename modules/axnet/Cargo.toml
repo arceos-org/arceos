@@ -11,7 +11,7 @@ documentation = "https://rcore-os.github.io/arceos/axnet/index.html"
 
 [features]
 smoltcp = []
-default = ["axdriver/virtio-net", "smoltcp"]
+default = ["smoltcp"]
 
 [dependencies]
 log = "0.4"
@@ -22,7 +22,7 @@ axerrno = { path = "../../crates/axerrno" }
 axhal = { path = "../axhal" }
 axsync = { path = "../axsync", default-features = false }
 axtask = { path = "../axtask", default-features = false }
-axdriver = { path = "../axdriver" }
+axdriver = { path = "../axdriver", features = ["net"] }
 
 [dependencies.smoltcp]
 version = "0.9.1"

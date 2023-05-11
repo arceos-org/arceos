@@ -14,9 +14,6 @@
 #![feature(const_trait_impl)]
 #![feature(doc_auto_cfg)]
 
-#[macro_use]
-extern crate log;
-
 #[cfg(feature = "block")]
 mod blk;
 #[cfg(feature = "gpu")]
@@ -41,38 +38,22 @@ pub use transport::mmio::MmioTransport;
 #[cfg(feature = "bus-pci")]
 pub use transport::pci::PciTransport;
 
-/// Try to probe a VirtIO MMIO device from the given base address.
+/// Try to probe a VirtIO MMIO device from the given memory region.
 ///
-/// If the device exists, [`Some(MmioTransport)`][MmioTransport] is returned.
-/// Otherwise, [`None`] is returned.
-///
-/// If `type_match` is [`None`], the device type is not considered. Otherwise,
-/// [`Some`] is returned only if the device type also matches.
+/// If the device is recognized, returns the device type and a transport object
+/// for later operations. Otherwise, returns [`None`].
 #[cfg(feature = "bus-mmio")]
 pub fn probe_mmio_device(
     reg_base: *mut u8,
     _reg_size: usize,
-    type_match: Option<DeviceType>,
-) -> Option<MmioTransport> {
+) -> Option<(DeviceType, MmioTransport)> {
     use core::ptr::NonNull;
     use transport::mmio::VirtIOHeader;
 
     let header = NonNull::new(reg_base as *mut VirtIOHeader).unwrap();
-    if let Ok(transport) = unsafe { MmioTransport::new(header) } {
-        if type_match.is_none() || as_dev_type(transport.device_type()) == type_match {
-            debug!(
-                "Detected virtio MMIO device with vendor id: {:#X}, device type: {:?}, version: {:?}",
-                transport.vendor_id(),
-                transport.device_type(),
-                transport.version(),
-            );
-            Some(transport)
-        } else {
-            None
-        }
-    } else {
-        None
-    }
+    let transport = unsafe { MmioTransport::new(header) }.ok()?;
+    let dev_type = as_dev_type(transport.device_type())?;
+    Some((dev_type, transport))
 }
 
 const fn as_dev_type(t: transport::DeviceType) -> Option<DeviceType> {

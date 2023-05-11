@@ -12,14 +12,19 @@ documentation = "https://rcore-os.github.io/arceos/axdriver/index.html"
 [features]
 bus-mmio = ["driver_virtio?/bus-mmio"]
 bus-pci = ["driver_virtio?/bus-pci"]
+net = ["driver_net"]
+block = ["driver_block"]
+display = ["driver_display"]
+
+# Enabled by features `virtio-*`
 virtio = ["driver_virtio", "dep:axalloc", "dep:axhal", "dep:axconfig"]
 
 # various types of drivers
-virtio-blk = ["virtio", "driver_block", "driver_virtio/block"]
-virtio-net = ["virtio", "dep:driver_net", "driver_virtio/net"]
-virtio-gpu = ["virtio", "dep:driver_display", "driver_virtio/gpu"]
-ramdisk = ["driver_block/ramdisk"]
-# more device example: e1000 = ["driver_net/e1000"]
+virtio-blk = ["block", "virtio", "driver_virtio/block"]
+virtio-net = ["net", "virtio", "driver_virtio/net"]
+virtio-gpu = ["display", "virtio", "driver_virtio/gpu"]
+ramdisk = ["block", "driver_block/ramdisk"]
+# more devices example: e1000 = ["net", "driver_net/e1000"]
 
 default = ["bus-mmio"]
 

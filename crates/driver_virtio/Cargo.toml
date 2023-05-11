@@ -18,7 +18,6 @@ gpu = ["driver_display"]
 default = ["bus-mmio"]
 
 [dependencies]
-log = "0.4"
 driver_common = { path = "../driver_common" }
 driver_block = { path = "../driver_block", optional = true }
 driver_net = { path = "../driver_net", optional = true }

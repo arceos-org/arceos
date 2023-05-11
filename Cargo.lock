@@ -651,7 +651,6 @@ dependencies = [
  "driver_common",
  "driver_display",
  "driver_net",
- "log",
  "virtio-drivers",
 ]
 
