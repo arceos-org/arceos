@@ -58,5 +58,4 @@ members = [
     "modules/axtask",
 
     "ulib/libax",
-    "tools/deptool"
 ]
