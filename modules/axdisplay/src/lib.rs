@@ -10,9 +10,8 @@ extern crate log;
 #[doc(no_inline)]
 pub use driver_display::DisplayInfo;
 
-use axdriver::{AxDeviceContainer, AxDisplayDevice};
+use axdriver::{prelude::*, AxDeviceContainer};
 use axsync::Mutex;
-use driver_display::{BaseDriverOps, DisplayDriverOps};
 use lazy_init::LazyInit;
 
 static MAIN_DISPLAY: LazyInit<Mutex<AxDisplayDevice>> = LazyInit::new();

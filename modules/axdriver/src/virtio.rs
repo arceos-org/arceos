@@ -36,7 +36,7 @@ cfg_if! {
             type Device = driver_virtio::VirtIoNetDev<'static, VirtIoHalImpl, VirtIoTransport, 64>;
 
             fn try_new(transport: VirtIoTransport) -> DevResult<AxDeviceEnum> {
-                Ok(AxDeviceEnum::Net(Self::Device::try_new(transport)?))
+                Ok(AxDeviceEnum::from_net(Self::Device::try_new(transport)?))
             }
         }
     }
@@ -51,7 +51,7 @@ cfg_if! {
             type Device = driver_virtio::VirtIoBlkDev<VirtIoHalImpl, VirtIoTransport>;
 
             fn try_new(transport: VirtIoTransport) -> DevResult<AxDeviceEnum> {
-                Ok(AxDeviceEnum::Block(Self::Device::try_new(transport)?))
+                Ok(AxDeviceEnum::from_block(Self::Device::try_new(transport)?))
             }
         }
     }
@@ -66,7 +66,7 @@ cfg_if! {
             type Device = driver_virtio::VirtIoGpuDev<VirtIoHalImpl, VirtIoTransport>;
 
             fn try_new(transport: VirtIoTransport) -> DevResult<AxDeviceEnum> {
-                Ok(AxDeviceEnum::Display(Self::Device::try_new(transport)?))
+                Ok(AxDeviceEnum::from_display(Self::Device::try_new(transport)?))
             }
         }
     }

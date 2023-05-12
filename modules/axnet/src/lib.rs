@@ -38,8 +38,7 @@ pub use self::net_impl::TcpSocket;
 pub use self::net_impl::UdpSocket;
 pub use smoltcp::wire::{IpAddress as IpAddr, IpEndpoint as SocketAddr, Ipv4Address as Ipv4Addr};
 
-use axdriver::{AxDeviceContainer, AxNetDevice};
-use driver_net::BaseDriverOps;
+use axdriver::{prelude::*, AxDeviceContainer};
 
 /// Initializes the network subsystem by NIC devices.
 pub fn init_network(mut net_devs: AxDeviceContainer<AxNetDevice>) {

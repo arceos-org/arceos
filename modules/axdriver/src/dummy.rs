@@ -3,8 +3,8 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
+use super::prelude::*;
 use cfg_if::cfg_if;
-use driver_common::{BaseDriverOps, DevError, DevResult, DeviceType};
 
 cfg_if! {
     if #[cfg(net_dev = "dummy")] {
@@ -19,7 +19,7 @@ cfg_if! {
             fn device_name(&self) -> &str { "dummy-net" }
         }
 
-        impl<'a> driver_net::NetDriverOps<'a> for DummyNetDev {
+        impl<'a> NetDriverOps<'a> for DummyNetDev {
             fn mac_address(&self) -> EthernetAddress { unreachable!() }
             fn can_transmit(&self) -> bool { false }
             fn can_receive(&self) -> bool { false }
@@ -49,7 +49,7 @@ cfg_if! {
             }
         }
 
-        impl driver_block::BlockDriverOps for DummyBlockDev {
+        impl BlockDriverOps for DummyBlockDev {
             fn num_blocks(&self) -> u64 {
                 0
             }
@@ -84,7 +84,7 @@ cfg_if! {
             }
         }
 
-        impl driver_display::DisplayDriverOps for DummyDisplayDev {
+        impl DisplayDriverOps for DummyDisplayDev {
             fn info(&self) -> driver_display::DisplayInfo {
                 unreachable!()
             }

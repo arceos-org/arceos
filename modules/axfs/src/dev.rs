@@ -1,5 +1,4 @@
-use axdriver::AxBlockDevice;
-use driver_block::{BlockDriverOps, DevResult};
+use axdriver::prelude::*;
 
 const BLOCK_SIZE: usize = 512;
 

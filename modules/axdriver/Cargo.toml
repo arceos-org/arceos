@@ -10,6 +10,7 @@ repository = "https://github.com/rcore-os/arceos/tree/main/modules/axdriver"
 documentation = "https://rcore-os.github.io/arceos/axdriver/index.html"
 
 [features]
+dyn = []
 bus-mmio = ["driver_virtio?/bus-mmio"]
 bus-pci = ["driver_virtio?/bus-pci"]
 net = ["driver_net"]

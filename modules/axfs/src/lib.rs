@@ -33,8 +33,7 @@ mod root;
 pub mod api;
 pub mod fops;
 
-use axdriver::{AxBlockDevice, AxDeviceContainer};
-use driver_block::BaseDriverOps;
+use axdriver::{prelude::*, AxDeviceContainer};
 
 /// Initializes filesystems by block devices.
 pub fn init_filesystems(mut blk_devs: AxDeviceContainer<AxBlockDevice>) {

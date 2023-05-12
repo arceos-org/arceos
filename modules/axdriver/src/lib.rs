@@ -1,18 +1,27 @@
 //! [ArceOS](https://github.com/rcore-os/arceos) device drivers.
 //!
-//! Currently, all device drivers used are selected by cargo features at compile
-//! time, and only one instance of each category of device is supported. For one
-//! category of device, the type of its unique instance is **static** to avoid
-//! performance overheads (rather than using `dyn Trait`). For example,
-//! [`AxNetDevice`] will be an alias of [`VirtioNetDev`] if the specified
-//! feature is enabled.
-//!
 //! # Usage
 //!
 //! All detected devices are composed into a large struct [`AllDevices`]
 //! and returned by the [`init_drivers`] function. The upperlayer subsystems
 //! (e.g., the network stack) may unpack the struct to get the specified device
 //! driver they want.
+//!
+//! # Concepts
+//!
+//! This crate supports two device model depending on the `dyn` feature:
+//!
+//! - **Static**: The type of all devices is static, it is determined at compile
+//!  time by corresponding cargo features. For example, [`AxNetDevice`] will be
+//! an alias of [`VirtioNetDev`] if the `virtio-net` feature is enabled. This
+//! model provides the best performance as it avoids dynamic dispatch. But on
+//! limitation, for each device category (i.e., net, block, display, etc.),
+//! only one instance of device is supported.
+//! - **Dynamic**: All device instance is using [trait objects] and wrapped in
+//! `Box<dyn Trait>`. For example, [`AxNetDevice`] will be [`Box<dyn NetDriverOps>`].
+//! When call a method in the device, it uses [dynamic dispatch][dyn] that
+//! introduces a little overhead. But on the other hand, it is more flexible,
+//! multiple instances of each device category are supported.
 //!
 //! # Supported Devices
 //!
@@ -25,6 +34,7 @@
 //!
 //! # Other Cargo Features
 //!
+//! - `dyn`: use dynamic device model (see above).
 //! - `bus-mmio`: use device tree to probe all MMIO devices. This feature is
 //!    enabeld by default.
 //! - `bus-pci`: use PCI bus to probe all PCI devices.
@@ -37,6 +47,9 @@
 //! - `display`: use graphics display devices. Similar to the `net` feature.
 //!
 //! [`VirtioNetDev`]: driver_virtio::VirtIoNetDev
+//! [`Box<dyn NetDriverOps>`]: driver_net::NetDriverOps
+//! [trait objects]: https://doc.rust-lang.org/book/ch17-02-trait-objects.html
+//! [dyn]: https://doc.rust-lang.org/std/keyword.dyn.html
 
 #![no_std]
 #![feature(doc_auto_cfg)]
@@ -45,113 +58,31 @@
 #[macro_use]
 extern crate log;
 
+#[cfg(feature = "dyn")]
+extern crate alloc;
+
 #[macro_use]
 mod macros;
 
 mod drivers;
 mod dummy;
+mod structs;
 
 #[cfg(feature = "virtio")]
 mod virtio;
 
+pub mod prelude;
+
 #[allow(unused_imports)]
-use driver_common::{BaseDriverOps, DeviceType};
+use self::prelude::*;
+pub use self::structs::{AxDeviceContainer, AxDeviceEnum};
 
 #[cfg(feature = "block")]
-pub use self::drivers::AxBlockDevice;
+pub use self::structs::AxBlockDevice;
 #[cfg(feature = "display")]
-pub use self::drivers::AxDisplayDevice;
+pub use self::structs::AxDisplayDevice;
 #[cfg(feature = "net")]
-pub use self::drivers::AxNetDevice;
-
-/// A unified enum that represents different categories of devices.
-#[allow(clippy::large_enum_variant)]
-pub enum AxDeviceEnum {
-    #[cfg(feature = "net")]
-    Net(AxNetDevice),
-    #[cfg(feature = "block")]
-    Block(AxBlockDevice),
-    #[cfg(feature = "display")]
-    Display(AxDisplayDevice),
-}
-
-impl BaseDriverOps for AxDeviceEnum {
-    #[inline]
-    fn device_type(&self) -> DeviceType {
-        match self {
-            #[cfg(feature = "net")]
-            Self::Net(_) => DeviceType::Net,
-            #[cfg(feature = "block")]
-            Self::Block(_) => DeviceType::Block,
-            #[cfg(feature = "display")]
-            Self::Display(_) => DeviceType::Display,
-        }
-    }
-
-    #[inline]
-    fn device_name(&self) -> &str {
-        match self {
-            #[cfg(feature = "net")]
-            Self::Net(dev) => dev.device_name(),
-            #[cfg(feature = "block")]
-            Self::Block(dev) => dev.device_name(),
-            #[cfg(feature = "display")]
-            Self::Display(dev) => dev.device_name(),
-        }
-    }
-}
-
-/// A structure that contains all device drivers of a certain category.
-///
-/// Currently, the inner type is [`Option<D>`] and at most one device can be contained.
-pub struct AxDeviceContainer<D: BaseDriverOps>(Option<D>);
-
-impl<D: BaseDriverOps> AxDeviceContainer<D> {
-    /// Returns number of devices in this container.
-    pub const fn len(&self) -> usize {
-        if self.0.is_some() {
-            1
-        } else {
-            0
-        }
-    }
-
-    /// Returns whether the container is empty.
-    pub const fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
-    /// Takes one device out of the container (will remove it from the container).
-    pub fn take_one(&mut self) -> Option<D> {
-        self.0.take()
-    }
-
-    /// Constructs the container from one device.
-    pub const fn from_one(dev: D) -> Self {
-        Self(Some(dev))
-    }
-
-    /// Adds one device into the container.
-    #[allow(dead_code)]
-    pub(crate) fn push(&mut self, dev: D) {
-        if self.0.is_none() {
-            self.0 = Some(dev);
-        }
-    }
-}
-
-impl<D: BaseDriverOps> core::ops::Deref for AxDeviceContainer<D> {
-    type Target = Option<D>;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<D: BaseDriverOps> Default for AxDeviceContainer<D> {
-    fn default() -> Self {
-        Self(Default::default())
-    }
-}
+pub use self::structs::AxNetDevice;
 
 /// A structure that contains all device drivers, organized by their category.
 #[derive(Default)]
@@ -168,6 +99,17 @@ pub struct AllDevices {
 }
 
 impl AllDevices {
+    /// Returns the device model used, either `dyn` or `static`.
+    ///
+    /// See the [crate-level documentation](crate) for more details.
+    pub const fn device_model() -> &'static str {
+        if cfg!(feature = "dyn") {
+            "dyn"
+        } else {
+            "static"
+        }
+    }
+
     /// Probes all supported devices.
     fn probe(&mut self) {
         for_each_drivers!(type Driver, {
@@ -202,6 +144,7 @@ impl AllDevices {
 /// Probes and initializes all device drivers, returns the [`AllDevices`] struct.
 pub fn init_drivers() -> AllDevices {
     info!("Initialize device drivers...");
+    info!("  device model: {}", AllDevices::device_model());
 
     let mut all_devs = AllDevices::default();
     all_devs.probe();
