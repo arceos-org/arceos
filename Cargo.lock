@@ -244,6 +244,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "axfs_os"
+version = "0.1.0"
+dependencies = [
+ "axerrno",
+ "axfs",
+ "axhal",
+ "axio",
+ "axsync",
+ "axtask",
+ "bitflags 2.1.0",
+]
+
+[[package]]
 name = "axfs_ramfs"
 version = "0.1.0"
 dependencies = [
@@ -669,10 +682,6 @@ checksum = "e15e994575e38332cf4a2dc9dc745ff6a65695d37a41e00efadd57fcd42c1ba4"
 dependencies = [
  "thiserror",
 ]
-
-[[package]]
-name = "deptool"
-version = "0.1.0"
 
 [[package]]
 name = "driver_block"
