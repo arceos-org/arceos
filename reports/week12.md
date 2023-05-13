@@ -111,16 +111,57 @@
 
 #### ab 测试卡住问题
 
+##### smoltcp 的复现
+
+smoltcp 可以较容易复现
+
 复现参数：
 
 - `make A=apps/net/httpserver/ ARCH=riscv64 LOG=warn NET=y MODE=release NETDEV=tap run`
 - `ab -n 1000 -c 2 http://10.0.2.15:5555/`
 
-使用 `smoltcp` 可以在 `release` 编译下可以稳定复现。
+使用 `smoltcp` 可以在 `release` 编译下可以大概率复现。换用 `lwip` / 换用 `debug` 编译均不复现。并发 `-c` 越低，卡住概率越大。
 
-换用 `lwip` / 换用 `debug` 编译均不复现。
+以下以 ab 结果 999 完成 1 超时进行分析，使用 tap 网卡上的抓包结果。
 
-并发 `-c` 越低，卡住概率越大。
+抓包发现，在 qemu 内部或外部抓包结果相同，可能之前 `-netdev user` 时的问题已通过更换成 `-netdev tap` 解决，但仍有其他问题。
+
+抓包结果显示，1000 个 HTTP 请求均已被响应，1000条 TCP 流均（基本）完整。
+
+怀疑 ab 有一部分问题，即 TCP 流已结束，但 ab 却仍在等待。
+
+查看 lwip 的 TCP 流，1000 条流模式相同，标准的三个包四次挥手断开连接：
+
+![debug1](pic/week12_debug1.png)
+
+查看 smoltcp 的 TCP 流，分以下三类：
+
+1. 数量：989
+   ![debug2](pic/week12_debug2.png)
+2. 数量：8
+   ![debug3](pic/week12_debug3.png)
+3. 数量：3
+   ![debug4](pic/week12_debug4.png)
+
+smoltcp 均以 RST 来结束连接。
+
+或许是 ab 有一些 bug （？）
+
+##### lwip 的复现
+
+恰巧复现了一次：
+
+`make A=apps/net/httpserver/ ARCH=riscv64 LOG=warn NET=y MODE=release NETDEV=tap run`
+
+若干次 `ab -n 10000 -c 10 http://10.0.2.15:5555/`
+
+![debug5](pic/week12_debug5.png)
+
+似乎 lwip 这边连接未完全关闭，导致 Port Reuse 时使用了之前一个流的 ack 记录。
+
+Port Reuse 发生次数很多，但极低概率发生这种情况。
+
+debug 难度较高，以后有空再尝试。
 
 ## 下周计划
 
