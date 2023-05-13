@@ -65,4 +65,7 @@ pub trait BaseScheduler {
 
     /// set priority for a task
     fn set_priority(&mut self, task: &Self::SchedItem, prio: isize) -> bool;
+
+    /// check if the scheduler is empty
+    fn is_empty(&mut self) -> bool;
 }

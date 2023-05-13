@@ -4,6 +4,8 @@ use spinlock::SpinRaw;
 
 use crate::{AxRunQueue, AxTaskRef, CurrentTask, RUN_QUEUE};
 
+use crate::get_current_cpu_id;
+
 /// A queue to store sleeping tasks.
 ///
 /// # Examples
@@ -65,7 +67,7 @@ impl WaitQueue {
     /// Blocks the current task and put it into the wait queue, until other task
     /// notifies it.
     pub fn wait(&self) {
-        RUN_QUEUE.lock().block_current(|task| {
+        RUN_QUEUE[get_current_cpu_id()].lock().block_current(|task| {
             task.set_in_wait_queue(true);
             self.queue.lock().push_back(task)
         });
@@ -82,7 +84,7 @@ impl WaitQueue {
         F: Fn() -> bool,
     {
         loop {
-            let mut rq = RUN_QUEUE.lock();
+            let mut rq = RUN_QUEUE[get_current_cpu_id()].lock();
             if condition() {
                 break;
             }
@@ -137,7 +139,7 @@ impl WaitQueue {
 
         let mut timeout = true;
         while axhal::time::current_time() < deadline {
-            let mut rq = RUN_QUEUE.lock();
+            let mut rq = RUN_QUEUE[get_current_cpu_id()].lock();
             if condition() {
                 timeout = false;
                 break;
@@ -156,7 +158,7 @@ impl WaitQueue {
     /// If `resched` is true, the current task will be preempted when the
     /// preemption is enabled.
     pub fn notify_one(&self, resched: bool) -> bool {
-        let mut rq = RUN_QUEUE.lock();
+        let mut rq = RUN_QUEUE[get_current_cpu_id()].lock();
         if !self.queue.lock().is_empty() {
             self.notify_one_locked(resched, &mut rq)
         } else {
@@ -170,7 +172,7 @@ impl WaitQueue {
     /// preemption is enabled.
     pub fn notify_all(&self, resched: bool) {
         loop {
-            let mut rq = RUN_QUEUE.lock();
+            let mut rq = RUN_QUEUE[get_current_cpu_id()].lock();
             if let Some(task) = self.queue.lock().pop_front() {
                 task.set_in_wait_queue(false);
                 rq.unblock_task(task, resched);
@@ -186,7 +188,7 @@ impl WaitQueue {
     /// If `resched` is true, the current task will be preempted when the
     /// preemption is enabled.
     pub fn notify_task(&mut self, resched: bool, task: &AxTaskRef) -> bool {
-        let mut rq = RUN_QUEUE.lock();
+        let mut rq = RUN_QUEUE[get_current_cpu_id()].lock();
         let mut wq = self.queue.lock();
         if let Some(index) = wq.iter().position(|t| Arc::ptr_eq(t, task)) {
             task.set_in_wait_queue(false);

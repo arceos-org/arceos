@@ -185,4 +185,8 @@ impl<T> BaseScheduler for CFScheduler<T> {
             false
         }
     }
+    
+    fn is_empty(&mut self) -> bool {
+        self.ready_queue.is_empty()
+    }
 }

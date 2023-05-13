@@ -133,6 +133,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "array-init"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f30bbe2f5e3d117f55bd8c7a1f9191e4a5deba9f15f595bbea4f670c59c765db"
+
+[[package]]
 name = "atomic-polyfill"
 version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -240,7 +246,7 @@ version = "0.1.0"
 dependencies = [
  "axfs_vfs",
  "log",
- "spin",
+ "spin 0.9.8",
 ]
 
 [[package]]
@@ -249,7 +255,7 @@ version = "0.1.0"
 dependencies = [
  "axfs_vfs",
  "log",
- "spin",
+ "spin 0.9.8",
 ]
 
 [[package]]
@@ -360,6 +366,7 @@ dependencies = [
 name = "axtask"
 version = "0.1.0"
 dependencies = [
+ "array-init",
  "axconfig",
  "axhal",
  "axtask",
@@ -367,6 +374,8 @@ dependencies = [
  "crate_interface 0.1.1",
  "kernel_guard",
  "lazy_init",
+ "lazy_static",
+ "load_balance",
  "log",
  "memory_addr",
  "percpu",
@@ -671,10 +680,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "deptool"
-version = "0.1.0"
-
-[[package]]
 name = "driver_block"
 version = "0.1.0"
 dependencies = [
@@ -843,7 +848,7 @@ dependencies = [
  "atomic-polyfill",
  "hash32",
  "rustc_version",
- "spin",
+ "spin 0.9.8",
  "stable_deref_trait",
 ]
 
@@ -954,6 +959,9 @@ name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
+dependencies = [
+ "spin 0.5.2",
+]
 
 [[package]]
 name = "lazycell"
@@ -1016,6 +1024,14 @@ name = "linux-raw-sys"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d59d8c75012853d2e872fb56bc8a2e53718e2cafe1a4c823143141c6d90c322f"
+
+[[package]]
+name = "load_balance"
+version = "0.1.0"
+dependencies = [
+ "linked_list",
+ "spinlock",
+]
 
 [[package]]
 name = "lock_api"
@@ -1157,7 +1173,7 @@ dependencies = [
  "cfg-if",
  "kernel_guard",
  "percpu_macros",
- "spin",
+ "spin 0.9.8",
  "x86",
 ]
 
@@ -1438,6 +1454,12 @@ dependencies = [
  "log",
  "managed",
 ]
+
+[[package]]
+name = "spin"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 
 [[package]]
 name = "spin"

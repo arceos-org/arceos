@@ -2,13 +2,23 @@ use alloc::collections::VecDeque;
 use alloc::sync::Arc;
 use lazy_init::LazyInit;
 use scheduler::BaseScheduler;
+use load_balance::BaseLoadBalance;
 use spinlock::SpinNoIrq;
 
 use crate::task::{CurrentTask, TaskState};
-use crate::{AxTaskRef, Scheduler, TaskInner, WaitQueue};
+use crate::{AxTaskRef, LoadBalance, Scheduler, TaskInner, WaitQueue, get_current_cpu_id};
 
-// TODO: per-CPU
-pub(crate) static RUN_QUEUE: LazyInit<SpinNoIrq<AxRunQueue>> = LazyInit::new();
+use core::sync::atomic::{AtomicIsize, Ordering};
+
+use array_init::array_init;
+use alloc::vec::Vec;
+
+lazy_static::lazy_static! {
+    pub(crate) static ref RUN_QUEUE: [LazyInit<Arc<SpinNoIrq<AxRunQueue>>>; axconfig::SMP] =
+        array_init(|_| LazyInit::new());
+    pub(crate) static ref LOAD_BALANCE_ARR: [LazyInit<Arc<LoadBalance>>; axconfig::SMP] =
+        array_init(|_| LazyInit::new());
+}
 
 // TODO: per-CPU
 static EXITED_TASKS: SpinNoIrq<VecDeque<AxTaskRef>> = SpinNoIrq::new(VecDeque::new());
@@ -26,6 +36,7 @@ impl AxRunQueue {
     pub fn new() -> SpinNoIrq<Self> {
         let gc_task = TaskInner::new(gc_entry, "gc", axconfig::TASK_STACK_SIZE);
         let mut scheduler = Scheduler::new();
+
         scheduler.add_task(gc_task);
         SpinNoIrq::new(Self { scheduler })
     }
@@ -147,6 +158,18 @@ impl AxRunQueue {
 impl AxRunQueue {
     /// Common reschedule subroutine. If `preempt`, keep current task's time
     /// slice, otherwise reset it.
+    fn if_empty_steal(&mut self) {
+        if self.scheduler.is_empty() {
+            let id = get_current_cpu_id();
+            let next = LOAD_BALANCE_ARR[id].find_stolen_cpu_id();
+            if next != -1 {
+                let task = RUN_QUEUE[next as usize].lock().scheduler.pick_next_task();
+                RUN_QUEUE[id].lock().scheduler.add_task(task.unwrap());
+                LOAD_BALANCE_ARR[next as usize].add_weight(-1);
+                LOAD_BALANCE_ARR[id].add_weight(1);
+            }
+        }
+    }
     fn resched_inner(&mut self, preempt: bool) {
         let prev = crate::current();
         if prev.is_running() {
@@ -159,6 +182,8 @@ impl AxRunQueue {
             // Safety: IRQs must be disabled at this time.
             IDLE_TASK.current_ref_raw().get_unchecked().clone()
         });
+        // TODO: 注意需要对所有 pick_next_task 后面都要判断是否队列空，如果是则需要执行线程窃取
+        self.if_empty_steal();
         self.switch_to(prev, next);
     }
 
@@ -216,7 +241,17 @@ pub(crate) fn init() {
     let main_task = TaskInner::new_init("main");
     main_task.set_state(TaskState::Running);
 
-    RUN_QUEUE.init_by(AxRunQueue::new());
+    for i in 0..axconfig::SMP {
+        RUN_QUEUE[i].init_by(Arc::new(AxRunQueue::new()));
+        LOAD_BALANCE_ARR[i].init_by(Arc::new(LoadBalance::new(i)));
+    }
+    let mut arr = Vec::new();
+    for i in 0..axconfig::SMP {
+        arr.push((*LOAD_BALANCE_ARR[i]).clone());
+    }
+    for i in 0..axconfig::SMP {
+        LOAD_BALANCE_ARR[i].init(axconfig::SMP, arr.clone());
+    }
     unsafe { CurrentTask::init_current(main_task) }
 }
 

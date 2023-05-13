@@ -7,6 +7,9 @@ pub use crate::task::{CurrentTask, TaskId, TaskInner};
 #[doc(cfg(feature = "multitask"))]
 pub use crate::wait_queue::WaitQueue;
 
+use crate::run_queue::LOAD_BALANCE_ARR;
+use load_balance::BaseLoadBalance;
+
 /// The reference type of a task.
 pub type AxTaskRef = alloc::sync::Arc<AxTask>;
 
@@ -23,6 +26,8 @@ cfg_if::cfg_if! {
         pub(crate) type Scheduler = scheduler::CFScheduler<TaskInner>;
     }
 }
+
+pub(crate) type LoadBalance = load_balance::LoadBalanceZirconStyle;
 
 #[cfg(feature = "preempt")]
 struct KernelGuardIfImpl;
@@ -41,6 +46,45 @@ impl kernel_guard::KernelGuardIf for KernelGuardIfImpl {
             curr.enable_preempt(true);
         }
     }
+}
+
+struct LogTaskImpl;
+
+
+
+#[cfg(not(feature = "std"))]
+#[def_interface]
+pub trait LogMyTime {
+    /// get current time
+    fn current_cpu_id() -> Option<usize>;
+}
+
+use core::sync::atomic::{AtomicUsize, Ordering};
+pub static INITED_CPUS: AtomicUsize = AtomicUsize::new(0);
+
+pub fn is_init_ok() -> bool {
+    INITED_CPUS.load(Ordering::Acquire) == axconfig::SMP
+}
+
+#[crate_interface::impl_interface]
+impl LogMyTime for LogTaskImpl {
+    fn current_cpu_id() -> Option<usize> {
+        #[cfg(feature = "smp")] {
+            // TODO: 这逻辑啥玩意啊
+            Some(axhal::cpu::this_cpu_id())
+        }
+        //if is_init_ok() {
+        //} else {
+        //    None
+        //}
+        #[cfg(not(feature = "smp"))]
+        Some(0)
+    }
+}
+
+use crate_interface::{call_interface, def_interface};
+pub fn get_current_cpu_id() -> usize {
+    call_interface!(LogMyTime::current_cpu_id).unwrap()
 }
 
 /// Gets the current task, or returns [`None`] if the current task is not
@@ -67,6 +111,7 @@ pub fn init_scheduler() {
     crate::timers::init();
 
     info!("  use {} scheduler.", Scheduler::scheduler_name());
+    info!("  use {} load balance manager.", LoadBalance::load_balance_name());
 }
 
 /// Initializes the task scheduler for secondary CPUs.
@@ -81,7 +126,7 @@ pub fn init_scheduler_secondary() {
 #[doc(cfg(feature = "irq"))]
 pub fn on_timer_tick() {
     crate::timers::check_events();
-    RUN_QUEUE.lock().scheduler_timer_tick();
+    RUN_QUEUE[get_current_cpu_id()].lock().scheduler_timer_tick();
 }
 
 /// Spawns a new task.
@@ -93,19 +138,22 @@ where
     F: FnOnce() + Send + 'static,
 {
     let task = TaskInner::new(f, "", axconfig::TASK_STACK_SIZE);
-    RUN_QUEUE.lock().add_task(task);
+    let target_cpu = LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu();
+    LOAD_BALANCE_ARR[target_cpu].add_weight(1);
+    RUN_QUEUE[target_cpu].lock().add_task(task);
 }
 
 /// set priority for current task.
 /// In CFS, priority is the nice value, ranging from -20 to 19.
 pub fn set_priority(prio: isize) -> bool {
-    RUN_QUEUE.lock().set_priority(prio)
+    RUN_QUEUE[get_current_cpu_id()].lock().set_priority(prio)
 }
 
 /// Current task gives up the CPU time voluntarily, and switches to another
 /// ready task.
 pub fn yield_now() {
-    RUN_QUEUE.lock().yield_current();
+    RUN_QUEUE[get_current_cpu_id()].lock().yield_current();
+    // TODO: 还没有把功能取出来的功能
 }
 
 /// Current task is going to sleep for the given duration.
@@ -120,14 +168,14 @@ pub fn sleep(dur: core::time::Duration) {
 /// If the feature `irq` is not enabled, it uses busy-wait instead.
 pub fn sleep_until(deadline: axhal::time::TimeValue) {
     #[cfg(feature = "irq")]
-    RUN_QUEUE.lock().sleep_until(deadline);
+    RUN_QUEUE[get_current_cpu_id()].lock().sleep_until(deadline);
     #[cfg(not(feature = "irq"))]
     axhal::time::busy_wait_until(deadline);
 }
 
 /// Exits the current task.
 pub fn exit(exit_code: i32) -> ! {
-    RUN_QUEUE.lock().exit_current(exit_code)
+    RUN_QUEUE[get_current_cpu_id()].lock().exit_current(exit_code)
 }
 
 /// The idle task routine.

@@ -8,6 +8,7 @@ use core::sync::atomic::AtomicUsize;
 
 use axhal::arch::TaskContext;
 use memory_addr::{align_up_4k, VirtAddr};
+use crate::get_current_cpu_id;
 
 use crate::{AxTask, AxTaskRef};
 
@@ -336,7 +337,7 @@ impl Deref for CurrentTask {
 
 extern "C" fn task_entry() -> ! {
     // release the lock that was implicitly held across the reschedule
-    unsafe { crate::RUN_QUEUE.force_unlock() };
+    unsafe { crate::RUN_QUEUE[get_current_cpu_id()].force_unlock() };
     #[cfg(feature = "irq")]
     axhal::arch::enable_irqs();
     let task = crate::current();
