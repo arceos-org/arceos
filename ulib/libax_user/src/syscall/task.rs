@@ -1,7 +1,7 @@
 extern crate alloc;
 use alloc::boxed::Box;
 
-use crate::sys_number::{SYS_SBRK, SYS_SLEEP, SYS_SPAWN, SYS_YIELD};
+use super::sys_number::{SYS_SBRK, SYS_SLEEP, SYS_SPAWN, SYS_YIELD};
 
 use super::sys_number::SYS_EXIT;
 

@@ -52,8 +52,8 @@ impl FutexPool {
 }
 
 static FUTEX_GLOBAL_POOL: LazyInit<FutexPool> = LazyInit::new();
-const FUTEX_WAIT: usize = 0;
-const FUTEX_WAKE: usize = 1;
+pub const FUTEX_WAIT: usize = 0;
+pub const FUTEX_WAKE: usize = 1;
 pub fn init() {
     FUTEX_GLOBAL_POOL.init_by(FutexPool(SpinNoIrq::new(BTreeMap::new())));
 }

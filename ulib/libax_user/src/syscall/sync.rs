@@ -1,4 +1,4 @@
-use crate::{syscall, sys_number::SYS_FUTEX};
+use crate::{syscall, syscall::sys_number::SYS_FUTEX};
 
 pub const FUTEX_WAIT: i32 = 0;
 pub const FUTEX_WAKE: i32 = 1;

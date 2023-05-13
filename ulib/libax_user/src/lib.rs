@@ -10,6 +10,7 @@ pub use logging::{debug, error, info, trace, warn};
 
 mod allocate;
 mod entry;
+#[path ="../../libax/src/rand.rs"]
 pub mod rand;
 mod sync;
 pub use sync::{Mutex, MutexGuard};

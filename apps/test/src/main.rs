@@ -16,7 +16,7 @@ mod test_sleep;
 fn main() {
     libax::println!("Hello, testcases!");
     //test_sleep::main();
-    //test_mem::main();
+    test_mem::main();
     sync_test();
 }
 

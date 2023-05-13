@@ -8,7 +8,6 @@ use core::sync::atomic::AtomicUsize;
 
 use axhal::arch::TaskContext;
 use memory_addr::{align_up_4k, VirtAddr};
-extern crate axalloc;
 
 use crate::{AxTask, AxTaskRef};
 

@@ -32,7 +32,7 @@ mod mp;
 #[cfg(feature = "user")]
 mod syscall;
 #[cfg(feature = "user")]
-pub use syscall::sys_number;
+mod sys_number;
 
 #[cfg(feature = "user")]
 use axmem::{USER_START, USTACK_SIZE, USTACK_START};
