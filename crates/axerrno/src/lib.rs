@@ -120,6 +120,30 @@ macro_rules! ax_err_type {
     }};
 }
 
+/// Ensure a condition is true. If it is not, return from the function
+/// with an error.
+///
+/// ## Examples
+///
+/// ```rust
+/// # use axerrno::{ensure, ax_err, AxError, AxResult};
+///
+/// fn example(user_id: i32) -> AxResult {
+///     ensure!(user_id > 0, ax_err!(InvalidInput));
+///     // After this point, we know that `user_id` is positive.
+///     let user_id = user_id as u32;
+///     Ok(())
+/// }
+/// ```
+#[macro_export]
+macro_rules! ensure {
+    ($predicate:expr, $context_selector:expr $(,)?) => {
+        if !$predicate {
+            return $context_selector;
+        }
+    };
+}
+
 /// Convenience method to construct an [`Err(AxError)`] type while printing a
 /// warning message.
 ///
