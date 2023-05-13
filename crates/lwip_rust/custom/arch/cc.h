@@ -20,7 +20,8 @@
 #define LWIP_NO_UNISTD_H 1
 
 extern int lwip_print(const char *fmt, ...);
-extern void lwip_abort();
+extern void lwip_abort(void);
+extern unsigned int lwip_rand_u32(void);
 
 #define LWIP_PLATFORM_DIAG(x) \
     do {                      \
@@ -32,5 +33,7 @@ extern void lwip_abort();
         lwip_print("Assert \"%s\" failed at line %d in %s\n", x, __LINE__, __FILE__); \
         lwip_abort();                                                                 \
     } while (0)
+
+#define LWIP_RAND() (lwip_rand_u32())
 
 #endif /* __ARCH_CC_H__ */

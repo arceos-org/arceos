@@ -1,4 +1,5 @@
 #include "depend/lwip/src/include/lwip/def.h"
+#include "depend/lwip/src/include/lwip/dns.h"
 #include "depend/lwip/src/include/lwip/etharp.h"
 #include "depend/lwip/src/include/lwip/ethip6.h"
 #include "depend/lwip/src/include/lwip/init.h"
