@@ -7,7 +7,7 @@ LOG ?= warn
 A ?= apps/helloworld
 APP ?= $(A)
 APP_FEATURES ?=
-DISK_IMG ?= disk.img
+DISK_IMG ?= target/fs.img
 
 FS ?= n
 NET ?= n

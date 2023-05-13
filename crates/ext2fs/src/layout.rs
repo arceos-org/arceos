@@ -11,7 +11,7 @@ use log::*;
 const VOLUMN_NAME_SIZE: usize = 16;
 const MOUNT_SIZE: usize = 64;
 const HASH_SEED_SIZE: usize = 4;
-const SB_RESERVED_SIZE: usize = 760;
+const SB_RESERVED_SIZE: usize = 760 - 16;
 
 pub const DIRECT_BLOCK_NUM: usize = 13;
 pub const DOUBLE_BLOCK_NUM: usize = BLOCK_SIZE/4;
@@ -219,13 +219,13 @@ bitflags! {
 pub const DEFAULT_IMODE: IMODE = IMODE::from_bits_truncate(0o755); // rwxrw-rw-
 
 // IMODE -> file format
-const EXT2_S_IFIFO: u16 = 0x1000;
-const EXT2_S_IFCHR: u16 = 0x2000;
+pub const EXT2_S_IFIFO: u16 = 0x1000;
+pub const EXT2_S_IFCHR: u16 = 0x2000;
 pub const EXT2_S_IFDIR: u16 = 0x4000;
 pub const EXT2_S_IFBLK: u16 = 0x6000;
 pub const EXT2_S_IFREG: u16 = 0x8000;
 pub const EXT2_S_IFLNK: u16 = 0xA000;
-const EXT2_S_IFSOCK: u16 = 0xC000;
+pub const EXT2_S_IFSOCK: u16 = 0xC000;
 
 // DirEntry -> file code
 pub const EXT2_FT_UNKNOWN: u8 = 0;
@@ -441,8 +441,8 @@ impl DiskInode {
         self.i_mode & 0xf000
     }
 
-    pub fn file_code(&self) -> u8 {
-        match self.file_type() {
+    pub fn _file_code(file_type: u16) -> u8 {
+        match file_type {
             EXT2_S_IFSOCK => EXT2_FT_SOCK,
             EXT2_S_IFLNK => EXT2_FT_SYMLINK,
             EXT2_S_IFREG => EXT2_FT_REG_FILE,
@@ -451,6 +451,23 @@ impl DiskInode {
             EXT2_S_IFCHR => EXT2_FT_CHRDEV,
             EXT2_S_IFIFO => EXT2_FT_FIFO,
             _ => EXT2_FT_UNKNOWN
+        }
+    }
+
+    pub fn file_code(&self) -> u8 {
+        Self::_file_code(self.file_type())
+    }
+
+    pub fn _file_code_to_disk(code: u8) -> u16 {
+        match code {
+            EXT2_FT_SOCK => EXT2_S_IFSOCK,
+            EXT2_FT_SYMLINK => EXT2_S_IFLNK,
+            EXT2_FT_REG_FILE => EXT2_S_IFREG,
+            EXT2_FT_BLKDEV => EXT2_S_IFBLK,
+            EXT2_FT_DIR => EXT2_S_IFDIR,
+            EXT2_FT_CHRDEV => EXT2_S_IFCHR,
+            EXT2_FT_FIFO => EXT2_S_IFIFO,
+            _ => panic!("Unsupport type")
         }
     }
 

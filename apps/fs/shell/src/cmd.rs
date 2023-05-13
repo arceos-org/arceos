@@ -55,6 +55,7 @@ fn do_ls(args: &str) {
     }
 
     fn list_one(name: &str, print_name: bool) -> io::Result<()> {
+        debug!("list_one {}", name);
         let is_dir = fs::metadata(name)?.is_dir();
         if !is_dir {
             return show_entry_info(name, name);

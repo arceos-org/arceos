@@ -239,3 +239,33 @@ impl<T: ?Sized, S: MutexSupport> SpinMutex<T, S> {
 
 ### 下一周计划
 1. 和另一位同学交流，把日志功能接入到 ext2 文件系统中。
+
+
+## 第 12 周
+1. 使用 Ext2 文件系统替换 arceos 中的根文件系统，目前支持 fs/shell 中的所有操作：
+```bash
+arceos:/$ mkdir dira
+arceos:/$ cd dira
+arceos:/dira/$ echo hello > a.txt
+arceos:/dira/$ echo world > b.txt
+arceos:/dira/$ ls
+-rwxr-xr-x        6 a.txt
+-rwxr-xr-x        6 b.txt
+arceos:/dira/$ cat a.txt
+hello
+arceos:/dira/$ rm a.txt
+arceos:/dira/$ ls
+-rwxr-xr-x        6 b.txt
+arceos:/dira/$ pwd
+/dira/
+arceos:/dira/$ cd ..
+arceos:/$ pwd
+/
+```
+
+### 下一周计划
+1. 目前 ext2 实现中的错误处理比较简陋，例如返回一个 `Option<T>`，我希望可以根据 arceos 中 VFS 的设计来
+完善错误处理这部分功能。
+2. 目前 ext2 的一部分功能，比如说：link、unlink、rm_dir 都没有在 fs/shell 中体现，下一步我会为 arceos 
+增加更多的文件相关的系统调用，来用上这些功能。
+3. 和另一位同学沟通，将日志功能加入 ext2 文件系统。

@@ -7,13 +7,14 @@ use super::{
     DiskInode, 
     Ext2FileSystem, layout::{
         MAX_NAME_LEN, DirEntryHead, EXT2_FT_UNKNOWN, EXT2_FT_DIR, EXT2_FT_REG_FILE,
-        DEFAULT_IMODE, EXT2_S_IFDIR, EXT2_S_IFLNK, IMODE
+        DEFAULT_IMODE, EXT2_S_IFDIR, EXT2_S_IFLNK, IMODE, EXT2_S_IFREG
     }
 };
 use alloc::string::{String, ToString};
 use alloc::sync::Arc;
 use alloc::vec::Vec;
 
+#[derive(Clone)]
 pub struct Inode {
     file_type: u8,
     inner: Arc<SpinMutex<InodeCache>>
@@ -40,6 +41,14 @@ impl Inode {
 
     pub fn file_type(&self) -> u8 {
         self.file_type
+    }
+
+    pub fn is_dir(&self) -> bool {
+        self.file_type == EXT2_FT_DIR
+    }
+
+    pub fn is_file(&self) -> bool {
+        self.file_type == EXT2_FT_REG_FILE
     }
 
     pub fn inode_id(&self) -> Option<usize> {
@@ -100,6 +109,14 @@ impl Inode {
             .map(|inner| Self::new(inner))
     }
 
+    pub fn create_dir(&self, name: &str) -> Option<Self> {
+        self.create(name, EXT2_S_IFDIR | DEFAULT_IMODE.bits())
+    }
+
+    pub fn create_file(&self, name: &str) -> Option<Self> {
+        self.create(name, EXT2_S_IFREG | DEFAULT_IMODE.bits())
+    }
+
     pub fn create(&self, name: &str, file_type: u16) -> Option<Self> {
         let mut lk = self.access()?.lock();
         lk.create(name, file_type)
@@ -112,6 +129,15 @@ impl Inode {
             None
         } else {
             Some(lk.ls())
+        }
+    }
+
+    pub fn read_dir(&self) -> Option<Vec<(String, DirEntryHead)>> {
+        let lk = self.access()?.lock();
+        if self.file_type != EXT2_FT_DIR {
+            None
+        } else {
+            Some(lk.ls_direntry())
         }
     }
 
@@ -360,10 +386,10 @@ impl InodeCache {
         }
     }
 
-    fn ls_disk(&self, disk_inode: &DiskInode) -> Vec<String> {
+    fn ls_disk(&self, disk_inode: &DiskInode) -> Vec<(String, DirEntryHead)> {
         assert!(disk_inode.is_dir());
         let mut buffer = [0 as u8; MAX_NAME_LEN];
-        let mut names: Vec<String> = Vec::new();
+        let mut dir_entries: Vec<(String, DirEntryHead)> = Vec::new();
 
         let mut dir_entry_head = DirEntryHead::empty();
         let mut offset: usize = 0;
@@ -376,14 +402,22 @@ impl InodeCache {
             let name_offset = offset + size_of::<DirEntryHead>();
             assert_eq!(disk_inode.read_at(name_offset, name_buffer, &self.fs.manager, Some(&self.blocks)),
                         name_len);
-            names.push(String::from_utf8_lossy(name_buffer).to_string());
+            dir_entries.push((String::from_utf8_lossy(name_buffer).to_string(), dir_entry_head));
             offset += dir_entry_head.rec_len as usize;
         };
 
-        names
+        dir_entries
     }
 
     pub fn ls(&self) -> Vec<String> {
+        assert!(self.file_type() == EXT2_FT_DIR);
+        let dir_entries = self.read_disk_inode(|disk_inode| {
+            self.ls_disk(disk_inode)
+        });
+        dir_entries.into_iter().map(|(name, _)| name).collect()
+    }
+
+    pub fn ls_direntry(&self) -> Vec<(String, DirEntryHead)> {
         assert!(self.file_type() == EXT2_FT_DIR);
         self.read_disk_inode(|disk_inode| {
             self.ls_disk(disk_inode)
