@@ -19,6 +19,6 @@ pub unsafe extern "C" fn ax_exit(exit_code: c_int) -> ! {
 pub unsafe extern "C" fn ax_getpid() -> c_int {
     ax_call_body!(ax_getpid, {
         let pid = current().id().as_u64() as c_int;
-        return Ok(pid);
+        Ok(pid)
     })
 }

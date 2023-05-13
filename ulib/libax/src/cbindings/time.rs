@@ -24,7 +24,7 @@ pub unsafe extern "C" fn ax_clock_gettime(ts: *mut ctypes::timespec) -> c_int {
             *ts = ret;
         }
         debug!("ax_clock_gettime: {}.{:09}s", ret.tv_sec, ret.tv_nsec);
-        return Ok(0);
+        Ok(0)
     })
 }
 
@@ -57,6 +57,6 @@ pub unsafe extern "C" fn ax_nanosleep(
             }
             return Err(LinuxError::EINTR);
         }
-        return Ok(0);
+        Ok(0)
     })
 }

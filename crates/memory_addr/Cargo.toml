@@ -8,5 +8,7 @@ license = "GPL-3.0-or-later OR Apache-2.0"
 homepage = "https://github.com/rcore-os/arceos"
 repository = "https://github.com/rcore-os/arceos/tree/main/crates/memory_addr"
 documentation = "https://rcore-os.github.io/arceos/memory_addr/index.html"
+keywords = ["arceos", "address", "virtual-memory"]
+categories = ["os", "memory-management", "no-std"]
 
 [dependencies]
