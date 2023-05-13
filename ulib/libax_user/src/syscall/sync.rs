@@ -1,7 +1,6 @@
 use crate::{syscall, syscall::sys_number::SYS_FUTEX};
+pub use syscall_number::futex::*;
 
-pub const FUTEX_WAIT: i32 = 0;
-pub const FUTEX_WAKE: i32 = 1;
 /*
 long syscall(SYS_futex, uint32_t *uaddr, int futex_op, uint32_t val,
                     const struct timespec *timeout,   /* or: uint32_t val2 */

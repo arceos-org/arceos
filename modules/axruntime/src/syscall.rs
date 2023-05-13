@@ -1,5 +1,5 @@
 use lazy_init::LazyInit;
-use crate::sys_number::*;
+use syscall_number::*;
 
 extern crate alloc;
 struct UserBuffer {

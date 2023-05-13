@@ -31,13 +31,13 @@ mod mp;
 
 #[cfg(feature = "user")]
 mod syscall;
-#[cfg(feature = "user")]
-mod sys_number;
 
 #[cfg(feature = "user")]
 use axmem::{USER_START, USTACK_SIZE, USTACK_START};
 #[cfg(feature = "smp")]
 pub use self::mp::rust_main_secondary;
+#[cfg(feature = "scheme")]
+mod scheme;
 
 const LOGO: &str = r#"
        d8888                            .d88888b.   .d8888b.

@@ -3,8 +3,7 @@ pub mod task;
 pub mod sync;
 
 
-#[path = "../../../../modules/axruntime/src/sys_number.rs"]
-mod sys_number;
+use syscall_number as sys_number;
 
 /// Copied from rcore
 pub fn syscall(id: usize, args: [usize; 6]) -> isize {

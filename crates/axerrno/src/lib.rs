@@ -32,8 +32,10 @@ pub enum AxError {
     Again,
     /// Bad address.
     BadAddress,
+    /// Bad File Descriptor
+    BadFileDescriptor,
     /// Bad internal state.
-    BadState,
+    BadState,    
     /// The connection was refused by the remote server,
     ConnectionRefused,
     /// A non-empty directory was specified where an empty directory was expected.
@@ -173,6 +175,7 @@ impl From<AxError> for LinuxError {
             AlreadyExists => LinuxError::EEXIST,
             Again => LinuxError::EAGAIN,
             BadAddress | BadState => LinuxError::EFAULT,
+            BadFileDescriptor => LinuxError::EBADF,
             ConnectionRefused => LinuxError::ECONNREFUSED,
             DirectoryNotEmpty => LinuxError::ENOTEMPTY,
             InvalidInput | InvalidData => LinuxError::EINVAL,

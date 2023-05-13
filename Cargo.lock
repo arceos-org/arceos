@@ -355,6 +355,7 @@ dependencies = [
  "axconfig",
  "axdisplay",
  "axdriver",
+ "axerrno",
  "axfs",
  "axhal",
  "axlog",
@@ -367,7 +368,9 @@ dependencies = [
  "kernel_guard",
  "lazy_init",
  "percpu",
+ "scheme",
  "spinlock",
+ "syscall_number",
 ]
 
 [[package]]
@@ -380,6 +383,7 @@ dependencies = [
  "memory_addr",
  "rand",
  "spinlock",
+ "syscall_number",
 ]
 
 [[package]]
@@ -1023,6 +1027,7 @@ dependencies = [
  "allocator",
  "log",
  "spinlock",
+ "syscall_number",
 ]
 
 [[package]]
@@ -1406,6 +1411,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "scheme"
+version = "0.1.0"
+dependencies = [
+ "axerrno",
+ "syscall_number",
+]
+
+[[package]]
 name = "scopeguard"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1538,6 +1551,10 @@ dependencies = [
  "quote",
  "unicode-ident",
 ]
+
+[[package]]
+name = "syscall_number"
+version = "0.1.0"
 
 [[package]]
 name = "tempfile"

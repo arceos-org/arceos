@@ -19,3 +19,4 @@ log-level-trace = ["log/max_level_trace"]
 log = "0.4"
 allocator = { path = "../../crates/allocator" }
 spinlock = { path = "../../crates/spinlock" }
+syscall_number = { path = "../../crates/syscall_number"}

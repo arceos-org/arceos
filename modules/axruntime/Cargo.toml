@@ -19,12 +19,14 @@ smp = ["axhal/smp", "spinlock/smp"]
 fs = ["alloc", "paging", "axdriver/virtio-blk", "axfs/use-virtio-blk"] # TODO: remove "paging"
 net = ["alloc", "paging", "axdriver/virtio-net", "dep:axnet"]
 display = ["alloc", "paging", "axdriver/virtio-gpu", "dep:axdisplay"]
-user = ["axhal/user", "dep:elf_loader", "dep:axmem"]
+user = ["axhal/user", "dep:elf_loader", "dep:axmem", "dep:axerrno", "dep:syscall_number"]
 
 user-paging = ["user", "paging", "axhal/user-paging", "axtask/user-paging"]
-futex = ["axsync/futex"]
+# See: https://github.com/rust-lang/cargo/issues/10788
+futex = ["dep:axsync", "axsync?/futex"]
+scheme = ["user-paging", "dep:axsync", "dep:scheme"]
 
-default = ["axtask?/default"]
+default = ["axtask?/default", "scheme"]
 
 [dependencies]
 percpu = { path = "../../crates/percpu" }
@@ -33,6 +35,9 @@ spinlock = { path = "../../crates/spinlock" }
 lazy_init = { path = "../../crates/lazy_init", optional = true }
 crate_interface = { path = "../../crates/crate_interface" }
 elf_loader = { path = "../../crates/elf_loader", optional = true}
+axerrno = { path = "../../crates/axerrno", optional = true}
+scheme = { path = "../../crates/scheme", optional = true }
+syscall_number = { path = "../../crates/syscall_number", optional = true }
 axalloc = { path = "../axalloc", optional = true }
 axconfig = { path = "../axconfig" }
 axdriver = { path = "../axdriver", optional = true }
@@ -44,6 +49,8 @@ axdisplay = { path = "../axdisplay", optional = true }
 axtask = { path = "../axtask", default-features = false, optional = true }
 axmem = { path = "../axmem", optional = true}
 axsync = { path = "../axsync", optional = true}
+
+
 
 [dev-dependencies]
 percpu = { path = "../../crates/percpu", features = ["sp-naive"] }
