@@ -2,13 +2,13 @@
 #![feature(allocator_api)]
 #![feature(new_uninit)]
 extern crate alloc;
-mod layout;
+pub mod layout;
 mod config;
 mod block_dev;
 mod bitmap;
 mod efs;
 mod vfs;
-mod timer;
+pub mod timer;
 mod block_cache_manager;
 mod inode_manager;
 mod mutex;

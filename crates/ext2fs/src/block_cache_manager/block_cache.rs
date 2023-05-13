@@ -44,6 +44,9 @@ impl BlockCache {
         T: Sized,
     {
         let type_size = core::mem::size_of::<T>();
+        if offset + type_size > self.cache.len() {
+            error!("{} {} {}", offset, type_size, self.cache.len());
+        }
         assert!(offset + type_size <= self.cache.len());
         let addr = self.addr_of_offset(offset);
         unsafe { &*(addr as *const T) }

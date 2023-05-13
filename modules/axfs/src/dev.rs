@@ -20,6 +20,10 @@ impl Disk {
         }
     }
 
+    pub fn true_block_size(&self) -> usize {
+        BLOCK_SIZE
+    }
+
     /// Get the size of the disk.
     pub fn size(&self) -> u64 {
         self.dev.num_blocks() * BLOCK_SIZE as u64

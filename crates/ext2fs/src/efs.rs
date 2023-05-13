@@ -150,7 +150,7 @@ impl Ext2FileSystem {
         inode_block.lock()
             .modify(root_inode_offset, |disk_inode: &mut DiskInode| {
                 *disk_inode = DiskInode::new(
-                    IMODE::from_bits_truncate(0o755), 
+                    IMODE::from_bits_truncate(0o777), 
                     EXT2_S_IFDIR, 0, 0);
             });
         fs.manager.lock().release_block(inode_block);
@@ -176,6 +176,8 @@ impl Ext2FileSystem {
     /// Open a file system from disk
     pub fn open(block_device: Arc<dyn BlockDevice>, timer: Arc<dyn TimeProvider>) -> Arc<Self> {
         assert!(block_device.block_size() == BLOCK_SIZE, "Unsupported block size");
+        debug!("sizeof(super_block) = {}", size_of::<SuperBlock>());
+        debug!("sizeof(disk_inode) = {}", size_of::<DiskInode>());
         debug!("Open ext2 file system...");
         let fs = Arc::new(Self {
             manager: SpinMutex::new(BlockCacheManager::new()),

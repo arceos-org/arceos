@@ -249,6 +249,7 @@ dependencies = [
  "cfg-if",
  "crate_interface 0.1.1",
  "driver_block",
+ "ext2fs",
  "fatfs",
  "lazy_init",
  "log",

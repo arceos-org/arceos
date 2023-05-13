@@ -13,6 +13,10 @@ use crate::{api::FileType, fs};
 static CURRENT_DIR_PATH: Mutex<String> = Mutex::new(String::new());
 static CURRENT_DIR: LazyInit<Mutex<VfsNodeRef>> = LazyInit::new();
 
+#[cfg(feature = "fatfs")]
+// type MainFileSystem = fs::fatfs::FatFileSystem;
+type MainFileSystem = fs::ext2fs::Ext2FileSystem;
+
 struct MountPoint {
     path: &'static str,
     fs: Arc<dyn VfsOps>,
@@ -138,10 +142,10 @@ pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
         if #[cfg(feature = "myfs")] { // override the default filesystem
             let main_fs = fs::myfs::new_myfs(disk);
         } else if #[cfg(feature = "fatfs")] {
-            static FAT_FS: LazyInit<Arc<fs::fatfs::FatFileSystem>> = LazyInit::new();
-            FAT_FS.init_by(Arc::new(fs::fatfs::FatFileSystem::new(disk)));
-            FAT_FS.init();
-            let main_fs = FAT_FS.clone();
+            static EXT2_FS: LazyInit<Arc<fs::ext2fs::Ext2FileSystem>> = LazyInit::new();
+            EXT2_FS.init_by(Arc::new(fs::ext2fs::Ext2FileSystem::new(disk)));
+            EXT2_FS.init();
+            let main_fs = EXT2_FS.clone();
         }
     }
 

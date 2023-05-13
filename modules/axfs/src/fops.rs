@@ -145,6 +145,7 @@ impl File {
         }
         let access_cap = opts.into();
         if !perm_to_cap(attr.perm()).contains(access_cap) {
+            error!("bad perm {} {}", perm_to_cap(attr.perm()).bits(), access_cap.bits());
             return ax_err!(PermissionDenied);
         }
 

@@ -30,6 +30,7 @@ axfs_vfs = { path = "../../crates/axfs_vfs" }
 axfs_devfs = { path = "../../crates/axfs_devfs", optional = true }
 axfs_ramfs = { path = "../../crates/axfs_ramfs", optional = true }
 axdriver = { path = "../axdriver", features = ["block"] }
+ext2fs = { path = "../../crates/ext2fs" }
 axsync = { path = "../axsync", default-features = false }
 crate_interface = { path = "../../crates/crate_interface", optional = true }
 
