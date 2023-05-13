@@ -3,6 +3,8 @@ use axhal::time::current_time;
 use lazy_init::LazyInit;
 use spinlock::SpinNoIrq;
 use timer_list::{TimeValue, TimerEvent, TimerList};
+use crate::run_queue::LOAD_BALANCE_ARR;
+use load_balance::BaseLoadBalance;
 
 use crate::{AxTaskRef, RUN_QUEUE, get_current_cpu_id};
 
@@ -13,7 +15,8 @@ struct TaskWakeupEvent(AxTaskRef);
 
 impl TimerEvent for TaskWakeupEvent {
     fn callback(self, _now: TimeValue) {
-        let mut rq = RUN_QUEUE[get_current_cpu_id()].lock();
+        info!("qwq {}", get_current_cpu_id());
+        let mut rq = RUN_QUEUE[LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu()].lock();
         self.0.set_in_timer_list(false);
         rq.unblock_task(self.0, true);
     }

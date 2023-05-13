@@ -1,7 +1,9 @@
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
+use load_balance::BaseLoadBalance;
 use spinlock::SpinRaw;
 
+use crate::run_queue::LOAD_BALANCE_ARR;
 use crate::{AxRunQueue, AxTaskRef, CurrentTask, RUN_QUEUE};
 
 use crate::get_current_cpu_id;
@@ -29,7 +31,7 @@ use crate::get_current_cpu_id;
 /// assert_eq!(VALUE.load(Ordering::Relaxed), 1);
 /// ```
 pub struct WaitQueue {
-    queue: SpinRaw<VecDeque<AxTaskRef>>, // we already disabled IRQs when lock the `RUN_QUEUE`
+    queue: SpinRaw<VecDeque<(AxTaskRef, usize)>>, // we already disabled IRQs when lock the `RUN_QUEUE`
 }
 
 impl WaitQueue {
@@ -54,7 +56,7 @@ impl WaitQueue {
             // wake up by timer (timeout).
             // `RUN_QUEUE` is not locked here, so disable IRQs.
             let _guard = kernel_guard::IrqSave::new();
-            self.queue.lock().retain(|t| !curr.ptr_eq(t));
+            self.queue.lock().retain(|(t, _)| !curr.ptr_eq(t));
             curr.set_in_wait_queue(false);
         }
         #[cfg(feature = "irq")]
@@ -69,7 +71,7 @@ impl WaitQueue {
     pub fn wait(&self) {
         RUN_QUEUE[get_current_cpu_id()].lock().block_current(|task| {
             task.set_in_wait_queue(true);
-            self.queue.lock().push_back(task)
+            self.queue.lock().push_back((task, get_current_cpu_id()))
         });
         self.cancel_events(crate::current());
     }
@@ -90,7 +92,7 @@ impl WaitQueue {
             }
             rq.block_current(|task| {
                 task.set_in_wait_queue(true);
-                self.queue.lock().push_back(task);
+                self.queue.lock().push_back((task, get_current_cpu_id()));
             });
         }
         self.cancel_events(crate::current());
@@ -109,9 +111,9 @@ impl WaitQueue {
         );
         crate::timers::set_alarm_wakeup(deadline, curr.clone());
 
-        RUN_QUEUE.lock().block_current(|task| {
+        RUN_QUEUE[get_current_cpu_id()].lock().block_current(|task| {
             task.set_in_wait_queue(true);
-            self.queue.lock().push_back(task)
+            self.queue.lock().push_back((task, get_current_cpu_id()))
         });
         let timeout = curr.in_wait_queue(); // still in the wait queue, must have timed out
         self.cancel_events(curr);
@@ -128,10 +130,11 @@ impl WaitQueue {
     where
         F: Fn() -> bool,
     {
+        assert!(false);
         let curr = crate::current();
         let deadline = axhal::time::current_time() + dur;
         debug!(
-            "task wait_timeout: {}, deadline={:?}",
+            "until: task wait_timeout: {}, deadline={:?}",
             curr.id_name(),
             deadline
         );
@@ -146,7 +149,7 @@ impl WaitQueue {
             }
             rq.block_current(|task| {
                 task.set_in_wait_queue(true);
-                self.queue.lock().push_back(task);
+                self.queue.lock().push_back((task, get_current_cpu_id()));
             });
         }
         self.cancel_events(curr);
@@ -172,14 +175,15 @@ impl WaitQueue {
     /// preemption is enabled.
     pub fn notify_all(&self, resched: bool) {
         loop {
-            let mut rq = RUN_QUEUE[get_current_cpu_id()].lock();
-            if let Some(task) = self.queue.lock().pop_front() {
+            //info!("333");
+            if let Some((task, cpu_id)) = self.queue.lock().pop_front() {
+                let mut rq = RUN_QUEUE[cpu_id].lock();
                 task.set_in_wait_queue(false);
                 rq.unblock_task(task, resched);
+                drop(rq); // we must unlock `RUN_QUEUE` after unlocking `self.queue`.
             } else {
                 break;
             }
-            drop(rq); // we must unlock `RUN_QUEUE` after unlocking `self.queue`.
         }
     }
 
@@ -188,11 +192,12 @@ impl WaitQueue {
     /// If `resched` is true, the current task will be preempted when the
     /// preemption is enabled.
     pub fn notify_task(&mut self, resched: bool, task: &AxTaskRef) -> bool {
-        let mut rq = RUN_QUEUE[get_current_cpu_id()].lock();
+        //info!("222");
         let mut wq = self.queue.lock();
-        if let Some(index) = wq.iter().position(|t| Arc::ptr_eq(t, task)) {
+        if let Some(index) = wq.iter().position(|(t, cpu_id)| Arc::ptr_eq(t, task)) {
+            let mut rq = RUN_QUEUE[wq[index].1].lock();
             task.set_in_wait_queue(false);
-            rq.unblock_task(wq.remove(index).unwrap(), resched);
+            rq.unblock_task(wq.remove(index).unwrap().0, resched);
             true
         } else {
             false
@@ -200,12 +205,17 @@ impl WaitQueue {
     }
 
     pub(crate) fn notify_one_locked(&self, resched: bool, rq: &mut AxRunQueue) -> bool {
-        if let Some(task) = self.queue.lock().pop_front() {
-            task.set_in_wait_queue(false);
-            rq.unblock_task(task, resched);
-            true
-        } else {
-            false
+        //assert!(false);
+        //info!("111 {}", get_current_cpu_id());
+        let tmp = self.queue.lock();
+        for i in 0..tmp.len() {
+            if tmp[i].1 == get_current_cpu_id() {
+                tmp[i].0.set_in_wait_queue(false);
+                rq.unblock_task(tmp[i].0.clone(), resched);
+                drop(tmp);
+                return true;
+            }
         }
+        false
     }
 }

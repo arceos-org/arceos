@@ -11,6 +11,7 @@ documentation = "https://rcore-os.github.io/arceos/axtask/index.html"
 
 [features]
 test = ["percpu?/sp-naive"]
+smp = ["axhal/smp", "spinlock?/smp"]
 multitask = [
     "dep:axconfig", "dep:percpu", "dep:spinlock", "dep:lazy_init",
     "dep:memory_addr", "dep:scheduler", "dep:timer_list", "dep:load_balance", 

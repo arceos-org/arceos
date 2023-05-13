@@ -94,7 +94,7 @@ impl AxRunQueue {
 
     pub fn exit_current(&mut self, exit_code: i32) -> ! {
         let curr = crate::current();
-        debug!("task exit: {}, exit_code={}", curr.id_name(), exit_code);
+        debug!("task exit: {}, exit_code={}, cpuid={}", curr.id_name(), exit_code, get_current_cpu_id());
         assert!(curr.is_running());
         assert!(!curr.is_idle());
         if curr.is_init() {

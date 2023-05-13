@@ -62,13 +62,14 @@ impl BaseLoadBalance for LoadBalanceZirconStyle {
             }
         }
         arg
+        //0
     }
     
     /// find target cpu id that can be stolen 
     /// the detailed steal process is defined in axtask
     /// >= 0 if a target cpu is found, -1 if no need to steal
     fn find_stolen_cpu_id(&self) -> isize {
-        let mut mx: isize = self.pointers.lock()[0].weight.load(Ordering::Acquire);
+        /*let mut mx: isize = self.pointers.lock()[0].weight.load(Ordering::Acquire);
         let mut arg: usize = 0;
         for i in 1..self.smp.load(Ordering::Acquire) {
             let tmp = self.pointers.lock()[i].weight.load(Ordering::Acquire);
@@ -77,11 +78,12 @@ impl BaseLoadBalance for LoadBalanceZirconStyle {
                 arg = i;
             }
         }
-        if mx == self.id.load(Ordering::Acquire) as isize {
+        if mx == 0 || arg == self.id.load(Ordering::Acquire) {
             -1
         } else {
             arg as isize
-        }
+        }*/
+        -1
     }
 
     fn add_weight(&self, delta: isize) {
