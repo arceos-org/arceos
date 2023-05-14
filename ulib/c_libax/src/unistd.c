@@ -52,25 +52,27 @@ long int sysconf(int name)
     return 0;
 }
 
-#ifdef AX_CONFIG_FS
-
-off_t lseek(int fd, off_t offset, int whence)
-{
-    return ax_lseek(fd, offset, whence);
-}
-
-// TODO:
-int fsync(int fd)
-{
-    unimplemented();
-    return 0;
-}
-
 int close(int fd)
 {
     return ax_close(fd);
 }
 
+int fstat(int fd, struct stat *buf)
+{
+    return ax_fstat(fd, buf);
+}
+
+ssize_t read(int fd, void *buf, size_t count)
+{
+    return ax_read(fd, buf, count);
+}
+
+ssize_t write(int fd, const void *buf, size_t count)
+{
+    return ax_write(fd, buf, count);
+}
+
+#ifdef AX_CONFIG_FS
 // TODO:
 int access(const char *pathname, int mode)
 {
@@ -93,26 +95,11 @@ int stat(const char *path, struct stat *buf)
     return ax_stat(path, buf);
 }
 
-int fstat(int fd, struct stat *buf)
-{
-    return ax_fstat(fd, buf);
-}
-
 // TODO:
-int ftruncate(int fd, off_t length)
+ssize_t readlink(const char *path, char *buf, size_t bufsiz)
 {
     unimplemented();
     return 0;
-}
-
-ssize_t read(int fd, void *buf, size_t count)
-{
-    return ax_read(fd, buf, count);
-}
-
-ssize_t write(int fd, const void *buf, size_t count)
-{
-    return ax_write(fd, buf, count);
 }
 
 // TODO:
@@ -129,6 +116,18 @@ int rmdir(const char *pathname)
     return 0;
 }
 
+off_t lseek(int fd, off_t offset, int whence)
+{
+    return ax_lseek(fd, offset, whence);
+}
+
+// TODO:
+int fsync(int fd)
+{
+    unimplemented();
+    return 0;
+}
+
 // TODO:
 int fchown(int fd, uid_t owner, gid_t group)
 {
@@ -137,7 +136,7 @@ int fchown(int fd, uid_t owner, gid_t group)
 }
 
 // TODO:
-ssize_t readlink(const char *path, char *buf, size_t bufsiz)
+int ftruncate(int fd, off_t length)
 {
     unimplemented();
     return 0;

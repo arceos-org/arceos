@@ -26,6 +26,8 @@ pub use linux_errno::LinuxError;
 #[non_exhaustive]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum AxError {
+    /// A socket address could not be bound because the address is already in use elsewhere.
+    AddrInUse,
     /// An entity already exists, often a file.
     AlreadyExists,
     /// Try again, often for non-blocking APIs.
@@ -194,6 +196,7 @@ impl From<AxError> for LinuxError {
     fn from(e: AxError) -> Self {
         use AxError::*;
         match e {
+            AddrInUse => LinuxError::EADDRINUSE,
             AlreadyExists => LinuxError::EEXIST,
             Again => LinuxError::EAGAIN,
             BadAddress | BadState => LinuxError::EFAULT,
