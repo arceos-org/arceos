@@ -142,6 +142,7 @@ pub fn time_stat_from_kernel_to_user() {
 
 pub fn run_idle() -> ! {
     loop {
+        on_timer_tick();
         #[cfg(feature = "multitask")]
         yield_now();
         debug!("idle task: waiting for IRQs...");

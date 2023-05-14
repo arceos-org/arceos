@@ -15,7 +15,6 @@ use crate::flags::{TimeSecs, TimeVal, UtsName, WaitFlags, TMS};
 /// 处理与任务（线程）有关的系统调用
 
 pub fn syscall_exit(exit_code: i32) -> isize {
-    axlog::info!("Syscall to exit!");
     axprocess::process::exit(exit_code)
 }
 
@@ -93,17 +92,14 @@ pub fn syscall_wait4(pid: isize, exit_code_ptr: *mut i32, option: WaitFlags) -> 
             Err(status) => {
                 match status {
                     WaitStatus::NotExist => {
-                        info!("Not exist!");
                         return -1;
                     }
                     WaitStatus::Running => {
-                        info!("Is running!");
                         if option.contains(WaitFlags::WNOHANG) {
                             // 不予等待，直接返回0
                             return 0;
                         } else {
                             // 执行yield操作，切换任务
-                            info!("wait4: yield_now_task");
                             yield_now_task();
                         }
                     }

@@ -162,16 +162,17 @@ impl AxRunQueue {
     /// slice, otherwise reset it.
     pub fn resched_inner(&mut self, preempt: bool) {
         let prev = crate::current();
+        let next = self.scheduler.pick_next_task().unwrap_or_else(|| unsafe {
+            // Safety: IRQs must be disabled at this time.
+            IDLE_TASK.current_ref_raw().get_unchecked().clone()
+        });
+        // 需要先把next取出来再取出prev，否则会出现prev和next一致导致死循环
         if prev.is_running() {
             prev.set_state(TaskState::Ready);
             if !prev.is_idle() {
                 self.scheduler.put_prev_task(prev.clone(), preempt);
             }
         }
-        let next = self.scheduler.pick_next_task().unwrap_or_else(|| unsafe {
-            // Safety: IRQs must be disabled at this time.
-            IDLE_TASK.current_ref_raw().get_unchecked().clone()
-        });
         self.switch_to(prev, next);
     }
 

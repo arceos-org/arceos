@@ -9,6 +9,7 @@ pub mod flags;
 use axerrno::AxResult;
 use axfs::api::OpenOptions;
 use axio::{Read, Seek, SeekFrom};
+use axlog::info;
 pub use file::new_fd;
 pub use stdio::{Stderr, Stdin, Stdout};
 

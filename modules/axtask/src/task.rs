@@ -55,14 +55,20 @@ pub struct TaskInner {
     time: UnsafeCell<TimeStat>,
 }
 
+static ID_COUNTER: AtomicU64 = AtomicU64::new(1);
+
 impl TaskId {
     pub fn new() -> Self {
-        static ID_COUNTER: AtomicU64 = AtomicU64::new(1);
         Self(ID_COUNTER.fetch_add(1, Ordering::Relaxed))
     }
 
     pub const fn as_u64(&self) -> u64 {
         self.0
+    }
+    /// 清空计数器，为了给单元测试使用
+    /// 保留了gc, 主调度，内核进程
+    pub fn clear() {
+        ID_COUNTER.store(3, Ordering::Relaxed);
     }
 }
 
@@ -142,9 +148,7 @@ impl TaskInner {
         F: FnOnce() + Send + 'static,
     {
         let mut t = Self::new_common(TaskId::new(), name, process_id, page_table_token);
-        info!("new task in kernel: id: {}", t.id.as_u64());
         t.set_leader(true);
-        debug!("new task: {}", t.id_name());
         let kstack = TaskStack::alloc(align_up_4k(stack_size));
         t.entry = Some(Box::into_raw(Box::new(entry)));
         t.ctx.get_mut().init(task_entry as usize, kstack.top());
@@ -519,12 +523,7 @@ extern "C" fn task_entry() -> ! {
             unsafe { Box::from_raw(entry)() };
             // 继续执行对应的函数
         } else {
-            info!("exec task: {}", task.name());
             // 需要通过切换特权级进入到对应的应用程序
-            unsafe {
-                let ans: u64 = *(0x1000 as *const u64);
-                axlog::info!("ans: {:X}", ans);
-            }
             let kernel_sp = task.get_kernel_stack_top().unwrap();
             let frame_address = task.trap_frame.get();
             // 切换页表已经在switch实现了

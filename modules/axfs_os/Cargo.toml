@@ -11,5 +11,6 @@ axfs = { path = "../axfs" }
 axtask = { path = "../axtask" }
 axio = { path = "../../crates/axio" }
 axsync = { path = "../axsync" }
+axlog = { path = "../axlog" }
 axhal = { path = "../axhal" }
 bitflags = "= 2.1.0"

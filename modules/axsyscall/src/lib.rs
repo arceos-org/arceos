@@ -1,6 +1,7 @@
 #![cfg_attr(not(test), no_std)]
 use flags::{MMAPFlags, TimeSecs, TimeVal, UtsName, WaitFlags, MMAPPROT, TMS};
 use fs::{syscall_close, syscall_open, syscall_read};
+use log::error;
 use mem::{syscall_brk, syscall_mmap, syscall_munmap};
 use task::{
     syscall_clone, syscall_get_time_of_day, syscall_getpid, syscall_getppid, syscall_sleep,
@@ -25,7 +26,6 @@ mod task;
 #[no_mangle]
 // #[cfg(feature = "user")]
 pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
-    // axlog::info!("syscall: {}", syscall_id);
     match syscall_id {
         SYSCALL_OPENAT => syscall_open(args[0], args[1] as *const u8, args[2] as u8, args[3] as u8), // args[0] is fd, args[1] is filename, args[2] is flags, args[3] is mode
         SYSCALL_CLOSE => syscall_close(args[0]), // args[0] is fd
@@ -57,7 +57,9 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[5],
         ),
         _ => {
-            panic!("Invalid Syscall Id: {}!", syscall_id);
+            error!("Invalid Syscall Id: {}!", syscall_id);
+            return -1;
+            // panic!("Invalid Syscall Id: {}!", syscall_id);
         }
     }
 }

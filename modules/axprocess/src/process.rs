@@ -5,9 +5,11 @@ use axfs_os::{file_io::FileIO, Stderr, Stdin, Stdout};
 use axhal::arch::{write_page_table_root, TrapFrame};
 use axhal::mem::VirtAddr;
 use axhal::paging::MappingFlags;
+use axlog::info;
 use axmem::memory_set::USER_STACK_SIZE;
 const KERNEL_STACK_SIZE: usize = 4096;
 use crate::flags::{CloneFlags, WaitStatus};
+use crate::test::finish_one_test;
 use axmem::memory_set::MemorySet;
 use axtask::{
     current,
@@ -103,16 +105,26 @@ impl Process {
         let mut user_stack_top = user_stack_bottom + USER_STACK_SIZE;
         // 注意要压入argc和argv，初赛阶段默认压入文件名
         let name = path.as_bytes();
-        user_stack_top -= 2 * core::mem::size_of::<usize>();
+        user_stack_top -= 3 * core::mem::size_of::<usize>();
         let argv_base = user_stack_top;
         unsafe {
-            *((argv_base + core::mem::size_of::<usize>()) as *mut usize) = 0;
+            *((argv_base + core::mem::size_of::<usize>() * 2) as *mut usize) = 0;
         }
-        user_stack_top -= name.len() + 1;
+        user_stack_top -= 2;
         unsafe {
             *(argv_base as *mut usize) = user_stack_top;
         }
         let mut p = user_stack_top;
+        unsafe {
+            // 记录argc
+            *(p as *mut u8) = 1;
+            p += 1;
+            *(p as *mut u8) = 0;
+        }
+        user_stack_top -= name.len() + 1;
+        unsafe {
+            *((argv_base + 2) as *mut usize) = user_stack_top;
+        }
         for c in name {
             unsafe {
                 *(p as *mut u8) = *c;
@@ -123,8 +135,6 @@ impl Process {
             *(p as *mut u8) = 0;
         }
         user_stack_top -= user_stack_top % core::mem::size_of::<usize>();
-        axlog::info!("entry: {:X}", entry);
-
         // 以这种方式建立的线程，不通过某一个具体的函数开始，而是通过地址来运行函数，所以entry不会被用到
         let new_process = Arc::new(Self {
             pid: TaskId::new().as_u64(),
@@ -150,13 +160,13 @@ impl Process {
         // 初始化线程的trap上下文
         let mut new_trap_frame = TrapFrame::app_init_context(entry, user_stack_top);
         // argc为1
-        new_trap_frame.regs.a0 = 1;
-        new_trap_frame.regs.a1 = argv_base;
+        new_trap_frame.regs.a0 = argv_base;
         new_task.set_trap_context(new_trap_frame);
         // 设立父子关系
         let mut inner = new_process.inner.lock();
         inner.tasks.push(Arc::clone(&new_task));
         drop(inner);
+        drop(new_process);
         new_task.set_trap_in_kernel_stack();
         new_task
         // let kernel_sp = new_task.get_kernel_stack_top();
@@ -392,7 +402,7 @@ pub fn init_kernel_process() {
     }));
 }
 
-/// 读取初始化应用程序，作为用户态初始进程
+/// 将进程转化为调度进程，此时会运行所有的测例文件
 pub fn init_user_process() {
     let main_task = Process::new("waitpid");
     RUN_QUEUE.lock().add_task(main_task);
@@ -425,17 +435,25 @@ pub fn exit(exit_code: i32) -> isize {
         {
             let pid2pc = PID2PC.lock();
             let kernel_process = Arc::clone(pid2pc.get(&KERNEL_PROCESS_ID).unwrap());
-            drop(pid2pc);
+
             // 回收子进程到内核进程下
             for child in inner.children.iter() {
                 child.inner.lock().parent = KERNEL_PROCESS_ID;
                 kernel_process.inner.lock().children.push(Arc::clone(child));
             }
+
+            drop(pid2pc);
         }
-        // 回收物理页帧
         inner.memory_set.lock().areas.clear();
         // 页表不用特意解除，因为整个对象都将被析构
         drop(inner);
+        drop(process);
+        let mut pid2pc = PID2PC.lock();
+        pid2pc.remove(&process_id);
+        drop(pid2pc);
+        // 记录当前的测试结果
+        #[cfg(feature = "test")]
+        finish_one_test(exit_code, process_id as usize);
     }
     // 当前的进程回收是比较简单的
     RUN_QUEUE.lock().resched_inner(false);

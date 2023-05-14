@@ -47,6 +47,8 @@ impl WaitQueue {
         self.cancel_events(crate::current());
     }
 
+    /// 正在wait的任务只能通过timer or `notify()`唤醒，所以gc任务回收无法唤醒正在睡眠的任务
+    /// sleep系统调用会出现任务堵塞，所以wait_queue会被用到
     pub fn wait_until<F>(&self, condition: F)
     where
         F: Fn() -> bool,

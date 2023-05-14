@@ -6,12 +6,18 @@ authors = ["Youjie Zheng <zyj578335934@gmail.com>"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+test = []
+default = ["test"]
+
 [dependencies]
 spinlock = { path = "../../crates/spinlock" }
 axtask = { path = "../axtask" }
 axhal = { path = "../axhal" }
 axlog = { path = "../axlog" }
 axmem = { path = "../axmem" }
+axconfig = {path = "../axconfig"}
 axfs_os = { path = "../axfs_os" }
 riscv = "0.10"
 bitflags = "= 2.1.0"
+lazy_static = { version = "1.4", features = ["spin_no_std"] }
