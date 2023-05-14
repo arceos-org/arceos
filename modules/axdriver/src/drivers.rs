@@ -18,12 +18,12 @@ pub trait DriverProbe {
         None
     }
 
-    #[cfg(feature = "bus-mmio")]
+    #[cfg(bus = "mmio")]
     fn probe_mmio(_mmio_base: usize, _mmio_size: usize) -> Option<AxDeviceEnum> {
         None
     }
 
-    #[cfg(feature = "bus-pci")]
+    #[cfg(bus = "pci")]
     fn probe_pci(
         _root: &mut PciRoot,
         _bdf: DeviceFunction,

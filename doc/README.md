@@ -1,5 +1,9 @@
 # ArceOS Architecture Overview
 
+## Rustdoc
+
+* https://rcore-os.github.io/arceos/
+
 ## ArceOS Modules
 
 * [axalloc](../modules/axalloc): ArceOS global memory allocator.
@@ -28,6 +32,7 @@
 * [driver_common](../crates/driver_common): Device driver interfaces used by ArceOS.
 * [driver_display](../crates/driver_display): Common traits and types for graphics device drivers.
 * [driver_net](../crates/driver_net): Common traits and types for network device (NIC) drivers.
+* [driver_pci](../crates/driver_pci): Structures and functions for PCI bus operations.
 * [driver_virtio](../crates/driver_virtio): Wrappers of some devices in the `virtio-drivers` crate, that implement traits in the `driver_common` series crates.
 * [handler_table](../crates/handler_table): A lock-free table of event handlers. [![Crates.io](https://img.shields.io/crates/v/handler_table)](https://crates.io/crates/handler_table)
 * [kernel_guard](../crates/kernel_guard): RAII wrappers to create a critical section with local IRQs or preemption disabled. [![Crates.io](https://img.shields.io/crates/v/kernel_guard)](https://crates.io/crates/kernel_guard)

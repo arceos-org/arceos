@@ -22,6 +22,8 @@ virtio-mmio-regions = []
 pci-ecam-base = "0"
 # End PCI bus number.
 pci-bus-end = "0"
+# PCI device memory ranges.
+pci-ranges = []
 
 # Timer interrupt frequency in Hz.
 timer-frequency = "0"
