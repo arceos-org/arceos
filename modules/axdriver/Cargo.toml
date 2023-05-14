@@ -11,8 +11,8 @@ documentation = "https://rcore-os.github.io/arceos/axdriver/index.html"
 
 [features]
 dyn = []
-bus-mmio = ["driver_virtio?/bus-mmio"]
-bus-pci = ["driver_virtio?/bus-pci"]
+bus-mmio = []
+bus-pci = ["dep:driver_pci", "dep:axhal", "dep:axconfig"]
 net = ["driver_net"]
 block = ["driver_block"]
 display = ["driver_display"]
@@ -37,6 +37,7 @@ driver_common = { path = "../../crates/driver_common" }
 driver_block = { path = "../../crates/driver_block", optional = true }
 driver_net = { path = "../../crates/driver_net", optional = true }
 driver_display = { path = "../../crates/driver_display", optional = true }
+driver_pci = { path = "../../crates/driver_pci", optional = true }
 driver_virtio = { path = "../../crates/driver_virtio", optional = true }
 axalloc = { path = "../axalloc", optional = true }
 axhal = { path = "../axhal", optional = true }

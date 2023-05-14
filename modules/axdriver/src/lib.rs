@@ -64,6 +64,7 @@ extern crate alloc;
 #[macro_use]
 mod macros;
 
+mod bus;
 mod drivers;
 mod dummy;
 mod structs;
@@ -123,8 +124,7 @@ impl AllDevices {
             }
         });
 
-        #[cfg(feature = "virtio")]
-        self.probe_virtio_devices();
+        self.probe_bus_devices();
     }
 
     /// Adds one device into the corresponding container, according to its device category.

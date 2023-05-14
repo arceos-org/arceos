@@ -31,6 +31,10 @@ virtio-mmio-regions = [
     ["0x1000_7000", "0x1000"],
     ["0x1000_8000", "0x1000"],
 ]
+# Base physical address of the PCIe ECAM space.
+pci-ecam-base = "0x3000_0000"
+# End PCI bus number (`bus-range` property in device tree).
+pci-bus-end = "0xff"
 
 # Timer interrupt frequency in Hz.
-timer_frequency = "10_000_000"      # 10MHz
+timer-frequency = "10_000_000"      # 10MHz

@@ -8,6 +8,9 @@ use driver_common::DeviceType;
 #[cfg(feature = "virtio")]
 use crate::virtio::{self, VirtIoDevMeta};
 
+#[cfg(feature = "bus-pci")]
+use driver_pci::{DeviceFunction, DeviceFunctionInfo, PciRoot};
+
 pub use super::dummy::*;
 
 pub trait DriverProbe {
@@ -15,11 +18,17 @@ pub trait DriverProbe {
         None
     }
 
+    #[cfg(feature = "bus-mmio")]
     fn probe_mmio(_mmio_base: usize, _mmio_size: usize) -> Option<AxDeviceEnum> {
         None
     }
 
-    fn probe_pci() -> Option<AxDeviceEnum> {
+    #[cfg(feature = "bus-pci")]
+    fn probe_pci(
+        _root: &mut PciRoot,
+        _bdf: DeviceFunction,
+        _dev_info: &DeviceFunctionInfo,
+    ) -> Option<AxDeviceEnum> {
         None
     }
 }

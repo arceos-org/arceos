@@ -7,13 +7,14 @@ use cfg_if::cfg_if;
 use driver_common::{BaseDriverOps, DevResult, DeviceType};
 use driver_virtio::{BufferDirection, PhysAddr, VirtIoHal};
 
-use crate::{drivers::DriverProbe, AllDevices, AxDeviceEnum};
+use crate::{drivers::DriverProbe, AxDeviceEnum};
 
 cfg_if! {
-    if #[cfg(feature =  "bus-mmio")] {
-        type VirtIoTransport = driver_virtio::MmioTransport;
-    } else if #[cfg(feature = "bus-pci")] {
+    if #[cfg(bus = "pci")] {
+        use driver_pci::{PciRoot, DeviceFunction, DeviceFunctionInfo};
         type VirtIoTransport = driver_virtio::PciTransport;
+    } else if #[cfg(bus =  "mmio")] {
+        type VirtIoTransport = driver_virtio::MmioTransport;
     }
 }
 
@@ -76,6 +77,7 @@ cfg_if! {
 pub struct VirtIoDriver<D: VirtIoDevMeta + ?Sized>(PhantomData<D>);
 
 impl<D: VirtIoDevMeta> DriverProbe for VirtIoDriver<D> {
+    #[cfg(bus = "mmio")]
     fn probe_mmio(mmio_base: usize, mmio_size: usize) -> Option<AxDeviceEnum> {
         let base_vaddr = phys_to_virt(mmio_base.into());
         if let Some((ty, transport)) =
@@ -90,6 +92,41 @@ impl<D: VirtIoDevMeta> DriverProbe for VirtIoDriver<D> {
                             mmio_base,
                             mmio_base + mmio_size,
                             e
+                        );
+                        return None;
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    #[cfg(bus = "pci")]
+    fn probe_pci(
+        root: &mut PciRoot,
+        bdf: DeviceFunction,
+        dev_info: &DeviceFunctionInfo,
+    ) -> Option<AxDeviceEnum> {
+        if dev_info.vendor_id != 0x1af4 {
+            return None;
+        }
+        match (D::DEVICE_TYPE, dev_info.device_id) {
+            (DeviceType::Net, 0x1000) | (DeviceType::Net, 0x1040) => {}
+            (DeviceType::Block, 0x1001) | (DeviceType::Block, 0x1041) => {}
+            (DeviceType::Display, 0x1050) => {}
+            _ => return None,
+        }
+
+        if let Some((ty, transport)) =
+            driver_virtio::probe_pci_device::<VirtIoHalImpl>(root, bdf, dev_info)
+        {
+            if ty == D::DEVICE_TYPE {
+                match D::try_new(transport) {
+                    Ok(dev) => return Some(dev),
+                    Err(e) => {
+                        warn!(
+                            "failed to initialize PCI device at {}({}): {:?}",
+                            bdf, dev_info, e
                         );
                         return None;
                     }
@@ -132,25 +169,4 @@ unsafe impl VirtIoHal for VirtIoHalImpl {
 
     #[inline]
     unsafe fn unshare(_paddr: PhysAddr, _buffer: NonNull<[u8]>, _direction: BufferDirection) {}
-}
-
-impl AllDevices {
-    #[cfg(feature = "bus-mmio")]
-    pub(crate) fn probe_virtio_devices(&mut self) {
-        // TODO: parse device tree
-        for reg in axconfig::VIRTIO_MMIO_REGIONS {
-            for_each_drivers!(type Driver, {
-                if let Some(dev) = Driver::probe_mmio(reg.0, reg.1) {
-                    info!(
-                        "registered a new {:?} device at [PA:{:#x}, PA:{:#x}): {:?}",
-                        dev.device_type(),
-                        reg.0, reg.0 + reg.1,
-                        dev.device_name(),
-                    );
-                    self.add_device(dev);
-                    continue; // skip to the next device
-                }
-            });
-        }
-    }
 }

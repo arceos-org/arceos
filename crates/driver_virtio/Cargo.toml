@@ -10,12 +10,9 @@ repository = "https://github.com/rcore-os/arceos/tree/main/crates/driver_virtio"
 documentation = "https://rcore-os.github.io/arceos/driver_virtio/index.html"
 
 [features]
-bus-mmio = []
-bus-pci = []
 block = ["driver_block"]
 net = ["driver_net"]
 gpu = ["driver_display"]
-default = ["bus-mmio"]
 
 [dependencies]
 driver_common = { path = "../driver_common" }

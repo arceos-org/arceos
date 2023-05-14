@@ -30,19 +30,15 @@ pub use self::net::VirtIoNetDev;
 
 use driver_common::{DevError, DeviceType};
 use virtio_drivers::transport;
+use virtio_drivers::transport::pci::bus::{DeviceFunction, DeviceFunctionInfo, PciRoot};
 
-pub use virtio_drivers::{transport::Transport, BufferDirection, Hal as VirtIoHal, PhysAddr};
-
-#[cfg(feature = "bus-mmio")]
-pub use transport::mmio::MmioTransport;
-#[cfg(feature = "bus-pci")]
-pub use transport::pci::PciTransport;
+pub use virtio_drivers::transport::{mmio::MmioTransport, pci::PciTransport, Transport};
+pub use virtio_drivers::{BufferDirection, Hal as VirtIoHal, PhysAddr};
 
 /// Try to probe a VirtIO MMIO device from the given memory region.
 ///
 /// If the device is recognized, returns the device type and a transport object
 /// for later operations. Otherwise, returns [`None`].
-#[cfg(feature = "bus-mmio")]
 pub fn probe_mmio_device(
     reg_base: *mut u8,
     _reg_size: usize,
@@ -53,6 +49,22 @@ pub fn probe_mmio_device(
     let header = NonNull::new(reg_base as *mut VirtIOHeader).unwrap();
     let transport = unsafe { MmioTransport::new(header) }.ok()?;
     let dev_type = as_dev_type(transport.device_type())?;
+    Some((dev_type, transport))
+}
+
+/// Try to probe a VirtIO PCI device from the given PCI address.
+///
+/// If the device is recognized, returns the device type and a transport object
+/// for later operations. Otherwise, returns [`None`].
+pub fn probe_pci_device<H: VirtIoHal>(
+    root: &mut PciRoot,
+    bdf: DeviceFunction,
+    dev_info: &DeviceFunctionInfo,
+) -> Option<(DeviceType, PciTransport)> {
+    use virtio_drivers::transport::pci::virtio_device_type;
+
+    let dev_type = virtio_device_type(dev_info).and_then(as_dev_type)?;
+    let transport = PciTransport::new::<H>(root, bdf).ok()?;
     Some((dev_type, transport))
 }
 

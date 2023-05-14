@@ -201,6 +201,7 @@ dependencies = [
  "driver_common",
  "driver_display",
  "driver_net",
+ "driver_pci",
  "driver_virtio",
  "log",
  "tuple_for_each",
@@ -641,6 +642,13 @@ version = "0.1.0"
 dependencies = [
  "driver_common",
  "spin",
+]
+
+[[package]]
+name = "driver_pci"
+version = "0.1.0"
+dependencies = [
+ "virtio-drivers",
 ]
 
 [[package]]
