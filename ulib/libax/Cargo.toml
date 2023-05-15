@@ -78,4 +78,4 @@ axtask = { path = "../../modules/axtask", default-features = false, optional = t
 
 [build-dependencies]
 cbindgen = { version = "0.24", optional = true }
-bindgen ={ version = "0.64", optional = true }
+bindgen ={ version = "0.65", optional = true }
