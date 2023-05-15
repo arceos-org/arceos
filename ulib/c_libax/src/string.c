@@ -129,7 +129,9 @@ int strncmp(const char *_l, const char *_r, size_t n)
     return *l - *r;
 }
 
-#define BITOP(a, b, op) a[(size_t)b / (8 * sizeof(size_t))] op 1 << (size_t)b % (8 * sizeof(size_t))
+#define BITOP(a, b, op) \
+    ((a)[(size_t)(b) / (8 * sizeof *(a))] op(size_t) 1 << ((size_t)(b) % (8 * sizeof *(a))))
+
 size_t strcspn(const char *s1, const char *s2)
 {
     const char *a = s1;
@@ -145,6 +147,26 @@ size_t strcspn(const char *s1, const char *s2)
         ;
 
     return s1 - a;
+}
+
+size_t strspn(const char *s, const char *c)
+{
+    const char *a = s;
+    size_t byteset[32 / sizeof(size_t)] = {0};
+
+    if (!c[0])
+        return 0;
+    if (!c[1]) {
+        for (; *s == *c; s++)
+            ;
+        return s - a;
+    }
+
+    for (; *c && BITOP(byteset, *(unsigned char *)c, |=); c++)
+        ;
+    for (; *s && BITOP(byteset, *(unsigned char *)s, &); s++)
+        ;
+    return s - a;
 }
 
 char *strchr(const char *s, int c)
@@ -175,4 +197,39 @@ char *strrchr(const char *s, int c)
 char *strerror(int n)
 {
     return "";
+}
+
+void *memcpy(void *restrict dest, const void *restrict src, size_t n)
+{
+    unsigned char *d = dest;
+    const unsigned char *s = src;
+    for (; n; n--) *d++ = *s++;
+    return dest;
+}
+
+void *memmove(void *dest, const void *src, size_t n)
+{
+    char *d = dest;
+    const char *s = src;
+
+    if (d == s)
+        return d;
+    if ((uintptr_t)s - (uintptr_t)d - n <= -2 * n)
+        return memcpy(d, s, n);
+
+    if (d < s) {
+        for (; n; n--) *d++ = *s++;
+    } else {
+        while (n) n--, d[n] = s[n];
+    }
+
+    return dest;
+}
+
+int memcmp(const void *vl, const void *vr, size_t n)
+{
+    const unsigned char *l = vl, *r = vr;
+    for (; n && *l == *r; n--, l++, r++)
+        ;
+    return n ? *l - *r : 0;
 }

@@ -21,10 +21,17 @@ int strcmp(const char *l, const char *r);
 int strncmp(const char *l, const char *r, size_t n);
 
 size_t strcspn(const char *s1, const char *s2);
+size_t strspn(const char *s, const char *c);
 
 char *strrchr(const char *str, int c);
 char *strchr(const char *str, int c);
 
 char *strerror(int n);
+
+void *memcpy(void *restrict dest, const void *restrict src, size_t n);
+
+void *memmove(void *dest, const void *src, size_t n);
+
+int memcmp(const void *vl, const void *vr, size_t n);
 
 #endif // __STRING_H__
