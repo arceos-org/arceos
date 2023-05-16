@@ -28,6 +28,7 @@ members = [
     "crates/driver_common",
     "crates/driver_display",
     "crates/driver_net",
+    "crates/driver_pci",
     "crates/driver_virtio",
     "crates/handler_table",
     "crates/kernel_guard",

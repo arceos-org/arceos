@@ -388,14 +388,17 @@ pub unsafe extern "C" fn ax_shutdown(
 ///
 /// Return address number if success.
 #[no_mangle]
-pub unsafe extern "C" fn ax_resolve_socket_addr(
+pub unsafe extern "C" fn ax_resolve_sockaddr(
     node: *const c_char,
     addr: *mut ctypes::sockaddr,
     len: ctypes::size_t,
 ) -> c_int {
     let name = char_ptr_to_str(node);
-    debug!("ax_dnsquery <= {:?} {:#x} {}", name, addr as usize, len);
-    ax_call_body!(ax_dnsquery, {
+    debug!(
+        "ax_resolve_sockaddr <= {:?} {:#x} {}",
+        name, addr as usize, len
+    );
+    ax_call_body!(ax_resolve_sockaddr, {
         if addr.is_null() {
             return Err(LinuxError::EFAULT);
         }

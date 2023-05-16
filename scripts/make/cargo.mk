@@ -16,6 +16,10 @@ features-$(FS) += libax/fs
 features-$(NET) += libax/net
 features-$(GRAPHIC) += libax/display
 
+ifeq ($(BUS),pci)
+  features-y += libax/bus-pci
+endif
+
 default_features := y
 
 ifeq ($(APP_LANG),c)
