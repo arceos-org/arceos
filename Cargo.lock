@@ -204,7 +204,6 @@ dependencies = [
  "driver_pci",
  "driver_virtio",
  "log",
- "tuple_for_each",
 ]
 
 [[package]]

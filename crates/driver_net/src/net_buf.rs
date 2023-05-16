@@ -6,7 +6,7 @@ use core::ptr::NonNull;
 use spin::Mutex;
 
 const MIN_BUFFER_LEN: usize = 1526;
-const MAX_BUFFER_LEN: usize = 63335;
+const MAX_BUFFER_LEN: usize = 65535;
 
 /// A RAII network buffer wrapped in a [`Box`].
 pub type NetBufferBox<'a> = Box<NetBuffer<'a>>;
@@ -176,7 +176,7 @@ impl NetBufferPool {
     ///
     /// `pool_offset` must be a multiple of `buf_len`.
     fn dealloc(&self, pool_offset: usize) {
-        assert_eq!(pool_offset % self.buf_len, 0);
+        debug_assert_eq!(pool_offset % self.buf_len, 0);
         self.free_list.lock().push(pool_offset);
     }
 }

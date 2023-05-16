@@ -28,12 +28,13 @@ pub use self::gpu::VirtIoGpuDev;
 #[cfg(feature = "net")]
 pub use self::net::VirtIoNetDev;
 
-use driver_common::{DevError, DeviceType};
-use virtio_drivers::transport;
-use virtio_drivers::transport::pci::bus::{DeviceFunction, DeviceFunctionInfo, PciRoot};
-
+pub use virtio_drivers::transport::pci::bus as pci;
 pub use virtio_drivers::transport::{mmio::MmioTransport, pci::PciTransport, Transport};
 pub use virtio_drivers::{BufferDirection, Hal as VirtIoHal, PhysAddr};
+
+use self::pci::{DeviceFunction, DeviceFunctionInfo, PciRoot};
+use driver_common::{DevError, DeviceType};
+use virtio_drivers::transport::DeviceType as VirtIoDevType;
 
 /// Try to probe a VirtIO MMIO device from the given memory region.
 ///
@@ -44,7 +45,7 @@ pub fn probe_mmio_device(
     _reg_size: usize,
 ) -> Option<(DeviceType, MmioTransport)> {
     use core::ptr::NonNull;
-    use transport::mmio::VirtIOHeader;
+    use virtio_drivers::transport::mmio::VirtIOHeader;
 
     let header = NonNull::new(reg_base as *mut VirtIOHeader).unwrap();
     let transport = unsafe { MmioTransport::new(header) }.ok()?;
@@ -68,8 +69,8 @@ pub fn probe_pci_device<H: VirtIoHal>(
     Some((dev_type, transport))
 }
 
-const fn as_dev_type(t: transport::DeviceType) -> Option<DeviceType> {
-    use transport::DeviceType::*;
+const fn as_dev_type(t: VirtIoDevType) -> Option<DeviceType> {
+    use VirtIoDevType::*;
     match t {
         Block => Some(DeviceType::Block),
         Network => Some(DeviceType::Net),

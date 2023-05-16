@@ -7,21 +7,24 @@
 //! (e.g., the network stack) may unpack the struct to get the specified device
 //! driver they want.
 //!
+//! For each device category (i.e., net, block, display, etc.), an unified type
+//! is used to represent all devices in that category. Currently, there are 3
+//! categories: [`AxNetDevice`], [`AxBlockDevice`], and [`AxDisplayDevice`].
+//!
 //! # Concepts
 //!
-//! This crate supports two device model depending on the `dyn` feature:
+//! This crate supports two device models depending on the `dyn` feature:
 //!
 //! - **Static**: The type of all devices is static, it is determined at compile
 //!  time by corresponding cargo features. For example, [`AxNetDevice`] will be
 //! an alias of [`VirtioNetDev`] if the `virtio-net` feature is enabled. This
 //! model provides the best performance as it avoids dynamic dispatch. But on
-//! limitation, for each device category (i.e., net, block, display, etc.),
-//! only one instance of device is supported.
-//! - **Dynamic**: All device instance is using [trait objects] and wrapped in
+//! limitation, only one device instance is supported for each device category.
+//! - **Dynamic**: All device instance is using [trait objects] and wrapped in a
 //! `Box<dyn Trait>`. For example, [`AxNetDevice`] will be [`Box<dyn NetDriverOps>`].
-//! When call a method in the device, it uses [dynamic dispatch][dyn] that
-//! introduces a little overhead. But on the other hand, it is more flexible,
-//! multiple instances of each device category are supported.
+//! When call a method provided by the device, it uses [dynamic dispatch][dyn]
+//! that may introduce a little overhead. But on the other hand, it is more
+//! flexible, multiple instances of each device category are supported.
 //!
 //! # Supported Devices
 //!
@@ -34,7 +37,7 @@
 //!
 //! # Other Cargo Features
 //!
-//! - `dyn`: use dynamic device model (see above).
+//! - `dyn`: use the dynamic device model (see above).
 //! - `bus-mmio`: use device tree to probe all MMIO devices. This feature is
 //!    enabeld by default.
 //! - `bus-pci`: use PCI bus to probe all PCI devices.

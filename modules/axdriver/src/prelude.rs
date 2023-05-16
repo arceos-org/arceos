@@ -1,7 +1,5 @@
 //! Device driver prelude that includes some traits and types.
 
-#![allow(unused_imports)]
-
 pub use driver_common::{BaseDriverOps, DevError, DevResult, DeviceType};
 
 #[cfg(feature = "block")]

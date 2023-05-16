@@ -35,8 +35,7 @@ fn main() {
 
         let mut selected = false;
         for feat in feat_list {
-            let env_var = format!("CARGO_FEATURE_{}", feat.to_uppercase().replace('-', "_"));
-            if std::env::var(env_var).is_ok() {
+            if has_feature(feat) {
                 enable_cfg(&format!("{dev_kind}_dev"), feat);
                 selected = true;
                 if !is_dyn {
