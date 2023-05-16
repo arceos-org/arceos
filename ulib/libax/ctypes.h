@@ -6,3 +6,6 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <stdio.h>
+#include <setjmp.h>
+#include <unistd.h>
+#include <pthread.h>

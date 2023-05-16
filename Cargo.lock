@@ -915,6 +915,7 @@ name = "libax"
 version = "0.1.0"
 dependencies = [
  "axalloc",
+ "axconfig",
  "axdisplay",
  "axdriver",
  "axerrno",

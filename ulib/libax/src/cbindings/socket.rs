@@ -5,7 +5,7 @@ use axerrno::{AxResult, LinuxError, LinuxResult};
 use axnet::{resolve_socket_addr, Ipv4Addr, SocketAddr, TcpSocket, UdpSocket};
 
 use super::ctypes;
-use super::fd_table::{add_new_socket, Filelike};
+use super::fd_table::Filelike;
 use super::utils::char_ptr_to_str;
 use crate::debug;
 
@@ -152,10 +152,14 @@ pub unsafe extern "C" fn ax_socket(domain: c_int, socktype: c_int, protocol: c_i
     ax_call_body!(ax_socket, {
         match (domain, socktype, protocol) {
             (ctypes::AF_INET, ctypes::SOCK_STREAM, ctypes::IPPROTO_TCP) => {
-                add_new_socket(Socket::Tcp(TcpSocket::new())).ok_or(LinuxError::ENFILE)
+                Filelike::from_socket(Socket::Tcp(TcpSocket::new()))
+                    .add_to_fd_table()
+                    .ok_or(LinuxError::ENFILE)
             }
             (ctypes::AF_INET, ctypes::SOCK_DGRAM, ctypes::IPPROTO_UDP) => {
-                add_new_socket(Socket::Udp(UdpSocket::new())).ok_or(LinuxError::ENFILE)
+                Filelike::from_socket(Socket::Udp(UdpSocket::new()))
+                    .add_to_fd_table()
+                    .ok_or(LinuxError::ENFILE)
             }
             _ => Err(LinuxError::EINVAL),
         }
@@ -359,7 +363,9 @@ pub unsafe extern "C" fn ax_accept(
         let socket = Filelike::from_fd(socket_fd)?.into_socket()?;
         let ressocket = socket.lock().accept()?;
         let addr = ressocket.peer_addr()?;
-        let fd = add_new_socket(Socket::Tcp(ressocket)).ok_or(LinuxError::ENFILE)?;
+        let fd = Filelike::from_socket(Socket::Tcp(ressocket))
+            .add_to_fd_table()
+            .ok_or(LinuxError::ENFILE)?;
         unsafe {
             *socket_addr = as_c_sockaddr(&addr);
             *socket_len = size_of::<ctypes::sockaddr>() as u32;

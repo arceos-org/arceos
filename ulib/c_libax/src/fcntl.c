@@ -2,13 +2,18 @@
 #include <libax.h>
 #include <stdio.h>
 
-// TODO:
 int fcntl(int fd, int cmd, ... /* arg */)
 {
-    unimplemented("fd: %d cmd: %d", fd, cmd);
-    return 0;
+    unsigned long arg;
+    va_list ap;
+    va_start(ap, cmd);
+    arg = va_arg(ap, unsigned long);
+    va_end(ap);
+
+    return ax_fcntl(fd, cmd, arg);
 }
 
+#ifdef AX_CONFIG_FS
 int open(const char *filename, int flags, ...)
 {
     mode_t mode = 0;
@@ -22,3 +27,4 @@ int open(const char *filename, int flags, ...)
 
     return ax_open(filename, flags, mode);
 }
+#endif

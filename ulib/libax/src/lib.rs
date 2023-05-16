@@ -37,6 +37,7 @@
 
 #![cfg_attr(all(not(test), not(doc)), no_std)]
 #![feature(doc_auto_cfg)]
+#![feature(naked_functions)]
 
 pub use axlog::{debug, error, info, trace, warn};
 
