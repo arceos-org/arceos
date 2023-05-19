@@ -192,6 +192,12 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         axsync::futex::init();
     }
 
+    #[cfg(feature = "scheme")]
+    {
+        info!("Initialize scheme...");
+        crate::scheme::init_scheme();
+    }
+
     info!("Primary CPU {} init OK.", cpu_id);
     INITED_CPUS.fetch_add(1, Ordering::Relaxed);
 

@@ -26,6 +26,7 @@ pub const SYS_RET: usize =      0x00F0_0000;
 pub const SYS_RET_FILE: usize = 0x0010_0000;
 
 pub const SYS_LINK: usize =     SYS_CLASS_PATH | SYS_ARG_PATH | 9;
+/// open: path ptr, path len, option
 pub const SYS_OPEN: usize =     SYS_CLASS_PATH | SYS_RET_FILE | 5;
 pub const SYS_RMDIR: usize =    SYS_CLASS_PATH | 84;
 pub const SYS_UNLINK: usize =   SYS_CLASS_PATH | 10;

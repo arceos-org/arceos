@@ -5,6 +5,7 @@ extern crate alloc;
 #[macro_use]
 extern crate axlog;
 
+use alloc::string::String;
 use alloc::sync::Arc;
 use alloc::vec::Vec;
 use axalloc::GlobalPage;
@@ -280,14 +281,17 @@ pub fn get_satp() -> usize {
     }
 }
 
-pub fn translate_buffer(vaddr: VirtAddr, size: usize) -> Vec<&'static mut [u8]> {
+pub fn translate_buffer(vaddr: VirtAddr, size: usize, write: bool) -> Vec<&'static mut [u8]> {
     let addr_space = unsafe {GLOBAL_USER_ADDR_SPACE.lock()};
 
     let mut read_size = 0usize;
     let mut vaddr = vaddr;
     let mut result: Vec<&'static mut [u8]> = vec![];
     while read_size < size {
-        let (paddr, _, page_size) = addr_space.page_table.query(vaddr).expect("Invalid vaddr!");
+        let (paddr, flag, page_size) = addr_space.page_table.query(vaddr).expect("Invalid vaddr!");
+        if !flag.contains(MappingFlags::USER) || (write && !flag.contains(MappingFlags::WRITE)) {
+            panic!("Invalid vaddr with improper rights!");
+        }
 
         let nxt_vaddr = align_up(vaddr.as_usize() + 1, page_size.into());
         let len = (nxt_vaddr - vaddr.as_usize()).min(size - read_size);
@@ -301,6 +305,19 @@ pub fn translate_buffer(vaddr: VirtAddr, size: usize) -> Vec<&'static mut [u8]> 
     result
 }
 
+pub fn copy_slice(vaddr: VirtAddr, size: usize) -> Vec<u8> {
+    let mut result = Vec::new();
+    let buffers = translate_buffer(vaddr, size, false);
+    for fragment in &buffers {
+        result.extend_from_slice(fragment);
+    }
+    result
+}
+pub fn copy_str(vaddr: VirtAddr, size: usize) -> String {
+    let result = copy_slice(vaddr, size);
+    String::from_utf8(result).expect("Invalid string!")    
+}
+
 pub fn translate_addr(vaddr: VirtAddr) -> Option<PhysAddr> {
     unsafe {
         GLOBAL_USER_ADDR_SPACE.lock().page_table.query(vaddr).ok().map(|x| x.0)
@@ -311,7 +328,7 @@ pub fn translate_addr(vaddr: VirtAddr) -> Option<PhysAddr> {
 // Copied from my code in rCore
 pub fn copy_byte_buffer(_token: usize, ptr: *const u8, data: &[u8]) {
     let copy_len = data.len();
-    let dst = translate_buffer((ptr as usize).into(), copy_len);
+    let dst = translate_buffer((ptr as usize).into(), copy_len, true);
     let mut offset = 0;
     for dst_space in dst {
         let dst_len = dst_space.len();

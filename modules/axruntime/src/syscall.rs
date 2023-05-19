@@ -26,6 +26,7 @@ static mut USER_BUFFER: LazyInit<UserBuffer> = LazyInit::new();
 pub fn syscall_handler(id: usize, params: [usize; 6]) -> isize {
     trace!("syscall {}", id);
     match id {
+        #[cfg(not(feature = "scheme"))]
         SYS_WRITE => {
             unsafe {
                 if !USER_BUFFER.is_init() {
@@ -53,6 +54,10 @@ pub fn syscall_handler(id: usize, params: [usize; 6]) -> isize {
                 }
                 0
             }
+        }
+        #[cfg(feature = "scheme")]
+        file_syscall if file_syscall & SYS_CLASS != 0 => {
+            crate::scheme::syscall_handler(id, params)
         }
         SYS_EXIT => {
             unsafe {
