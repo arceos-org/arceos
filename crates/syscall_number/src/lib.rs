@@ -57,3 +57,4 @@ pub const SYS_FUTIMENS: usize =   SYS_CLASS_FILE | SYS_ARG_SLICE | 320;
 
 // We do not use features, because these constants will cause little side effects.
 pub mod futex;
+pub mod io;

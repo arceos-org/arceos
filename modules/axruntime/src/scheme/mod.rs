@@ -80,7 +80,7 @@ pub fn init_scheme() {
 // TODO: all flags
 pub fn open(path: &str, options: usize) -> usize {
     let mut path_split = path.splitn(2, ":");
-    let (scheme, _path) = match (path_split.next(), path_split.next()) {
+    let (scheme, path) = match (path_split.next(), path_split.next()) {
         (Some(scheme), Some(path)) => (scheme, path),
         (Some(path), None) => ("file", path),
         _ => panic!("Invalid URL path!"),
@@ -111,12 +111,10 @@ pub fn open(path: &str, options: usize) -> usize {
 }
 
 pub fn file_op(op: usize, fd: usize, c: usize, d: usize) -> isize {
-    debug!("0");
     let fd_list = GLOBAL_FD_LIST.lock();
     if fd >= fd_list.len() {
         panic!("Invalid FD!");
     }
-    debug!("1");
     if let Some(handle) = &fd_list[fd] {
         let scheme = schemes().find_id(handle.scheme_id).unwrap();
         let file = handle.file_id;
@@ -129,9 +127,7 @@ pub fn file_op(op: usize, fd: usize, c: usize, d: usize) -> isize {
             uid: 0,
             gid: 0,
         };
-        debug!("2");
         scheme.handle(&mut packet);
-        debug!("3");
         packet.a as isize
     } else {
         panic!("Invalid FD!");
@@ -206,54 +202,7 @@ use syscall_number::*;
 pub trait KernelScheme: Scheme {
 }
 
-struct Stdout {
-    data: Mutex<Vec<u8>>,
-}
-impl Stdout {
-    fn flush(&self, mut data: MutexGuard<Vec<u8>>) {
-        use axhal::console::putchar;
-        info!("Writing user content");
-        for i in data.iter() {
-            putchar(*i);
-        }
-        data.clear();
-    }
-    fn putchar(&self, c: u8) {
-        let mut data = self.data.lock();
-        data.push(c);
-        if c == b'\n' {
-            self.flush(data);
-        }
-    }
-    fn new() -> Self {
-        Stdout {
-            data: Mutex::new(Vec::new())
-        }
-    }
-}
-impl Scheme for Stdout {
-    fn open(&self, path: &str, flags: usize, uid: u32, gid: u32) -> axerrno::AxResult<usize> {
-        Ok(1)
-    }
-    fn write(&self, id: usize, buf: &[u8]) -> axerrno::AxResult<usize> {
-        for i in buf {
-            self.putchar(*i)
-        }
-        Ok(buf.len())
-    }
-    fn close(&self, id: usize) -> axerrno::AxResult<usize> {
-        self.flush(self.data.lock());
-        Ok(0)
-    }
-}
-impl KernelScheme for Stdout {}
-struct Stdin;
-impl Scheme for Stdin {
-    fn open(&self, path: &str, flags: usize, uid: u32, gid: u32) -> axerrno::AxResult<usize> {
-        Ok(1)
-    }
-    fn close(&self, id: usize) -> axerrno::AxResult<usize> {
-        Ok(0)
-    }
-}
-impl KernelScheme for Stdin {}
+mod root;
+mod user;
+mod io;
+use io::{Stdin, Stdout};
