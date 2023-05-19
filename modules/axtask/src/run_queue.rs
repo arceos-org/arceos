@@ -113,8 +113,10 @@ impl AxRunQueue {
     where
         F: FnOnce(AxTaskRef),
     {
+        debug!("block_current 1");
         let curr = crate::current();
         debug!("task block: {}", curr.id_name());
+        debug!("block_current 2");
         assert!(curr.is_running());
         assert!(!curr.is_idle());
 
@@ -123,20 +125,27 @@ impl AxRunQueue {
         assert!(curr.can_preempt(1));
 
         curr.set_state(TaskState::Blocked);
+        debug!("block_current 3");
         wait_queue_push(curr.clone());
+        debug!("block_current 4");
         self.resched_inner(false);
+        debug!("block_current 5");
     }
 
     pub fn unblock_task(&mut self, task: AxTaskRef, resched: bool) {
         debug!("task unblock: {}", task.id_name());
         if task.is_blocked() {
+            debug!("123");
             task.set_state(TaskState::Ready);
+            debug!("234");
             self.scheduler.add_task(task); // TODO: priority
+            debug!("345");
             if resched {
                 #[cfg(feature = "preempt")]
                 crate::current().set_preempt_pending(true);
             }
         }
+        debug!("456");
     }
 
     #[cfg(feature = "irq")]
@@ -162,29 +171,38 @@ impl AxRunQueue {
         if self.scheduler.is_empty() {
             let id = get_current_cpu_id();
             let next = LOAD_BALANCE_ARR[id].find_stolen_cpu_id();
-            if next != -1 {
+            /*if next != -1 {
                 let task = RUN_QUEUE[next as usize].lock().scheduler.pick_next_task();
                 RUN_QUEUE[id].lock().scheduler.add_task(task.unwrap());
                 LOAD_BALANCE_ARR[next as usize].add_weight(-1);
                 LOAD_BALANCE_ARR[id].add_weight(1);
-            }
+            }*/
         }
     }
     fn resched_inner(&mut self, preempt: bool) {
+        debug!("resched inner 1");
         let prev = crate::current();
+        debug!("resched inner 2");
         if prev.is_running() {
+            debug!("resched inner 3");
             prev.set_state(TaskState::Ready);
+            debug!("resched inner 4");
             if !prev.is_idle() {
+                debug!("resched inner 5");
                 self.scheduler.put_prev_task(prev.clone(), preempt);
+                debug!("resched inner 6");
             }
         }
+        debug!("resched inner 7");
         let next = self.scheduler.pick_next_task().unwrap_or_else(|| unsafe {
             // Safety: IRQs must be disabled at this time.
             IDLE_TASK.current_ref_raw().get_unchecked().clone()
         });
+        debug!("resched inner 8");
         // TODO: 注意需要对所有 pick_next_task 后面都要判断是否队列空，如果是则需要执行线程窃取
-        self.if_empty_steal();
+        //self.if_empty_steal();
         self.switch_to(prev, next);
+        debug!("resched inner 9");
     }
 
     fn switch_to(&mut self, prev_task: CurrentTask, next_task: AxTaskRef) {

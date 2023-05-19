@@ -126,7 +126,9 @@ pub fn init_scheduler_secondary() {
 #[doc(cfg(feature = "irq"))]
 pub fn on_timer_tick() {
     crate::timers::check_events();
+    //info!("exit 6");
     RUN_QUEUE[get_current_cpu_id()].lock().scheduler_timer_tick();
+    //info!("exit 7");
 }
 
 /// Spawns a new task.

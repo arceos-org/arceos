@@ -19,6 +19,7 @@ impl TimerEvent for TaskWakeupEvent {
         let mut rq = RUN_QUEUE[LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu()].lock();
         self.0.set_in_timer_list(false);
         rq.unblock_task(self.0, true);
+        info!("exit 1");
     }
 }
 
@@ -40,6 +41,7 @@ pub fn check_events() {
         let event = TIMER_LIST.lock().expire_one(now);
         if let Some((_deadline, event)) = event {
             event.callback(now);
+            info!("exit 5");
         } else {
             break;
         }

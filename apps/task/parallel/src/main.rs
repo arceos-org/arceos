@@ -70,7 +70,9 @@ fn main() {
             println!("part {}: {:?} finished", i, task::current().id());
             let n = FINISHED_TASKS.fetch_add(1, Ordering::Relaxed);
             if n == NUM_TASKS - 1 {
+                println!("START DASH!");
                 MAIN_WQ.notify_one(true);
+                println!("END DASH!");
             }
         });
     }
