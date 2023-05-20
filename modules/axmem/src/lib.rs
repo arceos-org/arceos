@@ -5,10 +5,11 @@ extern crate alloc;
 #[macro_use]
 extern crate axlog;
 
-use alloc::string::String;
+use alloc::{string::String, collections::BTreeMap};
 use alloc::sync::Arc;
 use alloc::vec::Vec;
 use axalloc::GlobalPage;
+use axerrno::{AxResult, AxError, ax_err};
 use axhal::{
     mem::{phys_to_virt, virt_to_phys},
     paging::{MappingFlags, PageTable},
@@ -21,6 +22,9 @@ pub const USER_START: usize = 0x0400_0000;
 pub const USTACK_START: usize = 0xf_ffff_f000;
 pub const USTACK_SIZE: usize = 4096;
 pub const TRAMPOLINE_START: usize = 0xffff_ffc0_0000_0000;
+pub const MMAP_AREA_START: usize = 0x10_0000_0000;
+pub const MMAP_AREA_END: usize = 0x20_0000_0000;
+
 
 pub struct MapSegment {
     start_vaddr: VirtAddr,
@@ -37,6 +41,7 @@ pub struct AddrSpace {
     segments: alloc::vec::Vec<MapSegment>,
     page_table: PageTable,
     heap: Option<HeapSegment>,
+    mmap_use: BTreeMap<VirtAddr, GlobalPage>
 }
 
 impl AddrSpace {
@@ -45,6 +50,7 @@ impl AddrSpace {
             segments: vec![],
             page_table: PageTable::try_new().expect("Creating page table failed!"),
             heap: None,
+            mmap_use: BTreeMap::new(),
         }
     }
 
@@ -55,15 +61,16 @@ impl AddrSpace {
         phy_page: Arc<GlobalPage>,
         flags: MappingFlags,
         huge_page: bool,
-    ) {
+    ) -> AxResult<()>{
         self.page_table
             .map_region(vaddr, paddr, phy_page.size(), flags, huge_page)
-            .expect("Mapping Segment Error");
+            .map_err(|_| AxError::BadAddress)?;
         self.segments.push(MapSegment {
             start_vaddr: vaddr,
             size: phy_page.size(),
             phy_mem: vec![phy_page],
-        })
+        });
+        Ok(())
     }
     pub fn add_region_shadow(
         &mut self,
@@ -72,15 +79,16 @@ impl AddrSpace {
         size: usize,
         flags: MappingFlags,
         huge_page: bool,
-    ) {
+    ) -> AxResult<()> {
         self.page_table
             .map_region(vaddr, paddr, size, flags, huge_page)
-            .expect("Mapping Segment Error");
+            .map_err(|_| AxError::BadAddress)?;
         self.segments.push(MapSegment {
             start_vaddr: vaddr,
             size,
             phy_mem: vec![],
-        })
+        });
+        Ok(())
     }
 
     pub fn page_table_addr(&self) -> PhysAddr {
@@ -159,12 +167,60 @@ impl AddrSpace {
             None
         }
     }
+
+    /// a simple mmap-like page allocator, except that memory is alloced in pages
+    /// @param addr: desired memory position
+    /// @param len: desired pages
+    /// @returns: starting addr of the maped pages
+    pub fn mmap_page(&mut self, _addr: Option<VirtAddr>, len: usize, flags: MappingFlags) -> AxResult<VirtAddr> {
+        let mut addr: VirtAddr = MMAP_AREA_START.into();
+        let len = align_up_4k(len);
+        let pages = len / PAGE_SIZE_4K;
+        while addr + len < MMAP_AREA_END.into() {
+            if let Some(offset) = (0..pages).find(|offset| {
+                self.mmap_use.contains_key(&(addr + offset * PAGE_SIZE_4K))
+            }) {
+                addr += (offset + 1) * PAGE_SIZE_4K;
+            } else {
+                // TODO: undo when error
+                (0..pages).for_each(|offset| {
+                    let phy_page = GlobalPage::alloc_zero().expect("Run out of memory!");
+                    self.page_table.map_region(
+                        addr + offset * PAGE_SIZE_4K,
+                        phy_page.start_paddr(virt_to_phys),
+                        PAGE_SIZE_4K,
+                        flags,
+                        false)
+                        .expect("Mapping error");
+                    self.mmap_use.insert(addr + offset * PAGE_SIZE_4K, phy_page);
+                });
+                return Ok(addr)
+            }
+        }
+        ax_err!(NoMemory)
+    }
+
+    pub fn munmap_page(&mut self, addr: VirtAddr, len: usize) -> AxResult<()> {
+        let len = align_up_4k(len);
+        let pages = len / PAGE_SIZE_4K;
+        if (0..pages).find(|offset| {
+            !self.mmap_use.contains_key(&(addr + offset * PAGE_SIZE_4K))
+        }).is_some() {
+            return ax_err!(BadAddress)
+        } else {
+            (0..pages).for_each(|offset| {
+                self.page_table.unmap(addr + offset * PAGE_SIZE_4K).unwrap();
+                self.mmap_use.remove(&(addr + offset * PAGE_SIZE_4K));                
+            })
+        }
+        Ok(())
+    }
+    
 }
 
 static mut GLOBAL_USER_ADDR_SPACE: LazyInit<SpinNoIrq<AddrSpace>> = LazyInit::new();
 
 pub fn init_global_addr_space() {
-    use axhal::mem::PAGE_SIZE_4K;
     extern crate alloc;
 
     extern "C" {
@@ -206,7 +262,7 @@ pub fn init_global_addr_space() {
             Arc::new(user_phy_page),
             segment.flags | MappingFlags::USER,
             false,
-        );
+        ).expect("Memory error!");
         data_end = data_end.max(segment.start_addr + align_up_4k(segment.size))
     }
 
@@ -227,7 +283,7 @@ pub fn init_global_addr_space() {
             Arc::new(user_stack_page),
             MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
             false,
-        );
+        ).expect("Memory Error");
     }
 
     extern "C" {
@@ -239,7 +295,7 @@ pub fn init_global_addr_space() {
         PAGE_SIZE_4K,
         MappingFlags::READ | MappingFlags::EXECUTE,
         false,
-    );
+    ).expect("Memory Error");
     unsafe {
         GLOBAL_USER_ADDR_SPACE.init_by(SpinNoIrq::new(user_space));
     }
@@ -260,7 +316,7 @@ pub fn alloc_user_page(vaddr: VirtAddr, size: usize, flags: MappingFlags) -> Arc
             user_phy_page.clone(),
             flags,
             false,
-        );
+        ).expect("Memory Error");
     }
 
     user_phy_page
@@ -279,6 +335,16 @@ pub fn get_satp() -> usize {
             .page_table_addr()
             .into()
     }
+}
+
+pub fn mmap_page(addr: Option<VirtAddr>, len: usize, flags: MappingFlags) -> AxResult<VirtAddr> {
+    let mut addr_space = unsafe { GLOBAL_USER_ADDR_SPACE.lock() };
+    addr_space.mmap_page(addr, len, flags)
+}
+
+pub fn munmap_page(addr: VirtAddr, len: usize) -> AxResult<()> {
+    let mut addr_space = unsafe { GLOBAL_USER_ADDR_SPACE.lock() };
+    addr_space.munmap_page(addr, len)
 }
 
 pub fn translate_buffer(vaddr: VirtAddr, size: usize, write: bool) -> Vec<&'static mut [u8]> {
@@ -305,7 +371,7 @@ pub fn translate_buffer(vaddr: VirtAddr, size: usize, write: bool) -> Vec<&'stat
     result
 }
 
-pub fn copy_slice(vaddr: VirtAddr, size: usize) -> Vec<u8> {
+pub fn copy_slice_from_user(vaddr: VirtAddr, size: usize) -> Vec<u8> {
     let mut result = Vec::new();
     let buffers = translate_buffer(vaddr, size, false);
     for fragment in &buffers {
@@ -313,8 +379,8 @@ pub fn copy_slice(vaddr: VirtAddr, size: usize) -> Vec<u8> {
     }
     result
 }
-pub fn copy_str(vaddr: VirtAddr, size: usize) -> String {
-    let result = copy_slice(vaddr, size);
+pub fn copy_str_from_user(vaddr: VirtAddr, size: usize) -> String {
+    let result = copy_slice_from_user(vaddr, size);
     String::from_utf8(result).expect("Invalid string!")    
 }
 
@@ -326,7 +392,7 @@ pub fn translate_addr(vaddr: VirtAddr) -> Option<PhysAddr> {
 
 /// Copy a [u8] array `data' from current memory space into position `ptr' of the userspace `token'
 // Copied from my code in rCore
-pub fn copy_byte_buffer(_token: usize, ptr: *const u8, data: &[u8]) {
+pub fn copy_byte_buffer_to_user(_token: usize, ptr: *const u8, data: &[u8]) {
     let copy_len = data.len();
     let dst = translate_buffer((ptr as usize).into(), copy_len, true);
     let mut offset = 0;
@@ -340,8 +406,8 @@ pub fn copy_byte_buffer(_token: usize, ptr: *const u8, data: &[u8]) {
 
 /// Copy a `data' with type `T' from current memory space into position `ptr' of the userspace `token'
 // Copied from my code in rCore
-pub fn copy_data<T>(token: usize, ptr: *const u8, data: &T) {
+pub fn copy_data_to_user<T>(token: usize, ptr: *const u8, data: &T) {
     let data_ptr = data as *const T as *const u8;
     let data_buf = unsafe { core::slice::from_raw_parts(data_ptr, core::mem::size_of::<T>()) };
-    copy_byte_buffer(token, ptr, data_buf);
+    copy_byte_buffer_to_user(token, ptr, data_buf);
 }

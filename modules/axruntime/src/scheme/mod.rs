@@ -3,7 +3,7 @@ use alloc::{collections::BTreeMap, sync::Arc};
 use alloc::vec::Vec;
 use alloc::boxed::Box;
 use alloc::string::ToString;
-use axmem::{copy_byte_buffer, copy_slice};
+use axmem::{copy_slice_from_user, copy_byte_buffer_to_user};
 use axtask::current;
 use lazy_init::LazyInit;
 use axsync::{Mutex, MutexGuard};
@@ -24,7 +24,7 @@ pub fn syscall_handler(id: usize, params: [usize; 6]) -> isize {
                     match id {
                         SYS_FMAP => -1, // TODO
                         _ => {
-                            file_op_slice(id, fd, &copy_slice(params[1].into(), params[2]))
+                            file_op_slice(id, fd, &copy_slice_from_user(params[1].into(), params[2]))
                         }
                     }
                 }
@@ -50,7 +50,7 @@ pub fn syscall_handler(id: usize, params: [usize; 6]) -> isize {
             
         },
         SYS_CLASS_PATH => match id {
-            SYS_OPEN => open(&axmem::copy_str(params[0].into(), params[1]), params[2]) as isize,
+            SYS_OPEN => open(&axmem::copy_str_from_user(params[0].into(), params[1]), params[2]) as isize,
             SYS_RMDIR => -1, // TODO
             SYS_UNLINK => -1, // TODO
             _ => -1,
@@ -66,7 +66,7 @@ fn file_op_slice_mut(id: usize, fd: usize, ptr: usize, len: usize) -> isize {
     let buffer: Vec<u8> = alloc::vec![0; len];
     let buffer_slice = buffer.as_slice();
     let ret = file_op(id, fd, buffer_slice.as_ptr() as usize, buffer_slice.len());
-    copy_byte_buffer(0, ptr as *const u8, buffer_slice);
+    copy_byte_buffer_to_user(0, ptr as *const u8, buffer_slice);
     ret
 }
 

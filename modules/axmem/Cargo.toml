@@ -13,3 +13,4 @@ axalloc = { path = "../axalloc"}
 axlog = { path = "../axlog" }
 elf_loader = { path = "../../crates/elf_loader"}
 spinlock = { path = "../../crates/spinlock" }
+axerrno = { path = "../../crates/axerrno"}
