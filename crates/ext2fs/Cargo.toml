@@ -11,3 +11,4 @@ spin = "0.7.0"
 log = "0.4.0"
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
 fs_utils = { path = "../fs_utils" }
+axfs_vfs = { path = "../axfs_vfs" }

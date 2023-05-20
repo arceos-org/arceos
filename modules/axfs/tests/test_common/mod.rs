@@ -135,7 +135,7 @@ fn test_remove_file_dir() -> Result<()> {
     // remove a file and test existence
     let fname = "//very-long-dir-name/..///new-file.txt";
     println!("test remove file {:?}:", fname);
-    assert_err!(fs::remove_dir(fname), NotADirectory);
+    assert_err!(fs::remove_dir(fname, false), NotADirectory);
     assert!(fs::remove_file(fname).is_ok());
     assert_err!(fs::metadata(fname), NotFound);
     assert_err!(fs::remove_file(fname), NotFound);
@@ -144,21 +144,21 @@ fn test_remove_file_dir() -> Result<()> {
     let dirname = "very//.//long/../long/.//./new-dir////";
     println!("test remove dir {:?}:", dirname);
     assert_err!(fs::remove_file(dirname), IsADirectory);
-    assert!(fs::remove_dir(dirname).is_ok());
+    assert!(fs::remove_dir(dirname, false).is_ok());
     assert_err!(fs::metadata(dirname), NotFound);
-    assert_err!(fs::remove_dir(fname), NotFound);
+    assert_err!(fs::remove_dir(fname, false), NotFound);
 
     // error cases
     assert_err!(fs::remove_file(""), NotFound);
-    assert_err!(fs::remove_dir("/"), DirectoryNotEmpty);
-    assert_err!(fs::remove_dir("."), InvalidInput);
-    assert_err!(fs::remove_dir("../"), InvalidInput);
-    assert_err!(fs::remove_dir("./././/"), InvalidInput);
+    assert_err!(fs::remove_dir("/", false), DirectoryNotEmpty);
+    assert_err!(fs::remove_dir(".", false), InvalidInput);
+    assert_err!(fs::remove_dir("../", false), InvalidInput);
+    assert_err!(fs::remove_dir("./././/", false), InvalidInput);
     assert_err!(fs::remove_file("///very/./"), IsADirectory);
     assert_err!(fs::remove_file("short.txt/"), NotADirectory);
-    assert_err!(fs::remove_dir(".///"), InvalidInput);
-    assert_err!(fs::remove_dir("/./very///"), DirectoryNotEmpty);
-    assert_err!(fs::remove_dir("very/long/.."), InvalidInput);
+    assert_err!(fs::remove_dir(".///", false), InvalidInput);
+    assert_err!(fs::remove_dir("/./very///", false), DirectoryNotEmpty);
+    assert_err!(fs::remove_dir("very/long/..", false), InvalidInput);
 
     println!("test_remove_file_dir() OK!");
     Ok(())
@@ -224,17 +224,17 @@ fn test_devfs_ramfs() -> Result<()> {
     assert_err!(fs::write("/dev/stdout", "test"), PermissionDenied);
     assert_err!(fs::create_dir("/dev/test"), PermissionDenied);
     assert_err!(fs::remove_file("/dev/null"), PermissionDenied);
-    assert_err!(fs::remove_dir("./dev"), PermissionDenied);
-    assert_err!(fs::remove_dir("./dev/."), InvalidInput);
-    assert_err!(fs::remove_dir("///dev//..//"), InvalidInput);
+    assert_err!(fs::remove_dir("./dev", false), PermissionDenied);
+    assert_err!(fs::remove_dir("./dev/.", false), InvalidInput);
+    assert_err!(fs::remove_dir("///dev//..//", false), InvalidInput);
 
     // parent of '/dev'
     assert_eq!(fs::create_dir("///dev//..//233//"), Ok(()));
     assert_eq!(fs::write(".///dev//..//233//.///test.txt", "test"), Ok(()));
     assert_err!(fs::remove_file("./dev//../..//233//.///test.txt"), NotFound);
     assert_eq!(fs::remove_file("./dev//..//233//../233/./test.txt"), Ok(()));
-    assert_eq!(fs::remove_dir("dev//foo/../foo/../.././/233"), Ok(()));
-    assert_err!(fs::remove_dir("very/../dev//"), PermissionDenied);
+    assert_eq!(fs::remove_dir("dev//foo/../foo/../.././/233", false), Ok(()));
+    assert_err!(fs::remove_dir("very/../dev//", false), PermissionDenied);
 
     // tests in /tmp
     assert_eq!(fs::metadata("tmp")?.file_type(), FileType::Dir);
@@ -243,9 +243,9 @@ fn test_devfs_ramfs() -> Result<()> {
     assert_eq!(fs::write(".///tmp///dir//.///test.txt", "test"), Ok(()));
     assert_eq!(fs::read("tmp//././/dir//.///test.txt"), Ok("test".into()));
     // assert_err!(fs::remove_dir("dev/../tmp//dir"), DirectoryNotEmpty); // TODO
-    assert_err!(fs::remove_dir("/tmp/dir/../dir"), DirectoryNotEmpty);
+    assert_err!(fs::remove_dir("/tmp/dir/../dir", false), DirectoryNotEmpty);
     assert_eq!(fs::remove_file("./tmp//dir//test.txt"), Ok(()));
-    assert_eq!(fs::remove_dir("tmp/dir/.././dir///"), Ok(()));
+    assert_eq!(fs::remove_dir("tmp/dir/.././dir///", false), Ok(()));
     assert_eq!(fs::read_dir("tmp").unwrap().count(), 0);
 
     println!("test_devfs_ramfs() OK!");

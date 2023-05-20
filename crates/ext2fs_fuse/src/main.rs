@@ -100,8 +100,8 @@ fn efs_test() -> std::io::Result<()> {
     assert_eq!(greet_str, core::str::from_utf8(&buffer[..len]).unwrap());
 
     // ftruncate file
-    assert!(fileb.ftruncate(4096).unwrap());
-    assert!(fileb.ftruncate(4).unwrap());
+    assert!(fileb.ftruncate(4096).is_ok());
+    assert!(fileb.ftruncate(4).is_ok());
     let lenb = fileb.read_at(0, &mut buffer).unwrap();
     println!("fileb content after truncate:");
     println!("{}", core::str::from_utf8(&buffer[..lenb]).unwrap());
@@ -113,7 +113,7 @@ fn efs_test() -> std::io::Result<()> {
     println!("{}", core::str::from_utf8(&buffer[..lena]).unwrap());
 
     // rm file
-    assert!(root_inode.rm_file("fileb").unwrap());
+    assert!(root_inode.rm_file("fileb").is_ok());
     println!("After remove fileb");
     println!("Under root:");
     for name in root_inode.ls().unwrap() {
@@ -121,16 +121,16 @@ fn efs_test() -> std::io::Result<()> {
     }
 
     // invalid
-    assert!(fileb.disk_inode().is_none());
+    assert!(fileb.disk_inode().is_err());
 
     // rm empty dir
-    assert!(dire.rm_dir("dirg", false).unwrap());
+    assert!(dire.rm_dir("dirg", false).is_ok());
 
     // rm non-empty dir FAIL
-    assert!(!dirc.rm_dir("dire", false).unwrap());
+    assert!(!dirc.rm_dir("dire", false).is_ok());
 
     // rm non-empty dir recursively SUCCESS
-    assert!(dirc.rm_dir("dire", true).unwrap());
+    assert!(dirc.rm_dir("dire", true).is_ok());
 
     println!("After remove dire recursively, dirc:");
     for name in dirc.ls().unwrap() {
@@ -140,11 +140,11 @@ fn efs_test() -> std::io::Result<()> {
     // link count
     let disk_inode_a_before = filealink.disk_inode().unwrap();
     assert_eq!(disk_inode_a_before.i_links_count, 2);
-    assert!(dirc.rm_file("filealink").unwrap());
+    assert!(dirc.rm_file("filealink").is_ok());
     let disk_inode_a_after = filealink.disk_inode().unwrap();
     assert_eq!(disk_inode_a_after.i_links_count, 1);
 
-    assert!(root_inode.rm_dir("dirc", true).unwrap());
+    assert!(root_inode.rm_dir("dirc", true).is_ok());
 
     let mut random_str_test = |len: usize| {
         filea.ftruncate(0);
