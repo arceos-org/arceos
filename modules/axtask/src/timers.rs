@@ -15,10 +15,10 @@ struct TaskWakeupEvent(AxTaskRef);
 
 impl TimerEvent for TaskWakeupEvent {
     fn callback(self, _now: TimeValue) {
-        info!("qwq {}", get_current_cpu_id());
         self.0.set_in_timer_list(false);
-        RUN_QUEUE[LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu()].unblock_task(self.0, true);
-        info!("exit 1");
+        let target_cpu = LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu();
+        self.0.set_queue_id(target_cpu);
+        RUN_QUEUE[target_cpu].unblock_task(self.0, true);
     }
 }
 

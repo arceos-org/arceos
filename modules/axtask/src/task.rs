@@ -9,7 +9,7 @@ use core::sync::atomic::AtomicUsize;
 use axhal::arch::TaskContext;
 use memory_addr::{align_up_4k, VirtAddr};
 use crate::get_current_cpu_id;
-
+use core::sync::atomic::AtomicIsize;
 use crate::{AxTask, AxTaskRef};
 
 /// A unique identifier for a thread.
@@ -44,6 +44,8 @@ pub struct TaskInner {
     need_resched: AtomicBool,
     #[cfg(feature = "preempt")]
     preempt_disable_count: AtomicUsize,
+
+    in_which_queue: AtomicIsize,
 
     kstack: Option<TaskStack>,
     ctx: UnsafeCell<TaskContext>,
@@ -92,6 +94,11 @@ impl TaskInner {
     pub fn id_name(&self) -> alloc::string::String {
         alloc::format!("Task({}, {:?})", self.id.as_u64(), self.name)
     }
+
+    /// set queue id
+    pub fn set_queue_id(&self, id: usize) {
+        self.in_which_queue.store(id as isize, Ordering::Release);
+    }
 }
 
 // private methods
@@ -113,6 +120,7 @@ impl TaskInner {
             preempt_disable_count: AtomicUsize::new(0),
             kstack: None,
             ctx: UnsafeCell::new(TaskContext::new()),
+            in_which_queue: AtomicIsize::new(-1),
         }
     }
 
@@ -222,17 +230,25 @@ impl TaskInner {
     pub(crate) fn enable_preempt(&self, resched: bool) {
         if self.preempt_disable_count.fetch_sub(1, Ordering::Relaxed) == 1 && resched {
             // If current task is pending to be preempted, do rescheduling.
-            Self::current_check_preempt_pending();
+            self.current_check_preempt_pending();
         }
     }
 
     #[cfg(feature = "preempt")]
-    fn current_check_preempt_pending() {
+    fn current_check_preempt_pending(&self) {
         let curr = crate::current();
         if curr.need_resched.load(Ordering::Acquire) && curr.can_preempt(0) {
-            let mut rq = crate::RUN_QUEUE.lock();
+            //let mut rq = crate::RUN_QUEUE.lock();
             if curr.need_resched.load(Ordering::Acquire) {
-                rq.resched();
+                //assert!(self.in_which_queue.load(Ordering::Acquire) >= 0);
+                if self.in_which_queue.load(Ordering::Acquire) >= 0 {
+                    crate::RUN_QUEUE[self.in_which_queue.load(Ordering::Acquire) as usize].resched();
+                } else {
+                    // qwq???
+                    //for i in 0..axconfig.SMP {
+                    //    crate::RUN_QUEUE[i].resched();
+                    //}
+                }
             }
         }
     }

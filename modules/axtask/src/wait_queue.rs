@@ -167,7 +167,8 @@ impl WaitQueue {
         debug!("lock begin 3");
         if !self.queue.lock().is_empty() {
             //info!("tat1 {}", get_current_cpu_id());
-            let tmp = self.notify_one_locked(resched, &RUN_QUEUE[LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu()]);
+            let target_cpu = LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu();
+            let tmp = self.notify_one_locked(resched, &RUN_QUEUE[target_cpu], target_cpu);
             //debug!("lock end 3");
             tmp
         } else {
@@ -204,7 +205,10 @@ impl WaitQueue {
         let mut wq = self.queue.lock();
         if let Some(index) = wq.iter().position(|(t, cpu_id)| Arc::ptr_eq(t, task)) {
             task.set_in_wait_queue(false);
-            RUN_QUEUE[LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu()].unblock_task(wq.remove(index).unwrap().0, resched);
+            let target_cpu = LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu();
+            let task = wq.remove(index).unwrap().0;
+            task.set_queue_id(target_cpu);
+            RUN_QUEUE[target_cpu].unblock_task(task, resched);
             //info!("exit 4");
             true
         } else {
@@ -212,12 +216,13 @@ impl WaitQueue {
         }
     }
 
-    pub(crate) fn notify_one_locked(&self, resched: bool, rq: &AxRunQueue) -> bool {
+    pub(crate) fn notify_one_locked(&self, resched: bool, rq: &AxRunQueue, queueid: usize) -> bool {
         //assert!(false);
         let tmp = self.queue.lock();
         //info!("111 {} {}", get_current_cpu_id(), tmp[0].1);
         for i in 0..tmp.len() {
             tmp[i].0.set_in_wait_queue(false);
+            tmp[i].0.set_queue_id(queueid);
             rq.unblock_task(tmp[i].0.clone(), resched);
             drop(tmp);
             return true;

@@ -119,6 +119,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "arceos-unbalance"
+version = "0.1.0"
+dependencies = [
+ "libax",
+]
+
+[[package]]
 name = "arceos-yield"
 version = "0.1.0"
 dependencies = [

@@ -72,7 +72,7 @@ impl AxRunQueue {
     }
 
     #[cfg(feature = "preempt")]
-    pub fn resched(&mut self) {
+    pub fn resched(&self) {
         let curr = crate::current();
         assert!(curr.is_running());
 
@@ -106,7 +106,7 @@ impl AxRunQueue {
         } else {
             curr.set_state(TaskState::Exited);
             EXITED_TASKS.lock().push_back(curr.clone());
-            WAIT_FOR_EXIT.notify_one_locked(false, self);
+            WAIT_FOR_EXIT.notify_one_locked(false, self, self.id);
             self.resched_inner(false);
         }
         unreachable!("task exited!");
