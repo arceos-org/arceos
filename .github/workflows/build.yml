@@ -18,11 +18,19 @@ jobs:
         components: rust-src, clippy, rustfmt
     - name: Download x86_64 musl toolchain
       run: |
-        export MUSL_PATH="x86_64-linux-musl-cross"
-        wget https://musl.cc/$MUSL_PATH.tgz
-        tar -xf $MUSL_PATH.tgz
-        mv $MUSL_PATH musl
-        echo "$PWD/musl/bin" >> $GITHUB_PATH
+        for arch in x86_64 aarch64 riscv64; do
+          if [ "$arch" = "x86_64" ]; then
+            export MUSL_PATH="x86_64-linux-musl-cross"
+          elif [ "$arch" = "aarch64" ]; then
+            export MUSL_PATH="aarch64-linux-musl-cross"
+          elif [ "$arch" = "riscv64" ]; then
+            export MUSL_PATH="riscv64-linux-musl-cross"
+          fi
+          wget https://musl.cc/$MUSL_PATH.tgz
+          tar -xf $MUSL_PATH.tgz
+          mv $MUSL_PATH musl
+          echo "$PWD/musl/bin" >> $GITHUB_PATH
+        done
     - name: Clippy for the default target
       run: cargo clippy --all-features
     - name: Clippy for x86_64
