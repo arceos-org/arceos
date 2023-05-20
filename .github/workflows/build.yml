@@ -9,6 +9,8 @@ jobs:
       fail-fast: false
     steps:
     - uses: actions/checkout@v3
+      with:
+        submodules: recursive
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
@@ -34,6 +36,8 @@ jobs:
         arch: [x86_64, riscv64, aarch64]
     steps:
     - uses: actions/checkout@v3
+      with:
+        submodules: recursive
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
