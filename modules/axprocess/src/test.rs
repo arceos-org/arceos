@@ -10,9 +10,9 @@ use alloc::boxed::Box;
 use alloc::string::{self, String, ToString};
 use alloc::vec::Vec;
 use riscv::asm;
-/// 该文件用于进行运行测例
-
-const TESTCASES: &[&str] = &[
+/// 初赛测例
+#[allow(dead_code)]
+const JUNIOR_TESTCASES: &[&str] = &[
     "brk",
     "chdir",
     "clone",
@@ -45,6 +45,118 @@ const TESTCASES: &[&str] = &[
     "waitpid",
     "write",
     "yield",
+];
+
+/// libc静态测例
+pub const LIBC_STATIC_TESTCASES: &[&str] = &[
+    "argv",
+    "basename",
+    "clocale_mbfuncs",
+    "clock_gettime",
+    "crypt",
+    "daemon_failure",
+    "dirname",
+    "dn_expand_empty",
+    "dn_expand_ptr_0",
+    "env",
+    "fdopen",
+    "fflush_exit",
+    "fgets_eof",
+    "fgetwc_buffering",
+    "fnmatch",
+    "fpclassify_invalid_ld80",
+    "fscanf",
+    "ftello_unflushed_append",
+    "fwscanf",
+    "getpwnam_r_crash",
+    "getpwnam_r_errno",
+    "iconv_open",
+    "iconv_roundtrips",
+    "inet_ntop_v4mapped",
+    "inet_pton",
+    "inet_pton_empty_last_field",
+    "iswspace_null",
+    "lrand48_signextend",
+    "lseek_large",
+    "malloc_0",
+    "mbc",
+    "mbsrtowcs_overflow",
+    "memmem_oob",
+    "memmem_oob_read",
+    "memstream",
+    "mkdtemp_failure",
+    "mkstemp_failure",
+    "pleval",
+    "printf_1e9_oob",
+    "printf_fmt_g_round",
+    "printf_fmt_g_zeros",
+    "printf_fmt_n",
+    "pthread_cancel",
+    "pthread_cancel_points",
+    "pthread_cancel_sem_wait",
+    "pthread_cond",
+    "pthread_cond_smasher",
+    "pthread_condattr_setclock",
+    "pthread_exit_cancel",
+    "pthread_once_deadlock",
+    "pthread_robust_detach",
+    "pthread_rwlock_ebusy",
+    "pthread_tsd",
+    "putenv_doublefree",
+    "qsort",
+    "random",
+    "regex_backref_0",
+    "regex_bracket_icase",
+    "regex_ere_backref",
+    "regex_escaped_high_byte",
+    "regex_negated_range",
+    "regexec_nosub",
+    "rewind_clear_error",
+    "rlimit_open_files",
+    "scanf_bytes_consumed",
+    "scanf_match_literal_eof",
+    "scanf_nullbyte_char",
+    "search_hsearch",
+    "search_insque",
+    "search_lsearch",
+    "search_tsearch",
+    "setjmp",
+    "setvbuf_unget",
+    "sigprocmask_internal",
+    "snprintf",
+    "socket",
+    "sscanf",
+    "sscanf_eof",
+    //"sscanf_long",
+    "stat",
+    "statvfs",
+    "strftime",
+    "string",
+    "string_memcpy",
+    "string_memmem",
+    "string_memset",
+    "string_strchr",
+    "string_strcspn",
+    "string_strstr",
+    "strptime",
+    "strtod",
+    "strtod_simple",
+    "strtof",
+    "strtol",
+    "strtold",
+    "strverscmp",
+    "swprintf",
+    "syscall_sign_extend",
+    "tgmath",
+    "time",
+    "udiv",
+    "ungetc",
+    "uselocale_0",
+    "utime",
+    "wcsncpy_read_overflow",
+    "wcsstr",
+    "wcsstr_false_negative",
+    "wcstol",
 ];
 
 /// 运行测试时的状态机，记录测试结果与内容
@@ -114,8 +226,8 @@ impl TestResult {
     }
 }
 lazy_static::lazy_static! {
-    static ref TESTITER: SpinNoIrq<Box<dyn Iterator<Item = &'static &'static str> + Send>> = SpinNoIrq::new(Box::new(TESTCASES.iter()));
-    static ref TESTRESULT: SpinNoIrq<TestResult> = SpinNoIrq::new(TestResult::new(TESTCASES.len()));
+    static ref TESTITER: SpinNoIrq<Box<dyn Iterator<Item = &'static &'static str> + Send>> = SpinNoIrq::new(Box::new(LIBC_STATIC_TESTCASES.iter()));
+    static ref TESTRESULT: SpinNoIrq<TestResult> = SpinNoIrq::new(TestResult::new(LIBC_STATIC_TESTCASES.len()));
 }
 
 /// 某一个测试用例完成之后调用，记录测试结果
