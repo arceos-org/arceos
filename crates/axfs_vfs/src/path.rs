@@ -1,6 +1,7 @@
 //! Utilities for path manipulation.
 
 use alloc::string::String;
+use alloc::vec::Vec;
 
 /// Returns the canonical form of the path with all intermediate components
 /// normalized.
@@ -49,6 +50,28 @@ pub fn canonicalize(path: &str) -> String {
         buf.push('/');
     }
     buf
+}
+
+pub fn split_path(path: &str) -> Vec<String> {
+    let processed_path = canonicalize(path);
+    let mut names: Vec<String> = Vec::new();
+
+    for name in processed_path.split("/") {
+        names.push(String::from(name))
+    }
+    names
+}
+
+pub fn split_parent_name(path: &str) -> (Option<String>, String) {
+    assert!(!path.is_empty());
+    let names = split_path(path);
+    if names.len() == 1 {
+        return (None, names[0].clone());
+    } else {
+        let parent = names[0..names.len()-1].join("/");
+        let name = names[names.len()-1].clone();
+        return (Some(parent), name);
+    }
 }
 
 #[cfg(test)]

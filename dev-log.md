@@ -269,3 +269,121 @@ arceos:/$ pwd
 2. 目前 ext2 的一部分功能，比如说：link、unlink、rm_dir 都没有在 fs/shell 中体现，下一步我会为 arceos 
 增加更多的文件相关的系统调用，来用上这些功能。
 3. 和另一位同学沟通，将日志功能加入 ext2 文件系统。
+
+## 第 13 周
+1. 完善了 ext2 的错误处理，如下所示：
+```rust
+pub enum Ext2Error {
+    /// A directory entry already exists
+    AlreadyExists,
+    /// A directory is not empty when delete
+    DirectoryIsNotEmpty,
+    /// An directory entity is not found
+    NotFound,
+    /// There is no enough storage space for write
+    NotEnoughSpace,
+    /// The entry has been deleted
+    InvalidResource,
+    /// The operation is only valid in file
+    NotAFile,
+    /// The operation is only valid in directory
+    NotADir,
+    /// Invalid inode number
+    InvalidInodeId,
+    /// Link to itself
+    LinkToSelf,
+    /// Link to directory
+    LinkToDir,
+    /// Path too long when doing symbolic link
+    PathTooLong,
+    /// Name too long when adding dentry in directory
+    NameTooLong,
+    /// Not a symbolic link
+    NotSymlink,
+    /// Invalid file/directory name
+    InvalidName,
+}
+
+pub type Ext2Result<T = ()> = Result<T, Ext2Error>;
+```
+
+2. 支持递归删除文件夹、硬链接，因此修改了 VFS 接口：
+```rust
+/// Create a hard link to target (maybe file or symlink)
+fn link(&self, _name: &str, _handle: &LinkHandle) -> VfsResult {
+    ax_err!(Unsupported)
+}
+
+/// for hard link support
+/// (这是因为硬链接要求是同一个文件系统，LinkHandle 可以用来判断这一点)
+fn get_link_handle(&self) -> VfsResult<LinkHandle> {
+    ax_err!(Unsupported)
+}
+/// Remove the node with given `path` in the directory.
+fn remove(&self, _path: &str, _recursive: bool) -> VfsResult {
+    ax_err!(Unsupported)
+}
+```
+
+3. 支持软链接，因此路径查询需要在 VFS 层进行，因为软链接可以跨文件系统，这里通过限制软链接跳转的次数
+来防止无限循环：
+```rust
+fn _lookup_symbolic(dir: Option<&VfsNodeRef>, path: &str, count: &mut usize, max_count: usize, final_jump: bool) -> AxResult<VfsNodeRef> {
+    debug!("_lookup_symbolic({}, {})", path, count);
+    if path.is_empty() {
+        return ax_err!(NotFound);
+    }
+    let parent = parent_node_of(dir, path);
+    let is_dir = path.ends_with("/");
+    let path = path.trim_matches('/');
+    let names = axfs_vfs::path::split_path(path);
+
+    let mut cur = parent.clone();
+
+    for (idx, name) in names.iter().enumerate() {
+        let vnode = cur.clone().lookup(name.as_str())?;
+        let ty = vnode.get_attr()?.file_type();
+        if ty == VfsNodeType::SymLink {
+            if idx == names.len() - 1 && !final_jump {
+                return Ok(vnode);
+            }
+            *count += 1;
+            if *count > max_count {
+                return Err(VfsError::NotFound);
+            }
+            let mut new_path = vnode.get_path()?;
+            let rest_path = names[idx+1..].join("/");
+            if !rest_path.is_empty() {
+                new_path += "/";
+                new_path += &rest_path;
+            }
+            if is_dir {
+                new_path += "/";
+            }
+            return _lookup_symbolic(None, &new_path, count, max_count, final_jump);
+        } else {
+            if idx == names.len() - 1 {
+                if is_dir && !ty.is_dir() {
+                    return Err(AxError::NotADirectory);
+                }
+                return Ok(vnode);
+            } else {
+                match ty {
+                    VfsNodeType::Dir => {
+                        cur = vnode.clone();
+                    },
+                    VfsNodeType::File => {
+                        return Err(AxError::NotADirectory);
+                    },
+                    _ => panic!("unsupport type")
+                };
+            }
+        }
+    }
+
+    panic!("_lookup_symbolic");
+}
+```
+
+### 下一周计划
+1. 整合日志模块。

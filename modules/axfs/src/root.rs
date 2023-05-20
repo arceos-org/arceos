@@ -4,7 +4,7 @@
 
 use alloc::{string::String, sync::Arc, vec::Vec};
 use axerrno::{ax_err, AxError, AxResult};
-use axfs_vfs::{VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsNodeType, VfsOps, VfsResult};
+use axfs_vfs::{VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsNodeType, VfsOps, VfsResult, VfsError};
 use axsync::Mutex;
 use lazy_init::LazyInit;
 
@@ -126,12 +126,12 @@ impl VfsNodeOps for RootDirectory {
         })
     }
 
-    fn remove(&self, path: &str) -> VfsResult {
+    fn remove(&self, path: &str, recursive: bool) -> VfsResult {
         self.lookup_mounted_fs(path, |fs, rest_path| {
             if rest_path.is_empty() {
                 ax_err!(PermissionDenied) // cannot remove mount points
             } else {
-                fs.root_dir().remove(rest_path)
+                fs.root_dir().remove(rest_path, recursive)
             }
         })
     }
@@ -198,15 +198,16 @@ pub(crate) fn absolute_path(path: &str) -> AxResult<String> {
 }
 
 pub(crate) fn lookup(dir: Option<&VfsNodeRef>, path: &str) -> AxResult<VfsNodeRef> {
-    if path.is_empty() {
-        return ax_err!(NotFound);
-    }
-    let node = parent_node_of(dir, path).lookup(path)?;
-    if path.ends_with('/') && !node.get_attr()?.is_dir() {
-        ax_err!(NotADirectory)
-    } else {
-        Ok(node)
-    }
+    // if path.is_empty() {
+    //     return ax_err!(NotFound);
+    // }
+    // let node = parent_node_of(dir, path).lookup(path)?;
+    // if path.ends_with('/') && !node.get_attr()?.is_dir() {
+    //     ax_err!(NotADirectory)
+    // } else {
+    //     Ok(node)
+    // }
+    lookup_symbolic(dir, path, true)
 }
 
 pub(crate) fn create_file(dir: Option<&VfsNodeRef>, path: &str) -> AxResult<VfsNodeRef> {
@@ -236,11 +237,11 @@ pub(crate) fn remove_file(dir: Option<&VfsNodeRef>, path: &str) -> AxResult {
     } else if !attr.perm().owner_writable() {
         ax_err!(PermissionDenied)
     } else {
-        parent_node_of(dir, path).remove(path)
+        parent_node_of(dir, path).remove(path, false)
     }
 }
 
-pub(crate) fn remove_dir(dir: Option<&VfsNodeRef>, path: &str) -> AxResult {
+pub(crate) fn remove_dir(dir: Option<&VfsNodeRef>, path: &str, recursive: bool) -> AxResult {
     if path.is_empty() {
         return ax_err!(NotFound);
     }
@@ -265,7 +266,7 @@ pub(crate) fn remove_dir(dir: Option<&VfsNodeRef>, path: &str) -> AxResult {
     } else if !attr.perm().owner_writable() {
         ax_err!(PermissionDenied)
     } else {
-        parent_node_of(dir, path).remove(path)
+        parent_node_of(dir, path).remove(path, recursive)
     }
 }
 
@@ -295,4 +296,109 @@ pub(crate) fn set_current_dir(path: &str) -> AxResult {
         *CURRENT_DIR_PATH.lock() = abs_path;
         Ok(())
     }
+}
+
+pub(crate) fn link(dir: Option<&VfsNodeRef>, path: &str, target_path: &str) -> AxResult {
+    debug!("link {} to {}", path, target_path);
+    if path.is_empty() {
+        return ax_err!(NotFound);
+    } else if path.ends_with('/') {
+        return ax_err!(NotADirectory);
+    }
+
+    let target = lookup_symbolic(dir, target_path, false)?;
+    let handle = target.get_link_handle()?;
+
+    let parent = parent_node_of(dir, path);
+    let (ppath, name) = axfs_vfs::path::split_parent_name(path);
+
+    let dp = if let Some(p) = ppath {
+        lookup_symbolic(Some(&parent), p.as_str(), true)?
+    } else {
+        parent.clone()
+    };
+
+    dp.link(name.as_str(), &handle)
+}
+
+pub(crate) fn symblink(dir: Option<&VfsNodeRef>, path: &str, target_path: &str) -> AxResult {
+    debug!("symblink {} to {}", path, target_path);
+    if path.is_empty() {
+        return ax_err!(NotFound);
+    } else if path.ends_with('/') {
+        return ax_err!(NotADirectory);
+
+    }
+
+    let parent = parent_node_of(dir, path);
+    let (ppath, name) = axfs_vfs::path::split_parent_name(path);
+
+    let dp = if let Some(p) = ppath {
+        lookup_symbolic(Some(&parent), p.as_str(), true)?
+    } else {
+        parent.clone()
+    };
+
+    dp.symlink(name.as_str(), target_path)
+}
+
+pub(crate) fn lookup_symbolic(dir: Option<&VfsNodeRef>, path: &str, final_jump: bool) -> AxResult<VfsNodeRef> {
+    let mut count: usize = 0;
+    _lookup_symbolic(dir, path, &mut count, 20, final_jump)
+}
+
+fn _lookup_symbolic(dir: Option<&VfsNodeRef>, path: &str, count: &mut usize, max_count: usize, final_jump: bool) -> AxResult<VfsNodeRef> {
+    debug!("_lookup_symbolic({}, {})", path, count);
+    if path.is_empty() {
+        return ax_err!(NotFound);
+    }
+    let parent = parent_node_of(dir, path);
+    let is_dir = path.ends_with("/");
+    let path = path.trim_matches('/');
+    let names = axfs_vfs::path::split_path(path);
+
+    let mut cur = parent.clone();
+
+    for (idx, name) in names.iter().enumerate() {
+        let vnode = cur.clone().lookup(name.as_str())?;
+        let ty = vnode.get_attr()?.file_type();
+        if ty == VfsNodeType::SymLink {
+            if idx == names.len() - 1 && !final_jump {
+                return Ok(vnode);
+            }
+            *count += 1;
+            if *count > max_count {
+                return Err(VfsError::NotFound);
+            }
+            let mut new_path = vnode.get_path()?;
+            let rest_path = names[idx+1..].join("/");
+            if !rest_path.is_empty() {
+                new_path += "/";
+                new_path += &rest_path;
+            }
+            if is_dir {
+                new_path += "/";
+            }
+            return _lookup_symbolic(None, &new_path, count, max_count, final_jump);
+        } else {
+            if idx == names.len() - 1 {
+                if is_dir && !ty.is_dir() {
+                    return Err(AxError::NotADirectory);
+                }
+                return Ok(vnode);
+            } else {
+                match ty {
+                    VfsNodeType::Dir => {
+                        cur = vnode.clone();
+                    },
+                    VfsNodeType::File => {
+                        return Err(AxError::NotADirectory);
+                    },
+                    _ => panic!("unsupport type")
+                };
+            }
+        }
+    }
+
+    panic!("_lookup_symbolic");
 }

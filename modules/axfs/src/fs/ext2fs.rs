@@ -1,11 +1,11 @@
 use alloc::sync::Arc;
-use alloc::vec::Vec;
 use alloc::string::String;
 use core::cell::{RefCell, UnsafeCell};
+use core::ptr::NonNull;
 
 use axfs_vfs::{VfsDirEntry, VfsError, VfsNodePerm, VfsResult};
 use axfs_vfs::{VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsNodeType, VfsOps};
-use ext2fs::{self, BlockDevice, BLOCK_SIZE};
+use ext2fs::{self, BlockDevice, BLOCK_SIZE, ext2err::Ext2Error};
 
 use crate::dev::Disk;
 
@@ -48,8 +48,9 @@ impl BlockDevice for DiskAdapter {
     }
 }
 
-pub struct Ext2DirWrapper(ext2fs::Inode);
-pub struct Ext2FileWrapper(ext2fs::Inode);
+pub struct Ext2DirWrapper(ext2fs::Inode, NonNull<Ext2FileSystem>);
+pub struct Ext2FileWrapper(ext2fs::Inode, NonNull<Ext2FileSystem>);
+pub struct Ext2SymlinkWrapper(ext2fs::Inode, NonNull<Ext2FileSystem>);
 
 pub struct Ext2FileSystem {
     inner: Arc<ext2fs::Ext2FileSystem>,
@@ -59,6 +60,8 @@ unsafe impl Send for Ext2DirWrapper {}
 unsafe impl Sync for Ext2DirWrapper {}
 unsafe impl Send for Ext2FileWrapper {}
 unsafe impl Sync for Ext2FileWrapper {}
+unsafe impl Send for Ext2SymlinkWrapper {}
+unsafe impl Sync for Ext2SymlinkWrapper {}
 unsafe impl Send for Ext2FileSystem {}
 unsafe impl Sync for Ext2FileSystem {}
 
@@ -75,19 +78,25 @@ impl Ext2FileSystem {
         }
     }
 
-    fn new_file(inode: ext2fs::Inode) -> Arc<Ext2FileWrapper> {
+    fn new_file(inode: ext2fs::Inode, fs_ptr: NonNull<Ext2FileSystem>) -> Arc<Ext2FileWrapper> {
         assert!(inode.is_file());
-        Arc::new(Ext2FileWrapper(inode))
+        Arc::new(Ext2FileWrapper(inode, fs_ptr))
     }
 
-    fn new_dir(inode: ext2fs::Inode) -> Arc<Ext2DirWrapper> {
+    fn new_dir(inode: ext2fs::Inode, fs_ptr: NonNull<Ext2FileSystem>) -> Arc<Ext2DirWrapper> {
         assert!(inode.is_dir());
-        Arc::new(Ext2DirWrapper(inode))
+        Arc::new(Ext2DirWrapper(inode, fs_ptr))
+    }
+
+    fn new_sym(inode: ext2fs::Inode, fs_ptr: NonNull<Ext2FileSystem>) -> Arc<Ext2SymlinkWrapper> {
+        assert!(inode.is_symlink());
+        Arc::new(Ext2SymlinkWrapper(inode, fs_ptr))
     }
 
     pub fn init(&'static self) {
         let root_inode = ext2fs::Ext2FileSystem::root_inode(&self.inner);
-        unsafe { *self.root_dir.get() = Some(Self::new_dir(root_inode)) }
+        let fs_ptr: NonNull<Ext2FileSystem> = NonNull::new(self as *const _ as *mut Ext2FileSystem).unwrap();
+        unsafe { *self.root_dir.get() = Some(Self::new_dir(root_inode, fs_ptr)) }
     }
 }
 
@@ -98,44 +107,33 @@ impl VfsOps for Ext2FileSystem {
     }
 }
 
+impl VfsNodeOps for Ext2SymlinkWrapper {
+    axfs_vfs::impl_ext2_common! {}
+
+    axfs_vfs::impl_ext2_linkable! {}
+
+    fn get_path(&self) -> VfsResult<String> {
+        self.0.path_name().map_err(map_ext2_err)
+    }
+}
+
 impl VfsNodeOps for Ext2FileWrapper {
     axfs_vfs::impl_vfs_non_dir_default! {}
 
-    fn get_attr(&self) -> VfsResult<VfsNodeAttr> {
-        if let Some(disk_inode) = self.0.disk_inode() {
-            let (ty, perm) = map_imode(disk_inode.i_mode);
-            return Ok(VfsNodeAttr::new(perm, ty, disk_inode.i_size as _, disk_inode.i_blocks as _));
-        } else {
-            return Err(VfsError::NotFound);
-        }
-    }
+    axfs_vfs::impl_ext2_common! {}
+
+    axfs_vfs::impl_ext2_linkable! {}
 
     fn read_at(&self, offset: u64, buf: &mut [u8]) -> VfsResult<usize> {
-        if let Some(num) = self.0.read_at(offset as _, buf) {
-            Ok(num)
-        } else {
-            Err(axerrno::AxError::NotFound)
-        }
+        self.0.read_at(offset as _, buf).map_err(map_ext2_err)
     }
 
     fn write_at(&self, offset: u64, buf: &[u8]) -> VfsResult<usize> {
-        if let Some(num) = self.0.write_at(offset as _, buf) {
-            Ok(num)
-        } else {
-            Err(axerrno::AxError::NotFound)
-        }
+        self.0.write_at(offset as _, buf).map_err(map_ext2_err)
     }
 
     fn truncate(&self, size: u64) -> VfsResult {
-        if let Some(success) = self.0.ftruncate(size as _) {
-            if success {
-                Ok(())
-            } else {
-                Err(axerrno::AxError::NotFound)
-            }
-        } else {
-            Err(axerrno::AxError::NotFound)
-        }
+        self.0.ftruncate(size as _).map_err(map_ext2_err)
     }
 }
 
@@ -143,18 +141,11 @@ impl VfsNodeOps for Ext2FileWrapper {
 impl VfsNodeOps for Ext2DirWrapper {
     axfs_vfs::impl_vfs_dir_default! {}
 
-    fn get_attr(&self) -> VfsResult<VfsNodeAttr> {
-        if let Some(disk_inode) = self.0.disk_inode() {
-            let (ty, perm) = map_imode(disk_inode.i_mode);
-            return Ok(VfsNodeAttr::new(perm, ty, disk_inode.i_size as _, disk_inode.i_blocks as _));
-        } else {
-            return Err(VfsError::NotFound);
-        }
-    }
+    axfs_vfs::impl_ext2_common! {}
 
     fn parent(&self) -> Option<VfsNodeRef> {
-        if let Some(p) = self.0.find("..") {
-            Some(Ext2FileSystem::new_dir(p))
+        if let Some(p) = self.0.find("..").ok() {
+            Some(Ext2FileSystem::new_dir(p, self.1))
         } else {
             None
         }
@@ -169,35 +160,19 @@ impl VfsNodeOps for Ext2DirWrapper {
         if let Some(rest) = path.strip_prefix("./") {
             return self.lookup(rest);
         }
-        let names = split_path(path);
-        let mut cur = self.0.clone();
 
-        for (idx, name) in names.iter().enumerate() {
-            if name.len() == 0 {
-                continue;
-            }
-            if let Some(inode) = cur.find(name) {
-                if idx != names.len() - 1 {
-                    if !inode.is_dir() {
-                        return Err(axerrno::AxError::NotFound);
-                    } else {
-                        cur = inode.clone();
-                    }
-                } else {
-                    if inode.is_dir() {
-                        return Ok(Ext2FileSystem::new_dir(inode));
-                    } else if inode.is_file() {
-                        return Ok(Ext2FileSystem::new_file(inode));
-                    } else {
-                        return Err(axerrno::AxError::Unsupported);
-                    }
-                }
-            } else {
-                return Err(axerrno::AxError::NotFound);
-            }
+        let (parent, name) = self.0.lookup_parent(path).map_err(map_ext2_err)?;
+        let inode = parent.find(name.as_str()).map_err(map_ext2_err)?;
+
+        if inode.is_dir() {
+            return Ok(Ext2FileSystem::new_dir(inode, self.1));
+        } else if inode.is_file() {
+            return Ok(Ext2FileSystem::new_file(inode, self.1));
+        } else if inode.is_symlink() {
+            return Ok(Ext2FileSystem::new_sym(inode, self.1));
+        } else {
+            return Err(axerrno::AxError::Unsupported);
         }
-
-        panic!("lookup");
     }
 
     fn create(&self, path: &str, ty: VfsNodeType) -> VfsResult {
@@ -216,112 +191,83 @@ impl VfsNodeOps for Ext2DirWrapper {
             _ => return Err(VfsError::Unsupported)
         }
 
-        let names = split_path(path);
-        let mut cur = self.0.clone();
+        let (parent, name) = self.0.lookup_parent(path).map_err(map_ext2_err)?;
 
-        for (idx, name) in names.iter().enumerate() {
-            if idx == names.len() - 1 {
-                match ty {
-                    VfsNodeType::Dir => {
-                        if let Some(_) = cur.create_dir(name) {
-                            return Ok(());
-                        } else {
-                            return Err(VfsError::AlreadyExists);
-                        }
-                    },
-                    VfsNodeType::File => {
-                        if let Some(_) = cur.create_file(name) {
-                            return Ok(());
-                        } else {
-                            return Err(VfsError::AlreadyExists);
-                        }
-                    }
-                    _ => panic!("unsupported file type")
-                }
-            } else {
-                if let Some(inode) = cur.find(name) {
-                    if inode.is_dir() {
-                        cur = inode.clone();
-                    } else {
-                        return Err(VfsError::NotFound);
-                    }
-                }
-            }
+        match ty {
+            VfsNodeType::Dir => parent.create_dir(name.as_str()).map(|_| ()).map_err(map_ext2_err),
+            VfsNodeType::File => parent.create_file(name.as_str()).map(|_|()).map_err(map_ext2_err),
+            _ => panic!("unsupport type")
         }
-
-        panic!("create");
     }
 
-    fn remove(&self, path: &str) -> VfsResult {
+    fn remove(&self, path: &str, recursive: bool) -> VfsResult {
         debug!("remove at ext2fs: {}", path);
         let path = path.trim_matches('/');
         assert!(!path.is_empty()); // already check at `root.rs`
         if let Some(rest) = path.strip_prefix("./") {
-            return self.remove(rest);
+            return self.remove(rest, recursive);
         }
 
-        let names = split_path(path);
-        let mut cur = self.0.clone();
+        let (parent, name) = self.0.lookup_parent(path).map_err(map_ext2_err)?;
 
-        for (idx, name) in names.iter().enumerate() {
-            if idx == names.len() - 1 {
-                if let Some(inode) = cur.find(name) {
-                    if inode.is_dir() {
-                        cur.rm_dir(name.as_str(), false);
-                        return Ok(());
-                    } else if inode.is_file() {
-                        cur.rm_file(name.as_str());
-                        return Ok(());
-                    }
-                    panic!("Unsuport type");
-                } else {
-                    return Err(VfsError::NotFound);
-                }
-            } else {
-                if let Some(inode) = cur.find(name) {
-                    if inode.is_dir() {
-                        cur = inode.clone();
-                    } else {
-                        return Err(VfsError::NotFound);
-                    }
-                }
-            }
+        let inode = parent.find(name.as_str()).map_err(map_ext2_err)?;
+        if inode.is_dir() {
+            parent.rm_dir(name.as_str(), recursive).map_err(map_ext2_err)?;
+            return Ok(());
+        } else if inode.is_file() {
+            parent.rm_file(name.as_str()).map_err(map_ext2_err)?;
+            return Ok(());
+        } else if inode.is_symlink() {
+            parent.rm_symlink(name.as_str()).map_err(map_ext2_err)?;
+            return Ok(());
         }
-
-        panic!("remove");
+        panic!("Unsuport type");
     }
 
     fn read_dir(&self, start_idx: usize, dirents: &mut [VfsDirEntry]) -> VfsResult<usize> {
-        debug!("read_dir at {}", start_idx);
-        if let Some(dir_entries) = self.0.read_dir() {
-            let mut iter = dir_entries.into_iter().skip(2).skip(start_idx);
-            for (i, out_entry) in dirents.iter_mut().enumerate() {
-                let x = iter.next();
-                match x {
-                    Some((name, direntry)) => {
-                        let (ty, _) = map_imode(ext2fs::layout::DiskInode::_file_code_to_disk(direntry.file_type));
-                        *out_entry = VfsDirEntry::new(name.as_str(), ty);
-                    },
-                    _ => {
-                        return Ok(i);
-                    }
+        debug!("read_dir ext2 at {}", start_idx);
+        let dir_entries = self.0.read_dir().map_err(map_ext2_err)?;
+        let mut iter = dir_entries.into_iter().skip(2).skip(start_idx);
+        for (i, out_entry) in dirents.iter_mut().enumerate() {
+            let x = iter.next();
+            match x {
+                Some((name, direntry)) => {
+                    let (ty, _) = map_imode(ext2fs::layout::DiskInode::_file_code_to_disk(direntry.file_type));
+                    *out_entry = VfsDirEntry::new(name.as_str(), ty);
+                },
+                _ => {
+                    return Ok(i);
                 }
             }
-            unreachable!();
-        } else {
-            return Err(VfsError::NotFound);
         }
+        unreachable!();
+    }
+
+    fn link(&self, name: &str, handle: &axfs_vfs::LinkHandle) -> VfsResult {
+        debug!("ext2 link {} to inode {}", name, handle.inode_id);
+        if self.1.as_ptr() as usize != handle.fssp_ptr {
+            return Err(VfsError::InvalidInput);
+        }
+        self.0.link(name, handle.inode_id).map_err(map_ext2_err)
+    }
+
+    fn symlink(&self, name: &str, path: &str) -> VfsResult {
+        debug!("ext2 symbolic link {} to {}", name, path);
+        if !path.starts_with("/") {
+            return Err(VfsError::InvalidInput);
+        }
+        self.0.symlink(name, path).map_err(map_ext2_err)
     }
 }
 
-fn split_path(path: &str) -> Vec<String> {
-    let mut names: Vec<String> = Vec::new();
+// fn split_path(path: &str) -> Vec<String> {
+//     let mut names: Vec<String> = Vec::new();
 
-    for name in path.split("/") {
-        names.push(String::from(name))
-    }
-    names
-}
+//     for name in path.split("/") {
+//         names.push(String::from(name))
+//     }
+//     names
+// }
 
 fn map_imode(imode: u16) -> (VfsNodeType, VfsNodePerm) {
     // debug!("map_imode {} {}", imode & 0xf000, imode & 0xfff);
@@ -373,4 +319,18 @@ fn map_imode(imode: u16) -> (VfsNodeType, VfsNodePerm) {
     // debug!("final perm {}", vfs_perm.bits());
 
     (ty, vfs_perm)
+}
+
+const fn map_ext2_err(err: Ext2Error) -> VfsError {
+    use Ext2Error::*;
+    match err {
+        AlreadyExists => VfsError::AlreadyExists,
+        DirectoryIsNotEmpty => VfsError::DirectoryNotEmpty,
+        NotFound => VfsError::NotFound,
+        NotEnoughSpace => VfsError::StorageFull,
+        NotADir => VfsError::NotADirectory,
+        NotAFile => VfsError::IsADirectory,
+        InvalidResource => VfsError::NotFound,
+        _ => VfsError::InvalidInput
+    }
 }

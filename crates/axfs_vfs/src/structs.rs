@@ -71,6 +71,12 @@ pub struct VfsDirEntry {
     d_name: [u8; 63],
 }
 
+/// Used for hard link
+pub struct LinkHandle {
+    pub inode_id: usize,
+    pub fssp_ptr: usize
+}
+
 impl VfsNodePerm {
     /// Returns the default permission for a file.
     ///

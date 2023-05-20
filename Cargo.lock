@@ -796,6 +796,7 @@ dependencies = [
 name = "ext2fs"
 version = "0.1.0"
 dependencies = [
+ "axfs_vfs",
  "bitflags 1.3.2",
  "fs_utils",
  "lazy_static",

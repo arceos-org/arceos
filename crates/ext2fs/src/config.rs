@@ -21,3 +21,4 @@ pub const FAKE_UUID: u128 = 114514;
 pub const FAKE_JOURNAL_UUID: u128 = 996;
 
 pub const EXT2_ROOT_INO: usize = 2;
+pub const MAX_PATH_NAME: usize = 1024;
