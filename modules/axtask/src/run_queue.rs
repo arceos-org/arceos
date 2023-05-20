@@ -171,12 +171,19 @@ impl AxRunQueue {
         if self.scheduler.is_empty() {
             let id = get_current_cpu_id();
             let next = LOAD_BALANCE_ARR[id].find_stolen_cpu_id();
-            /*if next != -1 {
+            assert!(LOAD_BALANCE_ARR[id].get_weight() == 0);
+            debug!("steal: current = {}, victim = {}", get_current_cpu_id(), next);
+            if next != -1 {
+                debug!("steal 1");
                 let task = RUN_QUEUE[next as usize].lock().scheduler.pick_next_task();
-                RUN_QUEUE[id].lock().scheduler.add_task(task.unwrap());
+                debug!("steal 2");
+                self.scheduler.add_task(task.unwrap());
+                debug!("steal 3");
                 LOAD_BALANCE_ARR[next as usize].add_weight(-1);
+                debug!("steal 4");
                 LOAD_BALANCE_ARR[id].add_weight(1);
-            }*/
+                debug!("steal 5");
+            }
         }
     }
     fn resched_inner(&mut self, preempt: bool) {
@@ -190,6 +197,7 @@ impl AxRunQueue {
             if !prev.is_idle() {
                 debug!("resched inner 5");
                 self.scheduler.put_prev_task(prev.clone(), preempt);
+                LOAD_BALANCE_ARR[get_current_cpu_id()].add_weight(-1); //?
                 debug!("resched inner 6");
             }
         }
@@ -198,9 +206,10 @@ impl AxRunQueue {
             // Safety: IRQs must be disabled at this time.
             IDLE_TASK.current_ref_raw().get_unchecked().clone()
         });
+        LOAD_BALANCE_ARR[get_current_cpu_id()].add_weight(-1); //?
         debug!("resched inner 8");
         // TODO: 注意需要对所有 pick_next_task 后面都要判断是否队列空，如果是则需要执行线程窃取
-        //self.if_empty_steal();
+        self.if_empty_steal();
         self.switch_to(prev, next);
         debug!("resched inner 9");
     }

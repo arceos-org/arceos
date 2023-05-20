@@ -29,4 +29,7 @@ pub trait BaseLoadBalance {
 
     /// add weight
     fn add_weight(&self, delta: isize);
+
+    /// get weight
+    fn get_weight(&self) -> isize;
 }
