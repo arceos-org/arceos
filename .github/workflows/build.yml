@@ -1,0 +1,93 @@
+name: Build CI
+
+on: [push, pull_request]
+
+jobs:
+  clippy:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: nightly
+        components: rust-src, clippy, rustfmt
+    - name: Clippy for the default target
+      run: cargo clippy --all-features
+    - name: Clippy for x86_64
+      run: make clippy ARCH=x86_64
+    - name: Clippy for riscv64
+      run: make clippy ARCH=riscv64
+    - name: Clippy for aarch64
+      run: make clippy ARCH=aarch64
+    - name: Check code format
+      run: cargo fmt --all -- --check
+
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        arch: [x86_64, riscv64, aarch64]
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: nightly
+        components: rust-src, llvm-tools-preview
+    - uses: actions-rs/install@v0.1
+      with:
+        crate: cargo-binutils
+        version: latest
+        use-tool-cache: true
+    - name: Build helloworld
+      run: make ARCH=${{ matrix.arch }} A=apps/helloworld
+    - name: Build memtest
+      run: make ARCH=${{ matrix.arch }} A=apps/memtest
+    - name: Build exception
+      run: make ARCH=${{ matrix.arch }} A=apps/exception
+    - name: Build display
+      run: make ARCH=${{ matrix.arch }} A=apps/display GRAPHIC=y
+    - name: Build task/yield
+      run: make ARCH=${{ matrix.arch }} A=apps/task/yield
+    - name: Build task/parallel
+      run: make ARCH=${{ matrix.arch }} A=apps/task/parallel
+    - name: Build task/sleep
+      run: make ARCH=${{ matrix.arch }} A=apps/task/sleep
+    - name: Build fs/shell
+      run: make ARCH=${{ matrix.arch }} A=apps/fs/shell FS=y
+    - name: Build net/echoserver
+      run: make ARCH=${{ matrix.arch }} A=apps/net/echoserver NET=y
+    - name: Build net/httpclient
+      run: make ARCH=${{ matrix.arch }} A=apps/net/httpclient NET=y
+    - name: Build net/httpserver
+      run: make ARCH=${{ matrix.arch }} A=apps/net/httpserver NET=y
+
+    - name: Download musl toolchain
+      run: |
+        if [ "${{ matrix.arch }}" = "x86_64" ]; then
+          export MUSL_PATH="x86_64-linux-musl-cross"
+        elif [ "${{ matrix.arch }}" = "aarch64" ]; then
+          export MUSL_PATH="aarch64-linux-musl-cross"
+        elif [ "${{ matrix.arch }}" = "riscv64" ]; then
+          export MUSL_PATH="riscv64-linux-musl-cross"
+        fi
+        wget https://musl.cc/$MUSL_PATH.tgz
+        tar -xf $MUSL_PATH.tgz
+        mv $MUSL_PATH musl
+    - name: Build c/helloworld
+      run: PATH=$PATH:$PWD/musl/bin make ARCH=${{ matrix.arch }} A=apps/c/helloworld
+    - name: Build c/memtest
+      run: PATH=$PATH:$PWD/musl/bin make ARCH=${{ matrix.arch }} A=apps/c/memtest
+    - name: Build c/sqlite3
+      run: PATH=$PATH:$PWD/musl/bin make ARCH=${{ matrix.arch }} A=apps/c/sqlite3
+    - name: Build c/httpclient
+      run: PATH=$PATH:$PWD/musl/bin make ARCH=${{ matrix.arch }} A=apps/c/httpclient
+    - name: Build c/httpserver
+      run: PATH=$PATH:$PWD/musl/bin make ARCH=${{ matrix.arch }} A=apps/c/httpserver
+    - name: Build c/udpserver
+      run: PATH=$PATH:$PWD/musl/bin make ARCH=${{ matrix.arch }} A=apps/c/udpserver
