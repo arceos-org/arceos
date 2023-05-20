@@ -4,7 +4,7 @@ use alloc::{ffi::CString, vec, vec::Vec};
 use axerrno::{ax_err, AxResult};
 use axtask::yield_now;
 use core::{
-    ffi::{c_char, c_void},
+    ffi::{c_char, c_void, CStr},
     str::FromStr,
 };
 use lwip_rust::bindings::{
@@ -37,7 +37,7 @@ extern "C" fn dns_found_callback(
         } else {
             info!(
                 "DNS found: name={} ipaddr={}",
-                CString::from_raw(name as *mut c_char).to_str().unwrap(),
+                CStr::from_ptr(name as *mut c_char).to_str().unwrap(),
                 IpAddr::from(*ipaddr)
             );
             Some((*ipaddr).into())

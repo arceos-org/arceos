@@ -75,7 +75,7 @@ impl Socket {
         }
     }
 
-    fn shutdown(&self) -> LinuxResult {
+    fn shutdown(&mut self) -> LinuxResult {
         match self {
             Socket::Udp(udpsocket) => {
                 udpsocket.peer_addr()?;
