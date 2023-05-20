@@ -145,15 +145,11 @@ impl WaitQueue {
 
         let mut timeout = true;
         while axhal::time::current_time() < deadline {
-            
-            debug!("lock begin 4");
-            let mut rq = RUN_QUEUE[get_current_cpu_id()];
-            debug!("lock end 4");
             if condition() {
                 timeout = false;
                 break;
             }
-            rq.block_current(|task| {
+            RUN_QUEUE[get_current_cpu_id()].block_current(|task| {
                 task.set_in_wait_queue(true);
                 self.queue.lock().push_back((task, get_current_cpu_id()));
             });

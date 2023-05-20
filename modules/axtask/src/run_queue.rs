@@ -173,6 +173,7 @@ impl AxRunQueue {
     /// slice, otherwise reset it.
     fn if_empty_steal(&self) {
         if self.scheduler.lock().is_empty() {
+            let mut queuelock = self.scheduler.lock();
             let id = self.id;
             let next = LOAD_BALANCE_ARR[id].find_stolen_cpu_id();
             trace!("load balance weight for id {} : {}", id, LOAD_BALANCE_ARR[id].get_weight());
@@ -184,12 +185,15 @@ impl AxRunQueue {
                 let task = RUN_QUEUE[next as usize].scheduler.lock().pick_next_task();
                 //info!("exit 234");
                 debug!("steal 2");
-                self.scheduler.lock().add_task(task.unwrap());
-                debug!("steal 3");
-                LOAD_BALANCE_ARR[next as usize].add_weight(-1);
-                debug!("steal 4");
-                LOAD_BALANCE_ARR[id].add_weight(1);
-                debug!("steal 5");
+                // 这里可能有同步问题，简单起见，如果 task 是 None 那么就不窃取。
+                if let Some(tk) = task {
+                    queuelock.add_task(tk);
+                    debug!("steal 3");
+                    LOAD_BALANCE_ARR[next as usize].add_weight(-1);
+                    debug!("steal 4");
+                    LOAD_BALANCE_ARR[id].add_weight(1);
+                    debug!("steal 5");
+                }
             }
         }
     }

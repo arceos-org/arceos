@@ -24,11 +24,8 @@ fn barrier() {
     static BARRIER_WQ: WaitQueue = WaitQueue::new();
     static BARRIER_COUNT: AtomicUsize = AtomicUsize::new(0);
     BARRIER_COUNT.fetch_add(1, Ordering::Relaxed);
-    println!("BARRIER_COUNT : {}", BARRIER_COUNT.load(Ordering::Acquire));
     BARRIER_WQ.wait_until(|| BARRIER_COUNT.load(Ordering::Relaxed) == NUM_TASKS);
-    println!("AFTER BARRIER_COUNT 1");
     BARRIER_WQ.notify_all(true);
-    println!("AFTER BARRIER_COUNT 2");
 }
 
 fn sqrt(n: &u64) -> u64 {
@@ -50,8 +47,8 @@ fn main() {
     );
     let expect: u64 = vec.iter().map(sqrt).sum();
 
-    //let timeout = MAIN_WQ.wait_timeout(Duration::from_millis(500));
-    //assert!(timeout);
+    let timeout = MAIN_WQ.wait_timeout(Duration::from_millis(500));
+    assert!(timeout);
 
     for i in 0..NUM_TASKS {
         let vec = vec.clone();
@@ -73,15 +70,13 @@ fn main() {
             println!("part {}: {:?} finished", i, task::current().id());
             let n = FINISHED_TASKS.fetch_add(1, Ordering::Relaxed);
             if n == NUM_TASKS - 1 {
-                println!("START DASH!");
                 MAIN_WQ.notify_one(true);
-                println!("END DASH!");
             }
         });
     }
-    println!("before wait");
-    MAIN_WQ.wait();
-    //println!("main task woken up! timeout={}", timeout);
+
+    let timeout = MAIN_WQ.wait_timeout(Duration::from_millis(600));
+    println!("main task woken up! timeout={}", timeout);
 
     let actual = RESULTS.lock().iter().sum();
     println!("sum = {}", actual);

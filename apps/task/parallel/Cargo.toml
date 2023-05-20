@@ -12,4 +12,4 @@ default = ["libax/default"]
 sched_cfs = ["libax/sched_cfs"]
 
 [dependencies]
-libax = { path = "../../../ulib/libax", default-features = false, features = ["alloc", "paging", "multitask"] }
+libax = { path = "../../../ulib/libax", default-features = false, features = ["alloc", "paging", "multitask", "irq"] }

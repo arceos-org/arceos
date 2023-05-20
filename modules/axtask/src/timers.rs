@@ -16,11 +16,8 @@ struct TaskWakeupEvent(AxTaskRef);
 impl TimerEvent for TaskWakeupEvent {
     fn callback(self, _now: TimeValue) {
         info!("qwq {}", get_current_cpu_id());
-        //info!("exit 233");
-        let mut rq = RUN_QUEUE[LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu()];
-        //info!("exit 234");
         self.0.set_in_timer_list(false);
-        rq.unblock_task(self.0, true);
+        RUN_QUEUE[LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu()].unblock_task(self.0, true);
         info!("exit 1");
     }
 }
