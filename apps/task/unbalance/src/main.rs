@@ -169,9 +169,9 @@ fn main() {
         .map(|i| Arc::new(vec![TASK_PARAMS[i].value; TASK_PARAMS[i].data_len]))
         .collect::<Vec<_>>();
     let mut expect: u64 = 0;
-    for data_inner in &data {
-        expect += data_inner.iter().map(load).sum::<u64>();
-    }
+    //for data_inner in &data {
+    //    expect += data_inner.iter().map(load).sum::<u64>();
+    //}
     let start_time = libax::time::Instant::now();
     for ii in 0..PAYLOAD_KIND {
         let i = PAYLOAD_KIND - 1 - ii;
