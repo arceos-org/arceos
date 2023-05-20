@@ -13,3 +13,4 @@ axio = { path = "../../crates/axio" }
 axsync = { path = "../axsync" }
 axhal = { path = "../axhal" }
 bitflags = "= 2.1.0"
+log = "0.4.0"

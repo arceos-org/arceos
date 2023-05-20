@@ -235,6 +235,7 @@ dependencies = [
  "axsync",
  "axtask",
  "bitflags 2.1.0",
+ "log",
 ]
 
 [[package]]

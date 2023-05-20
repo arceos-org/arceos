@@ -130,12 +130,6 @@ impl MemorySet {
         let mut pages = GlobalPage::alloc_contiguous(num_pages, PAGE_SIZE_4K)
             .expect("Failed to get physical pages!");
         pages.zero();
-        // axlog::info!(
-        //     "start_va: {:X}, size: {:X}, start_align:{:X}",
-        //     start_va.as_usize(),
-        //     size,
-        //     start_va.align_down_4k().as_usize()
-        // );
         if let Some(x) = data {
             // 由于是连续的页面，所以可以直接拷贝数据进去
             // 注意从offset处开始填入数据
@@ -209,30 +203,6 @@ impl MemorySet {
                 // 两个区间不相交，直接保留
                 // 但是这种情况是不会出现的
             }
-        }
-    }
-
-    pub fn translate(
-        &self,
-        start_va: VirtAddr,
-    ) -> PagingResult<(PhysAddr, MappingFlags, PageSize)> {
-        self.page_table.query(start_va)
-    }
-    /// 在当前地址空间下，将vaddr转化为真实的物理地址
-    #[allow(unused)]
-    pub fn translate_va(&self, vaddr: VirtAddr) -> Option<PhysAddr> {
-        match self.page_table.query(vaddr) {
-            Ok((paddr, _, _)) => Some(paddr),
-            Err(x) => None,
-        }
-    }
-    pub fn translate_refmut<T>(&self, ptr: *mut T) -> PagingResult<&'static mut T> {
-        let start_va: VirtAddr = (ptr as usize).into();
-        match self.page_table.query(start_va) {
-            Ok((paddr, _, _)) => {
-                return Ok(unsafe { (paddr.as_usize() as *mut T).as_mut().unwrap() })
-            }
-            Err(x) => return Err(x),
         }
     }
     pub fn translate_str(&self, ptr: *const u8) -> String {
