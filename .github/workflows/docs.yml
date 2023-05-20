@@ -23,7 +23,7 @@ jobs:
         wget https://musl.cc/$MUSL_PATH.tgz
         tar -xf $MUSL_PATH.tgz
         mv $MUSL_PATH musl
-        export PATH=$PATH:$PWD/musl/bin
+        echo "$PWD/musl/bin" >> $GITHUB_PATH
     - name: Build docs
       continue-on-error: ${{ github.ref != 'refs/heads/main' && github.event_name != 'pull_request' }}
       run: make doc_check_missing

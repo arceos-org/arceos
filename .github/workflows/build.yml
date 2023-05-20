@@ -22,7 +22,7 @@ jobs:
         wget https://musl.cc/$MUSL_PATH.tgz
         tar -xf $MUSL_PATH.tgz
         mv $MUSL_PATH musl
-        export PATH=$PATH:$PWD/musl/bin
+        echo "$PWD/musl/bin" >> $GITHUB_PATH
     - name: Clippy for the default target
       run: cargo clippy --all-features
     - name: Clippy for x86_64
@@ -67,7 +67,7 @@ jobs:
         wget https://musl.cc/$MUSL_PATH.tgz
         tar -xf $MUSL_PATH.tgz
         mv $MUSL_PATH musl
-        export PATH=$PATH:$PWD/musl/bin
+        echo "$PWD/musl/bin" >> $GITHUB_PATH
 
     - name: Build helloworld
       run: make ARCH=${{ matrix.arch }} A=apps/helloworld
