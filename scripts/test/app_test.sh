@@ -117,6 +117,7 @@ if [ -z "$1" ]; then
         "apps/c/helloworld"
         "apps/c/memtest"
         "apps/c/sqlite3"
+        "apps/c/httpclient"
     )
 else
     test_list="$@"

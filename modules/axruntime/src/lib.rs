@@ -159,7 +159,7 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         let all_devices = axdriver::init_drivers();
 
         #[cfg(feature = "fs")]
-        axfs::init_filesystems(all_devices.block.0);
+        axfs::init_filesystems(all_devices.block);
 
         #[cfg(feature = "net")]
         axnet::init_network(all_devices.net);

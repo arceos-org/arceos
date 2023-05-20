@@ -11,8 +11,8 @@ documentation = "https://rcore-os.github.io/arceos/axnet/index.html"
 
 [features]
 smoltcp = []
-lwip = ["dep:printf-compat", "dep:lwip_rust" ]
-default = ["axdriver/virtio-net", "lwip"]
+lwip = ["dep:printf-compat", "dep:lwip_rust"]
+default = ["lwip"]
 
 [dependencies]
 log = "0.4"
@@ -26,7 +26,7 @@ axlog = { path = "../axlog" }
 axhal = { path = "../axhal" }
 axsync = { path = "../axsync", default-features = false }
 axtask = { path = "../axtask", default-features = false }
-axdriver = { path = "../axdriver" }
+axdriver = { path = "../axdriver", features = ["net"] }
 
 [dependencies.smoltcp]
 version = "0.9.1"

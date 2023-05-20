@@ -13,6 +13,7 @@ FS ?= n
 NET ?= n
 NETDEV ?= user
 GRAPHIC ?= n
+BUS ?= mmio
 
 QEMU_LOG ?= n
 
@@ -31,6 +32,7 @@ ifeq ($(ARCH), x86_64)
   ACCEL ?= y
   PLATFORM ?= pc-x86
   TARGET := x86_64-unknown-none
+  BUS := pci
 else ifeq ($(ARCH), riscv64)
   ACCEL ?= n
   PLATFORM ?= qemu-virt-riscv

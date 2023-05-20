@@ -9,12 +9,9 @@ homepage = "https://github.com/rcore-os/arceos"
 repository = "https://github.com/rcore-os/arceos/tree/main/modules/axdisplay"
 documentation = "https://rcore-os.github.io/arceos/axdisplay/index.html"
 
-[features]
-default = ["axdriver/virtio-gpu"]
-
 [dependencies]
 log = "0.4"
-axdriver = { path = "../axdriver" }
+axdriver = { path = "../axdriver", features = ["display"] }
 lazy_init = { path = "../../crates/lazy_init" }
 axsync = { path = "../axsync", default-features = false }
 driver_display = { path = "../../crates/driver_display" }

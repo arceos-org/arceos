@@ -19,6 +19,8 @@ mmio-regions = [
     ["0x0900_0000", "0x1000"],      # PL011 UART
     ["0x0800_0000", "0x2_0000"],    # GICv2
     ["0x0a00_0000", "0x4000"],      # VirtIO
+    ["0x1000_0000", "0x2eff_0000"],     # PCI memory ranges (ranges 1: 32-bit MMIO space)
+    ["0x40_1000_0000", "0x1000_0000"],  # PCI config space
 ]
 # VirtIO MMIO regions with format (`base_paddr`, `size`).
 virtio-mmio-regions = [
@@ -54,4 +56,14 @@ virtio-mmio-regions = [
     ["0x0a00_3a00", "0x200"],
     ["0x0a00_3c00", "0x200"],
     ["0x0a00_3e00", "0x200"],
+]
+# Base physical address of the PCIe ECAM space.
+pci-ecam-base = "0x40_1000_0000"
+# End PCI bus number (`bus-range` property in device tree).
+pci-bus-end = "0xff"
+# PCI device memory ranges (`ranges` property in device tree).
+pci-ranges = [
+    ["0x3ef_f0000", "0x1_0000"],            # PIO space
+    ["0x1000_0000", "0x2eff_0000"],         # 32-bit MMIO space
+    ["0x80_0000_0000", "0x80_0000_0000"],   # 64-but MMIO space
 ]

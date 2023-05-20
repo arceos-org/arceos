@@ -1,9 +1,10 @@
-#![cfg(all(not(feature = "use-virtio-blk"), feature = "myfs"))]
+#![cfg(feature = "myfs")]
 
 mod test_common;
 
 use std::sync::Arc;
 
+use axdriver::AxDeviceContainer;
 use axfs::api::{self as fs, File};
 use axfs::fops::{Disk, MyFileSystemIf};
 use axfs_ramfs::RamFileSystem;
@@ -45,7 +46,7 @@ fn test_ramfs() {
     println!("Testing ramfs ...");
 
     axtask::init_scheduler(); // call this to use `axsync::Mutex`.
-    axfs::init_filesystems(RamDisk::new(0)); // dummy disk, actually not used.
+    axfs::init_filesystems(AxDeviceContainer::from_one(RamDisk::default())); // dummy disk, actually not used.
 
     if let Err(e) = create_init_files() {
         log::warn!("failed to create init files: {:?}", e);

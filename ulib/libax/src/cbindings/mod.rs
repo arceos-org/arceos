@@ -5,10 +5,14 @@
 #[macro_use]
 mod utils;
 
+#[cfg(feature = "alloc")]
+mod fd_table;
 #[cfg(feature = "fs")]
-mod fs;
+mod file;
 #[cfg(feature = "alloc")]
 mod malloc;
+#[cfg(all(feature = "net"))]
+mod socket;
 
 mod thread;
 mod time;
@@ -16,7 +20,7 @@ mod time;
 /// cbindgen:ignore
 #[rustfmt::skip]
 #[path = "./ctypes_gen.rs"]
-#[allow(dead_code, non_camel_case_types, clippy::upper_case_acronyms)]
+#[allow(dead_code, non_camel_case_types, non_upper_case_globals, clippy::upper_case_acronyms)]
 mod ctypes;
 
 use crate::io::Write;
@@ -53,9 +57,16 @@ pub unsafe extern "C" fn ax_panic() -> ! {
 #[cfg(feature = "alloc")]
 pub use self::malloc::{ax_free, ax_malloc};
 
+#[cfg(feature = "alloc")]
+pub use self::fd_table::{ax_close, ax_fstat, ax_read, ax_write};
+
 #[cfg(feature = "fs")]
-pub use self::fs::{
-    ax_close, ax_fstat, ax_getcwd, ax_lseek, ax_lstat, ax_open, ax_read, ax_stat, ax_write,
+pub use self::file::{ax_getcwd, ax_lseek, ax_lstat, ax_open, ax_stat};
+
+#[cfg(feature = "net")]
+pub use self::socket::{
+    ax_accept, ax_bind, ax_connect, ax_listen, ax_recv, ax_recvfrom, ax_resolve_sockaddr, ax_send,
+    ax_sendto, ax_shutdown, ax_socket,
 };
 
 #[cfg(feature = "multitask")]

@@ -1,10 +1,10 @@
 use super::LWIP_MUTEX;
 use crate::IpAddr;
 use alloc::collections::VecDeque;
-use axdriver::NetDevices;
+use axdriver::prelude::*;
 use axsync::Mutex;
 use core::{cell::RefCell, ffi::c_void};
-use driver_net::{DevError, NetBuffer, NetDriverOps};
+use driver_net::{DevError, NetBufferBox, NetBufferPool};
 use lazy_init::LazyInit;
 use lwip_rust::bindings::{
     err_enum_t_ERR_OK, err_enum_t_ERR_WOULDBLOCK, err_t, etharp_output, ethernet_input,
@@ -16,16 +16,21 @@ use lwip_rust::bindings::{
 
 const RX_BUF_QUEUE_SIZE: usize = 64;
 
+const NET_BUF_LEN: usize = 1526;
+const NET_BUF_POOL_SIZE: usize = 128;
+
+static NET_BUF_POOL: LazyInit<NetBufferPool> = LazyInit::new();
+
 struct NetifWrapper(netif);
 unsafe impl Send for NetifWrapper {}
 
-struct DeviceWrapper<D: NetDriverOps> {
-    inner: RefCell<D>, // use `RefCell` is enough since it's wrapped in `Mutex` in `InterfaceWrapper`.
-    rx_buf_queue: VecDeque<D::RxBuffer>,
+struct DeviceWrapper {
+    inner: RefCell<AxNetDevice>, // use `RefCell` is enough since it's wrapped in `Mutex` in `InterfaceWrapper`.
+    rx_buf_queue: VecDeque<NetBufferBox<'static>>,
 }
 
-impl<D: NetDriverOps> DeviceWrapper<D> {
-    fn new(inner: D) -> Self {
+impl DeviceWrapper {
+    fn new(inner: AxNetDevice) -> Self {
         Self {
             inner: RefCell::new(inner),
             rx_buf_queue: VecDeque::with_capacity(RX_BUF_QUEUE_SIZE),
@@ -47,26 +52,26 @@ impl<D: NetDriverOps> DeviceWrapper<D> {
         }
     }
 
-    fn receive(&mut self) -> Option<D::RxBuffer> {
+    fn receive(&mut self) -> Option<NetBufferBox<'static>> {
         self.rx_buf_queue.pop_front()
     }
 }
 
-struct InterfaceWrapper<D: NetDriverOps> {
-    dev: Mutex<DeviceWrapper<D>>,
+struct InterfaceWrapper {
+    dev: Mutex<DeviceWrapper>,
     netif: Mutex<NetifWrapper>,
 }
 
-impl<D: NetDriverOps> InterfaceWrapper<D> {
+impl InterfaceWrapper {
     fn poll(&self) {
         self.dev.lock().poll();
         loop {
             let buf_receive = self.dev.lock().receive();
             if let Some(buf) = buf_receive {
-                trace!("RECV {} bytes: {:02X?}", buf.packet_len(), buf.packet());
+                trace!("RECV {} bytes: {:02X?}", buf.packet().len(), buf.packet());
 
                 // Copy buf to pbuf
-                let len = buf.packet_len();
+                let len = buf.packet().len();
                 let p = unsafe { pbuf_alloc(pbuf_layer_PBUF_RAW, len as u16, pbuf_type_PBUF_POOL) };
                 if p.is_null() {
                     warn!("pbuf_alloc failed");
@@ -115,15 +120,14 @@ extern "C" fn ethif_init(netif: *mut netif) -> err_t {
 
 extern "C" fn ethif_output(netif: *mut netif, p: *mut pbuf) -> err_t {
     debug!("ethif_output");
-    let ethif = unsafe {
-        &mut *((*netif).state as *mut _ as *mut InterfaceWrapper<axdriver::VirtIoNetDev>)
-    };
+    let ethif = unsafe { &mut *((*netif).state as *mut _ as *mut InterfaceWrapper) };
     let dev_wrapper = ethif.dev.lock();
     let mut dev = dev_wrapper.inner.borrow_mut();
 
-    if dev.can_send() {
+    if dev.can_transmit() {
         let tot_len = unsafe { (*p).tot_len };
-        let mut tx_buf = dev.new_tx_buffer(tot_len.into()).unwrap();
+        let mut tx_buf = NET_BUF_POOL.alloc().unwrap();
+        dev.prepare_tx_buffer(&mut tx_buf, tot_len.into()).unwrap();
 
         // Copy pbuf chain to tx_buf
         let mut offset = 0;
@@ -139,17 +143,17 @@ extern "C" fn ethif_output(netif: *mut netif, p: *mut pbuf) -> err_t {
 
         trace!(
             "SEND {} bytes: {:02X?}",
-            tx_buf.packet_len(),
+            tx_buf.packet().len(),
             tx_buf.packet()
         );
-        dev.send(tx_buf).unwrap();
+        dev.transmit(&tx_buf).unwrap();
         err_enum_t_ERR_OK as err_t
     } else {
         err_enum_t_ERR_WOULDBLOCK as err_t
     }
 }
 
-static mut ETH0: LazyInit<InterfaceWrapper<axdriver::VirtIoNetDev>> = LazyInit::new();
+static mut ETH0: LazyInit<InterfaceWrapper> = LazyInit::new();
 
 fn ip4_addr_gen(a: u8, b: u8, c: u8, d: u8) -> ip4_addr_t {
     ip4_addr_t {
@@ -160,7 +164,11 @@ fn ip4_addr_gen(a: u8, b: u8, c: u8, d: u8) -> ip4_addr_t {
     }
 }
 
-pub fn init(net_devs: NetDevices) {
+pub fn init(mut net_dev: AxNetDevice) {
+    let pool = NetBufferPool::new(NET_BUF_POOL_SIZE, NET_BUF_LEN).unwrap();
+    NET_BUF_POOL.init_by(pool);
+    net_dev.fill_rx_buffers(&NET_BUF_POOL).unwrap();
+
     LWIP_MUTEX.init_by(Mutex::new(()));
     let _guard = LWIP_MUTEX.lock();
 
@@ -168,7 +176,7 @@ pub fn init(net_devs: NetDevices) {
     let mut netmask: ip4_addr_t = ip4_addr_gen(255, 255, 255, 0);
     let mut gw: ip4_addr_t = ip4_addr_gen(10, 0, 2, 2); // QEMU user networking gateway
 
-    let dev = net_devs.0;
+    let dev = net_dev;
     let mut netif: netif = unsafe { core::mem::zeroed() };
     netif.hwaddr_len = 6;
     netif.hwaddr = dev.mac_address().0;

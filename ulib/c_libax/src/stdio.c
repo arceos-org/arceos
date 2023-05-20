@@ -184,7 +184,7 @@ void fprintf(int f, const char *restrict fmt, ...)
         case 's':
             if ((a = va_arg(ap, char *)) == 0)
                 a = "(null)";
-            l = strnlen(a, 200);
+            l = strnlen(a, 500);
             out(f, a, l);
             break;
         case 'l':

@@ -8,4 +8,4 @@ authors = ["Shiping Yuan <robert_yuan@pku.edu.com>"]
 
 [dependencies]
 libax = { path = "../../ulib/libax", features = ["alloc", "paging", "display"] }
-embedded-graphics = "0.7.1"
+embedded-graphics = "0.8"
