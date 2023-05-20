@@ -124,6 +124,33 @@ match arch {
 
 出现较多问题，仍在解决中。
 
+例如：`make A=apps/net/httpclient LOG=info NET=y ARCH=x86_64 ACCEL=n` 出错，riscv64 和 aarch64 无问题。
+
+``` log
+error: linking with `rust-lld` failed: exit status: 1
+  |
+  = note: LC_ALL="C" PATH="/home/thx/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin:/home/thx/.local/bin:/home/thx/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/thx/src/qemu-8.0.0/build:/home/thx/src/riscv64-linux-musl-cross/bin:/home/thx/src/x86_64-linux-musl-cross/bin:/home/thx/src/aarch64-linux-musl-cross/bin" VSLANG="1033" "rust-lld" "-flavor" "gnu" "/tmp/rustc5WWt0d/symbols.o" "/home/thx/Git/arceos-lwip/target/x86_64-unknown-none/release/deps/arceos_httpclient-81d249547e86c1dc.arceos_httpclient.27eb1be0a13a6b9d-cgu.9.rcgu.o" "--as-needed" "-L" "/home/thx/Git/arceos-lwip/target/x86_64-unknown-none/release/deps" "-L" "/home/thx/Git/arceos-lwip/target/release/deps" "-L" "/home/thx/Git/arceos-lwip/target/x86_64-unknown-none/release/build/lwip_rust-028903128b5a9c5d/out" "-L" "/home/thx/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-none/lib" "-Bstatic" "/tmp/rustc5WWt0d/liblwip_rust-f01b4fd7c2e53b1f.rlib" "/home/thx/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-none/lib/libcompiler_builtins-55df7e66f8cf4952.rlib" "-Bdynamic" "--eh-frame-hdr" "-z" "noexecstack" "-L" "/home/thx/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-none/lib" "-o" "/home/thx/Git/arceos-lwip/target/x86_64-unknown-none/release/deps/arceos_httpclient-81d249547e86c1dc" "--gc-sections" "-pie" "-z" "relro" "-z" "now" "-O1" "-T/home/thx/Git/arceos-lwip/modules/axhal/linker_x86_64.lds" "-no-pie"
+  = note: rust-lld: error: /tmp/rustc5WWt0d/liblwip_rust-f01b4fd7c2e53b1f.rlib(nd6.o):(function nd6_send_rs: .text.nd6_send_rs+0xaf): relocation R_X86_64_REX_GOTPCRELX out of range: -549753436244 is not in [-2147483648, 2147483647]; references ip6_addr_any
+          >>> referenced by nd6.c
+          >>> defined in /tmp/rustc5WWt0d/liblwip_rust-f01b4fd7c2e53b1f.rlib(ip6_addr.o)
+
+          rust-lld: error: /tmp/rustc5WWt0d/liblwip_rust-f01b4fd7c2e53b1f.rlib(nd6.o):(function nd6_send_ns: .text.nd6_send_ns+0x143): relocation R_X86_64_REX_GOTPCRELX out of range: -549753436244 is not in [-2147483648, 2147483647]; references ip6_addr_any
+          >>> referenced by nd6.c
+          >>> defined in /tmp/rustc5WWt0d/liblwip_rust-f01b4fd7c2e53b1f.rlib(ip6_addr.o)
+
+          rust-lld: error: /tmp/rustc5WWt0d/liblwip_rust-f01b4fd7c2e53b1f.rlib(nd6.o):(function nd6_find_route: .text.nd6_find_route+0x8a): relocation R_X86_64_REX_GOTPCRELX out of range: -549749819748 is not in [-2147483648, 2147483647]; references default_router_list
+          >>> referenced by nd6.c
+          >>> defined in /tmp/rustc5WWt0d/liblwip_rust-f01b4fd7c2e53b1f.rlib(nd6.o)
+
+          rust-lld: error: /tmp/rustc5WWt0d/liblwip_rust-f01b4fd7c2e53b1f.rlib(nd6.o):(function nd6_get_next_hop_addr_or_queue: .text.nd6_get_next_hop_addr_or_queue+0x2bf): relocation R_X86_64_REX_GOTPCRELX out of range: -549749819748 is not in [-2147483648, 2147483647]; references default_router_list
+          >>> referenced by nd6.c
+          >>> defined in /tmp/rustc5WWt0d/liblwip_rust-f01b4fd7c2e53b1f.rlib(nd6.o)
+
+
+error: could not compile `arceos-httpclient` (bin "arceos-httpclient") due to previous error
+make: *** [scripts/make/build.mk:16: _cargo_build] Error 101
+```
+
 ## 下周计划
 
 修复 CI，优化代码，进行 PR
