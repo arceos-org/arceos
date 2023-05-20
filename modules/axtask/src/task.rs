@@ -337,9 +337,9 @@ impl Deref for CurrentTask {
 
 extern "C" fn task_entry() -> ! {
     // release the lock that was implicitly held across the reschedule
-    info!("exit 233");
-    unsafe { crate::RUN_QUEUE[get_current_cpu_id()].force_unlock() };
-    info!("exit 234");
+    //info!("exit 233");
+    //unsafe { crate::RUN_QUEUE[get_current_cpu_id()].force_unlock() };
+    //info!("exit 234");
     #[cfg(feature = "irq")]
     axhal::arch::enable_irqs();
     let task = crate::current();

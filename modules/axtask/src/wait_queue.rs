@@ -70,7 +70,7 @@ impl WaitQueue {
     /// notifies it.
     pub fn wait(&self) {
         debug!("lock begin 7");
-        RUN_QUEUE[get_current_cpu_id()].lock().block_current(|task| {
+        RUN_QUEUE[get_current_cpu_id()].block_current(|task| {
             task.set_in_wait_queue(true);
             self.queue.lock().push_back((task, get_current_cpu_id()))
         });
@@ -88,13 +88,10 @@ impl WaitQueue {
         F: Fn() -> bool,
     {
         loop {
-            debug!("lock begin 6");
-            let mut rq = RUN_QUEUE[get_current_cpu_id()].lock();
-            debug!("lock end 6");
             if condition() {
                 break;
             }
-            rq.block_current(|task| {
+            RUN_QUEUE[get_current_cpu_id()].block_current(|task| {
                 task.set_in_wait_queue(true);
                 self.queue.lock().push_back((task, get_current_cpu_id()));
             });
@@ -116,7 +113,7 @@ impl WaitQueue {
         crate::timers::set_alarm_wakeup(deadline, curr.clone());
 
         debug!("lock begin 5");
-        RUN_QUEUE[get_current_cpu_id()].lock().block_current(|task| {
+        RUN_QUEUE[get_current_cpu_id()].block_current(|task| {
             task.set_in_wait_queue(true);
             self.queue.lock().push_back((task, get_current_cpu_id()))
         });
@@ -150,7 +147,7 @@ impl WaitQueue {
         while axhal::time::current_time() < deadline {
             
             debug!("lock begin 4");
-            let mut rq = RUN_QUEUE[get_current_cpu_id()].lock();
+            let mut rq = RUN_QUEUE[get_current_cpu_id()];
             debug!("lock end 4");
             if condition() {
                 timeout = false;
@@ -170,17 +167,16 @@ impl WaitQueue {
     /// If `resched` is true, the current task will be preempted when the
     /// preemption is enabled.
     pub fn notify_one(&self, resched: bool) -> bool {
-        info!("tat {}", get_current_cpu_id());
+        //info!("tat {}", get_current_cpu_id());
         debug!("lock begin 3");
-        let mut rq = RUN_QUEUE[LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu()].lock();
         if !self.queue.lock().is_empty() {
-            info!("tat1 {}", get_current_cpu_id());
-            let tmp = self.notify_one_locked(resched, &mut rq);
-            debug!("lock end 3");
+            //info!("tat1 {}", get_current_cpu_id());
+            let tmp = self.notify_one_locked(resched, &RUN_QUEUE[LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu()]);
+            //debug!("lock end 3");
             tmp
         } else {
-            info!("tat2 {}", get_current_cpu_id());
-            debug!("lock end 3");
+            //info!("tat2 {}", get_current_cpu_id());
+            //debug!("lock end 3");
             false
         }
     }
@@ -193,13 +189,10 @@ impl WaitQueue {
         loop {
             //info!("333");
             if let Some((task, cpu_id)) = self.queue.lock().pop_front() {
-                debug!("lock begin 2");
-                let mut rq = RUN_QUEUE[cpu_id].lock();
-                debug!("lock end 2");
                 task.set_in_wait_queue(false);
-                rq.unblock_task(task, resched);
-                info!("exit 2");
-                drop(rq); // we must unlock `RUN_QUEUE` after unlocking `self.queue`.
+                RUN_QUEUE[cpu_id].unblock_task(task, resched);
+                //info!("exit 2");
+                //drop(rq); // we must unlock `RUN_QUEUE` after unlocking `self.queue`.
             } else {
                 break;
             }
@@ -210,26 +203,23 @@ impl WaitQueue {
     ///
     /// If `resched` is true, the current task will be preempted when the
     /// preemption is enabled.
-    pub fn notify_task(&mut self, resched: bool, task: &AxTaskRef) -> bool {
+    pub fn notify_task(&self, resched: bool, task: &AxTaskRef) -> bool {
         //info!("222");
         let mut wq = self.queue.lock();
         if let Some(index) = wq.iter().position(|(t, cpu_id)| Arc::ptr_eq(t, task)) {
-            debug!("lock begin 1");
-            let mut rq = RUN_QUEUE[wq[index].1].lock();
-            debug!("lock end 1");
             task.set_in_wait_queue(false);
-            rq.unblock_task(wq.remove(index).unwrap().0, resched);
-            info!("exit 4");
+            RUN_QUEUE[LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu()].unblock_task(wq.remove(index).unwrap().0, resched);
+            //info!("exit 4");
             true
         } else {
             false
         }
     }
 
-    pub(crate) fn notify_one_locked(&self, resched: bool, rq: &mut AxRunQueue) -> bool {
+    pub(crate) fn notify_one_locked(&self, resched: bool, rq: &AxRunQueue) -> bool {
         //assert!(false);
         let tmp = self.queue.lock();
-        info!("111 {} {}", get_current_cpu_id(), tmp[0].1);
+        //info!("111 {} {}", get_current_cpu_id(), tmp[0].1);
         for i in 0..tmp.len() {
             tmp[i].0.set_in_wait_queue(false);
             rq.unblock_task(tmp[i].0.clone(), resched);

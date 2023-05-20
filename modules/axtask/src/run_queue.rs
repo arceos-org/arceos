@@ -34,40 +34,40 @@ pub(crate) struct AxRunQueue {
 }
 
 impl AxRunQueue {
-    pub fn new(id: usize) -> SpinNoIrq<Self> {
+    pub fn new(id: usize) -> Self {
         let gc_task = TaskInner::new(gc_entry, "gc", axconfig::TASK_STACK_SIZE);
         let mut scheduler = SpinNoIrq::new(Scheduler::new());
 
-        scheduler.add_task(gc_task);
-        SpinNoIrq::new(Self { scheduler, id})
+        scheduler.lock().add_task(gc_task);
+        Self { scheduler, id}
     }
 
-    pub fn add_task(&mut self, task: AxTaskRef) {
+    pub fn add_task(&self, task: AxTaskRef) {
         debug!("task spawn: {}", task.id_name());
         assert!(task.is_ready());
         LOAD_BALANCE_ARR[self.id].add_weight(1);
         trace!("add task in queue {}, now the weight is {}", self.id, LOAD_BALANCE_ARR[self.id].get_weight());
-        self.scheduler.add_task(task);
+        self.scheduler.lock().add_task(task);
     }
 
     #[cfg(feature = "irq")]
-    pub fn scheduler_timer_tick(&mut self) {
+    pub fn scheduler_timer_tick(&self) {
         let curr = crate::current();
-        if !curr.is_idle() && self.scheduler.task_tick(curr.as_task_ref()) {
+        if !curr.is_idle() && self.scheduler.lock().task_tick(curr.as_task_ref()) {
             #[cfg(feature = "preempt")]
             curr.set_preempt_pending(true);
         }
     }
 
-    pub fn yield_current(&mut self) {
+    pub fn yield_current(&self) {
         let curr = crate::current();
         debug!("task yield: {}", curr.id_name());
         assert!(curr.is_running());
         self.resched_inner(false);
     }
 
-    pub fn set_priority(&mut self, prio: isize) -> bool {
-        self.scheduler
+    pub fn set_priority(&self, prio: isize) -> bool {
+        self.scheduler.lock()
             .set_priority(crate::current().as_task_ref(), prio)
     }
 
@@ -95,7 +95,7 @@ impl AxRunQueue {
         }
     }
 
-    pub fn exit_current(&mut self, exit_code: i32) -> ! {
+    pub fn exit_current(&self, exit_code: i32) -> ! {
         let curr = crate::current();
         debug!("task exit: {}, exit_code={}, queue_id={}", curr.id_name(), exit_code, self.id);
         assert!(curr.is_running());
@@ -112,7 +112,7 @@ impl AxRunQueue {
         unreachable!("task exited!");
     }
 
-    pub fn block_current<F>(&mut self, wait_queue_push: F)
+    pub fn block_current<F>(&self, wait_queue_push: F)
     where
         F: FnOnce(AxTaskRef),
     {
@@ -135,13 +135,13 @@ impl AxRunQueue {
         debug!("block_current 5");
     }
 
-    pub fn unblock_task(&mut self, task: AxTaskRef, resched: bool) {
+    pub fn unblock_task(&self, task: AxTaskRef, resched: bool) {
         debug!("task unblock: {} at cpu {}", task.id_name(), self.id);
         if task.is_blocked() {
             debug!("123");
             task.set_state(TaskState::Ready);
             debug!("234");
-            self.scheduler.add_task(task); // TODO: priority
+            self.scheduler.lock().add_task(task); // TODO: priority
             LOAD_BALANCE_ARR[self.id].add_weight(1);
             debug!("345");
             if resched {
@@ -153,7 +153,7 @@ impl AxRunQueue {
     }
 
     #[cfg(feature = "irq")]
-    pub fn sleep_until(&mut self, deadline: axhal::time::TimeValue) {
+    pub fn sleep_until(&self, deadline: axhal::time::TimeValue) {
         let curr = crate::current();
         debug!("task sleep: {}, deadline={:?}", curr.id_name(), deadline);
         assert!(curr.is_running());
@@ -171,8 +171,8 @@ impl AxRunQueue {
 impl AxRunQueue {
     /// Common reschedule subroutine. If `preempt`, keep current task's time
     /// slice, otherwise reset it.
-    fn if_empty_steal(&mut self) {
-        if self.scheduler.is_empty() {
+    fn if_empty_steal(&self) {
+        if self.scheduler.lock().is_empty() {
             let id = self.id;
             let next = LOAD_BALANCE_ARR[id].find_stolen_cpu_id();
             trace!("load balance weight for id {} : {}", id, LOAD_BALANCE_ARR[id].get_weight());
@@ -180,11 +180,11 @@ impl AxRunQueue {
             debug!("steal: current = {}, victim = {}", self.id, next);
             if next != -1 {
                 debug!("steal 1");
-                info!("exit 233");
-                let task = RUN_QUEUE[next as usize].lock().scheduler.pick_next_task();
-                info!("exit 234");
+                //info!("exit 233");
+                let task = RUN_QUEUE[next as usize].scheduler.lock().pick_next_task();
+                //info!("exit 234");
                 debug!("steal 2");
-                self.scheduler.add_task(task.unwrap());
+                self.scheduler.lock().add_task(task.unwrap());
                 debug!("steal 3");
                 LOAD_BALANCE_ARR[next as usize].add_weight(-1);
                 debug!("steal 4");
@@ -193,7 +193,7 @@ impl AxRunQueue {
             }
         }
     }
-    fn resched_inner(&mut self, preempt: bool) {
+    fn resched_inner(&self, preempt: bool) {
         debug!("resched inner 1");
         let prev = crate::current();
         debug!("resched inner 2");
@@ -203,13 +203,13 @@ impl AxRunQueue {
             debug!("resched inner 4");
             if !prev.is_idle() {
                 debug!("resched inner 5");
-                self.scheduler.put_prev_task(prev.clone(), preempt);
+                self.scheduler.lock().put_prev_task(prev.clone(), preempt);
                 LOAD_BALANCE_ARR[self.id].add_weight(-1); //?
                 debug!("resched inner 6");
             }
         }
         debug!("resched inner 7");
-        let next = self.scheduler.pick_next_task().unwrap_or_else(|| unsafe {
+        let next = self.scheduler.lock().pick_next_task().unwrap_or_else(|| unsafe {
             // Safety: IRQs must be disabled at this time.
             LOAD_BALANCE_ARR[self.id].add_weight(1); // 后面需要减一，由于是 IDLE 所以不用减，先加一
             IDLE_TASK.current_ref_raw().get_unchecked().clone()
@@ -222,7 +222,7 @@ impl AxRunQueue {
         debug!("resched inner 9");
     }
 
-    fn switch_to(&mut self, prev_task: CurrentTask, next_task: AxTaskRef) {
+    fn switch_to(&self, prev_task: CurrentTask, next_task: AxTaskRef) {
         trace!(
             "context switch: {} -> {}",
             prev_task.id_name(),
