@@ -24,6 +24,56 @@ const TASK_PARAMS: &[TaskParam] = &[
         nice: 0,
     },
     TaskParam {
+        data_len: 5,
+        value: 10000000,
+        nice: 0,
+    },
+    TaskParam {
+        data_len: 5,
+        value: 10000000,
+        nice: 0,
+    },
+    TaskParam {
+        data_len: 5,
+        value: 10000000,
+        nice: 0,
+    },
+    TaskParam {
+        data_len: 5,
+        value: 10000000,
+        nice: 0,
+    },
+    TaskParam {
+        data_len: 5,
+        value: 10000000,
+        nice: 0,
+    },
+    TaskParam {
+        data_len: 5,
+        value: 10000000,
+        nice: 0,
+    },
+    TaskParam {
+        data_len: 5,
+        value: 10000000,
+        nice: 0,
+    },
+    TaskParam {
+        data_len: 5,
+        value: 10000000,
+        nice: 0,
+    },
+    TaskParam {
+        data_len: 5,
+        value: 10000000,
+        nice: 0,
+    },
+    TaskParam {
+        data_len: 5,
+        value: 10000000,
+        nice: 0,
+    },
+    TaskParam {
         data_len: 2,
         value: 10000000,
         nice: 0,
@@ -95,7 +145,7 @@ const TASK_PARAMS: &[TaskParam] = &[
     },
 ];
 
-const PAYLOAD_KIND: usize = 15;
+const PAYLOAD_KIND: usize = 25;
 
 static FINISHED_TASKS: AtomicUsize = AtomicUsize::new(0);
 
@@ -123,7 +173,8 @@ fn main() {
         expect += data_inner.iter().map(load).sum::<u64>();
     }
     let start_time = libax::time::Instant::now();
-    for i in 0..PAYLOAD_KIND {
+    for ii in 0..PAYLOAD_KIND {
+        let i = PAYLOAD_KIND - 1 - ii;
         let vec = data[i].clone();
         let data_len = TASK_PARAMS[i].data_len;
         let nice = TASK_PARAMS[i].nice;

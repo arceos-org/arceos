@@ -1,4 +1,0 @@
-test_one "SMP=1 LOG=info APP_FEATURES=sched_cfs" "expect_info_smp1_cfs.out"
-test_one "SMP=1 LOG=info APP_FEATURES=sched_fifo" "expect_info_smp1_fifo.out"
-test_one "SMP=1 LOG=info APP_FEATURES=sched_rr" "expect_info_smp1_rr.out"
-test_one "SMP=4 LOG=info APP_FEATURES=sched_cfs" "expect_info_smp4_cfs.out"

@@ -13,4 +13,4 @@ sched_rr = ["libax/sched_rr"]
 sched_fifo = ["libax/sched_fifo"]
 
 [dependencies]
-libax = { path = "../../../ulib/libax", default-features = false, features = ["alloc", "paging", "multitask"] }
+libax = { path = "../../../ulib/libax", default-features = false, features = ["alloc", "paging", "multitask", "irq"] }
