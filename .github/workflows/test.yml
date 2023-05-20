@@ -17,6 +17,13 @@ jobs:
         profile: minimal
         toolchain: nightly
         components: rust-src, llvm-tools-preview
+    - name: Download x86_64 musl toolchain
+      run: |
+        export MUSL_PATH="x86_64-linux-musl-cross"
+        wget https://musl.cc/$MUSL_PATH.tgz
+        tar -xf $MUSL_PATH.tgz
+        mv $MUSL_PATH musl
+        export PATH=$PATH:$PWD/musl/bin
     - name: Run unit tests
       run: make unittest_no_fail_fast
 
