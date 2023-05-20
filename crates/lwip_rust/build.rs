@@ -1,7 +1,8 @@
 use std::path::PathBuf;
 
 fn main() {
-    compile_lwip();
+    let arch = std::env::var("CARGO_CFG_TARGET_ARCH").unwrap();
+    compile_lwip(&arch);
     generate_lwip_bindings();
 }
 
@@ -27,8 +28,25 @@ fn generate_lwip_bindings() {
         .expect("Couldn't write bindings!");
 }
 
-fn compile_lwip() {
+fn compile_lwip(arch: &str) {
     let mut base_config = cc::Build::new();
+
+    match arch {
+        "riscv64" => {
+            base_config.compiler("riscv64-linux-musl-gcc");
+            base_config.flag("-mabi=lp64d");
+        }
+        "aarch64" => {
+            base_config.compiler("aarch64-linux-musl-gcc");
+        }
+        "x86_64" => {
+            base_config.compiler("x86_64-linux-musl-gcc");
+        }
+        _ => {
+            panic!("Unsupported arch: {}", arch);
+        }
+    }
+
     base_config
         .include("depend/lwip/src/include")
         .include("custom")
@@ -78,12 +96,6 @@ fn compile_lwip() {
         .file("depend/lwip/src/apps/lwiperf/lwiperf.c")
         .file("../../ulib/c_libax/src/string.c")
         .file("custom/sys_arch.c");
-
-    // base_config.target("riscv64gc-unknown-none-elf");
-    base_config
-        .flag("-march=rv64gc")
-        .flag("-mabi=lp64d")
-        .flag("-mcmodel=medany");
 
     base_config
         .warnings(false)

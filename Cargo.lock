@@ -322,6 +322,7 @@ dependencies = [
  "axsync",
  "axtask",
  "cfg-if",
+ "cty",
  "driver_net",
  "lazy_init",
  "log",
