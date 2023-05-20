@@ -16,7 +16,7 @@ jobs:
         profile: minimal
         toolchain: nightly
         components: rust-src, clippy, rustfmt
-    - name: Download x86_64 musl toolchain
+    - name: Download musl toolchain
       run: |
         for arch in x86_64 aarch64 riscv64; do
           if [ "$arch" = "x86_64" ]; then
@@ -28,8 +28,7 @@ jobs:
           fi
           wget https://musl.cc/$MUSL_PATH.tgz
           tar -xf $MUSL_PATH.tgz
-          mv $MUSL_PATH musl
-          echo "$PWD/musl/bin" >> $GITHUB_PATH
+          echo "$MUSL_PATH/bin" >> $GITHUB_PATH
         done
     - name: Clippy for the default target
       run: cargo clippy --all-features
