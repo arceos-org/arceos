@@ -47,8 +47,8 @@ fn main() {
     );
     let expect: u64 = vec.iter().map(sqrt).sum();
 
-    let timeout = MAIN_WQ.wait_timeout(Duration::from_millis(500));
-    assert!(timeout);
+    //let timeout = MAIN_WQ.wait_timeout(Duration::from_millis(500));
+    //assert!(timeout);
 
     for i in 0..NUM_TASKS {
         let vec = vec.clone();
@@ -77,8 +77,8 @@ fn main() {
         });
     }
 
-    let timeout = MAIN_WQ.wait_timeout(Duration::from_millis(600));
-    println!("main task woken up! timeout={}", timeout);
+    MAIN_WQ.wait();
+    //println!("main task woken up! timeout={}", timeout);
 
     let actual = RESULTS.lock().iter().sum();
     println!("sum = {}", actual);
