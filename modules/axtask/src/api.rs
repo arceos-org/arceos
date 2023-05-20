@@ -141,7 +141,6 @@ where
 {
     let task = TaskInner::new(f, "", axconfig::TASK_STACK_SIZE);
     let target_cpu = LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu();
-    LOAD_BALANCE_ARR[target_cpu].add_weight(1);
     RUN_QUEUE[target_cpu].lock().add_task(task);
 }
 

@@ -24,8 +24,11 @@ fn barrier() {
     static BARRIER_WQ: WaitQueue = WaitQueue::new();
     static BARRIER_COUNT: AtomicUsize = AtomicUsize::new(0);
     BARRIER_COUNT.fetch_add(1, Ordering::Relaxed);
+    println!("BARRIER_COUNT : {}", BARRIER_COUNT.load(Ordering::Acquire));
     BARRIER_WQ.wait_until(|| BARRIER_COUNT.load(Ordering::Relaxed) == NUM_TASKS);
+    println!("AFTER BARRIER_COUNT 1");
     BARRIER_WQ.notify_all(true);
+    println!("AFTER BARRIER_COUNT 2");
 }
 
 fn sqrt(n: &u64) -> u64 {
@@ -76,7 +79,7 @@ fn main() {
             }
         });
     }
-
+    println!("before wait");
     MAIN_WQ.wait();
     //println!("main task woken up! timeout={}", timeout);
 

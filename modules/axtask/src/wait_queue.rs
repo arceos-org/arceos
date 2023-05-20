@@ -172,7 +172,7 @@ impl WaitQueue {
     pub fn notify_one(&self, resched: bool) -> bool {
         info!("tat {}", get_current_cpu_id());
         debug!("lock begin 3");
-        let mut rq = RUN_QUEUE[get_current_cpu_id()].lock();
+        let mut rq = RUN_QUEUE[LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu()].lock();
         debug!("lock end 3");
         if !self.queue.lock().is_empty() {
             info!("tat1 {}", get_current_cpu_id());

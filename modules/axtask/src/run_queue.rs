@@ -6,7 +6,7 @@ use load_balance::BaseLoadBalance;
 use spinlock::SpinNoIrq;
 
 use crate::task::{CurrentTask, TaskState};
-use crate::{AxTaskRef, LoadBalance, Scheduler, TaskInner, WaitQueue, get_current_cpu_id};
+use crate::{AxTaskRef, LoadBalance, Scheduler, TaskInner, WaitQueue};
 
 use core::sync::atomic::{AtomicIsize, Ordering};
 
@@ -30,20 +30,23 @@ static IDLE_TASK: LazyInit<AxTaskRef> = LazyInit::new();
 
 pub(crate) struct AxRunQueue {
     scheduler: Scheduler,
+    id: usize,
 }
 
 impl AxRunQueue {
-    pub fn new() -> SpinNoIrq<Self> {
+    pub fn new(id: usize) -> SpinNoIrq<Self> {
         let gc_task = TaskInner::new(gc_entry, "gc", axconfig::TASK_STACK_SIZE);
         let mut scheduler = Scheduler::new();
 
         scheduler.add_task(gc_task);
-        SpinNoIrq::new(Self { scheduler })
+        SpinNoIrq::new(Self { scheduler, id})
     }
 
     pub fn add_task(&mut self, task: AxTaskRef) {
         debug!("task spawn: {}", task.id_name());
         assert!(task.is_ready());
+        LOAD_BALANCE_ARR[self.id].add_weight(1);
+        trace!("add task in queue {}, now the weight is {}", self.id, LOAD_BALANCE_ARR[self.id].get_weight());
         self.scheduler.add_task(task);
     }
 
@@ -94,7 +97,7 @@ impl AxRunQueue {
 
     pub fn exit_current(&mut self, exit_code: i32) -> ! {
         let curr = crate::current();
-        debug!("task exit: {}, exit_code={}, cpuid={}", curr.id_name(), exit_code, get_current_cpu_id());
+        debug!("task exit: {}, exit_code={}, queue_id={}", curr.id_name(), exit_code, self.id);
         assert!(curr.is_running());
         assert!(!curr.is_idle());
         if curr.is_init() {
@@ -133,12 +136,13 @@ impl AxRunQueue {
     }
 
     pub fn unblock_task(&mut self, task: AxTaskRef, resched: bool) {
-        debug!("task unblock: {}", task.id_name());
+        debug!("task unblock: {} at cpu {}", task.id_name(), self.id);
         if task.is_blocked() {
             debug!("123");
             task.set_state(TaskState::Ready);
             debug!("234");
             self.scheduler.add_task(task); // TODO: priority
+            LOAD_BALANCE_ARR[self.id].add_weight(1);
             debug!("345");
             if resched {
                 #[cfg(feature = "preempt")]
@@ -169,10 +173,11 @@ impl AxRunQueue {
     /// slice, otherwise reset it.
     fn if_empty_steal(&mut self) {
         if self.scheduler.is_empty() {
-            let id = get_current_cpu_id();
+            let id = self.id;
             let next = LOAD_BALANCE_ARR[id].find_stolen_cpu_id();
+            trace!("load balance weight for id {} : {}", id, LOAD_BALANCE_ARR[id].get_weight());
             assert!(LOAD_BALANCE_ARR[id].get_weight() == 0);
-            debug!("steal: current = {}, victim = {}", get_current_cpu_id(), next);
+            debug!("steal: current = {}, victim = {}", self.id, next);
             if next != -1 {
                 debug!("steal 1");
                 let task = RUN_QUEUE[next as usize].lock().scheduler.pick_next_task();
@@ -197,16 +202,17 @@ impl AxRunQueue {
             if !prev.is_idle() {
                 debug!("resched inner 5");
                 self.scheduler.put_prev_task(prev.clone(), preempt);
-                LOAD_BALANCE_ARR[get_current_cpu_id()].add_weight(-1); //?
+                LOAD_BALANCE_ARR[self.id].add_weight(-1); //?
                 debug!("resched inner 6");
             }
         }
         debug!("resched inner 7");
         let next = self.scheduler.pick_next_task().unwrap_or_else(|| unsafe {
             // Safety: IRQs must be disabled at this time.
+            LOAD_BALANCE_ARR[self.id].add_weight(1); // 后面需要减一，由于是 IDLE 所以不用减，先加一
             IDLE_TASK.current_ref_raw().get_unchecked().clone()
         });
-        LOAD_BALANCE_ARR[get_current_cpu_id()].add_weight(-1); //?
+        LOAD_BALANCE_ARR[self.id].add_weight(-1); //?
         debug!("resched inner 8");
         // TODO: 注意需要对所有 pick_next_task 后面都要判断是否队列空，如果是则需要执行线程窃取
         self.if_empty_steal();
@@ -269,8 +275,9 @@ pub(crate) fn init() {
     main_task.set_state(TaskState::Running);
 
     for i in 0..axconfig::SMP {
-        RUN_QUEUE[i].init_by(Arc::new(AxRunQueue::new()));
+        RUN_QUEUE[i].init_by(Arc::new(AxRunQueue::new(i)));
         LOAD_BALANCE_ARR[i].init_by(Arc::new(LoadBalance::new(i)));
+        LOAD_BALANCE_ARR[i].add_weight(1); // gc_task
     }
     let mut arr = Vec::new();
     for i in 0..axconfig::SMP {
