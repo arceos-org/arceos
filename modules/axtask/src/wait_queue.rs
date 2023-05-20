@@ -173,12 +173,12 @@ impl WaitQueue {
         info!("tat {}", get_current_cpu_id());
         debug!("lock begin 3");
         let mut rq = RUN_QUEUE[LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu()].lock();
-        debug!("lock end 3");
         if !self.queue.lock().is_empty() {
             info!("tat1 {}", get_current_cpu_id());
             self.notify_one_locked(resched, &mut rq)
         } else {
             info!("tat2 {}", get_current_cpu_id());
+            debug!("lock end 3");
             false
         }
     }
@@ -226,6 +226,7 @@ impl WaitQueue {
 
     pub(crate) fn notify_one_locked(&self, resched: bool, rq: &mut AxRunQueue) -> bool {
         //assert!(false);
+        info!("lock end 3");
         let tmp = self.queue.lock();
         info!("111 {} {}", get_current_cpu_id(), tmp[0].1);
         for i in 0..tmp.len() {

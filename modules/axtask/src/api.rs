@@ -126,8 +126,9 @@ pub fn init_scheduler_secondary() {
 #[doc(cfg(feature = "irq"))]
 pub fn on_timer_tick() {
     crate::timers::check_events();
-    //info!("exit 6");
+    info!("exit 233");
     RUN_QUEUE[get_current_cpu_id()].lock().scheduler_timer_tick();
+    info!("exit 234");
     //info!("exit 7");
 }
 
@@ -141,19 +142,27 @@ where
 {
     let task = TaskInner::new(f, "", axconfig::TASK_STACK_SIZE);
     let target_cpu = LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu();
+    info!("exit 233");
     RUN_QUEUE[target_cpu].lock().add_task(task);
+    info!("exit 234");
 }
 
 /// set priority for current task.
 /// In CFS, priority is the nice value, ranging from -20 to 19.
 pub fn set_priority(prio: isize) -> bool {
-    RUN_QUEUE[get_current_cpu_id()].lock().set_priority(prio)
+    info!("exit 233");
+    let tmp = RUN_QUEUE[get_current_cpu_id()].lock().set_priority(prio);
+    
+    info!("exit 234");
+    tmp
 }
 
 /// Current task gives up the CPU time voluntarily, and switches to another
 /// ready task.
 pub fn yield_now() {
+    info!("exit 233");
     RUN_QUEUE[get_current_cpu_id()].lock().yield_current();
+    info!("exit 234");
     // TODO: 还没有把功能取出来的功能
 }
 
@@ -168,14 +177,17 @@ pub fn sleep(dur: core::time::Duration) {
 ///
 /// If the feature `irq` is not enabled, it uses busy-wait instead.
 pub fn sleep_until(deadline: axhal::time::TimeValue) {
+    info!("exit 233");
     #[cfg(feature = "irq")]
     RUN_QUEUE[get_current_cpu_id()].lock().sleep_until(deadline);
+    info!("exit 234");
     #[cfg(not(feature = "irq"))]
     axhal::time::busy_wait_until(deadline);
 }
 
 /// Exits the current task.
 pub fn exit(exit_code: i32) -> ! {
+    info!("exit 233");
     RUN_QUEUE[get_current_cpu_id()].lock().exit_current(exit_code)
 }
 

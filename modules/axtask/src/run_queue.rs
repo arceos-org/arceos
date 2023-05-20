@@ -180,7 +180,9 @@ impl AxRunQueue {
             debug!("steal: current = {}, victim = {}", self.id, next);
             if next != -1 {
                 debug!("steal 1");
+                info!("exit 233");
                 let task = RUN_QUEUE[next as usize].lock().scheduler.pick_next_task();
+                info!("exit 234");
                 debug!("steal 2");
                 self.scheduler.add_task(task.unwrap());
                 debug!("steal 3");
@@ -250,19 +252,27 @@ impl AxRunQueue {
 
 fn gc_entry() {
     loop {
+        debug!("gc1");
         // Drop all exited tasks and recycle resources.
         while !EXITED_TASKS.lock().is_empty() {
+            debug!("gc2");
             // Do not do the slow drops in the critical section.
             let task = EXITED_TASKS.lock().pop_front();
+            debug!("gc3");
             if let Some(task) = task {
                 // wait for other threads to release the reference.
+        debug!("gc4");
                 while Arc::strong_count(&task) > 1 {
                     core::hint::spin_loop();
                 }
+                debug!("gc5");
                 drop(task);
             }
+            debug!("gc6");
         }
+        debug!("gc7");
         WAIT_FOR_EXIT.wait();
+        debug!("gc8");
     }
 }
 
