@@ -38,13 +38,17 @@ sched_rr = ["axtask/sched_rr", "irq"]
 sched_cfs = ["axtask/sched_cfs", "irq"]
 
 # File system
-fs = ["alloc", "axruntime/fs", "dep:axfs"]
+fs = ["alloc", "axruntime/fs", "dep:axdriver", "dep:axfs"]
 
 # Networking
-net = ["axruntime/net", "dep:axnet"]
+net = ["axruntime/net", "dep:axdriver", "dep:axnet"]
 
 # Display
-display = ["axruntime/display", "dep:axdisplay"]
+display = ["axruntime/display", "dep:axdriver", "dep:axdisplay"]
+
+# Device drivers
+bus-mmio = ["axdriver?/bus-mmio"]
+bus-pci = ["axdriver?/bus-pci"]
 
 # Logging
 log-level-off = ["axlog/log-level-off"]
@@ -55,9 +59,9 @@ log-level-debug = ["axlog/log-level-debug"]
 log-level-trace = ["axlog/log-level-trace"]
 
 # Platform
-platform-pc-x86 = ["axhal/platform-pc-x86", "axdriver?/bus-pci"]
-platform-qemu-virt-riscv = ["axhal/platform-qemu-virt-riscv", "axdriver?/bus-mmio"]
-platform-qemu-virt-aarch64 = ["axhal/platform-qemu-virt-aarch64", "axdriver?/bus-mmio"]
+platform-pc-x86 = ["axhal/platform-pc-x86", "bus-pci"]
+platform-qemu-virt-riscv = ["axhal/platform-qemu-virt-riscv", "bus-mmio"]
+platform-qemu-virt-aarch64 = ["axhal/platform-qemu-virt-aarch64", "bus-mmio"]
 
 default = ["axtask?/sched_fifo"]
 
@@ -78,4 +82,4 @@ axtask = { path = "../../modules/axtask", default-features = false, optional = t
 
 [build-dependencies]
 cbindgen = { version = "0.24", optional = true }
-bindgen ={ version = "0.64", optional = true }
+bindgen ={ version = "0.65", optional = true }

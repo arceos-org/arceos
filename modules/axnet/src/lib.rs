@@ -45,18 +45,13 @@ pub use self::net_impl::resolve_socket_addr;
 pub use self::net_impl::TcpSocket;
 pub use self::net_impl::UdpSocket;
 
-use axdriver::NetDevices;
-use driver_net::{BaseDriverOps, DeviceType};
+use axdriver::{prelude::*, AxDeviceContainer};
 
-/// Initializes the network subsystem by [`NetDevices`].
-pub fn init_network(net_devs: NetDevices) {
+/// Initializes the network subsystem by NIC devices.
+pub fn init_network(mut net_devs: AxDeviceContainer<AxNetDevice>) {
     info!("Initialize network subsystem...");
 
-    info!("number of NICs: {}", net_devs.len());
-    axdriver::net_devices_enumerate!((i, dev) in net_devs {
-        assert_eq!(dev.device_type(), DeviceType::Net);
-        info!("  NIC {}: {:?}", i, dev.device_name());
-    });
-
-    net_impl::init(net_devs);
+    let dev = net_devs.take_one().expect("No NIC device found!");
+    info!("  use NIC 0: {:?}", dev.device_name());
+    net_impl::init(dev);
 }

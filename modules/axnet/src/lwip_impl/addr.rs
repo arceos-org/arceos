@@ -26,6 +26,29 @@ pub struct SocketAddr {
     pub port: u16,
 }
 
+impl IpAddr {
+    pub fn as_bytes(&self) -> &[u8] {
+        match self {
+            IpAddr::Ipv4(Ipv4Addr(addr)) => unsafe { &*(addr as *const u32 as *const [u8; 4]) },
+            IpAddr::Ipv6(Ipv6Addr { addr, .. }) => unsafe {
+                &*(addr as *const u32 as *const [u8; 16])
+            },
+        }
+    }
+}
+
+impl From<Ipv4Addr> for IpAddr {
+    fn from(addr: Ipv4Addr) -> IpAddr {
+        IpAddr::Ipv4(addr)
+    }
+}
+
+impl From<Ipv6Addr> for IpAddr {
+    fn from(addr: Ipv6Addr) -> IpAddr {
+        IpAddr::Ipv6(addr)
+    }
+}
+
 impl FromStr for IpAddr {
     type Err = ();
 
@@ -82,6 +105,16 @@ impl fmt::Display for IpAddr {
             IpAddr::Ipv4(ipv4_addr) => write!(f, "{ipv4_addr}"),
             IpAddr::Ipv6(ipv6_addr) => write!(f, "{ipv6_addr}"),
         }
+    }
+}
+
+impl Ipv4Addr {
+    pub fn from_bytes(bytes: &[u8]) -> Ipv4Addr {
+        let mut addr: u32 = 0;
+        for i in 0..4 {
+            addr |= (bytes[i] as u32) << (8 * i);
+        }
+        Ipv4Addr(addr)
     }
 }
 
@@ -174,6 +207,24 @@ impl SocketAddr {
 impl From<(IpAddr, u16)> for SocketAddr {
     fn from((addr, port): (IpAddr, u16)) -> SocketAddr {
         SocketAddr { addr, port }
+    }
+}
+
+impl From<(Ipv4Addr, u16)> for SocketAddr {
+    fn from((addr, port): (Ipv4Addr, u16)) -> SocketAddr {
+        SocketAddr {
+            addr: IpAddr::Ipv4(addr),
+            port,
+        }
+    }
+}
+
+impl From<(Ipv6Addr, u16)> for SocketAddr {
+    fn from((addr, port): (Ipv6Addr, u16)) -> SocketAddr {
+        SocketAddr {
+            addr: IpAddr::Ipv6(addr),
+            port,
+        }
     }
 }
 

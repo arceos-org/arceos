@@ -8,7 +8,11 @@ use core::sync::atomic::{AtomicU64, Ordering::SeqCst};
 unsafe extern "C" fn lwip_print(str: *const c_uchar, mut args: ...) -> c_int {
     use printf_compat::{format, output};
     let mut s = String::new();
-    let bytes_written = format(str, args.as_va_list(), output::fmt_write(&mut s));
+    let bytes_written = format(
+        str as *const cty::c_char,
+        args.as_va_list(),
+        output::fmt_write(&mut s),
+    );
     let now = current_time();
     let cpu_id = this_cpu_id();
     ax_print!(

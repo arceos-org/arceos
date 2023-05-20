@@ -1,6 +1,7 @@
 use crate::{net_impl::driver::lwip_loop_once, IpAddr, SocketAddr};
 use alloc::{boxed::Box, collections::VecDeque};
 use axerrno::{ax_err, AxResult};
+use axsync::Mutex;
 use axtask::yield_now;
 use core::{ffi::c_void, pin::Pin};
 use lwip_rust::bindings::{
@@ -19,8 +20,8 @@ unsafe impl Send for PbuffPointer {}
 struct TcpSocketInner {
     remote_closed: bool,
     connect_result: i8,
-    recv_queue: VecDeque<PbuffPointer>,
-    accept_queue: VecDeque<TcpSocket>,
+    recv_queue: Mutex<VecDeque<PbuffPointer>>,
+    accept_queue: Mutex<VecDeque<TcpSocket>>,
 }
 pub struct TcpSocket {
     pcb: TcpPcbPointer,
@@ -55,7 +56,7 @@ extern "C" fn recv_callback(
             unsafe { (*p).len },
             unsafe { (*p).tot_len }
         );
-        socket_inner.recv_queue.push_back(PbuffPointer(p));
+        socket_inner.recv_queue.lock().push_back(PbuffPointer(p));
     }
     0
 }
@@ -72,8 +73,8 @@ extern "C" fn accept_callback(arg: *mut c_void, newpcb: *mut tcp_pcb, err: err_t
         inner: Box::pin(TcpSocketInner {
             remote_closed: false,
             connect_result: 0,
-            recv_queue: VecDeque::new(),
-            accept_queue: VecDeque::new(),
+            recv_queue: Mutex::new(VecDeque::new()),
+            accept_queue: Mutex::new(VecDeque::new()),
         }),
     };
     unsafe {
@@ -83,7 +84,7 @@ extern "C" fn accept_callback(arg: *mut c_void, newpcb: *mut tcp_pcb, err: err_t
         );
         tcp_recv(socket.pcb.0, Some(recv_callback));
     }
-    socket_inner.accept_queue.push_back(socket);
+    socket_inner.accept_queue.lock().push_back(socket);
     0
 }
 
@@ -96,8 +97,8 @@ impl TcpSocket {
             inner: Box::pin(TcpSocketInner {
                 remote_closed: false,
                 connect_result: 0,
-                recv_queue: VecDeque::new(),
-                accept_queue: VecDeque::new(),
+                recv_queue: Mutex::new(VecDeque::new()),
+                accept_queue: Mutex::new(VecDeque::new()),
             }),
         };
         unsafe {
@@ -213,16 +214,15 @@ impl TcpSocket {
         Ok(())
     }
 
-    pub fn accept(&mut self) -> AxResult<TcpSocket> {
+    pub fn accept(&self) -> AxResult<TcpSocket> {
         debug!("[TcpSocket] accept");
-        if self.inner.accept_queue.len() != 0 {
-            return Ok(self.inner.accept_queue.pop_front().unwrap());
-        }
         loop {
             lwip_loop_once();
-            if self.inner.accept_queue.len() != 0 {
-                return Ok(self.inner.accept_queue.pop_front().unwrap());
+            let mut accept_queue = self.inner.accept_queue.lock();
+            if accept_queue.len() != 0 {
+                return Ok(accept_queue.pop_front().unwrap());
             }
+            drop(accept_queue);
             yield_now();
         }
     }
@@ -250,19 +250,20 @@ impl TcpSocket {
         }
     }
 
-    pub fn recv(&mut self, buf: &mut [u8]) -> AxResult<usize> {
+    pub fn recv(&self, buf: &mut [u8]) -> AxResult<usize> {
         trace!("[TcpSocket] recv");
         if self.inner.remote_closed {
             return Ok(0);
         }
         loop {
             lwip_loop_once();
-            match if self.inner.recv_queue.len() == 0 {
+            let mut recv_queue = self.inner.recv_queue.lock();
+            let res = if recv_queue.len() == 0 {
                 Ok(0)
             } else {
                 // TODO: len > buf.len()
                 // TODO: pbuf chain
-                let p: *mut pbuf = self.inner.recv_queue.pop_front().unwrap().0;
+                let p: *mut pbuf = recv_queue.pop_front().unwrap().0;
                 let len = unsafe { (*p).len as usize };
                 let payload = unsafe { (*p).payload };
                 let payload = unsafe { core::slice::from_raw_parts_mut(payload as *mut u8, len) };
@@ -274,7 +275,9 @@ impl TcpSocket {
                 }
                 drop(guard);
                 Ok(len)
-            } {
+            };
+            drop(recv_queue);
+            match res {
                 Ok(0) => {
                     yield_now();
                 }

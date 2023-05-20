@@ -92,10 +92,35 @@ impl UdpSocket {
         }
     }
 
+    /// Returns the remote address and port, or
+    /// [`Err(NotConnected)`](AxError::NotConnected) if not connected.
+    pub fn peer_addr(&self) -> AxResult<SocketAddr> {
+        if self.pcb.0.is_null() {
+            return ax_err!(NotConnected);
+        } else {
+            let _guard = LWIP_MUTEX.lock();
+            let addr = unsafe { (*self.pcb.0).remote_ip };
+            let port = unsafe { (*self.pcb.0).remote_port };
+            trace!(
+                "[UdpSocket] peer_addr: {:#?}:{:#?}",
+                IpAddr::from(addr),
+                port
+            );
+            return Ok(SocketAddr {
+                addr: addr.into(),
+                port,
+            });
+        }
+    }
+
     /// Binds an unbound socket to the given address and port.
     pub fn bind(&mut self, addr: SocketAddr) -> AxResult {
         debug!("[UdpSocket] bind to {:#?}", addr);
         // TODO: check if already bound
+        let mut addr = addr;
+        if addr.port == 0 {
+            addr.port = get_ephemeral_port()?;
+        }
         let _guard = LWIP_MUTEX.lock();
         unsafe {
             #[allow(non_upper_case_globals)]
@@ -108,7 +133,7 @@ impl UdpSocket {
     }
 
     /// Transmits data in the given buffer to the given address.
-    pub fn sendto(&self, buf: &[u8], addr: SocketAddr) -> AxResult<usize> {
+    pub fn send_to(&self, buf: &[u8], addr: SocketAddr) -> AxResult<usize> {
         trace!("[UdpSocket] send: {:?}", buf);
         let _guard = LWIP_MUTEX.lock();
         unsafe {
@@ -143,12 +168,12 @@ impl UdpSocket {
     }
 
     /// Receives data from the socket, stores it in the given buffer.
-    pub fn recvfrom(&self, buf: &mut [u8]) -> AxResult<(usize, SocketAddr)> {
+    pub fn recv_from(&self, buf: &mut [u8]) -> AxResult<(usize, SocketAddr)> {
         trace!("[UdpSocket] recvfrom");
         loop {
             lwip_loop_once();
             let mut recv_queue = self.inner.recv_queue.lock();
-            match if recv_queue.len() == 0 {
+            let res = if recv_queue.len() == 0 {
                 Err(AxError::Again)
             } else {
                 // TODO: len > buf.len()
@@ -164,7 +189,9 @@ impl UdpSocket {
                     pbuf_free(p);
                 }
                 Ok((len, addr))
-            } {
+            };
+            drop(recv_queue);
+            match res {
                 Ok((len, addr)) => {
                     trace!("[UdpSocket] recv done: {:?}", &buf[0..len]);
                     return Ok((len, addr));
@@ -177,6 +204,25 @@ impl UdpSocket {
                 }
             };
         }
+    }
+
+    /// Connects to the given address and port.
+    ///
+    /// The local port will be generated automatically if the socket is not bound.
+    /// It's must be called before [`send`](Self::send) and
+    /// [`recv`](Self::recv).
+    pub fn connect(&mut self, _addr: SocketAddr) -> AxResult {
+        ax_err!(Unsupported, "LWIP Unsupported")
+    }
+
+    /// Transmits data in the given buffer to the remote address to which it is connected.
+    pub fn send(&self, _buf: &[u8]) -> AxResult<usize> {
+        ax_err!(Unsupported, "LWIP Unsupported")
+    }
+
+    /// Recv data in the given buffer from the remote address to which it is connected.
+    pub fn recv(&self, _buf: &mut [u8]) -> AxResult<usize> {
+        ax_err!(Unsupported, "LWIP Unsupported")
     }
 
     /// Close the socket.
@@ -195,7 +241,7 @@ impl UdpSocket {
     }
 
     /// Receives data from the socket, stores it in the given buffer, without removing it from the queue.
-    pub fn peekfrom(&self, _buf: &mut [u8]) -> AxResult<(usize, SocketAddr)> {
+    pub fn peek_from(&self, _buf: &mut [u8]) -> AxResult<(usize, SocketAddr)> {
         ax_err!(Unsupported, "LWIP Unsupported")
     }
 }
@@ -205,4 +251,19 @@ impl Drop for UdpSocket {
         debug!("[UdpSocket] drop");
         self.shutdown().unwrap();
     }
+}
+
+fn get_ephemeral_port() -> AxResult<u16> {
+    const PORT_START: u16 = 0xc000;
+    const PORT_END: u16 = 0xffff;
+    static CURR: Mutex<u16> = Mutex::new(PORT_START);
+    let mut curr = CURR.lock();
+
+    let port = *curr;
+    if *curr == PORT_END {
+        *curr = PORT_START;
+    } else {
+        *curr += 1;
+    }
+    Ok(port)
 }

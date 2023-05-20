@@ -1,0 +1,36 @@
+name: Build & Deploy docs
+
+on: [push, pull_request]
+
+jobs:
+  doc:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: nightly
+    - name: Download x86_64 musl toolchain
+      run: |
+        export MUSL_PATH="x86_64-linux-musl-cross"
+        wget https://musl.cc/$MUSL_PATH.tgz
+        tar -xf $MUSL_PATH.tgz
+        mv $MUSL_PATH musl
+        echo "$PWD/musl/bin" >> $GITHUB_PATH
+    - name: Build docs
+      continue-on-error: ${{ github.ref != 'refs/heads/main' && github.event_name != 'pull_request' }}
+      run: make doc_check_missing
+    - name: Deploy to Github Pages
+      if: ${{ github.ref == 'refs/heads/main' }}
+      uses: JamesIves/github-pages-deploy-action@v4
+      with:
+        single-commit: true
+        branch: gh-pages
+        folder: target/doc
