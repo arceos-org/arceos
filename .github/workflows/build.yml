@@ -28,7 +28,7 @@ jobs:
           fi
           wget https://musl.cc/$MUSL_PATH.tgz
           tar -xf $MUSL_PATH.tgz
-          echo "$MUSL_PATH/bin" >> $GITHUB_PATH
+          echo "$PWD/$MUSL_PATH/bin" >> $GITHUB_PATH
         done
     - name: Clippy for the default target
       run: cargo clippy --all-features
