@@ -1026,13 +1026,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "lwip_test"
-version = "0.1.0"
-dependencies = [
- "libax",
-]
-
-[[package]]
 name = "managed"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

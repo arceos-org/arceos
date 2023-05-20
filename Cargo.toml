@@ -11,7 +11,6 @@ members = [
     "apps/net/echoserver",
     "apps/net/httpclient",
     "apps/net/httpserver",
-    "apps/net/lwip_test",
     "apps/net/udpserver",
     "apps/task/parallel",
     "apps/task/sleep",
