@@ -11,13 +11,15 @@ extern crate alloc;
 
 mod test_mem;
 mod test_sleep;
+mod scheme;
 
 #[no_mangle]
 fn main() {
     libax::println!("Hello, testcases!");
     //test_sleep::main();
-    test_mem::main();
-    sync_test();
+    //test_mem::main();
+    //sync_test();
+    scheme::main();
 }
 
 #[allow(unused)]

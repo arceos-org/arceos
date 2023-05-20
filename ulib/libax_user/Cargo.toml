@@ -20,3 +20,5 @@ log = "0.4"
 allocator = { path = "../../crates/allocator" }
 spinlock = { path = "../../crates/spinlock" }
 syscall_number = { path = "../../crates/syscall_number"}
+scheme = { path = "../../crates/scheme" }
+axerrno = { path = "../../crates/axerrno" }

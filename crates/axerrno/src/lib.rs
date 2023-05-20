@@ -194,6 +194,25 @@ impl From<AxError> for LinuxError {
     }
 }
 
+pub fn to_ret_code(result: AxResult<usize>) -> isize {
+    match result {
+        Ok(val) => val as isize,
+        Err(err) => {
+            -(err as i32 as u32 as isize + 1)
+        }
+    }
+}
+pub fn from_ret_code(result: isize) -> AxResult<usize> {
+    if result >= 0 {
+        Ok(result as usize)
+    } else {
+        let code = ((-result) - 1) as u32 as i32;
+        Err(unsafe {
+            *(&code as *const i32 as *const AxError)
+        })
+    }
+}
+
 #[doc(hidden)]
 pub mod __priv {
     pub use log::warn;

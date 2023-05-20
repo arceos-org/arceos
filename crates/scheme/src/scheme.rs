@@ -3,6 +3,7 @@ use core::slice;
 use crate::{Packet, str_from_raw_parts};
 use axerrno::AxResult as Result;
 use axerrno::AxError as Error;
+use axerrno::to_ret_code;
 use core::result::Result::Err;
 
 // From https://gitlab.redox-os.org/redox-os/syscall/-/blob/master/src/scheme/scheme.rs
@@ -73,10 +74,7 @@ pub trait Scheme {
             _ => Err(Error::BadFileDescriptor)
         };
 
-        packet.a = match res {
-            Ok(value) => value,
-            Err(err) => -(err as i32 as u32 as isize) as usize
-        }
+        packet.a = to_ret_code(res) as usize;
     }
 
     /* Scheme operations */

@@ -85,7 +85,7 @@ pub fn open(path: &str, options: usize) -> usize {
         (Some(path), None) => ("file", path),
         _ => panic!("Invalid URL path!"),
     };
-
+    trace!("Open {}:{}", scheme, path);
     let scheme_id = schemes().find_name(scheme).expect("Scheme not found");
     let scheme = schemes().find_id(scheme_id).unwrap();
 
@@ -110,43 +110,46 @@ pub fn open(path: &str, options: usize) -> usize {
     }
 }
 
-pub fn file_op(op: usize, fd: usize, c: usize, d: usize) -> isize {
+pub fn find_fd(fd: usize) -> Arc<FileHandle> {
     let fd_list = GLOBAL_FD_LIST.lock();
     if fd >= fd_list.len() {
         panic!("Invalid FD!");
     }
     if let Some(handle) = &fd_list[fd] {
-        let scheme = schemes().find_id(handle.scheme_id).unwrap();
-        let file = handle.file_id;
-        let mut packet = Packet {
-            a: op,
-            b: file,
-            c, d,
-            id: 0,
-            pid: current().id().as_u64() as usize,
-            uid: 0,
-            gid: 0,
-        };
-        scheme.handle(&mut packet);
-        packet.a as isize
+        handle.clone()
     } else {
         panic!("Invalid FD!");
     }
 }
 
-pub fn close(fd: usize) -> isize {
-    let mut fd_list = GLOBAL_FD_LIST.lock();
-    if fd >= fd_list.len() {
-        panic!("Invalid FD!");
-    }
-    let ret = if let Some(handle) = &fd_list[fd] {
-        let scheme = schemes().find_id(handle.scheme_id).unwrap();
-        scheme.close(handle.file_id).map(|x| x as isize).unwrap_or_else(|e| -(e as i32 as isize))
-    } else {
-        panic!("Invalid FD!");
+pub fn file_op(op: usize, fd: usize, c: usize, d: usize) -> isize {
+    let handle = find_fd(fd);
+    let scheme = schemes().find_id(handle.scheme_id).unwrap();
+    let file = handle.file_id;
+    let mut packet = Packet {
+        a: op,
+        b: file,
+        c, d,
+        id: 0,
+        pid: current().id().as_u64() as usize,
+        uid: 0,
+        gid: 0,
     };
-    fd_list[fd] = None;
-    ret
+    scheme.handle(&mut packet);
+    packet.a as isize       
+}
+
+pub fn close(fd: usize) -> isize {
+    let handle = find_fd(fd);
+
+    let scheme = schemes().find_id(handle.scheme_id).unwrap();
+    
+    let ret = scheme.close(handle.file_id).map(|x| x as isize).unwrap_or_else(|e| -(e as i32 as isize));
+    {
+        let mut fd_list = GLOBAL_FD_LIST.lock();
+        fd_list[fd] = None;
+    }
+    ret        
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
@@ -169,6 +172,7 @@ impl SchemeList {
     fn new_init() -> Self {
         let mut result = Self::new();
         // TODO: add basic Schemes
+        result.insert("", Arc::new(RootScheme::new()));
         result.insert("stdout", Arc::new(Stdout::new()));
         result.insert("stdin", Arc::new(Stdin));
         result
@@ -206,3 +210,5 @@ mod root;
 mod user;
 mod io;
 use io::{Stdin, Stdout};
+
+use self::root::RootScheme;

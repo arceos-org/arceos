@@ -53,7 +53,7 @@ struct Logger;
 
 impl Write for Logger {
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        crate::syscall::io::write(1, s);
+        crate::syscall::io::write(1, s.as_bytes());
         Ok(())
     }
 }

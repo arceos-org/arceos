@@ -323,6 +323,7 @@ name = "axmem"
 version = "0.1.0"
 dependencies = [
  "axalloc",
+ "axerrno",
  "axhal",
  "axlog",
  "elf_loader",
@@ -1025,7 +1026,9 @@ name = "libax_user"
 version = "0.1.0"
 dependencies = [
  "allocator",
+ "axerrno",
  "log",
+ "scheme",
  "spinlock",
  "syscall_number",
 ]

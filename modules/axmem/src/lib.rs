@@ -201,7 +201,9 @@ impl AddrSpace {
     }
 
     pub fn munmap_page(&mut self, addr: VirtAddr, len: usize) -> AxResult<()> {
+
         let len = align_up_4k(len);
+        trace!("unmap: [{:x?}, {:x?})", addr, addr + len);
         let pages = len / PAGE_SIZE_4K;
         if (0..pages).find(|offset| {
             !self.mmap_use.contains_key(&(addr + offset * PAGE_SIZE_4K))
@@ -347,7 +349,7 @@ pub fn munmap_page(addr: VirtAddr, len: usize) -> AxResult<()> {
     addr_space.munmap_page(addr, len)
 }
 
-pub fn translate_buffer(vaddr: VirtAddr, size: usize, write: bool) -> Vec<&'static mut [u8]> {
+pub fn translate_buffer(vaddr: VirtAddr, size: usize, _write: bool) -> Vec<&'static mut [u8]> {
     let addr_space = unsafe {GLOBAL_USER_ADDR_SPACE.lock()};
 
     let mut read_size = 0usize;
@@ -355,10 +357,11 @@ pub fn translate_buffer(vaddr: VirtAddr, size: usize, write: bool) -> Vec<&'stat
     let mut result: Vec<&'static mut [u8]> = vec![];
     while read_size < size {
         let (paddr, flag, page_size) = addr_space.page_table.query(vaddr).expect("Invalid vaddr!");
+        /*
         if !flag.contains(MappingFlags::USER) || (write && !flag.contains(MappingFlags::WRITE)) {
             panic!("Invalid vaddr with improper rights!");
         }
-
+         */
         let nxt_vaddr = align_up(vaddr.as_usize() + 1, page_size.into());
         let len = (nxt_vaddr - vaddr.as_usize()).min(size - read_size);
         let data =
@@ -394,7 +397,7 @@ pub fn translate_addr(vaddr: VirtAddr) -> Option<PhysAddr> {
 // Copied from my code in rCore
 pub fn copy_byte_buffer_to_user(_token: usize, ptr: *const u8, data: &[u8]) {
     let copy_len = data.len();
-    let dst = translate_buffer((ptr as usize).into(), copy_len, true);
+    let dst = translate_buffer((ptr as usize).into(), copy_len, false);
     let mut offset = 0;
     for dst_space in dst {
         let dst_len = dst_space.len();

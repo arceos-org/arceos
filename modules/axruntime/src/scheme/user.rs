@@ -1,5 +1,5 @@
 extern crate alloc;
-use core::sync::atomic::{AtomicU64, Ordering};
+use core::{sync::atomic::{AtomicU64, Ordering}, time::Duration};
 
 use alloc::{sync::Weak, collections::{VecDeque, BTreeMap}};
 use axerrno::{AxResult, ax_err, AxError};
@@ -40,12 +40,18 @@ impl UserInner {
             core::slice::from_raw_parts_mut(ptr, buf.len() / core::mem::size_of::<Packet>())
         };
         for copy_item in buf.iter_mut() {
-            if let Some(request) = self.requests.lock().pop_front() {
-                core::mem::replace(copy_item, request);
-            } else {
-                // TODO: option to return EAGAIN
-                // TODO: use blocking instead of yield
-                axtask::yield_now();
+            loop {
+                let request = self.requests.lock().pop_front();
+                if let Some(request) = request {
+                    trace!("Root recv {:#?}", request);
+                    let _ = core::mem::replace(copy_item, request);
+                    break;
+                } else {
+                    // TODO: option to return EAGAIN
+                    // TODO: use blocking instead of yield
+                    assert!(!self.requests.is_locked());
+                    axtask::sleep(Duration::from_millis(1));
+                }
             }
         }
         Ok(buf.len() * core::mem::size_of::<Packet>())
@@ -60,6 +66,7 @@ impl UserInner {
             core::slice::from_raw_parts(ptr, buf.len() / core::mem::size_of::<Packet>())
         };
         for result_item in buf.iter() {
+            trace!("Root send {} -> {}", result_item.id, result_item.a);
             self.response.lock().insert(result_item.id, result_item.a);
         }       
         Ok(buf.len() * core::mem::size_of::<Packet>())
@@ -74,13 +81,15 @@ impl UserInner {
             pid: current().id().as_u64() as usize,
             a, b, c, d
         };
-
+        trace!("User Request: {:#?}", packet);
         self.requests.lock().push_back(packet);
         loop {
-            if let Some(value) = self.response.lock().remove(&id) {
+            let value = self.response.lock().remove(&id);
+            if let Some(value) = value {
                 return Ok(value);
             } else {
-                axtask::yield_now();
+                assert!(!self.response.is_locked());
+                axtask::sleep(Duration::from_millis(1));
             }
         }
     }
@@ -164,7 +173,7 @@ impl<'a> ShadowMemoryMut<'a> {
 }
 impl Drop for TempMemory {
     fn drop(&mut self) {
-        axmem::munmap_page(self.page_start, (self.page_end - self.page_start.into()).into());
+        axmem::munmap_page(self.page_start, (self.page_end - self.page_start.into()).into()).unwrap();
     }
 }
 impl<'a> Drop for ShadowMemoryMut<'a> {

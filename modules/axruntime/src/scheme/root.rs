@@ -8,7 +8,7 @@ use scheme::Scheme;
 use alloc::string::ToString;
 use syscall_number::io::OpenFlags;
 
-use super::{user::{UserInner, UserScheme}, schemes};
+use super::{user::{UserInner, UserScheme}, schemes, KernelScheme};
 
 
 pub struct RootScheme {
@@ -32,6 +32,7 @@ impl Scheme for RootScheme {
         let flags = OpenFlags::from_bits(flags).ok_or(AxError::InvalidInput)?;
 
         if flags.contains(OpenFlags::CREATE) {
+
             // Create a user scheme
             let id = self.next_id.fetch_add(1, Ordering::SeqCst);
             let inner = {
@@ -42,6 +43,7 @@ impl Scheme for RootScheme {
             };
             
             self.handles.lock().insert(id, RootHandle::Scheme(inner));
+            trace!("Root Scheme: create {} -> {}", path, id);
             Ok(id)
         } else if path.is_empty() {
             // list all schemes
@@ -55,7 +57,7 @@ impl Scheme for RootScheme {
 
     fn close(&self, id: usize) -> AxResult<usize> {
         let handle = self.handles.lock().remove(&id).ok_or(AxError::BadFileDescriptor)?;
-        
+
         match handle {
             RootHandle::Scheme(inner) => {
                 // TODO: remove a scheme
@@ -67,9 +69,12 @@ impl Scheme for RootScheme {
     fn read(&self, id: usize, buf: &mut [u8]) -> AxResult<usize> {
         let handles = self.handles.lock() ;
         let handle = handles.get(&id).ok_or(AxError::BadFileDescriptor)?;
-
+        trace!("Root Scheme {}: read", id);
         match handle {
             RootHandle::Scheme(inner) => {
+                // There is a blocking situation, so lock must be dropped.
+                let inner = inner.clone();
+                drop(handles);
                 inner.scheme_read(buf)
             }
         }
@@ -78,7 +83,7 @@ impl Scheme for RootScheme {
     fn write(&self, id: usize, buf: &[u8]) -> AxResult<usize> {
         let handles = self.handles.lock() ;
         let handle = handles.get(&id).ok_or(AxError::BadFileDescriptor)?;
-
+        trace!("Root Scheme {}: write", id);
         match handle {
             RootHandle::Scheme(inner) => {
                 inner.scheme_write(buf)
@@ -86,3 +91,4 @@ impl Scheme for RootScheme {
         }
     }
 }
+impl KernelScheme for RootScheme {}
