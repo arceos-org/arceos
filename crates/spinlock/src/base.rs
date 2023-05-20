@@ -78,6 +78,7 @@ impl<G: BaseGuard, T: ?Sized> BaseSpinLock<G, T> {
         let irq_state = G::acquire();
         #[cfg(feature = "smp")]
         {
+            
             // Can fail to lock even if the spinlock is not locked. May be more efficient than `try_lock`
             // when called in a loop.
             while self

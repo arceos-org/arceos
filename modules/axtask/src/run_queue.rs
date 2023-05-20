@@ -14,7 +14,7 @@ use array_init::array_init;
 use alloc::vec::Vec;
 
 lazy_static::lazy_static! {
-    pub(crate) static ref RUN_QUEUE: [LazyInit<Arc<SpinNoIrq<AxRunQueue>>>; axconfig::SMP] =
+    pub(crate) static ref RUN_QUEUE: [LazyInit<Arc<AxRunQueue>>; axconfig::SMP] =
         array_init(|_| LazyInit::new());
     pub(crate) static ref LOAD_BALANCE_ARR: [LazyInit<Arc<LoadBalance>>; axconfig::SMP] =
         array_init(|_| LazyInit::new());
@@ -29,14 +29,14 @@ static WAIT_FOR_EXIT: WaitQueue = WaitQueue::new();
 static IDLE_TASK: LazyInit<AxTaskRef> = LazyInit::new();
 
 pub(crate) struct AxRunQueue {
-    scheduler: Scheduler,
+    scheduler: SpinNoIrq<Scheduler>,
     id: usize,
 }
 
 impl AxRunQueue {
     pub fn new(id: usize) -> SpinNoIrq<Self> {
         let gc_task = TaskInner::new(gc_entry, "gc", axconfig::TASK_STACK_SIZE);
-        let mut scheduler = Scheduler::new();
+        let mut scheduler = SpinNoIrq::new(Scheduler::new());
 
         scheduler.add_task(gc_task);
         SpinNoIrq::new(Self { scheduler, id})

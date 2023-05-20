@@ -358,6 +358,7 @@ name = "axsync"
 version = "0.1.0"
 dependencies = [
  "axtask",
+ "log",
  "rand",
  "spinlock",
 ]
@@ -1476,6 +1477,7 @@ version = "0.1.0"
 dependencies = [
  "cfg-if",
  "kernel_guard",
+ "log",
 ]
 
 [[package]]
