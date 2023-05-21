@@ -11,7 +11,7 @@ mod fd_table;
 mod file;
 #[cfg(feature = "alloc")]
 mod malloc;
-#[cfg(all(feature = "net"))]
+#[cfg(feature = "net")]
 mod socket;
 
 mod thread;
