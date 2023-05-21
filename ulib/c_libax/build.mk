@@ -15,7 +15,7 @@ ulib_obj := $(patsubst $(src_dir)/%.c,$(obj_dir)/%.o,$(ulib_src))
 
 CFLAGS += -nostdinc -static -no-pie -fno-builtin -ffreestanding -Wall
 CFLAGS += -I$(inc_dir) -I$(ulib_dir)/../libax
-LDFLAGS += -nostdlib -static -no-pie --gc-sections -T$(LD_SCRIPT)
+LDFLAGS += -nostdlib -static -no-pie --no-relax --gc-sections -T$(LD_SCRIPT)
 
 ifeq ($(MODE), release)
   CFLAGS += -O3
