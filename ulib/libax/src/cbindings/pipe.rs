@@ -1,6 +1,6 @@
 use super::{ctypes, fd_table::Filelike};
 use crate::sync::Mutex;
-use crate::task::yield_now;
+use crate::thread::yield_now;
 use alloc::sync::Arc;
 use axerrno::{LinuxError, LinuxResult};
 use core::ffi::c_int;

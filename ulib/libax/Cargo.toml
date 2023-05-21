@@ -32,7 +32,7 @@ paging = ["axruntime/paging"]
 irq = ["axruntime/irq"]
 
 # Multi-task
-multitask = ["axtask", "axruntime/multitask", "axsync/multitask"]
+multitask = ["alloc", "axtask", "axruntime/multitask", "axsync/multitask"]
 sched_fifo = ["axtask/sched_fifo"]
 sched_rr = ["axtask/sched_rr", "irq"]
 sched_cfs = ["axtask/sched_cfs", "irq"]

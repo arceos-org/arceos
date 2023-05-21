@@ -7,9 +7,7 @@ extern crate alloc;
 
 use alloc::sync::Arc;
 use alloc::vec::Vec;
-use core::sync::atomic::{AtomicUsize, Ordering};
-use libax::sync::{Mutex, WaitQueue};
-use libax::task;
+use libax::thread;
 
 struct TaskParam {
     data_len: usize,
@@ -49,12 +47,6 @@ const TASK_PARAMS: &[TaskParam] = &[
 
 const PAYLOAD_KIND: usize = 5;
 
-static FINISHED_TASKS: AtomicUsize = AtomicUsize::new(0);
-
-static MAIN_WQ: WaitQueue = WaitQueue::new();
-static RESULTS: Mutex<[u64; PAYLOAD_KIND]> = Mutex::new([0; PAYLOAD_KIND]); // TODO: task join
-static LEAVE_TIME: Mutex<[u64; PAYLOAD_KIND]> = Mutex::new([0; PAYLOAD_KIND]);
-
 fn load(n: &u64) -> u64 {
     // time consuming is linear with *n
     let mut sum: u64 = *n;
@@ -66,7 +58,7 @@ fn load(n: &u64) -> u64 {
 
 #[no_mangle]
 fn main() {
-    task::set_priority(-20);
+    thread::set_priority(-20);
     let data = (0..PAYLOAD_KIND)
         .map(|i| Arc::new(vec![TASK_PARAMS[i].value; TASK_PARAMS[i].data_len]))
         .collect::<Vec<_>>();
@@ -74,42 +66,41 @@ fn main() {
     for data_inner in &data {
         expect += data_inner.iter().map(load).sum::<u64>();
     }
+
+    let mut tasks = Vec::with_capacity(PAYLOAD_KIND);
     let start_time = libax::time::Instant::now();
     for i in 0..PAYLOAD_KIND {
         let vec = data[i].clone();
         let data_len = TASK_PARAMS[i].data_len;
         let nice = TASK_PARAMS[i].nice;
-        task::spawn(move || {
+        tasks.push(thread::spawn(move || {
             let left = 0;
             let right = data_len;
-            task::set_priority(nice);
+            thread::set_priority(nice);
             println!(
                 "part {}: {:?} [{}, {})",
                 i,
-                task::current().id(),
+                thread::current().id(),
                 left,
                 right
             );
 
-            RESULTS.lock()[i] = vec[left..right].iter().map(load).sum();
-            LEAVE_TIME.lock()[i] = start_time.elapsed().as_millis() as u64;
+            let partial_sum: u64 = vec[left..right].iter().map(load).sum();
+            let leave_time = start_time.elapsed().as_millis() as u64;
 
-            println!("part {}: {:?} finished", i, task::current().id());
-            let n = FINISHED_TASKS.fetch_add(1, Ordering::Relaxed);
-            if n == PAYLOAD_KIND - 1 {
-                MAIN_WQ.notify_one(true);
-            }
-        });
+            println!("part {}: {:?} finished", i, thread::current().id());
+            (partial_sum, leave_time)
+        }));
     }
 
-    MAIN_WQ.wait();
+    let (results, level_times): (Vec<_>, Vec<_>) =
+        tasks.into_iter().map(|t| t.join().unwrap()).unzip();
+    let actual = results.iter().sum();
 
-    let actual = RESULTS.lock().iter().sum();
     println!("sum = {}", actual);
-    let level_times = LEAVE_TIME.lock();
     println!("leave time:");
-    for i in 0..PAYLOAD_KIND {
-        println!("task {} = {}ms", i, level_times[i]);
+    for (i, time) in level_times.iter().enumerate() {
+        println!("task {} = {}ms", i, time);
     }
 
     if cfg!(feature = "sched_cfs") && option_env!("SMP") == Some("1") {

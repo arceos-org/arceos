@@ -24,7 +24,7 @@ pub(crate) struct AxRunQueue {
 
 impl AxRunQueue {
     pub fn new() -> SpinNoIrq<Self> {
-        let gc_task = TaskInner::new(gc_entry, "gc", axconfig::TASK_STACK_SIZE);
+        let gc_task = TaskInner::new(gc_entry, "gc".into(), axconfig::TASK_STACK_SIZE);
         let mut scheduler = Scheduler::new();
         scheduler.add_task(gc_task);
         SpinNoIrq::new(Self { scheduler })
@@ -52,7 +52,7 @@ impl AxRunQueue {
         self.resched_inner(false);
     }
 
-    pub fn set_priority(&mut self, prio: isize) -> bool {
+    pub fn set_current_priority(&mut self, prio: isize) -> bool {
         self.scheduler
             .set_priority(crate::current().as_task_ref(), prio)
     }
@@ -91,6 +91,7 @@ impl AxRunQueue {
             axhal::misc::terminate();
         } else {
             curr.set_state(TaskState::Exited);
+            curr.notify_exit(exit_code, self);
             EXITED_TASKS.lock().push_back(curr.clone());
             WAIT_FOR_EXIT.notify_one_locked(false, self);
             self.resched_inner(false);
@@ -197,10 +198,9 @@ fn gc_entry() {
             // Do not do the slow drops in the critical section.
             let task = EXITED_TASKS.lock().pop_front();
             if let Some(task) = task {
-                // wait for other threads to release the reference.
-                while Arc::strong_count(&task) > 1 {
-                    core::hint::spin_loop();
-                }
+                // If the task reference is not taken after `spawn()`, it will be
+                // dropped here. Otherwise, it will be dropped after the reference
+                // is dropped (usually by `join()`).
                 drop(task);
             }
         }
@@ -210,10 +210,10 @@ fn gc_entry() {
 
 pub(crate) fn init() {
     const IDLE_TASK_STACK_SIZE: usize = 4096;
-    let idle_task = TaskInner::new(|| crate::run_idle(), "idle", IDLE_TASK_STACK_SIZE);
+    let idle_task = TaskInner::new(|| crate::run_idle(), "idle".into(), IDLE_TASK_STACK_SIZE);
     IDLE_TASK.with_current(|i| i.init_by(idle_task.clone()));
 
-    let main_task = TaskInner::new_init("main");
+    let main_task = TaskInner::new_init("main".into());
     main_task.set_state(TaskState::Running);
 
     RUN_QUEUE.init_by(AxRunQueue::new());
@@ -221,7 +221,7 @@ pub(crate) fn init() {
 }
 
 pub(crate) fn init_secondary() {
-    let idle_task = TaskInner::new_init("idle");
+    let idle_task = TaskInner::new_init("idle".into());
     idle_task.set_state(TaskState::Running);
     IDLE_TASK.with_current(|i| i.init_by(idle_task.clone()));
     unsafe { CurrentTask::init_current(idle_task) }

@@ -84,10 +84,10 @@ pub unsafe extern "C" fn ax_panic() -> ! {
     panic!()
 }
 
-/// Exit current task
+/// Exits the current thread.
 #[no_mangle]
 pub unsafe extern "C" fn ax_exit(exit_code: c_int) -> ! {
-    crate::task::exit(exit_code)
+    crate::thread::exit(exit_code)
 }
 
 #[cfg(feature = "alloc")]

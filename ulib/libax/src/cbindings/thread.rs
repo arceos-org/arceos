@@ -1,4 +1,3 @@
-use crate::task::current;
 use axerrno::LinuxResult;
 use core::ffi::c_int;
 
@@ -6,7 +5,7 @@ use core::ffi::c_int;
 #[no_mangle]
 pub unsafe extern "C" fn ax_getpid() -> c_int {
     ax_call_body!(ax_getpid, {
-        let pid = current().id().as_u64() as c_int;
+        let pid = crate::thread::current().id().as_u64() as c_int;
         Ok(pid)
     })
 }
