@@ -51,7 +51,11 @@ ifeq ($(default_features),n)
   build_args += --no-default-features
 endif
 
-rustc_flags := -Clink-args="-T$(LD_SCRIPT) -no-pie --no-relax"
+rustc_flags := -Clink-args="-T$(LD_SCRIPT) -no-pie"
+
+ifeq ($(ARCH), x86_64)
+  rustc_flags += -Clink-args="--no-relax"
+endif
 
 define cargo_build
   cargo rustc $(build_args) $(1) -- $(rustc_flags)
