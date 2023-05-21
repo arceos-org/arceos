@@ -151,6 +151,24 @@ error: could not compile `arceos-httpclient` (bin "arceos-httpclient") due to pr
 make: *** [scripts/make/build.mk:16: _cargo_build] Error 101
 ```
 
+[\[ELF\] Make --no-relax disable R_X86_64_GOTPCRELX and R_X86_64_REX_GOTPCRELX GOT optimization](https://reviews.llvm.org/D113615) 中提到：
+
+> Unlike GNU ld, LLD's relocation processing is one pass. If we decide to optimize(relax) R_X86_64_{,REX_}GOTPCRELX, we will suppress GOT generation and cannot undo the decision later. Optimizing R_X86_64_REX_GOTPCRELX can usually make it easy to hit `relocation R_X86_64_REX_GOTPCRELX out of range`. Without --no-relax, the user has to recompile with -Wa,-mrelax-relocations=no.
+
+故尝试添加 `--no-relax`：
+
+``` diff
+scripts/make/cargo.mk
+-   rustc_flags := -Clink-args="-T$(LD_SCRIPT) -no-pie"
++   rustc_flags := -Clink-args="-T$(LD_SCRIPT) -no-pie --no-relax"
+```
+
+``` diff
+ulib/c_libax/build.mk
+-   LDFLAGS += -nostdlib -static -no-pie --gc-sections -T$(LD_SCRIPT)
++   LDFLAGS += -nostdlib -static -no-pie --no-relax --gc-sections -T$(LD_SCRIPT)
+```
+
 ## 下周计划
 
 修复 CI，优化代码，进行 PR
