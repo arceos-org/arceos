@@ -1,4 +1,4 @@
-use super::fd_table::{add_new_file, Filelike};
+use super::fd_table::Filelike;
 use super::{ctypes, utils::char_ptr_to_str};
 use crate::debug;
 use crate::fs::{File, OpenOptions};
@@ -46,7 +46,9 @@ pub unsafe extern "C" fn ax_open(
     ax_call_body!(ax_open, {
         let options = flags_to_options(flags, mode);
         let file = options.open(filename?)?;
-        add_new_file(file).ok_or(LinuxError::ENFILE)
+        Filelike::from_file(file)
+            .add_to_fd_table()
+            .ok_or(LinuxError::ENFILE)
     })
 }
 

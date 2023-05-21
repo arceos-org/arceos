@@ -54,6 +54,9 @@
 #define F_SETLKW 7
 #endif
 
+#define FD_CLOEXEC      1
+#define F_DUPFD_CLOEXEC 1030
+
 #define F_RDLCK 0
 #define F_WRLCK 1
 #define F_UNLCK 2
@@ -76,6 +79,9 @@ struct flock {
 };
 
 int fcntl(int fd, int cmd, ... /* arg */);
+
+#ifdef AX_CONFIG_FS
 int open(const char *filename, int flags, ...);
+#endif
 
 #endif
