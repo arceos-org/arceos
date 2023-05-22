@@ -1,4 +1,3 @@
-use crate::debug;
 use axerrno::{LinuxError, LinuxResult};
 use axhal::time::{current_time, NANOS_PER_SEC};
 use core::ffi::{c_int, c_long};

@@ -1,52 +1,64 @@
+use alloc::sync::Arc;
 use core::ffi::{c_char, c_int, c_void};
 use core::mem::size_of;
 
-use axerrno::{AxResult, LinuxError, LinuxResult};
+use axerrno::{LinuxError, LinuxResult};
 use axnet::{resolve_socket_addr, Ipv4Addr, SocketAddr, TcpSocket, UdpSocket};
 
 use super::ctypes;
-use super::fd_table::Filelike;
+use super::fd_ops::FileLike;
 use super::utils::char_ptr_to_str;
-use crate::debug;
+use crate::sync::Mutex;
 
 pub enum Socket {
-    Udp(UdpSocket),
-    Tcp(TcpSocket),
+    Udp(Mutex<UdpSocket>),
+    Tcp(Mutex<TcpSocket>),
 }
 
 impl Socket {
-    pub fn send(&self, buf: &[u8]) -> LinuxResult<usize> {
+    fn add_to_fd_table(self) -> LinuxResult<c_int> {
+        super::fd_ops::add_file_like(Arc::new(self))
+    }
+
+    fn from_fd(fd: c_int) -> LinuxResult<Arc<Self>> {
+        let f = super::fd_ops::get_file_like(fd)?;
+        f.into_any()
+            .downcast::<Self>()
+            .map_err(|_| LinuxError::EINVAL)
+    }
+
+    fn send(&self, buf: &[u8]) -> LinuxResult<usize> {
         match self {
-            Socket::Udp(udpsocket) => Ok(udpsocket.send(buf)?),
-            Socket::Tcp(tcpsocket) => Ok(tcpsocket.send(buf)?),
+            Socket::Udp(udpsocket) => Ok(udpsocket.lock().send(buf)?),
+            Socket::Tcp(tcpsocket) => Ok(tcpsocket.lock().send(buf)?),
         }
     }
 
-    pub fn recv(&self, buf: &mut [u8]) -> LinuxResult<usize> {
+    fn recv(&self, buf: &mut [u8]) -> LinuxResult<usize> {
         match self {
-            Socket::Udp(udpsocket) => Ok(udpsocket.recv_from(buf).map(|e| e.0)?),
-            Socket::Tcp(tcpsocket) => Ok(tcpsocket.recv(buf)?),
+            Socket::Udp(udpsocket) => Ok(udpsocket.lock().recv_from(buf).map(|e| e.0)?),
+            Socket::Tcp(tcpsocket) => Ok(tcpsocket.lock().recv(buf)?),
         }
     }
 
-    fn bind(&mut self, addr: SocketAddr) -> LinuxResult {
+    fn bind(&self, addr: SocketAddr) -> LinuxResult {
         match self {
-            Socket::Udp(udpsocket) => Ok(udpsocket.bind(addr)?),
-            Socket::Tcp(tcpsocket) => Ok(tcpsocket.bind(addr)?),
+            Socket::Udp(udpsocket) => Ok(udpsocket.lock().bind(addr)?),
+            Socket::Tcp(tcpsocket) => Ok(tcpsocket.lock().bind(addr)?),
         }
     }
 
-    fn connect(&mut self, addr: SocketAddr) -> LinuxResult {
+    fn connect(&self, addr: SocketAddr) -> LinuxResult {
         match self {
-            Socket::Udp(udpsocket) => Ok(udpsocket.connect(addr)?),
-            Socket::Tcp(tcpsocket) => Ok(tcpsocket.connect(addr)?),
+            Socket::Udp(udpsocket) => Ok(udpsocket.lock().connect(addr)?),
+            Socket::Tcp(tcpsocket) => Ok(tcpsocket.lock().connect(addr)?),
         }
     }
 
     fn sendto(&self, buf: &[u8], addr: SocketAddr) -> LinuxResult<usize> {
         match self {
             // diff: must bind before sendto
-            Socket::Udp(udpsocket) => Ok(udpsocket.send_to(buf, addr)?),
+            Socket::Udp(udpsocket) => Ok(udpsocket.lock().send_to(buf, addr)?),
             Socket::Tcp(_) => Err(LinuxError::EISCONN),
         }
     }
@@ -54,41 +66,72 @@ impl Socket {
     fn recvfrom(&self, buf: &mut [u8]) -> LinuxResult<(usize, Option<SocketAddr>)> {
         match self {
             // diff: must bind before recvfrom
-            Socket::Udp(udpsocket) => {
-                Ok(udpsocket.recv_from(buf).map(|res| (res.0, Some(res.1)))?)
-            }
-            Socket::Tcp(tcpsocket) => Ok(tcpsocket.recv(buf).map(|res| (res, None))?),
+            Socket::Udp(udpsocket) => Ok(udpsocket
+                .lock()
+                .recv_from(buf)
+                .map(|res| (res.0, Some(res.1)))?),
+            Socket::Tcp(tcpsocket) => Ok(tcpsocket.lock().recv(buf).map(|res| (res, None))?),
         }
     }
 
-    fn listen(&mut self) -> LinuxResult {
+    fn listen(&self) -> LinuxResult {
         match self {
             Socket::Udp(_) => Err(LinuxError::EOPNOTSUPP),
-            Socket::Tcp(tcpsocket) => Ok(tcpsocket.listen()?),
+            Socket::Tcp(tcpsocket) => Ok(tcpsocket.lock().listen()?),
         }
     }
 
-    fn accept(&mut self) -> LinuxResult<TcpSocket> {
+    fn accept(&self) -> LinuxResult<TcpSocket> {
         match self {
             Socket::Udp(_) => Err(LinuxError::EOPNOTSUPP),
-            Socket::Tcp(tcpsocket) => Ok(tcpsocket.accept()?),
+            Socket::Tcp(tcpsocket) => Ok(tcpsocket.lock().accept()?),
         }
     }
 
     fn shutdown(&self) -> LinuxResult {
         match self {
             Socket::Udp(udpsocket) => {
+                let udpsocket = udpsocket.lock();
                 udpsocket.peer_addr()?;
-                udpsocket.shutdown().unwrap();
+                udpsocket.shutdown()?;
                 Ok(())
             }
 
             Socket::Tcp(tcpsocket) => {
+                let tcpsocket = tcpsocket.lock();
                 tcpsocket.peer_addr()?;
-                tcpsocket.shutdown().unwrap();
+                tcpsocket.shutdown()?;
                 Ok(())
             }
         }
+    }
+}
+
+impl FileLike for Socket {
+    fn read(&self, buf: &mut [u8]) -> LinuxResult<usize> {
+        self.recv(buf)
+    }
+
+    fn write(&self, buf: &[u8]) -> LinuxResult<usize> {
+        self.send(buf)
+    }
+
+    fn stat(&self) -> LinuxResult<ctypes::stat> {
+        // not really implemented
+        let st_mode = 0o140000 | 0o777u32; // S_IFSOCK | rwxrwxrwx
+        Ok(ctypes::stat {
+            st_ino: 1,
+            st_nlink: 1,
+            st_mode,
+            st_uid: 1000,
+            st_gid: 1000,
+            st_blksize: 4096,
+            ..Default::default()
+        })
+    }
+
+    fn into_any(self: Arc<Self>) -> Arc<dyn core::any::Any + Send + Sync> {
+        self
     }
 }
 
@@ -126,22 +169,6 @@ fn from_c_sockaddr(
     Ok(res)
 }
 
-pub(super) fn stat_socket(_socket: &Socket) -> AxResult<ctypes::stat> {
-    // not really implemented
-    let st_mode = ((0o14_u32) << 12) | (0o777_u32);
-    Ok(ctypes::stat {
-        st_ino: 1,
-        st_nlink: 1,
-        st_mode,
-        st_uid: 0,
-        st_gid: 0,
-        st_size: 0,
-        st_blocks: 0,
-        st_blksize: 512,
-        ..Default::default()
-    })
-}
-
 /// Create an socket for communication.
 ///
 /// Return the socket file descriptor.
@@ -152,14 +179,10 @@ pub unsafe extern "C" fn ax_socket(domain: c_int, socktype: c_int, protocol: c_i
     ax_call_body!(ax_socket, {
         match (domain, socktype, protocol) {
             (ctypes::AF_INET, ctypes::SOCK_STREAM, ctypes::IPPROTO_TCP) => {
-                Filelike::from_socket(Socket::Tcp(TcpSocket::new()))
-                    .add_to_fd_table()
-                    .ok_or(LinuxError::ENFILE)
+                Socket::Tcp(Mutex::new(TcpSocket::new())).add_to_fd_table()
             }
             (ctypes::AF_INET, ctypes::SOCK_DGRAM, ctypes::IPPROTO_UDP) => {
-                Filelike::from_socket(Socket::Udp(UdpSocket::new()))
-                    .add_to_fd_table()
-                    .ok_or(LinuxError::ENFILE)
+                Socket::Udp(Mutex::new(UdpSocket::new())).add_to_fd_table()
             }
             _ => Err(LinuxError::EINVAL),
         }
@@ -181,11 +204,8 @@ pub unsafe extern "C" fn ax_bind(
     );
     ax_call_body!(ax_bind, {
         let addr = from_c_sockaddr(socket_addr, addrlen)?;
-        Filelike::from_fd(socket_fd)?
-            .into_socket()?
-            .lock()
-            .bind(addr)
-            .map(|_| 0)
+        Socket::from_fd(socket_fd)?.bind(addr)?;
+        Ok(0)
     })
 }
 
@@ -204,11 +224,8 @@ pub unsafe extern "C" fn ax_connect(
     );
     ax_call_body!(ax_connect, {
         let addr = from_c_sockaddr(socket_addr, addrlen)?;
-        Filelike::from_fd(socket_fd)?
-            .into_socket()?
-            .lock()
-            .connect(addr)
-            .map(|_| 0)
+        Socket::from_fd(socket_fd)?.connect(addr)?;
+        Ok(0)
     })
 }
 
@@ -220,7 +237,7 @@ pub unsafe extern "C" fn ax_sendto(
     socket_fd: c_int,
     buf_ptr: *const c_void,
     len: ctypes::size_t,
-    flag: c_int, //no effect
+    flag: c_int, // currently not used
     socket_addr: *const ctypes::sockaddr,
     addrlen: ctypes::socklen_t,
 ) -> ctypes::ssize_t {
@@ -234,10 +251,7 @@ pub unsafe extern "C" fn ax_sendto(
         }
         let addr = from_c_sockaddr(socket_addr, addrlen)?;
         let buf = unsafe { core::slice::from_raw_parts(buf_ptr as *const u8, len) };
-        Filelike::from_fd(socket_fd)?
-            .into_socket()?
-            .lock()
-            .sendto(buf, addr)
+        Socket::from_fd(socket_fd)?.sendto(buf, addr)
     })
 }
 
@@ -249,7 +263,7 @@ pub unsafe extern "C" fn ax_send(
     socket_fd: c_int,
     buf_ptr: *const c_void,
     len: ctypes::size_t,
-    flag: c_int, //no effect
+    flag: c_int, // currently not used
 ) -> ctypes::ssize_t {
     debug!(
         "ax_sendto <= {} {:#x} {} {}",
@@ -259,10 +273,8 @@ pub unsafe extern "C" fn ax_send(
         if buf_ptr.is_null() {
             return Err(LinuxError::EFAULT);
         }
-        let socket = Filelike::from_fd(socket_fd)?.into_socket()?;
         let buf = unsafe { core::slice::from_raw_parts(buf_ptr as *const u8, len) };
-        let l = socket.lock().send(buf)?;
-        Ok(l)
+        Socket::from_fd(socket_fd)?.send(buf)
     })
 }
 
@@ -274,7 +286,7 @@ pub unsafe extern "C" fn ax_recvfrom(
     socket_fd: c_int,
     buf_ptr: *mut c_void,
     len: ctypes::size_t,
-    flag: c_int, //no effect
+    flag: c_int, // currently not used
     socket_addr: *mut ctypes::sockaddr,
     addrlen: *mut ctypes::socklen_t,
 ) -> ctypes::ssize_t {
@@ -286,19 +298,17 @@ pub unsafe extern "C" fn ax_recvfrom(
         if buf_ptr.is_null() || socket_addr.is_null() || addrlen.is_null() {
             return Err(LinuxError::EFAULT);
         }
-        let socket = Filelike::from_fd(socket_fd)?.into_socket()?;
+        let socket = Socket::from_fd(socket_fd)?;
         let buf = unsafe { core::slice::from_raw_parts_mut(buf_ptr as *mut u8, len) };
 
-        let a = socket.lock().recvfrom(buf);
-        a.map(|res| {
-            if let Some(addr) = res.1 {
-                unsafe {
-                    *socket_addr = as_c_sockaddr(&addr);
-                    *addrlen = size_of::<ctypes::sockaddr>() as u32;
-                }
+        let res = socket.recvfrom(buf)?;
+        if let Some(addr) = res.1 {
+            unsafe {
+                *socket_addr = as_c_sockaddr(&addr);
+                *addrlen = size_of::<ctypes::sockaddr>() as u32;
             }
-            res.0
-        })
+        }
+        Ok(res.0)
     })
 }
 
@@ -310,7 +320,7 @@ pub unsafe extern "C" fn ax_recv(
     socket_fd: c_int,
     buf_ptr: *mut c_void,
     len: ctypes::size_t,
-    flag: c_int, //no effect
+    flag: c_int, // currently not used
 ) -> ctypes::ssize_t {
     debug!(
         "ax_recv <= {} {:#x} {} {}",
@@ -320,10 +330,8 @@ pub unsafe extern "C" fn ax_recv(
         if buf_ptr.is_null() {
             return Err(LinuxError::EFAULT);
         }
-        let socket = Filelike::from_fd(socket_fd)?.into_socket()?;
         let buf = unsafe { core::slice::from_raw_parts_mut(buf_ptr as *mut u8, len) };
-        let a = socket.lock().recv(buf)?;
-        Ok(a)
+        Socket::from_fd(socket_fd)?.recv(buf)
     })
 }
 
@@ -333,12 +341,11 @@ pub unsafe extern "C" fn ax_recv(
 #[no_mangle]
 pub unsafe extern "C" fn ax_listen(
     socket_fd: c_int,
-    backlog: c_int, // no effect
+    backlog: c_int, // currently not used
 ) -> ctypes::ssize_t {
     debug!("ax_listen <= {} {}", socket_fd, backlog);
     ax_call_body!(ax_listen, {
-        let socket = Filelike::from_fd(socket_fd)?.into_socket()?;
-        socket.lock().listen()?;
+        Socket::from_fd(socket_fd)?.listen()?;
         Ok(0)
     })
 }
@@ -360,17 +367,15 @@ pub unsafe extern "C" fn ax_accept(
         if socket_addr.is_null() || socket_len.is_null() {
             return Err(LinuxError::EFAULT);
         }
-        let socket = Filelike::from_fd(socket_fd)?.into_socket()?;
-        let ressocket = socket.lock().accept()?;
-        let addr = ressocket.peer_addr()?;
-        let fd = Filelike::from_socket(Socket::Tcp(ressocket))
-            .add_to_fd_table()
-            .ok_or(LinuxError::ENFILE)?;
+        let socket = Socket::from_fd(socket_fd)?;
+        let new_socket = socket.accept()?;
+        let addr = new_socket.peer_addr()?;
+        let new_fd = Socket::add_to_fd_table(Socket::Tcp(Mutex::new(new_socket)))?;
         unsafe {
             *socket_addr = as_c_sockaddr(&addr);
             *socket_len = size_of::<ctypes::sockaddr>() as u32;
         }
-        Ok(fd)
+        Ok(new_fd)
     })
 }
 
@@ -380,12 +385,11 @@ pub unsafe extern "C" fn ax_accept(
 #[no_mangle]
 pub unsafe extern "C" fn ax_shutdown(
     socket_fd: c_int,
-    flag: c_int, // no effect
+    flag: c_int, // currently not used
 ) -> ctypes::ssize_t {
     debug!("ax_shutdown <= {} {}", socket_fd, flag);
     ax_call_body!(ax_shutdown, {
-        let socket = Filelike::from_fd(socket_fd)?.into_socket()?;
-        socket.lock().shutdown()?;
+        Socket::from_fd(socket_fd)?.shutdown()?;
         Ok(0)
     })
 }
@@ -409,7 +413,7 @@ pub unsafe extern "C" fn ax_resolve_sockaddr(
             return Err(LinuxError::EFAULT);
         }
         let addr_slice = unsafe { core::slice::from_raw_parts_mut(addr, len) };
-        let res = resolve_socket_addr(name?).map_err(|_| LinuxError::EINVAL)?;
+        let res = resolve_socket_addr(name?)?;
         for (i, item) in res.iter().enumerate().take(len) {
             addr_slice[i] = as_c_sockaddr(&(*item, 0).into());
         }

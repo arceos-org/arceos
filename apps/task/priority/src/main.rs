@@ -93,21 +93,21 @@ fn main() {
         }));
     }
 
-    let (results, level_times): (Vec<_>, Vec<_>) =
+    let (results, leave_times): (Vec<_>, Vec<_>) =
         tasks.into_iter().map(|t| t.join().unwrap()).unzip();
     let actual = results.iter().sum();
 
     println!("sum = {}", actual);
     println!("leave time:");
-    for (i, time) in level_times.iter().enumerate() {
+    for (i, time) in leave_times.iter().enumerate() {
         println!("task {} = {}ms", i, time);
     }
 
     if cfg!(feature = "sched_cfs") && option_env!("SMP") == Some("1") {
         assert!(
-            level_times[0] > level_times[1]
-                && level_times[1] > level_times[2]
-                && level_times[2] > level_times[3]
+            leave_times[0] > leave_times[1]
+                && leave_times[1] > leave_times[2]
+                && leave_times[2] > leave_times[3]
         );
     }
 

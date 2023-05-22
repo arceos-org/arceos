@@ -240,7 +240,7 @@ version = "0.1.0"
 dependencies = [
  "axfs_vfs",
  "log",
- "spin",
+ "spin 0.9.8",
 ]
 
 [[package]]
@@ -249,7 +249,7 @@ version = "0.1.0"
 dependencies = [
  "axfs_vfs",
  "log",
- "spin",
+ "spin 0.9.8",
 ]
 
 [[package]]
@@ -436,6 +436,12 @@ source = "git+https://github.com/rcore-os/bitmap-allocator.git?rev=88e871a#88e87
 dependencies = [
  "bit_field",
 ]
+
+[[package]]
+name = "bitmaps"
+version = "3.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "703642b98a00b3b90513279a8ede3fcfa479c126c5fb46e78f3051522f021403"
 
 [[package]]
 name = "buddy_system_allocator"
@@ -640,7 +646,7 @@ name = "driver_net"
 version = "0.1.0"
 dependencies = [
  "driver_common",
- "spin",
+ "spin 0.9.8",
 ]
 
 [[package]]
@@ -740,6 +746,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "flatten_objects"
+version = "0.1.0"
+dependencies = [
+ "bitmaps",
+]
+
+[[package]]
 name = "float-cmp"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -793,7 +806,7 @@ dependencies = [
  "atomic-polyfill",
  "hash32",
  "rustc_version",
- "spin",
+ "spin 0.9.8",
  "stable_deref_trait",
 ]
 
@@ -903,6 +916,9 @@ name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
+dependencies = [
+ "spin 0.5.2",
+]
 
 [[package]]
 name = "lazycell"
@@ -929,6 +945,9 @@ dependencies = [
  "axtask",
  "bindgen",
  "cbindgen",
+ "flatten_objects",
+ "lazy_static",
+ "spin 0.9.8",
  "spinlock",
 ]
 
@@ -1098,7 +1117,7 @@ dependencies = [
  "cfg-if",
  "kernel_guard",
  "percpu_macros",
- "spin",
+ "spin 0.9.8",
  "x86",
 ]
 
@@ -1392,6 +1411,12 @@ dependencies = [
  "log",
  "managed",
 ]
+
+[[package]]
+name = "spin"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 
 [[package]]
 name = "spin"

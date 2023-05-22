@@ -16,7 +16,7 @@ documentation = "https://rcore-os.github.io/arceos/libax/index.html"
 
 [features]
 # Generate bindings for C code
-cbindings = ["cbindgen", "bindgen"]
+cbindings = ["cbindgen", "bindgen", "dep:spin", "dep:lazy_static"]
 
 # Multicore
 smp = ["axruntime/smp"]
@@ -41,7 +41,7 @@ sched_cfs = ["axtask/sched_cfs", "irq"]
 fs = ["alloc", "axruntime/fs", "dep:axdriver", "dep:axfs"]
 
 # Networking
-net = ["axruntime/net", "dep:axdriver", "dep:axnet"]
+net = ["alloc", "axruntime/net", "dep:axdriver", "dep:axnet"]
 
 # Pipe
 pipe = ["alloc"]
@@ -69,7 +69,10 @@ platform-qemu-virt-aarch64 = ["axhal/platform-qemu-virt-aarch64", "bus-mmio"]
 default = ["axtask?/sched_fifo"]
 
 [dependencies]
+spin = { version = "0.9", optional = true }
+lazy_static = { version = "1.4", features = ["spin_no_std"], optional = true }
 spinlock = { path = "../../crates/spinlock" }
+flatten_objects = { path = "../../crates/flatten_objects" }
 axio = { path = "../../crates/axio" }
 axerrno = { path = "../../crates/axerrno" }
 axalloc = { path = "../../modules/axalloc", optional = true }
