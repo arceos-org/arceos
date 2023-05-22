@@ -1,0 +1,4 @@
+default
+alloc
+paging
+multitask
