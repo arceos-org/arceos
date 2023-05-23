@@ -14,6 +14,8 @@ jobs:
         profile: minimal
         toolchain: nightly
         components: rust-src, clippy, rustfmt
+    - name: Clone github submodule
+      run: git submodule update --init --recursive
     - name: Clippy for the default target
       run: cargo clippy --all-features
     - name: Clippy for x86_64
