@@ -161,8 +161,8 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     {
         #[cfg(feature = "paging")]
         {
-            info!("Initialize virtual memory...");
-            axhal::mem::init_virt_mem();
+            info!("Initialize kernel page table...");
+            remap_kernel_memory().expect("remap kernel memoy failed");
         }
     }
 
