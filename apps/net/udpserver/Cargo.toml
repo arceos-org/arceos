@@ -5,4 +5,4 @@ edition = "2021"
 authors = ["Dashuai Wu <wudashuaijss@foxmail.com>"]
 
 [dependencies]
-libax = { path = "../../../ulib/libax", features = ["paging", "multitask", "net"] }
+libax = { path = "../../../ulib/libax", features = ["paging", "net"] }

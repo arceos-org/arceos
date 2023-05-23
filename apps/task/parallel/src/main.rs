@@ -9,16 +9,11 @@ use alloc::sync::Arc;
 use alloc::vec::Vec;
 use core::sync::atomic::{AtomicUsize, Ordering};
 use core::time::Duration;
-use libax::sync::{Mutex, WaitQueue};
-use libax::{rand, task};
+use libax::sync::WaitQueue;
+use libax::{rand, thread};
 
 const NUM_DATA: usize = 2_000_000;
 const NUM_TASKS: usize = 16;
-
-static FINISHED_TASKS: AtomicUsize = AtomicUsize::new(0);
-
-static MAIN_WQ: WaitQueue = WaitQueue::new();
-static RESULTS: Mutex<[u64; NUM_TASKS]> = Mutex::new([0; NUM_TASKS]); // TODO: task join
 
 fn barrier() {
     static BARRIER_WQ: WaitQueue = WaitQueue::new();
@@ -47,38 +42,33 @@ fn main() {
     );
     let expect: u64 = vec.iter().map(sqrt).sum();
 
-    let timeout = MAIN_WQ.wait_timeout(Duration::from_millis(500));
+    // equals to sleep(500ms)
+    let timeout = WaitQueue::new().wait_timeout(Duration::from_millis(500));
     assert!(timeout);
 
+    let mut tasks = Vec::with_capacity(NUM_TASKS);
     for i in 0..NUM_TASKS {
         let vec = vec.clone();
-        task::spawn(move || {
+        tasks.push(thread::spawn(move || {
             let left = i * (NUM_DATA / NUM_TASKS);
             let right = (left + (NUM_DATA / NUM_TASKS)).min(NUM_DATA);
             println!(
                 "part {}: {:?} [{}, {})",
                 i,
-                task::current().id(),
+                thread::current().id(),
                 left,
                 right
             );
 
-            RESULTS.lock()[i] = vec[left..right].iter().map(sqrt).sum();
-
+            let partial_sum: u64 = vec[left..right].iter().map(sqrt).sum();
             barrier();
 
-            println!("part {}: {:?} finished", i, task::current().id());
-            let n = FINISHED_TASKS.fetch_add(1, Ordering::Relaxed);
-            if n == NUM_TASKS - 1 {
-                MAIN_WQ.notify_one(true);
-            }
-        });
+            println!("part {}: {:?} finished", i, thread::current().id());
+            partial_sum
+        }));
     }
 
-    let timeout = MAIN_WQ.wait_timeout(Duration::from_millis(600));
-    println!("main task woken up! timeout={}", timeout);
-
-    let actual = RESULTS.lock().iter().sum();
+    let actual = tasks.into_iter().map(|t| t.join().unwrap()).sum();
     println!("sum = {}", actual);
     assert_eq!(expect, actual);
 

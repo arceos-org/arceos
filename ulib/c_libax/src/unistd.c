@@ -1,6 +1,9 @@
+#include <errno.h>
+#include <fcntl.h>
 #include <libax.h>
 #include <stdio.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
 // TODO:
@@ -10,39 +13,37 @@ uid_t geteuid(void)
     return 0;
 }
 
-// TODO:
 pid_t getpid(void)
 {
-    unimplemented();
-    return -1;
+#ifdef AX_CONFIG_MULTITASK
+    return ax_getpid();
+#else
+    // return 'main' task Id
+    return 2;
+#endif
 }
 
-// TODO:
 unsigned int sleep(unsigned int seconds)
 {
-    unimplemented();
+    struct timespec ts;
+
+    ts.tv_sec = seconds;
+    ts.tv_nsec = 0;
+    if (nanosleep(&ts, &ts))
+        return ts.tv_sec;
+
     return 0;
 }
 
-// TODO:
-long int sysconf(int name)
+int usleep(unsigned useconds)
 {
-    unimplemented();
-    return 0;
+    struct timespec tv = {.tv_sec = useconds / 1000000, .tv_nsec = (useconds % 1000000) * 1000};
+    return nanosleep(&tv, &tv);
 }
 
-#ifdef AX_CONFIG_FS
-
-off_t lseek(int fd, off_t offset, int whence)
+long sysconf(int name)
 {
-    return ax_lseek(fd, offset, whence);
-}
-
-// TODO:
-int fsync(int fd)
-{
-    unimplemented();
-    return 0;
+    return ax_sysconf(name);
 }
 
 int close(int fd)
@@ -50,6 +51,22 @@ int close(int fd)
     return ax_close(fd);
 }
 
+int fstat(int fd, struct stat *buf)
+{
+    return ax_fstat(fd, buf);
+}
+
+ssize_t read(int fd, void *buf, size_t count)
+{
+    return ax_read(fd, buf, count);
+}
+
+ssize_t write(int fd, const void *buf, size_t count)
+{
+    return ax_write(fd, buf, count);
+}
+
+#ifdef AX_CONFIG_FS
 // TODO:
 int access(const char *pathname, int mode)
 {
@@ -72,26 +89,11 @@ int stat(const char *path, struct stat *buf)
     return ax_stat(path, buf);
 }
 
-int fstat(int fd, struct stat *buf)
-{
-    return ax_fstat(fd, buf);
-}
-
 // TODO:
-int ftruncate(int fd, off_t length)
+ssize_t readlink(const char *path, char *buf, size_t bufsiz)
 {
     unimplemented();
     return 0;
-}
-
-ssize_t read(int fd, void *buf, size_t count)
-{
-    return ax_read(fd, buf, count);
-}
-
-ssize_t write(int fd, const void *buf, size_t count)
-{
-    return ax_write(fd, buf, count);
 }
 
 // TODO:
@@ -108,6 +110,18 @@ int rmdir(const char *pathname)
     return 0;
 }
 
+off_t lseek(int fd, off_t offset, int whence)
+{
+    return ax_lseek(fd, offset, whence);
+}
+
+// TODO:
+int fsync(int fd)
+{
+    unimplemented();
+    return 0;
+}
+
 // TODO:
 int fchown(int fd, uid_t owner, gid_t group)
 {
@@ -116,10 +130,66 @@ int fchown(int fd, uid_t owner, gid_t group)
 }
 
 // TODO:
-ssize_t readlink(const char *path, char *buf, size_t bufsiz)
+int ftruncate(int fd, off_t length)
 {
     unimplemented();
     return 0;
+}
+
+#endif
+
+#ifdef AX_CONFIG_PIPE
+int pipe(int fd[2])
+{
+    return ax_pipe(&fd[0], &fd[1]);
+}
+
+int pipe2(int fd[2], int flag)
+{
+    if (!flag)
+        return pipe(fd);
+    if (flag & ~(O_CLOEXEC | O_NONBLOCK))
+        return -EINVAL;
+
+    int res = pipe(fd);
+    if (res != 0)
+        return res;
+
+    if (flag & O_CLOEXEC) {
+        fcntl(fd[0], F_SETFD, FD_CLOEXEC);
+        fcntl(fd[1], F_SETFD, FD_CLOEXEC);
+    }
+    if (flag & O_NONBLOCK) {
+        fcntl(fd[0], F_SETFL, O_NONBLOCK);
+        fcntl(fd[1], F_SETFL, O_NONBLOCK);
+    }
+
+    return 0;
+}
+#endif
+
+#ifdef AX_CONFIG_ALLOC
+int dup(int fd)
+{
+    return ax_dup(fd);
+}
+
+int dup2(int old, int new)
+{
+    int r;
+    if (old == new) {
+        r = fcntl(old, F_GETFD);
+        if (r >= 0)
+            return old;
+        else
+            return r;
+    }
+    return ax_dup3(old, new, 0);
+}
+
+int dup3(int old, int new, int flags)
+{
+    return ax_dup3(old, new, flags);
 }
 
 #endif

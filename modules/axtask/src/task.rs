@@ -1,6 +1,6 @@
-use alloc::{boxed::Box, sync::Arc};
+use alloc::{boxed::Box, string::String, sync::Arc};
 use core::ops::Deref;
-use core::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
+use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, AtomicU8, Ordering};
 use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 
 #[cfg(feature = "preempt")]
@@ -9,7 +9,7 @@ use core::sync::atomic::AtomicUsize;
 use axhal::arch::TaskContext;
 use memory_addr::{align_up_4k, VirtAddr};
 
-use crate::{AxTask, AxTaskRef};
+use crate::{AxRunQueue, AxTask, AxTaskRef, WaitQueue};
 
 /// A unique identifier for a thread.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -28,7 +28,7 @@ pub(crate) enum TaskState {
 /// The inner task structure.
 pub struct TaskInner {
     id: TaskId,
-    name: &'static str,
+    name: String,
     is_idle: bool,
     is_init: bool,
 
@@ -43,6 +43,9 @@ pub struct TaskInner {
     need_resched: AtomicBool,
     #[cfg(feature = "preempt")]
     preempt_disable_count: AtomicUsize,
+
+    exit_code: AtomicI32,
+    wait_for_exit: WaitQueue,
 
     kstack: Option<TaskStack>,
     ctx: UnsafeCell<TaskContext>,
@@ -86,19 +89,28 @@ impl TaskInner {
     }
 
     /// Gets the name of the task.
-    pub const fn name(&self) -> &str {
-        self.name
+    pub fn name(&self) -> &str {
+        self.name.as_str()
     }
 
     /// Get a combined string of the task ID and name.
     pub fn id_name(&self) -> alloc::string::String {
         alloc::format!("Task({}, {:?})", self.id.as_u64(), self.name)
     }
+
+    /// Wait for the task to exit, and return the exit code.
+    ///
+    /// It will return immediately if the task has already exited (but not dropped).
+    pub fn join(&self) -> Option<i32> {
+        self.wait_for_exit
+            .wait_until(|| self.state() == TaskState::Exited);
+        Some(self.exit_code.load(Ordering::Acquire))
+    }
 }
 
 // private methods
 impl TaskInner {
-    const fn new_common(id: TaskId, name: &'static str) -> Self {
+    const fn new_common(id: TaskId, name: String) -> Self {
         Self {
             id,
             name,
@@ -113,6 +125,8 @@ impl TaskInner {
             need_resched: AtomicBool::new(false),
             #[cfg(feature = "preempt")]
             preempt_disable_count: AtomicUsize::new(0),
+            exit_code: AtomicI32::new(0),
+            wait_for_exit: WaitQueue::new(),
             kstack: None,
             ctx: UnsafeCell::new(TaskContext::new()),
             #[cfg(feature = "user-paging")]
@@ -120,7 +134,7 @@ impl TaskInner {
         }
     }
 
-    pub(crate) fn new<F>(entry: F, name: &'static str, stack_size: usize) -> AxTaskRef
+    pub(crate) fn new<F>(entry: F, name: String, stack_size: usize) -> AxTaskRef
     where
         F: FnOnce() + Send + 'static,
     {
@@ -130,7 +144,7 @@ impl TaskInner {
         t.entry = Some(Box::into_raw(Box::new(entry)));
         t.ctx.get_mut().init(task_entry as usize, kstack.top());
         t.kstack = Some(kstack);
-        if name == "idle" {
+        if t.name == "idle" {
             t.is_idle = true;
         }
         Arc::new(AxTask::new(t))
@@ -138,7 +152,7 @@ impl TaskInner {
 
     #[cfg(feature = "user-paging")]
     pub(crate) fn new_user(entry: usize, kstack_size: usize, args: usize) -> AxTaskRef {
-        let mut t = Self::new_common(TaskId::new(), "");
+        let mut t = Self::new_common(TaskId::new(), "".into());
         debug!("new user task: {} {}", t.id_name(), entry);
         let kstack = TaskStack::alloc(align_up_4k(kstack_size));
         t.ctx.get_mut().init(task_user_entry as usize, kstack.top());
@@ -170,11 +184,11 @@ impl TaskInner {
         Arc::new(AxTask::new(t))
     }
 
-    pub(crate) fn new_init(name: &'static str) -> AxTaskRef {
+    pub(crate) fn new_init(name: String) -> AxTaskRef {
         // init_task does not change PC and SP, so `entry` and `kstack` fields are not used.
         let mut t = Self::new_common(TaskId::new(), name);
         t.is_init = true;
-        if name == "idle" {
+        if t.name == "idle" {
             t.is_idle = true;
         }
         debug!("init task: {}", t.id_name());
@@ -301,6 +315,11 @@ impl TaskInner {
                 rq.resched();
             }
         }
+    }
+
+    pub(crate) fn notify_exit(&self, exit_code: i32, rq: &mut AxRunQueue) {
+        self.exit_code.store(exit_code, Ordering::Release);
+        self.wait_for_exit.notify_all_locked(false, rq);
     }
 
     #[inline]

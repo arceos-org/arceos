@@ -1,7 +1,8 @@
-#![cfg(all(not(feature = "use-virtio-blk"), not(feature = "myfs")))]
+#![cfg(not(feature = "myfs"))]
 
 mod test_common;
 
+use axdriver::AxDeviceContainer;
 use driver_block::ramdisk::RamDisk;
 
 const IMG_PATH: &str = "resources/fat16.img";
@@ -20,7 +21,7 @@ fn test_fatfs() {
 
     let disk = make_disk().expect("failed to load disk image");
     axtask::init_scheduler(); // call this to use `axsync::Mutex`.
-    axfs::init_filesystems(disk);
+    axfs::init_filesystems(AxDeviceContainer::from_one(disk));
 
     test_common::test_all();
 }

@@ -9,6 +9,7 @@ use driver_common::{BaseDriverOps, DevError, DevResult, DeviceType};
 const BLOCK_SIZE: usize = 512;
 
 /// A RAM disk that stores data in a vector.
+#[derive(Default)]
 pub struct RamDisk {
     size: usize,
     data: Vec<u8>,

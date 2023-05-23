@@ -60,7 +60,6 @@ impl DnsSocket {
                 })
             }) {
                 Ok(n) => {
-                    debug!("here");
                     SOCKET_SET.poll_interfaces();
                     return Ok(n.to_vec());
                 }

@@ -2,7 +2,7 @@
 
 APP=
 ROOT=$(realpath $(dirname $0))/../../
-TIMEOUT=30s
+TIMEOUT=60s
 EXIT_STATUS=0
 
 S_PASS=0
@@ -117,6 +117,7 @@ if [ -z "$1" ]; then
         "apps/c/helloworld"
         "apps/c/memtest"
         "apps/c/sqlite3"
+        "apps/c/httpclient"
     )
 else
     test_list="$@"

@@ -18,6 +18,12 @@ phys-virt-offset = "0"
 mmio-regions = []
 # VirtIO MMIO regions with format (`base_paddr`, `size`).
 virtio-mmio-regions = []
+# Base physical address of the PCIe ECAM space.
+pci-ecam-base = "0"
+# End PCI bus number.
+pci-bus-end = "0"
+# PCI device memory ranges.
+pci-ranges = []
 
 # Timer interrupt frequency in Hz.
-timer_frequency = "0"
+timer-frequency = "0"

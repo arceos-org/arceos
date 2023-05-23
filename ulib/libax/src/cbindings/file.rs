@@ -1,40 +1,11 @@
-use alloc::sync::Arc;
-use axerrno::{LinuxError, LinuxResult};
-use core::ffi::{c_char, c_int, c_void};
-
+use super::fd_table::Filelike;
 use super::{ctypes, utils::char_ptr_to_str};
 use crate::debug;
 use crate::fs::{File, OpenOptions};
 use crate::io::{self, prelude::*, SeekFrom};
-use crate::sync::Mutex;
 
-const FILE_LIMIT: usize = 256;
-const FD_NONE: Option<Arc<Mutex<File>>> = None;
-
-/// File Descriptor Table
-static FD_TABLE: Mutex<[Option<Arc<Mutex<File>>>; FILE_LIMIT]> = Mutex::new([FD_NONE; FILE_LIMIT]);
-
-/// Get the [`File`] structure from `FD_TABLE` by `fd`.
-fn get_file_by_fd(fd: c_int) -> LinuxResult<Arc<Mutex<File>>> {
-    FD_TABLE
-        .lock()
-        .get(fd as usize)
-        .and_then(|f| f.as_ref())
-        .cloned()
-        .ok_or(LinuxError::EBADF)
-}
-
-/// Add a new file into `FD_TABLE` and return its fd.
-fn add_new_fd(file: File) -> Option<usize> {
-    let mut fd_table = FD_TABLE.lock();
-    for fd in 3..FILE_LIMIT {
-        if fd_table[fd].is_none() {
-            fd_table[fd] = Some(Arc::new(Mutex::new(file)));
-            return Some(fd);
-        }
-    }
-    None
-}
+use axerrno::{LinuxError, LinuxResult};
+use core::ffi::{c_char, c_int};
 
 /// Convert open flags to [`OpenOptions`].
 fn flags_to_options(flags: c_int, _mode: ctypes::mode_t) -> OpenOptions {
@@ -75,24 +46,9 @@ pub unsafe extern "C" fn ax_open(
     ax_call_body!(ax_open, {
         let options = flags_to_options(flags, mode);
         let file = options.open(filename?)?;
-        add_new_fd(file).ok_or(LinuxError::ENFILE)
-    })
-}
-
-/// Close a file by `fd`.
-#[no_mangle]
-pub unsafe extern "C" fn ax_close(fd: c_int) -> c_int {
-    debug!("ax_close <= {}", fd);
-    if (0..2).contains(&fd) {
-        return 0; // stdin, stdout, stderr
-    }
-    ax_call_body!(ax_close, {
-        FD_TABLE
-            .lock()
-            .get_mut(fd as usize)
-            .and_then(|file| file.take())
-            .ok_or(LinuxError::EBADF)?;
-        Ok(0)
+        Filelike::from_file(file)
+            .add_to_fd_table()
+            .ok_or(LinuxError::ENFILE)
     })
 }
 
@@ -113,47 +69,12 @@ pub unsafe extern "C" fn ax_lseek(
             2 => SeekFrom::End(offset as _),
             _ => return Err(LinuxError::EINVAL),
         };
-        let file = get_file_by_fd(fd)?;
-        let off = file.lock().seek(pos)?;
+        let off = Filelike::from_fd(fd)?.into_file()?.lock().seek(pos)?;
         Ok(off)
     })
 }
 
-/// Read data from the file indicated by `fd`.
-///
-/// Return the read size if success.
-#[no_mangle]
-pub unsafe extern "C" fn ax_read(fd: c_int, buf: *mut c_void, count: usize) -> ctypes::ssize_t {
-    debug!("ax_read <= {} {:#x} {}", fd, buf as usize, count);
-    ax_call_body!(ax_read, {
-        if buf.is_null() {
-            return Err(LinuxError::EFAULT);
-        }
-        let dst = unsafe { core::slice::from_raw_parts_mut(buf as *mut u8, count) };
-        let file = get_file_by_fd(fd)?;
-        let len = file.lock().read(dst)?;
-        Ok(len)
-    })
-}
-
-/// Write data to the file indicated by `fd`.
-///
-/// Return the written size if success.
-#[no_mangle]
-pub unsafe extern "C" fn ax_write(fd: c_int, buf: *const c_void, count: usize) -> ctypes::ssize_t {
-    debug!("ax_write <= {} {:#x} {}", fd, buf as usize, count);
-    ax_call_body!(ax_write, {
-        if buf.is_null() {
-            return Err(LinuxError::EFAULT);
-        }
-        let src = unsafe { core::slice::from_raw_parts(buf as *const u8, count) };
-        let file = get_file_by_fd(fd)?;
-        let len = file.lock().write(src)?;
-        Ok(len)
-    })
-}
-
-fn stat_file(file: &File) -> io::Result<ctypes::stat> {
+pub(super) fn stat_file(file: &File) -> io::Result<ctypes::stat> {
     let metadata = file.metadata()?;
     let metadata = metadata.raw_metadata();
     let ty = metadata.file_type() as u8;
@@ -203,23 +124,6 @@ pub unsafe extern "C" fn ax_lstat(path: *const c_char, buf: *mut ctypes::stat) -
             return Err(LinuxError::EFAULT);
         }
         unsafe { *buf = Default::default() }; // TODO
-        Ok(0)
-    })
-}
-
-/// Get file metadata by `fd` and write into `buf`.
-///
-/// Return 0 if success.
-#[no_mangle]
-pub unsafe extern "C" fn ax_fstat(fd: c_int, buf: *mut ctypes::stat) -> ctypes::ssize_t {
-    debug!("ax_fstat <= {} {:#x}", fd, buf as usize);
-    ax_call_body!(ax_fstat, {
-        if buf.is_null() {
-            return Err(LinuxError::EFAULT);
-        }
-        let file = get_file_by_fd(fd)?;
-        let st = stat_file(&file.lock())?;
-        unsafe { *buf = st };
         Ok(0)
     })
 }

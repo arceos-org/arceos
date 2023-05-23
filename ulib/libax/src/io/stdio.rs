@@ -70,7 +70,7 @@ impl Read for Stdin {
             if read_len > 0 {
                 return Ok(read_len);
             }
-            crate::task::yield_now();
+            crate::thread::yield_now();
         }
     }
 }

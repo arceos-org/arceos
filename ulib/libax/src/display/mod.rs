@@ -10,6 +10,6 @@ pub fn framebuffer_info() -> DisplayInfo {
 }
 
 /// Flushes the framebuffer.
-pub fn framebuffer_flush() -> isize {
+pub fn framebuffer_flush() {
     axdisplay::framebuffer_flush()
 }
