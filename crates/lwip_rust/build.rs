@@ -11,11 +11,11 @@ fn generate_lwip_bindings() {
     println!("cargo:include=depend/lwip/src/include/");
 
     let bindings = bindgen::Builder::default()
+        .detect_include_paths(true)
         .use_core()
         .header("wrapper.h")
         .clang_arg("-I./depend/lwip/src/include")
         .clang_arg("-I./custom")
-        .clang_arg("-I../../ulib/c_libax/include")
         .clang_arg("-Wno-everything")
         .layout_tests(false)
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
@@ -51,8 +51,7 @@ fn compile_lwip(arch: &str) {
 
     base_config
         .include("depend/lwip/src/include")
-        .include("custom")
-        .include("../../ulib/c_libax/include");
+        .include("custom");
 
     base_config
         .file("depend/lwip/src/api/err.c")
@@ -96,7 +95,6 @@ fn compile_lwip(arch: &str) {
         .file("depend/lwip/src/core/ipv6/nd6.c")
         .file("depend/lwip/src/netif/ethernet.c")
         .file("depend/lwip/src/apps/lwiperf/lwiperf.c")
-        .file("../../ulib/c_libax/src/string.c")
         .file("custom/sys_arch.c");
 
     base_config
@@ -105,6 +103,5 @@ fn compile_lwip(arch: &str) {
         .flag("-no-pie")
         .flag("-fno-builtin")
         .flag("-ffreestanding")
-        .flag("-nostdinc")
         .compile("liblwip.a");
 }

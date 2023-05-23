@@ -1,6 +1,8 @@
 #ifndef __ARCH_CC_H__
 #define __ARCH_CC_H__
 
+typedef long long ssize_t;
+
 #define LWIP_NO_INTTYPES_H 1
 #define U8_F               "hhu"
 #define S8_F               "hhd"

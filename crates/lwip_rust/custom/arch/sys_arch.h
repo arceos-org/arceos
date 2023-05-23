@@ -4,12 +4,11 @@
 #define SYS_MBOX_NULL NULL
 #define SYS_SEM_NULL  NULL
 
-typedef void *sys_prot_t;
+#define isspace(a) ((a == ' ' || (unsigned)a - '\t' < 5))
+#define isdigit(a) (((unsigned)(a) - '0') < 10)
 
-typedef void *sys_sem_t;
+int atoi(const char *s);
 
-typedef void *sys_mbox_t;
-
-typedef void *sys_thread_t;
+int strcmp(const char *l, const char *r);
 
 #endif /* __ARCH_SYS_ARCH_H__ */
