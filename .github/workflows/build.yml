@@ -46,6 +46,8 @@ jobs:
         crate: cargo-binutils
         version: latest
         use-tool-cache: true
+    - name: Clone github submodule
+      run: git submodule update --init --recursive
     - name: Build helloworld
       run: make ARCH=${{ matrix.arch }} A=apps/helloworld
     - name: Build memtest
