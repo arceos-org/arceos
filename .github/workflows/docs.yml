@@ -17,13 +17,6 @@ jobs:
       with:
         profile: minimal
         toolchain: nightly
-    - name: Download x86_64 musl toolchain
-      run: |
-        export MUSL_PATH="x86_64-linux-musl-cross"
-        wget https://musl.cc/$MUSL_PATH.tgz
-        tar -xf $MUSL_PATH.tgz
-        mv $MUSL_PATH musl
-        echo "$PWD/musl/bin" >> $GITHUB_PATH
     - name: Build docs
       continue-on-error: ${{ github.ref != 'refs/heads/main' && github.event_name != 'pull_request' }}
       run: make doc_check_missing
