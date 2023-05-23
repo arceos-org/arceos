@@ -12,7 +12,7 @@ documentation = "https://rcore-os.github.io/arceos/axnet/index.html"
 [features]
 smoltcp = []
 lwip = ["dep:printf-compat", "dep:lwip_rust", "cty" ]
-default = ["lwip"]
+default = ["smoltcp"]
 
 [dependencies]
 log = "0.4"

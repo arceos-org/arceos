@@ -284,6 +284,7 @@ fn snoop_tcp_packet(buf: &[u8]) -> Result<(), smoltcp::wire::Error> {
 }
 
 pub(crate) fn init(mut net_dev: AxNetDevice) {
+    info!("Using smoltcp");
     let pool = NetBufferPool::new(NET_BUF_POOL_SIZE, NET_BUF_LEN).unwrap();
     NET_BUF_POOL.init_by(pool);
     net_dev.fill_rx_buffers(&NET_BUF_POOL).unwrap();

@@ -42,6 +42,7 @@ fs = ["alloc", "axruntime/fs", "dep:axdriver", "dep:axfs"]
 
 # Networking
 net = ["axruntime/net", "dep:axdriver", "dep:axnet"]
+use-lwip = ["axnet?/lwip"]
 
 # Display
 display = ["axruntime/display", "dep:axdriver", "dep:axdisplay"]
