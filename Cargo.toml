@@ -46,6 +46,7 @@ members = [
     "crates/spinlock",
     "crates/timer_list",
     "crates/tuple_for_each",
+    "crates/hypercraft",
 
     "modules/axalloc",
     "modules/axconfig",
