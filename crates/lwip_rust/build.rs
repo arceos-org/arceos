@@ -38,9 +38,11 @@ fn compile_lwip(arch: &str) {
         }
         "aarch64" => {
             base_config.compiler("aarch64-linux-musl-gcc");
+            base_config.flag("-mgeneral-regs-only");
         }
         "x86_64" => {
             base_config.compiler("x86_64-linux-musl-gcc");
+            base_config.flag("-mno-sse");
         }
         _ => {
             panic!("Unsupported arch: {}", arch);
