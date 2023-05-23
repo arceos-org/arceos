@@ -359,6 +359,8 @@ dependencies = [
  "hypercraft",
  "kernel_guard",
  "lazy_init",
+ "page_table",
+ "page_table_entry",
  "percpu",
  "spinlock",
 ]
@@ -765,6 +767,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "fdt"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "784a4df722dc6267a04af36895398f59d21d07dce47232adf31ec0ff2fa45e67"
+
+[[package]]
 name = "float-cmp"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -842,6 +850,16 @@ name = "hermit-abi"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fed44880c466736ef9a5c5b5facefb5ed0785676d0c02d612db14e54f0d84286"
+
+[[package]]
+name = "hv"
+version = "0.1.0"
+dependencies = [
+ "arrayvec",
+ "fdt",
+ "libax",
+ "page_table_entry",
+]
 
 [[package]]
 name = "hypercraft"
@@ -971,6 +989,7 @@ dependencies = [
  "axtask",
  "bindgen",
  "cbindgen",
+ "hypercraft",
  "spinlock",
 ]
 

@@ -2,6 +2,11 @@
 
 QEMU := qemu-system-$(ARCH)
 
+GUEST ?= linux
+ROOTFS ?= apps/hv/guest/$(GUEST)/rootfs.img
+GUEST_DTB ?= apps/hv/guest/$(GUEST)/$(GUEST).dtb
+GUEST_BIN ?= apps/hv/guest/$(GUEST)/$(GUEST).bin
+
 ifeq ($(BUS), mmio)
   vdev-suffix := device
 else ifeq ($(BUS), pci)
@@ -24,7 +29,14 @@ qemu_args-aarch64 := \
   -machine virt \
   -kernel $(OUT_BIN)
 
-qemu_args-y := -m 128M -smp $(SMP) $(qemu_args-$(ARCH))
+ifeq ($(HV), y)
+  qemu_args-y := \
+      -m 3G -smp $(SMP) $(qemu_args-$(ARCH)) \
+    	-device loader,file=$(GUEST_DTB),addr=0x90000000,force-raw=on \
+      -device loader,file=$(GUEST_BIN),addr=0x90200000,force-raw=on
+else
+  qemu_args-y := -m 128M -smp $(SMP) $(qemu_args-$(ARCH))
+endif
 
 qemu_args-$(FS) += \
   -device virtio-blk-$(vdev-suffix),drive=disk0 \
@@ -37,6 +49,23 @@ qemu_args-$(NET) += \
 qemu_args-$(GRAPHIC) += \
   -device virtio-gpu-$(vdev-suffix) -vga none \
   -serial mon:stdio
+
+ifeq ($(GUEST), linux)
+  qemu_args-$(HV) += \
+    -drive file=$(ROOTFS),format=raw,id=hd0 \
+	  -device virtio-blk-device,drive=hd0 \
+	  -append "root=/dev/vda rw console=ttyS0" 
+else ifeq ($(GUEST), rCore-Tutorial)
+  qemu_args-$(HV) += \
+    	-drive file=guest/rCore-Tutorial-v3/fs.img,if=none,format=raw,id=x0 \
+	    -device virtio-blk-device,drive=x0 \
+      -device virtio-gpu-device \
+      -device virtio-keyboard-device \
+      -device virtio-mouse-device \
+      -device virtio-net-device,netdev=net0 \
+      -netdev user,id=net0,hostfwd=udp::6200-:2000
+endif
+
 
 ifeq ($(GRAPHIC), n)
   qemu_args-y += -nographic

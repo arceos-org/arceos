@@ -13,6 +13,7 @@ FS ?= n
 NET ?= n
 GRAPHIC ?= n
 BUS ?= mmio
+HV ?= n
 
 QEMU_LOG ?= n
 

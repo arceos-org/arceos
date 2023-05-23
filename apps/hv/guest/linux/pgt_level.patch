@@ -1,0 +1,29 @@
+--- arch/riscv/mm/init.c	2023-03-14 21:49:26.878349905 +0800
++++ arch/riscv/mm/init_new.c	2023-03-14 22:15:38.988148173 +0800
+@@ -785,15 +785,17 @@
+ 	hw_satp = csr_swap(CSR_SATP, 0ULL);
+ 	local_flush_tlb_all();
+ 
+-	if (hw_satp != identity_satp) {
+-		if (!check_l4) {
+-			disable_pgtable_l5();
+-			check_l4 = true;
+-			memset(early_pg_dir, 0, PAGE_SIZE);
+-			goto retry;
+-		}
+-		disable_pgtable_l4();
+-	}
++	// if (hw_satp != identity_satp) {
++	// 	if (!check_l4) {
++	// 		disable_pgtable_l5();
++	// 		check_l4 = true;
++	// 		memset(early_pg_dir, 0, PAGE_SIZE);
++	// 		goto retry;
++	// 	}
++	// 	disable_pgtable_l4();
++	// }
++	disable_pgtable_l5();
++	disable_pgtable_l4();
+ 
+ 	memset(early_pg_dir, 0, PAGE_SIZE);
+ 	memset(early_p4d, 0, PAGE_SIZE);
