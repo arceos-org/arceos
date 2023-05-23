@@ -209,6 +209,7 @@ pub trait KernelScheme: Scheme {
 mod root;
 mod user;
 mod io;
+mod dev;
 use io::{Stdin, Stdout};
 
 use self::root::RootScheme;

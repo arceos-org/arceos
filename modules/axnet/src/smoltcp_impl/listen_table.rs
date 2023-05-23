@@ -2,7 +2,7 @@ use alloc::{boxed::Box, collections::VecDeque};
 use core::ops::DerefMut;
 
 use axerrno::{ax_err, AxError, AxResult};
-use axsync::Mutex;
+use super::Mutex;
 use smoltcp::iface::SocketHandle;
 use smoltcp::socket::tcp::{self, State};
 

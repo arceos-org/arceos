@@ -1,5 +1,5 @@
 use axerrno::{ax_err, ax_err_type, AxError, AxResult};
-use axsync::Mutex;
+use super::Mutex;
 
 use smoltcp::iface::SocketHandle;
 use smoltcp::socket::tcp::{self, ConnectError, RecvError, State};
@@ -94,7 +94,7 @@ impl TcpSocket {
                 self.peer_addr = peer_addr;
                 return Ok(());
             } else if state == State::SynSent {
-                axtask::yield_now();
+                super::yield_now();
             } else {
                 return ax_err!(ConnectionRefused, "socket connect() failed");
             }
@@ -173,7 +173,7 @@ impl TcpSocket {
                         peer_addr,
                     });
                 }
-                Err(AxError::Again) => axtask::yield_now(),
+                Err(AxError::Again) => super::yield_now(),
                 Err(e) => return Err(e),
             }
         }
@@ -228,7 +228,7 @@ impl TcpSocket {
                     SOCKET_SET.poll_interfaces();
                     return Ok(n);
                 }
-                Err(AxError::Again) => axtask::yield_now(),
+                Err(AxError::Again) => super::yield_now(),
                 Err(e) => return Err(e),
             }
         }
@@ -261,7 +261,7 @@ impl TcpSocket {
                     SOCKET_SET.poll_interfaces();
                     return Ok(n);
                 }
-                Err(AxError::Again) => axtask::yield_now(),
+                Err(AxError::Again) => super::yield_now(),
                 Err(e) => return Err(e),
             }
         }

@@ -106,7 +106,7 @@ where
     RUN_QUEUE.lock().add_task(task.clone());
     task
 }
-}
+
 
     
 /// set priority for current task.
@@ -123,6 +123,7 @@ where
     F: FnOnce() + Send + 'static,
 {
     spawn_raw(f, "".into(), axconfig::TASK_STACK_SIZE)
+}
 }
 }
 

@@ -112,13 +112,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "arceos-test"
-version = "0.1.0"
-dependencies = [
- "libax_user",
-]
-
-[[package]]
 name = "arceos-udpserver"
 version = "0.1.0"
 dependencies = [
@@ -336,14 +329,11 @@ dependencies = [
 name = "axnet"
 version = "0.1.0"
 dependencies = [
- "axdriver",
  "axerrno",
- "axhal",
- "axsync",
- "axtask",
  "cfg-if",
  "driver_net",
  "lazy_init",
+ "libax_user",
  "log",
  "smoltcp",
 ]
@@ -365,6 +355,7 @@ dependencies = [
  "axsync",
  "axtask",
  "crate_interface 0.1.1",
+ "driver_net",
  "elf_loader",
  "kernel_guard",
  "lazy_init",
@@ -1151,6 +1142,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d5439c4ad607c3c23abf66de8c8bf57ba8adcd1f129e699851a6e43935d339d"
 
 [[package]]
+name = "net_deamon"
+version = "0.1.0"
+dependencies = [
+ "axnet",
+ "libax_user",
+]
+
+[[package]]
 name = "nom"
 version = "7.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1621,6 +1620,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be55cf8942feac5c765c2c993422806843c9a9a45d4d5c407ad6dd2ea95eb9b6"
 dependencies = [
  "winapi-util",
+]
+
+[[package]]
+name = "test"
+version = "0.1.0"
+dependencies = [
+ "libax_user",
 ]
 
 [[package]]

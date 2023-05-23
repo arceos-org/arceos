@@ -38,8 +38,10 @@ pub use self::net_impl::TcpSocket;
 pub use self::net_impl::UdpSocket;
 pub use smoltcp::wire::{IpAddress as IpAddr, IpEndpoint as SocketAddr, Ipv4Address as Ipv4Addr};
 
+#[cfg(not(feature = "user"))]
 use axdriver::{prelude::*, AxDeviceContainer};
 
+#[cfg(not(feature = "user"))]
 /// Initializes the network subsystem by NIC devices.
 pub fn init_network(mut net_devs: AxDeviceContainer<AxNetDevice>) {
     info!("Initialize network subsystem...");
@@ -47,4 +49,100 @@ pub fn init_network(mut net_devs: AxDeviceContainer<AxNetDevice>) {
     let dev = net_devs.take_one().expect("No NIC device found!");
     info!("  use NIC 0: {:?}", dev.device_name());
     net_impl::init(dev);
+}
+
+#[cfg(feature = "user")]
+mod user {
+    use driver_net::{
+        DevError, DevResult, EthernetAddress, NetBuffer, NetBufferBox, NetBufferPool,
+    };
+    use libax::io::File;
+    pub type AxNetDevice = AxNetDeviceMock<'static>;
+
+    pub struct AxNetDeviceMock<'a> {
+        rx_buffer: Option<NetBufferBox<'a>>,
+        daemon_file: File,
+    }
+
+    impl<'a> AxNetDeviceMock<'a> {
+        pub fn new() -> DevResult<Self> {
+            Ok(Self {
+                rx_buffer: None,
+                daemon_file: File::open("dev:/net/").map_err(|_| DevError::Unsupported)?,
+            })
+        }
+
+        pub fn mac_address(&self) -> EthernetAddress {
+            unimplemented!();
+        }
+        /*
+        pub fn can_transmit(&self) -> bool {
+            unimplemented!();
+        }
+
+        pub fn can_receive(&self) -> bool {
+            unimplemented!();
+        }
+
+        pub fn rx_queue_size(&self) -> usize {
+            unimplemented!();
+        }
+
+        pub fn tx_queue_size(&self) -> usize {
+            unimplemented!();
+        }
+         */
+        pub fn fill_rx_buffers(&mut self, buf_pool: &'a NetBufferPool) -> DevResult {
+            self.rx_buffer = Some(buf_pool.alloc_boxed().ok_or(DevError::NoMemory)?);
+            Ok(())
+        }
+
+        pub fn prepare_tx_buffer(&self, tx_buf: &mut NetBuffer, packet_len: usize) -> DevResult {
+            if packet_len > tx_buf.capacity() {
+                return Err(DevError::InvalidParam);
+            }
+            tx_buf.set_header_len(0);
+            tx_buf.set_packet_len(packet_len);
+            Ok(())
+        }
+
+        pub fn recycle_rx_buffer(&mut self, rx_buf: NetBufferBox<'a>) -> DevResult {
+            self.rx_buffer = Some(rx_buf);
+            Ok(())
+        }
+
+        pub fn transmit(&mut self, tx_buf: &NetBuffer) -> DevResult {
+            if self
+                .daemon_file
+                .write(tx_buf.packet())
+                .map_err(|_| DevError::Io)?
+                != tx_buf.packet().len()
+            {
+                Err(DevError::Io)
+            } else {
+                Ok(())
+            }
+        }
+
+        pub fn receive(&mut self) -> DevResult<NetBufferBox<'a>> {
+            if let Some(mut buf) = self.rx_buffer.take() {
+                buf.set_header_len(0);
+                let len = self
+                    .daemon_file
+                    .read(buf.raw_buf_mut())
+                    .map_err(|_| DevError::Io)?;
+                buf.set_packet_len(len);
+                Ok(buf)
+            } else {
+                Err(DevError::Again)
+            }
+        }
+    }
+    pub fn current_time_nanos() -> u64 {
+        unimplemented!();
+    }
+    pub fn yield_now() {
+        unimplemented!();
+    }
+    pub const NANOS_PER_MICROS: u64 = 1_000;
 }

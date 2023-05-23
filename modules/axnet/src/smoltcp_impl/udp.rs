@@ -1,5 +1,5 @@
 use axerrno::{ax_err, ax_err_type, AxError, AxResult};
-use axsync::Mutex;
+use super::Mutex;
 
 use smoltcp::iface::SocketHandle;
 use smoltcp::socket::udp::{self, BindError, SendError};
@@ -98,7 +98,7 @@ impl UdpSocket {
                     SOCKET_SET.poll_interfaces();
                     return Ok(n);
                 }
-                Err(AxError::Again) => axtask::yield_now(),
+                Err(AxError::Again) => super::yield_now(),
                 Err(e) => return Err(e),
             }
         }
@@ -131,7 +131,7 @@ impl UdpSocket {
                     SOCKET_SET.poll_interfaces();
                     return Ok(x);
                 }
-                Err(AxError::Again) => axtask::yield_now(),
+                Err(AxError::Again) => super::yield_now(),
                 Err(e) => return Err(e),
             }
         }
@@ -197,7 +197,7 @@ impl UdpSocket {
                     SOCKET_SET.poll_interfaces();
                     return Ok(x);
                 }
-                Err(AxError::Again) => axtask::yield_now(),
+                Err(AxError::Again) => super::yield_now(),
                 Err(e) => return Err(e),
             }
         }
@@ -245,7 +245,7 @@ impl UdpSocket {
                     SOCKET_SET.poll_interfaces();
                     return Ok(x);
                 }
-                Err(AxError::Again) => axtask::yield_now(),
+                Err(AxError::Again) => super::yield_now(),
                 Err(e) => return Err(e),
             }
         }

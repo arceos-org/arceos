@@ -11,7 +11,8 @@ documentation = "https://rcore-os.github.io/arceos/axnet/index.html"
 
 [features]
 smoltcp = []
-default = ["smoltcp"]
+user = []
+default = ["smoltcp", "user"]
 
 [dependencies]
 log = "0.4"
@@ -19,10 +20,11 @@ cfg-if = "1.0"
 driver_net = { path = "../../crates/driver_net" }
 lazy_init = { path = "../../crates/lazy_init" }
 axerrno = { path = "../../crates/axerrno" }
-axhal = { path = "../axhal" }
-axsync = { path = "../axsync", default-features = false }
-axtask = { path = "../axtask", default-features = false }
-axdriver = { path = "../axdriver", features = ["net"] }
+libax = { path = "../../ulib/libax_user", package = "libax_user" }
+# axhal = { path = "../axhal" }
+# axsync = { path = "../axsync", default-features = false }
+# axtask = { path = "../axtask", default-features = false }
+# axdriver = { path = "../axdriver", features = ["net"] }
 
 [dependencies.smoltcp]
 version = "0.9.1"

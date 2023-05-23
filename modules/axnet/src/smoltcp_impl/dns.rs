@@ -63,7 +63,7 @@ impl DnsSocket {
                     SOCKET_SET.poll_interfaces();
                     return Ok(n.to_vec());
                 }
-                Err(AxError::Again) => axtask::yield_now(),
+                Err(AxError::Again) => super::yield_now(),
                 Err(e) => return Err(e),
             }
         }
