@@ -10,6 +10,13 @@ ArceOS was inspired a lot by [Unikraft](https://github.com/unikraft/unikraft).
 
 🚧 Working In Progress.
 
+## Contributing to arceos
+1. fork this repo's branch `dev` to your own repo
+2. add&update codes in your own repo's `dev` branch, pass CI test
+3. create PR to this repo's branch `dev`
+4. discuss with other contributors, merge PR to this repo's branch `dev`
+5. owners merge this repo's branch `dev` to `main`
+
 ## Features & TODOs
 
 * [x] Architecture: x86_64, riscv64, aarch64
