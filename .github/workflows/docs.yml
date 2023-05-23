@@ -14,7 +14,7 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: nightly
+        toolchain: nightly-2023-02-01
     - name: Clone github submodule
       run: git submodule update --init --recursive
     - name: Build docs

@@ -31,7 +31,6 @@
 #![feature(naked_functions)]
 #![feature(const_maybe_uninit_zeroed)]
 #![feature(doc_auto_cfg)]
-#![feature(binary_heap_retain)]
 
 #[allow(unused_imports)]
 #[macro_use]
