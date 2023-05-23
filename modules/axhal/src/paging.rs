@@ -39,8 +39,21 @@ impl PagingIf for PagingIfImpl {
             .ok()
     }
 
+    #[cfg(target_arch = "riscv64")]
+    fn alloc_frames(page_nums: usize) -> Option<PhysAddr> {
+        global_allocator()
+            .alloc_pages(page_nums, PAGE_SIZE_4K * page_nums)
+            .map(|vaddr| virt_to_phys(vaddr.into()))
+            .ok()
+    }
+
     fn dealloc_frame(paddr: PhysAddr) {
         global_allocator().dealloc_pages(phys_to_virt(paddr).as_usize(), 1)
+    }
+
+    #[cfg(target_arch = "riscv64")]
+    fn dealloc_frames(paddr: PhysAddr, page_nums: usize) {
+        global_allocator().dealloc_pages(phys_to_virt(paddr).as_usize(), page_nums)
     }
 
     #[inline]

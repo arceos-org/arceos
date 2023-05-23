@@ -49,6 +49,21 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
         })
     }
 
+    #[cfg(target_arch = "riscv64")]
+    pub fn try_new_gpt() -> PagingResult<Self> {
+        let root_paddr = Self::alloc_guest_page_table()?;
+        Ok(Self {
+            root_paddr,
+            intrm_tables: vec![
+                root_paddr,
+                root_paddr + 0x1000,
+                root_paddr + 0x2000,
+                root_paddr + 0x3000,
+            ],
+            _phantom: PhantomData,
+        })
+    }
+
     /// Returns the physical address of the root page table.
     pub const fn root_paddr(&self) -> PhysAddr {
         self.root_paddr
@@ -231,6 +246,17 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
         if let Some(paddr) = IF::alloc_frame() {
             let ptr = IF::phys_to_virt(paddr).as_mut_ptr();
             unsafe { core::ptr::write_bytes(ptr, 0, PAGE_SIZE_4K) };
+            Ok(paddr)
+        } else {
+            Err(PagingError::NoMemory)
+        }
+    }
+
+    #[cfg(target_arch = "riscv64")]
+    fn alloc_guest_page_table() -> PagingResult<PhysAddr> {
+        if let Some(paddr) = IF::alloc_frames(4) {
+            let ptr = IF::phys_to_virt(paddr).as_mut_ptr();
+            unsafe { core::ptr::write_bytes(ptr, 0, PAGE_SIZE_4K * 4) };
             Ok(paddr)
         } else {
             Err(PagingError::NoMemory)

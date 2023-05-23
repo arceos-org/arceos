@@ -272,7 +272,7 @@ name = "axfs_vfs"
 version = "0.1.0"
 dependencies = [
  "axerrno",
- "bitflags 2.2.1",
+ "bitflags 2.3.1",
  "log",
 ]
 
@@ -285,7 +285,7 @@ dependencies = [
  "axalloc",
  "axconfig",
  "axlog",
- "bitflags 2.2.1",
+ "bitflags 2.3.1",
  "cfg-if",
  "crate_interface 0.1.1",
  "handler_table",
@@ -450,9 +450,9 @@ checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
 name = "bitflags"
-version = "2.2.1"
+version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "24a6904aef64d73cf10ab17ebace7befb918b82164785cb89907993be7f83813"
+checksum = "6776fc96284a0bb647b615056fc496d1fe1644a7ab01829818a6d91cae888b84"
 
 [[package]]
 name = "bitmap-allocator"
@@ -470,9 +470,9 @@ checksum = "43f9365b6b0c9e1663ca4ca9440c00eda46bc85a3407070be8b5e0d8d1f29629"
 
 [[package]]
 name = "bumpalo"
-version = "3.12.2"
+version = "3.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c6ed94e98ecff0c12dd1b04c15ec0d7d9458ca8fe806cea6f12954efe74c63b"
+checksum = "a3e2c3daef883ecc1b5d58c15adae93470a91d425f3532ba1695849656af3fc1"
 
 [[package]]
 name = "byteorder"
@@ -485,7 +485,7 @@ name = "capability"
 version = "0.1.0"
 dependencies = [
  "axerrno",
- "bitflags 2.2.1",
+ "bitflags 2.3.1",
 ]
 
 [[package]]
@@ -922,9 +922,9 @@ checksum = "453ad9f582a441959e5f0d088b02ce04cfe8d51a8eaf077f12ac6d3e94164ca6"
 
 [[package]]
 name = "js-sys"
-version = "0.3.62"
+version = "0.3.63"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68c16e1bfd491478ab155fd8b4896b86f9ede344949b641e61501e07c2b8b4d5"
+checksum = "2f37a4a5928311ac501dee68b3c7613a1037d0edb30c8e5427bd832d55d1b790"
 dependencies = [
  "wasm-bindgen",
 ]
@@ -997,9 +997,9 @@ version = "0.1.0"
 
 [[package]]
 name = "linux-raw-sys"
-version = "0.3.7"
+version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ece97ea872ece730aed82664c424eb4c8291e1ff2480247ccf7409044bc6479f"
+checksum = "ef53942eb7bf7ff43a617b3e2c1c4a5ecf5944a7c1bc12d7ee39bbb15e5c1519"
 
 [[package]]
 name = "lock_api"
@@ -1048,12 +1048,12 @@ version = "0.1.0"
 [[package]]
 name = "memory_addr"
 version = "0.1.0"
-source = "git+https://github.com/rcore-os/arceos.git#crates/page_table#2935f05a327d46628273ab7c267e22bf00779862"
+source = "git+https://github.com/rcore-os/arceos.git#crates/page_table#5ed6cde07925fa284fb315f01cc5f20e74af31bc"
 
 [[package]]
 name = "memory_addr"
 version = "0.1.0"
-source = "git+https://github.com/rcore-os/arceos.git#crates/page_table_entry#2935f05a327d46628273ab7c267e22bf00779862"
+source = "git+https://github.com/rcore-os/arceos.git#crates/page_table_entry#5ed6cde07925fa284fb315f01cc5f20e74af31bc"
 
 [[package]]
 name = "micromath"
@@ -1135,7 +1135,7 @@ dependencies = [
 [[package]]
 name = "page_table"
 version = "0.1.0"
-source = "git+https://github.com/rcore-os/arceos.git#crates/page_table#2935f05a327d46628273ab7c267e22bf00779862"
+source = "git+https://github.com/rcore-os/arceos.git#crates/page_table#5ed6cde07925fa284fb315f01cc5f20e74af31bc"
 dependencies = [
  "log",
  "memory_addr 0.1.0 (git+https://github.com/rcore-os/arceos.git#crates/page_table)",
@@ -1146,7 +1146,7 @@ dependencies = [
 name = "page_table_entry"
 version = "0.1.0"
 dependencies = [
- "bitflags 2.2.1",
+ "bitflags 2.3.1",
  "memory_addr 0.1.0",
  "x86_64",
 ]
@@ -1154,9 +1154,9 @@ dependencies = [
 [[package]]
 name = "page_table_entry"
 version = "0.1.0"
-source = "git+https://github.com/rcore-os/arceos.git#crates/page_table#2935f05a327d46628273ab7c267e22bf00779862"
+source = "git+https://github.com/rcore-os/arceos.git#crates/page_table#5ed6cde07925fa284fb315f01cc5f20e74af31bc"
 dependencies = [
- "bitflags 2.2.1",
+ "bitflags 2.3.1",
  "memory_addr 0.1.0 (git+https://github.com/rcore-os/arceos.git#crates/page_table)",
  "x86_64",
 ]
@@ -1164,9 +1164,9 @@ dependencies = [
 [[package]]
 name = "page_table_entry"
 version = "0.1.0"
-source = "git+https://github.com/rcore-os/arceos.git#crates/page_table_entry#2935f05a327d46628273ab7c267e22bf00779862"
+source = "git+https://github.com/rcore-os/arceos.git#crates/page_table_entry#5ed6cde07925fa284fb315f01cc5f20e74af31bc"
 dependencies = [
- "bitflags 2.2.1",
+ "bitflags 2.3.1",
  "memory_addr 0.1.0 (git+https://github.com/rcore-os/arceos.git#crates/page_table_entry)",
  "x86_64",
 ]
@@ -1245,9 +1245,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.57"
+version = "1.0.58"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4ec6d5fe0b140acb27c9a0444118cf55bfbb4e0b259739429abb4521dd67c16"
+checksum = "fa1fb82fc0c281dd9671101b66b771ebbe1eaf967b96ac8740dcba4b70005ca8"
 dependencies = [
  "unicode-ident",
 ]
@@ -1310,7 +1310,7 @@ version = "11.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d86a7c4638d42c44551f4791a20e687dbb4c3de1f33c43dd71e355cd429def1"
 dependencies = [
- "bitflags 2.2.1",
+ "bitflags 2.3.1",
 ]
 
 [[package]]
@@ -1324,9 +1324,9 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.8.1"
+version = "1.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af83e617f331cc6ae2da5443c602dfa5af81e517212d9d611a5b3ba1777b5370"
+checksum = "d1a59b5d8e97dee33696bf13c5ba8ab85341c002922fba050069326b9c498974"
 dependencies = [
  "aho-corasick",
  "memchr",
@@ -1335,9 +1335,9 @@ dependencies = [
 
 [[package]]
 name = "regex-syntax"
-version = "0.7.1"
+version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a5996294f19bd3aae0453a862ad728f60e6600695733dd5df01da90c54363a3c"
+checksum = "436b050e76ed2903236f032a59761c1eb99e1b0aead2c257922771dab1fc8c78"
 
 [[package]]
 name = "riscv"
@@ -1684,15 +1684,15 @@ dependencies = [
 
 [[package]]
 name = "toml_datetime"
-version = "0.6.1"
+version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ab8ed2edee10b50132aed5f331333428b011c99402b5a534154ed15746f9622"
+checksum = "5a76a9312f5ba4c2dec6b9161fdf25d87ad8a09256ccea5a556fef03c706a10f"
 
 [[package]]
 name = "toml_edit"
-version = "0.19.8"
+version = "0.19.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "239410c8609e8125456927e6707163a3b1fdb40561e4b803bc041f466ccfdc13"
+checksum = "92d964908cec0d030b812013af25a0e57fddfadb1e066ecc6681d86253129d4f"
 dependencies = [
  "indexmap",
  "toml_datetime",
@@ -1756,9 +1756,9 @@ checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
 
 [[package]]
 name = "wasm-bindgen"
-version = "0.2.85"
+version = "0.2.86"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b6cb788c4e39112fbe1822277ef6fb3c55cd86b95cb3d3c4c1c9597e4ac74b4"
+checksum = "5bba0e8cb82ba49ff4e229459ff22a191bbe9a1cb3a341610c9c33efc27ddf73"
 dependencies = [
  "cfg-if",
  "wasm-bindgen-macro",
@@ -1766,9 +1766,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-backend"
-version = "0.2.85"
+version = "0.2.86"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "35e522ed4105a9d626d885b35d62501b30d9666283a5c8be12c14a8bdafe7822"
+checksum = "19b04bc93f9d6bdee709f6bd2118f57dd6679cf1176a1af464fca3ab0d66d8fb"
 dependencies = [
  "bumpalo",
  "log",
@@ -1781,9 +1781,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-macro"
-version = "0.2.85"
+version = "0.2.86"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "358a79a0cb89d21db8120cbfb91392335913e4890665b1a7981d9e956903b434"
+checksum = "14d6b024f1a526bb0234f52840389927257beb670610081360e5a03c5df9c258"
 dependencies = [
  "quote",
  "wasm-bindgen-macro-support",
@@ -1791,9 +1791,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-macro-support"
-version = "0.2.85"
+version = "0.2.86"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4783ce29f09b9d93134d41297aded3a712b7b979e9c6f28c32cb88c973a94869"
+checksum = "e128beba882dd1eb6200e1dc92ae6c5dbaa4311aa7bb211ca035779e5efc39f8"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1804,9 +1804,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-shared"
-version = "0.2.85"
+version = "0.2.86"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a901d592cafaa4d711bc324edfaff879ac700b19c3dfd60058d2b445be2691eb"
+checksum = "ed9d5b4305409d1fc9482fee2d7f9bcbf24b3972bf59817ef757e23982242a93"
 
 [[package]]
 name = "which"
