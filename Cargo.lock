@@ -180,7 +180,7 @@ dependencies = [
  "allocator",
  "axerrno",
  "log",
- "memory_addr 0.1.0",
+ "memory_addr",
  "spinlock",
 ]
 
@@ -292,9 +292,9 @@ dependencies = [
  "kernel_guard",
  "lazy_init",
  "log",
- "memory_addr 0.1.0",
- "page_table 0.1.0",
- "page_table_entry 0.1.0",
+ "memory_addr",
+ "page_table",
+ "page_table_entry",
  "percpu",
  "ratio",
  "raw-cpuid 11.0.1",
@@ -384,7 +384,7 @@ dependencies = [
  "kernel_guard",
  "lazy_init",
  "log",
- "memory_addr 0.1.0",
+ "memory_addr",
  "percpu",
  "rand",
  "scheduler",
@@ -846,13 +846,12 @@ checksum = "fed44880c466736ef9a5c5b5facefb5ed0785676d0c02d612db14e54f0d84286"
 [[package]]
 name = "hypercraft"
 version = "0.1.0"
-source = "git+https://github.com/KuangjuX/hypercraft.git?branch=dev#df33f2f155138e54d567011521bf1a897bde1025"
 dependencies = [
  "arrayvec",
  "log",
  "memoffset",
- "page_table 0.1.0 (git+https://github.com/rcore-os/arceos.git#crates/page_table)",
- "page_table_entry 0.1.0 (git+https://github.com/rcore-os/arceos.git#crates/page_table_entry)",
+ "page_table",
+ "page_table_entry",
  "riscv 0.6.0",
  "riscv-decode",
  "sbi-rt",
@@ -1046,16 +1045,6 @@ name = "memory_addr"
 version = "0.1.0"
 
 [[package]]
-name = "memory_addr"
-version = "0.1.0"
-source = "git+https://github.com/rcore-os/arceos.git#crates/page_table#5ed6cde07925fa284fb315f01cc5f20e74af31bc"
-
-[[package]]
-name = "memory_addr"
-version = "0.1.0"
-source = "git+https://github.com/rcore-os/arceos.git#crates/page_table_entry#5ed6cde07925fa284fb315f01cc5f20e74af31bc"
-
-[[package]]
 name = "micromath"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1128,18 +1117,8 @@ name = "page_table"
 version = "0.1.0"
 dependencies = [
  "log",
- "memory_addr 0.1.0",
- "page_table_entry 0.1.0",
-]
-
-[[package]]
-name = "page_table"
-version = "0.1.0"
-source = "git+https://github.com/rcore-os/arceos.git#crates/page_table#5ed6cde07925fa284fb315f01cc5f20e74af31bc"
-dependencies = [
- "log",
- "memory_addr 0.1.0 (git+https://github.com/rcore-os/arceos.git#crates/page_table)",
- "page_table_entry 0.1.0 (git+https://github.com/rcore-os/arceos.git#crates/page_table)",
+ "memory_addr",
+ "page_table_entry",
 ]
 
 [[package]]
@@ -1147,27 +1126,7 @@ name = "page_table_entry"
 version = "0.1.0"
 dependencies = [
  "bitflags 2.3.1",
- "memory_addr 0.1.0",
- "x86_64",
-]
-
-[[package]]
-name = "page_table_entry"
-version = "0.1.0"
-source = "git+https://github.com/rcore-os/arceos.git#crates/page_table#5ed6cde07925fa284fb315f01cc5f20e74af31bc"
-dependencies = [
- "bitflags 2.3.1",
- "memory_addr 0.1.0 (git+https://github.com/rcore-os/arceos.git#crates/page_table)",
- "x86_64",
-]
-
-[[package]]
-name = "page_table_entry"
-version = "0.1.0"
-source = "git+https://github.com/rcore-os/arceos.git#crates/page_table_entry#5ed6cde07925fa284fb315f01cc5f20e74af31bc"
-dependencies = [
- "bitflags 2.3.1",
- "memory_addr 0.1.0 (git+https://github.com/rcore-os/arceos.git#crates/page_table_entry)",
+ "memory_addr",
  "x86_64",
 ]
 
