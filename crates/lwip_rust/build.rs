@@ -8,8 +8,8 @@ fn main() {
     // Not build with clippy or doc
     if target_os == "none" && clippy_args.is_err() {
         compile_lwip(&arch);
-        generate_lwip_bindings();
     }
+    generate_lwip_bindings();
 }
 
 fn generate_lwip_bindings() {
