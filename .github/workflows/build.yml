@@ -12,7 +12,7 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: 
+        toolchain: nightly-2023-02-01
         components: rust-src, clippy, rustfmt
     - name: Clone github submodule
       run: git submodule update --init --recursive
