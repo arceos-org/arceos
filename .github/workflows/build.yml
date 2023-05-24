@@ -16,14 +16,14 @@ jobs:
         components: rust-src, clippy, rustfmt
     - name: Clone github submodule
       run: git submodule update --init --recursive
-    # - name: Clippy for the default target
-    #   run: cargo clippy --all-features
-    # - name: Clippy for x86_64
-    #   run: make clippy ARCH=x86_64
+    - name: Clippy for the default target
+      run: cargo clippy --all-features
+    - name: Clippy for x86_64
+      run: make clippy ARCH=x86_64
     - name: Clippy for riscv64
       run: make clippy ARCH=riscv64
-    # - name: Clippy for aarch64
-    #   run: make clippy ARCH=aarch64
+    - name: Clippy for aarch64
+      run: make clippy ARCH=aarch64
     - name: Check code format
       run: cargo fmt --all -- --check
 
@@ -33,8 +33,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        # arch: [x86_64, riscv64, aarch64]
-        arch: [riscv64]
+        arch: [x86_64, riscv64, aarch64]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1

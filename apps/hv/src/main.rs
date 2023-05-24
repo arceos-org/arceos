@@ -19,27 +19,35 @@ mod dtb;
 fn main(hart_id: usize) {
     libax::println!("Hello, hv!");
 
-    // boot cpu
-    PerCpu::<HyperCraftHalImpl>::init(0, 0x4000);
+    #[cfg(target_arch = "riscv64")]
+    {
+        // boot cpu
+        PerCpu::<HyperCraftHalImpl>::init(0, 0x4000);
 
-    // get current percpu
-    let pcpu = PerCpu::<HyperCraftHalImpl>::this_cpu();
+        // get current percpu
+        let pcpu = PerCpu::<HyperCraftHalImpl>::this_cpu();
 
-    // create vcpu
-    let gpt = setup_gpm(0x9000_0000).unwrap();
-    let vcpu = pcpu.create_vcpu(0, 0x9020_0000).unwrap();
-    let mut vcpus = VmCpus::new();
+        // create vcpu
+        let gpt = setup_gpm(0x9000_0000).unwrap();
+        let vcpu = pcpu.create_vcpu(0, 0x9020_0000).unwrap();
+        let mut vcpus = VmCpus::new();
 
-    // add vcpu into vm
-    vcpus.add_vcpu(vcpu).unwrap();
-    let mut vm: VM<HyperCraftHalImpl, GuestPageTable> = VM::new(vcpus, gpt).unwrap();
-    vm.init_vcpu(0);
+        // add vcpu into vm
+        vcpus.add_vcpu(vcpu).unwrap();
+        let mut vm: VM<HyperCraftHalImpl, GuestPageTable> = VM::new(vcpus, gpt).unwrap();
+        vm.init_vcpu(0);
 
-    // vm run
-    libax::info!("vm run cpu{}", hart_id);
-    vm.run(0);
+        // vm run
+        libax::info!("vm run cpu{}", hart_id);
+        vm.run(0);
+    }
+    #[cfg(not(target_arch = "riscv64"))]
+    {
+        panic!("Other arch is not supported yet!")
+    }
 }
 
+#[cfg(target_arch = "riscv64")]
 pub fn setup_gpm(dtb: usize) -> Result<GuestPageTable> {
     let mut gpt = GuestPageTable::new()?;
     let meta = MachineMeta::parse(dtb);

@@ -13,7 +13,7 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: nightly
+        toolchain: nightly-2023-02-01
         components: rust-src, llvm-tools-preview
     - name: Clone github submodule
       run: git submodule update --init --recursive
@@ -26,8 +26,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        # arch: [x86_64, riscv64, aarch64]
-        arch: [riscv64]
+        arch: [x86_64, riscv64, aarch64]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
