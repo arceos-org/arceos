@@ -2,6 +2,7 @@ use axalloc::global_allocator;
 use axhal::mem::PAGE_SIZE_4K;
 use hypercraft::{HostPhysAddr, HyperCraftHal};
 
+/// An empty struct to implementate of `HyperCraftHal`
 pub struct HyperCraftHalImpl;
 
 impl HyperCraftHal for HyperCraftHalImpl {

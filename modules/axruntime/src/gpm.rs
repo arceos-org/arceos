@@ -4,6 +4,8 @@ use hypercraft::{GuestPageTableTrait, GuestPhysAddr, HyperError, HyperResult, Ne
 use page_table_entry::MappingFlags;
 
 pub type GuestPagingIfImpl = axhal::paging::PagingIfImpl;
+
+/// Guest Page Table struct
 pub struct GuestPageTable(NestedPageTable<GuestPagingIfImpl>);
 
 impl GuestPageTableTrait for GuestPageTable {
