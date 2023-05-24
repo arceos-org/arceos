@@ -1,11 +1,65 @@
-use super::fd_table::Filelike;
-use super::{ctypes, utils::char_ptr_to_str};
-use crate::debug;
-use crate::fs::{File, OpenOptions};
-use crate::io::{self, prelude::*, SeekFrom};
-
+use alloc::sync::Arc;
 use axerrno::{LinuxError, LinuxResult};
 use core::ffi::{c_char, c_int};
+
+use super::{ctypes, fd_ops::FileLike, utils::char_ptr_to_str};
+use crate::fs::OpenOptions;
+use crate::io::{prelude::*, SeekFrom};
+use crate::sync::Mutex;
+
+pub struct File(Mutex<crate::fs::File>);
+
+impl File {
+    fn new(inner: crate::fs::File) -> Self {
+        Self(Mutex::new(inner))
+    }
+
+    fn add_to_fd_table(self) -> LinuxResult<c_int> {
+        super::fd_ops::add_file_like(Arc::new(self))
+    }
+
+    fn from_fd(fd: c_int) -> LinuxResult<Arc<Self>> {
+        let f = super::fd_ops::get_file_like(fd)?;
+        f.into_any()
+            .downcast::<Self>()
+            .map_err(|_| LinuxError::EINVAL)
+    }
+}
+
+impl FileLike for File {
+    fn read(&self, buf: &mut [u8]) -> LinuxResult<usize> {
+        let len = self.0.lock().read(buf)?;
+        Ok(len)
+    }
+
+    fn write(&self, buf: &[u8]) -> LinuxResult<usize> {
+        let len = self.0.lock().write(buf)?;
+        Ok(len)
+    }
+
+    fn stat(&self) -> LinuxResult<ctypes::stat> {
+        let metadata = self.0.lock().metadata()?;
+        let metadata = metadata.raw_metadata();
+        let ty = metadata.file_type() as u8;
+        let perm = metadata.perm().bits() as u32;
+        let st_mode = ((ty as u32) << 12) | perm;
+        Ok(ctypes::stat {
+            st_ino: 1,
+            st_nlink: 1,
+            st_mode,
+            st_uid: 1000,
+            st_gid: 1000,
+            st_size: metadata.size() as _,
+            st_blocks: metadata.blocks() as _,
+            st_blksize: 512,
+            ..Default::default()
+        })
+    }
+
+    fn into_any(self: Arc<Self>) -> Arc<dyn core::any::Any + Send + Sync> {
+        self
+    }
+}
 
 /// Convert open flags to [`OpenOptions`].
 fn flags_to_options(flags: c_int, _mode: ctypes::mode_t) -> OpenOptions {
@@ -33,8 +87,8 @@ fn flags_to_options(flags: c_int, _mode: ctypes::mode_t) -> OpenOptions {
 
 /// Open a file by `filename` and insert it into the file descriptor table.
 ///
-/// Return its index in the file table (`fd`). Return `ENFILE` if the file
-/// table overflows.
+/// Return its index in the file table (`fd`). Return `EMFILE` if it already
+/// has the maximum number of files open.
 #[no_mangle]
 pub unsafe extern "C" fn ax_open(
     filename: *const c_char,
@@ -46,9 +100,7 @@ pub unsafe extern "C" fn ax_open(
     ax_call_body!(ax_open, {
         let options = flags_to_options(flags, mode);
         let file = options.open(filename?)?;
-        Filelike::from_file(file)
-            .add_to_fd_table()
-            .ok_or(LinuxError::ENFILE)
+        File::new(file).add_to_fd_table()
     })
 }
 
@@ -69,27 +121,8 @@ pub unsafe extern "C" fn ax_lseek(
             2 => SeekFrom::End(offset as _),
             _ => return Err(LinuxError::EINVAL),
         };
-        let off = Filelike::from_fd(fd)?.into_file()?.lock().seek(pos)?;
+        let off = File::from_fd(fd)?.0.lock().seek(pos)?;
         Ok(off)
-    })
-}
-
-pub(super) fn stat_file(file: &File) -> io::Result<ctypes::stat> {
-    let metadata = file.metadata()?;
-    let metadata = metadata.raw_metadata();
-    let ty = metadata.file_type() as u8;
-    let perm = metadata.perm().bits() as u32;
-    let st_mode = ((ty as u32) << 12) | perm;
-    Ok(ctypes::stat {
-        st_ino: 1,
-        st_nlink: 1,
-        st_mode,
-        st_uid: 1000,
-        st_gid: 1000,
-        st_size: metadata.size() as _,
-        st_blocks: metadata.blocks() as _,
-        st_blksize: 512,
-        ..Default::default()
     })
 }
 
@@ -104,9 +137,8 @@ pub unsafe extern "C" fn ax_stat(path: *const c_char, buf: *mut ctypes::stat) ->
         if buf.is_null() {
             return Err(LinuxError::EFAULT);
         }
-        let file = File::open(path?)?;
-        let st = stat_file(&file)?;
-        drop(file);
+        let file = crate::fs::File::open(path?)?;
+        let st = File::new(file).stat()?;
         unsafe { *buf = st };
         Ok(0)
     })

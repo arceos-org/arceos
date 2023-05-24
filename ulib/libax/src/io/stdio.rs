@@ -55,6 +55,11 @@ impl Stdin {
     pub fn read_line(&self, buf: &mut String) -> Result<usize> {
         self.inner.lock().read_line(buf)
     }
+
+    #[allow(dead_code)]
+    pub(crate) fn read_locked(&self, buf: &mut [u8]) -> Result<usize> {
+        self.inner.lock().read(buf)
+    }
 }
 
 impl Read for Stdin {
@@ -72,6 +77,13 @@ impl Read for Stdin {
             }
             crate::thread::yield_now();
         }
+    }
+}
+
+impl Stdout {
+    #[allow(dead_code)]
+    pub(crate) fn write_locked(&self, buf: &[u8]) -> Result<usize> {
+        self.inner.lock().write(buf)
     }
 }
 

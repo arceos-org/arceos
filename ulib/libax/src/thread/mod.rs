@@ -6,7 +6,7 @@ use axerrno::ax_err_type;
 use axtask::AxTaskRef;
 use core::cell::UnsafeCell;
 
-#[cfg(feature = "multitask")]
+#[doc(cfg(feature = "multitask"))]
 pub use axtask::{current, set_priority, TaskId};
 
 /// Thread factory, which can be used in order to configure the properties of
@@ -14,6 +14,7 @@ pub use axtask::{current, set_priority, TaskId};
 ///
 /// Methods can be chained on it in order to configure it.
 #[derive(Debug)]
+#[doc(cfg(feature = "multitask"))]
 pub struct Builder {
     // A name for the thread-to-be, for identification in panic messages
     name: Option<String>,
@@ -133,6 +134,7 @@ pub fn sleep_until(deadline: axhal::time::TimeValue) {
 /// [`axconfig::TASK_STACK_SIZE`].
 ///
 /// [`join`]: JoinHandle::join
+#[doc(cfg(feature = "multitask"))]
 pub fn spawn<T, F>(f: F) -> JoinHandle<T>
 where
     F: FnOnce() -> T + Send + 'static,
@@ -152,6 +154,7 @@ unsafe impl<T> Sync for Packet<T> {}
 /// A `JoinHandle` *detaches* the associated thread when it is dropped, which
 /// means that there is no longer any handle to the thread and no way to `join`
 /// on it.
+#[doc(cfg(feature = "multitask"))]
 pub struct JoinHandle<T> {
     task: AxTaskRef,
     packet: Arc<Packet<T>>,

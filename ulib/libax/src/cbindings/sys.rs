@@ -1,6 +1,4 @@
 use super::ctypes;
-use crate::debug;
-use axconfig::PHYS_MEMORY_SIZE;
 use axerrno::LinuxResult;
 use axhal::mem::PAGE_SIZE_4K;
 use core::ffi::{c_int, c_long};
@@ -16,7 +14,7 @@ pub unsafe extern "C" fn ax_sysconf(name: c_int) -> c_long {
             // Page size
             ctypes::_SC_PAGE_SIZE => Ok(PAGE_SIZE_4K as c_long),
             // Total physical pages
-            ctypes::_SC_PHYS_PAGES => Ok((PHYS_MEMORY_SIZE / PAGE_SIZE_4K) as c_long),
+            ctypes::_SC_PHYS_PAGES => Ok((axconfig::PHYS_MEMORY_SIZE / PAGE_SIZE_4K) as c_long),
             // Number of processors in use
             ctypes::_SC_NPROCESSORS_ONLN => Ok(axconfig::SMP as c_long),
             // Avaliable physical pages
@@ -24,7 +22,7 @@ pub unsafe extern "C" fn ax_sysconf(name: c_int) -> c_long {
             ctypes::_SC_AVPHYS_PAGES => Ok(axalloc::global_allocator().available_pages() as c_long),
             // Maximum number of files per process
             #[cfg(feature = "alloc")]
-            ctypes::_SC_OPEN_MAX => Ok(super::fd_table::AX_FILE_LIMIT as c_long),
+            ctypes::_SC_OPEN_MAX => Ok(super::fd_ops::AX_FILE_LIMIT as c_long),
             _ => Ok(0),
         }
     })

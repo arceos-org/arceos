@@ -38,8 +38,14 @@
 //! [ArceOS]: https://github.com/rcore-os/arceos
 
 #![cfg_attr(all(not(test), not(doc)), no_std)]
+#![feature(doc_cfg)]
 #![feature(doc_auto_cfg)]
 #![feature(naked_functions)]
+#![feature(result_option_inspect)]
+
+#[allow(unused_imports)]
+#[macro_use]
+extern crate axlog;
 
 pub use axlog::{debug, error, info, trace, warn};
 

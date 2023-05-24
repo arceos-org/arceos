@@ -1,0 +1,13 @@
+[package]
+name = "flatten_objects"
+version = "0.1.0"
+edition = "2021"
+authors = ["Yuekai Jia <equation618@gmail.com>"]
+description = "A container that stores numbered objects. Each object can be assigned with a unique ID."
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+repository = "https://github.com/rcore-os/arceos/tree/main/crates/flatten_objects"
+documentation = "https://rcore-os.github.io/arceos/flatten_objects/index.html"
+
+[dependencies]
+bitmaps = { version = "3.2", default-features = false }
