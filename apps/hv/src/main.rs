@@ -2,6 +2,8 @@
 #![no_main]
 
 extern crate alloc;
+#[macro_use]
+extern crate libax;
 
 use dtb::MachineMeta;
 use libax::{
@@ -17,7 +19,7 @@ mod dtb;
 
 #[no_mangle]
 fn main(hart_id: usize) {
-    libax::println!("Hello, hv!");
+    println!("Hello, hv!");
 
     #[cfg(target_arch = "riscv64")]
     {
@@ -38,7 +40,7 @@ fn main(hart_id: usize) {
         vm.init_vcpu(0);
 
         // vm run
-        libax::info!("vm run cpu{}", hart_id);
+        info!("vm run cpu{}", hart_id);
         vm.run(0);
     }
     #[cfg(not(target_arch = "riscv64"))]
