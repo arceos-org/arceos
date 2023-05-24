@@ -34,6 +34,7 @@
 //!     - `platform-qemu-virt-aarch64`: Specify for use on the corresponding platform.
 //! - Other
 //!    - `cbindings`: Generate C bindings, to support C applications.
+//!    -  `hv`: Enable hypervisor support.
 //!
 //! [ArceOS]: https://github.com/rcore-os/arceos
 
