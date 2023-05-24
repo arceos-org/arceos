@@ -166,6 +166,12 @@ impl File {
         Self::_open_at(None, path, opts)
     }
 
+    /// Look up no follow
+    pub fn lookup(path: &str) -> AxResult<Self> {
+        let node = crate::root::lookup_symbolic(None, path, false)?;
+        Ok(Self { node: WithCap::new(node, Cap::empty()), is_append: false, offset: 0 })
+    }
+
     /// Truncates the file to the specified size.
     pub fn truncate(&self, size: u64) -> AxResult {
         self.node.access(Cap::WRITE)?.truncate(size)?;
