@@ -70,7 +70,7 @@ pub fn split_parent_name(path: &str) -> (Option<String>, String) {
     } else {
         let parent = names[0..names.len()-1].join("/");
         let name = names[names.len()-1].clone();
-        return (Some(parent), name);
+        return (if parent.is_empty() { None } else { Some(parent) }, name);
     }
 }
 

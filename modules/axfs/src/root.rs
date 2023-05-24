@@ -135,6 +135,26 @@ impl VfsNodeOps for RootDirectory {
             }
         })
     }
+
+    fn link(&self, name: &str, handle: &axfs_vfs::LinkHandle) -> VfsResult {
+        self.lookup_mounted_fs(name, |fs, rest_path| {
+            if rest_path.is_empty() {
+                ax_err!(PermissionDenied) // cannot remove mount points
+            } else {
+                fs.root_dir().link(rest_path, handle)
+            }
+        })
+    }
+
+    fn symlink(&self, name: &str, spath: &str) -> VfsResult {
+        self.lookup_mounted_fs(name, |fs, rest_path| {
+            if rest_path.is_empty() {
+                ax_err!(PermissionDenied) // cannot remove mount points
+            } else {
+                fs.root_dir().symlink(rest_path, spath)
+            }
+        })
+    }
 }
 
 pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
@@ -216,28 +236,37 @@ pub(crate) fn create_file(dir: Option<&VfsNodeRef>, path: &str) -> AxResult<VfsN
     } else if path.ends_with('/') {
         return ax_err!(NotADirectory);
     }
-    let parent = parent_node_of(dir, path);
-    parent.create(path, VfsNodeType::File)?;
-    parent.lookup(path)
+    // let parent = parent_node_of(dir, path);
+    // parent.create(path, VfsNodeType::File)?;
+    // parent.lookup(path)
+    let (parent, child_name) = lookup_parent(dir, path)?;
+    parent.create(&child_name, VfsNodeType::File)?;
+    parent.lookup(&child_name)
 }
 
 pub(crate) fn create_dir(dir: Option<&VfsNodeRef>, path: &str) -> AxResult {
     match lookup(dir, path) {
         Ok(_) => ax_err!(AlreadyExists),
-        Err(AxError::NotFound) => parent_node_of(dir, path).create(path, VfsNodeType::Dir),
+        Err(AxError::NotFound) => {
+            let (parent, child_name) = lookup_parent(dir, path)?;
+            parent.create(&child_name, VfsNodeType::Dir)?;
+            Ok(())
+        },
         Err(e) => Err(e),
     }
 }
 
 pub(crate) fn remove_file(dir: Option<&VfsNodeRef>, path: &str) -> AxResult {
-    let node = lookup(dir, path)?;
+    let node = lookup_symbolic(dir, path, false)?;
     let attr = node.get_attr()?;
     if attr.is_dir() {
         ax_err!(IsADirectory)
     } else if !attr.perm().owner_writable() {
         ax_err!(PermissionDenied)
     } else {
-        parent_node_of(dir, path).remove(path, false)
+        let (parent, child_name) = lookup_parent(dir, path)?;
+        parent.remove(&child_name, false)?;
+        Ok(())
     }
 }
 
@@ -259,14 +288,16 @@ pub(crate) fn remove_dir(dir: Option<&VfsNodeRef>, path: &str, recursive: bool) 
         return ax_err!(PermissionDenied);
     }
 
-    let node = lookup(dir, path)?;
+    let node = lookup_symbolic(dir, path, false)?;
     let attr = node.get_attr()?;
     if !attr.is_dir() {
         ax_err!(NotADirectory)
     } else if !attr.perm().owner_writable() {
         ax_err!(PermissionDenied)
     } else {
-        parent_node_of(dir, path).remove(path, recursive)
+        let (parent, child_name) = lookup_parent(dir, path)?;
+        parent.remove(&child_name, recursive)?;
+        Ok(())
     }
 }
 
@@ -308,9 +339,11 @@ pub(crate) fn link(dir: Option<&VfsNodeRef>, path: &str, target_path: &str) -> A
 
     let target = lookup_symbolic(dir, target_path, false)?;
     let handle = target.get_link_handle()?;
+    debug!("after get target");
 
     let parent = parent_node_of(dir, path);
     let (ppath, name) = axfs_vfs::path::split_parent_name(path);
+    debug!("ppath = {:?}, name = {}", &ppath, &name);
 
     let dp = if let Some(p) = ppath {
         lookup_symbolic(Some(&parent), p.as_str(), true)?
@@ -327,8 +360,9 @@ pub(crate) fn symblink(dir: Option<&VfsNodeRef>, path: &str, target_path: &str) 
         return ax_err!(NotFound);
     } else if path.ends_with('/') {
         return ax_err!(NotADirectory);
-
     }
+
+    lookup_symbolic(dir, target_path, false)?;
 
     let parent = parent_node_of(dir, path);
     let (ppath, name) = axfs_vfs::path::split_parent_name(path);
@@ -344,10 +378,16 @@ pub(crate) fn symblink(dir: Option<&VfsNodeRef>, path: &str, target_path: &str) 
 
 pub(crate) fn lookup_symbolic(dir: Option<&VfsNodeRef>, path: &str, final_jump: bool) -> AxResult<VfsNodeRef> {
     let mut count: usize = 0;
-    _lookup_symbolic(dir, path, &mut count, 20, final_jump)
+    _lookup_symbolic(dir, path, &mut count, 20, final_jump, false)
 }
 
-fn _lookup_symbolic(dir: Option<&VfsNodeRef>, path: &str, count: &mut usize, max_count: usize, final_jump: bool) -> AxResult<VfsNodeRef> {
+pub(crate) fn lookup_parent(dir: Option<&VfsNodeRef>, path: &str) -> AxResult<(VfsNodeRef, String)> {
+    let mut count: usize = 0;
+    let names = axfs_vfs::path::split_path(path);
+    Ok((_lookup_symbolic(dir, path, &mut count, 20, false, true)?, names[names.len()-1].clone()))
+}
+
+fn _lookup_symbolic(dir: Option<&VfsNodeRef>, path: &str, count: &mut usize, max_count: usize, final_jump: bool, return_parent: bool) -> AxResult<VfsNodeRef> {
     debug!("_lookup_symbolic({}, {})", path, count);
     if path.is_empty() {
         return ax_err!(NotFound);
@@ -359,7 +399,14 @@ fn _lookup_symbolic(dir: Option<&VfsNodeRef>, path: &str, count: &mut usize, max
 
     let mut cur = parent.clone();
 
+    if names.len() <= 1 && return_parent {
+        return Ok(cur)
+    }
+
     for (idx, name) in names.iter().enumerate() {
+        if idx == names.len() - 1 && return_parent {
+            return Ok(cur);
+        }
         let vnode = cur.clone().lookup(name.as_str())?;
         let ty = vnode.get_attr()?.file_type();
         if ty == VfsNodeType::SymLink {
@@ -379,7 +426,8 @@ fn _lookup_symbolic(dir: Option<&VfsNodeRef>, path: &str, count: &mut usize, max
             if is_dir {
                 new_path += "/";
             }
-            return _lookup_symbolic(None, &new_path, count, max_count, final_jump);
+            debug!("follow {}", path);
+            return _lookup_symbolic(None, &new_path, count, max_count, final_jump, return_parent);
         } else {
             if idx == names.len() - 1 {
                 if is_dir && !ty.is_dir() {
