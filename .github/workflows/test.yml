@@ -13,8 +13,10 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: nightly
+        toolchain: nightly-2023-02-01
         components: rust-src, llvm-tools-preview
+    - name: Clone github submodule
+      run: git submodule update --init --recursive
     - name: Run unit tests
       run: make unittest_no_fail_fast
 
@@ -71,7 +73,8 @@ jobs:
       run: |
         cd qemu-${{ env.qemu_version }} && sudo make install
         qemu-system-x86_64 --version
-
+    - name: Clone github submodule
+      run: git submodule update --init --recursive
     - name: Run app tests
       run: |
         export PATH=$PATH:$PWD/musl/bin

@@ -34,6 +34,7 @@
 //!     - `platform-qemu-virt-aarch64`: Specify for use on the corresponding platform.
 //! - Other
 //!    - `cbindings`: Generate C bindings, to support C applications.
+//!    -  `hv`: Enable hypervisor support.
 //!
 //! [ArceOS]: https://github.com/rcore-os/arceos
 
@@ -58,6 +59,9 @@ extern crate alloc;
 #[cfg(feature = "alloc")]
 #[doc(no_inline)]
 pub use alloc::{boxed, format, string, vec};
+
+#[cfg(feature = "hv")]
+pub mod hv;
 
 pub mod env;
 pub mod io;

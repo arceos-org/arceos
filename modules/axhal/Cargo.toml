@@ -21,6 +21,7 @@ platform-qemu-virt-aarch64 = [
     "dep:page_table_entry", "dep:ratio",
 ]
 default = []
+hv = ["paging", "platform-qemu-virt-riscv"]
 
 [dependencies]
 log = "0.4"

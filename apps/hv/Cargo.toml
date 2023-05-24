@@ -1,0 +1,12 @@
+[package]
+name = "arceos-hv"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+libax = { path = "../../ulib/libax", features = ["alloc", "hv"] }
+page_table_entry = { path = "../../crates/page_table_entry" }
+fdt = {version = "0.1.5"}
+arrayvec = { version = "0.7.2", default-features = false }

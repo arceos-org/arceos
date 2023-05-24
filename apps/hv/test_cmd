@@ -1,0 +1,1 @@
+test_one "LOG=info ARCH=riscv64 HV=1" "expect_info.out"

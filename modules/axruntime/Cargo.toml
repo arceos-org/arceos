@@ -22,6 +22,8 @@ display = ["alloc", "paging", "axdriver/virtio-gpu", "dep:axdisplay"]
 
 default = ["axtask?/default"]
 
+hv = ["alloc", "dep:hypercraft", "axhal/hv", "dep:page_table", "dep:page_table_entry"]
+
 [dependencies]
 percpu = { path = "../../crates/percpu" }
 kernel_guard = { path = "../../crates/kernel_guard" }
@@ -37,3 +39,6 @@ axfs = { path = "../axfs", optional = true }
 axnet = { path = "../axnet", optional = true }
 axdisplay = { path = "../axdisplay", optional = true }
 axtask = { path = "../axtask", default-features = false, optional = true }
+hypercraft = { path = "../../crates/hypercraft", optional = true }
+page_table = { path = "../../crates/page_table", optional = true }
+page_table_entry = { path = "../../crates/page_table_entry", optional = true }

@@ -12,8 +12,10 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: nightly
+        toolchain: nightly-2023-02-01
         components: rust-src, clippy, rustfmt
+    - name: Clone github submodule
+      run: git submodule update --init --recursive
     - name: Clippy for the default target
       run: cargo clippy --all-features
     - name: Clippy for x86_64
@@ -37,13 +39,15 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: nightly
+        toolchain: nightly-2023-02-01
         components: rust-src, llvm-tools-preview
     - uses: actions-rs/install@v0.1
       with:
         crate: cargo-binutils
         version: latest
         use-tool-cache: true
+    - name: Clone github submodule
+      run: git submodule update --init --recursive
     - name: Build helloworld
       run: make ARCH=${{ matrix.arch }} A=apps/helloworld
     - name: Build memtest

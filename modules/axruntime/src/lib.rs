@@ -32,6 +32,16 @@ mod mp;
 #[cfg(feature = "smp")]
 pub use self::mp::rust_main_secondary;
 
+#[cfg(feature = "hv")]
+mod gpm;
+#[cfg(feature = "hv")]
+mod hv;
+
+#[cfg(feature = "hv")]
+pub use gpm::GuestPageTable;
+#[cfg(feature = "hv")]
+pub use hv::HyperCraftHalImpl;
+
 const LOGO: &str = r#"
        d8888                            .d88888b.   .d8888b.
       d88888                           d88P" "Y88b d88P  Y88b
@@ -44,6 +54,9 @@ d88P     888 888      "Y8888P  "Y8888   "Y88888P"   "Y8888P"
 "#;
 
 extern "C" {
+    #[cfg(feature = "hv")]
+    fn main(cpu_id: usize);
+    #[cfg(not(feature = "hv"))]
     fn main();
 }
 
@@ -124,6 +137,9 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     info!("Logging is enabled.");
     info!("Primary CPU {} started, dtb = {:#x}.", cpu_id, dtb);
 
+    #[cfg(feature = "hv")]
+    hypercraft::init_hv_runtime();
+
     info!("Found physcial memory regions:");
     for r in axhal::mem::memory_regions() {
         info!(
@@ -141,10 +157,13 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         init_allocator();
     }
 
-    #[cfg(feature = "paging")]
+    #[cfg(not(feature = "hv"))]
     {
-        info!("Initialize kernel page table...");
-        remap_kernel_memory().expect("remap kernel memoy failed");
+        #[cfg(feature = "paging")]
+        {
+            info!("Initialize kernel page table...");
+            remap_kernel_memory().expect("remap kernel memoy failed");
+        }
     }
 
     info!("Initialize platform devices...");
@@ -184,7 +203,15 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         core::hint::spin_loop();
     }
 
-    unsafe { main() };
+    #[cfg(feature = "hv")]
+    unsafe {
+        main(cpu_id)
+    };
+
+    #[cfg(not(feature = "hv"))]
+    unsafe {
+        main()
+    };
 
     #[cfg(feature = "multitask")]
     axtask::exit(0);

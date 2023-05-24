@@ -28,6 +28,7 @@
 //! ```
 
 #![cfg_attr(not(test), no_std)]
+#![feature(binary_heap_retain)]
 
 extern crate alloc;
 

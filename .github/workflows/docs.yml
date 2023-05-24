@@ -14,7 +14,9 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: nightly
+        toolchain: nightly-2023-02-01
+    - name: Clone github submodule
+      run: git submodule update --init --recursive
     - name: Build docs
       continue-on-error: ${{ github.ref != 'refs/heads/main' && github.event_name != 'pull_request' }}
       run: make doc_check_missing
