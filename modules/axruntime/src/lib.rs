@@ -152,6 +152,8 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     info!("Initialize platform devices...");
     axhal::platform_init();
 
+    info!("tmptmp");
+    
     #[cfg(feature = "multitask")]
     axtask::init_scheduler();
 

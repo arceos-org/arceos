@@ -69,12 +69,12 @@ impl WaitQueue {
     /// Blocks the current task and put it into the wait queue, until other task
     /// notifies it.
     pub fn wait(&self) {
-        debug!("lock begin 7");
+        info!("lock begin 7");
         RUN_QUEUE[get_current_cpu_id()].block_current(|task| {
             task.set_in_wait_queue(true);
             self.queue.lock().push_back((task, get_current_cpu_id()))
         });
-        debug!("lock end 7");
+        info!("lock end 7");
         self.cancel_events(crate::current());
     }
 
@@ -112,12 +112,12 @@ impl WaitQueue {
         );
         crate::timers::set_alarm_wakeup(deadline, curr.clone());
 
-        debug!("lock begin 5");
+        info!("lock begin 5");
         RUN_QUEUE[get_current_cpu_id()].block_current(|task| {
             task.set_in_wait_queue(true);
             self.queue.lock().push_back((task, get_current_cpu_id()))
         });
-        debug!("lock end 5");
+        info!("lock end 5");
         let timeout = curr.in_wait_queue(); // still in the wait queue, must have timed out
         self.cancel_events(curr);
         timeout
@@ -207,7 +207,7 @@ impl WaitQueue {
             task.set_in_wait_queue(false);
             let target_cpu = LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu();
             let task = wq.remove(index).unwrap().0;
-            task.set_queue_id(target_cpu);
+            //task.set_queue_id(target_cpu);
             RUN_QUEUE[target_cpu].unblock_task(task, resched);
             //info!("exit 4");
             true
@@ -222,7 +222,7 @@ impl WaitQueue {
         //info!("111 {} {}", get_current_cpu_id(), tmp[0].1);
         for i in 0..tmp.len() {
             tmp[i].0.set_in_wait_queue(false);
-            tmp[i].0.set_queue_id(queueid);
+            //tmp[i].0.set_queue_id(queueid);
             rq.unblock_task(tmp[i].0.clone(), resched);
             drop(tmp);
             return true;

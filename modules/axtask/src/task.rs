@@ -96,7 +96,7 @@ impl TaskInner {
     }
 
     /// set queue id
-    pub fn set_queue_id(&self, id: usize) {
+    pub fn set_queue_id(&self, id: isize) {
         self.in_which_queue.store(id as isize, Ordering::Release);
     }
 }
@@ -230,24 +230,26 @@ impl TaskInner {
     pub(crate) fn enable_preempt(&self, resched: bool) {
         if self.preempt_disable_count.fetch_sub(1, Ordering::Relaxed) == 1 && resched {
             // If current task is pending to be preempted, do rescheduling.
-            self.current_check_preempt_pending();
+            Self::current_check_preempt_pending();
         }
     }
 
     #[cfg(feature = "preempt")]
-    fn current_check_preempt_pending(&self) {
+    fn current_check_preempt_pending() {
         let curr = crate::current();
         if curr.need_resched.load(Ordering::Acquire) && curr.can_preempt(0) {
             //let mut rq = crate::RUN_QUEUE.lock();
             if curr.need_resched.load(Ordering::Acquire) {
                 //assert!(self.in_which_queue.load(Ordering::Acquire) >= 0);
-                if self.in_which_queue.load(Ordering::Acquire) >= 0 {
-                    crate::RUN_QUEUE[self.in_which_queue.load(Ordering::Acquire) as usize].resched();
+                if curr.in_which_queue.load(Ordering::Acquire) >= 0 {
+                    info!("qwq1 {}", curr.in_which_queue.load(Ordering::Acquire));
+                    crate::RUN_QUEUE[curr.in_which_queue.load(Ordering::Acquire) as usize].resched();
                 } else {
                     // qwq???
-                    //for i in 0..axconfig.SMP {
-                    //    crate::RUN_QUEUE[i].resched();
-                    //}
+                    info!("qwq2");
+                    /*for i in 0..axconfig::SMP {
+                        crate::RUN_QUEUE[i].resched();
+                    }*/
                 }
             }
         }

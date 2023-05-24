@@ -38,14 +38,17 @@ impl AxRunQueue {
         let gc_task = TaskInner::new(gc_entry, "gc", axconfig::TASK_STACK_SIZE);
         let mut scheduler = SpinNoIrq::new(Scheduler::new());
 
+        gc_task.set_queue_id(id as isize);
         scheduler.lock().add_task(gc_task);
         Self { scheduler, id}
     }
 
     pub fn add_task(&self, task: AxTaskRef) {
+        task.set_queue_id(self.id as isize);
         debug!("task spawn: {}", task.id_name());
         assert!(task.is_ready());
         LOAD_BALANCE_ARR[self.id].add_weight(1);
+        trace!("load balance weight for id {}: {}", self.id, LOAD_BALANCE_ARR[self.id].get_weight());
         trace!("add task in queue {}, now the weight is {}", self.id, LOAD_BALANCE_ARR[self.id].get_weight());
         self.scheduler.lock().add_task(task);
     }
@@ -116,10 +119,10 @@ impl AxRunQueue {
     where
         F: FnOnce(AxTaskRef),
     {
-        debug!("block_current 1");
+        info!("block_current 1");
         let curr = crate::current();
-        debug!("task block: {}", curr.id_name());
-        debug!("block_current 2");
+        info!("task block: {}", curr.id_name());
+        info!("block_current 2");
         assert!(curr.is_running());
         assert!(!curr.is_idle());
 
@@ -128,11 +131,11 @@ impl AxRunQueue {
         assert!(curr.can_preempt(1));
 
         curr.set_state(TaskState::Blocked);
-        debug!("block_current 3");
+        info!("block_current 3");
         wait_queue_push(curr.clone());
-        debug!("block_current 4");
+        info!("block_current 4");
         self.resched_inner(false);
-        debug!("block_current 5");
+        info!("block_current 5");
     }
 
     pub fn unblock_task(&self, task: AxTaskRef, resched: bool) {
@@ -141,8 +144,10 @@ impl AxRunQueue {
             debug!("123");
             task.set_state(TaskState::Ready);
             debug!("234");
+            task.set_queue_id(self.id as isize);
             self.scheduler.lock().add_task(task); // TODO: priority
             LOAD_BALANCE_ARR[self.id].add_weight(1);
+            trace!("load balance weight for id {}: {}", self.id, LOAD_BALANCE_ARR[self.id].get_weight());
             debug!("345");
             if resched {
                 #[cfg(feature = "preempt")]
@@ -187,11 +192,14 @@ impl AxRunQueue {
                 debug!("steal 2");
                 // 这里可能有同步问题，简单起见，如果 task 是 None 那么就不窃取。
                 if let Some(tk) = task {
+                    tk.set_queue_id(self.id as isize);
                     queuelock.add_task(tk);
                     debug!("steal 3");
                     LOAD_BALANCE_ARR[next as usize].add_weight(-1);
+                    trace!("load balance weight for id {}: {}", next as usize, LOAD_BALANCE_ARR[next as usize].get_weight());
                     debug!("steal 4");
                     LOAD_BALANCE_ARR[id].add_weight(1);
+                    trace!("load balance weight for id {}: {}", id, LOAD_BALANCE_ARR[id].get_weight());
                     debug!("steal 5");
                 }
             }
@@ -207,18 +215,27 @@ impl AxRunQueue {
             debug!("resched inner 4");
             if !prev.is_idle() {
                 debug!("resched inner 5");
+                prev.set_queue_id(self.id as isize);
                 self.scheduler.lock().put_prev_task(prev.clone(), preempt);
-                LOAD_BALANCE_ARR[self.id].add_weight(-1); //?
+                LOAD_BALANCE_ARR[self.id].add_weight(1); //?
+                trace!("load balance weight for id {}: {}", self.id, LOAD_BALANCE_ARR[self.id].get_weight());
                 debug!("resched inner 6");
             }
         }
         debug!("resched inner 7");
+        let mut flag = false;
         let next = self.scheduler.lock().pick_next_task().unwrap_or_else(|| unsafe {
             // Safety: IRQs must be disabled at this time.
             LOAD_BALANCE_ARR[self.id].add_weight(1); // 后面需要减一，由于是 IDLE 所以不用减，先加一
+            trace!("load balance weight for id {}: {}", self.id, LOAD_BALANCE_ARR[self.id].get_weight());
+            flag = true;
             IDLE_TASK.current_ref_raw().get_unchecked().clone()
         });
+        if !flag {
+            next.set_queue_id(-1);
+        }
         LOAD_BALANCE_ARR[self.id].add_weight(-1); //?
+        trace!("load balance weight for id {}: {}", self.id, LOAD_BALANCE_ARR[self.id].get_weight());
         debug!("resched inner 8");
         // TODO: 注意需要对所有 pick_next_task 后面都要判断是否队列空，如果是则需要执行线程窃取
         self.if_empty_steal();

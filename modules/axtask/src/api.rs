@@ -143,7 +143,7 @@ where
     let task = TaskInner::new(f, "", axconfig::TASK_STACK_SIZE);
     let target_cpu = LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu();
     //info!("exit 233");
-    task.set_queue_id(target_cpu);
+    //task.set_queue_id(target_cpu);
     RUN_QUEUE[target_cpu].add_task(task);
     //info!("exit 234");
 }
