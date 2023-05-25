@@ -26,6 +26,8 @@ pub(crate) enum TaskState {
     Exited = 4,
 }
 
+use core::sync::atomic::AtomicU32;
+
 /// The inner task structure.
 pub struct TaskInner {
     id: TaskId,
@@ -46,7 +48,7 @@ pub struct TaskInner {
     preempt_disable_count: AtomicUsize,
 
     in_which_queue: AtomicIsize,
-
+    affinity: AtomicU32,
     kstack: Option<TaskStack>,
     ctx: UnsafeCell<TaskContext>,
 }
@@ -99,6 +101,14 @@ impl TaskInner {
     pub fn set_queue_id(&self, id: isize) {
         self.in_which_queue.store(id as isize, Ordering::Release);
     }
+    /// get queue id
+    pub fn get_queue_id(&self) -> isize{
+        self.in_which_queue.load(Ordering::Acquire)
+    }
+
+    pub fn set_affinity(&self, aff: u32) {
+        self.affinity.store(aff, Ordering::Release);
+    }
 }
 
 // private methods
@@ -121,6 +131,7 @@ impl TaskInner {
             kstack: None,
             ctx: UnsafeCell::new(TaskContext::new()),
             in_which_queue: AtomicIsize::new(-1),
+            affinity: AtomicU32::new(0),
         }
     }
 
@@ -242,14 +253,17 @@ impl TaskInner {
             if curr.need_resched.load(Ordering::Acquire) {
                 //assert!(self.in_which_queue.load(Ordering::Acquire) >= 0);
                 if curr.in_which_queue.load(Ordering::Acquire) >= 0 {
-                    info!("qwq1 {}", curr.in_which_queue.load(Ordering::Acquire));
+                    //info!("qwq1 {}", curr.in_which_queue.load(Ordering::Acquire));
                     crate::RUN_QUEUE[curr.in_which_queue.load(Ordering::Acquire) as usize].resched();
                 } else {
                     // qwq???
-                    info!("qwq2");
-                    /*for i in 0..axconfig::SMP {
-                        crate::RUN_QUEUE[i].resched();
+                    //info!("qwq2");
+                    /*loop {
+
                     }*/
+                    for i in 0..axconfig::SMP {
+                        crate::RUN_QUEUE[i].resched();
+                    }
                 }
             }
         }

@@ -192,7 +192,8 @@ impl AxRunQueue {
                 debug!("steal 2");
                 // 这里可能有同步问题，简单起见，如果 task 是 None 那么就不窃取。
                 if let Some(tk) = task {
-                    tk.set_queue_id(self.id as isize);
+                    assert!(tk.get_queue_id() == next);
+                    tk.set_queue_id(id as isize);
                     queuelock.add_task(tk);
                     debug!("steal 3");
                     LOAD_BALANCE_ARR[next as usize].add_weight(-1);
