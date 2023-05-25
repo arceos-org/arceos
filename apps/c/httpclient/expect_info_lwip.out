@@ -18,15 +18,15 @@ Initialize device drivers...
 registered a new Net device at .\+: "virtio-net"
 Initialize network subsystem...
   use NIC 0: "virtio-net"
-Using smoltcp
+Using lwip
 created net interface "eth0":
   ether:    52-54-00-12-34-56
   ip:       10.0.2.15/24
   gateway:  10.0.2.2
+  ip6:      fe80::5054:ff:fe12:3456
 Primary CPU 0 init OK.
-Hello, simple http client!
-dest IP: [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+
-
+Hello, ArceOS C HTTP client!
+IP: [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+
 HTTP/1.1 200 OK
 Server: nginx
 Date:

@@ -35,7 +35,7 @@ extern "C" fn dns_found_callback(
         (*res).ipaddr = if ipaddr.is_null() {
             None
         } else {
-            info!(
+            debug!(
                 "DNS found: name={} ipaddr={}",
                 CStr::from_ptr(name as *mut c_char).to_str().unwrap(),
                 IpAddr::from(*ipaddr)

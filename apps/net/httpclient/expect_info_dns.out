@@ -18,6 +18,7 @@ Initialize device drivers...
 registered a new Net device at .\+: "virtio-net"
 Initialize network subsystem...
   use NIC 0: "virtio-net"
+Using smoltcp
 created net interface "eth0":
   ether:    52-54-00-12-34-56
   ip:       10.0.2.15/24

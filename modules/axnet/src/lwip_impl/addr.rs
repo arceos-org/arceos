@@ -1,9 +1,15 @@
-use core::{fmt, str::FromStr};
+use core::{
+    fmt::{self, Error},
+    str::FromStr,
+};
 
 use lwip_rust::bindings::{
     ip4_addr_t, ip6_addr_t, ip_addr__bindgen_ty_1, ip_addr_t, lwip_ip_addr_type_IPADDR_TYPE_V4,
     lwip_ip_addr_type_IPADDR_TYPE_V6,
 };
+
+#[derive(Clone, Copy, Debug)]
+pub struct MacAddr(pub [u8; 6]);
 
 #[derive(Clone, Copy, Debug)]
 pub enum IpAddr {
@@ -24,6 +30,64 @@ pub struct Ipv6Addr {
 pub struct SocketAddr {
     pub addr: IpAddr,
     pub port: u16,
+}
+
+pub fn mask_to_prefix(mask: IpAddr) -> Result<u8, Error> {
+    match mask {
+        IpAddr::Ipv4(Ipv4Addr(mask)) => {
+            let mut mask = mask.swap_bytes();
+            let mut prefix = 0;
+            while mask & (1 << 31) != 0 {
+                prefix += 1;
+                mask <<= 1;
+            }
+            if mask != 0 {
+                Err(Error)
+            } else {
+                Ok(prefix)
+            }
+        }
+        IpAddr::Ipv6(Ipv6Addr { addr, .. }) => {
+            let mut prefix = 0;
+            let mut finish = false;
+            for mask in &addr {
+                let mut mask = mask.swap_bytes();
+                for _ in 0..32 {
+                    if finish {
+                        if mask != 0 {
+                            return Err(Error);
+                        } else {
+                            break;
+                        }
+                    } else if mask & (1 << 31) != 0 {
+                        prefix += 1;
+                    } else {
+                        finish = true;
+                    }
+                    mask <<= 1;
+                }
+            }
+            Ok(prefix)
+        }
+    }
+}
+
+impl MacAddr {
+    pub fn from_bytes(bytes: &[u8]) -> MacAddr {
+        let mut addr = [0u8; 6];
+        addr.copy_from_slice(bytes);
+        MacAddr(addr)
+    }
+}
+
+impl fmt::Display for MacAddr {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{:02x}-{:02x}-{:02x}-{:02x}-{:02x}-{:02x}",
+            self.0[0], self.0[1], self.0[2], self.0[3], self.0[4], self.0[5]
+        )
+    }
 }
 
 impl IpAddr {

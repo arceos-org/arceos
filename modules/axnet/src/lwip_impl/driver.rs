@@ -1,5 +1,8 @@
 use super::LWIP_MUTEX;
-use crate::IpAddr;
+use crate::{
+    net_impl::addr::{mask_to_prefix, MacAddr},
+    IpAddr,
+};
 use alloc::collections::VecDeque;
 use axdriver::prelude::*;
 use axsync::Mutex;
@@ -30,14 +33,14 @@ struct DeviceWrapper {
 }
 
 impl DeviceWrapper {
-    fn new(inner: AxNetDevice) -> Self {
+    pub fn new(inner: AxNetDevice) -> Self {
         Self {
             inner: RefCell::new(inner),
             rx_buf_queue: VecDeque::with_capacity(RX_BUF_QUEUE_SIZE),
         }
     }
 
-    fn poll(&mut self) {
+    pub fn poll(&mut self) {
         while self.rx_buf_queue.len() < RX_BUF_QUEUE_SIZE {
             match self.inner.borrow_mut().receive() {
                 Ok(buf) => {
@@ -52,18 +55,23 @@ impl DeviceWrapper {
         }
     }
 
-    fn receive(&mut self) -> Option<NetBufferBox<'static>> {
+    pub fn receive(&mut self) -> Option<NetBufferBox<'static>> {
         self.rx_buf_queue.pop_front()
     }
 }
 
 struct InterfaceWrapper {
+    name: &'static str,
     dev: Mutex<DeviceWrapper>,
     netif: Mutex<NetifWrapper>,
 }
 
 impl InterfaceWrapper {
-    fn poll(&self) {
+    pub fn name(&self) -> &str {
+        self.name
+    }
+
+    pub fn poll(&self) {
         self.dev.lock().poll();
         loop {
             let buf_receive = self.dev.lock().receive();
@@ -153,7 +161,7 @@ extern "C" fn ethif_output(netif: *mut netif, p: *mut pbuf) -> err_t {
     }
 }
 
-static mut ETH0: LazyInit<InterfaceWrapper> = LazyInit::new();
+static ETH0: LazyInit<InterfaceWrapper> = LazyInit::new();
 
 fn ip4_addr_gen(a: u8, b: u8, c: u8, d: u8) -> ip4_addr_t {
     ip4_addr_t {
@@ -181,12 +189,11 @@ pub fn init(mut net_dev: AxNetDevice) {
     netif.hwaddr_len = 6;
     netif.hwaddr = dev.mac_address().0;
 
-    unsafe {
-        ETH0.init_by(InterfaceWrapper {
-            dev: Mutex::new(DeviceWrapper::new(dev)),
-            netif: Mutex::new(NetifWrapper(netif)),
-        });
-    }
+    ETH0.init_by(InterfaceWrapper {
+        name: "eth0",
+        dev: Mutex::new(DeviceWrapper::new(dev)),
+        netif: Mutex::new(NetifWrapper(netif)),
+    });
 
     unsafe {
         lwip_init();
@@ -195,7 +202,7 @@ pub fn init(mut net_dev: AxNetDevice) {
             &ipaddr,
             &netmask,
             &gw,
-            &mut ETH0 as *mut _ as *mut c_void,
+            &ETH0 as *const _ as *mut c_void,
             Some(ethif_init),
             Some(ethernet_input),
         );
@@ -205,13 +212,20 @@ pub fn init(mut net_dev: AxNetDevice) {
         netif_set_default(&mut ETH0.netif.lock().0);
     }
 
+    info!("created net interface {:?}:", ETH0.name());
     info!(
-        "ETH0 IPv4 address: {}",
-        IpAddr::from(unsafe { ETH0.netif.lock().0.ip_addr })
+        "  ether:    {}",
+        MacAddr::from_bytes(&ETH0.netif.lock().0.hwaddr)
     );
     info!(
-        "ETH0 IPv6 address: {}",
-        IpAddr::from(unsafe { ETH0.netif.lock().0.ip6_addr[0] })
+        "  ip:       {}/{}",
+        IpAddr::from(ETH0.netif.lock().0.ip_addr),
+        mask_to_prefix(IpAddr::from(ETH0.netif.lock().0.netmask)).unwrap()
+    );
+    info!("  gateway:  {}", IpAddr::from(ETH0.netif.lock().0.gw));
+    info!(
+        "  ip6:      {}",
+        IpAddr::from(ETH0.netif.lock().0.ip6_addr[0])
     );
 
     // let ipaddr: ip_addr_t = ip_addr_t {
