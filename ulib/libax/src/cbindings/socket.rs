@@ -88,17 +88,17 @@ impl Socket {
         }
     }
 
-    fn shutdown(&mut self) -> LinuxResult {
+    fn shutdown(&self) -> LinuxResult {
         match self {
             Socket::Udp(udpsocket) => {
-                let udpsocket = udpsocket.lock();
+                let mut udpsocket = udpsocket.lock();
                 udpsocket.peer_addr()?;
                 udpsocket.shutdown()?;
                 Ok(())
             }
 
             Socket::Tcp(tcpsocket) => {
-                let tcpsocket = tcpsocket.lock();
+                let mut tcpsocket = tcpsocket.lock();
                 tcpsocket.peer_addr()?;
                 tcpsocket.shutdown()?;
                 Ok(())

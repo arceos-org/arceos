@@ -204,7 +204,7 @@ impl UdpSocket {
     }
 
     /// Close the socket.
-    pub fn shutdown(&self) -> AxResult {
+    pub fn shutdown(&mut self) -> AxResult {
         SOCKET_SET.poll_interfaces();
         if let Some(handle) = self.handle {
             // stream
