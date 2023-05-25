@@ -1,6 +1,5 @@
 use alloc::string::String;
 use bitflags::bitflags;
-use log::debug;
 use axfs::api::canonicalize;
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]

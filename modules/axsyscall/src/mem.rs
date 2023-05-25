@@ -1,7 +1,5 @@
 use crate::flags::{MMAPFlags, MMAPPROT};
-use alloc::sync::Arc;
 use alloc::vec;
-use axfs_os::read_file_with_offset;
 use axprocess::process::current_process;
 use memory_addr::{align_down_4k, align_up_4k};
 const MAX_HEAP_SIZE: usize = 4096;
@@ -47,7 +45,7 @@ pub fn syscall_mmap(
     }
     let random_pos = start == 0 || !flags.contains(MMAPFlags::MAP_FIXED);
     let curr_process = current_process();
-    let mut inner = curr_process.inner.lock();
+    let inner = curr_process.inner.lock();
     // 若是不要求实际映射到文件，则只需要为其分配一段物理空间即可
     if flags.contains(MMAPFlags::MAP_ANONYMOUS) {
         // 此时应当要求fd = -1, offset = 0。
@@ -70,10 +68,10 @@ pub fn syscall_mmap(
         // 二是为文件内容分配物理页面，若是任意寻找位置，则直接找一个大小适合的连续物理页面放进去即可
         // 若是固定位置，则需要在固定位置处进行解映射，然后再进行映射。这个过程需要检查是否越界
         if let Some(file) = &inner.fd_table[fd as usize] {
-            file.seek(offest);
+            let _ = file.seek(offest);
             // 获取文件数据
             let mut data = vec![0u8; len];
-            file.read(&mut data);
+            let _ = file.read(&mut data);
             inner
                 .memory_set
                 .lock()
@@ -88,7 +86,7 @@ pub fn syscall_munmap(start: usize, len: usize) -> isize {
     let len = align_up_4k(start + len);
     let start = align_down_4k(start);
     let curr_process = current_process();
-    let mut inner = curr_process.inner.lock();
+    let inner = curr_process.inner.lock();
     let answer = inner.memory_set.lock().munmap(start.into(), len);
     drop(inner);
     answer

@@ -6,7 +6,6 @@ pub mod stdio;
 
 extern crate alloc;
 
-use alloc::string::String;
 use alloc::vec::Vec;
 
 pub mod flags;
@@ -17,9 +16,8 @@ pub mod types;
 pub mod dir;
 
 use axerrno::AxResult;
-use axfs::api::{canonicalize, OpenOptions, path_exists};
+use axfs::api::OpenOptions;
 use axio::{Read, Seek, SeekFrom};
-use axlog::info;
 pub use file::{new_fd, FileDesc, FileMetaData};
 pub use dir::{new_dir, DirDesc};
 pub use stdio::{Stderr, Stdin, Stdout};

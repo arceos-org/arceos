@@ -6,7 +6,6 @@ use axfs_os::{file_io::FileIO, Stderr, Stdin, Stdout};
 use axhal::arch::{write_page_table_root, TrapFrame};
 use axhal::mem::VirtAddr;
 use axhal::paging::MappingFlags;
-use axlog::info;
 use axmem::memory_set::USER_STACK_SIZE;
 
 const KERNEL_STACK_SIZE: usize = 4096;
@@ -95,7 +94,7 @@ impl Process {
         // let mut page_table = copy_from_kernel_memory();
         // let (entry, user_stack_bottom) = load_from_elf(&mut page_table, get_app_data(name));
         let mut memory_set = MemorySet::new_from_kernel();
-        let page_table_token = memory_set.page_table_token();
+        let _page_table_token = memory_set.page_table_token();
         let elf_data = read_file(path).unwrap();
         let (entry, user_stack_bottom, heap_bottom) =
             MemorySet::from_elf(&mut memory_set, elf_data.as_slice());
@@ -278,9 +277,9 @@ impl Process {
         &self,
         flags: CloneFlags,
         stack: Option<usize>,
-        ptid: usize,
+        _ptid: usize,
         tls: usize,
-        ctid: usize,
+        _ctid: usize,
     ) -> u64 {
         let mut inner = self.inner.lock();
         // 是否共享虚拟地址空间
@@ -390,11 +389,11 @@ impl Process {
     /// 将数据映射到对应的段
     pub fn mmap(
         &self,
-        start: VirtAddr,
-        end: VirtAddr,
-        flags: MappingFlags,
-        random_pos: bool,
-        data: Option<&[u8]>,
+        _start: VirtAddr,
+        _end: VirtAddr,
+        _flags: MappingFlags,
+        _random_pos: bool,
+        _data: Option<&[u8]>,
     ) {}
 }
 

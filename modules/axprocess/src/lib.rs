@@ -3,18 +3,20 @@
 
 use axconfig::TASK_STACK_SIZE;
 use axhal::arch::TaskContext;
-use axlog::info;
 use axtask::{
     current,
     task::{CurrentTask, TaskInner},
     RUN_QUEUE,
 };
-use process::{current_process, Process, KERNEL_PROCESS_ID};
+use process::KERNEL_PROCESS_ID;
+
 extern crate alloc;
+
 pub mod flags;
 pub mod process;
 pub mod fd_manager;
 mod test;
+
 /// 开始进行调度，我们先执行gc任务，通过gc任务逐个执行并收集RUN_QUEUE中的任务
 /// 所以先切换到gc对应的任务上下文即可
 pub fn start_schedule() {

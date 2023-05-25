@@ -1,27 +1,16 @@
-use alloc::boxed::Box;
 use alloc::format;
-use alloc::string::{String, ToString};
-/// 处理关于输出输入的系统调用
+use alloc::string::ToString;
 use alloc::sync::Arc;
-use alloc::vec::Vec;
-use core::any::Any;
-use core::fmt;
 use core::mem::transmute;
 use core::ptr::copy_nonoverlapping;
-use bitflags::bitflags;
-use log::{debug, trace};
-use memory_addr::{VirtAddr, PhysAddr};
+use log::debug;
 use axfs::api;
-use axfs::api::{File, FileType};
-use axfs_os::flags::OpenFlags;
 use axfs_os::{FilePath, new_fd, new_dir, DirEnt, DirEntType};
-use axfs_os::file::FileDesc;
 use axfs_os::link::{create_link, remove_link};
 use axfs_os::mount::{check_mounted, mount_fat_fs, umount_fat_fs};
 use axfs_os::pipe::make_pipe;
-use axfs_os::types::{Kstat, normal_file_mode, StMode};
-use axprocess::process::{current_process, Process};
-use axsync::Mutex;
+use axfs_os::types::Kstat;
+use axprocess::process::current_process;
 
 
 #[allow(unused)]
@@ -59,7 +48,7 @@ fn deal_with_path(dir_fd: usize, path_addr: Option<*const u8>, force_dir: bool) 
     }
 
     if !path.starts_with('/') && dir_fd != AT_FDCWD {   // 如果不是绝对路径, 且dir_fd不是AT_FDCWD, 则需要将dir_fd和path拼接起来
-        if dir_fd >= process_inner.fd_table.len() || dir_fd < 0 {
+        if dir_fd >= process_inner.fd_table.len() {
             debug!("fd index out of range");
             return None;
         }
@@ -94,7 +83,6 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
     debug!("Into syscall_read. fd: {}, buf: {:?}, len: {}", fd, buf as usize, count);
     let process = current_process();
     let process_inner = process.inner.lock();
-    let va = VirtAddr::from(buf as usize);
     if fd >= process_inner.fd_table.len() {
         return -1;
     }
@@ -235,7 +223,7 @@ pub fn syscall_close(fd: usize) -> isize {
 ///     - size：buf缓存区的大小。
 /// 返回值：成功执行，则返回当前工作目录的字符串的指针。失败，则返回NULL。
 ///  暂时：成功执行，则返回当前工作目录的字符串的指针 as isize。失败，则返回0。
-pub fn syscall_getcwd(mut buf: *mut u8, len: usize) -> isize {
+pub fn syscall_getcwd(buf: *mut u8, len: usize) -> isize {
     debug!("Into syscall_getcwd. buf: {}, len: {}", buf as usize, len);
     let cwd = api::current_dir().unwrap();
 
@@ -328,7 +316,7 @@ pub fn syscall_dup3(fd: usize, new_fd: usize) -> isize {
         return -1;
     }
     if new_fd >= process_inner.fd_table.len() {
-        for i in process_inner.fd_table.len()..new_fd + 1 {
+        for _i in process_inner.fd_table.len()..new_fd + 1 {
             process_inner.fd_table.push(None);
         }
     }
@@ -349,10 +337,8 @@ pub fn syscall_dup3(fd: usize, new_fd: usize) -> isize {
 /// 返回值：成功执行，返回0。失败，返回-1。
 pub fn syscall_mkdirat(dir_fd: usize, path: *const u8, mode: u32) -> isize {
     let path = deal_with_path(dir_fd, Some(path), true).unwrap();
-    let process = current_process();
-    let mut process_inner = process.inner.lock();
     debug!("Into syscall_mkdirat. dirfd: {}, path: {:?}, mode: {}", dir_fd, path.path(), mode);
-    if let Ok(res) = api::create_dir(path.path()) {
+    if let Ok(_res) = api::create_dir(path.path()) {
         0
     } else {
         -1
@@ -396,8 +382,8 @@ pub fn syscall_chdir(path: *const u8) -> isize {
 pub fn syscall_getdents64(fd: usize, buf: *mut u8, len: usize) -> isize {
     let path = deal_with_path(fd, None, true).unwrap();
 
-    let mut buf = unsafe { core::slice::from_raw_parts_mut(buf, len) };
-    let mut dir_iter = api::read_dir(path.path()).unwrap();
+    let buf = unsafe { core::slice::from_raw_parts_mut(buf, len) };
+    let dir_iter = api::read_dir(path.path()).unwrap();
     let mut count = 0;     // buf中已经写入的字节数
 
     for (i, entry) in dir_iter.enumerate() {
@@ -440,6 +426,7 @@ pub fn syscall_getdents64(fd: usize, buf: *mut u8, len: usize) -> isize {
 ///     - new_path：文件的新名字。new_path的使用规则同old_path。
 ///     - flags：在2.6.18内核之前，应置为0。其它的值详见`man 2 linkat`。
 /// 返回值：成功执行，返回0。失败，返回-1。
+#[allow(dead_code)]
 pub fn sys_linkat(old_dir_fd: usize, old_path: *const u8, new_dir_fd: usize, new_path: *const u8, _flags: usize) -> isize {
     let old_path = deal_with_path(old_dir_fd, Some(old_path), false).unwrap();
     let new_path = deal_with_path(new_dir_fd, Some(new_path), false).unwrap();
@@ -503,9 +490,9 @@ pub fn syscall_mount(
     let process_inner = process.inner.lock();
     let memory_set = process_inner.memory_set.lock();
     let fs_type = memory_set.translate_str(fs_type);
-    let mut data = "".to_string();
+    let mut _data_str = "".to_string();
     if !_data.is_null() {   // data可以为NULL, 必须判断, 否则会panic, 发生LoadPageFault
-        data = memory_set.translate_str(_data);
+        _data_str = memory_set.translate_str(_data);
     }
     if device_path.is_dir() {
         debug!("device_path should not be a dir");
@@ -593,7 +580,7 @@ pub fn syscall_umount(dir: *const u8, flags: usize) -> isize {
 /// };
 pub fn syscall_fstat(fd: usize, kst: *mut Kstat) -> isize {
     let process = current_process();
-    let mut process_inner = process.inner.lock();
+    let process_inner = process.inner.lock();
 
     if fd >= process_inner.fd_table.len() || fd < 3 {
         debug!("fd {} is out of range", fd);
