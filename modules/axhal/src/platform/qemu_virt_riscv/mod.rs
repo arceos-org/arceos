@@ -22,6 +22,9 @@ unsafe extern "C" fn rust_entry(cpu_id: usize, dtb: usize) {
     crate::mem::clear_bss();
     crate::cpu::init_primary(cpu_id);
     crate::arch::set_trap_vector_base(trap_vector_base as usize);
+    unsafe {
+        dtb::init(crate::mem::phys_to_virt(dtb.into()).as_ptr());
+    }
     rust_main(cpu_id, dtb);
 }
 

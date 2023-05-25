@@ -8,6 +8,8 @@ use core::cell::RefCell;
 use core::ops::DerefMut;
 
 use axdriver::prelude::*;
+#[cfg(feature = "irq")]
+use axdriver::register_interrupt_handler;
 use axhal::time::{current_time_nanos, NANOS_PER_MICROS};
 use axsync::Mutex;
 use driver_net::{DevError, NetBufferBox, NetBufferPool};
@@ -172,6 +174,11 @@ impl InterfaceWrapper {
         let mut sockets = sockets.lock();
         iface.poll(timestamp, dev.deref_mut(), &mut sockets);
     }
+
+    #[cfg(feature = "irq")]
+    pub fn ack_interrupt(&self) {
+        unsafe { &mut *self.dev.as_mut_ptr() }.ack_interrupt();
+    }
 }
 
 impl DeviceWrapper {
@@ -203,6 +210,11 @@ impl DeviceWrapper {
 
     fn receive(&mut self) -> Option<NetBufferBox<'static>> {
         self.rx_buf_queue.pop_front()
+    }
+
+    #[cfg(feature = "irq")]
+    fn ack_interrupt(&mut self) -> bool {
+        unsafe { self.inner.as_ptr().as_mut().unwrap().ack_interrupt() }
     }
 }
 
@@ -287,6 +299,11 @@ pub(crate) fn init(mut net_dev: AxNetDevice) {
     let pool = NetBufferPool::new(NET_BUF_POOL_SIZE, NET_BUF_LEN).unwrap();
     NET_BUF_POOL.init_by(pool);
     net_dev.fill_rx_buffers(&NET_BUF_POOL).unwrap();
+    #[cfg(feature = "irq")]
+    register_interrupt_handler!(net_dev, {
+        info!("ACK");
+        ETH0.ack_interrupt();
+    });
 
     let ether_addr = EthernetAddress(net_dev.mac_address().0);
     let eth0 = InterfaceWrapper::new("eth0", net_dev, Some(ether_addr));

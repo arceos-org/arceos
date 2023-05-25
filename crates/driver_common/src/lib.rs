@@ -14,7 +14,6 @@
 //! [4]: ../driver_net/index.html
 
 #![no_std]
-#![feature(const_trait_impl)]
 
 /// All supported device types.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -54,11 +53,22 @@ pub enum DevError {
 pub type DevResult<T = ()> = Result<T, DevError>;
 
 /// Common operations that require all device drivers to implement.
-#[const_trait]
 pub trait BaseDriverOps: Send + Sync {
     /// The name of the device.
     fn device_name(&self) -> &str;
 
     /// The type of the device.
     fn device_type(&self) -> DeviceType;
+
+    /// Get the interrupt number.
+    /// Only interrupt drivers need to implement this function.
+    fn get_irq_num(&self) -> Option<usize> {
+        None
+    }
+
+    /// Ack the interrupt.
+    /// Only interrupt drivers need to implement this function.
+    fn ack_interrupt(&mut self) -> bool {
+        false
+    }
 }

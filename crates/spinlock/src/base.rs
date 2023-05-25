@@ -172,6 +172,15 @@ impl<G: BaseGuard, T: ?Sized> BaseSpinLock<G, T> {
         // there's no need to lock the inner mutex.
         unsafe { &mut *self.data.get() }
     }
+
+    /// Returns a mutable pointer to the underlying data.
+    ///
+    /// # Safety
+    /// Can only be used in interrupt handler
+    #[inline(always)]
+    pub fn as_mut_ptr(&self) -> *mut T {
+        self.data.get()
+    }
 }
 
 impl<G: BaseGuard, T: ?Sized + Default> Default for BaseSpinLock<G, T> {
