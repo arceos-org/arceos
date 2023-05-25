@@ -17,7 +17,6 @@ fn generate_lwip_bindings() {
     println!("cargo:include=depend/lwip/src/include/");
 
     let bindings = bindgen::Builder::default()
-        .detect_include_paths(true)
         .use_core()
         .header("wrapper.h")
         .clang_arg("-I./depend/lwip/src/include")
