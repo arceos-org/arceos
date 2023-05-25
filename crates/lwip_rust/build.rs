@@ -1,13 +1,12 @@
 use std::path::PathBuf;
 
 fn main() {
-    let arch = std::env::var("CARGO_CFG_TARGET_ARCH").unwrap();
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
     let clippy_args = std::env::var("CLIPPY_ARGS");
 
     // Not build with clippy or doc
     if target_os == "none" && clippy_args.is_err() {
-        compile_lwip(&arch);
+        compile_lwip();
     }
     generate_lwip_bindings();
 }
@@ -33,26 +32,8 @@ fn generate_lwip_bindings() {
         .expect("Couldn't write bindings!");
 }
 
-fn compile_lwip(arch: &str) {
+fn compile_lwip() {
     let mut base_config = cc::Build::new();
-
-    match arch {
-        "riscv64" => {
-            base_config.compiler("riscv64-linux-musl-gcc");
-            base_config.flag("-mabi=lp64d");
-        }
-        "aarch64" => {
-            base_config.compiler("aarch64-linux-musl-gcc");
-            base_config.flag("-mgeneral-regs-only");
-        }
-        "x86_64" => {
-            base_config.compiler("x86_64-linux-musl-gcc");
-            base_config.flag("-mno-sse");
-        }
-        _ => {
-            panic!("Unsupported arch: {}", arch);
-        }
-    }
 
     base_config
         .include("depend/lwip/src/include")

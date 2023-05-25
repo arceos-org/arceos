@@ -45,20 +45,27 @@ else
   $(error "ARCH" must be one of "x86_64", "riscv64", or "aarch64")
 endif
 
+ifeq ($(ARCH), riscv64)
+  ARCH_CFLAGS := -march=rv64gc -mabi=lp64d -mcmodel=medany
+else ifeq ($(ARCH), x86_64)
+  ARCH_CFLAGS := -mno-sse
+else ifeq ($(ARCH), aarch64)
+  ARCH_CFLAGS := -mgeneral-regs-only
+endif
+
 export ARCH
+export ARCH_CFLAGS
 export PLATFORM
 export SMP
 export MODE
 export LOG
 
 # Binutils
-ifeq ($(APP_LANG), c)
-  CROSS_COMPILE ?= $(ARCH)-linux-musl-
-  CC := $(CROSS_COMPILE)gcc
-  AR := $(CROSS_COMPILE)ar
-  RANLIB := $(CROSS_COMPILE)ranlib
-  LD := rust-lld -flavor gnu
-endif
+CROSS_COMPILE ?= $(ARCH)-linux-musl-
+CC := $(CROSS_COMPILE)gcc
+AR := $(CROSS_COMPILE)ar
+RANLIB := $(CROSS_COMPILE)ranlib
+LD := rust-lld -flavor gnu
 
 OBJDUMP ?= rust-objdump -d --print-imm-hex --x86-asm-syntax=intel
 OBJCOPY ?= rust-objcopy --binary-architecture=$(ARCH)
