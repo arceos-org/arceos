@@ -75,7 +75,7 @@ impl UdpSocket {
     /// [`Err(NotConnected)`](AxError::NotConnected) if not connected.
     pub fn local_addr(&self) -> AxResult<SocketAddr> {
         if self.pcb.0.is_null() {
-            ax_err!(NotConnected)
+            Err(AxError::NotConnected)
         } else {
             let _guard = LWIP_MUTEX.lock();
             let addr = unsafe { (*self.pcb.0).local_ip };
@@ -96,7 +96,7 @@ impl UdpSocket {
     /// [`Err(NotConnected)`](AxError::NotConnected) if not connected.
     pub fn peer_addr(&self) -> AxResult<SocketAddr> {
         if self.pcb.0.is_null() {
-            ax_err!(NotConnected)
+            Err(AxError::NotConnected)
         } else {
             let _guard = LWIP_MUTEX.lock();
             let addr = unsafe { (*self.pcb.0).remote_ip };
@@ -114,6 +114,9 @@ impl UdpSocket {
     }
 
     /// Binds an unbound socket to the given address and port.
+    ///
+    /// It's must be called before [`send_to`](Self::send_to) and
+    /// [`recv_from`](Self::recv_from).
     pub fn bind(&mut self, addr: SocketAddr) -> AxResult {
         debug!("[UdpSocket] bind to {:#?}", addr);
         // TODO: check if already bound

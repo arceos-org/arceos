@@ -45,6 +45,7 @@ extern "C" fn dns_found_callback(
     }
 }
 
+/// Public function for DNS query.
 pub fn resolve_socket_addr(name: &str) -> AxResult<Vec<IpAddr>> {
     let guard = LWIP_MUTEX.lock();
     unsafe {

@@ -1,6 +1,6 @@
 use crate::{net_impl::driver::lwip_loop_once, IpAddr, SocketAddr};
 use alloc::{boxed::Box, collections::VecDeque};
-use axerrno::{ax_err, AxResult};
+use axerrno::{ax_err, AxError, AxResult};
 use axsync::Mutex;
 use axtask::yield_now;
 use core::{ffi::c_void, pin::Pin, ptr::null_mut};
@@ -23,6 +23,8 @@ struct TcpSocketInner {
     recv_queue: Mutex<VecDeque<PbuffPointer>>,
     accept_queue: Mutex<VecDeque<TcpSocket>>,
 }
+
+/// A TCP socket that provides POSIX-like APIs.
 pub struct TcpSocket {
     pcb: TcpPcbPointer,
     inner: Pin<Box<TcpSocketInner>>,
@@ -89,6 +91,7 @@ extern "C" fn accept_callback(arg: *mut c_void, newpcb: *mut tcp_pcb, err: err_t
 }
 
 impl TcpSocket {
+    /// Creates a new TCP socket.
     pub fn new() -> Self {
         debug!("[TcpSocket] new");
         let guard = LWIP_MUTEX.lock();
@@ -111,9 +114,11 @@ impl TcpSocket {
         socket
     }
 
+    /// Returns the local address and port, or
+    /// [`Err(NotConnected)`](AxError::NotConnected) if not connected.
     pub fn local_addr(&self) -> AxResult<SocketAddr> {
         if self.pcb.0.is_null() {
-            ax_err!(NotConnected)
+            Err(AxError::NotConnected)
         } else {
             let guard = LWIP_MUTEX.lock();
             let addr = unsafe { (*self.pcb.0).local_ip };
@@ -131,9 +136,11 @@ impl TcpSocket {
         }
     }
 
+    /// Returns the remote address and port, or
+    /// [`Err(NotConnected)`](AxError::NotConnected) if not connected.
     pub fn peer_addr(&self) -> AxResult<SocketAddr> {
         if self.pcb.0.is_null() {
-            ax_err!(NotConnected)
+            Err(AxError::NotConnected)
         } else {
             let guard = LWIP_MUTEX.lock();
             let addr = unsafe { (*self.pcb.0).remote_ip };
@@ -151,6 +158,9 @@ impl TcpSocket {
         }
     }
 
+    /// Connects to the given address and port.
+    ///
+    /// The local port is generated automatically.
     pub fn connect(&mut self, addr: SocketAddr) -> AxResult {
         debug!("[TcpSocket] connect to {:#?}", addr);
         let ip_addr: ip_addr_t = addr.addr.into();
@@ -188,6 +198,12 @@ impl TcpSocket {
         }
     }
 
+    /// Binds an unbound socket to the given address and port.
+    ///
+    /// If the given port is 0, it generates one automatically.
+    ///
+    /// It's must be called before [`listen`](Self::listen) and
+    /// [`accept`](Self::accept).
     pub fn bind(&mut self, addr: SocketAddr) -> AxResult {
         debug!("[TcpSocket] bind to {:#?}", addr);
         // TODO: check if already bound
@@ -199,6 +215,10 @@ impl TcpSocket {
         Ok(())
     }
 
+    /// Starts listening on the bound address and port.
+    ///
+    /// It's must be called after [`bind`](Self::bind) and before
+    /// [`accept`](Self::accept).
     pub fn listen(&mut self) -> AxResult {
         debug!("[TcpSocket] listen");
         let guard = LWIP_MUTEX.lock();
@@ -215,6 +235,12 @@ impl TcpSocket {
         Ok(())
     }
 
+    /// Accepts a new connection.
+    ///
+    /// This function will block the calling thread until a new TCP connection
+    /// is established. When established, a new [`TcpSocket`] is returned.
+    ///
+    /// It's must be called after [`bind`](Self::bind) and [`listen`](Self::listen).
     pub fn accept(&self) -> AxResult<TcpSocket> {
         debug!("[TcpSocket] accept");
         loop {
@@ -228,6 +254,7 @@ impl TcpSocket {
         }
     }
 
+    /// Close the connection.
     pub fn shutdown(&mut self) -> AxResult {
         if !self.pcb.0.is_null() {
             let guard = LWIP_MUTEX.lock();
@@ -247,10 +274,11 @@ impl TcpSocket {
             self.pcb.0 = null_mut();
             Ok(())
         } else {
-            ax_err!(NotConnected)
+            Err(AxError::NotConnected)
         }
     }
 
+    /// Receives data from the socket, stores it in the given buffer.
     pub fn recv(&self, buf: &mut [u8]) -> AxResult<usize> {
         trace!("[TcpSocket] recv");
         if self.inner.remote_closed {
@@ -293,6 +321,7 @@ impl TcpSocket {
         }
     }
 
+    /// Transmits data in the given buffer.
     pub fn send(&self, buf: &[u8]) -> AxResult<usize> {
         trace!("[TcpSocket] send: {:?}", buf);
         let guard = LWIP_MUTEX.lock();

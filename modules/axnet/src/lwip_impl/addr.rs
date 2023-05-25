@@ -8,71 +8,46 @@ use lwip_rust::bindings::{
     lwip_ip_addr_type_IPADDR_TYPE_V6,
 };
 
+/// Mac Address
 #[derive(Clone, Copy, Debug)]
 pub struct MacAddr(pub [u8; 6]);
 
+/// IP Address, either IPv4 or IPv6
 #[derive(Clone, Copy, Debug)]
 pub enum IpAddr {
+    /// IPv4 Address
     Ipv4(Ipv4Addr),
+
+    /// IPv6 Address
     Ipv6(Ipv6Addr),
 }
 
+/// IPv4 Address (host byte order)
 #[derive(Clone, Copy, Debug)]
 pub struct Ipv4Addr(pub u32);
 
+/// IPv6 Address
 #[derive(Clone, Copy, Debug)]
 pub struct Ipv6Addr {
+    /// Address in host byte order
     pub addr: [u32; 4usize],
+
+    /// Zone identifier
     pub zone: u8,
 }
 
+/// Socket Address (IP Address + Port)
 #[derive(Clone, Copy, Debug)]
 pub struct SocketAddr {
+    /// IP Address
     pub addr: IpAddr,
+
+    /// Port
     pub port: u16,
 }
 
-pub fn mask_to_prefix(mask: IpAddr) -> Result<u8, Error> {
-    match mask {
-        IpAddr::Ipv4(Ipv4Addr(mask)) => {
-            let mut mask = mask.swap_bytes();
-            let mut prefix = 0;
-            while mask & (1 << 31) != 0 {
-                prefix += 1;
-                mask <<= 1;
-            }
-            if mask != 0 {
-                Err(Error)
-            } else {
-                Ok(prefix)
-            }
-        }
-        IpAddr::Ipv6(Ipv6Addr { addr, .. }) => {
-            let mut prefix = 0;
-            let mut finish = false;
-            for mask in &addr {
-                let mut mask = mask.swap_bytes();
-                for _ in 0..32 {
-                    if finish {
-                        if mask != 0 {
-                            return Err(Error);
-                        } else {
-                            break;
-                        }
-                    } else if mask & (1 << 31) != 0 {
-                        prefix += 1;
-                    } else {
-                        finish = true;
-                    }
-                    mask <<= 1;
-                }
-            }
-            Ok(prefix)
-        }
-    }
-}
-
 impl MacAddr {
+    /// Create a new MacAddr from a byte array
     pub fn from_bytes(bytes: &[u8]) -> MacAddr {
         let mut addr = [0u8; 6];
         addr.copy_from_slice(bytes);
@@ -91,6 +66,7 @@ impl fmt::Display for MacAddr {
 }
 
 impl IpAddr {
+    /// Get the IP Address as a byte array
     pub fn as_bytes(&self) -> &[u8] {
         match self {
             IpAddr::Ipv4(Ipv4Addr(addr)) => unsafe { &*(addr as *const u32 as *const [u8; 4]) },
@@ -173,6 +149,7 @@ impl fmt::Display for IpAddr {
 }
 
 impl Ipv4Addr {
+    /// Create a new Ipv4Addr from a byte array
     pub fn from_bytes(bytes: &[u8]) -> Ipv4Addr {
         let mut addr: u32 = 0;
         for (i, &b) in bytes.iter().enumerate().take(4) {
@@ -263,6 +240,7 @@ impl FromStr for SocketAddr {
 }
 
 impl SocketAddr {
+    /// Create a new SocketAddr from an IpAddr and a port
     pub fn new(addr: IpAddr, port: u16) -> SocketAddr {
         SocketAddr { addr, port }
     }
@@ -295,5 +273,46 @@ impl From<(Ipv6Addr, u16)> for SocketAddr {
 impl fmt::Display for SocketAddr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}:{}", self.addr, self.port)
+    }
+}
+
+/// Convert a mask to a prefix length
+pub fn mask_to_prefix(mask: IpAddr) -> Result<u8, Error> {
+    match mask {
+        IpAddr::Ipv4(Ipv4Addr(mask)) => {
+            let mut mask = mask.swap_bytes();
+            let mut prefix = 0;
+            while mask & (1 << 31) != 0 {
+                prefix += 1;
+                mask <<= 1;
+            }
+            if mask != 0 {
+                Err(Error)
+            } else {
+                Ok(prefix)
+            }
+        }
+        IpAddr::Ipv6(Ipv6Addr { addr, .. }) => {
+            let mut prefix = 0;
+            let mut finish = false;
+            for mask in &addr {
+                let mut mask = mask.swap_bytes();
+                for _ in 0..32 {
+                    if finish {
+                        if mask != 0 {
+                            return Err(Error);
+                        } else {
+                            break;
+                        }
+                    } else if mask & (1 << 31) != 0 {
+                        prefix += 1;
+                    } else {
+                        finish = true;
+                    }
+                    mask <<= 1;
+                }
+            }
+            Ok(prefix)
+        }
     }
 }
