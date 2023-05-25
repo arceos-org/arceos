@@ -3,16 +3,26 @@
 pub mod file;
 pub mod file_io;
 pub mod stdio;
+
 extern crate alloc;
+
+use alloc::string::String;
 use alloc::vec::Vec;
+
 pub mod flags;
 pub mod pipe;
+pub mod link;
+pub mod mount;
+pub mod types;
+pub mod dir;
 
 use axerrno::AxResult;
-use axfs::api::OpenOptions;
+use axfs::api::{canonicalize, OpenOptions, path_exists};
 use axio::{Read, Seek, SeekFrom};
-pub use file::new_fd;
+pub use file::{new_fd, FileDesc, FileMetaData};
+pub use dir::{new_dir, DirDesc};
 pub use stdio::{Stderr, Stdin, Stdout};
+pub use types::{FilePath, DirEntType, DirEnt};
 
 
 /// 读取path文件的内容，但不新建文件描述符

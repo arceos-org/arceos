@@ -1,3 +1,4 @@
+use alloc::string::String;
 use alloc::sync::{Arc, Weak};
 use log::trace;
 use axerrno::AxResult;
@@ -175,5 +176,8 @@ impl FileIO for Pipe {
                 }
             }
         }
+    }
+    fn get_type(&self) -> String {
+        String::from("Pipe")
     }
 }

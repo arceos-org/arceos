@@ -141,6 +141,7 @@ impl DirBuilder {
         if self.recursive {
             self.create_dir_all(path)
         } else {
+            debug!("dir.rs: create dir: {}", path);
             crate::root::create_dir(None, path)
         }
     }

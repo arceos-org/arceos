@@ -236,8 +236,6 @@ fn parent_node_of(dir: Option<&VfsNodeRef>, path: &str) -> VfsNodeRef {
 }
 /// 将路径`path`转换为绝对路径。
 /// 如果`path`是绝对路径,则直接返回。
-///
-/// 似乎没有对'..'和'.'进行处理
 pub(crate) fn absolute_path(path: &str) -> AxResult<String> {
     if path.starts_with('/') {
         Ok(axfs_vfs::path::canonicalize(path))

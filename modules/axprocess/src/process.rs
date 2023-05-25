@@ -49,13 +49,13 @@ pub struct ProcessInner {
     /// 退出状态码
     pub exit_code: i32,
     /// 文件描述符表
-    pub fd_table: Vec<Option<Arc<dyn FileIO + Send + Sync>>>,
+    pub fd_table: Vec<Option<Arc<dyn FileIO>>>,
     /// 进程工作目录
     pub cwd: String,
 }
 
 impl ProcessInner {
-    pub fn new(parent: u64, memory_set: Arc<SpinNoIrq<MemorySet>>, heap_bottom: usize) -> Self {
+    pub fn new(parent: u64, memory_set: Arc<SpinNoIrq<MemorySet>>, heap_bottom: usize, fd_table: Vec<Option<Arc<dyn FileIO>>>) -> Self {
         Self {
             parent,
             children: Vec::new(),
@@ -65,16 +65,7 @@ impl ProcessInner {
             heap_top: heap_bottom,
             is_zombie: false,
             exit_code: 0,
-            fd_table: vec![
-                // 标准输入
-                Some(Arc::new(Stdin)),
-                // 标准输出
-                Some(Arc::new(Stdout)),
-                // 标准错误
-                Some(Arc::new(Stderr)),
-                // // 工作目录, fd_table[3]固定用来存放工作目录
-                // Some(Arc::new(CurWorkDirDesc::new('/'.to_string()))),   // 这里的工作目录是根目录
-            ],
+            fd_table,
             cwd: "/".to_string(),   // 这里的工作目录是根目录
         }
     }
@@ -145,8 +136,19 @@ impl Process {
                 KERNEL_PROCESS_ID,
                 Arc::new(SpinNoIrq::new(memory_set)),
                 heap_bottom,
+                vec![
+                    // 标准输入
+                    Some(Arc::new(Stdin)),
+                    // 标准输出
+                    Some(Arc::new(Stdout)),
+                    // 标准错误
+                    Some(Arc::new(Stderr)),
+                    // // 工作目录, fd_table[3]固定用来存放工作目录
+                    // Some(Arc::new(CurWorkDirDesc::new('/'.to_string()))),   // 这里的工作目录是根目录
+                ]
             )),
         });
+
         // 记录该进程，防止被回收
         PID2PC
             .lock()
@@ -325,8 +327,10 @@ impl Process {
                     parent_id,
                     new_memory_set,
                     inner.heap_bottom,
+                    self.inner.lock().fd_table.clone(),
                 )),
             });
+
             // 记录该进程，防止被回收
             PID2PC.lock().insert(process_id, Arc::clone(&new_process));
             new_process.inner.lock().tasks.push(Arc::clone(&new_task));
@@ -393,6 +397,7 @@ pub fn init_kernel_process() {
             0,
             Arc::new(SpinNoIrq::new(MemorySet::new_empty())),
             0,
+            vec![], // 内核进程不需要文件描述符
         )),
     });
     axtask::init_scheduler();
@@ -406,7 +411,7 @@ pub fn init_kernel_process() {
 
 /// 读取初始化应用程序，作为用户态初始进程
 pub fn init_user_process() {
-    let main_task = Process::new("init/user_shell");
+    let main_task = Process::new("fstat");
     RUN_QUEUE.lock().add_task(main_task);
 }
 
