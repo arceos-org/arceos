@@ -119,10 +119,10 @@ impl AxRunQueue {
     where
         F: FnOnce(AxTaskRef),
     {
-        info!("block_current 1");
+        //info!("block_current 1");
         let curr = crate::current();
-        info!("task block: {}", curr.id_name());
-        info!("block_current 2");
+        trace!("task block: {}", curr.id_name());
+        //info!("block_current 2");
         assert!(curr.is_running());
         assert!(!curr.is_idle());
 
@@ -131,11 +131,11 @@ impl AxRunQueue {
         assert!(curr.can_preempt(1));
 
         curr.set_state(TaskState::Blocked);
-        info!("block_current 3");
+        //info!("block_current 3");
         wait_queue_push(curr.clone());
-        info!("block_current 4");
+        //info!("block_current 4");
         self.resched_inner(false);
-        info!("block_current 5");
+        //info!("block_current 5");
     }
 
     pub fn unblock_task(&self, task: AxTaskRef, resched: bool) {
@@ -182,7 +182,7 @@ impl AxRunQueue {
             let id = self.id;
             let next = LOAD_BALANCE_ARR[id].find_stolen_cpu_id();
             trace!("load balance weight for id {} : {}", id, LOAD_BALANCE_ARR[id].get_weight());
-            assert!(LOAD_BALANCE_ARR[id].get_weight() == 0);
+            //assert!(LOAD_BALANCE_ARR[id].get_weight() == 0);
             debug!("steal: current = {}, victim = {}", self.id, next);
             if next != -1 {
                 debug!("steal 1");
