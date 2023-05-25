@@ -50,8 +50,9 @@ impl FileIO for DirDesc {
 
 pub fn new_dir(dir_path: String, _flags: OpenFlags) -> AxResult<DirDesc> {
     debug!("Into function new_dir, dir_path: {}", dir_path);
-    if let Err(e) = api::read_dir(dir_path.as_str()) {
-        return Err(e);
+    if !api::path_exists(dir_path.as_str()) {
+        // api::create_dir_all(dir_path.as_str())?;
+        api::create_dir(dir_path.as_str())?;
     }
     Ok(DirDesc::new(dir_path))
 }

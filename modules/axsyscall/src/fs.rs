@@ -165,7 +165,7 @@ pub fn syscall_openat(fd: usize, path: *const u8, flags: usize, _mode: u8) -> is
     if path.is_dir() {
         debug!("open dir");
         if let Ok(dir) = new_dir(path.path().to_string(), flags.into()) {
-            debug!("new dir_desc successfully allocated");
+            debug!("new dir_desc successfully allocated: {}", path.path());
             process_inner.fd_table[fd_num] = Some(Arc::new(dir));
             fd_num as isize
         } else {
