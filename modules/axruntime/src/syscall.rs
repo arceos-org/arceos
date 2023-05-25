@@ -86,6 +86,9 @@ pub fn syscall_handler(id: usize, params: [usize; 6]) -> isize {
             ));
             0
         }
+        SYS_TIME_NANO => {
+            axhal::time::current_time_nanos() as isize
+        }
         #[cfg(feature = "user-paging")]
         SYS_SBRK => {
             if let Some(value) = axmem::global_sbrk(params[0] as isize) {

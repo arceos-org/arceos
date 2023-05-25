@@ -3,6 +3,7 @@ pub mod task;
 pub mod sync;
 
 
+use sys_number::SYS_TIME_NANO;
 use syscall_number as sys_number;
 
 /// Copied from rcore
@@ -21,4 +22,8 @@ pub fn syscall(id: usize, args: [usize; 6]) -> isize {
         );
     }
     ret
+}
+
+pub fn current_time_nanos() -> u64 {
+    syscall(SYS_TIME_NANO, [0; 6]) as u64
 }

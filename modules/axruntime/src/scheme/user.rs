@@ -9,7 +9,7 @@ use axsync::Mutex;
 use axtask::current;
 use scheme::{Scheme, Packet};
 use alloc::boxed::Box;
-use syscall_number::{SYS_OPEN, SYS_READ, SYS_WRITE, SYS_CLOSE};
+use syscall_number::{SYS_OPEN, SYS_READ, SYS_WRITE, SYS_CLOSE, SYS_DUP};
 
 use super::KernelScheme;
 
@@ -124,6 +124,11 @@ impl Scheme for UserScheme {
     fn close(&self, id: usize) -> AxResult<usize> {
         let inner = self.inner.upgrade().ok_or(AxError::NotFound)?;
         inner.handle_request(SYS_CLOSE, id, 0, 0)
+    }
+    fn dup(&self, id: usize, buf: &[u8]) -> AxResult<usize> {
+        let inner = self.inner.upgrade().ok_or(AxError::NotFound)?;
+        let addr = ShadowMemory::new(buf)?;
+        inner.handle_request(SYS_DUP, id, addr.addr().into(), buf.len())
     }
 }
 impl KernelScheme for UserScheme {}

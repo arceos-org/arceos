@@ -142,10 +142,10 @@ mod user {
         }
     }
     pub fn current_time_nanos() -> u64 {
-        unimplemented!();
+        libax::current_time_nanos()
     }
     pub fn yield_now() {
-        unimplemented!();
+        libax::task::yield_now();
     }
     pub const NANOS_PER_MICROS: u64 = 1_000;
 }
