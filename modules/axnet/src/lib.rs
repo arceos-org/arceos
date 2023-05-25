@@ -73,7 +73,10 @@ mod user {
         }
 
         pub fn mac_address(&self) -> EthernetAddress {
-            unimplemented!();
+            let file = File::open("dev:/net/addr").unwrap();
+            let mut addr = EthernetAddress([0; 6]);
+            file.read(&mut addr.0).unwrap();
+            addr
         }
         /*
         pub fn can_transmit(&self) -> bool {

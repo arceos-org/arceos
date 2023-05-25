@@ -59,7 +59,7 @@ impl Scheme for RootScheme {
         let handle = self.handles.lock().remove(&id).ok_or(AxError::BadFileDescriptor)?;
 
         match handle {
-            RootHandle::Scheme(inner) => {
+            RootHandle::Scheme(_inner) => {
                 // TODO: remove a scheme
             }
         }

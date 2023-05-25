@@ -198,9 +198,10 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         crate::scheme::init_scheme();
     }
 
-    #[cfg(any(feature = "net"))]
+    #[cfg(any(feature = "user_net"))]
     {
         let all_devices = axdriver::init_drivers();
+        scheme::dev::init(all_devices);
     }
 
     info!("Primary CPU {} init OK.", cpu_id);
