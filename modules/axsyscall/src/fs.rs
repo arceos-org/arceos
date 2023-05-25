@@ -6,6 +6,7 @@ use core::ptr::copy_nonoverlapping;
 use log::debug;
 use axfs::api;
 use axfs_os::{FilePath, new_fd, new_dir, DirEnt, DirEntType};
+use axfs_os::flags::OpenFlags;
 use axfs_os::link::{create_link, remove_link};
 use axfs_os::mount::{check_mounted, mount_fat_fs, umount_fat_fs};
 use axfs_os::pipe::make_pipe;
@@ -28,6 +29,8 @@ const AT_REMOVEDIR: usize = 0x200;        // Remove directory instead of unlinki
 ///    - dir_fd：文件描述符
 ///    - path_addr：路径地址
 ///    - force_dir：是否强制为目录
+///
+/// 一般情况下, 传入path末尾是`/`的话, 生成的FilePath是一个目录，否则是一个文件；但如果force_dir为true, 则生成的FilePath一定是一个目录(自动补充`/`)
 fn deal_with_path(dir_fd: usize, path_addr: Option<*const u8>, force_dir: bool) -> Option<FilePath> {
     let process = current_process();
     let process_inner = process.inner.lock();
@@ -46,6 +49,7 @@ fn deal_with_path(dir_fd: usize, path_addr: Option<*const u8>, force_dir: bool) 
     if path.ends_with('.') {     // 如果path以.或..结尾, 则加上/告诉FilePath::new它是一个目录
         path = format!("{}/", path);
     }
+    debug!("path: {}", path);
 
     if !path.starts_with('/') && dir_fd != AT_FDCWD {   // 如果不是绝对路径, 且dir_fd不是AT_FDCWD, 则需要将dir_fd和path拼接起来
         if dir_fd >= process_inner.fd_table.len() {
@@ -151,7 +155,7 @@ pub fn syscall_write(fd: usize, buf: *const u8, count: usize) -> isize {
 /// 说明：如果打开的是一个目录，那么返回的文件描述符指向的是该目录的描述符。(后面会用到针对目录的文件描述符)
 /// flags: O_RDONLY: 0, O_WRONLY: 1, O_RDWR: 2, O_CREAT: 64, O_DIRECTORY: 65536
 pub fn syscall_openat(fd: usize, path: *const u8, flags: usize, _mode: u8) -> isize {
-    let force_dir = flags & 65536 != 0;
+    let force_dir = OpenFlags::from(flags).is_dir();
     let path = deal_with_path(fd, Some(path), force_dir).unwrap();
     let process = current_process();
     let mut process_inner = process.inner.lock();
@@ -161,7 +165,7 @@ pub fn syscall_openat(fd: usize, path: *const u8, flags: usize, _mode: u8) -> is
     if path.is_dir() {
         debug!("open dir");
         if let Ok(dir) = new_dir(path.path().to_string(), flags.into()) {
-            debug!("new dir_desc successfully allocated");
+            debug!("new dir_desc successfully allocated: {}", path.path());
             process_inner.fd_table[fd_num] = Some(Arc::new(dir));
             fd_num as isize
         } else {

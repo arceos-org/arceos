@@ -22,6 +22,7 @@ pub use file::{new_fd, FileDesc, FileMetaData};
 pub use dir::{new_dir, DirDesc};
 pub use stdio::{Stderr, Stdin, Stdout};
 pub use types::{FilePath, DirEntType, DirEnt};
+pub use axfs::api;
 
 
 /// 读取path文件的内容，但不新建文件描述符
