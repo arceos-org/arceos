@@ -4,12 +4,15 @@ use axlog::info;
 use axmem::paging::KERNEL_PAGE_TABLE;
 use axtask::{TaskId, RUN_QUEUE};
 use spinlock::SpinNoIrq;
+
 extern crate alloc;
+
 use crate::process::{yield_now_task, Process, KERNEL_PROCESS_ID, PID2PC};
 use alloc::boxed::Box;
-use alloc::string::{self, String, ToString};
+use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use riscv::asm;
+
 /// 初赛测例
 #[allow(dead_code)]
 const JUNIOR_TESTCASES: &[&str] = &[
@@ -163,7 +166,8 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
 struct TestResult {
     sum: usize,
     accepted: usize,
-    now_testcase: Option<(String, usize)>, // 同时记录名称与进程号
+    now_testcase: Option<(String, usize)>,
+    // 同时记录名称与进程号
     failed_testcases: Vec<String>,
 }
 
@@ -235,6 +239,7 @@ pub fn finish_one_test(exit_code: i32, pid: usize) {
     TESTRESULT.lock().finish_one_test(exit_code, pid);
 }
 
+#[allow(dead_code)]
 pub fn show_result() {
     TESTRESULT.lock().show_result();
 }

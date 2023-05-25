@@ -53,4 +53,24 @@ impl OpenFlags {
     pub fn writable(&self) -> bool {
         self.contains(Self::WRONLY) || self.contains(Self::RDWR)
     }
+    /// 获取创建权限
+    pub fn creatable(&self) -> bool {
+        self.writable()
+    }
+    /// 获取创建新文件权限
+    /// 与上面的区别是，如果文件已存在，返回 EEXIST
+    pub fn new_creatable(&self) -> bool {
+        self.contains(Self::EXCLUSIVE)
+    }
+
+    /// 获取是否是目录
+    pub fn is_dir(&self) -> bool {
+        self.contains(Self::DIR)
+    }
+}
+
+impl From<usize> for OpenFlags {
+    fn from(val: usize) -> Self {
+        Self::from_bits_truncate(val as u32)
+    }
 }

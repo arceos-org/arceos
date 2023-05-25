@@ -101,6 +101,7 @@ impl File {
     fn _open_at(dir: Option<&VfsNodeRef>, path: &str, opts: &OpenOptions) -> AxResult<Self> {
         debug!("open file: {} {:?}", path, opts);
         if !opts.is_valid() {
+            debug!("invalid open options: {:?}", opts);
             return ax_err!(InvalidInput);
         }
 
@@ -155,9 +156,13 @@ impl File {
     }
     /// 读文件, 返回读取的字节数
     pub fn read(&mut self, buf: &mut [u8]) -> AxResult<usize> {
+        // debug!("buf_len!!: {}", buf.len());
+        // let buf_str = String::from_utf8_lossy(buf);
+        // debug!("buf_str!!: {}", buf_str);
         let node = self.node.access(Cap::READ)?;
         let read_len = node.read_at(self.offset, buf)?;
         self.offset += read_len as u64;
+        // debug!("read_len!!: {}", read_len);
         Ok(read_len)
     }
     /// 写文件, 返回写入的字节数
@@ -255,7 +260,7 @@ impl Directory {
     pub fn remove_dir(&self, path: &str) -> AxResult {
         crate::root::remove_dir(self.access_at(path)?, path)
     }
-    //获取目录
+    /// 获取目录
     pub fn read_dir(&mut self, dirents: &mut [DirEntry]) -> AxResult<usize> {
         let n = self
             .node

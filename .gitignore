@@ -1,6 +1,8 @@
-/target
-/.vscode
+target/
+.vscode/
 .DS_Store
 *.asm
 *.img
-/testcases
+testcases/
+.idea/
+mnt/

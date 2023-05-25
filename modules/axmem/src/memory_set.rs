@@ -3,9 +3,8 @@ use alloc::{string::String, vec::Vec};
 use axalloc::GlobalPage;
 use axhal::{
     mem::{virt_to_phys, VirtAddr, PAGE_SIZE_4K},
-    paging::{MappingFlags, PageSize, PageTable, PagingResult},
+    paging::{MappingFlags, PageTable},
 };
-use memory_addr::PhysAddr;
 pub const USER_STACK_SIZE: usize = 4096;
 pub const MAX_HEAP_SIZE: usize = 4096;
 use riscv::asm;
@@ -172,7 +171,7 @@ impl MemorySet {
             let data = area.pages.as_slice();
             // 抛弃原先的区域
             // 页表解映射
-            self.page_table
+            let _ = self.page_table
                 .unmap_region(area_start_va, area.pages.size());
             if start_va <= area_start_va && area_end_va <= end_va {
                 // 原有的区间被完全征用，直接删除

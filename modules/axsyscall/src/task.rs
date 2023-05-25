@@ -9,7 +9,6 @@ use axprocess::{
 };
 extern crate alloc;
 use alloc::vec::Vec;
-use log::info;
 
 use crate::flags::{TimeSecs, TimeVal, UtsName, WaitFlags, TMS};
 /// 处理与任务（线程）有关的系统调用

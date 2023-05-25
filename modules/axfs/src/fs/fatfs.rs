@@ -27,14 +27,20 @@ pub struct FatFileSystem {
 
 /// 封装fatfs库的File,实现Send和Sync以用于多线程环境。
 pub struct FileWrapper<'a>(Mutex<File<'a, Disk, NullTimeProvider, LossyOemCpConverter>>);
+
 /// 封装fatfs库的Dir,实现Send和Sync以用于多线程环境。
 pub struct DirWrapper<'a>(Dir<'a, Disk, NullTimeProvider, LossyOemCpConverter>);
 
 unsafe impl Sync for FatFileSystem {}
+
 unsafe impl Send for FatFileSystem {}
+
 unsafe impl<'a> Send for FileWrapper<'a> {}
+
 unsafe impl<'a> Sync for FileWrapper<'a> {}
+
 unsafe impl<'a> Send for DirWrapper<'a> {}
+
 unsafe impl<'a> Sync for DirWrapper<'a> {}
 
 impl FatFileSystem {
@@ -200,7 +206,7 @@ impl VfsNodeOps for DirWrapper<'static> {
 }
 
 impl VfsOps for FatFileSystem {
-    /// 实现VfsOps trait以提供根目录相关操作
+    /// 根目录
     fn root_dir(&self) -> VfsNodeRef {
         let root_dir = unsafe { (*self.root_dir.get()).as_ref().unwrap() };
         root_dir.clone()

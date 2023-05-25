@@ -12,7 +12,10 @@ axalloc = { path = "../axalloc" }
 axlog = { path = "../axlog" }
 axprocess = { path = "../axprocess" }
 axfs_os = { path = "../axfs_os" }
+axfs = { path = "../axfs" }
 axmem = { path = "../axmem" }
+axsync = { path = "../axsync" }
+axerrno = { path = "../../crates/axerrno" }
 log = "0.4.0"
 bitflags = "= 2.1.0"
 memory_addr = { path = "../../crates/memory_addr" }

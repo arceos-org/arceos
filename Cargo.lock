@@ -236,6 +236,7 @@ dependencies = [
  "axsync",
  "axtask",
  "bitflags 2.1.0",
+ "log",
 ]
 
 [[package]]
@@ -380,11 +381,14 @@ name = "axsyscall"
 version = "0.1.0"
 dependencies = [
  "axalloc",
+ "axerrno",
+ "axfs",
  "axfs_os",
  "axhal",
  "axlog",
  "axmem",
  "axprocess",
+ "axsync",
  "bitflags 2.1.0",
  "log",
  "memory_addr",

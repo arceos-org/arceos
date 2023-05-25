@@ -1,13 +1,15 @@
 use alloc::vec;
 use alloc::{collections::BTreeMap, string::String, sync::Arc, vec::Vec};
+use alloc::string::ToString;
 use axfs_os::read_file;
 use axfs_os::{file_io::FileIO, Stderr, Stdin, Stdout};
 use axhal::arch::{write_page_table_root, TrapFrame};
 use axhal::mem::VirtAddr;
 use axhal::paging::MappingFlags;
-use axlog::info;
 use axmem::memory_set::USER_STACK_SIZE;
+
 const KERNEL_STACK_SIZE: usize = 4096;
+
 use crate::flags::{CloneFlags, WaitStatus};
 use crate::test::finish_one_test;
 use axmem::memory_set::MemorySet;
@@ -19,8 +21,10 @@ use axtask::{
 use spinlock::SpinNoIrq;
 
 use riscv::asm;
+
 pub static PID2PC: SpinNoIrq<BTreeMap<u64, Arc<Process>>> = SpinNoIrq::new(BTreeMap::new());
 pub const KERNEL_PROCESS_ID: u64 = 1;
+
 /// 进程的的数据结构
 pub struct Process {
     /// 进程的pid和初始化的线程的tid是一样的
@@ -46,11 +50,13 @@ pub struct ProcessInner {
     /// 退出状态码
     pub exit_code: i32,
     /// 文件描述符表
-    pub fd_table: Vec<Option<Arc<dyn FileIO + Send + Sync>>>,
+    pub fd_table: Vec<Option<Arc<dyn FileIO>>>,
+    /// 进程工作目录
+    pub cwd: String,
 }
 
 impl ProcessInner {
-    pub fn new(parent: u64, memory_set: Arc<SpinNoIrq<MemorySet>>, heap_bottom: usize) -> Self {
+    pub fn new(parent: u64, memory_set: Arc<SpinNoIrq<MemorySet>>, heap_bottom: usize, fd_table: Vec<Option<Arc<dyn FileIO>>>) -> Self {
         Self {
             parent,
             children: Vec::new(),
@@ -60,14 +66,8 @@ impl ProcessInner {
             heap_top: heap_bottom,
             is_zombie: false,
             exit_code: 0,
-            fd_table: vec![
-                // 标准输入
-                Some(Arc::new(Stdin)),
-                // 标准输出
-                Some(Arc::new(Stdout)),
-                // 标准错误
-                Some(Arc::new(Stderr)),
-            ],
+            fd_table,
+            cwd: "/".to_string(),   // 这里的工作目录是根目录
         }
     }
     pub fn get_page_table_token(&self) -> usize {
@@ -82,6 +82,9 @@ impl ProcessInner {
         self.fd_table.push(None);
         self.fd_table.len() - 1
     }
+    pub fn get_cwd(&self) -> String {
+        self.cwd.clone()
+    }
 }
 
 impl Process {
@@ -91,7 +94,7 @@ impl Process {
         // let mut page_table = copy_from_kernel_memory();
         // let (entry, user_stack_bottom) = load_from_elf(&mut page_table, get_app_data(name));
         let mut memory_set = MemorySet::new_from_kernel();
-        let page_table_token = memory_set.page_table_token();
+        let _page_table_token = memory_set.page_table_token();
         let elf_data = read_file(path).unwrap();
         let (entry, user_stack_bottom, heap_bottom) =
             MemorySet::from_elf(&mut memory_set, elf_data.as_slice());
@@ -142,8 +145,19 @@ impl Process {
                 KERNEL_PROCESS_ID,
                 Arc::new(SpinNoIrq::new(memory_set)),
                 heap_bottom,
+                vec![
+                    // 标准输入
+                    Some(Arc::new(Stdin)),
+                    // 标准输出
+                    Some(Arc::new(Stdout)),
+                    // 标准错误
+                    Some(Arc::new(Stderr)),
+                    // // 工作目录, fd_table[3]固定用来存放工作目录
+                    // Some(Arc::new(CurWorkDirDesc::new('/'.to_string()))),   // 这里的工作目录是根目录
+                ]
             )),
         });
+
         // 记录该进程，防止被回收
         PID2PC
             .lock()
@@ -263,9 +277,9 @@ impl Process {
         &self,
         flags: CloneFlags,
         stack: Option<usize>,
-        ptid: usize,
+        _ptid: usize,
         tls: usize,
-        ctid: usize,
+        _ctid: usize,
     ) -> u64 {
         let mut inner = self.inner.lock();
         // 是否共享虚拟地址空间
@@ -322,8 +336,10 @@ impl Process {
                     parent_id,
                     new_memory_set,
                     inner.heap_bottom,
+                    self.inner.lock().fd_table.clone(),
                 )),
             });
+
             // 记录该进程，防止被回收
             PID2PC.lock().insert(process_id, Arc::clone(&new_process));
             new_process.inner.lock().tasks.push(Arc::clone(&new_task));
@@ -373,13 +389,12 @@ impl Process {
     /// 将数据映射到对应的段
     pub fn mmap(
         &self,
-        start: VirtAddr,
-        end: VirtAddr,
-        flags: MappingFlags,
-        random_pos: bool,
-        data: Option<&[u8]>,
-    ) {
-    }
+        _start: VirtAddr,
+        _end: VirtAddr,
+        _flags: MappingFlags,
+        _random_pos: bool,
+        _data: Option<&[u8]>,
+    ) {}
 }
 
 /// 初始化内核调度进程
@@ -391,6 +406,7 @@ pub fn init_kernel_process() {
             0,
             Arc::new(SpinNoIrq::new(MemorySet::new_empty())),
             0,
+            vec![], // 内核进程不需要文件描述符
         )),
     });
     axtask::init_scheduler();
@@ -404,7 +420,7 @@ pub fn init_kernel_process() {
 
 /// 将进程转化为调度进程，此时会运行所有的测例文件
 pub fn init_user_process() {
-    let main_task = Process::new("waitpid");
+    let main_task = Process::new("fstat");
     RUN_QUEUE.lock().add_task(main_task);
 }
 

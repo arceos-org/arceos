@@ -1,3 +1,4 @@
+use alloc::string::String;
 use super::file_io::FileIO;
 use axerrno::{AxError, AxResult};
 use axhal::console::{getchar, write_bytes};
@@ -44,6 +45,9 @@ impl FileIO for Stdin {
     fn seek(&self, _pos: usize) -> AxResult<u64> {
         Err(AxError::Unsupported) // 如果没有实现seek, 则返回Unsupported
     }
+    fn get_type(&self) -> String {
+        String::from("Stdin")
+    }
 }
 
 impl FileIO for Stdout {
@@ -66,6 +70,9 @@ impl FileIO for Stdout {
     fn seek(&self, _pos: usize) -> AxResult<u64> {
         Err(AxError::Unsupported) // 如果没有实现seek, 则返回Unsupported
     }
+    fn get_type(&self) -> String {
+        String::from("Stdout")
+    }
 }
 
 impl FileIO for Stderr {
@@ -84,5 +91,8 @@ impl FileIO for Stderr {
     }
     fn seek(&self, _pos: usize) -> AxResult<u64> {
         Err(AxError::Unsupported) // 如果没有实现seek, 则返回Unsupported
+    }
+    fn get_type(&self) -> String {
+        String::from("Stderr")
     }
 }
