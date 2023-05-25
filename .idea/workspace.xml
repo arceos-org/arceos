@@ -14,17 +14,11 @@
   <component name="ChangeListManager">
     <list default="true" id="7c62798e-00ca-45fb-8290-e63c15b16cfe" name="更改" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axfs_os/src/file.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axfs_os/src/file.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build_img.sh" beforeDir="false" afterPath="$PROJECT_DIR$/build_img.sh" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/modules/axfs_os/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axfs_os/src/lib.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axfs_os/src/mount.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axfs_os/src/mount.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axfs_os/src/types.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axfs_os/src/types.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axmem/src/memory_set.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axmem/src/memory_set.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axprocess/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axprocess/src/lib.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axprocess/src/process.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axprocess/src/process.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/modules/axprocess/src/test.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axprocess/src/test.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/modules/axsyscall/src/fs.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axsyscall/src/fs.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axsyscall/src/mem.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axsyscall/src/mem.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axsyscall/src/task.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axsyscall/src/task.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/axsyscall/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axsyscall/src/lib.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -67,7 +61,7 @@
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
     "git-widget-placeholder": "merge__fs",
-    "last_opened_file_path": "//wsl$/Ubuntu-20.04/home/ccyd/HW/RustOS/oscomp/maturin",
+    "last_opened_file_path": "//wsl$/Ubuntu-20.04/home/ccyd/.cargo/git/checkouts/rust-fatfs-168a09f1b9eebca0/a3a834e",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",

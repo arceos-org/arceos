@@ -2,7 +2,7 @@
 
 use axfs_os::types::Kstat;
 use flags::{MMAPFlags, TimeSecs, TimeVal, UtsName, WaitFlags, MMAPPROT, TMS};
-use log::error;
+use log::{debug, error};
 use fs::*;
 use mem::{syscall_brk, syscall_mmap, syscall_munmap};
 use task::*;
@@ -22,8 +22,8 @@ mod task;
 #[no_mangle]
 // #[cfg(feature = "user")]
 pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
-    axlog::info!("syscall: {}", get_syscall_name(syscall_id));
-    axlog::info!("args: {:?}", args);
+    debug!("syscall: {}", get_syscall_name(syscall_id));
+    debug!("args: {:?}", args);
     match syscall_id {
         SYSCALL_OPENAT => syscall_openat(args[0], args[1] as *const u8, args[2] as usize, args[3] as u8), // args[0] is fd, args[1] is filename, args[2] is flags, args[3] is mode
         SYSCALL_CLOSE => syscall_close(args[0]), // args[0] is fd

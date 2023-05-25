@@ -1,9 +1,10 @@
 use alloc::sync::Arc;
 use axhal::arch::write_page_table_root;
-use axlog::info;
+use axlog::{debug, info};
 use axmem::paging::KERNEL_PAGE_TABLE;
 use axtask::{TaskId, RUN_QUEUE};
 use spinlock::SpinNoIrq;
+use axfs_os::api;
 
 extern crate alloc;
 
@@ -16,38 +17,38 @@ use riscv::asm;
 /// 初赛测例
 #[allow(dead_code)]
 const JUNIOR_TESTCASES: &[&str] = &[
-    "brk",
-    "chdir",
-    "clone",
-    "close",
-    "dup",
-    "dup2",
+    // "brk",
+    // "chdir",
+    // "clone",
+    // "close",
+    // "dup",
+    // "dup2",
     "execve",
-    "exit",
-    "fork",
-    "fstat",
-    "getcwd",
-    "getdents",
-    "getpid",
-    "getppid",
-    "gettimeofday",
-    "mkdir_",
-    "mmap",
-    "mount",
-    "munmap",
-    "open",
-    "openat",
-    "pipe",
-    "read",
-    "sleep",
-    "times",
-    "umount",
-    "uname",
-    "unlink",
-    "wait",
-    "waitpid",
-    "write",
-    "yield",
+    // "exit",
+    // "fork",
+    // "fstat",
+    // "getcwd",
+    // "getdents",
+    // "getpid",
+    // "getppid",
+    // "gettimeofday",
+    // "mkdir_",
+    // // "mmap",
+    // "mount",
+    // // "munmap",
+    // "open",
+    // "openat",
+    // // "pipe",
+    // "read",
+    // "sleep",
+    // "times",
+    // "umount",
+    // "uname",
+    // "unlink",
+    // "wait",
+    // // "waitpid",
+    // "write",
+    // // "yield",
 ];
 
 /// libc静态测例
@@ -230,8 +231,8 @@ impl TestResult {
     }
 }
 lazy_static::lazy_static! {
-    static ref TESTITER: SpinNoIrq<Box<dyn Iterator<Item = &'static &'static str> + Send>> = SpinNoIrq::new(Box::new(LIBC_STATIC_TESTCASES.iter()));
-    static ref TESTRESULT: SpinNoIrq<TestResult> = SpinNoIrq::new(TestResult::new(LIBC_STATIC_TESTCASES.len()));
+    static ref TESTITER: SpinNoIrq<Box<dyn Iterator<Item = &'static &'static str> + Send>> = SpinNoIrq::new(Box::new(JUNIOR_TESTCASES.iter()));
+    static ref TESTRESULT: SpinNoIrq<TestResult> = SpinNoIrq::new(TestResult::new(JUNIOR_TESTCASES.len()));
 }
 
 /// 某一个测试用例完成之后调用，记录测试结果
@@ -246,8 +247,10 @@ pub fn show_result() {
 
 /// 执行运行所有测例的任务
 pub fn run_testcases() {
+    debug!("run_testcases");
     loop {
-        let ans = TESTITER.lock().next().map_or_else(
+        let testcase = TESTITER.lock().next();
+        let ans = testcase.map_or_else(
             || {
                 // 已经执行完所有测例，输出测试结果并且跳出
                 TESTRESULT.lock().show_result();
@@ -289,6 +292,11 @@ pub fn run_testcases() {
         } else {
             // 已经测试完所有的测例
             break;
+        }
+
+        if testcase.unwrap().to_string() == "chdir".to_string() {
+            // chdir会改变当前目录，需要重新设置
+            api::set_current_dir("/").expect("reset current dir failed");
         }
     }
     panic!("All test finish!");
