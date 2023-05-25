@@ -64,9 +64,9 @@ impl FromStr for IpAddr {
     }
 }
 
-impl Into<ip_addr_t> for IpAddr {
-    fn into(self) -> ip_addr_t {
-        match self {
+impl From<IpAddr> for ip_addr_t {
+    fn from(val: IpAddr) -> Self {
+        match val {
             IpAddr::Ipv4(Ipv4Addr(addr)) => ip_addr_t {
                 u_addr: ip_addr__bindgen_ty_1 {
                     ip4: ip4_addr_t { addr },
@@ -111,8 +111,8 @@ impl fmt::Display for IpAddr {
 impl Ipv4Addr {
     pub fn from_bytes(bytes: &[u8]) -> Ipv4Addr {
         let mut addr: u32 = 0;
-        for i in 0..4 {
-            addr |= (bytes[i] as u32) << (8 * i);
+        for (i, &b) in bytes.iter().enumerate().take(4) {
+            addr |= (b as u32) << (8 * i);
         }
         Ipv4Addr(addr)
     }

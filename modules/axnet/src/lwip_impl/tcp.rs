@@ -3,7 +3,7 @@ use alloc::{boxed::Box, collections::VecDeque};
 use axerrno::{ax_err, AxResult};
 use axsync::Mutex;
 use axtask::yield_now;
-use core::{ffi::c_void, pin::Pin};
+use core::{ffi::c_void, pin::Pin, ptr::null_mut};
 use lwip_rust::bindings::{
     err_t, ip_addr_t, pbuf, pbuf_free, tcp_accept, tcp_arg, tcp_bind, tcp_close, tcp_connect,
     tcp_listen_with_backlog, tcp_new, tcp_output, tcp_pcb, tcp_recv, tcp_recved, tcp_write,
@@ -113,7 +113,7 @@ impl TcpSocket {
 
     pub fn local_addr(&self) -> AxResult<SocketAddr> {
         if self.pcb.0.is_null() {
-            return ax_err!(NotConnected);
+            ax_err!(NotConnected)
         } else {
             let guard = LWIP_MUTEX.lock();
             let addr = unsafe { (*self.pcb.0).local_ip };
@@ -124,16 +124,16 @@ impl TcpSocket {
                 IpAddr::from(addr),
                 port
             );
-            return Ok(SocketAddr {
+            Ok(SocketAddr {
                 addr: addr.into(),
                 port,
-            });
+            })
         }
     }
 
     pub fn peer_addr(&self) -> AxResult<SocketAddr> {
         if self.pcb.0.is_null() {
-            return ax_err!(NotConnected);
+            ax_err!(NotConnected)
         } else {
             let guard = LWIP_MUTEX.lock();
             let addr = unsafe { (*self.pcb.0).remote_ip };
@@ -144,10 +144,10 @@ impl TcpSocket {
                 IpAddr::from(addr),
                 port
             );
-            return Ok(SocketAddr {
+            Ok(SocketAddr {
                 addr: addr.into(),
                 port,
-            });
+            })
         }
     }
 
@@ -174,6 +174,7 @@ impl TcpSocket {
         // wait for connect
         debug!("[TcpSocket] wait for connect");
         lwip_loop_once();
+        #[allow(clippy::while_immutable_condition)]
         while self.inner.connect_result == 1 {
             yield_now();
             lwip_loop_once();
@@ -231,7 +232,7 @@ impl TcpSocket {
         if !self.pcb.0.is_null() {
             let guard = LWIP_MUTEX.lock();
             unsafe {
-                tcp_arg(self.pcb.0, 0 as *mut c_void);
+                tcp_arg(self.pcb.0, null_mut());
                 tcp_recv(self.pcb.0, None);
                 tcp_accept(self.pcb.0, None);
                 match tcp_close(self.pcb.0) {
@@ -243,7 +244,7 @@ impl TcpSocket {
                 }
             }
             drop(guard);
-            self.pcb.0 = 0 as *mut tcp_pcb;
+            self.pcb.0 = null_mut();
             Ok(())
         } else {
             ax_err!(NotConnected)
@@ -321,5 +322,11 @@ impl Drop for TcpSocket {
     fn drop(&mut self) {
         debug!("[TcpSocket] drop");
         self.shutdown().unwrap();
+    }
+}
+
+impl Default for TcpSocket {
+    fn default() -> Self {
+        Self::new()
     }
 }

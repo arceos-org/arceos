@@ -159,7 +159,6 @@ fn ip4_addr_gen(a: u8, b: u8, c: u8, d: u8) -> ip4_addr_t {
     ip4_addr_t {
         addr: unsafe {
             lwip_htonl(((a as u32) << 24) | ((b as u32) << 16) | ((c as u32) << 8) | (d as u32))
-                as u32
         },
     }
 }
@@ -173,9 +172,9 @@ pub fn init(mut net_dev: AxNetDevice) {
     LWIP_MUTEX.init_by(Mutex::new(()));
     let _guard = LWIP_MUTEX.lock();
 
-    let mut ipaddr: ip4_addr_t = ip4_addr_gen(10, 0, 2, 15); // QEMU user networking default IP
-    let mut netmask: ip4_addr_t = ip4_addr_gen(255, 255, 255, 0);
-    let mut gw: ip4_addr_t = ip4_addr_gen(10, 0, 2, 2); // QEMU user networking gateway
+    let ipaddr: ip4_addr_t = ip4_addr_gen(10, 0, 2, 15); // QEMU user networking default IP
+    let netmask: ip4_addr_t = ip4_addr_gen(255, 255, 255, 0);
+    let gw: ip4_addr_t = ip4_addr_gen(10, 0, 2, 2); // QEMU user networking gateway
 
     let dev = net_dev;
     let mut netif: netif = unsafe { core::mem::zeroed() };
@@ -193,9 +192,9 @@ pub fn init(mut net_dev: AxNetDevice) {
         lwip_init();
         netif_add(
             &mut ETH0.netif.lock().0,
-            &mut ipaddr,
-            &mut netmask,
-            &mut gw,
+            &ipaddr,
+            &netmask,
+            &gw,
             &mut ETH0 as *mut _ as *mut c_void,
             Some(ethif_init),
             Some(ethernet_input),

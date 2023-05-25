@@ -75,7 +75,7 @@ impl UdpSocket {
     /// [`Err(NotConnected)`](AxError::NotConnected) if not connected.
     pub fn local_addr(&self) -> AxResult<SocketAddr> {
         if self.pcb.0.is_null() {
-            return ax_err!(NotConnected);
+            ax_err!(NotConnected)
         } else {
             let _guard = LWIP_MUTEX.lock();
             let addr = unsafe { (*self.pcb.0).local_ip };
@@ -85,10 +85,10 @@ impl UdpSocket {
                 IpAddr::from(addr),
                 port
             );
-            return Ok(SocketAddr {
+            Ok(SocketAddr {
                 addr: addr.into(),
                 port,
-            });
+            })
         }
     }
 
@@ -96,7 +96,7 @@ impl UdpSocket {
     /// [`Err(NotConnected)`](AxError::NotConnected) if not connected.
     pub fn peer_addr(&self) -> AxResult<SocketAddr> {
         if self.pcb.0.is_null() {
-            return ax_err!(NotConnected);
+            ax_err!(NotConnected)
         } else {
             let _guard = LWIP_MUTEX.lock();
             let addr = unsafe { (*self.pcb.0).remote_ip };
@@ -106,10 +106,10 @@ impl UdpSocket {
                 IpAddr::from(addr),
                 port
             );
-            return Ok(SocketAddr {
+            Ok(SocketAddr {
                 addr: addr.into(),
                 port,
-            });
+            })
         }
     }
 
@@ -233,7 +233,7 @@ impl UdpSocket {
                 udp_recv(self.pcb.0, None, null_mut());
                 udp_remove(self.pcb.0);
             }
-            self.pcb.0 = 0 as *mut udp_pcb;
+            self.pcb.0 = null_mut();
             Ok(())
         } else {
             ax_err!(InvalidInput)
@@ -250,6 +250,12 @@ impl Drop for UdpSocket {
     fn drop(&mut self) {
         debug!("[UdpSocket] drop");
         self.shutdown().unwrap();
+    }
+}
+
+impl Default for UdpSocket {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
