@@ -11,6 +11,7 @@ axfs = { path = "../axfs" }
 axtask = { path = "../axtask" }
 axio = { path = "../../crates/axio" }
 axsync = { path = "../axsync" }
+axlog = { path = "../axlog" }
 axhal = { path = "../axhal" }
 
 log = "0.4.0"

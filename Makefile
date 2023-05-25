@@ -2,17 +2,18 @@
 ARCH ?= riscv64
 SMP ?= 1
 MODE ?= release
-LOG ?= warn
+LOG ?= info
 
 A ?= apps/helloworld
 APP ?= $(A)
 APP_FEATURES ?=
 DISK_IMG ?= disk.img
 
-FS ?= n
+# 是否启用文件系统，默认启用
+FS ?= y
 NET ?= n
 GRAPHIC ?= n
-
+TEST ?= 1
 ifeq ($(wildcard $(APP)),)
   $(error Application path "$(APP)" is not valid)
 endif

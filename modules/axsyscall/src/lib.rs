@@ -2,6 +2,7 @@
 
 use axfs_os::types::Kstat;
 use flags::{MMAPFlags, TimeSecs, TimeVal, UtsName, WaitFlags, MMAPPROT, TMS};
+use log::error;
 use fs::*;
 use mem::{syscall_brk, syscall_mmap, syscall_munmap};
 use task::*;
@@ -72,7 +73,9 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         SYSCALL_FSTAT => syscall_fstat(args[0], args[1] as *mut Kstat),
 
         _ => {
-            panic!("Invalid Syscall Id: {}!", syscall_id);
+            error!("Invalid Syscall Id: {}!", syscall_id);
+            return -1;
+            // panic!("Invalid Syscall Id: {}!", syscall_id);
         }
     }
 }

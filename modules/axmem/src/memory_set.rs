@@ -211,30 +211,6 @@ impl MemorySet {
             }
         }
     }
-
-    pub fn translate(
-        &self,
-        start_va: VirtAddr,
-    ) -> PagingResult<(PhysAddr, MappingFlags, PageSize)> {
-        self.page_table.query(start_va)
-    }
-    /// 在当前地址空间下，将vaddr转化为真实的物理地址
-    #[allow(unused)]
-    pub fn translate_va(&self, vaddr: VirtAddr) -> Option<PhysAddr> {
-        match self.page_table.query(vaddr) {
-            Ok((paddr, _, _)) => Some(paddr),
-            Err(x) => None,
-        }
-    }
-    pub fn translate_refmut<T>(&self, ptr: *mut T) -> PagingResult<&'static mut T> {
-        let start_va: VirtAddr = (ptr as usize).into();
-        match self.page_table.query(start_va) {
-            Ok((paddr, _, _)) => {
-                return Ok(unsafe { (paddr.as_usize() as *mut T).as_mut().unwrap() })
-            }
-            Err(x) => return Err(x),
-        }
-    }
     pub fn translate_str(&self, ptr: *const u8) -> String {
         let mut string = String::new();
         let mut va: usize = ptr as usize;

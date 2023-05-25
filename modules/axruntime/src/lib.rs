@@ -136,7 +136,7 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         axdisplay::init_display(all_devices.display);
     }
 
-    axprocess::process::init_user_process();
+    axprocess::init_tasks();
 
     info!("Initialize interrupt handlers...");
     init_interrupt();
@@ -209,7 +209,7 @@ fn init_interrupt() {
 
     axhal::irq::register_handler(TIMER_IRQ_NUM, || {
         update_timer();
-        #[cfg(feature = "multitask")]
+        // #[cfg(feature = "multitask")]
         axtask::on_timer_tick();
     });
 
