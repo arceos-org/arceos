@@ -17,7 +17,7 @@ use core::str::FromStr;
 
 use libax::io::{self, prelude::*};
 use libax::net::{IpAddr, TcpListener, TcpStream};
-use libax::task;
+use libax::thread;
 
 const LOCAL_IP: &str = "10.0.2.15";
 const LOCAL_PORT: u16 = 5555;
@@ -70,7 +70,7 @@ fn accept_loop() -> io::Result {
         match listener.accept() {
             Ok((stream, addr)) => {
                 info!("new client {}: {}", i, addr);
-                task::spawn(move || match http_server(stream) {
+                thread::spawn(move || match http_server(stream) {
                     Err(e) => error!("client connection error: {:?}", e),
                     Ok(()) => info!("client {} closed successfully", i),
                 });

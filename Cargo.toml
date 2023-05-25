@@ -32,6 +32,7 @@ members = [
     "crates/driver_net",
     "crates/driver_pci",
     "crates/driver_virtio",
+    "crates/flatten_objects",
     "crates/handler_table",
     "crates/kernel_guard",
     "crates/lazy_init",

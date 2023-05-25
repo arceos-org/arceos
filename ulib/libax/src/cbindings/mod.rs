@@ -2,29 +2,32 @@
 
 #![allow(clippy::missing_safety_doc)]
 
-#[macro_use]
-mod utils;
-
-#[cfg(feature = "alloc")]
-mod fd_table;
-#[cfg(feature = "fs")]
-mod file;
-#[cfg(feature = "alloc")]
-mod malloc;
-#[cfg(feature = "net")]
-mod socket;
-
-mod thread;
-mod time;
-
 /// cbindgen:ignore
 #[rustfmt::skip]
 #[path = "./ctypes_gen.rs"]
 #[allow(dead_code, non_camel_case_types, non_upper_case_globals, clippy::upper_case_acronyms)]
 mod ctypes;
 
-use crate::io::Write;
-use core::ffi::{c_char, c_int};
+#[macro_use]
+mod utils;
+
+#[cfg(feature = "alloc")]
+mod fd_ops;
+#[cfg(feature = "fs")]
+mod file;
+#[cfg(feature = "alloc")]
+mod malloc;
+#[cfg(feature = "pipe")]
+mod pipe;
+#[cfg(feature = "net")]
+mod socket;
+#[cfg(feature = "multitask")]
+mod thread;
+
+mod setjmp;
+mod stdio;
+mod sys;
+mod time;
 
 /// Sets the seed for the random number generator.
 #[no_mangle]
@@ -38,27 +41,23 @@ pub unsafe extern "C" fn ax_rand_u32() -> u32 {
     crate::rand::rand_u32()
 }
 
-/// Print a string to the global standard output stream.
-#[no_mangle]
-pub unsafe extern "C" fn ax_print_str(buf: *const c_char, count: usize) -> c_int {
-    if buf.is_null() {
-        return -axerrno::LinuxError::EFAULT.code();
-    }
-    let bytes = unsafe { core::slice::from_raw_parts(buf as *const u8, count as _) };
-    crate::io::stdout().write(bytes).unwrap() as _
-}
-
 /// Abort the current process.
 #[no_mangle]
 pub unsafe extern "C" fn ax_panic() -> ! {
     panic!()
 }
 
+/// Exits the current thread.
+#[no_mangle]
+pub unsafe extern "C" fn ax_exit(exit_code: core::ffi::c_int) -> ! {
+    crate::thread::exit(exit_code)
+}
+
 #[cfg(feature = "alloc")]
 pub use self::malloc::{ax_free, ax_malloc};
 
 #[cfg(feature = "alloc")]
-pub use self::fd_table::{ax_close, ax_fstat, ax_read, ax_write};
+pub use self::fd_ops::{ax_close, ax_dup, ax_dup3, ax_fcntl, ax_fstat, ax_read, ax_write};
 
 #[cfg(feature = "fs")]
 pub use self::file::{ax_getcwd, ax_lseek, ax_lstat, ax_open, ax_stat};
@@ -72,5 +71,9 @@ pub use self::socket::{
 #[cfg(feature = "multitask")]
 pub use self::thread::ax_getpid;
 
-pub use self::thread::ax_exit;
+#[cfg(feature = "pipe")]
+pub use self::pipe::ax_pipe;
+
+pub use self::stdio::{ax_print_str, ax_println_str};
+pub use self::sys::ax_sysconf;
 pub use self::time::{ax_clock_gettime, ax_nanosleep};

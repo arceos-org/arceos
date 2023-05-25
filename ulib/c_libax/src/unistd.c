@@ -1,3 +1,5 @@
+#include <errno.h>
+#include <fcntl.h>
 #include <libax.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -33,23 +35,15 @@ unsigned int sleep(unsigned int seconds)
     return 0;
 }
 
-int usleep(unsigned int usec)
+int usleep(unsigned useconds)
 {
-    struct timespec ts;
-
-    ts.tv_sec = (long int)(usec / 1000000);
-    ts.tv_nsec = (long int)usec % 1000;
-    if (nanosleep(&ts, &ts))
-        return -1;
-
-    return 0;
+    struct timespec tv = {.tv_sec = useconds / 1000000, .tv_nsec = (useconds % 1000000) * 1000};
+    return nanosleep(&tv, &tv);
 }
 
-// TODO:
-long int sysconf(int name)
+long sysconf(int name)
 {
-    unimplemented();
-    return 0;
+    return ax_sysconf(name);
 }
 
 int close(int fd)
@@ -140,6 +134,62 @@ int ftruncate(int fd, off_t length)
 {
     unimplemented();
     return 0;
+}
+
+#endif
+
+#ifdef AX_CONFIG_PIPE
+int pipe(int fd[2])
+{
+    return ax_pipe(&fd[0], &fd[1]);
+}
+
+int pipe2(int fd[2], int flag)
+{
+    if (!flag)
+        return pipe(fd);
+    if (flag & ~(O_CLOEXEC | O_NONBLOCK))
+        return -EINVAL;
+
+    int res = pipe(fd);
+    if (res != 0)
+        return res;
+
+    if (flag & O_CLOEXEC) {
+        fcntl(fd[0], F_SETFD, FD_CLOEXEC);
+        fcntl(fd[1], F_SETFD, FD_CLOEXEC);
+    }
+    if (flag & O_NONBLOCK) {
+        fcntl(fd[0], F_SETFL, O_NONBLOCK);
+        fcntl(fd[1], F_SETFL, O_NONBLOCK);
+    }
+
+    return 0;
+}
+#endif
+
+#ifdef AX_CONFIG_ALLOC
+int dup(int fd)
+{
+    return ax_dup(fd);
+}
+
+int dup2(int old, int new)
+{
+    int r;
+    if (old == new) {
+        r = fcntl(old, F_GETFD);
+        if (r >= 0)
+            return old;
+        else
+            return r;
+    }
+    return ax_dup3(old, new, 0);
+}
+
+int dup3(int old, int new, int flags)
+{
+    return ax_dup3(old, new, flags);
 }
 
 #endif

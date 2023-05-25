@@ -16,7 +16,7 @@ documentation = "https://rcore-os.github.io/arceos/libax/index.html"
 
 [features]
 # Generate bindings for C code
-cbindings = ["cbindgen", "bindgen"]
+cbindings = ["cbindgen", "bindgen", "dep:spin", "dep:lazy_static"]
 
 # Multicore
 smp = ["axruntime/smp"]
@@ -32,7 +32,7 @@ paging = ["axruntime/paging"]
 irq = ["axruntime/irq"]
 
 # Multi-task
-multitask = ["axtask", "axruntime/multitask", "axsync/multitask"]
+multitask = ["alloc", "axtask", "axruntime/multitask", "axsync/multitask"]
 sched_fifo = ["axtask/sched_fifo"]
 sched_rr = ["axtask/sched_rr", "irq"]
 sched_cfs = ["axtask/sched_cfs", "irq"]
@@ -41,8 +41,11 @@ sched_cfs = ["axtask/sched_cfs", "irq"]
 fs = ["alloc", "axruntime/fs", "dep:axdriver", "dep:axfs"]
 
 # Networking
-net = ["axruntime/net", "dep:axdriver", "dep:axnet"]
+net = ["alloc", "axruntime/net", "dep:axdriver", "dep:axnet"]
 use-lwip = ["axnet?/lwip"]
+
+# Pipe
+pipe = ["alloc"]
 
 # Display
 display = ["axruntime/display", "dep:axdriver", "dep:axdisplay"]
@@ -67,10 +70,14 @@ platform-qemu-virt-aarch64 = ["axhal/platform-qemu-virt-aarch64", "bus-mmio"]
 default = ["axtask?/sched_fifo"]
 
 [dependencies]
+spin = { version = "0.9", optional = true }
+lazy_static = { version = "1.4", features = ["spin_no_std"], optional = true }
 spinlock = { path = "../../crates/spinlock" }
+flatten_objects = { path = "../../crates/flatten_objects" }
 axio = { path = "../../crates/axio" }
 axerrno = { path = "../../crates/axerrno" }
 axalloc = { path = "../../modules/axalloc", optional = true }
+axconfig = { path = "../../modules/axconfig" }
 axdisplay = { path = "../../modules/axdisplay", optional = true }
 axdriver = { path = "../../modules/axdriver", optional = true }
 axhal = { path = "../../modules/axhal" }
@@ -84,3 +91,4 @@ axtask = { path = "../../modules/axtask", default-features = false, optional = t
 [build-dependencies]
 cbindgen = { version = "0.24", optional = true }
 bindgen ={ version = "0.65", optional = true }
+axconfig = { path = "../../modules/axconfig" }

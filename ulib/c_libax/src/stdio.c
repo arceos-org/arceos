@@ -139,9 +139,7 @@ int putchar(int c)
 
 int puts(const char *s)
 {
-    int r;
-    r = -(out(stdout->fd, s, strlen(s)) < 0 || putchar('\n') < 0);
-    return r;
+    return ax_println_str(s, strlen(s));
 }
 
 // Print to the file. only understands %d, %x, %p, %s.

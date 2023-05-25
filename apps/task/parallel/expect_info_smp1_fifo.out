@@ -35,7 +35,6 @@ part 13: TaskId(17) \[1625000, 1750000)
 part 14: TaskId(18) \[1750000, 1875000)
 part 15: TaskId(19) \[1875000, 2000000)
 part 15: TaskId(19) finished
-main task woken up! timeout=
 sum = 61783189038
 Parallel summation tests run OK!
 Shutting down...

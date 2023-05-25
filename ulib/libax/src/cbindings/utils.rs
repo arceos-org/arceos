@@ -29,3 +29,14 @@ macro_rules! ax_call_body {
         }
     }};
 }
+
+macro_rules! ax_call_body_no_debug {
+    ($($stmt: tt)*) => {{
+        #[allow(clippy::redundant_closure_call)]
+        let res = (|| -> LinuxResult<_> { $($stmt)* })();
+        match res {
+            Ok(v) => v as _,
+            Err(e) => -e.code() as _,
+        }
+    }};
+}
