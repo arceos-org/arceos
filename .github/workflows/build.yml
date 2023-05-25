@@ -12,7 +12,7 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: nightly-2023-02-01
+        toolchain: nightly
         components: rust-src, clippy, rustfmt
     - name: Clone github submodule
       run: git submodule update --init --recursive
@@ -39,7 +39,7 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: nightly-2023-02-01
+        toolchain: nightly
         components: rust-src, llvm-tools-preview
     - uses: actions-rs/install@v0.1
       with:
@@ -70,6 +70,8 @@ jobs:
       run: make ARCH=${{ matrix.arch }} A=apps/net/httpclient NET=y
     - name: Build net/httpserver
       run: make ARCH=${{ matrix.arch }} A=apps/net/httpserver NET=y
+    - name: Build hv
+      run: make ARCH=${{ matrix.arch }} A=apps/hv HV=y
 
     - name: Download musl toolchain
       run: |
