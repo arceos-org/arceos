@@ -227,19 +227,6 @@ pub fn init(mut net_dev: AxNetDevice) {
         "  ip6:      {}",
         IpAddr::from(ETH0.netif.lock().0.ip6_addr[0])
     );
-
-    // let ipaddr: ip_addr_t = ip_addr_t {
-    //     u_addr: ip_addr__bindgen_ty_1 { ip4: ipaddr },
-    //     type_: lwip_ip_addr_type_IPADDR_TYPE_V4 as u8,
-    // };
-    // unsafe {
-    //     lwiperf_start_tcp_server(&ipaddr, 5555, None, core::ptr::null_mut());
-    // }
-    drop(_guard);
-
-    // loop {
-    //     lwip_loop_once();
-    // }
 }
 
 pub fn lwip_loop_once() {

@@ -100,7 +100,7 @@ fn compile_lwip(arch: &str) {
         .file("depend/lwip/src/core/ipv6/mld6.c")
         .file("depend/lwip/src/core/ipv6/nd6.c")
         .file("depend/lwip/src/netif/ethernet.c")
-        .file("depend/lwip/src/apps/lwiperf/lwiperf.c")
+        // .file("depend/lwip/src/apps/lwiperf/lwiperf.c")
         .file("custom/sys_arch.c");
 
     base_config
