@@ -2,8 +2,8 @@ use core::sync::atomic::AtomicUsize;
 extern crate alloc;
 
 use alloc::{collections::BTreeMap, sync::Arc};
-use axdriver::AllDevices;
 use axdriver::prelude::*;
+use axdriver::AllDevices;
 use axerrno::{ax_err, AxError, AxResult};
 use axsync::Mutex;
 use scheme::Scheme;
@@ -11,8 +11,8 @@ use scheme::Scheme;
 #[cfg(feature = "user_net")]
 use self::net::NetDevice;
 
-use super::KernelScheme;
 use super::schemes;
+use super::KernelScheme;
 
 pub struct DeviceScheme {
     #[cfg(feature = "user_net")]
@@ -89,14 +89,14 @@ impl KernelScheme for DeviceScheme {}
 mod net {
     extern crate alloc;
     use alloc::{collections::BTreeMap, sync::Arc};
-    use axsync::Mutex;
-    use lazy_init::LazyInit;
-    use driver_net::NetBufferPool;
-    use axdriver::{prelude::NetDriverOps, AxNetDevice, AllDevices};
+    use axdriver::{prelude::NetDriverOps, AllDevices, AxNetDevice};
     use axerrno::{ax_err, AxError, AxResult};
+    use axsync::Mutex;
+    use driver_net::NetBufferPool;
+    use lazy_init::LazyInit;
 
-    use super::{Device, map_err};
-    
+    use super::{map_err, Device};
+
     enum NetFileType {
         Net,
         Stat { offset: usize },
@@ -110,7 +110,7 @@ mod net {
         Some(Arc::new({
             let pool = NetBufferPool::new(128, 1526).unwrap();
             POOL.init_by(pool);
-            
+
             let mut net_dev = all_device.net.take_one().expect("No NIC found");
             net_dev.fill_rx_buffers(&POOL).unwrap();
             NetDevice {

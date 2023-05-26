@@ -1,18 +1,23 @@
 extern crate alloc;
-use core::{sync::atomic::{AtomicU64, Ordering}, time::Duration};
+use core::{
+    sync::atomic::{AtomicU64, Ordering},
+    time::Duration,
+};
 
-use alloc::{sync::Weak, collections::{VecDeque, BTreeMap}};
-use axerrno::{AxResult, ax_err, AxError, from_ret_code};
+use alloc::boxed::Box;
+use alloc::{
+    collections::{BTreeMap, VecDeque},
+    sync::Weak,
+};
+use axerrno::{ax_err, from_ret_code, AxError, AxResult};
 use axhal::{mem::VirtAddr, paging::MappingFlags};
 use axmem::copy_slice_from_user;
 use axsync::Mutex;
 use axtask::current;
-use scheme::{Scheme, Packet};
-use alloc::boxed::Box;
-use syscall_number::{SYS_OPEN, SYS_READ, SYS_WRITE, SYS_CLOSE, SYS_DUP};
+use scheme::{Packet, Scheme};
+use syscall_number::{SYS_CLOSE, SYS_DUP, SYS_OPEN, SYS_READ, SYS_WRITE};
 
 use super::KernelScheme;
-
 
 pub struct UserInner {
     id: usize,
@@ -68,7 +73,7 @@ impl UserInner {
         for result_item in buf.iter() {
             trace!("Root send {} -> {}", result_item.id, result_item.a);
             self.response.lock().insert(result_item.id, result_item.a);
-        }       
+        }
         Ok(buf.len() * core::mem::size_of::<Packet>())
     }
 
@@ -79,7 +84,10 @@ impl UserInner {
             uid: 0,
             gid: 0,
             pid: current().id().as_u64() as usize,
-            a, b, c, d
+            a,
+            b,
+            c,
+            d,
         };
         trace!("User Request: {:#?}", packet);
         self.requests.lock().push_back(packet);
@@ -96,20 +104,18 @@ impl UserInner {
 }
 
 pub struct UserScheme {
-    inner: Weak<UserInner>,    
+    inner: Weak<UserInner>,
 }
 impl UserScheme {
     pub fn new(inner: Weak<UserInner>) -> Self {
-        UserScheme {
-            inner
-        }
+        UserScheme { inner }
     }
 }
 impl Scheme for UserScheme {
     fn open(&self, path: &str, flags: usize, _uid: u32, _gid: u32) -> AxResult<usize> {
         let inner = self.inner.upgrade().ok_or(AxError::NotFound)?;
         let addr = ShadowMemory::new(path.as_bytes())?;
-        inner.handle_request(SYS_OPEN, addr.addr().into(), path.len(), flags)    
+        inner.handle_request(SYS_OPEN, addr.addr().into(), path.len(), flags)
     }
     fn read(&self, id: usize, buf: &mut [u8]) -> AxResult<usize> {
         let inner = self.inner.upgrade().ok_or(AxError::NotFound)?;
@@ -134,24 +140,26 @@ impl Scheme for UserScheme {
 impl KernelScheme for UserScheme {}
 struct TempMemory {
     page_start: VirtAddr,
-    page_end: VirtAddr,        
+    page_end: VirtAddr,
 }
 struct ShadowMemory {
-    mem: TempMemory,    
+    mem: TempMemory,
 }
 struct ShadowMemoryMut<'a> {
     mem: TempMemory,
-    write_back: &'a mut [u8]
+    write_back: &'a mut [u8],
 }
 impl ShadowMemory {
     fn new(data: &[u8]) -> AxResult<Self> {
-        let page_start = axmem::mmap_page(None, data.len(), MappingFlags::READ | MappingFlags::USER)?;
+        let page_start =
+            axmem::mmap_page(None, data.len(), MappingFlags::READ | MappingFlags::USER)?;
         let page_end = page_start + data.len();
         axmem::copy_byte_buffer_to_user(0, page_start.as_ptr(), data);
         Ok(Self {
             mem: TempMemory {
-                page_start, page_end
-            }
+                page_start,
+                page_end,
+            },
         })
     }
     fn addr(&self) -> VirtAddr {
@@ -160,13 +168,18 @@ impl ShadowMemory {
 }
 impl<'a> ShadowMemoryMut<'a> {
     fn new(data: &'a mut [u8]) -> AxResult<Self> {
-        let page_start = axmem::mmap_page(None, data.len(), MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER)?;
+        let page_start = axmem::mmap_page(
+            None,
+            data.len(),
+            MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
+        )?;
         let page_end = page_start + data.len();
         Ok(Self {
             mem: TempMemory {
-                page_start, page_end
+                page_start,
+                page_end,
             },
-            write_back: data
+            write_back: data,
         })
     }
     fn addr(&self) -> VirtAddr {
@@ -178,7 +191,11 @@ impl<'a> ShadowMemoryMut<'a> {
 }
 impl Drop for TempMemory {
     fn drop(&mut self) {
-        axmem::munmap_page(self.page_start, (self.page_end - self.page_start.into()).into()).unwrap();
+        axmem::munmap_page(
+            self.page_start,
+            (self.page_end - self.page_start.into()).into(),
+        )
+        .unwrap();
     }
 }
 impl<'a> Drop for ShadowMemoryMut<'a> {

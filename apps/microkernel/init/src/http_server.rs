@@ -12,7 +12,7 @@ extern crate alloc;
 
 use core::str::FromStr;
 
-use libax::{io::File, OpenFlags, axerrno::AxResult, task::yield_now};
+use libax::{axerrno::AxResult, io::File, task::yield_now, OpenFlags};
 
 const LOCAL_IP: &str = "10.0.2.15";
 const LOCAL_PORT: u16 = 5555;

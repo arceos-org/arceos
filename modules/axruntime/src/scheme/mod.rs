@@ -1,13 +1,13 @@
 extern crate alloc;
-use alloc::{collections::BTreeMap, sync::Arc};
-use alloc::vec::Vec;
 use alloc::boxed::Box;
 use alloc::string::ToString;
-use axerrno::{AxResult, to_ret_code, ax_err, AxError};
-use axmem::{copy_slice_from_user, copy_byte_buffer_to_user};
+use alloc::vec::Vec;
+use alloc::{collections::BTreeMap, sync::Arc};
+use axerrno::{ax_err, to_ret_code, AxError, AxResult};
+use axmem::{copy_byte_buffer_to_user, copy_slice_from_user};
+use axsync::{Mutex, MutexGuard};
 use axtask::current;
 use lazy_init::LazyInit;
-use axsync::{Mutex, MutexGuard};
 
 pub struct FileHandle {
     pub scheme_id: SchemeId,
@@ -24,35 +24,39 @@ pub fn syscall_handler(id: usize, params: [usize; 6]) -> isize {
                 SYS_ARG_SLICE => {
                     match id {
                         SYS_FMAP => ax_err!(Unsupported), // TODO
-                        _ => {
-                            file_op_slice(id, fd, &copy_slice_from_user(params[1].into(), params[2]))
-                        }
+                        _ => file_op_slice(
+                            id,
+                            fd,
+                            &copy_slice_from_user(params[1].into(), params[2]),
+                        ),
                     }
                 }
                 SYS_ARG_MSLICE => {
                     match id {
                         SYS_FSTAT => ax_err!(Unsupported), // TODO
-                        _ => {
-                            file_op_slice_mut(id, fd, params[1], params[2])
-                        }
+                        _ => file_op_slice_mut(id, fd, params[1], params[2]),
                     }
                 }
                 _ => match id {
-                        SYS_CLOSE => close(fd),
-                        SYS_DUP => dup(params[0], &copy_slice_from_user(params[1].into(), params[2])),
-                        SYS_DUP2 => ax_err!(Unsupported), // TODO
-                        SYS_FCNTL => ax_err!(Unsupported), // TODO
-                        SYS_FRENAME => ax_err!(Unsupported), // TODO
-                        SYS_FUNMAP => ax_err!(Unsupported), // TODO
-                        _ => file_op(id, fd, params[1], params[2]),
-                }
-
+                    SYS_CLOSE => close(fd),
+                    SYS_DUP => dup(
+                        params[0],
+                        &copy_slice_from_user(params[1].into(), params[2]),
+                    ),
+                    SYS_DUP2 => ax_err!(Unsupported),    // TODO
+                    SYS_FCNTL => ax_err!(Unsupported),   // TODO
+                    SYS_FRENAME => ax_err!(Unsupported), // TODO
+                    SYS_FUNMAP => ax_err!(Unsupported),  // TODO
+                    _ => file_op(id, fd, params[1], params[2]),
+                },
             }
-            
-        },
+        }
         SYS_CLASS_PATH => match id {
-            SYS_OPEN => open(&axmem::copy_str_from_user(params[0].into(), params[1]), params[2]),
-            SYS_RMDIR => ax_err!(Unsupported), // TODO
+            SYS_OPEN => open(
+                &axmem::copy_str_from_user(params[0].into(), params[1]),
+                params[2],
+            ),
+            SYS_RMDIR => ax_err!(Unsupported),  // TODO
             SYS_UNLINK => ax_err!(Unsupported), // TODO
             _ => ax_err!(Unsupported),
         },
@@ -74,12 +78,12 @@ fn file_op_slice_mut(id: usize, fd: usize, ptr: usize, len: usize) -> AxResult<u
 
 pub fn init_scheme() {
     GLOBAL_SCHEME_LIST.init_by(Mutex::new(SchemeList::new_init()));
-    GLOBAL_FD_LIST.init_by(Mutex::new(Vec::new()));    
+    GLOBAL_FD_LIST.init_by(Mutex::new(Vec::new()));
     open("stdin:", 0).unwrap();
     open("stdout:", 0).unwrap();
-    open("stdout:", 0).unwrap();   
+    open("stdout:", 0).unwrap();
 }
-fn insert_fd(file_handle: Arc<FileHandle>) -> AxResult<usize>  {
+fn insert_fd(file_handle: Arc<FileHandle>) -> AxResult<usize> {
     let mut fd_list = GLOBAL_FD_LIST.lock();
     if let Some(fd) = fd_list.iter_mut().enumerate().find_map(|(fd, handle)| {
         if handle.is_none() {
@@ -102,7 +106,7 @@ pub fn open(path: &str, options: usize) -> AxResult<usize> {
     let (scheme, path) = match (path_split.next(), path_split.next()) {
         (Some(scheme), Some(path)) => (scheme, path),
         (Some(path), None) => ("file", path),
-        _ => return ax_err!(NotFound)
+        _ => return ax_err!(NotFound),
     };
     trace!("Open {}:{}", scheme, path);
     let scheme_id = schemes().find_name(scheme).ok_or(AxError::NotFound)?;
@@ -110,16 +114,16 @@ pub fn open(path: &str, options: usize) -> AxResult<usize> {
 
     let file_handle = Arc::new(FileHandle {
         scheme_id,
-        file_id: scheme.open(path, options, 0, 0).unwrap()
+        file_id: scheme.open(path, options, 0, 0).unwrap(),
     });
-    
+
     insert_fd(file_handle)
 }
 
 pub fn find_fd(fd: usize) -> AxResult<Arc<FileHandle>> {
     let fd_list = GLOBAL_FD_LIST.lock();
     if fd >= fd_list.len() {
-        return ax_err!(BadFileDescriptor)
+        return ax_err!(BadFileDescriptor);
     }
     if let Some(handle) = &fd_list[fd] {
         Ok(handle.clone())
@@ -135,7 +139,8 @@ pub fn file_op(op: usize, fd: usize, c: usize, d: usize) -> AxResult<usize> {
     let mut packet = Packet {
         a: op,
         b: file,
-        c, d,
+        c,
+        d,
         id: 0,
         pid: current().id().as_u64() as usize,
         uid: 0,
@@ -149,7 +154,7 @@ pub fn close(fd: usize) -> AxResult<usize> {
     let handle = find_fd(fd)?;
 
     let scheme = schemes().find_id(handle.scheme_id).unwrap();
-    
+
     let ret = scheme.close(handle.file_id)?;
     {
         let mut fd_list = GLOBAL_FD_LIST.lock();
@@ -167,12 +172,11 @@ fn dup_inner(fd: usize, buf: &[u8]) -> AxResult<Arc<FileHandle>> {
         let scheme = schemes().find_id(handle.scheme_id).unwrap();
         let new_id = scheme.dup(handle.file_id, buf)?;
 
-        Ok(Arc::new(FileHandle{
+        Ok(Arc::new(FileHandle {
             scheme_id: handle.scheme_id,
             file_id: new_id,
         }))
     }
-    
 }
 
 pub fn dup(fd: usize, buf: &[u8]) -> AxResult<usize> {
@@ -208,12 +212,15 @@ impl SchemeList {
     pub fn insert(&mut self, name: &str, scheme: Arc<dyn KernelScheme + Sync + Send>) {
         let id = SchemeId(self.next_id);
         trace!("insert {} scheme", name);
-        self.next_id += 1;        
-        assert!(self.names.insert(name.to_string().into_boxed_str(), id).is_none());        
+        self.next_id += 1;
+        assert!(self
+            .names
+            .insert(name.to_string().into_boxed_str(), id)
+            .is_none());
         assert!(self.map.insert(id, scheme).is_none());
     }
 
-    pub fn find_name(&self, name: &str) -> Option<SchemeId>{
+    pub fn find_name(&self, name: &str) -> Option<SchemeId> {
         self.names.get(name).copied()
     }
     pub fn find_id(&self, id: SchemeId) -> Option<Arc<dyn KernelScheme + Sync + Send>> {
@@ -227,17 +234,15 @@ pub fn schemes() -> MutexGuard<'static, SchemeList> {
     GLOBAL_SCHEME_LIST.lock()
 }
 
-
 use scheme::Packet;
 pub use scheme::Scheme;
 use syscall_number::*;
-pub trait KernelScheme: Scheme {
-}
+pub trait KernelScheme: Scheme {}
 
+pub mod dev;
+mod io;
 mod root;
 mod user;
-mod io;
-pub mod dev;
 use io::{Stdin, Stdout};
 
 use self::root::RootScheme;

@@ -37,7 +37,7 @@ pub enum AxError {
     /// Bad File Descriptor
     BadFileDescriptor,
     /// Bad internal state.
-    BadState,    
+    BadState,
     /// The connection was refused by the remote server,
     ConnectionRefused,
     /// A non-empty directory was specified where an empty directory was expected.
@@ -224,9 +224,7 @@ impl From<AxError> for LinuxError {
 pub fn to_ret_code(result: AxResult<usize>) -> isize {
     match result {
         Ok(val) => val as isize,
-        Err(err) => {
-            -(err as i32 as u32 as isize + 1)
-        }
+        Err(err) => -(err as i32 as u32 as isize + 1),
     }
 }
 pub fn from_ret_code(result: isize) -> AxResult<usize> {
@@ -234,9 +232,7 @@ pub fn from_ret_code(result: isize) -> AxResult<usize> {
         Ok(result as usize)
     } else {
         let code = ((-result) - 1) as u32 as i32;
-        Err(unsafe {
-            *(&code as *const i32 as *const AxError)
-        })
+        Err(unsafe { *(&code as *const i32 as *const AxError) })
     }
 }
 

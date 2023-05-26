@@ -1,4 +1,4 @@
-use syscall_number::{io::OpenFlags, SYS_CLOSE, SYS_OPEN, SYS_READ, SYS_DUP};
+use syscall_number::{io::OpenFlags, SYS_CLOSE, SYS_DUP, SYS_OPEN, SYS_READ};
 
 use super::sys_number::SYS_WRITE;
 

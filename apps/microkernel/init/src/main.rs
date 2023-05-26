@@ -17,18 +17,12 @@ fn main() {
     println!("Start TCP deamon");
 
     net_deamon::init();
-    
-    spawn(|| {
-        start_tcp()
-    });
 
-    spawn(|| {
-        http_server::main()
-    });
-    
-    spawn(|| {
-        http_client::main()
-    });
+    spawn(|| start_tcp());
+
+    spawn(|| http_server::main());
+
+    spawn(|| http_client::main());
 
     loop {
         yield_now();

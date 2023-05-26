@@ -3,15 +3,13 @@
 
 use core::time::Duration;
 
-
-
 #[macro_use]
 extern crate libax;
 extern crate alloc;
 
+mod scheme;
 mod test_mem;
 mod test_sleep;
-mod scheme;
 
 #[no_mangle]
 fn main() {
@@ -24,8 +22,8 @@ fn main() {
 
 #[allow(unused)]
 fn sync_test() {
-    use libax::Mutex;
     use alloc::sync::Arc;
+    use libax::Mutex;
     let counter = Arc::new(Mutex::new(0));
 
     for i in 0..10 {

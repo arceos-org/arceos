@@ -3,7 +3,6 @@
 mod syscall;
 pub use syscall::*;
 
-
 pub use io::logging;
 pub use io::logging::__print_impl;
 pub use logging::{debug, error, info, trace, warn};
@@ -13,7 +12,7 @@ pub mod io;
 
 mod allocate;
 mod entry;
-#[path ="../../libax/src/rand.rs"]
+#[path = "../../libax/src/rand.rs"]
 pub mod rand;
 mod sync;
 pub use sync::{Mutex, MutexGuard};

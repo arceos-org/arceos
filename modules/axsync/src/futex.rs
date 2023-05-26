@@ -8,7 +8,6 @@ use spinlock::SpinNoIrq;
 
 extern crate alloc;
 
-
 struct FutexPool(SpinNoIrq<BTreeMap<PhysAddr, Arc<WaitQueue>>>);
 
 impl FutexPool {
@@ -17,11 +16,8 @@ impl FutexPool {
             panic!("Align is invalid!");
         }
 
-        let data: &'static AtomicU32 = unsafe {
-            &*(paddr.as_usize() as *const u32).cast()
-        };
-        
-        
+        let data: &'static AtomicU32 = unsafe { &*(paddr.as_usize() as *const u32).cast() };
+
         if data.load(Ordering::Acquire) != val {
             return false;
         }
@@ -35,7 +31,6 @@ impl FutexPool {
         true
     }
     pub fn current_wake(&self, paddr: PhysAddr, val: u32) -> u32 {
-
         for i in 0..val {
             if let Some(queue) = self.0.lock().get(&paddr).map(Arc::clone) {
                 queue.notify_one(true);
@@ -46,7 +41,7 @@ impl FutexPool {
                 return i;
             }
         }
-        
+
         return val;
     }
 }
@@ -65,12 +60,8 @@ pub fn futex_call(paddr: usize, op: usize, val: u32) -> isize {
             } else {
                 -2
             }
-        },
-        FUTEX_WAKE => {
-            FUTEX_GLOBAL_POOL.current_wake(paddr.into(), val) as isize
         }
-        _ => {
-            -1
-        }
+        FUTEX_WAKE => FUTEX_GLOBAL_POOL.current_wake(paddr.into(), val) as isize,
+        _ => -1,
     }
 }

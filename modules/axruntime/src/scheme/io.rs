@@ -1,7 +1,7 @@
 extern crate alloc;
+use alloc::vec::Vec;
 use axsync::{Mutex, MutexGuard};
 use scheme::Scheme;
-use alloc::vec::Vec;
 
 use super::KernelScheme;
 
@@ -26,7 +26,7 @@ impl Stdout {
     }
     pub fn new() -> Self {
         Stdout {
-            data: Mutex::new(Vec::new())
+            data: Mutex::new(Vec::new()),
         }
     }
 }

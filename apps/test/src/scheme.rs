@@ -2,19 +2,23 @@
 
 use core::time::Duration;
 
-use libax::task::{spawn_fn, self};
+use libax::task::{self, spawn_fn};
 extern crate alloc;
 
 pub mod server {
     use core::cell::RefCell;
 
-    use alloc::{vec::Vec, collections::BTreeMap};
-    use libax::{scheme::{Scheme, Packet}, axerrno::{AxResult, AxError, ax_err}, io::File};
+    use alloc::{collections::BTreeMap, vec::Vec};
+    use libax::{
+        axerrno::{ax_err, AxError, AxResult},
+        io::File,
+        scheme::{Packet, Scheme},
+    };
 
     struct ServerInner {
         data: Vec<u8>,
         fds: BTreeMap<usize, usize>, // fd, offset
-        next_fd: usize
+        next_fd: usize,
     }
     impl ServerInner {
         fn new() -> Self {
@@ -26,7 +30,7 @@ pub mod server {
         }
     }
     struct Server {
-        inner: RefCell<ServerInner>
+        inner: RefCell<ServerInner>,
     }
     impl Scheme for Server {
         fn open(&self, _path: &str, flags: usize, uid: u32, gid: u32) -> AxResult<usize> {
@@ -58,7 +62,11 @@ pub mod server {
         }
         fn close(&self, id: usize) -> AxResult<usize> {
             let mut inner = self.inner.borrow_mut();
-            inner.fds.remove(&id).ok_or(AxError::BadFileDescriptor).map(|_| 0)
+            inner
+                .fds
+                .remove(&id)
+                .ok_or(AxError::BadFileDescriptor)
+                .map(|_| 0)
         }
     }
     impl Server {
@@ -73,12 +81,18 @@ pub mod server {
         println!("Server started!");
         let server = Server::new();
         let channel = File::create(":/test").unwrap();
-        
+
         loop {
             let mut packet: Packet = Packet::default();
-            assert_eq!(channel.read_data(&mut packet).unwrap(), core::mem::size_of::<Packet>());
+            assert_eq!(
+                channel.read_data(&mut packet).unwrap(),
+                core::mem::size_of::<Packet>()
+            );
             server.handle(&mut packet);
-            assert_eq!(channel.write_data(&packet).unwrap(), core::mem::size_of::<Packet>());
+            assert_eq!(
+                channel.write_data(&packet).unwrap(),
+                core::mem::size_of::<Packet>()
+            );
         }
     }
 }
@@ -87,7 +101,11 @@ mod client {
     use core::time::Duration;
 
     use alloc::vec;
-    use libax::{task::{spawn, self}, io::File, axerrno::AxError};
+    use libax::{
+        axerrno::AxError,
+        io::File,
+        task::{self, spawn},
+    };
 
     pub fn main() {
         spawn(|| {
@@ -119,7 +137,6 @@ mod client {
                     print!("{}({}), ", i, char::from_u32(*i as u32).unwrap());
                 }
                 println!("");
-                
             }
         });
         loop {

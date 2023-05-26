@@ -1,9 +1,9 @@
 use core::slice;
 
-use crate::{Packet, str_from_raw_parts};
-use axerrno::AxResult as Result;
-use axerrno::AxError as Error;
+use crate::{str_from_raw_parts, Packet};
 use axerrno::to_ret_code;
+use axerrno::AxError as Error;
+use axerrno::AxResult as Result;
 use core::result::Result::Err;
 
 // From https://gitlab.redox-os.org/redox-os/syscall/-/blob/master/src/scheme/scheme.rs
@@ -11,26 +11,40 @@ pub trait Scheme {
     fn handle(&self, packet: &mut Packet) {
         use syscall_number::*;
         let res = match packet.a {
-            SYS_OPEN => if let Some(path) = unsafe { str_from_raw_parts(packet.b as *const u8, packet.c) } {
-                self.open(path, packet.d, packet.uid, packet.gid)
-            } else {
-                Err(Error::InvalidData)
-            },
-            SYS_RMDIR => if let Some(path) = unsafe { str_from_raw_parts(packet.b as *const u8, packet.c) } {
-                self.rmdir(path, packet.uid, packet.gid)
-            } else {
-                Err(Error::InvalidData)
-            },
-            SYS_UNLINK => if let Some(path) = unsafe { str_from_raw_parts(packet.b as *const u8, packet.c) } {
-                self.unlink(path, packet.uid, packet.gid)
-            } else {
-                Err(Error::InvalidData)
-            },
+            SYS_OPEN => {
+                if let Some(path) = unsafe { str_from_raw_parts(packet.b as *const u8, packet.c) } {
+                    self.open(path, packet.d, packet.uid, packet.gid)
+                } else {
+                    Err(Error::InvalidData)
+                }
+            }
+            SYS_RMDIR => {
+                if let Some(path) = unsafe { str_from_raw_parts(packet.b as *const u8, packet.c) } {
+                    self.rmdir(path, packet.uid, packet.gid)
+                } else {
+                    Err(Error::InvalidData)
+                }
+            }
+            SYS_UNLINK => {
+                if let Some(path) = unsafe { str_from_raw_parts(packet.b as *const u8, packet.c) } {
+                    self.unlink(path, packet.uid, packet.gid)
+                } else {
+                    Err(Error::InvalidData)
+                }
+            }
 
-            SYS_DUP => self.dup(packet.b, unsafe { slice::from_raw_parts(packet.c as *const u8, packet.d) }),
-            SYS_READ => self.read(packet.b, unsafe { slice::from_raw_parts_mut(packet.c as *mut u8, packet.d) }),
-            SYS_WRITE => self.write(packet.b, unsafe { slice::from_raw_parts(packet.c as *const u8, packet.d) }),
-            SYS_LSEEK => self.seek(packet.b, packet.c as isize, packet.d).map(|o| o as usize),
+            SYS_DUP => self.dup(packet.b, unsafe {
+                slice::from_raw_parts(packet.c as *const u8, packet.d)
+            }),
+            SYS_READ => self.read(packet.b, unsafe {
+                slice::from_raw_parts_mut(packet.c as *mut u8, packet.d)
+            }),
+            SYS_WRITE => self.write(packet.b, unsafe {
+                slice::from_raw_parts(packet.c as *const u8, packet.d)
+            }),
+            SYS_LSEEK => self
+                .seek(packet.b, packet.c as isize, packet.d)
+                .map(|o| o as usize),
             SYS_FCHMOD => self.fchmod(packet.b, packet.c as u16),
             SYS_FCHOWN => self.fchown(packet.b, packet.c as u32, packet.d as u32),
             SYS_FCNTL => self.fcntl(packet.b, packet.c, packet.d),
@@ -47,12 +61,16 @@ pub trait Scheme {
             // },
             // SYS_FUNMAP_OLD => self.funmap_old(packet.b),
             // SYS_FUNMAP => self.funmap(packet.b, packet.c),
-            SYS_FPATH => self.fpath(packet.b, unsafe { slice::from_raw_parts_mut(packet.c as *mut u8, packet.d) }),
-            SYS_FRENAME => if let Some(path) = unsafe { str_from_raw_parts(packet.c as *const u8, packet.d) } {
-                self.frename(packet.b, path, packet.uid, packet.gid)
-            } else {
-                Err(Error::InvalidData)
-            },
+            SYS_FPATH => self.fpath(packet.b, unsafe {
+                slice::from_raw_parts_mut(packet.c as *mut u8, packet.d)
+            }),
+            SYS_FRENAME => {
+                if let Some(path) = unsafe { str_from_raw_parts(packet.c as *const u8, packet.d) } {
+                    self.frename(packet.b, path, packet.uid, packet.gid)
+                } else {
+                    Err(Error::InvalidData)
+                }
+            }
             // SYS_FSTAT => if packet.d >= mem::size_of::<Stat>() {
             //     self.fstat(packet.b, unsafe { &mut *(packet.c as *mut Stat) })
             // } else {
@@ -71,7 +89,7 @@ pub trait Scheme {
             //     Err(Error::BadAddress)
             // },
             SYS_CLOSE => self.close(packet.b),
-            _ => Err(Error::BadFileDescriptor)
+            _ => Err(Error::BadFileDescriptor),
         };
 
         packet.a = to_ret_code(res) as usize;
@@ -134,38 +152,38 @@ pub trait Scheme {
     fn fcntl(&self, id: usize, cmd: usize, arg: usize) -> Result<usize> {
         Err(Error::BadFileDescriptor)
     }
-/*
-    #[allow(unused_variables)]
-    fn fevent(&self, id: usize, flags: EventFlags) -> Result<EventFlags> {
-        Err(Error::BadFileDescriptor)
-    }
-
-    #[allow(unused_variables)]
-    fn fmap_old(&self, id: usize, map: &OldMap) -> Result<usize> {
-        Err(Error::BadFileDescriptor)
-    }
-    #[allow(unused_variables)]
-    fn fmap(&self, id: usize, map: &Map) -> Result<usize> {
-        if map.flags.contains(MapFlags::MAP_FIXED) {
-            return Err(Error::new(EINVAL));
+    /*
+        #[allow(unused_variables)]
+        fn fevent(&self, id: usize, flags: EventFlags) -> Result<EventFlags> {
+            Err(Error::BadFileDescriptor)
         }
-        self.fmap_old(id, &OldMap {
-            offset: map.offset,
-            size: map.size,
-            flags: map.flags,
-        })
-    }
 
-    #[allow(unused_variables)]
-    fn funmap_old(&self, address: usize) -> Result<usize> {
-        Ok(0)
-    }
+        #[allow(unused_variables)]
+        fn fmap_old(&self, id: usize, map: &OldMap) -> Result<usize> {
+            Err(Error::BadFileDescriptor)
+        }
+        #[allow(unused_variables)]
+        fn fmap(&self, id: usize, map: &Map) -> Result<usize> {
+            if map.flags.contains(MapFlags::MAP_FIXED) {
+                return Err(Error::new(EINVAL));
+            }
+            self.fmap_old(id, &OldMap {
+                offset: map.offset,
+                size: map.size,
+                flags: map.flags,
+            })
+        }
 
-    #[allow(unused_variables)]
-    fn funmap(&self, address: usize, length: usize) -> Result<usize> {
-        Ok(0)
-    }
-*/
+        #[allow(unused_variables)]
+        fn funmap_old(&self, address: usize) -> Result<usize> {
+            Ok(0)
+        }
+
+        #[allow(unused_variables)]
+        fn funmap(&self, address: usize, length: usize) -> Result<usize> {
+            Ok(0)
+        }
+    */
     #[allow(unused_variables)]
     fn fpath(&self, id: usize, buf: &mut [u8]) -> Result<usize> {
         Err(Error::BadFileDescriptor)
@@ -175,17 +193,17 @@ pub trait Scheme {
     fn frename(&self, id: usize, path: &str, uid: u32, gid: u32) -> Result<usize> {
         Err(Error::BadFileDescriptor)
     }
-/*
-    #[allow(unused_variables)]
-    fn fstat(&self, id: usize, stat: &mut Stat) -> Result<usize> {
-        Err(Error::BadFileDescriptor)
-    }
+    /*
+        #[allow(unused_variables)]
+        fn fstat(&self, id: usize, stat: &mut Stat) -> Result<usize> {
+            Err(Error::BadFileDescriptor)
+        }
 
-    #[allow(unused_variables)]
-    fn fstatvfs(&self, id: usize, stat: &mut StatVfs) -> Result<usize> {
-        Err(Error::BadFileDescriptor)
-    }
-*/
+        #[allow(unused_variables)]
+        fn fstatvfs(&self, id: usize, stat: &mut StatVfs) -> Result<usize> {
+            Err(Error::BadFileDescriptor)
+        }
+    */
     #[allow(unused_variables)]
     fn fsync(&self, id: usize) -> Result<usize> {
         Err(Error::BadFileDescriptor)
@@ -195,15 +213,14 @@ pub trait Scheme {
     fn ftruncate(&self, id: usize, len: usize) -> Result<usize> {
         Err(Error::BadFileDescriptor)
     }
-/*
-    #[allow(unused_variables)]
-    fn futimens(&self, id: usize, times: &[TimeSpec]) -> Result<usize> {
-        Err(Error::BadFileDescriptor)
-    }
-*/
+    /*
+        #[allow(unused_variables)]
+        fn futimens(&self, id: usize, times: &[TimeSpec]) -> Result<usize> {
+            Err(Error::BadFileDescriptor)
+        }
+    */
     #[allow(unused_variables)]
     fn close(&self, id: usize) -> Result<usize> {
         Err(Error::BadFileDescriptor)
     }
 }
-

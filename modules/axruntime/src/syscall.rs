@@ -56,9 +56,7 @@ pub fn syscall_handler(id: usize, params: [usize; 6]) -> isize {
             }
         }
         #[cfg(feature = "scheme")]
-        file_syscall if file_syscall & SYS_CLASS != 0 => {
-            crate::scheme::syscall_handler(id, params)
-        }
+        file_syscall if file_syscall & SYS_CLASS != 0 => crate::scheme::syscall_handler(id, params),
         SYS_EXIT => {
             unsafe {
                 if USER_BUFFER.is_init() {
@@ -86,9 +84,7 @@ pub fn syscall_handler(id: usize, params: [usize; 6]) -> isize {
             ));
             0
         }
-        SYS_TIME_NANO => {
-            axhal::time::current_time_nanos() as isize
-        }
+        SYS_TIME_NANO => axhal::time::current_time_nanos() as isize,
         #[cfg(feature = "user-paging")]
         SYS_SBRK => {
             if let Some(value) = axmem::global_sbrk(params[0] as isize) {

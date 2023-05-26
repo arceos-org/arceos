@@ -32,10 +32,10 @@ mod mp;
 #[cfg(feature = "user")]
 mod syscall;
 
-#[cfg(feature = "user")]
-use axmem::{USER_START, USTACK_SIZE, USTACK_START};
 #[cfg(feature = "smp")]
 pub use self::mp::rust_main_secondary;
+#[cfg(feature = "user")]
+use axmem::{USER_START, USTACK_SIZE, USTACK_START};
 #[cfg(feature = "scheme")]
 mod scheme;
 
@@ -214,13 +214,12 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     #[cfg(feature = "user")]
     trap::user_space_entry();
 
-
     #[cfg(not(feature = "user"))]
     {
         extern "Rust" {
             fn main();
         }
-        unsafe { main() };        
+        unsafe { main() };
         #[cfg(feature = "multitask")]
         axtask::exit(0);
         #[cfg(not(feature = "multitask"))]

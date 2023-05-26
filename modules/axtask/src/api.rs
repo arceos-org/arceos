@@ -86,7 +86,6 @@ pub fn on_timer_tick() {
     RUN_QUEUE.lock().scheduler_timer_tick();
 }
 
-
 cfg_if::cfg_if! {
 if #[cfg(feature = "user-paging")] {
 pub fn spawn(f: usize, arg: usize) {
@@ -108,7 +107,7 @@ where
 }
 
 
-    
+
 /// set priority for current task.
 /// In CFS, priority is the nice value, ranging from -20 to 19.
 

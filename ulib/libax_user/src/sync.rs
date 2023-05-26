@@ -70,15 +70,20 @@ impl<T: ?Sized> Mutex<T> {
         loop {
             // Can fail to lock even if the spinlock is not locked. May be more efficient than `try_lock`
             // when called in a loop.
-            match self.value.compare_exchange_weak(
-                0,
-                1,
-                Ordering::Acquire,
-                Ordering::Relaxed,
-            ) {
+            match self
+                .value
+                .compare_exchange_weak(0, 1, Ordering::Acquire, Ordering::Relaxed)
+            {
                 Ok(_) => break,
                 Err(locked_val) => {
-                    futex(self.value.as_ptr(), FUTEX_WAIT, locked_val, 0, core::ptr::null(), 0);
+                    futex(
+                        self.value.as_ptr(),
+                        FUTEX_WAIT,
+                        locked_val,
+                        0,
+                        core::ptr::null(),
+                        0,
+                    );
                 }
             }
         }
@@ -165,7 +170,13 @@ impl<'a, T: ?Sized> Drop for MutexGuard<'a, T> {
     /// The dropping of the [`MutexGuard`] will release the lock it was created from.
     fn drop(&mut self) {
         self.lock.value.swap(0, Ordering::Release);
-        futex(self.lock.value.as_ptr(), FUTEX_WAKE, 1, 0, core::ptr::null(), 0)
+        futex(
+            self.lock.value.as_ptr(),
+            FUTEX_WAKE,
+            1,
+            0,
+            core::ptr::null(),
+            0,
+        )
     }
 }
-

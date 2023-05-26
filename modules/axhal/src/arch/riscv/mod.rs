@@ -8,9 +8,9 @@ use memory_addr::{PhysAddr, VirtAddr};
 use riscv::asm;
 use riscv::register::{satp, sstatus, stvec};
 
+pub use self::context::{GeneralRegisters, TaskContext, TrapFrame};
 #[cfg(feature = "user-paging")]
 pub use trap::{enter_uspace, first_uentry};
-pub use self::context::{GeneralRegisters, TaskContext, TrapFrame};
 
 /// Allows the current CPU to respond to interrupts.
 #[inline]

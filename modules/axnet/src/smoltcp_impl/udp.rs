@@ -1,5 +1,5 @@
-use axerrno::{ax_err, ax_err_type, AxError, AxResult};
 use super::Mutex;
+use axerrno::{ax_err, ax_err_type, AxError, AxResult};
 
 use smoltcp::iface::SocketHandle;
 use smoltcp::socket::udp::{self, BindError, SendError};

@@ -11,7 +11,7 @@ pub mod logging;
 use axerrno::{from_ret_code, AxResult};
 use syscall_number::io::OpenFlags;
 
-use crate::syscall::io::{open, read, write, dup, close};
+use crate::syscall::io::{close, dup, open, read, write};
 
 pub struct File {
     fd: usize,

@@ -5,11 +5,11 @@ extern crate alloc;
 #[macro_use]
 extern crate axlog;
 
-use alloc::{string::String, collections::BTreeMap};
 use alloc::sync::Arc;
 use alloc::vec::Vec;
+use alloc::{collections::BTreeMap, string::String};
 use axalloc::GlobalPage;
-use axerrno::{AxResult, AxError, ax_err};
+use axerrno::{ax_err, AxError, AxResult};
 use axhal::{
     mem::{phys_to_virt, virt_to_phys},
     paging::{MappingFlags, PageTable},
@@ -24,7 +24,6 @@ pub const USTACK_SIZE: usize = 4096;
 pub const TRAMPOLINE_START: usize = 0xffff_ffc0_0000_0000;
 pub const MMAP_AREA_START: usize = 0x10_0000_0000;
 pub const MMAP_AREA_END: usize = 0x20_0000_0000;
-
 
 pub struct MapSegment {
     start_vaddr: VirtAddr,
@@ -41,7 +40,7 @@ pub struct AddrSpace {
     segments: alloc::vec::Vec<MapSegment>,
     page_table: PageTable,
     heap: Option<HeapSegment>,
-    mmap_use: BTreeMap<VirtAddr, GlobalPage>
+    mmap_use: BTreeMap<VirtAddr, GlobalPage>,
 }
 
 impl AddrSpace {
@@ -61,7 +60,7 @@ impl AddrSpace {
         phy_page: Arc<GlobalPage>,
         flags: MappingFlags,
         huge_page: bool,
-    ) -> AxResult<()>{
+    ) -> AxResult<()> {
         self.page_table
             .map_region(vaddr, paddr, phy_page.size(), flags, huge_page)
             .map_err(|_| AxError::BadAddress)?;
@@ -172,52 +171,58 @@ impl AddrSpace {
     /// @param addr: desired memory position
     /// @param len: desired pages
     /// @returns: starting addr of the maped pages
-    pub fn mmap_page(&mut self, _addr: Option<VirtAddr>, len: usize, flags: MappingFlags) -> AxResult<VirtAddr> {
+    pub fn mmap_page(
+        &mut self,
+        _addr: Option<VirtAddr>,
+        len: usize,
+        flags: MappingFlags,
+    ) -> AxResult<VirtAddr> {
         let mut addr: VirtAddr = MMAP_AREA_START.into();
         let len = align_up_4k(len);
         let pages = len / PAGE_SIZE_4K;
         while addr + len < MMAP_AREA_END.into() {
-            if let Some(offset) = (0..pages).find(|offset| {
-                self.mmap_use.contains_key(&(addr + offset * PAGE_SIZE_4K))
-            }) {
+            if let Some(offset) = (0..pages)
+                .find(|offset| self.mmap_use.contains_key(&(addr + offset * PAGE_SIZE_4K)))
+            {
                 addr += (offset + 1) * PAGE_SIZE_4K;
             } else {
                 // TODO: undo when error
                 (0..pages).for_each(|offset| {
                     let phy_page = GlobalPage::alloc_zero().expect("Run out of memory!");
-                    self.page_table.map_region(
-                        addr + offset * PAGE_SIZE_4K,
-                        phy_page.start_paddr(virt_to_phys),
-                        PAGE_SIZE_4K,
-                        flags,
-                        false)
+                    self.page_table
+                        .map_region(
+                            addr + offset * PAGE_SIZE_4K,
+                            phy_page.start_paddr(virt_to_phys),
+                            PAGE_SIZE_4K,
+                            flags,
+                            false,
+                        )
                         .expect("Mapping error");
                     self.mmap_use.insert(addr + offset * PAGE_SIZE_4K, phy_page);
                 });
-                return Ok(addr)
+                return Ok(addr);
             }
         }
         ax_err!(NoMemory)
     }
 
     pub fn munmap_page(&mut self, addr: VirtAddr, len: usize) -> AxResult<()> {
-
         let len = align_up_4k(len);
         trace!("unmap: [{:x?}, {:x?})", addr, addr + len);
         let pages = len / PAGE_SIZE_4K;
-        if (0..pages).find(|offset| {
-            !self.mmap_use.contains_key(&(addr + offset * PAGE_SIZE_4K))
-        }).is_some() {
-            return ax_err!(BadAddress)
+        if (0..pages)
+            .find(|offset| !self.mmap_use.contains_key(&(addr + offset * PAGE_SIZE_4K)))
+            .is_some()
+        {
+            return ax_err!(BadAddress);
         } else {
             (0..pages).for_each(|offset| {
                 self.page_table.unmap(addr + offset * PAGE_SIZE_4K).unwrap();
-                self.mmap_use.remove(&(addr + offset * PAGE_SIZE_4K));                
+                self.mmap_use.remove(&(addr + offset * PAGE_SIZE_4K));
             })
         }
         Ok(())
     }
-    
 }
 
 static mut GLOBAL_USER_ADDR_SPACE: LazyInit<SpinNoIrq<AddrSpace>> = LazyInit::new();
@@ -258,13 +263,15 @@ pub fn init_global_addr_space() {
             user_phy_page.as_slice()[1]
         );
 
-        user_space.add_region(
-            segment.start_addr,
-            user_phy_page.start_paddr(virt_to_phys),
-            Arc::new(user_phy_page),
-            segment.flags | MappingFlags::USER,
-            false,
-        ).expect("Memory error!");
+        user_space
+            .add_region(
+                segment.start_addr,
+                user_phy_page.start_paddr(virt_to_phys),
+                Arc::new(user_phy_page),
+                segment.flags | MappingFlags::USER,
+                false,
+            )
+            .expect("Memory error!");
         data_end = data_end.max(segment.start_addr + align_up_4k(segment.size))
     }
 
@@ -279,25 +286,29 @@ pub fn init_global_addr_space() {
                 .expect("Alloc page error!");
         debug!("{:?}", user_stack_page);
 
-        user_space.add_region(
-            USTACK_START.into(),
-            user_stack_page.start_paddr(virt_to_phys),
-            Arc::new(user_stack_page),
-            MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
-            false,
-        ).expect("Memory Error");
+        user_space
+            .add_region(
+                USTACK_START.into(),
+                user_stack_page.start_paddr(virt_to_phys),
+                Arc::new(user_stack_page),
+                MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
+                false,
+            )
+            .expect("Memory Error");
     }
 
     extern "C" {
         fn strampoline();
     }
-    user_space.add_region_shadow(
-        TRAMPOLINE_START.into(),
-        virt_to_phys((strampoline as usize).into()),
-        PAGE_SIZE_4K,
-        MappingFlags::READ | MappingFlags::EXECUTE,
-        false,
-    ).expect("Memory Error");
+    user_space
+        .add_region_shadow(
+            TRAMPOLINE_START.into(),
+            virt_to_phys((strampoline as usize).into()),
+            PAGE_SIZE_4K,
+            MappingFlags::READ | MappingFlags::EXECUTE,
+            false,
+        )
+        .expect("Memory Error");
     unsafe {
         GLOBAL_USER_ADDR_SPACE.init_by(SpinNoIrq::new(user_space));
     }
@@ -312,31 +323,27 @@ pub fn alloc_user_page(vaddr: VirtAddr, size: usize, flags: MappingFlags) -> Arc
     let user_phy_page = Arc::new(user_phy_page);
 
     unsafe {
-        GLOBAL_USER_ADDR_SPACE.lock().add_region(
-            vaddr,
-            user_phy_page.start_paddr(virt_to_phys),
-            user_phy_page.clone(),
-            flags,
-            false,
-        ).expect("Memory Error");
+        GLOBAL_USER_ADDR_SPACE
+            .lock()
+            .add_region(
+                vaddr,
+                user_phy_page.start_paddr(virt_to_phys),
+                user_phy_page.clone(),
+                flags,
+                false,
+            )
+            .expect("Memory Error");
     }
 
     user_phy_page
 }
 
 pub fn global_sbrk(size: isize) -> Option<usize> {
-    unsafe {
-        GLOBAL_USER_ADDR_SPACE.lock().sbrk(size)
-    }
+    unsafe { GLOBAL_USER_ADDR_SPACE.lock().sbrk(size) }
 }
 
 pub fn get_satp() -> usize {
-    unsafe {
-        GLOBAL_USER_ADDR_SPACE
-            .lock()
-            .page_table_addr()
-            .into()
-    }
+    unsafe { GLOBAL_USER_ADDR_SPACE.lock().page_table_addr().into() }
 }
 
 pub fn mmap_page(addr: Option<VirtAddr>, len: usize, flags: MappingFlags) -> AxResult<VirtAddr> {
@@ -350,7 +357,7 @@ pub fn munmap_page(addr: VirtAddr, len: usize) -> AxResult<()> {
 }
 
 pub fn translate_buffer(vaddr: VirtAddr, size: usize, _write: bool) -> Vec<&'static mut [u8]> {
-    let addr_space = unsafe {GLOBAL_USER_ADDR_SPACE.lock()};
+    let addr_space = unsafe { GLOBAL_USER_ADDR_SPACE.lock() };
 
     let mut read_size = 0usize;
     let mut vaddr = vaddr;
@@ -384,12 +391,17 @@ pub fn copy_slice_from_user(vaddr: VirtAddr, size: usize) -> Vec<u8> {
 }
 pub fn copy_str_from_user(vaddr: VirtAddr, size: usize) -> String {
     let result = copy_slice_from_user(vaddr, size);
-    String::from_utf8(result).expect("Invalid string!")    
+    String::from_utf8(result).expect("Invalid string!")
 }
 
 pub fn translate_addr(vaddr: VirtAddr) -> Option<PhysAddr> {
     unsafe {
-        GLOBAL_USER_ADDR_SPACE.lock().page_table.query(vaddr).ok().map(|x| x.0)
+        GLOBAL_USER_ADDR_SPACE
+            .lock()
+            .page_table
+            .query(vaddr)
+            .ok()
+            .map(|x| x.0)
     }
 }
 

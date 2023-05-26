@@ -1,6 +1,6 @@
 extern crate alloc;
 
-use alloc::{vec::Vec, format};
+use alloc::{format, vec::Vec};
 use libax::io::{self, prelude::*, File};
 
 const DEST_HOST: &str = "ident.me";

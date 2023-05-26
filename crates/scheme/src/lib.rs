@@ -12,14 +12,17 @@ pub struct Packet {
     pub a: usize,
     pub b: usize,
     pub c: usize,
-    pub d: usize
+    pub d: usize,
 }
 
 impl Deref for Packet {
     type Target = [u8];
     fn deref(&self) -> &[u8] {
         unsafe {
-            core::slice::from_raw_parts(self as *const Packet as *const u8, core::mem::size_of::<Packet>())
+            core::slice::from_raw_parts(
+                self as *const Packet as *const u8,
+                core::mem::size_of::<Packet>(),
+            )
         }
     }
 }
@@ -27,7 +30,10 @@ impl Deref for Packet {
 impl DerefMut for Packet {
     fn deref_mut(&mut self) -> &mut [u8] {
         unsafe {
-            core::slice::from_raw_parts_mut(self as *mut Packet as *mut u8, core::mem::size_of::<Packet>())
+            core::slice::from_raw_parts_mut(
+                self as *mut Packet as *mut u8,
+                core::mem::size_of::<Packet>(),
+            )
         }
     }
 }
@@ -36,7 +42,6 @@ unsafe fn str_from_raw_parts(ptr: *const u8, len: usize) -> Option<&'static str>
     let slice = core::slice::from_raw_parts(ptr, len);
     core::str::from_utf8(slice).ok()
 }
-
 
 mod scheme;
 use core::ops::{Deref, DerefMut};

@@ -7,9 +7,10 @@ use core::{
 use alloc::collections::BTreeMap;
 use axnet::{IpAddr, SocketAddr, UdpSocket};
 use libax::{
-    axerrno::{AxError, AxResult, ax_err},
-    scheme::{Scheme, Packet},
-    Mutex, OpenFlags, io::File,
+    axerrno::{ax_err, AxError, AxResult},
+    io::File,
+    scheme::{Packet, Scheme},
+    Mutex, OpenFlags,
 };
 
 struct UdpScheme {
@@ -53,7 +54,8 @@ impl Scheme for UdpScheme {
 
     fn close(&self, id: usize) -> AxResult<usize> {
         info!("CLOSE {}", id);
-        self.handles.lock()
+        self.handles
+            .lock()
             .remove(&id)
             .ok_or(AxError::BadFileDescriptor)?
             .shutdown()?;
@@ -76,7 +78,7 @@ impl Scheme for UdpScheme {
             .get(&id)
             .ok_or(AxError::BadFileDescriptor)?
             .send(buf)
-    }    
+    }
 }
 pub fn start_udp() {
     let udp = UdpScheme::new();
@@ -84,9 +86,14 @@ pub fn start_udp() {
     libax::println!("UDP deamon started!");
     loop {
         let mut packet: Packet = Packet::default();
-        assert_eq!(channel.read_data(&mut packet).unwrap(), core::mem::size_of::<Packet>());
+        assert_eq!(
+            channel.read_data(&mut packet).unwrap(),
+            core::mem::size_of::<Packet>()
+        );
         udp.handle(&mut packet);
-        assert_eq!(channel.write_data(&packet).unwrap(), core::mem::size_of::<Packet>());
+        assert_eq!(
+            channel.write_data(&packet).unwrap(),
+            core::mem::size_of::<Packet>()
+        );
     }
 }
-

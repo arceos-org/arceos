@@ -123,12 +123,7 @@ mod user {
         }
 
         pub fn transmit(&mut self, tx_buf: &NetBuffer) -> DevResult {
-            if self
-                .daemon_file
-                .write(tx_buf.packet())
-                .map_err(map_err)?
-                != tx_buf.packet().len()
-            {
+            if self.daemon_file.write(tx_buf.packet()).map_err(map_err)? != tx_buf.packet().len() {
                 Err(DevError::Io)
             } else {
                 Ok(())
@@ -138,20 +133,16 @@ mod user {
         pub fn receive(&mut self) -> DevResult<NetBufferBox<'a>> {
             if let Some(mut buf) = self.rx_buffer.take() {
                 buf.set_header_len(0);
-                match self
-                    .daemon_file
-                    .read(buf.raw_buf_mut())
-                    .map_err(map_err) {
-                        Ok(len) => {
-                            buf.set_packet_len(len);
-                            Ok(buf)
-                        },
-                        Err(e) => {
-                            self.recycle_rx_buffer(buf).unwrap();
-                            Err(e)
-                        }
+                match self.daemon_file.read(buf.raw_buf_mut()).map_err(map_err) {
+                    Ok(len) => {
+                        buf.set_packet_len(len);
+                        Ok(buf)
                     }
-
+                    Err(e) => {
+                        self.recycle_rx_buffer(buf).unwrap();
+                        Err(e)
+                    }
+                }
             } else {
                 Err(DevError::Again)
             }
