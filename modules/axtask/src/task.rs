@@ -267,7 +267,7 @@ impl TaskInner {
                     //info!("qwq2");
                 }
             }
-        } // need resched = 0
+        }
     }
 
     #[inline]
