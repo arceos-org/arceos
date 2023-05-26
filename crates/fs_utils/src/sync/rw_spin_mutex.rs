@@ -74,7 +74,11 @@ impl<T: ?Sized, S: MutexSupport> RwSpinMutex<T, S> {
             .lock
             .compare_exchange(0, -isize::MAX, Ordering::Acquire, Ordering::Relaxed)
         {
-            Ok(_) => Some(UniqueRwMutexGuard {_not_send_sync: PhantomData, mutex: self, guard }),
+            Ok(_) => Some(UniqueRwMutexGuard {
+                _not_send_sync: PhantomData,
+                mutex: self,
+                guard,
+            }),
             Err(_) => {
                 S::after_unlock(&mut guard);
                 None
@@ -100,7 +104,11 @@ impl<T: ?Sized, S: MutexSupport> RwSpinMutex<T, S> {
             {
                 continue;
             }
-            return UniqueRwMutexGuard {_not_send_sync: PhantomData, mutex: self, guard };
+            return UniqueRwMutexGuard {
+                _not_send_sync: PhantomData,
+                mutex: self,
+                guard,
+            };
         }
     }
     #[inline(always)]
@@ -112,7 +120,13 @@ impl<T: ?Sized, S: MutexSupport> RwSpinMutex<T, S> {
                 .lock
                 .compare_exchange(cur, cur + 1, Ordering::Acquire, Ordering::Relaxed)
             {
-                Ok(_) => return Some(SharedRwMutexGuard {_not_send_sync: PhantomData, mutex: self, guard }),
+                Ok(_) => {
+                    return Some(SharedRwMutexGuard {
+                        _not_send_sync: PhantomData,
+                        mutex: self,
+                        guard,
+                    })
+                }
                 Err(v) => cur = v,
             };
         }
@@ -124,7 +138,11 @@ impl<T: ?Sized, S: MutexSupport> RwSpinMutex<T, S> {
         let guard = S::before_lock();
         if self.lock.fetch_add(1, Ordering::Relaxed) >= 0 {
             atomic::fence(Ordering::Acquire);
-            return SharedRwMutexGuard {_not_send_sync: PhantomData, mutex: self, guard };
+            return SharedRwMutexGuard {
+                _not_send_sync: PhantomData,
+                mutex: self,
+                guard,
+            };
         }
         let mut cnt = 0;
         while self.lock.load(Ordering::Relaxed) <= 0 {
@@ -135,7 +153,11 @@ impl<T: ?Sized, S: MutexSupport> RwSpinMutex<T, S> {
             core::hint::spin_loop();
         }
         atomic::fence(Ordering::Acquire);
-        SharedRwMutexGuard { _not_send_sync: PhantomData, mutex: self, guard }
+        SharedRwMutexGuard {
+            _not_send_sync: PhantomData,
+            mutex: self,
+            guard,
+        }
     }
 }
 

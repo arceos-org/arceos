@@ -1,21 +1,27 @@
-use crate::vfs::InodeCache;
 use crate::efs::Ext2FileSystem;
 use crate::mutex::SpinMutex;
+use crate::vfs::InodeCache;
 use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
 
-
 pub struct InodeCacheManager {
     inodes: BTreeMap<usize, Arc<SpinMutex<InodeCache>>>,
-    max_inode: usize
+    max_inode: usize,
 }
 
 impl InodeCacheManager {
     pub fn new(max_inode: usize) -> InodeCacheManager {
-        Self { inodes: BTreeMap::new(), max_inode }
+        Self {
+            inodes: BTreeMap::new(),
+            max_inode,
+        }
     }
 
-    pub fn get_or_insert(&mut self, inode_id: usize, fs: &Arc<Ext2FileSystem>) -> Option<Arc<SpinMutex<InodeCache>>> {
+    pub fn get_or_insert(
+        &mut self,
+        inode_id: usize,
+        fs: &Arc<Ext2FileSystem>,
+    ) -> Option<Arc<SpinMutex<InodeCache>>> {
         if let Some(inode_cache) = self.inodes.get(&inode_id).map(|cache| cache.clone()) {
             // in cache
             Some(inode_cache)
@@ -31,8 +37,9 @@ impl InodeCacheManager {
                 }
             } else {
                 // first find an inode_cache to evict
-                if let Some(evict_inode_id) 
-                    = self.inodes.iter()
+                if let Some(evict_inode_id) = self
+                    .inodes
+                    .iter()
                     .find(|(_, cache)| Arc::strong_count(cache) == 1)
                     .map(|(id, _)| *id)
                 {
@@ -53,5 +60,5 @@ impl InodeCacheManager {
 
     pub fn try_to_remove(&mut self, inode_id: usize) -> bool {
         self.inodes.remove(&inode_id).is_some()
-    } 
+    }
 }

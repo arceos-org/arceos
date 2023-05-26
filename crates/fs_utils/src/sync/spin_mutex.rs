@@ -8,7 +8,6 @@ use core::{
     sync::atomic::{AtomicBool, Ordering},
 };
 
-
 use super::MutexSupport;
 
 pub struct SpinMutex<T: ?Sized, S: MutexSupport> {
@@ -32,7 +31,7 @@ impl<T, S: MutexSupport> SpinMutex<T, S> {
             lock: AtomicBool::new(false),
             data: UnsafeCell::new(user_data),
             _marker: PhantomData,
-            _not_send_sync: PhantomData
+            _not_send_sync: PhantomData,
         }
     }
 

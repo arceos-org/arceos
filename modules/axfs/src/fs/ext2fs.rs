@@ -1,21 +1,21 @@
-use alloc::sync::Arc;
 use alloc::string::String;
+use alloc::sync::Arc;
 use core::cell::{RefCell, UnsafeCell};
 use core::ptr::NonNull;
 
 use axfs_vfs::{VfsDirEntry, VfsError, VfsNodePerm, VfsResult};
 use axfs_vfs::{VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsNodeType, VfsOps};
-use ext2fs::{self, BlockDevice, BLOCK_SIZE, ext2err::Ext2Error};
+use ext2fs::{self, ext2err::Ext2Error, BlockDevice, BLOCK_SIZE};
 
 use crate::dev::Disk;
 
 pub struct DiskAdapter {
-    inner: RefCell<Disk>
+    inner: RefCell<Disk>,
 }
 
 impl BlockDevice for DiskAdapter {
     fn block_num(&self) -> usize {
-        self.inner.borrow_mut().size() as usize/BLOCK_SIZE
+        self.inner.borrow_mut().size() as usize / BLOCK_SIZE
     }
     fn block_size(&self) -> usize {
         BLOCK_SIZE
@@ -24,12 +24,12 @@ impl BlockDevice for DiskAdapter {
         assert!(buf.len() == BLOCK_SIZE);
         let mut inner = self.inner.borrow_mut();
         let true_block_size = inner.true_block_size();
-        let num_block = BLOCK_SIZE/true_block_size;
+        let num_block = BLOCK_SIZE / true_block_size;
 
         for i in 0..num_block {
             let pos = block_id * BLOCK_SIZE + i * true_block_size;
             inner.set_position(pos as _);
-            let res = inner.read_one(&mut buf[i*true_block_size..(i+1)*true_block_size]);
+            let res = inner.read_one(&mut buf[i * true_block_size..(i + 1) * true_block_size]);
             assert_eq!(res.unwrap(), true_block_size);
         }
     }
@@ -37,12 +37,12 @@ impl BlockDevice for DiskAdapter {
         assert!(buf.len() == BLOCK_SIZE);
         let mut inner = self.inner.borrow_mut();
         let true_block_size = inner.true_block_size();
-        let num_block = BLOCK_SIZE/true_block_size;
+        let num_block = BLOCK_SIZE / true_block_size;
 
         for i in 0..num_block {
             let pos = block_id * BLOCK_SIZE + i * true_block_size;
             inner.set_position(pos as _);
-            let res = inner.write_one(&buf[i*true_block_size..(i+1)*true_block_size]);
+            let res = inner.write_one(&buf[i * true_block_size..(i + 1) * true_block_size]);
             assert_eq!(res.unwrap(), true_block_size);
         }
     }
@@ -54,7 +54,7 @@ pub struct Ext2SymlinkWrapper(ext2fs::Inode, NonNull<Ext2FileSystem>);
 
 pub struct Ext2FileSystem {
     inner: Arc<ext2fs::Ext2FileSystem>,
-    root_dir: UnsafeCell<Option<VfsNodeRef>>
+    root_dir: UnsafeCell<Option<VfsNodeRef>>,
 }
 unsafe impl Send for Ext2DirWrapper {}
 unsafe impl Sync for Ext2DirWrapper {}
@@ -68,13 +68,13 @@ unsafe impl Sync for Ext2FileSystem {}
 impl Ext2FileSystem {
     pub fn new(disk: Disk) -> Self {
         let block_device = Arc::new(DiskAdapter {
-            inner: RefCell::new(disk)
+            inner: RefCell::new(disk),
         });
         let timer = Arc::new(ext2fs::timer::ZeroTimeProvider);
         let inner = ext2fs::Ext2FileSystem::open(block_device, timer);
         Self {
             inner,
-            root_dir: UnsafeCell::new(None)
+            root_dir: UnsafeCell::new(None),
         }
     }
 
@@ -95,7 +95,8 @@ impl Ext2FileSystem {
 
     pub fn init(&'static self) {
         let root_inode = ext2fs::Ext2FileSystem::root_inode(&self.inner);
-        let fs_ptr: NonNull<Ext2FileSystem> = NonNull::new(self as *const _ as *mut Ext2FileSystem).unwrap();
+        let fs_ptr: NonNull<Ext2FileSystem> =
+            NonNull::new(self as *const _ as *mut Ext2FileSystem).unwrap();
         unsafe { *self.root_dir.get() = Some(Self::new_dir(root_inode, fs_ptr)) }
     }
 }
@@ -136,7 +137,6 @@ impl VfsNodeOps for Ext2FileWrapper {
         self.0.ftruncate(size as _).map_err(map_ext2_err)
     }
 }
-
 
 impl VfsNodeOps for Ext2DirWrapper {
     axfs_vfs::impl_vfs_dir_default! {}
@@ -188,15 +188,21 @@ impl VfsNodeOps for Ext2DirWrapper {
         match ty {
             VfsNodeType::Dir => (),
             VfsNodeType::File => (),
-            _ => return Err(VfsError::Unsupported)
+            _ => return Err(VfsError::Unsupported),
         }
 
         let (parent, name) = self.0.lookup_parent(path).map_err(map_ext2_err)?;
 
         match ty {
-            VfsNodeType::Dir => parent.create_dir(name.as_str()).map(|_| ()).map_err(map_ext2_err),
-            VfsNodeType::File => parent.create_file(name.as_str()).map(|_|()).map_err(map_ext2_err),
-            _ => panic!("unsupport type")
+            VfsNodeType::Dir => parent
+                .create_dir(name.as_str())
+                .map(|_| ())
+                .map_err(map_ext2_err),
+            VfsNodeType::File => parent
+                .create_file(name.as_str())
+                .map(|_| ())
+                .map_err(map_ext2_err),
+            _ => panic!("unsupport type"),
         }
     }
 
@@ -212,7 +218,9 @@ impl VfsNodeOps for Ext2DirWrapper {
 
         let inode = parent.find(name.as_str()).map_err(map_ext2_err)?;
         if inode.is_dir() {
-            parent.rm_dir(name.as_str(), recursive).map_err(map_ext2_err)?;
+            parent
+                .rm_dir(name.as_str(), recursive)
+                .map_err(map_ext2_err)?;
             return Ok(());
         } else if inode.is_file() {
             parent.rm_file(name.as_str()).map_err(map_ext2_err)?;
@@ -232,9 +240,11 @@ impl VfsNodeOps for Ext2DirWrapper {
             let x = iter.next();
             match x {
                 Some((name, direntry)) => {
-                    let (ty, _) = map_imode(ext2fs::layout::DiskInode::_file_code_to_disk(direntry.file_type));
+                    let (ty, _) = map_imode(ext2fs::layout::DiskInode::_file_code_to_disk(
+                        direntry.file_type,
+                    ));
                     *out_entry = VfsDirEntry::new(name.as_str(), ty);
-                },
+                }
                 _ => {
                     return Ok(i);
                 }
@@ -280,7 +290,7 @@ fn map_imode(imode: u16) -> (VfsNodeType, VfsNodePerm) {
         ext2fs::layout::EXT2_S_IFIFO => VfsNodeType::Fifo,
         ext2fs::layout::EXT2_S_IFSOCK => VfsNodeType::Socket,
         ext2fs::layout::EXT2_S_IFLNK => VfsNodeType::SymLink,
-        _ => panic!("Unsupport type")
+        _ => panic!("Unsupport type"),
     };
     let perm = ext2fs::layout::IMODE::from_bits_truncate(imode);
     // debug!("origin perm {}", perm.bits());
@@ -331,6 +341,6 @@ const fn map_ext2_err(err: Ext2Error) -> VfsError {
         NotADir => VfsError::NotADirectory,
         NotAFile => VfsError::IsADirectory,
         InvalidResource => VfsError::NotFound,
-        _ => VfsError::InvalidInput
+        _ => VfsError::InvalidInput,
     }
 }

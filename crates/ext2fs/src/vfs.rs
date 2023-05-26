@@ -4,13 +4,12 @@ use log::*;
 use crate::mutex::SpinMutex;
 
 use super::{
-    DiskInode, 
-    Ext2FileSystem, layout::{
-        MAX_NAME_LEN, DirEntryHead, EXT2_FT_UNKNOWN, EXT2_FT_DIR, EXT2_FT_REG_FILE,
-        DEFAULT_IMODE, EXT2_S_IFDIR, EXT2_S_IFLNK, IMODE, EXT2_S_IFREG, EXT2_FT_SYMLINK
+    config::MAX_PATH_NAME,
+    layout::{
+        DirEntryHead, DEFAULT_IMODE, EXT2_FT_DIR, EXT2_FT_REG_FILE, EXT2_FT_SYMLINK,
+        EXT2_FT_UNKNOWN, EXT2_S_IFDIR, EXT2_S_IFLNK, EXT2_S_IFREG, IMODE, MAX_NAME_LEN,
     },
-    Ext2Error, Ext2Result,
-    config::MAX_PATH_NAME
+    DiskInode, Ext2Error, Ext2FileSystem, Ext2Result,
 };
 use alloc::string::{String, ToString};
 use alloc::sync::Arc;
@@ -20,16 +19,13 @@ use axfs_vfs::path::split_path;
 #[derive(Clone)]
 pub struct Inode {
     file_type: u8,
-    inner: Arc<SpinMutex<InodeCache>>
+    inner: Arc<SpinMutex<InodeCache>>,
 }
 
 impl Inode {
     pub fn new(inner: Arc<SpinMutex<InodeCache>>) -> Inode {
         let file_type = inner.lock().file_type();
-        Self {
-            file_type,
-            inner
-        }
+        Self { file_type, inner }
     }
 
     fn access(&self) -> Ext2Result<&Arc<SpinMutex<InodeCache>>> {
@@ -62,7 +58,7 @@ impl Inode {
         Ok(self.access()?.lock().inode_id)
     }
 
-    pub fn chown(&self, uid: Option<usize>, gid:Option<usize>) -> Ext2Result {
+    pub fn chown(&self, uid: Option<usize>, gid: Option<usize>) -> Ext2Result {
         Ok(self.access()?.lock().chown(uid, gid))
     }
 
@@ -111,7 +107,7 @@ impl Inode {
         }
     }
 
-    pub fn append(&self, buf: &[u8]) ->Ext2Result<usize> {
+    pub fn append(&self, buf: &[u8]) -> Ext2Result<usize> {
         let mut lk = self.access()?.lock();
         if self.file_type != EXT2_FT_REG_FILE {
             Err(Ext2Error::NotAFile)
@@ -143,8 +139,7 @@ impl Inode {
 
     pub fn find(&self, name: &str) -> Ext2Result<Self> {
         let lk = self.access()?.lock();
-        lk.find(name)
-            .map(|inner| Self::new(inner))
+        lk.find(name).map(|inner| Self::new(inner))
     }
 
     pub fn create_dir(&self, name: &str) -> Ext2Result<Self> {
@@ -157,8 +152,7 @@ impl Inode {
 
     pub fn create(&self, name: &str, file_type: u16) -> Ext2Result<Self> {
         let mut lk = self.access()?.lock();
-        lk.create(name, file_type)
-            .map(|inner| Self::new(inner))
+        lk.create(name, file_type).map(|inner| Self::new(inner))
     }
 
     pub fn ls(&self) -> Ext2Result<Vec<String>> {
@@ -200,7 +194,6 @@ impl Inode {
         let mut lk = self.access()?.lock();
         lk.unlink(dir_name, EXT2_FT_SYMLINK, false)
     }
-
 }
 
 /// Virtual filesystem layer over easy-fs
@@ -222,7 +215,7 @@ impl InodeCache {
         inode_id: usize,
         block_id: usize,
         block_offset: usize,
-        fs: Arc<Ext2FileSystem>
+        fs: Arc<Ext2FileSystem>,
     ) -> Self {
         let mut inode = Self {
             inode_id,
@@ -232,7 +225,7 @@ impl InodeCache {
             file_type: EXT2_FT_UNKNOWN,
             size: 0,
             blocks: Vec::new(),
-            valid: true
+            valid: true,
         };
         inode.read_cache();
         inode
@@ -241,16 +234,14 @@ impl InodeCache {
     /// Call a function over a disk inode to read it
     fn read_disk_inode<V>(&self, f: impl FnOnce(&DiskInode) -> V) -> V {
         let inode_block = self.fs.manager.lock().get_block_cache(self.block_id);
-        let ret = inode_block.lock()
-            .read(self.block_offset, f);
+        let ret = inode_block.lock().read(self.block_offset, f);
         self.fs.manager.lock().release_block(inode_block);
         ret
     }
     /// Call a function over a disk inode to modify it
     fn modify_disk_inode<V>(&self, f: impl FnOnce(&mut DiskInode) -> V) -> V {
         let inode_block = self.fs.manager.lock().get_block_cache(self.block_id);
-        let ret = inode_block.lock()
-            .modify(self.block_offset, f);
+        let ret = inode_block.lock().modify(self.block_offset, f);
         self.fs.manager.lock().release_block(inode_block);
         ret
     }
@@ -280,7 +271,11 @@ impl InodeCache {
     }
 
     /// Find inode under a disk inode by name (DirEntry, pos, prev_offset)
-    fn find_inode_id(&self, name: &str, disk_inode: &DiskInode) -> Option<(DirEntryHead, usize, usize)> {
+    fn find_inode_id(
+        &self,
+        name: &str,
+        disk_inode: &DiskInode,
+    ) -> Option<(DirEntryHead, usize, usize)> {
         // debug!("find_inode_id");
         // assert it is a directory
         assert!(disk_inode.is_dir());
@@ -291,13 +286,27 @@ impl InodeCache {
         let mut prev_offset: usize = 0;
 
         while offset + size_of::<DirEntryHead>() < disk_inode.i_size as usize {
-            assert_eq!(disk_inode.read_at(offset, dir_entry_head.as_bytes_mut(), &self.fs.manager, Some(&self.blocks)),
-                        size_of::<DirEntryHead>());
+            assert_eq!(
+                disk_inode.read_at(
+                    offset,
+                    dir_entry_head.as_bytes_mut(),
+                    &self.fs.manager,
+                    Some(&self.blocks)
+                ),
+                size_of::<DirEntryHead>()
+            );
             let name_len = dir_entry_head.name_len as usize;
             let name_buffer = &mut buffer[0..name_len];
             let name_offset = offset + size_of::<DirEntryHead>();
-            assert_eq!(disk_inode.read_at(name_offset, name_buffer, &self.fs.manager, Some(&self.blocks)),
-                        name_len);
+            assert_eq!(
+                disk_inode.read_at(
+                    name_offset,
+                    name_buffer,
+                    &self.fs.manager,
+                    Some(&self.blocks)
+                ),
+                name_len
+            );
             if name_buffer == name.as_bytes() {
                 return Some((dir_entry_head, pos, prev_offset));
             }
@@ -310,22 +319,22 @@ impl InodeCache {
     }
 
     fn get_inode_id(&self, name: &str) -> Option<(DirEntryHead, usize, usize)> {
-        self.read_disk_inode(|disk_inode| {
-            self.find_inode_id(name, disk_inode)
-        })
+        self.read_disk_inode(|disk_inode| self.find_inode_id(name, disk_inode))
     }
 
     pub fn find(&self, name: &str) -> Ext2Result<Arc<SpinMutex<InodeCache>>> {
-        if let Some(de) = self.get_inode_id(name)
-                                .map(|(de, _, _)| de)
-        {
+        if let Some(de) = self.get_inode_id(name).map(|(de, _, _)| de) {
             Ok(Ext2FileSystem::get_inode_cache(&self.fs, de.inode as _).unwrap())
         } else {
             Err(Ext2Error::NotFound)
         }
     }
 
-    pub fn create(&mut self, name: &str, mut file_type: u16) -> Ext2Result<Arc<SpinMutex<InodeCache>>> {
+    pub fn create(
+        &mut self,
+        name: &str,
+        mut file_type: u16,
+    ) -> Ext2Result<Arc<SpinMutex<InodeCache>>> {
         if self.file_type() != EXT2_FT_DIR {
             return Err(Ext2Error::NotADir);
         }
@@ -342,8 +351,13 @@ impl InodeCache {
         file_type &= 0xF000;
         let new_inode_id = self.fs.alloc_inode().unwrap();
         let (new_inode_block_id, new_inode_block_offset) = self.fs.get_disk_inode_pos(new_inode_id);
-        let inode_block = self.fs.manager.lock().get_block_cache(new_inode_block_id as _);
-        inode_block.lock()
+        let inode_block = self
+            .fs
+            .manager
+            .lock()
+            .get_block_cache(new_inode_block_id as _);
+        inode_block
+            .lock()
             .modify(new_inode_block_offset, |disk_inode: &mut DiskInode| {
                 *disk_inode = DiskInode::new(DEFAULT_IMODE, file_type, 0, 0);
                 let cur_time = self.fs.timer.get_current_time();
@@ -428,16 +442,33 @@ impl InodeCache {
         let mut offset: usize = 0;
 
         while offset + size_of::<DirEntryHead>() < disk_inode.i_size as usize {
-            assert_eq!(disk_inode.read_at(offset, dir_entry_head.as_bytes_mut(), &self.fs.manager, Some(&self.blocks)),
-                        size_of::<DirEntryHead>());
+            assert_eq!(
+                disk_inode.read_at(
+                    offset,
+                    dir_entry_head.as_bytes_mut(),
+                    &self.fs.manager,
+                    Some(&self.blocks)
+                ),
+                size_of::<DirEntryHead>()
+            );
             let name_len = dir_entry_head.name_len as usize;
             let name_buffer = &mut buffer[0..name_len];
             let name_offset = offset + size_of::<DirEntryHead>();
-            assert_eq!(disk_inode.read_at(name_offset, name_buffer, &self.fs.manager, Some(&self.blocks)),
-                        name_len);
-            dir_entries.push((String::from_utf8_lossy(name_buffer).to_string(), dir_entry_head));
+            assert_eq!(
+                disk_inode.read_at(
+                    name_offset,
+                    name_buffer,
+                    &self.fs.manager,
+                    Some(&self.blocks)
+                ),
+                name_len
+            );
+            dir_entries.push((
+                String::from_utf8_lossy(name_buffer).to_string(),
+                dir_entry_head,
+            ));
             offset += dir_entry_head.rec_len as usize;
-        };
+        }
 
         Ok(dir_entries)
     }
@@ -446,23 +477,15 @@ impl InodeCache {
         if self.file_type() != EXT2_FT_DIR {
             return Err(Ext2Error::NotADir);
         }
-        let dir_entries = self.read_disk_inode(|disk_inode| {
-            self.ls_disk(disk_inode)
-        });
-        dir_entries.map(|inner|
-                        inner.into_iter()
-                        .map(|(name, _)| name)
-                        .collect()
-                    )
+        let dir_entries = self.read_disk_inode(|disk_inode| self.ls_disk(disk_inode));
+        dir_entries.map(|inner| inner.into_iter().map(|(name, _)| name).collect())
     }
 
     pub fn ls_direntry(&self) -> Ext2Result<Vec<(String, DirEntryHead)>> {
         if self.file_type() != EXT2_FT_DIR {
             return Err(Ext2Error::NotADir);
         }
-        self.read_disk_inode(|disk_inode| {
-            self.ls_disk(disk_inode)
-        })
+        self.read_disk_inode(|disk_inode| self.ls_disk(disk_inode))
     }
 
     fn is_empty_dir_disk(&self, disk_inode: &DiskInode) -> Ext2Result<bool> {
@@ -475,14 +498,21 @@ impl InodeCache {
         let mut file_num = 0;
 
         while offset + size_of::<DirEntryHead>() < disk_inode.i_size as usize {
-            assert_eq!(disk_inode.read_at(offset, dir_entry_head.as_bytes_mut(), &self.fs.manager, Some(&self.blocks)),
-                        size_of::<DirEntryHead>());
+            assert_eq!(
+                disk_inode.read_at(
+                    offset,
+                    dir_entry_head.as_bytes_mut(),
+                    &self.fs.manager,
+                    Some(&self.blocks)
+                ),
+                size_of::<DirEntryHead>()
+            );
             offset += dir_entry_head.rec_len as usize;
             file_num += 1;
             if file_num > 2 {
                 return Ok(false);
             }
-        };
+        }
 
         Ok(true)
     }
@@ -491,9 +521,7 @@ impl InodeCache {
         if self.file_type() != EXT2_FT_DIR {
             return Err(Ext2Error::NotADir);
         }
-        self.read_disk_inode(|disk_inode| {
-            self.is_empty_dir_disk(disk_inode)
-        })
+        self.read_disk_inode(|disk_inode| self.is_empty_dir_disk(disk_inode))
     }
 
     fn unlink_below(&mut self) {
@@ -554,7 +582,6 @@ impl InodeCache {
         drop(lk);
         self.unlink_single(name);
         Ok(())
-        
     }
 
     fn unlink_single(&mut self, name: &str) -> bool {
@@ -570,8 +597,9 @@ impl InodeCache {
                 (*(&mut buf as *mut u8 as *mut DirEntryHead)).rec_len += de.rec_len;
             }
             self.write_at(prev_offset, &buf);
-            
-            let target_inode = Ext2FileSystem::get_inode_cache(&self.fs, de.inode as usize).unwrap();
+
+            let target_inode =
+                Ext2FileSystem::get_inode_cache(&self.fs, de.inode as usize).unwrap();
             target_inode.lock().decrease_nlink(1);
             true
         } else {
@@ -601,7 +629,7 @@ impl InodeCache {
     }
 
     // ----- Basic operation -----
-    pub fn ftruncate(&mut self, new_size: u32) -> Ext2Result{
+    pub fn ftruncate(&mut self, new_size: u32) -> Ext2Result {
         if self.file_type() != EXT2_FT_REG_FILE {
             return Err(Ext2Error::NotAFile);
         }
@@ -637,12 +665,11 @@ impl InodeCache {
     }
 
     fn cache_increase_size(&mut self, new_size: u32) {
-        if new_size <= self.size as _{
+        if new_size <= self.size as _ {
             return;
         }
-        let extra_blocks = self.modify_disk_inode(|disk_inode| {
-            self.increase_size(new_size, disk_inode)
-        });
+        let extra_blocks =
+            self.modify_disk_inode(|disk_inode| self.increase_size(new_size, disk_inode));
         for block in extra_blocks {
             self.blocks.push(block);
         }
@@ -653,19 +680,14 @@ impl InodeCache {
         if new_size >= self.size as _ {
             return;
         }
-        let remain_blocks = self.modify_disk_inode(|disk_inode| {
-            self.decrease_size(new_size, disk_inode)
-        });
+        let remain_blocks =
+            self.modify_disk_inode(|disk_inode| self.decrease_size(new_size, disk_inode));
         self.blocks.drain(remain_blocks..self.blocks.len());
         self.size = new_size as _;
     }
 
     /// Increase the size of a disk inode
-    fn increase_size(
-        &self,
-        new_size: u32,
-        disk_inode: &mut DiskInode,
-    ) -> Vec<u32> {
+    fn increase_size(&self, new_size: u32, disk_inode: &mut DiskInode) -> Vec<u32> {
         let blocks_needed = disk_inode.blocks_num_needed(new_size);
         let new_blocks = self.fs.batch_alloc_data(blocks_needed as _);
         assert!(new_blocks.len() == blocks_needed as _);
@@ -673,25 +695,25 @@ impl InodeCache {
     }
 
     /// Decrease the size of a disk node
-    fn decrease_size(
-        &self,
-        new_size: u32,
-        disk_inode: &mut DiskInode,
-    ) -> usize {
+    fn decrease_size(&self, new_size: u32, disk_inode: &mut DiskInode) -> usize {
         let blocks_unused = disk_inode.decrease_size(new_size, &self.fs.manager);
         self.fs.batch_dealloc_block(&blocks_unused);
         return disk_inode.data_blocks() as usize;
     }
     /// Clear the data in current inode
     /// # Safety
-    /// 
+    ///
     /// The inodecache should be marked as invalid and removed from cache manager right away
     pub fn clear(&self) {
         self.modify_disk_inode(|disk_inode| {
             let blocks = disk_inode.i_blocks;
             let data_blocks_dealloc = disk_inode.clear_size(&self.fs.manager);
             if data_blocks_dealloc.len() != DiskInode::total_blocks(blocks * 512) as usize {
-                error!("clear: {} != {}", data_blocks_dealloc.len(), DiskInode::total_blocks(blocks * 512) as usize);
+                error!(
+                    "clear: {} != {}",
+                    data_blocks_dealloc.len(),
+                    DiskInode::total_blocks(blocks * 512) as usize
+                );
             }
             assert!(data_blocks_dealloc.len() == DiskInode::total_blocks(blocks * 512) as usize);
             let cur_time = self.fs.timer.get_current_time();

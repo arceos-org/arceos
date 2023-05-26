@@ -77,7 +77,8 @@ macro_rules! impl_vfs_non_dir_default {
 macro_rules! impl_ext2_common {
     () => {
         fn get_attr(&self) -> VfsResult<VfsNodeAttr> {
-            self.0.disk_inode()
+            self.0
+                .disk_inode()
                 .map(|disk_inode| {
                     let (ty, perm) = map_imode(disk_inode.i_mode);
                     VfsNodeAttr::new(perm, ty, disk_inode.i_size as _, disk_inode.i_blocks as _)
@@ -92,7 +93,10 @@ macro_rules! impl_ext2_linkable {
     () => {
         fn get_link_handle(&self) -> VfsResult<$crate::LinkHandle> {
             let inode_id = self.0.inode_id().map_err(map_ext2_err)?;
-            Ok($crate::LinkHandle { inode_id, fssp_ptr: self.1.as_ptr() as usize })
+            Ok($crate::LinkHandle {
+                inode_id,
+                fssp_ptr: self.1.as_ptr() as usize,
+            })
         }
     };
 }

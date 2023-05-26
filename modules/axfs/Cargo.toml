@@ -15,8 +15,9 @@ ramfs = ["dep:axfs_ramfs"]
 fatfs = ["dep:fatfs"]
 myfs = ["dep:crate_interface"]
 use-ramdisk = []
+ext2fs = ["dep:ext2fs"]
 
-default = ["devfs", "ramfs", "fatfs"]
+default = ["devfs", "ramfs", "ext2fs"]
 
 [dependencies]
 log = "0.4"
@@ -30,7 +31,7 @@ axfs_vfs = { path = "../../crates/axfs_vfs" }
 axfs_devfs = { path = "../../crates/axfs_devfs", optional = true }
 axfs_ramfs = { path = "../../crates/axfs_ramfs", optional = true }
 axdriver = { path = "../axdriver", features = ["block"] }
-ext2fs = { path = "../../crates/ext2fs" }
+ext2fs = { path = "../../crates/ext2fs" , optional = true}
 axsync = { path = "../axsync", default-features = false }
 crate_interface = { path = "../../crates/crate_interface", optional = true }
 

@@ -3,6 +3,8 @@ cfg_if::cfg_if! {
         pub mod myfs;
     } else if #[cfg(feature = "fatfs")] {
         pub mod fatfs;
+    } else if #[cfg(feature = "ext2fs")] {
+        pub mod ext2fs;
     }
 }
 
@@ -11,4 +13,3 @@ pub use axfs_devfs as devfs;
 
 #[cfg(feature = "ramfs")]
 pub use axfs_ramfs as ramfs;
-pub mod ext2fs;

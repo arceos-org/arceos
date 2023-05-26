@@ -1,6 +1,6 @@
-use core::{marker::PhantomData, ptr::NonNull};
-use super::ListNode;
 use super::access::ListAccess;
+use super::ListNode;
+use core::{marker::PhantomData, ptr::NonNull};
 
 /// 生成一个通过成员反向获取父类的类型
 #[macro_export]
@@ -93,7 +93,7 @@ impl<T, A> InListNode<T, A> {
 
 impl<T, A: ListAccess<T, Self>> InListNode<T, A> {
     /// # Safety
-    /// 
+    ///
     /// 用户自行保证使用的安全性, 下面是获取多个mut的反例
     ///
     /// &mut A(1, 2) -> (&mut A.1, &A.2)
@@ -105,7 +105,7 @@ impl<T, A: ListAccess<T, Self>> InListNode<T, A> {
         A::get(self)
     }
     /// # Safety
-    /// 
+    ///
     /// 用户自行保证唯一性, 下面是获取多个mut的反例
     ///
     /// &mut A(1, 2) -> (&mut A.1, &mut A.2)

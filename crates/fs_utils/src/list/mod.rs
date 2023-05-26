@@ -1,17 +1,15 @@
 #![allow(unused)]
-use core::{
-    ptr::NonNull
-};
+use core::ptr::NonNull;
 
-pub mod instrusive;
 pub mod access;
+pub mod instrusive;
 
 pub use instrusive::InListNode;
 
-pub struct  ListNode<T> {
+pub struct ListNode<T> {
     prev: *mut ListNode<T>,
     next: *mut ListNode<T>,
-    data: T
+    data: T,
 }
 
 unsafe impl<T> Send for ListNode<T> {}
@@ -22,7 +20,7 @@ impl<T> ListNode<T> {
         Self {
             prev: core::ptr::null_mut(),
             next: core::ptr::null_mut(),
-            data
+            data,
         }
     }
 
@@ -53,7 +51,7 @@ impl<T> ListNode<T> {
                 assert!((*nxt).prev == cur);
                 cur = nxt;
                 nxt = (*cur).next;
-                while cur as usize != self as *const Self as usize  {
+                while cur as usize != self as *const Self as usize {
                     assert!((*nxt).prev == cur);
                     cur = nxt;
                     nxt = (*cur).next;
