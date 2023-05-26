@@ -106,6 +106,12 @@ impl VfsOps for Ext2FileSystem {
         let root_dir = unsafe { (*self.root_dir.get()).as_ref().unwrap() };
         root_dir.clone()
     }
+
+    fn umount(&self) -> VfsResult {
+        debug!("ext2fs unmount");
+        self.inner.close();
+        Ok(())
+    }
 }
 
 impl VfsNodeOps for Ext2SymlinkWrapper {
@@ -130,11 +136,15 @@ impl VfsNodeOps for Ext2FileWrapper {
     }
 
     fn write_at(&self, offset: u64, buf: &[u8]) -> VfsResult<usize> {
-        self.0.write_at(offset as _, buf).map_err(map_ext2_err)
+        let res = self.0.write_at(offset as _, buf).map_err(map_ext2_err);
+        self.0.flush();
+        res
     }
 
     fn truncate(&self, size: u64) -> VfsResult {
-        self.0.ftruncate(size as _).map_err(map_ext2_err)
+        let res = self.0.ftruncate(size as _).map_err(map_ext2_err);
+        self.0.flush();
+        res
     }
 }
 
@@ -193,7 +203,7 @@ impl VfsNodeOps for Ext2DirWrapper {
 
         let (parent, name) = self.0.lookup_parent(path).map_err(map_ext2_err)?;
 
-        match ty {
+        let res = match ty {
             VfsNodeType::Dir => parent
                 .create_dir(name.as_str())
                 .map(|_| ())
@@ -203,7 +213,9 @@ impl VfsNodeOps for Ext2DirWrapper {
                 .map(|_| ())
                 .map_err(map_ext2_err),
             _ => panic!("unsupport type"),
-        }
+        };
+        self.0.flush();
+        res
     }
 
     fn remove(&self, path: &str, recursive: bool) -> VfsResult {
@@ -221,15 +233,19 @@ impl VfsNodeOps for Ext2DirWrapper {
             parent
                 .rm_dir(name.as_str(), recursive)
                 .map_err(map_ext2_err)?;
+            self.0.flush();
             return Ok(());
         } else if inode.is_file() {
             parent.rm_file(name.as_str()).map_err(map_ext2_err)?;
+            self.0.flush();
             return Ok(());
         } else if inode.is_symlink() {
             parent.rm_symlink(name.as_str()).map_err(map_ext2_err)?;
+            self.0.flush();
             return Ok(());
-        }
-        panic!("Unsuport type");
+        } else {
+            panic!("Unsuport type");
+        };
     }
 
     fn read_dir(&self, start_idx: usize, dirents: &mut [VfsDirEntry]) -> VfsResult<usize> {
@@ -258,7 +274,9 @@ impl VfsNodeOps for Ext2DirWrapper {
         if self.1.as_ptr() as usize != handle.fssp_ptr {
             return Err(VfsError::InvalidInput);
         }
-        self.0.link(name, handle.inode_id).map_err(map_ext2_err)
+        let res = self.0.link(name, handle.inode_id).map_err(map_ext2_err);
+        self.0.flush();
+        res
     }
 
     fn symlink(&self, name: &str, path: &str) -> VfsResult {
@@ -266,7 +284,9 @@ impl VfsNodeOps for Ext2DirWrapper {
         if !path.starts_with("/") {
             return Err(VfsError::InvalidInput);
         }
-        self.0.symlink(name, path).map_err(map_ext2_err)
+        let res = self.0.symlink(name, path).map_err(map_ext2_err);
+        self.0.flush();
+        res
     }
 }
 

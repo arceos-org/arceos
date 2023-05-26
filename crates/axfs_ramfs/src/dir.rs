@@ -147,7 +147,10 @@ impl VfsNodeOps for DirNode {
         if let Some(rest) = rest {
             match name {
                 "" | "." => self.remove(rest, _recursive),
-                ".." => self.parent().ok_or(VfsError::NotFound)?.remove(rest, _recursive),
+                ".." => self
+                    .parent()
+                    .ok_or(VfsError::NotFound)?
+                    .remove(rest, _recursive),
                 _ => {
                     let subdir = self
                         .children

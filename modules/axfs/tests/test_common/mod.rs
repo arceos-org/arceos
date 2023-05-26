@@ -233,7 +233,10 @@ fn test_devfs_ramfs() -> Result<()> {
     assert_eq!(fs::write(".///dev//..//233//.///test.txt", "test"), Ok(()));
     assert_eq!(fs::remove_file("./dev//..//233//../233/./test.txt"), Ok(()));
     assert_err!(fs::remove_file("./dev//../..//233//.///test.txt"), NotFound);
-    assert_eq!(fs::remove_dir("dev//foo/../foo/../.././/233", false), Ok(()));
+    assert_eq!(
+        fs::remove_dir("dev//foo/../foo/../.././/233", false),
+        Ok(())
+    );
     assert_err!(fs::remove_dir("very/../dev//", false), PermissionDenied);
 
     // tests in /tmp

@@ -70,7 +70,9 @@ fn efs_test() -> std::io::Result<()> {
             .open("target/fs.img")?,
         NUM_BLOCKS,
     ));
-    Ext2FileSystem::create(block_file.clone(), Arc::new(ZeroTimeProvider));
+    let tmp = Ext2FileSystem::create(block_file.clone(), Arc::new(ZeroTimeProvider));
+    debug!("count of tmp: {}", Arc::strong_count(&tmp));
+    drop(tmp);
     let efs = Ext2FileSystem::open(block_file.clone(), Arc::new(ZeroTimeProvider));
 
     let root_inode = Ext2FileSystem::root_inode(&efs);

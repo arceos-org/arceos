@@ -37,6 +37,13 @@ impl Drop for MountPoint {
     }
 }
 
+impl Drop for RootDirectory {
+    fn drop(&mut self) {
+        debug!("drop RootDirectory");
+        let _ = self.main_fs.umount();
+    }
+}
+
 impl RootDirectory {
     pub const fn new(main_fs: Arc<dyn VfsOps>) -> Self {
         Self {
@@ -56,7 +63,16 @@ impl RootDirectory {
             return ax_err!(InvalidInput, "mount point already exists");
         }
         // create the mount point in the main filesystem if it does not exist
-        self.main_fs.root_dir().create(path, FileType::Dir)?;
+        let cres = self.main_fs.root_dir().create(path, FileType::Dir);
+        if cres.is_err() {
+            match cres {
+                Err(AxError::AlreadyExists) => (),
+                Err(_) => {
+                    return cres;
+                }
+                _ => unreachable!(),
+            }
+        }
         fs.mount(path, self.main_fs.root_dir().lookup(path)?)?;
         self.mounts.push(MountPoint::new(path, fs));
         Ok(())
