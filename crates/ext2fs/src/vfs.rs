@@ -12,7 +12,7 @@ use super::{
     DiskInode, Ext2Error, Ext2FileSystem, Ext2Result,
 };
 use alloc::string::{String, ToString};
-use alloc::sync::Arc;
+use alloc::sync::{Arc, Weak};
 use alloc::vec::Vec;
 use axfs_vfs::path::split_path;
 
@@ -37,6 +37,11 @@ impl Inode {
     }
 
     // common operations
+
+    pub fn flush(&self) -> Ext2Result {
+        self.access()?.lock().flush();
+        Ok(())
+    }
 
     pub fn file_type(&self) -> u8 {
         self.file_type
@@ -201,7 +206,7 @@ pub struct InodeCache {
     pub inode_id: usize,
     block_id: usize,
     block_offset: usize,
-    fs: Arc<Ext2FileSystem>,
+    fs: Weak<Ext2FileSystem>,
 
     // cache part
     file_type: u8,
@@ -221,7 +226,7 @@ impl InodeCache {
             inode_id,
             block_id,
             block_offset,
-            fs,
+            fs: Arc::downgrade(&fs),
             file_type: EXT2_FT_UNKNOWN,
             size: 0,
             blocks: Vec::new(),
@@ -231,18 +236,22 @@ impl InodeCache {
         inode
     }
 
+    fn get_fs(&self) -> Arc<Ext2FileSystem> {
+        self.fs.upgrade().unwrap()
+    }
+
     /// Call a function over a disk inode to read it
     fn read_disk_inode<V>(&self, f: impl FnOnce(&DiskInode) -> V) -> V {
-        let inode_block = self.fs.manager.lock().get_block_cache(self.block_id);
+        let inode_block = self.get_fs().manager.lock().get_block_cache(self.block_id);
         let ret = inode_block.lock().read(self.block_offset, f);
-        self.fs.manager.lock().release_block(inode_block);
+        self.get_fs().manager.lock().release_block(inode_block);
         ret
     }
     /// Call a function over a disk inode to modify it
     fn modify_disk_inode<V>(&self, f: impl FnOnce(&mut DiskInode) -> V) -> V {
-        let inode_block = self.fs.manager.lock().get_block_cache(self.block_id);
+        let inode_block = self.get_fs().manager.lock().get_block_cache(self.block_id);
         let ret = inode_block.lock().modify(self.block_offset, f);
-        self.fs.manager.lock().release_block(inode_block);
+        self.get_fs().manager.lock().release_block(inode_block);
         ret
     }
 
@@ -254,12 +263,16 @@ impl InodeCache {
         self.read_disk_inode(|disk_inode| {
             file_type = disk_inode.file_code();
             file_size = disk_inode.i_size as usize;
-            blocks = disk_inode.all_data_blocks(&self.fs.manager, false);
+            blocks = disk_inode.all_data_blocks(&self.get_fs().manager, false);
         });
 
         self.file_type = file_type;
         self.size = file_size;
         self.blocks = blocks;
+    }
+
+    pub fn flush(&self) {
+        self.get_fs().close()
     }
 
     pub fn file_type(&self) -> u8 {
@@ -290,7 +303,7 @@ impl InodeCache {
                 disk_inode.read_at(
                     offset,
                     dir_entry_head.as_bytes_mut(),
-                    &self.fs.manager,
+                    &self.get_fs().manager,
                     Some(&self.blocks)
                 ),
                 size_of::<DirEntryHead>()
@@ -302,7 +315,7 @@ impl InodeCache {
                 disk_inode.read_at(
                     name_offset,
                     name_buffer,
-                    &self.fs.manager,
+                    &self.get_fs().manager,
                     Some(&self.blocks)
                 ),
                 name_len
@@ -324,7 +337,7 @@ impl InodeCache {
 
     pub fn find(&self, name: &str) -> Ext2Result<Arc<SpinMutex<InodeCache>>> {
         if let Some(de) = self.get_inode_id(name).map(|(de, _, _)| de) {
-            Ok(Ext2FileSystem::get_inode_cache(&self.fs, de.inode as _).unwrap())
+            Ok(Ext2FileSystem::get_inode_cache(&self.get_fs(), de.inode as _).unwrap())
         } else {
             Err(Ext2Error::NotFound)
         }
@@ -349,10 +362,11 @@ impl InodeCache {
             return Err(Ext2Error::AlreadyExists);
         }
         file_type &= 0xF000;
-        let new_inode_id = self.fs.alloc_inode().unwrap();
-        let (new_inode_block_id, new_inode_block_offset) = self.fs.get_disk_inode_pos(new_inode_id);
+        let new_inode_id = self.get_fs().alloc_inode().unwrap();
+        let (new_inode_block_id, new_inode_block_offset) =
+            self.get_fs().get_disk_inode_pos(new_inode_id);
         let inode_block = self
-            .fs
+            .get_fs()
             .manager
             .lock()
             .get_block_cache(new_inode_block_id as _);
@@ -360,13 +374,14 @@ impl InodeCache {
             .lock()
             .modify(new_inode_block_offset, |disk_inode: &mut DiskInode| {
                 *disk_inode = DiskInode::new(DEFAULT_IMODE, file_type, 0, 0);
-                let cur_time = self.fs.timer.get_current_time();
+                let cur_time = self.get_fs().timer.get_current_time();
                 disk_inode.i_atime = cur_time;
                 disk_inode.i_ctime = cur_time;
             });
-        self.fs.manager.lock().release_block(inode_block);
+        self.get_fs().manager.lock().release_block(inode_block);
 
-        let new_inode = Ext2FileSystem::get_inode_cache(&self.fs, new_inode_id as usize).unwrap();
+        let new_inode =
+            Ext2FileSystem::get_inode_cache(&self.get_fs(), new_inode_id as usize).unwrap();
         self.append_dir_entry(new_inode_id as usize, name, new_inode.lock().file_type());
 
         if file_type == EXT2_S_IFDIR {
@@ -380,7 +395,7 @@ impl InodeCache {
             self.increase_nlink(1);
         }
 
-        self.fs.write_meta();
+        self.get_fs().write_meta();
         Ok(new_inode)
     }
 
@@ -399,7 +414,7 @@ impl InodeCache {
             return Err(Ext2Error::LinkToSelf);
         }
 
-        if let Some(inode) = Ext2FileSystem::get_inode_cache(&self.fs, inode_id) {
+        if let Some(inode) = Ext2FileSystem::get_inode_cache(&self.get_fs(), inode_id) {
             if self.get_inode_id(name).is_some() {
                 // already exists
                 Err(Ext2Error::AlreadyExists)
@@ -410,7 +425,7 @@ impl InodeCache {
                 }
                 self.append_dir_entry(inode_id, name, EXT2_FT_REG_FILE);
                 lk.increase_nlink(1);
-                self.fs.write_meta();
+                self.get_fs().write_meta();
                 Ok(())
             }
         } else {
@@ -446,7 +461,7 @@ impl InodeCache {
                 disk_inode.read_at(
                     offset,
                     dir_entry_head.as_bytes_mut(),
-                    &self.fs.manager,
+                    &self.get_fs().manager,
                     Some(&self.blocks)
                 ),
                 size_of::<DirEntryHead>()
@@ -458,7 +473,7 @@ impl InodeCache {
                 disk_inode.read_at(
                     name_offset,
                     name_buffer,
-                    &self.fs.manager,
+                    &self.get_fs().manager,
                     Some(&self.blocks)
                 ),
                 name_len
@@ -502,7 +517,7 @@ impl InodeCache {
                 disk_inode.read_at(
                     offset,
                     dir_entry_head.as_bytes_mut(),
-                    &self.fs.manager,
+                    &self.get_fs().manager,
                     Some(&self.blocks)
                 ),
                 size_of::<DirEntryHead>()
@@ -599,7 +614,7 @@ impl InodeCache {
             self.write_at(prev_offset, &buf);
 
             let target_inode =
-                Ext2FileSystem::get_inode_cache(&self.fs, de.inode as usize).unwrap();
+                Ext2FileSystem::get_inode_cache(&self.get_fs(), de.inode as usize).unwrap();
             target_inode.lock().decrease_nlink(1);
             true
         } else {
@@ -616,13 +631,13 @@ impl InodeCache {
             if let Some(gid) = gid {
                 disk_inode.i_gid = gid as _;
             }
-            disk_inode.i_mtime = self.fs.timer.get_current_time();
+            disk_inode.i_mtime = self.get_fs().timer.get_current_time();
         })
     }
     pub fn chmod(&self, access: IMODE) {
         self.modify_disk_inode(|disk_inode| {
             disk_inode.i_mode = (disk_inode.i_mode & 0o7000) | access.bits();
-            let cur_time = self.fs.timer.get_current_time();
+            let cur_time = self.get_fs().timer.get_current_time();
             disk_inode.i_ctime = cur_time;
             disk_inode.i_atime = cur_time;
         });
@@ -652,8 +667,11 @@ impl InodeCache {
 
         if clean {
             self.clear();
-            self.fs.dealloc_inode(self.inode_id as u32);
-            self.fs.inode_manager.lock().try_to_remove(self.inode_id);
+            self.get_fs().dealloc_inode(self.inode_id as u32);
+            self.get_fs()
+                .inode_manager
+                .lock()
+                .try_to_remove(self.inode_id);
             self.valid = false;
         }
     }
@@ -689,15 +707,15 @@ impl InodeCache {
     /// Increase the size of a disk inode
     fn increase_size(&self, new_size: u32, disk_inode: &mut DiskInode) -> Vec<u32> {
         let blocks_needed = disk_inode.blocks_num_needed(new_size);
-        let new_blocks = self.fs.batch_alloc_data(blocks_needed as _);
+        let new_blocks = self.get_fs().batch_alloc_data(blocks_needed as _);
         assert!(new_blocks.len() == blocks_needed as _);
-        disk_inode.increase_size(new_size, new_blocks, &self.fs.manager)
+        disk_inode.increase_size(new_size, new_blocks, &self.get_fs().manager)
     }
 
     /// Decrease the size of a disk node
     fn decrease_size(&self, new_size: u32, disk_inode: &mut DiskInode) -> usize {
-        let blocks_unused = disk_inode.decrease_size(new_size, &self.fs.manager);
-        self.fs.batch_dealloc_block(&blocks_unused);
+        let blocks_unused = disk_inode.decrease_size(new_size, &self.get_fs().manager);
+        self.get_fs().batch_dealloc_block(&blocks_unused);
         return disk_inode.data_blocks() as usize;
     }
     /// Clear the data in current inode
@@ -707,7 +725,7 @@ impl InodeCache {
     pub fn clear(&self) {
         self.modify_disk_inode(|disk_inode| {
             let blocks = disk_inode.i_blocks;
-            let data_blocks_dealloc = disk_inode.clear_size(&self.fs.manager);
+            let data_blocks_dealloc = disk_inode.clear_size(&self.get_fs().manager);
             if data_blocks_dealloc.len() != DiskInode::total_blocks(blocks * 512) as usize {
                 error!(
                     "clear: {} != {}",
@@ -716,28 +734,28 @@ impl InodeCache {
                 );
             }
             assert!(data_blocks_dealloc.len() == DiskInode::total_blocks(blocks * 512) as usize);
-            let cur_time = self.fs.timer.get_current_time();
+            let cur_time = self.get_fs().timer.get_current_time();
             disk_inode.i_atime = cur_time;
             disk_inode.i_mtime = cur_time;
-            self.fs.batch_dealloc_block(&data_blocks_dealloc);
+            self.get_fs().batch_dealloc_block(&data_blocks_dealloc);
         });
     }
     /// Read data from current inode
     pub fn read_at(&self, offset: usize, buf: &mut [u8]) -> usize {
         self.modify_disk_inode(|disk_inode| {
-            let cur_time = self.fs.timer.get_current_time();
+            let cur_time = self.get_fs().timer.get_current_time();
             disk_inode.i_atime = cur_time;
-            disk_inode.read_at(offset, buf, &self.fs.manager, Some(&self.blocks))
+            disk_inode.read_at(offset, buf, &self.get_fs().manager, Some(&self.blocks))
         })
     }
     /// Write data to current inode
     pub fn write_at(&mut self, offset: usize, buf: &[u8]) -> usize {
         self.cache_increase_size((offset + buf.len()) as _);
         let size = self.modify_disk_inode(|disk_inode| {
-            let cur_time = self.fs.timer.get_current_time();
+            let cur_time = self.get_fs().timer.get_current_time();
             disk_inode.i_atime = cur_time;
             disk_inode.i_mtime = cur_time;
-            disk_inode.write_at(offset, buf, &self.fs.manager, Some(&self.blocks))
+            disk_inode.write_at(offset, buf, &self.get_fs().manager, Some(&self.blocks))
         });
         size
     }
@@ -748,10 +766,10 @@ impl InodeCache {
         let size = self.modify_disk_inode(|disk_inode| {
             // let origin_size = disk_inode.i_size as usize;
             // self.increase_size((origin_size + buf.len()) as u32, disk_inode);
-            let cur_time = self.fs.timer.get_current_time();
+            let cur_time = self.get_fs().timer.get_current_time();
             disk_inode.i_atime = cur_time;
             disk_inode.i_mtime = cur_time;
-            disk_inode.write_at(origin_size, buf, &self.fs.manager, Some(&self.blocks))
+            disk_inode.write_at(origin_size, buf, &self.get_fs().manager, Some(&self.blocks))
         });
         size
     }

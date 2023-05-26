@@ -432,10 +432,17 @@ impl Ext2FileSystem {
     }
 }
 
-impl Drop for Ext2FileSystem {
-    fn drop(&mut self) {
+impl Ext2FileSystem {
+    pub fn close(&self) {
+        debug!("close ext2fs");
         self.write_meta();
         self.manager.lock().sync_all_block();
+    }
+}
+
+impl Drop for Ext2FileSystem {
+    fn drop(&mut self) {
+        self.close()
     }
 }
 

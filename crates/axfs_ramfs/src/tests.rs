@@ -122,8 +122,14 @@ fn test_ramfs() {
     assert_eq!(root.remove("f1", false), Ok(()));
     assert_eq!(root.remove("//f2", false), Ok(()));
     assert_eq!(root.remove("f3", false).err(), Some(VfsError::NotFound));
-    assert_eq!(root.remove("foo", false).err(), Some(VfsError::DirectoryNotEmpty));
-    assert_eq!(root.remove("foo/..", false).err(), Some(VfsError::InvalidInput));
+    assert_eq!(
+        root.remove("foo", false).err(),
+        Some(VfsError::DirectoryNotEmpty)
+    );
+    assert_eq!(
+        root.remove("foo/..", false).err(),
+        Some(VfsError::InvalidInput)
+    );
     assert_eq!(
         root.remove("foo/./bar", false).err(),
         Some(VfsError::DirectoryNotEmpty)

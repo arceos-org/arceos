@@ -187,7 +187,6 @@ pub trait VfsNodeOps: Send + Sync {
     fn get_link_handle(&self) -> VfsResult<LinkHandle> {
         ax_err!(Unsupported)
     }
-
 }
 
 #[doc(hidden)]
