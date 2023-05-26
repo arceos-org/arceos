@@ -49,11 +49,14 @@ impl LoadBalanceZirconStyle {
     }
 }
 
+/*
+
+*/
 impl BaseLoadBalance for LoadBalanceZirconStyle {
     //type LoadBalanceType = LoadBalanceZirconStyle;
 
     /// the most naive method : find min
-    fn find_target_cpu(&self/*, _affinity: usize*/) -> usize {
+    fn find_target_cpu(&self/*, affinity: usize*/) -> usize {
         let mut mn: isize = self.pointers.lock()[0].weight.load(Ordering::Acquire);
         let mut arg: usize = 0;
         for i in 1..self.smp.load(Ordering::Acquire) {

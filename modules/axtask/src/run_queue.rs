@@ -23,6 +23,8 @@ lazy_static::lazy_static! {
 // TODO: per-CPU
 static EXITED_TASKS: SpinNoIrq<VecDeque<AxTaskRef>> = SpinNoIrq::new(VecDeque::new());
 
+static LOCKQWQ: SpinNoIrq<u64> = SpinNoIrq::new(0);
+
 static WAIT_FOR_EXIT: WaitQueue = WaitQueue::new();
 
 #[percpu::def_percpu]
@@ -121,7 +123,7 @@ impl AxRunQueue {
     {
         //info!("block_current 1");
         let curr = crate::current();
-        trace!("task block: {}", curr.id_name());
+        info!("task block: {}", curr.id_name());
         //info!("block_current 2");
         assert!(curr.is_running());
         assert!(!curr.is_idle());

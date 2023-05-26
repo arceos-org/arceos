@@ -69,6 +69,13 @@ pub fn is_init_ok() -> bool {
 #[crate_interface::impl_interface]
 impl LogMyTime for LogTaskImpl {
     fn current_cpu_id() -> Option<usize> {
+        loop {
+            if is_init_ok() {
+                break;
+            } else {
+                return None;
+            }
+        }
         #[cfg(feature = "smp")] {
             // TODO: 这逻辑啥玩意啊
             Some(axhal::cpu::this_cpu_id())
@@ -77,6 +84,7 @@ impl LogMyTime for LogTaskImpl {
         //} else {
         //    None
         //}
+
         #[cfg(not(feature = "smp"))]
         Some(0)
     }
@@ -84,7 +92,9 @@ impl LogMyTime for LogTaskImpl {
 
 use crate_interface::{call_interface, def_interface};
 pub fn get_current_cpu_id() -> usize {
-    call_interface!(LogMyTime::current_cpu_id).unwrap()
+    call_interface!(LogMyTime::current_cpu_id).unwrap_or_else(
+        ||axconfig::SMP
+    )
 }
 
 /// Gets the current task, or returns [`None`] if the current task is not
@@ -127,7 +137,9 @@ pub fn init_scheduler_secondary() {
 pub fn on_timer_tick() {
     crate::timers::check_events();
     //info!("exit 233");
-    RUN_QUEUE[get_current_cpu_id()].scheduler_timer_tick();
+    if get_current_cpu_id() != axconfig::SMP {
+        RUN_QUEUE[get_current_cpu_id()].scheduler_timer_tick();
+    }
     //info!("exit 234");
     //info!("exit 7");
 }
