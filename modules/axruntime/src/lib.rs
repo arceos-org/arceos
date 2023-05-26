@@ -51,6 +51,7 @@ d88P     888 888      "Y8888P  "Y8888   "Y88888P"   "Y8888P"
 "#;
 
 extern "C" {
+    #[allow(dead_code)]
     fn main();
 }
 

@@ -107,7 +107,7 @@ pub fn enter_uspace(tf: usize, satp: usize) -> ! {
 #[no_mangle]
 #[link_section = ".text.trampoline"]
 #[naked]
-pub fn __enter_uspace() -> ! {
+pub extern "C" fn __enter_uspace() {
     // a0: _tf, a1: _satp
     unsafe {
         core::arch::asm!(
@@ -139,7 +139,7 @@ pub fn __enter_uspace() -> ! {
 #[no_mangle]
 #[link_section = ".text.trampoline"]
 #[naked]
-pub fn trap_from_uspace() -> ! {
+pub extern "C" fn trap_from_uspace() {
     unsafe {
         core::arch::asm!(
             r"

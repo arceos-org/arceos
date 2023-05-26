@@ -1,9 +1,9 @@
 extern crate alloc;
 
-use alloc::{format, vec::Vec};
-use libax::io::{self, prelude::*, File};
+use alloc::format;
+use libax::io::{self,  File};
 
-const DEST_HOST: &str = "ident.me";
+//const DEST_HOST: &str = "ident.me";
 const DEST_IP: &str = "49.12.234.183";
 const REQUEST: &str = "\
 GET / HTTP/1.1\r\n\
@@ -16,7 +16,7 @@ fn get_addr() -> (&'static str, u16) {
 }
 
 fn client() -> io::Result {
-    let mut stream = File::open(&format!("tcp:/{}/{}", get_addr().0, get_addr().1))?;
+    let stream = File::open(&format!("tcp:/{}/{}", get_addr().0, get_addr().1))?;
     stream.write(REQUEST.as_bytes())?;
     let mut buf = [0; 2048];
     let n = stream.read(&mut buf)?;

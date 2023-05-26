@@ -6,13 +6,9 @@
 //! ab -n 5000 -c 20 http://X.X.X.X:5555/
 //! ```
 
-#![no_std]
-
 extern crate alloc;
 
-use core::str::FromStr;
-
-use libax::{axerrno::AxResult, io::File, task::yield_now, OpenFlags};
+use libax::{axerrno::AxResult, io::File, task::yield_now};
 
 const LOCAL_IP: &str = "10.0.2.15";
 const LOCAL_PORT: u16 = 5555;

@@ -363,7 +363,7 @@ pub fn translate_buffer(vaddr: VirtAddr, size: usize, _write: bool) -> Vec<&'sta
     let mut vaddr = vaddr;
     let mut result: Vec<&'static mut [u8]> = vec![];
     while read_size < size {
-        let (paddr, flag, page_size) = addr_space.page_table.query(vaddr).expect("Invalid vaddr!");
+        let (paddr, _flag, page_size) = addr_space.page_table.query(vaddr).expect("Invalid vaddr!");
         /*
         if !flag.contains(MappingFlags::USER) || (write && !flag.contains(MappingFlags::WRITE)) {
             panic!("Invalid vaddr with improper rights!");

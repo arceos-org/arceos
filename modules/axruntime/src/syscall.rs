@@ -14,6 +14,7 @@ impl UserBuffer {
         }
         self.data.clear();
     }
+    #[allow(dead_code)]
     fn putchar(&mut self, c: u8) {
         self.data.push(c);
         if c == b'\n' {

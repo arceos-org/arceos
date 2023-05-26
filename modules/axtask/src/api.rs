@@ -1,6 +1,6 @@
 //! Task APIs for multi-task configuration.
 
-use alloc::{string::String, sync::Arc};
+use alloc::sync::Arc;
 
 pub(crate) use crate::run_queue::{AxRunQueue, RUN_QUEUE};
 
@@ -93,6 +93,7 @@ pub fn spawn(f: usize, arg: usize) {
     RUN_QUEUE.lock().add_task(task);
 }
 } else {
+use alloc::string::String;
 /// Spawns a new task.
 /// Spawns a new task with the given parameters.
 ///

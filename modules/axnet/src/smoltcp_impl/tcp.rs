@@ -162,6 +162,7 @@ impl TcpSocket {
             .ok_or_else(|| ax_err_type!(InvalidInput, "socket accept() failed: no address bound"))?
             .port;
 
+        #[allow(clippy::never_loop)]
         loop {
             SOCKET_SET.poll_interfaces();
             match LISTEN_TABLE.accept(local_port) {

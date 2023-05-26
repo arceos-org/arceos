@@ -20,7 +20,9 @@ use syscall_number::{SYS_CLOSE, SYS_DUP, SYS_OPEN, SYS_READ, SYS_WRITE};
 use super::KernelScheme;
 
 pub struct UserInner {
+    #[allow(unused)]
     id: usize,
+    #[allow(unused)]
     name: Box<str>,
     next_id: AtomicU64,
     requests: Mutex<VecDeque<Packet>>,
