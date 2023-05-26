@@ -69,13 +69,11 @@ pub fn is_init_ok() -> bool {
 #[crate_interface::impl_interface]
 impl LogMyTime for LogTaskImpl {
     fn current_cpu_id() -> Option<usize> {
-        loop {
-            if is_init_ok() {
-                break;
-            } else {
+        //loop {
+            if !is_init_ok() {
                 return None;
             }
-        }
+        //}
         #[cfg(feature = "smp")] {
             // TODO: 这逻辑啥玩意啊
             Some(axhal::cpu::this_cpu_id())
