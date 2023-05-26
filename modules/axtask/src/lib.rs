@@ -35,7 +35,7 @@ mod tests;
 extern crate alloc;
 use alloc::sync::Arc;
 
-pub use self::run_queue::{AxRunQueue, RUN_QUEUE, IDLE_TASK};
+pub use self::run_queue::{AxRunQueue, RUN_QUEUE, IDLE_TASK, EXITED_TASKS};
 use self::task::{CurrentTask, TaskInner};
 
 pub use self::task::TaskId;

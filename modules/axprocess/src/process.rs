@@ -1,11 +1,12 @@
+use alloc::string::ToString;
 use alloc::vec;
 use alloc::{collections::BTreeMap, string::String, sync::Arc, vec::Vec};
-use alloc::string::ToString;
 use axfs_os::read_file;
 use axfs_os::{file_io::FileIO, Stderr, Stdin, Stdout};
 use axhal::arch::{write_page_table_root, TrapFrame};
 use axhal::mem::VirtAddr;
 use axhal::paging::MappingFlags;
+use axlog::info;
 use axmem::memory_set::USER_STACK_SIZE;
 
 const KERNEL_STACK_SIZE: usize = 4096;
@@ -56,7 +57,12 @@ pub struct ProcessInner {
 }
 
 impl ProcessInner {
-    pub fn new(parent: u64, memory_set: Arc<SpinNoIrq<MemorySet>>, heap_bottom: usize, fd_table: Vec<Option<Arc<dyn FileIO>>>) -> Self {
+    pub fn new(
+        parent: u64,
+        memory_set: Arc<SpinNoIrq<MemorySet>>,
+        heap_bottom: usize,
+        fd_table: Vec<Option<Arc<dyn FileIO>>>,
+    ) -> Self {
         Self {
             parent,
             children: Vec::new(),
@@ -67,7 +73,7 @@ impl ProcessInner {
             is_zombie: false,
             exit_code: 0,
             fd_table,
-            cwd: "/".to_string(),   // 这里的工作目录是根目录
+            cwd: "/".to_string(), // 这里的工作目录是根目录
         }
     }
     pub fn get_page_table_token(&self) -> usize {
@@ -94,7 +100,6 @@ impl Process {
         // let mut page_table = copy_from_kernel_memory();
         // let (entry, user_stack_bottom) = load_from_elf(&mut page_table, get_app_data(name));
         let mut memory_set = MemorySet::new_from_kernel();
-        let _page_table_token = memory_set.page_table_token();
         let elf_data = read_file(path).unwrap();
         let (entry, user_stack_bottom, heap_bottom) =
             MemorySet::from_elf(&mut memory_set, elf_data.as_slice());
@@ -154,7 +159,7 @@ impl Process {
                     Some(Arc::new(Stderr)),
                     // // 工作目录, fd_table[3]固定用来存放工作目录
                     // Some(Arc::new(CurWorkDirDesc::new('/'.to_string()))),   // 这里的工作目录是根目录
-                ]
+                ],
             )),
         });
 
@@ -386,15 +391,6 @@ impl Process {
         }
         None
     }
-    /// 将数据映射到对应的段
-    pub fn mmap(
-        &self,
-        _start: VirtAddr,
-        _end: VirtAddr,
-        _flags: MappingFlags,
-        _random_pos: bool,
-        _data: Option<&[u8]>,
-    ) {}
 }
 
 /// 初始化内核调度进程

@@ -9,6 +9,7 @@ use axprocess::{
 };
 extern crate alloc;
 use alloc::vec::Vec;
+use log::info;
 
 use crate::flags::{TimeSecs, TimeVal, UtsName, WaitFlags, TMS};
 /// 处理与任务（线程）有关的系统调用
@@ -52,7 +53,6 @@ pub fn syscall_clone(
     tls: usize,
     ctid: usize,
 ) -> isize {
-    axlog::info!("flags: {}", flags);
     let clone_flags = CloneFlags::from_bits((flags & !0x3f) as u32).unwrap();
     let stack = if user_stack == 0 {
         None

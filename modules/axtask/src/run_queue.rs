@@ -13,7 +13,7 @@ const KERNEL_PROCESS_ID: u64 = 1;
 pub static RUN_QUEUE: LazyInit<SpinNoIrq<AxRunQueue>> = LazyInit::new();
 
 // TODO: per-CPU
-static EXITED_TASKS: SpinNoIrq<VecDeque<AxTaskRef>> = SpinNoIrq::new(VecDeque::new());
+pub static EXITED_TASKS: SpinNoIrq<VecDeque<AxTaskRef>> = SpinNoIrq::new(VecDeque::new());
 
 static WAIT_FOR_EXIT: WaitQueue = WaitQueue::new();
 const IDLE_TASK_STACK_SIZE: usize = 4096;

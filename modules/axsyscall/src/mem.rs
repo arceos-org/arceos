@@ -1,6 +1,7 @@
 use crate::flags::{MMAPFlags, MMAPPROT};
 use alloc::vec;
 use axprocess::process::current_process;
+use log::info;
 use memory_addr::{align_down_4k, align_up_4k};
 const MAX_HEAP_SIZE: usize = 4096;
 /// 修改用户堆大小，
@@ -68,10 +69,10 @@ pub fn syscall_mmap(
         // 二是为文件内容分配物理页面，若是任意寻找位置，则直接找一个大小适合的连续物理页面放进去即可
         // 若是固定位置，则需要在固定位置处进行解映射，然后再进行映射。这个过程需要检查是否越界
         if let Some(file) = &inner.fd_table[fd as usize] {
-            let _ = file.seek(offest);
+            file.seek(offest).unwrap();
             // 获取文件数据
             let mut data = vec![0u8; len];
-            let _ = file.read(&mut data);
+            file.read(&mut data).unwrap();
             inner
                 .memory_set
                 .lock()

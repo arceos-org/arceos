@@ -7,6 +7,7 @@ use axhal::{
 };
 pub const USER_STACK_SIZE: usize = 4096;
 pub const MAX_HEAP_SIZE: usize = 4096;
+use axlog::info;
 use riscv::asm;
 /// 地址空间实现
 pub struct MemorySet {
@@ -155,9 +156,11 @@ impl MemorySet {
     }
 
     /// 将地址空间中某一段[start_va, end_va)独立出来，用于进行mmap
+    /// 也可以在munmap使用代表解映射
     /// 由于访问权限可能发送改变，因此需要分割或缩小原有的area
     pub fn split_for_area(&mut self, start_va: VirtAddr, size: usize) {
         let end_va = start_va + size;
+        info!("start: {}, end: {}", start_va.as_usize(), end_va.as_usize());
         let ares_to_modified: Vec<MapArea> = self
             .areas
             .drain_filter(|area: &mut MapArea| area.overlap_with(start_va, end_va))
@@ -171,7 +174,8 @@ impl MemorySet {
             let data = area.pages.as_slice();
             // 抛弃原先的区域
             // 页表解映射
-            let _ = self.page_table
+            let _ = self
+                .page_table
                 .unmap_region(area_start_va, area.pages.size());
             if start_va <= area_start_va && area_end_va <= end_va {
                 // 原有的区间被完全征用，直接删除
@@ -224,6 +228,7 @@ impl MemorySet {
         string
     }
     /// start_va和size均已按页对齐
+    /// 成功返回已映射区域的指针，失败返回-1;
     pub fn mmap(
         &mut self,
         start_va: VirtAddr,
@@ -258,7 +263,7 @@ impl MemorySet {
                 unsafe {
                     asm::sfence_vma_all();
                 }
-                0
+                new_start_va.as_usize() as isize
             } else {
                 -1
             }
@@ -272,7 +277,7 @@ impl MemorySet {
             unsafe {
                 asm::sfence_vma_all();
             }
-            0
+            start_va.as_usize() as isize
         }
     }
     /// 解除一段内存的映射，其实某种意义上它被mmap包含了

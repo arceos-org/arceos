@@ -8,22 +8,22 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 
+pub mod dir;
 pub mod flags;
-pub mod pipe;
 pub mod link;
 pub mod mount;
+pub mod pipe;
 pub mod types;
-pub mod dir;
 
 use axerrno::AxResult;
+pub use axfs::api;
 use axfs::api::OpenOptions;
 use axio::{Read, Seek, SeekFrom};
-pub use file::{new_fd, FileDesc, FileMetaData};
 pub use dir::{new_dir, DirDesc};
+pub use file::{new_fd, FileDesc, FileMetaData};
+use log::info;
 pub use stdio::{Stderr, Stdin, Stdout};
-pub use types::{FilePath, DirEntType, DirEnt};
-pub use axfs::api;
-
+pub use types::{DirEnt, DirEntType, FilePath};
 
 /// 读取path文件的内容，但不新建文件描述符
 /// 用于内核读取代码文件初始化

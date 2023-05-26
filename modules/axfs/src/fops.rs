@@ -10,22 +10,22 @@ use axio::SeekFrom;
 use capability::{Cap, WithCap};
 use core::fmt;
 
-pub type FileType = axfs_vfs::VfsNodeType;      // 文件类型
-pub type DirEntry = axfs_vfs::VfsDirEntry;      // 目录项
-pub type FileAttr = axfs_vfs::VfsNodeAttr;      // 文件属性
-pub type FilePerm = axfs_vfs::VfsNodePerm;      // 文件权限
+pub type FileType = axfs_vfs::VfsNodeType; // 文件类型
+pub type DirEntry = axfs_vfs::VfsDirEntry; // 目录项
+pub type FileAttr = axfs_vfs::VfsNodeAttr; // 文件属性
+pub type FilePerm = axfs_vfs::VfsNodePerm; // 文件权限
 
 /// Filesystem operations. 打开的文件
 pub struct File {
-    node: WithCap<VfsNodeRef>,      // 包含访问权限的文件节点引用(Inner+Cap,Cap就是三种权限的bitflag)
-    is_append: bool,                // 是否以追加模式打开
+    node: WithCap<VfsNodeRef>, // 包含访问权限的文件节点引用(Inner+Cap,Cap就是三种权限的bitflag)
+    is_append: bool,           // 是否以追加模式打开
     offset: u64,
 }
 
 /// Directory operations. 打开的目录
 pub struct Directory {
-    node: WithCap<VfsNodeRef>,      // 包含访问权限的节点引用
-    entry_idx: usize,               // 目录项索引
+    node: WithCap<VfsNodeRef>, // 包含访问权限的节点引用
+    entry_idx: usize,          // 目录项索引
 }
 
 #[derive(Clone)]
@@ -104,7 +104,6 @@ impl File {
             debug!("invalid open options: {:?}", opts);
             return ax_err!(InvalidInput);
         }
-
         let node_option = crate::root::lookup(dir, path);
         let node = if opts.create || opts.create_new {
             match node_option {
@@ -134,7 +133,6 @@ impl File {
         if !perm_to_cap(attr.perm()).contains(access_cap) {
             return ax_err!(PermissionDenied);
         }
-
         node.open()?;
         if opts.truncate {
             node.truncate(0)?;
@@ -169,7 +167,7 @@ impl File {
     pub fn write(&mut self, buf: &[u8]) -> AxResult<usize> {
         let node = self.node.access(Cap::WRITE)?;
         if self.is_append {
-            self.offset = self.get_attr()?.size();          // 如果是追加模式, 则会将文件指针移动到文件末尾
+            self.offset = self.get_attr()?.size(); // 如果是追加模式, 则会将文件指针移动到文件末尾
         };
         let write_len = node.write_at(self.offset, buf)?;
         self.offset += write_len as u64;
@@ -188,7 +186,7 @@ impl File {
             SeekFrom::Current(off) => self.offset.checked_add_signed(off),
             SeekFrom::End(off) => size.checked_add_signed(off),
         }
-            .ok_or_else(|| ax_err_type!(InvalidInput))?;        // 如果是Some(x), 则返回Ok(x), 否则返回InvalidInput错误
+        .ok_or_else(|| ax_err_type!(InvalidInput))?; // 如果是Some(x), 则返回Ok(x), 否则返回InvalidInput错误
         self.offset = new_offset;
         Ok(new_offset)
     }

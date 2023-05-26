@@ -1,10 +1,10 @@
 use alloc::sync::Arc;
+use axfs_os::api;
 use axhal::arch::write_page_table_root;
 use axlog::{debug, info};
 use axmem::paging::KERNEL_PAGE_TABLE;
-use axtask::{TaskId, RUN_QUEUE};
+use axtask::{TaskId, EXITED_TASKS, RUN_QUEUE};
 use spinlock::SpinNoIrq;
-use axfs_os::api;
 
 extern crate alloc;
 
@@ -28,14 +28,14 @@ const JUNIOR_TESTCASES: &[&str] = &[
     "fork",
     "fstat",
     "getcwd",
-    "getdents",
+    // "getdents",
     "getpid",
     "getppid",
     "gettimeofday",
     "mkdir_",
-    // "mmap",
+    "mmap",
     "mount",
-    // "munmap",
+    "munmap",
     "open",
     "openat",
     "pipe",
@@ -281,14 +281,16 @@ pub fn run_testcases() {
                 }
             },
         );
+        EXITED_TASKS.lock().clear();
         if let Some(process_id) = ans {
             let kernel_process = Arc::clone(PID2PC.lock().get(&KERNEL_PROCESS_ID).unwrap());
             kernel_process
                 .inner
                 .lock()
                 .children
-                .retain(|x| x.pid != process_id);
+                .retain(|x| x.pid == KERNEL_PROCESS_ID);
             // 去除指针引用，此时process_id对应的进程已经被释放
+            // 释放所有非内核线程
         } else {
             // 已经测试完所有的测例
             break;

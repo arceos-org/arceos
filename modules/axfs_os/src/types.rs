@@ -1,6 +1,6 @@
 use alloc::string::String;
-use bitflags::bitflags;
 use axfs::api::canonicalize;
+use bitflags::bitflags;
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
 pub struct FilePath(String);
@@ -10,7 +10,8 @@ impl FilePath {
     pub fn new(path: &str) -> Self {
         let mut new_path = String::from(canonicalize(path).unwrap().trim());
         // canonicalize中没有处理末尾的空格、换行符等
-        if path.ends_with("/") && !new_path.ends_with("/") {    // 如果原始路径以 '/' 结尾，那么canonicalize后的路径也应该以 '/' 结尾
+        if path.ends_with("/") && !new_path.ends_with("/") {
+            // 如果原始路径以 '/' 结尾，那么canonicalize后的路径也应该以 '/' 结尾
             new_path.push('/');
         }
         // assert!(!path.ends_with("/"), "path should not end with '/', link only support file");      // 链接只支持文件
@@ -27,7 +28,7 @@ impl FilePath {
         }
         let mut pos = self.0.rfind("/").unwrap();
         if pos == self.0.len() - 1 {
-            pos = self.0[..pos].rfind("/").unwrap();    // 如果是以 '/' 结尾，那么再往前找一次
+            pos = self.0[..pos].rfind("/").unwrap(); // 如果是以 '/' 结尾，那么再往前找一次
         }
         &self.0[..=pos]
     }
@@ -38,7 +39,7 @@ impl FilePath {
         }
         let mut pos = self.0.rfind("/").unwrap();
         if pos == self.0.len() - 1 {
-            pos = self.0[..pos].rfind("/").unwrap();    // 如果是以 '/' 结尾，那么再往前找一次
+            pos = self.0[..pos].rfind("/").unwrap(); // 如果是以 '/' 结尾，那么再往前找一次
         }
         &self.0[pos + 1..]
     }
@@ -78,7 +79,6 @@ impl FilePath {
 //         Self(self.0.clone())
 //     }
 // }
-
 
 /// 目录项
 pub struct DirEnt {
@@ -130,6 +130,7 @@ impl DirEnt {
 
 /// 文件系统信息
 #[derive(Debug, Clone, Copy)]
+#[repr(C)]
 pub struct Kstat {
     /// 设备
     pub st_dev: u64,

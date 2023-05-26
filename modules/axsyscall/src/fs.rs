@@ -1,23 +1,22 @@
 use alloc::format;
 use alloc::string::ToString;
 use alloc::sync::Arc;
-use core::mem::transmute;
-use core::ptr::copy_nonoverlapping;
-use log::debug;
 use axfs::api;
-use axfs_os::{FilePath, new_fd, new_dir, DirEnt, DirEntType};
 use axfs_os::flags::OpenFlags;
 use axfs_os::link::{create_link, remove_link};
 use axfs_os::mount::{check_mounted, mount_fat_fs, umount_fat_fs};
 use axfs_os::pipe::make_pipe;
 use axfs_os::types::Kstat;
+use axfs_os::{new_dir, new_fd, DirEnt, DirEntType, FilePath};
 use axprocess::process::current_process;
-
+use core::mem::transmute;
+use core::ptr::copy_nonoverlapping;
+use log::{debug, info};
 
 #[allow(unused)]
 const AT_FDCWD: usize = -100isize as usize;
 // Special value used to indicate openat should use the current working directory.
-const AT_REMOVEDIR: usize = 0x200;        // Remove directory instead of unlinking file.
+const AT_REMOVEDIR: usize = 0x200; // Remove directory instead of unlinking file.
 
 // const STDIN: usize = 0;
 // const STDOUT: usize = 1;
@@ -31,7 +30,11 @@ const AT_REMOVEDIR: usize = 0x200;        // Remove directory instead of unlinki
 ///    - force_dir：是否强制为目录
 ///
 /// 一般情况下, 传入path末尾是`/`的话, 生成的FilePath是一个目录，否则是一个文件；但如果force_dir为true, 则生成的FilePath一定是一个目录(自动补充`/`)
-fn deal_with_path(dir_fd: usize, path_addr: Option<*const u8>, force_dir: bool) -> Option<FilePath> {
+fn deal_with_path(
+    dir_fd: usize,
+    path_addr: Option<*const u8>,
+    force_dir: bool,
+) -> Option<FilePath> {
     let process = current_process();
     let process_inner = process.inner.lock();
     let mut path = "".to_string();
@@ -46,12 +49,14 @@ fn deal_with_path(dir_fd: usize, path_addr: Option<*const u8>, force_dir: bool) 
     if force_dir {
         path = format!("{}/", path);
     }
-    if path.ends_with('.') {     // 如果path以.或..结尾, 则加上/告诉FilePath::new它是一个目录
+    if path.ends_with('.') {
+        // 如果path以.或..结尾, 则加上/告诉FilePath::new它是一个目录
         path = format!("{}/", path);
     }
     debug!("path: {}", path);
 
-    if !path.starts_with('/') && dir_fd != AT_FDCWD {   // 如果不是绝对路径, 且dir_fd不是AT_FDCWD, 则需要将dir_fd和path拼接起来
+    if !path.starts_with('/') && dir_fd != AT_FDCWD {
+        // 如果不是绝对路径, 且dir_fd不是AT_FDCWD, 则需要将dir_fd和path拼接起来
         if dir_fd >= process_inner.fd_table.len() {
             debug!("fd index out of range");
             return None;
@@ -76,7 +81,6 @@ fn deal_with_path(dir_fd: usize, path_addr: Option<*const u8>, force_dir: bool) 
     Some(FilePath::new(&path))
 }
 
-
 /// 功能：从一个文件描述符中读取；
 /// 输入：
 ///     - fd：要读取文件的文件描述符。
@@ -84,7 +88,10 @@ fn deal_with_path(dir_fd: usize, path_addr: Option<*const u8>, force_dir: bool) 
 ///     - count：要读取的字节数。
 /// 返回值：成功执行，返回读取的字节数。如为0，表示文件结束。错误，则返回-1。
 pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
-    debug!("Into syscall_read. fd: {}, buf: {:?}, len: {}", fd, buf as usize, count);
+    debug!(
+        "Into syscall_read. fd: {}, buf: {:?}, len: {}",
+        fd, buf as usize, count
+    );
     let process = current_process();
     let process_inner = process.inner.lock();
     if fd >= process_inner.fd_table.len() {
@@ -104,7 +111,8 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
         // file.print_content();
 
         drop(process_inner); // release current inner manually to avoid multi-borrow
-        let read_size = file.read(unsafe { core::slice::from_raw_parts_mut(buf, count) })
+        let read_size = file
+            .read(unsafe { core::slice::from_raw_parts_mut(buf, count) })
             .unwrap() as isize;
         debug!("read_size: {}", read_size);
         read_size as isize
@@ -112,7 +120,6 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
         -1
     }
 }
-
 
 /// 功能：从一个文件描述符中写入；
 /// 输入：
@@ -136,7 +143,7 @@ pub fn syscall_write(fd: usize, buf: *const u8, count: usize) -> isize {
         }
         let file = file.clone();
         drop(process_inner); // release current inner manually to avoid multi-borrow
-        // file.write("Test SysWrite\n".as_bytes()).unwrap();
+                             // file.write("Test SysWrite\n".as_bytes()).unwrap();
         file.write(unsafe { core::slice::from_raw_parts(buf, count) })
             .unwrap() as isize
     } else {
@@ -179,7 +186,7 @@ pub fn syscall_openat(fd: usize, path: *const u8, flags: usize, _mode: u8) -> is
         if let Ok(file) = new_fd(path.path().to_string(), flags.into()) {
             debug!("new file_desc successfully allocated");
             process_inner.fd_table[fd_num] = Some(Arc::new(file));
-            let _ = create_link(&path, &path);  // 不需要检查是否成功，因为如果成功，说明是新建的文件，如果失败，说明已经存在了
+            let _ = create_link(&path, &path); // 不需要检查是否成功，因为如果成功，说明是新建的文件，如果失败，说明已经存在了
             fd_num as isize
         } else {
             debug!("open file failed");
@@ -269,7 +276,6 @@ pub fn syscall_pipe2(fd: *mut u32) -> isize {
     let fd_num2 = process_inner.alloc_fd();
     process_inner.fd_table[fd_num2] = Some(write);
 
-
     debug!("fd_num: {}, fd_num2: {}", fd_num, fd_num2);
 
     unsafe {
@@ -341,14 +347,21 @@ pub fn syscall_dup3(fd: usize, new_fd: usize) -> isize {
 /// 返回值：成功执行，返回0。失败，返回-1。
 pub fn syscall_mkdirat(dir_fd: usize, path: *const u8, mode: u32) -> isize {
     let path = deal_with_path(dir_fd, Some(path), true).unwrap();
-    debug!("Into syscall_mkdirat. dirfd: {}, path: {:?}, mode: {}", dir_fd, path.path(), mode);
-    if let Ok(_res) = api::create_dir(path.path()) {
+    debug!(
+        "Into syscall_mkdirat. dirfd: {}, path: {:?}, mode: {}",
+        dir_fd,
+        path.path(),
+        mode
+    );
+    let _ = api::create_dir(path.path());
+
+    // 只要文件夹存在就返回0
+    if api::path_exists(path.path()) {
         0
     } else {
         -1
     }
 }
-
 
 /// 功能：切换工作目录；
 /// 输入：
@@ -388,7 +401,7 @@ pub fn syscall_getdents64(fd: usize, buf: *mut u8, len: usize) -> isize {
 
     let buf = unsafe { core::slice::from_raw_parts_mut(buf, len) };
     let dir_iter = api::read_dir(path.path()).unwrap();
-    let mut count = 0;     // buf中已经写入的字节数
+    let mut count = 0; // buf中已经写入的字节数
 
     for (i, entry) in dir_iter.enumerate() {
         let entry = entry.unwrap();
@@ -431,7 +444,13 @@ pub fn syscall_getdents64(fd: usize, buf: *mut u8, len: usize) -> isize {
 ///     - flags：在2.6.18内核之前，应置为0。其它的值详见`man 2 linkat`。
 /// 返回值：成功执行，返回0。失败，返回-1。
 #[allow(dead_code)]
-pub fn sys_linkat(old_dir_fd: usize, old_path: *const u8, new_dir_fd: usize, new_path: *const u8, _flags: usize) -> isize {
+pub fn sys_linkat(
+    old_dir_fd: usize,
+    old_path: *const u8,
+    new_dir_fd: usize,
+    new_path: *const u8,
+    _flags: usize,
+) -> isize {
     let old_path = deal_with_path(old_dir_fd, Some(old_path), false).unwrap();
     let new_path = deal_with_path(new_dir_fd, Some(new_path), false).unwrap();
     if create_link(&old_path, &new_path) {
@@ -495,7 +514,8 @@ pub fn syscall_mount(
     let memory_set = process_inner.memory_set.lock();
     let fs_type = memory_set.translate_str(fs_type);
     let mut _data_str = "".to_string();
-    if !_data.is_null() {   // data可以为NULL, 必须判断, 否则会panic, 发生LoadPageFault
+    if !_data.is_null() {
+        // data可以为NULL, 必须判断, 否则会panic, 发生LoadPageFault
         _data_str = memory_set.translate_str(_data);
     }
     if device_path.is_dir() {
@@ -529,7 +549,6 @@ pub fn syscall_mount(
     0
 }
 
-
 /// 功能：卸载文件系统；
 /// 输入：指定卸载目录，卸载参数；
 /// 返回值：成功返回0，失败返回-1；
@@ -554,7 +573,6 @@ pub fn syscall_umount(dir: *const u8, flags: usize) -> isize {
 
     0
 }
-
 
 /// 功能：获取文件状态；
 /// 输入：
@@ -602,23 +620,9 @@ pub fn syscall_fstat(fd: usize, kst: *mut Kstat) -> isize {
 
     match file.get_stat() {
         Ok(stat) => {
-            let kstat = unsafe { &mut *kst };
-            kstat.st_dev = stat.st_dev;
-            kstat.st_ino = stat.st_ino;
-            kstat.st_mode = stat.st_mode;
-            kstat.st_nlink = stat.st_nlink;
-            kstat.st_uid = stat.st_uid;
-            kstat.st_gid = stat.st_gid;
-            kstat.st_rdev = stat.st_rdev;
-            kstat.st_size = stat.st_size;
-            kstat.st_blksize = stat.st_blksize;
-            kstat.st_blocks = stat.st_blocks;
-            kstat.st_atime_sec = stat.st_atime_sec;
-            kstat.st_atime_nsec = stat.st_atime_nsec;
-            kstat.st_mtime_sec = stat.st_mtime_sec;
-            kstat.st_mtime_nsec = stat.st_mtime_nsec;
-            kstat.st_ctime_sec = stat.st_ctime_sec;
-            kstat.st_ctime_nsec = stat.st_ctime_nsec;
+            unsafe {
+                *kst = stat;
+            }
             0
         }
         Err(e) => {

@@ -528,10 +528,8 @@ extern "C" fn task_entry() -> ! {
             let frame_address = task.trap_frame.get();
             // 切换页表已经在switch实现了
             first_into_user(kernel_sp, frame_address as usize);
-            // 问题：能否回来?
         }
     }
-    // 任务执行完成，释放自我
-    unreachable!("test!");
-    // crate::exit(0);
+    // only for kernel task
+    crate::exit(0);
 }
