@@ -139,8 +139,12 @@ pub fn on_timer_tick() {
     //info!("exit 233");
     if get_current_cpu_id() != axconfig::SMP {
         RUN_QUEUE[get_current_cpu_id()].scheduler_timer_tick();
+    } else {
+        for i in 0..axconfig::SMP {
+            RUN_QUEUE[i].scheduler_timer_tick();
+        }
     }
-    //info!("exit 234");
+    info!("exit 234");
     //info!("exit 7");
 }
 
