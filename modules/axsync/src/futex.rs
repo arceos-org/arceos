@@ -42,7 +42,7 @@ impl FutexPool {
             }
         }
 
-        return val;
+        val
     }
 }
 

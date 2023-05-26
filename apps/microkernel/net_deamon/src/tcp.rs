@@ -32,7 +32,7 @@ impl Scheme for TcpScheme {
         let mut path = path.trim_matches('/').split('/');
         let addr = match (path.next(), path.next()) {
             (Some(addr), Some(port)) => SocketAddr::new(
-                IpAddr::from_str(&addr).map_err(|_| AxError::NotFound)?,
+                IpAddr::from_str(addr).map_err(|_| AxError::NotFound)?,
                 port.parse().map_err(|_| AxError::NotFound)?,
             ),
             _ => return ax_err!(NotFound),

@@ -61,7 +61,7 @@ impl UserInner {
                 }
             }
         }
-        Ok(buf.len() * core::mem::size_of::<Packet>())
+        Ok(core::mem::size_of_val(buf))
     }
     /// Write a response form the server
     pub fn scheme_write(&self, buf: &[u8]) -> AxResult<usize> {
@@ -76,7 +76,7 @@ impl UserInner {
             trace!("Root send {} -> {}", result_item.id, result_item.a);
             self.response.lock().insert(result_item.id, result_item.a);
         }
-        Ok(buf.len() * core::mem::size_of::<Packet>())
+        Ok(core::mem::size_of_val(buf))
     }
 
     pub fn handle_request(&self, a: usize, b: usize, c: usize, d: usize) -> AxResult<usize> {

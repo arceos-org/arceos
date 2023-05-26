@@ -40,7 +40,7 @@ impl Scheme for RootScheme {
             let inner = {
                 let path_box = path.to_string().into_boxed_str();
                 let inner = Arc::new(UserInner::new(id, path_box));
-                schemes().insert(&path, Arc::new(UserScheme::new(Arc::downgrade(&inner))));
+                schemes().insert(path, Arc::new(UserScheme::new(Arc::downgrade(&inner))));
                 inner
             };
 

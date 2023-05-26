@@ -102,7 +102,7 @@ fn insert_fd(file_handle: Arc<FileHandle>) -> AxResult<usize> {
 
 // TODO: all flags
 pub fn open(path: &str, options: usize) -> AxResult<usize> {
-    let mut path_split = path.splitn(2, ":");
+    let mut path_split = path.splitn(2, ':');
     let (scheme, path) = match (path_split.next(), path_split.next()) {
         (Some(scheme), Some(path)) => (scheme, path),
         (Some(path), None) => ("file", path),
@@ -167,7 +167,7 @@ fn dup_inner(fd: usize, buf: &[u8]) -> AxResult<Arc<FileHandle>> {
     let handle = find_fd(fd)?;
 
     if buf.is_empty() {
-        Ok(handle.clone())
+        Ok(handle)
     } else {
         let scheme = schemes().find_id(handle.scheme_id).unwrap();
         let new_id = scheme.dup(handle.file_id, buf)?;

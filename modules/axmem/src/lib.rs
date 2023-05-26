@@ -211,8 +211,7 @@ impl AddrSpace {
         trace!("unmap: [{:x?}, {:x?})", addr, addr + len);
         let pages = len / PAGE_SIZE_4K;
         if (0..pages)
-            .find(|offset| !self.mmap_use.contains_key(&(addr + offset * PAGE_SIZE_4K)))
-            .is_some()
+            .any(|offset| !self.mmap_use.contains_key(&(addr + offset * PAGE_SIZE_4K)))
         {
             return ax_err!(BadAddress);
         } else {
