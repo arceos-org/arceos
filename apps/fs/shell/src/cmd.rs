@@ -32,7 +32,7 @@ const CMD_TABLE: &[(&str, CmdHandler)] = &[
     ("pwd", do_pwd),
     ("rm", do_rm),
     ("uname", do_uname),
-    ("link", do_link)
+    ("link", do_link),
 ];
 
 fn do_ls(args: &str) {
@@ -270,7 +270,7 @@ fn do_link(args: &str) {
             *p = fs::canonicalize(&(pwd.clone() + p)).unwrap();
         }
     }
-    
+
     fn link_one(target: &str, name: &str, symbolic: bool) -> io::Result<()> {
         if symbolic {
             fs::symbolic_link(name, target)

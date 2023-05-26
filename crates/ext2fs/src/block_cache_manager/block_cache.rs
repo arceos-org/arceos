@@ -1,13 +1,13 @@
 #![allow(unused)]
-use alloc::boxed::Box;
-use alloc::sync::Arc;
-use alloc::collections::BTreeMap;
-use fs_utils::{InListNode, ListNode, inlist_access};
-use core::marker::PhantomData;
-use core::ops::DerefMut;
-use crate::mutex::SpinMutex;
 use crate::block_dev::{BlockDevice, NullDevice};
 use crate::config::BLOCK_SIZE;
+use crate::mutex::SpinMutex;
+use alloc::boxed::Box;
+use alloc::collections::BTreeMap;
+use alloc::sync::Arc;
+use core::marker::PhantomData;
+use core::ops::DerefMut;
+use fs_utils::{inlist_access, InListNode, ListNode};
 use log::*;
 
 inlist_access!(pub ManagerAccessBlockCache, BlockCache, lru_head);
@@ -17,7 +17,7 @@ pub struct BlockCache {
     block_id: usize,
     modified: bool,
     valid: bool,
-    cache: Box<[u8]>
+    cache: Box<[u8]>,
 }
 
 impl BlockCache {
@@ -28,9 +28,9 @@ impl BlockCache {
                 block_id,
                 modified: false,
                 valid: false,
-                cache: unsafe {cache.assume_init()}
+                cache: unsafe { cache.assume_init() },
             }),
-            Err(_) => None
+            Err(_) => None,
         }
     }
 
@@ -86,8 +86,8 @@ impl BlockCache {
 pub struct BlockCacheManager {
     device: Arc<dyn BlockDevice>,
     max_cache: usize,
-    blocks: BTreeMap<usize,Arc<SpinMutex<BlockCache>>>,
-    lru_head: InListNode<BlockCache, ManagerAccessBlockCache>
+    blocks: BTreeMap<usize, Arc<SpinMutex<BlockCache>>>,
+    lru_head: InListNode<BlockCache, ManagerAccessBlockCache>,
 }
 
 impl BlockCacheManager {
@@ -96,7 +96,7 @@ impl BlockCacheManager {
             device: Arc::new(NullDevice),
             max_cache: 0,
             blocks: BTreeMap::new(),
-            lru_head: InListNode::new()
+            lru_head: InListNode::new(),
         }
     }
 
@@ -114,7 +114,7 @@ impl BlockCacheManager {
         if let Some(cache) = self.blocks.get(&block_id) {
             return cache.clone();
         }
-        
+
         if self.blocks.len() < self.max_cache {
             let mut new_cache = BlockCache::new(block_id, self.device.block_size()).unwrap();
             // init
@@ -124,7 +124,8 @@ impl BlockCacheManager {
             new_cache.lock().lru_head.lazy_init();
             // debug!("&self.lru_head = {}", &self.lru_head as *const _ as usize);
             // self.lru_head.list_check();
-            self.lru_head.push_prev(unsafe {&mut new_cache.unsafe_get_mut().lru_head});
+            self.lru_head
+                .push_prev(unsafe { &mut new_cache.unsafe_get_mut().lru_head });
             self.blocks.insert(block_id, new_cache.clone());
             // self.lru_head.list_check();
             return new_cache;
@@ -158,14 +159,13 @@ impl BlockCacheManager {
     }
 
     /// Safety
-    /// 
+    ///
     /// Should drop lock of BlockCache right before calling this function to avoid dead lock
     pub fn release_block(&mut self, bac: Arc<SpinMutex<BlockCache>>) {
         if Arc::strong_count(&bac) == 2 {
             let ptr = unsafe { bac.unsafe_get_mut() };
             ptr.lru_head.pop_self();
             self.lru_head.push_prev(&mut ptr.lru_head);
-            
         }
     }
 
@@ -184,7 +184,7 @@ impl BlockCacheManager {
     }
 
     /// Move arc to this function, it will be dropped right away
-    pub fn unpin_block(&self, bac: Arc<SpinMutex<BlockCache>>) {  }
+    pub fn unpin_block(&self, bac: Arc<SpinMutex<BlockCache>>) {}
 
     /// Write all dirty blocks to disk
     pub fn sync_all_block(&self) {

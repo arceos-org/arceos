@@ -1,19 +1,19 @@
 #![allow(unused)]
-use crate::{block_cache_manager::BlockCacheManager, layout::EXT2_FT_DIR};
+use crate::inode_manager::InodeCacheManager;
 use crate::mutex::SpinMutex;
 use crate::timer::TimeProvider;
-use crate::inode_manager::InodeCacheManager;
+use crate::{block_cache_manager::BlockCacheManager, layout::EXT2_FT_DIR};
 use core::mem::size_of;
 use fs_utils::sync::Spin;
 use log::*;
 
 use super::{
-    Bitmap, BlockDevice, DiskInode, BlockGroupDesc, InodeCache, Inode,
-    SuperBlock, config::{
-        BLOCK_SIZE, BLOCKS_PER_GRP, RESERVED_BLOCKS_PER_GRP, EXT2_ROOT_INO,
-        FIRST_DATA_BLOCK, INODES_PER_GRP, EXT2_GOOD_OLD_FIRST_INO, SUPER_BLOCK_OFFSET
+    config::{
+        BLOCKS_PER_GRP, BLOCK_SIZE, EXT2_GOOD_OLD_FIRST_INO, EXT2_ROOT_INO, FIRST_DATA_BLOCK,
+        INODES_PER_GRP, RESERVED_BLOCKS_PER_GRP, SUPER_BLOCK_OFFSET,
     },
-    layout::{IMODE, EXT2_S_IFDIR, EXT2_S_IFREG}
+    layout::{EXT2_S_IFDIR, EXT2_S_IFREG, IMODE},
+    Bitmap, BlockDevice, BlockGroupDesc, DiskInode, Inode, InodeCache, SuperBlock,
 };
 use alloc::{sync::Arc, vec::Vec};
 use spin::Mutex;
@@ -26,7 +26,7 @@ pub struct Ext2FileSystem {
     /// provide time
     pub timer: Arc<dyn TimeProvider>,
     /// inner meta data
-    inner: Mutex<Ext2FileSystemInner>
+    inner: Mutex<Ext2FileSystemInner>,
 }
 
 type DataBlock = [u8; BLOCK_SIZE];
@@ -36,10 +36,13 @@ const MAX_CACHE_NUM: usize = 50;
 impl Ext2FileSystem {
     /// Create an ext2 file system in a device
     pub fn create(block_device: Arc<dyn BlockDevice>, timer: Arc<dyn TimeProvider>) -> Arc<Self> {
-        assert!(block_device.block_size() == BLOCK_SIZE, "Unsupported block size");
+        assert!(
+            block_device.block_size() == BLOCK_SIZE,
+            "Unsupported block size"
+        );
         debug!("Create ext2 file system...");
         let mut block_num = block_device.block_num();
-        let mut group_num = (block_num + BLOCKS_PER_GRP - 1)/BLOCKS_PER_GRP;
+        let mut group_num = (block_num + BLOCKS_PER_GRP - 1) / BLOCKS_PER_GRP;
         assert!(group_num >= 1, "Size is at least 32 MB");
         let mut last_group_block_num = block_num - (group_num - 1) * BLOCKS_PER_GRP;
 
@@ -49,9 +52,10 @@ impl Ext2FileSystem {
         }
         assert!(group_num >= 1);
         block_num = (group_num - 1) * BLOCKS_PER_GRP + last_group_block_num;
-        let group_desc_block_num = (group_num * size_of::<BlockGroupDesc>() + BLOCK_SIZE - 1)/BLOCK_SIZE;
+        let group_desc_block_num =
+            (group_num * size_of::<BlockGroupDesc>() + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
-        let mut group_desc_table:Vec<BlockGroupDesc> = Vec::new();
+        let mut group_desc_table: Vec<BlockGroupDesc> = Vec::new();
         for group_id in 0..group_num {
             let mut block_bitmap: usize = 0;
             let mut free_blocks: usize = 0;
@@ -75,7 +79,9 @@ impl Ext2FileSystem {
                 block_bitmap,
                 block_bitmap + 1,
                 block_bitmap + 2,
-                free_blocks, INODES_PER_GRP, 0
+                free_blocks,
+                INODES_PER_GRP,
+                0,
             ));
         }
 
@@ -83,9 +89,11 @@ impl Ext2FileSystem {
             INODES_PER_GRP * group_num,
             block_num,
             INODES_PER_GRP * group_num - EXT2_GOOD_OLD_FIRST_INO + 1,
-            block_num - group_num * RESERVED_BLOCKS_PER_GRP - (FIRST_DATA_BLOCK + 1 + group_desc_block_num),
+            block_num
+                - group_num * RESERVED_BLOCKS_PER_GRP
+                - (FIRST_DATA_BLOCK + 1 + group_desc_block_num),
             group_num,
-            "Image by hsh"
+            "Image by hsh",
         );
 
         let mut cache_manager = BlockCacheManager::new();
@@ -94,21 +102,20 @@ impl Ext2FileSystem {
             manager: SpinMutex::new(cache_manager),
             inode_manager: SpinMutex::new(InodeCacheManager::new(64)),
             timer,
-            inner: Mutex::new(Ext2FileSystemInner::new(super_block, group_desc_table))
+            inner: Mutex::new(Ext2FileSystemInner::new(super_block, group_desc_table)),
         });
         fs.manager.lock().init(block_device.clone(), MAX_CACHE_NUM);
 
         // clear all blocks except the first 1024 bytes
         for i in 0..block_num {
             let block = fs.manager.lock().get_block_cache(i as _);
-            block.lock()
-                .modify(0, |data_block: &mut DataBlock| {
-                    for (idx, byte) in data_block.iter_mut().enumerate() {
-                        if i != 0 || idx >= 1024 {
-                            *byte = 0;
-                        }
+            block.lock().modify(0, |data_block: &mut DataBlock| {
+                for (idx, byte) in data_block.iter_mut().enumerate() {
+                    if i != 0 || idx >= 1024 {
+                        *byte = 0;
                     }
-                });
+                }
+            });
             fs.manager.lock().release_block(block);
         }
 
@@ -118,40 +125,41 @@ impl Ext2FileSystem {
         for (idx, desc) in inner.group_desc_table.iter().enumerate() {
             debug!("Block group {:?}:\n{:?}", idx, desc);
         }
-        inner.get_inode_bitmap(0)
+        inner
+            .get_inode_bitmap(0)
             .range_alloc(&fs.manager, 1, EXT2_GOOD_OLD_FIRST_INO);
         for group_id in 0..group_num {
-            // debug!("Range alloc block in group {} {} {}", 
+            // debug!("Range alloc block in group {} {} {}",
             //     group_id,
             //     group_id * BLOCKS_PER_GRP,
             //     fs.group_desc_table[group_id].bg_block_bitmap as usize + RESERVED_BLOCKS_PER_GRP + 1
             // );
-            inner.get_data_bitmap(group_id)
-                .range_alloc(
-                    &fs.manager, 
-                    group_id * BLOCKS_PER_GRP, 
-                    inner.group_desc_table[group_id].bg_block_bitmap as usize + RESERVED_BLOCKS_PER_GRP + 1
-                );
+            inner.get_data_bitmap(group_id).range_alloc(
+                &fs.manager,
+                group_id * BLOCKS_PER_GRP,
+                inner.group_desc_table[group_id].bg_block_bitmap as usize
+                    + RESERVED_BLOCKS_PER_GRP
+                    + 1,
+            );
             if group_id == group_num - 1 {
                 if block_num < (group_id + 1) * BLOCKS_PER_GRP {
-                    inner.get_data_bitmap(group_id)
-                        .range_alloc(
-                            &fs.manager, 
-                            block_num, 
-                            (group_id + 1) * BLOCKS_PER_GRP
-                        );
+                    inner.get_data_bitmap(group_id).range_alloc(
+                        &fs.manager,
+                        block_num,
+                        (group_id + 1) * BLOCKS_PER_GRP,
+                    );
                 }
             }
         }
 
         // TODO: init '/' inode
-        let (root_inode_block_id, root_inode_offset) = inner.get_disk_inode_pos(EXT2_ROOT_INO as u32);
+        let (root_inode_block_id, root_inode_offset) =
+            inner.get_disk_inode_pos(EXT2_ROOT_INO as u32);
         let inode_block = fs.manager.lock().get_block_cache(root_inode_block_id as _);
-        inode_block.lock()
+        inode_block
+            .lock()
             .modify(root_inode_offset, |disk_inode: &mut DiskInode| {
-                *disk_inode = DiskInode::new(
-                    IMODE::from_bits_truncate(0o777), 
-                    EXT2_S_IFDIR, 0, 0);
+                *disk_inode = DiskInode::new(IMODE::from_bits_truncate(0o777), EXT2_S_IFDIR, 0, 0);
             });
         fs.manager.lock().release_block(inode_block);
 
@@ -175,7 +183,10 @@ impl Ext2FileSystem {
 
     /// Open a file system from disk
     pub fn open(block_device: Arc<dyn BlockDevice>, timer: Arc<dyn TimeProvider>) -> Arc<Self> {
-        assert!(block_device.block_size() == BLOCK_SIZE, "Unsupported block size");
+        assert!(
+            block_device.block_size() == BLOCK_SIZE,
+            "Unsupported block size"
+        );
         debug!("sizeof(super_block) = {}", size_of::<SuperBlock>());
         debug!("sizeof(disk_inode) = {}", size_of::<DiskInode>());
         debug!("Open ext2 file system...");
@@ -183,7 +194,7 @@ impl Ext2FileSystem {
             manager: SpinMutex::new(BlockCacheManager::new()),
             inode_manager: SpinMutex::new(InodeCacheManager::new(64)),
             timer,
-            inner: Mutex::new(Ext2FileSystemInner::new(SuperBlock::empty(), Vec::new()))
+            inner: Mutex::new(Ext2FileSystemInner::new(SuperBlock::empty(), Vec::new())),
         });
         fs.manager.lock().init(block_device.clone(), MAX_CACHE_NUM);
         // get_block_cache(FIRST_DATA_BLOCK, Arc::clone(&block_device))
@@ -193,31 +204,31 @@ impl Ext2FileSystem {
         //     });
         debug!("After manager init");
         let sb_block = fs.manager.lock().get_block_cache(FIRST_DATA_BLOCK);
-        sb_block.lock()
-            .read(SUPER_BLOCK_OFFSET, |sb: &SuperBlock| {
-                fs.inner.lock().super_block = *sb;
-            });
+        sb_block.lock().read(SUPER_BLOCK_OFFSET, |sb: &SuperBlock| {
+            fs.inner.lock().super_block = *sb;
+        });
         fs.manager.lock().release_block(sb_block);
         debug!("Super block:\n {:?}", &fs.inner.lock().super_block);
         fs.inner.lock().super_block.check_valid();
         debug!("After superblock check valid");
-        
+
         let s_block_group_nr = fs.inner.lock().super_block.s_block_group_nr;
         let s_first_data_block = fs.inner.lock().super_block.s_first_data_block;
 
         for group_id in 0..s_block_group_nr as usize {
-            let block_id = s_first_data_block as usize + 1 + (group_id * size_of::<BlockGroupDesc>())/BLOCK_SIZE;
-            let offset = (group_id * size_of::<BlockGroupDesc>())%BLOCK_SIZE;
+            let block_id = s_first_data_block as usize
+                + 1
+                + (group_id * size_of::<BlockGroupDesc>()) / BLOCK_SIZE;
+            let offset = (group_id * size_of::<BlockGroupDesc>()) % BLOCK_SIZE;
             // get_block_cache(block_id, Arc::clone(&block_device))
             //     .lock()
             //     .read(offset, |desc: &BlockGroupDesc| {
             //         group_desc_table.push(*desc);
             //     });
             let gdt_block = fs.manager.lock().get_block_cache(block_id);
-            gdt_block.lock()
-                .read(offset, |desc: &BlockGroupDesc| {
-                    fs.inner.lock().group_desc_table.push(*desc);
-                });
+            gdt_block.lock().read(offset, |desc: &BlockGroupDesc| {
+                fs.inner.lock().group_desc_table.push(*desc);
+            });
             fs.manager.lock().release_block(gdt_block);
         }
         let cur_time = fs.timer.get_current_time();
@@ -248,7 +259,7 @@ impl Ext2FileSystem {
 
     pub fn get_inode_cache(efs: &Arc<Self>, inode_id: usize) -> Option<Arc<SpinMutex<InodeCache>>> {
         efs.inode_manager.lock().get_or_insert(inode_id, efs)
-    } 
+    }
 
     pub fn create_inode_cache(efs: &Arc<Self>, inode_id: usize) -> Option<InodeCache> {
         if inode_id == 0 || !efs.inode_exists(inode_id as _) {
@@ -259,7 +270,7 @@ impl Ext2FileSystem {
                 inode_id,
                 block_id as usize,
                 offset,
-                Arc::clone(efs)
+                Arc::clone(efs),
             ))
         }
     }
@@ -286,7 +297,7 @@ impl Ext2FileSystem {
             if let Some(inode_id) = inner.get_inode_bitmap(group_id).alloc(&self.manager) {
                 inner.group_desc_table[group_id].bg_free_inodes_count -= 1; // still need to mantain bg_used_dir_count
                 inner.super_block.s_free_inodes_count -= 1;
-                return  Some(inode_id as u32);
+                return Some(inode_id as u32);
             }
         }
         None
@@ -337,7 +348,9 @@ impl Ext2FileSystem {
         assert!(inode_id != 0);
         let mut inner = self.inner.lock();
         let group_id = (inode_id as usize - 1) / INODES_PER_GRP;
-        inner.get_inode_bitmap(group_id).test(&self.manager, inode_id as usize)
+        inner
+            .get_inode_bitmap(group_id)
+            .test(&self.manager, inode_id as usize)
     }
 
     /// Dealloc inode (will modify meta data)
@@ -345,7 +358,9 @@ impl Ext2FileSystem {
         assert!(inode_id != 0);
         let mut inner = self.inner.lock();
         let group_id = (inode_id as usize - 1) / INODES_PER_GRP;
-        inner.get_inode_bitmap(group_id).dealloc(&self.manager, inode_id as usize);
+        inner
+            .get_inode_bitmap(group_id)
+            .dealloc(&self.manager, inode_id as usize);
 
         inner.super_block.s_free_inodes_count += 1;
         inner.group_desc_table[group_id].bg_free_inodes_count += 1;
@@ -354,16 +369,17 @@ impl Ext2FileSystem {
     /// Dealloc inode (will modify meta data)
     pub fn dealloc_block(&self, block_id: u32) {
         let target_block = self.manager.lock().get_block_cache(block_id as _);
-        target_block.lock()
-            .modify(0, |data_block: &mut DataBlock| {
-                data_block.iter_mut().for_each(|p| {
-                    *p = 0;
-                })
-            });
+        target_block.lock().modify(0, |data_block: &mut DataBlock| {
+            data_block.iter_mut().for_each(|p| {
+                *p = 0;
+            })
+        });
         self.manager.lock().release_block(target_block);
         let mut inner = self.inner.lock();
         let group_id = block_id as usize / BLOCKS_PER_GRP;
-        inner.get_data_bitmap(group_id).dealloc(&self.manager, block_id as usize);
+        inner
+            .get_data_bitmap(group_id)
+            .dealloc(&self.manager, block_id as usize);
         inner.super_block.s_free_blocks_count += 1;
         inner.group_desc_table[group_id].bg_free_blocks_count += 1;
     }
@@ -372,15 +388,16 @@ impl Ext2FileSystem {
         let mut inner = self.inner.lock();
         for block_id in blocks {
             let target_block = self.manager.lock().get_block_cache(*block_id as _);
-            target_block.lock()
-                .modify(0, |data_block: &mut DataBlock| {
-                    data_block.iter_mut().for_each(|p| {
-                        *p = 0;
-                    })
-                });
+            target_block.lock().modify(0, |data_block: &mut DataBlock| {
+                data_block.iter_mut().for_each(|p| {
+                    *p = 0;
+                })
+            });
             self.manager.lock().release_block(target_block);
             let group_id = *block_id as usize / BLOCKS_PER_GRP;
-            inner.get_data_bitmap(group_id).dealloc(&self.manager, *block_id as usize);
+            inner
+                .get_data_bitmap(group_id)
+                .dealloc(&self.manager, *block_id as usize);
             inner.super_block.s_free_blocks_count += 1;
             inner.group_desc_table[group_id].bg_free_blocks_count += 1;
         }
@@ -431,27 +448,34 @@ struct Ext2FileSystemInner {
 
 impl Ext2FileSystemInner {
     pub fn new(sb: SuperBlock, gdt: Vec<BlockGroupDesc>) -> Self {
-        Self { super_block: sb, group_desc_table: gdt }
+        Self {
+            super_block: sb,
+            group_desc_table: gdt,
+        }
     }
 
     /// Get inode block_id and offset from inode_id
     pub fn get_disk_inode_pos(&self, mut inode_id: u32) -> (u32, usize) {
         assert!(inode_id != 0); // invalid inode id
         inode_id -= 1;
-        let group_id = inode_id/INODES_PER_GRP as u32;
-        let group_offset = inode_id%INODES_PER_GRP as u32;
+        let group_id = inode_id / INODES_PER_GRP as u32;
+        let group_offset = inode_id % INODES_PER_GRP as u32;
         let inode_size = size_of::<DiskInode>();
-        let inode_per_block = BLOCK_SIZE/inode_size;
-        let block_id = self.group_desc_table[group_id as usize].bg_inode_table + group_offset/inode_per_block as u32;
+        let inode_per_block = BLOCK_SIZE / inode_size;
+        let block_id = self.group_desc_table[group_id as usize].bg_inode_table
+            + group_offset / inode_per_block as u32;
 
-        (block_id, (group_offset as usize%inode_per_block) * inode_size)
+        (
+            block_id,
+            (group_offset as usize % inode_per_block) * inode_size,
+        )
     }
 
     /// Get inode bitmap for group x
     pub fn get_inode_bitmap(&self, group_id: usize) -> Bitmap {
         Bitmap::new(
             self.group_desc_table[group_id].bg_inode_bitmap as usize,
-            group_id * INODES_PER_GRP + 1
+            group_id * INODES_PER_GRP + 1,
         )
     }
 
@@ -459,15 +483,22 @@ impl Ext2FileSystemInner {
     pub fn get_data_bitmap(&self, group_id: usize) -> Bitmap {
         Bitmap::new(
             self.group_desc_table[group_id].bg_block_bitmap as usize,
-            group_id * BLOCKS_PER_GRP
+            group_id * BLOCKS_PER_GRP,
         )
     }
 
     /// Write super block to disk
     pub fn write_super_block(&self, manager: &SpinMutex<BlockCacheManager>) {
-        let offset = if self.super_block.s_first_data_block == 0 { 1024 } else { 0 };
-        let sb_block = manager.lock().get_block_cache(self.super_block.s_first_data_block as _);
-        sb_block.lock()
+        let offset = if self.super_block.s_first_data_block == 0 {
+            1024
+        } else {
+            0
+        };
+        let sb_block = manager
+            .lock()
+            .get_block_cache(self.super_block.s_first_data_block as _);
+        sb_block
+            .lock()
             .modify(offset, |super_block: &mut SuperBlock| {
                 *super_block = self.super_block;
             });
@@ -476,13 +507,14 @@ impl Ext2FileSystemInner {
 
     /// Write group description of group_id to disk
     pub fn write_group_desc(&self, group_id: usize, manager: &SpinMutex<BlockCacheManager>) {
-        let block_id = self.super_block.s_first_data_block as usize + 1 + (group_id * size_of::<BlockGroupDesc>())/BLOCK_SIZE;
-        let offset = (group_id * size_of::<BlockGroupDesc>())%BLOCK_SIZE;
+        let block_id = self.super_block.s_first_data_block as usize
+            + 1
+            + (group_id * size_of::<BlockGroupDesc>()) / BLOCK_SIZE;
+        let offset = (group_id * size_of::<BlockGroupDesc>()) % BLOCK_SIZE;
         let gd_block = manager.lock().get_block_cache(block_id);
-        gd_block.lock()
-            .modify(offset, |desc: &mut BlockGroupDesc| {
-                *desc = self.group_desc_table[group_id];
-            });
+        gd_block.lock().modify(offset, |desc: &mut BlockGroupDesc| {
+            *desc = self.group_desc_table[group_id];
+        });
         manager.lock().release_block(gd_block);
     }
 

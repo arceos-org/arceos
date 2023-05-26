@@ -1,10 +1,10 @@
 #![allow(unused)]
-use super::{config::*};
-use crate::block_cache_manager::{BlockCacheManager};
+use super::config::*;
+use crate::block_cache_manager::BlockCacheManager;
 use crate::mutex::SpinMutex;
 use _core::mem::size_of;
-use bitflags::*;
 use alloc::{string::String, vec::Vec};
+use bitflags::*;
 use core::fmt::{Debug, Formatter, Result};
 use log::*;
 
@@ -14,9 +14,9 @@ const HASH_SEED_SIZE: usize = 4;
 const SB_RESERVED_SIZE: usize = 760 - 16;
 
 pub const DIRECT_BLOCK_NUM: usize = 13;
-pub const DOUBLE_BLOCK_NUM: usize = BLOCK_SIZE/4;
+pub const DOUBLE_BLOCK_NUM: usize = BLOCK_SIZE / 4;
 pub const DOUBLE_BLOCK_BOUND: usize = DIRECT_BLOCK_NUM + DOUBLE_BLOCK_NUM;
-pub const TRIPLE_BLOCK_NUM: usize = (BLOCK_SIZE/4) * (BLOCK_SIZE/4);
+pub const TRIPLE_BLOCK_NUM: usize = (BLOCK_SIZE / 4) * (BLOCK_SIZE / 4);
 // pub const TRIPLE_BLOCK_BOUND: usize = TRIPLE_BLOCK_NUM + DOUBLE_BLOCK_BOUND;
 pub const SB_MAGIC: u16 = 0xEF53;
 
@@ -75,7 +75,7 @@ pub struct SuperBlock {
     // Other options
     s_default_mount_option: u32,
     s_first_meta_bg: u32,
-    reserved: [u8; SB_RESERVED_SIZE]
+    reserved: [u8; SB_RESERVED_SIZE],
 }
 
 // s_state
@@ -155,7 +155,7 @@ pub struct BlockGroupDesc {
     pub bg_free_inodes_count: u16,
     pub bg_used_dirs_count: u16,
     bg_pad: u16,
-    bg_reserved: [u8; 12]
+    bg_reserved: [u8; 12],
 }
 
 #[derive(Clone, Copy)]
@@ -181,7 +181,7 @@ pub struct DiskInode {
     i_file_acl: u32,
     i_dir_acl: u32,
     i_faddr: u32,
-    i_osd2: LinuxOSD
+    i_osd2: LinuxOSD,
 }
 
 /// A indirect block
@@ -245,7 +245,7 @@ pub struct LinuxOSD {
     reserved: [u8; 2],
     l_i_uid_high: u16,
     l_i_gid_high: u16,
-    reserved_2: [u8; 4]
+    reserved_2: [u8; 4],
 }
 
 impl LinuxOSD {
@@ -256,7 +256,7 @@ impl LinuxOSD {
             reserved: [0; 2],
             l_i_uid_high: 0,
             l_i_gid_high: 0,
-            reserved_2: [0; 4]
+            reserved_2: [0; 4],
         }
     }
 }
@@ -280,9 +280,8 @@ impl SuperBlock {
         free_inodes_count: usize,
         free_blocks_count: usize,
         block_group_num: usize,
-        volumn_name: &str
-    ) -> SuperBlock 
-    {
+        volumn_name: &str,
+    ) -> SuperBlock {
         let mut sb = SuperBlock {
             s_inodes_count: inodes_count as u32,
             s_blocks_count: blocks_count as u32,
@@ -331,37 +330,48 @@ impl SuperBlock {
             s_def_hash_version: 0,
             s_default_mount_option: 0,
             s_first_meta_bg: 0,
-            reserved: [0; SB_RESERVED_SIZE]
+            reserved: [0; SB_RESERVED_SIZE],
         };
         sb.s_volume_name[..volumn_name.len()].copy_from_slice(volumn_name.as_bytes());
         sb
     }
 
     pub fn empty() -> Self {
-        Self::new(0, 0, 0, 0, 0,  "Null")
+        Self::new(0, 0, 0, 0, 0, "Null")
     }
 
     pub fn check_valid(&self) {
         assert_eq!(self.s_magic, SB_MAGIC, "Bad magic num");
-        assert!(self.s_first_data_block == FIRST_DATA_BLOCK as u32, "Wrong first data block");
-        assert!(self.s_log_block_size == LOG_BLOCK_SIZE as u32 
-                && self.s_log_frag_size == LOG_FRAG_SIZE as u32, 
-                "Bad log block size");
-        assert!(self.s_blocks_per_group == BLOCKS_PER_GRP as u32 &&
-                self.s_frags_per_group == BLOCKS_PER_GRP as u32 &&
-                self.s_inodes_per_group == INODES_PER_GRP as u32,
-                "Bad inodes and blocks per group");
-        assert!(self.s_rev_level == EXT2_GOOD_OLD_REV as u32 &&
-                self.s_first_ino == EXT2_GOOD_OLD_FIRST_INO as u32,
-                "Bad rev level");
-        assert!(self.s_feature_incompat == FeatureIncompat::from_bits_truncate(0),
-                "Feature incompat not supported");
-        assert!(self.s_feature_ro_compat == FeatureRocompat::from_bits_truncate(0),
-                "Feature rocompat not supported");
-        assert!(self.s_state == EXT2_VALID_FS,
-                "Not a valid state");
+        assert!(
+            self.s_first_data_block == FIRST_DATA_BLOCK as u32,
+            "Wrong first data block"
+        );
+        assert!(
+            self.s_log_block_size == LOG_BLOCK_SIZE as u32
+                && self.s_log_frag_size == LOG_FRAG_SIZE as u32,
+            "Bad log block size"
+        );
+        assert!(
+            self.s_blocks_per_group == BLOCKS_PER_GRP as u32
+                && self.s_frags_per_group == BLOCKS_PER_GRP as u32
+                && self.s_inodes_per_group == INODES_PER_GRP as u32,
+            "Bad inodes and blocks per group"
+        );
+        assert!(
+            self.s_rev_level == EXT2_GOOD_OLD_REV as u32
+                && self.s_first_ino == EXT2_GOOD_OLD_FIRST_INO as u32,
+            "Bad rev level"
+        );
+        assert!(
+            self.s_feature_incompat == FeatureIncompat::from_bits_truncate(0),
+            "Feature incompat not supported"
+        );
+        assert!(
+            self.s_feature_ro_compat == FeatureRocompat::from_bits_truncate(0),
+            "Feature rocompat not supported"
+        );
+        assert!(self.s_state == EXT2_VALID_FS, "Not a valid state");
     }
-
 }
 
 impl Debug for SuperBlock {
@@ -385,8 +395,7 @@ impl BlockGroupDesc {
         free_blocks: usize,
         free_inodes: usize,
         used_dirs: usize,
-    ) -> BlockGroupDesc
-    {
+    ) -> BlockGroupDesc {
         BlockGroupDesc {
             bg_block_bitmap: block_bitmap as u32,
             bg_inode_bitmap: inode_bitmap as u32,
@@ -395,20 +404,13 @@ impl BlockGroupDesc {
             bg_free_inodes_count: free_inodes as u16,
             bg_used_dirs_count: used_dirs as u16,
             bg_pad: 0,
-            bg_reserved: [0; 12]
+            bg_reserved: [0; 12],
         }
     }
 }
 
 impl DiskInode {
-    pub fn new(
-        acl_mode: IMODE,
-        file_type: u16,
-        uid: usize,
-        gid: usize,
-
-    ) -> DiskInode
-    {
+    pub fn new(acl_mode: IMODE, file_type: u16, uid: usize, gid: usize) -> DiskInode {
         DiskInode {
             i_mode: acl_mode.bits() | (file_type & 0xF000),
             i_uid: uid as u16,
@@ -429,7 +431,7 @@ impl DiskInode {
             i_dir_acl: 0,
             i_file_acl: 0,
             i_faddr: 0,
-            i_osd2: LinuxOSD::empty()
+            i_osd2: LinuxOSD::empty(),
         }
     }
 
@@ -450,7 +452,7 @@ impl DiskInode {
             EXT2_S_IFDIR => EXT2_FT_DIR,
             EXT2_S_IFCHR => EXT2_FT_CHRDEV,
             EXT2_S_IFIFO => EXT2_FT_FIFO,
-            _ => EXT2_FT_UNKNOWN
+            _ => EXT2_FT_UNKNOWN,
         }
     }
 
@@ -467,7 +469,7 @@ impl DiskInode {
             EXT2_FT_DIR => EXT2_S_IFDIR,
             EXT2_FT_CHRDEV => EXT2_S_IFCHR,
             EXT2_FT_FIFO => EXT2_S_IFIFO,
-            _ => panic!("Unsupport type")
+            _ => panic!("Unsupport type"),
         }
     }
 
@@ -499,8 +501,7 @@ impl DiskInode {
         if data_blocks > DOUBLE_BLOCK_BOUND {
             total += 1;
             // sub indirect1
-            total +=
-                (data_blocks - DOUBLE_BLOCK_BOUND + DOUBLE_BLOCK_NUM - 1) / DOUBLE_BLOCK_NUM;
+            total += (data_blocks - DOUBLE_BLOCK_BOUND + DOUBLE_BLOCK_NUM - 1) / DOUBLE_BLOCK_NUM;
         }
         total as u32
     }
@@ -533,9 +534,10 @@ impl DiskInode {
             //         indirect_block[inner_id - DIRECT_BLOCK_NUM]
             //     })
             let double_block = manager.lock().get_block_cache(self.i_double_block as _);
-            let block_id = double_block.lock()
+            let block_id = double_block
+                .lock()
                 .read(0, |indirect_block: &IndirectBlock| {
-                            indirect_block[inner_id - DIRECT_BLOCK_NUM]
+                    indirect_block[inner_id - DIRECT_BLOCK_NUM]
                 });
             block_id
         } else {
@@ -546,10 +548,9 @@ impl DiskInode {
             //         indirect2[last / DOUBLE_BLOCK_NUM]
             //     });
             let indirect1_block = manager.lock().get_block_cache(self.i_triple_block as _);
-            let indirect1 = indirect1_block.lock()
-                .read(0, |indirect2: &IndirectBlock| {
-                    indirect2[last / DOUBLE_BLOCK_NUM]
-                });
+            let indirect1 = indirect1_block.lock().read(0, |indirect2: &IndirectBlock| {
+                indirect2[last / DOUBLE_BLOCK_NUM]
+            });
             drop(indirect1_block);
             // get_block_cache(indirect1 as usize, Arc::clone(block_device))
             //     .lock()
@@ -557,10 +558,9 @@ impl DiskInode {
             //         indirect1[last % DOUBLE_BLOCK_NUM]
             //     })
             let indirect2_block = manager.lock().get_block_cache(indirect1 as _);
-            let block_id = indirect2_block.lock()
-                .read(0, |indirect1: &IndirectBlock| {
-                    indirect1[last % DOUBLE_BLOCK_NUM]
-                });
+            let block_id = indirect2_block.lock().read(0, |indirect1: &IndirectBlock| {
+                indirect1[last % DOUBLE_BLOCK_NUM]
+            });
             block_id
         }
     }
@@ -570,7 +570,7 @@ impl DiskInode {
         &mut self,
         new_size: u32,
         new_blocks: Vec<u32>,
-        manager: &SpinMutex<BlockCacheManager>
+        manager: &SpinMutex<BlockCacheManager>,
     ) -> Vec<u32> {
         if new_size <= self.i_size {
             return Vec::new();
@@ -579,13 +579,13 @@ impl DiskInode {
             self.i_size = new_size;
             return Vec::new();
         }
-        
+
         let mut extra_blocks: Vec<u32> = Vec::new();
 
         let mut current_blocks = self.data_blocks();
         self.i_size = new_size;
         let mut total_blocks = Self::_data_blocks(new_size);
-        self.i_blocks = total_blocks * (BLOCK_SIZE/512) as u32;
+        self.i_blocks = total_blocks * (BLOCK_SIZE / 512) as u32;
         let mut new_blocks = new_blocks.into_iter();
         // fill direct
         while current_blocks < total_blocks.min(DIRECT_BLOCK_NUM as u32) {
@@ -613,7 +613,8 @@ impl DiskInode {
         //         }
         //     });
         let double_block = manager.lock().get_block_cache(self.i_double_block as _);
-        double_block.lock()
+        double_block
+            .lock()
             .modify(0, |indirect1: &mut IndirectBlock| {
                 while current_blocks < total_blocks.min(DOUBLE_BLOCK_NUM as u32) {
                     indirect1[current_blocks as usize] = new_blocks.next().unwrap();
@@ -639,7 +640,8 @@ impl DiskInode {
         let b1 = total_blocks as usize % DOUBLE_BLOCK_NUM;
         // alloc low-level indirect1
         let indirect1_block = manager.lock().get_block_cache(self.i_triple_block as _);
-        indirect1_block.lock()
+        indirect1_block
+            .lock()
             .modify(0, |indirect1: &mut IndirectBlock| {
                 for a in a0..=a1 {
                     // if b0 == 0 {
@@ -663,7 +665,8 @@ impl DiskInode {
                         indirect1[a] = new_blocks.next().unwrap();
                     }
                     let indirect2_block = manager.lock().get_block_cache(indirect1[a] as _);
-                    indirect2_block.lock()
+                    indirect2_block
+                        .lock()
                         .modify(0, |indirect2: &mut IndirectBlock| {
                             for b in start..end {
                                 indirect2[b] = new_blocks.next().unwrap();
@@ -671,7 +674,6 @@ impl DiskInode {
                             }
                         });
                     manager.lock().release_block(indirect2_block);
-
                 }
             });
         manager.lock().release_block(indirect1_block);
@@ -685,7 +687,11 @@ impl DiskInode {
     }
 
     /// Get all data blocks of current inode
-    pub fn all_data_blocks(&self, manager: &SpinMutex<BlockCacheManager>, include_index: bool) -> Vec<u32> {
+    pub fn all_data_blocks(
+        &self,
+        manager: &SpinMutex<BlockCacheManager>,
+        include_index: bool,
+    ) -> Vec<u32> {
         let mut v: Vec<u32> = Vec::new();
         let mut data_blocks = self.data_blocks() as usize;
         // debug!("all_data_blocks called on {} blocks", data_blocks);
@@ -710,13 +716,12 @@ impl DiskInode {
         }
         // indirect1
         let double_block = manager.lock().get_block_cache(self.i_double_block as _);
-        double_block.lock()
-            .read(0, |indirect1: &IndirectBlock| {
-                while current_blocks < data_blocks.min(DOUBLE_BLOCK_NUM) {
-                    v.push(indirect1[current_blocks]);
-                    current_blocks += 1;
-                }
-            });
+        double_block.lock().read(0, |indirect1: &IndirectBlock| {
+            while current_blocks < data_blocks.min(DOUBLE_BLOCK_NUM) {
+                v.push(indirect1[current_blocks]);
+                current_blocks += 1;
+            }
+        });
         manager.lock().release_block(double_block);
         // debug!("after double block: {}", v.len());
         // indirect2 block
@@ -733,43 +738,44 @@ impl DiskInode {
         let a1 = data_blocks / DOUBLE_BLOCK_NUM;
         let b1 = data_blocks % DOUBLE_BLOCK_NUM;
         let indirect1_block = manager.lock().get_block_cache(self.i_triple_block as _);
-        indirect1_block.lock()
-            .read(0, |indirect2: &IndirectBlock| {
-                // full indirect1 blocks
-                for entry in indirect2.iter().take(a1) {
-                    if include_index {
+        indirect1_block.lock().read(0, |indirect2: &IndirectBlock| {
+            // full indirect1 blocks
+            for entry in indirect2.iter().take(a1) {
+                if include_index {
+                    v.push(*entry);
+                }
+                let indirect2_block = manager.lock().get_block_cache(*entry as _);
+                indirect2_block.lock().read(0, |indirect1: &IndirectBlock| {
+                    for entry in indirect1.iter() {
                         v.push(*entry);
                     }
-                    let indirect2_block = manager.lock().get_block_cache(*entry as _);
-                    indirect2_block.lock()
-                        .read(0, |indirect1: &IndirectBlock| {
-                            for entry in indirect1.iter() {
-                                v.push(*entry);
-                            }
-                        });
-                    manager.lock().release_block(indirect2_block);
+                });
+                manager.lock().release_block(indirect2_block);
+            }
+            // last indirect1 block
+            if b1 > 0 {
+                if include_index {
+                    v.push(indirect2[a1]);
                 }
-                // last indirect1 block
-                if b1 > 0 {
-                    if include_index {
-                        v.push(indirect2[a1]);
+                let indirect2_block = manager.lock().get_block_cache(indirect2[a1] as _);
+                indirect2_block.lock().read(0, |indirect1: &IndirectBlock| {
+                    for entry in indirect1.iter().take(b1) {
+                        v.push(*entry);
                     }
-                    let indirect2_block = manager.lock().get_block_cache(indirect2[a1] as _);
-                    indirect2_block.lock()
-                        .read(0, |indirect1: &IndirectBlock| {
-                            for entry in indirect1.iter().take(b1) {
-                                v.push(*entry);
-                            }
-                        });
-                    manager.lock().release_block(indirect2_block);
-                }
-            });
+                });
+                manager.lock().release_block(indirect2_block);
+            }
+        });
         manager.lock().release_block(indirect1_block);
         v
     }
 
     /// Decrease size
-    pub fn decrease_size(&mut self, new_size: u32, manager: &SpinMutex<BlockCacheManager>) -> Vec<u32> {
+    pub fn decrease_size(
+        &mut self,
+        new_size: u32,
+        manager: &SpinMutex<BlockCacheManager>,
+    ) -> Vec<u32> {
         // debug!("decrease size from {} to {}", self.i_size, new_size);
         if new_size >= self.i_size {
             return Vec::new();
@@ -783,7 +789,7 @@ impl DiskInode {
         self.i_blocks = Self::_data_blocks(new_size) * BLOCK_SIZE as u32 / 512;
         let remain_block_num = Self::total_blocks(new_size);
         all_blocks.drain(0..remain_block_num as usize);
-        
+
         all_blocks
     }
 
@@ -793,7 +799,7 @@ impl DiskInode {
         offset: usize,
         buf: &mut [u8],
         manager: &SpinMutex<BlockCacheManager>,
-        cache: Option<&Vec<u32>>
+        cache: Option<&Vec<u32>>,
     ) -> usize {
         let mut start = offset;
         let end = (offset + buf.len()).min(self.i_size as usize);
@@ -815,8 +821,7 @@ impl DiskInode {
                 self.get_block_id(start_block as _, manager)
             };
             let data_block = manager.lock().get_block_cache(block_id as _);
-            data_block.lock()
-            .read(0, |data_block: &DataBlock| {
+            data_block.lock().read(0, |data_block: &DataBlock| {
                 let src = &data_block[start % BLOCK_SIZE..start % BLOCK_SIZE + block_read_size];
                 dst.copy_from_slice(src);
             });
@@ -838,7 +843,7 @@ impl DiskInode {
         offset: usize,
         buf: &[u8],
         manager: &SpinMutex<BlockCacheManager>,
-        cache: Option<&Vec<u32>>
+        cache: Option<&Vec<u32>>,
     ) -> usize {
         let mut start = offset;
         let end = (offset + buf.len()).min(self.i_size as usize);
@@ -857,10 +862,10 @@ impl DiskInode {
                 self.get_block_id(start_block as _, manager)
             };
             let data_block = manager.lock().get_block_cache(block_id as _);
-            data_block.lock()
-            .modify(0, |data_block: &mut DataBlock| {
+            data_block.lock().modify(0, |data_block: &mut DataBlock| {
                 let src = &buf[write_size..write_size + block_write_size];
-                let dst = &mut data_block[start % BLOCK_SIZE..start % BLOCK_SIZE + block_write_size];
+                let dst =
+                    &mut data_block[start % BLOCK_SIZE..start % BLOCK_SIZE + block_write_size];
                 dst.copy_from_slice(src);
             });
             manager.lock().release_block(data_block);
@@ -876,7 +881,6 @@ impl DiskInode {
     }
 }
 
-
 impl DirEntryHead {
     pub fn create(inode: usize, name: &str, file_type: u8) -> DirEntryHead {
         let name_len = name.as_bytes().len().min(MAX_NAME_LEN);
@@ -886,20 +890,35 @@ impl DirEntryHead {
             inode: inode as u32,
             rec_len: rec_len as u16,
             name_len: name_len as u8,
-            file_type
+            file_type,
         }
     }
 
     pub fn empty() -> Self {
-        DirEntryHead { inode: 0, rec_len: 0, name_len: 0, file_type: 0 }
+        DirEntryHead {
+            inode: 0,
+            rec_len: 0,
+            name_len: 0,
+            file_type: 0,
+        }
     }
 
     /// Serialize into bytes
     pub fn as_bytes(&self) -> &[u8] {
-        unsafe { core::slice::from_raw_parts(self as *const _ as usize as *const u8, size_of::<DirEntryHead>()) }
+        unsafe {
+            core::slice::from_raw_parts(
+                self as *const _ as usize as *const u8,
+                size_of::<DirEntryHead>(),
+            )
+        }
     }
     /// Serialize into mutable bytes
     pub fn as_bytes_mut(&mut self) -> &mut [u8] {
-        unsafe { core::slice::from_raw_parts_mut(self as *mut _ as usize as *mut u8, size_of::<DirEntryHead>()) }
+        unsafe {
+            core::slice::from_raw_parts_mut(
+                self as *mut _ as usize as *mut u8,
+                size_of::<DirEntryHead>(),
+            )
+        }
     }
 }

@@ -1,5 +1,5 @@
-pub mod spin_mutex;
 pub mod rw_spin_mutex;
+pub mod spin_mutex;
 
 /// Low-level support for mutex
 pub trait MutexSupport {

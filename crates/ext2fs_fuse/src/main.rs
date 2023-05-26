@@ -1,19 +1,21 @@
 #![allow(unused)]
 use clap::{App, Arg};
-use ext2fs::{BlockDevice, Ext2FileSystem, BLOCK_SIZE, BLOCKS_PER_GRP, EXT2_S_IFDIR, EXT2_S_IFREG,
-            TimeProvider, ZeroTimeProvider};
+use ext2fs::{
+    BlockDevice, Ext2FileSystem, TimeProvider, ZeroTimeProvider, BLOCKS_PER_GRP, BLOCK_SIZE,
+    EXT2_S_IFDIR, EXT2_S_IFREG,
+};
+use log::*;
 use std::fs::{read_dir, File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
-use log::*;
 
 const NUM_BLOCKS: usize = BLOCKS_PER_GRP;
 
 struct BlockFile {
     file: Mutex<File>,
-    num_blocks: usize
+    num_blocks: usize,
 }
 
 impl BlockDevice for BlockFile {
@@ -28,7 +30,11 @@ impl BlockDevice for BlockFile {
         let mut file = self.file.lock().unwrap();
         file.seek(SeekFrom::Start((block_id * BLOCK_SIZE) as u64))
             .expect("Error when seeking!");
-        assert_eq!(file.write(buf).unwrap(), BLOCK_SIZE, "Not a complete block!");
+        assert_eq!(
+            file.write(buf).unwrap(),
+            BLOCK_SIZE,
+            "Not a complete block!"
+        );
     }
 
     fn block_num(&self) -> usize {
@@ -43,7 +49,10 @@ impl BlockDevice for BlockFile {
 impl BlockFile {
     pub fn new(f: File, num_blocks: usize) -> Self {
         f.set_len((BLOCK_SIZE * num_blocks) as u64);
-        Self { file: Mutex::new(f), num_blocks }
+        Self {
+            file: Mutex::new(f),
+            num_blocks,
+        }
     }
 }
 
@@ -58,13 +67,11 @@ fn efs_test() -> std::io::Result<()> {
             .read(true)
             .write(true)
             .create(true)
-            .open("target/fs.img")?, NUM_BLOCKS 
+            .open("target/fs.img")?,
+        NUM_BLOCKS,
     ));
     Ext2FileSystem::create(block_file.clone(), Arc::new(ZeroTimeProvider));
-    let efs = Ext2FileSystem::open(
-        block_file.clone(), 
-        Arc::new(ZeroTimeProvider)
-    );
+    let efs = Ext2FileSystem::open(block_file.clone(), Arc::new(ZeroTimeProvider));
 
     let root_inode = Ext2FileSystem::root_inode(&efs);
     let filea = root_inode.create("filea", EXT2_S_IFREG).unwrap();

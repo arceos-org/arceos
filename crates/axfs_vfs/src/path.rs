@@ -68,9 +68,16 @@ pub fn split_parent_name(path: &str) -> (Option<String>, String) {
     if names.len() == 1 {
         return (None, names[0].clone());
     } else {
-        let parent = names[0..names.len()-1].join("/");
-        let name = names[names.len()-1].clone();
-        return (if parent.is_empty() { None } else { Some(parent) }, name);
+        let parent = names[0..names.len() - 1].join("/");
+        let name = names[names.len() - 1].clone();
+        return (
+            if parent.is_empty() {
+                None
+            } else {
+                Some(parent)
+            },
+            name,
+        );
     }
 }
 

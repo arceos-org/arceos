@@ -138,14 +138,18 @@ impl File {
         };
 
         let attr = node.get_attr()?;
-        if !attr.is_file()
+        if attr.is_dir()
             && (opts.create || opts.create_new || opts.write || opts.append || opts.truncate)
         {
             return ax_err!(IsADirectory);
         }
         let access_cap = opts.into();
         if !perm_to_cap(attr.perm()).contains(access_cap) {
-            error!("bad perm {} {}", perm_to_cap(attr.perm()).bits(), access_cap.bits());
+            error!(
+                "bad perm {} {}",
+                perm_to_cap(attr.perm()).bits(),
+                access_cap.bits()
+            );
             return ax_err!(PermissionDenied);
         }
 
@@ -169,7 +173,11 @@ impl File {
     /// Look up no follow
     pub fn lookup(path: &str) -> AxResult<Self> {
         let node = crate::root::lookup_symbolic(None, path, false)?;
-        Ok(Self { node: WithCap::new(node, Cap::empty()), is_append: false, offset: 0 })
+        Ok(Self {
+            node: WithCap::new(node, Cap::empty()),
+            is_append: false,
+            offset: 0,
+        })
     }
 
     /// Truncates the file to the specified size.
