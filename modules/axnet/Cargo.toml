@@ -12,7 +12,7 @@ documentation = "https://rcore-os.github.io/arceos/axnet/index.html"
 [features]
 smoltcp = []
 user = []
-default = ["smoltcp", "user"]
+default = ["smoltcp"]
 
 [dependencies]
 log = "0.4"

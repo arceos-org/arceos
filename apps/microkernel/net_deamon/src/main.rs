@@ -3,6 +3,8 @@
 
 #[macro_use]
 extern crate libax;
+mod tcp;
+mod udp;
 
 #[no_mangle]
 fn main() {

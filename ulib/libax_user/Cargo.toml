@@ -15,6 +15,9 @@ log-level-info = ["log/max_level_info"]
 log-level-debug = ["log/max_level_debug"]
 log-level-trace = ["log/max_level_trace"]
 
+net = []
+default = ["net"]
+
 [dependencies]
 log = "0.4"
 allocator = { path = "../../crates/allocator" }
@@ -22,3 +25,4 @@ spinlock = { path = "../../crates/spinlock" }
 syscall_number = { path = "../../crates/syscall_number"}
 scheme = { path = "../../crates/scheme" }
 axerrno = { path = "../../crates/axerrno" }
+axio = { path = "../../crates/axio" }     

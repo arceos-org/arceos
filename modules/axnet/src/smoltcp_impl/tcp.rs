@@ -173,6 +173,8 @@ impl TcpSocket {
                         peer_addr,
                     });
                 }
+                // We will have to return EAGAIN to client
+                #[cfg(not(feature = "user"))]
                 Err(AxError::Again) => super::yield_now(),
                 Err(e) => return Err(e),
             }

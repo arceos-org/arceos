@@ -30,9 +30,9 @@ unsafe impl GlobalAlloc for UserAllocator {
                 if res < 0 {
                     handle_alloc_error(layout);
                 }
-                println!("sbrked {:x}, {:x}", res, size);
+                //println!("sbrked {:x}, {:x}", res, size);
                 allocator.add_memory(res as usize, size).unwrap();
-                println!("size {:x}", allocator.total_bytes());
+                //println!("size {:x}", allocator.total_bytes());
             }
         }
     }

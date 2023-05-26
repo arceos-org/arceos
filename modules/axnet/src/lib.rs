@@ -52,7 +52,10 @@ pub fn init_network(mut net_devs: AxDeviceContainer<AxNetDevice>) {
 }
 
 #[cfg(feature = "user")]
+pub use user::user_init;
+#[cfg(feature = "user")]
 mod user {
+    use axerrno::AxError;
     use driver_net::{
         DevError, DevResult, EthernetAddress, NetBuffer, NetBufferBox, NetBufferPool,
     };
@@ -62,6 +65,11 @@ mod user {
     pub struct AxNetDeviceMock<'a> {
         rx_buffer: Option<NetBufferBox<'a>>,
         daemon_file: File,
+    }
+
+    pub fn user_init() {
+        let dev = AxNetDevice::new().unwrap();
+        super::net_impl::init(dev);
     }
 
     impl<'a> AxNetDeviceMock<'a> {
@@ -118,7 +126,7 @@ mod user {
             if self
                 .daemon_file
                 .write(tx_buf.packet())
-                .map_err(|_| DevError::Io)?
+                .map_err(map_err)?
                 != tx_buf.packet().len()
             {
                 Err(DevError::Io)
@@ -130,12 +138,20 @@ mod user {
         pub fn receive(&mut self) -> DevResult<NetBufferBox<'a>> {
             if let Some(mut buf) = self.rx_buffer.take() {
                 buf.set_header_len(0);
-                let len = self
+                match self
                     .daemon_file
                     .read(buf.raw_buf_mut())
-                    .map_err(|_| DevError::Io)?;
-                buf.set_packet_len(len);
-                Ok(buf)
+                    .map_err(map_err) {
+                        Ok(len) => {
+                            buf.set_packet_len(len);
+                            Ok(buf)
+                        },
+                        Err(e) => {
+                            self.recycle_rx_buffer(buf).unwrap();
+                            Err(e)
+                        }
+                    }
+
             } else {
                 Err(DevError::Again)
             }
@@ -148,4 +164,17 @@ mod user {
         libax::task::yield_now();
     }
     pub const NANOS_PER_MICROS: u64 = 1_000;
+    fn map_err(e: AxError) -> DevError {
+        match e {
+            AxError::Again => DevError::Again,
+            AxError::AlreadyExists => DevError::AlreadyExists,
+            AxError::BadState => DevError::BadState,
+            AxError::InvalidInput => DevError::InvalidParam,
+            AxError::Io => DevError::Io,
+            AxError::NoMemory => DevError::NoMemory,
+            AxError::ResourceBusy => DevError::ResourceBusy,
+            AxError::Unsupported => DevError::Unsupported,
+            _ => DevError::Io,
+        }
+    }
 }

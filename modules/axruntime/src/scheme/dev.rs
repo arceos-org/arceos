@@ -91,7 +91,7 @@ mod net {
     use alloc::{collections::BTreeMap, sync::Arc};
     use axsync::Mutex;
     use lazy_init::LazyInit;
-    use driver_net::{DevError, NetBufferPool};
+    use driver_net::NetBufferPool;
     use axdriver::{prelude::NetDriverOps, AxNetDevice, AllDevices};
     use axerrno::{ax_err, AxError, AxResult};
 
@@ -144,6 +144,7 @@ mod net {
         }
 
         fn read(&self, id: usize, buf: &mut [u8]) -> AxResult<usize> {
+            info!("Net read {}", id);
             let mut handle = self.handles.lock();
             let tp = handle.get_mut(&id).ok_or(AxError::BadFileDescriptor)?;
             match tp {
@@ -174,6 +175,7 @@ mod net {
             }
         }
         fn write(&self, id: usize, buf: &[u8]) -> AxResult<usize> {
+            info!("Net write {}", id);
             let mut handle = self.handles.lock();
             let tp = handle.get_mut(&id).ok_or(AxError::BadFileDescriptor)?;
             match tp {

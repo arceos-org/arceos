@@ -369,7 +369,7 @@ impl Drop for TaskStack {
     }
 }
 
-use core::mem::{self, ManuallyDrop};
+use core::mem::ManuallyDrop;
 
 /// A wrapper of [`AxTaskRef`] as the current task.
 pub struct CurrentTask(ManuallyDrop<AxTaskRef>);

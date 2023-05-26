@@ -75,9 +75,9 @@ fn file_op_slice_mut(id: usize, fd: usize, ptr: usize, len: usize) -> AxResult<u
 pub fn init_scheme() {
     GLOBAL_SCHEME_LIST.init_by(Mutex::new(SchemeList::new_init()));
     GLOBAL_FD_LIST.init_by(Mutex::new(Vec::new()));    
-    open("stdin:", 0);
-    open("stdout:", 0);
-    open("stdout:", 0);   
+    open("stdin:", 0).unwrap();
+    open("stdout:", 0).unwrap();
+    open("stdout:", 0).unwrap();   
 }
 fn insert_fd(file_handle: Arc<FileHandle>) -> AxResult<usize>  {
     let mut fd_list = GLOBAL_FD_LIST.lock();
@@ -165,7 +165,7 @@ fn dup_inner(fd: usize, buf: &[u8]) -> AxResult<Arc<FileHandle>> {
         Ok(handle.clone())
     } else {
         let scheme = schemes().find_id(handle.scheme_id).unwrap();
-        let new_id = scheme.dup(fd, buf)?;
+        let new_id = scheme.dup(handle.file_id, buf)?;
 
         Ok(Arc::new(FileHandle{
             scheme_id: handle.scheme_id,

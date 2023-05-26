@@ -15,7 +15,7 @@ cfg_if::cfg_if! {
         use axdriver::prelude::*;
         use axhal::time::{current_time_nanos, NANOS_PER_MICROS};
         use axsync::Mutex;
-        use axtask::yield_now();
+        use axtask::yield_now;
     }
 }
 use driver_net::{DevError, NetBufferBox, NetBufferPool};

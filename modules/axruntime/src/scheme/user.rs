@@ -2,7 +2,7 @@ extern crate alloc;
 use core::{sync::atomic::{AtomicU64, Ordering}, time::Duration};
 
 use alloc::{sync::Weak, collections::{VecDeque, BTreeMap}};
-use axerrno::{AxResult, ax_err, AxError};
+use axerrno::{AxResult, ax_err, AxError, from_ret_code};
 use axhal::{mem::VirtAddr, paging::MappingFlags};
 use axmem::copy_slice_from_user;
 use axsync::Mutex;
@@ -86,7 +86,7 @@ impl UserInner {
         loop {
             let value = self.response.lock().remove(&id);
             if let Some(value) = value {
-                return Ok(value);
+                return from_ret_code(value as isize);
             } else {
                 assert!(!self.response.is_locked());
                 axtask::sleep(Duration::from_millis(1));

@@ -1,0 +1,10 @@
+[package]
+name = "init"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+libax = { path = "../../../ulib/libax_user", package = "libax_user"}
+net_deamon = { path = "../net_deamon" }

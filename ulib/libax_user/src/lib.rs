@@ -3,10 +3,13 @@
 mod syscall;
 pub use syscall::*;
 
-#[macro_use]
-pub mod logging;
-pub use logging::__print_impl;
+
+pub use io::logging;
+pub use io::logging::__print_impl;
 pub use logging::{debug, error, info, trace, warn};
+
+#[macro_use]
+pub mod io;
 
 mod allocate;
 mod entry;
@@ -29,3 +32,7 @@ pub mod scheme {
 pub mod axerrno {
     pub use axerrno::*;
 }
+pub use syscall_number::io::OpenFlags;
+
+//#[cfg(feature = "net")]
+//pub mod net;
