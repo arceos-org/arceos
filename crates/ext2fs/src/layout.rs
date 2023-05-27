@@ -174,7 +174,8 @@ pub struct DiskInode {
     pub(crate) i_mtime: u32,
     pub(crate) i_dtime: u32,
     pub(crate) i_gid: u16,
-    pub(crate) i_links_count: u16,
+    /// links count
+    pub i_links_count: u16,
     /// the total number of 512-bytes blocks
     pub i_blocks: u32,
     i_flags: u32,
