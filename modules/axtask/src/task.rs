@@ -110,7 +110,8 @@ impl TaskInner {
         self.affinity.store(aff, Ordering::Release);
     }
 }
-
+use spinlock::SpinNoIrq;
+static LOCK_QWQ2: SpinNoIrq<usize> = SpinNoIrq::new(0);
 // private methods
 impl TaskInner {
     const fn new_common(id: TaskId, name: &'static str) -> Self {
@@ -252,6 +253,7 @@ impl TaskInner {
         if curr.need_resched.load(Ordering::Acquire) && curr.can_preempt(0) {
             //let mut rq = crate::RUN_QUEUE.lock();
             if curr.need_resched.load(Ordering::Acquire) {
+                let tat = LOCK_QWQ2.lock();
                 //assert!(self.in_which_queue.load(Ordering::Acquire) >= 0);
                 if curr.in_which_queue.load(Ordering::Acquire) >= 0 {
                     crate::RUN_QUEUE[curr.in_which_queue.load(Ordering::Acquire) as usize].resched();
