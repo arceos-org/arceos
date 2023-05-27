@@ -16,7 +16,8 @@ pub(crate) const CHECK_INTERVAL: usize = 3 * 30 * 24 * 3600;
 
 pub(crate) const EXT2_GOOD_OLD_FIRST_INO: usize = 11;
 pub(crate) const EXT2_GOOD_OLD_INODE_SIZE: usize = 128;
-pub(crate) const INODE_TABLE_BLOCK_NUM: usize = (INODES_PER_GRP * EXT2_GOOD_OLD_INODE_SIZE) / BLOCK_SIZE;
+pub(crate) const INODE_TABLE_BLOCK_NUM: usize =
+    (INODES_PER_GRP * EXT2_GOOD_OLD_INODE_SIZE) / BLOCK_SIZE;
 pub(crate) const RESERVED_BLOCKS_PER_GRP: usize = INODE_TABLE_BLOCK_NUM + 2;
 
 pub(crate) const FAKE_UUID: u128 = 114514;

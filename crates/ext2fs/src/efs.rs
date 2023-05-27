@@ -257,7 +257,10 @@ impl Ext2FileSystem {
         Self::get_inode_cache(efs, EXT2_ROOT_INO).unwrap()
     }
 
-    pub(crate) fn get_inode_cache(efs: &Arc<Self>, inode_id: usize) -> Option<Arc<SpinMutex<InodeCache>>> {
+    pub(crate) fn get_inode_cache(
+        efs: &Arc<Self>,
+        inode_id: usize,
+    ) -> Option<Arc<SpinMutex<InodeCache>>> {
         efs.inode_manager.lock().get_or_insert(inode_id, efs)
     }
 
