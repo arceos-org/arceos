@@ -19,7 +19,7 @@ QEMU_LOG ?= n
 ifeq ($(FT), fat32)
   DISK_IMG ?= disk.img
 else
-  DISK_IMG ?= target/fs.img
+  DISK_IMG ?= crates/ext2fs_fuse/target/fs.img
 endif
 
 ifeq ($(wildcard $(APP)),)

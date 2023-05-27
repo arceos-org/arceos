@@ -39,8 +39,7 @@ impl Drop for MountPoint {
 
 impl Drop for RootDirectory {
     fn drop(&mut self) {
-        debug!("drop RootDirectory");
-        let _ = self.main_fs.umount();
+        self.close();
     }
 }
 
@@ -50,6 +49,11 @@ impl RootDirectory {
             main_fs,
             mounts: Vec::new(),
         }
+    }
+
+    fn close(&self) {
+        debug!("Close RootDirectory");
+        let _ = self.main_fs.umount();
     }
 
     pub fn mount(&mut self, path: &'static str, fs: Arc<dyn VfsOps>) -> AxResult {
@@ -427,7 +431,7 @@ fn _lookup_symbolic(
         return ax_err!(NotFound);
     }
     let parent = parent_node_of(dir, path);
-    let is_dir = path.ends_with("/");
+    let is_dir = path.ends_with('/');
     let path = path.trim_matches('/');
     let names = axfs_vfs::path::split_path(path);
 
@@ -462,25 +466,28 @@ fn _lookup_symbolic(
             }
             debug!("follow {}", path);
             return _lookup_symbolic(None, &new_path, count, max_count, final_jump, return_parent);
+        } else if idx == names.len() - 1 {
+            if is_dir && !ty.is_dir() {
+                return Err(AxError::NotADirectory);
+            }
+            return Ok(vnode);
         } else {
-            if idx == names.len() - 1 {
-                if is_dir && !ty.is_dir() {
+            match ty {
+                VfsNodeType::Dir => {
+                    cur = vnode.clone();
+                }
+                VfsNodeType::File => {
                     return Err(AxError::NotADirectory);
                 }
-                return Ok(vnode);
-            } else {
-                match ty {
-                    VfsNodeType::Dir => {
-                        cur = vnode.clone();
-                    }
-                    VfsNodeType::File => {
-                        return Err(AxError::NotADirectory);
-                    }
-                    _ => panic!("unsupport type"),
-                };
-            }
+                _ => panic!("unsupport type"),
+            };
         }
     }
 
     panic!("_lookup_symbolic");
+}
+
+pub fn close_main_fs() {
+    debug!("close main fs");
+    ROOT_DIR.close()
 }

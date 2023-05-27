@@ -136,15 +136,11 @@ impl VfsNodeOps for Ext2FileWrapper {
     }
 
     fn write_at(&self, offset: u64, buf: &[u8]) -> VfsResult<usize> {
-        let res = self.0.write_at(offset as _, buf).map_err(map_ext2_err);
-        self.0.flush();
-        res
+        self.0.write_at(offset as _, buf).map_err(map_ext2_err)
     }
 
     fn truncate(&self, size: u64) -> VfsResult {
-        let res = self.0.ftruncate(size as _).map_err(map_ext2_err);
-        self.0.flush();
-        res
+        self.0.ftruncate(size as _).map_err(map_ext2_err)
     }
 }
 
@@ -203,7 +199,7 @@ impl VfsNodeOps for Ext2DirWrapper {
 
         let (parent, name) = self.0.lookup_parent(path).map_err(map_ext2_err)?;
 
-        let res = match ty {
+        match ty {
             VfsNodeType::Dir => parent
                 .create_dir(name.as_str())
                 .map(|_| ())
@@ -213,9 +209,7 @@ impl VfsNodeOps for Ext2DirWrapper {
                 .map(|_| ())
                 .map_err(map_ext2_err),
             _ => panic!("unsupport type"),
-        };
-        self.0.flush();
-        res
+        }
     }
 
     fn remove(&self, path: &str, recursive: bool) -> VfsResult {
@@ -233,15 +227,12 @@ impl VfsNodeOps for Ext2DirWrapper {
             parent
                 .rm_dir(name.as_str(), recursive)
                 .map_err(map_ext2_err)?;
-            self.0.flush();
             return Ok(());
         } else if inode.is_file() {
             parent.rm_file(name.as_str()).map_err(map_ext2_err)?;
-            self.0.flush();
             return Ok(());
         } else if inode.is_symlink() {
             parent.rm_symlink(name.as_str()).map_err(map_ext2_err)?;
-            self.0.flush();
             return Ok(());
         } else {
             panic!("Unsuport type");
@@ -274,9 +265,7 @@ impl VfsNodeOps for Ext2DirWrapper {
         if self.1.as_ptr() as usize != handle.fssp_ptr {
             return Err(VfsError::InvalidInput);
         }
-        let res = self.0.link(name, handle.inode_id).map_err(map_ext2_err);
-        self.0.flush();
-        res
+        self.0.link(name, handle.inode_id).map_err(map_ext2_err)
     }
 
     fn symlink(&self, name: &str, path: &str) -> VfsResult {
@@ -284,9 +273,7 @@ impl VfsNodeOps for Ext2DirWrapper {
         if !path.starts_with("/") {
             return Err(VfsError::InvalidInput);
         }
-        let res = self.0.symlink(name, path).map_err(map_ext2_err);
-        self.0.flush();
-        res
+        self.0.symlink(name, path).map_err(map_ext2_err)
     }
 }
 

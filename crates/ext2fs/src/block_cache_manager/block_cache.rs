@@ -90,6 +90,12 @@ pub struct BlockCacheManager {
     lru_head: InListNode<BlockCache, ManagerAccessBlockCache>,
 }
 
+impl Default for BlockCacheManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BlockCacheManager {
     pub fn new() -> Self {
         Self {
@@ -180,7 +186,7 @@ impl BlockCacheManager {
     /// Use arc to record refcnt
     /// when unpin, just drop(cache)
     pub fn pin_block(&self, block_id: usize) -> Option<Arc<SpinMutex<BlockCache>>> {
-        self.blocks.get(&block_id).map(|ac| ac.clone())
+        self.blocks.get(&block_id).cloned()
     }
 
     /// Move arc to this function, it will be dropped right away

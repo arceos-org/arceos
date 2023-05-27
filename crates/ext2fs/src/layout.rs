@@ -358,7 +358,7 @@ impl SuperBlock {
             "Bad inodes and blocks per group"
         );
         assert!(
-            self.s_rev_level == EXT2_GOOD_OLD_REV as u32
+            self.s_rev_level == EXT2_GOOD_OLD_REV
                 && self.s_first_ino == EXT2_GOOD_OLD_FIRST_INO as u32,
             "Bad rev level"
         );
@@ -492,7 +492,7 @@ impl DiskInode {
     /// Return number of blocks needed include indirect1/2.
     pub fn total_blocks(size: u32) -> u32 {
         let data_blocks = Self::_data_blocks(size) as usize;
-        let mut total = data_blocks as usize;
+        let mut total = data_blocks;
         // indirect1
         if data_blocks > DIRECT_BLOCK_NUM {
             total += 1;
@@ -643,7 +643,7 @@ impl DiskInode {
         indirect1_block
             .lock()
             .modify(0, |indirect1: &mut IndirectBlock| {
-                for a in a0..=a1 {
+                for (a, item1) in indirect1.iter_mut().enumerate().take(a1 + 1).skip(a0) {
                     // if b0 == 0 {
                     //     indirect2[a0] = new_blocks.next().unwrap();
                     // }
@@ -662,22 +662,22 @@ impl DiskInode {
                     let start = if a == a0 { b0 } else { 0 };
                     let end = if a == a1 { b1 } else { DOUBLE_BLOCK_NUM };
                     if start == 0 && end > 0 {
-                        indirect1[a] = new_blocks.next().unwrap();
+                        *item1 = new_blocks.next().unwrap();
                     }
-                    let indirect2_block = manager.lock().get_block_cache(indirect1[a] as _);
+                    let indirect2_block = manager.lock().get_block_cache(*item1 as _);
                     indirect2_block
                         .lock()
                         .modify(0, |indirect2: &mut IndirectBlock| {
-                            for b in start..end {
-                                indirect2[b] = new_blocks.next().unwrap();
-                                extra_blocks.push(indirect2[b]);
+                            for item2 in indirect2.iter_mut().take(end).skip(start) {
+                                *item2 = new_blocks.next().unwrap();
+                                extra_blocks.push(*item2);
                             }
                         });
                     manager.lock().release_block(indirect2_block);
                 }
             });
         manager.lock().release_block(indirect1_block);
-        return extra_blocks;
+        extra_blocks
     }
 
     /// Clear size to zero and return blocks that should be deallocated.

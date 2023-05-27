@@ -31,7 +31,7 @@ impl Bitmap {
                 {
                     // modify cache
                     bitmap_block[bits64_pos] |= 1u64 << inner_pos;
-                    Some(self.offset + bits64_pos * 64 + inner_pos as usize)
+                    Some(self.offset + bits64_pos * 64 + inner_pos)
                 } else {
                     None
                 }
@@ -96,7 +96,7 @@ impl Bitmap {
             .lock()
             .modify(0, |bitmap_block: &mut BitmapBlock| {
                 for (pos, inner) in bitmap_block.iter_mut().enumerate() {
-                    for inner_pos in 0..64 as usize {
+                    for inner_pos in 0..64_usize {
                         let idx = pos * 64 + inner_pos;
                         if idx >= start && idx < end {
                             *inner |= 1u64 << inner_pos;

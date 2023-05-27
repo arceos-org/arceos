@@ -48,7 +48,6 @@ members = [
     "crates/tuple_for_each",
     "crates/fs_utils",
     "crates/ext2fs",
-    "crates/ext2fs_fuse",
 
     "modules/axalloc",
     "modules/axconfig",
