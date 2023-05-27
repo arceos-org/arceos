@@ -100,8 +100,7 @@ fn gen_config_rs(platform: &str) -> Result<()> {
                     }
                 }
                 Value::Array(regions) => {
-                    if key != "mmio-regions" && key != "virtio-mmio-regions" && key != "pci-ranges"
-                    {
+                    if key != "mmio-regions" && key != "pci-ranges" {
                         continue;
                     }
                     writeln!(output, "{comments}")?;

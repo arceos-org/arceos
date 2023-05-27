@@ -56,5 +56,8 @@ aarch64-cpu = "9.3"
 tock-registers = "0.8"
 arm_gic = { path = "../../crates/arm_gic" }
 
+[target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64", target_arch = "aarch64"))'.dependencies]
+dtb = {path = "../../crates/dtb" }
+
 [build-dependencies]
 axconfig = { path = "../axconfig" }

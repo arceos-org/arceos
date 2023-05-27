@@ -1,0 +1,14 @@
+[package]
+name = "dtb"
+version = "0.1.0"
+edition = "2021"
+authors = ["Leping Wang <xuehao14@126.com>"]
+description = "Device tree basic operations"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+repository = "https://github.com/rcore-os/arceos/tree/main/crates/dtb"
+documentation = "https://rcore-os.github.io/arceos/dtb/index.html"
+
+[dependencies]
+fdt-rs = { version = "0.4.3", default-features = false }
+lazy_init = { path = "../../crates/lazy_init" }
