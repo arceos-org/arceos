@@ -221,7 +221,7 @@ impl TaskInner {
     #[inline]
     #[cfg(feature = "preempt")]
     pub(crate) fn set_preempt_pending(&self, pending: bool) {
-        info!("qwq3");
+        //info!("qwq3");
         self.need_resched.store(pending, Ordering::Release)
     }
 
@@ -258,15 +258,16 @@ impl TaskInner {
                     //info!("qwq1 {}", curr.in_which_queue.load(Ordering::Acquire));
                 } else {
                     // qwq???
-                    /*loop {
-
-                    }*/
                     for i in 0..axconfig::SMP {
                         crate::RUN_QUEUE[i].resched();
                     }
                     //info!("qwq2");
                 }
             }
+        } else if !curr.need_resched.load(Ordering::Acquire) {
+            /*loop {
+
+            }*/
         }
     }
 

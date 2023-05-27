@@ -70,6 +70,11 @@ impl WaitQueue {
     /// notifies it.
     pub fn wait(&self) {
         //info!("lock begin 7");
+        loop {
+            if (get_current_cpu_id() != axconfig::SMP) {
+                break;
+            }
+        }
         RUN_QUEUE[get_current_cpu_id()].block_current(|task| {
             task.set_in_wait_queue(true);
             self.queue.lock().push_back((task, get_current_cpu_id()))

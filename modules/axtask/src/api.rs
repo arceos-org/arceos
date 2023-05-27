@@ -89,10 +89,18 @@ impl LogMyTime for LogTaskImpl {
 }
 
 use crate_interface::{call_interface, def_interface};
+
+use spinlock::SpinNoIrq;
+
+static LOCK_TAT: SpinNoIrq<usize> = SpinNoIrq::new(0);
+
 pub fn get_current_cpu_id() -> usize {
-    call_interface!(LogMyTime::current_cpu_id).unwrap_or_else(
+    let pmt = LOCK_TAT.lock();
+    let tmp = call_interface!(LogMyTime::current_cpu_id).unwrap_or_else(
         ||axconfig::SMP
-    )
+    );
+    info!("tmp: {}", tmp);
+    tmp
 }
 
 /// Gets the current task, or returns [`None`] if the current task is not
@@ -142,7 +150,7 @@ pub fn on_timer_tick() {
             RUN_QUEUE[i].scheduler_timer_tick();
         }
     }
-    info!("exit 234");
+    //info!("exit 234");
     //info!("exit 7");
 }
 
