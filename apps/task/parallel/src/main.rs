@@ -27,7 +27,7 @@ fn barrier() {
     BARRIER_WQ.wait_until(|| BARRIER_COUNT.load(Ordering::Relaxed) == NUM_TASKS);
     BARRIER_WQ.notify_all(true);
 }
-
+ 
 fn sqrt(n: &u64) -> u64 {
     let mut x = *n;
     loop {
