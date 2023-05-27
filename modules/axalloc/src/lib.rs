@@ -13,8 +13,7 @@ extern crate alloc;
 
 mod page;
 
-use allocator::{AllocResult, BaseAllocator, ByteAllocator, PageAllocator};
-use allocator::{BitmapPageAllocator, SlabByteAllocator};
+use allocator::*;
 use core::alloc::{GlobalAlloc, Layout};
 use spinlock::SpinNoIrq;
 
@@ -30,10 +29,10 @@ pub use page::GlobalPage;
 /// there is no memory, asks the page allocator for more memory and adds it to
 /// the byte allocator.
 ///
-/// Currently, [`SlabByteAllocator`] is used as the byte allocator, while
+/// Currently, [`TLSFAllocator`] is used as the byte allocator, while
 /// [`BitmapPageAllocator`] is used as the page allocator.
 pub struct GlobalAllocator {
-    balloc: SpinNoIrq<SlabByteAllocator>,
+    balloc: SpinNoIrq<TLSFAllocator>,
     palloc: SpinNoIrq<BitmapPageAllocator<PAGE_SIZE>>,
 }
 
@@ -41,7 +40,7 @@ impl GlobalAllocator {
     /// Creates an empty [`GlobalAllocator`].
     pub const fn new() -> Self {
         Self {
-            balloc: SpinNoIrq::new(SlabByteAllocator::new()),
+            balloc: SpinNoIrq::new(TLSFAllocator::new()),
             palloc: SpinNoIrq::new(BitmapPageAllocator::new()),
         }
     }

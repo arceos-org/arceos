@@ -52,6 +52,7 @@ export LOG
 
 # Binutils
 ifeq ($(APP_LANG), c)
+  # CROSS_COMPILE ?= $(ARCH)-linux-gnu-
   CROSS_COMPILE ?= $(ARCH)-linux-musl-
   CC := $(CROSS_COMPILE)gcc
   AR := $(CROSS_COMPILE)ar

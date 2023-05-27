@@ -1,0 +1,11 @@
+[package]
+name = "tlsf_c_allocator"
+version = "0.1.0"
+edition = "2021"
+authors = ["Yibin Zhang <zhangyb20@mails.tsinghua.edu.cn>"]
+build = "./build.rs"
+
+[dependencies]
+log = "0.4"
+[dev-dependencies]
+libc = "0.2.0"

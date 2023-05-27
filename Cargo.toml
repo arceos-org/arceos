@@ -46,6 +46,9 @@ members = [
     "crates/spinlock",
     "crates/timer_list",
     "crates/tuple_for_each",
+    "crates/basic_allocator",
+    "crates/tlsf_allocator",
+    "crates/tlsf_c_allocator",
 
     "modules/axalloc",
     "modules/axconfig",

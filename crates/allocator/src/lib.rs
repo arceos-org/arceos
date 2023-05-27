@@ -3,7 +3,7 @@
 //! There are three types of allocators:
 //!
 //! - [`ByteAllocator`]: Byte-granularity memory allocator. (e.g.,
-//!   [`BuddyByteAllocator`], [`SlabByteAllocator`])
+//!   [`BuddyByteAllocator`], [`SlabByteAllocator`], [`BasicAllocator`], [`TLSFAllocator`], [`TLSFCAllocator`])
 //! - [`PageAllocator`]: Page-granularity memory allocator. (e.g.,
 //!   [`BitmapPageAllocator`])
 //! - [`IdAllocator`]: Used to allocate unique IDs.
@@ -11,13 +11,19 @@
 #![no_std]
 #![feature(result_option_inspect)]
 
+mod basic;
 mod bitmap;
 mod buddy;
 mod slab;
+mod tlsf;
+mod tlsf_c;
 
+pub use basic::BasicAllocator;
 pub use bitmap::BitmapPageAllocator;
 pub use buddy::BuddyByteAllocator;
 pub use slab::SlabByteAllocator;
+pub use tlsf::TLSFAllocator;
+pub use tlsf_c::TLSFCAllocator;
 
 /// The error type used for allocation.
 #[derive(Debug)]
