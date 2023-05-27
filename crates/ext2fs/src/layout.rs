@@ -13,30 +13,31 @@ const MOUNT_SIZE: usize = 64;
 const HASH_SEED_SIZE: usize = 4;
 const SB_RESERVED_SIZE: usize = 760 - 16;
 
-pub const DIRECT_BLOCK_NUM: usize = 13;
-pub const DOUBLE_BLOCK_NUM: usize = BLOCK_SIZE / 4;
-pub const DOUBLE_BLOCK_BOUND: usize = DIRECT_BLOCK_NUM + DOUBLE_BLOCK_NUM;
-pub const TRIPLE_BLOCK_NUM: usize = (BLOCK_SIZE / 4) * (BLOCK_SIZE / 4);
+pub(crate) const DIRECT_BLOCK_NUM: usize = 13;
+pub(crate) const DOUBLE_BLOCK_NUM: usize = BLOCK_SIZE / 4;
+pub(crate) const DOUBLE_BLOCK_BOUND: usize = DIRECT_BLOCK_NUM + DOUBLE_BLOCK_NUM;
+pub(crate) const TRIPLE_BLOCK_NUM: usize = (BLOCK_SIZE / 4) * (BLOCK_SIZE / 4);
 // pub const TRIPLE_BLOCK_BOUND: usize = TRIPLE_BLOCK_NUM + DOUBLE_BLOCK_BOUND;
-pub const SB_MAGIC: u16 = 0xEF53;
+pub(crate) const SB_MAGIC: u16 = 0xEF53;
 
 #[derive(Clone, Copy)]
 #[repr(C)]
+/// Ext2 syper block
 pub struct SuperBlock {
-    pub s_inodes_count: u32,
-    pub s_blocks_count: u32,
+    pub(crate) s_inodes_count: u32,
+    pub(crate) s_blocks_count: u32,
     s_r_blocks_count: u32,
-    pub s_free_blocks_count: u32,
-    pub s_free_inodes_count: u32,
-    pub s_first_data_block: u32,
+    pub(crate) s_free_blocks_count: u32,
+    pub(crate) s_free_inodes_count: u32,
+    pub(crate) s_first_data_block: u32,
     s_log_block_size: u32,
     s_log_frag_size: u32,
     s_blocks_per_group: u32,
     s_frags_per_group: u32,
     s_inodes_per_group: u32,
-    pub s_mtime: u32,
-    pub s_wtime: u32,
-    pub s_mnt_count: u16,
+    pub(crate) s_mtime: u32,
+    pub(crate) s_wtime: u32,
+    pub(crate) s_mnt_count: u16,
     s_max_mnt_count: u16,
     s_magic: u16,
     s_state: u16,
@@ -51,7 +52,7 @@ pub struct SuperBlock {
     // EXT2_DYNAMIC_REV Specific
     s_first_ino: u32,
     s_inode_size: u16,
-    pub s_block_group_nr: u16,
+    pub(crate) s_block_group_nr: u16,
     s_feature_compat: FeatureCompat,
     s_feature_incompat: FeatureIncompat,
     s_feature_ro_compat: FeatureRocompat,
@@ -107,7 +108,7 @@ const EXT2_DEF_RESGID: u16 = 0;
 // s_feature_compat
 
 bitflags! {
-    pub struct FeatureCompat: u32 {
+    pub(crate) struct FeatureCompat: u32 {
         const EXT2_FEATURE_COMPAT_DIR_PREALLOC = 1;
         const EXT2_FEATURE_COMPAT_IMAGIC_INODES = 1 << 1;
         const EXT3_FEATURE_COMPAT_HAS_JOURNAL = 1 << 2;
@@ -118,7 +119,7 @@ bitflags! {
 }
 
 bitflags! {
-    pub struct FeatureIncompat: u32 {
+    pub(crate) struct FeatureIncompat: u32 {
         const EXT2_FEATURE_INCOMPAT_COMPRESSION = 1;
         const EXT2_FEATURE_INCOMPAT_FILETYPE = 1 << 1;
         const EXT3_FEATURE_INCOMPAT_RECOVER = 1 << 2;
@@ -128,7 +129,7 @@ bitflags! {
 }
 
 bitflags! {
-    pub struct FeatureRocompat: u32 {
+    pub(crate) struct FeatureRocompat: u32 {
         const EXT2_FEATURE_RO_COMPAT_SPARSE_SUPER = 1;
         const EXT2_FEATURE_RO_COMPAT_LARGE_FILE = 1 << 1;
         const EXT2_FEATURE_RO_COMPAT_BTREE_DIR = 1 << 2;
@@ -136,7 +137,7 @@ bitflags! {
 }
 
 bitflags! {
-    pub struct AlgoBitmap: u32 {
+    pub(crate) struct AlgoBitmap: u32 {
         const EXT2_LZV1_ALG = 1;
         const EXT2_LZRW3A_ALG = 1 << 1;
         const EXT2_GZIP_ALG = 1 << 2;
@@ -147,30 +148,34 @@ bitflags! {
 
 #[derive(Clone, Copy, Debug)]
 #[repr(C)]
-pub struct BlockGroupDesc {
-    pub bg_block_bitmap: u32,
-    pub bg_inode_bitmap: u32,
-    pub bg_inode_table: u32,
-    pub bg_free_blocks_count: u16,
-    pub bg_free_inodes_count: u16,
-    pub bg_used_dirs_count: u16,
+pub(crate) struct BlockGroupDesc {
+    pub(crate) bg_block_bitmap: u32,
+    pub(crate) bg_inode_bitmap: u32,
+    pub(crate) bg_inode_table: u32,
+    pub(crate) bg_free_blocks_count: u16,
+    pub(crate) bg_free_inodes_count: u16,
+    pub(crate) bg_used_dirs_count: u16,
     bg_pad: u16,
     bg_reserved: [u8; 12],
 }
 
 #[derive(Clone, Copy)]
 #[repr(C)]
+/// Ext2 disk inode
 pub struct DiskInode {
+    /// acl mode and type
     pub i_mode: u16,
+    /// user id
     pub i_uid: u16,
+    /// true size
     pub i_size: u32,
-    pub i_atime: u32,
-    pub i_ctime: u32,
-    pub i_mtime: u32,
-    pub i_dtime: u32,
-    pub i_gid: u16,
-    pub i_links_count: u16,
-    // the total number of 512-bytes blocks
+    pub(crate) i_atime: u32,
+    pub(crate) i_ctime: u32,
+    pub(crate) i_mtime: u32,
+    pub(crate) i_dtime: u32,
+    pub(crate) i_gid: u16,
+    pub(crate) i_links_count: u16,
+    /// the total number of 512-bytes blocks
     pub i_blocks: u32,
     i_flags: u32,
     i_osd1: u32,
@@ -198,48 +203,72 @@ const EXT2_BOOT_LOADER_INO: u32 = 5;
 const EXT2_UNDEL_DIR_INO: u32 = 6;
 
 bitflags! {
+    /// acl mode
     pub struct IMODE: u16 {
-        // access control
+        /// OX
         const EXT2_S_IXOTH = 1;
+        /// OW
         const EXT2_S_IWOTH = 1 << 1;
+        /// OR
         const EXT2_S_IROTH = 1 << 2;
+        /// GX
         const EXT2_S_IXGRP = 1 << 3;
+        /// GW
         const EXT2_S_IWGRP = 1 << 4;
+        /// GR
         const EXT2_S_IRGRP = 1 << 5;
+        /// UX
         const EXT2_S_IXUSR = 1 << 6;
+        /// UW
         const EXT2_S_IWUSR = 1 << 7;
+        /// UR
         const EXT2_S_IRUSR = 1 << 8;
         // process
+        /// ISVTX
         const EXT2_S_ISVTX = 1 << 9;
+        /// ISGID
         const EXT2_S_ISGID = 1 << 10;
+        /// ISUID
         const EXT2_S_ISUID = 1 << 11;
     }
 }
 
+/// Default acl mode: rwxrw-rw-
 pub const DEFAULT_IMODE: IMODE = IMODE::from_bits_truncate(0o755); // rwxrw-rw-
 
 // IMODE -> file format
+/// FIFO
 pub const EXT2_S_IFIFO: u16 = 0x1000;
+/// Char device
 pub const EXT2_S_IFCHR: u16 = 0x2000;
+/// Directory
 pub const EXT2_S_IFDIR: u16 = 0x4000;
+/// Block device
 pub const EXT2_S_IFBLK: u16 = 0x6000;
+/// Regular file
 pub const EXT2_S_IFREG: u16 = 0x8000;
+/// Symbolic link
 pub const EXT2_S_IFLNK: u16 = 0xA000;
+/// Socket
 pub const EXT2_S_IFSOCK: u16 = 0xC000;
 
 // DirEntry -> file code
+/// Unknown file
 pub const EXT2_FT_UNKNOWN: u8 = 0;
+/// Regular file
 pub const EXT2_FT_REG_FILE: u8 = 1;
+/// Directory
 pub const EXT2_FT_DIR: u8 = 2;
 const EXT2_FT_CHRDEV: u8 = 3;
 const EXT2_FT_BLKDEV: u8 = 4;
 const EXT2_FT_FIFO: u8 = 5;
 const EXT2_FT_SOCK: u8 = 6;
+/// Symbolic link
 pub const EXT2_FT_SYMLINK: u8 = 7;
 
 #[derive(Clone, Copy)]
 #[repr(C)]
-pub struct LinuxOSD {
+pub(crate) struct LinuxOSD {
     l_i_frag: u8,
     l_i_fsize: u8,
     reserved: [u8; 2],
@@ -261,20 +290,22 @@ impl LinuxOSD {
     }
 }
 
-pub const MAX_NAME_LEN: usize = 255;
+pub(crate) const MAX_NAME_LEN: usize = 255;
 
 #[derive(Clone, Copy)]
 #[repr(C)]
+/// Ext2 DirEntryHead
 pub struct DirEntryHead {
-    pub inode: u32,
-    pub rec_len: u16,
-    pub name_len: u8,
+    pub(crate) inode: u32,
+    pub(crate) rec_len: u16,
+    pub(crate) name_len: u8,
+    /// File type
     pub file_type: u8,
     // name is variable length
 }
 
 impl SuperBlock {
-    pub fn new(
+    pub(crate) fn new(
         inodes_count: usize,
         blocks_count: usize,
         free_inodes_count: usize,
@@ -336,10 +367,11 @@ impl SuperBlock {
         sb
     }
 
-    pub fn empty() -> Self {
+    pub(crate) fn empty() -> Self {
         Self::new(0, 0, 0, 0, 0, "Null")
     }
 
+    /// Check if it is a valid super block
     pub fn check_valid(&self) {
         assert_eq!(self.s_magic, SB_MAGIC, "Bad magic num");
         assert!(
@@ -388,7 +420,7 @@ impl Debug for SuperBlock {
 }
 
 impl BlockGroupDesc {
-    pub fn new(
+    pub(crate) fn new(
         block_bitmap: usize,
         inode_bitmap: usize,
         inode_table: usize,
@@ -410,7 +442,7 @@ impl BlockGroupDesc {
 }
 
 impl DiskInode {
-    pub fn new(acl_mode: IMODE, file_type: u16, uid: usize, gid: usize) -> DiskInode {
+    pub(crate) fn new(acl_mode: IMODE, file_type: u16, uid: usize, gid: usize) -> DiskInode {
         DiskInode {
             i_mode: acl_mode.bits() | (file_type & 0xF000),
             i_uid: uid as u16,
@@ -435,15 +467,15 @@ impl DiskInode {
         }
     }
 
-    pub fn acl(&self) -> IMODE {
+    pub(crate) fn acl(&self) -> IMODE {
         IMODE::from_bits_truncate(self.i_mode)
     }
 
-    pub fn file_type(&self) -> u16 {
+    pub(crate) fn file_type(&self) -> u16 {
         self.i_mode & 0xf000
     }
 
-    pub fn _file_code(file_type: u16) -> u8 {
+    pub(crate) fn _file_code(file_type: u16) -> u8 {
         match file_type {
             EXT2_S_IFSOCK => EXT2_FT_SOCK,
             EXT2_S_IFLNK => EXT2_FT_SYMLINK,
@@ -456,10 +488,11 @@ impl DiskInode {
         }
     }
 
-    pub fn file_code(&self) -> u8 {
+    pub(crate) fn file_code(&self) -> u8 {
         Self::_file_code(self.file_type())
     }
 
+    /// map file code
     pub fn _file_code_to_disk(code: u8) -> u16 {
         match code {
             EXT2_FT_SOCK => EXT2_S_IFSOCK,
@@ -473,15 +506,15 @@ impl DiskInode {
         }
     }
 
-    pub fn is_file(&self) -> bool {
+    pub(crate) fn is_file(&self) -> bool {
         self.file_type() == EXT2_S_IFREG
     }
 
-    pub fn is_dir(&self) -> bool {
+    pub(crate) fn is_dir(&self) -> bool {
         self.file_type() == EXT2_S_IFDIR
     }
 
-    pub fn data_blocks(&self) -> u32 {
+    pub(crate) fn data_blocks(&self) -> u32 {
         self.i_blocks * 512 / BLOCK_SIZE as u32
     }
 
@@ -490,7 +523,7 @@ impl DiskInode {
     }
 
     /// Return number of blocks needed include indirect1/2.
-    pub fn total_blocks(size: u32) -> u32 {
+    pub(crate) fn total_blocks(size: u32) -> u32 {
         let data_blocks = Self::_data_blocks(size) as usize;
         let mut total = data_blocks;
         // indirect1
@@ -507,7 +540,7 @@ impl DiskInode {
     }
 
     /// Get the number of data blocks that have to be allocated given the new size of data
-    pub fn blocks_num_needed(&self, new_size: u32) -> u32 {
+    pub(crate) fn blocks_num_needed(&self, new_size: u32) -> u32 {
         let allocated_size = 512 * self.i_blocks;
         if new_size <= allocated_size {
             return 0;
@@ -522,7 +555,7 @@ impl DiskInode {
     }
 
     /// Get id of block given inner id
-    pub fn get_block_id(&self, inner_id: u32, manager: &SpinMutex<BlockCacheManager>) -> u32 {
+    pub(crate) fn get_block_id(&self, inner_id: u32, manager: &SpinMutex<BlockCacheManager>) -> u32 {
         debug!("get block id of index {}", inner_id);
         let inner_id = inner_id as usize;
         if inner_id < DIRECT_BLOCK_NUM {
@@ -566,7 +599,7 @@ impl DiskInode {
     }
 
     /// Inncrease the size of current disk inode
-    pub fn increase_size(
+    pub(crate) fn increase_size(
         &mut self,
         new_size: u32,
         new_blocks: Vec<u32>,
@@ -682,12 +715,12 @@ impl DiskInode {
 
     /// Clear size to zero and return blocks that should be deallocated.
     /// We will clear the block contents to zero later.
-    pub fn clear_size(&mut self, manager: &SpinMutex<BlockCacheManager>) -> Vec<u32> {
+    pub(crate) fn clear_size(&mut self, manager: &SpinMutex<BlockCacheManager>) -> Vec<u32> {
         self.decrease_size(0, manager)
     }
 
     /// Get all data blocks of current inode
-    pub fn all_data_blocks(
+    pub(crate) fn all_data_blocks(
         &self,
         manager: &SpinMutex<BlockCacheManager>,
         include_index: bool,
@@ -771,7 +804,7 @@ impl DiskInode {
     }
 
     /// Decrease size
-    pub fn decrease_size(
+    pub(crate) fn decrease_size(
         &mut self,
         new_size: u32,
         manager: &SpinMutex<BlockCacheManager>,
@@ -794,7 +827,7 @@ impl DiskInode {
     }
 
     /// Read data from current disk inode
-    pub fn read_at(
+    pub(crate) fn read_at(
         &self,
         offset: usize,
         buf: &mut [u8],
@@ -838,7 +871,7 @@ impl DiskInode {
     }
     /// Write data into current disk inode
     /// size must be adjusted properly beforehand
-    pub fn write_at(
+    pub(crate) fn write_at(
         &mut self,
         offset: usize,
         buf: &[u8],
@@ -882,7 +915,7 @@ impl DiskInode {
 }
 
 impl DirEntryHead {
-    pub fn create(inode: usize, name: &str, file_type: u8) -> DirEntryHead {
+    pub(crate) fn create(inode: usize, name: &str, file_type: u8) -> DirEntryHead {
         let name_len = name.as_bytes().len().min(MAX_NAME_LEN);
         let rec_len = size_of::<DirEntryHead>() + name_len;
 
@@ -894,7 +927,7 @@ impl DirEntryHead {
         }
     }
 
-    pub fn empty() -> Self {
+    pub(crate) fn empty() -> Self {
         DirEntryHead {
             inode: 0,
             rec_len: 0,
@@ -904,7 +937,7 @@ impl DirEntryHead {
     }
 
     /// Serialize into bytes
-    pub fn as_bytes(&self) -> &[u8] {
+    pub(crate) fn as_bytes(&self) -> &[u8] {
         unsafe {
             core::slice::from_raw_parts(
                 self as *const _ as usize as *const u8,
@@ -913,7 +946,7 @@ impl DirEntryHead {
         }
     }
     /// Serialize into mutable bytes
-    pub fn as_bytes_mut(&mut self) -> &mut [u8] {
+    pub(crate) fn as_bytes_mut(&mut self) -> &mut [u8] {
         unsafe {
             core::slice::from_raw_parts_mut(
                 self as *mut _ as usize as *mut u8,

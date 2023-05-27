@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+#![allow(missing_docs)]
 
 use core::{
     cell::UnsafeCell,
@@ -16,7 +17,7 @@ pub struct SpinMutex<T: ?Sized, S: MutexSupport> {
     _not_send_sync: PhantomData<*const ()>,
     data: UnsafeCell<T>, // actual data
 }
-
+/// SpinMutexGuard
 pub struct SpinMutexGuard<'a, T: ?Sized, S: MutexSupport> {
     mutex: &'a SpinMutex<T, S>,
     support_guard: S::GuardData,
@@ -26,6 +27,7 @@ unsafe impl<T: ?Sized + Send, S: MutexSupport> Sync for SpinMutex<T, S> {}
 unsafe impl<T: ?Sized + Send, S: MutexSupport> Send for SpinMutex<T, S> {}
 
 impl<T, S: MutexSupport> SpinMutex<T, S> {
+    /// new
     pub const fn new(user_data: T) -> Self {
         SpinMutex {
             lock: AtomicBool::new(false),
@@ -45,6 +47,7 @@ impl<T, S: MutexSupport> SpinMutex<T, S> {
 }
 
 impl<T: ?Sized, S: MutexSupport> SpinMutex<T, S> {
+    /// get_mut
     #[inline(always)]
     pub fn get_mut(&mut self) -> &mut T {
         self.data.get_mut()
@@ -76,6 +79,7 @@ impl<T: ?Sized, S: MutexSupport> SpinMutex<T, S> {
             }
         }
     }
+    /// lock
     #[inline(always)]
     pub fn lock(&self) -> impl DerefMut<Target = T> + '_ {
         let support_guard = S::before_lock();

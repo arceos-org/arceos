@@ -1,8 +1,12 @@
+#![allow(missing_docs)]
+/// read/write spin mutex
 pub mod rw_spin_mutex;
+/// spin mutext
 pub mod spin_mutex;
 
 /// Low-level support for mutex
 pub trait MutexSupport {
+    /// GuardData
     type GuardData;
     /// Called before lock() & try_lock()
     fn before_lock() -> Self::GuardData;
@@ -24,6 +28,7 @@ impl MutexSupport for Spin {
     fn after_unlock(_: &mut Self::GuardData) {}
 }
 
+/// seq_fence
 #[allow(dead_code)]
 #[inline(always)]
 pub fn seq_fence() {

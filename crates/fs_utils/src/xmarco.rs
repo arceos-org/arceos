@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+/// Get offset
 #[macro_export]
 macro_rules! offset_of {
     ($ty:ty, $field:ident) => {

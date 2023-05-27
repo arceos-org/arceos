@@ -18,13 +18,14 @@ use alloc::vec::Vec;
 use axfs_vfs::path::split_path;
 
 #[derive(Clone)]
+/// Ext2 filesystem vfs inode
 pub struct Inode {
     file_type: u8,
     inner: Arc<SpinMutex<InodeCache>>,
 }
 
 impl Inode {
-    pub fn new(inner: Arc<SpinMutex<InodeCache>>) -> Inode {
+    pub(crate) fn new(inner: Arc<SpinMutex<InodeCache>>) -> Inode {
         let file_type = inner.lock().file_type();
         Self { file_type, inner }
     }
@@ -39,47 +40,57 @@ impl Inode {
 
     // common operations
 
+    /// flush filesystem
     pub fn flush(&self) -> Ext2Result {
         self.access()?.lock().flush();
         Ok(())
     }
 
+    /// Get file type
     pub fn file_type(&self) -> u8 {
         self.file_type
     }
 
+    /// Is a dir
     pub fn is_dir(&self) -> bool {
         self.file_type == EXT2_FT_DIR
     }
 
+    /// Is a file
     pub fn is_file(&self) -> bool {
         self.file_type == EXT2_FT_REG_FILE
     }
 
+    /// Is a symbolic link
     pub fn is_symlink(&self) -> bool {
         self.file_type == EXT2_FT_SYMLINK
     }
 
+    /// Get inode id
     pub fn inode_id(&self) -> Ext2Result<usize> {
         Ok(self.access()?.lock().inode_id)
     }
 
+    /// chown
     pub fn chown(&self, uid: Option<usize>, gid: Option<usize>) -> Ext2Result {
         self.access()?.lock().chown(uid, gid);
         Ok(())
     }
 
+    /// chmod
     pub fn chmod(&self, access: IMODE) -> Ext2Result {
         self.access()?.lock().chmod(access);
         Ok(())
     }
 
+    /// Get disk inode
     pub fn disk_inode(&self) -> Ext2Result<DiskInode> {
         Ok(self.access()?.lock().disk_inode())
     }
 
     // symbolic link operation
 
+    /// Get the path name of a symbolic link
     pub fn path_name(&self) -> Ext2Result<String> {
         let lk = self.access()?.lock();
         if self.file_type != EXT2_FT_SYMLINK {
@@ -93,10 +104,12 @@ impl Inode {
 
     // file operation
 
+    /// Change file size
     pub fn ftruncate(&self, new_size: usize) -> Ext2Result {
         self.access()?.lock().ftruncate(new_size as _)
     }
 
+    /// Read file
     pub fn read_at(&self, offset: usize, buf: &mut [u8]) -> Ext2Result<usize> {
         let lk = self.access()?.lock();
         if self.file_type != EXT2_FT_REG_FILE {
@@ -106,6 +119,7 @@ impl Inode {
         }
     }
 
+    /// Write file
     pub fn write_at(&self, offset: usize, buf: &[u8]) -> Ext2Result<usize> {
         let mut lk = self.access()?.lock();
         if self.file_type != EXT2_FT_REG_FILE {
@@ -115,6 +129,7 @@ impl Inode {
         }
     }
 
+    /// Append data
     pub fn append(&self, buf: &[u8]) -> Ext2Result<usize> {
         let mut lk = self.access()?.lock();
         if self.file_type != EXT2_FT_REG_FILE {
@@ -126,6 +141,7 @@ impl Inode {
 
     // dir operation
 
+    /// Lookup the parent of `path`, and return the rest path.
     pub fn lookup_parent(&self, path: &str) -> Ext2Result<(Self, String)> {
         let mut cur = self.clone();
         let names = split_path(path);
@@ -145,59 +161,71 @@ impl Inode {
         panic!("ext2 lookup");
     }
 
+    /// Lookup a dir
     pub fn find(&self, name: &str) -> Ext2Result<Self> {
         let lk = self.access()?.lock();
         lk.find(name).map(Self::new)
     }
 
+    /// Create a dir
     pub fn create_dir(&self, name: &str) -> Ext2Result<Self> {
         self.create(name, EXT2_S_IFDIR | DEFAULT_IMODE.bits())
     }
 
+    /// Create a file
     pub fn create_file(&self, name: &str) -> Ext2Result<Self> {
         self.create(name, EXT2_S_IFREG | DEFAULT_IMODE.bits())
     }
 
+    /// Create a file/dir
     pub fn create(&self, name: &str, file_type: u16) -> Ext2Result<Self> {
         let mut lk = self.access()?.lock();
         lk.create(name, file_type).map(Self::new)
     }
 
+    /// List die
     pub fn ls(&self) -> Ext2Result<Vec<String>> {
         let lk = self.access()?.lock();
         lk.ls()
     }
 
+    /// Read dir
     pub fn read_dir(&self) -> Ext2Result<Vec<(String, DirEntryHead)>> {
         let lk = self.access()?.lock();
         lk.ls_direntry()
     }
 
+    /// Check if it is an empty dir
     pub fn is_empty_dir(&self) -> Ext2Result<bool> {
         let lk = self.access()?.lock();
         lk.is_empty_dir()
     }
 
+    /// Hard link
     pub fn link(&self, name: &str, inode_id: usize) -> Ext2Result {
         let mut lk = self.access()?.lock();
         lk.link(name, inode_id)
     }
 
+    /// Symbolic link
     pub fn symlink(&self, name: &str, path_name: &str) -> Ext2Result {
         let mut lk = self.access()?.lock();
         lk.symlink(name, path_name)
     }
 
+    /// Remove a file
     pub fn rm_file(&self, file_name: &str) -> Ext2Result {
         let mut lk = self.access()?.lock();
         lk.unlink(file_name, EXT2_FT_REG_FILE, false)
     }
 
+    /// Remove a directory
     pub fn rm_dir(&self, dir_name: &str, recursive: bool) -> Ext2Result {
         let mut lk = self.access()?.lock();
         lk.unlink(dir_name, EXT2_FT_DIR, recursive)
     }
 
+    /// Remove a symbolic link
     pub fn rm_symlink(&self, dir_name: &str) -> Ext2Result {
         let mut lk = self.access()?.lock();
         lk.unlink(dir_name, EXT2_FT_SYMLINK, false)
@@ -219,7 +247,7 @@ pub struct InodeCache {
 }
 
 impl InodeCache {
-    pub fn new(
+    pub(crate) fn new(
         inode_id: usize,
         block_id: usize,
         block_offset: usize,
@@ -258,7 +286,7 @@ impl InodeCache {
         ret
     }
 
-    pub fn read_cache(&mut self) {
+    pub(crate) fn read_cache(&mut self) {
         let mut file_type: u8 = 0;
         let mut file_size: usize = 0;
         let mut blocks: Vec<u32> = Vec::new();
@@ -274,15 +302,15 @@ impl InodeCache {
         self.blocks = blocks;
     }
 
-    pub fn flush(&self) {
+    pub(crate) fn flush(&self) {
         self.get_fs().close()
     }
 
-    pub fn file_type(&self) -> u8 {
+    pub(crate) fn file_type(&self) -> u8 {
         self.file_type
     }
 
-    pub fn disk_inode(&self) -> DiskInode {
+    pub(crate) fn disk_inode(&self) -> DiskInode {
         self.read_disk_inode(|disk_inode| *disk_inode)
     }
 
@@ -338,7 +366,7 @@ impl InodeCache {
         self.read_disk_inode(|disk_inode| self.find_inode_id(name, disk_inode))
     }
 
-    pub fn find(&self, name: &str) -> Ext2Result<Arc<SpinMutex<InodeCache>>> {
+    pub(crate) fn find(&self, name: &str) -> Ext2Result<Arc<SpinMutex<InodeCache>>> {
         if let Some(de) = self.get_inode_id(name).map(|(de, _, _)| de) {
             Ok(Ext2FileSystem::get_inode_cache(&self.get_fs(), de.inode as _).unwrap())
         } else {
@@ -346,7 +374,7 @@ impl InodeCache {
         }
     }
 
-    pub fn create(
+    pub(crate) fn create(
         &mut self,
         name: &str,
         mut file_type: u16,
@@ -403,7 +431,7 @@ impl InodeCache {
     }
 
     /// can only link to file
-    pub fn link(&mut self, name: &str, inode_id: usize) -> Ext2Result {
+    pub(crate) fn link(&mut self, name: &str, inode_id: usize) -> Ext2Result {
         if self.file_type() != EXT2_FT_DIR {
             return Err(Ext2Error::NotADir);
         }
@@ -436,7 +464,7 @@ impl InodeCache {
         }
     }
 
-    pub fn symlink(&mut self, name: &str, path_name: &str) -> Ext2Result {
+    pub(crate) fn symlink(&mut self, name: &str, path_name: &str) -> Ext2Result {
         if self.file_type() != EXT2_FT_DIR {
             return Err(Ext2Error::NotADir);
         }
@@ -491,7 +519,7 @@ impl InodeCache {
         Ok(dir_entries)
     }
 
-    pub fn ls(&self) -> Ext2Result<Vec<String>> {
+    pub(crate) fn ls(&self) -> Ext2Result<Vec<String>> {
         if self.file_type() != EXT2_FT_DIR {
             return Err(Ext2Error::NotADir);
         }
@@ -499,7 +527,7 @@ impl InodeCache {
         dir_entries.map(|inner| inner.into_iter().map(|(name, _)| name).collect())
     }
 
-    pub fn ls_direntry(&self) -> Ext2Result<Vec<(String, DirEntryHead)>> {
+    pub(crate) fn ls_direntry(&self) -> Ext2Result<Vec<(String, DirEntryHead)>> {
         if self.file_type() != EXT2_FT_DIR {
             return Err(Ext2Error::NotADir);
         }
@@ -535,7 +563,7 @@ impl InodeCache {
         Ok(true)
     }
 
-    pub fn is_empty_dir(&self) -> Ext2Result<bool> {
+    pub(crate) fn is_empty_dir(&self) -> Ext2Result<bool> {
         if self.file_type() != EXT2_FT_DIR {
             return Err(Ext2Error::NotADir);
         }
@@ -569,7 +597,7 @@ impl InodeCache {
     }
 
     /// unlink recursively
-    pub fn unlink(&mut self, name: &str, expect: u8, recursive: bool) -> Ext2Result {
+    pub(crate) fn unlink(&mut self, name: &str, expect: u8, recursive: bool) -> Ext2Result {
         if self.file_type() != EXT2_FT_DIR {
             return Err(Ext2Error::NotADir);
         }
@@ -626,7 +654,7 @@ impl InodeCache {
     }
 
     // ----- ACL ------
-    pub fn chown(&self, uid: Option<usize>, gid: Option<usize>) {
+    pub(crate) fn chown(&self, uid: Option<usize>, gid: Option<usize>) {
         self.modify_disk_inode(|disk_inode| {
             if let Some(uid) = uid {
                 disk_inode.i_uid = uid as _;
@@ -637,7 +665,7 @@ impl InodeCache {
             disk_inode.i_mtime = self.get_fs().timer.get_current_time();
         })
     }
-    pub fn chmod(&self, access: IMODE) {
+    pub(crate) fn chmod(&self, access: IMODE) {
         self.modify_disk_inode(|disk_inode| {
             disk_inode.i_mode = (disk_inode.i_mode & 0o7000) | access.bits();
             let cur_time = self.get_fs().timer.get_current_time();
@@ -647,7 +675,7 @@ impl InodeCache {
     }
 
     // ----- Basic operation -----
-    pub fn ftruncate(&mut self, new_size: u32) -> Ext2Result {
+    pub(crate) fn ftruncate(&mut self, new_size: u32) -> Ext2Result {
         if self.file_type() != EXT2_FT_REG_FILE {
             return Err(Ext2Error::NotAFile);
         }
@@ -684,7 +712,7 @@ impl InodeCache {
         }
     }
 
-    pub fn increase_nlink(&self, by: usize) {
+    pub(crate) fn increase_nlink(&self, by: usize) {
         self.modify_disk_inode(|disk_inode| {
             disk_inode.i_links_count += by as u16;
         });
@@ -730,7 +758,7 @@ impl InodeCache {
     /// # Safety
     ///
     /// The inodecache should be marked as invalid and removed from cache manager right away
-    pub fn clear(&self) {
+    pub(crate) fn clear(&self) {
         self.modify_disk_inode(|disk_inode| {
             let blocks = disk_inode.i_blocks;
             let data_blocks_dealloc = disk_inode.clear_size(&self.get_fs().manager);
@@ -749,7 +777,7 @@ impl InodeCache {
         });
     }
     /// Read data from current inode
-    pub fn read_at(&self, offset: usize, buf: &mut [u8]) -> usize {
+    pub(crate) fn read_at(&self, offset: usize, buf: &mut [u8]) -> usize {
         self.modify_disk_inode(|disk_inode| {
             let cur_time = self.get_fs().timer.get_current_time();
             disk_inode.i_atime = cur_time;
@@ -757,7 +785,7 @@ impl InodeCache {
         })
     }
     /// Write data to current inode
-    pub fn write_at(&mut self, offset: usize, buf: &[u8]) -> usize {
+    pub(crate) fn write_at(&mut self, offset: usize, buf: &[u8]) -> usize {
         self.cache_increase_size((offset + buf.len()) as _);
         self.modify_disk_inode(|disk_inode| {
             let cur_time = self.get_fs().timer.get_current_time();
@@ -767,7 +795,7 @@ impl InodeCache {
         })
     }
     /// Write data at the end of file
-    pub fn append(&mut self, buf: &[u8]) -> usize {
+    pub(crate) fn append(&mut self, buf: &[u8]) -> usize {
         let origin_size = self.size;
         self.cache_increase_size((origin_size + buf.len()) as _);
         self.modify_disk_inode(|disk_inode| {
@@ -779,7 +807,7 @@ impl InodeCache {
             disk_inode.write_at(origin_size, buf, &self.get_fs().manager, Some(&self.blocks))
         })
     }
-    pub fn append_dir_entry(&mut self, inode: usize, name: &str, file_type: u8) {
+    pub(crate) fn append_dir_entry(&mut self, inode: usize, name: &str, file_type: u8) {
         let dir_entry = DirEntryHead::create(inode, name, file_type);
         self.append(dir_entry.as_bytes());
         let name_len = name.as_bytes().len();

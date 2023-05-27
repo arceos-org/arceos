@@ -73,6 +73,7 @@ macro_rules! impl_vfs_non_dir_default {
     };
 }
 
+/// Ext2 common implementation
 #[macro_export]
 macro_rules! impl_ext2_common {
     () => {
@@ -88,6 +89,7 @@ macro_rules! impl_ext2_common {
     };
 }
 
+/// Ext2 linkable node
 #[macro_export]
 macro_rules! impl_ext2_linkable {
     () => {
