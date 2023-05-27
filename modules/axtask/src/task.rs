@@ -112,6 +112,7 @@ impl TaskInner {
     }
 }
 use spinlock::SpinNoIrq;
+//static LOCK_QWQ2: [SpinNoIrq<usize>; 3] = [SpinNoIrq::new(0), SpinNoIrq::new(0), SpinNoIrq::new(0)];
 static LOCK_QWQ2: SpinNoIrq<usize> = SpinNoIrq::new(0);
 // private methods
 impl TaskInner {
@@ -254,15 +255,17 @@ impl TaskInner {
         let curr = crate::current();
         if curr.need_resched.load(Ordering::Acquire) && curr.can_preempt(0) {
             //let mut rq = crate::RUN_QUEUE.lock();
-                let tat = LOCK_QWQ2.lock();
-                info!("askldjasljd2");
+            //let tat = LOCK_QWQ2.lock();
+                //info!("askldjasljd2");
             if curr.need_resched.load(Ordering::Acquire) {
                 //assert!(self.in_which_queue.load(Ordering::Acquire) >= 0);
                 if curr.in_which_queue.load(Ordering::Acquire) >= 0 {
+                    //info!("qwoepqioepw1");
                     crate::RUN_QUEUE[curr.in_which_queue.load(Ordering::Acquire) as usize].resched();
                     //info!("qwq1 {}", curr.in_which_queue.load(Ordering::Acquire));
                 } else {
                     // qwq???
+                    //info!("qwoepqioepw2");
                     for i in 0..axconfig::SMP {
                         crate::RUN_QUEUE[i].resched();
                     }

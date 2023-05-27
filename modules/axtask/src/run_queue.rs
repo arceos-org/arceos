@@ -85,7 +85,6 @@ impl AxRunQueue {
 
     #[cfg(feature = "preempt")]
     pub fn resched(&self) {
-        //let tmp = LOCK_QWQ.lock();
         let curr = crate::current();
         assert!(curr.is_running());
 
@@ -129,6 +128,7 @@ impl AxRunQueue {
     where
         F: FnOnce(AxTaskRef),
     {
+        info!("qwq 8");
         let tmp = LOCK_QWQ7.lock();
         //info!("block_current 1");
         let curr = crate::current();
