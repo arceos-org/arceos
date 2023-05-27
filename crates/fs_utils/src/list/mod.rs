@@ -1,11 +1,14 @@
 #![allow(unused)]
 use core::ptr::NonNull;
 
+/// access
 pub mod access;
+///instrusive
 pub mod instrusive;
 
 pub use instrusive::InListNode;
 
+/// Linked list node
 pub struct ListNode<T> {
     prev: *mut ListNode<T>,
     next: *mut ListNode<T>,
@@ -16,6 +19,7 @@ unsafe impl<T> Send for ListNode<T> {}
 unsafe impl<T> Sync for ListNode<T> {}
 
 impl<T> ListNode<T> {
+    /// Create a new node
     pub const fn new(data: T) -> Self {
         Self {
             prev: core::ptr::null_mut(),
@@ -24,15 +28,18 @@ impl<T> ListNode<T> {
         }
     }
 
+    /// Init
     pub fn init(&mut self) {
         self.prev = self;
         self.next = self;
     }
 
+    /// Is inited
     pub fn inited(&self) -> bool {
         !self.prev.is_null()
     }
 
+    /// Lazy init
     pub fn lazy_init(&mut self) {
         if !self.inited() {
             debug_assert!(self.next.is_null());
@@ -41,6 +48,7 @@ impl<T> ListNode<T> {
         debug_assert!(!self.next.is_null());
     }
 
+    /// Check valid
     pub fn list_check(&self) {
         if cfg!(debug_assertions) {
             unsafe {
@@ -60,14 +68,17 @@ impl<T> ListNode<T> {
         }
     }
 
+    /// Get data
     pub fn data(&self) -> &T {
         &self.data
     }
 
+    /// Get data mut
     pub fn data_mut(&mut self) -> &mut T {
         &mut self.data
     }
 
+    /// Is the linked list empty
     pub fn is_empty(&self) -> bool {
         debug_assert!(self.inited());
         if self.prev as *const _ == self {
@@ -91,13 +102,16 @@ impl<T> ListNode<T> {
     pub unsafe fn set_next(&mut self, next: *mut Self) {
         self.next = next;
     }
+    /// Get prev
     pub fn get_prev(&self) -> *mut Self {
         self.prev
     }
+    /// Get next
     pub fn get_next(&self) -> *mut Self {
         self.next
     }
 
+    /// Push to prev
     pub fn push_prev(&mut self, new: &mut Self) {
         debug_assert!(self as *mut _ != new as *mut _);
         debug_assert!(new.is_empty());
@@ -108,6 +122,7 @@ impl<T> ListNode<T> {
         self.prev = new;
     }
 
+    /// Push to next
     pub fn push_next(&mut self, new: &mut Self) {
         debug_assert!(self as *mut _ != new as *mut _);
         debug_assert!(new.is_empty());
@@ -119,6 +134,7 @@ impl<T> ListNode<T> {
         self.next = new;
     }
 
+    /// Try to get prev
     pub fn try_prev(&self) -> Option<NonNull<Self>> {
         if self.is_empty() {
             return None;
@@ -126,6 +142,7 @@ impl<T> ListNode<T> {
         NonNull::new(self.prev)
     }
 
+    /// Try to get next
     pub fn try_next(&self) -> Option<NonNull<Self>> {
         if self.is_empty() {
             return None;
@@ -133,6 +150,7 @@ impl<T> ListNode<T> {
         NonNull::new(self.next)
     }
 
+    /// Pop itself
     pub fn pop_self(&mut self) {
         debug_assert!(unsafe { (*self.next).prev == self });
         debug_assert!(unsafe { (*self.prev).next == self });
@@ -145,6 +163,7 @@ impl<T> ListNode<T> {
         self.init();
     }
 
+    /// Pop prev
     pub fn pop_prev(&mut self) -> Option<NonNull<Self>> {
         if self.is_empty() {
             return None;
@@ -161,6 +180,7 @@ impl<T> ListNode<T> {
         NonNull::new(r)
     }
 
+    /// Pop next
     pub fn pop_next(&mut self) -> Option<NonNull<Self>> {
         if self.is_empty() {
             return None;

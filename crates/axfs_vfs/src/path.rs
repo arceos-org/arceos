@@ -52,6 +52,7 @@ pub fn canonicalize(path: &str) -> String {
     buf
 }
 
+/// split path
 pub fn split_path(path: &str) -> Vec<String> {
     let processed_path = canonicalize(path);
     let mut names: Vec<String> = Vec::new();
@@ -62,6 +63,7 @@ pub fn split_path(path: &str) -> Vec<String> {
     names
 }
 
+/// split parent and name
 pub fn split_parent_name(path: &str) -> (Option<String>, String) {
     assert!(!path.is_empty());
     let names = split_path(path);

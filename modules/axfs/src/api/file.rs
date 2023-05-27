@@ -128,6 +128,7 @@ impl File {
         OpenOptions::new().read(true).open(path)
     }
 
+    /// Lookup a path in a no-follow manner
     pub fn lookup(path: &str) -> Result<Self> {
         OpenOptions::new().read(true).lookup(path)
     }

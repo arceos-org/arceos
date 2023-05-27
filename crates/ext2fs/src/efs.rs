@@ -18,6 +18,7 @@ use super::{
 use alloc::{sync::Arc, vec::Vec};
 use spin::Mutex;
 
+/// Manage ext2 filesystem
 pub struct Ext2FileSystem {
     ///Real device
     pub manager: SpinMutex<BlockCacheManager>,
@@ -246,6 +247,7 @@ impl Ext2FileSystem {
         fs
     }
 
+    /// Get root inode
     pub fn root_inode(efs: &Arc<Self>) -> Inode {
         Inode::new(Self::root_inode_cache(efs))
     }
@@ -255,11 +257,11 @@ impl Ext2FileSystem {
         Self::get_inode_cache(efs, EXT2_ROOT_INO).unwrap()
     }
 
-    pub fn get_inode_cache(efs: &Arc<Self>, inode_id: usize) -> Option<Arc<SpinMutex<InodeCache>>> {
+    pub(crate) fn get_inode_cache(efs: &Arc<Self>, inode_id: usize) -> Option<Arc<SpinMutex<InodeCache>>> {
         efs.inode_manager.lock().get_or_insert(inode_id, efs)
     }
 
-    pub fn create_inode_cache(efs: &Arc<Self>, inode_id: usize) -> Option<InodeCache> {
+    pub(crate) fn create_inode_cache(efs: &Arc<Self>, inode_id: usize) -> Option<InodeCache> {
         if inode_id == 0 || !efs.inode_exists(inode_id as _) {
             None
         } else {
@@ -274,7 +276,7 @@ impl Ext2FileSystem {
     }
 
     /// Get inode block_id and offset from inode_id
-    pub fn get_disk_inode_pos(&self, mut inode_id: u32) -> (u32, usize) {
+    pub(crate) fn get_disk_inode_pos(&self, mut inode_id: u32) -> (u32, usize) {
         self.inner.lock().get_disk_inode_pos(inode_id)
     }
 
@@ -289,7 +291,7 @@ impl Ext2FileSystem {
     // }
 
     /// Allocate inode (will modify meta data)
-    pub fn alloc_inode(&self) -> Option<u32> {
+    pub(crate) fn alloc_inode(&self) -> Option<u32> {
         let mut inner = self.inner.lock();
         for group_id in 0..inner.group_desc_table.len() {
             if let Some(inode_id) = inner.get_inode_bitmap(group_id).alloc(&self.manager) {
@@ -302,7 +304,7 @@ impl Ext2FileSystem {
     }
 
     /// Allocate data block (will modify meta data)
-    pub fn alloc_data(&self) -> Option<u32> {
+    pub(crate) fn alloc_data(&self) -> Option<u32> {
         let mut inner = self.inner.lock();
         for group_id in 0..inner.group_desc_table.len() {
             if let Some(block_id) = inner.get_data_bitmap(group_id).alloc(&self.manager) {
@@ -315,7 +317,7 @@ impl Ext2FileSystem {
     }
 
     /// Batch allocate data
-    pub fn batch_alloc_data(&self, block_num: usize) -> Vec<u32> {
+    pub(crate) fn batch_alloc_data(&self, block_num: usize) -> Vec<u32> {
         let mut inner = self.inner.lock();
         let mut allocated_blocks: Vec<u32> = Vec::new();
         for _ in 0..block_num {
@@ -342,7 +344,7 @@ impl Ext2FileSystem {
     }
 
     /// Test whether an inode exists
-    pub fn inode_exists(&self, inode_id: u32) -> bool {
+    pub(crate) fn inode_exists(&self, inode_id: u32) -> bool {
         assert!(inode_id != 0);
         let mut inner = self.inner.lock();
         let group_id = (inode_id as usize - 1) / INODES_PER_GRP;
@@ -352,7 +354,7 @@ impl Ext2FileSystem {
     }
 
     /// Dealloc inode (will modify meta data)
-    pub fn dealloc_inode(&self, inode_id: u32) {
+    pub(crate) fn dealloc_inode(&self, inode_id: u32) {
         assert!(inode_id != 0);
         let mut inner = self.inner.lock();
         let group_id = (inode_id as usize - 1) / INODES_PER_GRP;
@@ -365,7 +367,7 @@ impl Ext2FileSystem {
     }
 
     /// Dealloc inode (will modify meta data)
-    pub fn dealloc_block(&self, block_id: u32) {
+    pub(crate) fn dealloc_block(&self, block_id: u32) {
         let target_block = self.manager.lock().get_block_cache(block_id as _);
         target_block.lock().modify(0, |data_block: &mut DataBlock| {
             data_block.iter_mut().for_each(|p| {
@@ -382,7 +384,7 @@ impl Ext2FileSystem {
         inner.group_desc_table[group_id].bg_free_blocks_count += 1;
     }
 
-    pub fn batch_dealloc_block(&self, blocks: &Vec<u32>) {
+    pub(crate) fn batch_dealloc_block(&self, blocks: &Vec<u32>) {
         let mut inner = self.inner.lock();
         for block_id in blocks {
             let target_block = self.manager.lock().get_block_cache(*block_id as _);
@@ -402,7 +404,7 @@ impl Ext2FileSystem {
     }
 
     /// Write super block to disk
-    pub fn write_super_block(&self) {
+    pub(crate) fn write_super_block(&self) {
         self.inner.lock().write_super_block(&self.manager);
     }
 
@@ -425,12 +427,13 @@ impl Ext2FileSystem {
     // }
 
     /// Write all meta data to disk
-    pub fn write_meta(&self) {
+    pub(crate) fn write_meta(&self) {
         self.inner.lock().write_meta(&self.manager);
     }
 }
 
 impl Ext2FileSystem {
+    /// Close file system
     pub fn close(&self) {
         debug!("close ext2fs");
         self.write_meta();
@@ -446,13 +449,13 @@ impl Drop for Ext2FileSystem {
 
 struct Ext2FileSystemInner {
     /// Super block cache
-    pub super_block: SuperBlock,
+    pub(crate) super_block: SuperBlock,
     /// Group description
-    pub group_desc_table: Vec<BlockGroupDesc>,
+    pub(crate) group_desc_table: Vec<BlockGroupDesc>,
 }
 
 impl Ext2FileSystemInner {
-    pub fn new(sb: SuperBlock, gdt: Vec<BlockGroupDesc>) -> Self {
+    pub(crate) fn new(sb: SuperBlock, gdt: Vec<BlockGroupDesc>) -> Self {
         Self {
             super_block: sb,
             group_desc_table: gdt,
@@ -460,7 +463,7 @@ impl Ext2FileSystemInner {
     }
 
     /// Get inode block_id and offset from inode_id
-    pub fn get_disk_inode_pos(&self, mut inode_id: u32) -> (u32, usize) {
+    pub(crate) fn get_disk_inode_pos(&self, mut inode_id: u32) -> (u32, usize) {
         assert!(inode_id != 0); // invalid inode id
         inode_id -= 1;
         let group_id = inode_id / INODES_PER_GRP as u32;
@@ -477,7 +480,7 @@ impl Ext2FileSystemInner {
     }
 
     /// Get inode bitmap for group x
-    pub fn get_inode_bitmap(&self, group_id: usize) -> Bitmap {
+    pub(crate) fn get_inode_bitmap(&self, group_id: usize) -> Bitmap {
         Bitmap::new(
             self.group_desc_table[group_id].bg_inode_bitmap as usize,
             group_id * INODES_PER_GRP + 1,
@@ -485,7 +488,7 @@ impl Ext2FileSystemInner {
     }
 
     /// Get data bitmap for group x
-    pub fn get_data_bitmap(&self, group_id: usize) -> Bitmap {
+    pub(crate) fn get_data_bitmap(&self, group_id: usize) -> Bitmap {
         Bitmap::new(
             self.group_desc_table[group_id].bg_block_bitmap as usize,
             group_id * BLOCKS_PER_GRP,
@@ -493,7 +496,7 @@ impl Ext2FileSystemInner {
     }
 
     /// Write super block to disk
-    pub fn write_super_block(&self, manager: &SpinMutex<BlockCacheManager>) {
+    pub(crate) fn write_super_block(&self, manager: &SpinMutex<BlockCacheManager>) {
         let offset = if self.super_block.s_first_data_block == 0 {
             1024
         } else {
@@ -511,7 +514,7 @@ impl Ext2FileSystemInner {
     }
 
     /// Write group description of group_id to disk
-    pub fn write_group_desc(&self, group_id: usize, manager: &SpinMutex<BlockCacheManager>) {
+    pub(crate) fn write_group_desc(&self, group_id: usize, manager: &SpinMutex<BlockCacheManager>) {
         let block_id = self.super_block.s_first_data_block as usize
             + 1
             + (group_id * size_of::<BlockGroupDesc>()) / BLOCK_SIZE;
@@ -524,14 +527,14 @@ impl Ext2FileSystemInner {
     }
 
     /// Write all group description to disk
-    pub fn write_all_group_desc(&self, manager: &SpinMutex<BlockCacheManager>) {
+    pub(crate) fn write_all_group_desc(&self, manager: &SpinMutex<BlockCacheManager>) {
         for group_id in 0..self.group_desc_table.len() {
             self.write_group_desc(group_id, manager);
         }
     }
 
     /// Write all meta data to disk
-    pub fn write_meta(&self, manager: &SpinMutex<BlockCacheManager>) {
+    pub(crate) fn write_meta(&self, manager: &SpinMutex<BlockCacheManager>) {
         self.write_super_block(manager);
         self.write_all_group_desc(manager);
     }

@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+#![allow(missing_docs)]
 
 use core::{
     cell::UnsafeCell,
@@ -26,6 +27,7 @@ unsafe impl<T: ?Sized + Send, S: MutexSupport> Sync for RwSpinMutex<T, S> {}
 
 impl<T, S: MutexSupport> RwSpinMutex<T, S> {
     #[inline(always)]
+    /// Create
     pub const fn new(user_data: T) -> Self {
         RwSpinMutex {
             lock: AtomicIsize::new(0),
@@ -46,6 +48,7 @@ impl<T, S: MutexSupport> RwSpinMutex<T, S> {
 
 impl<T: ?Sized, S: MutexSupport> RwSpinMutex<T, S> {
     #[inline(always)]
+    /// Get mut
     pub fn get_mut(&mut self) -> &mut T {
         self.data.get_mut()
     }
@@ -53,7 +56,7 @@ impl<T: ?Sized, S: MutexSupport> RwSpinMutex<T, S> {
     ///
     /// 自行保证数据访问的安全
     #[inline(always)]
-    pub unsafe fn unsafe_get(&self) -> &T {
+    pub(crate) unsafe fn unsafe_get(&self) -> &T {
         &*self.data.get()
     }
     /// # Safety
@@ -61,9 +64,10 @@ impl<T: ?Sized, S: MutexSupport> RwSpinMutex<T, S> {
     /// 自行保证数据访问的安全
     #[allow(clippy::mut_from_ref)]
     #[inline(always)]
-    pub unsafe fn unsafe_get_mut(&self) -> &mut T {
+    pub(crate) unsafe fn unsafe_get_mut(&self) -> &mut T {
         &mut *self.data.get()
     }
+    /// Try to unique lock
     #[inline(always)]
     pub fn try_unique_lock(&self) -> Option<impl DerefMut<Target = T> + '_> {
         let mut guard = S::before_lock();
@@ -85,6 +89,7 @@ impl<T: ?Sized, S: MutexSupport> RwSpinMutex<T, S> {
             }
         }
     }
+    /// Lock
     #[inline(always)]
     pub fn unique_lock(&self) -> impl DerefMut<Target = T> + '_ {
         let guard = S::before_lock();
@@ -111,6 +116,7 @@ impl<T: ?Sized, S: MutexSupport> RwSpinMutex<T, S> {
             };
         }
     }
+    /// Try to shared lock
     #[inline(always)]
     pub fn try_shared_lock(&self) -> Option<impl Deref<Target = T> + '_> {
         let mut guard = S::before_lock();
@@ -133,6 +139,7 @@ impl<T: ?Sized, S: MutexSupport> RwSpinMutex<T, S> {
         S::after_unlock(&mut guard);
         None
     }
+    /// shared lock
     #[inline(always)]
     pub fn shared_lock(&self) -> impl Deref<Target = T> + '_ {
         let guard = S::before_lock();

@@ -21,6 +21,7 @@ impl Disk {
     }
 
     #[allow(dead_code)]
+    /// Get block size
     pub fn true_block_size(&self) -> usize {
         BLOCK_SIZE
     }

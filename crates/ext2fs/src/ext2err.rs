@@ -1,4 +1,5 @@
 #[derive(Debug)]
+/// Ext2Error
 pub enum Ext2Error {
     /// A directory entry already exists
     AlreadyExists,
@@ -30,4 +31,5 @@ pub enum Ext2Error {
     InvalidName,
 }
 
+/// Ext2Result
 pub type Ext2Result<T = ()> = Result<T, Ext2Error>;

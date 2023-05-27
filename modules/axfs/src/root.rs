@@ -487,6 +487,7 @@ fn _lookup_symbolic(
     panic!("_lookup_symbolic");
 }
 
+/// Close filesystem, should be called when shutting down.
 pub fn close_main_fs() {
     debug!("close main fs");
     ROOT_DIR.close()

@@ -73,7 +73,9 @@ pub struct VfsDirEntry {
 
 /// Used for hard link
 pub struct LinkHandle {
+    /// inode id
     pub inode_id: usize,
+    /// ptr to fssp
     pub fssp_ptr: usize,
 }
 

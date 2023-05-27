@@ -1,3 +1,5 @@
+//! An ext2 file system implementation
+
 #![no_std]
 #![feature(allocator_api)]
 #![feature(new_uninit)]
@@ -7,10 +9,13 @@ mod block_cache_manager;
 mod block_dev;
 mod config;
 mod efs;
+/// Ext2 error
 pub mod ext2err;
 mod inode_manager;
+/// Ext2 layout
 pub mod layout;
 mod mutex;
+/// Timer
 pub mod timer;
 mod vfs;
 

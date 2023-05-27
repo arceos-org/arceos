@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 use super::access::ListAccess;
 use super::ListNode;
 use core::{marker::PhantomData, ptr::NonNull};
@@ -61,15 +62,19 @@ impl<T, A> InListNode<T, A> {
     pub fn try_prev(&self) -> Option<NonNull<Self>> {
         unsafe { core::mem::transmute(self.node.try_prev()) }
     }
+    /// try_next
     pub fn try_next(&self) -> Option<NonNull<Self>> {
         unsafe { core::mem::transmute(self.node.try_next()) }
     }
+    /// pop_self
     pub fn pop_self(&mut self) {
         self.node.pop_self()
     }
+    /// pop_prev
     pub fn pop_prev(&mut self) -> Option<NonNull<Self>> {
         unsafe { core::mem::transmute(self.node.pop_prev()) }
     }
+    /// pop_next
     pub fn pop_next(&mut self) -> Option<NonNull<Self>> {
         unsafe { core::mem::transmute(self.node.pop_next()) }
     }
@@ -119,6 +124,7 @@ impl<T, A: ListAccess<T, Self>> InListNode<T, A> {
 }
 
 impl<T: 'static, A: ListAccess<T, Self>> InListNode<T, A> {
+    /// next_iter
     pub fn next_iter(&self) -> impl Iterator<Item = &'static T> {
         struct Iter<T, A> {
             cur: *const ListNode<PhantomData<(T, A)>>,
@@ -146,6 +152,7 @@ impl<T: 'static, A: ListAccess<T, Self>> InListNode<T, A> {
             offset: A::offset(),
         }
     }
+    /// next_iter_mut
     pub fn next_iter_mut(&mut self) -> impl Iterator<Item = &'static mut T> {
         struct Iter<T, A> {
             cur: *mut ListNode<PhantomData<(T, A)>>,
