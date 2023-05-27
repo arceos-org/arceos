@@ -19,7 +19,7 @@ pub fn yield_now() {
 /// it directly terminates the main thread and shutdown.
 pub fn exit(exit_code: i32) -> ! {
     axlog::debug!("main task exited: exit_code={}", exit_code);
-    axruntime::runtime_close();
+    // axruntime::runtime_close();
     axhal::misc::terminate()
 }
 
