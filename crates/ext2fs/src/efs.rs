@@ -141,14 +141,12 @@ impl Ext2FileSystem {
                     + RESERVED_BLOCKS_PER_GRP
                     + 1,
             );
-            if group_id == group_num - 1 {
-                if block_num < (group_id + 1) * BLOCKS_PER_GRP {
-                    inner.get_data_bitmap(group_id).range_alloc(
-                        &fs.manager,
-                        block_num,
-                        (group_id + 1) * BLOCKS_PER_GRP,
-                    );
-                }
+            if group_id == group_num - 1 && block_num < (group_id + 1) * BLOCKS_PER_GRP {
+                inner.get_data_bitmap(group_id).range_alloc(
+                    &fs.manager,
+                    block_num,
+                    (group_id + 1) * BLOCKS_PER_GRP,
+                );
             }
         }
 

@@ -22,12 +22,27 @@ impl InodeCacheManager {
         inode_id: usize,
         fs: &Arc<Ext2FileSystem>,
     ) -> Option<Arc<SpinMutex<InodeCache>>> {
-        if let Some(inode_cache) = self.inodes.get(&inode_id).map(|cache| cache.clone()) {
+        if let Some(inode_cache) = self.inodes.get(&inode_id).cloned() {
             // in cache
             Some(inode_cache)
+        } else if self.inodes.len() < self.max_inode {
+            // insert directly
+            if let Some(cache) = Ext2FileSystem::create_inode_cache(fs, inode_id) {
+                let inode_cache = Arc::new(SpinMutex::new(cache));
+                self.inodes.insert(inode_id, inode_cache.clone());
+                Some(inode_cache)
+            } else {
+                None
+            }
         } else {
-            if self.inodes.len() < self.max_inode {
-                // insert directly
+            // first find an inode_cache to evict
+            if let Some(evict_inode_id) = self
+                .inodes
+                .iter()
+                .find(|(_, cache)| Arc::strong_count(cache) == 1)
+                .map(|(id, _)| *id)
+            {
+                self.inodes.remove(&evict_inode_id);
                 if let Some(cache) = Ext2FileSystem::create_inode_cache(fs, inode_id) {
                     let inode_cache = Arc::new(SpinMutex::new(cache));
                     self.inodes.insert(inode_id, inode_cache.clone());
@@ -36,24 +51,7 @@ impl InodeCacheManager {
                     None
                 }
             } else {
-                // first find an inode_cache to evict
-                if let Some(evict_inode_id) = self
-                    .inodes
-                    .iter()
-                    .find(|(_, cache)| Arc::strong_count(cache) == 1)
-                    .map(|(id, _)| *id)
-                {
-                    self.inodes.remove(&evict_inode_id);
-                    if let Some(cache) = Ext2FileSystem::create_inode_cache(fs, inode_id) {
-                        let inode_cache = Arc::new(SpinMutex::new(cache));
-                        self.inodes.insert(inode_id, inode_cache.clone());
-                        Some(inode_cache)
-                    } else {
-                        None
-                    }
-                } else {
-                    panic!("No free inode");
-                }
+                panic!("No free inode");
             }
         }
     }
