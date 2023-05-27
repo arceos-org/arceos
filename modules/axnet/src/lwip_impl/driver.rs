@@ -4,7 +4,7 @@ use crate::{
     IpAddr,
 };
 use alloc::collections::VecDeque;
-use axdriver::prelude::*;
+use axdriver::{prelude::*, register_interrupt_handler};
 use axsync::Mutex;
 use core::{cell::RefCell, ffi::c_void};
 use driver_net::{DevError, NetBufferBox, NetBufferPool};
@@ -33,14 +33,14 @@ struct DeviceWrapper {
 }
 
 impl DeviceWrapper {
-    pub fn new(inner: AxNetDevice) -> Self {
+    fn new(inner: AxNetDevice) -> Self {
         Self {
             inner: RefCell::new(inner),
             rx_buf_queue: VecDeque::with_capacity(RX_BUF_QUEUE_SIZE),
         }
     }
 
-    pub fn poll(&mut self) {
+    fn poll(&mut self) {
         while self.rx_buf_queue.len() < RX_BUF_QUEUE_SIZE {
             match self.inner.borrow_mut().receive() {
                 Ok(buf) => {
@@ -55,8 +55,13 @@ impl DeviceWrapper {
         }
     }
 
-    pub fn receive(&mut self) -> Option<NetBufferBox<'static>> {
+    fn receive(&mut self) -> Option<NetBufferBox<'static>> {
         self.rx_buf_queue.pop_front()
+    }
+
+    #[cfg(feature = "irq")]
+    fn ack_interrupt(&mut self) -> bool {
+        unsafe { self.inner.as_ptr().as_mut().unwrap().ack_interrupt() }
     }
 }
 
@@ -105,6 +110,11 @@ impl InterfaceWrapper {
                 break;
             }
         }
+    }
+
+    #[cfg(feature = "irq")]
+    pub fn ack_interrupt(&self) {
+        unsafe { &mut *self.dev.as_mut_ptr() }.ack_interrupt();
     }
 }
 
@@ -176,6 +186,11 @@ pub fn init(mut net_dev: AxNetDevice) {
     let pool = NetBufferPool::new(NET_BUF_POOL_SIZE, NET_BUF_LEN).unwrap();
     NET_BUF_POOL.init_by(pool);
     net_dev.fill_rx_buffers(&NET_BUF_POOL).unwrap();
+    #[cfg(feature = "irq")]
+    register_interrupt_handler!(net_dev, {
+        info!("ACK");
+        ETH0.ack_interrupt();
+    });
 
     LWIP_MUTEX.init_by(Mutex::new(()));
     let _guard = LWIP_MUTEX.lock();
