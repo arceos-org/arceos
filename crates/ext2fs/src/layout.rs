@@ -556,7 +556,11 @@ impl DiskInode {
     }
 
     /// Get id of block given inner id
-    pub(crate) fn get_block_id(&self, inner_id: u32, manager: &SpinMutex<BlockCacheManager>) -> u32 {
+    pub(crate) fn get_block_id(
+        &self,
+        inner_id: u32,
+        manager: &SpinMutex<BlockCacheManager>,
+    ) -> u32 {
         debug!("get block id of index {}", inner_id);
         let inner_id = inner_id as usize;
         if inner_id < DIRECT_BLOCK_NUM {
