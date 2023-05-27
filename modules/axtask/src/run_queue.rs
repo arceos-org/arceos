@@ -27,6 +27,7 @@ static EXITED_TASKS: SpinNoIrq<VecDeque<AxTaskRef>> = SpinNoIrq::new(VecDeque::n
 static WAIT_FOR_EXIT: WaitQueue = WaitQueue::new();
 
 static LOCK_QWQ: SpinNoIrq<usize> = SpinNoIrq::new(0);
+static LOCK_QWQ3: SpinNoIrq<usize> = SpinNoIrq::new(0);
 
 #[percpu::def_percpu]
 static IDLE_TASK: LazyInit<AxTaskRef> = LazyInit::new();
@@ -58,10 +59,11 @@ impl AxRunQueue {
 
     #[cfg(feature = "irq")]
     pub fn scheduler_timer_tick(&self) {
+        let tmp = LOCK_QWQ3.lock();
         let curr = crate::current();
-        //info!("qwq1");
+        info!("qwq1");
         if !curr.is_idle() && self.scheduler.lock().task_tick(curr.as_task_ref()) {
-            //info!("qwq2");
+            info!("qwq2");
             #[cfg(feature = "preempt")]
             curr.set_preempt_pending(true);
         }
@@ -81,7 +83,7 @@ impl AxRunQueue {
 
     #[cfg(feature = "preempt")]
     pub fn resched(&self) {
-        let tmp = LOCK_QWQ.lock();
+        //let tmp = LOCK_QWQ.lock();
         let curr = crate::current();
         assert!(curr.is_running());
 

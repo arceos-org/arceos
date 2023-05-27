@@ -99,6 +99,7 @@ impl TaskInner {
 
     /// set queue id
     pub fn set_queue_id(&self, id: isize) {
+        //info!("set queue id {} !", id);
         self.in_which_queue.store(id as isize, Ordering::Release);
     }
     /// get queue id
@@ -222,19 +223,20 @@ impl TaskInner {
     #[inline]
     #[cfg(feature = "preempt")]
     pub(crate) fn set_preempt_pending(&self, pending: bool) {
-        //info!("qwq3");
         self.need_resched.store(pending, Ordering::Release)
     }
 
     #[inline]
     #[cfg(feature = "preempt")]
     pub(crate) fn can_preempt(&self, current_disable_count: usize) -> bool {
+        //info!("qwq3 {}", current_disable_count);
         self.preempt_disable_count.load(Ordering::Acquire) == current_disable_count
     }
 
     #[inline]
     #[cfg(feature = "preempt")]
     pub(crate) fn disable_preempt(&self) {
+        //info!("qwq4 {}", self.preempt_disable_count.load(Ordering::Relaxed));
         self.preempt_disable_count.fetch_add(1, Ordering::Relaxed);
     }
 
