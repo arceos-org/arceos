@@ -266,7 +266,7 @@ fn do_link(args: &str) {
     }
 
     for p in paths.iter_mut() {
-        if !p.starts_with("/") {
+        if !p.starts_with('/') {
             *p = fs::canonicalize(&(pwd.clone() + p)).unwrap();
         }
     }
