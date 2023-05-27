@@ -34,6 +34,9 @@ pub struct WaitQueue {
     queue: SpinRaw<VecDeque<(AxTaskRef, usize)>>, // we already disabled IRQs when lock the `RUN_QUEUE`
 }
 
+use spinlock::SpinNoIrq;
+static LOCK_QWQ5: SpinNoIrq<usize> = SpinNoIrq::new(0);
+static LOCK_QWQ6: SpinNoIrq<usize> = SpinNoIrq::new(0);
 impl WaitQueue {
     /// Creates an empty wait queue.
     pub const fn new() -> Self {
@@ -70,6 +73,7 @@ impl WaitQueue {
     /// notifies it.
     pub fn wait(&self) {
         //info!("lock begin 7");
+        //let tmp = LOCK_QWQ6.lock();
         loop {
             if (get_current_cpu_id() != axconfig::SMP) {
                 break;
@@ -118,6 +122,7 @@ impl WaitQueue {
         crate::timers::set_alarm_wakeup(deadline, curr.clone());
 
         //info!("lock begin 5");
+
         RUN_QUEUE[get_current_cpu_id()].block_current(|task| {
             task.set_in_wait_queue(true);
             self.queue.lock().push_back((task, get_current_cpu_id()))
@@ -222,16 +227,12 @@ impl WaitQueue {
     }
 
     pub(crate) fn notify_one_locked(&self, resched: bool, rq: &AxRunQueue, queueid: usize) -> bool {
-        //assert!(false);
-        let tmp = self.queue.lock();
-        //info!("111 {} {}", get_current_cpu_id(), tmp[0].1);
-        for i in 0..tmp.len() {
-            tmp[i].0.set_in_wait_queue(false);
-            //tmp[i].0.set_queue_id(queueid);
-            rq.unblock_task(tmp[i].0.clone(), resched);
-            drop(tmp);
-            return true;
+        if let Some((task, _)) = self.queue.lock().pop_front() {
+            task.set_in_wait_queue(false);
+            rq.unblock_task(task, resched);
+            true
+        } else {
+            false
         }
-        false
     }
 }

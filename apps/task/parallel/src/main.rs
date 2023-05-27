@@ -12,7 +12,7 @@ use core::time::Duration;
 use libax::sync::{Mutex, WaitQueue};
 use libax::{rand, task};
 
-const NUM_DATA: usize = 2_000;
+const NUM_DATA: usize = 2_000_000;
 const NUM_TASKS: usize = 16;
 
 static FINISHED_TASKS: AtomicUsize = AtomicUsize::new(0);
@@ -40,7 +40,7 @@ fn sqrt(n: &u64) -> u64 {
 
 #[no_mangle]
 fn main() {
-    println!("111");
+    //println!("111");
     let vec = Arc::new(
         (0..NUM_DATA)
             .map(|_| rand::rand_u32() as u64)

@@ -28,6 +28,8 @@ static WAIT_FOR_EXIT: WaitQueue = WaitQueue::new();
 
 static LOCK_QWQ: SpinNoIrq<usize> = SpinNoIrq::new(0);
 static LOCK_QWQ3: SpinNoIrq<usize> = SpinNoIrq::new(0);
+static LOCK_QWQ4: SpinNoIrq<usize> = SpinNoIrq::new(0);
+static LOCK_QWQ7: SpinNoIrq<usize> = SpinNoIrq::new(0);
 
 #[percpu::def_percpu]
 static IDLE_TASK: LazyInit<AxTaskRef> = LazyInit::new();
@@ -61,9 +63,9 @@ impl AxRunQueue {
     pub fn scheduler_timer_tick(&self) {
         let tmp = LOCK_QWQ3.lock();
         let curr = crate::current();
-        info!("qwq1");
+        //info!("qwq1");
         if !curr.is_idle() && self.scheduler.lock().task_tick(curr.as_task_ref()) {
-            info!("qwq2");
+            //info!("qwq2");
             #[cfg(feature = "preempt")]
             curr.set_preempt_pending(true);
         }
@@ -127,9 +129,10 @@ impl AxRunQueue {
     where
         F: FnOnce(AxTaskRef),
     {
+        let tmp = LOCK_QWQ7.lock();
         //info!("block_current 1");
         let curr = crate::current();
-        info!("task block: {}", curr.id_name());
+        debug!("task block: {}", curr.id_name());
         //info!("block_current 2");
         assert!(curr.is_running());
         assert!(!curr.is_idle());
@@ -147,6 +150,7 @@ impl AxRunQueue {
     }
 
     pub fn unblock_task(&self, task: AxTaskRef, resched: bool) {
+        let tmp = LOCK_QWQ4.lock();
         debug!("task unblock: {} at cpu {}", task.id_name(), self.id);
         if task.is_blocked() {
             debug!("123");
@@ -215,23 +219,23 @@ impl AxRunQueue {
         }
     }
     fn resched_inner(&self, preempt: bool) {
-        debug!("resched inner 1");
+        //debug!("resched inner 1");
         let prev = crate::current();
-        debug!("resched inner 2");
+        //debug!("resched inner 2");
         if prev.is_running() {
-            debug!("resched inner 3");
+            //debug!("resched inner 3");
             prev.set_state(TaskState::Ready);
-            debug!("resched inner 4");
+            //debug!("resched inner 4");
             if !prev.is_idle() {
-                debug!("resched inner 5");
+                //debug!("resched inner 5");
                 prev.set_queue_id(self.id as isize);
                 self.scheduler.lock().put_prev_task(prev.clone(), preempt);
                 LOAD_BALANCE_ARR[self.id].add_weight(1); //?
                 trace!("load balance weight for id {}: {}", self.id, LOAD_BALANCE_ARR[self.id].get_weight());
-                debug!("resched inner 6");
+                //debug!("resched inner 6");
             }
         }
-        debug!("resched inner 7");
+        //debug!("resched inner 7");
         let mut flag = false;
         let next = self.scheduler.lock().pick_next_task().unwrap_or_else(|| unsafe {
             // Safety: IRQs must be disabled at this time.
@@ -245,11 +249,11 @@ impl AxRunQueue {
         }
         LOAD_BALANCE_ARR[self.id].add_weight(-1); //?
         trace!("load balance weight for id {}: {}", self.id, LOAD_BALANCE_ARR[self.id].get_weight());
-        debug!("resched inner 8");
+        //debug!("resched inner 8");
         // TODO: 注意需要对所有 pick_next_task 后面都要判断是否队列空，如果是则需要执行线程窃取
         self.if_empty_steal();
         self.switch_to(prev, next);
-        debug!("resched inner 9");
+        //debug!("resched inner 9");
     }
 
     fn switch_to(&self, prev_task: CurrentTask, next_task: AxTaskRef) {

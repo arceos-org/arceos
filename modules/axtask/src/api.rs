@@ -99,7 +99,6 @@ pub fn get_current_cpu_id() -> usize {
     let tmp = call_interface!(LogMyTime::current_cpu_id).unwrap_or_else(
         ||axconfig::SMP
     );
-    info!("tmp: {}", tmp);
     tmp
 }
 
