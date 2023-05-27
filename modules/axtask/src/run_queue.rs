@@ -63,9 +63,9 @@ impl AxRunQueue {
     pub fn scheduler_timer_tick(&self) {
         let tmp = LOCK_QWQ3.lock();
         let curr = crate::current();
-        //info!("qwq1");
+        info!("qwq1");
         if !curr.is_idle() && self.scheduler.lock().task_tick(curr.as_task_ref()) {
-            //info!("qwq2");
+            info!("qwq2");
             #[cfg(feature = "preempt")]
             curr.set_preempt_pending(true);
         }

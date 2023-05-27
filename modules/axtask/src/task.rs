@@ -254,8 +254,9 @@ impl TaskInner {
         let curr = crate::current();
         if curr.need_resched.load(Ordering::Acquire) && curr.can_preempt(0) {
             //let mut rq = crate::RUN_QUEUE.lock();
-            if curr.need_resched.load(Ordering::Acquire) {
                 let tat = LOCK_QWQ2.lock();
+                info!("askldjasljd2");
+            if curr.need_resched.load(Ordering::Acquire) {
                 //assert!(self.in_which_queue.load(Ordering::Acquire) >= 0);
                 if curr.in_which_queue.load(Ordering::Acquire) >= 0 {
                     crate::RUN_QUEUE[curr.in_which_queue.load(Ordering::Acquire) as usize].resched();
