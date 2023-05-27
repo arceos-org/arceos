@@ -6,11 +6,13 @@ use super::{AllocError, AllocResult, BaseAllocator, ByteAllocator};
 use basic_allocator::Heap;
 use core::alloc::Layout;
 
+/// A byte-granularity memory allocator based on the [basic_allocator].
 pub struct BasicAllocator {
     inner: Option<Heap>,
 }
 
 impl BasicAllocator {
+    /// Creates a new empty `BasicAllocator`.
     pub const fn new() -> Self {
         Self { inner: None }
     }
@@ -23,6 +25,7 @@ impl BasicAllocator {
         self.inner.as_ref().unwrap()
     }
 
+    /// set the alloc strategy to first_fit, best_fit or worst_fit
     pub fn set_strategy(&mut self, strategy: &str) {
         self.inner_mut().set_strategy(strategy);
     }

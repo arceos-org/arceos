@@ -5,11 +5,13 @@
 use super::{AllocError, AllocResult, BaseAllocator, ByteAllocator};
 use tlsf_c_allocator::Heap;
 
+/// A byte-granularity memory allocator based on the [tlsf_allocator] written by C code.
 pub struct TLSFCAllocator {
     inner: Option<Heap>,
 }
 
 impl TLSFCAllocator {
+    /// Creates a new empty `TLSFCAllocator`.
     pub const fn new() -> Self {
         Self { inner: None }
     }

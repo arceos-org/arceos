@@ -4,40 +4,37 @@
 use core::mem::size_of;
 use core::ptr;
 
-/// An intrusive linked list
-///
-/// A clean room implementation of the one used in CS140e 2018 Winter
-///
-/// Thanks Sergio Benitez for his excellent work,
-/// See [CS140e](https://cs140e.sergio.bz/) for more information
-
+/// the head structure of a memory block
 pub struct MemBlockHead {
-    pub size: usize, //最低位标记是否使用过
+    /// 最低位标记是否使用过
+    pub size: usize,
+    /// 前一个块的指针
     pub pre: *mut MemBlockHead,
+    /// 后一个块的指针
     pub nxt: *mut MemBlockHead,
 }
 
 impl MemBlockHead {
-    ///获取这一块的地址
+    /// 获取这一块的地址
     pub fn addr(&mut self) -> usize {
         self as *mut MemBlockHead as usize
     }
-    //获取这一块的大小
+    /// 获取这一块的大小
     pub fn size(&self) -> usize {
         self.size >> 1
     }
-    ///获取这一块的使用位
+    /// 获取这一块的使用位
     pub fn used(&self) -> bool {
         (self.size & 1) == 1
     }
 
-    ///重设这一块的大小，别忘了同时修改foot的信息
-    ///在同时需要修改size和used的时候，一定注意要先改size再改used
+    /// 重设这一块的大小，别忘了同时修改foot的信息
+    /// 在同时需要修改size和used的时候，一定注意要先改size再改used
     pub fn set_size(&mut self, size: usize) {
         self.size = (size << 1) | (self.size & 1);
         unsafe { (*(self.get_foot())).set_size(size) };
     }
-    ///重设这一块的使用位，别忘了同时修改foot的信息
+    /// 重设这一块的使用位，别忘了同时修改foot的信息
     pub fn set_used(&mut self, used: bool) {
         if used {
             self.size |= 1_usize;
@@ -49,42 +46,44 @@ impl MemBlockHead {
         }
     }
 
-    ///获取这一块的foot
+    /// 获取这一块的foot
     pub fn get_foot(&mut self) -> *mut MemBlockFoot {
         (self.addr() + self.size() - size_of::<usize>()) as *mut MemBlockFoot
     }
-    ///获取下一块的head
+    /// 获取下一块的head
     pub fn get_nxt_block(&mut self) -> *mut MemBlockHead {
         (self.addr() + self.size()) as *mut MemBlockHead
     }
-    ///获取上一块的head
+    /// 获取上一块的head
     pub fn get_pre_block(&mut self) -> *mut MemBlockHead {
         unsafe { (*((self.addr() - size_of::<usize>()) as *mut MemBlockFoot)).get_head() }
     }
 }
 
+/// the foot structure of a memory block
 pub struct MemBlockFoot {
-    pub size: usize, //最低位标记是否使用过
+    /// 最低位标记是否使用过
+    pub size: usize,
 }
 
 impl MemBlockFoot {
-    ///获取这一块的地址
+    /// 获取这一块的地址
     pub fn addr(&mut self) -> usize {
         (self as *mut MemBlockFoot as usize) - self.size() + size_of::<usize>()
     }
-    //获取这一块的大小
+    /// 获取这一块的大小
     pub fn size(&self) -> usize {
         self.size >> 1
     }
-    ///获取这一块的使用位
+    /// 获取这一块的使用位
     pub fn used(&self) -> bool {
         (self.size & 1) == 1
     }
-    ///重设这一块的大小
+    /// 重设这一块的大小
     pub fn set_size(&mut self, size: usize) {
         self.size = (size << 1) | (self.size & 1);
     }
-    ///重设这一块的使用位
+    /// 重设这一块的使用位
     pub fn set_used(&mut self, used: bool) {
         if used {
             self.size |= 1_usize;
@@ -92,14 +91,22 @@ impl MemBlockFoot {
             self.size &= !1_usize;
         }
     }
-    ///获取这一块的head
+    /// 获取这一块的head
     pub fn get_head(&mut self) -> *mut MemBlockHead {
         self.addr() as *mut MemBlockHead
     }
 }
 
+/// An intrusive linked list
+///
+/// A clean room implementation of the one used in CS140e 2018 Winter
+///
+/// Thanks Sergio Benitez for his excellent work,
+/// See [CS140e](https://cs140e.sergio.bz/) for more information
+
 #[derive(Copy, Clone)]
 pub struct LinkedList {
+    /// the head of linked list
     pub head: *mut MemBlockHead,
 }
 

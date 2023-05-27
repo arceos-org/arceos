@@ -6,11 +6,13 @@ use super::{AllocError, AllocResult, BaseAllocator, ByteAllocator};
 use core::alloc::Layout;
 use tlsf_allocator::Heap;
 
+/// A byte-granularity memory allocator based on the [tlsf_allocator] written by rust code.
 pub struct TLSFAllocator {
     inner: Option<Heap>,
 }
 
 impl TLSFAllocator {
+    /// Creates a new empty `TLSFAllocator`.
     pub const fn new() -> Self {
         Self { inner: None }
     }

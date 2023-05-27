@@ -1,3 +1,6 @@
+//! TLSF allocator for `no_std` systems.
+//! written by rust code
+
 #![feature(allocator_api)]
 #![no_std]
 
@@ -10,11 +13,12 @@ use core::mem::size_of;
 mod data;
 use data::*;
 
+/// the heap structure of the allocator
 pub struct Heap {
-    head: AddrPointer,
-    total_mem: usize, // 总共占用内存
-    used_mem: usize,  // 已经分配出去的内存
-    avail_mem: usize, // 实际可用的内存
+    head: AddrPointer, // 指向TLSF头结构的指针
+    total_mem: usize,  // 总共占用内存
+    used_mem: usize,   // 已经分配出去的内存
+    avail_mem: usize,  // 实际可用的内存
 }
 
 unsafe impl Send for Heap {}
@@ -226,15 +230,17 @@ impl Heap {
         self.head.add_into_list(nblock);
     }
 
-    /// 查询内存使用情况
+    /// get total bytes
     pub fn total_bytes(&self) -> usize {
         self.total_mem
     }
 
+    /// get used bytes
     pub fn used_bytes(&self) -> usize {
         self.used_mem
     }
 
+    /// get available bytes
     pub fn available_bytes(&self) -> usize {
         self.avail_mem
     }

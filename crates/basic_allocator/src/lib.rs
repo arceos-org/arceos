@@ -1,3 +1,6 @@
+//! basic allocator for `no_std` systems.
+//! implement 3 strategies: first fit, best fit ans worst fit
+
 #![feature(allocator_api)]
 #![no_std]
 
@@ -10,12 +13,17 @@ pub mod linked_list;
 use core::cmp::max;
 pub use linked_list::{LinkedList, MemBlockFoot, MemBlockHead};
 
+/// the strategy
 pub enum BasicAllocatorStrategy {
+    /// first fit
     FirstFitStrategy,
+    /// best fit
     BestFitStrategy,
+    /// worst fit
     WorstFitStrategy,
 }
 
+/// the heap structure of the allocator
 pub struct Heap {
     free_list: LinkedList,
     user: usize,                      //分配给用户的内存大小
@@ -41,7 +49,7 @@ fn alignto(size: usize, align: usize) -> usize {
 
 impl Heap {
     /// Create an empty heap
-    /// Currently, [`BestFitStrategy`] is used as the default allocator strategy,
+    /// Currently, best fit strategy is used as the default allocator strategy,
     pub const fn new() -> Self {
         Heap {
             free_list: LinkedList::new(),
@@ -281,14 +289,17 @@ impl Heap {
         }
     }
 
+    /// get total bytes
     pub fn total_bytes(&self) -> usize {
         self.total
     }
 
+    /// get used bytes
     pub fn used_bytes(&self) -> usize {
         self.user
     }
 
+    /// get available bytes
     pub fn available_bytes(&self) -> usize {
         self.total - self.allocated
     }
