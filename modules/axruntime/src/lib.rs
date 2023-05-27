@@ -278,3 +278,8 @@ fn init_interrupt() {
     // Enable IRQs before starting app
     axhal::arch::enable_irqs();
 }
+
+pub fn runtime_close() {
+    #[cfg(feature = "fs")]
+    axfs::close_main_fs();
+}

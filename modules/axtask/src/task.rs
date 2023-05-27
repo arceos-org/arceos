@@ -181,7 +181,7 @@ impl TaskInner {
     }
 
     #[inline]
-    pub(crate) const fn is_init(&self) -> bool {
+    pub const fn is_init(&self) -> bool {
         self.is_init
     }
 
