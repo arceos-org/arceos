@@ -7,8 +7,8 @@ fn main() {
 
     //to run user mode test, change the mode to "cc"
     //Command::new("cc")
-    //Command::new("riscv64-linux-gnu-gcc")
-    Command::new("riscv64-linux-musl-gcc")
+    Command::new("riscv64-linux-gnu-gcc")
+    //Command::new("riscv64-linux-musl-gcc")
         .args(["src/tlsf.c", "-O3", "-c", "-fPIC", "-o"])
         .arg(&format!("{}/tlsf.o", out_dir))
         .status()
@@ -16,8 +16,8 @@ fn main() {
 
     //to run user mode test, change the mode to "ar"
     //Command::new("ar")
-    //Command::new("riscv64-linux-gnu-ar")
-    Command::new("riscv64-linux-musl-ar")
+    Command::new("riscv64-linux-gnu-ar")
+    //Command::new("riscv64-linux-musl-ar")
         .args(["crus", "libtlsf.a", "tlsf.o"])
         .current_dir(Path::new(&out_dir))
         .status()
