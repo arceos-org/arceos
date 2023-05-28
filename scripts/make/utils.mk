@@ -13,7 +13,7 @@ endef
 
 define make_disk_image_ext2
   @echo "    $(GREEN_C)Creating$(END_C) EXT2 disk image \"$(1)\" ..."
-  @cd crates/ext2fs_fuse && cargo run
+  @cd ext2fs_fuse && cargo run
 endef
 
 define make_disk_image
