@@ -5,4 +5,4 @@
 *.img
 actual.out
 qemu.log
-/crates/ext2fs_fuse/target
+/ext2fs_fuse/target
