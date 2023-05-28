@@ -61,7 +61,6 @@ fn compile_lwip() {
         .file("depend/lwip/src/core/tcp_out.c")
         .file("depend/lwip/src/core/timeouts.c")
         .file("depend/lwip/src/core/udp.c")
-        .file("depend/lwip/src/core/ipv4/acd.c")
         .file("depend/lwip/src/core/ipv4/autoip.c")
         .file("depend/lwip/src/core/ipv4/dhcp.c")
         .file("depend/lwip/src/core/ipv4/etharp.c")
