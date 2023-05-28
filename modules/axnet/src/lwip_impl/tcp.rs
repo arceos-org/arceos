@@ -5,7 +5,8 @@ use axsync::Mutex;
 use axtask::yield_now;
 use core::{ffi::c_void, pin::Pin, ptr::null_mut};
 use lwip_rust::bindings::{
-    err_t, ip_addr_t, pbuf, pbuf_free, tcp_accept, tcp_arg, tcp_bind, tcp_close, tcp_connect,
+    err_enum_t_ERR_MEM, err_enum_t_ERR_OK, err_enum_t_ERR_USE, err_enum_t_ERR_VAL, err_t,
+    ip_addr_t, pbuf, pbuf_free, tcp_accept, tcp_arg, tcp_bind, tcp_close, tcp_connect,
     tcp_listen_with_backlog, tcp_new, tcp_output, tcp_pcb, tcp_recv, tcp_recved, tcp_write,
     TCP_DEFAULT_LISTEN_BACKLOG,
 };
@@ -59,6 +60,10 @@ extern "C" fn recv_callback(
             unsafe { (*p).tot_len }
         );
         socket_inner.recv_queue.lock().push_back(PbuffPointer(p));
+        debug!(
+            "[TcpSocket][recv_callback] recv_queue len: {}",
+            socket_inner.recv_queue.lock().len()
+        );
     }
     0
 }
@@ -87,6 +92,10 @@ extern "C" fn accept_callback(arg: *mut c_void, newpcb: *mut tcp_pcb, err: err_t
         tcp_recv(socket.pcb.0, Some(recv_callback));
     }
     socket_inner.accept_queue.lock().push_back(socket);
+    debug!(
+        "[TcpSocket][accept_callback] accept_queue len: {}",
+        socket_inner.accept_queue.lock().len()
+    );
     0
 }
 
@@ -171,11 +180,16 @@ impl TcpSocket {
         unsafe {
             debug!("[TcpSocket] set recv_callback");
             tcp_recv(self.pcb.0, Some(recv_callback));
+
             debug!("[TcpSocket] tcp_connect");
-            match tcp_connect(self.pcb.0, &ip_addr, addr.port, Some(connect_callback)) {
-                0 => {}
+            #[allow(non_upper_case_globals)]
+            match tcp_connect(self.pcb.0, &ip_addr, addr.port, Some(connect_callback)) as i32 {
+                err_enum_t_ERR_OK => {}
+                err_enum_t_ERR_VAL => {
+                    return ax_err!(InvalidInput, "LWIP [tcp_connect] Invalid input.");
+                }
                 _ => {
-                    return ax_err!(Unsupported, "LWIP Unsupported");
+                    return ax_err!(Unsupported, "LWIP [tcp_connect] Failed.");
                 }
             };
         }
@@ -194,7 +208,7 @@ impl TcpSocket {
         if self.inner.connect_result == 0 {
             Ok(())
         } else {
-            ax_err!(Unsupported, "LWIP Unsupported")
+            ax_err!(Unsupported, "LWIP [connect_result] Unsupported")
         }
     }
 
@@ -206,10 +220,24 @@ impl TcpSocket {
     /// [`accept`](Self::accept).
     pub fn bind(&mut self, addr: SocketAddr) -> AxResult {
         debug!("[TcpSocket] bind to {:#?}", addr);
-        // TODO: check if already bound
         let guard = LWIP_MUTEX.lock();
         unsafe {
-            tcp_bind(self.pcb.0, &addr.addr.into(), addr.port);
+            #[allow(non_upper_case_globals)]
+            match tcp_bind(self.pcb.0, &addr.addr.into(), addr.port) as i32 {
+                err_enum_t_ERR_OK => {}
+                err_enum_t_ERR_USE => {
+                    return ax_err!(AddrInUse, "LWIP [tcp_bind] Port already in use.");
+                }
+                err_enum_t_ERR_VAL => {
+                    return ax_err!(
+                        InvalidInput,
+                        "LWIP [tcp_bind] The PCB is not in a valid state."
+                    );
+                }
+                _ => {
+                    return ax_err!(Unsupported, "LWIP [tcp_bind] Failed.");
+                }
+            };
         }
         drop(guard);
         Ok(())
@@ -262,11 +290,13 @@ impl TcpSocket {
                 tcp_arg(self.pcb.0, null_mut());
                 tcp_recv(self.pcb.0, None);
                 tcp_accept(self.pcb.0, None);
-                match tcp_close(self.pcb.0) {
-                    0 => {}
+                trace!("[TcpSocket] tcp_close");
+                #[allow(non_upper_case_globals)]
+                match tcp_close(self.pcb.0) as i32 {
+                    err_enum_t_ERR_OK => {}
                     e => {
                         error!("LWIP tcp_close failed: {}", e);
-                        return ax_err!(Unsupported, "LWIP tcp_close failed");
+                        return ax_err!(Unsupported, "LWIP [tcp_close] failed");
                     }
                 }
             }
@@ -281,10 +311,10 @@ impl TcpSocket {
     /// Receives data from the socket, stores it in the given buffer.
     pub fn recv(&self, buf: &mut [u8]) -> AxResult<usize> {
         trace!("[TcpSocket] recv");
-        if self.inner.remote_closed {
-            return Ok(0);
-        }
         loop {
+            if self.inner.remote_closed {
+                return Ok(0);
+            }
             lwip_loop_once();
             let mut recv_queue = self.inner.recv_queue.lock();
             let res = if recv_queue.len() == 0 {
@@ -327,17 +357,22 @@ impl TcpSocket {
         let guard = LWIP_MUTEX.lock();
         unsafe {
             trace!("[TcpSocket] tcp_write");
-            match tcp_write(self.pcb.0, buf.as_ptr() as *const _, buf.len() as u16, 0) {
-                0 => {}
+            #[allow(non_upper_case_globals)]
+            match tcp_write(self.pcb.0, buf.as_ptr() as *const _, buf.len() as u16, 0) as i32 {
+                err_enum_t_ERR_OK => {}
+                err_enum_t_ERR_MEM => {
+                    return ax_err!(NoMemory, "LWIP [tcp_write] Out of memory.");
+                }
                 _ => {
-                    return ax_err!(Unsupported, "LWIP Unsupported");
+                    return ax_err!(Unsupported, "LWIP [tcp_write] Failed.");
                 }
             }
             trace!("[TcpSocket] tcp_output");
-            match tcp_output(self.pcb.0) {
-                0 => {}
+            #[allow(non_upper_case_globals)]
+            match tcp_output(self.pcb.0) as i32 {
+                err_enum_t_ERR_OK => {}
                 _ => {
-                    return ax_err!(Unsupported, "LWIP Unsupported");
+                    return ax_err!(Unsupported, "LWIP [tcp_output] Failed.");
                 }
             }
         }

@@ -119,7 +119,6 @@ impl UdpSocket {
     /// [`recv_from`](Self::recv_from).
     pub fn bind(&mut self, addr: SocketAddr) -> AxResult {
         debug!("[UdpSocket] bind to {:#?}", addr);
-        // TODO: check if already bound
         let mut addr = addr;
         if addr.port == 0 {
             addr.port = get_ephemeral_port()?;
