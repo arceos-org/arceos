@@ -303,10 +303,10 @@ impl TcpSocket {
     /// Receives data from the socket, stores it in the given buffer.
     pub fn recv(&self, buf: &mut [u8]) -> AxResult<usize> {
         trace!("[TcpSocket] recv");
-        if self.inner.remote_closed {
-            return Ok(0);
-        }
         loop {
+            if self.inner.remote_closed {
+                return Ok(0);
+            }
             lwip_loop_once();
             let mut recv_queue = self.inner.recv_queue.lock();
             let res = if recv_queue.len() == 0 {
