@@ -60,6 +60,10 @@ extern "C" fn recv_callback(
             unsafe { (*p).tot_len }
         );
         socket_inner.recv_queue.lock().push_back(PbuffPointer(p));
+        debug!(
+            "[TcpSocket][recv_callback] recv_queue len: {}",
+            socket_inner.recv_queue.lock().len()
+        );
     }
     0
 }
@@ -88,6 +92,10 @@ extern "C" fn accept_callback(arg: *mut c_void, newpcb: *mut tcp_pcb, err: err_t
         tcp_recv(socket.pcb.0, Some(recv_callback));
     }
     socket_inner.accept_queue.lock().push_back(socket);
+    debug!(
+        "[TcpSocket][accept_callback] accept_queue len: {}",
+        socket_inner.accept_queue.lock().len()
+    );
     0
 }
 
