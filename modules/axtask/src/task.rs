@@ -113,7 +113,7 @@ impl TaskInner {
 }
 use spinlock::SpinNoIrq;
 //static LOCK_QWQ2: [SpinNoIrq<usize>; 3] = [SpinNoIrq::new(0), SpinNoIrq::new(0), SpinNoIrq::new(0)];
-static LOCK_QWQ2: SpinNoIrq<usize> = SpinNoIrq::new(0);
+//static LOCK_QWQ2: SpinNoIrq<usize> = SpinNoIrq::new(0);
 // private methods
 impl TaskInner {
     const fn new_common(id: TaskId, name: &'static str) -> Self {
@@ -266,9 +266,9 @@ impl TaskInner {
                 } else {
                     // qwq???
                     //info!("qwoepqioepw2");
-                    for i in 0..axconfig::SMP {
-                        crate::RUN_QUEUE[i].resched();
-                    }
+                    // for i in 0..axconfig::SMP {
+                    //     crate::RUN_QUEUE[i].resched();
+                    // }
                     //info!("qwq2");
                 }
             }

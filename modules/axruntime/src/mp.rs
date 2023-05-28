@@ -44,7 +44,7 @@ pub extern "C" fn rust_main_secondary(cpu_id: usize) -> ! {
 
     info!("Secondary CPU {} init OK.", cpu_id);
     super::INITED_CPUS.fetch_add(1, Ordering::Relaxed);
-    info!("tmp1");
+    //info!("tmp1");
 
     while !super::is_init_ok() {
         core::hint::spin_loop();

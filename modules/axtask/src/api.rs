@@ -66,40 +66,12 @@ pub fn is_init_ok() -> bool {
     INITED_CPUS.load(Ordering::Acquire) == axconfig::SMP
 }
 
-#[crate_interface::impl_interface]
-impl LogMyTime for LogTaskImpl {
-    fn current_cpu_id() -> Option<usize> {
-        //loop {
-            if !is_init_ok() {
-                return None;
-            }
-        //}
-        #[cfg(feature = "smp")] {
-            // TODO: 这逻辑啥玩意啊
-            Some(axhal::cpu::this_cpu_id())
-        }
-        //if is_init_ok() {
-        //} else {
-        //    None
-        //}
-
-        #[cfg(not(feature = "smp"))]
-        Some(0)
-    }
-}
-
 use crate_interface::{call_interface, def_interface};
 
 use spinlock::SpinNoIrq;
 
-static LOCK_TAT: SpinNoIrq<usize> = SpinNoIrq::new(0);
-
 pub fn get_current_cpu_id() -> usize {
-    let pmt = LOCK_TAT.lock();
-    let tmp = call_interface!(LogMyTime::current_cpu_id).unwrap_or_else(
-        ||axconfig::SMP
-    );
-    tmp
+    axhal::cpu::this_cpu_id()
 }
 
 /// Gets the current task, or returns [`None`] if the current task is not
@@ -141,22 +113,13 @@ pub fn init_scheduler_secondary() {
 #[doc(cfg(feature = "irq"))]
 pub fn on_timer_tick() {
     crate::timers::check_events();
-    //info!("exit 233");
-    if get_current_cpu_id() != axconfig::SMP {
-        RUN_QUEUE[get_current_cpu_id()].scheduler_timer_tick();
-    } else {
-        for i in 0..axconfig::SMP {
-            RUN_QUEUE[i].scheduler_timer_tick();
-            info!("exit 234");
-        }
-    }
-    //info!("exit 7");
+    RUN_QUEUE[get_current_cpu_id()].scheduler_timer_tick()
 }
 
 /// Spawns a new task.
 ///
 /// The task name is an empty string. The task stack size is
-/// [`axconfig::TASK_STACK_SIZE`].
+/// [`axconfig::TASK_STACK_SIZE`].  
 pub fn spawn<F>(f: F)
 where
     F: FnOnce() + Send + 'static,

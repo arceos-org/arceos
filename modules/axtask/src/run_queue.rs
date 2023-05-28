@@ -26,10 +26,12 @@ static EXITED_TASKS: SpinNoIrq<VecDeque<AxTaskRef>> = SpinNoIrq::new(VecDeque::n
 
 static WAIT_FOR_EXIT: WaitQueue = WaitQueue::new();
 
-static LOCK_QWQ: SpinNoIrq<usize> = SpinNoIrq::new(0);
+use kernel_guard::NoPreempt;
+
+/*static LOCK_QWQ: SpinNoIrq<usize> = SpinNoIrq::new(0);
 static LOCK_QWQ3: SpinNoIrq<usize> = SpinNoIrq::new(0);
 static LOCK_QWQ4: SpinNoIrq<usize> = SpinNoIrq::new(0);
-static LOCK_QWQ7: SpinNoIrq<usize> = SpinNoIrq::new(0);
+static LOCK_QWQ7: SpinNoIrq<usize> = SpinNoIrq::new(0);*/
 
 #[percpu::def_percpu]
 static IDLE_TASK: LazyInit<AxTaskRef> = LazyInit::new();
@@ -50,6 +52,7 @@ impl AxRunQueue {
     }
 
     pub fn add_task(&self, task: AxTaskRef) {
+        let _guard = NoPreempt::new();
         task.set_queue_id(self.id as isize);
         debug!("task spawn: {}", task.id_name());
         assert!(task.is_ready());
@@ -61,17 +64,18 @@ impl AxRunQueue {
 
     #[cfg(feature = "irq")]
     pub fn scheduler_timer_tick(&self) {
-        let tmp = LOCK_QWQ3.lock();
+        let _guard = NoPreempt::new();
+        //let tmp = LOCK_QWQ3.lock();
         let curr = crate::current();
-        info!("qwq1");
+        //info!("qwq1");
         if !curr.is_idle() && self.scheduler.lock().task_tick(curr.as_task_ref()) {
-            info!("qwq2");
             #[cfg(feature = "preempt")]
             curr.set_preempt_pending(true);
         }
     }
 
     pub fn yield_current(&self) {
+        let _guard = NoPreempt::new();
         let curr = crate::current();
         debug!("task yield: {}", curr.id_name());
         assert!(curr.is_running());
@@ -79,12 +83,15 @@ impl AxRunQueue {
     }
 
     pub fn set_priority(&self, prio: isize) -> bool {
+        let _guard = NoPreempt::new();
         self.scheduler.lock()
             .set_priority(crate::current().as_task_ref(), prio)
     }
 
     #[cfg(feature = "preempt")]
     pub fn resched(&self) {
+        let _guard = NoPreempt::new();
+        info!("rescedh");
         let curr = crate::current();
         assert!(curr.is_running());
 
@@ -108,6 +115,7 @@ impl AxRunQueue {
     }
 
     pub fn exit_current(&self, exit_code: i32) -> ! {
+        let _guard = NoPreempt::new();
         let curr = crate::current();
         debug!("task exit: {}, exit_code={}, queue_id={}", curr.id_name(), exit_code, self.id);
         assert!(curr.is_running());
@@ -128,8 +136,8 @@ impl AxRunQueue {
     where
         F: FnOnce(AxTaskRef),
     {
-        info!("qwq 8");
-        let tmp = LOCK_QWQ7.lock();
+        let _guard = NoPreempt::new();
+        //let tmp = LOCK_QWQ7.lock();
         //info!("block_current 1");
         let curr = crate::current();
         debug!("task block: {}", curr.id_name());
@@ -150,7 +158,8 @@ impl AxRunQueue {
     }
 
     pub fn unblock_task(&self, task: AxTaskRef, resched: bool) {
-        let tmp = LOCK_QWQ4.lock();
+        let _guard = NoPreempt::new();
+        //let tmp = LOCK_QWQ4.lock();
         debug!("task unblock: {} at cpu {}", task.id_name(), self.id);
         if task.is_blocked() {
             debug!("123");
@@ -171,6 +180,7 @@ impl AxRunQueue {
 
     #[cfg(feature = "irq")]
     pub fn sleep_until(&self, deadline: axhal::time::TimeValue) {
+        let _guard = NoPreempt::new();
         let curr = crate::current();
         debug!("task sleep: {}, deadline={:?}", curr.id_name(), deadline);
         assert!(curr.is_running());
@@ -189,6 +199,7 @@ impl AxRunQueue {
     /// Common reschedule subroutine. If `preempt`, keep current task's time
     /// slice, otherwise reset it.
     fn if_empty_steal(&self) {
+        let _guard = NoPreempt::new();
         if self.scheduler.lock().is_empty() {
             let mut queuelock = self.scheduler.lock();
             let id = self.id;
@@ -219,6 +230,7 @@ impl AxRunQueue {
         }
     }
     fn resched_inner(&self, preempt: bool) {
+        let _guard = NoPreempt::new();
         //debug!("resched inner 1");
         let prev = crate::current();
         //debug!("resched inner 2");
@@ -257,6 +269,7 @@ impl AxRunQueue {
     }
 
     fn switch_to(&self, prev_task: CurrentTask, next_task: AxTaskRef) {
+        let _guard = NoPreempt::new();
         trace!(
             "context switch: {} -> {}",
             prev_task.id_name(),
@@ -286,27 +299,19 @@ impl AxRunQueue {
 
 fn gc_entry() {
     loop {
-        debug!("gc1");
         // Drop all exited tasks and recycle resources.
         while !EXITED_TASKS.lock().is_empty() {
-            debug!("gc2");
             // Do not do the slow drops in the critical section.
             let task = EXITED_TASKS.lock().pop_front();
-            debug!("gc3");
             if let Some(task) = task {
                 // wait for other threads to release the reference.
-        debug!("gc4");
                 while Arc::strong_count(&task) > 1 {
                     core::hint::spin_loop();
                 }
-                debug!("gc5");
                 drop(task);
             }
-            debug!("gc6");
         }
-        debug!("gc7");
         WAIT_FOR_EXIT.wait();
-        debug!("gc8");
     }
 }
 

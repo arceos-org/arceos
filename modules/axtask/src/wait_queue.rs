@@ -72,7 +72,7 @@ impl WaitQueue {
     /// Blocks the current task and put it into the wait queue, until other task
     /// notifies it.
     pub fn wait(&self) {
-        info!("lock begin 7");
+        //info!("lock begin 7");
         let tmp: usize;
         if get_current_cpu_id() == axconfig::SMP {
             tmp = 0;
@@ -80,7 +80,7 @@ impl WaitQueue {
             tmp = get_current_cpu_id();
         }
         let target_cpu = LOAD_BALANCE_ARR[tmp].find_target_cpu();
-        info!("lock begin 8");
+        //info!("lock begin 8");
         RUN_QUEUE[target_cpu].block_current(|task| {
             task.set_in_wait_queue(true);
             self.queue.lock().push_back((task, target_cpu))

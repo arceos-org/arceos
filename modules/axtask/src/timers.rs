@@ -40,7 +40,6 @@ pub fn check_events() {
         let event = TIMER_LIST.lock().expire_one(now);
         if let Some((_deadline, event)) = event {
             event.callback(now);
-            info!("exit 5");
         } else {
             break;
         }
