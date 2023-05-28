@@ -1,4 +1,7 @@
-use riscv::register::scause::{self, Exception as E, Trap};
+use riscv::register::{
+    scause::{self, Exception as E, Trap},
+    stval,
+};
 
 use super::TrapFrame;
 
@@ -22,10 +25,11 @@ fn riscv_trap_handler(tf: &mut TrapFrame, _from_user: bool) {
         Trap::Interrupt(_) => crate::trap::handle_irq_extern(scause.bits()),
         _ => {
             panic!(
-                "Unhandled trap {:?} @ {:#x}:\n{:#x?}",
+                "Unhandled trap {:?} @ {:#x}:\n{:#x?}, stval: {:#x}",
                 scause.cause(),
                 tf.sepc,
-                tf
+                tf,
+                stval::read(),
             );
         }
     }

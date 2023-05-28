@@ -284,6 +284,7 @@ dependencies = [
  "page_table",
  "page_table_entry",
  "percpu",
+ "plic",
  "ratio",
  "raw-cpuid 11.0.1",
  "riscv",
@@ -1187,6 +1188,14 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.16",
+]
+
+[[package]]
+name = "plic"
+version = "0.1.0"
+dependencies = [
+ "log",
+ "tock-registers",
 ]
 
 [[package]]

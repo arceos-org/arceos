@@ -1,8 +1,16 @@
 //! TODO: PLIC
 
-use crate::irq::IrqHandler;
+use crate::{irq::IrqHandler, mem::phys_to_virt};
 use lazy_init::LazyInit;
+use memory_addr::PhysAddr;
+use plic::Plic;
 use riscv::register::sie;
+use spinlock::SpinNoIrq;
+
+const PLIC_BASE: PhysAddr = PhysAddr::from(0x0c00_0000);
+
+static PLIC: SpinNoIrq<Plic> =
+    SpinNoIrq::new(Plic::new(phys_to_virt(PLIC_BASE).as_usize() as *mut u8));
 
 /// `Interrupt` bit in `scause`
 pub(super) const INTC_IRQ_BASE: usize = 1 << (usize::BITS - 1);
@@ -36,27 +44,39 @@ macro_rules! with_cause {
 }
 
 /// Enables or disables the given IRQ.
-pub fn set_enable(scause: usize, _enabled: bool) {
-    if scause == S_EXT {
-        // TODO: set enable in PLIC
-    }
+pub fn set_enable(irq_num: usize, _enabled: bool) {
+    let hart_id = crate::cpu::this_cpu_id();
+    info!("hart_id: {:#x}", hart_id);
+    PLIC.lock().enable(hart_id, irq_num);
 }
 
 /// Registers an IRQ handler for the given IRQ.
 ///
 /// It also enables the IRQ if the registration succeeds. It returns `false` if
 /// the registration failed.
-pub fn register_handler(scause: usize, handler: IrqHandler) -> bool {
-    with_cause!(
-        scause,
-        @TIMER => if !TIMER_HANDLER.is_init() {
-            TIMER_HANDLER.init_by(handler);
-            true
-        } else {
-            false
-        },
-        @EXT => crate::irq::register_handler_common(scause & !INTC_IRQ_BASE, handler),
-    )
+pub fn register_handler(irq_num: usize, handler: IrqHandler) -> bool {
+    // with_cause!(
+    //     scause,
+    //     @TIMER => if !TIMER_HANDLER.is_init() {
+    //         TIMER_HANDLER.init_by(handler);
+    //         true
+    //     } else {
+    //         false
+    //     },
+    //     @EXT => crate::irq::register_handler_common(scause & !INTC_IRQ_BASE, handler),
+    // )
+    trace!("irq num: {:#x}", irq_num);
+    match irq_num {
+        S_TIMER => {
+            if !TIMER_HANDLER.is_init() {
+                TIMER_HANDLER.init_by(handler);
+                true
+            } else {
+                false
+            }
+        }
+        _ => crate::irq::register_handler_common(irq_num, handler),
+    }
 }
 
 /// Dispatches the IRQ.
@@ -71,7 +91,14 @@ pub fn dispatch_irq(scause: usize) {
             trace!("IRQ: timer");
             TIMER_HANDLER();
         },
-        @EXT => crate::irq::dispatch_irq_common(0), // TODO: get IRQ number from PLIC
+        @EXT =>
+        {
+            // TODO: get IRQ number from PLIC
+            let hart_id = crate::cpu::this_cpu_id();
+            let irq_num = PLIC.lock().claim(hart_id);
+            trace!("External IRQ: {:#x}", irq_num);
+            crate::irq::dispatch_irq_common(irq_num as usize);
+        }
     );
 }
 

@@ -239,6 +239,12 @@ fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
                 r.flags.into(),
                 true,
             )?;
+            info!(
+                "{:#x} -> {:#x}, size: {:#x}",
+                r.paddr,
+                phys_to_virt(r.paddr),
+                r.size
+            );
         }
         KERNEL_PAGE_TABLE.init_by(kernel_page_table);
     }

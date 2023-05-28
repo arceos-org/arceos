@@ -58,6 +58,7 @@ arm_gic = { path = "../../crates/arm_gic" }
 
 [target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64", target_arch = "aarch64"))'.dependencies]
 dtb = {path = "../../crates/dtb" }
+plic = { path = "../../crates/plic" }
 
 [build-dependencies]
 axconfig = { path = "../axconfig" }
