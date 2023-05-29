@@ -21,10 +21,8 @@ struct ContextLocal {
 register_structs! {
     #[allow(non_snake_case)]
     PlicRegs{
-        // Reserved (interrupt source 0 does not exist)
-        (0x0000 => _reserved_0),
         /// Interrupt Source Priority Registers.
-        (0x0004 => PRIORITY: [ReadWrite<u32>; 1023]),
+        (0x0000 => PRIORITY: [ReadWrite<u32>; 1024]),
         /// Interrupt Pending Registers.
         (0x1000 => PENDING: [ReadWrite<u32>; 32]),
         (0x1080 => _reserved_1),
@@ -51,6 +49,34 @@ impl Plic {
 
     const fn regs(&self) -> &PlicRegs {
         unsafe { self.base.as_ref() }
+    }
+
+    /// Set interrupt priority by `irq`.
+    pub fn set_priority(&self, irq: usize, priority: u32) {
+        assert!(priority < 8);
+        self.regs().PRIORITY[irq].set(priority);
+        info!(
+            "PLIC set_priority@addr: {:#x}, irq: {}, priority: {}",
+            &self.regs().PRIORITY[irq] as *const _ as usize,
+            irq,
+            priority
+        );
+    }
+
+    /// Get interrupt priority by `irq`.
+    pub fn get_priority(&self, irq: usize) -> u32 {
+        self.regs().PRIORITY[irq].get()
+    }
+
+    /// Set threshold.
+    pub fn set_threshold(&self, hart_id: usize, priority: usize, threshold: u32) {
+        let id = hart_id * 2 + priority;
+        self.regs().CONTEXT[id].priority_threshold.set(threshold);
+    }
+
+    pub fn get_threshold(&self, hart_id: usize, priority: usize) -> u32 {
+        let id = hart_id * 2 + priority;
+        self.regs().CONTEXT[id].priority_threshold.get()
     }
 
     /// Enable the interrupt for the given hart.

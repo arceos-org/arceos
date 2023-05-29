@@ -48,6 +48,7 @@ pub fn set_enable(irq_num: usize, _enabled: bool) {
     let hart_id = crate::cpu::this_cpu_id();
     info!("hart_id: {:#x}", hart_id);
     PLIC.lock().enable(hart_id, irq_num);
+    PLIC.lock().set_priority(irq_num, 1);
 }
 
 /// Registers an IRQ handler for the given IRQ.
@@ -96,8 +97,9 @@ pub fn dispatch_irq(scause: usize) {
             // TODO: get IRQ number from PLIC
             let hart_id = crate::cpu::this_cpu_id();
             let irq_num = PLIC.lock().claim(hart_id);
-            trace!("External IRQ: {:#x}", irq_num);
+            info!("External IRQ: {:#x}", irq_num);
             crate::irq::dispatch_irq_common(irq_num as usize);
+            PLIC.lock().complete(hart_id, irq_num);
         }
     );
 }
@@ -109,4 +111,8 @@ pub(super) fn init_percpu() {
         sie::set_stimer();
         sie::set_sext();
     }
+
+    let hart_id = crate::cpu::this_cpu_id();
+    PLIC.lock().set_threshold(hart_id, 1, 0);
+    PLIC.lock().set_threshold(hart_id, 0, 1);
 }
