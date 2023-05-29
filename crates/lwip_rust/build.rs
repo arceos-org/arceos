@@ -1,6 +1,11 @@
 use std::path::PathBuf;
 
 fn main() {
+    println!("cargo:rustc-link-lib=lwip");
+    println!("cargo:rerun-if-changed=custom");
+    println!("cargo:rerun-if-changed=depend");
+    println!("cargo:rerun-if-changed=wrapper.h");
+
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
     let clippy_args = std::env::var("CLIPPY_ARGS");
 
@@ -12,9 +17,6 @@ fn main() {
 }
 
 fn generate_lwip_bindings() {
-    println!("cargo:rustc-link-lib=lwip");
-    println!("cargo:include=depend/lwip/src/include/");
-
     let bindings = bindgen::Builder::default()
         .use_core()
         .header("wrapper.h")
@@ -83,7 +85,7 @@ fn compile_lwip() {
         .file("custom/sys_arch.c");
 
     base_config
-        .warnings(false)
+        .warnings(true)
         .flag("-static")
         .flag("-no-pie")
         .flag("-fno-builtin")
