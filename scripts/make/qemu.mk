@@ -31,17 +31,14 @@ qemu_args-$(FS) += \
   -drive id=disk0,if=none,format=raw,file=$(DISK_IMG)
 
 qemu_args-$(NET) += -device virtio-net-$(vdev-suffix),netdev=net0
-ifeq ($(NETDEV), user)
-  qemu_args-$(NET) += \
-    -netdev user,id=net0,hostfwd=tcp::5555-:5555,hostfwd=udp::5555-:5555
-else ifeq ($(NETDEV), tap)
-  qemu_args-$(NET) += \
-    -netdev tap,id=net0,ifname=qemu-tap0,script=no,downscript=no
+ifeq ($(NET_DEV), user)
+  qemu_args-$(NET) += -netdev user,id=net0,hostfwd=tcp::5555-:5555,hostfwd=udp::5555-:5555
+else ifeq ($(NET_DEV), tap)
+  qemu_args-$(NET) += -netdev tap,id=net0,ifname=qemu-tap0,script=no,downscript=no
 endif
 
-ifeq ($(MODE), debug)
-  qemu_args-$(NET) += \
-  -object filter-dump,id=dump0,netdev=net0,file=qemu-net0.pcap
+ifeq ($(NET_DUMP), y)
+  qemu_args-$(NET) += -object filter-dump,id=dump0,netdev=net0,file=qemu-net0.pcap
 endif
 
 qemu_args-$(GRAPHIC) += \

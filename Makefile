@@ -11,7 +11,8 @@ DISK_IMG ?= disk.img
 
 FS ?= n
 NET ?= n
-NETDEV ?= user
+NET_DEV ?= user
+NET_DUMP ?= n
 GRAPHIC ?= n
 BUS ?= mmio
 

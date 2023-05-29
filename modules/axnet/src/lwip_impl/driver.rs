@@ -226,7 +226,6 @@ fn ip4_addr_gen(a: u8, b: u8, c: u8, d: u8) -> ip4_addr_t {
 }
 
 pub fn init(mut net_dev: AxNetDevice) {
-    info!("  net stack: lwip");
     let pool = NetBufferPool::new(NET_BUF_POOL_SIZE, NET_BUF_LEN).unwrap();
     NET_BUF_POOL.init_by(pool);
     net_dev.fill_rx_buffers(&NET_BUF_POOL).unwrap();
