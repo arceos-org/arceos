@@ -62,6 +62,14 @@ else
   qemu_args-$(ACCEL) += -cpu host -accel kvm
 endif
 
+define qemu_ifup
+  @if [ "$(NET_DEV)" = "tap" ]; then $(CURDIR)/scripts/net/qemu-ifup.sh; fi
+endef
+
+define qemu_ifdown
+  @if [ "$(NET_DEV)" = "tap" ]; then $(CURDIR)/scripts/net/qemu-ifdown.sh; fi
+endef
+
 define run_qemu
   @printf "    $(CYAN_C)Running$(END_C) $(QEMU) $(qemu_args-y) $(1)\n"
   @$(QEMU) $(qemu_args-y)

@@ -96,9 +96,12 @@ disasm:
 run: build justrun
 
 justrun:
+	$(call qemu_ifup)
 	$(call run_qemu)
+	$(call qemu_ifdown)
 
 debug: build
+	$(call qemu_ifup)
 	$(call run_qemu_debug) &
 	sleep 1
 	$(GDB) $(OUT_ELF) \
@@ -106,6 +109,7 @@ debug: build
 	  -ex 'b rust_entry' \
 	  -ex 'continue' \
 	  -ex 'disp /16i $$pc'
+	$(call qemu_ifdown)
 
 clippy:
 	$(call cargo_clippy)
