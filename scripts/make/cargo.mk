@@ -59,7 +59,7 @@ ifeq ($(ARCH), x86_64)
 endif
 
 define cargo_build
-  CC=$(CC) CFLAGS="$(ARCH_CFLAGS)" cargo rustc $(build_args) $(1) -- $(rustc_flags)
+  cargo rustc $(build_args) $(1) -- $(rustc_flags)
 endef
 
 define cargo_clippy

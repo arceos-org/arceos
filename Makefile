@@ -33,25 +33,20 @@ ifeq ($(ARCH), x86_64)
   ACCEL ?= y
   PLATFORM ?= pc-x86
   TARGET := x86_64-unknown-none
+  TARGET_CFLAGS := -mno-sse
   BUS := pci
 else ifeq ($(ARCH), riscv64)
   ACCEL ?= n
   PLATFORM ?= qemu-virt-riscv
   TARGET := riscv64gc-unknown-none-elf
+  TARGET_CFLAGS := -mabi=lp64d
 else ifeq ($(ARCH), aarch64)
   ACCEL ?= n
   PLATFORM ?= qemu-virt-aarch64
   TARGET := aarch64-unknown-none-softfloat
+  TARGET_CFLAGS := -mgeneral-regs-only
 else
   $(error "ARCH" must be one of "x86_64", "riscv64", or "aarch64")
-endif
-
-ifeq ($(ARCH), riscv64)
-  ARCH_CFLAGS := -march=rv64gc -mabi=lp64d -mcmodel=medany
-else ifeq ($(ARCH), x86_64)
-  ARCH_CFLAGS := -mno-sse
-else ifeq ($(ARCH), aarch64)
-  ARCH_CFLAGS := -mgeneral-regs-only
 endif
 
 export ARCH
@@ -71,6 +66,9 @@ LD := rust-lld -flavor gnu
 OBJDUMP ?= rust-objdump -d --print-imm-hex --x86-asm-syntax=intel
 OBJCOPY ?= rust-objcopy --binary-architecture=$(ARCH)
 GDB ?= gdb-multiarch
+
+export TARGET_CC=$(CC)	# for building lwip_rust
+export TARGET_CFLAGS
 
 # Paths
 OUT_DIR ?= $(APP)

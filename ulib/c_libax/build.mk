@@ -30,9 +30,15 @@ ifneq ($(wildcard $(in_feat)),)	# check if features.txt contains "fp_simd"
 endif
 
 ifeq ($(ARCH), riscv64)
-  CFLAGS += $(ARCH_CFLAGS)
-else ifeq ($(fp_simd),)
-  CFLAGS += $(ARCH_CFLAGS)
+  CFLAGS += -march=rv64gc -mabi=lp64d -mcmodel=medany
+endif
+
+ifeq ($(fp_simd),)
+  ifeq ($(ARCH), x86_64)
+    CFLAGS += -mno-sse
+  else ifeq ($(ARCH), aarch64)
+    CFLAGS += -mgeneral-regs-only
+  endif
 endif
 
 ifneq ($(wildcard $(in_feat)),)
