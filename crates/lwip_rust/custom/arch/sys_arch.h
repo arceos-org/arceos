@@ -7,8 +7,6 @@
 #define isspace(a) ((a == ' ' || (unsigned)a - '\t' < 5))
 #define isdigit(a) (((unsigned)(a) - '0') < 10)
 
-int atoi(const char *s);
-
 int strcmp(const char *l, const char *r);
 
 #endif /* __ARCH_SYS_ARCH_H__ */
