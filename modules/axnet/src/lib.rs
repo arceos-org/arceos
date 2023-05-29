@@ -53,5 +53,14 @@ pub fn init_network(mut net_devs: AxDeviceContainer<AxNetDevice>) {
 
     let dev = net_devs.take_one().expect("No NIC device found!");
     info!("  use NIC 0: {:?}", dev.device_name());
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "lwip")] {
+            info!("  net stack: lwip");
+        } else if #[cfg(feature = "smoltcp")] {
+            info!("  net stack: smoltcp");
+        } else {
+            compile_error!("No network stack is selected");
+        }
+    }
     net_impl::init(dev);
 }
