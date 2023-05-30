@@ -3,8 +3,6 @@ name = "allocator"
 version = "0.1.0"
 edition = "2021"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
-# To run user mode test, add below
-# build = "tests/build.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 description = "Various allocator algorithms in a unified interface"
@@ -21,8 +19,6 @@ basic_allocator = { path = "../basic_allocator" }
 tlsf_allocator = { path = "../tlsf_allocator" }
 tlsf_c_allocator = { path = "../tlsf_c_allocator" }
 log = "0.4"
-[dev-dependencies]
-spin = "0.9"
-axlog = {path = "../../modules/axlog", features = ["std"]}
-libax = {path = "../../ulib/libax"}
-libc = "0.2.0"
+
+[build-dependencies]
+cc = { version = "1.0.79", features = ["parallel"] }

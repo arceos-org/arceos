@@ -1,3 +1,5 @@
+// https://github.com/mattconte/tlsf/blob/master/tlsf.h
+
 #ifndef INCLUDED_tlsf
 #define INCLUDED_tlsf
 
@@ -39,6 +41,7 @@
 */
 
 #include <stddef.h>
+#include <string.h>
 
 #if defined(__cplusplus)
 extern "C" {

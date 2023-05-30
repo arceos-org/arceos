@@ -6,13 +6,11 @@ use super::{AllocError, AllocResult, BaseAllocator, ByteAllocator};
 use basic_allocator::Heap;
 use core::alloc::Layout;
 
-/// A byte-granularity memory allocator based on the [basic_allocator].
-pub struct BasicAllocator {
+pub struct BasicAllocator<const STRATEGY: usize> {
     inner: Option<Heap>,
 }
 
-impl BasicAllocator {
-    /// Creates a new empty `BasicAllocator`.
+impl<const S: usize> BasicAllocator<S> {
     pub const fn new() -> Self {
         Self { inner: None }
     }
@@ -25,16 +23,28 @@ impl BasicAllocator {
         self.inner.as_ref().unwrap()
     }
 
-    /// set the alloc strategy to first_fit, best_fit or worst_fit
     pub fn set_strategy(&mut self, strategy: &str) {
         self.inner_mut().set_strategy(strategy);
     }
 }
 
-impl BaseAllocator for BasicAllocator {
+impl<const S: usize> BaseAllocator for BasicAllocator<S> {
     fn init(&mut self, start: usize, size: usize) {
         self.inner = Some(Heap::new());
-        self.inner_mut().init(start, size);
+        match S {
+            0 => {
+                self.inner_mut().init(start, size, "first_fit");
+            }
+            1 => {
+                self.inner_mut().init(start, size, "best_fit");
+            }
+            2 => {
+                self.inner_mut().init(start, size, "worst_fit");
+            }
+            _ => {
+                panic!("Unknown basic allocator strategy.");
+            }
+        }
     }
 
     fn add_memory(&mut self, start: usize, size: usize) -> AllocResult {
@@ -43,7 +53,7 @@ impl BaseAllocator for BasicAllocator {
     }
 }
 
-impl ByteAllocator for BasicAllocator {
+impl<const S: usize> ByteAllocator for BasicAllocator<S> {
     fn alloc(&mut self, size: usize, align_pow2: usize) -> AllocResult<usize> {
         self.inner_mut()
             .allocate(Layout::from_size_align(size, align_pow2).unwrap())

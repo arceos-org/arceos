@@ -1,3 +1,5 @@
+// https://github.com/mattconte/tlsf/blob/master/tlsf.c
+
 #include <limits.h>
 #include <stddef.h>
 
@@ -389,10 +391,12 @@ static void block_set_size(block_header_t* block, size_t size)//设置块大小
 	block->size = size | (oldsize & (block_header_free_bit | block_header_prev_free_bit));
 }
 
+/*
 static int block_is_last(const block_header_t* block)//这一块是否为最后一块
 {
 	return block_size(block) == 0;
 }
+*/
 
 static int block_is_free(const block_header_t* block)//这一块是否空闲
 {

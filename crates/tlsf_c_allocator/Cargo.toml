@@ -7,5 +7,9 @@ build = "./build.rs"
 
 [dependencies]
 log = "0.4"
+
 [dev-dependencies]
 libc = "0.2.0"
+
+[build-dependencies]
+cc = { version = "1.0.79", features = ["parallel"] }

@@ -1,6 +1,24 @@
-use libax::rand::rand_u32;
+use core::sync::atomic::{AtomicU64, Ordering::SeqCst};
 use std::collections::BTreeMap;
 use std::vec::Vec;
+
+static SEED: AtomicU64 = AtomicU64::new(0xa2ce_a2ce);
+
+/// Sets the seed for the random number generator.
+pub fn srand(seed: u32) {
+    SEED.store(seed.wrapping_sub(1) as u64, SeqCst);
+}
+
+/// Returns a 32-bit unsigned pseudo random interger.
+pub fn rand_u32() -> u32 {
+    let new_seed = SEED.load(SeqCst).wrapping_mul(6364136223846793005) + 1;
+    SEED.store(new_seed, SeqCst);
+    (new_seed >> 33) as u32
+}
+
+pub fn rand_usize() -> usize {
+    ((rand_u32() as usize) << 32) | (rand_u32() as usize)
+}
 
 pub fn test_vec(n: usize) {
     println!("test_vec() begin...");
@@ -15,10 +33,10 @@ pub fn test_btree_map(n: usize) {
     println!("test_btree_map() begin...");
     let mut m = BTreeMap::new();
     for _ in 0..n {
-        if rand_u32() % 5 == 0 && !m.is_empty() {
+        if rand_usize() % 5 == 0 && !m.is_empty() {
             m.pop_first();
         } else {
-            let value = rand_u32() as usize;
+            let value = rand_usize();
             let key = format!("key_{value}");
             m.insert(key, value);
         }
@@ -37,7 +55,7 @@ pub fn test_vec_2(n: usize, m: usize) {
     for _ in 0..n {
         let mut tmp: Vec<usize> = Vec::with_capacity(m);
         for _ in 0..m {
-            tmp.push(rand_u32() as usize);
+            tmp.push(rand_usize());
         }
         tmp.sort();
         for j in 0..m - 1 {
@@ -52,7 +70,7 @@ pub fn test_vec_2(n: usize, m: usize) {
     }
 
     for i in 1..n {
-        let o: usize = rand_u32() as usize % (i + 1);
+        let o: usize = rand_usize() % (i + 1);
         let tmp = p[i];
         p[i] = p[o];
         p[o] = tmp;
@@ -78,7 +96,7 @@ pub fn test_vec_3(n: usize, k1: usize, k2: usize) {
         };
         v.push(Vec::with_capacity(nw));
         for _ in 0..nw {
-            v[i].push(rand_u32() as usize);
+            v[i].push(rand_usize());
         }
     }
     for i in 0..n * 4 {
@@ -91,7 +109,7 @@ pub fn test_vec_3(n: usize, k1: usize, k2: usize) {
         let nw = k2;
         v.push(Vec::with_capacity(nw));
         for _ in 0..nw {
-            v[4 * n + i].push(rand_u32() as usize);
+            v[4 * n + i].push(rand_usize());
         }
     }
     println!("test_vec3() OK!");

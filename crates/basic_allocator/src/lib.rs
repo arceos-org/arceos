@@ -1,6 +1,3 @@
-//! basic allocator for `no_std` systems.
-//! implement 3 strategies: first fit, best fit ans worst fit
-
 #![feature(allocator_api)]
 #![no_std]
 
@@ -13,17 +10,12 @@ pub mod linked_list;
 use core::cmp::max;
 pub use linked_list::{LinkedList, MemBlockFoot, MemBlockHead};
 
-/// the strategy
 pub enum BasicAllocatorStrategy {
-    /// first fit
     FirstFitStrategy,
-    /// best fit
     BestFitStrategy,
-    /// worst fit
     WorstFitStrategy,
 }
 
-/// the heap structure of the allocator
 pub struct Heap {
     free_list: LinkedList,
     user: usize,                      //分配给用户的内存大小
@@ -33,6 +25,7 @@ pub struct Heap {
     begin_addr: usize,                //堆区起始地址
     end_addr: usize,                  //堆区结束地址
 
+    //处理kernel page table，对此的申请是不经过这里的，这会形如在堆空间中挖了一个洞
     kernel_begin: Vec<usize>,
     kernel_end: Vec<usize>,
 }
@@ -49,7 +42,6 @@ fn alignto(size: usize, align: usize) -> usize {
 
 impl Heap {
     /// Create an empty heap
-    /// Currently, best fit strategy is used as the default allocator strategy,
     pub const fn new() -> Self {
         Heap {
             free_list: LinkedList::new(),
@@ -57,7 +49,9 @@ impl Heap {
             allocated: 0,
             total: 0,
 
+            //strategy: BasicAllocatorStrategy::FirstFitStrategy,
             strategy: BasicAllocatorStrategy::BestFitStrategy,
+            //strategy: BasicAllocatorStrategy::WorstFitStrategy,
             begin_addr: 0,
             end_addr: 0,
 
@@ -67,7 +61,7 @@ impl Heap {
     }
 
     ///init
-    pub fn init(&mut self, heap_start_addr: usize, heap_size: usize) {
+    pub fn init(&mut self, heap_start_addr: usize, heap_size: usize, strategy: &str) {
         assert!(
             heap_start_addr % 4096 == 0,
             "Start address should be page aligned"
@@ -83,6 +77,7 @@ impl Heap {
         self.end_addr = heap_start_addr + heap_size;
         self.push_mem_block(heap_start_addr, heap_size);
         self.total = heap_size;
+        self.set_strategy(strategy);
     }
 
     ///set strategy
@@ -128,7 +123,7 @@ impl Heap {
         self.total += heap_size;
     }
 
-    /// fitst fit strategy
+    /// fitst fit策略
     pub fn first_fit(&mut self, size: usize, align: usize) -> Option<*mut MemBlockHead> {
         let mut block = self.free_list.head;
         while !block.is_null() {
@@ -144,7 +139,7 @@ impl Heap {
         None
     }
 
-    /// best fit strategy
+    /// best fit策略
     pub fn best_fit(&mut self, size: usize, align: usize) -> Option<*mut MemBlockHead> {
         let mut res: Option<*mut MemBlockHead> = None;
         let mut now_size: usize = 0;
@@ -153,12 +148,13 @@ impl Heap {
             unsafe {
                 let addr = block as usize;
                 let bsize = (*block).size();
-                let addr_left = addr + bsize - get_aligned(addr, align) - size - size_of::<usize>();
-                if addr + bsize >= get_aligned(addr, align) + size + size_of::<usize>()
-                    && (res.is_none() || addr_left < now_size)
-                {
-                    now_size = addr_left;
-                    res = Some(block);
+                if addr + bsize >= get_aligned(addr, align) + size + size_of::<usize>() {
+                    let addr_left =
+                        addr + bsize - get_aligned(addr, align) - size - size_of::<usize>();
+                    if res.is_none() || addr_left < now_size {
+                        now_size = addr_left;
+                        res = Some(block);
+                    }
                 }
                 block = (*block).nxt;
             }
@@ -166,7 +162,7 @@ impl Heap {
         res
     }
 
-    /// worst fit strategy
+    /// worst fit策略
     pub fn worst_fit(&mut self, size: usize, align: usize) -> Option<*mut MemBlockHead> {
         let mut res: Option<*mut MemBlockHead> = None;
         let mut now_size: usize = 0;
@@ -175,12 +171,13 @@ impl Heap {
             unsafe {
                 let addr = block as usize;
                 let bsize = (*block).size();
-                let addr_left = addr + bsize - get_aligned(addr, align) - size - size_of::<usize>();
-                if addr + bsize >= get_aligned(addr, align) + size + size_of::<usize>()
-                    && (res.is_none() || addr_left > now_size)
-                {
-                    now_size = addr_left;
-                    res = Some(block);
+                if addr + bsize >= get_aligned(addr, align) + size + size_of::<usize>() {
+                    let addr_left =
+                        addr + bsize - get_aligned(addr, align) - size - size_of::<usize>();
+                    if res.is_none() || addr_left > now_size {
+                        now_size = addr_left;
+                        res = Some(block);
+                    }
                 }
                 block = (*block).nxt;
             }
@@ -191,7 +188,7 @@ impl Heap {
     /// Allocates a chunk of the given size with the given alignment. Returns a pointer to the
     /// beginning of that chunk if it was successful. Else it returns `Err`.
     pub fn allocate(&mut self, layout: Layout) -> Result<usize, AllocError> {
-        // The minimum allocate memory is 16 Bytes
+        //单次分配最小16字节
         let size = alignto(
             max(layout.size(), max(layout.align(), 2 * size_of::<usize>())),
             size_of::<usize>(),
@@ -207,14 +204,17 @@ impl Heap {
                 Some(inner) => {
                     let res = inner as usize;
                     let block_size = (*inner).size();
+                    //地址对齐
                     let addr = get_aligned(res, layout.align());
                     let addr_left = res + block_size - addr - size - size_of::<usize>();
                     if addr_left > 4 * size_of::<usize>() {
+                        //还能切出去更小的块
                         (*inner).set_size(block_size - addr_left);
                         (*inner).set_used(true);
                         self.free_list.del(inner);
                         self.user += layout.size();
                         self.allocated += block_size - addr_left;
+                        //一定不会merge
                         self.free_list.push(
                             (addr + size + size_of::<usize>()) as *mut MemBlockHead,
                             addr_left,
@@ -239,6 +239,7 @@ impl Heap {
         let mut now_addr = addr;
         let mut now_size = size;
 
+        //先找:是否有一个块紧贴在它后面
         if now_addr + now_size != self.end_addr
             && !self.kernel_begin.contains(&(now_addr + now_size))
         {
@@ -250,7 +251,7 @@ impl Heap {
                 }
             }
         }
-
+        //再找:是否有一个块紧贴在它前面
         if now_addr != self.begin_addr && !self.kernel_end.contains(&(now_addr)) {
             unsafe {
                 let pre_block =
@@ -289,17 +290,14 @@ impl Heap {
         }
     }
 
-    /// get total bytes
     pub fn total_bytes(&self) -> usize {
         self.total
     }
 
-    /// get used bytes
     pub fn used_bytes(&self) -> usize {
         self.user
     }
 
-    /// get available bytes
     pub fn available_bytes(&self) -> usize {
         self.total - self.allocated
     }

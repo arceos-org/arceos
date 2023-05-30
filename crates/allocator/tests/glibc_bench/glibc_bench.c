@@ -51,8 +51,8 @@ typedef struct
 static void
 do_benchmark (malloc_args *args, char**arr)
 {
-  printf("do benchmark: %d %d %d %d\n",args->iters,args->size,args->n,args->elapsed);
-  timing_t start, stop;
+  //printf("do benchmark: %d %d %d %d\n",args->iters,args->size,args->n,args->elapsed);
+  //timing_t start, stop;
   size_t iters = args->iters;
   size_t size = args->size;
   int n = args->n;
@@ -61,12 +61,12 @@ do_benchmark (malloc_args *args, char**arr)
 
   int *_size = glibc_bench_malloc(n * sizeof(int));
 
-  for (int j = 0; j < iters; j++)
+  for (int j = 0; j < (int)iters; j++)
     {
       for (int i = 0; i < n; i++) {
         arr[i] = glibc_bench_malloc (size);
         _size[i] = size;
-        for(int g = 0; g < size; g++) { arr[i][g] =(char)g; }
+        for(int g = 0; g < (int)size; g++) { arr[i][g] =(char)g; }
       }
 
       // free half in fifo order
@@ -91,22 +91,24 @@ do_benchmark (malloc_args *args, char**arr)
 static malloc_args tests[3][NUM_ALLOCS];
 static int allocs[NUM_ALLOCS] = { 25, 100, 400, MAX_ALLOCS };
 
+/*
 static void *
 thread_test (void *p)
 {
   char **arr = (char**)p;
 
-  /* Run benchmark multi-threaded.  */
+  // Run benchmark multi-threaded.
   for (int i = 0; i < NUM_ALLOCS; i++)
     do_benchmark (&tests[2][i], arr);
 
   return p;
 }
+*/
 
 void
 bench (unsigned long size)
 {
-  printf("bench: size = %d\n",size);
+  //printf("bench: size = %d\n",size);
   size_t iters = NUM_ITERS;
   char**arr = (char**)glibc_bench_malloc (MAX_ALLOCS * sizeof (void*));
 

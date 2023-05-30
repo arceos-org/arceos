@@ -8,7 +8,7 @@
 //!   [`BitmapPageAllocator`])
 //! - [`IdAllocator`]: Used to allocate unique IDs.
 
-#![no_std]
+#![cfg_attr(not(test), no_std)]
 #![feature(result_option_inspect)]
 
 mod basic;

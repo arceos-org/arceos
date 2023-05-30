@@ -15,15 +15,12 @@ dependencies = [
 name = "allocator"
 version = "0.1.0"
 dependencies = [
- "axlog",
  "basic_allocator",
  "bitmap-allocator",
  "buddy_system_allocator",
- "libax",
- "libc",
+ "cc",
  "log",
  "slab_allocator",
- "spin 0.9.8",
  "tlsf_allocator",
  "tlsf_c_allocator",
 ]
@@ -172,6 +169,7 @@ version = "0.1.0"
 dependencies = [
  "allocator",
  "axerrno",
+ "cfg-if",
  "log",
  "memory_addr",
  "spinlock",
@@ -511,6 +509,9 @@ name = "cc"
 version = "1.0.79"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "50d30906286121d95be3d479533b458f87493b30a4b5f79a607db8f5d11aa91f"
+dependencies = [
+ "jobserver",
+]
 
 [[package]]
 name = "cexpr"
@@ -943,6 +944,15 @@ name = "itoa"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "453ad9f582a441959e5f0d088b02ce04cfe8d51a8eaf077f12ac6d3e94164ca6"
+
+[[package]]
+name = "jobserver"
+version = "0.1.26"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "936cfd212a0155903bcbc060e316fb6cc7cbf2e1907329391ebadc1fe0ce77c2"
+dependencies = [
+ "libc",
+]
 
 [[package]]
 name = "js-sys"
@@ -1647,6 +1657,7 @@ dependencies = [
 name = "tlsf_c_allocator"
 version = "0.1.0"
 dependencies = [
+ "cc",
  "libc",
  "log",
 ]

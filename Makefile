@@ -36,6 +36,7 @@ else ifeq ($(ARCH), riscv64)
   ACCEL ?= n
   PLATFORM ?= qemu-virt-riscv
   TARGET := riscv64gc-unknown-none-elf
+  TARGET_CFLAGS := -mabi=lp64d
 else ifeq ($(ARCH), aarch64)
   ACCEL ?= n
   PLATFORM ?= qemu-virt-aarch64
@@ -51,18 +52,18 @@ export MODE
 export LOG
 
 # Binutils
-ifeq ($(APP_LANG), c)
-  # CROSS_COMPILE ?= $(ARCH)-linux-gnu-
-  CROSS_COMPILE ?= $(ARCH)-linux-musl-
-  CC := $(CROSS_COMPILE)gcc
-  AR := $(CROSS_COMPILE)ar
-  RANLIB := $(CROSS_COMPILE)ranlib
-  LD := rust-lld -flavor gnu
-endif
+CROSS_COMPILE ?= $(ARCH)-linux-musl-
+CC := $(CROSS_COMPILE)gcc
+AR := $(CROSS_COMPILE)ar
+RANLIB := $(CROSS_COMPILE)ranlib
+LD := rust-lld -flavor gnu
 
 OBJDUMP ?= rust-objdump -d --print-imm-hex --x86-asm-syntax=intel
 OBJCOPY ?= rust-objcopy --binary-architecture=$(ARCH)
 GDB ?= gdb-multiarch
+
+export TARGET_CC = $(CC)
+export TARGET_CFLAGS
 
 # Paths
 OUT_DIR ?= $(APP)
