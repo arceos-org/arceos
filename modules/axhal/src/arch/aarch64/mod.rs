@@ -93,3 +93,8 @@ pub fn flush_icache_all() {
 pub fn set_exception_vector_base(vbar_el1: usize) {
     VBAR_EL1.set(vbar_el1 as _);
 }
+
+/// Flushes the data cache at addr
+pub fn flush_dcache(addr: usize) {
+    unsafe { asm!("dc ivac, {0:x}; dsb sy; isb", in(reg) addr) };
+}

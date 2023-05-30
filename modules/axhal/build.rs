@@ -6,7 +6,10 @@ fn main() {
 }
 
 fn gen_linker_script(arch: &str) -> Result<()> {
+    #[cfg(not(feature = "platform-raspi4-aarch64"))]
     let fname = format!("linker_{}.lds", arch);
+    #[cfg(feature = "platform-raspi4-aarch64")]
+    let fname = format!("linker_{}_raspi4.lds", arch);
     let output_arch = if arch == "x86_64" {
         "i386:x86-64"
     } else if arch.contains("riscv") {
