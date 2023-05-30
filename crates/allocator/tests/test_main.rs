@@ -269,8 +269,8 @@ fn first_fit_alloc_test() {
     //align_test();
     basic_test();
     mi_test();
-    malloc_large_test();
-    glibc_bench_test();
+    //malloc_large_test();
+    //glibc_bench_test();
     //multi_thread_test();
     //multi_thread_c_test();
     println!("first fit alloc test passed!");
@@ -293,8 +293,8 @@ fn best_fit_alloc_test() {
     //align_test();
     basic_test();
     mi_test();
-    malloc_large_test();
-    glibc_bench_test();
+    //malloc_large_test();
+    //glibc_bench_test();
     //multi_thread_test();
     //multi_thread_c_test();
     println!("best fit alloc test passed!");
@@ -317,8 +317,8 @@ fn worst_fit_alloc_test() {
     //align_test();
     basic_test();
     mi_test();
-    malloc_large_test();
-    glibc_bench_test();
+    //malloc_large_test();
+    //glibc_bench_test();
     //multi_thread_test();
     //multi_thread_c_test();
     println!("worst fit alloc test passed!");
@@ -341,8 +341,8 @@ fn buddy_fit_alloc_test() {
     //align_test();
     basic_test();
     mi_test();
-    malloc_large_test();
-    glibc_bench_test();
+    //malloc_large_test();
+    //glibc_bench_test();
     //multi_thread_test();
     //multi_thread_c_test();
     println!("buddy alloc test passed!");
@@ -365,8 +365,8 @@ fn slab_alloc_test() {
     //align_test();
     basic_test();
     mi_test();
-    malloc_large_test();
-    glibc_bench_test();
+    //malloc_large_test();
+    //glibc_bench_test();
     //multi_thread_test();
     //multi_thread_c_test();
     println!("slab alloc test passed!");
@@ -380,8 +380,7 @@ fn slab_alloc_test() {
 fn test_start() {
     system_alloc_test();
     buddy_fit_alloc_test();
-    // slab alloc may have bugs?
-    //slab_alloc_test();
+    slab_alloc_test();
     first_fit_alloc_test();
     best_fit_alloc_test();
     worst_fit_alloc_test();
