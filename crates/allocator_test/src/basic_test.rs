@@ -2,7 +2,7 @@ use alloc::collections::BTreeMap;
 use alloc::format;
 use alloc::vec::Vec;
 use core::sync::atomic::{AtomicU64, Ordering::SeqCst};
-use log::info;
+use log::debug;
 
 static SEED: AtomicU64 = AtomicU64::new(0xa2ce_a2ce);
 
@@ -18,21 +18,24 @@ pub fn rand_u32() -> u32 {
     (new_seed >> 33) as u32
 }
 
+/// Return a usize pseudo random interger.
 pub fn rand_usize() -> usize {
     ((rand_u32() as usize) << 32) | (rand_u32() as usize)
 }
 
+/// test of vec
 pub fn test_vec(n: usize) {
-    info!("test_vec() begin...");
+    debug!("test_vec() begin...");
     let mut v = Vec::new();
     for _ in 0..n {
         v.push(rand_u32());
     }
-    info!("test_vec() OK!");
+    debug!("test_vec() OK!");
 }
 
+/// test of btreemap
 pub fn test_btree_map(n: usize) {
-    info!("test_btree_map() begin...");
+    debug!("test_btree_map() begin...");
     let mut m = BTreeMap::new();
     for _ in 0..n {
         if rand_usize() % 5 == 0 && !m.is_empty() {
@@ -48,11 +51,12 @@ pub fn test_btree_map(n: usize) {
             assert_eq!(k.parse::<usize>().unwrap(), *v);
         }
     }
-    info!("test_btree_map() OK!");
+    debug!("test_btree_map() OK!");
 }
 
+/// another test of vec
 pub fn test_vec_2(n: usize, m: usize) {
-    info!("test_vec2() begin...");
+    debug!("test_vec2() begin...");
     let mut v: Vec<Vec<usize>> = Vec::new();
     for _ in 0..n {
         let mut tmp: Vec<usize> = Vec::with_capacity(m);
@@ -79,11 +83,12 @@ pub fn test_vec_2(n: usize, m: usize) {
         let tmp: Vec<usize> = Vec::new();
         v[*o] = tmp;
     }
-    info!("test_vec2() OK!");
+    debug!("test_vec2() OK!");
 }
 
+/// third test of vec
 pub fn test_vec_3(n: usize, k1: usize, k2: usize) {
-    info!("test_vec3() begin...");
+    debug!("test_vec3() begin...");
     let mut v: Vec<Vec<usize>> = Vec::new();
     for i in 0..n * 4 {
         let nw = match i >= n * 2 {
@@ -111,16 +116,14 @@ pub fn test_vec_3(n: usize, k1: usize, k2: usize) {
             v[4 * n + i].push(rand_usize());
         }
     }
-    info!("test_vec3() OK!");
+    debug!("test_vec3() OK!");
 }
 
 /// basic test
 pub fn basic_test() {
-    info!("Basic alloc test begin...");
     test_vec(3000000);
     test_vec_2(30000, 64);
     test_vec_2(7500, 520);
     test_btree_map(50000);
     test_vec_3(10000, 32, 64);
-    info!("Basic alloc test OK!");
 }

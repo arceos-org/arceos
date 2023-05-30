@@ -1,3 +1,5 @@
+//! basic allocator for `no_std` systems.
+//! implement 3 strategies: first fit, best fit ans worst fit
 #![feature(allocator_api)]
 #![no_std]
 
@@ -10,12 +12,19 @@ pub mod linked_list;
 use core::cmp::max;
 pub use linked_list::{LinkedList, MemBlockFoot, MemBlockHead};
 
+/// The strategy of basic allocator.
+/// including FirstFitStrategy, BestFitStrategy and WorstFitStrategy.
+/// default mode is BestFitStrategy
 pub enum BasicAllocatorStrategy {
+    /// first fit
     FirstFitStrategy,
+    /// best fit
     BestFitStrategy,
+    /// worst fit
     WorstFitStrategy,
 }
 
+/// the inner heap of allocator
 pub struct Heap {
     free_list: LinkedList,
     user: usize,                      //分配给用户的内存大小
@@ -25,7 +34,7 @@ pub struct Heap {
     begin_addr: usize,                //堆区起始地址
     end_addr: usize,                  //堆区结束地址
 
-    //处理kernel page table，对此的申请是不经过这里的，这会形如在堆空间中挖了一个洞
+    // 记录Allocator中每一段连续的内存地址
     kernel_begin: Vec<usize>,
     kernel_end: Vec<usize>,
 }
@@ -49,9 +58,8 @@ impl Heap {
             allocated: 0,
             total: 0,
 
-            //strategy: BasicAllocatorStrategy::FirstFitStrategy,
+            // default mode
             strategy: BasicAllocatorStrategy::BestFitStrategy,
-            //strategy: BasicAllocatorStrategy::WorstFitStrategy,
             begin_addr: 0,
             end_addr: 0,
 
@@ -123,7 +131,7 @@ impl Heap {
         self.total += heap_size;
     }
 
-    /// fitst fit策略
+    /// fitst fit strategy
     pub fn first_fit(&mut self, size: usize, align: usize) -> Option<*mut MemBlockHead> {
         let mut block = self.free_list.head;
         while !block.is_null() {
@@ -139,7 +147,7 @@ impl Heap {
         None
     }
 
-    /// best fit策略
+    /// best fit strategy
     pub fn best_fit(&mut self, size: usize, align: usize) -> Option<*mut MemBlockHead> {
         let mut res: Option<*mut MemBlockHead> = None;
         let mut now_size: usize = 0;
@@ -162,7 +170,7 @@ impl Heap {
         res
     }
 
-    /// worst fit策略
+    /// worst fit strategy
     pub fn worst_fit(&mut self, size: usize, align: usize) -> Option<*mut MemBlockHead> {
         let mut res: Option<*mut MemBlockHead> = None;
         let mut now_size: usize = 0;
@@ -290,14 +298,17 @@ impl Heap {
         }
     }
 
+    /// get total bytes    
     pub fn total_bytes(&self) -> usize {
         self.total
     }
 
+    /// get used bytes
     pub fn used_bytes(&self) -> usize {
         self.user
     }
 
+    /// get available bytes
     pub fn available_bytes(&self) -> usize {
         self.total - self.allocated
     }

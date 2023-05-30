@@ -1,3 +1,5 @@
+//! Allocator test for user mode test of crate `allocator`.
+
 #![feature(ptr_alignment_type)]
 #![no_std]
 extern crate alloc;
@@ -9,17 +11,21 @@ use core::{alloc::Layout, ffi::c_ulonglong};
 
 #[link(name = "allocator_test")]
 extern "C" {
+    /// the start function of the mi_test
     pub fn mi_test_start(cb1: CallBackMalloc, cb2: CallBackMallocAligned, cb3: CallBackFree);
+    /// the start function of the malloc_large_test
     pub fn malloc_large_test_start(
         cb1: CallBackMalloc,
         cb2: CallBackMallocAligned,
         cb3: CallBackFree,
     );
+    /// the start function of the glibc_bench_test
     pub fn glibc_bench_test_start(
         cb1: CallBackMalloc,
         cb2: CallBackMallocAligned,
         cb3: CallBackFree,
     );
+    /// the start function of the multi_thread_c_test
     pub fn multi_thread_c_test_start(
         cb1: CallBackMalloc,
         cb2: CallBackMallocAligned,
@@ -27,9 +33,12 @@ extern "C" {
     );
 }
 
+/// the call back function of malloc
 pub type CallBackMalloc = unsafe extern "C" fn(size: c_ulonglong) -> c_ulonglong;
+/// the call back function of malloc_aligned
 pub type CallBackMallocAligned =
     unsafe extern "C" fn(size: c_ulonglong, align: c_ulonglong) -> c_ulonglong;
+/// the call back function of free
 pub type CallBackFree = unsafe extern "C" fn(ptr: c_ulonglong, size: c_ulonglong);
 
 /// # Safety

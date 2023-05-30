@@ -1,3 +1,6 @@
+//! TLSF allocator for `no_std` systems.
+//! written by rust code
+
 #![feature(allocator_api)]
 #![no_std]
 
@@ -10,11 +13,12 @@ use core::mem::size_of;
 mod data;
 use data::*;
 
+/// the heap structure of the allocator
 pub struct HeapRust {
-    head: AddrPointer,
-    total_mem: usize, // 总共占用内存
-    used_mem: usize,  // 已经分配出去的内存
-    avail_mem: usize, // 实际可用的内存
+    head: AddrPointer, // 指向TLSF头结构的指针
+    total_mem: usize,  // 总共占用内存
+    used_mem: usize,   // 已经分配出去的内存
+    avail_mem: usize,  // 实际可用的内存
 }
 
 unsafe impl Send for HeapRust {}
@@ -223,15 +227,15 @@ impl HeapRust {
         self.head.add_into_list(nblock);
     }
 
-    /// 查询内存使用情况
+    /// get total bytes
     pub fn total_bytes(&self) -> usize {
         self.total_mem
     }
-
+    /// get used bytes
     pub fn used_bytes(&self) -> usize {
         self.used_mem
     }
-
+    /// get available bytes
     pub fn available_bytes(&self) -> usize {
         self.avail_mem
     }
@@ -240,30 +244,37 @@ impl HeapRust {
 use core::ffi::c_ulonglong;
 #[link(name = "tlsf")]
 extern "C" {
+    /// create the TLSF structure with a memory pool
     pub fn tlsf_create_with_pool(mem: c_ulonglong, bytes: c_ulonglong) -> c_ulonglong;
+    /// add a memory pool to existing TLSF structure
     pub fn tlsf_add_pool(tlsf: c_ulonglong, mem: c_ulonglong, bytes: c_ulonglong) -> c_ulonglong;
-
-    pub fn tlsf_malloc(tlsf: c_ulonglong, bytes: c_ulonglong) -> c_ulonglong; //申请一段内存
-    pub fn tlsf_memalign(tlsf: c_ulonglong, align: c_ulonglong, bytes: c_ulonglong) -> c_ulonglong; //申请一段内存，要求对齐到align
-    pub fn tlsf_free(tlsf: c_ulonglong, ptr: c_ulonglong); //回收
+    /// malloc
+    pub fn tlsf_malloc(tlsf: c_ulonglong, bytes: c_ulonglong) -> c_ulonglong;
+    /// malloc an aligned memory
+    pub fn tlsf_memalign(tlsf: c_ulonglong, align: c_ulonglong, bytes: c_ulonglong) -> c_ulonglong;
+    /// free
+    pub fn tlsf_free(tlsf: c_ulonglong, ptr: c_ulonglong);
 }
 
+/// the inner heap of TLSF_C Allocator
 pub struct HeapC {
     inner: Option<c_ulonglong>,
 }
 
 impl HeapC {
+    /// create a new heap
     pub const fn new() -> Self {
         Self { inner: None }
     }
+    /// get inner mut
     pub fn inner_mut(&mut self) -> &mut c_ulonglong {
         self.inner.as_mut().unwrap()
     }
-
+    /// get inner
     pub fn inner(&self) -> &c_ulonglong {
         self.inner.as_ref().unwrap()
     }
-
+    /// init
     pub fn init(&mut self, start: usize, size: usize) {
         unsafe {
             self.inner = Some(
@@ -272,6 +283,13 @@ impl HeapC {
         }
     }
 
+    /// Adds memory to the heap. The start address must be valid
+    /// and the memory in the `[mem_start_addr, mem_start_addr + heap_size)` range must not be used for
+    /// anything else.
+    /// In case of linked list allocator the memory can only be extended.
+    /// # Safety
+    /// This function is unsafe because it can cause undefined behavior if the
+    /// given address is invalid.
     pub fn add_memory(&mut self, start: usize, size: usize) {
         unsafe {
             tlsf_add_pool(
@@ -282,6 +300,8 @@ impl HeapC {
         }
     }
 
+    /// Allocates a chunk of the given size with the given alignment. Returns a pointer to the
+    /// beginning of that chunk if it was successful. Else it returns `Err`.
     pub fn allocate(&mut self, size: usize, align_pow2: usize) -> Result<usize, AllocError> {
         if align_pow2 <= 8 {
             unsafe {
@@ -306,20 +326,27 @@ impl HeapC {
         }
     }
 
+    /// Frees the given allocation. `ptr` must be a pointer returned
+    /// by a call to the `allocate` function with identical size and alignment. Undefined
+    /// behavior may occur for invalid arguments, thus this function is unsafe.
+    ///
+    /// # Safety
+    /// This function is unsafe because it can cause undefined behavior if the
+    /// given address is invalid.
     pub fn deallocate(&mut self, pos: usize, _size: usize, _align_pow2: usize) {
         unsafe {
             tlsf_free(*self.inner() as c_ulonglong, pos as c_ulonglong);
         }
     }
-
+    /// get total bytes
     pub fn total_bytes(&self) -> usize {
         0
     }
-
+    /// get used bytes
     pub fn used_bytes(&self) -> usize {
         0
     }
-
+    /// get available bytes
     pub fn available_bytes(&self) -> usize {
         0
     }
