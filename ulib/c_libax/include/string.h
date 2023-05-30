@@ -1,7 +1,7 @@
 #ifndef __STRING_H__
 #define __STRING_H__
 
-#include <stdint.h>
+#include <stddef.h>
 
 int atoi(const char *s);
 
