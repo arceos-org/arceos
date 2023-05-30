@@ -1,4 +1,7 @@
-use crate::{net_impl::driver::lwip_loop_once, IpAddr, SocketAddr};
+use crate::{
+    net_impl::{driver::lwip_loop_once, RECV_QUEUE_LEN},
+    IpAddr, SocketAddr,
+};
 use alloc::{boxed::Box, collections::VecDeque};
 use axerrno::{ax_err, AxError, AxResult};
 use axsync::Mutex;
@@ -58,7 +61,7 @@ impl UdpSocket {
         let mut socket = Self {
             pcb: UdpPcbPointer(unsafe { udp_new() }),
             inner: Box::pin(UdpSocketInner {
-                recv_queue: Mutex::new(VecDeque::new()),
+                recv_queue: Mutex::new(VecDeque::with_capacity(RECV_QUEUE_LEN)),
             }),
         };
         unsafe {
