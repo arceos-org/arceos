@@ -65,6 +65,52 @@ cfg_if! {
             fn flush(&mut self) -> DevResult {
                 Err(DevError::Unsupported)
             }
+
+            fn read_block_nb(
+                &mut self,
+                _: u64,
+                _: &mut virtio_drivers::device::blk::BlkReq,
+                _: &mut [u8],
+                _: &mut virtio_drivers::device::blk::BlkResp,
+            ) -> DevResult<u16> {
+                Err(DevError::Unsupported)
+            }
+
+            fn write_block_nb(
+                &mut self,
+                _: u64,
+                _: &mut virtio_drivers::device::blk::BlkReq,
+                _: &[u8],
+                _: &mut virtio_drivers::device::blk::BlkResp,
+            ) -> DevResult<u16> {
+                Err(DevError::Unsupported)
+            }
+
+
+            fn complete_read_block(
+                &mut self,
+                _: u16,
+                _: &virtio_drivers::device::blk::BlkReq,
+                _: &mut [u8],
+                _: &mut virtio_drivers::device::blk::BlkResp,
+            ) -> DevResult {
+                Err(DevError::Unsupported)
+            }
+
+
+            fn complete_write_block(
+                &mut self,
+                _: u16,
+                _: &virtio_drivers::device::blk::BlkReq,
+                _: &[u8],
+                _: &mut virtio_drivers::device::blk::BlkResp,
+            ) -> DevResult {
+                Err(DevError::Unsupported)
+            }
+
+            fn peek_used(&mut self) -> Option<u16> {
+                None
+            }
         }
     }
 }

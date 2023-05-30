@@ -1,4 +1,6 @@
+//! RISC-V PLIC implementation.
 #![no_std]
+#![deny(missing_docs)]
 #![feature(const_nonnull_new, const_option, const_ptr_as_ref)]
 
 use core::mem::size_of;
@@ -36,11 +38,13 @@ register_structs! {
 
 }
 
+/// RISC-V PLIC struct.
 pub struct Plic {
     base: NonNull<PlicRegs>,
 }
 
 impl Plic {
+    /// Create a new instance.
     pub const fn new(base: *mut u8) -> Self {
         Plic {
             base: NonNull::new(base as *mut PlicRegs).unwrap().cast(),
@@ -74,6 +78,7 @@ impl Plic {
         self.regs().CONTEXT[id].priority_threshold.set(threshold);
     }
 
+    /// Get threshold.
     pub fn get_threshold(&self, hart_id: usize, priority: usize) -> u32 {
         let id = hart_id * 2 + priority;
         self.regs().CONTEXT[id].priority_threshold.get()

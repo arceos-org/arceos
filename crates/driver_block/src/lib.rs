@@ -46,8 +46,8 @@ pub trait BlockDriverOps: BaseDriverOps {
         resp: &mut BlkResp,
     ) -> DevResult<u16>;
 
-    #[cfg(feature = "irq")]
     /// Writes blocked data to the given block, without blocking.
+    #[cfg(feature = "irq")]
     fn write_block_nb(
         &mut self,
         block_id: u64,
@@ -56,6 +56,7 @@ pub trait BlockDriverOps: BaseDriverOps {
         resp: &mut BlkResp,
     ) -> DevResult<u16>;
 
+    /// Complete a read block request.
     #[cfg(feature = "irq")]
     fn complete_read_block(
         &mut self,
@@ -65,6 +66,7 @@ pub trait BlockDriverOps: BaseDriverOps {
         resp: &mut BlkResp,
     ) -> DevResult;
 
+    /// Complete a write block request.
     #[cfg(feature = "irq")]
     fn complete_write_block(
         &mut self,
@@ -74,6 +76,7 @@ pub trait BlockDriverOps: BaseDriverOps {
         resp: &mut BlkResp,
     ) -> DevResult;
 
+    /// Peek the used ring.
     #[cfg(feature = "irq")]
     fn peek_used(&mut self) -> Option<u16>;
 }
