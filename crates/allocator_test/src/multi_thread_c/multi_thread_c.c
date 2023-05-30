@@ -68,9 +68,9 @@ void* func2(void* _tid){
 }
 
 void multi_thread_c_test_start(CallBackMalloc _cb1,CallBackMallocAligned _cb2,CallBackFree _cb3) {
-    cb1 = _cb1;
-    cb2 = _cb2;
-    cb3 = _cb3;
+    cb1_multi_thread_c = _cb1;
+    cb2_multi_thread_c = _cb2;
+    cb3_multi_thread_c = _cb3;
     printf("Hello multi_thread_test_c!\n");
     srand(2333);
     int *_tid = multi_thread_c_malloc(NUM_TASKS * sizeof(int));

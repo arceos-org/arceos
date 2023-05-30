@@ -14,9 +14,9 @@ void test_large() {
 }
 
 void mi_test_start(CallBackMalloc _cb1,CallBackMallocAligned _cb2,CallBackFree _cb3) {
-  cb1 = _cb1;
-  cb2 = _cb2;
-  cb3 = _cb3;
+  cb1_mi_test = _cb1;
+  cb2_mi_test = _cb2;
+  cb3_mi_test = _cb3;
   void* p1 = mi_malloc(16);
   void* p2 = mi_malloc(1000000);
   mi_free(p1,16);

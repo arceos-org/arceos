@@ -30,7 +30,7 @@
    multi-threaded using thread-arena, and main arena with SINGLE_THREAD_P
    false.  */
 
-#define NUM_ITERS 2000000
+#define NUM_ITERS 1000000
 #define NUM_ALLOCS 4
 #define MAX_ALLOCS 1600
 
@@ -137,9 +137,9 @@ bench (unsigned long size)
 }
 
 void glibc_bench_test_start(CallBackMalloc _cb1,CallBackMallocAligned _cb2,CallBackFree _cb3) {
-  cb1 = _cb1;
-  cb2 = _cb2;
-  cb3 = _cb3;
+  cb1_glibc_bench = _cb1;
+  cb2_glibc_bench = _cb2;
+  cb3_glibc_bench = _cb3;
   long size = 16;
 
   bench (size);

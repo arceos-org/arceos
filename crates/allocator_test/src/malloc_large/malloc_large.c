@@ -7,9 +7,9 @@ int get_random(int xmin,int xmax){
   return rand() % (xmax - xmin + 1) + xmin;
 }
 void malloc_large_test_start(CallBackMalloc _cb1,CallBackMallocAligned _cb2,CallBackFree _cb3) {
-  cb1 = _cb1;
-  cb2 = _cb2;
-  cb3 = _cb3;
+  cb1_malloc_large = _cb1;
+  cb2_malloc_large = _cb2;
+  cb3_malloc_large = _cb3;
   static const int kNumBuffers = 10;
   static const size_t kMinBufferSize = 2 * 1024 * 1024;//2MB
   static const size_t kMaxBufferSize = 5 * 1024 * 1024;//5MB
