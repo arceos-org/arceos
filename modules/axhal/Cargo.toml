@@ -20,6 +20,10 @@ platform-qemu-virt-aarch64 = [
     "axconfig/platform-qemu-virt-aarch64",
     "dep:page_table_entry", "dep:ratio",
 ]
+platform-raspi4-aarch64 = [
+    "axconfig/platform-raspi4-aarch64",
+    "dep:page_table_entry", "dep:ratio",
+]
 default = []
 
 [dependencies]

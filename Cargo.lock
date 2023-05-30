@@ -331,6 +331,7 @@ dependencies = [
 name = "axruntime"
 version = "0.1.0"
 dependencies = [
+ "aarch64-cpu",
  "axalloc",
  "axconfig",
  "axdisplay",

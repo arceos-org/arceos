@@ -19,6 +19,12 @@ cfg_if::cfg_if! {
     ))] {
         mod qemu_virt_aarch64;
         pub use self::qemu_virt_aarch64::*;
+    } else if #[cfg(all(
+        target_arch = "aarch64",
+        feature = "platform-raspi4-aarch64"
+    ))] {
+        mod raspi4_aarch64;
+        pub use self::raspi4_aarch64::*;
     } else {
         mod dummy;
         pub use self::dummy::*;

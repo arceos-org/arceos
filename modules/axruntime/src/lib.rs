@@ -18,6 +18,7 @@
 
 #![cfg_attr(not(test), no_std)]
 #![feature(doc_auto_cfg)]
+#![feature(asm_const)]
 
 #[macro_use]
 extern crate axlog;
@@ -223,8 +224,10 @@ fn init_allocator() {
 
 #[cfg(feature = "paging")]
 fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
-    use axhal::mem::{memory_regions, phys_to_virt};
-    use axhal::paging::PageTable;
+    use axhal::{
+        mem::{memory_regions, phys_to_virt},
+        paging::PageTable,
+    };
     use lazy_init::LazyInit;
 
     static KERNEL_PAGE_TABLE: LazyInit<PageTable> = LazyInit::new();
