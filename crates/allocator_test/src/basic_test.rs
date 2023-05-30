@@ -1,6 +1,8 @@
+use alloc::collections::BTreeMap;
+use alloc::format;
+use alloc::vec::Vec;
 use core::sync::atomic::{AtomicU64, Ordering::SeqCst};
-use std::collections::BTreeMap;
-use std::vec::Vec;
+use log::info;
 
 static SEED: AtomicU64 = AtomicU64::new(0xa2ce_a2ce);
 
@@ -21,16 +23,16 @@ pub fn rand_usize() -> usize {
 }
 
 pub fn test_vec(n: usize) {
-    println!("test_vec() begin...");
+    info!("test_vec() begin...");
     let mut v = Vec::new();
     for _ in 0..n {
         v.push(rand_u32());
     }
-    println!("test_vec() OK!");
+    info!("test_vec() OK!");
 }
 
 pub fn test_btree_map(n: usize) {
-    println!("test_btree_map() begin...");
+    info!("test_btree_map() begin...");
     let mut m = BTreeMap::new();
     for _ in 0..n {
         if rand_usize() % 5 == 0 && !m.is_empty() {
@@ -46,11 +48,11 @@ pub fn test_btree_map(n: usize) {
             assert_eq!(k.parse::<usize>().unwrap(), *v);
         }
     }
-    println!("test_btree_map() OK!");
+    info!("test_btree_map() OK!");
 }
 
 pub fn test_vec_2(n: usize, m: usize) {
-    println!("test_vec2() begin...");
+    info!("test_vec2() begin...");
     let mut v: Vec<Vec<usize>> = Vec::new();
     for _ in 0..n {
         let mut tmp: Vec<usize> = Vec::with_capacity(m);
@@ -71,20 +73,17 @@ pub fn test_vec_2(n: usize, m: usize) {
 
     for i in 1..n {
         let o: usize = rand_usize() % (i + 1);
-        let tmp = p[i];
-        p[i] = p[o];
-        p[o] = tmp;
+        p.swap(i, o);
     }
-    for i in 0..n {
-        let o = p[i];
+    for o in p.iter().take(n) {
         let tmp: Vec<usize> = Vec::new();
-        v[o] = tmp;
+        v[*o] = tmp;
     }
-    println!("test_vec2() OK!");
+    info!("test_vec2() OK!");
 }
 
 pub fn test_vec_3(n: usize, k1: usize, k2: usize) {
-    println!("test_vec3() begin...");
+    info!("test_vec3() begin...");
     let mut v: Vec<Vec<usize>> = Vec::new();
     for i in 0..n * 4 {
         let nw = match i >= n * 2 {
@@ -99,10 +98,10 @@ pub fn test_vec_3(n: usize, k1: usize, k2: usize) {
             v[i].push(rand_usize());
         }
     }
-    for i in 0..n * 4 {
+    for (i, o) in v.iter_mut().enumerate().take(n * 4) {
         if i % 2 == 1 {
             let tmp: Vec<usize> = Vec::new();
-            v[i] = tmp;
+            *o = tmp;
         }
     }
     for i in 0..n {
@@ -112,19 +111,16 @@ pub fn test_vec_3(n: usize, k1: usize, k2: usize) {
             v[4 * n + i].push(rand_usize());
         }
     }
-    println!("test_vec3() OK!");
+    info!("test_vec3() OK!");
 }
 
 /// basic test
 pub fn basic_test() {
-    println!("Basic alloc test begin...");
-    let t0 = std::time::Instant::now();
+    info!("Basic alloc test begin...");
     test_vec(3000000);
     test_vec_2(30000, 64);
     test_vec_2(7500, 520);
     test_btree_map(50000);
     test_vec_3(10000, 32, 64);
-    let t1 = std::time::Instant::now();
-    println!("time: {:#?}", t1 - t0);
-    println!("Basic alloc test OK!");
+    info!("Basic alloc test OK!");
 }

@@ -15,6 +15,7 @@ dependencies = [
 name = "allocator"
 version = "0.1.0"
 dependencies = [
+ "allocator_test",
  "basic_allocator",
  "bitmap-allocator",
  "buddy_system_allocator",
@@ -22,7 +23,19 @@ dependencies = [
  "log",
  "slab_allocator",
  "tlsf_allocator",
- "tlsf_c_allocator",
+]
+
+[[package]]
+name = "allocator_test"
+version = "0.1.0"
+dependencies = [
+ "basic_allocator",
+ "bitmap-allocator",
+ "buddy_system_allocator",
+ "cc",
+ "log",
+ "slab_allocator",
+ "tlsf_allocator",
 ]
 
 [[package]]
@@ -1648,13 +1661,6 @@ version = "0.1.0"
 
 [[package]]
 name = "tlsf_allocator"
-version = "0.1.0"
-dependencies = [
- "log",
-]
-
-[[package]]
-name = "tlsf_c_allocator"
 version = "0.1.0"
 dependencies = [
  "cc",

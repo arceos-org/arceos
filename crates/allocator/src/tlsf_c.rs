@@ -3,31 +3,29 @@
 //!
 
 use super::{AllocError, AllocResult, BaseAllocator, ByteAllocator};
-use tlsf_c_allocator::Heap;
+use tlsf_allocator::HeapC;
 
-/// A byte-granularity memory allocator based on the [tlsf_allocator] written by C code.
 pub struct TLSFCAllocator {
-    inner: Option<Heap>,
+    inner: Option<HeapC>,
 }
 
 impl TLSFCAllocator {
-    /// Creates a new empty `TLSFCAllocator`.
     pub const fn new() -> Self {
         Self { inner: None }
     }
 
-    fn inner_mut(&mut self) -> &mut Heap {
+    fn inner_mut(&mut self) -> &mut HeapC {
         self.inner.as_mut().unwrap()
     }
 
-    fn inner(&self) -> &Heap {
+    fn inner(&self) -> &HeapC {
         self.inner.as_ref().unwrap()
     }
 }
 
 impl BaseAllocator for TLSFCAllocator {
     fn init(&mut self, start: usize, size: usize) {
-        self.inner = Some(Heap::new());
+        self.inner = Some(HeapC::new());
         self.inner_mut().init(start, size);
     }
 

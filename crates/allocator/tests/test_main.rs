@@ -1,86 +1,27 @@
 #![feature(ptr_alignment_type)]
-mod basic_test;
-use basic_test::{basic_test, rand_u32, rand_usize, srand};
 mod global_allocator;
+use allocator_test;
+use allocator_test::*;
 use core::panic;
 use core::sync::atomic::{AtomicUsize, Ordering};
 use global_allocator::GLOBAL_ALLOCATOR;
-use std::ffi::c_int;
+use std::alloc::Layout;
 use std::thread;
 use std::time::Duration;
 use std::vec::Vec;
-use std::{alloc::Layout, ffi::c_ulonglong};
-//use allocator_test::*;
 
-#[link(name = "allocator_test")]
-extern "C" {
-    pub fn hello(a: c_int, cb: CallBack) -> c_int;
-    pub fn mi_test_start(cb1: CallBackMalloc, cb2: CallBackMallocAligned, cb3: CallBackFree);
-    pub fn malloc_large_test_start(
-        cb1: CallBackMalloc,
-        cb2: CallBackMallocAligned,
-        cb3: CallBackFree,
-    );
-    pub fn glibc_bench_test_start(
-        cb1: CallBackMalloc,
-        cb2: CallBackMallocAligned,
-        cb3: CallBackFree,
-    );
-    pub fn multi_thread_c_test_start(
-        cb1: CallBackMalloc,
-        cb2: CallBackMallocAligned,
-        cb3: CallBackFree,
-    );
+pub fn basic_test() {
+    println!("Basic alloc test begin...");
+    let t0 = std::time::Instant::now();
+    allocator_test::basic_test();
+    let t1 = std::time::Instant::now();
+    println!("time: {:#?}", t1 - t0);
+    println!("Basic alloc test OK!");
 }
-
-pub type CallBack = unsafe extern "C" fn(c_int) -> c_int;
-pub unsafe extern "C" fn cb_func(x: c_int) -> c_int {
-    println!("hello rust! {:#?}", x);
-    return x * x + 1;
-}
-pub fn call_back_test(x: c_int) {
-    unsafe {
-        let y = hello(x, cb_func);
-        println!("rust call_back test passed! {:#?}", y);
-    }
-}
-
-pub type CallBackMalloc = unsafe extern "C" fn(size: c_ulonglong) -> c_ulonglong;
-pub type CallBackMallocAligned =
-    unsafe extern "C" fn(size: c_ulonglong, align: c_ulonglong) -> c_ulonglong;
-pub type CallBackFree = unsafe extern "C" fn(ptr: c_ulonglong, size: c_ulonglong);
-
-pub unsafe extern "C" fn cb_malloc_func(size: c_ulonglong) -> c_ulonglong {
-    if let Ok(ptr) = GLOBAL_ALLOCATOR.alloc(Layout::from_size_align_unchecked(size as usize, 8)) {
-        return ptr as c_ulonglong;
-    }
-    panic!("alloc err.");
-}
-pub unsafe extern "C" fn cb_malloc_aligned_func(
-    size: c_ulonglong,
-    align: c_ulonglong,
-) -> c_ulonglong {
-    if let Ok(ptr) = GLOBAL_ALLOCATOR.alloc(Layout::from_size_align_unchecked(
-        size as usize,
-        align as usize,
-    )) {
-        return ptr as c_ulonglong;
-    }
-    panic!("alloc err.");
-}
-pub unsafe extern "C" fn cb_free_func(ptr: c_ulonglong, size: c_ulonglong) {
-    GLOBAL_ALLOCATOR.dealloc(
-        ptr as usize,
-        Layout::from_size_align_unchecked(size as usize, 8),
-    );
-}
-
 pub fn mi_test() {
     println!("Mi alloc test begin...");
     let t0 = std::time::Instant::now();
-    unsafe {
-        mi_test_start(cb_malloc_func, cb_malloc_aligned_func, cb_free_func);
-    }
+    allocator_test::mi_test();
     let t1 = std::time::Instant::now();
     println!("time: {:#?}", t1 - t0);
     println!("Mi alloc test OK!");
@@ -88,9 +29,7 @@ pub fn mi_test() {
 pub fn malloc_large_test() {
     println!("Malloc large test begin...");
     let t0 = std::time::Instant::now();
-    unsafe {
-        malloc_large_test_start(cb_malloc_func, cb_malloc_aligned_func, cb_free_func);
-    }
+    allocator_test::malloc_large_test();
     let t1 = std::time::Instant::now();
     println!("time: {:#?}", t1 - t0);
     println!("Malloc large test OK!");
@@ -98,9 +37,7 @@ pub fn malloc_large_test() {
 pub fn glibc_bench_test() {
     println!("Glibc bench test begin...");
     let t0 = std::time::Instant::now();
-    unsafe {
-        glibc_bench_test_start(cb_malloc_func, cb_malloc_aligned_func, cb_free_func);
-    }
+    allocator_test::glibc_bench_test();
     let t1 = std::time::Instant::now();
     println!("time: {:#?}", t1 - t0);
     println!("Glibc bench test OK!");
@@ -108,9 +45,7 @@ pub fn glibc_bench_test() {
 pub fn multi_thread_c_test() {
     println!("Multi thread C test begin...");
     let t0 = std::time::Instant::now();
-    unsafe {
-        multi_thread_c_test_start(cb_malloc_func, cb_malloc_aligned_func, cb_free_func);
-    }
+    allocator_test::multi_thread_c_test();
     let t1 = std::time::Instant::now();
     println!("time: {:#?}", t1 - t0);
     println!("Multi thread C test OK!");
@@ -133,71 +68,11 @@ pub fn memory_chk() {
     }
 }
 
-/// new aligned memory
-pub fn new_mem(size: usize, align: usize) -> usize {
-    unsafe {
-        if let Ok(ptr) = GLOBAL_ALLOCATOR.alloc(Layout::from_size_align_unchecked(size, align)) {
-            return ptr;
-        }
-        panic!("alloc err.");
-    }
-}
-
 /// align test
 pub fn align_test() {
     println!("Align alloc test begin...");
     let t0 = std::time::Instant::now();
-    let mut v = Vec::new();
-    let mut v2 = Vec::new();
-    let mut v3 = Vec::new();
-    let mut p = Vec::new();
-    let n = 50000;
-    let mut cnt = 0;
-    let mut nw = 0;
-    for _ in 0..n {
-        if (rand_u32() % 3 != 0) | (nw == 0) {
-            //插入一个块
-            let size = (((1 << (rand_u32() & 15)) as f64)
-                * (1.0 + (rand_u32() as f64) / (0xffffffff as u32 as f64)))
-                as usize;
-            let align = (1 << (rand_u32() & 7)) as usize;
-            let addr = new_mem(size, align);
-            v.push(addr);
-            assert!((addr & (align - 1)) == 0, "align not correct.");
-            v2.push(size);
-            v3.push(align);
-            p.push(cnt);
-            cnt += 1;
-            nw += 1;
-        } else {
-            //删除一个块
-            let idx = rand_usize() % nw;
-            let addr = v[p[idx]];
-            let size = v2[p[idx]];
-            let align = v3[p[idx]];
-            unsafe {
-                GLOBAL_ALLOCATOR.dealloc(
-                    addr,
-                    Layout::from_size_align_unchecked(size as usize, align),
-                );
-            }
-            nw -= 1;
-            p[idx] = p[nw];
-            p.pop();
-        }
-    }
-    memory_chk();
-    for idx in 0..nw {
-        let addr = v[p[idx]];
-        let size = v2[p[idx]];
-        let align = v3[p[idx]];
-        unsafe {
-            GLOBAL_ALLOCATOR.dealloc(
-                addr,
-                Layout::from_size_align_unchecked(size as usize, align),
-            );
-        }
-    }
+    allocator_test::align_test();
     let t1 = std::time::Instant::now();
     println!("time: {:#?}", t1 - t0);
     println!("Align alloc test OK!");
@@ -312,15 +187,12 @@ pub fn multi_thread_test() {
     println!("Multi thread memory allocation test OK!");
 }
 
-/*
-#[test]
+//#[test]
 fn system_alloc_test() {
+    srand(2333);
     unsafe {
         GLOBAL_ALLOCATOR.init_heap();
     }
-    call_back_test(233);
-    println!("Running memory tests...");
-
     println!("system alloc test:");
     unsafe {
         GLOBAL_ALLOCATOR.init_system();
@@ -335,31 +207,13 @@ fn system_alloc_test() {
     println!("system test passed!");
     println!("*****************************");
 }
-*/
 
-#[test]
-fn test_start() {
+//#[test]
+fn tlsf_rust_alloc_test() {
     srand(2333);
     unsafe {
         GLOBAL_ALLOCATOR.init_heap();
     }
-    call_back_test(233);
-    println!("Running memory tests...");
-
-    println!("system alloc test:");
-    unsafe {
-        GLOBAL_ALLOCATOR.init_system();
-    }
-    align_test();
-    basic_test();
-    mi_test();
-    malloc_large_test();
-    glibc_bench_test();
-    multi_thread_test();
-    multi_thread_c_test();
-    println!("system test passed!");
-    println!("*****************************");
-
     println!("tlsf_rust alloc test:");
     unsafe {
         GLOBAL_ALLOCATOR.init_tlsf_rust();
@@ -376,92 +230,14 @@ fn test_start() {
     unsafe {
         GLOBAL_ALLOCATOR.init_system();
     }
+}
 
-    println!("first fit alloc test:");
+//#[test]
+fn tlsf_c_alloc_test() {
+    srand(2333);
     unsafe {
-        GLOBAL_ALLOCATOR.init_basic("first_fit");
+        GLOBAL_ALLOCATOR.init_heap();
     }
-    //align_test();
-    basic_test();
-    mi_test();
-    //malloc_large_test();
-    //glibc_bench_test();
-    //multi_thread_test();
-    //multi_thread_c_test();
-    println!("first fit alloc test passed!");
-    println!("*****************************");
-    unsafe {
-        GLOBAL_ALLOCATOR.init_system();
-    }
-
-    println!("best fit alloc test:");
-    unsafe {
-        GLOBAL_ALLOCATOR.init_basic("best_fit");
-    }
-    //align_test();
-    basic_test();
-    mi_test();
-    //malloc_large_test();
-    //glibc_bench_test();
-    //multi_thread_test();
-    //multi_thread_c_test();
-    println!("best fit alloc test passed!");
-    println!("*****************************");
-    unsafe {
-        GLOBAL_ALLOCATOR.init_system();
-    }
-
-    println!("worst fit alloc test:");
-    unsafe {
-        GLOBAL_ALLOCATOR.init_basic("worst_fit");
-    }
-    //align_test();
-    basic_test();
-    mi_test();
-    //malloc_large_test();
-    //glibc_bench_test();
-    //multi_thread_test();
-    //multi_thread_c_test();
-    println!("worst fit alloc test passed!");
-    println!("*****************************");
-    unsafe {
-        GLOBAL_ALLOCATOR.init_system();
-    }
-
-    println!("buddy alloc test:");
-    unsafe {
-        GLOBAL_ALLOCATOR.init_buddy();
-    }
-    //align_test();
-    basic_test();
-    mi_test();
-    //malloc_large_test();
-    //glibc_bench_test();
-    //multi_thread_test();
-    //multi_thread_c_test();
-    println!("buddy alloc test passed!");
-    println!("*****************************");
-    unsafe {
-        GLOBAL_ALLOCATOR.init_system();
-    }
-
-    println!("slab alloc test:");
-    unsafe {
-        GLOBAL_ALLOCATOR.init_slab();
-    }
-    //align_test();
-    basic_test();
-    mi_test();
-    //malloc_large_test();
-    //glibc_bench_test();
-    //multi_thread_test();
-    //multi_thread_c_test();
-    println!("slab alloc test passed!");
-    println!("*****************************");
-    unsafe {
-        GLOBAL_ALLOCATOR.init_system();
-    }
-
     println!("tlsf_c alloc test:");
     unsafe {
         GLOBAL_ALLOCATOR.init_tlsf_c();
@@ -478,6 +254,136 @@ fn test_start() {
     unsafe {
         GLOBAL_ALLOCATOR.init_system();
     }
+}
 
-    println!("Memory tests run OK!");
+//#[test]
+fn first_fit_alloc_test() {
+    srand(2333);
+    unsafe {
+        GLOBAL_ALLOCATOR.init_heap();
+    }
+    println!("first fit alloc test:");
+    unsafe {
+        GLOBAL_ALLOCATOR.init_basic("first_fit");
+    }
+    //align_test();
+    basic_test();
+    mi_test();
+    malloc_large_test();
+    glibc_bench_test();
+    //multi_thread_test();
+    //multi_thread_c_test();
+    println!("first fit alloc test passed!");
+    println!("*****************************");
+    unsafe {
+        GLOBAL_ALLOCATOR.init_system();
+    }
+}
+
+//#[test]
+fn best_fit_alloc_test() {
+    srand(2333);
+    unsafe {
+        GLOBAL_ALLOCATOR.init_heap();
+    }
+    println!("best fit alloc test:");
+    unsafe {
+        GLOBAL_ALLOCATOR.init_basic("best_fit");
+    }
+    //align_test();
+    basic_test();
+    mi_test();
+    malloc_large_test();
+    glibc_bench_test();
+    //multi_thread_test();
+    //multi_thread_c_test();
+    println!("best fit alloc test passed!");
+    println!("*****************************");
+    unsafe {
+        GLOBAL_ALLOCATOR.init_system();
+    }
+}
+
+//#[test]
+fn worst_fit_alloc_test() {
+    srand(2333);
+    unsafe {
+        GLOBAL_ALLOCATOR.init_heap();
+    }
+    println!("worst fit alloc test:");
+    unsafe {
+        GLOBAL_ALLOCATOR.init_basic("worst_fit");
+    }
+    //align_test();
+    basic_test();
+    mi_test();
+    malloc_large_test();
+    glibc_bench_test();
+    //multi_thread_test();
+    //multi_thread_c_test();
+    println!("worst fit alloc test passed!");
+    println!("*****************************");
+    unsafe {
+        GLOBAL_ALLOCATOR.init_system();
+    }
+}
+
+//#[test]
+fn buddy_fit_alloc_test() {
+    srand(2333);
+    unsafe {
+        GLOBAL_ALLOCATOR.init_heap();
+    }
+    println!("buddy alloc test:");
+    unsafe {
+        GLOBAL_ALLOCATOR.init_buddy();
+    }
+    //align_test();
+    basic_test();
+    mi_test();
+    malloc_large_test();
+    glibc_bench_test();
+    //multi_thread_test();
+    //multi_thread_c_test();
+    println!("buddy alloc test passed!");
+    println!("*****************************");
+    unsafe {
+        GLOBAL_ALLOCATOR.init_system();
+    }
+}
+
+//#[test]
+fn slab_alloc_test() {
+    srand(2333);
+    unsafe {
+        GLOBAL_ALLOCATOR.init_heap();
+    }
+    println!("slab alloc test:");
+    unsafe {
+        GLOBAL_ALLOCATOR.init_slab();
+    }
+    //align_test();
+    basic_test();
+    mi_test();
+    malloc_large_test();
+    glibc_bench_test();
+    //multi_thread_test();
+    //multi_thread_c_test();
+    println!("slab alloc test passed!");
+    println!("*****************************");
+    unsafe {
+        GLOBAL_ALLOCATOR.init_system();
+    }
+}
+
+#[test]
+fn test_start() {
+    system_alloc_test();
+    tlsf_rust_alloc_test();
+    tlsf_c_alloc_test();
+    first_fit_alloc_test();
+    best_fit_alloc_test();
+    worst_fit_alloc_test();
+    buddy_fit_alloc_test();
+    slab_alloc_test();
 }

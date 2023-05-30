@@ -4,31 +4,29 @@
 
 use super::{AllocError, AllocResult, BaseAllocator, ByteAllocator};
 use core::alloc::Layout;
-use tlsf_allocator::Heap;
+use tlsf_allocator::HeapRust;
 
-/// A byte-granularity memory allocator based on the [tlsf_allocator] written by rust code.
 pub struct TLSFAllocator {
-    inner: Option<Heap>,
+    inner: Option<HeapRust>,
 }
 
 impl TLSFAllocator {
-    /// Creates a new empty `TLSFAllocator`.
     pub const fn new() -> Self {
         Self { inner: None }
     }
 
-    fn inner_mut(&mut self) -> &mut Heap {
+    fn inner_mut(&mut self) -> &mut HeapRust {
         self.inner.as_mut().unwrap()
     }
 
-    fn inner(&self) -> &Heap {
+    fn inner(&self) -> &HeapRust {
         self.inner.as_ref().unwrap()
     }
 }
 
 impl BaseAllocator for TLSFAllocator {
     fn init(&mut self, start: usize, size: usize) {
-        self.inner = Some(Heap::new());
+        self.inner = Some(HeapRust::new());
         self.inner_mut().init(start, size);
     }
 

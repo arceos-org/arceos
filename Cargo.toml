@@ -48,7 +48,7 @@ members = [
     "crates/tuple_for_each",
     "crates/basic_allocator",
     "crates/tlsf_allocator",
-    "crates/tlsf_c_allocator",
+    "crates/allocator_test",
 
     "modules/axalloc",
     "modules/axconfig",
