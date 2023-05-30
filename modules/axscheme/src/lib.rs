@@ -31,7 +31,9 @@ pub struct FileTable {
 
 impl FileTable {
     pub fn new() -> Self {
-        Self { inner: Mutex::new(Vec::new()) }
+        Self {
+            inner: Mutex::new(Vec::new()),
+        }
     }
 
     pub fn insert(&self, file_handle: Arc<FileHandle>) -> AxResult<usize> {
@@ -69,7 +71,6 @@ impl FileTable {
         Ok(())
     }
 }
-
 
 pub fn syscall_handler(id: usize, params: [usize; 6]) -> isize {
     let ret = match id & SYS_CLASS {
@@ -168,8 +169,6 @@ pub fn open(path: &str, options: usize) -> AxResult<usize> {
     insert_fd(file_handle)
 }
 
-
-
 pub fn file_op(op: usize, fd: usize, c: usize, d: usize) -> AxResult<usize> {
     let handle = find_fd(fd)?;
     let scheme = schemes().find_id(handle.scheme_id).unwrap();
@@ -199,7 +198,7 @@ pub fn close(fd: usize) -> AxResult<usize> {
         let file_table = call_interface!(CurrentFileTable::current_file_table);
         file_table.remove(fd)?;
     }
-    
+
     Ok(ret)
 }
 

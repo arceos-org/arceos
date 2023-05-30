@@ -159,8 +159,8 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     axhal::platform_init();
 
     #[cfg(feature = "process")]
-    axprocess::init();    
-    
+    axprocess::init();
+
     #[cfg(feature = "multitask")]
     axtask::init_scheduler();
 

@@ -6,11 +6,7 @@ extern crate axlog;
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use alloc::{
-    sync::Arc,
-    vec::Vec,
-    vec,
-};
+use alloc::{sync::Arc, vec, vec::Vec};
 use axmem::AddrSpace;
 use axscheme::FileTable;
 use axtask::{current, AxTaskRef};
