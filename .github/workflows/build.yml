@@ -18,14 +18,8 @@ jobs:
         components: rust-src, clippy, rustfmt
     - name: Install gcc multilib
       run: sudo apt update && sudo apt install -y gcc-multilib
-    - name: Clippy for the default target
+    - name: Run cargo clippy for the default target
       run: cargo clippy --all-features
-    - name: Clippy for x86_64
-      run: make clippy ARCH=x86_64
-    - name: Clippy for riscv64
-      run: make clippy ARCH=riscv64
-    - name: Clippy for aarch64
-      run: make clippy ARCH=aarch64
     - name: Check code format
       run: cargo fmt --all -- --check
 
@@ -66,6 +60,9 @@ jobs:
         mv $MUSL_PATH musl
         echo "$PWD/musl/bin" >> $GITHUB_PATH
 
+    - name: Run cargo clippy for ${{ matrix.arch }}
+      run: make ARCH=${{ matrix.arch }} clippy
+      
     - name: Build helloworld
       run: make ARCH=${{ matrix.arch }} A=apps/helloworld
     - name: Build memtest
