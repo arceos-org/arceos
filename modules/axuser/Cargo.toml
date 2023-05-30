@@ -30,7 +30,7 @@ axdriver = { path = "../axdriver", optional = true }
 axhal = { path = "../axhal", features = ["user", "paging"] }
 axlog = { path = "../axlog" }
 axruntime = { path = "../axruntime", features = ["user", "alloc", "paging"
-  , "multitask", "irq"
+  , "multitask", "irq", "process"
   ] }
 axtask = { path = "../axtask", features = ["irq"]}
 axsync = { path = "../axsync", features = ["futex"]}

@@ -27,6 +27,7 @@ trait Device {
     fn write(&self, id: usize, buf: &[u8]) -> AxResult<usize>;
 }
 
+#[allow(unused_variables, unused_mut)]
 pub fn init(mut all_device: AllDevices) {
     #[cfg(feature = "user_net")]
     let net = self::net::init(&mut all_device);
@@ -42,6 +43,7 @@ pub fn init(mut all_device: AllDevices) {
 }
 
 impl Scheme for DeviceScheme {
+    #[allow(unreachable_code, unused_variables)]
     fn open(&self, path: &str, _flags: usize, _uid: u32, _gid: u32) -> AxResult<usize> {
         let mut path = path.trim_matches('/').splitn(2, '/');
         let (device, path) = match (path.next(), path.next()) {
@@ -49,7 +51,9 @@ impl Scheme for DeviceScheme {
             (Some(device), None) => (device, ""),
             _ => return ax_err!(NotFound),
         };
+
         let device: Arc<dyn Device + Sync + Send> = match device {
+            #[cfg(feature = "user_net")]
             "net" => self.net.clone().ok_or(AxError::NotFound)?,
             _ => return ax_err!(NotFound),
         };
@@ -198,6 +202,8 @@ mod net {
         }
     }
 }
+
+#[allow(dead_code)]
 fn map_err(e: DevError) -> AxError {
     match e {
         DevError::Again => AxError::Again,

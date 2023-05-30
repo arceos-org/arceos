@@ -319,6 +319,7 @@ dependencies = [
  "axerrno",
  "axhal",
  "axlog",
+ "crate_interface 0.1.1",
  "elf_loader",
  "lazy_init",
  "memory_addr",
@@ -339,6 +340,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "axprocess"
+version = "0.1.0"
+dependencies = [
+ "axerrno",
+ "axlog",
+ "axmem",
+ "axscheme",
+ "axtask",
+ "crate_interface 0.1.1",
+ "lazy_init",
+ "spinlock",
+]
+
+[[package]]
 name = "axruntime"
 version = "0.1.0"
 dependencies = [
@@ -352,16 +367,35 @@ dependencies = [
  "axlog",
  "axmem",
  "axnet",
+ "axprocess",
+ "axscheme",
  "axsync",
  "axtask",
  "crate_interface 0.1.1",
- "driver_net",
  "elf_loader",
  "kernel_guard",
  "lazy_init",
  "percpu",
  "scheme",
  "spinlock",
+ "syscall_number",
+]
+
+[[package]]
+name = "axscheme"
+version = "0.1.0"
+dependencies = [
+ "axdriver",
+ "axerrno",
+ "axhal",
+ "axlog",
+ "axmem",
+ "axsync",
+ "axtask",
+ "crate_interface 0.1.1",
+ "driver_net",
+ "lazy_init",
+ "scheme",
  "syscall_number",
 ]
 

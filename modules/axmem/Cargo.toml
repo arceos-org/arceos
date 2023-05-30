@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+crate_interface = { path = "../../crates/crate_interface" }
 memory_addr = { path = "../../crates/memory_addr"}
 lazy_init = { path = "../../crates/lazy_init"}
 axhal = { path = "../axhal" }

@@ -36,8 +36,6 @@ mod syscall;
 pub use self::mp::rust_main_secondary;
 #[cfg(feature = "user")]
 use axmem::{USER_START, USTACK_SIZE, USTACK_START};
-#[cfg(feature = "scheme")]
-mod scheme;
 
 const LOGO: &str = r#"
        d8888                            .d88888b.   .d8888b.
@@ -153,13 +151,16 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     {
         info!("Initialize kernel page table...");
         remap_kernel_memory().expect("remap kernel memoy failed");
-        #[cfg(feature = "user-paging")]
-        axmem::init_global_addr_space();
+
+        //axmem::init_global_addr_space();
     }
 
     info!("Initialize platform devices...");
     axhal::platform_init();
 
+    #[cfg(feature = "process")]
+    axprocess::init();    
+    
     #[cfg(feature = "multitask")]
     axtask::init_scheduler();
 
@@ -196,13 +197,13 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     #[cfg(feature = "scheme")]
     {
         info!("Initialize scheme...");
-        crate::scheme::init_scheme();
+        axscheme::init_scheme();
     }
 
     #[cfg(any(feature = "user_net"))]
     {
         let all_devices = axdriver::init_drivers();
-        scheme::dev::init(all_devices);
+        axscheme::dev::init(all_devices);
     }
 
     info!("Primary CPU {} init OK.", cpu_id);

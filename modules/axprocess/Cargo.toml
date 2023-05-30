@@ -1,0 +1,16 @@
+[package]
+name = "axprocess"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+lazy_init = { path = "../../crates/lazy_init" }
+crate_interface = { path = "../../crates/crate_interface" }
+spinlock = { path = "../../crates/spinlock" }
+axerrno = { path = "../../crates/axerrno" }
+axtask = { path = "../axtask", default-features = false, features = ["multitask"] }
+axmem = { path = "../axmem" }
+axscheme = { path = "../axscheme" }
+axlog = { path = "../axlog" }

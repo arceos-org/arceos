@@ -61,8 +61,10 @@ members = [
     "modules/axlog",
     "modules/axmem",
     "modules/axnet",
+    "modules/axprocess",
     "modules/axruntime",
     "modules/axsync",
+    "modules/axscheme",
     "modules/axtask",
     "modules/axuser",
 

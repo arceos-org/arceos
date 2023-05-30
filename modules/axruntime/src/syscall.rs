@@ -57,7 +57,7 @@ pub fn syscall_handler(id: usize, params: [usize; 6]) -> isize {
             }
         }
         #[cfg(feature = "scheme")]
-        file_syscall if file_syscall & SYS_CLASS != 0 => crate::scheme::syscall_handler(id, params),
+        file_syscall if file_syscall & SYS_CLASS != 0 => axscheme::syscall_handler(id, params),
         SYS_EXIT => {
             unsafe {
                 if USER_BUFFER.is_init() {

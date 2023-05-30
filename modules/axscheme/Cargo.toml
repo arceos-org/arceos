@@ -1,0 +1,23 @@
+[package]
+name = "axscheme"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+user_net = ["axdriver/virtio-net", "dep:driver_net"]
+
+[dependencies]
+driver_net = { path = "../../crates/driver_net", optional = true }
+crate_interface = { path = "../../crates/crate_interface" }
+axhal = { path = "../axhal" }
+axerrno = { path = "../../crates/axerrno" }
+scheme = { path = "../../crates/scheme" }
+syscall_number = { path = "../../crates/syscall_number" }
+lazy_init = { path = "../../crates/lazy_init" }
+axmem = { path = "../axmem" }
+axdriver = { path = "../axdriver" }
+axsync = { path = "../axsync" }
+axlog = { path = "../axlog" }
+axtask = { path = "../axtask", default-features = false }

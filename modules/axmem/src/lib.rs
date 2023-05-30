@@ -14,7 +14,7 @@ use axhal::{
     mem::{phys_to_virt, virt_to_phys},
     paging::{MappingFlags, PageTable},
 };
-use lazy_init::LazyInit;
+use crate_interface::def_interface;
 use memory_addr::{align_up, align_up_4k, PhysAddr, VirtAddr, PAGE_SIZE_4K};
 use spinlock::SpinNoIrq;
 
@@ -36,16 +36,16 @@ pub struct HeapSegment {
     actual_size: usize,
 }
 
-pub struct AddrSpace {
+pub struct AddrSpaceInner {
     segments: alloc::vec::Vec<MapSegment>,
     page_table: PageTable,
     heap: Option<HeapSegment>,
     mmap_use: BTreeMap<VirtAddr, GlobalPage>,
 }
 
-impl AddrSpace {
-    pub fn new() -> AddrSpace {
-        AddrSpace {
+impl AddrSpaceInner {
+    pub fn new() -> AddrSpaceInner {
+        AddrSpaceInner {
             segments: vec![],
             page_table: PageTable::try_new().expect("Creating page table failed!"),
             heap: None,
@@ -210,9 +210,7 @@ impl AddrSpace {
         let len = align_up_4k(len);
         trace!("unmap: [{:x?}, {:x?})", addr, addr + len);
         let pages = len / PAGE_SIZE_4K;
-        if (0..pages)
-            .any(|offset| !self.mmap_use.contains_key(&(addr + offset * PAGE_SIZE_4K)))
-        {
+        if (0..pages).any(|offset| !self.mmap_use.contains_key(&(addr + offset * PAGE_SIZE_4K))) {
             return ax_err!(BadAddress);
         } else {
             (0..pages).for_each(|offset| {
@@ -222,95 +220,132 @@ impl AddrSpace {
         }
         Ok(())
     }
+
+    pub fn translate_buffer(
+        &self,
+        vaddr: VirtAddr,
+        size: usize,
+        _write: bool,
+    ) -> AxResult<Vec<&'static mut [u8]>> {
+        let mut read_size = 0usize;
+        let mut vaddr = vaddr;
+        let mut result: Vec<&'static mut [u8]> = vec![];
+        while read_size < size {
+            let (paddr, _flag, page_size) = self
+                .page_table
+                .query(vaddr)
+                .map_err(|_| AxError::BadAddress)?;
+            /*
+            if !flag.contains(MappingFlags::USER) || (write && !flag.contains(MappingFlags::WRITE)) {
+            panic!("Invalid vaddr with improper rights!");
+            }
+             */
+            let nxt_vaddr = align_up(vaddr.as_usize() + 1, page_size.into());
+            let len = (nxt_vaddr - vaddr.as_usize()).min(size - read_size);
+            let data =
+                unsafe { core::slice::from_raw_parts_mut(phys_to_virt(paddr).as_mut_ptr(), len) };
+            debug!("translating {:x} -> {:x}, len = {}", vaddr, paddr, len);
+            vaddr += len;
+            read_size += len;
+            result.push(data);
+        }
+        Ok(result)
+    }
 }
 
-static mut GLOBAL_USER_ADDR_SPACE: LazyInit<SpinNoIrq<AddrSpace>> = LazyInit::new();
+pub struct AddrSpace(SpinNoIrq<AddrSpaceInner>);
 
-pub fn init_global_addr_space() {
-    extern crate alloc;
+impl AddrSpace {
+    pub fn init_global(user_elf: &[u8]) -> AxResult<AddrSpace> {
+        let segments = elf_loader::SegmentEntry::new(user_elf).expect("Corrupted elf file!");
 
-    extern "C" {
-        fn ustart();
-        fn uend();
-    }
+        let mut user_space = AddrSpaceInner::new();
 
-    let user_elf: &[u8] = unsafe {
-        let len = (uend as usize) - (ustart as usize);
-        core::slice::from_raw_parts(ustart as *const _, len)
-    };
+        let mut data_end: VirtAddr = 0.into();
 
-    debug!("{:x} {:x}", ustart as usize, user_elf.len());
-
-    let segments = elf_loader::SegmentEntry::new(user_elf).expect("Corrupted elf file!");
-
-    let mut user_space = AddrSpace::new();
-
-    let mut data_end: VirtAddr = 0.into();
-
-    for segment in &segments {
-        let mut user_phy_page =
-            GlobalPage::alloc_contiguous(align_up_4k(segment.size) / PAGE_SIZE_4K, PAGE_SIZE_4K)
-                .expect("Alloc page error!");
-        // init
-        user_phy_page.zero();
-
-        // copy user content
-        user_phy_page.as_slice_mut()[..segment.data.len()].copy_from_slice(segment.data);
-        debug!(
-            "{:x} {:x}",
-            user_phy_page.as_slice()[0],
-            user_phy_page.as_slice()[1]
-        );
-
-        user_space
-            .add_region(
-                segment.start_addr,
-                user_phy_page.start_paddr(virt_to_phys),
-                Arc::new(user_phy_page),
-                segment.flags | MappingFlags::USER,
-                false,
+        for segment in &segments {
+            let mut user_phy_page = GlobalPage::alloc_contiguous(
+                align_up_4k(segment.size) / PAGE_SIZE_4K,
+                PAGE_SIZE_4K,
             )
-            .expect("Memory error!");
-        data_end = data_end.max(segment.start_addr + align_up_4k(segment.size))
-    }
+            .expect("Alloc page error!");
+            // init
+            user_phy_page.zero();
 
-    user_space.init_heap(data_end);
+            // copy user content
+            user_phy_page.as_slice_mut()[..segment.data.len()].copy_from_slice(segment.data);
+            debug!(
+                "{:x} {:x}",
+                user_phy_page.as_slice()[0],
+                user_phy_page.as_slice()[1]
+            );
 
-    // stack allocation
-    assert!(USTACK_SIZE % PAGE_SIZE_4K == 0);
-    #[cfg(not(feature = "multitask"))]
-    {
-        let user_stack_page =
-            GlobalPage::alloc_contiguous(USTACK_SIZE / PAGE_SIZE_4K, PAGE_SIZE_4K)
-                .expect("Alloc page error!");
-        debug!("{:?}", user_stack_page);
+            user_space
+                .add_region(
+                    segment.start_addr,
+                    user_phy_page.start_paddr(virt_to_phys),
+                    Arc::new(user_phy_page),
+                    segment.flags | MappingFlags::USER,
+                    false,
+                )
+                .expect("Memory error!");
+            data_end = data_end.max(segment.start_addr + align_up_4k(segment.size))
+        }
 
+        user_space.init_heap(data_end);
+
+        // stack allocation
+        assert!(USTACK_SIZE % PAGE_SIZE_4K == 0);
+        #[cfg(not(feature = "multitask"))]
+        {
+            let user_stack_page =
+                GlobalPage::alloc_contiguous(USTACK_SIZE / PAGE_SIZE_4K, PAGE_SIZE_4K)
+                    .expect("Alloc page error!");
+            debug!("{:?}", user_stack_page);
+
+            user_space
+                .add_region(
+                    USTACK_START.into(),
+                    user_stack_page.start_paddr(virt_to_phys),
+                    Arc::new(user_stack_page),
+                    MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
+                    false,
+                )
+                .expect("Memory Error");
+        }
+
+        extern "C" {
+            fn strampoline();
+        }
         user_space
-            .add_region(
-                USTACK_START.into(),
-                user_stack_page.start_paddr(virt_to_phys),
-                Arc::new(user_stack_page),
-                MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
+            .add_region_shadow(
+                TRAMPOLINE_START.into(),
+                virt_to_phys((strampoline as usize).into()),
+                PAGE_SIZE_4K,
+                MappingFlags::READ | MappingFlags::EXECUTE,
                 false,
             )
             .expect("Memory Error");
-    }
 
-    extern "C" {
-        fn strampoline();
+        Ok(AddrSpace(SpinNoIrq::new(user_space)))
     }
-    user_space
-        .add_region_shadow(
-            TRAMPOLINE_START.into(),
-            virt_to_phys((strampoline as usize).into()),
-            PAGE_SIZE_4K,
-            MappingFlags::READ | MappingFlags::EXECUTE,
-            false,
-        )
-        .expect("Memory Error");
-    unsafe {
-        GLOBAL_USER_ADDR_SPACE.init_by(SpinNoIrq::new(user_space));
+}
+
+impl core::ops::Deref for AddrSpace {
+    type Target = SpinNoIrq<AddrSpaceInner>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
+}
+
+#[def_interface]
+pub trait CurrentAddrSpace {
+    fn current_addr_space() -> Arc<AddrSpace>;
+}
+
+fn current_addr_space() -> Arc<AddrSpace> {
+    call_interface!(CurrentAddrSpace::current_addr_space)
 }
 
 pub fn alloc_user_page(vaddr: VirtAddr, size: usize, flags: MappingFlags) -> Arc<GlobalPage> {
@@ -321,63 +356,41 @@ pub fn alloc_user_page(vaddr: VirtAddr, size: usize, flags: MappingFlags) -> Arc
     user_phy_page.zero();
     let user_phy_page = Arc::new(user_phy_page);
 
-    unsafe {
-        GLOBAL_USER_ADDR_SPACE
-            .lock()
-            .add_region(
-                vaddr,
-                user_phy_page.start_paddr(virt_to_phys),
-                user_phy_page.clone(),
-                flags,
-                false,
-            )
-            .expect("Memory Error");
-    }
+    current_addr_space()
+        .lock()
+        .add_region(
+            vaddr,
+            user_phy_page.start_paddr(virt_to_phys),
+            user_phy_page.clone(),
+            flags,
+            false,
+        )
+        .expect("Memory Error");
 
     user_phy_page
 }
 
 pub fn global_sbrk(size: isize) -> Option<usize> {
-    unsafe { GLOBAL_USER_ADDR_SPACE.lock().sbrk(size) }
+    current_addr_space().lock().sbrk(size)
 }
 
 pub fn get_satp() -> usize {
-    unsafe { GLOBAL_USER_ADDR_SPACE.lock().page_table_addr().into() }
+    current_addr_space().lock().page_table_addr().into()
 }
 
 pub fn mmap_page(addr: Option<VirtAddr>, len: usize, flags: MappingFlags) -> AxResult<VirtAddr> {
-    let mut addr_space = unsafe { GLOBAL_USER_ADDR_SPACE.lock() };
-    addr_space.mmap_page(addr, len, flags)
+    current_addr_space().lock().mmap_page(addr, len, flags)
 }
 
 pub fn munmap_page(addr: VirtAddr, len: usize) -> AxResult<()> {
-    let mut addr_space = unsafe { GLOBAL_USER_ADDR_SPACE.lock() };
-    addr_space.munmap_page(addr, len)
+    current_addr_space().lock().munmap_page(addr, len)
 }
 
-pub fn translate_buffer(vaddr: VirtAddr, size: usize, _write: bool) -> Vec<&'static mut [u8]> {
-    let addr_space = unsafe { GLOBAL_USER_ADDR_SPACE.lock() };
-
-    let mut read_size = 0usize;
-    let mut vaddr = vaddr;
-    let mut result: Vec<&'static mut [u8]> = vec![];
-    while read_size < size {
-        let (paddr, _flag, page_size) = addr_space.page_table.query(vaddr).expect("Invalid vaddr!");
-        /*
-        if !flag.contains(MappingFlags::USER) || (write && !flag.contains(MappingFlags::WRITE)) {
-            panic!("Invalid vaddr with improper rights!");
-        }
-         */
-        let nxt_vaddr = align_up(vaddr.as_usize() + 1, page_size.into());
-        let len = (nxt_vaddr - vaddr.as_usize()).min(size - read_size);
-        let data =
-            unsafe { core::slice::from_raw_parts_mut(phys_to_virt(paddr).as_mut_ptr(), len) };
-        debug!("translating {:x} -> {:x}, len = {}", vaddr, paddr, len);
-        vaddr += len;
-        read_size += len;
-        result.push(data);
-    }
-    result
+pub fn translate_buffer(vaddr: VirtAddr, size: usize, write: bool) -> Vec<&'static mut [u8]> {
+    current_addr_space()
+        .lock()
+        .translate_buffer(vaddr, size, write)
+        .unwrap()
 }
 
 pub fn copy_slice_from_user(vaddr: VirtAddr, size: usize) -> Vec<u8> {
@@ -394,14 +407,12 @@ pub fn copy_str_from_user(vaddr: VirtAddr, size: usize) -> String {
 }
 
 pub fn translate_addr(vaddr: VirtAddr) -> Option<PhysAddr> {
-    unsafe {
-        GLOBAL_USER_ADDR_SPACE
-            .lock()
-            .page_table
-            .query(vaddr)
-            .ok()
-            .map(|x| x.0)
-    }
+    current_addr_space()
+        .lock()
+        .page_table
+        .query(vaddr)
+        .ok()
+        .map(|x| x.0)
 }
 
 /// Copy a [u8] array `data' from current memory space into position `ptr' of the userspace `token'

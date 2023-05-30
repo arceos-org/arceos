@@ -1,4 +1,10 @@
+#![no_std]
+
 extern crate alloc;
+
+#[macro_use]
+extern crate axlog;
+
 use alloc::boxed::Box;
 use alloc::string::ToString;
 use alloc::vec::Vec;
@@ -14,7 +20,56 @@ pub struct FileHandle {
     pub file_id: usize,
 }
 
-static GLOBAL_FD_LIST: LazyInit<Mutex<Vec<Option<Arc<FileHandle>>>>> = LazyInit::new();
+#[crate_interface::def_interface]
+pub trait CurrentFileTable {
+    fn current_file_table() -> Arc<FileTable>;
+}
+
+pub struct FileTable {
+    inner: Mutex<Vec<Option<Arc<FileHandle>>>>,
+}
+
+impl FileTable {
+    pub fn new() -> Self {
+        Self { inner: Mutex::new(Vec::new()) }
+    }
+
+    pub fn insert(&self, file_handle: Arc<FileHandle>) -> AxResult<usize> {
+        let mut fd_list = self.inner.lock();
+        if let Some(fd) = fd_list.iter_mut().enumerate().find_map(|(fd, handle)| {
+            if handle.is_none() {
+                *handle = Some(file_handle.clone());
+                Some(fd)
+            } else {
+                None
+            }
+        }) {
+            Ok(fd)
+        } else {
+            fd_list.push(Some(file_handle.clone()));
+            Ok(fd_list.len() - 1)
+        }
+    }
+
+    pub fn find(&self, fd: usize) -> AxResult<Arc<FileHandle>> {
+        let fd_list = self.inner.lock();
+        if fd >= fd_list.len() {
+            return ax_err!(BadFileDescriptor);
+        }
+        if let Some(handle) = &fd_list[fd] {
+            Ok(handle.clone())
+        } else {
+            ax_err!(BadFileDescriptor)
+        }
+    }
+
+    pub fn remove(&self, fd: usize) -> AxResult<()> {
+        let mut fd_list = self.inner.lock();
+        *fd_list.get_mut(fd).ok_or(AxError::BadFileDescriptor)? = None;
+        Ok(())
+    }
+}
+
 
 pub fn syscall_handler(id: usize, params: [usize; 6]) -> isize {
     let ret = match id & SYS_CLASS {
@@ -78,26 +133,19 @@ fn file_op_slice_mut(id: usize, fd: usize, ptr: usize, len: usize) -> AxResult<u
 
 pub fn init_scheme() {
     GLOBAL_SCHEME_LIST.init_by(Mutex::new(SchemeList::new_init()));
-    GLOBAL_FD_LIST.init_by(Mutex::new(Vec::new()));
     open("stdin:", 0).unwrap();
     open("stdout:", 0).unwrap();
     open("stdout:", 0).unwrap();
 }
-fn insert_fd(file_handle: Arc<FileHandle>) -> AxResult<usize> {
-    let mut fd_list = GLOBAL_FD_LIST.lock();
-    if let Some(fd) = fd_list.iter_mut().enumerate().find_map(|(fd, handle)| {
-        if handle.is_none() {
-            *handle = Some(file_handle.clone());
-            Some(fd)
-        } else {
-            None
-        }
-    }) {
-        Ok(fd)
-    } else {
-        fd_list.push(Some(file_handle.clone()));
-        Ok(fd_list.len() - 1)
-    }
+
+fn insert_fd(fd: Arc<FileHandle>) -> AxResult<usize> {
+    let file_table = call_interface!(CurrentFileTable::current_file_table);
+    file_table.insert(fd)
+}
+
+fn find_fd(fd: usize) -> AxResult<Arc<FileHandle>> {
+    let file_table = call_interface!(CurrentFileTable::current_file_table);
+    file_table.find(fd)
 }
 
 // TODO: all flags
@@ -120,17 +168,7 @@ pub fn open(path: &str, options: usize) -> AxResult<usize> {
     insert_fd(file_handle)
 }
 
-pub fn find_fd(fd: usize) -> AxResult<Arc<FileHandle>> {
-    let fd_list = GLOBAL_FD_LIST.lock();
-    if fd >= fd_list.len() {
-        return ax_err!(BadFileDescriptor);
-    }
-    if let Some(handle) = &fd_list[fd] {
-        Ok(handle.clone())
-    } else {
-        ax_err!(BadFileDescriptor)
-    }
-}
+
 
 pub fn file_op(op: usize, fd: usize, c: usize, d: usize) -> AxResult<usize> {
     let handle = find_fd(fd)?;
@@ -156,10 +194,12 @@ pub fn close(fd: usize) -> AxResult<usize> {
     let scheme = schemes().find_id(handle.scheme_id).unwrap();
 
     let ret = scheme.close(handle.file_id)?;
+
     {
-        let mut fd_list = GLOBAL_FD_LIST.lock();
-        fd_list[fd] = None;
+        let file_table = call_interface!(CurrentFileTable::current_file_table);
+        file_table.remove(fd)?;
     }
+    
     Ok(ret)
 }
 
