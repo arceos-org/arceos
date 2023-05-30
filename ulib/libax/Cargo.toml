@@ -38,7 +38,10 @@ sched_rr = ["axtask/sched_rr", "irq"]
 sched_cfs = ["axtask/sched_cfs", "irq"]
 
 # File system
-fs = ["alloc", "axruntime/fs", "dep:axdriver", "dep:axfs"]
+fs = ["alloc", "axruntime/fs", "dep:axdriver"]
+
+
+irq_fs = ["alloc", "axruntime/fs", "dep:axdriver", "axfs/irq"]
 
 # Networking
 net = ["alloc", "axruntime/net", "dep:axdriver", "dep:axnet"]
@@ -81,7 +84,7 @@ axdisplay = { path = "../../modules/axdisplay", optional = true }
 axdriver = { path = "../../modules/axdriver", optional = true }
 axhal = { path = "../../modules/axhal" }
 axlog = { path = "../../modules/axlog" }
-axfs = { path = "../../modules/axfs", optional = true }
+axfs = { path = "../../modules/axfs", default-features = false }
 axnet = { path = "../../modules/axnet", optional = true }
 axruntime = { path = "../../modules/axruntime", default-features = false }
 axsync = { path = "../../modules/axsync", default-features = false, optional = true }

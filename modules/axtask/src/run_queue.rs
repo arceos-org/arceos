@@ -193,7 +193,6 @@ impl AxRunQueue {
 
 fn gc_entry() {
     loop {
-        info!("GC task is running...");
         // Drop all exited tasks and recycle resources.
         while !EXITED_TASKS.lock().is_empty() {
             // Do not do the slow drops in the critical section.

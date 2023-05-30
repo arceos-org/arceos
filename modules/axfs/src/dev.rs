@@ -1,6 +1,6 @@
 use axdriver::prelude::*;
 use axtask::yield_now;
-use fatfs::info;
+#[cfg(feature = "irq")]
 use virtio_drivers::device::blk::{BlkReq, BlkResp, RespStatus};
 
 const BLOCK_SIZE: usize = 512;
@@ -58,14 +58,12 @@ impl Disk {
                         while self.dev.peek_used() != Some(token) {
                             yield_now();
                         }
-                        unsafe {
-                            self.dev.complete_read_block(
-                                token,
-                                &req,
-                                &mut buf[0..BLOCK_SIZE],
-                                &mut resp,
-                            )?;
-                        }
+                        self.dev.complete_read_block(
+                            token,
+                            &req,
+                            &mut buf[0..BLOCK_SIZE],
+                            &mut resp,
+                        )?;
                         assert_eq!(
                             resp.status(),
                             RespStatus::OK,
