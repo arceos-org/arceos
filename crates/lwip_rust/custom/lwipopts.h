@@ -44,11 +44,15 @@
    ------------------------------------
 */
 
+// Important performance options
+// Smaller values increase performance
+// Larger values increase simultaneously active TCP connections limit
+#define MEMP_NUM_TCP_PCB 5
+
 // Memory options
 #define MEM_SIZE         (1 * 1024 * 1024)
-#define MEMP_NUM_TCP_PCB 1024
-#define MEMP_NUM_TCP_SEG 1024
-#define MEMP_NUM_PBUF    512
+#define MEMP_NUM_TCP_SEG 128
+#define MEMP_NUM_PBUF    32
 #define PBUF_POOL_SIZE   32
 
 // Tcp options

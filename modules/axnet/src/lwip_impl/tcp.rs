@@ -1,4 +1,7 @@
-use crate::{net_impl::driver::lwip_loop_once, IpAddr, SocketAddr};
+use crate::{
+    net_impl::{driver::lwip_loop_once, ACCEPT_QUEUE_LEN, RECV_QUEUE_LEN},
+    IpAddr, SocketAddr,
+};
 use alloc::{boxed::Box, collections::VecDeque};
 use axerrno::{ax_err, AxError, AxResult};
 use axsync::Mutex;
@@ -71,7 +74,7 @@ extern "C" fn recv_callback(
 extern "C" fn accept_callback(arg: *mut c_void, newpcb: *mut tcp_pcb, err: err_t) -> err_t {
     debug!("[TcpSocket] accept_callback: {:#?}", err);
     if err != 0 {
-        error!("[TcpSocket][accept_callback] err: {:#?}", err);
+        debug!("[TcpSocket][accept_callback] err: {:#?}", err);
         return err;
     }
     let socket_inner = unsafe { &mut *(arg as *mut TcpSocketInner) };
@@ -80,7 +83,7 @@ extern "C" fn accept_callback(arg: *mut c_void, newpcb: *mut tcp_pcb, err: err_t
         inner: Box::pin(TcpSocketInner {
             remote_closed: false,
             connect_result: 0,
-            recv_queue: Mutex::new(VecDeque::new()),
+            recv_queue: Mutex::new(VecDeque::with_capacity(RECV_QUEUE_LEN)),
             accept_queue: Mutex::new(VecDeque::new()),
         }),
     };
@@ -110,7 +113,7 @@ impl TcpSocket {
                 remote_closed: false,
                 connect_result: 0,
                 recv_queue: Mutex::new(VecDeque::new()),
-                accept_queue: Mutex::new(VecDeque::new()),
+                accept_queue: Mutex::new(VecDeque::with_capacity(ACCEPT_QUEUE_LEN)),
             }),
         };
         unsafe {

@@ -15,3 +15,6 @@ use axsync::Mutex;
 use lazy_init::LazyInit;
 
 static LWIP_MUTEX: LazyInit<Mutex<()>> = LazyInit::new();
+
+const RECV_QUEUE_LEN: usize = 16;
+const ACCEPT_QUEUE_LEN: usize = 16;

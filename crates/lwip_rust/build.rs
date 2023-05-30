@@ -82,6 +82,7 @@ fn compile_lwip() {
         .file("depend/lwip/src/core/ipv6/nd6.c")
         .file("depend/lwip/src/netif/ethernet.c")
         // .file("depend/lwip/src/apps/lwiperf/lwiperf.c")
+        .file("custom/custom_pool.c")
         .file("custom/sys_arch.c");
 
     base_config
