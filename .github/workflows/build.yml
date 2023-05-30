@@ -9,15 +9,11 @@ jobs:
       fail-fast: false
     steps:
     - uses: actions/checkout@v3
-      with:
-        submodules: recursive
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
         toolchain: nightly
         components: rust-src, clippy, rustfmt
-    - name: Install gcc multilib
-      run: sudo apt update && sudo apt install -y gcc-multilib
     - name: Run cargo clippy for the default target
       run: cargo clippy --all-features
     - name: Check code format
@@ -32,20 +28,16 @@ jobs:
         arch: [x86_64, riscv64, aarch64]
     steps:
     - uses: actions/checkout@v3
-      with:
-        submodules: recursive
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
         toolchain: nightly
-        components: rust-src, llvm-tools-preview
+        components: rust-src, clippy, llvm-tools-preview
     - uses: actions-rs/install@v0.1
       with:
         crate: cargo-binutils
         version: latest
         use-tool-cache: true
-    - name: Install gcc multilib
-      run: sudo apt update && sudo apt install -y gcc-multilib
     - name: Download musl toolchain
       run: |
         if [ "${{ matrix.arch }}" = "x86_64" ]; then
