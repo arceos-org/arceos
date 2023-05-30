@@ -11,5 +11,8 @@
 #include "depend/lwip/src/include/lwip/udp.h"
 #include "depend/lwip/src/include/netif/ethernet.h"
 
+// Custom
+#include "custom/custom_pool.h"
+
 // APP
 // #include "depend/lwip/src/include/lwip/apps/lwiperf.h"

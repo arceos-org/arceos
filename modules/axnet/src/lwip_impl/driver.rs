@@ -9,14 +9,14 @@ use axdriver::prelude::*;
 use axdriver::register_interrupt_handler;
 use axsync::Mutex;
 use core::{cell::RefCell, ffi::c_void};
-use driver_net::{DevError, NetBufferBox, NetBufferPool};
+use driver_net::{DevError, NetBuffer, NetBufferBox, NetBufferPool};
 use lazy_init::LazyInit;
 use lwip_rust::bindings::{
     err_enum_t_ERR_MEM, err_enum_t_ERR_OK, err_t, etharp_output, ethernet_input, ethip6_output,
     ip4_addr_t, lwip_htonl, lwip_init, netif, netif_add, netif_create_ip6_linklocal_address,
-    netif_set_default, netif_set_link_up, netif_set_up, pbuf, pbuf_alloced_custom, pbuf_custom,
-    pbuf_free, pbuf_layer_PBUF_RAW, pbuf_type_PBUF_REF, sys_check_timeouts, NETIF_FLAG_BROADCAST,
-    NETIF_FLAG_ETHARP, NETIF_FLAG_ETHERNET,
+    netif_set_default, netif_set_link_up, netif_set_up, pbuf, pbuf_free, rx_custom_pbuf_alloc,
+    rx_custom_pbuf_free, rx_custom_pbuf_init, rx_custom_pbuf_t, sys_check_timeouts,
+    NETIF_FLAG_BROADCAST, NETIF_FLAG_ETHARP, NETIF_FLAG_ETHERNET,
 };
 
 const RX_BUF_QUEUE_SIZE: usize = 64;
@@ -85,35 +85,19 @@ impl InterfaceWrapper {
             if let Some(buf) = buf_receive {
                 trace!("RECV {} bytes: {:02X?}", buf.packet().len(), buf.packet());
 
-                let custom_pbuf = Box::new(CustomPbuf {
-                    p: pbuf_custom {
-                        pbuf: pbuf {
-                            next: core::ptr::null_mut(),
-                            payload: core::ptr::null_mut(),
-                            tot_len: 0,
-                            len: 0,
-                            type_internal: 0,
-                            flags: 0,
-                            ref_: 0,
-                            if_idx: 0,
-                        },
-                        custom_free_function: Some(pbuf_free_custom),
-                    },
-                    buf: Some(buf),
-                    dev: self.dev.clone(),
-                });
+                let length = buf.packet().len();
+                let payload_mem = buf.packet().as_ptr() as *mut _;
+                let payload_mem_len = buf.capacity() as u16;
                 let p = unsafe {
-                    pbuf_alloced_custom(
-                        pbuf_layer_PBUF_RAW,
-                        custom_pbuf.buf.as_ref().unwrap().packet().len() as u16,
-                        pbuf_type_PBUF_REF,
-                        &custom_pbuf.p as *const _ as *mut _,
-                        custom_pbuf.buf.as_ref().unwrap().packet().as_ptr() as *mut _,
-                        custom_pbuf.buf.as_ref().unwrap().capacity() as u16,
+                    rx_custom_pbuf_alloc(
+                        Some(pbuf_free_custom),
+                        Box::into_raw(buf) as *mut _,
+                        Arc::into_raw(self.dev.clone()) as *mut _,
+                        length as u16,
+                        payload_mem,
+                        payload_mem_len,
                     )
                 };
-                // move to raw pointer to avoid double free
-                let _custom_pbuf = Box::into_raw(custom_pbuf);
 
                 debug!("ethernet_input");
                 let mut netif = self.netif.lock();
@@ -136,29 +120,20 @@ impl InterfaceWrapper {
     }
 }
 
-#[repr(C)]
-struct CustomPbuf {
-    p: pbuf_custom,
-    buf: Option<NetBufferBox<'static>>,
-    dev: Arc<Mutex<DeviceWrapper>>,
-}
-
 extern "C" fn pbuf_free_custom(p: *mut pbuf) {
     debug!("pbuf_free_custom: {:x?}", p);
-    let mut custom_pbuf = unsafe { Box::from_raw(p as *mut CustomPbuf) };
-    let buf = custom_pbuf.buf.take().unwrap();
-    let res = custom_pbuf
-        .dev
-        .lock()
-        .inner
-        .borrow_mut()
-        .recycle_rx_buffer(buf);
-    match res {
+    let p = p as *mut rx_custom_pbuf_t;
+    let buf = unsafe { Box::from_raw((*p).buf as *mut NetBuffer) };
+    let dev = unsafe { Arc::from_raw((*p).dev as *const Mutex<DeviceWrapper>) };
+    match dev.lock().inner.borrow_mut().recycle_rx_buffer(buf) {
         Ok(_) => (),
         Err(err) => {
             warn!("recycle_rx_buffer failed: {:?}", err);
         }
-    }
+    };
+    unsafe {
+        rx_custom_pbuf_free(p);
+    };
 }
 
 extern "C" fn ethif_init(netif: *mut netif) -> err_t {
@@ -255,6 +230,7 @@ pub fn init(mut net_dev: AxNetDevice) {
 
     unsafe {
         lwip_init();
+        rx_custom_pbuf_init();
         netif_add(
             &mut ETH0.netif.lock().0,
             &ipaddr,
