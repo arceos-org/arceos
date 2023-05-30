@@ -5,6 +5,7 @@ extern crate alloc;
 use crate::BlockDriverOps;
 use alloc::{vec, vec::Vec};
 use driver_common::{BaseDriverOps, DevError, DevResult, DeviceType};
+use virtio_drivers::device::blk::{BlkReq, BlkResp};
 
 const BLOCK_SIZE: usize = 512;
 
@@ -88,6 +89,57 @@ impl BlockDriverOps for RamDisk {
         }
         self.data[offset..offset + buf.len()].copy_from_slice(buf);
         Ok(())
+    }
+
+    #[cfg(feature = "irq")]
+    fn read_block_nb(
+        &mut self,
+        _block_id: u64,
+        _req: &mut BlkReq,
+        _buf: &mut [u8],
+        _resp: &mut BlkResp,
+    ) -> DevResult<u16> {
+        // self.read_block(block_id, buf)
+        unimplemented!()
+    }
+
+    #[cfg(feature = "irq")]
+    fn write_block_nb(
+        &mut self,
+        _block_id: u64,
+        _req: &mut BlkReq,
+        _buf: &[u8],
+        _resp: &mut BlkResp,
+    ) -> DevResult<u16> {
+        // self.write_block(block_id, buf)
+        unimplemented!()
+    }
+
+    #[cfg(feature = "irq")]
+    fn complete_read_block(
+        &mut self,
+        _token: u16,
+        _req: &BlkReq,
+        _buf: &mut [u8],
+        _resp: &mut BlkResp,
+    ) -> DevResult {
+        unimplemented!()
+    }
+
+    #[cfg(feature = "irq")]
+    fn complete_write_block(
+        &mut self,
+        _token: u16,
+        _req: &BlkReq,
+        _buf: &[u8],
+        _resp: &mut BlkResp,
+    ) -> DevResult {
+        unimplemented!()
+    }
+
+    #[cfg(feature = "irq")]
+    fn peek_used(&mut self) -> Option<u16> {
+        unimplemented!()
     }
 
     fn flush(&mut self) -> DevResult {

@@ -33,7 +33,7 @@ mod root;
 pub mod api;
 pub mod fops;
 
-use axdriver::{prelude::*, AxDeviceContainer};
+use axdriver::{prelude::*, register_interrupt_handler, AxDeviceContainer};
 
 /// Initializes filesystems by block devices.
 pub fn init_filesystems(mut blk_devs: AxDeviceContainer<AxBlockDevice>) {
@@ -41,5 +41,13 @@ pub fn init_filesystems(mut blk_devs: AxDeviceContainer<AxBlockDevice>) {
 
     let dev = blk_devs.take_one().expect("No block device found!");
     info!("  use block device 0: {:?}", dev.device_name());
+    #[cfg(feature = "irq")]
+    {
+        info!("register interrupt handler...");
+        register_interrupt_handler!(dev, {
+            debug!("Block device ACK!");
+            // TODO: tell virtio ack interrupt.
+        });
+    }
     self::root::init_rootfs(self::dev::Disk::new(dev));
 }

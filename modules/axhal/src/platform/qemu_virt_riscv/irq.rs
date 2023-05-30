@@ -97,7 +97,7 @@ pub fn dispatch_irq(scause: usize) {
             // TODO: get IRQ number from PLIC
             let hart_id = crate::cpu::this_cpu_id();
             let irq_num = PLIC.lock().claim(hart_id);
-            info!("External IRQ: {:#x}", irq_num);
+            debug!("External IRQ: {:#x}", irq_num);
             crate::irq::dispatch_irq_common(irq_num as usize);
             PLIC.lock().complete(hart_id, irq_num);
         }

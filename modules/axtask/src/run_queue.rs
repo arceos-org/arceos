@@ -164,7 +164,7 @@ impl AxRunQueue {
     }
 
     fn switch_to(&mut self, prev_task: CurrentTask, next_task: AxTaskRef) {
-        trace!(
+        debug!(
             "context switch: {} -> {}",
             prev_task.id_name(),
             next_task.id_name()
@@ -193,6 +193,7 @@ impl AxRunQueue {
 
 fn gc_entry() {
     loop {
+        info!("GC task is running...");
         // Drop all exited tasks and recycle resources.
         while !EXITED_TASKS.lock().is_empty() {
             // Do not do the slow drops in the critical section.

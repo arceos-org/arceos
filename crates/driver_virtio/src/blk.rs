@@ -1,7 +1,11 @@
 use crate::as_dev_err;
 use driver_block::BlockDriverOps;
-use driver_common::{BaseDriverOps, DevResult, DeviceType};
-use virtio_drivers::{device::blk::VirtIOBlk as InnerDev, transport::Transport, Hal};
+use driver_common::{BaseDriverOps, DevError, DevResult, DeviceType};
+use virtio_drivers::{
+    device::blk::{BlkReq, BlkResp, VirtIOBlk as InnerDev},
+    transport::Transport,
+    Hal,
+};
 
 /// The VirtIO block device driver.
 pub struct VirtIoBlkDev<H: Hal, T: Transport> {
@@ -62,6 +66,84 @@ impl<H: Hal, T: Transport> BlockDriverOps for VirtIoBlkDev<H, T> {
         self.inner
             .write_block(block_id as _, buf)
             .map_err(as_dev_err)
+    }
+
+    fn read_block_nb(
+        &mut self,
+        block_id: u64,
+        req: &mut BlkReq,
+        buf: &mut [u8],
+        resp: &mut BlkResp,
+    ) -> DevResult<u16> {
+        let token = unsafe {
+            self.inner
+                .read_block_nb(block_id as usize, req, buf, resp)
+                .unwrap()
+        };
+        Ok(token)
+        // yield_now();
+
+        // assert_eq!(self.inner.peek_used(), Some(token));
+
+        // unsafe { self.inner.complete_read_block(token, &req, buf, &mut resp) };
+
+        // if resp.status() == RespStatus::OK {
+        //     Ok(())
+        // } else {
+        //     Err(DevError::Io)
+        // }
+    }
+
+    fn write_block_nb(
+        &mut self,
+        block_id: u64,
+        req: &mut BlkReq,
+        buf: &[u8],
+        resp: &mut BlkResp,
+    ) -> DevResult<u16> {
+        let token = unsafe {
+            self.inner
+                .write_block_nb(block_id as usize, req, buf, resp)
+                .unwrap()
+        };
+        // Err(DevError::Again)
+        Ok(token)
+    }
+
+    fn complete_read_block(
+        &mut self,
+        token: u16,
+        req: &BlkReq,
+        buf: &mut [u8],
+        resp: &mut BlkResp,
+    ) -> DevResult {
+        unsafe {
+            self.inner
+                .complete_read_block(token, req, buf, resp)
+                .map_err(|_| DevError::Io)?;
+        }
+        self.ack_interrupt();
+        Ok(())
+    }
+
+    fn complete_write_block(
+        &mut self,
+        token: u16,
+        req: &BlkReq,
+        buf: &[u8],
+        resp: &mut BlkResp,
+    ) -> DevResult {
+        unsafe {
+            self.inner
+                .complete_write_block(token, req, buf, resp)
+                .map_err(|_| DevError::Io)?;
+        }
+        self.ack_interrupt();
+        Ok(())
+    }
+
+    fn peek_used(&mut self) -> Option<u16> {
+        self.inner.peek_used()
     }
 
     fn flush(&mut self) -> DevResult {

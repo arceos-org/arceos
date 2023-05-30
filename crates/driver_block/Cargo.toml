@@ -11,7 +11,9 @@ documentation = "https://rcore-os.github.io/arceos/driver_common/index.html"
 
 [features]
 ramdisk = []
-default = []
+irq = ["dep:virtio-drivers"]
+default = ["irq"]
 
 [dependencies]
 driver_common = { path = "../driver_common" }
+virtio-drivers = { git = "https://github.com/rcore-os/virtio-drivers.git", rev = "409ee72", optional = true }

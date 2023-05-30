@@ -10,6 +10,8 @@ pub mod ramdisk;
 #[doc(no_inline)]
 pub use driver_common::{BaseDriverOps, DevError, DevResult, DeviceType};
 
+use virtio_drivers::device::blk::{BlkReq, BlkResp};
+
 /// Operations that require a block storage device driver to implement.
 pub trait BlockDriverOps: BaseDriverOps {
     /// The number of blocks in this storage device.
@@ -33,4 +35,45 @@ pub trait BlockDriverOps: BaseDriverOps {
 
     /// Flushes the device to write all pending data to the storage.
     fn flush(&mut self) -> DevResult;
+
+    #[cfg(feature = "irq")]
+    /// Reads blocked data from the given block, without blocking.
+    fn read_block_nb(
+        &mut self,
+        block_id: u64,
+        req: &mut BlkReq,
+        buf: &mut [u8],
+        resp: &mut BlkResp,
+    ) -> DevResult<u16>;
+
+    #[cfg(feature = "irq")]
+    /// Writes blocked data to the given block, without blocking.
+    fn write_block_nb(
+        &mut self,
+        block_id: u64,
+        req: &mut BlkReq,
+        buf: &[u8],
+        resp: &mut BlkResp,
+    ) -> DevResult<u16>;
+
+    #[cfg(feature = "irq")]
+    fn complete_read_block(
+        &mut self,
+        token: u16,
+        req: &BlkReq,
+        buf: &mut [u8],
+        resp: &mut BlkResp,
+    ) -> DevResult;
+
+    #[cfg(feature = "irq")]
+    fn complete_write_block(
+        &mut self,
+        token: u16,
+        req: &BlkReq,
+        buf: &[u8],
+        resp: &mut BlkResp,
+    ) -> DevResult;
+
+    #[cfg(feature = "irq")]
+    fn peek_used(&mut self) -> Option<u16>;
 }

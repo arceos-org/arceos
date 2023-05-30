@@ -357,7 +357,11 @@ extern "C" fn task_entry() -> ! {
     // release the lock that was implicitly held across the reschedule
     unsafe { crate::RUN_QUEUE.force_unlock() };
     #[cfg(feature = "irq")]
-    axhal::arch::enable_irqs();
+    {
+        // info!("Before enable irqs");
+        axhal::arch::enable_irqs();
+        // info!("After enable irqs");
+    }
     let task = crate::current();
     if let Some(entry) = task.entry {
         unsafe { Box::from_raw(entry)() };

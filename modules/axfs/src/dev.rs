@@ -1,4 +1,7 @@
 use axdriver::prelude::*;
+use axtask::yield_now;
+use fatfs::info;
+use virtio_drivers::device::blk::{BlkReq, BlkResp, RespStatus};
 
 const BLOCK_SIZE: usize = 512;
 
@@ -40,8 +43,43 @@ impl Disk {
     pub fn read_one(&mut self, buf: &mut [u8]) -> DevResult<usize> {
         let read_size = if self.offset == 0 && buf.len() >= BLOCK_SIZE {
             // whole block
-            self.dev
-                .read_block(self.block_id, &mut buf[0..BLOCK_SIZE])?;
+            #[cfg(feature = "irq")]
+            {
+                let mut req = BlkReq::default();
+                let mut resp = BlkResp::default();
+                match self.dev.read_block_nb(
+                    self.block_id,
+                    &mut req,
+                    &mut buf[0..BLOCK_SIZE],
+                    &mut resp,
+                ) {
+                    Ok(token) => {
+                        yield_now();
+                        while self.dev.peek_used() != Some(token) {
+                            yield_now();
+                        }
+                        unsafe {
+                            self.dev.complete_read_block(
+                                token,
+                                &req,
+                                &mut buf[0..BLOCK_SIZE],
+                                &mut resp,
+                            )?;
+                        }
+                        assert_eq!(
+                            resp.status(),
+                            RespStatus::OK,
+                            "Error when reading VirtIOBlk"
+                        );
+                    }
+                    _ => unreachable!("read_block_nb should always return Again"),
+                }
+            }
+            #[cfg(not(feature = "irq"))]
+            {
+                self.dev
+                    .read_block(self.block_id, &mut buf[0..BLOCK_SIZE])?;
+            }
             self.block_id += 1;
             BLOCK_SIZE
         } else {
@@ -50,7 +88,34 @@ impl Disk {
             let start = self.offset;
             let count = buf.len().min(BLOCK_SIZE - self.offset);
 
-            self.dev.read_block(self.block_id, &mut data)?;
+            #[cfg(feature = "irq")]
+            {
+                let mut req = BlkReq::default();
+                let mut resp = BlkResp::default();
+                match self
+                    .dev
+                    .read_block_nb(self.block_id, &mut req, &mut data, &mut resp)
+                {
+                    Ok(token) => {
+                        yield_now();
+                        while self.dev.peek_used() != Some(token) {
+                            yield_now();
+                        }
+                        self.dev
+                            .complete_read_block(token, &req, &mut data, &mut resp)?;
+                        assert_eq!(
+                            resp.status(),
+                            RespStatus::OK,
+                            "Error when reading VirtIOBlk"
+                        );
+                    }
+                    _ => unreachable!("read_block_nb should always return Again"),
+                }
+            }
+            #[cfg(not(feature = "irq"))]
+            {
+                self.dev.read_block(self.block_id, &mut data)?;
+            }
             buf[..count].copy_from_slice(&data[start..start + count]);
 
             self.offset += count;
@@ -67,7 +132,41 @@ impl Disk {
     pub fn write_one(&mut self, buf: &[u8]) -> DevResult<usize> {
         let write_size = if self.offset == 0 && buf.len() >= BLOCK_SIZE {
             // whole block
-            self.dev.write_block(self.block_id, &buf[0..BLOCK_SIZE])?;
+            #[cfg(feature = "irq")]
+            {
+                let mut req = BlkReq::default();
+                let mut resp = BlkResp::default();
+                match self.dev.write_block_nb(
+                    self.block_id,
+                    &mut req,
+                    &buf[0..BLOCK_SIZE],
+                    &mut resp,
+                ) {
+                    Ok(token) => {
+                        yield_now();
+                        while self.dev.peek_used() != Some(token) {
+                            yield_now();
+                        }
+                        self.dev.complete_write_block(
+                            token,
+                            &req,
+                            &buf[0..BLOCK_SIZE],
+                            &mut resp,
+                        )?;
+                        assert_eq!(
+                            resp.status(),
+                            RespStatus::OK,
+                            "Error when writing VirtIOBlk"
+                        );
+                    }
+                    _ => unreachable!("write_block_nb should always return Again"),
+                }
+            }
+
+            #[cfg(not(feature = "irq"))]
+            {
+                self.dev.write_block(self.block_id, &buf[0..BLOCK_SIZE])?;
+            }
             self.block_id += 1;
             BLOCK_SIZE
         } else {
@@ -76,9 +175,64 @@ impl Disk {
             let start = self.offset;
             let count = buf.len().min(BLOCK_SIZE - self.offset);
 
-            self.dev.read_block(self.block_id, &mut data)?;
+            #[cfg(feature = "irq")]
+            {
+                let mut req = BlkReq::default();
+                let mut resp = BlkResp::default();
+                match self
+                    .dev
+                    .read_block_nb(self.block_id, &mut req, &mut data, &mut resp)
+                {
+                    Ok(token) => {
+                        yield_now();
+                        while self.dev.peek_used() != Some(token) {
+                            yield_now();
+                        }
+                        self.dev
+                            .complete_read_block(token, &req, &mut data, &mut resp)?;
+                        assert_eq!(
+                            resp.status(),
+                            RespStatus::OK,
+                            "Error when reading VirtIOBlk"
+                        );
+                    }
+                    _ => unreachable!("read_block_nb should always return Again"),
+                }
+            }
+
+            #[cfg(not(feature = "irq"))]
+            {
+                self.dev.read_block(self.block_id, &mut data)?;
+            }
             data[start..start + count].copy_from_slice(&buf[..count]);
-            self.dev.write_block(self.block_id, &data)?;
+            #[cfg(feature = "irq")]
+            {
+                let mut req = BlkReq::default();
+                let mut resp = BlkResp::default();
+                match self
+                    .dev
+                    .write_block_nb(self.block_id, &mut req, &data, &mut resp)
+                {
+                    Ok(token) => {
+                        yield_now();
+                        while self.dev.peek_used() != Some(token) {
+                            yield_now();
+                        }
+                        self.dev.complete_write_block(token, &req, buf, &mut resp)?;
+                        assert_eq!(
+                            resp.status(),
+                            RespStatus::OK,
+                            "Error when writing VirtIOBlk"
+                        );
+                    }
+                    _ => unreachable!("write_block_nb should always return Again"),
+                }
+            }
+
+            #[cfg(not(feature = "irq"))]
+            {
+                self.dev.write_block(self.block_id, &data)?;
+            }
 
             self.offset += count;
             if self.offset >= BLOCK_SIZE {

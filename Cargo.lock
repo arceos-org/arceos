@@ -224,6 +224,7 @@ dependencies = [
  "axfs_devfs",
  "axfs_ramfs",
  "axfs_vfs",
+ "axhal",
  "axio",
  "axsync",
  "axtask",
@@ -234,6 +235,7 @@ dependencies = [
  "fatfs",
  "lazy_init",
  "log",
+ "virtio-drivers",
 ]
 
 [[package]]
@@ -632,6 +634,7 @@ name = "driver_block"
 version = "0.1.0"
 dependencies = [
  "driver_common",
+ "virtio-drivers",
 ]
 
 [[package]]

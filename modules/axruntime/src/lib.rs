@@ -151,7 +151,16 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     axhal::platform_init();
 
     #[cfg(feature = "multitask")]
-    axtask::init_scheduler();
+    {
+        info!("Initialize task scheduler...");
+        axtask::init_scheduler();
+    }
+
+    #[cfg(feature = "irq")]
+    {
+        info!("Initialize interrupt handlers...");
+        init_interrupt();
+    }
 
     #[cfg(any(feature = "fs", feature = "net", feature = "display"))]
     {
@@ -170,12 +179,6 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
 
     #[cfg(feature = "smp")]
     self::mp::start_secondary_cpus(cpu_id);
-
-    #[cfg(feature = "irq")]
-    {
-        info!("Initialize interrupt handlers...");
-        init_interrupt();
-    }
 
     info!("Primary CPU {} init OK.", cpu_id);
     INITED_CPUS.fetch_add(1, Ordering::Relaxed);
@@ -239,12 +242,6 @@ fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
                 r.flags.into(),
                 true,
             )?;
-            info!(
-                "{:#x} -> {:#x}, size: {:#x}",
-                r.paddr,
-                phys_to_virt(r.paddr),
-                r.size
-            );
         }
         KERNEL_PAGE_TABLE.init_by(kernel_page_table);
     }
