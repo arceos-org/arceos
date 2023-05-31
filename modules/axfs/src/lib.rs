@@ -33,7 +33,9 @@ mod root;
 pub mod api;
 pub mod fops;
 
-use axdriver::{prelude::*, register_interrupt_handler, AxDeviceContainer};
+#[cfg(feature = "irq")]
+use axdriver::register_interrupt_handler;
+use axdriver::{prelude::*, AxDeviceContainer};
 
 /// Initializes filesystems by block devices.
 pub fn init_filesystems(mut blk_devs: AxDeviceContainer<AxBlockDevice>) {
@@ -46,7 +48,6 @@ pub fn init_filesystems(mut blk_devs: AxDeviceContainer<AxBlockDevice>) {
         info!("register interrupt handler...");
         register_interrupt_handler!(dev, {
             debug!("Block device ACK!");
-            // TODO: tell virtio ack interrupt.
         });
     }
     self::root::init_rootfs(self::dev::Disk::new(dev));

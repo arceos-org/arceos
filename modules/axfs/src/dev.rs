@@ -1,4 +1,5 @@
 use axdriver::prelude::*;
+#[cfg(feature = "irq")]
 use axtask::yield_now;
 #[cfg(feature = "irq")]
 use virtio_drivers::device::blk::{BlkReq, BlkResp, RespStatus};
