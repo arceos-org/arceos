@@ -2,10 +2,17 @@
 
 use alloc::{string::String, sync::Arc};
 
-pub(crate) use crate::run_queue::{AxRunQueue, RUN_QUEUE};
+#[cfg(feature = "multitask")]
+cfg_if::cfg_if! {
+    if #[cfg(feature = "macro")]  {
+        pub(crate) use crate::macro_task::run_queue::{AxRunQueue, RUN_QUEUE, init, init_secondary};
+        pub use crate::macro_task::task::{CurrentTask, TaskId, TaskInner, KERNEL_PROCESS_ID};
+    } else {
+        pub(crate) use crate::run_queue::{AxRunQueue, RUN_QUEUE, init, init_secondary};
+        pub use crate::task::{CurrentTask, TaskId, TaskInner};
+    }
+}
 
-#[doc(cfg(feature = "multitask"))]
-pub use crate::task::{CurrentTask, TaskId, TaskInner};
 #[doc(cfg(feature = "multitask"))]
 pub use crate::wait_queue::WaitQueue;
 
@@ -64,7 +71,7 @@ pub fn current() -> CurrentTask {
 pub fn init_scheduler() {
     info!("Initialize scheduling...");
 
-    crate::run_queue::init();
+    init();
     #[cfg(feature = "irq")]
     crate::timers::init();
 
@@ -73,7 +80,7 @@ pub fn init_scheduler() {
 
 /// Initializes the task scheduler for secondary CPUs.
 pub fn init_scheduler_secondary() {
-    crate::run_queue::init_secondary();
+    init_secondary();
 }
 
 /// Handles periodic timer ticks for the task manager.
@@ -93,7 +100,11 @@ pub fn spawn_raw<F>(f: F, name: String, stack_size: usize) -> AxTaskRef
 where
     F: FnOnce() + Send + 'static,
 {
+    #[cfg(feature = "macro")]
+    let task = TaskInner::new(f, name, stack_size, KERNEL_PROCESS_ID, 0);
+    #[cfg(not(feature = "macro"))]
     let task = TaskInner::new(f, name, stack_size);
+
     RUN_QUEUE.lock().add_task(task.clone());
     task
 }

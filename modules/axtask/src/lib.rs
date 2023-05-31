@@ -33,12 +33,19 @@ cfg_if::cfg_if! {
         #[macro_use]
         extern crate log;
         extern crate alloc;
-        mod run_queue;
-        mod task;
         mod wait_queue;
-
         #[cfg(feature = "irq")]
         mod timers;
+    }
+}
+
+cfg_if::cfg_if! {
+    if #[cfg(feature = "macro")] {
+        pub mod macro_task;
+    }
+    else {
+        mod task;
+        mod run_queue;
     }
 }
 

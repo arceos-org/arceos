@@ -21,11 +21,17 @@ preempt = ["irq", "percpu?/preempt", "kernel_guard/preempt"]
 sched_fifo = ["multitask"]
 sched_rr = ["multitask", "preempt"]
 sched_cfs = ["multitask", "preempt"]
+
+# 是否使用宏内核架构
+macro = []
+
 default = ["sched_fifo"]
+
 
 [dependencies]
 cfg-if = "1.0"
 log = "0.4"
+axalloc = { path = "../axalloc", optional = true }
 axhal = { path = "../axhal" }
 axconfig = { path = "../axconfig", optional = true }
 percpu = { path = "../../crates/percpu", optional = true }
@@ -36,7 +42,7 @@ scheduler = { path = "../../crates/scheduler", optional = true }
 timer_list = { path = "../../crates/timer_list", optional = true }
 kernel_guard = { path = "../../crates/kernel_guard" }
 crate_interface = { path = "../../crates/crate_interface" }
-
+riscv = { path = "../../extern_crates/riscv-0.10.1" }
 [dev-dependencies]
 rand = "0.8"
 axhal = { path = "../axhal", features = ["fp_simd"] }

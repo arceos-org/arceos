@@ -19,8 +19,10 @@ smp = ["axhal/smp", "spinlock/smp"]
 fs = ["alloc", "paging", "axdriver/virtio-blk", "dep:axfs"] # TODO: remove "paging"
 net = ["alloc", "paging", "axdriver/virtio-net", "dep:axnet"]
 display = ["alloc", "paging", "axdriver/virtio-gpu", "dep:axdisplay"]
+# 是否使用宏内核架构
+macro = ["paging", "multitask", "axtask/macro", "fs"]
 
-default = ["axtask?/default"]
+default = ["axtask?/default", "macro"]
 
 [dependencies]
 percpu = { path = "../../crates/percpu" }

@@ -4,7 +4,14 @@ use lazy_init::LazyInit;
 use scheduler::BaseScheduler;
 use spinlock::SpinNoIrq;
 
-use crate::task::{CurrentTask, TaskState};
+cfg_if::cfg_if! {
+    if #[cfg(feature = "macro")]  {
+        pub use crate::macro_task::task::{CurrentTask, TaskState};
+    } else {
+        pub use crate::task::{CurrentTask, TaskState};
+    }
+}
+
 use crate::{AxTaskRef, Scheduler, TaskInner, WaitQueue};
 
 // TODO: per-CPU
