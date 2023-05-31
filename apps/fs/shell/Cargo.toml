@@ -11,7 +11,7 @@ use_ramfs = ["axfs/myfs", "dep:axfs_vfs", "dep:axfs_ramfs", "dep:crate_interface
 default = []
 
 [dependencies]
-axfs = { path = "../../../modules/axfs", optional = true, features = ["irq"] }
+axfs = { path = "../../../modules/axfs", optional = true, default-features = false }
 axfs_vfs = { path = "../../../crates/axfs_vfs", optional = true }
 axfs_ramfs = { path = "../../../crates/axfs_ramfs", optional = true }
 crate_interface = { path = "../../../crates/crate_interface", optional = true }
