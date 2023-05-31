@@ -206,6 +206,7 @@ dependencies = [
  "driver_virtio",
  "dtb",
  "log",
+ "virtio-drivers",
 ]
 
 [[package]]

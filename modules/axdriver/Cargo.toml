@@ -42,6 +42,7 @@ axalloc = { path = "../axalloc", optional = true }
 axhal = { path = "../axhal", optional = true }
 axconfig = { path = "../axconfig", optional = true }
 dtb = {path = "../../crates/dtb" , optional = true}
+virtio-drivers = { git = "https://github.com/rcore-os/virtio-drivers.git", rev = "409ee72"}
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 arm_gic = { path = "../../crates/arm_gic"}
