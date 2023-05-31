@@ -3,6 +3,9 @@
 
 mod cmd;
 
+#[cfg(feature = "use_ramfs")]
+mod ramfs;
+
 use libax::io::prelude::*;
 
 #[macro_use]

@@ -1,7 +1,10 @@
+//! Temporal quantification.
+
 pub use core::time::Duration;
 
 /// A measurement of a monotonically nondecreasing clock.
 /// Opaque and useful only with [`Duration`].
+#[derive(Clone, Copy)]
 pub struct Instant(Duration);
 
 impl Instant {

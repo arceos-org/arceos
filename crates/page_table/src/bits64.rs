@@ -8,7 +8,7 @@ use memory_addr::{PhysAddr, VirtAddr, PAGE_SIZE_4K};
 use crate::{GenericPTE, PagingIf, PagingMetaData};
 use crate::{MappingFlags, PageSize, PagingError, PagingResult};
 
-pub const ENTRY_COUNT: usize = 512;
+const ENTRY_COUNT: usize = 512;
 
 const fn p4_index(vaddr: VirtAddr) -> usize {
     (vaddr.as_usize() >> (12 + 27)) & (ENTRY_COUNT - 1)
@@ -79,7 +79,7 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
     }
 
     /// Unmaps the mapping starts with `vaddr`.
-    /// 将vaddr与其对应的页表项解映射，标记对应的物理页面已经被释放
+    ///
     /// Returns [`Err(PagingError::NotMapped)`](PagingError::NotMapped) if the
     /// mapping is not present.
     pub fn unmap(&mut self, vaddr: VirtAddr) -> PagingResult<(PhysAddr, PageSize)> {
@@ -89,7 +89,6 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
         }
         let paddr = entry.paddr();
         entry.clear();
-        assert!(entry.is_unused());
         Ok((paddr, size))
     }
 

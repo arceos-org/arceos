@@ -106,13 +106,18 @@ unsafe fn init_mmu() {
     barrier::isb(barrier::SY);
 }
 
+unsafe fn enable_fp() {
+    if cfg!(feature = "fp_simd") {
+        CPACR_EL1.write(CPACR_EL1::FPEN::TrapNothing);
+        barrier::isb(barrier::SY);
+    }
+}
+
+/// The earliest entry point for the primary CPU.
 #[naked]
 #[no_mangle]
 #[link_section = ".text.boot"]
 unsafe extern "C" fn _start() -> ! {
-    extern "Rust" {
-        fn rust_main();
-    }
     // PC = 0x4008_0000
     // X0 = dtb
     core::arch::asm!("
@@ -120,47 +125,41 @@ unsafe extern "C" fn _start() -> ! {
         and     x19, x19, #0xffffff     // get current CPU id
         mov     x20, x0                 // save DTB pointer
 
-        adrp    x8, {BOOT_STACK}
-        add     x8, x8, {TASK_STACK_SIZE}
-        mov     sp, x8                  // setup boot stack
+        adrp    x8, {boot_stack}        // setup boot stack
+        add     x8, x8, {boot_stack_size}
+        mov     sp, x8
 
         bl      {switch_to_el1}         // switch to EL1
         bl      {init_boot_page_table}
         bl      {init_mmu}              // setup MMU
+        bl      {enable_fp}             // enable fp/neon
 
-        ldr     x8, ={BOOT_STACK}       // set SP to the high address
-        add     x8, x8, {TASK_STACK_SIZE}
-        mov     sp, x8
+        mov     x8, {phys_virt_offset}  // set SP to the high address
+        add     sp, sp, x8
 
-        mov     x0, x19
+        mov     x0, x19                 // call rust_entry(cpu_id, dtb)
         mov     x1, x20
-        ldr     x8, ={platform_init}    // call platform_init(cpu_id, dtb)
-        blr     x8
-
-        mov     x0, x19
-        mov     x1, x20
-        ldr     x8, ={rust_main}        // call rust_main(cpu_id, dtb)
+        ldr     x8, ={entry}
         blr     x8
         b      .",
         switch_to_el1 = sym switch_to_el1,
         init_boot_page_table = sym init_boot_page_table,
         init_mmu = sym init_mmu,
-        BOOT_STACK = sym BOOT_STACK,
-        TASK_STACK_SIZE = const TASK_STACK_SIZE,
-        platform_init = sym super::platform_init,
-        rust_main = sym rust_main,
+        enable_fp = sym enable_fp,
+        boot_stack = sym BOOT_STACK,
+        boot_stack_size = const TASK_STACK_SIZE,
+        phys_virt_offset = const axconfig::PHYS_VIRT_OFFSET,
+        entry = sym super::rust_entry,
         options(noreturn),
     )
 }
 
+/// The earliest entry point for the secondary CPUs.
 #[cfg(feature = "smp")]
 #[naked]
 #[no_mangle]
 #[link_section = ".text.boot"]
 unsafe extern "C" fn _start_secondary() -> ! {
-    extern "Rust" {
-        fn rust_main_secondary();
-    }
     core::arch::asm!("
         mrs     x19, mpidr_el1
         and     x19, x19, #0xffffff     // get current CPU id
@@ -168,23 +167,20 @@ unsafe extern "C" fn _start_secondary() -> ! {
         mov     sp, x0
         bl      {switch_to_el1}
         bl      {init_mmu}
+        bl      {enable_fp}
 
-        mov     x8, {phys_virt_offset}
-        add     sp, sp, x8              // set SP to the high address
+        mov     x8, {phys_virt_offset}  // set SP to the high address
+        add     sp, sp, x8
 
-        mov     x0, x19
-        ldr     x8, ={platform_init_secondary}
-        blr     x8                      // call platform_init_secondary(cpu_id)
-
-        mov     x0, x19
-        ldr     x8, ={rust_main_secondary}
-        blr     x8                      // call rust_main_secondary(cpu_id)
+        mov     x0, x19                 // call rust_entry_secondary(cpu_id)
+        ldr     x8, ={entry}
+        blr     x8
         b      .",
         switch_to_el1 = sym switch_to_el1,
         init_mmu = sym init_mmu,
+        enable_fp = sym enable_fp,
         phys_virt_offset = const axconfig::PHYS_VIRT_OFFSET,
-        platform_init_secondary = sym super::platform_init_secondary,
-        rust_main_secondary = sym rust_main_secondary,
+        entry = sym super::rust_entry_secondary,
         options(noreturn),
     )
 }

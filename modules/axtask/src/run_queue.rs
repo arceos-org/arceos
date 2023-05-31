@@ -5,39 +5,28 @@ use scheduler::BaseScheduler;
 use spinlock::SpinNoIrq;
 
 use crate::task::{CurrentTask, TaskState};
-use crate::{run_idle, AxTaskRef, Scheduler, TaskInner, WaitQueue};
-
-const KERNEL_PROCESS_ID: u64 = 1;
+use crate::{AxTaskRef, Scheduler, TaskInner, WaitQueue};
 
 // TODO: per-CPU
-pub static RUN_QUEUE: LazyInit<SpinNoIrq<AxRunQueue>> = LazyInit::new();
+pub(crate) static RUN_QUEUE: LazyInit<SpinNoIrq<AxRunQueue>> = LazyInit::new();
 
 // TODO: per-CPU
-pub static EXITED_TASKS: SpinNoIrq<VecDeque<AxTaskRef>> = SpinNoIrq::new(VecDeque::new());
+static EXITED_TASKS: SpinNoIrq<VecDeque<AxTaskRef>> = SpinNoIrq::new(VecDeque::new());
 
 static WAIT_FOR_EXIT: WaitQueue = WaitQueue::new();
-const IDLE_TASK_STACK_SIZE: usize = 4096;
-#[percpu::def_percpu]
-pub static IDLE_TASK: LazyInit<AxTaskRef> = LazyInit::new();
 
-pub struct AxRunQueue {
+#[percpu::def_percpu]
+static IDLE_TASK: LazyInit<AxTaskRef> = LazyInit::new();
+
+pub(crate) struct AxRunQueue {
     scheduler: Scheduler,
 }
 
 impl AxRunQueue {
     pub fn new() -> SpinNoIrq<Self> {
-        // 内核线程的page_table_token默认为0
-        let gc_task = TaskInner::new(
-            gc_entry,
-            "gc",
-            axconfig::TASK_STACK_SIZE,
-            KERNEL_PROCESS_ID,
-            0,
-        );
-        info!("gc task id: {}", gc_task.id().as_u64());
-        unsafe { CurrentTask::init_current(gc_task) }
-        let scheduler = Scheduler::new();
-        // scheduler.add_task(gc_task);
+        let gc_task = TaskInner::new(gc_entry, "gc".into(), axconfig::TASK_STACK_SIZE);
+        let mut scheduler = Scheduler::new();
+        scheduler.add_task(gc_task);
         SpinNoIrq::new(Self { scheduler })
     }
 
@@ -46,17 +35,8 @@ impl AxRunQueue {
         assert!(task.is_ready());
         self.scheduler.add_task(task);
     }
-    /// 仅用于exec时清除其他后台线程
-    pub fn remove_task(&mut self, task: &AxTaskRef) {
-        debug!("task remove: {}", task.id_name());
-        // 当前任务不予清除
-        assert!(task.is_running());
-        assert!(!task.is_idle());
-        self.scheduler.remove_task(task);
-        task.set_state(TaskState::Exited);
-        EXITED_TASKS.lock().push_back(task.clone());
-    }
 
+    #[cfg(feature = "irq")]
     pub fn scheduler_timer_tick(&mut self) {
         let curr = crate::current();
         if !curr.is_idle() && self.scheduler.task_tick(curr.as_task_ref()) {
@@ -67,8 +47,14 @@ impl AxRunQueue {
 
     pub fn yield_current(&mut self) {
         let curr = crate::current();
+        debug!("task yield: {}", curr.id_name());
         assert!(curr.is_running());
         self.resched_inner(false);
+    }
+
+    pub fn set_current_priority(&mut self, prio: isize) -> bool {
+        self.scheduler
+            .set_priority(crate::current().as_task_ref(), prio)
     }
 
     #[cfg(feature = "preempt")]
@@ -94,9 +80,8 @@ impl AxRunQueue {
             curr.set_preempt_pending(true);
         }
     }
-    /// 线程的退出，需要判断当前线程是否为调度线程。
-    /// 若是调度线程，则需要退出进程内所有程序
-    pub fn exit_current(&mut self, exit_code: i32) {
+
+    pub fn exit_current(&mut self, exit_code: i32) -> ! {
         let curr = crate::current();
         debug!("task exit: {}, exit_code={}", curr.id_name(), exit_code);
         assert!(curr.is_running());
@@ -105,11 +90,13 @@ impl AxRunQueue {
             EXITED_TASKS.lock().clear();
             axhal::misc::terminate();
         } else {
-            curr.set_exit_code(exit_code);
             curr.set_state(TaskState::Exited);
+            curr.notify_exit(exit_code, self);
             EXITED_TASKS.lock().push_back(curr.clone());
             WAIT_FOR_EXIT.notify_one_locked(false, self);
+            self.resched_inner(false);
         }
+        unreachable!("task exited!");
     }
 
     pub fn block_current<F>(&mut self, wait_queue_push: F)
@@ -142,6 +129,7 @@ impl AxRunQueue {
         }
     }
 
+    #[cfg(feature = "irq")]
     pub fn sleep_until(&mut self, deadline: axhal::time::TimeValue) {
         let curr = crate::current();
         debug!("task sleep: {}, deadline={:?}", curr.id_name(), deadline);
@@ -160,19 +148,18 @@ impl AxRunQueue {
 impl AxRunQueue {
     /// Common reschedule subroutine. If `preempt`, keep current task's time
     /// slice, otherwise reset it.
-    pub fn resched_inner(&mut self, preempt: bool) {
+    fn resched_inner(&mut self, preempt: bool) {
         let prev = crate::current();
-        let next = self.scheduler.pick_next_task().unwrap_or_else(|| unsafe {
-            // Safety: IRQs must be disabled at this time.
-            IDLE_TASK.current_ref_raw().get_unchecked().clone()
-        });
-        // 需要先把next取出来再取出prev，否则会出现prev和next一致导致死循环
         if prev.is_running() {
             prev.set_state(TaskState::Ready);
             if !prev.is_idle() {
                 self.scheduler.put_prev_task(prev.clone(), preempt);
             }
         }
+        let next = self.scheduler.pick_next_task().unwrap_or_else(|| unsafe {
+            // Safety: IRQs must be disabled at this time.
+            IDLE_TASK.current_ref_raw().get_unchecked().clone()
+        });
         self.switch_to(prev, next);
     }
 
@@ -188,20 +175,16 @@ impl AxRunQueue {
         if prev_task.ptr_eq(&next_task) {
             return;
         }
-        // 当任务进行切换时，更新两个任务的时间统计信息
-        next_task.time_stat_when_switch_to();
-        prev_task.time_stat_when_switch_from();
+
         unsafe {
             let prev_ctx_ptr = prev_task.ctx_mut_ptr();
             let next_ctx_ptr = next_task.ctx_mut_ptr();
+
             // The strong reference count of `prev_task` will be decremented by 1,
             // but won't be dropped until `gc_entry()` is called.
             assert!(Arc::strong_count(prev_task.as_task_ref()) > 1);
             assert!(Arc::strong_count(&next_task) >= 1);
-            let page_table_token = next_task.page_table_token();
-            if page_table_token != 0 {
-                axhal::arch::write_page_table_root(page_table_token.into());
-            }
+
             CurrentTask::set_current(prev_task, next_task);
             (*prev_ctx_ptr).switch_to(&*next_ctx_ptr);
         }
@@ -215,10 +198,9 @@ fn gc_entry() {
             // Do not do the slow drops in the critical section.
             let task = EXITED_TASKS.lock().pop_front();
             if let Some(task) = task {
-                // wait for other threads to release the reference.
-                while Arc::strong_count(&task) > 1 {
-                    core::hint::spin_loop();
-                }
+                // If the task reference is not taken after `spawn()`, it will be
+                // dropped here. Otherwise, it will be dropped after the reference
+                // is dropped (usually by `join()`).
                 drop(task);
             }
         }
@@ -227,21 +209,19 @@ fn gc_entry() {
 }
 
 pub(crate) fn init() {
-    let idle_task = TaskInner::new(
-        || run_idle(),
-        "idle",
-        IDLE_TASK_STACK_SIZE,
-        KERNEL_PROCESS_ID,
-        0,
-    );
-    idle_task.set_leader(true);
+    const IDLE_TASK_STACK_SIZE: usize = 4096;
+    let idle_task = TaskInner::new(|| crate::run_idle(), "idle".into(), IDLE_TASK_STACK_SIZE);
     IDLE_TASK.with_current(|i| i.init_by(idle_task.clone()));
+
+    let main_task = TaskInner::new_init("main".into());
+    main_task.set_state(TaskState::Running);
+
     RUN_QUEUE.init_by(AxRunQueue::new());
+    unsafe { CurrentTask::init_current(main_task) }
 }
 
-/// 副核启动
 pub(crate) fn init_secondary() {
-    let idle_task = TaskInner::new_init("idle");
+    let idle_task = TaskInner::new_init("idle".into());
     idle_task.set_state(TaskState::Running);
     IDLE_TASK.with_current(|i| i.init_by(idle_task.clone()));
     unsafe { CurrentTask::init_current(idle_task) }

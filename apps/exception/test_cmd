@@ -1,0 +1,1 @@
+test_one "LOG=debug" "expect_debug_${ARCH}.out"

@@ -1,8 +1,7 @@
-//! `std::fs`-like high-level filesystem manipulation operations.
+//! [`std::fs`]-like high-level filesystem manipulation operations.
 
 mod dir;
 mod file;
-mod link;
 
 pub use self::dir::{DirBuilder, DirEntry, ReadDir};
 pub use self::file::{File, FileType, Metadata, OpenOptions, Permissions};
@@ -80,18 +79,3 @@ pub fn remove_dir(path: &str) -> io::Result<()> {
 pub fn remove_file(path: &str) -> io::Result<()> {
     crate::root::remove_file(None, path)
 }
-
-/// Check if a path exists.
-pub fn path_exists(path: &str) -> bool {
-    crate::root::lookup(None, path).is_ok()
-}
-
-// /// Mount a filesystem
-// pub fn mount_fs(device: &str, mountpoint: &str) -> io::Result<()> {
-//     crate::root::mount_fs(device, mountpoint)
-// }
-//
-// /// Unmount a filesystem
-// pub fn unmount_fs(mountpoint: &str) -> io::Result<()> {
-//     crate::root::unmount_(mountpoint)
-// }

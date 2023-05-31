@@ -1,32 +1,36 @@
+//! [ArceOS](https://github.com/rcore-os/arceos) graphics module.
+//!
+//! Currently only supports direct writing to the framebuffer.
+
 #![no_std]
 
 #[macro_use]
 extern crate log;
 
-pub use driver_display::{DisplayDriverOps, DisplayInfo};
+#[doc(no_inline)]
+pub use driver_display::DisplayInfo;
 
-use axdriver::DisplayDevices;
+use axdriver::{prelude::*, AxDeviceContainer};
 use axsync::Mutex;
 use lazy_init::LazyInit;
 
-struct DisplayDevicesWrapper(Mutex<DisplayDevices>);
+static MAIN_DISPLAY: LazyInit<Mutex<AxDisplayDevice>> = LazyInit::new();
 
-static DISPLAYS: LazyInit<DisplayDevicesWrapper> = LazyInit::new();
+/// Initializes the graphics subsystem by underlayer devices.
+pub fn init_display(mut display_devs: AxDeviceContainer<AxDisplayDevice>) {
+    info!("Initialize graphics subsystem...");
 
-pub fn init_display(display_devs: DisplayDevices) {
-    info!("Initialize Display subsystem...");
-
-    info!("number of Displays: {}", display_devs.len());
-    DISPLAYS.init_by(DisplayDevicesWrapper(Mutex::new(display_devs)));
+    let dev = display_devs.take_one().expect("No graphics device found!");
+    info!("  use graphics device 0: {:?}", dev.device_name());
+    MAIN_DISPLAY.init_by(Mutex::new(dev));
 }
 
+/// Gets the framebuffer information.
 pub fn framebuffer_info() -> DisplayInfo {
-    let device = DISPLAYS.0.lock();
-    device.0.info()
+    MAIN_DISPLAY.lock().info()
 }
 
-pub fn framebuffer_flush() -> isize {
-    let mut device = DISPLAYS.0.lock();
-    device.0.flush().unwrap();
-    0
+/// Flushes the framebuffer, i.e. show on the screen.
+pub fn framebuffer_flush() {
+    MAIN_DISPLAY.lock().flush().unwrap();
 }

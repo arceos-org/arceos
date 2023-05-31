@@ -10,4 +10,5 @@ repository = "https://github.com/rcore-os/arceos/tree/main/crates/driver_net"
 documentation = "https://rcore-os.github.io/arceos/driver_net/index.html"
 
 [dependencies]
+spin = "0.9"
 driver_common = { path = "../driver_common" }

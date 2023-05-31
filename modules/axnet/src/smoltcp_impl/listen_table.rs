@@ -60,7 +60,7 @@ impl ListenTable {
             *entry = Some(Box::new(ListenTableEntry::new()));
             Ok(())
         } else {
-            ax_err!(AlreadyExists, "socket listen() failed")
+            ax_err!(AddrInUse, "socket listen() failed")
         }
     }
 

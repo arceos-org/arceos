@@ -4,7 +4,9 @@ use memory_addr::{PhysAddr, VirtAddr};
 
 use crate::{global_allocator, PAGE_SIZE};
 
-/// A safe wrapper of contiguous 4K-sized pages.
+/// A RAII wrapper of contiguous 4K-sized pages.
+///
+/// It will automatically deallocate the pages when dropped.
 #[derive(Debug)]
 pub struct GlobalPage {
     start_vaddr: VirtAddr,
@@ -71,7 +73,7 @@ impl GlobalPage {
 
     /// Fill `self` with `byte`.
     pub fn fill(&mut self, byte: u8) {
-        unsafe { core::ptr::write_bytes(self.as_mut_ptr(), byte, self.size()) };
+        unsafe { core::ptr::write_bytes(self.as_mut_ptr(), byte, self.size()) }
     }
 
     /// Fill `self` with zero.

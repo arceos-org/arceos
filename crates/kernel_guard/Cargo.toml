@@ -8,6 +8,8 @@ license = "GPL-3.0-or-later OR Apache-2.0"
 homepage = "https://github.com/rcore-os/arceos"
 repository = "https://github.com/rcore-os/arceos/tree/main/crates/kernel_guard"
 documentation = "https://rcore-os.github.io/arceos/kernel_guard/index.html"
+keywords = ["arceos", "synchronization", "preemption"]
+categories = ["os", "no-std"]
 
 [features]
 preempt = []
@@ -15,4 +17,4 @@ default = []
 
 [dependencies]
 cfg-if = "1.0"
-crate_interface = { path = "../crate_interface" }
+crate_interface = "0.1"
