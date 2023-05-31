@@ -16,7 +16,7 @@ fatfs = ["dep:fatfs"]
 myfs = ["dep:crate_interface"]
 
 default = ["devfs", "ramfs", "fatfs"]
-irq = ["devfs", "ramfs", "fatfs", "dep:virtio-drivers", "axtask?/irq", "axhal?/irq"]
+irq = ["devfs", "ramfs", "fatfs", "dep:virtio-drivers", "dep:axtask", "dep:axhal"]
 
 
 [dependencies]
@@ -33,8 +33,8 @@ axfs_ramfs = { path = "../../crates/axfs_ramfs", optional = true }
 axdriver = { path = "../axdriver", features = ["block"] }
 axsync = { path = "../axsync", default-features = false }
 crate_interface = { path = "../../crates/crate_interface", optional = true }
-axhal = { path = "../axhal", optional = true, default-features = false }
-axtask = { path = "../axtask", optional = true, default-features = false }
+axhal = { path = "../axhal", optional = true, features = ["irq"] }
+axtask = { path = "../axtask", optional = true, features = ["irq"] }
 virtio-drivers = { git = "https://github.com/rcore-os/virtio-drivers.git", rev = "409ee72", optional = true }
 
 [dependencies.fatfs]
