@@ -49,10 +49,10 @@ void query_test(sqlite3 *db, const char *args)
     puts("======== insert user 1, 2, 3 into user table ========");
 
     char cmd[256] = {0};
-    strcat(cmd, "insert into user (username, password) VALUES ");
-    strcat(cmd, "('"); strcat(cmd, args); strcat(cmd, "_1', 'password1'), ");
-    strcat(cmd, "('"); strcat(cmd, args); strcat(cmd, "_2', 'password2'), ");
-    strcat(cmd, "('"); strcat(cmd, args); strcat(cmd, "_3', 'password3')");
+    sprintf(cmd,
+            "insert into user (username, password) VALUES ('%s_1', 'password1'), ('%s_2', "
+            "'password2'), ('%s_3', 'password3')",
+            args, args, args);
     exec(db, cmd);
 
     puts("======== select all ========");
@@ -71,12 +71,13 @@ void memory()
     query_test(db, "memory");
 }
 
-void file() {
+void file()
+{
     sqlite3 *db;
     int ret = sqlite3_open("file.sqlite", &db);
     printf("sqlite open /file.sqlite status %d \n", ret);
 
-    if(ret != 0) {
+    if (ret != 0) {
         printf("sqlite open error");
         return;
     }
@@ -85,7 +86,8 @@ void file() {
     sqlite3_close(db);
 }
 
-int main() {
+int main()
+{
     printf("sqlite version: %s\n", sqlite3_libversion());
 
     memory();
