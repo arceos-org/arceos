@@ -22,6 +22,7 @@ sched_fifo = ["multitask"]
 sched_rr = ["multitask", "preempt"]
 sched_cfs = ["multitask", "preempt"]
 default = ["sched_fifo"]
+process = []
 
 user-paging = ["dep:axmem", "dep:axalloc"]
 

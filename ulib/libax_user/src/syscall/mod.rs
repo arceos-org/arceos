@@ -1,6 +1,7 @@
 pub mod io;
 pub mod sync;
 pub mod task;
+pub mod process;
 
 use sys_number::SYS_TIME_NANO;
 use syscall_number as sys_number;

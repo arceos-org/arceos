@@ -7,6 +7,7 @@ edition = "2021"
 
 [features]
 user_net = ["axdriver/virtio-net", "dep:driver_net"]
+process = ["axtask/process"]
 
 [dependencies]
 driver_net = { path = "../../crates/driver_net", optional = true }

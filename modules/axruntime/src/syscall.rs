@@ -75,6 +75,7 @@ pub fn syscall_handler(id: usize, params: [usize; 6]) -> isize {
         #[cfg(feature = "user-paging")]
         SYS_YIELD => {
             axtask::yield_now();
+            debug!("?????");
             0
         }
         #[cfg(feature = "user-paging")]
@@ -97,10 +98,14 @@ pub fn syscall_handler(id: usize, params: [usize; 6]) -> isize {
         #[cfg(feature = "futex")]
         SYS_FUTEX => {
             if let Some(phy_addr) = axmem::translate_addr(params[0].into()) {
-                axsync::futex::futex_op(params[0], params[1], params[2].into())
+                axsync::futex::futex_call(params[0], params[1], params[2] as u32)
             } else {
                 -1
             }
+        }
+        #[cfg(feature = "process")]
+        SYS_FORK => {
+            axprocess::fork() as isize
         }
 
         _ => -1,

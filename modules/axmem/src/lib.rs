@@ -19,8 +19,8 @@ use memory_addr::{align_up, align_up_4k, PhysAddr, VirtAddr, PAGE_SIZE_4K};
 use spinlock::SpinNoIrq;
 
 pub const USER_START: usize = 0x0400_0000;
-pub const USTACK_START: usize = 0xf_ffff_f000;
-pub const USTACK_SIZE: usize = 4096;
+pub const USTACK_START: usize = 0x10_0000_0000 - USTACK_SIZE;
+pub const USTACK_SIZE: usize = 4096 * 10;
 pub const TRAMPOLINE_START: usize = 0xffff_ffc0_0000_0000;
 pub const MMAP_AREA_START: usize = 0x10_0000_0000;
 pub const MMAP_AREA_END: usize = 0x20_0000_0000;
@@ -31,6 +31,7 @@ pub struct MapSegment {
     phy_mem: Vec<Arc<GlobalPage>>,
 }
 
+#[derive(Clone)]
 pub struct HeapSegment {
     start_vaddr: VirtAddr,
     actual_size: usize,
@@ -88,6 +89,21 @@ impl AddrSpaceInner {
             phy_mem: vec![],
         });
         Ok(())
+    }
+
+    pub fn remove_region(&mut self, vaddr: VirtAddr) -> AxResult<()> {
+        if let Some((idx, _)) = self
+            .segments
+            .iter()
+            .enumerate()
+            .find(|(_, page)| page.start_vaddr == vaddr)
+        {
+            let item = self.segments.remove(idx);
+            self.page_table.unmap_region(item.start_vaddr, item.size).map_err(|_| AxError::BadAddress)?;
+            Ok(())                
+        } else {
+            ax_err!(BadAddress)
+        }
     }
 
     pub fn page_table_addr(&self) -> PhysAddr {
@@ -251,6 +267,77 @@ impl AddrSpaceInner {
         }
         Ok(result)
     }
+    pub fn query(&self, vaddr: VirtAddr) -> Option<PhysAddr> {
+        self.page_table.query(vaddr).ok().map(|x| x.0)
+    }
+}
+
+impl Clone for AddrSpace {
+    fn clone(&self) -> Self {
+        let inner = self.lock();
+        let mut new_inner = AddrSpaceInner::new();
+        let page_table = &mut new_inner.page_table;
+
+        for segment in &inner.segments {
+            let mut new_seg = MapSegment {
+                start_vaddr: segment.start_vaddr,
+                size: segment.size,
+                phy_mem: Vec::new(),
+            };
+            let pages = segment.size / PAGE_SIZE_4K;
+
+            /*
+            if segment.phy_mem.is_empty() { // pages such as trampoline
+                (0..pages).for_each(|page| {
+                    let vaddr = segment.start_vaddr + page * PAGE_SIZE_4K;
+                    let (paddr, flags, _) = inner.page_table.query(vaddr).unwrap();
+                    page_table.map_region(vaddr, paddr, PAGE_SIZE_4K, flags, false).unwrap();
+                })
+            } else {
+            */
+                (0..pages).for_each(|page| {
+                    let vaddr = segment.start_vaddr + page * PAGE_SIZE_4K;
+                    let (paddr, flags, _) = inner.page_table.query(vaddr).unwrap();
+                    let mut user_phy_page = GlobalPage::alloc().unwrap();
+                    user_phy_page.as_slice_mut().copy_from_slice(unsafe {
+                        core::slice::from_raw_parts(phys_to_virt(paddr).as_ptr(), PAGE_SIZE_4K)
+                    });
+                    page_table
+                        .map_region(
+                            vaddr,
+                            user_phy_page.start_paddr(virt_to_phys),
+                            PAGE_SIZE_4K,
+                            flags,
+                            false,
+                        )
+                        .unwrap();
+                    new_seg.phy_mem.push(user_phy_page.into());
+                });
+            //}
+            new_inner.segments.push(new_seg)
+        }
+        new_inner.heap = inner.heap.clone();
+        for (vaddr, page) in &inner.mmap_use {
+            let mut user_phy_page = GlobalPage::alloc().unwrap();
+            user_phy_page
+                .as_slice_mut()
+                .copy_from_slice(page.as_slice());
+            let (_, flags, _) = inner.page_table.query(*vaddr).unwrap();
+
+            page_table
+                .map_region(
+                    *vaddr,
+                    user_phy_page.start_paddr(virt_to_phys),
+                    PAGE_SIZE_4K,
+                    flags,
+                    false,
+                )
+                .unwrap();
+            new_inner.mmap_use.insert(*vaddr, user_phy_page);
+        }     
+
+        AddrSpace(SpinNoIrq::new(new_inner))
+    }
 }
 
 pub struct AddrSpace(SpinNoIrq<AddrSpaceInner>);
@@ -326,7 +413,7 @@ impl AddrSpace {
                 false,
             )
             .expect("Memory Error");
-
+        
         Ok(AddrSpace(SpinNoIrq::new(user_space)))
     }
 }
@@ -407,12 +494,7 @@ pub fn copy_str_from_user(vaddr: VirtAddr, size: usize) -> String {
 }
 
 pub fn translate_addr(vaddr: VirtAddr) -> Option<PhysAddr> {
-    current_addr_space()
-        .lock()
-        .page_table
-        .query(vaddr)
-        .ok()
-        .map(|x| x.0)
+    current_addr_space().lock().query(vaddr)
 }
 
 /// Copy a [u8] array `data' from current memory space into position `ptr' of the userspace `token'

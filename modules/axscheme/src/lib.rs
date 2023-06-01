@@ -36,6 +36,13 @@ impl FileTable {
         }
     }
 
+    pub fn clone(&self) -> Self {
+        let inner = self.inner.lock();
+        FileTable {
+            inner: Mutex::new(inner.iter().map(|x| x.clone()).collect())
+        }
+    }
+
     pub fn insert(&self, file_handle: Arc<FileHandle>) -> AxResult<usize> {
         let mut fd_list = self.inner.lock();
         if let Some(fd) = fd_list.iter_mut().enumerate().find_map(|(fd, handle)| {
@@ -285,3 +292,4 @@ mod user;
 use io::{Stdin, Stdout};
 
 use self::root::RootScheme;
+pub use user::FindAddrSpace;

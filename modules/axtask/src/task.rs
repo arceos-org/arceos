@@ -9,7 +9,7 @@ use core::sync::atomic::AtomicUsize;
 use axhal::arch::TaskContext;
 use memory_addr::{align_up_4k, VirtAddr};
 
-use crate::{AxRunQueue, AxTask, AxTaskRef, WaitQueue};
+use crate::{AxRunQueue, AxTask, AxTaskRef, WaitQueue, RUN_QUEUE};
 
 /// A unique identifier for a thread.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -52,6 +52,8 @@ pub struct TaskInner {
 
     #[cfg(feature = "user-paging")]
     trap_frame: Option<Arc<axalloc::GlobalPage>>,
+    #[cfg(feature = "process")]
+    pid: AtomicU64,
 }
 
 impl TaskId {
@@ -131,6 +133,8 @@ impl TaskInner {
             ctx: UnsafeCell::new(TaskContext::new()),
             #[cfg(feature = "user-paging")]
             trap_frame: None,
+            #[cfg(feature = "process")]
+            pid: AtomicU64::new(0),
         }
     }
 
@@ -180,6 +184,10 @@ impl TaskInner {
             trap_frame.regs.a0 = args;
         }
         t.trap_frame = Some(trap_frame);
+        #[cfg(feature = "process")]
+        {
+            t.pid = current_pid().unwrap().into();
+        }
 
         Arc::new(AxTask::new(t))
     }
@@ -200,7 +208,7 @@ impl TaskInner {
                 axmem::USTACK_SIZE,
                 MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
             );
-            let kstack = TaskStack::alloc(TRAP_FRAME_SIZE);
+            let kstack = TaskStack::alloc(axconfig::TASK_STACK_SIZE);
             t.kstack = Some(kstack);
             use axhal::paging::MappingFlags;
             let trap_frame = axmem::alloc_user_page(
@@ -218,6 +226,47 @@ impl TaskInner {
             }
             t.trap_frame = Some(trap_frame);
         }
+        #[cfg(feature = "process")]
+        {
+            t.pid = 1.into();
+        }
+        
+        Arc::new(AxTask::new(t))
+    }
+    
+    #[cfg(all(feature = "user-paging", feature = "process"))]
+    pub fn new_fork(&self, pid: u64, mem: Arc<axmem::AddrSpace>) -> AxTaskRef {
+        use axalloc::GlobalPage;
+        use axhal::{mem::{phys_to_virt, virt_to_phys}, paging::MappingFlags};       
+        let mut t = Self::new_common(TaskId::new(), String::new());
+        t.is_init = true;
+        t.pid = pid.into();
+        debug!("fork task: {} -> {}", self.id_name(), t.id_name());
+
+        let kstack = TaskStack::alloc(axconfig::TASK_STACK_SIZE);
+        t.ctx.get_mut().init(axhal::arch::first_uentry as usize, kstack.top());
+        t.kstack = Some(kstack);
+
+        let trap_frame = Arc::new(GlobalPage::alloc().unwrap());
+        mem.lock().add_region(
+            get_trap_frame_vaddr(t.id),
+            trap_frame.start_paddr(virt_to_phys),
+            trap_frame.clone(),
+            MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
+            false
+        ).unwrap();
+        unsafe {
+            // TODO: move ustack
+            let old_trap_frame = mem.lock().query(get_trap_frame_vaddr(self.id)).unwrap();
+            let old_trap_frame = &*(phys_to_virt(old_trap_frame).as_ptr() as *const axhal::arch::TrapFrame);
+            
+            let new_trap_frame = &mut *(trap_frame.as_ptr() as *mut axhal::arch::TrapFrame);
+            *new_trap_frame = old_trap_frame.clone();
+            new_trap_frame.kstack = t.kstack.as_ref().unwrap().top().into();
+            new_trap_frame.regs.a0 = 0;            
+        }                
+        t.trap_frame = Some(trap_frame);               
+        
         Arc::new(AxTask::new(t))
     }
 
@@ -464,4 +513,18 @@ if #[cfg(feature = "user-paging")] {
         (axmem::USTACK_START - id.0 as usize * axmem::USTACK_SIZE).into()
     }
 }
+}
+
+cfg_if::cfg_if! {
+    if #[cfg(feature = "process")] {
+        use axmem::AddrSpace;
+        pub fn current_pid() -> Option<u64> {
+            crate::current_may_uninit().map(|task| task.pid.load(Ordering::Relaxed))
+        }
+        pub fn handle_fork(pid: u64, mem: Arc<AddrSpace>) {
+            let task = crate::current().new_fork(pid, mem);
+            RUN_QUEUE.lock().add_task(task);
+        }
+        
+    }
 }

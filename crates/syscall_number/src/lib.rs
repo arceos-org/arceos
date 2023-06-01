@@ -7,6 +7,7 @@ pub const SYS_SLEEP: usize = 13;
 pub const SYS_TIME_NANO: usize = 14;
 pub const SYS_SBRK: usize = 20;
 pub const SYS_FUTEX: usize = 30;
+pub const SYS_FORK: usize = 40;
 
 // ============
 // The following are from [redox](https://gitlab.redox-os.org/redox-os/syscall/-/blob/master/src/number.rs),

@@ -10,7 +10,7 @@ lazy_init = { path = "../../crates/lazy_init" }
 crate_interface = { path = "../../crates/crate_interface" }
 spinlock = { path = "../../crates/spinlock" }
 axerrno = { path = "../../crates/axerrno" }
-axtask = { path = "../axtask", default-features = false, features = ["multitask"] }
+axtask = { path = "../axtask", default-features = false, features = ["multitask", "process"] }
 axmem = { path = "../axmem" }
-axscheme = { path = "../axscheme" }
+axscheme = { path = "../axscheme", features = ["process"] }
 axlog = { path = "../axlog" }

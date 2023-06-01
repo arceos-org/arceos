@@ -4,16 +4,16 @@ use core::{
     time::Duration,
 };
 
-use alloc::boxed::Box;
+use alloc::{boxed::Box, sync::Arc};
 use alloc::{
     collections::{BTreeMap, VecDeque},
     sync::Weak,
 };
 use axerrno::{ax_err, from_ret_code, AxError, AxResult};
 use axhal::{mem::VirtAddr, paging::MappingFlags};
-use axmem::copy_slice_from_user;
+use axmem::{copy_slice_from_user, AddrSpace};
 use axsync::Mutex;
-use axtask::current;
+use axtask::{current, current_pid};
 use scheme::{Packet, Scheme};
 use syscall_number::{SYS_CLOSE, SYS_DUP, SYS_OPEN, SYS_READ, SYS_WRITE};
 
@@ -28,6 +28,9 @@ pub struct UserInner {
     requests: Mutex<VecDeque<Packet>>,
     /// response from server, Key is id, Value is return value.
     response: Mutex<BTreeMap<u64, usize>>,
+    #[cfg(feature = "process")]
+    /// pid of the server
+    pid: u64,
 }
 
 impl UserInner {
@@ -38,6 +41,8 @@ impl UserInner {
             next_id: 1.into(),
             requests: Mutex::new(VecDeque::new()),
             response: Mutex::new(BTreeMap::new()),
+            #[cfg(feature = "process")]
+            pid: current_pid().unwrap(),
         }
     }
     /// read a request from the clients to the server
@@ -116,17 +121,17 @@ impl UserScheme {
 impl Scheme for UserScheme {
     fn open(&self, path: &str, flags: usize, _uid: u32, _gid: u32) -> AxResult<usize> {
         let inner = self.inner.upgrade().ok_or(AxError::NotFound)?;
-        let addr = ShadowMemory::new(path.as_bytes())?;
+        let addr = ShadowMemory::new(path.as_bytes(), inner.pid)?;
         inner.handle_request(SYS_OPEN, addr.addr().into(), path.len(), flags)
     }
     fn read(&self, id: usize, buf: &mut [u8]) -> AxResult<usize> {
         let inner = self.inner.upgrade().ok_or(AxError::NotFound)?;
-        let addr = ShadowMemoryMut::new(buf)?;
+        let addr = ShadowMemoryMut::new(buf, inner.pid)?;
         inner.handle_request(SYS_READ, id, addr.addr().into(), addr.len())
     }
     fn write(&self, id: usize, buf: &[u8]) -> AxResult<usize> {
         let inner = self.inner.upgrade().ok_or(AxError::NotFound)?;
-        let addr = ShadowMemory::new(buf)?;
+        let addr = ShadowMemory::new(buf, inner.pid)?;
         inner.handle_request(SYS_WRITE, id, addr.addr().into(), buf.len())
     }
     fn close(&self, id: usize) -> AxResult<usize> {
@@ -135,7 +140,7 @@ impl Scheme for UserScheme {
     }
     fn dup(&self, id: usize, buf: &[u8]) -> AxResult<usize> {
         let inner = self.inner.upgrade().ok_or(AxError::NotFound)?;
-        let addr = ShadowMemory::new(buf)?;
+        let addr = ShadowMemory::new(buf, inner.pid)?;
         inner.handle_request(SYS_DUP, id, addr.addr().into(), buf.len())
     }
 }
@@ -143,6 +148,7 @@ impl KernelScheme for UserScheme {}
 struct TempMemory {
     page_start: VirtAddr,
     page_end: VirtAddr,
+    pid: u64,
 }
 struct ShadowMemory {
     mem: TempMemory,
@@ -152,15 +158,16 @@ struct ShadowMemoryMut<'a> {
     write_back: &'a mut [u8],
 }
 impl ShadowMemory {
-    fn new(data: &[u8]) -> AxResult<Self> {
+    fn new(data: &[u8], pid: u64) -> AxResult<Self> {
         let page_start =
-            axmem::mmap_page(None, data.len(), MappingFlags::READ | MappingFlags::USER)?;
+            mmap(pid, None, data.len(), MappingFlags::READ | MappingFlags::USER)?;
         let page_end = page_start + data.len();
-        axmem::copy_byte_buffer_to_user(0, page_start.as_ptr(), data);
+        copy_buffer_to_user(pid, page_start, data);
         Ok(Self {
             mem: TempMemory {
                 page_start,
                 page_end,
+                pid,
             },
         })
     }
@@ -169,8 +176,9 @@ impl ShadowMemory {
     }
 }
 impl<'a> ShadowMemoryMut<'a> {
-    fn new(data: &'a mut [u8]) -> AxResult<Self> {
-        let page_start = axmem::mmap_page(
+    fn new(data: &'a mut [u8], pid: u64) -> AxResult<Self> {
+        let page_start = mmap(
+            pid, 
             None,
             data.len(),
             MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
@@ -180,6 +188,7 @@ impl<'a> ShadowMemoryMut<'a> {
             mem: TempMemory {
                 page_start,
                 page_end,
+                pid
             },
             write_back: data,
         })
@@ -193,7 +202,8 @@ impl<'a> ShadowMemoryMut<'a> {
 }
 impl Drop for TempMemory {
     fn drop(&mut self) {
-        axmem::munmap_page(
+        munmap(
+            self.pid,
             self.page_start,
             (self.page_end - self.page_start.into()).into(),
         )
@@ -203,7 +213,49 @@ impl Drop for TempMemory {
 impl<'a> Drop for ShadowMemoryMut<'a> {
     fn drop(&mut self) {
         // TODO: optimize one copy time
-        let data = copy_slice_from_user(self.mem.page_start, self.write_back.len());
-        self.write_back.copy_from_slice(&data);
+        copy_buffer_from_user(self.mem.pid, self.mem.page_start, self.write_back);
+
+    }
+}
+
+#[crate_interface::def_interface]
+pub trait FindAddrSpace {
+    fn find_addr_space(pid: u64) -> Option<Arc<AddrSpace>>;
+}
+
+fn mmap(pid: u64, addr: Option<VirtAddr>, len: usize, flags: MappingFlags) -> AxResult<VirtAddr> {
+    let addr_space = call_interface!(FindAddrSpace::find_addr_space, pid).unwrap();
+    let ret = addr_space.lock().mmap_page(addr, len, flags);
+    ret
+}
+
+fn munmap(pid: u64, addr: VirtAddr, len: usize) -> AxResult<()> {
+    let addr_space = call_interface!(FindAddrSpace::find_addr_space, pid).unwrap();
+    let ret = addr_space.lock().munmap_page(addr, len);
+    ret
+}
+
+fn copy_buffer_to_user(pid: u64, dest: VirtAddr, data: &[u8]) {
+    let addr_space = call_interface!(FindAddrSpace::find_addr_space, pid).unwrap();
+    let paddrs = addr_space.lock().translate_buffer(dest, data.len(), true).unwrap();
+    let mut tot = 0;
+    for paddr in paddrs {
+        let len = paddr.len().min(data.len() - tot);
+        if len > 0 {
+            paddr[..len].copy_from_slice(&data[tot..tot+len]);
+            tot += len;
+        }
+    }
+}
+fn copy_buffer_from_user(pid: u64, dest: VirtAddr, data: &mut [u8]) {
+    let addr_space = call_interface!(FindAddrSpace::find_addr_space, pid).unwrap();
+    let paddrs = addr_space.lock().translate_buffer(dest, data.len(), true).unwrap();
+    let mut tot = 0;
+    for paddr in paddrs {
+        let len = paddr.len().min(data.len() - tot);
+        if len > 0 {
+            data[tot..tot+len].copy_from_slice(&paddr[..len]);
+            tot += len;
+        }
     }
 }
