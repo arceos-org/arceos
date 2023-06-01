@@ -141,13 +141,16 @@ impl VfsNodeOps for DirNode {
         }
     }
 
-    fn remove(&self, path: &str) -> VfsResult {
+    fn remove(&self, path: &str, _recursive: bool) -> VfsResult {
         log::debug!("remove at ramfs: {}", path);
         let (name, rest) = split_path(path);
         if let Some(rest) = rest {
             match name {
-                "" | "." => self.remove(rest),
-                ".." => self.parent().ok_or(VfsError::NotFound)?.remove(rest),
+                "" | "." => self.remove(rest, _recursive),
+                ".." => self
+                    .parent()
+                    .ok_or(VfsError::NotFound)?
+                    .remove(rest, _recursive),
                 _ => {
                     let subdir = self
                         .children
@@ -155,7 +158,7 @@ impl VfsNodeOps for DirNode {
                         .get(name)
                         .ok_or(VfsError::NotFound)?
                         .clone();
-                    subdir.remove(rest)
+                    subdir.remove(rest, _recursive)
                 }
             }
         } else if name.is_empty() || name == "." || name == ".." {

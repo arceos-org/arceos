@@ -56,7 +56,7 @@ pub fn write<C: AsRef<[u8]>>(path: &str, contents: C) -> io::Result<()> {
 /// Given a path, query the file system to get information about a file,
 /// directory, etc.
 pub fn metadata(path: &str) -> io::Result<Metadata> {
-    File::open(path)?.metadata()
+    File::lookup(path)?.metadata()
 }
 
 /// Creates a new, empty directory at the provided path.
@@ -71,11 +71,21 @@ pub fn create_dir_all(path: &str) -> io::Result<()> {
 }
 
 /// Removes an empty directory.
-pub fn remove_dir(path: &str) -> io::Result<()> {
-    crate::root::remove_dir(None, path)
+pub fn remove_dir(path: &str, recursive: bool) -> io::Result<()> {
+    crate::root::remove_dir(None, path, recursive)
 }
 
 /// Removes a file from the filesystem.
 pub fn remove_file(path: &str) -> io::Result<()> {
     crate::root::remove_file(None, path)
+}
+
+/// Hard link
+pub fn link_file(path: &str, target: &str) -> io::Result<()> {
+    crate::root::link(None, path, target)
+}
+
+/// Symbolic link
+pub fn symbolic_link(path: &str, target: &str) -> io::Result<()> {
+    crate::root::symblink(None, path, target)
 }
