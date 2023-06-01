@@ -32,7 +32,6 @@ const CMD_TABLE: &[(&str, CmdHandler)] = &[
     ("pwd", do_pwd),
     ("rm", do_rm),
     ("uname", do_uname),
-    ("link", do_link),
 ];
 
 fn do_ls(args: &str) {
@@ -56,7 +55,6 @@ fn do_ls(args: &str) {
     }
 
     fn list_one(name: &str, print_name: bool) -> io::Result<()> {
-        debug!("list_one {}", name);
         let is_dir = fs::metadata(name)?.is_dir();
         if !is_dir {
             return show_entry_info(name, name);
@@ -174,29 +172,25 @@ fn do_rm(args: &str) {
         return;
     }
     let mut rm_dir = false;
-    let mut recursive = false;
     for arg in args.split_whitespace() {
         if arg == "-d" {
             rm_dir = true;
         }
-        if arg == "-r" {
-            recursive = true;
-        }
     }
 
-    fn rm_one(path: &str, rm_dir: bool, recursive: bool) -> io::Result<()> {
+    fn rm_one(path: &str, rm_dir: bool) -> io::Result<()> {
         if rm_dir && fs::metadata(path)?.is_dir() {
-            fs::remove_dir(path, recursive)
+            fs::remove_dir(path)
         } else {
             fs::remove_file(path)
         }
     }
 
     for path in args.split_whitespace() {
-        if path == "-d" || path == "-r" {
+        if path == "-d" {
             continue;
         }
-        if let Err(e) = rm_one(path, rm_dir, recursive) {
+        if let Err(e) = rm_one(path, rm_dir) {
             print_err!("rm", format_args!("cannot remove '{path}'"), e.as_str());
         }
     }
@@ -246,42 +240,6 @@ fn do_help(_args: &str) {
 
 fn do_exit(_args: &str) {
     libax::thread::exit(0);
-}
-
-fn do_link(args: &str) {
-    let mut symbolic = false;
-    let mut paths: Vec<String> = Vec::new();
-    let pwd = libax::env::current_dir().unwrap();
-    for arg in args.split_whitespace() {
-        if arg == "-s" {
-            symbolic = true;
-            continue;
-        } else {
-            paths.push(String::from(arg))
-        }
-    }
-    if paths.len() != 2 {
-        print_err!("link", "Input format should be: link [-s] target name");
-        return;
-    }
-
-    for p in paths.iter_mut() {
-        if !p.starts_with('/') {
-            *p = fs::canonicalize(&(pwd.clone() + p)).unwrap();
-        }
-    }
-
-    fn link_one(target: &str, name: &str, symbolic: bool) -> io::Result<()> {
-        if symbolic {
-            fs::symbolic_link(name, target)
-        } else {
-            fs::link_file(name, target)
-        }
-    }
-
-    if let Err(e) = link_one(paths[0].as_str(), paths[1].as_str(), symbolic) {
-        print_err!("link", args, e.as_str());
-    }
 }
 
 pub fn run_cmd(line: &[u8]) {

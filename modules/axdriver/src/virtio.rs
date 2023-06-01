@@ -67,12 +67,7 @@ cfg_if! {
             type Device = driver_virtio::VirtIoGpuDev<VirtIoHalImpl, VirtIoTransport>;
 
             fn try_new(transport: VirtIoTransport, irq_num: Option<usize>) -> DevResult<AxDeviceEnum> {
-                // Ok(AxDeviceEnum::from_display(Self::Device::try_new(transport, irq_num)?))
-                Ok(
-                    AxDeviceEnum::from_display(
-                        Self::Device::try_new(transport, irq_num)?
-                    )
-                )
+                Ok(AxDeviceEnum::from_display(Self::Device::try_new(transport, irq_num)?))
             }
         }
     }

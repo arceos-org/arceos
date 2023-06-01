@@ -5,4 +5,3 @@
 *.img
 actual.out
 qemu.log
-/ext2fs_fuse/target

@@ -180,9 +180,8 @@ impl TaskInner {
         matches!(self.state(), TaskState::Blocked)
     }
 
-    /// Is init task
     #[inline]
-    pub const fn is_init(&self) -> bool {
+    pub(crate) const fn is_init(&self) -> bool {
         self.is_init
     }
 
