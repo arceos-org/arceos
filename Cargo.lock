@@ -126,13 +126,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "arceos-wakeup"
-version = "0.1.0"
-dependencies = [
- "libax",
-]
-
-[[package]]
 name = "arceos-yield"
 version = "0.1.0"
 dependencies = [

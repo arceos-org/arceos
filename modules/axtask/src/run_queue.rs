@@ -184,13 +184,11 @@ impl AxRunQueue {
     /// Common reschedule subroutine. If `preempt`, keep current task's time
     /// slice, otherwise reset it.
     fn if_empty_steal(&self) {
-        //let _guard = NoPreempt::new();
         if self.scheduler.lock().is_empty() {
             let mut queuelock = self.scheduler.lock();
             let id = self.id;
             let next = LOAD_BALANCE_ARR[id].find_stolen_cpu_id();
             trace!("load balance weight for id {} : {}", id, LOAD_BALANCE_ARR[id].get_weight());
-            //assert!(LOAD_BALANCE_ARR[id].get_weight() == 0);
             debug!("steal: current = {}, victim = {}", self.id, next);
             if next != -1 {
                 let task = RUN_QUEUE[next as usize].scheduler.lock().pick_next_task();

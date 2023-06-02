@@ -2,7 +2,7 @@
 name = "load_balance"
 version = "0.1.0"
 edition = "2021"
-authors = ["Yuekai Jia <equation618@gmail.com>"]
+authors = ["Haoxing Ye <yehx20@mails.tsinghua.edu.cn>"]
 description = "Various scheduler algorithms in a unified interface"
 license = "GPL-3.0-or-later OR Apache-2.0"
 homepage = "https://github.com/rcore-os/arceos"

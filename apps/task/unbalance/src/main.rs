@@ -226,5 +226,5 @@ fn main() {
 
     assert_eq!(expect, actual);
 
-    println!("Priority tests run OK!");
+    println!("Unbalance tests run OK!");
 }
