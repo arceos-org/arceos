@@ -1,12 +1,12 @@
+use crate::run_queue::LOAD_BALANCE_ARR;
 use alloc::sync::Arc;
 use axhal::time::current_time;
 use lazy_init::LazyInit;
+use load_balance::BaseLoadBalance;
 use spinlock::SpinNoIrq;
 use timer_list::{TimeValue, TimerEvent, TimerList};
-use crate::run_queue::LOAD_BALANCE_ARR;
-use load_balance::BaseLoadBalance;
 
-use crate::{AxTaskRef, RUN_QUEUE, get_current_cpu_id};
+use crate::{get_current_cpu_id, AxTaskRef, RUN_QUEUE};
 
 // TODO: per-CPU
 static TIMER_LIST: LazyInit<SpinNoIrq<TimerList<TaskWakeupEvent>>> = LazyInit::new();

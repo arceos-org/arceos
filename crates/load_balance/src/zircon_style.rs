@@ -5,11 +5,11 @@
 //! - [`FifoScheduler`]: FIFO (First-In-First-Out) scheduler (cooperative).
 //! - [`RRScheduler`]: Round-robin scheduler (preemptive).
 
-use core::sync::atomic::{AtomicIsize, Ordering};
-use alloc::vec::Vec;
-use alloc::sync::Arc;
 use crate::BaseLoadBalance;
+use alloc::sync::Arc;
+use alloc::vec::Vec;
 use core::sync::atomic::AtomicUsize;
+use core::sync::atomic::{AtomicIsize, Ordering};
 use spinlock::SpinNoIrq;
 
 //use log::debug;
@@ -50,10 +50,9 @@ impl LoadBalanceZirconStyle {
 }
 
 impl BaseLoadBalance for LoadBalanceZirconStyle {
-    //type LoadBalanceType = LoadBalanceZirconStyle;
 
     /// the most naive method : find min
-    fn find_target_cpu(&self/*, _affinity: usize*/) -> usize {
+    fn find_target_cpu(&self) -> usize {
         let mut mn: isize = self.pointers.lock()[0].weight.load(Ordering::Acquire);
         let mut arg: usize = 0;
         for i in 1..self.smp.load(Ordering::Acquire) {
@@ -64,17 +63,12 @@ impl BaseLoadBalance for LoadBalanceZirconStyle {
             }
         }
         arg
-        //0
     }
-    
-    /// find target cpu id that can be stolen 
+
+    /// find target cpu id that can be stolen
     /// the detailed steal process is defined in axtask
     /// >= 0 if a target cpu is found, -1 if no need to steal
     fn find_stolen_cpu_id(&self) -> isize {
-        //debug!("weight: ");
-        //for i in 0..self.smp.load(Ordering::Acquire) {
-        //    debug!("{}", self.pointers.lock()[i].weight.load(Ordering::Acquire));
-        //}
         let mut mx: isize = self.pointers.lock()[0].weight.load(Ordering::Acquire);
         let mut arg: usize = 0;
         for i in 1..self.smp.load(Ordering::Acquire) {

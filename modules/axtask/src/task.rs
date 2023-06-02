@@ -6,13 +6,13 @@ use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 #[cfg(feature = "preempt")]
 use core::sync::atomic::AtomicUsize;
 
-use axhal::arch::TaskContext;
-use memory_addr::{align_up_4k, VirtAddr};
 use crate::get_current_cpu_id;
-use core::sync::atomic::AtomicIsize;
-use crate::{AxTask, AxTaskRef};
-use crate::WaitQueue;
 use crate::AxRunQueue;
+use crate::WaitQueue;
+use crate::{AxTask, AxTaskRef};
+use axhal::arch::TaskContext;
+use core::sync::atomic::AtomicIsize;
+use memory_addr::{align_up_4k, VirtAddr};
 
 /// A unique identifier for a thread.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -108,10 +108,10 @@ impl TaskInner {
         self.in_which_queue.store(id as isize, Ordering::Release);
     }
     /// get queue id
-    pub fn get_queue_id(&self) -> isize{
+    pub fn get_queue_id(&self) -> isize {
         self.in_which_queue.load(Ordering::Acquire)
     }
-    
+
     /// Wait for the task to exit, and return the exit code.
     ///
     /// It will return immediately if the task has already exited (but not dropped).
@@ -272,7 +272,8 @@ impl TaskInner {
         if curr.need_resched.load(Ordering::Acquire) && curr.can_preempt(0) {
             if curr.need_resched.load(Ordering::Acquire) {
                 if curr.in_which_queue.load(Ordering::Acquire) >= 0 {
-                    crate::RUN_QUEUE[curr.in_which_queue.load(Ordering::Acquire) as usize].resched();
+                    crate::RUN_QUEUE[curr.in_which_queue.load(Ordering::Acquire) as usize]
+                        .resched();
                 }
             }
         }

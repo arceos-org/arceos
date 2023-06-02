@@ -14,15 +14,15 @@ pub use zircon_style::LoadBalanceZirconStyle;
 
 extern crate alloc;
 
-/// The base loadbalance trait that all load balance managers should implement. 
+/// The base loadbalance trait that all load balance managers should implement.
 pub trait BaseLoadBalance {
     //type LoadBalanceType;
 
     /// find target cpu id for a new task
     /// the affinity mask is keep all 1s
-    fn find_target_cpu(&self/*, affinity: usize*/) -> usize;
-    
-    /// find target cpu id that can be stolen 
+    fn find_target_cpu(&self) -> usize;
+
+    /// find target cpu id that can be stolen
     /// the detailed steal process is defined in axtask
     /// >= 0 if a target cpu is found, -1 if no need to steal
     fn find_stolen_cpu_id(&self) -> isize;

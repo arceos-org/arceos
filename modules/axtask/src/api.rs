@@ -52,8 +52,6 @@ impl kernel_guard::KernelGuardIf for KernelGuardIfImpl {
 
 struct LogTaskImpl;
 
-
-
 #[cfg(not(feature = "std"))]
 #[def_interface]
 pub trait LogMyTime {
@@ -100,7 +98,10 @@ pub fn init_scheduler() {
     crate::timers::init();
 
     info!("  use {} scheduler.", Scheduler::scheduler_name());
-    info!("  use {} load balance manager.", LoadBalance::load_balance_name());
+    info!(
+        "  use {} load balance manager.",
+        LoadBalance::load_balance_name()
+    );
 }
 
 /// Initializes the task scheduler for secondary CPUs.
