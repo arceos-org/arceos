@@ -39,6 +39,9 @@ impl TrapFrame {
     pub const fn is_user(&self) -> bool {
         self.cs & 0b11 == 3
     }
+    pub fn app_init_context(_app_entry: usize, _user_sp: usize) -> Self {
+        Self::default()
+    }
 }
 
 #[repr(C)]
@@ -150,6 +153,12 @@ impl TaskContext {
             #[cfg(feature = "fp_simd")]
             ext_state: ExtendedState::default(),
         }
+    }
+
+    pub fn new_empty() -> *mut TaskContext {
+        let task_ctx = TaskContext::new();
+        let task_ctx_ptr = &task_ctx as *const TaskContext as *mut TaskContext;
+        task_ctx_ptr
     }
 
     /// Initializes the context for a new task, with the given entry point and

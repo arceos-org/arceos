@@ -4,28 +4,22 @@ use lazy_init::LazyInit;
 use scheduler::BaseScheduler;
 use spinlock::SpinNoIrq;
 
-cfg_if::cfg_if! {
-    if #[cfg(feature = "macro")]  {
-        pub use crate::macro_task::task::{CurrentTask, TaskState};
-    } else {
-        pub use crate::task::{CurrentTask, TaskState};
-    }
-}
+pub use crate::macro_task::task::{CurrentTask, TaskState};
 
 use crate::{AxTaskRef, Scheduler, TaskInner, WaitQueue, KERNEL_PROCESS_ID};
 
 // TODO: per-CPU
-pub(crate) static RUN_QUEUE: LazyInit<SpinNoIrq<AxRunQueue>> = LazyInit::new();
+pub static RUN_QUEUE: LazyInit<SpinNoIrq<AxRunQueue>> = LazyInit::new();
 
 // TODO: per-CPU
-static EXITED_TASKS: SpinNoIrq<VecDeque<AxTaskRef>> = SpinNoIrq::new(VecDeque::new());
+pub static EXITED_TASKS: SpinNoIrq<VecDeque<AxTaskRef>> = SpinNoIrq::new(VecDeque::new());
 
 static WAIT_FOR_EXIT: WaitQueue = WaitQueue::new();
 
 #[percpu::def_percpu]
-static IDLE_TASK: LazyInit<AxTaskRef> = LazyInit::new();
+pub static IDLE_TASK: LazyInit<AxTaskRef> = LazyInit::new();
 
-pub(crate) struct AxRunQueue {
+pub struct AxRunQueue {
     scheduler: Scheduler,
 }
 
@@ -48,6 +42,17 @@ impl AxRunQueue {
         debug!("task spawn: {}", task.id_name());
         assert!(task.is_ready());
         self.scheduler.add_task(task);
+    }
+
+    /// 仅用于exec与exit时清除其他后台线程
+    pub fn remove_task(&mut self, task: &AxTaskRef) {
+        debug!("task remove: {}", task.id_name());
+        // 当前任务不予清除
+        assert!(task.is_running());
+        assert!(!task.is_idle());
+        self.scheduler.remove_task(task);
+        task.set_state(TaskState::Exited);
+        EXITED_TASKS.lock().push_back(task.clone());
     }
 
     #[cfg(feature = "irq")]
@@ -95,7 +100,7 @@ impl AxRunQueue {
         }
     }
 
-    pub fn exit_current(&mut self, exit_code: i32) -> ! {
+    pub fn exit_current(&mut self, exit_code: i32) {
         let curr = crate::current();
         debug!("task exit: {}, exit_code={}", curr.id_name(), exit_code);
         assert!(curr.is_running());
@@ -108,9 +113,10 @@ impl AxRunQueue {
             curr.notify_exit(exit_code, self);
             EXITED_TASKS.lock().push_back(curr.clone());
             WAIT_FOR_EXIT.notify_one_locked(false, self);
-            self.resched_inner(false);
+            // 调度任务交给process进行
+            // self.resched_inner(false);
         }
-        unreachable!("task exited!");
+        // unreachable!("task exited!");
     }
 
     pub fn block_current<F>(&mut self, wait_queue_push: F)
@@ -162,7 +168,7 @@ impl AxRunQueue {
 impl AxRunQueue {
     /// Common reschedule subroutine. If `preempt`, keep current task's time
     /// slice, otherwise reset it.
-    fn resched_inner(&mut self, preempt: bool) {
+    pub fn resched_inner(&mut self, preempt: bool) {
         let prev = crate::current();
         if prev.is_running() {
             prev.set_state(TaskState::Ready);

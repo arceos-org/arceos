@@ -21,6 +21,7 @@ pub type FileAttr = axfs_vfs::VfsNodeAttr;
 pub type FilePerm = axfs_vfs::VfsNodePerm;
 
 /// An opened file object, with open permissions and a cursor.
+#[derive(Clone)]
 pub struct File {
     node: WithCap<VfsNodeRef>,
     is_append: bool,
@@ -220,6 +221,18 @@ impl File {
     /// Gets the file attributes.
     pub fn get_attr(&self) -> AxResult<FileAttr> {
         self.node.access(Cap::empty())?.get_attr()
+    }
+
+    pub fn readable(&self) -> bool {
+        self.node.can_access(Cap::READ)
+    }
+
+    pub fn writable(&self) -> bool {
+        self.node.can_access(Cap::WRITE)
+    }
+
+    pub fn executable(&self) -> bool {
+        self.node.can_access(Cap::EXECUTE)
     }
 }
 

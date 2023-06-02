@@ -33,6 +33,9 @@ mod root;
 pub mod api;
 pub mod fops;
 
+#[cfg(feature = "macro")]
+pub mod macro_fs;
+
 use axdriver::{prelude::*, AxDeviceContainer};
 
 /// Initializes filesystems by block devices.

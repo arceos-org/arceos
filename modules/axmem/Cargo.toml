@@ -1,0 +1,24 @@
+[package]
+name = "axmem"
+version = "0.1.0"
+edition = "2021"
+authors = ["Jiayu Chen <c0percn@gmail.com>"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+macro = ["axfs/macro"]
+default = ["macro"]
+
+[dependencies]
+log = "0.4"
+axhal = { path = "../axhal", features = ["paging"] }
+axalloc = { path = "../axalloc" }
+axconfig = { path = "../axconfig" }
+axfs = { path = "../axfs" }
+axio = { path = "../../crates/axio" }
+spinlock = { path = "../../crates/spinlock" }
+#xmas-elf = "0.9.0"
+xmas-elf = { path = "../../extern_crates/xmas-elf-0.9.0" }
+#riscv = "0.10"
+riscv = { path = "../../extern_crates/riscv-0.10.1" }

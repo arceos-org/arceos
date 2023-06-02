@@ -15,6 +15,9 @@ endif
 features-$(FS) += libax/fs
 features-$(NET) += libax/net
 features-$(GRAPHIC) += libax/display
+features-$(MACRO) += libax/macro
+features-$(MULTITASK) += libax/multitask
+features-$(PAGING) += libax/paging
 
 ifeq ($(BUS),pci)
   features-y += libax/bus-pci

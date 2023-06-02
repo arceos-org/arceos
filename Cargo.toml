@@ -14,6 +14,7 @@ members = [
     "apps/task/sleep",
     "apps/task/yield",
     "apps/task/priority",
+    "apps/syscall/single",
 
     "crates/allocator",
     "crates/arm_gic",
@@ -58,6 +59,9 @@ members = [
     "modules/axruntime",
     "modules/axsync",
     "modules/axtask",
+    "modules/axmem",
+    "modules/axprocess",
 
     "ulib/libax",
+    "ulib/starry_libax",
 ]

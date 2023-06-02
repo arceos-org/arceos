@@ -1,8 +1,8 @@
-target/
-.vscode/
+/target
+/.vscode
 .DS_Store
 *.asm
 *.img
+actual.out
+qemu.log
 testcases/
-.idea/
-mnt/

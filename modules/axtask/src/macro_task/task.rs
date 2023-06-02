@@ -60,15 +60,21 @@ pub struct TaskInner {
     time: UnsafeCell<TimeStat>,
 }
 
+static ID_COUNTER: AtomicU64 = AtomicU64::new(1);
+
 impl TaskId {
-    fn new() -> Self {
-        static ID_COUNTER: AtomicU64 = AtomicU64::new(1);
+    pub fn new() -> Self {
         Self(ID_COUNTER.fetch_add(1, Ordering::Relaxed))
     }
 
     /// Convert the task ID to a `u64`.
     pub const fn as_u64(&self) -> u64 {
         self.0
+    }
+    /// 清空计数器，为了给单元测试使用
+    /// 保留了gc, 主调度，内核进程
+    pub fn clear() {
+        ID_COUNTER.store(3, Ordering::Relaxed);
     }
 }
 
@@ -143,7 +149,7 @@ impl TaskInner {
         }
     }
 
-    pub(crate) fn new<F>(
+    pub fn new<F>(
         entry: F,
         name: String,
         stack_size: usize,
@@ -224,7 +230,7 @@ impl TaskInner {
     }
 
     #[inline]
-    pub(crate) fn set_state(&self, state: TaskState) {
+    pub fn set_state(&self, state: TaskState) {
         self.state.store(state as u8, Ordering::Release)
     }
 
@@ -383,7 +389,7 @@ impl TaskInner {
     }
 
     #[inline]
-    pub(crate) const unsafe fn ctx_mut_ptr(&self) -> *mut TaskContext {
+    pub const unsafe fn ctx_mut_ptr(&self) -> *mut TaskContext {
         self.ctx.get()
     }
 
@@ -528,7 +534,7 @@ fn first_into_user(kernel_sp: usize, frame_base: usize) -> ! {
 
 #[no_mangle]
 /// 本线程将会执行的函数
-extern "C" fn task_entry() -> ! {
+extern "C" fn task_entry() {
     // release the lock that was implicitly held across the reschedule
     unsafe { crate::RUN_QUEUE.force_unlock() };
     axhal::arch::enable_irqs();

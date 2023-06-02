@@ -25,8 +25,7 @@ sched_cfs = ["multitask", "preempt"]
 # 是否使用宏内核架构
 macro = []
 
-default = ["sched_fifo"]
-
+default = ["sched_fifo", "macro"]
 
 [dependencies]
 cfg-if = "1.0"

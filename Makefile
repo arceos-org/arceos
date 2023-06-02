@@ -7,8 +7,11 @@ LOG ?= warn
 A ?= apps/helloworld
 APP ?= $(A)
 APP_FEATURES ?=
-DISK_IMG ?= disk.img
+DISK_IMG ?= sdcard.img
 
+MACRO ?= n
+MULTITASK ?= n
+PAGING ?= n
 FS ?= n
 NET ?= n
 GRAPHIC ?= n

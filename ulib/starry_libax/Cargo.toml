@@ -1,5 +1,5 @@
 [package]
-name = "libax"
+name = "starry_libax"
 version = "0.1.0"
 edition = "2021"
 authors = [
@@ -7,7 +7,6 @@ authors = [
     "yfblock <321353225@qq.com>",
     "scPointer <bhy18@mails.tsinghua.edu.cn>",
     "Shiping Yuan <robert_yuan@pku.edu.com>",
-    "Youjie Zheng <zyj578335934@gmail.com>",
 ]
 description = "ArceOS user library with an interface similar to rust std"
 license = "GPL-3.0-or-later OR Apache-2.0"
@@ -16,8 +15,6 @@ repository = "https://github.com/rcore-os/arceos/tree/main/ulib/ibax"
 documentation = "https://rcore-os.github.io/arceos/libax/index.html"
 
 [features]
-# Generate bindings for C code
-cbindings = ["cbindgen", "bindgen", "dep:spin", "dep:lazy_static"]
 
 # Multicore
 smp = ["axruntime/smp"]
@@ -67,11 +64,17 @@ platform-pc-x86 = ["axhal/platform-pc-x86", "bus-pci"]
 platform-qemu-virt-riscv = ["axhal/platform-qemu-virt-riscv", "bus-mmio"]
 platform-qemu-virt-aarch64 = ["axhal/platform-qemu-virt-aarch64", "bus-mmio"]
 
-default = ["axtask?/sched_fifo"]
+# Macro
+macro = ["axruntime/macro", "fs"]
 
+# Test
+test = []
+
+default = ["axtask?/sched_fifo", "axtask", "axmem", "macro", "test", "paging"]
 [dependencies]
 spin = { version = "0.9", optional = true }
-lazy_static = { version = "1.4", features = ["spin_no_std"], optional = true }
+lazy_static = { version = "1.4", features = ["spin_no_std"]}
+page_table_entry = { path = "../../crates/page_table_entry" }
 spinlock = { path = "../../crates/spinlock" }
 flatten_objects = { path = "../../crates/flatten_objects" }
 axio = { path = "../../crates/axio" }
@@ -85,10 +88,14 @@ axlog = { path = "../../modules/axlog" }
 axfs = { path = "../../modules/axfs", optional = true }
 axnet = { path = "../../modules/axnet", optional = true }
 axruntime = { path = "../../modules/axruntime", default-features = false }
-axsync = { path = "../../modules/axsync", default-features = false, optional = true }
+axsync = { path = "../../modules/axsync", default-features = false }
 axtask = { path = "../../modules/axtask", default-features = false, optional = true }
-
-[build-dependencies]
-cbindgen = { version = "0.24", optional = true }
-bindgen ={ version = "0.65", optional = true }
-axconfig = { path = "../../modules/axconfig" }
+axmem = { path = "../../modules/axmem", default-features = false, optional = true }
+axprocess = { path = "../../modules/axprocess", default-features = false }
+log = "0.4.0"
+bitflags = "2.0"
+memory_addr = { path = "../../crates/memory_addr" }
+# riscv = "0.10"
+riscv = { path = "../../extern_crates/riscv-0.10.1" }
+crate_interface = { path = "../../crates/crate_interface" }
+kernel_guard = { path = "../../crates/kernel_guard" }

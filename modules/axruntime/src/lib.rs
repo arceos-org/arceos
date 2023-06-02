@@ -24,6 +24,8 @@ extern crate axlog;
 
 #[cfg(all(target_os = "none", not(test)))]
 mod lang_items;
+
+#[cfg(not(feature = "macro"))]
 mod trap;
 
 #[cfg(feature = "smp")]
@@ -102,7 +104,7 @@ fn is_init_ok() -> bool {
 /// In multi-core environment, this function is called on the primary CPU,
 /// and the secondary CPUs call [`rust_main_secondary`].
 #[cfg_attr(not(test), no_mangle)]
-pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
+pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) {
     ax_println!("{}", LOGO);
     ax_println!(
         "\
@@ -150,8 +152,8 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     info!("Initialize platform devices...");
     axhal::platform_init();
 
-    #[cfg(feature = "multitask")]
-    axtask::init_scheduler();
+    #[cfg(feature = "macro")]
+    axprocess::process::init_kernel_process();
 
     #[cfg(any(feature = "fs", feature = "net", feature = "display"))]
     {
@@ -221,30 +223,32 @@ fn init_allocator() {
     }
 }
 
-#[cfg(feature = "paging")]
-fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
-    use axhal::mem::{memory_regions, phys_to_virt};
-    use axhal::paging::PageTable;
-    use lazy_init::LazyInit;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "paging")] {
+        use axhal::paging::PageTable;
+        use lazy_init::LazyInit;
+        pub static KERNEL_PAGE_TABLE: LazyInit<PageTable> = LazyInit::new();
 
-    static KERNEL_PAGE_TABLE: LazyInit<PageTable> = LazyInit::new();
+        fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
+            if axhal::cpu::this_cpu_is_bsp() {
+                use axhal::mem::{memory_regions, phys_to_virt};
+                let mut kernel_page_table = PageTable::try_new()?;
+                for r in memory_regions() {
+                    kernel_page_table.map_region(
+                        phys_to_virt(r.paddr),
+                        r.paddr,
+                        r.size,
+                        r.flags.into(),
+                        true,
+                    )?;
+                }
+                KERNEL_PAGE_TABLE.init_by(kernel_page_table);
+            }
 
-    if axhal::cpu::this_cpu_is_bsp() {
-        let mut kernel_page_table = PageTable::try_new()?;
-        for r in memory_regions() {
-            kernel_page_table.map_region(
-                phys_to_virt(r.paddr),
-                r.paddr,
-                r.size,
-                r.flags.into(),
-                true,
-            )?;
+            unsafe { axhal::arch::write_page_table_root(KERNEL_PAGE_TABLE.root_paddr()) };
+            Ok(())
         }
-        KERNEL_PAGE_TABLE.init_by(kernel_page_table);
     }
-
-    unsafe { axhal::arch::write_page_table_root(KERNEL_PAGE_TABLE.root_paddr()) };
-    Ok(())
 }
 
 #[cfg(feature = "irq")]

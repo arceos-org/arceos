@@ -7,3 +7,5 @@ mod stat;
 mod copy;
 
 pub mod run_queue;
+
+pub use run_queue::{EXITED_TASKS, IDLE_TASK, RUN_QUEUE};
