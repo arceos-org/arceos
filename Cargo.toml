@@ -14,7 +14,7 @@ members = [
     "apps/task/sleep",
     "apps/task/yield",
     "apps/task/priority",
-    "apps/syscall/single",
+    "apps/syscall/junior",
 
     "crates/allocator",
     "crates/arm_gic",

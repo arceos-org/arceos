@@ -4,15 +4,15 @@ SMP ?= 1
 MODE ?= release
 LOG ?= warn
 
-A ?= apps/helloworld
+A ?= apps/syscall/junior
 APP ?= $(A)
 APP_FEATURES ?=
 DISK_IMG ?= sdcard.img
 
-MACRO ?= n
-MULTITASK ?= n
-PAGING ?= n
-FS ?= n
+MACRO ?= y
+MULTITASK ?= y
+PAGING ?= y
+FS ?= y
 NET ?= n
 GRAPHIC ?= n
 BUS ?= mmio
