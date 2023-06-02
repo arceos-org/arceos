@@ -116,30 +116,35 @@ pub fn on_timer_tick() {
     RUN_QUEUE[get_current_cpu_id()].scheduler_timer_tick()
 }
 
-/// Spawns a new task.
+/// Spawns a new task with the given parameters.
 ///
-/// The task name is an empty string. The task stack size is
-/// [`axconfig::TASK_STACK_SIZE`].  
-pub fn spawn<F>(f: F)
+/// Returns the task reference.
+pub fn spawn_raw<F>(f: F, name: String, stack_size: usize) -> AxTaskRef
 where
     F: FnOnce() + Send + 'static,
 {
-    let task = TaskInner::new(f, "", axconfig::TASK_STACK_SIZE);
-    let target_cpu = LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu();
-    //info!("exit 233");
-    //task.set_queue_id(target_cpu);
-    RUN_QUEUE[target_cpu].add_task(task);
-    //info!("exit 234");
+    let task = TaskInner::new(f, name, stack_size);
+    RUN_QUEUE.lock().add_task(task.clone());
+    task
+}
+
+/// Spawns a new task with the default parameters.
+///
+/// The default task name is an empty string. The default task stack size is
+/// [`axconfig::TASK_STACK_SIZE`].
+///
+/// Returns the task reference.
+pub fn spawn<F>(f: F) -> AxTaskRef
+where
+    F: FnOnce() + Send + 'static,
+{
+    spawn_raw(f, "".into(), axconfig::TASK_STACK_SIZE);
 }
 
 /// set priority for current task.
 /// In CFS, priority is the nice value, ranging from -20 to 19.
 pub fn set_priority(prio: isize) -> bool {
-    //info!("exit 233");
-    let tmp = RUN_QUEUE[get_current_cpu_id()].set_priority(prio);
-    
-    //info!("exit 234");
-    tmp
+    RUN_QUEUE[get_current_cpu_id()].set_priority(prio)
 }
 
 /// Current task gives up the CPU time voluntarily, and switches to another

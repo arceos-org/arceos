@@ -25,7 +25,7 @@ default = []
 [dependencies]
 log = "0.4"
 cfg-if = "1.0"
-bitflags = "2.0"
+bitflags = "2.2"
 static_assertions = "1.1.0"
 axlog = { path = "../axlog" }
 axconfig = { path = "../axconfig" }
@@ -45,7 +45,7 @@ crate_interface = { path = "../../crates/crate_interface" }
 x86 = "0.52"
 x86_64 = "0.14"
 x2apic = "0.4"
-raw-cpuid = "10.7"
+raw-cpuid = "11.0"
 
 [target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]
 riscv = "0.10"

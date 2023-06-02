@@ -56,7 +56,6 @@ part 11: TaskId([0-9]\+) finished
 part 12: TaskId([0-9]\+) finished
 part 13: TaskId([0-9]\+) finished
 part 14: TaskId([0-9]\+) finished
-main task woken up! timeout=
 sum = 61783189038
 Parallel summation tests run OK!
 Shutting down...

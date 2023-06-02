@@ -1,6 +1,6 @@
-use alloc::{boxed::Box, sync::Arc};
+use alloc::{boxed::Box, string::String, sync::Arc};
 use core::ops::Deref;
-use core::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
+use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, AtomicU8, Ordering};
 use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 
 #[cfg(feature = "preempt")]
@@ -31,7 +31,7 @@ use core::sync::atomic::AtomicU32;
 /// The inner task structure.
 pub struct TaskInner {
     id: TaskId,
-    name: &'static str,
+    name: String,
     is_idle: bool,
     is_init: bool,
 
@@ -46,6 +46,9 @@ pub struct TaskInner {
     need_resched: AtomicBool,
     #[cfg(feature = "preempt")]
     preempt_disable_count: AtomicUsize,
+
+    exit_code: AtomicI32,
+    wait_for_exit: WaitQueue,
 
     in_which_queue: AtomicIsize,
     affinity: AtomicU32,
@@ -88,8 +91,8 @@ impl TaskInner {
     }
 
     /// Gets the name of the task.
-    pub const fn name(&self) -> &str {
-        self.name
+    pub fn name(&self) -> &str {
+        self.name.as_str()
     }
 
     /// Get a combined string of the task ID and name.
@@ -105,7 +108,16 @@ impl TaskInner {
     /// get queue id
     pub fn get_queue_id(&self) -> isize{
         self.in_which_queue.load(Ordering::Acquire)
+    
+    /// Wait for the task to exit, and return the exit code.
+    ///
+    /// It will return immediately if the task has already exited (but not dropped).
+    pub fn join(&self) -> Option<i32> {
+        self.wait_for_exit
+            .wait_until(|| self.state() == TaskState::Exited);
+        Some(self.exit_code.load(Ordering::Acquire))
     }
+}
 
     pub fn set_affinity(&self, aff: u32) {
         self.affinity.store(aff, Ordering::Release);
@@ -116,7 +128,7 @@ use spinlock::SpinNoIrq;
 //static LOCK_QWQ2: SpinNoIrq<usize> = SpinNoIrq::new(0);
 // private methods
 impl TaskInner {
-    const fn new_common(id: TaskId, name: &'static str) -> Self {
+    const fn new_common(id: TaskId, name: String) -> Self {
         Self {
             id,
             name,
@@ -131,6 +143,8 @@ impl TaskInner {
             need_resched: AtomicBool::new(false),
             #[cfg(feature = "preempt")]
             preempt_disable_count: AtomicUsize::new(0),
+            exit_code: AtomicI32::new(0),
+            wait_for_exit: WaitQueue::new(),
             kstack: None,
             ctx: UnsafeCell::new(TaskContext::new()),
             in_which_queue: AtomicIsize::new(-1),
@@ -138,7 +152,7 @@ impl TaskInner {
         }
     }
 
-    pub(crate) fn new<F>(entry: F, name: &'static str, stack_size: usize) -> AxTaskRef
+    pub(crate) fn new<F>(entry: F, name: String, stack_size: usize) -> AxTaskRef
     where
         F: FnOnce() + Send + 'static,
     {
@@ -148,17 +162,17 @@ impl TaskInner {
         t.entry = Some(Box::into_raw(Box::new(entry)));
         t.ctx.get_mut().init(task_entry as usize, kstack.top());
         t.kstack = Some(kstack);
-        if name == "idle" {
+        if t.name == "idle" {
             t.is_idle = true;
         }
         Arc::new(AxTask::new(t))
     }
 
-    pub(crate) fn new_init(name: &'static str) -> AxTaskRef {
+    pub(crate) fn new_init(name: String) -> AxTaskRef {
         // init_task does not change PC and SP, so `entry` and `kstack` fields are not used.
         let mut t = Self::new_common(TaskId::new(), name);
         t.is_init = true;
-        if name == "idle" {
+        if t.name == "idle" {
             t.is_idle = true;
         }
         Arc::new(AxTask::new(t))
@@ -254,29 +268,16 @@ impl TaskInner {
     fn current_check_preempt_pending() {
         let curr = crate::current();
         if curr.need_resched.load(Ordering::Acquire) && curr.can_preempt(0) {
-            //let mut rq = crate::RUN_QUEUE.lock();
-            //let tat = LOCK_QWQ2.lock();
-                //info!("askldjasljd2");
             if curr.need_resched.load(Ordering::Acquire) {
-                //assert!(self.in_which_queue.load(Ordering::Acquire) >= 0);
-                if curr.in_which_queue.load(Ordering::Acquire) >= 0 {
-                    //info!("qwoepqioepw1");
+                if curr.in_which_queue.load(Ordering::Acquire) >= 0
                     crate::RUN_QUEUE[curr.in_which_queue.load(Ordering::Acquire) as usize].resched();
-                    //info!("qwq1 {}", curr.in_which_queue.load(Ordering::Acquire));
-                } else {
-                    // qwq???
-                    //info!("qwoepqioepw2");
-                    // for i in 0..axconfig::SMP {
-                    //     crate::RUN_QUEUE[i].resched();
-                    // }
-                    //info!("qwq2");
-                }
             }
-        } else if !curr.need_resched.load(Ordering::Acquire) {
-            /*loop {
-
-            }*/
         }
+    }
+
+    pub(crate) fn notify_exit(&self, exit_code: i32, rq: &mut AxRunQueue) {
+        self.exit_code.store(exit_code, Ordering::Release);
+        self.wait_for_exit.notify_all_locked(false, rq);
     }
 
     #[inline]

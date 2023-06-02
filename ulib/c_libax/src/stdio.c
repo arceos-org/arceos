@@ -139,9 +139,7 @@ int putchar(int c)
 
 int puts(const char *s)
 {
-    int r;
-    r = -(out(stdout->fd, s, strlen(s)) < 0 || putchar('\n') < 0);
-    return r;
+    return ax_println_str(s, strlen(s));
 }
 
 // Print to the file. only understands %d, %x, %p, %s.
@@ -184,7 +182,7 @@ void fprintf(int f, const char *restrict fmt, ...)
         case 's':
             if ((a = va_arg(ap, char *)) == 0)
                 a = "(null)";
-            l = strnlen(a, 200);
+            l = strnlen(a, 500);
             out(f, a, l);
             break;
         case 'l':

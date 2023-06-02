@@ -97,7 +97,9 @@ impl<T> Deref for CFSTask<T> {
     }
 }
 
-/// scheduler for CFS
+/// A simple [Completely Fair Scheduler][1] (CFS).
+///
+/// [1]: https://en.wikipedia.org/wiki/Completely_Fair_Scheduler
 pub struct CFScheduler<T> {
     ready_queue: BTreeMap<(isize, isize), Arc<CFSTask<T>>>, // (vruntime, taskid)
     min_vruntime: Option<AtomicIsize>,

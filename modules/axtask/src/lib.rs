@@ -17,9 +17,12 @@
 //!   `multitask` feature if it is enabled. This feature is enabled by default.
 //! - `sched_rr`: Use the [Round-robin preemptive scheduler][2]. It also enables
 //!   the `multitask` and `preempt` features if it is enabled.
+//! - `sched_cfs`: Use the [Completely Fair Scheduler][3]. It also enables the
+//!   the `multitask` and `preempt` features if it is enabled.
 //!
 //! [1]: scheduler::FifoScheduler
 //! [2]: scheduler::RRScheduler
+//! [3]: scheduler::CFScheduler
 
 #![cfg_attr(not(test), no_std)]
 #![feature(doc_cfg)]

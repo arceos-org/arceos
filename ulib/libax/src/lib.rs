@@ -13,7 +13,7 @@
 //! - Interrupts:
 //!     - `irq`: Enable interrupt handling support. This feature is required for
 //!       some multitask operations, such as [`sync::WaitQueue::wait_timeout`] and
-//!       non-spinning [`task::sleep`].
+//!       non-spinning [`thread::sleep`].
 //! - Task management
 //!     - `multitask`: Enable multi-threading support.
 //!     - `sched_fifo`: Use the FIFO cooperative scheduler.
@@ -22,6 +22,8 @@
 //!     - `fs`: Enable file system support.
 //!     - `net`: Enable networking support.
 //!     - `display`: Enable graphics support.
+//!     - `bus-mmio`: Use device tree to probe all MMIO devices.
+//!     - `bus-pci`: Use PCI bus to probe all PCI devices.
 //! - Logging
 //!     - `log-level-off`: Disable all logging.
 //!     - `log-level-error`, `log-level-warn`, `log-level-info`, `log-level-debug`,
@@ -36,7 +38,14 @@
 //! [ArceOS]: https://github.com/rcore-os/arceos
 
 #![cfg_attr(all(not(test), not(doc)), no_std)]
+#![feature(doc_cfg)]
 #![feature(doc_auto_cfg)]
+#![feature(naked_functions)]
+#![feature(result_option_inspect)]
+
+#[allow(unused_imports)]
+#[macro_use]
+extern crate axlog;
 
 pub use axlog::{debug, error, info, trace, warn};
 
@@ -54,8 +63,10 @@ pub mod env;
 pub mod io;
 pub mod rand;
 pub mod sync;
-pub mod task;
 pub mod time;
+
+#[cfg_attr(not(feature = "multitask"), path = "thread/single.rs")]
+pub mod thread;
 
 #[cfg(feature = "fs")]
 pub mod fs;

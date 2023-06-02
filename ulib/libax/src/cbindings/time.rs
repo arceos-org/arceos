@@ -1,10 +1,7 @@
-use crate::{debug, task::sleep};
 use axerrno::{LinuxError, LinuxResult};
 use axhal::time::{current_time, NANOS_PER_SEC};
-use core::{
-    ffi::{c_int, c_long},
-    time::Duration,
-};
+use core::ffi::{c_int, c_long};
+use core::time::Duration;
 
 use super::ctypes;
 
@@ -45,7 +42,7 @@ pub unsafe extern "C" fn ax_nanosleep(
         let total_nano = (*req).tv_sec as u64 * NANOS_PER_SEC + (*req).tv_nsec as u64;
         let before = current_time().as_nanos() as u64;
 
-        sleep(Duration::from_nanos(total_nano));
+        crate::thread::sleep(Duration::from_nanos(total_nano));
 
         let after = current_time().as_nanos() as u64;
         let diff = after - before;

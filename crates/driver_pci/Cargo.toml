@@ -1,0 +1,13 @@
+[package]
+name = "driver_pci"
+version = "0.1.0"
+edition = "2021"
+authors = ["Yuekai Jia <equation618@gmail.com>"]
+description = "Structures and functions for PCI bus operations"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+repository = "https://github.com/rcore-os/arceos/tree/main/crates/driver_pci"
+documentation = "https://rcore-os.github.io/arceos/driver_pci/index.html"
+
+[dependencies]
+virtio-drivers = { git = "https://github.com/rcore-os/virtio-drivers.git", rev = "409ee72" }

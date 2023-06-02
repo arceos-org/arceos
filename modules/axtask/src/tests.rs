@@ -15,12 +15,16 @@ fn test_sched_fifo() {
     static FINISHED_TASKS: AtomicUsize = AtomicUsize::new(0);
 
     for i in 0..NUM_TASKS {
-        axtask::spawn(move || {
-            println!("Hello, task {}! id = {:?}", i, current().id());
-            axtask::yield_now();
-            let order = FINISHED_TASKS.fetch_add(1, Ordering::Relaxed);
-            assert_eq!(order, i); // FIFO scheduler
-        });
+        axtask::spawn_raw(
+            move || {
+                println!("sched_fifo: Hello, task {}! ({})", i, current().id_name());
+                axtask::yield_now();
+                let order = FINISHED_TASKS.fetch_add(1, Ordering::Relaxed);
+                assert_eq!(order, i); // FIFO scheduler
+            },
+            format!("T{}", i),
+            0x1000,
+        );
     }
 
     while FINISHED_TASKS.load(Ordering::Relaxed) < NUM_TASKS {
@@ -49,7 +53,7 @@ fn test_fp_state_switch() {
             axtask::yield_now();
             value -= i as f64;
 
-            println!("Float {} = {}", i, value);
+            println!("fp_state_switch: Float {} = {}", i, value);
             assert!((value - float).abs() < 1e-9);
             FINISHED_TASKS.fetch_add(1, Ordering::Relaxed);
         });
@@ -73,14 +77,14 @@ fn test_wait_queue() {
     for _ in 0..NUM_TASKS {
         axtask::spawn(move || {
             COUNTER.fetch_add(1, Ordering::Relaxed);
-            println!("task {:?} started", current().id());
+            println!("wait_queue: task {:?} started", current().id());
             WQ1.notify_one(true); // WQ1.wait_until()
             WQ2.wait();
 
             assert!(!current().in_wait_queue());
 
             COUNTER.fetch_sub(1, Ordering::Relaxed);
-            println!("task {:?} finished", current().id());
+            println!("wait_queue: task {:?} finished", current().id());
             WQ1.notify_one(true); // WQ1.wait_until()
         });
     }
@@ -98,4 +102,29 @@ fn test_wait_queue() {
     WQ1.wait_until(|| COUNTER.load(Ordering::Relaxed) == 0);
     assert_eq!(COUNTER.load(Ordering::Relaxed), 0);
     assert!(!current().in_wait_queue());
+}
+
+#[test]
+fn test_task_join() {
+    let _lock = SERIAL.lock();
+    INIT.call_once(axtask::init_scheduler);
+
+    const NUM_TASKS: usize = 10;
+    let mut tasks = Vec::with_capacity(NUM_TASKS);
+
+    for i in 0..NUM_TASKS {
+        tasks.push(axtask::spawn_raw(
+            move || {
+                println!("task_join: task {}! ({})", i, current().id_name());
+                axtask::yield_now();
+                axtask::exit(i as _);
+            },
+            format!("T{}", i),
+            0x1000,
+        ));
+    }
+
+    for i in 0..NUM_TASKS {
+        assert_eq!(tasks[i].join(), Some(i as _));
+    }
 }
