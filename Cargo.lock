@@ -55,7 +55,7 @@ dependencies = [
 name = "arceos-helloworld"
 version = "0.1.0"
 dependencies = [
- "libax_user",
+ "libax",
 ]
 
 [[package]]
@@ -990,14 +990,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "init"
-version = "0.1.0"
-dependencies = [
- "libax_user",
- "net_deamon",
-]
-
-[[package]]
 name = "instant"
 version = "0.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1162,6 +1154,22 @@ name = "memory_addr"
 version = "0.1.0"
 
 [[package]]
+name = "microkernel-init"
+version = "0.1.0"
+dependencies = [
+ "libax_user",
+ "microkernel-net-deamon",
+]
+
+[[package]]
+name = "microkernel-net-deamon"
+version = "0.1.0"
+dependencies = [
+ "axnet",
+ "libax_user",
+]
+
+[[package]]
 name = "micromath"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1187,14 +1195,6 @@ name = "nb"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d5439c4ad607c3c23abf66de8c8bf57ba8adcd1f129e699851a6e43935d339d"
-
-[[package]]
-name = "net_deamon"
-version = "0.1.0"
-dependencies = [
- "axnet",
- "libax_user",
-]
 
 [[package]]
 name = "nom"

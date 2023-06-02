@@ -69,7 +69,7 @@ pub fn syscall_handler(id: usize, params: [usize; 6]) -> isize {
         }
         #[cfg(feature = "user-paging")]
         SYS_SPAWN => {
-            axtask::spawn(params[0], params[1]);
+            axtask::spawn_args(params[0], params[1]);
             0
         }
         #[cfg(feature = "user-paging")]

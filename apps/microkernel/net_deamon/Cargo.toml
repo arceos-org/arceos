@@ -1,5 +1,5 @@
 [package]
-name = "net_deamon"
+name = "microkernel-net-deamon"
 version = "0.1.0"
 edition = "2021"
 

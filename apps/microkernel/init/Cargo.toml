@@ -1,5 +1,5 @@
 [package]
-name = "init"
+name = "microkernel-init"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,4 +7,4 @@ edition = "2021"
 
 [dependencies]
 libax = { path = "../../../ulib/libax_user", package = "libax_user"}
-net_deamon = { path = "../net_deamon" }
+net_deamon = { path = "../net_deamon" , package = "microkernel-net-deamon" }

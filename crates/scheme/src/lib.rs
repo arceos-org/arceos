@@ -46,4 +46,4 @@ unsafe fn str_from_raw_parts(ptr: *const u8, len: usize) -> Option<&'static str>
 mod scheme;
 use core::ops::{Deref, DerefMut};
 
-pub use scheme::Scheme;
+pub use crate::scheme::Scheme;

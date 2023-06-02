@@ -88,11 +88,18 @@ pub fn on_timer_tick() {
 }
 
 cfg_if::cfg_if! {
-if #[cfg(feature = "user-paging")] {
-pub fn spawn(f: usize, arg: usize) {
+if #[cfg(all(feature = "user-paging", not(feature = "test")))] {
+pub fn spawn_args(f: usize, arg: usize) {
     let task = TaskInner::new_user(f, axconfig::TASK_STACK_SIZE, arg);
     RUN_QUEUE.lock().add_task(task);
 }
+pub fn spawn<F>(f: F) -> AxTaskRef
+where
+    F: FnOnce() + Send + 'static,
+    {
+    unimplemented!();
+}
+    
 pub fn spawn_raw<F>(_f: F, _name: String, _stack_size: usize) -> AxTaskRef
 where
     F: FnOnce() + Send + 'static,
@@ -100,6 +107,11 @@ where
     unimplemented!();
 }
 } else {
+pub fn spawn_args(_f: usize, _arg: usize) {
+    unimplemented!();
+}
+
+    
 /// Spawns a new task.
 /// Spawns a new task with the given parameters.
 ///

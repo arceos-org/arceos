@@ -41,7 +41,7 @@ pub use smoltcp::wire::{IpAddress as IpAddr, IpEndpoint as SocketAddr, Ipv4Addre
 use axdriver::{prelude::*, AxDeviceContainer};
 
 /// Initializes the network subsystem by NIC devices.
-pub fn init_network(_net_devs: AxDeviceContainer<AxNetDevice>) {
+pub fn init_network(#[allow(unused, unused_mut)] mut net_devs: AxDeviceContainer<AxNetDevice>) {
     #[cfg(not(feature = "user"))]
     {
         info!("Initialize network subsystem...");

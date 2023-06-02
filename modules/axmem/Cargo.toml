@@ -9,7 +9,7 @@ edition = "2021"
 crate_interface = { path = "../../crates/crate_interface" }
 memory_addr = { path = "../../crates/memory_addr"}
 lazy_init = { path = "../../crates/lazy_init"}
-axhal = { path = "../axhal" }
+axhal = { path = "../axhal", features = ["paging"] }
 axalloc = { path = "../axalloc"}
 axlog = { path = "../axlog" }
 elf_loader = { path = "../../crates/elf_loader"}

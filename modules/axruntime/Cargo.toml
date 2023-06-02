@@ -19,16 +19,16 @@ smp = ["axhal/smp", "spinlock/smp"]
 fs = ["alloc", "paging", "axdriver/virtio-blk", "dep:axfs"] # TODO: remove "paging"
 net = ["alloc", "paging", "axdriver/virtio-net", "dep:axnet"]
 display = ["alloc", "paging", "axdriver/virtio-gpu", "dep:axdisplay"]
-user = ["axhal/user", "dep:elf_loader", "dep:axmem", "dep:axerrno", "dep:syscall_number"]
+user = ["axhal/user", "dep:elf_loader", "dep:axerrno", "dep:syscall_number"]
 
-user-paging = ["user", "paging", "axhal/user-paging", "axtask/user-paging"]
+user-paging = ["user", "paging", "axhal/user-paging", "axtask/user-paging", "dep:axmem"]
 process = ["dep:axprocess", "user-paging", "scheme"]
 # See: https://github.com/rust-lang/cargo/issues/10788
 futex = ["dep:axsync", "axsync?/futex"]
 scheme = ["user-paging", "dep:axsync", "dep:scheme", "dep:axscheme"]
 
 user_net = ["alloc", "paging", "axdriver/virtio-net", "dep:axscheme", "axscheme?/user_net"]
-default = ["axtask?/default", "scheme", "user_net"]
+default = ["axtask?/default"]
 
 [dependencies]
 percpu = { path = "../../crates/percpu" }

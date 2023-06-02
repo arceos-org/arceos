@@ -17,6 +17,7 @@ impl axhal::trap::TrapHandler for TrapHandlerImpl {
     }
 }
 
+
 #[cfg(feature = "user")]
 pub fn user_space_entry() -> ! {
     if cfg!(feature = "user-paging") {

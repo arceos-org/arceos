@@ -442,6 +442,7 @@ impl core::ops::Deref for AddrSpace {
     }
 }
 
+
 #[def_interface]
 pub trait CurrentAddrSpace {
     fn current_addr_space() -> Arc<AddrSpace>;

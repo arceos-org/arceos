@@ -22,9 +22,9 @@ sched_fifo = ["multitask"]
 sched_rr = ["multitask", "preempt"]
 sched_cfs = ["multitask", "preempt"]
 default = ["sched_fifo"]
-process = []
+process = ["user-paging"]
 
-user-paging = ["dep:axmem", "dep:axalloc"]
+user-paging = ["dep:axmem", "dep:axalloc", "axhal/user-paging"]
 
 [dependencies]
 cfg-if = "1.0"
