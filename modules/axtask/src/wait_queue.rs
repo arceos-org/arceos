@@ -238,10 +238,10 @@ impl WaitQueue {
         }
     }
 
-    pub(crate) fn notify_all_locked(&self, resched: bool, rq: &mut AxRunQueue) {
+    pub(crate) fn notify_all_locked(&self, resched: bool, rq: &AxRunQueue) {
         while let Some(task) = self.queue.lock().pop_front() {
-            task.set_in_wait_queue(false);
-            rq.unblock_task(task, resched);
+            task.0.set_in_wait_queue(false);
+            rq.unblock_task(task.0, resched);
         }
     }
 }

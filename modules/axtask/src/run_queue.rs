@@ -37,7 +37,7 @@ pub(crate) struct AxRunQueue {
 }
 
 impl AxRunQueue {
-    pub fn new() -> SpinNoIrq<Self> {
+    pub fn new(id: usize) -> Self {
         let gc_task = TaskInner::new(gc_entry, "gc".into(), axconfig::TASK_STACK_SIZE);
         let mut scheduler = SpinNoIrq::new(Scheduler::new());
 
@@ -77,9 +77,9 @@ impl AxRunQueue {
         self.resched_inner(false);
     }
 
-    pub fn set_priority(&mut self, prio: isize) -> bool {
+    pub fn set_priority(&self, prio: isize) -> bool {
         let _guard = NoPreempt::new();
-        self.scheduler
+        self.scheduler.lock()
             .set_priority(crate::current().as_task_ref(), prio)
     }
 
@@ -184,7 +184,7 @@ impl AxRunQueue {
     /// Common reschedule subroutine. If `preempt`, keep current task's time
     /// slice, otherwise reset it.
     fn if_empty_steal(&self) {
-        let _guard = NoPreempt::new();
+        //let _guard = NoPreempt::new();
         if self.scheduler.lock().is_empty() {
             let mut queuelock = self.scheduler.lock();
             let id = self.id;

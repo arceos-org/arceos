@@ -7,6 +7,8 @@ pub use crate::task::{CurrentTask, TaskId, TaskInner};
 #[doc(cfg(feature = "multitask"))]
 pub use crate::wait_queue::WaitQueue;
 
+use alloc::string::String;
+
 use crate::run_queue::LOAD_BALANCE_ARR;
 use load_balance::BaseLoadBalance;
 
@@ -124,7 +126,7 @@ where
     F: FnOnce() + Send + 'static,
 {
     let task = TaskInner::new(f, name, stack_size);
-    RUN_QUEUE.lock().add_task(task.clone());
+    RUN_QUEUE[LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu()].add_task(task.clone());
     task
 }
 
@@ -138,7 +140,7 @@ pub fn spawn<F>(f: F) -> AxTaskRef
 where
     F: FnOnce() + Send + 'static,
 {
-    spawn_raw(f, "".into(), axconfig::TASK_STACK_SIZE);
+    spawn_raw(f, "".into(), axconfig::TASK_STACK_SIZE)
 }
 
 /// set priority for current task.

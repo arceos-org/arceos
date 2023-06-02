@@ -11,6 +11,8 @@ use memory_addr::{align_up_4k, VirtAddr};
 use crate::get_current_cpu_id;
 use core::sync::atomic::AtomicIsize;
 use crate::{AxTask, AxTaskRef};
+use crate::WaitQueue;
+use crate::AxRunQueue;
 
 /// A unique identifier for a thread.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -108,6 +110,7 @@ impl TaskInner {
     /// get queue id
     pub fn get_queue_id(&self) -> isize{
         self.in_which_queue.load(Ordering::Acquire)
+    }
     
     /// Wait for the task to exit, and return the exit code.
     ///
@@ -117,7 +120,6 @@ impl TaskInner {
             .wait_until(|| self.state() == TaskState::Exited);
         Some(self.exit_code.load(Ordering::Acquire))
     }
-}
 
     pub fn set_affinity(&self, aff: u32) {
         self.affinity.store(aff, Ordering::Release);
@@ -269,13 +271,14 @@ impl TaskInner {
         let curr = crate::current();
         if curr.need_resched.load(Ordering::Acquire) && curr.can_preempt(0) {
             if curr.need_resched.load(Ordering::Acquire) {
-                if curr.in_which_queue.load(Ordering::Acquire) >= 0
+                if curr.in_which_queue.load(Ordering::Acquire) >= 0 {
                     crate::RUN_QUEUE[curr.in_which_queue.load(Ordering::Acquire) as usize].resched();
+                }
             }
         }
     }
 
-    pub(crate) fn notify_exit(&self, exit_code: i32, rq: &mut AxRunQueue) {
+    pub(crate) fn notify_exit(&self, exit_code: i32, rq: &AxRunQueue) {
         self.exit_code.store(exit_code, Ordering::Release);
         self.wait_for_exit.notify_all_locked(false, rq);
     }
