@@ -21,10 +21,10 @@ driver_net = { path = "../../crates/driver_net" }
 lazy_init = { path = "../../crates/lazy_init" }
 axerrno = { path = "../../crates/axerrno" }
 libax = { path = "../../ulib/libax_user", package = "libax_user" }
-# axhal = { path = "../axhal" }
-# axsync = { path = "../axsync", default-features = false }
-# axtask = { path = "../axtask", default-features = false }
-# axdriver = { path = "../axdriver", features = ["net"] }
+axhal = { path = "../axhal" }
+axsync = { path = "../axsync", default-features = false }
+axtask = { path = "../axtask", default-features = false }
+axdriver = { path = "../axdriver", features = ["net"] }
 
 [dependencies.smoltcp]
 version = "0.9.1"

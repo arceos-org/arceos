@@ -1,4 +1,4 @@
-#![no_std]
+#![cfg_attr(all(not(test), not(doc), target_os = "none"), no_std)]
 
 mod syscall;
 pub use syscall::*;
@@ -17,8 +17,10 @@ pub mod rand;
 mod sync;
 pub use sync::{Mutex, MutexGuard};
 
+#[cfg(all(target_os = "none", not(test)))]
 use core::panic::PanicInfo;
 
+#[cfg(all(target_os = "none", not(test)))]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     error!("{}", info);

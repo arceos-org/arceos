@@ -98,7 +98,7 @@ pub fn syscall_handler(id: usize, params: [usize; 6]) -> isize {
         #[cfg(feature = "futex")]
         SYS_FUTEX => {
             if let Some(phy_addr) = axmem::translate_addr(params[0].into()) {
-                axsync::futex::futex_call(params[0], params[1], params[2] as u32)
+                axsync::futex::futex_call(phy_addr.into(), params[1], params[2] as u32)
             } else {
                 -1
             }

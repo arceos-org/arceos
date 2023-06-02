@@ -42,14 +42,17 @@ pub trait CurrentTask {
     fn current_trap_frame_virt_addr() -> usize;
 }
 
+#[allow(unused)]
 #[cfg(feature = "user-paging")]
 pub(crate) fn get_current_trap_frame() -> *mut TrapFrame {
     call_interface!(CurrentTask::current_trap_frame)
 }
+#[allow(unused)]
 #[cfg(feature = "user-paging")]
 pub(crate) fn get_current_satp() -> usize {
     call_interface!(CurrentTask::current_satp)
 }
+#[allow(unused)]
 #[cfg(feature = "user-paging")]
 pub(crate) fn get_current_trap_frame_virt_addr() -> usize {
     call_interface!(CurrentTask::current_trap_frame_virt_addr)

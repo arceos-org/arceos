@@ -207,8 +207,8 @@ impl WaitQueue {
         }
     }
 
-    pub fn len(&self) -> usize {
-        self.queue.lock().len()
+    pub fn is_empty(&self) -> bool {
+        self.queue.lock().is_empty()
     }
     pub(crate) fn notify_all_locked(&self, resched: bool, rq: &mut AxRunQueue) {
         while let Some(task) = self.queue.lock().pop_front() {

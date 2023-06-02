@@ -93,10 +93,10 @@ impl KernelScheme for DeviceScheme {}
 mod net {
     extern crate alloc;
     use alloc::{collections::BTreeMap, sync::Arc};
-    use axdriver::{prelude::NetDriverOps, AllDevices, AxNetDevice};
+    use axdriver::{AllDevices, AxNetDevice};
     use axerrno::{ax_err, AxError, AxResult};
     use axsync::Mutex;
-    use driver_net::NetBufferPool;
+    use driver_net::{NetBufferPool, NetDriverOps};
     use lazy_init::LazyInit;
 
     use super::{map_err, Device};

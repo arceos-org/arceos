@@ -1,6 +1,7 @@
 //! Task APIs for multi-task configuration.
 
 use alloc::sync::Arc;
+use alloc::string::String;
 
 pub(crate) use crate::run_queue::{AxRunQueue, RUN_QUEUE};
 
@@ -92,8 +93,13 @@ pub fn spawn(f: usize, arg: usize) {
     let task = TaskInner::new_user(f, axconfig::TASK_STACK_SIZE, arg);
     RUN_QUEUE.lock().add_task(task);
 }
+pub fn spawn_raw<F>(_f: F, _name: String, _stack_size: usize) -> AxTaskRef
+where
+    F: FnOnce() + Send + 'static,
+    {
+    unimplemented!();
+}
 } else {
-use alloc::string::String;
 /// Spawns a new task.
 /// Spawns a new task with the given parameters.
 ///

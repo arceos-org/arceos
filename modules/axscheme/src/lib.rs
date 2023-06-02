@@ -5,6 +5,9 @@ extern crate alloc;
 #[macro_use]
 extern crate axlog;
 
+#[macro_use]
+extern crate crate_interface;
+
 use alloc::boxed::Box;
 use alloc::string::ToString;
 use alloc::vec::Vec;
@@ -29,17 +32,25 @@ pub struct FileTable {
     inner: Mutex<Vec<Option<Arc<FileHandle>>>>,
 }
 
+impl Default for FileTable {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Clone for FileTable {
+    fn clone(&self) -> Self {
+        let inner = self.inner.lock();
+        FileTable {
+            inner: Mutex::new(inner.iter().cloned().collect())
+        }
+    }
+}
+
 impl FileTable {
     pub fn new() -> Self {
         Self {
             inner: Mutex::new(Vec::new()),
-        }
-    }
-
-    pub fn clone(&self) -> Self {
-        let inner = self.inner.lock();
-        FileTable {
-            inner: Mutex::new(inner.iter().map(|x| x.clone()).collect())
         }
     }
 

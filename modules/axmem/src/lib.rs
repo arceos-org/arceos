@@ -5,6 +5,8 @@ extern crate alloc;
 #[macro_use]
 extern crate axlog;
 
+use core::cmp::Ordering;
+
 use alloc::sync::Arc;
 use alloc::vec::Vec;
 use alloc::{collections::BTreeMap, string::String};
@@ -42,6 +44,13 @@ pub struct AddrSpaceInner {
     page_table: PageTable,
     heap: Option<HeapSegment>,
     mmap_use: BTreeMap<VirtAddr, GlobalPage>,
+}
+
+
+impl Default for AddrSpaceInner {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl AddrSpaceInner {
@@ -140,39 +149,43 @@ impl AddrSpaceInner {
         if let Some(heap) = &mut self.heap {
             let old_brk: usize = (heap.start_vaddr + heap.actual_size).into();
             info!("user sbrk: {} bytes", size);
-            if size == 0 {
-                return Some(old_brk);
-            } else if size < 0 {
-                if (-size) as usize > heap.actual_size {
-                    return None;
+            match size.cmp(&0) {
+                Ordering::Equal => {
+                    return Some(old_brk);
                 }
-                heap.actual_size -= -size as usize
-            } else {
-                heap.actual_size += size as usize;
-                let heap_seg = self
-                    .segments
-                    .iter_mut()
-                    .find(|x| x.start_vaddr == heap.start_vaddr)
-                    .unwrap();
-                if heap.actual_size > heap_seg.size {
-                    let delta = align_up_4k(heap.actual_size - heap_seg.size);
-                    while heap.actual_size > heap_seg.size {
-                        if let Ok(page) =
-                            GlobalPage::alloc_contiguous(delta / PAGE_SIZE_4K, PAGE_SIZE_4K)
-                        {
-                            self.page_table
-                                .map_region(
-                                    heap.start_vaddr + heap_seg.size,
-                                    page.start_paddr(virt_to_phys),
-                                    page.size(),
-                                    MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
-                                    false,
-                                )
-                                .expect("Mapping Error");
-                            heap_seg.size += page.size();
-                            heap_seg.phy_mem.push(page.into());
-                        } else {
-                            return None;
+                Ordering::Less => {
+                    if (-size) as usize > heap.actual_size {
+                        return None;
+                    }
+                    heap.actual_size -= -size as usize
+                }
+                Ordering::Greater => {
+                    heap.actual_size += size as usize;
+                    let heap_seg = self
+                        .segments
+                        .iter_mut()
+                        .find(|x| x.start_vaddr == heap.start_vaddr)
+                        .unwrap();
+                    if heap.actual_size > heap_seg.size {
+                        let delta = align_up_4k(heap.actual_size - heap_seg.size);
+                        while heap.actual_size > heap_seg.size {
+                            if let Ok(page) =
+                                GlobalPage::alloc_contiguous(delta / PAGE_SIZE_4K, PAGE_SIZE_4K)
+                            {
+                                self.page_table
+                                    .map_region(
+                                        heap.start_vaddr + heap_seg.size,
+                                        page.start_paddr(virt_to_phys),
+                                        page.size(),
+                                        MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
+                                        false,
+                                    )
+                                    .expect("Mapping Error");
+                                heap_seg.size += page.size();
+                                heap_seg.phy_mem.push(page.into());
+                            } else {
+                                return None;
+                            }
                         }
                     }
                 }
@@ -254,7 +267,7 @@ impl AddrSpaceInner {
             /*
             if !flag.contains(MappingFlags::USER) || (write && !flag.contains(MappingFlags::WRITE)) {
             panic!("Invalid vaddr with improper rights!");
-            }
+        }
              */
             let nxt_vaddr = align_up(vaddr.as_usize() + 1, page_size.into());
             let len = (nxt_vaddr - vaddr.as_usize()).min(size - read_size);
@@ -288,31 +301,31 @@ impl Clone for AddrSpace {
 
             /*
             if segment.phy_mem.is_empty() { // pages such as trampoline
-                (0..pages).for_each(|page| {
-                    let vaddr = segment.start_vaddr + page * PAGE_SIZE_4K;
-                    let (paddr, flags, _) = inner.page_table.query(vaddr).unwrap();
-                    page_table.map_region(vaddr, paddr, PAGE_SIZE_4K, flags, false).unwrap();
-                })
-            } else {
-            */
-                (0..pages).for_each(|page| {
-                    let vaddr = segment.start_vaddr + page * PAGE_SIZE_4K;
-                    let (paddr, flags, _) = inner.page_table.query(vaddr).unwrap();
-                    let mut user_phy_page = GlobalPage::alloc().unwrap();
-                    user_phy_page.as_slice_mut().copy_from_slice(unsafe {
-                        core::slice::from_raw_parts(phys_to_virt(paddr).as_ptr(), PAGE_SIZE_4K)
-                    });
-                    page_table
-                        .map_region(
-                            vaddr,
-                            user_phy_page.start_paddr(virt_to_phys),
-                            PAGE_SIZE_4K,
-                            flags,
-                            false,
-                        )
-                        .unwrap();
-                    new_seg.phy_mem.push(user_phy_page.into());
+            (0..pages).for_each(|page| {
+            let vaddr = segment.start_vaddr + page * PAGE_SIZE_4K;
+            let (paddr, flags, _) = inner.page_table.query(vaddr).unwrap();
+            page_table.map_region(vaddr, paddr, PAGE_SIZE_4K, flags, false).unwrap();
+        })
+        } else {
+             */
+            (0..pages).for_each(|page| {
+                let vaddr = segment.start_vaddr + page * PAGE_SIZE_4K;
+                let (paddr, flags, _) = inner.page_table.query(vaddr).unwrap();
+                let mut user_phy_page = GlobalPage::alloc().unwrap();
+                user_phy_page.as_slice_mut().copy_from_slice(unsafe {
+                    core::slice::from_raw_parts(phys_to_virt(paddr).as_ptr(), PAGE_SIZE_4K)
                 });
+                page_table
+                    .map_region(
+                        vaddr,
+                        user_phy_page.start_paddr(virt_to_phys),
+                        PAGE_SIZE_4K,
+                        flags,
+                        false,
+                    )
+                    .unwrap();
+                new_seg.phy_mem.push(user_phy_page.into());
+            });
             //}
             new_inner.segments.push(new_seg)
         }
@@ -355,7 +368,7 @@ impl AddrSpace {
                 align_up_4k(segment.size) / PAGE_SIZE_4K,
                 PAGE_SIZE_4K,
             )
-            .expect("Alloc page error!");
+                .expect("Alloc page error!");
             // init
             user_phy_page.zero();
 
@@ -382,12 +395,12 @@ impl AddrSpace {
         user_space.init_heap(data_end);
 
         // stack allocation
-        assert!(USTACK_SIZE % PAGE_SIZE_4K == 0);
+        //assert!(USTACK_SIZE % PAGE_SIZE_4K == 0);
         #[cfg(not(feature = "multitask"))]
         {
             let user_stack_page =
                 GlobalPage::alloc_contiguous(USTACK_SIZE / PAGE_SIZE_4K, PAGE_SIZE_4K)
-                    .expect("Alloc page error!");
+                .expect("Alloc page error!");
             debug!("{:?}", user_stack_page);
 
             user_space
@@ -432,13 +445,13 @@ pub trait CurrentAddrSpace {
 }
 
 fn current_addr_space() -> Arc<AddrSpace> {
-    call_interface!(CurrentAddrSpace::current_addr_space)
+    crate_interface::call_interface!(CurrentAddrSpace::current_addr_space)
 }
 
 pub fn alloc_user_page(vaddr: VirtAddr, size: usize, flags: MappingFlags) -> Arc<GlobalPage> {
     let mut user_phy_page =
         GlobalPage::alloc_contiguous(align_up_4k(size) / PAGE_SIZE_4K, PAGE_SIZE_4K)
-            .expect("Alloc page error!");
+        .expect("Alloc page error!");
     // init
     user_phy_page.zero();
     let user_phy_page = Arc::new(user_phy_page);

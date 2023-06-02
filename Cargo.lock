@@ -330,7 +330,11 @@ dependencies = [
 name = "axnet"
 version = "0.1.0"
 dependencies = [
+ "axdriver",
  "axerrno",
+ "axhal",
+ "axsync",
+ "axtask",
  "cfg-if",
  "driver_net",
  "lazy_init",

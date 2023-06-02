@@ -155,7 +155,7 @@ impl TaskInner {
     }
 
     #[cfg(feature = "user-paging")]
-    pub(crate) fn new_user(entry: usize, kstack_size: usize, args: usize) -> AxTaskRef {
+    pub(crate) fn new_user(entry: usize, kstack_size: usize, #[allow(unused)] args: usize) -> AxTaskRef {
         let mut t = Self::new_common(TaskId::new(), "".into());
         debug!("new user task: {} {}", t.id_name(), entry);
         let kstack = TaskStack::alloc(align_up_4k(kstack_size));
@@ -175,6 +175,7 @@ impl TaskInner {
             axmem::USTACK_SIZE,
             MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
         );
+        #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
         unsafe {
             let trap_frame = &mut *(trap_frame.as_ptr() as *mut axhal::arch::TrapFrame);
             *trap_frame =
@@ -216,6 +217,8 @@ impl TaskInner {
                 TRAP_FRAME_SIZE,
                 MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
             );
+            // TODO: make a HAL wrapper
+            #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
             unsafe {
                 let trap_frame = &mut *(trap_frame.as_ptr() as *mut axhal::arch::TrapFrame);
                 *trap_frame = axhal::arch::TrapFrame::new(
@@ -237,7 +240,7 @@ impl TaskInner {
     #[cfg(all(feature = "user-paging", feature = "process"))]
     pub fn new_fork(&self, pid: u64, mem: Arc<axmem::AddrSpace>) -> AxTaskRef {
         use axalloc::GlobalPage;
-        use axhal::{mem::{phys_to_virt, virt_to_phys}, paging::MappingFlags};       
+        use axhal::{mem::{virt_to_phys}, paging::MappingFlags};       
         let mut t = Self::new_common(TaskId::new(), String::new());
         t.is_init = true;
         t.pid = pid.into();
@@ -255,10 +258,13 @@ impl TaskInner {
             MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
             false
         ).unwrap();
+
+        // TODO: make a HAL wrapper
+        #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
         unsafe {
             // TODO: move ustack
             let old_trap_frame = mem.lock().query(get_trap_frame_vaddr(self.id)).unwrap();
-            let old_trap_frame = &*(phys_to_virt(old_trap_frame).as_ptr() as *const axhal::arch::TrapFrame);
+            let old_trap_frame = &*(axhal::mem::phys_to_virt(old_trap_frame).as_ptr() as *const axhal::arch::TrapFrame);
             
             let new_trap_frame = &mut *(trap_frame.as_ptr() as *mut axhal::arch::TrapFrame);
             *new_trap_frame = old_trap_frame.clone();

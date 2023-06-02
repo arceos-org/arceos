@@ -11,7 +11,7 @@ use alloc::{
 };
 use axerrno::{ax_err, from_ret_code, AxError, AxResult};
 use axhal::{mem::VirtAddr, paging::MappingFlags};
-use axmem::{copy_slice_from_user, AddrSpace};
+use axmem::{AddrSpace};
 use axsync::Mutex;
 use axtask::{current, current_pid};
 use scheme::{Packet, Scheme};

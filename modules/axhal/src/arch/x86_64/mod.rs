@@ -16,6 +16,18 @@ pub use self::gdt::GdtStruct;
 pub use self::idt::IdtStruct;
 pub use x86_64::structures::tss::TaskStateSegment;
 
+#[cfg(feature = "user-paging")]
+pub fn first_uentry() -> ! {
+    unimplemented!();
+}
+
+#[cfg(feature = "user-paging")]
+pub fn enter_uspace(_tf: usize, _satp: usize) -> ! {
+    unimplemented!();
+}
+
+
+
 /// Allows the current CPU to respond to interrupts.
 #[inline]
 pub fn enable_irqs() {

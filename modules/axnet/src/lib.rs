@@ -38,17 +38,19 @@ pub use self::net_impl::TcpSocket;
 pub use self::net_impl::UdpSocket;
 pub use smoltcp::wire::{IpAddress as IpAddr, IpEndpoint as SocketAddr, Ipv4Address as Ipv4Addr};
 
-#[cfg(not(feature = "user"))]
 use axdriver::{prelude::*, AxDeviceContainer};
 
-#[cfg(not(feature = "user"))]
-/// Initializes the network subsystem by NIC devices.
-pub fn init_network(mut net_devs: AxDeviceContainer<AxNetDevice>) {
-    info!("Initialize network subsystem...");
 
-    let dev = net_devs.take_one().expect("No NIC device found!");
-    info!("  use NIC 0: {:?}", dev.device_name());
-    net_impl::init(dev);
+/// Initializes the network subsystem by NIC devices.
+pub fn init_network(_net_devs: AxDeviceContainer<AxNetDevice>) {
+    #[cfg(not(feature = "user"))]
+    {
+        info!("Initialize network subsystem...");
+        
+        let dev = net_devs.take_one().expect("No NIC device found!");
+        info!("  use NIC 0: {:?}", dev.device_name());
+        net_impl::init(dev);
+    }
 }
 
 #[cfg(feature = "user")]

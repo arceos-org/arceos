@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-use libax::{task::{spawn, yield_now}, process::fork};
+use libax::{task::yield_now, process::fork};
 use net_deamon::start_tcp;
 
 #[macro_use]
@@ -13,7 +13,6 @@ mod http_server;
 fn fake_exec(f: fn()) {
     match fork() {
         pid if pid > 0 => {
-            return;            
         }
         0 => {
             f();

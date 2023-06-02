@@ -34,7 +34,7 @@ impl FutexPool {
         for i in 0..val {
             if let Some(queue) = self.0.lock().get(&paddr).map(Arc::clone) {
                 queue.notify_one(true);
-                if queue.len() == 0 {
+                if queue.is_empty() {
                     self.0.lock().remove(&paddr);
                 }
             } else {

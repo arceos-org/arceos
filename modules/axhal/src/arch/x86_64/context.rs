@@ -39,6 +39,15 @@ impl TrapFrame {
     pub const fn is_user(&self) -> bool {
         self.cs & 0b11 == 3
     }
+
+    #[cfg(feature = "user")]
+    pub fn new(_entry: usize, _ustack: usize) -> TrapFrame {
+        unimplemented!();
+    }
+    #[cfg(feature = "user")]
+    pub fn enter_uspace(&self, _sp: usize) -> ! {
+        unimplemented!();
+    }
 }
 
 #[repr(C)]

@@ -22,6 +22,7 @@ platform-qemu-virt-riscv = ["axhal/platform-qemu-virt-riscv", "axdriver?/bus-mmi
 platform-qemu-virt-aarch64 = ["axhal/platform-qemu-virt-aarch64", "axdriver?/bus-mmio"]
 
 user-paging = ["axtask/user-paging", "axruntime/user-paging"]
+default = ["user-paging"]
 
 [dependencies]
 
