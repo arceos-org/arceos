@@ -31,12 +31,9 @@ use crate::get_current_cpu_id;
 /// assert_eq!(VALUE.load(Ordering::Relaxed), 1);
 /// ```
 pub struct WaitQueue {
-    queue: SpinRaw<VecDeque<(AxTaskRef, usize)>>, // we already disabled IRQs when lock the `RUN_QUEUE`
+    queue: SpinRaw<VecDeque<AxTaskRef>>, // we already disabled IRQs when lock the `RUN_QUEUE`
 }
 
-use spinlock::SpinNoIrq;
-static LOCK_QWQ5: SpinNoIrq<usize> = SpinNoIrq::new(0);
-static LOCK_QWQ6: SpinNoIrq<usize> = SpinNoIrq::new(0);
 impl WaitQueue {
     /// Creates an empty wait queue.
     pub const fn new() -> Self {
@@ -59,7 +56,7 @@ impl WaitQueue {
             // wake up by timer (timeout).
             // `RUN_QUEUE` is not locked here, so disable IRQs.
             let _guard = kernel_guard::IrqSave::new();
-            self.queue.lock().retain(|(t, _)| !curr.ptr_eq(t));
+            self.queue.lock().retain(|t| !curr.ptr_eq(t));
             curr.set_in_wait_queue(false);
         }
         #[cfg(feature = "irq")]
@@ -83,7 +80,7 @@ impl WaitQueue {
         //info!("lock begin 8");
         RUN_QUEUE[target_cpu].block_current(|task| {
             task.set_in_wait_queue(true);
-            self.queue.lock().push_back((task, target_cpu))
+            self.queue.lock().push_back(task)
         });
         //info!("lock end 7");
         self.cancel_events(crate::current());
@@ -104,7 +101,7 @@ impl WaitQueue {
             }
             RUN_QUEUE[get_current_cpu_id()].block_current(|task| {
                 task.set_in_wait_queue(true);
-                self.queue.lock().push_back((task, get_current_cpu_id()));
+                self.queue.lock().push_back(task);
             });
         }
         self.cancel_events(crate::current());
@@ -127,7 +124,7 @@ impl WaitQueue {
 
         RUN_QUEUE[get_current_cpu_id()].block_current(|task| {
             task.set_in_wait_queue(true);
-            self.queue.lock().push_back((task, get_current_cpu_id()))
+            self.queue.lock().push_back(task)
         });
         //info!("lock end 5");
         let timeout = curr.in_wait_queue(); // still in the wait queue, must have timed out
@@ -163,7 +160,7 @@ impl WaitQueue {
             }
             RUN_QUEUE[get_current_cpu_id()].block_current(|task| {
                 task.set_in_wait_queue(true);
-                self.queue.lock().push_back((task, get_current_cpu_id()));
+                self.queue.lock().push_back(task);
             });
         }
         self.cancel_events(curr);
@@ -196,12 +193,10 @@ impl WaitQueue {
     /// preemption is enabled.
     pub fn notify_all(&self, resched: bool) {
         loop {
-            //info!("333");
-            if let Some((task, cpu_id)) = self.queue.lock().pop_front() {
+            if let Some(task) = self.queue.lock().pop_front() {
                 task.set_in_wait_queue(false);
-                RUN_QUEUE[cpu_id].unblock_task(task, resched);
-                //info!("exit 2");
-                //drop(rq); // we must unlock `RUN_QUEUE` after unlocking `self.queue`.
+                RUN_QUEUE[LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu()]
+                    .unblock_task(task, resched);
             } else {
                 break;
             }
@@ -213,15 +208,12 @@ impl WaitQueue {
     /// If `resched` is true, the current task will be preempted when the
     /// preemption is enabled.
     pub fn notify_task(&self, resched: bool, task: &AxTaskRef) -> bool {
-        //info!("222");
         let mut wq = self.queue.lock();
-        if let Some(index) = wq.iter().position(|(t, cpu_id)| Arc::ptr_eq(t, task)) {
+        if let Some(index) = wq.iter().position(|t| Arc::ptr_eq(t, task)) {
             task.set_in_wait_queue(false);
             let target_cpu = LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu();
-            let task = wq.remove(index).unwrap().0;
-            //task.set_queue_id(target_cpu);
+            let task = wq.remove(index).unwrap();
             RUN_QUEUE[target_cpu].unblock_task(task, resched);
-            //info!("exit 4");
             true
         } else {
             false
@@ -229,7 +221,7 @@ impl WaitQueue {
     }
 
     pub(crate) fn notify_one_locked(&self, resched: bool, rq: &AxRunQueue, queueid: usize) -> bool {
-        if let Some((task, _)) = self.queue.lock().pop_front() {
+        if let Some(task) = self.queue.lock().pop_front() {
             task.set_in_wait_queue(false);
             rq.unblock_task(task, resched);
             true
@@ -240,8 +232,8 @@ impl WaitQueue {
 
     pub(crate) fn notify_all_locked(&self, resched: bool, rq: &AxRunQueue) {
         while let Some(task) = self.queue.lock().pop_front() {
-            task.0.set_in_wait_queue(false);
-            rq.unblock_task(task.0, resched);
+            task.set_in_wait_queue(false);
+            rq.unblock_task(task, resched);
         }
     }
 }
