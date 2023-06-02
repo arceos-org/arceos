@@ -54,8 +54,9 @@ fn main() {
                 i,
                 thread::current().id()
             );
-
-            let timeout = WaitQueue::new().wait_timeout(Duration::from_millis(wait_time - start_time.elapsed().as_millis() as u64));
+            //let timeout = WaitQueue::new().wait_timeout(Duration::from_millis(wait_time - start_time.elapsed().as_millis() as u64));
+            //let mut myresult = 0;
+            //RESULTS.lock()[i] = myresult;
             LEAVE_TIME.lock()[i] = start_time.elapsed().as_millis() as u64;
 
             //println!("part {}: {:?} finished", i, thread::current().id());
@@ -74,9 +75,9 @@ fn main() {
     println!("leave time:");
     let mut mx = 0;
     for i in 0..PAYLOAD_KIND {
-        println!("task {} = {}ms", i, level_times[i] - wait_time);
-        if level_times[i] - wait_time > mx {
-            mx = level_times[i] - wait_time;
+        println!("task {} = {}ms", i, level_times[i]);
+        if level_times[i] > mx {
+            mx = level_times[i];
         }
     }
     println!("leave time max: {}", mx);
