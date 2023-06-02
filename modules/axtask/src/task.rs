@@ -155,7 +155,11 @@ impl TaskInner {
     }
 
     #[cfg(feature = "user-paging")]
-    pub(crate) fn new_user(entry: usize, kstack_size: usize, #[allow(unused)] args: usize) -> AxTaskRef {
+    pub(crate) fn new_user(
+        entry: usize,
+        kstack_size: usize,
+        #[allow(unused)] args: usize,
+    ) -> AxTaskRef {
         let mut t = Self::new_common(TaskId::new(), "".into());
         debug!("new user task: {} {}", t.id_name(), entry);
         let kstack = TaskStack::alloc(align_up_4k(kstack_size));
@@ -233,46 +237,51 @@ impl TaskInner {
         {
             t.pid = 1.into();
         }
-        
+
         Arc::new(AxTask::new(t))
     }
-    
+
     #[cfg(all(feature = "user-paging", feature = "process"))]
     pub fn new_fork(&self, pid: u64, mem: Arc<axmem::AddrSpace>) -> AxTaskRef {
         use axalloc::GlobalPage;
-        use axhal::{mem::{virt_to_phys}, paging::MappingFlags};       
+        use axhal::{mem::virt_to_phys, paging::MappingFlags};
         let mut t = Self::new_common(TaskId::new(), String::new());
         t.is_init = true;
         t.pid = pid.into();
         debug!("fork task: {} -> {}", self.id_name(), t.id_name());
 
         let kstack = TaskStack::alloc(axconfig::TASK_STACK_SIZE);
-        t.ctx.get_mut().init(axhal::arch::first_uentry as usize, kstack.top());
+        t.ctx
+            .get_mut()
+            .init(axhal::arch::first_uentry as usize, kstack.top());
         t.kstack = Some(kstack);
 
         let trap_frame = Arc::new(GlobalPage::alloc().unwrap());
-        mem.lock().add_region(
-            get_trap_frame_vaddr(t.id),
-            trap_frame.start_paddr(virt_to_phys),
-            trap_frame.clone(),
-            MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
-            false
-        ).unwrap();
+        mem.lock()
+            .add_region(
+                get_trap_frame_vaddr(t.id),
+                trap_frame.start_paddr(virt_to_phys),
+                trap_frame.clone(),
+                MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
+                false,
+            )
+            .unwrap();
 
         // TODO: make a HAL wrapper
         #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
         unsafe {
             // TODO: move ustack
             let old_trap_frame = mem.lock().query(get_trap_frame_vaddr(self.id)).unwrap();
-            let old_trap_frame = &*(axhal::mem::phys_to_virt(old_trap_frame).as_ptr() as *const axhal::arch::TrapFrame);
-            
+            let old_trap_frame = &*(axhal::mem::phys_to_virt(old_trap_frame).as_ptr()
+                as *const axhal::arch::TrapFrame);
+
             let new_trap_frame = &mut *(trap_frame.as_ptr() as *mut axhal::arch::TrapFrame);
             *new_trap_frame = old_trap_frame.clone();
             new_trap_frame.kstack = t.kstack.as_ref().unwrap().top().into();
-            new_trap_frame.regs.a0 = 0;            
-        }                
-        t.trap_frame = Some(trap_frame);               
-        
+            new_trap_frame.regs.a0 = 0;
+        }
+        t.trap_frame = Some(trap_frame);
+
         Arc::new(AxTask::new(t))
     }
 
@@ -531,6 +540,6 @@ cfg_if::cfg_if! {
             let task = crate::current().new_fork(pid, mem);
             RUN_QUEUE.lock().add_task(task);
         }
-        
+
     }
 }

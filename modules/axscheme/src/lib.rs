@@ -42,7 +42,7 @@ impl Clone for FileTable {
     fn clone(&self) -> Self {
         let inner = self.inner.lock();
         FileTable {
-            inner: Mutex::new(inner.iter().cloned().collect())
+            inner: Mutex::new(inner.iter().cloned().collect()),
         }
     }
 }

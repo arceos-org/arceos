@@ -6,7 +6,11 @@ extern crate axlog;
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use alloc::{sync::{Arc, Weak}, vec, vec::Vec};
+use alloc::{
+    sync::{Arc, Weak},
+    vec,
+    vec::Vec,
+};
 use axmem::AddrSpace;
 use axscheme::FileTable;
 use lazy_init::LazyInit;
@@ -61,18 +65,20 @@ pub fn init() {
     })];
 
     PROCESS_TABLE.init_by(SpinNoIrq::new(process_table));
-    
 }
 
 fn find(pid: Pid) -> Option<Arc<AxProcess>> {
-    PROCESS_TABLE.lock().iter().find(|process| process.pid == pid).cloned()
+    PROCESS_TABLE
+        .lock()
+        .iter()
+        .find(|process| process.pid == pid)
+        .cloned()
 }
-fn current_process() -> Arc<AxProcess>{
+fn current_process() -> Arc<AxProcess> {
     match axtask::current_pid() {
         Some(pid) => find(pid.into()).unwrap(),
-        None => PROCESS_TABLE.lock()[0].clone()
+        None => PROCESS_TABLE.lock()[0].clone(),
     }
-
 }
 
 pub fn fork() -> usize {
@@ -108,7 +114,6 @@ impl axscheme::CurrentFileTable for CurrentFileTableImpl {
         current_process().file_table.clone()
     }
 }
-
 
 #[crate_interface::impl_interface]
 impl axscheme::FindAddrSpace for FindAddrSpaceImpl {

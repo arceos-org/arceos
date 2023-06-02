@@ -11,7 +11,7 @@ use alloc::{
 };
 use axerrno::{ax_err, from_ret_code, AxError, AxResult};
 use axhal::{mem::VirtAddr, paging::MappingFlags};
-use axmem::{AddrSpace};
+use axmem::AddrSpace;
 use axsync::Mutex;
 use axtask::{current, current_pid};
 use scheme::{Packet, Scheme};
@@ -159,8 +159,12 @@ struct ShadowMemoryMut<'a> {
 }
 impl ShadowMemory {
     fn new(data: &[u8], pid: u64) -> AxResult<Self> {
-        let page_start =
-            mmap(pid, None, data.len(), MappingFlags::READ | MappingFlags::USER)?;
+        let page_start = mmap(
+            pid,
+            None,
+            data.len(),
+            MappingFlags::READ | MappingFlags::USER,
+        )?;
         let page_end = page_start + data.len();
         copy_buffer_to_user(pid, page_start, data);
         Ok(Self {
@@ -178,7 +182,7 @@ impl ShadowMemory {
 impl<'a> ShadowMemoryMut<'a> {
     fn new(data: &'a mut [u8], pid: u64) -> AxResult<Self> {
         let page_start = mmap(
-            pid, 
+            pid,
             None,
             data.len(),
             MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
@@ -188,7 +192,7 @@ impl<'a> ShadowMemoryMut<'a> {
             mem: TempMemory {
                 page_start,
                 page_end,
-                pid
+                pid,
             },
             write_back: data,
         })
@@ -214,7 +218,6 @@ impl<'a> Drop for ShadowMemoryMut<'a> {
     fn drop(&mut self) {
         // TODO: optimize one copy time
         copy_buffer_from_user(self.mem.pid, self.mem.page_start, self.write_back);
-
     }
 }
 
@@ -237,24 +240,30 @@ fn munmap(pid: u64, addr: VirtAddr, len: usize) -> AxResult<()> {
 
 fn copy_buffer_to_user(pid: u64, dest: VirtAddr, data: &[u8]) {
     let addr_space = call_interface!(FindAddrSpace::find_addr_space, pid).unwrap();
-    let paddrs = addr_space.lock().translate_buffer(dest, data.len(), true).unwrap();
+    let paddrs = addr_space
+        .lock()
+        .translate_buffer(dest, data.len(), true)
+        .unwrap();
     let mut tot = 0;
     for paddr in paddrs {
         let len = paddr.len().min(data.len() - tot);
         if len > 0 {
-            paddr[..len].copy_from_slice(&data[tot..tot+len]);
+            paddr[..len].copy_from_slice(&data[tot..tot + len]);
             tot += len;
         }
     }
 }
 fn copy_buffer_from_user(pid: u64, dest: VirtAddr, data: &mut [u8]) {
     let addr_space = call_interface!(FindAddrSpace::find_addr_space, pid).unwrap();
-    let paddrs = addr_space.lock().translate_buffer(dest, data.len(), true).unwrap();
+    let paddrs = addr_space
+        .lock()
+        .translate_buffer(dest, data.len(), true)
+        .unwrap();
     let mut tot = 0;
     for paddr in paddrs {
         let len = paddr.len().min(data.len() - tot);
         if len > 0 {
-            data[tot..tot+len].copy_from_slice(&paddr[..len]);
+            data[tot..tot + len].copy_from_slice(&paddr[..len]);
             tot += len;
         }
     }

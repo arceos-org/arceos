@@ -46,7 +46,6 @@ pub struct AddrSpaceInner {
     mmap_use: BTreeMap<VirtAddr, GlobalPage>,
 }
 
-
 impl Default for AddrSpaceInner {
     fn default() -> Self {
         Self::new()
@@ -108,8 +107,10 @@ impl AddrSpaceInner {
             .find(|(_, page)| page.start_vaddr == vaddr)
         {
             let item = self.segments.remove(idx);
-            self.page_table.unmap_region(item.start_vaddr, item.size).map_err(|_| AxError::BadAddress)?;
-            Ok(())                
+            self.page_table
+                .unmap_region(item.start_vaddr, item.size)
+                .map_err(|_| AxError::BadAddress)?;
+            Ok(())
         } else {
             ax_err!(BadAddress)
         }
@@ -177,7 +178,9 @@ impl AddrSpaceInner {
                                         heap.start_vaddr + heap_seg.size,
                                         page.start_paddr(virt_to_phys),
                                         page.size(),
-                                        MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
+                                        MappingFlags::READ
+                                            | MappingFlags::WRITE
+                                            | MappingFlags::USER,
                                         false,
                                     )
                                     .expect("Mapping Error");
@@ -265,10 +268,10 @@ impl AddrSpaceInner {
                 .query(vaddr)
                 .map_err(|_| AxError::BadAddress)?;
             /*
-            if !flag.contains(MappingFlags::USER) || (write && !flag.contains(MappingFlags::WRITE)) {
-            panic!("Invalid vaddr with improper rights!");
-        }
-             */
+                if !flag.contains(MappingFlags::USER) || (write && !flag.contains(MappingFlags::WRITE)) {
+                panic!("Invalid vaddr with improper rights!");
+            }
+                 */
             let nxt_vaddr = align_up(vaddr.as_usize() + 1, page_size.into());
             let len = (nxt_vaddr - vaddr.as_usize()).min(size - read_size);
             let data =
@@ -300,14 +303,14 @@ impl Clone for AddrSpace {
             let pages = segment.size / PAGE_SIZE_4K;
 
             /*
-            if segment.phy_mem.is_empty() { // pages such as trampoline
-            (0..pages).for_each(|page| {
-            let vaddr = segment.start_vaddr + page * PAGE_SIZE_4K;
-            let (paddr, flags, _) = inner.page_table.query(vaddr).unwrap();
-            page_table.map_region(vaddr, paddr, PAGE_SIZE_4K, flags, false).unwrap();
-        })
-        } else {
-             */
+                if segment.phy_mem.is_empty() { // pages such as trampoline
+                (0..pages).for_each(|page| {
+                let vaddr = segment.start_vaddr + page * PAGE_SIZE_4K;
+                let (paddr, flags, _) = inner.page_table.query(vaddr).unwrap();
+                page_table.map_region(vaddr, paddr, PAGE_SIZE_4K, flags, false).unwrap();
+            })
+            } else {
+                 */
             (0..pages).for_each(|page| {
                 let vaddr = segment.start_vaddr + page * PAGE_SIZE_4K;
                 let (paddr, flags, _) = inner.page_table.query(vaddr).unwrap();
@@ -347,7 +350,7 @@ impl Clone for AddrSpace {
                 )
                 .unwrap();
             new_inner.mmap_use.insert(*vaddr, user_phy_page);
-        }     
+        }
 
         AddrSpace(SpinNoIrq::new(new_inner))
     }
@@ -368,7 +371,7 @@ impl AddrSpace {
                 align_up_4k(segment.size) / PAGE_SIZE_4K,
                 PAGE_SIZE_4K,
             )
-                .expect("Alloc page error!");
+            .expect("Alloc page error!");
             // init
             user_phy_page.zero();
 
@@ -400,7 +403,7 @@ impl AddrSpace {
         {
             let user_stack_page =
                 GlobalPage::alloc_contiguous(USTACK_SIZE / PAGE_SIZE_4K, PAGE_SIZE_4K)
-                .expect("Alloc page error!");
+                    .expect("Alloc page error!");
             debug!("{:?}", user_stack_page);
 
             user_space
@@ -426,7 +429,7 @@ impl AddrSpace {
                 false,
             )
             .expect("Memory Error");
-        
+
         Ok(AddrSpace(SpinNoIrq::new(user_space)))
     }
 }
@@ -451,7 +454,7 @@ fn current_addr_space() -> Arc<AddrSpace> {
 pub fn alloc_user_page(vaddr: VirtAddr, size: usize, flags: MappingFlags) -> Arc<GlobalPage> {
     let mut user_phy_page =
         GlobalPage::alloc_contiguous(align_up_4k(size) / PAGE_SIZE_4K, PAGE_SIZE_4K)
-        .expect("Alloc page error!");
+            .expect("Alloc page error!");
     // init
     user_phy_page.zero();
     let user_phy_page = Arc::new(user_phy_page);

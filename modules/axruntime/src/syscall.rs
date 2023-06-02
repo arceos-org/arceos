@@ -104,9 +104,7 @@ pub fn syscall_handler(id: usize, params: [usize; 6]) -> isize {
             }
         }
         #[cfg(feature = "process")]
-        SYS_FORK => {
-            axprocess::fork() as isize
-        }
+        SYS_FORK => axprocess::fork() as isize,
 
         _ => -1,
     }

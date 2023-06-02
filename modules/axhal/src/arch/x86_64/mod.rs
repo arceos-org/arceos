@@ -26,8 +26,6 @@ pub fn enter_uspace(_tf: usize, _satp: usize) -> ! {
     unimplemented!();
 }
 
-
-
 /// Allows the current CPU to respond to interrupts.
 #[inline]
 pub fn enable_irqs() {

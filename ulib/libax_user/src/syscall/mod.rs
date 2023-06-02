@@ -1,7 +1,7 @@
 pub mod io;
+pub mod process;
 pub mod sync;
 pub mod task;
-pub mod process;
 
 use sys_number::SYS_TIME_NANO;
 use syscall_number as sys_number;
@@ -10,7 +10,7 @@ use syscall_number as sys_number;
 #[allow(unused_variables)]
 pub fn syscall(id: usize, args: [usize; 6]) -> isize {
     let mut ret: isize;
-    #[cfg(any(target_arch = "riscv64", target_arch = "riscv32"))]    
+    #[cfg(any(target_arch = "riscv64", target_arch = "riscv32"))]
     unsafe {
         core::arch::asm!("ecall",
             inlateout("x10") args[0] => ret,

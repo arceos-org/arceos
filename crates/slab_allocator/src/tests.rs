@@ -19,7 +19,7 @@ fn new_heap() -> Heap {
     let test_heap = TestHeap {
         heap_space: [0u8; HEAP_SIZE],
     };
-    
+
     unsafe { Heap::new(&test_heap.heap_space[0] as *const u8 as usize, HEAP_SIZE) }
 }
 
@@ -27,7 +27,7 @@ fn new_big_heap() -> Heap {
     let test_heap = TestBigHeap {
         heap_space: [0u8; BIG_HEAP_SIZE],
     };
-    
+
     unsafe {
         Heap::new(
             &test_heap.heap_space[0] as *const u8 as usize,
