@@ -58,7 +58,7 @@ fn main() {
             let timeout = WaitQueue::new().wait_timeout(Duration::from_millis(wait_time - start_time.elapsed().as_millis() as u64));
             LEAVE_TIME.lock()[i] = start_time.elapsed().as_millis() as u64;
 
-            println!("part {}: {:?} finished", i, thread::current().id());
+            //println!("part {}: {:?} finished", i, thread::current().id());
             let n = FINISHED_TASKS.fetch_add(1, Ordering::Relaxed);
             if n == PAYLOAD_KIND - 1 {
                 MAIN_WQ.notify_one(true);
