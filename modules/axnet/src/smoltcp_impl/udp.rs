@@ -83,7 +83,7 @@ impl UdpSocket {
                 } else if socket.can_send() {
                     // TODO: size
                     socket.send_slice(buf, addr).map_err(|e| match e {
-                        SendError::BufferFull => AxError::Again,
+                        SendError::BufferFull => AxError::WouldBlock,
                         SendError::Unaddressable => {
                             ax_err_type!(ConnectionRefused, "socket send() failed")
                         }
@@ -91,14 +91,14 @@ impl UdpSocket {
                     Ok(buf.len())
                 } else {
                     // tx buffer is full
-                    Err(AxError::Again)
+                    Err(AxError::WouldBlock)
                 }
             }) {
                 Ok(n) => {
                     SOCKET_SET.poll_interfaces();
                     return Ok(n);
                 }
-                Err(AxError::Again) => axtask::yield_now(),
+                Err(AxError::WouldBlock) => axtask::yield_now(),
                 Err(e) => return Err(e),
             }
         }
@@ -120,18 +120,18 @@ impl UdpSocket {
                     // TODO: use socket.recv(|buf| {...})
                     match socket.recv_slice(buf) {
                         Ok(x) => Ok(x),
-                        Err(_) => Err(AxError::Again),
+                        Err(_) => Err(AxError::WouldBlock),
                     }
                 } else {
                     // no more data
-                    Err(AxError::Again)
+                    Err(AxError::WouldBlock)
                 }
             }) {
                 Ok(x) => {
                     SOCKET_SET.poll_interfaces();
                     return Ok(x);
                 }
-                Err(AxError::Again) => axtask::yield_now(),
+                Err(AxError::WouldBlock) => axtask::yield_now(),
                 Err(e) => return Err(e),
             }
         }
@@ -183,21 +183,21 @@ impl UdpSocket {
                                 // filter data from the remote address to which it is connected.
                                 Ok(x.0)
                             } else {
-                                Err(AxError::Again)
+                                Err(AxError::WouldBlock)
                             }
                         }
-                        Err(_) => Err(AxError::Again),
+                        Err(_) => Err(AxError::WouldBlock),
                     }
                 } else {
                     // no more data
-                    Err(AxError::Again)
+                    Err(AxError::WouldBlock)
                 }
             }) {
                 Ok(x) => {
                     SOCKET_SET.poll_interfaces();
                     return Ok(x);
                 }
-                Err(AxError::Again) => axtask::yield_now(),
+                Err(AxError::WouldBlock) => axtask::yield_now(),
                 Err(e) => return Err(e),
             }
         }
@@ -234,18 +234,18 @@ impl UdpSocket {
                     // TODO: use socket.recv(|buf| {...})
                     match socket.peek_slice(buf) {
                         Ok(x) => Ok((x.0, *x.1)),
-                        Err(_) => Err(AxError::Again),
+                        Err(_) => Err(AxError::WouldBlock),
                     }
                 } else {
                     // no more data
-                    Err(AxError::Again)
+                    Err(AxError::WouldBlock)
                 }
             }) {
                 Ok(x) => {
                     SOCKET_SET.poll_interfaces();
                     return Ok(x);
                 }
-                Err(AxError::Again) => axtask::yield_now(),
+                Err(AxError::WouldBlock) => axtask::yield_now(),
                 Err(e) => return Err(e),
             }
         }
