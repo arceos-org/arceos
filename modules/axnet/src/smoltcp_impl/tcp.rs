@@ -173,7 +173,7 @@ impl TcpSocket {
                         peer_addr,
                     });
                 }
-                Err(AxError::Again) => axtask::yield_now(),
+                Err(AxError::WouldBlock) => axtask::yield_now(),
                 Err(e) => return Err(e),
             }
         }
@@ -221,14 +221,14 @@ impl TcpSocket {
                     }
                 } else {
                     // no more data
-                    Err(AxError::Again)
+                    Err(AxError::WouldBlock)
                 }
             }) {
                 Ok(n) => {
                     SOCKET_SET.poll_interfaces();
                     return Ok(n);
                 }
-                Err(AxError::Again) => axtask::yield_now(),
+                Err(AxError::WouldBlock) => axtask::yield_now(),
                 Err(e) => return Err(e),
             }
         }
@@ -254,14 +254,14 @@ impl TcpSocket {
                     Ok(len)
                 } else {
                     // tx buffer is full
-                    Err(AxError::Again)
+                    Err(AxError::WouldBlock)
                 }
             }) {
                 Ok(n) => {
                     SOCKET_SET.poll_interfaces();
                     return Ok(n);
                 }
-                Err(AxError::Again) => axtask::yield_now(),
+                Err(AxError::WouldBlock) => axtask::yield_now(),
                 Err(e) => return Err(e),
             }
         }

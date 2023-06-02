@@ -25,7 +25,10 @@ macro_rules! ax_call_body {
         }
         match res {
             Ok(v) => v as _,
-            Err(e) => -e.code() as _,
+            Err(e) => {
+                super::errno::set_errno(e.code());
+                -1 as _
+            }
         }
     }};
 }
@@ -36,7 +39,10 @@ macro_rules! ax_call_body_no_debug {
         let res = (|| -> LinuxResult<_> { $($stmt)* })();
         match res {
             Ok(v) => v as _,
-            Err(e) => -e.code() as _,
+            Err(e) => {
+                super::errno::set_errno(e.code());
+                -1 as _
+            }
         }
     }};
 }
