@@ -5,7 +5,7 @@
 
 #### 需要被抢占和真的被抢占的区别
 
-- need_resched 设为真的时机
+- need_resched 设为 True 的时机
 - resched 被调用的时机
 
 #### 一个时钟中断来的时候会如何进行调度
@@ -22,15 +22,8 @@ on_timer_tick 的开关中断：axruntime/trap/... 前后会有一个开关中�
 
 - 中断是硬件产生的，比如时钟中断
 - 抢占：软件中因为其他优先级更高而强行切换线程。
-- 
-
-#### 抢占的实现方式：axtask
-
-- 
-
-#### 抢占的实现方式：scheduler
 
 #### 目前 bug 的解决
 
-- 给每个 RUN_QUEUE 增加 NoPreempt 上下文
+- 给每个 RUN_QUEUE 增加 NoPreempt 上下文，这样每个进程能完整地执行完整个 resched 过程而不会被抢。
 
