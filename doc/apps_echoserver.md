@@ -2,6 +2,7 @@
 
 | App | Extra modules | Enabled features | Description |
 <<<<<<< HEAD
+<<<<<<< HEAD
 | [echoserver](apps/net/echoserver/) | axalloc, axdriver, axnet, axtask | alloc, paging, net, multitask | A multi-threaded TCP server that reverses messages sent by the client |
 
 # RUN
@@ -25,6 +26,8 @@ In another shell, use `telnet` to view the reversed echo message:
 Trying ::1...
 telnet: connect to address ::1: Connection refused
 =======
+=======
+>>>>>>> dev
 |-|-|-|-|
 | [echoserver](../apps/net/echoserver/) | axalloc, axdriver, axnet, axtask | alloc, paging, net, multitask | A multi-threaded TCP server that reverses messages sent by the client |
 
@@ -41,7 +44,10 @@ In another shell, use `telnet` (or `nc`) to connect to localhost (`127.0.0.1`) t
 
 ```console
 $ telnet localhost 5555
+<<<<<<< HEAD
 >>>>>>> main
+=======
+>>>>>>> dev
 Trying 127.0.0.1...
 Connected to localhost.
 Escape character is '^]'.
@@ -52,7 +58,10 @@ olleh
 ```
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> dev
 ```console
 $ nc 127.0.0.1 5555
 hello
@@ -61,7 +70,10 @@ olleh
 54321
 ```
 
+<<<<<<< HEAD
 >>>>>>> main
+=======
+>>>>>>> dev
 # STEPS
 
 ## step1

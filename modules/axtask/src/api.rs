@@ -72,6 +72,7 @@ pub fn init_scheduler() {
     info!("Initialize scheduling...");
 
     init();
+
     #[cfg(feature = "irq")]
     crate::timers::init();
 

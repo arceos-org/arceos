@@ -39,6 +39,7 @@ impl TrapFrame {
     pub const fn is_user(&self) -> bool {
         self.cs & 0b11 == 3
     }
+
     pub fn app_init_context(_app_entry: usize, _user_sp: usize) -> Self {
         Self::default()
     }

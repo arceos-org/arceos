@@ -94,7 +94,7 @@ impl ListenTable {
                     return Ok((handle, peer_addr));
                 }
             } else {
-                return Err(AxError::Again);
+                return Err(AxError::WouldBlock);
             }
             if let Some((idx, peer_addr)) =
                 syn_queue
@@ -120,7 +120,7 @@ impl ListenTable {
                 Ok((handle, peer_addr))
             } else {
                 // wait for connection
-                Err(AxError::Again)
+                Err(AxError::WouldBlock)
             }
         } else {
             ax_err!(InvalidInput, "socket accept() failed: not listen")

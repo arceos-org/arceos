@@ -40,15 +40,20 @@ extern FILE *const stderr;
 
 #define FILENAME_MAX 4096
 
-int getchar();
-int putchar(int);
-int puts(const char *s);
-
 #if defined(AX_CONFIG_ALLOC) && defined(AX_CONFIG_FS)
 FILE *fopen(const char *filename, const char *mode);
 #endif
 
 int fflush(FILE *);
+
+int getchar();
+
+int fputc(int, FILE *);
+int putc(int, FILE *);
+int putchar(int);
+
+int fputs(const char *__restrict, FILE *__restrict);
+int puts(const char *s);
 
 int printf(const char *__restrict, ...);
 int fprintf(FILE *__restrict, const char *__restrict, ...);
@@ -58,5 +63,7 @@ int snprintf(char *__restrict, size_t, const char *__restrict, ...);
 int vfprintf(FILE *__restrict, const char *__restrict, va_list);
 int vsprintf(char *__restrict, const char *__restrict, va_list);
 int vsnprintf(char *__restrict, size_t, const char *__restrict, va_list);
+
+void perror(const char *);
 
 #endif // __STDIO_H__

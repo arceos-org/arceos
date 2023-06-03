@@ -1,5 +1,6 @@
 #include "printf.h"
 #include <assert.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <stdarg.h>
@@ -88,15 +89,43 @@ int fflush(FILE *f)
     return __fflush(f);
 }
 
-int putchar(int c)
+static inline int do_putc(int c, FILE *f)
 {
     char byte = c;
-    return out(stdout, &byte, 1);
+    return out(f, &byte, 1);
+}
+
+int fputc(int c, FILE *f)
+{
+    return do_putc(c, f);
+}
+
+int putc(int c, FILE *f)
+{
+    return do_putc(c, f);
+}
+
+int putchar(int c)
+{
+    return do_putc(c, stdout);
 }
 
 int puts(const char *s)
 {
-    return ax_println_str(s, strlen(s));
+    return ax_println_str(s, strlen(s)); // TODO: lock
+}
+
+void perror(const char *msg)
+{
+    FILE *f = stderr;
+    char *errstr = strerror(errno);
+
+    if (msg && *msg) {
+        out(f, msg, strlen(msg));
+        out(f, ": ", 2);
+    }
+    out(f, errstr, strlen(errstr));
+    out(f, "\n", 1);
 }
 
 static void __out_wrapper(char c, void *arg)
@@ -158,8 +187,13 @@ FILE *fopen(const char *filename, const char *mode)
     FILE *f;
     int flags;
 
+<<<<<<< HEAD
     // TODO: Should set errno
     if (!strchr("rwa", *mode)) {
+=======
+    if (!strchr("rwa", *mode)) {
+        errno = EINVAL;
+>>>>>>> 322a8c34d08df4a657daf4bb67e4031480162883
         return 0;
     }
 

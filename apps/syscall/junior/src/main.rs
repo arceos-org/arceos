@@ -12,6 +12,6 @@ fn main() -> i32 {
     // let name = "execve".to_string();
     // let args = [name].to_vec();
     // run_testcase(args).unwrap();
-    run_testcases();
+    run_testcases("junior");
     0
 }

@@ -23,6 +23,10 @@ ifeq ($(BUS),pci)
   features-y += libax/bus-pci
 endif
 
+ifeq ($(BUS),pci)
+  features-y += libax/bus-pci
+endif
+
 default_features := y
 
 ifeq ($(APP_LANG),c)
@@ -32,6 +36,7 @@ ifeq ($(APP_LANG),c)
     CFLAGS += $(addprefix -DAX_CONFIG_,$(shell cat $(APP)/features.txt | tr 'a-z' 'A-Z'))
   endif
   features-y += libax/cbindings
+  features-y += $(APP_FEATURES)
 else ifeq ($(APP_LANG),rust)
   features-y += $(APP_FEATURES)
   ifneq ($(APP_FEATURES),)

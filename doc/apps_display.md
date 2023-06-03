@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 # INTRODUCTION
 | App | Extra modules | Enabled features | Description |
 |-|-|-|-|
@@ -104,6 +105,8 @@ loop {
 }
 ```
 =======
+=======
+>>>>>>> dev
 # INTRODUCTION
 | App | Extra modules | Enabled features | Description |
 |-|-|-|-|
@@ -210,4 +213,7 @@ loop {
     core::hint::spin_loop();
 }
 ```
+<<<<<<< HEAD
 >>>>>>> main
+=======
+>>>>>>> dev

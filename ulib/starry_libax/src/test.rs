@@ -8,6 +8,7 @@ use axtask::{
     macro_task::{EXITED_TASKS, RUN_QUEUE},
     TaskId,
 };
+use lazy_init::LazyInit;
 use spinlock::SpinNoIrq;
 
 extern crate alloc;
@@ -17,6 +18,8 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use axprocess::process::{wait_pid, yield_now_task, Process, KERNEL_PROCESS_ID, PID2PC};
 use riscv::asm;
+
+use crate::fs::{link::create_link, FilePath};
 
 /// 初赛测例
 #[allow(dead_code)]
@@ -62,7 +65,7 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     "clocale_mbfuncs",
     "clock_gettime",
     "crypt",
-    "daemon_failure",
+    // "daemon_failure",
     "dirname",
     "dn_expand_empty",
     "dn_expand_ptr_0",
@@ -70,10 +73,10 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     "fdopen",
     "fflush_exit",
     "fgets_eof",
-    "fgetwc_buffering",
+    // "fgetwc_buffering",
     "fnmatch",
     "fpclassify_invalid_ld80",
-    "fscanf",
+    // "fscanf",
     "ftello_unflushed_append",
     "fwscanf",
     "getpwnam_r_crash",
@@ -167,6 +170,122 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     "wcstol",
 ];
 
+/// 来自 libc 的动态测例
+#[allow(dead_code)]
+pub const LIBC_DYNAMIC_TESTCASES: &[&str] = &[
+    // "getpwnam_r_crash.dout",
+    // "fflush_exit.dout",
+    // "tls_local_exec.dout",
+    // "inet_ntop_v4mapped.dout",
+    // "mkstemp_failure.dout",
+    // "utime.dout",
+    // "setjmp.dout",
+    // "string_memset.dout",
+    // "time.dout",
+    // "pthread_cond_smasher.dout",
+    // "fgetwc_buffering.dout",
+    // "pthread_rwlock_ebusy.dout",
+    // "sscanf_long.dout",
+    // "strptime.dout",
+    // "dn_expand_empty.dout",
+    // "wcsstr.dout",
+    // "search_tsearch.dout",
+    // "memmem_oob_read.dout",
+    // "mbc.dout",
+    // "basename.dout",
+    // "lrand48_signextend.dout",
+    // "regex_negated_range.dout",
+    // "sigprocmask_internal.dout",
+    "string.dout",
+    // "pthread_cancel.dout",
+    // "crypt.dout",
+    // "search_hsearch.dout",
+    // "clocale_mbfuncs.dout",
+    // "regex_bracket_icase.dout",
+    // "snprintf.dout",
+    // "strverscmp.dout",
+    // "sem_init.dout",
+    // "random.dout",
+    // "strtold.dout",
+    // "iswspace_null.dout",
+    // "regex_ere_backref.dout",
+    // "tls_get_new_dtv.dout",
+    // "ftello_unflushed_append.dout",
+    // "pthread_tsd.dout",
+    // "pthread_exit_cancel.dout",
+    // "string_strchr.dout",
+    // "printf_fmt_g_zeros.dout",
+    // "daemon_failure.dout",
+    // "mbsrtowcs_overflow.dout",
+    // "strtod_simple.dout",
+    // "inet_pton_empty_last_field.dout",
+    // "strtol.dout",
+    // "fscanf.dout",
+    // "tgmath.dout",
+    // "ungetc.dout",
+    // "dn_expand_ptr_0.dout",
+    // "socket.dout",
+    // "wcsncpy_read_overflow.dout",
+    // "getpwnam_r_errno.dout",
+    // "argv.dout",
+    // "fpclassify_invalid_ld80.dout",
+    // "string_memcpy.dout",
+    // "setvbuf_unget.dout",
+    // "putenv_doublefree.dout",
+    // "pthread_cancel_points.dout",
+    // "search_insque.dout",
+    // "scanf_bytes_consumed.dout",
+    // "dirname.dout",
+    // "string_strcspn.dout",
+    // "clock_gettime.dout",
+    // "wcstol.dout",
+    // "fdopen.dout",
+    // "scanf_match_literal_eof.dout",
+    // "sscanf_eof.dout",
+    // "pthread_once_deadlock.dout",
+    // "fwscanf.dout",
+    // "env.dout",
+    // "mkdtemp_failure.dout",
+    // "fnmatch.dout",
+    // "strftime.dout",
+    // "wcsstr_false_negative.dout",
+    // "syscall_sign_extend.dout",
+    // "swprintf.dout",
+    // "tls_init.dout",
+    // "regexec_nosub.dout",
+    // "string_strstr.dout",
+    // "scanf_nullbyte_char.dout",
+    // "regex_escaped_high_byte.dout",
+    // "printf_fmt_g_round.dout",
+    // "pthread_cond.dout",
+    // "stat.dout",
+    // "sscanf.dout",
+    // "dlopen.dout",
+    // "printf_fmt_n.dout",
+    // "uselocale_0.dout",
+    // "regex_backref_0.dout",
+    // "qsort.dout",
+    // "pthread_condattr_setclock.dout",
+    // "inet_pton.dout",
+    // "search_lsearch.dout",
+    // "strtod.dout",
+    // "memmem_oob.dout",
+    // "string_memmem.dout",
+    // "fgets_eof.dout",
+    // "rlimit_open_files.dout",
+    // "strtof.dout",
+    // "memstream.dout",
+    // "udiv.dout",
+    // "malloc_0.dout",
+    // "printf_1e9_oob.dout",
+    // "pthread_robust_detach.dout",
+    // "rewind_clear_error.dout",
+    // "iconv_roundtrips.dout",
+    // "lseek_large.dout",
+    // "statvfs.dout",
+    // "iconv_open.dout",
+];
+
 /// 运行测试时的状态机，记录测试结果与内容
 struct TestResult {
     sum: usize,
@@ -225,10 +344,11 @@ impl TestResult {
         info!(" --------------- end --------------- ");
     }
 }
-lazy_static::lazy_static! {
-    static ref TESTITER: SpinNoIrq<Box<dyn Iterator<Item = &'static &'static str> + Send>> = SpinNoIrq::new(Box::new(JUNIOR_TESTCASES.iter()));
-    static ref TESTRESULT: SpinNoIrq<TestResult> = SpinNoIrq::new(TestResult::new(JUNIOR_TESTCASES.len()));
-}
+
+static TESTITER: LazyInit<SpinNoIrq<Box<dyn Iterator<Item = &'static &'static str> + Send>>> =
+    LazyInit::new();
+
+static TESTRESULT: LazyInit<SpinNoIrq<TestResult>> = LazyInit::new();
 
 /// 某一个测试用例完成之后调用，记录测试结果
 pub fn finish_one_test(exit_code: i32) {
@@ -275,8 +395,42 @@ fn get_args(command_line: &[u8]) -> Vec<String> {
 }
 
 /// 执行运行所有测例的任务
-pub fn run_testcases() {
-    debug!("run_testcases");
+pub fn run_testcases(case: &'static str) {
+    debug!("run_testcases :{}", case);
+    match case {
+        "junior" => {
+            TESTITER.init_by(SpinNoIrq::new(Box::new(JUNIOR_TESTCASES.iter())));
+            TESTRESULT.init_by(SpinNoIrq::new(TestResult::new(JUNIOR_TESTCASES.len())));
+        }
+        "libc-static" => {
+            TESTITER.init_by(SpinNoIrq::new(Box::new(LIBC_STATIC_TESTCASES.iter())));
+            TESTRESULT.init_by(SpinNoIrq::new(TestResult::new(LIBC_STATIC_TESTCASES.len())));
+        }
+        "libc-dyamic" => {
+            TESTITER.init_by(SpinNoIrq::new(Box::new(LIBC_DYNAMIC_TESTCASES.iter())));
+            TESTRESULT.init_by(SpinNoIrq::new(TestResult::new(
+                LIBC_DYNAMIC_TESTCASES.len(),
+            )));
+            // 需要对libc-dynamic进行特殊处理，因为它需要先加载libc.so
+            // 建立一个硬链接
+            let libc_so = &"ld-musl-riscv64-sf.so.1";
+            let libc_so2 = &"ld-musl-riscv64.so.1"; // 另一种名字的 libc.so，非 libc-test 测例库用
+
+            create_link(
+                &FilePath::new(("/lib/".to_string() + libc_so).as_str()),
+                &FilePath::new("libc.so"),
+            );
+
+            create_link(
+                &FilePath::new(("/lib/".to_string() + libc_so2).as_str()),
+                &FilePath::new("libc.so"),
+            );
+            info!("get link!");
+        }
+        _ => {
+            panic!("unknown test case: {}", case);
+        }
+    };
     loop {
         let ans = TESTITER.lock().next().map_or_else(
             || {

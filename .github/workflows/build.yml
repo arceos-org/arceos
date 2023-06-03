@@ -7,18 +7,21 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        arch: [riscv64, aarch64]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
         toolchain: nightly
-        override: true
         components: rust-src, clippy, rustfmt
-    - name: Clippy
-      run: make clippy ARCH=${{ matrix.arch }}
+    - name: Clippy for the default target
+      run: cargo clippy --all-features
+    - name: Clippy for x86_64
+      run: make clippy ARCH=x86_64
+    - name: Clippy for riscv64
+      run: make clippy ARCH=riscv64
+    - name: Clippy for aarch64
+      run: make clippy ARCH=aarch64
     - name: Check code format
       run: cargo fmt --all -- --check
 
@@ -28,7 +31,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        arch: [riscv64, aarch64]
+        arch: [x86_64, riscv64, aarch64]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -64,7 +67,7 @@ jobs:
     - name: Build net/httpserver
       run: make ARCH=${{ matrix.arch }} A=apps/net/httpserver NET=y
 
-    - name: Install musl toolchain
+    - name: Download musl toolchain
       run: |
         if [ "${{ matrix.arch }}" = "x86_64" ]; then
           export MUSL_PATH="x86_64-linux-musl-cross"
@@ -82,3 +85,9 @@ jobs:
       run: PATH=$PATH:$PWD/musl/bin make ARCH=${{ matrix.arch }} A=apps/c/memtest
     - name: Build c/sqlite3
       run: PATH=$PATH:$PWD/musl/bin make ARCH=${{ matrix.arch }} A=apps/c/sqlite3
+    - name: Build c/httpclient
+      run: PATH=$PATH:$PWD/musl/bin make ARCH=${{ matrix.arch }} A=apps/c/httpclient
+    - name: Build c/httpserver
+      run: PATH=$PATH:$PWD/musl/bin make ARCH=${{ matrix.arch }} A=apps/c/httpserver
+    - name: Build c/udpserver
+      run: PATH=$PATH:$PWD/musl/bin make ARCH=${{ matrix.arch }} A=apps/c/udpserver

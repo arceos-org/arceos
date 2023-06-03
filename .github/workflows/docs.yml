@@ -1,16 +1,12 @@
-name: Deploy docs
+name: Build & Deploy docs
 
-on:
-  push:
-    branches: [main]
+on: [push, pull_request]
 
 jobs:
   doc:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        arch: [riscv64]
     permissions:
       contents: write
     steps:
@@ -19,20 +15,13 @@ jobs:
       with:
         profile: minimal
         toolchain: nightly
-        override: true
     - name: Build docs
-      run: |
-        make doc ARCH=${{ matrix.arch }}
-        if [ "${{ matrix.arch }}" = "x86_64" ]; then
-          cp -r target/x86_64-unknown-none/doc gh-pages
-        elif [ "${{ matrix.arch }}" = "aarch64" ]; then
-          cp -r target/aarch64-unknown-none-softfloat/doc gh-pages
-        elif [ "${{ matrix.arch }}" = "riscv64" ]; then
-          cp -r target/riscv64gc-unknown-none-elf/doc gh-pages
-        fi
+      continue-on-error: ${{ github.ref != 'refs/heads/main' && github.event_name != 'pull_request' }}
+      run: make doc_check_missing
     - name: Deploy to Github Pages
+      if: ${{ github.ref == 'refs/heads/main' }}
       uses: JamesIves/github-pages-deploy-action@v4
       with:
         single-commit: true
-        branch: gh-pages-${{ matrix.arch }}
-        folder: gh-pages
+        branch: gh-pages
+        folder: target/doc

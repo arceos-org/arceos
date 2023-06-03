@@ -1,8 +1,11 @@
 //! Trap handling.
 
 use crate_interface::{call_interface, def_interface};
+
 use memory_addr::VirtAddr;
+
 use page_table::MappingFlags;
+
 /// Trap handler interface.
 ///
 /// This trait is defined with the [`#[def_interface]`][1] attribute. Users
@@ -37,6 +40,7 @@ pub(crate) fn handle_syscall(syscall_id: usize, args: [usize; 6]) -> isize {
     call_interface!(TrapHandler::handle_syscall, syscall_id, args)
 }
 
+#[allow(dead_code)]
 #[cfg(feature = "paging")]
 pub(crate) fn handle_page_fault(addr: VirtAddr, flags: MappingFlags) {
     call_interface!(TrapHandler::handle_page_fault, addr, flags);
