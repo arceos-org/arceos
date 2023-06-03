@@ -5,7 +5,7 @@
 ## 主要成果
 
 - 将 lwip 协议栈接入 aceros，支持 **TCP / UDP / DNS**，支持 **IPv6**，提供与 smoltcp 相一致的网络接口，支持现有的各个网络应用
-- 对 lwip 的适配进行分析与优化，最终**性能**与使用 smoltcp 相当，**稳定性**更高
+- 对 lwip 的适配进行分析与优化，最终**性能**与**稳定性**相比使用 smoltcp 更高
 - 与吴大帅同学的项目 [arceos-udp](https://github.com/reflyable/arceos-udp) 配合，对其中的 UDP，DNS 和网络应用提供基于 lwip 的支持
 
 
@@ -843,9 +843,38 @@ CPU：`Intel(R) Xeon(R) Gold 6230 CPU @ 2.10GHz`
 
 QEMU：`QEMU emulator version 8.0.0`
 
-运行参数：
+运行参数：`make A=apps/net/httpserver/ LOG=warn NET=y NET_DEV=tap MODE=release ARCH=x86_64 ACCEL=y (APP_FEATURES=libax/use-lwip) SMP=$SMP run`
 
-- `make A=apps/net/httpserver/ ARCH=riscv64 LOG=warn NET=y NETDEV=tap MODE=release run`
-- `qemu-system-riscv64 -m 128M -smp 1 -machine virt -bios default -kernel apps/net/httpserver//httpserver_qemu-virt-riscv.bin -device virtio-net-device,netdev=net0 -netdev tap,id=net0,ifname=qemu-tap0,script=no,downscript=no -nographic`
+测试参数：`ab -n 100000 -c $Concurrency http://10.0.2.15:5555/`
 
-测试参数：`ab -n 100000 -c 100 http://10.0.2.15:5555/`
+### SMP=1
+
+|  RPS   | smoltcp | lwip |
+| :----: | :-----: | :--: |
+|  -c 1  |  7123   | 7726 |
+|  -c 2  |  7444   | 8698 |
+|  -c 5  |  7747   | 8752 |
+| -c 10  |  7820   | 8737 |
+| -c 50  |  7406   | 8704 |
+| -c 100 |  7480   | 8764 |
+
+### SMP=4
+
+|  RPS   | smoltcp | lwip |
+| :----: | :-----: | :--: |
+|  -c 1  |  6984   | 7701 |
+|  -c 2  |  7435   | 8674 |
+|  -c 5  |  7399   | 8907 |
+| -c 10  |  7383   | 8906 |
+| -c 50  |  7386   | 8915 |
+| -c 100 |  7083   | 8900 |
+
+可以发现，lwip 的性能更好，且在高并发下更为显著。
+
+
+
+## 稳定性
+
+- smoltcp 测试时 ab 最后会卡住，故只能在快要结束前手动中止获取数据；而 lwip 无此情况，可以使用脚本进行测试与统计
+- smoltcp 测试时会出现 `Failed requests`；而 lwip 无此情况
+- smoltcp 测试时数据波动很大，而 lwip 较为稳定

@@ -1,12 +1,12 @@
 repeats=5
 warmup=2
-for Concurrency in 1 2 4 8 16
+for Concurrency in 1 2 5 10 50 100
 do
     echo "----- Concurrency: $Concurrency -----"
     sum=0
     for ((i=1; i<=repeats; i++))
     do
-        log=`ab -c $Concurrency -n 10000 -q http://127.0.0.1:5555/ | grep "Requests per second"`
+        log=`ab -c $Concurrency -n 100000 -q http://10.0.2.15:5555/ | grep "Requests per second"`
         rps=`echo $log | grep -o "[0-9]*\.[0-9]*"`
 
         if [ $i -gt $warmup ]
