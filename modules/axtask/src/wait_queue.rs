@@ -69,7 +69,6 @@ impl WaitQueue {
     /// Blocks the current task and put it into the wait queue, until other task
     /// notifies it.
     pub fn wait(&self) {
-        //info!("lock begin 7");
         let tmp: usize;
         if get_current_cpu_id() == axconfig::SMP {
             tmp = 0;
@@ -77,12 +76,10 @@ impl WaitQueue {
             tmp = get_current_cpu_id();
         }
         let target_cpu = LOAD_BALANCE_ARR[tmp].find_target_cpu();
-        //info!("lock begin 8");
         RUN_QUEUE[target_cpu].block_current(|task| {
             task.set_in_wait_queue(true);
             self.queue.lock().push_back(task)
         });
-        //info!("lock end 7");
         self.cancel_events(crate::current());
     }
 
@@ -119,14 +116,10 @@ impl WaitQueue {
             deadline
         );
         crate::timers::set_alarm_wakeup(deadline, curr.clone());
-
-        //info!("lock begin 5");
-
         RUN_QUEUE[get_current_cpu_id()].block_current(|task| {
             task.set_in_wait_queue(true);
             self.queue.lock().push_back(task)
         });
-        //info!("lock end 5");
         let timeout = curr.in_wait_queue(); // still in the wait queue, must have timed out
         self.cancel_events(curr);
         timeout
@@ -172,17 +165,11 @@ impl WaitQueue {
     /// If `resched` is true, the current task will be preempted when the
     /// preemption is enabled.
     pub fn notify_one(&self, resched: bool) -> bool {
-        //info!("tat {}", get_current_cpu_id());
-        debug!("lock begin 3");
         if !self.queue.lock().is_empty() {
-            //info!("tat1 {}", get_current_cpu_id());
             let target_cpu = LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu();
-            let tmp = self.notify_one_locked(resched, &RUN_QUEUE[target_cpu], target_cpu);
-            //debug!("lock end 3");
+            let tmp = self.notify_one_locked(resched, &RUN_QUEUE[target_cpu]);
             tmp
         } else {
-            //info!("tat2 {}", get_current_cpu_id());
-            //debug!("lock end 3");
             false
         }
     }
@@ -220,7 +207,7 @@ impl WaitQueue {
         }
     }
 
-    pub(crate) fn notify_one_locked(&self, resched: bool, rq: &AxRunQueue, queueid: usize) -> bool {
+    pub(crate) fn notify_one_locked(&self, resched: bool, rq: &AxRunQueue) -> bool {
         if let Some(task) = self.queue.lock().pop_front() {
             task.set_in_wait_queue(false);
             rq.unblock_task(task, resched);

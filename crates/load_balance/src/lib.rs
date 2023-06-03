@@ -1,16 +1,16 @@
-//! Various scheduler algorithms in a unified interface.
+//! Zircon Style LoadBalance Method
+//! Various load_balance algorithms in a unified interface.
 //!
 //! Currently supported algorithms:
 //!
-//! - [`FifoScheduler`]: FIFO (First-In-First-Out) scheduler (cooperative).
-//! - [`RRScheduler`]: Round-robin scheduler (preemptive).
+//! - [`BasicMethod`]: simply find target CPU and stolen CPU according to mininum payload.
 
 #![cfg_attr(not(test), no_std)]
 #![feature(const_mut_refs)]
 
-mod zircon_style;
+mod basic_method;
 
-pub use zircon_style::LoadBalanceZirconStyle;
+pub use basic_method::BasicMethod;
 
 extern crate alloc;
 

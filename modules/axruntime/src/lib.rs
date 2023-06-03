@@ -84,10 +84,8 @@ impl axlog::LogIf for LogIfImpl {
     }
 }
 
-use core::sync::atomic::{AtomicUsize, Ordering};
-
+use core::sync::atomic::Ordering;
 // moved to axtask
-//static INITED_CPUS: AtomicUsize = AtomicUsize::new(0);
 use axtask::INITED_CPUS;
 
 fn is_init_ok() -> bool {
@@ -151,7 +149,7 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
 
     info!("Initialize platform devices...");
     axhal::platform_init();
-    
+
     #[cfg(feature = "multitask")]
     axtask::init_scheduler();
 

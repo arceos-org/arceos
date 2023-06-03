@@ -8,9 +8,6 @@ use spinlock::SpinNoIrq;
 use crate::task::{CurrentTask, TaskState};
 use crate::{AxTaskRef, LoadBalance, Scheduler, TaskInner, WaitQueue};
 
-use core::sync::atomic::{AtomicIsize, Ordering};
-
-use crate::get_current_cpu_id;
 use alloc::vec::Vec;
 use array_init::array_init;
 
@@ -39,7 +36,7 @@ pub(crate) struct AxRunQueue {
 impl AxRunQueue {
     pub fn new(id: usize) -> Self {
         let gc_task = TaskInner::new(gc_entry, "gc".into(), axconfig::TASK_STACK_SIZE);
-        let mut scheduler = SpinNoIrq::new(Scheduler::new());
+        let scheduler = SpinNoIrq::new(Scheduler::new());
 
         gc_task.set_queue_id(id as isize);
         scheduler.lock().add_task(gc_task);
@@ -136,7 +133,7 @@ impl AxRunQueue {
             curr.set_state(TaskState::Exited);
             curr.notify_exit(exit_code, self);
             EXITED_TASKS.lock().push_back(curr.clone());
-            WAIT_FOR_EXIT.notify_one_locked(false, self, self.id);
+            WAIT_FOR_EXIT.notify_one_locked(false, self);
             self.resched_inner(false);
         }
         unreachable!("task exited!");

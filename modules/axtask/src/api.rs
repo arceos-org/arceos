@@ -29,7 +29,7 @@ cfg_if::cfg_if! {
     }
 }
 
-pub(crate) type LoadBalance = load_balance::LoadBalanceZirconStyle;
+pub(crate) type LoadBalance = load_balance::BasicMethod;
 
 #[cfg(feature = "preempt")]
 struct KernelGuardIfImpl;
@@ -50,26 +50,26 @@ impl kernel_guard::KernelGuardIf for KernelGuardIfImpl {
     }
 }
 
-struct LogTaskImpl;
-
 #[cfg(not(feature = "std"))]
 #[def_interface]
+/// get current time
 pub trait LogMyTime {
     /// get current time
     fn current_cpu_id() -> Option<usize>;
 }
 
-use core::sync::atomic::{AtomicUsize, Ordering};
-pub static INITED_CPUS: AtomicUsize = AtomicUsize::new(0);
+use core::sync::atomic::Ordering;
 
+use crate::INITED_CPUS;
+
+/// Check whether all CPUs are inited
 pub fn is_init_ok() -> bool {
     INITED_CPUS.load(Ordering::Acquire) == axconfig::SMP
 }
 
-use crate_interface::{call_interface, def_interface};
+use crate_interface::def_interface;
 
-use spinlock::SpinNoIrq;
-
+/// get current cpu id
 pub fn get_current_cpu_id() -> usize {
     axhal::cpu::this_cpu_id()
 }

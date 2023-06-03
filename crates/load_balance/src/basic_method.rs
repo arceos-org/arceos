@@ -1,10 +1,3 @@
-//! Various scheduler algorithms in a unified interface.
-//!
-//! Currently supported algorithms:
-//!
-//! - [`FifoScheduler`]: FIFO (First-In-First-Out) scheduler (cooperative).
-//! - [`RRScheduler`]: Round-robin scheduler (preemptive).
-
 use crate::BaseLoadBalance;
 use alloc::sync::Arc;
 use alloc::vec::Vec;
@@ -12,21 +5,20 @@ use core::sync::atomic::AtomicUsize;
 use core::sync::atomic::{AtomicIsize, Ordering};
 use spinlock::SpinNoIrq;
 
-//use log::debug;
-
-pub struct LoadBalanceZirconStyle {
+/// simply find target CPU and stolen CPU according to mininum payload.
+pub struct BasicMethod {
     smp: AtomicUsize,
     /// self queue id
     id: AtomicUsize,
     /// pointers for BaseLoadBalance for each queue
-    pointers: SpinNoIrq<Vec<Arc<LoadBalanceZirconStyle>>>,
+    pointers: SpinNoIrq<Vec<Arc<BasicMethod>>>,
     /// estimated weight for its queue
     weight: AtomicIsize,
 }
 
-impl LoadBalanceZirconStyle {
-    /// Creates a new empty [`LoadBalanceZirconStyle`].
-    pub const fn new(id_: usize) -> Self {
+impl BasicMethod {
+    /// Creates a new empty [`BasicMethod`].
+    pub const fn new(_id: usize) -> Self {
         Self {
             weight: AtomicIsize::new(0),
             smp: AtomicUsize::new(0),
@@ -36,12 +28,13 @@ impl LoadBalanceZirconStyle {
     }
     /// get the name of load balance manager
     pub fn load_balance_name() -> &'static str {
-        "zircon style"
+        "basic method"
     }
 }
 
-impl LoadBalanceZirconStyle {
-    pub fn init(&self, smp: usize, loadbalancearr: Vec<Arc<LoadBalanceZirconStyle>>) {
+impl BasicMethod {
+    /// Initializes the load balance manager.
+    pub fn init(&self, smp: usize, loadbalancearr: Vec<Arc<BasicMethod>>) {
         self.smp.store(smp, Ordering::Release);
         for i in 0..smp {
             self.pointers.lock().push(loadbalancearr[i].clone());
@@ -49,8 +42,7 @@ impl LoadBalanceZirconStyle {
     }
 }
 
-impl BaseLoadBalance for LoadBalanceZirconStyle {
-
+impl BaseLoadBalance for BasicMethod {
     /// the most naive method : find min
     fn find_target_cpu(&self) -> usize {
         let mut mn: isize = self.pointers.lock()[0].weight.load(Ordering::Acquire);

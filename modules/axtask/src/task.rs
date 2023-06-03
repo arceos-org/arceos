@@ -6,7 +6,6 @@ use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 #[cfg(feature = "preempt")]
 use core::sync::atomic::AtomicUsize;
 
-use crate::get_current_cpu_id;
 use crate::AxRunQueue;
 use crate::WaitQueue;
 use crate::{AxTask, AxTaskRef};
@@ -121,13 +120,13 @@ impl TaskInner {
         Some(self.exit_code.load(Ordering::Acquire))
     }
 
+    /// Set affinity mask for the task
+    /// TODO: The rule will be similar to Zircon
     pub fn set_affinity(&self, aff: u32) {
         self.affinity.store(aff, Ordering::Release);
     }
 }
-use spinlock::SpinNoIrq;
-//static LOCK_QWQ2: [SpinNoIrq<usize>; 3] = [SpinNoIrq::new(0), SpinNoIrq::new(0), SpinNoIrq::new(0)];
-//static LOCK_QWQ2: SpinNoIrq<usize> = SpinNoIrq::new(0);
+
 // private methods
 impl TaskInner {
     const fn new_common(id: TaskId, name: String) -> Self {

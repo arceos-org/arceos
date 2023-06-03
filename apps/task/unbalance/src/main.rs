@@ -6,11 +6,11 @@ extern crate libax;
 extern crate alloc;
 
 use alloc::sync::Arc;
-use libax::time::Duration;
 use alloc::vec::Vec;
 use core::sync::atomic::{AtomicUsize, Ordering};
 use libax::sync::{Mutex, WaitQueue};
 use libax::thread;
+use libax::time::Duration;
 
 struct TaskParam {
     data_len: usize,
@@ -173,7 +173,7 @@ fn main() {
     for data_inner in &data {
         expect += data_inner.iter().map(load).sum::<u64>();
     }
-    
+
     let timeout = WaitQueue::new().wait_timeout(Duration::from_millis(500));
 
     let start_time = libax::time::Instant::now();
@@ -197,7 +197,9 @@ fn main() {
                 right
             );
 
-            let timeout = WaitQueue::new().wait_timeout(Duration::from_millis(wait_time - start_time.elapsed().as_millis() as u64));
+            let timeout = WaitQueue::new().wait_timeout(Duration::from_millis(
+                wait_time - start_time.elapsed().as_millis() as u64,
+            ));
             RESULTS.lock()[i] = vec[left..right].iter().map(load).sum();
             LEAVE_TIME.lock()[i] = start_time.elapsed().as_millis() as u64;
 
