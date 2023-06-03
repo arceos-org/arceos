@@ -107,7 +107,7 @@ pub fn syscall_handler(id: usize, params: [usize; 6]) -> isize {
                 }
                 SYS_ARG_MSLICE => {
                     match id {
-                        SYS_FSTAT => ax_err!(Unsupported), // TODO
+                        SYS_FSTAT => file_op_slice_mut(id, fd, params[1], params[2]), // TODO: Support UNIX stat struct
                         _ => file_op_slice_mut(id, fd, params[1], params[2]),
                     }
                 }
@@ -181,7 +181,7 @@ pub fn open(path: &str, options: usize) -> AxResult<usize> {
 
     let file_handle = Arc::new(FileHandle {
         scheme_id,
-        file_id: scheme.open(path, options, 0, 0).unwrap(),
+        file_id: scheme.open(path, options, 0, 0)?,
     });
 
     insert_fd(file_handle)

@@ -44,12 +44,27 @@ impl Scheme for Stdout {
         self.flush(self.data.lock());
         Ok(0)
     }
+    fn fsync(&self, _id: usize) -> axerrno::AxResult<usize> {
+        self.flush(self.data.lock());
+        Ok(0)
+    }
 }
 impl KernelScheme for Stdout {}
 pub struct Stdin;
 impl Scheme for Stdin {
     fn open(&self, _path: &str, _flags: usize, _uid: u32, _gid: u32) -> axerrno::AxResult<usize> {
         Ok(1)
+    }
+    fn read(&self, _id: usize, buf: &mut [u8]) -> axerrno::AxResult<usize> {
+        for i in buf.iter_mut() {
+            *i = loop {
+                match axhal::console::getchar() {
+                    Some(c) => break c,
+                    None => axtask::yield_now(),
+                }
+            }
+        }
+        Ok(buf.len())
     }
     fn close(&self, _id: usize) -> axerrno::AxResult<usize> {
         Ok(0)

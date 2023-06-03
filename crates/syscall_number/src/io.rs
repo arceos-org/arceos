@@ -12,6 +12,10 @@ bitflags! {
         const READ = 1 << 3;
         /// O_WRONLY (O_RDWR)
         const WRITE = 1 << 4;
+        /// O_DIRECTORY
+        const DIRECTORY = 1 << 5;
+        /// O_EXCL
+        const EXCL = 1 << 6;
     }
 }
 

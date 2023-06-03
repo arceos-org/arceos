@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 axerrno = { path = "../axerrno" }
 syscall_number = { path = "../syscall_number"}
+axfs_vfs = { path = "../axfs_vfs"}

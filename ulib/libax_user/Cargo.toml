@@ -26,3 +26,4 @@ syscall_number = { path = "../../crates/syscall_number"}
 scheme = { path = "../../crates/scheme" }
 axerrno = { path = "../../crates/axerrno" }
 axio = { path = "../../crates/axio", features = ["alloc"] }
+axfs_vfs = { path = "../../crates/axfs_vfs" }

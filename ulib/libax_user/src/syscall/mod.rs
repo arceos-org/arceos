@@ -8,7 +8,7 @@ use syscall_number as sys_number;
 
 /// Copied from rcore
 #[allow(unused_variables)]
-pub fn syscall(id: usize, args: [usize; 6]) -> isize {
+pub(crate) fn syscall(id: usize, args: [usize; 6]) -> isize {
     let mut ret: isize;
     #[cfg(any(target_arch = "riscv64", target_arch = "riscv32"))]
     unsafe {

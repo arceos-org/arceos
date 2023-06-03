@@ -1,5 +1,6 @@
 use core::slice;
 
+use crate::Stat;
 use crate::{str_from_raw_parts, Packet};
 use axerrno::to_ret_code;
 use axerrno::AxError as Error;
@@ -71,11 +72,13 @@ pub trait Scheme {
                     Err(Error::InvalidData)
                 }
             }
-            // SYS_FSTAT => if packet.d >= mem::size_of::<Stat>() {
-            //     self.fstat(packet.b, unsafe { &mut *(packet.c as *mut Stat) })
-            // } else {
-            //     Err(Error::BadAddress)
-            // },
+            SYS_FSTAT => {
+                if packet.d >= core::mem::size_of::<Stat>() {
+                    self.fstat(packet.b, unsafe { &mut *(packet.c as *mut Stat) })
+                } else {
+                    Err(Error::BadAddress)
+                }
+            }
             // SYS_FSTATVFS => if packet.d >= mem::size_of::<StatVfs>() {
             //     self.fstatvfs(packet.b, unsafe { &mut *(packet.c as *mut StatVfs) })
             // } else {
@@ -193,12 +196,12 @@ pub trait Scheme {
     fn frename(&self, id: usize, path: &str, uid: u32, gid: u32) -> Result<usize> {
         Err(Error::BadFileDescriptor)
     }
-    /*
-        #[allow(unused_variables)]
-        fn fstat(&self, id: usize, stat: &mut Stat) -> Result<usize> {
-            Err(Error::BadFileDescriptor)
-        }
 
+    #[allow(unused_variables)]
+    fn fstat(&self, id: usize, stat: &mut Stat) -> Result<usize> {
+        Err(Error::BadFileDescriptor)
+    }
+    /*
         #[allow(unused_variables)]
         fn fstatvfs(&self, id: usize, stat: &mut StatVfs) -> Result<usize> {
             Err(Error::BadFileDescriptor)

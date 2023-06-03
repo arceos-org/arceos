@@ -14,8 +14,11 @@ use axhal::{mem::VirtAddr, paging::MappingFlags};
 use axmem::AddrSpace;
 use axsync::Mutex;
 use axtask::{current, current_pid};
-use scheme::{Packet, Scheme};
-use syscall_number::{SYS_CLOSE, SYS_DUP, SYS_OPEN, SYS_READ, SYS_WRITE};
+use scheme::{Packet, Scheme, Stat};
+use syscall_number::{
+    SYS_CLOSE, SYS_DUP, SYS_FSTAT, SYS_FTRUNCATE, SYS_LSEEK, SYS_OPEN, SYS_READ, SYS_RMDIR,
+    SYS_UNLINK, SYS_WRITE,
+};
 
 use super::KernelScheme;
 
@@ -142,6 +145,43 @@ impl Scheme for UserScheme {
         let inner = self.inner.upgrade().ok_or(AxError::NotFound)?;
         let addr = ShadowMemory::new(buf, inner.pid)?;
         inner.handle_request(SYS_DUP, id, addr.addr().into(), buf.len())
+    }
+    fn fstat(&self, id: usize, stat: &mut Stat) -> AxResult<usize> {
+        let inner = self.inner.upgrade().ok_or(AxError::NotFound)?;
+        let buf = unsafe {
+            core::slice::from_raw_parts_mut(
+                stat as *mut Stat as *mut u8,
+                core::mem::size_of::<Stat>(),
+            )
+        };
+        let addr = ShadowMemoryMut::new(buf, inner.pid)?;
+        inner.handle_request(SYS_FSTAT, id, addr.addr().into(), addr.len())
+    }
+    fn ftruncate(&self, id: usize, len: usize) -> AxResult<usize> {
+        let inner = self.inner.upgrade().ok_or(AxError::NotFound)?;
+        inner.handle_request(SYS_FTRUNCATE, id, len, 0)
+    }
+    fn fsync(&self, id: usize) -> AxResult<usize> {
+        let inner = self.inner.upgrade().ok_or(AxError::NotFound)?;
+        inner.handle_request(SYS_FTRUNCATE, id, 0, 0)
+    }
+    fn seek(&self, id: usize, pos: isize, whence: usize) -> AxResult<isize> {
+        let inner = self.inner.upgrade().ok_or(AxError::NotFound)?;
+        inner
+            .handle_request(SYS_LSEEK, id, pos as usize, whence)
+            .map(|x| x as isize)
+    }
+
+    fn rmdir(&self, path: &str, _uid: u32, _gid: u32) -> AxResult<usize> {
+        let inner = self.inner.upgrade().ok_or(AxError::NotFound)?;
+        let addr = ShadowMemory::new(path.as_bytes(), inner.pid)?;
+        inner.handle_request(SYS_RMDIR, addr.addr().into(), path.len(), 0)
+    }
+
+    fn unlink(&self, path: &str, uid: u32, gid: u32) -> AxResult<usize> {
+        let inner = self.inner.upgrade().ok_or(AxError::NotFound)?;
+        let addr = ShadowMemory::new(path.as_bytes(), inner.pid)?;
+        inner.handle_request(SYS_UNLINK, addr.addr().into(), path.len(), 0)
     }
 }
 impl KernelScheme for UserScheme {}

@@ -38,6 +38,8 @@ impl DerefMut for Packet {
     }
 }
 
+pub type Stat = axfs_vfs::VfsNodeAttr;
+
 unsafe fn str_from_raw_parts(ptr: *const u8, len: usize) -> Option<&'static str> {
     let slice = core::slice::from_raw_parts(ptr, len);
     core::str::from_utf8(slice).ok()
