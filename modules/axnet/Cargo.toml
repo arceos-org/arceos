@@ -3,24 +3,26 @@ name = "axnet"
 version = "0.1.0"
 edition = "2021"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "ArceOS network module"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+repository = "https://github.com/rcore-os/arceos/tree/main/modules/axnet"
+documentation = "https://rcore-os.github.io/arceos/axnet/index.html"
 
 [features]
 smoltcp = []
-default = ["axdriver/virtio-net", "smoltcp"]
+default = ["smoltcp"]
 
 [dependencies]
 log = "0.4"
 cfg-if = "1.0"
-driver_common = { path = "../../crates/driver_common" }
 driver_net = { path = "../../crates/driver_net" }
 lazy_init = { path = "../../crates/lazy_init" }
 axerrno = { path = "../../crates/axerrno" }
 axhal = { path = "../axhal" }
 axsync = { path = "../axsync", default-features = false }
 axtask = { path = "../axtask", default-features = false }
-axdriver = { path = "../axdriver" }
+axdriver = { path = "../axdriver", features = ["net"] }
 
 [dependencies.smoltcp]
 version = "0.9.1"
@@ -29,5 +31,5 @@ features = [
   "alloc", "log",   # no std
   "medium-ethernet",
   "proto-ipv4",
-  "socket-raw", "socket-icmp", "socket-udp", "socket-tcp",
+  "socket-raw", "socket-icmp", "socket-udp", "socket-tcp", "socket-dns"
 ]

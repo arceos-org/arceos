@@ -1,38 +1,139 @@
+use core::marker::PhantomData;
 use core::ptr::NonNull;
 
 use axalloc::global_allocator;
 use axhal::mem::{phys_to_virt, virt_to_phys};
 use cfg_if::cfg_if;
-use driver_common::{BaseDriverOps, DeviceType};
+use driver_common::{BaseDriverOps, DevResult, DeviceType};
 use driver_virtio::{BufferDirection, PhysAddr, VirtIoHal};
 
-use crate::AllDevices;
+use crate::{drivers::DriverProbe, AxDeviceEnum};
 
 cfg_if! {
-    if #[cfg(feature =  "bus-mmio")] {
-        type VirtIoTransport = driver_virtio::MmioTransport;
-    } else if #[cfg(feature = "bus-pci")] {
+    if #[cfg(bus = "pci")] {
+        use driver_pci::{PciRoot, DeviceFunction, DeviceFunctionInfo};
         type VirtIoTransport = driver_virtio::PciTransport;
+    } else if #[cfg(bus =  "mmio")] {
+        type VirtIoTransport = driver_virtio::MmioTransport;
+    }
+}
+
+/// A trait for VirtIO device meta information.
+pub trait VirtIoDevMeta {
+    const DEVICE_TYPE: DeviceType;
+
+    type Device: BaseDriverOps;
+    type Driver = VirtIoDriver<Self>;
+
+    fn try_new(transport: VirtIoTransport) -> DevResult<AxDeviceEnum>;
+}
+
+cfg_if! {
+    if #[cfg(net_dev = "virtio-net")] {
+        pub struct VirtIoNet;
+
+        impl VirtIoDevMeta for VirtIoNet {
+            const DEVICE_TYPE: DeviceType = DeviceType::Net;
+            type Device = driver_virtio::VirtIoNetDev<'static, VirtIoHalImpl, VirtIoTransport, 64>;
+
+            fn try_new(transport: VirtIoTransport) -> DevResult<AxDeviceEnum> {
+                Ok(AxDeviceEnum::from_net(Self::Device::try_new(transport)?))
+            }
+        }
     }
 }
 
 cfg_if! {
-    if #[cfg(feature = "virtio-blk")] {
-        pub type VirtIoBlockDev = driver_virtio::VirtIoBlkDev<VirtIoHalImpl, VirtIoTransport>;
+    if #[cfg(block_dev = "virtio-blk")] {
+        pub struct VirtIoBlk;
+
+        impl VirtIoDevMeta for VirtIoBlk {
+            const DEVICE_TYPE: DeviceType = DeviceType::Block;
+            type Device = driver_virtio::VirtIoBlkDev<VirtIoHalImpl, VirtIoTransport>;
+
+            fn try_new(transport: VirtIoTransport) -> DevResult<AxDeviceEnum> {
+                Ok(AxDeviceEnum::from_block(Self::Device::try_new(transport)?))
+            }
+        }
     }
 }
 
 cfg_if! {
-    if #[cfg(feature = "virtio-net")] {
-        const NET_QUEUE_SIZE: usize = 64;
-        const NET_BUFFER_SIZE: usize = 2048;
-        pub type VirtIoNetDev = driver_virtio::VirtIoNetDev<VirtIoHalImpl, VirtIoTransport, NET_QUEUE_SIZE>;
+    if #[cfg(display_dev = "virtio-gpu")] {
+        pub struct VirtIoGpu;
+
+        impl VirtIoDevMeta for VirtIoGpu {
+            const DEVICE_TYPE: DeviceType = DeviceType::Display;
+            type Device = driver_virtio::VirtIoGpuDev<VirtIoHalImpl, VirtIoTransport>;
+
+            fn try_new(transport: VirtIoTransport) -> DevResult<AxDeviceEnum> {
+                Ok(AxDeviceEnum::from_display(Self::Device::try_new(transport)?))
+            }
+        }
     }
 }
 
-cfg_if! {
-    if #[cfg(feature = "virtio-gpu")] {
-        pub type VirtIoGpuDev = driver_virtio::VirtIoGpuDev<VirtIoHalImpl, VirtIoTransport>;
+/// A common driver for all VirtIO devices that implements [`DriverProbe`].
+pub struct VirtIoDriver<D: VirtIoDevMeta + ?Sized>(PhantomData<D>);
+
+impl<D: VirtIoDevMeta> DriverProbe for VirtIoDriver<D> {
+    #[cfg(bus = "mmio")]
+    fn probe_mmio(mmio_base: usize, mmio_size: usize) -> Option<AxDeviceEnum> {
+        let base_vaddr = phys_to_virt(mmio_base.into());
+        if let Some((ty, transport)) =
+            driver_virtio::probe_mmio_device(base_vaddr.as_mut_ptr(), mmio_size)
+        {
+            if ty == D::DEVICE_TYPE {
+                match D::try_new(transport) {
+                    Ok(dev) => return Some(dev),
+                    Err(e) => {
+                        warn!(
+                            "failed to initialize MMIO device at [PA:{:#x}, PA:{:#x}): {:?}",
+                            mmio_base,
+                            mmio_base + mmio_size,
+                            e
+                        );
+                        return None;
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    #[cfg(bus = "pci")]
+    fn probe_pci(
+        root: &mut PciRoot,
+        bdf: DeviceFunction,
+        dev_info: &DeviceFunctionInfo,
+    ) -> Option<AxDeviceEnum> {
+        if dev_info.vendor_id != 0x1af4 {
+            return None;
+        }
+        match (D::DEVICE_TYPE, dev_info.device_id) {
+            (DeviceType::Net, 0x1000) | (DeviceType::Net, 0x1040) => {}
+            (DeviceType::Block, 0x1001) | (DeviceType::Block, 0x1041) => {}
+            (DeviceType::Display, 0x1050) => {}
+            _ => return None,
+        }
+
+        if let Some((ty, transport)) =
+            driver_virtio::probe_pci_device::<VirtIoHalImpl>(root, bdf, dev_info)
+        {
+            if ty == D::DEVICE_TYPE {
+                match D::try_new(transport) {
+                    Ok(dev) => return Some(dev),
+                    Err(e) => {
+                        warn!(
+                            "failed to initialize PCI device at {}({}): {:?}",
+                            bdf, dev_info, e
+                        );
+                        return None;
+                    }
+                }
+            }
+        }
+        None
     }
 }
 
@@ -68,48 +169,4 @@ unsafe impl VirtIoHal for VirtIoHalImpl {
 
     #[inline]
     unsafe fn unshare(_paddr: PhysAddr, _buffer: NonNull<[u8]>, _direction: BufferDirection) {}
-}
-
-impl AllDevices {
-    #[cfg(feature = "bus-mmio")]
-    fn probe_devices_common<D, F>(dev_type: DeviceType, ret: F) -> Option<D>
-    where
-        D: BaseDriverOps,
-        F: FnOnce(VirtIoTransport) -> Option<D>,
-    {
-        // TODO: parse device tree
-        for reg in axconfig::VIRTIO_MMIO_REGIONS {
-            if let Some(transport) = driver_virtio::probe_mmio_device(
-                phys_to_virt(reg.0.into()).as_mut_ptr(),
-                reg.1,
-                Some(dev_type),
-            ) {
-                let dev = ret(transport)?;
-                info!(
-                    "created a new {:?} device: {:?}",
-                    dev.device_type(),
-                    dev.device_name()
-                );
-                return Some(dev);
-            }
-        }
-        None
-    }
-
-    #[cfg(feature = "virtio-blk")]
-    pub(crate) fn probe_virtio_blk() -> Option<VirtIoBlockDev> {
-        Self::probe_devices_common(DeviceType::Block, |t| VirtIoBlockDev::try_new(t).ok())
-    }
-
-    #[cfg(feature = "virtio-net")]
-    pub(crate) fn probe_virtio_net() -> Option<VirtIoNetDev> {
-        Self::probe_devices_common(DeviceType::Net, |t| {
-            VirtIoNetDev::try_new(t, NET_BUFFER_SIZE).ok()
-        })
-    }
-
-    #[cfg(feature = "virtio-gpu")]
-    pub(crate) fn probe_virtio_display() -> Option<VirtIoGpuDev> {
-        Self::probe_devices_common(DeviceType::Display, |t| VirtIoGpuDev::try_new(t).ok())
-    }
 }

@@ -3,14 +3,16 @@ use alloc::string::String;
 
 use crate::io::{prelude::*, BufReader, Result};
 use crate::sync::Mutex;
-use crate::task;
+
 struct StdinRaw;
 struct StdoutRaw;
 
+/// A handle to the standard input stream of a process.
 pub struct Stdin {
     inner: &'static Mutex<BufReader<StdinRaw>>,
 }
 
+/// A handle to the global standard output stream of the current process.
 pub struct Stdout {
     inner: &'static Mutex<StdoutRaw>,
 }
@@ -53,6 +55,11 @@ impl Stdin {
     pub fn read_line(&self, buf: &mut String) -> Result<usize> {
         self.inner.lock().read_line(buf)
     }
+
+    #[allow(dead_code)]
+    pub(crate) fn read_locked(&self, buf: &mut [u8]) -> Result<usize> {
+        self.inner.lock().read(buf)
+    }
 }
 
 impl Read for Stdin {
@@ -68,8 +75,15 @@ impl Read for Stdin {
             if read_len > 0 {
                 return Ok(read_len);
             }
-            task::yield_now();
+            crate::thread::yield_now();
         }
+    }
+}
+
+impl Stdout {
+    #[allow(dead_code)]
+    pub(crate) fn write_locked(&self, buf: &[u8]) -> Result<usize> {
+        self.inner.lock().write(buf)
     }
 }
 
@@ -88,12 +102,18 @@ pub fn stdin() -> Stdin {
     Stdin { inner: &INSTANCE }
 }
 
-/// A handle to the global standard output stream of the current process.
+/// Constructs a new handle to the standard output of the current process.
 pub fn stdout() -> Stdout {
     static INSTANCE: Mutex<StdoutRaw> = Mutex::new(StdoutRaw);
     Stdout { inner: &INSTANCE }
 }
 
+/// Prints to the standard output.
+///
+/// Equivalent to the [`println!`] macro except that a newline is not printed at
+/// the end of the message.
+///
+/// [`println!`]: crate::println
 #[macro_export]
 macro_rules! print {
     ($fmt: literal $(, $($arg: tt)+)?) => {
@@ -101,6 +121,7 @@ macro_rules! print {
     }
 }
 
+/// Prints to the standard output, with a newline.
 #[macro_export]
 macro_rules! println {
     () => { $crate::print!("\n") };
@@ -111,7 +132,11 @@ macro_rules! println {
 
 #[doc(hidden)]
 pub fn __print_impl(args: core::fmt::Arguments) {
-    static INLINE_LOCK: Mutex<()> = Mutex::new(()); // not break in one line
-    let _guard = INLINE_LOCK.lock();
-    stdout().write_fmt(args).unwrap();
+    if cfg!(feature = "smp") {
+        axlog::__print_impl(args); // synchronize using the lock in axlog
+    } else {
+        static INLINE_LOCK: Mutex<()> = Mutex::new(()); // not break in one line
+        let _guard = INLINE_LOCK.lock();
+        stdout().write_fmt(args).unwrap();
+    }
 }

@@ -1,3 +1,5 @@
+//! Useful synchronization primitives.
+
 #[cfg(feature = "multitask")]
 pub use axsync::{Mutex, MutexGuard};
 

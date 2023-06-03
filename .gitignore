@@ -3,4 +3,6 @@
 .DS_Store
 *.asm
 *.img
-/testcases
+actual.out
+qemu.log
+testcases/

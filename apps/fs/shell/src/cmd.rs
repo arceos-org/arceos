@@ -239,7 +239,7 @@ fn do_help(_args: &str) {
 }
 
 fn do_exit(_args: &str) {
-    libax::task::exit(0);
+    libax::thread::exit(0);
 }
 
 pub fn run_cmd(line: &[u8]) {

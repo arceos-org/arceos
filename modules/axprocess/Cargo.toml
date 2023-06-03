@@ -6,12 +6,26 @@ authors = ["Youjie Zheng <zyj578335934@gmail.com>"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+fs = []
+macro = ["axhal/macro"]
+default = ["macro", "fs"]
+
 [dependencies]
 spinlock = { path = "../../crates/spinlock" }
 axtask = { path = "../axtask" }
+axalloc = { path = "../axalloc" }
+axio = { path = "../../crates/axio", features = ["alloc"] }
 axhal = { path = "../axhal" }
 axlog = { path = "../axlog" }
 axmem = { path = "../axmem" }
-axfs_os = { path = "../axfs_os" }
-riscv = "0.10"
-bitflags = "= 2.1.0"
+axerrno = { path = "../../crates/axerrno" }
+axconfig = { path = "../axconfig" }
+axfs = { path = "../axfs" }
+#riscv = "0.10"
+riscv = { path = "../../extern_crates/riscv-0.10.1" }
+bitflags = "2.0"
+lazy_static = { version = "1.4", features = ["spin_no_std"] }
+#lazy_static = { path = "../../extern_crates/lazy_static-1.4.0" }
+#xmas-elf = "0.9.0"
+xmas-elf = { path = "../../extern_crates/xmas-elf-0.9.0" }

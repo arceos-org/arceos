@@ -1,4 +1,4 @@
-//! `std::fs`-like high-level filesystem manipulation operations.
+//! [`std::fs`]-like high-level filesystem manipulation operations.
 
 mod dir;
 mod file;
@@ -78,4 +78,9 @@ pub fn remove_dir(path: &str) -> io::Result<()> {
 /// Removes a file from the filesystem.
 pub fn remove_file(path: &str) -> io::Result<()> {
     crate::root::remove_file(None, path)
+}
+
+/// Check if a path exists.
+pub fn path_exists(path: &str) -> bool {
+    crate::root::lookup(None, path).is_ok()
 }

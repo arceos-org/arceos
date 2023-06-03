@@ -1,9 +1,10 @@
 # INTRODUCTION
 | App | Extra modules | Enabled features | Description |
 |-|-|-|-|
-| [sleep](apps/task/sleep) |axalloc,axtask |alloc, paging, multitask, sched_fifo | Thread sleeping test |
+| [sleep](../apps/task/sleep) |axalloc,axtask |alloc, paging, multitask, sched_fifo | Thread sleeping test |
 
 # RUN
+
 ```
 make A=apps/task/sleep SMP=4 LOG=debug run
 ```
@@ -39,7 +40,7 @@ Sleep tests run OK!
 
 # STEPS
 
-## step1 
+## step1
 [init](./init.md)
 After executed all initial actions, then arceos calls `main` function in `helloworld` app.
 
@@ -52,11 +53,11 @@ fn main(){
 
 ### step2.1
 ```Rust
-    println!("Hello, main task!");  
-    let now = Instant::now();  
-    task::sleep(Duration::from_secs(1));  
-    let elapsed = now.elapsed();  
-    println!("main task sleep for {:?}", elapsed);  
+    println!("Hello, main task!");
+    let now = Instant::now();
+    task::sleep(Duration::from_secs(1));
+    let elapsed = now.elapsed();
+    println!("main task sleep for {:?}", elapsed);
 ```
 
 **flow chart**
@@ -64,7 +65,6 @@ fn main(){
 ```mermaid
 graph TD;
     S["libax::task::sleep()"]
-    
     S-->arg["libax::time::Duration::from_secs()"]
     arg-->argA["libax::time::Duration::new(secs)"]
 
@@ -115,18 +115,7 @@ graph TD;
 
 ```mermaid
 graph TD;
-    T["FINISHED_TASKS.load(Ordering::Relaxed)"] 
+    T["FINISHED_TASKS.load(Ordering::Relaxed)"]
     T --> A["core::sync::atomic::AtomicUsize::new(num)"]
     T --> B["core::sync::atomic::Ordering::Relaxed"]
 ```
-
-> ```Rust
-> pub enum Ordering {
-> 	Relaxed,
-> 	Release,
-> 	Acquire,
-> 	AcqRel,
-> 	SeqCst,
-> }
-> ```
-

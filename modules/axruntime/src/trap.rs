@@ -1,20 +1,23 @@
+/// 仅用作非宏内核下的trap入口
+
 struct TrapHandlerImpl;
+
+#[cfg(feature = "paging")]
+use axprocess::handle_page_fault;
 
 #[crate_interface::impl_interface]
 impl axhal::trap::TrapHandler for TrapHandlerImpl {
-    fn handle_irq(irq_num: usize) {
-        let guard = kernel_guard::NoPreempt::new();
-        // trap进来，统计时间信息
-        axprocess::time_stat_from_user_to_kernel();
-        axhal::irq::dispatch_irq(irq_num);
-        axprocess::time_stat_from_kernel_to_user();
-        drop(guard); // rescheduling may occur when preemption is re-enabled.
+    fn handle_irq(_irq_num: usize) {
+        #[cfg(feature = "irq")]
+        {
+            let guard = kernel_guard::NoPreempt::new();
+            axhal::irq::dispatch_irq(_irq_num);
+            drop(guard); // rescheduling may occur when preemption is re-enabled.
+        }
     }
-    #[cfg(feature = "user")]
-    fn handle_syscall(syscall_id: usize, args: [usize; 6]) -> isize {
-        axprocess::time_stat_from_user_to_kernel();
-        let ans = axsyscall::syscall(syscall_id, args);
-        axprocess::time_stat_from_kernel_to_user();
-        ans
+
+    #[cfg(feature = "paging")]
+    fn handle_page_fault(addr: memory_addr::VirtAddr, flags: page_table::MappingFlags) {
+        handle_page_fault(addr, flags);
     }
 }

@@ -3,15 +3,15 @@ name = "axdisplay"
 version = "0.1.0"
 edition = "2021"
 authors = ["Shiping Yuan <robert_yuan@pku.edu.com>"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[features]
-default = ["axdriver/virtio-gpu"]
+description = "ArceOS graphics module"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+repository = "https://github.com/rcore-os/arceos/tree/main/modules/axdisplay"
+documentation = "https://rcore-os.github.io/arceos/axdisplay/index.html"
 
 [dependencies]
 log = "0.4"
-axdriver = { path = "../axdriver" }
+axdriver = { path = "../axdriver", features = ["display"] }
 lazy_init = { path = "../../crates/lazy_init" }
 axsync = { path = "../axsync", default-features = false }
 driver_display = { path = "../../crates/driver_display" }

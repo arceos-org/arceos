@@ -1,7 +1,7 @@
 use axio::{prelude::*, Result, SeekFrom};
 use core::fmt;
 
-use crate::fops;
+use crate::{fops, macro_fs::file_io::FileExt};
 
 /// A structure representing a type of file with accessors for each file type.
 /// It is returned by [`Metadata::file_type`] method.
@@ -11,6 +11,7 @@ pub type FileType = fops::FileType;
 pub type Permissions = fops::FilePerm;
 
 /// An object providing access to an open file on the filesystem.
+#[derive(Clone)]
 pub struct File {
     inner: fops::File,
 }
@@ -34,7 +35,7 @@ impl OpenOptions {
         self
     }
 
-    /// sets the option for write access.
+    /// Sets the option for write access.
     pub fn write(&mut self, write: bool) -> &mut Self {
         self.0.write(write);
         self
@@ -101,6 +102,7 @@ impl Metadata {
         self.0.perm()
     }
 
+    /// Returns the inner raw metadata [`fops::FileAttr`].
     pub const fn raw_metadata(&self) -> &fops::FileAttr {
         &self.0
     }
@@ -155,6 +157,10 @@ impl File {
     pub fn metadata(&self) -> Result<Metadata> {
         self.inner.get_attr().map(Metadata)
     }
+
+    pub fn executable(&self) -> bool {
+        self.inner.executable()
+    }
 }
 
 impl Read for File {
@@ -176,5 +182,20 @@ impl Write for File {
 impl Seek for File {
     fn seek(&mut self, pos: SeekFrom) -> Result<u64> {
         self.inner.seek(pos)
+    }
+}
+
+// #[cfg(feature = "macro")]
+impl FileExt for File {
+    fn readable(&self) -> bool {
+        self.inner.readable()
+    }
+
+    fn writable(&self) -> bool {
+        self.inner.writable()
+    }
+
+    fn executable(&self) -> bool {
+        self.inner.executable()
     }
 }

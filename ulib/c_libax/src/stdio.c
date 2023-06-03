@@ -1,99 +1,76 @@
+#include "printf.h"
 #include <assert.h>
+#include <fcntl.h>
+#include <limits.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <libax.h>
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
-#define __LINE_WIDTH 256
+FILE __stdin_FILE = {.fd = 0, .buffer_len = 0};
 
-static char buffer[__LINE_WIDTH];
-static int buffer_len;
+FILE __stdout_FILE = {.fd = 1, .buffer_len = 0};
+
+FILE __stderr_FILE = {.fd = 2, .buffer_len = 0};
+
+FILE *const stdin = &__stdin_FILE;
+FILE *const stdout = &__stdout_FILE;
+FILE *const stderr = &__stderr_FILE;
 
 // Returns: number of chars written, negative for failure
 // Warn: buffer_len[f] will not be changed
-static int __write_buffer()
+static int __write_buffer(FILE *f)
 {
-    if (buffer_len == 0)
+    int r = 0;
+    if (f->buffer_len == 0)
         return 0;
-    int r = ax_print_str(buffer, buffer_len);
+    if (f->fd == stdout->fd || f->fd == stderr->fd) {
+        r = ax_print_str(f->buf, f->buffer_len);
+#ifdef AX_CONFIG_ALLOC
+    } else {
+        r = write(f->fd, f->buf, f->buffer_len);
+#endif
+    }
     return r;
 }
 
 // Clear buffer_len[f]
-static void __clear_buffer()
+static void __clear_buffer(FILE *f)
 {
-    buffer_len = 0;
+    f->buffer_len = 0;
 }
 
-static int __fflush()
+static int __fflush(FILE *f)
 {
-    int r = __write_buffer();
-    __clear_buffer();
+    int r = __write_buffer(f);
+    __clear_buffer(f);
     return r >= 0 ? 0 : r;
 }
 
-static char digits[] = "0123456789abcdef";
-
-static int out(int f, const char *s, size_t l)
+static int out(FILE *f, const char *s, size_t l)
 {
     int ret = 0;
     for (size_t i = 0; i < l; i++) {
         char c = s[i];
-        buffer[buffer_len++] = c;
-        if (buffer_len == __LINE_WIDTH || c == '\n') {
-            int r = __write_buffer();
-            __clear_buffer();
+        f->buf[f->buffer_len++] = c;
+        if (f->buffer_len == FILE_BUF_SIZE || c == '\n') {
+            int r = __write_buffer(f);
+            __clear_buffer(f);
             if (r < 0)
                 return r;
-            if (r < buffer_len)
+            if (r < f->buffer_len)
                 return ret + r;
             ret += r;
         }
     }
     return ret;
-}
-
-static void printint(long long value, int base, int sign)
-{
-    const int buf_size = 20;
-    char buf[buf_size + 1];
-    int i;
-    uint64_t x;
-
-    if (sign && (sign = (value < 0)))
-        x = -value;
-    else
-        x = value;
-
-    buf[buf_size] = 0;
-    i = buf_size;
-
-    do {
-        buf[--i] = digits[x % base];
-    } while ((x /= base) != 0);
-
-    if (sign)
-        buf[--i] = '-';
-    assert(i >= 0);
-    out(stdout, buf + i, buf_size - i);
-}
-
-static void printptr(uint64_t value)
-{
-    int i = 0, j;
-    char buf[32 + 1];
-    buf[i++] = '0';
-    buf[i++] = 'x';
-    for (j = 0; j < (sizeof(uint64_t) * 2); j++, value <<= 4)
-        buf[i++] = digits[value >> (sizeof(uint64_t) * 8 - 4)];
-    buf[i] = 0;
-    out(stdout, buf, i);
 }
 
 // int getchar()
@@ -106,11 +83,9 @@ static void printptr(uint64_t value)
 //     }
 // }
 
-int fflush(int fd)
+int fflush(FILE *f)
 {
-    if (fd == stdout || fd == stderr)
-        return __fflush();
-    return 0;
+    return __fflush(f);
 }
 
 int putchar(int c)
@@ -121,78 +96,83 @@ int putchar(int c)
 
 int puts(const char *s)
 {
-    int r;
-    r = -(out(stdout, s, strlen(s)) < 0 || putchar('\n') < 0);
-    return r;
+    return ax_println_str(s, strlen(s));
 }
 
-// Print to the file. only understands %d, %x, %p, %s.
-void fprintf(int f, const char *restrict fmt, ...)
+static void __out_wrapper(char c, void *arg)
 {
-    va_list ap;
-    int l = 0;
-    char *a, *z, *s = (char *)fmt;
-
-    va_start(ap, fmt);
-    for (;;) {
-        if (!*s)
-            break;
-        for (a = s; *s && *s != '%'; s++)
-            ;
-        for (z = s; s[0] == '%' && s[1] == '%'; z++, s += 2)
-            ;
-        l = z - a;
-        out(f, a, l);
-        if (l)
-            continue;
-        if (s[1] == 0)
-            break;
-        switch (s[1]) {
-        case 'u':
-            printint(va_arg(ap, int), 10, 0);
-            break;
-        case 'c':
-            putchar((char)va_arg(ap, int));
-            break;
-        case 'd':
-            printint(va_arg(ap, int), 10, 1);
-            break;
-        case 'x':
-            printint(va_arg(ap, int), 16, 1);
-            break;
-        case 'p':
-            printptr(va_arg(ap, uint64_t));
-            break;
-        case 's':
-            if ((a = va_arg(ap, char *)) == 0)
-                a = "(null)";
-            l = strnlen(a, 200);
-            out(f, a, l);
-            break;
-        case 'l':
-            if (s[2] == 'u')
-                printint(va_arg(ap, long), 10, 0);
-            else if (s[2] == 'd')
-                printint(va_arg(ap, long), 10, 1);
-            else if (s[2] == 'x')
-                printint(va_arg(ap, long), 16, 1);
-            else {
-                putchar('%');
-                putchar(s[1]);
-                if (s[2])
-                    putchar(s[2]);
-                else
-                    s -= 1;
-            }
-            s += 1;
-            break;
-        default:
-            // Print unknown % sequence to draw attention.
-            putchar('%');
-            putchar(s[1]);
-            break;
-        }
-        s += 2;
-    }
-    va_end(ap);
+    out(arg, &c, 1);
 }
+
+int printf(const char *restrict fmt, ...)
+{
+    int ret;
+    va_list ap;
+    va_start(ap, fmt);
+    ret = vfprintf(stdout, fmt, ap);
+    va_end(ap);
+    return ret;
+}
+
+int fprintf(FILE *restrict f, const char *restrict fmt, ...)
+{
+    int ret;
+    va_list ap;
+    va_start(ap, fmt);
+    ret = vfprintf(f, fmt, ap);
+    va_end(ap);
+    return ret;
+}
+
+int vfprintf(FILE *restrict f, const char *restrict fmt, va_list ap)
+{
+    return vfctprintf(__out_wrapper, f, fmt, ap);
+}
+
+#if defined(AX_CONFIG_ALLOC) && defined(AX_CONFIG_FS)
+
+int __fmodeflags(const char *mode)
+{
+    int flags;
+    if (strchr(mode, '+'))
+        flags = O_RDWR;
+    else if (*mode == 'r')
+        flags = O_RDONLY;
+    else
+        flags = O_WRONLY;
+    if (strchr(mode, 'x'))
+        flags |= O_EXCL;
+    if (strchr(mode, 'e'))
+        flags |= O_CLOEXEC;
+    if (*mode != 'r')
+        flags |= O_CREAT;
+    if (*mode == 'w')
+        flags |= O_TRUNC;
+    if (*mode == 'a')
+        flags |= O_APPEND;
+    return flags;
+}
+
+FILE *fopen(const char *filename, const char *mode)
+{
+    FILE *f;
+    int flags;
+
+    // TODO: Should set errno
+    if (!strchr("rwa", *mode)) {
+        return 0;
+    }
+
+    f = (FILE *)malloc(sizeof(FILE));
+
+    flags = __fmodeflags(mode);
+    // TODO: currently mode is unused in ax_open
+    int fd = ax_open(filename, flags, 0666);
+    if (fd < 0)
+        return NULL;
+    f->fd = fd;
+
+    return f;
+}
+
+#endif

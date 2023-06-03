@@ -1,6 +1,7 @@
 #include "sqlite3.h"
 #include <stddef.h>
 #include <stdio.h>
+#include <string.h>
 
 int callback(void *NotUsed, int argc, char **argv, char **azColName)
 {
@@ -17,7 +18,7 @@ int callback(void *NotUsed, int argc, char **argv, char **azColName)
 
 void exec(sqlite3 *db, char *sql)
 {
-    printf("\nsqlite exec\n%s\n", sql);
+    printf("sqlite exec:\n    %s\n", sql);
     char *errmsg = NULL;
     int rc = sqlite3_exec(db, sql, NULL, NULL, &errmsg);
     if (rc != SQLITE_OK) {
@@ -27,7 +28,7 @@ void exec(sqlite3 *db, char *sql)
 
 void query(sqlite3 *db, char *sql)
 {
-    printf("\nsqlite query\n%s\n", sql);
+    printf("sqlite query:\n    %s\n", sql);
     char *errmsg = NULL;
     int rc = sqlite3_exec(db, sql, callback, NULL, &errmsg);
 
@@ -36,24 +37,28 @@ void query(sqlite3 *db, char *sql)
     }
 }
 
-void query_test(sqlite3 *db)
+void query_test(sqlite3 *db, const char *args)
 {
-    printf("init user table\n");
+    puts("======== init user table ========");
     exec(db, "create table user("
              "id INTEGER PRIMARY KEY AUTOINCREMENT,"
              "username TEXT,"
              "password TEXT"
              ")");
 
-    printf("insert user 1, 2, 3 into user table");
+    puts("======== insert user 1, 2, 3 into user table ========");
 
-    exec(db, "insert into user (username, password) VALUES ('1', 'password1'), ('2', 'password2'), "
-             "('3', 'password3')");
+    char cmd[256] = {0};
+    sprintf(cmd,
+            "insert into user (username, password) VALUES ('%s_1', 'password1'), ('%s_2', "
+            "'password2'), ('%s_3', 'password3')",
+            args, args, args);
+    exec(db, cmd);
 
-    printf("select all");
+    puts("======== select all ========");
     query(db, "select * from user");
 
-    printf("select id = 2");
+    puts("======== select id = 2 ========");
     query(db, "select * from user where id = 2");
 }
 
@@ -63,24 +68,26 @@ void memory()
     int ret = sqlite3_open(":memory:", &db);
     printf("sqlite open memory status %d \n", ret);
 
-    query_test(db);
+    query_test(db, "memory");
 }
 
-void file() {
+void file()
+{
     sqlite3 *db;
     int ret = sqlite3_open("file.sqlite", &db);
     printf("sqlite open /file.sqlite status %d \n", ret);
 
-    if(ret != 0) {
+    if (ret != 0) {
         printf("sqlite open error");
         return;
     }
 
-    query_test(db);
+    query_test(db, "file");
     sqlite3_close(db);
 }
 
-int main() {
+int main()
+{
     printf("sqlite version: %s\n", sqlite3_libversion());
 
     memory();
