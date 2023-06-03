@@ -26,6 +26,10 @@ const fn p1_index(vaddr: VirtAddr) -> usize {
     (vaddr.as_usize() >> 12) & (ENTRY_COUNT - 1)
 }
 
+/// A generic page table struct for 64-bit platform.
+///
+/// It also tracks all intermediate level tables. They will be deallocated
+/// When the [`PageTable64`] itself is dropped.
 pub struct PageTable64<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> {
     root_paddr: PhysAddr,
     intrm_tables: Vec<PhysAddr>,
@@ -33,6 +37,9 @@ pub struct PageTable64<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> {
 }
 
 impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
+    /// Creates a new page table instance or returns the error.
+    ///
+    /// It will allocate a new page for the root page table.
     pub fn try_new() -> PagingResult<Self> {
         let root_paddr = Self::alloc_table()?;
         Ok(Self {
@@ -42,10 +49,20 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
         })
     }
 
+    /// Returns the physical address of the root page table.
     pub const fn root_paddr(&self) -> PhysAddr {
         self.root_paddr
     }
 
+    /// Maps a virtual page to a physical frame with the given `page_size`
+    /// and mapping `flags`.
+    ///
+    /// The virtual page starts with `vaddr`, amd the physical frame starts with
+    /// `target`. If the addresses is not aligned to the page size, they will be
+    /// aligned down automatically.
+    ///
+    /// Returns [`Err(PagingError::AlreadyMapped)`](PagingError::AlreadyMapped)
+    /// if the mapping is already present.
     pub fn map(
         &mut self,
         vaddr: VirtAddr,
@@ -97,6 +114,13 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
         Ok((paddr, size))
     }
 
+    /// Query the result of the mapping starts with `vaddr`.
+    ///
+    /// Returns the physical address of the target frame, mapping flags, and
+    /// the page size.
+    ///
+    /// Returns [`Err(PagingError::NotMapped)`](PagingError::NotMapped) if the
+    /// mapping is not present.
     pub fn query(&self, vaddr: VirtAddr) -> PagingResult<(PhysAddr, MappingFlags, PageSize)> {
         let (entry, size) = self.get_entry_mut(vaddr)?;
         if entry.is_unused() {
@@ -128,12 +152,12 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
     ) -> PagingResult {
         if !vaddr.is_aligned(PageSize::Size4K)
             || !paddr.is_aligned(PageSize::Size4K)
-            || !memory_addr::is_aligned(size, PageSize::Size4K as usize)
+            || !memory_addr::is_aligned(size, PageSize::Size4K.into())
         {
             return Err(PagingError::NotAligned);
         }
         trace!(
-            "map_region({:#x}): [{:#x}, {:#x}) -> [{:#x}, {:#x}) ({:#?})",
+            "map_region({:#x}): [{:#x}, {:#x}) -> [{:#x}, {:#x}) {:?}",
             self.root_paddr(),
             vaddr,
             vaddr + size,

@@ -20,6 +20,7 @@ platform-qemu-virt-aarch64 = [
     "axconfig/platform-qemu-virt-aarch64",
     "dep:page_table_entry", "dep:ratio",
 ]
+
 macro = []
 
 default = ["macro"]

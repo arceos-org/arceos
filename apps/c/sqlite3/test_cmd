@@ -1,3 +1,7 @@
 test_one "LOG=info FS=y" "expect_info.out"
 test_one "LOG=info FS=y" "expect_info_again.out"
+<<<<<<< HEAD
+=======
+test_one "LOG=info FS=y APP_FEATURES=use-ramdisk" "expect_info_ramdisk.out"
+>>>>>>> 322a8c34d08df4a657daf4bb67e4031480162883
 rm -f $APP/*.o

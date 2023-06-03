@@ -1,8 +1,11 @@
 //! Trap handling.
 
 use crate_interface::{call_interface, def_interface};
+
 use memory_addr::VirtAddr;
+
 use page_table::MappingFlags;
+
 /// Trap handler interface.
 ///
 /// This trait is defined with the [`#[def_interface]`][1] attribute. Users

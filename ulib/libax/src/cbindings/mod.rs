@@ -24,6 +24,10 @@ mod socket;
 #[cfg(feature = "multitask")]
 mod thread;
 
+<<<<<<< HEAD
+=======
+mod errno;
+>>>>>>> 322a8c34d08df4a657daf4bb67e4031480162883
 mod setjmp;
 mod stdio;
 mod sys;
@@ -74,6 +78,10 @@ pub use self::thread::ax_getpid;
 #[cfg(feature = "pipe")]
 pub use self::pipe::ax_pipe;
 
+<<<<<<< HEAD
+=======
+pub use self::errno::ax_errno_string;
+>>>>>>> 322a8c34d08df4a657daf4bb67e4031480162883
 pub use self::stdio::{ax_print_str, ax_println_str};
 pub use self::sys::ax_sysconf;
 pub use self::time::{ax_clock_gettime, ax_nanosleep};
