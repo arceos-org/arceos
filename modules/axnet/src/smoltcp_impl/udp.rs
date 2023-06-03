@@ -83,11 +83,7 @@ impl UdpSocket {
                 } else if socket.can_send() {
                     // TODO: size
                     socket.send_slice(buf, addr).map_err(|e| match e {
-<<<<<<< HEAD
-                        SendError::BufferFull => AxError::Again,
-=======
                         SendError::BufferFull => AxError::WouldBlock,
->>>>>>> 322a8c34d08df4a657daf4bb67e4031480162883
                         SendError::Unaddressable => {
                             ax_err_type!(ConnectionRefused, "socket send() failed")
                         }
@@ -95,22 +91,14 @@ impl UdpSocket {
                     Ok(buf.len())
                 } else {
                     // tx buffer is full
-<<<<<<< HEAD
-                    Err(AxError::Again)
-=======
                     Err(AxError::WouldBlock)
->>>>>>> 322a8c34d08df4a657daf4bb67e4031480162883
                 }
             }) {
                 Ok(n) => {
                     SOCKET_SET.poll_interfaces();
                     return Ok(n);
                 }
-<<<<<<< HEAD
-                Err(AxError::Again) => axtask::yield_now(),
-=======
                 Err(AxError::WouldBlock) => axtask::yield_now(),
->>>>>>> 322a8c34d08df4a657daf4bb67e4031480162883
                 Err(e) => return Err(e),
             }
         }
@@ -132,30 +120,18 @@ impl UdpSocket {
                     // TODO: use socket.recv(|buf| {...})
                     match socket.recv_slice(buf) {
                         Ok(x) => Ok(x),
-<<<<<<< HEAD
-                        Err(_) => Err(AxError::Again),
-                    }
-                } else {
-                    // no more data
-                    Err(AxError::Again)
-=======
                         Err(_) => Err(AxError::WouldBlock),
                     }
                 } else {
                     // no more data
                     Err(AxError::WouldBlock)
->>>>>>> 322a8c34d08df4a657daf4bb67e4031480162883
                 }
             }) {
                 Ok(x) => {
                     SOCKET_SET.poll_interfaces();
                     return Ok(x);
                 }
-<<<<<<< HEAD
-                Err(AxError::Again) => axtask::yield_now(),
-=======
                 Err(AxError::WouldBlock) => axtask::yield_now(),
->>>>>>> 322a8c34d08df4a657daf4bb67e4031480162883
                 Err(e) => return Err(e),
             }
         }
@@ -207,16 +183,6 @@ impl UdpSocket {
                                 // filter data from the remote address to which it is connected.
                                 Ok(x.0)
                             } else {
-<<<<<<< HEAD
-                                Err(AxError::Again)
-                            }
-                        }
-                        Err(_) => Err(AxError::Again),
-                    }
-                } else {
-                    // no more data
-                    Err(AxError::Again)
-=======
                                 Err(AxError::WouldBlock)
                             }
                         }
@@ -225,18 +191,13 @@ impl UdpSocket {
                 } else {
                     // no more data
                     Err(AxError::WouldBlock)
->>>>>>> 322a8c34d08df4a657daf4bb67e4031480162883
                 }
             }) {
                 Ok(x) => {
                     SOCKET_SET.poll_interfaces();
                     return Ok(x);
                 }
-<<<<<<< HEAD
-                Err(AxError::Again) => axtask::yield_now(),
-=======
                 Err(AxError::WouldBlock) => axtask::yield_now(),
->>>>>>> 322a8c34d08df4a657daf4bb67e4031480162883
                 Err(e) => return Err(e),
             }
         }
@@ -273,30 +234,18 @@ impl UdpSocket {
                     // TODO: use socket.recv(|buf| {...})
                     match socket.peek_slice(buf) {
                         Ok(x) => Ok((x.0, *x.1)),
-<<<<<<< HEAD
-                        Err(_) => Err(AxError::Again),
-                    }
-                } else {
-                    // no more data
-                    Err(AxError::Again)
-=======
                         Err(_) => Err(AxError::WouldBlock),
                     }
                 } else {
                     // no more data
                     Err(AxError::WouldBlock)
->>>>>>> 322a8c34d08df4a657daf4bb67e4031480162883
                 }
             }) {
                 Ok(x) => {
                     SOCKET_SET.poll_interfaces();
                     return Ok(x);
                 }
-<<<<<<< HEAD
-                Err(AxError::Again) => axtask::yield_now(),
-=======
                 Err(AxError::WouldBlock) => axtask::yield_now(),
->>>>>>> 322a8c34d08df4a657daf4bb67e4031480162883
                 Err(e) => return Err(e),
             }
         }

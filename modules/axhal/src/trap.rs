@@ -40,6 +40,7 @@ pub(crate) fn handle_syscall(syscall_id: usize, args: [usize; 6]) -> isize {
     call_interface!(TrapHandler::handle_syscall, syscall_id, args)
 }
 
+#[allow(dead_code)]
 #[cfg(feature = "paging")]
 pub(crate) fn handle_page_fault(addr: VirtAddr, flags: MappingFlags) {
     call_interface!(TrapHandler::handle_page_fault, addr, flags);

@@ -53,11 +53,7 @@ impl DnsSocket {
             SOCKET_SET.poll_interfaces();
             match SOCKET_SET.with_socket_mut::<dns::Socket, _, _>(handle, |socket| {
                 socket.get_query_result(query_handle).map_err(|e| match e {
-<<<<<<< HEAD
-                    GetQueryResultError::Pending => AxError::Again,
-=======
                     GetQueryResultError::Pending => AxError::WouldBlock,
->>>>>>> 322a8c34d08df4a657daf4bb67e4031480162883
                     GetQueryResultError::Failed => {
                         ax_err_type!(ConnectionRefused, "socket query() failed")
                     }
@@ -67,11 +63,7 @@ impl DnsSocket {
                     SOCKET_SET.poll_interfaces();
                     return Ok(n.to_vec());
                 }
-<<<<<<< HEAD
-                Err(AxError::Again) => axtask::yield_now(),
-=======
                 Err(AxError::WouldBlock) => axtask::yield_now(),
->>>>>>> 322a8c34d08df4a657daf4bb67e4031480162883
                 Err(e) => return Err(e),
             }
         }

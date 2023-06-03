@@ -9,9 +9,6 @@ extern crate libax;
 use libax::test::run_testcases;
 #[no_mangle]
 fn main() -> i32 {
-    // let name = "execve".to_string();
-    // let args = [name].to_vec();
-    // run_testcase(args).unwrap();
-    run_testcases("junior");
+    run_testcases("libc-static");
     0
 }
