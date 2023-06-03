@@ -223,6 +223,7 @@ dependencies = [
  "axfs_ramfs",
  "axfs_vfs",
  "axio",
+ "axsync",
  "axtask",
  "capability",
  "cfg-if",

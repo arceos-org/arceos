@@ -58,9 +58,9 @@ define cargo_build
 endef
 
 define cargo_clippy
-  cargo clippy --target $(TARGET) --all-features --workspace --exclude axlog --exclude libax_user --exclude axuser --exclude "microkernel-*" --exclude axprocess --exclude axscheme --exclude test --exclude axnet
+  cargo clippy --target $(TARGET) --all-features --workspace --exclude axlog --exclude libax_user --exclude axuser --exclude "microkernel-*" --exclude axprocess --exclude axscheme --exclude test --exclude axnet --exclude axfs
   cargo clippy --target $(TARGET) --all-features -p libax_user -p "microkernel-*"
-  cargo clippy --target $(TARGET) --all-features -p axuser -p axscheme -p axprocess -p axnet
+  cargo clippy --target $(TARGET) --all-features -p axuser -p axscheme -p axprocess -p axnet -p axfs
   cargo clippy --target $(TARGET) -p axlog -p percpu -p percpu_macros
 
 endef

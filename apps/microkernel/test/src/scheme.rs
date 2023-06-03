@@ -80,7 +80,7 @@ pub mod server {
     pub fn main() {
         println!("Server started!");
         let server = Server::new();
-        let channel = File::create(":/test").unwrap();
+        let mut channel = File::create(":/test").unwrap();
 
         loop {
             let mut packet: Packet = Packet::default();
@@ -103,14 +103,14 @@ mod client {
     use alloc::vec;
     use libax::{
         axerrno::AxError,
-        io::File,
+        io::{File, Read, Write},
         task::{self, spawn},
     };
 
     pub fn main() {
         spawn(|| {
             println!("Client sender started!");
-            let file = File::create("test:/test").unwrap();
+            let mut file = File::create("test:/test").unwrap();
             let data = vec!["Hello", " ", "world", "\n", "Goodbye", " ", "world", "\n"];
             for item in &data {
                 println!("Send: '{}'", item);
@@ -119,7 +119,7 @@ mod client {
         });
         spawn(|| {
             println!("Client receiver started!");
-            let file = File::create("test:/test").unwrap();
+            let mut file = File::create("test:/test").unwrap();
             let mut buffer = [0u8; 8];
             loop {
                 let len = match file.read(&mut buffer) {
