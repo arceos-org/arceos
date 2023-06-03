@@ -16,6 +16,8 @@ BUS ?= mmio
 
 QEMU_LOG ?= n
 
+MICRO ?= y
+
 ifeq ($(wildcard $(APP)),)
   $(error Application path "$(APP)" is not valid)
 endif
@@ -49,6 +51,7 @@ export PLATFORM
 export SMP
 export MODE
 export LOG
+export MICRO
 
 # Binutils
 ifeq ($(APP_LANG), c)

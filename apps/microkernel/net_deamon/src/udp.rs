@@ -83,7 +83,7 @@ impl Scheme for UdpScheme {
 }
 pub fn start_udp() {
     let udp = UdpScheme::new();
-    let channel = File::create(":/udp").unwrap();
+    let mut channel = File::create(":/udp").unwrap();
     libax::println!("UDP deamon started!");
     loop {
         let mut packet: Packet = Packet::default();

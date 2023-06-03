@@ -75,7 +75,6 @@ pub fn syscall_handler(id: usize, params: [usize; 6]) -> isize {
         #[cfg(feature = "user-paging")]
         SYS_YIELD => {
             axtask::yield_now();
-            debug!("?????");
             0
         }
         #[cfg(feature = "user-paging")]

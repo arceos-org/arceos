@@ -7,8 +7,8 @@ use net_deamon::start_tcp;
 #[macro_use]
 extern crate libax;
 
-mod http_client;
-mod http_server;
+use apps::http_client;
+use apps::http_server;
 
 fn fake_exec(f: fn()) {
     match fork() {
@@ -36,6 +36,7 @@ fn main() {
     println!("Start TCP deamon");
 
     fake_exec(run_net_deamon);
+    fake_exec(fs_deamon::init);
     fake_exec(http_client::main);
     fake_exec(http_server::main);
 

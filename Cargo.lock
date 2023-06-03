@@ -223,7 +223,6 @@ dependencies = [
  "axfs_ramfs",
  "axfs_vfs",
  "axio",
- "axsync",
  "axtask",
  "capability",
  "cfg-if",
@@ -231,6 +230,7 @@ dependencies = [
  "driver_block",
  "fatfs",
  "lazy_init",
+ "libax_user",
  "log",
 ]
 
@@ -397,6 +397,7 @@ dependencies = [
  "axsync",
  "axtask",
  "crate_interface 0.1.1",
+ "driver_block",
  "driver_net",
  "lazy_init",
  "scheme",
@@ -1154,10 +1155,35 @@ name = "memory_addr"
 version = "0.1.0"
 
 [[package]]
+name = "microkernel-apps"
+version = "0.1.0"
+dependencies = [
+ "libax_user",
+]
+
+[[package]]
+name = "microkernel-basic-test"
+version = "0.1.0"
+dependencies = [
+ "libax_user",
+]
+
+[[package]]
+name = "microkernel-fs-deamon"
+version = "0.1.0"
+dependencies = [
+ "axfs",
+ "libax_user",
+ "syscall_number",
+]
+
+[[package]]
 name = "microkernel-init"
 version = "0.1.0"
 dependencies = [
  "libax_user",
+ "microkernel-apps",
+ "microkernel-fs-deamon",
  "microkernel-net-deamon",
 ]
 
@@ -1667,13 +1693,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be55cf8942feac5c765c2c993422806843c9a9a45d4d5c407ad6dd2ea95eb9b6"
 dependencies = [
  "winapi-util",
-]
-
-[[package]]
-name = "test"
-version = "0.1.0"
-dependencies = [
- "libax_user",
 ]
 
 [[package]]

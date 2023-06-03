@@ -8,7 +8,11 @@
 
 extern crate alloc;
 
-use libax::{axerrno::AxResult, io::{File, Read, Write}, task::yield_now};
+use libax::{
+    axerrno::AxResult,
+    io::{File, Read, Write},
+    task::yield_now,
+};
 
 const LOCAL_IP: &str = "10.0.2.15";
 const LOCAL_PORT: u16 = 5555;

@@ -5,7 +5,14 @@
 use alloc::{string::String, sync::Arc, vec::Vec};
 use axerrno::{ax_err, AxError, AxResult};
 use axfs_vfs::{VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsNodeType, VfsOps, VfsResult};
-use axsync::Mutex;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "user")] {
+        use libax::Mutex;
+    } else {
+        use axsync::Mutex;
+    }
+}
+
 use lazy_init::LazyInit;
 
 use crate::{api::FileType, fs};
@@ -170,7 +177,6 @@ pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
             .mount("/tmp", Arc::new(ramfs))
             .expect("failed to mount ramfs at /tmp");
     }
-
     ROOT_DIR.init_by(Arc::new(root_dir));
     CURRENT_DIR.init_by(Mutex::new(ROOT_DIR.clone()));
     *CURRENT_DIR_PATH.lock() = "/".into();

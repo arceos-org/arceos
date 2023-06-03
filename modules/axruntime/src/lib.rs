@@ -200,7 +200,7 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         axscheme::init_scheme();
     }
 
-    #[cfg(any(feature = "user_net"))]
+    #[cfg(any(feature = "user-net"))]
     {
         let all_devices = axdriver::init_drivers();
         axscheme::dev::init(all_devices);

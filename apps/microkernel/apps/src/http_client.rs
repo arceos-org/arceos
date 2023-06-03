@@ -1,7 +1,7 @@
 extern crate alloc;
 
 use alloc::format;
-use libax::io::{self, File, Write, Read};
+use libax::io::{self, File, Read, Write};
 
 //const DEST_HOST: &str = "ident.me";
 const DEST_IP: &str = "49.12.234.183";

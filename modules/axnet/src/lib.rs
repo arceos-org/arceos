@@ -60,7 +60,7 @@ mod user {
     use driver_net::{
         DevError, DevResult, EthernetAddress, NetBuffer, NetBufferBox, NetBufferPool,
     };
-    use libax::io::File;
+    use libax::io::{File, Read, Write};
     pub type AxNetDevice = AxNetDeviceMock<'static>;
 
     pub struct AxNetDeviceMock<'a> {
@@ -82,7 +82,7 @@ mod user {
         }
 
         pub fn mac_address(&self) -> EthernetAddress {
-            let file = File::open("dev:/net/addr").unwrap();
+            let mut file = File::open("dev:/net/addr").unwrap();
             let mut addr = EthernetAddress([0; 6]);
             file.read(&mut addr.0).unwrap();
             addr

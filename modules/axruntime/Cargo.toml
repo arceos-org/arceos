@@ -27,7 +27,8 @@ process = ["dep:axprocess", "user-paging", "scheme"]
 futex = ["dep:axsync", "axsync?/futex"]
 scheme = ["user-paging", "dep:axsync", "dep:scheme", "dep:axscheme"]
 
-user_net = ["alloc", "paging", "axdriver/virtio-net", "dep:axscheme", "axscheme?/user_net"]
+user-net = ["alloc", "paging", "axdriver/virtio-net", "dep:axscheme", "axscheme?/user_net"]
+user-fs = ["alloc", "paging", "axdriver/virtio-blk", "dep:axscheme", "axscheme?/user_fs"]
 default = ["axtask?/default"]
 
 [dependencies]

@@ -56,9 +56,10 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
 
         _ => {
             panic!(
-                "Unhandled trap {:?} (stval = {:x}) @ {:#x}:\n{:#x?}",
+                "Unhandled trap {:?} (stval = {:x}, from user: {}) @ {:#x}:\n{:#x?}",
                 scause.cause(),
                 riscv::register::stval::read(),
+                from_user,
                 tf.sepc,
                 tf,
             );

@@ -7,10 +7,12 @@ edition = "2021"
 
 [features]
 user_net = ["axdriver/virtio-net", "dep:driver_net"]
+user_fs = ["axdriver/virtio-blk", "dep:driver_block"]
 process = ["axtask/process"]
 
 [dependencies]
 driver_net = { path = "../../crates/driver_net", optional = true }
+driver_block = { path = "../../crates/driver_block", optional = true }      
 crate_interface = { path = "../../crates/crate_interface" }
 axhal = { path = "../axhal" }
 axerrno = { path = "../../crates/axerrno" }

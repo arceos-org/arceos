@@ -99,7 +99,7 @@ where
     {
     unimplemented!();
 }
-    
+
 pub fn spawn_raw<F>(_f: F, _name: String, _stack_size: usize) -> AxTaskRef
 where
     F: FnOnce() + Send + 'static,
@@ -111,7 +111,7 @@ pub fn spawn_args(_f: usize, _arg: usize) {
     unimplemented!();
 }
 
-    
+
 /// Spawns a new task.
 /// Spawns a new task with the given parameters.
 ///

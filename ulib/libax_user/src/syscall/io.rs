@@ -1,4 +1,4 @@
-use syscall_number::{io::OpenFlags, SYS_CLOSE, SYS_DUP, SYS_OPEN, SYS_READ};
+use syscall_number::{io::OpenFlags, SYS_CLOSE, SYS_DUP, SYS_LSEEK, SYS_OPEN, SYS_READ};
 
 use super::sys_number::SYS_WRITE;
 
@@ -29,4 +29,8 @@ pub fn close(fd: usize) -> isize {
 }
 pub fn dup(fd: usize, buf: &str) -> isize {
     crate::syscall(SYS_DUP, [fd, buf.as_ptr() as usize, buf.len(), 0, 0, 0])
+}
+
+pub fn lseek(fd: usize, offset: isize, whence: usize) -> isize {
+    crate::syscall(SYS_LSEEK, [fd, offset as usize, whence as usize, 0, 0, 0])
 }
