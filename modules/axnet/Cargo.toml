@@ -23,6 +23,7 @@ axhal = { path = "../axhal" }
 axsync = { path = "../axsync", default-features = false }
 axtask = { path = "../axtask", default-features = false }
 axdriver = { path = "../axdriver", features = ["net"] }
+axio = { path = "../../crates/axio" }
 
 [dependencies.smoltcp]
 version = "0.9.1"
@@ -31,5 +32,5 @@ features = [
   "alloc", "log",   # no std
   "medium-ethernet",
   "proto-ipv4",
-  "socket-raw", "socket-icmp", "socket-udp", "socket-tcp", "socket-dns"
+  "socket-raw", "socket-icmp", "socket-udp", "socket-tcp", "socket-dns",
 ]

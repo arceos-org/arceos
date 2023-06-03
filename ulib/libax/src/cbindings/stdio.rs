@@ -1,11 +1,11 @@
 use core::ffi::{c_char, c_int};
 
 use crate::io::{self, Write};
-use axerrno::{LinuxError, LinuxResult};
+use axerrno::LinuxError;
 use spinlock::SpinNoIrq;
 
 #[cfg(feature = "alloc")]
-use alloc::sync::Arc;
+use {crate::io::PollState, alloc::sync::Arc, axerrno::LinuxResult};
 
 static LOCK: SpinNoIrq<()> = SpinNoIrq::new(()); // Lock used by `ax_println_str` for C apps
 
@@ -62,6 +62,17 @@ impl super::fd_ops::FileLike for crate::io::Stdin {
     fn into_any(self: Arc<Self>) -> Arc<dyn core::any::Any + Send + Sync> {
         self
     }
+
+    fn poll(&self) -> LinuxResult<PollState> {
+        Ok(PollState {
+            readable: true,
+            writable: true,
+        })
+    }
+
+    fn set_nonblocking(&self, _nonblocking: bool) -> LinuxResult {
+        Ok(())
+    }
 }
 
 #[cfg(feature = "alloc")]
@@ -86,5 +97,16 @@ impl super::fd_ops::FileLike for crate::io::Stdout {
 
     fn into_any(self: Arc<Self>) -> Arc<dyn core::any::Any + Send + Sync> {
         self
+    }
+
+    fn poll(&self) -> LinuxResult<PollState> {
+        Ok(PollState {
+            readable: true,
+            writable: true,
+        })
+    }
+
+    fn set_nonblocking(&self, _nonblocking: bool) -> LinuxResult {
+        Ok(())
     }
 }
