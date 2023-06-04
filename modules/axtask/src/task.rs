@@ -125,6 +125,11 @@ impl TaskInner {
     pub fn set_affinity(&self, aff: u32) {
         self.affinity.store(aff, Ordering::Release);
     }
+
+    /// get affinity mask for the task
+    pub fn get_affinity(&self) -> u32{
+        self.affinity.load(Ordering::Acquire)
+    }
 }
 
 // private methods

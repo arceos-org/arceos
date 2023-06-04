@@ -75,7 +75,7 @@ impl WaitQueue {
         } else {
             tmp = get_current_cpu_id();
         }
-        let target_cpu = LOAD_BALANCE_ARR[tmp].find_target_cpu();
+        let target_cpu = LOAD_BALANCE_ARR[tmp].find_target_cpu(crate::current().get_affinity());
         RUN_QUEUE[target_cpu].block_current(|task| {
             task.set_in_wait_queue(true);
             self.queue.lock().push_back(task)
@@ -166,8 +166,8 @@ impl WaitQueue {
     /// preemption is enabled.
     pub fn notify_one(&self, resched: bool) -> bool {
         if !self.queue.lock().is_empty() {
-            let target_cpu = LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu();
-            let tmp = self.notify_one_locked(resched, &RUN_QUEUE[target_cpu]);
+            //let target_cpu = LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu(task.get_affinity());
+            let tmp = self.notify_one_locked(resched);
             tmp
         } else {
             false
@@ -182,7 +182,7 @@ impl WaitQueue {
         loop {
             if let Some(task) = self.queue.lock().pop_front() {
                 task.set_in_wait_queue(false);
-                RUN_QUEUE[LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu()]
+                RUN_QUEUE[LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu(task.get_affinity())]
                     .unblock_task(task, resched);
             } else {
                 break;
@@ -198,7 +198,7 @@ impl WaitQueue {
         let mut wq = self.queue.lock();
         if let Some(index) = wq.iter().position(|t| Arc::ptr_eq(t, task)) {
             task.set_in_wait_queue(false);
-            let target_cpu = LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu();
+            let target_cpu = LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu(task.get_affinity());
             let task = wq.remove(index).unwrap();
             RUN_QUEUE[target_cpu].unblock_task(task, resched);
             true
@@ -207,8 +207,9 @@ impl WaitQueue {
         }
     }
 
-    pub(crate) fn notify_one_locked(&self, resched: bool, rq: &AxRunQueue) -> bool {
+    pub(crate) fn notify_one_locked(&self, resched: bool) -> bool {
         if let Some(task) = self.queue.lock().pop_front() {
+            let rq = RUN_QUEUE[LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu(task.get_affinity())];
             task.set_in_wait_queue(false);
             rq.unblock_task(task, resched);
             true

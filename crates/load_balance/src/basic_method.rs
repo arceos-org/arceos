@@ -44,17 +44,19 @@ impl BasicMethod {
 
 impl BaseLoadBalance for BasicMethod {
     /// the most naive method : find min
-    fn find_target_cpu(&self) -> usize {
-        let mut mn: isize = self.pointers.lock()[0].weight.load(Ordering::Acquire);
-        let mut arg: usize = 0;
-        for i in 1..self.smp.load(Ordering::Acquire) {
-            let tmp = self.pointers.lock()[i].weight.load(Ordering::Acquire);
-            if tmp < mn {
-                mn = tmp;
-                arg = i;
+    fn find_target_cpu(&self, aff: u32) -> usize {
+        let mut mn = 0;
+        let mut arg: isize = -1;
+        for i in 0..self.smp.load(Ordering::Acquire) {
+            if ((aff >> i) & 1) == 1 {
+                let tmp = self.pointers.lock()[i].weight.load(Ordering::Acquire);
+                if tmp < mn {
+                    mn = tmp;
+                    arg = i as isize;
+                }
             }
         }
-        arg
+        arg as usize
     }
 
     /// find target cpu id that can be stolen
