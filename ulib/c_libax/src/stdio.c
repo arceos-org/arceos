@@ -187,13 +187,8 @@ FILE *fopen(const char *filename, const char *mode)
     FILE *f;
     int flags;
 
-<<<<<<< HEAD
-    // TODO: Should set errno
-    if (!strchr("rwa", *mode)) {
-=======
     if (!strchr("rwa", *mode)) {
         errno = EINVAL;
->>>>>>> 322a8c34d08df4a657daf4bb67e4031480162883
         return 0;
     }
 
