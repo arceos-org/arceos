@@ -1,5 +1,5 @@
 use alloc::boxed::Box;
-use axfs::{api::File, macro_fs::file_io::FileExt};
+use axfs::{api::File, monolithic_fs::file_io::FileExt};
 use axio::{Read, Seek, SeekFrom};
 
 /// File backend for Lazy load `MapArea`. `file` should be a file holding a offset value. Normally,

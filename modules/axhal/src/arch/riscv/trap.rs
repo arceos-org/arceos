@@ -26,7 +26,7 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
     match scause.cause() {
         Trap::Exception(E::Breakpoint) => handle_breakpoint(&mut tf.sepc),
         Trap::Interrupt(_) => crate::trap::handle_irq_extern(scause.bits()),
-        #[cfg(feature = "macro")]
+        #[cfg(feature = "monolithic")]
         Trap::Exception(E::UserEnvCall) => {
             // jump to next instruction anyway
             tf.sepc += 4;
@@ -40,6 +40,8 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
             // cx is changed during sys_exec, so we have to call it again
             tf.regs.a0 = result as usize;
         }
+
+        #[cfg(feature = "paging")]
         Trap::Exception(E::InstructionPageFault) => {
             if !from_user {
                 unimplemented!("I page fault from kernel");
@@ -50,13 +52,21 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
             handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::EXECUTE);
         }
 
+        #[cfg(feature = "paging")]
         Trap::Exception(E::LoadPageFault) => {
+            if !from_user {
+                unimplemented!("L page fault from kernel");
+            }
             let addr = stval::read();
 
             handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::READ);
         }
 
+        #[cfg(feature = "paging")]
         Trap::Exception(E::StorePageFault) => {
+            if !from_user {
+                unimplemented!("S page fault from kernel");
+            }
             let addr = stval::read();
 
             handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::WRITE);

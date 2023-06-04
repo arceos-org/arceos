@@ -99,7 +99,7 @@ impl<T: Any> AsAny for T {
 }
 
 /// 用于给虚存空间进行懒分配
-#[cfg(feature = "macro")]
+#[cfg(feature = "monolithic")]
 pub trait FileExt: Read + Write + Seek + AsAny + Send + Sync {
     fn readable(&self) -> bool;
     fn writable(&self) -> bool;

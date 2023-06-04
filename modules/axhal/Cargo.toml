@@ -21,9 +21,9 @@ platform-qemu-virt-aarch64 = [
     "dep:page_table_entry", "dep:ratio",
 ]
 
-macro = []
+monolithic = []
 
-default = ["macro"]
+default = ["monolithic"]
 
 [dependencies]
 log = "0.4"

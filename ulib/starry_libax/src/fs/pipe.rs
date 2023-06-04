@@ -2,7 +2,7 @@ use super::FileIOType;
 extern crate alloc;
 use alloc::sync::{Arc, Weak};
 use axerrno::{AxError, AxResult};
-use axfs::macro_fs::{file_io::FileExt, FileIO};
+use axfs::monolithic_fs::{file_io::FileExt, FileIO};
 use axio::{Read, Seek, Write};
 use axsync::Mutex;
 use axtask::yield_now;

@@ -8,8 +8,8 @@ authors = ["Youjie Zheng <zyj578335934@gmail.com>"]
 
 [features]
 fs = []
-macro = ["axhal/macro"]
-default = ["macro", "fs"]
+monolithic = ["axhal/monolithic"]
+default = ["monolithic", "fs"]
 
 [dependencies]
 spinlock = { path = "../../crates/spinlock" }

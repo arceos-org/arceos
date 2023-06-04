@@ -2,7 +2,7 @@ use alloc::string::ToString;
 use alloc::vec;
 use alloc::{collections::BTreeMap, format, string::String, sync::Arc, vec::Vec};
 use axerrno::{AxError, AxResult};
-use axfs::macro_fs::FileIO;
+use axfs::monolithic_fs::FileIO;
 use axhal::arch::{write_page_table_root, TrapFrame};
 use axlog::info;
 use axtask::{AxTaskRef, TaskId};
@@ -16,8 +16,8 @@ use crate::stdin::{Stderr, Stdin, Stdout};
 use axmem::MemorySet;
 use axtask::{
     current,
-    macro_task::run_queue::{IDLE_TASK, RUN_QUEUE},
-    macro_task::task::{CurrentTask, TaskInner},
+    monolithic_task::run_queue::{IDLE_TASK, RUN_QUEUE},
+    monolithic_task::task::{CurrentTask, TaskInner},
 };
 use spinlock::SpinNoIrq;
 
@@ -72,7 +72,7 @@ impl ProcessInner {
             heap_top: heap_bottom,
             is_zombie: false,
             exit_code: 0,
-            fd_table: fd_table,
+            fd_table,
             cwd: "/".to_string(), // 这里的工作目录是根目录
         }
     }
@@ -100,15 +100,17 @@ impl Process {
         // 测例文件名
         let path = args[0].clone();
         let mut memory_set = MemorySet::new_with_kernel_mapped();
-        let (entry, user_stack_bottom, heap_bottom) = load_app(path.clone(), args, &mut memory_set)
-            .expect(format!("Failed to load app: {}", path).as_str());
-        // 切换页表
         let page_table_token = memory_set.page_table_token();
         if page_table_token != 0 {
             unsafe {
                 write_page_table_root(page_table_token.into());
+                riscv::register::sstatus::set_sum();
             };
         }
+
+        let (entry, user_stack_bottom, heap_bottom) = load_app(path.clone(), args, &mut memory_set)
+            .expect(format!("Failed to load app: {}", path).as_str());
+        // 切换页表
 
         // 以这种方式建立的线程，不通过某一个具体的函数开始，而是通过地址来运行函数，所以entry不会被用到
         let new_process = Arc::new(Self {
@@ -129,7 +131,6 @@ impl Process {
                 ],
             )),
         });
-
         // 记录该进程，防止被回收
         PID2PC
             .lock()

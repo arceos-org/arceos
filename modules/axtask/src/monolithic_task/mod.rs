@@ -1,4 +1,4 @@
-//! Macro 存放为了实现宏内核架构而改造的task结构
+//! Monolithic 存放为了实现宏内核架构而改造的task结构
 
 pub mod task;
 

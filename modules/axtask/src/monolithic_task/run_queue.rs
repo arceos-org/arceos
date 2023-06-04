@@ -4,9 +4,9 @@ use lazy_init::LazyInit;
 use scheduler::BaseScheduler;
 use spinlock::SpinNoIrq;
 
-pub use crate::macro_task::task::{CurrentTask, TaskState};
+pub use crate::monolithic_task::task::{CurrentTask, TaskInner, TaskState, KERNEL_PROCESS_ID};
 
-use crate::{AxTaskRef, Scheduler, TaskInner, WaitQueue, KERNEL_PROCESS_ID};
+use crate::{AxTaskRef, Scheduler, WaitQueue};
 
 // TODO: per-CPU
 pub static RUN_QUEUE: LazyInit<SpinNoIrq<AxRunQueue>> = LazyInit::new();

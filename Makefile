@@ -9,7 +9,7 @@ APP ?= $(A)
 APP_FEATURES ?=
 DISK_IMG ?= sdcard.img
 
-MACRO ?= y
+MONOLITHIC ?= y
 MULTITASK ?= y
 PAGING ?= y
 FS ?= y

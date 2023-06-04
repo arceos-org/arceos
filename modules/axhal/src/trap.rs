@@ -19,7 +19,7 @@ pub trait TrapHandler {
     fn handle_irq(irq_num: usize);
     // more e.g.: handle_page_fault();
     // 需要分离用户态使用
-    #[cfg(feature = "macro")]
+    #[cfg(feature = "monolithic")]
     fn handle_syscall(syscall_id: usize, args: [usize; 6]) -> isize;
 
     #[cfg(feature = "paging")]
@@ -34,7 +34,7 @@ pub(crate) fn handle_irq_extern(irq_num: usize) {
 
 /// Call the syscall handler
 #[allow(dead_code)]
-#[cfg(feature = "macro")]
+#[cfg(feature = "monolithic")]
 /// 分割token流
 pub(crate) fn handle_syscall(syscall_id: usize, args: [usize; 6]) -> isize {
     call_interface!(TrapHandler::handle_syscall, syscall_id, args)

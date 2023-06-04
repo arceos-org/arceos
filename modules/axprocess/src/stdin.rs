@@ -1,5 +1,5 @@
 use axerrno::{AxError, AxResult};
-use axfs::macro_fs::{
+use axfs::monolithic_fs::{
     file_io::{FileExt, FileIO},
     FileIOType,
 };

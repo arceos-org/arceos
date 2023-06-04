@@ -64,13 +64,13 @@ platform-pc-x86 = ["axhal/platform-pc-x86", "bus-pci"]
 platform-qemu-virt-riscv = ["axhal/platform-qemu-virt-riscv", "bus-mmio"]
 platform-qemu-virt-aarch64 = ["axhal/platform-qemu-virt-aarch64", "bus-mmio"]
 
-# Macro
-macro = ["axruntime/macro", "fs"]
+# Monolithic kernel
+monolithic = ["axruntime/monolithic", "fs"]
 
 # Test
 test = []
 
-default = ["axtask?/sched_fifo", "axtask", "axmem", "macro", "test", "paging"]
+default = ["axtask?/sched_fifo", "axtask", "axmem", "monolithic", "test", "paging"]
 [dependencies]
 spin = { version = "0.9", optional = true }
 lazy_static = { version = "1.4", features = ["spin_no_std"]}

@@ -25,7 +25,7 @@ extern crate axlog;
 #[cfg(all(target_os = "none", not(test)))]
 mod lang_items;
 
-#[cfg(not(feature = "macro"))]
+#[cfg(not(feature = "monolithic"))]
 mod trap;
 
 #[cfg(feature = "smp")]
@@ -153,7 +153,7 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) {
     axhal::platform_init();
 
     cfg_if::cfg_if! {
-        if #[cfg(feature = "macro")] {
+        if #[cfg(feature = "monolithic")] {
             axprocess::process::init_kernel_process();
         }
         else {

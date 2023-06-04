@@ -3,8 +3,8 @@ use super::FileIOType;
 extern crate alloc;
 use alloc::string::{String, ToString};
 use axerrno::{AxError, AxResult};
-use axfs::macro_fs::FileIO;
-use axfs::{api, macro_fs::file_io::FileExt};
+use axfs::monolithic_fs::FileIO;
+use axfs::{api, monolithic_fs::file_io::FileExt};
 use axio::{Read, Seek, SeekFrom, Write};
 use log::debug;
 

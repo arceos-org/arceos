@@ -14,9 +14,9 @@ devfs = ["dep:axfs_devfs"]
 ramfs = ["dep:axfs_ramfs"]
 fatfs = ["dep:fatfs"]
 myfs = ["dep:crate_interface"]
-macro = []
+monolithic = []
 use-ramdisk = []
-default = ["devfs", "ramfs", "fatfs", "macro"]
+default = ["devfs", "ramfs", "fatfs", "monolithic"]
 
 [dependencies]
 log = "0.4"

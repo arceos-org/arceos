@@ -1,7 +1,7 @@
 #![cfg_attr(not(test), no_std)]
 #![feature(drain_filter)]
 use axhal::{arch::TaskContext, mem::VirtAddr, paging::MappingFlags};
-use axtask::{current, macro_task::task::CurrentTask, macro_task::task::TaskState};
+use axtask::{current, monolithic_task::task::CurrentTask, monolithic_task::task::TaskState};
 
 use crate::process::current_process;
 mod loader;

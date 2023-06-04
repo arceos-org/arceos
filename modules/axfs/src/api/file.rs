@@ -1,7 +1,7 @@
 use axio::{prelude::*, Result, SeekFrom};
 use core::fmt;
 
-use crate::{fops, macro_fs::file_io::FileExt};
+use crate::{fops, monolithic_fs::file_io::FileExt};
 
 /// A structure representing a type of file with accessors for each file type.
 /// It is returned by [`Metadata::file_type`] method.
@@ -185,7 +185,7 @@ impl Seek for File {
     }
 }
 
-// #[cfg(feature = "macro")]
+// #[cfg(feature = "monolithic")]
 impl FileExt for File {
     fn readable(&self) -> bool {
         self.inner.readable()

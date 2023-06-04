@@ -1,4 +1,4 @@
-use axfs::macro_fs::file_io::Kstat;
+use axfs::monolithic_fs::file_io::Kstat;
 use flags::{MMAPFlags, TimeSecs, TimeVal, UtsName, WaitFlags, MMAPPROT, TMS};
 use fs::*;
 use log::{debug, error};

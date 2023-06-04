@@ -6,7 +6,7 @@ use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 #[cfg(feature = "preempt")]
 use core::sync::atomic::AtomicUsize;
 
-use crate::{AxRunQueue, AxTask, AxTaskRef, WaitQueue};
+use crate::{monolithic_task::run_queue::AxRunQueue, AxTask, AxTaskRef, WaitQueue};
 use axhal::arch::{TaskContext, TrapFrame};
 use memory_addr::{align_up_4k, VirtAddr};
 use riscv::asm;

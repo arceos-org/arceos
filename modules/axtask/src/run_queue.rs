@@ -5,8 +5,8 @@ use scheduler::BaseScheduler;
 use spinlock::SpinNoIrq;
 
 cfg_if::cfg_if! {
-    if #[cfg(feature = "macro")]  {
-        pub use crate::macro_task::task::{CurrentTask, TaskState};
+    if #[cfg(feature = "monolithic")]  {
+        pub use crate::monolithic_task::task::{CurrentTask, TaskState};
     } else {
         pub use crate::task::{CurrentTask, TaskState};
     }

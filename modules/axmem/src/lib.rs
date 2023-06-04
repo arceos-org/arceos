@@ -264,6 +264,7 @@ impl MemorySet {
             }
         }
 
+        info!("Relocating done");
         self.entry = elf.header.pt2.entry_point() as usize + base_addr;
 
         let mut map = BTreeMap::new();

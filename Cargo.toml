@@ -16,7 +16,7 @@ members = [
     "apps/task/priority",
     "apps/syscall/junior",
     "apps/syscall/libc_static",
-    "apps/syscall/libc_dyamic",
+    "apps/syscall/libc_dynamic",
 
     "crates/allocator",
     "crates/arm_gic",

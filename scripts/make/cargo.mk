@@ -15,7 +15,7 @@ endif
 features-$(FS) += libax/fs
 features-$(NET) += libax/net
 features-$(GRAPHIC) += libax/display
-features-$(MACRO) += libax/macro
+features-$(MANOLITHIC) += libax/monolithic
 features-$(MULTITASK) += libax/multitask
 features-$(PAGING) += libax/paging
 

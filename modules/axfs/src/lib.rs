@@ -33,8 +33,8 @@ mod root;
 pub mod api;
 pub mod fops;
 
-#[cfg(feature = "macro")]
-pub mod macro_fs;
+#[cfg(feature = "monolithic")]
+pub mod monolithic_fs;
 
 use axdriver::{prelude::*, AxDeviceContainer};
 

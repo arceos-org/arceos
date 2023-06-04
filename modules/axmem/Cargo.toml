@@ -7,8 +7,8 @@ authors = ["Jiayu Chen <c0percn@gmail.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-macro = ["axfs/macro"]
-default = ["macro"]
+monolithic = ["axfs/monolithic"]
+default = ["monolithic"]
 
 [dependencies]
 log = "0.4"

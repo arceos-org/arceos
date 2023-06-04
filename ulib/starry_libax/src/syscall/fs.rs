@@ -9,7 +9,7 @@ use alloc::format;
 use alloc::string::ToString;
 use alloc::sync::Arc;
 use axfs::api;
-use axfs::macro_fs::file_io::Kstat;
+use axfs::monolithic_fs::file_io::Kstat;
 use axprocess::process::current_process;
 use core::mem::transmute;
 use core::ptr::copy_nonoverlapping;

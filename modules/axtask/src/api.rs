@@ -4,9 +4,9 @@ use alloc::{string::String, sync::Arc};
 
 #[cfg(feature = "multitask")]
 cfg_if::cfg_if! {
-    if #[cfg(feature = "macro")]  {
-        pub(crate) use crate::macro_task::run_queue::{AxRunQueue, RUN_QUEUE, init, init_secondary};
-        pub use crate::macro_task::task::{CurrentTask, TaskId, TaskInner, KERNEL_PROCESS_ID};
+    if #[cfg(feature = "monolithic")]  {
+        pub(crate) use crate::monolithic_task::run_queue::{AxRunQueue, RUN_QUEUE, init, init_secondary};
+        pub use crate::monolithic_task::task::{CurrentTask, TaskId, TaskInner, KERNEL_PROCESS_ID};
     } else {
         pub(crate) use crate::run_queue::{AxRunQueue, RUN_QUEUE, init, init_secondary};
         pub use crate::task::{CurrentTask, TaskId, TaskInner};
@@ -101,9 +101,9 @@ pub fn spawn_raw<F>(f: F, name: String, stack_size: usize) -> AxTaskRef
 where
     F: FnOnce() + Send + 'static,
 {
-    #[cfg(feature = "macro")]
+    #[cfg(feature = "monolithic")]
     let task = TaskInner::new(f, name, stack_size, KERNEL_PROCESS_ID, 0);
-    #[cfg(not(feature = "macro"))]
+    #[cfg(not(feature = "monolithic"))]
     let task = TaskInner::new(f, name, stack_size);
 
     RUN_QUEUE.lock().add_task(task.clone());

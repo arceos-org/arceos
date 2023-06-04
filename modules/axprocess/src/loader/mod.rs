@@ -12,7 +12,7 @@ pub const USER_STACK_SIZE: usize = 0x20000;
 use axerrno::AxResult;
 mod user_stack;
 use axhal::{mem::VirtAddr, paging::MappingFlags};
-use axlog::{debug, info};
+use axlog::info;
 use axmem::MemorySet;
 use core::str::from_utf8;
 use xmas_elf::{program::SegmentData, ElfFile};
@@ -86,10 +86,14 @@ impl<'a> Loader<'a> {
             None,
             None,
         );
-
+        info!(
+            "[new region] user heap: [{:?}, {:?})",
+            heap_start,
+            heap_start + MAX_HEAP_SIZE
+        );
         let ustack_top = VirtAddr::from(USER_STACK_OFFSET);
         let ustack_bottom = ustack_top + USER_STACK_SIZE;
-        debug!(
+        info!(
             "[new region] user stack: [{:?}, {:?})",
             ustack_top,
             ustack_bottom.align_up_4k()
