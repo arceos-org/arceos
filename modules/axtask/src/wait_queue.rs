@@ -209,7 +209,7 @@ impl WaitQueue {
 
     pub(crate) fn notify_one_locked(&self, resched: bool) -> bool {
         if let Some(task) = self.queue.lock().pop_front() {
-            let rq = RUN_QUEUE[LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu(task.get_affinity())];
+            let rq = &RUN_QUEUE[LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu(task.get_affinity())];
             task.set_in_wait_queue(false);
             rq.unblock_task(task, resched);
             true

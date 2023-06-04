@@ -127,6 +127,8 @@ where
     F: FnOnce() + Send + 'static,
 {
     let task = TaskInner::new(f, name, stack_size);
+    // TODO
+    task.set_affinity(((1u32) << (axconfig::SMP)) - 1);
     RUN_QUEUE[LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu(task.get_affinity())].add_task(task.clone());
     task
 }

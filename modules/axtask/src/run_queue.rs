@@ -8,6 +8,8 @@ use spinlock::SpinNoIrq;
 use crate::task::{CurrentTask, TaskState};
 use crate::{AxTaskRef, LoadBalance, Scheduler, TaskInner, WaitQueue};
 
+use core::sync::atomic::Ordering;
+use core::sync::atomic::AtomicUsize;
 use alloc::vec::Vec;
 use array_init::array_init;
 
@@ -22,6 +24,8 @@ lazy_static::lazy_static! {
 static EXITED_TASKS: SpinNoIrq<VecDeque<AxTaskRef>> = SpinNoIrq::new(VecDeque::new());
 
 static WAIT_FOR_EXIT: WaitQueue = WaitQueue::new();
+
+static SWITCH_EXITED_LOCK: AtomicUsize = AtomicUsize::new(0);
 
 use kernel_guard::NoPreempt;
 
@@ -81,7 +85,7 @@ impl AxRunQueue {
         let curr = crate::current();
         debug!("task yield: {}", curr.id_name());
         assert!(curr.is_running());
-        self.resched_inner(false);
+        self.resched_inner(false, false);
     }
 
     pub fn set_priority(&self, prio: isize) -> bool {
@@ -111,7 +115,7 @@ impl AxRunQueue {
             can_preempt
         );
         if can_preempt {
-            self.resched_inner(true);
+            self.resched_inner(true, false);
         } else {
             curr.set_preempt_pending(true);
         }
@@ -134,9 +138,10 @@ impl AxRunQueue {
         } else {
             curr.set_state(TaskState::Exited);
             curr.notify_exit(exit_code, self);
+            SWITCH_EXITED_LOCK.fetch_add(1, Ordering::Release);
             EXITED_TASKS.lock().push_back(curr.clone());
-            WAIT_FOR_EXIT.notify_one_locked(false, self);
-            self.resched_inner(false);
+            WAIT_FOR_EXIT.notify_one_locked(false);
+            self.resched_inner(false, true);
         }
         unreachable!("task exited!");
     }
@@ -157,7 +162,7 @@ impl AxRunQueue {
 
         curr.set_state(TaskState::Blocked);
         wait_queue_push(curr.clone());
-        self.resched_inner(false);
+        self.resched_inner(false, false);
     }
 
     pub fn unblock_task(&self, task: AxTaskRef, resched: bool) {
@@ -192,7 +197,7 @@ impl AxRunQueue {
         if now < deadline {
             crate::timers::set_alarm_wakeup(deadline, curr.clone());
             curr.set_state(TaskState::Blocked);
-            self.resched_inner(false);
+            self.resched_inner(false, false);
         }
     }
 }
@@ -201,7 +206,6 @@ impl AxRunQueue {
     /// Common reschedule subroutine. If `preempt`, keep current task's time
     /// slice, otherwise reset it.
     fn if_empty_steal(&self) {
-        return;
         if self.scheduler.lock().is_empty() {
             let mut queuelock = self.scheduler.lock();
             let id = self.id;
@@ -235,7 +239,7 @@ impl AxRunQueue {
             }
         }
     }
-    fn resched_inner(&self, preempt: bool) {
+    fn resched_inner(&self, preempt: bool, exit_lock: bool) {
         let _guard = NoPreempt::new();
         let prev = crate::current();
         if prev.is_running() {
@@ -243,7 +247,7 @@ impl AxRunQueue {
             if !prev.is_idle() {
                 prev.set_queue_id(self.id as isize);
                 self.scheduler.lock().put_prev_task(prev.clone(), preempt);
-                LOAD_BALANCE_ARR[self.id].add_weight(1); //?
+                LOAD_BALANCE_ARR[self.id].add_weight(1);
                 trace!(
                     "load balance weight for id {}: {}",
                     self.id,
@@ -270,7 +274,7 @@ impl AxRunQueue {
         if !flag {
             next.set_queue_id(-1);
         }
-        LOAD_BALANCE_ARR[self.id].add_weight(-1); //?
+        LOAD_BALANCE_ARR[self.id].add_weight(-1);
         trace!(
             "load balance weight for id {}: {}",
             self.id,
@@ -283,10 +287,10 @@ impl AxRunQueue {
         );
         // TODO: 注意需要对所有 pick_next_task 后面都要判断是否队列空，如果是则需要执行线程窃取
         self.if_empty_steal();
-        self.switch_to(prev, next);
+        self.switch_to(prev, next, exit_lock);
     }
 
-    fn switch_to(&self, prev_task: CurrentTask, next_task: AxTaskRef) {
+    fn switch_to(&self, prev_task: CurrentTask, next_task: AxTaskRef, exit_lock: bool) {
         let _guard = NoPreempt::new();
         trace!(
             "context switch: {} -> {}",
@@ -310,6 +314,9 @@ impl AxRunQueue {
             assert!(Arc::strong_count(&next_task) >= 1);
 
             CurrentTask::set_current(prev_task, next_task);
+            if exit_lock {
+                SWITCH_EXITED_LOCK.store(SWITCH_EXITED_LOCK.load(Ordering::Acquire) - 1, Ordering::Release);
+            }
             (*prev_ctx_ptr).switch_to(&*next_ctx_ptr);
         }
     }
@@ -319,6 +326,10 @@ fn gc_entry() {
     loop {
         // Drop all exited tasks and recycle resources.
         while !EXITED_TASKS.lock().is_empty() {
+            // 用 lock 先顶一顶
+            while SWITCH_EXITED_LOCK.load(Ordering::Acquire) > 0 {
+                trace!("qwqq {}", SWITCH_EXITED_LOCK.load(Ordering::Acquire));
+            }
             // Do not do the slow drops in the critical section.
             let task = EXITED_TASKS.lock().pop_front();
             if let Some(task) = task {

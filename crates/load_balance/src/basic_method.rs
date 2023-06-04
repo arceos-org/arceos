@@ -50,7 +50,7 @@ impl BaseLoadBalance for BasicMethod {
         for i in 0..self.smp.load(Ordering::Acquire) {
             if ((aff >> i) & 1) == 1 {
                 let tmp = self.pointers.lock()[i].weight.load(Ordering::Acquire);
-                if tmp < mn {
+                if arg == -1 || tmp < mn {
                     mn = tmp;
                     arg = i as isize;
                 }
