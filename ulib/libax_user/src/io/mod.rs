@@ -32,19 +32,19 @@ pub struct File {
 impl File {
     /// Opens a file (read only)
     pub fn open(path: &str) -> AxResult<Self> {
-        from_ret_code(open(path, OpenFlags::READ)).map(|fd| Self { fd })
+        open_wrapper(path, OpenFlags::READ).map(|fd| Self { fd })
     }
     /// Opens a file (write only, create one if not exist)
     pub fn create(path: &str) -> AxResult<Self> {
-        from_ret_code(open(
+        open_wrapper(
             path,
             OpenFlags::CREATE | OpenFlags::WRITE | OpenFlags::TRUNCATE,
-        ))
+        )
         .map(|fd| Self { fd })
     }
     /// Opens a file with options specified in `flags`
     pub fn open_with(path: &str, flags: OpenFlags) -> AxResult<Self> {
-        from_ret_code(open(path, flags)).map(|fd| Self { fd })
+        open_wrapper(path, flags).map(|fd| Self { fd })
     }
 }
 
@@ -120,12 +120,12 @@ pub fn stdout() -> File {
 
 /// remove a directory, recursively delete is not supported
 pub fn remove_dir(path: &str) -> AxResult<()> {
-    from_ret_code(remove_dir_inner(path)).map(|_| ())
+    op_wrapper(path, |path| remove_dir_inner(path)).map(|_| ())
 }
 
 /// remove (unlink) a file
 pub fn remove_file(path: &str) -> AxResult<()> {
-    from_ret_code(remove_file_inner(path)).map(|_| ())
+    op_wrapper(path, |path| remove_file_inner(path)).map(|_| ())
 }
 
 /// create a directory
@@ -142,14 +142,22 @@ pub fn read_dir(path: &str) -> AxResult<Vec<String>> {
     let mut file = File::open_with(path, OpenFlags::READ | OpenFlags::DIRECTORY)?;
     let mut result = String::new();
     file.read_to_string(&mut result)?;
-    Ok(result.split('\n').map(|x| x.to_string()).collect())
+    Ok(result
+        .split('\n')
+        .filter_map(|x| {
+            if x.is_empty() {
+                None
+            } else {
+                Some(x.to_string())
+            }
+        })
+        .collect())
 }
 
 /// show metadata of the file/dirctory in `path`
 pub fn metadata(path: &str) -> AxResult<Stat> {
     let mut file = File::open(path)?;
     let ret = file.stat()?;
-    info!("sdfsdf");
     Ok(ret)
 }
 
@@ -182,13 +190,13 @@ pub mod env {
     }
 
     pub(crate) fn absolute_path(path: &str) -> AxResult<String> {
-        let res = if path.starts_with("/") {
+        let res = if path.starts_with('/') {
             canonicalize(path)
         } else {
             let mut old = CURRENT_DIR_PATH.lock().clone();
-            old.push_str("/");
+            old.push('/');
             old.push_str(path);
-            canonicalize(path)
+            canonicalize(&old)
         }?;
         if res.is_empty() {
             Ok("/".to_string())
@@ -204,7 +212,7 @@ pub(crate) fn init() {
 
 mod scheme_helper {
     pub(crate) fn get_scheme(url: &str) -> Option<(&str, &str)> {
-        let mut url = url.splitn(2, ":");
+        let mut url = url.splitn(2, ':');
         match (url.next(), url.next()) {
             (Some(scheme), Some(path)) => Some((scheme, path)),
             (Some(path), None) => Some(("file", path)),
@@ -213,12 +221,21 @@ mod scheme_helper {
     }
 }
 
-pub(crate) fn open_wrapper(path: &str, flags: OpenFlags) -> AxResult<usize> {
-    let (scheme, path) = scheme_helper::get_scheme(path).ok_or(AxError::InvalidInput)?;
+pub(crate) fn op_wrapper<F>(url: &str, f: F) -> AxResult<usize>
+where
+    F: FnOnce(&str) -> isize,
+{
+    let (scheme, path) = scheme_helper::get_scheme(url).ok_or(AxError::InvalidInput)?;
+    info!("URL {}, {}", scheme, path);
     if scheme == "file" {
         let absolute = absolute_path(path)?;
-        from_ret_code(open(&absolute, flags))
+        info!("     -> {}", absolute);
+        from_ret_code(f(&absolute))
     } else {
-        from_ret_code(open(path, flags))
+        from_ret_code(f(url))
     }
+}
+
+pub(crate) fn open_wrapper(url: &str, flags: OpenFlags) -> AxResult<usize> {
+    op_wrapper(url, |path| open(path, flags))
 }

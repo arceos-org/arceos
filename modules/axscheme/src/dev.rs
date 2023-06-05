@@ -137,6 +137,7 @@ mod net {
     }
     static POOL: LazyInit<NetBufferPool> = LazyInit::new();
     pub fn init(all_device: &mut AllDevices) -> Option<Arc<NetDevice>> {
+        info!("dev:/net started");
         Some(Arc::new({
             let pool = NetBufferPool::new(128, 1526).unwrap();
             POOL.init_by(pool);
@@ -243,6 +244,7 @@ mod block {
     }
 
     pub fn init(all_device: &mut AllDevices) -> Option<Arc<BlockDev>> {
+        info!("dev:/block started");
         Some(Arc::new({
             let dev = all_device.block.take_one().expect("No block device found!");
             info!("  use block device 0: {:?}", dev.device_name());

@@ -36,7 +36,7 @@ pub(crate) fn dup(fd: usize, buf: &str) -> isize {
 }
 
 pub(crate) fn lseek(fd: usize, offset: isize, whence: usize) -> isize {
-    crate::syscall(SYS_LSEEK, [fd, offset as usize, whence as usize, 0, 0, 0])
+    crate::syscall(SYS_LSEEK, [fd, offset as usize, whence, 0, 0, 0])
 }
 
 pub(crate) fn remove_dir(path: &str) -> isize {

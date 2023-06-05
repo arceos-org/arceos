@@ -50,7 +50,7 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
                     tf.regs.a0, tf.regs.a1, tf.regs.a2, tf.regs.a3, tf.regs.a4, tf.regs.a5,
                 ],
             );
-            info!("Syscall ret with code = {}", ret);
+            trace!("Syscall ret with code = {}", ret);
             tf.regs.a0 = ret as usize;
         }
 

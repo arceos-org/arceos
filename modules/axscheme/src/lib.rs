@@ -149,8 +149,9 @@ pub fn syscall_handler(id: usize, params: [usize; 6]) -> isize {
                 &axmem::copy_str_from_user(params[0].into(), params[1]),
                 params[2],
             ),
-            SYS_RMDIR => ax_err!(Unsupported),  // TODO
-            SYS_UNLINK => ax_err!(Unsupported), // TODO
+            op @ (SYS_RMDIR | SYS_UNLINK) => {
+                rm_op(op, &axmem::copy_str_from_user(params[0].into(), params[1]))
+            }
             _ => ax_err!(Unsupported),
         },
         _ => ax_err!(Unsupported),
@@ -205,6 +206,23 @@ fn open(path: &str, options: usize) -> AxResult<usize> {
     });
 
     insert_fd(file_handle)
+}
+
+fn rm_op(op: usize, path: &str) -> AxResult<usize> {
+    let mut path_split = path.splitn(2, ':');
+    let (scheme, path) = match (path_split.next(), path_split.next()) {
+        (Some(scheme), Some(path)) => (scheme, path),
+        (Some(path), None) => ("file", path),
+        _ => return ax_err!(NotFound),
+    };
+    trace!("rm {}:{}", scheme, path);
+    let scheme_id = schemes().find_name(scheme).ok_or(AxError::NotFound)?;
+    let scheme = schemes().find_id(scheme_id).unwrap();
+    match op {
+        SYS_RMDIR => scheme.rmdir(path, 0, 0),
+        SYS_UNLINK => scheme.unlink(path, 0, 0),
+        _ => unreachable!(),
+    }
 }
 
 fn file_op(op: usize, fd: usize, c: usize, d: usize) -> AxResult<usize> {
