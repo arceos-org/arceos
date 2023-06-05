@@ -11,8 +11,8 @@ use core::{ffi::c_void, pin::Pin, ptr::null_mut};
 use lwip_rust::bindings::{
     err_enum_t_ERR_MEM, err_enum_t_ERR_OK, err_enum_t_ERR_USE, err_enum_t_ERR_VAL, err_t,
     ip_addr_t, pbuf, pbuf_free, tcp_accept, tcp_arg, tcp_bind, tcp_close, tcp_connect,
-    tcp_listen_with_backlog, tcp_new, tcp_output, tcp_pcb, tcp_recv, tcp_recved, tcp_write,
-    TCP_DEFAULT_LISTEN_BACKLOG,
+    tcp_listen_with_backlog, tcp_new, tcp_output, tcp_pcb, tcp_recv, tcp_recved, tcp_state_LISTEN,
+    tcp_write, TCP_DEFAULT_LISTEN_BACKLOG, TCP_MSS,
 };
 
 use super::LWIP_MUTEX;
@@ -26,7 +26,8 @@ struct TcpSocketInner {
     nonblock: bool,
     remote_closed: bool,
     connect_result: i8,
-    recv_queue: Mutex<VecDeque<PbuffPointer>>,
+    // (pcb, offset)
+    recv_queue: Mutex<VecDeque<(PbuffPointer, usize)>>,
     accept_queue: Mutex<VecDeque<TcpSocket>>,
 }
 
@@ -64,7 +65,10 @@ extern "C" fn recv_callback(
             unsafe { (*p).len },
             unsafe { (*p).tot_len }
         );
-        socket_inner.recv_queue.lock().push_back(PbuffPointer(p));
+        socket_inner
+            .recv_queue
+            .lock()
+            .push_back((PbuffPointer(p), 0));
         debug!(
             "[TcpSocket][recv_callback] recv_queue len: {}",
             socket_inner.recv_queue.lock().len()
@@ -308,12 +312,16 @@ impl TcpSocket {
     /// Close the connection.
     pub fn shutdown(&mut self) -> AxResult {
         if !self.pcb.0.is_null() {
-            let guard = LWIP_MUTEX.lock();
             unsafe {
+                let _guard = LWIP_MUTEX.lock();
                 tcp_arg(self.pcb.0, null_mut());
-                tcp_recv(self.pcb.0, None);
-                tcp_accept(self.pcb.0, None);
-                trace!("[TcpSocket] tcp_close");
+                if (*self.pcb.0).state == tcp_state_LISTEN {
+                    tcp_accept(self.pcb.0, None);
+                } else {
+                    tcp_recv(self.pcb.0, None);
+                }
+
+                warn!("[TcpSocket] tcp_close");
                 #[allow(non_upper_case_globals)]
                 match tcp_close(self.pcb.0) as i32 {
                     err_enum_t_ERR_OK => {}
@@ -323,8 +331,8 @@ impl TcpSocket {
                     }
                 }
             }
-            drop(guard);
             self.pcb.0 = null_mut();
+            lwip_loop_once();
             Ok(())
         } else {
             Err(AxError::NotConnected)
@@ -343,20 +351,32 @@ impl TcpSocket {
             let res = if recv_queue.len() == 0 {
                 Ok(0)
             } else {
-                // TODO: len > buf.len()
-                // TODO: pbuf chain
-                let p: *mut pbuf = recv_queue.pop_front().unwrap().0;
+                let (p, offset) = recv_queue.pop_front().unwrap();
+                let p = p.0;
                 let len = unsafe { (*p).len as usize };
+                let tot_len = unsafe { (*p).tot_len as usize };
+                if len != tot_len {
+                    // TODO: pbuf chain
+                    error!("[TcpSocket] recv pbuf len != tot_len");
+                    return ax_err!(Unsupported, "LWIP [recv] pbuf len != tot_len");
+                }
                 let payload = unsafe { (*p).payload };
                 let payload = unsafe { core::slice::from_raw_parts_mut(payload as *mut u8, len) };
-                buf[0..len].copy_from_slice(payload);
-                let guard = LWIP_MUTEX.lock();
-                unsafe {
-                    pbuf_free(p);
-                    tcp_recved(self.pcb.0, len as u16);
+
+                let copy_len = core::cmp::min(len - offset, buf.len());
+                buf[0..copy_len].copy_from_slice(&payload[offset..offset + copy_len]);
+                if offset + copy_len < len {
+                    recv_queue.push_front((PbuffPointer(p), offset + copy_len));
+                } else {
+                    let guard = LWIP_MUTEX.lock();
+                    unsafe {
+                        pbuf_free(p);
+                        tcp_recved(self.pcb.0, len as u16);
+                    }
+                    drop(guard);
                 }
-                drop(guard);
-                Ok(len)
+
+                Ok(copy_len)
             };
             drop(recv_queue);
             match res {
@@ -368,7 +388,7 @@ impl TcpSocket {
                     }
                 }
                 Ok(len) => {
-                    trace!("[TcpSocket] recv done: {:?}", &buf[0..len]);
+                    trace!("[TcpSocket] recv done (len: {}): {:?}", len, &buf[0..len]);
                     return Ok(len);
                 }
                 Err(e) => {
@@ -380,12 +400,13 @@ impl TcpSocket {
 
     /// Transmits data in the given buffer.
     pub fn send(&self, buf: &[u8]) -> AxResult<usize> {
-        trace!("[TcpSocket] send: {:?}", buf);
-        let guard = LWIP_MUTEX.lock();
+        trace!("[TcpSocket] send (len = {})", buf.len());
+        let copy_len = core::cmp::min(buf.len(), TCP_MSS as usize);
         unsafe {
+            let _guard = LWIP_MUTEX.lock();
             trace!("[TcpSocket] tcp_write");
             #[allow(non_upper_case_globals)]
-            match tcp_write(self.pcb.0, buf.as_ptr() as *const _, buf.len() as u16, 0) as i32 {
+            match tcp_write(self.pcb.0, buf.as_ptr() as *const _, copy_len as u16, 0) as i32 {
                 err_enum_t_ERR_OK => {}
                 err_enum_t_ERR_MEM => {
                     return ax_err!(NoMemory, "LWIP [tcp_write] Out of memory.");
@@ -402,21 +423,31 @@ impl TcpSocket {
                     return ax_err!(Unsupported, "LWIP [tcp_output] Failed.");
                 }
             }
-        }
-        drop(guard);
-        trace!("[TcpSocket] send done");
-        Ok(buf.len())
+        };
+        lwip_loop_once();
+        trace!("[TcpSocket] send done (len: {})", copy_len);
+        Ok(copy_len)
     }
 
     /// Detect whether the socket needs to receive/can send.
     ///
     /// Return is <need to receive, can send>
     pub fn poll(&self) -> AxResult<PollState> {
-        // TODO: query lwip for true state
-        Ok(PollState {
-            readable: true,
-            writable: true,
-        })
+        trace!("poll pcbstate: {:?}", unsafe { (*self.pcb.0).state });
+        lwip_loop_once();
+        if unsafe { (*self.pcb.0).state } == tcp_state_LISTEN {
+            // listener
+            Ok(PollState {
+                readable: self.inner.accept_queue.lock().len() != 0,
+                writable: false,
+            })
+        } else {
+            // stream
+            Ok(PollState {
+                readable: self.inner.recv_queue.lock().len() != 0,
+                writable: true,
+            })
+        }
     }
 }
 
