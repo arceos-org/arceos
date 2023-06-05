@@ -1,3 +1,4 @@
+//! FUTEX (Fast User muTEX) implementation, a simplification of Linux futex.
 use core::sync::atomic::{AtomicU32, Ordering};
 
 use alloc::{collections::BTreeMap, sync::Arc};
@@ -11,7 +12,7 @@ extern crate alloc;
 struct FutexPool(SpinNoIrq<BTreeMap<PhysAddr, Arc<WaitQueue>>>);
 
 impl FutexPool {
-    pub fn current_wait(&self, paddr: PhysAddr, val: u32) -> bool {
+    pub(crate) fn current_wait(&self, paddr: PhysAddr, val: u32) -> bool {
         if !paddr.is_aligned(4usize) {
             panic!("Align is invalid!");
         }
@@ -30,7 +31,7 @@ impl FutexPool {
         }
         true
     }
-    pub fn current_wake(&self, paddr: PhysAddr, val: u32) -> u32 {
+    pub(crate) fn current_wake(&self, paddr: PhysAddr, val: u32) -> u32 {
         for i in 0..val {
             if let Some(queue) = self.0.lock().get(&paddr).map(Arc::clone) {
                 queue.notify_one(true);
@@ -47,11 +48,15 @@ impl FutexPool {
 }
 
 static FUTEX_GLOBAL_POOL: LazyInit<FutexPool> = LazyInit::new();
-pub const FUTEX_WAIT: usize = 0;
-pub const FUTEX_WAKE: usize = 1;
+const FUTEX_WAIT: usize = 0;
+const FUTEX_WAKE: usize = 1;
+
+/// Initializes futex structures
 pub fn init() {
     FUTEX_GLOBAL_POOL.init_by(FutexPool(SpinNoIrq::new(BTreeMap::new())));
 }
+
+/// Handles futex operations, see `man 2 futex`.
 pub fn futex_call(paddr: usize, op: usize, val: u32) -> isize {
     match op {
         FUTEX_WAIT => {

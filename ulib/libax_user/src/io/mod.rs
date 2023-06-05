@@ -24,13 +24,17 @@ use alloc::vec::Vec;
 
 use self::env::absolute_path;
 
+/// RAII style File objects
+/// closes the file upon `drop`
 pub struct File {
     fd: usize,
 }
 impl File {
+    /// Opens a file (read only)
     pub fn open(path: &str) -> AxResult<Self> {
         from_ret_code(open(path, OpenFlags::READ)).map(|fd| Self { fd })
     }
+    /// Opens a file (write only, create one if not exist)
     pub fn create(path: &str) -> AxResult<Self> {
         from_ret_code(open(
             path,
@@ -38,6 +42,7 @@ impl File {
         ))
         .map(|fd| Self { fd })
     }
+    /// Opens a file with options specified in `flags`
     pub fn open_with(path: &str, flags: OpenFlags) -> AxResult<Self> {
         from_ret_code(open(path, flags)).map(|fd| Self { fd })
     }
@@ -71,20 +76,24 @@ impl Seek for File {
 }
 
 impl File {
+    /// read data in type `T`
     pub fn read_data<T>(&mut self, s: &mut T) -> AxResult<usize> {
         self.read(unsafe {
             core::slice::from_raw_parts_mut(s as *mut T as *mut u8, core::mem::size_of::<T>())
         })
     }
+    /// write data of type `T`
     pub fn write_data<T>(&mut self, s: &T) -> AxResult<usize> {
         self.write(unsafe {
             core::slice::from_raw_parts(s as *const T as *mut u8, core::mem::size_of::<T>())
         })
     }
+    /// duplicate a file, see [scheme] for more information
     pub fn dup(&mut self, buf: &str) -> AxResult<Self> {
         let fd = from_ret_code(dup(self.fd, buf))?;
         Ok(File { fd })
     }
+    /// get the metadata of the file
     pub fn stat(&mut self) -> AxResult<Stat> {
         let mut ret: Stat = Stat::new_file(0, 0);
         from_ret_code(fstat(self.fd, &mut ret))?;
@@ -98,21 +107,28 @@ impl Drop for File {
     }
 }
 
+/// Return the `stdin` `File` wrapper
+/// NOTE: fd 0 (stdin) will not be closed after drop
 pub fn stdin() -> File {
     File::open("stdin:/").unwrap()
 }
+/// Return the `stdout` `File` wrapper
+/// NOTE: fd 1 (stdout) will not be closed after drop
 pub fn stdout() -> File {
     File::open("stdout:/").unwrap()
 }
 
+/// remove a directory, recursively delete is not supported
 pub fn remove_dir(path: &str) -> AxResult<()> {
     from_ret_code(remove_dir_inner(path)).map(|_| ())
 }
 
+/// remove (unlink) a file
 pub fn remove_file(path: &str) -> AxResult<()> {
     from_ret_code(remove_file_inner(path)).map(|_| ())
 }
 
+/// create a directory
 pub fn create_dir(path: &str) -> AxResult<()> {
     File::open_with(
         path,
@@ -121,6 +137,7 @@ pub fn create_dir(path: &str) -> AxResult<()> {
     Ok(())
 }
 
+/// show all items in a directory, return a `Vec` of names
 pub fn read_dir(path: &str) -> AxResult<Vec<String>> {
     let mut file = File::open_with(path, OpenFlags::READ | OpenFlags::DIRECTORY)?;
     let mut result = String::new();
@@ -128,6 +145,7 @@ pub fn read_dir(path: &str) -> AxResult<Vec<String>> {
     Ok(result.split('\n').map(|x| x.to_string()).collect())
 }
 
+/// show metadata of the file/dirctory in `path`
 pub fn metadata(path: &str) -> AxResult<Stat> {
     let mut file = File::open(path)?;
     let ret = file.stat()?;
@@ -136,6 +154,7 @@ pub fn metadata(path: &str) -> AxResult<Stat> {
 }
 
 static CURRENT_DIR_PATH: Mutex<String> = Mutex::new(String::new());
+/// Inspection and manipulation of the process’s environment.
 pub mod env {
     use axerrno::{ax_err, AxError, AxResult};
     extern crate alloc;
@@ -143,7 +162,7 @@ pub mod env {
 
     use super::{scheme_helper, CURRENT_DIR_PATH};
 
-    pub fn canonicalize(path: &str) -> AxResult<String> {
+    pub(crate) fn canonicalize(path: &str) -> AxResult<String> {
         Ok(axfs_vfs::path::canonicalize(path))
     }
 
@@ -162,7 +181,7 @@ pub mod env {
         Ok(())
     }
 
-    pub fn absolute_path(path: &str) -> AxResult<String> {
+    pub(crate) fn absolute_path(path: &str) -> AxResult<String> {
         let res = if path.starts_with("/") {
             canonicalize(path)
         } else {
@@ -179,12 +198,12 @@ pub mod env {
     }
 }
 
-pub fn init() {
+pub(crate) fn init() {
     *CURRENT_DIR_PATH.lock() = "/".to_string();
 }
 
 mod scheme_helper {
-    pub fn get_scheme(url: &str) -> Option<(&str, &str)> {
+    pub(crate) fn get_scheme(url: &str) -> Option<(&str, &str)> {
         let mut url = url.splitn(2, ":");
         match (url.next(), url.next()) {
             (Some(scheme), Some(path)) => Some((scheme, path)),
@@ -194,7 +213,7 @@ mod scheme_helper {
     }
 }
 
-pub fn open_wrapper(path: &str, flags: OpenFlags) -> AxResult<usize> {
+pub(crate) fn open_wrapper(path: &str, flags: OpenFlags) -> AxResult<usize> {
     let (scheme, path) = scheme_helper::get_scheme(path).ok_or(AxError::InvalidInput)?;
     if scheme == "file" {
         let absolute = absolute_path(path)?;

@@ -1,3 +1,5 @@
+//! User library of the microkernel version of ArceOS.
+//! 
 #![cfg_attr(all(not(test), not(doc), target_os = "none"), no_std)]
 
 mod syscall;
@@ -27,9 +29,11 @@ fn panic(info: &PanicInfo) -> ! {
     task::exit(1);
 }
 
+/// `Scheme` re-export
 pub mod scheme {
     pub use scheme::*;
 }
+/// Error number re-export
 pub mod axerrno {
     pub use axerrno::*;
 }

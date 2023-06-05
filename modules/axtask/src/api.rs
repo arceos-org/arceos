@@ -107,6 +107,8 @@ where
     unimplemented!();
 }
 } else {
+/// Spawns a new task with an argument
+/// only available in with user syscalls
 pub fn spawn_args(_f: usize, _arg: usize) {
     unimplemented!();
 }

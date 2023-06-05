@@ -207,6 +207,7 @@ impl WaitQueue {
         }
     }
 
+    /// Whether the queue is empty
     pub fn is_empty(&self) -> bool {
         self.queue.lock().is_empty()
     }

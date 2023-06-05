@@ -1,17 +1,27 @@
 //! Scheme: Concepts derived from [Redox](https://redox-os.org/).
-//! This crate is originally from https://gitlab.redox-os.org/redox-os/syscall/, with some simplification and modification.
+//! This crate is originally from <https://gitlab.redox-os.org/redox-os/syscall/>, with some simplification and modification.
 #![no_std]
 
+/// Packet: data sent between scheme implementations
+/// a wrapper of IO syscalls
 #[derive(Copy, Clone, Debug, Default)]
 #[repr(C)]
 pub struct Packet {
+    /// syscall id
     pub id: u64,
+    /// process id (not used)
     pub pid: usize,
-    pub uid: u32, // Not used
-    pub gid: u32, // Not used
+    /// user id (not used)
+    pub uid: u32,
+    /// group id (not used)
+    pub gid: u32,
+    /// param 1
     pub a: usize,
+    /// param 2
     pub b: usize,
+    /// param 3
     pub c: usize,
+    /// param 4
     pub d: usize,
 }
 
@@ -38,6 +48,7 @@ impl DerefMut for Packet {
     }
 }
 
+/// return type of `stat` syscall, NOT in UNIX format
 pub type Stat = axfs_vfs::VfsNodeAttr;
 
 unsafe fn str_from_raw_parts(ptr: *const u8, len: usize) -> Option<&'static str> {

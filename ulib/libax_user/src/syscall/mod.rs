@@ -1,3 +1,4 @@
+//! syscall wrappers of the user library.
 pub mod io;
 pub mod process;
 pub mod sync;
@@ -27,6 +28,7 @@ pub(crate) fn syscall(id: usize, args: [usize; 6]) -> isize {
     unimplemented!();
 }
 
+/// get current time, in nanoseconds
 pub fn current_time_nanos() -> u64 {
     syscall(SYS_TIME_NANO, [0; 6]) as u64
 }

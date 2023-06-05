@@ -1,3 +1,7 @@
+//!
+//! An ELF file loader.
+//! It takes an elf file as an input, parses all segments, and output its address info, binary data, and access flags.
+//!
 #![no_std]
 
 #[macro_use]
@@ -6,15 +10,20 @@ extern crate alloc;
 use memory_addr::VirtAddr;
 use page_table_entry::MappingFlags;
 
+/// Segments of the elf file
 pub struct SegmentEntry<'a> {
+    /// Start address
     pub start_addr: VirtAddr,
+    /// Segment length
     pub size: usize,
+    /// Segment data
     pub data: &'a [u8],
+    /// Access Flags (RWX)
     pub flags: MappingFlags,
 }
 
 impl<'a> SegmentEntry<'a> {
-    // copied from rCore
+    /// creates the `SegmentEntry` from binary data.   
     pub fn new(data: &'a [u8]) -> Option<alloc::vec::Vec<SegmentEntry<'a>>> {
         let elf = xmas_elf::ElfFile::new(data).ok()?;
         let elf_header = elf.header;

@@ -1,3 +1,5 @@
+//! logging support in user space
+
 extern crate log;
 
 use core::fmt::{self, Write};
@@ -7,6 +9,7 @@ use log::{Level, LevelFilter, Log, Metadata, Record};
 
 pub use log::{debug, error, info, trace, warn};
 
+/// print the content, same as rust library
 #[macro_export]
 macro_rules! print {
     ($fmt: literal $(, $($arg: tt)+)?) => {
@@ -14,6 +17,7 @@ macro_rules! print {
     }
 }
 
+/// print the content with EOLN, same as rust library
 #[macro_export]
 macro_rules! println {
     () => { print!("\n") };
@@ -92,16 +96,17 @@ impl Log for Logger {
     fn flush(&self) {}
 }
 
+/// helper function of print and println
 pub fn __print_impl(args: fmt::Arguments) {
     Logger.write_fmt(args).unwrap();
 }
 
-pub fn init() {
+pub(crate) fn init() {
     log::set_logger(&Logger).unwrap();
     log::set_max_level(LevelFilter::Warn);
 }
 
-pub fn set_max_level(level: &str) {
+pub(crate) fn set_max_level(level: &str) {
     let lf = LevelFilter::from_str(level)
         .ok()
         .unwrap_or(LevelFilter::Off);

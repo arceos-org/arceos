@@ -1,4 +1,7 @@
+//! syscall number: all syscall constants
+//! most of them have the same meaning as UNIX syscall
 #![no_std]
+#![allow(missing_docs)]
 
 pub const SYS_EXIT: usize = 10;
 pub const SYS_SPAWN: usize = 11;

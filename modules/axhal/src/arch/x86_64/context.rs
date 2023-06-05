@@ -40,10 +40,13 @@ impl TrapFrame {
         self.cs & 0b11 == 3
     }
 
+    /// Create a `TrapFrame` with given user entry and user stack
     #[cfg(feature = "user")]
     pub fn new(_entry: usize, _ustack: usize) -> TrapFrame {
         unimplemented!();
     }
+
+    /// Enter user space
     #[cfg(feature = "user")]
     pub fn enter_uspace(&self, _sp: usize) -> ! {
         unimplemented!();

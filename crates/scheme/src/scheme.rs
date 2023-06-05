@@ -7,8 +7,10 @@ use axerrno::AxError as Error;
 use axerrno::AxResult as Result;
 use core::result::Result::Err;
 
-// From https://gitlab.redox-os.org/redox-os/syscall/-/blob/master/src/scheme/scheme.rs
+/// Scheme: abstraction of service handlers
+/// From <https://gitlab.redox-os.org/redox-os/syscall/-/blob/master/src/scheme/scheme.rs>
 pub trait Scheme {
+    /// Do not reimplement. dispatch all `Packet`s to different handlers.
     fn handle(&self, packet: &mut Packet) {
         use syscall_number::*;
         let res = match packet.a {
@@ -100,57 +102,70 @@ pub trait Scheme {
 
     /* Scheme operations */
 
+    /// `open` syscall
     #[allow(unused_variables)]
     fn open(&self, path: &str, flags: usize, uid: u32, gid: u32) -> Result<usize> {
         Err(Error::NotFound)
     }
 
+    /// `chmod` syscall
     #[allow(unused_variables)]
     fn chmod(&self, path: &str, mode: u16, uid: u32, gid: u32) -> Result<usize> {
         Err(Error::NotFound)
     }
 
+    /// `rmdir` syscall
     #[allow(unused_variables)]
     fn rmdir(&self, path: &str, uid: u32, gid: u32) -> Result<usize> {
         Err(Error::NotFound)
     }
 
+    /// `unlink` syscall
     #[allow(unused_variables)]
     fn unlink(&self, path: &str, uid: u32, gid: u32) -> Result<usize> {
         Err(Error::NotFound)
     }
 
+    /// `dup` syscall
+    /// if `buf` is empty, normal `dup` operation (duplicate `fd`s) is done,
+    /// otherwise, `Scheme`-defined operations are done.
     /* Resource operations */
     #[allow(unused_variables)]
     fn dup(&self, old_id: usize, buf: &[u8]) -> Result<usize> {
         Err(Error::BadFileDescriptor)
     }
 
+    /// `read` syscall
     #[allow(unused_variables)]
     fn read(&self, id: usize, buf: &mut [u8]) -> Result<usize> {
         Err(Error::BadFileDescriptor)
     }
 
+    /// `write` syscall
     #[allow(unused_variables)]
     fn write(&self, id: usize, buf: &[u8]) -> Result<usize> {
         Err(Error::BadFileDescriptor)
     }
 
+    /// `seek` syscall
     #[allow(unused_variables)]
     fn seek(&self, id: usize, pos: isize, whence: usize) -> Result<isize> {
         Err(Error::BadFileDescriptor)
     }
 
+    /// `fchmod` syscall
     #[allow(unused_variables)]
     fn fchmod(&self, id: usize, mode: u16) -> Result<usize> {
         Err(Error::BadFileDescriptor)
     }
 
+    /// `fchown` syscall
     #[allow(unused_variables)]
     fn fchown(&self, id: usize, uid: u32, gid: u32) -> Result<usize> {
         Err(Error::BadFileDescriptor)
     }
 
+    /// `fcntl` syscall
     #[allow(unused_variables)]
     fn fcntl(&self, id: usize, cmd: usize, arg: usize) -> Result<usize> {
         Err(Error::BadFileDescriptor)
@@ -186,17 +201,21 @@ pub trait Scheme {
         fn funmap(&self, address: usize, length: usize) -> Result<usize> {
             Ok(0)
         }
-    */
+     */
+
+    /// `fpath` syscall
     #[allow(unused_variables)]
     fn fpath(&self, id: usize, buf: &mut [u8]) -> Result<usize> {
         Err(Error::BadFileDescriptor)
     }
 
+    /// `frename` syscall
     #[allow(unused_variables)]
     fn frename(&self, id: usize, path: &str, uid: u32, gid: u32) -> Result<usize> {
         Err(Error::BadFileDescriptor)
     }
 
+    /// `fstat` syscall
     #[allow(unused_variables)]
     fn fstat(&self, id: usize, stat: &mut Stat) -> Result<usize> {
         Err(Error::BadFileDescriptor)
@@ -206,12 +225,15 @@ pub trait Scheme {
         fn fstatvfs(&self, id: usize, stat: &mut StatVfs) -> Result<usize> {
             Err(Error::BadFileDescriptor)
         }
-    */
+     */
+
+    /// `fsync` syscall
     #[allow(unused_variables)]
     fn fsync(&self, id: usize) -> Result<usize> {
         Err(Error::BadFileDescriptor)
     }
 
+    /// `ftruncate` syscall
     #[allow(unused_variables)]
     fn ftruncate(&self, id: usize, len: usize) -> Result<usize> {
         Err(Error::BadFileDescriptor)
@@ -221,7 +243,9 @@ pub trait Scheme {
         fn futimens(&self, id: usize, times: &[TimeSpec]) -> Result<usize> {
             Err(Error::BadFileDescriptor)
         }
-    */
+     */
+
+    /// `close` syscall
     #[allow(unused_variables)]
     fn close(&self, id: usize) -> Result<usize> {
         Err(Error::BadFileDescriptor)

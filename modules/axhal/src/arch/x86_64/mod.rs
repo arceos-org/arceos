@@ -16,11 +16,13 @@ pub use self::gdt::GdtStruct;
 pub use self::idt::IdtStruct;
 pub use x86_64::structures::tss::TaskStateSegment;
 
+/// Entry function of the first run of a process
 #[cfg(feature = "user-paging")]
 pub fn first_uentry() -> ! {
     unimplemented!();
 }
 
+/// Enters user space after trap handling 
 #[cfg(feature = "user-paging")]
 pub fn enter_uspace(_tf: usize, _satp: usize) -> ! {
     unimplemented!();

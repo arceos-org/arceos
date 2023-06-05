@@ -1,3 +1,4 @@
+//! Process implementation
 #![no_std]
 
 extern crate alloc;
@@ -41,6 +42,7 @@ struct AxProcess {
 
 static PROCESS_TABLE: LazyInit<SpinNoIrq<Vec<Arc<AxProcess>>>> = LazyInit::new();
 
+/// Initializes process structures
 pub fn init() {
     extern "C" {
         fn ustart();
@@ -81,6 +83,7 @@ fn current_process() -> Arc<AxProcess> {
     }
 }
 
+/// Forks the current process
 pub fn fork() -> usize {
     let current = current_process();
     let res = Arc::new(AxProcess {

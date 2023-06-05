@@ -1,3 +1,4 @@
+//! Address space of user mode management of microkernel version of ArceOS.
 #![no_std]
 
 #[macro_use]
@@ -20,25 +21,32 @@ use crate_interface::def_interface;
 use memory_addr::{align_up, align_up_4k, PhysAddr, VirtAddr, PAGE_SIZE_4K};
 use spinlock::SpinNoIrq;
 
+/// Start of binary
 pub const USER_START: usize = 0x0400_0000;
+/// top of user stack
 pub const USTACK_START: usize = 0x10_0000_0000 - USTACK_SIZE;
+/// size of user stack
 pub const USTACK_SIZE: usize = 4096 * 10;
+/// address of trampoline page
 pub const TRAMPOLINE_START: usize = 0xffff_ffc0_0000_0000;
+/// start of default mmap areas
 pub const MMAP_AREA_START: usize = 0x10_0000_0000;
+/// end of default mmap areas
 pub const MMAP_AREA_END: usize = 0x20_0000_0000;
 
-pub struct MapSegment {
+pub(crate) struct MapSegment {
     start_vaddr: VirtAddr,
     size: usize,
     phy_mem: Vec<Arc<GlobalPage>>,
 }
 
 #[derive(Clone)]
-pub struct HeapSegment {
+pub(crate) struct HeapSegment {
     start_vaddr: VirtAddr,
     actual_size: usize,
 }
 
+/// mutable inner objects of address space
 pub struct AddrSpaceInner {
     segments: alloc::vec::Vec<MapSegment>,
     page_table: PageTable,
@@ -53,7 +61,7 @@ impl Default for AddrSpaceInner {
 }
 
 impl AddrSpaceInner {
-    pub fn new() -> AddrSpaceInner {
+    pub(crate) fn new() -> AddrSpaceInner {
         AddrSpaceInner {
             segments: vec![],
             page_table: PageTable::try_new().expect("Creating page table failed!"),
@@ -62,6 +70,7 @@ impl AddrSpaceInner {
         }
     }
 
+    /// create a segment region
     pub fn add_region(
         &mut self,
         vaddr: VirtAddr,
@@ -80,6 +89,8 @@ impl AddrSpaceInner {
         });
         Ok(())
     }
+
+    /// create a segment region without memory allocation
     pub fn add_region_shadow(
         &mut self,
         vaddr: VirtAddr,
@@ -99,6 +110,7 @@ impl AddrSpaceInner {
         Ok(())
     }
 
+    /// remove a segment
     pub fn remove_region(&mut self, vaddr: VirtAddr) -> AxResult<()> {
         if let Some((idx, _)) = self
             .segments
@@ -116,11 +128,12 @@ impl AddrSpaceInner {
         }
     }
 
+    /// get root address of pagetable
     pub fn page_table_addr(&self) -> PhysAddr {
         self.page_table.root_paddr()
     }
 
-    pub fn init_heap(&mut self, vaddr: VirtAddr) {
+    pub(crate) fn init_heap(&mut self, vaddr: VirtAddr) {
         if self.heap.is_some() {
             return;
         }
@@ -146,6 +159,7 @@ impl AddrSpaceInner {
         info!("User heap inited @ {:x}", vaddr);
     }
 
+    /// modify heap size
     pub fn sbrk(&mut self, size: isize) -> Option<usize> {
         if let Some(heap) = &mut self.heap {
             let old_brk: usize = (heap.start_vaddr + heap.actual_size).into();
@@ -238,6 +252,7 @@ impl AddrSpaceInner {
         ax_err!(NoMemory)
     }
 
+    /// unmap a page obtained from `mmap`
     pub fn munmap_page(&mut self, addr: VirtAddr, len: usize) -> AxResult<()> {
         let len = align_up_4k(len);
         trace!("unmap: [{:x?}, {:x?})", addr, addr + len);
@@ -253,6 +268,7 @@ impl AddrSpaceInner {
         Ok(())
     }
 
+    /// translate a slice to slices in kernel
     pub fn translate_buffer(
         &self,
         vaddr: VirtAddr,
@@ -283,6 +299,8 @@ impl AddrSpaceInner {
         }
         Ok(result)
     }
+
+    /// find a mapping of the virtual address
     pub fn query(&self, vaddr: VirtAddr) -> Option<PhysAddr> {
         self.page_table.query(vaddr).ok().map(|x| x.0)
     }
@@ -356,9 +374,11 @@ impl Clone for AddrSpace {
     }
 }
 
+/// A user address space
 pub struct AddrSpace(SpinNoIrq<AddrSpaceInner>);
 
 impl AddrSpace {
+    /// init address space of a process
     pub fn init_global(user_elf: &[u8]) -> AxResult<AddrSpace> {
         let segments = elf_loader::SegmentEntry::new(user_elf).expect("Corrupted elf file!");
 
@@ -442,15 +462,19 @@ impl core::ops::Deref for AddrSpace {
     }
 }
 
+/// interface to get current process's address space
 #[def_interface]
 pub trait CurrentAddrSpace {
+    /// get reference of current address space
     fn current_addr_space() -> Arc<AddrSpace>;
 }
+
 
 fn current_addr_space() -> Arc<AddrSpace> {
     crate_interface::call_interface!(CurrentAddrSpace::current_addr_space)
 }
 
+/// alloc a user space
 pub fn alloc_user_page(vaddr: VirtAddr, size: usize, flags: MappingFlags) -> Arc<GlobalPage> {
     let mut user_phy_page =
         GlobalPage::alloc_contiguous(align_up_4k(size) / PAGE_SIZE_4K, PAGE_SIZE_4K)
@@ -473,22 +497,27 @@ pub fn alloc_user_page(vaddr: VirtAddr, size: usize, flags: MappingFlags) -> Arc
     user_phy_page
 }
 
+/// manage heap space of current process
 pub fn global_sbrk(size: isize) -> Option<usize> {
     current_addr_space().lock().sbrk(size)
 }
 
+/// get root of page table of current process
 pub fn get_satp() -> usize {
     current_addr_space().lock().page_table_addr().into()
 }
 
+/// mmap a page of current process
 pub fn mmap_page(addr: Option<VirtAddr>, len: usize, flags: MappingFlags) -> AxResult<VirtAddr> {
     current_addr_space().lock().mmap_page(addr, len, flags)
 }
 
+/// unmap a page of current process
 pub fn munmap_page(addr: VirtAddr, len: usize) -> AxResult<()> {
     current_addr_space().lock().munmap_page(addr, len)
 }
 
+/// translate a slice from current process
 pub fn translate_buffer(vaddr: VirtAddr, size: usize, write: bool) -> Vec<&'static mut [u8]> {
     current_addr_space()
         .lock()
@@ -496,6 +525,7 @@ pub fn translate_buffer(vaddr: VirtAddr, size: usize, write: bool) -> Vec<&'stat
         .unwrap()
 }
 
+/// copy a slice of current process into kernel address space
 pub fn copy_slice_from_user(vaddr: VirtAddr, size: usize) -> Vec<u8> {
     let mut result = Vec::new();
     let buffers = translate_buffer(vaddr, size, false);
@@ -504,16 +534,19 @@ pub fn copy_slice_from_user(vaddr: VirtAddr, size: usize) -> Vec<u8> {
     }
     result
 }
+
+/// copy a `str` in current process into kernel address space
 pub fn copy_str_from_user(vaddr: VirtAddr, size: usize) -> String {
     let result = copy_slice_from_user(vaddr, size);
     String::from_utf8(result).expect("Invalid string!")
 }
 
+/// translate a virtual address to phyical address of current process
 pub fn translate_addr(vaddr: VirtAddr) -> Option<PhysAddr> {
     current_addr_space().lock().query(vaddr)
 }
 
-/// Copy a [u8] array `data' from current memory space into position `ptr' of the userspace `token'
+/// Copy a [u8] array `data' from current memory space into position `ptr' of the userspace `token'(not used)
 // Copied from my code in rCore
 pub fn copy_byte_buffer_to_user(_token: usize, ptr: *const u8, data: &[u8]) {
     let copy_len = data.len();
@@ -527,7 +560,7 @@ pub fn copy_byte_buffer_to_user(_token: usize, ptr: *const u8, data: &[u8]) {
     assert_eq!(copy_len, offset);
 }
 
-/// Copy a `data' with type `T' from current memory space into position `ptr' of the userspace `token'
+/// Copy a `data' with type `T' from current memory space into position `ptr' of the userspace `token' (not used)
 // Copied from my code in rCore
 pub fn copy_data_to_user<T>(token: usize, ptr: *const u8, data: &T) {
     let data_ptr = data as *const T as *const u8;

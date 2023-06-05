@@ -221,12 +221,15 @@ impl From<AxError> for LinuxError {
     }
 }
 
+/// Convents `AxResult<usize>` into isize, so that it can be transferred in trap contexts
 pub fn to_ret_code(result: AxResult<usize>) -> isize {
     match result {
         Ok(val) => val as isize,
         Err(err) => -(err as i32 as u32 as isize + 1),
     }
 }
+
+/// Convents isize into `AxResult<usize>`
 pub fn from_ret_code(result: isize) -> AxResult<usize> {
     if result >= 0 {
         Ok(result as usize)

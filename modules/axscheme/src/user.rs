@@ -178,7 +178,7 @@ impl Scheme for UserScheme {
         inner.handle_request(SYS_RMDIR, addr.addr().into(), path.len(), 0)
     }
 
-    fn unlink(&self, path: &str, uid: u32, gid: u32) -> AxResult<usize> {
+    fn unlink(&self, path: &str, _uid: u32, _gid: u32) -> AxResult<usize> {
         let inner = self.inner.upgrade().ok_or(AxError::NotFound)?;
         let addr = ShadowMemory::new(path.as_bytes(), inner.pid)?;
         inner.handle_request(SYS_UNLINK, addr.addr().into(), path.len(), 0)
@@ -261,8 +261,10 @@ impl<'a> Drop for ShadowMemoryMut<'a> {
     }
 }
 
+/// Gets a process's address space
 #[crate_interface::def_interface]
 pub trait FindAddrSpace {
+    /// get a process's address space
     fn find_addr_space(pid: u64) -> Option<Arc<AddrSpace>>;
 }
 

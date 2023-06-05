@@ -68,6 +68,7 @@ mod user {
         daemon_file: File,
     }
 
+    /// Initializes net service in user mode.
     pub fn user_init() {
         let dev = AxNetDevice::new().unwrap();
         super::net_impl::init(dev);

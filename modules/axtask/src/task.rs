@@ -154,6 +154,7 @@ impl TaskInner {
         Arc::new(AxTask::new(t))
     }
 
+    #[allow(dead_code)]
     #[cfg(feature = "user-paging")]
     pub(crate) fn new_user(
         entry: usize,
@@ -242,7 +243,7 @@ impl TaskInner {
     }
 
     #[cfg(all(feature = "user-paging", feature = "process"))]
-    pub fn new_fork(&self, pid: u64, mem: Arc<axmem::AddrSpace>) -> AxTaskRef {
+    pub(crate) fn new_fork(&self, pid: u64, mem: Arc<axmem::AddrSpace>) -> AxTaskRef {
         use axalloc::GlobalPage;
         use axhal::{mem::virt_to_phys, paging::MappingFlags};
         let mut t = Self::new_common(TaskId::new(), String::new());
@@ -496,6 +497,7 @@ extern "C" fn task_entry() -> ! {
     crate::exit(0);
 }
 
+#[allow(dead_code)]
 #[cfg(feature = "user-paging")]
 extern "C" fn task_user_entry() -> ! {
     unsafe { crate::RUN_QUEUE.force_unlock() };
@@ -533,9 +535,11 @@ if #[cfg(feature = "user-paging")] {
 cfg_if::cfg_if! {
     if #[cfg(feature = "process")] {
         use axmem::AddrSpace;
+        /// Gets current process id
         pub fn current_pid() -> Option<u64> {
             crate::current_may_uninit().map(|task| task.pid.load(Ordering::Relaxed))
         }
+        /// Copies current task and creates a new task in the given process
         pub fn handle_fork(pid: u64, mem: Arc<AddrSpace>) {
             let task = crate::current().new_fork(pid, mem);
             RUN_QUEUE.lock().add_task(task);

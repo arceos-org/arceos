@@ -1,3 +1,4 @@
+//! Scheme about all driver operations
 use core::sync::atomic::AtomicUsize;
 extern crate alloc;
 
@@ -9,6 +10,7 @@ use axerrno::{ax_err, AxError, AxResult};
 use axsync::Mutex;
 use scheme::Scheme;
 
+#[cfg(feature = "user_fs")]
 use self::block::BlockDev;
 #[cfg(feature = "user_net")]
 use self::net::NetDevice;
@@ -16,6 +18,7 @@ use self::net::NetDevice;
 use super::schemes;
 use super::KernelScheme;
 
+/// Device Scheme 
 pub struct DeviceScheme {
     #[cfg(feature = "user_net")]
     net: Option<Arc<NetDevice>>,
@@ -35,6 +38,7 @@ trait Device {
     }
 }
 
+/// Initializes all devices
 #[allow(unused_variables, unused_mut)]
 pub fn init(mut all_device: AllDevices) {
     #[cfg(feature = "user_net")]

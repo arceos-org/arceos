@@ -1,3 +1,5 @@
+//! User program linker
+
 #![no_std]
 #![no_main]
 

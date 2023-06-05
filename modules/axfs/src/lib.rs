@@ -58,6 +58,7 @@ mod user {
     use driver_block::{DevError, DevResult};
     use libax::io::File;
 
+    /// Initializes filesystems in user mode.
     pub fn user_init() {
         let dev = AxBlockDeviceMock::new().unwrap();
         super::root::init_rootfs(super::dev::Disk::new(dev));

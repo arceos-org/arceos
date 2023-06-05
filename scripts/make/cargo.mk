@@ -58,7 +58,7 @@ define cargo_build
 endef
 
 define cargo_clippy
-  cargo clippy --target $(TARGET) --all-features --workspace --exclude axlog --exclude libax_user --exclude axuser --exclude "microkernel-*" --exclude axprocess --exclude axscheme --exclude test --exclude axnet --exclude axfs
+  cargo clippy --target $(TARGET) --all-features --workspace --exclude axlog --exclude libax_user --exclude axuser --exclude "microkernel-*" --exclude axprocess --exclude axscheme --exclude axnet --exclude axfs
   cargo clippy --target $(TARGET) --all-features -p libax_user -p "microkernel-*"
   cargo clippy --target $(TARGET) --all-features -p axuser -p axscheme -p axprocess -p axnet -p axfs
   cargo clippy --target $(TARGET) -p axlog -p percpu -p percpu_macros
@@ -72,7 +72,7 @@ all_packages := \
 
 define cargo_doc
   RUSTDOCFLAGS="--enable-index-page -Zunstable-options -D rustdoc::broken_intra_doc_links $(1)" \
-    cargo doc --no-deps --all-features --workspace --exclude "arceos-*"
+    cargo doc --no-deps --all-features --workspace --exclude "arceos-*" --exclude "microkernel-*"
   @# run twice to fix broken hyperlinks
   $(foreach p,$(all_packages), \
     cargo rustdoc --all-features -p $(p)
