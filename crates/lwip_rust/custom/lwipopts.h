@@ -38,6 +38,9 @@
 #define LWIP_IPV6_MLD        0
 #define LWIP_IPV6_AUTOCONFIG 1
 
+// Enable SO_REUSEADDR
+#define SO_REUSE 1
+
 /*
    ------------------------------------
    ------ Memory and Performance ------
