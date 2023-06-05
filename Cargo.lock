@@ -318,7 +318,6 @@ dependencies = [
  "axdriver",
  "axerrno",
  "axhal",
- "axio",
  "axsync",
  "axtask",
  "cfg-if",

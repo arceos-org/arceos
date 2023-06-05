@@ -1,39 +1,9 @@
-use crate::time::Instant;
-use axerrno::LinuxError;
+use axerrno::{LinuxError, LinuxResult};
+use axhal::time::{current_time, NANOS_PER_SEC};
 use core::ffi::{c_int, c_long};
 use core::time::Duration;
 
 use super::ctypes;
-
-impl From<ctypes::timespec> for Duration {
-    fn from(ts: ctypes::timespec) -> Self {
-        Duration::new(ts.tv_sec as u64, ts.tv_nsec as u32)
-    }
-}
-
-impl From<ctypes::timeval> for Duration {
-    fn from(tv: ctypes::timeval) -> Self {
-        Duration::new(tv.tv_sec as u64, tv.tv_usec as u32 * 1000)
-    }
-}
-
-impl From<Duration> for ctypes::timespec {
-    fn from(d: Duration) -> Self {
-        ctypes::timespec {
-            tv_sec: d.as_secs() as c_long,
-            tv_nsec: d.subsec_nanos() as c_long,
-        }
-    }
-}
-
-impl From<Duration> for ctypes::timeval {
-    fn from(d: Duration) -> Self {
-        ctypes::timeval {
-            tv_sec: d.as_secs() as c_long,
-            tv_usec: d.subsec_micros() as c_long,
-        }
-    }
-}
 
 /// Get clock time since booting
 #[no_mangle]
@@ -42,9 +12,15 @@ pub unsafe extern "C" fn ax_clock_gettime(ts: *mut ctypes::timespec) -> c_int {
         if ts.is_null() {
             return Err(LinuxError::EFAULT);
         }
-        let now = Instant::now().as_duration().into();
-        unsafe { *ts = now };
-        debug!("ax_clock_gettime: {}.{:09}s", now.tv_sec, now.tv_nsec);
+        let now = current_time();
+        let ret = ctypes::timespec {
+            tv_sec: now.as_secs() as c_long,
+            tv_nsec: now.subsec_nanos() as c_long,
+        };
+        unsafe {
+            *ts = ret;
+        }
+        debug!("ax_clock_gettime: {}.{:09}s", ret.tv_sec, ret.tv_nsec);
         Ok(0)
     })
 }
@@ -63,15 +39,18 @@ pub unsafe extern "C" fn ax_nanosleep(
         }
 
         debug!("ax_nanosleep <= {}.{:09}s", (*req).tv_sec, (*req).tv_nsec);
-        let dur = Duration::from(*req);
+        let total_nano = (*req).tv_sec as u64 * NANOS_PER_SEC + (*req).tv_nsec as u64;
+        let before = current_time().as_nanos() as u64;
 
-        let now = Instant::now();
-        crate::thread::sleep(dur);
-        let actual = now.elapsed();
+        crate::thread::sleep(Duration::from_nanos(total_nano));
 
-        if let Some(diff) = dur.checked_sub(actual) {
+        let after = current_time().as_nanos() as u64;
+        let diff = after - before;
+
+        if diff < total_nano {
             if !rem.is_null() {
-                unsafe { (*rem) = diff.into() };
+                (*rem).tv_sec = ((total_nano - diff) / NANOS_PER_SEC) as i64;
+                (*rem).tv_nsec = ((total_nano - diff) % NANOS_PER_SEC) as i64;
             }
             return Err(LinuxError::EINTR);
         }
