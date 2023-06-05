@@ -39,6 +39,7 @@ sched_cfs = ["axtask/sched_cfs", "irq"]
 
 # File system
 fs = ["alloc", "axruntime/fs", "dep:axdriver", "dep:axfs"]
+use-ramdisk = ["axdriver?/ramdisk", "axfs?/use-ramdisk"]
 
 # Networking
 net = ["alloc", "axruntime/net", "dep:axdriver", "dep:axnet"]
