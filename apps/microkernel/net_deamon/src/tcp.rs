@@ -39,6 +39,7 @@ impl Scheme for TcpScheme {
         };
 
         let mut socket = TcpSocket::new();
+        socket.set_nonblocking(true);
         let flags = OpenFlags::from_bits_truncate(flags);
 
         if flags.contains(OpenFlags::CREATE) {

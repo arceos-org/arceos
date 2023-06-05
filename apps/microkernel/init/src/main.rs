@@ -38,9 +38,9 @@ fn main() {
 
     fake_exec(run_net_deamon);
     fake_exec(fs_deamon::init);
-    //fake_exec(http_client::main);
-    //fake_exec(http_server::main);
-    fake_exec(shell::main);
+    fake_exec(http_client::main);
+    fake_exec(http_server::main);
+    //fake_exec(shell::main);
 
     loop {
         yield_now();

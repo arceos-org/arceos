@@ -118,7 +118,7 @@ mod user {
 
     fn map_err(e: AxError) -> DevError {
         match e {
-            AxError::Again => DevError::Again,
+            AxError::WouldBlock => DevError::Again,
             AxError::AlreadyExists => DevError::AlreadyExists,
             AxError::BadState => DevError::BadState,
             AxError::InvalidInput => DevError::InvalidParam,

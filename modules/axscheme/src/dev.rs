@@ -405,7 +405,7 @@ impl ReadOnlyFile {
 #[allow(dead_code)]
 fn map_err(e: DevError) -> AxError {
     match e {
-        DevError::Again => AxError::Again,
+        DevError::Again => AxError::WouldBlock,
         DevError::AlreadyExists => AxError::AlreadyExists,
         DevError::BadState => AxError::BadState,
         DevError::InvalidParam => AxError::InvalidInput,

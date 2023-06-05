@@ -159,7 +159,7 @@ mod user {
     pub const NANOS_PER_MICROS: u64 = 1_000;
     fn map_err(e: AxError) -> DevError {
         match e {
-            AxError::Again => DevError::Again,
+            AxError::WouldBlock => DevError::Again,
             AxError::AlreadyExists => DevError::AlreadyExists,
             AxError::BadState => DevError::BadState,
             AxError::InvalidInput => DevError::InvalidParam,

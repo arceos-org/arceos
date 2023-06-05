@@ -19,7 +19,7 @@ fn client() -> io::Result {
     let mut stream = File::open(&format!("tcp:/{}/{}", get_addr().0, get_addr().1))?;
     stream.write(REQUEST.as_bytes())?;
     let mut buf = [0; 2048];
-    let n = stream.read(&mut buf)?;
+    let n = loop_wait!(stream.read(&mut buf))?;
     let response = core::str::from_utf8(&buf[..n]).unwrap();
     println!("{}", response); // longer response need to handle tcp package problems.
     Ok(())

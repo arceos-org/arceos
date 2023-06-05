@@ -47,10 +47,10 @@ const CONTENT: &str = r#"<html>
 
 fn http_server(mut stream: File) -> AxResult {
     let mut buf = [0u8; 1024];
-    stream.read(&mut buf)?;
+    loop_wait!(stream.read(&mut buf))?;
 
     let reponse = alloc::format!(header!(), CONTENT.len(), CONTENT);
-    stream.write(reponse.as_bytes())?;
+    loop_wait!(stream.write(reponse.as_bytes()))?;
 
     Ok(())
 }
@@ -64,7 +64,7 @@ fn accept_loop() -> AxResult {
 
     let mut i = 0;
     loop {
-        match listener.dup("accept") {
+        match loop_wait!(listener.dup("accept")) {
             Ok(stream) => {
                 info!("new client {}: ", i);
                 libax::task::spawn(move || match http_server(stream) {
@@ -72,7 +72,6 @@ fn accept_loop() -> AxResult {
                     Ok(()) => info!("client {} closed successfully", i),
                 });
             }
-            Err(libax::axerrno::AxError::Again) => yield_now(),
             Err(e) => return Err(e),
         }
         i += 1;
