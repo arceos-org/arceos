@@ -28,12 +28,18 @@ pub struct GlobalAllocator {
     heap_size: usize,
 }
 
-const PAGE_SIZE: usize = 1 << 12; // need 4KB aligned
+const PAGE_SIZE: usize = 1 << 22; // need 4MB aligned (prepared for mimalloc)
 const HEAP_SIZE: usize = 1 << 26; // 512MB
+/// The memory heap in this test
 static mut HEAP: [usize; HEAP_SIZE + PAGE_SIZE] = [0; HEAP_SIZE + PAGE_SIZE];
 
+/// if FLAG=ture, always uses system_alloc
 static mut FLAG: bool = false;
 
+/// The global allocator to test alloc in user mode.
+/// The alloc mode supported: system_alloc, basic_alloc, buddy_alloc,
+/// slab_alloc, tlsf_c_alloc and tlsf_rust_alloc.
+/// The basic_alloc can choose strategy: first_fit, best_fit and worst_fit.
 impl GlobalAllocator {
     pub const fn new() -> Self {
         Self {
