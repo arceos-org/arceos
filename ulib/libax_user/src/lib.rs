@@ -39,9 +39,6 @@ pub mod axerrno {
 }
 pub use syscall_number::io::OpenFlags;
 
-//#[cfg(feature = "net")]
-//pub mod net;
-
 pub use io::env;
 
 // for macro

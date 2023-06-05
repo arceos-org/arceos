@@ -24,7 +24,7 @@ platform-qemu-virt-aarch64 = ["axhal/platform-qemu-virt-aarch64", "axdriver?/bus
 user-paging = ["axtask/user-paging", "axruntime/user-paging"]
 user-net = ["axruntime/user-net"]
 user-fs = ["axruntime/user-fs"]
-default = ["user-paging", "user-net", "user-fs"]
+default = ["user-paging"]
 
 [dependencies]
 

@@ -15,8 +15,7 @@ log-level-info = ["log/max_level_info"]
 log-level-debug = ["log/max_level_debug"]
 log-level-trace = ["log/max_level_trace"]
 
-net = []
-default = ["net"]
+default = []
 
 [dependencies]
 log = "0.4"

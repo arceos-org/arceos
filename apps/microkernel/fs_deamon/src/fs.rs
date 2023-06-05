@@ -31,12 +31,13 @@ struct VfsScheme {
 
 pub(crate) fn init_fs() {
     axfs::user_init();
+    libax::println!("FS inited");
 }
 
 pub(crate) fn run() {
     let fs = VfsScheme::default();
     let mut channel = File::create(":/file").unwrap();
-    libax::println!("TCP deamon started!");
+    libax::println!("FS deamon started!");
     loop {
         let mut packet: Packet = Packet::default();
         assert_eq!(

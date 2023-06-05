@@ -16,7 +16,12 @@ BUS ?= mmio
 
 QEMU_LOG ?= n
 
-MICRO ?= y
+# === Config of microkernel ===
+MICRO ?= n
+KERN_LOG ?= $(LOG)
+USER_LOG ?= $(LOG)
+# =============================
+
 
 ifeq ($(wildcard $(APP)),)
   $(error Application path "$(APP)" is not valid)
@@ -76,10 +81,16 @@ OUT_BIN := $(OUT_DIR)/$(APP_NAME)_$(PLATFORM).bin
 
 all: build
 
-include scripts/make/utils.mk
+ifeq ($(MICRO), y)
+include scripts/make/cargo-micro.mk
+include scripts/make/build-micro.mk
+else
 include scripts/make/cargo.mk
-include scripts/make/qemu.mk
 include scripts/make/build.mk
+endif
+
+include scripts/make/utils.mk
+include scripts/make/qemu.mk
 include scripts/make/test.mk
 
 build: $(OUT_DIR) $(OUT_BIN)
