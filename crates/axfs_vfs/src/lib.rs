@@ -43,10 +43,13 @@ mod structs;
 
 pub mod path;
 
+use alloc::string::String;
 use alloc::sync::Arc;
 use axerrno::{ax_err, AxError, AxResult};
 
-pub use self::structs::{FileSystemInfo, VfsDirEntry, VfsNodeAttr, VfsNodePerm, VfsNodeType};
+pub use self::structs::{
+    FileSystemInfo, LinkHandle, VfsDirEntry, VfsNodeAttr, VfsNodePerm, VfsNodeType,
+};
 
 /// A wrapper of [`Arc<dyn VfsNodeOps>`].
 pub type VfsNodeRef = Arc<dyn VfsNodeOps>;
@@ -145,8 +148,8 @@ pub trait VfsNodeOps: Send + Sync {
         ax_err!(Unsupported)
     }
 
-    /// Remove the node with the given `path` in the directory.
-    fn remove(&self, _path: &str) -> VfsResult {
+    /// Remove the node with given `path` in the directory.
+    fn remove(&self, _path: &str, _recursive: bool) -> VfsResult {
         ax_err!(Unsupported)
     }
 
@@ -154,7 +157,6 @@ pub trait VfsNodeOps: Send + Sync {
     fn read_dir(&self, _start_idx: usize, _dirents: &mut [VfsDirEntry]) -> VfsResult<usize> {
         ax_err!(Unsupported)
     }
-
     /// Convert `&self` to [`&dyn Any`][1] that can use
     /// [`Any::downcast_ref`][2].
     ///
@@ -162,6 +164,28 @@ pub trait VfsNodeOps: Send + Sync {
     /// [2]: core::any::Any#method.downcast_ref
     fn as_any(&self) -> &dyn core::any::Any {
         unimplemented!()
+    }
+
+    /// Create a symbolic link to target
+    fn symlink(&self, _name: &str, _path: &str) -> VfsResult {
+        ax_err!(Unsupported)
+    }
+
+    /// Create a hard link to target (maybe file or symlink)
+    fn link(&self, _name: &str, _handle: &LinkHandle) -> VfsResult {
+        ax_err!(Unsupported)
+    }
+
+    // symbolic link operation
+
+    /// Get the target this symbolic link is pointing
+    fn get_path(&self) -> VfsResult<String> {
+        ax_err!(Unsupported)
+    }
+
+    /// for hard link support
+    fn get_link_handle(&self) -> VfsResult<LinkHandle> {
+        ax_err!(Unsupported)
     }
 }
 

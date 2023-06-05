@@ -1,4 +1,5 @@
 #![cfg(not(feature = "myfs"))]
+#![cfg(not(feature = "ext2fs"))]
 
 mod test_common;
 
