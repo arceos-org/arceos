@@ -1,5 +1,5 @@
 use std::{
-    cell::{Ref, RefCell},
+    cell::RefCell,
     fs::{File, OpenOptions},
     io::{Read, Seek, SeekFrom, Write},
 };
@@ -17,7 +17,7 @@ impl FileDevice {
             .write(true)
             .create(true)
             .open(path)?;
-        file.set_len((nblocks * BLOCK_SIZE) as u64);
+        file.set_len((nblocks * BLOCK_SIZE) as u64)?;
         Ok(Self(RefCell::new(file)))
     }
 

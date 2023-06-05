@@ -23,7 +23,7 @@ pub fn existing_journal(system: Rc<UserSystem>) -> Rc<RefCell<Journal>> {
 
 pub fn create_journal() -> JBDResult<(Rc<UserSystem>, Rc<RefCell<Journal>>)> {
     const NBLOCKS: usize = 2048;
-    let system = Rc::new(UserSystem::new("target/test.img", NBLOCKS).unwrap());
+    let system = Rc::new(UserSystem::new("test.img", NBLOCKS).unwrap());
     let dev = system.block_device();
     let mut journal = Journal::init_dev(
         system.clone(),

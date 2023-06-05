@@ -193,6 +193,7 @@ impl Buffer for BlockCache {
             inner.device.write_block(inner.block_id, unsafe {
                 slice::from_raw_parts_mut(inner.data, inner.size)
             });
+            drop(inner);
             self.clear_dirty();
         }
     }
