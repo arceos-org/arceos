@@ -1,0 +1,6 @@
+default
+alloc
+paging
+net
+fs
+fp_simd
