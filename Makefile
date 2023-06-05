@@ -11,6 +11,8 @@ APP_FEATURES ?=
 # DISK_IMG ?= target/fs.img
 FS ?= n
 NET ?= n
+NET_DEV ?= user
+NET_DUMP ?= n
 GRAPHIC ?= n
 BUS ?= mmio
 
@@ -37,37 +39,42 @@ ifeq ($(ARCH), x86_64)
   ACCEL ?= y
   PLATFORM ?= pc-x86
   TARGET := x86_64-unknown-none
+  TARGET_CFLAGS := -mno-sse
   BUS := pci
 else ifeq ($(ARCH), riscv64)
   ACCEL ?= n
   PLATFORM ?= qemu-virt-riscv
   TARGET := riscv64gc-unknown-none-elf
+  TARGET_CFLAGS := -mabi=lp64d
 else ifeq ($(ARCH), aarch64)
   ACCEL ?= n
   PLATFORM ?= qemu-virt-aarch64
   TARGET := aarch64-unknown-none-softfloat
+  TARGET_CFLAGS := -mgeneral-regs-only
 else
   $(error "ARCH" must be one of "x86_64", "riscv64", or "aarch64")
 endif
 
 export ARCH
+export ARCH_CFLAGS
 export PLATFORM
 export SMP
 export MODE
 export LOG
 
 # Binutils
-ifeq ($(APP_LANG), c)
-  CROSS_COMPILE ?= $(ARCH)-linux-musl-
-  CC := $(CROSS_COMPILE)gcc
-  AR := $(CROSS_COMPILE)ar
-  RANLIB := $(CROSS_COMPILE)ranlib
-  LD := rust-lld -flavor gnu
-endif
+CROSS_COMPILE ?= $(ARCH)-linux-musl-
+CC := $(CROSS_COMPILE)gcc
+AR := $(CROSS_COMPILE)ar
+RANLIB := $(CROSS_COMPILE)ranlib
+LD := rust-lld -flavor gnu
 
 OBJDUMP ?= rust-objdump -d --print-imm-hex --x86-asm-syntax=intel
 OBJCOPY ?= rust-objcopy --binary-architecture=$(ARCH)
 GDB ?= gdb-multiarch
+
+export TARGET_CC=$(CC)	# for building lwip_rust
+export TARGET_CFLAGS
 
 # Paths
 OUT_DIR ?= $(APP)

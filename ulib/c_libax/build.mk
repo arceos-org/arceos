@@ -17,6 +17,10 @@ CFLAGS += -nostdinc -static -no-pie -fno-builtin -ffreestanding -Wall
 CFLAGS += -I$(inc_dir) -I$(ulib_dir)/../libax
 LDFLAGS += -nostdlib -static -no-pie --gc-sections -T$(LD_SCRIPT)
 
+ifeq ($(ARCH), x86_64)
+  LDFLAGS += --no-relax
+endif
+
 ifeq ($(MODE), release)
   CFLAGS += -O3
 endif
