@@ -52,7 +52,7 @@ impl AxRunQueue {
     pub fn add_task(&self, task: AxTaskRef) {
         let _guard = NoPreempt::new();
         task.set_queue_id(self.id as isize);
-        debug!("task spawn: {} at queue {}", task.id_name(), self.id);
+        debug!("task spawn: {} at queue {}, affinity is {}", task.id_name(), self.id, task.get_affinity());
         assert!(task.is_ready());
         LOAD_BALANCE_ARR[self.id].add_weight(1);
         trace!(
@@ -98,7 +98,6 @@ impl AxRunQueue {
     #[cfg(feature = "preempt")]
     pub fn resched(&self) {
         let _guard = NoPreempt::new();
-        info!("rescedh");
         let curr = crate::current();
         assert!(curr.is_running());
 
@@ -280,11 +279,6 @@ impl AxRunQueue {
             self.id,
             LOAD_BALANCE_ARR[self.id].get_weight()
         );
-        trace!(
-            "load balance weight for id {}: {}",
-            1,
-            LOAD_BALANCE_ARR[1].get_weight()
-        );
         // TODO: 注意需要对所有 pick_next_task 后面都要判断是否队列空，如果是则需要执行线程窃取
         self.if_empty_steal();
         self.switch_to(prev, next, exit_lock);
@@ -350,6 +344,7 @@ pub(crate) fn init() {
 
     let main_task = TaskInner::new_init("main".into());
     main_task.set_state(TaskState::Running);
+    main_task.set_affinity((1u32 << axconfig::SMP) - 1);
 
     for i in 0..axconfig::SMP {
         RUN_QUEUE[i].init_by(Arc::new(AxRunQueue::new(i)));
