@@ -160,19 +160,10 @@ impl Journal {
             #[cfg(feature = "debug")]
             log::debug!("Added descriptor: {}", header.display(0));
 
-            // Transaction::file_buffer(
-            //     transaction_rc,
-            //     transaction,
-            //     descriptor_rc.as_ref().unwrap(),
-            //     &mut descriptor,
-            //     BufferListType::LogCtl,
-            // )?;
             descriptor.buf.sync();
 
             *offset = size_of::<RevokeBlockHeader>() as u32;
         }
-
-        // FIXME: count?
 
         let descriptor = descriptor_rc.as_ref().unwrap().as_ref().borrow_mut();
         let blocknr = descriptor.buf.convert_offset_mut::<u32>(*offset as usize);

@@ -5,6 +5,7 @@ use core::cell::RefCell;
 
 use crate::{
     err::{JBDError, JBDResult},
+    jbd_assert,
     journal::Journal,
     sal::Buffer,
 };
@@ -191,7 +192,7 @@ impl Transaction {
 
 impl Transaction {
     fn remove_buffer(&mut self, jb: &Rc<RefCell<JournalBuffer>>, list_type: BufferListType) {
-        // FIXME: Linux has lots of asserts here
+        // FIXME: Linux has lots of jbd_asserts here
         match list_type {
             BufferListType::None => {}
             BufferListType::SyncData => self.sync_datalist.remove(jb),
@@ -305,7 +306,7 @@ impl Transaction {
         jb: &mut JournalBuffer,
         tx: &mut Transaction,
     ) {
-        assert!(jb.transaction.is_some());
+        jbd_assert!(jb.transaction.is_some());
         Self::temp_unlink_buffer(tx, jb_rc, jb);
         jb.transaction = None;
     }
@@ -416,9 +417,8 @@ impl Handle {
         let journal_rc = tx.journal.upgrade().unwrap();
         let journal = &journal_rc.as_ref().borrow();
 
-        // TODO: async version
+        jbd_assert!(tx.updates > 0);
 
-        assert!(tx.updates > 0);
         journal.system.set_current_handle(None);
         tx.outstanding_credits -= self.buffer_credits;
         tx.updates -= 1;
@@ -445,7 +445,7 @@ impl Handle {
             return Err(JBDError::HandleAborted);
         }
 
-        // TODO: Lots of assertions here
+        // TODO: Lots of jbd_assertions here
 
         let tx_rc = self.transaction.as_ref().unwrap();
         let mut tx = tx_rc.borrow_mut();
@@ -837,7 +837,7 @@ impl Handle {
                 )?;
             }
         }
-        // done:
+
         self.cancel_revoke(jb)?;
 
         Ok(())

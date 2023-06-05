@@ -1,4 +1,4 @@
-use crate::{journal::JournalFlag, Journal};
+use crate::{jbd_assert, journal::JournalFlag, Journal};
 
 impl Journal {
     pub fn do_all_checkpoints(&mut self) -> usize {
@@ -6,7 +6,6 @@ impl Journal {
         while self.log_do_checkpoint() {
             count += 1;
         }
-
         count
     }
 
@@ -55,7 +54,7 @@ impl Journal {
             (self.transaction_sequence, self.head)
         };
 
-        assert!(blocknr != 0);
+        jbd_assert!(blocknr != 0);
 
         log::debug!(
             "Cleanup tail: first_tid: {}, blocknr: {}, self.tail_sequence: {}",
@@ -68,7 +67,7 @@ impl Journal {
             return;
         }
 
-        assert!(first_tid > self.tail_sequence);
+        jbd_assert!(first_tid > self.tail_sequence);
 
         let mut freed = blocknr - self.tail;
         if blocknr < self.tail {

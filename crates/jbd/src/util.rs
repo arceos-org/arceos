@@ -4,7 +4,7 @@ macro_rules! jbd_assert {
     ($e:expr) => {
         assert!(
             $e,
-            "jbd-rs: assertion failed at {}:{}:{}: {}",
+            "jbd-rs: jbd_assert failed at {}:{}:{}: {}",
             file!(),
             line!(),
             column!(),

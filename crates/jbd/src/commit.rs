@@ -1,7 +1,4 @@
-use core::{
-    cell::RefCell,
-    mem::{self, size_of},
-};
+use core::{cell::RefCell, mem::size_of};
 
 extern crate alloc;
 use alloc::{rc::Rc, vec::Vec};
@@ -10,6 +7,7 @@ use crate::{
     config::JFS_MAGIC_NUMBER,
     disk::{BlockTag, BlockType, Header, TagFlag},
     err::JBDResult,
+    jbd_assert,
     journal::JournalFlag,
     tx::{BufferListType, JournalBuffer, Transaction, TransactionState},
     Journal,
@@ -26,18 +24,18 @@ impl Journal {
         if self.flags.contains(JournalFlag::FLUSHED) {
             self.update_superblock();
         }
-        assert!(self.running_transaction.is_some());
-        assert!(self.committing_transaction.is_none());
+        jbd_assert!(self.running_transaction.is_some());
+        jbd_assert!(self.committing_transaction.is_none());
 
         let commit_tx_rc = self.running_transaction.as_ref().unwrap().clone();
         let mut commit_tx = commit_tx_rc.as_ref().borrow_mut();
-        assert!(commit_tx.state == TransactionState::Running);
+        jbd_assert!(commit_tx.state == TransactionState::Running);
 
         log::debug!("Start committing transaction {}.", commit_tx.tid);
         commit_tx.state = TransactionState::Locked;
 
-        assert!(commit_tx.updates == 0);
-        assert!(commit_tx.outstanding_credits <= self.max_transaction_buffers);
+        jbd_assert!(commit_tx.updates == 0);
+        jbd_assert!(commit_tx.outstanding_credits <= self.max_transaction_buffers);
 
         for jb_rc in commit_tx.reserved_list.0.clone().into_iter() {
             let mut jb = jb_rc.as_ref().borrow_mut();
@@ -46,10 +44,6 @@ impl Journal {
             }
             Transaction::refile_buffer(&jb_rc, &mut jb, &mut commit_tx);
         }
-
-        // TODO: Now try to drop any written-back buffers from the journal's
-        // checkpoint lists.  We do this *before* commit because it potentially
-        // frees some memory.
 
         log::debug!("Commit phase 1.");
 
@@ -85,13 +79,13 @@ impl Journal {
 
         self.write_revoke_records(&mut commit_tx)?;
 
-        assert!(commit_tx.sync_datalist.0.is_empty());
+        jbd_assert!(commit_tx.sync_datalist.0.is_empty());
 
         log::debug!("Commit phase 3.");
 
         commit_tx.state = TransactionState::Commit;
 
-        assert!(commit_tx.nr_buffers <= commit_tx.outstanding_credits as i32);
+        jbd_assert!(commit_tx.nr_buffers <= commit_tx.outstanding_credits as i32);
 
         let mut descriptor_rc: Option<Rc<RefCell<JournalBuffer>>> = None;
         let mut first_tag = false;
@@ -111,7 +105,6 @@ impl Journal {
             }
 
             if descriptor_rc.is_none() {
-                log::debug!("Get descriptor.");
                 descriptor_rc = Some(self.get_descriptor_buffer()?);
                 let descriptor_rc = descriptor_rc.as_mut().unwrap();
                 let descriptor = descriptor_rc.as_ref().borrow_mut();
@@ -123,11 +116,12 @@ impl Journal {
 
                 buf.mark_dirty();
                 self.wbuf.push(buf.clone());
-                // Transaction::file_buffer(&commit_tx_rc, &descriptor_rc, &mut descriptor, BufferListType::LogCtl)?;
                 first_tag = true;
                 descriptor_buf_data = Some(buf.buf_mut()[size_of::<Header>()..].as_mut_ptr());
                 space_left = buf.size() - size_of::<Header>();
 
+                #[cfg(not(feature = "debug"))]
+                log::debug!("Added descriptor.");
                 #[cfg(feature = "debug")]
                 log::debug!("Added descriptor: {}", header.display(0));
             }
@@ -155,8 +149,7 @@ impl Journal {
             }
 
             let tag_ptr = descriptor_buf_data.unwrap();
-            #[allow(clippy::transmute_ptr_to_ref)]
-            let tag_mut = unsafe { mem::transmute::<_, &mut BlockTag>(tag_ptr) };
+            let tag_mut = unsafe { &mut *(tag_ptr as *mut BlockTag) };
             tag_mut.block_nr = (jb.buf.block_id() as u32).to_be();
             tag_mut.flag = tag_flag.bits().to_be();
             space_left -= size_of::<BlockTag>();
@@ -172,14 +165,13 @@ impl Journal {
             }
 
             if first_tag {
-                // TODO: uuid
-                // let uuid_mut = unsafe { mem::transmute::<_, &mut [u8; 16]>(descriptor_buf_data.as_mut().unwrap()) };
+                // TODO: Fill UUID
                 unsafe {
                     *descriptor_buf_data.as_mut().unwrap() =
                         descriptor_buf_data.as_ref().unwrap().offset(16);
                 }
                 first_tag = false;
-                space_left -= 16;
+                space_left -= 16; // UUID
             }
 
             // Submit IO
@@ -207,7 +199,7 @@ impl Journal {
         log::debug!("Commit phase 4-5.");
 
         // IO bufs
-        assert!(commit_tx.iobuf_list.0.len() == commit_tx.shadow_list.0.len());
+        jbd_assert!(commit_tx.iobuf_list.0.len() == commit_tx.shadow_list.0.len());
 
         while !commit_tx.iobuf_list.0.is_empty() {
             let jb_rc = &commit_tx.iobuf_list.0[0].clone();
@@ -225,12 +217,12 @@ impl Journal {
             )?;
         }
 
-        assert!(commit_tx.iobuf_list.0.is_empty());
-        assert!(commit_tx.shadow_list.0.is_empty());
+        jbd_assert!(commit_tx.iobuf_list.0.is_empty());
+        jbd_assert!(commit_tx.shadow_list.0.is_empty());
 
         log::debug!("Commit phase 6.");
 
-        assert!(commit_tx.state == TransactionState::Commit);
+        jbd_assert!(commit_tx.state == TransactionState::Commit);
         commit_tx.state = TransactionState::CommitRecord;
         self.write_commit_record(&mut commit_tx)?;
 
@@ -240,12 +232,12 @@ impl Journal {
         // before.
         log::debug!("Commit phase 7.");
 
-        assert!(commit_tx.sync_datalist.0.is_empty());
-        assert!(commit_tx.buffers.0.is_empty());
-        assert!(commit_tx.checkpoint_list.0.is_empty());
-        assert!(commit_tx.iobuf_list.0.is_empty());
-        assert!(commit_tx.shadow_list.0.is_empty());
-        assert!(commit_tx.log_list.0.is_empty());
+        jbd_assert!(commit_tx.sync_datalist.0.is_empty());
+        jbd_assert!(commit_tx.buffers.0.is_empty());
+        jbd_assert!(commit_tx.checkpoint_list.0.is_empty());
+        jbd_assert!(commit_tx.iobuf_list.0.is_empty());
+        jbd_assert!(commit_tx.shadow_list.0.is_empty());
+        jbd_assert!(commit_tx.log_list.0.is_empty());
 
         let forget_list = commit_tx.forget.0.clone();
 
@@ -276,20 +268,20 @@ impl Journal {
                 jb.cp_transaction = None;
             }
 
-            assert!(jb.next_transaction.is_none());
+            jbd_assert!(jb.next_transaction.is_none());
             let buf = &jb.buf;
 
             if buf.jbd_dirty() {
                 jb.cp_transaction = Some(commit_tx_rc.clone());
                 commit_tx.checkpoint_list.0.push(jb_rc.clone());
             } else {
-                assert!(!buf.dirty());
+                jbd_assert!(!buf.dirty());
             }
 
             Transaction::refile_buffer(&jb_rc, &mut jb, &mut commit_tx);
         }
 
-        assert!(commit_tx.forget.0.is_empty());
+        jbd_assert!(commit_tx.forget.0.is_empty());
 
         log::debug!("Commit phase 8.");
         commit_tx.state = TransactionState::Finished;
@@ -397,7 +389,7 @@ impl Journal {
             let mut jb = jb_rc.as_ref().borrow_mut();
             let buf = &jb.buf;
 
-            assert!(buf.jbd_managed());
+            jbd_assert!(buf.jbd_managed());
 
             if buf.test_clear_dirty() {
                 buf.sync();
@@ -419,14 +411,13 @@ impl Journal {
     }
 
     fn next_log_block(&mut self) -> u32 {
-        assert!(self.free > 1);
+        jbd_assert!(self.free > 1);
         let block = self.head;
         self.head += 1;
         self.free -= 1;
         if self.head == self.last {
             self.head = self.first;
         }
-        // TODO: bmap
         block
     }
 }

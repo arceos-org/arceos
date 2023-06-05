@@ -9,6 +9,7 @@ use crate::{
     config::{JFS_MAGIC_NUMBER, JFS_MIN_JOURNAL_BLOCKS, MIN_LOG_RESERVED_BLOCKS},
     disk::{BlockType, Superblock},
     err::{JBDError, JBDResult},
+    jbd_assert,
     revoke::RevokeRecord,
     sal::{BlockDevice, Buffer, System},
     tx::{Handle, Tid, Transaction, TransactionState},
@@ -18,48 +19,48 @@ use crate::{
 use crate::disk::Display;
 
 pub struct Journal {
-    pub system: Rc<dyn System>,
-    pub sb_buffer: Rc<dyn Buffer>,
-    pub format_version: i32,
-    pub flags: JournalFlag,
-    pub errno: i32, // TODO: Strongly-typed error?
-    pub running_transaction: Option<Rc<RefCell<Transaction>>>,
-    pub committing_transaction: Option<Rc<RefCell<Transaction>>>,
+    pub(crate) system: Rc<dyn System>,
+    pub(crate) sb_buffer: Rc<dyn Buffer>,
+    pub(crate) format_version: i32,
+    pub(crate) flags: JournalFlag,
+    pub(crate) errno: i32, // TODO: Strongly-typed error?
+    pub(crate) running_transaction: Option<Rc<RefCell<Transaction>>>,
+    pub(crate) committing_transaction: Option<Rc<RefCell<Transaction>>>,
     /// Journal head: identifies the first unused block in the journal.
-    pub head: u32,
+    pub(crate) head: u32,
     /// Journal tail: identifies the oldest still-used block in the journal
-    pub tail: u32,
+    pub(crate) tail: u32,
     /// Journal free: how many free blocks are there in the journal?
-    pub free: u32,
+    pub(crate) free: u32,
     /// Journal start: the block number of the first usable block in the journal
-    pub first: u32,
+    pub(crate) first: u32,
     /// Journal end: the block number of the last usable block in the journal
-    pub last: u32,
+    pub(crate) last: u32,
     /// Sequence number of the oldest transaction in the log
-    pub tail_sequence: Tid,
+    pub(crate) tail_sequence: Tid,
     /// Sequence number of the next transaction to grant
-    pub transaction_sequence: Tid,
+    pub(crate) transaction_sequence: Tid,
     /// Sequence number of the most recently committed transaction
-    pub commit_sequence: Tid,
+    pub(crate) commit_sequence: Tid,
     /// Sequence number of the most recent transaction wanting commit
-    pub commit_request: Tid,
+    pub(crate) commit_request: Tid,
     /// List of all transactions waiting for checkpointing
-    pub checkpoint_transactions: Vec<Rc<RefCell<Transaction>>>,
+    pub(crate) checkpoint_transactions: Vec<Rc<RefCell<Transaction>>>,
     /// Block devices
     pub(crate) devs: JournalDevs,
     /// Total maximum capacity of the journal region on disk
-    pub maxlen: u32,
+    pub(crate) maxlen: u32,
     /// Maximum number of metadata buffers to allow in a single compound
     /// commit transaction
-    pub max_transaction_buffers: u32,
+    pub(crate) max_transaction_buffers: u32,
     // commit_interval: usize,
-    pub wbuf: Vec<Rc<dyn Buffer>>,
+    pub(crate) wbuf: Vec<Rc<dyn Buffer>>,
     pub(crate) revoke_tables: [BTreeMap<u32, RevokeRecord>; 2],
     pub(crate) current_revoke_table: usize,
 }
 
 bitflags! {
-    pub struct JournalFlag: usize {
+    pub(crate) struct JournalFlag: usize {
         const UNMOUNT = 0x001;
         const ABORT = 0x002;
         const ACK_ERR = 0x004;
@@ -75,33 +76,6 @@ pub(crate) struct JournalDevs {
     pub(crate) blk_offset: u32,
     #[allow(unused)]
     pub(crate) fs_dev: Rc<dyn BlockDevice>,
-}
-
-/// Journal states protected by a single spin lock in Linux.
-pub struct JournalStates {
-    pub flags: JournalFlag,
-    pub errno: i32, // TODO: Strongly-typed error?
-    pub running_transaction: Option<Rc<Transaction>>,
-    pub committing_transaction: Option<Rc<Transaction>>,
-    /// Journal head: identifies the first unused block in the journal.
-    pub head: u32,
-    /// Journal tail: identifies the oldest still-used block in the journal
-    pub tail: u32,
-    /// Journal free: how many free blocks are there in the journal?
-    pub free: u32,
-    /// Journal start: the block number of the first usable block in the journal
-    pub first: u32,
-    /// Journal end: the block number of the last usable block in the journal
-    pub last: u32,
-
-    /// Sequence number of the oldest transaction in the log
-    pub tail_sequence: Tid,
-    /// Sequence number of the next transaction to grant
-    pub transaction_sequence: Tid,
-    /// Sequence number of the most recently committed transaction
-    pub commit_sequence: Tid,
-    /// Sequence number of the most recent transaction wanting commit
-    pub commit_request: Tid,
 }
 
 /// Public interfaces.
@@ -161,7 +135,6 @@ impl Journal {
             return Err(JBDError::InvalidJournalSize);
         }
 
-        // TODO: j_inode
         log::debug!("Zeroing out journal blocks.");
         for i in 0..self.maxlen {
             let block_id = i;
@@ -171,7 +144,6 @@ impl Journal {
             page_head.sync();
         }
 
-        // FIXME
         log::debug!("Journal cleared.");
 
         let sb = self.superblock_mut();
@@ -228,9 +200,9 @@ impl Journal {
 
         self.do_all_checkpoints();
 
-        assert!(self.running_transaction.is_none());
-        assert!(self.committing_transaction.is_none());
-        assert!(self.checkpoint_transactions.is_empty());
+        jbd_assert!(self.running_transaction.is_none());
+        jbd_assert!(self.committing_transaction.is_none());
+        jbd_assert!(self.checkpoint_transactions.is_empty());
 
         if !self.flags.contains(JournalFlag::ABORT) {
             self.tail = 0;
@@ -277,7 +249,7 @@ impl Journal {
 
         self.update_superblock();
 
-        Ok(()) // FIXME: Should start deamon thread here.
+        Ok(())
     }
 
     /// Load the on-disk journal superblock and read the key fields.
@@ -304,8 +276,7 @@ impl Journal {
         Ok(())
     }
 
-    /// Update a journal's dynamic superblock fields and write it to disk,
-    /// ~~optionally waiting for the IO to complete~~.
+    /// Update a journal's dynamic superblock fields and write it to disk.
     pub(crate) fn update_superblock(&mut self) {
         let sb = self.superblock_mut();
 
@@ -315,6 +286,7 @@ impl Journal {
             return;
         }
 
+        #[cfg(not(feature = "debug"))]
         log::debug!("Updating superblock.");
         sb.sequence = (self.tail_sequence as u32).to_be();
         sb.start = self.tail.to_be();
@@ -323,7 +295,7 @@ impl Journal {
         self.sb_buffer.sync();
 
         #[cfg(feature = "debug")]
-        log::debug!("Superblock after update: {}", sb.display(0));
+        log::debug!("Updating superblock: {}", sb.display(0));
 
         if self.tail != 0 {
             self.flags.remove(JournalFlag::FLUSHED);
@@ -402,11 +374,9 @@ impl Journal {
             let mut tx_mut = tx.as_ref().borrow_mut();
             tx_mut.state = TransactionState::Running;
             tx_mut.start_time = self.system.get_time();
-            // FIXME
             tx_mut.tid = self.transaction_sequence;
         }
         self.transaction_sequence += 1;
-        // TODO: tx.expires
         self.running_transaction = Some(tx.clone());
     }
 
