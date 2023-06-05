@@ -11,7 +11,6 @@ extern crate alloc;
 use libax::{
     axerrno::AxResult,
     io::{File, Read, Write},
-    task::yield_now,
 };
 
 const LOCAL_IP: &str = "10.0.2.15";
