@@ -145,6 +145,11 @@ impl File {
         }
         let access_cap = opts.into();
         if !perm_to_cap(attr.perm()).contains(access_cap) {
+            error!(
+                "bad perm {} {}",
+                perm_to_cap(attr.perm()).bits(),
+                access_cap.bits()
+            );
             return ax_err!(PermissionDenied);
         }
 
@@ -163,6 +168,16 @@ impl File {
     /// [`File`] object.
     pub fn open(path: &str, opts: &OpenOptions) -> AxResult<Self> {
         Self::_open_at(None, path, opts)
+    }
+
+    /// Look up no follow
+    pub fn lookup(path: &str) -> AxResult<Self> {
+        let node = crate::root::lookup_symbolic(None, path, false)?;
+        Ok(Self {
+            node: WithCap::new(node, Cap::empty()),
+            is_append: false,
+            offset: 0,
+        })
     }
 
     /// Truncates the file to the specified size.
@@ -292,8 +307,8 @@ impl Directory {
     }
 
     /// Removes a directory at the path relative to this directory.
-    pub fn remove_dir(&self, path: &str) -> AxResult {
-        crate::root::remove_dir(self.access_at(path)?, path)
+    pub fn remove_dir(&self, path: &str, recursive: bool) -> AxResult {
+        crate::root::remove_dir(self.access_at(path)?, path, recursive)
     }
 
     /// Reads directory entries starts from the current position into the

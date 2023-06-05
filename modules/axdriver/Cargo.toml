@@ -11,7 +11,7 @@ documentation = "https://rcore-os.github.io/arceos/axdriver/index.html"
 
 [features]
 dyn = []
-bus-mmio = []
+bus-mmio = ["dep:dtb"]
 bus-pci = ["dep:driver_pci", "dep:axhal", "dep:axconfig"]
 net = ["driver_net"]
 block = ["driver_block"]
@@ -41,3 +41,7 @@ driver_virtio = { path = "../../crates/driver_virtio", optional = true }
 axalloc = { path = "../axalloc", optional = true }
 axhal = { path = "../axhal", optional = true }
 axconfig = { path = "../axconfig", optional = true }
+dtb = {path = "../../crates/dtb" , optional = true}
+
+[target.'cfg(target_arch = "aarch64")'.dependencies]
+arm_gic = { path = "../../crates/arm_gic"}

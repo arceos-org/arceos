@@ -1,7 +1,7 @@
 #ifndef __STRING_H__
 #define __STRING_H__
 
-#include <stdint.h>
+#include <stddef.h>
 
 int atoi(const char *s);
 
@@ -31,7 +31,7 @@ int strncasecmp(const char *__s1, const char *__s2, size_t __n);
 
 char *strstr(const char *h, const char *n);
 
-char *strerror(int n);
+char *strerror(int e);
 
 void *memcpy(void *restrict dest, const void *restrict src, size_t n);
 
