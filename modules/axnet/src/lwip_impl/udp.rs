@@ -4,6 +4,7 @@ use crate::{
 };
 use alloc::{boxed::Box, collections::VecDeque};
 use axerrno::{ax_err, AxError, AxResult};
+use axio::PollState;
 use axsync::Mutex;
 use axtask::yield_now;
 use core::{ffi::c_void, pin::Pin, ptr::null_mut};
@@ -21,6 +22,7 @@ struct PbuffPointer(*mut pbuf);
 unsafe impl Send for PbuffPointer {}
 
 struct UdpSocketInner {
+    nonblock: bool,
     recv_queue: Mutex<VecDeque<(PbuffPointer, SocketAddr)>>,
 }
 
@@ -61,6 +63,7 @@ impl UdpSocket {
         let mut socket = Self {
             pcb: UdpPcbPointer(unsafe { udp_new() }),
             inner: Box::pin(UdpSocketInner {
+                nonblock: false,
                 recv_queue: Mutex::new(VecDeque::with_capacity(RECV_QUEUE_LEN)),
             }),
         };
@@ -114,6 +117,18 @@ impl UdpSocket {
                 port,
             })
         }
+    }
+
+    /// Moves this UDP socket into or out of nonblocking mode.
+    ///
+    /// This will result in `recv`, `recv_from`, `send`, and `send_to`
+    /// operations becoming nonblocking, i.e., immediately returning from their
+    /// calls. If the IO operation is successful, `Ok` is returned and no
+    /// further action is required. If the IO operation could not be completed
+    /// and needs to be retried, an error with kind
+    /// [`Err(WouldBlock)`](AxError::WouldBlock) is returned.
+    pub fn set_nonblocking(&mut self, nonblocking: bool) {
+        self.inner.nonblock = nonblocking;
     }
 
     /// Binds an unbound socket to the given address and port.
@@ -179,7 +194,7 @@ impl UdpSocket {
             lwip_loop_once();
             let mut recv_queue = self.inner.recv_queue.lock();
             let res = if recv_queue.len() == 0 {
-                Err(AxError::Again)
+                Err(AxError::WouldBlock)
             } else {
                 // TODO: len > buf.len()
                 // TODO: pbuf chain
@@ -201,8 +216,12 @@ impl UdpSocket {
                     trace!("[UdpSocket] recv done: {:?}", &buf[0..len]);
                     return Ok((len, addr));
                 }
-                Err(AxError::Again) => {
-                    yield_now();
+                Err(AxError::WouldBlock) => {
+                    if self.inner.nonblock {
+                        return Err(AxError::WouldBlock);
+                    } else {
+                        yield_now();
+                    }
                 }
                 Err(e) => {
                     return Err(e);
@@ -248,6 +267,17 @@ impl UdpSocket {
     /// Receives data from the socket, stores it in the given buffer, without removing it from the queue.
     pub fn peek_from(&self, _buf: &mut [u8]) -> AxResult<(usize, SocketAddr)> {
         ax_err!(Unsupported, "LWIP Unsupported")
+    }
+
+    /// Detect whether the socket needs to receive/can send.
+    ///
+    /// Return is <need to receive, can send>
+    pub fn poll(&self) -> AxResult<PollState> {
+        // TODO: query lwip for true state
+        Ok(PollState {
+            readable: true,
+            writable: true,
+        })
     }
 }
 
