@@ -16,7 +16,6 @@ fatfs = ["dep:fatfs"]
 myfs = ["dep:crate_interface"]
 ext2fs = ["dep:ext2fs"]
 use-ramdisk = []
-ext2fs = ["dep:ext2fs"]
 
 default = ["devfs", "ramfs", "ext2fs"]
 
