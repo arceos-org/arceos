@@ -90,3 +90,5 @@ jobs:
       run: make ARCH=${{ matrix.arch }} A=apps/c/httpserver
     - name: Build c/udpserver
       run: make ARCH=${{ matrix.arch }} A=apps/c/udpserver
+    - name: Build c/iperf
+      run: make ARCH=${{ matrix.arch }} A=apps/c/iperf

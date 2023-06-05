@@ -137,6 +137,6 @@ clean: clean_c
 
 clean_c:
 	rm -rf ulib/c_libax/build_*
-	rm -rf $(APP)/*.o
+	rm -rf $(app-objs)
 
 .PHONY: all build disasm run justrun debug clippy fmt fmt_c test test_no_fail_fast clean clean_c doc disk_image
