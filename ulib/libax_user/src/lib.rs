@@ -1,5 +1,5 @@
 //! User library of the microkernel version of ArceOS.
-//! 
+//!
 #![cfg_attr(all(not(test), not(doc), target_os = "none"), no_std)]
 
 mod syscall;

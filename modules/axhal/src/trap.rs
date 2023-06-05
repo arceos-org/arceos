@@ -33,16 +33,15 @@ pub(crate) fn handle_syscall_extern(syscall_num: usize, param: [usize; 6]) -> is
     call_interface!(TrapHandler::handle_syscall, syscall_num, param)
 }
 
-
 #[cfg(feature = "user-paging")]
 use crate::arch::TrapFrame;
 /// Task Infomation Interface
 ///
 /// Call the external task manager to obtain infomation
-/// 
+///
 /// This trait is defined with the [`#[def_interface]`][1] attribute. Users
 /// should implement it with [`#[impl_interface]`][2] in any other crate.
-/// 
+///
 /// [1]: crate_interface::def_interface
 /// [2]: crate_interface::impl_interface
 #[cfg(feature = "user-paging")]

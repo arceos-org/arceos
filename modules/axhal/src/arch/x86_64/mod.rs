@@ -22,7 +22,7 @@ pub fn first_uentry() -> ! {
     unimplemented!();
 }
 
-/// Enters user space after trap handling 
+/// Enters user space after trap handling
 #[cfg(feature = "user-paging")]
 pub fn enter_uspace(_tf: usize, _satp: usize) -> ! {
     unimplemented!();

@@ -469,7 +469,6 @@ pub trait CurrentAddrSpace {
     fn current_addr_space() -> Arc<AddrSpace>;
 }
 
-
 fn current_addr_space() -> Arc<AddrSpace> {
     crate_interface::call_interface!(CurrentAddrSpace::current_addr_space)
 }

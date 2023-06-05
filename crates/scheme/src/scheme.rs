@@ -171,37 +171,37 @@ pub trait Scheme {
         Err(Error::BadFileDescriptor)
     }
     /*
-        #[allow(unused_variables)]
-        fn fevent(&self, id: usize, flags: EventFlags) -> Result<EventFlags> {
-            Err(Error::BadFileDescriptor)
-        }
+       #[allow(unused_variables)]
+       fn fevent(&self, id: usize, flags: EventFlags) -> Result<EventFlags> {
+           Err(Error::BadFileDescriptor)
+       }
 
-        #[allow(unused_variables)]
-        fn fmap_old(&self, id: usize, map: &OldMap) -> Result<usize> {
-            Err(Error::BadFileDescriptor)
-        }
-        #[allow(unused_variables)]
-        fn fmap(&self, id: usize, map: &Map) -> Result<usize> {
-            if map.flags.contains(MapFlags::MAP_FIXED) {
-                return Err(Error::new(EINVAL));
-            }
-            self.fmap_old(id, &OldMap {
-                offset: map.offset,
-                size: map.size,
-                flags: map.flags,
-            })
-        }
+       #[allow(unused_variables)]
+       fn fmap_old(&self, id: usize, map: &OldMap) -> Result<usize> {
+           Err(Error::BadFileDescriptor)
+       }
+       #[allow(unused_variables)]
+       fn fmap(&self, id: usize, map: &Map) -> Result<usize> {
+           if map.flags.contains(MapFlags::MAP_FIXED) {
+               return Err(Error::new(EINVAL));
+           }
+           self.fmap_old(id, &OldMap {
+               offset: map.offset,
+               size: map.size,
+               flags: map.flags,
+           })
+       }
 
-        #[allow(unused_variables)]
-        fn funmap_old(&self, address: usize) -> Result<usize> {
-            Ok(0)
-        }
+       #[allow(unused_variables)]
+       fn funmap_old(&self, address: usize) -> Result<usize> {
+           Ok(0)
+       }
 
-        #[allow(unused_variables)]
-        fn funmap(&self, address: usize, length: usize) -> Result<usize> {
-            Ok(0)
-        }
-     */
+       #[allow(unused_variables)]
+       fn funmap(&self, address: usize, length: usize) -> Result<usize> {
+           Ok(0)
+       }
+    */
 
     /// `fpath` syscall
     #[allow(unused_variables)]
@@ -221,11 +221,11 @@ pub trait Scheme {
         Err(Error::BadFileDescriptor)
     }
     /*
-        #[allow(unused_variables)]
-        fn fstatvfs(&self, id: usize, stat: &mut StatVfs) -> Result<usize> {
-            Err(Error::BadFileDescriptor)
-        }
-     */
+       #[allow(unused_variables)]
+       fn fstatvfs(&self, id: usize, stat: &mut StatVfs) -> Result<usize> {
+           Err(Error::BadFileDescriptor)
+       }
+    */
 
     /// `fsync` syscall
     #[allow(unused_variables)]
@@ -239,11 +239,11 @@ pub trait Scheme {
         Err(Error::BadFileDescriptor)
     }
     /*
-        #[allow(unused_variables)]
-        fn futimens(&self, id: usize, times: &[TimeSpec]) -> Result<usize> {
-            Err(Error::BadFileDescriptor)
-        }
-     */
+       #[allow(unused_variables)]
+       fn futimens(&self, id: usize, times: &[TimeSpec]) -> Result<usize> {
+           Err(Error::BadFileDescriptor)
+       }
+    */
 
     /// `close` syscall
     #[allow(unused_variables)]

@@ -18,7 +18,7 @@ use self::net::NetDevice;
 use super::schemes;
 use super::KernelScheme;
 
-/// Device Scheme 
+/// Device Scheme
 pub struct DeviceScheme {
     #[cfg(feature = "user_net")]
     net: Option<Arc<NetDevice>>,
