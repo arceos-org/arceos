@@ -11,7 +11,8 @@ use core::{ffi::c_void, pin::Pin, ptr::null_mut};
 use lwip_rust::bindings::{
     err_enum_t_ERR_MEM, err_enum_t_ERR_OK, err_enum_t_ERR_RTE, err_enum_t_ERR_USE,
     err_enum_t_ERR_VAL, ip_addr_t, pbuf, pbuf_alloc, pbuf_free, pbuf_layer_PBUF_TRANSPORT,
-    pbuf_type_PBUF_RAM, u16_t, udp_bind, udp_new, udp_pcb, udp_recv, udp_remove, udp_sendto,
+    pbuf_type_PBUF_RAM, u16_t, udp_bind, udp_connect, udp_new, udp_pcb, udp_recv, udp_remove,
+    udp_sendto,
 };
 
 use super::LWIP_MUTEX;
@@ -23,7 +24,8 @@ unsafe impl Send for PbuffPointer {}
 
 struct UdpSocketInner {
     nonblock: bool,
-    recv_queue: Mutex<VecDeque<(PbuffPointer, SocketAddr)>>,
+    // (pbuf, offser, addr)
+    recv_queue: Mutex<VecDeque<(PbuffPointer, usize, SocketAddr)>>,
 }
 
 /// A UDP socket that provides POSIX-like APIs.
@@ -50,6 +52,7 @@ extern "C" fn udp_recv_callback(
         );
         socket_inner.recv_queue.lock().push_back((
             PbuffPointer(p),
+            0,
             SocketAddr::new(unsafe { *addr }.into(), port),
         ));
     }
@@ -146,45 +149,54 @@ impl UdpSocket {
             #[allow(non_upper_case_globals)]
             match udp_bind(self.pcb.0, &addr.addr.into(), addr.port) as i32 {
                 err_enum_t_ERR_OK => Ok(()),
-                err_enum_t_ERR_USE => ax_err!(AlreadyExists, "socket bind() failed"),
-                _ => ax_err!(InvalidInput, "socket bind() failed"),
+                err_enum_t_ERR_USE => {
+                    ax_err!(AlreadyExists, "LWIP [udp_bind] Port already in use.")
+                }
+                _ => ax_err!(InvalidInput, "LWIP [udp_bind] Failed."),
             }
         }
     }
 
     /// Transmits data in the given buffer to the given address.
     pub fn send_to(&self, buf: &[u8], addr: SocketAddr) -> AxResult<usize> {
-        trace!("[UdpSocket] send: {:?}", buf);
-        let _guard = LWIP_MUTEX.lock();
+        trace!("[UdpSocket] send (len = {})", buf.len());
+        let copy_len = core::cmp::min(buf.len(), 1472);
         unsafe {
+            let _guard = LWIP_MUTEX.lock();
             let p = pbuf_alloc(
                 pbuf_layer_PBUF_TRANSPORT,
-                buf.len() as u16,
+                copy_len as u16,
                 pbuf_type_PBUF_RAM,
             );
             if p.is_null() {
                 return ax_err!(NoMemory, "LWIP Out of memory.");
             }
             let payload = (*p).payload;
-            let payload = core::slice::from_raw_parts_mut(payload as *mut u8, buf.len());
+            let payload = core::slice::from_raw_parts_mut(payload as *mut u8, copy_len);
             payload.copy_from_slice(buf);
-            (*p).len = buf.len() as u16;
-            (*p).tot_len = buf.len() as u16;
+            (*p).len = copy_len as u16;
+            (*p).tot_len = copy_len as u16;
 
             trace!("[UdpSocket] udp_sendto");
 
             #[allow(non_upper_case_globals)]
             match udp_sendto(self.pcb.0, p, &addr.addr.into(), addr.port) as i32 {
-                err_enum_t_ERR_OK => Ok(buf.len()),
-                err_enum_t_ERR_MEM => ax_err!(NoMemory, "LWIP Out of memory."),
-                err_enum_t_ERR_RTE => ax_err!(
-                    BadState,
-                    "LWIP Could not find route to destination address."
-                ),
-                err_enum_t_ERR_VAL => ax_err!(InvalidInput, "LWIP No PCB or PCB is dual-stack."),
-                _ => ax_err!(InvalidInput, "LWIP Invalid input."),
+                err_enum_t_ERR_OK => {}
+                err_enum_t_ERR_MEM => return ax_err!(NoMemory, "LWIP Out of memory."),
+                err_enum_t_ERR_RTE => {
+                    return ax_err!(
+                        BadState,
+                        "LWIP Could not find route to destination address."
+                    )
+                }
+                err_enum_t_ERR_VAL => {
+                    return ax_err!(InvalidInput, "LWIP No PCB or PCB is dual-stack.")
+                }
+                _ => return ax_err!(InvalidInput, "LWIP Invalid input."),
             }
         }
+        lwip_loop_once();
+        Ok(copy_len)
     }
 
     /// Receives data from the socket, stores it in the given buffer.
@@ -196,24 +208,36 @@ impl UdpSocket {
             let res = if recv_queue.len() == 0 {
                 Err(AxError::WouldBlock)
             } else {
-                // TODO: len > buf.len()
-                // TODO: pbuf chain
-                let (p, addr) = recv_queue.pop_front().unwrap();
+                let (p, offset, addr) = recv_queue.pop_front().unwrap();
                 let p: *mut pbuf = p.0;
                 let len = unsafe { (*p).len as usize };
+                let tot_len = unsafe { (*p).tot_len as usize };
+                if len != tot_len {
+                    // TODO: pbuf chain
+                    error!("[TcpSocket] recv pbuf len != tot_len");
+                    return ax_err!(Unsupported, "LWIP [recv] pbuf len != tot_len");
+                }
                 let payload = unsafe { (*p).payload };
                 let payload = unsafe { core::slice::from_raw_parts_mut(payload as *mut u8, len) };
-                buf[0..len].copy_from_slice(payload);
-                let _guard = LWIP_MUTEX.lock();
-                unsafe {
-                    pbuf_free(p);
+
+                let copy_len = core::cmp::min(len - offset, buf.len());
+                buf[0..copy_len].copy_from_slice(&payload[offset..offset + copy_len]);
+                if offset + copy_len < len {
+                    recv_queue.push_front((PbuffPointer(p), offset + copy_len, addr));
+                } else {
+                    let guard = LWIP_MUTEX.lock();
+                    unsafe {
+                        pbuf_free(p);
+                    }
+                    drop(guard);
                 }
-                Ok((len, addr))
+
+                Ok((copy_len, addr))
             };
             drop(recv_queue);
             match res {
                 Ok((len, addr)) => {
-                    trace!("[UdpSocket] recv done: {:?}", &buf[0..len]);
+                    trace!("[UdpSocket] recv done (len: {}): {:?}", len, &buf[0..len]);
                     return Ok((len, addr));
                 }
                 Err(AxError::WouldBlock) => {
@@ -235,18 +259,27 @@ impl UdpSocket {
     /// The local port will be generated automatically if the socket is not bound.
     /// It's must be called before [`send`](Self::send) and
     /// [`recv`](Self::recv).
-    pub fn connect(&mut self, _addr: SocketAddr) -> AxResult {
-        ax_err!(Unsupported, "LWIP Unsupported")
+    pub fn connect(&mut self, addr: SocketAddr) -> AxResult {
+        debug!("[UdpSocket] connect to {:#?}", addr);
+        let ip_addr: ip_addr_t = addr.addr.into();
+        let _guard = LWIP_MUTEX.lock();
+        unsafe {
+            #[allow(non_upper_case_globals)]
+            match udp_connect(self.pcb.0, &ip_addr, addr.port) as i32 {
+                err_enum_t_ERR_OK => Ok(()),
+                _ => ax_err!(InvalidInput, "LWIP [udp_connect] Failed."),
+            }
+        }
     }
 
     /// Transmits data in the given buffer to the remote address to which it is connected.
     pub fn send(&self, _buf: &[u8]) -> AxResult<usize> {
-        ax_err!(Unsupported, "LWIP Unsupported")
+        ax_err!(Unsupported, "LWIP Unsupported UDP send")
     }
 
     /// Recv data in the given buffer from the remote address to which it is connected.
     pub fn recv(&self, _buf: &mut [u8]) -> AxResult<usize> {
-        ax_err!(Unsupported, "LWIP Unsupported")
+        ax_err!(Unsupported, "LWIP Unsupported UDP recv")
     }
 
     /// Close the socket.
@@ -258,6 +291,7 @@ impl UdpSocket {
                 udp_remove(self.pcb.0);
             }
             self.pcb.0 = null_mut();
+            lwip_loop_once();
             Ok(())
         } else {
             ax_err!(InvalidInput)
@@ -266,16 +300,16 @@ impl UdpSocket {
 
     /// Receives data from the socket, stores it in the given buffer, without removing it from the queue.
     pub fn peek_from(&self, _buf: &mut [u8]) -> AxResult<(usize, SocketAddr)> {
-        ax_err!(Unsupported, "LWIP Unsupported")
+        ax_err!(Unsupported, "LWIP Unsupported UDP peek_from")
     }
 
     /// Detect whether the socket needs to receive/can send.
     ///
     /// Return is <need to receive, can send>
     pub fn poll(&self) -> AxResult<PollState> {
-        // TODO: query lwip for true state
+        lwip_loop_once();
         Ok(PollState {
-            readable: true,
+            readable: self.inner.recv_queue.lock().len() != 0,
             writable: true,
         })
     }
