@@ -40,10 +40,20 @@ struct addrinfo {
 #define EAI_SYSTEM   -11
 #define EAI_OVERFLOW -12
 
+#define HOST_NOT_FOUND 1
+#define TRY_AGAIN      2
+#define NO_RECOVERY    3
+#define NO_DATA        4
+#define NO_ADDRESS     NO_DATA
+
+extern int h_errno;
+const char *hstrerror(int ecode);
+
 #define MAXADDRS 48
 #if defined(AX_CONFIG_ALLOC) && defined(AX_CONFIG_NET)
 int getaddrinfo(const char *__restrict, const char *__restrict, const struct addrinfo *__restrict,
                 struct addrinfo **__restrict);
 void freeaddrinfo(struct addrinfo *);
+
 #endif
 #endif

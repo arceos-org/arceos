@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <limits.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -105,8 +106,7 @@ int __secs_to_tm(long long t, struct tm *tm)
 struct tm *__gmtime_r(const time_t *restrict t, struct tm *restrict tm)
 {
     if (__secs_to_tm(*t, tm) < 0) {
-        // TODO: set errno
-        // errno = EOVERFLOW;
+        errno = EOVERFLOW;
         return 0;
     }
     tm->tm_isdst = 0;
