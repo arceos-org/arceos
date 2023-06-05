@@ -30,6 +30,20 @@ pub const SPI_RANGE: Range<usize> = 32..1020;
 /// Maximum number of interrupts supported by the GIC.
 pub const GIC_MAX_IRQ: usize = 1024;
 
+/// Type ID for SPI.
+pub const GIC_SPI_TYPE: u32 = 0;
+/// Type ID for PPI.
+pub const GIC_PPI_TYPE: u32 = 1;
+
+/// Translate Interrupt ID given by device tree to real Interrupt ID.
+pub fn gic_irq_translate(irq_type: u32, irq_num: u32) -> u32 {
+    match irq_type {
+        GIC_SPI_TYPE => irq_num + SPI_RANGE.start as u32,
+        GIC_PPI_TYPE => irq_num + PPI_RANGE.start as u32,
+        _ => irq_num,
+    }
+}
+
 /// Interrupt trigger mode.
 pub enum TriggerMode {
     /// Edge-triggered.

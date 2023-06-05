@@ -13,6 +13,7 @@ documentation = "https://rcore-os.github.io/arceos/axnet/index.html"
 smoltcp = []
 user = ["dep:libax"]
 default = ["smoltcp"]
+irq = ["axhal/irq"]
 
 [dependencies]
 log = "0.4"

@@ -1,9 +1,10 @@
-use super::{ctypes, fd_table::Filelike};
-use crate::sync::Mutex;
-use crate::thread::yield_now;
 use alloc::sync::Arc;
 use axerrno::{LinuxError, LinuxResult};
 use core::ffi::c_int;
+
+use super::{ctypes, fd_ops::FileLike};
+use crate::sync::Mutex;
+use crate::thread::yield_now;
 
 #[derive(Copy, Clone, PartialEq)]
 enum RingBufferStatus {
@@ -77,16 +78,16 @@ pub struct Pipe {
 }
 
 impl Pipe {
-    pub fn new() -> (Arc<Mutex<Self>>, Arc<Mutex<Self>>) {
+    pub fn new() -> (Pipe, Pipe) {
         let buffer = Arc::new(Mutex::new(PipeRingBuffer::new()));
-        let read_end = Arc::new(Mutex::new(Pipe {
+        let read_end = Pipe {
             readable: true,
             buffer: buffer.clone(),
-        }));
-        let write_end = Arc::new(Mutex::new(Pipe {
+        };
+        let write_end = Pipe {
             readable: false,
             buffer,
-        }));
+        };
         (read_end, write_end)
     }
 
@@ -103,8 +104,8 @@ impl Pipe {
     }
 }
 
-impl Pipe {
-    pub fn read(&mut self, buf: &mut [u8]) -> LinuxResult<usize> {
+impl FileLike for Pipe {
+    fn read(&self, buf: &mut [u8]) -> LinuxResult<usize> {
         if !self.readable() {
             return Err(LinuxError::EPERM);
         }
@@ -119,7 +120,7 @@ impl Pipe {
                 }
                 drop(ring_buffer);
                 // Data not ready, wait for write end
-                yield_now();
+                yield_now(); // TODO: use synconize primitive
                 continue;
             }
             for _ in 0..loop_read {
@@ -132,7 +133,7 @@ impl Pipe {
         }
     }
 
-    pub fn write(&mut self, buf: &[u8]) -> LinuxResult<usize> {
+    fn write(&self, buf: &[u8]) -> LinuxResult<usize> {
         if !self.writable() {
             return Err(LinuxError::EPERM);
         }
@@ -144,7 +145,7 @@ impl Pipe {
             if loop_write == 0 {
                 drop(ring_buffer);
                 // Buffer is full, wait for read end to consume
-                yield_now();
+                yield_now(); // TODO: use synconize primitive
                 continue;
             }
             for _ in 0..loop_write {
@@ -156,17 +157,23 @@ impl Pipe {
             }
         }
     }
-}
 
-pub(super) fn stat_pipe(_pipe: &Pipe) -> LinuxResult<ctypes::stat> {
-    let st_mode = 0o10000 | 0o666u32;
-    Ok(ctypes::stat {
-        st_ino: 1,
-        st_nlink: 1,
-        st_mode,
-        st_blksize: 512,
-        ..Default::default()
-    })
+    fn stat(&self) -> LinuxResult<ctypes::stat> {
+        let st_mode = 0o10000 | 0o600u32; // S_IFIFO | rw-------
+        Ok(ctypes::stat {
+            st_ino: 1,
+            st_nlink: 1,
+            st_mode,
+            st_uid: 1000,
+            st_gid: 1000,
+            st_blksize: 4096,
+            ..Default::default()
+        })
+    }
+
+    fn into_any(self: Arc<Self>) -> Arc<dyn core::any::Any + Send + Sync> {
+        self
+    }
 }
 
 /// Create a pipe
@@ -175,13 +182,11 @@ pub(super) fn stat_pipe(_pipe: &Pipe) -> LinuxResult<ctypes::stat> {
 #[no_mangle]
 pub unsafe extern "C" fn ax_pipe(fd1: *mut c_int, fd2: *mut c_int) -> c_int {
     ax_call_body!(ax_pipe, {
-        let (pipe1, pipe2) = Pipe::new();
-        let read_fd = Filelike::from_pipe(pipe1)
-            .add_to_fd_table()
-            .ok_or(LinuxError::EPIPE)?;
-        let write_fd = Filelike::from_pipe(pipe2)
-            .add_to_fd_table()
-            .ok_or(LinuxError::EPIPE)?;
+        let (read_end, write_end) = Pipe::new();
+        let read_fd = super::fd_ops::add_file_like(Arc::new(read_end))?;
+        let write_fd = super::fd_ops::add_file_like(Arc::new(write_end)).inspect_err(|_| {
+            super::fd_ops::close_file_like(read_fd).ok();
+        })?;
         unsafe {
             *fd1 = read_fd as c_int;
             *fd2 = write_fd as c_int;
