@@ -48,7 +48,7 @@ pub mod server {
             if offset == end {
                 // We do not have coroutines, so that we must return EAGAIN
                 // to let user wait manually
-                return ax_err!(Again);
+                return ax_err!(WouldBlock);
             }
             let len = end - offset;
             buf[..len].copy_from_slice(&inner.data[offset..end]);
@@ -124,7 +124,7 @@ mod client {
             loop {
                 let len = match file.read(&mut buffer) {
                     Ok(len) => len,
-                    Err(AxError::Again) => {
+                    Err(AxError::WouldBlock) => {
                         task::sleep(Duration::from_millis(1));
                         continue;
                     }

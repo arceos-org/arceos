@@ -120,12 +120,12 @@ pub fn stdout() -> File {
 
 /// remove a directory, recursively delete is not supported
 pub fn remove_dir(path: &str) -> AxResult<()> {
-    op_wrapper(path, |path| remove_dir_inner(path)).map(|_| ())
+    op_wrapper(path, remove_dir_inner).map(|_| ())
 }
 
 /// remove (unlink) a file
 pub fn remove_file(path: &str) -> AxResult<()> {
-    op_wrapper(path, |path| remove_file_inner(path)).map(|_| ())
+    op_wrapper(path, remove_file_inner).map(|_| ())
 }
 
 /// create a directory
