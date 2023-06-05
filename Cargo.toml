@@ -49,6 +49,8 @@ members = [
     "crates/basic_allocator",
     "crates/tlsf_allocator",
     "crates/allocator_test",
+    "crates/fs_utils",
+    "crates/ext2fs",
 
     "modules/axalloc",
     "modules/axconfig",

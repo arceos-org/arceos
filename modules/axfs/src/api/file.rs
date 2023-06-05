@@ -68,6 +68,11 @@ impl OpenOptions {
     pub fn open(&self, path: &str) -> Result<File> {
         fops::File::open(path, &self.0).map(|inner| File { inner })
     }
+
+    /// Lookups an entry, no follow
+    pub fn lookup(&self, path: &str) -> Result<File> {
+        fops::File::lookup(path).map(|inner| File { inner })
+    }
 }
 
 impl Metadata {
@@ -121,6 +126,11 @@ impl File {
     /// Attempts to open a file in read-only mode.
     pub fn open(path: &str) -> Result<Self> {
         OpenOptions::new().read(true).open(path)
+    }
+
+    /// Lookup a path in a no-follow manner
+    pub fn lookup(path: &str) -> Result<Self> {
+        OpenOptions::new().read(true).lookup(path)
     }
 
     /// Opens a file in write-only mode.
