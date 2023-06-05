@@ -15,12 +15,23 @@ pub enum LinuxError {{
 {0}\
 }}
 
+impl TryFrom<i32> for LinuxError {{
+    type Error = i32;
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {{
+        use self::LinuxError::*;
+        match value {{
+{1}            _ => Err(value),
+        }}
+    }}
+}}
+
 impl LinuxError {{
     /// Returns the error description.
     pub const fn as_str(&self) -> &'static str {{
         use self::LinuxError::*;
         match self {{
-{1}        }}
+{2}        }}
     }}
 
     /// Returns the error code value in `i32`.
@@ -39,6 +50,7 @@ fn main() {
 
 fn gen_linux_errno(dest_path: &Path) -> Result<()> {
     let mut enum_define = Vec::new();
+    let mut try_from_i32 = Vec::new();
     let mut detail_info = Vec::new();
 
     let file = File::open("src/errno.h")?;
@@ -53,6 +65,7 @@ fn gen_linux_errno(dest_path: &Path) -> Result<()> {
                         format!("Error number {num}")
                     };
                     writeln!(enum_define, "    /// {description}\n    {name} = {num},")?;
+                    writeln!(try_from_i32, "            {num} => Ok({name}),")?;
                     writeln!(detail_info, "            {name} => \"{description}\",")?;
                 }
             }
@@ -64,6 +77,7 @@ fn gen_linux_errno(dest_path: &Path) -> Result<()> {
         format!(
             template!(),
             String::from_utf8_lossy(&enum_define),
+            String::from_utf8_lossy(&try_from_i32),
             String::from_utf8_lossy(&detail_info)
         ),
     )?;

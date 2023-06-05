@@ -4,9 +4,11 @@
 #include <stddef.h>
 #include <sys/stat.h>
 
+#ifdef AX_CONFIG_ALLOC
 int close(int fd);
 ssize_t read(int fd, void *buf, size_t count);
 ssize_t write(int fd, const void *buf, size_t count);
+#endif
 
 #ifdef AX_CONFIG_FS
 ssize_t readlink(const char *path, char *buf, size_t bufsiz);

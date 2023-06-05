@@ -1,10 +1,12 @@
 #include <ctype.h>
-#include <libax.h>
+#include <errno.h>
 #include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <libax.h>
 
 #define __DECONST(type, var) ((type)(uintptr_t)(const void *)(var))
 
@@ -71,7 +73,6 @@ int __clzdi2(int a)
     return 0;
 }
 
-// TODO: set errno when overflow
 long strtol(const char *restrict nptr, char **restrict endptr, int base)
 {
     const char *s;
@@ -82,7 +83,7 @@ long strtol(const char *restrict nptr, char **restrict endptr, int base)
 
     s = nptr;
     if (base < 0 || base == 1 || base > 36) {
-        // errno = -EINVAL;
+        errno = EINVAL;
         any = 0;
         acc = 0;
         goto exit;
@@ -133,7 +134,7 @@ long strtol(const char *restrict nptr, char **restrict endptr, int base)
 
     if (any < 0) {
         acc = neg ? LONG_MIN : LONG_MAX;
-        // errno = ERANGE;
+        errno = ERANGE;
     } else if (neg)
         acc = -acc;
 
@@ -143,7 +144,6 @@ exit:
     return acc;
 }
 
-// TODO: set errno
 unsigned long strtoul(const char *nptr, char **endptr, int base)
 {
     const char *s = nptr;
@@ -153,7 +153,7 @@ unsigned long strtoul(const char *nptr, char **endptr, int base)
     int neg = 0, any, cutlim;
 
     if (base < 0 || base == 1 || base > 36) {
-        // errno = -EINVAL;
+        errno = EINVAL;
         any = 0;
         acc = 0;
         goto exit;
@@ -198,7 +198,7 @@ unsigned long strtoul(const char *nptr, char **endptr, int base)
     }
     if (any < 0) {
         acc = ULONG_MAX;
-        // errno = ERANGE;
+        errno = ERANGE;
     } else if (neg)
         acc = -acc;
 exit:
@@ -207,7 +207,6 @@ exit:
     return acc;
 }
 
-// TODO: set errno
 long long strtoll(const char *nptr, char **endptr, int base)
 {
     const char *s;
@@ -218,7 +217,7 @@ long long strtoll(const char *nptr, char **endptr, int base)
 
     s = nptr;
     if (base < 0 || base == 1 || base > 36) {
-        // errno = -EINVAL;
+        errno = EINVAL;
         any = 0;
         acc = 0;
         goto exit;
@@ -269,7 +268,7 @@ long long strtoll(const char *nptr, char **endptr, int base)
     }
 
     if (any < 0) {
-        // errno = ERANGE;
+        errno = ERANGE;
         acc = neg ? LLONG_MIN : LLONG_MAX;
     } else if (neg)
         acc = -acc;
@@ -280,7 +279,6 @@ exit:
     return acc;
 }
 
-// TODO: set errno
 unsigned long long strtoull(const char *nptr, char **endptr, int base)
 {
     const char *s = nptr;
@@ -290,7 +288,7 @@ unsigned long long strtoull(const char *nptr, char **endptr, int base)
     int neg, any, cutlim;
 
     if (base < 0 || base == 1 || base > 36) {
-        // errno = -EINVAL;
+        errno = EINVAL;
         any = 0;
         acc = 0;
         goto exit;
@@ -338,7 +336,7 @@ unsigned long long strtoull(const char *nptr, char **endptr, int base)
         }
     }
     if (any < 0) {
-        // errno = ERANGE;
+        errno = ERANGE;
         acc = ULLONG_MAX;
     } else if (neg)
         acc = -acc;

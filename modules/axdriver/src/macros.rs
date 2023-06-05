@@ -31,6 +31,7 @@ macro_rules! for_each_drivers {
         #[allow(unused_imports)]
         use crate::drivers::DriverProbe;
         #[cfg(feature = "virtio")]
+        #[allow(unused_imports)]
         use crate::virtio::{self, VirtIoDevMeta};
 
         #[cfg(net_dev = "virtio-net")]
