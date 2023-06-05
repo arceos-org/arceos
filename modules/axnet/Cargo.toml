@@ -26,11 +26,15 @@ axdriver = { path = "../axdriver", features = ["net"] }
 axio = { path = "../../crates/axio" }
 
 [dependencies.smoltcp]
-version = "0.9.1"
+git = "https://github.com/smoltcp-rs/smoltcp.git"
+rev = "1f9b9f0"
 default-features = false
 features = [
   "alloc", "log",   # no std
   "medium-ethernet",
   "proto-ipv4",
   "socket-raw", "socket-icmp", "socket-udp", "socket-tcp", "socket-dns",
+  # "fragmentation-buffer-size-65536", "proto-ipv4-fragmentation",
+  # "reassembly-buffer-size-65536", "reassembly-buffer-count-32",
+  # "assembler-max-segment-count-32",
 ]
