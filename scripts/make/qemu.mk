@@ -30,9 +30,16 @@ qemu_args-$(FS) += \
   -device virtio-blk-$(vdev-suffix),drive=disk0 \
   -drive id=disk0,if=none,format=raw,file=$(DISK_IMG)
 
-qemu_args-$(NET) += \
-  -device virtio-net-$(vdev-suffix),netdev=net0 \
-  -netdev user,id=net0,hostfwd=tcp::5555-:5555,hostfwd=udp::5555-:5555
+qemu_args-$(NET) += -device virtio-net-$(vdev-suffix),netdev=net0
+ifeq ($(NET_DEV), user)
+  qemu_args-$(NET) += -netdev user,id=net0,hostfwd=tcp::5555-:5555,hostfwd=udp::5555-:5555
+else ifeq ($(NET_DEV), tap)
+  qemu_args-$(NET) += -netdev tap,id=net0,ifname=qemu-tap0,script=no,downscript=no
+endif
+
+ifeq ($(NET_DUMP), y)
+  qemu_args-$(NET) += -object filter-dump,id=dump0,netdev=net0,file=qemu-net0.pcap
+endif
 
 qemu_args-$(GRAPHIC) += \
   -device virtio-gpu-$(vdev-suffix) -vga none \

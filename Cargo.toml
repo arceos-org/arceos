@@ -1,5 +1,7 @@
 [workspace]
 
+resolver = "2"
+
 members = [
     "apps/display",
     "apps/exception",
@@ -35,6 +37,7 @@ members = [
     "crates/kernel_guard",
     "crates/lazy_init",
     "crates/linked_list",
+    "crates/lwip_rust",
     "crates/memory_addr",
     "crates/page_table",
     "crates/page_table_entry",
