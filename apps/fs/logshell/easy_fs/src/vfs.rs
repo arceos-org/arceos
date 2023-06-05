@@ -247,7 +247,7 @@ impl VfsNodeOps for Inode {
         Ok(())
     }
 
-    fn remove(&self, _path: &str) -> VfsResult {
+    fn remove(&self, _path: &str, _recursive: bool) -> VfsResult {
         let components = path_components(_path);
         match components.len() {
             1 => {

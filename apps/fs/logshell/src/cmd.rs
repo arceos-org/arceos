@@ -185,7 +185,7 @@ fn do_rm(args: &str) {
 
     fn rm_one(path: &str, rm_dir: bool) -> io::Result<()> {
         if rm_dir && fs::metadata(path)?.is_dir() {
-            fs::remove_dir(path)
+            fs::remove_dir(path, false)
         } else {
             fs::remove_file(path)
         }
