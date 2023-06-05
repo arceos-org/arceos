@@ -106,6 +106,10 @@ pub fn yield_now() {
 /// For single-threaded configuration (`multitask` feature is disabled),
 /// it directly terminates the main thread and shutdown.
 pub fn exit(exit_code: i32) -> ! {
+    // let cur = axtask::current();
+    // if cur.is_init() {
+    //     axruntime::runtime_close();
+    // }
     axtask::exit(exit_code);
 }
 

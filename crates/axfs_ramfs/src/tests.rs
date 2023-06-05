@@ -119,18 +119,24 @@ fn test_ramfs() {
     test_get_parent(&ramfs).unwrap();
 
     let root = ramfs.root_dir();
-    assert_eq!(root.remove("f1"), Ok(()));
-    assert_eq!(root.remove("//f2"), Ok(()));
-    assert_eq!(root.remove("f3").err(), Some(VfsError::NotFound));
-    assert_eq!(root.remove("foo").err(), Some(VfsError::DirectoryNotEmpty));
-    assert_eq!(root.remove("foo/..").err(), Some(VfsError::InvalidInput));
+    assert_eq!(root.remove("f1", false), Ok(()));
+    assert_eq!(root.remove("//f2", false), Ok(()));
+    assert_eq!(root.remove("f3", false).err(), Some(VfsError::NotFound));
     assert_eq!(
-        root.remove("foo/./bar").err(),
+        root.remove("foo", false).err(),
         Some(VfsError::DirectoryNotEmpty)
     );
-    assert_eq!(root.remove("foo/bar/f4"), Ok(()));
-    assert_eq!(root.remove("foo/bar"), Ok(()));
-    assert_eq!(root.remove("./foo//.//f3"), Ok(()));
-    assert_eq!(root.remove("./foo"), Ok(()));
+    assert_eq!(
+        root.remove("foo/..", false).err(),
+        Some(VfsError::InvalidInput)
+    );
+    assert_eq!(
+        root.remove("foo/./bar", false).err(),
+        Some(VfsError::DirectoryNotEmpty)
+    );
+    assert_eq!(root.remove("foo/bar/f4", false), Ok(()));
+    assert_eq!(root.remove("foo/bar", false), Ok(()));
+    assert_eq!(root.remove("./foo//.//f3", false), Ok(()));
+    assert_eq!(root.remove("./foo", false), Ok(()));
     assert!(ramfs.root_dir_node().get_entries().is_empty());
 }
