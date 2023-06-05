@@ -205,7 +205,7 @@ pub trait BufRead: Read {
             let (done, used) = {
                 let available = match self.fill_buf() {
                     Ok(n) => n,
-                    Err(Error::Again) => continue,
+                    Err(Error::WouldBlock) => continue,
                     Err(e) => return Err(e),
                 };
                 match available.iter().position(|&b| b == byte) {

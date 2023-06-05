@@ -1,7 +1,7 @@
-#include <arpa/inet.h>
-#include <netinet/in.h>
 #include <stdio.h>
 #include <string.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <sys/socket.h>
 
 const char res_suffix[11] = "_response\n";
@@ -13,17 +13,17 @@ int main()
     int addr_len = sizeof(remote);
     local.sin_family = AF_INET;
     if (inet_pton(AF_INET, "10.0.2.15", &(local.sin_addr)) != 1) {
-        puts("inet_pton() error!");
+        perror("inet_pton() error");
         return -1;
     }
     local.sin_port = htons(5555);
     int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (sock == -1) {
-        puts("socket() error!");
+        perror("socket() error");
         return -1;
     }
     if (bind(sock, (struct sockaddr *)&local, sizeof(local)) != 0) {
-        puts("bind() error!");
+        perror("bind() error");
         return -1;
     }
     puts("listen on: 10.0.2.15:5555");
@@ -32,7 +32,7 @@ int main()
         ssize_t l =
             recvfrom(sock, buf, 1024, 0, (struct sockaddr *)&remote, (socklen_t *)&addr_len);
         if (l == -1) {
-            puts("recvfrom() error!");
+            perror("recvfrom() error");
             return -1;
         }
         uint8_t *addr = (uint8_t *)&(remote.sin_addr);
@@ -46,7 +46,7 @@ int main()
         }
         strncpy(buf + l - 1, res_suffix, 10);
         if (sendto(sock, buf, l + 10, 0, (struct sockaddr *)&remote, addr_len) == -1) {
-            puts("sendto() error!");
+            perror("sendto() error");
             return -1;
         }
     }
