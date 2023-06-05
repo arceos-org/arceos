@@ -71,7 +71,10 @@ impl Ext2FileSystem {
             inner: RefCell::new(disk),
         });
         let timer = Arc::new(ext2fs::timer::ZeroTimeProvider);
+        #[cfg(not(feature = "use-ramdisk"))]
         let inner = ext2fs::Ext2FileSystem::open(block_device, timer);
+        #[cfg(feature = "use-ramdisk")]
+        let inner = ext2fs::Ext2FileSystem::create(block_device, timer);
         Self {
             inner,
             root_dir: UnsafeCell::new(None),
