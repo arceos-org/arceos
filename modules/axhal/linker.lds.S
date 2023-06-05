@@ -20,6 +20,7 @@ SECTIONS
         srodata = .;
         *(.rodata .rodata.*)
         *(.srodata .srodata.*)
+        *(.sdata2 .sdata2.*)
         . = ALIGN(4K);
         erodata = .;
     }
@@ -57,6 +58,7 @@ SECTIONS
         sbss = .;
         *(.bss .bss.*)
         *(.sbss .sbss.*)
+        *(COMMON)
         . = ALIGN(4K);
         ebss = .;
     }

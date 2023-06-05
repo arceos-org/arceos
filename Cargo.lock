@@ -376,6 +376,7 @@ dependencies = [
  "axdriver",
  "axerrno",
  "axhal",
+ "axio",
  "axsync",
  "axtask",
  "cfg-if 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
