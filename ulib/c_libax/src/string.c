@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <libax.h>
+
 size_t strlen(const char *s)
 {
     const char *a = s;
@@ -195,10 +197,9 @@ char *strrchr(const char *s, int c)
     return isCharFind;
 }
 
-// TODO:
-char *strerror(int n)
+char *strerror(int e)
 {
-    return "";
+    return ax_errno_string(e);
 }
 
 void *memcpy(void *restrict dest, const void *restrict src, size_t n)

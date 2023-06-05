@@ -136,6 +136,7 @@
 #define ERFKILL         132 /* Operation not possible due to RF-kill */
 #define EHWPOISON       133 /* Memory page has hardware error */
 
-extern unsigned int errno;
+int *__errno_location(void);
+#define errno (*__errno_location())
 
 #endif

@@ -45,7 +45,7 @@ long sysconf(int name)
 {
     return ax_sysconf(name);
 }
-
+#ifdef AX_CONFIG_ALLOC
 int close(int fd)
 {
     return ax_close(fd);
@@ -65,6 +65,7 @@ ssize_t write(int fd, const void *buf, size_t count)
 {
     return ax_write(fd, buf, count);
 }
+#endif
 
 #ifdef AX_CONFIG_FS
 // TODO:

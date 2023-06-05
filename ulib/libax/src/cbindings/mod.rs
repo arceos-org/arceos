@@ -16,6 +16,8 @@ mod fd_ops;
 #[cfg(feature = "fs")]
 mod file;
 #[cfg(feature = "alloc")]
+mod io_mpx;
+#[cfg(feature = "alloc")]
 mod malloc;
 #[cfg(feature = "pipe")]
 mod pipe;
@@ -24,6 +26,7 @@ mod socket;
 #[cfg(feature = "multitask")]
 mod thread;
 
+mod errno;
 mod setjmp;
 mod stdio;
 mod sys;
@@ -64,8 +67,8 @@ pub use self::file::{ax_getcwd, ax_lseek, ax_lstat, ax_open, ax_stat};
 
 #[cfg(feature = "net")]
 pub use self::socket::{
-    ax_accept, ax_bind, ax_connect, ax_listen, ax_recv, ax_recvfrom, ax_resolve_sockaddr, ax_send,
-    ax_sendto, ax_shutdown, ax_socket,
+    ax_accept, ax_bind, ax_connect, ax_getpeername, ax_getsockname, ax_listen, ax_recv,
+    ax_recvfrom, ax_resolve_sockaddr, ax_send, ax_sendto, ax_shutdown, ax_socket,
 };
 
 #[cfg(feature = "multitask")]
@@ -74,6 +77,10 @@ pub use self::thread::ax_getpid;
 #[cfg(feature = "pipe")]
 pub use self::pipe::ax_pipe;
 
+#[cfg(feature = "alloc")]
+pub use self::io_mpx::ax_select;
+
+pub use self::errno::ax_errno_string;
 pub use self::stdio::{ax_print_str, ax_println_str};
 pub use self::sys::ax_sysconf;
 pub use self::time::{ax_clock_gettime, ax_nanosleep};

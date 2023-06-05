@@ -321,7 +321,7 @@ dependencies = [
  "axdriver",
  "axerrno",
  "axhal",
- "axlog",
+ "axio",
  "axsync",
  "axtask",
  "cfg-if",
