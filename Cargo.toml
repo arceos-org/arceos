@@ -8,7 +8,6 @@ members = [
     "apps/helloworld",
     "apps/memtest",
     "apps/fs/shell",
-    "apps/fs/logshell",
     "apps/net/echoserver",
     "apps/net/httpclient",
     "apps/net/httpserver",
