@@ -9,7 +9,7 @@ use lwip_rust::bindings::{
 };
 
 /// Mac Address
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct MacAddr(pub [u8; 6]);
 
 /// IP Address, either IPv4 or IPv6
@@ -23,11 +23,11 @@ pub enum IpAddr {
 }
 
 /// IPv4 Address (host byte order)
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct Ipv4Addr(pub u32);
 
 /// IPv6 Address
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct Ipv6Addr {
     /// Address in host byte order
     pub addr: [u32; 4usize],
@@ -149,6 +149,11 @@ impl fmt::Display for IpAddr {
 }
 
 impl Ipv4Addr {
+    /// Construct an IPv4 address from parts.
+    pub fn new(a0: u8, a1: u8, a2: u8, a3: u8) -> Ipv4Addr {
+        Self::from_bytes(&[a0, a1, a2, a3])
+    }
+
     /// Create a new Ipv4Addr from a byte array
     pub fn from_bytes(bytes: &[u8]) -> Ipv4Addr {
         let mut addr: u32 = 0;

@@ -4,6 +4,7 @@ use crate::{
 };
 use alloc::{boxed::Box, collections::VecDeque};
 use axerrno::{ax_err, AxError, AxResult};
+use axio::PollState;
 use axsync::Mutex;
 use axtask::yield_now;
 use core::{ffi::c_void, pin::Pin, ptr::null_mut};
@@ -22,6 +23,7 @@ struct PbuffPointer(*mut pbuf);
 unsafe impl Send for PbuffPointer {}
 
 struct TcpSocketInner {
+    nonblock: bool,
     remote_closed: bool,
     connect_result: i8,
     recv_queue: Mutex<VecDeque<PbuffPointer>>,
@@ -81,6 +83,7 @@ extern "C" fn accept_callback(arg: *mut c_void, newpcb: *mut tcp_pcb, err: err_t
     let mut socket = TcpSocket {
         pcb: TcpPcbPointer(newpcb),
         inner: Box::pin(TcpSocketInner {
+            nonblock: false,
             remote_closed: false,
             connect_result: 0,
             recv_queue: Mutex::new(VecDeque::with_capacity(RECV_QUEUE_LEN)),
@@ -110,6 +113,7 @@ impl TcpSocket {
         let mut socket = Self {
             pcb: TcpPcbPointer(unsafe { tcp_new() }),
             inner: Box::pin(TcpSocketInner {
+                nonblock: false,
                 remote_closed: false,
                 connect_result: 0,
                 recv_queue: Mutex::new(VecDeque::new()),
@@ -168,6 +172,18 @@ impl TcpSocket {
                 port,
             })
         }
+    }
+
+    /// Moves this TCP stream into or out of nonblocking mode.
+    ///
+    /// This will result in `read`, `write`, `recv` and `send` operations
+    /// becoming nonblocking, i.e., immediately returning from their calls.
+    /// If the IO operation is successful, `Ok` is returned and no further
+    /// action is required. If the IO operation could not be completed and needs
+    /// to be retried, an error with kind  [`Err(WouldBlock)`](AxError::WouldBlock) is
+    /// returned.
+    pub fn set_nonblocking(&mut self, nonblocking: bool) {
+        self.inner.nonblock = nonblocking;
     }
 
     /// Connects to the given address and port.
@@ -281,7 +297,11 @@ impl TcpSocket {
                 return Ok(accept_queue.pop_front().unwrap());
             }
             drop(accept_queue);
-            yield_now();
+            if self.inner.nonblock {
+                return Err(AxError::WouldBlock);
+            } else {
+                yield_now();
+            }
         }
     }
 
@@ -341,7 +361,11 @@ impl TcpSocket {
             drop(recv_queue);
             match res {
                 Ok(0) => {
-                    yield_now();
+                    if self.inner.nonblock {
+                        return Err(AxError::WouldBlock);
+                    } else {
+                        yield_now();
+                    }
                 }
                 Ok(len) => {
                     trace!("[TcpSocket] recv done: {:?}", &buf[0..len]);
@@ -382,6 +406,17 @@ impl TcpSocket {
         drop(guard);
         trace!("[TcpSocket] send done");
         Ok(buf.len())
+    }
+
+    /// Detect whether the socket needs to receive/can send.
+    ///
+    /// Return is <need to receive, can send>
+    pub fn poll(&self) -> AxResult<PollState> {
+        // TODO: query lwip for true state
+        Ok(PollState {
+            readable: true,
+            writable: true,
+        })
     }
 }
 
