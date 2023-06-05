@@ -158,7 +158,7 @@ impl EasyFileSystem {
             #[cfg(feature = "journal")]
             journal.load().unwrap();
 
-            let efs = Self {
+            Self {
                 block_device,
                 inode_bitmap: Bitmap::new(1, super_block.inode_bitmap_blocks as usize),
                 data_bitmap: Bitmap::new(
@@ -171,8 +171,7 @@ impl EasyFileSystem {
                 journal_size: super_block.journal_len,
                 #[cfg(feature = "journal")]
                 journal: Rc::new(RefCell::new(journal)),
-            };
-            efs
+            }
         })
     }
 

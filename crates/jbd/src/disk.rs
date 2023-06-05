@@ -32,7 +32,7 @@ impl BlockType {
         }
     }
 
-    pub fn to_u32_be(&self) -> u32 {
+    pub fn to_u32_be(self) -> u32 {
         let val = match self {
             BlockType::DescriptorBlock => 1,
             BlockType::CommitBlock => 2,

@@ -60,7 +60,7 @@ static mut JB_COUNT: usize = 0;
 impl JournalBuffer {
     pub fn new_or_get(buf: &Rc<dyn Buffer>) -> Rc<RefCell<Self>> {
         match buf.journal_buffer() {
-            Some(jb) => jb.clone(),
+            Some(jb) => jb,
             None => {
                 // FIXME
                 unsafe {
@@ -253,11 +253,11 @@ impl Transaction {
         };
 
         if let Some(jb_tx) = &jb.transaction {
-            if Rc::ptr_eq(jb_tx, &tx_rc) {
-                Transaction::temp_unlink_buffer(tx, &jb_rc, jb);
+            if Rc::ptr_eq(jb_tx, tx_rc) {
+                Transaction::temp_unlink_buffer(tx, jb_rc, jb);
             } else {
                 let jb_tx = jb_tx.clone();
-                Transaction::temp_unlink_buffer(&mut jb_tx.borrow_mut(), &jb_rc, jb);
+                Transaction::temp_unlink_buffer(&mut jb_tx.borrow_mut(), jb_rc, jb);
             }
         }
 
@@ -475,7 +475,7 @@ impl Handle {
             }
             Some(tx) => match &journal.committing_transaction {
                 None => false,
-                Some(committing_tx) => Rc::ptr_eq(tx, &committing_tx),
+                Some(committing_tx) => Rc::ptr_eq(tx, committing_tx),
             },
         };
 
@@ -542,7 +542,7 @@ impl Handle {
             return Err(JBDError::HandleAborted);
         }
 
-        let jb_rc = JournalBuffer::new_or_get(&buf);
+        let jb_rc = JournalBuffer::new_or_get(buf);
         let mut jb = jb_rc.borrow_mut();
         let tx_rc = self.transaction.as_ref().unwrap();
         let mut tx = tx_rc.borrow_mut();
@@ -569,7 +569,7 @@ impl Handle {
 
         // TODO: buffer_mapped
         if let Some(jb_tx) = &jb.transaction {
-            if !Rc::ptr_eq(&jb_tx, &tx_rc) {
+            if !Rc::ptr_eq(jb_tx, tx_rc) {
                 // The buffer belongs to a different transaction.
                 if jb.jlist != BufferListType::None
                     && jb.jlist != BufferListType::SyncData
@@ -584,7 +584,7 @@ impl Handle {
                 }
                 // TODO: if (unlikely(!buffer_uptodate(bh)))
                 if let Some(jb_tx) = &jb.transaction {
-                    if !Rc::ptr_eq(&jb_tx, &tx_rc) {
+                    if !Rc::ptr_eq(jb_tx, tx_rc) {
                         // Unlink buffer from old transaction
                         let jb_tx = jb_tx.clone();
                         Transaction::temp_unlink_buffer(&mut jb_tx.borrow_mut(), &jb_rc, &mut jb);
@@ -596,7 +596,7 @@ impl Handle {
             if jb.jlist != BufferListType::SyncData && jb.jlist != BufferListType::Locked {
                 // jb.jlist == BufferListType::None here
                 Transaction::file_buffer(
-                    &tx_rc,
+                    tx_rc,
                     &mut tx,
                     &jb_rc,
                     &mut jb,
@@ -604,7 +604,7 @@ impl Handle {
                 )?;
             }
         } else {
-            Transaction::file_buffer(&tx_rc, &mut tx, &jb_rc, &mut jb, BufferListType::SyncData)?;
+            Transaction::file_buffer(tx_rc, &mut tx, &jb_rc, &mut jb, BufferListType::SyncData)?;
         }
 
         // no_journal:
@@ -638,13 +638,13 @@ impl Handle {
             self.buffer_credits -= 1;
         }
 
-        if jb.tx_eq(&tx_rc) && jb.jlist == BufferListType::Metadata {
+        if jb.tx_eq(tx_rc) && jb.jlist == BufferListType::Metadata {
             // The buffer is already part of the metadata of current transaction.
             // Nothing to do.
             return Ok(());
         }
 
-        Transaction::file_buffer(&tx_rc, &mut tx, &jb_rc, &mut jb, BufferListType::Metadata)?;
+        Transaction::file_buffer(tx_rc, &mut tx, &jb_rc, &mut jb, BufferListType::Metadata)?;
 
         Ok(())
     }
@@ -683,7 +683,7 @@ impl Handle {
 
         let mut drop_reserve = false;
 
-        if jb.tx_eq(&tx_rc) {
+        if jb.tx_eq(tx_rc) {
             buf.clear_dirty();
             buf.clear_jbd_dirty();
 
@@ -695,7 +695,7 @@ impl Handle {
 
             if jb.cp_transaction.is_some() {
                 Transaction::temp_unlink_buffer(tx, &jb_rc, &mut jb);
-                Transaction::file_buffer(&tx_rc, tx, &jb_rc, &mut jb, BufferListType::Forget)?;
+                Transaction::file_buffer(tx_rc, tx, &jb_rc, &mut jb, BufferListType::Forget)?;
             } else {
                 Transaction::unfile_buffer(&jb_rc, &mut jb, tx);
             }
@@ -770,7 +770,7 @@ impl Handle {
             // The buffer is already part of this transaction if b_transaction or
             // b_next_transaction points to it
             if let Some(tx) = &jb.transaction {
-                if Rc::ptr_eq(&tx, &this_tx) {
+                if Rc::ptr_eq(tx, &this_tx) {
                     break;
                 }
             }
@@ -786,7 +786,7 @@ impl Handle {
 
             // Is there data here we need to preserve?
             if let Some(tx) = &jb.transaction {
-                if !Rc::ptr_eq(&tx, &this_tx) {
+                if !Rc::ptr_eq(tx, &this_tx) {
                     // There is one case we have to be very careful about.
                     // If the committing transaction is currently writing
                     // this buffer out to disk and has NOT made a copy-out,
@@ -831,7 +831,7 @@ impl Handle {
                 Transaction::file_buffer(
                     &this_tx,
                     &mut this_tx_mut,
-                    &jb_rc,
+                    jb_rc,
                     jb,
                     BufferListType::Reserved,
                 )?;

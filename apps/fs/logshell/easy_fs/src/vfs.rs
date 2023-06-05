@@ -87,7 +87,7 @@ impl VfsNodeOps for Inode {
                 #[cfg(feature = "journal")]
                 fs.journal_commit();
 
-                return Ok(size);
+                Ok(size)
             }
         })?;
 
@@ -127,7 +127,6 @@ impl VfsNodeOps for Inode {
         handle.stop().unwrap();
         #[cfg(feature = "journal")]
         fs.journal_commit();
-
         Ok(())
     }
 
@@ -136,7 +135,7 @@ impl VfsNodeOps for Inode {
     }
 
     fn lookup(self: Arc<Self>, _path: &str) -> VfsResult<VfsNodeRef> {
-        _ = self.read_disk_inode(|disk_inode| {
+        self.read_disk_inode(|disk_inode| {
             if disk_inode.type_() != DiskInodeType::Directory {
                 Err(VfsError::NotADirectory)
             } else {
@@ -146,7 +145,7 @@ impl VfsNodeOps for Inode {
 
         let components = path_components(_path);
         match components.len() {
-            0 => Ok(self.clone() as VfsNodeRef),
+            0 => Ok(self as VfsNodeRef),
             1 => self
                 .find(&components[0])
                 .map_or_else(|| Err(VfsError::NotFound), |x| Ok(x as VfsNodeRef)),
@@ -159,7 +158,7 @@ impl VfsNodeOps for Inode {
             return Err(VfsError::Unsupported);
         }
         let components = path_components(path);
-        if components.len() == 0 {
+        if components.is_empty() {
             return Err(VfsError::AlreadyExists);
         } else if components.len() > 1 {
             return Err(VfsError::Unsupported);
@@ -193,17 +192,19 @@ impl VfsNodeOps for Inode {
         let buf = get_buffer_dyn(&self.block_device, new_inode_block_id as usize).unwrap();
         #[cfg(feature = "journal")]
         handle.get_write_access(&buf).unwrap();
+
         get_block_cache(new_inode_block_id as usize, Rc::clone(&self.block_device)).modify(
             new_inode_block_offset,
             |new_inode: &mut DiskInode| {
                 new_inode.initialize(DiskInodeType::File);
             },
         );
+
         #[cfg(feature = "journal")]
         handle.dirty_metadata(&buf).unwrap();
 
         #[cfg(feature = "journal")]
-        let self_buf = get_buffer_dyn(&self.block_device, self.block_id as usize).unwrap();
+        let self_buf = get_buffer_dyn(&self.block_device, self.block_id).unwrap();
         #[cfg(feature = "journal")]
         handle.get_write_access(&self_buf).unwrap();
 
@@ -212,7 +213,6 @@ impl VfsNodeOps for Inode {
             let file_count = (root_inode.size as usize) / DIRENT_SZ;
             let new_size = (file_count + 1) * DIRENT_SZ;
             // increase size
-
             self.increase_size(
                 new_size as u32,
                 root_inode,
@@ -277,7 +277,7 @@ impl VfsNodeOps for Inode {
                 );
                 _dirents[i - _start_idx] = VfsDirEntry::new(dirent.name(), VfsNodeType::File);
             }
-            return Ok(file_count - _start_idx);
+            Ok(file_count - _start_idx)
         })
     }
 }
@@ -325,7 +325,7 @@ impl Inode {
                 DIRENT_SZ,
             );
             if dirent.name() == name {
-                return Some(dirent.inode_id() as u32);
+                return Some(dirent.inode_id());
             }
         }
         None
@@ -366,12 +366,6 @@ impl Inode {
         let mut v: Vec<u32> = Vec::new();
 
         for _ in 0..blocks_needed {
-            // if i == 0 {
-            //     let buf = get_buffer_dyn(&self.block_device, disk_inode_block_id as usize).unwrap();
-            //     handle.get_write_access(&buf).unwrap();
-            //     handle.dirty_metadata(&buf).unwrap();
-            // }
-
             v.push(fs.alloc_data(
                 #[cfg(feature = "journal")]
                 Some(handle),
@@ -606,5 +600,5 @@ fn path_components(path: &str) -> Vec<String> {
     let path = canonicalize(path);
     let mut trimmed_path = path.trim_matches('/');
     trimmed_path = path.strip_prefix("./").unwrap_or(trimmed_path);
-    trimmed_path.split("/").map(|x| String::from(x)).collect()
+    trimmed_path.split('/').map(String::from).collect()
 }

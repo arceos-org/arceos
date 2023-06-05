@@ -155,6 +155,7 @@ impl Journal {
             }
 
             let tag_ptr = descriptor_buf_data.unwrap();
+            #[allow(clippy::transmute_ptr_to_ref)]
             let tag_mut = unsafe { mem::transmute::<_, &mut BlockTag>(tag_ptr) };
             tag_mut.block_nr = (jb.buf.block_id() as u32).to_be();
             tag_mut.flag = tag_flag.bits().to_be();
@@ -211,10 +212,10 @@ impl Journal {
         while !commit_tx.iobuf_list.0.is_empty() {
             let jb_rc = &commit_tx.iobuf_list.0[0].clone();
             let mut jb = jb_rc.as_ref().borrow_mut();
-            Transaction::unfile_buffer(&jb_rc, &mut jb, &mut commit_tx);
+            Transaction::unfile_buffer(jb_rc, &mut jb, &mut commit_tx);
             let jb_rc = &commit_tx.shadow_list.0[0].clone();
             let mut jb = jb_rc.as_ref().borrow_mut();
-            Transaction::unfile_buffer(&jb_rc, &mut jb, &mut commit_tx);
+            Transaction::unfile_buffer(jb_rc, &mut jb, &mut commit_tx);
             Transaction::file_buffer(
                 &commit_tx_rc,
                 &mut commit_tx,
@@ -262,7 +263,7 @@ impl Journal {
 
             if let Some(cp_tx_rc) = &jb.cp_transaction {
                 // Remove from checkpoint
-                if Rc::ptr_eq(&cp_tx_rc, &commit_tx_rc) {
+                if Rc::ptr_eq(cp_tx_rc, &commit_tx_rc) {
                     commit_tx
                         .checkpoint_list
                         .0
@@ -352,6 +353,7 @@ impl Journal {
             do_escape = true;
         }
 
+        #[allow(clippy::slow_vector_initialization)]
         if need_copy_out && !done_copy_out {
             let mut new_data: Vec<u8> = Vec::with_capacity(data.len());
             new_data.resize(data.len(), 0);

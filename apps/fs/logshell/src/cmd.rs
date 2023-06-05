@@ -254,14 +254,9 @@ fn do_crash(_args: &str) {
 fn do_bench_meta(_args: &str) {
     let start = libax::time::Instant::now();
 
-    for i in 0..16 {
-        for j in 0..32 {
-            let fname = format!("benchmark-{}.txt", j);
-            _ = File::create(&fname).unwrap();
-        }
-        println!("HERE!");
-        do_checkpoint("");
-        do_ls("");
+    for j in 0..64 {
+        let fname = format!("benchmark-{}.txt", j);
+        _ = File::create(&fname).unwrap();
     }
 
     println!(
@@ -271,7 +266,7 @@ fn do_bench_meta(_args: &str) {
 
     for i in 0..64 {
         let fname = format!("benchmark-{}.txt", i);
-        // fs::remove_file(&fname).unwrap();
+        fs::remove_file(&fname).unwrap();
     }
     do_checkpoint("");
 }

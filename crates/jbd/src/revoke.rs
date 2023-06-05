@@ -69,18 +69,17 @@ impl Handle {
             true
         };
 
-        if need_cancel {
-            if journal
+        if need_cancel
+            && journal
                 .get_revoke_table_mut()
                 .remove_entry(&(buf.block_id() as u32))
                 .is_some()
-            {
-                log::debug!(
-                    "Canceling revoke for buffer {} in transaction {}",
-                    buf.block_id(),
-                    transaction.tid
-                );
-            }
+        {
+            log::debug!(
+                "Canceling revoke for buffer {} in transaction {}",
+                buf.block_id(),
+                transaction.tid
+            );
         }
 
         Ok(())

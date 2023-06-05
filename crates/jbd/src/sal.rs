@@ -60,6 +60,7 @@ impl dyn Buffer {
         unsafe { core::slice::from_raw_parts(self.data(), self.size()) }
     }
 
+    #[allow(clippy::mut_from_ref)]
     pub(crate) fn buf_mut(&self) -> &mut [u8] {
         self.mark_dirty();
         unsafe { core::slice::from_raw_parts_mut(self.data(), self.size()) }
@@ -73,11 +74,13 @@ impl dyn Buffer {
         unsafe { &*((self.data() as usize + offset) as *const T) }
     }
 
+    #[allow(clippy::mut_from_ref)]
     pub(crate) fn convert_mut<T>(&self) -> &mut T {
         self.mark_dirty();
         unsafe { &mut *(self.data() as *mut T) }
     }
 
+    #[allow(clippy::mut_from_ref)]
     pub(crate) fn convert_offset_mut<T>(&self, offset: usize) -> &mut T {
         self.mark_dirty();
         unsafe { &mut *((self.data() as usize + offset) as *mut T) }

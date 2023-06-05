@@ -23,7 +23,7 @@ impl jbd::sal::System for SystemProvider {
         self.0.borrow().cache_manager.clone()
     }
     fn get_current_handle(&self) -> Option<Rc<RefCell<jbd::Handle>>> {
-        self.0.borrow().current_handle.as_ref().map(|x| x.clone())
+        self.0.borrow().current_handle.as_ref().cloned()
     }
     fn get_time(&self) -> usize {
         0

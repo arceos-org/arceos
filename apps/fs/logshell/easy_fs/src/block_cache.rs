@@ -73,6 +73,7 @@ impl BlockCache {
         unsafe { &*(addr as *const T) }
     }
 
+    #[allow(clippy::mut_from_ref)]
     pub fn get_mut<T>(&self, offset: usize) -> &mut T
     where
         T: Sized,
@@ -262,6 +263,7 @@ static mut BLOCK_CACHE_MANAGER: Lazy<BlockCacheManager> = Lazy::new(BlockCacheMa
 
 pub fn block_cache_manager() -> &'static mut BlockCacheManager {
     unsafe {
+        #[allow(clippy::cast_ref_to_mut)] // Just a test code, nothing harmful
         &mut *(BLOCK_CACHE_MANAGER.deref() as *const BlockCacheManager as *mut BlockCacheManager)
     }
 }

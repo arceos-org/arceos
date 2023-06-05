@@ -252,7 +252,7 @@ fn count_tags(buf: &Rc<dyn Buffer>, size: usize) -> u32 {
     let mut num = 0;
 
     while offset <= size {
-        let tag = buf.convert_offset::<BlockTag>(offset as usize);
+        let tag = buf.convert_offset::<BlockTag>(offset);
 
         num += 1;
         offset += size_of::<BlockTag>();

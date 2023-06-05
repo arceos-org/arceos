@@ -39,6 +39,7 @@ pub struct SuperBlock {
 
 impl SuperBlock {
     /// Initialize a super block
+    #[allow(clippy::too_many_arguments)]
     pub fn initialize(
         &mut self,
         total_blocks: u32,
@@ -124,7 +125,7 @@ impl DiskInode {
     /// Return number of blocks needed include indirect1/2.
     pub fn total_blocks(size: u32) -> u32 {
         let data_blocks = Self::_data_blocks(size) as usize;
-        let mut total = data_blocks as usize;
+        let mut total = data_blocks;
         // indirect1
         if data_blocks > INODE_DIRECT_COUNT {
             total += 1;
@@ -305,7 +306,7 @@ impl DiskInode {
             let mut a1 = current_blocks as usize / INODE_INDIRECT1_COUNT;
             let mut b1 = current_blocks as usize % INODE_INDIRECT1_COUNT;
             #[cfg(feature = "journal")]
-            let buf = get_buffer_dyn(&block_device, self.indirect2 as usize).unwrap();
+            let buf = get_buffer_dyn(block_device, self.indirect2 as usize).unwrap();
             #[cfg(feature = "journal")]
             handle.get_write_access(&buf).unwrap();
             #[cfg(feature = "journal")]
@@ -316,7 +317,7 @@ impl DiskInode {
                 |indirect2: &IndirectBlock| {
                     while (a0 < a1) || (a0 == a1 && b0 < b1) {
                         #[cfg(feature = "journal")]
-                        let buf = get_buffer_dyn(&block_device, indirect2[a1] as usize).unwrap();
+                        let buf = get_buffer_dyn(block_device, indirect2[a1] as usize).unwrap();
                         #[cfg(feature = "journal")]
                         handle.get_write_access(&buf).unwrap();
 
@@ -352,7 +353,7 @@ impl DiskInode {
         if current_blocks > INODE_DIRECT_COUNT as u32 {
             let target_total = total_blocks.max(INODE_DIRECT_COUNT as u32);
             #[cfg(feature = "journal")]
-            let buf = get_buffer_dyn(&block_device, self.indirect1 as usize).unwrap();
+            let buf = get_buffer_dyn(block_device, self.indirect1 as usize).unwrap();
             #[cfg(feature = "journal")]
             handle.get_write_access(&buf).unwrap();
 
@@ -418,7 +419,7 @@ impl DiskInode {
             return v;
         }
         #[cfg(feature = "journal")]
-        let buf = get_buffer_dyn(&block_device, self.indirect1 as usize).unwrap();
+        let buf = get_buffer_dyn(block_device, self.indirect1 as usize).unwrap();
         #[cfg(feature = "journal")]
         handle.get_write_access(&buf).unwrap();
 
@@ -448,7 +449,7 @@ impl DiskInode {
 
         // indirect2
         #[cfg(feature = "journal")]
-        let buf = get_buffer_dyn(&block_device, self.indirect1 as usize).unwrap();
+        let buf = get_buffer_dyn(block_device, self.indirect1 as usize).unwrap();
         #[cfg(feature = "journal")]
         handle.get_write_access(&buf).unwrap();
 
@@ -461,7 +462,7 @@ impl DiskInode {
                 // full indirect1 blocks
                 for entry in indirect2.iter_mut().take(a1) {
                     #[cfg(feature = "journal")]
-                    let buf = get_buffer_dyn(&block_device, *entry as usize).unwrap();
+                    let buf = get_buffer_dyn(block_device, *entry as usize).unwrap();
                     #[cfg(feature = "journal")]
                     handle.get_write_access(&buf).unwrap();
 
@@ -481,7 +482,7 @@ impl DiskInode {
                 // last indirect1 block
                 if b1 > 0 {
                     #[cfg(feature = "journal")]
-                    let buf = get_buffer_dyn(&block_device, indirect2[a1] as usize).unwrap();
+                    let buf = get_buffer_dyn(block_device, indirect2[a1] as usize).unwrap();
                     #[cfg(feature = "journal")]
                     handle.get_write_access(&buf).unwrap();
 
@@ -576,6 +577,7 @@ impl DiskInode {
             .unwrap();
             #[cfg(feature = "journal")]
             handle.get_write_access(&j_buf).unwrap();
+
             get_block_cache(
                 self.get_block_id(start_block as u32, block_device) as usize,
                 Rc::clone(block_device),
@@ -585,6 +587,7 @@ impl DiskInode {
                 let dst = &mut data_block[start % BLOCK_SZ..start % BLOCK_SZ + block_write_size];
                 dst.copy_from_slice(src);
             });
+
             #[cfg(feature = "journal")]
             if metadata {
                 handle.dirty_metadata(&j_buf).unwrap();

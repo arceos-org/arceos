@@ -207,7 +207,7 @@ impl Journal {
     pub fn start(journal_rc: Rc<RefCell<Journal>>, nblocks: u32) -> JBDResult<Rc<RefCell<Handle>>> {
         let journal = journal_rc.as_ref().borrow();
         if let Some(current_handle) = journal.system.get_current_handle() {
-            return Ok(current_handle.clone());
+            return Ok(current_handle);
         }
         let mut handle = Handle::new(nblocks);
         drop(journal);
@@ -326,9 +326,9 @@ impl Journal {
         log::debug!("Superblock after update: {}", sb.display(0));
 
         if self.tail != 0 {
-            self.flags.insert(JournalFlag::FLUSHED);
-        } else {
             self.flags.remove(JournalFlag::FLUSHED);
+        } else {
+            self.flags.insert(JournalFlag::FLUSHED);
         }
     }
 
@@ -373,11 +373,11 @@ impl Journal {
         Ok(())
     }
 
-    pub(crate) fn superblock_ref<'a>(&'a self) -> &'a Superblock {
+    pub(crate) fn superblock_ref(&self) -> &Superblock {
         self.sb_buffer.convert::<Superblock>()
     }
 
-    pub(crate) fn superblock_mut<'a>(&'a self) -> &'a mut Superblock {
+    pub(crate) fn superblock_mut(&self) -> &mut Superblock {
         self.sb_buffer.convert_mut::<Superblock>()
     }
 
@@ -411,12 +411,12 @@ impl Journal {
     }
 
     pub(crate) fn log_space_left(&self) -> u32 {
-        let mut left = self.free;
-        left -= MIN_LOG_RESERVED_BLOCKS;
+        let mut left = self.free as i32;
+        left -= MIN_LOG_RESERVED_BLOCKS as i32;
         if left <= 0 {
             0
         } else {
-            left - (left >> 3)
+            (left - (left >> 3)) as u32
         }
     }
 }
@@ -461,7 +461,7 @@ pub(crate) fn start_handle(journal_rc: &Rc<RefCell<Journal>>, handle: &mut Handl
         todo!("Wait for transaction to unlock.");
     }
 
-    let needed = transaction.outstanding_credits as u32 + nblocks;
+    let needed = transaction.outstanding_credits + nblocks;
 
     if needed > journal.max_transaction_buffers {
         todo!("Wait for previous transaction to commit.");
@@ -481,5 +481,5 @@ pub(crate) fn start_handle(journal_rc: &Rc<RefCell<Journal>>, handle: &mut Handl
         transaction.outstanding_credits
     );
 
-    return Ok(());
+    Ok(())
 }

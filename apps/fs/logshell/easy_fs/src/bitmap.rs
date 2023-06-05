@@ -28,24 +28,21 @@ impl Bitmap {
     /// Allocate a new block from a block device, returns (block_id, block_id_of_bitmap_block)
     pub fn alloc(&self, block_device: &Rc<dyn BlockDevice>) -> Option<(usize, usize)> {
         for block_id in 0..self.blocks {
-            let pos = get_block_cache(
-                block_id + self.start_block_id as usize,
-                Rc::clone(block_device),
-            )
-            .modify(0, |bitmap_block: &mut BitmapBlock| {
-                if let Some((bits64_pos, inner_pos)) = bitmap_block
-                    .iter()
-                    .enumerate()
-                    .find(|(_, bits64)| **bits64 != u64::MAX)
-                    .map(|(bits64_pos, bits64)| (bits64_pos, bits64.trailing_ones() as usize))
-                {
-                    // modify cache
-                    bitmap_block[bits64_pos] |= 1u64 << inner_pos;
-                    Some(block_id * BLOCK_BITS + bits64_pos * 64 + inner_pos as usize)
-                } else {
-                    None
-                }
-            });
+            let pos = get_block_cache(block_id + self.start_block_id, Rc::clone(block_device))
+                .modify(0, |bitmap_block: &mut BitmapBlock| {
+                    if let Some((bits64_pos, inner_pos)) = bitmap_block
+                        .iter()
+                        .enumerate()
+                        .find(|(_, bits64)| **bits64 != u64::MAX)
+                        .map(|(bits64_pos, bits64)| (bits64_pos, bits64.trailing_ones() as usize))
+                    {
+                        // modify cache
+                        bitmap_block[bits64_pos] |= 1u64 << inner_pos;
+                        Some(block_id * BLOCK_BITS + bits64_pos * 64 + inner_pos)
+                    } else {
+                        None
+                    }
+                });
             if let Some(pos) = pos {
                 return Some((pos, block_id + self.start_block_id));
             }
