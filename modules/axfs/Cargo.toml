@@ -15,7 +15,7 @@ ramfs = ["dep:axfs_ramfs"]
 fatfs = ["dep:fatfs"]
 myfs = ["dep:crate_interface"]
 
-default = ["devfs", "ramfs", "fatfs"]
+default = ["fatfs"]
 
 [dependencies]
 log = "0.4"
