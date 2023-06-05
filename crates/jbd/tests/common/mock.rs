@@ -1,4 +1,4 @@
-use std::{slice, rc::Rc};
+use std::{rc::Rc, slice};
 
 use jbd::sal::{BlockDevice, Buffer, System};
 use rand::Rng;
