@@ -67,7 +67,7 @@ app-objs := main.o
 app-objs := $(addprefix $(APP)/,$(app-objs))
 
 $(APP)/%.o: $(APP)/%.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) $(APP_CFLAGS) -c -o $@ $<
 
 $(OUT_ELF): $(app-objs) $(c_lib) $(rust_lib)
 	@printf "    $(CYAN_C)Linking$(END_C) $(OUT_ELF)\n"
