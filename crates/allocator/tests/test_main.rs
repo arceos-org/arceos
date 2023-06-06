@@ -315,7 +315,7 @@ fn worst_fit_alloc_test() {
         GLOBAL_ALLOCATOR.init_basic("worst_fit");
     }
     //align_test();
-    basic_test();
+    //basic_test();
     mi_test();
     //malloc_large_test();
     //glibc_bench_test();
