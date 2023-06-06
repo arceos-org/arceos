@@ -9,7 +9,7 @@ members = [
     "apps/microkernel/apps",
     "apps/microkernel/init",
     "apps/microkernel/net_deamon",
-    "apps/microkernel/test",
+    "apps/microkernel/tests",
     "apps/microkernel/fs_deamon",
     "apps/net/echoserver",
     "apps/net/httpclient",

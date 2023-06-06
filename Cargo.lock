@@ -1232,7 +1232,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "microkernel-basic-test"
+name = "microkernel-basic-tests"
 version = "0.1.0"
 dependencies = [
  "libax_user",
@@ -1253,6 +1253,7 @@ version = "0.1.0"
 dependencies = [
  "libax_user",
  "microkernel-apps",
+ "microkernel-basic-tests",
  "microkernel-fs-deamon",
  "microkernel-net-deamon",
 ]

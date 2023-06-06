@@ -1,12 +1,17 @@
 #![allow(unused)]
 
-use core::time::Duration;
+use core::{
+    sync::atomic::{AtomicUsize, Ordering},
+    time::Duration,
+};
 
-use libax::task::{self, spawn_fn};
+use libax::task::{self, exit, spawn, yield_now};
 extern crate alloc;
 
+static FINISHED: AtomicUsize = AtomicUsize::new(0);
+
 pub mod server {
-    use core::cell::RefCell;
+    use core::{cell::RefCell, sync::atomic::Ordering};
 
     use alloc::{collections::BTreeMap, vec::Vec};
     use libax::{
@@ -14,6 +19,8 @@ pub mod server {
         io::File,
         scheme::{Packet, Scheme},
     };
+
+    use crate::scheme::FINISHED;
 
     struct ServerInner {
         data: Vec<u8>,
@@ -75,6 +82,11 @@ pub mod server {
                 inner: ServerInner::new().into(),
             }
         }
+
+        fn finished(&self) -> bool {
+            let inner = self.inner.borrow();
+            inner.next_fd == 3 && inner.fds.is_empty()
+        }
     }
 
     pub fn main() {
@@ -93,12 +105,17 @@ pub mod server {
                 channel.write_data(&packet).unwrap(),
                 core::mem::size_of::<Packet>()
             );
+
+            if server.finished() {
+                break;
+            }
         }
+        FINISHED.fetch_add(1, Ordering::Relaxed);
     }
 }
 
 mod client {
-    use core::time::Duration;
+    use core::{sync::atomic::Ordering, time::Duration};
 
     use alloc::vec;
     use libax::{
@@ -111,17 +128,20 @@ mod client {
         spawn(|| {
             println!("Client sender started!");
             let mut file = File::create("test:/test").unwrap();
-            let data = vec!["Hello", " ", "world", "\n", "Goodbye", " ", "world", "\n"];
+            let data = vec![
+                "Hello", " ", "world", "\n", "Goodbye", " ", "world", "\n", "\0",
+            ];
             for item in &data {
                 println!("Send: '{}'", item);
                 assert!(file.write(item.as_bytes()).unwrap() == item.len());
             }
+            super::FINISHED.fetch_add(1, Ordering::Relaxed);
         });
         spawn(|| {
             println!("Client receiver started!");
             let mut file = File::create("test:/test").unwrap();
             let mut buffer = [0u8; 8];
-            loop {
+            'a: loop {
                 let len = match file.read(&mut buffer) {
                     Ok(len) => len,
                     Err(AxError::WouldBlock) => {
@@ -134,21 +154,24 @@ mod client {
                 };
                 print!("Received: ");
                 for i in &buffer[..len] {
+                    if *i == b'\0' {
+                        break 'a;
+                    }
                     print!("{}({}), ", i, char::from_u32(*i as u32).unwrap());
                 }
                 println!("");
             }
+            println!("ENDED");
+            super::FINISHED.fetch_add(1, Ordering::Relaxed);
         });
-        loop {
-            task::sleep(Duration::from_secs(1));
-        }
     }
 }
 pub fn main() {
-    spawn_fn(server::main);
+    spawn(server::main);
     task::sleep(Duration::from_millis(100));
-    spawn_fn(client::main);
-    loop {
-        task::sleep(Duration::from_secs(1));
+    spawn(client::main);
+    while FINISHED.load(Ordering::Relaxed) != 3 {
+        yield_now();
     }
+    exit(0);
 }

@@ -1,0 +1,6 @@
+if [ "$ARCH" == "riscv64" ]; then
+  test_one "MICRO=y MICRO_TEST=test_mem" "expect/mem.out"
+  test_one "MICRO=y MICRO_TEST=test_sleep" "expect/sleep.out"
+  test_one "MICRO=y MICRO_TEST=test_scheme" "expect/scheme.out"
+  test_one "MICRO=y MICRO_TEST=test_http NET=y" "expect/http.out"  
+fi

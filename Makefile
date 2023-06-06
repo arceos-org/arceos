@@ -20,6 +20,7 @@ QEMU_LOG ?= n
 MICRO ?= n
 KERN_LOG ?= $(LOG)
 USER_LOG ?= $(LOG)
+MICRO_TEST ?= 
 # =============================
 
 

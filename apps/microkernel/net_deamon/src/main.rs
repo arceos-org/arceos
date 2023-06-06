@@ -7,4 +7,7 @@ mod tcp;
 mod udp;
 
 #[no_mangle]
-fn main() {}
+fn main() {
+    axnet::user_init();
+    tcp::start_tcp();
+}

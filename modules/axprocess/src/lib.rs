@@ -138,7 +138,10 @@ pub fn exit_current(code: i32) {
         .0;
 
     if id == 0 {
-        assert!(process.pid != Pid(1));
+        if process.pid.0 == 1 {
+            // Directly call termination in axtask
+            return;
+        }
         // main process
         // Wait all tasks to complete
         // TODO: use signals to kill

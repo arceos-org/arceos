@@ -1,5 +1,5 @@
 [package]
-name = "microkernel-basic-test"
+name = "microkernel-basic-tests"
 version = "0.1.0"
 edition = "2021"
 

@@ -1,0 +1,5 @@
+Running memory tests...
+test_vec() OK!
+test_btree_map() OK!
+Memory tests run OK!
+Process [0-9]\+ exited with code 0

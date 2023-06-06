@@ -2,7 +2,7 @@
 #![no_main]
 
 use libax::process::wait;
-use libax::{process::fork, task::yield_now};
+use microkernel_init::fake_exec;
 use net_deamon::start_tcp;
 
 #[macro_use]
@@ -12,20 +12,6 @@ use apps::http_client;
 use apps::http_server;
 use apps::shell;
 
-fn fake_exec(f: fn()) {
-    match fork() {
-        pid if pid > 0 => {}
-        0 => {
-            f();
-            loop {
-                yield_now()
-            }
-        }
-        _ => {
-            panic!("Error fork()");
-        }
-    }
-}
 fn run_net_deamon() {
     net_deamon::init();
     start_tcp();
@@ -41,7 +27,7 @@ fn main() {
     fake_exec(fs_deamon::init);
     fake_exec(http_client::main);
     fake_exec(http_server::main);
-    //fake_exec(shell::main);
+    fake_exec(shell::main);
 
     loop {
         let mut ret: i32 = 0;
