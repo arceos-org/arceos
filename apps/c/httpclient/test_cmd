@@ -1,2 +1,3 @@
 test_one "LOG=info NET=y" "expect_info.out"
+test_one "LOG=info NET=y APP_FEATURES=libax/use-lwip" "expect_info_lwip.out"
 rm -f $APP/*.o

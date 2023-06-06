@@ -207,7 +207,7 @@ impl UdpSocket {
     }
 
     /// Close the socket.
-    pub fn shutdown(&self) -> AxResult {
+    pub fn shutdown(&mut self) -> AxResult {
         SOCKET_SET.with_socket_mut::<udp::Socket, _, _>(self.handle, |socket| {
             debug!("socket {}: shutting down", self.handle);
             socket.close();
