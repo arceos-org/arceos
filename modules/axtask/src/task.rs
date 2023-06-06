@@ -270,6 +270,7 @@ impl TaskInner {
         let curr = crate::current();
         if curr.need_resched.load(Ordering::Acquire) && curr.can_preempt(0) {
             if curr.need_resched.load(Ordering::Acquire) {
+                //let _guard = kernel_guard::NoPreemptIrqSave::new();
                 if curr.in_which_queue.load(Ordering::Acquire) >= 0 {
                     crate::RUN_QUEUE[curr.in_which_queue.load(Ordering::Acquire) as usize]
                         .resched();

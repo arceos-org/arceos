@@ -48,7 +48,6 @@ impl AxRunQueue {
     }
 
     pub fn add_task(&self, task: AxTaskRef) {
-        let _guard = NoPreempt::new();
         task.set_queue_id(self.id as isize);
         debug!(
             "task spawn: {} at queue {}, affinity is {}",
@@ -73,7 +72,6 @@ impl AxRunQueue {
 
     #[cfg(feature = "irq")]
     pub fn scheduler_timer_tick(&self) {
-        let _guard = NoPreempt::new();
         //let tmp = LOCK_QWQ3.lock();
         let curr = crate::current();
         //info!("qwq1");
@@ -84,7 +82,6 @@ impl AxRunQueue {
     }
 
     pub fn yield_current(&self) {
-        let _guard = NoPreempt::new();
         let curr = crate::current();
         debug!("task yield: {}", curr.id_name());
         assert!(curr.is_running());
@@ -92,7 +89,6 @@ impl AxRunQueue {
     }
 
     pub fn set_current_priority(&self, prio: isize) -> bool {
-        let _guard = NoPreempt::new();
         self.scheduler
             .lock()
             .set_priority(crate::current().as_task_ref(), prio)
@@ -100,7 +96,6 @@ impl AxRunQueue {
 
     #[cfg(feature = "preempt")]
     pub fn resched(&self) {
-        let _guard = NoPreempt::new();
         let curr = crate::current();
         assert!(curr.is_running());
 
@@ -124,7 +119,6 @@ impl AxRunQueue {
     }
 
     pub fn exit_current(&self, exit_code: i32) -> ! {
-        let _guard = NoPreempt::new();
         let curr = crate::current();
         debug!(
             "task exit: {}, exit_code={}, queue_id={}",
@@ -152,7 +146,6 @@ impl AxRunQueue {
     where
         F: FnOnce(AxTaskRef),
     {
-        let _guard = NoPreempt::new();
         let curr = crate::current();
         debug!("task block: {}", curr.id_name());
         assert!(curr.is_running());
@@ -168,7 +161,6 @@ impl AxRunQueue {
     }
 
     pub fn unblock_task(&self, task: AxTaskRef, resched: bool) {
-        let _guard = NoPreempt::new();
         debug!("task unblock: {} at cpu {}", task.id_name(), self.id);
         if task.is_blocked() {
             task.set_state(TaskState::Ready);
@@ -189,7 +181,6 @@ impl AxRunQueue {
 
     #[cfg(feature = "irq")]
     pub fn sleep_until(&self, deadline: axhal::time::TimeValue) {
-        let _guard = NoPreempt::new();
         let curr = crate::current();
         debug!("task sleep: {}, deadline={:?}", curr.id_name(), deadline);
         assert!(curr.is_running());
@@ -259,7 +250,6 @@ impl AxRunQueue {
         }
     }
     fn resched_inner(&self, preempt: bool, exit_lock: bool) {
-        let _guard = NoPreempt::new();
         let prev = crate::current();
         if prev.is_running() {
             prev.set_state(TaskState::Ready);
@@ -305,7 +295,6 @@ impl AxRunQueue {
     }
 
     fn switch_to(&self, prev_task: CurrentTask, next_task: AxTaskRef, exit_lock: bool) {
-        let _guard = NoPreempt::new();
         trace!(
             "context switch: {} -> {}",
             prev_task.id_name(),

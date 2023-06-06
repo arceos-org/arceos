@@ -111,7 +111,7 @@ where
 {
     let task = TaskInner::new(f, name, stack_size);
     // TODO
-    task.set_affinity(((1u32) << (axconfig::SMP)) - 1);
+    task.set_affinity((1 << (axconfig::SMP)) - 1);
     
     RUN_QUEUE[axhal::cpu::this_cpu_id()].with_chosen_rq(task.clone(), |rq| {
         rq.add_task(task.clone());
@@ -143,7 +143,7 @@ where
 /// [CFS]: https://en.wikipedia.org/wiki/Completely_Fair_Scheduler
 pub fn set_priority(prio: isize) -> bool {
     RUN_QUEUE[axhal::cpu::this_cpu_id()].with_current_rq(|rq| {
-        rq.set_priority(prio)
+        rq.set_current_priority(prio)
     })
 }
 
