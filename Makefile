@@ -15,6 +15,7 @@ GRAPHIC ?= n
 BUS ?= mmio
 
 QEMU_LOG ?= n
+NET_DUMP ?= n
 
 ifeq ($(wildcard $(APP)),)
   $(error Application path "$(APP)" is not valid)

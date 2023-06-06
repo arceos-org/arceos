@@ -34,6 +34,10 @@ qemu_args-$(NET) += \
   -device virtio-net-$(vdev-suffix),netdev=net0 \
   -netdev user,id=net0,hostfwd=tcp::5555-:5555,hostfwd=udp::5555-:5555
 
+ifeq ($(NET_DUMP), y)
+  qemu_args-$(NET) += -object filter-dump,id=dump0,netdev=net0,file=qemu-net0.pcap
+endif
+
 qemu_args-$(GRAPHIC) += \
   -device virtio-gpu-$(vdev-suffix) -vga none \
   -serial mon:stdio
