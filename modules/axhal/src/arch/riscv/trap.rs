@@ -43,6 +43,7 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
 
         #[cfg(feature = "user")]
         Trap::Exception(E::UserEnvCall) => {
+            super::enable_irqs();
             tf.sepc += 4;
             let ret = crate::trap::handle_syscall_extern(
                 tf.regs.a7,
@@ -50,6 +51,7 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
                     tf.regs.a0, tf.regs.a1, tf.regs.a2, tf.regs.a3, tf.regs.a4, tf.regs.a5,
                 ],
             );
+            super::disable_irqs();
             trace!("Syscall ret with code = {}", ret);
             tf.regs.a0 = ret as usize;
         }

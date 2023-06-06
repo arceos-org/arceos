@@ -1,8 +1,5 @@
 extern crate alloc;
-use core::{
-    sync::atomic::{AtomicU64, Ordering},
-    time::Duration,
-};
+use core::sync::atomic::{AtomicU64, Ordering};
 
 use alloc::{boxed::Box, sync::Arc};
 use alloc::{
@@ -13,7 +10,7 @@ use axerrno::{ax_err, from_ret_code, AxError, AxResult};
 use axhal::{mem::VirtAddr, paging::MappingFlags};
 use axmem::AddrSpace;
 use axsync::Mutex;
-use axtask::{current, current_pid};
+use axtask::{current, current_pid, yield_now};
 use scheme::{Packet, Scheme, Stat};
 use syscall_number::{
     SYS_CLOSE, SYS_DUP, SYS_FSTAT, SYS_FTRUNCATE, SYS_LSEEK, SYS_OPEN, SYS_READ, SYS_RMDIR,
@@ -65,7 +62,7 @@ impl UserInner {
                     // TODO: option to return EAGAIN
                     // TODO: use blocking instead of yield
                     assert!(!self.requests.is_locked());
-                    axtask::sleep(Duration::from_millis(1));
+                    yield_now();
                 }
             }
         }
@@ -107,7 +104,7 @@ impl UserInner {
                 return from_ret_code(value as isize);
             } else {
                 assert!(!self.response.is_locked());
-                axtask::sleep(Duration::from_millis(1));
+                yield_now();
             }
         }
     }

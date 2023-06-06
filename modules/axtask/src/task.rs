@@ -9,7 +9,7 @@ use core::sync::atomic::AtomicUsize;
 use axhal::arch::TaskContext;
 use memory_addr::{align_up_4k, VirtAddr};
 
-use crate::{AxRunQueue, AxTask, AxTaskRef, WaitQueue, RUN_QUEUE};
+use crate::{current, AxRunQueue, AxTask, AxTaskRef, WaitQueue, RUN_QUEUE};
 
 /// A unique identifier for a thread.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -107,6 +107,11 @@ impl TaskInner {
         self.wait_for_exit
             .wait_until(|| self.state() == TaskState::Exited);
         Some(self.exit_code.load(Ordering::Acquire))
+    }
+
+    #[cfg(feature = "process")]
+    pub fn pid(&self) -> u64 {
+        self.pid.load(Ordering::Relaxed)
     }
 }
 
@@ -539,11 +544,14 @@ cfg_if::cfg_if! {
         pub fn current_pid() -> Option<u64> {
             crate::current_may_uninit().map(|task| task.pid.load(Ordering::Relaxed))
         }
-        /// Copies current task and creates a new task in the given process
-        pub fn handle_fork(pid: u64, mem: Arc<AddrSpace>) {
-            let task = crate::current().new_fork(pid, mem);
-            RUN_QUEUE.lock().add_task(task);
+        pub fn current_task() -> AxTaskRef {
+            current().as_task_ref().clone()
         }
-
+        /// Copies current task and creates a new task in the given process
+        pub fn handle_fork(pid: u64, mem: Arc<AddrSpace>) -> AxTaskRef {
+            let task = crate::current().new_fork(pid, mem);
+            RUN_QUEUE.lock().add_task(task.clone());
+            task
+        }
     }
 }

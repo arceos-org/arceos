@@ -1,3 +1,4 @@
+use axmem::copy_data_to_user;
 use lazy_init::LazyInit;
 use syscall_number::*;
 
@@ -65,11 +66,20 @@ pub fn syscall_handler(id: usize, params: [usize; 6]) -> isize {
                 }
             }
             axlog::info!("task exit with code {}", params[0] as isize);
-            axtask::exit(0);
+
+            #[cfg(feature = "process")]
+            axprocess::exit_current(params[0] as i32);
+
+            axtask::exit(params[0] as i32);
         }
         #[cfg(feature = "user-paging")]
         SYS_SPAWN => {
-            axtask::spawn_args(params[0], params[1]);
+            #[allow(unused_variables)]
+            let task = axtask::spawn_args(params[0], params[1]);
+
+            #[cfg(feature = "process")]
+            axprocess::add_task(task);
+
             0
         }
         #[cfg(feature = "user-paging")]
@@ -105,6 +115,12 @@ pub fn syscall_handler(id: usize, params: [usize; 6]) -> isize {
         #[cfg(feature = "process")]
         SYS_FORK => axprocess::fork() as isize,
 
+        #[cfg(feature = "process")]
+        SYS_WAIT => {
+            let (id, code) = axprocess::wait(params[0] as u64);
+            copy_data_to_user(0, params[1] as *const u8, &code);
+            id as isize
+        }
         _ => -1,
     }
 }

@@ -1,11 +1,12 @@
 //! Process implementation
 #![no_std]
+#![feature(drain_filter)]
 
 extern crate alloc;
 #[macro_use]
 extern crate axlog;
 
-use core::sync::atomic::{AtomicU64, Ordering};
+use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, Ordering};
 
 use alloc::{
     sync::{Arc, Weak},
@@ -14,6 +15,7 @@ use alloc::{
 };
 use axmem::AddrSpace;
 use axscheme::FileTable;
+use axtask::{current, current_task, yield_now, AxTaskRef};
 use lazy_init::LazyInit;
 use spinlock::SpinNoIrq;
 
@@ -34,13 +36,17 @@ impl Pid {
 
 struct AxProcess {
     pid: Pid,
-    parent: Weak<AxProcess>,
+    parent: SpinNoIrq<Weak<AxProcess>>,
     child: SpinNoIrq<Vec<Arc<AxProcess>>>,
     addr_space: Arc<AddrSpace>,
     file_table: Arc<FileTable>,
+    tasks: SpinNoIrq<Vec<AxTaskRef>>,
+    exit_code: AtomicI32,
+    exited: AtomicBool,
 }
 
 static PROCESS_TABLE: LazyInit<SpinNoIrq<Vec<Arc<AxProcess>>>> = LazyInit::new();
+static INIT_PROCESS: LazyInit<Arc<AxProcess>> = LazyInit::new();
 
 /// Initializes process structures
 pub fn init() {
@@ -58,15 +64,25 @@ pub fn init() {
 
     let user_space = AddrSpace::init_global(user_elf).unwrap();
 
-    let process_table = vec![Arc::new(AxProcess {
+    let init_process = Arc::new(AxProcess {
         pid: Pid::alloc(),
-        parent: Weak::new(),
+        parent: SpinNoIrq::new(Weak::new()),
         child: SpinNoIrq::new(Vec::new()),
         addr_space: Arc::new(user_space),
         file_table: Arc::new(FileTable::new()),
-    })];
+        tasks: SpinNoIrq::new(Vec::new()),
+        exit_code: AtomicI32::new(0),
+        exited: AtomicBool::new(false),
+    });
+
+    let process_table = vec![init_process.clone()];
 
     PROCESS_TABLE.init_by(SpinNoIrq::new(process_table));
+    INIT_PROCESS.init_by(init_process);
+}
+/// Initializes task structure after axtask is inited
+pub fn post_task_init() {
+    PROCESS_TABLE.lock()[0].tasks.lock().push(current_task());
 }
 
 fn find(pid: Pid) -> Option<Arc<AxProcess>> {
@@ -88,16 +104,94 @@ pub fn fork() -> usize {
     let current = current_process();
     let res = Arc::new(AxProcess {
         pid: Pid::alloc(),
-        parent: Arc::downgrade(&current),
+        parent: SpinNoIrq::new(Arc::downgrade(&current)),
         child: SpinNoIrq::new(Vec::new()),
         addr_space: Arc::new(current.addr_space.as_ref().clone()),
         file_table: Arc::new(current.file_table.as_ref().clone()),
+        tasks: SpinNoIrq::new(Vec::new()),
+        exit_code: AtomicI32::new(0),
+        exited: AtomicBool::new(false),
     });
 
     current.child.lock().push(res.clone());
-    axtask::handle_fork(res.pid.0, res.addr_space.clone());
+    let task = axtask::handle_fork(res.pid.0, res.addr_space.clone());
+    res.tasks.lock().push(task);
     PROCESS_TABLE.lock().push(res.clone());
     res.pid.0 as usize
+}
+
+/// push the task into process sturcture after `spawn` syscall
+pub fn add_task(task: AxTaskRef) {
+    current_process().tasks.lock().push(task)
+}
+
+pub fn exit_current(code: i32) {
+    let task = current();
+    let process = current_process();
+    let id = process
+        .tasks
+        .lock()
+        .iter()
+        .enumerate()
+        .find(|(_, task_i)| task.id() == task_i.id())
+        .unwrap()
+        .0;
+
+    if id == 0 {
+        assert!(process.pid != Pid(1));
+        // main process
+        // Wait all tasks to complete
+        // TODO: use signals to kill
+        process
+            .tasks
+            .lock()
+            .iter()
+            .skip(1) // exclude current task
+            .for_each(|task_i| {
+                task_i.join();
+            });
+
+        // make all child zombie
+        process.child.lock().iter_mut().for_each(|child_process| {
+            *child_process.parent.lock() = Arc::downgrade(&INIT_PROCESS);
+            INIT_PROCESS.child.lock().push(child_process.clone())
+        });
+        process.child.lock().clear();
+        process.tasks.lock().clear();
+
+        process.exit_code.store(code, Ordering::Release);
+        process.exited.store(true, Ordering::Release);
+        // remove from process table
+        PROCESS_TABLE
+            .lock()
+            .drain_filter(|process_inner| process_inner.pid == process.pid);
+
+        // There is no need to prevent resource (memory space) to be released before task switch
+        // as one reference is held by its parent
+    } else {
+        // others
+        // TODO: remove stack and trapframe
+        process.tasks.lock().remove(id);
+    }
+}
+
+pub fn wait(_pid: u64) -> (u64, i32) {
+    let process = current_process();
+    loop {
+        if let Some((id, process_i)) = process
+            .child
+            .lock()
+            .iter()
+            .enumerate()
+            .find(|(_, process_i)| process_i.exited.load(Ordering::Acquire))
+        {
+            let ret = (process_i.pid.0, process_i.exit_code.load(Ordering::Acquire));
+            process.child.lock().remove(id);
+            return ret;
+        }
+
+        yield_now();
+    }
 }
 
 struct CurrentAddrSpaceImpl;

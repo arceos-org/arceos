@@ -86,7 +86,13 @@ impl AxRunQueue {
         debug!("task exit: {}, exit_code={}", curr.id_name(), exit_code);
         assert!(curr.is_running());
         assert!(!curr.is_idle());
-        if curr.is_init() {
+
+        #[cfg(feature = "process")]
+        let is_init_process = curr.pid() == 1;
+        #[cfg(not(feature = "process"))]
+        let is_init_process = true;
+
+        if curr.is_init() && is_init_process {
             EXITED_TASKS.lock().clear();
             axhal::misc::terminate();
         } else {
@@ -94,6 +100,7 @@ impl AxRunQueue {
             curr.notify_exit(exit_code, self);
             EXITED_TASKS.lock().push_back(curr.clone());
             WAIT_FOR_EXIT.notify_one_locked(false, self);
+
             self.resched_inner(false);
         }
         unreachable!("task exited!");

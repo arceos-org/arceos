@@ -89,11 +89,12 @@ pub fn on_timer_tick() {
 
 cfg_if::cfg_if! {
 if #[cfg(all(feature = "user-paging", not(feature = "test")))] {
-pub fn spawn_args(f: usize, arg: usize) {
+pub fn spawn_args(f: usize, arg: usize) -> AxTaskRef {
     let task = TaskInner::new_user(f, axconfig::TASK_STACK_SIZE, arg);
-    RUN_QUEUE.lock().add_task(task);
+    RUN_QUEUE.lock().add_task(task.clone());
+    task
 }
-pub fn spawn<F>(f: F) -> AxTaskRef
+pub fn spawn<F>(_f: F) -> AxTaskRef
 where
     F: FnOnce() + Send + 'static,
     {
@@ -109,7 +110,7 @@ where
 } else {
 /// Spawns a new task with an argument
 /// only available in with user syscalls
-pub fn spawn_args(_f: usize, _arg: usize) {
+pub fn spawn_args(_f: usize, _arg: usize) -> AxTaskRef {
     unimplemented!();
 }
 

@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 
+use libax::process::wait;
 use libax::{process::fork, task::yield_now};
 use net_deamon::start_tcp;
 
@@ -38,11 +39,13 @@ fn main() {
 
     fake_exec(run_net_deamon);
     fake_exec(fs_deamon::init);
-    //fake_exec(http_client::main);
-    //fake_exec(http_server::main);
-    fake_exec(shell::main);
+    fake_exec(http_client::main);
+    fake_exec(http_server::main);
+    //fake_exec(shell::main);
 
     loop {
-        yield_now();
+        let mut ret: i32 = 0;
+        let pid = wait(0, &mut ret);
+        println!("Process {} exited with code {}", pid, ret);
     }
 }

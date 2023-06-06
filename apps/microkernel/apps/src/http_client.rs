@@ -1,7 +1,10 @@
 extern crate alloc;
 
 use alloc::format;
-use libax::io::{self, File, Read, Write};
+use libax::{
+    io::{self, File, Read, Write},
+    task::exit,
+};
 
 //const DEST_HOST: &str = "ident.me";
 const DEST_IP: &str = "49.12.234.183";
@@ -28,4 +31,5 @@ fn client() -> io::Result {
 pub fn main() {
     println!("Hello, simple http client!");
     client().expect("test http client failed");
+    exit(0);
 }
