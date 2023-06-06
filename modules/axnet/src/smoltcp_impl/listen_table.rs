@@ -1,5 +1,5 @@
 use alloc::{boxed::Box, collections::VecDeque};
-use core::ops::DerefMut;
+use core::ops::{Deref, DerefMut};
 
 use axerrno::{ax_err, AxError, AxResult};
 use axsync::Mutex;
@@ -69,18 +69,22 @@ impl ListenTable {
         *self.tcp[port as usize].lock() = None;
     }
 
-    pub fn accept(&self, port: u16) -> AxResult<(SocketHandle, Option<SocketAddr>)> {
-        fn get_socket_info(handle: SocketHandle) -> (bool, Option<SocketAddr>) {
-            let (connected, peer_addr) =
-                SOCKET_SET.with_socket::<tcp::Socket, _, _>(handle, |socket| {
-                    (
-                        !matches!(socket.state(), State::Listen | State::SynReceived),
-                        socket.remote_endpoint(),
-                    )
-                });
-            (connected, peer_addr)
+    pub fn can_accept(&self, port: u16) -> AxResult<bool> {
+        if let Some(entry) = self.tcp[port as usize].lock().deref() {
+            if entry.syn_queue.iter().any(|&handle| {
+                let (connected, _) = get_socket_info(handle);
+                connected
+            }) {
+                Ok(true)
+            } else {
+                Ok(false)
+            }
+        } else {
+            ax_err!(InvalidInput, "socket accept() failed: not listen")
         }
+    }
 
+    pub fn accept(&self, port: u16) -> AxResult<(SocketHandle, Option<SocketAddr>)> {
         if let Some(entry) = self.tcp[port as usize].lock().deref_mut() {
             let syn_queue = &mut entry.syn_queue;
             if let Some(&handle) = syn_queue.front() {
@@ -145,4 +149,14 @@ impl ListenTable {
             }
         }
     }
+}
+
+fn get_socket_info(handle: SocketHandle) -> (bool, Option<SocketAddr>) {
+    let (connected, peer_addr) = SOCKET_SET.with_socket::<tcp::Socket, _, _>(handle, |socket| {
+        (
+            !matches!(socket.state(), State::Listen | State::SynReceived),
+            socket.remote_endpoint(),
+        )
+    });
+    (connected, peer_addr)
 }

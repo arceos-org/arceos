@@ -249,3 +249,12 @@ where
         Ok(ret)
     }
 }
+
+/// Struct for poll result.
+#[derive(Debug)]
+pub struct PollState {
+    /// Object can be read now.
+    pub readable: bool,
+    /// Object can be writen now.
+    pub writable: bool,
+}

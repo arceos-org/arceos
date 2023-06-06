@@ -17,7 +17,7 @@ pub fn char_ptr_to_str<'a>(str: *const c_char) -> LinuxResult<&'a str> {
 macro_rules! ax_call_body {
     ($fn: ident, $($stmt: tt)*) => {{
         #[allow(clippy::redundant_closure_call)]
-        let res = (|| -> LinuxResult<_> { $($stmt)* })();
+        let res = (|| -> axerrno::LinuxResult<_> { $($stmt)* })();
         if res.is_err() {
             $crate::info!(concat!(stringify!($fn), " => {:?}"),  res);
         } else {
@@ -26,7 +26,7 @@ macro_rules! ax_call_body {
         match res {
             Ok(v) => v as _,
             Err(e) => {
-                super::errno::set_errno(e.code());
+                crate::cbindings::errno::set_errno(e.code());
                 -1 as _
             }
         }
@@ -36,11 +36,11 @@ macro_rules! ax_call_body {
 macro_rules! ax_call_body_no_debug {
     ($($stmt: tt)*) => {{
         #[allow(clippy::redundant_closure_call)]
-        let res = (|| -> LinuxResult<_> { $($stmt)* })();
+        let res = (|| -> axerrno::LinuxResult<_> { $($stmt)* })();
         match res {
             Ok(v) => v as _,
             Err(e) => {
-                super::errno::set_errno(e.code());
+                crate::cbindings::errno::set_errno(e.code());
                 -1 as _
             }
         }
