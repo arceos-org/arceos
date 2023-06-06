@@ -1,5 +1,9 @@
 //! Task APIs for multi-task configuration.
 
+use crate::run_queue::LOAD_BALANCE_ARR;
+use alloc::{string::String, sync::Arc};
+use load_balance::BaseLoadBalance;
+
 pub(crate) use crate::run_queue::{AxRunQueue, RUN_QUEUE};
 
 #[doc(cfg(feature = "multitask"))]
@@ -7,13 +11,8 @@ pub use crate::task::{CurrentTask, TaskId, TaskInner};
 #[doc(cfg(feature = "multitask"))]
 pub use crate::wait_queue::WaitQueue;
 
-use alloc::string::String;
-
-use crate::run_queue::LOAD_BALANCE_ARR;
-use load_balance::BaseLoadBalance;
-
 /// The reference type of a task.
-pub type AxTaskRef = alloc::sync::Arc<AxTask>;
+pub type AxTaskRef = Arc<AxTask>;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "sched_fifo")] {
@@ -49,26 +48,6 @@ impl kernel_guard::KernelGuardIf for KernelGuardIfImpl {
         }
     }
 }
-
-
-#[cfg(not(feature = "std"))]
-#[def_interface]
-/// get current time
-pub trait LogMyTime {
-    /// get current time
-    fn current_cpu_id() -> Option<usize>;
-}
-
-use core::sync::atomic::Ordering;
-
-use crate::INITED_CPUS;
-
-/// Check whether all CPUs are inited
-pub fn is_init_ok() -> bool {
-    INITED_CPUS.load(Ordering::Acquire) == axconfig::SMP
-}
-
-use crate_interface::def_interface;
 
 /// get current cpu id
 pub fn get_current_cpu_id() -> usize {
@@ -153,8 +132,15 @@ where
     spawn_raw(f, "".into(), axconfig::TASK_STACK_SIZE)
 }
 
-/// set priority for current task.
-/// In CFS, priority is the nice value, ranging from -20 to 19.
+/// Set the priority for current task.
+///
+/// The range of the priority is dependent on the underlying scheduler. For
+/// example, in the [CFS] scheduler, the priority is the nice value, ranging from
+/// -20 to 19.
+///
+/// Returns `true` if the priority is set successfully.
+///
+/// [CFS]: https://en.wikipedia.org/wiki/Completely_Fair_Scheduler
 pub fn set_priority(prio: isize) -> bool {
     RUN_QUEUE[axhal::cpu::this_cpu_id()].with_current_rq(|rq| {
         rq.set_priority(prio)

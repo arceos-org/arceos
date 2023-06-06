@@ -20,7 +20,7 @@ pub trait BaseLoadBalance {
 
     /// find target cpu id for a new task
     /// the affinity mask is keep all 1s
-    fn find_target_cpu(&self, aff: u32) -> usize;
+    fn find_target_cpu(&self, aff: u64) -> usize;
 
     /// find target cpu id that can be stolen
     /// the detailed steal process is defined in axtask

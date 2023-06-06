@@ -3,10 +3,8 @@ use alloc::sync::Arc;
 use load_balance::BaseLoadBalance;
 use spinlock::SpinRaw;
 
-use crate::run_queue::LOAD_BALANCE_ARR;
-use crate::{AxRunQueue, AxTaskRef, CurrentTask, RUN_QUEUE};
-
-use crate::get_current_cpu_id;
+use crate::run_queue::{LOAD_BALANCE_ARR, RUN_QUEUE};
+use crate::{get_current_cpu_id, AxRunQueue, AxTaskRef, CurrentTask};
 
 /// A queue to store sleeping tasks.
 ///
@@ -69,14 +67,18 @@ impl WaitQueue {
     /// Blocks the current task and put it into the wait queue, until other task
     /// notifies it.
     pub fn wait(&self) {
-        /*let tmp: usize;
-        if get_current_cpu_id() == axconfig::SMP {
-            tmp = 0;
+        /*
+         let tmp = if get_current_cpu_id() == axconfig::SMP {
+            0
         } else {
-            tmp = get_current_cpu_id();
-        }*/
-        //let target_cpu = LOAD_BALANCE_ARR[tmp].find_target_cpu(crate::current().get_affinity());
-        
+            get_current_cpu_id()
+        };
+        let target_cpu = LOAD_BALANCE_ARR[tmp].find_target_cpu(crate::current().get_affinity());
+        RUN_QUEUE[target_cpu].block_current(|task| {
+            task.set_in_wait_queue(true);
+            self.queue.lock().push_back(task)
+        });
+        */
         RUN_QUEUE[axhal::cpu::this_cpu_id()].with_current_rq(|rq| {
             rq.block_current(|task| {
                 task.set_in_wait_queue(true);
@@ -142,11 +144,10 @@ impl WaitQueue {
     where
         F: Fn() -> bool,
     {
-        assert!(false);
         let curr = crate::current();
         let deadline = axhal::time::current_time() + dur;
         debug!(
-            "until: task wait_timeout: {}, deadline={:?}",
+            "task wait_timeout: {}, deadline={:?}",
             curr.id_name(),
             deadline
         );
@@ -209,8 +210,9 @@ impl WaitQueue {
         let mut wq = self.queue.lock();
         if let Some(index) = wq.iter().position(|t| Arc::ptr_eq(t, task)) {
             task.set_in_wait_queue(false);
+            // same as task
             let task_to_unblock = wq.remove(index).unwrap();
-            RUN_QUEUE[axhal::cpu::this_cpu_id()].with_chosen_rq(task.clone(), |rq| {
+            RUN_QUEUE[axhal::cpu::this_cpu_id()].with_chosen_rq(task_to_unblock.clone(), |rq| {
                 rq.unblock_task(task_to_unblock, resched);
             });
             true

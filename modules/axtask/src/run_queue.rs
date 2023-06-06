@@ -1,5 +1,8 @@
-use alloc::collections::VecDeque;
 use alloc::sync::Arc;
+use alloc::{collections::VecDeque, vec::Vec};
+use core::sync::atomic::{AtomicUsize, Ordering};
+
+use array_init::array_init;
 use lazy_init::LazyInit;
 use load_balance::BaseLoadBalance;
 use scheduler::BaseScheduler;
@@ -7,11 +10,6 @@ use spinlock::SpinNoIrq;
 
 use crate::task::{CurrentTask, TaskState};
 use crate::{AxTaskRef, LoadBalance, Scheduler, TaskInner, WaitQueue};
-
-use core::sync::atomic::Ordering;
-use core::sync::atomic::AtomicUsize;
-use alloc::vec::Vec;
-use array_init::array_init;
 
 lazy_static::lazy_static! {
     pub(crate) static ref RUN_QUEUE: [LazyInit<Arc<AxRunQueue>>; axconfig::SMP] =
@@ -44,7 +42,7 @@ impl AxRunQueue {
 
         gc_task.set_queue_id(id as isize);
         // this task must run on gc_task
-        gc_task.set_affinity((1u32 << id));
+        gc_task.set_affinity(1u64 << id);
         scheduler.lock().add_task(gc_task);
         Self { scheduler, id }
     }
@@ -52,7 +50,12 @@ impl AxRunQueue {
     pub fn add_task(&self, task: AxTaskRef) {
         let _guard = NoPreempt::new();
         task.set_queue_id(self.id as isize);
-        debug!("task spawn: {} at queue {}, affinity is {}", task.id_name(), self.id, task.get_affinity());
+        debug!(
+            "task spawn: {} at queue {}, affinity is {}",
+            task.id_name(),
+            self.id,
+            task.get_affinity()
+        );
         assert!(task.is_ready());
         LOAD_BALANCE_ARR[self.id].add_weight(1);
         trace!(
@@ -88,7 +91,7 @@ impl AxRunQueue {
         self.resched_inner(false, false);
     }
 
-    pub fn set_priority(&self, prio: isize) -> bool {
+    pub fn set_current_priority(&self, prio: isize) -> bool {
         let _guard = NoPreempt::new();
         self.scheduler
             .lock()
@@ -326,7 +329,10 @@ impl AxRunQueue {
 
             CurrentTask::set_current(prev_task, next_task);
             if exit_lock {
-                SWITCH_EXITED_LOCK.store(SWITCH_EXITED_LOCK.load(Ordering::Acquire) - 1, Ordering::Release);
+                SWITCH_EXITED_LOCK.store(
+                    SWITCH_EXITED_LOCK.load(Ordering::Acquire) - 1,
+                    Ordering::Release,
+                );
             }
             (*prev_ctx_ptr).switch_to(&*next_ctx_ptr);
         }
@@ -361,7 +367,7 @@ pub(crate) fn init() {
 
     let main_task = TaskInner::new_init("main".into());
     main_task.set_state(TaskState::Running);
-    main_task.set_affinity((1u32 << axconfig::SMP) - 1);
+    main_task.set_affinity((1u64 << axconfig::SMP) - 1);
 
     for i in 0..axconfig::SMP {
         RUN_QUEUE[i].init_by(Arc::new(AxRunQueue::new(i)));

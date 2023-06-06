@@ -1,16 +1,13 @@
 use alloc::{boxed::Box, string::String, sync::Arc};
 use core::ops::Deref;
-use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, AtomicU8, Ordering};
+use core::sync::atomic::{AtomicBool, AtomicI32, AtomicIsize, AtomicU64, AtomicU8, Ordering};
 use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 
 #[cfg(feature = "preempt")]
 use core::sync::atomic::AtomicUsize;
 
-use crate::AxRunQueue;
-use crate::WaitQueue;
-use crate::{AxTask, AxTaskRef};
+use crate::{AxRunQueue, AxTask, AxTaskRef, WaitQueue};
 use axhal::arch::TaskContext;
-use core::sync::atomic::AtomicIsize;
 use memory_addr::{align_up_4k, VirtAddr};
 
 /// A unique identifier for a thread.
@@ -26,8 +23,6 @@ pub(crate) enum TaskState {
     Blocked = 3,
     Exited = 4,
 }
-
-use core::sync::atomic::AtomicU32;
 
 /// The inner task structure.
 pub struct TaskInner {
@@ -52,7 +47,7 @@ pub struct TaskInner {
     wait_for_exit: WaitQueue,
 
     in_which_queue: AtomicIsize,
-    affinity: AtomicU32,
+    affinity: AtomicU64,
     kstack: Option<TaskStack>,
     ctx: UnsafeCell<TaskContext>,
 }
@@ -102,9 +97,9 @@ impl TaskInner {
     }
 
     /// set queue id
-    pub fn set_queue_id(&self, id: isize) {
+    pub fn set_queue_id(&self, queue_id: isize) {
         //info!("set queue id {} !", id);
-        self.in_which_queue.store(id as isize, Ordering::Release);
+        self.in_which_queue.store(queue_id, Ordering::Release);
     }
     /// get queue id
     pub fn get_queue_id(&self) -> isize {
@@ -122,12 +117,12 @@ impl TaskInner {
 
     /// Set affinity mask for the task
     /// TODO: The rule will be similar to Zircon
-    pub fn set_affinity(&self, aff: u32) {
+    pub fn set_affinity(&self, aff: u64) {
         self.affinity.store(aff, Ordering::Release);
     }
 
     /// get affinity mask for the task
-    pub fn get_affinity(&self) -> u32{
+    pub fn get_affinity(&self) -> u64 {
         self.affinity.load(Ordering::Acquire)
     }
 }
@@ -154,7 +149,7 @@ impl TaskInner {
             kstack: None,
             ctx: UnsafeCell::new(TaskContext::new()),
             in_which_queue: AtomicIsize::new(-1),
-            affinity: AtomicU32::new(0),
+            affinity: AtomicU64::new(0),
         }
     }
 

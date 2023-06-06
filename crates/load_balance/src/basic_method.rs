@@ -44,7 +44,7 @@ impl BasicMethod {
 
 impl BaseLoadBalance for BasicMethod {
     /// the most naive method : find min
-    fn find_target_cpu(&self, aff: u32) -> usize {
+    fn find_target_cpu(&self, aff: u64) -> usize {
         let mut mn = 0;
         let mut arg: isize = -1;
         for i in 0..self.smp.load(Ordering::Acquire) {
