@@ -84,9 +84,9 @@ impl axlog::LogIf for LogIfImpl {
     }
 }
 
-use core::sync::atomic::Ordering;
-// moved to axtask
-use axtask::INITED_CPUS;
+use core::sync::atomic::{AtomicUsize, Ordering};
+
+static INITED_CPUS: AtomicUsize = AtomicUsize::new(0);
 
 fn is_init_ok() -> bool {
     INITED_CPUS.load(Ordering::Acquire) == axconfig::SMP

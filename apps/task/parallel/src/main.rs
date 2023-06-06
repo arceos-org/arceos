@@ -35,7 +35,6 @@ fn sqrt(n: &u64) -> u64 {
 
 #[no_mangle]
 fn main() {
-    //println!("111");
     let vec = Arc::new(
         (0..NUM_DATA)
             .map(|_| rand::rand_u32() as u64)

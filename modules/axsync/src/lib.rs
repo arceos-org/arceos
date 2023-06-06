@@ -18,7 +18,6 @@ pub use spinlock as spin;
 
 #[cfg(feature = "multitask")]
 mod mutex;
-extern crate log;
 
 #[cfg(feature = "multitask")]
 #[doc(cfg(feature = "multitask"))]

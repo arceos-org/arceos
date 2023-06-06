@@ -19,7 +19,7 @@ documentation = "https://rcore-os.github.io/arceos/libax/index.html"
 cbindings = ["cbindgen", "bindgen", "dep:spin", "dep:lazy_static"]
 
 # Multicore
-smp = ["axtask/smp", "axruntime/smp"]
+smp = ["axruntime/smp"]
 
 # Floating point/SIMD
 fp_simd = ["axhal/fp_simd"]

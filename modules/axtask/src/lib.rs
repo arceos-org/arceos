@@ -41,9 +41,6 @@ cfg_if::cfg_if! {
         mod timers;
     }
 }
-use core::sync::atomic::AtomicUsize;
-/// Counter for inited CPUs
-pub static INITED_CPUS: AtomicUsize = AtomicUsize::new(0);
 
 #[cfg_attr(not(feature = "multitask"), path = "api_s.rs")]
 mod api;

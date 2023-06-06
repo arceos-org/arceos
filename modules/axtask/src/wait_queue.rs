@@ -3,10 +3,8 @@ use alloc::sync::Arc;
 use load_balance::BaseLoadBalance;
 use spinlock::SpinRaw;
 
-use crate::run_queue::LOAD_BALANCE_ARR;
-use crate::{AxRunQueue, AxTaskRef, CurrentTask, RUN_QUEUE};
-
-use crate::get_current_cpu_id;
+use crate::run_queue::{LOAD_BALANCE_ARR, RUN_QUEUE};
+use crate::{get_current_cpu_id, AxRunQueue, AxTaskRef, CurrentTask};
 
 /// A queue to store sleeping tasks.
 ///
@@ -69,12 +67,12 @@ impl WaitQueue {
     /// Blocks the current task and put it into the wait queue, until other task
     /// notifies it.
     pub fn wait(&self) {
-        let tmp: usize;
-        if get_current_cpu_id() == axconfig::SMP {
-            tmp = 0;
+        // ???
+        let tmp = if get_current_cpu_id() == axconfig::SMP {
+            0
         } else {
-            tmp = get_current_cpu_id();
-        }
+            get_current_cpu_id()
+        };
         let target_cpu = LOAD_BALANCE_ARR[tmp].find_target_cpu(crate::current().get_affinity());
         RUN_QUEUE[target_cpu].block_current(|task| {
             task.set_in_wait_queue(true);
@@ -135,11 +133,10 @@ impl WaitQueue {
     where
         F: Fn() -> bool,
     {
-        assert!(false);
         let curr = crate::current();
         let deadline = axhal::time::current_time() + dur;
         debug!(
-            "until: task wait_timeout: {}, deadline={:?}",
+            "task wait_timeout: {}, deadline={:?}",
             curr.id_name(),
             deadline
         );
@@ -182,8 +179,9 @@ impl WaitQueue {
         loop {
             if let Some(task) = self.queue.lock().pop_front() {
                 task.set_in_wait_queue(false);
-                RUN_QUEUE[LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu(task.get_affinity())]
-                    .unblock_task(task, resched);
+                RUN_QUEUE
+                    [LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu(task.get_affinity())]
+                .unblock_task(task, resched);
             } else {
                 break;
             }
@@ -198,7 +196,8 @@ impl WaitQueue {
         let mut wq = self.queue.lock();
         if let Some(index) = wq.iter().position(|t| Arc::ptr_eq(t, task)) {
             task.set_in_wait_queue(false);
-            let target_cpu = LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu(task.get_affinity());
+            let target_cpu =
+                LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu(task.get_affinity());
             let task = wq.remove(index).unwrap();
             RUN_QUEUE[target_cpu].unblock_task(task, resched);
             true
@@ -209,7 +208,8 @@ impl WaitQueue {
 
     pub(crate) fn notify_one_locked(&self, resched: bool) -> bool {
         if let Some(task) = self.queue.lock().pop_front() {
-            let rq = &RUN_QUEUE[LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu(task.get_affinity())];
+            let rq = &RUN_QUEUE
+                [LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu(task.get_affinity())];
             task.set_in_wait_queue(false);
             rq.unblock_task(task, resched);
             true
