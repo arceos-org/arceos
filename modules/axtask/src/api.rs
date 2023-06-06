@@ -50,6 +50,7 @@ impl kernel_guard::KernelGuardIf for KernelGuardIfImpl {
     }
 }
 
+
 #[cfg(not(feature = "std"))]
 #[def_interface]
 /// get current time
@@ -116,7 +117,10 @@ pub fn init_scheduler_secondary() {
 #[doc(cfg(feature = "irq"))]
 pub fn on_timer_tick() {
     crate::timers::check_events();
-    RUN_QUEUE[get_current_cpu_id()].scheduler_timer_tick()
+    RUN_QUEUE[axhal::cpu::this_cpu_id()].with_current_rq(|rq| {
+        rq.scheduler_timer_tick()
+    });
+    //RUN_QUEUE[get_current_cpu_id()].scheduler_timer_tick()
 }
 
 /// Spawns a new task with the given parameters.
@@ -129,7 +133,10 @@ where
     let task = TaskInner::new(f, name, stack_size);
     // TODO
     task.set_affinity(((1u32) << (axconfig::SMP)) - 1);
-    RUN_QUEUE[LOAD_BALANCE_ARR[get_current_cpu_id()].find_target_cpu(task.get_affinity())].add_task(task.clone());
+    
+    RUN_QUEUE[axhal::cpu::this_cpu_id()].with_chosen_rq(task.clone(), |rq| {
+        rq.add_task(task.clone());
+    });
     task
 }
 
@@ -149,14 +156,18 @@ where
 /// set priority for current task.
 /// In CFS, priority is the nice value, ranging from -20 to 19.
 pub fn set_priority(prio: isize) -> bool {
-    RUN_QUEUE[get_current_cpu_id()].set_priority(prio)
+    RUN_QUEUE[axhal::cpu::this_cpu_id()].with_current_rq(|rq| {
+        rq.set_priority(prio)
+    })
 }
 
 /// Current task gives up the CPU time voluntarily, and switches to another
 /// ready task.
 pub fn yield_now() {
     //info!("exit 233");
-    RUN_QUEUE[get_current_cpu_id()].yield_current();
+    RUN_QUEUE[axhal::cpu::this_cpu_id()].with_current_rq(|rq| {
+        rq.yield_current();
+    });
     //info!("exit 234");
     // TODO: 还没有把功能取出来的功能
 }
@@ -174,7 +185,9 @@ pub fn sleep(dur: core::time::Duration) {
 pub fn sleep_until(deadline: axhal::time::TimeValue) {
     //info!("exit 233");
     #[cfg(feature = "irq")]
-    RUN_QUEUE[get_current_cpu_id()].sleep_until(deadline);
+    RUN_QUEUE[axhal::cpu::this_cpu_id()].with_current_rq(|rq| {
+        rq.sleep_until(deadline);
+    });
     //info!("exit 234");
     #[cfg(not(feature = "irq"))]
     axhal::time::busy_wait_until(deadline);
@@ -183,7 +196,9 @@ pub fn sleep_until(deadline: axhal::time::TimeValue) {
 /// Exits the current task.
 pub fn exit(exit_code: i32) -> ! {
     //info!("exit 233");
-    RUN_QUEUE[get_current_cpu_id()].exit_current(exit_code)
+    RUN_QUEUE[axhal::cpu::this_cpu_id()].with_current_rq(|rq| {
+        rq.exit_current(exit_code);
+    })
 }
 
 /// The idle task routine.

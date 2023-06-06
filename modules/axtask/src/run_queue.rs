@@ -81,7 +81,7 @@ impl AxRunQueue {
     }
 
     pub fn yield_current(&self) {
-        //let _guard = NoPreempt::new();
+        let _guard = NoPreempt::new();
         let curr = crate::current();
         debug!("task yield: {}", curr.id_name());
         assert!(curr.is_running());
@@ -202,6 +202,23 @@ impl AxRunQueue {
 }
 
 impl AxRunQueue {
+    
+    pub fn with_current_rq<F, T>(&self, f: F) -> T
+    where
+        F: FnOnce(&AxRunQueue) -> T,
+    {
+        let _guard = kernel_guard::NoPreempt::new();
+        f(&RUN_QUEUE[axhal::cpu::this_cpu_id()])
+    }
+    
+    pub fn with_chosen_rq<F, T>(&self, task: AxTaskRef, f: F) -> T
+    where
+        F: FnOnce(&AxRunQueue) -> T,
+    {
+        let _guard = kernel_guard::NoPreempt::new();
+        let target = LOAD_BALANCE_ARR[axhal::cpu::this_cpu_id()].find_target_cpu(task.get_affinity());
+        f(&RUN_QUEUE[target])
+    }
     /// Common reschedule subroutine. If `preempt`, keep current task's time
     /// slice, otherwise reset it.
     fn if_empty_steal(&self) {
