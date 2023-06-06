@@ -270,9 +270,9 @@ impl AxRunQueue {
                 flag = true;
                 IDLE_TASK.current_ref_raw().get_unchecked().clone()
             });
-        if !flag {
+        /*if !flag {
             next.set_queue_id(-1);
-        }
+        }*/
         LOAD_BALANCE_ARR[self.id].add_weight(-1);
         trace!(
             "load balance weight for id {}: {}",
