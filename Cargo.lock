@@ -377,7 +377,6 @@ dependencies = [
  "array-init",
  "axconfig",
  "axhal",
- "axlog",
  "axtask",
  "cfg-if",
  "crate_interface 0.1.1",
