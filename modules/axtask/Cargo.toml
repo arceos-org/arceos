@@ -19,6 +19,7 @@ irq = []
 smp = []
 preempt = ["irq", "percpu?/preempt", "kernel_guard/preempt"]
 
+
 sched_fifo = ["multitask"]
 sched_rr = ["multitask", "preempt"]
 sched_cfs = ["multitask", "preempt"]
@@ -45,3 +46,4 @@ crate_interface = { path = "../../crates/crate_interface" }
 rand = "0.8"
 axhal = { path = "../axhal", features = ["fp_simd"] }
 axtask = { path = ".", features = ["test"] }
+axlog = { path = "../axlog", features=["std"]}

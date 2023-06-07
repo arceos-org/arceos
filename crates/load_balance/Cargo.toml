@@ -12,3 +12,4 @@ documentation = "https://rcore-os.github.io/arceos/scheduler/index.html"
 [dependencies]
 linked_list = { path = "../linked_list" }
 spinlock = { path = "../../crates/spinlock" }
+log = "0.4"

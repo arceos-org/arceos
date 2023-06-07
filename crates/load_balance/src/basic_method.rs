@@ -4,6 +4,7 @@ use alloc::vec::Vec;
 use core::sync::atomic::AtomicUsize;
 use core::sync::atomic::{AtomicIsize, Ordering};
 use spinlock::SpinNoIrq;
+use log::info;
 
 /// simply find target CPU and stolen CPU according to mininum payload.
 pub struct BasicMethod {
@@ -65,6 +66,7 @@ impl BaseLoadBalance for BasicMethod {
     fn find_stolen_cpu_id(&self) -> isize {
         let mut mx: isize = self.pointers.lock()[0].weight.load(Ordering::Acquire);
         let mut arg: usize = 0;
+        //info!("qwq");
         for i in 1..self.smp.load(Ordering::Acquire) {
             let tmp = self.pointers.lock()[i].weight.load(Ordering::Acquire);
             if tmp > mx {

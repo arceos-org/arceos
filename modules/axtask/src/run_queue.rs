@@ -313,7 +313,16 @@ impl AxRunQueue {
         /*if !flag {
             next.set_queue_id(-1);
         }*/
-        if !next.is_gc() {
+        
+        trace!(
+            "load balance weight for id {}: {}",
+            self.id,
+            LOAD_BALANCE_ARR[self.id].get_weight()
+        );
+        trace!(
+            "is gc: {}", next.is_gc()
+        );
+        if !(next.is_gc()) {
             LOAD_BALANCE_ARR[self.id].add_weight(-1);
         }
         trace!(

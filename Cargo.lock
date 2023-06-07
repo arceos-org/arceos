@@ -377,6 +377,7 @@ dependencies = [
  "array-init",
  "axconfig",
  "axhal",
+ "axlog",
  "axtask",
  "cfg-if",
  "crate_interface 0.1.1",
@@ -999,6 +1000,7 @@ name = "load_balance"
 version = "0.1.0"
 dependencies = [
  "linked_list",
+ "log",
  "spinlock",
 ]
 
