@@ -96,6 +96,7 @@ impl AxRunQueue {
 
     #[cfg(feature = "preempt")]
     pub fn resched(&self) {
+        //info!("resched");
         let curr = crate::current();
         assert!(curr.is_running());
 
@@ -205,7 +206,7 @@ impl AxRunQueue {
         f(&RUN_QUEUE[axhal::cpu::this_cpu_id()])
     }
     
-    pub fn with_chosen_rq<F, T>(&self, task: AxTaskRef, f: F) -> T
+    pub fn with_task_correspond_rq<F, T>(&self, task: AxTaskRef, f: F) -> T
     where
         F: FnOnce(&AxRunQueue) -> T,
     {
@@ -216,6 +217,7 @@ impl AxRunQueue {
     /// Common reschedule subroutine. If `preempt`, keep current task's time
     /// slice, otherwise reset it.
     fn if_empty_steal(&self) {
+        return;
         if self.scheduler.lock().is_empty() {
             let mut queuelock = self.scheduler.lock();
             let id = self.id;

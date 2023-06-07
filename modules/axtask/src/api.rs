@@ -113,7 +113,7 @@ where
     // TODO
     task.set_affinity((1 << (axconfig::SMP)) - 1);
     
-    RUN_QUEUE[axhal::cpu::this_cpu_id()].with_chosen_rq(task.clone(), |rq| {
+    RUN_QUEUE[axhal::cpu::this_cpu_id()].with_task_correspond_rq(task.clone(), |rq| {
         rq.add_task(task.clone());
     });
     task

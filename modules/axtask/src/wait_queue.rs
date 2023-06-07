@@ -6,6 +6,8 @@ use spinlock::SpinRaw;
 use crate::run_queue::{LOAD_BALANCE_ARR, RUN_QUEUE};
 use crate::{get_current_cpu_id, AxRunQueue, AxTaskRef, CurrentTask};
 
+use spinlock::SpinNoIrq;
+
 /// A queue to store sleeping tasks.
 ///
 /// # Examples
@@ -29,21 +31,21 @@ use crate::{get_current_cpu_id, AxRunQueue, AxTaskRef, CurrentTask};
 /// assert_eq!(VALUE.load(Ordering::Relaxed), 1);
 /// ```
 pub struct WaitQueue {
-    queue: SpinRaw<VecDeque<AxTaskRef>>, // we already disabled IRQs when lock the `RUN_QUEUE`
+    queue: SpinNoIrq<VecDeque<AxTaskRef>>, // we already disabled IRQs when lock the `RUN_QUEUE`
 }
 
 impl WaitQueue {
     /// Creates an empty wait queue.
     pub const fn new() -> Self {
         Self {
-            queue: SpinRaw::new(VecDeque::new()),
+            queue: SpinNoIrq::new(VecDeque::new()),
         }
     }
 
     /// Creates an empty wait queue with space for at least `capacity` elements.
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
-            queue: SpinRaw::new(VecDeque::with_capacity(capacity)),
+            queue: SpinNoIrq::new(VecDeque::with_capacity(capacity)),
         }
     }
 
@@ -193,7 +195,7 @@ impl WaitQueue {
         loop {
             if let Some(task) = self.queue.lock().pop_front() {
                 task.set_in_wait_queue(false);
-                RUN_QUEUE[axhal::cpu::this_cpu_id()].with_chosen_rq(task.clone(), |rq| {
+                RUN_QUEUE[axhal::cpu::this_cpu_id()].with_task_correspond_rq(task.clone(), |rq| {
                     rq.unblock_task(task, resched);
                 });
             } else {
@@ -212,7 +214,7 @@ impl WaitQueue {
             task.set_in_wait_queue(false);
             // same as task
             let task_to_unblock = wq.remove(index).unwrap();
-            RUN_QUEUE[axhal::cpu::this_cpu_id()].with_chosen_rq(task_to_unblock.clone(), |rq| {
+            RUN_QUEUE[axhal::cpu::this_cpu_id()].with_task_correspond_rq(task_to_unblock.clone(), |rq| {
                 rq.unblock_task(task_to_unblock, resched);
             });
             true
@@ -224,7 +226,7 @@ impl WaitQueue {
     pub(crate) fn notify_one_locked(&self, resched: bool) -> bool {
         if let Some(task) = self.queue.lock().pop_front() {
             task.set_in_wait_queue(false);
-            RUN_QUEUE[axhal::cpu::this_cpu_id()].with_chosen_rq(task.clone(), |rq| {
+            RUN_QUEUE[axhal::cpu::this_cpu_id()].with_task_correspond_rq(task.clone(), |rq| {
                 rq.unblock_task(task, resched);
             });
             true

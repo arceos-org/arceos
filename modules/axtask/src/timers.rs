@@ -16,7 +16,7 @@ struct TaskWakeupEvent(AxTaskRef);
 impl TimerEvent for TaskWakeupEvent {
     fn callback(self, _now: TimeValue) {
         self.0.set_in_timer_list(false);
-        RUN_QUEUE[axhal::cpu::this_cpu_id()].with_chosen_rq(self.0.clone(), |rq| {
+        RUN_QUEUE[axhal::cpu::this_cpu_id()].with_task_correspond_rq(self.0.clone(), |rq| {
             rq.unblock_task(self.0, true);
         });
     }

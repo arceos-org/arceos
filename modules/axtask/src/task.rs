@@ -269,12 +269,14 @@ impl TaskInner {
     fn current_check_preempt_pending() {
         let curr = crate::current();
         if curr.need_resched.load(Ordering::Acquire) && curr.can_preempt(0) {
+            let _guard = kernel_guard::NoPreemptIrqSave::new();
             if curr.need_resched.load(Ordering::Acquire) {
-                //let _guard = kernel_guard::NoPreemptIrqSave::new();
-                if curr.in_which_queue.load(Ordering::Acquire) >= 0 {
-                    crate::RUN_QUEUE[curr.in_which_queue.load(Ordering::Acquire) as usize]
-                        .resched();
-                }
+                //if curr.in_which_queue.load(Ordering::Acquire) >= 0 {
+                    crate::RUN_QUEUE[axhal::cpu::this_cpu_id()].resched();
+                    //crate::RUN_QUEUE[axhal::cpu::this_cpu_id()].with_current_rq(|rq| {
+                    //    rq.resched();
+                    //});
+                //}
             }
         }
     }
