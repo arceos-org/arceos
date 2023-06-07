@@ -233,7 +233,7 @@ impl AxRunQueue {
                     LOAD_BALANCE_ARR[id].get_weight()
                 );
                 debug!("steal: current = {}, victim = {}", self.id, next);
-                if next != -1 && next != id as isize {
+                if next != -1 && (next != id as isize) {
                     let task = RUN_QUEUE[next as usize].scheduler.lock().pick_next_task();
                     // 简单实现：如果是 gc_task 就放回去
                     // 这里可能有同步问题，简单起见，如果 task 是 None 那么就不窃取。
@@ -255,11 +255,6 @@ impl AxRunQueue {
                                 LOAD_BALANCE_ARR[next as usize].get_weight()
                             );
 
-                            trace!(
-                                "load balance weight for id {}: {}",
-                                id,
-                                LOAD_BALANCE_ARR[id].get_weight()
-                            );
                         } else {
                             RUN_QUEUE[next as usize].scheduler.lock().add_task(tk);
                             flag = 0;
@@ -314,14 +309,14 @@ impl AxRunQueue {
             next.set_queue_id(-1);
         }*/
         
-        trace!(
+        /*trace!(
             "load balance weight for id {}: {}",
             self.id,
             LOAD_BALANCE_ARR[self.id].get_weight()
         );
         trace!(
             "is gc: {}", next.is_gc()
-        );
+        );*/
         if !(next.is_gc()) {
             LOAD_BALANCE_ARR[self.id].add_weight(-1);
         }

@@ -6,7 +6,6 @@ use crate::{self as axtask, current, WaitQueue};
 static INIT: Once = Once::new();
 static SERIAL: Mutex<()> = Mutex::new(());
 
-/*
 #[test]
 fn test_sched_fifo() {
     let _lock = SERIAL.lock();
@@ -24,7 +23,7 @@ fn test_sched_fifo() {
                 assert_eq!(order, i); // FIFO scheduler
             },
             format!("T{}", i),
-            0x1000,
+            0x10000,
         );
     }
 
@@ -62,12 +61,12 @@ fn test_fp_state_switch() {
     while FINISHED_TASKS.load(Ordering::Relaxed) < NUM_TASKS {
         axtask::yield_now();
     }
-}*/
-/*
+}
+
 #[test]
 fn test_wait_queue() {
-    axlog::init();
-    axlog::set_max_level("trace");
+    //axlog::init();
+    //axlog::set_max_level("trace");
     let _lock = SERIAL.lock();
     INIT.call_once(axtask::init_scheduler);
 
@@ -105,19 +104,16 @@ fn test_wait_queue() {
     WQ1.wait_until(|| COUNTER.load(Ordering::Relaxed) == 0);
     assert_eq!(COUNTER.load(Ordering::Relaxed), 0);
     assert!(!current().in_wait_queue());
-}*/
+}
 
 #[test]
 fn test_task_join() {
-    axlog::init();
-    axlog::set_max_level("trace");
     let _lock = SERIAL.lock();
     INIT.call_once(axtask::init_scheduler);
 
-    const NUM_TASKS: usize = 1;
+    const NUM_TASKS: usize = 10;
     let mut tasks = Vec::with_capacity(NUM_TASKS);
 
-    //println!("111");
     for i in 0..NUM_TASKS {
         tasks.push(axtask::spawn_raw(
             move || {
@@ -126,7 +122,7 @@ fn test_task_join() {
                 axtask::exit(i as _);
             },
             format!("T{}", i),
-            0x1000,
+            0x10000,
         ));
     }
 
