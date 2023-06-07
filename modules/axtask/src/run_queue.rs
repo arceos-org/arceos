@@ -222,8 +222,8 @@ impl AxRunQueue {
     /// slice, otherwise reset it.
     fn if_empty_steal(&self) {
         if self.scheduler.lock().is_empty() {
-            let mut forbidden: u64 = 0;
-            //loop {
+            let mut flag = 0;
+            loop {
                 let mut queuelock = self.scheduler.lock();
                 let id = self.id;
                 let next = LOAD_BALANCE_ARR[id].find_stolen_cpu_id();
@@ -233,35 +233,49 @@ impl AxRunQueue {
                     LOAD_BALANCE_ARR[id].get_weight()
                 );
                 debug!("steal: current = {}, victim = {}", self.id, next);
-                if next != -1 {
+                if next != -1 && next != id as isize {
                     let task = RUN_QUEUE[next as usize].scheduler.lock().pick_next_task();
                     // 简单实现：如果是 gc_task 就放回去
                     // 这里可能有同步问题，简单起见，如果 task 是 None 那么就不窃取。
                     if let Some(tk) = task {
-                        assert!(tk.get_queue_id() == next);
+                        assert!(tk.clone().is_gc() || tk.get_queue_id() == next);
                         tk.set_queue_id(id as isize);
                         
+                        trace!(
+                            "is gc task: {}", tk.clone().is_gc()
+                        );
+                        
                         if !tk.clone().is_gc() {
+                            flag = 1;
                             LOAD_BALANCE_ARR[next as usize].add_weight(-1);
                             LOAD_BALANCE_ARR[id].add_weight(1);
+                            queuelock.add_task(tk);
+                        
+                            trace!(
+                                "load balance weight for id {}: {}",
+                                next as usize,
+                                LOAD_BALANCE_ARR[next as usize].get_weight()
+                            );
+                            
+                            trace!(
+                                "load balance weight for id {}: {}",
+                                id,
+                                LOAD_BALANCE_ARR[id].get_weight()
+                            );
+                        } else {
+                            RUN_QUEUE[next as usize].scheduler.lock().add_task(tk);
+                            flag = 0;
                         }
-
-                        queuelock.add_task(tk);
-                        
-                        trace!(
-                            "load balance weight for id {}: {}",
-                            next as usize,
-                            LOAD_BALANCE_ARR[next as usize].get_weight()
-                        );
-                        
-                        trace!(
-                            "load balance weight for id {}: {}",
-                            id,
-                            LOAD_BALANCE_ARR[id].get_weight()
-                        );
+                    } else {
+                        flag = 1;
                     }
+                } else {
+                    flag = 1;
                 }
-            //}
+                if flag == 1 {
+                    break;
+                }
+            }
         }
     }
     fn resched_inner(&self, preempt: bool, exit_lock: bool) {
@@ -352,6 +366,7 @@ fn gc_entry() {
     loop {
         // Drop all exited tasks and recycle resources.
         while !EXITED_TASKS.lock().is_empty() {
+            //info!("into gc");
             // 用 lock 先顶一顶
            // while SWITCH_EXITED_LOCK.load(Ordering::Acquire) > 0 {
             //    trace!("qwqq {}", SWITCH_EXITED_LOCK.load(Ordering::Acquire));
