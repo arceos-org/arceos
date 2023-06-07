@@ -1,4 +1,5 @@
 if [ "$ARCH" == "riscv64" ]; then
+  cargo clean; # Remove all caches to make it all right
   test_one "MICRO=y MICRO_TEST=test_mem" "expect/mem.out"
   test_one "MICRO=y MICRO_TEST=test_sleep" "expect/sleep.out"
   test_one "MICRO=y MICRO_TEST=test_scheme" "expect/scheme.out"

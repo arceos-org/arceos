@@ -2,20 +2,10 @@
 #![no_main]
 
 use libax::process::wait;
-use microkernel_init::fake_exec;
-use net_deamon::start_tcp;
+use microkernel_init::{fake_exec, real_exec};
 
 #[macro_use]
 extern crate libax;
-
-use apps::http_client;
-use apps::http_server;
-use apps::shell;
-
-fn run_net_deamon() {
-    net_deamon::init();
-    start_tcp();
-}
 
 #[no_mangle]
 fn main() {
@@ -23,15 +13,14 @@ fn main() {
 
     println!("Start TCP deamon");
 
-    fake_exec(run_net_deamon);
     fake_exec(fs_deamon::init);
-    fake_exec(http_client::main);
-    fake_exec(http_server::main);
-    fake_exec(shell::main);
+    #[cfg(feature = "net_deamon")]
+    real_exec("./net_deamon");
+    real_exec("./shell");
 
     loop {
         let mut ret: i32 = 0;
         let pid = wait(0, &mut ret);
-        println!("Process {} exited with code {}", pid, ret);
+        println!("init: process {} exited with code {}", pid, ret);
     }
 }

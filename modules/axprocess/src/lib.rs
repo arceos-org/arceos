@@ -13,6 +13,7 @@ use alloc::{
     vec,
     vec::Vec,
 };
+use axerrno::AxResult;
 use axmem::AddrSpace;
 use axscheme::FileTable;
 use axtask::{current, current_task, yield_now, AxTaskRef};
@@ -125,6 +126,7 @@ pub fn add_task(task: AxTaskRef) {
     current_process().tasks.lock().push(task)
 }
 
+/// Exit current process
 pub fn exit_current(code: i32) {
     let task = current();
     let process = current_process();
@@ -178,6 +180,7 @@ pub fn exit_current(code: i32) {
     }
 }
 
+/// Wait for a child process to stop.
 pub fn wait(_pid: u64) -> (u64, i32) {
     let process = current_process();
     loop {
@@ -195,6 +198,27 @@ pub fn wait(_pid: u64) -> (u64, i32) {
 
         yield_now();
     }
+}
+
+/// exec syscall
+/// only returns on error
+pub fn exec(elf_data: Vec<u8>) -> isize {
+    info!("EXEC");
+    fn exec_inner(elf_data: Vec<u8>) -> AxResult<()> {
+        let process = current_process();
+        process.addr_space.init_exec(&elf_data)?;
+        process.file_table.reset();
+        process.tasks.lock().clear();
+        Ok(())
+        // elf_data should be successfully dropped
+    }
+
+    if exec_inner(elf_data).is_err() {
+        return -1;
+    }
+    let process = current_process();
+
+    axtask::handle_exec(|task| process.tasks.lock().push(task))
 }
 
 struct CurrentAddrSpaceImpl;

@@ -306,6 +306,79 @@ impl AddrSpaceInner {
     }
 }
 
+impl AddrSpaceInner {
+    fn init_global(&mut self, data: &[u8]) -> AxResult<()> {
+        let segments = elf_loader::SegmentEntry::new(data).ok_or(AxError::InvalidData)?;
+
+        let mut data_end: VirtAddr = 0.into();
+
+        for segment in &segments {
+            let mut user_phy_page = GlobalPage::alloc_contiguous(
+                align_up_4k(segment.size) / PAGE_SIZE_4K,
+                PAGE_SIZE_4K,
+            )
+            .expect("Alloc page error!");
+            // init
+            user_phy_page.zero();
+
+            // copy user content
+            user_phy_page.as_slice_mut()[..segment.data.len()].copy_from_slice(segment.data);
+            debug!(
+                "{:x} {:x}",
+                user_phy_page.as_slice()[0],
+                user_phy_page.as_slice()[1]
+            );
+
+            self.add_region(
+                segment.start_addr,
+                user_phy_page.start_paddr(virt_to_phys),
+                Arc::new(user_phy_page),
+                segment.flags | MappingFlags::USER,
+                false,
+            )
+            .map_err(|_| AxError::BadAddress)?;
+            data_end = data_end.max(segment.start_addr + align_up_4k(segment.size))
+        }
+
+        self.init_heap(data_end);
+
+        /*
+        // stack allocation
+        //assert!(USTACK_SIZE % PAGE_SIZE_4K == 0);
+        #[cfg(not(feature = "multitask"))]
+        {
+            let user_stack_page =
+                GlobalPage::alloc_contiguous(USTACK_SIZE / PAGE_SIZE_4K, PAGE_SIZE_4K)
+                    .expect("Alloc page error!");
+            debug!("{:?}", user_stack_page);
+
+            self
+                .add_region(
+                    USTACK_START.into(),
+                    user_stack_page.start_paddr(virt_to_phys),
+                    Arc::new(user_stack_page),
+                    MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
+                    false,
+                )
+                .expect("Memory Error");
+        }
+        */
+        extern "C" {
+            fn strampoline();
+        }
+        self.add_region_shadow(
+            TRAMPOLINE_START.into(),
+            virt_to_phys((strampoline as usize).into()),
+            PAGE_SIZE_4K,
+            MappingFlags::READ | MappingFlags::EXECUTE,
+            false,
+        )
+        .expect("Memory Error");
+
+        Ok(())
+    }
+}
+
 impl Clone for AddrSpace {
     fn clone(&self) -> Self {
         let inner = self.lock();
@@ -380,77 +453,18 @@ pub struct AddrSpace(SpinNoIrq<AddrSpaceInner>);
 impl AddrSpace {
     /// init address space of a process
     pub fn init_global(user_elf: &[u8]) -> AxResult<AddrSpace> {
-        let segments = elf_loader::SegmentEntry::new(user_elf).expect("Corrupted elf file!");
-
         let mut user_space = AddrSpaceInner::new();
-
-        let mut data_end: VirtAddr = 0.into();
-
-        for segment in &segments {
-            let mut user_phy_page = GlobalPage::alloc_contiguous(
-                align_up_4k(segment.size) / PAGE_SIZE_4K,
-                PAGE_SIZE_4K,
-            )
-            .expect("Alloc page error!");
-            // init
-            user_phy_page.zero();
-
-            // copy user content
-            user_phy_page.as_slice_mut()[..segment.data.len()].copy_from_slice(segment.data);
-            debug!(
-                "{:x} {:x}",
-                user_phy_page.as_slice()[0],
-                user_phy_page.as_slice()[1]
-            );
-
-            user_space
-                .add_region(
-                    segment.start_addr,
-                    user_phy_page.start_paddr(virt_to_phys),
-                    Arc::new(user_phy_page),
-                    segment.flags | MappingFlags::USER,
-                    false,
-                )
-                .expect("Memory error!");
-            data_end = data_end.max(segment.start_addr + align_up_4k(segment.size))
-        }
-
-        user_space.init_heap(data_end);
-
-        // stack allocation
-        //assert!(USTACK_SIZE % PAGE_SIZE_4K == 0);
-        #[cfg(not(feature = "multitask"))]
-        {
-            let user_stack_page =
-                GlobalPage::alloc_contiguous(USTACK_SIZE / PAGE_SIZE_4K, PAGE_SIZE_4K)
-                    .expect("Alloc page error!");
-            debug!("{:?}", user_stack_page);
-
-            user_space
-                .add_region(
-                    USTACK_START.into(),
-                    user_stack_page.start_paddr(virt_to_phys),
-                    Arc::new(user_stack_page),
-                    MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
-                    false,
-                )
-                .expect("Memory Error");
-        }
-
-        extern "C" {
-            fn strampoline();
-        }
-        user_space
-            .add_region_shadow(
-                TRAMPOLINE_START.into(),
-                virt_to_phys((strampoline as usize).into()),
-                PAGE_SIZE_4K,
-                MappingFlags::READ | MappingFlags::EXECUTE,
-                false,
-            )
-            .expect("Memory Error");
+        user_space.init_global(user_elf)?;
 
         Ok(AddrSpace(SpinNoIrq::new(user_space)))
+    }
+
+    /// init address space in current structure.
+    pub fn init_exec(&self, user_elf: &[u8]) -> AxResult<()> {
+        let mut new_space = AddrSpaceInner::new();
+        new_space.init_global(user_elf)?;
+        *self.0.lock() = new_space;
+        Ok(())
     }
 }
 

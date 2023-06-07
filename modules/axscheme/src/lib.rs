@@ -69,6 +69,36 @@ impl FileTable {
         }
     }
 
+    /// Remove all opening fds.
+    pub fn clear(&self) {
+        self.inner.lock().iter().for_each(|handle| {
+            if let Some(handle) = handle {
+                let scheme = schemes().find_id(handle.scheme_id).unwrap();
+                let _ = scheme.close(handle.file_id);
+            }
+        });
+        self.inner.lock().clear();
+    }
+
+    /// reset file table to init state (with only fd 0, 1, 2 as stdin, stdout, stderr)
+    pub fn reset(&self) {
+        self.clear();
+        fn open_inner(scheme: &str, path: &str) -> Option<Arc<FileHandle>> {
+            let id = schemes().find_name(scheme).unwrap();
+            let scheme = schemes().find_id(id).unwrap();
+            let ret = scheme.open(path, 0, 0, 0).unwrap();
+            Some(Arc::new(FileHandle {
+                scheme_id: id,
+                file_id: ret,
+            }))
+        }
+        self.inner.lock().extend_from_slice(&[
+            open_inner("stdin", "/"),
+            open_inner("stdout", "/"),
+            open_inner("stdout", "/"),
+        ]);
+    }
+
     /// Inserts a file handle
     pub fn insert(&self, file_handle: Arc<FileHandle>) -> AxResult<usize> {
         let mut fd_list = self.inner.lock();
@@ -105,6 +135,12 @@ impl FileTable {
         let mut fd_list = self.inner.lock();
         *fd_list.get_mut(fd).ok_or(AxError::BadFileDescriptor)? = None;
         Ok(())
+    }
+}
+
+impl Drop for FileTable {
+    fn drop(&mut self) {
+        self.clear();
     }
 }
 

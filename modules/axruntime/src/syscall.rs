@@ -1,4 +1,4 @@
-use axmem::copy_data_to_user;
+use axmem::{copy_data_to_user, copy_slice_from_user};
 use lazy_init::LazyInit;
 use syscall_number::*;
 
@@ -120,6 +120,12 @@ pub fn syscall_handler(id: usize, params: [usize; 6]) -> isize {
             let (id, code) = axprocess::wait(params[0] as u64);
             copy_data_to_user(0, params[1] as *const u8, &code);
             id as isize
+        }
+
+        #[cfg(feature = "process")]
+        SYS_EXEC => {
+            let data = copy_slice_from_user(params[0].into(), params[1]);
+            axprocess::exec(data)
         }
         _ => -1,
     }

@@ -109,6 +109,7 @@ impl TaskInner {
         Some(self.exit_code.load(Ordering::Acquire))
     }
 
+    /// current task's pid
     #[cfg(feature = "process")]
     pub fn pid(&self) -> u64 {
         self.pid.load(Ordering::Relaxed)
@@ -248,6 +249,46 @@ impl TaskInner {
     }
 
     #[cfg(all(feature = "user-paging", feature = "process"))]
+    pub(crate) fn new_exec() -> AxTaskRef {
+        let mut t = Self::new_common(TaskId::new(), String::new());
+        t.is_init = true;
+        debug!("task exec: {}", t.id_name());
+
+        let kstack = TaskStack::alloc(axconfig::TASK_STACK_SIZE);
+        t.ctx.get_mut().init(task_user_entry as usize, kstack.top());
+        t.kstack = Some(kstack);
+
+        let ustack_start = get_ustack_vaddr(t.id);
+        axmem::alloc_user_page(
+            ustack_start,
+            axmem::USTACK_SIZE,
+            MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
+        );
+        use axhal::paging::MappingFlags;
+        let trap_frame = axmem::alloc_user_page(
+            get_trap_frame_vaddr(t.id),
+            TRAP_FRAME_SIZE,
+            MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
+        );
+
+        // TODO: make a HAL wrapper
+        #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
+        unsafe {
+            let trap_frame = &mut *(trap_frame.as_ptr() as *mut axhal::arch::TrapFrame);
+            *trap_frame = axhal::arch::TrapFrame::new(
+                axmem::USER_START,
+                (ustack_start + axmem::USTACK_SIZE).into(),
+            );
+            trap_frame.kstack = t.kstack.as_ref().unwrap().top().into();
+        }
+        t.trap_frame = Some(trap_frame);
+        t.pid
+            .store(current().pid.load(Ordering::Relaxed), Ordering::Relaxed);
+
+        Arc::new(AxTask::new(t))
+    }
+
+    #[cfg(all(feature = "user-paging", feature = "process"))]
     pub(crate) fn new_fork(&self, pid: u64, mem: Arc<axmem::AddrSpace>) -> AxTaskRef {
         use axalloc::GlobalPage;
         use axhal::{mem::virt_to_phys, paging::MappingFlags};
@@ -257,9 +298,7 @@ impl TaskInner {
         debug!("fork task: {} -> {}", self.id_name(), t.id_name());
 
         let kstack = TaskStack::alloc(axconfig::TASK_STACK_SIZE);
-        t.ctx
-            .get_mut()
-            .init(axhal::arch::first_uentry as usize, kstack.top());
+        t.ctx.get_mut().init(task_user_entry as usize, kstack.top());
         t.kstack = Some(kstack);
 
         let trap_frame = Arc::new(GlobalPage::alloc().unwrap());
@@ -506,7 +545,7 @@ extern "C" fn task_entry() -> ! {
 #[cfg(feature = "user-paging")]
 extern "C" fn task_user_entry() -> ! {
     unsafe { crate::RUN_QUEUE.force_unlock() };
-    axhal::arch::enable_irqs();
+    axhal::arch::disable_irqs();
     axhal::arch::first_uentry();
 }
 
@@ -544,6 +583,7 @@ cfg_if::cfg_if! {
         pub fn current_pid() -> Option<u64> {
             crate::current_may_uninit().map(|task| task.pid.load(Ordering::Relaxed))
         }
+        /// Gets current task reference
         pub fn current_task() -> AxTaskRef {
             current().as_task_ref().clone()
         }
@@ -552,6 +592,16 @@ cfg_if::cfg_if! {
             let task = crate::current().new_fork(pid, mem);
             RUN_QUEUE.lock().add_task(task.clone());
             task
+        }
+
+        /// Inits a new task for the new program and run it
+        pub fn handle_exec<F>(post_fn: F) -> !
+        where F: FnOnce(AxTaskRef) {
+
+            let task = TaskInner::new_exec();
+            post_fn(task.clone());
+
+            crate::run_queue::run_exec(task)
         }
     }
 }

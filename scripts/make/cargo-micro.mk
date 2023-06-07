@@ -36,20 +36,20 @@ features-kern-$(NET) += user-net
 
 default_features := y
 
-# ifeq ($(APP_LANG),c)
-#  default_features := n
-#  ifneq ($(wildcard $(APP)/features.txt),)    # check features.txt exists
-#    features-y += $(addprefix libax/,$(shell cat $(APP)/features.txt))
-#    CFLAGS += $(addprefix -DAX_CONFIG_,$(shell cat $(APP)/features.txt | tr 'a-z' 'A-Z'))
-#  endif
-#  features-y += libax/cbindings
-#  features-y += $(APP_FEATURES)
-#else ifeq ($(APP_LANG),rust)
-#  features-y += $(APP_FEATURES)
-#  ifneq ($(APP_FEATURES),)
-#    default_features := n
-#  endif
-#endif
+ifeq ($(APP_LANG),c)
+  #default_features := n
+  #ifneq ($(wildcard $(APP)/features.txt),)    # check features.txt exists
+  #  features-y += $(addprefix libax/,$(shell cat $(APP)/features.txt))
+  #  CFLAGS += $(addprefix -DAX_CONFIG_,$(shell cat $(APP)/features.txt | tr 'a-z' 'A-Z'))
+  #endif
+  #features-y += libax/cbindings
+  #features-y += $(APP_FEATURES)
+else ifeq ($(APP_LANG),rust)
+  features-user-y += $(APP_FEATURES)
+  ifneq ($(APP_FEATURES),)
+    default_features := n
+  endif
+endif
 
 build_args-release := --release
 build_args-c := --crate-type staticlib
@@ -67,11 +67,11 @@ build_args_user := \
   --target-dir $(CURDIR)/target \
   $(build_args-$(MODE)) \
   $(build_args-$(APP_LANG)) \
-  --features "$(features-user-y)"\ 
+  --features "$(features-user-y)"
 
-#ifeq ($(default_features),n)
-#  build_args += --no-default-features
-#endif
+ifeq ($(default_features),n)
+  build_args_user += --no-default-features
+endif
 
 LD_SCRIPT_USER := $(CURDIR)/ulib/libax_user/linker_$(ARCH).lds
 

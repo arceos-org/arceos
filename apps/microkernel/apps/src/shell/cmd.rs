@@ -1,9 +1,12 @@
 extern crate alloc;
 
 use alloc::string::String;
+use libax::axerrno::from_ret_code;
 use libax::io as fs;
 use libax::io::File;
 use libax::io::{self, prelude::*};
+use libax::process::{exec, fork, wait};
+use libax::task::exit;
 
 macro_rules! print_err {
     ($cmd: literal, $msg: literal) => {
@@ -242,6 +245,18 @@ fn do_exit(_args: &str) {
     libax::task::exit(0);
 }
 
+fn do_exec(cmd: &str, _args: &str) -> Option<i32> {
+    match fork() {
+        pid if pid > 0 => {
+            let mut ret: i32 = 0;
+            wait(pid as usize, &mut ret);
+            Some(ret)
+        }
+        0 => exit(exec(cmd) as usize),
+        _ => None,
+    }
+}
+
 pub fn run_cmd(line: &[u8]) {
     let line_str = unsafe { core::str::from_utf8_unchecked(line) };
     let (cmd, args) = split_whitespace(line_str);
@@ -251,6 +266,17 @@ pub fn run_cmd(line: &[u8]) {
                 func(args);
                 return;
             }
+        }
+        if let Some(code) = do_exec(cmd, args) {
+            match from_ret_code(code as isize) {
+                Ok(code) => {
+                    println!("{} returned with exit code {}", cmd, code);
+                }
+                Err(e) => {
+                    println!("{}: {:?}", cmd, e);
+                }
+            }
+            return;
         }
         println!("{}: command not found", cmd);
     }

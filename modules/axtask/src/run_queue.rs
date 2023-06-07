@@ -5,7 +5,7 @@ use scheduler::BaseScheduler;
 use spinlock::SpinNoIrq;
 
 use crate::task::{CurrentTask, TaskState};
-use crate::{AxTaskRef, Scheduler, TaskInner, WaitQueue};
+use crate::{current, AxTaskRef, Scheduler, TaskInner, WaitQueue};
 
 // TODO: per-CPU
 pub(crate) static RUN_QUEUE: LazyInit<SpinNoIrq<AxRunQueue>> = LazyInit::new();
@@ -232,4 +232,19 @@ pub(crate) fn init_secondary() {
     idle_task.set_state(TaskState::Running);
     IDLE_TASK.with_current(|i| i.init_by(idle_task.clone()));
     unsafe { CurrentTask::init_current(idle_task) }
+}
+
+cfg_if::cfg_if! {
+    if #[cfg(feature = "process")] {
+        /// start running a new program, dropping current task as EXITED
+        pub fn run_exec(next: AxTaskRef) -> ! {
+            let prev = current();
+            prev.set_state(TaskState::Exited);
+            EXITED_TASKS.lock().push_back(prev.clone());
+            WAIT_FOR_EXIT.notify_one_locked(false, &mut RUN_QUEUE.lock());
+            RUN_QUEUE.lock().switch_to(prev, next);
+
+            unreachable!();
+        }
+    }
 }

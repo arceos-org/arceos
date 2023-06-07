@@ -17,6 +17,14 @@ else
   rust_elf := $(rust_target_dir)/$(rust_package)
 endif
 
+build_user:
+ifeq ($(APP_LANG), rust)
+	$(call cargo_build_user,--manifest-path $(APP)/Cargo.toml --bin $(rust_package))
+else ifeq ($(APP_LANG), c)
+#$(call cargo_build,-p libax)
+	$(error microkernel for C apps are not supported!)
+endif
+
 
 _cargo_build_user:
 	@printf "    $(GREEN_C)Building$(END_C) App: $(APP_NAME), Arch: $(ARCH), Platform: $(PLATFORM), Language: $(APP_LANG)\n"
@@ -37,4 +45,4 @@ _cargo_build_kern: _cargo_build_user $(CURDIR)/modules/axuser/user.elf
 $(OUT_BIN): _cargo_build_kern $(OUT_ELF)
 	$(OBJCOPY) $(OUT_ELF) --strip-all -O binary $@
 
-.PHONY: _cargo_build_kern _cargo_build_user
+.PHONY: _cargo_build_kern _cargo_build_user build_user
