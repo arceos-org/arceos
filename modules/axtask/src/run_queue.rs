@@ -217,36 +217,39 @@ impl AxRunQueue {
     /// Common reschedule subroutine. If `preempt`, keep current task's time
     /// slice, otherwise reset it.
     fn if_empty_steal(&self) {
-        //return;
+        return;
         if self.scheduler.lock().is_empty() {
-            let mut queuelock = self.scheduler.lock();
-            let id = self.id;
-            let next = LOAD_BALANCE_ARR[id].find_stolen_cpu_id();
-            trace!(
-                "load balance weight for id {} : {}",
-                id,
-                LOAD_BALANCE_ARR[id].get_weight()
-            );
-            debug!("steal: current = {}, victim = {}", self.id, next);
-            if next != -1 {
-                let task = RUN_QUEUE[next as usize].scheduler.lock().pick_next_task();
-                // 这里可能有同步问题，简单起见，如果 task 是 None 那么就不窃取。
-                if let Some(tk) = task {
-                    assert!(tk.get_queue_id() == next);
-                    tk.set_queue_id(id as isize);
-                    queuelock.add_task(tk);
-                    LOAD_BALANCE_ARR[next as usize].add_weight(-1);
-                    trace!(
-                        "load balance weight for id {}: {}",
-                        next as usize,
-                        LOAD_BALANCE_ARR[next as usize].get_weight()
-                    );
-                    LOAD_BALANCE_ARR[id].add_weight(1);
-                    trace!(
-                        "load balance weight for id {}: {}",
-                        id,
-                        LOAD_BALANCE_ARR[id].get_weight()
-                    );
+            let mut forbidden: u64 = 0;
+            loop {
+                let mut queuelock = self.scheduler.lock();
+                let id = self.id;
+                let next = LOAD_BALANCE_ARR[id].find_stolen_cpu_id();
+                trace!(
+                    "load balance weight for id {} : {}",
+                    id,
+                    LOAD_BALANCE_ARR[id].get_weight()
+                );
+                debug!("steal: current = {}, victim = {}", self.id, next);
+                if next != -1 {
+                    let task = RUN_QUEUE[next as usize].scheduler.lock().pick_next_task();
+                    // 这里可能有同步问题，简单起见，如果 task 是 None 那么就不窃取。
+                    if let Some(tk) = task {
+                        assert!(tk.get_queue_id() == next);
+                        tk.set_queue_id(id as isize);
+                        queuelock.add_task(tk);
+                        LOAD_BALANCE_ARR[next as usize].add_weight(-1);
+                        trace!(
+                            "load balance weight for id {}: {}",
+                            next as usize,
+                            LOAD_BALANCE_ARR[next as usize].get_weight()
+                        );
+                        LOAD_BALANCE_ARR[id].add_weight(1);
+                        trace!(
+                            "load balance weight for id {}: {}",
+                            id,
+                            LOAD_BALANCE_ARR[id].get_weight()
+                        );
+                    }
                 }
             }
         }
