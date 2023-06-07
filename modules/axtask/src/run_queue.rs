@@ -56,7 +56,9 @@ impl AxRunQueue {
             task.get_affinity()
         );
         assert!(task.is_ready());
-        LOAD_BALANCE_ARR[self.id].add_weight(1);
+        if !task.is_gc() {
+            LOAD_BALANCE_ARR[self.id].add_weight(1);
+        }
         trace!(
             "load balance weight for id {}: {}",
             self.id,
@@ -166,8 +168,10 @@ impl AxRunQueue {
         if task.is_blocked() {
             task.set_state(TaskState::Ready);
             task.set_queue_id(self.id as isize);
+            if !task.is_gc() {
+                LOAD_BALANCE_ARR[self.id].add_weight(1);
+            }
             self.scheduler.lock().add_task(task); // TODO: priority
-            LOAD_BALANCE_ARR[self.id].add_weight(1);
             trace!(
                 "load balance weight for id {}: {}",
                 self.id,
@@ -217,10 +221,9 @@ impl AxRunQueue {
     /// Common reschedule subroutine. If `preempt`, keep current task's time
     /// slice, otherwise reset it.
     fn if_empty_steal(&self) {
-        return;
         if self.scheduler.lock().is_empty() {
             let mut forbidden: u64 = 0;
-            loop {
+            //loop {
                 let mut queuelock = self.scheduler.lock();
                 let id = self.id;
                 let next = LOAD_BALANCE_ARR[id].find_stolen_cpu_id();
@@ -232,18 +235,25 @@ impl AxRunQueue {
                 debug!("steal: current = {}, victim = {}", self.id, next);
                 if next != -1 {
                     let task = RUN_QUEUE[next as usize].scheduler.lock().pick_next_task();
+                    // 简单实现：如果是 gc_task 就放回去
                     // 这里可能有同步问题，简单起见，如果 task 是 None 那么就不窃取。
                     if let Some(tk) = task {
                         assert!(tk.get_queue_id() == next);
                         tk.set_queue_id(id as isize);
+                        
+                        if !tk.clone().is_gc() {
+                            LOAD_BALANCE_ARR[next as usize].add_weight(-1);
+                            LOAD_BALANCE_ARR[id].add_weight(1);
+                        }
+
                         queuelock.add_task(tk);
-                        LOAD_BALANCE_ARR[next as usize].add_weight(-1);
+                        
                         trace!(
                             "load balance weight for id {}: {}",
                             next as usize,
                             LOAD_BALANCE_ARR[next as usize].get_weight()
                         );
-                        LOAD_BALANCE_ARR[id].add_weight(1);
+                        
                         trace!(
                             "load balance weight for id {}: {}",
                             id,
@@ -251,7 +261,7 @@ impl AxRunQueue {
                         );
                     }
                 }
-            }
+            //}
         }
     }
     fn resched_inner(&self, preempt: bool, exit_lock: bool) {
@@ -261,7 +271,10 @@ impl AxRunQueue {
             if !prev.is_idle() {
                 prev.set_queue_id(self.id as isize);
                 self.scheduler.lock().put_prev_task(prev.clone(), preempt);
-                LOAD_BALANCE_ARR[self.id].add_weight(1);
+                
+                if !prev.is_gc() {
+                    LOAD_BALANCE_ARR[self.id].add_weight(1);
+                }
                 trace!(
                     "load balance weight for id {}: {}",
                     self.id,
@@ -288,7 +301,9 @@ impl AxRunQueue {
         /*if !flag {
             next.set_queue_id(-1);
         }*/
-        LOAD_BALANCE_ARR[self.id].add_weight(-1);
+        if !next.is_gc() {
+            LOAD_BALANCE_ARR[self.id].add_weight(-1);
+        }
         trace!(
             "load balance weight for id {}: {}",
             self.id,
@@ -372,7 +387,7 @@ pub(crate) fn init() {
     for i in 0..axconfig::SMP {
         RUN_QUEUE[i].init_by(Arc::new(AxRunQueue::new(i)));
         LOAD_BALANCE_ARR[i].init_by(Arc::new(LoadBalance::new(i)));
-        LOAD_BALANCE_ARR[i].add_weight(1); // gc_task
+        //LOAD_BALANCE_ARR[i].add_weight(1); // gc_task
     }
     let mut arr = Vec::new();
     for i in 0..axconfig::SMP {

@@ -215,6 +215,11 @@ impl TaskInner {
     }
 
     #[inline]
+    pub(crate) fn is_gc(&self) -> bool {
+        self.name == "gc"
+    }
+
+    #[inline]
     pub(crate) fn in_wait_queue(&self) -> bool {
         self.in_wait_queue.load(Ordering::Acquire)
     }
