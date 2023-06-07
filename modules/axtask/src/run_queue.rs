@@ -135,7 +135,7 @@ impl AxRunQueue {
         } else {
             curr.set_state(TaskState::Exited);
             curr.notify_exit(exit_code, self);
-            SWITCH_EXITED_LOCK.fetch_add(1, Ordering::Release);
+            //SWITCH_EXITED_LOCK.fetch_add(1, Ordering::Release);
             EXITED_TASKS.lock().push_back(curr.clone());
             WAIT_FOR_EXIT.notify_one_locked(false);
             self.resched_inner(false, true);
@@ -217,7 +217,7 @@ impl AxRunQueue {
     /// Common reschedule subroutine. If `preempt`, keep current task's time
     /// slice, otherwise reset it.
     fn if_empty_steal(&self) {
-        return;
+        //return;
         if self.scheduler.lock().is_empty() {
             let mut queuelock = self.scheduler.lock();
             let id = self.id;
@@ -319,12 +319,12 @@ impl AxRunQueue {
             assert!(Arc::strong_count(&next_task) >= 1);
 
             CurrentTask::set_current(prev_task, next_task);
-            if exit_lock {
+            /*if exit_lock {
                 SWITCH_EXITED_LOCK.store(
                     SWITCH_EXITED_LOCK.load(Ordering::Acquire) - 1,
                     Ordering::Release,
                 );
-            }
+            }*/
             (*prev_ctx_ptr).switch_to(&*next_ctx_ptr);
         }
     }
@@ -335,16 +335,22 @@ fn gc_entry() {
         // Drop all exited tasks and recycle resources.
         while !EXITED_TASKS.lock().is_empty() {
             // 用 lock 先顶一顶
-            while SWITCH_EXITED_LOCK.load(Ordering::Acquire) > 0 {
-                trace!("qwqq {}", SWITCH_EXITED_LOCK.load(Ordering::Acquire));
-            }
+           // while SWITCH_EXITED_LOCK.load(Ordering::Acquire) > 0 {
+            //    trace!("qwqq {}", SWITCH_EXITED_LOCK.load(Ordering::Acquire));
+            //}
             // Do not do the slow drops in the critical section.
             let task = EXITED_TASKS.lock().pop_front();
             if let Some(task) = task {
                 // If the task reference is not taken after `spawn()`, it will be
                 // dropped here. Otherwise, it will be dropped after the reference
                 // is dropped (usually by `join()`).
-                drop(task);
+                if Arc::strong_count(&task) == 1 {
+                    drop(task);
+                } else {
+                    EXITED_TASKS.lock().push_back(task);
+                    // TODO: for loop
+                    break;
+                }
             }
         }
         WAIT_FOR_EXIT.wait();

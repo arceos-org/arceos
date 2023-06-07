@@ -75,7 +75,7 @@ part [0-9]\+: TaskId([0-9]\+) finished
 part [0-9]\+: TaskId([0-9]\+) finished
 part [0-9]\+: TaskId([0-9]\+) finished
 part [0-9]\+: TaskId([0-9]\+) finished
-sum = 56335141332
+sum = 5310778284
 leave time:
 task 0 =
 task 1 =

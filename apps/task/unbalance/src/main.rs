@@ -19,127 +19,127 @@ struct TaskParam {
 const TASK_PARAMS: &[TaskParam] = &[
     TaskParam {
         data_len: 100,
-        value: 10000000,
+        value: 1000000,
         nice: 10,
     },
     TaskParam {
         data_len: 5,
-        value: 10000000,
+        value: 1000000,
         nice: 10,
     },
     TaskParam {
         data_len: 5,
-        value: 10000000,
+        value: 1000000,
         nice: 10,
     },
     TaskParam {
         data_len: 5,
-        value: 10000000,
+        value: 1000000,
         nice: 10,
     },
     TaskParam {
         data_len: 5,
-        value: 10000000,
+        value: 1000000,
         nice: 10,
     },
     TaskParam {
         data_len: 5,
-        value: 10000000,
+        value: 1000000,
         nice: 10,
     },
     TaskParam {
         data_len: 5,
-        value: 10000000,
+        value: 1000000,
         nice: 10,
     },
     TaskParam {
         data_len: 5,
-        value: 10000000,
+        value: 1000000,
         nice: 10,
     },
     TaskParam {
         data_len: 5,
-        value: 10000000,
+        value: 1000000,
         nice: 10,
     },
     TaskParam {
         data_len: 5,
-        value: 10000000,
+        value: 1000000,
         nice: 10,
     },
     TaskParam {
         data_len: 5,
-        value: 10000000,
+        value: 1000000,
         nice: 10,
     },
     TaskParam {
         data_len: 2,
-        value: 10000000,
+        value: 1000000,
         nice: 10,
     },
     TaskParam {
         data_len: 3,
-        value: 10000000,
+        value: 1000000,
         nice: 10,
     },
     TaskParam {
         data_len: 4,
-        value: 10000000,
+        value: 1000000,
         nice: 10,
     },
     TaskParam {
         data_len: 5,
-        value: 10000000,
+        value: 1000000,
         nice: 10,
     },
     TaskParam {
         data_len: 6,
-        value: 10000000,
+        value: 1000000,
         nice: 10,
     },
     TaskParam {
         data_len: 7,
-        value: 10000000,
+        value: 1000000,
         nice: 10,
     },
     TaskParam {
         data_len: 8,
-        value: 10000000,
+        value: 1000000,
         nice: 10,
     },
     TaskParam {
         data_len: 9,
-        value: 10000000,
+        value: 1000000,
         nice: 10,
     },
     TaskParam {
         data_len: 10,
-        value: 10000000,
+        value: 1000000,
         nice: 10,
     },
     TaskParam {
         data_len: 15,
-        value: 10000000,
+        value: 1000000,
         nice: 10,
     },
     TaskParam {
         data_len: 20,
-        value: 10000000,
+        value: 1000000,
         nice: 10,
     },
     TaskParam {
         data_len: 25,
-        value: 10000000,
+        value: 1000000,
         nice: 10,
     },
     TaskParam {
         data_len: 30,
-        value: 10000000,
+        value: 1000000,
         nice: 10,
     },
     TaskParam {
         data_len: 30,
-        value: 10000000,
+        value: 1000000,
         nice: 10,
     },
 ];
@@ -166,7 +166,7 @@ fn main() {
         expect += data_inner.iter().map(load).sum::<u64>();
     }
 
-    let sleep_dur = Duration::new(3, 0);
+    let sleep_dur = Duration::new(0, 300000000);
     let start_time = libax::time::Instant::now();
     let wakeup_time = start_time.as_duration() + sleep_dur;
 
