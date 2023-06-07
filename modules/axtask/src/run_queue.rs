@@ -254,7 +254,6 @@ impl AxRunQueue {
                                 next as usize,
                                 LOAD_BALANCE_ARR[next as usize].get_weight()
                             );
-
                         } else {
                             RUN_QUEUE[next as usize].scheduler.lock().add_task(tk);
                             flag = 0;
@@ -308,7 +307,7 @@ impl AxRunQueue {
         /*if !flag {
             next.set_queue_id(-1);
         }*/
-        
+
         /*trace!(
             "load balance weight for id {}: {}",
             self.id,
