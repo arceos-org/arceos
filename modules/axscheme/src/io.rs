@@ -11,7 +11,7 @@ pub struct Stdout {
 impl Stdout {
     fn flush(&self, mut data: MutexGuard<Vec<u8>>) {
         use axhal::console::putchar;
-        info!("Writing user content");
+        trace!("Writing user content");
         for i in data.iter() {
             putchar(*i);
         }
@@ -20,7 +20,7 @@ impl Stdout {
     fn putchar(&self, c: u8) {
         let mut data = self.data.lock();
         data.push(c);
-        if c == b'\n' {
+        if option_env!("LOG") != Some("trace") || c == b'\n' {
             self.flush(data);
         }
     }

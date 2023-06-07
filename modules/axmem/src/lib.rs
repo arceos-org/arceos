@@ -163,7 +163,7 @@ impl AddrSpaceInner {
     pub fn sbrk(&mut self, size: isize) -> Option<usize> {
         if let Some(heap) = &mut self.heap {
             let old_brk: usize = (heap.start_vaddr + heap.actual_size).into();
-            info!("user sbrk: {} bytes", size);
+            trace!("user sbrk: {} bytes", size);
             match size.cmp(&0) {
                 Ordering::Equal => {
                     return Some(old_brk);

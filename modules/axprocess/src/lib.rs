@@ -102,6 +102,7 @@ fn current_process() -> Arc<AxProcess> {
 
 /// Forks the current process
 pub fn fork() -> usize {
+    trace!("fork");
     let current = current_process();
     let res = Arc::new(AxProcess {
         pid: Pid::alloc(),
@@ -128,6 +129,7 @@ pub fn add_task(task: AxTaskRef) {
 
 /// Exit current process
 pub fn exit_current(code: i32) {
+    trace!("exit");
     let task = current();
     let process = current_process();
     let id = process
@@ -182,6 +184,7 @@ pub fn exit_current(code: i32) {
 
 /// Wait for a child process to stop.
 pub fn wait(_pid: u64) -> (u64, i32) {
+    trace!("wait");
     let process = current_process();
     loop {
         if let Some((id, process_i)) = process
@@ -203,7 +206,7 @@ pub fn wait(_pid: u64) -> (u64, i32) {
 /// exec syscall
 /// only returns on error
 pub fn exec(elf_data: Vec<u8>) -> isize {
-    info!("EXEC");
+    trace!("exec");
     fn exec_inner(elf_data: Vec<u8>) -> AxResult<()> {
         let process = current_process();
         process.addr_space.init_exec(&elf_data)?;

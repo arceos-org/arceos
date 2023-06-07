@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# A script to build user apps and copy it to FAT FS
+
 set -e
    
 ARCH=riscv64
