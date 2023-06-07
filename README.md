@@ -4,6 +4,8 @@
 [![CI](https://github.com/rcore-os/arceos/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/rcore-os/arceos/actions/workflows/test.yml)
 [![Docs](https://img.shields.io/badge/docs-pages-green)](https://rcore-os.github.io/arceos/)
 
+**This is a fork of ArceOS, which converts ArceOS into microkernel. For more information, see [here](https://github.com/jhdjames37/arceos/blob/main/log/report.md) (in Chinese).**
+
 An experimental modular operating system (or unikernel) written in Rust.
 
 ArceOS was inspired a lot by [Unikraft](https://github.com/unikraft/unikraft).

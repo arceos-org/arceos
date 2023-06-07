@@ -117,6 +117,7 @@ impl TaskInner {
         self.pid.load(Ordering::Relaxed)
     }
 
+    /// release memory when exit
     #[cfg(feature = "process")]
     pub fn on_exit<F>(&self, remove_fn: F)
     where

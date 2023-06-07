@@ -2,6 +2,10 @@
 name = "axmem"
 version = "0.1.0"
 edition = "2021"
+authors = ["Haodi Jiang <jhdjames37@outlook.com>"]
+description = "User address space management of ArceOS (microkernel version)"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
