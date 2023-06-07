@@ -201,7 +201,6 @@ impl AxRunQueue {
 }
 
 impl AxRunQueue {
-    
     pub fn with_current_rq<F, T>(&self, f: F) -> T
     where
         F: FnOnce(&AxRunQueue) -> T,
@@ -209,13 +208,14 @@ impl AxRunQueue {
         let _guard = kernel_guard::NoPreempt::new();
         f(&RUN_QUEUE[axhal::cpu::this_cpu_id()])
     }
-    
+
     pub fn with_task_correspond_rq<F, T>(&self, task: AxTaskRef, f: F) -> T
     where
         F: FnOnce(&AxRunQueue) -> T,
     {
         let _guard = kernel_guard::NoPreempt::new();
-        let target = LOAD_BALANCE_ARR[axhal::cpu::this_cpu_id()].find_target_cpu(task.get_affinity());
+        let target =
+            LOAD_BALANCE_ARR[axhal::cpu::this_cpu_id()].find_target_cpu(task.get_affinity());
         f(&RUN_QUEUE[target])
     }
     /// Common reschedule subroutine. If `preempt`, keep current task's time
@@ -240,23 +240,21 @@ impl AxRunQueue {
                     if let Some(tk) = task {
                         assert!(tk.clone().is_gc() || tk.get_queue_id() == next);
                         tk.set_queue_id(id as isize);
-                        
-                        trace!(
-                            "is gc task: {}", tk.clone().is_gc()
-                        );
-                        
+
+                        trace!("is gc task: {}", tk.clone().is_gc());
+
                         if !tk.clone().is_gc() {
                             flag = 1;
                             LOAD_BALANCE_ARR[next as usize].add_weight(-1);
                             LOAD_BALANCE_ARR[id].add_weight(1);
                             queuelock.add_task(tk);
-                        
+
                             trace!(
                                 "load balance weight for id {}: {}",
                                 next as usize,
                                 LOAD_BALANCE_ARR[next as usize].get_weight()
                             );
-                            
+
                             trace!(
                                 "load balance weight for id {}: {}",
                                 id,
@@ -285,7 +283,7 @@ impl AxRunQueue {
             if !prev.is_idle() {
                 prev.set_queue_id(self.id as isize);
                 self.scheduler.lock().put_prev_task(prev.clone(), preempt);
-                
+
                 if !prev.is_gc() {
                     LOAD_BALANCE_ARR[self.id].add_weight(1);
                 }
@@ -368,7 +366,7 @@ fn gc_entry() {
         while !EXITED_TASKS.lock().is_empty() {
             //info!("into gc");
             // 用 lock 先顶一顶
-           // while SWITCH_EXITED_LOCK.load(Ordering::Acquire) > 0 {
+            // while SWITCH_EXITED_LOCK.load(Ordering::Acquire) > 0 {
             //    trace!("qwqq {}", SWITCH_EXITED_LOCK.load(Ordering::Acquire));
             //}
             // Do not do the slow drops in the critical section.

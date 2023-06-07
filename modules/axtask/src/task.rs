@@ -278,10 +278,10 @@ impl TaskInner {
             let _guard = kernel_guard::NoPreemptIrqSave::new();
             if curr.need_resched.load(Ordering::Acquire) {
                 //if curr.in_which_queue.load(Ordering::Acquire) >= 0 {
-                    crate::RUN_QUEUE[axhal::cpu::this_cpu_id()].resched();
-                    //crate::RUN_QUEUE[axhal::cpu::this_cpu_id()].with_current_rq(|rq| {
-                    //    rq.resched();
-                    //});
+                crate::RUN_QUEUE[axhal::cpu::this_cpu_id()].resched();
+                //crate::RUN_QUEUE[axhal::cpu::this_cpu_id()].with_current_rq(|rq| {
+                //    rq.resched();
+                //});
                 //}
             }
         }

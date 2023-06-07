@@ -161,7 +161,7 @@ impl WaitQueue {
                 timeout = false;
                 break;
             }
-            
+
             RUN_QUEUE[axhal::cpu::this_cpu_id()].with_current_rq(|rq| {
                 rq.block_current(|task| {
                     task.set_in_wait_queue(true);
@@ -192,15 +192,11 @@ impl WaitQueue {
     /// If `resched` is true, the current task will be preempted when the
     /// preemption is enabled.
     pub fn notify_all(&self, resched: bool) {
-        loop {
-            if let Some(task) = self.queue.lock().pop_front() {
-                task.set_in_wait_queue(false);
-                RUN_QUEUE[axhal::cpu::this_cpu_id()].with_task_correspond_rq(task.clone(), |rq| {
-                    rq.unblock_task(task, resched);
-                });
-            } else {
-                break;
-            }
+        while let Some(task) = self.queue.lock().pop_front() {
+            task.set_in_wait_queue(false);
+            RUN_QUEUE[axhal::cpu::this_cpu_id()].with_task_correspond_rq(task.clone(), |rq| {
+                rq.unblock_task(task, resched);
+            });
         }
     }
 
@@ -214,9 +210,12 @@ impl WaitQueue {
             task.set_in_wait_queue(false);
             // same as task
             let task_to_unblock = wq.remove(index).unwrap();
-            RUN_QUEUE[axhal::cpu::this_cpu_id()].with_task_correspond_rq(task_to_unblock.clone(), |rq| {
-                rq.unblock_task(task_to_unblock, resched);
-            });
+            RUN_QUEUE[axhal::cpu::this_cpu_id()].with_task_correspond_rq(
+                task_to_unblock.clone(),
+                |rq| {
+                    rq.unblock_task(task_to_unblock, resched);
+                },
+            );
             true
         } else {
             false

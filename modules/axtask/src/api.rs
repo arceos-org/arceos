@@ -96,9 +96,7 @@ pub fn init_scheduler_secondary() {
 #[doc(cfg(feature = "irq"))]
 pub fn on_timer_tick() {
     crate::timers::check_events();
-    RUN_QUEUE[axhal::cpu::this_cpu_id()].with_current_rq(|rq| {
-        rq.scheduler_timer_tick()
-    });
+    RUN_QUEUE[axhal::cpu::this_cpu_id()].with_current_rq(|rq| rq.scheduler_timer_tick());
     //RUN_QUEUE[get_current_cpu_id()].scheduler_timer_tick()
 }
 
@@ -112,7 +110,7 @@ where
     let task = TaskInner::new(f, name, stack_size);
     // TODO
     task.set_affinity((1 << (axconfig::SMP)) - 1);
-    
+
     RUN_QUEUE[axhal::cpu::this_cpu_id()].with_task_correspond_rq(task.clone(), |rq| {
         rq.add_task(task.clone());
     });
@@ -142,9 +140,7 @@ where
 ///
 /// [CFS]: https://en.wikipedia.org/wiki/Completely_Fair_Scheduler
 pub fn set_priority(prio: isize) -> bool {
-    RUN_QUEUE[axhal::cpu::this_cpu_id()].with_current_rq(|rq| {
-        rq.set_current_priority(prio)
-    })
+    RUN_QUEUE[axhal::cpu::this_cpu_id()].with_current_rq(|rq| rq.set_current_priority(prio))
 }
 
 /// Current task gives up the CPU time voluntarily, and switches to another
