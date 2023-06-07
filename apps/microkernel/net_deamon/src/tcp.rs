@@ -91,7 +91,7 @@ impl Scheme for TcpScheme {
         let handle = handles.get_mut(&old_id).ok_or(AxError::BadFileDescriptor)?;
 
         let new_handle = handle.accept()?;
-        println!("{:?}", new_handle.peer_addr());
+        //println!("{:?}", new_handle.peer_addr());
         let id = self.next_id.fetch_add(1, Ordering::SeqCst);
         handles.insert(id, new_handle);
         Ok(id)

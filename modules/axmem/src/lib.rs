@@ -164,6 +164,7 @@ impl AddrSpaceInner {
         if let Some(heap) = &mut self.heap {
             let old_brk: usize = (heap.start_vaddr + heap.actual_size).into();
             trace!("user sbrk: {} bytes", size);
+            debug!("sbrk: {}, {}", size, old_brk);
             match size.cmp(&0) {
                 Ordering::Equal => {
                     return Some(old_brk);
@@ -292,7 +293,7 @@ impl AddrSpaceInner {
             let len = (nxt_vaddr - vaddr.as_usize()).min(size - read_size);
             let data =
                 unsafe { core::slice::from_raw_parts_mut(phys_to_virt(paddr).as_mut_ptr(), len) };
-            debug!("translating {:x} -> {:x}, len = {}", vaddr, paddr, len);
+            trace!("translating {:x} -> {:x}, len = {}", vaddr, paddr, len);
             vaddr += len;
             read_size += len;
             result.push(data);

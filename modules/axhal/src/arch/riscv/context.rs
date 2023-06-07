@@ -72,8 +72,10 @@ impl TrapFrame {
 
         let sstatus_reg = sstatus::read();
         // set up SPP (8th bit) to 0 (User)
+        // set SIE (1st bit) to 0 (disabled), so that when setting it in `trap_return`,
+        // IRQs will not be triggered.
         trap_frame.sstatus =
-            unsafe { *(&sstatus_reg as *const Sstatus as *const usize) & !(1 << 8) };
+            unsafe { *(&sstatus_reg as *const Sstatus as *const usize) & !(1 << 8) & !(1 << 1) };
         #[cfg(feature = "user-paging")]
         {
             use riscv::register::satp::{self, Satp};

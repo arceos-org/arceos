@@ -177,8 +177,11 @@ pub fn exit_current(code: i32) {
         // as one reference is held by its parent
     } else {
         // others
-        // TODO: remove stack and trapframe
-        process.tasks.lock().remove(id);
+        let task = process.tasks.lock().remove(id);
+        task.on_exit(|vaddr| {
+            process.addr_space.lock().remove_region(vaddr).unwrap();
+        });
+        debug!("{}", process.tasks.lock().len());
     }
 }
 

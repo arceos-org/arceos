@@ -51,7 +51,9 @@ pub struct TaskInner {
     ctx: UnsafeCell<TaskContext>,
 
     #[cfg(feature = "user-paging")]
-    trap_frame: Option<Arc<axalloc::GlobalPage>>,
+    trap_frame: Option<(Arc<axalloc::GlobalPage>, VirtAddr)>,
+    #[cfg(feature = "user-paging")]
+    ustack: Option<(Arc<axalloc::GlobalPage>, VirtAddr)>,
     #[cfg(feature = "process")]
     pid: AtomicU64,
 }
@@ -114,6 +116,53 @@ impl TaskInner {
     pub fn pid(&self) -> u64 {
         self.pid.load(Ordering::Relaxed)
     }
+
+    #[cfg(feature = "process")]
+    pub fn on_exit<F>(&self, remove_fn: F)
+    where
+        F: Fn(VirtAddr),
+    {
+        remove_fn(self.ustack.as_ref().unwrap().1);
+        remove_fn(self.trap_frame.as_ref().unwrap().1);
+    }
+}
+
+#[cfg(feature = "user-paging")]
+impl TaskInner {
+    fn setup_ustack(&mut self) {
+        use axhal::paging::MappingFlags;
+
+        let ustack_start = get_ustack_vaddr(self.id);
+        self.ustack = Some((
+            axmem::alloc_user_page(
+                ustack_start,
+                axmem::USTACK_SIZE,
+                MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
+            ),
+            ustack_start,
+        ));
+    }
+
+    fn setup_trapframe(&mut self, start: usize) {
+        use axhal::paging::MappingFlags;
+        let tf_addr = get_trap_frame_vaddr(self.id);
+        let trap_frame = axmem::alloc_user_page(
+            tf_addr,
+            TRAP_FRAME_SIZE,
+            MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
+        );
+        let ustack_start = self.ustack.as_ref().unwrap().1;
+
+        // TODO: make a HAL wrapper
+        #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
+        unsafe {
+            let trap_frame = &mut *(trap_frame.as_ptr() as *mut axhal::arch::TrapFrame);
+            *trap_frame =
+                axhal::arch::TrapFrame::new(start, (ustack_start + axmem::USTACK_SIZE).into());
+            trap_frame.kstack = self.kstack.as_ref().unwrap().top().into();
+        }
+        self.trap_frame = Some((trap_frame, tf_addr));
+    }
 }
 
 // private methods
@@ -139,6 +188,8 @@ impl TaskInner {
             ctx: UnsafeCell::new(TaskContext::new()),
             #[cfg(feature = "user-paging")]
             trap_frame: None,
+            #[cfg(feature = "user-paging")]
+            ustack: None,
             #[cfg(feature = "process")]
             pid: AtomicU64::new(0),
         }
@@ -173,29 +224,16 @@ impl TaskInner {
         t.ctx.get_mut().init(task_user_entry as usize, kstack.top());
         t.kstack = Some(kstack);
 
-        use axhal::paging::MappingFlags;
-        let trap_frame = axmem::alloc_user_page(
-            get_trap_frame_vaddr(t.id),
-            TRAP_FRAME_SIZE,
-            MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
-        );
+        t.setup_ustack();
+        t.setup_trapframe(entry);
 
-        let ustack_start = get_ustack_vaddr(t.id);
-        axmem::alloc_user_page(
-            ustack_start,
-            axmem::USTACK_SIZE,
-            MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
-        );
         #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
         unsafe {
-            let trap_frame = &mut *(trap_frame.as_ptr() as *mut axhal::arch::TrapFrame);
-            *trap_frame =
-                axhal::arch::TrapFrame::new(entry, (ustack_start + axmem::USTACK_SIZE).into());
-            trap_frame.kstack = t.kstack.as_ref().unwrap().top().into();
-            // TODO: make a HAL wrapper
+            let trap_frame =
+                &mut *(t.trap_frame.as_mut().unwrap().0.as_ptr() as *mut axhal::arch::TrapFrame);
             trap_frame.regs.a0 = args;
         }
-        t.trap_frame = Some(trap_frame);
+
         #[cfg(feature = "process")]
         {
             t.pid = current_pid().unwrap().into();
@@ -214,32 +252,14 @@ impl TaskInner {
         debug!("init task: {}", t.id_name());
         #[cfg(feature = "user-paging")]
         {
-            let ustack_start = get_ustack_vaddr(t.id);
-            axmem::alloc_user_page(
-                ustack_start,
-                axmem::USTACK_SIZE,
-                MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
-            );
+            t.setup_ustack();
+
             let kstack = TaskStack::alloc(axconfig::TASK_STACK_SIZE);
             t.kstack = Some(kstack);
-            use axhal::paging::MappingFlags;
-            let trap_frame = axmem::alloc_user_page(
-                get_trap_frame_vaddr(t.id),
-                TRAP_FRAME_SIZE,
-                MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
-            );
-            // TODO: make a HAL wrapper
-            #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
-            unsafe {
-                let trap_frame = &mut *(trap_frame.as_ptr() as *mut axhal::arch::TrapFrame);
-                *trap_frame = axhal::arch::TrapFrame::new(
-                    axmem::USER_START,
-                    (ustack_start + axmem::USTACK_SIZE).into(),
-                );
-                trap_frame.kstack = t.kstack.as_ref().unwrap().top().into();
-            }
-            t.trap_frame = Some(trap_frame);
+
+            t.setup_trapframe(axmem::USER_START);
         }
+
         #[cfg(feature = "process")]
         {
             t.pid = 1.into();
@@ -258,30 +278,10 @@ impl TaskInner {
         t.ctx.get_mut().init(task_user_entry as usize, kstack.top());
         t.kstack = Some(kstack);
 
-        let ustack_start = get_ustack_vaddr(t.id);
-        axmem::alloc_user_page(
-            ustack_start,
-            axmem::USTACK_SIZE,
-            MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
-        );
-        use axhal::paging::MappingFlags;
-        let trap_frame = axmem::alloc_user_page(
-            get_trap_frame_vaddr(t.id),
-            TRAP_FRAME_SIZE,
-            MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
-        );
+        t.setup_ustack();
 
-        // TODO: make a HAL wrapper
-        #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
-        unsafe {
-            let trap_frame = &mut *(trap_frame.as_ptr() as *mut axhal::arch::TrapFrame);
-            *trap_frame = axhal::arch::TrapFrame::new(
-                axmem::USER_START,
-                (ustack_start + axmem::USTACK_SIZE).into(),
-            );
-            trap_frame.kstack = t.kstack.as_ref().unwrap().top().into();
-        }
-        t.trap_frame = Some(trap_frame);
+        t.setup_trapframe(axmem::USER_START);
+
         t.pid
             .store(current().pid.load(Ordering::Relaxed), Ordering::Relaxed);
 
@@ -302,9 +302,10 @@ impl TaskInner {
         t.kstack = Some(kstack);
 
         let trap_frame = Arc::new(GlobalPage::alloc().unwrap());
+        let tf_addr = get_trap_frame_vaddr(t.id);
         mem.lock()
             .add_region(
-                get_trap_frame_vaddr(t.id),
+                tf_addr,
                 trap_frame.start_paddr(virt_to_phys),
                 trap_frame.clone(),
                 MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
@@ -325,7 +326,7 @@ impl TaskInner {
             new_trap_frame.kstack = t.kstack.as_ref().unwrap().top().into();
             new_trap_frame.regs.a0 = 0;
         }
-        t.trap_frame = Some(trap_frame);
+        t.trap_frame = Some((trap_frame, tf_addr));
 
         Arc::new(AxTask::new(t))
     }
@@ -555,14 +556,14 @@ if #[cfg(feature = "user-paging")] {
     #[crate_interface::impl_interface]
     impl axhal::trap::CurrentTask for CurrentTaskIf {
         fn current_trap_frame() -> *mut axhal::arch::TrapFrame {
-            crate::current().trap_frame.as_ref().unwrap().as_ptr()
+            crate::current().trap_frame.as_ref().unwrap().0.as_ptr()
                 as *mut axhal::arch::TrapFrame
         }
         fn current_satp() -> usize {
             axmem::get_satp()
         }
         fn current_trap_frame_virt_addr() -> usize {
-            get_trap_frame_vaddr(crate::current().id).into()
+            crate::current().trap_frame.as_ref().unwrap().1.into()
         }
     }
     const TRAP_FRAME_BASE: usize = 0xffff_ffff_ffff_f000;
