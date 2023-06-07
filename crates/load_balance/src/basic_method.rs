@@ -3,8 +3,8 @@ use alloc::sync::Arc;
 use alloc::vec::Vec;
 use core::sync::atomic::AtomicUsize;
 use core::sync::atomic::{AtomicIsize, Ordering};
-use spinlock::SpinNoIrq;
 use log::info;
+use spinlock::SpinNoIrq;
 
 /// simply find target CPU and stolen CPU according to mininum payload.
 pub struct BasicMethod {
