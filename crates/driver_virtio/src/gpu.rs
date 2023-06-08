@@ -9,6 +9,7 @@ use virtio_drivers::{device::gpu::VirtIOGpu as InnerDev, transport::Transport, H
 pub struct VirtIoGpuDev<H: Hal, T: Transport> {
     inner: InnerDev<'static, H, T>,
     info: DisplayInfo,
+    irq_num: Option<usize>,
 }
 
 unsafe impl<H: Hal, T: Transport> Send for VirtIoGpuDev<H, T> {}
@@ -17,7 +18,7 @@ unsafe impl<H: Hal, T: Transport> Sync for VirtIoGpuDev<H, T> {}
 impl<H: Hal, T: Transport> VirtIoGpuDev<H, T> {
     /// Creates a new driver instance and initializes the device, or returns
     /// an error if any step fails.
-    pub fn try_new(transport: T) -> DevResult<Self> {
+    pub fn try_new(transport: T, irq_num: Option<usize>) -> DevResult<Self> {
         let mut virtio = InnerDev::new(transport).unwrap();
 
         // get framebuffer
@@ -35,17 +36,26 @@ impl<H: Hal, T: Transport> VirtIoGpuDev<H, T> {
         Ok(Self {
             inner: virtio,
             info,
+            irq_num,
         })
     }
 }
 
-impl<H: Hal, T: Transport> const BaseDriverOps for VirtIoGpuDev<H, T> {
+impl<H: Hal, T: Transport> BaseDriverOps for VirtIoGpuDev<H, T> {
     fn device_name(&self) -> &str {
         "virtio-gpu"
     }
 
     fn device_type(&self) -> DeviceType {
         DeviceType::Display
+    }
+
+    fn get_irq_num(&self) -> Option<usize> {
+        self.irq_num
+    }
+
+    fn ack_interrupt(&mut self) -> bool {
+        self.inner.ack_interrupt()
     }
 }
 

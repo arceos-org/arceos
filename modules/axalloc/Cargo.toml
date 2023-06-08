@@ -9,7 +9,20 @@ homepage = "https://github.com/rcore-os/arceos"
 repository = "https://github.com/rcore-os/arceos/tree/main/modules/axalloc"
 documentation = "https://rcore-os.github.io/arceos/axalloc/index.html"
 
+[features]
+alloc-buddy = []
+alloc-slab = []
+alloc-basic-first_fit = []
+alloc-basic-best_fit = []
+alloc-basic-worst_fit = []
+alloc-tlsf-rust = []
+alloc-tlsf-c = []
+alloc-mimalloc = []
+# default = ["alloc-tlsf-rust"]
+default = ["alloc-mimalloc"]
+
 [dependencies]
+cfg-if = "1.0"
 log = "0.4"
 spinlock = { path = "../../crates/spinlock" }
 memory_addr = { path = "../../crates/memory_addr" }

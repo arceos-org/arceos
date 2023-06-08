@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+      with:
+        submodules: recursive
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
@@ -29,6 +31,8 @@ jobs:
         arch: [x86_64, riscv64, aarch64]
     steps:
     - uses: actions/checkout@v3
+      with:
+        submodules: recursive
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
@@ -39,6 +43,8 @@ jobs:
         crate: cargo-binutils
         version: latest
         use-tool-cache: true
+    - name: Install gcc multilib
+      run: sudo apt update && sudo apt install -y gcc-multilib
     - name: Download musl toolchain
       run: |
         if [ "${{ matrix.arch }}" = "x86_64" ]; then
@@ -51,6 +57,7 @@ jobs:
         wget https://musl.cc/$MUSL_PATH.tgz
         tar -xf $MUSL_PATH.tgz
         mv $MUSL_PATH musl
+        echo "$PWD/musl/bin" >> $GITHUB_PATH
 
     - name: Cache QEMU
       id: cache-qemu
@@ -77,6 +84,5 @@ jobs:
       run: git submodule update --init --recursive
     - name: Run app tests
       run: |
-        export PATH=$PATH:$PWD/musl/bin
         make disk_img
         make test ARCH=${{ matrix.arch }}

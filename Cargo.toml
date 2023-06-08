@@ -1,5 +1,7 @@
 [workspace]
 
+resolver = "2"
+
 members = [
     "apps/display",
     "apps/exception",
@@ -23,6 +25,7 @@ members = [
     "crates/axfs_ramfs",
     "crates/axfs_vfs",
     "crates/axio",
+    "crates/jbd",
     "crates/capability",
     "crates/crate_interface",
     "crates/driver_block",
@@ -36,6 +39,7 @@ members = [
     "crates/kernel_guard",
     "crates/lazy_init",
     "crates/linked_list",
+    "crates/lwip_rust",
     "crates/memory_addr",
     "crates/page_table",
     "crates/page_table_entry",
@@ -48,6 +52,12 @@ members = [
     "crates/timer_list",
     "crates/tuple_for_each",
     "crates/hypercraft",
+    "crates/basic_allocator",
+    "crates/tlsf_allocator",
+    "crates/allocator_test",
+    "crates/fs_utils",
+    "crates/ext2fs",
+    "crates/mimalloc_allocator",
 
     "modules/axalloc",
     "modules/axconfig",

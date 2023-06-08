@@ -11,25 +11,36 @@ documentation = "https://rcore-os.github.io/arceos/axnet/index.html"
 
 [features]
 smoltcp = []
+lwip = ["dep:printf-compat", "dep:lwip_rust", "cty" ]
 default = ["smoltcp"]
+irq = ["axhal/irq"]
 
 [dependencies]
 log = "0.4"
 cfg-if = "1.0"
 driver_net = { path = "../../crates/driver_net" }
 lazy_init = { path = "../../crates/lazy_init" }
+lwip_rust = { path = "../../crates/lwip_rust", optional = true }
+printf-compat = { version = "0.1", default-features = false, optional = true }
 axerrno = { path = "../../crates/axerrno" }
+axlog = { path = "../axlog" }
 axhal = { path = "../axhal" }
 axsync = { path = "../axsync", default-features = false }
 axtask = { path = "../axtask", default-features = false }
 axdriver = { path = "../axdriver", features = ["net"] }
+cty = { version = "0.2.2", optional = true }
+axio = { path = "../../crates/axio" }
 
 [dependencies.smoltcp]
-version = "0.9.1"
+git = "https://github.com/smoltcp-rs/smoltcp.git"
+rev = "1f9b9f0"
 default-features = false
 features = [
   "alloc", "log",   # no std
   "medium-ethernet",
   "proto-ipv4",
-  "socket-raw", "socket-icmp", "socket-udp", "socket-tcp", "socket-dns"
+  "socket-raw", "socket-icmp", "socket-udp", "socket-tcp", "socket-dns",
+  # "fragmentation-buffer-size-65536", "proto-ipv4-fragmentation",
+  # "reassembly-buffer-size-65536", "reassembly-buffer-count-32",
+  # "assembler-max-segment-count-32",
 ]

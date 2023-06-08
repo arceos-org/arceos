@@ -1,4 +1,3 @@
-use axerrno::LinuxResult;
 use core::ffi::c_int;
 
 /// Get current thread ID

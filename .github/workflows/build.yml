@@ -9,6 +9,8 @@ jobs:
       fail-fast: false
     steps:
     - uses: actions/checkout@v3
+      with:
+        submodules: recursive
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
@@ -16,6 +18,8 @@ jobs:
         components: rust-src, clippy, rustfmt
     - name: Clone github submodule
       run: git submodule update --init --recursive
+    - name: Install gcc multilib
+      run: sudo apt update && sudo apt install -y gcc-multilib
     - name: Clippy for the default target
       run: cargo clippy --all-features
     - name: Clippy for x86_64
@@ -36,6 +40,8 @@ jobs:
         arch: [x86_64, riscv64, aarch64]
     steps:
     - uses: actions/checkout@v3
+      with:
+        submodules: recursive
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
@@ -48,6 +54,22 @@ jobs:
         use-tool-cache: true
     - name: Clone github submodule
       run: git submodule update --init --recursive
+    - name: Install gcc multilib
+      run: sudo apt update && sudo apt install -y gcc-multilib
+    - name: Download musl toolchain
+      run: |
+        if [ "${{ matrix.arch }}" = "x86_64" ]; then
+          export MUSL_PATH="x86_64-linux-musl-cross"
+        elif [ "${{ matrix.arch }}" = "aarch64" ]; then
+          export MUSL_PATH="aarch64-linux-musl-cross"
+        elif [ "${{ matrix.arch }}" = "riscv64" ]; then
+          export MUSL_PATH="riscv64-linux-musl-cross"
+        fi
+        wget https://musl.cc/$MUSL_PATH.tgz
+        tar -xf $MUSL_PATH.tgz
+        mv $MUSL_PATH musl
+        echo "$PWD/musl/bin" >> $GITHUB_PATH
+
     - name: Build helloworld
       run: make ARCH=${{ matrix.arch }} A=apps/helloworld
     - name: Build memtest
@@ -73,27 +95,17 @@ jobs:
     - name: Build hv
       run: make ARCH=${{ matrix.arch }} A=apps/hv HV=y
 
-    - name: Download musl toolchain
-      run: |
-        if [ "${{ matrix.arch }}" = "x86_64" ]; then
-          export MUSL_PATH="x86_64-linux-musl-cross"
-        elif [ "${{ matrix.arch }}" = "aarch64" ]; then
-          export MUSL_PATH="aarch64-linux-musl-cross"
-        elif [ "${{ matrix.arch }}" = "riscv64" ]; then
-          export MUSL_PATH="riscv64-linux-musl-cross"
-        fi
-        wget https://musl.cc/$MUSL_PATH.tgz
-        tar -xf $MUSL_PATH.tgz
-        mv $MUSL_PATH musl
     - name: Build c/helloworld
-      run: PATH=$PATH:$PWD/musl/bin make ARCH=${{ matrix.arch }} A=apps/c/helloworld
+      run: make ARCH=${{ matrix.arch }} A=apps/c/helloworld
     - name: Build c/memtest
-      run: PATH=$PATH:$PWD/musl/bin make ARCH=${{ matrix.arch }} A=apps/c/memtest
+      run: make ARCH=${{ matrix.arch }} A=apps/c/memtest
     - name: Build c/sqlite3
-      run: PATH=$PATH:$PWD/musl/bin make ARCH=${{ matrix.arch }} A=apps/c/sqlite3
+      run: make ARCH=${{ matrix.arch }} A=apps/c/sqlite3
     - name: Build c/httpclient
-      run: PATH=$PATH:$PWD/musl/bin make ARCH=${{ matrix.arch }} A=apps/c/httpclient
+      run: make ARCH=${{ matrix.arch }} A=apps/c/httpclient
     - name: Build c/httpserver
-      run: PATH=$PATH:$PWD/musl/bin make ARCH=${{ matrix.arch }} A=apps/c/httpserver
+      run: make ARCH=${{ matrix.arch }} A=apps/c/httpserver
     - name: Build c/udpserver
-      run: PATH=$PATH:$PWD/musl/bin make ARCH=${{ matrix.arch }} A=apps/c/udpserver
+      run: make ARCH=${{ matrix.arch }} A=apps/c/udpserver
+    - name: Build c/iperf
+      run: make ARCH=${{ matrix.arch }} A=apps/c/iperf

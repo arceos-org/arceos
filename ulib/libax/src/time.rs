@@ -13,6 +13,12 @@ impl Instant {
         Instant(axhal::time::current_time())
     }
 
+    /// Converts an `Instant` to a `Duration` directly.
+    #[allow(dead_code)]
+    pub(crate) fn as_duration(&self) -> Duration {
+        self.0
+    }
+
     /// Returns the amount of time elapsed from another instant to this one,
     /// or zero duration if that instant is later than this one.
     ///

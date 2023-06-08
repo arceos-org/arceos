@@ -10,6 +10,8 @@
 #include <netdb.h>
 #include <netinet/in.h>
 
+int h_errno;
+
 #if defined(AX_CONFIG_ALLOC) && defined(AX_CONFIG_NET)
 /*Only IPv4. Ports are always 0. Ignore service and hint. Results' ai_flags, ai_socktype,
  * ai_protocol and ai_canonname are 0 or NULL.  */
@@ -17,7 +19,7 @@ int getaddrinfo(const char *__restrict node, const char *__restrict service,
                 const struct addrinfo *__restrict hints, struct addrinfo **__restrict res)
 {
     struct sockaddr *addrs = (struct sockaddr *)malloc(MAXADDRS * sizeof(struct sockaddr));
-    int res_len = ax_resolve_sockaddr(node, addrs, MAXADDRS);
+    int res_len = ax_resolve_sockaddr(node, service, addrs, MAXADDRS);
     if (res_len < 0)
         return EAI_FAIL;
     if (res_len == 0)
@@ -41,6 +43,23 @@ void freeaddrinfo(struct addrinfo *__restrict res)
     return;
 }
 #endif
+
+static const char msgs[] = "Host not found\0"
+                           "Try again\0"
+                           "Non-recoverable error\0"
+                           "Address not available\0"
+                           "\0Unknown error";
+
+const char *hstrerror(int ecode)
+{
+    const char *s;
+    for (s = msgs, ecode--; ecode && *s; ecode--, s++)
+        for (; *s; s++)
+            ;
+    if (!*s)
+        s++;
+    return s;
+}
 
 static __inline uint16_t __bswap_16(uint16_t __x)
 {
