@@ -2,11 +2,9 @@
 use alloc::boxed::Box;
 #[cfg(feature = "journal")]
 use core::any::Any;
-use core::cell::RefCell;
+use core::cell::{RefCell, UnsafeCell};
 #[cfg(feature = "journal")]
 use jbd::sal::Buffer;
-use lazy_static::__Deref;
-use spin::Lazy;
 
 use super::{BlockDevice, BLOCK_SZ};
 use alloc::collections::VecDeque;
@@ -221,7 +219,7 @@ pub struct BlockCacheManager {
 }
 
 impl BlockCacheManager {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             queue: VecDeque::new(),
         }
@@ -257,15 +255,23 @@ impl BlockCacheManager {
     }
 }
 
+struct SyncCell<T>(UnsafeCell<T>);
+unsafe impl<T> Sync for SyncCell<T> {}
+impl<T> SyncCell<T> {
+    const fn new(v: T) -> Self {
+        Self(UnsafeCell::new(v))
+    }
+    unsafe fn get_mut(&self) -> &mut T {
+        &mut *self.0.get()
+    }
+}
+impl<T: Copy> SyncCell<T> {}
 unsafe impl Send for BlockCacheManager {}
 
-static mut BLOCK_CACHE_MANAGER: Lazy<BlockCacheManager> = Lazy::new(BlockCacheManager::new);
+static BLOCK_CACHE_MANAGER: SyncCell<BlockCacheManager> = SyncCell::new(BlockCacheManager::new());
 
 pub fn block_cache_manager() -> &'static mut BlockCacheManager {
-    unsafe {
-        #[allow(clippy::cast_ref_to_mut)] // Just a test code, nothing harmful
-        &mut *(BLOCK_CACHE_MANAGER.deref() as *const BlockCacheManager as *mut BlockCacheManager)
-    }
+    unsafe { BLOCK_CACHE_MANAGER.get_mut() }
 }
 
 /// Get the block cache corresponding to the given block id and block device
