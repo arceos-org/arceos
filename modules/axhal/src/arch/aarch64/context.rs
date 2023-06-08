@@ -15,6 +15,17 @@ pub struct TrapFrame {
     pub spsr: u64,
 }
 
+impl TrapFrame {
+    #[cfg(feature = "user")]
+    pub fn new(_entry: usize, _ustack: usize) -> TrapFrame {
+        unimplemented!();
+    }
+    #[cfg(feature = "user")]
+    pub fn enter_uspace(&self, _sp: usize) -> ! {
+        unimplemented!();
+    }
+}
+
 /// FP & SIMD registers.
 #[repr(C, align(16))]
 #[derive(Debug, Default)]

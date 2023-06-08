@@ -3,7 +3,13 @@ use core::cell::UnsafeCell;
 
 use axfs_vfs::{VfsDirEntry, VfsError, VfsNodePerm, VfsResult};
 use axfs_vfs::{VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsNodeType, VfsOps};
-use axsync::Mutex;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "user")] {
+        use libax::Mutex;
+    } else {
+        use axsync::Mutex;
+    }
+}
 use fatfs::{Dir, File, LossyOemCpConverter, NullTimeProvider, Read, Seek, SeekFrom, Write};
 
 use crate::dev::Disk;

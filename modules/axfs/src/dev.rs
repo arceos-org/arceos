@@ -1,4 +1,11 @@
-use axdriver::prelude::*;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "user")] {
+        use crate::user::AxBlockDeviceMock as AxBlockDevice;
+        use driver_block::DevResult;
+    } else {
+        use axdriver::prelude::*;
+    }
+}
 
 const BLOCK_SIZE: usize = 512;
 

@@ -7,4 +7,5 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-libax = { path = "../../ulib/libax" }
+libax = { path = "../../ulib/libax"}
+#libax = { path = "../../ulib/libax_user", package = "libax_user"}

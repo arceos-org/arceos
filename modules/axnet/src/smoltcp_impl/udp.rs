@@ -1,6 +1,6 @@
+use super::Mutex;
 use axerrno::{ax_err, ax_err_type, AxError, AxResult};
 use axio::PollState;
-use axsync::Mutex;
 
 use smoltcp::iface::SocketHandle;
 use smoltcp::socket::udp::{self, BindError, SendError};
@@ -110,7 +110,7 @@ impl UdpSocket {
                     if self.nonblock {
                         return Err(AxError::WouldBlock);
                     } else {
-                        axtask::yield_now()
+                        super::yield_now()
                     }
                 }
                 Err(e) => return Err(e),
@@ -143,7 +143,7 @@ impl UdpSocket {
                     if self.nonblock {
                         return Err(AxError::WouldBlock);
                     } else {
-                        axtask::yield_now()
+                        super::yield_now()
                     }
                 }
                 Err(e) => return Err(e),

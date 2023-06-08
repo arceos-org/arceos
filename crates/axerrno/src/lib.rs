@@ -32,6 +32,8 @@ pub enum AxError {
     AlreadyExists,
     /// Bad address.
     BadAddress,
+    /// Bad File Descriptor
+    BadFileDescriptor,
     /// Bad internal state.
     BadState,
     /// The connection was refused by the remote server,
@@ -200,6 +202,7 @@ impl From<AxError> for LinuxError {
             AddrInUse => LinuxError::EADDRINUSE,
             AlreadyExists => LinuxError::EEXIST,
             BadAddress | BadState => LinuxError::EFAULT,
+            BadFileDescriptor => LinuxError::EBADF,
             ConnectionRefused => LinuxError::ECONNREFUSED,
             DirectoryNotEmpty => LinuxError::ENOTEMPTY,
             InvalidInput | InvalidData => LinuxError::EINVAL,
@@ -216,6 +219,24 @@ impl From<AxError> for LinuxError {
             UnexpectedEof | WriteZero => LinuxError::EIO,
             WouldBlock => LinuxError::EAGAIN,
         }
+    }
+}
+
+/// Convents `AxResult<usize>` into isize, so that it can be transferred in trap contexts
+pub fn to_ret_code(result: AxResult<usize>) -> isize {
+    match result {
+        Ok(val) => val as isize,
+        Err(err) => -(err as i32 as u32 as isize + 1),
+    }
+}
+
+/// Convents isize into `AxResult<usize>`
+pub fn from_ret_code(result: isize) -> AxResult<usize> {
+    if result >= 0 {
+        Ok(result as usize)
+    } else {
+        let code = ((-result) - 1) as u32 as i32;
+        Err(unsafe { *(&code as *const i32 as *const AxError) })
     }
 }
 

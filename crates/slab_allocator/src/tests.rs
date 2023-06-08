@@ -19,21 +19,21 @@ fn new_heap() -> Heap {
     let test_heap = TestHeap {
         heap_space: [0u8; HEAP_SIZE],
     };
-    let heap = unsafe { Heap::new(&test_heap.heap_space[0] as *const u8 as usize, HEAP_SIZE) };
-    heap
+
+    unsafe { Heap::new(&test_heap.heap_space[0] as *const u8 as usize, HEAP_SIZE) }
 }
 
 fn new_big_heap() -> Heap {
     let test_heap = TestBigHeap {
         heap_space: [0u8; BIG_HEAP_SIZE],
     };
-    let heap = unsafe {
+
+    unsafe {
         Heap::new(
             &test_heap.heap_space[0] as *const u8 as usize,
             BIG_HEAP_SIZE,
         )
-    };
-    heap
+    }
 }
 
 #[test]
@@ -57,13 +57,13 @@ fn allocate_double_usize() {
 fn allocate_and_free_double_usize() {
     let mut heap = new_heap();
     let layout = Layout::from_size_align(size_of::<usize>() * 2, align_of::<usize>()).unwrap();
-    let addr = heap.allocate(layout.clone());
+    let addr = heap.allocate(layout);
     assert!(addr.is_ok());
     let addr = addr.unwrap();
     unsafe {
         *(addr as *mut (usize, usize)) = (0xdeafdeadbeafbabe, 0xdeafdeadbeafbabe);
 
-        heap.deallocate(addr, layout.clone());
+        heap.deallocate(addr, layout);
     }
 }
 
@@ -73,17 +73,17 @@ fn reallocate_double_usize() {
 
     let layout = Layout::from_size_align(size_of::<usize>() * 2, align_of::<usize>()).unwrap();
 
-    let x = heap.allocate(layout.clone()).unwrap();
+    let x = heap.allocate(layout).unwrap();
     unsafe {
-        heap.deallocate(x, layout.clone());
+        heap.deallocate(x, layout);
     }
 
-    let y = heap.allocate(layout.clone()).unwrap();
+    let y = heap.allocate(layout).unwrap();
     unsafe {
-        heap.deallocate(y, layout.clone());
+        heap.deallocate(y, layout);
     }
 
-    assert_eq!(x as usize, y as usize);
+    assert_eq!({ x }, { y });
 }
 
 #[test]
@@ -97,16 +97,16 @@ fn allocate_multiple_sizes() {
     let layout_3 = Layout::from_size_align(base_size * 3, base_align * 8).unwrap();
     let layout_4 = Layout::from_size_align(base_size * 10, base_align).unwrap();
 
-    let x = heap.allocate(layout_1.clone()).unwrap();
-    let y = heap.allocate(layout_2.clone()).unwrap();
-    let z = heap.allocate(layout_3.clone()).unwrap();
+    let x = heap.allocate(layout_1).unwrap();
+    let y = heap.allocate(layout_2).unwrap();
+    let z = heap.allocate(layout_3).unwrap();
 
     unsafe {
-        heap.deallocate(x, layout_1.clone());
+        heap.deallocate(x, layout_1);
     }
 
-    let a = heap.allocate(layout_4.clone()).unwrap();
-    let b = heap.allocate(layout_1.clone()).unwrap();
+    let a = heap.allocate(layout_4).unwrap();
+    let b = heap.allocate(layout_1).unwrap();
 
     unsafe {
         heap.deallocate(y, layout_2);
@@ -124,10 +124,10 @@ fn allocate_one_4096_block() {
 
     let layout = Layout::from_size_align(base_size * 512, base_align).unwrap();
 
-    let x = heap.allocate(layout.clone()).unwrap();
+    let x = heap.allocate(layout).unwrap();
 
     unsafe {
-        heap.deallocate(x, layout.clone());
+        heap.deallocate(x, layout);
     }
 }
 
@@ -140,23 +140,23 @@ fn allocate_multiple_4096_blocks() {
     let layout = Layout::from_size_align(base_size * 512, base_align).unwrap();
     let layout_2 = Layout::from_size_align(base_size * 1024, base_align).unwrap();
 
-    let _x = heap.allocate(layout.clone()).unwrap();
-    let y = heap.allocate(layout.clone()).unwrap();
-    let z = heap.allocate(layout.clone()).unwrap();
+    let _x = heap.allocate(layout).unwrap();
+    let y = heap.allocate(layout).unwrap();
+    let z = heap.allocate(layout).unwrap();
 
     unsafe {
-        heap.deallocate(y, layout.clone());
+        heap.deallocate(y, layout);
     }
 
-    let a = heap.allocate(layout.clone()).unwrap();
-    let _b = heap.allocate(layout.clone()).unwrap();
+    let a = heap.allocate(layout).unwrap();
+    let _b = heap.allocate(layout).unwrap();
 
     unsafe {
-        heap.deallocate(a, layout.clone());
-        heap.deallocate(z, layout.clone());
+        heap.deallocate(a, layout);
+        heap.deallocate(z, layout);
     }
-    let c = heap.allocate(layout_2.clone()).unwrap();
-    let _d = heap.allocate(layout.clone()).unwrap();
+    let c = heap.allocate(layout_2).unwrap();
+    let _d = heap.allocate(layout).unwrap();
     unsafe {
         *(c as *mut (usize, usize)) = (0xdeafdeadbeafbabe, 0xdeafdeadbeafbabe);
     }

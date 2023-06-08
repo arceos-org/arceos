@@ -1,0 +1,29 @@
+[package]
+name = "libax_user"
+version = "0.1.0"
+edition = "2021"
+authors = ["Haodi Jiang <jhdjames37@outlook.com>"]
+description = "ArceOS (microkernel) user library"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+
+log-level-off = ["log/max_level_off"]
+log-level-error = ["log/max_level_error"]
+log-level-warn = ["log/max_level_warn"]
+log-level-info = ["log/max_level_info"]
+log-level-debug = ["log/max_level_debug"]
+log-level-trace = ["log/max_level_trace"]
+
+default = []
+
+[dependencies]
+log = "0.4"
+allocator = { path = "../../crates/allocator" }
+spinlock = { path = "../../crates/spinlock" }
+syscall_number = { path = "../../crates/syscall_number"}
+scheme = { path = "../../crates/scheme" }
+axerrno = { path = "../../crates/axerrno" }
+axio = { path = "../../crates/axio", features = ["alloc"] }
+axfs_vfs = { path = "../../crates/axfs_vfs" }

@@ -7,6 +7,7 @@ pub struct FileSystemInfo;
 /// Node (file/directory) attributes.
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
+#[repr(C)]
 pub struct VfsNodeAttr {
     /// File permission mode.
     mode: VfsNodePerm,

@@ -23,6 +23,9 @@ mod mutex;
 #[doc(cfg(feature = "multitask"))]
 pub use self::mutex::{Mutex, MutexGuard};
 
+#[cfg(feature = "futex")]
+pub mod futex;
+
 #[cfg(not(feature = "multitask"))]
 #[doc(cfg(not(feature = "multitask")))]
 pub use spinlock::{SpinNoIrq as Mutex, SpinNoIrqGuard as MutexGuard};

@@ -1,0 +1,26 @@
+Server started
+Client sender started
+Client receiver started
+Send: 'Hello'
+Send: ' '
+Received: 72(H), 101(e), 108(l), 108(l), 111(o), 
+Send: 'world'
+Received: 32( ), 
+Send: '
+'
+Received: 119(w), 111(o), 114(r), 108(l), 100(d), 
+Send: 'Goodbye'
+Received: 10(
+), 
+Send: ' '
+Received: 71(G), 111(o), 111(o), 100(d), 98(b), 121(y), 101(e), 
+Send: 'world'
+Received: 32( ), 
+Send: '
+'
+Received: 119(w), 111(o), 114(r), 108(l), 100(d), 
+Send: 
+Received: 10(
+), 
+Received: ENDED
+Process [0-9]\+ exited with code 0

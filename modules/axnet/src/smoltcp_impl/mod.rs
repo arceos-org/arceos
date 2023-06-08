@@ -7,11 +7,19 @@ use alloc::{collections::VecDeque, vec};
 use core::cell::RefCell;
 use core::ops::DerefMut;
 
-use axdriver::prelude::*;
-#[cfg(feature = "irq")]
-use axdriver::register_interrupt_handler;
-use axhal::time::{current_time_nanos, NANOS_PER_MICROS};
-use axsync::Mutex;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "user")] {
+        use crate::user::{current_time_nanos, NANOS_PER_MICROS, AxNetDevice, yield_now};
+        use libax::Mutex;
+    } else {
+        use axdriver::prelude::*;
+        #[cfg(feature = "irq")]
+        use axdriver::register_interrupt_handler;
+        use axhal::time::{current_time_nanos, NANOS_PER_MICROS};
+        use axsync::Mutex;
+        use axtask::yield_now;
+    }
+}
 use driver_net::{DevError, NetBufferBox, NetBufferPool};
 use lazy_init::LazyInit;
 use smoltcp::iface::{Config, Interface, SocketHandle, SocketSet};
@@ -174,7 +182,7 @@ impl InterfaceWrapper {
         iface.poll(timestamp, dev.deref_mut(), &mut sockets);
     }
 
-    #[cfg(feature = "irq")]
+    #[cfg(all(not(feature = "user"), feature = "irq"))]
     pub fn ack_interrupt(&self) {
         unsafe { &mut *self.dev.as_mut_ptr() }.ack_interrupt();
     }
@@ -211,7 +219,7 @@ impl DeviceWrapper {
         self.rx_buf_queue.pop_front()
     }
 
-    #[cfg(feature = "irq")]
+    #[cfg(all(not(feature = "user"), feature = "irq"))]
     fn ack_interrupt(&mut self) -> bool {
         unsafe { self.inner.as_ptr().as_mut().unwrap().ack_interrupt() }
     }
@@ -298,7 +306,7 @@ pub(crate) fn init(mut net_dev: AxNetDevice) {
     let pool = NetBufferPool::new(NET_BUF_POOL_SIZE, NET_BUF_LEN).unwrap();
     NET_BUF_POOL.init_by(pool);
     net_dev.fill_rx_buffers(&NET_BUF_POOL).unwrap();
-    #[cfg(feature = "irq")]
+    #[cfg(all(not(feature = "user"), feature = "irq"))]
     register_interrupt_handler!(net_dev, {
         info!("ACK");
         ETH0.ack_interrupt();

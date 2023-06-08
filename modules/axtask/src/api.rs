@@ -1,6 +1,7 @@
 //! Task APIs for multi-task configuration.
 
-use alloc::{string::String, sync::Arc};
+use alloc::string::String;
+use alloc::sync::Arc;
 
 pub(crate) use crate::run_queue::{AxRunQueue, RUN_QUEUE};
 
@@ -86,6 +87,35 @@ pub fn on_timer_tick() {
     RUN_QUEUE.lock().scheduler_timer_tick();
 }
 
+cfg_if::cfg_if! {
+if #[cfg(all(feature = "user-paging", not(feature = "test")))] {
+pub fn spawn_args(f: usize, arg: usize) -> AxTaskRef {
+    let task = TaskInner::new_user(f, axconfig::TASK_STACK_SIZE, arg);
+    RUN_QUEUE.lock().add_task(task.clone());
+    task
+}
+pub fn spawn<F>(_f: F) -> AxTaskRef
+where
+    F: FnOnce() + Send + 'static,
+    {
+    unimplemented!();
+}
+
+pub fn spawn_raw<F>(_f: F, _name: String, _stack_size: usize) -> AxTaskRef
+where
+    F: FnOnce() + Send + 'static,
+    {
+    unimplemented!();
+}
+} else {
+/// Spawns a new task with an argument
+/// only available in with user syscalls
+pub fn spawn_args(_f: usize, _arg: usize) -> AxTaskRef {
+    unimplemented!();
+}
+
+
+/// Spawns a new task.
 /// Spawns a new task with the given parameters.
 ///
 /// Returns the task reference.
@@ -98,6 +128,11 @@ where
     task
 }
 
+
+
+/// set priority for current task.
+/// In CFS, priority is the nice value, ranging from -20 to 19.
+
 /// Spawns a new task with the default parameters.
 ///
 /// The default task name is an empty string. The default task stack size is
@@ -109,6 +144,8 @@ where
     F: FnOnce() + Send + 'static,
 {
     spawn_raw(f, "".into(), axconfig::TASK_STACK_SIZE)
+}
+}
 }
 
 /// Set the priority for current task.

@@ -19,7 +19,16 @@ smp = ["axhal/smp", "spinlock/smp"]
 fs = ["alloc", "paging", "axdriver/virtio-blk", "dep:axfs"] # TODO: remove "paging"
 net = ["alloc", "paging", "axdriver/virtio-net", "dep:axnet"]
 display = ["alloc", "paging", "axdriver/virtio-gpu", "dep:axdisplay"]
+user = ["axhal/user", "dep:elf_loader", "dep:axerrno", "dep:syscall_number"]
 
+user-paging = ["user", "paging", "axhal/user-paging", "axtask/user-paging", "dep:axmem"]
+process = ["dep:axprocess", "user-paging", "scheme"]
+# See: https://github.com/rust-lang/cargo/issues/10788
+futex = ["dep:axsync", "axsync?/futex"]
+scheme = ["user-paging", "dep:axsync", "dep:scheme", "dep:axscheme"]
+
+user-net = ["alloc", "paging", "axdriver/virtio-net", "dep:axscheme", "axscheme?/user_net"]
+user-fs = ["alloc", "paging", "axdriver/virtio-blk", "dep:axscheme", "axscheme?/user_fs"]
 default = ["axtask?/default"]
 
 [dependencies]
@@ -28,6 +37,10 @@ kernel_guard = { path = "../../crates/kernel_guard" }
 spinlock = { path = "../../crates/spinlock" }
 lazy_init = { path = "../../crates/lazy_init", optional = true }
 crate_interface = { path = "../../crates/crate_interface" }
+elf_loader = { path = "../../crates/elf_loader", optional = true}
+axerrno = { path = "../../crates/axerrno", optional = true}
+scheme = { path = "../../crates/scheme", optional = true }
+syscall_number = { path = "../../crates/syscall_number", optional = true }
 axalloc = { path = "../axalloc", optional = true }
 axconfig = { path = "../axconfig" }
 axdriver = { path = "../axdriver", optional = true }
@@ -37,3 +50,11 @@ axfs = { path = "../axfs", optional = true }
 axnet = { path = "../axnet", optional = true }
 axdisplay = { path = "../axdisplay", optional = true }
 axtask = { path = "../axtask", default-features = false, optional = true }
+axmem = { path = "../axmem", optional = true }
+axsync = { path = "../axsync", optional = true }
+axscheme = { path = "../axscheme", optional = true }
+axprocess = { path = "../axprocess", optional = true}
+
+
+[dev-dependencies]
+percpu = { path = "../../crates/percpu", features = ["sp-naive"] }

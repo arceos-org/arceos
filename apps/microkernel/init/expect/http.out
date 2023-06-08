@@ -1,0 +1,13 @@
+TCP deamon started!
+Hello, simple http client!
+HTTP/1.1 200 OK
+Server: nginx
+Date: 
+Content-Type: text/plain
+Content-Length: 
+Connection: keep-alive
+Access-Control-Allow-Origin: *
+Cache-Control: no-cache, no-store, must-revalidate
+
+[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+
+Process 3 exited with code 0

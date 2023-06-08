@@ -17,8 +17,11 @@ unsafe fn init_boot_page_table() {
 
 unsafe fn init_mmu() {
     let page_table_root = BOOT_PT_SV39.as_ptr() as usize;
+
     satp::set(satp::Mode::Sv39, 0, page_table_root >> 12);
     riscv::asm::sfence_vma_all();
+
+    riscv::register::sstatus::set_sum();
 }
 
 /// The earliest entry point for the primary CPU.

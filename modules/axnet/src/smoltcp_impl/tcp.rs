@@ -1,6 +1,6 @@
+use super::Mutex;
 use axerrno::{ax_err, ax_err_type, AxError, AxResult};
 use axio::PollState;
-use axsync::Mutex;
 
 use smoltcp::iface::SocketHandle;
 use smoltcp::socket::tcp::{self, ConnectError, RecvError, State};
@@ -109,7 +109,7 @@ impl TcpSocket {
                 self.peer_addr = peer_addr;
                 return Ok(());
             } else if state == State::SynSent {
-                axtask::yield_now();
+                super::yield_now();
             } else {
                 return ax_err!(ConnectionRefused, "socket connect() failed");
             }
@@ -177,6 +177,7 @@ impl TcpSocket {
             .ok_or_else(|| ax_err_type!(InvalidInput, "socket accept() failed: no address bound"))?
             .port;
 
+        #[allow(clippy::never_loop)]
         loop {
             SOCKET_SET.poll_interfaces();
             match LISTEN_TABLE.accept(local_port) {
@@ -193,7 +194,7 @@ impl TcpSocket {
                     if self.nonblock {
                         return Err(AxError::WouldBlock);
                     } else {
-                        axtask::yield_now()
+                        super::yield_now()
                     }
                 }
                 Err(e) => return Err(e),
@@ -253,7 +254,7 @@ impl TcpSocket {
                     if self.nonblock {
                         return Err(AxError::WouldBlock);
                     } else {
-                        axtask::yield_now()
+                        super::yield_now()
                     }
                 }
                 Err(e) => return Err(e),
@@ -291,7 +292,7 @@ impl TcpSocket {
                     if self.nonblock {
                         return Err(AxError::WouldBlock);
                     } else {
-                        axtask::yield_now()
+                        super::yield_now()
                     }
                 }
                 Err(e) => return Err(e),

@@ -1,0 +1,20 @@
+[package]
+name = "axprocess"
+version = "0.1.0"
+edition = "2021"
+authors = ["Haodi Jiang <jhdjames37@outlook.com>"]
+description = "Process Abstraction of ArceOS (microkernel version)"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+lazy_init = { path = "../../crates/lazy_init" }
+crate_interface = { path = "../../crates/crate_interface" }
+spinlock = { path = "../../crates/spinlock" }
+axerrno = { path = "../../crates/axerrno" }
+axtask = { path = "../axtask", default-features = false, features = ["multitask", "process"] }
+axmem = { path = "../axmem" }
+axscheme = { path = "../axscheme", features = ["process"] }
+axlog = { path = "../axlog" }

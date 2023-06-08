@@ -1,0 +1,21 @@
+[package]
+name = "axmem"
+version = "0.1.0"
+edition = "2021"
+authors = ["Haodi Jiang <jhdjames37@outlook.com>"]
+description = "User address space management of ArceOS (microkernel version)"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+crate_interface = { path = "../../crates/crate_interface" }
+memory_addr = { path = "../../crates/memory_addr"}
+lazy_init = { path = "../../crates/lazy_init"}
+axhal = { path = "../axhal", features = ["paging"] }
+axalloc = { path = "../axalloc"}
+axlog = { path = "../axlog" }
+elf_loader = { path = "../../crates/elf_loader"}
+spinlock = { path = "../../crates/spinlock" }
+axerrno = { path = "../../crates/axerrno"}

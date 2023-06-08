@@ -51,6 +51,73 @@ pub struct TrapFrame {
     pub sepc: usize,
     /// Supervisor Status Register.
     pub sstatus: usize,
+    #[cfg(feature = "user-paging")]
+    pub kstack: usize,
+    #[cfg(feature = "user-paging")]
+    pub satp: usize,
+    #[cfg(feature = "user-paging")]
+    pub trap_handler: usize,
+}
+
+impl TrapFrame {
+    #[cfg(feature = "user")]
+    /// Create a trap frame with entry (sepc) and user stack
+    /// specified
+    pub fn new(entry: usize, ustack: usize) -> TrapFrame {
+        use riscv::register::sstatus::{self, Sstatus};
+
+        let mut trap_frame = TrapFrame::default();
+        trap_frame.regs.sp = ustack;
+        trap_frame.sepc = entry;
+
+        let sstatus_reg = sstatus::read();
+        // set up SPP (8th bit) to 0 (User)
+        // set SIE (1st bit) to 0 (disabled), so that when setting it in `trap_return`,
+        // IRQs will not be triggered.
+        trap_frame.sstatus =
+            unsafe { *(&sstatus_reg as *const Sstatus as *const usize) & !(1 << 8) & !(1 << 1) };
+        #[cfg(feature = "user-paging")]
+        {
+            use riscv::register::satp::{self, Satp};
+            let satp_reg = satp::read();
+            trap_frame.satp = unsafe { *(&satp_reg as *const Satp as *const usize) };
+            extern "Rust" {
+                fn riscv_trap_handler();
+            }
+            trap_frame.trap_handler = riscv_trap_handler as usize
+        }
+
+        trap_frame
+    }
+
+    #[cfg(feature = "user")]
+    /// Enter user space, with kstack specified
+    pub fn enter_uspace(&self, sp: usize) -> ! {
+        // sp: kernel trap space
+        unsafe {
+            core::arch::asm!(r"
+                mv      sp, {tf}
+                //LDR     gp, sp, 2                   // load user gp and tp
+                //LDR     t0, sp, 3
+                //STR     tp, sp, 3                   // save supervisor tp
+                //mv      tp, t0
+                csrw    sscratch, {sp}
+
+                LDR     t0, sp, 31
+                LDR     t1, sp, 32
+                csrw    sepc, t0
+                csrw    sstatus, t1
+
+                POP_GENERAL_REGS
+                LDR     sp, sp, 1                   // load sp from tf.regs.sp
+                sret
+            ",
+                sp = in(reg) sp,
+                tf = in(reg) (self as *const TrapFrame),
+            );
+        };
+        unreachable!("already in user space")
+    }
 }
 
 /// Saved hardware states of a task.

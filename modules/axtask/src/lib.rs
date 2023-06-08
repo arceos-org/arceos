@@ -51,3 +51,9 @@ mod tests;
 #[doc(cfg(feature = "multitask"))]
 pub use self::api::*;
 pub use self::api::{sleep, sleep_until, yield_now};
+
+cfg_if::cfg_if! {
+    if #[cfg(feature = "process")] {
+        pub use task::{current_pid, handle_fork, current_task, handle_exec};
+    }
+}

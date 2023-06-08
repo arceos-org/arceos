@@ -10,19 +10,19 @@
     STR     t2, sp, 1                   // tf.regs.sp
 
 .if \from_user == 1
-    LDR     t0, sp, 3                   // load supervisor tp
-    STR     gp, sp, 2                   // save user gp and tp
-    STR     tp, sp, 3
-    mv      tp, t0
+    //LDR     t0, sp, 3                   // load supervisor tp
+    //STR     gp, sp, 2                   // save user gp and tp
+    //STR     tp, sp, 3
+    //mv      tp, t0
 .endif
 .endm
 
 .macro RESTORE_REGS, from_user
 .if \from_user == 1
-    LDR     gp, sp, 2                   // load user gp and tp
-    LDR     t0, sp, 3
-    STR     tp, sp, 3                   // save supervisor tp
-    mv      tp, t0
+    //LDR     gp, sp, 2                   // load user gp and tp
+    //LDR     t0, sp, 3
+    //STR     tp, sp, 3                   // save supervisor tp
+    //mv      tp, t0
     addi    t0, sp, {trapframe_size}    // put supervisor sp to scratch
     csrw    sscratch, t0
 .endif

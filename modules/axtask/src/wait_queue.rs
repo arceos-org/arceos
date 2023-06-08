@@ -166,7 +166,7 @@ impl WaitQueue {
 
     /// Wakes all tasks in the wait queue.
     ///
-    /// If `resched` is true, the current task will be preempted when the
+    /// If `resched` is true, the current taskaxalloc = {path = "../axalloc", optional = true} will be preempted when the
     /// preemption is enabled.
     pub fn notify_all(&self, resched: bool) {
         loop {
@@ -207,6 +207,10 @@ impl WaitQueue {
         }
     }
 
+    /// Whether the queue is empty
+    pub fn is_empty(&self) -> bool {
+        self.queue.lock().is_empty()
+    }
     pub(crate) fn notify_all_locked(&self, resched: bool, rq: &mut AxRunQueue) {
         while let Some(task) = self.queue.lock().pop_front() {
             task.set_in_wait_queue(false);

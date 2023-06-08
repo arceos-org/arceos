@@ -1,0 +1,17 @@
+[package]
+name = "microkernel-init"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+net_deamon = []
+default = ["net_deamon"]
+
+[dependencies]
+libax = { path = "../../../ulib/libax_user", package = "libax_user"}
+apps = { path = "../apps", package = "microkernel-apps"}
+tests = { path = "../tests", package = "microkernel-basic-tests"}
+net_deamon = { path = "../net_deamon" , package = "microkernel-net-deamon" }
+fs_deamon = { path = "../fs_deamon" , package = "microkernel-fs-deamon" }    

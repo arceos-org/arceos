@@ -11,6 +11,7 @@ documentation = "https://rcore-os.github.io/arceos/axnet/index.html"
 
 [features]
 smoltcp = []
+user = ["dep:libax"]
 default = ["smoltcp"]
 irq = ["axhal/irq"]
 
@@ -20,6 +21,7 @@ cfg-if = "1.0"
 driver_net = { path = "../../crates/driver_net" }
 lazy_init = { path = "../../crates/lazy_init" }
 axerrno = { path = "../../crates/axerrno" }
+libax = { path = "../../ulib/libax_user", package = "libax_user", optional = true }
 axhal = { path = "../axhal" }
 axsync = { path = "../axsync", default-features = false }
 axtask = { path = "../axtask", default-features = false }

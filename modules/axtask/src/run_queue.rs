@@ -5,7 +5,7 @@ use scheduler::BaseScheduler;
 use spinlock::SpinNoIrq;
 
 use crate::task::{CurrentTask, TaskState};
-use crate::{AxTaskRef, Scheduler, TaskInner, WaitQueue};
+use crate::{current, AxTaskRef, Scheduler, TaskInner, WaitQueue};
 
 // TODO: per-CPU
 pub(crate) static RUN_QUEUE: LazyInit<SpinNoIrq<AxRunQueue>> = LazyInit::new();
@@ -86,7 +86,13 @@ impl AxRunQueue {
         debug!("task exit: {}, exit_code={}", curr.id_name(), exit_code);
         assert!(curr.is_running());
         assert!(!curr.is_idle());
-        if curr.is_init() {
+
+        #[cfg(feature = "process")]
+        let is_init_process = curr.pid() == 1;
+        #[cfg(not(feature = "process"))]
+        let is_init_process = true;
+
+        if curr.is_init() && is_init_process {
             EXITED_TASKS.lock().clear();
             axhal::misc::terminate();
         } else {
@@ -94,6 +100,7 @@ impl AxRunQueue {
             curr.notify_exit(exit_code, self);
             EXITED_TASKS.lock().push_back(curr.clone());
             WAIT_FOR_EXIT.notify_one_locked(false, self);
+
             self.resched_inner(false);
         }
         unreachable!("task exited!");
@@ -225,4 +232,19 @@ pub(crate) fn init_secondary() {
     idle_task.set_state(TaskState::Running);
     IDLE_TASK.with_current(|i| i.init_by(idle_task.clone()));
     unsafe { CurrentTask::init_current(idle_task) }
+}
+
+cfg_if::cfg_if! {
+    if #[cfg(feature = "process")] {
+        /// start running a new program, dropping current task as EXITED
+        pub fn run_exec(next: AxTaskRef) -> ! {
+            let prev = current();
+            prev.set_state(TaskState::Exited);
+            EXITED_TASKS.lock().push_back(prev.clone());
+            WAIT_FOR_EXIT.notify_one_locked(false, &mut RUN_QUEUE.lock());
+            RUN_QUEUE.lock().switch_to(prev, next);
+
+            unreachable!();
+        }
+    }
 }
