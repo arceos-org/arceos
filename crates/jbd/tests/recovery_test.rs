@@ -1,5 +1,5 @@
 mod common;
-use std::{borrow::Borrow, cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
 use common::{
     create_handle, create_journal, existing_journal, mock::write_random_block, sal::UserSystem,
@@ -55,7 +55,7 @@ fn do_one_transaction(
     for block_id_offset in blocks.iter() {
         let block_id = JOURNAL_SIZE + *block_id_offset;
         // Write a random block.
-        let meta_buf = write_random_block(&system, system.block_device().borrow(), block_id);
+        let meta_buf = write_random_block(&system, &system.block_device(), block_id);
         let mut data = vec![0_u8; BLOCK_SIZE];
         data.copy_from_slice(convert_buf(&meta_buf));
 

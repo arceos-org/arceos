@@ -1,6 +1,6 @@
 mod common;
 
-use std::{borrow::Borrow, rc::Rc};
+use std::rc::Rc;
 
 use common::{
     create_handle, create_journal, mock::write_random_block, mock::write_random_escape_block,
@@ -25,7 +25,7 @@ fn test_write_meta() {
     let mut handle = handle_rc.as_ref().borrow_mut();
     // Write a random block.
     let block_id = JOURNAL_SIZE;
-    let meta_buf = write_random_block(&system, system.block_device().borrow(), block_id);
+    let meta_buf = write_random_block(&system, &system.block_device(), block_id);
 
     // Write the block to the journal.
     handle.get_write_access(&meta_buf).unwrap();
@@ -33,7 +33,7 @@ fn test_write_meta() {
 
     // Write a block that starts with the magic number.
     let block_id = JOURNAL_SIZE + 1;
-    let meta_buf = write_random_escape_block(&system, system.block_device().borrow(), block_id);
+    let meta_buf = write_random_escape_block(&system, &system.block_device(), block_id);
     handle.get_write_access(&meta_buf).unwrap();
     handle.dirty_metadata(&meta_buf).unwrap();
 
@@ -49,8 +49,8 @@ fn test_write_data() {
     let handle_rc = create_handle(journal.clone()).unwrap();
     let mut handle = handle_rc.as_ref().borrow_mut();
     let block_id = JOURNAL_SIZE;
-    let data_buf1 = write_random_block(&system, system.block_device().borrow(), block_id);
-    let data_buf2 = write_random_block(&system, system.block_device().borrow(), block_id + 1);
+    let data_buf1 = write_random_block(&system, &system.block_device(), block_id);
+    let data_buf2 = write_random_block(&system, &system.block_device(), block_id + 1);
 
     handle.dirty_data(&data_buf2).unwrap();
     handle.dirty_data(&data_buf1).unwrap();

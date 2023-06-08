@@ -56,17 +56,11 @@ pub struct JournalBuffer {
     pub(crate) commited_data: Option<Vec<u8>>,
 }
 
-static mut JB_COUNT: usize = 0;
-
 impl JournalBuffer {
     pub fn new_or_get(buf: &Rc<dyn Buffer>) -> Rc<RefCell<Self>> {
         match buf.journal_buffer() {
             Some(jb) => jb,
             None => {
-                // FIXME
-                unsafe {
-                    JB_COUNT += 1;
-                }
                 let ret = Rc::new(RefCell::new(Self {
                     buf: buf.clone(),
                     transaction: None,
@@ -104,49 +98,48 @@ pub enum TransactionState {
     Finished,
 }
 
-pub struct Transaction {
+pub(crate) struct Transaction {
     /// Journal for this transaction [no locking]
-    pub journal: Weak<RefCell<Journal>>,
+    pub(crate) journal: Weak<RefCell<Journal>>,
     /// Sequence number for this transaction [no locking]
-    pub tid: Tid,
+    pub(crate) tid: Tid,
     /// Transaction's current state
     /// [no locking - only kjournald alters this]
-    pub state: TransactionState,
+    pub(crate) state: TransactionState,
     /// Where in the log does this transaction's commit start? [no locking]
-    pub log_start: u32,
+    pub(crate) log_start: u32,
     /// Doubly-linked circular list of all buffers reserved but not yet
     /// modified by this transaction [j_list_lock]
-    pub reserved_list: JournalBufferList,
+    pub(crate) reserved_list: JournalBufferList,
     /// Doubly-linked circular list of all buffers under writeout during
     /// commit [j_list_lock]
-    pub locked_list: JournalBufferList,
+    pub(crate) locked_list: JournalBufferList,
     /// Doubly-linked circular list of all metadata buffers owned by this
     /// transaction [j_list_lock]
-    pub buffers: JournalBufferList,
+    pub(crate) buffers: JournalBufferList,
     /// Doubly-linked circular list of all data buffers still to be
     /// flushed before this transaction can be committed [j_list_lock]
-    pub sync_datalist: JournalBufferList,
+    pub(crate) sync_datalist: JournalBufferList,
 
-    pub forget: JournalBufferList,
-    pub checkpoint_list: JournalBufferList,
-    pub checkpoint_io_list: JournalBufferList,
-    pub iobuf_list: JournalBufferList,
-    pub shadow_list: JournalBufferList,
-    pub log_list: JournalBufferList,
+    pub(crate) forget: JournalBufferList,
+    pub(crate) checkpoint_list: JournalBufferList,
+    // pub(crate) checkpoint_io_list: JournalBufferList,
+    pub(crate) iobuf_list: JournalBufferList,
+    pub(crate) shadow_list: JournalBufferList,
+    pub(crate) log_list: JournalBufferList,
 
     /// Number of buffers on the t_buffers list [j_list_lock]
-    pub nr_buffers: i32,
+    pub(crate) nr_buffers: i32,
     /// Number of outstanding updates running on this transaction
-    pub updates: u32,
+    pub(crate) updates: u32,
     /// Number of buffers reserved for use by all handles in this transaction
     /// handle but not yet modified
-    pub outstanding_credits: u32,
+    pub(crate) outstanding_credits: u32,
     /// How many handles used this transaction?
-    pub handle_count: u32,
+    pub(crate) handle_count: u32,
 
-    pub expires: usize,
-    pub start_time: usize, // TODO: ktime_t
-                           // pub synchronous_commit: bool,
+    // pub(crate) expires: usize,
+    pub(crate) start_time: usize,
 }
 
 pub struct JournalBufferList(pub Vec<Rc<RefCell<JournalBuffer>>>);
@@ -177,14 +170,12 @@ impl Transaction {
             sync_datalist: JournalBufferList::new(),
             forget: JournalBufferList::new(),
             checkpoint_list: JournalBufferList::new(),
-            checkpoint_io_list: JournalBufferList::new(),
             iobuf_list: JournalBufferList::new(),
             shadow_list: JournalBufferList::new(),
             log_list: JournalBufferList::new(),
             updates: 0,
             outstanding_credits: 0,
             handle_count: 0,
-            expires: 0,
             start_time: 0,
         }
     }
@@ -192,7 +183,6 @@ impl Transaction {
 
 impl Transaction {
     fn remove_buffer(&mut self, jb: &Rc<RefCell<JournalBuffer>>, list_type: BufferListType) {
-        // FIXME: Linux has lots of jbd_asserts here
         match list_type {
             BufferListType::None => {}
             BufferListType::SyncData => self.sync_datalist.remove(jb),
@@ -331,12 +321,6 @@ impl Transaction {
         // It has been modified by a later transaction: add it to the new
         // transaction's metadata list.
         todo!();
-        // let was_dirty = buf.test_clear_jbd_dirty();
-        // let tx_binding = jb.transaction.as_ref().unwrap().upgrade().unwrap();
-        // Transaction::temp_unlink_buffer(&tx_binding.lock(), jb_ref, jb, buf);
-
-        // jb.transaction = jb.next_transaction.clone();
-        // jb.next_transaction = None;
     }
 }
 
@@ -435,8 +419,6 @@ impl Handle {
         if self.aborted {
             return Err(JBDError::HandleAborted);
         }
-
-        // TODO: Lots of jbd_assertions here
 
         let tx_rc = self.transaction.as_ref().unwrap();
         let mut tx = tx_rc.borrow_mut();
@@ -558,7 +540,6 @@ impl Handle {
         // never, ever allow this to happen: there's nothing we can do
         // about it in this layer.
 
-        // TODO: buffer_mapped
         if let Some(jb_tx) = &jb.transaction {
             if !Rc::ptr_eq(jb_tx, tx_rc) {
                 // The buffer belongs to a different transaction.
@@ -573,7 +554,7 @@ impl Handle {
                     // write back synchronously
                     buf.sync();
                 }
-                // TODO: if (unlikely(!buffer_uptodate(bh)))
+
                 if let Some(jb_tx) = &jb.transaction {
                     if !Rc::ptr_eq(jb_tx, tx_rc) {
                         // Unlink buffer from old transaction
@@ -597,8 +578,6 @@ impl Handle {
         } else {
             Transaction::file_buffer(tx_rc, &mut tx, &jb_rc, &mut jb, BufferListType::SyncData)?;
         }
-
-        // no_journal:
 
         Ok(())
     }
@@ -725,7 +704,7 @@ impl Handle {
     ) -> JBDResult {
         if self.aborted {
             return Err(JBDError::HandleAborted);
-        } // TODO
+        }
 
         // We now hold the buffer lock so it is safe to query the buffer
         // state.  Is the buffer dirty?

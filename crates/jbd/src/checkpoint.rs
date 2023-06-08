@@ -58,13 +58,6 @@ impl Journal {
 
         jbd_assert!(blocknr != 0);
 
-        log::debug!(
-            "Cleanup tail: first_tid: {}, blocknr: {}, self.tail_sequence: {}",
-            first_tid,
-            blocknr,
-            self.tail_sequence
-        );
-
         if self.tail_sequence == first_tid {
             return;
         }

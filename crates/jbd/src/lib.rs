@@ -7,7 +7,8 @@
 pub mod checkpoint;
 /// Commit routines.
 pub mod commit;
-mod config;
+/// Some configuration constants.
+pub mod config;
 mod disk;
 /// Error types.
 pub mod err;

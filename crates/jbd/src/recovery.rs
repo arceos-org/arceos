@@ -105,7 +105,7 @@ impl Journal {
             if pass_type != PassType::Scan && next_commit_id >= info.end_transaction as u32 {
                 break;
             }
-            log::debug!(
+            log::trace!(
                 "Scanning sequence {} at {}/{}",
                 next_commit_id,
                 next_log_block,
@@ -124,7 +124,7 @@ impl Journal {
 
             let block_type = BlockType::from_u32_be(header.block_type)?;
             let sequence = u32::from_be(header.sequence);
-            log::debug!("Found block type {:?}, sequence {}", block_type, sequence);
+            log::trace!("Found block type {:?}, sequence {}", block_type, sequence);
 
             if sequence != next_commit_id {
                 // Reach the end of the log
@@ -137,7 +137,7 @@ impl Journal {
                         // Just skip the blocks it describes
                         let num_tags = count_tags(&buf, buf.size());
                         next_log_block = self.wrap(next_log_block + num_tags);
-                        log::debug!("Descriptor block has {} tags.", num_tags);
+                        log::trace!("Descriptor block has {} tags.", num_tags);
                         continue;
                     }
                     let mut offset = size_of::<Header>();
@@ -151,10 +151,10 @@ impl Journal {
 
                         let blocknr = u32::from_be(tag.block_nr);
                         if self.test_revoke(blocknr, next_commit_id as Tid) {
-                            log::debug!("Replay: skipping revoked block {}", blocknr);
+                            log::trace!("Replay: skipping revoked block {}", blocknr);
                             info.num_revoke_hits += 1;
                         } else {
-                            log::debug!("Replay: replaying block {}", blocknr);
+                            log::trace!("Replay: replaying block {}", blocknr);
                             // The block is should not be offseted.
                             let new_buf = self.get_buffer_direct(blocknr)?;
                             new_buf.buf_mut().copy_from_slice(io_buf.buf());
@@ -167,7 +167,7 @@ impl Journal {
 
                             info.num_replays += 1;
                         }
-                        log::debug!("flags: {:?}, blocknr: {}", flag, blocknr);
+                        log::trace!("flags: {:?}, blocknr: {}", flag, blocknr);
 
                         offset += size_of::<BlockTag>();
                         if !flag.contains(TagFlag::SAME_UUID) {
@@ -258,7 +258,6 @@ fn count_tags(buf: &Rc<dyn Buffer>, size: usize) -> u32 {
         offset += size_of::<BlockTag>();
 
         let flag = TagFlag::from_bits_truncate(u32::from_be(tag.flag));
-        log::debug!("flags: {:?}, blocknr: {}", flag, u32::from_be(tag.block_nr));
         if !flag.contains(TagFlag::SAME_UUID) {
             offset += 16;
         }

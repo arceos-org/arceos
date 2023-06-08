@@ -46,7 +46,7 @@ impl Journal {
             Transaction::refile_buffer(&jb_rc, &mut jb, &mut commit_tx);
         }
 
-        log::debug!("Commit phase 1.");
+        // Commit phase 1
 
         // Clear revoked flag to reflect there is no revoked buffers
         // in the next transaction which is going to be started.
@@ -62,7 +62,7 @@ impl Journal {
         let mut commit_tx = commit_tx_rc.as_ref().borrow_mut();
         commit_tx.log_start = self.head;
 
-        log::debug!("Commit phase 2.");
+        // Commit phase 2
 
         // Now start flushing things to disk, in the order they appear
         // on the transaction lists.  Data blocks go first.
@@ -82,7 +82,7 @@ impl Journal {
 
         jbd_assert!(commit_tx.sync_datalist.0.is_empty());
 
-        log::debug!("Commit phase 3.");
+        // Commit phase 3
 
         commit_tx.state = TransactionState::Commit;
 
@@ -197,7 +197,7 @@ impl Journal {
 
         // We don't need to wait for the buffer to be written, as they are synced.
 
-        log::debug!("Commit phase 4-5.");
+        // Commit phase 4-5
 
         // IO bufs
         jbd_assert!(commit_tx.iobuf_list.0.len() == commit_tx.shadow_list.0.len());
@@ -221,7 +221,7 @@ impl Journal {
         jbd_assert!(commit_tx.iobuf_list.0.is_empty());
         jbd_assert!(commit_tx.shadow_list.0.is_empty());
 
-        log::debug!("Commit phase 6.");
+        // Commit phase 6
 
         jbd_assert!(commit_tx.state == TransactionState::Commit);
         commit_tx.state = TransactionState::CommitRecord;
@@ -231,7 +231,8 @@ impl Journal {
         // processing: any buffers committed as a result of this
         // transaction can be removed from any checkpoint list it was on
         // before.
-        log::debug!("Commit phase 7.");
+
+        // Commit phase 7
 
         jbd_assert!(commit_tx.sync_datalist.0.is_empty());
         jbd_assert!(commit_tx.buffers.0.is_empty());
@@ -284,7 +285,7 @@ impl Journal {
 
         jbd_assert!(commit_tx.forget.0.is_empty());
 
-        log::debug!("Commit phase 8.");
+        // Commit phase 8
         commit_tx.state = TransactionState::Finished;
 
         self.commit_sequence = commit_tx.tid;
