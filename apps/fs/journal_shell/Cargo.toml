@@ -1,0 +1,18 @@
+[package]
+name = "arceos-logshell"
+version = "0.1.0"
+edition = "2021"
+authors = ["Liang Yesheng <liang2kl@outlook.com>"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+journal = ["easy_fs/journal"]
+data = ["journal", "easy_fs/data"]
+default = ["journal"]
+
+[dependencies]
+libax = { path = "../../../ulib/libax", features = ["fs"] }
+easy_fs = { path = "./easy_fs" }
+axfs = { path = "../../../modules/axfs", features = ["myfs"] }
+crate_interface = { path = "../../../crates/crate_interface" }

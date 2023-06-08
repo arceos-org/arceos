@@ -82,6 +82,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "arceos-logshell"
+version = "0.1.0"
+dependencies = [
+ "axfs",
+ "crate_interface 0.1.1",
+ "easy_fs",
+ "libax",
+]
+
+[[package]]
 name = "arceos-memtest"
 version = "0.1.0"
 dependencies = [
@@ -710,6 +720,20 @@ version = "0.1.0"
 dependencies = [
  "fdt-rs",
  "lazy_init",
+]
+
+[[package]]
+name = "easy_fs"
+version = "0.1.0"
+dependencies = [
+ "axfs",
+ "axfs_vfs",
+ "axlog",
+ "cfg-if",
+ "crate_interface 0.1.1",
+ "jbd",
+ "lazy_static",
+ "spin 0.7.1",
 ]
 
 [[package]]
