@@ -1,6 +1,7 @@
 use crate::{jbd_assert, journal::JournalFlag, Journal};
 
 impl Journal {
+    /// Checkpoint all commits in the log.
     pub fn do_all_checkpoints(&mut self) -> usize {
         let mut count = 0;
         while self.log_do_checkpoint() {
@@ -9,6 +10,7 @@ impl Journal {
         count
     }
 
+    /// Checkpoint one commit in the log.
     pub fn log_do_checkpoint(&mut self) -> bool {
         log::debug!("Start checkpoint.");
 

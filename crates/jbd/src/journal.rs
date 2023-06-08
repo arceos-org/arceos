@@ -18,6 +18,7 @@ use crate::{
 #[cfg(feature = "debug")]
 use crate::disk::Display;
 
+/// The in-memory journal controlling structure.
 pub struct Journal {
     pub(crate) system: Rc<dyn System>,
     pub(crate) sb_buffer: Rc<dyn Buffer>,
@@ -129,6 +130,7 @@ impl Journal {
         Ok(ret)
     }
 
+    /// Create a new journal on the given device.
     pub fn create(&mut self) -> JBDResult {
         if self.maxlen < JFS_MIN_JOURNAL_BLOCKS {
             log::error!("Journal too small: {} blocks.", self.maxlen);
@@ -164,6 +166,7 @@ impl Journal {
         self.reset()
     }
 
+    /// Load the journal from disk.
     pub fn load(&mut self) -> JBDResult {
         self.load_superblock()?;
 
@@ -176,6 +179,7 @@ impl Journal {
         Ok(())
     }
 
+    /// Start a new handle for a transaction.
     pub fn start(journal_rc: Rc<RefCell<Journal>>, nblocks: u32) -> JBDResult<Rc<RefCell<Handle>>> {
         let journal = journal_rc.as_ref().borrow();
         if let Some(current_handle) = journal.system.get_current_handle() {
@@ -193,6 +197,8 @@ impl Journal {
         Ok(handle)
     }
 
+    /// Do cleanup jobs and ensure everything is on disk. Usually called when
+    /// the filesystem is unmounted.
     pub fn destroy(&mut self) -> JBDResult {
         if self.running_transaction.is_some() {
             self.commit_transaction()?;

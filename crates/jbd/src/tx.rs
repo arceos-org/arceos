@@ -343,32 +343,23 @@ impl Transaction {
 /// Represents a single atomic update being performed by some process.
 pub struct Handle {
     /// Which compound transaction is this update a part of?
-    pub transaction: Option<Rc<RefCell<Transaction>>>,
+    pub(crate) transaction: Option<Rc<RefCell<Transaction>>>,
     /// Number of remaining buffers we are allowed to dirty
-    pub buffer_credits: u32,
-    pub err: i32, // TODO
-
-    /* Flags [no locking] */
-    /// Sync-on-close
-    pub sync: bool,
-    /// Force data journaling
-    pub jdata: bool,
+    pub(crate) buffer_credits: u32,
     /// Fatal error on handle
-    pub aborted: bool,
+    pub(crate) aborted: bool,
 }
 
 impl Handle {
-    pub fn new(nblocks: u32) -> Self {
+    pub(crate) fn new(nblocks: u32) -> Self {
         Self {
             transaction: None,
             buffer_credits: nblocks,
-            err: 0,
-            sync: false,
-            jdata: false,
             aborted: false,
         }
     }
 
+    /// Extend the reserved blocks of the handle by `nblocks`.
     pub fn extend(&mut self, nblocks: u32) -> JBDResult {
         if self.aborted {
             return Err(JBDError::HandleAborted);

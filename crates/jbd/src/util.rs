@@ -1,3 +1,4 @@
+/// Assertion enabled only when the `debug` feature is enabled.
 #[cfg(feature = "debug")]
 #[macro_export]
 macro_rules! jbd_assert {
@@ -13,6 +14,7 @@ macro_rules! jbd_assert {
     };
 }
 
+/// Assertion enabled only when the `debug` feature is enabled.
 #[cfg(not(feature = "debug"))]
 #[macro_export]
 macro_rules! jbd_assert {

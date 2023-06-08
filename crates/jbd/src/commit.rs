@@ -18,6 +18,7 @@ use crate::disk::Display;
 
 /// Commit related interfaces.
 impl Journal {
+    /// Commit the currently-running transaction.
     pub fn commit_transaction(&mut self) -> JBDResult {
         // First job: lock down the current transaction and wait for
         // all outstanding updates to complete.

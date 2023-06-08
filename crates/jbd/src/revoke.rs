@@ -1,3 +1,38 @@
+//! Revoke is the mechanism used to prevent old log records for deleted
+//! metadata from being replayed on top of newer data using the same
+//! blocks.  The revoke mechanism is used in two separate places:
+//!
+//! + Commit: during commit we write the entire list of the current
+//!   transaction's revoked blocks to the journal
+//!
+//! + Recovery: during recovery we record the transaction ID of all
+//!   revoked blocks.  If there are multiple revoke records in the log
+//!   for a single block, only the last one counts, and if there is a log
+//!   entry for a block beyond the last revoke, then that log entry still
+//!   gets replayed.
+//!
+//! We can get interactions between revokes and new log data within a
+//! single transaction:
+//!
+//! Block is revoked and then journaled:
+//!   The desired end result is the journaling of the new block, so we
+//!   cancel the revoke before the transaction commits.
+//!
+//! Block is journaled and then revoked:
+//!   The revoke must take precedence over the write of the block, so we
+//!   need either to cancel the journal entry or to write the revoke
+//!   later in the log than the log block.  In this case, we choose the
+//!   latter: journaling a block cancels any revoke record for that block
+//!   in the current transaction, so any revoke for that block in the
+//!   transaction must have happened after the block was journaled and so
+//!   the revoke must take precedence.
+//!
+//! Block is revoked and then written as data:
+//!   The data write is allowed to succeed, but the revoke is _not_
+//!   cancelled.  We still need to prevent old log records from
+//!   overwriting the new data.  We don't even need to clear the revoke
+//!   bit here.
+
 use core::{cell::RefCell, mem::size_of};
 
 extern crate alloc;
@@ -23,6 +58,10 @@ pub(crate) struct RevokeRecord {
 }
 
 impl Handle {
+    /// Revoke a buffer. This prevents the block from being replayed during
+    /// recovery if we take a crash after this current transaction commits.
+    /// Any subsequent metadata writes of the buffer in this transaction cancel
+    /// the revoke.
     pub fn revoke(&mut self, buf: &Rc<dyn Buffer>) -> JBDResult {
         let transcation_rc = self.transaction.as_ref().unwrap().clone();
         let mut transaction = transcation_rc.as_ref().borrow_mut();

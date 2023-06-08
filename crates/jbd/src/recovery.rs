@@ -13,7 +13,7 @@ use crate::{
     Journal,
 };
 
-pub struct RecoveryInfo {
+pub(crate) struct RecoveryInfo {
     start_transcation: Tid,
     end_transaction: Tid,
 
@@ -35,14 +35,14 @@ impl RecoveryInfo {
 }
 
 #[derive(PartialEq, Eq, Debug)]
-pub enum PassType {
+pub(crate) enum PassType {
     Scan,
     Revoke,
     Replay,
 }
 
 impl Journal {
-    pub fn recover(&mut self) -> JBDResult {
+    pub(crate) fn recover(&mut self) -> JBDResult {
         let sb = self.superblock_ref();
 
         // If sb.start == 0, the journal has already been safely unmounted.
