@@ -17,7 +17,9 @@ alloc-basic-best_fit = []
 alloc-basic-worst_fit = []
 alloc-tlsf-rust = []
 alloc-tlsf-c = []
-default = ["alloc-tlsf-rust"]
+alloc-mimalloc = []
+# default = ["alloc-tlsf-rust"]
+default = ["alloc-mimalloc"]
 
 [dependencies]
 cfg-if = "1.0"

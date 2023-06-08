@@ -82,8 +82,8 @@ const NUM_TASKS: usize = 10;
 const MUN_TURN: usize = 100;
 const NUM_ARRAY_PRE_THREAD: usize = 1000;
 
-static mut MEMORY_POOL: Vec<AtomicUsize> = Vec::new(); //NUM_TASKS * NUM_ARRAY_PRE_THREAD] = [AtomicUsize::new(0); NUM_TASKS * NUM_ARRAY_PRE_THREAD];
-static mut MEMORY_SIZE: Vec<AtomicUsize> = Vec::new(); //NUM_TASKS * NUM_ARRAY_PRE_THREAD] = [AtomicUsize::new(0); NUM_TASKS * NUM_ARRAY_PRE_THREAD];
+static mut MEMORY_POOL: Vec<AtomicUsize> = Vec::new();
+static mut MEMORY_SIZE: Vec<AtomicUsize> = Vec::new();
 
 static FINISHED_TASKS: AtomicUsize = AtomicUsize::new(0);
 
@@ -113,7 +113,6 @@ pub fn multi_thread_test() {
                         if let Ok(ptr) =
                             GLOBAL_ALLOCATOR.alloc(Layout::from_size_align_unchecked(size, 8))
                         {
-                            //println!("successfully alloc: {:#?} {:#x} {:#?}", idx,ptr,size);
                             MEMORY_POOL[idx].store(ptr, Ordering::Relaxed);
                             MEMORY_SIZE[idx].store(size, Ordering::Relaxed);
                         } else {
@@ -125,7 +124,6 @@ pub fn multi_thread_test() {
                         let idx = j * NUM_TASKS + tid;
                         let addr = MEMORY_POOL[idx].load(Ordering::Relaxed);
                         let size = MEMORY_SIZE[idx].load(Ordering::Relaxed);
-                        //println!("dealloc: {:#?} {:#x} {:#?}", idx,addr,size);
                         GLOBAL_ALLOCATOR
                             .dealloc(addr as _, Layout::from_size_align_unchecked(size, 8));
                         MEMORY_POOL[idx].store(0_usize, Ordering::Relaxed);
@@ -183,7 +181,6 @@ pub fn multi_thread_test() {
     }
     let t1 = std::time::Instant::now();
     println!("time: {:#?}", t1 - t0);
-    println!("Align alloc test OK!");
     println!("Multi thread memory allocation test OK!");
 }
 
@@ -339,7 +336,7 @@ fn buddy_fit_alloc_test() {
         GLOBAL_ALLOCATOR.init_buddy();
     }
     //align_test();
-    basic_test();
+    //basic_test();
     mi_test();
     //malloc_large_test();
     //glibc_bench_test();
@@ -376,11 +373,35 @@ fn slab_alloc_test() {
     }
 }
 
+fn mi_alloc_test() {
+    srand(2333);
+    unsafe {
+        GLOBAL_ALLOCATOR.init_heap();
+    }
+    println!("mi alloc test:");
+    unsafe {
+        GLOBAL_ALLOCATOR.init_mi();
+    }
+    align_test();
+    basic_test();
+    mi_test();
+    malloc_large_test();
+    glibc_bench_test();
+    //multi_thread_test();
+    //multi_thread_c_test();
+    println!("mi alloc test passed!");
+    println!("*****************************");
+    unsafe {
+        GLOBAL_ALLOCATOR.init_system();
+    }
+}
+
 #[test]
 fn test_start() {
     system_alloc_test();
     buddy_fit_alloc_test();
     slab_alloc_test();
+    mi_alloc_test();
     first_fit_alloc_test();
     best_fit_alloc_test();
     worst_fit_alloc_test();

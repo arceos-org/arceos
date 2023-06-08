@@ -17,6 +17,7 @@ bitmap-allocator = { git = "https://github.com/rcore-os/bitmap-allocator.git", r
 slab_allocator = { path = "../slab_allocator" }
 basic_allocator = { path = "../basic_allocator" }
 tlsf_allocator = { path = "../tlsf_allocator" }
+mimalloc_allocator = { path = "../mimalloc_allocator" }
 allocator_test = { path = "../allocator_test" }
 log = "0.4"
 
