@@ -24,6 +24,7 @@ members = [
     "crates/axfs_ramfs",
     "crates/axfs_vfs",
     "crates/axio",
+    "crates/jbd",
     "crates/capability",
     "crates/crate_interface",
     "crates/driver_block",

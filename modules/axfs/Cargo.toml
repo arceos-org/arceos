@@ -17,7 +17,7 @@ myfs = ["dep:crate_interface"]
 ext2fs = ["dep:ext2fs"]
 use-ramdisk = []
 
-default = ["devfs", "ramfs", "ext2fs"]
+default = ["ext2fs"]
 
 [dependencies]
 log = "0.4"

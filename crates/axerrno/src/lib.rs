@@ -80,6 +80,8 @@ pub enum AxError {
     /// An error returned when an operation could not be completed because a
     /// call to `write()` returned [`Ok(0)`](Ok).
     WriteZero,
+    /// Journaling filesystem detected an internal error.
+    Journal,
 }
 
 /// A specialized [`Result`] type with [`AxError`] as the error type.
@@ -213,7 +215,7 @@ impl From<AxError> for LinuxError {
             ResourceBusy => LinuxError::EBUSY,
             StorageFull => LinuxError::ENOSPC,
             Unsupported => LinuxError::ENOSYS,
-            UnexpectedEof | WriteZero => LinuxError::EIO,
+            UnexpectedEof | WriteZero | Journal => LinuxError::EIO,
             WouldBlock => LinuxError::EAGAIN,
         }
     }
