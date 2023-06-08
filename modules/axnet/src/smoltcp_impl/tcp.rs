@@ -1,4 +1,5 @@
 use axerrno::{ax_err, ax_err_type, AxError, AxResult};
+use axio::PollState;
 use axsync::Mutex;
 
 use smoltcp::iface::SocketHandle;
@@ -22,6 +23,7 @@ pub struct TcpSocket {
     handle: Option<SocketHandle>, // `None` if is listening
     local_addr: Option<SocketAddr>,
     peer_addr: Option<SocketAddr>,
+    nonblock: bool,
 }
 
 impl TcpSocket {
@@ -34,6 +36,7 @@ impl TcpSocket {
             handle,
             local_addr: None,
             peer_addr: None,
+            nonblock: false,
         }
     }
 
@@ -54,6 +57,18 @@ impl TcpSocket {
     /// [`Err(NotConnected)`](AxError::NotConnected) if not connected.
     pub fn peer_addr(&self) -> AxResult<SocketAddr> {
         self.peer_addr.ok_or(AxError::NotConnected)
+    }
+
+    /// Moves this TCP stream into or out of nonblocking mode.
+    ///
+    /// This will result in `read`, `write`, `recv` and `send` operations
+    /// becoming nonblocking, i.e., immediately returning from their calls.
+    /// If the IO operation is successful, `Ok` is returned and no further
+    /// action is required. If the IO operation could not be completed and needs
+    /// to be retried, an error with kind  [`Err(WouldBlock)`](AxError::WouldBlock) is
+    /// returned.
+    pub fn set_nonblocking(&mut self, nonblocking: bool) {
+        self.nonblock = nonblocking;
     }
 
     /// Connects to the given address and port.
@@ -171,16 +186,23 @@ impl TcpSocket {
                         handle: Some(handle),
                         local_addr: self.local_addr,
                         peer_addr,
+                        nonblock: false,
                     });
                 }
-                Err(AxError::Again) => axtask::yield_now(),
+                Err(AxError::WouldBlock) => {
+                    if self.nonblock {
+                        return Err(AxError::WouldBlock);
+                    } else {
+                        axtask::yield_now()
+                    }
+                }
                 Err(e) => return Err(e),
             }
         }
     }
 
     /// Close the connection.
-    pub fn shutdown(&self) -> AxResult {
+    pub fn shutdown(&mut self) -> AxResult {
         if let Some(handle) = self.handle {
             // stream
             SOCKET_SET.with_socket_mut::<tcp::Socket, _, _>(handle, |socket| {
@@ -221,14 +243,19 @@ impl TcpSocket {
                     }
                 } else {
                     // no more data
-                    Err(AxError::Again)
+                    Err(AxError::WouldBlock)
                 }
             }) {
                 Ok(n) => {
-                    SOCKET_SET.poll_interfaces();
                     return Ok(n);
                 }
-                Err(AxError::Again) => axtask::yield_now(),
+                Err(AxError::WouldBlock) => {
+                    if self.nonblock {
+                        return Err(AxError::WouldBlock);
+                    } else {
+                        axtask::yield_now()
+                    }
+                }
                 Err(e) => return Err(e),
             }
         }
@@ -254,16 +281,49 @@ impl TcpSocket {
                     Ok(len)
                 } else {
                     // tx buffer is full
-                    Err(AxError::Again)
+                    Err(AxError::WouldBlock)
                 }
             }) {
                 Ok(n) => {
-                    SOCKET_SET.poll_interfaces();
                     return Ok(n);
                 }
-                Err(AxError::Again) => axtask::yield_now(),
+                Err(AxError::WouldBlock) => {
+                    if self.nonblock {
+                        return Err(AxError::WouldBlock);
+                    } else {
+                        axtask::yield_now()
+                    }
+                }
                 Err(e) => return Err(e),
             }
+        }
+    }
+
+    /// Detect whether the socket needs to receive/can send.
+    ///
+    /// Return is <need to receive, can send>
+    pub fn poll(&self) -> AxResult<PollState> {
+        SOCKET_SET.poll_interfaces();
+        if let Some(handle) = self.handle {
+            // stream
+            SOCKET_SET.with_socket_mut::<tcp::Socket, _, _>(handle, |socket| {
+                Ok(PollState {
+                    readable: socket.is_open() && socket.can_recv(),
+                    writable: socket.is_open() && socket.can_send(),
+                })
+            })
+        } else {
+            // listener
+            let local_port = self
+                .local_addr
+                .ok_or_else(|| {
+                    ax_err_type!(InvalidInput, "socket poll() failed: no address bound")
+                })?
+                .port;
+            Ok(PollState {
+                readable: LISTEN_TABLE.can_accept(local_port)?,
+                writable: false,
+            })
         }
     }
 }

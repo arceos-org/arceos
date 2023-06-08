@@ -34,6 +34,7 @@ pub mod api;
 pub mod fops;
 
 use axdriver::{prelude::*, AxDeviceContainer};
+pub use root::close_main_fs;
 
 /// Initializes filesystems by block devices.
 pub fn init_filesystems(mut blk_devs: AxDeviceContainer<AxBlockDevice>) {

@@ -9,6 +9,7 @@ use virtio_drivers::{device::net::VirtIONetRaw as InnerDev, transport::Transport
 pub struct VirtIoNetDev<'a, H: Hal, T: Transport, const QS: usize> {
     rx_buffers: [Option<NetBufferBox<'a>>; QS],
     inner: InnerDev<H, T, QS>,
+    irq_num: Option<usize>,
 }
 
 unsafe impl<H: Hal, T: Transport, const QS: usize> Send for VirtIoNetDev<'_, H, T, QS> {}
@@ -17,21 +18,33 @@ unsafe impl<H: Hal, T: Transport, const QS: usize> Sync for VirtIoNetDev<'_, H, 
 impl<'a, H: Hal, T: Transport, const QS: usize> VirtIoNetDev<'a, H, T, QS> {
     /// Creates a new driver instance and initializes the device, or returns
     /// an error if any step fails.
-    pub fn try_new(transport: T) -> DevResult<Self> {
+    pub fn try_new(transport: T, irq_num: Option<usize>) -> DevResult<Self> {
         const NONE_BUF: Option<NetBufferBox> = None;
         let inner = InnerDev::new(transport).map_err(as_dev_err)?;
         let rx_buffers = [NONE_BUF; QS];
-        Ok(Self { rx_buffers, inner })
+        Ok(Self {
+            rx_buffers,
+            inner,
+            irq_num,
+        })
     }
 }
 
-impl<H: Hal, T: Transport, const QS: usize> const BaseDriverOps for VirtIoNetDev<'_, H, T, QS> {
+impl<H: Hal, T: Transport, const QS: usize> BaseDriverOps for VirtIoNetDev<'_, H, T, QS> {
     fn device_name(&self) -> &str {
         "virtio-net"
     }
 
     fn device_type(&self) -> DeviceType {
         DeviceType::Net
+    }
+
+    fn get_irq_num(&self) -> Option<usize> {
+        self.irq_num
+    }
+
+    fn ack_interrupt(&mut self) -> bool {
+        self.inner.ack_interrupt()
     }
 }
 

@@ -4,9 +4,12 @@
 #include <stdarg.h>
 #include <stddef.h>
 
+#define FILE_BUF_SIZE 1024
 // TODO: complete this struct
 struct IO_FILE {
     int fd;
+    uint16_t buffer_len;
+    char buf[FILE_BUF_SIZE];
 };
 
 typedef struct IO_FILE FILE;
@@ -20,8 +23,6 @@ extern FILE *const stderr;
 #define stderr (stderr)
 
 #define EOF (-1)
-
-#define printf(...) fprintf(stdout->fd, __VA_ARGS__)
 
 #define unimplemented(fmt, ...)                                                                \
     printf("\x1b[33m%s%s:\x1b[0m " fmt "\n", "WARN: no ax_call implementation for ", __func__, \
@@ -39,21 +40,30 @@ extern FILE *const stderr;
 
 #define FILENAME_MAX 4096
 
-int getchar();
-int putchar(int);
-int puts(const char *s);
-void fprintf(int f, const char *fmt, ...);
-
 #if defined(AX_CONFIG_ALLOC) && defined(AX_CONFIG_FS)
 FILE *fopen(const char *filename, const char *mode);
 #endif
 
 int fflush(FILE *);
 
-int vsnprintf(char *__restrict, size_t, const char *__restrict, va_list);
-int snprintf(char *__restrict, size_t, const char *__restrict, ...);
-int vsprintf(char *__restrict, const char *__restrict, va_list);
-int vfprintf(FILE *__restrict, const char *__restrict, va_list);
+int getchar();
+
+int fputc(int, FILE *);
+int putc(int, FILE *);
+int putchar(int);
+
+int fputs(const char *__restrict, FILE *__restrict);
+int puts(const char *s);
+
+int printf(const char *__restrict, ...);
+int fprintf(FILE *__restrict, const char *__restrict, ...);
 int sprintf(char *__restrict, const char *__restrict, ...);
+int snprintf(char *__restrict, size_t, const char *__restrict, ...);
+
+int vfprintf(FILE *__restrict, const char *__restrict, va_list);
+int vsprintf(char *__restrict, const char *__restrict, va_list);
+int vsnprintf(char *__restrict, size_t, const char *__restrict, va_list);
+
+void perror(const char *);
 
 #endif // __STDIO_H__

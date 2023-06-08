@@ -1,0 +1,23 @@
+[package]
+name = "allocator_test"
+version = "0.1.0"
+edition = "2021"
+authors = ["Yibin Zhang <zhangyb20@mails.tsinghua.edu.cn>"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "Various allocator algorithms in a unified interface"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+repository = "https://github.com/rcore-os/arceos/tree/main/crates/allocator"
+documentation = "https://rcore-os.github.io/arceos/allocator/index.html"
+
+[dependencies]
+buddy_system_allocator = { version = "0.9", default-features = false }
+bitmap-allocator = { git = "https://github.com/rcore-os/bitmap-allocator.git", rev = "88e871a" }
+slab_allocator = { path = "../slab_allocator" }
+basic_allocator = { path = "../basic_allocator" }
+tlsf_allocator = { path = "../tlsf_allocator" }
+log = "0.4"
+
+[build-dependencies]
+cc = { version = "1.0.79", features = ["parallel"] }

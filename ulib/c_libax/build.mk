@@ -17,6 +17,10 @@ CFLAGS += -nostdinc -static -no-pie -fno-builtin -ffreestanding -Wall
 CFLAGS += -I$(inc_dir) -I$(ulib_dir)/../libax
 LDFLAGS += -nostdlib -static -no-pie --gc-sections -T$(LD_SCRIPT)
 
+ifeq ($(ARCH), x86_64)
+  LDFLAGS += --no-relax
+endif
+
 ifeq ($(MODE), release)
   CFLAGS += -O3
 endif
@@ -67,7 +71,7 @@ app-objs := main.o
 app-objs := $(addprefix $(APP)/,$(app-objs))
 
 $(APP)/%.o: $(APP)/%.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) $(APP_CFLAGS) -c -o $@ $<
 
 $(OUT_ELF): $(app-objs) $(c_lib) $(rust_lib)
 	@printf "    $(CYAN_C)Linking$(END_C) $(OUT_ELF)\n"

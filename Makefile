@@ -3,19 +3,28 @@ ARCH ?= x86_64
 SMP ?= 1
 MODE ?= release
 LOG ?= warn
+FT ?= ext2
 
 A ?= apps/helloworld
 APP ?= $(A)
 APP_FEATURES ?=
-DISK_IMG ?= disk.img
-
+# DISK_IMG ?= target/fs.img
 FS ?= n
 NET ?= n
+NET_DEV ?= user
+NET_DUMP ?= n
 GRAPHIC ?= n
 BUS ?= mmio
 HV ?= n
 
 QEMU_LOG ?= n
+NET_DUMP ?= n
+
+ifeq ($(FT), fat32)
+  DISK_IMG ?= disk.img
+else
+  DISK_IMG ?= ext2fs_fuse/target/fs.img
+endif
 
 ifeq ($(wildcard $(APP)),)
   $(error Application path "$(APP)" is not valid)
@@ -32,37 +41,42 @@ ifeq ($(ARCH), x86_64)
   ACCEL ?= y
   PLATFORM ?= pc-x86
   TARGET := x86_64-unknown-none
+  TARGET_CFLAGS := -mno-sse
   BUS := pci
 else ifeq ($(ARCH), riscv64)
   ACCEL ?= n
   PLATFORM ?= qemu-virt-riscv
   TARGET := riscv64gc-unknown-none-elf
+  TARGET_CFLAGS := -mabi=lp64d
 else ifeq ($(ARCH), aarch64)
   ACCEL ?= n
   PLATFORM ?= qemu-virt-aarch64
   TARGET := aarch64-unknown-none-softfloat
+  TARGET_CFLAGS := -mgeneral-regs-only
 else
   $(error "ARCH" must be one of "x86_64", "riscv64", or "aarch64")
 endif
 
 export ARCH
+export ARCH_CFLAGS
 export PLATFORM
 export SMP
 export MODE
 export LOG
 
 # Binutils
-ifeq ($(APP_LANG), c)
-  CROSS_COMPILE ?= $(ARCH)-linux-musl-
-  CC := $(CROSS_COMPILE)gcc
-  AR := $(CROSS_COMPILE)ar
-  RANLIB := $(CROSS_COMPILE)ranlib
-  LD := rust-lld -flavor gnu
-endif
+CROSS_COMPILE ?= $(ARCH)-linux-musl-
+CC := $(CROSS_COMPILE)gcc
+AR := $(CROSS_COMPILE)ar
+RANLIB := $(CROSS_COMPILE)ranlib
+LD := rust-lld -flavor gnu
 
 OBJDUMP ?= rust-objdump -d --print-imm-hex --x86-asm-syntax=intel
 OBJCOPY ?= rust-objcopy --binary-architecture=$(ARCH)
 GDB ?= gdb-multiarch
+
+export TARGET_CC = $(CC)
+export TARGET_CFLAGS
 
 # Paths
 OUT_DIR ?= $(APP)
@@ -127,7 +141,7 @@ disk_img:
 ifneq ($(wildcard $(DISK_IMG)),)
 	@printf "$(YELLOW_C)warning$(END_C): disk image \"$(DISK_IMG)\" already exists!\n"
 else
-	$(call make_disk_image,fat32,$(DISK_IMG))
+	$(call make_disk_image,$(FT),$(DISK_IMG))
 endif
 
 clean: clean_c
@@ -136,6 +150,6 @@ clean: clean_c
 
 clean_c:
 	rm -rf ulib/c_libax/build_*
-	rm -rf $(APP)/*.o
+	rm -rf $(app-objs)
 
 .PHONY: all build disasm run justrun debug clippy fmt fmt_c test test_no_fail_fast clean clean_c doc disk_image

@@ -4,7 +4,7 @@
 
 use alloc::{string::String, sync::Arc, vec::Vec};
 use axerrno::{ax_err, AxError, AxResult};
-use axfs_vfs::{VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsNodeType, VfsOps, VfsResult};
+use axfs_vfs::{VfsError, VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsNodeType, VfsOps, VfsResult};
 use axsync::Mutex;
 use lazy_init::LazyInit;
 
@@ -37,12 +37,23 @@ impl Drop for MountPoint {
     }
 }
 
+impl Drop for RootDirectory {
+    fn drop(&mut self) {
+        self.close();
+    }
+}
+
 impl RootDirectory {
     pub const fn new(main_fs: Arc<dyn VfsOps>) -> Self {
         Self {
             main_fs,
             mounts: Vec::new(),
         }
+    }
+
+    fn close(&self) {
+        debug!("Close RootDirectory");
+        let _ = self.main_fs.umount();
     }
 
     pub fn mount(&mut self, path: &'static str, fs: Arc<dyn VfsOps>) -> AxResult {
@@ -56,7 +67,16 @@ impl RootDirectory {
             return ax_err!(InvalidInput, "mount point already exists");
         }
         // create the mount point in the main filesystem if it does not exist
-        self.main_fs.root_dir().create(path, FileType::Dir)?;
+        let cres = self.main_fs.root_dir().create(path, FileType::Dir);
+        if cres.is_err() {
+            match cres {
+                Err(AxError::AlreadyExists) => (),
+                Err(_) => {
+                    return cres;
+                }
+                _ => unreachable!(),
+            }
+        }
         fs.mount(path, self.main_fs.root_dir().lookup(path)?)?;
         self.mounts.push(MountPoint::new(path, fs));
         Ok(())
@@ -122,12 +142,32 @@ impl VfsNodeOps for RootDirectory {
         })
     }
 
-    fn remove(&self, path: &str) -> VfsResult {
+    fn remove(&self, path: &str, recursive: bool) -> VfsResult {
         self.lookup_mounted_fs(path, |fs, rest_path| {
             if rest_path.is_empty() {
                 ax_err!(PermissionDenied) // cannot remove mount points
             } else {
-                fs.root_dir().remove(rest_path)
+                fs.root_dir().remove(rest_path, recursive)
+            }
+        })
+    }
+
+    fn link(&self, name: &str, handle: &axfs_vfs::LinkHandle) -> VfsResult {
+        self.lookup_mounted_fs(name, |fs, rest_path| {
+            if rest_path.is_empty() {
+                ax_err!(PermissionDenied) // cannot remove mount points
+            } else {
+                fs.root_dir().link(rest_path, handle)
+            }
+        })
+    }
+
+    fn symlink(&self, name: &str, spath: &str) -> VfsResult {
+        self.lookup_mounted_fs(name, |fs, rest_path| {
+            if rest_path.is_empty() {
+                ax_err!(PermissionDenied) // cannot remove mount points
+            } else {
+                fs.root_dir().symlink(rest_path, spath)
             }
         })
     }
@@ -137,6 +177,11 @@ pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
     cfg_if::cfg_if! {
         if #[cfg(feature = "myfs")] { // override the default filesystem
             let main_fs = fs::myfs::new_myfs(disk);
+        } else if #[cfg(feature = "ext2fs")] {
+            static EXT2_FS: LazyInit<Arc<fs::ext2fs::Ext2FileSystem>> = LazyInit::new();
+            EXT2_FS.init_by(Arc::new(fs::ext2fs::Ext2FileSystem::new(disk)));
+            EXT2_FS.init();
+            let main_fs = EXT2_FS.clone();
         } else if #[cfg(feature = "fatfs")] {
             static FAT_FS: LazyInit<Arc<fs::fatfs::FatFileSystem>> = LazyInit::new();
             FAT_FS.init_by(Arc::new(fs::fatfs::FatFileSystem::new(disk)));
@@ -194,15 +239,16 @@ pub(crate) fn absolute_path(path: &str) -> AxResult<String> {
 }
 
 pub(crate) fn lookup(dir: Option<&VfsNodeRef>, path: &str) -> AxResult<VfsNodeRef> {
-    if path.is_empty() {
-        return ax_err!(NotFound);
-    }
-    let node = parent_node_of(dir, path).lookup(path)?;
-    if path.ends_with('/') && !node.get_attr()?.is_dir() {
-        ax_err!(NotADirectory)
-    } else {
-        Ok(node)
-    }
+    // if path.is_empty() {
+    //     return ax_err!(NotFound);
+    // }
+    // let node = parent_node_of(dir, path).lookup(path)?;
+    // if path.ends_with('/') && !node.get_attr()?.is_dir() {
+    //     ax_err!(NotADirectory)
+    // } else {
+    //     Ok(node)
+    // }
+    lookup_symbolic(dir, path, true)
 }
 
 pub(crate) fn create_file(dir: Option<&VfsNodeRef>, path: &str) -> AxResult<VfsNodeRef> {
@@ -211,32 +257,41 @@ pub(crate) fn create_file(dir: Option<&VfsNodeRef>, path: &str) -> AxResult<VfsN
     } else if path.ends_with('/') {
         return ax_err!(NotADirectory);
     }
-    let parent = parent_node_of(dir, path);
-    parent.create(path, VfsNodeType::File)?;
-    parent.lookup(path)
+    // let parent = parent_node_of(dir, path);
+    // parent.create(path, VfsNodeType::File)?;
+    // parent.lookup(path)
+    let (parent, child_name) = lookup_parent(dir, path)?;
+    parent.create(&child_name, VfsNodeType::File)?;
+    parent.lookup(&child_name)
 }
 
 pub(crate) fn create_dir(dir: Option<&VfsNodeRef>, path: &str) -> AxResult {
     match lookup(dir, path) {
         Ok(_) => ax_err!(AlreadyExists),
-        Err(AxError::NotFound) => parent_node_of(dir, path).create(path, VfsNodeType::Dir),
+        Err(AxError::NotFound) => {
+            let (parent, child_name) = lookup_parent(dir, path)?;
+            parent.create(&child_name, VfsNodeType::Dir)?;
+            Ok(())
+        }
         Err(e) => Err(e),
     }
 }
 
 pub(crate) fn remove_file(dir: Option<&VfsNodeRef>, path: &str) -> AxResult {
-    let node = lookup(dir, path)?;
+    let node = lookup_symbolic(dir, path, false)?;
     let attr = node.get_attr()?;
     if attr.is_dir() {
         ax_err!(IsADirectory)
     } else if !attr.perm().owner_writable() {
         ax_err!(PermissionDenied)
     } else {
-        parent_node_of(dir, path).remove(path)
+        let (parent, child_name) = lookup_parent(dir, path)?;
+        parent.remove(&child_name, false)?;
+        Ok(())
     }
 }
 
-pub(crate) fn remove_dir(dir: Option<&VfsNodeRef>, path: &str) -> AxResult {
+pub(crate) fn remove_dir(dir: Option<&VfsNodeRef>, path: &str, recursive: bool) -> AxResult {
     if path.is_empty() {
         return ax_err!(NotFound);
     }
@@ -254,14 +309,16 @@ pub(crate) fn remove_dir(dir: Option<&VfsNodeRef>, path: &str) -> AxResult {
         return ax_err!(PermissionDenied);
     }
 
-    let node = lookup(dir, path)?;
+    let node = lookup_symbolic(dir, path, false)?;
     let attr = node.get_attr()?;
     if !attr.is_dir() {
         ax_err!(NotADirectory)
     } else if !attr.perm().owner_writable() {
         ax_err!(PermissionDenied)
     } else {
-        parent_node_of(dir, path).remove(path)
+        let (parent, child_name) = lookup_parent(dir, path)?;
+        parent.remove(&child_name, recursive)?;
+        Ok(())
     }
 }
 
@@ -291,4 +348,147 @@ pub(crate) fn set_current_dir(path: &str) -> AxResult {
         *CURRENT_DIR_PATH.lock() = abs_path;
         Ok(())
     }
+}
+
+pub(crate) fn link(dir: Option<&VfsNodeRef>, path: &str, target_path: &str) -> AxResult {
+    debug!("link {} to {}", path, target_path);
+    if path.is_empty() {
+        return ax_err!(NotFound);
+    } else if path.ends_with('/') {
+        return ax_err!(NotADirectory);
+    }
+
+    let target = lookup_symbolic(dir, target_path, false)?;
+    let handle = target.get_link_handle()?;
+    debug!("after get target");
+
+    let parent = parent_node_of(dir, path);
+    let (ppath, name) = axfs_vfs::path::split_parent_name(path);
+    debug!("ppath = {:?}, name = {}", &ppath, &name);
+
+    let dp = if let Some(p) = ppath {
+        lookup_symbolic(Some(&parent), p.as_str(), true)?
+    } else {
+        parent.clone()
+    };
+
+    dp.link(name.as_str(), &handle)
+}
+
+pub(crate) fn symblink(dir: Option<&VfsNodeRef>, path: &str, target_path: &str) -> AxResult {
+    debug!("symblink {} to {}", path, target_path);
+    if path.is_empty() {
+        return ax_err!(NotFound);
+    } else if path.ends_with('/') {
+        return ax_err!(NotADirectory);
+    }
+
+    lookup_symbolic(dir, target_path, false)?;
+
+    let parent = parent_node_of(dir, path);
+    let (ppath, name) = axfs_vfs::path::split_parent_name(path);
+
+    let dp = if let Some(p) = ppath {
+        lookup_symbolic(Some(&parent), p.as_str(), true)?
+    } else {
+        parent.clone()
+    };
+
+    dp.symlink(name.as_str(), target_path)
+}
+
+pub(crate) fn lookup_symbolic(
+    dir: Option<&VfsNodeRef>,
+    path: &str,
+    final_jump: bool,
+) -> AxResult<VfsNodeRef> {
+    let mut count: usize = 0;
+    _lookup_symbolic(dir, path, &mut count, 20, final_jump, false)
+}
+
+pub(crate) fn lookup_parent(
+    dir: Option<&VfsNodeRef>,
+    path: &str,
+) -> AxResult<(VfsNodeRef, String)> {
+    let mut count: usize = 0;
+    let names = axfs_vfs::path::split_path(path);
+    Ok((
+        _lookup_symbolic(dir, path, &mut count, 20, false, true)?,
+        names[names.len() - 1].clone(),
+    ))
+}
+
+fn _lookup_symbolic(
+    dir: Option<&VfsNodeRef>,
+    path: &str,
+    count: &mut usize,
+    max_count: usize,
+    final_jump: bool,
+    return_parent: bool,
+) -> AxResult<VfsNodeRef> {
+    debug!("_lookup_symbolic({}, {})", path, count);
+    if path.is_empty() {
+        return ax_err!(NotFound);
+    }
+    let parent = parent_node_of(dir, path);
+    let is_dir = path.ends_with('/');
+    let path = path.trim_matches('/');
+    let names = axfs_vfs::path::split_path(path);
+
+    let mut cur = parent.clone();
+
+    if names.len() <= 1 && return_parent {
+        return Ok(cur);
+    }
+
+    for (idx, name) in names.iter().enumerate() {
+        if idx == names.len() - 1 && return_parent {
+            return Ok(cur);
+        }
+        let vnode = cur.clone().lookup(name.as_str())?;
+        let ty = vnode.get_attr()?.file_type();
+        if ty == VfsNodeType::SymLink {
+            if idx == names.len() - 1 && !final_jump {
+                return Ok(vnode);
+            }
+            *count += 1;
+            if *count > max_count {
+                return Err(VfsError::NotFound);
+            }
+            let mut new_path = vnode.get_path()?;
+            let rest_path = names[idx + 1..].join("/");
+            if !rest_path.is_empty() {
+                new_path += "/";
+                new_path += &rest_path;
+            }
+            if is_dir {
+                new_path += "/";
+            }
+            debug!("follow {}", path);
+            return _lookup_symbolic(None, &new_path, count, max_count, final_jump, return_parent);
+        } else if idx == names.len() - 1 {
+            if is_dir && !ty.is_dir() {
+                return Err(AxError::NotADirectory);
+            }
+            return Ok(vnode);
+        } else {
+            match ty {
+                VfsNodeType::Dir => {
+                    cur = vnode.clone();
+                }
+                VfsNodeType::File => {
+                    return Err(AxError::NotADirectory);
+                }
+                _ => panic!("unsupport type"),
+            };
+        }
+    }
+
+    panic!("_lookup_symbolic");
+}
+
+/// Close filesystem, should be called when shutting down.
+pub fn close_main_fs() {
+    debug!("close main fs");
+    ROOT_DIR.close()
 }

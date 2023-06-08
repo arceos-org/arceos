@@ -31,6 +31,7 @@ ifeq ($(APP_LANG),c)
     CFLAGS += $(addprefix -DAX_CONFIG_,$(shell cat $(APP)/features.txt | tr 'a-z' 'A-Z'))
   endif
   features-y += libax/cbindings
+  features-y += $(APP_FEATURES)
 else ifeq ($(APP_LANG),rust)
   features-y += $(APP_FEATURES)
   ifneq ($(APP_FEATURES),)
@@ -55,9 +56,14 @@ endif
 
 rustc_flags := -Clink-args="-T$(LD_SCRIPT) -no-pie"
 
+
 ifeq ($(HV), y)
   rustc_flags += -Ctarget-feature=+h
 endif 
+
+  rustc_flags += -Clink-args="--no-relax"
+endif
+
 
 define cargo_build
   cargo rustc $(build_args) $(1) -- $(rustc_flags)

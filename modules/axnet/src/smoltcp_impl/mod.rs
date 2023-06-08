@@ -8,6 +8,8 @@ use core::cell::RefCell;
 use core::ops::DerefMut;
 
 use axdriver::prelude::*;
+#[cfg(feature = "irq")]
+use axdriver::register_interrupt_handler;
 use axhal::time::{current_time_nanos, NANOS_PER_MICROS};
 use axsync::Mutex;
 use driver_net::{DevError, NetBufferBox, NetBufferPool};
@@ -31,10 +33,10 @@ const IP_PREFIX: u8 = 24;
 
 const RANDOM_SEED: u64 = 0xA2CE_05A2_CE05_A2CE;
 
-const TCP_RX_BUF_LEN: usize = 4096;
-const TCP_TX_BUF_LEN: usize = 4096;
-const UDP_RX_BUF_LEN: usize = 4096;
-const UDP_TX_BUF_LEN: usize = 4096;
+const TCP_RX_BUF_LEN: usize = 64 * 1024;
+const TCP_TX_BUF_LEN: usize = 64 * 1024;
+const UDP_RX_BUF_LEN: usize = 64 * 1024;
+const UDP_TX_BUF_LEN: usize = 64 * 1024;
 const RX_BUF_QUEUE_SIZE: usize = 64;
 const LISTEN_QUEUE_SIZE: usize = 512;
 
@@ -56,7 +58,7 @@ struct DeviceWrapper {
 
 struct InterfaceWrapper {
     name: &'static str,
-    ether_addr: Option<EthernetAddress>,
+    ether_addr: EthernetAddress,
     dev: Mutex<DeviceWrapper>,
     iface: Mutex<Interface>,
 }
@@ -123,10 +125,9 @@ impl<'a> SocketSetWrapper<'a> {
 }
 
 impl InterfaceWrapper {
-    fn new(name: &'static str, dev: AxNetDevice, ether_addr: Option<EthernetAddress>) -> Self {
-        let mut config = Config::new();
+    fn new(name: &'static str, dev: AxNetDevice, ether_addr: EthernetAddress) -> Self {
+        let mut config = Config::new(HardwareAddress::Ethernet(ether_addr));
         config.random_seed = RANDOM_SEED;
-        config.hardware_addr = ether_addr.map(HardwareAddress::Ethernet);
 
         let mut dev = DeviceWrapper::new(dev);
         let iface = Mutex::new(Interface::new(config, &mut dev));
@@ -142,7 +143,7 @@ impl InterfaceWrapper {
         self.name
     }
 
-    pub fn ethernet_address(&self) -> Option<EthernetAddress> {
+    pub fn ethernet_address(&self) -> EthernetAddress {
         self.ether_addr
     }
 
@@ -171,6 +172,11 @@ impl InterfaceWrapper {
         let mut iface = self.iface.lock();
         let mut sockets = sockets.lock();
         iface.poll(timestamp, dev.deref_mut(), &mut sockets);
+    }
+
+    #[cfg(feature = "irq")]
+    pub fn ack_interrupt(&self) {
+        unsafe { &mut *self.dev.as_mut_ptr() }.ack_interrupt();
     }
 }
 
@@ -204,6 +210,11 @@ impl DeviceWrapper {
     fn receive(&mut self) -> Option<NetBufferBox<'static>> {
         self.rx_buf_queue.pop_front()
     }
+
+    #[cfg(feature = "irq")]
+    fn ack_interrupt(&mut self) -> bool {
+        unsafe { self.inner.as_ptr().as_mut().unwrap().ack_interrupt() }
+    }
 }
 
 impl Device for DeviceWrapper {
@@ -221,8 +232,8 @@ impl Device for DeviceWrapper {
 
     fn capabilities(&self) -> DeviceCapabilities {
         let mut caps = DeviceCapabilities::default();
-        caps.max_transmission_unit = 1536;
-        caps.max_burst_size = Some(1);
+        caps.max_transmission_unit = 1514;
+        caps.max_burst_size = None;
         caps.medium = Medium::Ethernet;
         caps
     }
@@ -287,9 +298,14 @@ pub(crate) fn init(mut net_dev: AxNetDevice) {
     let pool = NetBufferPool::new(NET_BUF_POOL_SIZE, NET_BUF_LEN).unwrap();
     NET_BUF_POOL.init_by(pool);
     net_dev.fill_rx_buffers(&NET_BUF_POOL).unwrap();
+    #[cfg(feature = "irq")]
+    register_interrupt_handler!(net_dev, {
+        info!("ACK");
+        ETH0.ack_interrupt();
+    });
 
     let ether_addr = EthernetAddress(net_dev.mac_address().0);
-    let eth0 = InterfaceWrapper::new("eth0", net_dev, Some(ether_addr));
+    let eth0 = InterfaceWrapper::new("eth0", net_dev, ether_addr);
     eth0.setup_ip_addr(IP, IP_PREFIX);
     eth0.setup_gateway(GATEWAY);
 
@@ -298,9 +314,7 @@ pub(crate) fn init(mut net_dev: AxNetDevice) {
     LISTEN_TABLE.init_by(ListenTable::new());
 
     info!("created net interface {:?}:", ETH0.name());
-    if let Some(ether_addr) = ETH0.ethernet_address() {
-        info!("  ether:    {}", ether_addr);
-    }
+    info!("  ether:    {}", ETH0.ethernet_address());
     info!("  ip:       {}/{}", IP, IP_PREFIX);
     info!("  gateway:  {}", GATEWAY);
 }
