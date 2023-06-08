@@ -17,6 +17,7 @@ GRAPHIC ?= n
 BUS ?= mmio
 
 QEMU_LOG ?= n
+NET_DUMP ?= n
 
 ifeq ($(FT), fat32)
   DISK_IMG ?= disk.img

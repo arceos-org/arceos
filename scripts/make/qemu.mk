@@ -41,6 +41,10 @@ ifeq ($(NET_DUMP), y)
   qemu_args-$(NET) += -object filter-dump,id=dump0,netdev=net0,file=qemu-net0.pcap
 endif
 
+ifeq ($(NET_DUMP), y)
+  qemu_args-$(NET) += -object filter-dump,id=dump0,netdev=net0,file=qemu-net0.pcap
+endif
+
 qemu_args-$(GRAPHIC) += \
   -device virtio-gpu-$(vdev-suffix) -vga none \
   -serial mon:stdio
