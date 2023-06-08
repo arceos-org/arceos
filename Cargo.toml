@@ -54,6 +54,7 @@ members = [
     "crates/allocator_test",
     "crates/fs_utils",
     "crates/ext2fs",
+    "crates/mimalloc_allocator",
 
     "modules/axalloc",
     "modules/axconfig",

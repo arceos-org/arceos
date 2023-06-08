@@ -4,10 +4,31 @@
 #![no_std]
 extern crate alloc;
 use alloc::alloc::{alloc, dealloc};
+mod align_test;
 mod basic_test;
-use alloc::vec::Vec;
-pub use basic_test::{basic_test, rand_u32, rand_usize, srand};
+pub use align_test::align_test;
+pub use basic_test::basic_test;
+use core::sync::atomic::{AtomicU64, Ordering::SeqCst};
 use core::{alloc::Layout, ffi::c_ulonglong};
+
+static SEED: AtomicU64 = AtomicU64::new(0xa2ce_a2ce);
+
+/// Sets the seed for the random number generator.
+pub fn srand(seed: u32) {
+    SEED.store(seed.wrapping_sub(1) as u64, SeqCst);
+}
+
+/// Returns a 32-bit unsigned pseudo random interger.
+pub fn rand_u32() -> u32 {
+    let new_seed = SEED.load(SeqCst).wrapping_mul(6364136223846793005) + 1;
+    SEED.store(new_seed, SeqCst);
+    (new_seed >> 33) as u32
+}
+
+/// Return a usize pseudo random interger.
+pub fn rand_usize() -> usize {
+    ((rand_u32() as usize) << 32) | (rand_u32() as usize)
+}
 
 #[link(name = "allocator_test")]
 extern "C" {
@@ -87,67 +108,5 @@ pub fn glibc_bench_test() {
 pub fn multi_thread_c_test() {
     unsafe {
         multi_thread_c_test_start(cb_malloc_func, cb_malloc_aligned_func, cb_free_func);
-    }
-}
-
-/// new aligned memory
-pub fn new_mem(size: usize, align: usize) -> usize {
-    unsafe {
-        let ptr = alloc(Layout::from_size_align_unchecked(size, align));
-        ptr as usize
-    }
-}
-
-/// align test
-pub fn align_test() {
-    let mut v = Vec::new();
-    let mut v2 = Vec::new();
-    let mut v3 = Vec::new();
-    let mut p = Vec::new();
-    let n = 50000;
-    let mut cnt = 0;
-    let mut nw = 0;
-    for _ in 0..n {
-        if (rand_u32() % 3 != 0) | (nw == 0) {
-            //插入一个块
-            let size = (((1 << (rand_u32() & 15)) as f64)
-                * (1.0 + (rand_u32() as f64) / (0xffffffff_u32 as f64)))
-                as usize;
-            let align = (1 << (rand_u32() & 7)) as usize;
-            let addr = new_mem(size, align);
-            v.push(addr);
-            assert!((addr & (align - 1)) == 0, "align not correct.");
-            v2.push(size);
-            v3.push(align);
-            p.push(cnt);
-            cnt += 1;
-            nw += 1;
-        } else {
-            //删除一个块
-            let idx = rand_usize() % nw;
-            let addr = v[p[idx]];
-            let size = v2[p[idx]];
-            let align = v3[p[idx]];
-            unsafe {
-                dealloc(
-                    addr as *mut u8,
-                    Layout::from_size_align_unchecked(size, align),
-                );
-            }
-            nw -= 1;
-            p[idx] = p[nw];
-            p.pop();
-        }
-    }
-    for idx in 0..nw {
-        let addr = v[p[idx]];
-        let size = v2[p[idx]];
-        let align = v3[p[idx]];
-        unsafe {
-            dealloc(
-                addr as *mut u8,
-                Layout::from_size_align_unchecked(size, align),
-            );
-        }
     }
 }

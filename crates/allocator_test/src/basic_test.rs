@@ -1,27 +1,8 @@
+use super::{rand_u32, rand_usize};
 use alloc::collections::BTreeMap;
 use alloc::format;
 use alloc::vec::Vec;
-use core::sync::atomic::{AtomicU64, Ordering::SeqCst};
 use log::debug;
-
-static SEED: AtomicU64 = AtomicU64::new(0xa2ce_a2ce);
-
-/// Sets the seed for the random number generator.
-pub fn srand(seed: u32) {
-    SEED.store(seed.wrapping_sub(1) as u64, SeqCst);
-}
-
-/// Returns a 32-bit unsigned pseudo random interger.
-pub fn rand_u32() -> u32 {
-    let new_seed = SEED.load(SeqCst).wrapping_mul(6364136223846793005) + 1;
-    SEED.store(new_seed, SeqCst);
-    (new_seed >> 33) as u32
-}
-
-/// Return a usize pseudo random interger.
-pub fn rand_usize() -> usize {
-    ((rand_u32() as usize) << 32) | (rand_u32() as usize)
-}
 
 /// test of vec
 pub fn test_vec(n: usize) {
