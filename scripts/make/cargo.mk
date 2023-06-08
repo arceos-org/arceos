@@ -61,6 +61,7 @@ ifeq ($(HV), y)
   rustc_flags += -Ctarget-feature=+h
 endif 
 
+ifeq ($(ARCH), x86_64)
   rustc_flags += -Clink-args="--no-relax"
 endif
 
