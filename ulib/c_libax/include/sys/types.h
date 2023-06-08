@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+typedef unsigned char u_char;
+
 typedef unsigned mode_t;
 typedef uint32_t nlink_t;
 typedef int64_t off_t;

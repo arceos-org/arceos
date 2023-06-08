@@ -1,9 +1,10 @@
-#include <arpa/inet.h>
-#include <netinet/in.h>
+
 #include <stdio.h>
 #include <string.h>
-#include <sys/socket.h>
 #include <unistd.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 
 const char header[] = "\
 HTTP/1.1 200 OK\r\n\
@@ -36,21 +37,21 @@ int main()
     int addr_len = sizeof(remote);
     local.sin_family = AF_INET;
     if (inet_pton(AF_INET, "10.0.2.15", &(local.sin_addr)) != 1) {
-        puts("inet_pton() error!");
+        perror("inet_pton() error");
         return -1;
     }
     local.sin_port = htons(5555);
     int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (sock == -1) {
-        puts("socket() error!");
+        perror("socket() error");
         return -1;
     }
     if (bind(sock, (struct sockaddr *)&local, sizeof(local)) != 0) {
-        puts("bind() error!");
+        perror("bind() error");
         return -1;
     }
     if (listen(sock, 0) != 0) {
-        puts("listen() error!");
+        perror("listen() error");
         return -1;
     }
     puts("listen on: http://10.0.2.15:5555/");
@@ -62,27 +63,27 @@ int main()
     for (;;) {
         client = accept(sock, (struct sockaddr *)&remote, (socklen_t *)&addr_len);
         if (client == -1) {
-            puts("accept() error!");
+            perror("accept() error");
             return -1;
         }
         printf("new client %d\n", client);
         if (recv(client, buf, 1024, 0) == -1) {
-            puts("recv() error!");
+            perror("recv() error");
             return -1;
         }
         ssize_t l = send(client, response, strlen(response), 0);
         if (l == -1) {
-            puts("send() error!");
+            perror("send() error");
             return -1;
         }
         if (close(client) == -1) {
-            puts("close() error!");
+            perror("close() error");
             return -1;
         }
         printf("client %d close: %ld bytes sent\n", client, l);
     }
     if (close(sock) == -1) {
-        puts("close() error!");
+        perror("close() error");
         return -1;
     }
     return 0;
