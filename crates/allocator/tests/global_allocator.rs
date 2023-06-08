@@ -36,9 +36,6 @@ const HEAP_SIZE: usize = 1 << 26; // 512MB
 /// The memory heap in this test
 static mut HEAP: [usize; HEAP_SIZE + PAGE_SIZE] = [0; HEAP_SIZE + PAGE_SIZE];
 
-/// if FLAG=ture, always uses system_alloc
-static mut FLAG: bool = false;
-
 /// The global allocator to test alloc in user mode.
 /// The alloc mode supported: system_alloc, basic_alloc, buddy_alloc,
 /// slab_alloc, tlsf_c_alloc and tlsf_rust_alloc.
@@ -119,10 +116,6 @@ impl GlobalAllocator {
     pub unsafe fn alloc(&self, layout: Layout) -> AllocResult<usize> {
         let size: usize = layout.size();
         let align_pow2: usize = layout.align();
-        if FLAG {
-            let ptr = System.alloc(layout);
-            return Ok(ptr as usize);
-        }
 
         match self.alloc_type {
             AllocType::SystemAlloc => {
@@ -130,54 +123,42 @@ impl GlobalAllocator {
                 return Ok(ptr as usize);
             }
             AllocType::BasicAlloc => {
-                FLAG = true;
                 if let Ok(ptr) = self.basic_alloc.lock().unwrap().alloc(size, align_pow2) {
-                    FLAG = false;
                     return Ok(ptr);
                 } else {
                     panic!("alloc err: no memery.");
                 }
             }
             AllocType::BuddyAlloc => {
-                FLAG = true;
                 if let Ok(ptr) = self.buddy_alloc.lock().unwrap().alloc(size, align_pow2) {
-                    FLAG = false;
                     return Ok(ptr);
                 } else {
                     panic!("alloc err: no memery.");
                 }
             }
             AllocType::SlabAlloc => {
-                FLAG = true;
                 if let Ok(ptr) = self.slab_alloc.lock().unwrap().alloc(size, align_pow2) {
-                    FLAG = false;
                     return Ok(ptr);
                 } else {
                     panic!("alloc err: no memery.");
                 }
             }
             AllocType::TLSFCAlloc => {
-                FLAG = true;
                 if let Ok(ptr) = self.tlsf_c_alloc.lock().unwrap().alloc(size, align_pow2) {
-                    FLAG = false;
                     return Ok(ptr);
                 } else {
                     panic!("alloc err: no memery.");
                 }
             }
             AllocType::TLSFRustAlloc => {
-                FLAG = true;
                 if let Ok(ptr) = self.tlsf_rust_alloc.lock().unwrap().alloc(size, align_pow2) {
-                    FLAG = false;
                     return Ok(ptr);
                 } else {
                     panic!("alloc err: no memery.");
                 }
             }
             AllocType::MiAlloc => {
-                FLAG = true;
                 if let Ok(ptr) = self.mi_alloc.lock().unwrap().alloc(size, align_pow2) {
-                    FLAG = false;
                     return Ok(ptr);
                 } else {
                     panic!("alloc err: no memery.");
@@ -189,59 +170,43 @@ impl GlobalAllocator {
     pub unsafe fn dealloc(&self, pos: usize, layout: Layout) {
         let size: usize = layout.size();
         let align_pow2: usize = layout.align();
-        if FLAG {
-            System.dealloc(pos as *mut u8, layout);
-            return;
-        }
 
         match self.alloc_type {
             AllocType::SystemAlloc => {
                 System.dealloc(pos as *mut u8, layout);
             }
             AllocType::BasicAlloc => {
-                FLAG = true;
                 self.basic_alloc
                     .lock()
                     .unwrap()
                     .dealloc(pos, size, align_pow2);
-                FLAG = false;
             }
             AllocType::BuddyAlloc => {
-                FLAG = true;
                 self.buddy_alloc
                     .lock()
                     .unwrap()
                     .dealloc(pos, size, align_pow2);
-                FLAG = false;
             }
             AllocType::SlabAlloc => {
-                FLAG = true;
                 self.slab_alloc
                     .lock()
                     .unwrap()
                     .dealloc(pos, size, align_pow2);
-                FLAG = false;
             }
             AllocType::TLSFCAlloc => {
-                FLAG = true;
                 self.tlsf_c_alloc
                     .lock()
                     .unwrap()
                     .dealloc(pos, size, align_pow2);
-                FLAG = false;
             }
             AllocType::TLSFRustAlloc => {
-                FLAG = true;
                 self.tlsf_rust_alloc
                     .lock()
                     .unwrap()
                     .dealloc(pos, size, align_pow2);
-                FLAG = false;
             }
             AllocType::MiAlloc => {
-                FLAG = true;
                 self.mi_alloc.lock().unwrap().dealloc(pos, size, align_pow2);
-                FLAG = false;
             }
         }
     }
