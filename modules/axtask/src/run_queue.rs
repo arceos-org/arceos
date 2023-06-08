@@ -256,7 +256,7 @@ impl AxRunQueue {
                             );
                         } else {
                             RUN_QUEUE[next as usize].scheduler.lock().add_task(tk);
-                            flag = 0;
+                            //flag = 0;
                         }
                     } else {
                         flag = 1;
