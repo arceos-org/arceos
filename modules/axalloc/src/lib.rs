@@ -56,7 +56,7 @@ cfg_if::cfg_if! {
 /// there is no memory, asks the page allocator for more memory and adds it to
 /// the byte allocator.
 ///
-/// Currently, [`SlabByteAllocator`] is used as the byte allocator, while
+/// Currently, [`MiAllocator`] is used as the byte allocator, while
 /// [`BitmapPageAllocator`] is used as the page allocator.
 pub struct GlobalAllocator {
     balloc: SpinNoIrq<Allocator>,
@@ -217,6 +217,7 @@ unsafe impl GlobalAlloc for GlobalAllocator {
 }
 
 #[cfg_attr(all(target_os = "none", not(test)), global_allocator)]
+/// Global allocator
 pub static GLOBAL_ALLOCATOR: GlobalAllocator = GlobalAllocator::new();
 
 /// Returns the reference to the global allocator.

@@ -15,15 +15,15 @@ use data::*;
 
 /// the heap structure of the allocator
 pub struct Heap {
-    // 指向heap的地址
+    /// 指向heap的地址
     pub addr: usize,
-    // 尚未建成段的起始地址
+    /// 尚未建成段的起始地址
     pub unused_begin: usize,
-    // 尚未建成段的终止地址
+    /// 尚未建成段的终止地址
     pub unused_end: usize,
-    // 一个临时的尚未建成段的起始地址，为建立huge segment而暂存
+    /// 一个临时的尚未建成段的起始地址，为建立huge segment而暂存
     pub unused_begin_tmp: usize,
-    // 一个临时的尚未建成段的终止地址，为建立huge segment而暂存
+    /// 一个临时的尚未建成段的终止地址，为建立huge segment而暂存
     pub unused_end_tmp: usize,
 }
 

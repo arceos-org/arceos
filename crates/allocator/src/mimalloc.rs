@@ -6,7 +6,7 @@ use super::{AllocError, AllocResult, BaseAllocator, ByteAllocator};
 use core::alloc::Layout;
 use mimalloc_allocator::Heap;
 
-/// A byte-granularity memory allocator based on the [mimalloc] written by rust code.
+/// A byte-granularity memory allocator based on the [mimalloc_allocator] written by rust code.
 pub struct MiAllocator {
     inner: Option<Heap>,
 }
