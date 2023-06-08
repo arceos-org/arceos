@@ -1,0 +1,190 @@
+/dts-v1/;
+
+/ {
+	#address-cells = <1>;
+	#size-cells = <1>;
+	compatible = "freechips,rocketchip-unknown-dev";
+	model = "freechips,rocketchip-unknown";
+
+
+	chosen {
+		bootargs = "earlycon=uartlite,mmio,0x60100000 console=ttyUL0 rdinit=/sbin/init";
+		stdout-path = "serial0";
+	};
+
+	aliases {
+		serial0 = &uart0;
+	};
+
+	uart0: uartlite_0@60100000 {
+		compatible = "xlnx,axi-uartlite-1.02.a", "xlnx,xps-uartlite-1.00.a";
+		reg = <0x60100000 0x1000>;
+		interrupt-parent = <&L8>;
+		interrupts = <1>;
+		clock = <&L0>;
+		current-speed = <115200>;
+		xlnx,data-bits = <8>;
+		xlnx,use-parity = <0>;
+	};
+
+	axi_eth_0_dma: eth_dma@60300000 {
+		compatible = "xlnx,eth-dma";
+		reg = <0x60300000 0x100000>;
+		interrupt-parent = <&L8>;
+		interrupts = <4 3>;
+	};
+
+	eth0: ethernet@60200000 {
+		axistream-connected = <&axi_eth_0_dma>;
+		compatible = "xlnx,axi-ethernet-1.00.a";
+		device_type = "network";
+		interrupt-parent = <&L8>;
+		interrupts = <2>;
+		phy-handle = <&axi_eth_phy>;
+		phy-mode = "rgmii-rxid"; // phy-mode = "internal";
+		reg = <0x60200000 0x100000>;
+		mac-address = [ac 67 1c ba 82 58];
+
+		/*
+		fixed-link {
+			speed = <1000>;
+			full-duplex;
+		};
+		 */
+
+		eth_0: mdio {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			axi_eth_phy: phy@7 { // axi_eth_phy: phy@1 {
+				device_type = "ethernet-phy";
+				reg = <7>; // reg = <1>;
+				// xlnx,phy-type = <0x5>;
+			};
+		};
+	};
+
+
+	L18: cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		timebase-frequency = <100000000>;
+		L4: cpu@0 {
+			clock-frequency = <100000000>;
+			compatible = "sifive,rocket0", "riscv";
+			d-cache-block-size = <64>;
+			d-cache-sets = <64>;
+			d-cache-size = <16384>;
+			d-tlb-sets = <1>;
+			d-tlb-size = <32>;
+			device_type = "cpu";
+			hardware-exec-breakpoint-count = <1>;
+			i-cache-block-size = <64>;
+			i-cache-sets = <64>;
+			i-cache-size = <16384>;
+			i-tlb-sets = <1>;
+			i-tlb-size = <32>;
+			mmu-type = "riscv,sv39,sv39x4";
+			next-level-cache = <&L13>;
+			reg = <0x0>;
+			riscv,isa = "rv64imafdchzicsr_zifencei_zihpm_xrocket";
+			riscv,pmpgranularity = <4096>;
+			riscv,pmpregions = <8>;
+			status = "okay";
+			timebase-frequency = <100000000>;
+			tlb-split;
+			L2: interrupt-controller {
+				#interrupt-cells = <1>;
+				compatible = "riscv,cpu-intc";
+				interrupt-controller;
+			};
+		};
+		L7: cpu@1 {
+			clock-frequency = <100000000>;
+			compatible = "sifive,rocket0", "riscv";
+			d-cache-block-size = <64>;
+			d-cache-sets = <64>;
+			d-cache-size = <16384>;
+			d-tlb-sets = <1>;
+			d-tlb-size = <32>;
+			device_type = "cpu";
+			hardware-exec-breakpoint-count = <1>;
+			i-cache-block-size = <64>;
+			i-cache-sets = <64>;
+			i-cache-size = <16384>;
+			i-tlb-sets = <1>;
+			i-tlb-size = <32>;
+			mmu-type = "riscv,sv39,sv39x4";
+			next-level-cache = <&L13>;
+			reg = <0x1>;
+			riscv,isa = "rv64imafdchzicsr_zifencei_zihpm_xrocket";
+			riscv,pmpgranularity = <4096>;
+			riscv,pmpregions = <8>;
+			status = "okay";
+			timebase-frequency = <100000000>;
+			tlb-split;
+			L5: interrupt-controller {
+				#interrupt-cells = <1>;
+				compatible = "riscv,cpu-intc";
+				interrupt-controller;
+			};
+		};
+	};
+	L13: memory@80000000 {
+		device_type = "memory";
+		reg = <0x80000000 0x80000000>;
+	};
+	L17: soc {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "freechips,rocketchip-unknown-soc", "simple-bus";
+		ranges;
+		L9: clint@2000000 {
+			compatible = "riscv,clint0";
+			interrupts-extended = <&L2 3 &L2 7 &L5 3 &L5 7>;
+			reg = <0x2000000 0x10000>;
+			reg-names = "control";
+		};
+		L10: debug-controller@0 {
+			compatible = "sifive,debug-013", "riscv,debug-013";
+			debug-attach = "dmi";
+			interrupts-extended = <&L2 65535 &L5 65535>;
+			reg = <0x0 0x1000>;
+			reg-names = "control";
+		};
+		L1: error-device@3000 {
+			compatible = "sifive,error0";
+			reg = <0x3000 0x1000>;
+		};
+		L12: external-interrupts {
+			interrupt-parent = <&L8>;
+			interrupts = <1 2 3 4>;
+		};
+		L8: interrupt-controller@c000000 {
+			#interrupt-cells = <1>;
+			compatible = "riscv,plic0";
+			interrupt-controller;
+			interrupts-extended = <&L2 11 &L2 9 &L5 11 &L5 9>;
+			reg = <0xc000000 0x4000000>;
+			reg-names = "control";
+			riscv,max-priority = <7>;
+			riscv,ndev = <4>;
+		};
+		L14: mmio-port-axi4@60000000 {
+			#address-cells = <1>;
+			#size-cells = <1>;
+			compatible = "simple-bus";
+			ranges = <0x60000000 0x60000000 0x20000000>;
+		};
+		L15: rom@10000 {
+			compatible = "sifive,rom0";
+			reg = <0x10000 0x10000>;
+			reg-names = "mem";
+		};
+		L0: subsystem_pbus_clock {
+			#clock-cells = <0>;
+			clock-frequency = <100000000>;
+			clock-output-names = "subsystem_pbus_clock";
+			compatible = "fixed-clock";
+		};
+	};
+};

@@ -118,5 +118,6 @@ pub fn setup_gpm(dtb: usize) -> Result<GuestPageTable> {
         meta.physical_memory_size,
         MappingFlags::READ | MappingFlags::WRITE | MappingFlags::EXECUTE | MappingFlags::USER,
     )?;
+
     Ok(gpt)
 }
