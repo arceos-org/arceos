@@ -13,8 +13,7 @@ extern crate alloc;
 
 mod page;
 
-use allocator::{AllocResult, BaseAllocator, ByteAllocator, PageAllocator};
-use allocator::{BitmapPageAllocator, SlabByteAllocator};
+use allocator::*;
 use core::alloc::{GlobalAlloc, Layout};
 use spinlock::SpinNoIrq;
 
@@ -23,6 +22,24 @@ const MIN_HEAP_SIZE: usize = 0x8000; // 32 K
 
 pub use page::GlobalPage;
 
+cfg_if::cfg_if! {
+    if #[cfg(feature = "alloc-buddy")] {
+        pub(crate) type Allocator = allocator::BuddyByteAllocator;
+    } else if #[cfg(feature = "alloc-slab")] {
+        pub(crate) type Allocator = allocator::SlabByteAllocator;
+    } else if #[cfg(feature = "alloc-basic-first_fit")] {
+        pub(crate) type Allocator = allocator::BasicAllocator<0>;
+    } else if #[cfg(feature = "alloc-basic-best_fit")] {
+        pub(crate) type Allocator = allocator::BasicAllocator<1>;
+    } else if #[cfg(feature = "alloc-basic-worst_fit")] {
+        pub(crate) type Allocator = allocator::BasicAllocator<2>;
+    } else if #[cfg(feature = "alloc-tlsf-rust")] {
+        pub(crate) type Allocator = allocator::TLSFAllocator;
+    } else if #[cfg(feature = "alloc-tlsf-c")] {
+        pub(crate) type Allocator = allocator::TLSFCAllocator;
+    }
+}
+
 /// The global allocator used by ArceOS.
 ///
 /// It combines a [`ByteAllocator`] and a [`PageAllocator`] into a simple
@@ -30,10 +47,10 @@ pub use page::GlobalPage;
 /// there is no memory, asks the page allocator for more memory and adds it to
 /// the byte allocator.
 ///
-/// Currently, [`SlabByteAllocator`] is used as the byte allocator, while
+/// Currently, [`TLSFAllocator`] is used as the byte allocator, while
 /// [`BitmapPageAllocator`] is used as the page allocator.
 pub struct GlobalAllocator {
-    balloc: SpinNoIrq<SlabByteAllocator>,
+    balloc: SpinNoIrq<Allocator>,
     palloc: SpinNoIrq<BitmapPageAllocator<PAGE_SIZE>>,
 }
 
@@ -41,7 +58,7 @@ impl GlobalAllocator {
     /// Creates an empty [`GlobalAllocator`].
     pub const fn new() -> Self {
         Self {
-            balloc: SpinNoIrq::new(SlabByteAllocator::new()),
+            balloc: SpinNoIrq::new(Allocator::new()),
             palloc: SpinNoIrq::new(BitmapPageAllocator::new()),
         }
     }

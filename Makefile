@@ -74,7 +74,7 @@ OBJDUMP ?= rust-objdump -d --print-imm-hex --x86-asm-syntax=intel
 OBJCOPY ?= rust-objcopy --binary-architecture=$(ARCH)
 GDB ?= gdb-multiarch
 
-export TARGET_CC=$(CC)	# for building lwip_rust
+export TARGET_CC = $(CC)
 export TARGET_CFLAGS
 
 # Paths

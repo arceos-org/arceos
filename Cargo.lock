@@ -24,9 +24,27 @@ dependencies = [
 name = "allocator"
 version = "0.1.0"
 dependencies = [
+ "allocator_test",
+ "basic_allocator",
  "bitmap-allocator",
  "buddy_system_allocator",
+ "cc",
+ "log",
  "slab_allocator",
+ "tlsf_allocator",
+]
+
+[[package]]
+name = "allocator_test"
+version = "0.1.0"
+dependencies = [
+ "basic_allocator",
+ "bitmap-allocator",
+ "buddy_system_allocator",
+ "cc",
+ "log",
+ "slab_allocator",
+ "tlsf_allocator",
 ]
 
 [[package]]
@@ -173,6 +191,7 @@ version = "0.1.0"
 dependencies = [
  "allocator",
  "axerrno",
+ "cfg-if",
  "log",
  "memory_addr",
  "spinlock",
@@ -399,6 +418,13 @@ name = "az"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7b7e4c2464d97fe331d41de9d5db0def0a96f4d823b8b32a2efd503578988973"
+
+[[package]]
+name = "basic_allocator"
+version = "0.1.0"
+dependencies = [
+ "log",
+]
 
 [[package]]
 name = "bindgen"
@@ -1757,6 +1783,15 @@ dependencies = [
 [[package]]
 name = "timer_list"
 version = "0.1.0"
+
+[[package]]
+name = "tlsf_allocator"
+version = "0.1.0"
+dependencies = [
+ "cc",
+ "libc",
+ "log",
+]
 
 [[package]]
 name = "tock-registers"
