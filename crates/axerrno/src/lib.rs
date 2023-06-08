@@ -30,8 +30,6 @@ pub enum AxError {
     AddrInUse,
     /// An entity already exists, often a file.
     AlreadyExists,
-    /// Try again, often for non-blocking APIs.
-    Again,
     /// Bad address.
     BadAddress,
     /// Bad internal state.
@@ -76,6 +74,9 @@ pub enum AxError {
     UnexpectedEof,
     /// This operation is unsupported or unimplemented.
     Unsupported,
+    /// The operation needs to block to complete, but the blocking operation was
+    /// requested to not occur.
+    WouldBlock,
     /// An error returned when an operation could not be completed because a
     /// call to `write()` returned [`Ok(0)`](Ok).
     WriteZero,
@@ -198,7 +199,6 @@ impl From<AxError> for LinuxError {
         match e {
             AddrInUse => LinuxError::EADDRINUSE,
             AlreadyExists => LinuxError::EEXIST,
-            Again => LinuxError::EAGAIN,
             BadAddress | BadState => LinuxError::EFAULT,
             ConnectionRefused => LinuxError::ECONNREFUSED,
             DirectoryNotEmpty => LinuxError::ENOTEMPTY,
@@ -214,6 +214,7 @@ impl From<AxError> for LinuxError {
             StorageFull => LinuxError::ENOSPC,
             Unsupported => LinuxError::ENOSYS,
             UnexpectedEof | WriteZero => LinuxError::EIO,
+            WouldBlock => LinuxError::EAGAIN,
         }
     }
 }

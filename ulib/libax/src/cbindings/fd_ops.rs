@@ -1,12 +1,11 @@
+use super::ctypes;
+use crate::io::{stdin, stdout, PollState};
 use alloc::sync::Arc;
-use core::ffi::{c_int, c_void};
-
 use axerrno::{LinuxError, LinuxResult};
+
+use core::ffi::{c_int, c_void};
 use flatten_objects::FlattenObjects;
 use spin::RwLock;
-
-use super::ctypes;
-use crate::io::{stdin, stdout};
 
 pub const AX_FILE_LIMIT: usize = 1024;
 
@@ -15,6 +14,8 @@ pub trait FileLike: Send + Sync {
     fn write(&self, buf: &[u8]) -> LinuxResult<usize>;
     fn stat(&self) -> LinuxResult<ctypes::stat>;
     fn into_any(self: Arc<Self>) -> Arc<dyn core::any::Any + Send + Sync>;
+    fn poll(&self) -> LinuxResult<PollState>;
+    fn set_nonblocking(&self, nonblocking: bool) -> LinuxResult;
 }
 
 lazy_static::lazy_static! {
@@ -165,6 +166,10 @@ pub unsafe extern "C" fn ax_fcntl(fd: c_int, cmd: c_int, arg: usize) -> c_int {
             ctypes::F_DUPFD_CLOEXEC => {
                 // TODO: Change fd flags
                 dup_fd(fd)
+            }
+            ctypes::F_SETFL => {
+                get_file_like(fd)?.set_nonblocking(arg & (ctypes::O_NONBLOCK as usize) > 0)?;
+                Ok(0)
             }
             _ => {
                 warn!("unsupported fcntl parameters: cmd {}", cmd);
