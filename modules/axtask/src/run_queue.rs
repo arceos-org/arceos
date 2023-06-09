@@ -160,7 +160,7 @@ impl AxRunQueue {
 
         curr.set_state(TaskState::Blocked);
         wait_queue_push(curr.clone());
-        self.resched_inner(false, false);
+        self.resched_inner(false, true);
     }
 
     pub fn unblock_task(&self, task: AxTaskRef, resched: bool) {
@@ -270,7 +270,7 @@ impl AxRunQueue {
             }
         }
     }
-    fn resched_inner(&self, preempt: bool, exit_lock: bool) {
+    fn resched_inner(&self, preempt: bool, to_wait: bool) {
         let prev = crate::current();
         if prev.is_running() {
             prev.set_state(TaskState::Ready);
@@ -326,10 +326,10 @@ impl AxRunQueue {
         );
         // TODO: 注意需要对所有 pick_next_task 后面都要判断是否队列空，如果是则需要执行线程窃取
         self.if_empty_steal();
-        self.switch_to(prev, next, exit_lock);
+        self.switch_to(prev, next, to_wait);
     }
 
-    fn switch_to(&self, prev_task: CurrentTask, next_task: AxTaskRef, exit_lock: bool) {
+    fn switch_to(&self, prev_task: CurrentTask, next_task: AxTaskRef, to_wait: bool) {
         trace!(
             "context switch: {} -> {}",
             prev_task.id_name(),
@@ -351,6 +351,9 @@ impl AxRunQueue {
             assert!(Arc::strong_count(prev_task.as_task_ref()) > 1);
             assert!(Arc::strong_count(&next_task) >= 1);
 
+            if to_wait {
+                prev_task.set_in_wait_queue(true);
+            }
             CurrentTask::set_current(prev_task, next_task);
             /*if exit_lock {
                 SWITCH_EXITED_LOCK.store(
