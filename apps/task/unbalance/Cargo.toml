@@ -1,8 +1,8 @@
 [package]
-name = "arceos-httpserver"
+name = "arceos-unbalance"
 version = "0.1.0"
 edition = "2021"
-authors = ["Yuekai Jia <equation618@gmail.com>"]
+authors = ["Haoxing Ye <yehx20@mails.tsinghua.edu.cn>"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -13,4 +13,4 @@ sched_rr = ["libax/sched_rr"]
 sched_fifo = ["libax/sched_fifo"]
 
 [dependencies]
-libax = { path = "../../../ulib/libax", default-features = false, features = ["paging", "multitask", "net", "irq"] }
+libax = { path = "../../../ulib/libax", default-features = false, features = ["alloc", "paging", "multitask", "irq"] }

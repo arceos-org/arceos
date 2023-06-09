@@ -1,15 +1,14 @@
 use alloc::{boxed::Box, string::String, sync::Arc};
 use core::ops::Deref;
-use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, AtomicU8, Ordering};
+use core::sync::atomic::{AtomicBool, AtomicI32, AtomicIsize, AtomicU64, AtomicU8, Ordering};
 use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 
 #[cfg(feature = "preempt")]
 use core::sync::atomic::AtomicUsize;
 
+use crate::{AxRunQueue, AxTask, AxTaskRef, WaitQueue};
 use axhal::arch::TaskContext;
 use memory_addr::{align_up_4k, VirtAddr};
-
-use crate::{AxRunQueue, AxTask, AxTaskRef, WaitQueue};
 
 /// A unique identifier for a thread.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -47,6 +46,8 @@ pub struct TaskInner {
     exit_code: AtomicI32,
     wait_for_exit: WaitQueue,
 
+    in_which_queue: AtomicIsize,
+    affinity: AtomicU64,
     kstack: Option<TaskStack>,
     ctx: UnsafeCell<TaskContext>,
 }
@@ -95,6 +96,16 @@ impl TaskInner {
         alloc::format!("Task({}, {:?})", self.id.as_u64(), self.name)
     }
 
+    /// set queue id
+    pub fn set_queue_id(&self, queue_id: isize) {
+        //info!("set queue id {} !", id);
+        self.in_which_queue.store(queue_id, Ordering::Release);
+    }
+    /// get queue id
+    pub fn get_queue_id(&self) -> isize {
+        self.in_which_queue.load(Ordering::Acquire)
+    }
+
     /// Wait for the task to exit, and return the exit code.
     ///
     /// It will return immediately if the task has already exited (but not dropped).
@@ -102,6 +113,17 @@ impl TaskInner {
         self.wait_for_exit
             .wait_until(|| self.state() == TaskState::Exited);
         Some(self.exit_code.load(Ordering::Acquire))
+    }
+
+    /// Set affinity mask for the task
+    /// TODO: The rule will be similar to Zircon
+    pub fn set_affinity(&self, aff: u64) {
+        self.affinity.store(aff, Ordering::Release);
+    }
+
+    /// get affinity mask for the task
+    pub fn get_affinity(&self) -> u64 {
+        self.affinity.load(Ordering::Acquire)
     }
 }
 
@@ -126,6 +148,8 @@ impl TaskInner {
             wait_for_exit: WaitQueue::new(),
             kstack: None,
             ctx: UnsafeCell::new(TaskContext::new()),
+            in_which_queue: AtomicIsize::new(-1),
+            affinity: AtomicU64::new(0),
         }
     }
 
@@ -192,6 +216,11 @@ impl TaskInner {
     }
 
     #[inline]
+    pub(crate) fn is_gc(&self) -> bool {
+        self.name == "gc"
+    }
+
+    #[inline]
     pub(crate) fn in_wait_queue(&self) -> bool {
         self.in_wait_queue.load(Ordering::Acquire)
     }
@@ -222,12 +251,14 @@ impl TaskInner {
     #[inline]
     #[cfg(feature = "preempt")]
     pub(crate) fn can_preempt(&self, current_disable_count: usize) -> bool {
+        //info!("qwq3 {}", current_disable_count);
         self.preempt_disable_count.load(Ordering::Acquire) == current_disable_count
     }
 
     #[inline]
     #[cfg(feature = "preempt")]
     pub(crate) fn disable_preempt(&self) {
+        //info!("qwq4 {}", self.preempt_disable_count.load(Ordering::Relaxed));
         self.preempt_disable_count.fetch_add(1, Ordering::Relaxed);
     }
 
@@ -244,14 +275,19 @@ impl TaskInner {
     fn current_check_preempt_pending() {
         let curr = crate::current();
         if curr.need_resched.load(Ordering::Acquire) && curr.can_preempt(0) {
-            let mut rq = crate::RUN_QUEUE.lock();
+            let _guard = kernel_guard::NoPreemptIrqSave::new();
             if curr.need_resched.load(Ordering::Acquire) {
-                rq.resched();
+                //if curr.in_which_queue.load(Ordering::Acquire) >= 0 {
+                crate::RUN_QUEUE[axhal::cpu::this_cpu_id()].resched();
+                //crate::RUN_QUEUE[axhal::cpu::this_cpu_id()].with_current_rq(|rq| {
+                //    rq.resched();
+                //});
+                //}
             }
         }
     }
 
-    pub(crate) fn notify_exit(&self, exit_code: i32, rq: &mut AxRunQueue) {
+    pub(crate) fn notify_exit(&self, exit_code: i32, rq: &AxRunQueue) {
         self.exit_code.store(exit_code, Ordering::Release);
         self.wait_for_exit.notify_all_locked(false, rq);
     }
@@ -356,7 +392,9 @@ impl Deref for CurrentTask {
 
 extern "C" fn task_entry() -> ! {
     // release the lock that was implicitly held across the reschedule
-    unsafe { crate::RUN_QUEUE.force_unlock() };
+    //info!("exit 233");
+    //unsafe { crate::RUN_QUEUE[get_current_cpu_id()].force_unlock() };
+    //info!("exit 234");
     #[cfg(feature = "irq")]
     axhal::arch::enable_irqs();
     let task = crate::current();

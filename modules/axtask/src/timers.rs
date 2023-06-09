@@ -1,10 +1,12 @@
+use crate::run_queue::LOAD_BALANCE_ARR;
 use alloc::sync::Arc;
 use axhal::time::current_time;
 use lazy_init::LazyInit;
+use load_balance::BaseLoadBalance;
 use spinlock::SpinNoIrq;
 use timer_list::{TimeValue, TimerEvent, TimerList};
 
-use crate::{AxTaskRef, RUN_QUEUE};
+use crate::{get_current_cpu_id, AxTaskRef, RUN_QUEUE};
 
 // TODO: per-CPU
 static TIMER_LIST: LazyInit<SpinNoIrq<TimerList<TaskWakeupEvent>>> = LazyInit::new();
@@ -13,9 +15,10 @@ struct TaskWakeupEvent(AxTaskRef);
 
 impl TimerEvent for TaskWakeupEvent {
     fn callback(self, _now: TimeValue) {
-        let mut rq = RUN_QUEUE.lock();
         self.0.set_in_timer_list(false);
-        rq.unblock_task(self.0, true);
+        RUN_QUEUE[axhal::cpu::this_cpu_id()].with_task_correspond_rq(self.0.clone(), |rq| {
+            rq.unblock_task(self.0, true);
+        });
     }
 }
 
