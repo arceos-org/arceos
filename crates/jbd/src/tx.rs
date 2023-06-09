@@ -236,7 +236,7 @@ impl Transaction {
                 // tune2fs can modify the sb and set the dirty bit at any time
                 // so we try to gracefully handle that.
                 if jb.buf.dirty() {
-                    log::debug!("Block {} is unexpectedly dirty", jb.buf.block_id());
+                    // log::debug!("Block {} is unexpectedly dirty", jb.buf.block_id());
                 }
                 jb.buf.test_clear_dirty() || jb.buf.test_clear_jbd_dirty()
             }
@@ -423,7 +423,7 @@ impl Handle {
         let tx_rc = self.transaction.as_ref().unwrap();
         let mut tx = tx_rc.borrow_mut();
         let journal_rc = tx.journal.upgrade().unwrap();
-        let journal = &journal_rc.as_ref().borrow();
+        let journal = journal_rc.as_ref().borrow();
 
         let should_set_next_tx = match &jb.transaction {
             None => {
@@ -456,6 +456,9 @@ impl Handle {
             jb.modified = false;
             jb.next_transaction = Some(tx_rc.clone());
         }
+
+        drop(tx);
+        drop(journal);
 
         self.cancel_revoke(&jb)?;
 
@@ -510,7 +513,7 @@ impl Handle {
     /// The buffer is placed on the transaction's data list and is marked as
     /// belonging to the transaction.
     pub fn dirty_data(&mut self, buf: &Rc<dyn Buffer>) -> JBDResult {
-        log::debug!("Dirtying data buffer {:?}", buf.block_id());
+        log::trace!("Dirtying data buffer {:?}", buf.block_id());
         if self.aborted {
             return Err(JBDError::HandleAborted);
         }
@@ -614,8 +617,9 @@ impl Handle {
             return Ok(());
         }
 
-        Transaction::file_buffer(tx_rc, &mut tx, &jb_rc, &mut jb, BufferListType::Metadata)?;
+        buf.mark_jbd_dirty();
 
+        Transaction::file_buffer(tx_rc, &mut tx, &jb_rc, &mut jb, BufferListType::Metadata)?;
         Ok(())
     }
 
@@ -722,7 +726,7 @@ impl Handle {
             // First question: is this buffer already part of the current
             // transaction or the existing committing transaction?
             if jb.transaction.is_some() {
-                log::debug!("Block {} is unexpectedly dirty", jb.buf.block_id());
+                // log::debug!("Block {} is unexpectedly dirty", jb.buf.block_id());
             }
             // In any case we need to clean the dirty flag.
             jb.buf.clear_dirty();
