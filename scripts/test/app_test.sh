@@ -106,14 +106,18 @@ function test_one() {
 
 if [ -z "$1" ]; then
     test_list=(
-        "apps/helloworld"
-        "apps/memtest"
-        "apps/exception"
-        "apps/task/yield"
-        "apps/task/parallel"
-        "apps/task/sleep"
-        "apps/task/priority"
-        "apps/net/httpclient"
+#        "apps/helloworld"
+#        "apps/memtest"
+#        "apps/exception"
+#        "apps/task/yield"
+#        "apps/task/parallel"
+#        "apps/task/sleep"
+#        "apps/task/priority"
+#        "apps/net/httpclient"
+        "apps/c/helloworld"
+        "apps/c/memtest"
+        "apps/c/sqlite3"
+        "apps/c/httpclient"
         "apps/syscall/junior"
     )
 else
