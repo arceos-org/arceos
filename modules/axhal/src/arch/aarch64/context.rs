@@ -15,6 +15,17 @@ pub struct TrapFrame {
     pub spsr: u64,
 }
 
+impl TrapFrame {
+    /// 获取寄存器的值
+    pub fn get_reg(&self, index: usize) -> usize {
+        self.r[index] as usize
+    }
+    /// 设置寄存器的值
+    pub fn set_reg(&mut self, index: usize, value: usize) {
+        self.r[index] = value as u64;
+    }
+}
+
 /// FP & SIMD registers.
 #[repr(C, align(16))]
 #[derive(Debug, Default)]
