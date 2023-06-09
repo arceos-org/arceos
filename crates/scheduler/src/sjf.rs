@@ -1,6 +1,6 @@
 use alloc::{collections::BTreeMap, sync::Arc};
 use core::ops::Deref;
-use core::sync::atomic::{AtomicIsize, AtomicBool, Ordering};
+use core::sync::atomic::{AtomicBool, AtomicIsize, Ordering};
 
 use crate::current_ticks;
 use crate::BaseScheduler;
@@ -13,7 +13,7 @@ pub struct SJFTask<T, const A: usize, const LOGB: usize> {
     alpha_a: AtomicIsize,
     alpha_log_b: AtomicIsize,
     id: AtomicIsize,
-    use_ema: AtomicBool, 
+    use_ema: AtomicBool,
 }
 
 // TODO：现在全部都是暴力实现

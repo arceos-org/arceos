@@ -14,7 +14,7 @@ pub struct RMSTask<T> {
 }
 
 impl<T> RMSTask<T> {
-    /// new RMSTask 
+    /// new RMSTask
     pub fn new(inner: T) -> Self {
         Self {
             inner,
