@@ -120,14 +120,14 @@ impl Socket {
     fn shutdown(&self) -> LinuxResult {
         match self {
             Socket::Udp(udpsocket) => {
-                let mut udpsocket = udpsocket.lock();
+                let udpsocket = udpsocket.lock();
                 udpsocket.peer_addr()?;
                 udpsocket.shutdown()?;
                 Ok(())
             }
 
             Socket::Tcp(tcpsocket) => {
-                let mut tcpsocket = tcpsocket.lock();
+                let tcpsocket = tcpsocket.lock();
                 tcpsocket.peer_addr()?;
                 tcpsocket.shutdown()?;
                 Ok(())

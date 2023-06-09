@@ -3,8 +3,6 @@ cfg_if::cfg_if! {
         pub mod myfs;
     } else if #[cfg(feature = "fatfs")] {
         pub mod fatfs;
-    } else if #[cfg(feature = "ext2fs")] {
-        pub mod ext2fs;
     }
 }
 

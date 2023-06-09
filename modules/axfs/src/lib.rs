@@ -33,8 +33,10 @@ mod root;
 pub mod api;
 pub mod fops;
 
+#[cfg(feature = "monolithic")]
+pub mod monolithic_fs;
+
 use axdriver::{prelude::*, AxDeviceContainer};
-pub use root::close_main_fs;
 
 /// Initializes filesystems by block devices.
 pub fn init_filesystems(mut blk_devs: AxDeviceContainer<AxBlockDevice>) {

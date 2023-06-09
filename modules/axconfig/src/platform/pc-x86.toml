@@ -22,6 +22,8 @@ mmio-regions = [
     ["0xfed0_0000", "0x1000"],      # HPET
     ["0xfee0_0000", "0x1000"],      # Local APIC
 ]
+# VirtIO MMIO regions with format (`base_paddr`, `size`).
+virtio-mmio-regions = []
 # Base physical address of the PCIe ECAM space (should read from ACPI 'MCFG' table).
 pci-ecam-base = "0xb000_0000"
 # End PCI bus number.

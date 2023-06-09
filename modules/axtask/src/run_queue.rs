@@ -1,104 +1,72 @@
+use alloc::collections::VecDeque;
 use alloc::sync::Arc;
-use alloc::{collections::VecDeque, vec::Vec};
-use core::sync::atomic::{AtomicUsize, Ordering};
-
-use array_init::array_init;
 use lazy_init::LazyInit;
-use load_balance::BaseLoadBalance;
 use scheduler::BaseScheduler;
 use spinlock::SpinNoIrq;
 
-use crate::task::{CurrentTask, TaskState};
-use crate::{AxTaskRef, LoadBalance, Scheduler, TaskInner, WaitQueue};
-
-lazy_static::lazy_static! {
-    pub(crate) static ref RUN_QUEUE: [LazyInit<Arc<AxRunQueue>>; axconfig::SMP] =
-        array_init(|_| LazyInit::new());
-    pub(crate) static ref LOAD_BALANCE_ARR: [LazyInit<Arc<LoadBalance>>; axconfig::SMP] =
-        array_init(|_| LazyInit::new());
+cfg_if::cfg_if! {
+    if #[cfg(feature = "monolithic")]  {
+        pub use crate::monolithic_task::task::{CurrentTask, TaskState};
+    } else {
+        pub use crate::task::CurrentTask;
+        pub(crate) use crate::task::TaskState;
+    }
 }
+
+use crate::{AxTaskRef, Scheduler, TaskInner, WaitQueue};
+
+// TODO: per-CPU
+pub(crate) static RUN_QUEUE: LazyInit<SpinNoIrq<AxRunQueue>> = LazyInit::new();
 
 // TODO: per-CPU
 static EXITED_TASKS: SpinNoIrq<VecDeque<AxTaskRef>> = SpinNoIrq::new(VecDeque::new());
 
 static WAIT_FOR_EXIT: WaitQueue = WaitQueue::new();
 
-static SWITCH_EXITED_LOCK: AtomicUsize = AtomicUsize::new(0);
-
-use kernel_guard::NoPreempt;
-
 #[percpu::def_percpu]
 static IDLE_TASK: LazyInit<AxTaskRef> = LazyInit::new();
 
 pub(crate) struct AxRunQueue {
-    scheduler: SpinNoIrq<Scheduler>,
-    id: usize,
+    scheduler: Scheduler,
 }
 
 impl AxRunQueue {
-    pub fn new(id: usize) -> Self {
+    pub fn new() -> SpinNoIrq<Self> {
         let gc_task = TaskInner::new(gc_entry, "gc".into(), axconfig::TASK_STACK_SIZE);
-        let scheduler = SpinNoIrq::new(Scheduler::new());
-
-        gc_task.set_queue_id(id as isize);
-        // this task must run on gc_task
-        gc_task.set_affinity(1u64 << id);
-        scheduler.lock().add_task(gc_task);
-        Self { scheduler, id }
+        let mut scheduler = Scheduler::new();
+        scheduler.add_task(gc_task);
+        SpinNoIrq::new(Self { scheduler })
     }
 
-    pub fn add_task(&self, task: AxTaskRef) {
-        task.set_queue_id(self.id as isize);
-        debug!(
-            "task spawn: {} at queue {}, affinity is {}",
-            task.id_name(),
-            self.id,
-            task.get_affinity()
-        );
+    pub fn add_task(&mut self, task: AxTaskRef) {
+        debug!("task spawn: {}", task.id_name());
         assert!(task.is_ready());
-        if !task.is_gc() {
-            LOAD_BALANCE_ARR[self.id].add_weight(1);
-        }
-        trace!(
-            "load balance weight for id {}: {}",
-            self.id,
-            LOAD_BALANCE_ARR[self.id].get_weight()
-        );
-        trace!(
-            "add task in queue {}, now the weight is {}",
-            self.id,
-            LOAD_BALANCE_ARR[self.id].get_weight()
-        );
-        self.scheduler.lock().add_task(task);
+        self.scheduler.add_task(task);
     }
 
     #[cfg(feature = "irq")]
-    pub fn scheduler_timer_tick(&self) {
-        //let tmp = LOCK_QWQ3.lock();
+    pub fn scheduler_timer_tick(&mut self) {
         let curr = crate::current();
-        //info!("qwq1");
-        if !curr.is_idle() && self.scheduler.lock().task_tick(curr.as_task_ref()) {
+        if !curr.is_idle() && self.scheduler.task_tick(curr.as_task_ref()) {
             #[cfg(feature = "preempt")]
             curr.set_preempt_pending(true);
         }
     }
 
-    pub fn yield_current(&self) {
+    pub fn yield_current(&mut self) {
         let curr = crate::current();
         debug!("task yield: {}", curr.id_name());
         assert!(curr.is_running());
-        self.resched_inner(false, false);
+        self.resched_inner(false);
     }
 
-    pub fn set_current_priority(&self, prio: isize) -> bool {
+    pub fn set_current_priority(&mut self, prio: isize) -> bool {
         self.scheduler
-            .lock()
             .set_priority(crate::current().as_task_ref(), prio)
     }
 
     #[cfg(feature = "preempt")]
-    pub fn resched(&self) {
-        //info!("resched");
+    pub fn resched(&mut self) {
         let curr = crate::current();
         assert!(curr.is_running());
 
@@ -115,20 +83,15 @@ impl AxRunQueue {
             can_preempt
         );
         if can_preempt {
-            self.resched_inner(true, false);
+            self.resched_inner(true);
         } else {
             curr.set_preempt_pending(true);
         }
     }
 
-    pub fn exit_current(&self, exit_code: i32) -> ! {
+    pub fn exit_current(&mut self, exit_code: i32) -> ! {
         let curr = crate::current();
-        debug!(
-            "task exit: {}, exit_code={}, queue_id={}",
-            curr.id_name(),
-            exit_code,
-            self.id
-        );
+        debug!("task exit: {}, exit_code={}", curr.id_name(), exit_code);
         assert!(curr.is_running());
         assert!(!curr.is_idle());
         if curr.is_init() {
@@ -137,15 +100,14 @@ impl AxRunQueue {
         } else {
             curr.set_state(TaskState::Exited);
             curr.notify_exit(exit_code, self);
-            //SWITCH_EXITED_LOCK.fetch_add(1, Ordering::Release);
             EXITED_TASKS.lock().push_back(curr.clone());
-            WAIT_FOR_EXIT.notify_one_locked(false);
-            self.resched_inner(false, true);
+            WAIT_FOR_EXIT.notify_one_locked(false, self);
+            self.resched_inner(false);
         }
         unreachable!("task exited!");
     }
 
-    pub fn block_current<F>(&self, wait_queue_push: F)
+    pub fn block_current<F>(&mut self, wait_queue_push: F)
     where
         F: FnOnce(AxTaskRef),
     {
@@ -160,23 +122,14 @@ impl AxRunQueue {
 
         curr.set_state(TaskState::Blocked);
         wait_queue_push(curr.clone());
-        self.resched_inner(false, false);
+        self.resched_inner(false);
     }
 
-    pub fn unblock_task(&self, task: AxTaskRef, resched: bool) {
-        debug!("task unblock: {} at cpu {}", task.id_name(), self.id);
+    pub fn unblock_task(&mut self, task: AxTaskRef, resched: bool) {
+        debug!("task unblock: {}", task.id_name());
         if task.is_blocked() {
             task.set_state(TaskState::Ready);
-            task.set_queue_id(self.id as isize);
-            if !task.is_gc() {
-                LOAD_BALANCE_ARR[self.id].add_weight(1);
-            }
-            self.scheduler.lock().add_task(task); // TODO: priority
-            trace!(
-                "load balance weight for id {}: {}",
-                self.id,
-                LOAD_BALANCE_ARR[self.id].get_weight()
-            );
+            self.scheduler.add_task(task); // TODO: priority
             if resched {
                 #[cfg(feature = "preempt")]
                 crate::current().set_preempt_pending(true);
@@ -185,7 +138,7 @@ impl AxRunQueue {
     }
 
     #[cfg(feature = "irq")]
-    pub fn sleep_until(&self, deadline: axhal::time::TimeValue) {
+    pub fn sleep_until(&mut self, deadline: axhal::time::TimeValue) {
         let curr = crate::current();
         debug!("task sleep: {}, deadline={:?}", curr.id_name(), deadline);
         assert!(curr.is_running());
@@ -195,141 +148,30 @@ impl AxRunQueue {
         if now < deadline {
             crate::timers::set_alarm_wakeup(deadline, curr.clone());
             curr.set_state(TaskState::Blocked);
-            self.resched_inner(false, false);
+            self.resched_inner(false);
         }
     }
 }
 
 impl AxRunQueue {
-    pub fn with_current_rq<F, T>(&self, f: F) -> T
-    where
-        F: FnOnce(&AxRunQueue) -> T,
-    {
-        let _guard = kernel_guard::NoPreempt::new();
-        f(&RUN_QUEUE[axhal::cpu::this_cpu_id()])
-    }
-
-    pub fn with_task_correspond_rq<F, T>(&self, task: AxTaskRef, f: F) -> T
-    where
-        F: FnOnce(&AxRunQueue) -> T,
-    {
-        let _guard = kernel_guard::NoPreempt::new();
-        let target =
-            LOAD_BALANCE_ARR[axhal::cpu::this_cpu_id()].find_target_cpu(task.get_affinity());
-        f(&RUN_QUEUE[target])
-    }
     /// Common reschedule subroutine. If `preempt`, keep current task's time
     /// slice, otherwise reset it.
-    fn if_empty_steal(&self) {
-        if self.scheduler.lock().is_empty() {
-            let mut flag = 0;
-            loop {
-                let mut queuelock = self.scheduler.lock();
-                let id = self.id;
-                let next = LOAD_BALANCE_ARR[id].find_stolen_cpu_id();
-                trace!(
-                    "load balance weight for id {} : {}",
-                    id,
-                    LOAD_BALANCE_ARR[id].get_weight()
-                );
-                debug!("steal: current = {}, victim = {}", self.id, next);
-                if next != -1 && (next != id as isize) {
-                    let task = RUN_QUEUE[next as usize].scheduler.lock().pick_next_task();
-                    // 简单实现：如果是 gc_task 就放回去
-                    // 这里可能有同步问题，简单起见，如果 task 是 None 那么就不窃取。
-                    if let Some(tk) = task {
-                        assert!(tk.clone().is_gc() || tk.get_queue_id() == next);
-                        tk.set_queue_id(id as isize);
-
-                        trace!("is gc task: {}", tk.clone().is_gc());
-
-                        if !tk.clone().is_gc() {
-                            flag = 1;
-                            LOAD_BALANCE_ARR[next as usize].add_weight(-1);
-                            LOAD_BALANCE_ARR[id].add_weight(1);
-                            queuelock.add_task(tk);
-
-                            trace!(
-                                "load balance weight for id {}: {}",
-                                next as usize,
-                                LOAD_BALANCE_ARR[next as usize].get_weight()
-                            );
-                        } else {
-                            RUN_QUEUE[next as usize].scheduler.lock().add_task(tk);
-                            //flag = 0;
-                        }
-                    } else {
-                        flag = 1;
-                    }
-                } else {
-                    flag = 1;
-                }
-                if flag == 1 {
-                    break;
-                }
-            }
-        }
-    }
-    fn resched_inner(&self, preempt: bool, exit_lock: bool) {
+    fn resched_inner(&mut self, preempt: bool) {
         let prev = crate::current();
         if prev.is_running() {
             prev.set_state(TaskState::Ready);
             if !prev.is_idle() {
-                prev.set_queue_id(self.id as isize);
-                self.scheduler.lock().put_prev_task(prev.clone(), preempt);
-
-                if !prev.is_gc() {
-                    LOAD_BALANCE_ARR[self.id].add_weight(1);
-                }
-                trace!(
-                    "load balance weight for id {}: {}",
-                    self.id,
-                    LOAD_BALANCE_ARR[self.id].get_weight()
-                );
+                self.scheduler.put_prev_task(prev.clone(), preempt);
             }
         }
-        let mut flag = false;
-        let next = self
-            .scheduler
-            .lock()
-            .pick_next_task()
-            .unwrap_or_else(|| unsafe {
-                // Safety: IRQs must be disabled at this time.
-                trace!(
-                    "load balance weight for id {}: {}",
-                    self.id,
-                    LOAD_BALANCE_ARR[self.id].get_weight()
-                );
-                LOAD_BALANCE_ARR[self.id].add_weight(1); // 后面需要减一，由于是 IDLE 所以不用减，先加一
-                flag = true;
-                IDLE_TASK.current_ref_raw().get_unchecked().clone()
-            });
-        /*if !flag {
-            next.set_queue_id(-1);
-        }*/
-
-        /*trace!(
-            "load balance weight for id {}: {}",
-            self.id,
-            LOAD_BALANCE_ARR[self.id].get_weight()
-        );
-        trace!(
-            "is gc: {}", next.is_gc()
-        );*/
-        if !(next.is_gc()) {
-            LOAD_BALANCE_ARR[self.id].add_weight(-1);
-        }
-        trace!(
-            "load balance weight for id {}: {}",
-            self.id,
-            LOAD_BALANCE_ARR[self.id].get_weight()
-        );
-        // TODO: 注意需要对所有 pick_next_task 后面都要判断是否队列空，如果是则需要执行线程窃取
-        self.if_empty_steal();
-        self.switch_to(prev, next, exit_lock);
+        let next = self.scheduler.pick_next_task().unwrap_or_else(|| unsafe {
+            // Safety: IRQs must be disabled at this time.
+            IDLE_TASK.current_ref_raw().get_unchecked().clone()
+        });
+        self.switch_to(prev, next);
     }
 
-    fn switch_to(&self, prev_task: CurrentTask, next_task: AxTaskRef, exit_lock: bool) {
+    fn switch_to(&mut self, prev_task: CurrentTask, next_task: AxTaskRef) {
         trace!(
             "context switch: {} -> {}",
             prev_task.id_name(),
@@ -352,12 +194,6 @@ impl AxRunQueue {
             assert!(Arc::strong_count(&next_task) >= 1);
 
             CurrentTask::set_current(prev_task, next_task);
-            /*if exit_lock {
-                SWITCH_EXITED_LOCK.store(
-                    SWITCH_EXITED_LOCK.load(Ordering::Acquire) - 1,
-                    Ordering::Release,
-                );
-            }*/
             (*prev_ctx_ptr).switch_to(&*next_ctx_ptr);
         }
     }
@@ -367,24 +203,13 @@ fn gc_entry() {
     loop {
         // Drop all exited tasks and recycle resources.
         while !EXITED_TASKS.lock().is_empty() {
-            //info!("into gc");
-            // 用 lock 先顶一顶
-            // while SWITCH_EXITED_LOCK.load(Ordering::Acquire) > 0 {
-            //    trace!("qwqq {}", SWITCH_EXITED_LOCK.load(Ordering::Acquire));
-            //}
             // Do not do the slow drops in the critical section.
             let task = EXITED_TASKS.lock().pop_front();
             if let Some(task) = task {
                 // If the task reference is not taken after `spawn()`, it will be
                 // dropped here. Otherwise, it will be dropped after the reference
                 // is dropped (usually by `join()`).
-                if Arc::strong_count(&task) == 1 {
-                    drop(task);
-                } else {
-                    EXITED_TASKS.lock().push_back(task);
-                    // TODO: for loop
-                    break;
-                }
+                drop(task);
             }
         }
         WAIT_FOR_EXIT.wait();
@@ -398,20 +223,8 @@ pub(crate) fn init() {
 
     let main_task = TaskInner::new_init("main".into());
     main_task.set_state(TaskState::Running);
-    main_task.set_affinity((1u64 << axconfig::SMP) - 1);
 
-    for i in 0..axconfig::SMP {
-        RUN_QUEUE[i].init_by(Arc::new(AxRunQueue::new(i)));
-        LOAD_BALANCE_ARR[i].init_by(Arc::new(LoadBalance::new(i)));
-        //LOAD_BALANCE_ARR[i].add_weight(1); // gc_task
-    }
-    let mut arr = Vec::new();
-    for i in 0..axconfig::SMP {
-        arr.push((*LOAD_BALANCE_ARR[i]).clone());
-    }
-    for i in 0..axconfig::SMP {
-        LOAD_BALANCE_ARR[i].init(axconfig::SMP, arr.clone());
-    }
+    RUN_QUEUE.init_by(AxRunQueue::new());
     unsafe { CurrentTask::init_current(main_task) }
 }
 

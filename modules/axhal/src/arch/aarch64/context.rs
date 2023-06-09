@@ -73,6 +73,12 @@ impl TaskContext {
         unsafe { core::mem::MaybeUninit::zeroed().assume_init() }
     }
 
+    pub fn new_empty() -> *mut TaskContext {
+        let task_ctx = TaskContext::new();
+        let task_ctx_ptr = &task_ctx as *const TaskContext as *mut TaskContext;
+        task_ctx_ptr
+    }
+
     /// Initializes the context for a new task, with the given entry point and
     /// kernel stack.
     pub fn init(&mut self, entry: usize, kstack_top: VirtAddr) {

@@ -1,28 +1,23 @@
 # Arguments
-ARCH ?= x86_64
+ARCH ?= riscv64
 SMP ?= 1
 MODE ?= release
-LOG ?= warn
-FT ?= ext2
+LOG ?= off
 
-A ?= apps/helloworld
+A ?= apps/syscall/junior
 APP ?= $(A)
 APP_FEATURES ?=
-# DISK_IMG ?= target/fs.img
-FS ?= n
+DISK_IMG ?= sdcard.img
+
+MONOLITHIC ?= y
+MULTITASK ?= y
+PAGING ?= y
+FS ?= y
 NET ?= n
-NET_DEV ?= user
-NET_DUMP ?= n
 GRAPHIC ?= n
 BUS ?= mmio
 
 QEMU_LOG ?= n
-
-ifeq ($(FT), fat32)
-  DISK_IMG ?= disk.img
-else
-  DISK_IMG ?= ext2fs_fuse/target/fs.img
-endif
 
 ifeq ($(wildcard $(APP)),)
   $(error Application path "$(APP)" is not valid)
@@ -39,42 +34,37 @@ ifeq ($(ARCH), x86_64)
   ACCEL ?= y
   PLATFORM ?= pc-x86
   TARGET := x86_64-unknown-none
-  TARGET_CFLAGS := -mno-sse
   BUS := pci
 else ifeq ($(ARCH), riscv64)
   ACCEL ?= n
   PLATFORM ?= qemu-virt-riscv
   TARGET := riscv64gc-unknown-none-elf
-  TARGET_CFLAGS := -mabi=lp64d
 else ifeq ($(ARCH), aarch64)
   ACCEL ?= n
   PLATFORM ?= qemu-virt-aarch64
   TARGET := aarch64-unknown-none-softfloat
-  TARGET_CFLAGS := -mgeneral-regs-only
 else
   $(error "ARCH" must be one of "x86_64", "riscv64", or "aarch64")
 endif
 
 export ARCH
-export ARCH_CFLAGS
 export PLATFORM
 export SMP
 export MODE
 export LOG
 
 # Binutils
-CROSS_COMPILE ?= $(ARCH)-linux-musl-
-CC := $(CROSS_COMPILE)gcc
-AR := $(CROSS_COMPILE)ar
-RANLIB := $(CROSS_COMPILE)ranlib
-LD := rust-lld -flavor gnu
+ifeq ($(APP_LANG), c)
+  CROSS_COMPILE ?= $(ARCH)-linux-musl-
+  CC := $(CROSS_COMPILE)gcc
+  AR := $(CROSS_COMPILE)ar
+  RANLIB := $(CROSS_COMPILE)ranlib
+  LD := rust-lld -flavor gnu
+endif
 
 OBJDUMP ?= rust-objdump -d --print-imm-hex --x86-asm-syntax=intel
 OBJCOPY ?= rust-objcopy --binary-architecture=$(ARCH)
 GDB ?= gdb-multiarch
-
-export TARGET_CC = $(CC)
-export TARGET_CFLAGS
 
 # Paths
 OUT_DIR ?= $(APP)
@@ -84,6 +74,12 @@ LD_SCRIPT := $(CURDIR)/modules/axhal/linker_$(ARCH).lds
 OUT_ELF := $(OUT_DIR)/$(APP_NAME)_$(PLATFORM).elf
 OUT_BIN := $(OUT_DIR)/$(APP_NAME)_$(PLATFORM).bin
 
+.PREWORK:
+	#mv ./cargo/ ./.cargo/
+	if [ ! -d "./.cargo" ]; then mkdir .cargo; fi
+	touch .cargo/config.toml
+	cat ./cargo/config.toml > ./.cargo/config.toml
+
 all: build
 
 include scripts/make/utils.mk
@@ -92,7 +88,10 @@ include scripts/make/qemu.mk
 include scripts/make/build.mk
 include scripts/make/test.mk
 
-build: $(OUT_DIR) $(OUT_BIN)
+build: .PREWORK $(OUT_DIR) $(OUT_BIN)
+	cp $(OUT_BIN) kernel-qemu
+	cat ./.cargo/config.toml
+	#mv ./.cargo/ ./cargo/
 
 disasm:
 	$(OBJDUMP) $(OUT_ELF) | less
@@ -139,7 +138,7 @@ disk_img:
 ifneq ($(wildcard $(DISK_IMG)),)
 	@printf "$(YELLOW_C)warning$(END_C): disk image \"$(DISK_IMG)\" already exists!\n"
 else
-	$(call make_disk_image,$(FT),$(DISK_IMG))
+	$(call make_disk_image,fat32,$(DISK_IMG))
 endif
 
 clean: clean_c

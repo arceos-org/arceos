@@ -3,8 +3,7 @@
 define unit_test
   cargo test -p percpu $(1) -- --nocapture
   cargo test -p axfs $(1) --features "myfs" -- --nocapture
-  cargo test -p allocator $(1) --release -- --nocapture
-  cargo test --workspace --exclude lwip_rust --exclude allocator --exclude "arceos-*" $(1) -- --nocapture
+  cargo test --workspace --exclude "arceos-*" $(1) -- --nocapture
 endef
 
 define app_test

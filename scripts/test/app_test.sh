@@ -18,7 +18,7 @@ BLOD_C="\x1b[1m"
 END_C="\x1b[0m"
 
 if [ -z "$ARCH" ]; then
-    ARCH=x86_64
+    ARCH=riscv64
 fi
 if [ "$ARCH" != "x86_64" ] && [ "$ARCH" != "riscv64" ] && [ "$ARCH" != "aarch64" ]; then
     echo "Unknown architecture: $ARCH"
@@ -114,10 +114,6 @@ if [ -z "$1" ]; then
         "apps/task/sleep"
         "apps/task/priority"
         "apps/net/httpclient"
-        "apps/c/helloworld"
-        "apps/c/memtest"
-        "apps/c/sqlite3"
-        "apps/c/httpclient"
     )
 else
     test_list="$@"

@@ -21,6 +21,7 @@ pub type FileAttr = axfs_vfs::VfsNodeAttr;
 pub type FilePerm = axfs_vfs::VfsNodePerm;
 
 /// An opened file object, with open permissions and a cursor.
+#[derive(Clone)]
 pub struct File {
     node: WithCap<VfsNodeRef>,
     is_append: bool,
@@ -145,11 +146,6 @@ impl File {
         }
         let access_cap = opts.into();
         if !perm_to_cap(attr.perm()).contains(access_cap) {
-            error!(
-                "bad perm {} {}",
-                perm_to_cap(attr.perm()).bits(),
-                access_cap.bits()
-            );
             return ax_err!(PermissionDenied);
         }
 
@@ -168,16 +164,6 @@ impl File {
     /// [`File`] object.
     pub fn open(path: &str, opts: &OpenOptions) -> AxResult<Self> {
         Self::_open_at(None, path, opts)
-    }
-
-    /// Look up no follow
-    pub fn lookup(path: &str) -> AxResult<Self> {
-        let node = crate::root::lookup_symbolic(None, path, false)?;
-        Ok(Self {
-            node: WithCap::new(node, Cap::empty()),
-            is_append: false,
-            offset: 0,
-        })
     }
 
     /// Truncates the file to the specified size.
@@ -235,6 +221,18 @@ impl File {
     /// Gets the file attributes.
     pub fn get_attr(&self) -> AxResult<FileAttr> {
         self.node.access(Cap::empty())?.get_attr()
+    }
+
+    pub fn readable(&self) -> bool {
+        self.node.can_access(Cap::READ)
+    }
+
+    pub fn writable(&self) -> bool {
+        self.node.can_access(Cap::WRITE)
+    }
+
+    pub fn executable(&self) -> bool {
+        self.node.can_access(Cap::EXECUTE)
     }
 }
 
@@ -307,8 +305,8 @@ impl Directory {
     }
 
     /// Removes a directory at the path relative to this directory.
-    pub fn remove_dir(&self, path: &str, recursive: bool) -> AxResult {
-        crate::root::remove_dir(self.access_at(path)?, path, recursive)
+    pub fn remove_dir(&self, path: &str) -> AxResult {
+        crate::root::remove_dir(self.access_at(path)?, path)
     }
 
     /// Reads directory entries starts from the current position into the

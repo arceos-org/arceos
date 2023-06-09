@@ -64,11 +64,6 @@ pub trait BaseScheduler {
     /// `current` is the current running task.
     fn task_tick(&mut self, current: &Self::SchedItem) -> bool;
 
-    /// Set priority for a task.
-    ///
-    /// Returns `true` if the priority is set successfully.
+    /// set priority for a task
     fn set_priority(&mut self, task: &Self::SchedItem, prio: isize) -> bool;
-
-    /// Check if the scheduler is empty.
-    fn is_empty(&self) -> bool;
 }

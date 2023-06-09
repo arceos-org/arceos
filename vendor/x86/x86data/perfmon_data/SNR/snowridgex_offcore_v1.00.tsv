@@ -1,0 +1,8 @@
+# Performance Monitoring Events for Intel Atom Processors Based on the Tremont Microarchitecture - V1.00
+# 4/5/2019 5:20:57 PM
+# Copyright (c) 2007 - 2017 Intel Corporation. All rights reserved.
+Unit	EventCode	UMask	PortMask	FCMask	UMaskExt	EventName	Description	Counter	MSRValue	ELLC	Filter	Internal	Deprecated	FILTER_VALUE
+MLC MLC	0XB7	0x01,0x02	0	0	0	OCR.DEMAND_DATA_RD.ANY_RESPONSE	Counts demand data reads that have any response type. 	0,1,2,3	0x000000000000010001	0	0	0	0	0
+MLC MLC	0XB7	0x01,0x02	0	0	0	OCR.DEMAND_DATA_RD.L3_MISS	Counts demand data reads that was not supplied by the L3 cache. 	0,1,2,3	0x000000003F04000001	0	0	0	0	0
+MLC MLC	0XB7	0x01,0x02	0	0	0	OCR.DEMAND_RFO.ANY_RESPONSE	Counts all demand reads for ownership (RFO) requests and software based prefetches for exclusive ownership (PREFETCHW) that have any response type. 	0,1,2,3	0x000000000000010002	0	0	0	0	0
+MLC MLC	0XB7	0x01,0x02	0	0	0	OCR.DEMAND_RFO.L3_MISS	Counts all demand reads for ownership (RFO) requests and software based prefetches for exclusive ownership (PREFETCHW) that was not supplied by the L3 cache. 	0,1,2,3	0x000000003F04000002	0	0	0	0	0

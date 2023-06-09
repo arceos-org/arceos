@@ -1,13 +1,18 @@
 //! Task APIs for multi-task configuration.
 
-use crate::run_queue::LOAD_BALANCE_ARR;
 use alloc::{string::String, sync::Arc};
-use load_balance::BaseLoadBalance;
 
-pub(crate) use crate::run_queue::{AxRunQueue, RUN_QUEUE};
+#[cfg(feature = "multitask")]
+cfg_if::cfg_if! {
+    if #[cfg(feature = "monolithic")]  {
+        pub(crate) use crate::monolithic_task::run_queue::{AxRunQueue, RUN_QUEUE, init, init_secondary};
+        pub use crate::monolithic_task::task::{CurrentTask, TaskId, TaskInner, KERNEL_PROCESS_ID};
+    } else {
+        pub(crate) use crate::run_queue::{AxRunQueue, RUN_QUEUE, init, init_secondary};
+        pub use crate::task::{CurrentTask, TaskId, TaskInner};
+    }
+}
 
-#[doc(cfg(feature = "multitask"))]
-pub use crate::task::{CurrentTask, TaskId, TaskInner};
 #[doc(cfg(feature = "multitask"))]
 pub use crate::wait_queue::WaitQueue;
 
@@ -28,8 +33,6 @@ cfg_if::cfg_if! {
     }
 }
 
-pub(crate) type LoadBalance = load_balance::BasicMethod;
-
 #[cfg(feature = "preempt")]
 struct KernelGuardIfImpl;
 
@@ -47,11 +50,6 @@ impl kernel_guard::KernelGuardIf for KernelGuardIfImpl {
             curr.enable_preempt(true);
         }
     }
-}
-
-/// get current cpu id
-pub fn get_current_cpu_id() -> usize {
-    axhal::cpu::this_cpu_id()
 }
 
 /// Gets the current task, or returns [`None`] if the current task is not
@@ -73,20 +71,17 @@ pub fn current() -> CurrentTask {
 pub fn init_scheduler() {
     info!("Initialize scheduling...");
 
-    crate::run_queue::init();
+    init();
+
     #[cfg(feature = "irq")]
     crate::timers::init();
 
     info!("  use {} scheduler.", Scheduler::scheduler_name());
-    info!(
-        "  use {} load balance manager.",
-        LoadBalance::load_balance_name()
-    );
 }
 
 /// Initializes the task scheduler for secondary CPUs.
 pub fn init_scheduler_secondary() {
-    crate::run_queue::init_secondary();
+    init_secondary();
 }
 
 /// Handles periodic timer ticks for the task manager.
@@ -96,8 +91,7 @@ pub fn init_scheduler_secondary() {
 #[doc(cfg(feature = "irq"))]
 pub fn on_timer_tick() {
     crate::timers::check_events();
-    RUN_QUEUE[axhal::cpu::this_cpu_id()].with_current_rq(|rq| rq.scheduler_timer_tick());
-    //RUN_QUEUE[get_current_cpu_id()].scheduler_timer_tick()
+    RUN_QUEUE.lock().scheduler_timer_tick();
 }
 
 /// Spawns a new task with the given parameters.
@@ -107,13 +101,12 @@ pub fn spawn_raw<F>(f: F, name: String, stack_size: usize) -> AxTaskRef
 where
     F: FnOnce() + Send + 'static,
 {
+    #[cfg(feature = "monolithic")]
+    let task = TaskInner::new(f, name, stack_size, KERNEL_PROCESS_ID, 0);
+    #[cfg(not(feature = "monolithic"))]
     let task = TaskInner::new(f, name, stack_size);
-    // TODO
-    task.set_affinity((1 << (axconfig::SMP)) - 1);
 
-    RUN_QUEUE[axhal::cpu::this_cpu_id()].with_task_correspond_rq(task.clone(), |rq| {
-        rq.add_task(task.clone());
-    });
+    RUN_QUEUE.lock().add_task(task.clone());
     task
 }
 
@@ -140,18 +133,13 @@ where
 ///
 /// [CFS]: https://en.wikipedia.org/wiki/Completely_Fair_Scheduler
 pub fn set_priority(prio: isize) -> bool {
-    RUN_QUEUE[axhal::cpu::this_cpu_id()].with_current_rq(|rq| rq.set_current_priority(prio))
+    RUN_QUEUE.lock().set_current_priority(prio)
 }
 
 /// Current task gives up the CPU time voluntarily, and switches to another
 /// ready task.
 pub fn yield_now() {
-    //info!("exit 233");
-    RUN_QUEUE[axhal::cpu::this_cpu_id()].with_current_rq(|rq| {
-        rq.yield_current();
-    });
-    //info!("exit 234");
-    // TODO: 还没有把功能取出来的功能
+    RUN_QUEUE.lock().yield_current();
 }
 
 /// Current task is going to sleep for the given duration.
@@ -165,22 +153,15 @@ pub fn sleep(dur: core::time::Duration) {
 ///
 /// If the feature `irq` is not enabled, it uses busy-wait instead.
 pub fn sleep_until(deadline: axhal::time::TimeValue) {
-    //info!("exit 233");
     #[cfg(feature = "irq")]
-    RUN_QUEUE[axhal::cpu::this_cpu_id()].with_current_rq(|rq| {
-        rq.sleep_until(deadline);
-    });
-    //info!("exit 234");
+    RUN_QUEUE.lock().sleep_until(deadline);
     #[cfg(not(feature = "irq"))]
     axhal::time::busy_wait_until(deadline);
 }
 
 /// Exits the current task.
-pub fn exit(exit_code: i32) -> ! {
-    //info!("exit 233");
-    RUN_QUEUE[axhal::cpu::this_cpu_id()].with_current_rq(|rq| {
-        rq.exit_current(exit_code);
-    })
+pub fn exit(exit_code: i32) {
+    RUN_QUEUE.lock().exit_current(exit_code)
 }
 
 /// The idle task routine.

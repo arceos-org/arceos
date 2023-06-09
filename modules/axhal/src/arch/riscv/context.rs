@@ -1,12 +1,13 @@
 use core::arch::asm;
 use memory_addr::VirtAddr;
+use riscv::register::sstatus::{self, Sstatus};
 
 include_asm_marcos!();
 
 /// General registers of RISC-V.
 #[allow(missing_docs)]
 #[repr(C)]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct GeneralRegisters {
     pub ra: usize,
     pub sp: usize,
@@ -43,7 +44,7 @@ pub struct GeneralRegisters {
 
 /// Saved registers when a trap (interrupt or exception) occurs.
 #[repr(C)]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct TrapFrame {
     /// All general registers.
     pub regs: GeneralRegisters,
@@ -51,6 +52,29 @@ pub struct TrapFrame {
     pub sepc: usize,
     /// Supervisor Status Register.
     pub sstatus: usize,
+}
+
+impl TrapFrame {
+    fn set_user_sp(&mut self, user_sp: usize) {
+        self.regs.sp = user_sp;
+    }
+    /// 用于第一次进入应用程序时的初始化
+    pub fn app_init_context(app_entry: usize, user_sp: usize) -> Self {
+        let sstatus = sstatus::read();
+        // 当前版本的riscv不支持使用set_spp函数，需要手动修改
+        // 修改当前的sstatus为User，即是第8位置0
+        let mut trap_frame = TrapFrame::default();
+        trap_frame.set_user_sp(user_sp);
+        trap_frame.sepc = app_entry;
+        trap_frame.sstatus = unsafe { *(&sstatus as *const Sstatus as *const usize) & !(1 << 8) };
+        unsafe {
+            // a0为参数个数
+            // a1存储的是用户栈底，即argv
+            trap_frame.regs.a0 = *(user_sp as *const usize);
+            trap_frame.regs.a1 = *(user_sp as *const usize).add(1) as usize;
+        }
+        trap_frame
+    }
 }
 
 /// Saved hardware states of a task.
@@ -91,6 +115,12 @@ impl TaskContext {
     /// Creates a new default context for a new task.
     pub const fn new() -> Self {
         unsafe { core::mem::MaybeUninit::zeroed().assume_init() }
+    }
+
+    pub fn new_empty() -> *mut TaskContext {
+        let task_ctx = TaskContext::new();
+        let task_ctx_ptr = &task_ctx as *const TaskContext as *mut TaskContext;
+        task_ctx_ptr
     }
 
     /// Initializes the context for a new task, with the given entry point and

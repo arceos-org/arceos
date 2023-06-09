@@ -25,10 +25,14 @@ macro_rules! ax_call_body {
         }
         match res {
             Ok(v) => v as _,
+<<<<<<< HEAD
+            Err(e) => -e.code() as _,
+=======
             Err(e) => {
                 crate::cbindings::errno::set_errno(e.code());
                 -1 as _
             }
+>>>>>>> 322a8c34d08df4a657daf4bb67e4031480162883
         }
     }};
 }
@@ -39,10 +43,14 @@ macro_rules! ax_call_body_no_debug {
         let res = (|| -> axerrno::LinuxResult<_> { $($stmt)* })();
         match res {
             Ok(v) => v as _,
+<<<<<<< HEAD
+            Err(e) => -e.code() as _,
+=======
             Err(e) => {
                 crate::cbindings::errno::set_errno(e.code());
                 -1 as _
             }
+>>>>>>> 322a8c34d08df4a657daf4bb67e4031480162883
         }
     }};
 }

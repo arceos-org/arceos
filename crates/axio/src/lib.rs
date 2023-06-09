@@ -16,6 +16,7 @@ pub mod prelude;
 
 pub use self::buffered::BufReader;
 pub use self::error::{Error, Result};
+use log::{debug, error};
 
 #[cfg(feature = "alloc")]
 use alloc::{string::String, vec::Vec};
@@ -66,6 +67,21 @@ pub trait Read {
             Ok(())
         }
     }
+    fn read_full(&mut self, mut buf: &mut [u8]) -> Result<usize> {
+        let buf_len = buf.len();
+
+        while !buf.is_empty() {
+            match self.read(buf) {
+                // read to EOF
+                Ok(0) => return Ok(buf_len - buf.len()),
+                // read n bytes
+                Ok(n) => buf = &mut buf[n..],
+                // error
+                Err(e) => return Err(e),
+            }
+        }
+        Ok(buf_len)
+    }
 }
 
 /// A trait for objects which are byte-oriented sinks.
@@ -87,6 +103,28 @@ pub trait Write {
             }
         }
         Ok(())
+    }
+
+    /// Attempts to write as many bytes in a buffer as possible into this writer.
+    fn write_many(&mut self, mut buf: &[u8]) -> usize {
+        let mut idx: usize = 0;
+        while !buf.is_empty() {
+            match self.write(buf) {
+                Ok(0) => {
+                    error!("WriteZero: failed to write whole buffer");
+                    return idx;
+                }
+                Ok(n) => {
+                    buf = &buf[n..];
+                    idx += n;
+                }
+                Err(e) => {
+                    error!("WriteError: failed to write whole buffer: {:?}", e);
+                    return idx;
+                }
+            }
+        }
+        idx
     }
 
     /// Writes a formatted string into this writer, returning any error

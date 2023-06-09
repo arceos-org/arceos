@@ -8,24 +8,16 @@
 //!   [`BitmapPageAllocator`])
 //! - [`IdAllocator`]: Used to allocate unique IDs.
 
-#![cfg_attr(not(test), no_std)]
+#![no_std]
 #![feature(result_option_inspect)]
 
-mod basic;
 mod bitmap;
 mod buddy;
-mod mimalloc;
 mod slab;
-mod tlsf;
-mod tlsf_c;
 
-pub use basic::BasicAllocator;
 pub use bitmap::BitmapPageAllocator;
 pub use buddy::BuddyByteAllocator;
-pub use mimalloc::MiAllocator;
 pub use slab::SlabByteAllocator;
-pub use tlsf::TLSFAllocator;
-pub use tlsf_c::TLSFCAllocator;
 
 /// The error type used for allocation.
 #[derive(Debug)]
@@ -123,36 +115,4 @@ const fn align_down(pos: usize, align: usize) -> usize {
 #[inline]
 const fn align_up(pos: usize, align: usize) -> usize {
     (pos + align - 1) & !(align - 1)
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn align_test() {
-        //allocator_test::align_test();
-    }
-    #[test]
-    fn basic_test() {
-        //allocator_test::glibc_bench_test();
-    }
-    #[test]
-    fn mi_test() {
-        //allocator_test::mi_test();
-    }
-    #[test]
-    fn malloc_large_test() {
-        //allocator_test::malloc_large_test();
-    }
-    #[test]
-    fn glibc_bench_test() {
-        //allocator_test::glibc_bench_test();
-    }
-    #[test]
-    fn multi_thread_test() {
-        //allocator_test::multi_thread_test();
-    }
-    #[test]
-    fn multi_thread_c_test() {
-        //allocator_test::multi_thread_c_test();
-    }
 }

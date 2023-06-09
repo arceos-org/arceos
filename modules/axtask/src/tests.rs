@@ -23,7 +23,7 @@ fn test_sched_fifo() {
                 assert_eq!(order, i); // FIFO scheduler
             },
             format!("T{}", i),
-            0x10000,
+            0x1000,
         );
     }
 
@@ -65,8 +65,6 @@ fn test_fp_state_switch() {
 
 #[test]
 fn test_wait_queue() {
-    //axlog::init();
-    //axlog::set_max_level("trace");
     let _lock = SERIAL.lock();
     INIT.call_once(axtask::init_scheduler);
 
@@ -122,7 +120,7 @@ fn test_task_join() {
                 axtask::exit(i as _);
             },
             format!("T{}", i),
-            0x10000,
+            0x1000,
         ));
     }
 

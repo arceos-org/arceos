@@ -1,5 +1,4 @@
 #![cfg(feature = "myfs")]
-#![cfg(feature = "ramfs")]
 
 mod test_common;
 

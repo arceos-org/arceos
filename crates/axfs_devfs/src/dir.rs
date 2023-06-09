@@ -108,19 +108,19 @@ impl VfsNodeOps for DirNode {
         }
     }
 
-    fn remove(&self, path: &str, _recursive: bool) -> VfsResult {
+    fn remove(&self, path: &str) -> VfsResult {
         log::debug!("remove at devfs: {}", path);
         let (name, rest) = split_path(path);
         if let Some(rest) = rest {
             match name {
-                "" | "." => self.remove(rest, false),
-                ".." => self.parent().ok_or(VfsError::NotFound)?.remove(rest, false),
+                "" | "." => self.remove(rest),
+                ".." => self.parent().ok_or(VfsError::NotFound)?.remove(rest),
                 _ => self
                     .children
                     .read()
                     .get(name)
                     .ok_or(VfsError::NotFound)?
-                    .remove(rest, false),
+                    .remove(rest),
             }
         } else {
             Err(VfsError::PermissionDenied) // do not support to remove nodes dynamically

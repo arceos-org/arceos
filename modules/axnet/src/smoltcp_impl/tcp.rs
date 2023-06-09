@@ -202,7 +202,7 @@ impl TcpSocket {
     }
 
     /// Close the connection.
-    pub fn shutdown(&mut self) -> AxResult {
+    pub fn shutdown(&self) -> AxResult {
         if let Some(handle) = self.handle {
             // stream
             SOCKET_SET.with_socket_mut::<tcp::Socket, _, _>(handle, |socket| {

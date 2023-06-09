@@ -1,14 +1,11 @@
 [workspace]
-
 resolver = "2"
-
 members = [
     "apps/display",
     "apps/exception",
     "apps/helloworld",
     "apps/memtest",
     "apps/fs/shell",
-    "apps/fs/journal_shell",
     "apps/net/echoserver",
     "apps/net/httpclient",
     "apps/net/httpserver",
@@ -17,7 +14,9 @@ members = [
     "apps/task/sleep",
     "apps/task/yield",
     "apps/task/priority",
-    "apps/task/unbalance",
+    "apps/syscall/junior",
+    "apps/syscall/libc_static",
+    "apps/syscall/libc_dynamic",
 
     "crates/allocator",
     "crates/arm_gic",
@@ -26,7 +25,6 @@ members = [
     "crates/axfs_ramfs",
     "crates/axfs_vfs",
     "crates/axio",
-    "crates/jbd",
     "crates/capability",
     "crates/crate_interface",
     "crates/driver_block",
@@ -40,7 +38,6 @@ members = [
     "crates/kernel_guard",
     "crates/lazy_init",
     "crates/linked_list",
-    "crates/lwip_rust",
     "crates/memory_addr",
     "crates/page_table",
     "crates/page_table_entry",
@@ -52,12 +49,6 @@ members = [
     "crates/spinlock",
     "crates/timer_list",
     "crates/tuple_for_each",
-    "crates/basic_allocator",
-    "crates/tlsf_allocator",
-    "crates/allocator_test",
-    "crates/fs_utils",
-    "crates/ext2fs",
-    "crates/mimalloc_allocator",
 
     "modules/axalloc",
     "modules/axconfig",
@@ -70,6 +61,10 @@ members = [
     "modules/axruntime",
     "modules/axsync",
     "modules/axtask",
+    "modules/axmem",
+    "modules/axprocess",
 
     "ulib/libax",
+    "ulib/starry_libax",
+    
 ]

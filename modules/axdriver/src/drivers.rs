@@ -19,11 +19,7 @@ pub trait DriverProbe {
     }
 
     #[cfg(bus = "mmio")]
-    fn probe_mmio(
-        _mmio_base: usize,
-        _mmio_size: usize,
-        _irq_num: Option<usize>,
-    ) -> Option<AxDeviceEnum> {
+    fn probe_mmio(_mmio_base: usize, _mmio_size: usize) -> Option<AxDeviceEnum> {
         None
     }
 

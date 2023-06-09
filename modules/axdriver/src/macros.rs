@@ -56,19 +56,3 @@ macro_rules! for_each_drivers {
         }
     }};
 }
-
-/// Register an interrupt handler for the device.
-#[macro_export]
-macro_rules! register_interrupt_handler {
-    ($dev:ident, $handler:block) => {{
-        use axhal::irq::{register_handler, IrqHandler};
-        if let Some(irq_num) = $dev.get_irq_num() {
-            info!(
-                "Registered handler for device {} with irq num {}",
-                $dev.device_name(),
-                irq_num
-            );
-            register_handler(irq_num, || $handler);
-        }
-    }};
-}

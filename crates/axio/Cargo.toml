@@ -15,3 +15,4 @@ default = []
 
 [dependencies]
 axerrno = { path = "../axerrno" }
+log = "0.4"

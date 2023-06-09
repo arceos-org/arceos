@@ -5,5 +5,3 @@
 *.img
 actual.out
 qemu.log
-*.pcap
-/ext2fs_fuse/target

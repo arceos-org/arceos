@@ -13,7 +13,7 @@ documentation = "https://rcore-os.github.io/arceos/axconfig/index.html"
 platform-pc-x86 = []
 platform-qemu-virt-riscv = []
 platform-qemu-virt-aarch64 = []
-default = []
+default = ["platform-qemu-virt-riscv"]
 
 [dependencies]
 cfg-if = "1.0"

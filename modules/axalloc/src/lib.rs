@@ -12,42 +12,16 @@ extern crate log;
 extern crate alloc;
 
 mod page;
-
-use allocator::*;
+use allocator::{AllocResult, BaseAllocator, ByteAllocator, PageAllocator};
+use allocator::{BitmapPageAllocator, SlabByteAllocator};
 use core::alloc::{GlobalAlloc, Layout};
-use core::mem::size_of;
+pub use page::PhysPage;
 use spinlock::SpinNoIrq;
 
 const PAGE_SIZE: usize = 0x1000;
-cfg_if::cfg_if! {
-    if #[cfg(feature = "alloc-mimalloc")]{
-        const MIN_HEAP_SIZE: usize = 0x400000; // 4 M
-    } else{
-        const MIN_HEAP_SIZE: usize = 0x8000; // 32 K
-    }
-}
+const MIN_HEAP_SIZE: usize = 0x8000; // 32 K
 
 pub use page::GlobalPage;
-
-cfg_if::cfg_if! {
-    if #[cfg(feature = "alloc-buddy")] {
-        pub(crate) type Allocator = allocator::BuddyByteAllocator;
-    } else if #[cfg(feature = "alloc-slab")] {
-        pub(crate) type Allocator = allocator::SlabByteAllocator;
-    } else if #[cfg(feature = "alloc-basic-first_fit")] {
-        pub(crate) type Allocator = allocator::BasicAllocator<0>;
-    } else if #[cfg(feature = "alloc-basic-best_fit")] {
-        pub(crate) type Allocator = allocator::BasicAllocator<1>;
-    } else if #[cfg(feature = "alloc-basic-worst_fit")] {
-        pub(crate) type Allocator = allocator::BasicAllocator<2>;
-    } else if #[cfg(feature = "alloc-tlsf-rust")] {
-        pub(crate) type Allocator = allocator::TLSFAllocator;
-    } else if #[cfg(feature = "alloc-tlsf-c")] {
-        pub(crate) type Allocator = allocator::TLSFCAllocator;
-    } else if #[cfg(feature = "alloc-mimalloc")] {
-        pub(crate) type Allocator = allocator::MiAllocator;
-    }
-}
 
 /// The global allocator used by ArceOS.
 ///
@@ -56,10 +30,10 @@ cfg_if::cfg_if! {
 /// there is no memory, asks the page allocator for more memory and adds it to
 /// the byte allocator.
 ///
-/// Currently, [`MiAllocator`] is used as the byte allocator, while
+/// Currently, [`SlabByteAllocator`] is used as the byte allocator, while
 /// [`BitmapPageAllocator`] is used as the page allocator.
 pub struct GlobalAllocator {
-    balloc: SpinNoIrq<Allocator>,
+    balloc: SpinNoIrq<SlabByteAllocator>,
     palloc: SpinNoIrq<BitmapPageAllocator<PAGE_SIZE>>,
 }
 
@@ -67,7 +41,7 @@ impl GlobalAllocator {
     /// Creates an empty [`GlobalAllocator`].
     pub const fn new() -> Self {
         Self {
-            balloc: SpinNoIrq::new(Allocator::new()),
+            balloc: SpinNoIrq::new(SlabByteAllocator::new()),
             palloc: SpinNoIrq::new(BitmapPageAllocator::new()),
         }
     }
@@ -81,21 +55,10 @@ impl GlobalAllocator {
         assert!(size > MIN_HEAP_SIZE);
         let init_heap_size = MIN_HEAP_SIZE;
         self.palloc.lock().init(start_vaddr, size);
-        cfg_if::cfg_if! {
-            if #[cfg(feature = "alloc-mimalloc")]{
-                // mimalloc中，申请的内存必须是4MB对齐的
-                let heap_ptr = self
-                    .alloc_pages(init_heap_size / PAGE_SIZE, MIN_HEAP_SIZE)
-                    .unwrap();
-                let new_heap_ptr = heap_ptr;
-            } else{
-                let heap_ptr = self
-                    .alloc_pages(init_heap_size / PAGE_SIZE, PAGE_SIZE)
-                    .unwrap();
-                let new_heap_ptr = heap_ptr;
-            }
-        }
-        self.balloc.lock().init(new_heap_ptr, init_heap_size);
+        let heap_ptr = self
+            .alloc_pages(init_heap_size / PAGE_SIZE, PAGE_SIZE)
+            .unwrap();
+        self.balloc.lock().init(heap_ptr, init_heap_size);
     }
 
     /// Add the given region to the allocator.
@@ -115,31 +78,21 @@ impl GlobalAllocator {
     /// `align_pow2` must be a power of 2, and the returned region bound will be
     ///  aligned to it.
     pub fn alloc(&self, size: usize, align_pow2: usize) -> AllocResult<usize> {
-        //默认alloc请求都是8对齐，现在TLSF已经可以支持其他字节的对齐
         // simple two-level allocator: if no heap memory, allocate from the page allocator.
         let mut balloc = self.balloc.lock();
         loop {
             if let Ok(ptr) = balloc.alloc(size, align_pow2) {
                 return Ok(ptr);
             } else {
-                //申请时要比原始size大一点
-                cfg_if::cfg_if! {
-                    if #[cfg(feature = "alloc-mimalloc")]{
-                        // mimalloc中，申请的内存必须是4MB对齐的，而且要是size的至少8/7倍
-                        let expand_size = (size * 8 / 7 + align_pow2 + 6 * size_of::<usize>())
-                            .next_power_of_two()
-                            .max(MIN_HEAP_SIZE);
-                        let heap_ptr = self.alloc_pages(expand_size / PAGE_SIZE, MIN_HEAP_SIZE)?;
-                        let new_heap_ptr = heap_ptr;
-                    } else{
-                        let expand_size = (size + align_pow2 + 6 * size_of::<usize>())
-                            .next_power_of_two()
-                            .max(PAGE_SIZE);
-                        let heap_ptr = self.alloc_pages(expand_size / PAGE_SIZE, PAGE_SIZE)?;
-                        let new_heap_ptr = heap_ptr;
-                    }
-                }
-                balloc.add_memory(new_heap_ptr, expand_size)?;
+                let old_size = balloc.total_bytes();
+                let expand_size = old_size.max(size).next_power_of_two().max(PAGE_SIZE);
+                let heap_ptr = self.alloc_pages(expand_size / PAGE_SIZE, PAGE_SIZE)?;
+                debug!(
+                    "expand heap memory: [{:#x}, {:#x})",
+                    heap_ptr,
+                    heap_ptr + expand_size
+                );
+                balloc.add_memory(heap_ptr, expand_size)?;
             }
         }
     }
@@ -152,7 +105,7 @@ impl GlobalAllocator {
     ///
     /// [`alloc`]: GlobalAllocator::alloc
     pub fn dealloc(&self, pos: usize, size: usize, align_pow2: usize) {
-        self.balloc.lock().dealloc(pos, size, align_pow2);
+        self.balloc.lock().dealloc(pos, size, align_pow2)
     }
 
     /// Allocates contiguous pages.
@@ -174,11 +127,6 @@ impl GlobalAllocator {
     /// [`alloc_pages`]: GlobalAllocator::alloc_pages
     pub fn dealloc_pages(&self, pos: usize, num_pages: usize) {
         self.palloc.lock().dealloc_pages(pos, num_pages)
-    }
-
-    /// Returns the number of total bytes in the byte allocator.
-    pub fn total_bytes(&self) -> usize {
-        self.balloc.lock().total_bytes()
     }
 
     /// Returns the number of allocated bytes in the byte allocator.
@@ -217,8 +165,7 @@ unsafe impl GlobalAlloc for GlobalAllocator {
 }
 
 #[cfg_attr(all(target_os = "none", not(test)), global_allocator)]
-/// Global allocator
-pub static GLOBAL_ALLOCATOR: GlobalAllocator = GlobalAllocator::new();
+static GLOBAL_ALLOCATOR: GlobalAllocator = GlobalAllocator::new();
 
 /// Returns the reference to the global allocator.
 pub fn global_allocator() -> &'static GlobalAllocator {

@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <libax.h>
+#define __DECONST(type, var) ((type)(uintptr_t)(const void *)(var))
 
 #define __DECONST(type, var) ((type)(uintptr_t)(const void *)(var))
 

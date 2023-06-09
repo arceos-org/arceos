@@ -31,7 +31,7 @@ impl TcpStream {
     }
 
     /// Shuts down the connection.
-    pub fn shutdown(&mut self) -> io::Result {
+    pub fn shutdown(&self) -> io::Result {
         self.socket.shutdown()
     }
 }

@@ -1,0 +1,235 @@
+# Performance Monitoring Events for Intel Eigth Processors Based on the SunnyCove Microarchitecture - V1.00
+# 3/18/2019 9:26:49 AM
+# Copyright (c) 2007 - 2017 Intel Corporation. All rights reserved.
+EventCode	UMask	EventName	BriefDescription	Counter	CounterHTOff	PEBScounters	SampleAfterValue	MSRIndex	MSRValue	CollectPEBSRecord	TakenAlone	CounterMask	Invert	AnyThread	EdgeDetect	PEBS	Data_LA	L1_Hit_Indication	Errata
+0x00	0x01	INST_RETIRED.ANY	Number of instructions retired. Fixed Counter - architectural event	32	32	32	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x00	0x01	INST_RETIRED.PREC_DIST	Precise instruction retired event with a reduced effect of PEBS shadow in IP distribution	32	32	32	2000003	0x00	0x00	3	0	0	0	0	0	2	0	0	0
+0x00	0x02	CPU_CLK_UNHALTED.THREAD	Core cycles when the thread is not in halt state	33	33	33	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x00	0x03	CPU_CLK_UNHALTED.REF_TSC	Reference cycles when the core is not in halt state.	34	34	34	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x00	0x04	TOPDOWN.SLOTS	Counts the number of available slots for an unhalted logical processor.	35	35	35	10000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x03	0x02	LD_BLOCKS.STORE_FORWARD	Loads blocked by overlapping with store buffer that cannot be forwarded.	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x03	0x08	LD_BLOCKS.NO_SR	The number of times that split load operations are temporarily blocked because all resources for handling the split accesses are in use.	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x07	0x01	LD_BLOCKS_PARTIAL.ADDRESS_ALIAS	False dependencies in MOB due to partial compare on address.	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x08	0x02	DTLB_LOAD_MISSES.WALK_COMPLETED_4K	Page walks completed due to a demand data load to a 4K page.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x08	0x04	DTLB_LOAD_MISSES.WALK_COMPLETED_2M_4M	Page walks completed due to a demand data load to a 2M/4M page.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x08	0x0E	DTLB_LOAD_MISSES.WALK_COMPLETED	Load miss in all TLB levels causes a page walk that completes. (All page sizes)	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x08	0x10	DTLB_LOAD_MISSES.WALK_PENDING	Number of page walks outstanding for a demand load in the PMH each cycle.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x08	0x10	DTLB_LOAD_MISSES.WALK_ACTIVE	Cycles when at least one PMH is busy with a page walk for a demand load.	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	1	0	0	0	0	0	0	0
+0x08	0x20	DTLB_LOAD_MISSES.STLB_HIT	Loads that miss the DTLB and hit the STLB.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x0D	0x01	INT_MISC.RECOVERY_CYCLES	Core cycles the allocator was stalled due to recovery from earlier clear event for this thread	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x0D	0x03	INT_MISC.ALL_RECOVERY_CYCLES	Cycles the Backend cluster is recovering after a miss-speculation or a Store Buffer or Load Buffer drain stall.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	1	0	0	0	0	0	0	0
+0x0d	0x80	INT_MISC.CLEAR_RESTEER_CYCLES	Counts cycles after recovery from a branch misprediction or machine clear till the first uop is issued from the resteered path.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x0E	0x01	UOPS_ISSUED.ANY	Uops that RAT issues to RS	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x0E	0x01	UOPS_ISSUED.STALL_CYCLES	Cycles when RAT does not issue Uops to RS for the thread	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	1	1	0	0	0	0	0	0
+0x14	0x09	ARITH.DIVIDER_ACTIVE	Cycles when divide unit is busy executing divide or square root operations.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	1	0	0	0	0	0	0	0
+0x24	0x21	L2_RQSTS.DEMAND_DATA_RD_MISS	Demand Data Read miss L2, no rejects	0,1,2,3	0,1,2,3	0,1,2,3	200003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x24	0x22	L2_RQSTS.RFO_MISS	RFO requests that miss L2 cache	0,1,2,3	0,1,2,3	0,1,2,3	200003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x24	0x24	L2_RQSTS.CODE_RD_MISS	L2 cache misses when fetching instructions	0,1,2,3	0,1,2,3	0,1,2,3	200003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x24	0x27	L2_RQSTS.ALL_DEMAND_MISS	Demand requests that miss L2 cache	0,1,2,3	0,1,2,3	0,1,2,3	200003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x24	0x28	L2_RQSTS.SWPF_MISS	SW prefetch requests that miss L2 cache.	0,1,2,3	0,1,2,3	0,1,2,3	200003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x24	0xc1	L2_RQSTS.DEMAND_DATA_RD_HIT	Demand Data Read requests that hit L2 cache	0,1,2,3	0,1,2,3	0,1,2,3	200003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x24	0xc2	L2_RQSTS.RFO_HIT	RFO requests that hit L2 cache	0,1,2,3	0,1,2,3	0,1,2,3	200003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x24	0xc4	L2_RQSTS.CODE_RD_HIT	L2 cache hits when fetching instructions, code reads.	0,1,2,3	0,1,2,3	0,1,2,3	200003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x24	0xc8	L2_RQSTS.SWPF_HIT	SW prefetch requests that hit L2 cache.	0,1,2,3	0,1,2,3	0,1,2,3	200003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x24	0xE1	L2_RQSTS.ALL_DEMAND_DATA_RD	Demand Data Read requests	0,1,2,3	0,1,2,3	0,1,2,3	200003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x24	0xE2	L2_RQSTS.ALL_RFO	RFO requests to L2 cache	0,1,2,3	0,1,2,3	0,1,2,3	200003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x24	0xE4	L2_RQSTS.ALL_CODE_RD	L2 code requests	0,1,2,3	0,1,2,3	0,1,2,3	200003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x24	0xE7	L2_RQSTS.ALL_DEMAND_REFERENCES	Demand requests to L2 cache	0,1,2,3	0,1,2,3	0,1,2,3	200003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x28	0x07	CORE_POWER.LVL0_TURBO_LICENSE	Core cycles where the core was running in a manner where Turbo may be clipped to the Non-AVX turbo schedule.	0,1,2,3	0,1,2,3	0,1,2,3	200003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x28	0x18	CORE_POWER.LVL1_TURBO_LICENSE	Core cycles where the core was running in a manner where Turbo may be clipped to the AVX2 turbo schedule.	0,1,2,3	0,1,2,3	0,1,2,3	200003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x28	0x20	CORE_POWER.LVL2_TURBO_LICENSE	Core cycles where the core was running in a manner where Turbo may be clipped to the AVX512 turbo schedule.	0,1,2,3	0,1,2,3	0,1,2,3	200003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x32	0x01	SW_PREFETCH_ACCESS.NTA	Number of PREFETCHNTA instructions executed.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x32	0x02	SW_PREFETCH_ACCESS.T0	Number of PREFETCHT0 instructions executed.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x32	0x04	SW_PREFETCH_ACCESS.T1_T2	Number of PREFETCHT1 or PREFETCHT2 instructions executed.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x32	0x08	SW_PREFETCH_ACCESS.PREFETCHW	Number of PREFETCHW instructions executed.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x3C	0x00	CPU_CLK_UNHALTED.THREAD_P	Thread cycles when thread is not in halt state	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x3C	0x01	CPU_CLK_UNHALTED.REF_XCLK	Core crystal clock cycles when the thread is unhalted.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	25003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x3C	0x02	CPU_CLK_UNHALTED.ONE_THREAD_ACTIVE	Core crystal clock cycles when this thread is unhalted and the other thread is halted.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	25003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x48	0x01	L1D_PEND_MISS.PENDING	Number of L1D misses that are outstanding	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x48	0x01	L1D_PEND_MISS.PENDING_CYCLES	Cycles with L1D load Misses outstanding.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	1	0	0	0	0	0	0	0
+0x48	0x02	L1D_PEND_MISS.FB_FULL	Number of cycles a demand request has waited due to L1D Fill Buffer (FB) unavailablability.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x48	0x02	L1D_PEND_MISS.FB_FULL_PERIODS	Number of phases a demand request has waited due to L1D Fill Buffer (FB) unavailablability.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	1	0	0	1	0	0	0	0
+0x48	0x04	L1D_PEND_MISS.L2_STALL	Number of cycles a demand request has waited due to L1D due to lack of L2 resources.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x49	0x02	DTLB_STORE_MISSES.WALK_COMPLETED_4K	Page walks completed due to a demand data store to a 4K page.	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x49	0x04	DTLB_STORE_MISSES.WALK_COMPLETED_2M_4M	Page walks completed due to a demand data store to a 2M/4M page.	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x49	0x0E	DTLB_STORE_MISSES.WALK_COMPLETED	Store misses in all TLB levels causes a page walk that completes. (All page sizes)	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x49	0x10	DTLB_STORE_MISSES.WALK_PENDING	Number of page walks outstanding for a store in the PMH each cycle.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x49	0x10	DTLB_STORE_MISSES.WALK_ACTIVE	Cycles when at least one PMH is busy with a page walk for a store.	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	1	0	0	0	0	0	0	0
+0x49	0x20	DTLB_STORE_MISSES.STLB_HIT	Stores that miss the DTLB and hit the STLB.	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x4c	0x01	LOAD_HIT_PREFETCH.SWPF	Counts the number of demand load dispatches that hit L1D fill buffer (FB) allocated for software prefetch.	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x51	0x01	L1D.REPLACEMENT	Counts the number of cache lines replaced in L1 data cache.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x54	0x01	TX_MEM.ABORT_CONFLICT	Number of times a transactional abort was signaled due to a data conflict on a transactionally accessed address	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x54	0x02	TX_MEM.ABORT_CAPACITY_WRITE	Speculatively counts the number TSX Aborts due to a data capacity limitation for transactional writes.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x54	0x04	TX_MEM.ABORT_HLE_STORE_TO_ELIDED_LOCK	Number of times a HLE transactional region aborted due to a non XRELEASE prefixed instruction writing to an elided lock in the elision buffer	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x54	0x08	TX_MEM.ABORT_HLE_ELISION_BUFFER_NOT_EMPTY	Number of times an HLE transactional execution aborted due to NoAllocatedElisionBuffer being non-zero.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x54	0x10	TX_MEM.ABORT_HLE_ELISION_BUFFER_MISMATCH	Number of times an HLE transactional execution aborted due to XRELEASE lock not satisfying the address and value requirements in the elision buffer	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x54	0x20	TX_MEM.ABORT_HLE_ELISION_BUFFER_UNSUPPORTED_ALIGNMENT	Number of times an HLE transactional execution aborted due to an unsupported read alignment from the elision buffer.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x54	0x40	TX_MEM.HLE_ELISION_BUFFER_FULL	Number of times HLE lock could not be elided due to ElisionBufferAvailable being zero.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x5d	0x02	TX_EXEC.MISC2	Counts the number of times a class of instructions that may cause a transactional abort was executed inside a transactional region	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x5d	0x04	TX_EXEC.MISC3	Number of times an instruction execution caused the transactional nest count supported to be exceeded	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x5E	0x01	RS_EVENTS.EMPTY_CYCLES	Cycles when Reservation Station (RS) is empty for the thread	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x5E	0x01	RS_EVENTS.EMPTY_END	Counts end of periods where the Reservation Station (RS) was empty.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	1	1	0	1	0	0	0	0
+0x60	0x04	OFFCORE_REQUESTS_OUTSTANDING.CYCLES_WITH_DEMAND_RFO	Cycles with offcore outstanding demand rfo reads transactions in SuperQueue (SQ), queue to uncore.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	1	0	0	0	0	0	0	0
+0x60	0x08	OFFCORE_REQUESTS_OUTSTANDING.ALL_DATA_RD	Offcore outstanding cacheable Core Data Read transactions in SuperQueue (SQ), queue to uncore	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x60	0x08	OFFCORE_REQUESTS_OUTSTANDING.CYCLES_WITH_DATA_RD	Cycles when offcore outstanding cacheable Core Data Read transactions are present in SuperQueue (SQ), queue to uncore.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	1	0	0	0	0	0	0	0
+0x79	0x04	IDQ.MITE_UOPS	Uops delivered to Instruction Decode Queue (IDQ) from MITE path	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x79	0x04	IDQ.MITE_CYCLES_OK	Cycles MITE is delivering optimal number of Uops	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	5	0	0	0	0	0	0	0
+0x79	0x04	IDQ.MITE_CYCLES_ANY	Cycles MITE is delivering any Uop	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	1	0	0	0	0	0	0	0
+0x79	0x08	IDQ.DSB_UOPS	Uops delivered to Instruction Decode Queue (IDQ) from the Decode Stream Buffer (DSB) path	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x79	0x08	IDQ.DSB_CYCLES_OK	Cycles DSB is delivering optimal number of Uops	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	5	0	0	0	0	0	0	0
+0x79	0x08	IDQ.DSB_CYCLES_ANY	Cycles Decode Stream Buffer (DSB) is delivering any Uop	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	1	0	0	0	0	0	0	0
+0x79	0x30	IDQ.MS_SWITCHES	Number of switches from DSB or MITE to the MS	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	1	0	0	1	0	0	0	0
+0x79	0x30	IDQ.MS_UOPS	Uops delivered to IDQ while MS is busy	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x79	0x30	IDQ.MS_CYCLES_ANY	Cycles when uops are being delivered to IDQ while MS is busy	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	1	0	0	0	0	0	0	0
+0x80	0x04	ICACHE_16B.IFDATA_STALL	Cycles where a code fetch is stalled due to L1 instruction cache miss.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x83	0x01	ICACHE_64B.IFTAG_HIT	Instruction fetch tag lookups that hit in the instruction cache (L1I). Counts at 64-byte cache-line granularity.	0,1,2,3	0,1,2,3	0,1,2,3	200003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x83	0x02	ICACHE_64B.IFTAG_MISS	Instruction fetch tag lookups that miss in the instruction cache (L1I). Counts at 64-byte cache-line granularity.	0,1,2,3	0,1,2,3	0,1,2,3	200003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x83	0x04	ICACHE_64B.IFTAG_STALL	Cycles where a code fetch is stalled due to L1 instruction cache tag miss.	0,1,2,3	0,1,2,3	0,1,2,3	200003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x85	0x02	ITLB_MISSES.WALK_COMPLETED_4K	Code miss in all TLB levels causes a page walk that completes. (4K)	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x85	0x04	ITLB_MISSES.WALK_COMPLETED_2M_4M	Code miss in all TLB levels causes a page walk that completes. (2M/4M)	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x85	0x0E	ITLB_MISSES.WALK_COMPLETED	Code miss in all TLB levels causes a page walk that completes. (All page sizes)	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x85	0x10	ITLB_MISSES.WALK_PENDING	Number of page walks outstanding for an outstanding code request in the PMH each cycle.	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x85	0x10	ITLB_MISSES.WALK_ACTIVE	Cycles when at least one PMH is busy with a page walk for code (instruction fetch) request.	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	1	0	0	0	0	0	0	0
+0x85	0x20	ITLB_MISSES.STLB_HIT	Instruction fetch requests that miss the ITLB and hit the STLB.	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x87	0x01	ILD_STALL.LCP	Stalls caused by changing prefix length of the instruction.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x9C	0x01	IDQ_UOPS_NOT_DELIVERED.CORE	Uops not delivered by IDQ when backend of the machine is not stalled	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0x9c	0x01	IDQ_UOPS_NOT_DELIVERED.CYCLES_0_UOPS_DELIV.CORE	Cycles when no uops are not delivered by the IDQ when backend of the machine is not stalled	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	5	0	0	0	0	0	0	0
+0x9C	0x01	IDQ_UOPS_NOT_DELIVERED.CYCLES_FE_WAS_OK	Cycles when optimal number of uops was delivered to the back-end when the back-end is not stalled	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	1	1	0	0	0	0	0	0
+0xa1	0x01	UOPS_DISPATCHED.PORT_0	Number of uops executed on port 0	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xa1	0x02	UOPS_DISPATCHED.PORT_1	Number of uops executed on port 1	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xa1	0x04	UOPS_DISPATCHED.PORT_2_3	Number of uops executed on port 2 and 3	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xa1	0x10	UOPS_DISPATCHED.PORT_4_9	Number of uops executed on port 4 and 9	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xa1	0x20	UOPS_DISPATCHED.PORT_5	Number of uops executed on port 5	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xa1	0x40	UOPS_DISPATCHED.PORT_6	Number of uops executed on port 6	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xa1	0x80	UOPS_DISPATCHED.PORT_7_8	Number of uops executed on port 7 and 8	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xa2	0x02	RESOURCE_STALLS.SCOREBOARD	Counts cycles where the pipeline is stalled due to serializing operations.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xA2	0x08	RESOURCE_STALLS.SB	Cycles stalled due to no store buffers available. (not including draining form sync).	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xA3	0x01	CYCLE_ACTIVITY.CYCLES_L2_MISS	Cycles while L2 cache miss demand load is outstanding.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	1	0	0	0	0	0	0	0
+0xA3	0x02	CYCLE_ACTIVITY.CYCLES_L3_MISS	Cycles while L3 cache miss demand load is outstanding.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	2	0	0	0	0	0	0	0
+0xA3	0x04	CYCLE_ACTIVITY.STALLS_TOTAL	Total execution stalls.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	4	0	0	0	0	0	0	0
+0xA3	0x05	CYCLE_ACTIVITY.STALLS_L2_MISS	Execution stalls while L2 cache miss demand load is outstanding.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	5	0	0	0	0	0	0	0
+0xA3	0x06	CYCLE_ACTIVITY.STALLS_L3_MISS	Execution stalls while L3 cache miss demand load is outstanding.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	6	0	0	0	0	0	0	0
+0xA3	0x08	CYCLE_ACTIVITY.CYCLES_L1D_MISS	Cycles while L1 cache miss demand load is outstanding.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	8	0	0	0	0	0	0	0
+0xA3	0x0C	CYCLE_ACTIVITY.STALLS_L1D_MISS	Execution stalls while L1 cache miss demand load is outstanding.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	12	0	0	0	0	0	0	0
+0xA3	0x10	CYCLE_ACTIVITY.CYCLES_MEM_ANY	Cycles while memory subsystem has an outstanding load.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	16	0	0	0	0	0	0	0
+0xA3	0x14	CYCLE_ACTIVITY.STALLS_MEM_ANY	Execution stalls while memory subsystem has an outstanding load.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	20	0	0	0	0	0	0	0
+0xa4	0x01	TOPDOWN.SLOTS_P	Counts the number of available slots for an unhalted logical processor.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	10000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xA4	0x02	TOPDOWN.BACKEND_BOUND_SLOTS	Issue slots where no uops were being issued due to lack of back end resources.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	10000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xa6	0x02	EXE_ACTIVITY.1_PORTS_UTIL	Cycles total of 1 uop is executed on all ports and Reservation Station was not empty.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xa6	0x04	EXE_ACTIVITY.2_PORTS_UTIL	Cycles total of 2 uops are executed on all ports and Reservation Station was not empty.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xA6	0x40	EXE_ACTIVITY.BOUND_ON_STORES	Cycles where the Store Buffer was full and no loads caused an execution stall.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	2	0	0	0	0	0	0	0
+0xa6	0x80	EXE_ACTIVITY.EXE_BOUND_0_PORTS	Cycles where no uops were executed, the Reservation Station was not empty, the Store Buffer was full and there was no outstanding load.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xA8	0x01	LSD.UOPS	Number of Uops delivered by the LSD.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xA8	0x01	LSD.CYCLES_ACTIVE	Cycles Uops delivered by the LSD, but didn't come from the decoder.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	1	0	0	0	0	0	0	0
+0xa8	0x01	LSD.CYCLES_OK	Cycles optimal number of Uops delivered by the LSD, but did not come from the decoder.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	5	0	0	0	0	0	0	0
+0xAB	0x02	DSB2MITE_SWITCHES.PENALTY_CYCLES	DSB-to-MITE switch true penalty cycles.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xAE	0x01	ITLB.ITLB_FLUSH	Flushing of the Instruction TLB (ITLB) pages, includes 4k/2M/4M pages.	0,1,2,3	0,1,2,3	0,1,2,3	100007	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xB0	0x01	OFFCORE_REQUESTS.DEMAND_DATA_RD	Demand Data Read requests sent to uncore	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xB0	0x04	OFFCORE_REQUESTS.DEMAND_RFO	Demand RFO requests including regular RFOs, locks, ItoM	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xB0	0x08	OFFCORE_REQUESTS.ALL_DATA_RD	Demand and prefetch data reads	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xB0	0x10	OFFCORE_REQUESTS.L3_MISS_DEMAND_DATA_RD	Demand Data Read requests who miss L3 cache	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xB0	0x80	OFFCORE_REQUESTS.ALL_REQUESTS	Any memory transaction that reached the SQ.	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xB1	0x01	UOPS_EXECUTED.THREAD	Counts the number of uops to be executed per-thread each cycle.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xB1	0x01	UOPS_EXECUTED.STALL_CYCLES	Counts number of cycles no uops were dispatched to be executed on this thread.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	1	1	0	0	0	0	0	0
+0xb1	0x01	UOPS_EXECUTED.CYCLES_GE_1	Cycles where at least 1 uop was executed per-thread	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	1	0	0	0	0	0	0	0
+0xb1	0x01	UOPS_EXECUTED.CYCLES_GE_2	Cycles where at least 2 uops were executed per-thread	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	2	0	0	0	0	0	0	0
+0xb1	0x01	UOPS_EXECUTED.CYCLES_GE_3	Cycles where at least 3 uops were executed per-thread	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	3	0	0	0	0	0	0	0
+0xb1	0x01	UOPS_EXECUTED.CYCLES_GE_4	Cycles where at least 4 uops were executed per-thread	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	4	0	0	0	0	0	0	0
+0xB1	0x02	UOPS_EXECUTED.CORE	Number of uops executed on the core.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xB1	0x02	UOPS_EXECUTED.CORE_CYCLES_GE_1	Cycles at least 1 micro-op is executed from any thread on physical core.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	1	0	0	0	0	0	0	0
+0xB1	0x02	UOPS_EXECUTED.CORE_CYCLES_GE_2	Cycles at least 2 micro-op is executed from any thread on physical core.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	2	0	0	0	0	0	0	0
+0xB1	0x02	UOPS_EXECUTED.CORE_CYCLES_GE_3	Cycles at least 3 micro-op is executed from any thread on physical core.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	3	0	0	0	0	0	0	0
+0xB1	0x02	UOPS_EXECUTED.CORE_CYCLES_GE_4	Cycles at least 4 micro-op is executed from any thread on physical core.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	4	0	0	0	0	0	0	0
+0xB1	0x10	UOPS_EXECUTED.X87	Counts the number of x87 uops dispatched.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xBD	0x01	TLB_FLUSH.DTLB_THREAD	DTLB flush attempts of the thread-specific entries	0,1,2,3	0,1,2,3	0,1,2,3	100007	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xBD	0x20	TLB_FLUSH.STLB_ANY	STLB flush attempts	0,1,2,3	0,1,2,3	0,1,2,3	100007	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xC0	0x00	INST_RETIRED.ANY_P	Number of instructions retired. General Counter - architectural event	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xC1	0x02	ASSISTS.FP	Counts all microcode FP assists.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	100003	0x00	0x00	2	0	1	0	0	0	0	0	0	0
+0xc1	0x07	ASSISTS.ANY	Number of occurrences where a microcode assist is invoked by hardware.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	100003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xC2	0x02	UOPS_RETIRED.TOTAL_CYCLES	Cycles with less than 10 actually retired uops.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	10	1	0	0	0	0	0	0
+0xc2	0x02	UOPS_RETIRED.SLOTS	Retirement slots used.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xC3	0x01	MACHINE_CLEARS.COUNT	Number of machine clears (nukes) of any type.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	100003	0x00	0x00	2	0	1	0	0	1	0	0	0	0
+0xc3	0x02	MACHINE_CLEARS.MEMORY_ORDERING	Number of machine clears due to memory ordering conflicts.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	100003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xC3	0x04	MACHINE_CLEARS.SMC	Self-modifying code (SMC) detected.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	100003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xC4	0x00	BR_INST_RETIRED.ALL_BRANCHES	All branch instructions retired.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	400009	0x00	0x00	2	0	0	0	0	0	1	0	0	0
+0xc4	0x01	BR_INST_RETIRED.COND_TAKEN	Taken conditional branch instructions retired.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	400009	0x00	0x00	2	0	0	0	0	0	1	0	0	0
+0xC4	0x02	BR_INST_RETIRED.NEAR_CALL	Direct and indirect near call instructions retired.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	100007	0x00	0x00	2	0	0	0	0	0	1	0	0	0
+0xC4	0x08	BR_INST_RETIRED.NEAR_RETURN	Return instructions retired.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	100007	0x00	0x00	2	0	0	0	0	0	1	0	0	0
+0xC4	0x10	BR_INST_RETIRED.COND_NTAKEN	Not taken branch instructions retired.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	400009	0x00	0x00	2	0	0	0	0	0	1	0	0	0
+0xc4	0x11	BR_INST_RETIRED.COND	Conditional branch instructions retired.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	400009	0x00	0x00	2	0	0	0	0	0	1	0	0	0
+0xC4	0x20	BR_INST_RETIRED.NEAR_TAKEN	Taken branch instructions retired.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	400009	0x00	0x00	2	0	0	0	0	0	1	0	0	0
+0xC4	0x40	BR_INST_RETIRED.FAR_BRANCH	Far branch instructions retired.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	100007	0x00	0x00	2	0	0	0	0	0	1	0	0	0
+0xc4	0x80	BR_INST_RETIRED.INDIRECT	All indirect branch instructions retired (excluding RETs. TSX aborts are considered indirect branch).	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	100003	0x00	0x00	2	0	0	0	0	0	1	0	0	0
+0xC5	0x00	BR_MISP_RETIRED.ALL_BRANCHES	All mispredicted branch instructions retired.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	400009	0x00	0x00	2	0	0	0	0	0	1	1	0	0
+0xc5	0x01	BR_MISP_RETIRED.COND_TAKEN	number of branch instructions retired that were mispredicted and taken. Non PEBS	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	400009	0x00	0x00	2	0	0	0	0	0	1	1	0	0
+0xc5	0x11	BR_MISP_RETIRED.COND	Mispredicted conditional branch instructions retired.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	400009	0x00	0x00	2	0	0	0	0	0	1	1	0	0
+0xC5	0x20	BR_MISP_RETIRED.NEAR_TAKEN	Number of near branch instructions retired that were mispredicted and taken.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	400009	0x00	0x00	2	0	0	0	0	0	1	1	0	0
+0xC5	0x80	BR_MISP_RETIRED.INDIRECT	All miss-predicted indirect branch instructions retired (excluding RETs. TSX aborts is considered indirect branch).	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	100003	0x00	0x00	2	0	0	0	0	0	1	1	0	0
+0xC6	0x01	FRONTEND_RETIRED.DSB_MISS	Retired Instructions who experienced DSB miss.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	100007	0x3F7	0x11	2	1	0	0	0	0	1	0	0	0
+0xC6	0x01	FRONTEND_RETIRED.L1I_MISS	Retired Instructions who experienced Instruction L1 Cache true miss.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	100007	0x3F7	0x12	2	1	0	0	0	0	1	0	0	0
+0xC6	0x01	FRONTEND_RETIRED.L2_MISS	Retired Instructions who experienced Instruction L2 Cache true miss.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	100007	0x3F7	0x13	2	1	0	0	0	0	1	0	0	0
+0xC6	0x01	FRONTEND_RETIRED.ITLB_MISS	Retired Instructions who experienced iTLB true miss.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	100007	0x3F7	0x14	2	1	0	0	0	0	1	0	0	0
+0xC6	0x01	FRONTEND_RETIRED.STLB_MISS	Retired Instructions who experienced STLB (2nd level TLB) true miss.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	100007	0x3F7	0x15	2	1	0	0	0	0	1	0	0	0
+0xC6	0x01	FRONTEND_RETIRED.LATENCY_GE_2	Retired instructions that are fetched after an interval where the front-end delivered no uops for a period of 2 cycles which was not interrupted by a back-end stall.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	100007	0x3F7	0x500206	2	1	0	0	0	0	1	0	0	0
+0xC6	0x01	FRONTEND_RETIRED.LATENCY_GE_4	Retired instructions that are fetched after an interval where the front-end delivered no uops for a period of 4 cycles which was not interrupted by a back-end stall.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	100007	0x3F7	0x500406	2	1	0	0	0	0	1	0	0	0
+0xC6	0x01	FRONTEND_RETIRED.LATENCY_GE_8	Retired instructions that are fetched after an interval where the front-end delivered no uops for a period of 8 cycles which was not interrupted by a back-end stall.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	100007	0x3F7	0x500806	2	1	0	0	0	0	1	0	0	0
+0xC6	0x01	FRONTEND_RETIRED.LATENCY_GE_16	Retired instructions that are fetched after an interval where the front-end delivered no uops for a period of 16 cycles which was not interrupted by a back-end stall.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	100007	0x3F7	0x501006	2	1	0	0	0	0	1	0	0	0
+0xC6	0x01	FRONTEND_RETIRED.LATENCY_GE_32	Retired instructions that are fetched after an interval where the front-end delivered no uops for a period of 32 cycles which was not interrupted by a back-end stall.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	100007	0x3F7	0x502006	2	1	0	0	0	0	1	0	0	0
+0xC6	0x01	FRONTEND_RETIRED.LATENCY_GE_64	Retired instructions that are fetched after an interval where the front-end delivered no uops for a period of 64 cycles which was not interrupted by a back-end stall.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	100007	0x3F7	0x504006	2	1	0	0	0	0	1	0	0	0
+0xC6	0x01	FRONTEND_RETIRED.LATENCY_GE_128	Retired instructions that are fetched after an interval where the front-end delivered no uops for a period of 128 cycles which was not interrupted by a back-end stall.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	100007	0x3F7	0x508006	2	1	0	0	0	0	1	0	0	0
+0xC6	0x01	FRONTEND_RETIRED.LATENCY_GE_256	Retired instructions that are fetched after an interval where the front-end delivered no uops for a period of 256 cycles which was not interrupted by a back-end stall.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	100007	0x3F7	0x510006	2	1	0	0	0	0	1	0	0	0
+0xC6	0x01	FRONTEND_RETIRED.LATENCY_GE_512	Retired instructions that are fetched after an interval where the front-end delivered no uops for a period of 512 cycles which was not interrupted by a back-end stall.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	100007	0x3F7	0x520006	2	1	0	0	0	0	1	0	0	0
+0xC6	0x01	FRONTEND_RETIRED.LATENCY_GE_2_BUBBLES_GE_1	Retired instructions that are fetched after an interval where the front-end had at least 1 bubble-slot for a period of 2 cycles which was not interrupted by a back-end stall.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	100007	0x3F7	0x100206	2	1	0	0	0	0	1	0	0	0
+0xc7	0x01	FP_ARITH_INST_RETIRED.SCALAR_DOUBLE	Number of SSE/AVX computational scalar double precision floating-point instructions retired; some instructions will count twice as noted below.  Each count represents 1 computation. Applies to SSE* and AVX* scalar double precision floating-point instructions: ADD SUB MUL DIV MIN MAX RCP14 RSQRT14 RANGE SQRT DPP FM(N)ADD/SUB.  DPP and FM(N)ADD/SUB instructions count twice as they perform 2 calculations per element.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xc7	0x02	FP_ARITH_INST_RETIRED.SCALAR_SINGLE	Number of SSE/AVX computational scalar single precision floating-point instructions retired; some instructions will count twice as noted below.  Each count represents 1 computation. Applies to SSE* and AVX* scalar single precision floating-point instructions: ADD SUB MUL DIV MIN MAX RCP14 RSQRT14 RANGE SQRT DPP FM(N)ADD/SUB.  DPP and FM(N)ADD/SUB instructions count twice as they perform 2 calculations per element.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xc7	0x04	FP_ARITH_INST_RETIRED.128B_PACKED_DOUBLE	Number of SSE/AVX computational 128-bit packed double precision floating-point instructions retired; some instructions will count twice as noted below.  Each count represents 2 computation operations, one for each element.  Applies to SSE* and AVX* packed double precision floating-point instructions: ADD SUB HADD HSUB SUBADD MUL DIV MIN MAX SQRT RSQRT14 RCP14 RANGE DPP FM(N)ADD/SUB.  DPP and FM(N)ADD/SUB instructions count twice as they perform 2 calculations per element.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xc7	0x08	FP_ARITH_INST_RETIRED.128B_PACKED_SINGLE	Number of SSE/AVX computational 128-bit packed single precision floating-point instructions retired; some instructions will count twice as noted below.  Each count represents 4 computation operations, one for each element.  Applies to SSE* and AVX* packed single precision floating-point instructions: ADD SUB MUL DIV MIN MAX RCP14 RSQRT14 SQRT DPP FM(N)ADD/SUB.  DPP and FM(N)ADD/SUB instructions count twice as they perform 2 calculations per element.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xc7	0x10	FP_ARITH_INST_RETIRED.256B_PACKED_DOUBLE	Number of SSE/AVX computational 256-bit packed double precision floating-point instructions retired; some instructions will count twice as noted below.  Each count represents 4 computation operations, one for each element.  Applies to SSE* and AVX* packed double precision floating-point instructions: ADD SUB MUL DIV MIN MAX RCP14 RSQRT14 RANGE SQRT DPP FM(N)ADD/SUB.  DPP and FM(N)ADD/SUB instructions count twice as they perform 2 calculations per element.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xc7	0x20	FP_ARITH_INST_RETIRED.256B_PACKED_SINGLE	Number of SSE/AVX computational 256-bit packed single precision floating-point instructions retired; some instructions will count twice as noted below.  Each count represents 8 computation operations, one for each element.  Applies to SSE* and AVX* packed single precision floating-point instructions: ADD SUB MUL DIV MIN MAX RCP14 RSQRT14 RANGE SQRT DPP FM(N)ADD/SUB.  DPP and FM(N)ADD/SUB instructions count twice as they perform 2 calculations per element.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xc7	0x40	FP_ARITH_INST_RETIRED.512B_PACKED_DOUBLE	Number of SSE/AVX computational 512-bit packed double precision floating-point instructions retired; some instructions will count twice as noted below.  Each count represents 16 computation operations, one for each element.  Applies to SSE* and AVX* packed double precision floating-point instructions: ADD SUB MUL DIV MIN MAX SQRT RSQRT14 RCP14 RANGE FM(N)ADD/SUB. FM(N)ADD/SUB instructions count twice as they perform 2 calculations per element.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xc7	0x80	FP_ARITH_INST_RETIRED.512B_PACKED_SINGLE	Number of SSE/AVX computational 512-bit packed double precision floating-point instructions retired; some instructions will count twice as noted below.  Each count represents 8 computation operations, one for each element.  Applies to SSE* and AVX* packed double precision floating-point instructions: ADD SUB MUL DIV MIN MAX SQRT RSQRT14 RCP14 RANGE FM(N)ADD/SUB. FM(N)ADD/SUB instructions count twice as they perform 2 calculations per element.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xC8	0x01	HLE_RETIRED.START	Number of times an HLE execution started.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xC8	0x02	HLE_RETIRED.COMMIT	Number of times an HLE execution successfully committed	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	1	0	0
+0xc8	0x04	HLE_RETIRED.ABORTED	Number of times an HLE execution aborted due to any reasons (multiple categories may count as one).	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xC8	0x08	HLE_RETIRED.ABORTED_MEM	Number of times an HLE execution aborted due to various memory events (e.g., read/write capacity and conflicts).	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xC8	0x20	HLE_RETIRED.ABORTED_UNFRIENDLY	Number of times an HLE execution aborted due to HLE-unfriendly instructions and certain unfriendly events (such as AD assists etc.).	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xC8	0x80	HLE_RETIRED.ABORTED_EVENTS	Number of times an HLE execution aborted due to unfriendly events (such as interrupts).	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xC9	0x01	RTM_RETIRED.START	Number of times an RTM execution started.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xC9	0x02	RTM_RETIRED.COMMIT	Number of times an RTM execution successfully committed	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xc9	0x04	RTM_RETIRED.ABORTED	Number of times an RTM execution aborted.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	1	0	0
+0xC9	0x08	RTM_RETIRED.ABORTED_MEM	Number of times an RTM execution aborted due to various memory events (e.g. read/write capacity and conflicts)	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xC9	0x20	RTM_RETIRED.ABORTED_UNFRIENDLY	Number of times an RTM execution aborted due to HLE-unfriendly instructions	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xC9	0x40	RTM_RETIRED.ABORTED_MEMTYPE	Number of times an RTM execution aborted due to incompatible memory type	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xC9	0x80	RTM_RETIRED.ABORTED_EVENTS	Number of times an RTM execution aborted due to none of the previous 4 categories (e.g. interrupt)	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xcc	0x20	MISC_RETIRED.LBR_INSERTS	Increments whenever there is an update to the LBR array.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xcc	0x40	MISC_RETIRED.PAUSE_INST	Number of retired PAUSE instructions.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0	2000003	0	0	0	0	0	0	0	0	0	0	0	0
+0xcd	0x01	MEM_TRANS_RETIRED.LOAD_LATENCY_GT_4	Counts randomly selected loads when the latency from first dispatch to completion is greater than 4 cycles.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	100003	0x3F6	0x4	2	1	0	0	0	0	2	0	0	0
+0xcd	0x01	MEM_TRANS_RETIRED.LOAD_LATENCY_GT_8	Counts randomly selected loads when the latency from first dispatch to completion is greater than 8 cycles.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	50021	0x3F6	0x8	2	1	0	0	0	0	2	0	0	0
+0xcd	0x01	MEM_TRANS_RETIRED.LOAD_LATENCY_GT_16	Counts randomly selected loads when the latency from first dispatch to completion is greater than 16 cycles.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	20011	0x3F6	0x10	2	1	0	0	0	0	2	0	0	0
+0xcd	0x01	MEM_TRANS_RETIRED.LOAD_LATENCY_GT_32	Counts randomly selected loads when the latency from first dispatch to completion is greater than 32 cycles.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	100007	0x3F6	0x20	2	1	0	0	0	0	2	0	0	0
+0xcd	0x01	MEM_TRANS_RETIRED.LOAD_LATENCY_GT_64	Counts randomly selected loads when the latency from first dispatch to completion is greater than 64 cycles.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2003	0x3F6	0x40	2	1	0	0	0	0	2	0	0	0
+0xcd	0x01	MEM_TRANS_RETIRED.LOAD_LATENCY_GT_128	Counts randomly selected loads when the latency from first dispatch to completion is greater than 128 cycles.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	1009	0x3F6	0x80	2	1	0	0	0	0	2	0	0	0
+0xcd	0x01	MEM_TRANS_RETIRED.LOAD_LATENCY_GT_256	Counts randomly selected loads when the latency from first dispatch to completion is greater than 256 cycles.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	503	0x3F6	0x100	2	1	0	0	0	0	2	0	0	0
+0xcd	0x01	MEM_TRANS_RETIRED.LOAD_LATENCY_GT_512	Counts randomly selected loads when the latency from first dispatch to completion is greater than 512 cycles.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	101	0x3F6	0x200	2	1	0	0	0	0	2	0	0	0
+0xD0	0x11	MEM_INST_RETIRED.STLB_MISS_LOADS	Retired load instructions that miss the STLB.	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	1	1	0	0
+0xD0	0x12	MEM_INST_RETIRED.STLB_MISS_STORES	Retired store instructions that miss the STLB.	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	1	1	1	0
+0xD0	0x21	MEM_INST_RETIRED.LOCK_LOADS	Retired load instructions with locked access.	0,1,2,3	0,1,2,3	0,1,2,3	100007	0x00	0x00	2	0	0	0	0	0	1	1	0	0
+0xD0	0x41	MEM_INST_RETIRED.SPLIT_LOADS	Retired load instructions that split across a cacheline boundary.	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	1	1	0	0
+0xD0	0x42	MEM_INST_RETIRED.SPLIT_STORES	Retired store instructions that split across a cacheline boundary.	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	1	1	1	0
+0xD0	0x81	MEM_INST_RETIRED.ALL_LOADS	All retired load instructions.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	1	1	0	0
+0xD0	0x82	MEM_INST_RETIRED.ALL_STORES	All retired store instructions.	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	1	1	1	0
+0xD1	0x01	MEM_LOAD_RETIRED.L1_HIT	Retired load instructions with L1 cache hits as data sources	0,1,2,3	0,1,2,3	0,1,2,3	2000003	0x00	0x00	2	0	0	0	0	0	1	1	0	0
+0xD1	0x02	MEM_LOAD_RETIRED.L2_HIT	Retired load instructions with L2 cache hits as data sources	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	1	1	0	0
+0xD1	0x04	MEM_LOAD_RETIRED.L3_HIT	Retired load instructions with L3 cache hits as data sources	0,1,2,3	0,1,2,3	0,1,2,3	50021	0x00	0x00	2	0	0	0	0	0	1	1	0	0
+0xD1	0x08	MEM_LOAD_RETIRED.L1_MISS	Retired load instructions missed L1 cache as data sources	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	1	1	0	0
+0xD1	0x10	MEM_LOAD_RETIRED.L2_MISS	Retired load instructions missed L2 cache as data sources	0,1,2,3	0,1,2,3	0,1,2,3	50021	0x00	0x00	2	0	0	0	0	0	1	1	0	0
+0xD1	0x20	MEM_LOAD_RETIRED.L3_MISS	Retired load instructions missed L3 cache as data sources	0,1,2,3	0,1,2,3	0,1,2,3	100007	0x00	0x00	2	0	0	0	0	0	1	1	0	0
+0xd1	0x40	MEM_LOAD_RETIRED.FB_HIT	Number of completed demand load requests that missed the L1, but hit the FB(fill buffer), because a preceding miss to the same cacheline initiated the line to be brought into L1, but data is not yet ready in L1.	0,1,2,3	0,1,2,3	0,1,2,3	100007	0x00	0x00	2	0	0	0	0	0	1	1	0	0
+0xd2	0x01	MEM_LOAD_L3_HIT_RETIRED.XSNP_MISS	Retired load instructions whose data sources were L3 hit and cross-core snoop missed in on-pkg core cache.	0,1,2,3	0,1,2,3	0,1,2,3	20011	0x00	0x00	2	0	0	0	0	0	1	1	0	0
+0xd2	0x02	MEM_LOAD_L3_HIT_RETIRED.XSNP_HIT	Retired load instructions whose data sources were L3 and cross-core snoop hits in on-pkg core cache	0,1,2,3	0,1,2,3	0,1,2,3	20011	0x00	0x00	2	0	0	0	0	0	1	1	0	0
+0xd2	0x04	MEM_LOAD_L3_HIT_RETIRED.XSNP_HITM	Retired load instructions whose data sources were HitM responses from shared L3	0,1,2,3	0,1,2,3	0,1,2,3	20011	0x00	0x00	2	0	0	0	0	0	1	1	0	0
+0xd2	0x08	MEM_LOAD_L3_HIT_RETIRED.XSNP_NONE	Retired load instructions whose data sources were hits in L3 without snoops required	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	1	1	0	0
+0xE6	0x01	BACLEARS.ANY	Counts the total number when the front end is resteered, mainly when the BPU cannot provide a correct prediction and this is corrected by other branch handling mechanisms at the front end.	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xec	0x02	CPU_CLK_UNHALTED.DISTRIBUTED	Cycle counts are evenly distributed between active threads in the Core.	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	0,1,2,3,4,5,6,7	2000003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xF1	0x1F	L2_LINES_IN.ALL	L2 cache lines filling L2	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	0	0	0	0
+0xF4	0x04	SQ_MISC.SQ_FULL	Cycles the thread is active and superQ cannot take any more entries.	0,1,2,3	0,1,2,3	0,1,2,3	100003	0x00	0x00	2	0	0	0	0	0	0	0	0	0

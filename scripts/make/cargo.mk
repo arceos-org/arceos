@@ -15,6 +15,13 @@ endif
 features-$(FS) += libax/fs
 features-$(NET) += libax/net
 features-$(GRAPHIC) += libax/display
+features-$(MANOLITHIC) += libax/monolithic
+features-$(MULTITASK) += libax/multitask
+features-$(PAGING) += libax/paging
+
+ifeq ($(BUS),pci)
+  features-y += libax/bus-pci
+endif
 
 ifeq ($(BUS),pci)
   features-y += libax/bus-pci
@@ -47,16 +54,13 @@ build_args := \
   $(build_args-$(MODE)) \
   $(build_args-$(APP_LANG)) \
   --features "$(features-y)" \
+  --offline\
 
 ifeq ($(default_features),n)
   build_args += --no-default-features
 endif
 
 rustc_flags := -Clink-args="-T$(LD_SCRIPT) -no-pie"
-
-ifeq ($(ARCH), x86_64)
-  rustc_flags += -Clink-args="--no-relax"
-endif
 
 define cargo_build
   cargo rustc $(build_args) $(1) -- $(rustc_flags)

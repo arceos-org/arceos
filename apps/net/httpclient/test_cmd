@@ -1,4 +1,2 @@
 test_one "LOG=info NET=y" "expect_info.out"
 test_one "LOG=info NET=y APP_FEATURES=dns" "expect_info_dns.out"
-test_one "LOG=info NET=y APP_FEATURES=libax/use-lwip" "expect_info_lwip.out"
-test_one "LOG=info NET=y APP_FEATURES=dns,libax/use-lwip" "expect_info_lwip_dns.out"

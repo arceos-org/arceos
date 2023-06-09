@@ -1,7 +1,7 @@
 use axio::{prelude::*, Result, SeekFrom};
 use core::fmt;
 
-use crate::fops;
+use crate::{fops, monolithic_fs::file_io::FileExt};
 
 /// A structure representing a type of file with accessors for each file type.
 /// It is returned by [`Metadata::file_type`] method.
@@ -11,6 +11,7 @@ pub type FileType = fops::FileType;
 pub type Permissions = fops::FilePerm;
 
 /// An object providing access to an open file on the filesystem.
+#[derive(Clone)]
 pub struct File {
     inner: fops::File,
 }
@@ -68,11 +69,6 @@ impl OpenOptions {
     pub fn open(&self, path: &str) -> Result<File> {
         fops::File::open(path, &self.0).map(|inner| File { inner })
     }
-
-    /// Lookups an entry, no follow
-    pub fn lookup(&self, path: &str) -> Result<File> {
-        fops::File::lookup(path).map(|inner| File { inner })
-    }
 }
 
 impl Metadata {
@@ -128,11 +124,6 @@ impl File {
         OpenOptions::new().read(true).open(path)
     }
 
-    /// Lookup a path in a no-follow manner
-    pub fn lookup(path: &str) -> Result<Self> {
-        OpenOptions::new().read(true).lookup(path)
-    }
-
     /// Opens a file in write-only mode.
     pub fn create(path: &str) -> Result<Self> {
         OpenOptions::new()
@@ -166,6 +157,10 @@ impl File {
     pub fn metadata(&self) -> Result<Metadata> {
         self.inner.get_attr().map(Metadata)
     }
+
+    pub fn executable(&self) -> bool {
+        self.inner.executable()
+    }
 }
 
 impl Read for File {
@@ -187,5 +182,20 @@ impl Write for File {
 impl Seek for File {
     fn seek(&mut self, pos: SeekFrom) -> Result<u64> {
         self.inner.seek(pos)
+    }
+}
+
+// #[cfg(feature = "monolithic")]
+impl FileExt for File {
+    fn readable(&self) -> bool {
+        self.inner.readable()
+    }
+
+    fn writable(&self) -> bool {
+        self.inner.writable()
+    }
+
+    fn executable(&self) -> bool {
+        self.inner.executable()
     }
 }
