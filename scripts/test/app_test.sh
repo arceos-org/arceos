@@ -114,6 +114,7 @@ if [ -z "$1" ]; then
         "apps/task/sleep"
         "apps/task/priority"
         "apps/net/httpclient"
+        "apps/syscall/junior"
     )
 else
     test_list="$@"

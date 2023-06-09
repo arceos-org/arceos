@@ -30,6 +30,9 @@ cfg_if::cfg_if! {
     } else if #[cfg(feature = "sched_cfs")] {
         pub(crate) type AxTask = scheduler::CFSTask<TaskInner>;
         pub(crate) type Scheduler = scheduler::CFScheduler<TaskInner>;
+    } else {
+        pub(crate) type AxTask = scheduler::FifoTask<TaskInner>;
+        pub(crate) type Scheduler = scheduler::FifoScheduler<TaskInner>;
     }
 }
 
