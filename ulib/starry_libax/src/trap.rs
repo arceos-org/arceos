@@ -13,7 +13,7 @@ impl axhal::trap::TrapHandler for TrapHandlerImpl {
             let guard = kernel_guard::NoPreempt::new();
             // trap进来，统计时间信息
             axprocess::time_stat_from_user_to_kernel();
-            axhal::irq::dispatch_irq(irq_num);
+            axhal::irq::dispatch_irq(_irq_num);
             axprocess::time_stat_from_kernel_to_user();
             drop(guard); // rescheduling may occur when preemption is re-enabled.
         }

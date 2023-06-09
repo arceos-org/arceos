@@ -95,8 +95,8 @@ axprocess = { path = "../../modules/axprocess", default-features = false }
 log = "0.4.0"
 bitflags = "2.0"
 memory_addr = { path = "../../crates/memory_addr" }
-# riscv = "0.10"
-riscv = { path = "../../extern_crates/riscv-0.10.1" }
+riscv = "0.10"
+#riscv = { path = "../../extern_crates/riscv-0.10.1" }
 crate_interface = { path = "../../crates/crate_interface" }
 kernel_guard = { path = "../../crates/kernel_guard" }
 lazy_init = { path = "../../crates/lazy_init" }

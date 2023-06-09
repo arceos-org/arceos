@@ -4,7 +4,7 @@ use memory_addr::VirtAddr;
 /// Saved registers when a trap (interrupt or exception) occurs.
 #[allow(missing_docs)]
 #[repr(C)]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct TrapFrame {
     pub rax: u64,
     pub rcx: u64,
@@ -42,6 +42,61 @@ impl TrapFrame {
 
     pub fn app_init_context(_app_entry: usize, _user_sp: usize) -> Self {
         Self::default()
+    }
+
+
+    /// 获取寄存器的值
+    pub fn get_reg(&self, index: usize) -> usize {
+        match index {
+            1 => self.rax as usize,
+            2 => self.rdi as usize,
+            3 => self.rsi as usize,
+            4 => self.rdx as usize,
+            5 => self.r10 as usize,
+            6 => self.r8 as usize,
+            7 => self.r9 as usize,
+            8 => self.r15 as usize,
+            9 => self.r14 as usize,
+            10 => self.r13 as usize,
+            11 => self.r12 as usize,
+            12 => self.r11 as usize,
+            13 => self.rbp as usize,
+            14 => self.rbx as usize,
+            15 => self.rcx as usize,
+            16 => self.rsp as usize,
+            17 => self.rip as usize,
+            18 => self.rflags as usize,
+            19 => self.cs as usize,
+            20 => self.ss as usize,
+            _ => panic!("get_reg: invalid index {}", index),
+        }
+    }
+
+    /// 设置寄存器的值
+    pub fn set_reg(&mut self, index: usize, value: usize) {
+        match index {
+            1 => self.rax = value as u64,
+            2 => self.rdi = value as u64,
+            3 => self.rsi = value as u64,
+            4 => self.rdx = value as u64,
+            5 => self.r10 = value as u64,
+            6 => self.r8 = value as u64,
+            7 => self.r9 = value as u64,
+            8 => self.r15 = value as u64,
+            9 => self.r14 = value as u64,
+            10 => self.r13 = value as u64,
+            11 => self.r12 = value as u64,
+            12 => self.r11 = value as u64,
+            13 => self.rbp = value as u64,
+            14 => self.rbx = value as u64,
+            15 => self.rcx = value as u64,
+            16 => self.rsp = value as u64,
+            17 => self.rip = value as u64,
+            18 => self.rflags = value as u64,
+            19 => self.cs = value as u64,
+            20 => self.ss = value as u64,
+            _ => panic!("set_reg: invalid index {}", index),
+        }
     }
 }
 

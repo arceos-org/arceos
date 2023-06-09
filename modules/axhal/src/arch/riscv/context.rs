@@ -75,6 +75,84 @@ impl TrapFrame {
         }
         trap_frame
     }
+    /// 获取寄存器的值
+    pub fn get_reg(&self, index: usize) -> usize {
+        match index {
+            1 => self.regs.ra,
+            2 => self.regs.sp,
+            3 => self.regs.gp,
+            4 => self.regs.tp,
+            5 => self.regs.t0,
+            6 => self.regs.t1,
+            7 => self.regs.t2,
+            8 => self.regs.s0,
+            9 => self.regs.s1,
+            10 => self.regs.a0,
+            11 => self.regs.a1,
+            12 => self.regs.a2,
+            13 => self.regs.a3,
+            14 => self.regs.a4,
+            15 => self.regs.a5,
+            16 => self.regs.a6,
+            17 => self.regs.a7,
+            18 => self.regs.s2,
+            19 => self.regs.s3,
+            20 => self.regs.s4,
+            21 => self.regs.s5,
+            22 => self.regs.s6,
+            23 => self.regs.s7,
+            24 => self.regs.s8,
+            25 => self.regs.s9,
+            26 => self.regs.s10,
+            27 => self.regs.s11,
+            28 => self.regs.t3,
+            29 => self.regs.t4,
+            30 => self.regs.t5,
+            31 => self.regs.t6,
+            32 => self.sepc,
+            33 => self.sstatus,
+            _ => panic!("invalid register index"),
+        }
+    }
+    /// 设置寄存器的值
+    pub fn set_reg(&mut self, index: usize, value: usize) {
+        match index {
+            1 => self.regs.ra = value,
+            2 => self.regs.sp = value,
+            3 => self.regs.gp = value,
+            4 => self.regs.tp = value,
+            5 => self.regs.t0 = value,
+            6 => self.regs.t1 = value,
+            7 => self.regs.t2 = value,
+            8 => self.regs.s0 = value,
+            9 => self.regs.s1 = value,
+            10 => self.regs.a0 = value,
+            11 => self.regs.a1 = value,
+            12 => self.regs.a2 = value,
+            13 => self.regs.a3 = value,
+            14 => self.regs.a4 = value,
+            15 => self.regs.a5 = value,
+            16 => self.regs.a6 = value,
+            17 => self.regs.a7 = value,
+            18 => self.regs.s2 = value,
+            19 => self.regs.s3 = value,
+            20 => self.regs.s4 = value,
+            21 => self.regs.s5 = value,
+            22 => self.regs.s6 = value,
+            23 => self.regs.s7 = value,
+            24 => self.regs.s8 = value,
+            25 => self.regs.s9 = value,
+            26 => self.regs.s10 = value,
+            27 => self.regs.s11 = value,
+            28 => self.regs.t3 = value,
+            29 => self.regs.t4 = value,
+            30 => self.regs.t5 = value,
+            31 => self.regs.t6 = value,
+            32 => self.sepc = value,
+            33 => self.sstatus = value,
+            _ => panic!("invalid register index"),
+        }
+    }
 }
 
 /// Saved hardware states of a task.

@@ -1,6 +1,7 @@
 use alloc::string::ToString;
 use alloc::vec;
 use alloc::{collections::BTreeMap, format, string::String, sync::Arc, vec::Vec};
+use bitflags::Flags;
 use axerrno::{AxError, AxResult};
 use axfs::monolithic_fs::FileIO;
 use axhal::arch::{write_page_table_root, TrapFrame};
@@ -309,19 +310,19 @@ impl Process {
         let mut trap_frame = unsafe { *(curr.get_first_trap_frame()) }.clone();
         drop(curr);
         // 新开的进程/线程返回值为0
-        trap_frame.regs.a0 = 0;
+        trap_frame.set_reg(10, 0);
         if flags.contains(CloneFlags::CLONE_SETTLS) {
-            trap_frame.regs.tp = tls;
+            trap_frame.set_reg(4,tls)
         }
         // 设置用户栈
         // 若给定了用户栈，则使用给定的用户栈
         // 若没有给定用户栈，则使用当前用户栈
         // 没有给定用户栈的时候，只能是共享了地址空间，且原先调用clone的有用户栈，此时已经在之前的trap clone时复制了
         if let Some(stack) = stack {
-            trap_frame.regs.sp = stack;
+            trap_frame.set_reg(2, stack);
             info!(
                 "New user stack: sepc:{:X}, stack:{:X}",
-                trap_frame.sepc, trap_frame.regs.sp
+                trap_frame.get_reg(32), trap_frame.get_reg(2)
             );
         }
         new_task.set_trap_context(trap_frame);

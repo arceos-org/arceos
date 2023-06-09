@@ -36,6 +36,22 @@ pub(crate) const AT_BASE: u8 = 7;
 pub(crate) const AT_ENTRY: u8 = 9;
 pub(crate) const AT_RANDOM: u8 = 25;
 
+/// user memory
+pub const USER_MEMORY_START: usize = 0x1000;
+pub const USER_MEMORY_LIMIT: usize = 0xffff_ffff;
+
+/// VirtIO MMIO regions with format (`base_paddr`, `size`).
+pub const VIRTIO_MMIO_REGIONS: &[(usize, usize)] = &[
+    (0x1000_1000, 0x1000),
+    (0x1000_2000, 0x1000),
+    (0x1000_3000, 0x1000),
+    (0x1000_4000, 0x1000),
+    (0x1000_5000, 0x1000),
+    (0x1000_6000, 0x1000),
+    (0x1000_7000, 0x1000),
+    (0x1000_8000, 0x1000),
+];
+
 /// PageTable + MemoryArea for a process (task)
 pub struct MemorySet {
     page_table: PageTable,
@@ -387,7 +403,7 @@ impl MemorySet {
     }
 
     fn find_free_area(&self, hint: VirtAddr, size: usize) -> Option<VirtAddr> {
-        let mut last_end = hint.max(axconfig::USER_MEMORY_START.into());
+        let mut last_end = hint.max(USER_MEMORY_START.into());
         for area in self.owned_mem.values() {
             if last_end + size <= area.vaddr {
                 return Some(last_end);

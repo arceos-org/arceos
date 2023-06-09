@@ -16,7 +16,7 @@ pub mod prelude;
 
 pub use self::buffered::BufReader;
 pub use self::error::{Error, Result};
-use log::{debug, error};
+use log::error;
 
 #[cfg(feature = "alloc")]
 use alloc::{string::String, vec::Vec};

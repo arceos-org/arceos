@@ -268,10 +268,10 @@ pub fn syscall_getcwd(buf: *mut u8, len: usize) -> isize {
 
 /// 功能：创建管道；
 /// 输入：
-///     - fd[2]：用于保存2个文件描述符。其中，fd[0]为管道的读出端，fd[1]为管道的写入端。
+///     - fd\[2]：用于保存2个文件描述符。其中，fd\[0]为管道的读出端，fd\[1]为管道的写入端。
 /// 返回值：成功执行，返回0。失败，返回-1。
 ///
-/// 注意：fd[2]是32位数组，所以这里的 fd 是 u32 类型的指针，而不是 usize 类型的指针。
+/// 注意：fd\[2]是32位数组，所以这里的 fd 是 u32 类型的指针，而不是 usize 类型的指针。
 pub fn syscall_pipe2(fd: *mut u32) -> isize {
     debug!("Into syscall_pipe2. fd: {}", fd as usize);
     let process = current_process();
@@ -612,7 +612,7 @@ pub fn syscall_umount(dir: *const u8, flags: usize) -> isize {
 /// 	long st_mtime_nsec;
 /// 	long st_ctime_sec;
 /// 	long st_ctime_nsec;
-/// 	unsigned __unused[2];
+/// 	unsigned __unused\[2];
 /// };
 pub fn syscall_fstat(fd: usize, kst: *mut Kstat) -> isize {
     let process = current_process();
