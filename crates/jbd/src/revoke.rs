@@ -99,7 +99,7 @@ impl Handle {
         let journal_rc = transaction.journal.upgrade().unwrap();
         let mut journal = journal_rc.as_ref().borrow_mut();
 
-        log::debug!("Canceling revoke for buffer {}", buf.block_id());
+        log::trace!("Canceling revoke for buffer {}", buf.block_id());
 
         let need_cancel = if buf.test_set_revoke_valid() {
             buf.test_clear_revoked()
