@@ -94,8 +94,7 @@ impl Journal {
         let mut space_left = 0;
 
         // Metadata list
-        let buffers = commit_tx.buffers.0.clone();
-        let buffer_count = buffers.len();
+        let buffer_count = commit_tx.buffers.0.len();
 
         for (i, jb_rc) in commit_tx.buffers.0.clone().into_iter().enumerate() {
             let mut jb = jb_rc.as_ref().borrow_mut();
@@ -139,6 +138,7 @@ impl Journal {
                 &mut jb,
                 blocknr,
             )?;
+            new_jb_rc.borrow().buf.mark_jbd_dirty();
             self.wbuf.push(new_jb_rc.as_ref().borrow().buf.clone());
 
             let mut tag_flag = TagFlag::default();
@@ -277,6 +277,7 @@ impl Journal {
                 jb.cp_transaction = Some(commit_tx_rc.clone());
                 commit_tx.checkpoint_list.0.push(jb_rc.clone());
             } else {
+                assert!(false);
                 jbd_assert!(!buf.dirty());
             }
 
@@ -387,19 +388,23 @@ impl Journal {
         let datalist = tx.sync_datalist.0.clone();
         tx.sync_datalist.0.clear();
 
+        let mut count = 0;
         for jb_rc in datalist.into_iter() {
             let mut jb = jb_rc.as_ref().borrow_mut();
             let buf = &jb.buf;
 
             jbd_assert!(buf.jbd_managed());
 
-            if buf.test_clear_dirty() {
+            if buf.dirty() {
                 buf.sync();
+                count += 1;
                 Transaction::file_buffer(tx_rc, tx, &jb_rc, &mut jb, BufferListType::Locked)?;
             } else {
                 Transaction::unfile_buffer(&jb_rc, &mut jb, tx);
             }
         }
+
+        log::debug!("Submit {} data buffers.", count);
 
         Ok(())
     }
