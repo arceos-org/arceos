@@ -1,6 +1,7 @@
 //! Exported C bindings, to call ArceOS funtions from C code.
 
 #![allow(clippy::missing_safety_doc)]
+#![allow(clippy::not_unsafe_ptr_arg_deref)]
 
 /// cbindgen:ignore
 #[rustfmt::skip]
@@ -52,7 +53,7 @@ pub unsafe extern "C" fn ax_panic() -> ! {
 
 /// Exits the current thread.
 #[no_mangle]
-pub unsafe extern "C" fn ax_exit(exit_code: core::ffi::c_int) -> ! {
+pub unsafe extern "C" fn ax_exit(exit_code: core::ffi::c_int) -> () {
     crate::thread::exit(exit_code)
 }
 

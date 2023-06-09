@@ -25,7 +25,7 @@ sched_cfs = ["multitask", "preempt"]
 # 是否使用宏内核架构
 monolithic = ["axhal/monolithic"]
 
-default = ["sched_fifo", "monolithic"]
+default = ["sched_fifo"]
 
 [dependencies]
 cfg-if = "1.0"

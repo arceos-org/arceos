@@ -1,7 +1,7 @@
 .altmacro
 .macro COPY n
-    ld t2, (\n)*8(a0)
-    sd t2, (\n)*8(a1)
+    ld t2, (\n) * 8(a0)
+    sd t2, (\n) * 8(a1)
 .endm
     .section .text
     .globl __copy

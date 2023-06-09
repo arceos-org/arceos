@@ -4,7 +4,7 @@ use core::{
     ptr::null,
 };
 
-use alloc::{collections::BTreeMap, string::String, vec::Vec};
+use alloc::{collections::BTreeMap, string::String, vec, vec::Vec};
 
 pub const USER_INIT_STACK_SIZE: usize = 0x4000;
 /// 规定用户栈初始化时的内容
@@ -19,7 +19,7 @@ pub struct UserStack {
 
 impl UserStack {
     pub fn new(sp: usize) -> Self {
-        let mut data: Vec<u8> = Vec::with_capacity(USER_INIT_STACK_SIZE);
+        let mut data: Vec<u8> = vec![0; USER_INIT_STACK_SIZE];
         unsafe {
             // 规定好初始的用户栈大小，防止越界
             data.set_len(USER_INIT_STACK_SIZE);

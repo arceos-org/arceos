@@ -36,16 +36,13 @@ cfg_if::cfg_if! {
         mod wait_queue;
         #[cfg(feature = "irq")]
         mod timers;
-    }
-}
-
-cfg_if::cfg_if! {
-    if #[cfg(feature = "monolithic")] {
+        #[cfg(feature = "monolithic")]
         pub mod monolithic_task;
-    }
-    else {
-        mod task;
+        #[cfg(not(feature = "monolithic"))]
         mod run_queue;
+        #[cfg(not(feature = "monolithic"))]
+        mod task;
+
     }
 }
 

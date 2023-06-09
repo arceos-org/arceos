@@ -4,6 +4,7 @@ use crate_interface::{call_interface, def_interface};
 
 use memory_addr::VirtAddr;
 
+// #[cfg(feature = "paging")]
 use page_table::MappingFlags;
 
 /// Trap handler interface.

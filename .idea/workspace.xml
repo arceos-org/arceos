@@ -109,7 +109,7 @@
       <workItem from="1683996445819" duration="12554000" />
       <workItem from="1686136210728" duration="6474000" />
       <workItem from="1686228920445" duration="6583000" />
-      <workItem from="1686329653350" duration="4539000" />
+      <workItem from="1686329653350" duration="9189000" />
     </task>
     <servers />
   </component>
@@ -144,6 +144,20 @@
                     <value>
                       <list>
                         <option value="update" />
+                      </list>
+                    </value>
+                  </entry>
+                  <entry key="hash">
+                    <value>
+                      <list>
+                        <option value="322a8c34d08df4a657daf4bb67e4031480162883" />
+                      </list>
+                    </value>
+                  </entry>
+                  <entry key="text">
+                    <value>
+                      <list>
+                        <option value="322a8c34d08df4a657daf4bb67e4031480162883" />
                       </list>
                     </value>
                   </entry>

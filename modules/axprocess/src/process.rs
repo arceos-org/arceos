@@ -427,6 +427,7 @@ pub fn exit(exit_code: i32) -> isize {
 /// 在当前进程找对应的子进程，并等待子进程结束
 /// 若找到了则返回对应的pid
 /// 否则返回一个状态
+#[warn(clippy::not_unsafe_ptr_arg_deref)]
 pub fn wait_pid(pid: isize, exit_code_ptr: *mut i32) -> Result<u64, WaitStatus> {
     // 获取当前进程
     let curr_process = current_process();

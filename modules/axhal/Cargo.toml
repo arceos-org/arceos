@@ -12,7 +12,7 @@ documentation = "https://rcore-os.github.io/arceos/axhal/index.html"
 [features]
 smp = []
 fp_simd = []
-paging = ["axalloc", "page_table"]
+paging = ["axalloc"]
 irq = []
 platform-pc-x86 = ["axconfig/platform-pc-x86", "dep:ratio"]
 platform-qemu-virt-riscv = ["axconfig/platform-qemu-virt-riscv"]
@@ -37,7 +37,7 @@ kernel_guard = { path = "../../crates/kernel_guard" }
 spinlock = { path = "../../crates/spinlock" }
 ratio = { path = "../../crates/ratio", optional = true }
 lazy_init = { path = "../../crates/lazy_init" }
-page_table = { path = "../../crates/page_table", optional = true }
+page_table = { path = "../../crates/page_table"}
 page_table_entry = { path = "../../crates/page_table_entry", optional = true }
 percpu = { path = "../../crates/percpu" }
 memory_addr = { path = "../../crates/memory_addr" }
