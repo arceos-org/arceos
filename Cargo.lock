@@ -94,6 +94,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "arceos-sched-static"
+version = "0.1.0"
+dependencies = [
+ "libax",
+]
+
+[[package]]
 name = "arceos-shell"
 version = "0.1.0"
 dependencies = [
@@ -1364,6 +1371,8 @@ dependencies = [
 name = "scheduler"
 version = "0.1.0"
 dependencies = [
+ "axhal",
+ "crate_interface 0.1.1",
  "linked_list",
 ]
 

@@ -11,16 +11,25 @@
 
 mod cfs;
 mod fifo;
+mod mlfq;
+mod rms;
 mod round_robin;
+mod sjf;
+mod utils;
+pub use utils::timer::current_ticks;
 
 #[cfg(test)]
 mod tests;
 
 extern crate alloc;
+extern crate crate_interface;
 
 pub use cfs::{CFSTask, CFScheduler};
 pub use fifo::{FifoScheduler, FifoTask};
+pub use mlfq::{MLFQScheduler, MLFQTask};
+pub use rms::{RMSTask, RMScheduler};
 pub use round_robin::{RRScheduler, RRTask};
+pub use sjf::{SJFScheduler, SJFTask};
 
 /// The base scheduler trait that all schedulers should implement.
 ///
