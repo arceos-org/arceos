@@ -17,6 +17,7 @@ members = [
 
     "crates/allocator",
     "crates/arm_gic",
+    "crates/arm_pl011",
     "crates/axerrno",
     "crates/axfs_devfs",
     "crates/axfs_ramfs",

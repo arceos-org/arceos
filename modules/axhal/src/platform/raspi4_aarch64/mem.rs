@@ -3,7 +3,7 @@ use page_table_entry::{aarch64::A64PTE, GenericPTE, MappingFlags};
 
 /// Number of physical memory regions.
 pub(crate) fn memory_regions_num() -> usize {
-    common_memory_regions_num() + 1
+    common_memory_regions_num() + 2
 }
 
 /// Returns the physical memory region at the given index, or [`None`] if the
@@ -26,7 +26,20 @@ pub(crate) fn memory_region_at(idx: usize) -> Option<MemRegion> {
                 name: "free memory",
             })
         }
-        Ordering::Greater => None,
+        Ordering::Greater => extern_memory_region_at(idx - common_memory_regions_num()),
+    }
+}
+
+pub(crate) fn extern_memory_region_at(idx: usize) -> Option<MemRegion> {
+    if idx == 1 {
+        Some(MemRegion {
+            paddr: 0x0.into(),
+            size: 0x1000,
+            flags: MemRegionFlags::FREE | MemRegionFlags::READ | MemRegionFlags::WRITE,
+            name: "spintable",
+        })
+    } else {
+        None
     }
 }
 
@@ -39,13 +52,25 @@ pub(crate) unsafe fn init_boot_page_table(
     // 0x0000_0000_0000..0x0000_4000_0000, 1G block, device memory
     boot_pt_l1[0] = A64PTE::new_page(
         PhysAddr::from(0),
-        MappingFlags::READ | MappingFlags::WRITE | MappingFlags::DEVICE,
+        MappingFlags::READ | MappingFlags::WRITE | MappingFlags::EXECUTE,
         true,
     );
     // 0x0000_4000_0000..0x0000_8000_0000, 1G block, normal memory
     boot_pt_l1[1] = A64PTE::new_page(
         PhysAddr::from(0x4000_0000),
         MappingFlags::READ | MappingFlags::WRITE | MappingFlags::EXECUTE,
+        true,
+    );
+    // 0x0000_8000_0000..0x0000_C000_0000, 1G block, normal memory
+    boot_pt_l1[2] = A64PTE::new_page(
+        PhysAddr::from(0x8000_0000),
+        MappingFlags::READ | MappingFlags::WRITE | MappingFlags::EXECUTE,
+        true,
+    );
+    // 0x0000_C000_0000..0x0001_0000_0000, 1G block, DEVICE memory
+    boot_pt_l1[3] = A64PTE::new_page(
+        PhysAddr::from(0xc000_0000),
+        MappingFlags::READ | MappingFlags::WRITE | MappingFlags::DEVICE,
         true,
     );
 }

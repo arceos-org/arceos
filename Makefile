@@ -68,7 +68,7 @@ GDB ?= gdb-multiarch
 OUT_DIR ?= $(APP)
 
 APP_NAME := $(shell basename $(APP))
-LD_SCRIPT := $(CURDIR)/modules/axhal/linker_$(ARCH).lds
+LD_SCRIPT := $(CURDIR)/modules/axhal/linker_$(PLATFORM).lds
 OUT_ELF := $(OUT_DIR)/$(APP_NAME)_$(PLATFORM).elf
 OUT_BIN := $(OUT_DIR)/$(APP_NAME)_$(PLATFORM).bin
 
@@ -79,6 +79,9 @@ include scripts/make/cargo.mk
 include scripts/make/qemu.mk
 include scripts/make/build.mk
 include scripts/make/test.mk
+ifeq ($(PLATFORM), raspi4-aarch64)
+  include scripts/make/raspi4.mk
+endif
 
 build: $(OUT_DIR) $(OUT_BIN)
 
