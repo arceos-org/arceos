@@ -7,7 +7,7 @@ set -e
 ARCH=riscv64
 RELEASE=riscv64gc-unknown-none-elf
 
-rm disk.img
+rm disk.img || true;
 make disk_img
 make A=apps/microkernel/net_deamon MICRO=y ARCH=$ARCH build_user
 make A=apps/microkernel/apps MICRO_TEST=shell MICRO=y ARCH=$ARCH build_user
