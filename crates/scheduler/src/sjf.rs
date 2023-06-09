@@ -5,6 +5,7 @@ use core::sync::atomic::{AtomicIsize, AtomicBool, Ordering};
 use crate::current_ticks;
 use crate::BaseScheduler;
 
+/// SJF Task
 pub struct SJFTask<T, const A: usize, const LOGB: usize> {
     inner: T,
     expect_runtime: AtomicIsize,         // 用整数记录移动平均
@@ -18,6 +19,7 @@ pub struct SJFTask<T, const A: usize, const LOGB: usize> {
 // TODO：现在全部都是暴力实现
 
 impl<T, const A: usize, const LOGB: usize> SJFTask<T, A, LOGB> {
+    /// new with default values
     pub const fn new(inner: T) -> Self {
         Self {
             inner,
@@ -30,7 +32,7 @@ impl<T, const A: usize, const LOGB: usize> SJFTask<T, A, LOGB> {
         }
     }
 
-    pub fn set_id(&self, id: isize) {
+    fn set_id(&self, id: isize) {
         self.id.store(id, Ordering::Release);
     }
 
@@ -51,15 +53,16 @@ impl<T, const A: usize, const LOGB: usize> SJFTask<T, A, LOGB> {
         }
     }
 
-    pub fn get_expect_runtime(&self) -> isize {
+    fn get_expect_runtime(&self) -> isize {
         self.expect_runtime.load(Ordering::Acquire)
     }
 
-    pub fn sched_timer(&self) {
+    fn sched_timer(&self) {
         self.start_time_after_sched
             .store(current_ticks() as isize, Ordering::Release);
     }
 
+    /// Returns a reference to the inner task struct.
     pub const fn inner(&self) -> &T {
         &self.inner
     }
@@ -121,12 +124,14 @@ impl<T, const A: usize, const LOGB: usize> Deref for SJFTask<T, A, LOGB> {
     }
 }
 
+/// SJF Scheduler
 pub struct SJFScheduler<T, const A: usize, const LOGB: usize> {
     ready_queue: BTreeMap<Arc<SJFTask<T, A, LOGB>>, isize>,
     id_pool: AtomicIsize,
 }
 
 impl<T, const A: usize, const LOGB: usize> SJFScheduler<T, A, LOGB> {
+    /// new sjf scheduler, A/2^LOGB is the EMA alpha
     pub const fn new() -> Self {
         Self {
             ready_queue: BTreeMap::new(),
@@ -134,6 +139,7 @@ impl<T, const A: usize, const LOGB: usize> SJFScheduler<T, A, LOGB> {
         }
     }
 
+    /// get the name of scheduler
     pub fn scheduler_name() -> &'static str {
         "SJF"
     }

@@ -18,6 +18,7 @@ pub trait LogMyTime {
     fn current_time() -> core::time::Duration;
 }
 
+/// get current time
 pub fn current_ticks() -> isize {
     let mytime = call_interface!(LogMyTime::current_time).as_nanos();
     mytime as isize

@@ -4,6 +4,7 @@ use core::sync::atomic::{AtomicIsize, Ordering};
 
 use crate::BaseScheduler;
 
+/// task for MLFQ
 pub struct MLFQTask<T, const QNUM: usize, const BASETICK: usize, const RESETTICK: usize> {
     inner: T,
     prio: AtomicIsize, // 注意值越大优先级越低，每增加 1 相对应的时间片数乘以 2。
@@ -13,6 +14,7 @@ pub struct MLFQTask<T, const QNUM: usize, const BASETICK: usize, const RESETTICK
 impl<T, const QNUM: usize, const BASETICK: usize, const RESETTICK: usize>
     MLFQTask<T, QNUM, BASETICK, RESETTICK>
 {
+    /// new with default values
     pub const fn new(inner: T) -> Self {
         Self {
             inner,
@@ -21,19 +23,19 @@ impl<T, const QNUM: usize, const BASETICK: usize, const RESETTICK: usize>
         }
     }
 
-    pub fn get_prio(&self) -> isize {
+    fn get_prio(&self) -> isize {
         self.prio.load(Ordering::Acquire)
     }
 
-    pub fn tick(&self) -> isize {
+    fn tick(&self) -> isize {
         self.remain_ticks.fetch_sub(1, Ordering::Release)
     }
 
-    pub fn get_remain(&self) -> isize {
+    fn get_remain(&self) -> isize {
         self.remain_ticks.load(Ordering::Acquire)
     }
 
-    pub fn reset_ticks(&self) {
+    fn reset_ticks(&self) {
         self.remain_ticks.store(
             (BASETICK as isize) << self.prio.load(Ordering::Acquire),
             Ordering::Release,
@@ -41,7 +43,7 @@ impl<T, const QNUM: usize, const BASETICK: usize, const RESETTICK: usize>
     }
 
     // 所有的任务重置优先级
-    pub fn reset_prio(&self) {
+    fn reset_prio(&self) {
         self.prio.store(0, Ordering::Release);
         self.remain_ticks
             .store(BASETICK as isize, Ordering::Release);
@@ -49,7 +51,7 @@ impl<T, const QNUM: usize, const BASETICK: usize, const RESETTICK: usize>
 
     // 优先级减一（代码取反了所以是加一，不想用负数），相应设置 remain_ticks。返回的是新的优先级。
     // 注意处理优先级已经到最低的情况。
-    pub fn prio_promote(&self) -> isize {
+    fn prio_promote(&self) -> isize {
         let mut current_prio = self.prio.fetch_add(1, Ordering::Release) + 1;
         if current_prio == QNUM as isize {
             self.prio.store(QNUM as isize - 1, Ordering::Release);
@@ -60,6 +62,7 @@ impl<T, const QNUM: usize, const BASETICK: usize, const RESETTICK: usize>
         current_prio as isize
     }
 
+    /// Returns a reference to the inner task struct.
     pub const fn inner(&self) -> &T {
         &self.inner
     }
@@ -83,6 +86,7 @@ pub struct MLFQScheduler<T, const QNUM: usize, const BASETICK: usize, const RESE
 impl<T, const QNUM: usize, const BASETICK: usize, const RESETTICK: usize>
     MLFQScheduler<T, QNUM, BASETICK, RESETTICK>
 {
+    /// new MLFQ, QNUM: number of queues, BASETICK: time passed for each time slice, RESETTICK: time slices to reset
     pub fn new() -> Self {
         assert!(QNUM > 0);
         let mut ready_queue = Vec::new();
@@ -95,6 +99,7 @@ impl<T, const QNUM: usize, const BASETICK: usize, const RESETTICK: usize>
         }
     }
 
+    /// get the name of scheduler
     pub fn scheduler_name() -> &'static str {
         "MLFQ"
     }

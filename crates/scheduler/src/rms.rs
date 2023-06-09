@@ -6,6 +6,7 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::BaseScheduler;
 
+/// RMSTASK
 pub struct RMSTask<T> {
     inner: T,
     runtime: AtomicUsize,
@@ -13,6 +14,7 @@ pub struct RMSTask<T> {
 }
 
 impl<T> RMSTask<T> {
+    /// new RMSTask 
     pub fn new(inner: T) -> Self {
         Self {
             inner,
@@ -21,15 +23,16 @@ impl<T> RMSTask<T> {
         }
     }
 
+    /// Returns a reference to the inner task struct.
     pub fn inner(&self) -> &T {
         &self.inner
     }
 
-    pub fn set_period(&self, period: usize) {
+    fn set_period(&self, period: usize) {
         self.period.store(period, Ordering::Release);
     }
 
-    pub fn set_runtime(&self, runtime: usize) {
+    fn set_runtime(&self, runtime: usize) {
         self.runtime.store(runtime, Ordering::Release);
     }
 }
@@ -47,18 +50,21 @@ struct TaskPriority {
     id: usize,
 }
 
+/// RMS Scheduler
 pub struct RMScheduler<T> {
     ready_queue: BTreeMap<TaskPriority, Arc<RMSTask<T>>>,
     next_task_id: AtomicUsize,
 }
 
 impl<T> RMScheduler<T> {
+    /// new
     pub fn new() -> Self {
         Self {
             ready_queue: BTreeMap::new(),
             next_task_id: AtomicUsize::new(0),
         }
     }
+    /// scheduler_name
     pub fn scheduler_name() -> &'static str {
         "RMS"
     }
