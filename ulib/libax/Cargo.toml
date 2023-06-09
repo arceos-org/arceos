@@ -36,6 +36,9 @@ multitask = ["alloc", "axtask", "axruntime/multitask", "axsync/multitask"]
 sched_fifo = ["axtask/sched_fifo"]
 sched_rr = ["axtask/sched_rr", "irq"]
 sched_cfs = ["axtask/sched_cfs", "irq"]
+sched_mlfq = ["axtask/sched_mlfq", "irq"]
+sched_sjf = ["axtask/sched_sjf"]
+sched_rms = ["axtask/sched_rms"]
 
 # File system
 fs = ["alloc", "axruntime/fs", "dep:axdriver", "dep:axfs"]

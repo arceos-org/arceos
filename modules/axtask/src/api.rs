@@ -25,6 +25,15 @@ cfg_if::cfg_if! {
     } else if #[cfg(feature = "sched_cfs")] {
         pub(crate) type AxTask = scheduler::CFSTask<TaskInner>;
         pub(crate) type Scheduler = scheduler::CFScheduler<TaskInner>;
+    } else if #[cfg(feature = "sched_mlfq")] {
+        pub(crate) type AxTask = scheduler::MLFQTask<TaskInner, 8, 1, 1000>;
+        pub(crate) type Scheduler = scheduler::MLFQScheduler<TaskInner, 8, 1, 1000>;
+    } else if #[cfg(feature = "sched_sjf")] {
+        pub(crate) type AxTask = scheduler::SJFTask<TaskInner>;
+        pub(crate) type Scheduler = scheduler::SJFScheduler<TaskInner>;
+    } else if #[cfg(feature = "sched_rms")] {
+        pub(crate) type AxTask = scheduler::RMSTask<TaskInner>;
+        pub(crate) type Scheduler = scheduler::RMScheduler<TaskInner>;
     }
 }
 

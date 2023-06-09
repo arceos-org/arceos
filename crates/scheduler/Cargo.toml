@@ -11,3 +11,5 @@ documentation = "https://rcore-os.github.io/arceos/scheduler/index.html"
 
 [dependencies]
 linked_list = { path = "../linked_list" }
+crate_interface = { path = "../../crates/crate_interface"}
+axhal = { path = "../../modules/axhal" }
