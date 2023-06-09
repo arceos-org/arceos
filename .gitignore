@@ -6,3 +6,4 @@
 actual.out
 qemu.log
 tools/fat32-pack/target
+/modules/axuser/user.elf
