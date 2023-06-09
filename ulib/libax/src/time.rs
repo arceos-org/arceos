@@ -14,7 +14,7 @@ impl Instant {
     }
 
     /// Converts an `Instant` to a `Duration` directly.
-    pub const fn as_duration(&self) -> Duration {
+    pub(crate) fn as_duration(&self) -> Duration {
         self.0
     }
 

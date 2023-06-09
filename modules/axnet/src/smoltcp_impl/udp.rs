@@ -104,6 +104,7 @@ impl UdpSocket {
                 }
             }) {
                 Ok(n) => {
+                    SOCKET_SET.poll_interfaces();
                     return Ok(n);
                 }
                 Err(AxError::WouldBlock) => {
@@ -137,6 +138,7 @@ impl UdpSocket {
                 }
             }) {
                 Ok(x) => {
+                    SOCKET_SET.poll_interfaces();
                     return Ok(x);
                 }
                 Err(AxError::WouldBlock) => {
