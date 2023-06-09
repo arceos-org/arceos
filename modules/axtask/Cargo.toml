@@ -13,10 +13,12 @@ documentation = "https://rcore-os.github.io/arceos/axtask/index.html"
 test = ["percpu?/sp-naive"]
 multitask = [
     "dep:axconfig", "dep:percpu", "dep:spinlock", "dep:lazy_init",
-    "dep:memory_addr", "dep:scheduler", "dep:timer_list"
+    "dep:memory_addr", "dep:scheduler", "dep:timer_list", "dep:load_balance",
 ]
 irq = []
+smp = []
 preempt = ["irq", "percpu?/preempt", "kernel_guard/preempt"]
+
 
 sched_fifo = ["multitask"]
 sched_rr = ["multitask", "preempt"]
@@ -24,6 +26,7 @@ sched_cfs = ["multitask", "preempt"]
 default = ["sched_fifo"]
 
 [dependencies]
+array-init = "0.1"
 cfg-if = "1.0"
 log = "0.4"
 axhal = { path = "../axhal" }
@@ -31,6 +34,8 @@ axconfig = { path = "../axconfig", optional = true }
 percpu = { path = "../../crates/percpu", optional = true }
 spinlock = { path = "../../crates/spinlock", optional = true }
 lazy_init = { path = "../../crates/lazy_init", optional = true }
+lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
+load_balance = { path = "../../crates/load_balance", optional = true }
 memory_addr = { path = "../../crates/memory_addr", optional = true }
 scheduler = { path = "../../crates/scheduler", optional = true }
 timer_list = { path = "../../crates/timer_list", optional = true }

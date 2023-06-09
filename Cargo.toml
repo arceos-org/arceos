@@ -17,6 +17,7 @@ members = [
     "apps/task/yield",
     "apps/task/priority",
     "apps/hv",
+    "apps/task/unbalance",
 
     "crates/allocator",
     "crates/arm_gic",

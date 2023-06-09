@@ -147,6 +147,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "arceos-unbalance"
+version = "0.1.0"
+dependencies = [
+ "libax",
+]
+
+[[package]]
 name = "arceos-yield"
 version = "0.1.0"
 dependencies = [
@@ -159,6 +166,12 @@ version = "0.1.0"
 dependencies = [
  "tock-registers",
 ]
+
+[[package]]
+name = "array-init"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f30bbe2f5e3d117f55bd8c7a1f9191e4a5deba9f15f595bbea4f670c59c765db"
 
 [[package]]
 name = "atomic-polyfill"
@@ -398,6 +411,7 @@ dependencies = [
 name = "axtask"
 version = "0.1.0"
 dependencies = [
+ "array-init",
  "axconfig",
  "axhal",
  "axtask",
@@ -405,6 +419,8 @@ dependencies = [
  "crate_interface 0.1.1",
  "kernel_guard",
  "lazy_init",
+ "lazy_static",
+ "load_balance",
  "log",
  "memory_addr",
  "percpu",
@@ -1152,6 +1168,15 @@ name = "linux-raw-sys"
 version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ef53942eb7bf7ff43a617b3e2c1c4a5ecf5944a7c1bc12d7ee39bbb15e5c1519"
+
+[[package]]
+name = "load_balance"
+version = "0.1.0"
+dependencies = [
+ "linked_list",
+ "log",
+ "spinlock",
+]
 
 [[package]]
 name = "lock_api"

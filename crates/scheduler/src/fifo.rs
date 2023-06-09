@@ -99,4 +99,8 @@ impl<T> BaseScheduler for FifoScheduler<T> {
     fn set_priority(&mut self, _task: &Self::SchedItem, _prio: isize) -> bool {
         false
     }
+
+    fn is_empty(&self) -> bool {
+        self.ready_queue.is_empty()
+    }
 }

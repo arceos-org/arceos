@@ -14,7 +14,7 @@ alloc = ["dep:axalloc"]
 paging = ["alloc", "axhal/paging", "dep:lazy_init"]
 irq = ["axhal/irq", "axtask?/irq", "axnet?/irq"]
 multitask = ["alloc", "axtask/multitask"]
-smp = ["axhal/smp", "spinlock/smp"]
+smp = ["axhal/smp", "axtask?/smp", "spinlock/smp"]
 
 fs = ["alloc", "paging", "axdriver/virtio-blk", "dep:axfs"] # TODO: remove "paging"
 net = ["alloc", "paging", "axdriver/virtio-net", "dep:axnet"]

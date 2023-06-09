@@ -16,6 +16,7 @@ Initialize kernel page table...
 Initialize platform devices...
 Initialize scheduling...
   use FIFO scheduler.
+  use basic method load balance manager.
 CPU 1 init OK
 CPU 0 init OK
 CPU 1 started
@@ -25,15 +26,15 @@ CPU 1 init OK
 CPU 2 init OK
 CPU 3 init OK
 Hello, main task!
-Hello, task 0! id = TaskId(7)
-Hello, task 1! id = TaskId(8)
-Hello, task 2! id = TaskId(9)
-Hello, task 3! id = TaskId(10)
-Hello, task 4! id = TaskId(11)
-Hello, task 5! id = TaskId(12)
-Hello, task 6! id = TaskId(13)
-Hello, task 7! id = TaskId(14)
-Hello, task 8! id = TaskId(15)
-Hello, task 9! id = TaskId(16)
+Hello, task 0! id = TaskId(10)
+Hello, task 1! id = TaskId(11)
+Hello, task 2! id = TaskId(12)
+Hello, task 3! id = TaskId(13)
+Hello, task 4! id = TaskId(14)
+Hello, task 5! id = TaskId(15)
+Hello, task 6! id = TaskId(16)
+Hello, task 7! id = TaskId(17)
+Hello, task 8! id = TaskId(18)
+Hello, task 9! id = TaskId(19)
 Task yielding tests run OK!
 Shutting down...
