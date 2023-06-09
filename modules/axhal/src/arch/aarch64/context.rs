@@ -16,6 +16,9 @@ pub struct TrapFrame {
 }
 
 impl TrapFrame {
+    pub fn app_init_context(_app_entry: usize, _user_sp: usize) -> Self {
+        Self::default()
+    }
     /// 获取寄存器的值
     pub fn get_reg(&self, index: usize) -> usize {
         self.r[index] as usize
