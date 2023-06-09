@@ -44,7 +44,6 @@ impl TrapFrame {
         Self::default()
     }
 
-
     /// 获取寄存器的值
     pub fn get_reg(&self, index: usize) -> usize {
         match index {

@@ -3,9 +3,9 @@ use crate::fs::FileDesc;
 use super::flags::{MMAPFlags, MMAPPROT};
 extern crate alloc;
 use alloc::boxed::Box;
-use bitflags::Flags;
 use axmem::MemBackend;
 use axprocess::process::current_process;
+use bitflags::Flags;
 use log::info;
 const MAX_HEAP_SIZE: usize = 4096;
 /// 修改用户堆大小，

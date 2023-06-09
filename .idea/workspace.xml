@@ -78,7 +78,7 @@
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
-    "settings.editor.selected.configurable": "Errors",
+    "settings.editor.selected.configurable": "preferences.sourceCode",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
@@ -109,7 +109,7 @@
       <workItem from="1683996445819" duration="12554000" />
       <workItem from="1686136210728" duration="6474000" />
       <workItem from="1686228920445" duration="6583000" />
-      <workItem from="1686329653350" duration="11538000" />
+      <workItem from="1686329653350" duration="12581000" />
     </task>
     <servers />
   </component>

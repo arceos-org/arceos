@@ -3,7 +3,6 @@
 #![feature(doc_auto_cfg)]
 #![feature(naked_functions)]
 #![feature(result_option_inspect)]
-
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
 
 #[cfg(not(test))]

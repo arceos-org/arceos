@@ -1,12 +1,12 @@
 use alloc::string::ToString;
 use alloc::vec;
 use alloc::{collections::BTreeMap, format, string::String, sync::Arc, vec::Vec};
-use bitflags::Flags;
 use axerrno::{AxError, AxResult};
 use axfs::monolithic_fs::FileIO;
 use axhal::arch::{write_page_table_root, TrapFrame};
 use axlog::info;
 use axtask::{AxTaskRef, TaskId};
+use bitflags::Flags;
 
 const KERNEL_STACK_SIZE: usize = 4096;
 
@@ -312,7 +312,7 @@ impl Process {
         // 新开的进程/线程返回值为0
         trap_frame.set_reg(10, 0);
         if flags.contains(CloneFlags::CLONE_SETTLS) {
-            trap_frame.set_reg(4,tls)
+            trap_frame.set_reg(4, tls)
         }
         // 设置用户栈
         // 若给定了用户栈，则使用给定的用户栈
@@ -322,7 +322,8 @@ impl Process {
             trap_frame.set_reg(2, stack);
             info!(
                 "New user stack: sepc:{:X}, stack:{:X}",
-                trap_frame.get_reg(32), trap_frame.get_reg(2)
+                trap_frame.get_reg(32),
+                trap_frame.get_reg(2)
             );
         }
         new_task.set_trap_context(trap_frame);

@@ -66,12 +66,10 @@ pub fn write_many<C: AsRef<[u8]>>(path: &str, contents: C) -> io::Result<usize> 
     Ok(File::create(path)?.write_many(contents.as_ref()))
 }
 
-
 /// Seek to an offset, in bytes, in a file.
 pub fn seek(path: &str, offset: usize) -> io::Result<u64> {
     File::open(path)?.seek(SeekFrom::Start(offset as u64))
 }
-
 
 /// Given a path, query the file system to get information about a file,
 /// directory, etc.
