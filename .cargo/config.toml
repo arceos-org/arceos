@@ -1,2 +1,23 @@
 [profile.release]
 lto = true
+
+[source.crates-io]
+replace-with = "vendored-sources"
+
+[source."git+https://github.com/rafalh/rust-fatfs?rev=a3a834e"]
+git = "https://github.com/rafalh/rust-fatfs"
+rev = "a3a834e"
+replace-with = "vendored-sources"
+
+[source."git+https://github.com/rcore-os/bitmap-allocator.git?rev=88e871a"]
+git = "https://github.com/rcore-os/bitmap-allocator.git"
+rev = "88e871a"
+replace-with = "vendored-sources"
+
+[source."git+https://github.com/rcore-os/virtio-drivers.git?rev=409ee72"]
+git = "https://github.com/rcore-os/virtio-drivers.git"
+rev = "409ee72"
+replace-with = "vendored-sources"
+
+[source.vendored-sources]
+directory = "vendor"

@@ -75,7 +75,6 @@ OUT_ELF := $(OUT_DIR)/$(APP_NAME)_$(PLATFORM).elf
 OUT_BIN := $(OUT_DIR)/$(APP_NAME)_$(PLATFORM).bin
 
 .PREWORK:
-	#mv ./cargo/ ./.cargo/
 	if [ ! -d "./.cargo" ]; then mkdir .cargo; fi
 	touch .cargo/config.toml
 	cat ./cargo/config.toml > ./.cargo/config.toml
@@ -90,8 +89,8 @@ include scripts/make/test.mk
 
 build: .PREWORK $(OUT_DIR) $(OUT_BIN)
 	cp $(OUT_BIN) kernel-qemu
-	cat ./.cargo/config.toml
-	#mv ./.cargo/ ./cargo/
+	#cat ./.cargo/config.toml
+	rm -rf ./.cargo/
 
 disasm:
 	$(OBJDUMP) $(OUT_ELF) | less

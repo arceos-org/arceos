@@ -16,15 +16,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7c62798e-00ca-45fb-8290-e63c15b16cfe" name="更改" comment="">
+      <change beforePath="$PROJECT_DIR$/.cargo/config.toml" beforeDir="false" afterPath="$PROJECT_DIR$/.cargo/config.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/kernel-qemu" beforeDir="false" afterPath="$PROJECT_DIR$/kernel-qemu" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axhal/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axhal/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axhal/src/arch/riscv/trap.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axhal/src/arch/riscv/trap.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axhal/src/trap.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axhal/src/trap.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axruntime/src/trap.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axruntime/src/trap.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axtask/src/run_queue.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axtask/src/run_queue.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axtask/src/task.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axtask/src/task.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/test/app_test.sh" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/test/app_test.sh" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -75,7 +69,7 @@
     "cf.advertisement.text.overridden": "true",
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
-    "git-widget-placeholder": "fix__old__bug",
+    "git-widget-placeholder": "unitest",
     "ignore.virus.scanning.warn.message": "true",
     "last_opened_file_path": "//wsl$/Ubuntu-20.04/home/ccyd/Coding/OS/ArceOS/Starry",
     "node.js.detected.package.eslint": "true",
@@ -115,6 +109,7 @@
       <workItem from="1683996445819" duration="12554000" />
       <workItem from="1686136210728" duration="6474000" />
       <workItem from="1686228920445" duration="6583000" />
+      <workItem from="1686329653350" duration="385000" />
     </task>
     <servers />
   </component>

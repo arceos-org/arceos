@@ -54,7 +54,7 @@ build_args := \
   $(build_args-$(MODE)) \
   $(build_args-$(APP_LANG)) \
   --features "$(features-y)" \
-  --offline\
+#  --offline\
 
 ifeq ($(default_features),n)
   build_args += --no-default-features
