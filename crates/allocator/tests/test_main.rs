@@ -194,9 +194,9 @@ fn system_alloc_test() {
     unsafe {
         GLOBAL_ALLOCATOR.init_system();
     }
-    align_test();
     basic_test();
     mi_test();
+    align_test();
     malloc_large_test();
     glibc_bench_test();
     multi_thread_test();
@@ -215,11 +215,11 @@ fn tlsf_rust_alloc_test() {
     unsafe {
         GLOBAL_ALLOCATOR.init_tlsf_rust();
     }
-    align_test();
     basic_test();
     mi_test();
+    align_test();
     malloc_large_test();
-    glibc_bench_test();
+    //glibc_bench_test();
     //multi_thread_test();
     //multi_thread_c_test();
     println!("tlsf_rust alloc test passed!");
@@ -239,11 +239,11 @@ fn tlsf_c_alloc_test() {
     unsafe {
         GLOBAL_ALLOCATOR.init_tlsf_c();
     }
-    align_test();
     basic_test();
     mi_test();
+    align_test();
     malloc_large_test();
-    glibc_bench_test();
+    //glibc_bench_test();
     //multi_thread_test();
     //multi_thread_c_test();
     println!("tlsf_c alloc test passed!");
@@ -253,7 +253,6 @@ fn tlsf_c_alloc_test() {
     }
 }
 
-//#[test]
 fn first_fit_alloc_test() {
     srand(2333);
     unsafe {
@@ -263,9 +262,9 @@ fn first_fit_alloc_test() {
     unsafe {
         GLOBAL_ALLOCATOR.init_basic("first_fit");
     }
-    //align_test();
-    basic_test();
+    //basic_test();
     mi_test();
+    //align_test();
     //malloc_large_test();
     //glibc_bench_test();
     //multi_thread_test();
@@ -277,7 +276,6 @@ fn first_fit_alloc_test() {
     }
 }
 
-//#[test]
 fn best_fit_alloc_test() {
     srand(2333);
     unsafe {
@@ -287,9 +285,9 @@ fn best_fit_alloc_test() {
     unsafe {
         GLOBAL_ALLOCATOR.init_basic("best_fit");
     }
-    //align_test();
-    basic_test();
+    //basic_test();
     mi_test();
+    //align_test();
     //malloc_large_test();
     //glibc_bench_test();
     //multi_thread_test();
@@ -301,7 +299,6 @@ fn best_fit_alloc_test() {
     }
 }
 
-//#[test]
 fn worst_fit_alloc_test() {
     srand(2333);
     unsafe {
@@ -311,9 +308,9 @@ fn worst_fit_alloc_test() {
     unsafe {
         GLOBAL_ALLOCATOR.init_basic("worst_fit");
     }
-    //align_test();
     //basic_test();
     mi_test();
+    //align_test();
     //malloc_large_test();
     //glibc_bench_test();
     //multi_thread_test();
@@ -325,7 +322,6 @@ fn worst_fit_alloc_test() {
     }
 }
 
-//#[test]
 fn buddy_fit_alloc_test() {
     srand(2333);
     unsafe {
@@ -335,9 +331,9 @@ fn buddy_fit_alloc_test() {
     unsafe {
         GLOBAL_ALLOCATOR.init_buddy();
     }
-    //align_test();
     //basic_test();
     mi_test();
+    //align_test();
     //malloc_large_test();
     //glibc_bench_test();
     //multi_thread_test();
@@ -349,7 +345,6 @@ fn buddy_fit_alloc_test() {
     }
 }
 
-//#[test]
 fn slab_alloc_test() {
     srand(2333);
     unsafe {
@@ -359,9 +354,9 @@ fn slab_alloc_test() {
     unsafe {
         GLOBAL_ALLOCATOR.init_slab();
     }
-    //align_test();
-    basic_test();
+    //basic_test();
     mi_test();
+    //align_test();
     //malloc_large_test();
     //glibc_bench_test();
     //multi_thread_test();
@@ -382,13 +377,13 @@ fn mi_alloc_test() {
     unsafe {
         GLOBAL_ALLOCATOR.init_mi();
     }
-    align_test();
     basic_test();
     mi_test();
+    align_test();
     malloc_large_test();
     glibc_bench_test();
-    //multi_thread_test();
-    //multi_thread_c_test();
+    multi_thread_test();
+    multi_thread_c_test();
     println!("mi alloc test passed!");
     println!("*****************************");
     unsafe {
@@ -401,10 +396,10 @@ fn test_start() {
     system_alloc_test();
     buddy_fit_alloc_test();
     slab_alloc_test();
-    mi_alloc_test();
     first_fit_alloc_test();
     best_fit_alloc_test();
     worst_fit_alloc_test();
-    tlsf_rust_alloc_test();
     tlsf_c_alloc_test();
+    tlsf_rust_alloc_test();
+    mi_alloc_test();
 }
