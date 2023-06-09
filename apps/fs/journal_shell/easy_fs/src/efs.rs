@@ -170,6 +170,7 @@ impl EasyFileSystem {
         })
     }
 
+    /// Reload the filesystem
     pub fn load(&mut self, block_device: Rc<dyn BlockDevice>) {
         *self = Self::open(block_device);
     }
@@ -260,16 +261,17 @@ impl EasyFileSystem {
     }
 
     #[cfg(feature = "journal")]
-    pub fn journal_start(&self, nblocks: u32) -> VfsResult<Rc<RefCell<jbd::Handle>>> {
+    pub(crate) fn journal_start(&self, nblocks: u32) -> VfsResult<Rc<RefCell<jbd::Handle>>> {
         jbd::Journal::start(self.journal.clone(), nblocks).map_err(|_| VfsError::Journal)
     }
 
     #[cfg(feature = "journal")]
-    pub fn journal_commit(&self) {
+    pub(crate) fn journal_commit(&self) {
         let mut journal = self.journal.as_ref().borrow_mut();
         journal.commit_transaction().unwrap();
     }
 
+    /// Do checkpoint
     #[cfg(feature = "journal")]
     pub fn journal_checkpoint(&self) {
         let mut journal = self.journal.as_ref().borrow_mut();

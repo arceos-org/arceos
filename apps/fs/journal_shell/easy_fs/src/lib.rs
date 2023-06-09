@@ -56,6 +56,7 @@ impl BlockDevice for DiskWrapper {
 }
 
 static mut DISK: Option<Rc<DiskWrapper>> = None;
+/// The main file system
 pub static mut MAIN_FS: Option<Arc<EasyFileSystemWrapper>> = None;
 
 #[crate_interface::impl_interface]
@@ -75,6 +76,7 @@ impl MyFileSystemIf for MyFileSystemIfImpl {
     }
 }
 
+/// Crash simulation
 pub fn crash() {
     block_cache_sync_all();
 
