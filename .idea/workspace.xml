@@ -17,57 +17,7 @@
   <component name="ChangeListManager">
     <list default="true" id="7c62798e-00ca-45fb-8290-e63c15b16cfe" name="更改" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/syscall/junior/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/apps/syscall/junior/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/syscall/libc_dynamic/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/apps/syscall/libc_dynamic/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/syscall/libc_static/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/apps/syscall/libc_static/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/crates/axio/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/crates/axio/src/lib.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/crates/page_table/src/bits64.rs" beforeDir="false" afterPath="$PROJECT_DIR$/crates/page_table/src/bits64.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/crates/page_table_entry/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/crates/page_table_entry/src/lib.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axalloc/src/page.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axalloc/src/page.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/modules/axfs/src/api/dir.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axfs/src/api/dir.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axfs/src/api/file.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axfs/src/api/file.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axfs/src/fops.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axfs/src/fops.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axfs/src/monolithic_fs/file_io.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axfs/src/monolithic_fs/file_io.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axfs/src/monolithic_fs/flags.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axfs/src/monolithic_fs/flags.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axfs/src/monolithic_fs/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axfs/src/monolithic_fs/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axhal/src/arch/aarch64/context.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axhal/src/arch/aarch64/context.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axhal/src/arch/riscv/context.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axhal/src/arch/riscv/context.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axhal/src/arch/x86_64/context.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axhal/src/arch/x86_64/context.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axhal/src/trap.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axhal/src/trap.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axmem/src/area.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axmem/src/area.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axmem/src/backend.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axmem/src/backend.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axmem/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axmem/src/lib.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axprocess/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axprocess/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axprocess/src/flags.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axprocess/src/flags.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axprocess/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axprocess/src/lib.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axprocess/src/loader/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axprocess/src/loader/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axprocess/src/loader/user_stack.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axprocess/src/loader/user_stack.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axprocess/src/process.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axprocess/src/process.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axprocess/src/stdin.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axprocess/src/stdin.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axruntime/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axruntime/src/lib.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axtask/src/monolithic_task/copy.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axtask/src/monolithic_task/copy.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axtask/src/monolithic_task/run_queue.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axtask/src/monolithic_task/run_queue.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axtask/src/monolithic_task/stat.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axtask/src/monolithic_task/stat.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axtask/src/monolithic_task/task.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axtask/src/monolithic_task/task.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/test/app_test.sh" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/test/app_test.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ulib/starry_libax/src/fs/dir.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/starry_libax/src/fs/dir.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ulib/starry_libax/src/fs/file.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/starry_libax/src/fs/file.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ulib/starry_libax/src/fs/flags.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/starry_libax/src/fs/flags.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ulib/starry_libax/src/fs/link.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/starry_libax/src/fs/link.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ulib/starry_libax/src/fs/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/starry_libax/src/fs/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ulib/starry_libax/src/fs/mount.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/starry_libax/src/fs/mount.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ulib/starry_libax/src/fs/pipe.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/starry_libax/src/fs/pipe.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ulib/starry_libax/src/fs/types.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/starry_libax/src/fs/types.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ulib/starry_libax/src/io/stdio.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/starry_libax/src/io/stdio.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ulib/starry_libax/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/starry_libax/src/lib.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ulib/starry_libax/src/syscall/flags.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/starry_libax/src/syscall/flags.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ulib/starry_libax/src/syscall/fs.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/starry_libax/src/syscall/fs.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ulib/starry_libax/src/syscall/mem.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/starry_libax/src/syscall/mem.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ulib/starry_libax/src/syscall/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/starry_libax/src/syscall/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ulib/starry_libax/src/syscall/syscall_id.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/starry_libax/src/syscall/syscall_id.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ulib/starry_libax/src/syscall/task.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/starry_libax/src/syscall/task.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ulib/starry_libax/src/test.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/starry_libax/src/test.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ulib/starry_libax/src/trap.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/starry_libax/src/trap.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -161,7 +111,7 @@
       <workItem from="1686329653350" duration="14146000" />
       <workItem from="1686345820320" duration="7236000" />
       <workItem from="1686363731066" duration="1451000" />
-      <workItem from="1686365923621" duration="5501000" />
+      <workItem from="1686365923621" duration="6034000" />
     </task>
     <servers />
   </component>
