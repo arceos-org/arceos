@@ -1,3 +1,5 @@
+//! 文件打开时的权限
+
 use bitflags::*;
 
 bitflags! {

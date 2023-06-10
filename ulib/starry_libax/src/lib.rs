@@ -5,6 +5,8 @@
 #![feature(result_option_inspect)]
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
 
+//! The library for user mode applications.
+
 #[cfg(not(test))]
 extern crate axruntime;
 

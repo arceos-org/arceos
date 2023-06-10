@@ -1,3 +1,5 @@
+//! 文件描述符
+
 use crate::fs::FilePath;
 
 use super::flags::OpenFlags;

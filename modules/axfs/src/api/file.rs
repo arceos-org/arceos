@@ -158,6 +158,7 @@ impl File {
         self.inner.get_attr().map(Metadata)
     }
 
+    /// Returns true if this file is executable.
     pub fn executable(&self) -> bool {
         self.inner.executable()
     }

@@ -1,5 +1,7 @@
 #![cfg_attr(not(test), no_std)]
 #![feature(drain_filter)]
+//! 进程管理模块
+
 use axhal::{arch::TaskContext, mem::VirtAddr, paging::MappingFlags};
 use axtask::{current, monolithic_task::task::CurrentTask, monolithic_task::task::TaskState};
 
@@ -48,6 +50,7 @@ pub fn time_stat_output() -> (usize, usize, usize, usize) {
     curr_task.time_stat_output()
 }
 
+/// 处理页错误
 pub fn handle_page_fault(addr: VirtAddr, flags: MappingFlags) {
     axlog::info!("'page fault' addr: {:?}, flags: {:?}", addr, flags);
     let current = current_process();

@@ -1,3 +1,5 @@
+//! 管道文件
+
 use super::FileIOType;
 extern crate alloc;
 use alloc::sync::{Arc, Weak};

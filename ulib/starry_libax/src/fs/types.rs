@@ -1,3 +1,5 @@
+//! 文件系统相关的类型定义
+
 extern crate alloc;
 use alloc::string::String;
 use axfs::api::canonicalize;

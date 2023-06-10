@@ -19,10 +19,11 @@ pub trait TrapHandler {
     /// Handles interrupt requests for the given IRQ number.
     fn handle_irq(irq_num: usize);
     // more e.g.: handle_page_fault();
-    // 需要分离用户态使用
+    /// 需要分离用户态使用
+    /// Handles syscall requests for the given syscall number.
     #[cfg(feature = "monolithic")]
     fn handle_syscall(syscall_id: usize, args: [usize; 6]) -> isize;
-
+    /// Handles page faults for the given virtual address.
     #[cfg(all(feature = "paging", feature = "monolithic"))]
     fn handle_page_fault(addr: VirtAddr, flags: MappingFlags);
 }
@@ -43,6 +44,7 @@ pub(crate) fn handle_syscall(syscall_id: usize, args: [usize; 6]) -> isize {
 
 #[allow(dead_code)]
 #[cfg(feature = "paging")]
+/// 处理页错误
 pub(crate) fn handle_page_fault(addr: VirtAddr, flags: MappingFlags) {
     call_interface!(TrapHandler::handle_page_fault, addr, flags);
 }

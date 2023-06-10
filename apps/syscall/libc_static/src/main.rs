@@ -1,3 +1,5 @@
+//! # libc_static
+
 #![no_std]
 #![no_main]
 

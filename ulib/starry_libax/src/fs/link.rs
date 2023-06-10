@@ -1,5 +1,6 @@
 //! 模拟的链接、挂载模块
 //! fat32本身不支持符号链接和硬链接，两个指向相同文件的目录条目将会被chkdsk报告为交叉链接并修复
+
 extern crate alloc;
 use super::FilePath;
 use alloc::collections::BTreeMap;

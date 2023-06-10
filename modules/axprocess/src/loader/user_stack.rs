@@ -1,3 +1,5 @@
+//! 用户栈的初始化
+
 extern crate alloc;
 use core::{
     mem::{align_of, size_of},
@@ -6,6 +8,7 @@ use core::{
 
 use alloc::{collections::BTreeMap, string::String, vec, vec::Vec};
 
+/// 用户栈的大小
 pub const USER_INIT_STACK_SIZE: usize = 0x4000;
 /// 规定用户栈初始化时的内容
 pub struct UserStack {
@@ -18,6 +21,7 @@ pub struct UserStack {
 }
 
 impl UserStack {
+    /// 创建一个新的用户栈
     pub fn new(sp: usize) -> Self {
         let mut data: Vec<u8> = vec![0; USER_INIT_STACK_SIZE];
         unsafe {
@@ -30,10 +34,12 @@ impl UserStack {
             data,
         }
     }
+    /// 获取用户栈的栈顶
     pub fn get_data_front_ref(&self) -> &[u8] {
         let offset = self.data.len() - (self.bottom - self.sp);
         &self.data[offset..]
     }
+    /// 获取用户栈的栈顶的可变引用
     #[allow(unused)]
     pub fn get_data_front_mut_ref(&mut self) -> &mut [u8] {
         let offset = self.data.len() - (self.bottom - self.sp);
@@ -59,10 +65,11 @@ impl UserStack {
         self.push(str.as_bytes());
         self.sp
     }
+    /// 获取当前的栈顶
     pub fn get_sp(&self) -> usize {
         self.sp
     }
-    // 获取真实的栈占用的内容
+    /// 获取真实的栈占用的内容
     pub fn get_len(&self) -> usize {
         self.bottom - self.sp
     }

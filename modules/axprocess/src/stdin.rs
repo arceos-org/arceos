@@ -1,3 +1,5 @@
+//! 标准输入输出
+
 use axerrno::{AxError, AxResult};
 use axfs::monolithic_fs::{
     file_io::{FileExt, FileIO},

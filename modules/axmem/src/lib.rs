@@ -1,3 +1,5 @@
+//! Memory management
+
 #![no_std]
 #![feature(drain_filter)]
 #![feature(btree_drain_filter)]
@@ -38,6 +40,7 @@ pub(crate) const AT_RANDOM: u8 = 25;
 
 /// user memory
 pub const USER_MEMORY_START: usize = 0x1000;
+/// user memory limit
 pub const USER_MEMORY_LIMIT: usize = 0xffff_ffff;
 
 /// VirtIO MMIO regions with format (`base_paddr`, `size`).
@@ -54,16 +57,21 @@ pub const VIRTIO_MMIO_REGIONS: &[(usize, usize)] = &[
 
 /// PageTable + MemoryArea for a process (task)
 pub struct MemorySet {
+    /// Page table
     page_table: PageTable,
+    /// Owned memory areas
     owned_mem: BTreeMap<usize, MapArea>,
+    /// Entry point
     pub entry: usize,
 }
 
 impl MemorySet {
+    /// Get the root page table token
     pub fn page_table_token(&self) -> usize {
         self.page_table.root_paddr().as_usize()
     }
 
+    /// Create a new empty memory set
     pub fn new_empty() -> Self {
         Self {
             page_table: PageTable::try_new().expect("Error allocating page table."),
@@ -72,6 +80,7 @@ impl MemorySet {
         }
     }
 
+    /// Create a new memory set with kernel mapped
     pub fn new_with_kernel_mapped() -> Self {
         let mut page_table = PageTable::try_new().expect("Error allocating page table.");
 
@@ -93,6 +102,7 @@ impl MemorySet {
         }
     }
 
+    /// Create a new memory set with kernel mapped and user mapped
     pub fn map_elf(&mut self, elf: &xmas_elf::ElfFile) -> BTreeMap<u8, usize> {
         let elf_header = elf.header;
         let magic = elf_header.pt1.magic;
@@ -295,10 +305,12 @@ impl MemorySet {
         map
     }
 
+    /// Get the root page table physical address.
     pub fn page_table_root_ppn(&self) -> PhysAddr {
         self.page_table.root_paddr()
     }
 
+    /// Get the maximum virtual address.
     pub fn max_va(&self) -> VirtAddr {
         self.owned_mem
             .last_key_value()
@@ -402,6 +414,7 @@ impl MemorySet {
         }
     }
 
+    /// Find a free area that can hold `size` bytes. If `hint` is provided, it will try to find a free area after `hint`.
     fn find_free_area(&self, hint: VirtAddr, size: usize) -> Option<VirtAddr> {
         let mut last_end = hint.max(USER_MEMORY_START.into());
         for area in self.owned_mem.values() {

@@ -1,3 +1,5 @@
+//! 系统调用中的各种标志位
+
 use axhal::paging::MappingFlags;
 use bitflags::*;
 use log::error;
@@ -29,14 +31,18 @@ pub struct TMS {
 /// sys_gettimeofday 中指定的类型
 #[repr(C)]
 pub struct TimeVal {
+    /// 秒
     pub sec: usize,
+    /// 微秒
     pub usec: usize,
 }
 
-// sys_nanosleep指定的结构体类型
+/// sys_nanosleep指定的结构体类型
 #[derive(Clone, Copy)]
 pub struct TimeSecs {
+    /// 秒
     pub tv_sec: usize,
+    /// 纳秒
     pub tv_nsec: usize,
 }
 
@@ -69,6 +75,7 @@ impl Into<MappingFlags> for MMAPPROT {
 }
 
 bitflags! {
+    /// 指定 mmap 的选项
     pub struct MMAPFlags: u32 {
         /// 对这段内存的修改是共享的
         const MAP_SHARED = 1 << 0;

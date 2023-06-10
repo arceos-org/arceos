@@ -1,3 +1,5 @@
+//! 进程的实现
+
 use alloc::string::ToString;
 use alloc::vec;
 use alloc::{collections::BTreeMap, format, string::String, sync::Arc, vec::Vec};
@@ -8,6 +10,7 @@ use axlog::info;
 use axtask::{AxTaskRef, TaskId};
 use bitflags::Flags;
 
+/// 进程的栈大小
 const KERNEL_STACK_SIZE: usize = 4096;
 
 use crate::flags::{CloneFlags, WaitStatus};
@@ -24,16 +27,20 @@ use spinlock::SpinNoIrq;
 
 use riscv::asm;
 
+/// 进程的全局pid表
 pub static PID2PC: SpinNoIrq<BTreeMap<u64, Arc<Process>>> = SpinNoIrq::new(BTreeMap::new());
+/// kernel进程的全局tid表
 pub const KERNEL_PROCESS_ID: u64 = 1;
 
 /// 进程的的数据结构
 pub struct Process {
     /// 进程的pid和初始化的线程的tid是一样的
     pub pid: u64,
+    /// 内部数据结构
     pub inner: SpinNoIrq<ProcessInner>,
 }
 
+/// 进程的实现
 pub struct ProcessInner {
     /// 父进程的进程号
     pub parent: u64,
@@ -58,6 +65,7 @@ pub struct ProcessInner {
 }
 
 impl ProcessInner {
+    /// 创建一个新的进程
     pub fn new(
         parent: u64,
         memory_set: Arc<SpinNoIrq<MemorySet>>,
@@ -77,9 +85,11 @@ impl ProcessInner {
             cwd: "/".to_string(), // 这里的工作目录是根目录
         }
     }
+    /// 获取当前进程的地址空间
     pub fn get_page_table_token(&self) -> usize {
         self.memory_set.lock().page_table_token()
     }
+    /// 分配一个新的文件描述符
     pub fn alloc_fd(&mut self) -> usize {
         for (i, fd) in self.fd_table.iter().enumerate() {
             if fd.is_none() {
@@ -89,6 +99,7 @@ impl ProcessInner {
         self.fd_table.push(None);
         self.fd_table.len() - 1
     }
+    /// 获取当前进程的工作目录
     pub fn get_cwd(&self) -> String {
         self.cwd.clone()
     }
@@ -378,6 +389,7 @@ pub fn current_process() -> Arc<Process> {
     curr_process
 }
 
+/// 退出当前进程
 pub fn exit(exit_code: i32) -> isize {
     let curr = current();
     let curr_id = curr.id();
@@ -483,10 +495,12 @@ pub fn yield_now_task() {
     axtask::yield_now();
 }
 
+/// 以进程作为中转调用task的sleep
 pub fn sleep_now_task(dur: core::time::Duration) {
     axtask::sleep(dur);
 }
 
+/// 以进程作为中转调用task的current
 pub fn current_task() -> CurrentTask {
     axtask::current()
 }

@@ -1,3 +1,5 @@
+//! 这个文件是整个axtask的核心，包含了任务调度的所有逻辑
+
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
 use lazy_init::LazyInit;
@@ -9,21 +11,28 @@ pub use crate::monolithic_task::task::{CurrentTask, TaskInner, TaskState, KERNEL
 use crate::{AxTaskRef, Scheduler, WaitQueue};
 
 // TODO: per-CPU
+/// 运行队列
 pub static RUN_QUEUE: LazyInit<SpinNoIrq<AxRunQueue>> = LazyInit::new();
 
 // TODO: per-CPU
+/// 已经退出的任务
 pub static EXITED_TASKS: SpinNoIrq<VecDeque<AxTaskRef>> = SpinNoIrq::new(VecDeque::new());
 
+/// 等待退出的任务
 static WAIT_FOR_EXIT: WaitQueue = WaitQueue::new();
 
+/// 空闲任务
 #[percpu::def_percpu]
 pub static IDLE_TASK: LazyInit<AxTaskRef> = LazyInit::new();
 
+/// 任务队列
 pub struct AxRunQueue {
+    /// 任务调度器
     scheduler: Scheduler,
 }
 
 impl AxRunQueue {
+    /// 初始化
     pub fn new() -> SpinNoIrq<Self> {
         // 注意，此时是通过用户程序启动的，所以原有的arceos不要动
         let gc_task = TaskInner::new(
@@ -38,6 +47,7 @@ impl AxRunQueue {
         SpinNoIrq::new(Self { scheduler })
     }
 
+    /// 添加任务
     pub fn add_task(&mut self, task: AxTaskRef) {
         debug!("task spawn: {}", task.id_name());
         assert!(task.is_ready());
@@ -55,6 +65,7 @@ impl AxRunQueue {
         EXITED_TASKS.lock().push_back(task.clone());
     }
 
+    /// 设置
     #[cfg(feature = "irq")]
     pub fn scheduler_timer_tick(&mut self) {
         let curr = crate::current();
@@ -64,6 +75,7 @@ impl AxRunQueue {
         }
     }
 
+    /// yield当前任务
     pub fn yield_current(&mut self) {
         let curr = crate::current();
         debug!("task yield: {}", curr.id_name());
@@ -71,11 +83,13 @@ impl AxRunQueue {
         self.resched_inner(false);
     }
 
+    /// 设置当前任务的优先级
     pub fn set_current_priority(&mut self, prio: isize) -> bool {
         self.scheduler
             .set_priority(crate::current().as_task_ref(), prio)
     }
 
+    /// resched当前任务
     #[cfg(feature = "preempt")]
     pub fn resched(&mut self) {
         let curr = crate::current();
@@ -100,6 +114,7 @@ impl AxRunQueue {
         }
     }
 
+    /// 退出当前任务
     pub fn exit_current(&mut self, exit_code: i32) {
         let curr = crate::current();
         debug!("task exit: {}, exit_code={}", curr.id_name(), exit_code);
@@ -119,6 +134,7 @@ impl AxRunQueue {
         // unreachable!("task exited!");
     }
 
+    /// 阻塞当前任务
     pub fn block_current<F>(&mut self, wait_queue_push: F)
     where
         F: FnOnce(AxTaskRef),
@@ -137,6 +153,7 @@ impl AxRunQueue {
         self.resched_inner(false);
     }
 
+    /// 阻塞当前任务，直到有任务退出
     pub fn unblock_task(&mut self, task: AxTaskRef, resched: bool) {
         debug!("task unblock: {}", task.id_name());
         if task.is_blocked() {
@@ -149,6 +166,7 @@ impl AxRunQueue {
         }
     }
 
+    /// sleep当前任务, 直到时间到
     #[cfg(feature = "irq")]
     pub fn sleep_until(&mut self, deadline: axhal::time::TimeValue) {
         let curr = crate::current();
@@ -183,6 +201,7 @@ impl AxRunQueue {
         self.switch_to(prev, next);
     }
 
+    /// Context switch to `next_task` from `prev_task`.
     fn switch_to(&mut self, prev_task: CurrentTask, next_task: AxTaskRef) {
         trace!(
             "context switch: {} -> {}",
@@ -215,6 +234,7 @@ impl AxRunQueue {
     }
 }
 
+/// GC entry point.
 fn gc_entry() {
     loop {
         // Drop all exited tasks and recycle resources.
@@ -232,7 +252,9 @@ fn gc_entry() {
     }
 }
 
+/// Initialize the kernel.
 pub(crate) fn init() {
+    /// The stack size of the idle task.
     const IDLE_TASK_STACK_SIZE: usize = 4096;
     let idle_task = TaskInner::new(
         || crate::run_idle(),
@@ -250,6 +272,7 @@ pub(crate) fn init() {
     unsafe { CurrentTask::init_current(main_task) }
 }
 
+/// Initialize the secondary CPU.
 pub(crate) fn init_secondary() {
     let idle_task = TaskInner::new_init("idle".into());
     idle_task.set_state(TaskState::Running);

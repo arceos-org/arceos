@@ -1,3 +1,5 @@
+//! 目录描述符
+
 use super::flags::OpenFlags;
 use super::FileIOType;
 extern crate alloc;

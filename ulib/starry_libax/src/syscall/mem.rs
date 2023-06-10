@@ -1,3 +1,5 @@
+//! 内存管理相关系统调用
+
 use crate::fs::FileDesc;
 
 use super::flags::{MMAPFlags, MMAPPROT};
@@ -88,6 +90,7 @@ pub fn syscall_mmap(
     addr
 }
 
+/// 取消内存映射
 pub fn syscall_munmap(start: usize, len: usize) -> isize {
     let curr = current_process();
     let inner = curr.inner.lock();

@@ -1,3 +1,5 @@
+//! trap处理
+
 use crate::syscall::syscall;
 
 /// 宏内核架构下的trap入口

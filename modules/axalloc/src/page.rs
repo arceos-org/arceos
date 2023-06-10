@@ -102,10 +102,12 @@ impl Drop for GlobalPage {
 /// A safe wrapper of a single 4K page.
 /// It holds the page's VirtAddr (PhysAddr + offset)
 pub struct PhysPage {
+    /// The start virtual address of this page.
     pub start_vaddr: VirtAddr,
 }
 
 impl PhysPage {
+    /// Allocate a single 4K-sized page.
     pub fn alloc() -> AxResult<Self> {
         global_allocator()
             .alloc_pages(1, PAGE_SIZE)
@@ -115,6 +117,7 @@ impl PhysPage {
             .map_err(alloc_err_to_ax_err)
     }
 
+    /// Allocate a contiguous 4K-sized pages.
     pub fn alloc_contiguous(
         num_pages: usize,
         align_pow2: usize,

@@ -16,6 +16,7 @@ pub struct TrapFrame {
 }
 
 impl TrapFrame {
+    /// init context for app
     pub fn app_init_context(_app_entry: usize, _user_sp: usize) -> Self {
         Self::default()
     }

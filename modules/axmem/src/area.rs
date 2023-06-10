@@ -1,3 +1,5 @@
+//! Memory area abstraction.
+
 use alloc::vec::Vec;
 use axalloc::PhysPage;
 use axhal::{
@@ -14,10 +16,13 @@ use crate::MemBackend;
 /// NOTE: Cloning a `MapArea` needs allocating new phys pages and modifying a page table. So
 /// `Clone` trait won't implemented.
 pub struct MapArea {
+    /// 物理页
     pub pages: Vec<Option<PhysPage>>,
     /// 起始虚拟地址
     pub vaddr: VirtAddr,
+    /// 映射标志
     pub flags: MappingFlags,
+    /// 后端文件
     pub backend: Option<MemBackend>,
 }
 
@@ -77,6 +82,7 @@ impl MapArea {
         }
     }
 
+    /// Handle page fault in this area.
     pub fn handle_page_fault(
         &mut self,
         addr: VirtAddr,
@@ -148,6 +154,7 @@ impl MapArea {
         self.pages[page_index] = Some(page);
     }
 
+    /// Get the end virtual address of this area.
     pub fn sync_page_with_backend(&mut self, page_index: usize) {
         if page_index >= self.pages.len() {
             panic!("Sync page index out of bound");
@@ -376,18 +383,22 @@ impl MapArea {
 }
 
 impl MapArea {
+    /// Get the size of this area.
     pub fn size(&self) -> usize {
         self.pages.len() * PAGE_SIZE_4K
     }
 
+    /// Get the end virtual address of this area.
     pub fn end_va(&self) -> VirtAddr {
         self.vaddr + self.size()
     }
 
+    /// Return true if all pages are allocated.
     pub fn allocated(&self) -> bool {
         self.pages.iter().all(|page| page.is_some())
     }
 
+    /// Get the slice of this area.
     pub unsafe fn as_slice(&self) -> &[u8] {
         unsafe { core::slice::from_raw_parts(self.vaddr.as_ptr(), self.size()) }
     }
@@ -406,14 +417,17 @@ impl MapArea {
         self.vaddr <= start && start < self.end_va() || start <= self.vaddr && self.vaddr < end
     }
 
+    /// If [start, end) is contained in self.
     pub fn contained_in(&self, start: VirtAddr, end: VirtAddr) -> bool {
         start <= self.vaddr && self.end_va() <= end
     }
 
+    /// If [start, end) contained self.
     pub fn contains(&self, start: VirtAddr, end: VirtAddr) -> bool {
         self.vaddr <= start && end <= self.end_va()
     }
 
+    /// If [start, end) strictly contained self.
     pub fn strict_contain(&self, start: VirtAddr, end: VirtAddr) -> bool {
         self.vaddr < start && end < self.end_va()
     }

@@ -1,3 +1,5 @@
+//! 处理与任务（线程）有关的系统调用
+
 use core::time::Duration;
 
 use axhal::time::{current_time, current_time_nanos, nanos_to_ticks};
@@ -12,10 +14,12 @@ use alloc::{string::ToString, vec::Vec};
 use super::flags::{raw_ptr_to_ref_str, TimeSecs, TimeVal, UtsName, WaitFlags, TMS};
 /// 处理与任务（线程）有关的系统调用
 
+/// 线程退出
 pub fn syscall_exit(exit_code: i32) -> isize {
     axprocess::process::exit(exit_code)
 }
 
+/// 开启一个新的线程
 pub fn syscall_exec(path: *const u8, mut args: *const usize) -> isize {
     let curr_process = current_process();
     let inner = curr_process.inner.lock();
@@ -38,6 +42,7 @@ pub fn syscall_exec(path: *const u8, mut args: *const usize) -> isize {
     argc as isize
 }
 
+/// 复制当前进程
 pub fn syscall_clone(
     flags: usize,
     user_stack: usize,
@@ -56,13 +61,14 @@ pub fn syscall_clone(
     new_task_id as isize
 }
 
-/// 当前不涉及多核情况
+/// 获取当前进程的id
 pub fn syscall_getpid() -> isize {
     let curr = current_task();
     let pid = curr.get_process_id();
     pid as isize
 }
 
+/// 获取当前进程的父进程id
 pub fn syscall_getppid() -> isize {
     let curr_process = current_process();
     let inner = curr_process.inner.lock();
@@ -103,6 +109,7 @@ pub fn syscall_wait4(pid: isize, exit_code_ptr: *mut i32, option: WaitFlags) -> 
     }
 }
 
+/// yield当前任务
 pub fn syscall_yield() -> isize {
     yield_now_task();
     0

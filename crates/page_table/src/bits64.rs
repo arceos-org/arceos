@@ -78,6 +78,7 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
         Ok(())
     }
 
+    /// Maps a virtual page to a physical frame with the given `page_size`
     pub fn map_fault(&mut self, vaddr: VirtAddr, page_size: PageSize) -> PagingResult {
         let entry = self.get_entry_mut_or_create(vaddr, page_size)?;
         if !entry.is_unused() {
@@ -104,6 +105,7 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
         Ok(())
     }
 
+    /// Unmaps a virtual page.
     pub fn unmap(&mut self, vaddr: VirtAddr) -> PagingResult<(PhysAddr, PageSize)> {
         let (entry, size) = self.get_entry_mut(vaddr)?;
         if entry.is_unused() {
@@ -130,6 +132,7 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
         Ok((entry.paddr() + off, entry.flags(), size))
     }
 
+    /// Lookup the result of the mapping starts with `vaddr`.
     pub fn lookup(
         paddr: PhysAddr,
         vaddr: VirtAddr,
@@ -142,6 +145,7 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
         Ok((entry.paddr() + off, entry.flags(), size))
     }
 
+    /// Maps a virtual page to a physical frame with the given `page_size`
     pub fn map_region(
         &mut self,
         vaddr: VirtAddr,
@@ -229,6 +233,7 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
         Ok(())
     }
 
+    /// Unmaps a virtual page.
     pub fn unmap_region(&mut self, vaddr: VirtAddr, size: usize) -> PagingResult {
         trace!(
             "unmap_region({:#x}) [{:#x}, {:#x})",
@@ -259,6 +264,7 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
         Ok(page_size)
     }
 
+    /// Update the mapping flags of a region.
     pub fn update_region(
         &mut self,
         mut vaddr: VirtAddr,
@@ -273,6 +279,7 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
         Ok(())
     }
 
+    /// Walk the page table and call `func` on each entry.
     pub fn walk<F>(&self, limit: usize, func: &F) -> PagingResult
     where
         F: Fn(usize, usize, VirtAddr, &PTE),
@@ -287,7 +294,7 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
     }
 }
 
-// Private implements.
+/// Private implements.
 impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
     fn alloc_table() -> PagingResult<PhysAddr> {
         if let Some(paddr) = IF::alloc_frame() {

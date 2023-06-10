@@ -1,3 +1,5 @@
+//! 用于统计进程时间的模块
+
 use axhal::time::current_time_nanos;
 
 pub struct TimeStat {

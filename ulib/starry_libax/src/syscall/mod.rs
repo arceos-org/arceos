@@ -1,3 +1,5 @@
+//! implement syscalls
+
 use axfs::monolithic_fs::file_io::Kstat;
 use flags::{MMAPFlags, TimeSecs, TimeVal, UtsName, WaitFlags, MMAPPROT, TMS};
 use fs::*;
@@ -20,6 +22,7 @@ use syscall_id::*;
 
 pub mod task;
 
+/// 分发系统调用
 #[no_mangle]
 pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
     debug!("syscall: {}", get_syscall_name(syscall_id));
@@ -88,3 +91,6 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         }
     }
 }
+
+// 支持的syscall列表：
+// syscall_openat, syscall_close, syscall_read, syscall_write, syscall_exit, syscall_execve, syscall_clone, syscall_sleep, syscall_yield, syscall_time, syscall_uname, syscall_get_time_of_day, syscall_getpid, syscall_getppid, syscall_wait4, syscall_brk, syscall_munmap, syscall_mmap, syscall_getcwd, syscall_pipe2, syscall_dup, syscall_dup3, syscall_mkdirat, syscall_chdir, syscall_getdents64, syscall_unlinkat, syscall_mount, syscall_umount, syscall_fstat

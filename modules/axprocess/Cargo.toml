@@ -8,7 +8,7 @@ authors = ["Youjie Zheng <zyj578335934@gmail.com>"]
 
 [features]
 fs = []
-monolithic = ["axhal/monolithic"]
+monolithic = ["axhal/monolithic", "axtask/monolithic"]
 default = ["monolithic", "fs"]
 
 [dependencies]

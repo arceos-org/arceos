@@ -1,4 +1,4 @@
-/// 定义与文件I/O操作相关的trait泛型
+//! 定义与文件I/O操作相关的trait泛型
 use axerrno::{AxError, AxResult};
 use axio::{Read, Seek, SeekFrom, Write};
 use core::any::Any;
@@ -23,11 +23,13 @@ pub struct Kstat {
     pub st_gid: u32,
     /// 设备号
     pub st_rdev: u64,
+    /// 填充
     pub _pad0: u32,
     /// 文件大小
     pub st_size: u64,
     /// 块大小
     pub st_blksize: u32,
+    /// 填充
     pub _pad1: u32,
     /// 块个数
     pub st_blocks: u64,
@@ -43,6 +45,7 @@ pub struct Kstat {
     pub st_ctime_sec: isize,
     /// 最后一次改变状态时间(纳秒)
     pub st_ctime_nsec: isize,
+    /// 未使用
     pub _unused: [u32; 2],
 }
 
@@ -53,9 +56,11 @@ pub enum FileIOType {
     FileDesc,
     /// 目录
     DirDesc,
-    /// 标准输入输出错误流
+    /// 标准输入流
     Stdin,
+    /// 标准输出流
     Stdout,
+    /// 标准错误流
     Stderr,
     /// 管道
     Pipe,
@@ -101,8 +106,11 @@ impl<T: Any> AsAny for T {
 /// 用于给虚存空间进行懒分配
 #[cfg(feature = "monolithic")]
 pub trait FileExt: Read + Write + Seek + AsAny + Send + Sync {
+    /// 是否可读
     fn readable(&self) -> bool;
+    /// 是否可写
     fn writable(&self) -> bool;
+    /// 是否是可执行文件
     fn executable(&self) -> bool;
     /// Read from position without changing cursor.
     fn read_from_seek(&mut self, pos: SeekFrom, buf: &mut [u8]) -> AxResult<usize> {

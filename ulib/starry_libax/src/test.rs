@@ -1,3 +1,5 @@
+//! 测试用例
+
 use alloc::sync::Arc;
 use axerrno::AxResult;
 use axfs::api;
@@ -288,14 +290,18 @@ pub const LIBC_DYNAMIC_TESTCASES: &[&str] = &[
 
 /// 运行测试时的状态机，记录测试结果与内容
 struct TestResult {
+    /// 测试用例总数
     sum: usize,
+    /// 通过的测试用例数
     accepted: usize,
+    /// 当前正在测试的测试用例
     now_testcase: Option<String>,
-    // 同时记录名称与进程号
+    /// 同时记录名称与进程号
     failed_testcases: Vec<String>,
 }
 
 impl TestResult {
+    /// 新建一个测试结果
     pub fn new(case_num: usize) -> Self {
         Self {
             sum: case_num,
@@ -304,6 +310,7 @@ impl TestResult {
             failed_testcases: Vec::new(),
         }
     }
+    /// 加载一个测试用例
     pub fn load(&mut self, testcase: &String) {
         info!(
             " --------------- load testcase: {} --------------- ",
@@ -345,9 +352,11 @@ impl TestResult {
     }
 }
 
+/// 测试用例迭代器
 static TESTITER: LazyInit<SpinNoIrq<Box<dyn Iterator<Item = &'static &'static str> + Send>>> =
     LazyInit::new();
 
+/// 测试结果
 static TESTRESULT: LazyInit<SpinNoIrq<TestResult>> = LazyInit::new();
 
 /// 某一个测试用例完成之后调用，记录测试结果
@@ -355,10 +364,12 @@ pub fn finish_one_test(exit_code: i32) {
     TESTRESULT.lock().finish_one_test(exit_code);
 }
 
+/// 展示测试结果
 #[allow(dead_code)]
 pub fn show_result() {
     TESTRESULT.lock().show_result();
 }
+
 /// 分割命令行参数
 fn get_args(command_line: &[u8]) -> Vec<String> {
     let mut args = Vec::new();
@@ -483,6 +494,7 @@ pub fn run_testcases(case: &'static str) {
     panic!("All test finish!");
 }
 
+/// 执行单个测例
 pub fn run_testcase(args: Vec<String>) -> AxResult<()> {
     let main_task = Process::new(args)?;
     RUN_QUEUE.lock().add_task(main_task);

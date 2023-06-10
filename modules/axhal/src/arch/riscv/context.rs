@@ -55,6 +55,7 @@ pub struct TrapFrame {
 }
 
 impl TrapFrame {
+    /// 设置用户栈指针
     fn set_user_sp(&mut self, user_sp: usize) {
         self.regs.sp = user_sp;
     }

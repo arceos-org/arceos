@@ -223,14 +223,17 @@ impl File {
         self.node.access(Cap::empty())?.get_attr()
     }
 
+    /// Returns true if the file is readable.
     pub fn readable(&self) -> bool {
         self.node.can_access(Cap::READ)
     }
 
+    /// Returns true if the file is writable.
     pub fn writable(&self) -> bool {
         self.node.can_access(Cap::WRITE)
     }
 
+    /// Returns true if the file is executable.
     pub fn executable(&self) -> bool {
         self.node.can_access(Cap::EXECUTE)
     }

@@ -1,3 +1,5 @@
+//! Standard input/output streams.
+
 extern crate alloc;
 use alloc::string::String;
 

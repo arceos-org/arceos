@@ -40,6 +40,7 @@ impl TrapFrame {
         self.cs & 0b11 == 3
     }
 
+    /// Initialize the context for a new process.
     pub fn app_init_context(_app_entry: usize, _user_sp: usize) -> Self {
         Self::default()
     }
@@ -210,6 +211,7 @@ impl TaskContext {
         }
     }
 
+    /// Creates a new empty context for a new task.
     pub fn new_empty() -> *mut TaskContext {
         let task_ctx = TaskContext::new();
         let task_ctx_ptr = &task_ctx as *const TaskContext as *mut TaskContext;

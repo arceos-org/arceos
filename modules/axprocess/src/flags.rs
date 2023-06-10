@@ -47,7 +47,10 @@ bitflags! {
 /// sys_wait4 的返回值
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WaitStatus {
+    /// 子任务正常退出，返回退出码
     Exited,
+    /// 子任务还未退出
     Running,
+    /// 子任务不存在
     NotExist,
 }

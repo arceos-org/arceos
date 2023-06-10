@@ -67,6 +67,7 @@ pub trait Read {
             Ok(())
         }
     }
+    /// Read as much as possible from this source into `buf`.
     fn read_full(&mut self, mut buf: &mut [u8]) -> Result<usize> {
         let buf_len = buf.len();
 

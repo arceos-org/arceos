@@ -45,7 +45,7 @@ bitflags::bitflags! {
 pub trait GenericPTE: Debug + Clone + Copy + Sync + Send + Sized {
     /// Creates a page table entry point to a terminate page or block.
     fn new_page(paddr: PhysAddr, flags: MappingFlags, is_huge: bool) -> Self;
-
+    /// Creates a page table entry point to a fault page.(for lazy allocation)
     fn new_fault_page(_is_huge: bool) -> Self {
         panic!("Only implemented for riscv for now.");
     }

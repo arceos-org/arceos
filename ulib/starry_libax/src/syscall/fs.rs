@@ -1,3 +1,5 @@
+//! 文件系统相关系统调用的实现
+
 use crate::fs::flags::OpenFlags;
 use crate::fs::link::{create_link, remove_link};
 use crate::fs::mount::{check_mounted, mount_fat_fs, umount_fat_fs};

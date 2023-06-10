@@ -1,3 +1,5 @@
+//! Task structure and implementation.
+
 use alloc::{boxed::Box, string::String, sync::Arc};
 use core::ops::Deref;
 use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, AtomicU8, Ordering};
@@ -10,6 +12,7 @@ use crate::{monolithic_task::run_queue::AxRunQueue, AxTask, AxTaskRef, WaitQueue
 use axhal::arch::{TaskContext, TrapFrame};
 use memory_addr::{align_up_4k, VirtAddr};
 use riscv::asm;
+/// Kernel process ID.
 pub const KERNEL_PROCESS_ID: u64 = 1;
 /// A unique identifier for a thread.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -19,54 +22,69 @@ pub struct TaskId(u64);
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum TaskState {
+    /// The task is running.
     Running = 1,
+    /// The task is ready to run.
     Ready = 2,
+    /// The task is blocked.
     Blocked = 3,
+    /// The task has exited.
     Exited = 4,
 }
 
 /// The inner task structure.
 pub struct TaskInner {
+    /// The task ID.
     id: TaskId,
+    /// The task name.
     name: String,
+    /// Whether the task is idle.
     is_idle: bool,
+    /// Whether the task is the init task.
     is_init: bool,
-
+    /// The task entry.
     entry: Option<*mut dyn FnOnce()>,
+    /// The task state.
     state: AtomicU8,
-
+    /// Whether the task is in the wait queue.
     in_wait_queue: AtomicBool,
+    /// Whether the task is in the timer list.
     #[cfg(feature = "irq")]
     in_timer_list: AtomicBool,
-
+    /// Whether the task needs to be rescheduled.s
     #[cfg(feature = "preempt")]
     need_resched: AtomicBool,
+    /// Preempt disable count
     #[cfg(feature = "preempt")]
     preempt_disable_count: AtomicUsize,
-
+    /// The task's exit code.
     exit_code: AtomicI32,
+    /// The tasks that are waiting for this task to exit.
     wait_for_exit: WaitQueue,
-
+    /// The task's kernel stack.
     kstack: Option<TaskStack>,
+    /// The task's task context.
     ctx: UnsafeCell<TaskContext>,
-    // 对应进程ID
+    /// 对应进程ID
     process_id: AtomicU64,
     /// 是否是所属进程下的主线程
     is_leader: AtomicBool,
-    // 所属页表ID，在宏内核下默认会开启分页，是只读的所以不用原子量
+    /// 所属页表ID，在宏内核下默认会开启分页，是只读的所以不用原子量
     page_table_token: usize,
+    /// The task's trap frame.
     pub trap_frame: UnsafeCell<TrapFrame>,
-    // 时间统计
+    /// 时间统计
     time: UnsafeCell<TimeStat>,
 }
 
+/// The task id counter.
 static ID_COUNTER: AtomicU64 = AtomicU64::new(1);
 
 impl TaskId {
+    /// Create a new task ID.
     pub fn new() -> Self {
         Self(ID_COUNTER.fetch_add(1, Ordering::Relaxed))
     }
-
     /// Convert the task ID to a `u64`.
     pub const fn as_u64(&self) -> u64 {
         self.0
@@ -120,8 +138,9 @@ impl TaskInner {
     }
 }
 
-// private methods
+/// private methods
 impl TaskInner {
+    /// Gets the task state.
     fn new_common(id: TaskId, name: String, process_id: u64, page_table_token: usize) -> Self {
         Self {
             id,
@@ -149,6 +168,7 @@ impl TaskInner {
         }
     }
 
+    /// Gets the task state.
     pub fn new<F>(
         entry: F,
         name: String,
@@ -171,6 +191,7 @@ impl TaskInner {
         Arc::new(AxTask::new(t))
     }
 
+    /// 创建一个线程
     pub(crate) fn new_init(name: String) -> AxTaskRef {
         // init_task does not change PC and SP, so `entry` and `kstack` fields are not used.
         let mut t = Self::new_common(TaskId::new(), name, KERNEL_PROCESS_ID, 0);
@@ -199,6 +220,7 @@ impl TaskInner {
         unreachable!("get_first_trap_frame: kstack is None");
     }
 
+    /// 将任务设置为leader
     pub fn set_leader(&self, is_lead: bool) {
         self.is_leader.store(is_lead, Ordering::Release);
     }
@@ -225,66 +247,79 @@ impl TaskInner {
     }
 
     #[inline]
+    /// 获取任务状态
     pub(crate) fn state(&self) -> TaskState {
         self.state.load(Ordering::Acquire).into()
     }
 
     #[inline]
+    /// 设置任务状态
     pub fn set_state(&self, state: TaskState) {
         self.state.store(state as u8, Ordering::Release)
     }
 
     #[inline]
+    /// 任务是否为leader
     pub fn is_leader(&self) -> bool {
         self.is_leader.load(Ordering::Acquire)
     }
 
     #[inline]
+    /// 任务是否在运行
     pub(crate) fn is_running(&self) -> bool {
         matches!(self.state(), TaskState::Running)
     }
 
     #[inline]
+    /// 任务是否为就绪
     pub(crate) fn is_ready(&self) -> bool {
         matches!(self.state(), TaskState::Ready)
     }
 
     #[inline]
+    /// 任务是否为阻塞
     pub(crate) fn is_blocked(&self) -> bool {
         matches!(self.state(), TaskState::Blocked)
     }
 
     #[inline]
+    /// 任务是否为初始
     pub(crate) const fn is_init(&self) -> bool {
         self.is_init
     }
 
     #[inline]
+    /// 任务是否为idle
     pub(crate) const fn is_idle(&self) -> bool {
         self.is_idle
     }
 
     #[inline]
+    /// 任务是否在等待队列中
     pub(crate) fn in_wait_queue(&self) -> bool {
         self.in_wait_queue.load(Ordering::Acquire)
     }
 
     #[inline]
+    /// 获取对应的进程id
     pub fn get_process_id(&self) -> u64 {
         self.process_id.load(Ordering::Acquire)
     }
 
     #[inline]
+    /// 设置对应的进程id
     pub fn set_process_id(&self, process_id: u64) {
         self.process_id.store(process_id, Ordering::Release);
     }
 
     #[inline]
+    /// 改变任务的等待队列状态
     pub(crate) fn set_in_wait_queue(&self, in_wait_queue: bool) {
         self.in_wait_queue.store(in_wait_queue, Ordering::Release);
     }
 
     #[inline]
+    /// 时间统计(用户态到内核态)
     pub fn time_stat_from_user_to_kernel(&self) {
         let time = self.time.get();
         unsafe {
@@ -293,6 +328,7 @@ impl TaskInner {
     }
 
     #[inline]
+    /// 时间统计(内核态到用户态)
     pub fn time_stat_from_kernel_to_user(&self) {
         let time = self.time.get();
         unsafe {
@@ -301,6 +337,7 @@ impl TaskInner {
     }
 
     #[inline]
+    /// 时间统计(内核态到内核态)
     pub fn time_stat_when_switch_from(&self) {
         let time = self.time.get();
         unsafe {
@@ -309,6 +346,7 @@ impl TaskInner {
     }
 
     #[inline]
+    /// 时间统计(内核态到内核态)
     pub fn time_stat_when_switch_to(&self) {
         let time = self.time.get();
         unsafe {
@@ -335,36 +373,42 @@ impl TaskInner {
 
     #[inline]
     #[cfg(feature = "irq")]
+    /// 返回是否在timer list中
     pub(crate) fn in_timer_list(&self) -> bool {
         self.in_timer_list.load(Ordering::Acquire)
     }
 
     #[inline]
     #[cfg(feature = "irq")]
+    /// 设置是否在timer list中
     pub(crate) fn set_in_timer_list(&self, in_timer_list: bool) {
         self.in_timer_list.store(in_timer_list, Ordering::Release);
     }
 
     #[inline]
     #[cfg(feature = "preempt")]
+    /// preempt
     pub(crate) fn set_preempt_pending(&self, pending: bool) {
         self.need_resched.store(pending, Ordering::Release)
     }
 
     #[inline]
     #[cfg(feature = "preempt")]
+    /// 是否可以preempt
     pub(crate) fn can_preempt(&self, current_disable_count: usize) -> bool {
         self.preempt_disable_count.load(Ordering::Acquire) == current_disable_count
     }
 
     #[inline]
     #[cfg(feature = "preempt")]
+    /// 禁止preempt
     pub(crate) fn disable_preempt(&self) {
         self.preempt_disable_count.fetch_add(1, Ordering::Relaxed);
     }
 
     #[inline]
     #[cfg(feature = "preempt")]
+    /// 允许preempt
     pub(crate) fn enable_preempt(&self, resched: bool) {
         if self.preempt_disable_count.fetch_sub(1, Ordering::Relaxed) == 1 && resched {
             // If current task is pending to be preempted, do rescheduling.
@@ -373,6 +417,7 @@ impl TaskInner {
     }
 
     #[cfg(feature = "preempt")]
+    /// 检查当前任务是否需要被抢占
     fn current_check_preempt_pending() {
         let curr = crate::current();
         if curr.need_resched.load(Ordering::Acquire) && curr.can_preempt(0) {
@@ -383,17 +428,20 @@ impl TaskInner {
         }
     }
 
+    /// 通知任务退出
     pub(crate) fn notify_exit(&self, exit_code: i32, rq: &mut AxRunQueue) {
         self.exit_code.store(exit_code, Ordering::Release);
         self.wait_for_exit.notify_all_locked(false, rq);
     }
 
     #[inline]
+    /// 获取context的指针
     pub const unsafe fn ctx_mut_ptr(&self) -> *mut TaskContext {
         self.ctx.get()
     }
 
     #[inline]
+    /// 获取页表的token
     pub(crate) const fn page_table_token(&self) -> usize {
         self.page_table_token
     }
@@ -421,6 +469,7 @@ struct TaskStack {
 }
 
 impl TaskStack {
+    /// 分配一个新的栈
     pub fn alloc(size: usize) -> Self {
         let layout = Layout::from_size_align(size, 16).unwrap();
         Self {
@@ -429,6 +478,7 @@ impl TaskStack {
         }
     }
 
+    /// 获取栈的顶部
     pub const fn top(&self) -> VirtAddr {
         unsafe { core::mem::transmute(self.ptr.as_ptr().add(self.layout.size())) }
     }
@@ -454,6 +504,7 @@ use super::stat::TimeStat;
 pub struct CurrentTask(ManuallyDrop<AxTaskRef>);
 
 impl CurrentTask {
+    /// Try to get the current task.
     pub(crate) fn try_get() -> Option<Self> {
         let ptr: *const crate::AxTask = axhal::cpu::current_task_ptr();
         if !ptr.is_null() {
@@ -463,27 +514,33 @@ impl CurrentTask {
         }
     }
 
+    /// Get the current task.
     pub(crate) fn get() -> Self {
         Self::try_get().expect("current task is uninitialized")
     }
 
+    /// Get the current task as a reference.
     pub(crate) fn as_task_ref(&self) -> &AxTaskRef {
         &self.0
     }
 
+    /// Clone the current task.
     pub(crate) fn clone(&self) -> AxTaskRef {
         self.0.deref().clone()
     }
 
+    /// Returns `true` if the two `AxTaskRef`s point to the same task.
     pub(crate) fn ptr_eq(&self, other: &AxTaskRef) -> bool {
         Arc::ptr_eq(&self.0, other)
     }
 
+    /// init current task
     pub(crate) unsafe fn init_current(init_task: AxTaskRef) {
         let ptr = Arc::into_raw(init_task);
         axhal::cpu::set_current_task_ptr(ptr);
     }
 
+    /// Set the current task.
     pub(crate) unsafe fn set_current(prev: Self, next: AxTaskRef) {
         let Self(arc) = prev;
         ManuallyDrop::into_inner(arc); // `call Arc::drop()` to decrease prev task reference count.

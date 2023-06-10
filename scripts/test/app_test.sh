@@ -18,7 +18,7 @@ BLOD_C="\x1b[1m"
 END_C="\x1b[0m"
 
 if [ -z "$ARCH" ]; then
-    ARCH=riscv64
+    ARCH=aarch64
 fi
 if [ "$ARCH" != "x86_64" ] && [ "$ARCH" != "riscv64" ] && [ "$ARCH" != "aarch64" ]; then
     echo "Unknown architecture: $ARCH"
