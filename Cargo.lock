@@ -184,6 +184,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f30bbe2f5e3d117f55bd8c7a1f9191e4a5deba9f15f595bbea4f670c59c765db"
 
 [[package]]
+name = "arm_pl011"
+version = "0.1.0"
+dependencies = [
+ "tock-registers",
+]
+
+[[package]]
 name = "atomic-polyfill"
 version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -322,6 +329,7 @@ version = "0.1.0"
 dependencies = [
  "aarch64-cpu",
  "arm_gic",
+ "arm_pl011",
  "axalloc",
  "axconfig",
  "axlog",

@@ -30,9 +30,6 @@ extern "C" {
 pub(crate) unsafe extern "C" fn rust_entry(cpu_id: usize, dtb: usize) {
     crate::mem::clear_bss();
     crate::arch::set_exception_vector_base(exception_vector_base as usize);
-    unsafe {
-        dtb::init(crate::mem::phys_to_virt(dtb.into()).as_ptr());
-    }
     crate::cpu::init_primary(cpu_id);
     super::aarch64_common::pl011::init_early();
     super::aarch64_common::generic_timer::init_early();
