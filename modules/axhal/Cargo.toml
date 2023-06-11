@@ -20,8 +20,15 @@ platform-qemu-virt-aarch64 = [
     "axconfig/platform-qemu-virt-aarch64",
     "dep:page_table_entry", "dep:ratio",
 ]
+
 user = []
 user-paging = ["user", "paging"]
+
+platform-raspi4-aarch64 = [
+    "axconfig/platform-raspi4-aarch64",
+    "dep:page_table_entry", "dep:ratio",
+]
+
 default = []
 
 [dependencies]
@@ -57,6 +64,7 @@ sbi-rt = { version = "0.0.2", features = ["legacy"] }
 aarch64-cpu = "9.3"
 tock-registers = "0.8"
 arm_gic = { path = "../../crates/arm_gic" }
+arm_pl011 = { path = "../../crates/arm_pl011" }
 
 [target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64", target_arch = "aarch64"))'.dependencies]
 dtb = {path = "../../crates/dtb" }
