@@ -178,6 +178,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "arm_pl011"
+version = "0.1.0"
+dependencies = [
+ "tock-registers",
+]
+
+[[package]]
 name = "array-init"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -322,6 +329,7 @@ version = "0.1.0"
 dependencies = [
  "aarch64-cpu",
  "arm_gic",
+ "arm_pl011",
  "axalloc",
  "axconfig",
  "axlog",
