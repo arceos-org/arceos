@@ -60,15 +60,7 @@ typedef struct {
         0                         \
     }
 
-#define pthread __pthread
-
-struct pthread {
-    int tid;
-    void *result;
-    int errno_val;
-};
-
-typedef unsigned long pthread_t;
+typedef void *pthread_t;
 
 #define PTHREAD_CANCELED ((void *)-1)
 #define SIGCANCEL        33
@@ -79,6 +71,13 @@ pthread_t pthread_self(void);
 int pthread_create(pthread_t *__restrict, const pthread_attr_t *__restrict, void *(*)(void *),
                    void *__restrict);
 int pthread_join(pthread_t t, void **res);
+
+int pthread_setcancelstate(int, int *);
+int pthread_setcanceltype(int, int *);
+
+int pthread_mutex_init(pthread_mutex_t *__restrict, const pthread_mutexattr_t *__restrict);
+int pthread_mutex_lock(pthread_mutex_t *);
+int pthread_mutex_unlock(pthread_mutex_t *);
 #endif
 
 #endif

@@ -72,7 +72,7 @@ pub use self::socket::{
 };
 
 #[cfg(feature = "multitask")]
-pub use self::thread::ax_getpid;
+pub use self::thread::{ax_getpid, ax_pthread_create, ax_pthread_exit, ax_pthread_join};
 
 #[cfg(feature = "pipe")]
 pub use self::pipe::ax_pipe;
