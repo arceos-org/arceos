@@ -245,7 +245,7 @@ impl TaskInner {
         if curr.need_resched.load(Ordering::Acquire) && curr.can_preempt(0) {
             let mut rq = crate::RUN_QUEUE.lock();
             if curr.need_resched.load(Ordering::Acquire) {
-                rq.resched();
+                rq.preempt_resched();
             }
         }
     }
