@@ -3,26 +3,58 @@
 #include <unistd.h>
 
 #if defined(AX_CONFIG_MULTITASK)
+
 _Noreturn void pthread_exit(void *result)
 {
-    unimplemented();
+    ax_pthread_exit(result);
 }
 
 pthread_t pthread_self(void)
 {
-    return (pthread_t)getpid();
+    return ax_pthread_self();
 }
 
 int pthread_create(pthread_t *restrict res, const pthread_attr_t *restrict attrp,
                    void *(*entry)(void *), void *restrict arg)
 {
-    unimplemented();
-    return 0;
+    return ax_pthread_create(res, attrp, (void *)entry, arg);
 }
 
 int pthread_join(pthread_t t, void **res)
 {
+    return ax_pthread_join(t, res);
+}
+
+int pthread_mutex_init(pthread_mutex_t *restrict m, const pthread_mutexattr_t *restrict a)
+{
+    *m = (pthread_mutex_t){0};
+    if (a)
+        m->_m_type = a->__attr;
+    return 0;
+}
+
+int pthread_mutex_lock(pthread_mutex_t *m)
+{
     unimplemented();
     return 0;
 }
+
+int pthread_mutex_unlock(pthread_mutex_t *m)
+{
+    unimplemented();
+    return 0;
+}
+
+int pthread_setcancelstate(int new, int *old)
+{
+    unimplemented();
+    return 0;
+}
+
+int pthread_setcanceltype(int new, int *old)
+{
+    unimplemented();
+    return 0;
+}
+
 #endif

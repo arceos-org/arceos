@@ -87,7 +87,7 @@ impl AxRunQueue {
         let curr = crate::current();
         debug!("task yield: {}", curr.id_name());
         assert!(curr.is_running());
-        self.resched_inner(false, false);
+        self.resched(false);
     }
 
     pub fn set_current_priority(&self, prio: isize) -> bool {
@@ -97,8 +97,7 @@ impl AxRunQueue {
     }
 
     #[cfg(feature = "preempt")]
-    pub fn resched(&self) {
-        //info!("resched");
+    pub fn preempt_resched(&mut self) {
         let curr = crate::current();
         assert!(curr.is_running());
 
@@ -115,7 +114,7 @@ impl AxRunQueue {
             can_preempt
         );
         if can_preempt {
-            self.resched_inner(true, false);
+            self.resched(true);
         } else {
             curr.set_preempt_pending(true);
         }
@@ -139,8 +138,8 @@ impl AxRunQueue {
             curr.notify_exit(exit_code, self);
             //SWITCH_EXITED_LOCK.fetch_add(1, Ordering::Release);
             EXITED_TASKS.lock().push_back(curr.clone());
-            WAIT_FOR_EXIT.notify_one_locked(false);
-            self.resched_inner(false, true);
+            WAIT_FOR_EXIT.notify_one_locked(false, self);
+            self.resched(false);
         }
         unreachable!("task exited!");
     }
@@ -160,7 +159,7 @@ impl AxRunQueue {
 
         curr.set_state(TaskState::Blocked);
         wait_queue_push(curr.clone());
-        self.resched_inner(false, false);
+        self.resched(false);
     }
 
     pub fn unblock_task(&self, task: AxTaskRef, resched: bool) {
@@ -195,7 +194,7 @@ impl AxRunQueue {
         if now < deadline {
             crate::timers::set_alarm_wakeup(deadline, curr.clone());
             curr.set_state(TaskState::Blocked);
-            self.resched_inner(false, false);
+            self.resched(false);
         }
     }
 }
@@ -220,57 +219,7 @@ impl AxRunQueue {
     }
     /// Common reschedule subroutine. If `preempt`, keep current task's time
     /// slice, otherwise reset it.
-    fn if_empty_steal(&self) {
-        if self.scheduler.lock().is_empty() {
-            let mut flag = 0;
-            loop {
-                let mut queuelock = self.scheduler.lock();
-                let id = self.id;
-                let next = LOAD_BALANCE_ARR[id].find_stolen_cpu_id();
-                trace!(
-                    "load balance weight for id {} : {}",
-                    id,
-                    LOAD_BALANCE_ARR[id].get_weight()
-                );
-                debug!("steal: current = {}, victim = {}", self.id, next);
-                if next != -1 && (next != id as isize) {
-                    let task = RUN_QUEUE[next as usize].scheduler.lock().pick_next_task();
-                    // 简单实现：如果是 gc_task 就放回去
-                    // 这里可能有同步问题，简单起见，如果 task 是 None 那么就不窃取。
-                    if let Some(tk) = task {
-                        assert!(tk.clone().is_gc() || tk.get_queue_id() == next);
-                        tk.set_queue_id(id as isize);
-
-                        trace!("is gc task: {}", tk.clone().is_gc());
-
-                        if !tk.clone().is_gc() {
-                            flag = 1;
-                            LOAD_BALANCE_ARR[next as usize].add_weight(-1);
-                            LOAD_BALANCE_ARR[id].add_weight(1);
-                            queuelock.add_task(tk);
-
-                            trace!(
-                                "load balance weight for id {}: {}",
-                                next as usize,
-                                LOAD_BALANCE_ARR[next as usize].get_weight()
-                            );
-                        } else {
-                            RUN_QUEUE[next as usize].scheduler.lock().add_task(tk);
-                            //flag = 0;
-                        }
-                    } else {
-                        flag = 1;
-                    }
-                } else {
-                    flag = 1;
-                }
-                if flag == 1 {
-                    break;
-                }
-            }
-        }
-    }
-    fn resched_inner(&self, preempt: bool, exit_lock: bool) {
+    fn resched(&mut self, preempt: bool) {
         let prev = crate::current();
         if prev.is_running() {
             prev.set_state(TaskState::Ready);
@@ -366,24 +315,18 @@ impl AxRunQueue {
 fn gc_entry() {
     loop {
         // Drop all exited tasks and recycle resources.
-        while !EXITED_TASKS.lock().is_empty() {
-            //info!("into gc");
-            // 用 lock 先顶一顶
-            // while SWITCH_EXITED_LOCK.load(Ordering::Acquire) > 0 {
-            //    trace!("qwqq {}", SWITCH_EXITED_LOCK.load(Ordering::Acquire));
-            //}
+        let n = EXITED_TASKS.lock().len();
+        for _ in 0..n {
             // Do not do the slow drops in the critical section.
             let task = EXITED_TASKS.lock().pop_front();
             if let Some(task) = task {
-                // If the task reference is not taken after `spawn()`, it will be
-                // dropped here. Otherwise, it will be dropped after the reference
-                // is dropped (usually by `join()`).
                 if Arc::strong_count(&task) == 1 {
+                    // If I'm the last holder of the task, drop it immediately.
                     drop(task);
                 } else {
+                    // Otherwise (e.g, `switch_to` is not compeleted, held by the
+                    // joiner, etc), push it back and wait for them to drop first.
                     EXITED_TASKS.lock().push_back(task);
-                    // TODO: for loop
-                    break;
                 }
             }
         }
