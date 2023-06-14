@@ -1,8 +1,8 @@
+#include <assert.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <assert.h>
-#include <pthread.h>
 
 void *ThreadFunc1(void *arg)
 {
@@ -22,6 +22,23 @@ void *ThreadFunc2(void *arg)
     puts("A message before call pthread_exit");
     pthread_exit("Exit message");
     puts("This message should not be printed");
+}
+
+static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
+void *ThreadFunc3(void *arg)
+{
+    pthread_mutex_lock(&lock);
+
+    int value = *(int *)arg;
+
+    // long operation
+    for (int i = 0; i < 100000; i++) getpid();
+
+    *(int *)arg = value + 1;
+
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
 
 void test_create_join()
@@ -52,9 +69,7 @@ void test_create_join()
         puts("Second pthread join fail");
     }
 
-    char buf[128];
-    sprintf(buf, "%s", (char *)thread_result);
-    puts(buf);
+    printf("test_create_join: %s\n", (char *)thread_result);
 }
 
 void test_create_exit()
@@ -74,10 +89,32 @@ void test_create_exit()
         puts("pthread join fail");
     }
 
-    char buf[16];
-    sprintf(buf, "%s", (char *)thread_result);
-    puts(buf);
-    return;
+    printf("test_create_exit: %s\n", (char *)thread_result);
+}
+
+void test_mutex()
+{
+    const int NUM_THREADS = 100;
+    int data = 0;
+    pthread_t t[NUM_THREADS];
+
+    for (int i = 0; i < NUM_THREADS; i++) {
+        int res = pthread_create(&t[i], NULL, ThreadFunc3, &data);
+        if (res != 0) {
+            puts("pthread create fail");
+            return;
+        }
+    }
+
+    for (int i = 0; i < NUM_THREADS; i++) {
+        int res = pthread_join(t[i], NULL);
+        if (res != 0) {
+            puts("pthread join fail");
+        }
+    }
+
+    printf("test_mutex: data = %d\n", data);
+    assert(data == NUM_THREADS);
 }
 
 int main()
@@ -87,6 +124,7 @@ int main()
 
     test_create_join();
     test_create_exit();
+    test_mutex();
     puts("(C)Pthread basic tests run OK!");
 
     return 0;

@@ -25,26 +25,6 @@ int pthread_join(pthread_t t, void **res)
     return ax_pthread_join(t, res);
 }
 
-int pthread_mutex_init(pthread_mutex_t *restrict m, const pthread_mutexattr_t *restrict a)
-{
-    *m = (pthread_mutex_t){0};
-    if (a)
-        m->_m_type = a->__attr;
-    return 0;
-}
-
-int pthread_mutex_lock(pthread_mutex_t *m)
-{
-    unimplemented();
-    return 0;
-}
-
-int pthread_mutex_unlock(pthread_mutex_t *m)
-{
-    unimplemented();
-    return 0;
-}
-
 int pthread_setcancelstate(int new, int *old)
 {
     unimplemented();
@@ -57,4 +37,22 @@ int pthread_setcanceltype(int new, int *old)
     return 0;
 }
 
-#endif
+int pthread_mutex_init(pthread_mutex_t *restrict m, const pthread_mutexattr_t *restrict a)
+{
+    ax_pthread_mutex_init(m, a);
+    return 0;
+}
+
+int pthread_mutex_lock(pthread_mutex_t *m)
+{
+    ax_pthread_mutex_lock(m);
+    return 0;
+}
+
+int pthread_mutex_unlock(pthread_mutex_t *m)
+{
+    ax_pthread_mutex_unlock(m);
+    return 0;
+}
+
+#endif // AX_CONFIG_MULTITASK

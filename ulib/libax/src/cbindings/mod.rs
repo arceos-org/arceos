@@ -21,10 +21,10 @@ mod io_mpx;
 mod malloc;
 #[cfg(feature = "pipe")]
 mod pipe;
+#[cfg(feature = "multitask")]
+mod pthread;
 #[cfg(feature = "net")]
 mod socket;
-#[cfg(feature = "multitask")]
-mod thread;
 
 mod errno;
 mod setjmp;
@@ -72,7 +72,11 @@ pub use self::socket::{
 };
 
 #[cfg(feature = "multitask")]
-pub use self::thread::{ax_getpid, ax_pthread_create, ax_pthread_exit, ax_pthread_join};
+pub use self::pthread::mutex::{
+    ax_pthread_mutex_init, ax_pthread_mutex_lock, ax_pthread_mutex_unlock,
+};
+#[cfg(feature = "multitask")]
+pub use self::pthread::{ax_getpid, ax_pthread_create, ax_pthread_exit, ax_pthread_join};
 
 #[cfg(feature = "pipe")]
 pub use self::pipe::ax_pipe;
