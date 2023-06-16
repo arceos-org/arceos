@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <libax.h>
 
@@ -36,6 +37,9 @@ void *calloc(size_t m, size_t n)
 
 void *realloc(void *memblock, size_t size)
 {
+    if (!memblock)
+        return malloc(size);
+
     size_t o_size = *(size_t *)(memblock - 8);
 
     void *mem = ax_malloc(size);
@@ -49,6 +53,8 @@ void *realloc(void *memblock, size_t size)
 
 void free(void *addr)
 {
+    if (!addr)
+        return;
     return ax_free(addr);
 }
 
@@ -58,13 +64,6 @@ _Noreturn void abort(void)
 {
     ax_panic();
     __builtin_unreachable();
-}
-
-// TODO:
-char *getenv(const char *name)
-{
-    unimplemented();
-    return 0;
 }
 
 // TODO:
@@ -377,3 +376,16 @@ long long atoll(const char *s)
     while (isdigit(*s)) n = 10 * n - (*s++ - '0');
     return neg ? n : -n;
 }
+
+#ifdef AX_CONFIG_FP_SIMD
+float strtof(const char *restrict s, char **restrict p)
+{
+    return ax_strtof(s, p);
+}
+
+double strtod(const char *restrict s, char **restrict p)
+{
+    return ax_strtod(s, p);
+}
+
+#endif

@@ -68,6 +68,7 @@ typedef struct {{
             "fd.*",
             "timeval",
             "pthread_.*",
+            "epoll_event",
         ];
         let allow_vars = [
             "O_.*",
@@ -79,6 +80,8 @@ typedef struct {{
             "_SC_.*",
             "SO_.*",
             "SOL_.*",
+            "EPOLL_CTL_.*",
+            "EPOLL.*",
         ];
 
         #[derive(Debug)]

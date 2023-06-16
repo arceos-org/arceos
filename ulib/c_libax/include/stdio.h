@@ -42,6 +42,7 @@ extern FILE *const stderr;
 
 #if defined(AX_CONFIG_ALLOC) && defined(AX_CONFIG_FS)
 FILE *fopen(const char *filename, const char *mode);
+char *fgets(char *__restrict, int, FILE *__restrict);
 #endif
 
 int fflush(FILE *);

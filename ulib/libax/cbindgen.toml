@@ -8,6 +8,7 @@ sys_includes = [
     "sys/stat.h",
     "stdio.h",
     "time.h",
+    "sys/epoll.h",
     "sys/socket.h",
     "sys/select.h",
     "sys/time.h",
@@ -20,6 +21,7 @@ includes = ["axconfig.h"]
 "sockaddr" = "struct sockaddr"
 "timespec" = "struct timespec"
 "timeval" = "struct timeval"
+"epoll_event" = "struct epoll_event"
 
 [fn]
 no_return = "__attribute__((noreturn))"
