@@ -22,6 +22,8 @@ extern crate axruntime;
 mod macros;
 mod imp;
 
+pub mod legacy;
+
 pub use axerrno::{AxError, AxResult};
 
 /// Platform-specific constants and parameters.
