@@ -1,7 +1,6 @@
 #ifndef _PTHREAD_H
-#define _PTHREAD_H 1
+#define _PTHREAD_H
 
-#include <locale.h>
 #include <signal.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -17,18 +16,7 @@ typedef struct {
     unsigned __attr;
 } pthread_condattr_t;
 
-#define __DEFINED_pthread_condattr_t
-#define __SIZEOF_PTHREAD_MUTEX_T 40
-
-typedef struct {
-    union {
-        int __i[sizeof(long) == 8 ? 10 : 6];
-        volatile int __vi[sizeof(long) == 8 ? 10 : 6];
-        volatile void *volatile __p[sizeof(long) == 8 ? 5 : 6];
-    } __u;
-} pthread_mutex_t;
-
-#define _m_type __u.__i[0]
+#include <ax_pthread_mutex.h>
 
 typedef struct {
     unsigned __attr;
@@ -55,30 +43,26 @@ typedef struct {
 #define _c_clock  __u.__i[4]
 #define _c_shared __u.__p[0]
 
-#define PTHREAD_MUTEX_INITIALIZER \
-    {                             \
-        0                         \
-    }
-
-#define pthread __pthread
-
-struct pthread {
-    int tid;
-    void *result;
-    int errno_val;
-};
-
-typedef unsigned long pthread_t;
+typedef void *pthread_t;
 
 #define PTHREAD_CANCELED ((void *)-1)
 #define SIGCANCEL        33
 
-#if defined(AX_CONFIG_MULTITASK) && defined(AX_CONFIG_ALLOC)
+#if defined(AX_CONFIG_MULTITASK)
+
 _Noreturn void pthread_exit(void *);
 pthread_t pthread_self(void);
 int pthread_create(pthread_t *__restrict, const pthread_attr_t *__restrict, void *(*)(void *),
                    void *__restrict);
 int pthread_join(pthread_t t, void **res);
-#endif
 
-#endif
+int pthread_setcancelstate(int, int *);
+int pthread_setcanceltype(int, int *);
+
+int pthread_mutex_init(pthread_mutex_t *__restrict, const pthread_mutexattr_t *__restrict);
+int pthread_mutex_lock(pthread_mutex_t *);
+int pthread_mutex_unlock(pthread_mutex_t *);
+
+#endif // AX_CONFIG_MULTITASK
+
+#endif // _PTHREAD_H

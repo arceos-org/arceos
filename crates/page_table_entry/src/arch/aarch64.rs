@@ -72,7 +72,7 @@ impl DescriptorAttr {
         if matches!(mem_type, MemType::Normal) {
             bits |= Self::INNER.bits() | Self::SHAREABLE.bits();
         }
-        Self::from_bits_truncate(bits)
+        Self::from_bits_retain(bits)
     }
 
     fn mem_type(&self) -> MemType {

@@ -245,7 +245,7 @@ impl TaskInner {
         if curr.need_resched.load(Ordering::Acquire) && curr.can_preempt(0) {
             let mut rq = crate::RUN_QUEUE.lock();
             if curr.need_resched.load(Ordering::Acquire) {
-                rq.resched();
+                rq.preempt_resched();
             }
         }
     }
@@ -321,7 +321,8 @@ impl CurrentTask {
         Self::try_get().expect("current task is uninitialized")
     }
 
-    pub(crate) fn as_task_ref(&self) -> &AxTaskRef {
+    /// Converts [`CurrentTask`] to [`AxTaskRef`].
+    pub fn as_task_ref(&self) -> &AxTaskRef {
         &self.0
     }
 

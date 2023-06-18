@@ -20,8 +20,13 @@ char *strncat(char *restrict d, const char *restrict s, size_t n);
 int strcmp(const char *l, const char *r);
 int strncmp(const char *l, const char *r, size_t n);
 
+int strcoll(const char *, const char *);
+
 size_t strcspn(const char *s1, const char *s2);
 size_t strspn(const char *s, const char *c);
+char *strpbrk(const char *, const char *);
+
+char *strchrnul(const char *, int);
 
 char *strrchr(const char *str, int c);
 char *strchr(const char *str, int c);

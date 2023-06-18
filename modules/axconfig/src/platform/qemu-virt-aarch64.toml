@@ -67,3 +67,10 @@ pci-ranges = [
     ["0x1000_0000", "0x2eff_0000"],         # 32-bit MMIO space
     ["0x80_0000_0000", "0x80_0000_0000"],   # 64-but MMIO space
 ]
+# UART Address
+uart-paddr = "0x0900_0000"
+uart-irq-num = "33"
+
+# GICC Address
+gicc-paddr = "0x0801_0000"
+gicd-paddr = "0x0800_0000"

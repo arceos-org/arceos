@@ -56,7 +56,7 @@ impl AxRunQueue {
         let curr = crate::current();
         debug!("task yield: {}", curr.id_name());
         assert!(curr.is_running());
-        self.resched_inner(false);
+        self.resched(false);
     }
 
     pub fn set_current_priority(&mut self, prio: isize) -> bool {
@@ -65,7 +65,7 @@ impl AxRunQueue {
     }
 
     #[cfg(feature = "preempt")]
-    pub fn resched(&mut self) {
+    pub fn preempt_resched(&mut self) {
         let curr = crate::current();
         assert!(curr.is_running());
 
@@ -82,7 +82,7 @@ impl AxRunQueue {
             can_preempt
         );
         if can_preempt {
-            self.resched_inner(true);
+            self.resched(true);
         } else {
             curr.set_preempt_pending(true);
         }
@@ -101,7 +101,7 @@ impl AxRunQueue {
             curr.notify_exit(exit_code, self);
             EXITED_TASKS.lock().push_back(curr.clone());
             WAIT_FOR_EXIT.notify_one_locked(false, self);
-            self.resched_inner(false);
+            self.resched(false);
         }
         unreachable!("task exited!");
     }
@@ -121,7 +121,7 @@ impl AxRunQueue {
 
         curr.set_state(TaskState::Blocked);
         wait_queue_push(curr.clone());
-        self.resched_inner(false);
+        self.resched(false);
     }
 
     pub fn unblock_task(&mut self, task: AxTaskRef, resched: bool) {
@@ -147,7 +147,7 @@ impl AxRunQueue {
         if now < deadline {
             crate::timers::set_alarm_wakeup(deadline, curr.clone());
             curr.set_state(TaskState::Blocked);
-            self.resched_inner(false);
+            self.resched(false);
         }
     }
 }
@@ -155,7 +155,7 @@ impl AxRunQueue {
 impl AxRunQueue {
     /// Common reschedule subroutine. If `preempt`, keep current task's time
     /// slice, otherwise reset it.
-    fn resched_inner(&mut self, preempt: bool) {
+    fn resched(&mut self, preempt: bool) {
         let prev = crate::current();
         if prev.is_running() {
             prev.set_state(TaskState::Ready);
@@ -201,14 +201,19 @@ impl AxRunQueue {
 fn gc_entry() {
     loop {
         // Drop all exited tasks and recycle resources.
-        while !EXITED_TASKS.lock().is_empty() {
+        let n = EXITED_TASKS.lock().len();
+        for _ in 0..n {
             // Do not do the slow drops in the critical section.
             let task = EXITED_TASKS.lock().pop_front();
             if let Some(task) = task {
-                // If the task reference is not taken after `spawn()`, it will be
-                // dropped here. Otherwise, it will be dropped after the reference
-                // is dropped (usually by `join()`).
-                drop(task);
+                if Arc::strong_count(&task) == 1 {
+                    // If I'm the last holder of the task, drop it immediately.
+                    drop(task);
+                } else {
+                    // Otherwise (e.g, `switch_to` is not compeleted, held by the
+                    // joiner, etc), push it back and wait for them to drop first.
+                    EXITED_TASKS.lock().push_back(task);
+                }
             }
         }
         WAIT_FOR_EXIT.wait();

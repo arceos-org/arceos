@@ -14,6 +14,22 @@ pub fn char_ptr_to_str<'a>(str: *const c_char) -> LinuxResult<&'a str> {
     }
 }
 
+pub fn check_null_ptr<T>(ptr: *const T) -> LinuxResult {
+    if ptr.is_null() {
+        Err(LinuxError::EFAULT)
+    } else {
+        Ok(())
+    }
+}
+
+pub fn check_null_mut_ptr<T>(ptr: *mut T) -> LinuxResult {
+    if ptr.is_null() {
+        Err(LinuxError::EFAULT)
+    } else {
+        Ok(())
+    }
+}
+
 macro_rules! ax_call_body {
     ($fn: ident, $($stmt: tt)*) => {{
         #[allow(clippy::redundant_closure_call)]

@@ -1,6 +1,6 @@
 use aarch64_cpu::{asm, asm::barrier, registers::*};
 use memory_addr::PhysAddr;
-use page_table_entry::{aarch64::A64PTE, GenericPTE, MappingFlags};
+use page_table_entry::aarch64::A64PTE;
 use tock_registers::interfaces::{ReadWriteable, Readable, Writeable};
 
 use axconfig::TASK_STACK_SIZE;
@@ -16,6 +16,7 @@ static mut BOOT_PT_L1: [A64PTE; 512] = [A64PTE::empty(); 512];
 
 unsafe fn switch_to_el1() {
     SPSel.write(SPSel::SP::ELx);
+    SP_EL0.set(0);
     let current_el = CurrentEL.read(CurrentEL::EL);
     if current_el >= 2 {
         if current_el == 3 {
@@ -46,27 +47,14 @@ unsafe fn switch_to_el1() {
                 + SPSR_EL2::I::Masked
                 + SPSR_EL2::F::Masked,
         );
-        SP_EL1.set(BOOT_STACK.as_ptr_range().end as u64);
+        core::arch::asm!(
+            "
+            mov     x8, sp
+            msr     sp_el1, x8"
+        );
         ELR_EL2.set(LR.get());
         asm::eret();
     }
-}
-
-unsafe fn init_boot_page_table() {
-    // 0x0000_0000_0000 ~ 0x0080_0000_0000, table
-    BOOT_PT_L0[0] = A64PTE::new_table(PhysAddr::from(BOOT_PT_L1.as_ptr() as usize));
-    // 0x0000_0000_0000..0x0000_4000_0000, 1G block, device memory
-    BOOT_PT_L1[0] = A64PTE::new_page(
-        PhysAddr::from(0),
-        MappingFlags::READ | MappingFlags::WRITE | MappingFlags::DEVICE,
-        true,
-    );
-    // 0x0000_4000_0000..0x0000_8000_0000, 1G block, normal memory
-    BOOT_PT_L1[1] = A64PTE::new_page(
-        PhysAddr::from(0x4000_0000),
-        MappingFlags::READ | MappingFlags::WRITE | MappingFlags::EXECUTE,
-        true,
-    );
 }
 
 unsafe fn init_mmu() {
@@ -113,12 +101,16 @@ unsafe fn enable_fp() {
     }
 }
 
+unsafe fn init_boot_page_table() {
+    crate::platform::mem::init_boot_page_table(&mut BOOT_PT_L0, &mut BOOT_PT_L1);
+}
+
 /// The earliest entry point for the primary CPU.
 #[naked]
 #[no_mangle]
 #[link_section = ".text.boot"]
 unsafe extern "C" fn _start() -> ! {
-    // PC = 0x4008_0000
+    // PC = 0x8_0000
     // X0 = dtb
     core::arch::asm!("
         mrs     x19, mpidr_el1
@@ -149,7 +141,7 @@ unsafe extern "C" fn _start() -> ! {
         boot_stack = sym BOOT_STACK,
         boot_stack_size = const TASK_STACK_SIZE,
         phys_virt_offset = const axconfig::PHYS_VIRT_OFFSET,
-        entry = sym super::rust_entry,
+        entry = sym crate::platform::rust_entry,
         options(noreturn),
     )
 }
@@ -180,7 +172,7 @@ unsafe extern "C" fn _start_secondary() -> ! {
         init_mmu = sym init_mmu,
         enable_fp = sym enable_fp,
         phys_virt_offset = const axconfig::PHYS_VIRT_OFFSET,
-        entry = sym super::rust_entry_secondary,
+        entry = sym crate::platform::rust_entry_secondary,
         options(noreturn),
     )
 }
