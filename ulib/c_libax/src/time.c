@@ -177,3 +177,10 @@ int nanosleep(const struct timespec *req, struct timespec *rem)
 {
     return ax_nanosleep(req, rem);
 }
+
+#ifdef AX_CONFIG_FP_SIMD
+double difftime(time_t t1, time_t t0)
+{
+    return t1 - t0;
+}
+#endif

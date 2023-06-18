@@ -16,6 +16,11 @@ void *realloc(void *memblock, size_t size);
 _Noreturn void abort(void);
 char *getenv(const char *name);
 
+#ifdef AX_CONFIG_FP_SIMD
+float strtof(const char *__restrict, char **__restrict);
+double strtod(const char *__restrict, char **__restrict);
+#endif
+
 long strtol(const char *__restrict, char **__restrict, int);
 unsigned long strtoul(const char *nptr, char **endptr, int base);
 long long strtoll(const char *nptr, char **endptr, int base);

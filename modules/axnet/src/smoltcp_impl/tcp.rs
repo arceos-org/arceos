@@ -247,7 +247,6 @@ impl TcpSocket {
                 }
             }) {
                 Ok(n) => {
-                    SOCKET_SET.poll_interfaces();
                     return Ok(n);
                 }
                 Err(AxError::WouldBlock) => {
@@ -286,7 +285,6 @@ impl TcpSocket {
                 }
             }) {
                 Ok(n) => {
-                    SOCKET_SET.poll_interfaces();
                     return Ok(n);
                 }
                 Err(AxError::WouldBlock) => {

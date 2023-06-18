@@ -42,7 +42,7 @@ pub fn set_oneshot_timer(deadline_ns: u64) {
 }
 
 /// Early stage initialization: stores the timer frequency.
-pub(super) fn init_early() {
+pub(crate) fn init_early() {
     let freq = CNTFRQ_EL0.get();
     unsafe {
         CNTPCT_TO_NANOS_RATIO = Ratio::new(crate::time::NANOS_PER_SEC as u32, freq as u32);
@@ -50,11 +50,11 @@ pub(super) fn init_early() {
     }
 }
 
-pub(super) fn init_percpu() {
+pub(crate) fn init_percpu() {
     #[cfg(feature = "irq")]
     {
         CNTP_CTL_EL0.write(CNTP_CTL_EL0::ENABLE::SET);
         CNTP_TVAL_EL0.set(0);
-        super::irq::set_enable(super::irq::TIMER_IRQ_NUM, true);
+        crate::platform::irq::set_enable(crate::platform::irq::TIMER_IRQ_NUM, true);
     }
 }

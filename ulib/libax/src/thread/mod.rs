@@ -7,7 +7,7 @@ use axtask::AxTaskRef;
 use core::cell::UnsafeCell;
 
 #[doc(cfg(feature = "multitask"))]
-pub use axtask::{current, set_priority, TaskId};
+pub use axtask::{current, set_priority, TaskId as ThreadId};
 
 /// Thread factory, which can be used in order to configure the properties of
 /// a new thread.

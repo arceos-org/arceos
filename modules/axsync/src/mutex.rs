@@ -118,6 +118,24 @@ impl<T: ?Sized> Mutex<T> {
         }
     }
 
+    /// Force unlock the [`Mutex`].
+    ///
+    /// # Safety
+    ///
+    /// This is *extremely* unsafe if the lock is not held by the current
+    /// thread. However, this can be useful in some instances for exposing
+    /// the lock to FFI that doesn’t know how to deal with RAII.
+    pub unsafe fn force_unlock(&self) {
+        let owner_id = self.owner_id.swap(0, Ordering::Release);
+        assert_eq!(
+            owner_id,
+            current().id().as_u64(),
+            "{} tried to release mutex it doesn't own",
+            current().id_name()
+        );
+        self.wq.notify_one(true);
+    }
+
     /// Returns a mutable reference to the underlying data.
     ///
     /// Since this call borrows the [`Mutex`] mutably, and a mutable reference is guaranteed to be exclusive in
@@ -175,14 +193,7 @@ impl<'a, T: ?Sized + fmt::Debug> fmt::Debug for MutexGuard<'a, T> {
 impl<'a, T: ?Sized> Drop for MutexGuard<'a, T> {
     /// The dropping of the [`MutexGuard`] will release the lock it was created from.
     fn drop(&mut self) {
-        let owner_id = self.lock.owner_id.swap(0, Ordering::Release);
-        assert_eq!(
-            owner_id,
-            current().id().as_u64(),
-            "{} tried to release mutex it doesn't own",
-            current().id_name()
-        );
-        self.lock.wq.notify_one(true);
+        unsafe { self.lock.force_unlock() }
     }
 }
 
