@@ -131,6 +131,11 @@ int strncmp(const char *_l, const char *_r, size_t n)
     return *l - *r;
 }
 
+int strcoll(const char *l, const char *r)
+{
+    return strcmp(l, r);
+}
+
 #define BITOP(a, b, op) \
     ((a)[(size_t)(b) / (8 * sizeof *(a))] op(size_t) 1 << ((size_t)(b) % (8 * sizeof *(a))))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -171,6 +176,23 @@ size_t strspn(const char *s, const char *c)
     for (; *s && BITOP(byteset, *(unsigned char *)s, &); s++)
         ;
     return s - a;
+}
+
+char *strpbrk(const char *s, const char *b)
+{
+    s += strcspn(s, b);
+    return *s ? (char *)s : 0;
+}
+
+char *strchrnul(const char *s, int c)
+{
+    c = (unsigned char)c;
+    if (!c)
+        return (char *)s + strlen(s);
+
+    for (; *s && *(unsigned char *)s != c; s++)
+        ;
+    return (char *)s;
 }
 
 char *strchr(const char *s, int c)

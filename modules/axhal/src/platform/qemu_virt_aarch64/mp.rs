@@ -6,5 +6,5 @@ pub fn start_secondary_cpu(cpu_id: usize, stack_top: PhysAddr) {
         fn _start_secondary();
     }
     let entry = virt_to_phys(VirtAddr::from(_start_secondary as usize));
-    super::psci::cpu_on(cpu_id, entry.as_usize(), stack_top.as_usize());
+    crate::platform::aarch64_common::psci::cpu_on(cpu_id, entry.as_usize(), stack_top.as_usize());
 }

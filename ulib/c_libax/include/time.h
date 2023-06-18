@@ -34,4 +34,8 @@ time_t time(time_t *t);
 int clock_gettime(clockid_t _clk, struct timespec *ts);
 int nanosleep(const struct timespec *requested_time, struct timespec *remaining);
 
+#ifdef AX_CONFIG_FP_SIMD
+double difftime(time_t, time_t);
+#endif
+
 #endif

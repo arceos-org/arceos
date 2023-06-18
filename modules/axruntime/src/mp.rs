@@ -49,6 +49,7 @@ pub extern "C" fn rust_main_secondary(cpu_id: usize) -> ! {
         core::hint::spin_loop();
     }
 
+    #[cfg(feature = "irq")]
     axhal::arch::enable_irqs();
 
     #[cfg(feature = "multitask")]
