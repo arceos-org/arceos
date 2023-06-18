@@ -69,7 +69,7 @@ fn gen_config_rs(platform: &str) -> Result<()> {
         Some("# Number of CPUs"),
     );
 
-    println!("{config:#x?}");
+    // println!("{config:#x?}");
 
     // Generate config.rs
     let mut output = Vec::new();

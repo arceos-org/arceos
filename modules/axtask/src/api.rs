@@ -190,6 +190,7 @@ pub fn run_idle() -> ! {
     loop {
         yield_now();
         debug!("idle task: waiting for IRQs...");
+        #[cfg(feature = "irq")]
         axhal::arch::wait_for_irqs();
     }
 }

@@ -8,6 +8,8 @@ use spin::RwLock;
 
 use super::ctypes;
 
+pub mod mutex;
+
 lazy_static::lazy_static! {
     static ref TID_TO_PTHREAD: RwLock<BTreeMap<u64, ForceSendSync<ctypes::pthread_t>>> = {
         let mut map = BTreeMap::new();
@@ -32,7 +34,7 @@ struct Packet<T> {
 unsafe impl<T> Send for Packet<T> {}
 unsafe impl<T> Sync for Packet<T> {}
 
-struct Pthread {
+pub struct Pthread {
     inner: AxTaskRef,
     retval: Arc<Packet<*mut c_void>>,
 }
@@ -93,7 +95,9 @@ impl Pthread {
 
         let thread = unsafe { Box::from_raw(ptr as *mut Pthread) };
         thread.inner.join();
+        let tid = thread.inner.id().as_u64();
         let retval = unsafe { *thread.retval.result.get() };
+        TID_TO_PTHREAD.write().remove(&tid);
         drop(thread);
         Ok(retval)
     }
