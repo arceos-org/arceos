@@ -23,7 +23,7 @@ pub unsafe extern "C" fn ax_print_str(buf: *const c_char, count: usize) -> c_int
     })
 }
 
-/// Printf a string to the global standard output stream. Add a line break.
+/// Print a string to the global standard output stream. Add a line break.
 #[no_mangle]
 pub unsafe extern "C" fn ax_println_str(buf: *const c_char, count: usize) -> c_int {
     ax_call_body_no_debug!({

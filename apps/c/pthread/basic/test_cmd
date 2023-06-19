@@ -1,0 +1,2 @@
+test_one "SMP=4 LOG=info" "expect_info_smp4_fifo.out"
+rm -f $APP/*.o

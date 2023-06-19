@@ -1,5 +1,4 @@
-use crate::irq::IrqHandler;
-use crate::mem::phys_to_virt;
+use crate::{irq::IrqHandler, mem::phys_to_virt};
 use arm_gic::gic_v2::{GicCpuInterface, GicDistributor};
 use memory_addr::PhysAddr;
 use spinlock::SpinNoIrq;
@@ -10,9 +9,8 @@ pub const MAX_IRQ_COUNT: usize = 1024;
 /// The timer IRQ number.
 pub const TIMER_IRQ_NUM: usize = 30; // physical timer, type=PPI, id=14
 
-const GIC_BASE: usize = 0x0800_0000;
-const GICD_BASE: PhysAddr = PhysAddr::from(GIC_BASE);
-const GICC_BASE: PhysAddr = PhysAddr::from(GIC_BASE + 0x10000);
+const GICD_BASE: PhysAddr = PhysAddr::from(axconfig::GICD_PADDR);
+const GICC_BASE: PhysAddr = PhysAddr::from(axconfig::GICC_PADDR);
 
 static GICD: SpinNoIrq<GicDistributor> =
     SpinNoIrq::new(GicDistributor::new(phys_to_virt(GICD_BASE).as_mut_ptr()));
@@ -43,7 +41,7 @@ pub fn dispatch_irq(_unused: usize) {
 }
 
 /// Initializes GICD, GICC on the primary CPU.
-pub(super) fn init_primary() {
+pub(crate) fn init_primary() {
     info!("Initialize GICv2...");
     GICD.lock().init();
     GICC.init();
@@ -51,6 +49,6 @@ pub(super) fn init_primary() {
 
 /// Initializes GICC on secondary CPUs.
 #[cfg(feature = "smp")]
-pub(super) fn init_secondary() {
+pub(crate) fn init_secondary() {
     GICC.init();
 }
