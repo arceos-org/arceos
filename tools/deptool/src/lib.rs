@@ -65,21 +65,13 @@ pub fn generate_deps_path(cfg: &Config, result: &mut String) {
     let mut idx: usize = 1;
 
     lastest_dep_map.insert(0, &dep_root.1);
-    // for (level, name) in deps_iter.skip(1) {
-    //     *result += &format!("{}-->{}\n", lastest_dep_map[&(level - 1)], name);
-    //     if parsed_crates.contains(&name) {
-    //     } 
-    //     lastest_dep_map.insert(*level, name);
-    //     parsed_crates.push(name);
-    // }
     while idx < deps_parsed.len() {
         let (level, name) = deps_parsed.get(idx).unwrap();
-        // *result += &format!("{}-->{}\n", lastest_dep_map[&(level - 1)], name);
         if !is_arceos_crate(&name) {
             idx += 1;
             continue;
         }
-        print!("{}-->{}\n", lastest_dep_map[&(level - 1)], name);
+        *result += &format!("{}-->{}\n", lastest_dep_map[&(level - 1)], name);
         if parsed_crates.contains(&name) {
             let mut skip_idx: usize = idx + 1;
             if skip_idx >= deps_parsed.len() {

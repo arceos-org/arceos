@@ -8,5 +8,5 @@ fn main() {
     });
 
     let rst = generate_mermaid(&config);
-    println!("{}", rst);
+    print!("{}", rst);
 }
