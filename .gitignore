@@ -5,3 +5,6 @@
 *.img
 actual.out
 qemu.log
+tools/deptool/Cargo.lock
+tools/deptool/Cargo.lock
+tools/deptool/target

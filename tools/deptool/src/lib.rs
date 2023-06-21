@@ -1,53 +1,34 @@
-use std::fs;
-use std::path::Path;
-use std::process::Command;
+use std::{process::Command, collections::HashMap};
+use cmd_parser::is_arceos_crate;
+use cmd_builder::build_cargo_tree_cmd;
 
-static CRATE_ROOT: &str = "../../crates/";
-static MODULE_ROOT: &str = "../../modules/";
+mod cmd_parser;
+mod cmd_builder;
+pub use cmd_parser::{parse_cmd, build_loc};
 
+#[derive(Clone, Copy, Debug)]
+pub enum GraphFormat {
+   Mermaid,
+   D2,
+}
+
+#[derive(Debug)]
 pub struct Config {
-    pub crate_name: String,
-    loc: &'static str,
+    pub no_default: bool,
+    pub format: GraphFormat,
+    pub features: Vec::<String>,
+    loc: String,
 }
 
 impl Config {
-    pub fn build(args: &[String]) -> Result<Config, &'static str>{
-        if args.len() < 2 {
-            return Err("not enough arguments");
-        }
-        let crate_name = args[1].clone();
-        if check_crate_name(&crate_name) {
-            Ok(Config { crate_name, loc: CRATE_ROOT })
-        } else if check_module_name(&crate_name) {
-           Ok(Config { crate_name, loc: MODULE_ROOT }) 
-        } else {
-            Err("crate not exist")
-        }
+    pub fn build(no_default: bool, features: Vec::<String>, format: GraphFormat, loc: String) -> Config {
+        Config { no_default, format, features, loc }
     }
 }
 
-fn check_crate_name(name: &String) -> bool {
-    let crates = fs::read_dir(CRATE_ROOT).unwrap();
-    crates.into_iter().map(|p| p.unwrap().file_name()).any(|n| n.to_str().unwrap() == name)
-}
-
-fn check_module_name(name: &String) -> bool {
-    let crates = fs::read_dir(MODULE_ROOT).unwrap();
-    crates.into_iter().map(|p| p.unwrap().file_name()).any(|n| n.to_str().unwrap() == name)
-}
-
-fn is_arceos_crate(name: &String) -> bool {
-    check_crate_name(&name) || check_module_name(&name)
-}
-
 pub fn get_deps_by_crate_name(cfg: &Config) -> String {
-    let path_str = cfg.loc.to_string() + &cfg.crate_name;
-    let crate_path = Path::new(&path_str);
-    let binding = fs::canonicalize(&crate_path).unwrap();
-    let abs_path = binding.to_str().unwrap();
-
-    let cmd1 = &(String::from("cd ") + abs_path + " && " + "cargo tree -e normal --prefix depth --format {lib}");
-    let cmds = ["-c", cmd1];
+    let cmd_ct = build_cargo_tree_cmd(&cfg);
+    let cmds = ["-c", &cmd_ct];
     let output = if cfg!(target_os = "windows") {
         Command::new("cmd")
                 .args(cmds)
@@ -60,8 +41,8 @@ pub fn get_deps_by_crate_name(cfg: &Config) -> String {
                 .expect("failed to execute process")
     };
 
-    let hello = output.stdout;
-    String::from_utf8(hello).unwrap()
+    let deps = output.stdout;
+    String::from_utf8(deps).unwrap()
 }
 
 fn parse_deps(deps: &String) -> Vec<(i32, String)> {
@@ -74,40 +55,51 @@ fn parse_deps(deps: &String) -> Vec<(i32, String)> {
     }
     rst
 }
-
-pub fn generate_deps_path(cfg: &Config, parsed_crates: &mut Vec<String>, result: &mut String) {
+pub fn generate_deps_path(cfg: &Config, result: &mut String) {
     let deps = get_deps_by_crate_name(cfg);
     let deps_parsed = parse_deps(&deps);
-    let dep_root = &deps_parsed[0].1;
-    let root_level = deps_parsed[0].0;
-    for (level, crate_name) in deps_parsed.iter().skip(1) {
-        if !is_arceos_crate(&crate_name) {
+    let dep_root = &deps_parsed[0];
+
+    let mut parsed_crates: Vec<&String> = Vec::new();
+    let mut lastest_dep_map: HashMap<i32, &String> = HashMap::new();
+    let mut idx: usize = 1;
+
+    lastest_dep_map.insert(0, &dep_root.1);
+    // for (level, name) in deps_iter.skip(1) {
+    //     *result += &format!("{}-->{}\n", lastest_dep_map[&(level - 1)], name);
+    //     if parsed_crates.contains(&name) {
+    //     } 
+    //     lastest_dep_map.insert(*level, name);
+    //     parsed_crates.push(name);
+    // }
+    while idx < deps_parsed.len() {
+        let (level, name) = deps_parsed.get(idx).unwrap();
+        // *result += &format!("{}-->{}\n", lastest_dep_map[&(level - 1)], name);
+        if !is_arceos_crate(&name) {
+            idx += 1;
             continue;
+        }
+        print!("{}-->{}\n", lastest_dep_map[&(level - 1)], name);
+        if parsed_crates.contains(&name) {
+            let mut skip_idx: usize = idx + 1;
+            if skip_idx >= deps_parsed.len() {
+                break;
+            }
+            while deps_parsed.get(skip_idx).unwrap().0 > *level {
+                idx += 1;
+                skip_idx += 1;
+            }
+            idx += 1;
         } else {
-            if *level != root_level + 1 {
-                continue;
-            }
-            // println!("{}-->{}", dep_root, crate_name);
-            *result += &format!("{}-->{}\n", dep_root, crate_name);
-            if parsed_crates.contains(&crate_name) {
-                continue;
-            }
-            parsed_crates.push(crate_name.clone());
-            let loc;
-            if check_crate_name(&crate_name) {
-                loc = CRATE_ROOT;
-            } else {
-                loc = MODULE_ROOT;
-            }
-            let new_cfg = Config {crate_name: (*crate_name).clone(), loc};
-            generate_deps_path(&new_cfg, parsed_crates, result);
+            parsed_crates.push(&name);
+            lastest_dep_map.insert(*level, name);
+            idx += 1;
         }
     }
 }
 
 pub fn generate_mermaid(config: &Config) -> String {
-    let mut tmp = Vec::new();
     let mut result = String::from("");
-    generate_deps_path(&config, &mut tmp, &mut result);
+    generate_deps_path(&config, &mut result);
     "graph TD;\n".to_string() + &result
 }
