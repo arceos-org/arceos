@@ -1,9 +1,11 @@
-use std::fs;
+use std::{fs, path::Path};
 use clap::{Arg, ArgAction, Command};
 use crate::{Config, GraphFormat};
 
+static APP_ROOT: &str = "../../apps/";
 static CRATE_ROOT: &str = "../../crates/";
 static MODULE_ROOT: &str = "../../modules/";
+static LIBAX_ROOT: &str = "../../ulib/";
 
 
 /// Ex: exe --default=false --format=mermaid --features=f1 f2 f3
@@ -24,9 +26,6 @@ pub fn parse_cmd() -> Result<Config, &'static str> {
         .arg(
             Arg::new("target").short('t').long("target").required(true)
         )
-        .arg(
-            Arg::new("app_path").short('p').long("app_path")
-        )
         .get_matches();
 
     let is_default = matches.get_flag("no-default");
@@ -41,19 +40,15 @@ pub fn parse_cmd() -> Result<Config, &'static str> {
     if !is_arceos_crate(&target) {
         return Err("target not exist, should be valid arceos crate, module or app");
     }
-    let app_path = matches.get_one::<String>("app_path").unwrap_or(&String::new()).to_string();
 
     let loc;
-    if app_path.is_empty() {
-       if check_crate_name(&target) {
-            loc = CRATE_ROOT.to_string() + &target;
-        } else {
-            loc = MODULE_ROOT.to_string() + &target;
-        }
+   if check_crate_name(&target) {
+        loc = CRATE_ROOT.to_string() + &target;
+    } else if check_module_name(&target) {
+        loc = MODULE_ROOT.to_string() + &target;
     } else {
-        loc = app_path;
+        loc = APP_ROOT.to_string() + &target;
     }
-
     Ok(gen_config(is_default, features, format, loc))
 }
 
@@ -72,11 +67,15 @@ pub fn check_module_name(name: &String) -> bool {
 }
 
 pub fn check_app_name(name: &String) -> bool {
-    false
+    Path::new(&(APP_ROOT.to_string() + name)).exists()
+}
+
+pub fn check_lib_name(name: &String) -> bool {
+    Path::new(&(LIBAX_ROOT.to_string() + name)).exists()
 }
 
 pub fn is_arceos_crate(name: &String) -> bool {
-    check_crate_name(&name) || check_module_name(&name) || check_app_name(name)
+    check_crate_name(&name) || check_module_name(&name) || check_app_name(name) || check_lib_name(name)
 }
 
 pub fn build_loc(name: &String) -> String {

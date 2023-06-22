@@ -12,7 +12,7 @@ pub fn build_cargo_tree_cmd(cfg: &Config) -> String {
     };
     let path = &cfg.loc;
     let cmd_str = format!(
-        "cd {path} && cargo tree -e normal,build {default_opt} {features_opt} --format {{lib}} --prefix depth",
+        "cd {path} && cargo tree -e normal,build {default_opt} {features_opt} --format {{p}} --prefix depth",
     );
     cmd_str.to_string()
 }
