@@ -1,10 +1,16 @@
-use std::{process::Command, collections::HashMap};
-use cmd_parser::is_arceos_crate;
-use cmd_builder::build_cargo_tree_cmd;
-
 mod cmd_parser;
 mod cmd_builder;
+mod mermaid_generator;
+mod d2_generator;
+
+use std::process::Command;
+use std::fs::File;
+use std::io::Write;
+
+use cmd_builder::build_cargo_tree_cmd;
 pub use cmd_parser::{parse_cmd, build_loc};
+use d2_generator::gen_d2_script;
+use mermaid_generator::gen_mermaid_script;
 
 #[derive(Clone, Copy, Debug)]
 pub enum GraphFormat {
@@ -18,15 +24,16 @@ pub struct Config {
     pub format: GraphFormat,
     pub features: Vec::<String>,
     loc: String,
+    output_loc: String
 }
 
 impl Config {
-    pub fn build(no_default: bool, features: Vec::<String>, format: GraphFormat, loc: String) -> Config {
-        Config { no_default, format, features, loc }
+    pub fn build(no_default: bool, features: Vec::<String>, format: GraphFormat, loc: String, output_loc: String) -> Config {
+        Config { no_default, format, features, loc, output_loc }
     }
 }
 
-pub fn get_deps_by_crate_name(cfg: &Config) -> String {
+fn get_deps_by_crate_name(cfg: &Config) -> String {
     let cmd_ct = build_cargo_tree_cmd(&cfg);
     let cmds = ["-c", &cmd_ct];
     let output = if cfg!(target_os = "windows") {
@@ -55,43 +62,39 @@ fn parse_deps(deps: &String) -> Vec<(i32, String)> {
     }
     rst
 }
-pub fn generate_deps_path(cfg: &Config, result: &mut String) {
-    let deps = get_deps_by_crate_name(cfg);
-    let deps_parsed = parse_deps(&deps);
-    let dep_root = &deps_parsed[0];
 
-    let mut parsed_crates: Vec<&String> = Vec::new();
-    let mut lastest_dep_map: HashMap<i32, &String> = HashMap::new();
-    let mut idx: usize = 1;
+fn generate_mermaid(config: &Config) -> String {
+    let mut result = String::from("");
+    let deps = get_deps_by_crate_name(config);
+    gen_mermaid_script(&deps, &mut result);
+    "graph TD;\n".to_string() + &result
+}
 
-    lastest_dep_map.insert(0, &dep_root.1);
-    while idx < deps_parsed.len() {
-        let (level, name) = deps_parsed.get(idx).unwrap();
-        if !is_arceos_crate(&name) {
-            idx += 1;
-            continue;
-        }
-        *result += &format!("{}-->{}\n", lastest_dep_map[&(level - 1)], name);
-        if parsed_crates.contains(&name) {
-            let mut skip_idx: usize = idx + 1;
-            if skip_idx >= deps_parsed.len() {
-                break;
-            }
-            while deps_parsed.get(skip_idx).unwrap().0 > *level {
-                idx += 1;
-                skip_idx += 1;
-            }
-            idx += 1;
-        } else {
-            parsed_crates.push(&name);
-            lastest_dep_map.insert(*level, name);
-            idx += 1;
-        }
+fn generate_d2(config: &Config) -> String {
+    let mut result = String::from("");
+    let deps = get_deps_by_crate_name(config);
+    gen_d2_script(&deps, &mut result);
+    result
+}
+
+fn generate_deps_graph(config: &Config) -> String {
+    match config.format {
+        GraphFormat::D2 => generate_d2(config),
+        _ => generate_mermaid(config)
     }
 }
 
-pub fn generate_mermaid(config: &Config) -> String {
-    let mut result = String::from("");
-    generate_deps_path(&config, &mut result);
-    "graph TD;\n".to_string() + &result
+fn output_deps_graph(rst: &String) -> std::io::Result<()> {
+    let mut file = File::create("output.txt")?;
+    file.write_all(rst.as_bytes())?;
+    Ok(())
+}
+
+pub fn run(config: &Config) {
+    let rst = generate_deps_graph(config);
+    print!("{}", rst);
+    match output_deps_graph(&rst) {
+        Ok(()) => {},
+        Err(error) => println!("Error during writing file {}, {}", config.output_loc, error)
+    }
 }

@@ -1,4 +1,4 @@
-use deptool::{generate_mermaid, parse_cmd};
+use deptool::{run, parse_cmd};
 use std::process;
 
 fn main() {
@@ -7,6 +7,5 @@ fn main() {
         process::exit(1);
     });
 
-    let rst = generate_mermaid(&config);
-    print!("{}", rst);
+    run(&config);
 }

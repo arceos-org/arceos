@@ -26,6 +26,9 @@ pub fn parse_cmd() -> Result<Config, &'static str> {
         .arg(
             Arg::new("target").short('t').long("target").required(true)
         )
+        .arg(
+            Arg::new("save-path").short('s').long("save-path").default_value("out.txt")
+        )
         .get_matches();
 
     let is_default = matches.get_flag("no-default");
@@ -42,18 +45,19 @@ pub fn parse_cmd() -> Result<Config, &'static str> {
     }
 
     let loc;
-   if check_crate_name(&target) {
+    if check_crate_name(&target) {
         loc = CRATE_ROOT.to_string() + &target;
     } else if check_module_name(&target) {
         loc = MODULE_ROOT.to_string() + &target;
     } else {
         loc = APP_ROOT.to_string() + &target;
     }
-    Ok(gen_config(is_default, features, format, loc))
+    let output_loc = matches.get_one::<String>("save-path").unwrap().to_string();
+    Ok(gen_config(is_default, features, format, loc, output_loc))
 }
 
-fn gen_config(is_default: bool, features: Vec::<String>, format: GraphFormat, loc: String) -> Config {
-    Config::build(is_default, features, format, loc)
+fn gen_config(is_default: bool, features: Vec::<String>, format: GraphFormat, loc: String, output_loc: String) -> Config {
+    Config::build(is_default, features, format, loc, output_loc)
 }
 
 pub fn check_crate_name(name: &String) -> bool {
