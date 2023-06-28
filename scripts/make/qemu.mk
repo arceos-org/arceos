@@ -60,11 +60,11 @@ else
 endif
 
 define run_qemu
-  @printf "    $(CYAN_C)Running$(END_C) $(QEMU) $(qemu_args-y) $(1)\n"
-  @$(QEMU) $(qemu_args-y)
+  @printf "    $(CYAN_C)Running$(END_C) on qemu...\n"
+  $(call run_cmd,$(QEMU),$(qemu_args-y))
 endef
 
 define run_qemu_debug
-  @printf "    $(CYAN_C)Running$(END_C) $(QEMU) $(qemu_args-debug) $(1)\n"
-  @$(QEMU) $(qemu_args-debug)
+  @printf "    $(CYAN_C)Debugging$(END_C) on qemu...\n"
+  $(call run_cmd,$(QEMU),$(qemu_args-debug))
 endef
