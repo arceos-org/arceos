@@ -8,10 +8,12 @@ authors = ["Youjie Zheng <zyj578335934@gmail.com>"]
 
 [features]
 fs = []
+signal = ["axhal/signal", "axsignal/signal"]
 monolithic = ["axhal/monolithic"]
-default = ["monolithic", "fs"]
+default = ["monolithic", "fs", "signal"]
 
 [dependencies]
+cfg-if = "1.0"
 spinlock = { path = "../../crates/spinlock" }
 axtask = { path = "../axtask" }
 axalloc = { path = "../axalloc" }
@@ -22,6 +24,7 @@ axmem = { path = "../axmem" }
 axerrno = { path = "../../crates/axerrno" }
 axconfig = { path = "../axconfig" }
 axfs = { path = "../axfs" }
+axsignal = { path = "../axsignal" }
 #riscv = "0.10"
 riscv = { path = "../../extern_crates/riscv-0.10.1" }
 bitflags = "2.0"

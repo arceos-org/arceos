@@ -18,6 +18,7 @@ features-$(GRAPHIC) += libax/display
 features-$(MANOLITHIC) += libax/monolithic
 features-$(MULTITASK) += libax/multitask
 features-$(PAGING) += libax/paging
+features-$(SIGNAL) += libax/signal
 
 ifeq ($(BUS),pci)
   features-y += libax/bus-pci

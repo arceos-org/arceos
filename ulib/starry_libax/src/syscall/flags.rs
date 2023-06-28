@@ -145,3 +145,22 @@ pub(crate) unsafe fn raw_ptr_to_ref_str(start: *const u8) -> &'static str {
         &"p"
     }
 }
+
+pub const SIGSET_SIZE_IN_BYTE: usize = 8;
+
+pub enum SigMaskFlag {
+    SigBlock = 0,
+    SigUnblock = 1,
+    SigSetmask = 2,
+}
+
+impl SigMaskFlag {
+    pub fn from(value: usize) -> Self {
+        match value {
+            0 => SigMaskFlag::SigBlock,
+            1 => SigMaskFlag::SigUnblock,
+            2 => SigMaskFlag::SigSetmask,
+            _ => panic!("SIG_MASK_FLAG::from: invalid value"),
+        }
+    }
+}

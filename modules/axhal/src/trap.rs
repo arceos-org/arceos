@@ -24,8 +24,11 @@ pub trait TrapHandler {
 
     #[cfg(feature = "paging")]
     fn handle_page_fault(addr: VirtAddr, flags: MappingFlags);
-}
 
+    /// 处理当前进程的信号
+    #[cfg(feature = "signal")]
+    fn handle_signal();
+}
 /// Call the external IRQ handler.
 #[allow(dead_code)]
 pub(crate) fn handle_irq_extern(irq_num: usize) {
@@ -44,4 +47,11 @@ pub(crate) fn handle_syscall(syscall_id: usize, args: [usize; 6]) -> isize {
 #[cfg(feature = "paging")]
 pub(crate) fn handle_page_fault(addr: VirtAddr, flags: MappingFlags) {
     call_interface!(TrapHandler::handle_page_fault, addr, flags);
+}
+
+/// 信号处理函数
+#[allow(dead_code)]
+#[cfg(feature = "signal")]
+pub(crate) fn handle_signal() {
+    call_interface!(TrapHandler::handle_signal);
 }

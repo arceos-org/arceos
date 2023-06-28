@@ -5,12 +5,13 @@
 mod area;
 mod backend;
 pub use area::MapArea;
+use axerrno::{AxError, AxResult};
 pub use backend::MemBackend;
 
 extern crate alloc;
 use alloc::{collections::BTreeMap, vec::Vec};
 use core::{mem::size_of, ptr::copy_nonoverlapping};
-
+use page_table_entry::GenericPTE;
 #[macro_use]
 extern crate log;
 
@@ -394,7 +395,6 @@ impl MemorySet {
             }
             last_end = area.end_va();
         }
-
         None
     }
 
@@ -531,6 +531,36 @@ impl MemorySet {
                 .unwrap();
         }
         self.owned_mem.clear();
+    }
+
+    /// 判断某一个虚拟地址是否在内存集中。
+    /// 若当前虚拟地址在内存集中，且对应的是lazy分配，暂未分配物理页的情况下，
+    /// 则为其分配物理页面。
+    ///
+    /// 若不在内存集中，则返回None。
+    ///
+    /// 若在内存集中，且已经分配了物理页面，则不做处理。
+    pub fn manual_alloc_for_lazy(&mut self, addr: VirtAddr) -> AxResult<()> {
+        if let Some((_, area)) = self
+            .owned_mem
+            .iter_mut()
+            .find(|(_, area)| area.vaddr <= addr && addr < area.end_va())
+        {
+            let entry = self.page_table.get_entry_mut(addr);
+            if entry.is_err() {
+                // 地址不合法
+                return Err(AxError::InvalidInput);
+            }
+
+            let entry = entry.unwrap().0;
+            if !entry.is_present() {
+                // 若未分配物理页面，则手动为其分配一个页面，写入到对应页表中
+                area.handle_page_fault(addr, entry.flags(), &mut self.page_table);
+            }
+            Ok(())
+        } else {
+            Err(AxError::InvalidInput)
+        }
     }
 }
 

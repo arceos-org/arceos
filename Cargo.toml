@@ -65,6 +65,7 @@ members = [
     "modules/axtask",
     "modules/axmem",
     "modules/axprocess",
+    "modules/axsignal",
 
     "ulib/libax",
     "ulib/starry_libax",

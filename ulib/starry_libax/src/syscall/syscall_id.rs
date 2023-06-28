@@ -38,6 +38,12 @@ pub const SYSCALL_TIMES: usize = 153;
 pub const SYSCALL_UNAME: usize = 160;
 pub const SYSCALL_GETTIMEOFDAY: usize = 169;
 
+// 信号模块
+pub const SYSCALL_KILL: usize = 129;
+pub const SYSCALL_TKILL: usize = 130;
+pub const SYSCALL_SIGACTION: usize = 134;
+pub const SYSCALL_SIGPROCMASK: usize = 135;
+pub const SYSCALL_SIGRETURN: usize = 139;
 // 从syscall_id获取syscall_name
 pub fn get_syscall_name(syscall_id: usize) -> &'static str {
     match syscall_id {

@@ -12,6 +12,12 @@ pub mod process;
 pub mod stdin;
 // mod test;
 
+#[cfg(feature = "signal")]
+mod signal;
+
+#[cfg(feature = "signal")]
+pub use signal::{handle_signals, send_signal_to_process, send_signal_to_thread, signal_return};
+
 /// 开始进行调度，我们先执行gc任务，通过gc任务逐个执行并收集RUN_QUEUE中的任务
 /// 所以先切换到gc对应的任务上下文即可
 pub fn start_schedule() {
@@ -52,6 +58,10 @@ pub fn handle_page_fault(addr: VirtAddr, flags: MappingFlags) {
     axlog::info!("'page fault' addr: {:?}, flags: {:?}", addr, flags);
     let current = current_process();
     let inner = current.inner.lock();
+    axlog::info!(
+        "memory token : {}",
+        inner.memory_set.lock().page_table_token()
+    );
     inner.memory_set.lock().handle_page_fault(addr, flags);
     drop(inner);
     drop(current);

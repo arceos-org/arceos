@@ -30,4 +30,9 @@ impl axhal::trap::TrapHandler for TrapHandlerImpl {
         use axprocess::handle_page_fault;
         handle_page_fault(addr, flags);
     }
+
+    #[cfg(feature = "signal")]
+    fn handle_signal() {
+        axprocess::handle_signals();
+    }
 }

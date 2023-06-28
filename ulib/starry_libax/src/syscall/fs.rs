@@ -13,7 +13,7 @@ use axfs::monolithic_fs::file_io::Kstat;
 use axprocess::process::current_process;
 use core::mem::transmute;
 use core::ptr::copy_nonoverlapping;
-use log::debug;
+use log::{debug, info};
 use spinlock::SpinNoIrq;
 
 #[allow(unused)]
@@ -361,8 +361,15 @@ pub fn syscall_mkdirat(dir_fd: usize, path: *const u8, mode: u32) -> isize {
         path.path(),
         mode
     );
+    let process = current_process();
+    let process_inner = process.inner.lock();
+    // info!("signal module: {:?}", process_inner.signal_module.keys());
+    drop(process_inner);
     let _ = api::create_dir(path.path());
-
+    let process = current_process();
+    let process_inner = process.inner.lock();
+    // info!("signal module: {:?}", process_inner.signal_module.keys());
+    drop(process_inner);
     // 只要文件夹存在就返回0
     if api::path_exists(path.path()) {
         0
@@ -379,6 +386,7 @@ pub fn syscall_chdir(path: *const u8) -> isize {
     // 从path中读取字符串
     let path = deal_with_path(AT_FDCWD, Some(path), true).unwrap();
     debug!("Into syscall_chdir. path: {:?}", path.path());
+    info!("test!");
     match api::set_current_dir(path.path()) {
         Ok(_) => 0,
         Err(_) => -1,

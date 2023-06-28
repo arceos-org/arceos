@@ -1,7 +1,8 @@
 use axfs::monolithic_fs::file_io::Kstat;
+use axsignal::action::SigAction;
 use flags::{MMAPFlags, TimeSecs, TimeVal, UtsName, WaitFlags, MMAPPROT, TMS};
 use fs::*;
-use log::{debug, error};
+use log::{debug, error, info};
 use mem::{syscall_brk, syscall_mmap, syscall_munmap};
 use task::*;
 
@@ -9,6 +10,9 @@ extern crate axlog;
 extern crate log;
 
 extern crate alloc;
+
+#[cfg(feature = "signal")]
+pub mod signal;
 
 pub mod flags;
 pub mod fs;
@@ -18,11 +22,18 @@ pub mod syscall_id;
 #[allow(unused)]
 use syscall_id::*;
 
+use crate::syscall::{
+    flags::SigMaskFlag,
+    signal::{
+        syscall_kill, syscall_sigaction, syscall_sigprocmask, syscall_sigreturn, syscall_tkill,
+    },
+};
+
 pub mod task;
 
 #[no_mangle]
 pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
-    debug!("syscall: {}", get_syscall_name(syscall_id));
+    info!("syscall: {}", get_syscall_name(syscall_id));
     debug!("args: {:?}", args);
     match syscall_id {
         SYSCALL_OPENAT => syscall_openat(
@@ -80,6 +91,22 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         ),
         SYSCALL_UNMOUNT => syscall_umount(args[0] as *const u8, args[1] as usize),
         SYSCALL_FSTAT => syscall_fstat(args[0], args[1] as *mut Kstat),
+
+        SYSCALL_SIGACTION => syscall_sigaction(
+            args[0],
+            args[1] as *const SigAction,
+            args[2] as *mut SigAction,
+        ),
+
+        SYSCALL_KILL => syscall_kill(args[0] as isize, args[1] as isize),
+        SYSCALL_TKILL => syscall_tkill(args[0] as isize, args[1] as isize),
+        SYSCALL_SIGPROCMASK => syscall_sigprocmask(
+            SigMaskFlag::from(args[0]),
+            args[1] as *const usize,
+            args[2] as *mut usize,
+            args[3],
+        ),
+        SYSCALL_SIGRETURN => syscall_sigreturn(),
 
         _ => {
             error!("Invalid Syscall Id: {}!", syscall_id);

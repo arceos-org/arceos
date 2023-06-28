@@ -4,7 +4,7 @@ use riscv::register::{
     stval,
 };
 
-use crate::trap::{handle_page_fault, handle_syscall};
+use crate::trap::{handle_page_fault, handle_signal, handle_syscall};
 
 use super::TrapFrame;
 
@@ -80,4 +80,7 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
             );
         }
     }
+
+    #[cfg(feature = "signal")]
+    handle_signal();
 }

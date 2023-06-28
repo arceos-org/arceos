@@ -11,6 +11,7 @@ const KERNEL_STACK_SIZE: usize = 4096;
 
 use crate::flags::{CloneFlags, WaitStatus};
 use crate::loader::load_app;
+use crate::signal::SignalModule;
 use crate::stdin::{Stderr, Stdin, Stdout};
 // use crate::test::finish_one_test;
 use axmem::MemorySet;
@@ -22,7 +23,8 @@ use axtask::{
 use spinlock::SpinNoIrq;
 
 use riscv::asm;
-
+// pub(crate) static TID2TASK: SpinNoIrq<BTreeMap<TaskId, AxTaskRef>> =
+//     SpinNoIrq::new(BTreeMap::new());
 pub static PID2PC: SpinNoIrq<BTreeMap<u64, Arc<Process>>> = SpinNoIrq::new(BTreeMap::new());
 pub const KERNEL_PROCESS_ID: u64 = 1;
 
@@ -30,6 +32,7 @@ pub const KERNEL_PROCESS_ID: u64 = 1;
 pub struct Process {
     /// 进程的pid和初始化的线程的tid是一样的
     pub pid: u64,
+
     pub inner: SpinNoIrq<ProcessInner>,
 }
 
@@ -54,6 +57,9 @@ pub struct ProcessInner {
     pub fd_table: Vec<Option<Arc<SpinNoIrq<dyn FileIO>>>>,
     /// 进程工作目录
     pub cwd: String,
+    #[cfg(feature = "signal")]
+    /// 信号处理模块    
+    pub signal_module: BTreeMap<u64, SignalModule>,
 }
 
 impl ProcessInner {
@@ -74,6 +80,8 @@ impl ProcessInner {
             exit_code: 0,
             fd_table,
             cwd: "/".to_string(), // 这里的工作目录是根目录
+            #[cfg(feature = "signal")]
+            signal_module: BTreeMap::new(),
         }
     }
     pub fn get_page_table_token(&self) -> usize {
@@ -155,6 +163,12 @@ impl Process {
         // 设立父子关系
         let mut inner = new_process.inner.lock();
         inner.tasks.push(Arc::clone(&new_task));
+        // TID2TASK.lock().insert(new_task.id(), Arc::clone(&new_task));
+        // 设置信号模块内容
+        info!("new task: {}", new_task.id().as_u64());
+        inner
+            .signal_module
+            .insert(new_task.id().as_u64(), SignalModule::init_signal(None));
 
         drop(inner);
         // 将其作为内核进程的子进程
@@ -220,6 +234,15 @@ impl Process {
         // 重置用户堆
         inner.heap_bottom = heap_bottom.as_usize();
         inner.heap_top = inner.heap_bottom;
+
+        // 重置信号处理模块
+        inner
+            .signal_module
+            .get_mut(&curr.id().as_u64())
+            .unwrap()
+            .signal_handler
+            .lock()
+            .clear();
         drop(inner);
         // user_stack_top = user_stack_top / PAGE_SIZE_4K * PAGE_SIZE_4K;
         let new_trap_frame =
@@ -270,6 +293,27 @@ impl Process {
             process_id,
             new_memory_set.lock().page_table_token(),
         );
+        // TID2TASK.lock().insert(new_task.id(), Arc::clone(&new_task));
+        #[cfg(feature = "signal")]
+        let new_handler = if flags.contains(CloneFlags::CLONE_SIGHAND) {
+            inner
+                .signal_module
+                .get(&current_task().id().as_u64())
+                .unwrap()
+                .signal_handler
+                .clone()
+        } else {
+            Arc::new(SpinNoIrq::new(
+                inner
+                    .signal_module
+                    .get(&current_task().id().as_u64())
+                    .unwrap()
+                    .signal_handler
+                    .lock()
+                    .clone(),
+            ))
+        };
+
         // 返回的值
         // 若创建的是进程，则返回进程的id
         // 若创建的是线程，则返回线程的id
@@ -278,6 +322,12 @@ impl Process {
         if flags.contains(CloneFlags::CLONE_THREAD) {
             // 若创建的是线程，那么不用新建进程
             inner.tasks.push(Arc::clone(&new_task));
+            info!("new thread: {}", new_task.id().as_u64());
+            #[cfg(feature = "signal")]
+            inner.signal_module.insert(
+                new_task.id().as_u64(),
+                SignalModule::init_signal(Some(new_handler)),
+            );
             return_id = new_task.id().as_u64();
         } else {
             // 若创建的是进程，那么需要新建进程
@@ -296,7 +346,12 @@ impl Process {
             PID2PC.lock().insert(process_id, Arc::clone(&new_process));
             new_process.inner.lock().tasks.push(Arc::clone(&new_task));
             // 若是新建了进程，那么需要把进程的父子关系进行记录
-            // info!("new process id:{}", new_process.pid);
+            info!("new task id:{}", new_task.id().as_u64());
+            #[cfg(feature = "signal")]
+            new_process.inner.lock().signal_module.insert(
+                new_task.id().as_u64(),
+                SignalModule::init_signal(Some(new_handler)),
+            );
             return_id = new_process.pid;
             inner.children.push(new_process);
         };
@@ -359,6 +414,10 @@ pub fn init_kernel_process() {
     kernel_process.inner.lock().tasks.push(Arc::clone(unsafe {
         &IDLE_TASK.current_ref_raw().get_unchecked()
     }));
+    // TID2TASK.lock().insert(
+    //     unsafe { IDLE_TASK.current_ref_raw().id() },
+    //     Arc::clone(unsafe { &IDLE_TASK.current_ref_raw().get_unchecked() }),
+    // );
 }
 
 /// 将进程转化为调度进程，此时会运行所有的测例文件
@@ -381,22 +440,29 @@ pub fn exit(exit_code: i32) -> isize {
     let curr_id = curr.id();
     let is_leader = curr.is_leader();
     let process_id = curr.get_process_id();
+    // 记得删除任务
+    // TID2TASK.lock().remove(&curr_id);
     drop(curr);
-    RUN_QUEUE.lock().exit_current(exit_code);
     // 若退出的是内核线程，就没有必要考虑后续了，否则此时调度队列重新调度的操作拿到进程这里来
     // 先进行资源的回收
     // 不可以回收内核任务
+    let process = current_process();
+    let mut inner = process.inner.lock();
+    inner.signal_module.remove(&curr_id.as_u64());
+    RUN_QUEUE.lock().exit_current(exit_code);
     if is_leader {
         assert!(process_id != 0);
-        let process = current_process();
-        let mut inner = process.inner.lock();
         inner.exit_code = exit_code;
         inner.is_zombie = true;
         // 结束自身的所有子线程
         let _ = inner
             .tasks
             .drain_filter(|task: &mut AxTaskRef| task.id() != curr_id)
-            .map(|task| RUN_QUEUE.lock().remove_task(&task));
+            .map(|task| {
+                // TID2TASK.lock().remove(&task.id());
+                RUN_QUEUE.lock().remove_task(&task)
+            });
+        inner.signal_module.clear();
         {
             let pid2pc = PID2PC.lock();
             let kernel_process = Arc::clone(pid2pc.get(&KERNEL_PROCESS_ID).unwrap());

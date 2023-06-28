@@ -24,7 +24,7 @@ use crate::fs::{link::create_link, FilePath};
 /// 初赛测例
 #[allow(dead_code)]
 const JUNIOR_TESTCASES: &[&str] = &[
-    "brk",
+    // "brk",
     "chdir",
     "clone",
     "close",

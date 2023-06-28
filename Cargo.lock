@@ -368,10 +368,12 @@ version = "0.1.0"
 dependencies = [
  "axalloc",
  "axconfig",
+ "axerrno",
  "axfs",
  "axhal",
  "axio",
  "log",
+ "page_table_entry",
  "riscv 0.10.1",
  "spinlock",
  "xmas-elf",
@@ -406,8 +408,10 @@ dependencies = [
  "axio",
  "axlog",
  "axmem",
+ "axsignal",
  "axtask",
  "bitflags 2.3.1",
+ "cfg-if 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static",
  "riscv 0.10.1",
  "spinlock",
@@ -438,6 +442,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "axsignal"
+version = "0.1.0"
+dependencies = [
+ "axhal",
+ "bitflags 2.3.1",
+ "numeric-enum-macro",
+]
+
+[[package]]
 name = "axsync"
 version = "0.1.0"
 dependencies = [
@@ -453,6 +466,7 @@ dependencies = [
  "axalloc",
  "axconfig",
  "axhal",
+ "axsignal",
  "axtask",
  "cfg-if 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "crate_interface 0.1.1",
@@ -1583,6 +1597,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "numeric-enum-macro"
+version = "0.2.0"
+source = "git+https://github.com/mexus/numeric-enum-macro#20aef288b2ecd2381ab6627c2a6c9e0436d8c8ff"
+
+[[package]]
 name = "once_cell"
 version = "1.17.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2122,6 +2141,7 @@ dependencies = [
  "axnet",
  "axprocess",
  "axruntime",
+ "axsignal",
  "axsync",
  "axtask",
  "bitflags 2.3.1",

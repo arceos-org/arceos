@@ -20,4 +20,9 @@ impl axhal::trap::TrapHandler for TrapHandlerImpl {
     fn handle_page_fault(addr: memory_addr::VirtAddr, flags: page_table::MappingFlags) {
         handle_page_fault(addr, flags);
     }
+
+    #[cfg(feature = "signal")]
+    fn handle_signal() {
+        unimplemented!();
+    }
 }

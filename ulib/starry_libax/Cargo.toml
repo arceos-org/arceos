@@ -70,7 +70,10 @@ monolithic = ["axruntime/monolithic", "fs"]
 # Test
 test = []
 
-default = ["axtask?/sched_fifo", "axtask", "axmem", "monolithic", "test", "paging"]
+# Signal
+signal = ["axprocess/signal", "multitask"]
+
+default = ["axtask?/sched_fifo", "axtask", "axmem", "monolithic", "test", "paging", "signal"]
 [dependencies]
 spin = { version = "0.9", optional = true }
 lazy_static = { version = "1.4", features = ["spin_no_std"]}
@@ -92,6 +95,7 @@ axsync = { path = "../../modules/axsync", default-features = false }
 axtask = { path = "../../modules/axtask", default-features = false, optional = true }
 axmem = { path = "../../modules/axmem", default-features = false, optional = true }
 axprocess = { path = "../../modules/axprocess", default-features = false }
+axsignal = { path = "../../modules/axsignal", default-features = false }
 log = "0.4.0"
 bitflags = "2.0"
 memory_addr = { path = "../../crates/memory_addr" }

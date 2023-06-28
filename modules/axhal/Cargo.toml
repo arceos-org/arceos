@@ -23,12 +23,14 @@ platform-qemu-virt-aarch64 = [
 
 monolithic = []
 
+# 是否引入信号
+signal = []
 
 platform-raspi4-aarch64 = [
     "axconfig/platform-raspi4-aarch64",
     "dep:page_table_entry", "dep:ratio",
 ]
-default = ["monolithic"]
+default = ["monolithic", "signal"]
 
 [dependencies]
 log = "0.4"

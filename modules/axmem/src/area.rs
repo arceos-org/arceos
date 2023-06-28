@@ -6,6 +6,7 @@ use axhal::{
 };
 use axio::{Seek, SeekFrom};
 use core::ptr::copy_nonoverlapping;
+use riscv::asm::sfence_vma;
 
 use crate::MemBackend;
 
@@ -144,7 +145,9 @@ impl MapArea {
                 self.flags,
             )
             .expect("Map in page fault handler failed");
-
+        unsafe {
+            sfence_vma(0, addr.align_down_4k().into());
+        }
         self.pages[page_index] = Some(page);
     }
 
