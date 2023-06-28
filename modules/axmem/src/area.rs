@@ -151,11 +151,12 @@ impl MapArea {
         self.pages[page_index] = Some(page);
     }
 
+    /// Sync pages in index back to `self.backend` (if there is one).
+    ///
+    /// # Panics
+    ///
+    /// Panics if index is out of bounds.
     pub fn sync_page_with_backend(&mut self, page_index: usize) {
-        if page_index >= self.pages.len() {
-            panic!("Sync page index out of bound");
-        }
-
         if let Some(page) = &self.pages[page_index] {
             if let Some(backend) = &mut self.backend {
                 if backend.writable() {

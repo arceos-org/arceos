@@ -456,6 +456,26 @@ impl MemorySet {
         self.split_for_area(start, size);
     }
 
+    /// msync
+    pub fn msync(&mut self, start: VirtAddr, size: usize) {
+        let end = start + size;
+
+        for area in self.owned_mem.values_mut() {
+            if area.backend.is_none() {
+                continue;
+            }
+            if area.overlap_with(start, end) {
+                for page_index in 0..area.pages.len() {
+                    let page_vaddr = area.vaddr + page_index * PAGE_SIZE_4K;
+
+                    if page_vaddr >= start && page_vaddr < end {
+                        area.sync_page_with_backend(page_index);
+                    }
+                }
+            }
+        }
+    }
+
     /// Edit the page table to update flags in given virt address segment. You need to flush TLB
     /// after calling this function.
     ///

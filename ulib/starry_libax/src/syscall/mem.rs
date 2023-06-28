@@ -97,3 +97,14 @@ pub fn syscall_munmap(start: usize, len: usize) -> isize {
 
     0
 }
+
+pub fn syscall_msync(start: usize, len: usize) -> isize {
+    let curr = current_process();
+    let inner = curr.inner.lock();
+    inner.memory_set.lock().msync(start.into(), len);
+
+    drop(inner);
+    drop(curr);
+
+    0
+}
