@@ -51,15 +51,15 @@ _gen_feat: $(obj_dir)
 endif
 
 $(obj_dir):
-	mkdir -p $@
+	$(call run_cmd,mkdir,-p $@)
 
 $(obj_dir)/%.o: $(src_dir)/%.c $(out_feat)
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(call run_cmd,$(CC),$(CFLAGS) -c -o $@ $<)
 
 $(c_lib): $(obj_dir) _gen_feat $(ulib_obj)
-	rm -f $@
-	$(AR) rc $@ $(ulib_obj)
-	$(RANLIB) $@
+	@rm -f $@
+	$(call run_cmd,$(AR),rc $@ $(ulib_obj))
+	$(call run_cmd,$(RANLIB),$@)
 
 app-objs := main.o
 
@@ -68,10 +68,10 @@ app-objs := main.o
 app-objs := $(addprefix $(APP)/,$(app-objs))
 
 $(APP)/%.o: $(APP)/%.c $(libax_inc_dir)/ax_pthread_mutex.h
-	$(CC) $(CFLAGS) $(APP_CFLAGS) -c -o $@ $<
+	$(call run_cmd,$(CC),$(CFLAGS) $(APP_CFLAGS) -c -o $@ $<)
 
 $(OUT_ELF): $(app-objs) $(c_lib) $(rust_lib)
 	@printf "    $(CYAN_C)Linking$(END_C) $(OUT_ELF)\n"
-	$(LD) $(LDFLAGS) $^ -o $@
+	$(call run_cmd,$(LD),$(LDFLAGS) $^ -o $@)
 
 .PHONY: _gen_feat

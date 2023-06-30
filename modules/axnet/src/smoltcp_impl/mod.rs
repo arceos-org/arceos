@@ -128,13 +128,17 @@ impl InterfaceWrapper {
         config.random_seed = RANDOM_SEED;
 
         let mut dev = DeviceWrapper::new(dev);
-        let iface = Mutex::new(Interface::new(config, &mut dev));
+        let iface = Mutex::new(Interface::new(config, &mut dev, Self::current_time()));
         Self {
             name,
             ether_addr,
             dev: Mutex::new(dev),
             iface,
         }
+    }
+
+    fn current_time() -> Instant {
+        Instant::from_micros_const((current_time_nanos() / NANOS_PER_MICROS) as i64)
     }
 
     pub fn name(&self) -> &str {
@@ -165,8 +169,7 @@ impl InterfaceWrapper {
             snoop_tcp_packet(buf).ok(); // preprocess TCP packets
         });
 
-        let timestamp =
-            Instant::from_micros_const((current_time_nanos() / NANOS_PER_MICROS) as i64);
+        let timestamp = Self::current_time();
         let mut iface = self.iface.lock();
         let mut sockets = sockets.lock();
         iface.poll(timestamp, dev.deref_mut(), &mut sockets);

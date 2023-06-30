@@ -2,6 +2,9 @@ name: Build CI
 
 on: [push, pull_request]
 
+env:
+  rust-toolchain: nightly
+
 jobs:
   clippy:
     runs-on: ubuntu-latest
@@ -12,7 +15,7 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: nightly
+        toolchain: ${{ env.rust-toolchain }}
         components: rust-src, clippy, rustfmt
     - name: Clippy for the default target
       run: cargo clippy --all-features
@@ -37,8 +40,8 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: nightly
-        components: rust-src, llvm-tools-preview
+        toolchain: ${{ env.rust-toolchain }}
+        components: rust-src
     - uses: actions-rs/install@v0.1
       with:
         crate: cargo-binutils
@@ -67,29 +70,20 @@ jobs:
     - name: Build net/httpserver
       run: make ARCH=${{ matrix.arch }} A=apps/net/httpserver NET=y
 
-    - name: Download musl toolchain
-      run: |
-        if [ "${{ matrix.arch }}" = "x86_64" ]; then
-          export MUSL_PATH="x86_64-linux-musl-cross"
-        elif [ "${{ matrix.arch }}" = "aarch64" ]; then
-          export MUSL_PATH="aarch64-linux-musl-cross"
-        elif [ "${{ matrix.arch }}" = "riscv64" ]; then
-          export MUSL_PATH="riscv64-linux-musl-cross"
-        fi
-        wget https://musl.cc/$MUSL_PATH.tgz
-        tar -xf $MUSL_PATH.tgz
-        mv $MUSL_PATH musl
+    - uses: ./.github/workflows/actions/setup-musl
+      with:
+        arch: ${{ matrix.arch }}
     - name: Build c/helloworld
-      run: PATH=$PATH:$PWD/musl/bin make ARCH=${{ matrix.arch }} A=apps/c/helloworld
+      run: make ARCH=${{ matrix.arch }} A=apps/c/helloworld
     - name: Build c/memtest
-      run: PATH=$PATH:$PWD/musl/bin make ARCH=${{ matrix.arch }} A=apps/c/memtest
+      run: make ARCH=${{ matrix.arch }} A=apps/c/memtest
     - name: Build c/sqlite3
-      run: PATH=$PATH:$PWD/musl/bin make ARCH=${{ matrix.arch }} A=apps/c/sqlite3
+      run: make ARCH=${{ matrix.arch }} A=apps/c/sqlite3
     - name: Build c/httpclient
-      run: PATH=$PATH:$PWD/musl/bin make ARCH=${{ matrix.arch }} A=apps/c/httpclient
+      run: make ARCH=${{ matrix.arch }} A=apps/c/httpclient
     - name: Build c/httpserver
-      run: PATH=$PATH:$PWD/musl/bin make ARCH=${{ matrix.arch }} A=apps/c/httpserver
+      run: make ARCH=${{ matrix.arch }} A=apps/c/httpserver
     - name: Build c/udpserver
-      run: PATH=$PATH:$PWD/musl/bin make ARCH=${{ matrix.arch }} A=apps/c/udpserver
+      run: make ARCH=${{ matrix.arch }} A=apps/c/udpserver
     - name: Build c/iperf
-      run: PATH=$PATH:$PWD/musl/bin make ARCH=${{ matrix.arch }} A=apps/c/iperf
+      run: make ARCH=${{ matrix.arch }} A=apps/c/iperf

@@ -1,5 +1,13 @@
 # Cargo features and build args
 
+ifeq ($(V),1)
+  verbose := -v
+else ifeq ($(V),2)
+  verbose := -vv
+else
+  verbose :=
+endif
+
 features-y := libax/platform-$(PLATFORM)
 
 ifeq ($(shell test $(SMP) -gt 1; echo $$?),0)
@@ -22,7 +30,7 @@ endif
 
 default_features := y
 
-ifeq ($(APP_LANG),c)
+ifeq ($(APP_TYPE),c)
   default_features := n
   ifneq ($(wildcard $(APP)/features.txt),)    # check features.txt exists
     features-y += $(addprefix libax/,$(shell cat $(APP)/features.txt))
@@ -30,7 +38,7 @@ ifeq ($(APP_LANG),c)
   endif
   features-y += libax/cbindings
   features-y += $(APP_FEATURES)
-else ifeq ($(APP_LANG),rust)
+else ifeq ($(APP_TYPE),rust)
   features-y += $(APP_FEATURES)
   ifneq ($(APP_FEATURES),)
     default_features := n
@@ -45,22 +53,22 @@ build_args := \
   --target $(TARGET) \
   --target-dir $(CURDIR)/target \
   $(build_args-$(MODE)) \
-  $(build_args-$(APP_LANG)) \
+  $(build_args-$(APP_TYPE)) \
   --features "$(features-y)" \
 
 ifeq ($(default_features),n)
   build_args += --no-default-features
 endif
 
-rustc_flags := -Clink-args="-T$(LD_SCRIPT) -no-pie"
+RUSTFLAGS := -C link-arg=-T$(LD_SCRIPT) -C link-arg=-no-pie
 
-define cargo_build
-  cargo rustc $(build_args) $(1) -- $(rustc_flags)
+define cargo_rustc
+  $(call run_cmd,cargo rustc,$(build_args) $(1) $(verbose) -- $(RUSTFLAGS))
 endef
 
 define cargo_clippy
-  cargo clippy --target $(TARGET) --all-features --workspace --exclude axlog
-  cargo clippy --target $(TARGET) -p axlog -p percpu -p percpu_macros
+  $(call run_cmd,cargo clippy,--target $(TARGET) --all-features --workspace --exclude axlog $(verbose))
+  $(call run_cmd,cargo clippy,--target $(TARGET) -p axlog -p percpu -p percpu_macros $(verbose))
 endef
 
 all_packages := \
@@ -70,11 +78,11 @@ all_packages := \
 
 define cargo_doc
   RUSTDOCFLAGS="--enable-index-page -Zunstable-options -D rustdoc::broken_intra_doc_links $(1)" \
-    cargo doc --no-deps --all-features --workspace --exclude "arceos-*"
+    cargo doc --no-deps --all-features --workspace --exclude "arceos-*" $(verbose)
   @# run twice to fix broken hyperlinks
   $(foreach p,$(all_packages), \
-    cargo rustdoc --all-features -p $(p)
+    $(call run_cmd,cargo rustdoc,--all-features -p $(p) $(verbose))
   )
   @# for some crates, re-generate without `--all-features`
-  cargo doc --no-deps -p percpu
+  $(call run_cmd,cargo doc,--no-deps -p percpu $(verbose))
 endef

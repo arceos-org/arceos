@@ -3,6 +3,7 @@ ARCH ?= x86_64
 SMP ?= 1
 MODE ?= release
 LOG ?= warn
+V ?=
 
 A ?= apps/helloworld
 APP ?= $(A)
@@ -22,9 +23,9 @@ ifeq ($(wildcard $(APP)),)
 endif
 
 ifneq ($(wildcard $(APP)/Cargo.toml),)
-  APP_LANG ?= rust
+  APP_TYPE ?= rust
 else
-  APP_LANG ?= c
+  APP_TYPE ?= c
 endif
 
 # Platform
@@ -52,13 +53,11 @@ export MODE
 export LOG
 
 # Binutils
-ifeq ($(APP_LANG), c)
-  CROSS_COMPILE ?= $(ARCH)-linux-musl-
-  CC := $(CROSS_COMPILE)gcc
-  AR := $(CROSS_COMPILE)ar
-  RANLIB := $(CROSS_COMPILE)ranlib
-  LD := rust-lld -flavor gnu
-endif
+CROSS_COMPILE ?= $(ARCH)-linux-musl-
+CC := $(CROSS_COMPILE)gcc
+AR := $(CROSS_COMPILE)ar
+RANLIB := $(CROSS_COMPILE)ranlib
+LD := rust-lld -flavor gnu
 
 OBJDUMP ?= rust-objdump -d --print-imm-hex --x86-asm-syntax=intel
 OBJCOPY ?= rust-objcopy --binary-architecture=$(ARCH)
@@ -75,9 +74,8 @@ OUT_BIN := $(OUT_DIR)/$(APP_NAME)_$(PLATFORM).bin
 all: build
 
 include scripts/make/utils.mk
-include scripts/make/cargo.mk
-include scripts/make/qemu.mk
 include scripts/make/build.mk
+include scripts/make/qemu.mk
 include scripts/make/test.mk
 ifeq ($(PLATFORM), raspi4-aarch64)
   include scripts/make/raspi4.mk

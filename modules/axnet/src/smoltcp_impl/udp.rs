@@ -155,7 +155,7 @@ impl UdpSocket {
     pub fn recv_from(&self, buf: &mut [u8]) -> AxResult<(usize, SocketAddr)> {
         self.recv_impl(
             |socket| match socket.recv_slice(buf) {
-                Ok(x) => Ok(x),
+                Ok((len, meta)) => Ok((len, meta.endpoint)),
                 Err(_) => Err(AxError::WouldBlock),
             },
             "socket recv_from() failed",
@@ -192,10 +192,10 @@ impl UdpSocket {
         let peeraddr = self.peer_addr()?;
         self.recv_impl(
             |socket| match socket.recv_slice(buf) {
-                Ok(x) => {
-                    if x.1 == peeraddr {
+                Ok((len, meta)) => {
+                    if meta.endpoint == peeraddr {
                         // filter data from the remote address to which it is connected.
-                        Ok(x.0)
+                        Ok(len)
                     } else {
                         Err(AxError::WouldBlock)
                     }
@@ -220,7 +220,7 @@ impl UdpSocket {
     pub fn peek_from(&self, buf: &mut [u8]) -> AxResult<(usize, SocketAddr)> {
         self.recv_impl(
             |socket| match socket.peek_slice(buf) {
-                Ok(x) => Ok((x.0, *x.1)),
+                Ok((len, meta)) => Ok((len, meta.endpoint)),
                 Err(_) => Err(AxError::WouldBlock),
             },
             "socket peek_from() failed",
