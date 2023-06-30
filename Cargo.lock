@@ -171,6 +171,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "arceos_api"
+version = "0.1.0"
+dependencies = [
+ "axalloc",
+ "axconfig",
+ "axdisplay",
+ "axerrno",
+ "axfeat",
+ "axfs",
+ "axhal",
+ "axio",
+ "axlog",
+ "axnet",
+ "axruntime",
+ "axtask",
+]
+
+[[package]]
 name = "arm_gic"
 version = "0.1.0"
 dependencies = [

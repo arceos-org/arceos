@@ -1,0 +1,39 @@
+[package]
+name = "arceos_api"
+version = "0.1.0"
+edition = "2021"
+authors = ["Yuekai Jia <equation618@gmail.com>"]
+description = "Public APIs and types for ArceOS modules"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+repository = "https://github.com/rcore-os/arceos/tree/main/api/arceos_api"
+documentation = "https://rcore-os.github.io/arceos/arceos_api/index.html"
+
+[features]
+default = []
+
+irq = ["axfeat/irq"]
+alloc = ["dep:axalloc", "axfeat/alloc"]
+multitask = ["axtask/multitask", "axfeat/multitask"]
+fs = ["dep:axfs", "axfeat/fs"]
+net = ["dep:axnet", "axfeat/net"]
+display = ["dep:axdisplay", "axfeat/display"]
+
+myfs = ["axfeat/myfs"]
+
+# Use dummy functions if the feature is not enabled
+dummy-if-not-enabled = []
+
+[dependencies]
+axfeat = { path = "../axfeat" }
+axruntime = { path = "../../modules/axruntime" }
+axconfig = { path = "../../modules/axconfig" }
+axlog = { path = "../../modules/axlog" }
+axio = { path = "../../crates/axio" }
+axerrno = { path = "../../crates/axerrno" }
+axhal = { path = "../../modules/axhal" }
+axalloc = { path = "../../modules/axalloc", optional = true }
+axtask = { path = "../../modules/axtask", optional = true }
+axfs = { path = "../../modules/axfs", optional = true }
+axnet = { path = "../../modules/axnet", optional = true }
+axdisplay = { path = "../../modules/axdisplay", optional = true }
