@@ -22,6 +22,7 @@ includes = ["axconfig.h"]
 "timespec" = "struct timespec"
 "timeval" = "struct timeval"
 "epoll_event" = "struct epoll_event"
+"iovec" = "struct iovec"
 
 [fn]
 no_return = "__attribute__((noreturn))"
