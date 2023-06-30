@@ -57,3 +57,10 @@ int setrlimit(int resource, struct rlimit *rlimits)
     }
     return 0;
 }
+
+// TODO
+int getrusage(int __who, struct rusage *__usage)
+{
+    unimplemented();
+    return 0;
+}

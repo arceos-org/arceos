@@ -1,6 +1,8 @@
 #include <ctype.h>
+#include <errno.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 #include <libax.h>
@@ -464,3 +466,18 @@ char *strdup(const char *s)
     return memcpy(d, s, l + 1);
 }
 #endif
+
+int strerror_r(int err, char *buf, size_t buflen)
+{
+    char *msg = strerror(err);
+    size_t l = strlen(msg);
+    if (l >= buflen) {
+        if (buflen) {
+            memcpy(buf, msg, buflen - 1);
+            buf[buflen - 1] = 0;
+        }
+        return ERANGE;
+    }
+    memcpy(buf, msg, l + 1);
+    return 0;
+}

@@ -1,7 +1,130 @@
 #ifndef __SOCKET_H__
 #define __SOCKET_H__
 
+#include <endian.h>
+#include <limits.h>
 #include <stddef.h>
+
+typedef unsigned short sa_family_t;
+typedef unsigned int socklen_t;
+
+struct msghdr {
+    void *msg_name;
+    socklen_t msg_namelen;
+    struct iovec *msg_iov;
+#if __LONG_MAX > 0x7fffffff && __BYTE_ORDER == __BIG_ENDIAN
+    int __pad1;
+#endif
+    int msg_iovlen;
+#if __LONG_MAX > 0x7fffffff && __BYTE_ORDER == __LITTLE_ENDIAN
+    int __pad1;
+#endif
+    void *msg_control;
+#if __LONG_MAX > 0x7fffffff && __BYTE_ORDER == __BIG_ENDIAN
+    int __pad2;
+#endif
+    socklen_t msg_controllen;
+#if __LONG_MAX > 0x7fffffff && __BYTE_ORDER == __LITTLE_ENDIAN
+    int __pad2;
+#endif
+    int msg_flags;
+};
+
+struct cmsghdr {
+#if __LONG_MAX > 0x7fffffff && __BYTE_ORDER == __BIG_ENDIAN
+    int __pad1;
+#endif
+    socklen_t cmsg_len;
+#if __LONG_MAX > 0x7fffffff && __BYTE_ORDER == __LITTLE_ENDIAN
+    int __pad1;
+#endif
+    int cmsg_level;
+    int cmsg_type;
+};
+
+struct sockaddr {
+    sa_family_t sa_family;
+    char sa_data[14];
+};
+
+struct sockaddr_storage {
+    sa_family_t ss_family;
+    char __ss_padding[128 - sizeof(long) - sizeof(sa_family_t)];
+    unsigned long __ss_align;
+};
+
+typedef unsigned socklen_t;
+
+#ifdef AX_CONFIG_NET
+
+int socket(int, int, int);
+int shutdown(int, int);
+
+int bind(int, const struct sockaddr *, socklen_t);
+int connect(int, const struct sockaddr *, socklen_t);
+int listen(int, int);
+int accept(int, struct sockaddr *__restrict, socklen_t *__restrict);
+int accept4(int, struct sockaddr *__restrict, socklen_t *__restrict, int);
+
+ssize_t send(int, const void *, size_t, int);
+ssize_t recv(int, void *, size_t, int);
+ssize_t sendto(int, const void *, size_t, int, const struct sockaddr *, socklen_t);
+ssize_t recvfrom(int, void *__restrict, size_t, int, struct sockaddr *__restrict,
+                 socklen_t *__restrict);
+ssize_t sendmsg(int, const struct msghdr *, int);
+
+int getsockopt(int, int, int, void *__restrict, socklen_t *__restrict);
+int setsockopt(int, int, int, const void *, socklen_t);
+
+int getsockname(int sockfd, struct sockaddr *restrict addr, socklen_t *restrict addrlen);
+int getpeername(int sockfd, struct sockaddr *restrict addr, socklen_t *restrict addrlen);
+
+#endif
+
+#define SO_BINDTODEVICE            25
+#define SO_ATTACH_FILTER           26
+#define SO_DETACH_FILTER           27
+#define SO_GET_FILTER              SO_ATTACH_FILTER
+#define SO_PEERNAME                28
+#define SO_ACCEPTCONN              30
+#define SO_PEERSEC                 31
+#define SO_PASSSEC                 34
+#define SO_MARK                    36
+#define SO_RXQ_OVFL                40
+#define SO_WIFI_STATUS             41
+#define SCM_WIFI_STATUS            SO_WIFI_STATUS
+#define SO_PEEK_OFF                42
+#define SO_NOFCS                   43
+#define SO_LOCK_FILTER             44
+#define SO_SELECT_ERR_QUEUE        45
+#define SO_BUSY_POLL               46
+#define SO_MAX_PACING_RATE         47
+#define SO_BPF_EXTENSIONS          48
+#define SO_INCOMING_CPU            49
+#define SO_ATTACH_BPF              50
+#define SO_DETACH_BPF              SO_DETACH_FILTER
+#define SO_ATTACH_REUSEPORT_CBPF   51
+#define SO_ATTACH_REUSEPORT_EBPF   52
+#define SO_CNX_ADVICE              53
+#define SCM_TIMESTAMPING_OPT_STATS 54
+#define SO_MEMINFO                 55
+#define SO_INCOMING_NAPI_ID        56
+#define SO_COOKIE                  57
+#define SCM_TIMESTAMPING_PKTINFO   58
+#define SO_PEERGROUPS              59
+#define SO_ZEROCOPY                60
+#define SO_TXTIME                  61
+#define SCM_TXTIME                 SO_TXTIME
+#define SO_BINDTOIFINDEX           62
+#define SO_DETACH_REUSEPORT_BPF    68
+#define SO_PREFER_BUSY_POLL        69
+#define SO_BUSY_POLL_BUDGET        70
+
+#define MSG_NOSIGNAL 0x4000
+
+#define SHUT_RD   0
+#define SHUT_WR   1
+#define SHUT_RDWR 2
 
 #ifndef SOCK_STREAM
 #define SOCK_STREAM 1
@@ -145,6 +268,10 @@
 #define SO_PROTOCOL    38
 #define SO_DOMAIN      39
 
+#define SO_SECURITY_AUTHENTICATION       22
+#define SO_SECURITY_ENCRYPTION_TRANSPORT 23
+#define SO_SECURITY_ENCRYPTION_NETWORK   24
+
 #define SOL_SOCKET 1
 
 #define SOL_IP     0
@@ -176,40 +303,14 @@
 #define SOL_TLS       282
 #define SOL_XDP       283
 
-typedef unsigned short sa_family_t;
-struct sockaddr {
-    sa_family_t sa_family;
-    char sa_data[14];
-};
-
-struct sockaddr_storage {
-    sa_family_t ss_family;
-    char __ss_padding[128 - sizeof(long) - sizeof(sa_family_t)];
-    unsigned long __ss_align;
-};
-
-typedef unsigned socklen_t;
-
-#if defined(AX_CONFIG_NET)
-int socket(int, int, int);
-int shutdown(int, int);
-
-int bind(int, const struct sockaddr *, socklen_t);
-int connect(int, const struct sockaddr *, socklen_t);
-int listen(int, int);
-int accept(int, struct sockaddr *__restrict, socklen_t *__restrict);
-
-ssize_t send(int, const void *, size_t, int);
-ssize_t recv(int, void *, size_t, int);
-ssize_t sendto(int, const void *, size_t, int, const struct sockaddr *, socklen_t);
-ssize_t recvfrom(int, void *__restrict, size_t, int, struct sockaddr *__restrict,
-                 socklen_t *__restrict);
-
-int getsockopt(int, int, int, void *__restrict, socklen_t *__restrict);
-int setsockopt(int, int, int, const void *, socklen_t);
-
-int getsockname(int sockfd, struct sockaddr *restrict addr, socklen_t *restrict addrlen);
-int getpeername(int sockfd, struct sockaddr *restrict addr, socklen_t *restrict addrlen);
-
+#ifndef SO_RCVTIMEO_OLD
+#define SO_RCVTIMEO_OLD 20
 #endif
+#ifndef SO_SNDTIMEO_OLD
+#define SO_SNDTIMEO_OLD 21
+#endif
+
+#define SO_RCVTIMEO SO_RCVTIMEO_OLD
+#define SO_SNDTIMEO SO_SNDTIMEO_OLD
+
 #endif
