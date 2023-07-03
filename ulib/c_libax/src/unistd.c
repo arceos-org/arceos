@@ -23,6 +23,13 @@ pid_t getpid(void)
 #endif
 }
 
+// TODO
+uid_t getuid(void)
+{
+    unimplemented();
+    return 0;
+}
+
 unsigned int sleep(unsigned int seconds)
 {
     struct timespec ts;
@@ -123,6 +130,13 @@ int fsync(int fd)
     return 0;
 }
 
+// TODO
+int fdatasync(int __fildes)
+{
+    unimplemented();
+    return 0;
+}
+
 // TODO:
 int fchown(int fd, uid_t owner, gid_t group)
 {
@@ -194,3 +208,52 @@ int dup3(int old, int new, int flags)
 }
 
 #endif
+
+// TODO
+_Noreturn void _exit(int __status)
+{
+    unimplemented();
+    abort();
+}
+
+// TODO
+int execve(const char *__path, char *const *__argv, char *const *__envp)
+{
+    unimplemented();
+    return 0;
+}
+
+// TODO
+pid_t setsid(void)
+{
+    unimplemented();
+    return 0;
+}
+
+// TODO
+int isatty(int fd)
+{
+    unimplemented();
+    return 0;
+}
+
+// TODO
+pid_t fork(void)
+{
+    unimplemented();
+    return -1;
+}
+
+// TODO
+int chdir(const char *__path)
+{
+    unimplemented();
+    return 0;
+}
+
+// TODO
+int truncate(const char *path, off_t length)
+{
+    unimplemented();
+    return 0;
+}

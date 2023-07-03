@@ -3,6 +3,11 @@
 
 #include <stdint.h>
 
+#define ITIMER_REAL    0
+#define ITIMER_VIRTUAL 1
+#define ITIMER_PROF    2
+
+extern long timezone;
 typedef long time_t;
 
 struct timeval {
@@ -20,6 +25,11 @@ typedef struct timespec timespec;
 struct timezone {
     int tz_minuteswest; /* (minutes west of Greenwich) */
     int tz_dsttime;     /* (type of DST correction) */
+};
+
+struct itimerval {
+    struct timeval it_interval;
+    struct timeval it_value;
 };
 
 int gettimeofday(struct timeval *tv, struct timezone *tz);

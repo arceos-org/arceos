@@ -7,6 +7,9 @@
 
 #include <libax.h>
 
+long timezone = 0;
+const char __utc[] = "UTC";
+
 const int SEC_PER_MIN = 60;
 const int SEC_PER_HOUR = 3600;
 const int MIN_PER_HOUR = 60;
@@ -178,9 +181,44 @@ int nanosleep(const struct timespec *req, struct timespec *rem)
     return ax_nanosleep(req, rem);
 }
 
+// TODO
+void tzset()
+{
+    unimplemented();
+    return;
+}
+
+// TODO
+int setitimer(int _which, const struct itimerval *restrict _new, struct itimerval *restrict _old)
+{
+    unimplemented();
+    return 0;
+}
+
+// TODO
+char *ctime_r(const time_t *t, char *buf)
+{
+    unimplemented();
+    return NULL;
+}
+
+// TODO
+clock_t clock(void)
+{
+    unimplemented();
+    return 0;
+}
+
 #ifdef AX_CONFIG_FP_SIMD
 double difftime(time_t t1, time_t t0)
 {
     return t1 - t0;
 }
 #endif
+
+// TODO
+time_t mktime(struct tm *tm)
+{
+    unimplemented();
+    return 0;
+}
