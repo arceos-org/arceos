@@ -70,7 +70,8 @@ int getsockopt(int fd, int level, int optname, void *restrict optval, socklen_t 
 
 int setsockopt(int fd, int level, int optname, const void *optval, socklen_t optlen)
 {
-    unimplemented();
+    unimplemented("fd: %d, level: %d, optname: %d, optval: %d, optlen: %d", fd, level, optname,
+                  *(int *)optval, optlen);
     return 0;
 }
 
@@ -83,4 +84,18 @@ int getpeername(int sockfd, struct sockaddr *restrict addr, socklen_t *restrict 
 {
     return ax_getpeername(sockfd, addr, addrlen);
 }
+
+// TODO
+int accept4(int fd, struct sockaddr *restrict addr, socklen_t *restrict len, int __flags)
+{
+    unimplemented();
+}
+
+// TODO
+ssize_t sendmsg(int fd, const struct msghdr *msg, int flags)
+{
+    unimplemented();
+    return 0;
+}
+
 #endif

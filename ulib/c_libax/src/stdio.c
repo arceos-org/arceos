@@ -74,15 +74,11 @@ static int out(FILE *f, const char *s, size_t l)
     return ret;
 }
 
-// int getchar()
-// {
-//     char byte = 0;
-//     if (1 == read(stdin, &byte, 1)) {
-//         return byte;
-//     } else {
-//         return EOF;
-//     }
-// }
+int getchar(void)
+{
+    unimplemented();
+    return 0;
+}
 
 int fflush(FILE *f)
 {
@@ -228,4 +224,166 @@ char *fgets(char *restrict s, int n, FILE *restrict f)
     return s;
 }
 
+// TODO
+int sscanf(const char *restrict __s, const char *restrict __format, ...)
+{
+    unimplemented();
+    return 0;
+}
+
+size_t fread(void *restrict destv, size_t size, size_t nmemb, FILE *restrict f)
+{
+    return (size_t)ax_read(f->fd, destv, size * nmemb) / size;
+}
+
+size_t fwrite(const void *restrict src, size_t size, size_t nmemb, FILE *restrict f)
+{
+    return (size_t)ax_write(f->fd, src, size * nmemb) / size;
+}
+
+int fputs(const char *restrict s, FILE *restrict f)
+{
+    size_t l = strlen(s);
+    return (fwrite(s, 1, l, f) == l) - 1;
+}
+
+int fclose(FILE *f)
+{
+    return ax_close(f->fd);
+}
 #endif
+
+// TODO
+int rename(const char *__old, const char *__new)
+{
+    unimplemented();
+    return 0;
+}
+
+int fileno(FILE *f)
+{
+    return f->fd;
+}
+
+int feof(FILE *f)
+{
+    unimplemented();
+    return 0;
+}
+
+// TODO
+int fseek(FILE *__stream, long __off, int __whence)
+{
+    unimplemented();
+    return 0;
+}
+
+// TODO
+long ftello(FILE *__stream)
+{
+    unimplemented();
+    return 0;
+}
+
+// TODO
+char *tmpnam(char *)
+{
+    unimplemented();
+    return 0;
+}
+
+// TODO
+void clearerr(FILE *f)
+{
+    unimplemented();
+}
+
+// TODO
+int ferror(FILE *f)
+{
+    unimplemented();
+    return 0;
+}
+
+// TODO
+FILE *freopen(const char *restrict, const char *restrict, FILE *restrict)
+{
+    unimplemented();
+    return 0;
+}
+
+// TODO
+int fscanf(FILE *restrict, const char *restrict, ...)
+{
+    unimplemented();
+    return 0;
+}
+
+// TODO
+long ftell(FILE *)
+{
+    unimplemented();
+    return 0;
+}
+
+int getc(FILE *)
+{
+    unimplemented();
+    return 0;
+}
+
+// TODO
+int remove(const char *)
+{
+    unimplemented();
+    return 0;
+}
+
+// TODO
+int setvbuf(FILE *restrict f, char *restrict buf, int type, size_t size)
+{
+    unimplemented();
+    return 0;
+}
+
+// TODO
+FILE *tmpfile(void)
+{
+    unimplemented();
+    return NULL;
+}
+
+int ungetc(int c, FILE *f)
+{
+    unimplemented();
+    return 0;
+}
+
+ssize_t getdelim(char **restrict s, size_t *restrict n, int delim, FILE *restrict f)
+{
+    unimplemented();
+    return 0;
+}
+
+ssize_t getline(char **restrict s, size_t *restrict n, FILE *restrict f)
+{
+    return getdelim(s, n, '\n', f);
+}
+
+int __uflow(FILE *f)
+{
+    unimplemented();
+    return 0;
+}
+
+int getc_unlocked(FILE *)
+{
+    unimplemented();
+    return 0;
+}
+
+FILE *fdopen(int fd, const char *mode)
+{
+    unimplemented();
+    return NULL;
+}
