@@ -6,6 +6,7 @@ mod uart16550;
 pub mod mem;
 pub mod misc;
 pub mod time;
+pub mod acpi;
 
 #[cfg(feature = "smp")]
 pub mod mp;
@@ -58,6 +59,7 @@ unsafe extern "C" fn rust_entry_secondary(magic: usize) {
 pub fn platform_init() {
     self::apic::init_primary();
     self::time::init_primary();
+    self::acpi::init();
 }
 
 /// Initializes the platform devices for secondary CPUs.

@@ -15,6 +15,7 @@ pub use self::context::{ExtendedState, FxsaveArea, TaskContext, TrapFrame};
 pub use self::gdt::GdtStruct;
 pub use self::idt::IdtStruct;
 pub use x86_64::structures::tss::TaskStateSegment;
+pub use trap::{irq_to_vector,vector_to_irq};
 
 /// Allows the current CPU to respond to interrupts.
 #[inline]

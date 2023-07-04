@@ -44,3 +44,12 @@ fn x86_trap_handler(tf: &mut TrapFrame) {
         }
     }
 }
+
+/// map external IRQ to vector
+pub fn irq_to_vector(irq:u8)->usize{
+    (irq + IRQ_VECTOR_START )as usize
+}
+/// map vector to external IRQ
+pub fn vector_to_irq(vector:usize)->u8{
+    vector as u8 - IRQ_VECTOR_START
+}

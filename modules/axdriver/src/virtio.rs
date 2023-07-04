@@ -13,6 +13,7 @@ cfg_if! {
     if #[cfg(bus = "pci")] {
         use driver_pci::{PciRoot, DeviceFunction, DeviceFunctionInfo};
         type VirtIoTransport = driver_virtio::PciTransport;
+        use axhal::platform::acpi::get_pci_irq_vector;
     } else if #[cfg(bus =  "mmio")] {
         type VirtIoTransport = driver_virtio::MmioTransport;
     }
@@ -131,7 +132,8 @@ impl<D: VirtIoDevMeta> DriverProbe for VirtIoDriver<D> {
         {
             if ty == D::DEVICE_TYPE {
                 //todo: find irq num for pci
-                match D::try_new(transport, None) {
+                let vector = get_pci_irq_vector(bdf.bus,bdf.device,bdf.function);
+                match D::try_new(transport, vector) {
                     Ok(dev) => return Some(dev),
                     Err(e) => {
                         warn!(
