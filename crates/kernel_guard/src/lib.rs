@@ -84,7 +84,7 @@ pub struct NoOp;
 cfg_if::cfg_if! {
     // For user-mode std apps, we use the alias of [`NoOp`] for all guards,
     // since we can not disable IRQs or preemption in user-mode.
-    if #[cfg(any(target_os = "none", doc))] {
+    if #[cfg(any(target_os = "none", target_os = "arceos", doc))] {
         /// A guard that disables/enables local IRQs around the critical section.
         pub struct IrqSave(usize);
 
@@ -128,7 +128,7 @@ impl Drop for NoOp {
     fn drop(&mut self) {}
 }
 
-#[cfg(any(target_os = "none", doc))]
+#[cfg(any(target_os = "none", target_os = "arceos", doc))]
 mod imp {
     use super::*;
 

@@ -42,7 +42,7 @@
 //!    preemption when accessing per-CPU data. Otherwise, the data may be corrupted
 //!    when it's being accessing and the current thread happens to be preempted.
 
-#![cfg_attr(target_os = "none", no_std)]
+#![cfg_attr(any(target_os = "none", target_os = "arceos"), no_std)]
 #![feature(doc_cfg)]
 
 extern crate percpu_macros;
