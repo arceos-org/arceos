@@ -23,9 +23,7 @@ pub fn syscall_sigaction(
     let inner = current_process.inner.lock();
     let signal_module = inner
         .signal_module
-        .iter()
-        .find(|(id, _)| *id == current_task().id().as_u64())
-        .map(|(_, handler)| handler)
+        .get(&current_task().id().as_u64())
         .unwrap();
     let mut memory_set = inner.memory_set.lock();
     let mut signal_handler = signal_module.signal_handler.lock();
@@ -100,9 +98,7 @@ pub fn syscall_sigprocmask(
     drop(memory_set);
     let signal_module = inner
         .signal_module
-        .iter_mut()
-        .find(|(id, _)| *id == current_task().id().as_u64())
-        .map(|(_, handler)| handler)
+        .get_mut(&current_task().id().as_u64())
         .unwrap();
     if old_mask as usize != 0 {
         unsafe {

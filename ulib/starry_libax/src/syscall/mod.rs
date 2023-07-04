@@ -2,7 +2,7 @@ use axfs::monolithic_fs::file_io::Kstat;
 use axsignal::action::SigAction;
 use flags::{MMAPFlags, TimeSecs, TimeVal, UtsName, WaitFlags, MMAPPROT, TMS};
 use fs::*;
-use log::{debug, error, info};
+use log::{debug, error};
 use mem::{syscall_brk, syscall_mmap, syscall_munmap};
 use task::*;
 
@@ -107,7 +107,8 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[3],
         ),
         SYSCALL_SIGRETURN => syscall_sigreturn(),
-
+        SYSCALL_EXIT_GROUP => syscall_exit(args[0] as i32),
+        SYSCALL_SET_TID_ADDRESS => syscall_set_tid_address(args[0] as usize),
         _ => {
             error!("Invalid Syscall Id: {}!", syscall_id);
             return -1;

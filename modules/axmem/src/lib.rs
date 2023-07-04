@@ -17,7 +17,7 @@ extern crate log;
 
 use axhal::{
     mem::{memory_regions, phys_to_virt, PhysAddr, VirtAddr, PAGE_SIZE_4K},
-    paging::{MappingFlags, PageTable},
+    paging::{MappingFlags, PageSize, PageTable},
 };
 use xmas_elf::symbol_table::Entry;
 
@@ -558,6 +558,14 @@ impl MemorySet {
                 area.handle_page_fault(addr, entry.flags(), &mut self.page_table);
             }
             Ok(())
+        } else {
+            Err(AxError::InvalidInput)
+        }
+    }
+
+    pub fn query(&self, vaddr: VirtAddr) -> AxResult<(PhysAddr, MappingFlags, PageSize)> {
+        if let Ok((paddr, flags, size)) = self.page_table.query(vaddr) {
+            Ok((paddr, flags, size))
         } else {
             Err(AxError::InvalidInput)
         }

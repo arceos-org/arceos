@@ -47,17 +47,38 @@ pub struct TaskInner {
     exit_code: AtomicI32,
     wait_for_exit: WaitQueue,
 
+    #[cfg(feature = "monolithic")]
     kstack: Option<TaskStack>,
+
     ctx: UnsafeCell<TaskContext>,
+
+    #[cfg(feature = "monolithic")]
     // 对应进程ID
     process_id: AtomicU64,
+
+    #[cfg(feature = "monolithic")]
     /// 是否是所属进程下的主线程
     is_leader: AtomicBool,
+
+    #[cfg(feature = "monolithic")]
     // 所属页表ID，在宏内核下默认会开启分页，是只读的所以不用原子量
     page_table_token: usize,
+
+    #[cfg(feature = "monolithic")]
     pub trap_frame: UnsafeCell<TrapFrame>,
     // 时间统计
+    #[cfg(feature = "monolithic")]
     time: UnsafeCell<TimeStat>,
+
+    #[allow(unused)]
+    #[cfg(feature = "monolithic")]
+    /// 子线程初始化的时候，存放tid的地址
+    set_child_tid: AtomicU64,
+
+    #[cfg(feature = "monolithic")]
+    /// 子线程初始化时，将这个地址清空；子线程退出时，触发这里的 futex。
+    /// 在创建时包含 CLONE_CHILD_SETTID 时才非0，但可以被 sys_set_tid_address 修改
+    clear_child_tid: AtomicU64,
 }
 
 static ID_COUNTER: AtomicU64 = AtomicU64::new(1);
@@ -146,6 +167,8 @@ impl TaskInner {
             is_leader: AtomicBool::new(false),
             trap_frame: UnsafeCell::new(TrapFrame::default()),
             time: UnsafeCell::new(TimeStat::new()),
+            set_child_tid: AtomicU64::new(0),
+            clear_child_tid: AtomicU64::new(0),
         }
     }
 
@@ -222,6 +245,21 @@ impl TaskInner {
             __copy(frame_address, kernel_base);
         }
         kernel_base
+    }
+
+    #[cfg(feature = "monolithic")]
+    pub fn set_child_tid(&self, tid: usize) {
+        self.set_child_tid.store(tid as u64, Ordering::Release)
+    }
+
+    #[cfg(feature = "monolithic")]
+    pub fn set_clear_child_tid(&self, tid: usize) {
+        self.clear_child_tid.store(tid as u64, Ordering::Release)
+    }
+
+    #[cfg(feature = "monolithic")]
+    pub fn get_clear_child_tid(&self) -> usize {
+        self.clear_child_tid.load(Ordering::Acquire) as usize
     }
 
     #[inline]

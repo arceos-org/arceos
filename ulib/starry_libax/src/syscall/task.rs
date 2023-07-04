@@ -3,7 +3,9 @@ use core::time::Duration;
 use axhal::time::{current_time, current_time_nanos, nanos_to_ticks};
 use axprocess::{
     flags::{CloneFlags, WaitStatus},
-    process::{current_process, current_task, sleep_now_task, wait_pid, yield_now_task},
+    process::{
+        current_process, current_task, set_child_tid, sleep_now_task, wait_pid, yield_now_task,
+    },
     time_stat_output,
 };
 extern crate alloc;
@@ -52,8 +54,11 @@ pub fn syscall_clone(
         Some(user_stack)
     };
     let curr_process = current_process();
-    let new_task_id = curr_process.clone_task(clone_flags, stack, ptid, tls, ctid);
-    new_task_id as isize
+    if let Ok(new_task_id) = curr_process.clone_task(clone_flags, stack, ptid, tls, ctid) {
+        new_task_id as isize
+    } else {
+        -1
+    }
 }
 
 /// 当前不涉及多核情况
@@ -168,4 +173,11 @@ pub fn syscall_uname(uts: *mut UtsName) -> isize {
         *uts = UtsName::default();
     }
     0
+}
+
+/// 设置tid对应的指针
+/// 返回值为当前的tid
+pub fn syscall_set_tid_address(tid: usize) -> isize {
+    set_child_tid(tid);
+    current_task().id().as_u64() as isize
 }

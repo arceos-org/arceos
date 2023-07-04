@@ -4,6 +4,7 @@ use alloc::{collections::BTreeMap, format, string::String, sync::Arc, vec::Vec};
 use axerrno::{AxError, AxResult};
 use axfs::monolithic_fs::FileIO;
 use axhal::arch::{write_page_table_root, TrapFrame};
+use axhal::mem::phys_to_virt;
 use axlog::info;
 use axtask::{AxTaskRef, TaskId};
 
@@ -60,7 +61,7 @@ pub struct ProcessInner {
     #[cfg(feature = "signal")]
     /// 信号处理模块    
     /// 第一维代表线程号，第二维代表线程对应的信号处理模块
-    pub signal_module: Vec<(u64, SignalModule)>,
+    pub signal_module: BTreeMap<u64, SignalModule>,
 }
 
 impl ProcessInner {
@@ -82,7 +83,7 @@ impl ProcessInner {
             fd_table,
             cwd: "/".to_string(), // 这里的工作目录是根目录
             #[cfg(feature = "signal")]
-            signal_module: Vec::new(),
+            signal_module: BTreeMap::new(),
         }
     }
     pub fn get_page_table_token(&self) -> usize {
@@ -165,7 +166,7 @@ impl Process {
         // info!("new task: {}", new_task.id().as_u64());
         inner
             .signal_module
-            .push((new_task.id().as_u64(), SignalModule::init_signal(None)));
+            .insert(new_task.id().as_u64(), SignalModule::init_signal(None));
 
         PID2PC
             .lock()
@@ -240,7 +241,7 @@ impl Process {
         inner.signal_module.clear();
         inner
             .signal_module
-            .push((curr.id().as_u64(), SignalModule::init_signal(None)));
+            .insert(curr.id().as_u64(), SignalModule::init_signal(None));
         drop(inner);
         // user_stack_top = user_stack_top / PAGE_SIZE_4K * PAGE_SIZE_4K;
         let new_trap_frame =
@@ -256,8 +257,8 @@ impl Process {
         stack: Option<usize>,
         _ptid: usize,
         tls: usize,
-        _ctid: usize,
-    ) -> u64 {
+        ctid: usize,
+    ) -> AxResult<u64> {
         let mut inner = self.inner.lock();
         // 是否共享虚拟地址空间
         let new_memory_set = if flags.contains(CloneFlags::CLONE_VM) {
@@ -283,8 +284,6 @@ impl Process {
             // 创建父子关系，此时以self作为父进程
             self.pid
         };
-        // info!("test!");
-        // let new_process =
         let new_task = TaskInner::new(
             || {},
             String::new(),
@@ -299,31 +298,84 @@ impl Process {
             // info!("address: {:X}", &curr_id as *const _ as usize);
             inner
                 .signal_module
-                .iter()
-                .find(|(id, _)| *id == current_task().id().as_u64())
-                .map(|(_, handler)| handler.signal_handler.clone())
+                .get_mut(&current_task().id().as_u64())
                 .unwrap()
+                .signal_handler
+                .clone()
         } else {
-            let curr_id = current_task().id().as_u64();
             // info!("curr_id: {:X}", (&curr_id as *const _ as usize));
             Arc::new(SpinNoIrq::new(
                 inner
                     .signal_module
-                    .iter()
-                    .find(|(id, _)| {
-                        // info!("id: {:X}", (&id as *const _ as usize));
-                        *id == curr_id
-                    })
-                    .map(|(_, handler)| {
-                        // info!(
-                        //     "handler: {:X}",
-                        //     (&handler.signal_handler as *const _ as usize)
-                        // );
-                        handler.signal_handler.lock().clone()
-                    })
-                    .unwrap(),
+                    .get_mut(&current_task().id().as_u64())
+                    .unwrap()
+                    .signal_handler
+                    .lock()
+                    .clone(),
             ))
         };
+
+        // 若包含CLONE_CHILD_SETTID或者CLONE_CHILD_CLEARTID
+        // 则需要把线程号写入到子线程地址空间中tid对应的地址中
+        if flags.contains(CloneFlags::CLONE_CHILD_SETTID)
+            || flags.contains(CloneFlags::CLONE_CHILD_CLEARTID)
+        {
+            if flags.contains(CloneFlags::CLONE_CHILD_SETTID) {
+                new_task.set_child_tid(ctid);
+            }
+
+            if flags.contains(CloneFlags::CLONE_CHILD_CLEARTID) {
+                new_task.set_clear_child_tid(ctid);
+            }
+
+            if flags.contains(CloneFlags::CLONE_VM) {
+                // 此时地址空间不会发生改变
+                // 在当前地址空间下进行分配
+                if inner
+                    .memory_set
+                    .lock()
+                    .manual_alloc_for_lazy(ctid.into())
+                    .is_ok()
+                {
+                    // 正常分配了地址
+                    unsafe {
+                        *(ctid as *mut i32) = if flags.contains(CloneFlags::CLONE_CHILD_SETTID) {
+                            new_task.id().as_u64() as i32
+                        } else {
+                            0
+                        }
+                    }
+                } else {
+                    return Err(AxError::BadAddress);
+                }
+            } else {
+                let mut vm = new_memory_set.lock();
+                // 否则需要在新的地址空间中进行分配
+                if vm.manual_alloc_for_lazy(ctid.into()).is_ok() {
+                    // 此时token没有发生改变，所以不能直接解引用访问，需要手动查页表
+                    if let Ok((phyaddr, _, _)) = vm.query(ctid.into()) {
+                        let vaddr: usize = phys_to_virt(phyaddr).into();
+                        // 注意：任何地址都是从free memory分配来的，那么在页表中，free memory一直在页表中，他们的虚拟地址和物理地址一直有偏移的映射关系
+                        unsafe {
+                            *(vaddr as *mut i32) = if flags.contains(CloneFlags::CLONE_CHILD_SETTID)
+                            {
+                                new_task.id().as_u64() as i32
+                            } else {
+                                0
+                            }
+                        }
+                        drop(vm);
+                    } else {
+                        drop(vm);
+                        return Err(AxError::BadAddress);
+                    }
+                } else {
+                    drop(vm);
+                    return Err(AxError::BadAddress);
+                }
+            }
+        }
+
         // 返回的值
         // 若创建的是进程，则返回进程的id
         // 若创建的是线程，则返回线程的id
@@ -333,10 +385,10 @@ impl Process {
             // 若创建的是线程，那么不用新建进程
             inner.tasks.push(Arc::clone(&new_task));
             #[cfg(feature = "signal")]
-            inner.signal_module.push((
+            inner.signal_module.insert(
                 new_task.id().as_u64(),
                 SignalModule::init_signal(Some(new_handler)),
-            ));
+            );
             return_id = new_task.id().as_u64();
         } else {
             // 若创建的是进程，那么需要新建进程
@@ -356,10 +408,10 @@ impl Process {
             new_process.inner.lock().tasks.push(Arc::clone(&new_task));
             // 若是新建了进程，那么需要把进程的父子关系进行记录
             #[cfg(feature = "signal")]
-            new_process.inner.lock().signal_module.push((
+            new_process.inner.lock().signal_module.insert(
                 new_task.id().as_u64(),
                 SignalModule::init_signal(Some(new_handler)),
-            ));
+            );
             return_id = new_process.pid;
             inner.children.push(new_process);
         };
@@ -390,7 +442,7 @@ impl Process {
         new_task.set_trap_context(trap_frame);
         new_task.set_trap_in_kernel_stack();
         RUN_QUEUE.lock().add_task(new_task);
-        return_id
+        Ok(return_id)
     }
     /// 若进程运行完成，则获取其返回码
     /// 若正在运行（可能上锁或没有上锁），则返回None
@@ -445,22 +497,38 @@ pub fn current_process() -> Arc<Process> {
 
 /// 退出当前任务
 pub fn exit(exit_code: i32) -> isize {
+    let process = current_process();
+    let mut inner = process.inner.lock();
     let curr = current();
     let curr_id = curr.id();
     let is_leader = curr.is_leader();
     let process_id = curr.get_process_id();
+    // clear_child_tid 的值不为 0，则将这个用户地址处的值写为0
+    let clear_child_tid = curr.get_clear_child_tid();
+    if clear_child_tid != 0 {
+        // 先确认是否在用户空间
+        let mut memory_set = inner.memory_set.lock();
+        if memory_set
+            .manual_alloc_for_lazy(clear_child_tid.into())
+            .is_ok()
+        {
+            // 就算不在也问题不大，反正要推出了
+            unsafe {
+                *(clear_child_tid as *mut i32) = 0;
+            }
+        }
+        drop(memory_set);
+    }
     // 记得删除任务
     // TID2TASK.lock().remove(&curr_id);
     drop(curr);
     // 若退出的是内核线程，就没有必要考虑后续了，否则此时调度队列重新调度的操作拿到进程这里来
     // 先进行资源的回收
     // 不可以回收内核任务
-    let process = current_process();
-    let mut inner = process.inner.lock();
+
     // inner.signal_module.remove(&curr_id.as_u64());
-    inner
-        .signal_module
-        .drain_filter(|(id, _)| *id == curr_id.as_u64());
+    inner.signal_module.remove(&curr_id.as_u64());
+
     RUN_QUEUE.lock().exit_current(exit_code);
     if is_leader {
         assert!(process_id != 0);
@@ -568,4 +636,9 @@ pub fn sleep_now_task(dur: core::time::Duration) {
 
 pub fn current_task() -> CurrentTask {
     axtask::current()
+}
+
+pub fn set_child_tid(tid: usize) {
+    let curr = current_task();
+    curr.set_clear_child_tid(tid);
 }

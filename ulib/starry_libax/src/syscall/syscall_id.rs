@@ -19,6 +19,8 @@ pub const SYSCALL_FSTAT: usize = 80;
 
 // 进程管理
 pub const SYSCALL_EXIT: usize = 93;
+pub const SYSCALL_EXIT_GROUP: usize = 94;
+pub const SYSCALL_SET_TID_ADDRESS: usize = 96;
 pub const SYSCALL_GETPID: usize = 172;
 pub const SYSCALL_GETPPID: usize = 173;
 pub const SYSCALL_CLONE: usize = 220;
@@ -77,6 +79,11 @@ pub fn get_syscall_name(syscall_id: usize) -> &'static str {
         SYSCALL_TIMES => "times",
         SYSCALL_UNAME => "uname",
         SYSCALL_GETTIMEOFDAY => "gettimeofday",
+        SYSCALL_EXIT_GROUP => "exit_group",
+        SYSCALL_SIGACTION => "sigaction",
+        SYSCALL_SIGPROCMASK => "sigprocmask",
+        SYSCALL_SIGRETURN => "sigreturn",
+        SYSCALL_SET_TID_ADDRESS => "set_tid_address",
         _ => "unknown",
     }
 }
