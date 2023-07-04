@@ -55,7 +55,9 @@ pub fn load_trap_for_signal() -> bool {
     let current_task = current_task();
     let signal_module = inner
         .signal_module
-        .get_mut(&current_task.id().as_u64())
+        .iter_mut()
+        .find(|(id, _)| *id == current_task.id().as_u64())
+        .map(|(_, handler)| handler)
         .unwrap();
     if let Some(old_trap_frame) = signal_module.last_trap_frame_for_signal.take() {
         unsafe {
@@ -81,17 +83,16 @@ pub fn load_trap_for_signal() -> bool {
 
 /// 处理当前进程的信号
 pub fn handle_signals() {
-    // let mut current_task = current_task();
-
-    // let signal_set = current_task.signal_set.get_mut();
-
-    // let handler = current_task.signal_handler.get_mut();
     let process = current_process();
     let mut inner = process.inner.lock();
     let current_task = current_task();
+    // info!("handle_signals: current_task: {:?}", current_task.id());
+    // info!("get map: {:?}", inner.signal_module.keys());
     let signal_module = inner
         .signal_module
-        .get_mut(&current_task.id().as_u64())
+        .iter_mut()
+        .find(|(id, _)| *id == current_task.id().as_u64())
+        .map(|(_, handler)| handler)
         .unwrap();
     let signal_set = &mut signal_module.signal_set;
     if let Some(sig_num) = signal_set.get_one_signal() {
@@ -202,15 +203,20 @@ pub fn send_signal_to_process(pid: isize, signum: isize) -> AxResult<()> {
     }
     let process = pid2pc.get_mut(&(pid as u64)).unwrap();
     let mut inner = process.inner.lock();
-    let mut id: Option<u64> = None;
+    let mut now_id: Option<u64> = None;
     for task in inner.tasks.iter_mut() {
         if task.is_leader() {
-            id = Some(task.id().as_u64());
+            now_id = Some(task.id().as_u64());
             break;
         }
     }
-    if id.is_some() {
-        let signal_module = inner.signal_module.get_mut(&id.unwrap()).unwrap();
+    if now_id.is_some() {
+        let signal_module = inner
+            .signal_module
+            .iter_mut()
+            .find(|(id, _)| *id == now_id.unwrap())
+            .map(|(_, handler)| handler)
+            .unwrap();
         signal_module.signal_set.try_add_signal(signum as usize);
     }
     Ok(())
@@ -227,10 +233,16 @@ pub fn send_signal_to_thread(tid: isize, signum: isize) -> AxResult<()> {
     let process = current_process();
     let mut inner = process.inner.lock();
 
-    if inner.signal_module.contains_key(&(tid as u64)) == false {
+    let signal_module = if let Some(module) = inner
+        .signal_module
+        .iter_mut()
+        .find(|(id, _)| *id == tid as u64)
+        .map(|(_, handler)| handler)
+    {
+        module
+    } else {
         return Err(axerrno::AxError::NotFound);
-    }
-    let signal_module = inner.signal_module.get_mut(&(tid as u64)).unwrap();
+    };
     signal_module.signal_set.try_add_signal(signum as usize);
     Ok(())
 }

@@ -33,7 +33,7 @@ pub mod task;
 
 #[no_mangle]
 pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
-    info!("syscall: {}", get_syscall_name(syscall_id));
+    debug!("syscall: {}", get_syscall_name(syscall_id));
     debug!("args: {:?}", args);
     match syscall_id {
         SYSCALL_OPENAT => syscall_openat(

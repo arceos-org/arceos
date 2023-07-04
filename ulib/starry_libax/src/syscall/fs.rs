@@ -133,6 +133,16 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
 pub fn syscall_write(fd: usize, buf: *const u8, count: usize) -> isize {
     let process = current_process();
     let process_inner = process.inner.lock();
+    // info!("id: {}", process.pid);
+    // info!("get map:{:?}", process_inner.signal_module.keys());
+    // info!(
+    //     "address: {:X}",
+    //     (&process_inner.signal_module) as *const _ as usize
+    // );
+    // for key in process_inner.signal_module.keys() {
+    //     info!("key address: {:X}", key as *const _ as usize);
+    //     info!("key val: {:}", *key);
+    // }
     if fd >= process_inner.fd_table.len() {
         return -1;
     }

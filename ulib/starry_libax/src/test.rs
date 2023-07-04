@@ -24,7 +24,7 @@ use crate::fs::{link::create_link, FilePath};
 /// 初赛测例
 #[allow(dead_code)]
 const JUNIOR_TESTCASES: &[&str] = &[
-    // "brk",
+    "brk",
     "chdir",
     "clone",
     "close",
@@ -445,7 +445,17 @@ pub fn run_testcases(case: &'static str) {
                 let testcase = args[0].clone();
                 let main_task = Process::new(args).unwrap();
                 let now_process_id = main_task.get_process_id() as isize;
-
+                // let pid2pc = PID2PC.lock();
+                // let inner = pid2pc.get(&(now_process_id as u64)).unwrap().inner.lock();
+                // info!("load testcases");
+                // info!("get map:{:?}", inner.signal_module.keys());
+                // info!("address: {:X}", (&inner.signal_module) as *const _ as usize);
+                // for key in inner.signal_module.keys() {
+                //     info!("key address: {:X}", key as *const _ as usize);
+                //     info!("key val: {:}", *key);
+                // }
+                // drop(inner);
+                // drop(pid2pc);
                 TESTRESULT.lock().load(&(testcase));
                 RUN_QUEUE.lock().add_task(main_task);
                 let mut exit_code = 0;
@@ -454,6 +464,17 @@ pub fn run_testcases(case: &'static str) {
                         break Some(exit_code);
                     }
                     yield_now_task();
+                    // let pid2pc = PID2PC.lock();
+                    // let inner = pid2pc.get(&(now_process_id as u64)).unwrap().inner.lock();
+                    // info!("load testcases");
+                    // info!("get map:{:?}", inner.signal_module.keys());
+                    // info!("address: {:X}", (&inner.signal_module) as *const _ as usize);
+                    // for key in inner.signal_module.keys() {
+                    //     info!("key address: {:X}", key as *const _ as usize);
+                    //     info!("key val: {:}", *key);
+                    // }
+                    // drop(inner);
+                    // drop(pid2pc);
                 }
             },
         );

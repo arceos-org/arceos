@@ -54,11 +54,11 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
 
         #[cfg(feature = "paging")]
         Trap::Exception(E::LoadPageFault) => {
+            let addr = stval::read();
             if !from_user {
+                info!("L page fault from kernel, addr: {:#x}", addr);
                 unimplemented!("L page fault from kernel");
             }
-            let addr = stval::read();
-
             handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::READ);
         }
 

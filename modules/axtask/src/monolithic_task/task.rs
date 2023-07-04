@@ -74,7 +74,7 @@ impl TaskId {
     /// 清空计数器，为了给单元测试使用
     /// 保留了gc, 主调度，内核进程
     pub fn clear() {
-        ID_COUNTER.store(3, Ordering::Relaxed);
+        ID_COUNTER.store(5, Ordering::Relaxed);
     }
 }
 
