@@ -1,5 +1,4 @@
 use crate::syscall::syscall;
-
 /// 宏内核架构下的trap入口
 use memory_addr::VirtAddr;
 use page_table_entry::MappingFlags;
@@ -7,7 +6,7 @@ struct TrapHandlerImpl;
 
 #[crate_interface::impl_interface]
 impl axhal::trap::TrapHandler for TrapHandlerImpl {
-    fn handle_irq(_irq_num: usize) {
+    fn handle_irq(irq_num: usize) {
         #[cfg(feature = "irq")]
         {
             let guard = kernel_guard::NoPreempt::new();

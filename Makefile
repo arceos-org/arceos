@@ -4,19 +4,20 @@ SMP ?= 1
 MODE ?= release
 LOG ?= warn
 
-A ?= apps/syscall/libc_static
+A ?= apps/syscall/junior
 APP ?= $(A)
 APP_FEATURES ?=
 DISK_IMG ?= sdcard.img
 
-SIGNAL ?= y
-MONOLITHIC ?= y
-MULTITASK ?= y
-PAGING ?= y
-FS ?= y
+SIGNAL ?= n
+MONOLITHIC ?= n
+MULTITASK ?= n
+PAGING ?= n
+FS ?= n
 NET ?= n
 GRAPHIC ?= n
 BUS ?= mmio
+PREEMPT ?= n
 
 QEMU_LOG ?= n
 NET_DUMP ?= n

@@ -60,25 +60,25 @@ const JUNIOR_TESTCASES: &[&str] = &[
 
 /// libc静态测例
 pub const LIBC_STATIC_TESTCASES: &[&str] = &[
-    "argv",
-    "basename",
+    // "argv",
+    // "basename",
     // "clocale_mbfuncs",
-    // "clock_gettime",
+    // "clock_gettime", // 需要113
     // "crypt",
-    "dirname",
-    "env",
-    "fdopen",
-    // "fnmatch",
-    // "fscanf",
-    // "fwscanf",
+    // "dirname",
+    // "env",
+    "fdopen", // 需要62
+    "fnmatch",
+    // "fscanf", // 需要管道，但是当前存在bug
+    // "fwscanf", // 需要113
     // "iconv_open",
     // "inet_pton",
     // "mbc",
     // "memstream",
-    // "pthread_cancel_points",
-    // "pthread_cancel",
-    // "pthread_cond",
-    // "pthread_tsd",
+    // "pthread_cancel_points", // 需要226
+    // "pthread_cancel",        // 需要226
+    // "pthread_cond",          // 需要226
+    // "pthread_tsd",           // 需要226
     // "qsort",
     // "random",
     // "search_hsearch",
@@ -87,10 +87,10 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     // "search_tsearch",
     // "setjmp",
     // "snprintf",
-    // "socket",
+    // "socket", // 需要198
     // "sscanf",
-    // "sscanf_long",
-    // "stat",
+    // "sscanf_long", // 需261
+    // "stat",        // 需79
     // "strftime",
     // "string",
     // "string_memcpy",
@@ -108,21 +108,21 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     // "swprintf",
     // "tgmath",
     // "time",
-    // "tls_align",
+    // "tls_align", // app不存在
     // "udiv",
-    // "ungetc",
-    // "utime",
+    // "ungetc", // 需要113
+    // "utime",  // 需要88
     // "wcsstr",
     // "wcstol",
     // "pleval",
-    // "daemon_failure",
+    // "daemon_failure", // 需要178
     // "dn_expand_empty",
     // "dn_expand_ptr_0",
-    // "fflush_exit",
+    // "fflush_exit", // 需要113
     // "fgets_eof",
-    // "fgetwc_buffering",
+    // "fgetwc_buffering", // 读取Stdin，但是当前存在bug
     // "fpclassify_invalid_ld80",
-    // "ftello_unflushed_append",
+    // "ftello_unflushed_append", // 需要113
     // "getpwnam_r_crash",
     // "getpwnam_r_errno",
     // "iconv_roundtrips",
@@ -130,7 +130,7 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     // "inet_pton_empty_last_field",
     // "iswspace_null",
     // "lrand48_signextend",
-    // "lseek_large",
+    // "lseek_large", // 需要113
     // "malloc_0",
     // "mbsrtowcs_overflow",
     // "memmem_oob_read",
@@ -141,13 +141,13 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     // "printf_fmt_g_round",
     // "printf_fmt_g_zeros",
     // "printf_fmt_n",
-    // "pthread_robust_detach",
-    // "pthread_cancel_sem_wait",
-    // "pthread_cond_smasher",
-    // "pthread_condattr_setclock",
-    // "pthread_exit_cancel",
-    // "pthread_once_deadlock",
-    // "pthread_rwlock_ebusy",
+    // "pthread_robust_detach",     // 需要100
+    // "pthread_cancel_sem_wait",   // 需要226
+    // "pthread_cond_smasher",      // 需要226
+    // "pthread_condattr_setclock", // 需要113
+    // "pthread_exit_cancel",       // 需要226
+    // "pthread_once_deadlock",     // 需要226
+    // "pthread_rwlock_ebusy",      // 需要226
     // "putenv_doublefree",
     // "regex_backref_0",
     // "regex_bracket_icase",
@@ -155,15 +155,15 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     // "regex_escaped_high_byte",
     // "regex_negated_range",
     // "regexec_nosub",
-    // "rewind_clear_error",
-    // "rlimit_open_files",
+    // "rewind_clear_error", // 需要62
+    // "rlimit_open_files",  // 需要261
     // "scanf_bytes_consumed",
     // "scanf_match_literal_eof",
     // "scanf_nullbyte_char",
-    // "setvbuf_unget",
-    "sigprocmask_internal",
+    // "setvbuf_unget", // 需要62
+    // "sigprocmask_internal",
     // "sscanf_eof",
-    // "statvfs",
+    // "statvfs", // 需要43
     // "strverscmp",
     // "syscall_sign_extend",
     // "uselocale_0",
@@ -347,9 +347,6 @@ impl TestResult {
     }
 }
 
-static TESTITER: LazyInit<SpinNoIrq<Box<dyn Iterator<Item = &'static &'static str> + Send>>> =
-    LazyInit::new();
-
 static TESTRESULT: LazyInit<SpinNoIrq<TestResult>> = LazyInit::new();
 
 /// 某一个测试用例完成之后调用，记录测试结果
@@ -398,18 +395,20 @@ fn get_args(command_line: &[u8]) -> Vec<String> {
 
 /// 执行运行所有测例的任务
 pub fn run_testcases(case: &'static str) {
+    let mut test_iter: LazyInit<Box<dyn Iterator<Item = &'static &'static str> + Send>> =
+        LazyInit::new();
     debug!("run_testcases :{}", case);
     match case {
         "junior" => {
-            TESTITER.init_by(SpinNoIrq::new(Box::new(JUNIOR_TESTCASES.iter())));
+            test_iter.init_by(Box::new(JUNIOR_TESTCASES.iter()));
             TESTRESULT.init_by(SpinNoIrq::new(TestResult::new(JUNIOR_TESTCASES.len())));
         }
         "libc-static" => {
-            TESTITER.init_by(SpinNoIrq::new(Box::new(LIBC_STATIC_TESTCASES.iter())));
+            test_iter.init_by(Box::new(LIBC_STATIC_TESTCASES.iter()));
             TESTRESULT.init_by(SpinNoIrq::new(TestResult::new(LIBC_STATIC_TESTCASES.len())));
         }
         "libc-dyamic" => {
-            TESTITER.init_by(SpinNoIrq::new(Box::new(LIBC_DYNAMIC_TESTCASES.iter())));
+            test_iter.init_by(Box::new(LIBC_DYNAMIC_TESTCASES.iter()));
             TESTRESULT.init_by(SpinNoIrq::new(TestResult::new(
                 LIBC_DYNAMIC_TESTCASES.len(),
             )));
@@ -434,7 +433,7 @@ pub fn run_testcases(case: &'static str) {
         }
     };
     loop {
-        let ans = TESTITER.lock().next().map_or_else(
+        let ans = test_iter.next().map_or_else(
             || {
                 // 已经执行完所有测例，输出测试结果并且跳出
                 TESTRESULT.lock().show_result();
@@ -442,7 +441,6 @@ pub fn run_testcases(case: &'static str) {
             },
             |&command_line| {
                 // 清空分配器
-
                 let args = get_args(command_line.as_bytes());
                 let testcase = args[0].clone();
                 let main_task = Process::new(args).unwrap();

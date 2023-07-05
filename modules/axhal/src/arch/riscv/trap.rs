@@ -4,7 +4,14 @@ use riscv::register::{
     stval,
 };
 
-use crate::trap::{handle_page_fault, handle_signal, handle_syscall};
+#[cfg(feature = "paging")]
+use crate::trap::handle_page_fault;
+
+#[cfg(feature = "signal")]
+use crate::trap::handle_signal;
+
+#[cfg(feature = "monolithic")]
+use crate::trap::handle_syscall;
 
 use super::TrapFrame;
 

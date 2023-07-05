@@ -261,7 +261,6 @@ cfg_if::cfg_if! {
 #[cfg(feature = "irq")]
 fn init_interrupt() {
     use axhal::time::TIMER_IRQ_NUM;
-
     // Setup timer interrupt handler
     const PERIODIC_INTERVAL_NANOS: u64 =
         axhal::time::NANOS_PER_SEC / axconfig::TICKS_PER_SEC as u64;
@@ -285,7 +284,6 @@ fn init_interrupt() {
         #[cfg(feature = "multitask")]
         axtask::on_timer_tick();
     });
-
     // Enable IRQs before starting app
     axhal::arch::enable_irqs();
 }

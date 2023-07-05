@@ -22,7 +22,10 @@ display = ["alloc", "paging", "axdriver/virtio-gpu", "dep:axdisplay"]
 # 是否使用宏内核架构
 monolithic = ["axtask/monolithic", "axhal/monolithic", "axprocess/monolithic", "axfs/monolithic"]
 
-default = ["axtask?/default", "monolithic"]
+# 任务抢占
+preempt = ["axtask/preempt", "irq"]
+
+default = ["axtask?/default"]
 
 [dependencies]
 percpu = { path = "../../crates/percpu" }
@@ -40,5 +43,8 @@ axnet = { path = "../axnet", optional = true }
 axdisplay = { path = "../axdisplay", optional = true }
 axtask = { path = "../axtask", default-features = false, optional = true }
 axmem = { path = "../axmem" }
+memory_addr = { path = "../../crates/memory_addr" }
+page_table = { path = "../../crates/page_table"}
+page_table_entry = { path = "../../crates/page_table_entry" }
 axprocess = { path = "../axprocess", optional = true }
 cfg-if = "1.0"

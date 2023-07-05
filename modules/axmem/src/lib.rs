@@ -533,6 +533,16 @@ impl MemorySet {
         self.owned_mem.clear();
     }
 
+    pub fn query(&self, vaddr: VirtAddr) -> AxResult<(PhysAddr, MappingFlags, PageSize)> {
+        if let Ok((paddr, flags, size)) = self.page_table.query(vaddr) {
+            Ok((paddr, flags, size))
+        } else {
+            Err(AxError::InvalidInput)
+        }
+    }
+}
+
+impl MemorySet {
     /// 判断某一个虚拟地址是否在内存集中。
     /// 若当前虚拟地址在内存集中，且对应的是lazy分配，暂未分配物理页的情况下，
     /// 则为其分配物理页面。
@@ -562,13 +572,26 @@ impl MemorySet {
             Err(AxError::InvalidInput)
         }
     }
-
-    pub fn query(&self, vaddr: VirtAddr) -> AxResult<(PhysAddr, MappingFlags, PageSize)> {
-        if let Ok((paddr, flags, size)) = self.page_table.query(vaddr) {
-            Ok((paddr, flags, size))
-        } else {
-            Err(AxError::InvalidInput)
+    /// 暴力实现区间强制分配
+    /// 传入区间左闭右闭
+    pub fn manual_alloc_range_for_lazy(&mut self, start: VirtAddr, end: VirtAddr) -> AxResult<()> {
+        if start > end {
+            return Err(AxError::InvalidInput);
         }
+        let start: usize = start.align_down_4k().into();
+        let end: usize = end.align_down_4k().into();
+        for addr in (start..=end).step_by(PAGE_SIZE_4K) {
+            // 逐页访问，主打暴力
+            info!("allocating page at {:x}", addr);
+            self.manual_alloc_for_lazy(addr.into())?;
+        }
+        Ok(())
+    }
+    /// 判断某一个类型的某一个对象是否被分配
+    pub fn manual_alloc_type_for_lazy<T: Sized>(&mut self, obj: *const T) -> AxResult<()> {
+        let start = obj as usize;
+        let end = start + core::mem::size_of::<T>() - 1;
+        self.manual_alloc_range_for_lazy(start.into(), end.into())
     }
 }
 

@@ -10,6 +10,7 @@ authors = ["Youjie Zheng <zyj578335934@gmail.com>"]
 fs = []
 signal = ["axhal/signal", "axsignal/signal"]
 monolithic = ["axhal/monolithic"]
+
 default = ["monolithic", "fs", "signal"]
 
 [dependencies]

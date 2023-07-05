@@ -1,7 +1,7 @@
-use axhal::paging::MappingFlags;
+use axhal::{paging::MappingFlags, time::current_time_nanos};
 use bitflags::*;
 use log::error;
-
+pub const NSEC_PER_SEC: usize = 1_000_000_000;
 bitflags! {
     /// 指定 sys_wait4 的选项
     pub struct WaitFlags: u32 {
@@ -34,10 +34,22 @@ pub struct TimeVal {
 }
 
 // sys_nanosleep指定的结构体类型
+#[repr(C)]
 #[derive(Clone, Copy)]
 pub struct TimeSecs {
     pub tv_sec: usize,
     pub tv_nsec: usize,
+}
+
+impl TimeSecs {
+    /// 从秒数和纳秒数构造一个 TimeSecs
+
+    pub fn now() -> Self {
+        let nano = current_time_nanos() as usize;
+        let tv_sec = nano / NSEC_PER_SEC;
+        let tv_nsec = nano % NSEC_PER_SEC;
+        TimeSecs { tv_sec, tv_nsec }
+    }
 }
 
 bitflags! {
@@ -164,3 +176,19 @@ impl SigMaskFlag {
         }
     }
 }
+
+/// sys_prlimit64 使用的数组
+#[repr(C)]
+pub struct RLimit {
+    /// 软上限
+    pub rlim_cur: u64,
+    /// 硬上限
+    pub rlim_max: u64,
+}
+// sys_prlimit64 使用的选项
+/// 用户栈大小
+pub const RLIMIT_STACK: i32 = 3;
+/// 可以打开的 fd 数
+pub const RLIMIT_NOFILE: i32 = 7;
+/// 用户地址空间的最大大小
+pub const RLIMIT_AS: i32 = 9;

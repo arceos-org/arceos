@@ -10,6 +10,7 @@ use axsignal::{
     ucontext::SignalUserContext,
     SignalHandler, SignalSet,
 };
+use axtask::KERNEL_PROCESS_ID;
 use spinlock::SpinNoIrq;
 
 pub struct SignalModule {
@@ -88,14 +89,10 @@ pub fn handle_signals() {
     let process = current_process();
     let mut inner = process.inner.lock();
     let current_task = current_task();
-    // info!("handle_signals: current_task: {:?}", current_task.id());
-    // info!("get map: {:?}", inner.signal_module.keys());
-    // let signal_module = inner
-    //     .signal_module
-    //     .iter_mut()
-    //     .find(|(id, _)| *id == current_task.id().as_u64())
-    //     .map(|(_, handler)| handler)
-    //     .unwrap();
+    if process.pid == KERNEL_PROCESS_ID {
+        // 内核进程不处理信号
+        return;
+    }
     let signal_module = inner
         .signal_module
         .get_mut(&current_task.id().as_u64())

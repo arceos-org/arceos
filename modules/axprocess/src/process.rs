@@ -5,11 +5,12 @@ use axerrno::{AxError, AxResult};
 use axfs::monolithic_fs::FileIO;
 use axhal::arch::{write_page_table_root, TrapFrame};
 use axhal::mem::phys_to_virt;
-use axlog::info;
+use axlog::{error, info};
 use axtask::{AxTaskRef, TaskId};
 
 const KERNEL_STACK_SIZE: usize = 0x20000;
-
+const FD_LIMIT_ORIGIN: usize = 256;
+use crate::fd_manager::FdManager;
 use crate::flags::{CloneFlags, WaitStatus};
 use crate::loader::load_app;
 use crate::signal::SignalModule;
@@ -54,8 +55,12 @@ pub struct ProcessInner {
     pub is_zombie: bool,
     /// 退出状态码
     pub exit_code: i32,
-    /// 文件描述符表
-    pub fd_table: Vec<Option<Arc<SpinNoIrq<dyn FileIO>>>>,
+    // /// 文件描述符表
+    // pub fd_table: Vec<Option<Arc<SpinNoIrq<dyn FileIO>>>>,
+    // /// 文件描述符上限，由prlimit设置
+    // pub fd_limit: usize,
+    #[cfg(feature = "fs")]
+    pub fd_manager: FdManager,
     /// 进程工作目录
     pub cwd: String,
     #[cfg(feature = "signal")]
@@ -80,7 +85,7 @@ impl ProcessInner {
             heap_top: heap_bottom,
             is_zombie: false,
             exit_code: 0,
-            fd_table,
+            fd_manager: FdManager::new(fd_table, FD_LIMIT_ORIGIN),
             cwd: "/".to_string(), // 这里的工作目录是根目录
             #[cfg(feature = "signal")]
             signal_module: BTreeMap::new(),
@@ -89,14 +94,18 @@ impl ProcessInner {
     pub fn get_page_table_token(&self) -> usize {
         self.memory_set.lock().page_table_token()
     }
-    pub fn alloc_fd(&mut self) -> usize {
-        for (i, fd) in self.fd_table.iter().enumerate() {
+    pub fn alloc_fd(&mut self) -> AxResult<usize> {
+        for (i, fd) in self.fd_manager.fd_table.iter().enumerate() {
             if fd.is_none() {
-                return i;
+                return Ok(i);
             }
         }
-        self.fd_table.push(None);
-        self.fd_table.len() - 1
+        if self.fd_manager.fd_table.len() >= self.fd_manager.limit {
+            error!("fd table is full");
+            return Err(AxError::StorageFull);
+        }
+        self.fd_manager.fd_table.push(None);
+        Ok(self.fd_manager.fd_table.len() - 1)
     }
     pub fn get_cwd(&self) -> String {
         self.cwd.clone()
@@ -399,7 +408,7 @@ impl Process {
                     parent_id,
                     new_memory_set,
                     inner.heap_bottom,
-                    self.inner.lock().fd_table.clone(),
+                    self.inner.lock().fd_manager.fd_table.clone(),
                 )),
             });
 
@@ -474,6 +483,7 @@ pub fn init_kernel_process() {
     kernel_process.inner.lock().tasks.push(Arc::clone(unsafe {
         &IDLE_TASK.current_ref_raw().get_unchecked()
     }));
+
     // TID2TASK.lock().insert(
     //     unsafe { IDLE_TASK.current_ref_raw().id() },
     //     Arc::clone(unsafe { &IDLE_TASK.current_ref_raw().get_unchecked() }),

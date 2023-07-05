@@ -28,7 +28,7 @@ monolithic = ["axhal/monolithic"]
 # 是否引入信号架构
 signal = ["axhal/signal", "axsignal/signal"]
 
-default = ["sched_fifo", "monolithic", "signal"]
+default = ["sched_fifo"]
 
 [dependencies]
 cfg-if = "1.0"

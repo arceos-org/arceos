@@ -19,7 +19,7 @@ features-$(MANOLITHIC) += libax/monolithic
 features-$(MULTITASK) += libax/multitask
 features-$(PAGING) += libax/paging
 features-$(SIGNAL) += libax/signal
-
+features-$(PREEMPT) += libax/preempt
 ifeq ($(BUS),pci)
   features-y += libax/bus-pci
 endif

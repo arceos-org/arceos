@@ -437,6 +437,9 @@ dependencies = [
  "crate_interface 0.1.1",
  "kernel_guard",
  "lazy_init",
+ "memory_addr",
+ "page_table",
+ "page_table_entry",
  "percpu",
  "spinlock",
 ]

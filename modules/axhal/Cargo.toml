@@ -30,7 +30,7 @@ platform-raspi4-aarch64 = [
     "axconfig/platform-raspi4-aarch64",
     "dep:page_table_entry", "dep:ratio",
 ]
-default = ["monolithic", "signal"]
+default = []
 
 [dependencies]
 log = "0.4"

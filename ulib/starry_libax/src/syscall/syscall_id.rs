@@ -23,10 +23,14 @@ pub const SYSCALL_EXIT_GROUP: usize = 94;
 pub const SYSCALL_SET_TID_ADDRESS: usize = 96;
 pub const SYSCALL_GETPID: usize = 172;
 pub const SYSCALL_GETPPID: usize = 173;
+pub const SYSCALL_GETUID: usize = 174;
+pub const SYSCALL_GETEUID: usize = 175;
+pub const SYSCALL_GETGID: usize = 176;
+pub const SYSCALL_GETEGID: usize = 177;
+pub const SYSCALL_GETTID: usize = 178;
 pub const SYSCALL_CLONE: usize = 220;
 pub const SYSCALL_EXECVE: usize = 221;
 pub const SYSCALL_WAIT4: usize = 260;
-
 // 内存管理
 pub const SYSCALL_BRK: usize = 214;
 pub const SYSCALL_MUNMAP: usize = 215;
@@ -35,11 +39,11 @@ pub const SYSCALL_MMAP: usize = 222;
 // 其他
 pub const SYSCALL_NANO_SLEEP: usize = 101;
 pub const SYSCALL_SCHED_YIELD: usize = 124;
-//?159
+pub const SYSCALL_CLOCK_GET_TIME: usize = 113;
 pub const SYSCALL_TIMES: usize = 153;
 pub const SYSCALL_UNAME: usize = 160;
 pub const SYSCALL_GETTIMEOFDAY: usize = 169;
-
+pub const SYSCALL_PRLIMIT64: usize = 261;
 // 信号模块
 pub const SYSCALL_KILL: usize = 129;
 pub const SYSCALL_TKILL: usize = 130;
@@ -84,6 +88,8 @@ pub fn get_syscall_name(syscall_id: usize) -> &'static str {
         SYSCALL_SIGPROCMASK => "sigprocmask",
         SYSCALL_SIGRETURN => "sigreturn",
         SYSCALL_SET_TID_ADDRESS => "set_tid_address",
+        SYSCALL_PRLIMIT64 => "prlimit64",
+        SYSCALL_CLOCK_GET_TIME => "clock_gettime",
         _ => "unknown",
     }
 }

@@ -70,8 +70,11 @@ monolithic = ["axruntime/monolithic", "fs"]
 # Test
 test = []
 
+# Preempt
+preempt = ["axruntime/preempt", "irq"]
+
 # Signal
-signal = ["axprocess/signal", "multitask"]
+signal = ["axprocess/signal", "multitask", "preempt"]
 
 default = ["axtask?/sched_fifo", "axtask", "axmem", "monolithic", "test", "paging", "signal"]
 [dependencies]

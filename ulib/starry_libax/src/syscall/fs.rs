@@ -60,11 +60,11 @@ fn deal_with_path(
 
     if !path.starts_with('/') && dir_fd != AT_FDCWD {
         // 如果不是绝对路径, 且dir_fd不是AT_FDCWD, 则需要将dir_fd和path拼接起来
-        if dir_fd >= process_inner.fd_table.len() {
+        if dir_fd >= process_inner.fd_manager.fd_table.len() {
             debug!("fd index out of range");
             return None;
         }
-        match process_inner.fd_table[dir_fd].as_ref() {
+        match process_inner.fd_manager.fd_table[dir_fd].as_ref() {
             Some(dir) => {
                 if dir.lock().get_type() != FileIOType::DirDesc {
                     debug!("selected fd is not a dir");
@@ -97,10 +97,10 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
     );
     let process = current_process();
     let process_inner = process.inner.lock();
-    if fd >= process_inner.fd_table.len() {
+    if fd >= process_inner.fd_manager.fd_table.len() {
         return -1;
     }
-    if let Some(file) = process_inner.fd_table[fd].as_ref() {
+    if let Some(file) = process_inner.fd_manager.fd_table[fd].as_ref() {
         if file.lock().get_type() == FileIOType::DirDesc {
             debug!("fd is a dir");
             return -1;
@@ -110,7 +110,7 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
         }
         // // debug
         // file.print_content();
-
+        info!("file type: {:?}", file.lock().get_type());
         // release current inner manually to avoid multi-borrow
         let read_size = file
             .lock()
@@ -143,10 +143,10 @@ pub fn syscall_write(fd: usize, buf: *const u8, count: usize) -> isize {
     //     info!("key address: {:X}", key as *const _ as usize);
     //     info!("key val: {:}", *key);
     // }
-    if fd >= process_inner.fd_table.len() {
+    if fd >= process_inner.fd_manager.fd_table.len() {
         return -1;
     }
-    if let Some(file) = process_inner.fd_table[fd].as_ref() {
+    if let Some(file) = process_inner.fd_manager.fd_table[fd].as_ref() {
         if file.lock().get_type() == FileIOType::DirDesc {
             debug!("fd is a dir");
             return -1;
@@ -184,14 +184,18 @@ pub fn syscall_openat(fd: usize, path: *const u8, flags: usize, _mode: u8) -> is
     let path = deal_with_path(fd, Some(path), force_dir).unwrap();
     let process = current_process();
     let mut process_inner = process.inner.lock();
-    let fd_num = process_inner.alloc_fd();
+    let fd_num = if let Ok(fd) = process_inner.alloc_fd() {
+        fd
+    } else {
+        return -1;
+    };
     debug!("allocated fd_num: {}", fd_num);
     // 如果是DIR
     if path.is_dir() {
         debug!("open dir");
         if let Ok(dir) = new_dir(path.path().to_string(), flags.into()) {
             debug!("new dir_desc successfully allocated: {}", path.path());
-            process_inner.fd_table[fd_num] = Some(Arc::new(SpinNoIrq::new(dir)));
+            process_inner.fd_manager.fd_table[fd_num] = Some(Arc::new(SpinNoIrq::new(dir)));
             fd_num as isize
         } else {
             debug!("open dir failed");
@@ -203,7 +207,7 @@ pub fn syscall_openat(fd: usize, path: *const u8, flags: usize, _mode: u8) -> is
         debug!("open file");
         if let Ok(file) = new_fd(path.path().to_string(), flags.into()) {
             debug!("new file_desc successfully allocated");
-            process_inner.fd_table[fd_num] = Some(Arc::new(SpinNoIrq::new(file)));
+            process_inner.fd_manager.fd_table[fd_num] = Some(Arc::new(SpinNoIrq::new(file)));
             let _ = create_link(&path, &path); // 不需要检查是否成功，因为如果成功，说明是新建的文件，如果失败，说明已经存在了
             fd_num as isize
         } else {
@@ -223,7 +227,7 @@ pub fn syscall_close(fd: usize) -> isize {
     let process = current_process();
     let mut process_inner = process.inner.lock();
 
-    if fd >= process_inner.fd_table.len() {
+    if fd >= process_inner.fd_manager.fd_table.len() {
         debug!("fd {} is out of range", fd);
         return -1;
     }
@@ -231,11 +235,11 @@ pub fn syscall_close(fd: usize) -> isize {
     //     debug!("fd {} is reserved for cwd", fd);
     //     return -1;
     // }
-    if process_inner.fd_table[fd].is_none() {
+    if process_inner.fd_manager.fd_table[fd].is_none() {
         debug!("fd {} is none", fd);
         return -1;
     }
-    process_inner.fd_table[fd].take();
+    process_inner.fd_manager.fd_table[fd].take();
 
     // for i in 0..process_inner.fd_table.len() {
     //     if let Some(file) = process_inner.fd_table[i].as_ref() {
@@ -289,10 +293,18 @@ pub fn syscall_pipe2(fd: *mut u32) -> isize {
 
     let (read, write) = make_pipe();
 
-    let fd_num = process_inner.alloc_fd();
-    process_inner.fd_table[fd_num] = Some(read);
-    let fd_num2 = process_inner.alloc_fd();
-    process_inner.fd_table[fd_num2] = Some(write);
+    let fd_num = if let Ok(fd) = process_inner.alloc_fd() {
+        fd
+    } else {
+        return -1;
+    };
+    process_inner.fd_manager.fd_table[fd_num] = Some(read);
+    let fd_num2 = if let Ok(fd) = process_inner.alloc_fd() {
+        fd
+    } else {
+        return -1;
+    };
+    process_inner.fd_manager.fd_table[fd_num2] = Some(write);
 
     debug!("fd_num: {}, fd_num2: {}", fd_num, fd_num2);
 
@@ -311,17 +323,21 @@ pub fn syscall_dup(fd: usize) -> isize {
     let process = current_process();
     let mut process_inner = process.inner.lock();
 
-    if fd >= process_inner.fd_table.len() {
+    if fd >= process_inner.fd_manager.fd_table.len() {
         debug!("fd {} is out of range", fd);
         return -1;
     }
-    if process_inner.fd_table[fd].is_none() {
+    if process_inner.fd_manager.fd_table[fd].is_none() {
         debug!("fd {} is a closed fd", fd);
         return -1;
     }
 
-    let fd_num = process_inner.alloc_fd();
-    process_inner.fd_table[fd_num] = process_inner.fd_table[fd].clone();
+    let fd_num = if let Ok(fd) = process_inner.alloc_fd() {
+        fd
+    } else {
+        return -1;
+    };
+    process_inner.fd_manager.fd_table[fd_num] = process_inner.fd_manager.fd_table[fd].clone();
 
     fd_num as isize
 }
@@ -335,24 +351,24 @@ pub fn syscall_dup3(fd: usize, new_fd: usize) -> isize {
     let process = current_process();
     let mut process_inner = process.inner.lock();
 
-    if fd >= process_inner.fd_table.len() {
+    if fd >= process_inner.fd_manager.fd_table.len() {
         debug!("fd {} is out of range", fd);
         return -1;
     }
-    if process_inner.fd_table[fd].is_none() {
+    if process_inner.fd_manager.fd_table[fd].is_none() {
         debug!("fd {} is not opened", fd);
         return -1;
     }
-    if new_fd >= process_inner.fd_table.len() {
-        for _i in process_inner.fd_table.len()..new_fd + 1 {
-            process_inner.fd_table.push(None);
+    if new_fd >= process_inner.fd_manager.fd_table.len() {
+        for _i in process_inner.fd_manager.fd_table.len()..new_fd + 1 {
+            process_inner.fd_manager.fd_table.push(None);
         }
     }
-    if process_inner.fd_table[new_fd].is_some() {
+    if process_inner.fd_manager.fd_table[new_fd].is_some() {
         debug!("new_fd {} is already opened", new_fd);
         return -1;
     }
-    process_inner.fd_table[new_fd] = process_inner.fd_table[fd].clone();
+    process_inner.fd_manager.fd_table[new_fd] = process_inner.fd_manager.fd_table[fd].clone();
 
     new_fd as isize
 }
@@ -636,15 +652,15 @@ pub fn syscall_fstat(fd: usize, kst: *mut Kstat) -> isize {
     let process = current_process();
     let process_inner = process.inner.lock();
 
-    if fd >= process_inner.fd_table.len() || fd < 3 {
+    if fd >= process_inner.fd_manager.fd_table.len() || fd < 3 {
         debug!("fd {} is out of range", fd);
         return -1;
     }
-    if process_inner.fd_table[fd].is_none() {
+    if process_inner.fd_manager.fd_table[fd].is_none() {
         debug!("fd {} is none", fd);
         return -1;
     }
-    let file = process_inner.fd_table[fd].clone().unwrap();
+    let file = process_inner.fd_manager.fd_table[fd].clone().unwrap();
     if file.lock().get_type() != FileIOType::FileDesc {
         debug!("fd {} is not a file", fd);
         return -1;

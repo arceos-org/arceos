@@ -18,7 +18,7 @@ pub struct TaskId(u64);
 /// The possible states of a task.
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub(crate) enum TaskState {
+pub enum TaskState {
     Running = 1,
     Ready = 2,
     Blocked = 3,
@@ -354,7 +354,7 @@ impl Deref for CurrentTask {
     }
 }
 
-extern "C" fn task_entry() -> ! {
+extern "C" fn task_entry() {
     // release the lock that was implicitly held across the reschedule
     unsafe { crate::RUN_QUEUE.force_unlock() };
     #[cfg(feature = "irq")]

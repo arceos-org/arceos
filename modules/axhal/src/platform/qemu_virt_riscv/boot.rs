@@ -19,7 +19,7 @@ unsafe fn init_mmu() {
     let page_table_root = BOOT_PT_SV39.as_ptr() as usize;
     satp::set(satp::Mode::Sv39, 0, page_table_root >> 12);
     riscv::asm::sfence_vma_all();
-    #[cfg(feature = "macro")]
+    #[cfg(feature = "monolithic")]
     riscv::register::sstatus::set_sum();
 }
 

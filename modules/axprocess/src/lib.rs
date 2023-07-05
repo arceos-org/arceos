@@ -25,6 +25,7 @@ pub fn start_schedule() {
     let curr: CurrentTask = current();
     #[cfg(feature = "preempt")]
     curr.set_preempt_pending(false);
+
     curr.set_state(TaskState::Running);
     unsafe {
         let prev_ctx_ptr = TaskContext::new_empty();

@@ -1,17 +1,19 @@
 use core::time::Duration;
 
-use axhal::time::{current_time, current_time_nanos, nanos_to_ticks};
+use axconfig::{TASK_STACK_SIZE, USER_MEMORY_LIMIT};
+use axhal::time::current_time;
 use axprocess::{
     flags::{CloneFlags, WaitStatus},
     process::{
         current_process, current_task, set_child_tid, sleep_now_task, wait_pid, yield_now_task,
     },
-    time_stat_output,
 };
 extern crate alloc;
 use alloc::{string::ToString, vec::Vec};
 
-use super::flags::{raw_ptr_to_ref_str, TimeSecs, TimeVal, UtsName, WaitFlags, TMS};
+use super::flags::{
+    raw_ptr_to_ref_str, RLimit, TimeSecs, WaitFlags, RLIMIT_AS, RLIMIT_NOFILE, RLIMIT_STACK,
+};
 /// 处理与任务（线程）有关的系统调用
 
 pub fn syscall_exit(exit_code: i32) -> isize {
@@ -59,21 +61,6 @@ pub fn syscall_clone(
     } else {
         -1
     }
-}
-
-/// 当前不涉及多核情况
-pub fn syscall_getpid() -> isize {
-    let curr = current_task();
-    let pid = curr.get_process_id();
-    pid as isize
-}
-
-pub fn syscall_getppid() -> isize {
-    let curr_process = current_process();
-    let inner = curr_process.inner.lock();
-    let parent_id = inner.parent;
-    drop(inner);
-    parent_id as isize
 }
 
 /// 等待子进程完成任务，若子进程没有完成，则自身yield
@@ -141,43 +128,110 @@ pub fn syscall_sleep(req: *const TimeSecs, rem: *mut TimeSecs) -> isize {
     0
 }
 
-/// 返回值为当前经过的时钟中断数
-pub fn syscall_time(tms: *mut TMS) -> isize {
-    let (_, utime_us, _, stime_us) = time_stat_output();
-    unsafe {
-        *tms = TMS {
-            tms_utime: utime_us,
-            tms_stime: stime_us,
-            tms_cutime: utime_us,
-            tms_cstime: stime_us,
-        }
-    }
-    nanos_to_ticks(current_time_nanos()) as isize
-}
-
-/// 获取当前系统时间并且存储在给定结构体中
-pub fn syscall_get_time_of_day(ts: *mut TimeVal) -> isize {
-    let current_us = current_time_nanos() as usize / 1000;
-    unsafe {
-        *ts = TimeVal {
-            sec: current_us / 1000_000,
-            usec: current_us % 1000_000,
-        }
-    }
-    0
-}
-
-/// 获取系统信息
-pub fn syscall_uname(uts: *mut UtsName) -> isize {
-    unsafe {
-        *uts = UtsName::default();
-    }
-    0
-}
-
 /// 设置tid对应的指针
 /// 返回值为当前的tid
 pub fn syscall_set_tid_address(tid: usize) -> isize {
     set_child_tid(tid);
+    current_task().id().as_u64() as isize
+}
+
+/// 设置任务资源限制
+///
+/// pid 设为0时，表示应用于自己
+pub fn syscall_prlimit64(
+    pid: usize,
+    resource: i32,
+    new_limit: *const RLimit,
+    old_limit: *mut RLimit,
+) -> isize {
+    // 当pid不为0，其实没有权利去修改其他的进程的资源限制
+    let curr_process = current_process();
+    if pid == 0 || pid == curr_process.pid as usize {
+        match resource {
+            RLIMIT_STACK => {
+                if old_limit as usize != 0 {
+                    unsafe {
+                        *old_limit = RLimit {
+                            rlim_cur: TASK_STACK_SIZE as u64,
+                            rlim_max: TASK_STACK_SIZE as u64,
+                        };
+                    }
+                }
+            }
+            RLIMIT_NOFILE => {
+                // 仅支持修改最大文件数
+                let mut inner = curr_process.inner.lock();
+                if old_limit as usize != 0 {
+                    let limit = inner.fd_manager.limit;
+                    unsafe {
+                        *old_limit = RLimit {
+                            rlim_cur: limit as u64,
+                            rlim_max: limit as u64,
+                        };
+                    }
+                }
+                if new_limit as usize != 0 {
+                    let new_limit = unsafe { (*new_limit).rlim_cur };
+                    inner.fd_manager.limit = new_limit as usize;
+                }
+            }
+            RLIMIT_AS => {
+                if old_limit as usize != 0 {
+                    unsafe {
+                        *old_limit = RLimit {
+                            rlim_cur: USER_MEMORY_LIMIT as u64,
+                            rlim_max: USER_MEMORY_LIMIT as u64,
+                        };
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    0
+}
+
+/// 当前不涉及多核情况
+pub fn syscall_getpid() -> isize {
+    let curr = current_task();
+    let pid = curr.get_process_id();
+    pid as isize
+}
+
+pub fn syscall_getppid() -> isize {
+    let curr_process = current_process();
+    let inner = curr_process.inner.lock();
+    let parent_id = inner.parent;
+    drop(inner);
+    parent_id as isize
+}
+
+pub fn syscall_umask(new_mask: i32) -> isize {
+    let curr_process = current_process();
+    let mut inner = curr_process.inner.lock();
+    inner.fd_manager.set_mask(new_mask) as isize
+}
+
+/// 获取用户 id。在实现多用户权限前默认为最高权限
+pub fn syscall_getuid() -> isize {
+    0
+}
+
+/// 获取有效用户 id，即相当于哪个用户的权限。在实现多用户权限前默认为最高权限
+pub fn syscall_geteuid() -> isize {
+    0
+}
+
+/// 获取用户组 id。在实现多用户权限前默认为最高权限
+pub fn syscall_getgid() -> isize {
+    0
+}
+
+/// 获取有效用户组 id，即相当于哪个用户的权限。在实现多用户权限前默认为最高权限
+pub fn syscall_getegid() -> isize {
+    0
+}
+
+pub fn syscall_gettid() -> isize {
     current_task().id().as_u64() as isize
 }

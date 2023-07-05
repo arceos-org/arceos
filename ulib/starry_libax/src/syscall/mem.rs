@@ -57,7 +57,7 @@ pub fn syscall_mmap(
     } else {
         // file backend
         info!("[mmap] fd: {}, offset: 0x{:x}", fd, offset);
-        let file = match &inner.fd_table[fd] {
+        let file = match &inner.fd_manager.fd_table[fd] {
             // 文件描述符表里面存的是文件描述符，这很合理罢
             Some(file) => Box::new(
                 file.lock()

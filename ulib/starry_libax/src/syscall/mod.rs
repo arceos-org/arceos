@@ -1,11 +1,12 @@
 use axfs::monolithic_fs::file_io::Kstat;
+use axprocess::process::exit;
 use axsignal::action::SigAction;
 use flags::{MMAPFlags, TimeSecs, TimeVal, UtsName, WaitFlags, MMAPPROT, TMS};
 use fs::*;
 use log::{debug, error, info};
 use mem::{syscall_brk, syscall_mmap, syscall_munmap};
 use task::*;
-
+use utils::*;
 extern crate axlog;
 extern crate log;
 
@@ -18,12 +19,12 @@ pub mod flags;
 pub mod fs;
 pub mod mem;
 pub mod syscall_id;
-
+pub mod utils;
 #[allow(unused)]
 use syscall_id::*;
 
 use crate::syscall::{
-    flags::SigMaskFlag,
+    flags::{RLimit, SigMaskFlag},
     signal::{
         syscall_kill, syscall_sigaction, syscall_sigprocmask, syscall_sigreturn, syscall_tkill,
     },
@@ -109,10 +110,24 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         SYSCALL_SIGRETURN => syscall_sigreturn(),
         SYSCALL_EXIT_GROUP => syscall_exit(args[0] as i32),
         SYSCALL_SET_TID_ADDRESS => syscall_set_tid_address(args[0] as usize),
+        SYSCALL_PRLIMIT64 => syscall_prlimit64(
+            args[0] as usize,
+            args[1] as i32,
+            args[2] as *const RLimit,
+            args[3] as *mut RLimit,
+        ),
+        SYSCALL_CLOCK_GET_TIME => {
+            syscall_clock_get_time(args[0] as usize, args[1] as *mut TimeSecs)
+        }
+        SYSCALL_GETUID => syscall_getuid(),
+        SYSCALL_GETEUID => syscall_geteuid(),
+        SYSCALL_GETGID => syscall_getgid(),
+        SYSCALL_GETEGID => syscall_getegid(),
+        SYSCALL_GETTID => syscall_gettid(),
         _ => {
             error!("Invalid Syscall Id: {}!", syscall_id);
-            return -1;
-            // panic!("Invalid Syscall Id: {}!", syscall_id);
+            // return -1;
+            exit(-1)
         }
     }
 }

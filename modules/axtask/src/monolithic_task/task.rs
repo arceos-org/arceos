@@ -385,7 +385,7 @@ impl TaskInner {
 
     #[inline]
     #[cfg(feature = "preempt")]
-    pub(crate) fn set_preempt_pending(&self, pending: bool) {
+    pub fn set_preempt_pending(&self, pending: bool) {
         self.need_resched.store(pending, Ordering::Release)
     }
 
