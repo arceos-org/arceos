@@ -2,7 +2,7 @@ use axfs::monolithic_fs::file_io::Kstat;
 use axsignal::action::SigAction;
 use flags::{MMAPFlags, TimeSecs, TimeVal, UtsName, WaitFlags, MMAPPROT, TMS};
 use fs::*;
-use log::{debug, error};
+use log::{debug, error, info};
 use mem::{syscall_brk, syscall_mmap, syscall_munmap};
 use task::*;
 
@@ -33,7 +33,7 @@ pub mod task;
 
 #[no_mangle]
 pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
-    debug!("syscall: {}", get_syscall_name(syscall_id));
+    info!("syscall: {}", get_syscall_name(syscall_id));
     debug!("args: {:?}", args);
     match syscall_id {
         SYSCALL_OPENAT => syscall_openat(
