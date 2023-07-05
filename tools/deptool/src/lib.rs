@@ -1,53 +1,41 @@
-use std::fs;
-use std::path::Path;
+mod cmd_parser;
+mod cmd_builder;
+mod mermaid_generator;
+mod d2_generator;
+
 use std::process::Command;
+use std::fs::File;
+use std::io::Write;
 
-static CRATE_ROOT: &str = "../../crates/";
-static MODULE_ROOT: &str = "../../modules/";
+use cmd_builder::build_cargo_tree_cmd;
+pub use cmd_parser::{parse_cmd, build_loc};
+use d2_generator::gen_d2_script;
+use mermaid_generator::gen_mermaid_script;
 
+#[derive(Clone, Copy, Debug)]
+pub enum GraphFormat {
+   Mermaid,
+   D2,
+}
+
+#[derive(Debug)]
 pub struct Config {
-    pub crate_name: String,
-    loc: &'static str,
+    pub no_default: bool,
+    pub format: GraphFormat,
+    pub features: Vec::<String>,
+    loc: String,
+    output_loc: String
 }
 
 impl Config {
-    pub fn build(args: &[String]) -> Result<Config, &'static str>{
-        if args.len() < 2 {
-            return Err("not enough arguments");
-        }
-        let crate_name = args[1].clone();
-        if check_crate_name(&crate_name) {
-            Ok(Config { crate_name, loc: CRATE_ROOT })
-        } else if check_module_name(&crate_name) {
-           Ok(Config { crate_name, loc: MODULE_ROOT }) 
-        } else {
-            Err("crate not exist")
-        }
+    pub fn build(no_default: bool, features: Vec::<String>, format: GraphFormat, loc: String, output_loc: String) -> Config {
+        Config { no_default, format, features, loc, output_loc }
     }
 }
 
-fn check_crate_name(name: &String) -> bool {
-    let crates = fs::read_dir(CRATE_ROOT).unwrap();
-    crates.into_iter().map(|p| p.unwrap().file_name()).any(|n| n.to_str().unwrap() == name)
-}
-
-fn check_module_name(name: &String) -> bool {
-    let crates = fs::read_dir(MODULE_ROOT).unwrap();
-    crates.into_iter().map(|p| p.unwrap().file_name()).any(|n| n.to_str().unwrap() == name)
-}
-
-fn is_arceos_crate(name: &String) -> bool {
-    check_crate_name(&name) || check_module_name(&name)
-}
-
-pub fn get_deps_by_crate_name(cfg: &Config) -> String {
-    let path_str = cfg.loc.to_string() + &cfg.crate_name;
-    let crate_path = Path::new(&path_str);
-    let binding = fs::canonicalize(&crate_path).unwrap();
-    let abs_path = binding.to_str().unwrap();
-
-    let cmd1 = &(String::from("cd ") + abs_path + " && " + "cargo tree -e normal --prefix depth --format {lib}");
-    let cmds = ["-c", cmd1];
+fn get_deps_by_crate_name(cfg: &Config) -> String {
+    let cmd_ct = build_cargo_tree_cmd(&cfg);
+    let cmds = ["-c", &cmd_ct];
     let output = if cfg!(target_os = "windows") {
         Command::new("cmd")
                 .args(cmds)
@@ -60,8 +48,8 @@ pub fn get_deps_by_crate_name(cfg: &Config) -> String {
                 .expect("failed to execute process")
     };
 
-    let hello = output.stdout;
-    String::from_utf8(hello).unwrap()
+    let deps = output.stdout;
+    String::from_utf8(deps).unwrap()
 }
 
 fn parse_deps(deps: &String) -> Vec<(i32, String)> {
@@ -75,39 +63,38 @@ fn parse_deps(deps: &String) -> Vec<(i32, String)> {
     rst
 }
 
-pub fn generate_deps_path(cfg: &Config, parsed_crates: &mut Vec<String>, result: &mut String) {
-    let deps = get_deps_by_crate_name(cfg);
-    let deps_parsed = parse_deps(&deps);
-    let dep_root = &deps_parsed[0].1;
-    let root_level = deps_parsed[0].0;
-    for (level, crate_name) in deps_parsed.iter().skip(1) {
-        if !is_arceos_crate(&crate_name) {
-            continue;
-        } else {
-            if *level != root_level + 1 {
-                continue;
-            }
-            // println!("{}-->{}", dep_root, crate_name);
-            *result += &format!("{}-->{}\n", dep_root, crate_name);
-            if parsed_crates.contains(&crate_name) {
-                continue;
-            }
-            parsed_crates.push(crate_name.clone());
-            let loc;
-            if check_crate_name(&crate_name) {
-                loc = CRATE_ROOT;
-            } else {
-                loc = MODULE_ROOT;
-            }
-            let new_cfg = Config {crate_name: (*crate_name).clone(), loc};
-            generate_deps_path(&new_cfg, parsed_crates, result);
-        }
+fn generate_mermaid(config: &Config) -> String {
+    let mut result = String::from("");
+    let deps = get_deps_by_crate_name(config);
+    gen_mermaid_script(&deps, &mut result);
+    "graph TD;\n".to_string() + &result
+}
+
+fn generate_d2(config: &Config) -> String {
+    let mut result = String::from("");
+    let deps = get_deps_by_crate_name(config);
+    gen_d2_script(&deps, &mut result);
+    result
+}
+
+fn generate_deps_graph(config: &Config) -> String {
+    match config.format {
+        GraphFormat::D2 => generate_d2(config),
+        _ => generate_mermaid(config)
     }
 }
 
-pub fn generate_mermaid(config: &Config) -> String {
-    let mut tmp = Vec::new();
-    let mut result = String::from("");
-    generate_deps_path(&config, &mut tmp, &mut result);
-    "graph TD;\n".to_string() + &result
+fn output_deps_graph(rst: &String) -> std::io::Result<()> {
+    let mut file = File::create("output.txt")?;
+    file.write_all(rst.as_bytes())?;
+    Ok(())
+}
+
+pub fn run(config: &Config) {
+    let rst = generate_deps_graph(config);
+    print!("{}", rst);
+    match output_deps_graph(&rst) {
+        Ok(()) => {},
+        Err(error) => println!("Error during writing file {}, {}", config.output_loc, error)
+    }
 }

@@ -3,7 +3,8 @@ name: Test CI
 on: [push, pull_request]
 
 env:
-  qemu_version: 7.0.0
+  qemu-version: 7.1.0
+  rust-toolchain: nightly
 
 jobs:
   unit-test:
@@ -13,8 +14,8 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: nightly
-        components: rust-src, llvm-tools-preview
+        toolchain: ${{ env.rust-toolchain }}
+        components: rust-src
     - name: Run unit tests
       run: make unittest_no_fail_fast
 
@@ -30,50 +31,20 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: nightly
-        components: rust-src, llvm-tools-preview
+        toolchain: ${{ env.rust-toolchain }}
+        components: rust-src
     - uses: actions-rs/install@v0.1
       with:
         crate: cargo-binutils
         version: latest
         use-tool-cache: true
-    - name: Download musl toolchain
-      run: |
-        if [ "${{ matrix.arch }}" = "x86_64" ]; then
-          export MUSL_PATH="x86_64-linux-musl-cross"
-        elif [ "${{ matrix.arch }}" = "aarch64" ]; then
-          export MUSL_PATH="aarch64-linux-musl-cross"
-        elif [ "${{ matrix.arch }}" = "riscv64" ]; then
-          export MUSL_PATH="riscv64-linux-musl-cross"
-        fi
-        wget https://musl.cc/$MUSL_PATH.tgz
-        tar -xf $MUSL_PATH.tgz
-        mv $MUSL_PATH musl
-
-    - name: Cache QEMU
-      id: cache-qemu
-      uses: actions/cache@v3
+    - uses: ./.github/workflows/actions/setup-qemu
       with:
-        path: qemu-${{ env.qemu_version }}
-        key: qemu-${{ env.qemu_version }}
-    - name: Install dependencies
-      run: sudo apt-get update && sudo apt-get install -y ninja-build
-    - name: Download and compile QEMU
-      if: steps.cache-qemu.outputs.cache-hit != 'true'
-      run: |
-        QEMU=qemu-${{ env.qemu_version }}
-        wget https://download.qemu.org/$QEMU.tar.xz \
-          && tar -xJf $QEMU.tar.xz \
-          && cd $QEMU \
-          && ./configure --target-list=x86_64-softmmu,riscv64-softmmu,aarch64-softmmu \
-          && make -j > /dev/null 2>&1
-    - name: Install QEMU
-      run: |
-        cd qemu-${{ env.qemu_version }} && sudo make install
-        qemu-system-x86_64 --version
-
+        qemu-version: ${{ env.qemu-version }}
+    - uses: ./.github/workflows/actions/setup-musl
+      with:
+        arch: ${{ matrix.arch }}
     - name: Run app tests
       run: |
-        export PATH=$PATH:$PWD/musl/bin
         make disk_img
         make test ARCH=${{ matrix.arch }}
