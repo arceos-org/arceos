@@ -21,6 +21,7 @@ mmio-regions = [
     ["0xfec0_0000", "0x1000"],      # IO APIC
     ["0xfed0_0000", "0x1000"],      # HPET
     ["0xfee0_0000", "0x1000"],      # Local APIC
+    ["0xe_0000", "0x2_0000"],       #ACPI
 ]
 # VirtIO MMIO regions with format (`base_paddr`, `size`).
 virtio-mmio-regions = []
