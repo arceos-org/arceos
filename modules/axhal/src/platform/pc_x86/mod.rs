@@ -6,6 +6,7 @@ mod uart16550;
 pub mod mem;
 pub mod misc;
 pub mod time;
+#[cfg(feature = "alloc")]
 pub mod acpi;
 
 #[cfg(feature = "smp")]
@@ -59,6 +60,7 @@ unsafe extern "C" fn rust_entry_secondary(magic: usize) {
 pub fn platform_init() {
     self::apic::init_primary();
     self::time::init_primary();
+    #[cfg(feature = "alloc")]
     self::acpi::init();
 }
 
