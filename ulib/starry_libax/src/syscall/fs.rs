@@ -16,6 +16,8 @@ use core::ptr::copy_nonoverlapping;
 use log::{debug, info};
 use spinlock::SpinNoIrq;
 
+use super::syscall_id::ErrorNo;
+
 #[allow(unused)]
 const AT_FDCWD: usize = -100isize as usize;
 // Special value used to indicate openat should use the current working directory.
@@ -335,7 +337,8 @@ pub fn syscall_dup(fd: usize) -> isize {
     let fd_num = if let Ok(fd) = process_inner.alloc_fd() {
         fd
     } else {
-        return -1;
+        // 文件描述符达到上限了
+        return ErrorNo::EMFILE as isize;
     };
     process_inner.fd_manager.fd_table[fd_num] = process_inner.fd_manager.fd_table[fd].clone();
 

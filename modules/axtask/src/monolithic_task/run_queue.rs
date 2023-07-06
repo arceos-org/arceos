@@ -14,7 +14,7 @@ pub static RUN_QUEUE: LazyInit<SpinNoIrq<AxRunQueue>> = LazyInit::new();
 // TODO: per-CPU
 pub static EXITED_TASKS: SpinNoIrq<VecDeque<AxTaskRef>> = SpinNoIrq::new(VecDeque::new());
 
-static WAIT_FOR_EXIT: WaitQueue = WaitQueue::new();
+pub static WAIT_FOR_EXIT: WaitQueue = WaitQueue::new();
 
 #[percpu::def_percpu]
 pub static IDLE_TASK: LazyInit<AxTaskRef> = LazyInit::new();
@@ -241,7 +241,9 @@ pub(crate) fn init() {
         KERNEL_PROCESS_ID,
         0,
     );
-    IDLE_TASK.with_current(|i| i.init_by(idle_task.clone()));
+    IDLE_TASK.with_current(|i: &mut LazyInit<Arc<scheduler::FifoTask<TaskInner>>>| {
+        i.init_by(idle_task.clone())
+    });
 
     let main_task = TaskInner::new_init("main".into());
     main_task.set_state(TaskState::Running);

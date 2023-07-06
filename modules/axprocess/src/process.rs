@@ -12,6 +12,7 @@ const KERNEL_STACK_SIZE: usize = 0x20000;
 const FD_LIMIT_ORIGIN: usize = 256;
 use crate::fd_manager::FdManager;
 use crate::flags::{CloneFlags, WaitStatus};
+use crate::futex::{clear_wait, FutexRobustList};
 use crate::loader::load_app;
 use crate::signal::SignalModule;
 use crate::stdin::{Stderr, Stdin, Stdout};
@@ -67,6 +68,11 @@ pub struct ProcessInner {
     /// 信号处理模块    
     /// 第一维代表线程号，第二维代表线程对应的信号处理模块
     pub signal_module: BTreeMap<u64, SignalModule>,
+
+    /// robust list存储模块
+    /// 用来存储线程对共享变量的使用地址
+    /// 具体使用交给了用户空间
+    pub robust_list: BTreeMap<u64, FutexRobustList>,
 }
 
 impl ProcessInner {
@@ -89,6 +95,7 @@ impl ProcessInner {
             cwd: "/".to_string(), // 这里的工作目录是根目录
             #[cfg(feature = "signal")]
             signal_module: BTreeMap::new(),
+            robust_list: BTreeMap::new(),
         }
     }
     pub fn get_page_table_token(&self) -> usize {
@@ -513,6 +520,7 @@ pub fn exit(exit_code: i32) -> isize {
     let curr_id = curr.id();
     let is_leader = curr.is_leader();
     let process_id = curr.get_process_id();
+    clear_wait(process_id);
     // clear_child_tid 的值不为 0，则将这个用户地址处的值写为0
     let clear_child_tid = curr.get_clear_child_tid();
     if clear_child_tid != 0 {

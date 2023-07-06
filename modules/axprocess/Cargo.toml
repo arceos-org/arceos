@@ -8,6 +8,8 @@ authors = ["Youjie Zheng <zyj578335934@gmail.com>"]
 
 [features]
 fs = []
+preempt = ["axtask/preempt"]
+
 signal = ["axhal/signal", "axsignal/signal"]
 monolithic = ["axhal/monolithic"]
 

@@ -1,5 +1,6 @@
 #![cfg_attr(not(test), no_std)]
 #![feature(drain_filter)]
+#![feature(btree_drain_filter)]
 use axhal::{arch::TaskContext, mem::VirtAddr, paging::MappingFlags};
 use axtask::{current, monolithic_task::task::CurrentTask, monolithic_task::task::TaskState};
 
@@ -11,6 +12,8 @@ pub mod flags;
 pub mod process;
 pub mod stdin;
 // mod test;
+
+pub mod futex;
 
 #[cfg(feature = "signal")]
 mod signal;

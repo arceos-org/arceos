@@ -4,6 +4,7 @@ use axconfig::{TASK_STACK_SIZE, USER_MEMORY_LIMIT};
 use axhal::time::current_time;
 use axprocess::{
     flags::{CloneFlags, WaitStatus},
+    futex::{clear_wait, futex, FutexRobustList},
     process::{
         current_process, current_task, set_child_tid, sleep_now_task, wait_pid, yield_now_task,
     },
@@ -12,7 +13,8 @@ extern crate alloc;
 use alloc::{string::ToString, vec::Vec};
 
 use super::flags::{
-    raw_ptr_to_ref_str, RLimit, TimeSecs, WaitFlags, RLIMIT_AS, RLIMIT_NOFILE, RLIMIT_STACK,
+    raw_ptr_to_ref_str, RLimit, RobustList, TimeSecs, WaitFlags, RLIMIT_AS, RLIMIT_NOFILE,
+    RLIMIT_STACK,
 };
 /// 处理与任务（线程）有关的系统调用
 
@@ -37,6 +39,8 @@ pub fn syscall_exec(path: *const u8, mut args: *const usize) -> isize {
         }
     }
     drop(inner);
+    // 清空futex信号列表
+    clear_wait(curr_process.pid);
     let argc = args_vec.len();
     curr_process.exec(path, args_vec);
     argc as isize
@@ -234,4 +238,92 @@ pub fn syscall_getegid() -> isize {
 
 pub fn syscall_gettid() -> isize {
     current_task().id().as_u64() as isize
+}
+
+pub fn syscall_futex(
+    vaddr: usize,
+    futex_op: i32,
+    futex_val: u32,
+    time_out_val: usize,
+    _vaddr2: usize,
+    _val3: u32,
+) -> isize {
+    let process = current_process();
+    let inner = process.inner.lock();
+    let timeout = if time_out_val != 0
+        && inner
+            .memory_set
+            .lock()
+            .manual_alloc_for_lazy(time_out_val.into())
+            .is_ok()
+    {
+        let time_sepc: TimeSecs = unsafe { *(time_out_val as *const TimeSecs) };
+        time_sepc.to_nano()
+    } else {
+        usize::MAX
+    };
+    if let Ok(ans) = futex(vaddr.into(), futex_op, futex_val, timeout) {
+        ans as isize
+    } else {
+        -1
+    }
+}
+
+/// 内核只发挥存储的作用
+/// 但要保证head对应的地址已经被分配
+pub fn syscall_set_robust_list(head: usize, len: usize) -> isize {
+    let process = current_process();
+    let mut inner = process.inner.lock();
+    if len != core::mem::size_of::<RobustList>() {
+        return -1;
+    }
+    let curr_id = current_task().id().as_u64();
+    if inner
+        .memory_set
+        .lock()
+        .manual_alloc_for_lazy(head.into())
+        .is_ok()
+    {
+        if inner.robust_list.contains_key(&curr_id) {
+            let list = inner.robust_list.get_mut(&curr_id).unwrap();
+            list.head = head;
+            list.len = len;
+        } else {
+            inner
+                .robust_list
+                .insert(curr_id, FutexRobustList::new(head, len));
+        }
+        0
+    } else {
+        -1
+    }
+}
+
+/// 取出对应线程的robust list
+pub fn syscall_get_robust_list(pid: i32, head: *mut usize, len: *mut usize) -> isize {
+    if pid == 0 {
+        let process = current_process();
+        let inner = process.inner.lock();
+        let curr_id = current_task().id().as_u64();
+        if inner
+            .memory_set
+            .lock()
+            .manual_alloc_for_lazy((head as usize).into())
+            .is_ok()
+        {
+            if inner.robust_list.contains_key(&curr_id) {
+                let list = inner.robust_list.get(&curr_id).unwrap();
+                unsafe {
+                    *head = list.head;
+                    *len = list.len;
+                }
+            } else {
+                return -1;
+            }
+            return 0;
+        } else {
+            return -1;
+        }
+    }
+    -1
 }

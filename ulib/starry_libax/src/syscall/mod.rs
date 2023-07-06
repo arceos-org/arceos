@@ -34,7 +34,11 @@ pub mod task;
 
 #[no_mangle]
 pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
-    info!("syscall: {}", get_syscall_name(syscall_id));
+    info!(
+        "syscall: id: {}, name: {}",
+        syscall_id,
+        get_syscall_name(syscall_id)
+    );
     debug!("args: {:?}", args);
     match syscall_id {
         SYSCALL_OPENAT => syscall_openat(
@@ -124,6 +128,18 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         SYSCALL_GETGID => syscall_getgid(),
         SYSCALL_GETEGID => syscall_getegid(),
         SYSCALL_GETTID => syscall_gettid(),
+        SYSCALL_FUTEX => syscall_futex(
+            args[0] as usize,
+            args[1] as i32,
+            args[2] as u32,
+            args[3] as usize,
+            args[4] as usize,
+            args[5] as u32,
+        ),
+        SYSCALL_SET_ROBUST_LIST => syscall_set_robust_list(args[0] as usize, args[1] as usize),
+        SYSCALL_GET_ROBUST_LIST => {
+            syscall_get_robust_list(args[0] as i32, args[1] as *mut usize, args[2] as *mut usize)
+        }
         _ => {
             error!("Invalid Syscall Id: {}!", syscall_id);
             // return -1;

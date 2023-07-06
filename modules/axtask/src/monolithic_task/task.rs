@@ -505,7 +505,7 @@ impl CurrentTask {
         Self::try_get().expect("current task is uninitialized")
     }
 
-    pub(crate) fn as_task_ref(&self) -> &AxTaskRef {
+    pub fn as_task_ref(&self) -> &AxTaskRef {
         &self.0
     }
 

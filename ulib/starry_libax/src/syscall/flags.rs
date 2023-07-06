@@ -50,6 +50,10 @@ impl TimeSecs {
         let tv_nsec = nano % NSEC_PER_SEC;
         TimeSecs { tv_sec, tv_nsec }
     }
+
+    pub fn to_nano(&self) -> usize {
+        self.tv_sec * NSEC_PER_SEC + self.tv_nsec
+    }
 }
 
 bitflags! {
@@ -192,3 +196,11 @@ pub const RLIMIT_STACK: i32 = 3;
 pub const RLIMIT_NOFILE: i32 = 7;
 /// 用户地址空间的最大大小
 pub const RLIMIT_AS: i32 = 9;
+
+/// robust list
+#[repr(C)]
+pub struct RobustList {
+    pub head: usize,
+    pub off: usize,
+    pub pending: usize,
+}

@@ -71,7 +71,7 @@ monolithic = ["axruntime/monolithic", "fs"]
 test = []
 
 # Preempt
-preempt = ["axruntime/preempt", "irq"]
+preempt = ["axruntime/preempt", "axprocess/preempt", "irq"]
 
 # Signal
 signal = ["axprocess/signal", "multitask", "preempt"]

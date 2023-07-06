@@ -4,7 +4,7 @@ SMP ?= 1
 MODE ?= release
 LOG ?= warn
 
-A ?= apps/syscall/junior
+A ?= apps/syscall/libc-static
 APP ?= $(A)
 APP_FEATURES ?=
 DISK_IMG ?= sdcard.img
