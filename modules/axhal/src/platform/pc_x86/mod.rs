@@ -3,20 +3,27 @@ mod boot;
 mod dtables;
 mod uart16550;
 
+/// acpi module
 #[cfg(feature = "alloc")]
 pub mod acpi;
+/// mem module
 pub mod mem;
+/// misc module
 pub mod misc;
+/// time module
 pub mod time;
 
+/// mp module
 #[cfg(feature = "smp")]
 pub mod mp;
 
+/// irq module
 #[cfg(feature = "irq")]
 pub mod irq {
     pub use super::apic::*;
 }
 
+/// console module
 pub mod console {
     pub use super::uart16550::*;
 }
