@@ -11,11 +11,11 @@ use self::vectors::*;
 use crate::mem::phys_to_virt;
 
 #[cfg(feature = "irq")]
+use crate::arch::vector_to_irq;
+#[cfg(feature = "irq")]
 use crate::platform::pc_x86::current_cpu_id;
 #[cfg(feature = "irq")]
 use x2apic::ioapic::{IrqFlags, IrqMode};
-#[cfg(feature = "irq")]
-use crate::arch::{vector_to_irq};
 
 pub(super) mod vectors {
     pub const APIC_TIMER_VECTOR: u8 = 0xf0;
@@ -52,15 +52,15 @@ pub fn set_enable(vector: usize, enabled: bool) {
 
 /// Program IO_APIC in order to route IO_APIC IRQ to vector.
 #[cfg(feature = "irq")]
-fn ioapic_redirect(vector:usize){
+fn ioapic_redirect(vector: usize) {
     let irq = vector_to_irq(vector);
-    let mut table_entry = unsafe{IO_APIC.lock().table_entry(irq)};
+    let mut table_entry = unsafe { IO_APIC.lock().table_entry(irq) };
     table_entry.set_vector(vector as u8);
     table_entry.set_mode(IrqMode::Fixed);
     let irq_flag = table_entry.flags() - IrqFlags::MASKED;
     table_entry.set_flags(irq_flag);
     table_entry.set_dest(current_cpu_id() as u8);
-    unsafe{IO_APIC.lock().set_table_entry(irq, table_entry)};
+    unsafe { IO_APIC.lock().set_table_entry(irq, table_entry) };
 }
 
 /// Registers an IRQ handler for the given IRQ.

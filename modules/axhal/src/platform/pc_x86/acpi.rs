@@ -6,13 +6,13 @@ use core::alloc::{AllocError, Layout};
 use core::ptr::NonNull;
 
 use acpi::{AcpiTables, PhysicalMapping};
-use aml::{AmlContext, AmlName, DebugVerbosity};
 use aml::pci_routing::{IrqDescriptor, PciRoutingTable, Pin};
+use aml::{AmlContext, AmlName, DebugVerbosity};
 
+use crate::mem::phys_to_virt;
 use axalloc::global_allocator;
 use lazy_init::LazyInit;
 use memory_addr::PhysAddr;
-use crate::mem::phys_to_virt;
 
 use crate::arch::irq_to_vector;
 
@@ -140,7 +140,15 @@ impl aml::Handler for LocalAmlHandler {
         unsafe { address.read_volatile() }
     }
 
-    fn write_pci_u8(&self, segment: u16, bus: u8, device: u8, function: u8, offset: u16, value: u8) {
+    fn write_pci_u8(
+        &self,
+        segment: u16,
+        bus: u8,
+        device: u8,
+        function: u8,
+        offset: u16,
+        value: u8,
+    ) {
         let paddr = unsafe {
             ACPI.get_pci_config_regions_addr(segment, bus, device, function)
                 .unwrap()
@@ -150,7 +158,15 @@ impl aml::Handler for LocalAmlHandler {
         unsafe { address.write_volatile(value) }
     }
 
-    fn write_pci_u16(&self, segment: u16, bus: u8, device: u8, function: u8, offset: u16, value: u16) {
+    fn write_pci_u16(
+        &self,
+        segment: u16,
+        bus: u8,
+        device: u8,
+        function: u8,
+        offset: u16,
+        value: u16,
+    ) {
         let paddr = unsafe {
             ACPI.get_pci_config_regions_addr(segment, bus, device, function)
                 .unwrap()
@@ -160,7 +176,15 @@ impl aml::Handler for LocalAmlHandler {
         unsafe { address.write_volatile(value) }
     }
 
-    fn write_pci_u32(&self, segment: u16, bus: u8, device: u8, function: u8, offset: u16, value: u32) {
+    fn write_pci_u32(
+        &self,
+        segment: u16,
+        bus: u8,
+        device: u8,
+        function: u8,
+        offset: u16,
+        value: u32,
+    ) {
         let paddr = unsafe {
             ACPI.get_pci_config_regions_addr(segment, bus, device, function)
                 .unwrap()
@@ -220,9 +244,8 @@ impl Acpi {
         let dsdt = self.rsdp.dsdt.as_ref().unwrap();
         let paddr = PhysAddr::from(dsdt.address);
         let vaddr = phys_to_virt(paddr).as_ptr();
-        let slice = unsafe {
-            core::slice::from_raw_parts_mut(vaddr as *mut u8, dsdt.length as usize)
-        };
+        let slice =
+            unsafe { core::slice::from_raw_parts_mut(vaddr as *mut u8, dsdt.length as usize) };
         if self.aml_context.parse_table(slice).is_err() {
             return false;
         }
@@ -289,7 +312,7 @@ impl Acpi {
     /// space address directly. This method get configuration space address of bdf(0:0:0) instead.
     fn get_ecam_address(&mut self) -> Option<u64> {
         if let Ok(config) = acpi::mcfg::PciConfigRegions::new(&self.rsdp) {
-            return Some(config.physical_address(0, 0, 0, 0).unwrap() );
+            return Some(config.physical_address(0, 0, 0, 0).unwrap());
         }
         None
     }
@@ -321,7 +344,8 @@ pub(crate) fn init() {
 
 /// Get PCI IRQ and map it to vector used in OS.
 pub fn get_pci_irq_vector(bus: u8, device: u8, function: u8) -> Option<usize> {
-    unsafe { ACPI.get_pci_irq_desc(bus, device, function) }.map(|irq_desc| irq_to_vector(irq_desc.irq as u8))
+    unsafe { ACPI.get_pci_irq_desc(bus, device, function) }
+        .map(|irq_desc| irq_to_vector(irq_desc.irq as u8))
 }
 
 /// Get PCIe ECAM space physical address.

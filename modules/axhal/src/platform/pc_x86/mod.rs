@@ -3,11 +3,11 @@ mod boot;
 mod dtables;
 mod uart16550;
 
+#[cfg(feature = "alloc")]
+pub mod acpi;
 pub mod mem;
 pub mod misc;
 pub mod time;
-#[cfg(feature = "alloc")]
-pub mod acpi;
 
 #[cfg(feature = "smp")]
 pub mod mp;
