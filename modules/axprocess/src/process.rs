@@ -203,7 +203,7 @@ impl Process {
         // 再考虑手动结束其他所有的task
         let _ = inner
             .tasks
-            .drain_filter(|task: &mut AxTaskRef| task.id() != curr.id())
+            .extract_if(|task: &mut AxTaskRef| task.id() != curr.id())
             .map(|task| RUN_QUEUE.lock().remove_task(&task));
         // 当前任务被设置为主线程
         curr.set_leader(true);
@@ -537,7 +537,7 @@ pub fn exit(exit_code: i32) -> isize {
         // 结束自身的所有子线程
         let _ = inner
             .tasks
-            .drain_filter(|task: &mut AxTaskRef| task.id() != curr_id)
+            .extract_if(|task: &mut AxTaskRef| task.id() != curr_id)
             .map(|task| {
                 // TID2TASK.lock().remove(&task.id());
                 RUN_QUEUE.lock().remove_task(&task);
