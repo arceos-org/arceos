@@ -32,6 +32,7 @@ pub const SYSCALL_BRK: usize = 214;
 pub const SYSCALL_MUNMAP: usize = 215;
 pub const SYSCALL_MMAP: usize = 222;
 pub const SYSCALL_MSYNC: usize = 227;
+pub const SYSCALL_MPROCTECT: usize = 226;
 
 // 其他
 pub const SYSCALL_NANO_SLEEP: usize = 101;
@@ -75,6 +76,7 @@ pub fn get_syscall_name(syscall_id: usize) -> &'static str {
         SYSCALL_BRK => "brk",
         SYSCALL_MUNMAP => "munmap",
         SYSCALL_MMAP => "mmap",
+        SYSCALL_MPROCTECT => "mprotect",
         SYSCALL_NANO_SLEEP => "nanosleep",
         SYSCALL_SCHED_YIELD => "sched_yield",
         SYSCALL_TIMES => "times",

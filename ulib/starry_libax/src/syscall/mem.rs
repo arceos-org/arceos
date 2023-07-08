@@ -6,6 +6,7 @@ use alloc::boxed::Box;
 use axmem::MemBackend;
 use axprocess::process::current_process;
 use log::info;
+use memory_addr::VirtAddr;
 const MAX_HEAP_SIZE: usize = 4096;
 /// 修改用户堆大小，
 ///
@@ -105,6 +106,20 @@ pub fn syscall_msync(start: usize, len: usize) -> isize {
 
     drop(inner);
     drop(curr);
+
+    0
+}
+
+pub fn syscall_mprotect(start: usize, len: usize, prot: MMAPPROT) -> isize {
+    let curr = current_process();
+    let inner = curr.inner.lock();
+
+    inner
+        .memory_set
+        .lock()
+        .mprotect(VirtAddr::from(start), len, prot.into());
+
+    unsafe { riscv::asm::sfence_vma_all() };
 
     0
 }

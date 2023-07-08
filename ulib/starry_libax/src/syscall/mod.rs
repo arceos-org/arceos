@@ -24,6 +24,7 @@ use syscall_id::*;
 
 use crate::syscall::{
     flags::SigMaskFlag,
+    mem::syscall_mprotect,
     signal::{
         syscall_kill, syscall_sigaction, syscall_sigprocmask, syscall_sigreturn, syscall_tkill,
     },
@@ -72,6 +73,11 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[5],
         ),
         SYSCALL_MSYNC => syscall_msync(args[0], args[1]),
+        SYSCALL_MPROCTECT => syscall_mprotect(
+            args[0],
+            args[1],
+            MMAPPROT::from_bits_truncate(args[2] as u32),
+        ),
         SYSCALL_GETCWD => syscall_getcwd(args[0] as *mut u8, args[1]),
         SYSCALL_PIPE2 => syscall_pipe2(args[0] as *mut u32),
         SYSCALL_DUP => syscall_dup(args[0]),
