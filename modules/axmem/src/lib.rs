@@ -1,6 +1,6 @@
 #![no_std]
-#![feature(drain_filter)]
-#![feature(btree_drain_filter)]
+#![feature(extract_if)]
+#![feature(btree_extract_if)]
 
 mod area;
 mod backend;
@@ -337,7 +337,7 @@ impl MemorySet {
         // We get all the overlapped areas out first.
         let overlapped_area: Vec<_> = self
             .owned_mem
-            .drain_filter(|_, area| area.overlap_with(start, end))
+            .extract_if(|_, area| area.overlap_with(start, end))
             .collect();
 
         info!("splitting for [{:?}, {:?})", start, end);
@@ -456,6 +456,26 @@ impl MemorySet {
         self.split_for_area(start, size);
     }
 
+    /// msync
+    pub fn msync(&mut self, start: VirtAddr, size: usize) {
+        let end = start + size;
+
+        for area in self.owned_mem.values_mut() {
+            if area.backend.is_none() {
+                continue;
+            }
+            if area.overlap_with(start, end) {
+                for page_index in 0..area.pages.len() {
+                    let page_vaddr = area.vaddr + page_index * PAGE_SIZE_4K;
+
+                    if page_vaddr >= start && page_vaddr < end {
+                        area.sync_page_with_backend(page_index);
+                    }
+                }
+            }
+        }
+    }
+
     /// Edit the page table to update flags in given virt address segment. You need to flush TLB
     /// after calling this function.
     ///
@@ -473,10 +493,10 @@ impl MemorySet {
 
         // NOTE: There will be new areas but all old aree's start address won't change. But we
         // can't iterating through `value_mut()` while `insert()` to BTree at the same time, so we
-        // `drain_filter()` out the overlapped areas first.
+        // `extract_if()` out the overlapped areas first.
         let overlapped_area: Vec<_> = self
             .owned_mem
-            .drain_filter(|_, area| area.overlap_with(start, end))
+            .extract_if(|_, area| area.overlap_with(start, end))
             .collect();
 
         for (_, mut area) in overlapped_area {

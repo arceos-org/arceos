@@ -60,115 +60,115 @@ const JUNIOR_TESTCASES: &[&str] = &[
 
 /// libc静态测例
 pub const LIBC_STATIC_TESTCASES: &[&str] = &[
-    "argv",
-    "basename",
-    "clocale_mbfuncs",
-    "clock_gettime",
-    "crypt",
-    "dirname",
-    "env",
-    // "fdopen", // 需要62
-    "fnmatch",
-    // "fscanf", // 需要62
-    // "fwscanf", // 需要29
-    "iconv_open",
-    "inet_pton",
-    "mbc",
-    "memstream",
-    // "pthread_cancel_points", // 需要226
-    // "pthread_cancel",        // 需要226
-    // "pthread_cond",          // 需要226
-    // "pthread_tsd",           // 需要226
-    "qsort",
-    "random",
-    "search_hsearch",
-    "search_insque",
-    "search_lsearch",
-    "search_tsearch",
-    "setjmp",
-    "snprintf",
-    // "socket", // 需要198
-    "sscanf",
-    "sscanf_long",
-    // "stat",        // 需79
-    "strftime",
-    "string",
-    "string_memcpy",
-    "string_memmem",
-    "string_memset",
-    "string_strchr",
-    "string_strcspn",
-    "string_strstr",
-    "strptime",
-    "strtod",
-    "strtod_simple",
-    "strtof",
-    "strtol",
-    "strtold",
-    "swprintf",
-    "tgmath",
-    "time",
-    // "tls_align", // app不存在
-    "udiv",
-    // "ungetc", // 需要29
-    // "utime",  // 需要88
-    "wcsstr",
-    "wcstol",
-    "pleval",
-    "daemon_failure",
-    "dn_expand_empty",
-    "dn_expand_ptr_0",
-    // "fflush_exit", // 需要29
-    "fgets_eof",
-    "fgetwc_buffering",
-    "fpclassify_invalid_ld80",
-    // "ftello_unflushed_append", // 需要25
-    "getpwnam_r_crash",
-    "getpwnam_r_errno",
-    "iconv_roundtrips",
-    "inet_ntop_v4mapped",
-    "inet_pton_empty_last_field",
-    "iswspace_null",
-    "lrand48_signextend",
-    // "lseek_large", // 需要29
-    "malloc_0",
-    "mbsrtowcs_overflow",
-    "memmem_oob_read",
-    "memmem_oob",
-    "mkdtemp_failure",
-    "mkstemp_failure",
-    "printf_1e9_oob",
-    "printf_fmt_g_round",
-    "printf_fmt_g_zeros",
-    "printf_fmt_n",
-    // "pthread_robust_detach", // 需226
-    // "pthread_cancel_sem_wait",   // 需要226
-    // "pthread_cond_smasher",      // 需要226
-    "pthread_condattr_setclock",
-    // "pthread_exit_cancel",       // 需要226
-    // "pthread_once_deadlock",     // 需要226
-    // "pthread_rwlock_ebusy",      // 需要226
-    "putenv_doublefree",
-    "regex_backref_0",
-    "regex_bracket_icase",
-    "regex_ere_backref",
-    "regex_escaped_high_byte",
-    "regex_negated_range",
-    "regexec_nosub",
-    // "rewind_clear_error", // 需要62
-    "rlimit_open_files",
-    "scanf_bytes_consumed",
-    "scanf_match_literal_eof",
-    "scanf_nullbyte_char",
-    // "setvbuf_unget", // 需要62
-    "sigprocmask_internal",
-    "sscanf_eof",
-    // "statvfs", // 需要43
-    "strverscmp",
-    "syscall_sign_extend",
-    "uselocale_0",
-    "wcsncpy_read_overflow",
-    "wcsstr_false_negative",
+    // "argv",
+    // "basename",
+    // "clocale_mbfuncs",
+    // "clock_gettime",
+    // "crypt",
+    // "dirname",
+    // "env",
+    // // "fdopen", // 需要62
+    // "fnmatch",
+    // // "fscanf", // 需要62
+    // // "fwscanf", // 需要29
+    // "iconv_open",
+    // "inet_pton",
+    // "mbc",
+    // "memstream",
+    "pthread_cancel_points", // 需要226
+    "pthread_cancel",        // 需要226
+    "pthread_cond",          // 需要226
+    "pthread_tsd",           // 需要226
+                             // "qsort",
+                             // "random",
+                             // "search_hsearch",
+                             // "search_insque",
+                             // "search_lsearch",
+                             // "search_tsearch",
+                             // "setjmp",
+                             // "snprintf",
+                             // // "socket", // 需要198
+                             // "sscanf",
+                             // "sscanf_long",
+                             // // "stat",        // 需79
+                             // "strftime",
+                             // "string",
+                             // "string_memcpy",
+                             // "string_memmem",
+                             // "string_memset",
+                             // "string_strchr",
+                             // "string_strcspn",
+                             // "string_strstr",
+                             // "strptime",
+                             // "strtod",
+                             // "strtod_simple",
+                             // "strtof",
+                             // "strtol",
+                             // "strtold",
+                             // "swprintf",
+                             // "tgmath",
+                             // "time",
+                             // // "tls_align", // app不存在
+                             // "udiv",
+                             // // "ungetc", // 需要29
+                             // // "utime",  // 需要88
+                             // "wcsstr",
+                             // "wcstol",
+                             // "pleval",
+                             // "daemon_failure",
+                             // "dn_expand_empty",
+                             // "dn_expand_ptr_0",
+                             // // "fflush_exit", // 需要29
+                             // "fgets_eof",
+                             // "fgetwc_buffering",
+                             // "fpclassify_invalid_ld80",
+                             // // "ftello_unflushed_append", // 需要25
+                             // "getpwnam_r_crash",
+                             // "getpwnam_r_errno",
+                             // "iconv_roundtrips",
+                             // "inet_ntop_v4mapped",
+                             // "inet_pton_empty_last_field",
+                             // "iswspace_null",
+                             // "lrand48_signextend",
+                             // // "lseek_large", // 需要29
+                             // "malloc_0",
+                             // "mbsrtowcs_overflow",
+                             // "memmem_oob_read",
+                             // "memmem_oob",
+                             // "mkdtemp_failure",
+                             // "mkstemp_failure",
+                             // "printf_1e9_oob",
+                             // "printf_fmt_g_round",
+                             // "printf_fmt_g_zeros",
+                             // "printf_fmt_n",
+                             // // "pthread_robust_detach", // 需226
+                             // // "pthread_cancel_sem_wait",   // 需要226
+                             // // "pthread_cond_smasher",      // 需要226
+                             // "pthread_condattr_setclock",
+                             // // "pthread_exit_cancel",       // 需要226
+                             // // "pthread_once_deadlock",     // 需要226
+                             // // "pthread_rwlock_ebusy",      // 需要226
+                             // "putenv_doublefree",
+                             // "regex_backref_0",
+                             // "regex_bracket_icase",
+                             // "regex_ere_backref",
+                             // "regex_escaped_high_byte",
+                             // "regex_negated_range",
+                             // "regexec_nosub",
+                             // // "rewind_clear_error", // 需要62
+                             // "rlimit_open_files",
+                             // "scanf_bytes_consumed",
+                             // "scanf_match_literal_eof",
+                             // "scanf_nullbyte_char",
+                             // // "setvbuf_unget", // 需要62
+                             // "sigprocmask_internal",
+                             // "sscanf_eof",
+                             // // "statvfs", // 需要43
+                             // "strverscmp",
+                             // "syscall_sign_extend",
+                             // "uselocale_0",
+                             // "wcsncpy_read_overflow",
+                             // "wcsstr_false_negative",
 ];
 
 /// 来自 libc 的动态测例

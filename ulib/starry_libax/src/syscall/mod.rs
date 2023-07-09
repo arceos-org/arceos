@@ -4,7 +4,7 @@ use axsignal::action::SigAction;
 use flags::{MMAPFlags, TimeSecs, TimeVal, UtsName, WaitFlags, MMAPPROT, TMS};
 use fs::*;
 use log::{debug, error, info};
-use mem::{syscall_brk, syscall_mmap, syscall_munmap};
+use mem::{syscall_brk, syscall_mmap, syscall_msync, syscall_munmap};
 use task::*;
 use utils::*;
 extern crate axlog;
@@ -77,6 +77,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[4] as usize,
             args[5],
         ),
+        SYSCALL_MSYNC => syscall_msync(args[0], args[1]),
         SYSCALL_GETCWD => syscall_getcwd(args[0] as *mut u8, args[1]),
         SYSCALL_PIPE2 => syscall_pipe2(args[0] as *mut u32),
         SYSCALL_DUP => syscall_dup(args[0]),

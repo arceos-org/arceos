@@ -151,11 +151,12 @@ impl MapArea {
         self.pages[page_index] = Some(page);
     }
 
+    /// Sync pages in index back to `self.backend` (if there is one).
+    ///
+    /// # Panics
+    ///
+    /// Panics if index is out of bounds.
     pub fn sync_page_with_backend(&mut self, page_index: usize) {
-        if page_index >= self.pages.len() {
-            panic!("Sync page index out of bound");
-        }
-
         if let Some(page) = &self.pages[page_index] {
             if let Some(backend) = &mut self.backend {
                 if backend.writable() {
@@ -180,15 +181,6 @@ impl MapArea {
         let delete_size = new_start.as_usize() - self.vaddr.as_usize();
         let delete_pages = delete_size / PAGE_SIZE_4K;
 
-        // sync allocated pages to file
-        if self.backend.is_some() {
-            for idx in 0..delete_pages {
-                if self.pages[idx].is_some() {
-                    self.sync_page_with_backend(idx);
-                }
-            }
-        }
-
         // move backend offset
         if let Some(backend) = &mut self.backend {
             let _ = backend.seek(SeekFrom::Current(delete_size as i64)).unwrap();
@@ -210,15 +202,6 @@ impl MapArea {
 
         let delete_size = self.end_va().as_usize() - new_end.as_usize();
         let delete_pages = delete_size / PAGE_SIZE_4K;
-
-        if self.backend.is_some() {
-            // sync allocated pages to file
-            for idx in (self.pages.len() - delete_pages)..self.pages.len() {
-                if self.pages[idx].is_some() {
-                    self.sync_page_with_backend(idx);
-                }
-            }
-        };
 
         // remove (dealloc) phys pages
         drop(
@@ -255,8 +238,6 @@ impl MapArea {
                 backend
             }),
         }
-
-        // TODO: maybe we need to sync back to file
     }
 
     /// Split this area into 3.
@@ -339,13 +320,6 @@ impl MapArea {
         let delete_size = right_start.as_usize() - left_end.as_usize();
         let delete_range = ((left_end.as_usize() - self.vaddr.as_usize()) / PAGE_SIZE_4K)
             ..((right_start.as_usize() - self.vaddr.as_usize()) / PAGE_SIZE_4K);
-
-        // sync allocated pages to file
-        for idx in delete_range.clone() {
-            if self.pages[idx].is_some() {
-                self.sync_page_with_backend(idx);
-            }
-        }
 
         // create a right area
         let pages = self
@@ -486,16 +460,6 @@ impl MapArea {
                 vaddr: self.vaddr,
                 flags: self.flags,
                 backend: self.backend.clone(),
-            }
-        }
-    }
-}
-
-impl Drop for MapArea {
-    fn drop(&mut self) {
-        for idx in 0..self.pages.len() {
-            if self.pages[idx].is_some() {
-                self.sync_page_with_backend(idx);
             }
         }
     }

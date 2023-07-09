@@ -20,7 +20,7 @@ fs = ["alloc", "paging", "axdriver/virtio-blk", "dep:axfs"] # TODO: remove "pagi
 net = ["alloc", "paging", "axdriver/virtio-net", "dep:axnet"]
 display = ["alloc", "paging", "axdriver/virtio-gpu", "dep:axdisplay"]
 # 是否使用宏内核架构
-monolithic = ["axtask/monolithic", "axhal/monolithic", "axprocess/monolithic", "axfs/monolithic"]
+monolithic = ["axtask/monolithic", "axhal/monolithic", "axprocess/monolithic", "axfs?/monolithic"]
 
 # 任务抢占
 preempt = ["axtask/preempt", "irq"]

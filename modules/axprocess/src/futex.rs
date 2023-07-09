@@ -60,10 +60,10 @@ pub fn clear_wait(process_id: u64) {
     let mut futex_wait_task = FUTEX_WAIT_TASK.lock();
     // 清空所有所属进程为指定进程的线程
     futex_wait_task.iter_mut().for_each(|(_, tasks)| {
-        tasks.drain_filter(|task| task.get_process_id() == process_id);
+        let _ = tasks.extract_if(|task| task.get_process_id() == process_id);
     });
     // 如果一个共享变量不会被线程所使用了，那么直接把他移除
-    futex_wait_task.drain_filter(|_, tasks| tasks.is_empty());
+    let _ = futex_wait_task.extract_if(|_, tasks| tasks.is_empty());
 }
 
 pub fn futex(vaddr: VirtAddr, futex_op: i32, futex_val: u32, timeout: usize) -> AxResult<usize> {

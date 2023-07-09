@@ -1,6 +1,6 @@
 #![cfg_attr(not(test), no_std)]
-#![feature(drain_filter)]
-#![feature(btree_drain_filter)]
+#![feature(extract_if)]
+#![feature(btree_extract_if)]
 use axhal::{arch::TaskContext, mem::VirtAddr, paging::MappingFlags};
 use axtask::{current, monolithic_task::task::CurrentTask, monolithic_task::task::TaskState};
 

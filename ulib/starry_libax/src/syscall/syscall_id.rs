@@ -40,7 +40,9 @@ pub const SYSCALL_WAIT4: usize = 260;
 pub const SYSCALL_BRK: usize = 214;
 pub const SYSCALL_MUNMAP: usize = 215;
 pub const SYSCALL_MMAP: usize = 222;
+pub const SYSCALL_MSYNC: usize = 227;
 pub const SYSCALL_MPROTECT: usize = 226;
+
 // 其他
 pub const SYSCALL_NANO_SLEEP: usize = 101;
 pub const SYSCALL_SCHED_YIELD: usize = 124;
