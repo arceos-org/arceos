@@ -204,3 +204,10 @@ pub struct RobustList {
     pub off: usize,
     pub pending: usize,
 }
+
+/// readv/writev使用的结构体
+#[repr(C)]
+pub struct IoVec {
+    pub base: *mut u8,
+    pub len: usize,
+}

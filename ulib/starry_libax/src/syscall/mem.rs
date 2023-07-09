@@ -97,3 +97,7 @@ pub fn syscall_munmap(start: usize, len: usize) -> isize {
 
     0
 }
+
+pub fn syscall_mprotect(start: usize, len: usize, protect: MMAPPROT) -> isize {
+    0
+}

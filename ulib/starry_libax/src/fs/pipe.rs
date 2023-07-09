@@ -6,7 +6,7 @@ use axfs::monolithic_fs::{file_io::FileExt, FileIO};
 use axio::{Read, Seek, Write};
 use axsync::Mutex;
 use axtask::yield_now;
-use log::trace;
+use log::{info, trace};
 use spinlock::SpinNoIrq;
 
 /// IPC pipe
@@ -122,11 +122,15 @@ impl Read for Pipe {
         let want_to_read = buf.len();
         let mut buf_iter = buf.iter_mut();
         let mut already_read = 0usize;
+        // 防止pipe死循环
+        let mut cnt = 0;
         loop {
+            cnt += 1;
             let mut ring_buffer = self.buffer.lock();
             let loop_read = ring_buffer.available_read();
+            // info!("kernel: Pipe::read: already_read = {}", already_read);
             if loop_read == 0 {
-                if ring_buffer.all_write_ends_closed() {
+                if ring_buffer.all_write_ends_closed() || cnt > 3 {
                     return Ok(already_read);
                 }
                 drop(ring_buffer);
@@ -169,9 +173,11 @@ impl Write for Pipe {
                     ring_buffer.write_byte(*byte_ref);
                     already_write += 1;
                     if already_write == want_to_write {
+                        info!("write_byte: {}", already_write);
                         return Ok(want_to_write);
                     }
                 } else {
+                    info!("write_byte: {}", already_write);
                     return Ok(already_write);
                 }
             }

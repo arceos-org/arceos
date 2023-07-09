@@ -24,7 +24,8 @@ pub mod utils;
 use syscall_id::*;
 
 use crate::syscall::{
-    flags::{RLimit, SigMaskFlag},
+    flags::{IoVec, RLimit, SigMaskFlag},
+    mem::syscall_mprotect,
     signal::{
         syscall_kill, syscall_sigaction, syscall_sigprocmask, syscall_sigreturn, syscall_tkill,
     },
@@ -140,6 +141,15 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         SYSCALL_GET_ROBUST_LIST => {
             syscall_get_robust_list(args[0] as i32, args[1] as *mut usize, args[2] as *mut usize)
         }
+        SYSCALL_READV => syscall_readv(args[0] as usize, args[1] as *mut IoVec, args[2] as usize),
+        SYSCALL_WRITEV => {
+            syscall_writev(args[0] as usize, args[1] as *const IoVec, args[2] as usize)
+        }
+        SYSCALL_MPROTECT => syscall_mprotect(
+            args[0] as usize,
+            args[1] as usize,
+            MMAPPROT::from_bits_truncate(args[2] as u32),
+        ),
         _ => {
             error!("Invalid Syscall Id: {}!", syscall_id);
             // return -1;

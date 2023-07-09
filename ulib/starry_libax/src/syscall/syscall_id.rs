@@ -15,6 +15,8 @@ pub const SYSCALL_PIPE2: usize = 59;
 pub const SYSCALL_GETDENTS64: usize = 61;
 pub const SYSCALL_READ: usize = 63;
 pub const SYSCALL_WRITE: usize = 64;
+pub const SYSCALL_READV: usize = 65;
+pub const SYSCALL_WRITEV: usize = 66;
 pub const SYSCALL_FSTAT: usize = 80;
 
 // 进程管理
@@ -38,7 +40,7 @@ pub const SYSCALL_WAIT4: usize = 260;
 pub const SYSCALL_BRK: usize = 214;
 pub const SYSCALL_MUNMAP: usize = 215;
 pub const SYSCALL_MMAP: usize = 222;
-
+pub const SYSCALL_MPROTECT: usize = 226;
 // 其他
 pub const SYSCALL_NANO_SLEEP: usize = 101;
 pub const SYSCALL_SCHED_YIELD: usize = 124;
@@ -96,6 +98,9 @@ pub fn get_syscall_name(syscall_id: usize) -> &'static str {
         SYSCALL_FUTEX => "futex",
         SYSCALL_SET_ROBUST_LIST => "set_robust_list",
         SYSCALL_GET_ROBUST_LIST => "get_robust_list",
+        SYSCALL_READV => "readv",
+        SYSCALL_WRITEV => "writev",
+        SYSCALL_MPROTECT => "mprotect",
         _ => "unknown",
     }
 }

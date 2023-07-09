@@ -16,6 +16,7 @@ use core::ptr::copy_nonoverlapping;
 use log::{debug, info};
 use spinlock::SpinNoIrq;
 
+use super::flags::IoVec;
 use super::syscall_id::ErrorNo;
 
 #[allow(unused)]
@@ -171,6 +172,38 @@ pub fn syscall_write(fd: usize, buf: *const u8, count: usize) -> isize {
     }
 }
 
+/// 从同一个文件描述符读取多个字符串
+pub fn syscall_readv(fd: usize, iov: *mut IoVec, iov_cnt: usize) -> isize {
+    let mut read_len = 0;
+    for i in 0..iov_cnt {
+        let io: &IoVec = unsafe { &(*iov.add(i)) };
+        if io.base as usize == 0 {
+            continue;
+        }
+        match syscall_read(fd, io.base, io.len) {
+            -1 => break,
+            len => read_len += len,
+        }
+    }
+    read_len
+}
+
+/// 从同一个文件描述符写入多个字符串
+pub fn syscall_writev(fd: usize, iov: *const IoVec, iov_cnt: usize) -> isize {
+    let mut write_len = 0;
+    for i in 0..iov_cnt {
+        let io: &IoVec = unsafe { &(*iov.add(i)) };
+        if io.base as usize == 0 {
+            continue;
+        }
+        match syscall_write(fd, io.base, io.len) {
+            -1 => break,
+            len => write_len += len,
+        }
+    }
+    write_len
+}
+
 /// 功能：打开或创建一个文件；
 /// 输入：
 ///     - fd：文件所在目录的文件描述符。
@@ -189,7 +222,7 @@ pub fn syscall_openat(fd: usize, path: *const u8, flags: usize, _mode: u8) -> is
     let fd_num = if let Ok(fd) = process_inner.alloc_fd() {
         fd
     } else {
-        return -1;
+        return ErrorNo::EMFILE as isize;
     };
     debug!("allocated fd_num: {}", fd_num);
     // 如果是DIR
@@ -201,7 +234,7 @@ pub fn syscall_openat(fd: usize, path: *const u8, flags: usize, _mode: u8) -> is
             fd_num as isize
         } else {
             debug!("open dir failed");
-            -1
+            ErrorNo::ENOENT as isize
         }
     }
     // 如果是FILE，注意若创建了新文件，需要添加链接
@@ -214,7 +247,7 @@ pub fn syscall_openat(fd: usize, path: *const u8, flags: usize, _mode: u8) -> is
             fd_num as isize
         } else {
             debug!("open file failed");
-            -1
+            ErrorNo::ENOENT as isize
         }
     }
 }
@@ -327,11 +360,11 @@ pub fn syscall_dup(fd: usize) -> isize {
 
     if fd >= process_inner.fd_manager.fd_table.len() {
         debug!("fd {} is out of range", fd);
-        return -1;
+        return ErrorNo::EBADF as isize;
     }
     if process_inner.fd_manager.fd_table[fd].is_none() {
         debug!("fd {} is a closed fd", fd);
-        return -1;
+        return ErrorNo::EBADF as isize;
     }
 
     let fd_num = if let Ok(fd) = process_inner.alloc_fd() {
@@ -353,7 +386,6 @@ pub fn syscall_dup(fd: usize) -> isize {
 pub fn syscall_dup3(fd: usize, new_fd: usize) -> isize {
     let process = current_process();
     let mut process_inner = process.inner.lock();
-
     if fd >= process_inner.fd_manager.fd_table.len() {
         debug!("fd {} is out of range", fd);
         return -1;
@@ -363,14 +395,19 @@ pub fn syscall_dup3(fd: usize, new_fd: usize) -> isize {
         return -1;
     }
     if new_fd >= process_inner.fd_manager.fd_table.len() {
+        if new_fd >= process_inner.fd_manager.limit {
+            // 超出了资源限制
+            return ErrorNo::EBADF as isize;
+        }
         for _i in process_inner.fd_manager.fd_table.len()..new_fd + 1 {
             process_inner.fd_manager.fd_table.push(None);
         }
     }
-    if process_inner.fd_manager.fd_table[new_fd].is_some() {
-        debug!("new_fd {} is already opened", new_fd);
-        return -1;
-    }
+    // if process_inner.fd_manager.fd_table[new_fd].is_some() {
+    //     debug!("new_fd {} is already opened", new_fd);
+    //     return ErrorNo::EINVAL as isize;
+    // }
+    // 就算new_fd已经被打开了，也可以被重新替代掉
     process_inner.fd_manager.fd_table[new_fd] = process_inner.fd_manager.fd_table[fd].clone();
 
     new_fd as isize
