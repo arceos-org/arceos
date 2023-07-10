@@ -3,7 +3,7 @@ use core::ops::{Deref, DerefMut};
 
 use axerrno::{ax_err, AxError, AxResult};
 use axsync::Mutex;
-use smoltcp::iface::SocketHandle;
+use smoltcp::iface::{SocketHandle, SocketSet};
 use smoltcp::socket::tcp::{self, State};
 
 use super::{SocketSetWrapper, LISTEN_QUEUE_SIZE, SOCKET_SET};
@@ -131,7 +131,12 @@ impl ListenTable {
         }
     }
 
-    pub fn incoming_tcp_packet(&self, src: SocketAddr, dst: SocketAddr) {
+    pub fn incoming_tcp_packet(
+        &self,
+        src: SocketAddr,
+        dst: SocketAddr,
+        sockets: &mut SocketSet<'_>,
+    ) {
         if let Some(entry) = self.tcp[dst.port as usize].lock().deref_mut() {
             if entry.syn_queue.len() >= LISTEN_QUEUE_SIZE {
                 // SYN queue is full, drop the packet
@@ -140,7 +145,7 @@ impl ListenTable {
             }
             let mut socket = SocketSetWrapper::new_tcp_socket();
             if socket.listen(dst).is_ok() {
-                let handle = SOCKET_SET.add(socket);
+                let handle = sockets.add(socket);
                 debug!(
                     "socket {}: prepare for connection {} -> {}",
                     handle, src, dst
