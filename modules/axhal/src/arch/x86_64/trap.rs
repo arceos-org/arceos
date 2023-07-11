@@ -46,4 +46,3 @@ fn x86_trap_handler(tf: &mut TrapFrame) {
         }
     }
 }
-

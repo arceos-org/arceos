@@ -16,7 +16,7 @@ use crate::platform::pc_x86::current_cpu_id;
 use x2apic::ioapic::{IrqFlags, IrqMode};
 
 #[cfg(feature = "irq")]
-use crate::arch::{IRQ_VECTOR_START};
+use crate::arch::IRQ_VECTOR_START;
 /// map external IRQ to vector
 #[cfg(feature = "irq")]
 pub fn irq_to_vector(irq: u8) -> usize {

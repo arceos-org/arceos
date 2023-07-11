@@ -220,8 +220,7 @@ impl Acpi {
         let dsdt = self.rsdp.dsdt.as_ref().unwrap();
         let paddr = PhysAddr::from(dsdt.address);
         let vaddr = phys_to_virt(paddr).as_mut_ptr();
-        let slice =
-            unsafe { core::slice::from_raw_parts_mut(vaddr, dsdt.length as usize) };
+        let slice = unsafe { core::slice::from_raw_parts_mut(vaddr, dsdt.length as usize) };
         if self.aml_context.parse_table(slice).is_err() {
             return false;
         }
