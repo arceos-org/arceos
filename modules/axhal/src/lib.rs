@@ -36,7 +36,7 @@
 #[macro_use]
 extern crate log;
 
-pub mod platform;
+mod platform;
 
 pub mod arch;
 pub mod cpu;

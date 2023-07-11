@@ -11,11 +11,22 @@ use self::vectors::*;
 use crate::mem::phys_to_virt;
 
 #[cfg(feature = "irq")]
-use crate::arch::vector_to_irq;
-#[cfg(feature = "irq")]
 use crate::platform::pc_x86::current_cpu_id;
 #[cfg(feature = "irq")]
 use x2apic::ioapic::{IrqFlags, IrqMode};
+
+#[cfg(feature = "irq")]
+use crate::arch::{IRQ_VECTOR_START};
+/// map external IRQ to vector
+#[cfg(feature = "irq")]
+pub fn irq_to_vector(irq: u8) -> usize {
+    (irq + IRQ_VECTOR_START) as usize
+}
+/// map vector to external IRQ
+#[cfg(feature = "irq")]
+pub fn vector_to_irq(vector: usize) -> u8 {
+    vector as u8 - IRQ_VECTOR_START
+}
 
 pub(super) mod vectors {
     pub const APIC_TIMER_VECTOR: u8 = 0xf0;

@@ -2,7 +2,6 @@ extern crate alloc;
 
 use alloc::boxed::Box;
 use alloc::format;
-use core::alloc::{AllocError, Layout};
 use core::ptr::NonNull;
 
 use acpi::{AcpiTables, PhysicalMapping};
@@ -10,11 +9,11 @@ use aml::pci_routing::{IrqDescriptor, PciRoutingTable, Pin};
 use aml::{AmlContext, AmlName, DebugVerbosity};
 
 use crate::mem::phys_to_virt;
-use axalloc::global_allocator;
 use lazy_init::LazyInit;
 use memory_addr::PhysAddr;
 
-use crate::arch::irq_to_vector;
+#[cfg(feature = "irq")]
+use crate::platform::irq::irq_to_vector;
 
 #[derive(Clone)]
 struct LocalAcpiHandler;
@@ -115,7 +114,7 @@ impl aml::Handler for LocalAmlHandler {
             ACPI.get_pci_config_regions_addr(segment, bus, device, function)
                 .unwrap()
         };
-        let vaddr = phys_to_virt(PhysAddr::from(paddr as usize)).as_usize() as *mut u8;
+        let vaddr = phys_to_virt(PhysAddr::from(paddr as usize)).as_mut_ptr();
         let address = unsafe { vaddr.add(offset as usize) };
         unsafe { address.read_volatile() }
     }
@@ -153,7 +152,7 @@ impl aml::Handler for LocalAmlHandler {
             ACPI.get_pci_config_regions_addr(segment, bus, device, function)
                 .unwrap()
         };
-        let vaddr = phys_to_virt(PhysAddr::from(paddr as usize)).as_usize() as *mut u8;
+        let vaddr = phys_to_virt(PhysAddr::from(paddr as usize)).as_mut_ptr();
         let address = unsafe { vaddr.add(offset as usize) };
         unsafe { address.write_volatile(value) }
     }
@@ -195,37 +194,14 @@ impl aml::Handler for LocalAmlHandler {
     }
 }
 
-#[derive(Clone, Debug)]
-struct LocalAllocator;
-
-unsafe impl core::alloc::Allocator for LocalAllocator {
-    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
-        match layout.size() {
-            0 => Ok(NonNull::slice_from_raw_parts(layout.dangling(), 0)),
-            size => {
-                let raw_ptr = global_allocator()
-                    .alloc(layout.size(), layout.align())
-                    .unwrap() as *mut u8;
-                let ptr = NonNull::new(raw_ptr).ok_or(AllocError)?;
-                Ok(NonNull::slice_from_raw_parts(ptr, size))
-            }
-        }
-    }
-
-    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-        if layout.size() != 0 {
-            global_allocator().dealloc(ptr.as_ptr() as usize, layout.size(), layout.align())
-        }
-    }
-}
-
 struct Acpi {
     rsdp: AcpiTables<LocalAcpiHandler>,
     aml_context: AmlContext,
 }
 
 /// irq model used in ACPI
-pub enum X86IrqModel {
+#[allow(dead_code)]
+enum X86IrqModel {
     /// PIC model
     PIC,
     /// APIC model
@@ -243,9 +219,9 @@ impl Acpi {
     fn init(&mut self) -> bool {
         let dsdt = self.rsdp.dsdt.as_ref().unwrap();
         let paddr = PhysAddr::from(dsdt.address);
-        let vaddr = phys_to_virt(paddr).as_ptr();
+        let vaddr = phys_to_virt(paddr).as_mut_ptr();
         let slice =
-            unsafe { core::slice::from_raw_parts_mut(vaddr as *mut u8, dsdt.length as usize) };
+            unsafe { core::slice::from_raw_parts_mut(vaddr, dsdt.length as usize) };
         if self.aml_context.parse_table(slice).is_err() {
             return false;
         }
@@ -343,12 +319,16 @@ pub(crate) fn init() {
 }
 
 /// Get PCI IRQ and map it to vector used in OS.
+/// Temporarily allow unused here because irq support for virtio hasn't ready yet.
+#[allow(dead_code)]
+#[cfg(feature = "irq")]
 pub fn get_pci_irq_vector(bus: u8, device: u8, function: u8) -> Option<usize> {
     unsafe { ACPI.get_pci_irq_desc(bus, device, function) }
         .map(|irq_desc| irq_to_vector(irq_desc.irq as u8))
 }
 
 /// Get PCIe ECAM space physical address.
+#[allow(dead_code)]
 pub fn get_ecam_address() -> Option<u64> {
     unsafe { ACPI.get_ecam_address() }
 }

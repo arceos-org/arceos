@@ -4,8 +4,8 @@ use super::context::TrapFrame;
 
 core::arch::global_asm!(include_str!("trap.S"));
 
-const IRQ_VECTOR_START: u8 = 0x20;
-const IRQ_VECTOR_END: u8 = 0xff;
+pub const IRQ_VECTOR_START: u8 = 0x20;
+pub const IRQ_VECTOR_END: u8 = 0xff;
 
 #[no_mangle]
 fn x86_trap_handler(tf: &mut TrapFrame) {
@@ -45,11 +45,3 @@ fn x86_trap_handler(tf: &mut TrapFrame) {
     }
 }
 
-/// map external IRQ to vector
-pub fn irq_to_vector(irq: u8) -> usize {
-    (irq + IRQ_VECTOR_START) as usize
-}
-/// map vector to external IRQ
-pub fn vector_to_irq(vector: usize) -> u8 {
-    vector as u8 - IRQ_VECTOR_START
-}
