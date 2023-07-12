@@ -274,7 +274,7 @@ pub fn syscall_futex(
         time_sepc.to_nano()
     } else {
         // usize::MAX
-        100000
+        1000000
     };
     // 释放锁，防止任务无法被调度
     drop(inner);
