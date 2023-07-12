@@ -135,6 +135,10 @@ impl TaskContext {
     /// It first saves the current task's context from CPU to this place, and then
     /// restores the next task's context from `next_ctx` to CPU.
     pub fn switch_to(&mut self, next_ctx: &Self) {
+        // let trap: usize = 0xFFFFFFC0805BFEF8;
+        // let trap_frame: *const TrapFrame = trap as *const TrapFrame;
+        // info!("trap_frame: {:?}", unsafe { &*trap_frame });
+        // info!("next task: {:X?}", (*next_ctx).ra);
         unsafe {
             // TODO: switch TLS
             context_switch(self, next_ctx)

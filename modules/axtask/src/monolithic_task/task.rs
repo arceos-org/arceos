@@ -42,7 +42,7 @@ pub struct TaskInner {
     #[cfg(feature = "preempt")]
     need_resched: AtomicBool,
     #[cfg(feature = "preempt")]
-    preempt_disable_count: AtomicUsize,
+    pub preempt_disable_count: AtomicUsize,
 
     exit_code: AtomicI32,
     wait_for_exit: WaitQueue,
@@ -65,6 +65,7 @@ pub struct TaskInner {
     page_table_token: usize,
 
     #[cfg(feature = "monolithic")]
+    /// 初始化的trap上下文
     pub trap_frame: UnsafeCell<TrapFrame>,
     // 时间统计
     #[cfg(feature = "monolithic")]
@@ -79,6 +80,10 @@ pub struct TaskInner {
     /// 子线程初始化时，将这个地址清空；子线程退出时，触发这里的 futex。
     /// 在创建时包含 CLONE_CHILD_SETTID 时才非0，但可以被 sys_set_tid_address 修改
     clear_child_tid: AtomicU64,
+
+    #[cfg(feature = "monolithic")]
+    /// 退出时是否向父进程发送SIG_CHILD
+    pub send_sigchld_when_exit: bool,
 }
 
 static ID_COUNTER: AtomicU64 = AtomicU64::new(1);
@@ -143,7 +148,13 @@ impl TaskInner {
 
 // private methods
 impl TaskInner {
-    fn new_common(id: TaskId, name: String, process_id: u64, page_table_token: usize) -> Self {
+    fn new_common(
+        id: TaskId,
+        name: String,
+        process_id: u64,
+        page_table_token: usize,
+        sig_child: bool,
+    ) -> Self {
         Self {
             id,
             name,
@@ -169,6 +180,7 @@ impl TaskInner {
             time: UnsafeCell::new(TimeStat::new()),
             set_child_tid: AtomicU64::new(0),
             clear_child_tid: AtomicU64::new(0),
+            send_sigchld_when_exit: sig_child,
         }
     }
 
@@ -178,15 +190,25 @@ impl TaskInner {
         stack_size: usize,
         process_id: u64,
         page_table_token: usize,
+        sig_child: bool,
     ) -> AxTaskRef
     where
         F: FnOnce() + Send + 'static,
     {
-        let mut t = Self::new_common(TaskId::new(), name, process_id, page_table_token);
+        let mut t = Self::new_common(TaskId::new(), name, process_id, page_table_token, sig_child);
         debug!("new task: {}", t.id_name());
         let kstack = TaskStack::alloc(align_up_4k(stack_size));
         t.entry = Some(Box::into_raw(Box::new(entry)));
-        t.ctx.get_mut().init(task_entry as usize, kstack.top());
+        t.ctx.get_mut().init(
+            task_entry as usize,
+            kstack.top() - core::mem::size_of::<TrapFrame>(),
+        );
+        // info!(
+        //     "task id: {}, kernel top: {:X}, bottom: {:X}",
+        //     t.id.as_u64(),
+        //     kstack.top().as_usize(),
+        //     kstack.ptr.as_ptr() as *const _ as usize
+        // );
         t.kstack = Some(kstack);
         if t.name == "idle" {
             t.is_idle = true;
@@ -196,7 +218,7 @@ impl TaskInner {
 
     pub(crate) fn new_init(name: String) -> AxTaskRef {
         // init_task does not change PC and SP, so `entry` and `kstack` fields are not used.
-        let mut t = Self::new_common(TaskId::new(), name, KERNEL_PROCESS_ID, 0);
+        let mut t = Self::new_common(TaskId::new(), name, KERNEL_PROCESS_ID, 0, false);
         t.is_init = true;
         if t.name == "idle" {
             t.is_idle = true;
@@ -585,7 +607,14 @@ extern "C" fn task_entry() {
         } else {
             // 需要通过切换特权级进入到对应的应用程序
             let kernel_sp = task.get_kernel_stack_top().unwrap();
-            let frame_address = task.trap_frame.get();
+
+            let frame_address = task.get_first_trap_frame();
+            // // 似乎不加的话会导致内核栈被覆盖
+            // info!(
+            //     "initial trap frame: {:X}",
+            //     frame_address as *const _ as usize
+            // );
+            // info!("trap frame: {:?}", unsafe { *frame_address });
             // 切换页表已经在switch实现了
             first_into_user(kernel_sp, frame_address as usize);
         }

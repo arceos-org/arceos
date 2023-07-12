@@ -78,6 +78,10 @@ impl MapArea {
         }
     }
 
+    pub fn dealloc(&self, page_table: &mut PageTable) {
+        page_table.unmap_region(self.vaddr, self.size()).unwrap();
+    }
+
     pub fn handle_page_fault(
         &mut self,
         addr: VirtAddr,

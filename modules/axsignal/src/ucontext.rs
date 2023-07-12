@@ -7,7 +7,7 @@
 #[derive(Clone, Copy, Debug)]
 pub struct SignalStack {
     pub sp: usize,
-    pub flags: usize,
+    pub flags: u32,
     pub size: usize,
 }
 
@@ -27,7 +27,8 @@ impl Default for SignalStack {
 pub struct MContext {
     pub reserved1: [usize; 16],
     pub pc: usize,
-    pub reserved2: [usize; 83],
+    pub reserved2: [usize; 17],
+    pub fpstate: [usize; 66],
 }
 
 impl Default for MContext {
@@ -35,7 +36,8 @@ impl Default for MContext {
         Self {
             reserved1: [0; 16],
             pc: 0,
-            reserved2: [0; 83],
+            reserved2: [0; 17],
+            fpstate: [0; 66],
         }
     }
 }
@@ -45,7 +47,8 @@ impl MContext {
         Self {
             reserved1: [0; 16],
             pc,
-            reserved2: [0; 83],
+            reserved2: [0; 17],
+            fpstate: [0; 66],
         }
     }
 }
@@ -56,8 +59,8 @@ pub struct SignalUserContext {
     pub flags: usize,
     pub link: usize,
     pub stack: SignalStack,
+    pub sigmask: u64,
     pub mcontext: MContext,
-    pub sigmask: usize,
 }
 
 impl SignalUserContext {
@@ -67,7 +70,7 @@ impl SignalUserContext {
             link: 0,
             stack: SignalStack::default(),
             mcontext: MContext::init_by_pc(pc),
-            sigmask: mask,
+            sigmask: mask as u64,
         }
     }
 

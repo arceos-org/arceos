@@ -1,8 +1,8 @@
-use super::flags::OpenFlags;
 use super::FileIOType;
 extern crate alloc;
 use alloc::string::{String, ToString};
 use axerrno::{AxError, AxResult};
+use axfs::monolithic_fs::flags::OpenFlags;
 use axfs::monolithic_fs::FileIO;
 use axfs::{api, monolithic_fs::file_io::FileExt};
 use axio::{Read, Seek, SeekFrom, Write};

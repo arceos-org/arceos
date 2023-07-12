@@ -4,21 +4,24 @@ use axconfig::{TASK_STACK_SIZE, USER_MEMORY_LIMIT};
 use axhal::time::current_time;
 use axprocess::{
     flags::{CloneFlags, WaitStatus},
-    futex::{clear_wait, futex, FutexRobustList},
+    futex::{clear_wait, FutexRobustList},
     process::{
         current_process, current_task, set_child_tid, sleep_now_task, wait_pid, yield_now_task,
     },
 };
 extern crate alloc;
-use alloc::{string::ToString, vec::Vec};
-
-use super::flags::{
-    raw_ptr_to_ref_str, RLimit, RobustList, TimeSecs, WaitFlags, RLIMIT_AS, RLIMIT_NOFILE,
-    RLIMIT_STACK,
+use super::{
+    flags::{
+        raw_ptr_to_ref_str, RLimit, RobustList, TimeSecs, WaitFlags, RLIMIT_AS, RLIMIT_NOFILE,
+        RLIMIT_STACK,
+    },
+    futex::futex,
 };
+use alloc::{string::ToString, vec::Vec};
+use axsignal::signal_no::SignalNo;
 /// 处理与任务（线程）有关的系统调用
 
-pub fn syscall_exit(exit_code: i32) -> isize {
+pub fn syscall_exit(exit_code: i32) -> ! {
     axprocess::process::exit(exit_code)
 }
 
@@ -40,7 +43,7 @@ pub fn syscall_exec(path: *const u8, mut args: *const usize) -> isize {
     }
     drop(inner);
     // 清空futex信号列表
-    clear_wait(curr_process.pid);
+    clear_wait(curr_process.pid, true);
     let argc = args_vec.len();
     curr_process.exec(path, args_vec);
     argc as isize
@@ -54,13 +57,21 @@ pub fn syscall_clone(
     ctid: usize,
 ) -> isize {
     let clone_flags = CloneFlags::from_bits((flags & !0x3f) as u32).unwrap();
+    let signal = SignalNo::from(flags as usize & 0x3f);
     let stack = if user_stack == 0 {
         None
     } else {
         Some(user_stack)
     };
     let curr_process = current_process();
-    if let Ok(new_task_id) = curr_process.clone_task(clone_flags, stack, ptid, tls, ctid) {
+    if let Ok(new_task_id) = curr_process.clone_task(
+        clone_flags,
+        signal == SignalNo::SIGCHLD,
+        stack,
+        ptid,
+        tls,
+        ctid,
+    ) {
         new_task_id as isize
     } else {
         -1
@@ -113,21 +124,23 @@ pub fn syscall_sleep(req: *const TimeSecs, rem: *mut TimeSecs) -> isize {
     sleep_now_task(dur);
     // 若被唤醒时时间小于请求时间，则将剩余时间写入rem
     let sleep_time = current_time() - start_to_sleep;
-    if sleep_time < dur {
-        let delta = (dur - sleep_time).as_nanos() as usize;
-        unsafe {
-            *rem = TimeSecs {
-                tv_sec: delta / 1000_000_000,
-                tv_nsec: delta % 1000_000_000,
-            }
-        };
-    } else {
-        unsafe {
-            *rem = TimeSecs {
-                tv_sec: 0,
-                tv_nsec: 0,
-            }
-        };
+    if rem as usize != 0 {
+        if sleep_time < dur {
+            let delta = (dur - sleep_time).as_nanos() as usize;
+            unsafe {
+                *rem = TimeSecs {
+                    tv_sec: delta / 1000_000_000,
+                    tv_nsec: delta % 1000_000_000,
+                }
+            };
+        } else {
+            unsafe {
+                *rem = TimeSecs {
+                    tv_sec: 0,
+                    tv_nsec: 0,
+                }
+            };
+        }
     }
     0
 }
@@ -245,8 +258,8 @@ pub fn syscall_futex(
     futex_op: i32,
     futex_val: u32,
     time_out_val: usize,
-    _vaddr2: usize,
-    _val3: u32,
+    vaddr2: usize,
+    val3: u32,
 ) -> isize {
     let process = current_process();
     let inner = process.inner.lock();
@@ -260,12 +273,21 @@ pub fn syscall_futex(
         let time_sepc: TimeSecs = unsafe { *(time_out_val as *const TimeSecs) };
         time_sepc.to_nano()
     } else {
-        usize::MAX
+        // usize::MAX
+        100000
     };
-    if let Ok(ans) = futex(vaddr.into(), futex_op, futex_val, timeout) {
-        ans as isize
-    } else {
-        -1
+    // 释放锁，防止任务无法被调度
+    drop(inner);
+    match futex(
+        vaddr.into(),
+        futex_op,
+        futex_val,
+        timeout,
+        vaddr2.into(),
+        val3,
+    ) {
+        Ok(ans) => ans as isize,
+        Err(errno) => errno as isize,
     }
 }
 

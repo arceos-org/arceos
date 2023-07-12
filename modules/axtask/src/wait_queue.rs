@@ -106,7 +106,6 @@ impl WaitQueue {
             deadline
         );
         crate::timers::set_alarm_wakeup(deadline, curr.clone());
-
         RUN_QUEUE.lock().block_current(|task| {
             task.set_in_wait_queue(true);
             self.queue.lock().push_back(task)

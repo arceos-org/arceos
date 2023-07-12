@@ -5,7 +5,6 @@ pub mod file;
 extern crate alloc;
 
 pub mod dir;
-pub mod flags;
 pub mod link;
 pub mod mount;
 pub mod pipe;

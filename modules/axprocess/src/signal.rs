@@ -3,6 +3,7 @@
 use alloc::sync::Arc;
 use axerrno::AxResult;
 use axhal::arch::TrapFrame;
+use axlog::debug;
 use axsignal::{
     action::{SigActionFlags, SignalDefault, SIG_IGN},
     info::SigInfo,
@@ -48,6 +49,7 @@ use crate::process::{current_process, current_task, exit, PID2PC};
 /// 若使用了SIG_INFO，此时会对原有trap上下文作一定修改。
 ///
 /// 若确实存在可以被恢复的trap上下文，则返回true
+#[no_mangle]
 pub fn load_trap_for_signal() -> bool {
     let current_process = current_process();
     let mut inner = current_process.inner.lock();
@@ -65,15 +67,13 @@ pub fn load_trap_for_signal() -> bool {
     if let Some(old_trap_frame) = signal_module.last_trap_frame_for_signal.take() {
         unsafe {
             let now_trap_frame = current_task.get_first_trap_frame();
-
+            // 考虑当时调用信号处理函数时，sp对应的地址上的内容即是SignalUserContext
+            // 此时认为一定通过sig_return调用这个函数
+            // 所以此时sp的位置应该是SignalUserContext的位置
+            let sp = (*now_trap_frame).regs.sp;
             *now_trap_frame = old_trap_frame;
-
             // 若存在SIG_INFO，此时pc可能发生变化
             if signal_module.sig_info {
-                let sp = (*now_trap_frame).regs.sp;
-                // 考虑当时调用信号处理函数时，sp对应的地址上的内容即是SignalUserContext
-                // 此时认为一定通过sig_return调用这个函数
-                // 所以此时sp的位置应该是SignalUserContext的位置
                 let pc = (*(sp as *const SignalUserContext)).get_pc();
                 (*now_trap_frame).sepc = pc;
             }
@@ -99,6 +99,7 @@ pub fn handle_signals() {
         .unwrap();
     let signal_set = &mut signal_module.signal_set;
     if let Some(sig_num) = signal_set.get_one_signal() {
+        debug!("handler signal: {}", sig_num);
         let signal = SignalNo::from(sig_num);
         let mask = signal_set.mask;
         // 存在未被处理的信号
@@ -114,8 +115,9 @@ pub fn handle_signals() {
             // 说明之前的信号处理函数已经返回，即没有信号嵌套。
             // 此时可以将当前的trap frame保存起来
             signal_module.last_trap_frame_for_signal =
-                Some((unsafe { *current_task.trap_frame.get() }).clone());
+                Some((unsafe { *current_task.get_first_trap_frame() }).clone());
             // current_task.set_siginfo(false);
+
             signal_module.sig_info = false;
             // 调取处理函数
             if let Some(action) = signal_module.signal_handler.lock().get_action(sig_num) {
@@ -132,12 +134,18 @@ pub fn handle_signals() {
 
                 // 注意是直接修改内核栈上的内容
                 let trap_frame = unsafe { &mut *(current_task.get_first_trap_frame()) };
-                trap_frame.regs.ra = action.restorer;
 
                 // 新的trap上下文的sp指针位置，由于SIGINFO会存放内容，所以需要开个保护区域
                 let mut sp = trap_frame.regs.sp - USER_SIGNAL_PROTECT;
-
+                // info!("test sp: {:X}", sp);
+                // info!("task trap: {:?}", trap_frame);
+                // info!(
+                //     "trap address: {:X}",
+                //     current_task.get_first_trap_frame() as *const _ as usize
+                //         + core::mem::size_of::<TrapFrame>()
+                // );
                 let old_pc = trap_frame.sepc;
+                trap_frame.regs.ra = action.restorer;
                 trap_frame.sepc = action.sa_handler;
                 // 传参
                 trap_frame.regs.a0 = sig_num;
@@ -156,6 +164,7 @@ pub fn handle_signals() {
 
                     // 接下来存储ucontext
                     sp = (sp - core::mem::size_of::<SignalUserContext>()) & !0xf;
+
                     let ucontext = SignalUserContext::init(old_pc, mask);
                     unsafe {
                         *(sp as *mut SignalUserContext) = ucontext;

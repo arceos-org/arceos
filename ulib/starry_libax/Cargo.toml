@@ -78,6 +78,7 @@ signal = ["axprocess/signal", "multitask", "preempt"]
 
 default = ["axtask?/sched_fifo", "axtask", "axmem", "monolithic", "test", "paging", "signal"]
 [dependencies]
+numeric-enum-macro = { git = "https://github.com/mexus/numeric-enum-macro" }
 spin = { version = "0.9", optional = true }
 lazy_static = { version = "1.4", features = ["spin_no_std"]}
 page_table_entry = { path = "../../crates/page_table_entry" }

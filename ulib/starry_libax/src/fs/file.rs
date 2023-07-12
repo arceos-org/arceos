@@ -1,6 +1,5 @@
 use crate::fs::FilePath;
 
-use super::flags::OpenFlags;
 use super::link::get_link_count;
 use super::types::{normal_file_mode, StMode};
 extern crate alloc;
@@ -9,11 +8,12 @@ use alloc::sync::Arc;
 use axerrno::AxResult;
 use axfs::api::File;
 use axfs::monolithic_fs::file_io::{FileExt, Kstat};
+use axfs::monolithic_fs::flags::OpenFlags;
 use axfs::monolithic_fs::FileIO;
 use axfs::monolithic_fs::FileIOType;
 use axio::{Read, Seek, SeekFrom, Write};
 use axsync::Mutex;
-use log::debug;
+use log::{debug, info};
 
 /// 文件描述符
 pub struct FileDesc {
@@ -113,6 +113,25 @@ impl FileIO for FileDesc {
         debug!("kstat: {:?}", kstat);
         Ok(kstat)
     }
+
+    fn set_status(&mut self, flags: OpenFlags) -> bool {
+        self.flags = flags;
+        true
+    }
+
+    fn get_status(&self) -> OpenFlags {
+        self.flags
+    }
+
+    fn set_close_on_exec(&mut self, is_set: bool) -> bool {
+        if is_set {
+            // 设置close_on_exec位置
+            self.flags |= OpenFlags::CLOEXEC;
+        } else {
+            self.flags &= !OpenFlags::CLOEXEC;
+        }
+        true
+    }
 }
 
 /// 为FileDesc实现FileIO trait
@@ -134,15 +153,19 @@ impl FileDesc {
     }
 }
 
-/// 新建一个文件描述符
-pub fn new_fd(path: String, flags: OpenFlags) -> AxResult<FileDesc> {
-    debug!("Into function new_fd, path: {}", path);
+pub fn new_file(path: &str, flags: &OpenFlags) -> AxResult<File> {
     let mut file = File::options();
     file.read(flags.readable());
     file.write(flags.writable());
     file.create(flags.creatable());
     file.create_new(flags.new_creatable());
-    let file = file.open(path.as_str())?;
+    file.open(path)
+}
+
+/// 新建一个文件描述符
+pub fn new_fd(path: String, flags: OpenFlags) -> AxResult<FileDesc> {
+    debug!("Into function new_fd, path: {}", path);
+    let file = new_file(path.as_str(), &flags)?;
     // let file_size = file.metadata()?.len();
     let fd = FileDesc::new(path.as_str(), Arc::new(Mutex::new(file)), flags);
     Ok(fd)

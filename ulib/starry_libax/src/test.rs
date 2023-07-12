@@ -60,115 +60,115 @@ const JUNIOR_TESTCASES: &[&str] = &[
 
 /// libc静态测例
 pub const LIBC_STATIC_TESTCASES: &[&str] = &[
-    // "argv",
-    // "basename",
-    // "clocale_mbfuncs",
-    // "clock_gettime",
-    // "crypt",
-    // "dirname",
-    // "env",
-    // // "fdopen", // 需要62
-    // "fnmatch",
-    // // "fscanf", // 需要62
-    // // "fwscanf", // 需要29
-    // "iconv_open",
-    // "inet_pton",
-    // "mbc",
-    // "memstream",
-    "pthread_cancel_points", // 需要226
-    "pthread_cancel",        // 需要226
-    "pthread_cond",          // 需要226
-    "pthread_tsd",           // 需要226
-                             // "qsort",
-                             // "random",
-                             // "search_hsearch",
-                             // "search_insque",
-                             // "search_lsearch",
-                             // "search_tsearch",
-                             // "setjmp",
-                             // "snprintf",
-                             // // "socket", // 需要198
-                             // "sscanf",
-                             // "sscanf_long",
-                             // // "stat",        // 需79
-                             // "strftime",
-                             // "string",
-                             // "string_memcpy",
-                             // "string_memmem",
-                             // "string_memset",
-                             // "string_strchr",
-                             // "string_strcspn",
-                             // "string_strstr",
-                             // "strptime",
-                             // "strtod",
-                             // "strtod_simple",
-                             // "strtof",
-                             // "strtol",
-                             // "strtold",
-                             // "swprintf",
-                             // "tgmath",
-                             // "time",
-                             // // "tls_align", // app不存在
-                             // "udiv",
-                             // // "ungetc", // 需要29
-                             // // "utime",  // 需要88
-                             // "wcsstr",
-                             // "wcstol",
-                             // "pleval",
-                             // "daemon_failure",
-                             // "dn_expand_empty",
-                             // "dn_expand_ptr_0",
-                             // // "fflush_exit", // 需要29
-                             // "fgets_eof",
-                             // "fgetwc_buffering",
-                             // "fpclassify_invalid_ld80",
-                             // // "ftello_unflushed_append", // 需要25
-                             // "getpwnam_r_crash",
-                             // "getpwnam_r_errno",
-                             // "iconv_roundtrips",
-                             // "inet_ntop_v4mapped",
-                             // "inet_pton_empty_last_field",
-                             // "iswspace_null",
-                             // "lrand48_signextend",
-                             // // "lseek_large", // 需要29
-                             // "malloc_0",
-                             // "mbsrtowcs_overflow",
-                             // "memmem_oob_read",
-                             // "memmem_oob",
-                             // "mkdtemp_failure",
-                             // "mkstemp_failure",
-                             // "printf_1e9_oob",
-                             // "printf_fmt_g_round",
-                             // "printf_fmt_g_zeros",
-                             // "printf_fmt_n",
-                             // // "pthread_robust_detach", // 需226
-                             // // "pthread_cancel_sem_wait",   // 需要226
-                             // // "pthread_cond_smasher",      // 需要226
-                             // "pthread_condattr_setclock",
-                             // // "pthread_exit_cancel",       // 需要226
-                             // // "pthread_once_deadlock",     // 需要226
-                             // // "pthread_rwlock_ebusy",      // 需要226
-                             // "putenv_doublefree",
-                             // "regex_backref_0",
-                             // "regex_bracket_icase",
-                             // "regex_ere_backref",
-                             // "regex_escaped_high_byte",
-                             // "regex_negated_range",
-                             // "regexec_nosub",
-                             // // "rewind_clear_error", // 需要62
-                             // "rlimit_open_files",
-                             // "scanf_bytes_consumed",
-                             // "scanf_match_literal_eof",
-                             // "scanf_nullbyte_char",
-                             // // "setvbuf_unget", // 需要62
-                             // "sigprocmask_internal",
-                             // "sscanf_eof",
-                             // // "statvfs", // 需要43
-                             // "strverscmp",
-                             // "syscall_sign_extend",
-                             // "uselocale_0",
-                             // "wcsncpy_read_overflow",
-                             // "wcsstr_false_negative",
+    "argv",
+    "basename",
+    "clocale_mbfuncs",
+    "clock_gettime",
+    "crypt",
+    "dirname",
+    "env",
+    // "fdopen", // 需要62
+    "fnmatch",
+    // "fscanf", // 需要62
+    // "fwscanf", // 需要29
+    "iconv_open",
+    "inet_pton",
+    "mbc",
+    "memstream",
+    "pthread_cancel_points",
+    "pthread_cancel",
+    "pthread_cond",
+    "pthread_tsd",
+    "qsort",
+    "random",
+    "search_hsearch",
+    "search_insque",
+    "search_lsearch",
+    "search_tsearch",
+    "setjmp",
+    "snprintf",
+    // "socket", // 需要198
+    "sscanf",
+    "sscanf_long",
+    // "stat",        // 需79
+    "strftime",
+    "string",
+    "string_memcpy",
+    "string_memmem",
+    "string_memset",
+    "string_strchr",
+    "string_strcspn",
+    "string_strstr",
+    "strptime",
+    "strtod",
+    "strtod_simple",
+    "strtof",
+    "strtol",
+    "strtold",
+    "swprintf",
+    "tgmath",
+    "time",
+    // "tls_align", // app不存在
+    "udiv",
+    // "ungetc", // 需要29
+    // "utime",  // 需要88
+    "wcsstr",
+    "wcstol",
+    "pleval",
+    "daemon_failure",
+    "dn_expand_empty",
+    "dn_expand_ptr_0",
+    // "fflush_exit", // 需要29
+    "fgets_eof",
+    "fgetwc_buffering",
+    "fpclassify_invalid_ld80",
+    // "ftello_unflushed_append", // 需要25
+    "getpwnam_r_crash",
+    "getpwnam_r_errno",
+    "iconv_roundtrips",
+    "inet_ntop_v4mapped",
+    "inet_pton_empty_last_field",
+    "iswspace_null",
+    "lrand48_signextend",
+    // "lseek_large", // 需要29
+    "malloc_0",
+    "mbsrtowcs_overflow",
+    "memmem_oob_read",
+    "memmem_oob",
+    "mkdtemp_failure",
+    "mkstemp_failure",
+    "printf_1e9_oob",
+    "printf_fmt_g_round",
+    "printf_fmt_g_zeros",
+    "printf_fmt_n",
+    "pthread_robust_detach",
+    "pthread_cancel_sem_wait",
+    "pthread_cond_smasher",
+    "pthread_condattr_setclock",
+    "pthread_exit_cancel",
+    "pthread_once_deadlock",
+    "pthread_rwlock_ebusy",
+    "putenv_doublefree",
+    "regex_backref_0",
+    "regex_bracket_icase",
+    "regex_ere_backref",
+    "regex_escaped_high_byte",
+    "regex_negated_range",
+    "regexec_nosub",
+    // "rewind_clear_error", // 需要62
+    "rlimit_open_files",
+    "scanf_bytes_consumed",
+    "scanf_match_literal_eof",
+    "scanf_nullbyte_char",
+    // "setvbuf_unget", // 需要62
+    "sigprocmask_internal",
+    "sscanf_eof",
+    // "statvfs", // 需要43
+    "strverscmp",
+    "syscall_sign_extend",
+    "uselocale_0",
+    "wcsncpy_read_overflow",
+    "wcsstr_false_negative",
 ];
 
 /// 来自 libc 的动态测例
@@ -392,11 +392,50 @@ fn get_args(command_line: &[u8]) -> Vec<String> {
     args
 }
 
+/// 在执行系统调用前初始化文件系统
+///
+/// 包括建立软连接，提前准备好一系列的文件与文件夹
+pub fn fs_init(case: &'static str) -> AxResult<()> {
+    // create_dir("/dev/")?;
+    // create_dir("/lib").unwrap();
+    // create_dir("tmp/")?;
+    // create_dir("/proc").unwrap();
+    // create_dir("./dev/shm").unwrap();
+    // create_dir("./dev/./misc")?;
+
+    // create_dir("/sbin/")?;
+    // new_file("./dev/misc/rtc", &OpenFlags::CREATE)?;
+    // new_file("./lat_sig", &OpenFlags::CREATE)?;
+    // new_file("./proc/mounts", &OpenFlags::CREATE)?;
+    // new_file("./proc/meminfo", &OpenFlags::CREATE)?;
+
+    if case == "libc-dynamic" {
+        // 需要对libc-dynamic进行特殊处理，因为它需要先加载libc.so
+        // 建立一个硬链接
+        let libc_so = &"ld-musl-riscv64-sf.so.1";
+        let libc_so2 = &"ld-musl-riscv64.so.1"; // 另一种名字的 libc.so，非 libc-test 测例库用
+
+        create_link(
+            &FilePath::new(("/lib/".to_string() + libc_so).as_str()),
+            &FilePath::new("libc.so"),
+        );
+
+        create_link(
+            &FilePath::new(("/lib/".to_string() + libc_so2).as_str()),
+            &FilePath::new("libc.so"),
+        );
+        info!("get link!");
+    }
+    Ok(())
+}
+
 /// 执行运行所有测例的任务
 pub fn run_testcases(case: &'static str) {
+    debug!("run_testcases :{}", case);
+    fs_init(case).unwrap();
     let mut test_iter: LazyInit<Box<dyn Iterator<Item = &'static &'static str> + Send>> =
         LazyInit::new();
-    debug!("run_testcases :{}", case);
+
     match case {
         "junior" => {
             test_iter.init_by(Box::new(JUNIOR_TESTCASES.iter()));
@@ -406,26 +445,11 @@ pub fn run_testcases(case: &'static str) {
             test_iter.init_by(Box::new(LIBC_STATIC_TESTCASES.iter()));
             TESTRESULT.init_by(SpinNoIrq::new(TestResult::new(LIBC_STATIC_TESTCASES.len())));
         }
-        "libc-dyamic" => {
+        "libc-dynamic" => {
             test_iter.init_by(Box::new(LIBC_DYNAMIC_TESTCASES.iter()));
             TESTRESULT.init_by(SpinNoIrq::new(TestResult::new(
                 LIBC_DYNAMIC_TESTCASES.len(),
             )));
-            // 需要对libc-dynamic进行特殊处理，因为它需要先加载libc.so
-            // 建立一个硬链接
-            let libc_so = &"ld-musl-riscv64-sf.so.1";
-            let libc_so2 = &"ld-musl-riscv64.so.1"; // 另一种名字的 libc.so，非 libc-test 测例库用
-
-            create_link(
-                &FilePath::new(("/lib/".to_string() + libc_so).as_str()),
-                &FilePath::new("libc.so"),
-            );
-
-            create_link(
-                &FilePath::new(("/lib/".to_string() + libc_so2).as_str()),
-                &FilePath::new("libc.so"),
-            );
-            info!("get link!");
         }
         _ => {
             panic!("unknown test case: {}", case);
@@ -451,6 +475,9 @@ pub fn run_testcases(case: &'static str) {
                     if wait_pid(now_process_id, &mut exit_code as *mut i32).is_ok() {
                         break Some(exit_code);
                     }
+                    // let trap: usize = 0xFFFFFFC0805BFEF8;
+                    // let trap_frame: *const TrapFrame = trap as *const TrapFrame;
+                    // info!("trap_frame: {:?}", unsafe { &*trap_frame });
                     yield_now_task();
                 }
             },

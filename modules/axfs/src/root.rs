@@ -109,7 +109,9 @@ impl VfsNodeOps for RootDirectory {
     }
 
     fn lookup(self: Arc<Self>, path: &str) -> VfsResult<VfsNodeRef> {
-        self.lookup_mounted_fs(path, |fs, rest_path| fs.root_dir().lookup(rest_path))
+        self.lookup_mounted_fs(path, |fs: Arc<dyn VfsOps>, rest_path| {
+            fs.root_dir().lookup(rest_path)
+        })
     }
 
     fn create(&self, path: &str, ty: VfsNodeType) -> VfsResult {
@@ -152,8 +154,11 @@ pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
         let null = fs::devfs::NullDev;
         let zero = fs::devfs::ZeroDev;
         let bar = fs::devfs::ZeroDev;
+        let testshm = fs::devfs::ZeroDev;
         let devfs = fs::devfs::DeviceFileSystem::new();
         let foo_dir = devfs.mkdir("foo");
+        let shm_dir = devfs.mkdir("shm");
+        shm_dir.add("testshm", Arc::new(testshm));
         devfs.add("null", Arc::new(null));
         devfs.add("zero", Arc::new(zero));
         foo_dir.add("bar", Arc::new(bar));

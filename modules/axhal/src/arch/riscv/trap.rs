@@ -1,7 +1,7 @@
 use page_table::MappingFlags;
 use riscv::register::{
     scause::{self, Exception as E, Trap},
-    stval,
+    sepc, stval,
 };
 
 #[cfg(feature = "paging")]
@@ -30,6 +30,12 @@ fn handle_breakpoint(sepc: &mut usize) {
 #[no_mangle]
 fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
     let scause = scause::read();
+    // info!(
+    //     "get trap: reason: {:?} from user: {} , sepc: {:X}",
+    //     scause.cause(),
+    //     from_user,
+    //     sepc::read(),
+    // );
     match scause.cause() {
         Trap::Exception(E::Breakpoint) => handle_breakpoint(&mut tf.sepc),
         Trap::Interrupt(_) => crate::trap::handle_irq_extern(scause.bits()),
@@ -72,6 +78,11 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
         #[cfg(feature = "paging")]
         Trap::Exception(E::StorePageFault) => {
             if !from_user {
+                error!(
+                    "S page fault from kernel, addr: {:#x} sepc:{:X}",
+                    stval::read(),
+                    sepc::read()
+                );
                 unimplemented!("S page fault from kernel");
             }
             let addr = stval::read();
@@ -89,5 +100,7 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
     }
 
     #[cfg(feature = "signal")]
-    handle_signal();
+    if !(!from_user && scause.cause() == Trap::Interrupt(scause::Interrupt::SupervisorTimer)) {
+        handle_signal();
+    }
 }

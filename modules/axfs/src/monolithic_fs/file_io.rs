@@ -5,6 +5,8 @@ use core::any::Any;
 use log::debug;
 extern crate alloc;
 use alloc::string::String;
+
+use super::flags::OpenFlags;
 /// 文件系统信息
 #[derive(Debug, Clone, Copy)]
 #[repr(C)]
@@ -85,6 +87,22 @@ pub trait FileIO: FileExt {
     /// debug
     fn print_content(&self) {
         debug!("Function print_content not implemented");
+    }
+
+    /// 设置文件状态
+    fn set_status(&mut self, _flags: OpenFlags) -> bool {
+        false
+    }
+
+    /// 获取文件状态
+    fn get_status(&self) -> OpenFlags {
+        OpenFlags::empty()
+    }
+
+    /// 设置 close_on_exec 位
+    /// 设置成功返回false
+    fn set_close_on_exec(&mut self, _is_set: bool) -> bool {
+        false
     }
 }
 

@@ -2168,6 +2168,7 @@ dependencies = [
  "lazy_static",
  "log",
  "memory_addr",
+ "numeric-enum-macro",
  "page_table_entry",
  "riscv 0.10.1",
  "spin 0.9.8",

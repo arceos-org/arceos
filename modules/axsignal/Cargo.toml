@@ -9,8 +9,6 @@ edition = "2021"
 
 signal = ["axhal/signal"]
 
-
-
 [dependencies]
 numeric-enum-macro = { git = "https://github.com/mexus/numeric-enum-macro" }
 bitflags = "2.0"

@@ -1,4 +1,3 @@
-use crate::fs::flags::OpenFlags;
 use crate::fs::link::{create_link, remove_link};
 use crate::fs::mount::{check_mounted, mount_fat_fs, umount_fat_fs};
 use crate::fs::pipe::make_pipe;
@@ -10,13 +9,14 @@ use alloc::string::ToString;
 use alloc::sync::Arc;
 use axfs::api;
 use axfs::monolithic_fs::file_io::Kstat;
+use axfs::monolithic_fs::flags::OpenFlags;
 use axprocess::process::current_process;
 use core::mem::transmute;
 use core::ptr::copy_nonoverlapping;
 use log::{debug, info};
 use spinlock::SpinNoIrq;
 
-use super::flags::IoVec;
+use super::flags::{Fcntl64Cmd, IoVec};
 use super::syscall_id::ErrorNo;
 
 #[allow(unused)]
@@ -226,7 +226,7 @@ pub fn syscall_openat(fd: usize, path: *const u8, flags: usize, _mode: u8) -> is
     };
     debug!("allocated fd_num: {}", fd_num);
     // 如果是DIR
-    if path.is_dir() {
+    let ans = if path.is_dir() {
         debug!("open dir");
         if let Ok(dir) = new_dir(path.path().to_string(), flags.into()) {
             debug!("new dir_desc successfully allocated: {}", path.path());
@@ -249,7 +249,9 @@ pub fn syscall_openat(fd: usize, path: *const u8, flags: usize, _mode: u8) -> is
             debug!("open file failed");
             ErrorNo::ENOENT as isize
         }
-    }
+    };
+    info!("openat: {} -> {}", path.path(), ans);
+    ans
 }
 
 /// 功能：关闭一个文件描述符；
@@ -452,7 +454,6 @@ pub fn syscall_chdir(path: *const u8) -> isize {
     // 从path中读取字符串
     let path = deal_with_path(AT_FDCWD, Some(path), true).unwrap();
     debug!("Into syscall_chdir. path: {:?}", path.path());
-    info!("test!");
     match api::set_current_dir(path.path()) {
         Ok(_) => 0,
         Err(_) => -1,
@@ -719,6 +720,73 @@ pub fn syscall_fstat(fd: usize, kst: *mut Kstat) -> isize {
         }
     };
     ans
+}
+
+pub fn syscall_fcntl64(fd: usize, cmd: usize, arg: usize) -> isize {
+    let process = current_process();
+    let mut process_inner = process.inner.lock();
+    if fd >= process_inner.fd_manager.fd_table.len() || fd < 3 {
+        debug!("fd {} is out of range", fd);
+        return ErrorNo::EBADF as isize;
+    }
+    if process_inner.fd_manager.fd_table[fd].is_none() {
+        debug!("fd {} is none", fd);
+        return ErrorNo::EBADF as isize;
+    }
+    let file = process_inner.fd_manager.fd_table[fd].clone().unwrap();
+    match Fcntl64Cmd::try_from(cmd) {
+        Ok(Fcntl64Cmd::F_DUPFD) => {
+            let new_fd = if let Ok(fd) = process_inner.alloc_fd() {
+                fd
+            } else {
+                // 文件描述符达到上限了
+                return ErrorNo::EMFILE as isize;
+            };
+            process_inner.fd_manager.fd_table[new_fd] =
+                process_inner.fd_manager.fd_table[fd].clone();
+            return new_fd as isize;
+        }
+        Ok(Fcntl64Cmd::F_GETFD) => {
+            if file.lock().get_status().contains(OpenFlags::CLOEXEC) {
+                1
+            } else {
+                0
+            }
+        }
+        Ok(Fcntl64Cmd::F_SETFD) => {
+            if file.lock().set_close_on_exec((arg & 1) != 0) {
+                0
+            } else {
+                ErrorNo::EINVAL as isize
+            }
+        }
+        Ok(Fcntl64Cmd::F_GETFL) => file.lock().get_status().bits() as isize,
+        Ok(Fcntl64Cmd::F_SETFL) => {
+            if let Some(flags) = OpenFlags::from_bits(arg as u32) {
+                if file.lock().set_status(flags) {
+                    return 0;
+                }
+            }
+            ErrorNo::EINVAL as isize
+        }
+        Ok(Fcntl64Cmd::F_DUPFD_CLOEXEC) => {
+            let new_fd = if let Ok(fd) = process_inner.alloc_fd() {
+                fd
+            } else {
+                // 文件描述符达到上限了
+                return ErrorNo::EMFILE as isize;
+            };
+
+            if file.lock().set_close_on_exec((arg & 1) != 0) {
+                process_inner.fd_manager.fd_table[new_fd] =
+                    process_inner.fd_manager.fd_table[fd].clone();
+                return new_fd as isize;
+            } else {
+                return ErrorNo::EINVAL as isize;
+            }
+        }
+        _ => ErrorNo::EINVAL as isize,
+    }
 }
 
 // // ## sys_renameat2()

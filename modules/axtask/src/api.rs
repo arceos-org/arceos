@@ -102,7 +102,7 @@ where
     F: FnOnce() + Send + 'static,
 {
     #[cfg(feature = "monolithic")]
-    let task = TaskInner::new(f, name, stack_size, KERNEL_PROCESS_ID, 0);
+    let task = TaskInner::new(f, name, stack_size, KERNEL_PROCESS_ID, 0, false);
     #[cfg(not(feature = "monolithic"))]
     let task = TaskInner::new(f, name, stack_size);
 

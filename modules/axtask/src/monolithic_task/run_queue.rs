@@ -32,6 +32,7 @@ impl AxRunQueue {
             axconfig::TASK_STACK_SIZE,
             KERNEL_PROCESS_ID,
             0,
+            false,
         );
         let mut scheduler = Scheduler::new();
         scheduler.add_task(gc_task);
@@ -48,11 +49,14 @@ impl AxRunQueue {
     pub fn remove_task(&mut self, task: &AxTaskRef) {
         debug!("task remove: {}", task.id_name());
         // 当前任务不予清除
-        assert!(task.is_running());
+        // assert!(!task.is_running());
+        assert!(!task.is_running());
         assert!(!task.is_idle());
-        self.scheduler.remove_task(task);
-        task.set_state(TaskState::Exited);
-        EXITED_TASKS.lock().push_back(task.clone());
+        if task.is_ready() {
+            task.set_state(TaskState::Exited);
+            EXITED_TASKS.lock().push_back(task.clone());
+            self.scheduler.remove_task(task);
+        }
     }
 
     #[cfg(feature = "irq")]
@@ -127,7 +131,6 @@ impl AxRunQueue {
         debug!("task block: {}", curr.id_name());
         assert!(curr.is_running());
         assert!(!curr.is_idle());
-
         // we must not block current task with preemption disabled.
         #[cfg(feature = "preempt")]
         assert!(curr.can_preempt(1));
@@ -138,7 +141,6 @@ impl AxRunQueue {
     }
 
     pub fn unblock_task(&mut self, task: AxTaskRef, resched: bool) {
-        debug!("task unblock: {}", task.id_name());
         if task.is_blocked() {
             task.set_state(TaskState::Ready);
             self.scheduler.add_task(task); // TODO: priority
@@ -203,6 +205,8 @@ impl AxRunQueue {
             let next_ctx_ptr = next_task.ctx_mut_ptr();
             // The strong reference count of `prev_task` will be decremented by 1,
             // but won't be dropped until `gc_entry()` is called.
+            // info!("prev ctx: {:X?}", &*prev_ctx_ptr);
+            // info!("next ctx: {:X?}", &*next_ctx_ptr);
             assert!(Arc::strong_count(prev_task.as_task_ref()) > 1);
             assert!(Arc::strong_count(&next_task) >= 1);
             let page_table_token = next_task.page_table_token();
@@ -233,13 +237,14 @@ fn gc_entry() {
 }
 
 pub(crate) fn init() {
-    const IDLE_TASK_STACK_SIZE: usize = 4096;
+    const IDLE_TASK_STACK_SIZE: usize = 0x20000;
     let idle_task = TaskInner::new(
         || crate::run_idle(),
         "idle".into(),
         IDLE_TASK_STACK_SIZE,
         KERNEL_PROCESS_ID,
         0,
+        false,
     );
     IDLE_TASK.with_current(|i: &mut LazyInit<Arc<scheduler::FifoTask<TaskInner>>>| {
         i.init_by(idle_task.clone())

@@ -1,6 +1,7 @@
 use axfs::monolithic_fs::file_io::Kstat;
 use axprocess::process::exit;
 use axsignal::action::SigAction;
+use axtask::current;
 use flags::{MMAPFlags, TimeSecs, TimeVal, UtsName, WaitFlags, MMAPPROT, TMS};
 use fs::*;
 use log::{debug, error, info};
@@ -12,12 +13,12 @@ extern crate log;
 
 extern crate alloc;
 
-#[cfg(feature = "signal")]
-pub mod signal;
-
 pub mod flags;
 pub mod fs;
+pub mod futex;
 pub mod mem;
+#[cfg(feature = "signal")]
+pub mod signal;
 pub mod syscall_id;
 pub mod utils;
 #[allow(unused)]
@@ -35,13 +36,14 @@ pub mod task;
 
 #[no_mangle]
 pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
+    let curr_id = current().id().as_u64();
     info!(
-        "syscall: id: {}, name: {}",
+        "task id: {}, syscall: id: {}, name: {}",
+        curr_id,
         syscall_id,
         get_syscall_name(syscall_id)
     );
-    debug!("args: {:?}", args);
-    match syscall_id {
+    let ans = match syscall_id {
         SYSCALL_OPENAT => syscall_openat(
             args[0],
             args[1] as *const u8,
@@ -151,10 +153,16 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[1] as usize,
             MMAPPROT::from_bits_truncate(args[2] as u32),
         ),
+        SYSCALL_FCNTL64 => syscall_fcntl64(args[0] as usize, args[1] as usize, args[2] as usize),
         _ => {
             error!("Invalid Syscall Id: {}!", syscall_id);
             // return -1;
             exit(-1)
         }
-    }
+    };
+    // info!(
+    //     "currr id: {}, Syscall {} return: {}",
+    //     curr_id, syscall_id, ans
+    // );
+    ans
 }

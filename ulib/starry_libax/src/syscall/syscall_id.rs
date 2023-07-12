@@ -3,6 +3,7 @@ pub const SYSCALL_GETCWD: usize = 17;
 pub const SYSCALL_DUP: usize = 23;
 pub const SYSCALL_DUP3: usize = 24;
 //?
+pub const SYSCALL_FCNTL64: usize = 25;
 pub const SYSCALL_MKDIRAT: usize = 34;
 pub const SYSCALL_UNLINKAT: usize = 35;
 pub const SYSCALL_LINKAT: usize = 37;
@@ -65,6 +66,7 @@ pub fn get_syscall_name(syscall_id: usize) -> &'static str {
         SYSCALL_DUP3 => "dup3",
         SYSCALL_MKDIRAT => "mkdirat",
         SYSCALL_UNLINKAT => "unlinkat",
+        SYSCALL_FCNTL64 => "fcntl64",
         SYSCALL_LINKAT => "linkat",
         SYSCALL_UNMOUNT => "unmount",
         SYSCALL_MOUNT => "mount",
@@ -103,6 +105,8 @@ pub fn get_syscall_name(syscall_id: usize) -> &'static str {
         SYSCALL_READV => "readv",
         SYSCALL_WRITEV => "writev",
         SYSCALL_MPROTECT => "mprotect",
+        SYSCALL_KILL => "kill",
+        SYSCALL_TKILL => "tkill",
         _ => "unknown",
     }
 }

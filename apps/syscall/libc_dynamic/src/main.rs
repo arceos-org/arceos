@@ -9,6 +9,6 @@ extern crate libax;
 use libax::test::run_testcases;
 #[no_mangle]
 fn main() -> i32 {
-    run_testcases("libc-dyamic");
+    run_testcases("libc-dynamic");
     0
 }

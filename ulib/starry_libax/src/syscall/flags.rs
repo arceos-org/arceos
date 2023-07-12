@@ -211,3 +211,44 @@ pub struct IoVec {
     pub base: *mut u8,
     pub len: usize,
 }
+/// 对 futex 的操作
+pub enum FutexFlags {
+    /// 检查用户地址 uaddr 处的值。如果不是要求的值则等待 wake
+    WAIT,
+    /// 唤醒最多 val 个在等待 uaddr 位置的线程。
+    WAKE,
+    REQUEUE,
+    UNSUPPORTED,
+}
+
+impl FutexFlags {
+    pub fn new(val: i32) -> Self {
+        match val & 0x7f {
+            0 => FutexFlags::WAIT,
+            1 => FutexFlags::WAKE,
+            3 => FutexFlags::REQUEUE,
+            _ => FutexFlags::UNSUPPORTED,
+        }
+    }
+}
+
+numeric_enum_macro::numeric_enum! {
+    #[repr(usize)]
+    #[allow(non_camel_case_types)]
+    #[derive(Debug)]
+    /// sys_fcntl64 使用的选项
+    pub enum Fcntl64Cmd {
+        /// 复制这个 fd，相当于 sys_dup
+        F_DUPFD = 0,
+        /// 获取 cloexec 信息，即 exec 成功时是否删除该 fd
+        F_GETFD = 1,
+        /// 设置 cloexec 信息，即 exec 成功时删除该 fd
+        F_SETFD = 2,
+        /// 获取 flags 信息
+        F_GETFL = 3,
+        /// 设置 flags 信息
+        F_SETFL = 4,
+        /// 复制 fd，然后设置 cloexec 信息，即 exec 成功时删除该 fd
+        F_DUPFD_CLOEXEC = 1030,
+    }
+}

@@ -5,15 +5,17 @@ use axerrno::{AxError, AxResult};
 use axfs::monolithic_fs::FileIO;
 use axhal::arch::{write_page_table_root, TrapFrame};
 use axhal::mem::phys_to_virt;
-use axlog::{error, info};
+use axlog::{debug, error};
+use axtask::monolithic_task::run_queue::WAIT_FOR_EXIT;
 use axtask::{AxTaskRef, TaskId};
 
-const KERNEL_STACK_SIZE: usize = 0x20000;
+const KERNEL_STACK_SIZE: usize = 0x40000;
 const FD_LIMIT_ORIGIN: usize = 256;
 use crate::fd_manager::FdManager;
 use crate::flags::{CloneFlags, WaitStatus};
 use crate::futex::{clear_wait, FutexRobustList};
 use crate::loader::load_app;
+use crate::send_signal_to_process;
 use crate::signal::SignalModule;
 use crate::stdin::{Stderr, Stdin, Stdout};
 // use crate::test::finish_one_test;
@@ -164,6 +166,7 @@ impl Process {
             KERNEL_STACK_SIZE,
             new_process.pid,
             page_table_token,
+            false,
         );
         new_task.set_leader(true);
         // 初始化线程的trap上下文
@@ -176,6 +179,9 @@ impl Process {
         // info!("new task: {}", new_task.id().as_u64());
         // 设立父子关系
         let mut inner = new_process.inner.lock();
+        inner
+            .robust_list
+            .insert(new_task.id().as_u64(), FutexRobustList::default());
         inner.tasks.push(Arc::clone(&new_task));
         // TID2TASK.lock().insert(new_task.id(), Arc::clone(&new_task));
         // 设置信号模块内容
@@ -219,7 +225,7 @@ impl Process {
         // 再考虑手动结束其他所有的task
         let _ = inner
             .tasks
-            .extract_if(|task: &mut AxTaskRef| task.id() != curr.id())
+            .drain_filter(|task: &mut AxTaskRef| task.id() != curr.id())
             .map(|task| RUN_QUEUE.lock().remove_task(&task));
         // 当前任务被设置为主线程
         curr.set_leader(true);
@@ -252,6 +258,12 @@ impl Process {
         inner.heap_bottom = heap_bottom.as_usize();
         inner.heap_top = inner.heap_bottom;
 
+        // 重置robust list
+        inner.robust_list.clear();
+        inner
+            .robust_list
+            .insert(curr.id().as_u64(), FutexRobustList::default());
+
         // 重置信号处理模块
         // 此时只会留下一个线程
         inner.signal_module.clear();
@@ -270,8 +282,9 @@ impl Process {
     pub fn clone_task(
         &self,
         flags: CloneFlags,
+        sig_child: bool,
         stack: Option<usize>,
-        _ptid: usize,
+        ptid: usize,
         tls: usize,
         ctid: usize,
     ) -> AxResult<u64> {
@@ -306,12 +319,13 @@ impl Process {
             KERNEL_STACK_SIZE,
             process_id,
             new_memory_set.lock().page_table_token(),
+            sig_child,
         );
+        debug!("new task:{}", new_task.id().as_u64());
         // TID2TASK.lock().insert(new_task.id(), Arc::clone(&new_task));
         #[cfg(feature = "signal")]
         let new_handler = if flags.contains(CloneFlags::CLONE_SIGHAND) {
             // let curr_id = current_task().id().as_u64();
-            // info!("address: {:X}", &curr_id as *const _ as usize);
             inner
                 .signal_module
                 .get_mut(&current_task().id().as_u64())
@@ -330,7 +344,19 @@ impl Process {
                     .clone(),
             ))
         };
-
+        // 检查是否在父任务中写入当前新任务的tid
+        if flags.contains(CloneFlags::CLONE_PARENT_SETTID) {
+            if inner
+                .memory_set
+                .lock()
+                .manual_alloc_for_lazy(ptid.into())
+                .is_ok()
+            {
+                unsafe {
+                    *(ptid as *mut i32) = new_task.id().as_u64() as i32;
+                }
+            }
+        }
         // 若包含CLONE_CHILD_SETTID或者CLONE_CHILD_CLEARTID
         // 则需要把线程号写入到子线程地址空间中tid对应的地址中
         if flags.contains(CloneFlags::CLONE_CHILD_SETTID)
@@ -391,20 +417,28 @@ impl Process {
                 }
             }
         }
-
         // 返回的值
         // 若创建的是进程，则返回进程的id
         // 若创建的是线程，则返回线程的id
         let return_id: u64;
         // 决定是创建线程还是进程
         if flags.contains(CloneFlags::CLONE_THREAD) {
-            // 若创建的是线程，那么不用新建进程
+            // // 若创建的是线程，那么不用新建进程
+            // info!("task len: {}", inner.tasks.len());
+            // info!("task address :{:X}", (&new_task as *const _ as usize));
+            // info!(
+            //     "task address: {:X}",
+            //     (&Arc::clone(&new_task)) as *const _ as usize
+            // );
             inner.tasks.push(Arc::clone(&new_task));
             #[cfg(feature = "signal")]
             inner.signal_module.insert(
                 new_task.id().as_u64(),
                 SignalModule::init_signal(Some(new_handler)),
             );
+            inner
+                .robust_list
+                .insert(new_task.id().as_u64(), FutexRobustList::default());
             return_id = new_task.id().as_u64();
         } else {
             // 若创建的是进程，那么需要新建进程
@@ -428,6 +462,12 @@ impl Process {
                 new_task.id().as_u64(),
                 SignalModule::init_signal(Some(new_handler)),
             );
+
+            new_process
+                .inner
+                .lock()
+                .robust_list
+                .insert(new_task.id().as_u64(), FutexRobustList::default());
             return_id = new_process.pid;
             inner.children.push(new_process);
         };
@@ -450,10 +490,10 @@ impl Process {
         // 没有给定用户栈的时候，只能是共享了地址空间，且原先调用clone的有用户栈，此时已经在之前的trap clone时复制了
         if let Some(stack) = stack {
             trap_frame.regs.sp = stack;
-            info!(
-                "New user stack: sepc:{:X}, stack:{:X}",
-                trap_frame.sepc, trap_frame.regs.sp
-            );
+            // info!(
+            //     "New user stack: sepc:{:X}, stack:{:X}",
+            //     trap_frame.sepc, trap_frame.regs.sp
+            // );
         }
         new_task.set_trap_context(trap_frame);
         new_task.set_trap_in_kernel_stack();
@@ -513,14 +553,35 @@ pub fn current_process() -> Arc<Process> {
 }
 
 /// 退出当前任务
-pub fn exit(exit_code: i32) -> isize {
+pub fn exit(exit_code: i32) -> ! {
     let process = current_process();
-    let mut inner = process.inner.lock();
     let curr = current();
     let curr_id = curr.id();
+    // info!(
+    //     "curr_id: {}, exit_code: {}",
+    //     curr_id.as_u64(),
+    //     exit_code as i32
+    // );
     let is_leader = curr.is_leader();
     let process_id = curr.get_process_id();
-    clear_wait(process_id);
+    clear_wait(
+        if curr.is_leader() {
+            process_id
+        } else {
+            curr_id.as_u64()
+        },
+        curr.is_leader(),
+    );
+
+    // 检查这个任务是否有sig_child信号
+    if curr.send_sigchld_when_exit || curr.is_leader() {
+        let parent = process.inner.lock().parent;
+        if parent != KERNEL_PROCESS_ID {
+            // 发送sigchild
+            send_signal_to_process(parent as isize, 17).unwrap();
+        }
+    }
+    let mut inner = process.inner.lock();
     // clear_child_tid 的值不为 0，则将这个用户地址处的值写为0
     let clear_child_tid = curr.get_clear_child_tid();
     if clear_child_tid != 0 {
@@ -530,35 +591,32 @@ pub fn exit(exit_code: i32) -> isize {
             .manual_alloc_for_lazy(clear_child_tid.into())
             .is_ok()
         {
-            // 就算不在也问题不大，反正要推出了
             unsafe {
                 *(clear_child_tid as *mut i32) = 0;
             }
         }
         drop(memory_set);
     }
+
     // 记得删除任务
     // TID2TASK.lock().remove(&curr_id);
     drop(curr);
     // 若退出的是内核线程，就没有必要考虑后续了，否则此时调度队列重新调度的操作拿到进程这里来
     // 先进行资源的回收
     // 不可以回收内核任务
-
-    // inner.signal_module.remove(&curr_id.as_u64());
     inner.signal_module.remove(&curr_id.as_u64());
-    RUN_QUEUE.lock().exit_current(exit_code);
     if is_leader {
         assert!(process_id != 0);
         inner.exit_code = exit_code;
         inner.is_zombie = true;
         // 结束自身的所有子线程
-        let _ = inner
-            .tasks
-            .extract_if(|task: &mut AxTaskRef| task.id() != curr_id)
-            .map(|task| {
-                // TID2TASK.lock().remove(&task.id());
+        // 先把所有睡眠中的任务唤醒加入到run_queue中
+        WAIT_FOR_EXIT.notify_all(false);
+        for task in &inner.tasks {
+            if task.id() != curr_id {
                 RUN_QUEUE.lock().remove_task(&task);
-            });
+            }
+        }
         inner.tasks.clear();
         inner.signal_module.clear();
         {
@@ -585,9 +643,10 @@ pub fn exit(exit_code: i32) -> isize {
         drop(inner);
         drop(process);
     }
+    RUN_QUEUE.lock().exit_current(exit_code);
     // 当前的进程回收是比较简单的
     RUN_QUEUE.lock().resched_inner(false);
-    exit_code as isize
+    unreachable!("Unreachable in sys_exit!");
 }
 
 /// 在当前进程找对应的子进程，并等待子进程结束
