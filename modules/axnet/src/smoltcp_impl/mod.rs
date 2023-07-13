@@ -3,14 +3,14 @@ mod listen_table;
 mod tcp;
 mod udp;
 
-use alloc::{collections::VecDeque, vec};
+use alloc::vec;
 use core::cell::RefCell;
 use core::ops::DerefMut;
 
 use axdriver::prelude::*;
 use axhal::time::{current_time_nanos, NANOS_PER_MICROS};
 use axsync::Mutex;
-use driver_net::{DevError, NetBufferBox, NetBufferPool};
+use driver_net::{DevError, NetBufPtr};
 use lazy_init::LazyInit;
 use smoltcp::iface::{Config, Interface, SocketHandle, SocketSet};
 use smoltcp::phy::{Device, DeviceCapabilities, Medium, RxToken, TxToken};
@@ -35,13 +35,7 @@ const TCP_RX_BUF_LEN: usize = 64 * 1024;
 const TCP_TX_BUF_LEN: usize = 64 * 1024;
 const UDP_RX_BUF_LEN: usize = 64 * 1024;
 const UDP_TX_BUF_LEN: usize = 64 * 1024;
-const RX_BUF_QUEUE_SIZE: usize = 64;
 const LISTEN_QUEUE_SIZE: usize = 512;
-
-const NET_BUF_LEN: usize = 1526;
-const NET_BUF_POOL_SIZE: usize = 128;
-
-static NET_BUF_POOL: LazyInit<NetBufferPool> = LazyInit::new();
 
 static LISTEN_TABLE: LazyInit<ListenTable> = LazyInit::new();
 static SOCKET_SET: LazyInit<SocketSetWrapper> = LazyInit::new();
@@ -51,7 +45,6 @@ struct SocketSetWrapper<'a>(Mutex<SocketSet<'a>>);
 
 struct DeviceWrapper {
     inner: RefCell<AxNetDevice>, // use `RefCell` is enough since it's wrapped in `Mutex` in `InterfaceWrapper`.
-    rx_buf_queue: VecDeque<NetBufferBox<'static>>,
 }
 
 struct InterfaceWrapper {
@@ -165,13 +158,9 @@ impl InterfaceWrapper {
 
     pub fn poll(&self, sockets: &Mutex<SocketSet>) {
         let mut dev = self.dev.lock();
-        dev.poll(|buf| {
-            snoop_tcp_packet(buf).ok(); // preprocess TCP packets
-        });
-
-        let timestamp = Self::current_time();
         let mut iface = self.iface.lock();
         let mut sockets = sockets.lock();
+        let timestamp = Self::current_time();
         iface.poll(timestamp, dev.deref_mut(), &mut sockets);
     }
 }
@@ -180,31 +169,7 @@ impl DeviceWrapper {
     fn new(inner: AxNetDevice) -> Self {
         Self {
             inner: RefCell::new(inner),
-            rx_buf_queue: VecDeque::with_capacity(RX_BUF_QUEUE_SIZE),
         }
-    }
-
-    fn poll<F>(&mut self, f: F)
-    where
-        F: Fn(&[u8]),
-    {
-        while self.rx_buf_queue.len() < RX_BUF_QUEUE_SIZE {
-            match self.inner.borrow_mut().receive() {
-                Ok(buf) => {
-                    f(buf.packet());
-                    self.rx_buf_queue.push_back(buf);
-                }
-                Err(DevError::Again) => break, // TODO: better method to avoid error type conversion
-                Err(err) => {
-                    warn!("receive failed: {:?}", err);
-                    break;
-                }
-            }
-        }
-    }
-
-    fn receive(&mut self) -> Option<NetBufferBox<'static>> {
-        self.rx_buf_queue.pop_front()
     }
 }
 
@@ -213,12 +178,38 @@ impl Device for DeviceWrapper {
     type TxToken<'a> = AxNetTxToken<'a> where Self: 'a;
 
     fn receive(&mut self, _timestamp: Instant) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
-        let rx_buf = self.receive()?;
+        let mut dev = self.inner.borrow_mut();
+        if let Err(e) = dev.recycle_tx_buffers() {
+            warn!("recycle_tx_buffers failed: {:?}", e);
+            return None;
+        }
+
+        if !dev.can_transmit() {
+            return None;
+        }
+        let rx_buf = match dev.receive() {
+            Ok(buf) => buf,
+            Err(err) => {
+                if !matches!(err, DevError::Again) {
+                    warn!("receive failed: {:?}", err);
+                }
+                return None;
+            }
+        };
         Some((AxNetRxToken(&self.inner, rx_buf), AxNetTxToken(&self.inner)))
     }
 
     fn transmit(&mut self, _timestamp: Instant) -> Option<Self::TxToken<'_>> {
-        Some(AxNetTxToken(&self.inner))
+        let mut dev = self.inner.borrow_mut();
+        if let Err(e) = dev.recycle_tx_buffers() {
+            warn!("recycle_tx_buffers failed: {:?}", e);
+            return None;
+        }
+        if dev.can_transmit() {
+            Some(AxNetTxToken(&self.inner))
+        } else {
+            None
+        }
     }
 
     fn capabilities(&self) -> DeviceCapabilities {
@@ -230,10 +221,14 @@ impl Device for DeviceWrapper {
     }
 }
 
-struct AxNetRxToken<'a>(&'a RefCell<AxNetDevice>, NetBufferBox<'static>);
+struct AxNetRxToken<'a>(&'a RefCell<AxNetDevice>, NetBufPtr);
 struct AxNetTxToken<'a>(&'a RefCell<AxNetDevice>);
 
 impl<'a> RxToken for AxNetRxToken<'a> {
+    fn preprocess(&self, sockets: &mut SocketSet<'_>) {
+        snoop_tcp_packet(self.1.packet(), sockets).ok();
+    }
+
     fn consume<R, F>(self, f: F) -> R
     where
         F: FnOnce(&mut [u8]) -> R,
@@ -241,7 +236,7 @@ impl<'a> RxToken for AxNetRxToken<'a> {
         let mut rx_buf = self.1;
         trace!(
             "RECV {} bytes: {:02X?}",
-            rx_buf.packet().len(),
+            rx_buf.packet_len(),
             rx_buf.packet()
         );
         let result = f(rx_buf.packet_mut());
@@ -256,16 +251,15 @@ impl<'a> TxToken for AxNetTxToken<'a> {
         F: FnOnce(&mut [u8]) -> R,
     {
         let mut dev = self.0.borrow_mut();
-        let mut tx_buf = NET_BUF_POOL.alloc().unwrap();
-        dev.prepare_tx_buffer(&mut tx_buf, len).unwrap();
-        let result = f(tx_buf.packet_mut());
+        let mut tx_buf = dev.alloc_tx_buffer(len).unwrap();
+        let ret = f(tx_buf.packet_mut());
         trace!("SEND {} bytes: {:02X?}", len, tx_buf.packet());
-        dev.transmit(&tx_buf).unwrap();
-        result
+        dev.transmit(tx_buf).unwrap();
+        ret
     }
 }
 
-fn snoop_tcp_packet(buf: &[u8]) -> Result<(), smoltcp::wire::Error> {
+fn snoop_tcp_packet(buf: &[u8], sockets: &mut SocketSet<'_>) -> Result<(), smoltcp::wire::Error> {
     use crate::SocketAddr;
     use smoltcp::wire::{EthernetFrame, IpProtocol, Ipv4Packet, TcpPacket};
 
@@ -279,17 +273,13 @@ fn snoop_tcp_packet(buf: &[u8]) -> Result<(), smoltcp::wire::Error> {
         let is_first = tcp_packet.syn() && !tcp_packet.ack();
         if is_first {
             // create a socket for the first incoming TCP packet, as the later accept() returns.
-            LISTEN_TABLE.incoming_tcp_packet(src_addr, dst_addr);
+            LISTEN_TABLE.incoming_tcp_packet(src_addr, dst_addr, sockets);
         }
     }
     Ok(())
 }
 
-pub(crate) fn init(mut net_dev: AxNetDevice) {
-    let pool = NetBufferPool::new(NET_BUF_POOL_SIZE, NET_BUF_LEN).unwrap();
-    NET_BUF_POOL.init_by(pool);
-    net_dev.fill_rx_buffers(&NET_BUF_POOL).unwrap();
-
+pub(crate) fn init(net_dev: AxNetDevice) {
     let ether_addr = EthernetAddress(net_dev.mac_address().0);
     let eth0 = InterfaceWrapper::new("eth0", net_dev, ether_addr);
     eth0.setup_ip_addr(IP, IP_PREFIX);
