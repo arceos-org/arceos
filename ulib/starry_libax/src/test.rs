@@ -67,10 +67,10 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     "crypt",
     "dirname",
     "env",
-    // "fdopen", // 需要62
+    //"fdopen", // 需要62
     "fnmatch",
-    // "fscanf", // 需要62
-    // "fwscanf", // 需要29
+    //"fscanf",  // 需要62
+    //"fwscanf", // 需要29
     "iconv_open",
     "inet_pton",
     "mbc",
@@ -87,10 +87,10 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     "search_tsearch",
     "setjmp",
     "snprintf",
-    // "socket", // 需要198
+    //"socket", // 需要198
     "sscanf",
     "sscanf_long",
-    // "stat",        // 需79
+    //"stat", // 需79
     "strftime",
     "string",
     "string_memcpy",
@@ -108,21 +108,21 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     "swprintf",
     "tgmath",
     "time",
-    // "tls_align", // app不存在
+    //"tls_align", // app不存在
     "udiv",
-    // "ungetc", // 需要29
-    // "utime",  // 需要88
+    //"ungetc", // 需要29
+    //"utime",  // 需要88
     "wcsstr",
     "wcstol",
     "pleval",
     "daemon_failure",
     "dn_expand_empty",
     "dn_expand_ptr_0",
-    // "fflush_exit", // 需要29
+    //"fflush_exit", // 需要29
     "fgets_eof",
     "fgetwc_buffering",
     "fpclassify_invalid_ld80",
-    // "ftello_unflushed_append", // 需要25
+    //"ftello_unflushed_append", // 需要25
     "getpwnam_r_crash",
     "getpwnam_r_errno",
     "iconv_roundtrips",
@@ -130,7 +130,7 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     "inet_pton_empty_last_field",
     "iswspace_null",
     "lrand48_signextend",
-    // "lseek_large", // 需要29
+    //"lseek_large", // 需要29
     "malloc_0",
     "mbsrtowcs_overflow",
     "memmem_oob_read",
@@ -155,7 +155,7 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     "regex_escaped_high_byte",
     "regex_negated_range",
     "regexec_nosub",
-    // "rewind_clear_error", // 需要62
+    //"rewind_clear_error", // 需要62
     "rlimit_open_files",
     "scanf_bytes_consumed",
     "scanf_match_literal_eof",
@@ -337,7 +337,7 @@ pub const BUSYBOX_TESTCASES: &[&str] = &[
     "busybox od test.txt",
     "busybox head test.txt",
     "busybox tail test.txt",
-    //"busybox hexdump -C test.txt", // 会要求标准输入，不方便自动测试
+    // "busybox hexdump -C test.txt", // 会要求标准输入，不方便自动测试
     "busybox md5sum test.txt",
     "busybox echo \"ccccccc\" >> test.txt",
     "busybox echo \"bbbbbbb\" >> test.txt",
@@ -540,32 +540,26 @@ pub fn run_testcases(case: &'static str) {
         }
     };
     loop {
-        let ans = test_iter.next().map_or_else(
-            || {
-                // 已经执行完所有测例，输出测试结果并且跳出
-                TESTRESULT.lock().show_result();
-                None
-            },
-            |&command_line| {
-                // 清空分配器
-                let args = get_args(command_line.as_bytes());
-                let testcase = args.clone();
-                let main_task = Process::new(args).unwrap();
-                let now_process_id = main_task.get_process_id() as isize;
-                TESTRESULT.lock().load(&(testcase));
-                RUN_QUEUE.lock().add_task(main_task);
-                let mut exit_code = 0;
-                loop {
-                    if wait_pid(now_process_id, &mut exit_code as *mut i32).is_ok() {
-                        break Some(exit_code);
-                    }
-                    // let trap: usize = 0xFFFFFFC0805BFEF8;
-                    // let trap_frame: *const TrapFrame = trap as *const TrapFrame;
-                    // info!("trap_frame: {:?}", unsafe { &*trap_frame });
-                    yield_now_task();
+        let mut ans = None;
+        if let Some(command_line) = test_iter.next() {
+            let args = get_args(command_line.as_bytes());
+            let testcase = args.clone();
+            let main_task = Process::new(args).unwrap();
+            let now_process_id = main_task.get_process_id() as isize;
+            TESTRESULT.lock().load(&(testcase));
+            RUN_QUEUE.lock().add_task(main_task);
+            let mut exit_code = 0;
+            ans = loop {
+                if wait_pid(now_process_id, &mut exit_code as *mut i32).is_ok() {
+                    break Some(exit_code);
                 }
-            },
-        );
+                // let trap: usize = 0xFFFFFFC0805BFEF8;
+                // let trap_frame: *const TrapFrame = trap as *const TrapFrame;
+                // info!("trap_frame: {:?}", unsafe { &*trap_frame });
+                yield_now_task();
+                // axhal::arch::enable_irqs();
+            };
+        }
         TaskId::clear();
         unsafe {
             write_page_table_root(KERNEL_PAGE_TABLE.root_paddr());
@@ -584,6 +578,7 @@ pub fn run_testcases(case: &'static str) {
             finish_one_test(exit_code);
         } else {
             // 已经测试完所有的测例
+            TESTRESULT.lock().show_result();
             break;
         }
         // chdir会改变当前目录，需要重新设置

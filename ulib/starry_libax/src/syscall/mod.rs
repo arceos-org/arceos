@@ -24,6 +24,8 @@ pub mod syscall_id;
 pub mod utils;
 use syscall_id::*;
 use SyscallId::*;
+
+use self::futex::check_dead_wait;
 pub mod task;
 
 #[no_mangle]
@@ -34,6 +36,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         error!("Unsupported syscall id = {}", syscall_id,);
         exit(-1);
     };
+    check_dead_wait();
     let curr_id = current().id().as_u64();
     info!("task id: {}, syscall: id: {}", curr_id, syscall_id);
     let ans = match syscall_name {
@@ -42,8 +45,8 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[1] as *const u8,
             args[2] as usize,
             args[3] as u8,
-        ), // args[0] is fd, args[1] is filename, args[2] is flags, args[3] is mode
-        CLOSE => syscall_close(args[0]), // args[0] is fd
+        ),
+        CLOSE => syscall_close(args[0]),
         READ => syscall_read(args[0], args[1] as *mut u8, args[2]),
         WRITE => syscall_write(args[0], args[1] as *const u8, args[2]),
         EXIT => syscall_exit(args[0] as i32),
@@ -146,6 +149,9 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             exit(-1)
         }
     };
+    // let sstatus = riscv::register::sstatus::read();
+    // error!("irq: {}", riscv::register::sstatus::Sstatus::sie(&sstatus));
     // info!("Syscall {} return: {}", id, ans);
+    axhal::arch::disable_irqs();
     ans
 }

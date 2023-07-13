@@ -13,7 +13,7 @@ use crate::trap::handle_signal;
 #[cfg(feature = "monolithic")]
 use crate::trap::handle_syscall;
 
-use super::TrapFrame;
+use super::{disable_irqs, enable_irqs, TrapFrame};
 
 include_asm_marcos!();
 
@@ -28,19 +28,17 @@ fn handle_breakpoint(sepc: &mut usize) {
 }
 
 #[no_mangle]
-fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
+fn riscv_trap_handler(tf: &mut TrapFrame, mut from_user: bool) {
     let scause = scause::read();
-    // info!(
-    //     "get trap: reason: {:?} from user: {} , sepc: {:X}",
-    //     scause.cause(),
-    //     from_user,
-    //     sepc::read(),
-    // );
+    if (tf.sepc as isize) < 0 {
+        from_user = false;
+    }
     match scause.cause() {
         Trap::Exception(E::Breakpoint) => handle_breakpoint(&mut tf.sepc),
         Trap::Interrupt(_) => crate::trap::handle_irq_extern(scause.bits()),
         #[cfg(feature = "monolithic")]
         Trap::Exception(E::UserEnvCall) => {
+            enable_irqs();
             // jump to next instruction anyway
             tf.sepc += 4;
             // get system call return value
@@ -99,9 +97,11 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
             );
         }
     }
-
     #[cfg(feature = "signal")]
     if !(!from_user && scause.cause() == Trap::Interrupt(scause::Interrupt::SupervisorTimer)) {
         handle_signal();
     }
+    // 在保证将寄存器都存储好之后，再开启中断
+    // 否则此时会因为写入csr寄存器过程中出现中断，导致出现异常
+    disable_irqs();
 }

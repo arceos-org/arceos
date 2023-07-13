@@ -601,7 +601,6 @@ impl MemorySet {
     /// 暴力实现区间强制分配
     /// 传入区间左闭右闭
     pub fn manual_alloc_range_for_lazy(&mut self, start: VirtAddr, end: VirtAddr) -> AxResult<()> {
-        info!("start :{:?}, end: {:?}", start, end);
         if start > end {
             return Err(AxError::InvalidInput);
         }
@@ -609,7 +608,7 @@ impl MemorySet {
         let end: usize = end.align_down_4k().into();
         for addr in (start..=end).step_by(PAGE_SIZE_4K) {
             // 逐页访问，主打暴力
-            info!("allocating page at {:x}", addr);
+            debug!("allocating page at {:x}", addr);
             self.manual_alloc_for_lazy(addr.into())?;
         }
         Ok(())
