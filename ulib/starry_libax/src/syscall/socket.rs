@@ -1,6 +1,6 @@
 extern crate alloc;
 
-use core::ptr::copy_nonoverlapping;
+use core::{ptr::copy_nonoverlapping, slice::from_raw_parts};
 
 use alloc::sync::Arc;
 use axerrno::{AxError, AxResult};
@@ -56,43 +56,78 @@ pub enum SocketOption {
 
 /// 包装内部的不同协议 Socket
 /// 类似 FileDesc，impl FileIO 后加入fd_list
-pub enum Socket {
+pub struct Socket {
+    #[allow(dead_code)]
+    domain: Domain,
+    socket_type: SocketType,
+    inner: SocketInner,
+}
+
+pub enum SocketInner {
     Tcp(TcpSocket),
     Udp(UdpSocket),
 }
 
 impl Socket {
-    fn new(s_type: SocketType) -> Self {
-        match s_type {
-            SocketType::SOCK_STREAM | SocketType::SOCK_SEQPACKET => Self::Tcp(TcpSocket::new()),
-            SocketType::SOCK_DGRAM => Self::Udp(UdpSocket::new()),
+    fn new(domain: Domain, socket_type: SocketType) -> Self {
+        let inner = match socket_type {
+            SocketType::SOCK_STREAM | SocketType::SOCK_SEQPACKET => {
+                SocketInner::Tcp(TcpSocket::new())
+            }
+            SocketType::SOCK_DGRAM => SocketInner::Udp(UdpSocket::new()),
             _ => unimplemented!(),
+        };
+        Self {
+            domain,
+            socket_type,
+            inner,
         }
     }
 
     /// Return bound address.
     pub fn name(&self) -> AxResult<SocketAddr> {
-        match self {
-            Self::Tcp(s) => s.local_addr(),
-            Self::Udp(s) => s.local_addr(),
+        match &self.inner {
+            SocketInner::Tcp(s) => s.local_addr(),
+            SocketInner::Udp(s) => s.local_addr(),
+        }
+    }
+
+    pub fn bind(&mut self, addr: SocketAddr) -> AxResult {
+        match &mut self.inner {
+            SocketInner::Tcp(s) => s.bind(addr),
+            SocketInner::Udp(s) => s.bind(addr),
+        }
+    }
+
+    pub fn is_bound(&self) -> bool {
+        match &self.inner {
+            SocketInner::Tcp(s) => s.local_addr().is_ok(),
+            SocketInner::Udp(s) => s.local_addr().is_ok(),
+        }
+    }
+
+    pub fn sendto(&self, buf: &[u8], addr: SocketAddr) -> AxResult<usize> {
+        match &self.inner {
+            SocketInner::Tcp(s) => s.send(buf),
+            SocketInner::Udp(s) => s.send_to(buf, addr),
         }
     }
 }
 
 impl Read for Socket {
     fn read(&mut self, buf: &mut [u8]) -> AxResult<usize> {
-        match self {
-            Self::Tcp(s) => s.read(buf),
-            Self::Udp(s) => s.read(buf),
+        match &mut self.inner {
+            SocketInner::Tcp(s) => s.read(buf),
+            SocketInner::Udp(s) => s.read(buf),
         }
     }
 }
 
 impl Write for Socket {
     fn write(&mut self, buf: &[u8]) -> AxResult<usize> {
-        match self {
-            Self::Tcp(s) => s.write(buf),
-            Self::Udp(s) => s.write(buf),
+        match &mut self.inner {
+            SocketInner::Tcp(s) => s.write(buf),
+            SocketInner::Udp(s) => s.write(buf),
         }
     }
 
@@ -109,16 +144,16 @@ impl Seek for Socket {
 
 impl FileExt for Socket {
     fn readable(&self) -> bool {
-        match self {
-            Self::Tcp(s) => s.poll().map_or(false, |p| p.readable),
-            Self::Udp(s) => s.poll().map_or(false, |p| p.readable),
+        match &self.inner {
+            SocketInner::Tcp(s) => s.poll().map_or(false, |p| p.readable),
+            SocketInner::Udp(s) => s.poll().map_or(false, |p| p.readable),
         }
     }
 
     fn writable(&self) -> bool {
-        match self {
-            Self::Tcp(s) => s.poll().map_or(false, |p| p.writable),
-            Self::Udp(s) => s.poll().map_or(false, |p| p.writable),
+        match &self.inner {
+            SocketInner::Tcp(s) => s.poll().map_or(false, |p| p.writable),
+            SocketInner::Udp(s) => s.poll().map_or(false, |p| p.writable),
         }
     }
 
@@ -194,14 +229,14 @@ pub unsafe fn socket_address_to(addr: SocketAddr, buf: *mut u8, buf_len: *mut us
 }
 
 pub fn syscall_socket(domain: usize, s_type: usize, _protocol: usize) -> isize {
-    let Ok(_domain) = Domain::try_from(domain) else {
+    let Ok(domain) = Domain::try_from(domain) else {
         return -1;
     };
     let Ok(s_type) = SocketType::try_from(s_type) else {
         return -1;
     };
 
-    let socket = Socket::new(s_type);
+    let socket = Socket::new(domain, s_type);
     let curr = current_process();
     let mut inner = curr.inner.lock();
 
@@ -218,21 +253,22 @@ pub fn syscall_bind(fd: usize, addr: *const u8, _addr_len: usize) -> isize {
     let curr = current_process();
     let inner = curr.inner.lock();
 
-    let Some(Some(socket)) = inner.fd_manager.fd_table.get(fd) else {
+    let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
         // EBADF
         return -1;
     };
-    let mut socket = socket.lock();
+    let mut file = file.lock();
 
     let addr = unsafe { socket_address_from(addr) };
 
     info!("[bind()] binding socket {} to {:?}", fd, addr);
 
-    match socket.as_any_mut().downcast_mut::<Socket>().unwrap() {
-        Socket::Tcp(s) => s.bind(addr),
-        Socket::Udp(s) => s.bind(addr),
-    }
-    .map_or(-1, |_| 0)
+    let Some(socket) = file.as_any_mut().downcast_mut::<Socket>() else {
+        // ENOTSOCK
+        return -1;
+    };
+
+    socket.bind(addr).map_or(-1, |_| 0)
 }
 
 /// NOTE: linux man 中没有说明若socket未bound应返回什么错误
@@ -255,7 +291,63 @@ pub fn syscall_get_sock_name(fd: usize, addr: *mut u8, addr_len: *mut usize) -> 
         return -1;
     };
 
+    info!("[getsockname()] socket {fd} name: {:?}", name);
+
     unsafe { socket_address_to(name, addr, addr_len) }.map_or(-1, |_| 0)
+}
+
+// TODO: flags
+/// Calling sendto() will bind the socket if it's not bound.
+pub fn syscall_sendto(
+    fd: usize,
+    buf: *const u8,
+    len: usize,
+    _flags: usize,
+    addr: *const u8,
+    addr_len: usize,
+) -> isize {
+    let curr = current_process();
+    let inner = curr.inner.lock();
+
+    let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
+        // EBADF
+        return -1;
+    };
+
+    let mut file = file.lock();
+    let Some(socket) = file.as_any_mut().downcast_mut::<Socket>() else {
+        // ENOTSOCK
+        return -1;
+    };
+
+    let addr = match socket.socket_type {
+        SocketType::SOCK_STREAM | SocketType::SOCK_SEQPACKET => {
+            if !addr.is_null() || addr_len != 0 {
+                // EISCONN
+                return -1;
+            }
+            // TODO: if socket isn't connected, return ENOTCONN
+
+            SocketAddr::new(IpAddr::v4(0, 0, 0, 0), 0)
+        }
+        SocketType::SOCK_DGRAM => {
+            if !socket.is_bound() {
+                socket
+                    .bind(SocketAddr::new(IpAddr::v4(0, 0, 0, 0), 0))
+                    .unwrap();
+            }
+
+            unsafe { socket_address_from(addr) }
+        }
+        _ => unimplemented!(),
+    };
+
+    // TODO: check if buffer is safe
+    let buf = unsafe { from_raw_parts(buf, len) };
+
+    info!("[sendto()] socket {fd} send to {:?}", addr);
+
+    socket.sendto(buf, addr).map_or(-1, |l| l as isize)
 }
 
 /// NOTE: only support socket level options (SOL_SOCKET)

@@ -63,6 +63,7 @@ pub const SYSCALL_SIGRETURN: usize = 139;
 pub const SYSCALL_SOCKET: usize = 198;
 pub const SYSCALL_BIND: usize = 200;
 pub const SYSCALL_GETSOCKNAME: usize = 204;
+pub const SYSCALL_SENDTO: usize = 206;
 pub const SYSCALL_SETSOCKOPT: usize = 208;
 
 // 从syscall_id获取syscall_name
@@ -118,6 +119,7 @@ pub fn get_syscall_name(syscall_id: usize) -> &'static str {
         SYSCALL_SOCKET => "socket",
         SYSCALL_BIND => "bind",
         SYSCALL_GETSOCKNAME => "getsockname",
+        SYSCALL_SENDTO => "sendto",
         SYSCALL_SETSOCKOPT => "setsockopt",
 
         _ => "unknown",
