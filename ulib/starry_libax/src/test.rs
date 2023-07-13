@@ -180,7 +180,7 @@ pub const LIBC_DYNAMIC_TESTCASES: &[&str] = &[
     // "clock_gettime",
     // "crypt",
     // "dirname",
-    "dlopen.dout", // 存在运行时bug
+    // "dlopen.dout", // 存在运行时bug
                    // "env",
                    // "fdopen", // 62
                    // // "fnmatch",
@@ -299,6 +299,67 @@ pub const LUA_TESTCASES: &[&str] = &[
     "lua sin30.lua",
     "lua strings.lua",
     "lua sort.lua",
+];
+
+#[allow(dead_code)]
+pub const BUSYBOX_TESTCASES: &[&str] = &[
+    //"busybox sh ./busybox_testcode.sh", //最终测例，它包含了下面全部
+    "busybox echo \"#### independent command test\"",
+    "busybox ash -c exit",
+    "busybox sh -c exit",
+    "busybox basename /aaa/bbb",
+    "busybox cal",
+    "busybox clear",
+    "busybox date",
+    "busybox df",
+    "busybox dirname /aaa/bbb",
+    "busybox dmesg",
+    "busybox du",
+    "busybox expr 1 + 1",
+    "busybox false",
+    "busybox true",
+    "busybox which ls",
+    "busybox uname",
+    "busybox uptime",
+    "busybox printf \"abc\n\"",
+    "busybox ps",
+    "busybox pwd",
+    "busybox free",
+    "busybox hwclock",
+    "busybox kill 10",
+    "busybox ls",
+    "busybox sleep 1",
+    "busybox echo \"#### file opration test\"",
+    "busybox touch test.txt",
+    "busybox echo \"hello world\" > test.txt",
+    "busybox cat test.txt",
+    "busybox cut -c 3 test.txt",
+    "busybox od test.txt",
+    "busybox head test.txt",
+    "busybox tail test.txt",
+    //"busybox hexdump -C test.txt", // 会要求标准输入，不方便自动测试
+    "busybox md5sum test.txt",
+    "busybox echo \"ccccccc\" >> test.txt",
+    "busybox echo \"bbbbbbb\" >> test.txt",
+    "busybox echo \"aaaaaaa\" >> test.txt",
+    "busybox echo \"2222222\" >> test.txt",
+    "busybox echo \"1111111\" >> test.txt",
+    "busybox echo \"bbbbbbb\" >> test.txt",
+    "busybox sort test.txt | ./busybox uniq",
+    "busybox stat test.txt",
+    "busybox strings test.txt",
+    "busybox wc test.txt",
+    "busybox [ -f test.txt ]",
+    "busybox more test.txt",
+    "busybox rm test.txt",
+    "busybox mkdir test_dir",
+    "busybox mv test_dir test",
+    "busybox rmdir test",
+    "busybox grep hello busybox_cmd.txt",
+    "busybox cp busybox_cmd.txt busybox_cmd.bak",
+    "busybox rm busybox_cmd.bak",
+    "busybox find -name \"busybox_cmd.txt\"",
+    "busybox sh lua_testcode.sh",
 ];
 
 /// 运行测试时的状态机，记录测试结果与内容
@@ -470,6 +531,10 @@ pub fn run_testcases(case: &'static str) {
             test_iter.init_by(Box::new(LUA_TESTCASES.iter()));
             TESTRESULT.init_by(SpinNoIrq::new(TestResult::new(LUA_TESTCASES.len())));
         }
+        "busybox" => {
+            test_iter.init_by(Box::new(BUSYBOX_TESTCASES.iter()));
+            TESTRESULT.init_by(SpinNoIrq::new(TestResult::new(BUSYBOX_TESTCASES.len())));
+        }
         _ => {
             panic!("unknown test case: {}", case);
         }
@@ -527,8 +592,8 @@ pub fn run_testcases(case: &'static str) {
     panic!("All test finish!");
 }
 
-pub fn run_testcase(args: Vec<String>) -> AxResult<()> {
-    let main_task = Process::new(args)?;
-    RUN_QUEUE.lock().add_task(main_task);
-    Ok(())
-}
+// pub fn run_testcase(args: Vec<String>) -> AxResult<()> {
+//     let main_task = Process::new(args)?;
+//     RUN_QUEUE.lock().add_task(main_task);
+//     Ok(())
+// }

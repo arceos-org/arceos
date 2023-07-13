@@ -19,6 +19,7 @@ members = [
     "apps/syscall/libc_static",
     "apps/syscall/libc_dynamic",
     "apps/syscall/lua",
+    "apps/syscall/busybox",
 
     "crates/allocator",
     "crates/arm_gic",
