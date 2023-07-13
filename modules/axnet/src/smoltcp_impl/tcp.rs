@@ -1,5 +1,5 @@
 use axerrno::{ax_err, ax_err_type, AxError, AxResult};
-use axio::PollState;
+use axio::{PollState, Read, Write};
 use axsync::Mutex;
 
 use smoltcp::iface::SocketHandle;
@@ -325,6 +325,22 @@ impl TcpSocket {
                 writable: false,
             })
         }
+    }
+}
+
+impl Read for TcpSocket {
+    fn read(&mut self, buf: &mut [u8]) -> AxResult<usize> {
+        self.recv(buf)
+    }
+}
+
+impl Write for TcpSocket {
+    fn write(&mut self, buf: &[u8]) -> AxResult<usize> {
+        self.send(buf)
+    }
+
+    fn flush(&mut self) -> AxResult {
+        Err(AxError::Unsupported)
     }
 }
 

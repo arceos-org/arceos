@@ -19,6 +19,7 @@ pub mod futex;
 pub mod mem;
 #[cfg(feature = "signal")]
 pub mod signal;
+pub mod socket;
 pub mod syscall_id;
 pub mod utils;
 #[allow(unused)]
@@ -30,6 +31,7 @@ use crate::syscall::{
     signal::{
         syscall_kill, syscall_sigaction, syscall_sigprocmask, syscall_sigreturn, syscall_tkill,
     },
+    socket::syscall_socket,
 };
 
 pub mod task;
@@ -154,6 +156,8 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             MMAPPROT::from_bits_truncate(args[2] as u32),
         ),
         SYSCALL_FCNTL64 => syscall_fcntl64(args[0] as usize, args[1] as usize, args[2] as usize),
+
+        SYSCALL_SOCKET => syscall_socket(args[0], args[1], args[2]),
         _ => {
             error!("Invalid Syscall Id: {}!", syscall_id);
             // return -1;

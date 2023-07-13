@@ -58,6 +58,10 @@ pub const SYSCALL_TKILL: usize = 130;
 pub const SYSCALL_SIGACTION: usize = 134;
 pub const SYSCALL_SIGPROCMASK: usize = 135;
 pub const SYSCALL_SIGRETURN: usize = 139;
+
+// socket 相关
+pub const SYSCALL_SOCKET: usize = 198;
+
 // 从syscall_id获取syscall_name
 pub fn get_syscall_name(syscall_id: usize) -> &'static str {
     match syscall_id {
@@ -107,6 +111,9 @@ pub fn get_syscall_name(syscall_id: usize) -> &'static str {
         SYSCALL_MPROTECT => "mprotect",
         SYSCALL_KILL => "kill",
         SYSCALL_TKILL => "tkill",
+
+        SYSCALL_SOCKET => "socket",
+
         _ => "unknown",
     }
 }
