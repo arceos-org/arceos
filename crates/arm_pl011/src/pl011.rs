@@ -85,8 +85,7 @@ impl Pl011Uart {
         self.regs().dr.set(c as u32);
     }
 
-    /// Return a Option<char> if pl011 has received a new char
-    /// Or it will return None
+    /// Return a byte if pl011 has received, or it will return `None`.
     pub fn getchar(&mut self) -> Option<u8> {
         if self.regs().fr.get() & (1 << 4) == 0 {
             Some(self.regs().dr.get() as u8)
