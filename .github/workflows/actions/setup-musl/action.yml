@@ -1,0 +1,38 @@
+name: Download musl toolchain
+
+inputs:
+  arch:
+    description: 'Architecture'
+    required: true
+    type: string
+
+runs:
+  using: "composite"
+  steps:
+  - name: Cache musl
+    id: cache-musl
+    uses: actions/cache/restore@v3
+    with:
+      path: ${{ inputs.arch }}-linux-musl-cross
+      key: ${{ inputs.arch }}-linux-musl-cross
+  - name: Download musl toolchain
+    if: steps.cache-musl.outputs.cache-hit != 'true'
+    shell: bash
+    run: |
+      MUSL_PATH=${{ inputs.arch }}-linux-musl-cross
+      wget https://musl.cc/${MUSL_PATH}.tgz
+      tar -xf ${MUSL_PATH}.tgz
+  - uses: actions/cache/save@v3
+    if: steps.cache-musl.outputs.cache-hit != 'true'
+    with:
+      path: ${{ inputs.arch }}-linux-musl-cross
+      key: ${{ inputs.arch }}-linux-musl-cross
+
+  - name: Add to PATH environment variable
+    shell: bash
+    run: |
+      echo "$PWD/${{ inputs.arch }}-linux-musl-cross/bin" >> $GITHUB_PATH
+  - name: Verify installation
+    shell: bash
+    run: |
+      ${{ inputs.arch }}-linux-musl-gcc --version
