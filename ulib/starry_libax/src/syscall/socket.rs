@@ -4,8 +4,9 @@ use alloc::sync::Arc;
 use axerrno::{AxError, AxResult};
 use axfs::monolithic_fs::{file_io::FileExt, FileIO, FileIOType};
 use axio::{Read, Seek, Write};
-use axnet::{TcpSocket, UdpSocket};
+use axnet::{IpAddr, SocketAddr, TcpSocket, UdpSocket};
 use axprocess::process::current_process;
+use log::info;
 use num_enum::TryFromPrimitive;
 use spinlock::SpinNoIrq;
 
@@ -115,6 +116,22 @@ impl FileIO for Socket {
     }
 }
 
+pub unsafe fn socket_address_from(addr: *const u8) -> SocketAddr {
+    let addr = addr as *const u16;
+    let domain = Domain::try_from(*addr as usize).expect("Unsupported Domain (Address Family)");
+    match domain {
+        Domain::AF_UNIX => unimplemented!(),
+        Domain::AF_INET => {
+            let port = u16::from_be(*addr.add(1));
+            let a = (*(addr.add(2) as *const u32)).to_be_bytes();
+
+            // TODO: not tested! This could be a[3], a[2], a[1], a[0]
+            let addr = IpAddr::v4(a[0], a[1], a[2], a[3]);
+            SocketAddr { addr, port }
+        }
+    }
+}
+
 pub fn syscall_socket(domain: usize, s_type: usize, _protocol: usize) -> isize {
     let Ok(_domain) = Domain::try_from(domain) else {
         return -1;
@@ -134,4 +151,25 @@ pub fn syscall_socket(domain: usize, s_type: usize, _protocol: usize) -> isize {
     inner.fd_manager.fd_table[fd] = Some(Arc::new(SpinNoIrq::new(socket)));
 
     fd as isize
+}
+
+pub fn syscall_bind(fd: usize, addr: *const u8, _addr_len: usize) -> isize {
+    let curr = current_process();
+    let inner = curr.inner.lock();
+
+    let Some(Some(socket)) = inner.fd_manager.fd_table.get(fd) else {
+        // EBADF
+        return -1;
+    };
+    let mut socket = socket.lock();
+
+    let addr = unsafe { socket_address_from(addr) };
+
+    info!("[bind()] binding socket {} to {:?}", fd, addr);
+
+    match socket.as_any_mut().downcast_mut::<Socket>().unwrap() {
+        Socket::Tcp(s) => s.bind(addr),
+        Socket::Udp(s) => s.bind(addr),
+    }
+    .map_or(-1, |_| 0)
 }
