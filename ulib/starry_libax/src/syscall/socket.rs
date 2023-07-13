@@ -47,6 +47,13 @@ pub enum SocketType {
     SOCK_CLOEXEC = 0x80000,
 }
 
+#[derive(TryFromPrimitive)]
+#[repr(usize)]
+#[allow(non_camel_case_types)]
+pub enum SocketOption {
+    SO_RCVTIMEO = 0x1006, // receive timeout
+}
+
 /// 包装内部的不同协议 Socket
 /// 类似 FileDesc，impl FileIO 后加入fd_list
 pub enum Socket {
@@ -249,4 +256,36 @@ pub fn syscall_get_sock_name(fd: usize, addr: *mut u8, addr_len: *mut usize) -> 
     };
 
     unsafe { socket_address_to(name, addr, addr_len) }.map_or(-1, |_| 0)
+}
+
+/// NOTE: only support socket level options (SOL_SOCKET)
+pub fn syscall_set_sock_opt(
+    fd: usize,
+    level: usize,
+    opt_name: usize,
+    _opt_value: *const u8,
+    _opt_len: usize,
+) -> isize {
+    // SOL_SOCKET
+    if level != 1 {
+        unimplemented!();
+    }
+
+    let curr = current_process();
+    let inner = curr.inner.lock();
+
+    let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
+        // EBADF
+        return -1;
+    };
+
+    let mut file = file.lock();
+    let Some(_socket) = file.as_any_mut().downcast_ref::<Socket>() else {
+        // ENOTSOCK
+        return -1;
+    };
+
+    let _option = SocketOption::try_from(opt_name);
+
+    0
 }
