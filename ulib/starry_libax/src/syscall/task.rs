@@ -9,6 +9,7 @@ use axprocess::{
         current_process, current_task, set_child_tid, sleep_now_task, wait_pid, yield_now_task,
     },
 };
+use log::info;
 extern crate alloc;
 use super::{
     flags::{
@@ -22,6 +23,7 @@ use axsignal::signal_no::SignalNo;
 /// 处理与任务（线程）有关的系统调用
 
 pub fn syscall_exit(exit_code: i32) -> ! {
+    info!("task exit: {}", exit_code);
     axprocess::process::exit(exit_code)
 }
 

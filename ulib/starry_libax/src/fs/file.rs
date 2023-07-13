@@ -11,9 +11,12 @@ use axfs::monolithic_fs::file_io::{FileExt, Kstat};
 use axfs::monolithic_fs::flags::OpenFlags;
 use axfs::monolithic_fs::FileIO;
 use axfs::monolithic_fs::FileIOType;
+
 use axio::{Read, Seek, SeekFrom, Write};
 use axsync::Mutex;
 use log::{debug, info};
+
+use axfs::BLOCK_SIZE;
 
 /// 文件描述符
 pub struct FileDesc {
@@ -44,7 +47,20 @@ pub struct FileMetaData {
 impl Read for FileDesc {
     fn read(&mut self, buf: &mut [u8]) -> AxResult<usize> {
         debug!("Into function read, buf_len: {}", buf.len());
-        self.file.lock().read(buf)
+        // 似乎当前的fat32文件系统不支持一次读取达到block size的内容
+        let buf_len = buf.len();
+        let mut offset = 0;
+        while offset < buf_len {
+            let read_len = self
+                .file
+                .lock()
+                .read(&mut buf[offset..buf_len.min(offset + BLOCK_SIZE - 1)])?;
+            if read_len == 0 {
+                break;
+            }
+            offset += read_len;
+        }
+        Ok(offset)
     }
 }
 

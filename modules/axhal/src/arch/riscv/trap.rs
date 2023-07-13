@@ -91,10 +91,11 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
         }
         _ => {
             panic!(
-                "Unhandled trap {:?} @ {:#x}:\n{:#x?}",
+                "Unhandled trap {:?} @ {:#x}:\n{:#x?} from_user: {}",
                 scause.cause(),
                 tf.sepc,
-                tf
+                tf,
+                from_user
             );
         }
     }

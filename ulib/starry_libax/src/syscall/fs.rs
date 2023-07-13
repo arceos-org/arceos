@@ -95,7 +95,7 @@ fn deal_with_path(
 /// 返回值：成功执行，返回读取的字节数。如为0，表示文件结束。错误，则返回-1。
 pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
     debug!(
-        "Into syscall_read. fd: {}, buf: {:?}, len: {}",
+        "Into syscall_read. fd: {}, buf: {:X}, len: {}",
         fd, buf as usize, count
     );
     let process = current_process();
@@ -113,7 +113,7 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
         }
         // // debug
         // file.print_content();
-        info!("file type: {:?}", file.lock().get_type());
+        // info!("file type: {:?}", file.lock().get_type());
         // release current inner manually to avoid multi-borrow
         let read_size = file
             .lock()
@@ -176,13 +176,12 @@ pub fn syscall_write(fd: usize, buf: *const u8, count: usize) -> isize {
 pub fn syscall_readv(fd: usize, iov: *mut IoVec, iov_cnt: usize) -> isize {
     let mut read_len = 0;
     for i in 0..iov_cnt {
-        let io: &IoVec = unsafe { &(*iov.add(i)) };
-        if io.base as usize == 0 {
-            continue;
-        }
-        match syscall_read(fd, io.base, io.len) {
-            -1 => break,
-            len => read_len += len,
+        let io: &IoVec = unsafe { &*iov.add(i) };
+        let len = syscall_read(fd, io.base, io.len);
+        if len == -1 {
+            break;
+        } else {
+            read_len += len;
         }
     }
     read_len
@@ -196,9 +195,11 @@ pub fn syscall_writev(fd: usize, iov: *const IoVec, iov_cnt: usize) -> isize {
         if io.base as usize == 0 {
             continue;
         }
-        match syscall_write(fd, io.base, io.len) {
-            -1 => break,
-            len => write_len += len,
+        let len = syscall_write(fd, io.base, io.len);
+        if len == -1 {
+            break;
+        } else {
+            write_len += len;
         }
     }
     write_len

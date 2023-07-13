@@ -18,6 +18,7 @@ members = [
     "apps/syscall/junior",
     "apps/syscall/libc_static",
     "apps/syscall/libc_dynamic",
+    "apps/syscall/lua",
 
     "crates/allocator",
     "crates/arm_gic",

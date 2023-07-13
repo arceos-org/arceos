@@ -7,7 +7,7 @@ use axmem::MemBackend;
 use axprocess::process::current_process;
 use log::info;
 use memory_addr::VirtAddr;
-const MAX_HEAP_SIZE: usize = 4096;
+const MAX_HEAP_SIZE: usize = 0x20000;
 /// 修改用户堆大小，
 ///
 /// - 如输入 brk 为 0 ，则返回堆顶地址
@@ -51,6 +51,7 @@ pub fn syscall_mmap(
     let inner = curr.inner.lock();
     let addr = if flags.contains(MMAPFlags::MAP_ANONYMOUS) {
         // no file
+        info!("no file");
         inner
             .memory_set
             .lock()

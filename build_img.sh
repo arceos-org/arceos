@@ -1,10 +1,10 @@
 rm sdcard.img
-dd if=/dev/zero of=sdcard.img bs=3M count=1024
+dd if=/dev/zero of=sdcard.img bs=3M count=2048
 mkfs.vfat -F 32 sdcard.img
 mkdir -p mnt
 sudo mount sdcard.img mnt
 # 此处生成的是libc的测例
-sudo cp -r ./testcases/libc-static/* ./mnt/
+sudo cp -r ./testcases/libc-dynamic/* ./mnt/
 sudo umount mnt
 rm -rf mnt
 sudo chmod 777 sdcard.img

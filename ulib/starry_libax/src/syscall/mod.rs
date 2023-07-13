@@ -160,9 +160,6 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             exit(-1)
         }
     };
-    // info!(
-    //     "currr id: {}, Syscall {} return: {}",
-    //     curr_id, syscall_id, ans
-    // );
+    // info!("Syscall {} return: {}", syscall_id, ans);
     ans
 }
