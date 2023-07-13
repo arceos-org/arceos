@@ -74,4 +74,6 @@ $(OUT_ELF): $(app-objs) $(c_lib) $(rust_lib)
 	@printf "    $(CYAN_C)Linking$(END_C) $(OUT_ELF)\n"
 	$(call run_cmd,$(LD),$(LDFLAGS) $^ -o $@)
 
+$(APP)/axbuild: ;
+
 .PHONY: _gen_feat

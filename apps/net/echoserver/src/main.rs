@@ -12,7 +12,7 @@ use libax::io::{self, prelude::*};
 use libax::net::{IpAddr, TcpListener, TcpStream};
 use libax::thread;
 
-const LOCAL_IP: &str = "10.0.2.15";
+const LOCAL_IP: &str = "0.0.0.0";
 const LOCAL_PORT: u16 = 5555;
 
 fn reverse(buf: &[u8]) -> Vec<u8> {
@@ -39,7 +39,7 @@ fn echo_server(mut stream: TcpStream) -> io::Result {
 
 fn accept_loop() -> io::Result {
     let (addr, port) = (IpAddr::from_str(LOCAL_IP).unwrap(), LOCAL_PORT);
-    let mut listener = TcpListener::bind((addr, port).into())?;
+    let listener = TcpListener::bind((addr, port).into())?;
     println!("listen on: {}", listener.local_addr().unwrap());
 
     let mut i = 0;

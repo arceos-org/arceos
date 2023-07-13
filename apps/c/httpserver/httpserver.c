@@ -36,7 +36,7 @@ int main()
     struct sockaddr_in local, remote;
     int addr_len = sizeof(remote);
     local.sin_family = AF_INET;
-    if (inet_pton(AF_INET, "10.0.2.15", &(local.sin_addr)) != 1) {
+    if (inet_pton(AF_INET, "0.0.0.0", &(local.sin_addr)) != 1) {
         perror("inet_pton() error");
         return -1;
     }
@@ -54,7 +54,7 @@ int main()
         perror("listen() error");
         return -1;
     }
-    puts("listen on: http://10.0.2.15:5555/");
+    puts("listen on: http://0.0.0.0:5555/");
     char buf[1024] = {};
     int client;
     char response[1024] = {};

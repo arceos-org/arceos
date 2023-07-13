@@ -47,7 +47,7 @@ impl AxRunQueue {
 
     pub fn yield_current(&mut self) {
         let curr = crate::current();
-        debug!("task yield: {}", curr.id_name());
+        trace!("task yield: {}", curr.id_name());
         assert!(curr.is_running());
         self.resched(false);
     }
