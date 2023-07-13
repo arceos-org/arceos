@@ -1,5 +1,7 @@
 extern crate alloc;
 
+use core::ptr::copy_nonoverlapping;
+
 use alloc::sync::Arc;
 use axerrno::{AxError, AxResult};
 use axfs::monolithic_fs::{file_io::FileExt, FileIO, FileIOType};
@@ -58,6 +60,14 @@ impl Socket {
             SocketType::SOCK_STREAM | SocketType::SOCK_SEQPACKET => Self::Tcp(TcpSocket::new()),
             SocketType::SOCK_DGRAM => Self::Udp(UdpSocket::new()),
             _ => unimplemented!(),
+        }
+    }
+
+    /// Return bound address.
+    pub fn name(&self) -> AxResult<SocketAddr> {
+        match self {
+            Self::Tcp(s) => s.local_addr(),
+            Self::Udp(s) => s.local_addr(),
         }
     }
 }
@@ -132,6 +142,50 @@ pub unsafe fn socket_address_from(addr: *const u8) -> SocketAddr {
     }
 }
 
+/// Only support INET (ipv4)
+///
+/// ipv4 socket address buffer:
+/// socket_domain (address_family) u16
+/// port u16 (big endian)
+/// addr u32 (big endian)
+///
+/// TODO: Returns error if buf or buf_len is in invalid memory
+pub unsafe fn socket_address_to(addr: SocketAddr, buf: *mut u8, buf_len: *mut usize) -> AxResult {
+    let mut tot_len = *buf_len;
+
+    *buf_len = 8;
+
+    // 写入 AF_INET
+    if tot_len == 0 {
+        return Ok(());
+    }
+    let domain = (Domain::AF_INET as u16).to_ne_bytes();
+    let write_len = tot_len.min(2);
+    copy_nonoverlapping(domain.as_ptr(), buf, write_len);
+    let buf = buf.add(write_len);
+    tot_len -= write_len;
+
+    // 写入 port
+    if tot_len == 0 {
+        return Ok(());
+    }
+    let port = &addr.port.to_be_bytes();
+    let write_len = tot_len.min(2);
+    copy_nonoverlapping(port.as_ptr(), buf, write_len);
+    let buf = buf.add(write_len);
+    tot_len -= write_len;
+
+    // 写入 address
+    if tot_len == 0 {
+        return Ok(());
+    }
+    let address = &addr.addr.as_bytes();
+    let write_len = tot_len.min(4);
+    copy_nonoverlapping(address.as_ptr(), buf, write_len);
+
+    Ok(())
+}
+
 pub fn syscall_socket(domain: usize, s_type: usize, _protocol: usize) -> isize {
     let Ok(_domain) = Domain::try_from(domain) else {
         return -1;
@@ -172,4 +226,27 @@ pub fn syscall_bind(fd: usize, addr: *const u8, _addr_len: usize) -> isize {
         Socket::Udp(s) => s.bind(addr),
     }
     .map_or(-1, |_| 0)
+}
+
+/// NOTE: linux man 中没有说明若socket未bound应返回什么错误
+pub fn syscall_get_sock_name(fd: usize, addr: *mut u8, addr_len: *mut usize) -> isize {
+    let curr = current_process();
+    let inner = curr.inner.lock();
+
+    let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
+        // EBADF
+        return -1;
+    };
+    let file = file.lock();
+
+    let Some(socket) = file.as_any().downcast_ref::<Socket>() else {
+        // ENOTSOCK
+        return -1;
+    };
+
+    let Ok(name) = socket.name() else {
+        return -1;
+    };
+
+    unsafe { socket_address_to(name, addr, addr_len) }.map_or(-1, |_| 0)
 }
