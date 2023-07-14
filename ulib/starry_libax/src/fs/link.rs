@@ -6,7 +6,7 @@ use alloc::collections::BTreeMap;
 use alloc::string::{String, ToString};
 use axfs::api::{path_exists, remove_file};
 use axsync::Mutex;
-use log::{info, trace};
+use log::{debug, trace};
 
 /// 用户看到的文件到实际文件的映射
 static LINK_PATH_MAP: Mutex<BTreeMap<FilePath, FilePath>> = Mutex::new(BTreeMap::new());
@@ -42,7 +42,7 @@ pub fn read_link(src_path: &FilePath) -> Option<FilePath> {
                 "./riscv64-linux-musl-native/lib/gcc/riscv64-linux-musl/11.2.1/include/";
             static GCC_LINK_INCLUDE: &str = "/riscv64-linux-musl-native/include/";
             if src_path.path().starts_with(GCC_INCLUDE) {
-                info!(
+                debug!(
                     "read gcc link: {}",
                     String::from(GCC_LINK_INCLUDE)
                         + src_path.path().strip_prefix(GCC_INCLUDE).unwrap()
@@ -81,7 +81,7 @@ pub fn remove_link(src_path: &FilePath) -> Option<FilePath> {
             *count -= 1;
             // 如果链接数为0，那么删除文件
             if *count == 0 {
-                info!("link num down to zero, remove file: {}", dest_path.path());
+                debug!("link num down to zero, remove file: {}", dest_path.path());
                 let _ = remove_file(dest_path.path());
             }
             Some(dest_path.clone())
@@ -100,12 +100,12 @@ pub fn create_link(src_path: &FilePath, dest_path: &FilePath) -> bool {
     // assert_ne!(src_path.path(), dest_path.path(), "link src and dest should not be the same");  // 否则在第一步删除旧链接时可能会删除源文件
     // 检查是否是文件
     if !src_path.is_file() || !dest_path.is_file() {
-        info!("link only support file");
+        debug!("link only support file");
         return false;
     }
     // 检查被链接到的文件是否存在
     if !path_exists(dest_path.path()) {
-        info!("link dest file not exists");
+        debug!("link dest file not exists");
         return false;
     }
 
@@ -114,7 +114,7 @@ pub fn create_link(src_path: &FilePath, dest_path: &FilePath) -> bool {
     if let Some(old_dest_path) = map.get(src_path) {
         // 如果不是当前链接，那么删除旧链接; 否则不做任何事
         if old_dest_path.equal_to(dest_path) {
-            info!("link already exists");
+            debug!("link already exists");
             return true;
         }
         remove_link(src_path);

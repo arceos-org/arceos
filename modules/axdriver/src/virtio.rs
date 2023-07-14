@@ -34,7 +34,7 @@ cfg_if! {
 
         impl VirtIoDevMeta for VirtIoNet {
             const DEVICE_TYPE: DeviceType = DeviceType::Net;
-            type Device = driver_virtio::VirtIoNetDev<'static, VirtIoHalImpl, VirtIoTransport, 64>;
+            type Device = driver_virtio::VirtIoNetDev<VirtIoHalImpl, VirtIoTransport, 64>;
 
             fn try_new(transport: VirtIoTransport) -> DevResult<AxDeviceEnum> {
                 Ok(AxDeviceEnum::from_net(Self::Device::try_new(transport)?))

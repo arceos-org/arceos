@@ -66,7 +66,9 @@ impl TrapFrame {
         let mut trap_frame = TrapFrame::default();
         trap_frame.set_user_sp(user_sp);
         trap_frame.sepc = app_entry;
-        trap_frame.sstatus = unsafe { *(&sstatus as *const Sstatus as *const usize) & !(1 << 8) };
+        trap_frame.sstatus =
+            unsafe { (*(&sstatus as *const Sstatus as *const usize) & !(1 << 8)) & !(1 << 1) };
+        // 保证sstatus不支持sie使能
         unsafe {
             // a0为参数个数
             // a1存储的是用户栈底，即argv

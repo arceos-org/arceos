@@ -67,10 +67,10 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     "crypt",
     "dirname",
     "env",
-    // "fdopen", // 需要62
+    //"fdopen", // 需要62
     "fnmatch",
-    // "fscanf", // 需要62
-    // "fwscanf", // 需要29
+    //"fscanf",  // 需要62
+    //"fwscanf", // 需要29
     "iconv_open",
     "inet_pton",
     "mbc",
@@ -87,10 +87,10 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     "search_tsearch",
     "setjmp",
     "snprintf",
-    // "socket", // 需要198
+    //"socket", // 需要198
     "sscanf",
     "sscanf_long",
-    // "stat",        // 需79
+    //"stat", // 需79
     "strftime",
     "string",
     "string_memcpy",
@@ -108,21 +108,21 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     "swprintf",
     "tgmath",
     "time",
-    // "tls_align", // app不存在
+    //"tls_align", // app不存在
     "udiv",
-    // "ungetc", // 需要29
-    // "utime",  // 需要88
+    //"ungetc", // 需要29
+    //"utime",  // 需要88
     "wcsstr",
     "wcstol",
     "pleval",
     "daemon_failure",
     "dn_expand_empty",
     "dn_expand_ptr_0",
-    // "fflush_exit", // 需要29
+    //"fflush_exit", // 需要29
     "fgets_eof",
     "fgetwc_buffering",
     "fpclassify_invalid_ld80",
-    // "ftello_unflushed_append", // 需要25
+    //"ftello_unflushed_append", // 需要25
     "getpwnam_r_crash",
     "getpwnam_r_errno",
     "iconv_roundtrips",
@@ -130,7 +130,7 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     "inet_pton_empty_last_field",
     "iswspace_null",
     "lrand48_signextend",
-    // "lseek_large", // 需要29
+    //"lseek_large", // 需要29
     "malloc_0",
     "mbsrtowcs_overflow",
     "memmem_oob_read",
@@ -155,7 +155,7 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     "regex_escaped_high_byte",
     "regex_negated_range",
     "regexec_nosub",
-    // "rewind_clear_error", // 需要62
+    //"rewind_clear_error", // 需要62
     "rlimit_open_files",
     "scanf_bytes_consumed",
     "scanf_match_literal_eof",
@@ -175,125 +175,200 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
 #[allow(dead_code)]
 pub const LIBC_DYNAMIC_TESTCASES: &[&str] = &[
     // "argv.dout",
-    // "basename.dout",
-    // "clocale_mbfuncs.dout",
-    // "clock_gettime.dout",
-    // "crypt.dout",
-    // "dirname.dout",
+    // "basename",
+    // "clocale_mbfuncs",
+    // "clock_gettime",
+    // "crypt",
+    // "dirname",
     // "dlopen.dout", // 存在运行时bug
-    // "env.dout",
-    "fdopen.dout", // 62
-    // "fnmatch.dout",
-    "fscanf.dout",  //62
-    "fwscanf.dout", //29
-    // "iconv_open.dout",
-    // "inet_pton.dout",
-    // "mbc.dout",
-    // "memstream.dout",
-    "pthread_cancel_points.dout", // 226
-    "pthread_cancel.dout",        // 226
-    "pthread_cond.dout",          //226
-    "pthread_tsd.dout",           //226
-    // "qsort.dout",
-    // "random.dout",
-    // "search_hsearch.dout",
-    // "search_insque.dout",
-    // "search_lsearch.dout",
-    // "search_tsearch.dout",
-    "sem_init.dout", //226
-    // "setjmp.dout",
-    // "snprintf.dout",
-    "socket.dout", //198
-    // "sscanf.dout",
-    // "sscanf_long.dout",
-    "stat.dout", //79
-    // "strftime.dout",
-    // "string.dout",
-    // "string_memcpy.dout",
-    // "string_memmem.dout",
-    // "string_memset.dout",
-    // "string_strchr.dout",
-    // "string_strcspn.dout",
-    // "string_strstr.dout",
-    // "strptime.dout",
-    // "strtod.dout",
-    // "strtod_simple.dout",
-    // "strtof.dout",
-    // "strtol.dout",
-    // "strtold.dout",
-    // "swprintf.dout",
-    // "tgmath.dout",
-    // "time.dout",
-    "tls_init.dout",       //226
-    "tls_local_exec.dout", //226
-    // "udiv.dout",
-    // "ungetc.dout",
-    "utime.dout", //88
-    // "wcsstr.dout",
-    // "wcstol.dout",
-    // "daemon_failure.dout",
-    // "dn_expand_empty.dout",
-    // "dn_expand_ptr_0.dout",
-    "fflush_exit.dout", //29 + 67
-    // "fgets_eof.dout",
-    // "fgetwc_buffering.dout",
-    // "fpclassify_invalid_ld80.dout",
-    "ftello_unflushed_append.dout", //25
-    // "getpwnam_r_crash.dout",
-    // "getpwnam_r_errno.dout",
-    // "iconv_roundtrips.dout",
-    // "inet_ntop_v4mapped.dout",
-    // "inet_pton_empty_last_field.dout",
-    // "iswspace_null.dout",
-    // "lrand48_signextend.dout",
-    "lseek_large.dout", //29
-    // "malloc_0.dout",
-    // "mbsrtowcs_overflow.dout",
-    // "memmem_oob_read.dout",
-    // "memmem_oob.dout",
-    // "mkdtemp_failure.dout",
-    // "mkstemp_failure.dout",
-    // "printf_1e9_oob.dout",
-    // "printf_fmt_g_round.dout",
-    // "printf_fmt_g_zeros.dout",
-    // "printf_fmt_n.dout",
-    "pthread_robust_detach.dout", //226
-    "pthread_cond_smasher.dout",  //226
-    // "pthread_condattr_setclock.dout",
-    "pthread_exit_cancel.dout",   //226
-    "pthread_once_deadlock.dout", //226
-    "pthread_rwlock_ebusy.dout",  //226
-    // "putenv_doublefree.dout",
-    // "regex_backref_0.dout",
-    // "regex_bracket_icase.dout",
-    // "regex_ere_backref.dout",
-    // "regex_escaped_high_byte.dout",
-    // "regex_negated_range.dout",
-    // "regexec_nosub.dout",
-    "rewind_clear_error.dout", //62
-    // "rlimit_open_files.dout",
-    // "scanf_bytes_consumed.dout",
-    // "scanf_match_literal_eof.dout",
-    // "scanf_nullbyte_char.dout",
-    "setvbuf_unget.dout", //62
-    // "sigprocmask_internal.dout",
-    // "sscanf_eof.dout",
-    "statvfs.dout", //43
-    // "strverscmp.dout",
-    // "syscall_sign_extend.dout",
-    "tls_get_new_dtv.dout", //226
-                            // "uselocale_0.dout",
-                            // "wcsncpy_read_overflow.dout",
-                            // "wcsstr_false_negative.dout",
+                   // "env",
+                   // "fdopen", // 62
+                   // // "fnmatch",
+                   // "fscanf",  //62
+                   // "fwscanf", //29
+                   // // "iconv_open",
+                   // // "inet_pton",
+                   // // "mbc",
+                   // // "memstream",
+                   // "pthread_cancel_points", // 226
+                   // "pthread_cancel",        // 226
+                   // "pthread_cond",          //226
+                   // "pthread_tsd",           //226
+                   // // "qsort",
+                   // // "random",
+                   // // "search_hsearch",
+                   // // "search_insque",
+                   // // "search_lsearch",
+                   // // "search_tsearch",
+                   // "sem_init", //226
+                   // // "setjmp",
+                   // // "snprintf",
+                   // "socket", //198
+                   // // "sscanf",
+                   // // "sscanf_long",
+                   // "stat", //79
+                   // // "strftime",
+                   // // "string",
+                   // // "string_memcpy",
+                   // // "string_memmem",
+                   // // "string_memset",
+                   // // "string_strchr",
+                   // // "string_strcspn",
+                   // // "string_strstr",
+                   // // "strptime",
+                   // // "strtod",
+                   // // "strtod_simple",
+                   // // "strtof",
+                   // // "strtol",
+                   // // "strtold",
+                   // // "swprintf",
+                   // // "tgmath",
+                   // // "time",
+                   // "tls_init",       //226
+                   // "tls_local_exec", //226
+                   // // "udiv",
+                   // // "ungetc",
+                   // "utime", //88
+                   // // "wcsstr",
+                   // // "wcstol",
+                   // // "daemon_failure",
+                   // // "dn_expand_empty",
+                   // // "dn_expand_ptr_0",
+                   // "fflush_exit", //29 + 67
+                   // // "fgets_eof",
+                   // // "fgetwc_buffering",
+                   // // "fpclassify_invalid_ld80",
+                   // "ftello_unflushed_append", //25
+                   // // "getpwnam_r_crash",
+                   // // "getpwnam_r_errno",
+                   // // "iconv_roundtrips",
+                   // // "inet_ntop_v4mapped",
+                   // // "inet_pton_empty_last_field",
+                   // // "iswspace_null",
+                   // // "lrand48_signextend",
+                   // "lseek_large", //29
+                   // // "malloc_0",
+                   // // "mbsrtowcs_overflow",
+                   // // "memmem_oob_read",
+                   // // "memmem_oob",
+                   // // "mkdtemp_failure",
+                   // // "mkstemp_failure",
+                   // // "printf_1e9_oob",
+                   // // "printf_fmt_g_round",
+                   // // "printf_fmt_g_zeros",
+                   // // "printf_fmt_n",
+                   // "pthread_robust_detach", //226
+                   // "pthread_cond_smasher",  //226
+                   // // "pthread_condattr_setclock",
+                   // "pthread_exit_cancel",   //226
+                   // "pthread_once_deadlock", //226
+                   // "pthread_rwlock_ebusy",  //226
+                   // // "putenv_doublefree",
+                   // // "regex_backref_0",
+                   // // "regex_bracket_icase",
+                   // // "regex_ere_backref",
+                   // // "regex_escaped_high_byte",
+                   // // "regex_negated_range",
+                   // // "regexec_nosub",
+                   // "rewind_clear_error", //62
+                   // // "rlimit_open_files",
+                   // // "scanf_bytes_consumed",
+                   // // "scanf_match_literal_eof",
+                   // // "scanf_nullbyte_char",
+                   // "setvbuf_unget", //62
+                   // // "sigprocmask_internal",
+                   // // "sscanf_eof",
+                   // "statvfs", //43
+                   // // "strverscmp",
+                   // // "syscall_sign_extend",
+                   // "tls_get_new_dtv", //226
+                   // "uselocale_0",
+                   // "wcsncpy_read_overflow",
+                   // "wcsstr_false_negative",
+];
+
+#[allow(dead_code)]
+pub const LUA_TESTCASES: &[&str] = &[
+    "lua", // 需要29
+    "lua date.lua",
+    "lua file_io.lua", // 需要29
+    "lua max_min.lua",
+    "lua random.lua",
+    "lua remove.lua",
+    "lua round_num.lua",
+    "lua sin30.lua",
+    "lua strings.lua",
+    "lua sort.lua",
+];
+
+#[allow(dead_code)]
+pub const BUSYBOX_TESTCASES: &[&str] = &[
+    //"busybox sh ./busybox_testcode.sh", //最终测例，它包含了下面全部
+    "busybox echo \"#### independent command test\"",
+    "busybox ash -c exit",
+    "busybox sh -c exit",
+    "busybox basename /aaa/bbb",
+    "busybox cal",
+    "busybox clear",
+    "busybox date",
+    "busybox df",
+    "busybox dirname /aaa/bbb",
+    "busybox dmesg",
+    "busybox du",
+    "busybox expr 1 + 1",
+    "busybox false",
+    "busybox true",
+    "busybox which ls",
+    "busybox uname",
+    "busybox uptime",
+    "busybox printf \"abc\n\"",
+    "busybox ps",
+    "busybox pwd",
+    "busybox free",
+    "busybox hwclock",
+    "busybox kill 10",
+    "busybox ls",
+    "busybox sleep 1",
+    "busybox echo \"#### file opration test\"",
+    "busybox touch test.txt",
+    "busybox echo \"hello world\" > test.txt",
+    "busybox cat test.txt",
+    "busybox cut -c 3 test.txt",
+    "busybox od test.txt",
+    "busybox head test.txt",
+    "busybox tail test.txt",
+    // "busybox hexdump -C test.txt", // 会要求标准输入，不方便自动测试
+    "busybox md5sum test.txt",
+    "busybox echo \"ccccccc\" >> test.txt",
+    "busybox echo \"bbbbbbb\" >> test.txt",
+    "busybox echo \"aaaaaaa\" >> test.txt",
+    "busybox echo \"2222222\" >> test.txt",
+    "busybox echo \"1111111\" >> test.txt",
+    "busybox echo \"bbbbbbb\" >> test.txt",
+    "busybox sort test.txt | ./busybox uniq",
+    "busybox stat test.txt",
+    "busybox strings test.txt",
+    "busybox wc test.txt",
+    "busybox [ -f test.txt ]",
+    "busybox more test.txt",
+    "busybox rm test.txt",
+    "busybox mkdir test_dir",
+    "busybox mv test_dir test",
+    "busybox rmdir test",
+    "busybox grep hello busybox_cmd.txt",
+    "busybox cp busybox_cmd.txt busybox_cmd.bak",
+    "busybox rm busybox_cmd.bak",
+    "busybox find -name \"busybox_cmd.txt\"",
+    "busybox sh lua_testcode.sh",
 ];
 
 /// 运行测试时的状态机，记录测试结果与内容
 struct TestResult {
     sum: usize,
     accepted: usize,
-    now_testcase: Option<String>,
+    now_testcase: Option<Vec<String>>,
     // 同时记录名称与进程号
-    failed_testcases: Vec<String>,
+    failed_testcases: Vec<Vec<String>>,
 }
 
 impl TestResult {
@@ -305,9 +380,9 @@ impl TestResult {
             failed_testcases: Vec::new(),
         }
     }
-    pub fn load(&mut self, testcase: &String) {
+    pub fn load(&mut self, testcase: &Vec<String>) {
         info!(
-            " --------------- load testcase: {} --------------- ",
+            " --------------- load testcase: {:?} --------------- ",
             testcase
         );
         self.now_testcase = Some(testcase.clone());
@@ -340,7 +415,7 @@ impl TestResult {
         );
         info!(" --------------- failed tests: --------------- ");
         for test in &self.failed_testcases {
-            info!("{}", test);
+            info!("{:?}", test);
         }
         info!(" --------------- end --------------- ");
     }
@@ -426,6 +501,7 @@ pub fn fs_init(case: &'static str) -> AxResult<()> {
         );
         info!("get link!");
     }
+
     Ok(())
 }
 
@@ -451,37 +527,39 @@ pub fn run_testcases(case: &'static str) {
                 LIBC_DYNAMIC_TESTCASES.len(),
             )));
         }
+        "lua" => {
+            test_iter.init_by(Box::new(LUA_TESTCASES.iter()));
+            TESTRESULT.init_by(SpinNoIrq::new(TestResult::new(LUA_TESTCASES.len())));
+        }
+        "busybox" => {
+            test_iter.init_by(Box::new(BUSYBOX_TESTCASES.iter()));
+            TESTRESULT.init_by(SpinNoIrq::new(TestResult::new(BUSYBOX_TESTCASES.len())));
+        }
         _ => {
             panic!("unknown test case: {}", case);
         }
     };
     loop {
-        let ans = test_iter.next().map_or_else(
-            || {
-                // 已经执行完所有测例，输出测试结果并且跳出
-                TESTRESULT.lock().show_result();
-                None
-            },
-            |&command_line| {
-                // 清空分配器
-                let args = get_args(command_line.as_bytes());
-                let testcase = args[0].clone();
-                let main_task = Process::new(args).unwrap();
-                let now_process_id = main_task.get_process_id() as isize;
-                TESTRESULT.lock().load(&(testcase));
-                RUN_QUEUE.lock().add_task(main_task);
-                let mut exit_code = 0;
-                loop {
-                    if wait_pid(now_process_id, &mut exit_code as *mut i32).is_ok() {
-                        break Some(exit_code);
-                    }
-                    // let trap: usize = 0xFFFFFFC0805BFEF8;
-                    // let trap_frame: *const TrapFrame = trap as *const TrapFrame;
-                    // info!("trap_frame: {:?}", unsafe { &*trap_frame });
-                    yield_now_task();
+        let mut ans = None;
+        if let Some(command_line) = test_iter.next() {
+            let args = get_args(command_line.as_bytes());
+            let testcase = args.clone();
+            let main_task = Process::new(args).unwrap();
+            let now_process_id = main_task.get_process_id() as isize;
+            TESTRESULT.lock().load(&(testcase));
+            RUN_QUEUE.lock().add_task(main_task);
+            let mut exit_code = 0;
+            ans = loop {
+                if wait_pid(now_process_id, &mut exit_code as *mut i32).is_ok() {
+                    break Some(exit_code);
                 }
-            },
-        );
+                // let trap: usize = 0xFFFFFFC0805BFEF8;
+                // let trap_frame: *const TrapFrame = trap as *const TrapFrame;
+                // info!("trap_frame: {:?}", unsafe { &*trap_frame });
+                yield_now_task();
+                // axhal::arch::enable_irqs();
+            };
+        }
         TaskId::clear();
         unsafe {
             write_page_table_root(KERNEL_PAGE_TABLE.root_paddr());
@@ -500,6 +578,7 @@ pub fn run_testcases(case: &'static str) {
             finish_one_test(exit_code);
         } else {
             // 已经测试完所有的测例
+            TESTRESULT.lock().show_result();
             break;
         }
         // chdir会改变当前目录，需要重新设置
@@ -508,8 +587,8 @@ pub fn run_testcases(case: &'static str) {
     panic!("All test finish!");
 }
 
-pub fn run_testcase(args: Vec<String>) -> AxResult<()> {
-    let main_task = Process::new(args)?;
-    RUN_QUEUE.lock().add_task(main_task);
-    Ok(())
-}
+// pub fn run_testcase(args: Vec<String>) -> AxResult<()> {
+//     let main_task = Process::new(args)?;
+//     RUN_QUEUE.lock().add_task(main_task);
+//     Ok(())
+// }

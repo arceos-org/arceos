@@ -5,9 +5,9 @@ extern crate alloc;
 use alloc::boxed::Box;
 use axmem::MemBackend;
 use axprocess::process::current_process;
-use log::info;
+use log::debug;
 use memory_addr::VirtAddr;
-const MAX_HEAP_SIZE: usize = 4096;
+const MAX_HEAP_SIZE: usize = 0x20000;
 /// 修改用户堆大小，
 ///
 /// - 如输入 brk 为 0 ，则返回堆顶地址
@@ -57,7 +57,7 @@ pub fn syscall_mmap(
             .mmap(start.into(), len, prot.into(), fixed, None)
     } else {
         // file backend
-        info!("[mmap] fd: {}, offset: 0x{:x}", fd, offset);
+        debug!("[mmap] fd: {}, offset: 0x{:x}", fd, offset);
         let file = match &inner.fd_manager.fd_table[fd] {
             // 文件描述符表里面存的是文件描述符，这很合理罢
             Some(file) => Box::new(
@@ -83,7 +83,7 @@ pub fn syscall_mmap(
     drop(curr);
 
     unsafe { riscv::asm::sfence_vma_all() };
-    info!("mmap: 0x{:x}", addr);
+    debug!("mmap: 0x{:x}", addr);
     // info!("val: {}", unsafe { *(addr as *const usize) });
     addr
 }

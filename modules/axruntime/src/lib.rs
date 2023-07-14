@@ -284,6 +284,5 @@ fn init_interrupt() {
         #[cfg(feature = "multitask")]
         axtask::on_timer_tick();
     });
-    // Enable IRQs before starting app
     axhal::arch::enable_irqs();
 }

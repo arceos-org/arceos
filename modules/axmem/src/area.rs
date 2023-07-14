@@ -88,7 +88,7 @@ impl MapArea {
         flags: MappingFlags,
         page_table: &mut PageTable,
     ) {
-        info!(
+        debug!(
             "handling {:?} page fault in area [{:?}, {:?})",
             addr,
             self.vaddr,
@@ -113,12 +113,12 @@ impl MapArea {
             panic!("Page fault in page already loaded");
         }
 
-        info!("page index {}", page_index);
+        debug!("page index {}", page_index);
 
         // Allocate new page
         let mut page = PhysPage::alloc().expect("Error allocating new phys page for page fault");
 
-        info!(
+        debug!(
             "new phys page virtual (offset) address {:?}",
             page.start_vaddr
         );
@@ -403,9 +403,9 @@ impl MapArea {
     /// this function.
     pub fn update_flags(&mut self, flags: MappingFlags, page_table: &mut PageTable) {
         self.flags = flags;
-
+        info!("update start: {:?}, end: {:?}", self.vaddr, self.end_va());
         let _ = page_table
-            .update_region(self.vaddr, PAGE_SIZE_4K, flags)
+            .update_region(self.vaddr, self.size(), flags)
             .unwrap();
     }
 

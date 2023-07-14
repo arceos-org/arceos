@@ -12,7 +12,7 @@ pub const USER_STACK_SIZE: usize = 0x20000;
 use axerrno::AxResult;
 mod user_stack;
 use axhal::{mem::VirtAddr, paging::MappingFlags};
-use axlog::info;
+use axlog::{debug, info};
 use axmem::MemorySet;
 use core::str::from_utf8;
 use xmas_elf::{program::SegmentData, ElfFile};
@@ -137,11 +137,10 @@ pub fn load_app(
     args: Vec<String>,
     memory_set: &mut MemorySet,
 ) -> AxResult<(VirtAddr, VirtAddr, VirtAddr)> {
-    info!("app name: {}", name);
     let elf_data =
         axfs::api::read(name.as_str()).expect("error calling axfs::api::read on init app");
 
-    info!("app elf data length: {}", elf_data.len());
+    debug!("app elf data length: {}", elf_data.len());
 
     let loader = Loader::new(&elf_data);
     loader.load(args, memory_set)

@@ -28,6 +28,10 @@ extern crate alloc;
 
 mod dev;
 mod fs;
+#[cfg(feature = "fatfs")]
+pub use fs::fatfs::BLOCK_SIZE;
+#[cfg(not(feature = "fatfs"))]
+pub const BLOCK_SIZE: usize = 512;
 mod root;
 
 pub mod api;

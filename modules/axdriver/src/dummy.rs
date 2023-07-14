@@ -8,7 +8,7 @@ use cfg_if::cfg_if;
 
 cfg_if! {
     if #[cfg(net_dev = "dummy")] {
-        use driver_net::{EthernetAddress, NetBuffer, NetBufferBox, NetBufferPool};
+        use driver_net::{EthernetAddress, NetBuf, NetBufBox, NetBufPool, NetBufPtr};
 
         pub struct DummyNetDev;
         pub struct DummyNetDrvier;
@@ -19,17 +19,17 @@ cfg_if! {
             fn device_name(&self) -> &str { "dummy-net" }
         }
 
-        impl<'a> NetDriverOps<'a> for DummyNetDev {
+        impl NetDriverOps for DummyNetDev {
             fn mac_address(&self) -> EthernetAddress { unreachable!() }
             fn can_transmit(&self) -> bool { false }
             fn can_receive(&self) -> bool { false }
             fn rx_queue_size(&self) -> usize { 0 }
             fn tx_queue_size(&self) -> usize { 0 }
-            fn fill_rx_buffers(&mut self, _: &NetBufferPool) -> DevResult { Err(DevError::Unsupported) }
-            fn prepare_tx_buffer(&self, _: &mut NetBuffer, _: usize) -> DevResult { Err(DevError::Unsupported) }
-            fn recycle_rx_buffer(&mut self, _: NetBufferBox<'a>) -> DevResult { Err(DevError::Unsupported) }
-            fn transmit(&mut self, _: &NetBuffer) -> DevResult { Err(DevError::Unsupported) }
-            fn receive(&mut self) -> DevResult<NetBufferBox<'a>> { Err(DevError::Unsupported) }
+            fn recycle_rx_buffer(&mut self, _: NetBufPtr) -> DevResult { Err(DevError::Unsupported) }
+            fn recycle_tx_buffers(&mut self) -> DevResult { Err(DevError::Unsupported) }
+            fn transmit(&mut self, _: NetBufPtr) -> DevResult { Err(DevError::Unsupported) }
+            fn receive(&mut self) -> DevResult<NetBufPtr> { Err(DevError::Unsupported) }
+            fn alloc_tx_buffer(&mut self, _: usize) -> DevResult<NetBufPtr> { Err(DevError::Unsupported) }
         }
     }
 }

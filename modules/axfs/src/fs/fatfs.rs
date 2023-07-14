@@ -8,7 +8,7 @@ use fatfs::{Dir, File, LossyOemCpConverter, NullTimeProvider, Read, Seek, SeekFr
 
 use crate::dev::Disk;
 
-const BLOCK_SIZE: usize = 512;
+pub const BLOCK_SIZE: usize = 512;
 
 pub struct FatFileSystem {
     inner: fatfs::FileSystem<Disk, NullTimeProvider, LossyOemCpConverter>,

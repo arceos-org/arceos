@@ -132,17 +132,18 @@ pub unsafe extern "C" fn ax_select(
         zero_fd_set(exceptfds, nfds);
 
         loop {
+            #[cfg(feature = "net")]
+            axnet::poll_interfaces();
+            let res = fd_sets.poll_all(readfds, writefds, exceptfds)?;
+            if res > 0 {
+                return Ok(res);
+            }
+
             if deadline.map_or(false, |ddl| current_time() >= ddl) {
                 debug!("    timeout!");
                 return Ok(0);
             }
-
-            let res = fd_sets.poll_all(readfds, writefds, exceptfds)?;
-            if res > 0 {
-                return Ok(res);
-            } else {
-                crate::thread::yield_now();
-            }
+            crate::thread::yield_now();
         }
     })
 }

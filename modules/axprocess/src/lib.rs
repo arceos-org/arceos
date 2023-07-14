@@ -59,10 +59,10 @@ pub fn time_stat_output() -> (usize, usize, usize, usize) {
 }
 
 pub fn handle_page_fault(addr: VirtAddr, flags: MappingFlags) {
-    axlog::info!("'page fault' addr: {:?}, flags: {:?}", addr, flags);
+    axlog::debug!("'page fault' addr: {:?}, flags: {:?}", addr, flags);
     let current = current_process();
     let inner = current.inner.lock();
-    axlog::info!(
+    axlog::debug!(
         "memory token : {}",
         inner.memory_set.lock().page_table_token()
     );

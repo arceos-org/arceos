@@ -130,7 +130,7 @@ dependencies = [
  "axfs",
  "axfs_ramfs",
  "axfs_vfs",
- "crate_interface 0.1.1",
+ "crate_interface",
  "libax",
 ]
 
@@ -277,7 +277,7 @@ dependencies = [
  "bitflags 2.3.3",
  "capability",
  "cfg-if 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "crate_interface 0.1.1",
+ "crate_interface",
  "driver_block",
  "fatfs",
  "lazy_init",
@@ -323,7 +323,7 @@ dependencies = [
  "axlog",
  "bitflags 2.3.3",
  "cfg-if 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "crate_interface 0.1.1",
+ "crate_interface",
  "handler_table",
  "kernel_guard",
  "lazy_init",
@@ -357,7 +357,7 @@ version = "0.1.0"
 dependencies = [
  "cfg-if 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono",
- "crate_interface 0.1.1",
+ "crate_interface",
  "log",
  "spinlock",
 ]
@@ -434,7 +434,7 @@ dependencies = [
  "axprocess",
  "axtask",
  "cfg-if 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "crate_interface 0.1.1",
+ "crate_interface",
  "kernel_guard",
  "lazy_init",
  "memory_addr",
@@ -472,7 +472,7 @@ dependencies = [
  "axsignal",
  "axtask",
  "cfg-if 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "crate_interface 0.1.1",
+ "crate_interface",
  "kernel_guard",
  "lazy_init",
  "log",
@@ -508,11 +508,11 @@ checksum = "7dfdb4953a096c551ce9ace855a604d702e6e62d77fac690575ae347571717f5"
 
 [[package]]
 name = "bindgen"
-version = "0.65.1"
+version = "0.66.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cfdf7b466f9a4903edc73f95d6d2bcd5baf8ae620638762244d3f60143643cc5"
+checksum = "f2b84e06fc203107bfbad243f4aba2af864eb7db3b1cf46ea0a023b0b433d2a7"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags 2.3.3",
  "cexpr",
  "clang-sys",
  "lazy_static",
@@ -588,6 +588,13 @@ name = "bumpalo"
 version = "3.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a3e2c3daef883ecc1b5d58c15adae93470a91d425f3532ba1695849656af3fc1"
+
+[[package]]
+name = "busybox"
+version = "0.1.0"
+dependencies = [
+ "starry_libax",
+]
 
 [[package]]
 name = "byteorder"
@@ -806,17 +813,6 @@ dependencies = [
 [[package]]
 name = "crate_interface"
 version = "0.1.1"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.23",
-]
-
-[[package]]
-name = "crate_interface"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d54b79db793871881b52a1eb5dc6fd869743122e34795f12db8e183dcb6a4f28"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1388,7 +1384,7 @@ name = "kernel_guard"
 version = "0.1.0"
 dependencies = [
  "cfg-if 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "crate_interface 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "crate_interface",
 ]
 
 [[package]]
@@ -1519,6 +1515,13 @@ name = "log"
 version = "0.4.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b06a4cde4c0f271a446782e3eff8de789548ce57dbc8eca9292c27f4a42004b4"
+
+[[package]]
+name = "lua"
+version = "0.1.0"
+dependencies = [
+ "starry_libax",
+]
 
 [[package]]
 name = "managed"
@@ -2119,8 +2122,8 @@ dependencies = [
 
 [[package]]
 name = "smoltcp"
-version = "0.9.1"
-source = "git+https://github.com/smoltcp-rs/smoltcp.git?rev=1f9b9f0#1f9b9f0c9acd65b4d6cd84256a103608b5aedc54"
+version = "0.10.0"
+source = "git+https://github.com/rcore-os/smoltcp.git?rev=2ade274#2ade2747abc4d779d0836154b0413d13ce16cd5b"
 dependencies = [
  "bitflags 1.3.2",
  "byteorder",
@@ -2181,7 +2184,7 @@ dependencies = [
  "axsync",
  "axtask",
  "bitflags 2.3.3",
- "crate_interface 0.1.1",
+ "crate_interface",
  "flatten_objects",
  "kernel_guard",
  "lazy_init",

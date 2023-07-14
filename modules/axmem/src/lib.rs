@@ -12,6 +12,7 @@ extern crate alloc;
 use alloc::{collections::BTreeMap, vec::Vec};
 use core::{mem::size_of, ptr::copy_nonoverlapping};
 use page_table_entry::GenericPTE;
+use riscv::asm::sfence_vma_all;
 #[macro_use]
 extern crate log;
 
@@ -192,12 +193,12 @@ impl MemorySet {
                             let value = base_addr + entry.get_addend() as usize;
                             let addr = base_addr + entry.get_offset() as usize;
 
-                            info!(
-                                "write: {:#x} @ {:#x} type = {}",
-                                value,
-                                addr,
-                                entry.get_type() as usize
-                            );
+                            // info!(
+                            //     "write: {:#x} @ {:#x} type = {}",
+                            //     value,
+                            //     addr,
+                            //     entry.get_type() as usize
+                            // );
 
                             unsafe {
                                 copy_nonoverlapping(
@@ -411,7 +412,7 @@ impl MemorySet {
         // align up to 4k
         let size = (size + PAGE_SIZE_4K - 1) / PAGE_SIZE_4K * PAGE_SIZE_4K;
 
-        debug!(
+        info!(
             "[mmap] vaddr: [{:?}, {:?}), {:?}, fixed: {}, backend: {}",
             start,
             start + size,
@@ -492,6 +493,9 @@ impl MemorySet {
         let end = start + size;
         assert!(end.is_aligned_4k());
 
+        // 在更新flags前需要保证该区域的所有页都已经分配了物理内存
+        // 否则会因为flag被更新，导致本应该是page fault 而出现了fault
+        self.manual_alloc_range_for_lazy(start, end - 1).unwrap();
         // NOTE: There will be new areas but all old aree's start address won't change. But we
         // can't iterating through `value_mut()` while `insert()` to BTree at the same time, so we
         // `drain_filter()` out the overlapped areas first.
@@ -507,7 +511,6 @@ impl MemorySet {
             } else if area.strict_contain(start, end) {
                 // split into 3 areas, update the middle one
                 let (mut mid, right) = area.split3(start, end);
-
                 mid.update_flags(flags, &mut self.page_table);
 
                 assert!(self.owned_mem.insert(mid.vaddr.into(), mid).is_none());
@@ -515,20 +518,21 @@ impl MemorySet {
             } else if start <= area.vaddr && area.vaddr < end {
                 // split into 2 areas, update the left one
                 let right = area.split(end);
-
                 area.update_flags(flags, &mut self.page_table);
 
                 assert!(self.owned_mem.insert(right.vaddr.into(), right).is_none());
             } else {
                 // split into 2 areas, update the right one
                 let mut right = area.split(start);
-
                 right.update_flags(flags, &mut self.page_table);
 
                 assert!(self.owned_mem.insert(right.vaddr.into(), right).is_none());
             }
 
             assert!(self.owned_mem.insert(area.vaddr.into(), area).is_none());
+        }
+        unsafe {
+            sfence_vma_all();
         }
     }
 
@@ -604,7 +608,7 @@ impl MemorySet {
         let end: usize = end.align_down_4k().into();
         for addr in (start..=end).step_by(PAGE_SIZE_4K) {
             // 逐页访问，主打暴力
-            info!("allocating page at {:x}", addr);
+            debug!("allocating page at {:x}", addr);
             self.manual_alloc_for_lazy(addr.into())?;
         }
         Ok(())

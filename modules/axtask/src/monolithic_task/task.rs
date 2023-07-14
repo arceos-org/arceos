@@ -285,7 +285,7 @@ impl TaskInner {
     }
 
     #[inline]
-    pub(crate) fn state(&self) -> TaskState {
+    pub fn state(&self) -> TaskState {
         self.state.load(Ordering::Acquire).into()
     }
 
@@ -565,6 +565,9 @@ impl Deref for CurrentTask {
 fn first_into_user(kernel_sp: usize, frame_base: usize) -> ! {
     let trap_frame_size = core::mem::size_of::<TrapFrame>();
     let kernel_base = kernel_sp - trap_frame_size;
+    // 在保证将寄存器都存储好之后，再开启中断
+    // 否则此时会因为写入csr寄存器过程中出现中断，导致出现异常
+    axhal::arch::disable_irqs();
     unsafe {
         asm::sfence_vma_all();
         core::arch::asm!(
@@ -580,15 +583,28 @@ fn first_into_user(kernel_sp: usize, frame_base: usize) -> ! {
             LDR     t1, sp, 32
             csrw    sepc, t0
             csrw    sstatus, t1
-            POP_GENERAL_REGS
-            LDR     sp, sp, 1
-            sret
         ",
             frame_base = in(reg) frame_base,
             kernel_sp = in(reg) kernel_sp,
             kernel_base = in(reg) kernel_base,
         );
     };
+    // let mut cnt = 0;
+    // loop {
+    //     cnt += 1;
+    //     if cnt > 1000 {
+    //         break;
+    //     }
+    // }
+    unsafe {
+        core::arch::asm!(
+            r"
+        POP_GENERAL_REGS
+        LDR     sp, sp, 1
+        sret
+        "
+        )
+    }
     core::panic!("already in user mode!")
 }
 
@@ -614,7 +630,6 @@ extern "C" fn task_entry() {
             //     "initial trap frame: {:X}",
             //     frame_address as *const _ as usize
             // );
-            // info!("trap frame: {:?}", unsafe { *frame_address });
             // 切换页表已经在switch实现了
             first_into_user(kernel_sp, frame_address as usize);
         }

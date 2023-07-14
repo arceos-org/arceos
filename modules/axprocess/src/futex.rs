@@ -6,7 +6,8 @@ use spinlock::SpinNoIrq;
 
 extern crate alloc;
 
-pub static FUTEX_WAIT_TASK: SpinNoIrq<BTreeMap<VirtAddr, VecDeque<AxTaskRef>>> =
+/// vec中的元素分别是任务指针以及对应存储时的futex变量的值
+pub static FUTEX_WAIT_TASK: SpinNoIrq<BTreeMap<VirtAddr, VecDeque<(AxTaskRef, u32)>>> =
     SpinNoIrq::new(BTreeMap::new());
 
 pub struct FutexRobustList {
@@ -37,12 +38,12 @@ pub fn clear_wait(id: u64, leader: bool) {
         // 清空所有所属进程为指定进程的线程
         futex_wait_task.iter_mut().for_each(|(_, tasks)| {
             // tasks.drain_filter(|task| task.get_process_id() == id);
-            tasks.retain(|task| task.get_process_id() != id);
+            tasks.retain(|(task, _)| task.get_process_id() != id);
         });
     } else {
         futex_wait_task.iter_mut().for_each(|(_, tasks)| {
             // tasks.drain_filter(|task| task.id().as_u64() == id);
-            tasks.retain(|task| task.id().as_u64() != id)
+            tasks.retain(|(task, _)| task.id().as_u64() != id)
         });
     }
 

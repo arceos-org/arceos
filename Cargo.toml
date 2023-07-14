@@ -18,6 +18,8 @@ members = [
     "apps/syscall/junior",
     "apps/syscall/libc_static",
     "apps/syscall/libc_dynamic",
+    "apps/syscall/lua",
+    "apps/syscall/busybox",
 
     "crates/allocator",
     "crates/arm_gic",
@@ -71,3 +73,9 @@ members = [
     "ulib/starry_libax",
     
 ]
+
+[profile.release]
+lto = true
+
+[patch.crates-io]
+crate_interface = { path = "crates/crate_interface" }
