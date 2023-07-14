@@ -108,6 +108,29 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
         Ok((entry.paddr() + off, entry.flags(), size))
     }
 
+    /// Updates the target or flags of the mapping starts with `vaddr`. If the
+    /// corresponding argument is `None`, it will not be updated.
+    ///
+    /// Returns the page size of the mapping.
+    ///
+    /// Returns [`Err(PagingError::NotMapped)`](PagingError::NotMapped) if the
+    /// mapping is not present.
+    pub fn update(
+        &mut self,
+        vaddr: VirtAddr,
+        paddr: Option<PhysAddr>,
+        flags: Option<MappingFlags>,
+    ) -> PagingResult<PageSize> {
+        let (entry, size) = self.get_entry_mut(vaddr)?;
+        if let Some(paddr) = paddr {
+            entry.set_paddr(paddr);
+        }
+        if let Some(flags) = flags {
+            entry.set_flags(flags, size.is_huge());
+        }
+        Ok(size)
+    }
+
     /// Map a contiguous virtual memory region to a contiguous physical memory
     /// region with the given mapping `flags`.
     ///

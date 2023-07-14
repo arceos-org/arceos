@@ -1,5 +1,6 @@
 //! AArch64 VMSAv8-64 translation table format descriptors.
 
+use aarch64_cpu::registers::MAIR_EL1;
 use core::fmt;
 use memory_addr::PhysAddr;
 
@@ -56,33 +57,58 @@ bitflags::bitflags! {
     }
 }
 
+/// The memory attributes index field in the descriptor, which is used to index
+/// into the MAIR (Memory Attribute Indirection Register).
 #[repr(u64)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-enum MemType {
+pub enum MemAttr {
+    /// Device-nGnRE memory
     Device = 0,
+    /// Normal memory
     Normal = 1,
+    /// Normal non-cacheable memory
+    NormalNonCacheable = 2,
 }
 
 impl DescriptorAttr {
     #[allow(clippy::unusual_byte_groupings)]
     const ATTR_INDEX_MASK: u64 = 0b111_00;
 
-    const fn from_mem_type(mem_type: MemType) -> Self {
-        let mut bits = (mem_type as u64) << 2;
-        if matches!(mem_type, MemType::Normal) {
+    /// Constructs a descriptor from the memory index, leaving the other fields
+    /// empty.
+    pub const fn from_mem_attr(idx: MemAttr) -> Self {
+        let mut bits = (idx as u64) << 2;
+        if matches!(idx, MemAttr::Normal | MemAttr::NormalNonCacheable) {
             bits |= Self::INNER.bits() | Self::SHAREABLE.bits();
         }
         Self::from_bits_retain(bits)
     }
 
-    fn mem_type(&self) -> MemType {
+    /// Returns the memory attribute index field.
+    pub const fn mem_attr(&self) -> Option<MemAttr> {
         let idx = (self.bits() & Self::ATTR_INDEX_MASK) >> 2;
-        match idx {
-            0 => MemType::Device,
-            1 => MemType::Normal,
-            _ => panic!("Invalid memory attribute index"),
-        }
+        Some(match idx {
+            0 => MemAttr::Device,
+            1 => MemAttr::Normal,
+            2 => MemAttr::NormalNonCacheable,
+            _ => return None,
+        })
     }
+}
+
+impl MemAttr {
+    /// The MAIR_ELx register should be set to this value to match the memory
+    /// attributes in the descriptors.
+    pub const MAIR_VALUE: u64 = {
+        // Device-nGnRE memory
+        let attr0 = MAIR_EL1::Attr0_Device::nonGathering_nonReordering_EarlyWriteAck.value;
+        // Normal memory
+        let attr1 = MAIR_EL1::Attr1_Normal_Inner::WriteBack_NonTransient_ReadWriteAlloc.value
+            | MAIR_EL1::Attr1_Normal_Outer::WriteBack_NonTransient_ReadWriteAlloc.value;
+        let attr2 = MAIR_EL1::Attr2_Normal_Inner::NonCacheable.value
+            + MAIR_EL1::Attr2_Normal_Outer::NonCacheable.value;
+        attr0 | attr1 | attr2 // 0x44_ff_04
+    };
 }
 
 impl From<DescriptorAttr> for MappingFlags {
@@ -102,8 +128,10 @@ impl From<DescriptorAttr> for MappingFlags {
         } else if !attr.intersects(DescriptorAttr::PXN) {
             flags |= Self::EXECUTE;
         }
-        if attr.mem_type() == MemType::Device {
-            flags |= Self::DEVICE;
+        match attr.mem_attr() {
+            Some(MemAttr::Device) => flags |= Self::DEVICE,
+            Some(MemAttr::NormalNonCacheable) => flags |= Self::UNCACHED,
+            _ => {}
         }
         flags
     }
@@ -112,9 +140,11 @@ impl From<DescriptorAttr> for MappingFlags {
 impl From<MappingFlags> for DescriptorAttr {
     fn from(flags: MappingFlags) -> Self {
         let mut attr = if flags.contains(MappingFlags::DEVICE) {
-            Self::from_mem_type(MemType::Device)
+            Self::from_mem_attr(MemAttr::Device)
+        } else if flags.contains(MappingFlags::UNCACHED) {
+            Self::from_mem_attr(MemAttr::NormalNonCacheable)
         } else {
-            Self::from_mem_type(MemType::Normal)
+            Self::from_mem_attr(MemAttr::Normal)
         };
         if flags.contains(MappingFlags::READ) {
             attr |= Self::VALID;
@@ -147,7 +177,7 @@ impl From<MappingFlags> for DescriptorAttr {
 pub struct A64PTE(u64);
 
 impl A64PTE {
-    const PHYS_ADDR_MASK: usize = 0x0000_ffff_ffff_f000; // bits 12..48
+    const PHYS_ADDR_MASK: u64 = 0x0000_ffff_ffff_f000; // bits 12..48
 
     /// Creates an empty descriptor with all bits set to zero.
     pub const fn empty() -> Self {
@@ -161,18 +191,29 @@ impl GenericPTE for A64PTE {
         if !is_huge {
             attr |= DescriptorAttr::NON_BLOCK;
         }
-        Self(attr.bits() | (paddr.as_usize() & Self::PHYS_ADDR_MASK) as u64)
+        Self(attr.bits() | (paddr.as_usize() as u64 & Self::PHYS_ADDR_MASK))
     }
     fn new_table(paddr: PhysAddr) -> Self {
         let attr = DescriptorAttr::NON_BLOCK | DescriptorAttr::VALID;
-        Self(attr.bits() | (paddr.as_usize() & Self::PHYS_ADDR_MASK) as u64)
+        Self(attr.bits() | (paddr.as_usize() as u64 & Self::PHYS_ADDR_MASK))
     }
     fn paddr(&self) -> PhysAddr {
-        PhysAddr::from(self.0 as usize & Self::PHYS_ADDR_MASK)
+        PhysAddr::from((self.0 & Self::PHYS_ADDR_MASK) as usize)
     }
     fn flags(&self) -> MappingFlags {
         DescriptorAttr::from_bits_truncate(self.0).into()
     }
+    fn set_paddr(&mut self, paddr: PhysAddr) {
+        self.0 = (self.0 & !Self::PHYS_ADDR_MASK) | (paddr.as_usize() as u64 & Self::PHYS_ADDR_MASK)
+    }
+    fn set_flags(&mut self, flags: MappingFlags, is_huge: bool) {
+        let mut attr = DescriptorAttr::from(flags) | DescriptorAttr::AF;
+        if !is_huge {
+            attr |= DescriptorAttr::NON_BLOCK;
+        }
+        self.0 = (self.0 & Self::PHYS_ADDR_MASK) | attr.bits();
+    }
+
     fn is_unused(&self) -> bool {
         self.0 == 0
     }

@@ -1,6 +1,6 @@
 use aarch64_cpu::{asm, asm::barrier, registers::*};
 use memory_addr::PhysAddr;
-use page_table_entry::aarch64::A64PTE;
+use page_table_entry::aarch64::{MemAttr, A64PTE};
 use tock_registers::interfaces::{ReadWriteable, Readable, Writeable};
 
 use axconfig::TASK_STACK_SIZE;
@@ -58,12 +58,7 @@ unsafe fn switch_to_el1() {
 }
 
 unsafe fn init_mmu() {
-    // Device-nGnRE memory
-    let attr0 = MAIR_EL1::Attr0_Device::nonGathering_nonReordering_EarlyWriteAck;
-    // Normal memory
-    let attr1 = MAIR_EL1::Attr1_Normal_Inner::WriteBack_NonTransient_ReadWriteAlloc
-        + MAIR_EL1::Attr1_Normal_Outer::WriteBack_NonTransient_ReadWriteAlloc;
-    MAIR_EL1.write(attr0 + attr1); // 0xff_04
+    MAIR_EL1.set(MemAttr::MAIR_VALUE);
 
     // Enable TTBR0 and TTBR1 walks, page size = 4K, vaddr size = 48 bits, paddr size = 40 bits.
     let tcr_flags0 = TCR_EL1::EPD0::EnableTTBR0Walks

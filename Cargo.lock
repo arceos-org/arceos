@@ -1107,6 +1107,7 @@ dependencies = [
 name = "page_table_entry"
 version = "0.1.0"
 dependencies = [
+ "aarch64-cpu",
  "bitflags 2.3.3",
  "memory_addr",
  "x86_64",
