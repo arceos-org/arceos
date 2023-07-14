@@ -15,6 +15,8 @@ use log::info;
 use num_enum::TryFromPrimitive;
 use spinlock::SpinNoIrq;
 
+pub const SOCKET_TYPE_MASK: usize = 0xFF;
+
 #[derive(TryFromPrimitive)]
 #[repr(usize)]
 #[allow(non_camel_case_types)]
@@ -44,11 +46,12 @@ pub enum SocketType {
     SOCK_DCCP = 6,
     /// Obsolete and should not be used in new programs.
     SOCK_PACKET = 10,
-    /// Set O_NONBLOCK flag on the open fd
-    SOCK_NONBLOCK = 0x800,
-    /// Set FD_CLOEXEC flag on the new fd
-    SOCK_CLOEXEC = 0x80000,
 }
+
+/// Set O_NONBLOCK flag on the open fd
+pub const SOCK_NONBLOCK: usize = 0x800;
+/// Set FD_CLOEXEC flag on the new fd
+pub const SOCK_CLOEXEC: usize = 0x80000;
 
 #[derive(TryFromPrimitive)]
 #[repr(usize)]
@@ -64,6 +67,7 @@ pub struct Socket {
     domain: Domain,
     socket_type: SocketType,
     inner: SocketInner,
+    close_exec: bool,
 }
 
 pub enum SocketInner {
@@ -84,6 +88,14 @@ impl Socket {
             domain,
             socket_type,
             inner,
+            close_exec: false,
+        }
+    }
+
+    pub fn set_nonblocking(&mut self, nonblocking: bool) {
+        match &mut self.inner {
+            SocketInner::Tcp(s) => s.set_nonblocking(nonblocking),
+            SocketInner::Udp(s) => s.set_nonblocking(nonblocking),
         }
     }
 
@@ -179,6 +191,16 @@ impl FileIO for Socket {
     fn get_type(&self) -> FileIOType {
         FileIOType::Socket
     }
+
+    fn get_status(&self) -> axfs::monolithic_fs::flags::OpenFlags {
+        let mut flags = axfs::monolithic_fs::flags::OpenFlags::default();
+
+        if self.close_exec {
+            flags = flags | axfs::monolithic_fs::flags::OpenFlags::CLOEXEC;
+        }
+
+        flags
+    }
 }
 
 pub unsafe fn socket_address_from(addr: *const u8) -> SocketAddr {
@@ -244,11 +266,18 @@ pub fn syscall_socket(domain: usize, s_type: usize, _protocol: usize) -> isize {
     let Ok(domain) = Domain::try_from(domain) else {
         return -1;
     };
-    let Ok(s_type) = SocketType::try_from(s_type) else {
+    let Ok(socket_type) = SocketType::try_from(s_type & SOCKET_TYPE_MASK) else {
         return -1;
     };
 
-    let socket = Socket::new(domain, s_type);
+    let mut socket = Socket::new(domain, socket_type);
+    if s_type & SOCK_NONBLOCK != 0 {
+        socket.set_nonblocking(true)
+    }
+    if s_type & SOCK_CLOEXEC != 0 {
+        socket.close_exec = true;
+    }
+
     let curr = current_process();
     let mut inner = curr.inner.lock();
 
