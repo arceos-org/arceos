@@ -6,7 +6,7 @@ use smoltcp::iface::SocketHandle;
 use smoltcp::socket::udp::{self, BindError, SendError};
 use smoltcp::wire::{IpAddress, IpListenEndpoint};
 
-use super::{SocketSetWrapper, ETH0, SOCKET_SET};
+use super::{SocketSetWrapper, ETH0, LOOPBACK, SOCKET_SET};
 use crate::SocketAddr;
 
 const UNSPECIFIED_IP: IpAddress = IpAddress::v4(0, 0, 0, 0);
@@ -154,7 +154,9 @@ impl UdpSocket {
     pub fn connect(&mut self, addr: SocketAddr) -> AxResult {
         if self.local_addr.is_none() {
             self.bind(SocketAddr::new(
-                ETH0.iface
+                // ETH0.iface
+                //     .lock()
+                LOOPBACK
                     .lock()
                     .ipv4_addr()
                     .ok_or_else(|| ax_err_type!(BadAddress, "No IPv4 address"))?

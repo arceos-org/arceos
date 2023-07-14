@@ -11,7 +11,7 @@ use axfs::monolithic_fs::{file_io::FileExt, FileIO, FileIOType};
 use axio::{Read, Seek, Write};
 use axnet::{IpAddr, SocketAddr, TcpSocket, UdpSocket};
 use axprocess::process::current_process;
-use log::info;
+use log::{debug, info};
 use num_enum::TryFromPrimitive;
 use spinlock::SpinNoIrq;
 
@@ -138,6 +138,13 @@ impl Socket {
         match &mut self.inner {
             SocketInner::Tcp(s) => s.listen(),
             SocketInner::Udp(_) => Err(AxError::Unsupported),
+        }
+    }
+
+    pub fn connect(&mut self, addr: SocketAddr) -> AxResult {
+        match &mut self.inner {
+            SocketInner::Tcp(s) => s.connect(addr),
+            SocketInner::Udp(s) => s.connect(addr),
         }
     }
 
@@ -318,6 +325,8 @@ pub fn syscall_socket(domain: usize, s_type: usize, _protocol: usize) -> isize {
 
     inner.fd_manager.fd_table[fd] = Some(Arc::new(SpinNoIrq::new(socket)));
 
+    debug!("[socket()] create socket {fd}");
+
     fd as isize
 }
 
@@ -336,11 +345,11 @@ pub fn syscall_bind(fd: usize, addr: *const u8, _addr_len: usize) -> isize {
         addr.addr = IpAddr::v4(127, 0, 0, 1);
     }
 
-    info!("[bind()] binding socket {} to {:?}", fd, addr);
-
     let Some(socket) = file.as_any_mut().downcast_mut::<Socket>() else {
         return ErrorNo::ENOTSOCK as isize;
     };
+
+    info!("[bind()] binding socket {} to {:?}", fd, addr);
 
     socket.bind(addr).map_or(-1, |_| 0)
 }
@@ -362,6 +371,30 @@ pub fn syscall_listen(fd: usize, _backlog: usize) -> isize {
     socket.listen().map_or(-1, |_| 0)
 }
 
+pub fn syscall_connect(fd: usize, addr_buf: *const u8, _addr_len: usize) -> isize {
+    let curr = current_process();
+    let inner = curr.inner.lock();
+
+    let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
+        return ErrorNo::EBADF as isize;
+    };
+
+    let mut file = file.lock();
+    let Some(socket) = file.as_any_mut().downcast_mut::<Socket>() else {
+        return ErrorNo::ENOTSOCK as isize;
+    };
+
+    let addr = unsafe { socket_address_from(addr_buf) };
+
+    debug!("[connect()] socket {fd} connecting to {addr:?}");
+
+    match socket.connect(addr) {
+        Ok(_) => 0,
+        Err(AxError::WouldBlock) => ErrorNo::EINPROGRESS as isize,
+        Err(_) => -1,
+    }
+}
+
 /// NOTE: linux man 中没有说明若socket未bound应返回什么错误
 pub fn syscall_get_sock_name(fd: usize, addr: *mut u8, addr_len: *mut usize) -> isize {
     let curr = current_process();
@@ -375,6 +408,8 @@ pub fn syscall_get_sock_name(fd: usize, addr: *mut u8, addr_len: *mut usize) -> 
     let Some(socket) = file.as_any().downcast_ref::<Socket>() else {
         return ErrorNo::ENOTSOCK as isize;
     };
+
+    debug!("[getsockname()] socket {fd}");
 
     let Ok(name) = socket.name() else {
         return -1;

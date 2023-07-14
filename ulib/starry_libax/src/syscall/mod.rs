@@ -149,6 +149,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         SOCKET => syscall_socket(args[0], args[1], args[2]),
         BIND => syscall_bind(args[0], args[1] as *const u8, args[2]),
         LISTEN => syscall_listen(args[0], args[1]),
+        CONNECT => syscall_connect(args[0], args[1] as *const u8, args[2]),
         GETSOCKNAME => syscall_get_sock_name(args[0], args[1] as *mut u8, args[2] as *mut usize),
         SENDTO => syscall_sendto(
             args[0],

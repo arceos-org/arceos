@@ -67,6 +67,7 @@ pub enum SyscallId {
     SOCKET = 198,
     BIND = 200,
     LISTEN = 201,
+    CONNECT = 203,
     GETSOCKNAME = 204,
     SENDTO = 206,
     RECVFROM = 207,
@@ -118,4 +119,6 @@ pub enum ErrorNo {
     EISCONN = -106,
     /// 拒绝连接
     ECONNREFUSED = -111,
+    /// Operation now in progress
+    EINPROGRESS = -115,
 }
