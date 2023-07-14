@@ -1,6 +1,9 @@
 extern crate alloc;
 
-use core::{ptr::copy_nonoverlapping, slice::from_raw_parts};
+use core::{
+    ptr::copy_nonoverlapping,
+    slice::{from_raw_parts, from_raw_parts_mut},
+};
 
 use alloc::sync::Arc;
 use axerrno::{AxError, AxResult};
@@ -112,6 +115,16 @@ impl Socket {
             SocketInner::Udp(s) => s.send_to(buf, addr),
         }
     }
+
+    pub fn recv_from(&self, buf: &mut [u8]) -> AxResult<(usize, SocketAddr)> {
+        match &self.inner {
+            SocketInner::Tcp(s) => {
+                let addr = s.peer_addr()?;
+                s.recv(buf).map(|len| (len, addr))
+            }
+            SocketInner::Udp(s) => s.recv_from(buf),
+        }
+    }
 }
 
 impl Read for Socket {
@@ -175,9 +188,8 @@ pub unsafe fn socket_address_from(addr: *const u8) -> SocketAddr {
         Domain::AF_UNIX => unimplemented!(),
         Domain::AF_INET => {
             let port = u16::from_be(*addr.add(1));
-            let a = (*(addr.add(2) as *const u32)).to_be_bytes();
+            let a = (*(addr.add(2) as *const u32)).to_le_bytes();
 
-            // TODO: not tested! This could be a[3], a[2], a[1], a[0]
             let addr = IpAddr::v4(a[0], a[1], a[2], a[3]);
             SocketAddr { addr, port }
         }
@@ -259,7 +271,11 @@ pub fn syscall_bind(fd: usize, addr: *const u8, _addr_len: usize) -> isize {
     };
     let mut file = file.lock();
 
-    let addr = unsafe { socket_address_from(addr) };
+    let mut addr = unsafe { socket_address_from(addr) };
+    // TODO: hack
+    if addr.addr.is_unspecified() {
+        addr.addr = IpAddr::v4(127, 0, 0, 1);
+    }
 
     info!("[bind()] binding socket {} to {:?}", fd, addr);
 
@@ -347,7 +363,43 @@ pub fn syscall_sendto(
 
     info!("[sendto()] socket {fd} send to {:?}", addr);
 
-    socket.sendto(buf, addr).map_or(-1, |l| l as isize)
+    socket.sendto(buf, addr).map_or(-1, |l| {
+        info!("[sendto()] socket {fd} send {l} bytes");
+        l as isize
+    })
+}
+
+pub fn syscall_recvfrom(
+    fd: usize,
+    buf: *mut u8,
+    len: usize,
+    _flags: usize,
+    addr_buf: *mut u8,
+    addr_len: *mut usize,
+) -> isize {
+    let curr = current_process();
+    let inner = curr.inner.lock();
+
+    let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
+        // EBADF
+        return -1;
+    };
+
+    let mut file = file.lock();
+    let Some(socket) = file.as_any_mut().downcast_mut::<Socket>() else {
+        // ENOTSOCK
+        return -1;
+    };
+
+    let buf = unsafe { from_raw_parts_mut(buf, len) };
+
+    match socket.recv_from(buf) {
+        Ok((len, addr)) => {
+            info!("socket {fd} recv {len} bytes from {addr:?}");
+            unsafe { socket_address_to(addr, addr_buf, addr_len) }.map_or(-1, |_| len as isize)
+        }
+        Err(_) => -1,
+    }
 }
 
 /// NOTE: only support socket level options (SOL_SOCKET)

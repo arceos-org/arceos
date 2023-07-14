@@ -32,7 +32,8 @@ use crate::syscall::{
         syscall_kill, syscall_sigaction, syscall_sigprocmask, syscall_sigreturn, syscall_tkill,
     },
     socket::{
-        syscall_bind, syscall_get_sock_name, syscall_sendto, syscall_set_sock_opt, syscall_socket,
+        syscall_bind, syscall_get_sock_name, syscall_recvfrom, syscall_sendto,
+        syscall_set_sock_opt, syscall_socket,
     },
 };
 
@@ -171,6 +172,14 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[3],
             args[4] as *const u8,
             args[5],
+        ),
+        SYSCALL_RECVFROM => syscall_recvfrom(
+            args[0],
+            args[1] as *mut u8,
+            args[2],
+            args[3],
+            args[4] as *mut u8,
+            args[5] as *mut usize,
         ),
         SYSCALL_SETSOCKOPT => {
             syscall_set_sock_opt(args[0], args[1], args[2], args[3] as *const u8, args[4])
