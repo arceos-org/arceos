@@ -2,7 +2,7 @@ mod context;
 mod gdt;
 mod idt;
 
-#[cfg(target_os = "none")]
+// #[cfg(target_os = "none")]
 mod trap;
 
 use core::arch::asm;
