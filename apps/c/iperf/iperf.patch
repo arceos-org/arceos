@@ -417,7 +417,7 @@ index 73dc362..4bfe6f9 100644
  }
 diff --git a/src/main_server.c b/src/main_server.c
 new file mode 100644
-index 0000000..9d31a66
+index 0000000..c9964ba
 --- /dev/null
 +++ b/src/main_server.c
 @@ -0,0 +1,42 @@
@@ -445,7 +445,7 @@ index 0000000..9d31a66
 +    iperf_defaults(test);
 +    iperf_set_test_role(test, 's');
 +    iperf_set_test_server_port(test, port);
-+    iperf_set_test_bind_address(test, "10.0.2.15");
++    iperf_set_test_bind_address(test, "0.0.0.0");
 +    consecutive_errors = 0;
 +    for (;;) {
 +        if (iperf_run_server(test) < 0) {
