@@ -71,6 +71,10 @@ impl TcpSocket {
         self.nonblock = nonblocking;
     }
 
+    pub fn is_nonblocking(&self) -> bool {
+        self.nonblock
+    }
+
     /// Connects to the given address and port.
     ///
     /// The local port is generated automatically.

@@ -54,6 +54,10 @@ impl UdpSocket {
         self.nonblock = nonblocking;
     }
 
+    pub fn is_nonblocking(&self) -> bool {
+        self.nonblock
+    }
+
     /// Binds an unbound socket to the given address and port.
     ///
     /// It's must be called before [`send_to`](Self::send_to) and

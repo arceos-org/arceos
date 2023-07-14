@@ -19,6 +19,7 @@ bitflags! {
         /// 同上，在不同的库中可能会用到这个或者上一个
         const EXCL = 1 << 9;
         /// 非阻塞读写?(虽然不知道为什么但 date.lua 也要)
+        /// 在 socket 中使用得较多
         const NON_BLOCK = 1 << 11;
         /// 要求把 CR-LF 都换成 LF
         const TEXT = 1 << 14;

@@ -99,6 +99,13 @@ impl Socket {
         }
     }
 
+    pub fn is_nonblocking(&self) -> bool {
+        match &self.inner {
+            SocketInner::Tcp(s) => s.is_nonblocking(),
+            SocketInner::Udp(s) => s.is_nonblocking(),
+        }
+    }
+
     /// Return bound address.
     pub fn name(&self) -> AxResult<SocketAddr> {
         match &self.inner {
@@ -215,6 +222,10 @@ impl FileIO for Socket {
 
         if self.close_exec {
             flags = flags | axfs::monolithic_fs::flags::OpenFlags::CLOEXEC;
+        }
+
+        if self.is_nonblocking() {
+            flags = flags | axfs::monolithic_fs::flags::OpenFlags::NON_BLOCK;
         }
 
         flags
