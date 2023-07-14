@@ -328,6 +328,6 @@ pub fn get_pci_irq_vector(bus: u8, device: u8, function: u8) -> Option<usize> {
 }
 
 /// Get PCIe ECAM space physical address.
-pub fn get_ecam_address() -> Option<u64> {
-    unsafe { ACPI.get_ecam_address() }
+pub fn get_ecam_address() -> Option<PhysAddr> {
+    unsafe { ACPI.get_ecam_address() }.map(|ecam_addr| PhysAddr::from(ecam_addr))
 }

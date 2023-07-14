@@ -1,5 +1,5 @@
 use crate::{prelude::*, AllDevices};
-use axhal::mem::{phys_to_virt, PhysAddr};
+use axhal::mem::phys_to_virt;
 use driver_pci::{
     BarInfo, Cam, Command, DeviceFunction, HeaderType, MemoryBarType, PciRangeAllocator, PciRoot,
 };
@@ -85,8 +85,8 @@ fn config_pci_device(
 impl AllDevices {
     pub(crate) fn probe_bus_devices(&mut self) {
         cfg_if::cfg_if! {
-            if #[cfg(target_arch = "x86_64")] {
-                let pci_ecam_base = PhysAddr::from(axhal::get_ecam_address().unwrap() as usize);
+            if #[cfg(all(target_arch = "x86_64",feature="alloc"))] {
+                let pci_ecam_base = axhal::get_ecam_address().unwrap();
             } else {
                 let pci_ecam_base = axconfig::PCI_ECAM_BASE.into();
             }
