@@ -19,6 +19,7 @@ default = ["monolithic", "fs", "signal"]
 cfg-if = "1.0"
 spinlock = { path = "../../crates/spinlock" }
 axtask = { path = "../axtask" }
+axsync = { path = "../axsync" }
 axalloc = { path = "../axalloc" }
 axio = { path = "../../crates/axio", features = ["alloc"] }
 axhal = { path = "../axhal" }

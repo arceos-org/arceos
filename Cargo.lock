@@ -409,6 +409,7 @@ dependencies = [
  "axlog",
  "axmem",
  "axsignal",
+ "axsync",
  "axtask",
  "bitflags 2.3.3",
  "cfg-if 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",

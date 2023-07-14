@@ -154,14 +154,23 @@ pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
         let null = fs::devfs::NullDev;
         let zero = fs::devfs::ZeroDev;
         let bar = fs::devfs::ZeroDev;
-        let testshm = fs::devfs::ZeroDev;
         let devfs = fs::devfs::DeviceFileSystem::new();
         let foo_dir = devfs.mkdir("foo");
-        let shm_dir = devfs.mkdir("shm");
-        shm_dir.add("testshm", Arc::new(testshm));
         devfs.add("null", Arc::new(null));
         devfs.add("zero", Arc::new(zero));
         foo_dir.add("bar", Arc::new(bar));
+        #[cfg(feature = "monolithic")]
+        {
+            // 添加dev文件系统下的配置文件
+            // busybox的时候要用到
+            // devfs不支持可修改的file，因此取巧直接用了ramfs提供的file实现
+            let testshm = fs::ramfs::FileNode::new();
+            let testrtc = fs::ramfs::FileNode::new();
+            let shm_dir = devfs.mkdir("shm");
+            shm_dir.add("testshm", Arc::new(testshm));
+            let rtc_dir = devfs.mkdir("misc");
+            rtc_dir.add("rtc", Arc::new(testrtc));
+        }
 
         root_dir
             .mount("/dev", Arc::new(devfs))
@@ -174,6 +183,22 @@ pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
         root_dir
             .mount("/tmp", Arc::new(ramfs))
             .expect("failed to mount ramfs at /tmp");
+    }
+
+    #[cfg(feature = "monolithic")]
+    {
+        let procfs = fs::ramfs::RamFileSystem::new();
+        procfs
+            .root_dir_node()
+            .create("meminfo", VfsNodeType::File)
+            .expect("failed to create file meminfo");
+        procfs
+            .root_dir_node()
+            .create("mounts", VfsNodeType::File)
+            .expect("failed to create file mounts");
+        root_dir
+            .mount("/proc", Arc::new(procfs))
+            .expect("failed to mount ramfs at /proc");
     }
 
     ROOT_DIR.init_by(Arc::new(root_dir));
@@ -224,7 +249,10 @@ pub(crate) fn create_file(dir: Option<&VfsNodeRef>, path: &str) -> AxResult<VfsN
 pub(crate) fn create_dir(dir: Option<&VfsNodeRef>, path: &str) -> AxResult {
     match lookup(dir, path) {
         Ok(_) => ax_err!(AlreadyExists),
-        Err(AxError::NotFound) => parent_node_of(dir, path).create(path, VfsNodeType::Dir),
+        Err(AxError::NotFound) => {
+            info!("test");
+            parent_node_of(dir, path).create(path, VfsNodeType::Dir)
+        }
         Err(e) => Err(e),
     }
 }

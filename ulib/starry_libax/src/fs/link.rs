@@ -1,62 +1,44 @@
 //! 模拟的链接、挂载模块
 //! fat32本身不支持符号链接和硬链接，两个指向相同文件的目录条目将会被chkdsk报告为交叉链接并修复
 extern crate alloc;
-use super::FilePath;
 use alloc::collections::BTreeMap;
 use alloc::string::{String, ToString};
 use axfs::api::{path_exists, remove_file};
+use axprocess::link::{FilePath, LINK_COUNT_MAP, LINK_PATH_MAP};
 use axsync::Mutex;
 use log::{debug, trace};
-
-/// 用户看到的文件到实际文件的映射
-static LINK_PATH_MAP: Mutex<BTreeMap<FilePath, FilePath>> = Mutex::new(BTreeMap::new());
-/// 实际文件(而不是用户文件)到链接数的映射
-static LINK_COUNT_MAP: Mutex<BTreeMap<FilePath, usize>> = Mutex::new(BTreeMap::new());
-
-/// 将用户提供的路径转换成实际的路径
-#[allow(unused)]
-pub fn real_path(src_path: &FilePath) -> Option<FilePath> {
-    trace!("parse_file_name: {}", src_path.path());
-    let map = LINK_PATH_MAP.lock();
-    // 找到对应的链接
-    match map.get(src_path) {
-        Some(dest_path) => Some(dest_path.clone()),
-        None => None,
-    }
-}
-
-/// 检查文件名对应的链接
-///
-/// 如果在 map 中找不到对应链接，则返回 None
-/// 相较于 real_path，这个函数会支持 gcc 的 include 目录(todo)
-#[allow(unused)]
-pub fn read_link(src_path: &FilePath) -> Option<FilePath> {
-    trace!("read_link: {}", src_path.path());
-    let map = LINK_PATH_MAP.lock();
-    // 找到对应的链接
-    match map.get(src_path) {
-        Some(dest_path) => Some(dest_path.clone()),
-        // 如果是链接到 gcc 的 include 目录，那么返回 gcc 的链接目录
-        None => {
-            static GCC_INCLUDE: &str =
-                "./riscv64-linux-musl-native/lib/gcc/riscv64-linux-musl/11.2.1/include/";
-            static GCC_LINK_INCLUDE: &str = "/riscv64-linux-musl-native/include/";
-            if src_path.path().starts_with(GCC_INCLUDE) {
-                debug!(
-                    "read gcc link: {}",
-                    String::from(GCC_LINK_INCLUDE)
-                        + src_path.path().strip_prefix(GCC_INCLUDE).unwrap()
-                );
-                Some(FilePath::new(
-                    &(GCC_LINK_INCLUDE.to_string()
-                        + src_path.path().strip_prefix(GCC_INCLUDE).unwrap()),
-                ))
-            } else {
-                None
-            }
-        }
-    }
-}
+// /// 检查文件名对应的链接
+// ///
+// /// 如果在 map 中找不到对应链接，则返回 None
+// /// 相较于 real_path，这个函数会支持 gcc 的 include 目录(todo)
+// #[allow(unused)]
+// pub fn read_link(src_path: &FilePath) -> Option<FilePath> {
+//     trace!("read_link: {}", src_path.path());
+//     let map = LINK_PATH_MAP.lock();
+//     // 找到对应的链接
+//     match map.get(src_path) {
+//         Some(dest_path) => Some(dest_path.clone()),
+//         // 如果是链接到 gcc 的 include 目录，那么返回 gcc 的链接目录
+//         None => {
+//             static GCC_INCLUDE: &str =
+//                 "./riscv64-linux-musl-native/lib/gcc/riscv64-linux-musl/11.2.1/include/";
+//             static GCC_LINK_INCLUDE: &str = "/riscv64-linux-musl-native/include/";
+//             if src_path.path().starts_with(GCC_INCLUDE) {
+//                 debug!(
+//                     "read gcc link: {}",
+//                     String::from(GCC_LINK_INCLUDE)
+//                         + src_path.path().strip_prefix(GCC_INCLUDE).unwrap()
+//                 );
+//                 Some(FilePath::new(
+//                     &(GCC_LINK_INCLUDE.to_string()
+//                         + src_path.path().strip_prefix(GCC_INCLUDE).unwrap()),
+//                 ))
+//             } else {
+//                 None
+//             }
+//         }
+//     }
+// }
 
 /// 删除一个链接
 ///

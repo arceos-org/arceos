@@ -1,5 +1,3 @@
-use crate::fs::FilePath;
-
 use super::link::get_link_count;
 use super::types::{normal_file_mode, StMode};
 extern crate alloc;
@@ -13,6 +11,7 @@ use axfs::monolithic_fs::FileIO;
 use axfs::monolithic_fs::FileIOType;
 
 use axio::{Read, Seek, SeekFrom, Write};
+use axprocess::link::FilePath;
 use axsync::Mutex;
 use log::{debug, info};
 

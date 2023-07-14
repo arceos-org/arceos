@@ -1,7 +1,7 @@
 use crate::fs::link::{create_link, remove_link};
 use crate::fs::mount::{check_mounted, mount_fat_fs, umount_fat_fs};
 use crate::fs::pipe::make_pipe;
-use crate::fs::{new_dir, new_fd, DirEnt, DirEntType, FileIOType, FilePath};
+use crate::fs::{new_dir, new_fd, DirEnt, DirEntType, FileIOType};
 use crate::syscall::flags::raw_ptr_to_ref_str;
 extern crate alloc;
 use alloc::format;
@@ -10,6 +10,7 @@ use alloc::sync::Arc;
 use axfs::api;
 use axfs::monolithic_fs::file_io::Kstat;
 use axfs::monolithic_fs::flags::OpenFlags;
+use axprocess::link::FilePath;
 use axprocess::process::current_process;
 use core::mem::transmute;
 use core::ptr::copy_nonoverlapping;

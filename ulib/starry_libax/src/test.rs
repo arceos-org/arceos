@@ -1,6 +1,5 @@
 use alloc::sync::Arc;
-use axerrno::AxResult;
-use axfs::api;
+use axfs::api::{self};
 use axhal::arch::write_page_table_root;
 use axlog::{debug, info};
 use axruntime::KERNEL_PAGE_TABLE;
@@ -16,10 +15,13 @@ extern crate alloc;
 use alloc::boxed::Box;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
-use axprocess::process::{wait_pid, yield_now_task, Process, KERNEL_PROCESS_ID, PID2PC};
+use axprocess::{
+    link::FilePath,
+    process::{wait_pid, yield_now_task, Process, KERNEL_PROCESS_ID, PID2PC},
+};
 use riscv::asm;
 
-use crate::fs::{link::create_link, FilePath};
+use crate::fs::link::create_link;
 
 /// 初赛测例
 #[allow(dead_code)]
@@ -174,117 +176,117 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
 /// 来自 libc 的动态测例
 #[allow(dead_code)]
 pub const LIBC_DYNAMIC_TESTCASES: &[&str] = &[
-    // "argv.dout",
-    // "basename",
+    "argv.dout",
+    "basename.dout",
     // "clocale_mbfuncs",
     // "clock_gettime",
     // "crypt",
     // "dirname",
     // "dlopen.dout", // 存在运行时bug
-                   // "env",
-                   // "fdopen", // 62
-                   // // "fnmatch",
-                   // "fscanf",  //62
-                   // "fwscanf", //29
-                   // // "iconv_open",
-                   // // "inet_pton",
-                   // // "mbc",
-                   // // "memstream",
-                   // "pthread_cancel_points", // 226
-                   // "pthread_cancel",        // 226
-                   // "pthread_cond",          //226
-                   // "pthread_tsd",           //226
-                   // // "qsort",
-                   // // "random",
-                   // // "search_hsearch",
-                   // // "search_insque",
-                   // // "search_lsearch",
-                   // // "search_tsearch",
-                   // "sem_init", //226
-                   // // "setjmp",
-                   // // "snprintf",
-                   // "socket", //198
-                   // // "sscanf",
-                   // // "sscanf_long",
-                   // "stat", //79
-                   // // "strftime",
-                   // // "string",
-                   // // "string_memcpy",
-                   // // "string_memmem",
-                   // // "string_memset",
-                   // // "string_strchr",
-                   // // "string_strcspn",
-                   // // "string_strstr",
-                   // // "strptime",
-                   // // "strtod",
-                   // // "strtod_simple",
-                   // // "strtof",
-                   // // "strtol",
-                   // // "strtold",
-                   // // "swprintf",
-                   // // "tgmath",
-                   // // "time",
-                   // "tls_init",       //226
-                   // "tls_local_exec", //226
-                   // // "udiv",
-                   // // "ungetc",
-                   // "utime", //88
-                   // // "wcsstr",
-                   // // "wcstol",
-                   // // "daemon_failure",
-                   // // "dn_expand_empty",
-                   // // "dn_expand_ptr_0",
-                   // "fflush_exit", //29 + 67
-                   // // "fgets_eof",
-                   // // "fgetwc_buffering",
-                   // // "fpclassify_invalid_ld80",
-                   // "ftello_unflushed_append", //25
-                   // // "getpwnam_r_crash",
-                   // // "getpwnam_r_errno",
-                   // // "iconv_roundtrips",
-                   // // "inet_ntop_v4mapped",
-                   // // "inet_pton_empty_last_field",
-                   // // "iswspace_null",
-                   // // "lrand48_signextend",
-                   // "lseek_large", //29
-                   // // "malloc_0",
-                   // // "mbsrtowcs_overflow",
-                   // // "memmem_oob_read",
-                   // // "memmem_oob",
-                   // // "mkdtemp_failure",
-                   // // "mkstemp_failure",
-                   // // "printf_1e9_oob",
-                   // // "printf_fmt_g_round",
-                   // // "printf_fmt_g_zeros",
-                   // // "printf_fmt_n",
-                   // "pthread_robust_detach", //226
-                   // "pthread_cond_smasher",  //226
-                   // // "pthread_condattr_setclock",
-                   // "pthread_exit_cancel",   //226
-                   // "pthread_once_deadlock", //226
-                   // "pthread_rwlock_ebusy",  //226
-                   // // "putenv_doublefree",
-                   // // "regex_backref_0",
-                   // // "regex_bracket_icase",
-                   // // "regex_ere_backref",
-                   // // "regex_escaped_high_byte",
-                   // // "regex_negated_range",
-                   // // "regexec_nosub",
-                   // "rewind_clear_error", //62
-                   // // "rlimit_open_files",
-                   // // "scanf_bytes_consumed",
-                   // // "scanf_match_literal_eof",
-                   // // "scanf_nullbyte_char",
-                   // "setvbuf_unget", //62
-                   // // "sigprocmask_internal",
-                   // // "sscanf_eof",
-                   // "statvfs", //43
-                   // // "strverscmp",
-                   // // "syscall_sign_extend",
-                   // "tls_get_new_dtv", //226
-                   // "uselocale_0",
-                   // "wcsncpy_read_overflow",
-                   // "wcsstr_false_negative",
+    // "env",
+    // "fdopen", // 62
+    // // "fnmatch",
+    // "fscanf",  //62
+    // "fwscanf", //29
+    // // "iconv_open",
+    // // "inet_pton",
+    // // "mbc",
+    // // "memstream",
+    // "pthread_cancel_points", // 226
+    // "pthread_cancel",        // 226
+    // "pthread_cond",          //226
+    // "pthread_tsd",           //226
+    // // "qsort",
+    // // "random",
+    // // "search_hsearch",
+    // // "search_insque",
+    // // "search_lsearch",
+    // // "search_tsearch",
+    // "sem_init", //226
+    // // "setjmp",
+    // // "snprintf",
+    // "socket", //198
+    // // "sscanf",
+    // // "sscanf_long",
+    // "stat", //79
+    // // "strftime",
+    // // "string",
+    // // "string_memcpy",
+    // // "string_memmem",
+    // // "string_memset",
+    // // "string_strchr",
+    // // "string_strcspn",
+    // // "string_strstr",
+    // // "strptime",
+    // // "strtod",
+    // // "strtod_simple",
+    // // "strtof",
+    // // "strtol",
+    // // "strtold",
+    // // "swprintf",
+    // // "tgmath",
+    // // "time",
+    // "tls_init",       //226
+    // "tls_local_exec", //226
+    // // "udiv",
+    // // "ungetc",
+    // "utime", //88
+    // // "wcsstr",
+    // // "wcstol",
+    // // "daemon_failure",
+    // // "dn_expand_empty",
+    // // "dn_expand_ptr_0",
+    // "fflush_exit", //29 + 67
+    // // "fgets_eof",
+    // // "fgetwc_buffering",
+    // // "fpclassify_invalid_ld80",
+    // "ftello_unflushed_append", //25
+    // // "getpwnam_r_crash",
+    // // "getpwnam_r_errno",
+    // // "iconv_roundtrips",
+    // // "inet_ntop_v4mapped",
+    // // "inet_pton_empty_last_field",
+    // // "iswspace_null",
+    // // "lrand48_signextend",
+    // "lseek_large", //29
+    // // "malloc_0",
+    // // "mbsrtowcs_overflow",
+    // // "memmem_oob_read",
+    // // "memmem_oob",
+    // // "mkdtemp_failure",
+    // // "mkstemp_failure",
+    // // "printf_1e9_oob",
+    // // "printf_fmt_g_round",
+    // // "printf_fmt_g_zeros",
+    // // "printf_fmt_n",
+    // "pthread_robust_detach", //226
+    // "pthread_cond_smasher",  //226
+    // // "pthread_condattr_setclock",
+    // "pthread_exit_cancel",   //226
+    // "pthread_once_deadlock", //226
+    // "pthread_rwlock_ebusy",  //226
+    // // "putenv_doublefree",
+    // // "regex_backref_0",
+    // // "regex_bracket_icase",
+    // // "regex_ere_backref",
+    // // "regex_escaped_high_byte",
+    // // "regex_negated_range",
+    // // "regexec_nosub",
+    // "rewind_clear_error", //62
+    // // "rlimit_open_files",
+    // // "scanf_bytes_consumed",
+    // // "scanf_match_literal_eof",
+    // // "scanf_nullbyte_char",
+    // "setvbuf_unget", //62
+    // // "sigprocmask_internal",
+    // // "sscanf_eof",
+    // "statvfs", //43
+    // // "strverscmp",
+    // // "syscall_sign_extend",
+    // "tls_get_new_dtv", //226
+    // "uselocale_0",
+    // "wcsncpy_read_overflow",
+    // "wcsstr_false_negative",
 ];
 
 #[allow(dead_code)]
@@ -470,45 +472,30 @@ fn get_args(command_line: &[u8]) -> Vec<String> {
 /// 在执行系统调用前初始化文件系统
 ///
 /// 包括建立软连接，提前准备好一系列的文件与文件夹
-pub fn fs_init(case: &'static str) -> AxResult<()> {
-    // create_dir("/dev/")?;
-    // create_dir("/lib").unwrap();
-    // create_dir("tmp/")?;
-    // create_dir("/proc").unwrap();
-    // create_dir("./dev/shm").unwrap();
-    // create_dir("./dev/./misc")?;
+pub fn fs_init() {
+    // 需要对libc-dynamic进行特殊处理，因为它需要先加载libc.so
+    // 建立一个硬链接
+    let libc_so = &"ld-musl-riscv64-sf.so.1";
+    let libc_so2 = &"ld-musl-riscv64.so.1"; // 另一种名字的 libc.so，非 libc-test 测例库用
 
-    // create_dir("/sbin/")?;
-    // new_file("./dev/misc/rtc", &OpenFlags::CREATE)?;
-    // new_file("./lat_sig", &OpenFlags::CREATE)?;
-    // new_file("./proc/mounts", &OpenFlags::CREATE)?;
-    // new_file("./proc/meminfo", &OpenFlags::CREATE)?;
+    assert!(create_link(
+        &FilePath::new(("/lib/".to_string() + libc_so).as_str()),
+        &FilePath::new("libc.so"),
+    ));
 
-    if case == "libc-dynamic" {
-        // 需要对libc-dynamic进行特殊处理，因为它需要先加载libc.so
-        // 建立一个硬链接
-        let libc_so = &"ld-musl-riscv64-sf.so.1";
-        let libc_so2 = &"ld-musl-riscv64.so.1"; // 另一种名字的 libc.so，非 libc-test 测例库用
-
-        create_link(
-            &FilePath::new(("/lib/".to_string() + libc_so).as_str()),
-            &FilePath::new("libc.so"),
-        );
-
-        create_link(
-            &FilePath::new(("/lib/".to_string() + libc_so2).as_str()),
-            &FilePath::new("libc.so"),
-        );
-        info!("get link!");
-    }
-
-    Ok(())
+    assert!(create_link(
+        &FilePath::new(("/lib/".to_string() + libc_so2).as_str()),
+        &FilePath::new("libc.so"),
+    ));
+    info!("create link");
+    // create_dir("sbin");
+    // create_link(&FilePath::new("path"), dest_path)
 }
 
 /// 执行运行所有测例的任务
 pub fn run_testcases(case: &'static str) {
     debug!("run_testcases :{}", case);
-    fs_init(case).unwrap();
+    fs_init();
     let mut test_iter: LazyInit<Box<dyn Iterator<Item = &'static &'static str> + Send>> =
         LazyInit::new();
 

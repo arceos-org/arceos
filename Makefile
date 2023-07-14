@@ -5,7 +5,7 @@ MODE ?= release
 LOG ?= warn
 V ?=
 
-A ?= apps/syscall/libc-static
+A ?= apps/syscall/libc_static
 APP ?= $(A)
 APP_FEATURES ?=
 DISK_IMG ?= sdcard.img

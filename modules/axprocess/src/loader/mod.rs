@@ -9,7 +9,7 @@ pub const USER_HEAP_OFFSET: usize = 0x3F80_0000;
 pub const USER_STACK_OFFSET: usize = 0x3FE0_0000;
 pub const MAX_HEAP_SIZE: usize = 0x60000;
 pub const USER_STACK_SIZE: usize = 0x20000;
-use axerrno::AxResult;
+use axerrno::{AxError, AxResult};
 mod user_stack;
 use axhal::{mem::VirtAddr, paging::MappingFlags};
 use axlog::{debug, info};
@@ -17,7 +17,10 @@ use axmem::MemorySet;
 use core::str::from_utf8;
 use xmas_elf::{program::SegmentData, ElfFile};
 
-use crate::loader::user_stack::init_stack;
+use crate::{
+    link::{real_path, FilePath},
+    loader::user_stack::init_stack,
+};
 
 /// A elf file wrapper.
 pub struct Loader<'a> {
@@ -68,8 +71,14 @@ impl<'a> Loader<'a> {
             {
                 panic!("ELF Interpreter is not supported without fs feature");
             }
+            let real_interp_path = if let Some(path) = real_path(&FilePath::new(interp_path)) {
+                path
+            } else {
+                return Err(AxError::NotFound);
+            };
 
-            let interp = axfs::api::read(interp_path).expect("Error reading Interpreter from fs");
+            let interp = axfs::api::read(real_interp_path.path())
+                .expect("Error reading Interpreter from fs");
             let loader = Loader::new(&interp);
             return loader.load(new_argv, &mut memory_set);
         }

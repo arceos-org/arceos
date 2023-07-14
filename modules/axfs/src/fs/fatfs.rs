@@ -132,7 +132,7 @@ impl VfsNodeOps for DirWrapper<'static> {
     }
 
     fn create(&self, path: &str, ty: VfsNodeType) -> VfsResult {
-        debug!("create {:?} at fatfs: {}", ty, path);
+        info!("create {:?} at fatfs: {}", ty, path);
         let path = path.trim_matches('/');
         if path.is_empty() || path == "." {
             return Ok(());
