@@ -69,6 +69,11 @@ impl OpenFlags {
     pub fn is_dir(&self) -> bool {
         self.contains(Self::DIR)
     }
+
+    /// 获取是否需要在 `exec()` 时关闭
+    pub fn is_close_on_exec(&self) -> bool {
+        self.contains(Self::CLOEXEC)
+    }
 }
 
 impl From<usize> for OpenFlags {
