@@ -1,5 +1,5 @@
 use crate::{prelude::*, AllDevices};
-use axhal::mem::phys_to_virt;
+use axhal::mem::{phys_to_virt, PhysAddr};
 use driver_pci::{
     BarInfo, Cam, Command, DeviceFunction, HeaderType, MemoryBarType, PciRangeAllocator, PciRoot,
 };
@@ -84,7 +84,14 @@ fn config_pci_device(
 
 impl AllDevices {
     pub(crate) fn probe_bus_devices(&mut self) {
-        let base_vaddr = phys_to_virt(axconfig::PCI_ECAM_BASE.into());
+        cfg_if::cfg_if! {
+            if #[cfg(target_arch = "x86_64")] {
+                let pci_ecam_base = PhysAddr::from(axhal::get_ecam_address().unwrap() as usize);
+            } else {
+                let pci_ecam_base = axconfig::PCI_ECAM_BASE.into();
+            }
+        }
+        let base_vaddr = phys_to_virt(pci_ecam_base);
         let mut root = unsafe { PciRoot::new(base_vaddr.as_mut_ptr(), Cam::Ecam) };
 
         // PCI 32-bit MMIO space

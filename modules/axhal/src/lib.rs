@@ -77,3 +77,6 @@ pub use self::platform::platform_init;
 
 #[cfg(feature = "smp")]
 pub use self::platform::platform_init_secondary;
+
+#[cfg(target_arch = "x86_64")]
+pub use self::platform::acpi::get_ecam_address;

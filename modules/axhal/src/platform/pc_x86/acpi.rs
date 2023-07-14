@@ -24,10 +24,10 @@ impl acpi::AcpiHandler for LocalAcpiHandler {
         physical_address: usize,
         size: usize,
     ) -> PhysicalMapping<Self, T> {
-        let vaddr = phys_to_virt(PhysAddr::from(physical_address)).as_usize();
+        let vaddr = phys_to_virt(PhysAddr::from(physical_address)).as_mut_ptr();
         PhysicalMapping::new(
             physical_address,
-            NonNull::new_unchecked(vaddr as *mut i32 as *mut _),
+            NonNull::new_unchecked(vaddr as *mut T),
             size,
             size,
             self.clone(),
@@ -114,7 +114,7 @@ impl aml::Handler for LocalAmlHandler {
             ACPI.get_pci_config_regions_addr(segment, bus, device, function)
                 .unwrap()
         };
-        let vaddr = phys_to_virt(PhysAddr::from(paddr as usize)).as_mut_ptr();
+        let vaddr = phys_to_virt(PhysAddr::from(paddr as usize)).as_ptr();
         let address = unsafe { vaddr.add(offset as usize) };
         unsafe { address.read_volatile() }
     }
@@ -124,7 +124,7 @@ impl aml::Handler for LocalAmlHandler {
             ACPI.get_pci_config_regions_addr(segment, bus, device, function)
                 .unwrap()
         };
-        let vaddr = phys_to_virt(PhysAddr::from(paddr as usize)).as_usize() as *mut u16;
+        let vaddr = phys_to_virt(PhysAddr::from(paddr as usize)).as_ptr() as *const u16;
         let address = unsafe { vaddr.add(offset as usize) };
         unsafe { address.read_volatile() }
     }
@@ -134,7 +134,7 @@ impl aml::Handler for LocalAmlHandler {
             ACPI.get_pci_config_regions_addr(segment, bus, device, function)
                 .unwrap()
         };
-        let vaddr = phys_to_virt(PhysAddr::from(paddr as usize)).as_usize() as *mut u32;
+        let vaddr = phys_to_virt(PhysAddr::from(paddr as usize)).as_ptr() as *const u32;
         let address = unsafe { vaddr.add(offset as usize) };
         unsafe { address.read_volatile() }
     }
@@ -170,7 +170,7 @@ impl aml::Handler for LocalAmlHandler {
             ACPI.get_pci_config_regions_addr(segment, bus, device, function)
                 .unwrap()
         };
-        let vaddr = phys_to_virt(PhysAddr::from(paddr as usize)).as_usize() as *mut u16;
+        let vaddr = phys_to_virt(PhysAddr::from(paddr as usize)).as_mut_ptr() as *mut u16;
         let address = unsafe { vaddr.add(offset as usize) };
         unsafe { address.write_volatile(value) }
     }
@@ -188,7 +188,7 @@ impl aml::Handler for LocalAmlHandler {
             ACPI.get_pci_config_regions_addr(segment, bus, device, function)
                 .unwrap()
         };
-        let vaddr = phys_to_virt(PhysAddr::from(paddr as usize)).as_usize() as *mut u32;
+        let vaddr = phys_to_virt(PhysAddr::from(paddr as usize)).as_mut_ptr() as *mut u32;
         let address = unsafe { vaddr.add(offset as usize) };
         unsafe { address.write_volatile(value) }
     }
@@ -258,6 +258,7 @@ impl Acpi {
     /// in the ACPI namespace.
     /// Each of these devices contains a _PRT method that returns an array of objects describing
     /// the interrupt routing for slots on that PCI bus.
+    #[allow(dead_code)]
     fn get_pci_irq_desc(&mut self, bus: u8, device: u8, function: u8) -> Option<IrqDescriptor> {
         match AmlName::from_str(format!("\\_SB.PCI{bus_id}._PRT", bus_id = bus).as_str()) {
             Ok(prt_path) => {
@@ -327,7 +328,6 @@ pub fn get_pci_irq_vector(bus: u8, device: u8, function: u8) -> Option<usize> {
 }
 
 /// Get PCIe ECAM space physical address.
-#[allow(dead_code)]
 pub fn get_ecam_address() -> Option<u64> {
     unsafe { ACPI.get_ecam_address() }
 }

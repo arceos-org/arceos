@@ -3,27 +3,19 @@ mod boot;
 mod dtables;
 mod uart16550;
 
-/// acpi module
-#[cfg(feature = "irq")]
 pub mod acpi;
-/// mem module
 pub mod mem;
-/// misc module
 pub mod misc;
-/// time module
 pub mod time;
 
-/// mp module
 #[cfg(feature = "smp")]
 pub mod mp;
 
-/// irq module
 #[cfg(feature = "irq")]
 pub mod irq {
     pub use super::apic::*;
 }
 
-/// console module
 pub mod console {
     pub use super::uart16550::*;
 }
@@ -67,7 +59,6 @@ unsafe extern "C" fn rust_entry_secondary(magic: usize) {
 pub fn platform_init() {
     self::apic::init_primary();
     self::time::init_primary();
-    #[cfg(feature = "irq")]
     self::acpi::init();
 }
 

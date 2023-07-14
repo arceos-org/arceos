@@ -64,14 +64,15 @@ pub fn set_enable(vector: usize, enabled: bool) {
 /// Program IO_APIC in order to route IO_APIC IRQ to vector.
 #[cfg(feature = "irq")]
 fn ioapic_redirect(vector: usize) {
+    let mut ioapic = IO_APIC.lock();
     let irq = vector_to_irq(vector);
-    let mut table_entry = unsafe { IO_APIC.lock().table_entry(irq) };
+    let mut table_entry = unsafe { ioapic.table_entry(irq) };
     table_entry.set_vector(vector as u8);
     table_entry.set_mode(IrqMode::Fixed);
     let irq_flag = table_entry.flags() - IrqFlags::MASKED;
     table_entry.set_flags(irq_flag);
     table_entry.set_dest(current_cpu_id() as u8);
-    unsafe { IO_APIC.lock().set_table_entry(irq, table_entry) };
+    unsafe { ioapic.set_table_entry(irq, table_entry) };
 }
 
 /// Registers an IRQ handler for the given IRQ.
@@ -80,7 +81,7 @@ fn ioapic_redirect(vector: usize) {
 /// the registration failed.
 #[cfg(feature = "irq")]
 pub fn register_handler(vector: usize, handler: crate::irq::IrqHandler) -> bool {
-    if vector < APIC_TIMER_VECTOR as _ {
+    if vector < APIC_TIMER_VECTOR as usize && vector >= IRQ_VECTOR_START as usize {
         ioapic_redirect(vector);
     }
     crate::irq::register_handler_common(vector, handler)
