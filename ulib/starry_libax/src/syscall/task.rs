@@ -1,6 +1,7 @@
 use core::time::Duration;
 
 use axconfig::{TASK_STACK_SIZE, USER_MEMORY_LIMIT};
+use axfs::monolithic_fs::flags::OpenFlags;
 use axhal::time::current_time;
 use axprocess::{
     flags::{CloneFlags, WaitStatus},
@@ -9,6 +10,7 @@ use axprocess::{
         current_process, current_task, set_child_tid, sleep_now_task, wait_pid, yield_now_task,
     },
 };
+use log::info;
 extern crate alloc;
 use super::{
     flags::{
@@ -22,12 +24,13 @@ use axsignal::signal_no::SignalNo;
 /// 处理与任务（线程）有关的系统调用
 
 pub fn syscall_exit(exit_code: i32) -> ! {
+    info!("exit: exit_code = {}", exit_code as i32);
     axprocess::process::exit(exit_code)
 }
 
 pub fn syscall_exec(path: *const u8, mut args: *const usize) -> isize {
     let curr_process = current_process();
-    let inner = curr_process.inner.lock();
+    let mut inner = curr_process.inner.lock();
     let path = unsafe { raw_ptr_to_ref_str(path) }.to_string();
     let mut args_vec = Vec::new();
     // args相当于argv，指向了参数所在的地址
@@ -39,6 +42,22 @@ pub fn syscall_exec(path: *const u8, mut args: *const usize) -> isize {
         args_vec.push(unsafe { raw_ptr_to_ref_str(args_str_ptr as *const u8) }.to_string());
         unsafe {
             args = args.add(1);
+        }
+    }
+    // 删除所有带有 CLOEXEC 标记的文件。在 exec 时使用
+    // 暂时存在，之后采用c0per写的方法
+    for fd in 0..inner.fd_manager.fd_table.len() {
+        let file = inner.fd_manager.fd_table[fd].take();
+        if file.is_some() {
+            if !file
+                .clone()
+                .unwrap()
+                .lock()
+                .get_status()
+                .contains(OpenFlags::CLOEXEC)
+            {
+                inner.fd_manager.fd_table[fd] = file;
+            }
         }
     }
     drop(inner);

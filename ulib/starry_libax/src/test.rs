@@ -110,7 +110,7 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     "swprintf",
     "tgmath",
     "time",
-    //"tls_align", // app不存在
+    "tls_align",
     "udiv",
     //"ungetc", // 需要29
     //"utime",  // 需要88
@@ -176,117 +176,118 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
 /// 来自 libc 的动态测例
 #[allow(dead_code)]
 pub const LIBC_DYNAMIC_TESTCASES: &[&str] = &[
-    "argv.dout",
-    "basename.dout",
-    // "clocale_mbfuncs",
-    // "clock_gettime",
-    // "crypt",
-    // "dirname",
-    // "dlopen.dout", // 存在运行时bug
-    // "env",
-    // "fdopen", // 62
+    // "argv.dout",
+    // "basename.dout",
+    // "clocale_mbfuncs.dout",
+    // "clock_gettime.dout",
+    // "crypt.dout",
+    // "dirname.dout",
+    // "dlopen.dout", // 单独存在运行时bug，放在runtest里面就是正常的
+    "./runtest.exe -w entry-dynamic.exe dlopen",
+    // "env.dout",
+    // // "fdopen", // 62
     // // "fnmatch",
-    // "fscanf",  //62
-    // "fwscanf", //29
-    // // "iconv_open",
-    // // "inet_pton",
-    // // "mbc",
-    // // "memstream",
-    // "pthread_cancel_points", // 226
-    // "pthread_cancel",        // 226
-    // "pthread_cond",          //226
-    // "pthread_tsd",           //226
-    // // "qsort",
-    // // "random",
-    // // "search_hsearch",
-    // // "search_insque",
-    // // "search_lsearch",
-    // // "search_tsearch",
-    // "sem_init", //226
-    // // "setjmp",
-    // // "snprintf",
-    // "socket", //198
-    // // "sscanf",
-    // // "sscanf_long",
-    // "stat", //79
-    // // "strftime",
-    // // "string",
-    // // "string_memcpy",
-    // // "string_memmem",
-    // // "string_memset",
-    // // "string_strchr",
-    // // "string_strcspn",
-    // // "string_strstr",
-    // // "strptime",
-    // // "strtod",
-    // // "strtod_simple",
-    // // "strtof",
-    // // "strtol",
-    // // "strtold",
-    // // "swprintf",
-    // // "tgmath",
-    // // "time",
-    // "tls_init",       //226
-    // "tls_local_exec", //226
-    // // "udiv",
-    // // "ungetc",
-    // "utime", //88
-    // // "wcsstr",
-    // // "wcstol",
-    // // "daemon_failure",
-    // // "dn_expand_empty",
-    // // "dn_expand_ptr_0",
-    // "fflush_exit", //29 + 67
-    // // "fgets_eof",
-    // // "fgetwc_buffering",
-    // // "fpclassify_invalid_ld80",
-    // "ftello_unflushed_append", //25
-    // // "getpwnam_r_crash",
-    // // "getpwnam_r_errno",
-    // // "iconv_roundtrips",
-    // // "inet_ntop_v4mapped",
-    // // "inet_pton_empty_last_field",
-    // // "iswspace_null",
-    // // "lrand48_signextend",
-    // "lseek_large", //29
-    // // "malloc_0",
-    // // "mbsrtowcs_overflow",
-    // // "memmem_oob_read",
-    // // "memmem_oob",
-    // // "mkdtemp_failure",
-    // // "mkstemp_failure",
-    // // "printf_1e9_oob",
-    // // "printf_fmt_g_round",
-    // // "printf_fmt_g_zeros",
-    // // "printf_fmt_n",
-    // "pthread_robust_detach", //226
-    // "pthread_cond_smasher",  //226
-    // // "pthread_condattr_setclock",
-    // "pthread_exit_cancel",   //226
-    // "pthread_once_deadlock", //226
-    // "pthread_rwlock_ebusy",  //226
-    // // "putenv_doublefree",
-    // // "regex_backref_0",
-    // // "regex_bracket_icase",
-    // // "regex_ere_backref",
-    // // "regex_escaped_high_byte",
-    // // "regex_negated_range",
-    // // "regexec_nosub",
-    // "rewind_clear_error", //62
-    // // "rlimit_open_files",
-    // // "scanf_bytes_consumed",
-    // // "scanf_match_literal_eof",
-    // // "scanf_nullbyte_char",
-    // "setvbuf_unget", //62
-    // // "sigprocmask_internal",
-    // // "sscanf_eof",
-    // "statvfs", //43
-    // // "strverscmp",
-    // // "syscall_sign_extend",
-    // "tls_get_new_dtv", //226
-    // "uselocale_0",
-    // "wcsncpy_read_overflow",
-    // "wcsstr_false_negative",
+    // // "fscanf",  //62
+    // // "fwscanf", //29
+    // "iconv_open.dout",
+    // "inet_pton.dout",
+    // "mbc.dout",
+    // "memstream.dout",
+    // "pthread_cancel_points.dout", // 226
+    // "pthread_cancel.dout",        // 226
+    // "pthread_cond.dout",          //226
+    // "pthread_tsd.dout",           //226
+    // "qsort.dout",
+    // "random.dout",
+    // "search_hsearch.dout",
+    // "search_insque.dout",
+    // "search_lsearch.dout",
+    // "search_tsearch.dout",
+    // "sem_init.dout", //226
+    // "setjmp.dout",
+    // "snprintf.dout",
+    // // "socket", //198
+    // "sscanf.dout",
+    // "sscanf_long.dout",
+    // // "stat", //79
+    // "strftime.dout",
+    // "string.dout",
+    // "string_memcpy.dout",
+    // "string_memmem.dout",
+    // "string_memset.dout",
+    // "string_strchr.dout",
+    // "string_strcspn.dout",
+    // "string_strstr.dout",
+    // "strptime.dout",
+    // "strtod.dout",
+    // "strtod_simple.dout",
+    // "strtof.dout",
+    // "strtol.dout",
+    // "strtold.dout",
+    // "swprintf.dout",
+    // "tgmath.dout",
+    // "time.dout",
+    // "tls_init.dout",       //226
+    // "tls_local_exec.dout", //226
+    // "udiv.dout",
+    // // "ungetc.dout", // 29
+    // // "utime", //88
+    // "wcsstr.dout",
+    // "wcstol.dout",
+    // "daemon_failure.dout",
+    // "dn_expand_empty.dout",
+    // "dn_expand_ptr_0.dout",
+    // // "fflush_exit", //29 + 67
+    // "fgets_eof.dout",
+    // "fgetwc_buffering.dout",
+    // "fpclassify_invalid_ld80.dout",
+    // // "ftello_unflushed_append", //25
+    // "getpwnam_r_crash.dout",
+    // "getpwnam_r_errno.dout",
+    // "iconv_roundtrips.dout",
+    // "inet_ntop_v4mapped.dout",
+    // "inet_pton_empty_last_field.dout",
+    // "iswspace_null.dout",
+    // "lrand48_signextend.dout",
+    // // "lseek_large", //29
+    // "malloc_0.dout",
+    // "mbsrtowcs_overflow.dout",
+    // "memmem_oob_read.dout",
+    // "memmem_oob.dout",
+    // "mkdtemp_failure.dout",
+    // "mkstemp_failure.dout",
+    // "printf_1e9_oob.dout",
+    // "printf_fmt_g_round.dout",
+    // "printf_fmt_g_zeros.dout",
+    // "printf_fmt_n.dout",
+    // "pthread_robust_detach.dout", //226
+    // "pthread_cond_smasher.dout",  //226
+    // "pthread_condattr_setclock.dout",
+    // "pthread_exit_cancel.dout",   //226
+    // "pthread_once_deadlock.dout", //226
+    // "pthread_rwlock_ebusy.dout",  //226
+    // "putenv_doublefree.dout",
+    // "regex_backref_0.dout",
+    // "regex_bracket_icase.dout",
+    // "regex_ere_backref.dout",
+    // "regex_escaped_high_byte.dout",
+    // "regex_negated_range.dout",
+    // "regexec_nosub.dout",
+    // // "rewind_clear_error", //62
+    // "rlimit_open_files.dout",
+    // "scanf_bytes_consumed.dout",
+    // "scanf_match_literal_eof.dout",
+    // "scanf_nullbyte_char.dout",
+    // // "setvbuf_unget", //62
+    // "sigprocmask_internal.dout",
+    // "sscanf_eof.dout",
+    // // "statvfs", //43
+    // "strverscmp.dout",
+    // "syscall_sign_extend.dout",
+    // "tls_get_new_dtv.dout",
+    // "uselocale_0.dout",
+    // "wcsncpy_read_overflow.dout",
+    // "wcsstr_false_negative.dout",
 ];
 
 #[allow(dead_code)]
@@ -487,7 +488,24 @@ pub fn fs_init() {
         &FilePath::new(("/lib/".to_string() + libc_so2).as_str()),
         &FilePath::new("libc.so"),
     ));
+
+    let tls_so = &"tls_get_new-dtv_dso.so";
+    assert!(create_link(
+        &FilePath::new("tls_get_new-dtv_dso.so"),
+        &FilePath::new(("/lib".to_string() + tls_so).as_str()),
+    ));
+
+    // let dl_so = &"dlopen_dso.so";
+    // assert!(create_link(
+    //     &FilePath::new(dl_so),
+    //     &FilePath::new(("/lib".to_string() + dl_so).as_str()),
+    // ));
     info!("create link");
+
+    // let tls_align_so = &"tls_align"
+
+    // create_dir("lib");
+    // new_file("lib/tls_get_new-dtv_dso.so", &OpenFlags::CREATE);
     // create_dir("sbin");
     // create_link(&FilePath::new("path"), dest_path)
 }

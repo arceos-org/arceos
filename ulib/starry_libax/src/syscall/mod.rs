@@ -142,6 +142,9 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[1] as usize,
             MMAPPROT::from_bits_truncate(args[2] as u32),
         ),
+        // 不做处理即可
+        MEMBARRIER => 0,
+        SIGTIMEDWAIT => 0,
         FCNTL64 => syscall_fcntl64(args[0] as usize, args[1] as usize, args[2] as usize),
         _ => {
             error!("Invalid Syscall Id: {}!", syscall_id);
@@ -151,7 +154,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
     };
     // let sstatus = riscv::register::sstatus::read();
     // error!("irq: {}", riscv::register::sstatus::Sstatus::sie(&sstatus));
-    // info!("Syscall {} return: {}", id, ans);
+    info!("Syscall {} return: {}", syscall_id, ans);
     axhal::arch::disable_irqs();
     ans
 }

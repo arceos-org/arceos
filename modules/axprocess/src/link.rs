@@ -89,12 +89,14 @@ pub static LINK_PATH_MAP: Mutex<BTreeMap<FilePath, FilePath>> = Mutex::new(BTree
 pub static LINK_COUNT_MAP: Mutex<BTreeMap<FilePath, usize>> = Mutex::new(BTreeMap::new());
 
 /// 将用户提供的路径转换成实际的路径
-pub fn real_path(src_path: &FilePath) -> Option<FilePath> {
+///
+/// 如果在链接列表中找不到，则直接返回自己
+pub fn real_path(src_path: &FilePath) -> FilePath {
     trace!("parse_file_name: {}", src_path.path());
     let map = LINK_PATH_MAP.lock();
     // 找到对应的链接
     match map.get(src_path) {
-        Some(dest_path) => Some(dest_path.clone()),
-        None => None,
+        Some(dest_path) => dest_path.clone(),
+        None => src_path.clone(),
     }
 }

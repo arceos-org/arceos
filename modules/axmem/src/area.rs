@@ -403,7 +403,6 @@ impl MapArea {
     /// this function.
     pub fn update_flags(&mut self, flags: MappingFlags, page_table: &mut PageTable) {
         self.flags = flags;
-        info!("update start: {:?}, end: {:?}", self.vaddr, self.end_va());
         let _ = page_table
             .update_region(self.vaddr, self.size(), flags)
             .unwrap();

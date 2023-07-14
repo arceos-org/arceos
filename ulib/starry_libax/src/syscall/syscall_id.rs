@@ -49,10 +49,12 @@ pub enum SyscallId {
     MMAP = 222,
     MSYNC = 227,
     MPROTECT = 226,
+    MEMBARRIER = 283,
     // 其他
     NANO_SLEEP = 101,
     SCHED_YIELD = 124,
     CLOCK_GET_TIME = 113,
+    SIGTIMEDWAIT = 137,
     TIMES = 153,
     UNAME = 160,
     GETTIMEOFDAY = 169,
