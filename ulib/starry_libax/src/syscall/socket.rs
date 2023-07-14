@@ -15,6 +15,8 @@ use log::info;
 use num_enum::TryFromPrimitive;
 use spinlock::SpinNoIrq;
 
+use crate::syscall::syscall_id::ErrorNo;
+
 pub const SOCKET_TYPE_MASK: usize = 0xFF;
 
 #[derive(TryFromPrimitive)]
@@ -324,8 +326,7 @@ pub fn syscall_bind(fd: usize, addr: *const u8, _addr_len: usize) -> isize {
     let inner = curr.inner.lock();
 
     let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
-        // EBADF
-        return -1;
+        return ErrorNo::EBADF as isize;
     };
     let mut file = file.lock();
 
@@ -338,8 +339,7 @@ pub fn syscall_bind(fd: usize, addr: *const u8, _addr_len: usize) -> isize {
     info!("[bind()] binding socket {} to {:?}", fd, addr);
 
     let Some(socket) = file.as_any_mut().downcast_mut::<Socket>() else {
-        // ENOTSOCK
-        return -1;
+        return ErrorNo::ENOTSOCK as isize;
     };
 
     socket.bind(addr).map_or(-1, |_| 0)
@@ -351,14 +351,12 @@ pub fn syscall_listen(fd: usize, _backlog: usize) -> isize {
     let inner = curr.inner.lock();
 
     let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
-        // EBADF
-        return -1;
+        return ErrorNo::EBADF as isize;
     };
 
     let mut file = file.lock();
     let Some(socket) = file.as_any_mut().downcast_mut::<Socket>() else {
-        // ENOTSOCK
-        return -1;
+        return ErrorNo::ENOTSOCK as isize;
     };
 
     socket.listen().map_or(-1, |_| 0)
@@ -370,14 +368,12 @@ pub fn syscall_get_sock_name(fd: usize, addr: *mut u8, addr_len: *mut usize) -> 
     let inner = curr.inner.lock();
 
     let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
-        // EBADF
-        return -1;
+        return ErrorNo::EBADF as isize;
     };
     let file = file.lock();
 
     let Some(socket) = file.as_any().downcast_ref::<Socket>() else {
-        // ENOTSOCK
-        return -1;
+        return ErrorNo::ENOTSOCK as isize;
     };
 
     let Ok(name) = socket.name() else {
@@ -403,21 +399,18 @@ pub fn syscall_sendto(
     let inner = curr.inner.lock();
 
     let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
-        // EBADF
-        return -1;
+        return ErrorNo::EBADF as isize;
     };
 
     let mut file = file.lock();
     let Some(socket) = file.as_any_mut().downcast_mut::<Socket>() else {
-        // ENOTSOCK
-        return -1;
+        return ErrorNo::ENOTSOCK as isize;
     };
 
     let addr = match socket.socket_type {
         SocketType::SOCK_STREAM | SocketType::SOCK_SEQPACKET => {
             if !addr.is_null() || addr_len != 0 {
-                // EISCONN
-                return -1;
+                return ErrorNo::EISCONN as isize;
             }
             // TODO: if socket isn't connected, return ENOTCONN
 
@@ -458,14 +451,12 @@ pub fn syscall_recvfrom(
     let inner = curr.inner.lock();
 
     let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
-        // EBADF
-        return -1;
+        return ErrorNo::EBADF as isize;
     };
 
     let mut file = file.lock();
     let Some(socket) = file.as_any_mut().downcast_mut::<Socket>() else {
-        // ENOTSOCK
-        return -1;
+        return ErrorNo::ENOTSOCK as isize;
     };
 
     let buf = unsafe { from_raw_parts_mut(buf, len) };
@@ -496,14 +487,12 @@ pub fn syscall_set_sock_opt(
     let inner = curr.inner.lock();
 
     let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
-        // EBADF
-        return -1;
+        return ErrorNo::EBADF as isize;
     };
 
     let mut file = file.lock();
     let Some(_socket) = file.as_any_mut().downcast_ref::<Socket>() else {
-        // ENOTSOCK
-        return -1;
+        return ErrorNo::ENOTSOCK as isize;
     };
 
     let _option = SocketOption::try_from(opt_name);
