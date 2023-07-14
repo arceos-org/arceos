@@ -25,7 +25,7 @@ pub enum Domain {
     AF_INET = 2,
 }
 
-#[derive(TryFromPrimitive)]
+#[derive(TryFromPrimitive, PartialEq, Eq)]
 #[repr(usize)]
 #[allow(non_camel_case_types)]
 pub enum SocketType {
@@ -111,6 +111,24 @@ impl Socket {
         match &mut self.inner {
             SocketInner::Tcp(s) => s.bind(addr),
             SocketInner::Udp(s) => s.bind(addr),
+        }
+    }
+
+    /// Listen to the bound address.
+    ///
+    /// Only support socket with type SOCK_STREAM or SOCK_SEQPACKET
+    ///
+    /// Err(Unsupported): EOPNOTSUPP
+    pub fn listen(&mut self) -> AxResult {
+        if self.socket_type != SocketType::SOCK_STREAM
+            && self.socket_type != SocketType::SOCK_SEQPACKET
+        {
+            return Err(AxError::Unsupported);
+        }
+
+        match &mut self.inner {
+            SocketInner::Tcp(s) => s.listen(),
+            SocketInner::Udp(_) => Err(AxError::Unsupported),
         }
     }
 
@@ -314,6 +332,25 @@ pub fn syscall_bind(fd: usize, addr: *const u8, _addr_len: usize) -> isize {
     };
 
     socket.bind(addr).map_or(-1, |_| 0)
+}
+
+// TODO: support change `backlog` for tcp socket
+pub fn syscall_listen(fd: usize, _backlog: usize) -> isize {
+    let curr = current_process();
+    let inner = curr.inner.lock();
+
+    let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
+        // EBADF
+        return -1;
+    };
+
+    let mut file = file.lock();
+    let Some(socket) = file.as_any_mut().downcast_mut::<Socket>() else {
+        // ENOTSOCK
+        return -1;
+    };
+
+    socket.listen().map_or(-1, |_| 0)
 }
 
 /// NOTE: linux man 中没有说明若socket未bound应返回什么错误
