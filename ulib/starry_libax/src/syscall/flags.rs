@@ -1,4 +1,8 @@
-use axhal::{paging::MappingFlags, time::current_time_nanos};
+use axconfig::TICKS_PER_SEC;
+use axhal::{
+    paging::MappingFlags,
+    time::{current_time_nanos, MICROS_PER_SEC, NANOS_PER_MICROS, NANOS_PER_SEC},
+};
 use bitflags::*;
 use log::error;
 pub const NSEC_PER_SEC: usize = 1_000_000_000;
@@ -33,6 +37,24 @@ pub struct TimeVal {
     pub usec: usize,
 }
 
+impl TimeVal {
+    pub fn to_nanos(&self) -> usize {
+        self.sec * NANOS_PER_SEC as usize + self.usec * NANOS_PER_MICROS as usize
+    }
+    pub fn from_micro(micro: usize) -> Self {
+        TimeVal {
+            sec: micro / (MICROS_PER_SEC as usize),
+            usec: micro % (MICROS_PER_SEC as usize),
+        }
+    }
+}
+
+/// sys_gettimer / sys_settimer 指定的类型，用户输入输出计时器
+pub struct ITimerVal {
+    pub it_interval: TimeVal,
+    pub it_value: TimeVal,
+}
+
 // sys_nanosleep指定的结构体类型
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -53,6 +75,10 @@ impl TimeSecs {
 
     pub fn to_nano(&self) -> usize {
         self.tv_sec * NSEC_PER_SEC + self.tv_nsec
+    }
+
+    pub fn get_ticks(&self) -> usize {
+        self.tv_sec * TICKS_PER_SEC + self.tv_nsec * TICKS_PER_SEC / (NANOS_PER_SEC as usize)
     }
 }
 
@@ -250,5 +276,58 @@ numeric_enum_macro::numeric_enum! {
         F_SETFL = 4,
         /// 复制 fd，然后设置 cloexec 信息，即 exec 成功时删除该 fd
         F_DUPFD_CLOEXEC = 1030,
+    }
+}
+
+/// syscall_info 用到的 结构体
+#[repr(C)]
+#[derive(Debug)]
+pub struct SysInfo {
+    /// 启动时间(以秒计)
+    pub uptime: isize,
+    /// 1 / 5 / 15 分钟平均负载
+    pub loads: [usize; 3],
+    /// 内存总量，单位为 mem_unit Byte(见下)
+    pub totalram: usize,
+    /// 当前可用内存，单位为 mem_unit Byte(见下)
+    pub freeram: usize,
+    /// 共享内存大小，单位为 mem_unit Byte(见下)
+    pub sharedram: usize,
+    /// 用于缓存的内存大小，单位为 mem_unit Byte(见下)
+    pub bufferram: usize,
+    /// swap空间大小，即主存上用于替换内存中非活跃部分的空间大小，单位为 mem_unit Byte(见下)
+    pub totalswap: usize,
+    /// 可用的swap空间大小，单位为 mem_unit Byte(见下)
+    pub freeswap: usize,
+    /// 当前进程数，单位为 mem_unit Byte(见下)
+    pub procs: u16,
+    /// 高地址段的内存大小，单位为 mem_unit Byte(见下)
+    pub totalhigh: usize,
+    /// 可用的高地址段的内存大小，单位为 mem_unit Byte(见下)
+    pub freehigh: usize,
+    /// 指定 sys_info 的结构中用到的内存值的单位。
+    /// 如 mem_unit = 1024, totalram = 100, 则指示总内存为 100K
+    pub mem_unit: u32,
+}
+
+// sys_getrusage 用到的选项
+#[allow(non_camel_case_types)]
+pub enum RusageFlags {
+    /// 获取当前进程的资源统计
+    RUSAGE_SELF = 0,
+    /// 获取当前进程的所有 **已结束并等待资源回收的** 子进程资源统计
+    RUSAGE_CHILDREN = -1,
+    /// 获取当前线程的资源统计
+    RUSAGE_THREAD = 1,
+}
+
+impl RusageFlags {
+    pub fn from(val: i32) -> Option<Self> {
+        match val {
+            0 => Some(RusageFlags::RUSAGE_SELF),
+            -1 => Some(RusageFlags::RUSAGE_CHILDREN),
+            1 => Some(RusageFlags::RUSAGE_THREAD),
+            _ => None,
+        }
     }
 }

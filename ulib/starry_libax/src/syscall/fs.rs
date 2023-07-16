@@ -87,7 +87,8 @@ fn deal_with_path(
                     return None;
                 }
                 let dir = dir.clone();
-                path = format!("{}/{}", dir.lock().get_path(), path);
+                // 有没有可能dir的尾部一定是一个/号，所以不用手工添加/
+                path = format!("{}{}", dir.lock().get_path(), path);
                 debug!("handled_path: {}", path);
             }
             None => {
@@ -96,8 +97,10 @@ fn deal_with_path(
             }
         }
     }
-
-    Some(FilePath::new(&path))
+    match FilePath::new(&path) {
+        Ok(path) => Some(path),
+        Err(_) => None,
+    }
 }
 
 /// 功能：从一个文件描述符中读取；
@@ -788,6 +791,8 @@ pub fn syscall_umount(dir: *const u8, flags: usize) -> isize {
 /// 	long st_ctime_nsec;
 /// 	unsigned __unused[2];
 /// };
+///
+
 pub fn syscall_fstat(fd: usize, kst: *mut Kstat) -> isize {
     let process = current_process();
     let process_inner = process.inner.lock();
@@ -888,6 +893,27 @@ pub fn syscall_fcntl64(fd: usize, cmd: usize, arg: usize) -> isize {
         }
         _ => ErrorNo::EINVAL as isize,
     }
+}
+
+pub fn syscall_ioctl(fd: usize, _request: usize, argp: *mut usize) -> isize {
+    // 仅是检查是否存在错误，并不会对内容进行实质改动
+    let process = current_process();
+    let inner = process.inner.lock();
+    if fd >= inner.fd_manager.fd_table.len() {
+        return ErrorNo::EBADF as isize;
+    }
+    if inner.fd_manager.fd_table[fd].is_none() {
+        return ErrorNo::EBADF as isize;
+    }
+    if inner
+        .memory_set
+        .lock()
+        .manual_alloc_for_lazy((argp as usize).into())
+        .is_err()
+    {
+        return ErrorNo::EFAULT as isize;
+    }
+    0
 }
 
 // // ## sys_renameat2()

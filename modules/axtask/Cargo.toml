@@ -28,9 +28,10 @@ monolithic = ["axhal/monolithic"]
 # 是否引入信号架构
 signal = ["axhal/signal", "axsignal/signal"]
 
-default = ["sched_fifo"]
+default = ["sched_fifo", "signal"]
 
 [dependencies]
+numeric-enum-macro = { git = "https://github.com/mexus/numeric-enum-macro" }
 cfg-if = "1.0"
 log = "0.4"
 axalloc = { path = "../axalloc", optional = true }

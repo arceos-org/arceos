@@ -71,7 +71,8 @@ impl<'a> Loader<'a> {
             {
                 panic!("ELF Interpreter is not supported without fs feature");
             }
-            let real_interp_path = real_path(&FilePath::new(interp_path));
+            let interp_path = FilePath::new(interp_path)?;
+            let real_interp_path = real_path(&interp_path);
             let interp = axfs::api::read(real_interp_path.path())
                 .expect("Error reading Interpreter from fs");
             let loader = Loader::new(&interp);

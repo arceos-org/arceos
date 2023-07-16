@@ -90,7 +90,7 @@ impl FileExt for FileDesc {
         self.file.lock().executable()
     }
 }
-
+/// 为FileDesc实现FileIO trait
 impl FileIO for FileDesc {
     fn get_type(&self) -> FileIOType {
         FileIOType::FileDesc
@@ -108,7 +108,7 @@ impl FileIO for FileDesc {
             st_dev: 1,
             st_ino: 1,
             st_mode: normal_file_mode(StMode::S_IFREG).bits(),
-            st_nlink: get_link_count(&FilePath::new(self.path.as_str())) as u32,
+            st_nlink: get_link_count(&(FilePath::new(self.path.as_str())?)) as u32,
             st_uid: 0,
             st_gid: 0,
             st_rdev: 0,
@@ -147,9 +147,34 @@ impl FileIO for FileDesc {
         }
         true
     }
+
+    fn ready_to_read(&mut self) -> bool {
+        if !self.readable() {
+            return false;
+        }
+        // 获取当前的位置
+        let now_pos = self.seek(SeekFrom::Current(0)).unwrap();
+        // 获取最后的位置
+        let len = self.seek(SeekFrom::End(0)).unwrap();
+        // 把文件指针复原，因为获取len的时候指向了尾部
+        self.seek(SeekFrom::Start(now_pos)).unwrap();
+        now_pos != len
+    }
+
+    fn ready_to_write(&mut self) -> bool {
+        if !self.writable() {
+            return false;
+        }
+        // 获取当前的位置
+        let now_pos = self.seek(SeekFrom::Current(0)).unwrap();
+        // 获取最后的位置
+        let len = self.seek(SeekFrom::End(0)).unwrap();
+        // 把文件指针复原，因为获取len的时候指向了尾部
+        self.seek(SeekFrom::Start(now_pos)).unwrap();
+        now_pos != len
+    }
 }
 
-/// 为FileDesc实现FileIO trait
 impl FileDesc {
     /// debug
 

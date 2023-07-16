@@ -36,3 +36,4 @@ lazy_static = { version = "1.4", features = ["spin_no_std"] }
 #lazy_static = { path = "../../extern_crates/lazy_static-1.4.0" }
 #xmas-elf = "0.9.0"
 xmas-elf = { path = "../../extern_crates/xmas-elf-0.9.0" }
+crate_interface = { path = "../../crates/crate_interface" }

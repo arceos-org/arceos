@@ -11,7 +11,7 @@ use axsignal::{
     ucontext::SignalUserContext,
     SignalHandler, SignalSet,
 };
-use axtask::KERNEL_PROCESS_ID;
+use axtask::{monolithic_task::SignalCaller, KERNEL_PROCESS_ID};
 use spinlock::SpinNoIrq;
 
 pub struct SignalModule {
@@ -240,4 +240,12 @@ pub fn send_signal_to_thread(tid: isize, signum: isize) -> AxResult<()> {
     let signal_module = inner.signal_module.get_mut(&(tid as u64)).unwrap();
     signal_module.signal_set.try_add_signal(signum as usize);
     Ok(())
+}
+
+struct SignalCallerImpl;
+#[crate_interface::impl_interface]
+impl SignalCaller for SignalCallerImpl {
+    fn send_signal(tid: isize, signum: isize) {
+        send_signal_to_thread(tid, signum).unwrap();
+    }
 }

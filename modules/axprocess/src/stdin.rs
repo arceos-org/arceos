@@ -68,6 +68,14 @@ impl FileIO for Stdin {
     fn get_type(&self) -> FileIOType {
         FileIOType::Stdin
     }
+
+    fn ready_to_read(&mut self) -> bool {
+        true
+    }
+
+    fn ready_to_write(&mut self) -> bool {
+        false
+    }
 }
 
 impl Read for Stdout {
@@ -107,6 +115,14 @@ impl FileExt for Stdout {
 impl FileIO for Stdout {
     fn get_type(&self) -> FileIOType {
         FileIOType::Stdout
+    }
+
+    fn ready_to_read(&mut self) -> bool {
+        false
+    }
+
+    fn ready_to_write(&mut self) -> bool {
+        true
     }
 }
 
@@ -149,5 +165,13 @@ impl FileExt for Stderr {
 impl FileIO for Stderr {
     fn get_type(&self) -> FileIOType {
         FileIOType::Stderr
+    }
+
+    fn ready_to_read(&mut self) -> bool {
+        false
+    }
+
+    fn ready_to_write(&mut self) -> bool {
+        true
     }
 }

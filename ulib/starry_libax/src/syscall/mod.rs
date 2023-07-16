@@ -2,10 +2,12 @@ use axfs::monolithic_fs::file_io::Kstat;
 use axprocess::process::exit;
 use axsignal::action::SigAction;
 use axtask::current;
+use epoll::*;
 use flags::*;
 use fs::*;
 use log::{error, info};
 use mem::*;
+use poll::*;
 use signal::*;
 use task::*;
 use utils::*;
@@ -13,17 +15,20 @@ extern crate axlog;
 extern crate log;
 
 extern crate alloc;
-
+pub mod epoll;
 pub mod flags;
 pub mod fs;
 pub mod futex;
 pub mod mem;
+pub mod poll;
 #[cfg(feature = "signal")]
 pub mod signal;
 pub mod syscall_id;
 pub mod utils;
 use syscall_id::*;
 use SyscallId::*;
+
+use crate::syscall::{epoll::flags::EpollEvent, poll::syscall_ppoll};
 
 use self::futex::check_dead_wait;
 pub mod task;
@@ -146,6 +151,35 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         MEMBARRIER => 0,
         SIGTIMEDWAIT => 0,
         FCNTL64 => syscall_fcntl64(args[0] as usize, args[1] as usize, args[2] as usize),
+        IOCTL => syscall_ioctl(args[0], args[1], args[2] as *mut usize),
+        SYSINFO => syscall_sysinfo(args[0] as *mut SysInfo),
+        SETITIMER => syscall_settimer(
+            args[0] as usize,
+            args[1] as *const ITimerVal,
+            args[1] as *mut ITimerVal,
+        ),
+        GETTIMER => syscall_gettimer(args[0] as usize, args[1] as *mut ITimerVal),
+        GETRUSAGE => syscall_getrusage(args[0] as i32, args[1] as *mut TimeVal),
+        UMASK => syscall_umask(args[0] as i32),
+        PPOLL => syscall_ppoll(
+            args[0] as *mut PollFd,
+            args[1] as usize,
+            args[2] as *const TimeSecs,
+            args[3] as usize,
+        ),
+        EPOLL_CREATE => syscall_epoll_create1(args[0] as usize),
+        EPOLL_CTL => syscall_epoll_ctl(
+            args[0] as i32,
+            args[1] as i32,
+            args[2] as i32,
+            args[3] as *const EpollEvent,
+        ),
+        EPOLL_WAIT => syscall_epoll_wait(
+            args[0] as i32,
+            args[1] as *mut EpollEvent,
+            args[2] as i32,
+            args[3] as i32,
+        ),
         _ => {
             error!("Invalid Syscall Id: {}!", syscall_id);
             // return -1;

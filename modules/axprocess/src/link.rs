@@ -3,6 +3,7 @@
 extern crate alloc;
 use alloc::collections::BTreeMap;
 use alloc::string::String;
+use axerrno::{AxError, AxResult};
 use axfs::api::canonicalize;
 use axlog::trace;
 use axsync::Mutex;
@@ -12,15 +13,20 @@ pub struct FilePath(String);
 
 impl FilePath {
     /// 创建一个 FilePath, 传入的 path 会被 canonicalize, 故可以是相对路径
-    pub fn new(path: &str) -> Self {
-        let mut new_path = String::from(canonicalize(path).unwrap().trim());
+    pub fn new(path: &str) -> AxResult<Self> {
+        let path = canonicalize(path);
+        if path.is_err() {
+            return Err(AxError::NotFound);
+        }
+        let path = path.unwrap();
+        let mut new_path = String::from(path.trim());
         // canonicalize中没有处理末尾的空格、换行符等
         if path.ends_with("/") && !new_path.ends_with("/") {
             // 如果原始路径以 '/' 结尾，那么canonicalize后的路径也应该以 '/' 结尾
             new_path.push('/');
         }
         // assert!(!path.ends_with("/"), "path should not end with '/', link only support file");      // 链接只支持文件
-        Self(new_path)
+        Ok(Self(new_path))
     }
     /// 获取路径
     pub fn path(&self) -> &str {
@@ -28,27 +34,44 @@ impl FilePath {
     }
     /// 获取所属目录
     #[allow(unused)]
-    pub fn dir(&self) -> &str {
+    pub fn dir(&self) -> AxResult<&str> {
         if self.is_root() {
-            return "/";
+            return Ok("/");
         }
-        let mut pos = self.0.rfind("/").unwrap();
+        let mut pos = if let Some(pos) = self.0.rfind("/") {
+            pos
+        } else {
+            return Err(AxError::NotADirectory);
+        };
         if pos == self.0.len() - 1 {
-            pos = self.0[..pos].rfind("/").unwrap(); // 如果是以 '/' 结尾，那么再往前找一次
+            // 如果是以 '/' 结尾，那么再往前找一次
+            pos = if let Some(pos) = self.0[..pos].rfind("/") {
+                pos
+            } else {
+                return Err(AxError::NotADirectory);
+            };
         }
-        &self.0[..=pos]
+        Ok(&self.0[..=pos])
     }
     /// 获取文件/目录名
     #[allow(unused)]
-    pub fn file(&self) -> &str {
+    pub fn file(&self) -> AxResult<&str> {
         if self.is_root() {
-            return "/";
+            return Ok("/");
         }
-        let mut pos = self.0.rfind("/").unwrap();
+        let mut pos = if let Some(pos) = self.0.rfind("/") {
+            pos
+        } else {
+            return Err(AxError::NotFound);
+        };
         if pos == self.0.len() - 1 {
-            pos = self.0[..pos].rfind("/").unwrap(); // 如果是以 '/' 结尾，那么再往前找一次
+            pos = if let Some(pos) = self.0[..pos].rfind("/") {
+                pos
+            } else {
+                return Err(AxError::NotFound);
+            };
         }
-        &self.0[pos + 1..]
+        Ok(&self.0[pos + 1..])
     }
     /// 返回是否是根目录
     #[allow(unused)]

@@ -158,6 +158,7 @@ impl Write for Pipe {
         assert!(self.writable());
         let want_to_write = buf.len();
         let mut buf_iter = buf.iter();
+        let mut cnt = 0;
         let mut already_write = 0usize;
         loop {
             let mut ring_buffer = self.buffer.lock();
@@ -166,6 +167,11 @@ impl Write for Pipe {
                 drop(ring_buffer);
                 yield_now();
                 continue;
+            }
+            cnt += 1;
+            if cnt > 3 || Arc::strong_count(&self.buffer) < 2 {
+                // 读入端关闭
+                return Ok(already_write);
             }
             // write at most loop_write bytes
             for _ in 0..loop_write {
@@ -210,5 +216,29 @@ impl FileExt for Pipe {
 impl FileIO for Pipe {
     fn get_type(&self) -> FileIOType {
         FileIOType::Pipe
+    }
+
+    fn is_hang_up(&self) -> bool {
+        if self.readable {
+            if self.buffer.lock().available_read() == 0
+                && self.buffer.lock().all_write_ends_closed()
+            {
+                // 写入端关闭且缓冲区读完了
+                true
+            } else {
+                false
+            }
+        } else {
+            // 否则在写入端，只关心读入端是否被关闭
+            Arc::strong_count(&self.buffer) < 2
+        }
+    }
+
+    fn ready_to_read(&mut self) -> bool {
+        self.readable && self.buffer.lock().available_read() != 0
+    }
+
+    fn ready_to_write(&mut self) -> bool {
+        self.writable && self.buffer.lock().available_write() != 0
     }
 }

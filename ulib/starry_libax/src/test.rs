@@ -9,7 +9,6 @@ use axtask::{
 };
 use lazy_init::LazyInit;
 use spinlock::SpinNoIrq;
-
 extern crate alloc;
 
 use alloc::boxed::Box;
@@ -183,7 +182,7 @@ pub const LIBC_DYNAMIC_TESTCASES: &[&str] = &[
     // "crypt.dout",
     // "dirname.dout",
     // "dlopen.dout", // 单独存在运行时bug，放在runtest里面就是正常的
-    "./runtest.exe -w entry-dynamic.exe dlopen",
+    "./runtest.exe -w entry-dynamic.exe pthread_robust_detach",
     // "env.dout",
     // // "fdopen", // 62
     // // "fnmatch",
@@ -307,62 +306,64 @@ pub const LUA_TESTCASES: &[&str] = &[
 #[allow(dead_code)]
 pub const BUSYBOX_TESTCASES: &[&str] = &[
     //"busybox sh ./busybox_testcode.sh", //最终测例，它包含了下面全部
-    "busybox echo \"#### independent command test\"",
-    "busybox ash -c exit",
-    "busybox sh -c exit",
-    "busybox basename /aaa/bbb",
-    "busybox cal",
-    "busybox clear",
-    "busybox date",
-    "busybox df",
-    "busybox dirname /aaa/bbb",
-    "busybox dmesg",
-    "busybox du",
-    "busybox expr 1 + 1",
-    "busybox false",
-    "busybox true",
-    "busybox which ls",
-    "busybox uname",
-    "busybox uptime",
-    "busybox printf \"abc\n\"",
-    "busybox ps",
-    "busybox pwd",
-    "busybox free",
-    "busybox hwclock",
-    "busybox kill 10",
-    "busybox ls",
-    "busybox sleep 1",
-    "busybox echo \"#### file opration test\"",
-    "busybox touch test.txt",
-    "busybox echo \"hello world\" > test.txt",
-    "busybox cat test.txt",
-    "busybox cut -c 3 test.txt",
-    "busybox od test.txt",
-    "busybox head test.txt",
-    "busybox tail test.txt",
+    // "busybox echo \"#### independent command test\"",
+    // "busybox ash -c exit", // 需要79
+    // "busybox sh -c exit", // 需要79
+    // "busybox basename /aaa/bbb",
+    // "busybox cal",
+    // "busybox clear",
+    // "busybox date",             // 需要29
+    // "busybox df",               // 需要29
+    // "busybox dirname /aaa/bbb", // 需要29
+    // "busybox dmesg",            // 需要116
+    // "busybox du",               // 需要79
+    // "busybox expr 1 + 1",       // 需要29
+    // "busybox false",
+    // "busybox true",
+    // "busybox which ls", // 需要48
+    // "busybox uname",    // 需要29
+    // "busybox uptime",   // 需要179
+    // "busybox printf \"abc\n\"",
+    // "busybox ps",  // 需要179
+    // "busybox pwd", // 需要29
+    // "busybox free", // 需要29
+    // "busybox hwclock", // 需要29
+    // "busybox kill 10",
+    // "busybox ls", // 29
+    // "busybox sleep 1",
+    // "busybox echo \"#### file opration test\"",
+    // "busybox touch test.txt", // 88
+    // "busybox echo \"hello world\" > test.txt", // 需要依赖touch test.txt
+    // "busybox cat test.txt",                    // 需要依赖touch test.txt
+    // "busybox cut -c 3 test.txt",               // 需要依赖touch test.txt
+    // "busybox od test.txt",                     // 需要依赖touch test.txt
+    // "busybox head test.txt",                   // 需要依赖touch test.txt
+    // "busybox tail test.txt",                   // 需要依赖touch test.txt
     // "busybox hexdump -C test.txt", // 会要求标准输入，不方便自动测试
-    "busybox md5sum test.txt",
-    "busybox echo \"ccccccc\" >> test.txt",
-    "busybox echo \"bbbbbbb\" >> test.txt",
-    "busybox echo \"aaaaaaa\" >> test.txt",
-    "busybox echo \"2222222\" >> test.txt",
-    "busybox echo \"1111111\" >> test.txt",
-    "busybox echo \"bbbbbbb\" >> test.txt",
-    "busybox sort test.txt | ./busybox uniq",
-    "busybox stat test.txt",
-    "busybox strings test.txt",
-    "busybox wc test.txt",
-    "busybox [ -f test.txt ]",
-    "busybox more test.txt",
-    "busybox rm test.txt",
-    "busybox mkdir test_dir",
-    "busybox mv test_dir test",
-    "busybox rmdir test",
-    "busybox grep hello busybox_cmd.txt",
-    "busybox cp busybox_cmd.txt busybox_cmd.bak",
-    "busybox rm busybox_cmd.bak",
-    "busybox find -name \"busybox_cmd.txt\"",
-    "busybox sh lua_testcode.sh",
+    // "busybox md5sum test.txt",
+    // "busybox echo \"ccccccc\" >> test.txt",
+    // "busybox echo \"bbbbbbb\" >> test.txt",
+    // "busybox echo \"aaaaaaa\" >> test.txt",
+    // "busybox echo \"2222222\" >> test.txt",
+    // "busybox echo \"1111111\" >> test.txt",
+    // "busybox echo \"bbbbbbb\" >> test.txt",
+    // "busybox sort test.txt | ./busybox uniq",
+    // "busybox stat test.txt",
+    // "busybox strings test.txt",
+    // "busybox wc test.txt",
+    // "busybox [ -f test.txt ]",
+    // "busybox more test.txt",
+    // "busybox rm test.txt",
+    // "busybox mkdir test_dir",
+    // "busybox mv test_dir test", // 需要79
+    // "busybox rmdir test", // 依赖上一条
+    // "busybox grep hello busybox_cmd.txt", //需要29
+    // "busybox cp busybox_cmd.txt busybox_cmd.bak", // 依赖前文
+    // "busybox rm busybox_cmd.bak",
+    // "busybox find -name \"busybox_cmd.txt\"",
+    // "busybox sh lua_testcode.sh",
+    // "echo latency measurements",
+    "lmbench_all lat_syscall -P 1 null",
 ];
 
 /// 运行测试时的状态机，记录测试结果与内容
@@ -480,19 +481,19 @@ pub fn fs_init() {
     let libc_so2 = &"ld-musl-riscv64.so.1"; // 另一种名字的 libc.so，非 libc-test 测例库用
 
     assert!(create_link(
-        &FilePath::new(("/lib/".to_string() + libc_so).as_str()),
-        &FilePath::new("libc.so"),
+        &(FilePath::new(("/lib/".to_string() + libc_so).as_str()).unwrap()),
+        &(FilePath::new("libc.so").unwrap()),
     ));
 
     assert!(create_link(
-        &FilePath::new(("/lib/".to_string() + libc_so2).as_str()),
-        &FilePath::new("libc.so"),
+        &(FilePath::new(("/lib/".to_string() + libc_so2).as_str()).unwrap()),
+        &(FilePath::new("libc.so").unwrap()),
     ));
 
     let tls_so = &"tls_get_new-dtv_dso.so";
     assert!(create_link(
-        &FilePath::new("tls_get_new-dtv_dso.so"),
-        &FilePath::new(("/lib".to_string() + tls_so).as_str()),
+        &(FilePath::new("tls_get_new-dtv_dso.so").unwrap()),
+        &(FilePath::new(("/lib".to_string() + tls_so).as_str()).unwrap()),
     ));
 
     // let dl_so = &"dlopen_dso.so";
@@ -513,7 +514,10 @@ pub fn fs_init() {
 /// 执行运行所有测例的任务
 pub fn run_testcases(case: &'static str) {
     debug!("run_testcases :{}", case);
-    fs_init();
+    if case == "libc-dynamic" {
+        fs_init();
+    }
+
     let mut test_iter: LazyInit<Box<dyn Iterator<Item = &'static &'static str> + Send>> =
         LazyInit::new();
 

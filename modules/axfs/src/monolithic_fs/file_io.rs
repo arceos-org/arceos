@@ -104,6 +104,29 @@ pub trait FileIO: FileExt {
     fn set_close_on_exec(&mut self, _is_set: bool) -> bool {
         false
     }
+
+    /// 处于“意外情况”。在 (p)select 和 (p)poll 中会使用到
+    ///
+    /// 当前基本默认为false
+    fn in_exceptional_conditions(&self) -> bool {
+        false
+    }
+
+    /// 是否已经终止，对pipe来说相当于另一端已经关闭
+    ///
+    /// 对于其他文件类型来说，是在被close的时候终止，但这个时候已经没有对应的filedesc了，所以自然不会调用这个函数
+    fn is_hang_up(&self) -> bool {
+        false
+    }
+
+    /// 已准备好读。对于 pipe 来说，这意味着读端的buffer内有值
+    fn ready_to_read(&mut self) -> bool {
+        false
+    }
+    /// 已准备好写。对于 pipe 来说，这意味着写端的buffer未满
+    fn ready_to_write(&mut self) -> bool {
+        false
+    }
 }
 
 /// `FileExt` 需要满足 `AsAny` 的要求，即可以转化为 `Any` 类型，从而能够进行向下类型转换。

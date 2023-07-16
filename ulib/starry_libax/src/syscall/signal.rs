@@ -7,7 +7,10 @@ use axprocess::{
 use axsignal::action::SigAction;
 use axsignal::signal_no::SignalNo;
 
-use super::flags::{SigMaskFlag, SIGSET_SIZE_IN_BYTE};
+use super::{
+    flags::{SigMaskFlag, SIGSET_SIZE_IN_BYTE},
+    syscall_id::ErrorNo,
+};
 
 pub fn syscall_sigaction(
     signum: usize,
@@ -128,23 +131,22 @@ pub fn syscall_sigprocmask(
 /// 由于处理信号的单位在线程上，所以若进程中有多个线程，则会发送给主线程
 pub fn syscall_kill(pid: isize, signum: isize) -> isize {
     if pid > 0 && signum > 0 {
-        if send_signal_to_process(pid, signum).is_err() {
-            return -1;
-        }
+        // 不关心是否成功
+        let _ = send_signal_to_process(pid, signum);
         0
+    } else if pid == 0 {
+        ErrorNo::ESRCH as isize
     } else {
-        -1
+        ErrorNo::EINVAL as isize
     }
 }
 
 /// 向tid指定的线程发送信号
 pub fn syscall_tkill(tid: isize, signum: isize) -> isize {
     if tid > 0 && signum > 0 {
-        if send_signal_to_thread(tid, signum).is_err() {
-            return -1;
-        }
+        let _ = send_signal_to_thread(tid, signum);
         0
     } else {
-        -1
+        ErrorNo::EINVAL as isize
     }
 }

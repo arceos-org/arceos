@@ -9,7 +9,6 @@ pub mod link;
 pub mod mount;
 pub mod pipe;
 pub mod types;
-
 pub use axfs::api;
 pub use axfs::monolithic_fs::{FileIO, FileIOType};
 pub use axprocess::stdin::{Stderr, Stdin, Stdout};

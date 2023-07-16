@@ -348,7 +348,7 @@ impl TaskInner {
     pub fn time_stat_from_user_to_kernel(&self) {
         let time = self.time.get();
         unsafe {
-            (*time).into_kernel_mode();
+            (*time).into_kernel_mode(self.id.as_u64() as isize);
         }
     }
 
@@ -356,7 +356,7 @@ impl TaskInner {
     pub fn time_stat_from_kernel_to_user(&self) {
         let time = self.time.get();
         unsafe {
-            (*time).into_user_mode();
+            (*time).into_user_mode(self.id.as_u64() as isize);
         }
     }
 
@@ -364,7 +364,7 @@ impl TaskInner {
     pub fn time_stat_when_switch_from(&self) {
         let time = self.time.get();
         unsafe {
-            (*time).swtich_from();
+            (*time).swtich_from(self.id.as_u64() as isize);
         }
     }
 
@@ -382,6 +382,29 @@ impl TaskInner {
     pub fn time_stat_output(&self) -> (usize, usize, usize, usize) {
         let time = self.time.get();
         unsafe { (*time).output_as_us() }
+    }
+
+    #[inline]
+    /// 输出计时器信息
+    /// (计时器周期，当前计时器剩余时间)
+    /// 单位为us
+    pub fn timer_output(&self) -> (usize, usize) {
+        let time = self.time.get();
+        unsafe { (*time).output_timer_as_us() }
+    }
+
+    #[inline]
+    /// 设置计时器信息
+    ///
+    /// 若type不为None则返回成功
+    pub fn set_timer(
+        &self,
+        timer_interval_ns: usize,
+        timer_remained_ns: usize,
+        timer_type: usize,
+    ) -> bool {
+        let time = self.time.get();
+        unsafe { (*time).set_timer(timer_interval_ns, timer_remained_ns, timer_type) }
     }
 
     #[inline]

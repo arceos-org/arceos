@@ -2,10 +2,11 @@
 
 pub mod task;
 
-mod stat;
-
 mod copy;
 
+mod stat;
+#[cfg(feature = "signal")]
+pub use stat::SignalCaller;
 pub mod run_queue;
 
 pub use run_queue::{EXITED_TASKS, IDLE_TASK, RUN_QUEUE};
