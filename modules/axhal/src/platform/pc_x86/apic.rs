@@ -51,11 +51,12 @@ static IO_APIC: LazyInit<SpinNoIrq<IoApic>> = LazyInit::new();
 pub fn set_enable(vector: usize, enabled: bool) {
     // should not affect LAPIC interrupts
     if vector < APIC_TIMER_VECTOR as _ {
+        let irq = vector_to_irq(vector);
         unsafe {
             if enabled {
-                IO_APIC.lock().enable_irq(vector as u8);
+                IO_APIC.lock().enable_irq(irq as u8);
             } else {
-                IO_APIC.lock().disable_irq(vector as u8);
+                IO_APIC.lock().disable_irq(irq as u8);
             }
         }
     }

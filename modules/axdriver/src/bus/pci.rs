@@ -85,8 +85,8 @@ fn config_pci_device(
 impl AllDevices {
     pub(crate) fn probe_bus_devices(&mut self) {
         cfg_if::cfg_if! {
-            if #[cfg(all(target_arch = "x86_64",feature="alloc"))] {
-                let pci_ecam_base = axhal::get_ecam_address().unwrap();
+            if #[cfg(all(target_arch = "x86_64",feature = "virtio"))] {
+                let pci_ecam_base = axhal::pci::get_ecam_address().unwrap();
             } else {
                 let pci_ecam_base = axconfig::PCI_ECAM_BASE.into();
             }

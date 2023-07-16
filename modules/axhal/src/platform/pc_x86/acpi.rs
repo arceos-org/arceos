@@ -203,9 +203,9 @@ struct Acpi {
 #[allow(dead_code)]
 enum X86IrqModel {
     /// PIC model
-    PIC,
+    Pic,
     /// APIC model
-    APIC,
+    Apic,
 }
 
 impl Acpi {
@@ -224,7 +224,7 @@ impl Acpi {
         if self.aml_context.parse_table(slice).is_err() {
             return false;
         }
-        self.set_irq_model(X86IrqModel::APIC)
+        self.set_irq_model(X86IrqModel::Apic)
     }
 
     /// Set IRQ model that ACPI uses by invoking ACPI global method _PIC.
@@ -235,8 +235,8 @@ impl Acpi {
     /// We may need a lock for ACPI in the future as more ACPI state altering method implemented.
     fn set_irq_model(&mut self, irq_model: X86IrqModel) -> bool {
         let value = match irq_model {
-            X86IrqModel::PIC => 0,
-            X86IrqModel::APIC => 1,
+            X86IrqModel::Pic => 0,
+            X86IrqModel::Apic => 1,
         };
         let mut arg = aml::value::Args::EMPTY;
         if arg.store_arg(0, aml::AmlValue::Integer(value)).is_err() {
@@ -320,7 +320,6 @@ pub(crate) fn init() {
 
 /// Get PCI IRQ and map it to vector used in OS.
 /// Temporarily allow unused here because irq support for virtio hasn't ready yet.
-#[allow(dead_code)]
 #[cfg(feature = "irq")]
 pub fn get_pci_irq_vector(bus: u8, device: u8, function: u8) -> Option<usize> {
     unsafe { ACPI.get_pci_irq_desc(bus, device, function) }
@@ -329,5 +328,5 @@ pub fn get_pci_irq_vector(bus: u8, device: u8, function: u8) -> Option<usize> {
 
 /// Get PCIe ECAM space physical address.
 pub fn get_ecam_address() -> Option<PhysAddr> {
-    unsafe { ACPI.get_ecam_address() }.map(|ecam_addr| PhysAddr::from(ecam_addr))
+    unsafe { ACPI.get_ecam_address() }.map(|ecam_addr| PhysAddr::from(ecam_addr as usize))
 }

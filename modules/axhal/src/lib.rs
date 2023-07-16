@@ -78,5 +78,9 @@ pub use self::platform::platform_init;
 #[cfg(feature = "smp")]
 pub use self::platform::platform_init_secondary;
 
-#[cfg(all(target_arch = "x86_64", frature = "alloc"))]
-pub use self::platform::acpi::get_ecam_address;
+pub mod pci {
+    #[cfg(all(target_arch = "x86_64", feature = "axalloc"))]
+    pub use super::platform::acpi::get_ecam_address;
+    #[cfg(all(target_arch = "x86_64", feature = "irq", feature = "axalloc"))]
+    pub use super::platform::acpi::get_pci_irq_vector;
+}
