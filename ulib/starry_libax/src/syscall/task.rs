@@ -18,6 +18,7 @@ use super::{
         RLIMIT_STACK,
     },
     futex::futex,
+    syscall_id::ErrorNo,
 };
 use alloc::{string::ToString, vec::Vec};
 use axsignal::signal_no::SignalNo;
@@ -137,8 +138,10 @@ pub fn syscall_yield() -> isize {
 /// 当前任务进入睡眠，req指定了睡眠的时间
 /// rem存储当睡眠完成时，真实睡眠时间和预期睡眠时间之间的差值
 pub fn syscall_sleep(req: *const TimeSecs, rem: *mut TimeSecs) -> isize {
+    // error!("req: {:X}, rem: {:X}", req as us, rem);
     let req_time = unsafe { *req };
     let start_to_sleep = current_time();
+    // info!("sleep: req_time = {:?}", req_time);
     let dur = Duration::new(req_time.tv_sec as u64, req_time.tv_nsec as u32);
     sleep_now_task(dur);
     // 若被唤醒时时间小于请求时间，则将剩余时间写入rem
@@ -316,7 +319,7 @@ pub fn syscall_set_robust_list(head: usize, len: usize) -> isize {
     let process = current_process();
     let mut inner = process.inner.lock();
     if len != core::mem::size_of::<RobustList>() {
-        return -1;
+        return ErrorNo::EINVAL as isize;
     }
     let curr_id = current_task().id().as_u64();
     if inner
@@ -336,7 +339,7 @@ pub fn syscall_set_robust_list(head: usize, len: usize) -> isize {
         }
         0
     } else {
-        -1
+        ErrorNo::EINVAL as isize
     }
 }
 

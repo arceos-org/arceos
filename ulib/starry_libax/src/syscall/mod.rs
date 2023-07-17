@@ -1,4 +1,5 @@
 use axfs::monolithic_fs::file_io::Kstat;
+use axhal::cpu::this_cpu_id;
 use axprocess::process::exit;
 use axsignal::action::SigAction;
 use axtask::current;
@@ -43,7 +44,12 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
     };
     check_dead_wait();
     let curr_id = current().id().as_u64();
-    info!("task id: {}, syscall: id: {}", curr_id, syscall_id);
+    info!(
+        "cpu id: {}, task id: {}, syscall: id: {}",
+        this_cpu_id(),
+        curr_id,
+        syscall_id,
+    );
     let ans = match syscall_name {
         OPENAT => syscall_openat(
             args[0],
@@ -188,7 +194,10 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
     };
     // let sstatus = riscv::register::sstatus::read();
     // error!("irq: {}", riscv::register::sstatus::Sstatus::sie(&sstatus));
-    info!("Syscall {} return: {}", syscall_id, ans);
+    info!(
+        "curr id: {}, Syscall {} return: {}",
+        curr_id, syscall_id, ans
+    );
     axhal::arch::disable_irqs();
     ans
 }

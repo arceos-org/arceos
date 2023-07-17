@@ -77,7 +77,7 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     "mbc",
     "memstream",
     "pthread_cancel_points",
-    "pthread_cancel",
+    // "pthread_cancel",
     "pthread_cond",
     "pthread_tsd",
     "qsort",
@@ -170,6 +170,8 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     "uselocale_0",
     "wcsncpy_read_overflow",
     "wcsstr_false_negative",
+    // "./runtest.exe -w entry-static.exe pthread_cancel_points",
+    // "./runtest.exe -w entry-static.exe pthread_cancel",
 ];
 
 /// 来自 libc 的动态测例

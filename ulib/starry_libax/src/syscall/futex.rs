@@ -1,11 +1,13 @@
 use core::time::Duration;
 extern crate alloc;
 use alloc::collections::VecDeque;
+use axhal::cpu::this_cpu_id;
 use axprocess::{
-    futex::FUTEX_WAIT_TASK,
+    futex::{FUTEX_WAIT_TASK, WAIT_FOR_FUTEX},
     process::{current_process, current_task, yield_now_task},
 };
-use axtask::monolithic_task::{run_queue::WAIT_FOR_EXIT, task::TaskState};
+use axtask::monolithic_task::task::TaskState;
+use log::info;
 use memory_addr::VirtAddr;
 
 use super::{flags::FutexFlags, syscall_id::ErrorNo};
@@ -27,7 +29,7 @@ pub fn futex_requeue(wake_num: u32, move_num: usize, src_addr: VirtAddr, dst_add
     let src_wait_task = futex_wait_task.get_mut(&src_addr).unwrap();
     for _ in 0..wake_num {
         if let Some((task, _)) = src_wait_task.pop_front() {
-            WAIT_FOR_EXIT.notify_task(false, &task);
+            WAIT_FOR_FUTEX.notify_task(false, &task);
         } else {
             break;
         }
@@ -60,7 +62,8 @@ pub fn futex(
     match flag {
         FutexFlags::WAIT => {
             // info!(
-            //     "wait addr: {:X} val: {} process: {}",
+            //     "cpu: {}, wait addr: {:X} val: {} process: {}",
+            //     this_cpu_id(),
             //     vaddr,
             //     val,
             //     current_task.get_process_id()
@@ -70,6 +73,7 @@ pub fn futex(
             let mut memory_set = inner.memory_set.lock();
             if memory_set.manual_alloc_for_lazy(vaddr).is_ok() {
                 let real_futex_val = unsafe { (vaddr.as_usize() as *const u32).read_volatile() };
+                info!("real val: {}, expected val: {}", real_futex_val, val);
                 if real_futex_val != val {
                     return Err(ErrorNo::EAGAIN);
                 }
@@ -90,7 +94,7 @@ pub fn futex(
                 if timeout == 0 {
                     yield_now_task();
                 } else {
-                    WAIT_FOR_EXIT.wait_timeout(Duration::from_nanos(timeout as u64));
+                    WAIT_FOR_FUTEX.wait_timeout(Duration::from_nanos(timeout as u64));
                 }
                 return Ok(0);
             } else {
@@ -98,8 +102,8 @@ pub fn futex(
             }
         }
         FutexFlags::WAKE => {
-            // info!("wake addr: {:X}", vaddr);
-            // 当前任务释放了锁，所以不需要再次释放
+            info!("cpu: {}, wake addr: {:X}", this_cpu_id(), vaddr);
+            // // 当前任务释放了锁，所以不需要再次释放
             let mut futex_wait_task = FUTEX_WAIT_TASK.lock();
             if futex_wait_task.contains_key(&vaddr) {
                 let wait_list = futex_wait_task.get_mut(&vaddr).unwrap();
@@ -111,11 +115,16 @@ pub fn futex(
                             // 说明自己已经醒了，那么就不在wait里面了
                             continue;
                         }
+                        info!("wake task: {}", task.id().as_u64());
                         drop(futex_wait_task);
-                        WAIT_FOR_EXIT.notify_task(false, &task);
+                        WAIT_FOR_FUTEX.notify_task(false, &task);
+                    } else {
+                        drop(futex_wait_task);
                     }
                     break;
                 }
+            } else {
+                drop(futex_wait_task);
             }
             yield_now_task();
             return Ok(val as usize);
@@ -149,7 +158,7 @@ pub fn check_dead_wait() {
                 //     val
                 // );
                 if real_futex_val != *val && task.state() == TaskState::Blocked {
-                    WAIT_FOR_EXIT.notify_task(false, task);
+                    WAIT_FOR_FUTEX.notify_task(false, task);
                 }
             }
             // 仅保留那些真正等待的任务

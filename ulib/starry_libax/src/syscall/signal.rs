@@ -1,11 +1,13 @@
 //! 与信号处理相关的系统调用
 
+use axhal::cpu::this_cpu_id;
 use axprocess::{
     process::{current_process, current_task},
     send_signal_to_process, send_signal_to_thread,
 };
 use axsignal::action::SigAction;
 use axsignal::signal_no::SignalNo;
+use log::debug;
 
 use super::{
     flags::{SigMaskFlag, SIGSET_SIZE_IN_BYTE},
@@ -143,6 +145,12 @@ pub fn syscall_kill(pid: isize, signum: isize) -> isize {
 
 /// 向tid指定的线程发送信号
 pub fn syscall_tkill(tid: isize, signum: isize) -> isize {
+    debug!(
+        "cpu: {}, send singal: {} to: {}",
+        this_cpu_id(),
+        signum,
+        tid
+    );
     if tid > 0 && signum > 0 {
         let _ = send_signal_to_thread(tid, signum);
         0

@@ -1,14 +1,16 @@
 //! 实现与futex相关的系统调用
 use alloc::collections::{BTreeMap, VecDeque};
 use axhal::mem::VirtAddr;
-use axtask::AxTaskRef;
+use axtask::{AxTaskRef, WaitQueue};
 use spinlock::SpinNoIrq;
 
 extern crate alloc;
 
-/// vec中的元素分别是任务指针以及对应存储时的futex变量的值
+/// vec中的元素分别是任务指针,对应存储时的futex变量的值
 pub static FUTEX_WAIT_TASK: SpinNoIrq<BTreeMap<VirtAddr, VecDeque<(AxTaskRef, u32)>>> =
     SpinNoIrq::new(BTreeMap::new());
+
+pub static WAIT_FOR_FUTEX: WaitQueue = WaitQueue::new();
 
 pub struct FutexRobustList {
     pub head: usize,

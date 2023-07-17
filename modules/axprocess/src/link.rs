@@ -14,12 +14,11 @@ pub struct FilePath(String);
 impl FilePath {
     /// 创建一个 FilePath, 传入的 path 会被 canonicalize, 故可以是相对路径
     pub fn new(path: &str) -> AxResult<Self> {
-        let path = canonicalize(path);
-        if path.is_err() {
+        let new_path = canonicalize(path);
+        if new_path.is_err() {
             return Err(AxError::NotFound);
         }
-        let path = path.unwrap();
-        let mut new_path = String::from(path.trim());
+        let mut new_path = String::from(new_path.unwrap().trim());
         // canonicalize中没有处理末尾的空格、换行符等
         if path.ends_with("/") && !new_path.ends_with("/") {
             // 如果原始路径以 '/' 结尾，那么canonicalize后的路径也应该以 '/' 结尾

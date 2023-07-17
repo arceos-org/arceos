@@ -57,7 +57,7 @@ pub struct ITimerVal {
 
 // sys_nanosleep指定的结构体类型
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct TimeSecs {
     pub tv_sec: usize,
     pub tv_nsec: usize,

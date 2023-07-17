@@ -17,7 +17,7 @@ documentation = "https://rcore-os.github.io/arceos/libax/index.html"
 [features]
 
 # Multicore
-smp = ["axruntime/smp"]
+smp = ["axruntime/smp", "spinlock/smp"]
 
 # Floating point/SIMD
 fp_simd = ["axhal/fp_simd"]
@@ -76,7 +76,7 @@ preempt = ["axruntime/preempt", "axprocess/preempt", "irq"]
 # Signal
 signal = ["axprocess/signal", "multitask", "preempt"]
 
-default = ["axtask?/sched_fifo", "axtask", "axmem", "monolithic", "test", "paging", "signal"]
+default = ["axtask?/sched_fifo", "axtask", "axmem", "monolithic", "test", "paging", "signal", "smp"]
 [dependencies]
 numeric-enum-macro = { git = "https://github.com/mexus/numeric-enum-macro" }
 # base-file = { git = "https://github.com/scPointer/maturin/tree/master/modules/base-file" }

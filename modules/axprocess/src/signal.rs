@@ -2,7 +2,7 @@
 
 use alloc::sync::Arc;
 use axerrno::AxResult;
-use axhal::arch::TrapFrame;
+use axhal::{arch::TrapFrame, cpu::this_cpu_id};
 use axlog::debug;
 use axsignal::{
     action::{SigActionFlags, SignalDefault, SIG_IGN},
@@ -11,7 +11,10 @@ use axsignal::{
     ucontext::SignalUserContext,
     SignalHandler, SignalSet,
 };
-use axtask::{monolithic_task::SignalCaller, KERNEL_PROCESS_ID};
+use axtask::{
+    monolithic_task::{task::TaskState, SignalCaller, RUN_QUEUE},
+    KERNEL_PROCESS_ID,
+};
 use spinlock::SpinNoIrq;
 
 pub struct SignalModule {
@@ -89,6 +92,15 @@ pub fn handle_signals() {
     let process = current_process();
     let mut inner = process.inner.lock();
     let current_task = current_task();
+    if inner.is_zombie {
+        if current_task.is_leader() {
+            return;
+        }
+        drop(inner);
+        // 进程退出了，在测试环境下线程应该立即退出
+        exit(0);
+    }
+
     if process.pid == KERNEL_PROCESS_ID {
         // 内核进程不处理信号
         return;
@@ -98,95 +110,105 @@ pub fn handle_signals() {
         .get_mut(&current_task.id().as_u64())
         .unwrap();
     let signal_set = &mut signal_module.signal_set;
-    if let Some(sig_num) = signal_set.get_one_signal() {
-        debug!("handler signal: {}", sig_num);
-        let signal = SignalNo::from(sig_num);
-        let mask = signal_set.mask;
-        // 存在未被处理的信号
-        if signal_module.last_trap_frame_for_signal.is_some() {
-            // 之前的trap frame还未被处理
-            // 说明之前的信号处理函数还未返回，即出现了信号嵌套。
-            if signal == SignalNo::SIGSEGV || signal == SignalNo::SIGBUS {
-                // 在处理信号的过程中又触发 SIGSEGV 或 SIGBUS，此时会导致死循环，所以直接结束当前进程
-                exit(-1);
-            }
+    let sig_num = if let Some(sig_num) = signal_set.get_one_signal() {
+        sig_num
+    } else {
+        return;
+    };
+    debug!("cpu: {}, handler signal: {}", this_cpu_id(), sig_num);
+    let signal = SignalNo::from(sig_num);
+    let mask = signal_set.mask;
+    // 存在未被处理的信号
+    if signal_module.last_trap_frame_for_signal.is_some() {
+        // 之前的trap frame还未被处理
+        // 说明之前的信号处理函数还未返回，即出现了信号嵌套。
+        drop(inner);
+        if signal == SignalNo::SIGSEGV || signal == SignalNo::SIGBUS {
+            // 在处理信号的过程中又触发 SIGSEGV 或 SIGBUS，此时会导致死循环，所以直接结束当前进程
+            exit(-1);
         } else {
-            // 之前的trap frame已经被处理
-            // 说明之前的信号处理函数已经返回，即没有信号嵌套。
-            // 此时可以将当前的trap frame保存起来
-            signal_module.last_trap_frame_for_signal =
-                Some((unsafe { *current_task.get_first_trap_frame() }).clone());
-            // current_task.set_siginfo(false);
-
-            signal_module.sig_info = false;
-            // 调取处理函数
-            if let Some(action) = signal_module.signal_handler.lock().get_action(sig_num) {
-                if action.sa_handler == SIG_IGN {
-                    // 忽略处理
-                    return;
-                }
-                // 此时需要调用信号处理函数，注意调用的方式是：
-                // 通过修改trap上下文的pc指针，使得trap返回之后，直接到达信号处理函数
-                // 因此需要处理一系列的trap上下文，使得正确传参与返回。
-                // 具体来说需要考虑两个方面：
-                // 1. 传参
-                // 2. 返回值ra地址的设定，与是否设置了SA_RESTORER有关
-
-                // 注意是直接修改内核栈上的内容
-                let trap_frame = unsafe { &mut *(current_task.get_first_trap_frame()) };
-
-                // 新的trap上下文的sp指针位置，由于SIGINFO会存放内容，所以需要开个保护区域
-                let mut sp = trap_frame.regs.sp - USER_SIGNAL_PROTECT;
-                // info!("test sp: {:X}", sp);
-                // info!("task trap: {:?}", trap_frame);
-                // info!(
-                //     "trap address: {:X}",
-                //     current_task.get_first_trap_frame() as *const _ as usize
-                //         + core::mem::size_of::<TrapFrame>()
-                // );
-                let old_pc = trap_frame.sepc;
-                trap_frame.regs.ra = action.restorer;
-                trap_frame.sepc = action.sa_handler;
-                // 传参
-                trap_frame.regs.a0 = sig_num;
-                // 若带有SIG_INFO参数，则函数原型为fn(sig: SignalNo, info: &SigInfo, ucontext: &mut UContext)
-                if action.sa_flags.contains(SigActionFlags::SA_SIGINFO) {
-                    // current_task.set_siginfo(true);
-                    signal_module.sig_info = true;
-                    // 注意16字节对齐
-                    sp = (sp - core::mem::size_of::<SigInfo>()) & !0xf;
-                    let mut info = SigInfo::default();
-                    info.si_signo = sig_num as i32;
-                    unsafe {
-                        *(sp as *mut SigInfo) = info;
-                    }
-                    trap_frame.regs.a1 = sp;
-
-                    // 接下来存储ucontext
-                    sp = (sp - core::mem::size_of::<SignalUserContext>()) & !0xf;
-
-                    let ucontext = SignalUserContext::init(old_pc, mask);
-                    unsafe {
-                        *(sp as *mut SignalUserContext) = ucontext;
-                    }
-                    trap_frame.regs.a2 = sp;
-                }
-                trap_frame.regs.sp = sp;
-            } else {
-                drop(current_task);
-                // 未显式指定处理函数，使用默认处理函数
-                match SignalDefault::get_action(signal) {
-                    SignalDefault::Ignore => {
-                        // 忽略，此时相当于已经完成了处理，所以要把trap上下文清空
-                        load_trap_for_signal();
-                    }
-                    SignalDefault::Terminate => {
-                        exit(0);
-                    }
-                }
-            }
+            return;
         }
     }
+    // 之前的trap frame已经被处理
+    // 说明之前的信号处理函数已经返回，即没有信号嵌套。
+    // 此时可以将当前的trap frame保存起来
+    signal_module.last_trap_frame_for_signal =
+        Some((unsafe { *current_task.get_first_trap_frame() }).clone());
+    // current_task.set_siginfo(false);
+    signal_module.sig_info = false;
+    // 调取处理函数
+    let signal_handler = signal_module.signal_handler.lock();
+    let action = signal_handler.get_action(sig_num);
+    if action.is_none() {
+        drop(signal_handler);
+
+        drop(inner);
+        drop(current_task);
+        // 未显式指定处理函数，使用默认处理函数
+        match SignalDefault::get_action(signal) {
+            SignalDefault::Ignore => {
+                // 忽略，此时相当于已经完成了处理，所以要把trap上下文清空
+                load_trap_for_signal();
+            }
+            SignalDefault::Terminate => {
+                exit(0);
+            }
+        }
+        return;
+    }
+    let action = action.unwrap();
+    if action.sa_handler == SIG_IGN {
+        // 忽略处理
+        return;
+    }
+    // 此时需要调用信号处理函数，注意调用的方式是：
+    // 通过修改trap上下文的pc指针，使得trap返回之后，直接到达信号处理函数
+    // 因此需要处理一系列的trap上下文，使得正确传参与返回。
+    // 具体来说需要考虑两个方面：
+    // 1. 传参
+    // 2. 返回值ra地址的设定，与是否设置了SA_RESTORER有关
+
+    // 注意是直接修改内核栈上的内容
+    let trap_frame = unsafe { &mut *(current_task.get_first_trap_frame()) };
+
+    // 新的trap上下文的sp指针位置，由于SIGINFO会存放内容，所以需要开个保护区域
+    let mut sp = trap_frame.regs.sp - USER_SIGNAL_PROTECT;
+    // info!("test sp: {:X}", sp);
+    // info!("task trap: {:?}", trap_frame);
+    // info!(
+    //     "trap address: {:X}",
+    //     current_task.get_first_trap_frame() as *const _ as usize
+    //         + core::mem::size_of::<TrapFrame>()
+    // );
+    let old_pc = trap_frame.sepc;
+    trap_frame.regs.ra = action.restorer;
+    trap_frame.sepc = action.sa_handler;
+    // 传参
+    trap_frame.regs.a0 = sig_num;
+    // 若带有SIG_INFO参数，则函数原型为fn(sig: SignalNo, info: &SigInfo, ucontext: &mut UContext)
+    if action.sa_flags.contains(SigActionFlags::SA_SIGINFO) {
+        // current_task.set_siginfo(true);
+        signal_module.sig_info = true;
+        // 注意16字节对齐
+        sp = (sp - core::mem::size_of::<SigInfo>()) & !0xf;
+        let mut info = SigInfo::default();
+        info.si_signo = sig_num as i32;
+        unsafe {
+            *(sp as *mut SigInfo) = info;
+        }
+        trap_frame.regs.a1 = sp;
+
+        // 接下来存储ucontext
+        sp = (sp - core::mem::size_of::<SignalUserContext>()) & !0xf;
+
+        let ucontext = SignalUserContext::init(old_pc, mask);
+        unsafe {
+            *(sp as *mut SignalUserContext) = ucontext;
+        }
+        trap_frame.regs.a2 = sp;
+    }
+    trap_frame.regs.sp = sp;
 }
 
 /// 从信号处理函数返回
@@ -239,6 +261,13 @@ pub fn send_signal_to_thread(tid: isize, signum: isize) -> AxResult<()> {
     }
     let signal_module = inner.signal_module.get_mut(&(tid as u64)).unwrap();
     signal_module.signal_set.try_add_signal(signum as usize);
+
+    for task in inner.tasks.iter() {
+        if task.id().as_u64() == tid as u64 && task.state() == TaskState::Blocked {
+            RUN_QUEUE.lock().unblock_task(Arc::clone(task), false);
+            break;
+        }
+    }
     Ok(())
 }
 

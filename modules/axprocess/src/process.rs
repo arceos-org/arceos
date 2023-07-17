@@ -6,7 +6,7 @@ use axfs::monolithic_fs::FileIO;
 use axhal::arch::{write_page_table_root, TrapFrame};
 use axhal::mem::phys_to_virt;
 use axlog::{debug, error};
-use axtask::monolithic_task::run_queue::WAIT_FOR_EXIT;
+use axtask::monolithic_task::task::TaskState;
 use axtask::{AxTaskRef, TaskId};
 
 const KERNEL_STACK_SIZE: usize = 0x40000;
@@ -449,10 +449,9 @@ impl Process {
                     parent_id,
                     new_memory_set,
                     inner.heap_bottom,
-                    self.inner.lock().fd_manager.fd_table.clone(),
+                    inner.fd_manager.fd_table.clone(),
                 )),
             });
-
             // 记录该进程，防止被回收
             PID2PC.lock().insert(process_id, Arc::clone(&new_process));
             new_process.inner.lock().tasks.push(Arc::clone(&new_task));
@@ -557,11 +556,11 @@ pub fn exit(exit_code: i32) -> ! {
     let process = current_process();
     let curr = current();
     let curr_id = curr.id();
-    // info!(
-    //     "curr_id: {}, exit_code: {}",
-    //     curr_id.as_u64(),
-    //     exit_code as i32
-    // );
+    debug!(
+        "curr_id: {}, exit_code: {}",
+        curr_id.as_u64(),
+        exit_code as i32
+    );
     let is_leader = curr.is_leader();
     let process_id = curr.get_process_id();
     clear_wait(
@@ -572,10 +571,11 @@ pub fn exit(exit_code: i32) -> ! {
         },
         curr.is_leader(),
     );
-
     // 检查这个任务是否有sig_child信号
     if curr.send_sigchld_when_exit || curr.is_leader() {
-        let parent = process.inner.lock().parent;
+        let inner = process.inner.lock();
+        let parent = inner.parent;
+        drop(inner);
         if parent != KERNEL_PROCESS_ID {
             // 发送sigchild
             send_signal_to_process(parent as isize, 17).unwrap();
@@ -600,29 +600,39 @@ pub fn exit(exit_code: i32) -> ! {
 
     // 记得删除任务
     // TID2TASK.lock().remove(&curr_id);
-    drop(curr);
+
     // 若退出的是内核线程，就没有必要考虑后续了，否则此时调度队列重新调度的操作拿到进程这里来
     // 先进行资源的回收
     // 不可以回收内核任务
-    inner.signal_module.remove(&curr_id.as_u64());
+
     if is_leader {
         assert!(process_id != 0);
+        // WAIT_FOR_FUTEX.notify_all(false);
         inner.exit_code = exit_code;
         inner.is_zombie = true;
-        // 结束自身的所有子线程
-        // 先把所有睡眠中的任务唤醒加入到run_queue中
-        WAIT_FOR_EXIT.notify_all(false);
-        for task in &inner.tasks {
-            if task.id() != curr_id {
-                RUN_QUEUE.lock().remove_task(&task);
+        drop(inner);
+        loop {
+            let inner = process.inner.lock();
+            let mut all_exited = true;
+            for task in inner.tasks.iter() {
+                if task.state() != TaskState::Exited {
+                    all_exited = false;
+                    break;
+                }
+            }
+            drop(inner);
+            if !all_exited {
+                yield_now_task();
+            } else {
+                break;
             }
         }
+        let mut inner = process.inner.lock();
         inner.tasks.clear();
         inner.signal_module.clear();
         {
             let pid2pc = PID2PC.lock();
             let kernel_process = Arc::clone(pid2pc.get(&KERNEL_PROCESS_ID).unwrap());
-
             // 回收子进程到内核进程下
             for child in inner.children.iter() {
                 child.inner.lock().parent = KERNEL_PROCESS_ID;
@@ -632,6 +642,7 @@ pub fn exit(exit_code: i32) -> ! {
             drop(pid2pc);
         }
         inner.memory_set.lock().unmap_user_areas();
+
         // 页表不用特意解除，因为整个对象都将被析构
         drop(inner);
         drop(process);
@@ -640,11 +651,12 @@ pub fn exit(exit_code: i32) -> ! {
         drop(pid2pc);
         // 记录当前的测试结果
     } else {
+        inner.signal_module.remove(&curr_id.as_u64());
+        RUN_QUEUE.lock().exit_current(exit_code);
         drop(inner);
         drop(process);
     }
-    RUN_QUEUE.lock().exit_current(exit_code);
-    // 当前的进程回收是比较简单的
+
     RUN_QUEUE.lock().resched_inner(false);
     unreachable!("Unreachable in sys_exit!");
 }

@@ -127,30 +127,30 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
         return ErrorNo::EINVAL as isize;
     }
     if fd >= process_inner.fd_manager.fd_table.len() {
+        return ErrorNo::EBADF as isize;
+    }
+    if process_inner.fd_manager.fd_table[fd].is_none() {
+        return ErrorNo::EBADF as isize;
+    }
+    let file = process_inner.fd_manager.fd_table[fd].clone().unwrap();
+    drop(process_inner);
+    if file.lock().get_type() == FileIOType::DirDesc {
+        debug!("fd is a dir");
         return -1;
     }
-    if let Some(file) = process_inner.fd_manager.fd_table[fd].as_ref() {
-        if file.lock().get_type() == FileIOType::DirDesc {
-            debug!("fd is a dir");
-            return -1;
-        }
-        if !file.lock().readable() {
-            return -1;
-        }
-        // // debug
-        // file.print_content();
-        // info!("file type: {:?}", file.lock().get_type());
-        // release current inner manually to avoid multi-borrow
-        let read_size = file
-            .lock()
-            .read(unsafe { core::slice::from_raw_parts_mut(buf, count) })
-            .unwrap() as isize;
-        drop(process_inner);
-        info!("read_size: {}", read_size);
-        read_size as isize
-    } else {
-        -1
+    if !file.lock().readable() {
+        return -1;
     }
+    // // debug
+    // file.print_content();
+    // info!("file type: {:?}", file.lock().get_type());
+    // release current inner manually to avoid multi-borrow
+    let read_size = file
+        .lock()
+        .read(unsafe { core::slice::from_raw_parts_mut(buf, count) })
+        .unwrap() as isize;
+    info!("read_size: {}", read_size);
+    read_size as isize
 }
 
 /// 功能：从一个文件描述符中写入；
@@ -173,29 +173,27 @@ pub fn syscall_write(fd: usize, buf: *const u8, count: usize) -> isize {
         return ErrorNo::EINVAL as isize;
     }
     if fd >= process_inner.fd_manager.fd_table.len() {
+        return ErrorNo::EBADF as isize;
+    }
+
+    let file = process_inner.fd_manager.fd_table[fd].clone().unwrap();
+    drop(process_inner); // release current inner manually to avoid multi-borrow
+
+    if file.lock().get_type() == FileIOType::DirDesc {
+        debug!("fd is a dir");
+        return ErrorNo::EBADF as isize;
+    }
+    if !file.lock().writable() {
         return -1;
     }
-    if let Some(file) = process_inner.fd_manager.fd_table[fd].as_ref() {
-        if file.lock().get_type() == FileIOType::DirDesc {
-            debug!("fd is a dir");
-            return -1;
-        }
-        if !file.lock().writable() {
-            return -1;
-        }
-        let file = file.clone();
+    let file = file.clone();
 
-        drop(process_inner); // release current inner manually to avoid multi-borrow
-                             // file.write("Test SysWrite\n".as_bytes()).unwrap();
-        let ans = file
-            .lock()
-            .write(unsafe { core::slice::from_raw_parts(buf, count) })
-            .unwrap() as isize;
-        drop(file);
-        ans
-    } else {
-        -1
-    }
+    let ans = file
+        .lock()
+        .write(unsafe { core::slice::from_raw_parts(buf, count) })
+        .unwrap() as isize;
+    drop(file);
+    ans
 }
 
 /// 从同一个文件描述符读取多个字符串

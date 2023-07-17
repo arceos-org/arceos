@@ -30,6 +30,7 @@ fn handle_breakpoint(sepc: &mut usize) {
 #[no_mangle]
 fn riscv_trap_handler(tf: &mut TrapFrame, mut from_user: bool) {
     let scause = scause::read();
+    // info!("scause: {:?}", scause.cause());
     if (tf.sepc as isize) < 0 {
         from_user = false;
     }
@@ -39,6 +40,7 @@ fn riscv_trap_handler(tf: &mut TrapFrame, mut from_user: bool) {
         #[cfg(feature = "monolithic")]
         Trap::Exception(E::UserEnvCall) => {
             enable_irqs();
+            // info!("syscall: id: {}, cpu: {}", tf.regs.a7, cpu_id);
             // jump to next instruction anyway
             tf.sepc += 4;
             // get system call return value

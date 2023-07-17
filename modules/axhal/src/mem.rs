@@ -123,6 +123,7 @@ pub(crate) fn common_memory_region_at(idx: usize) -> Option<MemRegion> {
             flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
             name: ".data",
         },
+        // 这里是每一个CPU内核所使用的内核栈的地址，在linker.lds.S种已经为不同的CPU核加入了保护页面
         3 => MemRegion {
             paddr: virt_to_phys((percpu_start as usize).into()),
             size: percpu_end as usize - percpu_start as usize,

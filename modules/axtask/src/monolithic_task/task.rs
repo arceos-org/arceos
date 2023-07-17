@@ -216,7 +216,7 @@ impl TaskInner {
         Arc::new(AxTask::new(t))
     }
 
-    pub(crate) fn new_init(name: String) -> AxTaskRef {
+    pub fn new_init(name: String) -> AxTaskRef {
         // init_task does not change PC and SP, so `entry` and `kstack` fields are not used.
         let mut t = Self::new_common(TaskId::new(), name, KERNEL_PROCESS_ID, 0, false);
         t.is_init = true;
@@ -591,6 +591,13 @@ fn first_into_user(kernel_sp: usize, frame_base: usize) -> ! {
     // 在保证将寄存器都存储好之后，再开启中断
     // 否则此时会因为写入csr寄存器过程中出现中断，导致出现异常
     axhal::arch::disable_irqs();
+    // 在内核态中，tp寄存器存储的是当前任务的CPU ID
+    // 而当从内核态进入到用户态时，会将tp寄存器的值先存储在内核栈上，即把该任务对应的CPU ID存储在内核栈上
+    // 然后将tp寄存器的值改为对应线程的tls指针的值
+    // 因此在用户态中，tp寄存器存储的值是线程的tls指针的值
+    // 而当从用户态进入到内核态时，会先将内核栈上的值读取到某一个中间寄存器t0中，然后将tp的值存入内核栈
+    // 然后再将t0的值赋给tp，因此此时tp的值是当前任务的CPU ID
+    // 对应实现在axhal/src/arch/riscv/trap.S中
     unsafe {
         asm::sfence_vma_all();
         core::arch::asm!(
@@ -599,8 +606,8 @@ fn first_into_user(kernel_sp: usize, frame_base: usize) -> ! {
             LDR     gp, sp, 2                   // load user gp and tp
             LDR     t0, sp, 3
             mv      t1, {kernel_base}
-            STR     tp, t1, 3                   // save supervisor tp，注意是存储到内核栈上而不是sp中
-            mv      tp, t0                      // tp：线程指针
+            STR     tp, t1, 3                   // save supervisor tp，注意是存储到内核栈上而不是sp中，此时存储的应该是当前运行的CPU的ID
+            mv      tp, t0                      // tp：本来存储的是CPU ID，在这个时候变成了对应线程的TLS 指针
             csrw    sscratch, {kernel_sp}       // put supervisor sp to scratch
             LDR     t0, sp, 31
             LDR     t1, sp, 32

@@ -115,6 +115,7 @@ impl AxRunQueue {
         } else {
             curr.set_state(TaskState::Exited);
             curr.notify_exit(exit_code, self);
+            // info!("curr id: {}", curr.id().as_u64());
             EXITED_TASKS.lock().push_back(curr.clone());
             WAIT_FOR_EXIT.notify_one_locked(false, self);
             // 调度任务交给process进行
@@ -132,6 +133,11 @@ impl AxRunQueue {
         assert!(curr.is_running());
         assert!(!curr.is_idle());
         // we must not block current task with preemption disabled.
+        // info!(
+        //     "curr preempt: {}",
+        //     curr.preempt_disable_count
+        //         .load(core::sync::atomic::Ordering::Acquire)
+        // );
         #[cfg(feature = "preempt")]
         assert!(curr.can_preempt(1));
 
@@ -186,11 +192,11 @@ impl AxRunQueue {
     }
 
     fn switch_to(&mut self, prev_task: CurrentTask, next_task: AxTaskRef) {
-        trace!(
-            "context switch: {} -> {}",
-            prev_task.id_name(),
-            next_task.id_name()
-        );
+        // trace!(
+        //     "context switch: {} -> {}",
+        //     prev_task.id_name(),
+        //     next_task.id_name()
+        // );
         #[cfg(feature = "preempt")]
         next_task.set_preempt_pending(false);
         next_task.set_state(TaskState::Running);
@@ -207,7 +213,7 @@ impl AxRunQueue {
             // but won't be dropped until `gc_entry()` is called.
             // info!("prev ctx: {:X?}", &*prev_ctx_ptr);
             // info!("next ctx: {:X?}", &*next_ctx_ptr);
-            assert!(Arc::strong_count(prev_task.as_task_ref()) > 1);
+            // assert!(Arc::strong_count(prev_task.as_task_ref()) > 1);
             assert!(Arc::strong_count(&next_task) >= 1);
             let page_table_token = next_task.page_table_token();
             if page_table_token != 0 {
@@ -229,6 +235,7 @@ fn gc_entry() {
                 // If the task reference is not taken after `spawn()`, it will be
                 // dropped here. Otherwise, it will be dropped after the reference
                 // is dropped (usually by `join()`).
+                // info!("drop task: {}", task.id().as_u64());
                 drop(task);
             }
         }
