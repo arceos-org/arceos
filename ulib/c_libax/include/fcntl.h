@@ -87,6 +87,25 @@
 #define S_IXOTH 0001
 #define S_IRWXO 0007
 #endif
+
+#define POSIX_FADV_NORMAL     0
+#define POSIX_FADV_RANDOM     1
+#define POSIX_FADV_SEQUENTIAL 2
+#define POSIX_FADV_WILLNEED   3
+#ifndef POSIX_FADV_DONTNEED
+#define POSIX_FADV_DONTNEED 4
+#define POSIX_FADV_NOREUSE  5
+#endif
+
+#define AT_FDCWD      (-100)
+#define AT_EMPTY_PATH 0x1000
+
+#define SYNC_FILE_RANGE_WAIT_BEFORE 1
+#define SYNC_FILE_RANGE_WRITE       2
+#define SYNC_FILE_RANGE_WAIT_AFTER  4
+
+#define loff_t off_t
+
 struct flock {
     short l_type;
     short l_whence;
@@ -96,6 +115,8 @@ struct flock {
 };
 
 int fcntl(int fd, int cmd, ... /* arg */);
+int posix_fadvise(int __fd, unsigned long __offset, unsigned long __len, int __advise);
+int sync_file_range(int, off_t, off_t, unsigned);
 
 #ifdef AX_CONFIG_FS
 int open(const char *filename, int flags, ...);

@@ -2,7 +2,17 @@
 #define _ENDIAN_H
 
 #include <stdint.h>
-#define __BYTE_ORDER    1234
+
+#if defined(__aarch64__)
+#if __AARCH64EB__
+#define __BYTE_ORDER 4321
+#else
+#define __BYTE_ORDER 1234
+#endif
+#else
+#define __BYTE_ORDER 1234
+#endif
+
 #define __LITTLE_ENDIAN 1234
 #define __BIG_ENDIAN    4321
 #define __PDP_ENDIAN    3412
