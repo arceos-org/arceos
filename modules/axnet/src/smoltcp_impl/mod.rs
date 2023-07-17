@@ -1,3 +1,4 @@
+mod bench;
 mod dns;
 mod listen_table;
 mod tcp;
@@ -28,6 +29,8 @@ const IP: IpAddress = IpAddress::v4(10, 0, 2, 15); // QEMU user networking defau
 const GATEWAY: IpAddress = IpAddress::v4(10, 0, 2, 2); // QEMU user networking gateway
 const DNS_SEVER: IpAddress = IpAddress::v4(8, 8, 8, 8);
 const IP_PREFIX: u8 = 24;
+
+const STANDARD_MTU: usize = 1500;
 
 const RANDOM_SEED: u64 = 0xA2CE_05A2_CE05_A2CE;
 
@@ -285,6 +288,16 @@ fn snoop_tcp_packet(buf: &[u8], sockets: &mut SocketSet<'_>) -> Result<(), smolt
 /// packets to the NIC.
 pub fn poll_interfaces() {
     SOCKET_SET.poll_interfaces();
+}
+
+/// Benchmark raw socket transmit bandwidth.
+pub fn bench_transmit() {
+    ETH0.dev.lock().bench_transmit_bandwidth();
+}
+
+/// Benchmark raw socket receive bandwidth.
+pub fn bench_receive() {
+    ETH0.dev.lock().bench_receive_bandwidth();
 }
 
 pub(crate) fn init(net_dev: AxNetDevice) {
