@@ -24,6 +24,10 @@ struct dirent {
 
 int closedir(DIR *);
 DIR *fdopendir(int);
+DIR *opendir(const char *);
+struct dirent *readdir(DIR *);
+int readdir_r(DIR *__restrict, struct dirent *__restrict, struct dirent **__restrict);
+void rewinddir(DIR *);
 int dirfd(DIR *);
 
 #define DT_UNKNOWN 0

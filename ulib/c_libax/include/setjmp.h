@@ -16,5 +16,6 @@ typedef struct __jmp_buf_tag {
 } jmp_buf[1];
 
 int setjmp(jmp_buf);
+_Noreturn void longjmp(jmp_buf, int);
 
 #endif

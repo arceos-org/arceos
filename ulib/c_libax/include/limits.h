@@ -18,6 +18,7 @@
 #define LLONG_MIN  (-LLONG_MAX - 1)
 #define LLONG_MAX  0x7fffffffffffffffLL
 #define ULLONG_MAX (2ULL * LLONG_MAX + 1)
+#define IOV_MAX    1024
 
 #define PTHREAD_STACK_MIN 2048
 
