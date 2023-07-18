@@ -27,6 +27,8 @@ mod pthread;
 mod socket;
 #[cfg(feature = "fp_simd")]
 mod strtod;
+#[cfg(feature = "alloc")]
+mod uio;
 
 mod errno;
 mod setjmp;
@@ -88,6 +90,9 @@ pub use self::io_mpx::{ax_epoll_create, ax_epoll_ctl, ax_epoll_wait, ax_select};
 
 #[cfg(feature = "fp_simd")]
 pub use self::strtod::{ax_strtod, ax_strtof};
+
+#[cfg(feature = "alloc")]
+pub use self::uio::ax_writev;
 
 pub use self::errno::ax_errno_string;
 pub use self::stdio::{ax_print_str, ax_println_str};

@@ -37,6 +37,7 @@ int strncasecmp(const char *__s1, const char *__s2, size_t __n);
 char *strstr(const char *h, const char *n);
 
 char *strerror(int e);
+int strerror_r(int, char *, size_t);
 
 void *memcpy(void *restrict dest, const void *restrict src, size_t n);
 

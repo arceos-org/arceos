@@ -4,6 +4,14 @@
 #include <stddef.h>
 #include <sys/stat.h>
 
+#define STDIN_FILENO  0
+#define STDOUT_FILENO 1
+#define STDERR_FILENO 2
+
+#define X_OK 1
+#define F_OK 0
+#define W_OK 2
+
 #ifdef AX_CONFIG_ALLOC
 int close(int fd);
 ssize_t read(int fd, void *buf, size_t count);
@@ -20,6 +28,7 @@ int access(const char *pathname, int mode);
 char *getcwd(char *buf, size_t size);
 off_t lseek(int fd, off_t offset, int whence);
 int fsync(int fd);
+int fdatasync(int);
 int fchown(int fd, uid_t owner, gid_t group);
 #endif
 
@@ -27,6 +36,7 @@ unsigned sleep(unsigned seconds);
 int usleep(unsigned int useconds);
 
 uid_t geteuid(void);
+uid_t getuid(void);
 pid_t getpid(void);
 
 #ifdef AX_CONFIG_PIPE
@@ -41,6 +51,14 @@ int dup3(int, int, int);
 #endif
 
 long int sysconf(int name);
+int execve(const char *__path, char *const *__argv, char *const *__envp);
+pid_t setsid(void);
+int isatty(int __fd);
+pid_t fork(void);
+
+int chdir(const char *__path);
+int truncate(const char *path, off_t length);
+_Noreturn void _exit(int __status);
 
 #define _SC_ARG_MAX                      0
 #define _SC_CHILD_MAX                    1

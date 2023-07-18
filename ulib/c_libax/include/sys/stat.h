@@ -70,7 +70,9 @@ int fstat(int fd, struct stat *buf);
 int lstat(const char *path, struct stat *buf);
 
 int fchmod(int fd, mode_t mode);
-
+int chmod(const char *file, mode_t mode);
 int mkdir(const char *pathname, mode_t mode);
+mode_t umask(mode_t mask);
+int fstatat(int, const char *__restrict, struct stat *__restrict, int);
 
 #endif
