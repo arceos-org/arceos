@@ -41,10 +41,8 @@ int setitimer(int which, const struct itimerval *restrict new, struct itimerval 
 char *ctime_r(const time_t *t, char *buf);
 clock_t clock(void);
 
-#ifdef AX_CONFIG_FP_SIMD
 double difftime(time_t, time_t);
-#endif
 
 time_t mktime(struct tm *);
 
-#endif
+#endif // __TIME_H__

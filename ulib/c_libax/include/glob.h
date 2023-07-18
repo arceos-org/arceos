@@ -28,12 +28,7 @@ typedef struct {
     void *__dummy2[5];
 } glob_t;
 
-#if defined(AX_CONFIG_FS) && defined(AX_CONFIG_ALLOC)
 int glob(const char *__restrict, int, int (*)(const char *, int), glob_t *__restrict);
-#endif
-
-#if defined(AX_CONFIG_ALLOC)
 void globfree(glob_t *);
-#endif
 
 #endif

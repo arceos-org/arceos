@@ -34,7 +34,7 @@ static int __write_buffer(FILE *f)
         return 0;
     if (f->fd == stdout->fd || f->fd == stderr->fd) {
         r = ax_print_str(f->buf, f->buffer_len);
-#ifdef AX_CONFIG_ALLOC
+#ifdef AX_CONFIG_FD
     } else {
         r = write(f->fd, f->buf, f->buffer_len);
 #endif
@@ -154,7 +154,14 @@ int vfprintf(FILE *restrict f, const char *restrict fmt, va_list ap)
     return vfctprintf(__out_wrapper, f, fmt, ap);
 }
 
-#if defined(AX_CONFIG_ALLOC) && defined(AX_CONFIG_FS)
+// TODO
+int sscanf(const char *restrict __s, const char *restrict __format, ...)
+{
+    unimplemented();
+    return 0;
+}
+
+#ifdef AX_CONFIG_FS
 
 int __fmodeflags(const char *mode)
 {
@@ -224,13 +231,6 @@ char *fgets(char *restrict s, int n, FILE *restrict f)
     return s;
 }
 
-// TODO
-int sscanf(const char *restrict __s, const char *restrict __format, ...)
-{
-    unimplemented();
-    return 0;
-}
-
 size_t fread(void *restrict destv, size_t size, size_t nmemb, FILE *restrict f)
 {
     size_t total = size * nmemb;
@@ -269,7 +269,6 @@ int fclose(FILE *f)
 {
     return ax_close(f->fd);
 }
-#endif
 
 // TODO
 int rename(const char *__old, const char *__new)
@@ -297,7 +296,7 @@ int fseek(FILE *__stream, long __off, int __whence)
 }
 
 // TODO
-long ftello(FILE *__stream)
+off_t ftello(FILE *__stream)
 {
     unimplemented();
     return 0;
@@ -405,3 +404,5 @@ FILE *fdopen(int fd, const char *mode)
     unimplemented();
     return NULL;
 }
+
+#endif // AX_CONFIG_FS

@@ -34,10 +34,9 @@ macro_rules! ax_call_body {
     ($fn: ident, $($stmt: tt)*) => {{
         #[allow(clippy::redundant_closure_call)]
         let res = (|| -> axerrno::LinuxResult<_> { $($stmt)* })();
-        if res.is_err() {
-            $crate::info!(concat!(stringify!($fn), " => {:?}"),  res);
-        } else {
-            $crate::debug!(concat!(stringify!($fn), " => {:?}"), res);
+        match res {
+            Ok(_) | Err(axerrno::LinuxError::EAGAIN) => $crate::debug!(concat!(stringify!($fn), " => {:?}"),  res),
+            Err(_) => $crate::info!(concat!(stringify!($fn), " => {:?}"), res),
         }
         match res {
             Ok(v) => v as _,

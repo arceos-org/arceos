@@ -1,6 +1,8 @@
 #ifndef _NETDB_H
 #define _NETDB_H
 
+#ifdef AX_CONFIG_NET
+
 #include <netinet/in.h>
 
 struct addrinfo {
@@ -50,10 +52,10 @@ extern int h_errno;
 const char *hstrerror(int ecode);
 
 #define MAXADDRS 48
-#if defined(AX_CONFIG_ALLOC) && defined(AX_CONFIG_NET)
 int getaddrinfo(const char *__restrict, const char *__restrict, const struct addrinfo *__restrict,
                 struct addrinfo **__restrict);
 void freeaddrinfo(struct addrinfo *);
 
-#endif
-#endif
+#endif // AX_CONFIG_NET
+
+#endif // _NETDB_H

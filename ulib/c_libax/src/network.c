@@ -1,3 +1,5 @@
+#ifdef AX_CONFIG_NET
+
 #include <ctype.h>
 #include <errno.h>
 #include <libax.h>
@@ -12,7 +14,6 @@
 
 int h_errno;
 
-#if defined(AX_CONFIG_ALLOC) && defined(AX_CONFIG_NET)
 /*Only IPv4. Ports are always 0. Ignore service and hint. Results' ai_flags, ai_socktype,
  * ai_protocol and ai_canonname are 0 or NULL.  */
 int getaddrinfo(const char *__restrict node, const char *__restrict service,
@@ -42,7 +43,6 @@ void freeaddrinfo(struct addrinfo *__restrict res)
     free(res);
     return;
 }
-#endif
 
 static const char msgs[] = "Host not found\0"
                            "Try again\0"
@@ -228,3 +228,5 @@ const char *inet_ntop(int af, const void *__restrict a0, char *__restrict s, soc
     errno = ENOSPC;
     return 0;
 }
+
+#endif // AX_CONFIG_NET

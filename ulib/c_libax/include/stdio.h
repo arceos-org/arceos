@@ -46,22 +46,36 @@ extern FILE *const stderr;
 #define BUFSIZ       1024
 #define L_tmpnam     20
 
-#if defined(AX_CONFIG_ALLOC) && defined(AX_CONFIG_FS)
 FILE *fopen(const char *filename, const char *mode);
-char *fgets(char *__restrict, int, FILE *__restrict);
-#endif
+FILE *freopen(const char *__restrict, const char *__restrict, FILE *__restrict);
+int fclose(FILE *);
 
+int remove(const char *);
+int rename(const char *__old, const char *__new);
+
+int feof(FILE *__stream);
+int ferror(FILE *);
 int fflush(FILE *);
+void clearerr(FILE *);
 
+int fseek(FILE *__stream, long __off, int __whence);
+long ftell(FILE *);
+
+size_t fread(void *__restrict, size_t, size_t, FILE *__restrict);
+size_t fwrite(const void *__restrict, size_t, size_t, FILE *__restrict);
+
+int getc(FILE *);
 int getchar(void);
+int ungetc(int, FILE *);
 
 int fputc(int, FILE *);
 int putc(int, FILE *);
 int putchar(int);
+
+char *fgets(char *__restrict, int, FILE *__restrict);
+
 int fputs(const char *__restrict, FILE *__restrict);
 int puts(const char *s);
-
-int sscanf(const char *__restrict, const char *__restrict, ...);
 
 int printf(const char *__restrict, ...);
 int fprintf(FILE *__restrict, const char *__restrict, ...);
@@ -72,37 +86,22 @@ int vfprintf(FILE *__restrict, const char *__restrict, va_list);
 int vsprintf(char *__restrict, const char *__restrict, va_list);
 int vsnprintf(char *__restrict, size_t, const char *__restrict, va_list);
 
-size_t fread(void *__restrict, size_t, size_t, FILE *__restrict);
-size_t fwrite(const void *__restrict, size_t, size_t, FILE *__restrict);
-
-int fclose(FILE *);
-
-int rename(const char *__old, const char *__new);
-
-int fileno(FILE *__stream);
-int feof(FILE *__stream);
-int fseek(FILE *__stream, long __off, int __whence);
-long ftello(FILE *__stream);
-char *tmpnam(char *);
-
-void clearerr(FILE *);
-int ferror(FILE *);
-FILE *freopen(const char *__restrict, const char *__restrict, FILE *__restrict);
 int fscanf(FILE *__restrict, const char *__restrict, ...);
-long ftell(FILE *);
-int getc(FILE *);
-int remove(const char *);
-int setvbuf(FILE *__restrict, char *__restrict, int, size_t);
-FILE *tmpfile(void);
-int ungetc(int, FILE *);
-
-ssize_t getdelim(char **__restrict, size_t *__restrict, int, FILE *__restrict);
-ssize_t getline(char **__restrict, size_t *__restrict, FILE *__restrict);
-
-int getc_unlocked(FILE *);
-
-FILE *fdopen(int, const char *);
+int sscanf(const char *__restrict, const char *__restrict, ...);
 
 void perror(const char *);
+
+int setvbuf(FILE *__restrict, char *__restrict, int, size_t);
+
+char *tmpnam(char *);
+FILE *tmpfile(void);
+
+FILE *fdopen(int, const char *);
+int fileno(FILE *);
+off_t ftello(FILE *);
+
+int getc_unlocked(FILE *);
+ssize_t getdelim(char **__restrict, size_t *__restrict, int, FILE *__restrict);
+ssize_t getline(char **__restrict, size_t *__restrict, FILE *__restrict);
 
 #endif // __STDIO_H__

@@ -226,6 +226,21 @@ char *strerror(int e)
     return ax_errno_string(e);
 }
 
+int strerror_r(int err, char *buf, size_t buflen)
+{
+    char *msg = strerror(err);
+    size_t l = strlen(msg);
+    if (l >= buflen) {
+        if (buflen) {
+            memcpy(buf, msg, buflen - 1);
+            buf[buflen - 1] = 0;
+        }
+        return ERANGE;
+    }
+    memcpy(buf, msg, l + 1);
+    return 0;
+}
+
 void *memcpy(void *restrict dest, const void *restrict src, size_t n)
 {
     unsigned char *d = dest;
@@ -456,6 +471,7 @@ char *strstr(const char *h, const char *n)
 }
 
 #ifdef AX_CONFIG_ALLOC
+
 #include <stdlib.h>
 char *strdup(const char *s)
 {
@@ -465,19 +481,5 @@ char *strdup(const char *s)
         return NULL;
     return memcpy(d, s, l + 1);
 }
-#endif
 
-int strerror_r(int err, char *buf, size_t buflen)
-{
-    char *msg = strerror(err);
-    size_t l = strlen(msg);
-    if (l >= buflen) {
-        if (buflen) {
-            memcpy(buf, msg, buflen - 1);
-            buf[buflen - 1] = 0;
-        }
-        return ERANGE;
-    }
-    memcpy(buf, msg, l + 1);
-    return 0;
-}
+#endif // AX_CONFIG_ALLOC

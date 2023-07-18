@@ -7,6 +7,7 @@ obj_dir := $(ulib_dir)/build_$(ARCH)
 inc_dir := $(ulib_dir)/include
 libax_inc_dir = $(ulib_dir)/../libax/include
 c_lib := $(obj_dir)/libc.a
+libgcc :=
 
 in_feat := $(APP)/features.txt
 out_feat := $(obj_dir)/.features.txt
@@ -35,6 +36,11 @@ ifeq ($(fp_simd),)
     CFLAGS += -mno-sse
   else ifeq ($(ARCH), aarch64)
     CFLAGS += -mgeneral-regs-only
+  endif
+else
+  ifeq ($(ARCH), riscv64)
+    # for compiler-rt fallbacks like `__addtf3`, `__multf3`, ...
+    libgcc := $(shell $(CC) -print-libgcc-file-name)
   endif
 endif
 
@@ -70,7 +76,7 @@ app-objs := $(addprefix $(APP)/,$(app-objs))
 $(APP)/%.o: $(APP)/%.c $(libax_inc_dir)/ax_pthread_mutex.h
 	$(call run_cmd,$(CC),$(CFLAGS) $(APP_CFLAGS) -c -o $@ $<)
 
-$(OUT_ELF): $(app-objs) $(c_lib) $(rust_lib)
+$(OUT_ELF): $(app-objs) $(c_lib) $(rust_lib) $(libgcc)
 	@printf "    $(CYAN_C)Linking$(END_C) $(OUT_ELF)\n"
 	$(call run_cmd,$(LD),$(LDFLAGS) $^ -o $@)
 

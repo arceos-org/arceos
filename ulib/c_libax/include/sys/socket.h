@@ -55,8 +55,6 @@ struct sockaddr_storage {
 
 typedef unsigned socklen_t;
 
-#ifdef AX_CONFIG_NET
-
 int socket(int, int, int);
 int shutdown(int, int);
 
@@ -78,8 +76,6 @@ int setsockopt(int, int, int, const void *, socklen_t);
 
 int getsockname(int sockfd, struct sockaddr *restrict addr, socklen_t *restrict addrlen);
 int getpeername(int sockfd, struct sockaddr *restrict addr, socklen_t *restrict addrlen);
-
-#endif
 
 #define SO_BINDTODEVICE            25
 #define SO_ATTACH_FILTER           26
@@ -313,4 +309,4 @@ int getpeername(int sockfd, struct sockaddr *restrict addr, socklen_t *restrict 
 #define SO_RCVTIMEO SO_RCVTIMEO_OLD
 #define SO_SNDTIMEO SO_SNDTIMEO_OLD
 
-#endif
+#endif // __SOCKET_H__

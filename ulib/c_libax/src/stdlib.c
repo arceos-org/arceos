@@ -58,7 +58,7 @@ void free(void *addr)
     return ax_free(addr);
 }
 
-#endif
+#endif // AX_CONFIG_ALLOC
 
 _Noreturn void abort(void)
 {
@@ -66,10 +66,35 @@ _Noreturn void abort(void)
     __builtin_unreachable();
 }
 
-// TODO:
-int __clzdi2(int a)
+_Noreturn void exit(int status)
 {
-    return 0;
+    ax_exit(status);
+}
+
+long long llabs(long long a)
+{
+    return a > 0 ? a : -a;
+}
+
+int abs(int a)
+{
+    return a > 0 ? a : -a;
+}
+
+long long atoll(const char *s)
+{
+    long long n = 0;
+    int neg = 0;
+    while (isspace(*s)) s++;
+    switch (*s) {
+    case '-':
+        neg = 1;
+    case '+':
+        s++;
+    }
+    /* Compute n as a negative number to avoid overflow on LLONG_MIN */
+    while (isdigit(*s)) n = 10 * n - (*s++ - '0');
+    return neg ? n : -n;
 }
 
 long strtol(const char *restrict nptr, char **restrict endptr, int base)
@@ -346,38 +371,8 @@ exit:
     return acc;
 }
 
-void exit(int status)
-{
-    ax_exit(status);
-}
-
-long long llabs(long long a)
-{
-    return a > 0 ? a : -a;
-}
-
-int abs(int a)
-{
-    return a > 0 ? a : -a;
-}
-
-long long atoll(const char *s)
-{
-    long long n = 0;
-    int neg = 0;
-    while (isspace(*s)) s++;
-    switch (*s) {
-    case '-':
-        neg = 1;
-    case '+':
-        s++;
-    }
-    /* Compute n as a negative number to avoid overflow on LLONG_MIN */
-    while (isdigit(*s)) n = 10 * n - (*s++ - '0');
-    return neg ? n : -n;
-}
-
 #ifdef AX_CONFIG_FP_SIMD
+
 float strtof(const char *restrict s, char **restrict p)
 {
     return ax_strtof(s, p);
@@ -388,4 +383,4 @@ double strtod(const char *restrict s, char **restrict p)
     return ax_strtod(s, p);
 }
 
-#endif
+#endif // AX_CONFIG_FP_SIMD

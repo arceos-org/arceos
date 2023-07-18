@@ -1,3 +1,5 @@
+#ifdef AX_CONFIG_SELECT
+
 #include <errno.h>
 #include <libax.h>
 #include <stdint.h>
@@ -37,3 +39,5 @@ int pselect(int n, fd_set *restrict rfds, fd_set *restrict wfds, fd_set *restric
     select(n, rfds, wfds, efds, &tv);
     return 0;
 }
+
+#endif // AX_CONFIG_SELECT

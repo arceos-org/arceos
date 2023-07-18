@@ -48,7 +48,7 @@ typedef void *pthread_t;
 #define PTHREAD_CANCELED ((void *)-1)
 #define SIGCANCEL        33
 
-#if defined(AX_CONFIG_MULTITASK)
+#ifdef AX_CONFIG_MULTITASK
 
 _Noreturn void pthread_exit(void *);
 pthread_t pthread_self(void);

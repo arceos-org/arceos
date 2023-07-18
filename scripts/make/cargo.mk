@@ -33,9 +33,13 @@ default_features := y
 ifeq ($(APP_TYPE),c)
   default_features := n
   ifneq ($(wildcard $(APP)/features.txt),)    # check features.txt exists
-    features-y += $(addprefix libax/,$(shell cat $(APP)/features.txt))
-    CFLAGS += $(addprefix -DAX_CONFIG_,$(shell cat $(APP)/features.txt | tr 'a-z' 'A-Z'))
+    features_c := $(shell cat $(APP)/features.txt)
+    ifneq ($(foreach feat,fs net pipe select epoll,$(filter $(feat),$(features_c))),)
+      features_c += fd
+    endif
+    CFLAGS += $(addprefix -DAX_CONFIG_,$(shell echo $(features_c) | tr 'a-z' 'A-Z'))
   endif
+  features-y += $(addprefix libax/,$(features_c))
   features-y += libax/cbindings
   features-y += $(APP_FEATURES)
 else ifeq ($(APP_TYPE),rust)

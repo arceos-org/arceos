@@ -31,6 +31,20 @@ uid_t getuid(void)
     return 0;
 }
 
+// TODO
+pid_t setsid(void)
+{
+    unimplemented();
+    return 0;
+}
+
+// TODO
+int isatty(int fd)
+{
+    unimplemented();
+    return 0;
+}
+
 unsigned int sleep(unsigned int seconds)
 {
     struct timespec ts;
@@ -53,7 +67,9 @@ long sysconf(int name)
 {
     return ax_sysconf(name);
 }
-#ifdef AX_CONFIG_ALLOC
+
+#ifdef AX_CONFIG_FD
+
 int close(int fd)
 {
     return ax_close(fd);
@@ -73,9 +89,34 @@ ssize_t write(int fd, const void *buf, size_t count)
 {
     return ax_write(fd, buf, count);
 }
-#endif
+
+int dup(int fd)
+{
+    return ax_dup(fd);
+}
+
+int dup2(int old, int new)
+{
+    int r;
+    if (old == new) {
+        r = fcntl(old, F_GETFD);
+        if (r >= 0)
+            return old;
+        else
+            return r;
+    }
+    return ax_dup3(old, new, 0);
+}
+
+int dup3(int old, int new, int flags)
+{
+    return ax_dup3(old, new, flags);
+}
+
+#endif // AX_CONFIG_FD
 
 #ifdef AX_CONFIG_FS
+
 // TODO:
 int access(const char *pathname, int mode)
 {
@@ -152,9 +193,24 @@ int ftruncate(int fd, off_t length)
     return 0;
 }
 
-#endif
+// TODO
+int chdir(const char *__path)
+{
+    unimplemented();
+    return 0;
+}
+
+// TODO
+int truncate(const char *path, off_t length)
+{
+    unimplemented();
+    return 0;
+}
+
+#endif // AX_CONFIG_FS
 
 #ifdef AX_CONFIG_PIPE
+
 int pipe(int fd[2])
 {
     return ax_pipe(&fd[0], &fd[1]);
@@ -182,33 +238,8 @@ int pipe2(int fd[2], int flag)
 
     return 0;
 }
-#endif
 
-#ifdef AX_CONFIG_ALLOC
-int dup(int fd)
-{
-    return ax_dup(fd);
-}
-
-int dup2(int old, int new)
-{
-    int r;
-    if (old == new) {
-        r = fcntl(old, F_GETFD);
-        if (r >= 0)
-            return old;
-        else
-            return r;
-    }
-    return ax_dup3(old, new, 0);
-}
-
-int dup3(int old, int new, int flags)
-{
-    return ax_dup3(old, new, flags);
-}
-
-#endif
+#endif // AX_CONFIG_PIPE
 
 // TODO
 _Noreturn void _exit(int status)
@@ -224,36 +255,8 @@ int execve(const char *__path, char *const *__argv, char *const *__envp)
 }
 
 // TODO
-pid_t setsid(void)
-{
-    unimplemented();
-    return 0;
-}
-
-// TODO
-int isatty(int fd)
-{
-    unimplemented();
-    return 0;
-}
-
-// TODO
 pid_t fork(void)
 {
     unimplemented();
     return -1;
-}
-
-// TODO
-int chdir(const char *__path)
-{
-    unimplemented();
-    return 0;
-}
-
-// TODO
-int truncate(const char *path, off_t length)
-{
-    unimplemented();
-    return 0;
 }

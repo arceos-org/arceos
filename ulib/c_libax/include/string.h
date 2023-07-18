@@ -45,8 +45,6 @@ void *memmove(void *dest, const void *src, size_t n);
 
 int memcmp(const void *vl, const void *vr, size_t n);
 
-#ifdef AX_CONFIG_ALLOC
 char *strdup(const char *__s);
-#endif
 
 #endif // __STRING_H__

@@ -1,8 +1,8 @@
+#ifdef AX_CONFIG_MULTITASK
+
 #include <libax.h>
 #include <pthread.h>
 #include <unistd.h>
-
-#if defined(AX_CONFIG_MULTITASK)
 
 _Noreturn void pthread_exit(void *result)
 {

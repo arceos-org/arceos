@@ -13,12 +13,11 @@ authors = [
 description = "ArceOS user library with an interface similar to rust std"
 license = "GPL-3.0-or-later OR Apache-2.0"
 homepage = "https://github.com/rcore-os/arceos"
-repository = "https://github.com/rcore-os/arceos/tree/main/ulib/ibax"
+repository = "https://github.com/rcore-os/arceos/tree/main/ulib/libax"
 documentation = "https://rcore-os.github.io/arceos/libax/index.html"
 
 [features]
-# Generate bindings for C code
-cbindings = ["cbindgen", "bindgen", "dep:spin", "dep:lazy_static"]
+default = ["axtask?/sched_fifo"]
 
 # Multicore
 smp = ["axruntime/smp", "spinlock/smp"]
@@ -46,9 +45,6 @@ use-ramdisk = ["axdriver?/ramdisk", "axfs?/use-ramdisk"]
 # Networking
 net = ["alloc", "axruntime/net", "dep:axdriver", "dep:axnet"]
 
-# Pipe
-pipe = ["alloc"]
-
 # Display
 display = ["axruntime/display", "dep:axdriver", "dep:axdisplay"]
 
@@ -70,29 +66,37 @@ platform-qemu-virt-riscv = ["axhal/platform-qemu-virt-riscv", "bus-mmio"]
 platform-qemu-virt-aarch64 = ["axhal/platform-qemu-virt-aarch64", "bus-mmio"]
 platform-raspi4-aarch64 = ["axhal/platform-raspi4-aarch64", "bus-mmio"]
 
-default = ["axtask?/sched_fifo"]
+# For C bindings
+cbindings = ["cbindgen", "bindgen", "dep:spin", "dep:lazy_static", "dep:flatten_objects", "dep:axconfig"]
+fd = ["alloc"]
+pipe = ["fd"]
+select = ["fd"]
+epoll = ["fd"]
 
 [dependencies]
-spin = { version = "0.9", optional = true }
-static_assertions = "1.1.0"
-lazy_static = { version = "1.4", features = ["spin_no_std"], optional = true }
-spinlock = { path = "../../crates/spinlock" }
-flatten_objects = { path = "../../crates/flatten_objects" }
-axio = { path = "../../crates/axio" }
-axerrno = { path = "../../crates/axerrno" }
-axalloc = { path = "../../modules/axalloc", optional = true }
-axconfig = { path = "../../modules/axconfig" }
-axdisplay = { path = "../../modules/axdisplay", optional = true }
-axdriver = { path = "../../modules/axdriver", optional = true }
+# ArceOS modules
+axruntime = { path = "../../modules/axruntime", default-features = false }
 axhal = { path = "../../modules/axhal" }
 axlog = { path = "../../modules/axlog" }
+axconfig = { path = "../../modules/axconfig" }
+axalloc = { path = "../../modules/axalloc", optional = true }
+axdriver = { path = "../../modules/axdriver", optional = true }
 axfs = { path = "../../modules/axfs", optional = true }
 axnet = { path = "../../modules/axnet", optional = true }
-axruntime = { path = "../../modules/axruntime", default-features = false }
+axdisplay = { path = "../../modules/axdisplay", optional = true }
 axsync = { path = "../../modules/axsync", default-features = false, optional = true }
 axtask = { path = "../../modules/axtask", default-features = false, optional = true }
+
+# Other crates
+axio = { path = "../../crates/axio" }
+axerrno = { path = "../../crates/axerrno" }
+spinlock = { path = "../../crates/spinlock" }
+static_assertions = "1.1.0"
+spin = { version = "0.9", optional = true }
+lazy_static = { version = "1.4", features = ["spin_no_std"], optional = true }
+flatten_objects = { path = "../../crates/flatten_objects", optional = true }
 
 [build-dependencies]
 cbindgen = { version = "0.24", optional = true }
 bindgen ={ version = "0.66", optional = true }
-axconfig = { path = "../../modules/axconfig" }
+axconfig = { path = "../../modules/axconfig", optional = true }

@@ -4,7 +4,7 @@ use crate::io::{self, Write};
 use axerrno::LinuxError;
 use spinlock::SpinNoIrq;
 
-#[cfg(feature = "alloc")]
+#[cfg(feature = "fd")]
 use {crate::io::PollState, alloc::sync::Arc, axerrno::LinuxResult};
 
 static LOCK: SpinNoIrq<()> = SpinNoIrq::new(()); // Lock used by `ax_println_str` for C apps
@@ -39,7 +39,7 @@ pub unsafe extern "C" fn ax_println_str(buf: *const c_char, count: usize) -> c_i
     })
 }
 
-#[cfg(feature = "alloc")]
+#[cfg(feature = "fd")]
 impl super::fd_ops::FileLike for crate::io::Stdin {
     fn read(&self, buf: &mut [u8]) -> LinuxResult<usize> {
         Ok(self.read_locked(buf)?)
@@ -75,7 +75,7 @@ impl super::fd_ops::FileLike for crate::io::Stdin {
     }
 }
 
-#[cfg(feature = "alloc")]
+#[cfg(feature = "fd")]
 impl super::fd_ops::FileLike for crate::io::Stdout {
     fn read(&self, _buf: &mut [u8]) -> LinuxResult<usize> {
         Err(LinuxError::EPERM)

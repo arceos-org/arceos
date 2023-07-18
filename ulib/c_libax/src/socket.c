@@ -1,3 +1,5 @@
+#ifdef AX_CONFIG_NET
+
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -6,7 +8,6 @@
 
 #include <libax.h>
 
-#if defined(AX_CONFIG_NET)
 int socket(int domain, int type, int protocol)
 {
     return ax_socket(domain, type, protocol);
@@ -113,4 +114,4 @@ ssize_t sendmsg(int fd, const struct msghdr *msg, int flags)
     return 0;
 }
 
-#endif
+#endif // AX_CONFIG_NET

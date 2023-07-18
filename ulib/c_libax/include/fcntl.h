@@ -118,8 +118,6 @@ int fcntl(int fd, int cmd, ... /* arg */);
 int posix_fadvise(int __fd, unsigned long __offset, unsigned long __len, int __advise);
 int sync_file_range(int, off_t, off_t, unsigned);
 
-#ifdef AX_CONFIG_FS
 int open(const char *filename, int flags, ...);
-#endif
 
 #endif
