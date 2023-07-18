@@ -12,7 +12,7 @@ use axprocess::{
 extern crate alloc;
 use super::{
     flags::{
-        raw_ptr_to_ref_str, RLimit, RobustList, TimeSecs, WaitFlags, RLIMIT_AS, RLIMIT_NOFILE,
+        raw_ptr_to_ref_str, RLimit, RobustList, TimeSpec, WaitFlags, RLIMIT_AS, RLIMIT_NOFILE,
         RLIMIT_STACK,
     },
     futex::futex,
@@ -117,7 +117,7 @@ pub fn syscall_yield() -> isize {
 
 /// 当前任务进入睡眠，req指定了睡眠的时间
 /// rem存储当睡眠完成时，真实睡眠时间和预期睡眠时间之间的差值
-pub fn syscall_sleep(req: *const TimeSecs, rem: *mut TimeSecs) -> isize {
+pub fn syscall_sleep(req: *const TimeSpec, rem: *mut TimeSpec) -> isize {
     let req_time = unsafe { *req };
     let start_to_sleep = current_time();
     let dur = Duration::new(req_time.tv_sec as u64, req_time.tv_nsec as u32);
@@ -128,14 +128,14 @@ pub fn syscall_sleep(req: *const TimeSecs, rem: *mut TimeSecs) -> isize {
         if sleep_time < dur {
             let delta = (dur - sleep_time).as_nanos() as usize;
             unsafe {
-                *rem = TimeSecs {
+                *rem = TimeSpec {
                     tv_sec: delta / 1000_000_000,
                     tv_nsec: delta % 1000_000_000,
                 }
             };
         } else {
             unsafe {
-                *rem = TimeSecs {
+                *rem = TimeSpec {
                     tv_sec: 0,
                     tv_nsec: 0,
                 }
@@ -270,7 +270,7 @@ pub fn syscall_futex(
             .manual_alloc_for_lazy(time_out_val.into())
             .is_ok()
     {
-        let time_sepc: TimeSecs = unsafe { *(time_out_val as *const TimeSecs) };
+        let time_sepc: TimeSpec = unsafe { *(time_out_val as *const TimeSpec) };
         time_sepc.to_nano()
     } else {
         // usize::MAX

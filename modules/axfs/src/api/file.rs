@@ -102,6 +102,11 @@ impl Metadata {
         self.0.perm()
     }
 
+    /// Sets the permissions of the file this metadata is for.
+    pub fn set_permissions(&mut self, perm: Permissions){
+        self.0.set_perm(perm)
+    }
+
     /// Returns the inner raw metadata [`fops::FileAttr`].
     pub const fn raw_metadata(&self) -> &fops::FileAttr {
         &self.0

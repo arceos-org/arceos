@@ -5,6 +5,7 @@ use core::any::Any;
 use log::debug;
 extern crate alloc;
 use alloc::string::String;
+use axhal::time::{self, TimeValue};
 
 use super::flags::OpenFlags;
 /// 文件系统信息
@@ -104,6 +105,9 @@ pub trait FileIO: FileExt {
     fn set_close_on_exec(&mut self, _is_set: bool) -> bool {
         false
     }
+
+    /// 设置时间
+    fn set_time(&self, atime: TimeValue, mtime: TimeValue)->bool{ false }
 }
 
 /// `FileExt` 需要满足 `AsAny` 的要求，即可以转化为 `Any` 类型，从而能够进行向下类型转换。

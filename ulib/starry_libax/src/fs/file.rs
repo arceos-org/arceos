@@ -1,3 +1,4 @@
+use alloc::borrow::ToOwned;
 use crate::fs::FilePath;
 
 use super::link::get_link_count;
@@ -11,6 +12,7 @@ use axfs::monolithic_fs::file_io::{FileExt, Kstat};
 use axfs::monolithic_fs::flags::OpenFlags;
 use axfs::monolithic_fs::FileIO;
 use axfs::monolithic_fs::FileIOType;
+use axhal::time::TimeValue;
 
 use axio::{Read, Seek, SeekFrom, Write};
 use axsync::Mutex;
@@ -34,11 +36,11 @@ pub struct FileDesc {
 /// TODO: 暂时全部记为usize
 pub struct FileMetaData {
     /// 最后一次访问时间
-    pub atime: usize,
+    pub atime: TimeValue,
     /// 最后一次改变(modify)内容的时间
-    pub mtime: usize,
+    pub mtime: TimeValue,
     /// 最后一次改变(change)属性的时间
-    pub ctime: usize,
+    pub ctime: TimeValue,
     // /// 打开时的选项。
     // /// 主要用于判断 CLOEXEC，即 exec 时是否关闭。默认为 false。
     // pub flags: OpenFlags,
@@ -118,12 +120,12 @@ impl FileIO for FileDesc {
             st_blksize: 0,
             _pad1: 0,
             st_blocks: raw_metadata.blocks() as u64,
-            st_atime_sec: stat.atime as isize,
-            st_atime_nsec: 0,
-            st_mtime_sec: stat.mtime as isize,
-            st_mtime_nsec: 0,
-            st_ctime_sec: stat.ctime as isize,
-            st_ctime_nsec: 0,
+            st_atime_sec: stat.atime.as_secs() as isize,
+            st_atime_nsec: stat.atime.subsec_nanos() as isize,
+            st_mtime_sec: stat.mtime.as_secs() as isize,
+            st_mtime_nsec: stat.mtime.subsec_nanos() as isize,
+            st_ctime_sec: stat.ctime.as_secs() as isize,
+            st_ctime_nsec: stat.ctime.subsec_nanos() as isize,
             _unused: [0; 2],
         };
         debug!("kstat: {:?}", kstat);
@@ -148,6 +150,13 @@ impl FileIO for FileDesc {
         }
         true
     }
+
+    fn set_time(&self, atime: TimeValue, mtime: TimeValue) -> bool {
+        let mut inner = self.stat.lock();
+        atime.clone_into(&mut inner.atime);
+        mtime.clone_into(&mut inner.mtime);
+        true
+    }
 }
 
 /// 为FileDesc实现FileIO trait
@@ -161,9 +170,9 @@ impl FileDesc {
             file,
             flags,
             stat: Mutex::new(FileMetaData {
-                atime: 0,
-                mtime: 0,
-                ctime: 0,
+                atime: TimeValue::default(),
+                mtime: TimeValue::default(),
+                ctime: TimeValue::default(),
             }),
         }
     }

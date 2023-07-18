@@ -6,6 +6,7 @@
 
 #[cfg(not(test))]
 extern crate axruntime;
+extern crate alloc;
 
 #[allow(unused_imports)]
 mod fs;

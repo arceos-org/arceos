@@ -1,4 +1,5 @@
 pub mod file_io;
+pub mod fs_stat;
 pub use crate::api;
 use crate::api::OpenOptions;
 use axerrno::AxResult;

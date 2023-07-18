@@ -36,19 +36,19 @@ pub struct TimeVal {
 // sys_nanosleep指定的结构体类型
 #[repr(C)]
 #[derive(Clone, Copy)]
-pub struct TimeSecs {
+pub struct TimeSpec {
     pub tv_sec: usize,
     pub tv_nsec: usize,
 }
 
-impl TimeSecs {
+impl TimeSpec {
     /// 从秒数和纳秒数构造一个 TimeSecs
 
     pub fn now() -> Self {
         let nano = current_time_nanos() as usize;
         let tv_sec = nano / NSEC_PER_SEC;
         let tv_nsec = nano % NSEC_PER_SEC;
-        TimeSecs { tv_sec, tv_nsec }
+        TimeSpec { tv_sec, tv_nsec }
     }
 
     pub fn to_nano(&self) -> usize {

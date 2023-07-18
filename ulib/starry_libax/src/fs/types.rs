@@ -52,10 +52,12 @@ impl FilePath {
         self.0 == "/"
     }
     /// 返回是否是目录
+    /// 只能判断路径本身的格式，并不会考虑实际的文件信息
     pub fn is_dir(&self) -> bool {
         self.0.ends_with("/")
     }
     /// 返回是否是文件
+    /// 只能判断路径本身的格式，并不会考虑实际的文件信息
     pub fn is_file(&self) -> bool {
         !self.0.ends_with("/")
     }

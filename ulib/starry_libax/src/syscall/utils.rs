@@ -1,7 +1,7 @@
 use axhal::time::{current_time_nanos, nanos_to_ticks};
 use axprocess::{process::current_process, time_stat_output};
 
-use super::flags::{TimeSecs, TimeVal, UtsName, TMS};
+use super::flags::{TimeSpec, TimeVal, UtsName, TMS};
 
 /// 返回值为当前经过的时钟中断数
 pub fn syscall_time(tms: *mut TMS) -> isize {
@@ -30,19 +30,19 @@ pub fn syscall_get_time_of_day(ts: *mut TimeVal) -> isize {
 }
 
 /// 用于获取当前系统时间并且存储在对应的结构体中
-pub fn syscall_clock_get_time(_clock_id: usize, ts: *mut TimeSecs) -> isize {
+pub fn syscall_clock_get_time(_clock_id: usize, ts: *mut TimeSpec) -> isize {
     let process = current_process();
     let inner = process.inner.lock();
     if inner
         .memory_set
         .lock()
-        .manual_alloc_type_for_lazy(ts as *const TimeSecs)
+        .manual_alloc_type_for_lazy(ts as *const TimeSpec)
         .is_err()
     {
         return -1;
     }
     unsafe {
-        (*ts) = TimeSecs::now();
+        (*ts) = TimeSpec::now();
     }
     0
 }
