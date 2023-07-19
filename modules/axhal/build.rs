@@ -2,7 +2,7 @@ use std::io::Result;
 
 fn main() {
     let arch = std::env::var("CARGO_CFG_TARGET_ARCH").unwrap();
-    let platform = std::env::var("PLATFORM").unwrap_or("dummy".to_string());
+    let platform = std::env::var("AX_PLATFORM").unwrap_or("dummy".to_string());
     gen_linker_script(&arch, &platform).unwrap();
 }
 

@@ -21,6 +21,7 @@
 
 #![no_std]
 #![feature(new_uninit)]
+#![feature(const_option)]
 
 #[macro_use]
 extern crate log;

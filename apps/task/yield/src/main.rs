@@ -20,7 +20,7 @@ fn main() {
 
             let _order = FINISHED_TASKS.fetch_add(1, Ordering::Relaxed);
             #[cfg(not(feature = "sched_cfs"))]
-            if option_env!("SMP") == Some("1") {
+            if option_env!("AX_SMP") == Some("1") {
                 assert!(_order == i); // FIFO scheduler
             }
         });

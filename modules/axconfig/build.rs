@@ -65,7 +65,7 @@ fn gen_config_rs(platform: &str) -> Result<()> {
     add_config(
         &mut config,
         "smp",
-        toml_edit::value(std::env::var("SMP").unwrap_or("1".into())),
+        toml_edit::value(std::env::var("AX_SMP").unwrap_or("1".into())),
         Some("# Number of CPUs"),
     );
 

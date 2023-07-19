@@ -1,36 +1,72 @@
-# Arguments
+# Available arguments:
+# * General options:
+#     - `ARCH`: Target architecture: x86_64, riscv64, aarch64
+#     - `PLATFORM`: Target platform: pc-x86, qemu-virt-riscv, qemu-virt-aarch64, raspi4-aarch64
+#     - `SMP`: Number of CPUs
+#     - `MODE`: Build mode: release, debug
+#     - `LOG:` Logging level: warn, error, info, debug, trace
+#     - `V`: Verbose level: (empty), 1, 2
+# * App options:
+#     - `A` or `APP`: Path to the application
+#     - `FEATURES`: Features to be enabled. Each feature need to start with one
+#       of the prefix `ax/`, `lib/` or `app/`. See "scripts/make/features.mk"
+#       for more details.
+# * QEMU options:
+#     - `BLK`: Enable storage devices (virtio-blk)
+#     - `NET`: Enable network devices (virtio-net)
+#     - `GRAPHIC`: Enable display devices and graphic output (virtio-gpu)
+#     - `BUS`: Device bus type: mmio, pci
+#     - `DISK_IMG`: Path to the virtual disk image
+#     - `ACCEL`: Enable hardware acceleration (KVM on linux)
+#     - `QEMU_LOG`: Enable QEMU logging (log file is "qemu.log")
+#     - `NET_DUMP`: Enable network packet dump (log file is "netdump.pcap")
+#     - `NET_DEV`: QEMU netdev backend types: user, tap
+# * Network options:
+#     - `IP`: ArceOS IPv4 address (default is 10.0.2.15 for QEMU user netdev)
+#     - `GW`: Gateway IPv4 address (default is 10.0.2.2 for QEMU user netdev)
+
+# General options
 ARCH ?= x86_64
 SMP ?= 1
 MODE ?= release
 LOG ?= warn
 V ?=
 
+# App options
 A ?= apps/helloworld
 APP ?= $(A)
 APP_FEATURES ?=
-DISK_IMG ?= disk.img
 
-FS ?= n
+# QEMU options
+BLK ?= n
 NET ?= n
 GRAPHIC ?= n
 BUS ?= mmio
 
+DISK_IMG ?= disk.img
 QEMU_LOG ?= n
 NET_DUMP ?= n
+NET_DEV ?= user
 
+# Network options
+IP ?= 10.0.2.15
+GW ?= 10.0.2.2
+
+# App type
 ifeq ($(wildcard $(APP)),)
   $(error Application path "$(APP)" is not valid)
 endif
 
 ifneq ($(wildcard $(APP)/Cargo.toml),)
-  APP_TYPE ?= rust
+  APP_TYPE := rust
 else
-  APP_TYPE ?= c
+  APP_TYPE := c
 endif
 
-# Platform
+# Platform and target
 ifeq ($(ARCH), x86_64)
-  ACCEL ?= y
+  # Don't enable kvm for WSL/WSL2.
+  ACCEL ?= $(if $(findstring -microsoft, $(shell uname -r | tr '[:upper:]' '[:lower:]')),n,y)
   PLATFORM ?= pc-x86
   TARGET := x86_64-unknown-none
   BUS := pci
@@ -46,11 +82,14 @@ else
   $(error "ARCH" must be one of "x86_64", "riscv64", or "aarch64")
 endif
 
-export ARCH
-export PLATFORM
-export SMP
-export MODE
-export LOG
+export AX_ARCH=$(ARCH)
+export AX_PLATFORM=$(PLATFORM)
+export AX_SMP=$(SMP)
+export AX_MODE=$(MODE)
+export AX_LOG=$(LOG)
+export AX_TARGET=$(TARGET)
+export AX_IP=$(IP)
+export AX_GW=$(GW)
 
 # Binutils
 CROSS_COMPILE ?= $(ARCH)-linux-musl-
@@ -101,13 +140,17 @@ debug: build
 	  -ex 'disp /16i $$pc'
 
 clippy:
+ifeq ($(origin ARCH), command line)
+	$(call cargo_clippy,--target $(TARGET))
+else
 	$(call cargo_clippy)
+endif
 
 doc:
 	$(call cargo_doc)
 
 doc_check_missing:
-	$(call cargo_doc,-D missing-docs)
+	$(call cargo_doc)
 
 fmt:
 	cargo fmt --all

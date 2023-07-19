@@ -108,19 +108,21 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         "\
         arch = {}\n\
         platform = {}\n\
+        target = {}\n\
         smp = {}\n\
         build_mode = {}\n\
         log_level = {}\n\
         ",
-        option_env!("ARCH").unwrap_or(""),
-        option_env!("PLATFORM").unwrap_or(""),
-        option_env!("SMP").unwrap_or(""),
-        option_env!("MODE").unwrap_or(""),
-        option_env!("LOG").unwrap_or(""),
+        option_env!("AX_ARCH").unwrap_or(""),
+        option_env!("AX_PLATFORM").unwrap_or(""),
+        option_env!("AX_TARGET").unwrap_or(""),
+        option_env!("AX_SMP").unwrap_or(""),
+        option_env!("AX_MODE").unwrap_or(""),
+        option_env!("AX_LOG").unwrap_or(""),
     );
 
     axlog::init();
-    axlog::set_max_level(option_env!("LOG").unwrap_or("")); // no effect if set `log-level-*` features
+    axlog::set_max_level(option_env!("AX_LOG").unwrap_or("")); // no effect if set `log-level-*` features
     info!("Logging is enabled.");
     info!("Primary CPU {} started, dtb = {:#x}.", cpu_id, dtb);
 

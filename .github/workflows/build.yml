@@ -18,7 +18,7 @@ jobs:
         toolchain: ${{ env.rust-toolchain }}
         components: rust-src, clippy, rustfmt
     - name: Clippy for the default target
-      run: cargo clippy --all-features
+      run: make clippy
     - name: Clippy for x86_64
       run: make clippy ARCH=x86_64
     - name: Clippy for riscv64
@@ -54,21 +54,25 @@ jobs:
     - name: Build exception
       run: make ARCH=${{ matrix.arch }} A=apps/exception
     - name: Build display
-      run: make ARCH=${{ matrix.arch }} A=apps/display GRAPHIC=y
+      run: make ARCH=${{ matrix.arch }} A=apps/display
     - name: Build task/yield
       run: make ARCH=${{ matrix.arch }} A=apps/task/yield
     - name: Build task/parallel
       run: make ARCH=${{ matrix.arch }} A=apps/task/parallel
     - name: Build task/sleep
       run: make ARCH=${{ matrix.arch }} A=apps/task/sleep
+    - name: Build task/priority
+      run: make ARCH=${{ matrix.arch }} A=apps/task/priority
     - name: Build fs/shell
-      run: make ARCH=${{ matrix.arch }} A=apps/fs/shell FS=y
+      run: make ARCH=${{ matrix.arch }} A=apps/fs/shell
     - name: Build net/echoserver
-      run: make ARCH=${{ matrix.arch }} A=apps/net/echoserver NET=y
+      run: make ARCH=${{ matrix.arch }} A=apps/net/echoserver
     - name: Build net/httpclient
-      run: make ARCH=${{ matrix.arch }} A=apps/net/httpclient NET=y
+      run: make ARCH=${{ matrix.arch }} A=apps/net/httpclient
     - name: Build net/httpserver
-      run: make ARCH=${{ matrix.arch }} A=apps/net/httpserver NET=y
+      run: make ARCH=${{ matrix.arch }} A=apps/net/httpserver
+    - name: Build net/udpserver
+      run: make ARCH=${{ matrix.arch }} A=apps/net/udpserver
 
     - uses: ./.github/workflows/actions/setup-musl
       with:
