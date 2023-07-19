@@ -25,8 +25,8 @@ pub use self::dns::resolve_socket_addr;
 pub use self::tcp::TcpSocket;
 pub use self::udp::UdpSocket;
 
-const IP: &str = option_env!("AX_IP").unwrap();
-const GATEWAY: &str = option_env!("AX_GW").unwrap();
+const IP: &str = env!("AX_IP");
+const GATEWAY: &str = env!("AX_GW");
 const DNS_SEVER: &str = "8.8.8.8";
 const IP_PREFIX: u8 = 24;
 
