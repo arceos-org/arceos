@@ -36,6 +36,7 @@ cfg_if::cfg_if! {
 
 pub use self::net_impl::TcpSocket;
 pub use self::net_impl::UdpSocket;
+pub use self::net_impl::{bench_receive, bench_transmit};
 pub use self::net_impl::{poll_interfaces, resolve_socket_addr};
 pub use smoltcp::wire::{IpAddress as IpAddr, IpEndpoint as SocketAddr, Ipv4Address as Ipv4Addr};
 

@@ -36,6 +36,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "arceos-bwbench"
+version = "0.1.0"
+dependencies = [
+ "axnet",
+ "libax",
+]
+
+[[package]]
 name = "arceos-display"
 version = "0.1.0"
 dependencies = [
