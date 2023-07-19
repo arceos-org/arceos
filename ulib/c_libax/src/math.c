@@ -199,81 +199,81 @@ long double ceill(long double x)
     return x;
 }
 
-double acos(double)
+double acos(double x)
 {
     unimplemented();
     return 0;
 }
 
 // TODO
-double atan(double)
+double atan(double x)
 {
     unimplemented();
     return 0;
 }
 
 // TODO
-double atan2(double, double)
+double atan2(double y, double x)
 {
     unimplemented();
     return 0;
 }
 
-double cosh(double)
-{
-    unimplemented();
-    return 0;
-}
-
-// TODO
-double exp(double)
+double cosh(double x)
 {
     unimplemented();
     return 0;
 }
 
 // TODO
-double frexp(double, int *)
-{
-    unimplemented();
-    return 0;
-}
-
-double ldexp(double, int)
+double exp(double x)
 {
     unimplemented();
     return 0;
 }
 
 // TODO
-double log10(double)
+double frexp(double x, int *e)
+{
+    unimplemented();
+    return 0;
+}
+
+double ldexp(double x, int n)
 {
     unimplemented();
     return 0;
 }
 
 // TODO
-double modf(double, double *)
-{
-    unimplemented();
-    return 0;
-}
-
-double sinh(double)
+double log10(double x)
 {
     unimplemented();
     return 0;
 }
 
 // TODO
-double tan(double)
+double modf(double x, double *iptr)
+{
+    unimplemented();
+    return 0;
+}
+
+double sinh(double x)
 {
     unimplemented();
     return 0;
 }
 
 // TODO
-double tanh(double)
+double tan(double x)
+{
+    unimplemented();
+    return 0;
+}
+
+// TODO
+double tanh(double x)
 {
     unimplemented();
     return 0;

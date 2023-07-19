@@ -307,7 +307,7 @@ impl TcpSocket {
         if self.is_connecting() {
             return Err(AxError::WouldBlock);
         } else if !self.is_connected() {
-            return ax_err!(NotConnected, "socket recv() failed");
+            return ax_err!(NotConnected, "socket send() failed");
         }
 
         // SAFETY: `self.handle` should be initialized in a connected socket.
@@ -427,6 +427,11 @@ impl TcpSocket {
                 State::SynSent => false, // wait for connection
                 State::Established => {
                     self.set_state(STATE_CONNECTED); // connected
+                    debug!(
+                        "TCP socket {}: connected to {}",
+                        handle,
+                        socket.remote_endpoint().unwrap(),
+                    );
                     true
                 }
                 _ => {

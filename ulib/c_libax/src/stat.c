@@ -10,14 +10,14 @@ int fchmod(int fd, mode_t mode)
 }
 
 // TODO:
-int mkdir(const char *pathname, mode_t mode)
+int mkdir(const char *path, mode_t mode)
 {
     unimplemented();
     return 0;
 }
 
 // TODO
-int chmod(const char *__file, mode_t __mode)
+int chmod(const char *path, mode_t mode)
 {
     unimplemented();
     return 0;
@@ -31,7 +31,7 @@ mode_t umask(mode_t mask)
 }
 
 // TODO
-int fstatat(int, const char *__restrict, struct stat *__restrict, int)
+int fstatat(int fd, const char *restrict path, struct stat *restrict st, int flag)
 {
     unimplemented();
     return 0;

@@ -303,7 +303,7 @@ off_t ftello(FILE *__stream)
 }
 
 // TODO
-char *tmpnam(char *)
+char *tmpnam(char *buf)
 {
     unimplemented();
     return 0;
@@ -323,34 +323,34 @@ int ferror(FILE *f)
 }
 
 // TODO
-FILE *freopen(const char *restrict, const char *restrict, FILE *restrict)
+FILE *freopen(const char *restrict filename, const char *restrict mode, FILE *restrict f)
 {
     unimplemented();
     return 0;
 }
 
 // TODO
-int fscanf(FILE *restrict, const char *restrict, ...)
+int fscanf(FILE *restrict f, const char *restrict fmt, ...)
 {
     unimplemented();
     return 0;
 }
 
 // TODO
-long ftell(FILE *)
+long ftell(FILE *f)
 {
     unimplemented();
     return 0;
 }
 
-int getc(FILE *)
+int getc(FILE *f)
 {
     unimplemented();
     return 0;
 }
 
 // TODO
-int remove(const char *)
+int remove(const char *path)
 {
     unimplemented();
     return 0;
@@ -393,7 +393,7 @@ int __uflow(FILE *f)
     return 0;
 }
 
-int getc_unlocked(FILE *)
+int getc_unlocked(FILE *f)
 {
     unimplemented();
     return 0;

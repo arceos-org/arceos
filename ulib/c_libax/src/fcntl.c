@@ -42,7 +42,7 @@ int posix_fadvise(int __fd, unsigned long __offset, unsigned long __len, int __a
 }
 
 // TODO
-int sync_file_range(int, off_t, off_t, unsigned)
+int sync_file_range(int fd, off_t pos, off_t len, unsigned flags)
 {
     unimplemented();
     return 0;

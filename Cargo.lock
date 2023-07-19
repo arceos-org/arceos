@@ -348,6 +348,7 @@ dependencies = [
  "lazy_init",
  "log",
  "smoltcp",
+ "spin 0.9.8",
 ]
 
 [[package]]
