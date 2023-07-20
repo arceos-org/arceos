@@ -210,8 +210,12 @@ pub fn new_file(path: &str, flags: &OpenFlags) -> AxResult<File> {
 /// 新建一个文件描述符
 pub fn new_fd(path: String, flags: OpenFlags) -> AxResult<FileDesc> {
     debug!("Into function new_fd, path: {}", path);
-    let file = new_file(path.as_str(), &flags)?;
+    let mut file = new_file(path.as_str(), &flags)?;
     // let file_size = file.metadata()?.len();
+    let pos = file.seek(SeekFrom::Current(0))? as usize;
+    let file_size = file.seek(SeekFrom::End(0))? as usize;
+    info!("pos: {}, file_size: {}", pos, file_size);
+    file.seek(SeekFrom::Start(pos as u64))?;
     let fd = FileDesc::new(path.as_str(), Arc::new(Mutex::new(file)), flags);
     Ok(fd)
 }

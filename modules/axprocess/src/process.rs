@@ -5,7 +5,7 @@ use axerrno::{AxError, AxResult};
 use axfs::monolithic_fs::FileIO;
 use axhal::arch::{write_page_table_root, TrapFrame};
 use axhal::mem::phys_to_virt;
-use axlog::{debug, error, info};
+use axlog::{debug, error};
 use axtask::monolithic_task::task::TaskState;
 use axtask::{AxTaskRef, TaskId};
 

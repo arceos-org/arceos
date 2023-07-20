@@ -46,9 +46,10 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
     check_dead_wait();
     let curr_id = current().id().as_u64();
     info!(
-        "cpu id: {}, task id: {}, syscall: id: {} name: {:?}",
+        "cpu id: {}, task id: {}, process id: {}, syscall: id: {} name: {:?}",
         this_cpu_id(),
         curr_id,
+        current().get_process_id(),
         syscall_id,
         syscall_name,
     );

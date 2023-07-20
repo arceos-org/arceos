@@ -366,7 +366,8 @@ pub const BUSYBOX_TESTCASES: &[&str] = &[
     // "busybox sh lua_testcode.sh",
     // "echo latency measurements",
     // "lmbench_all lat_syscall -P 1 null",
-    "busybox sh lua_testcode.sh",
+    // "busybox sh lua_testcode.sh",
+    "busybox sh busybox_testcode.sh",
 ];
 
 /// 运行测试时的状态机，记录测试结果与内容

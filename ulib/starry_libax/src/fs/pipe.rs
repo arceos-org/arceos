@@ -6,7 +6,7 @@ use axfs::monolithic_fs::{file_io::FileExt, FileIO};
 use axio::{Read, Seek, Write};
 use axsync::Mutex;
 use axtask::yield_now;
-use log::{info, trace};
+use log::{error, info, trace};
 use spinlock::SpinNoIrq;
 
 /// IPC pipe
@@ -37,7 +37,7 @@ impl Pipe {
     }
 }
 
-const RING_BUFFER_SIZE: usize = 32;
+const RING_BUFFER_SIZE: usize = 4096;
 
 #[derive(Copy, Clone, PartialEq)]
 enum RingBufferStatus {
@@ -179,11 +179,9 @@ impl Write for Pipe {
                     ring_buffer.write_byte(*byte_ref);
                     already_write += 1;
                     if already_write == want_to_write {
-                        info!("write_byte: {}", already_write);
                         return Ok(want_to_write);
                     }
                 } else {
-                    info!("write_byte: {}", already_write);
                     return Ok(already_write);
                 }
             }

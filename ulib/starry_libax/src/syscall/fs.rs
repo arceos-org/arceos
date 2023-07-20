@@ -8,7 +8,7 @@ extern crate alloc;
 use alloc::format;
 use alloc::string::ToString;
 use alloc::sync::Arc;
-use alloc::vec::Vec;
+use alloc::vec;
 use axfs::api;
 use axfs::api::Permissions;
 use axfs::monolithic_fs::file_io::Kstat;
@@ -298,7 +298,7 @@ pub fn syscall_openat(fd: usize, path: *const u8, flags: usize, _mode: u8) -> is
 ///     - fd：要关闭的文件描述符。
 /// 返回值：成功执行，返回0。失败，返回-1。
 pub fn syscall_close(fd: usize) -> isize {
-    debug!("Into syscall_close. fd: {}", fd);
+    info!("Into syscall_close. fd: {}", fd);
 
     let process = current_process();
     let mut process_inner = process.inner.lock();
@@ -402,8 +402,6 @@ pub fn syscall_pipe2(fd: *mut u32) -> isize {
     };
     process_inner.fd_manager.fd_table[fd_num2] = Some(write);
 
-    debug!("fd_num: {}, fd_num2: {}", fd_num, fd_num2);
-
     unsafe {
         core::ptr::write(fd, fd_num as u32);
         core::ptr::write(fd.offset(1), fd_num2 as u32);
@@ -468,9 +466,9 @@ pub fn syscall_dup3(fd: usize, new_fd: usize) -> isize {
     //     debug!("new_fd {} is already opened", new_fd);
     //     return ErrorNo::EINVAL as isize;
     // }
+    info!("dup3 fd {} to new fd {}", fd, new_fd);
     // 就算new_fd已经被打开了，也可以被重新替代掉
     process_inner.fd_manager.fd_table[new_fd] = process_inner.fd_manager.fd_table[fd].clone();
-
     new_fd as isize
 }
 
@@ -1153,13 +1151,14 @@ pub fn syscall_pwrite64(fd: usize, buf: *const u8, count: usize, offset: usize) 
 /// 如果offset为NULL，则从当前读写指针开始读取，读取完毕后会更新读写指针
 /// 如果offset不为NULL，则从offset指定的位置开始读取，读取完毕后不会更新读写指针，但是会更新offset的值
 pub fn syscall_sendfile64(out_fd: usize, in_fd: usize, offset: *mut usize, count: usize) -> isize {
+    info!("send from {} to {}, count: {}", in_fd, out_fd, count);
     let process = current_process();
     let process_inner = process.inner.lock();
     let out_file = process_inner.fd_manager.fd_table[out_fd].clone().unwrap();
     let in_file = process_inner.fd_manager.fd_table[in_fd].clone().unwrap();
     let old_in_offset = in_file.lock().seek(SeekFrom::Current(0)).unwrap();
     // 如果offset不为NULL，则从offset指定的位置开始读取
-    let mut buf: Vec<u8> = Vec::with_capacity(count);
+    let mut buf = vec![0u8; count];
     if !offset.is_null() {
         let in_offset = unsafe { *offset };
         in_file
@@ -1169,10 +1168,15 @@ pub fn syscall_sendfile64(out_fd: usize, in_fd: usize, offset: *mut usize, count
         let ret = in_file.lock().read(buf.as_mut_slice());
         unsafe { *offset = in_offset + ret.unwrap() };
         in_file.lock().seek(SeekFrom::Start(old_in_offset)).unwrap();
+        let buf = buf[..ret.unwrap()].to_vec();
         out_file.lock().write(buf.as_slice()).unwrap() as isize
     } else {
         // 如果offset为NULL，则从当前读写指针开始读取
-        let _ = in_file.lock().read(buf.as_mut_slice());
+        let ret = in_file.lock().read(buf.as_mut_slice());
+        info!("in fd: {}, count: {}", in_fd, count);
+        let buf = buf[..ret.unwrap()].to_vec();
+        info!("read len: {}", buf.len());
+        info!("write len: {}", buf.as_slice().len());
         out_file.lock().write(buf.as_slice()).unwrap() as isize
     }
 }
