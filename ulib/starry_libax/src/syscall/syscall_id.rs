@@ -54,6 +54,7 @@ pub enum SyscallId {
     NANO_SLEEP = 101,
     GETTIMER = 102,
     SETITIMER = 103,
+    SYSLOG = 116,
     GETRUSAGE = 165,
     UMASK = 166,
     GETPID = 172,

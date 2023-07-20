@@ -48,6 +48,7 @@ impl<'a> Loader<'a> {
         args: Vec<String>,
         mut memory_set: &mut MemorySet,
     ) -> AxResult<(VirtAddr, VirtAddr, VirtAddr)> {
+        info!("args: {:?}", args);
         if let Some(interp) = self
             .elf
             .program_iter()
@@ -139,14 +140,18 @@ impl<'a> Loader<'a> {
 /// 返回应用程序入口，用户栈底，用户堆底
 pub fn load_app(
     name: String,
-    args: Vec<String>,
+    mut args: Vec<String>,
     memory_set: &mut MemorySet,
 ) -> AxResult<(VirtAddr, VirtAddr, VirtAddr)> {
+    if name.ends_with(".sh") {
+        args = [vec![String::from("busybox"), String::from("sh")], args].concat();
+        return load_app("busybox".to_string(), args, memory_set);
+    }
+
     let elf_data =
         axfs::api::read(name.as_str()).expect("error calling axfs::api::read on init app");
-
     debug!("app elf data length: {}", elf_data.len());
-
     let loader = Loader::new(&elf_data);
+
     loader.load(args, memory_set)
 }

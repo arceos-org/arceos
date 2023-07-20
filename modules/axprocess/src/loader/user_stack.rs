@@ -5,6 +5,7 @@ use core::{
 };
 
 use alloc::{collections::BTreeMap, string::String, vec::Vec};
+use axlog::info;
 
 pub const USER_INIT_STACK_SIZE: usize = 0x4000;
 /// 规定用户栈初始化时的内容
@@ -55,7 +56,7 @@ impl UserStack {
     }
     /// 记得插入后补0
     pub fn push_str(&mut self, str: &str) -> usize {
-        self.push(&['\0' as usize]);
+        self.push(&[b'\0']);
         self.push(str.as_bytes());
         self.sp
     }
@@ -88,6 +89,8 @@ pub fn init_stack(
         .iter()
         .map(|arg| stack.push_str(arg.as_str()))
         .collect();
+    // 加入envs和argv的地址
+    stack.push(&[null::<u8>(), null::<u8>()]);
     // 再加入auxv
     // 注意若是atrandom，则要指向栈上的一个16字节长度的随机字符串
     for (key, value) in auxv.iter() {
@@ -104,6 +107,8 @@ pub fn init_stack(
     stack.push(&[null::<u8>()]);
     stack.push(argv.as_slice());
     // 加入argc
+    info!("args: len: {}", args.len());
+    info!("argv: {:x?}", argv);
     stack.push(&[args.len()]);
     stack
 }

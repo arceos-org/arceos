@@ -155,9 +155,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[1] as usize,
             MMAPPROT::from_bits_truncate(args[2] as u32),
         ),
-        // 不做处理即可
-        MEMBARRIER => 0,
-        SIGTIMEDWAIT => 0,
+
         FCNTL64 => syscall_fcntl64(args[0] as usize, args[1] as usize, args[2] as usize),
         SYSINFO => syscall_sysinfo(args[0] as *mut SysInfo),
         SETITIMER => syscall_settimer(
@@ -220,7 +218,10 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[3],
         ),
         IOCTL => syscall_ioctl(args[0] as usize, args[1] as usize, args[2] as *mut usize),
-
+        // 不做处理即可
+        MEMBARRIER => 0,
+        SIGTIMEDWAIT => 0,
+        SYSLOG => 0,
         _ => {
             error!("Invalid Syscall Id: {}!", syscall_id);
             // return -1;

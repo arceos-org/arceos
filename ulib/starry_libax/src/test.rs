@@ -309,47 +309,47 @@ pub const LUA_TESTCASES: &[&str] = &[
 pub const BUSYBOX_TESTCASES: &[&str] = &[
     // "busybox sh ./busybox_testcode.sh", //最终测例，它包含了下面全部
     // "busybox echo \"#### independent command test\"",
-    // "busybox ash -c exit", // 需要79
-    // "busybox sh -c exit",  // 需要79
+    // "busybox ash -c exit",
+    // "busybox sh -c exit",
     // "busybox basename /aaa/bbb",
     // "busybox cal",
     // "busybox clear",
-    // "busybox date",             // 需要29
-    // "busybox df",               // 需要29
-    // "busybox dirname /aaa/bbb", // 需要29
-    "busybox dmesg", // 需要116
-    // "busybox du",         // 需要79
+    // "busybox date",
+    // "busybox df",
+    // "busybox dirname /aaa/bbb",
+    // "busybox dmesg",
+    // "busybox du",
     // "busybox expr 1 + 1", // 需要29
-    "busybox false",
+    // "busybox false",
     // "busybox true",
-    "busybox which ls", // 需要48
+    // "busybox which ls",
     // "busybox uname",    // 需要29
     // "busybox uptime",   // 需要179
-    "busybox printf \"abc\n\"",
-    // "busybox ps",  // 需要179
-    // "busybox pwd", // 需要29
-    // "busybox free", // 需要29
+    // "busybox printf \"abc\n\"",
+    // "busybox ps",      // 需要179
+    // "busybox pwd",     // 需要29
+    // "busybox free",    // 需要29
     // "busybox hwclock", // 需要29
     // "busybox kill 10",
     // "busybox ls", // 29
     // "busybox sleep 1",
     // "busybox echo \"#### file opration test\"",
-    // "busybox touch test.txt", // 88
-    // "busybox echo \"hello world\" > test.txt", // 需要依赖touch test.txt
-    // "busybox cat test.txt",                    // 需要依赖touch test.txt
-    // "busybox cut -c 3 test.txt",               // 需要依赖touch test.txt
-    // "busybox od test.txt",                     // 需要依赖touch test.txt
-    // "busybox head test.txt",                   // 需要依赖touch test.txt
-    // "busybox tail test.txt",                   // 需要依赖touch test.txt
-    // "busybox hexdump -C test.txt", // 会要求标准输入，不方便自动测试
-    // "busybox md5sum test.txt",
-    // "busybox echo \"ccccccc\" >> test.txt",
-    // "busybox echo \"bbbbbbb\" >> test.txt",
-    // "busybox echo \"aaaaaaa\" >> test.txt",
-    // "busybox echo \"2222222\" >> test.txt",
-    // "busybox echo \"1111111\" >> test.txt",
-    // "busybox echo \"bbbbbbb\" >> test.txt",
-    // "busybox sort test.txt | ./busybox uniq",
+    // "busybox touch test.txt",
+    // "busybox echo \"hello world\" > test.txt",
+    // "busybox cat test.txt",
+    //   "busybox cut -c 3 test.txt",
+    //   "busybox od test.txt",
+    //   "busybox head test.txt",
+    //   "busybox tail test.txt",
+    //   "busybox hexdump -C test.txt",
+    //   "busybox md5sum test.txt",
+    //   "busybox echo \"ccccccc\" >> test.txt",
+    //   "busybox echo \"bbbbbbb\" >> test.txt",
+    //   "busybox echo \"aaaaaaa\" >> test.txt",
+    //   "busybox echo \"2222222\" >> test.txt",
+    //   "busybox echo \"1111111\" >> test.txt",
+    //   "busybox echo \"bbbbbbb\" >> test.txt",
+    //   "busybox sort test.txt | ./busybox uniq",
     // "busybox stat test.txt",
     // "busybox strings test.txt",
     // "busybox wc test.txt",
@@ -357,15 +357,16 @@ pub const BUSYBOX_TESTCASES: &[&str] = &[
     // "busybox more test.txt",
     // "busybox rm test.txt",
     // "busybox mkdir test_dir",
-    // "busybox mv test_dir test", // 需要79
-    // "busybox rmdir test", // 依赖上一条
-    // "busybox grep hello busybox_cmd.txt", //需要29
+    // "busybox mv test_dir test",                   // 需要79
+    // "busybox rmdir test",                         // 依赖上一条
+    // "busybox grep hello busybox_cmd.txt",         //需要29
     // "busybox cp busybox_cmd.txt busybox_cmd.bak", // 依赖前文
     // "busybox rm busybox_cmd.bak",
     // "busybox find -name \"busybox_cmd.txt\"",
     // "busybox sh lua_testcode.sh",
     // "echo latency measurements",
     // "lmbench_all lat_syscall -P 1 null",
+    "busybox sh lua_testcode.sh",
 ];
 
 /// 运行测试时的状态机，记录测试结果与内容
@@ -476,27 +477,48 @@ fn get_args(command_line: &[u8]) -> Vec<String> {
 /// 在执行系统调用前初始化文件系统
 ///
 /// 包括建立软连接，提前准备好一系列的文件与文件夹
-pub fn fs_init() {
+pub fn fs_init(case: &'static str) {
     // 需要对libc-dynamic进行特殊处理，因为它需要先加载libc.so
     // 建立一个硬链接
-    let libc_so = &"ld-musl-riscv64-sf.so.1";
-    let libc_so2 = &"ld-musl-riscv64.so.1"; // 另一种名字的 libc.so，非 libc-test 测例库用
+    if case == "libc-dynamic" {
+        let libc_so = &"ld-musl-riscv64-sf.so.1";
+        let libc_so2 = &"ld-musl-riscv64.so.1"; // 另一种名字的 libc.so，非 libc-test 测例库用
 
-    assert!(create_link(
-        &(FilePath::new(("/lib/".to_string() + libc_so).as_str()).unwrap()),
-        &(FilePath::new("libc.so").unwrap()),
-    ));
+        assert!(create_link(
+            &(FilePath::new(("/lib/".to_string() + libc_so).as_str()).unwrap()),
+            &(FilePath::new("libc.so").unwrap()),
+        ));
 
-    assert!(create_link(
-        &(FilePath::new(("/lib/".to_string() + libc_so2).as_str()).unwrap()),
-        &(FilePath::new("libc.so").unwrap()),
-    ));
+        assert!(create_link(
+            &(FilePath::new(("/lib/".to_string() + libc_so2).as_str()).unwrap()),
+            &(FilePath::new("libc.so").unwrap()),
+        ));
 
-    let tls_so = &"tls_get_new-dtv_dso.so";
-    assert!(create_link(
-        &(FilePath::new("tls_get_new-dtv_dso.so").unwrap()),
-        &(FilePath::new(("/lib".to_string() + tls_so).as_str()).unwrap()),
-    ));
+        let tls_so = &"tls_get_new-dtv_dso.so";
+        assert!(create_link(
+            &(FilePath::new(("/lib".to_string() + tls_so).as_str()).unwrap()),
+            &(FilePath::new("tls_get_new-dtv_dso.so").unwrap()),
+        ));
+    }
+
+    if case == "busybox" {
+        assert!(create_link(
+            &(FilePath::new("./sbin/busybox").unwrap()),
+            &(FilePath::new("busybox").unwrap()),
+        ));
+        assert!(create_link(
+            &(FilePath::new("./sbin/ls").unwrap()),
+            &(FilePath::new("busybox").unwrap()),
+        ));
+        create_link(
+            &(FilePath::new("./bin/busybox").unwrap()),
+            &(FilePath::new("./ls").unwrap()),
+        );
+        create_link(
+            &(FilePath::new("./bin/busybox").unwrap()),
+            &(FilePath::new(".sh").unwrap()),
+        );
+    }
 
     // let dl_so = &"dlopen_dso.so";
     // assert!(create_link(
@@ -504,21 +526,14 @@ pub fn fs_init() {
     //     &FilePath::new(("/lib".to_string() + dl_so).as_str()),
     // ));
     info!("create link");
-
-    // let tls_align_so = &"tls_align"
-
-    // create_dir("lib");
-    // new_file("lib/tls_get_new-dtv_dso.so", &OpenFlags::CREATE);
-    // create_dir("sbin");
-    // create_link(&FilePath::new("path"), dest_path)
 }
 
 /// 执行运行所有测例的任务
 pub fn run_testcases(case: &'static str) {
     debug!("run_testcases :{}", case);
-    if case == "libc-dynamic" {
-        fs_init();
-    }
+    // if case == "libc-dynamic" {
+    fs_init(case);
+    // }
 
     let mut test_iter: LazyInit<Box<dyn Iterator<Item = &'static &'static str> + Send>> =
         LazyInit::new();

@@ -205,7 +205,6 @@ impl Process {
             }
         }
         new_task.set_trap_in_kernel_stack();
-        info!("finish");
         Ok(new_task)
         // let kernel_sp = new_task.get_kernel_stack_top();
     }

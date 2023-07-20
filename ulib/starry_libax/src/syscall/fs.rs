@@ -105,7 +105,7 @@ fn deal_with_path(
         }
     }
     match FilePath::new(&path) {
-        Ok(path) => Some(path),
+        Ok(path) => Some(real_path(&path)),
         Err(_) => None,
     }
 }
@@ -167,6 +167,7 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
 ///     - count：要写入的字节数。
 /// 返回值：成功执行，返回写入的字节数。错误，则返回-1。
 pub fn syscall_write(fd: usize, buf: *const u8, count: usize) -> isize {
+    info!("fd: {}, buf: {:X}, len: {}", fd, buf as usize, count);
     let process = current_process();
     let process_inner = process.inner.lock();
     let start: VirtAddr = (buf as usize).into();
@@ -255,8 +256,6 @@ pub fn syscall_openat(fd: usize, path: *const u8, flags: usize, _mode: u8) -> is
     } else {
         return ErrorNo::EINVAL as isize;
     };
-    // 查询path是否需要经过链接转化
-    let path = real_path(&path);
     let process = current_process();
     let mut process_inner = process.inner.lock();
     let fd_num = if let Ok(fd) = process_inner.alloc_fd() {
@@ -849,7 +848,7 @@ pub fn syscall_fstatat(dir_fd: usize, path: *const u8, kst: *mut Kstat) -> isize
 pub fn syscall_fcntl64(fd: usize, cmd: usize, arg: usize) -> isize {
     let process = current_process();
     let mut process_inner = process.inner.lock();
-    if fd >= process_inner.fd_manager.fd_table.len() || fd < 3 {
+    if fd >= process_inner.fd_manager.fd_table.len() {
         debug!("fd {} is out of range", fd);
         return ErrorNo::EBADF as isize;
     }
@@ -1081,7 +1080,12 @@ pub fn syscall_faccessat(dir_fd: usize, path: *const u8, mode: usize) -> isize {
         .map(|metadata| {
             if mode == 0 {
                 //F_OK
-                api::path_exists(file_path.path()) as isize - 1 // 文件存在返回0，不存在返回-1
+                // 文件存在返回0，不存在返回-1
+                if api::path_exists(file_path.path()) {
+                    0
+                } else {
+                    ErrorNo::ENOENT as isize
+                }
             } else {
                 // 逐位对比
                 let mut ret = true;
@@ -1306,7 +1310,7 @@ pub fn syscall_utimensat(
         drop(process_inner);
         let file_path = deal_with_path(dir_fd, Some(path), false).unwrap();
         if !api::path_exists(file_path.path()) {
-            error!("Set time failed: file doesn't exist!");
+            error!("Set time failed: file {} doesn't exist!", file_path.path());
             if !api::path_exists(file_path.dir().unwrap()) {
                 return ErrorNo::ENOTDIR as isize;
             } else {
