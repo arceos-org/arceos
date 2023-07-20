@@ -91,3 +91,16 @@ pub fn platform_init() {}
 /// Initializes the platform devices for secondary CPUs.
 #[cfg(feature = "smp")]
 pub fn platform_init_secondary() {}
+
+pub mod acpi {
+    #[cfg(feature = "irq")]
+    pub fn get_pci_irq_vector(bus: u8, device: u8, function: u8) -> Option<usize> {
+        None
+    }
+
+    use crate::mem::PhysAddr;
+    /// Get PCIe ECAM space physical address.
+    pub fn get_ecam_address() -> Option<PhysAddr> {
+        None
+    }
+}

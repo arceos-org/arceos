@@ -77,3 +77,11 @@ pub use self::platform::platform_init;
 
 #[cfg(feature = "smp")]
 pub use self::platform::platform_init_secondary;
+
+/// PCI related operations
+pub mod pci {
+    #[cfg(all(target_arch = "x86_64", feature = "axalloc"))]
+    pub use super::platform::acpi::get_ecam_address;
+    #[cfg(all(target_arch = "x86_64", feature = "irq", feature = "axalloc"))]
+    pub use super::platform::acpi::get_pci_irq_vector;
+}

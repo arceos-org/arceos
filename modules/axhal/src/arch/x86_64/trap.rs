@@ -4,8 +4,10 @@ use super::context::TrapFrame;
 
 core::arch::global_asm!(include_str!("trap.S"));
 
-const IRQ_VECTOR_START: u8 = 0x20;
-const IRQ_VECTOR_END: u8 = 0xff;
+/// start value of irq vector
+pub const IRQ_VECTOR_START: u8 = 0x20;
+/// end value of irq vector
+pub const IRQ_VECTOR_END: u8 = 0xff;
 
 #[no_mangle]
 fn x86_trap_handler(tf: &mut TrapFrame) {

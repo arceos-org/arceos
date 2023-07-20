@@ -15,6 +15,9 @@ pub mod irq {
     pub use super::apic::*;
 }
 
+#[cfg(feature = "axalloc")]
+pub mod acpi;
+
 pub mod console {
     pub use super::uart16550::*;
 }
@@ -58,6 +61,8 @@ unsafe extern "C" fn rust_entry_secondary(magic: usize) {
 pub fn platform_init() {
     self::apic::init_primary();
     self::time::init_primary();
+    #[cfg(feature = "axalloc")]
+    self::acpi::init();
 }
 
 /// Initializes the platform devices for secondary CPUs.
