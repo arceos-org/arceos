@@ -1,6 +1,9 @@
+extern crate alloc;
+use crate::syscall::flags::TimeSecs;
+
 use super::link::get_link_count;
 use super::types::{normal_file_mode, StMode};
-extern crate alloc;
+use alloc::borrow::ToOwned;
 use alloc::string::{String, ToString};
 use alloc::sync::Arc;
 use axerrno::AxResult;
@@ -9,6 +12,7 @@ use axfs::monolithic_fs::file_io::{FileExt, Kstat};
 use axfs::monolithic_fs::flags::OpenFlags;
 use axfs::monolithic_fs::FileIO;
 use axfs::monolithic_fs::FileIOType;
+use axhal::time::TimeValue;
 
 use axio::{Read, Seek, SeekFrom, Write};
 use axprocess::link::FilePath;
@@ -33,11 +37,11 @@ pub struct FileDesc {
 /// TODO: 暂时全部记为usize
 pub struct FileMetaData {
     /// 最后一次访问时间
-    pub atime: usize,
+    pub atime: TimeSecs,
     /// 最后一次改变(modify)内容的时间
-    pub mtime: usize,
+    pub mtime: TimeSecs,
     /// 最后一次改变(change)属性的时间
-    pub ctime: usize,
+    pub ctime: TimeSecs,
     // /// 打开时的选项。
     // /// 主要用于判断 CLOEXEC，即 exec 时是否关闭。默认为 false。
     // pub flags: OpenFlags,
@@ -117,12 +121,12 @@ impl FileIO for FileDesc {
             st_blksize: 0,
             _pad1: 0,
             st_blocks: raw_metadata.blocks() as u64,
-            st_atime_sec: stat.atime as isize,
-            st_atime_nsec: 0,
-            st_mtime_sec: stat.mtime as isize,
-            st_mtime_nsec: 0,
-            st_ctime_sec: stat.ctime as isize,
-            st_ctime_nsec: 0,
+            st_atime_sec: stat.atime.tv_sec as isize,
+            st_atime_nsec: stat.atime.tv_nsec as isize,
+            st_mtime_sec: stat.mtime.tv_sec as isize,
+            st_mtime_nsec: stat.mtime.tv_nsec as isize,
+            st_ctime_sec: stat.ctime.tv_sec as isize,
+            st_ctime_nsec: stat.ctime.tv_nsec as isize,
             _unused: [0; 2],
         };
         debug!("kstat: {:?}", kstat);
@@ -185,14 +189,15 @@ impl FileDesc {
             file,
             flags,
             stat: Mutex::new(FileMetaData {
-                atime: 0,
-                mtime: 0,
-                ctime: 0,
+                atime: TimeSecs::default(),
+                mtime: TimeSecs::default(),
+                ctime: TimeSecs::default(),
             }),
         }
     }
 }
 
+/// 若使用多次new file打开同名文件，那么不同new file之间读写指针不共享，但是修改的内容是共享的
 pub fn new_file(path: &str, flags: &OpenFlags) -> AxResult<File> {
     let mut file = File::options();
     file.read(flags.readable());

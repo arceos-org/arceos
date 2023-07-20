@@ -48,6 +48,32 @@ pub struct Kstat {
     pub _unused: [u32; 2],
 }
 
+impl Default for Kstat {
+    fn default() -> Self {
+        Self {
+            st_dev: 0,
+            st_ino: 0,
+            st_mode: 0,
+            st_nlink: 0,
+            st_uid: 0,
+            st_gid: 0,
+            st_rdev: 0,
+            _pad0: 0,
+            st_size: 0,
+            st_blksize: 0,
+            _pad1: 0,
+            st_blocks: 0,
+            st_atime_sec: 0,
+            st_atime_nsec: 0,
+            st_mtime_sec: 0,
+            st_mtime_nsec: 0,
+            st_ctime_sec: 0,
+            st_ctime_nsec: 0,
+            _unused: [0; 2],
+        }
+    }
+}
+
 /// 文件类型
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum FileIOType {

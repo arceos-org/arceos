@@ -192,6 +192,8 @@ pub unsafe extern "C" fn ax_epoll_wait(
             .then(|| current_time() + Duration::from_millis(timeout as u64));
         let epoll_instance = EpollInstance::from_fd(epfd)?;
         loop {
+            #[cfg(feature = "net")]
+            axnet::poll_interfaces();
             let events_num = epoll_instance.poll_all(events)?;
             if events_num > 0 {
                 return Ok(events_num as c_int);

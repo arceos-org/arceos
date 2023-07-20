@@ -57,15 +57,17 @@ pub struct ITimerVal {
 
 // sys_nanosleep指定的结构体类型
 #[repr(C)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct TimeSecs {
     pub tv_sec: usize,
     pub tv_nsec: usize,
 }
-
+/// 当 nsec 为这个特殊值时，指示修改时间为现在
+pub const UTIME_NOW: usize = 0x3fffffff;
+/// 当 nsec 为这个特殊值时，指示不修改时间
+pub const UTIME_OMIT: usize = 0x3ffffffe;
 impl TimeSecs {
     /// 从秒数和纳秒数构造一个 TimeSecs
-
     pub fn now() -> Self {
         let nano = current_time_nanos() as usize;
         let tv_sec = nano / NSEC_PER_SEC;
@@ -79,6 +81,18 @@ impl TimeSecs {
 
     pub fn get_ticks(&self) -> usize {
         self.tv_sec * TICKS_PER_SEC + self.tv_nsec * TICKS_PER_SEC / (NANOS_PER_SEC as usize)
+    }
+
+    pub fn set_as_utime(&mut self, other: &TimeSecs) {
+        match other.tv_nsec {
+            UTIME_NOW => {
+                *self = TimeSecs::now();
+            } // 设为当前时间
+            UTIME_OMIT => {} // 忽略
+            _ => {
+                *self = *other;
+            } // 设为指定时间
+        }
     }
 }
 

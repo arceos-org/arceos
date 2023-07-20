@@ -25,7 +25,7 @@ app-objs := $(patsubst %.c,$(iperf_pkg)/src/%.o,$(iperf_src))
 
 .PRECIOUS: $(APP)/%.c
 $(APP)/%.c:
-	echo "Download iperf source code"
+	@echo "Download iperf source code"
 	wget https://downloads.es.net/pub/iperf/$(iperf_pkg).tar.gz -P $(APP)
 	tar -zxvf $(APP)/$(iperf_pkg).tar.gz -C $(APP) && rm -f $(APP)/$(iperf_pkg).tar.gz
 	patch -p1 -N -d $(iperf_dir) --no-backup-if-mismatch -r - < $(APP)/iperf.patch

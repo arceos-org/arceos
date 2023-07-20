@@ -435,7 +435,7 @@ impl MemorySet {
 
             match start {
                 Some(start) => {
-                    debug!("found area [{:?}, {:?})", start, start + size);
+                    info!("found area [{:?}, {:?})", start, start + size);
                     self.new_region(start, size, flags, None, backend);
 
                     start.as_usize() as isize
@@ -551,10 +551,7 @@ impl MemorySet {
     /// 将用户分配的页面从页表中直接解映射，内核分配的页面依然保留
     pub fn unmap_user_areas(&mut self) {
         for (_, area) in &self.owned_mem {
-            self.page_table
-                .unmap_region(area.vaddr, area.size())
-                .unwrap();
-            // area.dealloc(&mut self.page_table);
+            area.dealloc(&mut self.page_table);
         }
         self.owned_mem.clear();
     }

@@ -37,6 +37,9 @@ mod root;
 pub mod api;
 pub mod fops;
 
+pub use axfs_devfs;
+pub use axfs_ramfs;
+
 #[cfg(feature = "monolithic")]
 pub mod monolithic_fs;
 

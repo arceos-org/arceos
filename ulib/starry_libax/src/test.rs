@@ -68,16 +68,16 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     "crypt",
     "dirname",
     "env",
-    //"fdopen", // 需要62
+    "fdopen",
     "fnmatch",
-    //"fscanf",  // 需要62
-    //"fwscanf", // 需要29
+    "fscanf",
+    "fwscanf",
     "iconv_open",
     "inet_pton",
     "mbc",
     "memstream",
     "pthread_cancel_points",
-    // "pthread_cancel",
+    "pthread_cancel",
     "pthread_cond",
     "pthread_tsd",
     "qsort",
@@ -91,7 +91,7 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     //"socket", // 需要198
     "sscanf",
     "sscanf_long",
-    //"stat", // 需79
+    "stat",
     "strftime",
     "string",
     "string_memcpy",
@@ -111,19 +111,19 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     "time",
     "tls_align",
     "udiv",
-    //"ungetc", // 需要29
-    //"utime",  // 需要88
+    "ungetc",
+    "utime",
     "wcsstr",
     "wcstol",
     "pleval",
     "daemon_failure",
     "dn_expand_empty",
     "dn_expand_ptr_0",
-    //"fflush_exit", // 需要29
+    "fflush_exit",
     "fgets_eof",
     "fgetwc_buffering",
     "fpclassify_invalid_ld80",
-    //"ftello_unflushed_append", // 需要25
+    "ftello_unflushed_append",
     "getpwnam_r_crash",
     "getpwnam_r_errno",
     "iconv_roundtrips",
@@ -131,7 +131,7 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     "inet_pton_empty_last_field",
     "iswspace_null",
     "lrand48_signextend",
-    //"lseek_large", // 需要29
+    "lseek_large",
     "malloc_0",
     "mbsrtowcs_overflow",
     "memmem_oob_read",
@@ -156,15 +156,15 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     "regex_escaped_high_byte",
     "regex_negated_range",
     "regexec_nosub",
-    //"rewind_clear_error", // 需要62
+    "rewind_clear_error",
     "rlimit_open_files",
     "scanf_bytes_consumed",
     "scanf_match_literal_eof",
     "scanf_nullbyte_char",
-    // "setvbuf_unget", // 需要62
+    "setvbuf_unget",
     "sigprocmask_internal",
     "sscanf_eof",
-    // "statvfs", // 需要43
+    "statvfs",
     "strverscmp",
     "syscall_sign_extend",
     "uselocale_0",
@@ -177,125 +177,125 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
 /// 来自 libc 的动态测例
 #[allow(dead_code)]
 pub const LIBC_DYNAMIC_TESTCASES: &[&str] = &[
-    // "argv.dout",
-    // "basename.dout",
-    // "clocale_mbfuncs.dout",
-    // "clock_gettime.dout",
-    // "crypt.dout",
-    // "dirname.dout",
+    "argv.dout",
+    "basename.dout",
+    "clocale_mbfuncs.dout",
+    "clock_gettime.dout",
+    "crypt.dout",
+    "dirname.dout",
     // "dlopen.dout", // 单独存在运行时bug，放在runtest里面就是正常的
-    "./runtest.exe -w entry-dynamic.exe pthread_robust_detach",
-    // "env.dout",
-    // // "fdopen", // 62
-    // // "fnmatch",
-    // // "fscanf",  //62
-    // // "fwscanf", //29
-    // "iconv_open.dout",
-    // "inet_pton.dout",
-    // "mbc.dout",
-    // "memstream.dout",
-    // "pthread_cancel_points.dout", // 226
-    // "pthread_cancel.dout",        // 226
-    // "pthread_cond.dout",          //226
-    // "pthread_tsd.dout",           //226
-    // "qsort.dout",
-    // "random.dout",
-    // "search_hsearch.dout",
-    // "search_insque.dout",
-    // "search_lsearch.dout",
-    // "search_tsearch.dout",
-    // "sem_init.dout", //226
-    // "setjmp.dout",
-    // "snprintf.dout",
-    // // "socket", //198
-    // "sscanf.dout",
-    // "sscanf_long.dout",
-    // // "stat", //79
-    // "strftime.dout",
-    // "string.dout",
-    // "string_memcpy.dout",
-    // "string_memmem.dout",
-    // "string_memset.dout",
-    // "string_strchr.dout",
-    // "string_strcspn.dout",
-    // "string_strstr.dout",
-    // "strptime.dout",
-    // "strtod.dout",
-    // "strtod_simple.dout",
-    // "strtof.dout",
-    // "strtol.dout",
-    // "strtold.dout",
-    // "swprintf.dout",
-    // "tgmath.dout",
-    // "time.dout",
-    // "tls_init.dout",       //226
-    // "tls_local_exec.dout", //226
-    // "udiv.dout",
-    // // "ungetc.dout", // 29
-    // // "utime", //88
-    // "wcsstr.dout",
-    // "wcstol.dout",
-    // "daemon_failure.dout",
-    // "dn_expand_empty.dout",
-    // "dn_expand_ptr_0.dout",
-    // // "fflush_exit", //29 + 67
-    // "fgets_eof.dout",
-    // "fgetwc_buffering.dout",
-    // "fpclassify_invalid_ld80.dout",
-    // // "ftello_unflushed_append", //25
-    // "getpwnam_r_crash.dout",
-    // "getpwnam_r_errno.dout",
-    // "iconv_roundtrips.dout",
-    // "inet_ntop_v4mapped.dout",
-    // "inet_pton_empty_last_field.dout",
-    // "iswspace_null.dout",
-    // "lrand48_signextend.dout",
-    // // "lseek_large", //29
-    // "malloc_0.dout",
-    // "mbsrtowcs_overflow.dout",
-    // "memmem_oob_read.dout",
-    // "memmem_oob.dout",
-    // "mkdtemp_failure.dout",
-    // "mkstemp_failure.dout",
-    // "printf_1e9_oob.dout",
-    // "printf_fmt_g_round.dout",
-    // "printf_fmt_g_zeros.dout",
-    // "printf_fmt_n.dout",
-    // "pthread_robust_detach.dout", //226
-    // "pthread_cond_smasher.dout",  //226
-    // "pthread_condattr_setclock.dout",
-    // "pthread_exit_cancel.dout",   //226
-    // "pthread_once_deadlock.dout", //226
-    // "pthread_rwlock_ebusy.dout",  //226
-    // "putenv_doublefree.dout",
-    // "regex_backref_0.dout",
-    // "regex_bracket_icase.dout",
-    // "regex_ere_backref.dout",
-    // "regex_escaped_high_byte.dout",
-    // "regex_negated_range.dout",
-    // "regexec_nosub.dout",
-    // // "rewind_clear_error", //62
-    // "rlimit_open_files.dout",
-    // "scanf_bytes_consumed.dout",
-    // "scanf_match_literal_eof.dout",
-    // "scanf_nullbyte_char.dout",
-    // // "setvbuf_unget", //62
-    // "sigprocmask_internal.dout",
-    // "sscanf_eof.dout",
-    // // "statvfs", //43
-    // "strverscmp.dout",
-    // "syscall_sign_extend.dout",
-    // "tls_get_new_dtv.dout",
-    // "uselocale_0.dout",
-    // "wcsncpy_read_overflow.dout",
-    // "wcsstr_false_negative.dout",
+    "./runtest.exe -w entry-dynamic.exe dlopen",
+    "env.dout",
+    "fdopen.dout", // 62
+    "fnmatch.dout",
+    "fscanf.dout",  //62
+    "fwscanf.dout", //29
+    "iconv_open.dout",
+    "inet_pton.dout",
+    "mbc.dout",
+    "memstream.dout",
+    "pthread_cancel_points.dout", // 226
+    "pthread_cancel.dout",        // 226
+    "pthread_cond.dout",          //226
+    "pthread_tsd.dout",           //226
+    "qsort.dout",
+    "random.dout",
+    "search_hsearch.dout",
+    "search_insque.dout",
+    "search_lsearch.dout",
+    "search_tsearch.dout",
+    "sem_init.dout", //226
+    "setjmp.dout",
+    "snprintf.dout",
+    // "socket", //198
+    "sscanf.dout",
+    "sscanf_long.dout",
+    "stat.dout", //79
+    "strftime.dout",
+    "string.dout",
+    "string_memcpy.dout",
+    "string_memmem.dout",
+    "string_memset.dout",
+    "string_strchr.dout",
+    "string_strcspn.dout",
+    "string_strstr.dout",
+    "strptime.dout",
+    "strtod.dout",
+    "strtod_simple.dout",
+    "strtof.dout",
+    "strtol.dout",
+    "strtold.dout",
+    "swprintf.dout",
+    "tgmath.dout",
+    "time.dout",
+    "tls_init.dout",       //226
+    "tls_local_exec.dout", //226
+    "udiv.dout",
+    "ungetc.dout", // 29
+    "utime.dout",  //88
+    "wcsstr.dout",
+    "wcstol.dout",
+    "daemon_failure.dout",
+    "dn_expand_empty.dout",
+    "dn_expand_ptr_0.dout",
+    "fflush_exit.dout", //29 + 67
+    "fgets_eof.dout",
+    "fgetwc_buffering.dout",
+    "fpclassify_invalid_ld80.dout",
+    "ftello_unflushed_append.dout", //25
+    "getpwnam_r_crash.dout",
+    "getpwnam_r_errno.dout",
+    "iconv_roundtrips.dout",
+    "inet_ntop_v4mapped.dout",
+    "inet_pton_empty_last_field.dout",
+    "iswspace_null.dout",
+    "lrand48_signextend.dout",
+    "lseek_large.dout", //29
+    "malloc_0.dout",
+    "mbsrtowcs_overflow.dout",
+    "memmem_oob_read.dout",
+    "memmem_oob.dout",
+    "mkdtemp_failure.dout",
+    "mkstemp_failure.dout",
+    "printf_1e9_oob.dout",
+    "printf_fmt_g_round.dout",
+    "printf_fmt_g_zeros.dout",
+    "printf_fmt_n.dout",
+    "pthread_robust_detach.dout", //226
+    "pthread_cond_smasher.dout",  //226
+    "pthread_condattr_setclock.dout",
+    "pthread_exit_cancel.dout",   //226
+    "pthread_once_deadlock.dout", //226
+    "pthread_rwlock_ebusy.dout",  //226
+    "putenv_doublefree.dout",
+    "regex_backref_0.dout",
+    "regex_bracket_icase.dout",
+    "regex_ere_backref.dout",
+    "regex_escaped_high_byte.dout",
+    "regex_negated_range.dout",
+    "regexec_nosub.dout",
+    "rewind_clear_error.dout", //62
+    "rlimit_open_files.dout",
+    "scanf_bytes_consumed.dout",
+    "scanf_match_literal_eof.dout",
+    "scanf_nullbyte_char.dout",
+    "setvbuf_unget.dout", //62
+    "sigprocmask_internal.dout",
+    "sscanf_eof.dout",
+    "statvfs.dout", //43
+    "strverscmp.dout",
+    "syscall_sign_extend.dout",
+    "tls_get_new_dtv.dout",
+    "uselocale_0.dout",
+    "wcsncpy_read_overflow.dout",
+    "wcsstr_false_negative.dout",
 ];
 
 #[allow(dead_code)]
 pub const LUA_TESTCASES: &[&str] = &[
-    "lua", // 需要29
+    // "lua", // 需标准输入，不好进行自动测试
     "lua date.lua",
-    "lua file_io.lua", // 需要29
+    "lua file_io.lua",
     "lua max_min.lua",
     "lua random.lua",
     "lua remove.lua",
@@ -307,25 +307,25 @@ pub const LUA_TESTCASES: &[&str] = &[
 
 #[allow(dead_code)]
 pub const BUSYBOX_TESTCASES: &[&str] = &[
-    //"busybox sh ./busybox_testcode.sh", //最终测例，它包含了下面全部
+    // "busybox sh ./busybox_testcode.sh", //最终测例，它包含了下面全部
     // "busybox echo \"#### independent command test\"",
     // "busybox ash -c exit", // 需要79
-    // "busybox sh -c exit", // 需要79
+    // "busybox sh -c exit",  // 需要79
     // "busybox basename /aaa/bbb",
     // "busybox cal",
     // "busybox clear",
     // "busybox date",             // 需要29
     // "busybox df",               // 需要29
     // "busybox dirname /aaa/bbb", // 需要29
-    // "busybox dmesg",            // 需要116
-    // "busybox du",               // 需要79
-    // "busybox expr 1 + 1",       // 需要29
-    // "busybox false",
+    "busybox dmesg", // 需要116
+    // "busybox du",         // 需要79
+    // "busybox expr 1 + 1", // 需要29
+    "busybox false",
     // "busybox true",
-    // "busybox which ls", // 需要48
+    "busybox which ls", // 需要48
     // "busybox uname",    // 需要29
     // "busybox uptime",   // 需要179
-    // "busybox printf \"abc\n\"",
+    "busybox printf \"abc\n\"",
     // "busybox ps",  // 需要179
     // "busybox pwd", // 需要29
     // "busybox free", // 需要29
@@ -365,7 +365,7 @@ pub const BUSYBOX_TESTCASES: &[&str] = &[
     // "busybox find -name \"busybox_cmd.txt\"",
     // "busybox sh lua_testcode.sh",
     // "echo latency measurements",
-    "lmbench_all lat_syscall -P 1 null",
+    // "lmbench_all lat_syscall -P 1 null",
 ];
 
 /// 运行测试时的状态机，记录测试结果与内容
@@ -556,6 +556,7 @@ pub fn run_testcases(case: &'static str) {
             let args = get_args(command_line.as_bytes());
             let testcase = args.clone();
             let main_task = Process::new(args).unwrap();
+
             let now_process_id = main_task.get_process_id() as isize;
             TESTRESULT.lock().load(&(testcase));
             RUN_QUEUE.lock().add_task(main_task);

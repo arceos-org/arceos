@@ -5,7 +5,7 @@ use axerrno::{AxError, AxResult};
 use axfs::monolithic_fs::FileIO;
 use axhal::arch::{write_page_table_root, TrapFrame};
 use axhal::mem::phys_to_virt;
-use axlog::{debug, error};
+use axlog::{debug, error, info};
 use axtask::monolithic_task::task::TaskState;
 use axtask::{AxTaskRef, TaskId};
 
@@ -193,6 +193,7 @@ impl Process {
         PID2PC
             .lock()
             .insert(new_process.pid, Arc::clone(&new_process));
+
         drop(inner);
         // 将其作为内核进程的子进程
         match PID2PC.lock().get(&KERNEL_PROCESS_ID) {
@@ -204,6 +205,7 @@ impl Process {
             }
         }
         new_task.set_trap_in_kernel_stack();
+        info!("finish");
         Ok(new_task)
         // let kernel_sp = new_task.get_kernel_stack_top();
     }
@@ -604,30 +606,32 @@ pub fn exit(exit_code: i32) -> ! {
     // 若退出的是内核线程，就没有必要考虑后续了，否则此时调度队列重新调度的操作拿到进程这里来
     // 先进行资源的回收
     // 不可以回收内核任务
-
     if is_leader {
         assert!(process_id != 0);
         // WAIT_FOR_FUTEX.notify_all(false);
-        inner.exit_code = exit_code;
-        inner.is_zombie = true;
         drop(inner);
         loop {
             let inner = process.inner.lock();
             let mut all_exited = true;
             for task in inner.tasks.iter() {
-                if task.state() != TaskState::Exited {
+                if !task.is_leader() && task.state() != TaskState::Exited {
                     all_exited = false;
                     break;
                 }
             }
             drop(inner);
             if !all_exited {
+                // info!("exit current: {}", curr_id.as_u64());
                 yield_now_task();
             } else {
                 break;
             }
         }
+
         let mut inner = process.inner.lock();
+        inner.exit_code = exit_code;
+        inner.is_zombie = true;
+        RUN_QUEUE.lock().exit_current(exit_code);
         inner.tasks.clear();
         inner.signal_module.clear();
         {
@@ -642,7 +646,7 @@ pub fn exit(exit_code: i32) -> ! {
             drop(pid2pc);
         }
         inner.memory_set.lock().unmap_user_areas();
-
+        // assert!(Arc::strong_count(&inner.memory_set) )
         // 页表不用特意解除，因为整个对象都将被析构
         drop(inner);
         drop(process);

@@ -1,4 +1,5 @@
 use axfs::monolithic_fs::file_io::Kstat;
+use axfs::monolithic_fs::fs_stat::FsStat;
 use axhal::cpu::this_cpu_id;
 use axprocess::process::exit;
 use axsignal::action::SigAction;
@@ -39,16 +40,17 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
     let syscall_name = if let Ok(id) = SyscallId::try_from(syscall_id) {
         id
     } else {
-        error!("Unsupported syscall id = {}", syscall_id,);
+        error!("Unsupported syscall id = {}", syscall_id);
         exit(-1);
     };
     check_dead_wait();
     let curr_id = current().id().as_u64();
     info!(
-        "cpu id: {}, task id: {}, syscall: id: {}",
+        "cpu id: {}, task id: {}, syscall: id: {} name: {:?}",
         this_cpu_id(),
         curr_id,
         syscall_id,
+        syscall_name,
     );
     let ans = match syscall_name {
         OPENAT => syscall_openat(
@@ -157,7 +159,6 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         MEMBARRIER => 0,
         SIGTIMEDWAIT => 0,
         FCNTL64 => syscall_fcntl64(args[0] as usize, args[1] as usize, args[2] as usize),
-        IOCTL => syscall_ioctl(args[0], args[1], args[2] as *mut usize),
         SYSINFO => syscall_sysinfo(args[0] as *mut SysInfo),
         SETITIMER => syscall_settimer(
             args[0] as usize,
@@ -186,6 +187,40 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[2] as i32,
             args[3] as i32,
         ),
+        // STATFS => {
+        //     error!("args: {} {} {} {}", args[0],args[1],args[2],args[3]);
+        //     syscall_statfs(args[0] as *const u8, args[1] as *mut FsStat)
+        // },
+        FSTATAT => syscall_fstatat(
+            args[0] as usize,
+            args[1] as *const u8,
+            args[2] as *mut Kstat,
+        ),
+        STATFS => syscall_statfs(args[0] as *const u8, args[1] as *mut FsStat),
+        FCHMODAT => syscall_fchmodat(args[0] as usize, args[1] as *const u8, args[2] as usize),
+        FACCESSAT => syscall_faccessat(args[0] as usize, args[1] as *const u8, args[2] as usize),
+        LSEEK => syscall_lseek(args[0] as usize, args[1] as isize, args[2] as usize),
+        PREAD64 => syscall_pread64(
+            args[0] as usize,
+            args[1] as *mut u8,
+            args[2] as usize,
+            args[3] as usize,
+        ),
+        SENDFILE64 => syscall_sendfile64(
+            args[0] as usize,
+            args[1] as usize,
+            args[2] as *mut usize,
+            args[3] as usize,
+        ),
+        FSYNC => syscall_fsync(args[0] as usize),
+        UTIMENSAT => syscall_utimensat(
+            args[0] as usize,
+            args[1] as *const u8,
+            args[2] as *const TimeSecs,
+            args[3],
+        ),
+        IOCTL => syscall_ioctl(args[0] as usize, args[1] as usize, args[2] as *mut usize),
+
         _ => {
             error!("Invalid Syscall Id: {}!", syscall_id);
             // return -1;
