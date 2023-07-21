@@ -537,14 +537,20 @@ impl MemorySet {
     }
 
     /// It will map newly allocated page in the page table. You need to flush TLB after this.
-    pub fn handle_page_fault(&mut self, addr: VirtAddr, flags: MappingFlags) {
+    pub fn handle_page_fault(&mut self, addr: VirtAddr, flags: MappingFlags) -> AxResult<()> {
         match self
             .owned_mem
             .values_mut()
             .find(|area| area.vaddr <= addr && addr < area.end_va())
         {
-            Some(area) => area.handle_page_fault(addr, flags, &mut self.page_table),
-            None => error!("Page fault address {:?} not found in memory set", addr),
+            Some(area) => {
+                area.handle_page_fault(addr, flags, &mut self.page_table);
+                Ok(())
+            }
+            None => {
+                error!("Page fault address {:?} not found in memory set", addr);
+                Err(AxError::BadAddress)
+            }
         }
     }
 
@@ -644,5 +650,11 @@ impl Clone for MemorySet {
             owned_mem,
             entry: self.entry,
         }
+    }
+}
+
+impl Drop for MemorySet {
+    fn drop(&mut self) {
+        self.unmap_user_areas();
     }
 }

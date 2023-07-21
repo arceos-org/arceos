@@ -1,3 +1,5 @@
+use axhal::arch::SIGNAL_RETURN_TRAP;
+
 use crate::signal_no::SignalNo;
 
 /// 特殊取值，代表默认处理函数
@@ -56,4 +58,14 @@ pub struct SigAction {
     pub restorer: usize,
     /// 该信号处理函数的信号掩码
     pub sa_mask: usize,
+}
+
+impl SigAction {
+    pub fn get_storer(&self) -> usize {
+        if self.sa_flags.contains(SigActionFlags::SA_RESTORER) {
+            self.restorer
+        } else {
+            SIGNAL_RETURN_TRAP
+        }
+    }
 }

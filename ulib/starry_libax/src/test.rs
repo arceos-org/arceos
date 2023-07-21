@@ -363,11 +363,14 @@ pub const BUSYBOX_TESTCASES: &[&str] = &[
     // "busybox cp busybox_cmd.txt busybox_cmd.bak", // 依赖前文
     // "busybox rm busybox_cmd.bak",
     // "busybox find -name \"busybox_cmd.txt\"",
-    // "busybox sh lua_testcode.sh",
+    // "busybox sh busybox echo \"hello\"",
+    "busybox sh lmbench_testcode.sh",
     // "echo latency measurements",
     // "lmbench_all lat_syscall -P 1 null",
     // "busybox sh lua_testcode.sh",
-    "busybox sh busybox_testcode.sh",
+    // "busybox sh busybox_testcode.sh",
+    // "busybox echo latency measurements",
+    // "busybox sh lmbench_all lat_syscall -P 1 null",
 ];
 
 /// 运行测试时的状态机，记录测试结果与内容
@@ -497,8 +500,8 @@ pub fn fs_init(case: &'static str) {
 
         let tls_so = &"tls_get_new-dtv_dso.so";
         assert!(create_link(
-            &(FilePath::new(("/lib".to_string() + tls_so).as_str()).unwrap()),
             &(FilePath::new("tls_get_new-dtv_dso.so").unwrap()),
+            &(FilePath::new(("/lib".to_string() + tls_so).as_str()).unwrap()),
         ));
     }
 
@@ -512,30 +515,24 @@ pub fn fs_init(case: &'static str) {
             &(FilePath::new("busybox").unwrap()),
         ));
         create_link(
-            &(FilePath::new("./bin/busybox").unwrap()),
             &(FilePath::new("./ls").unwrap()),
+            &(FilePath::new("./bin/busybox").unwrap()),
         );
         create_link(
-            &(FilePath::new("./bin/busybox").unwrap()),
             &(FilePath::new(".sh").unwrap()),
+            &(FilePath::new("./bin/busybox").unwrap()),
+        );
+        create_link(
+            &(FilePath::new("./bin/lmbench_all").unwrap()),
+            &(FilePath::new("./lmbench_all").unwrap()),
         );
     }
-
-    // let dl_so = &"dlopen_dso.so";
-    // assert!(create_link(
-    //     &FilePath::new(dl_so),
-    //     &FilePath::new(("/lib".to_string() + dl_so).as_str()),
-    // ));
-    info!("create link");
 }
 
 /// 执行运行所有测例的任务
 pub fn run_testcases(case: &'static str) {
     debug!("run_testcases :{}", case);
-    // if case == "libc-dynamic" {
     fs_init(case);
-    // }
-
     let mut test_iter: LazyInit<Box<dyn Iterator<Item = &'static &'static str> + Send>> =
         LazyInit::new();
 
@@ -566,13 +563,13 @@ pub fn run_testcases(case: &'static str) {
             panic!("unknown test case: {}", case);
         }
     };
+
     loop {
         let mut ans = None;
         if let Some(command_line) = test_iter.next() {
             let args = get_args(command_line.as_bytes());
             let testcase = args.clone();
             let main_task = Process::new(args).unwrap();
-
             let now_process_id = main_task.get_process_id() as isize;
             TESTRESULT.lock().load(&(testcase));
             RUN_QUEUE.lock().add_task(main_task);

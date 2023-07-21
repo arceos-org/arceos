@@ -42,7 +42,7 @@ ifeq ($(ARCH), x86_64)
 else ifeq ($(ARCH), riscv64)
   ACCEL ?= n
   PLATFORM ?= qemu-virt-riscv
-  TARGET := riscv64gc-unknown-none-elf
+  TARGET := riscv64imac-unknown-none-elf
 else ifeq ($(ARCH), aarch64)
   ACCEL ?= n
   PLATFORM ?= qemu-virt-aarch64

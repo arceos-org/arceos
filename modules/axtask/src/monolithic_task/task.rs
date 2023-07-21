@@ -603,6 +603,8 @@ fn first_into_user(kernel_sp: usize, frame_base: usize) -> ! {
         core::arch::asm!(
             r"
             mv      sp, {frame_base}
+            .short  0x2432                      // fld fs0,264(sp)
+            .short  0x24d2                      // fld fs1,272(sp)
             LDR     gp, sp, 2                   // load user gp and tp
             LDR     t0, sp, 3
             mv      t1, {kernel_base}
@@ -613,28 +615,15 @@ fn first_into_user(kernel_sp: usize, frame_base: usize) -> ! {
             LDR     t1, sp, 32
             csrw    sepc, t0
             csrw    sstatus, t1
+            POP_GENERAL_REGS
+            LDR     sp, sp, 1
+            sret
         ",
             frame_base = in(reg) frame_base,
             kernel_sp = in(reg) kernel_sp,
             kernel_base = in(reg) kernel_base,
         );
     };
-    // let mut cnt = 0;
-    // loop {
-    //     cnt += 1;
-    //     if cnt > 1000 {
-    //         break;
-    //     }
-    // }
-    unsafe {
-        core::arch::asm!(
-            r"
-        POP_GENERAL_REGS
-        LDR     sp, sp, 1
-        sret
-        "
-        )
-    }
     core::panic!("already in user mode!")
 }
 

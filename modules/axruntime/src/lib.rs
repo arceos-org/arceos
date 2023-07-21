@@ -192,7 +192,6 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) {
     while !is_init_ok() {
         core::hint::spin_loop();
     }
-
     unsafe { main() };
 
     #[cfg(feature = "multitask")]

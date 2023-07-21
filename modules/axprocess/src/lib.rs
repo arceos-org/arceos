@@ -1,6 +1,7 @@
 #![cfg_attr(not(test), no_std)]
 #![feature(drain_filter)]
 #![feature(btree_drain_filter)]
+use axerrno::AxResult;
 use axhal::{arch::TaskContext, mem::VirtAddr, paging::MappingFlags};
 use axtask::{current, monolithic_task::task::CurrentTask, monolithic_task::task::TaskState};
 
@@ -39,8 +40,6 @@ pub fn start_schedule() {
     }
 }
 
-
-
 /// 当从内核态到用户态时，统计对应进程的时间信息
 pub fn time_stat_from_kernel_to_user() {
     let curr_task = current();
@@ -60,7 +59,7 @@ pub fn time_stat_output() -> (usize, usize, usize, usize) {
     curr_task.time_stat_output()
 }
 
-pub fn handle_page_fault(addr: VirtAddr, flags: MappingFlags) {
+pub fn handle_page_fault(addr: VirtAddr, flags: MappingFlags) -> AxResult<()> {
     axlog::debug!("'page fault' addr: {:?}, flags: {:?}", addr, flags);
     let current = current_process();
     let inner = current.inner.lock();
@@ -68,8 +67,11 @@ pub fn handle_page_fault(addr: VirtAddr, flags: MappingFlags) {
         "memory token : {}",
         inner.memory_set.lock().page_table_token()
     );
-    inner.memory_set.lock().handle_page_fault(addr, flags);
+    let ans = inner.memory_set.lock().handle_page_fault(addr, flags);
     drop(inner);
     drop(current);
-    unsafe { riscv::asm::sfence_vma_all() };
+    if ans.is_ok() {
+        unsafe { riscv::asm::sfence_vma_all() };
+    }
+    ans
 }

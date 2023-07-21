@@ -125,10 +125,10 @@ impl Read for Pipe {
         // 防止pipe死循环
         let mut cnt = 0;
         loop {
-            cnt += 1;
             let mut ring_buffer = self.buffer.lock();
             let loop_read = ring_buffer.available_read();
             // info!("kernel: Pipe::read: already_read = {}", already_read);
+            cnt += 1;
             if loop_read == 0 {
                 if ring_buffer.all_write_ends_closed() || cnt > 3 {
                     return Ok(already_read);
@@ -169,13 +169,14 @@ impl Write for Pipe {
                 continue;
             }
             cnt += 1;
-            if cnt > 3 || Arc::strong_count(&self.buffer) < 2 {
+            if Arc::strong_count(&self.buffer) < 2 || cnt > 3 {
                 // 读入端关闭
                 return Ok(already_write);
             }
             // write at most loop_write bytes
             for _ in 0..loop_write {
                 if let Some(byte_ref) = buf_iter.next() {
+                    // info!("write to pipe");
                     ring_buffer.write_byte(*byte_ref);
                     already_write += 1;
                     if already_write == want_to_write {

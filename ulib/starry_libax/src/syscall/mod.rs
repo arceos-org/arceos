@@ -10,6 +10,7 @@ use fs::*;
 use log::{error, info};
 use mem::*;
 use poll::*;
+use select::syscall_pselect6;
 use signal::*;
 use task::*;
 use utils::*;
@@ -23,6 +24,7 @@ pub mod fs;
 pub mod futex;
 pub mod mem;
 pub mod poll;
+pub mod select;
 #[cfg(feature = "signal")]
 pub mod signal;
 pub mod syscall_id;
@@ -45,14 +47,19 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
     };
     check_dead_wait();
     let curr_id = current().id().as_u64();
-    info!(
-        "cpu id: {}, task id: {}, process id: {}, syscall: id: {} name: {:?}",
-        this_cpu_id(),
-        curr_id,
-        current().get_process_id(),
-        syscall_id,
-        syscall_name,
-    );
+    if syscall_id != GETPPID as usize
+        && syscall_id != CLOCK_GET_TIME as usize
+        && syscall_id != GETRUSAGE as usize
+    {
+        info!(
+            "cpu id: {}, task id: {}, process id: {}, syscall: id: {} name: {:?}",
+            this_cpu_id(),
+            curr_id,
+            current().get_process_id(),
+            syscall_id,
+            syscall_name,
+        );
+    }
     let ans = match syscall_name {
         OPENAT => syscall_openat(
             args[0],
@@ -218,6 +225,20 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[2] as *const TimeSecs,
             args[3],
         ),
+        PREADLINKAT => syscall_readlinkat(
+            args[0] as usize,
+            args[1] as *const u8,
+            args[2] as *mut u8,
+            args[3] as usize,
+        ),
+        PSELECT6 => syscall_pselect6(
+            args[0] as usize,
+            args[1] as *mut usize,
+            args[2] as *mut usize,
+            args[3] as *mut usize,
+            args[4] as *const TimeSecs,
+            args[5] as usize,
+        ),
         IOCTL => syscall_ioctl(args[0] as usize, args[1] as usize, args[2] as *mut usize),
         // 不做处理即可
         MEMBARRIER => 0,
@@ -231,10 +252,14 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
     };
     // let sstatus = riscv::register::sstatus::read();
     // error!("irq: {}", riscv::register::sstatus::Sstatus::sie(&sstatus));
-    info!(
-        "curr id: {}, Syscall {} return: {}",
-        curr_id, syscall_id, ans
-    );
-    axhal::arch::disable_irqs();
+    if syscall_id != GETPPID as usize
+        && syscall_id != CLOCK_GET_TIME as usize
+        && syscall_id != GETRUSAGE as usize
+    {
+        info!(
+            "curr id: {}, Syscall {} return: {}",
+            curr_id, syscall_id, ans,
+        )
+    };
     ans
 }

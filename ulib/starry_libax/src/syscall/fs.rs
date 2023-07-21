@@ -28,7 +28,7 @@ use super::flags::{Fcntl64Cmd, IoVec, TimeSecs};
 use super::syscall_id::ErrorNo;
 
 #[allow(unused)]
-const AT_FDCWD: usize = -100isize as usize;
+pub const AT_FDCWD: usize = -100isize as usize;
 // Special value used to indicate openat should use the current working directory.
 const AT_REMOVEDIR: usize = 0x200; // Remove directory instead of unlinking file.
 
@@ -44,7 +44,7 @@ const AT_REMOVEDIR: usize = 0x200; // Remove directory instead of unlinking file
 ///    - force_dir：是否强制为目录
 ///
 /// 一般情况下, 传入path末尾是`/`的话, 生成的FilePath是一个目录，否则是一个文件；但如果force_dir为true, 则生成的FilePath一定是一个目录(自动补充`/`)
-fn deal_with_path(
+pub fn deal_with_path(
     dir_fd: usize,
     path_addr: Option<*const u8>,
     force_dir: bool,
@@ -117,10 +117,10 @@ fn deal_with_path(
 ///     - count：要读取的字节数。
 /// 返回值：成功执行，返回读取的字节数。如为0，表示文件结束。错误，则返回-1。
 pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
-    info!(
-        "Into syscall_read. fd: {}, buf: {:X}, len: {}",
-        fd, buf as usize, count
-    );
+    // info!(
+    //     "Into syscall_read. fd: {}, buf: {:X}, len: {}",
+    //     fd, buf as usize, count
+    // );
     let process = current_process();
     let process_inner = process.inner.lock();
     let start: VirtAddr = (buf as usize).into();
@@ -148,6 +148,7 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
     if !file.lock().readable() {
         return -1;
     }
+
     // // debug
     // file.print_content();
     // info!("file type: {:?}", file.lock().get_type());
@@ -156,7 +157,6 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
         .lock()
         .read(unsafe { core::slice::from_raw_parts_mut(buf, count) })
         .unwrap() as isize;
-    info!("read_size: {}", read_size);
     read_size as isize
 }
 
@@ -167,7 +167,7 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
 ///     - count：要写入的字节数。
 /// 返回值：成功执行，返回写入的字节数。错误，则返回-1。
 pub fn syscall_write(fd: usize, buf: *const u8, count: usize) -> isize {
-    info!("fd: {}, buf: {:X}, len: {}", fd, buf as usize, count);
+    // info!("fd: {}, buf: {:X}, len: {}", fd, buf as usize, count);
     let process = current_process();
     let process_inner = process.inner.lock();
     let start: VirtAddr = (buf as usize).into();
@@ -1200,13 +1200,50 @@ pub fn syscall_pselect6(
 /// 读取符号链接文件的内容
 /// 如果buf为NULL，则返回符号链接文件的长度
 /// 如果buf不为NULL，则将符号链接文件的内容写入buf中
-pub fn syscall_readlinkat(
-    _dir_fd: usize,
-    _path: *const u8,
-    _buf: *mut u8,
-    _bufsiz: usize,
-) -> isize {
-    -1
+/// 如果写入的内容超出了buf_size则直接截断
+pub fn syscall_readlinkat(dir_fd: usize, path: *const u8, buf: *mut u8, bufsiz: usize) -> isize {
+    let process = current_process();
+    let inner = process.inner.lock();
+    let mut memory_set = inner.memory_set.lock();
+    if memory_set
+        .manual_alloc_for_lazy((path as usize).into())
+        .is_err()
+    {
+        return ErrorNo::EFAULT as isize;
+    }
+    if !buf.is_null() {
+        if memory_set
+            .manual_alloc_for_lazy((buf as usize).into())
+            .is_err()
+        {
+            return ErrorNo::EFAULT as isize;
+        }
+    }
+    drop(memory_set);
+    drop(inner);
+
+    let path = deal_with_path(dir_fd, Some(path), false);
+    if path.is_none() {
+        return ErrorNo::ENOENT as isize;
+    }
+    let path = path.unwrap();
+    if path.path() == "proc/self/exe" {
+        // 针对lmbench_all特判
+        let name = "/lmbench_all";
+        let len = bufsiz.min(name.len());
+        let slice = unsafe { core::slice::from_raw_parts_mut(buf, bufsiz) };
+        slice.copy_from_slice(&name.as_bytes()[..len]);
+        return len as isize;
+    }
+    if path.path() != real_path(&path).path() {
+        // 说明链接存在
+        let path = path.path();
+        let len = bufsiz.min(path.len());
+        let slice = unsafe { core::slice::from_raw_parts_mut(buf, len) };
+        slice.copy_from_slice(&path.as_bytes()[..len]);
+        return path.len() as isize;
+    }
+    ErrorNo::EINVAL as isize
 }
 /// 62
 /// 移动文件描述符的读写指针

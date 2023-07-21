@@ -5,21 +5,19 @@ extern crate alloc;
 use alloc::boxed::Box;
 use axmem::MemBackend;
 use axprocess::process::current_process;
-use log::debug;
+use log::{debug, error};
 use memory_addr::VirtAddr;
 const MAX_HEAP_SIZE: usize = 0x20000;
 /// 修改用户堆大小，
 ///
 /// - 如输入 brk 为 0 ，则返回堆顶地址
-/// - 否则，尝试修改堆顶为 brk，成功时返回0，失败时返回-1。
+/// - 重新设置堆顶地址，如成功则返回设置后的堆顶地址，否则保持不变，并返回之前的堆顶地址。
 pub fn syscall_brk(brk: usize) -> isize {
     let curr_process = current_process();
     let mut inner = curr_process.inner.lock();
     let mut return_val: isize = inner.heap_top as isize;
     if brk != 0 {
-        if brk < inner.heap_bottom || brk > inner.heap_bottom + MAX_HEAP_SIZE {
-            return_val = -1;
-        } else {
+        if brk >= inner.heap_bottom && brk <= inner.heap_bottom + MAX_HEAP_SIZE {
             inner.heap_top = brk;
             return_val = brk as isize;
         }

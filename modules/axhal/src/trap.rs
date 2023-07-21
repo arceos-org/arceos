@@ -2,8 +2,8 @@
 
 use crate_interface::{call_interface, def_interface};
 
+use crate::arch::TrapFrame;
 use memory_addr::VirtAddr;
-
 use page_table::MappingFlags;
 
 /// Trap handler interface.
@@ -23,11 +23,15 @@ pub trait TrapHandler {
     fn handle_syscall(syscall_id: usize, args: [usize; 6]) -> isize;
 
     #[cfg(feature = "paging")]
-    fn handle_page_fault(addr: VirtAddr, flags: MappingFlags);
+    fn handle_page_fault(addr: VirtAddr, flags: MappingFlags, tf: &mut TrapFrame);
 
     /// 处理当前进程的信号
     #[cfg(feature = "signal")]
     fn handle_signal();
+
+    /// 为了lmbench特判，即在出现未能处理的情况，不panic，而是退出当前进程
+    #[cfg(feature = "monolithic")]
+    fn exit();
 }
 /// Call the external IRQ handler.
 #[allow(dead_code)]
@@ -45,8 +49,8 @@ pub(crate) fn handle_syscall(syscall_id: usize, args: [usize; 6]) -> isize {
 
 #[allow(dead_code)]
 #[cfg(feature = "paging")]
-pub(crate) fn handle_page_fault(addr: VirtAddr, flags: MappingFlags) {
-    call_interface!(TrapHandler::handle_page_fault, addr, flags);
+pub(crate) fn handle_page_fault(addr: VirtAddr, flags: MappingFlags, tf: &mut TrapFrame) {
+    call_interface!(TrapHandler::handle_page_fault, addr, flags, tf);
 }
 
 /// 信号处理函数
@@ -54,4 +58,11 @@ pub(crate) fn handle_page_fault(addr: VirtAddr, flags: MappingFlags) {
 #[cfg(feature = "signal")]
 pub(crate) fn handle_signal() {
     call_interface!(TrapHandler::handle_signal);
+}
+
+/// 为了lmbench特判，即在出现未能处理的情况，不panic，而是退出当前进程
+#[allow(dead_code)]
+#[cfg(feature = "monolithic")]
+pub(crate) fn exit() {
+    call_interface!(TrapHandler::exit);
 }

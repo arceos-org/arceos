@@ -3,7 +3,7 @@
 use alloc::sync::Arc;
 use axerrno::AxResult;
 use axhal::{arch::TrapFrame, cpu::this_cpu_id};
-use axlog::debug;
+use axlog::{debug, error, info};
 use axsignal::{
     action::{SigActionFlags, SignalDefault, SIG_IGN},
     info::SigInfo,
@@ -115,7 +115,7 @@ pub fn handle_signals() {
     } else {
         return;
     };
-    debug!("cpu: {}, handler signal: {}", this_cpu_id(), sig_num);
+    info!("cpu: {}, handler signal: {}", this_cpu_id(), sig_num);
     let signal = SignalNo::from(sig_num);
     let mask = signal_set.mask;
     // 存在未被处理的信号
@@ -181,8 +181,12 @@ pub fn handle_signals() {
     //     current_task.get_first_trap_frame() as *const _ as usize
     //         + core::mem::size_of::<TrapFrame>()
     // );
+    info!(
+        "restorer :{}, handler: {}",
+        action.restorer, action.sa_handler
+    );
     let old_pc = trap_frame.sepc;
-    trap_frame.regs.ra = action.restorer;
+    trap_frame.regs.ra = action.get_storer();
     trap_frame.sepc = action.sa_handler;
     // 传参
     trap_frame.regs.a0 = sig_num;

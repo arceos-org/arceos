@@ -3,7 +3,10 @@ use riscv::register::{
     scause::{self, Exception as E, Trap},
     sepc, stval,
 };
+/// 信号处理跳板，当未指定SA_RESTORER时使用这个地址触发page fault，从而进行跳转
+pub const SIGNAL_RETURN_TRAP: usize = 0xffff_0000_0000_0000;
 
+use crate::trap::exit;
 #[cfg(feature = "paging")]
 use crate::trap::handle_page_fault;
 
@@ -34,6 +37,7 @@ fn riscv_trap_handler(tf: &mut TrapFrame, mut from_user: bool) {
     if (tf.sepc as isize) < 0 {
         from_user = false;
     }
+
     match scause.cause() {
         Trap::Exception(E::Breakpoint) => handle_breakpoint(&mut tf.sepc),
         Trap::Interrupt(_) => crate::trap::handle_irq_extern(scause.bits()),
@@ -56,23 +60,25 @@ fn riscv_trap_handler(tf: &mut TrapFrame, mut from_user: bool) {
 
         #[cfg(feature = "paging")]
         Trap::Exception(E::InstructionPageFault) => {
-            if !from_user {
-                unimplemented!("I page fault from kernel");
-            }
-
             let addr = stval::read();
-
-            handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::EXECUTE);
+            if !from_user && addr != SIGNAL_RETURN_TRAP {
+                unimplemented!(
+                    "I page fault from kernel, addr: {:X}, sepc: {:X}",
+                    addr,
+                    tf.sepc
+                );
+            }
+            handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::EXECUTE, tf);
         }
 
         #[cfg(feature = "paging")]
         Trap::Exception(E::LoadPageFault) => {
             let addr = stval::read();
             if !from_user {
-                info!("L page fault from kernel, addr: {:#x}", addr);
+                error!("L page fault from kernel, addr: {:#x}", addr);
                 unimplemented!("L page fault from kernel");
             }
-            handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::READ);
+            handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::READ, tf);
         }
 
         #[cfg(feature = "paging")]
@@ -86,21 +92,23 @@ fn riscv_trap_handler(tf: &mut TrapFrame, mut from_user: bool) {
                 unimplemented!("S page fault from kernel");
             }
             let addr = stval::read();
-
-            handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::WRITE);
+            handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::WRITE, tf);
         }
         _ => {
-            panic!(
+            error!(
                 "Unhandled trap {:?} @ {:#x}:\n{:#x?} from_user: {}",
                 scause.cause(),
                 tf.sepc,
                 tf,
                 from_user
             );
+            exit();
         }
     }
     #[cfg(feature = "signal")]
-    if !(!from_user && scause.cause() == Trap::Interrupt(scause::Interrupt::SupervisorTimer)) {
+    if !(!from_user && scause.cause() == Trap::Interrupt(scause::Interrupt::SupervisorTimer))
+        && stval::read() != SIGNAL_RETURN_TRAP
+    {
         handle_signal();
     }
     // 在保证将寄存器都存储好之后，再开启中断

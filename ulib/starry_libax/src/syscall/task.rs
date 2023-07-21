@@ -17,6 +17,7 @@ use super::{
         raw_ptr_to_ref_str, RLimit, RobustList, TimeSecs, WaitFlags, RLIMIT_AS, RLIMIT_NOFILE,
         RLIMIT_STACK,
     },
+    fs::{deal_with_path, AT_FDCWD},
     futex::futex,
     syscall_id::ErrorNo,
 };
@@ -30,9 +31,14 @@ pub fn syscall_exit(exit_code: i32) -> ! {
 }
 
 pub fn syscall_exec(path: *const u8, mut args: *const usize) -> isize {
+    // let path = unsafe { raw_ptr_to_ref_str(path) }.to_string();
+    let path = deal_with_path(AT_FDCWD, Some(path), false);
     let curr_process = current_process();
     let mut inner = curr_process.inner.lock();
-    let path = unsafe { raw_ptr_to_ref_str(path) }.to_string();
+    if path.is_none() {
+        return ErrorNo::EINVAL as isize;
+    }
+    let path = path.unwrap().path().to_string();
     let mut args_vec = Vec::new();
     // args相当于argv，指向了参数所在的地址
     loop {

@@ -6,7 +6,7 @@ use alloc::string::{String, ToString};
 use axfs::api::{path_exists, remove_file};
 use axprocess::link::{FilePath, LINK_COUNT_MAP, LINK_PATH_MAP};
 use axsync::Mutex;
-use log::{debug, trace};
+use log::{debug, info, trace};
 // /// 检查文件名对应的链接
 // ///
 // /// 如果在 map 中找不到对应链接，则返回 None
@@ -77,7 +77,7 @@ pub fn remove_link(src_path: &FilePath) -> Option<FilePath> {
 /// 返回是否创建成功(已存在的链接也会返回 true)
 /// 创建新文件时注意调用该函数创建链接
 pub fn create_link(src_path: &FilePath, dest_path: &FilePath) -> bool {
-    trace!("create_link: {} -> {}", src_path.path(), dest_path.path());
+    info!("create_link: {} -> {}", src_path.path(), dest_path.path());
     // assert!(src_path.is_file() && dest_path.is_file(), "link only support file");
     // assert_ne!(src_path.path(), dest_path.path(), "link src and dest should not be the same");  // 否则在第一步删除旧链接时可能会删除源文件
     // 检查是否是文件
@@ -90,7 +90,6 @@ pub fn create_link(src_path: &FilePath, dest_path: &FilePath) -> bool {
         debug!("link dest file not exists");
         return false;
     }
-
     let mut map = LINK_PATH_MAP.lock();
     // 如果需要连接的文件已经存在
     if let Some(old_dest_path) = map.get(src_path) {

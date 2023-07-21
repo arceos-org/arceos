@@ -5,7 +5,7 @@ use axerrno::{AxError, AxResult};
 use axfs::monolithic_fs::FileIO;
 use axhal::arch::{write_page_table_root, TrapFrame};
 use axhal::mem::phys_to_virt;
-use axlog::{debug, error};
+use axlog::debug;
 use axtask::monolithic_task::task::TaskState;
 use axtask::{AxTaskRef, TaskId};
 
@@ -110,7 +110,7 @@ impl ProcessInner {
             }
         }
         if self.fd_manager.fd_table.len() >= self.fd_manager.limit {
-            error!("fd table is full");
+            debug!("fd table is full");
             return Err(AxError::StorageFull);
         }
         self.fd_manager.fd_table.push(None);
@@ -644,7 +644,8 @@ pub fn exit(exit_code: i32) -> ! {
 
             drop(pid2pc);
         }
-        inner.memory_set.lock().unmap_user_areas();
+        // 不能在这里直接解除页表映射，因为存在地址空间共享机制
+        // inner.memory_set.lock().unmap_user_areas();
         // assert!(Arc::strong_count(&inner.memory_set) )
         // 页表不用特意解除，因为整个对象都将被析构
         drop(inner);
