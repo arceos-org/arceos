@@ -1,6 +1,7 @@
 use super::ctypes;
-use axhal::mem::PAGE_SIZE_4K;
 use core::ffi::{c_int, c_long};
+
+const PAGE_SIZE_4K: usize = 4096;
 
 /// Return system configuration infomation
 ///

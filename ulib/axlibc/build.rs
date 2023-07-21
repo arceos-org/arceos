@@ -1,4 +1,3 @@
-#[cfg(feature = "cbindings")]
 fn main() {
     use std::io::Write;
     use std::path::{Path, PathBuf};
@@ -51,10 +50,9 @@ typedef struct {{
             .write_to_file(out_file);
     }
 
-    fn gen_c_to_rust_bindings(crate_dir: &Path, in_file: &str, out_file: &str) {
+    fn gen_c_to_rust_bindings(in_file: &str, out_file: &str) {
         println!("cargo:rerun-if-changed={in_file}");
 
-        let include_dir = crate_dir.join("../c_libax/include");
         let allow_types = [
             "stat",
             "size_t",
@@ -98,7 +96,6 @@ typedef struct {{
 
         let mut builder = bindgen::Builder::default()
             .header(in_file)
-            .clang_arg(format!("-I{}", include_dir.display()))
             .clang_arg("-I./include")
             .parse_callbacks(Box::new(MyCallbacks))
             .derive_default(true)
@@ -119,11 +116,8 @@ typedef struct {{
     }
 
     let crate_dir = PathBuf::from(&std::env::var("CARGO_MANIFEST_DIR").unwrap());
-    gen_rust_to_c_bindings(&crate_dir, "include/libax.h");
-    gen_ax_config("include/axconfig.h").unwrap();
+    gen_rust_to_c_bindings(&crate_dir, "include_gen/libax.h");
+    gen_ax_config("include_gen/axconfig.h").unwrap();
     gen_pthread_mutex("include/ax_pthread_mutex.h").unwrap();
-    gen_c_to_rust_bindings(&crate_dir, "ctypes.h", "src/cbindings/ctypes_gen.rs");
+    gen_c_to_rust_bindings("ctypes.h", "src/ctypes_gen.rs");
 }
-
-#[cfg(not(feature = "cbindings"))]
-fn main() {}

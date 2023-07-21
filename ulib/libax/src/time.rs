@@ -15,7 +15,7 @@ impl Instant {
 
     /// Converts an `Instant` to a `Duration` directly.
     #[allow(dead_code)]
-    pub(crate) fn as_duration(&self) -> Duration {
+    pub fn as_duration(&self) -> Duration {
         self.0
     }
 

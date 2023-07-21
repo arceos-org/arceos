@@ -1,11 +1,11 @@
 use core::ffi::{c_char, c_int};
 
-use crate::io::{self, Write};
 use axerrno::LinuxError;
+use libax::io::{self, Write};
 use spinlock::SpinNoIrq;
 
 #[cfg(feature = "fd")]
-use {crate::io::PollState, alloc::sync::Arc, axerrno::LinuxResult};
+use {alloc::sync::Arc, axerrno::LinuxResult, axio::PollState};
 
 static LOCK: SpinNoIrq<()> = SpinNoIrq::new(()); // Lock used by `ax_println_str` for C apps
 
@@ -40,7 +40,7 @@ pub unsafe extern "C" fn ax_println_str(buf: *const c_char, count: usize) -> c_i
 }
 
 #[cfg(feature = "fd")]
-impl super::fd_ops::FileLike for crate::io::Stdin {
+impl super::fd_ops::FileLike for libax::io::Stdin {
     fn read(&self, buf: &mut [u8]) -> LinuxResult<usize> {
         Ok(self.read_locked(buf)?)
     }
@@ -76,7 +76,7 @@ impl super::fd_ops::FileLike for crate::io::Stdin {
 }
 
 #[cfg(feature = "fd")]
-impl super::fd_ops::FileLike for crate::io::Stdout {
+impl super::fd_ops::FileLike for libax::io::Stdout {
     fn read(&self, _buf: &mut [u8]) -> LinuxResult<usize> {
         Err(LinuxError::EPERM)
     }

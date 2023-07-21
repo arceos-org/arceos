@@ -63,6 +63,7 @@ members = [
     "modules/axtask",
 
     "ulib/libax",
+    "ulib/axlibc",
 ]
 
 [profile.release]

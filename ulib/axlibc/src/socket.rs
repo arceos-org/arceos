@@ -6,9 +6,9 @@ use core::net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4};
 use axerrno::{LinuxError, LinuxResult};
 use axio::PollState;
 use axnet::{TcpSocket, UdpSocket};
+use libax::sync::Mutex;
 
-use super::{ctypes, fd_ops::FileLike, utils::char_ptr_to_str};
-use crate::sync::Mutex;
+use crate::{ctypes, fd_ops::FileLike, utils::char_ptr_to_str};
 
 pub enum Socket {
     Udp(Mutex<UdpSocket>),

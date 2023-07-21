@@ -1,6 +1,30 @@
-//! Exported C bindings, to call ArceOS funtions from C code.
+//! [ArceOS] user program library for C apps.
+//!
+//! # Cargo Features
+//!
+//! - `fd`: Enable file descriptor table.
+//! - `pipe`: Enable pipe support.
+//! - `select`: Enable synchronous I/O multiplexing ([select]) support.
+//! - `epoll`: Enable event polling ([epoll]) support.
+//!
+//! [ArceOS]: https://github.com/rcore-os/arceos
+//! [select]: https://man7.org/linux/man-pages/man2/select.2.html
+//! [epoll]: https://man7.org/linux/man-pages/man7/epoll.7.html
 
+#![cfg_attr(all(not(test), not(doc)), no_std)]
+#![feature(doc_cfg)]
+#![feature(doc_auto_cfg)]
+#![feature(ip_in_core)]
+#![feature(int_roundings)]
+#![feature(naked_functions)]
+#![feature(result_option_inspect)]
 #![allow(clippy::missing_safety_doc)]
+
+#[macro_use]
+extern crate axlog;
+
+#[cfg(feature = "alloc")]
+extern crate alloc;
 
 /// cbindgen:ignore
 #[rustfmt::skip]
@@ -39,13 +63,13 @@ mod time;
 /// Sets the seed for the random number generator.
 #[no_mangle]
 pub unsafe extern "C" fn ax_srand(seed: u32) {
-    crate::rand::srand(seed);
+    libax::rand::srand(seed);
 }
 
 /// Returns a 32-bit unsigned pseudo random interger.
 #[no_mangle]
 pub unsafe extern "C" fn ax_rand_u32() -> u32 {
-    crate::rand::rand_u32()
+    libax::rand::rand_u32()
 }
 
 /// Abort the current process.
@@ -57,7 +81,7 @@ pub unsafe extern "C" fn ax_panic() -> ! {
 /// Exits the current thread.
 #[no_mangle]
 pub unsafe extern "C" fn ax_exit(exit_code: core::ffi::c_int) -> ! {
-    crate::thread::exit(exit_code)
+    libax::thread::exit(exit_code)
 }
 
 #[cfg(feature = "alloc")]

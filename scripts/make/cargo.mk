@@ -12,6 +12,9 @@ features-y :=
 
 ifeq ($(shell test $(SMP) -gt 1; echo $$?),0)
   features-y += libax/smp
+  ifeq ($(APP_TYPE), c)
+    features-y += axlibc/smp
+  endif
 endif
 
 ifneq ($(filter $(LOG),off error warn info debug trace),)
@@ -27,13 +30,12 @@ endif
 ifeq ($(APP_TYPE),c)
   ifneq ($(wildcard $(APP)/features.txt),)    # check features.txt exists
     features_c := $(shell cat $(APP)/features.txt)
-    ifneq ($(foreach feat,fs net pipe select epoll,$(filter $(feat),$(features_c))),)
+    ifneq ($(strip $(foreach feat,fs net pipe select epoll,$(filter $(feat),$(features_c)))),)
       features_c += fd
     endif
     CFLAGS += $(addprefix -DAX_CONFIG_,$(shell echo $(features_c) | tr 'a-z' 'A-Z'))
   endif
-  features-y += $(addprefix libax/,$(features_c))
-  features-y += libax/cbindings
+  features-y += $(addprefix axlibc/,$(features_c))
   features-y += $(APP_FEATURES)
 else ifeq ($(APP_TYPE),rust)
   features-y += $(APP_FEATURES)
@@ -67,7 +69,7 @@ endef
 all_packages := \
   $(shell ls $(CURDIR)/crates) \
   $(shell ls $(CURDIR)/modules) \
-  libax
+  libax axlibc
 
 define cargo_doc
   $(call run_cmd,cargo doc,--no-deps --all-features --workspace --exclude "arceos-*" $(verbose))

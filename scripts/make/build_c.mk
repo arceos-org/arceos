@@ -1,11 +1,11 @@
-rust_lib_name := libax
+rust_lib_name := axlibc
 rust_lib := target/$(TARGET)/$(MODE)/lib$(rust_lib_name).a
 
-ulib_dir := ulib/c_libax
-src_dir := $(ulib_dir)/src
+ulib_dir := ulib/axlibc
+src_dir := $(ulib_dir)/c
 obj_dir := $(ulib_dir)/build_$(ARCH)
 inc_dir := $(ulib_dir)/include
-libax_inc_dir = $(ulib_dir)/../libax/include
+inc_gen_dir = $(ulib_dir)/include_gen
 c_lib := $(obj_dir)/libc.a
 libgcc :=
 
@@ -13,10 +13,11 @@ in_feat := $(APP)/features.txt
 out_feat := $(obj_dir)/.features.txt
 
 ulib_src := $(wildcard $(src_dir)/*.c)
+ulib_hdr := $(wildcard $(inc_dir)/*.h)
 ulib_obj := $(patsubst $(src_dir)/%.c,$(obj_dir)/%.o,$(ulib_src))
 
 CFLAGS += -nostdinc -static -no-pie -fno-builtin -ffreestanding -Wall
-CFLAGS += -I$(inc_dir) -I$(libax_inc_dir)
+CFLAGS += -I$(inc_dir) -I$(inc_gen_dir)
 LDFLAGS += -nostdlib -static -no-pie --gc-sections -T$(LD_SCRIPT)
 
 ifeq ($(MODE), release)
@@ -75,7 +76,7 @@ app-objs := main.o
 
 app-objs := $(addprefix $(APP)/,$(app-objs))
 
-$(APP)/%.o: $(APP)/%.c $(libax_inc_dir)/ax_pthread_mutex.h
+$(APP)/%.o: $(APP)/%.c $(ulib_hdr)
 	$(call run_cmd,$(CC),$(CFLAGS) $(APP_CFLAGS) -c -o $@ $<)
 
 $(OUT_ELF): $(app-objs) $(c_lib) $(rust_lib) $(libgcc)

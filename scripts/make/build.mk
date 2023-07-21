@@ -32,7 +32,7 @@ ifeq ($(APP_TYPE), rust)
 	$(call cargo_rustc,--manifest-path $(APP)/Cargo.toml)
 	@cp $(rust_elf) $(OUT_ELF)
 else ifeq ($(APP_TYPE), c)
-	$(call cargo_rustc,-p libax --crate-type staticlib)
+	$(call cargo_rustc,-p axlibc --crate-type staticlib)
 endif
 
 $(OUT_DIR):

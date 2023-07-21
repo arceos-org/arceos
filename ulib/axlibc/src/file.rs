@@ -1,16 +1,17 @@
 use alloc::sync::Arc;
-use axerrno::{LinuxError, LinuxResult};
 use core::ffi::{c_char, c_int};
 
-use super::{ctypes, fd_ops::FileLike, utils::char_ptr_to_str};
-use crate::fs::OpenOptions;
-use crate::io::{prelude::*, PollState, SeekFrom};
-use crate::sync::Mutex;
+use axerrno::{LinuxError, LinuxResult};
+use axio::{prelude::*, PollState, SeekFrom};
+use libax::fs::OpenOptions;
+use libax::sync::Mutex;
 
-pub struct File(Mutex<crate::fs::File>);
+use crate::{ctypes, fd_ops::FileLike, utils::char_ptr_to_str};
+
+pub struct File(Mutex<libax::fs::File>);
 
 impl File {
-    fn new(inner: crate::fs::File) -> Self {
+    fn new(inner: libax::fs::File) -> Self {
         Self(Mutex::new(inner))
     }
 
@@ -148,7 +149,7 @@ pub unsafe extern "C" fn ax_stat(path: *const c_char, buf: *mut ctypes::stat) ->
         if buf.is_null() {
             return Err(LinuxError::EFAULT);
         }
-        let file = crate::fs::File::open(path?)?;
+        let file = libax::fs::File::open(path?)?;
         let st = File::new(file).stat()?;
         unsafe { *buf = st };
         Ok(0)
@@ -180,7 +181,7 @@ pub unsafe extern "C" fn ax_getcwd(buf: *mut c_char, size: usize) -> *mut c_char
             return Ok(core::ptr::null::<c_char>() as _);
         }
         let dst = unsafe { core::slice::from_raw_parts_mut(buf as *mut u8, size as _) };
-        let cwd = crate::env::current_dir()?;
+        let cwd = libax::env::current_dir()?;
         let cwd = cwd.as_bytes();
         if cwd.len() < size {
             dst[..cwd.len()].copy_from_slice(cwd);

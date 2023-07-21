@@ -1,11 +1,12 @@
 use alloc::sync::Arc;
-use axerrno::{LinuxError, LinuxResult};
 use core::ffi::c_int;
 
-use super::{ctypes, fd_ops::FileLike};
-use crate::io::PollState;
-use crate::sync::Mutex;
-use crate::thread::yield_now;
+use axerrno::{LinuxError, LinuxResult};
+use axio::PollState;
+use libax::sync::Mutex;
+use libax::thread::yield_now;
+
+use crate::{ctypes, fd_ops::FileLike};
 
 #[derive(Copy, Clone, PartialEq)]
 enum RingBufferStatus {

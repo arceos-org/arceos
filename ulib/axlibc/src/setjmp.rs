@@ -137,7 +137,7 @@ unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) -> !
         ldp d10, d11, [x0,#128]
         ldp d12, d13, [x0,#144]
         ldp d14, d15, [x0,#160]
-    
+
         cmp w1, 0
         csinc w0, w1, wzr, ne
         br x30",
@@ -153,7 +153,7 @@ unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) -> !
         ldp x29, x30, [x0,#80]
         ldr x2, [x0,#104]
         mov sp, x2
-    
+
         cmp w1, 0
         csinc w0, w1, wzr, ne
         br x30",
@@ -173,7 +173,7 @@ unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) -> !
         mov r14, [rdi + 32]
         mov r15, [rdi + 40]
         mov rdx, [rdi + 48]
-        mov rsp, rdx 
+        mov rsp, rdx
         mov rdx, [rdi + 56]
         jmp rdx",
         options(noreturn),
@@ -194,7 +194,7 @@ unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) -> !
         ld s11,   88(a0)
         ld sp,    96(a0)
         ld ra,    104(a0)
-    
+
         fld fs0,  112(a0)
         fld fs1,  120(a0)
         fld fs2,  128(a0)
@@ -207,7 +207,7 @@ unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) -> !
         fld fs9,  184(a0)
         fld fs10, 192(a0)
         fld fs11, 200(a0)
-    
+
         seqz a0, a1
         add a0, a0, a1
         ret",
@@ -229,7 +229,7 @@ unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) -> !
         ld s11,   88(a0)
         ld sp,    96(a0)
         ld ra,    104(a0)
-    
+
         seqz a0, a1
         add a0, a0, a1
         ret",

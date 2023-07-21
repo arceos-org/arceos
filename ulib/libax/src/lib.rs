@@ -31,8 +31,6 @@
 //!     - `log-level-off`: Disable all logging.
 //!     - `log-level-error`, `log-level-warn`, `log-level-info`, `log-level-debug`,
 //!       `log-level-trace`: Keep logging only at the specified level or higher.
-//! - Other
-//!    - `cbindings`: Generate C bindings, to support C applications.
 //!
 //! [ArceOS]: https://github.com/rcore-os/arceos
 
@@ -40,9 +38,6 @@
 #![feature(doc_cfg)]
 #![feature(doc_auto_cfg)]
 #![feature(ip_in_core)]
-#![feature(int_roundings)]
-#![feature(naked_functions)]
-#![feature(result_option_inspect)]
 
 #[allow(unused_imports)]
 #[macro_use]
@@ -77,6 +72,3 @@ pub mod net;
 
 #[cfg(feature = "display")]
 pub mod display;
-
-#[cfg(feature = "cbindings")]
-pub mod cbindings;

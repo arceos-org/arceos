@@ -56,8 +56,8 @@ impl Stdin {
         self.inner.lock().read_line(buf)
     }
 
-    #[allow(dead_code)]
-    pub(crate) fn read_locked(&self, buf: &mut [u8]) -> Result<usize> {
+    /// TODO: remove this
+    pub fn read_locked(&self, buf: &mut [u8]) -> Result<usize> {
         self.inner.lock().read(buf)
     }
 }
@@ -81,8 +81,8 @@ impl Read for Stdin {
 }
 
 impl Stdout {
-    #[allow(dead_code)]
-    pub(crate) fn write_locked(&self, buf: &[u8]) -> Result<usize> {
+    /// TODO: remove this
+    pub fn write_locked(&self, buf: &[u8]) -> Result<usize> {
         self.inner.lock().write(buf)
     }
 }

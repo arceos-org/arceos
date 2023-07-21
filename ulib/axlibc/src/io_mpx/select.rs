@@ -2,7 +2,7 @@ use axerrno::{LinuxError, LinuxResult};
 use axhal::time::current_time;
 use core::ffi::c_int;
 
-use crate::cbindings::{ctypes, fd_ops::get_file_like};
+use crate::{ctypes, fd_ops::get_file_like};
 
 const FD_SETSIZE: usize = 1024;
 const BITS_PER_USIZE: usize = usize::BITS as usize;
@@ -143,7 +143,7 @@ pub unsafe extern "C" fn ax_select(
                 debug!("    timeout!");
                 return Ok(0);
             }
-            crate::thread::yield_now();
+            libax::thread::yield_now();
         }
     })
 }
