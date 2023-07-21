@@ -194,7 +194,6 @@ dependencies = [
 name = "axconfig"
 version = "0.1.0"
 dependencies = [
- "cfg-if",
  "serde",
  "toml_edit",
 ]
@@ -375,6 +374,7 @@ dependencies = [
 name = "axsync"
 version = "0.1.0"
 dependencies = [
+ "axsync",
  "axtask",
  "rand",
  "spinlock",

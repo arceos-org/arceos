@@ -17,7 +17,7 @@ repository = "https://github.com/rcore-os/arceos/tree/main/ulib/libax"
 documentation = "https://rcore-os.github.io/arceos/libax/index.html"
 
 [features]
-default = ["axtask?/sched_fifo"]
+default = []
 
 # Multicore
 smp = ["axruntime/smp", "spinlock/smp"]
@@ -75,7 +75,7 @@ epoll = ["fd"]
 
 [dependencies]
 # ArceOS modules
-axruntime = { path = "../../modules/axruntime", default-features = false }
+axruntime = { path = "../../modules/axruntime" }
 axhal = { path = "../../modules/axhal" }
 axlog = { path = "../../modules/axlog" }
 axconfig = { path = "../../modules/axconfig" }
@@ -84,8 +84,8 @@ axdriver = { path = "../../modules/axdriver", optional = true }
 axfs = { path = "../../modules/axfs", optional = true }
 axnet = { path = "../../modules/axnet", optional = true }
 axdisplay = { path = "../../modules/axdisplay", optional = true }
-axsync = { path = "../../modules/axsync", default-features = false, optional = true }
-axtask = { path = "../../modules/axtask", default-features = false, optional = true }
+axsync = { path = "../../modules/axsync", optional = true }
+axtask = { path = "../../modules/axtask", optional = true }
 
 # Other crates
 axio = { path = "../../crates/axio" }

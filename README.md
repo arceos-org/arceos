@@ -92,7 +92,7 @@ export PATH=`pwd`/x86_64-linux-musl-cross/bin:`pwd`/aarch64-linux-musl-cross/bin
 
 ```bash
 # in arceos directory
-make A=path/to/app ARCH=<arch> LOG=<log> NET=[y|n] FS=[y|n]
+make A=path/to/app ARCH=<arch> LOG=<log> NET=[y|n] BLK=[y|n]
 ```
 
 Where `<arch>` should be one of `riscv64`, `aarch64`，`x86_64`.
@@ -153,7 +153,6 @@ make A=apps/net/httpserver ARCH=aarch64 LOG=info NET=y SMP=4 run
 
     ```bash
     # in features.txt
-    default
     alloc
     paging
     net

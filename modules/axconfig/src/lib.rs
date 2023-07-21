@@ -14,42 +14,22 @@
 
 #![no_std]
 
-cfg_if::cfg_if! {
-    // add `not(target_os = "none")` check to use in `build.rs`
-    if #[cfg(all(
-        any(target_arch = "x86_64", not(target_os = "none")),
-        feature = "platform-pc-x86"
-    ))] {
+#[rustfmt::skip]
+macro_rules! platform_config {
+    ($plat_ident: ident, $config_path: literal) => {
+        #[cfg($plat_ident)]
         #[rustfmt::skip]
-        #[path = "config_pc_x86.rs"]
-        mod config;
-    } else if #[cfg(all(
-        any(target_arch = "riscv32", target_arch = "riscv64", not(target_os = "none")),
-        feature = "platform-qemu-virt-riscv"
-    ))] {
-        #[rustfmt::skip]
-        #[path = "config_qemu_virt_riscv.rs"]
-        mod config;
-    } else if #[cfg(all(
-        any(target_arch = "aarch64", not(target_os = "none")),
-        feature = "platform-qemu-virt-aarch64"
-    ))] {
-        #[rustfmt::skip]
-        #[path = "config_qemu_virt_aarch64.rs"]
-        mod config;
-    } else if #[cfg(all(
-        any(target_arch = "aarch64", not(target_os = "none")),
-        feature = "platform-raspi4-aarch64"
-    ))] {
-        #[rustfmt::skip]
-        #[path = "config_raspi4_aarch64.rs"]
-        mod config;
-    } else {
-        #[rustfmt::skip]
-        #[path = "config_dummy.rs"]
-        mod config;
-    }
+        mod config {
+            include!(concat!(env!("OUT_DIR"), "/", $config_path));
+        }
+    };
 }
+
+platform_config!(pc_x86, "config_pc_x86.rs");
+platform_config!(qemu_virt_riscv, "config_qemu_virt_riscv.rs");
+platform_config!(qemu_virt_aarch64, "config_qemu_virt_aarch64.rs");
+platform_config!(raspi4_aarch64, "config_raspi4_aarch64.rs");
+platform_config!(dummy, "config_dummy.rs");
 
 pub use config::*;
 

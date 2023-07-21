@@ -30,7 +30,7 @@ axfs_vfs = { path = "../../crates/axfs_vfs" }
 axfs_devfs = { path = "../../crates/axfs_devfs", optional = true }
 axfs_ramfs = { path = "../../crates/axfs_ramfs", optional = true }
 axdriver = { path = "../axdriver", features = ["block"] }
-axsync = { path = "../axsync", default-features = false }
+axsync = { path = "../axsync" }
 crate_interface = { path = "../../crates/crate_interface", optional = true }
 
 [dependencies.fatfs]
@@ -48,4 +48,5 @@ features = [ # no std
 [dev-dependencies]
 axdriver = { path = "../axdriver", features = ["block", "ramdisk"] }
 driver_block = { path = "../../crates/driver_block", features = ["ramdisk"] }
+axsync = { path = "../axsync", features = ["multitask"] }
 axtask = { path = "../axtask", features = ["test"] }

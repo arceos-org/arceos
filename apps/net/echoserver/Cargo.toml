@@ -7,4 +7,4 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-libax = { path = "../../../ulib/libax", features = ["paging", "multitask", "net"] }
+libax = { path = "../../../ulib/libax", features = ["multitask", "net"] }

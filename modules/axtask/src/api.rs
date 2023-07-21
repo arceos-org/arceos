@@ -13,16 +13,17 @@ pub use crate::wait_queue::WaitQueue;
 pub type AxTaskRef = Arc<AxTask>;
 
 cfg_if::cfg_if! {
-    if #[cfg(feature = "sched_fifo")] {
-        pub(crate) type AxTask = scheduler::FifoTask<TaskInner>;
-        pub(crate) type Scheduler = scheduler::FifoScheduler<TaskInner>;
-    } else if #[cfg(feature = "sched_rr")] {
+    if #[cfg(feature = "sched_rr")] {
         const MAX_TIME_SLICE: usize = 5;
         pub(crate) type AxTask = scheduler::RRTask<TaskInner, MAX_TIME_SLICE>;
         pub(crate) type Scheduler = scheduler::RRScheduler<TaskInner, MAX_TIME_SLICE>;
     } else if #[cfg(feature = "sched_cfs")] {
         pub(crate) type AxTask = scheduler::CFSTask<TaskInner>;
         pub(crate) type Scheduler = scheduler::CFScheduler<TaskInner>;
+    } else {
+        // If no scheduler features are set, use FIFO as the default.
+        pub(crate) type AxTask = scheduler::FifoTask<TaskInner>;
+        pub(crate) type Scheduler = scheduler::FifoScheduler<TaskInner>;
     }
 }
 

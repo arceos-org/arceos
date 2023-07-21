@@ -21,8 +21,8 @@ driver_net = { path = "../../crates/driver_net" }
 lazy_init = { path = "../../crates/lazy_init" }
 axerrno = { path = "../../crates/axerrno" }
 axhal = { path = "../axhal" }
-axsync = { path = "../axsync", default-features = false }
-axtask = { path = "../axtask", default-features = false }
+axsync = { path = "../axsync" }
+axtask = { path = "../axtask" }
 axdriver = { path = "../axdriver", features = ["net"] }
 axio = { path = "../../crates/axio" }
 

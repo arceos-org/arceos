@@ -46,13 +46,15 @@ endif
 
 ifneq ($(wildcard $(in_feat)),)
 _gen_feat: $(obj_dir)
+  # copy "feature.txt" to ".feature.txt" and trigger rebuild if changed
   ifneq ($(shell diff -Nq $(in_feat) $(out_feat)),)
 	$(shell cp $(in_feat) $(out_feat))
   endif
 else
 _gen_feat: $(obj_dir)
-  ifneq ($(shell cat $(out_feat) 2> /dev/null),default)
-	@echo default > $(out_feat)
+  # create an empty ".feature.txt"
+  ifneq ($(shell cat $(out_feat) 2>&1),)
+	@touch $(out_feat)
   endif
 endif
 

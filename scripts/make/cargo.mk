@@ -28,10 +28,7 @@ ifeq ($(BUS),pci)
   features-y += libax/bus-pci
 endif
 
-default_features := y
-
 ifeq ($(APP_TYPE),c)
-  default_features := n
   ifneq ($(wildcard $(APP)/features.txt),)    # check features.txt exists
     features_c := $(shell cat $(APP)/features.txt)
     ifneq ($(foreach feat,fs net pipe select epoll,$(filter $(feat),$(features_c))),)
@@ -44,9 +41,6 @@ ifeq ($(APP_TYPE),c)
   features-y += $(APP_FEATURES)
 else ifeq ($(APP_TYPE),rust)
   features-y += $(APP_FEATURES)
-  ifneq ($(APP_FEATURES),)
-    default_features := n
-  endif
 endif
 
 build_args-release := --release
@@ -57,10 +51,6 @@ build_args := \
   $(build_args-$(MODE)) \
   --features "$(features-y)" \
   $(verbose)
-
-ifeq ($(default_features),n)
-  build_args += --no-default-features
-endif
 
 RUSTFLAGS := -C link-arg=-T$(LD_SCRIPT) -C link-arg=-no-pie
 RUSTDOCFLAGS := --enable-index-page -Zunstable-options -D rustdoc::broken_intra_doc_links

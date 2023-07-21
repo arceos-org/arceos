@@ -16,9 +16,6 @@ platform-qemu-virt-aarch64 = []
 platform-raspi4-aarch64 = []
 default = []
 
-[dependencies]
-cfg-if = "1.0"
-
 [build-dependencies]
 toml_edit = "0.19"
 serde = "1.0"
