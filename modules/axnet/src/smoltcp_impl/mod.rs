@@ -25,8 +25,17 @@ pub use self::dns::resolve_socket_addr;
 pub use self::tcp::TcpSocket;
 pub use self::udp::UdpSocket;
 
-const IP: &str = env!("AX_IP");
-const GATEWAY: &str = env!("AX_GW");
+macro_rules! env_or_default {
+    ($key:literal) => {
+        match option_env!($key) {
+            Some(val) => val,
+            None => "",
+        }
+    };
+}
+
+const IP: &str = env_or_default!("AX_IP");
+const GATEWAY: &str = env_or_default!("AX_GW");
 const DNS_SEVER: &str = "8.8.8.8";
 const IP_PREFIX: u8 = 24;
 

@@ -7,30 +7,18 @@ cfg_if::cfg_if! {
 }
 
 cfg_if::cfg_if! {
-    if #[cfg(all(
-        target_arch = "x86_64",
-        feature = "platform-pc-x86"
-    ))] {
-        mod pc_x86;
-        pub use self::pc_x86::*;
-    } else if #[cfg(all(
-        any(target_arch = "riscv32", target_arch = "riscv64"),
-        feature = "platform-qemu-virt-riscv"
-    ))] {
-        mod qemu_virt_riscv;
-        pub use self::qemu_virt_riscv::*;
-    } else if #[cfg(all(
-        target_arch = "aarch64",
-        feature = "platform-qemu-virt-aarch64"
-    ))] {
-        mod qemu_virt_aarch64;
-        pub use self::qemu_virt_aarch64::*;
-    } else if #[cfg(all(
-        target_arch = "aarch64",
-        feature = "platform-raspi4-aarch64"
-    ))] {
-        mod raspi4_aarch64;
-        pub use self::raspi4_aarch64::*;
+    if #[cfg(all(target_arch = "x86_64", platform_family = "x86-pc"))] {
+        mod x86_pc;
+        pub use self::x86_pc::*;
+    } else if #[cfg(all(target_arch = "riscv64", platform_family = "riscv64-qemu-virt"))] {
+        mod riscv64_qemu_virt;
+        pub use self::riscv64_qemu_virt::*;
+    } else if #[cfg(all(target_arch = "aarch64", platform_family = "aarch64-qemu-virt"))] {
+        mod aarch64_qemu_virt;
+        pub use self::aarch64_qemu_virt::*;
+    } else if #[cfg(all(target_arch = "aarch64", platform_family = "aarch64-raspi"))] {
+        mod aarch64_raspi;
+        pub use self::aarch64_raspi::*;
     } else {
         mod dummy;
         pub use self::dummy::*;

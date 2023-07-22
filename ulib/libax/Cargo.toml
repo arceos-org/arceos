@@ -60,12 +60,6 @@ log-level-info = ["axlog/log-level-info"]
 log-level-debug = ["axlog/log-level-debug"]
 log-level-trace = ["axlog/log-level-trace"]
 
-# Platform
-platform-pc-x86 = ["axhal/platform-pc-x86", "bus-pci"]
-platform-qemu-virt-riscv = ["axhal/platform-qemu-virt-riscv", "bus-mmio"]
-platform-qemu-virt-aarch64 = ["axhal/platform-qemu-virt-aarch64", "bus-mmio"]
-platform-raspi4-aarch64 = ["axhal/platform-raspi4-aarch64", "bus-mmio"]
-
 # For C bindings
 cbindings = ["cbindgen", "bindgen", "dep:spin", "dep:lazy_static", "dep:flatten_objects", "dep:axconfig"]
 fd = ["alloc"]

@@ -1,7 +1,9 @@
 # Architecture identifier.
 arch = "riscv64"
 # Platform identifier.
-platform = "qemu-virt-riscv"
+platform = "riscv64-qemu-virt"
+# Platform family.
+family = "riscv64-qemu-virt"
 
 # Base address of the whole physical memory.
 phys-memory-base = "0x8000_0000"

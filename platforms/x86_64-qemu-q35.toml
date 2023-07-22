@@ -1,7 +1,9 @@
 # Architecture identifier.
 arch = "x86_64"
 # Platform identifier.
-platform = "pc-x86"
+platform = "x86_64-qemu-q35"
+# Platform family.
+family = "x86-pc"
 
 # Base address of the whole physical memory.
 phys-memory-base = "0"

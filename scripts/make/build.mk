@@ -27,7 +27,7 @@ else ifneq ($(filter $(MAKECMDGOALS),doc doc_check_missing),)
 endif
 
 _cargo_build:
-	@printf "    $(GREEN_C)Building$(END_C) App: $(APP_NAME), Arch: $(ARCH), Platform: $(PLATFORM), App type: $(APP_TYPE)\n"
+	@printf "    $(GREEN_C)Building$(END_C) App: $(APP_NAME), Arch: $(ARCH), Platform: $(PLATFORM_NAME), App type: $(APP_TYPE)\n"
 ifeq ($(APP_TYPE), rust)
 	$(call cargo_rustc,--manifest-path $(APP)/Cargo.toml)
 	@cp $(rust_elf) $(OUT_ELF)

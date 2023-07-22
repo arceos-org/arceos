@@ -8,7 +8,7 @@ const IRQ_VECTOR_START: u8 = 0x20;
 const IRQ_VECTOR_END: u8 = 0xff;
 
 #[no_mangle]
-fn x86_trap_handler(tf: &mut TrapFrame) {
+fn x86_trap_handler(tf: &TrapFrame) {
     match tf.vector as u8 {
         PAGE_FAULT_VECTOR => {
             if tf.is_user() {

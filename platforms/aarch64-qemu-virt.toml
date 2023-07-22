@@ -1,7 +1,9 @@
 # Architecture identifier.
 arch = "aarch64"
 # Platform identifier.
-platform = "qemu-virt-aarch64"
+platform = "aarch64-qemu-virt"
+# Platform family.
+family = "aarch64-qemu-virt"
 
 # Base address of the whole physical memory.
 phys-memory-base = "0x4000_0000"

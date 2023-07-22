@@ -8,7 +8,7 @@ else
   verbose :=
 endif
 
-features-y := libax/platform-$(PLATFORM)
+features-y :=
 
 ifeq ($(shell test $(SMP) -gt 1; echo $$?),0)
   features-y += libax/smp
@@ -19,10 +19,6 @@ ifneq ($(filter $(LOG),off error warn info debug trace),)
 else
   $(error "LOG" must be one of "off", "error", "warn", "info", "debug", "trace")
 endif
-
-features-$(FS) += libax/fs
-features-$(NET) += libax/net
-features-$(GRAPHIC) += libax/display
 
 ifeq ($(BUS),pci)
   features-y += libax/bus-pci

@@ -2,6 +2,8 @@
 arch = "unknown"
 # Platform identifier.
 platform = "dummy"
+# Platform family.
+family = "dummy"
 
 # Base address of the whole physical memory.
 phys-memory-base = "0"
@@ -27,3 +29,13 @@ pci-ranges = []
 
 # Timer interrupt frequency in Hz.
 timer-frequency = "0"
+
+# Stack size of each task.
+task-stack-size = "0x40000"   # 256 K
+
+# Number of timer ticks per second (Hz). A timer tick may contain several timer
+# interrupts.
+ticks-per-sec = "100"
+
+# Number of CPUs
+smp = "1"

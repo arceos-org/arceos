@@ -6,9 +6,10 @@
 //!
 //! Currently supported platforms (specify by cargo features):
 //!
-//! - `platform-pc-x86`: Standard PC with x86_64 ISA.
-//! - `platform-qemu-virt-riscv`: QEMU virt machine with RISC-V ISA.
-//! - `platform-qemu-virt-aarch64`: QEMU virt machine with AArch64 ISA.
+//! - `x86-pc`: Standard PC with x86_64 ISA.
+//! - `riscv64-qemu-virt`: QEMU virt machine with RISC-V ISA.
+//! - `aarch64-qemu-virt`: QEMU virt machine with AArch64 ISA.
+//! - `aarch64-raspi`: Raspberry Pi with AArch64 ISA.
 //! - `dummy`: If none of the above platform is selected, the dummy platform
 //!    will be used. In this platform, most of the operations are no-op or
 //!    `unimplemented!()`. This platform is mainly used for [cargo test].
@@ -19,9 +20,6 @@
 //! - `fp_simd`: Enable floating-point and SIMD support.
 //! - `paging`: Enable page table manipulation.
 //! - `irq`: Enable interrupt handling support.
-//! - `platform-pc-x86`: Specify for use on the corresponding platform.
-//! - `platform-qemu-virt-riscv`: Specify for use on the corresponding platform.
-//! - `platform-qemu-virt-aarch64`: Specify for use on the corresponding platform.
 //!
 //! [ArceOS]: https://github.com/rcore-os/arceos
 //! [cargo test]: https://doc.rust-lang.org/cargo/guide/tests.html

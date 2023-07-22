@@ -1,7 +1,7 @@
 # Available arguments:
 # * General options:
 #     - `ARCH`: Target architecture: x86_64, riscv64, aarch64
-#     - `PLATFORM`: Target platform: pc-x86, qemu-virt-riscv, qemu-virt-aarch64, raspi4-aarch64
+#     - `PLATFORM`: Target platform in the `platforms` directory
 #     - `SMP`: Number of CPUs
 #     - `MODE`: Build mode: release, debug
 #     - `LOG:` Logging level: warn, error, info, debug, trace
@@ -67,19 +67,32 @@ endif
 ifeq ($(ARCH), x86_64)
   # Don't enable kvm for WSL/WSL2.
   ACCEL ?= $(if $(findstring -microsoft, $(shell uname -r | tr '[:upper:]' '[:lower:]')),n,y)
-  PLATFORM ?= pc-x86
+  PLATFORM ?= x86_64-qemu-q35
   TARGET := x86_64-unknown-none
   BUS := pci
 else ifeq ($(ARCH), riscv64)
   ACCEL ?= n
-  PLATFORM ?= qemu-virt-riscv
+  PLATFORM ?= riscv64-qemu-virt
   TARGET := riscv64gc-unknown-none-elf
 else ifeq ($(ARCH), aarch64)
   ACCEL ?= n
-  PLATFORM ?= qemu-virt-aarch64
+  PLATFORM ?= aarch64-qemu-virt
   TARGET := aarch64-unknown-none-softfloat
 else
   $(error "ARCH" must be one of "x86_64", "riscv64", or "aarch64")
+endif
+
+ifneq ($(filter $(MAKECMDGOALS),unittest unittest_no_fail_fast),)
+  PLATFORM :=
+endif
+
+builtin_platforms := $(patsubst platforms/%.toml,%,$(wildcard platforms/*))
+ifneq ($(filter $(PLATFORM),$(builtin_platforms)),)
+  # builtin platform
+  PLATFORM_NAME := $(PLATFORM)
+else ifneq ($(wildcard $(PLATFORM)),)
+  # custom platform, read the "platform" field from the toml file
+  PLATFORM_NAME := $(shell cat $(PLATFORM) | sed -n 's/^platform = "\([a-z0-9A-Z_\-]*\)"/\1/p')
 endif
 
 export AX_ARCH=$(ARCH)
@@ -106,9 +119,9 @@ GDB ?= gdb-multiarch
 OUT_DIR ?= $(APP)
 
 APP_NAME := $(shell basename $(APP))
-LD_SCRIPT := $(CURDIR)/modules/axhal/linker_$(PLATFORM).lds
-OUT_ELF := $(OUT_DIR)/$(APP_NAME)_$(PLATFORM).elf
-OUT_BIN := $(OUT_DIR)/$(APP_NAME)_$(PLATFORM).bin
+LD_SCRIPT := $(CURDIR)/modules/axhal/linker_$(PLATFORM_NAME).lds
+OUT_ELF := $(OUT_DIR)/$(APP_NAME)_$(PLATFORM_NAME).elf
+OUT_BIN := $(OUT_DIR)/$(APP_NAME)_$(PLATFORM_NAME).bin
 
 all: build
 
@@ -116,7 +129,7 @@ include scripts/make/utils.mk
 include scripts/make/build.mk
 include scripts/make/qemu.mk
 include scripts/make/test.mk
-ifeq ($(PLATFORM), raspi4-aarch64)
+ifeq ($(PLATFORM_NAME), aarch64-raspi4)
   include scripts/make/raspi4.mk
 endif
 
