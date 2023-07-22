@@ -1,9 +1,10 @@
 //! Platform-specific constants and parameters for [ArceOS].
 //!
-//! Currently supported platforms can be found in the [platforms](../../platforms)
-//! directory of the [ArceOS] root.
+//! Currently supported platforms can be found in the [platforms] directory of
+//! the [ArceOS] root.
 //!
 //! [ArceOS]: https://github.com/rcore-os/arceos
+//! [platforms]: https://github.com/rcore-os/arceos/tree/main/platforms
 
 #![no_std]
 

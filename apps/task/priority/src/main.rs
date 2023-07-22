@@ -2,12 +2,12 @@
 #![no_main]
 
 #[macro_use]
-extern crate libax;
+extern crate axstd;
 extern crate alloc;
 
 use alloc::sync::Arc;
 use alloc::vec::Vec;
-use libax::thread;
+use axstd::thread;
 
 struct TaskParam {
     data_len: usize,
@@ -68,7 +68,7 @@ fn main() {
     }
 
     let mut tasks = Vec::with_capacity(PAYLOAD_KIND);
-    let start_time = libax::time::Instant::now();
+    let start_time = axstd::time::Instant::now();
     for i in 0..PAYLOAD_KIND {
         let vec = data[i].clone();
         let data_len = TASK_PARAMS[i].data_len;

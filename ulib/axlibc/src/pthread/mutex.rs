@@ -1,8 +1,8 @@
 use crate::{ctypes, utils::check_null_mut_ptr};
 use axerrno::LinuxResult;
+use axstd::sync::Mutex;
 use core::ffi::c_int;
 use core::mem::{size_of, ManuallyDrop};
-use libax::sync::Mutex;
 
 static_assertions::const_assert_eq!(
     size_of::<PthreadMutex>(),

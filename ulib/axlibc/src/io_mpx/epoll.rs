@@ -8,7 +8,7 @@ use crate::{
 };
 use axerrno::{LinuxError, LinuxResult};
 use axhal::time::current_time;
-use libax::sync::Mutex;
+use axstd::sync::Mutex;
 
 use alloc::collections::btree_map::Entry;
 use alloc::collections::BTreeMap;
@@ -202,7 +202,7 @@ pub unsafe extern "C" fn ax_epoll_wait(
                 debug!("    timeout!");
                 return Ok(0);
             }
-            libax::thread::yield_now();
+            axstd::thread::yield_now();
         }
     })
 }

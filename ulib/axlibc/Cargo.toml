@@ -20,30 +20,30 @@ documentation = "https://rcore-os.github.io/arceos/axlibc/index.html"
 default = []
 
 # Multicore
-smp = ["libax/smp"]
+smp = ["axstd/smp"]
 
 # Floating point/SIMD
-fp_simd = ["libax/fp_simd"]
+fp_simd = ["axstd/fp_simd"]
 
 # Memory
-alloc = ["libax/alloc", "dep:axalloc"]
-paging = ["libax/paging"]
+alloc = ["axstd/alloc", "dep:axalloc"]
+paging = ["axstd/paging"]
 
 # Interrupts
-irq = ["libax/irq"]
+irq = ["axstd/irq"]
 
 # Multi-task
-multitask = ["libax/multitask", "axtask/multitask"]
-sched_fifo = ["libax/sched_fifo"]
-sched_rr = ["libax/sched_rr"]
-sched_cfs = ["libax/sched_cfs"]
+multitask = ["axstd/multitask", "axtask/multitask"]
+sched_fifo = ["axstd/sched_fifo"]
+sched_rr = ["axstd/sched_rr"]
+sched_cfs = ["axstd/sched_cfs"]
 
 # File system
-fs = ["libax/fs", "fd"]
-use-ramdisk = ["libax/use-ramdisk"]
+fs = ["axstd/fs", "fd"]
+use-ramdisk = ["axstd/use-ramdisk"]
 
 # Networking
-net = ["libax/net", "dep:axnet", "fd"]
+net = ["axstd/net", "dep:axnet", "fd"]
 
 # Libc features
 fd = ["alloc"]
@@ -53,7 +53,7 @@ epoll = ["fd"]
 
 [dependencies]
 # ArceOS modules
-libax = { path = "../libax" }
+axstd = { path = "../axstd" }
 axhal = { path = "../../modules/axhal" }
 axlog = { path = "../../modules/axlog" }
 axconfig = { path = "../../modules/axconfig" }

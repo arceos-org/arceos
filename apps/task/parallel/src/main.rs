@@ -2,15 +2,15 @@
 #![no_main]
 
 #[macro_use]
-extern crate libax;
+extern crate axstd;
 extern crate alloc;
 
 use alloc::sync::Arc;
 use alloc::vec::Vec;
+use axstd::sync::WaitQueue;
+use axstd::{rand, thread};
 use core::sync::atomic::{AtomicUsize, Ordering};
 use core::time::Duration;
-use libax::sync::WaitQueue;
-use libax::{rand, thread};
 
 const NUM_DATA: usize = 2_000_000;
 const NUM_TASKS: usize = 16;

@@ -11,20 +11,20 @@ endif
 features-y :=
 
 ifeq ($(shell test $(SMP) -gt 1; echo $$?),0)
-  features-y += libax/smp
+  features-y += axstd/smp
   ifeq ($(APP_TYPE), c)
     features-y += axlibc/smp
   endif
 endif
 
 ifneq ($(filter $(LOG),off error warn info debug trace),)
-  features-y += libax/log-level-$(LOG)
+  features-y += axstd/log-level-$(LOG)
 else
   $(error "LOG" must be one of "off", "error", "warn", "info", "debug", "trace")
 endif
 
 ifeq ($(BUS),pci)
-  features-y += libax/bus-pci
+  features-y += axstd/bus-pci
 endif
 
 ifeq ($(APP_TYPE),c)
@@ -69,7 +69,7 @@ endef
 all_packages := \
   $(shell ls $(CURDIR)/crates) \
   $(shell ls $(CURDIR)/modules) \
-  libax axlibc
+  axstd axlibc
 
 define cargo_doc
   $(call run_cmd,cargo doc,--no-deps --all-features --workspace --exclude "arceos-*" $(verbose))

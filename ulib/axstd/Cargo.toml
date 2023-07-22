@@ -1,5 +1,5 @@
 [package]
-name = "libax"
+name = "axstd"
 version = "0.1.0"
 edition = "2021"
 authors = [
@@ -13,8 +13,8 @@ authors = [
 description = "ArceOS user library with an interface similar to rust std"
 license = "GPL-3.0-or-later OR Apache-2.0"
 homepage = "https://github.com/rcore-os/arceos"
-repository = "https://github.com/rcore-os/arceos/tree/main/ulib/libax"
-documentation = "https://rcore-os.github.io/arceos/libax/index.html"
+repository = "https://github.com/rcore-os/arceos/tree/main/ulib/axstd"
+documentation = "https://rcore-os.github.io/arceos/axstd/index.html"
 
 [features]
 default = []

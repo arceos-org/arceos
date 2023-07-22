@@ -2,12 +2,12 @@
 #![no_main]
 
 #[macro_use]
-extern crate libax;
+extern crate axstd;
 extern crate alloc;
 
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
-use libax::rand;
+use axstd::rand;
 
 fn test_vec() {
     const N: usize = 1_000_000;

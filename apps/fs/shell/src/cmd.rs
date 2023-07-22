@@ -1,6 +1,6 @@
-use libax::fs::{self, File};
-use libax::io::{self, prelude::*};
-use libax::{string::String, vec::Vec};
+use axstd::fs::{self, File};
+use axstd::io::{self, prelude::*};
+use axstd::{string::String, vec::Vec};
 
 macro_rules! print_err {
     ($cmd: literal, $msg: literal) => {
@@ -35,7 +35,7 @@ const CMD_TABLE: &[(&str, CmdHandler)] = &[
 ];
 
 fn do_ls(args: &str) {
-    let current_dir = libax::env::current_dir().unwrap();
+    let current_dir = axstd::env::current_dir().unwrap();
     let args = if args.is_empty() {
         current_dir.as_str()
     } else {
@@ -201,7 +201,7 @@ fn do_cd(mut args: &str) {
         args = "/";
     }
     if !args.contains(char::is_whitespace) {
-        if let Err(e) = libax::env::set_current_dir(args) {
+        if let Err(e) = axstd::env::set_current_dir(args) {
             print_err!("cd", args, e.as_str());
         }
     } else {
@@ -210,7 +210,7 @@ fn do_cd(mut args: &str) {
 }
 
 fn do_pwd(_args: &str) {
-    let pwd = libax::env::current_dir().unwrap();
+    let pwd = axstd::env::current_dir().unwrap();
     println!("{}", pwd);
 }
 
@@ -239,7 +239,7 @@ fn do_help(_args: &str) {
 }
 
 fn do_exit(_args: &str) {
-    libax::thread::exit(0);
+    axstd::thread::exit(0);
 }
 
 pub fn run_cmd(line: &[u8]) {

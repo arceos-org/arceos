@@ -7,8 +7,8 @@ authors = ["Haoxing Ye <yehx20@mails.tsinghua.edu.cn>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-sched_rr = ["libax/sched_rr"]
-sched_cfs = ["libax/sched_cfs"]
+sched_rr = ["axstd/sched_rr"]
+sched_cfs = ["axstd/sched_cfs"]
 
 [dependencies]
-libax = { path = "../../../ulib/libax", features = ["alloc", "paging", "multitask"] }
+axstd = { path = "../../../ulib/axstd", features = ["alloc", "paging", "multitask"] }

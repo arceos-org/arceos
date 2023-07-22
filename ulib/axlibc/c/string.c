@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <libax.h>
+#include <axlibc.h>
 
 size_t strlen(const char *s)
 {

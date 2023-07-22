@@ -15,4 +15,4 @@ axfs = { path = "../../../modules/axfs", optional = true }
 axfs_vfs = { path = "../../../crates/axfs_vfs", optional = true }
 axfs_ramfs = { path = "../../../crates/axfs_ramfs", optional = true }
 crate_interface = { path = "../../../crates/crate_interface", optional = true }
-libax = { path = "../../../ulib/libax", features = ["fs"] }
+axstd = { path = "../../../ulib/axstd", features = ["fs"] }

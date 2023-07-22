@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <sys/epoll.h>
 
-#include <libax.h>
+#include <axlibc.h>
 
 int epoll_create(int size)
 {

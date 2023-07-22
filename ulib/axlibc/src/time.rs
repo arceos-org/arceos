@@ -1,7 +1,7 @@
 use axerrno::LinuxError;
+use axstd::time::Instant;
 use core::ffi::{c_int, c_long};
 use core::time::Duration;
-use libax::time::Instant;
 
 use super::ctypes;
 
@@ -66,7 +66,7 @@ pub unsafe extern "C" fn ax_nanosleep(
         let dur = Duration::from(*req);
 
         let now = Instant::now();
-        libax::thread::sleep(dur);
+        axstd::thread::sleep(dur);
         let actual = now.elapsed();
 
         if let Some(diff) = dur.checked_sub(actual) {

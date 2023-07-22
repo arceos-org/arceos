@@ -3,8 +3,8 @@ use core::ffi::c_int;
 
 use axerrno::{LinuxError, LinuxResult};
 use axio::PollState;
-use libax::sync::Mutex;
-use libax::thread::yield_now;
+use axstd::sync::Mutex;
+use axstd::thread::yield_now;
 
 use crate::{ctypes, fd_ops::FileLike};
 

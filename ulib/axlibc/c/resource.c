@@ -1,5 +1,5 @@
 #include <errno.h>
-#include <libax.h>
+#include <axlibc.h>
 #include <stdio.h>
 #include <sys/resource.h>
 

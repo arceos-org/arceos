@@ -1,8 +1,8 @@
 #![no_std]
 #![no_main]
 
+use axstd::println;
 use core::arch::asm;
-use libax::println;
 
 fn raise_break_exception() {
     unsafe {

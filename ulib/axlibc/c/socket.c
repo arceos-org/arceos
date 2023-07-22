@@ -6,7 +6,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
-#include <libax.h>
+#include <axlibc.h>
 
 int socket(int domain, int type, int protocol)
 {

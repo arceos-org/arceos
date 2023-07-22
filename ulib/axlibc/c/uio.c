@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <sys/uio.h>
 
-#include <libax.h>
+#include <axlibc.h>
 
 ssize_t writev(int fd, const struct iovec *iovec, int count)
 {

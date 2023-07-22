@@ -6,10 +6,10 @@ mod cmd;
 #[cfg(feature = "use_ramfs")]
 mod ramfs;
 
-use libax::io::prelude::*;
+use axstd::io::prelude::*;
 
 #[macro_use]
-extern crate libax;
+extern crate axstd;
 
 const LF: u8 = b'\n';
 const CR: u8 = b'\r';
@@ -20,13 +20,13 @@ const SPACE: u8 = b' ';
 const MAX_CMD_LEN: usize = 256;
 
 fn print_prompt() {
-    print!("arceos:{}$ ", libax::env::current_dir().unwrap());
+    print!("arceos:{}$ ", axstd::env::current_dir().unwrap());
 }
 
 #[no_mangle]
 fn main() {
-    let mut stdin = libax::io::stdin();
-    let mut stdout = libax::io::stdout();
+    let mut stdin = axstd::io::stdin();
+    let mut stdout = axstd::io::stdout();
 
     let mut buf = [0; MAX_CMD_LEN];
     let mut cursor = 0;

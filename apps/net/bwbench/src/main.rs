@@ -1,11 +1,11 @@
 #![no_std]
 #![no_main]
 
-extern crate libax;
+extern crate axstd;
 
 #[no_mangle]
 fn main() {
-    libax::println!("Benchmarking bandwidth...");
+    axstd::println!("Benchmarking bandwidth...");
     axnet::bench_transmit();
     // axnet::bench_receive();
 }

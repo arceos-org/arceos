@@ -49,71 +49,71 @@ name = "arceos-bwbench"
 version = "0.1.0"
 dependencies = [
  "axnet",
- "libax",
+ "axstd",
 ]
 
 [[package]]
 name = "arceos-display"
 version = "0.1.0"
 dependencies = [
+ "axstd",
  "embedded-graphics",
- "libax",
 ]
 
 [[package]]
 name = "arceos-echoserver"
 version = "0.1.0"
 dependencies = [
- "libax",
+ "axstd",
 ]
 
 [[package]]
 name = "arceos-exception"
 version = "0.1.0"
 dependencies = [
- "libax",
+ "axstd",
 ]
 
 [[package]]
 name = "arceos-helloworld"
 version = "0.1.0"
 dependencies = [
- "libax",
+ "axstd",
 ]
 
 [[package]]
 name = "arceos-httpclient"
 version = "0.1.0"
 dependencies = [
- "libax",
+ "axstd",
 ]
 
 [[package]]
 name = "arceos-httpserver"
 version = "0.1.0"
 dependencies = [
- "libax",
+ "axstd",
 ]
 
 [[package]]
 name = "arceos-memtest"
 version = "0.1.0"
 dependencies = [
- "libax",
+ "axstd",
 ]
 
 [[package]]
 name = "arceos-parallel"
 version = "0.1.0"
 dependencies = [
- "libax",
+ "axstd",
 ]
 
 [[package]]
 name = "arceos-priority"
 version = "0.1.0"
 dependencies = [
- "libax",
+ "axstd",
 ]
 
 [[package]]
@@ -123,29 +123,29 @@ dependencies = [
  "axfs",
  "axfs_ramfs",
  "axfs_vfs",
+ "axstd",
  "crate_interface",
- "libax",
 ]
 
 [[package]]
 name = "arceos-sleep"
 version = "0.1.0"
 dependencies = [
- "libax",
+ "axstd",
 ]
 
 [[package]]
 name = "arceos-udpserver"
 version = "0.1.0"
 dependencies = [
- "libax",
+ "axstd",
 ]
 
 [[package]]
 name = "arceos-yield"
 version = "0.1.0"
 dependencies = [
- "libax",
+ "axstd",
 ]
 
 [[package]]
@@ -341,12 +341,12 @@ dependencies = [
  "axio",
  "axlog",
  "axnet",
+ "axstd",
  "axtask",
  "bindgen",
  "cbindgen",
  "flatten_objects",
  "lazy_static",
- "libax",
  "spin 0.9.8",
  "spinlock",
  "static_assertions",
@@ -398,6 +398,26 @@ dependencies = [
  "kernel_guard",
  "lazy_init",
  "percpu",
+ "spinlock",
+]
+
+[[package]]
+name = "axstd"
+version = "0.1.0"
+dependencies = [
+ "axalloc",
+ "axconfig",
+ "axdisplay",
+ "axdriver",
+ "axerrno",
+ "axfs",
+ "axhal",
+ "axio",
+ "axlog",
+ "axnet",
+ "axruntime",
+ "axsync",
+ "axtask",
  "spinlock",
 ]
 
@@ -982,26 +1002,6 @@ name = "lazycell"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
-
-[[package]]
-name = "libax"
-version = "0.1.0"
-dependencies = [
- "axalloc",
- "axconfig",
- "axdisplay",
- "axdriver",
- "axerrno",
- "axfs",
- "axhal",
- "axio",
- "axlog",
- "axnet",
- "axruntime",
- "axsync",
- "axtask",
- "spinlock",
-]
 
 [[package]]
 name = "libc"

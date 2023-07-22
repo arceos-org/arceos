@@ -116,7 +116,7 @@ typedef struct {{
     }
 
     let crate_dir = PathBuf::from(&std::env::var("CARGO_MANIFEST_DIR").unwrap());
-    gen_rust_to_c_bindings(&crate_dir, "include_gen/libax.h");
+    gen_rust_to_c_bindings(&crate_dir, "include_gen/axlibc.h");
     gen_ax_config("include_gen/axconfig.h").unwrap();
     gen_pthread_mutex("include/ax_pthread_mutex.h").unwrap();
     gen_c_to_rust_bindings("ctypes.h", "src/ctypes_gen.rs");

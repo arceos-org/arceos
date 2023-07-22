@@ -3,5 +3,5 @@
 
 #[no_mangle]
 fn main() {
-    libax::println!("Hello, world!");
+    axstd::println!("Hello, world!");
 }

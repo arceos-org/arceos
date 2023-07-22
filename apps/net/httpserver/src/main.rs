@@ -10,11 +10,11 @@
 #![no_main]
 
 #[macro_use]
-extern crate libax;
+extern crate axstd;
 
-use libax::io::{self, prelude::*};
-use libax::net::{TcpListener, TcpStream};
-use libax::thread;
+use axstd::io::{self, prelude::*};
+use axstd::net::{TcpListener, TcpStream};
+use axstd::thread;
 
 const LOCAL_IP: &str = "0.0.0.0";
 const LOCAL_PORT: u16 = 5555;

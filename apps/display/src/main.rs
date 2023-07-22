@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-extern crate libax;
+extern crate axstd;
 mod display;
 
 use display::*;

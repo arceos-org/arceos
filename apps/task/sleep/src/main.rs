@@ -2,11 +2,11 @@
 #![no_main]
 
 #[macro_use]
-extern crate libax;
+extern crate axstd;
 
+use axstd::thread;
+use axstd::time::{Duration, Instant};
 use core::sync::atomic::{AtomicUsize, Ordering};
-use libax::thread;
-use libax::time::{Duration, Instant};
 
 const NUM_TASKS: usize = 5;
 

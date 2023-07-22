@@ -143,7 +143,7 @@ pub unsafe extern "C" fn ax_select(
                 debug!("    timeout!");
                 return Ok(0);
             }
-            libax::thread::yield_now();
+            axstd::thread::yield_now();
         }
     })
 }

@@ -1,7 +1,7 @@
 use core::ffi::{c_char, c_int};
 
 use axerrno::LinuxError;
-use libax::io::{self, Write};
+use axstd::io::{self, Write};
 use spinlock::SpinNoIrq;
 
 #[cfg(feature = "fd")]
@@ -40,7 +40,7 @@ pub unsafe extern "C" fn ax_println_str(buf: *const c_char, count: usize) -> c_i
 }
 
 #[cfg(feature = "fd")]
-impl super::fd_ops::FileLike for libax::io::Stdin {
+impl super::fd_ops::FileLike for axstd::io::Stdin {
     fn read(&self, buf: &mut [u8]) -> LinuxResult<usize> {
         Ok(self.read_locked(buf)?)
     }
@@ -76,7 +76,7 @@ impl super::fd_ops::FileLike for libax::io::Stdin {
 }
 
 #[cfg(feature = "fd")]
-impl super::fd_ops::FileLike for libax::io::Stdout {
+impl super::fd_ops::FileLike for axstd::io::Stdout {
     fn read(&self, _buf: &mut [u8]) -> LinuxResult<usize> {
         Err(LinuxError::EPERM)
     }

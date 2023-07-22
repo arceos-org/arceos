@@ -63,13 +63,13 @@ mod time;
 /// Sets the seed for the random number generator.
 #[no_mangle]
 pub unsafe extern "C" fn ax_srand(seed: u32) {
-    libax::rand::srand(seed);
+    axstd::rand::srand(seed);
 }
 
 /// Returns a 32-bit unsigned pseudo random interger.
 #[no_mangle]
 pub unsafe extern "C" fn ax_rand_u32() -> u32 {
-    libax::rand::rand_u32()
+    axstd::rand::rand_u32()
 }
 
 /// Abort the current process.
@@ -81,7 +81,7 @@ pub unsafe extern "C" fn ax_panic() -> ! {
 /// Exits the current thread.
 #[no_mangle]
 pub unsafe extern "C" fn ax_exit(exit_code: core::ffi::c_int) -> ! {
-    libax::thread::exit(exit_code)
+    axstd::thread::exit(exit_code)
 }
 
 #[cfg(feature = "alloc")]

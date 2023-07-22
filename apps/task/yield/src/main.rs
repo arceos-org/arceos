@@ -2,9 +2,9 @@
 #![no_main]
 
 #[macro_use]
-extern crate libax;
+extern crate axstd;
+use axstd::thread;
 use core::sync::atomic::{AtomicUsize, Ordering};
-use libax::thread;
 
 const NUM_TASKS: usize = 10;
 static FINISHED_TASKS: AtomicUsize = AtomicUsize::new(0);

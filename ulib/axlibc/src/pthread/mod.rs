@@ -13,7 +13,7 @@ pub mod mutex;
 lazy_static::lazy_static! {
     static ref TID_TO_PTHREAD: RwLock<BTreeMap<u64, ForceSendSync<ctypes::pthread_t>>> = {
         let mut map = BTreeMap::new();
-        let main_task = libax::thread::current();
+        let main_task = axstd::thread::current();
         let main_tid = main_task.id().as_u64();
         let main_thread = Pthread {
             inner: main_task.as_task_ref().clone(),
@@ -71,7 +71,7 @@ impl Pthread {
     }
 
     fn current_ptr() -> *mut Pthread {
-        let tid = libax::thread::current().id().as_u64();
+        let tid = axstd::thread::current().id().as_u64();
         match TID_TO_PTHREAD.read().get(&tid) {
             None => core::ptr::null_mut(),
             Some(ptr) => ptr.0 as *mut Pthread,
@@ -107,7 +107,7 @@ impl Pthread {
 #[no_mangle]
 pub unsafe extern "C" fn ax_getpid() -> c_int {
     ax_call_body!(ax_getpid, {
-        let pid = libax::thread::current().id().as_u64() as c_int;
+        let pid = axstd::thread::current().id().as_u64() as c_int;
         Ok(pid)
     })
 }

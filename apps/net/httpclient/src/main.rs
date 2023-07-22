@@ -2,10 +2,10 @@
 #![no_main]
 
 #[macro_use]
-extern crate libax;
+extern crate axstd;
 
-use libax::io::{self, prelude::*};
-use libax::net::{TcpStream, ToSocketAddrs};
+use axstd::io::{self, prelude::*};
+use axstd::net::{TcpStream, ToSocketAddrs};
 
 #[cfg(feature = "dns")]
 const DEST: &str = "ident.me:80";

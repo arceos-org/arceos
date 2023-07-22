@@ -7,7 +7,7 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-sched_rr = ["libax/sched_rr"]
+sched_rr = ["axstd/sched_rr"]
 
 [dependencies]
-libax = { path = "../../../ulib/libax", features = ["paging", "multitask", "irq"] }
+axstd = { path = "../../../ulib/axstd", features = ["paging", "multitask", "irq"] }

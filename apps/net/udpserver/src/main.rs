@@ -2,10 +2,10 @@
 #![no_main]
 
 #[macro_use]
-extern crate libax;
+extern crate axstd;
 
-use libax::io;
-use libax::net::{ToSocketAddrs, UdpSocket};
+use axstd::io;
+use axstd::net::{ToSocketAddrs, UdpSocket};
 
 const LOCAL_IP: &str = "0.0.0.0";
 const LOCAL_PORT: u16 = 5555;

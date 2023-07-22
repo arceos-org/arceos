@@ -5,7 +5,7 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include <libax.h>
+#include <axlibc.h>
 
 long timezone = 0;
 const char __utc[] = "UTC";

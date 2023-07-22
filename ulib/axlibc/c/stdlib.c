@@ -7,7 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <libax.h>
+#include <axlibc.h>
 
 #define __DECONST(type, var) ((type)(uintptr_t)(const void *)(var))
 

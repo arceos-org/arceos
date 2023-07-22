@@ -2,7 +2,7 @@ use embedded_graphics::pixelcolor::Rgb888;
 use embedded_graphics::prelude::{RgbColor, Size};
 use embedded_graphics::{draw_target::DrawTarget, prelude::OriginDimensions};
 
-pub use libax::display::{framebuffer_flush, framebuffer_info, DisplayInfo};
+pub use axstd::display::{framebuffer_flush, framebuffer_info, DisplayInfo};
 
 pub struct Display {
     size: Size,

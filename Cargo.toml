@@ -62,7 +62,7 @@ members = [
     "modules/axsync",
     "modules/axtask",
 
-    "ulib/libax",
+    "ulib/axstd",
     "ulib/axlibc",
 ]
 

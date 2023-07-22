@@ -2,7 +2,7 @@
 
 #include <ctype.h>
 #include <errno.h>
-#include <libax.h>
+#include <axlibc.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
