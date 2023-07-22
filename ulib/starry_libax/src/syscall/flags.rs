@@ -97,6 +97,7 @@ impl TimeSecs {
 }
 
 bitflags! {
+    #[derive(Debug)]
     /// 指定 mmap 的选项
     pub struct MMAPPROT: u32 {
         /// 区域内容可读取
@@ -125,6 +126,7 @@ impl Into<MappingFlags> for MMAPPROT {
 }
 
 bitflags! {
+    #[derive(Debug)]
     pub struct MMAPFlags: u32 {
         /// 对这段内存的修改是共享的
         const MAP_SHARED = 1 << 0;

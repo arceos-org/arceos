@@ -57,7 +57,7 @@ impl OpenFlags {
 
     /// 获取创建权限
     pub fn creatable(&self) -> bool {
-        self.writable()
+        self.contains(Self::CREATE)
     }
     /// 获取创建新文件权限
     /// 与上面的区别是，如果文件已存在，返回 EEXIST

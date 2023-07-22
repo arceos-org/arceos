@@ -69,7 +69,19 @@ impl Read for FileDesc {
 
 impl Write for FileDesc {
     fn write(&mut self, buf: &[u8]) -> AxResult<usize> {
-        self.file.lock().write(buf)
+        let buf_len = buf.len();
+        let mut offset = 0;
+        while offset < buf_len {
+            let read_len = self
+                .file
+                .lock()
+                .write(&buf[offset..buf_len.min(offset + BLOCK_SIZE - 1)])?;
+            if read_len == 0 {
+                break;
+            }
+            offset += read_len;
+        }
+        Ok(offset)
     }
 
     fn flush(&mut self) -> AxResult {
@@ -104,10 +116,14 @@ impl FileIO for FileDesc {
     }
 
     fn get_stat(&self) -> AxResult<Kstat> {
-        let file = self.file.lock();
+        let mut file = self.file.lock();
         let metadata = file.metadata()?;
         let raw_metadata = metadata.raw_metadata();
         let stat = self.stat.lock();
+        let old_pos = file.seek(SeekFrom::Current(0)).unwrap();
+        let len = file.seek(SeekFrom::End(0)).unwrap();
+        file.seek(SeekFrom::Start(old_pos)).unwrap();
+        info!("st size: {}", len);
         let kstat = Kstat {
             st_dev: 1,
             st_ino: 1,
@@ -117,7 +133,7 @@ impl FileIO for FileDesc {
             st_gid: 0,
             st_rdev: 0,
             _pad0: 0,
-            st_size: raw_metadata.size() as u64,
+            st_size: len,
             st_blksize: 0,
             _pad1: 0,
             st_blocks: raw_metadata.blocks() as u64,
@@ -127,7 +143,6 @@ impl FileIO for FileDesc {
             st_mtime_nsec: stat.mtime.tv_nsec as isize,
             st_ctime_sec: stat.ctime.tv_sec as isize,
             st_ctime_nsec: stat.ctime.tv_nsec as isize,
-            _unused: [0; 2],
         };
         debug!("kstat: {:?}", kstat);
         Ok(kstat)
@@ -210,12 +225,8 @@ pub fn new_file(path: &str, flags: &OpenFlags) -> AxResult<File> {
 /// 新建一个文件描述符
 pub fn new_fd(path: String, flags: OpenFlags) -> AxResult<FileDesc> {
     debug!("Into function new_fd, path: {}", path);
-    let mut file = new_file(path.as_str(), &flags)?;
+    let file = new_file(path.as_str(), &flags)?;
     // let file_size = file.metadata()?.len();
-    let pos = file.seek(SeekFrom::Current(0))? as usize;
-    let file_size = file.seek(SeekFrom::End(0))? as usize;
-    info!("pos: {}, file_size: {}", pos, file_size);
-    file.seek(SeekFrom::Start(pos as u64))?;
     let fd = FileDesc::new(path.as_str(), Arc::new(Mutex::new(file)), flags);
     Ok(fd)
 }

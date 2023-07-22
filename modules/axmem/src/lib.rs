@@ -461,7 +461,6 @@ impl MemorySet {
     /// msync
     pub fn msync(&mut self, start: VirtAddr, size: usize) {
         let end = start + size;
-
         for area in self.owned_mem.values_mut() {
             if area.backend.is_none() {
                 continue;
@@ -556,7 +555,7 @@ impl MemorySet {
 
     /// 将用户分配的页面从页表中直接解映射，内核分配的页面依然保留
     pub fn unmap_user_areas(&mut self) {
-        for (_, area) in &self.owned_mem {
+        for (_, area) in self.owned_mem.iter_mut() {
             area.dealloc(&mut self.page_table);
         }
         self.owned_mem.clear();

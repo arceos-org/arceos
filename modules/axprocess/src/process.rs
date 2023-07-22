@@ -1,3 +1,5 @@
+use core::ptr::null;
+
 use alloc::string::ToString;
 use alloc::vec;
 use alloc::{collections::BTreeMap, format, string::String, sync::Arc, vec::Vec};
@@ -5,7 +7,7 @@ use axerrno::{AxError, AxResult};
 use axfs::monolithic_fs::FileIO;
 use axhal::arch::{write_page_table_root, TrapFrame};
 use axhal::mem::phys_to_virt;
-use axlog::debug;
+use axlog::{debug, info};
 use axtask::monolithic_task::task::TaskState;
 use axtask::{AxTaskRef, TaskId};
 
@@ -633,10 +635,13 @@ pub fn exit(exit_code: i32) -> ! {
         RUN_QUEUE.lock().exit_current(exit_code);
         inner.tasks.clear();
         inner.signal_module.clear();
+        inner.fd_manager.fd_table.clear();
         {
             let pid2pc = PID2PC.lock();
             let kernel_process = Arc::clone(pid2pc.get(&KERNEL_PROCESS_ID).unwrap());
             // 回收子进程到内核进程下
+            // 销毁原进程的地址空间
+            inner.memory_set = Arc::clone(&kernel_process.inner.lock().memory_set);
             for child in inner.children.iter() {
                 child.inner.lock().parent = KERNEL_PROCESS_ID;
                 kernel_process.inner.lock().children.push(Arc::clone(child));

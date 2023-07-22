@@ -86,7 +86,6 @@ impl FileIO for DirDesc {
             st_mtime_nsec: 0,
             st_ctime_sec: 0,
             st_ctime_nsec: 0,
-            _unused: [0; 2],
         };
         Ok(kstat)
     }

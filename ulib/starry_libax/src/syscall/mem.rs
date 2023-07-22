@@ -1,11 +1,11 @@
-use crate::fs::FileDesc;
+use crate::{fs::FileDesc, syscall::syscall_id::ErrorNo};
 
 use super::flags::{MMAPFlags, MMAPPROT};
 extern crate alloc;
 use alloc::boxed::Box;
 use axmem::MemBackend;
 use axprocess::process::current_process;
-use log::{debug, error};
+use log::{debug, error, info};
 use memory_addr::VirtAddr;
 const MAX_HEAP_SIZE: usize = 0x20000;
 /// 修改用户堆大小，
@@ -36,19 +36,26 @@ pub fn syscall_mmap(
     len: usize,
     prot: MMAPPROT,
     flags: MMAPFlags,
-    fd: usize,
+    fd: i32,
     offset: usize,
 ) -> isize {
+    debug!(
+        "mmap start={:x} len={:x} prot=[{:#?}] flags=[{:#?}] fd={} offset={:x}",
+        start, len, prot, flags, fd, offset
+    );
     let fixed = flags.contains(MMAPFlags::MAP_FIXED);
     // try to map to NULL
     if fixed && start == 0 {
-        return -1;
+        return ErrorNo::EINVAL as isize;
     }
 
     let curr = current_process();
     let inner = curr.inner.lock();
     let addr = if flags.contains(MMAPFlags::MAP_ANONYMOUS) {
         // no file
+        if !(fd == -1 && offset == 0) {
+            return ErrorNo::EINVAL as isize;
+        }
         inner
             .memory_set
             .lock()
@@ -56,7 +63,10 @@ pub fn syscall_mmap(
     } else {
         // file backend
         debug!("[mmap] fd: {}, offset: 0x{:x}", fd, offset);
-        let file = match &inner.fd_manager.fd_table[fd] {
+        if fd >= inner.fd_manager.fd_table.len() as i32 || fd < 0 {
+            return ErrorNo::EINVAL as isize;
+        }
+        let file = match &inner.fd_manager.fd_table[fd as usize] {
             // 文件描述符表里面存的是文件描述符，这很合理罢
             Some(file) => Box::new(
                 file.lock()
@@ -68,7 +78,7 @@ pub fn syscall_mmap(
                     .clone(),
             ),
             // fd not found
-            None => return -1,
+            None => return ErrorNo::EINVAL as isize,
         };
 
         let backend = MemBackend::new(file, offset as u64);
@@ -100,6 +110,7 @@ pub fn syscall_munmap(start: usize, len: usize) -> isize {
 pub fn syscall_msync(start: usize, len: usize) -> isize {
     let curr = current_process();
     let inner = curr.inner.lock();
+    info!("test");
     inner.memory_set.lock().msync(start.into(), len);
 
     drop(inner);

@@ -1,5 +1,8 @@
 use alloc::sync::Arc;
-use axfs::api::{self};
+use axfs::{
+    api::{self},
+    monolithic_fs::flags::OpenFlags,
+};
 use axhal::arch::write_page_table_root;
 use axlog::{debug, info};
 use axruntime::KERNEL_PAGE_TABLE;
@@ -20,7 +23,10 @@ use axprocess::{
 };
 use riscv::asm;
 
-use crate::fs::link::create_link;
+use crate::{
+    fs::{file::new_file, link::create_link},
+    syscall::fs::syscall_openat,
+};
 
 /// 初赛测例
 #[allow(dead_code)]
@@ -526,6 +532,9 @@ pub fn fs_init(case: &'static str) {
             &(FilePath::new("./bin/lmbench_all").unwrap()),
             &(FilePath::new("./lmbench_all").unwrap()),
         );
+        let _ = new_file("/lat_sig", &(OpenFlags::CREATE | OpenFlags::RDWR));
+        // let path = "/lat_sig\0";
+        // assert!(syscall_openat(0, path.as_ptr(), 0, 0) > 0);
     }
 }
 

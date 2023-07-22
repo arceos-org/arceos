@@ -85,7 +85,7 @@ dependencies = [
 name = "arceos-helloworld"
 version = "0.1.0"
 dependencies = [
- "libax",
+ "starry_libax",
 ]
 
 [[package]]

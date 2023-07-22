@@ -112,7 +112,7 @@ impl VfsNodeOps for DirWrapper<'static> {
     }
 
     fn lookup(self: Arc<Self>, path: &str) -> VfsResult<VfsNodeRef> {
-        debug!("lookup at fatfs: {}", path);
+        info!("lookup at fatfs: {}", path);
         let path = path.trim_matches('/');
         if path.is_empty() || path == "." {
             return Ok(self.clone());

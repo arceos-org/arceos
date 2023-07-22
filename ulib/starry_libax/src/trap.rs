@@ -1,5 +1,7 @@
 use crate::syscall::syscall;
 use axhal::arch::{TrapFrame, SIGNAL_RETURN_TRAP};
+use axprocess::process::current_process;
+use log::error;
 /// 宏内核架构下的trap入口
 use memory_addr::VirtAddr;
 use page_table_entry::MappingFlags;
@@ -44,6 +46,18 @@ impl axhal::trap::TrapHandler for TrapHandlerImpl {
             axlog::error!("kill task: {}", curr);
             syscall_tkill(curr, SignalNo::SIGSEGV as isize);
         }
+    }
+
+    fn handle_access_fault(addr: VirtAddr, flags: MappingFlags) {
+        let process = current_process();
+        let inner = process.inner.lock();
+        let ans = inner.memory_set.lock().query(addr);
+        if ans.is_err() {
+            panic!("addr not exist: addr: {:X?}, flags: {:?}", addr, flags);
+        }
+        let (phy_addr, flags, _) = ans.unwrap();
+
+        panic!("addr: {:X}, flags: {:?}", phy_addr, flags);
     }
 
     #[cfg(feature = "signal")]

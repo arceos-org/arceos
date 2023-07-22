@@ -59,6 +59,12 @@ impl MapArea {
     ) -> Self {
         let pages = PhysPage::alloc_contiguous(num_pages, PAGE_SIZE_4K, data)
             .expect("Error allocating memory when trying to map");
+        info!(
+            "start: {:X?}, size: {:X},  page start: {:X?}",
+            start,
+            num_pages * PAGE_SIZE_4K,
+            pages[0].as_ref().unwrap().start_vaddr
+        );
         let _ = page_table
             .map_region(
                 start,
@@ -77,8 +83,9 @@ impl MapArea {
         }
     }
 
-    pub fn dealloc(&self, page_table: &mut PageTable) {
+    pub fn dealloc(&mut self, page_table: &mut PageTable) {
         page_table.unmap_region(self.vaddr, self.size()).unwrap();
+        self.pages.clear();
     }
 
     pub fn handle_page_fault(
@@ -98,18 +105,21 @@ impl MapArea {
             "Try to handle page fault address out of bound"
         );
         if !self.flags.contains(flags) {
-            panic!(
+            error!(
                 "Try to access {:?} memory with {:?} flag",
                 self.flags, flags
             );
+            axhal::trap::exit();
         }
 
         let page_index = (usize::from(addr) - usize::from(self.vaddr)) / PAGE_SIZE_4K;
         if page_index >= self.pages.len() {
-            unreachable!("Phys page index out of bound");
+            error!("Phys page index out of bound");
+            axhal::trap::exit();
         }
         if self.pages[page_index].is_some() {
-            panic!("Page fault in page already loaded");
+            error!("Page fault in page already loaded");
+            axhal::trap::exit();
         }
 
         debug!("page index {}", page_index);
@@ -165,7 +175,7 @@ impl MapArea {
                 if backend.writable() {
                     let _ = backend
                         .write_to_seek(
-                            SeekFrom::Current((page_index * PAGE_SIZE_4K) as i64),
+                            SeekFrom::Start((page_index * PAGE_SIZE_4K) as u64),
                             page.as_slice(),
                         )
                         .unwrap();

@@ -25,7 +25,7 @@ pub struct Kstat {
     pub st_gid: u32,
     /// 设备号
     pub st_rdev: u64,
-    pub _pad0: u32,
+    pub _pad0: u64,
     /// 文件大小
     pub st_size: u64,
     /// 块大小
@@ -45,7 +45,6 @@ pub struct Kstat {
     pub st_ctime_sec: isize,
     /// 最后一次改变状态时间(纳秒)
     pub st_ctime_nsec: isize,
-    pub _unused: [u32; 2],
 }
 
 impl Default for Kstat {
@@ -69,7 +68,6 @@ impl Default for Kstat {
             st_mtime_nsec: 0,
             st_ctime_sec: 0,
             st_ctime_nsec: 0,
-            _unused: [0; 2],
         }
     }
 }
@@ -185,7 +183,6 @@ pub trait FileExt: Read + Write + Seek + AsAny + Send + Sync {
         let old_pos = self
             .seek(SeekFrom::Current(0))
             .expect("Error get current pos in file");
-        info!("    'read_from_seek' old_pos: {}", old_pos);
 
         // seek to read position
         let _ = self.seek(pos).unwrap();
@@ -207,7 +204,6 @@ pub trait FileExt: Read + Write + Seek + AsAny + Send + Sync {
         let old_pos = self
             .seek(SeekFrom::Current(0))
             .expect("Error get current pos in file");
-
         // seek to write position
         let _ = self.seek(pos).unwrap();
 

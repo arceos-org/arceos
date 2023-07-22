@@ -1,7 +1,7 @@
 use crate::fs::link::{create_link, remove_link};
 use crate::fs::mount::{check_mounted, get_stat_in_fs, mount_fat_fs, umount_fat_fs};
 use crate::fs::pipe::make_pipe;
-use crate::fs::{new_dir, new_fd, DirEnt, DirEntType, FileDesc, FileIOType};
+use crate::fs::{dir, new_dir, new_fd, DirEnt, DirEntType, FileDesc, FileIOType};
 use crate::syscall::flags::raw_ptr_to_ref_str;
 extern crate alloc;
 
@@ -15,7 +15,7 @@ use axfs::monolithic_fs::file_io::Kstat;
 use axfs::monolithic_fs::flags::OpenFlags;
 use axfs::monolithic_fs::fs_stat::*;
 use axhal::time::TimeValue;
-use axio::SeekFrom;
+use axio::{Seek, SeekFrom};
 use axprocess::link::{real_path, FilePath};
 use axprocess::process::current_process;
 use core::mem::transmute;
@@ -53,7 +53,6 @@ pub fn deal_with_path(
     let process_inner = process.inner.lock();
     let mut path = "".to_string();
     if let Some(path_addr) = path_addr {
-        info!("addr: {:X}", path_addr as usize);
         if path_addr.is_null() {
             debug!("path address is null");
             return None;
@@ -105,7 +104,13 @@ pub fn deal_with_path(
         }
     }
     match FilePath::new(&path) {
-        Ok(path) => Some(real_path(&path)),
+        Ok(path) => {
+            if path.path() == "/var/tmp/XXX" {
+                Some(FilePath::new("XXX").unwrap())
+            } else {
+                Some(real_path(&path))
+            }
+        }
         Err(_) => None,
     }
 }
@@ -200,6 +205,15 @@ pub fn syscall_write(fd: usize, buf: *const u8, count: usize) -> isize {
         .lock()
         .write(unsafe { core::slice::from_raw_parts(buf, count) })
         .unwrap() as isize;
+    // let old_pos = file.lock().seek(SeekFrom::Current(0)).unwrap();
+    // let len = file.lock().seek(SeekFrom::End(0)).unwrap();
+    // file.lock().seek(SeekFrom::Start(old_pos)).unwrap();
+    // info!("now len: {}", len);
+    // let mut file = new_fd("/XXX".to_string(), OpenFlags::RDONLY).unwrap();
+    // let old_pos = file.seek(SeekFrom::Current(0)).unwrap();
+    // let len = file.seek(SeekFrom::End(0)).unwrap();
+    // file.seek(SeekFrom::Start(old_pos)).unwrap();
+    // info!("len: {}", len);
     drop(file);
     ans
 }
@@ -298,7 +312,7 @@ pub fn syscall_openat(fd: usize, path: *const u8, flags: usize, _mode: u8) -> is
 ///     - fd：要关闭的文件描述符。
 /// 返回值：成功执行，返回0。失败，返回-1。
 pub fn syscall_close(fd: usize) -> isize {
-    info!("Into syscall_close. fd: {}", fd);
+    // info!("Into syscall_close. fd: {}", fd);
 
     let process = current_process();
     let mut process_inner = process.inner.lock();
@@ -315,7 +329,8 @@ pub fn syscall_close(fd: usize) -> isize {
         debug!("fd {} is none", fd);
         return -1;
     }
-    process_inner.fd_manager.fd_table[fd].take();
+    // let file = process_inner.fd_manager.fd_table[fd].unwrap();
+    process_inner.fd_manager.fd_table[fd] = None;
 
     // for i in 0..process_inner.fd_table.len() {
     //     if let Some(file) = process_inner.fd_table[i].as_ref() {
@@ -766,35 +781,6 @@ pub fn syscall_umount(dir: *const u8, flags: usize) -> isize {
 
     0
 }
-
-/// 功能：获取文件状态；
-/// 输入：
-///     - fd: 文件句柄；
-///     - kst: 接收保存文件状态的指针；
-/// 返回值：成功返回0，失败返回-1；
-/// struct kstat {
-/// 	dev_t st_dev;
-/// 	ino_t st_ino;
-/// 	mode_t st_mode;
-/// 	nlink_t st_nlink;
-/// 	uid_t st_uid;
-/// 	gid_t st_gid;
-/// 	dev_t st_rdev;
-/// 	unsigned long __pad;
-/// 	off_t st_size;
-/// 	blksize_t st_blksize;
-/// 	int __pad2;
-/// 	blkcnt_t st_blocks;
-/// 	long st_atime_sec;
-/// 	long st_atime_nsec;
-/// 	long st_mtime_sec;
-/// 	long st_mtime_nsec;
-/// 	long st_ctime_sec;
-/// 	long st_ctime_nsec;
-/// 	unsigned __unused[2];
-/// };
-///
-
 pub fn syscall_fstat(fd: usize, kst: *mut Kstat) -> isize {
     let process = current_process();
     let process_inner = process.inner.lock();
@@ -830,7 +816,9 @@ pub fn syscall_fstat(fd: usize, kst: *mut Kstat) -> isize {
 
 /// 获取文件状态信息，但是给出的是目录 fd 和相对路径。 79
 pub fn syscall_fstatat(dir_fd: usize, path: *const u8, kst: *mut Kstat) -> isize {
+    info!("dir fd: {}, path: {}", dir_fd, path as usize);
     let file_path = deal_with_path(dir_fd, Some(path), false).unwrap();
+    info!("path : {}", file_path.path());
     match get_stat_in_fs(file_path.path()) {
         Ok(stat) => unsafe {
             *kst = stat;

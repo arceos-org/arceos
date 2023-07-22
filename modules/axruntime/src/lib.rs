@@ -148,7 +148,6 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) {
         info!("Initialize kernel page table...");
         remap_kernel_memory().expect("remap kernel memoy failed");
     }
-
     info!("Initialize platform devices...");
     axhal::platform_init();
 

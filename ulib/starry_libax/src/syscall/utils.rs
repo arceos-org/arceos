@@ -46,10 +46,12 @@ pub fn syscall_clock_get_time(_clock_id: usize, ts: *mut TimeSecs) -> isize {
         .manual_alloc_type_for_lazy(ts as *const TimeSecs)
         .is_err()
     {
+        // info!("addr: {:X?} failed", ts as usize);
         return -1;
     }
     unsafe {
         (*ts) = TimeSecs::now();
+        // info!("ts: {:?}", *ts);
     }
     0
 }

@@ -6,9 +6,9 @@ use riscv::register::{
 /// 信号处理跳板，当未指定SA_RESTORER时使用这个地址触发page fault，从而进行跳转
 pub const SIGNAL_RETURN_TRAP: usize = 0xffff_0000_0000_0000;
 
-use crate::trap::exit;
 #[cfg(feature = "paging")]
 use crate::trap::handle_page_fault;
+use crate::trap::{exit, handle_access_fault};
 
 #[cfg(feature = "signal")]
 use crate::trap::handle_signal;
@@ -93,6 +93,12 @@ fn riscv_trap_handler(tf: &mut TrapFrame, mut from_user: bool) {
             }
             let addr = stval::read();
             handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::WRITE, tf);
+        }
+
+        #[cfg(feature = "paging")]
+        Trap::Exception(E::StoreFault) => {
+            let addr = stval::read();
+            handle_access_fault(addr.into(), MappingFlags::USER | MappingFlags::WRITE)
         }
         _ => {
             error!(

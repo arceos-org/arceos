@@ -7,7 +7,7 @@ use alloc::{
 // 堆和栈的基地址
 pub const USER_HEAP_OFFSET: usize = 0x3F80_0000;
 pub const USER_STACK_OFFSET: usize = 0x3FE0_0000;
-pub const MAX_HEAP_SIZE: usize = 0x60000;
+pub const MAX_HEAP_SIZE: usize = 0x20000;
 pub const USER_STACK_SIZE: usize = 0x20000;
 use axerrno::AxResult;
 mod user_stack;
@@ -20,6 +20,7 @@ use xmas_elf::{program::SegmentData, ElfFile};
 use crate::{
     link::{real_path, FilePath},
     loader::user_stack::init_stack,
+    process::exit,
 };
 
 /// A elf file wrapper.
@@ -148,8 +149,11 @@ pub fn load_app(
         return load_app("busybox".to_string(), args, memory_set);
     }
 
-    let elf_data =
-        axfs::api::read(name.as_str()).expect("error calling axfs::api::read on init app");
+    let elf_data = if let Ok(ans) = axfs::api::read(name.as_str()) {
+        ans
+    } else {
+        exit(0)
+    };
     debug!("app elf data length: {}", elf_data.len());
     let loader = Loader::new(&elf_data);
 

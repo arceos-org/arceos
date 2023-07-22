@@ -47,10 +47,10 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
     };
     check_dead_wait();
     let curr_id = current().id().as_u64();
-    if syscall_id != GETPPID as usize
-        && syscall_id != CLOCK_GET_TIME as usize
-        && syscall_id != GETRUSAGE as usize
-    {
+    // if syscall_id != GETPPID as usize
+    //     && syscall_id != CLOCK_GET_TIME as usize
+    //     && syscall_id != GETRUSAGE as usize
+    if syscall_id == CLONE as usize {
         info!(
             "cpu id: {}, task id: {}, process id: {}, syscall: id: {} name: {:?}",
             this_cpu_id(),
@@ -92,7 +92,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[1],
             MMAPPROT::from_bits_truncate(args[2] as u32),
             MMAPFlags::from_bits_truncate(args[3] as u32),
-            args[4] as usize,
+            args[4] as i32,
             args[5],
         ),
         MSYNC => syscall_msync(args[0], args[1]),
@@ -218,7 +218,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[2] as *mut usize,
             args[3] as usize,
         ),
-        FSYNC => syscall_fsync(args[0] as usize),
+        FSYNC => 0,
         UTIMENSAT => syscall_utimensat(
             args[0] as usize,
             args[1] as *const u8,
@@ -252,14 +252,14 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
     };
     // let sstatus = riscv::register::sstatus::read();
     // error!("irq: {}", riscv::register::sstatus::Sstatus::sie(&sstatus));
-    if syscall_id != GETPPID as usize
-        && syscall_id != CLOCK_GET_TIME as usize
-        && syscall_id != GETRUSAGE as usize
-    {
+    // if syscall_id != GETPPID as usize
+    //     && syscall_id != CLOCK_GET_TIME as usize
+    //     && syscall_id != GETRUSAGE as usize
+    if syscall_id == CLONE as usize {
         info!(
             "curr id: {}, Syscall {} return: {}",
             curr_id, syscall_id, ans,
-        )
+        );
     };
     ans
 }
