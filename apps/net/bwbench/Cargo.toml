@@ -7,5 +7,5 @@ authors = ["ChengXiang Qi <kuangjux@outlook.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axstd = {path = "../../../ulib/axstd", features = ["net"]}
-axnet = {path = "../../../modules/axnet"}
+axstd = { path = "../../../ulib/axstd", features = ["net"] }
+axnet = { path = "../../../modules/axnet" }

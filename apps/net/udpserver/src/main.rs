@@ -1,11 +1,12 @@
-#![no_std]
-#![no_main]
+#![cfg_attr(feature = "axstd", no_std)]
+#![cfg_attr(feature = "axstd", no_main)]
 
 #[macro_use]
-extern crate axstd;
+#[cfg(feature = "axstd")]
+extern crate axstd as std;
 
-use axstd::io;
-use axstd::net::{ToSocketAddrs, UdpSocket};
+use std::io;
+use std::net::{ToSocketAddrs, UdpSocket};
 
 const LOCAL_IP: &str = "0.0.0.0";
 const LOCAL_PORT: u16 = 5555;
@@ -30,7 +31,7 @@ fn receive_loop() -> io::Result<()> {
     }
 }
 
-#[no_mangle]
+#[cfg_attr(feature = "axstd", no_mangle)]
 fn main() {
     println!("Hello, simple udp client!");
     receive_loop().expect("test udp client failed");

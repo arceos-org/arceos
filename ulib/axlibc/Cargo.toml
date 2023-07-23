@@ -64,7 +64,6 @@ axtask = { path = "../../modules/axtask", optional = true }
 # Other crates
 axio = { path = "../../crates/axio" }
 axerrno = { path = "../../crates/axerrno" }
-spinlock = { path = "../../crates/spinlock" }
 static_assertions = "1.1.0"
 spin = { version = "0.9" }
 lazy_static = { version = "1.4", features = ["spin_no_std"] }

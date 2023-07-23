@@ -91,3 +91,41 @@ jobs:
       run: make ARCH=${{ matrix.arch }} A=apps/c/udpserver
     - name: Build c/iperf
       run: make ARCH=${{ matrix.arch }} A=apps/c/iperf
+
+  build-apps-for-std:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        arch: [x86_64]
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: ${{ env.rust-toolchain }}
+    - name: Build helloworld
+      run: cargo build -p arceos-helloworld
+    - name: Build memtest
+      run: cargo build -p arceos-memtest
+    - name: Build exception
+      run: cargo build -p arceos-exception
+    - name: Build task/yield
+      run: cargo build -p arceos-yield
+    - name: Build task/parallel
+      run: cargo build -p arceos-parallel
+    - name: Build task/sleep
+      run: cargo build -p arceos-sleep
+    - name: Build task/priority
+      run: cargo build -p arceos-priority
+    - name: Build fs/shell
+      run: cargo build -p arceos-shell
+    - name: Build net/echoserver
+      run: cargo build -p arceos-echoserver
+    - name: Build net/httpclient
+      run: cargo build -p arceos-httpclient
+    - name: Build net/httpserver
+      run: cargo build -p arceos-httpserver
+    - name: Build net/udpserver
+      run: cargo build -p arceos-udpserver

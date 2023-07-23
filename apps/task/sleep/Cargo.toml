@@ -10,4 +10,4 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 sched_rr = ["axstd/sched_rr"]
 
 [dependencies]
-axstd = { path = "../../../ulib/axstd", features = ["paging", "multitask", "irq"] }
+axstd = { path = "../../../ulib/axstd", features = ["multitask", "irq"], optional = true }

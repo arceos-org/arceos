@@ -1,19 +1,19 @@
-//! [ArceOS] user program library, with an interface similar to rust
-//! [std], but calling the functions directly
-//! in ArceOS modules, instead of using libc and system calls.
+//! # The ArceOS Standard Library
 //!
-//! # Cargo Features
+//! The [ArceOS] Standard Library is a mini-std library, with an interface similar
+//! to rust [std], but calling the functions directly in ArceOS modules, instead
+//! of using libc and system calls.
+//!
+//! ## Cargo Features
 //!
 //! - CPU
 //!     - `smp`: Enable SMP (symmetric multiprocessing) support.
 //!     - `fp_simd`: Enable floating point and SIMD support.
+//! - Interrupts:
+//!     - `irq`: Enable interrupt handling support.
 //! - Memory
 //!     - `alloc`: Enable dynamic memory allocation.
 //!     - `paging`: Enable page table manipulation.
-//! - Interrupts:
-//!     - `irq`: Enable interrupt handling support. This feature is required for
-//!       some multitask operations, such as [`sync::WaitQueue::wait_timeout`] and
-//!       non-spinning [`thread::sleep`].
 //! - Task management
 //!     - `multitask`: Enable multi-threading support.
 //!     - `sched_fifo`: Use the FIFO cooperative scheduler.
@@ -21,6 +21,7 @@
 //!     - `sched_cfs`: Use the Completely Fair Scheduler (CFS) preemptive scheduler.
 //! - Device and upperlayer stack
 //!     - `fs`: Enable file system support.
+//!     - `myfs`: Allow users to define their custom filesystems to override the default.
 //!     - `use-ramdisk`: Use the RAM disk to emulate the block device.
 //!     - `net`: Enable networking support.
 //!     - `dns`: Enable DNS lookup support.
@@ -39,12 +40,6 @@
 #![feature(doc_auto_cfg)]
 #![feature(ip_in_core)]
 
-#[allow(unused_imports)]
-#[macro_use]
-extern crate axlog;
-
-pub use axlog::{debug, error, info, trace, warn};
-
 #[cfg(not(test))]
 extern crate axruntime;
 
@@ -53,22 +48,23 @@ extern crate alloc;
 
 #[cfg(feature = "alloc")]
 #[doc(no_inline)]
-pub use alloc::{boxed, format, string, vec};
+pub use alloc::{boxed, collections, format, string, vec};
+
+#[doc(no_inline)]
+pub use core::{arch, cell, cmp, hint, marker, mem, ops, ptr, slice, str};
+
+#[macro_use]
+mod macros;
 
 pub mod env;
 pub mod io;
-pub mod rand;
+pub mod os;
+pub mod process;
 pub mod sync;
-pub mod time;
-
-#[cfg_attr(not(feature = "multitask"), path = "thread/single.rs")]
 pub mod thread;
+pub mod time;
 
 #[cfg(feature = "fs")]
 pub mod fs;
-
 #[cfg(feature = "net")]
 pub mod net;
-
-#[cfg(feature = "display")]
-pub mod display;

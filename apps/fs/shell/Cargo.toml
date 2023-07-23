@@ -7,12 +7,11 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-use_ramfs = ["axfs/myfs", "dep:axfs_vfs", "dep:axfs_ramfs", "dep:crate_interface"]
+use-ramfs = ["axstd/myfs", "dep:axfs_vfs", "dep:axfs_ramfs", "dep:crate_interface"]
 default = []
 
 [dependencies]
-axfs = { path = "../../../modules/axfs", optional = true }
 axfs_vfs = { path = "../../../crates/axfs_vfs", optional = true }
 axfs_ramfs = { path = "../../../crates/axfs_ramfs", optional = true }
 crate_interface = { path = "../../../crates/crate_interface", optional = true }
-axstd = { path = "../../../ulib/axstd", features = ["fs"] }
+axstd = { path = "../../../ulib/axstd", features = ["alloc", "fs"], optional = true }

@@ -29,7 +29,7 @@ extern crate alloc;
 /// cbindgen:ignore
 #[rustfmt::skip]
 #[path = "./ctypes_gen.rs"]
-#[allow(dead_code, non_camel_case_types, non_upper_case_globals, clippy::upper_case_acronyms)]
+#[allow(dead_code, non_snake_case, non_camel_case_types, non_upper_case_globals, clippy::upper_case_acronyms)]
 mod ctypes;
 
 #[macro_use]
@@ -55,22 +55,11 @@ mod strtod;
 mod uio;
 
 mod errno;
+mod rand;
 mod setjmp;
 mod stdio;
 mod sys;
 mod time;
-
-/// Sets the seed for the random number generator.
-#[no_mangle]
-pub unsafe extern "C" fn ax_srand(seed: u32) {
-    axstd::rand::srand(seed);
-}
-
-/// Returns a 32-bit unsigned pseudo random interger.
-#[no_mangle]
-pub unsafe extern "C" fn ax_rand_u32() -> u32 {
-    axstd::rand::rand_u32()
-}
 
 /// Abort the current process.
 #[no_mangle]
@@ -83,6 +72,8 @@ pub unsafe extern "C" fn ax_panic() -> ! {
 pub unsafe extern "C" fn ax_exit(exit_code: core::ffi::c_int) -> ! {
     axstd::thread::exit(exit_code)
 }
+
+pub use self::rand::{ax_rand_u32, ax_srand};
 
 #[cfg(feature = "alloc")]
 pub use self::malloc::{ax_free, ax_malloc};

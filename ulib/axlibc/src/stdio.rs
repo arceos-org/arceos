@@ -2,12 +2,9 @@ use core::ffi::{c_char, c_int};
 
 use axerrno::LinuxError;
 use axstd::io::{self, Write};
-use spinlock::SpinNoIrq;
 
 #[cfg(feature = "fd")]
-use {alloc::sync::Arc, axerrno::LinuxResult, axio::PollState};
-
-static LOCK: SpinNoIrq<()> = SpinNoIrq::new(()); // Lock used by `ax_println_str` for C apps
+use {alloc::sync::Arc, axerrno::LinuxResult, axio::PollState, axstd::io::Read};
 
 /// Print a string to the global standard output stream.
 #[no_mangle]
@@ -32,9 +29,9 @@ pub unsafe extern "C" fn ax_println_str(buf: *const c_char, count: usize) -> c_i
         }
 
         let bytes = unsafe { core::slice::from_raw_parts(buf as *const u8, count as _) };
-        let _guard = LOCK.lock();
-        let len = io::stdout().write(bytes)?;
-        let len = io::stdout().write(b"\n")? + len;
+        let mut stdout = io::stdout().lock();
+        let len = stdout.write(bytes)?;
+        let len = stdout.write(b"\n")? + len;
         Ok(len as c_int)
     })
 }
@@ -42,7 +39,7 @@ pub unsafe extern "C" fn ax_println_str(buf: *const c_char, count: usize) -> c_i
 #[cfg(feature = "fd")]
 impl super::fd_ops::FileLike for axstd::io::Stdin {
     fn read(&self, buf: &mut [u8]) -> LinuxResult<usize> {
-        Ok(self.read_locked(buf)?)
+        Ok(self.lock().read(buf)?)
     }
 
     fn write(&self, _buf: &[u8]) -> LinuxResult<usize> {
@@ -82,7 +79,7 @@ impl super::fd_ops::FileLike for axstd::io::Stdout {
     }
 
     fn write(&self, buf: &[u8]) -> LinuxResult<usize> {
-        Ok(self.write_locked(buf)?)
+        Ok(self.lock().write(buf)?)
     }
 
     fn stat(&self) -> LinuxResult<super::ctypes::stat> {

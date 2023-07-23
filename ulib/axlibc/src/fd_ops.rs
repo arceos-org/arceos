@@ -2,7 +2,8 @@ use alloc::sync::Arc;
 use core::ffi::{c_int, c_void};
 
 use axerrno::{LinuxError, LinuxResult};
-use axstd::io::{stdin, stdout, PollState};
+use axio::PollState;
+use axstd::io::{stdin, stdout};
 use flatten_objects::FlattenObjects;
 use spin::RwLock;
 

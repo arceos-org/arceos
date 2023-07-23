@@ -1,8 +1,11 @@
-#![no_std]
-#![no_main]
+#![cfg_attr(feature = "axstd", no_std)]
+#![cfg_attr(feature = "axstd", no_main)]
 
-use axstd::println;
-use core::arch::asm;
+#[cfg(feature = "axstd")]
+extern crate axstd as std;
+
+use std::arch::asm;
+use std::println;
 
 fn raise_break_exception() {
     unsafe {
@@ -15,7 +18,7 @@ fn raise_break_exception() {
     }
 }
 
-#[no_mangle]
+#[cfg_attr(feature = "axstd", no_mangle)]
 fn main() {
     println!("Running exception tests...");
     raise_break_exception();

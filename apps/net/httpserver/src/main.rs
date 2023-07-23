@@ -6,15 +6,16 @@
 //! ab -n 5000 -c 20 http://X.X.X.X:5555/
 //! ```
 
-#![no_std]
-#![no_main]
+#![cfg_attr(feature = "axstd", no_std)]
+#![cfg_attr(feature = "axstd", no_main)]
 
 #[macro_use]
-extern crate axstd;
+#[cfg(feature = "axstd")]
+extern crate axstd as std;
 
-use axstd::io::{self, prelude::*};
-use axstd::net::{TcpListener, TcpStream};
-use axstd::thread;
+use std::io::{self, prelude::*};
+use std::net::{TcpListener, TcpStream};
+use std::thread;
 
 const LOCAL_IP: &str = "0.0.0.0";
 const LOCAL_PORT: u16 = 5555;
@@ -47,6 +48,17 @@ const CONTENT: &str = r#"<html>
 </html>
 "#;
 
+macro_rules! info {
+    ($($arg:tt)*) => {
+        match option_env!("LOG") {
+            Some("info") | Some("debug") | Some("trace") => {
+                print!("[INFO] {}\n", format_args!($($arg)*));
+            }
+            _ => {}
+        }
+    };
+}
+
 fn http_server(mut stream: TcpStream) -> io::Result<()> {
     let mut buf = [0u8; 4096];
     let _len = stream.read(&mut buf)?;
@@ -67,7 +79,7 @@ fn accept_loop() -> io::Result<()> {
             Ok((stream, addr)) => {
                 info!("new client {}: {}", i, addr);
                 thread::spawn(move || match http_server(stream) {
-                    Err(e) => error!("client connection error: {:?}", e),
+                    Err(e) => info!("client connection error: {:?}", e),
                     Ok(()) => info!("client {} closed successfully", i),
                 });
             }
@@ -77,7 +89,7 @@ fn accept_loop() -> io::Result<()> {
     }
 }
 
-#[no_mangle]
+#[cfg_attr(feature = "axstd", no_mangle)]
 fn main() {
     println!("Hello, ArceOS HTTP server!");
     accept_loop().expect("test HTTP server failed");

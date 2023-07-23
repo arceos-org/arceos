@@ -1,9 +1,10 @@
-#![no_std]
-#![no_main]
+#![cfg_attr(feature = "axstd", no_std)]
+#![cfg_attr(feature = "axstd", no_main)]
 
-extern crate axstd;
+#[cfg(feature = "axstd")]
+extern crate axstd as std;
+
 mod display;
-
 use display::*;
 
 use embedded_graphics::{
@@ -77,7 +78,7 @@ fn test_gpu() -> i32 {
     0
 }
 
-#[no_mangle]
+#[cfg_attr(feature = "axstd", no_mangle)]
 fn main() -> ! {
     test_gpu();
     loop {

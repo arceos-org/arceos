@@ -1,7 +1,10 @@
-#![no_std]
-#![no_main]
+#![cfg_attr(feature = "axstd", no_std)]
+#![cfg_attr(feature = "axstd", no_main)]
 
-#[no_mangle]
+#[cfg(feature = "axstd")]
+use axstd::println;
+
+#[cfg_attr(feature = "axstd", no_mangle)]
 fn main() {
-    axstd::println!("Hello, world!");
+    println!("Hello, world!");
 }

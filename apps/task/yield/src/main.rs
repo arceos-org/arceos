@@ -1,15 +1,17 @@
-#![no_std]
-#![no_main]
+#![cfg_attr(feature = "axstd", no_std)]
+#![cfg_attr(feature = "axstd", no_main)]
 
 #[macro_use]
-extern crate axstd;
-use axstd::thread;
-use core::sync::atomic::{AtomicUsize, Ordering};
+#[cfg(feature = "axstd")]
+extern crate axstd as std;
+
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::thread;
 
 const NUM_TASKS: usize = 10;
 static FINISHED_TASKS: AtomicUsize = AtomicUsize::new(0);
 
-#[no_mangle]
+#[cfg_attr(feature = "axstd", no_mangle)]
 fn main() {
     for i in 0..NUM_TASKS {
         thread::spawn(move || {

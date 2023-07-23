@@ -11,4 +11,4 @@ sched_rr = ["axstd/sched_rr"]
 sched_cfs = ["axstd/sched_cfs"]
 
 [dependencies]
-axstd = { path = "../../../ulib/axstd", features = ["paging", "multitask"] }
+axstd = { path = "../../../ulib/axstd", features = ["multitask"], optional = true }

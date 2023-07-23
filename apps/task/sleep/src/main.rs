@@ -1,18 +1,19 @@
-#![no_std]
-#![no_main]
+#![cfg_attr(feature = "axstd", no_std)]
+#![cfg_attr(feature = "axstd", no_main)]
 
 #[macro_use]
-extern crate axstd;
+#[cfg(feature = "axstd")]
+extern crate axstd as std;
 
-use axstd::thread;
-use axstd::time::{Duration, Instant};
-use core::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::thread;
+use std::time::{Duration, Instant};
 
 const NUM_TASKS: usize = 5;
 
 static FINISHED_TASKS: AtomicUsize = AtomicUsize::new(0);
 
-#[no_mangle]
+#[cfg_attr(feature = "axstd", no_mangle)]
 fn main() {
     println!("Hello, main task!");
     let now = Instant::now();
@@ -23,7 +24,7 @@ fn main() {
     // backgroud ticks, 0.5s x 30 = 15s
     thread::spawn(|| {
         for i in 0..30 {
-            info!("  tick {}", i);
+            println!("  tick {}", i);
             thread::sleep(Duration::from_millis(500));
         }
     });
@@ -37,7 +38,7 @@ fn main() {
                 let now = Instant::now();
                 thread::sleep(Duration::from_secs(sec as _));
                 let elapsed = now.elapsed();
-                info!("task {} actual sleep {:?} seconds ({}).", i, elapsed, j);
+                println!("task {} actual sleep {:?} seconds ({}).", i, elapsed, j);
             }
             FINISHED_TASKS.fetch_add(1, Ordering::Relaxed);
         });

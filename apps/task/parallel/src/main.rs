@@ -1,26 +1,36 @@
-#![no_std]
-#![no_main]
+#![cfg_attr(feature = "axstd", no_std)]
+#![cfg_attr(feature = "axstd", no_main)]
 
 #[macro_use]
-extern crate axstd;
-extern crate alloc;
+#[cfg(feature = "axstd")]
+extern crate axstd as std;
 
-use alloc::sync::Arc;
-use alloc::vec::Vec;
-use axstd::sync::WaitQueue;
-use axstd::{rand, thread};
-use core::sync::atomic::{AtomicUsize, Ordering};
-use core::time::Duration;
+use rand::{rngs::SmallRng, RngCore, SeedableRng};
+use std::thread;
+use std::{sync::Arc, vec::Vec};
+
+#[cfg(feature = "axstd")]
+use std::os::arceos::axtask::WaitQueue;
 
 const NUM_DATA: usize = 2_000_000;
 const NUM_TASKS: usize = 16;
 
+#[cfg(feature = "axstd")]
 fn barrier() {
+    use std::sync::atomic::{AtomicUsize, Ordering};
     static BARRIER_WQ: WaitQueue = WaitQueue::new();
     static BARRIER_COUNT: AtomicUsize = AtomicUsize::new(0);
+
     BARRIER_COUNT.fetch_add(1, Ordering::Relaxed);
     BARRIER_WQ.wait_until(|| BARRIER_COUNT.load(Ordering::Relaxed) == NUM_TASKS);
-    BARRIER_WQ.notify_all(true);
+    BARRIER_WQ.notify_all(true); // wakeup all
+}
+
+#[cfg(not(feature = "axstd"))]
+fn barrier() {
+    use std::sync::{Barrier, OnceLock};
+    static BARRIER: OnceLock<Barrier> = OnceLock::new();
+    BARRIER.get_or_init(|| Barrier::new(NUM_TASKS)).wait();
 }
 
 fn sqrt(n: &u64) -> u64 {
@@ -33,18 +43,22 @@ fn sqrt(n: &u64) -> u64 {
     }
 }
 
-#[no_mangle]
+#[cfg_attr(feature = "axstd", no_mangle)]
 fn main() {
+    let mut rng = SmallRng::seed_from_u64(0xdead_beef);
     let vec = Arc::new(
         (0..NUM_DATA)
-            .map(|_| rand::rand_u32() as u64)
+            .map(|_| rng.next_u32() as u64)
             .collect::<Vec<_>>(),
     );
     let expect: u64 = vec.iter().map(sqrt).sum();
 
-    // equals to sleep(500ms)
-    let timeout = WaitQueue::new().wait_timeout(Duration::from_millis(500));
-    assert!(timeout);
+    #[cfg(feature = "axstd")]
+    {
+        // equals to sleep(500ms)
+        let timeout = WaitQueue::new().wait_timeout(std::time::Duration::from_millis(500));
+        assert!(timeout);
+    }
 
     let mut tasks = Vec::with_capacity(NUM_TASKS);
     for i in 0..NUM_TASKS {

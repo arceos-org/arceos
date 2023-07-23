@@ -42,7 +42,7 @@ pub unsafe extern "C" fn ax_clock_gettime(ts: *mut ctypes::timespec) -> c_int {
         if ts.is_null() {
             return Err(LinuxError::EFAULT);
         }
-        let now = Instant::now().as_duration().into();
+        let now = axhal::time::current_time().into();
         unsafe { *ts = now };
         debug!("ax_clock_gettime: {}.{:09}s", now.tv_sec, now.tv_nsec);
         Ok(0)

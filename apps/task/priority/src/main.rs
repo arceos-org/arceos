@@ -1,13 +1,16 @@
-#![no_std]
-#![no_main]
+#![cfg_attr(feature = "axstd", no_std)]
+#![cfg_attr(feature = "axstd", no_main)]
 
 #[macro_use]
-extern crate axstd;
-extern crate alloc;
+#[cfg(feature = "axstd")]
+extern crate axstd as std;
 
-use alloc::sync::Arc;
-use alloc::vec::Vec;
-use axstd::thread;
+use std::sync::Arc;
+use std::{thread, time};
+use std::{vec, vec::Vec};
+
+#[cfg(any(feature = "axstd", target_os = "arceos"))]
+use std::os::arceos::axtask;
 
 struct TaskParam {
     data_len: usize,
@@ -56,9 +59,11 @@ fn load(n: &u64) -> u64 {
     sum
 }
 
-#[no_mangle]
+#[cfg_attr(feature = "axstd", no_mangle)]
 fn main() {
-    thread::set_priority(-20);
+    #[cfg(feature = "axstd")]
+    axtask::set_priority(-20);
+
     let data = (0..PAYLOAD_KIND)
         .map(|i| Arc::new(vec![TASK_PARAMS[i].value; TASK_PARAMS[i].data_len]))
         .collect::<Vec<_>>();
@@ -68,15 +73,17 @@ fn main() {
     }
 
     let mut tasks = Vec::with_capacity(PAYLOAD_KIND);
-    let start_time = axstd::time::Instant::now();
+    let start_time = time::Instant::now();
     for i in 0..PAYLOAD_KIND {
         let vec = data[i].clone();
         let data_len = TASK_PARAMS[i].data_len;
         let nice = TASK_PARAMS[i].nice;
         tasks.push(thread::spawn(move || {
+            #[cfg(feature = "axstd")]
+            axtask::set_priority(nice);
+
             let left = 0;
             let right = data_len;
-            thread::set_priority(nice);
             println!(
                 "part {}: {:?} [{}, {})",
                 i,
@@ -103,6 +110,7 @@ fn main() {
         println!("task {} = {}ms", i, time);
     }
 
+    #[cfg(feature = "axstd")]
     if cfg!(feature = "sched_cfs") && option_env!("AX_SMP") == Some("1") {
         assert!(
             leave_times[0] > leave_times[1]

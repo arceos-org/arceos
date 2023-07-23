@@ -1,13 +1,14 @@
-#![no_std]
-#![no_main]
+#![cfg_attr(feature = "axstd", no_std)]
+#![cfg_attr(feature = "axstd", no_main)]
 
 #[macro_use]
-extern crate axstd;
+#[cfg(feature = "axstd")]
+extern crate axstd as std;
 
-use axstd::io::{self, prelude::*};
-use axstd::net::{TcpListener, TcpStream};
-use axstd::thread;
-use axstd::vec::Vec;
+use std::io::{self, prelude::*};
+use std::net::{TcpListener, TcpStream};
+use std::thread;
+use std::vec::Vec;
 
 const LOCAL_IP: &str = "0.0.0.0";
 const LOCAL_PORT: u16 = 5555;
@@ -42,10 +43,10 @@ fn accept_loop() -> io::Result<()> {
     loop {
         match listener.accept() {
             Ok((stream, addr)) => {
-                info!("new client {}: {}", i, addr);
+                println!("new client {}: {}", i, addr);
                 thread::spawn(move || match echo_server(stream) {
-                    Err(e) => error!("client connection error: {:?}", e),
-                    Ok(()) => info!("client {} closed successfully", i),
+                    Err(e) => println!("client connection error: {:?}", e),
+                    Ok(()) => println!("client {} closed successfully", i),
                 });
             }
             Err(e) => return Err(e),
@@ -54,7 +55,7 @@ fn accept_loop() -> io::Result<()> {
     }
 }
 
-#[no_mangle]
+#[cfg_attr(feature = "axstd", no_mangle)]
 fn main() {
     println!("Hello, echo server!");
     accept_loop().expect("test echo server failed");

@@ -11,4 +11,5 @@ sched_rr = ["axstd/sched_rr"]
 sched_cfs = ["axstd/sched_cfs"]
 
 [dependencies]
-axstd = { path = "../../../ulib/axstd", features = ["alloc", "paging", "multitask", "irq"] }
+rand = { version = "0.8", default-features = false, features = ["small_rng"] }
+axstd = { path = "../../../ulib/axstd", features = ["alloc", "multitask", "irq"], optional = true }
