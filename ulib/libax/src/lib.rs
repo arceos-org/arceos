@@ -18,9 +18,12 @@
 //!     - `multitask`: Enable multi-threading support.
 //!     - `sched_fifo`: Use the FIFO cooperative scheduler.
 //!     - `sched_rr`: Use the Round-robin preemptive scheduler.
+//!     - `sched_cfs`: Use the Completely Fair Scheduler (CFS) preemptive scheduler.
 //! - Device and upperlayer stack
 //!     - `fs`: Enable file system support.
+//!     - `use-ramdisk`: Use the RAM disk to emulate the block device.
 //!     - `net`: Enable networking support.
+//!     - `dns`: Enable DNS lookup support.
 //!     - `display`: Enable graphics support.
 //!     - `bus-mmio`: Use device tree to probe all MMIO devices.
 //!     - `bus-pci`: Use PCI bus to probe all PCI devices.
@@ -36,6 +39,7 @@
 #![cfg_attr(all(not(test), not(doc)), no_std)]
 #![feature(doc_cfg)]
 #![feature(doc_auto_cfg)]
+#![feature(ip_in_core)]
 #![feature(int_roundings)]
 #![feature(naked_functions)]
 #![feature(result_option_inspect)]

@@ -11,4 +11,4 @@ libax = { path = "../../../ulib/libax", features = ["net"] }
 
 [features]
 default = []
-dns = []
+dns = ["libax/dns"]

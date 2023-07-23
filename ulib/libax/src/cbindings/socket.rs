@@ -1,15 +1,13 @@
+use alloc::{sync::Arc, vec};
 use core::ffi::{c_char, c_int, c_void};
 use core::mem::size_of;
+use core::net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4};
 
-use alloc::sync::Arc;
-use alloc::vec;
 use axerrno::{LinuxError, LinuxResult};
-use axnet::{resolve_socket_addr, IpAddr, Ipv4Addr, SocketAddr, TcpSocket, UdpSocket};
+use axio::PollState;
+use axnet::{TcpSocket, UdpSocket};
 
-use super::ctypes;
-use super::fd_ops::FileLike;
-use super::utils::char_ptr_to_str;
-use crate::io::PollState;
+use super::{ctypes, fd_ops::FileLike, utils::char_ptr_to_str};
 use crate::sync::Mutex;
 
 pub enum Socket {
@@ -52,14 +50,8 @@ impl Socket {
 
     fn local_addr(&self) -> LinuxResult<SocketAddr> {
         match self {
-            Socket::Udp(udpsocket) => Ok(udpsocket
-                .lock()
-                .local_addr()
-                .unwrap_or_else(|_| (Ipv4Addr::default(), 0).into())),
-            Socket::Tcp(tcpsocket) => Ok(tcpsocket
-                .lock()
-                .local_addr()
-                .unwrap_or_else(|_| (Ipv4Addr::default(), 0).into())),
+            Socket::Udp(udpsocket) => Ok(udpsocket.lock().local_addr()?),
+            Socket::Tcp(tcpsocket) => Ok(tcpsocket.lock().local_addr()?),
         }
     }
 
@@ -176,37 +168,58 @@ impl FileLike for Socket {
     }
 }
 
-fn as_c_sockaddr(addr: &SocketAddr) -> ctypes::sockaddr {
-    debug!("    Sockaddr: {}", addr);
-    return unsafe {
-        *(&ctypes::sockaddr_in {
+impl From<SocketAddrV4> for ctypes::sockaddr_in {
+    fn from(addr: SocketAddrV4) -> ctypes::sockaddr_in {
+        ctypes::sockaddr_in {
             sin_family: ctypes::AF_INET as u16,
-            sin_port: addr.port.to_be(),
+            sin_port: addr.port().to_be(),
             sin_addr: ctypes::in_addr {
-                s_addr: u32::from_be_bytes(addr.addr.as_bytes().try_into().unwrap()).to_be(),
+                // `s_addr` is stored as BE on all machines and the array is in BE order.
+                // So the native endian conversion method is used so that it's never swapped.
+                s_addr: u32::from_ne_bytes(addr.ip().octets()),
             },
             sin_zero: [0; 8],
-        } as *const _ as *const ctypes::sockaddr)
-    };
+        }
+    }
 }
 
-fn from_c_sockaddr(
+impl From<ctypes::sockaddr_in> for SocketAddrV4 {
+    fn from(addr: ctypes::sockaddr_in) -> SocketAddrV4 {
+        SocketAddrV4::new(
+            Ipv4Addr::from(addr.sin_addr.s_addr.to_ne_bytes()),
+            u16::from_be(addr.sin_port),
+        )
+    }
+}
+
+fn into_sockaddr(addr: SocketAddr) -> (ctypes::sockaddr, ctypes::socklen_t) {
+    debug!("    Sockaddr: {}", addr);
+    match addr {
+        SocketAddr::V4(addr) => (
+            unsafe { *(&ctypes::sockaddr_in::from(addr) as *const _ as *const ctypes::sockaddr) },
+            size_of::<ctypes::sockaddr>() as _,
+        ),
+        SocketAddr::V6(_) => panic!("IPv6 is not supported"),
+    }
+}
+
+fn from_sockaddr(
     addr: *const ctypes::sockaddr,
     addrlen: ctypes::socklen_t,
 ) -> LinuxResult<SocketAddr> {
     if addr.is_null() {
         return Err(LinuxError::EFAULT);
     }
-    if addrlen != size_of::<ctypes::sockaddr>() as u32 {
+    if addrlen != size_of::<ctypes::sockaddr>() as _ {
         return Err(LinuxError::EINVAL);
     }
+
     let mid = unsafe { *(addr as *const ctypes::sockaddr_in) };
     if mid.sin_family != ctypes::AF_INET as u16 {
         return Err(LinuxError::EINVAL);
     }
-    let address = Ipv4Addr::from_bytes(&(u32::from_be(mid.sin_addr.s_addr).to_be_bytes()));
-    let port = u16::from_be(mid.sin_port);
-    let res: SocketAddr = (address, port).into();
+
+    let res = SocketAddr::V4(mid.into());
     debug!("    load sockaddr:{:#x} => {:?}", addr as usize, res);
     Ok(res)
 }
@@ -247,7 +260,7 @@ pub unsafe extern "C" fn ax_bind(
         socket_fd, socket_addr as usize, addrlen
     );
     ax_call_body!(ax_bind, {
-        let addr = from_c_sockaddr(socket_addr, addrlen)?;
+        let addr = from_sockaddr(socket_addr, addrlen)?;
         Socket::from_fd(socket_fd)?.bind(addr)?;
         Ok(0)
     })
@@ -267,7 +280,7 @@ pub unsafe extern "C" fn ax_connect(
         socket_fd, socket_addr as usize, addrlen
     );
     ax_call_body!(ax_connect, {
-        let addr = from_c_sockaddr(socket_addr, addrlen)?;
+        let addr = from_sockaddr(socket_addr, addrlen)?;
         Socket::from_fd(socket_fd)?.connect(addr)?;
         Ok(0)
     })
@@ -293,7 +306,7 @@ pub unsafe extern "C" fn ax_sendto(
         if buf_ptr.is_null() {
             return Err(LinuxError::EFAULT);
         }
-        let addr = from_c_sockaddr(socket_addr, addrlen)?;
+        let addr = from_sockaddr(socket_addr, addrlen)?;
         let buf = unsafe { core::slice::from_raw_parts(buf_ptr as *const u8, len) };
         Socket::from_fd(socket_fd)?.sendto(buf, addr)
     })
@@ -348,8 +361,7 @@ pub unsafe extern "C" fn ax_recvfrom(
         let res = socket.recvfrom(buf)?;
         if let Some(addr) = res.1 {
             unsafe {
-                *socket_addr = as_c_sockaddr(&addr);
-                *addrlen = size_of::<ctypes::sockaddr>() as u32;
+                (*socket_addr, *addrlen) = into_sockaddr(addr);
             }
         }
         Ok(res.0)
@@ -416,8 +428,7 @@ pub unsafe extern "C" fn ax_accept(
         let addr = new_socket.peer_addr()?;
         let new_fd = Socket::add_to_fd_table(Socket::Tcp(Mutex::new(new_socket)))?;
         unsafe {
-            *socket_addr = as_c_sockaddr(&addr);
-            *socket_len = size_of::<ctypes::sockaddr>() as u32;
+            (*socket_addr, *socket_len) = into_sockaddr(addr);
         }
         Ok(new_fd)
     })
@@ -442,40 +453,41 @@ pub unsafe extern "C" fn ax_shutdown(
 ///
 /// Return address number if success.
 #[no_mangle]
-pub unsafe extern "C" fn ax_resolve_sockaddr(
+pub unsafe extern "C" fn ax_getaddrinfo(
     node: *const c_char,
     service: *const c_char,
-    addr: *mut ctypes::sockaddr,
+    addrs: *mut ctypes::sockaddr,
     len: ctypes::size_t,
 ) -> c_int {
     let name = char_ptr_to_str(node);
     let port = char_ptr_to_str(service);
     debug!(
-        "ax_resolve_sockaddr <= {:?} {:?} {:#x} {}",
-        name, port, addr as usize, len
+        "ax_getaddrinfo <= {:?} {:?} {:#x} {}",
+        name, port, addrs as usize, len
     );
-    ax_call_body!(ax_resolve_sockaddr, {
-        if addr.is_null() || (node.is_null() && service.is_null()) {
+    ax_call_body!(ax_getaddrinfo, {
+        if addrs.is_null() || (node.is_null() && service.is_null()) {
             return Err(LinuxError::EFAULT);
         }
-        let addr_slice = unsafe { core::slice::from_raw_parts_mut(addr, len) };
+        let addr_slice = unsafe { core::slice::from_raw_parts_mut(addrs, len) };
         let res = if let Ok(domain) = name {
             if let Ok(a) = domain.parse::<IpAddr>() {
                 vec![a]
             } else {
-                resolve_socket_addr(domain).map_err(|_| LinuxError::EINVAL)?
+                axnet::dns_query(domain)?
             }
         } else {
-            vec![Ipv4Addr::new(127, 0, 0, 1).into()]
+            vec![Ipv4Addr::LOCALHOST.into()]
         };
 
         for (i, item) in res.iter().enumerate().take(len) {
-            addr_slice[i] = as_c_sockaddr(&SocketAddr::from((
+            addr_slice[i] = into_sockaddr(SocketAddr::new(
                 *item,
                 port.map_or(0, |p| p.parse::<u16>().unwrap_or(0)),
-            )));
+            ))
+            .0;
         }
-        Ok(if len > res.len() { res.len() } else { len })
+        Ok(res.len().min(len))
     })
 }
 
@@ -498,8 +510,7 @@ pub unsafe extern "C" fn ax_getsockname(
             return Err(LinuxError::EINVAL);
         }
         unsafe {
-            *addr = as_c_sockaddr(&Socket::from_fd(sock_fd)?.local_addr()?);
-            *addrlen = size_of::<ctypes::sockaddr>() as u32;
+            (*addr, *addrlen) = into_sockaddr(Socket::from_fd(sock_fd)?.local_addr()?);
         }
         Ok(0)
     })
@@ -524,8 +535,7 @@ pub unsafe extern "C" fn ax_getpeername(
             return Err(LinuxError::EINVAL);
         }
         unsafe {
-            *addr = as_c_sockaddr(&Socket::from_fd(sock_fd)?.peer_addr()?);
-            *addrlen = size_of::<ctypes::sockaddr>() as u32;
+            (*addr, *addrlen) = into_sockaddr(Socket::from_fd(sock_fd)?.peer_addr()?);
         }
         Ok(0)
     })

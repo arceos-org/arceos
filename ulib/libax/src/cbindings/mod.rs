@@ -73,8 +73,8 @@ pub use self::file::{ax_getcwd, ax_lseek, ax_lstat, ax_open, ax_stat};
 
 #[cfg(feature = "net")]
 pub use self::socket::{
-    ax_accept, ax_bind, ax_connect, ax_getpeername, ax_getsockname, ax_listen, ax_recv,
-    ax_recvfrom, ax_resolve_sockaddr, ax_send, ax_sendto, ax_shutdown, ax_socket,
+    ax_accept, ax_bind, ax_connect, ax_getaddrinfo, ax_getpeername, ax_getsockname, ax_listen,
+    ax_recv, ax_recvfrom, ax_send, ax_sendto, ax_shutdown, ax_socket,
 };
 
 #[cfg(feature = "multitask")]

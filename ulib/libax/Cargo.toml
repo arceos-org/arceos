@@ -44,6 +44,7 @@ use-ramdisk = ["axdriver?/ramdisk", "axfs?/use-ramdisk"]
 
 # Networking
 net = ["alloc", "axruntime/net", "dep:axdriver", "dep:axnet"]
+dns = []
 
 # Display
 display = ["axruntime/display", "dep:axdriver", "dep:axdisplay"]

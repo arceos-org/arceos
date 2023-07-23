@@ -11,12 +11,9 @@
 
 #[macro_use]
 extern crate libax;
-extern crate alloc;
-
-use core::str::FromStr;
 
 use libax::io::{self, prelude::*};
-use libax::net::{IpAddr, TcpListener, TcpStream};
+use libax::net::{TcpListener, TcpStream};
 use libax::thread;
 
 const LOCAL_IP: &str = "0.0.0.0";
@@ -50,19 +47,18 @@ const CONTENT: &str = r#"<html>
 </html>
 "#;
 
-fn http_server(mut stream: TcpStream) -> io::Result {
-    let mut buf = [0u8; 1024];
-    stream.read(&mut buf)?;
+fn http_server(mut stream: TcpStream) -> io::Result<()> {
+    let mut buf = [0u8; 4096];
+    let _len = stream.read(&mut buf)?;
 
-    let reponse = alloc::format!(header!(), CONTENT.len(), CONTENT);
-    stream.write_all(reponse.as_bytes())?;
+    let response = format!(header!(), CONTENT.len(), CONTENT);
+    stream.write_all(response.as_bytes())?;
 
     Ok(())
 }
 
-fn accept_loop() -> io::Result {
-    let (addr, port) = (IpAddr::from_str(LOCAL_IP).unwrap(), LOCAL_PORT);
-    let listener = TcpListener::bind((addr, port).into())?;
+fn accept_loop() -> io::Result<()> {
+    let listener = TcpListener::bind((LOCAL_IP, LOCAL_PORT))?;
     println!("listen on: http://{}/", listener.local_addr().unwrap());
 
     let mut i = 0;

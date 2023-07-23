@@ -20,7 +20,7 @@ int getaddrinfo(const char *__restrict node, const char *__restrict service,
                 const struct addrinfo *__restrict hints, struct addrinfo **__restrict res)
 {
     struct sockaddr *addrs = (struct sockaddr *)malloc(MAXADDRS * sizeof(struct sockaddr));
-    int res_len = ax_resolve_sockaddr(node, service, addrs, MAXADDRS);
+    int res_len = ax_getaddrinfo(node, service, addrs, MAXADDRS);
     if (res_len < 0)
         return EAI_FAIL;
     if (res_len == 0)

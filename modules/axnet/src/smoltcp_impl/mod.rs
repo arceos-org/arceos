@@ -1,3 +1,4 @@
+mod addr;
 mod bench;
 mod dns;
 mod listen_table;
@@ -21,7 +22,7 @@ use smoltcp::wire::{EthernetAddress, HardwareAddress, IpAddress, IpCidr};
 
 use self::listen_table::ListenTable;
 
-pub use self::dns::resolve_socket_addr;
+pub use self::dns::dns_query;
 pub use self::tcp::TcpSocket;
 pub use self::udp::UdpSocket;
 
@@ -273,7 +274,6 @@ impl<'a> TxToken for AxNetTxToken<'a> {
 }
 
 fn snoop_tcp_packet(buf: &[u8], sockets: &mut SocketSet<'_>) -> Result<(), smoltcp::wire::Error> {
-    use crate::SocketAddr;
     use smoltcp::wire::{EthernetFrame, IpProtocol, Ipv4Packet, TcpPacket};
 
     let ether_frame = EthernetFrame::new_checked(buf)?;
@@ -281,8 +281,8 @@ fn snoop_tcp_packet(buf: &[u8], sockets: &mut SocketSet<'_>) -> Result<(), smolt
 
     if ipv4_packet.next_header() == IpProtocol::Tcp {
         let tcp_packet = TcpPacket::new_checked(ipv4_packet.payload())?;
-        let src_addr = SocketAddr::new(ipv4_packet.src_addr().into(), tcp_packet.src_port());
-        let dst_addr = SocketAddr::new(ipv4_packet.dst_addr().into(), tcp_packet.dst_port());
+        let src_addr = (ipv4_packet.src_addr(), tcp_packet.src_port()).into();
+        let dst_addr = (ipv4_packet.dst_addr(), tcp_packet.dst_port()).into();
         let is_first = tcp_packet.syn() && !tcp_packet.ack();
         if is_first {
             // create a socket for the first incoming TCP packet, as the later accept() returns.

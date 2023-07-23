@@ -1,3 +1,4 @@
+use core::net::SocketAddr;
 use core::sync::atomic::{AtomicBool, Ordering};
 
 use axerrno::{ax_err, ax_err_type, AxError, AxResult};
@@ -7,19 +8,16 @@ use spin::RwLock;
 
 use smoltcp::iface::SocketHandle;
 use smoltcp::socket::udp::{self, BindError, SendError};
-use smoltcp::wire::{IpAddress, IpListenEndpoint};
+use smoltcp::wire::{IpEndpoint, IpListenEndpoint};
 
+use super::addr::{from_core_sockaddr, into_core_sockaddr, is_unspecified, UNSPECIFIED_ENDPOINT};
 use super::{SocketSetWrapper, SOCKET_SET};
-use crate::SocketAddr;
-
-const UNSPECIFIED_IP: IpAddress = IpAddress::v4(0, 0, 0, 0);
-const UNSPECIFIED: SocketAddr = SocketAddr::new(UNSPECIFIED_IP, 0);
 
 /// A UDP socket that provides POSIX-like APIs.
 pub struct UdpSocket {
     handle: SocketHandle,
-    local_addr: RwLock<Option<SocketAddr>>,
-    peer_addr: RwLock<Option<SocketAddr>>,
+    local_addr: RwLock<Option<IpEndpoint>>,
+    peer_addr: RwLock<Option<IpEndpoint>>,
     nonblock: AtomicBool,
 }
 
@@ -41,7 +39,7 @@ impl UdpSocket {
     /// [`Err(NotConnected)`](AxError::NotConnected) if not connected.
     pub fn local_addr(&self) -> AxResult<SocketAddr> {
         match self.local_addr.try_read() {
-            Some(addr) => addr.ok_or(AxError::NotConnected),
+            Some(addr) => addr.map(into_core_sockaddr).ok_or(AxError::NotConnected),
             None => Err(AxError::NotConnected),
         }
     }
@@ -49,10 +47,7 @@ impl UdpSocket {
     /// Returns the remote address and port, or
     /// [`Err(NotConnected)`](AxError::NotConnected) if not connected.
     pub fn peer_addr(&self) -> AxResult<SocketAddr> {
-        match self.peer_addr.try_read() {
-            Some(addr) => addr.ok_or(AxError::NotConnected),
-            None => Err(AxError::NotConnected),
-        }
+        self.remote_endpoint().map(into_core_sockaddr)
     }
 
     /// Returns whether this socket is in nonblocking mode.
@@ -81,19 +76,17 @@ impl UdpSocket {
     pub fn bind(&self, mut local_addr: SocketAddr) -> AxResult {
         let mut self_local_addr = self.local_addr.write();
 
-        if local_addr.addr.is_unspecified() && local_addr.addr != UNSPECIFIED_IP {
-            return ax_err!(InvalidInput, "socket bind() failed: invalid addr");
-        }
-        if local_addr.port == 0 {
-            local_addr.port = get_ephemeral_port()?;
+        if local_addr.port() == 0 {
+            local_addr.set_port(get_ephemeral_port()?);
         }
         if self_local_addr.is_some() {
             return ax_err!(InvalidInput, "socket bind() failed: already bound");
         }
 
+        let local_endpoint = from_core_sockaddr(local_addr);
         let endpoint = IpListenEndpoint {
-            addr: (!local_addr.addr.is_unspecified()).then_some(local_addr.addr),
-            port: local_addr.port,
+            addr: (!is_unspecified(local_endpoint.addr)).then_some(local_endpoint.addr),
+            port: local_endpoint.port,
         };
         SOCKET_SET.with_socket_mut::<udp::Socket, _, _>(self.handle, |socket| {
             socket.bind(endpoint).or_else(|e| match e {
@@ -102,7 +95,7 @@ impl UdpSocket {
             })
         })?;
 
-        *self_local_addr = Some(local_addr);
+        *self_local_addr = Some(local_endpoint);
         debug!("UDP socket {}: bound on {}", self.handle, endpoint);
         Ok(())
     }
@@ -110,17 +103,17 @@ impl UdpSocket {
     /// Sends data on the socket to the given address. On success, returns the
     /// number of bytes written.
     pub fn send_to(&self, buf: &[u8], remote_addr: SocketAddr) -> AxResult<usize> {
-        if remote_addr.port == 0 || remote_addr.addr.is_unspecified() {
+        if remote_addr.port() == 0 || remote_addr.ip().is_unspecified() {
             return ax_err!(InvalidInput, "socket send_to() failed: invalid address");
         }
-        self.send_impl(buf, remote_addr)
+        self.send_impl(buf, from_core_sockaddr(remote_addr))
     }
 
     /// Receives a single datagram message on the socket. On success, returns
     /// the number of bytes read and the origin.
     pub fn recv_from(&self, buf: &mut [u8]) -> AxResult<(usize, SocketAddr)> {
         self.recv_impl(|socket| match socket.recv_slice(buf) {
-            Ok((len, meta)) => Ok((len, meta.endpoint)),
+            Ok((len, meta)) => Ok((len, into_core_sockaddr(meta.endpoint))),
             Err(_) => ax_err!(BadState, "socket recv_from() failed"),
         })
     }
@@ -129,7 +122,7 @@ impl UdpSocket {
     /// the queue. On success, returns the number of bytes read and the origin.
     pub fn peek_from(&self, buf: &mut [u8]) -> AxResult<(usize, SocketAddr)> {
         self.recv_impl(|socket| match socket.peek_slice(buf) {
-            Ok((len, meta)) => Ok((len, meta.endpoint)),
+            Ok((len, meta)) => Ok((len, into_core_sockaddr(meta.endpoint))),
             Err(_) => ax_err!(BadState, "socket recv_from() failed"),
         })
     }
@@ -144,37 +137,33 @@ impl UdpSocket {
     pub fn connect(&self, addr: SocketAddr) -> AxResult {
         let mut self_peer_addr = self.peer_addr.write();
 
-        if addr.addr.is_unspecified() && addr.addr != UNSPECIFIED_IP {
-            return ax_err!(InvalidInput, "socket connect() failed: invalid addr");
-        }
-
         if self.local_addr.read().is_none() {
-            self.bind(UNSPECIFIED)?;
+            self.bind(into_core_sockaddr(UNSPECIFIED_ENDPOINT))?;
         }
 
-        *self_peer_addr = Some(addr);
+        *self_peer_addr = Some(from_core_sockaddr(addr));
         debug!("UDP socket {}: connected to {}", self.handle, addr);
         Ok(())
     }
 
     /// Sends data on the socket to the remote address to which it is connected.
     pub fn send(&self, buf: &[u8]) -> AxResult<usize> {
-        let remote_addr = self.peer_addr()?;
-        self.send_impl(buf, remote_addr)
+        let remote_endpoint = self.remote_endpoint()?;
+        self.send_impl(buf, remote_endpoint)
     }
 
     /// Receives a single datagram message on the socket from the remote address
     /// to which it is connected. On success, returns the number of bytes read.
     pub fn recv(&self, buf: &mut [u8]) -> AxResult<usize> {
-        let remote_addr = self.peer_addr()?;
+        let remote_endpoint = self.remote_endpoint()?;
         self.recv_impl(|socket| {
             let (len, meta) = socket
                 .recv_slice(buf)
                 .map_err(|_| ax_err_type!(BadState, "socket recv() failed"))?;
-            if !remote_addr.addr.is_unspecified() && remote_addr.addr != meta.endpoint.addr {
+            if !is_unspecified(remote_endpoint.addr) && remote_endpoint.addr != meta.endpoint.addr {
                 return Err(AxError::WouldBlock);
             }
-            if remote_addr.port != 0 && remote_addr.port != meta.endpoint.port {
+            if remote_endpoint.port != 0 && remote_endpoint.port != meta.endpoint.port {
                 return Err(AxError::WouldBlock);
             }
             Ok(len)
@@ -210,7 +199,14 @@ impl UdpSocket {
 
 /// Private methods
 impl UdpSocket {
-    fn send_impl(&self, buf: &[u8], remote_addr: SocketAddr) -> AxResult<usize> {
+    fn remote_endpoint(&self) -> AxResult<IpEndpoint> {
+        match self.peer_addr.try_read() {
+            Some(addr) => addr.ok_or(AxError::NotConnected),
+            None => Err(AxError::NotConnected),
+        }
+    }
+
+    fn send_impl(&self, buf: &[u8], remote_endpoint: IpEndpoint) -> AxResult<usize> {
         if self.local_addr.read().is_none() {
             return ax_err!(NotConnected, "socket send() failed");
         }
@@ -218,12 +214,14 @@ impl UdpSocket {
         self.block_on(|| {
             SOCKET_SET.with_socket_mut::<udp::Socket, _, _>(self.handle, |socket| {
                 if socket.can_send() {
-                    socket.send_slice(buf, remote_addr).map_err(|e| match e {
-                        SendError::BufferFull => AxError::WouldBlock,
-                        SendError::Unaddressable => {
-                            ax_err_type!(ConnectionRefused, "socket send() failed")
-                        }
-                    })?;
+                    socket
+                        .send_slice(buf, remote_endpoint)
+                        .map_err(|e| match e {
+                            SendError::BufferFull => AxError::WouldBlock,
+                            SendError::Unaddressable => {
+                                ax_err_type!(ConnectionRefused, "socket send() failed")
+                            }
+                        })?;
                     Ok(buf.len())
                 } else {
                     // tx buffer is full

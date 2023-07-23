@@ -3,19 +3,16 @@
 
 #[macro_use]
 extern crate libax;
-extern crate alloc;
-
-use core::str::FromStr;
 
 use libax::io;
-use libax::net::{IpAddr, UdpSocket};
+use libax::net::{ToSocketAddrs, UdpSocket};
 
 const LOCAL_IP: &str = "0.0.0.0";
 const LOCAL_PORT: u16 = 5555;
 
-fn receive_loop() -> io::Result {
-    let (addr, port) = (IpAddr::from_str(LOCAL_IP).unwrap(), LOCAL_PORT);
-    let socket = UdpSocket::bind((addr, port).into())?;
+fn receive_loop() -> io::Result<()> {
+    let addr = (LOCAL_IP, LOCAL_PORT).to_socket_addrs()?.next().unwrap();
+    let socket = UdpSocket::bind(addr)?;
     println!("listen on: {}", socket.local_addr().unwrap());
     let mut buf = [0u8; 1024];
     loop {

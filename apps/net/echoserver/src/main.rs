@@ -3,14 +3,11 @@
 
 #[macro_use]
 extern crate libax;
-extern crate alloc;
-
-use alloc::vec::Vec;
-use core::str::FromStr;
 
 use libax::io::{self, prelude::*};
-use libax::net::{IpAddr, TcpListener, TcpStream};
+use libax::net::{TcpListener, TcpStream};
 use libax::thread;
+use libax::vec::Vec;
 
 const LOCAL_IP: &str = "0.0.0.0";
 const LOCAL_PORT: u16 = 5555;
@@ -26,7 +23,7 @@ fn reverse(buf: &[u8]) -> Vec<u8> {
     lines.join(&b'\n')
 }
 
-fn echo_server(mut stream: TcpStream) -> io::Result {
+fn echo_server(mut stream: TcpStream) -> io::Result<()> {
     let mut buf = [0u8; 1024];
     loop {
         let n = stream.read(&mut buf)?;
@@ -37,9 +34,8 @@ fn echo_server(mut stream: TcpStream) -> io::Result {
     }
 }
 
-fn accept_loop() -> io::Result {
-    let (addr, port) = (IpAddr::from_str(LOCAL_IP).unwrap(), LOCAL_PORT);
-    let listener = TcpListener::bind((addr, port).into())?;
+fn accept_loop() -> io::Result<()> {
+    let listener = TcpListener::bind((LOCAL_IP, LOCAL_PORT))?;
     println!("listen on: {}", listener.local_addr().unwrap());
 
     let mut i = 0;

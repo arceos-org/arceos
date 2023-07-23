@@ -5,29 +5,28 @@ use axerrno::{ax_err, AxError, AxResult};
 use axsync::Mutex;
 use smoltcp::iface::{SocketHandle, SocketSet};
 use smoltcp::socket::tcp::{self, State};
-use smoltcp::wire::{IpAddress, IpListenEndpoint};
+use smoltcp::wire::{IpAddress, IpEndpoint, IpListenEndpoint};
 
 use super::{SocketSetWrapper, LISTEN_QUEUE_SIZE, SOCKET_SET};
-use crate::SocketAddr;
 
 const PORT_NUM: usize = 65536;
 
 struct ListenTableEntry {
-    listen_addr: IpListenEndpoint,
+    listen_endpoint: IpListenEndpoint,
     syn_queue: VecDeque<SocketHandle>,
 }
 
 impl ListenTableEntry {
-    pub fn new(listen_addr: IpListenEndpoint) -> Self {
+    pub fn new(listen_endpoint: IpListenEndpoint) -> Self {
         Self {
-            listen_addr,
+            listen_endpoint,
             syn_queue: VecDeque::with_capacity(LISTEN_QUEUE_SIZE),
         }
     }
 
     #[inline]
     fn can_accept(&self, dst: IpAddress) -> bool {
-        match self.listen_addr.addr {
+        match self.listen_endpoint.addr {
             Some(addr) => addr == dst,
             None => true,
         }
@@ -62,12 +61,12 @@ impl ListenTable {
         self.tcp[port as usize].lock().is_none()
     }
 
-    pub fn listen(&self, listen_addr: IpListenEndpoint) -> AxResult {
-        let port = listen_addr.port;
+    pub fn listen(&self, listen_endpoint: IpListenEndpoint) -> AxResult {
+        let port = listen_endpoint.port;
         assert_ne!(port, 0);
         let mut entry = self.tcp[port as usize].lock();
         if entry.is_none() {
-            *entry = Some(Box::new(ListenTableEntry::new(listen_addr)));
+            *entry = Some(Box::new(ListenTableEntry::new(listen_endpoint)));
             Ok(())
         } else {
             ax_err!(AddrInUse, "socket listen() failed")
@@ -87,7 +86,7 @@ impl ListenTable {
         }
     }
 
-    pub fn accept(&self, port: u16) -> AxResult<(SocketHandle, (SocketAddr, SocketAddr))> {
+    pub fn accept(&self, port: u16) -> AxResult<(SocketHandle, (IpEndpoint, IpEndpoint))> {
         if let Some(entry) = self.tcp[port as usize].lock().deref_mut() {
             let syn_queue = &mut entry.syn_queue;
             let (idx, addr_tuple) = syn_queue
@@ -113,8 +112,8 @@ impl ListenTable {
 
     pub fn incoming_tcp_packet(
         &self,
-        src: SocketAddr,
-        dst: SocketAddr,
+        src: IpEndpoint,
+        dst: IpEndpoint,
         sockets: &mut SocketSet<'_>,
     ) {
         if let Some(entry) = self.tcp[dst.port as usize].lock().deref_mut() {
@@ -128,11 +127,11 @@ impl ListenTable {
                 return;
             }
             let mut socket = SocketSetWrapper::new_tcp_socket();
-            if socket.listen(entry.listen_addr).is_ok() {
+            if socket.listen(entry.listen_endpoint).is_ok() {
                 let handle = sockets.add(socket);
                 debug!(
                     "TCP socket {}: prepare for connection {} -> {}",
-                    handle, src, entry.listen_addr
+                    handle, src, entry.listen_endpoint
                 );
                 entry.syn_queue.push_back(handle);
             }
@@ -146,7 +145,7 @@ fn is_connected(handle: SocketHandle) -> bool {
     })
 }
 
-fn get_addr_tuple(handle: SocketHandle) -> (SocketAddr, SocketAddr) {
+fn get_addr_tuple(handle: SocketHandle) -> (IpEndpoint, IpEndpoint) {
     SOCKET_SET.with_socket::<tcp::Socket, _, _>(handle, |socket| {
         (
             socket.local_endpoint().unwrap(),
