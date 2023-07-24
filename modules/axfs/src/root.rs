@@ -249,10 +249,7 @@ pub(crate) fn create_file(dir: Option<&VfsNodeRef>, path: &str) -> AxResult<VfsN
 pub(crate) fn create_dir(dir: Option<&VfsNodeRef>, path: &str) -> AxResult {
     match lookup(dir, path) {
         Ok(_) => ax_err!(AlreadyExists),
-        Err(AxError::NotFound) => {
-            info!("test");
-            parent_node_of(dir, path).create(path, VfsNodeType::Dir)
-        }
+        Err(AxError::NotFound) => parent_node_of(dir, path).create(path, VfsNodeType::Dir),
         Err(e) => Err(e),
     }
 }

@@ -35,7 +35,7 @@ pub struct FsStat {
 pub fn get_fs_stat() -> FsStat {
     FsStat {
         f_type: 0,
-        f_bsize: 512,
+        f_bsize: 1024,
         f_blocks: 0x4000_0000 / 512,
         f_bfree: 1,
         f_bavail: 1,

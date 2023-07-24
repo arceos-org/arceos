@@ -1,7 +1,6 @@
 use crate::syscall::syscall;
 use axhal::arch::{TrapFrame, SIGNAL_RETURN_TRAP};
 use axprocess::process::current_process;
-use log::error;
 /// 宏内核架构下的trap入口
 use memory_addr::VirtAddr;
 use page_table_entry::MappingFlags;

@@ -47,10 +47,11 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
     };
     check_dead_wait();
     let curr_id = current().id().as_u64();
-    // if syscall_id != GETPPID as usize
-    //     && syscall_id != CLOCK_GET_TIME as usize
-    //     && syscall_id != GETRUSAGE as usize
-    if syscall_id == CLONE as usize {
+    if syscall_id != GETPPID as usize
+        && syscall_id != CLOCK_GET_TIME as usize
+        && syscall_id != GETRUSAGE as usize
+    {
+        // if syscall_id == CLONE as usize {
         info!(
             "cpu id: {}, task id: {}, process id: {}, syscall: id: {} name: {:?}",
             this_cpu_id(),
@@ -239,8 +240,13 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[4] as *const TimeSecs,
             args[5] as usize,
         ),
+        // FTRUNCATE64 => syscall_ftruncate64(args[0] as usize, args[1] as usize),
         IOCTL => syscall_ioctl(args[0] as usize, args[1] as usize, args[2] as *mut usize),
         // 不做处理即可
+        SYNC => 0,
+        SHMGET => 0,
+        SHMCTL => 0,
+        SHMAT => 0,
         MEMBARRIER => 0,
         SIGTIMEDWAIT => 0,
         SYSLOG => 0,
@@ -252,10 +258,11 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
     };
     // let sstatus = riscv::register::sstatus::read();
     // error!("irq: {}", riscv::register::sstatus::Sstatus::sie(&sstatus));
-    // if syscall_id != GETPPID as usize
-    //     && syscall_id != CLOCK_GET_TIME as usize
-    //     && syscall_id != GETRUSAGE as usize
-    if syscall_id == CLONE as usize {
+    if syscall_id != GETPPID as usize
+        && syscall_id != CLOCK_GET_TIME as usize
+        && syscall_id != GETRUSAGE as usize
+    {
+        // if syscall_id == CLONE as usize {
         info!(
             "curr id: {}, Syscall {} return: {}",
             curr_id, syscall_id, ans,

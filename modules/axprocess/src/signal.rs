@@ -3,7 +3,7 @@
 use alloc::sync::Arc;
 use axerrno::AxResult;
 use axhal::{arch::TrapFrame, cpu::this_cpu_id};
-use axlog::{debug, error, info};
+use axlog::info;
 use axsignal::{
     action::{SigActionFlags, SignalDefault, SIG_IGN},
     info::SigInfo,

@@ -1,4 +1,5 @@
 extern crate alloc;
+
 use crate::syscall::flags::TimeSecs;
 
 use super::link::get_link_count;
@@ -6,6 +7,7 @@ use super::types::{normal_file_mode, StMode};
 use alloc::borrow::ToOwned;
 use alloc::string::{String, ToString};
 use alloc::sync::Arc;
+use alloc::vec::Vec;
 use axerrno::AxResult;
 use axfs::api::File;
 use axfs::monolithic_fs::file_io::{FileExt, Kstat};
@@ -53,15 +55,15 @@ impl Read for FileDesc {
         // 似乎当前的fat32文件系统不支持一次读取达到block size的内容
         let buf_len = buf.len();
         let mut offset = 0;
+        let mut probe = buf.to_vec();
         while offset < buf_len {
-            let read_len = self
-                .file
-                .lock()
-                .read(&mut buf[offset..buf_len.min(offset + BLOCK_SIZE - 1)])?;
+            let read_len = self.file.lock().read(&mut probe)?;
             if read_len == 0 {
                 break;
             }
+            buf[offset..offset + read_len].copy_from_slice(&probe[..read_len]);
             offset += read_len;
+            probe.truncate(buf_len - offset);
         }
         Ok(offset)
     }
@@ -71,15 +73,14 @@ impl Write for FileDesc {
     fn write(&mut self, buf: &[u8]) -> AxResult<usize> {
         let buf_len = buf.len();
         let mut offset = 0;
+        let mut probe = buf.to_vec();
         while offset < buf_len {
-            let read_len = self
-                .file
-                .lock()
-                .write(&buf[offset..buf_len.min(offset + BLOCK_SIZE - 1)])?;
-            if read_len == 0 {
+            let write_len = self.file.lock().write(&probe)?;
+            if write_len == 0 {
                 break;
             }
-            offset += read_len;
+            offset += write_len;
+            probe = probe[write_len..].to_vec();
         }
         Ok(offset)
     }
@@ -113,6 +114,10 @@ impl FileIO for FileDesc {
     }
     fn get_path(&self) -> String {
         self.path.clone()
+    }
+
+    fn truncate(&mut self, len: usize) -> AxResult<()> {
+        self.file.lock().truncate(len)
     }
 
     fn get_stat(&self) -> AxResult<Kstat> {

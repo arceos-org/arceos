@@ -94,7 +94,7 @@ impl MapArea {
         flags: MappingFlags,
         page_table: &mut PageTable,
     ) {
-        debug!(
+        error!(
             "handling {:?} page fault in area [{:?}, {:?})",
             addr,
             self.vaddr,

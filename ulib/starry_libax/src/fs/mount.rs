@@ -151,7 +151,7 @@ pub fn get_stat_in_fs(path: &str) -> Result<Kstat, isize> {
                 }
             }
         } else {
-            Err(ErrorNo::EINVAL as isize)
+            Err(ErrorNo::ENOENT as isize)
         };
     } else {
         // 是目录
@@ -164,7 +164,7 @@ pub fn get_stat_in_fs(path: &str) -> Result<Kstat, isize> {
                 }
             }
         } else {
-            Err(ErrorNo::EINVAL as isize)
+            Err(ErrorNo::ENOENT as isize)
         };
     }
 }

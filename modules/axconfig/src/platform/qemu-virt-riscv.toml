@@ -6,7 +6,7 @@ platform = "qemu-virt-riscv"
 # Base address of the whole physical memory.
 phys-memory-base = "0x8000_0000"
 # Size of the whole physical memory.
-phys-memory-size = "0x2000_0000"     # 512M
+phys-memory-size = "0x4000_0000"     # 768M
 # Base physical address of the kernel image.
 kernel-base-paddr = "0x8020_0000"
 # Base virtual address of the kernel image.

@@ -169,6 +169,10 @@ impl File {
     pub fn executable(&self) -> bool {
         self.inner.executable()
     }
+
+    pub fn truncate(&mut self, len: usize) -> Result<()> {
+        self.inner.truncate(len as u64)
+    }
 }
 
 impl Read for File {
@@ -178,7 +182,7 @@ impl Read for File {
     /// Read all bytes until EOF in this source, placing them into `buf`.
     fn read_to_end(&mut self, buf: &mut Vec<u8>) -> Result<usize> {
         let start_len = buf.len();
-        let mut probe = [0u8; 1024];
+        let mut probe = [0u8; 0x20000];
         loop {
             match self.read(&mut probe) {
                 Ok(0) => return Ok(buf.len() - start_len),

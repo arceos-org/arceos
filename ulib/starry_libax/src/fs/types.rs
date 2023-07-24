@@ -51,9 +51,9 @@ impl DirEnt {
         8 + 8 + 2 + 1
     }
     /// 设置定长部分
-    pub fn set_fixed_part(&mut self, ino: u64, off: i64, reclen: usize, type_: DirEntType) {
+    pub fn set_fixed_part(&mut self, ino: u64, _off: i64, reclen: usize, type_: DirEntType) {
         self.d_ino = ino;
-        self.d_off = off;
+        self.d_off = -1;
         self.d_reclen = reclen as u16;
         self.d_type = type_ as u8;
     }

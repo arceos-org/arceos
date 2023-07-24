@@ -1,5 +1,3 @@
-use core::ptr::null;
-
 use alloc::string::ToString;
 use alloc::vec;
 use alloc::{collections::BTreeMap, format, string::String, sync::Arc, vec::Vec};
@@ -7,7 +5,7 @@ use axerrno::{AxError, AxResult};
 use axfs::monolithic_fs::FileIO;
 use axhal::arch::{write_page_table_root, TrapFrame};
 use axhal::mem::phys_to_virt;
-use axlog::{debug, info};
+use axlog::debug;
 use axtask::monolithic_task::task::TaskState;
 use axtask::{AxTaskRef, TaskId};
 

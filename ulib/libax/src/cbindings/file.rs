@@ -51,7 +51,7 @@ impl FileLike for File {
             st_gid: 1000,
             st_size: metadata.size() as _,
             st_blocks: metadata.blocks() as _,
-            st_blksize: 512,
+            st_blksize: 1024,
             ..Default::default()
         })
     }

@@ -5,10 +5,10 @@ use alloc::{
     vec::Vec,
 };
 // 堆和栈的基地址
-pub const USER_HEAP_OFFSET: usize = 0x3F80_0000;
-pub const USER_STACK_OFFSET: usize = 0x3FE0_0000;
-pub const MAX_HEAP_SIZE: usize = 0x20000;
-pub const USER_STACK_SIZE: usize = 0x20000;
+pub const USER_HEAP_OFFSET: usize = 0x3F00_0000;
+pub const USER_STACK_OFFSET: usize = 0x3FA0_0000;
+pub const MAX_HEAP_SIZE: usize = 0xA0_0000;
+pub const USER_STACK_SIZE: usize = 0x60_0000;
 use axerrno::AxResult;
 mod user_stack;
 use axhal::{mem::VirtAddr, paging::MappingFlags};
@@ -86,11 +86,12 @@ impl<'a> Loader<'a> {
         // 栈顶为低地址，栈底为高地址
 
         let heap_start = VirtAddr::from(USER_HEAP_OFFSET);
+        let data = [0 as u8].repeat(MAX_HEAP_SIZE);
         memory_set.new_region(
             heap_start,
             MAX_HEAP_SIZE,
             MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
-            None,
+            Some(&data),
             None,
         );
         info!(
@@ -121,7 +122,7 @@ impl<'a> Loader<'a> {
         let stack = init_stack(args, envs, auxv, ustack_bottom.into());
         let ustack_bottom: VirtAddr = stack.get_sp().into();
         // 拼接出用户栈初始化数组
-        let mut data = [0].repeat(USER_STACK_SIZE - stack.get_len());
+        let mut data = [0 as u8].repeat(USER_STACK_SIZE - stack.get_len());
         data.extend(stack.get_data_front_ref());
         memory_set.new_region(
             ustack_top,

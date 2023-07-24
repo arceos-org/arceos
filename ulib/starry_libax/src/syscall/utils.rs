@@ -3,7 +3,6 @@ use axprocess::{
     process::{current_process, current_task},
     time_stat_output,
 };
-use log::info;
 
 use super::{
     flags::{ITimerVal, RusageFlags, SysInfo, TimeSecs, TimeVal, UtsName, TMS},

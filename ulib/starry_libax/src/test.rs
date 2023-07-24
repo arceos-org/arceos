@@ -23,10 +23,7 @@ use axprocess::{
 };
 use riscv::asm;
 
-use crate::{
-    fs::{file::new_file, link::create_link},
-    syscall::fs::syscall_openat,
-};
+use crate::fs::{file::new_file, link::create_link};
 
 /// 初赛测例
 #[allow(dead_code)]
@@ -313,7 +310,23 @@ pub const LUA_TESTCASES: &[&str] = &[
 
 #[allow(dead_code)]
 pub const BUSYBOX_TESTCASES: &[&str] = &[
-    // "busybox sh ./busybox_testcode.sh", //最终测例，它包含了下面全部
+    // "busybox echo iozone automatic measurements",
+    // "busybox sh cyclictest_testcode.sh",
+    // "busybox echo iozone throughput write/read measurements",
+    // "iozone -t 4 -i 0 -i 1 -r 1k -s 1m",
+    // "busybox echo iozone throughput random-read measurements",
+    // "iozone -t 4 -i 0 -i 2 -r 1k -s 1m",
+    // "busybox sh ./test_all.sh",
+    // "busybox echo \"run libctest_testcode.sh\"",
+    // "./runtest.exe -w entry-dynamic.exe argv.dout",
+    // "./runtest.exe -w entry-dynamic.exe tls_get_new_dtv.dout",
+    "./libctest_testcode.sh",
+    // "busybox echo \"run lua_testcode.sh\"",
+    // "./lua_testcode.sh",
+    // "lua strings.lua",
+    // "busybox echo \"run busybox_testcode.sh\"",
+    // "./busybox_testcode.sh",
+    // "busybox du",
     // "busybox echo \"#### independent command test\"",
     // "busybox ash -c exit",
     // "busybox sh -c exit",
@@ -370,7 +383,7 @@ pub const BUSYBOX_TESTCASES: &[&str] = &[
     // "busybox rm busybox_cmd.bak",
     // "busybox find -name \"busybox_cmd.txt\"",
     // "busybox sh busybox echo \"hello\"",
-    "busybox sh lmbench_testcode.sh",
+    // "busybox sh lmbench_testcode.sh",
     // "echo latency measurements",
     // "lmbench_all lat_syscall -P 1 null",
     // "busybox sh lua_testcode.sh",
@@ -490,26 +503,25 @@ fn get_args(command_line: &[u8]) -> Vec<String> {
 pub fn fs_init(case: &'static str) {
     // 需要对libc-dynamic进行特殊处理，因为它需要先加载libc.so
     // 建立一个硬链接
-    if case == "libc-dynamic" {
-        let libc_so = &"ld-musl-riscv64-sf.so.1";
-        let libc_so2 = &"ld-musl-riscv64.so.1"; // 另一种名字的 libc.so，非 libc-test 测例库用
 
-        assert!(create_link(
-            &(FilePath::new(("/lib/".to_string() + libc_so).as_str()).unwrap()),
-            &(FilePath::new("libc.so").unwrap()),
-        ));
+    let libc_so = &"ld-musl-riscv64-sf.so.1";
+    let libc_so2 = &"ld-musl-riscv64.so.1"; // 另一种名字的 libc.so，非 libc-test 测例库用
 
-        assert!(create_link(
-            &(FilePath::new(("/lib/".to_string() + libc_so2).as_str()).unwrap()),
-            &(FilePath::new("libc.so").unwrap()),
-        ));
+    assert!(create_link(
+        &(FilePath::new(("/lib/".to_string() + libc_so).as_str()).unwrap()),
+        &(FilePath::new("libc.so").unwrap()),
+    ));
 
-        let tls_so = &"tls_get_new-dtv_dso.so";
-        assert!(create_link(
-            &(FilePath::new("tls_get_new-dtv_dso.so").unwrap()),
-            &(FilePath::new(("/lib".to_string() + tls_so).as_str()).unwrap()),
-        ));
-    }
+    assert!(create_link(
+        &(FilePath::new(("/lib/".to_string() + libc_so2).as_str()).unwrap()),
+        &(FilePath::new("libc.so").unwrap()),
+    ));
+
+    let tls_so = &"tls_get_new-dtv_dso.so";
+    assert!(create_link(
+        &(FilePath::new(("/lib/".to_string() + tls_so).as_str()).unwrap()),
+        &(FilePath::new("tls_get_new-dtv_dso.so").unwrap()),
+    ));
 
     if case == "busybox" {
         assert!(create_link(
@@ -531,6 +543,10 @@ pub fn fs_init(case: &'static str) {
         create_link(
             &(FilePath::new("./bin/lmbench_all").unwrap()),
             &(FilePath::new("./lmbench_all").unwrap()),
+        );
+        create_link(
+            &(FilePath::new("./bin/iozone").unwrap()),
+            &(FilePath::new("./iozone").unwrap()),
         );
         let _ = new_file("/lat_sig", &(OpenFlags::CREATE | OpenFlags::RDWR));
         // let path = "/lat_sig\0";

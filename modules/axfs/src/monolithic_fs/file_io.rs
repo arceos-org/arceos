@@ -108,6 +108,12 @@ pub trait FileIO: FileExt {
         Err(AxError::Unsupported) // 如果没有实现get_stat, 则返回Unsupported
     }
 
+    /// 截断文件到指定长度
+    fn truncate(&mut self, _len: usize) -> AxResult<()> {
+        debug!("Function truncate not implemented");
+        Err(AxError::Unsupported)
+    }
+
     /// debug
     fn print_content(&self) {
         debug!("Function print_content not implemented");

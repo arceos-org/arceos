@@ -5,7 +5,7 @@ extern crate alloc;
 use alloc::boxed::Box;
 use axmem::MemBackend;
 use axprocess::process::current_process;
-use log::{debug, error, info};
+use log::{debug, info};
 use memory_addr::VirtAddr;
 const MAX_HEAP_SIZE: usize = 0x20000;
 /// 修改用户堆大小，

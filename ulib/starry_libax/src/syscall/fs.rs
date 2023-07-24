@@ -1,7 +1,7 @@
 use crate::fs::link::{create_link, remove_link};
 use crate::fs::mount::{check_mounted, get_stat_in_fs, mount_fat_fs, umount_fat_fs};
 use crate::fs::pipe::make_pipe;
-use crate::fs::{dir, new_dir, new_fd, DirEnt, DirEntType, FileDesc, FileIOType};
+use crate::fs::{new_dir, new_fd, DirEnt, DirEntType, FileDesc, FileIOType};
 use crate::syscall::flags::raw_ptr_to_ref_str;
 extern crate alloc;
 
@@ -15,7 +15,7 @@ use axfs::monolithic_fs::file_io::Kstat;
 use axfs::monolithic_fs::flags::OpenFlags;
 use axfs::monolithic_fs::fs_stat::*;
 use axhal::time::TimeValue;
-use axio::{Seek, SeekFrom};
+use axio::SeekFrom;
 use axprocess::link::{real_path, FilePath};
 use axprocess::process::current_process;
 use core::mem::transmute;
@@ -64,7 +64,7 @@ pub fn deal_with_path(
             .is_ok()
         {
             // 直接访问前需要确保已经被分配
-            path = unsafe { raw_ptr_to_ref_str(path_addr) }.to_string();
+            path = unsafe { raw_ptr_to_ref_str(path_addr) }.to_string().clone();
         } else {
             debug!("path address is invalid");
             return None;
@@ -78,9 +78,9 @@ pub fn deal_with_path(
         // 如果path以.或..结尾, 则加上/告诉FilePath::new它是一个目录
         path = format!("{}/", path);
     }
-    debug!("path: {}", path);
+    // info!("path: {}", path);
 
-    if !path.starts_with('/') && dir_fd != AT_FDCWD {
+    if dir_fd != AT_FDCWD {
         // 如果不是绝对路径, 且dir_fd不是AT_FDCWD, 则需要将dir_fd和path拼接起来
         if dir_fd >= process_inner.fd_manager.fd_table.len() {
             debug!("fd index out of range");
@@ -122,10 +122,10 @@ pub fn deal_with_path(
 ///     - count：要读取的字节数。
 /// 返回值：成功执行，返回读取的字节数。如为0，表示文件结束。错误，则返回-1。
 pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
-    // info!(
-    //     "Into syscall_read. fd: {}, buf: {:X}, len: {}",
-    //     fd, buf as usize, count
-    // );
+    info!(
+        "Into syscall_read. fd: {}, buf: {:X}, len: {}",
+        fd, buf as usize, count
+    );
     let process = current_process();
     let process_inner = process.inner.lock();
     let start: VirtAddr = (buf as usize).into();
@@ -566,22 +566,31 @@ pub fn syscall_getdents64(fd: usize, buf: *mut u8, len: usize) -> isize {
     let process = current_process();
     let inner = process.inner.lock();
     // 注意是否分配地址
+    let start: VirtAddr = (buf as usize).into();
+    let end = start + len;
     if inner
         .memory_set
         .lock()
-        .manual_alloc_for_lazy((buf as usize).into())
+        .manual_alloc_range_for_lazy(start, end)
         .is_err()
     {
-        return ErrorNo::EINVAL as isize;
+        return ErrorNo::EFAULT as isize;
+    }
+
+    let entry_id_from = unsafe { (*(buf as *const DirEnt)).d_off };
+    if entry_id_from == -1 {
+        // 说明已经读完了
+        return 0;
     }
 
     let buf = unsafe { core::slice::from_raw_parts_mut(buf, len) };
     let dir_iter = api::read_dir(path.path()).unwrap();
     let mut count = 0; // buf中已经写入的字节数
 
-    for (i, entry) in dir_iter.enumerate() {
+    for (_, entry) in dir_iter.enumerate() {
         let entry = entry.unwrap();
-        let name = entry.file_name();
+        let mut name = entry.file_name();
+        name.push('\0');
         let name = name.as_bytes();
         let name_len = name.len();
         let file_type = entry.file_type();
@@ -596,19 +605,19 @@ pub fn syscall_getdents64(fd: usize, buf: *mut u8, len: usize) -> isize {
         let dirent: &mut DirEnt = unsafe { transmute(buf.as_mut_ptr().offset(count as isize)) };
         // 设置定长部分
         if file_type.is_dir() {
-            dirent.set_fixed_part(i as u64, entry_size as i64, entry_size, DirEntType::DIR);
+            dirent.set_fixed_part(1, entry_size as i64, entry_size, DirEntType::DIR);
         } else if file_type.is_file() {
-            dirent.set_fixed_part(i as u64, entry_size as i64, entry_size, DirEntType::REG);
+            dirent.set_fixed_part(1, entry_size as i64, entry_size, DirEntType::REG);
         } else {
-            dirent.set_fixed_part(i as u64, entry_size as i64, entry_size, DirEntType::UNKNOWN);
+            dirent.set_fixed_part(1, entry_size as i64, entry_size, DirEntType::UNKNOWN);
         }
 
         // 写入文件名
-        unsafe { copy_nonoverlapping(name.as_ptr(), dirent.d_name.as_mut_ptr(), name_len + 1) };
+        unsafe { copy_nonoverlapping(name.as_ptr(), dirent.d_name.as_mut_ptr(), name_len) };
 
         count += entry_size;
     }
-    0
+    count as isize
 }
 
 /// 功能：创建文件的链接；
@@ -816,7 +825,6 @@ pub fn syscall_fstat(fd: usize, kst: *mut Kstat) -> isize {
 
 /// 获取文件状态信息，但是给出的是目录 fd 和相对路径。 79
 pub fn syscall_fstatat(dir_fd: usize, path: *const u8, kst: *mut Kstat) -> isize {
-    info!("dir fd: {}, path: {}", dir_fd, path as usize);
     let file_path = deal_with_path(dir_fd, Some(path), false).unwrap();
     info!("path : {}", file_path.path());
     match get_stat_in_fs(file_path.path()) {
@@ -1447,5 +1455,23 @@ pub fn syscall_renameat2(
 
     // 做实际重命名操作
 
+    0
+}
+
+pub fn syscall_ftruncate64(fd: usize, len: usize) -> isize {
+    let process = current_process();
+    let inner = process.inner.lock();
+    if fd >= inner.fd_manager.fd_table.len() {
+        return ErrorNo::EINVAL as isize;
+    }
+    if inner.fd_manager.fd_table[fd].is_none() {
+        return ErrorNo::EINVAL as isize;
+    }
+
+    if let Some(file) = inner.fd_manager.fd_table[fd].as_ref() {
+        if file.lock().truncate(len).is_err() {
+            return ErrorNo::EINVAL as isize;
+        }
+    }
     0
 }
