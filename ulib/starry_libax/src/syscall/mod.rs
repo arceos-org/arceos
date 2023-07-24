@@ -149,8 +149,9 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         SOCKET => syscall_socket(args[0], args[1], args[2]),
         BIND => syscall_bind(args[0], args[1] as *const u8, args[2]),
         LISTEN => syscall_listen(args[0], args[1]),
+        ACCEPT => syscall_accept(args[0], args[1] as *mut u8, args[2] as *mut u32),
         CONNECT => syscall_connect(args[0], args[1] as *const u8, args[2]),
-        GETSOCKNAME => syscall_get_sock_name(args[0], args[1] as *mut u8, args[2] as *mut usize),
+        GETSOCKNAME => syscall_get_sock_name(args[0], args[1] as *mut u8, args[2] as *mut u32),
         SENDTO => syscall_sendto(
             args[0],
             args[1] as *const u8,
@@ -165,7 +166,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[2],
             args[3],
             args[4] as *mut u8,
-            args[5] as *mut usize,
+            args[5] as *mut u32,
         ),
         SETSOCKOPT => {
             syscall_set_sock_opt(args[0], args[1], args[2], args[3] as *const u8, args[4])

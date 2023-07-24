@@ -67,6 +67,7 @@ pub enum SyscallId {
     SOCKET = 198,
     BIND = 200,
     LISTEN = 201,
+    ACCEPT = 202,
     CONNECT = 203,
     GETSOCKNAME = 204,
     SENDTO = 206,
@@ -111,6 +112,8 @@ pub enum ErrorNo {
     ERANGE = -34,
     /// fd 不是 Socket
     ENOTSOCK = -88,
+    /// Operation not supported on transport endpoint
+    EOPNOTSUPP = -95,
     /// 不支持的协议
     EPFNOSUPPORT = -96,
     /// 不支持的地址

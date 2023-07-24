@@ -19,7 +19,7 @@ use crate::syscall::syscall_id::ErrorNo;
 
 pub const SOCKET_TYPE_MASK: usize = 0xFF;
 
-#[derive(TryFromPrimitive)]
+#[derive(TryFromPrimitive, Clone)]
 #[repr(usize)]
 #[allow(non_camel_case_types)]
 pub enum Domain {
@@ -27,7 +27,7 @@ pub enum Domain {
     AF_INET = 2,
 }
 
-#[derive(TryFromPrimitive, PartialEq, Eq)]
+#[derive(TryFromPrimitive, PartialEq, Eq, Clone)]
 #[repr(usize)]
 #[allow(non_camel_case_types)]
 pub enum SocketType {
@@ -139,6 +139,31 @@ impl Socket {
             SocketInner::Tcp(s) => s.listen(),
             SocketInner::Udp(_) => Err(AxError::Unsupported),
         }
+    }
+
+    pub fn accept(&self) -> AxResult<(Self, SocketAddr)> {
+        if self.socket_type != SocketType::SOCK_STREAM
+            && self.socket_type != SocketType::SOCK_SEQPACKET
+        {
+            return Err(AxError::Unsupported);
+        }
+
+        let new_socket = match &self.inner {
+            SocketInner::Tcp(s) => s.accept()?,
+            SocketInner::Udp(_) => Err(AxError::Unsupported)?,
+        };
+
+        let addr = new_socket.peer_addr()?;
+
+        Ok((
+            Self {
+                domain: self.domain.clone(),
+                socket_type: self.socket_type.clone(),
+                inner: SocketInner::Tcp(new_socket),
+                close_exec: false,
+            },
+            addr,
+        ))
     }
 
     pub fn connect(&mut self, addr: SocketAddr) -> AxResult {
@@ -264,8 +289,8 @@ pub unsafe fn socket_address_from(addr: *const u8) -> SocketAddr {
 /// addr u32 (big endian)
 ///
 /// TODO: Returns error if buf or buf_len is in invalid memory
-pub unsafe fn socket_address_to(addr: SocketAddr, buf: *mut u8, buf_len: *mut usize) -> AxResult {
-    let mut tot_len = *buf_len;
+pub unsafe fn socket_address_to(addr: SocketAddr, buf: *mut u8, buf_len: *mut u32) -> AxResult {
+    let mut tot_len = *buf_len as usize;
 
     *buf_len = 8;
 
@@ -371,6 +396,42 @@ pub fn syscall_listen(fd: usize, _backlog: usize) -> isize {
     socket.listen().map_or(-1, |_| 0)
 }
 
+pub fn syscall_accept(fd: usize, addr_buf: *mut u8, addr_len: *mut u32) -> isize {
+    let curr = current_process();
+    let mut inner = curr.inner.lock();
+
+    let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
+        return ErrorNo::EBADF as isize;
+    };
+
+    // 复制一份文件，释放对 `inner` 的引用，以便于后续使用 `inner` 添加新 `socket`
+    let file = file.clone();
+    let file = file.lock();
+    let Some(socket) = file.as_any().downcast_ref::<Socket>() else {
+        return ErrorNo::ENOTSOCK as isize;
+    };
+
+    debug!("[accept()] socket {fd} accept");
+
+    match socket.accept() {
+        Ok((s, addr)) => {
+            let _ = unsafe { socket_address_to(addr, addr_buf, addr_len) };
+
+            let Ok(new_fd) = inner.alloc_fd() else {
+                return ErrorNo::EMFILE as isize; // Maybe ENFILE
+            };
+
+            debug!("[accept()] socket {fd} accept new socket {new_fd} {addr:?}");
+
+            inner.fd_manager.fd_table[new_fd] = Some(Arc::new(SpinNoIrq::new(s)));
+
+            new_fd as isize
+        }
+        Err(AxError::Unsupported) => ErrorNo::EOPNOTSUPP as isize,
+        Err(_) => -1,
+    }
+}
+
 pub fn syscall_connect(fd: usize, addr_buf: *const u8, _addr_len: usize) -> isize {
     let curr = current_process();
     let inner = curr.inner.lock();
@@ -396,7 +457,7 @@ pub fn syscall_connect(fd: usize, addr_buf: *const u8, _addr_len: usize) -> isiz
 }
 
 /// NOTE: linux man 中没有说明若socket未bound应返回什么错误
-pub fn syscall_get_sock_name(fd: usize, addr: *mut u8, addr_len: *mut usize) -> isize {
+pub fn syscall_get_sock_name(fd: usize, addr: *mut u8, addr_len: *mut u32) -> isize {
     let curr = current_process();
     let inner = curr.inner.lock();
 
@@ -480,7 +541,7 @@ pub fn syscall_recvfrom(
     len: usize,
     _flags: usize,
     addr_buf: *mut u8,
-    addr_len: *mut usize,
+    addr_len: *mut u32,
 ) -> isize {
     let curr = current_process();
     let inner = curr.inner.lock();

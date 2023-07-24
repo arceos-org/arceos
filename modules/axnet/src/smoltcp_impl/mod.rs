@@ -1,5 +1,6 @@
 mod dns;
 mod listen_table;
+mod loopback;
 mod tcp;
 mod udp;
 
@@ -13,12 +14,13 @@ use axsync::Mutex;
 use driver_net::{DevError, NetBufPtr};
 use lazy_init::LazyInit;
 use smoltcp::iface::{Config, Interface, SocketHandle, SocketSet};
-use smoltcp::phy::{Device, DeviceCapabilities, Loopback, Medium, RxToken, TxToken};
+use smoltcp::phy::{Device, DeviceCapabilities, Medium, RxToken, TxToken};
 use smoltcp::socket::{self, AnySocket};
 use smoltcp::time::Instant;
 use smoltcp::wire::{EthernetAddress, HardwareAddress, IpAddress, IpCidr};
 
 use self::listen_table::ListenTable;
+use self::loopback::LoopbackDev;
 
 pub use self::dns::resolve_socket_addr;
 pub use self::tcp::TcpSocket;
@@ -40,7 +42,7 @@ const LISTEN_QUEUE_SIZE: usize = 512;
 static LISTEN_TABLE: LazyInit<ListenTable> = LazyInit::new();
 static SOCKET_SET: LazyInit<SocketSetWrapper> = LazyInit::new();
 static ETH0: LazyInit<InterfaceWrapper> = LazyInit::new();
-static LOOPBACK_DEV: LazyInit<Mutex<Loopback>> = LazyInit::new();
+static LOOPBACK_DEV: LazyInit<Mutex<LoopbackDev>> = LazyInit::new();
 static LOOPBACK: LazyInit<Mutex<Interface>> = LazyInit::new();
 
 struct SocketSetWrapper<'a>(Mutex<SocketSet<'a>>);
@@ -312,7 +314,7 @@ pub(crate) fn init(net_dev: AxNetDevice) {
     // info!("  ip:       {}/{}", IP, IP_PREFIX);
     // info!("  gateway:  {}", GATEWAY);
 
-    let mut device = Loopback::new(Medium::Ip);
+    let mut device = LoopbackDev::new(Medium::Ip);
     let config = Config::new(smoltcp::wire::HardwareAddress::Ip);
 
     let mut iface = Interface::new(
