@@ -35,7 +35,7 @@ pub(crate) fn extern_memory_region_at(idx: usize) -> Option<MemRegion> {
         Some(MemRegion {
             paddr: 0x0.into(),
             size: 0x1000,
-            flags: MemRegionFlags::FREE | MemRegionFlags::READ | MemRegionFlags::WRITE,
+            flags: MemRegionFlags::READ | MemRegionFlags::WRITE,
             name: "spintable",
         })
     } else {
