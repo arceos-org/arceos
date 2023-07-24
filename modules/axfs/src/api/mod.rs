@@ -79,3 +79,8 @@ pub fn remove_dir(path: &str) -> io::Result<()> {
 pub fn remove_file(path: &str) -> io::Result<()> {
     crate::root::remove_file(None, path)
 }
+
+/// Renames a file
+pub fn rename(old: &str, new: &str) -> io::Result<()> {
+    crate::root::rename(old, new)
+}

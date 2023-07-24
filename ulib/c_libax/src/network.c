@@ -31,6 +31,9 @@ int getaddrinfo(const char *__restrict node, const char *__restrict service,
         (_res + i)->ai_addrlen = sizeof(struct sockaddr);
         (_res + i)->ai_addr = (addrs + i);
         (_res + i)->ai_next = (_res + i + 1);
+        // TODO: This is a hard-code part, only return TCP parameters
+        (_res + i)->ai_socktype = SOCK_STREAM;
+        (_res + i)->ai_protocol = IPPROTO_TCP;
     }
     (_res + res_len - 1)->ai_next = NULL;
     *res = _res;
@@ -70,6 +73,15 @@ static __inline uint32_t __bswap_32(uint32_t __x)
 {
     return __x >> 24 | (__x >> 8 & 0xff00) | (__x << 8 & 0xff0000) | __x << 24;
 }
+
+static __inline uint64_t __bswap_64(uint64_t __x)
+{
+    return ((__bswap_32(__x) + 0ULL) << 32) | __bswap_32(__x >> 32);
+}
+
+#define bswap_16(x) __bswap_16(x)
+#define bswap_32(x) __bswap_32(x)
+#define bswap_64(x) __bswap_64(x)
 
 uint32_t htonl(uint32_t n)
 {

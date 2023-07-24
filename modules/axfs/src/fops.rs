@@ -309,6 +309,11 @@ impl Directory {
         self.entry_idx += n;
         Ok(n)
     }
+
+    /// Renames a file
+    pub fn rename(&self, old: &str, new: &str) -> AxResult {
+        crate::root::rename(old, new)
+    }
 }
 
 impl Drop for File {

@@ -131,6 +131,96 @@ impl VfsNodeOps for RootDirectory {
             }
         })
     }
+
+    fn rename(&self, src_path: &str, dst_path: &str) -> VfsResult {
+        self.lookup_mounted_fs(src_path, |fs, rest_path| {
+            if rest_path.is_empty() {
+                ax_err!(NotFound)
+            } else {
+                fs.root_dir().rename(rest_path, dst_path)
+            }
+        })
+    }
+}
+
+#[cfg(all(feature = "ramfs", feature = "procfs"))]
+fn mount_procfs() -> fs::ramfs::RamFileSystem {
+    let procfs = fs::ramfs::RamFileSystem::new();
+    let proc_root = procfs.root_dir();
+
+    // Create /proc/sys/net/core/somaxconn
+    proc_root.create("sys", VfsNodeType::Dir).unwrap();
+    proc_root.create("sys/net", VfsNodeType::Dir).unwrap();
+    proc_root.create("sys/net/core", VfsNodeType::Dir).unwrap();
+    proc_root
+        .create("sys/net/core/somaxconn", VfsNodeType::File)
+        .unwrap();
+    let file_somaxconn = proc_root
+        .clone()
+        .lookup("./sys/net/core/somaxconn")
+        .unwrap();
+    file_somaxconn.write_at(0, b"4096").unwrap();
+
+    // Create /proc/sys/vm/overcommit_memory
+    proc_root.create("sys/vm", VfsNodeType::Dir).unwrap();
+    proc_root
+        .create("sys/vm/overcommit_memory", VfsNodeType::File)
+        .unwrap();
+    let file_over = proc_root
+        .clone()
+        .lookup("./sys/vm/overcommit_memory")
+        .unwrap();
+    file_over.write_at(0, b"0").unwrap();
+
+    // Create /proc/self/stat
+    proc_root.create("self", VfsNodeType::Dir).unwrap();
+    proc_root.create("self/stat", VfsNodeType::File).unwrap();
+
+    procfs
+}
+
+#[cfg(all(feature = "ramfs", feature = "sysfs"))]
+fn mount_sysfs() -> fs::ramfs::RamFileSystem {
+    let sysfs = fs::ramfs::RamFileSystem::new();
+    let sys_root = sysfs.root_dir();
+
+    // Create /sys/kernel/mm/transparent_hugepage/enabled
+    sys_root.create("kernel", VfsNodeType::Dir).unwrap();
+    sys_root.create("kernel/mm", VfsNodeType::Dir).unwrap();
+    sys_root
+        .create("kernel/mm/transparent_hugepage", VfsNodeType::Dir)
+        .unwrap();
+    sys_root
+        .create("kernel/mm/transparent_hugepage/enabled", VfsNodeType::File)
+        .unwrap();
+    let file_hp = sys_root
+        .clone()
+        .lookup("./kernel/mm/transparent_hugepage/enabled")
+        .unwrap();
+    file_hp.write_at(0, b"always [madvise] never\n").unwrap();
+
+    // Create /sys/devices/system/clocksource/clocksource0/current_clocksource
+    sys_root.create("devices", VfsNodeType::Dir).unwrap();
+    sys_root.create("devices/system", VfsNodeType::Dir).unwrap();
+    sys_root
+        .create("devices/system/clocksource", VfsNodeType::Dir)
+        .unwrap();
+    sys_root
+        .create("devices/system/clocksource/clocksource0", VfsNodeType::Dir)
+        .unwrap();
+    sys_root
+        .create(
+            "devices/system/clocksource/clocksource0/current_clocksource",
+            VfsNodeType::File,
+        )
+        .unwrap();
+    let file_cc = sys_root
+        .clone()
+        .lookup("devices/system/clocksource/clocksource0/current_clocksource")
+        .unwrap();
+    file_cc.write_at(0, b"tsc\n").unwrap();
+
+    sysfs
 }
 
 pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
@@ -170,6 +260,18 @@ pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
             .mount("/tmp", Arc::new(ramfs))
             .expect("failed to mount ramfs at /tmp");
     }
+
+    // Mount another ramfs as procfs
+    #[cfg(all(feature = "ramfs", feature = "procfs"))]
+    root_dir
+        .mount("/proc", Arc::new(mount_procfs()))
+        .expect("fail to mount procfs at /proc");
+
+    // Mount another ramfs as sysfs
+    #[cfg(all(feature = "ramfs", feature = "sysfs"))]
+    root_dir
+        .mount("/sys", Arc::new(mount_sysfs()))
+        .expect("fail to mount sysfs at /sys");
 
     ROOT_DIR.init_by(Arc::new(root_dir));
     CURRENT_DIR.init_by(Mutex::new(ROOT_DIR.clone()));
@@ -291,4 +393,13 @@ pub(crate) fn set_current_dir(path: &str) -> AxResult {
         *CURRENT_DIR_PATH.lock() = abs_path;
         Ok(())
     }
+}
+
+pub(crate) fn rename(old: &str, new: &str) -> AxResult {
+    debug!("root::rename <= old : {:?}, new: {:?}", old, new);
+    if parent_node_of(None, new).lookup(new).is_ok() {
+        warn!("dst file already exist, now remove it");
+        remove_file(None, new)?;
+    }
+    parent_node_of(None, old).rename(old, new)
 }

@@ -1,7 +1,7 @@
 #ifndef __SYS_TYPES_H__
 #define __SYS_TYPES_H__
 
-#include <stdint.h>
+#include <stddef.h>
 
 typedef unsigned char u_char;
 
