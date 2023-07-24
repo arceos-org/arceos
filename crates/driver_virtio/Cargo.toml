@@ -2,7 +2,7 @@
 name = "driver_virtio"
 version = "0.1.0"
 edition = "2021"
-authors = ["Yuekai Jia <equation618@gmail.com>"]
+authors = ["Yuekai Jia <equation618@gmail.com>", "ChengXiang Qi <kuangjux@outlook.com>"]
 description = "Wrappers of some devices in the `virtio-drivers` crate, that implement traits in the `driver_common` series crates"
 license = "GPL-3.0-or-later OR Apache-2.0"
 homepage = "https://github.com/rcore-os/arceos"

@@ -3,7 +3,11 @@
 #![no_std]
 #![feature(const_mut_refs)]
 #![feature(const_slice_from_raw_parts_mut)]
+#![feature(box_into_inner)]
 
+#[cfg(feature = "ixgbe")]
+/// ixgbe NIC device driver.
+pub mod ixgbe;
 mod net_buf;
 
 use core::ptr::NonNull;
