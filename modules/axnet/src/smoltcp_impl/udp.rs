@@ -1,12 +1,12 @@
 use axerrno::{ax_err, ax_err_type, AxError, AxResult};
-use axio::PollState;
+use axio::{PollState, Read, Write};
 use axsync::Mutex;
 
 use smoltcp::iface::SocketHandle;
 use smoltcp::socket::udp::{self, BindError, SendError};
 use smoltcp::wire::{IpAddress, IpListenEndpoint};
 
-use super::{SocketSetWrapper, ETH0, SOCKET_SET};
+use super::{SocketSetWrapper, ETH0, LOOPBACK, SOCKET_SET};
 use crate::SocketAddr;
 
 const UNSPECIFIED_IP: IpAddress = IpAddress::v4(0, 0, 0, 0);
@@ -55,6 +55,10 @@ impl UdpSocket {
     /// [`Err(WouldBlock)`](AxError::WouldBlock) is returned.
     pub fn set_nonblocking(&mut self, nonblocking: bool) {
         self.nonblock = nonblocking;
+    }
+
+    pub fn is_nonblocking(&self) -> bool {
+        self.nonblock
     }
 
     /// Binds an unbound socket to the given address and port.
@@ -150,7 +154,9 @@ impl UdpSocket {
     pub fn connect(&mut self, addr: SocketAddr) -> AxResult {
         if self.local_addr.is_none() {
             self.bind(SocketAddr::new(
-                ETH0.iface
+                // ETH0.iface
+                //     .lock()
+                LOOPBACK
                     .lock()
                     .ipv4_addr()
                     .ok_or_else(|| ax_err_type!(BadAddress, "No IPv4 address"))?
@@ -233,6 +239,22 @@ impl UdpSocket {
                 }
             }
         }
+    }
+}
+
+impl Read for UdpSocket {
+    fn read(&mut self, buf: &mut [u8]) -> AxResult<usize> {
+        self.recv(buf)
+    }
+}
+
+impl Write for UdpSocket {
+    fn write(&mut self, buf: &[u8]) -> AxResult<usize> {
+        self.send(buf)
+    }
+
+    fn flush(&mut self) -> AxResult {
+        Err(AxError::Unsupported)
     }
 }
 

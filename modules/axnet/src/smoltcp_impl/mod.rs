@@ -1,5 +1,6 @@
 mod dns;
 mod listen_table;
+mod loopback;
 mod tcp;
 mod udp;
 
@@ -19,6 +20,7 @@ use smoltcp::time::Instant;
 use smoltcp::wire::{EthernetAddress, HardwareAddress, IpAddress, IpCidr};
 
 use self::listen_table::ListenTable;
+use self::loopback::LoopbackDev;
 
 pub use self::dns::resolve_socket_addr;
 pub use self::tcp::TcpSocket;
@@ -40,6 +42,8 @@ const LISTEN_QUEUE_SIZE: usize = 512;
 static LISTEN_TABLE: LazyInit<ListenTable> = LazyInit::new();
 static SOCKET_SET: LazyInit<SocketSetWrapper> = LazyInit::new();
 static ETH0: LazyInit<InterfaceWrapper> = LazyInit::new();
+static LOOPBACK_DEV: LazyInit<Mutex<LoopbackDev>> = LazyInit::new();
+static LOOPBACK: LazyInit<Mutex<Interface>> = LazyInit::new();
 
 struct SocketSetWrapper<'a>(Mutex<SocketSet<'a>>);
 
@@ -106,7 +110,15 @@ impl<'a> SocketSetWrapper<'a> {
     }
 
     pub fn poll_interfaces(&self) {
-        ETH0.poll(&self.0);
+        // ETH0.poll(&self.0);
+
+        // poll loopback
+        let timestamp =
+            Instant::from_micros_const((current_time_nanos() / NANOS_PER_MICROS) as i64);
+        let mut sockets = self.0.lock();
+        LOOPBACK
+            .lock()
+            .poll(timestamp, LOOPBACK_DEV.lock().deref_mut(), &mut sockets);
     }
 
     pub fn remove(&self, handle: SocketHandle) {
@@ -288,17 +300,34 @@ pub fn poll_interfaces() {
 }
 
 pub(crate) fn init(net_dev: AxNetDevice) {
-    let ether_addr = EthernetAddress(net_dev.mac_address().0);
-    let eth0 = InterfaceWrapper::new("eth0", net_dev, ether_addr);
-    eth0.setup_ip_addr(IP, IP_PREFIX);
-    eth0.setup_gateway(GATEWAY);
+    // let ether_addr = EthernetAddress(net_dev.mac_address().0);
+    // let eth0 = InterfaceWrapper::new("eth0", net_dev, ether_addr);
+    // eth0.setup_ip_addr(IP, IP_PREFIX);
+    // eth0.setup_gateway(GATEWAY);
 
-    ETH0.init_by(eth0);
+    // ETH0.init_by(eth0);
     SOCKET_SET.init_by(SocketSetWrapper::new());
     LISTEN_TABLE.init_by(ListenTable::new());
 
-    info!("created net interface {:?}:", ETH0.name());
-    info!("  ether:    {}", ETH0.ethernet_address());
-    info!("  ip:       {}/{}", IP, IP_PREFIX);
-    info!("  gateway:  {}", GATEWAY);
+    // info!("created net interface {:?}:", ETH0.name());
+    // info!("  ether:    {}", ETH0.ethernet_address());
+    // info!("  ip:       {}/{}", IP, IP_PREFIX);
+    // info!("  gateway:  {}", GATEWAY);
+
+    let mut device = LoopbackDev::new(Medium::Ip);
+    let config = Config::new(smoltcp::wire::HardwareAddress::Ip);
+
+    let mut iface = Interface::new(
+        config,
+        &mut device,
+        Instant::from_micros_const((current_time_nanos() / NANOS_PER_MICROS) as i64),
+    );
+    iface.update_ip_addrs(|ip_addrs| {
+        ip_addrs
+            .push(IpCidr::new(IpAddress::v4(127, 0, 0, 1), 8))
+            .unwrap();
+    });
+
+    LOOPBACK.init_by(Mutex::new(iface));
+    LOOPBACK_DEV.init_by(Mutex::new(device));
 }
