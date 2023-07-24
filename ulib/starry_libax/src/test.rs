@@ -87,7 +87,7 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     "search_tsearch",
     "setjmp",
     "snprintf",
-    //"socket", // 需要198
+    "socket",
     "sscanf",
     "sscanf_long",
     //"stat", // 需79
@@ -203,7 +203,7 @@ pub const LIBC_DYNAMIC_TESTCASES: &[&str] = &[
                    // "sem_init", //226
                    // // "setjmp",
                    // // "snprintf",
-                   // "socket", //198
+                   // "socket",
                    // // "sscanf",
                    // // "sscanf_long",
                    // "stat", //79
