@@ -87,7 +87,7 @@ impl Device for LoopbackDev {
         cap
     }
 
-    fn receive(&mut self, timestamp: Instant) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
+    fn receive(&mut self, _timestamp: Instant) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
         self.queue.pop_front().map(move |buffer| {
             let rx = Self::RxToken { buffer };
             let tx = Self::TxToken {
@@ -97,7 +97,7 @@ impl Device for LoopbackDev {
         })
     }
 
-    fn transmit(&mut self, timestamp: Instant) -> Option<Self::TxToken<'_>> {
+    fn transmit(&mut self, _timestamp: Instant) -> Option<Self::TxToken<'_>> {
         Some(TxToken {
             queue: &mut self.queue,
         })
