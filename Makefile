@@ -86,7 +86,11 @@ ifeq ($(PLATFORM), raspi4-aarch64)
   include scripts/make/raspi4.mk
 endif
 
-build: $(OUT_DIR) $(OUT_BIN)
+pre_build:
+	if [ ! -d ".cargo" ]; then cp -r cargo .cargo; fi
+
+
+build: pre_build $(OUT_DIR) $(OUT_BIN)
 
 disasm:
 	$(OBJDUMP) $(OUT_ELF) | less

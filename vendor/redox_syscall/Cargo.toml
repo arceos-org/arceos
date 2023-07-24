@@ -1,0 +1,24 @@
+[dependencies.bitflags]
+version = "1.1.0"
+
+[dependencies.core]
+optional = true
+package = "rustc-std-workspace-core"
+version = "1.0.0"
+
+[features]
+rustc-dep-of-std = ["core", "bitflags/rustc-dep-of-std"]
+
+[lib]
+name = "syscall"
+
+[package]
+authors = ["Jeremy Soller <jackpot51@gmail.com>"]
+description = "A Rust library to access raw Redox system calls"
+documentation = "https://docs.rs/redox_syscall"
+edition = "2018"
+license = "MIT"
+name = "redox_syscall"
+readme = "README.md"
+repository = "https://gitlab.redox-os.org/redox-os/syscall"
+version = "0.3.5"

@@ -1,0 +1,19 @@
+[badges.travis-ci]
+repository = "jethrogb/rust-cexpr"
+[dependencies.nom]
+default-features = false
+features = ["std"]
+version = "7"
+[dev-dependencies.clang-sys]
+version = ">= 0.13.0, < 0.29.0"
+
+[package]
+authors = ["Jethro Beekman <jethro@jbeekman.nl>"]
+description = "A C expression parser and evaluator"
+documentation = "https://docs.rs/cexpr/"
+edition = "2018"
+keywords = ["C", "expression", "parser"]
+license = "Apache-2.0/MIT"
+name = "cexpr"
+repository = "https://github.com/jethrogb/rust-cexpr"
+version = "0.6.0"

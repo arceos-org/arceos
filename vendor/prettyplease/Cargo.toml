@@ -1,0 +1,36 @@
+[dependencies.proc-macro2]
+default-features = false
+version = "1.0.63"
+
+[dependencies.syn]
+default-features = false
+features = ["full"]
+version = "2.0.23"
+[dev-dependencies.syn]
+default-features = false
+features = ["parsing"]
+version = "2.0.23"
+
+[features]
+verbatim = ["syn/parsing"]
+
+[lib]
+doc-scrape-examples = false
+
+[package]
+authors = ["David Tolnay <dtolnay@gmail.com>"]
+autoexamples = false
+categories = ["development-tools"]
+description = "A minimal `syn` syntax tree pretty-printer"
+documentation = "https://docs.rs/prettyplease"
+edition = "2021"
+exclude = ["cargo-expand"]
+keywords = ["rustfmt"]
+license = "MIT OR Apache-2.0"
+name = "prettyplease"
+readme = "README.md"
+repository = "https://github.com/dtolnay/prettyplease"
+rust-version = "1.56"
+version = "0.2.10"
+[package.metadata.playground]
+features = ["verbatim"]

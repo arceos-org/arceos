@@ -1,0 +1,45 @@
+[dependencies.atomic-polyfill]
+optional = true
+version = "1"
+
+[dependencies.critical-section]
+optional = true
+version = "1"
+
+[dependencies.parking_lot_core]
+default_features = false
+optional = true
+version = "0.9.3"
+[dev-dependencies.critical-section]
+features = ["std"]
+version = "1.1.1"
+
+[dev-dependencies.regex]
+version = "1.2.0"
+
+[features]
+alloc = ["race"]
+atomic-polyfill = ["critical-section"]
+critical-section = ["dep:critical-section", "dep:atomic-polyfill"]
+default = ["std"]
+parking_lot = ["dep:parking_lot_core"]
+race = []
+std = ["alloc"]
+unstable = []
+
+[package]
+authors = ["Aleksey Kladov <aleksey.kladov@gmail.com>"]
+categories = ["rust-patterns", "memory-management"]
+description = "Single assignment cells and lazy values."
+documentation = "https://docs.rs/once_cell"
+edition = "2021"
+exclude = ["*.png", "*.svg", "/Cargo.lock.msrv", "rustfmt.toml"]
+keywords = ["lazy", "static"]
+license = "MIT OR Apache-2.0"
+name = "once_cell"
+readme = "README.md"
+repository = "https://github.com/matklad/once_cell"
+rust-version = "1.60"
+version = "1.18.0"
+[package.metadata.docs.rs]
+all-features = true

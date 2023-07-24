@@ -1,0 +1,34 @@
+[dev-dependencies.getrandom]
+version = "0.2"
+
+[dev-dependencies.rand]
+version = "0.8"
+
+[dev-dependencies.wyhash]
+version = "0.5"
+
+[package]
+authors = ["Stjepan Glavina <stjepang@gmail.com>"]
+categories = ["algorithms"]
+description = "A simple and fast random number generator"
+edition = "2018"
+exclude = ["/.*"]
+keywords = ["simple", "fast", "rand", "random", "wyrand"]
+license = "Apache-2.0 OR MIT"
+name = "fastrand"
+readme = "README.md"
+repository = "https://github.com/smol-rs/fastrand"
+rust-version = "1.34"
+version = "1.9.0"
+[target."cfg(all(target_arch = \"wasm32\", not(target_os = \"wasi\")))".dependencies.instant]
+version = "0.1"
+[target."cfg(all(target_arch = \"wasm32\", not(target_os = \"wasi\")))".dev-dependencies.getrandom]
+features = ["js"]
+version = "0.2"
+
+[target."cfg(all(target_arch = \"wasm32\", not(target_os = \"wasi\")))".dev-dependencies.instant]
+features = ["wasm-bindgen"]
+version = "0.1"
+
+[target."cfg(all(target_arch = \"wasm32\", not(target_os = \"wasi\")))".dev-dependencies.wasm-bindgen-test]
+version = "0.3"

@@ -1,0 +1,36 @@
+[dependencies.memchr]
+optional = true
+version = "2.4"
+
+[dependencies.print_bytes]
+optional = true
+version = "1.0"
+
+[dependencies.uniquote]
+optional = true
+version = "3.0"
+[dev-dependencies.fastrand]
+version = "2.0"
+
+[features]
+checked_conversions = []
+default = ["memchr", "raw_os_str"]
+raw_os_str = []
+
+[package]
+authors = ["dylni"]
+categories = ["command-line-interface", "development-tools::ffi", "encoding", "os", "rust-patterns"]
+description = "Convert between byte sequences and platform-native strings\n"
+edition = "2021"
+exclude = [".*", "tests.rs", "/rustfmt.toml", "/src/bin", "/tests"]
+keywords = ["bytes", "osstr", "osstring", "path", "windows"]
+license = "MIT OR Apache-2.0"
+name = "os_str_bytes"
+readme = "README.md"
+repository = "https://github.com/dylni/os_str_bytes"
+rust-version = "1.57.0"
+version = "6.5.1"
+[package.metadata.docs.rs]
+all-features = true
+rustc-args = ["--cfg", "os_str_bytes_docs_rs"]
+rustdoc-args = ["--cfg", "os_str_bytes_docs_rs"]

@@ -1,0 +1,28 @@
+[dependencies.either]
+version = "1.6.1"
+
+[dependencies.libc]
+version = "0.2.121"
+
+[dependencies.regex]
+optional = true
+version = "1.5.5"
+[dev-dependencies.tempfile]
+version = "3.3.0"
+
+[package]
+authors = ["Harry Fei <tiziyuanfang@gmail.com>"]
+categories = ["os", "filesystem"]
+description = "A Rust equivalent of Unix command \"which\". Locate installed executable in cross platforms."
+documentation = "https://docs.rs/which/"
+edition = "2018"
+keywords = ["which", "which-rs", "unix", "command"]
+license = "MIT"
+name = "which"
+readme = "README.md"
+repository = "https://github.com/harryfei/which-rs.git"
+version = "4.4.0"
+[package.metadata.docs.rs]
+all-features = true
+[target."cfg(windows)".dependencies.once_cell]
+version = "1"

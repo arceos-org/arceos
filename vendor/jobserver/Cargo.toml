@@ -1,0 +1,28 @@
+[dev-dependencies.futures]
+version = "0.1"
+
+[dev-dependencies.num_cpus]
+version = "1.0"
+
+[dev-dependencies.tempfile]
+version = "3"
+
+[dev-dependencies.tokio-core]
+version = "0.1"
+
+[dev-dependencies.tokio-process]
+version = "0.2"
+
+[package]
+authors = ["Alex Crichton <alex@alexcrichton.com>"]
+description = "An implementation of the GNU make jobserver for Rust\n"
+documentation = "https://docs.rs/jobserver"
+edition = "2018"
+homepage = "https://github.com/alexcrichton/jobserver-rs"
+license = "MIT/Apache-2.0"
+name = "jobserver"
+readme = "README.md"
+repository = "https://github.com/alexcrichton/jobserver-rs"
+version = "0.1.26"
+[target."cfg(unix)".dependencies.libc]
+version = "0.2.50"

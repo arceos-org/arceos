@@ -1,0 +1,13 @@
+[dependencies.critical-section]
+version = "1.1"
+
+[package]
+authors = ["Dario Nieuwenhuis <dirbaio@dirbaio.net>"]
+categories = ["embedded", "no-std", "concurrency"]
+description = "Atomic polyfills, for targets where they're not available."
+edition = "2018"
+license = "MIT OR Apache-2.0"
+name = "atomic-polyfill"
+readme = "README.md"
+repository = "https://github.com/embassy-rs/atomic-polyfill"
+version = "0.1.11"

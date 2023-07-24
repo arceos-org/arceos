@@ -1,0 +1,30 @@
+# Performance Monitoring Events for Intel Xeon Processors Based on the Skylake Microarchitecture - V1.12
+# 8/6/2018 10:15:59 PM
+# Copyright (c) 2007 - 2017 Intel Corporation. All rights reserved.
+MATRIX_REQUEST	MATRIX_RESPONSE	MATRIX_VALUE	MATRIX_REGISTER	DESCRIPTION
+DEMAND_DATA_RD	Null	0x0001 	0,1	Counts demand data reads
+DEMAND_RFO	Null	0x0002 	0,1	Counts all demand data writes (RFOs)
+DEMAND_CODE_RD	Null	0x0004 	0,1	Counts all demand code reads
+PF_L2_DATA_RD	Null	0x0010 	0,1	Counts prefetch (that bring data to L2) data reads
+PF_L2_RFO	Null	0x0020 	0,1	Counts all prefetch (that bring data to L2) RFOs
+PF_L3_DATA_RD	Null	0x0080 	0,1	Counts all prefetch (that bring data to LLC only) data reads
+PF_L3_RFO	Null	0x0100 	0,1	Counts all prefetch (that bring data to LLC only) RFOs
+PF_L1D_AND_SW	Null	0x0400 	0,1	Counts L1 data cache hardware prefetch requests and software prefetch requests
+OTHER	Null	0x8000 	0,1	Counts any other requests
+ALL_PF_DATA_RD	Null	0x0490 	0,1	Counts all prefetch data reads
+ALL_PF_RFO	Null	0x0120 	0,1	Counts prefetch RFOs
+ALL_DATA_RD	Null	0x0491 	0,1	Counts all demand & prefetch data reads
+ALL_RFO	Null	0x0122 	0,1	Counts all demand & prefetch RFOs
+ALL_READS	Null	0x07f7	0,1	Counts all data/code/rfo reads (demand & prefetch)
+Null	ANY_RESPONSE	0x000001 	0,1	have any response type.
+Null	L3_HIT.NO_SNOOP_NEEDED	0x01003c 	0,1	hit in the L3 and sibling core snoops are not needed as either the core-valid bit is not set or the shared line is present in multiple cores.
+Null	L3_HIT.HIT_OTHER_CORE_NO_FWD	0x04003c 	0,1	hit in the L3 and the snoops to sibling cores hit in either E/S state and the line is not forwarded.
+Null	L3_HIT.HIT_OTHER_CORE_FWD	0x08003c 	0,1	hit in the L3 and the snoop to one of the sibling cores hits the line in E/S/F state and the line is forwarded.
+Null	L3_HIT.HITM_OTHER_CORE	0x10003c 	0,1	hit in the L3 and the snoop to one of the sibling cores hits the line in M state and the line is forwarded.
+Null	L3_HIT.ANY_SNOOP	0x3f803c 	0,1	hit in the L3.
+Null	L3_MISS.ANY_SNOOP	0x3fbc00	0,1	miss in the L3.
+Null	L3_MISS.REMOTE_HIT_FORWARD	0x083fc0	0,1	miss the L3 and clean or shared data is transferred from remote cache.
+Null	L3_MISS.REMOTE_HITM	0x103fc0	0,1	miss the L3 and the modified data is transferred from remote cache.
+Null	L3_MISS.SNOOP_MISS_OR_NO_FWD	0x063fc0	0,1	miss the L3 and the data is returned from local or remote dram.
+Null	L3_MISS_REMOTE_DRAM.SNOOP_MISS_OR_NO_FWD	0x063b80	0,1	miss the L3 and the data is returned from remote dram.
+Null	L3_MISS_LOCAL_DRAM.SNOOP_MISS_OR_NO_FWD	0x060400	0,1	miss the L3 and the data is returned from local dram.

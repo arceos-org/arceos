@@ -1,0 +1,36 @@
+[dependencies.console_error_panic_hook]
+version = "0.1"
+
+[dependencies.gg-alloc]
+optional = true
+version = "1.0"
+
+[dependencies.js-sys]
+version = "0.3.64"
+
+[dependencies.scoped-tls]
+version = "1.0"
+
+[dependencies.wasm-bindgen]
+version = "0.2.87"
+
+[dependencies.wasm-bindgen-futures]
+version = "0.4.37"
+
+[dependencies.wasm-bindgen-test-macro]
+version = "=0.3.37"
+
+[lib]
+test = false
+
+[package]
+authors = ["The wasm-bindgen Developers"]
+description = "Internal testing crate for wasm-bindgen"
+edition = "2018"
+license = "MIT/Apache-2.0"
+name = "wasm-bindgen-test"
+readme = "README.md"
+repository = "https://github.com/rustwasm/wasm-bindgen"
+resolver = "2"
+rust-version = "1.56"
+version = "0.3.37"

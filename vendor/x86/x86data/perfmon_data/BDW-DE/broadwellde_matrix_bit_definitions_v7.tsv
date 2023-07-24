@@ -1,0 +1,43 @@
+# Performance Monitoring Events for the Fifth Generation Intel Core Processors Based on the Broadwell-DE Microarchitecture - V7
+# 1/18/2018 9:56:36 AM
+# Copyright (c) 2007 - 2017 Intel Corporation. All rights reserved.
+BitName	BitIndex	Type	Description	MATRIX_REG	BitsNotCombinedWith	Errata
+DEMAND_DATA_RD	0	1		0,1	null	null
+DEMAND_RFO	1	1		0,1	null	null
+DEMAND_CODE_RD	2	1		0,1	null	null
+COREWB	3	1		0,1	null	null
+PF_L2_DATA_RD	4	1		0,1	null	null
+PF_L2_RFO	5	1		0,1	null	null
+PF_L2_CODE_RD	6	1		0,1	null	null
+PF_L3_DATA_RD	7	1		0,1	null	null
+PF_L3_RFO	8	1		0,1	null	null
+PF_L3_CODE_RD	9	1		0,1	null	null
+SPLIT_LOCK_UC_LOCK	10	1		0,1	null	null
+STREAMING_STORES	11	1		0,1	null	null
+OTHER	15	1		0,1	null	null
+ALL_PF_DATA_RD	4,7	1		0,1	null	null
+ALL_PF_RFO	5,8	1		0,1	null	null
+ALL_PF_CODE_RD	6,9	1		0,1	null	null
+ALL_DATA_RD	0,4,7	1		0,1	null	null
+ALL_RFO	1,5,8	1		0,1	null	null
+ALL_CODE_RD	2,6,9	1		0,1	null	null
+ALL_READS	0,1,2,4,5,6,7,8,9	1		0,1	null	null
+ALL_REQUESTS	0,1,2,3,4,5,6,7,8,9,10,11,15	1		0,1	null	null
+ANY_RESPONSE	16	2	have any response type.	0,1	null	null
+SUPPLIER_NONE	17	3		0,1	null	null
+L3_HIT_M	18	3		0,1	null	null
+L3_HIT_E	19	3		0,1	null	null
+L3_HIT_S	20	3		0,1	null	null
+L3_HIT_F	21	3		0,1	null	null
+L3_HIT	18,19,20,21	3		0,1	null	null
+L3_MISS_LOCAL_DRAM	26	3		0,1	null	null
+SPL_HIT	30	4		0,1	null	null
+SNOOP_NONE	31	4		0,1	null	null
+SNOOP_NOT_NEEDED	32	4		0,1	null	null
+SNOOP_MISS	33	4		0,1	null	null
+SNOOP_HIT_NO_FWD	34	4		0,1	null	null
+SNOOP_HIT_WITH_FWD	35	4		0,1	null	null
+SNOOP_HITM	36	4		0,1	null	null
+SNOOP_NON_DRAM	37	4		0,1	null	null
+ANY_SNOOP	31,32,33,34,35,36,37	4		0,1	null	null
+L3_MISS	26	3		0,1	null	null

@@ -1,0 +1,40 @@
+[build-dependencies.cc]
+optional = true
+version = "1.0"
+[dependencies.core]
+optional = true
+package = "rustc-std-workspace-core"
+version = "1.0.0"
+
+[dev-dependencies]
+
+[features]
+c = ["cc"]
+compiler-builtins = []
+default = ["compiler-builtins"]
+mangled-names = []
+mem = []
+no-asm = []
+public-test-deps = []
+rustc-dep-of-std = ["compiler-builtins", "core"]
+weak-intrinsics = []
+
+[lib]
+test = false
+
+[package]
+authors = ["Jorge Aparicio <japaricious@gmail.com>"]
+description = "Compiler intrinsics used by the Rust compiler. Also available for other targets\nif necessary!\n"
+documentation = "https://docs.rs/compiler_builtins"
+homepage = "https://github.com/rust-lang/compiler-builtins"
+include = ["/Cargo.toml", "/build.rs", "/src/*", "/examples/*", "/LICENSE.txt", "/README.md", "/compiler-rt/*", "/libm/src/math/*"]
+license = "MIT/Apache-2.0"
+name = "compiler_builtins"
+readme = "README.md"
+repository = "https://github.com/rust-lang/compiler-builtins"
+version = "0.1.95"
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"

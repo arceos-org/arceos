@@ -1,0 +1,17 @@
+[dev-dependencies.doc-comment]
+version = "0.3"
+
+[dev-dependencies.tempdir]
+version = "0.3"
+
+[package]
+authors = ["The Rust Project Developers"]
+categories = ["filesystem"]
+description = "Support for matching file paths against Unix shell style patterns.\n"
+documentation = "https://docs.rs/glob/0.3.1"
+homepage = "https://github.com/rust-lang/glob"
+license = "MIT OR Apache-2.0"
+name = "glob"
+readme = "README.md"
+repository = "https://github.com/rust-lang/glob"
+version = "0.3.1"

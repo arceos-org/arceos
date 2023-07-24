@@ -1,0 +1,16 @@
+[dependencies.cc]
+version = "1.0.72"
+
+[package]
+authors = ["Alex Crichton <alex@alexcrichton.com>"]
+categories = ["development-tools::build-utils"]
+description = "A build dependency for running `cmake` to build a native library\n"
+documentation = "https://docs.rs/cmake"
+edition = "2021"
+homepage = "https://github.com/rust-lang/cmake-rs"
+keywords = ["build-dependencies"]
+license = "MIT OR Apache-2.0"
+name = "cmake"
+readme = "README.md"
+repository = "https://github.com/rust-lang/cmake-rs"
+version = "0.1.50"

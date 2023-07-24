@@ -1,0 +1,90 @@
+[dependencies.annotate-snippets]
+features = ["color"]
+optional = true
+version = "0.9.1"
+
+[dependencies.bitflags]
+version = "2.2.1"
+
+[dependencies.cexpr]
+version = "0.6"
+
+[dependencies.clang-sys]
+features = ["clang_6_0"]
+version = "1"
+
+[dependencies.lazy_static]
+version = "1"
+
+[dependencies.lazycell]
+version = "1"
+
+[dependencies.log]
+optional = true
+version = "0.4"
+
+[dependencies.peeking_take_while]
+version = "0.1.2"
+
+[dependencies.prettyplease]
+optional = true
+version = "0.2.0"
+
+[dependencies.proc-macro2]
+default-features = false
+version = "1"
+
+[dependencies.quote]
+default-features = false
+version = "1"
+
+[dependencies.regex]
+default-features = false
+features = ["std", "unicode"]
+version = "1.5"
+
+[dependencies.rustc-hash]
+version = "1.0.1"
+
+[dependencies.shlex]
+version = "1"
+
+[dependencies.syn]
+features = ["full", "extra-traits", "visit-mut"]
+version = "2.0"
+
+[dependencies.which]
+default-features = false
+optional = true
+version = "4.2.1"
+
+[features]
+__cli = []
+__testing_only_extra_assertions = []
+__testing_only_libclang_5 = []
+__testing_only_libclang_9 = []
+default = ["logging", "prettyplease", "runtime", "which-rustfmt"]
+experimental = ["dep:annotate-snippets"]
+logging = ["dep:log"]
+runtime = ["clang-sys/runtime"]
+static = ["clang-sys/static"]
+which-rustfmt = ["dep:which"]
+
+[lib]
+name = "bindgen"
+path = "lib.rs"
+
+[package]
+authors = ["Jyun-Yan You <jyyou.tw@gmail.com>", "Emilio Cobos Álvarez <emilio@crisal.io>", "Nick Fitzgerald <fitzgen@gmail.com>", "The Servo project developers"]
+categories = ["external-ffi-bindings", "development-tools::ffi"]
+description = "Automatically generates Rust FFI bindings to C and C++ libraries."
+documentation = "https://docs.rs/bindgen"
+edition = "2018"
+homepage = "https://rust-lang.github.io/rust-bindgen/"
+keywords = ["bindings", "ffi", "code-generation"]
+license = "BSD-3-Clause"
+name = "bindgen"
+readme = "README.md"
+repository = "https://github.com/rust-lang/rust-bindgen"
+rust-version = "1.60.0"
+version = "0.66.1"

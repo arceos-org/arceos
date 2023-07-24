@@ -1,0 +1,33 @@
+[dev-dependencies.adler]
+version = "1.0.2"
+
+[dev-dependencies.adler32]
+version = "1.2.0"
+
+[dev-dependencies.criterion]
+version = "0.3"
+
+[dev-dependencies.rand]
+version = "0.8"
+
+[features]
+const-generics = []
+default = ["std", "const-generics"]
+nightly = []
+std = []
+
+[package]
+authors = ["Marvin Countryman <me@maar.vin>"]
+categories = ["algorithms", "no-std"]
+description = "A SIMD-accelerated Adler-32 rolling hash algorithm implementation."
+edition = "2018"
+exclude = ["bench"]
+keywords = ["simd", "avx2", "ssse3", "adler", "adler32"]
+license = "MIT"
+name = "simd-adler32"
+readme = "README.md"
+repository = "https://github.com/mcountryman/simd-adler32"
+version = "0.3.5"
+[profile.release]
+debug = true
+opt-level = 2

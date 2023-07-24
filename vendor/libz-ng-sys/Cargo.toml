@@ -1,0 +1,17 @@
+[build-dependencies.cmake]
+version = "0.1.44"
+[dependencies.libc]
+version = "0.2.43"
+
+[package]
+authors = ["Alex Crichton <alex@alexcrichton.com>", "Josh Triplett <josh@joshtriplett.org>"]
+categories = ["compression", "external-ffi-bindings"]
+description = "Low-level bindings to zlib-ng (libz-ng), a high-performance zlib library."
+edition = "2018"
+exclude = ["/.github", "/.gitmodules", "/README.md", "/build.rs", "/cargo-zng", "/ci", "/src/smoke.c", "/src/zlib", "/systest"]
+keywords = ["zlib", "zlib-ng"]
+license = "MIT OR Apache-2.0"
+name = "libz-ng-sys"
+readme = "README-zng.md"
+repository = "https://github.com/rust-lang/libz-sys"
+version = "1.1.9"
