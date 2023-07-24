@@ -2,7 +2,7 @@ use bitflags::*;
 
 bitflags! {
     /// 指定文件打开时的权限
-    #[derive(Clone, Copy)]
+    #[derive(Clone, Copy, Default)]
     pub struct OpenFlags: u32 {
         /// 只读
         const RDONLY = 0;
@@ -19,6 +19,7 @@ bitflags! {
         /// 同上，在不同的库中可能会用到这个或者上一个
         const EXCL = 1 << 9;
         /// 非阻塞读写?(虽然不知道为什么但 date.lua 也要)
+        /// 在 socket 中使用得较多
         const NON_BLOCK = 1 << 11;
         /// 要求把 CR-LF 都换成 LF
         const TEXT = 1 << 14;
@@ -68,6 +69,11 @@ impl OpenFlags {
     /// 获取是否是目录
     pub fn is_dir(&self) -> bool {
         self.contains(Self::DIR)
+    }
+
+    /// 获取是否需要在 `exec()` 时关闭
+    pub fn is_close_on_exec(&self) -> bool {
+        self.contains(Self::CLOEXEC)
     }
 }
 

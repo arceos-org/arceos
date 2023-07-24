@@ -33,4 +33,15 @@ impl FdManager {
         self.umask = new_mask;
         old_mask
     }
+
+    /// 在执行 `exec()` 时关闭标记为 `CLOEXEC` 的文件
+    pub fn close_on_exec(&mut self) {
+        for fd in &mut self.fd_table {
+            if let Some(f) = fd {
+                if f.lock().get_status().is_close_on_exec() {
+                    fd.take();
+                }
+            }
+        }
+    }
 }

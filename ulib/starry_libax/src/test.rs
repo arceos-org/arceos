@@ -91,7 +91,7 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     "search_tsearch",
     "setjmp",
     "snprintf",
-    //"socket", // 需要198
+    "socket",
     "sscanf",
     "sscanf_long",
     "stat",
@@ -180,118 +180,118 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
 /// 来自 libc 的动态测例
 #[allow(dead_code)]
 pub const LIBC_DYNAMIC_TESTCASES: &[&str] = &[
-    "argv.dout",
-    "basename.dout",
-    "clocale_mbfuncs.dout",
-    "clock_gettime.dout",
-    "crypt.dout",
-    "dirname.dout",
-    // "dlopen.dout", // 单独存在运行时bug，放在runtest里面就是正常的
-    "./runtest.exe -w entry-dynamic.exe dlopen",
-    "env.dout",
-    "fdopen.dout", // 62
-    "fnmatch.dout",
-    "fscanf.dout",  //62
-    "fwscanf.dout", //29
-    "iconv_open.dout",
-    "inet_pton.dout",
-    "mbc.dout",
-    "memstream.dout",
-    "pthread_cancel_points.dout", // 226
-    "pthread_cancel.dout",        // 226
-    "pthread_cond.dout",          //226
-    "pthread_tsd.dout",           //226
-    "qsort.dout",
-    "random.dout",
-    "search_hsearch.dout",
-    "search_insque.dout",
-    "search_lsearch.dout",
-    "search_tsearch.dout",
-    "sem_init.dout", //226
-    "setjmp.dout",
-    "snprintf.dout",
-    // "socket", //198
-    "sscanf.dout",
-    "sscanf_long.dout",
-    "stat.dout", //79
-    "strftime.dout",
-    "string.dout",
-    "string_memcpy.dout",
-    "string_memmem.dout",
-    "string_memset.dout",
-    "string_strchr.dout",
-    "string_strcspn.dout",
-    "string_strstr.dout",
-    "strptime.dout",
-    "strtod.dout",
-    "strtod_simple.dout",
-    "strtof.dout",
-    "strtol.dout",
-    "strtold.dout",
-    "swprintf.dout",
-    "tgmath.dout",
-    "time.dout",
-    "tls_init.dout",       //226
-    "tls_local_exec.dout", //226
-    "udiv.dout",
-    "ungetc.dout", // 29
-    "utime.dout",  //88
-    "wcsstr.dout",
-    "wcstol.dout",
-    "daemon_failure.dout",
-    "dn_expand_empty.dout",
-    "dn_expand_ptr_0.dout",
-    "fflush_exit.dout", //29 + 67
-    "fgets_eof.dout",
-    "fgetwc_buffering.dout",
-    "fpclassify_invalid_ld80.dout",
-    "ftello_unflushed_append.dout", //25
-    "getpwnam_r_crash.dout",
-    "getpwnam_r_errno.dout",
-    "iconv_roundtrips.dout",
-    "inet_ntop_v4mapped.dout",
-    "inet_pton_empty_last_field.dout",
-    "iswspace_null.dout",
-    "lrand48_signextend.dout",
-    "lseek_large.dout", //29
-    "malloc_0.dout",
-    "mbsrtowcs_overflow.dout",
-    "memmem_oob_read.dout",
-    "memmem_oob.dout",
-    "mkdtemp_failure.dout",
-    "mkstemp_failure.dout",
-    "printf_1e9_oob.dout",
-    "printf_fmt_g_round.dout",
-    "printf_fmt_g_zeros.dout",
-    "printf_fmt_n.dout",
-    "pthread_robust_detach.dout", //226
-    "pthread_cond_smasher.dout",  //226
-    "pthread_condattr_setclock.dout",
-    "pthread_exit_cancel.dout",   //226
-    "pthread_once_deadlock.dout", //226
-    "pthread_rwlock_ebusy.dout",  //226
-    "putenv_doublefree.dout",
-    "regex_backref_0.dout",
-    "regex_bracket_icase.dout",
-    "regex_ere_backref.dout",
-    "regex_escaped_high_byte.dout",
-    "regex_negated_range.dout",
-    "regexec_nosub.dout",
-    "rewind_clear_error.dout", //62
-    "rlimit_open_files.dout",
-    "scanf_bytes_consumed.dout",
-    "scanf_match_literal_eof.dout",
-    "scanf_nullbyte_char.dout",
-    "setvbuf_unget.dout", //62
-    "sigprocmask_internal.dout",
-    "sscanf_eof.dout",
-    "statvfs.dout", //43
-    "strverscmp.dout",
-    "syscall_sign_extend.dout",
-    "tls_get_new_dtv.dout",
-    "uselocale_0.dout",
-    "wcsncpy_read_overflow.dout",
-    "wcsstr_false_negative.dout",
+    // "argv.dout",
+    // "basename.dout",
+    // "clocale_mbfuncs.dout",
+    // "clock_gettime.dout",
+    // "crypt.dout",
+    // "dirname.dout",
+    // // "dlopen.dout", // 单独存在运行时bug，放在runtest里面就是正常的
+    // "./runtest.exe -w entry-dynamic.exe dlopen",
+    // "env.dout",
+    // "fdopen.dout", // 62
+    // "fnmatch.dout",
+    // "fscanf.dout",  //62
+    // "fwscanf.dout", //29
+    // "iconv_open.dout",
+    // "inet_pton.dout",
+    // "mbc.dout",
+    // "memstream.dout",
+    // "pthread_cancel_points.dout", // 226
+    // "pthread_cancel.dout",        // 226
+    // "pthread_cond.dout",          //226
+    // "pthread_tsd.dout",           //226
+    // "qsort.dout",
+    // "random.dout",
+    // "search_hsearch.dout",
+    // "search_insque.dout",
+    // "search_lsearch.dout",
+    // "search_tsearch.dout",
+    // "sem_init.dout", //226
+    // "setjmp.dout",
+    // "snprintf.dout",
+    "socket", //198
+             // "sscanf.dout",
+             // "sscanf_long.dout",
+             // "stat.dout", //79
+             // "strftime.dout",
+             // "string.dout",
+             // "string_memcpy.dout",
+             // "string_memmem.dout",
+             // "string_memset.dout",
+             // "string_strchr.dout",
+             // "string_strcspn.dout",
+             // "string_strstr.dout",
+             // "strptime.dout",
+             // "strtod.dout",
+             // "strtod_simple.dout",
+             // "strtof.dout",
+             // "strtol.dout",
+             // "strtold.dout",
+             // "swprintf.dout",
+             // "tgmath.dout",
+             // "time.dout",
+             // "tls_init.dout",       //226
+             // "tls_local_exec.dout", //226
+             // "udiv.dout",
+             // "ungetc.dout", // 29
+             // "utime.dout",  //88
+             // "wcsstr.dout",
+             // "wcstol.dout",
+             // "daemon_failure.dout",
+             // "dn_expand_empty.dout",
+             // "dn_expand_ptr_0.dout",
+             // "fflush_exit.dout", //29 + 67
+             // "fgets_eof.dout",
+             // "fgetwc_buffering.dout",
+             // "fpclassify_invalid_ld80.dout",
+             // "ftello_unflushed_append.dout", //25
+             // "getpwnam_r_crash.dout",
+             // "getpwnam_r_errno.dout",
+             // "iconv_roundtrips.dout",
+             // "inet_ntop_v4mapped.dout",
+             // "inet_pton_empty_last_field.dout",
+             // "iswspace_null.dout",
+             // "lrand48_signextend.dout",
+             // "lseek_large.dout", //29
+             // "malloc_0.dout",
+             // "mbsrtowcs_overflow.dout",
+             // "memmem_oob_read.dout",
+             // "memmem_oob.dout",
+             // "mkdtemp_failure.dout",
+             // "mkstemp_failure.dout",
+             // "printf_1e9_oob.dout",
+             // "printf_fmt_g_round.dout",
+             // "printf_fmt_g_zeros.dout",
+             // "printf_fmt_n.dout",
+             // "pthread_robust_detach.dout", //226
+             // "pthread_cond_smasher.dout",  //226
+             // "pthread_condattr_setclock.dout",
+             // "pthread_exit_cancel.dout",   //226
+             // "pthread_once_deadlock.dout", //226
+             // "pthread_rwlock_ebusy.dout",  //226
+             // "putenv_doublefree.dout",
+             // "regex_backref_0.dout",
+             // "regex_bracket_icase.dout",
+             // "regex_ere_backref.dout",
+             // "regex_escaped_high_byte.dout",
+             // "regex_negated_range.dout",
+             // "regexec_nosub.dout",
+             // "rewind_clear_error.dout", //62
+             // "rlimit_open_files.dout",
+             // "scanf_bytes_consumed.dout",
+             // "scanf_match_literal_eof.dout",
+             // "scanf_nullbyte_char.dout",
+             // "setvbuf_unget.dout", //62
+             // "sigprocmask_internal.dout",
+             // "sscanf_eof.dout",
+             // "statvfs.dout", //43
+             // "strverscmp.dout",
+             // "syscall_sign_extend.dout",
+             // "tls_get_new_dtv.dout",
+             // "uselocale_0.dout",
+             // "wcsncpy_read_overflow.dout",
+             // "wcsstr_false_negative.dout",
 ];
 
 #[allow(dead_code)]
@@ -318,9 +318,12 @@ pub const BUSYBOX_TESTCASES: &[&str] = &[
     // "iozone -t 4 -i 0 -i 2 -r 1k -s 1m",
     // "busybox sh ./test_all.sh",
     // "busybox echo \"run libctest_testcode.sh\"",
-    // "./runtest.exe -w entry-dynamic.exe argv.dout",
-    // "./runtest.exe -w entry-dynamic.exe tls_get_new_dtv.dout",
-    "./libctest_testcode.sh",
+    // "./runtest.exe -w entry-static.exe socket",
+    "./runtest.exe -w entry-dynamic.exe socket",
+    "./runtest.exe -w entry-dynamic.exe socket",
+    "./runtest.exe -w entry-dynamic.exe socket",
+    "./runtest.exe -w entry-dynamic.exe socket",
+    // "./libctest_testcode.sh",
     // "busybox echo \"run lua_testcode.sh\"",
     // "./lua_testcode.sh",
     // "lua strings.lua",

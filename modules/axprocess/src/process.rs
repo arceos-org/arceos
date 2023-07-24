@@ -222,6 +222,10 @@ impl Process {
         unsafe {
             asm::sfence_vma_all();
         }
+
+        // 关闭 `CLOEXEC` 的文件
+        inner.fd_manager.close_on_exec();
+
         let curr = current();
         // 再考虑手动结束其他所有的task
         let _ = inner

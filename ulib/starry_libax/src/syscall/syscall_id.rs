@@ -93,6 +93,16 @@ pub enum SyscallId {
     SIGACTION = 134,
     SIGPROCMASK = 135,
     SIGRETURN = 139,
+    // Socket
+    SOCKET = 198,
+    BIND = 200,
+    LISTEN = 201,
+    ACCEPT = 202,
+    CONNECT = 203,
+    GETSOCKNAME = 204,
+    SENDTO = 206,
+    RECVFROM = 207,
+    SETSOCKOPT = 208,
 }
 }
 
@@ -130,10 +140,18 @@ pub enum ErrorNo {
     ESPIPE = -29,
     /// 超过范围。例如用户提供的buffer不够长
     ERANGE = -34,
+    /// fd 不是 Socket
+    ENOTSOCK = -88,
+    /// Operation not supported on transport endpoint
+    EOPNOTSUPP = -95,
     /// 不支持的协议
     EPFNOSUPPORT = -96,
     /// 不支持的地址
     EAFNOSUPPORT = -97,
+    /// Transport endpoint is already connected
+    EISCONN = -106,
     /// 拒绝连接
     ECONNREFUSED = -111,
+    /// Operation now in progress
+    EINPROGRESS = -115,
 }

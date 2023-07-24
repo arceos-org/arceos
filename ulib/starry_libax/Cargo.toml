@@ -76,7 +76,7 @@ preempt = ["axruntime/preempt", "axprocess/preempt", "irq"]
 # Signal
 signal = ["axprocess/signal", "multitask", "preempt"]
 
-default = ["axtask?/sched_fifo", "axtask", "axmem", "monolithic", "test", "paging", "signal"]
+default = ["axtask?/sched_fifo", "axtask", "axmem", "monolithic", "test", "paging", "signal", "net"]
 [dependencies]
 numeric-enum-macro = { git = "https://github.com/mexus/numeric-enum-macro" }
 # base-file = { git = "https://github.com/scPointer/maturin/tree/master/modules/base-file" }
@@ -110,3 +110,4 @@ riscv = { path = "../../extern_crates/riscv-0.10.1" }
 crate_interface = { path = "../../crates/crate_interface" }
 kernel_guard = { path = "../../crates/kernel_guard" }
 lazy_init = { path = "../../crates/lazy_init" }
+num_enum = { version = "0.5.11", default-features = false }

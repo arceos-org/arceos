@@ -164,7 +164,7 @@ pub trait AsAny {
     /// 把当前对象转化为 `Any` 类型，供后续 downcast 使用
     fn as_any(&self) -> &dyn Any;
     // 供 downcast_mut 使用
-    // fn as_any_mut(&mut self) -> &mut dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
 impl<T: Any> AsAny for T {
@@ -172,9 +172,9 @@ impl<T: Any> AsAny for T {
         self
     }
 
-    // fn as_any_mut(&mut self) -> &mut dyn Any {
-    //     self
-    // }
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
 }
 
 /// 用于给虚存空间进行懒分配

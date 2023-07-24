@@ -12,6 +12,7 @@ use mem::*;
 use poll::*;
 use select::syscall_pselect6;
 use signal::*;
+use socket::*;
 use task::*;
 use utils::*;
 extern crate axlog;
@@ -27,6 +28,7 @@ pub mod poll;
 pub mod select;
 #[cfg(feature = "signal")]
 pub mod signal;
+pub mod socket;
 pub mod syscall_id;
 pub mod utils;
 use syscall_id::*;
@@ -250,6 +252,33 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         MEMBARRIER => 0,
         SIGTIMEDWAIT => 0,
         SYSLOG => 0,
+
+        SOCKET => syscall_socket(args[0], args[1], args[2]),
+        BIND => syscall_bind(args[0], args[1] as *const u8, args[2]),
+        LISTEN => syscall_listen(args[0], args[1]),
+        ACCEPT => syscall_accept(args[0], args[1] as *mut u8, args[2] as *mut u32),
+        CONNECT => syscall_connect(args[0], args[1] as *const u8, args[2]),
+        GETSOCKNAME => syscall_get_sock_name(args[0], args[1] as *mut u8, args[2] as *mut u32),
+        SENDTO => syscall_sendto(
+            args[0],
+            args[1] as *const u8,
+            args[2],
+            args[3],
+            args[4] as *const u8,
+            args[5],
+        ),
+        RECVFROM => syscall_recvfrom(
+            args[0],
+            args[1] as *mut u8,
+            args[2],
+            args[3],
+            args[4] as *mut u8,
+            args[5] as *mut u32,
+        ),
+        SETSOCKOPT => {
+            syscall_set_sock_opt(args[0], args[1], args[2], args[3] as *const u8, args[4])
+        }
+
         _ => {
             error!("Invalid Syscall Id: {}!", syscall_id);
             // return -1;
