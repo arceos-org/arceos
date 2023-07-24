@@ -75,6 +75,9 @@ mod structs;
 #[cfg(feature = "virtio")]
 mod virtio;
 
+#[cfg(feature = "ixgbe")]
+mod ixgbe;
+
 pub mod prelude;
 
 #[allow(unused_imports)]
