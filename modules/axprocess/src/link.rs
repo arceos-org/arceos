@@ -106,15 +106,15 @@ impl FilePath {
 }
 
 /// 用户看到的文件到实际文件的映射
-pub static LINK_PATH_MAP: Mutex<BTreeMap<FilePath, FilePath>> = Mutex::new(BTreeMap::new());
+pub static LINK_PATH_MAP: Mutex<BTreeMap<String, String>> = Mutex::new(BTreeMap::new());
 /// 实际文件(而不是用户文件)到链接数的映射
-pub static LINK_COUNT_MAP: Mutex<BTreeMap<FilePath, usize>> = Mutex::new(BTreeMap::new());
+pub static LINK_COUNT_MAP: Mutex<BTreeMap<String, usize>> = Mutex::new(BTreeMap::new());
 
 /// 将用户提供的路径转换成实际的路径
 ///
 /// 如果在链接列表中找不到，则直接返回自己
-pub fn real_path(src_path: &FilePath) -> FilePath {
-    trace!("parse_file_name: {}", src_path.path());
+pub fn real_path(src_path: &String) -> String {
+    trace!("parse_file_name: {}", src_path);
     let map = LINK_PATH_MAP.lock();
     // 找到对应的链接
     match map.get(src_path) {

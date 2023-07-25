@@ -37,17 +37,6 @@ pub fn syscall_get_time_of_day(ts: *mut TimeVal) -> isize {
 
 /// 用于获取当前系统时间并且存储在对应的结构体中
 pub fn syscall_clock_get_time(_clock_id: usize, ts: *mut TimeSecs) -> isize {
-    let process = current_process();
-    let inner = process.inner.lock();
-    if inner
-        .memory_set
-        .lock()
-        .manual_alloc_type_for_lazy(ts as *const TimeSecs)
-        .is_err()
-    {
-        // info!("addr: {:X?} failed", ts as usize);
-        return -1;
-    }
     unsafe {
         (*ts) = TimeSecs::now();
         // info!("ts: {:?}", *ts);

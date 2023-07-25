@@ -2,23 +2,23 @@
 ARCH ?= riscv64
 SMP ?= 1
 MODE ?= release
-LOG ?= warn
+LOG ?= off
 V ?=
 
-A ?= apps/syscall/libc_static
+A ?= apps/syscall/busybox
 APP ?= $(A)
 APP_FEATURES ?=
 DISK_IMG ?= sdcard.img
 
-SIGNAL ?= n
-MONOLITHIC ?= n
-MULTITASK ?= n
-PAGING ?= n
-FS ?= n
-NET ?= n
+SIGNAL ?= y
+MONOLITHIC ?= y
+MULTITASK ?= y
+PAGING ?= y
+FS ?= y
+NET ?= y
 GRAPHIC ?= n
 BUS ?= mmio
-PREEMPT ?= n
+PREEMPT ?= y
 
 QEMU_LOG ?= n
 NET_DUMP ?= n

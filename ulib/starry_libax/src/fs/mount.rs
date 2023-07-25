@@ -98,51 +98,62 @@ pub fn check_mounted(path: &FilePath) -> bool {
 }
 
 /// 根据给定的路径获取对应的文件stat
-pub fn get_stat_in_fs(path: &str) -> Result<Kstat, isize> {
-    if let Ok(node) = lookup(path) {
-        let mut stat = Kstat::default();
-        stat.st_nlink = 1;
-        // 先检查是否在vfs中存在对应文件
-        // 判断是在哪个vfs中
-        if node
-            .as_any()
-            .downcast_ref::<axfs::axfs_devfs::DirNode>()
-            .is_some()
-            || node
-                .as_any()
-                .downcast_ref::<axfs::axfs_ramfs::DirNode>()
-                .is_some()
-        {
-            stat.st_dev = 2;
-            stat.st_mode = normal_file_mode(StMode::S_IFDIR).bits();
-            return Ok(stat);
-        } else if node
-            .as_any()
-            .downcast_ref::<axfs::axfs_devfs::ZeroDev>()
-            .is_some()
-            || node
-                .as_any()
-                .downcast_ref::<axfs::axfs_devfs::NullDev>()
-                .is_some()
-        {
-            stat.st_mode = normal_file_mode(StMode::S_IFCHR).bits();
-            return Ok(stat);
-        } else if node
-            .as_any()
-            .downcast_ref::<axfs::axfs_ramfs::FileNode>()
-            .is_some()
-        {
-            stat.st_mode = normal_file_mode(StMode::S_IFREG).bits();
-            stat.st_size = node.get_attr().unwrap().size();
-            return Ok(stat);
-        }
-    }
+pub fn get_stat_in_fs(path: &FilePath) -> Result<Kstat, isize> {
     // 根目录算作一个简单的目录文件，不使用特殊的stat
     // 否则在fat32中查找
-
-    if !path.ends_with("/") {
+    let real_path = path.path();
+    let mut ans = Kstat::default();
+    if real_path.starts_with("/var")
+        || real_path.starts_with("/dev")
+        || real_path.starts_with("/tmp")
+    {
+        if path.is_dir() {
+            ans.st_dev = 2;
+            ans.st_mode = normal_file_mode(StMode::S_IFDIR).bits();
+            return Ok(ans);
+        }
+        if let Ok(node) = lookup(path.path()) {
+            let mut stat = Kstat::default();
+            stat.st_nlink = 1;
+            // 先检查是否在vfs中存在对应文件
+            // 判断是在哪个vfs中
+            if node
+                .as_any()
+                .downcast_ref::<axfs::axfs_devfs::DirNode>()
+                .is_some()
+                || node
+                    .as_any()
+                    .downcast_ref::<axfs::axfs_ramfs::DirNode>()
+                    .is_some()
+            {
+                stat.st_dev = 2;
+                stat.st_mode = normal_file_mode(StMode::S_IFDIR).bits();
+                return Ok(stat);
+            } else if node
+                .as_any()
+                .downcast_ref::<axfs::axfs_devfs::ZeroDev>()
+                .is_some()
+                || node
+                    .as_any()
+                    .downcast_ref::<axfs::axfs_devfs::NullDev>()
+                    .is_some()
+            {
+                stat.st_mode = normal_file_mode(StMode::S_IFCHR).bits();
+                return Ok(stat);
+            } else if node
+                .as_any()
+                .downcast_ref::<axfs::axfs_ramfs::FileNode>()
+                .is_some()
+            {
+                stat.st_mode = normal_file_mode(StMode::S_IFREG).bits();
+                stat.st_size = node.get_attr().unwrap().size();
+                return Ok(stat);
+            }
+        }
+    }
+    if !real_path.ends_with("/") {
         // 是文件
-        return if let Ok(file) = new_fd(path.to_string(), 0.into()) {
+        return if let Ok(file) = new_fd(real_path.to_string(), 0.into()) {
             match file.get_stat() {
                 Ok(stat) => Ok(stat),
                 Err(e) => {
@@ -155,7 +166,7 @@ pub fn get_stat_in_fs(path: &str) -> Result<Kstat, isize> {
         };
     } else {
         // 是目录
-        return if let Ok(dir) = new_dir(path.to_string(), OpenFlags::DIR) {
+        return if let Ok(dir) = new_dir(real_path.to_string(), OpenFlags::DIR) {
             match dir.get_stat() {
                 Ok(stat) => Ok(stat),
                 Err(e) => {

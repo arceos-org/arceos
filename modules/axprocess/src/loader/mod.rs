@@ -5,10 +5,10 @@ use alloc::{
     vec::Vec,
 };
 // 堆和栈的基地址
-pub const USER_HEAP_OFFSET: usize = 0x3F00_0000;
-pub const USER_STACK_OFFSET: usize = 0x3FA0_0000;
-pub const MAX_HEAP_SIZE: usize = 0xA0_0000;
-pub const USER_STACK_SIZE: usize = 0x60_0000;
+pub const USER_HEAP_OFFSET: usize = 0x3FB0_0000;
+pub const USER_STACK_OFFSET: usize = 0x3FF0_0000;
+pub const MAX_HEAP_SIZE: usize = 0x40_0000;
+pub const USER_STACK_SIZE: usize = 0x10_0000;
 use axerrno::AxResult;
 mod user_stack;
 use axhal::{mem::VirtAddr, paging::MappingFlags};
@@ -74,8 +74,8 @@ impl<'a> Loader<'a> {
                 panic!("ELF Interpreter is not supported without fs feature");
             }
             let interp_path = FilePath::new(interp_path)?;
-            let real_interp_path = real_path(&interp_path);
-            let interp = axfs::api::read(real_interp_path.path())
+            let real_interp_path = real_path(&(interp_path.path().to_string()));
+            let interp = axfs::api::read(real_interp_path.as_str())
                 .expect("Error reading Interpreter from fs");
             let loader = Loader::new(&interp);
             return loader.load(new_argv, &mut memory_set);

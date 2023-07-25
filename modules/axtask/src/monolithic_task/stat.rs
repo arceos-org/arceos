@@ -1,4 +1,4 @@
-use axhal::time::current_time_nanos;
+use axhal::time::{current_time_nanos, NANOS_PER_MICROS, NANOS_PER_SEC};
 #[cfg(feature = "signal")]
 use axsignal::signal_no::SignalNo;
 #[cfg(feature = "signal")]
@@ -123,10 +123,10 @@ impl TimeStat {
     /// 将时间转化为秒与微秒输出，方便sys_times使用
     /// (用户态秒，用户态微妙，内核态秒，内核态微妙)
     pub fn output_as_us(&self) -> (usize, usize, usize, usize) {
-        let utime_s = self.utime_ns / 1000_0000_0000;
-        let stime_s = self.stime_ns / 1000_0000_0000;
-        let utime_us = self.utime_ns / 1000;
-        let stime_us = self.stime_ns / 1000;
+        let utime_s = self.utime_ns / (NANOS_PER_SEC as usize);
+        let stime_s = self.stime_ns / (NANOS_PER_SEC as usize);
+        let utime_us = self.utime_ns / (NANOS_PER_MICROS as usize);
+        let stime_us = self.stime_ns / (NANOS_PER_MICROS as usize);
         (utime_s, utime_us, stime_s, stime_us)
     }
 

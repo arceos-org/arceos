@@ -103,14 +103,9 @@ pub fn deal_with_path(
             }
         }
     }
+    let path = real_path(&path);
     match FilePath::new(&path) {
-        Ok(path) => {
-            if path.path() == "/var/tmp/XXX" {
-                Some(FilePath::new("XXX").unwrap())
-            } else {
-                Some(real_path(&path))
-            }
-        }
+        Ok(path) => Some(path),
         Err(_) => None,
     }
 }
@@ -128,16 +123,16 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
     );
     let process = current_process();
     let process_inner = process.inner.lock();
-    let start: VirtAddr = (buf as usize).into();
-    let end = start + count;
-    if process_inner
-        .memory_set
-        .lock()
-        .manual_alloc_range_for_lazy(start, end)
-        .is_err()
-    {
-        return ErrorNo::EINVAL as isize;
-    }
+    // let start: VirtAddr = (buf as usize).into();
+    // let end = start + count;
+    // if process_inner
+    //     .memory_set
+    //     .lock()
+    //     .manual_alloc_range_for_lazy(start, end)
+    //     .is_err()
+    // {
+    //     return ErrorNo::EFAULT as isize;
+    // }
     if fd >= process_inner.fd_manager.fd_table.len() {
         return ErrorNo::EBADF as isize;
     }
@@ -183,7 +178,7 @@ pub fn syscall_write(fd: usize, buf: *const u8, count: usize) -> isize {
         .manual_alloc_range_for_lazy(start, end)
         .is_err()
     {
-        return ErrorNo::EINVAL as isize;
+        return ErrorNo::EFAULT as isize;
     }
     if fd >= process_inner.fd_manager.fd_table.len() {
         return ErrorNo::EBADF as isize;
@@ -827,7 +822,7 @@ pub fn syscall_fstat(fd: usize, kst: *mut Kstat) -> isize {
 pub fn syscall_fstatat(dir_fd: usize, path: *const u8, kst: *mut Kstat) -> isize {
     let file_path = deal_with_path(dir_fd, Some(path), false).unwrap();
     info!("path : {}", file_path.path());
-    match get_stat_in_fs(file_path.path()) {
+    match get_stat_in_fs(&file_path) {
         Ok(stat) => unsafe {
             *kst = stat;
             0
@@ -1231,7 +1226,7 @@ pub fn syscall_readlinkat(dir_fd: usize, path: *const u8, buf: *mut u8, bufsiz: 
         slice.copy_from_slice(&name.as_bytes()[..len]);
         return len as isize;
     }
-    if path.path() != real_path(&path).path() {
+    if path.path().to_string() != real_path(&(path.path().to_string())) {
         // 说明链接存在
         let path = path.path();
         let len = bufsiz.min(path.len());

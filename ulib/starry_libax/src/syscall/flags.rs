@@ -71,7 +71,7 @@ impl TimeSecs {
     pub fn now() -> Self {
         let nano = current_time_nanos() as usize;
         let tv_sec = nano / NSEC_PER_SEC;
-        let tv_nsec = nano % NSEC_PER_SEC;
+        let tv_nsec = nano - tv_sec * NSEC_PER_SEC;
         TimeSecs { tv_sec, tv_nsec }
     }
 

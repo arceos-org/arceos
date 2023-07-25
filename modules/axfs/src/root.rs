@@ -183,6 +183,10 @@ pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
         root_dir
             .mount("/tmp", Arc::new(ramfs))
             .expect("failed to mount ramfs at /tmp");
+        let ramfs = fs::ramfs::RamFileSystem::new();
+        root_dir
+            .mount("/var", Arc::new(ramfs))
+            .expect("failed to mount ramfs at /var");
     }
 
     #[cfg(feature = "monolithic")]

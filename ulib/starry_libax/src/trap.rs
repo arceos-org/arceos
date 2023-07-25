@@ -31,7 +31,7 @@ impl axhal::trap::TrapHandler for TrapHandlerImpl {
         use axprocess::handle_page_fault;
         use axsignal::signal_no::SignalNo;
         use axtask::current;
-
+        axprocess::time_stat_from_user_to_kernel();
         use crate::syscall::signal::{syscall_sigreturn, syscall_tkill};
         if addr.as_usize() == SIGNAL_RETURN_TRAP {
             // 说明是信号执行完毕，此时应当执行sig return
@@ -45,6 +45,7 @@ impl axhal::trap::TrapHandler for TrapHandlerImpl {
             axlog::error!("kill task: {}", curr);
             syscall_tkill(curr, SignalNo::SIGSEGV as isize);
         }
+        axprocess::time_stat_from_kernel_to_user();
     }
 
     fn handle_access_fault(addr: VirtAddr, flags: MappingFlags) {
