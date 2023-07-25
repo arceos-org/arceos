@@ -154,11 +154,17 @@ pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
         let null = fs::devfs::NullDev;
         let zero = fs::devfs::ZeroDev;
         let bar = fs::devfs::ZeroDev;
+        let random = fs::devfs::RandomDev::default();
+        let urandom = fs::devfs::RandomDev::default();
+
         let devfs = fs::devfs::DeviceFileSystem::new();
         let foo_dir = devfs.mkdir("foo");
         devfs.add("null", Arc::new(null));
         devfs.add("zero", Arc::new(zero));
+        devfs.add("random", Arc::new(random));
+        devfs.add("urandom", Arc::new(urandom));
         foo_dir.add("bar", Arc::new(bar));
+
         #[cfg(feature = "monolithic")]
         {
             // 添加dev文件系统下的配置文件
