@@ -114,14 +114,14 @@ make A=apps/net/httpserver ARCH=aarch64 LOG=info NET=y SMP=4 run
 #### Rust
 
 1. Create a new rust package with `no_std` and `no_main` environment.
-2. Add `libax` dependency and features to enable to `Cargo.toml`:
+2. Add `axstd` dependency and features to enable to `Cargo.toml`:
 
     ```toml
     [dependencies]
-    libax = { path = "/path/to/arceos/ulib/libax", features = ["..."] }
+    axstd = { path = "/path/to/arceos/ulib/axstd", features = ["..."] }
     ```
 
-3. Call library functions from `libax` in your code, like the [helloworld](apps/helloworld/) example.
+3. Call library functions from `axstd` in your code, just like the Rust [std](https://doc.rust-lang.org/std/) library.
 4. Build your application with ArceOS, by running the `make` command in the application directory:
 
     ```bash

@@ -1,0 +1,82 @@
+[package]
+name = "axstd"
+version = "0.1.0"
+edition = "2021"
+authors = [
+    "Yuekai Jia <equation618@gmail.com>",
+    "yanjuguang <coolyanjg@163.com>",
+    "wudashuai <wu-ds20@mails.tsinghua.edu.cn>",
+    "yfblock <321353225@qq.com>",
+    "scPointer <bhy18@mails.tsinghua.edu.cn>",
+    "Shiping Yuan <robert_yuan@pku.edu.com>",
+]
+description = "ArceOS user library with an interface similar to rust std"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+repository = "https://github.com/rcore-os/arceos/tree/main/ulib/axstd"
+documentation = "https://rcore-os.github.io/arceos/axstd/index.html"
+
+[features]
+default = []
+
+# Multicore
+smp = ["axruntime/smp", "spinlock/smp"]
+
+# Floating point/SIMD
+fp_simd = ["axhal/fp_simd"]
+
+# Memory
+alloc = ["dep:axalloc", "axruntime/alloc", "axio/alloc"]
+paging = ["axruntime/paging"]
+
+# Interrupts
+irq = ["axruntime/irq"]
+
+# Multi-task
+multitask = ["alloc", "axtask", "axruntime/multitask", "axsync/multitask"]
+sched_fifo = ["axtask/sched_fifo"]
+sched_rr = ["axtask/sched_rr", "irq"]
+sched_cfs = ["axtask/sched_cfs", "irq"]
+
+# File system
+fs = ["alloc", "axruntime/fs", "dep:axdriver", "dep:axfs"]
+myfs = ["axfs?/myfs"]
+use-ramdisk = ["axdriver?/ramdisk", "axfs?/use-ramdisk"]
+
+# Networking
+net = ["alloc", "axruntime/net", "dep:axdriver", "dep:axnet"]
+dns = []
+
+# Display
+display = ["axruntime/display", "dep:axdriver", "dep:axdisplay"]
+
+# Device drivers
+bus-mmio = ["axdriver?/bus-mmio"]
+bus-pci = ["axdriver?/bus-pci"]
+
+# Logging
+log-level-off = ["axlog/log-level-off"]
+log-level-error = ["axlog/log-level-error"]
+log-level-warn = ["axlog/log-level-warn"]
+log-level-info = ["axlog/log-level-info"]
+log-level-debug = ["axlog/log-level-debug"]
+log-level-trace = ["axlog/log-level-trace"]
+
+[dependencies]
+# ArceOS modules
+axruntime = { path = "../../modules/axruntime" }
+axhal = { path = "../../modules/axhal" }
+axlog = { path = "../../modules/axlog" }
+axconfig = { path = "../../modules/axconfig" }
+axalloc = { path = "../../modules/axalloc", optional = true }
+axdriver = { path = "../../modules/axdriver", optional = true }
+axfs = { path = "../../modules/axfs", optional = true }
+axnet = { path = "../../modules/axnet", optional = true }
+axdisplay = { path = "../../modules/axdisplay", optional = true }
+axsync = { path = "../../modules/axsync", optional = true }
+axtask = { path = "../../modules/axtask", optional = true }
+
+# Other crates
+axio = { path = "../../crates/axio" }
+axerrno = { path = "../../crates/axerrno" }
+spinlock = { path = "../../crates/spinlock" }

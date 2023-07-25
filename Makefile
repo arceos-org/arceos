@@ -169,7 +169,7 @@ fmt:
 	cargo fmt --all
 
 fmt_c:
-	@clang-format --style=file -i $(shell find ulib/c_libax -iname '*.c' -o -iname '*.h')
+	@clang-format --style=file -i $(shell find ulib/axlibc -iname '*.c' -o -iname '*.h')
 
 test:
 	$(call app_test)
@@ -192,7 +192,7 @@ clean: clean_c
 	cargo clean
 
 clean_c:
-	rm -rf ulib/c_libax/build_*
+	rm -rf ulib/axlibc/build_*
 	rm -rf $(app-objs)
 
 .PHONY: all build disasm run justrun debug clippy fmt fmt_c test test_no_fail_fast clean clean_c doc disk_image

@@ -182,6 +182,15 @@ impl File {
         Ok(read_len)
     }
 
+    /// Reads the file at the given position. Returns the number of bytes read.
+    ///
+    /// It does not update the file cursor.
+    pub fn read_at(&self, offset: u64, buf: &mut [u8]) -> AxResult<usize> {
+        let node = self.node.access(Cap::READ)?;
+        let read_len = node.read_at(offset, buf)?;
+        Ok(read_len)
+    }
+
     /// Writes the file at the current position. Returns the number of bytes
     /// written.
     ///
@@ -194,6 +203,16 @@ impl File {
         };
         let write_len = node.write_at(self.offset, buf)?;
         self.offset += write_len as u64;
+        Ok(write_len)
+    }
+
+    /// Writes the file at the given position. Returns the number of bytes
+    /// written.
+    ///
+    /// It does not update the file cursor.
+    pub fn write_at(&self, offset: u64, buf: &[u8]) -> AxResult<usize> {
+        let node = self.node.access(Cap::WRITE)?;
+        let write_len = node.write_at(offset, buf)?;
         Ok(write_len)
     }
 
