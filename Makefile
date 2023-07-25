@@ -19,6 +19,7 @@ NET ?= y
 GRAPHIC ?= n
 BUS ?= mmio
 PREEMPT ?= y
+OFFLINE ?= y
 
 QEMU_LOG ?= n
 NET_DUMP ?= n
