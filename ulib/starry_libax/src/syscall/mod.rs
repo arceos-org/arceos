@@ -283,6 +283,13 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[3] as *const u8,
             args[4] as u32,
         ),
+        GETSOCKOPT => syscall_get_sock_opt(
+            args[0],
+            args[1],
+            args[2],
+            args[3] as *mut u8,
+            args[4] as *mut u32,
+        ),
 
         _ => {
             error!("Invalid Syscall Id: {}!", syscall_id);

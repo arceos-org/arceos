@@ -104,6 +104,7 @@ pub enum SyscallId {
     SENDTO = 206,
     RECVFROM = 207,
     SETSOCKOPT = 208,
+    GETSOCKOPT = 209,
 }
 }
 

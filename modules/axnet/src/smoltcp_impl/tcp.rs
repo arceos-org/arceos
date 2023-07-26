@@ -362,6 +362,18 @@ impl TcpSocket {
 
         Ok(())
     }
+
+    pub fn nagle_enabled(&self) -> bool {
+        let handle = unsafe { self.handle.get().read() };
+
+        match handle {
+            Some(handle) => {
+                SOCKET_SET.with_socket::<tcp::Socket, _, _>(handle, |socket| socket.nagle_enabled())
+            }
+            // Nagle algorithm will be enabled by default once the socket is created
+            None => true,
+        }
+    }
 }
 
 /// Private methods

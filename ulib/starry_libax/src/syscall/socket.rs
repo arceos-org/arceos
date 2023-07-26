@@ -1,6 +1,7 @@
 extern crate alloc;
 
 use core::{
+    mem::size_of,
     ptr::copy_nonoverlapping,
     slice::{from_raw_parts, from_raw_parts_mut},
 };
@@ -58,14 +59,19 @@ pub const SOCK_CLOEXEC: usize = 0x80000;
 #[derive(TryFromPrimitive)]
 #[repr(usize)]
 pub enum SocketOptionLevel {
+    Ip = 0,
     Socket = 1,
     Tcp = 6,
 }
 
-#[derive(TryFromPrimitive)]
+#[derive(TryFromPrimitive, Debug)]
 #[repr(usize)]
 #[allow(non_camel_case_types)]
 pub enum SocketOption {
+    SO_REUSEADDR = 2,
+    SO_DONTROUTE = 5,
+    SO_SNDBUF = 7,
+    SO_RCVBUF = 8,
     SO_RCVTIMEO = 0x1006, // receive timeout
 }
 
@@ -74,6 +80,107 @@ pub enum SocketOption {
 #[allow(non_camel_case_types)]
 pub enum TcpSocketOption {
     TCP_NODELAY = 1, // disable nagle algorithm and flush
+    TCP_MAXSEG = 2,
+}
+
+impl SocketOption {
+    fn set(&self, socket: &mut Socket, opt: &[u8]) {
+        match self {
+            SocketOption::SO_REUSEADDR => {
+                if opt.len() < 4 {
+                    panic!("can't read a int from socket opt value");
+                }
+
+                let opt_value = i32::from_ne_bytes(<[u8; 4]>::try_from(&opt[0..4]).unwrap());
+
+                socket.reuse_addr = opt_value != 0;
+            }
+            SocketOption::SO_DONTROUTE => {
+                if opt.len() < 4 {
+                    panic!("can't read a int from socket opt value");
+                }
+
+                let opt_value = i32::from_ne_bytes(<[u8; 4]>::try_from(&opt[0..4]).unwrap());
+
+                socket.reuse_addr = opt_value != 0;
+            }
+            SocketOption::SO_SNDBUF => {
+                if opt.len() < 4 {
+                    panic!("can't read a int from socket opt value");
+                }
+
+                let opt_value = i32::from_ne_bytes(<[u8; 4]>::try_from(&opt[0..4]).unwrap());
+
+                socket.send_buf_size = opt_value as usize;
+            }
+            SocketOption::SO_RCVBUF => {
+                if opt.len() < 4 {
+                    panic!("can't read a int from socket opt value");
+                }
+
+                let opt_value = i32::from_ne_bytes(<[u8; 4]>::try_from(&opt[0..4]).unwrap());
+
+                socket.recv_buf_size = opt_value as usize;
+            }
+            _ => unimplemented!("{self:?}"),
+        }
+    }
+
+    fn get(&self, socket: &Socket, opt_value: *mut u8, opt_len: *mut u32) {
+        let buf_len = unsafe { *opt_len };
+
+        match self {
+            SocketOption::SO_REUSEADDR => {
+                let value: i32 = if socket.reuse_addr { 1 } else { 0 };
+
+                if buf_len < 4 {
+                    panic!("can't write a int to socket opt value");
+                }
+
+                unsafe {
+                    copy_nonoverlapping(&value.to_ne_bytes() as *const u8, opt_value, 4);
+                    *opt_len = 4;
+                }
+            }
+            SocketOption::SO_DONTROUTE => {
+                if buf_len < 4 {
+                    panic!("can't write a int to socket opt value");
+                }
+
+                let size: i32 = if socket.dont_route { 1 } else { 0 };
+
+                unsafe {
+                    copy_nonoverlapping(&size.to_ne_bytes() as *const u8, opt_value, 4);
+                    *opt_len = 4;
+                }
+            }
+            SocketOption::SO_SNDBUF => {
+                if buf_len < 4 {
+                    panic!("can't write a int to socket opt value");
+                }
+
+                let size: i32 = socket.send_buf_size as i32;
+
+                unsafe {
+                    copy_nonoverlapping(&size.to_ne_bytes() as *const u8, opt_value, 4);
+                    *opt_len = 4;
+                }
+            }
+            SocketOption::SO_RCVBUF => {
+                if buf_len < 4 {
+                    panic!("can't write a int to socket opt value");
+                }
+
+                let size: i32 = socket.recv_buf_size as i32;
+
+                unsafe {
+                    copy_nonoverlapping(&size.to_ne_bytes() as *const u8, opt_value, 4);
+                    *opt_len = 4;
+                }
+            }
+            _ => unimplemented!(),
+        }
+    }
 }
 
 impl TcpSocketOption {
@@ -93,6 +200,45 @@ impl TcpSocketOption {
                 let _ = socket.set_nagle_enabled(opt_value == 0);
                 let _ = socket.flush();
             }
+            _ => {
+                unimplemented!()
+            }
+        }
+    }
+
+    fn get(&self, socket: &Socket, opt_value: *mut u8, opt_len: *mut u32) {
+        let socket = match socket.inner {
+            SocketInner::Tcp(ref s) => s,
+            _ => panic!("calling tcp option on a wrong type of socket"),
+        };
+
+        let buf_len = unsafe { *opt_len };
+
+        match self {
+            TcpSocketOption::TCP_NODELAY => {
+                if buf_len < 4 {
+                    panic!("can't write a int to socket opt value");
+                }
+
+                let value: i32 = if socket.nagle_enabled() { 0 } else { 1 };
+
+                let value = value.to_ne_bytes();
+
+                unsafe {
+                    copy_nonoverlapping(&value as *const u8, opt_value, 4);
+                    *opt_len = 4;
+                }
+            }
+            TcpSocketOption::TCP_MAXSEG => {
+                let len = size_of::<usize>();
+
+                let value: usize = 1500;
+
+                unsafe {
+                    copy_nonoverlapping(&value as *const usize as *const u8, opt_value, len);
+                    *opt_len = len as u32;
+                };
+            }
         }
     }
 }
@@ -105,6 +251,12 @@ pub struct Socket {
     socket_type: SocketType,
     inner: SocketInner,
     close_exec: bool,
+
+    // fake options
+    reuse_addr: bool,
+    dont_route: bool,
+    send_buf_size: usize,
+    recv_buf_size: usize,
 }
 
 pub enum SocketInner {
@@ -126,6 +278,10 @@ impl Socket {
             socket_type,
             inner,
             close_exec: false,
+            reuse_addr: false,
+            dont_route: false,
+            send_buf_size: 64 * 1024,
+            recv_buf_size: 64 * 1024,
         }
     }
 
@@ -196,6 +352,10 @@ impl Socket {
                 socket_type: self.socket_type.clone(),
                 inner: SocketInner::Tcp(new_socket),
                 close_exec: false,
+                reuse_addr: false,
+                dont_route: false,
+                send_buf_size: 64 * 1024,
+                recv_buf_size: 64 * 1024,
             },
             addr,
         ))
@@ -648,16 +808,98 @@ pub fn syscall_set_sock_opt(
     let opt = unsafe { from_raw_parts(opt_value, opt_len as usize) };
 
     match level {
+        SocketOptionLevel::Ip => {}
         SocketOptionLevel::Socket => {
-            let _option = SocketOption::try_from(opt_name);
-        }
-        SocketOptionLevel::Tcp => {
-            let Ok(option) = TcpSocketOption::try_from(opt_name) else {
-                error!("[setsockopt()] option {opt_name} not supported in tcp level");
-                unimplemented!();
+            let Ok(option) = SocketOption::try_from(opt_name) else {
+                panic!("[setsockopt()] option {opt_name} not supported in socket level");
             };
 
             option.set(socket, opt);
+        }
+        SocketOptionLevel::Tcp => {
+            let Ok(option) = TcpSocketOption::try_from(opt_name) else {
+                panic!("[setsockopt()] option {opt_name} not supported in tcp level");
+            };
+
+            option.set(socket, opt);
+        }
+    }
+
+    0
+}
+
+pub fn syscall_get_sock_opt(
+    fd: usize,
+    level: usize,
+    opt_name: usize,
+    opt_value: *mut u8,
+    opt_len: *mut u32,
+) -> isize {
+    let Ok(level) = SocketOptionLevel::try_from(level) else {
+        error!("[setsockopt()] level {level} not supported");
+        unimplemented!();
+    };
+
+    let curr = current_process();
+    let inner = curr.inner.lock();
+
+    let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
+        return ErrorNo::EBADF as isize;
+    };
+
+    let mut file = file.lock();
+    let Some(socket) = file.as_any_mut().downcast_mut::<Socket>() else {
+        return ErrorNo::ENOTSOCK as isize;
+    };
+
+    let curr = current_process();
+    let inner = curr.inner.lock();
+    if inner
+        .memory_set
+        .lock()
+        .manual_alloc_for_lazy((opt_value as usize).into())
+        .is_err()
+    {
+        error!("[getsockopt()] opt_value address {opt_value:?} invalid");
+        return ErrorNo::EFAULT as isize;
+    }
+    if inner
+        .memory_set
+        .lock()
+        .manual_alloc_for_lazy((opt_len as usize).into())
+        .is_err()
+    {
+        error!("[getsockopt()] opt_len address {opt_len:?} invalid");
+        return ErrorNo::EFAULT as isize;
+    }
+    if inner
+        .memory_set
+        .lock()
+        .manual_alloc_for_lazy((unsafe { opt_value.offset(*opt_len as isize) } as usize).into())
+        .is_err()
+    {
+        error!(
+            "[getsockopt()] opt_value end address {opt_value:?} + {} invalid",
+            unsafe { *opt_len }
+        );
+        return ErrorNo::EFAULT as isize;
+    }
+
+    match level {
+        SocketOptionLevel::Ip => {}
+        SocketOptionLevel::Socket => {
+            let Ok(option) = SocketOption::try_from(opt_name) else {
+                panic!("[setsockopt()] option {opt_name} not supported in socket level");
+            };
+
+            option.get(socket, opt_value, opt_len);
+        }
+        SocketOptionLevel::Tcp => {
+            let Ok(option) = TcpSocketOption::try_from(opt_name) else {
+                panic!("[setsockopt()] option {opt_name} not supported in tcp level");
+            };
+
+            option.get(socket, opt_value, opt_len);
         }
     }
 
