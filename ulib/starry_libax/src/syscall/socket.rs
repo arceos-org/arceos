@@ -76,12 +76,13 @@ pub enum SocketOption {
     SO_RCVTIMEO = 0x1006, // receive timeout
 }
 
-#[derive(TryFromPrimitive)]
+#[derive(TryFromPrimitive, PartialEq)]
 #[repr(usize)]
 #[allow(non_camel_case_types)]
 pub enum TcpSocketOption {
     TCP_NODELAY = 1, // disable nagle algorithm and flush
     TCP_MAXSEG = 2,
+    TCP_INFO = 11,
 }
 
 impl SocketOption {
@@ -251,6 +252,7 @@ impl TcpSocketOption {
                 let _ = socket.set_nagle_enabled(opt_value == 0);
                 let _ = socket.flush();
             }
+            TcpSocketOption::TCP_INFO => panic!("[setsockopt()] try to set TCP_INFO"),
             _ => {
                 unimplemented!()
             }
@@ -290,6 +292,7 @@ impl TcpSocketOption {
                     *opt_len = len as u32;
                 };
             }
+            TcpSocketOption::TCP_INFO => {}
         }
     }
 }
@@ -1005,6 +1008,10 @@ pub fn syscall_get_sock_opt(
             let Ok(option) = TcpSocketOption::try_from(opt_name) else {
                 panic!("[setsockopt()] option {opt_name} not supported in tcp level");
             };
+
+            if option == TcpSocketOption::TCP_INFO {
+                return ErrorNo::ENOPROTOOPT as isize;
+            }
 
             option.get(socket, opt_value, opt_len);
         }

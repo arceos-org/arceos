@@ -145,6 +145,7 @@ pub enum ErrorNo {
     ERANGE = -34,
     /// fd 不是 Socket
     ENOTSOCK = -88,
+    ENOPROTOOPT = -92,
     /// Operation not supported on transport endpoint
     EOPNOTSUPP = -95,
     /// 不支持的协议
