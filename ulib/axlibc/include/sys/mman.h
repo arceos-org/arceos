@@ -46,5 +46,7 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off);
 int munmap(void *addr, size_t length);
 void *mremap(void *old_address, size_t old_size, size_t new_size, int flags,
              ... /* void *new_address */);
+int mprotect(void *addr, size_t len, int prot);
+int madvise(void *addr, size_t length, int advice);
 
 #endif

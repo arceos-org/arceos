@@ -184,6 +184,18 @@ impl VfsNodeOps for DirWrapper<'static> {
         }
         Ok(dirents.len())
     }
+
+    fn rename(&self, src_path: &str, dst_path: &str) -> VfsResult {
+        // `src_path` and `dst_path` should in the same mounted fs
+        debug!(
+            "rename at fatfs, src_path: {}, dst_path: {}",
+            src_path, dst_path
+        );
+
+        self.0
+            .rename(src_path, &self.0, dst_path)
+            .map_err(as_vfs_err)
+    }
 }
 
 impl VfsOps for FatFileSystem {

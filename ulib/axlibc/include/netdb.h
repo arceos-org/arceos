@@ -16,6 +16,28 @@ struct addrinfo {
     struct addrinfo *ai_next;
 };
 
+struct aibuf {
+    struct addrinfo ai;
+    union sa {
+        struct sockaddr_in sin;
+        struct sockaddr_in6 sin6;
+    } sa;
+    volatile int lock[1];
+    short slot, ref;
+};
+
+struct service {
+    uint16_t port;
+    unsigned char proto, socktype;
+};
+
+struct address {
+    int family;
+    unsigned scopeid;
+    uint8_t addr[16];
+    int sortkey;
+};
+
 #define AI_PASSIVE     0x01
 #define AI_CANONNAME   0x02
 #define AI_NUMERICHOST 0x04
@@ -51,10 +73,13 @@ struct addrinfo {
 extern int h_errno;
 const char *hstrerror(int ecode);
 
+#define MAXSERVS 2
 #define MAXADDRS 48
+
 int getaddrinfo(const char *__restrict, const char *__restrict, const struct addrinfo *__restrict,
                 struct addrinfo **__restrict);
 void freeaddrinfo(struct addrinfo *);
+const char *gai_strerror(int __ecode);
 
 #endif // AX_CONFIG_NET
 

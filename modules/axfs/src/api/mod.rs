@@ -79,3 +79,11 @@ pub fn remove_dir(path: &str) -> io::Result<()> {
 pub fn remove_file(path: &str) -> io::Result<()> {
     crate::root::remove_file(None, path)
 }
+
+/// Rename a file or directory to a new name.
+/// Delete the original file if `old` already exists.
+///
+/// This only works then the new path is in the same mounted fs.
+pub fn rename(old: &str, new: &str) -> io::Result<()> {
+    crate::root::rename(old, new)
+}

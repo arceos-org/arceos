@@ -22,3 +22,17 @@ void *mremap(void *old_address, size_t old_size, size_t new_size, int flags,
     unimplemented();
     return NULL;
 }
+
+// TODO
+int mprotect(void *addr, size_t len, int prot)
+{
+    unimplemented();
+    return 0;
+}
+
+// TODO
+int madvise(void *addr, size_t len, int advice)
+{
+    unimplemented();
+    return 0;
+}

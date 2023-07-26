@@ -24,6 +24,10 @@ typedef double double_t;
 #define FP_ILOGBNAN (-1 - 0x7fffffff)
 #define FP_ILOGB0   FP_ILOGBNAN
 
+#define LOG_TABLE_BITS  7
+#define LOG_POLY_ORDER  6
+#define LOG_POLY1_ORDER 12
+
 #define FP_NAN       0
 #define FP_INFINITE  1
 #define FP_ZERO      2

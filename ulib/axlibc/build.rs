@@ -68,6 +68,7 @@ typedef struct {{
             "pthread_.*",
             "epoll_event",
             "iovec",
+            "tm",
         ];
         let allow_vars = [
             "O_.*",

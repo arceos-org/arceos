@@ -38,4 +38,8 @@
 #define TCP_INQ                  36
 #define TCP_TX_DELAY             37
 
-#endif
+#define TCP_REPAIR_ON        1
+#define TCP_REPAIR_OFF       0
+#define TCP_REPAIR_OFF_NO_WP -1
+
+#endif // _NETINET_TCP_H

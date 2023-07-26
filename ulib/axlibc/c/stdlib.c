@@ -9,6 +9,9 @@
 
 #include <axlibc.h>
 
+char *program_invocation_short_name = NULL;
+char *program_invocation_name = NULL;
+
 #define __DECONST(type, var) ((type)(uintptr_t)(const void *)(var))
 
 void srand(unsigned s)
@@ -19,6 +22,16 @@ void srand(unsigned s)
 int rand(void)
 {
     return ax_rand_u32();
+}
+
+long random(void)
+{
+    return (long)ax_rand_u32();
+}
+
+void srandom(unsigned int s)
+{
+    ax_srand(s);
 }
 
 #ifdef AX_CONFIG_ALLOC
@@ -383,4 +396,31 @@ double strtod(const char *restrict s, char **restrict p)
     return ax_strtod(s, p);
 }
 
+// TODO: precision may not be enough
+long double strtold(const char *restrict s, char **restrict p)
+{
+    return (long double)strtod(s, p);
+}
+
 #endif // AX_CONFIG_FP_SIMD
+
+// TODO
+void qsort(void *, size_t, size_t, int (*)(const void *, const void *))
+{
+    unimplemented();
+    return;
+}
+
+// TODO
+int mkostemp(char *__template, int __flags)
+{
+    unimplemented();
+    return 0;
+}
+
+// TODO
+int system(const char *)
+{
+    unimplemented();
+    return 0;
+}

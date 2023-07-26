@@ -53,4 +53,7 @@ struct __locale_struct {
 
 typedef struct __locale_struct *locale_t;
 
-#endif
+char *setlocale(int, const char *);
+struct lconv *localeconv(void);
+
+#endif // _LOCALE_H
