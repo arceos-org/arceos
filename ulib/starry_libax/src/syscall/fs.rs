@@ -3,6 +3,7 @@ use crate::fs::mount::{check_mounted, get_stat_in_fs, mount_fat_fs, umount_fat_f
 use crate::fs::pipe::make_pipe;
 use crate::fs::{new_dir, new_fd, DirEnt, DirEntType, FileDesc, FileIOType};
 use crate::syscall::flags::raw_ptr_to_ref_str;
+use crate::syscall::socket::Socket;
 extern crate alloc;
 
 use alloc::format;
@@ -147,11 +148,20 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
     let file = process_inner.fd_manager.fd_table[fd].clone().unwrap();
     drop(process_inner);
     if file.lock().get_type() == FileIOType::DirDesc {
-        debug!("fd is a dir");
-        return -1;
+        error!("fd is a dir");
+        return ErrorNo::EISDIR as isize;
     }
     if !file.lock().readable() {
-        return -1;
+        // 1. nonblock file
+        // return ErrorNo::EAGAIN as isize;
+
+        // 2. socket
+        if file.lock().as_any().downcast_ref::<Socket>().is_some() {
+            return ErrorNo::EAGAIN as isize;
+        }
+
+        // 3. regular file
+        return ErrorNo::EBADF as isize;
     }
 
     // // debug
