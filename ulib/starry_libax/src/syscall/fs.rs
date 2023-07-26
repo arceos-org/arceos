@@ -1177,20 +1177,6 @@ pub fn syscall_sendfile64(out_fd: usize, in_fd: usize, offset: *mut usize, count
     }
 }
 
-/// 72
-/// pselect6
-/// 与select类似，但是可以指定信号集
-pub fn syscall_pselect6(
-    _nfds: usize,
-    _readfds: *mut usize,
-    _writefds: *mut usize,
-    _exceptfds: *mut usize,
-    _timeout: *mut TimeValue,
-    _sigmask: *mut usize,
-) -> isize {
-    -1
-}
-
 /// 78
 /// readlinkat
 /// 读取符号链接文件的内容

@@ -459,6 +459,14 @@ impl FileIO for Socket {
 
         flags
     }
+
+    fn ready_to_read(&mut self) -> bool {
+        self.readable()
+    }
+
+    fn ready_to_write(&mut self) -> bool {
+        self.writable()
+    }
 }
 
 pub unsafe fn socket_address_from(addr: *const u8) -> SocketAddr {

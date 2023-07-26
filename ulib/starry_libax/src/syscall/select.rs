@@ -2,6 +2,7 @@ extern crate alloc;
 use alloc::{sync::Arc, vec::Vec};
 use axfs::monolithic_fs::FileIO;
 use axprocess::process::{current_process, yield_now_task};
+use log::error;
 use memory_addr::VirtAddr;
 use spinlock::SpinNoIrq;
 
@@ -23,7 +24,7 @@ impl ShadowBitset {
             return false;
         }
         // 因为一次add会移动八个字节，所以这里需要除以64，即8个字节，每一个字节8位
-        let byte_index = index >> 8;
+        let byte_index = index / 64;
         let bit_index = index & 0x3f;
         unsafe { *self.addr.add(byte_index) & (1 << bit_index) != 0 }
     }
@@ -32,7 +33,7 @@ impl ShadowBitset {
         if index >= self.len {
             return;
         }
-        let byte_index = index >> 8;
+        let byte_index = index / 64;
         let bit_index = index & 0x3f;
         unsafe {
             *self.addr.add(byte_index) |= 1 << bit_index;
@@ -61,6 +62,7 @@ fn init_fd_set(
     let process = current_process();
     let inner = process.inner.lock();
     if len >= inner.fd_manager.limit {
+        error!("[pselect6()] len {len} >= limit {}", inner.fd_manager.limit);
         return Err(ErrorNo::EINVAL as isize);
     }
 
@@ -77,8 +79,10 @@ fn init_fd_set(
         .manual_alloc_range_for_lazy(start, end)
         .is_err()
     {
+        error!("[pselect6()] addr {addr:?} invalid");
         return Err(ErrorNo::EFAULT as isize);
     }
+
     let mut fds = Vec::new();
     let mut files = Vec::new();
     for fd in 0..len {
@@ -125,6 +129,7 @@ pub fn syscall_pselect6(
             .manual_alloc_type_for_lazy(timeout)
             .is_err()
         {
+            error!("[pselect6()] timeout addr {timeout:?} invalid");
             return ErrorNo::EFAULT as isize;
         }
         riscv::register::time::read() + unsafe { (*timeout).get_ticks() }
