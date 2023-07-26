@@ -442,6 +442,24 @@ impl Socket {
             SocketInner::Udp(s) => s.recv_from(buf),
         }
     }
+
+    pub fn shutdown(&mut self) {
+        let _ = match &mut self.inner {
+            SocketInner::Udp(s) => s.shutdown(),
+            SocketInner::Tcp(s) => s.shutdown(),
+        };
+    }
+
+    pub fn abort(&mut self) {
+        match &mut self.inner {
+            SocketInner::Udp(s) => {}
+            SocketInner::Tcp(s) => s.with_socket_mut(|s| {
+                if let Some(s) = s {
+                    s.abort();
+                }
+            }),
+        }
+    }
 }
 
 impl Read for Socket {
@@ -989,6 +1007,43 @@ pub fn syscall_get_sock_opt(
             };
 
             option.get(socket, opt_value, opt_len);
+        }
+    }
+
+    0
+}
+
+#[derive(TryFromPrimitive)]
+#[repr(usize)]
+enum SocketShutdown {
+    Read = 0,
+    Write = 1,
+    ReadWrite = 2,
+}
+
+pub fn syscall_shutdown(fd: usize, how: usize) -> isize {
+    let curr = current_process();
+    let inner = curr.inner.lock();
+
+    let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
+        return ErrorNo::EBADF as isize;
+    };
+    let mut file = file.lock();
+
+    let Some(socket) = file.as_any_mut().downcast_mut::<Socket>() else {
+        return ErrorNo::ENOTSOCK as isize;
+    };
+
+    let Ok(how) = SocketShutdown::try_from(how) else {
+        return ErrorNo::EINVAL as isize;
+    };
+
+    match how {
+        SocketShutdown::Read => socket.abort(),
+        SocketShutdown::Write => socket.shutdown(),
+        SocketShutdown::ReadWrite => {
+            socket.shutdown();
+            socket.abort();
         }
     }
 

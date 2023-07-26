@@ -290,6 +290,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[3] as *mut u8,
             args[4] as *mut u32,
         ),
+        SHUTDOWN => syscall_shutdown(args[0], args[1]),
 
         _ => {
             error!("Invalid Syscall Id: {}!", syscall_id);

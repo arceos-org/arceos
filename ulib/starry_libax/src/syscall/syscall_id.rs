@@ -105,6 +105,7 @@ pub enum SyscallId {
     RECVFROM = 207,
     SETSOCKOPT = 208,
     GETSOCKOPT = 209,
+    SHUTDOWN = 210,
 }
 }
 
