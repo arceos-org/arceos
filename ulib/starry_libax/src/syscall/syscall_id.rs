@@ -57,6 +57,7 @@ pub enum SyscallId {
     GETTIMER = 102,
     SETITIMER = 103,
     SYSLOG = 116,
+    SETSID = 157,
     GETRUSAGE = 165,
     UMASK = 166,
     GETPID = 172,

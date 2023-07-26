@@ -175,6 +175,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[1] as *mut ITimerVal,
         ),
         GETTIMER => syscall_gettimer(args[0] as usize, args[1] as *mut ITimerVal),
+        SETSID => syscall_setsid(),
         GETRUSAGE => syscall_getrusage(args[0] as i32, args[1] as *mut TimeVal),
         UMASK => syscall_umask(args[0] as i32),
         PPOLL => syscall_ppoll(
