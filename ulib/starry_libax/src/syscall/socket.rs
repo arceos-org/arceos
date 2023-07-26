@@ -828,12 +828,42 @@ pub fn syscall_recvfrom(
         return ErrorNo::ENOTSOCK as isize;
     };
 
+    if !addr_len.is_null()
+        && inner
+            .memory_set
+            .lock()
+            .manual_alloc_for_lazy((addr_len as usize).into())
+            .is_err()
+    {
+        error!("[recvfrom()] addr_len address {addr_len:?} invalid");
+        return ErrorNo::EFAULT as isize;
+    }
+
+    if !addr_buf.is_null()
+        && !addr_len.is_null()
+        && inner
+            .memory_set
+            .lock()
+            .manual_alloc_range_for_lazy(
+                (addr_buf as usize).into(),
+                unsafe { addr_len.add(*addr_len as usize) as usize }.into(),
+            )
+            .is_err()
+    {
+        error!("[recvfrom()] addr_buf address {addr_buf:?} invalid");
+        return ErrorNo::EFAULT as isize;
+    }
+
     let buf = unsafe { from_raw_parts_mut(buf, len) };
 
     match socket.recv_from(buf) {
         Ok((len, addr)) => {
             info!("socket {fd} recv {len} bytes from {addr:?}");
-            unsafe { socket_address_to(addr, addr_buf, addr_len) }.map_or(-1, |_| len as isize)
+            if !addr_buf.is_null() && !addr_len.is_null() {
+                unsafe { socket_address_to(addr, addr_buf, addr_len) }.map_or(-1, |_| len as isize)
+            } else {
+                len as isize
+            }
         }
         Err(_) => -1,
     }
