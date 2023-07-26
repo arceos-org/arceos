@@ -57,9 +57,44 @@ pub const SOCK_CLOEXEC: usize = 0x80000;
 
 #[derive(TryFromPrimitive)]
 #[repr(usize)]
+pub enum SocketOptionLevel {
+    Socket = 1,
+    Tcp = 6,
+}
+
+#[derive(TryFromPrimitive)]
+#[repr(usize)]
 #[allow(non_camel_case_types)]
 pub enum SocketOption {
     SO_RCVTIMEO = 0x1006, // receive timeout
+}
+
+#[derive(TryFromPrimitive)]
+#[repr(usize)]
+#[allow(non_camel_case_types)]
+pub enum TcpSocketOption {
+    TCP_NODELAY = 1, // disable nagle algorithm and flush
+}
+
+impl TcpSocketOption {
+    fn set(&self, socket: &mut Socket, opt: &[u8]) {
+        let socket = match &mut socket.inner {
+            SocketInner::Tcp(ref mut s) => s,
+            _ => panic!("calling tcp option on a wrong type of socket"),
+        };
+
+        match self {
+            TcpSocketOption::TCP_NODELAY => {
+                if opt.len() < 4 {
+                    panic!("can't read a int from socket opt value");
+                }
+                let opt_value = i32::from_ne_bytes(<[u8; 4]>::try_from(&opt[0..4]).unwrap());
+
+                let _ = socket.set_nagle_enabled(opt_value == 0);
+                let _ = socket.flush();
+            }
+        }
+    }
 }
 
 /// 包装内部的不同协议 Socket
@@ -587,13 +622,13 @@ pub fn syscall_set_sock_opt(
     fd: usize,
     level: usize,
     opt_name: usize,
-    _opt_value: *const u8,
-    _opt_len: usize,
+    opt_value: *const u8,
+    opt_len: usize,
 ) -> isize {
-    // SOL_SOCKET
-    if level != 1 {
+    let Ok(level) = SocketOptionLevel::try_from(level) else {
+        error!("[setsockopt()] level {level} not supported");
         unimplemented!();
-    }
+    };
 
     let curr = current_process();
     let inner = curr.inner.lock();
@@ -603,11 +638,25 @@ pub fn syscall_set_sock_opt(
     };
 
     let mut file = file.lock();
-    let Some(_socket) = file.as_any_mut().downcast_ref::<Socket>() else {
+    let Some(socket) = file.as_any_mut().downcast_mut::<Socket>() else {
         return ErrorNo::ENOTSOCK as isize;
     };
 
-    let _option = SocketOption::try_from(opt_name);
+    let opt = unsafe { from_raw_parts(opt_value, opt_len) };
+
+    match level {
+        SocketOptionLevel::Socket => {
+            let _option = SocketOption::try_from(opt_name);
+        }
+        SocketOptionLevel::Tcp => {
+            let Ok(option) = TcpSocketOption::try_from(opt_name) else {
+                error!("[setsockopt()] option {opt_name} not supported in tcp level");
+                unimplemented!();
+            };
+
+            option.set(socket, opt);
+        }
+    }
 
     0
 }

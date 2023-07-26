@@ -348,6 +348,20 @@ impl TcpSocket {
             }),
         }
     }
+
+    pub fn set_nagle_enabled(&self, enabled: bool) -> AxResult {
+        let handle = unsafe { self.handle.get().read() };
+
+        let Some(handle) = handle else {
+            return Err(AxError::NotConnected);
+        };
+
+        SOCKET_SET.with_socket_mut::<tcp::Socket, _, _>(handle, |socket| {
+            socket.set_nagle_enabled(enabled)
+        });
+
+        Ok(())
+    }
 }
 
 /// Private methods
