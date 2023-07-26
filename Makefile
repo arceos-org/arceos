@@ -92,6 +92,7 @@ pre_build:
 
 
 build: pre_build $(OUT_DIR) $(OUT_BIN)
+	cp $(OUT_BIN) ./os.bin
 
 disasm:
 	$(OBJDUMP) $(OUT_ELF) | less

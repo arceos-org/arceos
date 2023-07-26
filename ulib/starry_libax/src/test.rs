@@ -389,6 +389,8 @@ pub const BUSYBOX_TESTCASES: &[&str] = &[
     "busybox sh lua_testcode.sh",
     "busybox sh busybox_testcode.sh",
     "busybox sh lmbench_testcode.sh",
+    // "busybox mkdir -p /var/tmp",
+    // "lmbench_all lat_fs /var/tmp",
     // "busybox echo latency measurements",
     // "lmbench_all lat_syscall -P 1 null",
     // "busybox mkdir -p /var/tmp",

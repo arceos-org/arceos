@@ -5,10 +5,10 @@ use alloc::{
     vec::Vec,
 };
 // 堆和栈的基地址
-pub const USER_HEAP_OFFSET: usize = 0x3FB0_0000;
-pub const USER_STACK_OFFSET: usize = 0x3FF0_0000;
-pub const MAX_HEAP_SIZE: usize = 0x40_0000;
-pub const USER_STACK_SIZE: usize = 0x10_0000;
+pub const USER_HEAP_OFFSET: usize = 0x3F0B_0000;
+pub const USER_STACK_OFFSET: usize = 0x3F0F_0000;
+pub const MAX_HEAP_SIZE: usize = 0x4_0000;
+pub const USER_STACK_SIZE: usize = 0x1_0000;
 use axerrno::AxResult;
 mod user_stack;
 use axhal::{mem::VirtAddr, paging::MappingFlags};
