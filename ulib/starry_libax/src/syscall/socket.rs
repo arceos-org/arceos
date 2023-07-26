@@ -535,14 +535,17 @@ pub fn syscall_sendto(
         .manual_alloc_for_lazy((buf as usize).into())
         .is_err()
     {
+        error!("[sendto()] buf address {buf:?} invalid");
         return ErrorNo::EFAULT as isize;
     }
-    if inner
-        .memory_set
-        .lock()
-        .manual_alloc_for_lazy((addr as usize).into())
-        .is_err()
+    if !addr.is_null()
+        && inner
+            .memory_set
+            .lock()
+            .manual_alloc_for_lazy((addr as usize).into())
+            .is_err()
     {
+        error!("[sendto()] addr address {addr:?} invalid");
         return ErrorNo::EFAULT as isize;
     }
     let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
