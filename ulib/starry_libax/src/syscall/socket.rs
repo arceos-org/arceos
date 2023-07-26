@@ -11,7 +11,7 @@ use axfs::monolithic_fs::{file_io::FileExt, FileIO, FileIOType};
 use axio::{Read, Seek, Write};
 use axnet::{IpAddr, SocketAddr, TcpSocket, UdpSocket};
 use axprocess::process::current_process;
-use log::{debug, info};
+use log::{debug, error, info};
 use num_enum::TryFromPrimitive;
 use spinlock::SpinNoIrq;
 
@@ -327,10 +327,11 @@ pub unsafe fn socket_address_to(addr: SocketAddr, buf: *mut u8, buf_len: *mut u3
 
 pub fn syscall_socket(domain: usize, s_type: usize, _protocol: usize) -> isize {
     let Ok(domain) = Domain::try_from(domain) else {
-        return -1;
+        error!("[socket()] Address Family not supported: {domain}");
+        return ErrorNo::EAFNOSUPPORT as isize;
     };
     let Ok(socket_type) = SocketType::try_from(s_type & SOCKET_TYPE_MASK) else {
-        return -1;
+        return ErrorNo::EINVAL as isize;
     };
 
     let mut socket = Socket::new(domain, socket_type);
@@ -345,7 +346,7 @@ pub fn syscall_socket(domain: usize, s_type: usize, _protocol: usize) -> isize {
     let mut inner = curr.inner.lock();
 
     let Ok(fd) = inner.alloc_fd() else {
-        return -1;
+        return ErrorNo::EMFILE as isize;
     };
 
     inner.fd_manager.fd_table[fd] = Some(Arc::new(SpinNoIrq::new(socket)));
