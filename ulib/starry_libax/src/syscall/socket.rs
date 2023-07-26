@@ -623,7 +623,7 @@ pub fn syscall_set_sock_opt(
     level: usize,
     opt_name: usize,
     opt_value: *const u8,
-    opt_len: usize,
+    opt_len: u32,
 ) -> isize {
     let Ok(level) = SocketOptionLevel::try_from(level) else {
         error!("[setsockopt()] level {level} not supported");
@@ -642,7 +642,7 @@ pub fn syscall_set_sock_opt(
         return ErrorNo::ENOTSOCK as isize;
     };
 
-    let opt = unsafe { from_raw_parts(opt_value, opt_len) };
+    let opt = unsafe { from_raw_parts(opt_value, opt_len as usize) };
 
     match level {
         SocketOptionLevel::Socket => {
