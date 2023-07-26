@@ -374,6 +374,28 @@ impl TcpSocket {
             None => true,
         }
     }
+
+    pub fn with_socket<R>(&self, f: impl FnOnce(Option<&tcp::Socket>) -> R) -> R {
+        let handle = unsafe { self.handle.get().read() };
+
+        match handle {
+            Some(handle) => {
+                SOCKET_SET.with_socket::<tcp::Socket, _, _>(handle, |socket| f(Some(socket)))
+            }
+            None => f(None),
+        }
+    }
+
+    pub fn with_socket_mut<R>(&mut self, f: impl FnOnce(Option<&mut tcp::Socket>) -> R) -> R {
+        let handle = unsafe { self.handle.get().read() };
+
+        match handle {
+            Some(handle) => {
+                SOCKET_SET.with_socket_mut::<tcp::Socket, _, _>(handle, |socket| f(Some(socket)))
+            }
+            None => f(None),
+        }
+    }
 }
 
 /// Private methods

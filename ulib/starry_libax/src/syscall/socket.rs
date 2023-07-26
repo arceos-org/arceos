@@ -12,7 +12,7 @@ use axfs::monolithic_fs::{file_io::FileExt, FileIO, FileIOType};
 use axio::{Read, Seek, Write};
 use axnet::{IpAddr, SocketAddr, TcpSocket, UdpSocket};
 use axprocess::process::current_process;
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use num_enum::TryFromPrimitive;
 use spinlock::SpinNoIrq;
 
@@ -72,6 +72,7 @@ pub enum SocketOption {
     SO_DONTROUTE = 5,
     SO_SNDBUF = 7,
     SO_RCVBUF = 8,
+    SO_KEEPALIVE = 9,
     SO_RCVTIMEO = 0x1006, // receive timeout
 }
 
@@ -120,6 +121,32 @@ impl SocketOption {
 
                 let opt_value = i32::from_ne_bytes(<[u8; 4]>::try_from(&opt[0..4]).unwrap());
 
+                socket.recv_buf_size = opt_value as usize;
+            }
+            SocketOption::SO_KEEPALIVE => {
+                if opt.len() < 4 {
+                    panic!("can't read a int from socket opt value");
+                }
+
+                let opt_value = i32::from_ne_bytes(<[u8; 4]>::try_from(&opt[0..4]).unwrap());
+
+                let interval = if opt_value != 0 {
+                    Some(axnet::Duration::from_secs(45))
+                } else {
+                    None
+                };
+
+                match &mut socket.inner {
+                    SocketInner::Udp(_) => {
+                        warn!("[setsockopt()] set SO_KEEPALIVE on udp socket, ignored")
+                    }
+                    SocketInner::Tcp(s) => s.with_socket_mut(|s| match s {
+                        Some(s) => s.set_keep_alive(interval),
+                        None => warn!(
+                            "[setsockopt()] set keep-alive for tcp socket not created, ignored"
+                        ),
+                    }),
+                }
                 socket.recv_buf_size = opt_value as usize;
             }
             _ => unimplemented!("{self:?}"),
@@ -175,6 +202,30 @@ impl SocketOption {
 
                 unsafe {
                     copy_nonoverlapping(&size.to_ne_bytes() as *const u8, opt_value, 4);
+                    *opt_len = 4;
+                }
+            }
+            SocketOption::SO_KEEPALIVE => {
+                if buf_len < 4 {
+                    panic!("can't write a int to socket opt value");
+                }
+
+                let keep_alive: i32 = match &socket.inner {
+                    SocketInner::Udp(_) => {
+                        warn!("[getsockopt()] get SO_KEEPALIVE on udp socket, returning false");
+                        0
+                    }
+                    SocketInner::Tcp(s) => s.with_socket(|s| match s {
+                        Some(s) => if s.keep_alive().is_some() { 1 } else { 0 },
+                        None => {warn!(
+                            "[setsockopt()] set keep-alive for tcp socket not created, returning false"
+                        );
+                            0},
+                    }),
+                };
+
+                unsafe {
+                    copy_nonoverlapping(&keep_alive.to_ne_bytes() as *const u8, opt_value, 4);
                     *opt_len = 4;
                 }
             }
