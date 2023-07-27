@@ -10,7 +10,7 @@ use alloc::{string::String, sync::Arc, vec::Vec};
 use axerrno::{AxError, AxResult};
 use axfs::monolithic_fs::{file_io::FileExt, FileIO, FileIOType};
 use axio::{Read, Seek, Write};
-use axnet::{IpAddr, SocketAddr, TcpSocket, UdpSocket};
+use axnet::{poll_interfaces, IpAddr, SocketAddr, TcpSocket, UdpSocket};
 use axprocess::process::current_process;
 use log::{debug, error, info, warn};
 use num_enum::TryFromPrimitive;
@@ -510,6 +510,7 @@ impl Seek for Socket {
 
 impl FileExt for Socket {
     fn readable(&self) -> bool {
+        poll_interfaces();
         match &self.inner {
             SocketInner::Tcp(s) => s.poll().map_or(false, |p| p.readable),
             SocketInner::Udp(s) => s.poll().map_or(false, |p| p.readable),
@@ -517,6 +518,7 @@ impl FileExt for Socket {
     }
 
     fn writable(&self) -> bool {
+        poll_interfaces();
         match &self.inner {
             SocketInner::Tcp(s) => s.poll().map_or(false, |p| p.writable),
             SocketInner::Udp(s) => s.poll().map_or(false, |p| p.writable),
