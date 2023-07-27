@@ -6,7 +6,7 @@ use core::{
     slice::{from_raw_parts, from_raw_parts_mut},
 };
 
-use alloc::sync::Arc;
+use alloc::{string::String, sync::Arc, vec::Vec};
 use axerrno::{AxError, AxResult};
 use axfs::monolithic_fs::{file_io::FileExt, FileIO, FileIOType};
 use axio::{Read, Seek, Write};
@@ -83,6 +83,7 @@ pub enum TcpSocketOption {
     TCP_NODELAY = 1, // disable nagle algorithm and flush
     TCP_MAXSEG = 2,
     TCP_INFO = 11,
+    TCP_CONGESTION = 13,
 }
 
 impl SocketOption {
@@ -236,8 +237,8 @@ impl SocketOption {
 }
 
 impl TcpSocketOption {
-    fn set(&self, socket: &mut Socket, opt: &[u8]) {
-        let socket = match &mut socket.inner {
+    fn set(&self, raw_socket: &mut Socket, opt: &[u8]) {
+        let socket = match &mut raw_socket.inner {
             SocketInner::Tcp(ref mut s) => s,
             _ => panic!("calling tcp option on a wrong type of socket"),
         };
@@ -253,14 +254,17 @@ impl TcpSocketOption {
                 let _ = socket.flush();
             }
             TcpSocketOption::TCP_INFO => panic!("[setsockopt()] try to set TCP_INFO"),
+            TcpSocketOption::TCP_CONGESTION => {
+                raw_socket.congestion = String::from_utf8(Vec::from(opt)).unwrap()
+            }
             _ => {
                 unimplemented!()
             }
         }
     }
 
-    fn get(&self, socket: &Socket, opt_value: *mut u8, opt_len: *mut u32) {
-        let socket = match socket.inner {
+    fn get(&self, raw_socket: &Socket, opt_value: *mut u8, opt_len: *mut u32) {
+        let socket = match raw_socket.inner {
             SocketInner::Tcp(ref s) => s,
             _ => panic!("calling tcp option on a wrong type of socket"),
         };
@@ -293,6 +297,14 @@ impl TcpSocketOption {
                 };
             }
             TcpSocketOption::TCP_INFO => {}
+            TcpSocketOption::TCP_CONGESTION => {
+                let bytes = raw_socket.congestion.as_bytes();
+
+                unsafe {
+                    copy_nonoverlapping(bytes.as_ptr(), opt_value, bytes.len());
+                    *opt_len = bytes.len() as u32;
+                };
+            }
         }
     }
 }
@@ -311,6 +323,7 @@ pub struct Socket {
     dont_route: bool,
     send_buf_size: usize,
     recv_buf_size: usize,
+    congestion: String,
 }
 
 pub enum SocketInner {
@@ -336,6 +349,7 @@ impl Socket {
             dont_route: false,
             send_buf_size: 64 * 1024,
             recv_buf_size: 64 * 1024,
+            congestion: String::from("reno"),
         }
     }
 
@@ -410,6 +424,7 @@ impl Socket {
                 dont_route: false,
                 send_buf_size: 64 * 1024,
                 recv_buf_size: 64 * 1024,
+                congestion: String::from("reno"),
             },
             addr,
         ))
