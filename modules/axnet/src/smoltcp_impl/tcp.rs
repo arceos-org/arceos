@@ -273,6 +273,19 @@ impl TcpSocket {
         Ok(())
     }
 
+    /// Close the transmit half of the tcp socket.
+    /// It will call `close()` on smoltcp::socket::tcp::Socket. It should send FIN to remote half.
+    ///
+    /// This function is for shutdown(fd, SHUT_WR) syscall.
+    ///
+    /// It won't change TCP state.
+    /// It won't affect unconnected sockets (listener).
+    pub fn close(&mut self) {
+        let handle = unsafe { self.handle.get().read().unwrap() };
+        SOCKET_SET.with_socket_mut::<tcp::Socket, _, _>(handle, |socket| socket.close());
+        SOCKET_SET.poll_interfaces();
+    }
+
     /// Receives data from the socket, stores it in the given buffer.
     pub fn recv(&self, buf: &mut [u8]) -> AxResult<usize> {
         if self.is_connecting() {

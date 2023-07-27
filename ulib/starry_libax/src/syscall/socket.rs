@@ -461,16 +461,22 @@ impl Socket {
         }
     }
 
+    /// For shutdown(fd, SHUT_WR)
     pub fn shutdown(&mut self) {
         let _ = match &mut self.inner {
-            SocketInner::Udp(s) => s.shutdown(),
-            SocketInner::Tcp(s) => s.shutdown(),
+            SocketInner::Udp(s) => {
+                let _ = s.shutdown();
+            }
+            SocketInner::Tcp(s) => s.close(),
         };
     }
 
+    /// For shutdown(fd, SHUT_RDWR)
     pub fn abort(&mut self) {
         match &mut self.inner {
-            SocketInner::Udp(s) => {}
+            SocketInner::Udp(s) => {
+                let _ = s.shutdown();
+            }
             SocketInner::Tcp(s) => s.with_socket_mut(|s| {
                 if let Some(s) = s {
                     s.abort();
@@ -1085,10 +1091,11 @@ pub fn syscall_shutdown(fd: usize, how: usize) -> isize {
     };
 
     match how {
-        SocketShutdown::Read => socket.abort(),
+        SocketShutdown::Read => {
+            error!("[shutdown()] SHUT_RD is noop")
+        }
         SocketShutdown::Write => socket.shutdown(),
         SocketShutdown::ReadWrite => {
-            socket.shutdown();
             socket.abort();
         }
     }
