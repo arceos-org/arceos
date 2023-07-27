@@ -912,11 +912,14 @@ pub fn syscall_recvfrom(
             .lock()
             .manual_alloc_range_for_lazy(
                 (addr_buf as usize).into(),
-                unsafe { addr_len.add(*addr_len as usize) as usize }.into(),
+                unsafe { addr_buf.add(*addr_len as usize) as usize }.into(),
             )
             .is_err()
     {
-        error!("[recvfrom()] addr_buf address {addr_buf:?} invalid");
+        error!(
+            "[recvfrom()] addr_buf address {addr_buf:?}, len: {} invalid",
+            unsafe { *addr_len }
+        );
         return ErrorNo::EFAULT as isize;
     }
 
