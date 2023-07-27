@@ -328,6 +328,14 @@ impl Directory {
         self.entry_idx += n;
         Ok(n)
     }
+
+    /// Rename a file or directory to a new name.
+    /// Delete the original file if `old` already exists.
+    ///
+    /// This only works then the new path is in the same mounted fs.
+    pub fn rename(&self, old: &str, new: &str) -> AxResult {
+        crate::root::rename(old, new)
+    }
 }
 
 impl Drop for File {

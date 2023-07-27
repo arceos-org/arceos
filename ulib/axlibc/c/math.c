@@ -568,16 +568,4 @@ long double fabsl(long double x)
 }
 #endif
 
-double log(double x)
-{
-    unimplemented();
-    return 0;
-}
-
-double pow(double x, double y)
-{
-    unimplemented();
-    return 0;
-}
-
 #endif // AX_CONFIG_FP_SIMD

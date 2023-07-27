@@ -28,6 +28,7 @@ extern crate alloc;
 
 mod dev;
 mod fs;
+mod mounts;
 mod root;
 
 pub mod api;

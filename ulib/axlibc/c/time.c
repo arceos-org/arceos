@@ -216,9 +216,7 @@ double difftime(time_t t1, time_t t0)
 }
 #endif
 
-// TODO
 time_t mktime(struct tm *tm)
 {
-    unimplemented();
-    return 0;
+    return ax_mktime(tm);
 }

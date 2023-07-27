@@ -1,8 +1,8 @@
 #ifdef AX_CONFIG_NET
 
+#include <axlibc.h>
 #include <ctype.h>
 #include <errno.h>
-#include <axlibc.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,6 +31,9 @@ int getaddrinfo(const char *__restrict node, const char *__restrict service,
         (_res + i)->ai_addrlen = sizeof(struct sockaddr);
         (_res + i)->ai_addr = (addrs + i);
         (_res + i)->ai_next = (_res + i + 1);
+        // TODO: This is a hard-code part, only return TCP parameters
+        (_res + i)->ai_socktype = SOCK_STREAM;
+        (_res + i)->ai_protocol = IPPROTO_TCP;
     }
     (_res + res_len - 1)->ai_next = NULL;
     *res = _res;
@@ -42,6 +45,31 @@ void freeaddrinfo(struct addrinfo *__restrict res)
     free(res->ai_addr);
     free(res);
     return;
+}
+
+static const char gai_msgs[] = "Invalid flags\0"
+                           "Name does not resolve\0"
+                           "Try again\0"
+                           "Non-recoverable error\0"
+                           "Unknown error\0"
+                           "Unrecognized address family or invalid length\0"
+                           "Unrecognized socket type\0"
+                           "Unrecognized service\0"
+                           "Unknown error\0"
+                           "Out of memory\0"
+                           "System error\0"
+                           "Overflow\0"
+                           "\0Unknown error";
+
+const char *gai_strerror(int ecode)
+{
+    const char *s;
+    for (s = gai_msgs, ecode++; ecode && *s; ecode++, s++)
+        for (; *s; s++)
+            ;
+    if (!*s)
+        s++;
+    return s;
 }
 
 static const char msgs[] = "Host not found\0"

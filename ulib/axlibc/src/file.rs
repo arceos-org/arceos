@@ -192,3 +192,18 @@ pub unsafe extern "C" fn ax_getcwd(buf: *mut c_char, size: usize) -> *mut c_char
         }
     })
 }
+
+/// Rename `old` to `new`
+/// If new exists, it is first removed.
+///
+/// Return 0 if the operation succeeds, otherwise return -1.
+#[no_mangle]
+pub unsafe extern "C" fn ax_rename(old: *const c_char, new: *const c_char) -> c_int {
+    ax_call_body!(ax_rename, {
+        let old_path = char_ptr_to_str(old)?;
+        let new_path = char_ptr_to_str(new)?;
+        debug!("ax_rename <= old: {:?}, new: {:?}", old_path, new_path);
+        axstd::fs::rename(old_path, new_path)?;
+        Ok(0)
+    })
+}

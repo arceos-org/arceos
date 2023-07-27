@@ -12,11 +12,13 @@ documentation = "https://rcore-os.github.io/arceos/axfs/index.html"
 [features]
 devfs = ["dep:axfs_devfs"]
 ramfs = ["dep:axfs_ramfs"]
+procfs = ["dep:axfs_ramfs"]
+sysfs = ["dep:axfs_ramfs"]
 fatfs = ["dep:fatfs"]
 myfs = ["dep:crate_interface"]
 use-ramdisk = []
 
-default = ["devfs", "ramfs", "fatfs"]
+default = ["devfs", "ramfs", "fatfs", "procfs", "sysfs"]
 
 [dependencies]
 log = "0.4"

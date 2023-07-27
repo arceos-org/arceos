@@ -49,12 +49,15 @@ mod pipe;
 mod pthread;
 #[cfg(feature = "net")]
 mod socket;
+#[cfg(feature = "alloc")]
+mod strftime;
 #[cfg(feature = "fp_simd")]
 mod strtod;
 #[cfg(feature = "fd")]
 mod uio;
 
 mod errno;
+mod mktime;
 mod rand;
 mod setjmp;
 mod stdio;
@@ -77,6 +80,8 @@ pub use self::rand::{ax_rand_u32, ax_srand};
 
 #[cfg(feature = "alloc")]
 pub use self::malloc::{ax_free, ax_malloc};
+#[cfg(feature = "alloc")]
+pub use self::strftime::ax_strftime;
 
 #[cfg(feature = "fd")]
 pub use self::fd_ops::{ax_close, ax_dup, ax_dup3, ax_fcntl, ax_fstat, ax_read, ax_write};
@@ -112,6 +117,7 @@ pub use self::io_mpx::{ax_epoll_create, ax_epoll_ctl, ax_epoll_wait};
 pub use self::strtod::{ax_strtod, ax_strtof};
 
 pub use self::errno::ax_errno_string;
+pub use self::mktime::ax_mktime;
 pub use self::stdio::{ax_print_str, ax_println_str};
 pub use self::sys::ax_sysconf;
 pub use self::time::{ax_clock_gettime, ax_nanosleep};
