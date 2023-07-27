@@ -445,7 +445,7 @@ impl TcpSocket {
     }
 
     #[inline]
-    fn is_connected(&self) -> bool {
+    pub fn is_connected(&self) -> bool {
         self.get_state() == STATE_CONNECTED
     }
 

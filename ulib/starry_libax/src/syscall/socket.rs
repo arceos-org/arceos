@@ -784,25 +784,7 @@ pub fn syscall_sendto(
 ) -> isize {
     let curr = current_process();
     let inner = curr.inner.lock();
-    if inner
-        .memory_set
-        .lock()
-        .manual_alloc_for_lazy((buf as usize).into())
-        .is_err()
-    {
-        error!("[sendto()] buf address {buf:?} invalid");
-        return ErrorNo::EFAULT as isize;
-    }
-    if !addr.is_null()
-        && inner
-            .memory_set
-            .lock()
-            .manual_alloc_for_lazy((addr as usize).into())
-            .is_err()
-    {
-        error!("[sendto()] addr address {addr:?} invalid");
-        return ErrorNo::EFAULT as isize;
-    }
+
     let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
         return ErrorNo::EBADF as isize;
     };
@@ -812,36 +794,76 @@ pub fn syscall_sendto(
         return ErrorNo::ENOTSOCK as isize;
     };
 
-    let addr = match socket.socket_type {
-        SocketType::SOCK_STREAM | SocketType::SOCK_SEQPACKET => {
-            if !addr.is_null() || addr_len != 0 {
-                return ErrorNo::EISCONN as isize;
-            }
-            // TODO: if socket isn't connected, return ENOTCONN
-
-            SocketAddr::new(IpAddr::v4(0, 0, 0, 0), 0)
-        }
-        SocketType::SOCK_DGRAM => {
-            if !socket.is_bound() {
-                socket
-                    .bind(SocketAddr::new(IpAddr::v4(0, 0, 0, 0), 0))
-                    .unwrap();
-            }
-
-            unsafe { socket_address_from(addr) }
-        }
-        _ => unimplemented!(),
+    if buf.is_null() {
+        return ErrorNo::EFAULT as isize;
+    }
+    let Ok(buf) =  inner
+        .memory_set
+        .lock()
+        .manual_alloc_range_for_lazy(
+            (buf as usize).into(),
+            unsafe { buf.add(len) as usize }.into(),
+        )
+        .map(|_| unsafe { from_raw_parts(buf, len) })
+        else
+    {
+        error!("[sendto()] buf address {buf:?} invalid");
+        return ErrorNo::EFAULT as isize;
     };
 
-    // TODO: check if buffer is safe
-    let buf = unsafe { from_raw_parts(buf, len) };
+    let addr = if !addr.is_null() && addr_len != 0 {
+        match inner.memory_set.lock().manual_alloc_range_for_lazy(
+            (addr as usize).into(),
+            unsafe { addr.add(addr_len) as usize }.into(),
+        ) {
+            Ok(_) => Some(unsafe { socket_address_from(addr) }),
+            Err(_) => {
+                error!("[sendto()] addr address {addr:?} invalid");
+                return ErrorNo::EFAULT as isize;
+            }
+        }
+    } else {
+        None
+    };
 
-    info!("[sendto()] socket {fd} send to {:?}", addr);
+    let send_result = match &mut socket.inner {
+        SocketInner::Udp(s) => {
+            // udp socket not bound
+            if s.local_addr().is_err() {
+                s.bind(SocketAddr::new(IpAddr::v4(0, 0, 0, 0), 0)).unwrap();
+            }
 
-    socket.sendto(buf, addr).map_or(-1, |l| {
-        info!("[sendto()] socket {fd} send {l} bytes");
-        l as isize
-    })
+            match addr {
+                Some(addr) => s.send_to(buf, addr),
+                None => {
+                    // not connected and no target is given
+                    if s.peer_addr().is_err() {
+                        return ErrorNo::ENOTCONN as isize;
+                    }
+                    s.send(buf)
+                }
+            }
+        }
+        SocketInner::Tcp(s) => {
+            if addr.is_some() {
+                return ErrorNo::EISCONN as isize;
+            }
+
+            if !s.is_connected() {
+                return ErrorNo::ENOTCONN as isize;
+            }
+
+            s.send(buf)
+        }
+    };
+
+    match send_result {
+        Ok(len) => {
+            info!("[sendto()] socket {fd} sent {len} bytes");
+            len as isize
+        }
+        Err(_) => -1,
+    }
 }
 
 pub fn syscall_recvfrom(

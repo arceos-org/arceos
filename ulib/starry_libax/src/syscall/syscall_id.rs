@@ -155,6 +155,7 @@ pub enum ErrorNo {
     EAFNOSUPPORT = -97,
     /// Transport endpoint is already connected
     EISCONN = -106,
+    ENOTCONN = -107,
     /// 拒绝连接
     ECONNREFUSED = -111,
     /// Operation now in progress
