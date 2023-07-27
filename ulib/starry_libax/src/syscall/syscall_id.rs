@@ -71,6 +71,7 @@ pub enum SyscallId {
     CLONE = 220,
     EXECVE = 221,
     WAIT4 = 260,
+    GETRANDOM = 278,
     // 内存管理
     BRK = 214,
     MUNMAP = 215,

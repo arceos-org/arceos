@@ -88,6 +88,8 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[1] as *mut i32,
             WaitFlags::from_bits(args[2] as u32).unwrap(),
         ),
+        GETRANDOM => syscall_getrandom(args[0] as *mut u8, args[1], args[2]),
+
         BRK => syscall_brk(args[0] as usize),
         MUNMAP => syscall_munmap(args[0], args[1]),
         MMAP => syscall_mmap(

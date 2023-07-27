@@ -1,8 +1,11 @@
+use core::slice::from_raw_parts_mut;
+
 use axhal::time::{current_time_nanos, nanos_to_ticks, NANOS_PER_SEC};
 use axprocess::{
     process::{current_process, current_task},
     time_stat_output,
 };
+use rand::{rngs::SmallRng, Fill, SeedableRng};
 
 use super::{
     flags::{ITimerVal, RusageFlags, SysInfo, TimeSecs, TimeVal, UtsName, TMS},
@@ -166,4 +169,31 @@ pub fn syscall_getrusage(who: i32, utime: *mut TimeVal) -> isize {
     } else {
         ErrorNo::EINVAL as isize
     }
+}
+
+pub fn syscall_getrandom(buf: *mut u8, len: usize, _flags: usize) -> isize {
+    let process = current_process();
+    let inner = process.inner.lock();
+
+    if inner
+        .memory_set
+        .lock()
+        .manual_alloc_range_for_lazy(
+            (buf as usize).into(),
+            unsafe { buf.add(len) as usize }.into(),
+        )
+        .is_err()
+    {
+        return ErrorNo::EFAULT as isize;
+    }
+
+    let buf = unsafe { from_raw_parts_mut(buf, len) };
+
+    // TODO: flags
+    // - GRND_RANDOM: use /dev/random or /dev/urandom
+    // - GRND_NONBLOCK: EAGAIN when block
+    let mut rng = SmallRng::from_seed([0; 32]);
+    buf.try_fill(&mut rng).unwrap();
+
+    buf.len() as isize
 }
