@@ -13,13 +13,25 @@
 #![feature(result_option_inspect)]
 #![cfg_attr(feature = "allocator_api", feature(allocator_api))]
 
+#[cfg(feature = "bitmap")]
 mod bitmap;
-mod buddy;
-mod slab;
-
+#[cfg(feature = "bitmap")]
 pub use bitmap::BitmapPageAllocator;
+
+#[cfg(feature = "buddy")]
+mod buddy;
+#[cfg(feature = "buddy")]
 pub use buddy::BuddyByteAllocator;
+
+#[cfg(feature = "slab")]
+mod slab;
+#[cfg(feature = "slab")]
 pub use slab::SlabByteAllocator;
+
+#[cfg(feature = "tlsf")]
+mod tlsf;
+#[cfg(feature = "tlsf")]
+pub use tlsf::TlsfByteAllocator;
 
 use core::alloc::Layout;
 use core::num::NonZeroUsize;

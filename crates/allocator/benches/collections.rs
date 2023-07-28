@@ -7,7 +7,7 @@ use std::alloc::Allocator;
 use std::collections::BTreeMap;
 use std::io::Write;
 
-use allocator::{AllocatorRc, BuddyByteAllocator, SlabByteAllocator};
+use allocator::{AllocatorRc, BuddyByteAllocator, SlabByteAllocator, TlsfByteAllocator};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use rand::{rngs::SmallRng, seq::SliceRandom, RngCore, SeedableRng};
 
@@ -80,6 +80,11 @@ fn bench(c: &mut Criterion, alloc_name: &str, alloc: impl Allocator + Clone) {
 fn criterion_benchmark(c: &mut Criterion) {
     let mut pool = MemoryPool::new(POOL_SIZE);
     bench(c, "system", std::alloc::System);
+    bench(
+        c,
+        "tlsf",
+        AllocatorRc::new(TlsfByteAllocator::new(), pool.as_slice()),
+    );
     bench(
         c,
         "slab",

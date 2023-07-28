@@ -6,7 +6,7 @@ use std::alloc::{Allocator, Layout};
 use std::collections::BTreeMap;
 use std::io::Write;
 
-use allocator::{AllocatorRc, BuddyByteAllocator, SlabByteAllocator};
+use allocator::{AllocatorRc, BuddyByteAllocator, SlabByteAllocator, TlsfByteAllocator};
 use rand::{prelude::SliceRandom, Rng};
 
 const POOL_SIZE: usize = 1024 * 1024 * 128;
@@ -72,7 +72,6 @@ pub fn test_alignment(n: usize, alloc: &(impl Allocator + Clone)) {
             let align = 1 << rng.gen_range(0..8);
             let layout = Layout::from_size_align(size, align).unwrap();
             let ptr = alloc.allocate(layout).unwrap();
-            // println!("{:?} {:#x}", layout, ptr.addr());
             blocks.push((ptr, layout));
         } else {
             // delete a block
@@ -124,6 +123,18 @@ fn buddy_alloc() {
 fn slab_alloc() {
     run_test(|pool| {
         let alloc = AllocatorRc::new(SlabByteAllocator::new(), pool);
+        test_alignment(50, &alloc);
+        test_vec(3_000_000, &alloc);
+        test_vec2(30_000, 64, &alloc);
+        test_vec2(7_500, 520, &alloc);
+        test_btree_map(50_000, &alloc);
+    })
+}
+
+#[test]
+fn tlsf_alloc() {
+    run_test(|pool| {
+        let alloc = AllocatorRc::new(TlsfByteAllocator::new(), pool);
         test_alignment(50, &alloc);
         test_vec(3_000_000, &alloc);
         test_vec2(30_000, 64, &alloc);

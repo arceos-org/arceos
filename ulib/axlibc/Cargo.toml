@@ -27,6 +27,9 @@ fp_simd = ["axstd/fp_simd"]
 
 # Memory
 alloc = ["axstd/alloc", "dep:axalloc"]
+alloc_tlsf = ["axalloc/tlsf"]
+alloc_slab = ["axalloc/slab"]
+alloc_buddy = ["axalloc/buddy"]
 paging = ["axstd/paging"]
 
 # Interrupts
