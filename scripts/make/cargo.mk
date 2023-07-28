@@ -64,6 +64,10 @@ build_args := \
   $(build_args-$(APP_TYPE)) \
   --features "$(features-y)" \
 
+ifeq ($(OFFLINE),y)
+  build_args += --offline
+endif
+
 ifeq ($(default_features),n)
   build_args += --no-default-features
 endif

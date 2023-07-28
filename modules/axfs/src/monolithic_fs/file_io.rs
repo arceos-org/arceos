@@ -157,6 +157,10 @@ pub trait FileIO: FileExt {
     fn ready_to_write(&mut self) -> bool {
         false
     }
+
+    fn ioctl(&mut self, _request: usize, _arg1: usize) -> AxResult<()> {
+        Err(AxError::Unsupported)
+    }
 }
 
 /// `FileExt` 需要满足 `AsAny` 的要求，即可以转化为 `Any` 类型，从而能够进行向下类型转换。

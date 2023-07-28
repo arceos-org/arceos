@@ -1,10 +1,13 @@
 //! todo 重构fd_table, fd_allocator
 
 use alloc::sync::Arc;
-use axfs::monolithic_fs::FileIO;
+use axfs::monolithic_fs::{flags::OpenFlags, FileIO};
+use axlog::info;
 use spinlock::SpinNoIrq;
 extern crate alloc;
 use alloc::vec::Vec;
+
+use crate::stdin::{Stdin, Stdout};
 pub struct FdManager {
     /// 保存文件描述符的数组
     pub fd_table: Vec<Option<Arc<SpinNoIrq<dyn FileIO>>>>,
@@ -36,12 +39,23 @@ impl FdManager {
 
     /// 在执行 `exec()` 时关闭标记为 `CLOEXEC` 的文件
     pub fn close_on_exec(&mut self) {
-        for fd in &mut self.fd_table {
+        for (index, fd) in &mut self.fd_table.iter_mut().enumerate() {
             if let Some(f) = fd {
                 if f.lock().get_status().is_close_on_exec() {
+                    info!("close fd: {} on exec", index);
                     fd.take();
                 }
             }
+        }
+        if self.fd_table[0].is_none() {
+            self.fd_table[0] = Some(Arc::new(SpinNoIrq::new(Stdin {
+                flags: OpenFlags::empty(),
+            })));
+        }
+        if self.fd_table[1].is_none() {
+            self.fd_table[1] = Some(Arc::new(SpinNoIrq::new(Stdout {
+                flags: OpenFlags::empty(),
+            })));
         }
     }
 }

@@ -5,6 +5,7 @@ use crate::syscall::flags::TimeSecs;
 use super::link::get_link_count;
 use super::types::{normal_file_mode, StMode};
 use alloc::borrow::ToOwned;
+use alloc::collections::BTreeMap;
 use alloc::string::{String, ToString};
 use alloc::sync::Arc;
 use alloc::vec::Vec;
@@ -52,37 +53,13 @@ pub struct FileMetaData {
 impl Read for FileDesc {
     fn read(&mut self, buf: &mut [u8]) -> AxResult<usize> {
         debug!("Into function read, buf_len: {}", buf.len());
-        // 似乎当前的fat32文件系统不支持一次读取达到block size的内容
-        let buf_len = buf.len();
-        let mut offset = 0;
-        let mut probe = buf.to_vec();
-        while offset < buf_len {
-            let read_len = self.file.lock().read(&mut probe)?;
-            if read_len == 0 {
-                break;
-            }
-            buf[offset..offset + read_len].copy_from_slice(&probe[..read_len]);
-            offset += read_len;
-            probe.truncate(buf_len - offset);
-        }
-        Ok(offset)
+        self.file.lock().read(buf)
     }
 }
 
 impl Write for FileDesc {
     fn write(&mut self, buf: &[u8]) -> AxResult<usize> {
-        let buf_len = buf.len();
-        let mut offset = 0;
-        let mut probe = buf.to_vec();
-        while offset < buf_len {
-            let write_len = self.file.lock().write(&probe)?;
-            if write_len == 0 {
-                break;
-            }
-            offset += write_len;
-            probe = probe[write_len..].to_vec();
-        }
-        Ok(offset)
+        self.file.lock().write(buf)
     }
 
     fn flush(&mut self) -> AxResult {
@@ -121,24 +98,20 @@ impl FileIO for FileDesc {
     }
 
     fn get_stat(&self) -> AxResult<Kstat> {
-        let mut file = self.file.lock();
+        let file = self.file.lock();
         let metadata = file.metadata()?;
         let raw_metadata = metadata.raw_metadata();
         let stat = self.stat.lock();
-        let old_pos = file.seek(SeekFrom::Current(0)).unwrap();
-        let len = file.seek(SeekFrom::End(0)).unwrap();
-        file.seek(SeekFrom::Start(old_pos)).unwrap();
-        info!("st size: {}", len);
         let kstat = Kstat {
             st_dev: 1,
             st_ino: 1,
             st_mode: normal_file_mode(StMode::S_IFREG).bits(),
-            st_nlink: get_link_count(&(FilePath::new(self.path.as_str())?)) as u32,
+            st_nlink: get_link_count(&(self.path.as_str().to_string())) as u32,
             st_uid: 0,
             st_gid: 0,
             st_rdev: 0,
             _pad0: 0,
-            st_size: len,
+            st_size: raw_metadata.size(),
             st_blksize: 0,
             _pad1: 0,
             st_blocks: raw_metadata.blocks() as u64,

@@ -1,9 +1,9 @@
 //! 负责处理进程中与信号相关的内容
 
 use alloc::sync::Arc;
-use axerrno::AxResult;
+use axerrno::{AxError, AxResult};
 use axhal::{arch::TrapFrame, cpu::this_cpu_id};
-use axlog::info;
+use axlog::{error, info, warn};
 use axsignal::{
     action::{SigActionFlags, SignalDefault, SIG_IGN},
     info::SigInfo,
@@ -45,7 +45,7 @@ impl SignalModule {
 
 const USER_SIGNAL_PROTECT: usize = 512;
 
-use crate::process::{current_process, current_task, exit, PID2PC};
+use crate::process::{current_process, current_task, exit, PID2PC, TID2TASK};
 
 /// 将保存的trap上下文填入内核栈中
 ///
@@ -115,7 +115,12 @@ pub fn handle_signals() {
     } else {
         return;
     };
-    info!("cpu: {}, handler signal: {}", this_cpu_id(), sig_num);
+    warn!(
+        "cpu: {}, task: {}, handler signal: {}",
+        this_cpu_id(),
+        current_task.id().as_u64(),
+        sig_num
+    );
     let signal = SignalNo::from(sig_num);
     let mask = signal_set.mask;
     // 存在未被处理的信号
@@ -174,13 +179,6 @@ pub fn handle_signals() {
 
     // 新的trap上下文的sp指针位置，由于SIGINFO会存放内容，所以需要开个保护区域
     let mut sp = trap_frame.regs.sp - USER_SIGNAL_PROTECT;
-    // info!("test sp: {:X}", sp);
-    // info!("task trap: {:?}", trap_frame);
-    // info!(
-    //     "trap address: {:X}",
-    //     current_task.get_first_trap_frame() as *const _ as usize
-    //         + core::mem::size_of::<TrapFrame>()
-    // );
     info!(
         "restorer :{}, handler: {}",
         action.restorer, action.sa_handler
@@ -213,12 +211,38 @@ pub fn handle_signals() {
         trap_frame.regs.a2 = sp;
     }
     trap_frame.regs.sp = sp;
+    //     let frame_base = current_task.get_first_trap_frame() as usize;
+    //     unsafe {
+    //         sfence_vma_all();
+    //         core::arch::asm!(
+    //             r"
+    //             mv      sp, {frame_base}
+    //             LDR     gp, sp, 2                   // load user gp and tp
+    //             LDR     t0, sp, 3
+    //             STR     tp, sp, 3                   // save supervisor tp
+    //             mv      tp, t0
+    //             addi    t0, sp, 280                 // put supervisor sp to scratch
+    //             csrw    sscratch, t0
+    //             LDR     t0, sp, 31
+    //             LDR     t1, sp, 32
+    //             csrw    sepc, t0
+    //             csrw    sstatus, t1
+    //             .short  0x2432                      // fld fs0,264(sp)
+    //             .short  0x24d2                      // fld fs1,272(sp)
+    //             POP_GENERAL_REGS
+    //             LDR     sp, sp, 1                   // load sp from tf.regs.sp
+    //             sret
+    //             ",
+    //             frame_base = in(reg) frame_base,
+    //         );
+    //     }
 }
 
 /// 从信号处理函数返回
 ///
 /// 返回的值与原先syscall应当返回的值相同，即返回原先保存的trap上下文的a0的值
 pub fn signal_return() -> isize {
+    // error!("id: {}, test", current_task().id().as_u64());
     if load_trap_for_signal() {
         // 说明确实存在着信号处理函数的trap上下文
         // 此时内核栈上存储的是调用信号处理前的trap上下文
@@ -227,6 +251,7 @@ pub fn signal_return() -> isize {
     } else {
         // 没有进行信号处理，但是调用了sig_return
         // 此时直接返回-1
+        error!("test");
         -1
     }
 }
@@ -257,15 +282,27 @@ pub fn send_signal_to_process(pid: isize, signum: isize) -> AxResult<()> {
 
 /// 发送信号到指定的线程
 pub fn send_signal_to_thread(tid: isize, signum: isize) -> AxResult<()> {
-    let process = current_process();
+    let tid2task = TID2TASK.lock();
+    let task = if let Some(task) = tid2task.get(&(tid as u64)) {
+        Arc::clone(task)
+    } else {
+        return Err(AxError::NotFound);
+    };
+    drop(tid2task);
+    let pid = task.get_process_id();
+    let pid2pc = PID2PC.lock();
+    let process = if let Some(process) = pid2pc.get(&pid) {
+        Arc::clone(process)
+    } else {
+        return Err(AxError::NotFound);
+    };
+    drop(pid2pc);
     let mut inner = process.inner.lock();
-
     if inner.signal_module.contains_key(&(tid as u64)) == false {
         return Err(axerrno::AxError::NotFound);
     }
     let signal_module = inner.signal_module.get_mut(&(tid as u64)).unwrap();
     signal_module.signal_set.try_add_signal(signum as usize);
-
     for task in inner.tasks.iter() {
         if task.id().as_u64() == tid as u64 && task.state() == TaskState::Blocked {
             RUN_QUEUE.lock().unblock_task(Arc::clone(task), false);

@@ -5,10 +5,10 @@ use alloc::{
     vec::Vec,
 };
 // 堆和栈的基地址
-pub const USER_HEAP_OFFSET: usize = 0x3F00_0000;
-pub const USER_STACK_OFFSET: usize = 0x3FA0_0000;
-pub const MAX_HEAP_SIZE: usize = 0xA0_0000;
-pub const USER_STACK_SIZE: usize = 0x60_0000;
+pub const USER_HEAP_OFFSET: usize = 0x3FA0_0000;
+pub const USER_STACK_OFFSET: usize = 0x3FE0_0000;
+pub const MAX_HEAP_SIZE: usize = 0x40_0000;
+pub const USER_STACK_SIZE: usize = 0x20_0000;
 use axerrno::AxResult;
 mod user_stack;
 use axhal::{mem::VirtAddr, paging::MappingFlags};
@@ -47,6 +47,7 @@ impl<'a> Loader<'a> {
     pub fn load(
         self,
         args: Vec<String>,
+        envs: Vec<String>,
         mut memory_set: &mut MemorySet,
     ) -> AxResult<(VirtAddr, VirtAddr, VirtAddr)> {
         info!("args: {:?}", args);
@@ -74,11 +75,11 @@ impl<'a> Loader<'a> {
                 panic!("ELF Interpreter is not supported without fs feature");
             }
             let interp_path = FilePath::new(interp_path)?;
-            let real_interp_path = real_path(&interp_path);
-            let interp = axfs::api::read(real_interp_path.path())
+            let real_interp_path = real_path(&(interp_path.path().to_string()));
+            let interp = axfs::api::read(real_interp_path.as_str())
                 .expect("Error reading Interpreter from fs");
             let loader = Loader::new(&interp);
-            return loader.load(new_argv, &mut memory_set);
+            return loader.load(new_argv, envs, &mut memory_set);
         }
 
         let auxv = memory_set.map_elf(&self.elf);
@@ -107,18 +108,6 @@ impl<'a> Loader<'a> {
             ustack_bottom.align_up_4k()
         );
 
-        let envs:Vec<String> = vec![
-            "SHLVL=1".into(),
-            "PATH=/usr/sbin:/usr/bin:/sbin:/bin".into(),
-            "PWD=/".into(),
-            "GCC_EXEC_PREFIX=/riscv64-linux-musl-native/bin/../lib/gcc/".into(),
-            "COLLECT_GCC=./riscv64-linux-musl-native/bin/riscv64-linux-musl-gcc".into(),
-            "COLLECT_LTO_WRAPPER=/riscv64-linux-musl-native/bin/../libexec/gcc/riscv64-linux-musl/11.2.1/lto-wrapper".into(),
-            "COLLECT_GCC_OPTIONS='-march=rv64gc' '-mabi=lp64d' '-march=rv64imafdc' '-dumpdir' 'a.'".into(),
-            "LIBRARY_PATH=/lib/".into(),
-            "LD_LIBRARY_PATH=/lib/".into(),
-        ];
-
         let stack = init_stack(args, envs, auxv, ustack_bottom.into());
         let ustack_bottom: VirtAddr = stack.get_sp().into();
         // 拼接出用户栈初始化数组
@@ -143,13 +132,13 @@ impl<'a> Loader<'a> {
 pub fn load_app(
     name: String,
     mut args: Vec<String>,
+    envs: Vec<String>,
     memory_set: &mut MemorySet,
 ) -> AxResult<(VirtAddr, VirtAddr, VirtAddr)> {
     if name.ends_with(".sh") {
         args = [vec![String::from("busybox"), String::from("sh")], args].concat();
-        return load_app("busybox".to_string(), args, memory_set);
+        return load_app("busybox".to_string(), args, envs, memory_set);
     }
-
     let elf_data = if let Ok(ans) = axfs::api::read(name.as_str()) {
         ans
     } else {
@@ -158,5 +147,5 @@ pub fn load_app(
     debug!("app elf data length: {}", elf_data.len());
     let loader = Loader::new(&elf_data);
 
-    loader.load(args, memory_set)
+    loader.load(args, envs, memory_set)
 }

@@ -47,11 +47,11 @@ use log::{debug, info, trace};
 ///
 /// 现在的一个问题是，如果建立了dir1/A，并将dir2/B链接到dir1/A，那么删除dir1/A时，实际的文件不会被删除(连接数依然大于1)，只有当删除dir2/B时，实际的文件才会被删除
 /// 这样的话，如果新建了dir1/A，那么就会报错(create_new)或者覆盖原文件(create)，从而影响到dir2/B
-pub fn remove_link(src_path: &FilePath) -> Option<FilePath> {
+pub fn remove_link(src_path: &FilePath) -> Option<String> {
     trace!("remove_link: {}", src_path.path());
     let mut map = LINK_PATH_MAP.lock();
     // 找到对应的链接
-    match map.remove(src_path) {
+    match map.remove(&src_path.path().to_string()) {
         Some(dest_path) => {
             // 更新链接数
             let mut count_map = LINK_COUNT_MAP.lock();
@@ -63,10 +63,10 @@ pub fn remove_link(src_path: &FilePath) -> Option<FilePath> {
             *count -= 1;
             // 如果链接数为0，那么删除文件
             if *count == 0 {
-                debug!("link num down to zero, remove file: {}", dest_path.path());
-                let _ = remove_file(dest_path.path());
+                debug!("link num down to zero, remove file: {}", dest_path);
+                let _ = remove_file(dest_path.as_str());
             }
-            Some(dest_path.clone())
+            Some(dest_path)
         }
         None => None,
     }
@@ -92,19 +92,19 @@ pub fn create_link(src_path: &FilePath, dest_path: &FilePath) -> bool {
     }
     let mut map = LINK_PATH_MAP.lock();
     // 如果需要连接的文件已经存在
-    if let Some(old_dest_path) = map.get(src_path) {
+    if let Some(old_dest_path) = map.get(&src_path.path().to_string()) {
         // 如果不是当前链接，那么删除旧链接; 否则不做任何事
-        if old_dest_path.equal_to(dest_path) {
+        if old_dest_path.eq(&dest_path.path().to_string()) {
             debug!("link already exists");
             return true;
         }
         remove_link(src_path);
     }
     // 创建链接
-    map.insert(src_path.clone(), dest_path.clone());
+    map.insert(src_path.path().to_string(), dest_path.path().to_string());
     // 更新链接数
     let mut count_map = LINK_COUNT_MAP.lock();
-    let count = count_map.entry(dest_path.clone()).or_insert(0);
+    let count = count_map.entry(dest_path.path().to_string()).or_insert(0);
     *count += 1;
     true
 }
@@ -114,8 +114,8 @@ pub fn create_link(src_path: &FilePath, dest_path: &FilePath) -> bool {
 /// 如果文件不存在，那么返回 0
 /// 如果文件存在，但是没有链接，那么返回 1
 /// 如果文件存在，且有链接，那么返回链接数
-pub fn get_link_count(src_path: &FilePath) -> usize {
-    trace!("get_link_count: {}", src_path.path());
+pub fn get_link_count(src_path: &String) -> usize {
+    trace!("get_link_count: {}", src_path);
     let map = LINK_PATH_MAP.lock();
     // 找到对应的链接
     match map.get(src_path) {

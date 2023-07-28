@@ -32,6 +32,7 @@ pub struct TMS {
 
 /// sys_gettimeofday 中指定的类型
 #[repr(C)]
+#[derive(Debug, Clone, Copy)]
 pub struct TimeVal {
     pub sec: usize,
     pub usec: usize,
@@ -50,6 +51,8 @@ impl TimeVal {
 }
 
 /// sys_gettimer / sys_settimer 指定的类型，用户输入输出计时器
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
 pub struct ITimerVal {
     pub it_interval: TimeVal,
     pub it_value: TimeVal,
@@ -71,7 +74,7 @@ impl TimeSecs {
     pub fn now() -> Self {
         let nano = current_time_nanos() as usize;
         let tv_sec = nano / NSEC_PER_SEC;
-        let tv_nsec = nano % NSEC_PER_SEC;
+        let tv_nsec = nano - tv_sec * NSEC_PER_SEC;
         TimeSecs { tv_sec, tv_nsec }
     }
 

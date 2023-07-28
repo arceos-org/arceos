@@ -105,14 +105,9 @@ pub fn deal_with_path(
             }
         }
     }
+    let path = real_path(&path);
     match FilePath::new(&path) {
-        Ok(path) => {
-            if path.path() == "/var/tmp/XXX" {
-                Some(FilePath::new("XXX").unwrap())
-            } else {
-                Some(real_path(&path))
-            }
-        }
+        Ok(path) => Some(path),
         Err(_) => None,
     }
 }
@@ -334,7 +329,7 @@ pub fn syscall_openat(fd: usize, path: *const u8, flags: usize, _mode: u8) -> is
 ///     - fd：要关闭的文件描述符。
 /// 返回值：成功执行，返回0。失败，返回-1。
 pub fn syscall_close(fd: usize) -> isize {
-    // info!("Into syscall_close. fd: {}", fd);
+    info!("Into syscall_close. fd: {}", fd);
 
     let process = current_process();
     let mut process_inner = process.inner.lock();
@@ -353,7 +348,6 @@ pub fn syscall_close(fd: usize) -> isize {
     }
     // let file = process_inner.fd_manager.fd_table[fd].unwrap();
     process_inner.fd_manager.fd_table[fd] = None;
-
     // for i in 0..process_inner.fd_table.len() {
     //     if let Some(file) = process_inner.fd_table[i].as_ref() {
     //         debug!("fd: {} has file", i);
@@ -438,7 +432,7 @@ pub fn syscall_pipe2(fd: *mut u32) -> isize {
         return -1;
     };
     process_inner.fd_manager.fd_table[fd_num2] = Some(write);
-
+    info!("read end: {} write: end: {}", fd_num, fd_num2);
     unsafe {
         core::ptr::write(fd, fd_num as u32);
         core::ptr::write(fd.offset(1), fd_num2 as u32);
@@ -849,7 +843,7 @@ pub fn syscall_fstat(fd: usize, kst: *mut Kstat) -> isize {
 pub fn syscall_fstatat(dir_fd: usize, path: *const u8, kst: *mut Kstat) -> isize {
     let file_path = deal_with_path(dir_fd, Some(path), false).unwrap();
     info!("path : {}", file_path.path());
-    match get_stat_in_fs(file_path.path()) {
+    match get_stat_in_fs(&file_path) {
         Ok(stat) => unsafe {
             *kst = stat;
             0
@@ -969,8 +963,13 @@ pub fn syscall_ioctl(fd: usize, request: usize, argp: *mut usize) -> isize {
     {
         return ErrorNo::EFAULT as isize; // 地址不合法
     }
+
+    let file = process_inner.fd_manager.fd_table[fd].clone().unwrap();
+    // if file.lock().ioctl(request, argp as usize).is_err() {
+    //     return -1;
+    // }
+    let _ = file.lock().ioctl(request, argp as usize);
     0
-    // let file = process_inner.fd_manager.fd_table[fd].clone().unwrap();
     // match IoCtlCmd::try_from(request) {
     //     Ok(IoCtlCmd::TCGETS) => {
     //         if let Ok(termios) = file.lock().get_termios() {
@@ -1239,7 +1238,7 @@ pub fn syscall_readlinkat(dir_fd: usize, path: *const u8, buf: *mut u8, bufsiz: 
         slice.copy_from_slice(&name.as_bytes()[..len]);
         return len as isize;
     }
-    if path.path() != real_path(&path).path() {
+    if path.path().to_string() != real_path(&(path.path().to_string())) {
         // 说明链接存在
         let path = path.path();
         let len = bufsiz.min(path.len());

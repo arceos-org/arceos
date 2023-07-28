@@ -48,12 +48,14 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         exit(-1);
     };
     check_dead_wait();
+    // let start = riscv::register::time::read();
     let curr_id = current().id().as_u64();
     if syscall_id != GETPPID as usize
         && syscall_id != CLOCK_GET_TIME as usize
         && syscall_id != GETRUSAGE as usize
     {
         // if syscall_id == CLONE as usize {
+
         info!(
             "cpu id: {}, task id: {}, process id: {}, syscall: id: {} name: {:?}",
             this_cpu_id(),
@@ -74,7 +76,11 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         READ => syscall_read(args[0], args[1] as *mut u8, args[2]),
         WRITE => syscall_write(args[0], args[1] as *const u8, args[2]),
         EXIT => syscall_exit(args[0] as i32),
-        EXECVE => syscall_exec(args[0] as *const u8, args[1] as *const usize),
+        EXECVE => syscall_exec(
+            args[0] as *const u8,
+            args[1] as *const usize,
+            args[2] as *const usize,
+        ),
         CLONE => syscall_clone(args[0], args[1], args[2], args[3], args[4]),
         NANO_SLEEP => syscall_sleep(args[0] as *const TimeSecs, args[1] as *mut TimeSecs),
         SCHED_YIELD => syscall_yield(),
@@ -118,8 +124,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         ),
         UNMOUNT => syscall_umount(args[0] as *const u8, args[1] as usize),
         FSTAT => syscall_fstat(args[0], args[1] as *mut Kstat),
-        // implemented in branch feat/extension
-        // SIGSUSPEND => syscall_sigsuspend(args[0] as *const usize),
+        SIGSUSPEND => syscall_sigsuspend(args[0] as *const usize),
         SIGACTION => syscall_sigaction(
             args[0],
             args[1] as *const SigAction,
@@ -304,6 +309,8 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             exit(-1)
         }
     };
+    // let end = riscv::register::time::read();
+
     // let sstatus = riscv::register::sstatus::read();
     // error!("irq: {}", riscv::register::sstatus::Sstatus::sie(&sstatus));
     // if syscall_id != GETPPID as usize

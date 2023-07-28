@@ -92,6 +92,7 @@ pub enum SyscallId {
     // 信号模块
     KILL = 129,
     TKILL = 130,
+    SIGSUSPEND = 133,
     SIGACTION = 134,
     SIGPROCMASK = 135,
     SIGRETURN = 139,
@@ -120,6 +121,8 @@ pub enum ErrorNo {
     ENOENT = -2,
     /// 找不到对应进程
     ESRCH = -3,
+    // Interrupted function call
+    EINTR = -4,
     /// 错误的文件描述符
     EBADF = -9,
     /// 资源暂时不可用。也可因为 futex_wait 时对应用户地址处的值与给定值不符

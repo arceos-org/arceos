@@ -312,17 +312,28 @@ pub const LUA_TESTCASES: &[&str] = &[
 pub const BUSYBOX_TESTCASES: &[&str] = &[
     // "busybox echo iozone automatic measurements",
     // "busybox sh cyclictest_testcode.sh",
+    // "busybox echo \"run iozone_testcode.sh\"",
+    // "busybox sh ./iozone_testcode.sh",
     // "busybox echo iozone throughput write/read measurements",
     // "iozone -t 4 -i 0 -i 1 -r 1k -s 1m",
     // "busybox echo iozone throughput random-read measurements",
     // "iozone -t 4 -i 0 -i 2 -r 1k -s 1m",
     // "busybox sh ./test_all.sh",
     // "busybox echo \"run libctest_testcode.sh\"",
-    // "./runtest.exe -w entry-static.exe socket",
-    "./runtest.exe -w entry-dynamic.exe socket",
-    "./runtest.exe -w entry-dynamic.exe socket",
-    "./runtest.exe -w entry-dynamic.exe socket",
-    "./runtest.exe -w entry-dynamic.exe socket",
+    "busybox sh unixbench_testcode.sh",
+    // "./looper 20 ./multi.sh 16",
+    // "./fstime -w -t 20 -b 1024 -m 2000",
+    // "./fstime -w -t 20 -b 4096 -m 8000",
+    // "./fstime -w -t 20 -b 1024 -m 2000",
+    // "./arithoh 10",
+    // "./looper 20 ./multi.sh 1",
+    // "./looper 20 ./multi.sh 8",
+    // "./syscall 10",
+    // "./dhry2reg 10",
+    // "./looper 20 ./multi.sh 1",
+    // "./looper 20 ./multi.sh 8",
+    // "./fstime -w -t 20 -b 256 -m 500",
+    // "./runtest.exe -w entry-dynamic.exe fscanf",
     // "./libctest_testcode.sh",
     // "busybox echo \"run lua_testcode.sh\"",
     // "./lua_testcode.sh",
@@ -386,13 +397,45 @@ pub const BUSYBOX_TESTCASES: &[&str] = &[
     // "busybox rm busybox_cmd.bak",
     // "busybox find -name \"busybox_cmd.txt\"",
     // "busybox sh busybox echo \"hello\"",
-    // "busybox sh lmbench_testcode.sh",
+
     // "echo latency measurements",
     // "lmbench_all lat_syscall -P 1 null",
+    // "busybox sh libctest_testcode.sh",
     // "busybox sh lua_testcode.sh",
     // "busybox sh busybox_testcode.sh",
+    // "busybox sh lmbench_testcode.sh",
+    // "busybox mkdir -p /var/tmp",
     // "busybox echo latency measurements",
-    // "busybox sh lmbench_all lat_syscall -P 1 null",
+    // "lmbench_all lat_syscall -P 1 null",
+    // "lmbench_all lat_syscall -P 1 read",
+    // "lmbench_all lat_syscall -P 1 write",
+    // "busybox mkdir -p /var/tmp",
+    // "busybox touch /var/tmp/lmbench",
+    // "lmbench_all lat_syscall -P 1 stat /var/tmp/lmbench",
+    // "lmbench_all lat_syscall -P 1 fstat /var/tmp/lmbench",
+    // "lmbench_all lat_syscall -P 1 open /var/tmp/lmbench",
+    // "lmbench_all lat_select -n 100 -P 1 file",
+    // "lmbench_all lat_sig -P 1 install",
+    // "lmbench_all lat_sig -P 1 catch",
+    // "lmbench_all lat_sig -P 1 prot lat_sig",
+    // "lmbench_all lat_pipe -P 1",
+    // "lmbench_all lat_proc -P 1 fork",
+    // "lmbench_all lat_proc -P 1 exec",
+    // "busybox cp hello /tmp",
+    // "lmbench_all lat_proc -P 1 shell",
+    // "lmbench_all lmdd label=\"File /var/tmp/XXX write bandwidth:\" of=/var/tmp/XXX move=1m fsync=1 print=3",
+    // "lmbench_all lat_pagefault -P 1 /var/tmp/XXX",
+    // "lmbench_all lat_mmap -P 1 512k /var/tmp/XXX",
+    // "busybox echo file system latency",
+    // "lmbench_all lat_fs /var/tmp",
+    // "busybox echo Bandwidth measurements",
+    // "lmbench_all bw_pipe -P 1",
+    // "lmbench_all bw_file_rd -P 1 512k io_only /var/tmp/XXX",
+    // "lmbench_all bw_file_rd -P 1 512k open2close /var/tmp/XXX",
+    // "lmbench_all bw_mmap_rd -P 1 512k mmap_only /var/tmp/XXX",
+    // "lmbench_all bw_mmap_rd -P 1 512k open2close /var/tmp/XXX",
+    // "busybox echo context switch overhead",
+    // "lmbench_all lat_ctx -P 1 -s 32 2 4 8 16 24 32 64 96",
 ];
 
 /// 运行测试时的状态机，记录测试结果与内容
@@ -510,27 +553,26 @@ pub fn fs_init(case: &'static str) {
     let libc_so = &"ld-musl-riscv64-sf.so.1";
     let libc_so2 = &"ld-musl-riscv64.so.1"; // 另一种名字的 libc.so，非 libc-test 测例库用
 
-    assert!(create_link(
+    create_link(
         &(FilePath::new(("/lib/".to_string() + libc_so).as_str()).unwrap()),
         &(FilePath::new("libc.so").unwrap()),
-    ));
-
-    assert!(create_link(
+    );
+    create_link(
         &(FilePath::new(("/lib/".to_string() + libc_so2).as_str()).unwrap()),
         &(FilePath::new("libc.so").unwrap()),
-    ));
+    );
 
     let tls_so = &"tls_get_new-dtv_dso.so";
-    assert!(create_link(
+    create_link(
         &(FilePath::new(("/lib/".to_string() + tls_so).as_str()).unwrap()),
         &(FilePath::new("tls_get_new-dtv_dso.so").unwrap()),
-    ));
+    );
 
     if case == "busybox" {
-        assert!(create_link(
+        create_link(
             &(FilePath::new("./sbin/busybox").unwrap()),
             &(FilePath::new("busybox").unwrap()),
-        ));
+        );
         assert!(create_link(
             &(FilePath::new("./sbin/ls").unwrap()),
             &(FilePath::new("busybox").unwrap()),

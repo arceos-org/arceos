@@ -1,0 +1,26 @@
+# Performance Monitoring Events for the Sixth Generation Intel Core Processors Based on the Skylake Microarchitecture - V42
+# 8/6/2018 3:30:52 PM
+# Copyright (c) 2007 - 2017 Intel Corporation. All rights reserved.
+BitName	BitIndex	Type	Description	MATRIX_REG	BitsNotCombinedWith	Errata
+DEMAND_DATA_RD	0	1	Counts demand data reads	0,1		na
+DEMAND_RFO	1	1	Counts all demand data writes (RFOs)	0,1		na
+DEMAND_CODE_RD	2	1	Counts all demand code reads	0,1		na
+OTHER	15	1	Counts any other requests	0,1		na
+ANY_RESPONSE	16	2	have any response type.	0,1		na
+SUPPLIER_NONE	17	3		0,1		na
+L3_HIT_M	18	3		0,1		na
+L3_HIT_E	19	3		0,1		na
+L3_HIT_S	20	3		0,1		na
+L3_HIT	18,19,20	3		0,1		na
+L4_HIT_LOCAL_L4	22	3		0,1		na
+L3_MISS_LOCAL_DRAM	26	3		0,1		na
+L3_MISS	26,27,28,29	3		0,1		na
+SPL_HIT	30	4		0,1		na
+SNOOP_NONE	31	4		0,1		na
+SNOOP_NOT_NEEDED	32	4		0,1		na
+SNOOP_MISS	33	4		0,1		na
+SNOOP_HIT_NO_FWD	34	4		0,1		na
+SNOOP_HIT_WITH_FWD	35	4		0,1	18,19,20,21	na
+SNOOP_HITM	36	4		0,1		na
+SNOOP_NON_DRAM	37	4		0,1		na
+ANY_SNOOP	30,31,32,33,34,35,36,37	4		0,1		na

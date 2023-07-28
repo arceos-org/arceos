@@ -33,7 +33,6 @@ fn handle_breakpoint(sepc: &mut usize) {
 #[no_mangle]
 fn riscv_trap_handler(tf: &mut TrapFrame, mut from_user: bool) {
     let scause = scause::read();
-    // info!("scause: {:?}", scause.cause());
     if (tf.sepc as isize) < 0 {
         from_user = false;
     }
@@ -112,11 +111,10 @@ fn riscv_trap_handler(tf: &mut TrapFrame, mut from_user: bool) {
         }
     }
     #[cfg(feature = "signal")]
-    if !(!from_user && scause.cause() == Trap::Interrupt(scause::Interrupt::SupervisorTimer))
-        && stval::read() != SIGNAL_RETURN_TRAP
-    {
+    if from_user == true && stval::read() != SIGNAL_RETURN_TRAP {
         handle_signal();
     }
+
     // 在保证将寄存器都存储好之后，再开启中断
     // 否则此时会因为写入csr寄存器过程中出现中断，导致出现异常
     disable_irqs();
