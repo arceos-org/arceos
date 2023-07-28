@@ -93,35 +93,40 @@ pub fn syscall_settimer(
 ) -> isize {
     let process = current_process();
     let inner = process.inner.lock();
-    if inner
-        .memory_set
-        .lock()
-        .manual_alloc_type_for_lazy(new_value as *const TimeVal)
-        .is_err()
-    {
+
+    if new_value.is_null() {
         return ErrorNo::EFAULT as isize;
     }
-    if old_value as usize != 0 {
+
+    let new_value = match inner
+        .memory_set
+        .lock()
+        .manual_alloc_type_for_lazy(new_value)
+    {
+        Ok(_) => unsafe { &*new_value },
+        Err(_) => return ErrorNo::EFAULT as isize,
+    };
+
+    if !old_value.is_null() {
         if inner
             .memory_set
             .lock()
-            .manual_alloc_type_for_lazy(old_value as *const TimeVal)
+            .manual_alloc_type_for_lazy(old_value)
             .is_err()
         {
             return ErrorNo::EFAULT as isize;
         }
+
         let (time_interval_us, time_remained_us) = current_task().timer_output();
         unsafe {
             (*old_value).it_interval = TimeVal::from_micro(time_interval_us);
             (*old_value).it_value = TimeVal::from_micro(time_remained_us);
         }
     }
-    let (time_interval_ns, time_remained_ns) = unsafe {
-        (
-            (*new_value).it_interval.to_nanos(),
-            (*new_value).it_value.to_nanos(),
-        )
-    };
+    let (time_interval_ns, time_remained_ns) = (
+        new_value.it_interval.to_nanos(),
+        new_value.it_value.to_nanos(),
+    );
     if current_task().set_timer(time_interval_ns, time_remained_ns, which) {
         0
     } else {
