@@ -281,7 +281,10 @@ impl TcpSocket {
     /// It won't change TCP state.
     /// It won't affect unconnected sockets (listener).
     pub fn close(&mut self) {
-        let handle = unsafe { self.handle.get().read().unwrap() };
+        let handle = match unsafe { self.handle.get().read() } {
+            Some(h) => h,
+            None => return,
+        };
         SOCKET_SET.with_socket_mut::<tcp::Socket, _, _>(handle, |socket| socket.close());
         SOCKET_SET.poll_interfaces();
     }
