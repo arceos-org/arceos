@@ -2,6 +2,7 @@ use alloc::string::ToString;
 use alloc::vec;
 use alloc::{collections::BTreeMap, format, string::String, sync::Arc, vec::Vec};
 use axerrno::{AxError, AxResult};
+use axfs::monolithic_fs::flags::OpenFlags;
 use axfs::monolithic_fs::FileIO;
 use axhal::arch::{write_page_table_root, TrapFrame};
 use axhal::mem::phys_to_virt;
@@ -28,8 +29,7 @@ use axtask::{
 use spinlock::SpinNoIrq;
 
 use riscv::asm;
-// pub(crate) static TID2TASK: SpinNoIrq<BTreeMap<TaskId, AxTaskRef>> =
-//     SpinNoIrq::new(BTreeMap::new());
+pub(crate) static TID2TASK: SpinNoIrq<BTreeMap<u64, AxTaskRef>> = SpinNoIrq::new(BTreeMap::new());
 pub static PID2PC: SpinNoIrq<BTreeMap<u64, Arc<Process>>> = SpinNoIrq::new(BTreeMap::new());
 pub const KERNEL_PROCESS_ID: u64 = 1;
 
@@ -135,9 +135,21 @@ impl Process {
                 riscv::register::sstatus::set_sum();
             };
         }
+        let envs:Vec<String> = vec![
+            "SHLVL=1".into(),
+            "PATH=/usr/sbin:/usr/bin:/sbin:/bin".into(),
+            "PWD=/".into(),
+            "GCC_EXEC_PREFIX=/riscv64-linux-musl-native/bin/../lib/gcc/".into(),
+            "COLLECT_GCC=./riscv64-linux-musl-native/bin/riscv64-linux-musl-gcc".into(),
+            "COLLECT_LTO_WRAPPER=/riscv64-linux-musl-native/bin/../libexec/gcc/riscv64-linux-musl/11.2.1/lto-wrapper".into(),
+            "COLLECT_GCC_OPTIONS='-march=rv64gc' '-mabi=lp64d' '-march=rv64imafdc' '-dumpdir' 'a.'".into(),
+            "LIBRARY_PATH=/lib/".into(),
+            "LD_LIBRARY_PATH=/lib/".into(),
+        ];
 
-        let (entry, user_stack_bottom, heap_bottom) = load_app(path.clone(), args, &mut memory_set)
-            .expect(format!("Failed to load app: {}", path).as_str());
+        let (entry, user_stack_bottom, heap_bottom) =
+            load_app(path.clone(), args, envs, &mut memory_set)
+                .expect(format!("Failed to load app: {}", path).as_str());
         // 切换页表
         // 以这种方式建立的线程，不通过某一个具体的函数开始，而是通过地址来运行函数，所以entry不会被用到
         let new_process = Arc::new(Self {
@@ -148,11 +160,17 @@ impl Process {
                 heap_bottom.as_usize(),
                 vec![
                     // 标准输入
-                    Some(Arc::new(SpinNoIrq::new(Stdin))),
+                    Some(Arc::new(SpinNoIrq::new(Stdin {
+                        flags: OpenFlags::empty(),
+                    }))),
                     // 标准输出
-                    Some(Arc::new(SpinNoIrq::new(Stdout))),
+                    Some(Arc::new(SpinNoIrq::new(Stdout {
+                        flags: OpenFlags::empty(),
+                    }))),
                     // 标准错误
-                    Some(Arc::new(SpinNoIrq::new(Stderr))),
+                    Some(Arc::new(SpinNoIrq::new(Stderr {
+                        flags: OpenFlags::empty(),
+                    }))),
                     // // 工作目录, fd_table[3]固定用来存放工作目录
                     // Some(Arc::new(CurWorkDirDesc::new('/'.to_string()))),   // 这里的工作目录是根目录
                 ],
@@ -168,6 +186,9 @@ impl Process {
             page_table_token,
             false,
         );
+        TID2TASK
+            .lock()
+            .insert(new_task.id().as_u64(), Arc::clone(&new_task));
         new_task.set_leader(true);
         // 初始化线程的trap上下文
         // info!("new process: {}", new_process.pid);
@@ -211,7 +232,7 @@ impl Process {
     /// 将当前进程替换为指定的用户程序
     /// args为传入的参数
     /// 任务的统计时间会被重置
-    pub fn exec(&self, name: String, args: Vec<String>) {
+    pub fn exec(&self, name: String, args: Vec<String>, envs: Vec<String>) {
         // 首先要处理原先进程的资源
         // 处理分配的页帧
         let mut inner = self.inner.lock();
@@ -231,7 +252,11 @@ impl Process {
         let _ = inner
             .tasks
             .drain_filter(|task: &mut AxTaskRef| task.id() != curr.id())
-            .map(|task| RUN_QUEUE.lock().remove_task(&task));
+            .map(|task| {
+                // 原有task的指针不变
+                TID2TASK.lock().remove(&task.id().as_u64());
+                RUN_QUEUE.lock().remove_task(&task)
+            });
         // 当前任务被设置为主线程
         curr.set_leader(true);
         // 重置统计时间
@@ -243,7 +268,7 @@ impl Process {
             args
         };
         let (entry, user_stack_bottom, heap_bottom) =
-            load_app(name.clone(), args, &mut inner.memory_set.lock())
+            load_app(name.clone(), args, envs, &mut inner.memory_set.lock())
                 .expect(format!("Failed to load app: {}", name).as_str());
         // 切换了地址空间， 需要切换token
         let page_table_token = if self.pid == KERNEL_PROCESS_ID {
@@ -327,7 +352,9 @@ impl Process {
             sig_child,
         );
         debug!("new task:{}", new_task.id().as_u64());
-        // TID2TASK.lock().insert(new_task.id(), Arc::clone(&new_task));
+        TID2TASK
+            .lock()
+            .insert(new_task.id().as_u64(), Arc::clone(&new_task));
         #[cfg(feature = "signal")]
         let new_handler = if flags.contains(CloneFlags::CLONE_SIGHAND) {
             // let curr_id = current_task().id().as_u64();
@@ -603,9 +630,6 @@ pub fn exit(exit_code: i32) -> ! {
         drop(memory_set);
     }
 
-    // 记得删除任务
-    // TID2TASK.lock().remove(&curr_id);
-
     // 若退出的是内核线程，就没有必要考虑后续了，否则此时调度队列重新调度的操作拿到进程这里来
     // 先进行资源的回收
     // 不可以回收内核任务
@@ -624,12 +648,13 @@ pub fn exit(exit_code: i32) -> ! {
             }
             drop(inner);
             if !all_exited {
-                // info!("exit current: {}", curr_id.as_u64());
                 yield_now_task();
             } else {
                 break;
             }
         }
+        // 记得删除任务
+        TID2TASK.lock().remove(&curr_id.as_u64());
 
         let mut inner = process.inner.lock();
         inner.exit_code = exit_code;
@@ -662,6 +687,8 @@ pub fn exit(exit_code: i32) -> ! {
         drop(pid2pc);
         // 记录当前的测试结果
     } else {
+        // 记得删除任务
+        TID2TASK.lock().remove(&curr_id.as_u64());
         inner.signal_module.remove(&curr_id.as_u64());
         RUN_QUEUE.lock().exit_current(exit_code);
         drop(inner);

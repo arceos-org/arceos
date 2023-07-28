@@ -33,7 +33,6 @@ fn handle_breakpoint(sepc: &mut usize) {
 #[no_mangle]
 fn riscv_trap_handler(tf: &mut TrapFrame, mut from_user: bool) {
     let scause = scause::read();
-    // info!("scause: {:?}", scause.cause());
     if (tf.sepc as isize) < 0 {
         from_user = false;
     }
@@ -112,9 +111,7 @@ fn riscv_trap_handler(tf: &mut TrapFrame, mut from_user: bool) {
         }
     }
     #[cfg(feature = "signal")]
-    if !(scause.cause() == Trap::Interrupt(scause::Interrupt::SupervisorTimer))
-        && stval::read() != SIGNAL_RETURN_TRAP
-    {
+    if from_user == true && stval::read() != SIGNAL_RETURN_TRAP {
         handle_signal();
     }
 

@@ -76,7 +76,11 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         READ => syscall_read(args[0], args[1] as *mut u8, args[2]),
         WRITE => syscall_write(args[0], args[1] as *const u8, args[2]),
         EXIT => syscall_exit(args[0] as i32),
-        EXECVE => syscall_exec(args[0] as *const u8, args[1] as *const usize),
+        EXECVE => syscall_exec(
+            args[0] as *const u8,
+            args[1] as *const usize,
+            args[2] as *const usize,
+        ),
         CLONE => syscall_clone(args[0], args[1], args[2], args[3], args[4]),
         NANO_SLEEP => syscall_sleep(args[0] as *const TimeSecs, args[1] as *mut TimeSecs),
         SCHED_YIELD => syscall_yield(),

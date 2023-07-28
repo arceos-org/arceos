@@ -2,12 +2,12 @@
 
 use axhal::cpu::this_cpu_id;
 use axprocess::{
-    process::{current_process, current_task},
+    process::{current_process, current_task, yield_now_task},
     send_signal_to_process, send_signal_to_thread,
 };
 use axsignal::action::SigAction;
 use axsignal::signal_no::SignalNo;
-use log::debug;
+use log::{debug, info};
 
 use super::{
     flags::{SigMaskFlag, SIGSET_SIZE_IN_BYTE},
@@ -19,6 +19,10 @@ pub fn syscall_sigaction(
     action: *const SigAction,
     old_action: *mut SigAction,
 ) -> isize {
+    info!(
+        "signum: {}, action: {:X}, old_action: {:X}",
+        signum, action as usize, old_action as usize
+    );
     if signum == SignalNo::SIGKILL as usize || signum == SignalNo::SIGSTOP as usize {
         // 特殊参数不能被覆盖
         return -1;
@@ -66,6 +70,45 @@ pub fn syscall_sigaction(
     0
 }
 
+/// 实现sigsuspend系统调用
+pub fn syscall_sigsuspend(mask: *const usize) -> isize {
+    let process = current_process();
+    let mut inner = process.inner.lock();
+    if inner
+        .memory_set
+        .lock()
+        .manual_alloc_for_lazy((mask as usize).into())
+        .is_err()
+    {
+        return ErrorNo::EFAULT as isize;
+    }
+    let signal_module = inner
+        .signal_module
+        .get_mut(&current_task().id().as_u64())
+        .unwrap();
+    // 设置新的掩码
+    if signal_module.last_trap_frame_for_signal.is_some() {
+        // 信号嵌套的情况下触发这个调用
+        return ErrorNo::EINTR as isize;
+    }
+    signal_module.signal_set.mask = unsafe { *mask };
+    drop(inner);
+    loop {
+        let mut inner = process.inner.lock();
+        let signal_module = inner
+            .signal_module
+            .get_mut(&current_task().id().as_u64())
+            .unwrap();
+        if signal_module.signal_set.find_signal().is_none() {
+            drop(inner);
+            // 记得释放锁
+            yield_now_task();
+        }
+        break;
+    }
+    return -1;
+}
+
 pub fn syscall_sigreturn() -> isize {
     axprocess::signal_return()
 }
@@ -78,7 +121,7 @@ pub fn syscall_sigprocmask(
 ) -> isize {
     if sigsetsize != SIGSET_SIZE_IN_BYTE {
         // 若sigsetsize不是正确的大小，则返回错误
-        return -1;
+        return ErrorNo::EINVAL as isize;
     }
 
     let current_process = current_process();
@@ -90,7 +133,7 @@ pub fn syscall_sigprocmask(
             .manual_alloc_for_lazy((old_mask as usize).into())
             .is_err()
     {
-        return -1;
+        return ErrorNo::EFAULT as isize;
     }
     if new_mask as usize != 0
         && memory_set

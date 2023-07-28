@@ -117,20 +117,21 @@ pub fn make_pipe() -> (Arc<SpinNoIrq<Pipe>>, Arc<SpinNoIrq<Pipe>>) {
 
 impl Read for Pipe {
     fn read(&mut self, buf: &mut [u8]) -> AxResult<usize> {
-        trace!("kernel: Pipe::read");
+        info!("kernel: Pipe::read");
         assert!(self.readable());
         let want_to_read = buf.len();
         let mut buf_iter = buf.iter_mut();
         let mut already_read = 0usize;
         // 防止pipe死循环
-        let mut cnt = 0;
+        // let mut cnt = 0;
         loop {
             let mut ring_buffer = self.buffer.lock();
             let loop_read = ring_buffer.available_read();
             // info!("kernel: Pipe::read: already_read = {}", already_read);
-            cnt += 1;
+            // cnt += 1;
             if loop_read == 0 {
-                if ring_buffer.all_write_ends_closed() || cnt > 3 {
+                if Arc::strong_count(&self.buffer) < 2 {
+                    info!("close");
                     return Ok(already_read);
                 }
                 drop(ring_buffer);
@@ -154,11 +155,11 @@ impl Read for Pipe {
 
 impl Write for Pipe {
     fn write(&mut self, buf: &[u8]) -> AxResult<usize> {
-        trace!("kernel: Pipe::write");
+        info!("kernel: Pipe::write");
         assert!(self.writable());
         let want_to_write = buf.len();
         let mut buf_iter = buf.iter();
-        let mut cnt = 0;
+        // let mut cnt = 0;
         let mut already_write = 0usize;
         loop {
             let mut ring_buffer = self.buffer.lock();
@@ -168,9 +169,10 @@ impl Write for Pipe {
                 yield_now();
                 continue;
             }
-            cnt += 1;
-            if Arc::strong_count(&self.buffer) < 2 || cnt > 3 {
+            // cnt += 1;
+            if Arc::strong_count(&self.buffer) < 2 {
                 // 读入端关闭
+                info!("close");
                 return Ok(already_write);
             }
             // write at most loop_write bytes

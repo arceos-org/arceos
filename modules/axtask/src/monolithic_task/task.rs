@@ -433,7 +433,7 @@ impl TaskInner {
     pub fn time_stat_when_switch_to(&self) {
         let time = self.time.get();
         unsafe {
-            (*time).switch_to();
+            (*time).switch_to(self.id.as_u64() as isize);
         }
     }
 

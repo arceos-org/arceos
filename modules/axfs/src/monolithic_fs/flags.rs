@@ -113,3 +113,17 @@ impl From<usize> for AccessMode {
         Self::from_bits_truncate(val as u16)
     }
 }
+
+/// IOCTL系统调用支持
+pub const TCGETS: usize = 0x5401;
+pub const TIOCGPGRP: usize = 0x540F;
+pub const TIOCSPGRP: usize = 0x5410;
+pub const TIOCGWINSZ: usize = 0x5413;
+#[repr(C)]
+#[derive(Clone, Copy, Default)]
+pub struct ConsoleWinSize {
+    pub ws_row: u16,
+    pub ws_col: u16,
+    pub ws_xpixel: u16,
+    pub ws_ypixel: u16,
+}

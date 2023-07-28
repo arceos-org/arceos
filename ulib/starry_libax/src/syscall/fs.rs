@@ -167,7 +167,7 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
 ///     - count：要写入的字节数。
 /// 返回值：成功执行，返回写入的字节数。错误，则返回-1。
 pub fn syscall_write(fd: usize, buf: *const u8, count: usize) -> isize {
-    // info!("fd: {}, buf: {:X}, len: {}", fd, buf as usize, count);
+    info!("fd: {}, buf: {:X}, len: {}", fd, buf as usize, count);
     let process = current_process();
     let process_inner = process.inner.lock();
     let start: VirtAddr = (buf as usize).into();
@@ -200,15 +200,6 @@ pub fn syscall_write(fd: usize, buf: *const u8, count: usize) -> isize {
         .lock()
         .write(unsafe { core::slice::from_raw_parts(buf, count) })
         .unwrap() as isize;
-    // let old_pos = file.lock().seek(SeekFrom::Current(0)).unwrap();
-    // let len = file.lock().seek(SeekFrom::End(0)).unwrap();
-    // file.lock().seek(SeekFrom::Start(old_pos)).unwrap();
-    // info!("now len: {}", len);
-    // let mut file = new_fd("/XXX".to_string(), OpenFlags::RDONLY).unwrap();
-    // let old_pos = file.seek(SeekFrom::Current(0)).unwrap();
-    // let len = file.seek(SeekFrom::End(0)).unwrap();
-    // file.seek(SeekFrom::Start(old_pos)).unwrap();
-    // info!("len: {}", len);
     drop(file);
     ans
 }
@@ -307,7 +298,7 @@ pub fn syscall_openat(fd: usize, path: *const u8, flags: usize, _mode: u8) -> is
 ///     - fd：要关闭的文件描述符。
 /// 返回值：成功执行，返回0。失败，返回-1。
 pub fn syscall_close(fd: usize) -> isize {
-    // info!("Into syscall_close. fd: {}", fd);
+    info!("Into syscall_close. fd: {}", fd);
 
     let process = current_process();
     let mut process_inner = process.inner.lock();
@@ -326,7 +317,6 @@ pub fn syscall_close(fd: usize) -> isize {
     }
     // let file = process_inner.fd_manager.fd_table[fd].unwrap();
     process_inner.fd_manager.fd_table[fd] = None;
-
     // for i in 0..process_inner.fd_table.len() {
     //     if let Some(file) = process_inner.fd_table[i].as_ref() {
     //         debug!("fd: {} has file", i);
@@ -411,7 +401,7 @@ pub fn syscall_pipe2(fd: *mut u32) -> isize {
         return -1;
     };
     process_inner.fd_manager.fd_table[fd_num2] = Some(write);
-
+    info!("read end: {} write: end: {}", fd_num, fd_num2);
     unsafe {
         core::ptr::write(fd, fd_num as u32);
         core::ptr::write(fd.offset(1), fd_num2 as u32);
@@ -942,8 +932,13 @@ pub fn syscall_ioctl(fd: usize, request: usize, argp: *mut usize) -> isize {
     {
         return ErrorNo::EFAULT as isize; // 地址不合法
     }
+
+    let file = process_inner.fd_manager.fd_table[fd].clone().unwrap();
+    // if file.lock().ioctl(request, argp as usize).is_err() {
+    //     return -1;
+    // }
+    let _ = file.lock().ioctl(request, argp as usize);
     0
-    // let file = process_inner.fd_manager.fd_table[fd].clone().unwrap();
     // match IoCtlCmd::try_from(request) {
     //     Ok(IoCtlCmd::TCGETS) => {
     //         if let Ok(termios) = file.lock().get_termios() {

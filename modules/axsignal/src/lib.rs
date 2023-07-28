@@ -7,7 +7,7 @@
 #![no_std]
 
 use action::SigAction;
-use signal_no::MAX_SIG_NUM;
+use signal_no::{SignalNo, MAX_SIG_NUM};
 
 pub mod action;
 pub mod info;
@@ -80,24 +80,48 @@ impl SignalSet {
         self.pending = 0;
     }
 
+    /// 查询是否有未决信号，若有则返回对应编号
+    ///
+    /// 但是不会修改原有信号集
+    pub fn find_signal(&self) -> Option<usize> {
+        let mut temp_pending = self.pending;
+        loop {
+            let pos: u32 = temp_pending.trailing_zeros();
+            // 若全为0，则返回64，代表没有未决信号
+            if pos == MAX_SIG_NUM as u32 {
+                return None;
+            } else {
+                temp_pending &= !(1 << pos);
+
+                if (self.mask & (1 << pos) == 0)
+                    || pos == SignalNo::SIGKILL as u32 - 1
+                    || pos == SignalNo::SIGSTOP as u32 - 1
+                {
+                    break Some(pos as usize + 1);
+                }
+            }
+        }
+    }
+
     /// 查询当前是否有未决信号
     ///
-    /// 若有则返回信号编号最低的一个
+    /// 若有则返回信号编号最低的一个，，并且修改原有信号集
     pub fn get_one_signal(&mut self) -> Option<usize> {
-        let pos: u32 = self.pending.trailing_zeros();
-        // 若全为0，则返回64，代表没有未决信号
-        if pos == MAX_SIG_NUM as u32 {
-            return None;
-        } else {
-            // 将对应位置改为0代表已经处理
-            self.pending &= !(1 << pos);
-            return Some(pos as usize + 1);
+        match self.find_signal() {
+            Some(pos) => {
+                // 修改原有信号集
+                self.pending &= !(1 << (pos - 1));
+                Some(pos)
+            }
+            None => None,
         }
     }
 
     /// 尝试添加一个bit作为信号
     ///
     /// 若当前信号已经加入到未决信号集中，则不作处理
+    ///
+    /// 若信号在掩码中，则仍然加入，但是可能不会触发
     pub fn try_add_signal(&mut self, sig_num: usize) {
         let now_mask = 1 << (sig_num - 1);
         self.pending |= now_mask;
