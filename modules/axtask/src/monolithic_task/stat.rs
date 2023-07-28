@@ -88,37 +88,47 @@ impl TimeStat {
     /// 从用户态进入内核态，记录当前时间戳，统计用户态时间
     pub fn into_kernel_mode(&mut self, tid: isize) {
         let now_time_ns = current_time_nanos() as usize;
-        self.utime_ns += now_time_ns - self.user_tick;
+        let delta = now_time_ns - self.user_tick;
+        self.utime_ns += delta;
         self.kernel_tick = now_time_ns;
         if self.timer_type != TimerType::NONE {
-            self.update_timer(now_time_ns, tid);
+            self.update_timer(delta, tid);
         };
     }
     /// 从内核态进入用户态，记录当前时间戳，统计内核态时间
     pub fn into_user_mode(&mut self, tid: isize) {
         // 获取当前时间，单位为纳秒
         let now_time_ns = current_time_nanos() as usize;
-        self.stime_ns += now_time_ns - self.kernel_tick;
+        let delta = now_time_ns - self.kernel_tick;
+        self.stime_ns += delta;
         self.user_tick = now_time_ns;
         if self.timer_type == TimerType::REAL || self.timer_type == TimerType::PROF {
-            self.update_timer(now_time_ns, tid);
+            self.update_timer(delta, tid);
         };
     }
     /// 内核态下，当前任务被切换掉，统计内核态时间
     pub fn swtich_from(&mut self, tid: isize) {
         // 获取当前时间，单位为纳秒
         let now_time_ns = current_time_nanos() as usize;
-        self.stime_ns += now_time_ns - self.kernel_tick;
+        let delta = now_time_ns - self.kernel_tick;
+        self.stime_ns += delta;
         // 需要更新内核态时间戳
         self.kernel_tick = now_time_ns;
         if self.timer_type == TimerType::REAL || self.timer_type == TimerType::PROF {
-            self.update_timer(now_time_ns, tid);
+            self.update_timer(delta, tid);
         };
     }
     /// 内核态下，切换到当前任务，更新内核态时间戳
-    pub fn switch_to(&mut self) {
+    pub fn switch_to(&mut self, tid: isize) {
         // 获取当前时间，单位为纳秒
-        self.kernel_tick = current_time_nanos() as usize;
+        let now_time_ns = current_time_nanos() as usize;
+        let delta = now_time_ns - self.kernel_tick;
+        // 更新时间戳，方便当该任务被切换时统计内核经过的时间
+        self.kernel_tick = now_time_ns;
+        // 注意，对于REAL类型的任务，此时也需要统计经过的时间
+        if self.timer_type == TimerType::REAL {
+            self.update_timer(delta, tid)
+        }
     }
     /// 将时间转化为秒与微秒输出，方便sys_times使用
     /// (用户态秒，用户态微妙，内核态秒，内核态微妙)
@@ -153,8 +163,6 @@ impl TimeStat {
     }
 
     /// 更新计时器，同时判断是否要发出信号
-    ///
-    /// 如果返回值为true，代表计时器归零，此时要求发出信号
     pub fn update_timer(&mut self, delta: usize, tid: isize) {
         if self.timer_remained_ns == 0 {
             // 计时器已经结束了

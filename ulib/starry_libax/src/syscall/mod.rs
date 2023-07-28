@@ -118,7 +118,8 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         ),
         UNMOUNT => syscall_umount(args[0] as *const u8, args[1] as usize),
         FSTAT => syscall_fstat(args[0], args[1] as *mut Kstat),
-
+        // implemented in branch feat/extension
+        // SIGSUSPEND => syscall_sigsuspend(args[0] as *const usize),
         SIGACTION => syscall_sigaction(
             args[0],
             args[1] as *const SigAction,
@@ -245,7 +246,10 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[4] as *const TimeSecs,
             args[5] as usize,
         ),
-        // FTRUNCATE64 => syscall_ftruncate64(args[0] as usize, args[1] as usize),
+        FTRUNCATE64 => {
+            // syscall_ftruncate64(args[0] as usize, args[1] as usize)
+            0
+        }
         IOCTL => syscall_ioctl(args[0] as usize, args[1] as usize, args[2] as *mut usize),
         // 不做处理即可
         SYNC => 0,
@@ -302,15 +306,15 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
     };
     // let sstatus = riscv::register::sstatus::read();
     // error!("irq: {}", riscv::register::sstatus::Sstatus::sie(&sstatus));
-    if syscall_id != GETPPID as usize
-        && syscall_id != CLOCK_GET_TIME as usize
-        && syscall_id != GETRUSAGE as usize
-    {
-        // if syscall_id == CLONE as usize {
-        info!(
-            "curr id: {}, Syscall {} return: {}",
-            curr_id, syscall_id, ans,
-        );
-    };
+    // if syscall_id != GETPPID as usize
+    //     && syscall_id != CLOCK_GET_TIME as usize
+    //     && syscall_id != GETRUSAGE as usize
+    // if curr_id == 6 {
+    //     // if syscall_id == CLONE as usize {
+    //     error!(
+    //         "curr id: {}, Syscall {} return: {}",
+    //         curr_id, syscall_id, ans,
+    //     );
+    // };
     ans
 }
