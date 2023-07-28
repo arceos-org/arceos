@@ -16,3 +16,12 @@ allocator_api = []
 buddy_system_allocator = { version = "0.9", default-features = false }
 bitmap-allocator = { git = "https://github.com/rcore-os/bitmap-allocator.git", rev = "88e871a" }
 slab_allocator = { path = "../slab_allocator" }
+
+[dev-dependencies]
+allocator = { path = ".", features = ["allocator_api"] }
+rand = { version = "0.8", features = ["small_rng"] }
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "collections"
+harness = false
