@@ -19,9 +19,10 @@ use axhal::time::TimeValue;
 use axio::SeekFrom;
 use axprocess::link::{real_path, FilePath};
 use axprocess::process::current_process;
+use core::any::TypeId;
 use core::mem::transmute;
 use core::ptr::copy_nonoverlapping;
-use log::{debug, error, info};
+use log::{debug, error, info, trace};
 use memory_addr::VirtAddr;
 use spinlock::SpinNoIrq;
 
@@ -123,40 +124,41 @@ pub fn deal_with_path(
 ///     - count：要读取的字节数。
 /// 返回值：成功执行，返回读取的字节数。如为0，表示文件结束。错误，则返回-1。
 pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
-    info!(
-        "Into syscall_read. fd: {}, buf: {:X}, len: {}",
-        fd, buf as usize, count
-    );
+    trace!("[read()] fd: {fd}, buf: {buf:?}, len: {count}",);
+
+    if buf.is_null() {
+        return ErrorNo::EFAULT as isize;
+    }
+
     let process = current_process();
     let process_inner = process.inner.lock();
-    let start: VirtAddr = (buf as usize).into();
-    let end = start + count;
-    if process_inner
-        .memory_set
-        .lock()
-        .manual_alloc_range_for_lazy(start, end)
-        .is_err()
-    {
-        return ErrorNo::EINVAL as isize;
-    }
-    if fd >= process_inner.fd_manager.fd_table.len() {
-        return ErrorNo::EBADF as isize;
-    }
-    if process_inner.fd_manager.fd_table[fd].is_none() {
-        return ErrorNo::EBADF as isize;
-    }
-    let file = process_inner.fd_manager.fd_table[fd].clone().unwrap();
+
+    let buf = match process_inner.memory_set.lock().manual_alloc_range_for_lazy(
+        (buf as usize).into(),
+        unsafe { buf.add(count) as usize }.into(),
+    ) {
+        Ok(_) => unsafe { core::slice::from_raw_parts_mut(buf, count) },
+        Err(_) => return ErrorNo::EFAULT as isize,
+    };
+
+    let file = match process_inner.fd_manager.fd_table.get(fd) {
+        Some(Some(f)) => f.clone(),
+        _ => return ErrorNo::EBADF as isize,
+    };
     drop(process_inner);
-    if file.lock().get_type() == FileIOType::DirDesc {
+
+    let mut file = file.lock();
+
+    if file.get_type() == FileIOType::DirDesc {
         error!("fd is a dir");
         return ErrorNo::EISDIR as isize;
     }
-    if !file.lock().readable() {
+    if !file.readable() {
         // 1. nonblock file
         // return ErrorNo::EAGAIN as isize;
 
         // 2. socket
-        if file.lock().as_any().downcast_ref::<Socket>().is_some() {
+        if file.as_any().type_id() == TypeId::of::<Socket>() {
             return ErrorNo::EAGAIN as isize;
         }
 
@@ -164,15 +166,14 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
         return ErrorNo::EBADF as isize;
     }
 
-    // // debug
-    // file.print_content();
-    // info!("file type: {:?}", file.lock().get_type());
-    // release current inner manually to avoid multi-borrow
-    let read_size = file
-        .lock()
-        .read(unsafe { core::slice::from_raw_parts_mut(buf, count) })
-        .unwrap() as isize;
-    read_size as isize
+    // for sockets:
+    // Sockets are "readable" when:
+    // - have some data to read without blocking
+    // - remote end send FIN packet, local read half is closed (this will return 0 immediately)
+    //   this will return Ok(0)
+    // - ready to accept new connections
+
+    file.read(buf).unwrap() as isize
 }
 
 /// 功能：从一个文件描述符中写入；
@@ -182,50 +183,61 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
 ///     - count：要写入的字节数。
 /// 返回值：成功执行，返回写入的字节数。错误，则返回-1。
 pub fn syscall_write(fd: usize, buf: *const u8, count: usize) -> isize {
-    // info!("fd: {}, buf: {:X}, len: {}", fd, buf as usize, count);
+    trace!("[write()] fd: {fd}, buf: {buf:?}, len: {count}");
+
+    if buf.is_null() {
+        return ErrorNo::EFAULT as isize;
+    }
+
     let process = current_process();
     let process_inner = process.inner.lock();
-    let start: VirtAddr = (buf as usize).into();
-    let end = start + count;
-    if process_inner
-        .memory_set
-        .lock()
-        .manual_alloc_range_for_lazy(start, end)
-        .is_err()
-    {
-        return ErrorNo::EINVAL as isize;
-    }
-    if fd >= process_inner.fd_manager.fd_table.len() {
-        return ErrorNo::EBADF as isize;
-    }
 
-    let file = process_inner.fd_manager.fd_table[fd].clone().unwrap();
+    let buf = match process_inner.memory_set.lock().manual_alloc_range_for_lazy(
+        (buf as usize).into(),
+        unsafe { buf.add(count) as usize }.into(),
+    ) {
+        Ok(_) => unsafe { core::slice::from_raw_parts(buf, count) },
+        Err(_) => return ErrorNo::EFAULT as isize,
+    };
+
+    let file = match process_inner.fd_manager.fd_table.get(fd) {
+        Some(Some(f)) => f.clone(),
+        _ => return ErrorNo::EBADF as isize,
+    };
     drop(process_inner); // release current inner manually to avoid multi-borrow
 
-    if file.lock().get_type() == FileIOType::DirDesc {
+    let mut file = file.lock();
+
+    if file.get_type() == FileIOType::DirDesc {
         debug!("fd is a dir");
         return ErrorNo::EBADF as isize;
     }
-    if !file.lock().writable() {
-        return -1;
-    }
-    let file = file.clone();
+    if !file.writable() {
+        // 1. nonblock file
+        // return ErrorNo::EAGAIN as isize;
 
-    let ans = file
-        .lock()
-        .write(unsafe { core::slice::from_raw_parts(buf, count) })
-        .unwrap() as isize;
-    // let old_pos = file.lock().seek(SeekFrom::Current(0)).unwrap();
-    // let len = file.lock().seek(SeekFrom::End(0)).unwrap();
-    // file.lock().seek(SeekFrom::Start(old_pos)).unwrap();
-    // info!("now len: {}", len);
-    // let mut file = new_fd("/XXX".to_string(), OpenFlags::RDONLY).unwrap();
-    // let old_pos = file.seek(SeekFrom::Current(0)).unwrap();
-    // let len = file.seek(SeekFrom::End(0)).unwrap();
-    // file.seek(SeekFrom::Start(old_pos)).unwrap();
-    // info!("len: {}", len);
-    drop(file);
-    ans
+        // 2. socket
+        if file.as_any().type_id() == TypeId::of::<Socket>() {
+            return ErrorNo::EAGAIN as isize;
+        }
+
+        // 3. regular file
+        return ErrorNo::EBADF as isize;
+    }
+
+    // for sockets:
+    // Sockets are "writable" when:
+    // - connected and have space in tx buffer to write
+    // - sent FIN packet, local send half is closed (this will return 0 immediately)
+    //   this will return Err(ConnectionReset)
+
+    match file.write(buf) {
+        Ok(len) => len as isize,
+        // socket with send half closed
+        // TODO: send a SIGPIPE signal to the process
+        Err(axerrno::AxError::ConnectionReset) => ErrorNo::EPIPE as isize,
+        Err(_) => -1,
+    }
 }
 
 /// 从同一个文件描述符读取多个字符串

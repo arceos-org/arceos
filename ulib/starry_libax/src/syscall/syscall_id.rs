@@ -142,6 +142,7 @@ pub enum ErrorNo {
     EMFILE = -24,
     /// 对文件进行了无效的 seek
     ESPIPE = -29,
+    EPIPE = -32,
     /// 超过范围。例如用户提供的buffer不够长
     ERANGE = -34,
     /// fd 不是 Socket
