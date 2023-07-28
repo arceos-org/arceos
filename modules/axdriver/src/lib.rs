@@ -57,6 +57,7 @@
 #![no_std]
 #![feature(doc_auto_cfg)]
 #![feature(associated_type_defaults)]
+#![feature(strict_provenance)]
 
 #[macro_use]
 extern crate log;

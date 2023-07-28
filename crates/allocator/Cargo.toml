@@ -9,6 +9,9 @@ homepage = "https://github.com/rcore-os/arceos"
 repository = "https://github.com/rcore-os/arceos/tree/main/crates/allocator"
 documentation = "https://rcore-os.github.io/arceos/allocator/index.html"
 
+[features]
+allocator_api = []
+
 [dependencies]
 buddy_system_allocator = { version = "0.9", default-features = false }
 bitmap-allocator = { git = "https://github.com/rcore-os/bitmap-allocator.git", rev = "88e871a" }

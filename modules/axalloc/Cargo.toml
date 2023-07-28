@@ -11,7 +11,8 @@ documentation = "https://rcore-os.github.io/arceos/axalloc/index.html"
 
 [dependencies]
 log = "0.4"
+cfg-if = "1.0"
 spinlock = { path = "../../crates/spinlock" }
 memory_addr = { path = "../../crates/memory_addr" }
-allocator = { path = "../../crates/allocator" }
+allocator = { path = "../../crates/allocator"}
 axerrno = { path = "../../crates/axerrno" }

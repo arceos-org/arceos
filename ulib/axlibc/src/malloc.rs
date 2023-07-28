@@ -6,6 +6,7 @@
 //! order to maintain consistency, C user programs also choose to share the kernel heap,
 //! skipping the sys_brk step.
 
+use core::alloc::Layout;
 use core::result::Result::{Err, Ok};
 use core::{ffi::c_void, mem::size_of};
 
@@ -23,9 +24,11 @@ pub unsafe extern "C" fn ax_malloc(size: usize) -> *mut c_void {
     // Allocate `(actual length) + 8`. The lowest 8 Bytes are stored in the actual allocated space size.
     // This is because free(uintptr_t) has only one parameter representing the address,
     // So we need to save in advance to know the size of the memory space that needs to be released
-    match axalloc::global_allocator().alloc(size + size_of::<MemoryControlBlock>(), BYTES_OF_USIZE)
-    {
+    let layout =
+        Layout::from_size_align(size + size_of::<MemoryControlBlock>(), BYTES_OF_USIZE).unwrap();
+    match axalloc::global_allocator().alloc(layout) {
         Ok(addr) => {
+            let addr = addr.get();
             let control_block = unsafe { &mut *(addr as *mut MemoryControlBlock) };
             control_block.size = size;
             (addr + 8) as *mut c_void
@@ -41,15 +44,16 @@ pub unsafe extern "C" fn ax_malloc(size: usize) -> *mut c_void {
 /// (currently used) does not check the validity of address to be released.
 #[no_mangle]
 pub unsafe extern "C" fn ax_free(addr: *mut c_void) {
+    let addr = (addr as usize)
+        .checked_sub(size_of::<MemoryControlBlock>())
+        .filter(|&a| a > 0)
+        .expect("free a null pointer");
     let size = {
-        let control_block = unsafe {
-            &mut *((addr as usize - size_of::<MemoryControlBlock>()) as *mut MemoryControlBlock)
-        };
+        let control_block = unsafe { &mut *(addr as *mut MemoryControlBlock) };
         control_block.size
     };
-    axalloc::global_allocator().dealloc(
-        addr as usize - size_of::<MemoryControlBlock>(),
-        size + size_of::<MemoryControlBlock>(),
-        BYTES_OF_USIZE,
-    )
+    let ptr = unsafe { core::num::NonZeroUsize::new_unchecked(addr) };
+    let layout =
+        Layout::from_size_align(size + size_of::<MemoryControlBlock>(), BYTES_OF_USIZE).unwrap();
+    axalloc::global_allocator().dealloc(ptr, layout)
 }

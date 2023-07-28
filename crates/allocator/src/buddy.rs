@@ -4,6 +4,7 @@
 
 use buddy_system_allocator::Heap;
 use core::alloc::Layout;
+use core::num::NonZeroUsize;
 
 use crate::{AllocError, AllocResult, BaseAllocator, ByteAllocator};
 
@@ -35,17 +36,17 @@ impl BaseAllocator for BuddyByteAllocator {
 }
 
 impl ByteAllocator for BuddyByteAllocator {
-    fn alloc(&mut self, size: usize, align_pow2: usize) -> AllocResult<usize> {
+    fn alloc(&mut self, layout: Layout) -> AllocResult<NonZeroUsize> {
         self.inner
-            .alloc(Layout::from_size_align(size, align_pow2).unwrap())
-            .map(|ptr| ptr.as_ptr() as usize)
+            .alloc(layout)
+            .map(|ptr| ptr.addr())
             .map_err(|_| AllocError::NoMemory)
     }
 
-    fn dealloc(&mut self, pos: usize, size: usize, align_pow2: usize) {
+    fn dealloc(&mut self, pos: NonZeroUsize, layout: Layout) {
         self.inner.dealloc(
-            unsafe { core::ptr::NonNull::new_unchecked(pos as *mut u8) },
-            Layout::from_size_align(size, align_pow2).unwrap(),
+            unsafe { core::ptr::NonNull::new_unchecked(pos.get() as _) },
+            layout,
         )
     }
 
