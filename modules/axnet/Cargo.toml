@@ -22,6 +22,7 @@ axerrno = { path = "../../crates/axerrno" }
 axhal = { path = "../axhal" }
 axsync = { path = "../axsync", default-features = false }
 axtask = { path = "../axtask", default-features = false }
+axprocess = { path = "../axprocess", default-features = false }
 axdriver = { path = "../axdriver", features = ["net"] }
 axio = { path = "../../crates/axio" }
 

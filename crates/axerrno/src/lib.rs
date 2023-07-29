@@ -85,6 +85,8 @@ pub enum AxError {
     /// An error returned when an operation could not be completed because a
     /// call to `write()` returned [`Ok(0)`](Ok).
     WriteZero,
+    /// Syscall interrupted by a caught signal
+    Interrupted,
 }
 
 /// A specialized [`Result`] type with [`AxError`] as the error type.
@@ -210,6 +212,7 @@ impl AxError {
             Unsupported => "Operation not supported",
             WouldBlock => "Operation would block",
             WriteZero => "Write zero",
+            Interrupted => "Interrupted",
         }
     }
 
@@ -261,6 +264,7 @@ impl From<AxError> for LinuxError {
             Unsupported => LinuxError::ENOSYS,
             UnexpectedEof | WriteZero => LinuxError::EIO,
             WouldBlock => LinuxError::EAGAIN,
+            Interrupted => LinuxError::EINTR,
         }
     }
 }

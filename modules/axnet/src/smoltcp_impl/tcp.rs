@@ -3,6 +3,7 @@ use core::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 
 use axerrno::{ax_err, ax_err_type, AxError, AxResult};
 use axio::{PollState, Read, Write};
+use axprocess::process::current_process;
 use axsync::Mutex;
 
 use smoltcp::iface::SocketHandle;
@@ -129,8 +130,9 @@ impl TcpSocket {
             let bound_addr = self.bound_addr()?;
             // let iface = &ETH0.iface;
             let iface = LOOPBACK.try_get().unwrap();
-            let (local_addr, remote_addr) =
-                SOCKET_SET.with_socket_mut::<tcp::Socket, _, _>(handle, |socket| {
+            let (local_addr, remote_addr) = SOCKET_SET.with_socket_mut::<tcp::Socket, _, _>(
+                handle,
+                |socket| -> AxResult<(SocketAddr, SocketAddr)> {
                     socket
                         .connect(iface.lock().context(), remote_addr, bound_addr)
                         .or_else(|e| match e {
@@ -145,7 +147,8 @@ impl TcpSocket {
                         socket.local_endpoint().unwrap(),
                         socket.remote_endpoint().unwrap(),
                     ))
-                })?;
+                },
+            )?;
             unsafe {
                 // SAFETY: no other threads can read or write these fields as we
                 // have changed the state to `BUSY`.
@@ -537,6 +540,9 @@ impl TcpSocket {
     /// If the socket is non-blocking, it calls the function once and returns
     /// immediately. Otherwise, it may call the function multiple times if it
     /// returns [`Err(WouldBlock)`](AxError::WouldBlock).
+    ///
+    /// If ths socket is blocking and Interrupted by a signal, it returns
+    /// [`Err(Interrupted)`](AxError::Interrupted).
     fn block_on<F, T>(&self, mut f: F) -> AxResult<T>
     where
         F: FnMut() -> AxResult<T>,
@@ -544,11 +550,29 @@ impl TcpSocket {
         if self.is_nonblocking() {
             f()
         } else {
+            let tid = axtask::current().id().as_u64();
+            let curr = current_process();
             loop {
                 SOCKET_SET.poll_interfaces();
                 match f() {
                     Ok(t) => return Ok(t),
-                    Err(AxError::WouldBlock) => axtask::yield_now(),
+                    Err(AxError::WouldBlock) => {
+                        let inner = curr.inner.lock();
+                        let signal_before =
+                            inner.signal_module.get(&tid).map(|s| s.signal_set.pending);
+                        drop(inner);
+
+                        axtask::yield_now();
+
+                        let inner = curr.inner.lock();
+                        let signal_after =
+                            inner.signal_module.get(&tid).map(|s| s.signal_set.pending);
+                        drop(inner);
+
+                        if signal_before != signal_after {
+                            return Err(AxError::Interrupted);
+                        }
+                    }
                     Err(e) => return Err(e),
                 }
             }

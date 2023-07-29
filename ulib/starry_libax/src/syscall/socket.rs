@@ -737,6 +737,7 @@ pub fn syscall_accept(fd: usize, addr_buf: *mut u8, addr_len: *mut u32) -> isize
             new_fd as isize
         }
         Err(AxError::Unsupported) => ErrorNo::EOPNOTSUPP as isize,
+        Err(AxError::Interrupted) => ErrorNo::EINTR as isize,
         Err(_) => -1,
     }
 }
@@ -764,6 +765,7 @@ pub fn syscall_connect(fd: usize, addr_buf: *const u8, _addr_len: usize) -> isiz
     match socket.connect(addr) {
         Ok(_) => 0,
         Err(AxError::WouldBlock) => ErrorNo::EINPROGRESS as isize,
+        Err(AxError::Interrupted) => ErrorNo::EINTR as isize,
         Err(_) => -1,
     }
 }
@@ -889,6 +891,7 @@ pub fn syscall_sendto(
             info!("[sendto()] socket {fd} sent {len} bytes");
             len as isize
         }
+        Err(AxError::Interrupted) => ErrorNo::EINTR as isize,
         Err(_) => -1,
     }
 }
@@ -956,6 +959,8 @@ pub fn syscall_recvfrom(
                 len as isize
             }
         }
+        Err(AxError::ConnectionRefused) => 0,
+        Err(AxError::Interrupted) => ErrorNo::EINTR as isize,
         Err(_) => -1,
     }
 }
