@@ -140,6 +140,8 @@ pub fn syscall_pselect6(
         usize::MAX
     };
 
+    drop(inner);
+
     loop {
         let mut set = 0;
         if rset.valid() {
