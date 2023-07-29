@@ -240,6 +240,10 @@ impl UdpSocket {
             }
         }
     }
+
+    pub fn with_socket<R>(&self, f: impl FnOnce(&udp::Socket) -> R) -> R {
+        SOCKET_SET.with_socket(self.handle, |s| f(s))
+    }
 }
 
 impl Read for UdpSocket {

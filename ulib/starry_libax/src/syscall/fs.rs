@@ -19,7 +19,6 @@ use axhal::time::TimeValue;
 use axio::SeekFrom;
 use axprocess::link::{real_path, FilePath};
 use axprocess::process::current_process;
-use core::any::TypeId;
 use core::mem::transmute;
 use core::ptr::copy_nonoverlapping;
 use log::{debug, error, info, trace};
@@ -149,16 +148,20 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
         return ErrorNo::EISDIR as isize;
     }
     if !file.readable() {
-        // 1. nonblock file
-        // return ErrorNo::EAGAIN as isize;
+        // 1. nonblocking socket
+        //
+        // Normal socket will block while trying to read, so we don't return here.
+        if let Some(socket) = file.as_any().downcast_ref::<Socket>() {
+            if socket.is_nonblocking() && socket.is_connected() {
+                return ErrorNo::EAGAIN as isize;
+            }
+        } else {
+            // 2. nonblock file
+            // return ErrorNo::EAGAIN as isize;
 
-        // 2. socket
-        if file.as_any().type_id() == TypeId::of::<Socket>() {
-            return ErrorNo::EAGAIN as isize;
+            // 3. regular file
+            return ErrorNo::EBADF as isize;
         }
-
-        // 3. regular file
-        return ErrorNo::EBADF as isize;
     }
 
     // for sockets:
@@ -208,16 +211,20 @@ pub fn syscall_write(fd: usize, buf: *const u8, count: usize) -> isize {
         return ErrorNo::EBADF as isize;
     }
     if !file.writable() {
-        // 1. nonblock file
-        // return ErrorNo::EAGAIN as isize;
+        // 1. socket
+        //
+        // Normal socket will block while trying to write, so we don't return here.
+        if let Some(socket) = file.as_any().downcast_ref::<Socket>() {
+            if socket.is_nonblocking() && socket.is_connected() {
+                return ErrorNo::EAGAIN as isize;
+            }
+        } else {
+            // 2. nonblock file
+            // return ErrorNo::EAGAIN as isize;
 
-        // 2. socket
-        if file.as_any().type_id() == TypeId::of::<Socket>() {
-            return ErrorNo::EAGAIN as isize;
+            // 3. regular file
+            return ErrorNo::EBADF as isize;
         }
-
-        // 3. regular file
-        return ErrorNo::EBADF as isize;
     }
 
     // for sockets:

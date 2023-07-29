@@ -367,6 +367,14 @@ impl Socket {
         }
     }
 
+    /// Socket may send or recv.
+    pub fn is_connected(&self) -> bool {
+        match &self.inner {
+            SocketInner::Tcp(s) => s.is_connected(),
+            SocketInner::Udp(s) => s.with_socket(|s| s.is_open()),
+        }
+    }
+
     /// Return bound address.
     pub fn name(&self) -> AxResult<SocketAddr> {
         match &self.inner {
