@@ -56,7 +56,7 @@ pub const SOCK_NONBLOCK: usize = 0x800;
 /// Set FD_CLOEXEC flag on the new fd
 pub const SOCK_CLOEXEC: usize = 0x80000;
 
-#[derive(TryFromPrimitive)]
+#[derive(TryFromPrimitive, Debug)]
 #[repr(usize)]
 pub enum SocketOptionLevel {
     Ip = 0,
@@ -658,9 +658,12 @@ pub fn syscall_bind(fd: usize, addr: *const u8, _addr_len: usize) -> isize {
     let curr = current_process();
     let inner = curr.inner.lock();
 
-    let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
-        return ErrorNo::EBADF as isize;
+    let file = match inner.fd_manager.fd_table.get(fd) {
+        Some(Some(file)) => file.clone(),
+        _ => return ErrorNo::EBADF as isize,
     };
+    drop(inner);
+
     let mut file = file.lock();
 
     let mut addr = unsafe { socket_address_from(addr) };
@@ -683,11 +686,14 @@ pub fn syscall_listen(fd: usize, _backlog: usize) -> isize {
     let curr = current_process();
     let inner = curr.inner.lock();
 
-    let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
-        return ErrorNo::EBADF as isize;
+    let file = match inner.fd_manager.fd_table.get(fd) {
+        Some(Some(file)) => file.clone(),
+        _ => return ErrorNo::EBADF as isize,
     };
+    drop(inner);
 
     let mut file = file.lock();
+
     let Some(socket) = file.as_any_mut().downcast_mut::<Socket>() else {
         return ErrorNo::ENOTSOCK as isize;
     };
@@ -697,14 +703,13 @@ pub fn syscall_listen(fd: usize, _backlog: usize) -> isize {
 
 pub fn syscall_accept(fd: usize, addr_buf: *mut u8, addr_len: *mut u32) -> isize {
     let curr = current_process();
-    let mut inner = curr.inner.lock();
+    let inner = curr.inner.lock();
 
-    let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
-        return ErrorNo::EBADF as isize;
+    let file = match inner.fd_manager.fd_table.get(fd) {
+        Some(Some(file)) => file.clone(),
+        _ => return ErrorNo::EBADF as isize,
     };
 
-    // 复制一份文件，释放对 `inner` 的引用，以便于后续使用 `inner` 添加新 `socket`
-    let file = file.clone();
     let file = file.lock();
     let Some(socket) = file.as_any().downcast_ref::<Socket>() else {
         return ErrorNo::ENOTSOCK as isize;
@@ -712,9 +717,14 @@ pub fn syscall_accept(fd: usize, addr_buf: *mut u8, addr_len: *mut u32) -> isize
 
     debug!("[accept()] socket {fd} accept");
 
+    // socket.accept() might block, we need to release all lock now.
+    drop(inner);
+
     match socket.accept() {
         Ok((s, addr)) => {
             let _ = unsafe { socket_address_to(addr, addr_buf, addr_len) };
+
+            let mut inner = curr.inner.lock();
 
             let Ok(new_fd) = inner.alloc_fd() else {
                 return ErrorNo::EMFILE as isize; // Maybe ENFILE
@@ -735,11 +745,14 @@ pub fn syscall_connect(fd: usize, addr_buf: *const u8, _addr_len: usize) -> isiz
     let curr = current_process();
     let inner = curr.inner.lock();
 
-    let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
-        return ErrorNo::EBADF as isize;
+    let file = match inner.fd_manager.fd_table.get(fd) {
+        Some(Some(file)) => file.clone(),
+        _ => return ErrorNo::EBADF as isize,
     };
+    drop(inner);
 
     let mut file = file.lock();
+
     let Some(socket) = file.as_any_mut().downcast_mut::<Socket>() else {
         return ErrorNo::ENOTSOCK as isize;
     };
@@ -760,9 +773,12 @@ pub fn syscall_get_sock_name(fd: usize, addr: *mut u8, addr_len: *mut u32) -> is
     let curr = current_process();
     let inner = curr.inner.lock();
 
-    let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
-        return ErrorNo::EBADF as isize;
+    let file = match inner.fd_manager.fd_table.get(fd) {
+        Some(Some(file)) => file.clone(),
+        _ => return ErrorNo::EBADF as isize,
     };
+    drop(inner);
+
     let file = file.lock();
 
     let Some(socket) = file.as_any().downcast_ref::<Socket>() else {
@@ -793,8 +809,9 @@ pub fn syscall_sendto(
     let curr = current_process();
     let inner = curr.inner.lock();
 
-    let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
-        return ErrorNo::EBADF as isize;
+    let file = match inner.fd_manager.fd_table.get(fd) {
+        Some(Some(file)) => file.clone(),
+        _ => return ErrorNo::EBADF as isize,
     };
 
     let mut file = file.lock();
@@ -833,6 +850,8 @@ pub fn syscall_sendto(
     } else {
         None
     };
+
+    drop(inner);
 
     let send_result = match &mut socket.inner {
         SocketInner::Udp(s) => {
@@ -885,8 +904,9 @@ pub fn syscall_recvfrom(
     let curr = current_process();
     let inner = curr.inner.lock();
 
-    let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
-        return ErrorNo::EBADF as isize;
+    let file = match inner.fd_manager.fd_table.get(fd) {
+        Some(Some(file)) => file.clone(),
+        _ => return ErrorNo::EBADF as isize,
     };
 
     let mut file = file.lock();
@@ -923,6 +943,8 @@ pub fn syscall_recvfrom(
         return ErrorNo::EFAULT as isize;
     }
 
+    drop(inner);
+
     let buf = unsafe { from_raw_parts_mut(buf, len) };
 
     match socket.recv_from(buf) {
@@ -954,11 +976,14 @@ pub fn syscall_set_sock_opt(
     let curr = current_process();
     let inner = curr.inner.lock();
 
-    let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
-        return ErrorNo::EBADF as isize;
+    let file = match inner.fd_manager.fd_table.get(fd) {
+        Some(Some(file)) => file.clone(),
+        _ => return ErrorNo::EBADF as isize,
     };
+    drop(inner);
 
     let mut file = file.lock();
+
     let Some(socket) = file.as_any_mut().downcast_mut::<Socket>() else {
         return ErrorNo::ENOTSOCK as isize;
     };
@@ -998,11 +1023,16 @@ pub fn syscall_get_sock_opt(
         unimplemented!();
     };
 
+    if opt_value.is_null() || opt_len.is_null() {
+        return ErrorNo::EFAULT as isize;
+    }
+
     let curr = current_process();
     let inner = curr.inner.lock();
 
-    let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
-        return ErrorNo::EBADF as isize;
+    let file = match inner.fd_manager.fd_table.get(fd) {
+        Some(Some(file)) => file.clone(),
+        _ => return ErrorNo::EBADF as isize,
     };
 
     let mut file = file.lock();
@@ -1010,21 +1040,10 @@ pub fn syscall_get_sock_opt(
         return ErrorNo::ENOTSOCK as isize;
     };
 
-    let curr = current_process();
-    let inner = curr.inner.lock();
     if inner
         .memory_set
         .lock()
-        .manual_alloc_for_lazy((opt_value as usize).into())
-        .is_err()
-    {
-        error!("[getsockopt()] opt_value address {opt_value:?} invalid");
-        return ErrorNo::EFAULT as isize;
-    }
-    if inner
-        .memory_set
-        .lock()
-        .manual_alloc_for_lazy((opt_len as usize).into())
+        .manual_alloc_type_for_lazy(opt_len as *const u32)
         .is_err()
     {
         error!("[getsockopt()] opt_len address {opt_len:?} invalid");
@@ -1033,15 +1052,20 @@ pub fn syscall_get_sock_opt(
     if inner
         .memory_set
         .lock()
-        .manual_alloc_for_lazy((unsafe { opt_value.offset(*opt_len as isize) } as usize).into())
+        .manual_alloc_range_for_lazy(
+            (opt_value as usize).into(),
+            (unsafe { opt_value.add(*opt_len as usize) } as usize).into(),
+        )
         .is_err()
     {
         error!(
-            "[getsockopt()] opt_value end address {opt_value:?} + {} invalid",
+            "[getsockopt()] opt_value {opt_value:?}, len {} invalid",
             unsafe { *opt_len }
         );
         return ErrorNo::EFAULT as isize;
     }
+
+    drop(inner);
 
     match level {
         SocketOptionLevel::Ip => {}
@@ -1080,9 +1104,12 @@ pub fn syscall_shutdown(fd: usize, how: usize) -> isize {
     let curr = current_process();
     let inner = curr.inner.lock();
 
-    let Some(Some(file)) = inner.fd_manager.fd_table.get(fd) else {
-        return ErrorNo::EBADF as isize;
+    let file = match inner.fd_manager.fd_table.get(fd) {
+        Some(Some(file)) => file.clone(),
+        _ => return ErrorNo::EBADF as isize,
     };
+    drop(inner);
+
     let mut file = file.lock();
 
     let Some(socket) = file.as_any_mut().downcast_mut::<Socket>() else {
