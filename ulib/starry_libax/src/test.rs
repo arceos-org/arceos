@@ -11,6 +11,7 @@ use axtask::{
     TaskId,
 };
 use lazy_init::LazyInit;
+use log::error;
 use spinlock::SpinNoIrq;
 extern crate alloc;
 
@@ -438,6 +439,14 @@ pub const BUSYBOX_TESTCASES: &[&str] = &[
     // "lmbench_all lat_ctx -P 1 -s 32 2 4 8 16 24 32 64 96",
 ];
 
+pub const NETPERF_TESTCASES: &[&str] = &[
+    "netperf -H 127.0.0.1 -p 12865 -t UDP_STREAM -l 1 -- -s 16k -S 16k -m 1k -M 1k",
+    "netperf -H 127.0.0.1 -p 12865 -t TCP_STREAM -l 1 -- -s 16k -S 16k -m 1k -M 1k",
+    "netperf -H 127.0.0.1 -p 12865 -t UDP_RR -l 1 -- -s 16k -S 16k -m 1k -M 1k -r 64,64 -R 1",
+    "netperf -H 127.0.0.1 -p 12865 -t TCP_RR -l 1 -- -s 16k -S 16k -m 1k -M 1k -r 64,64 -R 1",
+    "netperf -H 127.0.0.1 -p 12865 -t TCP_CRR -l 1 -- -s 16k -S 16k -m 1k -M 1k -r 64,64 -R 1",
+];
+
 /// 运行测试时的状态机，记录测试结果与内容
 struct TestResult {
     sum: usize,
@@ -680,6 +689,48 @@ pub fn run_testcases(case: &'static str) {
         api::set_current_dir("/").expect("reset current dir failed");
     }
     panic!("All test finish!");
+}
+
+pub fn run_netperf() {
+    debug!("run netperf");
+    let server_task =
+        Process::new(get_args("netserver -D -L 127.0.0.1 -p 12865".as_bytes())).unwrap();
+    RUN_QUEUE.lock().add_task(server_task);
+
+    let mut failed_cases = Vec::new();
+
+    for (idx, command) in NETPERF_TESTCASES.iter().enumerate() {
+        unsafe { write_page_table_root(KERNEL_PAGE_TABLE.root_paddr()) };
+        let client_task = Process::new(get_args(command.as_bytes())).unwrap();
+        let pid = client_task.get_process_id() as isize;
+        RUN_QUEUE.lock().add_task(client_task);
+
+        let mut exit_code = -1;
+        loop {
+            if wait_pid(pid, &mut exit_code as *mut i32).is_ok() {
+                break;
+            }
+
+            yield_now_task();
+            info!("main: after yield");
+        }
+        info!(" --------------- Exit Code: {exit_code} --------------- ");
+
+        if exit_code != 0 {
+            failed_cases.push((idx, exit_code));
+        }
+    }
+
+    let total = NETPERF_TESTCASES.len();
+    info!(
+        " --------------- Netperf manual test: {} / {total} --------------- ",
+        total - failed_cases.len()
+    );
+    for (idx, exit_code) in failed_cases {
+        error!(" --------------- Test case {idx} --------------- ");
+        error!("{}", NETPERF_TESTCASES[idx]);
+        error!("exit code: {exit_code}");
+    }
 }
 
 // pub fn run_testcase(args: Vec<String>) -> AxResult<()> {
