@@ -92,7 +92,7 @@ export PATH=`pwd`/x86_64-linux-musl-cross/bin:`pwd`/aarch64-linux-musl-cross/bin
 
 ```bash
 # in arceos directory
-make A=path/to/app ARCH=<arch> LOG=<log> NET=[y|n] BLK=[y|n]
+make A=path/to/app ARCH=<arch> LOG=<log>
 ```
 
 Where `<arch>` should be one of `riscv64`, `aarch64`，`x86_64`.
@@ -106,8 +106,10 @@ More arguments and targets can be found in [Makefile](Makefile).
 For example, to run the [httpserver](apps/net/httpserver/) on `qemu-system-aarch64` with 4 cores:
 
 ```bash
-make A=apps/net/httpserver ARCH=aarch64 LOG=info NET=y SMP=4 run
+make A=apps/net/httpserver ARCH=aarch64 LOG=info SMP=4 run NET=y
 ```
+
+Note that the `NET=y` argument is required to enable the network device in QEMU. These arguments (`BLK`, `GRAPHIC`, etc.) only take effect at runtime not build time.
 
 ### Your custom apps
 

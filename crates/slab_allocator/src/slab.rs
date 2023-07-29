@@ -109,12 +109,6 @@ impl<const BLK_SIZE: usize> FreeBlockList<BLK_SIZE> {
     }
 }
 
-impl<const BLK_SIZE: usize> Drop for FreeBlockList<BLK_SIZE> {
-    fn drop(&mut self) {
-        while self.pop().is_some() {}
-    }
-}
-
 struct FreeBlock {
     next: Option<&'static mut FreeBlock>,
 }

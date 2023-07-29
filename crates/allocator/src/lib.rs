@@ -9,15 +9,32 @@
 //! - [`IdAllocator`]: Used to allocate unique IDs.
 
 #![no_std]
+#![feature(strict_provenance)]
 #![feature(result_option_inspect)]
+#![cfg_attr(feature = "allocator_api", feature(allocator_api))]
 
+#[cfg(feature = "bitmap")]
 mod bitmap;
-mod buddy;
-mod slab;
-
+#[cfg(feature = "bitmap")]
 pub use bitmap::BitmapPageAllocator;
+
+#[cfg(feature = "buddy")]
+mod buddy;
+#[cfg(feature = "buddy")]
 pub use buddy::BuddyByteAllocator;
+
+#[cfg(feature = "slab")]
+mod slab;
+#[cfg(feature = "slab")]
 pub use slab::SlabByteAllocator;
+
+#[cfg(feature = "tlsf")]
+mod tlsf;
+#[cfg(feature = "tlsf")]
+pub use tlsf::TlsfByteAllocator;
+
+use core::alloc::Layout;
+use core::num::NonZeroUsize;
 
 /// The error type used for allocation.
 #[derive(Debug)]
@@ -47,10 +64,10 @@ pub trait BaseAllocator {
 /// Byte-granularity allocator.
 pub trait ByteAllocator: BaseAllocator {
     /// Allocate memory with the given size (in bytes) and alignment.
-    fn alloc(&mut self, size: usize, align_pow2: usize) -> AllocResult<usize>;
+    fn alloc(&mut self, layout: Layout) -> AllocResult<NonZeroUsize>;
 
     /// Deallocate memory at the given position, size, and alignment.
-    fn dealloc(&mut self, pos: usize, size: usize, align_pow2: usize);
+    fn dealloc(&mut self, pos: NonZeroUsize, layout: Layout);
 
     /// Returns total memory size in bytes.
     fn total_bytes(&self) -> usize;
@@ -116,3 +133,51 @@ const fn align_down(pos: usize, align: usize) -> usize {
 const fn align_up(pos: usize, align: usize) -> usize {
     (pos + align - 1) & !(align - 1)
 }
+
+#[cfg(feature = "allocator_api")]
+mod allocator_api {
+    extern crate alloc;
+
+    use super::ByteAllocator;
+    use alloc::rc::Rc;
+    use core::alloc::{AllocError, Allocator, Layout};
+    use core::cell::RefCell;
+    use core::ptr::NonNull;
+
+    /// A byte-allocator wrapped in [`Rc<RefCell>`] that implements [`core::alloc::Allocator`].
+    pub struct AllocatorRc<A: ByteAllocator>(Rc<RefCell<A>>);
+
+    impl<A: ByteAllocator> AllocatorRc<A> {
+        /// Creates a new allocator with the given memory pool.
+        pub fn new(mut inner: A, pool: &mut [u8]) -> Self {
+            inner.init(pool.as_mut_ptr() as usize, pool.len());
+            Self(Rc::new(RefCell::new(inner)))
+        }
+    }
+
+    unsafe impl<A: ByteAllocator> Allocator for AllocatorRc<A> {
+        fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
+            match layout.size() {
+                0 => Ok(NonNull::slice_from_raw_parts(NonNull::dangling(), 0)),
+                size => {
+                    let raw_addr = self.0.borrow_mut().alloc(layout).map_err(|_| AllocError)?;
+                    let ptr = unsafe { NonNull::new_unchecked(raw_addr.get() as _) };
+                    Ok(NonNull::slice_from_raw_parts(ptr, size))
+                }
+            }
+        }
+
+        unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
+            self.0.borrow_mut().dealloc(ptr.addr(), layout)
+        }
+    }
+
+    impl<A: ByteAllocator> Clone for AllocatorRc<A> {
+        fn clone(&self) -> Self {
+            Self(self.0.clone())
+        }
+    }
+}
+
+#[cfg(feature = "allocator_api")]
+pub use allocator_api::AllocatorRc;

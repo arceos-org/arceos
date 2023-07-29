@@ -4,6 +4,7 @@
 
 use super::{AllocError, AllocResult, BaseAllocator, ByteAllocator};
 use core::alloc::Layout;
+use core::num::NonZeroUsize;
 use slab_allocator::Heap;
 
 /// A byte-granularity memory allocator based on the [slab allocator].
@@ -42,17 +43,15 @@ impl BaseAllocator for SlabByteAllocator {
 }
 
 impl ByteAllocator for SlabByteAllocator {
-    fn alloc(&mut self, size: usize, align_pow2: usize) -> AllocResult<usize> {
+    fn alloc(&mut self, layout: Layout) -> AllocResult<NonZeroUsize> {
         self.inner_mut()
-            .allocate(Layout::from_size_align(size, align_pow2).unwrap())
+            .allocate(layout)
+            .map(|addr| NonZeroUsize::new(addr).unwrap())
             .map_err(|_| AllocError::NoMemory)
     }
 
-    fn dealloc(&mut self, pos: usize, size: usize, align_pow2: usize) {
-        unsafe {
-            self.inner_mut()
-                .deallocate(pos, Layout::from_size_align(size, align_pow2).unwrap())
-        }
+    fn dealloc(&mut self, pos: NonZeroUsize, layout: Layout) {
+        unsafe { self.inner_mut().deallocate(pos.get(), layout) }
     }
 
     fn total_bytes(&self) -> usize {
