@@ -127,9 +127,10 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
     let process = current_process();
     let process_inner = process.inner.lock();
 
+    // TODO: 左闭右开
     let buf = match process_inner.memory_set.lock().manual_alloc_range_for_lazy(
         (buf as usize).into(),
-        unsafe { buf.add(count) as usize }.into(),
+        (unsafe { buf.add(count) as usize } - 1).into(),
     ) {
         Ok(_) => unsafe { core::slice::from_raw_parts_mut(buf, count) },
         Err(_) => return ErrorNo::EFAULT as isize,
@@ -190,9 +191,10 @@ pub fn syscall_write(fd: usize, buf: *const u8, count: usize) -> isize {
     let process = current_process();
     let process_inner = process.inner.lock();
 
+    // TODO: 左闭右开
     let buf = match process_inner.memory_set.lock().manual_alloc_range_for_lazy(
         (buf as usize).into(),
-        unsafe { buf.add(count) as usize }.into(),
+        (unsafe { buf.add(count) as usize } - 1).into(),
     ) {
         Ok(_) => unsafe { core::slice::from_raw_parts(buf, count) },
         Err(_) => return ErrorNo::EFAULT as isize,
