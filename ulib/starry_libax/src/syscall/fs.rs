@@ -250,11 +250,13 @@ pub fn syscall_readv(fd: usize, iov: *mut IoVec, iov_cnt: usize) -> isize {
     // 似乎要判断iov是否分配，但是懒了，反正能过测例
     for i in 0..iov_cnt {
         let io: &IoVec = unsafe { &*iov.add(i) };
-        let len = syscall_read(fd, io.base, io.len);
-        if len == -1 {
-            break;
-        } else {
-            read_len += len;
+        if io.base.is_null() || io.len == 0 {
+            continue;
+        }
+        match syscall_read(fd, io.base, io.len) {
+            len if len >= 0 => read_len += len,
+
+            err => return err,
         }
     }
     read_len
@@ -266,14 +268,13 @@ pub fn syscall_writev(fd: usize, iov: *const IoVec, iov_cnt: usize) -> isize {
     // 似乎要判断iov是否分配，但是懒了，反正能过测例
     for i in 0..iov_cnt {
         let io: &IoVec = unsafe { &(*iov.add(i)) };
-        if io.base as usize == 0 {
+        if io.base.is_null() || io.len == 0 {
             continue;
         }
-        let len = syscall_write(fd, io.base, io.len);
-        if len == -1 {
-            break;
-        } else {
-            write_len += len;
+        match syscall_write(fd, io.base, io.len) {
+            len if len >= 0 => write_len += len,
+
+            err => return err,
         }
     }
     write_len
