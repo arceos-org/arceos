@@ -375,6 +375,14 @@ impl Socket {
         }
     }
 
+    /// Return peer address.
+    pub fn peer_name(&self) -> AxResult<SocketAddr> {
+        match &self.inner {
+            SocketInner::Tcp(s) => s.peer_addr(),
+            SocketInner::Udp(s) => s.peer_addr(),
+        }
+    }
+
     pub fn bind(&mut self, addr: SocketAddr) -> AxResult {
         match &mut self.inner {
             SocketInner::Tcp(s) => s.bind(addr),
@@ -796,6 +804,54 @@ pub fn syscall_get_sock_name(fd: usize, addr: *mut u8, addr_len: *mut u32) -> is
     info!("[getsockname()] socket {fd} name: {:?}", name);
 
     unsafe { socket_address_to(name, addr, addr_len) }.map_or(-1, |_| 0)
+}
+
+pub fn syscall_getpeername(fd: usize, addr_buf: *mut u8, addr_len: *mut u32) -> isize {
+    let curr = current_process();
+    let inner = curr.inner.lock();
+
+    let file = match inner.fd_manager.fd_table.get(fd) {
+        Some(Some(file)) => file.clone(),
+        _ => return ErrorNo::EBADF as isize,
+    };
+
+    let mut memory_set = inner.memory_set.lock();
+    let len = match memory_set.manual_alloc_type_for_lazy(addr_len as *const u32) {
+        Ok(_) => unsafe { *addr_len },
+        Err(_) => return ErrorNo::EFAULT as isize,
+    };
+    // It seems it could be negative according to Linux man page.
+    if (len as i32) < 0 {
+        return ErrorNo::EINVAL as isize;
+    }
+
+    if memory_set
+        .manual_alloc_range_for_lazy(
+            (addr_buf as usize).into(),
+            unsafe { addr_buf.add(len as usize) as usize }.into(),
+        )
+        .is_err()
+    {
+        return ErrorNo::EFAULT as isize;
+    }
+
+    drop(memory_set);
+    drop(inner);
+
+    let file = file.lock();
+
+    let Some(socket) = file.as_any().downcast_ref::<Socket>() else {
+        return ErrorNo::ENOTSOCK as isize;
+    };
+
+    match socket.peer_name() {
+        Ok(name) => {
+            error!("ok");
+            unsafe { socket_address_to(name, addr_buf, addr_len) }.map_or(-1, |_| 0)
+        }
+        Err(AxError::NotConnected) => ErrorNo::ENOTCONN as isize,
+        Err(_) => unreachable!(),
+    }
 }
 
 // TODO: flags

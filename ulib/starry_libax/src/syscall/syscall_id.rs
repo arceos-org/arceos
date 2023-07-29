@@ -103,6 +103,7 @@ pub enum SyscallId {
     ACCEPT = 202,
     CONNECT = 203,
     GETSOCKNAME = 204,
+    GETPEERNAME = 205,
     SENDTO = 206,
     RECVFROM = 207,
     SETSOCKOPT = 208,

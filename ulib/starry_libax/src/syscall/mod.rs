@@ -271,6 +271,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         ACCEPT => syscall_accept(args[0], args[1] as *mut u8, args[2] as *mut u32),
         CONNECT => syscall_connect(args[0], args[1] as *const u8, args[2]),
         GETSOCKNAME => syscall_get_sock_name(args[0], args[1] as *mut u8, args[2] as *mut u32),
+        GETPEERNAME => syscall_getpeername(args[0], args[1] as *mut u8, args[2] as *mut u32),
         SENDTO => syscall_sendto(
             args[0],
             args[1] as *const u8,
