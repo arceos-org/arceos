@@ -1,19 +1,27 @@
 use axerrno::{AxError, AxResult};
 use axfs::monolithic_fs::{
     file_io::{FileExt, FileIO},
+    flags::{ConsoleWinSize, OpenFlags, TCGETS, TIOCGPGRP, TIOCGWINSZ, TIOCSPGRP},
     FileIOType,
 };
 use axhal::console::{getchar, write_bytes};
 use axio::{Read, Seek, SeekFrom, Write};
+use axlog::warn;
 use axtask::yield_now;
 /// stdin file for getting chars from console
-pub struct Stdin;
+pub struct Stdin {
+    pub flags: OpenFlags,
+}
 
 /// stdout file for putting chars to console
-pub struct Stdout;
+pub struct Stdout {
+    pub flags: OpenFlags,
+}
 
 /// stderr file for putting chars to console
-pub struct Stderr;
+pub struct Stderr {
+    pub flags: OpenFlags,
+}
 
 impl Read for Stdin {
     fn read(&mut self, _buf: &mut [u8]) -> AxResult<usize> {
@@ -76,6 +84,55 @@ impl FileIO for Stdin {
     fn ready_to_write(&mut self) -> bool {
         false
     }
+
+    fn ioctl(&mut self, request: usize, data: usize) -> AxResult<()> {
+        match request {
+            TIOCGWINSZ => {
+                let winsize = data as *mut ConsoleWinSize;
+                unsafe {
+                    *winsize = ConsoleWinSize::default();
+                }
+                Ok(())
+            }
+            TCGETS | TIOCSPGRP => {
+                warn!("stdin TCGETS | TIOCSPGRP, pretend to be tty.");
+                // pretend to be tty
+                Ok(())
+            }
+
+            TIOCGPGRP => {
+                warn!("stdin TIOCGPGRP, pretend to be have a tty process group.");
+                unsafe {
+                    *(data as *mut u32) = 0;
+                }
+                Ok(())
+            }
+            _ => Err(AxError::Unsupported),
+        }
+    }
+
+    fn set_status(&mut self, flags: OpenFlags) -> bool {
+        if flags.contains(OpenFlags::CLOEXEC) {
+            self.flags = OpenFlags::CLOEXEC;
+            true
+        } else {
+            false
+        }
+    }
+
+    fn get_status(&self) -> OpenFlags {
+        self.flags
+    }
+
+    fn set_close_on_exec(&mut self, is_set: bool) -> bool {
+        if is_set {
+            // 设置close_on_exec位置
+            self.flags |= OpenFlags::CLOEXEC;
+        } else {
+            self.flags &= !OpenFlags::CLOEXEC;
+        }
+        true
+    }
 }
 
 impl Read for Stdout {
@@ -122,6 +179,29 @@ impl FileIO for Stdout {
     }
 
     fn ready_to_write(&mut self) -> bool {
+        true
+    }
+
+    fn set_status(&mut self, flags: OpenFlags) -> bool {
+        if flags.contains(OpenFlags::CLOEXEC) {
+            self.flags = flags;
+            true
+        } else {
+            false
+        }
+    }
+
+    fn get_status(&self) -> OpenFlags {
+        self.flags
+    }
+
+    fn set_close_on_exec(&mut self, is_set: bool) -> bool {
+        if is_set {
+            // 设置close_on_exec位置
+            self.flags |= OpenFlags::CLOEXEC;
+        } else {
+            self.flags &= !OpenFlags::CLOEXEC;
+        }
         true
     }
 }
@@ -174,4 +254,43 @@ impl FileIO for Stderr {
     fn ready_to_write(&mut self) -> bool {
         true
     }
+
+    // fn ioctl(&mut self, request: usize, data: usize) -> AxResult<()> {
+    //     match request {
+    //         TIOCGWINSZ => {
+    //             let winsize = data as *mut ConsoleWinSize;
+    //             unsafe {
+    //                 *winsize = ConsoleWinSize::default();
+    //             }
+    //             Ok(())
+    //         }
+    //         TCGETS | TIOCSPGRP => {
+    //             warn!("stdout TCGETS | TIOCSPGRP, pretend to be tty.");
+    //             // pretend to be tty
+    //             Ok(())
+    //         }
+
+    //         TIOCGPGRP => {
+    //             warn!("stdout TIOCGPGRP, pretend to be have a tty process group.");
+    //             unsafe {
+    //                 *(data as *mut u32) = 0;
+    //             }
+    //             Ok(())
+    //         }
+    //         _ => Err(AxError::Unsupported),
+    //     }
+    // }
+
+    // fn set_status(&mut self, flags: OpenFlags) -> bool {
+    //     if flags.contains(OpenFlags::CLOEXEC) {
+    //         self.flags = flags;
+    //         true
+    //     } else {
+    //         false
+    //     }
+    // }
+
+    // fn get_status(&self) -> OpenFlags {
+    //     self.flags
+    // }
 }

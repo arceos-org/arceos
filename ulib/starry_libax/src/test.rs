@@ -11,6 +11,7 @@ use axtask::{
     TaskId,
 };
 use lazy_init::LazyInit;
+use log::error;
 use spinlock::SpinNoIrq;
 extern crate alloc;
 
@@ -312,12 +313,27 @@ pub const LUA_TESTCASES: &[&str] = &[
 pub const BUSYBOX_TESTCASES: &[&str] = &[
     // "busybox echo iozone automatic measurements",
     // "busybox sh cyclictest_testcode.sh",
+    // "busybox echo \"run iozone_testcode.sh\"",
+    // "busybox sh ./iozone_testcode.sh",
     // "busybox echo iozone throughput write/read measurements",
     // "iozone -t 4 -i 0 -i 1 -r 1k -s 1m",
     // "busybox echo iozone throughput random-read measurements",
     // "iozone -t 4 -i 0 -i 2 -r 1k -s 1m",
     // "busybox sh ./test_all.sh",
     // "busybox echo \"run libctest_testcode.sh\"",
+    "busybox sh unixbench_testcode.sh",
+    // "./looper 20 ./multi.sh 16",
+    // "./fstime -w -t 20 -b 1024 -m 2000",
+    // "./fstime -w -t 20 -b 4096 -m 8000",
+    // "./fstime -w -t 20 -b 1024 -m 2000",
+    // "./arithoh 10",
+    // "./looper 20 ./multi.sh 1",
+    // "./looper 20 ./multi.sh 8",
+    // "./syscall 10",
+    // "./dhry2reg 10",
+    // "./looper 20 ./multi.sh 1",
+    // "./looper 20 ./multi.sh 8",
+    // "./fstime -w -t 20 -b 256 -m 500",
     // "./runtest.exe -w entry-dynamic.exe fscanf",
     // "./libctest_testcode.sh",
     // "busybox echo \"run lua_testcode.sh\"",
@@ -385,23 +401,59 @@ pub const BUSYBOX_TESTCASES: &[&str] = &[
 
     // "echo latency measurements",
     // "lmbench_all lat_syscall -P 1 null",
-    "busybox sh libctest_testcode.sh",
-    "busybox sh lua_testcode.sh",
-    "busybox sh busybox_testcode.sh",
-    "busybox sh lmbench_testcode.sh",
+    // "busybox sh libctest_testcode.sh",
+    // "busybox sh lua_testcode.sh",
+    // "busybox sh busybox_testcode.sh",
+    // "busybox sh lmbench_testcode.sh",
     // "busybox mkdir -p /var/tmp",
-    // "lmbench_all lat_fs /var/tmp",
     // "busybox echo latency measurements",
     // "lmbench_all lat_syscall -P 1 null",
+    // "lmbench_all lat_syscall -P 1 read",
+    // "lmbench_all lat_syscall -P 1 write",
     // "busybox mkdir -p /var/tmp",
     // "busybox touch /var/tmp/lmbench",
-    // "lmbench_all lat_syscall -P 1 fstat /var/tmp/lmbench",
-    // "lmbench_all lat_fs /var/tmp",
-    // "busybox touch /var/tmp/lmbench",
     // "lmbench_all lat_syscall -P 1 stat /var/tmp/lmbench",
+    // "lmbench_all lat_syscall -P 1 fstat /var/tmp/lmbench",
+    // "lmbench_all lat_syscall -P 1 open /var/tmp/lmbench",
+    // "lmbench_all lat_select -n 100 -P 1 file",
+    // "lmbench_all lat_sig -P 1 install",
+    // "lmbench_all lat_sig -P 1 catch",
+    // "lmbench_all lat_sig -P 1 prot lat_sig",
+    // "lmbench_all lat_pipe -P 1",
+    // "lmbench_all lat_proc -P 1 fork",
+    // "lmbench_all lat_proc -P 1 exec",
+    // "busybox cp hello /tmp",
+    // "lmbench_all lat_proc -P 1 shell",
     // "lmbench_all lmdd label=\"File /var/tmp/XXX write bandwidth:\" of=/var/tmp/XXX move=1m fsync=1 print=3",
     // "lmbench_all lat_pagefault -P 1 /var/tmp/XXX",
+    // "lmbench_all lat_mmap -P 1 512k /var/tmp/XXX",
+    // "busybox echo file system latency",
+    // "lmbench_all lat_fs /var/tmp",
+    // "busybox echo Bandwidth measurements",
+    // "lmbench_all bw_pipe -P 1",
+    // "lmbench_all bw_file_rd -P 1 512k io_only /var/tmp/XXX",
+    // "lmbench_all bw_file_rd -P 1 512k open2close /var/tmp/XXX",
+    // "lmbench_all bw_mmap_rd -P 1 512k mmap_only /var/tmp/XXX",
+    // "lmbench_all bw_mmap_rd -P 1 512k open2close /var/tmp/XXX",
+    // "busybox echo context switch overhead",
     // "lmbench_all lat_ctx -P 1 -s 32 2 4 8 16 24 32 64 96",
+];
+
+pub const NETPERF_TESTCASES: &[&str] = &[
+    "netperf -H 127.0.0.1 -p 12865 -t UDP_STREAM -l 1 -- -s 16k -S 16k -m 1k -M 1k",
+    "netperf -H 127.0.0.1 -p 12865 -t TCP_STREAM -l 1 -- -s 16k -S 16k -m 1k -M 1k",
+    "netperf -H 127.0.0.1 -p 12865 -t UDP_RR -l 1 -- -s 16k -S 16k -m 1k -M 1k -r 64,64 -R 1",
+    "netperf -H 127.0.0.1 -p 12865 -t TCP_RR -l 1 -- -s 16k -S 16k -m 1k -M 1k -r 64,64 -R 1",
+    "netperf -H 127.0.0.1 -p 12865 -t TCP_CRR -l 1 -- -s 16k -S 16k -m 1k -M 1k -r 64,64 -R 1",
+];
+
+pub const IPERF_TESTCASES: &[&str] = &[
+    "iperf3 -c 127.0.0.1 -p 5001 -t 2 -i 0", // basic tcp
+    "iperf3 -c 127.0.0.1 -p 5001 -t 2 -i 0 -u -b 100G", // basic udp
+    "iperf3 -c 127.0.0.1 -p 5001 -t 2 -i 0 -P 5", // parallel tcp
+    "iperf3 -c 127.0.0.1 -p 5001 -t 2 -i 0 -u -P 5 -b 1000G", // parallel udp
+    "iperf3 -c 127.0.0.1 -p 5001 -t 2 -i 0 -R", // reverse tcp
+    "iperf3 -c 127.0.0.1 -p 5001 -t 2 -i 0 -u -R -b 1000G", // reverse udp
 ];
 
 /// 运行测试时的状态机，记录测试结果与内容
@@ -646,6 +698,93 @@ pub fn run_testcases(case: &'static str) {
         api::set_current_dir("/").expect("reset current dir failed");
     }
     panic!("All test finish!");
+}
+
+pub fn run_netperf() {
+    debug!("run netperf");
+    let server_task =
+        Process::new(get_args("netserver -D -L 127.0.0.1 -p 12865".as_bytes())).unwrap();
+    RUN_QUEUE.lock().add_task(server_task);
+
+    let mut failed_cases = Vec::new();
+
+    for (idx, command) in NETPERF_TESTCASES.iter().enumerate() {
+        unsafe { write_page_table_root(KERNEL_PAGE_TABLE.root_paddr()) };
+        let client_task = Process::new(get_args(command.as_bytes())).unwrap();
+        let pid = client_task.get_process_id() as isize;
+        RUN_QUEUE.lock().add_task(client_task);
+
+        let mut exit_code = -1;
+        loop {
+            if wait_pid(pid, &mut exit_code as *mut i32).is_ok() {
+                break;
+            }
+
+            yield_now_task();
+            info!("main: after yield");
+        }
+        info!(" --------------- Exit Code: {exit_code} --------------- ");
+
+        if exit_code != 0 {
+            failed_cases.push((idx, exit_code));
+        }
+    }
+
+    let total = NETPERF_TESTCASES.len();
+    info!(
+        " --------------- Netperf manual test: {} / {total} --------------- ",
+        total - failed_cases.len()
+    );
+    for (idx, exit_code) in failed_cases {
+        error!(" --------------- Test case {} --------------- ", idx + 1);
+        error!("{}", NETPERF_TESTCASES[idx]);
+        error!("exit code: {exit_code}");
+    }
+}
+
+pub fn run_iperf() {
+    debug!("run iperf");
+
+    let server_task = Process::new(get_args("iperf3 -s -p 5001 -D".as_bytes())).unwrap();
+
+    RUN_QUEUE.lock().add_task(server_task);
+    yield_now_task();
+    yield_now_task();
+
+    let mut failed_cases = Vec::new();
+
+    for (idx, command) in IPERF_TESTCASES.iter().enumerate() {
+        unsafe { write_page_table_root(KERNEL_PAGE_TABLE.root_paddr()) };
+        let client_task = Process::new(get_args(command.as_bytes())).unwrap();
+
+        let pid = client_task.get_process_id() as isize;
+        RUN_QUEUE.lock().add_task(client_task);
+
+        let mut exit_code = 0;
+        loop {
+            if wait_pid(pid, &mut exit_code as *mut i32).is_ok() {
+                break;
+            }
+
+            yield_now_task();
+        }
+        info!("----------------- Exit Code: {exit_code} ------------------");
+
+        if exit_code != 0 {
+            failed_cases.push((idx, exit_code));
+        }
+    }
+
+    let total = IPERF_TESTCASES.len();
+    info!(
+        " --------------- Iperf manual test: {} / {total} --------------- ",
+        total - failed_cases.len()
+    );
+    for (idx, exit_code) in failed_cases {
+        error!(" --------------- Test case {} --------------- ", idx + 1);
+        error!("{}", IPERF_TESTCASES[idx]);
+        error!("exit code: {exit_code}");
+    }
 }
 
 // pub fn run_testcase(args: Vec<String>) -> AxResult<()> {

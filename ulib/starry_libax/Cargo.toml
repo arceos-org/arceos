@@ -76,13 +76,13 @@ preempt = ["axruntime/preempt", "axprocess/preempt", "irq"]
 # Signal
 signal = ["axprocess/signal", "multitask", "preempt"]
 
-default = ["axtask?/sched_fifo", "axtask", "axmem", "monolithic", "test", "paging", "signal", "net"]
+default = ["axtask?/sched_fifo", "axtask", "axmem", "monolithic", "test", "paging", "signal", "net", "smp"]
 [dependencies]
 numeric-enum-macro = { git = "https://github.com/mexus/numeric-enum-macro" }
 # base-file = { git = "https://github.com/scPointer/maturin/tree/master/modules/base-file" }
 # poll ={ git = "https://github.com/scPointer/maturin/tree/master/modules/poll" }
 spin = { version = "0.9", optional = true }
-lazy_static = { version = "1.4", features = ["spin_no_std"]}
+lazy_static = { version = "1.4", features = ["spin_no_std"] }
 page_table_entry = { path = "../../crates/page_table_entry" }
 spinlock = { path = "../../crates/spinlock" }
 flatten_objects = { path = "../../crates/flatten_objects" }
@@ -111,3 +111,6 @@ crate_interface = { path = "../../crates/crate_interface" }
 kernel_guard = { path = "../../crates/kernel_guard" }
 lazy_init = { path = "../../crates/lazy_init" }
 num_enum = { version = "0.5.11", default-features = false }
+rand = { path = "../../extern_crates/rand-0.8.5", default-features = false, features = [
+    "small_rng",
+] }

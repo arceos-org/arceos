@@ -76,7 +76,11 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         READ => syscall_read(args[0], args[1] as *mut u8, args[2]),
         WRITE => syscall_write(args[0], args[1] as *const u8, args[2]),
         EXIT => syscall_exit(args[0] as i32),
-        EXECVE => syscall_exec(args[0] as *const u8, args[1] as *const usize),
+        EXECVE => syscall_exec(
+            args[0] as *const u8,
+            args[1] as *const usize,
+            args[2] as *const usize,
+        ),
         CLONE => syscall_clone(args[0], args[1], args[2], args[3], args[4]),
         NANO_SLEEP => syscall_sleep(args[0] as *const TimeSecs, args[1] as *mut TimeSecs),
         SCHED_YIELD => syscall_yield(),
@@ -90,6 +94,8 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[1] as *mut i32,
             WaitFlags::from_bits(args[2] as u32).unwrap(),
         ),
+        GETRANDOM => syscall_getrandom(args[0] as *mut u8, args[1], args[2]),
+
         BRK => syscall_brk(args[0] as usize),
         MUNMAP => syscall_munmap(args[0], args[1]),
         MMAP => syscall_mmap(
@@ -118,7 +124,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         ),
         UNMOUNT => syscall_umount(args[0] as *const u8, args[1] as usize),
         FSTAT => syscall_fstat(args[0], args[1] as *mut Kstat),
-
+        SIGSUSPEND => syscall_sigsuspend(args[0] as *const usize),
         SIGACTION => syscall_sigaction(
             args[0],
             args[1] as *const SigAction,
@@ -174,9 +180,10 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         SETITIMER => syscall_settimer(
             args[0] as usize,
             args[1] as *const ITimerVal,
-            args[1] as *mut ITimerVal,
+            args[2] as *mut ITimerVal,
         ),
         GETTIMER => syscall_gettimer(args[0] as usize, args[1] as *mut ITimerVal),
+        SETSID => syscall_setsid(),
         GETRUSAGE => syscall_getrusage(args[0] as i32, args[1] as *mut TimeVal),
         UMASK => syscall_umask(args[0] as i32),
         PPOLL => syscall_ppoll(
@@ -244,7 +251,10 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[4] as *const TimeSecs,
             args[5] as usize,
         ),
-        // FTRUNCATE64 => syscall_ftruncate64(args[0] as usize, args[1] as usize),
+        FTRUNCATE64 => {
+            // syscall_ftruncate64(args[0] as usize, args[1] as usize)
+            0
+        }
         IOCTL => syscall_ioctl(args[0] as usize, args[1] as usize, args[2] as *mut usize),
         // 不做处理即可
         SYNC => 0,
@@ -261,6 +271,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         ACCEPT => syscall_accept(args[0], args[1] as *mut u8, args[2] as *mut u32),
         CONNECT => syscall_connect(args[0], args[1] as *const u8, args[2]),
         GETSOCKNAME => syscall_get_sock_name(args[0], args[1] as *mut u8, args[2] as *mut u32),
+        GETPEERNAME => syscall_getpeername(args[0], args[1] as *mut u8, args[2] as *mut u32),
         SENDTO => syscall_sendto(
             args[0],
             args[1] as *const u8,
@@ -277,9 +288,21 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[4] as *mut u8,
             args[5] as *mut u32,
         ),
-        SETSOCKOPT => {
-            syscall_set_sock_opt(args[0], args[1], args[2], args[3] as *const u8, args[4])
-        }
+        SETSOCKOPT => syscall_set_sock_opt(
+            args[0],
+            args[1],
+            args[2],
+            args[3] as *const u8,
+            args[4] as u32,
+        ),
+        GETSOCKOPT => syscall_get_sock_opt(
+            args[0],
+            args[1],
+            args[2],
+            args[3] as *mut u8,
+            args[4] as *mut u32,
+        ),
+        SHUTDOWN => syscall_shutdown(args[0], args[1]),
 
         _ => {
             error!("Invalid Syscall Id: {}!", syscall_id);
@@ -291,15 +314,15 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
 
     // let sstatus = riscv::register::sstatus::read();
     // error!("irq: {}", riscv::register::sstatus::Sstatus::sie(&sstatus));
-    if syscall_id != GETPPID as usize
-        && syscall_id != CLOCK_GET_TIME as usize
-        && syscall_id != GETRUSAGE as usize
-    {
-        // if syscall_id == CLONE as usize {
-        info!(
-            "curr id: {}, Syscall {} return: {}",
-            curr_id, syscall_id, ans,
-        );
-    };
+    // if syscall_id != GETPPID as usize
+    //     && syscall_id != CLOCK_GET_TIME as usize
+    //     && syscall_id != GETRUSAGE as usize
+    // if curr_id == 6 {
+    //     // if syscall_id == CLONE as usize {
+    //     error!(
+    //         "curr id: {}, Syscall {} return: {}",
+    //         curr_id, syscall_id, ans,
+    //     );
+    // };
     ans
 }

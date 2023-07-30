@@ -1,7 +1,9 @@
-use axconfig::TICKS_PER_SEC;
 use axhal::{
     paging::MappingFlags,
-    time::{current_time_nanos, MICROS_PER_SEC, NANOS_PER_MICROS, NANOS_PER_SEC},
+    time::{
+        current_time_nanos, nanos_to_ticks, secs_to_ticks, MICROS_PER_SEC, NANOS_PER_MICROS,
+        NANOS_PER_SEC,
+    },
 };
 use bitflags::*;
 use log::error;
@@ -32,6 +34,7 @@ pub struct TMS {
 
 /// sys_gettimeofday 中指定的类型
 #[repr(C)]
+#[derive(Debug, Clone, Copy)]
 pub struct TimeVal {
     pub sec: usize,
     pub usec: usize,
@@ -41,15 +44,22 @@ impl TimeVal {
     pub fn to_nanos(&self) -> usize {
         self.sec * NANOS_PER_SEC as usize + self.usec * NANOS_PER_MICROS as usize
     }
+
     pub fn from_micro(micro: usize) -> Self {
         TimeVal {
             sec: micro / (MICROS_PER_SEC as usize),
             usec: micro % (MICROS_PER_SEC as usize),
         }
     }
+
+    pub fn to_ticks(&self) -> u64 {
+        secs_to_ticks(self.sec as u64) + nanos_to_ticks((self.usec as u64) * NANOS_PER_MICROS)
+    }
 }
 
 /// sys_gettimer / sys_settimer 指定的类型，用户输入输出计时器
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
 pub struct ITimerVal {
     pub it_interval: TimeVal,
     pub it_value: TimeVal,
@@ -80,7 +90,7 @@ impl TimeSecs {
     }
 
     pub fn get_ticks(&self) -> usize {
-        self.tv_sec * TICKS_PER_SEC + self.tv_nsec * TICKS_PER_SEC / (NANOS_PER_SEC as usize)
+        (secs_to_ticks(self.tv_sec as u64) + nanos_to_ticks(self.tv_nsec as u64)) as usize
     }
 
     pub fn set_as_utime(&mut self, other: &TimeSecs) {

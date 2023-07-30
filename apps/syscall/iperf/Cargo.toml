@@ -1,0 +1,14 @@
+[package]
+name = "iperf"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+libax = { path = "../../../ulib/starry_libax", package = "starry_libax", features = [
+    "monolithic",
+    "test",
+    "net",
+    "signal",
+] }

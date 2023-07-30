@@ -20,7 +20,9 @@ pub mod link;
 mod signal;
 
 #[cfg(feature = "signal")]
-pub use signal::{handle_signals, send_signal_to_process, send_signal_to_thread, signal_return};
+pub use signal::{
+    handle_signals, send_signal_to_process, send_signal_to_thread, signal_return, SignalModule,
+};
 
 /// 开始进行调度，我们先执行gc任务，通过gc任务逐个执行并收集RUN_QUEUE中的任务
 /// 所以先切换到gc对应的任务上下文即可

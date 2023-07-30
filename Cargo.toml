@@ -20,6 +20,8 @@ members = [
     "apps/syscall/libc_dynamic",
     "apps/syscall/lua",
     "apps/syscall/busybox",
+    "apps/syscall/netperf",
+    "apps/syscall/iperf",
 
     "crates/allocator",
     "crates/arm_gic",
@@ -71,7 +73,7 @@ members = [
 
     "ulib/libax",
     "ulib/starry_libax",
-    
+
 ]
 
 [profile.release]
@@ -79,3 +81,6 @@ lto = true
 
 [patch.crates-io]
 crate_interface = { path = "crates/crate_interface" }
+
+[patch."https://github.com/rcore-os/smoltcp.git"]
+smoltcp = { git = "https://github.com/c0per/smoltcp", branch = "starryos" }
