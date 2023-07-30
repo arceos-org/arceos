@@ -140,12 +140,14 @@ impl<'a> SocketSet<'a> {
     }
 
     /// Iterate every socket in this set.
-    pub(crate) fn items(&self) -> impl Iterator<Item = &Item<'a>> + '_ {
+    pub(crate) fn items(&self) -> impl Iterator<Item = &Item<'a>> + DoubleEndedIterator + '_ {
         self.sockets.iter().filter_map(|x| x.inner.as_ref())
     }
 
     /// Iterate every socket in this set.
-    pub(crate) fn items_mut(&mut self) -> impl Iterator<Item = &mut Item<'a>> + '_ {
+    pub(crate) fn items_mut(
+        &mut self,
+    ) -> impl Iterator<Item = &mut Item<'a>> + DoubleEndedIterator + '_ {
         self.sockets.iter_mut().filter_map(|x| x.inner.as_mut())
     }
 }
