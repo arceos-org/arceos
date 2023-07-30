@@ -1,6 +1,7 @@
 use riscv::register::time;
 
 const NANOS_PER_TICK: u64 = crate::time::NANOS_PER_SEC / axconfig::TIMER_FREQUENCY as u64;
+const TICKS_PER_SEC: u64 = axconfig::TIMER_FREQUENCY as u64;
 
 /// Returns the current clock time in hardware ticks.
 #[inline]
@@ -18,6 +19,18 @@ pub const fn ticks_to_nanos(ticks: u64) -> u64 {
 #[inline]
 pub const fn nanos_to_ticks(nanos: u64) -> u64 {
     nanos / NANOS_PER_TICK
+}
+
+#[inline]
+/// Converts hardware ticks to seconds.
+pub const fn ticks_to_secs(ticks: u64) -> u64 {
+    ticks / TICKS_PER_SEC
+}
+
+#[inline]
+/// Converts seconds to hardware ticks.
+pub const fn secs_to_ticks(secs: u64) -> u64 {
+    secs * TICKS_PER_SEC
 }
 
 /// Set a one-shot timer.

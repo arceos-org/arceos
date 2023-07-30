@@ -1,7 +1,9 @@
-use axconfig::TICKS_PER_SEC;
 use axhal::{
     paging::MappingFlags,
-    time::{current_time_nanos, MICROS_PER_SEC, NANOS_PER_MICROS, NANOS_PER_SEC},
+    time::{
+        current_time_nanos, nanos_to_ticks, secs_to_ticks, MICROS_PER_SEC, NANOS_PER_MICROS,
+        NANOS_PER_SEC,
+    },
 };
 use bitflags::*;
 use log::error;
@@ -83,7 +85,7 @@ impl TimeSecs {
     }
 
     pub fn get_ticks(&self) -> usize {
-        self.tv_sec * TICKS_PER_SEC + self.tv_nsec * TICKS_PER_SEC / (NANOS_PER_SEC as usize)
+        (secs_to_ticks(self.tv_sec as u64) + nanos_to_ticks(self.tv_nsec as u64)) as usize
     }
 
     pub fn set_as_utime(&mut self, other: &TimeSecs) {

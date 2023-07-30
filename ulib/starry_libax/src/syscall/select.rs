@@ -133,9 +133,7 @@ pub fn syscall_pselect6(
             error!("[pselect6()] timeout addr {timeout:?} invalid");
             return ErrorNo::EFAULT as isize;
         }
-        // HACK: 强制将 timeout 改大以通过测例
-        // current_ticks() as usize + unsafe { (*timeout).get_ticks() }
-        usize::MAX
+        current_ticks() as usize + unsafe { (*timeout).get_ticks() }
     } else {
         usize::MAX
     };
