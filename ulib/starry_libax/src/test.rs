@@ -447,6 +447,15 @@ pub const NETPERF_TESTCASES: &[&str] = &[
     "netperf -H 127.0.0.1 -p 12865 -t TCP_CRR -l 1 -- -s 16k -S 16k -m 1k -M 1k -r 64,64 -R 1",
 ];
 
+pub const IPERF_TESTCASES: &[&str] = &[
+    "iperf3 -c 127.0.0.1 -p 5001 -t 2 -i 0", // basic tcp
+    "iperf3 -c 127.0.0.1 -p 5001 -t 2 -i 0 -u -b 100G", // basic udp
+    "iperf3 -c 127.0.0.1 -p 5001 -t 2 -i 0 -P 5", // parallel tcp
+    "iperf3 -c 127.0.0.1 -p 5001 -t 2 -i 0 -u -P 5 -b 1000G", // parallel udp
+    "iperf3 -c 127.0.0.1 -p 5001 -t 2 -i 0 -R", // reverse tcp
+    "iperf3 -c 127.0.0.1 -p 5001 -t 2 -i 0 -u -R -b 1000G", // reverse udp
+];
+
 /// 运行测试时的状态机，记录测试结果与内容
 struct TestResult {
     sum: usize,
@@ -727,8 +736,53 @@ pub fn run_netperf() {
         total - failed_cases.len()
     );
     for (idx, exit_code) in failed_cases {
-        error!(" --------------- Test case {idx} --------------- ");
+        error!(" --------------- Test case {} --------------- ", idx + 1);
         error!("{}", NETPERF_TESTCASES[idx]);
+        error!("exit code: {exit_code}");
+    }
+}
+
+pub fn run_iperf() {
+    debug!("run iperf");
+
+    let server_task = Process::new(get_args("iperf3 -s -p 5001 -D".as_bytes())).unwrap();
+
+    RUN_QUEUE.lock().add_task(server_task);
+    yield_now_task();
+    yield_now_task();
+
+    let mut failed_cases = Vec::new();
+
+    for (idx, command) in IPERF_TESTCASES.iter().enumerate() {
+        unsafe { write_page_table_root(KERNEL_PAGE_TABLE.root_paddr()) };
+        let client_task = Process::new(get_args(command.as_bytes())).unwrap();
+
+        let pid = client_task.get_process_id() as isize;
+        RUN_QUEUE.lock().add_task(client_task);
+
+        let mut exit_code = 0;
+        loop {
+            if wait_pid(pid, &mut exit_code as *mut i32).is_ok() {
+                break;
+            }
+
+            yield_now_task();
+        }
+        info!("----------------- Exit Code: {exit_code} ------------------");
+
+        if exit_code != 0 {
+            failed_cases.push((idx, exit_code));
+        }
+    }
+
+    let total = IPERF_TESTCASES.len();
+    info!(
+        " --------------- Iperf manual test: {} / {total} --------------- ",
+        total - failed_cases.len()
+    );
+    for (idx, exit_code) in failed_cases {
+        error!(" --------------- Test case {} --------------- ", idx + 1);
+        error!("{}", IPERF_TESTCASES[idx]);
         error!("exit code: {exit_code}");
     }
 }

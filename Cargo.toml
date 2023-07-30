@@ -21,6 +21,7 @@ members = [
     "apps/syscall/lua",
     "apps/syscall/busybox",
     "apps/syscall/netperf",
+    "apps/syscall/iperf",
 
     "crates/allocator",
     "crates/arm_gic",
