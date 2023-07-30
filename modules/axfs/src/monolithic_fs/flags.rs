@@ -2,7 +2,7 @@ use bitflags::*;
 
 bitflags! {
     /// 指定文件打开时的权限
-    #[derive(Clone, Copy, Default)]
+    #[derive(Clone, Copy, Default, Debug)]
     pub struct OpenFlags: u32 {
         /// 只读
         const RDONLY = 0;

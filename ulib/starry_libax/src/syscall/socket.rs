@@ -8,7 +8,7 @@ use core::{
 
 use alloc::{string::String, sync::Arc, vec::Vec};
 use axerrno::{AxError, AxResult};
-use axfs::monolithic_fs::{file_io::FileExt, FileIO, FileIOType};
+use axfs::monolithic_fs::{file_io::FileExt, flags::OpenFlags, FileIO, FileIOType};
 use axio::{Read, Seek, Write};
 use axnet::{poll_interfaces, IpAddr, SocketAddr, TcpSocket, UdpSocket};
 use axprocess::process::current_process;
@@ -601,18 +601,24 @@ impl FileIO for Socket {
         FileIOType::Socket
     }
 
-    fn get_status(&self) -> axfs::monolithic_fs::flags::OpenFlags {
-        let mut flags = axfs::monolithic_fs::flags::OpenFlags::default();
+    fn get_status(&self) -> OpenFlags {
+        let mut flags = OpenFlags::default();
 
         if self.close_exec {
-            flags = flags | axfs::monolithic_fs::flags::OpenFlags::CLOEXEC;
+            flags = flags | OpenFlags::CLOEXEC;
         }
 
         if self.is_nonblocking() {
-            flags = flags | axfs::monolithic_fs::flags::OpenFlags::NON_BLOCK;
+            flags = flags | OpenFlags::NON_BLOCK;
         }
 
         flags
+    }
+
+    fn set_status(&mut self, flags: OpenFlags) -> bool {
+        self.set_nonblocking(flags.contains(OpenFlags::NON_BLOCK));
+
+        true
     }
 
     fn ready_to_read(&mut self) -> bool {
