@@ -732,11 +732,7 @@ pub fn syscall_bind(fd: usize, addr: *const u8, _addr_len: usize) -> isize {
 
     let mut file = file.lock();
 
-    let mut addr = unsafe { socket_address_from(addr) };
-    // TODO: hack
-    if addr.addr.is_unspecified() {
-        addr.addr = IpAddr::v4(127, 0, 0, 1);
-    }
+    let addr = unsafe { socket_address_from(addr) };
 
     let Some(socket) = file.as_any_mut().downcast_mut::<Socket>() else {
         return ErrorNo::ENOTSOCK as isize;

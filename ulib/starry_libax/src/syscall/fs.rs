@@ -16,7 +16,6 @@ use axfs::api::Permissions;
 use axfs::monolithic_fs::file_io::Kstat;
 use axfs::monolithic_fs::flags::OpenFlags;
 use axfs::monolithic_fs::fs_stat::*;
-use axhal::time::TimeValue;
 use axio::SeekFrom;
 use axprocess::link::{real_path, FilePath};
 use axprocess::process::current_process;
