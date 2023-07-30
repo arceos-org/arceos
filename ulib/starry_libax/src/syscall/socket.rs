@@ -18,6 +18,8 @@ use spinlock::SpinNoIrq;
 
 use crate::syscall::syscall_id::ErrorNo;
 
+use super::flags::TimeVal;
+
 pub const SOCKET_TYPE_MASK: usize = 0xFF;
 
 #[derive(TryFromPrimitive, Clone)]
@@ -73,7 +75,7 @@ pub enum SocketOption {
     SO_SNDBUF = 7,
     SO_RCVBUF = 8,
     SO_KEEPALIVE = 9,
-    SO_RCVTIMEO = 0x1006, // receive timeout
+    SO_RCVTIMEO = 20,
 }
 
 #[derive(TryFromPrimitive, PartialEq)]
@@ -151,12 +153,24 @@ impl SocketOption {
                 }
                 socket.recv_buf_size = opt_value as usize;
             }
-            _ => unimplemented!("{self:?}"),
+            SocketOption::SO_RCVTIMEO => {
+                if opt.len() < size_of::<TimeVal>() {
+                    panic!("can't read a timeval from socket opt value");
+                }
+
+                let timeout = unsafe { *(opt.as_ptr() as *const TimeVal) };
+
+                socket.recv_timeout = if timeout.sec == 0 && timeout.usec == 0 {
+                    None
+                } else {
+                    Some(timeout)
+                };
+            }
         }
     }
 
     fn get(&self, socket: &Socket, opt_value: *mut u8, opt_len: *mut u32) {
-        let buf_len = unsafe { *opt_len };
+        let buf_len = unsafe { *opt_len } as usize;
 
         match self {
             SocketOption::SO_REUSEADDR => {
@@ -231,7 +245,26 @@ impl SocketOption {
                     *opt_len = 4;
                 }
             }
-            _ => unimplemented!(),
+            SocketOption::SO_RCVTIMEO => {
+                if buf_len < size_of::<TimeVal>() {
+                    panic!("can't write a timeval to socket opt value");
+                }
+
+                unsafe {
+                    match socket.recv_timeout {
+                        Some(time) => copy_nonoverlapping(
+                            (&time) as *const TimeVal,
+                            opt_value as *mut TimeVal,
+                            1,
+                        ),
+                        None => {
+                            copy_nonoverlapping(&0u8 as *const u8, opt_value, size_of::<TimeVal>())
+                        }
+                    }
+
+                    *opt_len = size_of::<TimeVal>() as u32;
+                }
+            }
         }
     }
 }
@@ -317,6 +350,7 @@ pub struct Socket {
     socket_type: SocketType,
     inner: SocketInner,
     close_exec: bool,
+    recv_timeout: Option<TimeVal>,
 
     // fake options
     reuse_addr: bool,
@@ -345,6 +379,7 @@ impl Socket {
             socket_type,
             inner,
             close_exec: false,
+            recv_timeout: None,
             reuse_addr: false,
             dont_route: false,
             send_buf_size: 64 * 1024,
@@ -436,6 +471,7 @@ impl Socket {
                 socket_type: self.socket_type.clone(),
                 inner: SocketInner::Tcp(new_socket),
                 close_exec: false,
+                recv_timeout: None,
                 reuse_addr: false,
                 dont_route: false,
                 send_buf_size: 64 * 1024,
@@ -471,9 +507,17 @@ impl Socket {
         match &self.inner {
             SocketInner::Tcp(s) => {
                 let addr = s.peer_addr()?;
-                s.recv(buf).map(|len| (len, addr))
+
+                match self.recv_timeout {
+                    Some(time) => s.recv_timeout(buf, time.to_ticks()),
+                    None => s.recv(buf),
+                }
+                .map(|len| (len, addr))
             }
-            SocketInner::Udp(s) => s.recv_from(buf),
+            SocketInner::Udp(s) => match self.recv_timeout {
+                Some(time) => s.recv_from_timeout(buf, time.to_ticks()),
+                None => s.recv_from(buf),
+            },
         }
     }
 
@@ -1025,6 +1069,7 @@ pub fn syscall_recvfrom(
         }
         Err(AxError::ConnectionRefused) => 0,
         Err(AxError::Interrupted) => ErrorNo::EINTR as isize,
+        Err(AxError::Timeout) | Err(AxError::WouldBlock) => ErrorNo::EAGAIN as isize,
         Err(_) => -1,
     }
 }

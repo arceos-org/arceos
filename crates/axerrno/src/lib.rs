@@ -87,6 +87,8 @@ pub enum AxError {
     WriteZero,
     /// Syscall interrupted by a caught signal
     Interrupted,
+    /// Syscall timed out
+    Timeout,
 }
 
 /// A specialized [`Result`] type with [`AxError`] as the error type.
@@ -213,6 +215,7 @@ impl AxError {
             WouldBlock => "Operation would block",
             WriteZero => "Write zero",
             Interrupted => "Interrupted",
+            Timeout => "Timeout",
         }
     }
 
@@ -265,6 +268,7 @@ impl From<AxError> for LinuxError {
             UnexpectedEof | WriteZero => LinuxError::EIO,
             WouldBlock => LinuxError::EAGAIN,
             Interrupted => LinuxError::EINTR,
+            Timeout => LinuxError::ETIME,
         }
     }
 }

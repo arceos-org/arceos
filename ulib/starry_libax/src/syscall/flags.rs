@@ -44,11 +44,16 @@ impl TimeVal {
     pub fn to_nanos(&self) -> usize {
         self.sec * NANOS_PER_SEC as usize + self.usec * NANOS_PER_MICROS as usize
     }
+
     pub fn from_micro(micro: usize) -> Self {
         TimeVal {
             sec: micro / (MICROS_PER_SEC as usize),
             usec: micro % (MICROS_PER_SEC as usize),
         }
+    }
+
+    pub fn to_ticks(&self) -> u64 {
+        secs_to_ticks(self.sec as u64) + nanos_to_ticks((self.usec as u64) * NANOS_PER_MICROS)
     }
 }
 

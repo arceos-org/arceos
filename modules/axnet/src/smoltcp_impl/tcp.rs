@@ -2,6 +2,7 @@ use core::cell::UnsafeCell;
 use core::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 
 use axerrno::{ax_err, ax_err_type, AxError, AxResult};
+use axhal::time::current_ticks;
 use axio::{PollState, Read, Write};
 use axprocess::process::current_process;
 use axsync::Mutex;
@@ -320,6 +321,47 @@ impl TcpSocket {
                 } else {
                     // no more data
                     Err(AxError::WouldBlock)
+                }
+            })
+        })
+    }
+
+    /// Receives data from the socket, stores it in the given buffer.
+    ///
+    /// It will return [`Err(Timeout)`](AxError::Timeout) if expired.
+    pub fn recv_timeout(&self, buf: &mut [u8], ticks: u64) -> AxResult<usize> {
+        if self.is_connecting() {
+            return Err(AxError::WouldBlock);
+        } else if !self.is_connected() {
+            return ax_err!(NotConnected, "socket recv() failed");
+        }
+
+        let expire_at = current_ticks() + ticks;
+
+        // SAFETY: `self.handle` should be initialized in a connected socket.
+        let handle = unsafe { self.handle.get().read().unwrap() };
+        self.block_on(|| {
+            SOCKET_SET.with_socket_mut::<tcp::Socket, _, _>(handle, |socket| {
+                if !socket.is_active() {
+                    // not open
+                    ax_err!(ConnectionRefused, "socket recv() failed")
+                } else if !socket.may_recv() {
+                    // connection closed
+                    Ok(0)
+                } else if socket.recv_queue() > 0 {
+                    // data available
+                    // TODO: use socket.recv(|buf| {...})
+                    let len = socket
+                        .recv_slice(buf)
+                        .map_err(|_| ax_err_type!(BadState, "socket recv() failed"))?;
+                    Ok(len)
+                } else {
+                    // no more data
+                    if current_ticks() > expire_at {
+                        Err(AxError::Timeout)
+                    } else {
+                        Err(AxError::WouldBlock)
+                    }
                 }
             })
         })
