@@ -10,6 +10,7 @@ use alloc::format;
 use alloc::string::ToString;
 use alloc::sync::Arc;
 use alloc::vec;
+use axerrno::AxError;
 use axfs::api;
 use axfs::api::Permissions;
 use axfs::monolithic_fs::file_io::Kstat;
@@ -172,7 +173,11 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
     //   this will return Ok(0)
     // - ready to accept new connections
 
-    file.read(buf).unwrap() as isize
+    match file.read(buf) {
+        Ok(len) => len as isize,
+        Err(AxError::WouldBlock) => ErrorNo::EAGAIN as isize,
+        Err(_) => -1,
+    }
 }
 
 /// 功能：从一个文件描述符中写入；
