@@ -3,7 +3,7 @@ use alloc::{sync::Arc, vec::Vec};
 use axfs::monolithic_fs::FileIO;
 use axhal::time::current_ticks;
 use axprocess::process::{current_process, yield_now_task};
-use log::error;
+use log::{debug, error};
 use memory_addr::VirtAddr;
 use spinlock::SpinNoIrq;
 
@@ -140,7 +140,21 @@ pub fn syscall_pselect6(
 
     drop(inner);
 
+    debug!("[pselect6()]: r: {rfds:?}, w: {wfds:?}, e: {efds:?}");
+
     loop {
+        // Why yield first?
+        //
+        // 当用户程序中出现如下结构：
+        // while (true) { select(); }
+        // 如果存在 ready 的 fd，select() 立即返回，
+        // 但并不完全满足用户程序的要求，可能出现死循环。
+        //
+        // 因此先 yield 避免其他进程 starvation。
+        //
+        // 可见 iperf 测例。
+        yield_now_task();
+
         let mut set = 0;
         if rset.valid() {
             for i in 0..rfds.len() {
@@ -169,7 +183,6 @@ pub fn syscall_pselect6(
         if set > 0 {
             return set as isize;
         }
-        yield_now_task();
         if current_ticks() as usize > expire_time {
             return 0;
         }
