@@ -309,6 +309,7 @@ pub fn send_signal_to_thread(tid: isize, signum: isize) -> AxResult<()> {
             break;
         }
     }
+    drop(inner);
     Ok(())
 }
 

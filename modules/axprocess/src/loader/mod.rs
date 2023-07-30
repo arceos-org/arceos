@@ -9,7 +9,7 @@ pub const USER_HEAP_OFFSET: usize = 0x3FA0_0000;
 pub const USER_STACK_OFFSET: usize = 0x3FE0_0000;
 pub const MAX_HEAP_SIZE: usize = 0x40_0000;
 pub const USER_STACK_SIZE: usize = 0x20_0000;
-use axerrno::AxResult;
+use axerrno::{AxError, AxResult};
 mod user_stack;
 use axhal::{mem::VirtAddr, paging::MappingFlags};
 use axlog::{debug, info};
@@ -20,7 +20,6 @@ use xmas_elf::{program::SegmentData, ElfFile};
 use crate::{
     link::{real_path, FilePath},
     loader::user_stack::init_stack,
-    process::exit,
 };
 
 /// A elf file wrapper.
@@ -142,7 +141,8 @@ pub fn load_app(
     let elf_data = if let Ok(ans) = axfs::api::read(name.as_str()) {
         ans
     } else {
-        exit(0)
+        // exit(0)
+        return Err(AxError::NotFound);
     };
     debug!("app elf data length: {}", elf_data.len());
     let loader = Loader::new(&elf_data);

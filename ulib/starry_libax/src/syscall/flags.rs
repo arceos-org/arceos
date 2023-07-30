@@ -1,4 +1,4 @@
-use axconfig::TICKS_PER_SEC;
+use axconfig::TIMER_FREQUENCY;
 use axhal::{
     paging::MappingFlags,
     time::{current_time_nanos, MICROS_PER_SEC, NANOS_PER_MICROS, NANOS_PER_SEC},
@@ -83,7 +83,7 @@ impl TimeSecs {
     }
 
     pub fn get_ticks(&self) -> usize {
-        self.tv_sec * TICKS_PER_SEC + self.tv_nsec * TICKS_PER_SEC / (NANOS_PER_SEC as usize)
+        self.tv_sec * TIMER_FREQUENCY + self.tv_nsec * TIMER_FREQUENCY / (NANOS_PER_SEC as usize)
     }
 
     pub fn set_as_utime(&mut self, other: &TimeSecs) {

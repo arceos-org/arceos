@@ -543,7 +543,9 @@ impl MemorySet {
             .find(|area| area.vaddr <= addr && addr < area.end_va())
         {
             Some(area) => {
-                area.handle_page_fault(addr, flags, &mut self.page_table);
+                if !area.handle_page_fault(addr, flags, &mut self.page_table) {
+                    return Err(AxError::BadAddress);
+                }
                 Ok(())
             }
             None => {

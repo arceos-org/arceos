@@ -69,9 +69,10 @@ pub fn handle_page_fault(addr: VirtAddr, flags: MappingFlags) -> AxResult<()> {
     );
     let ans = inner.memory_set.lock().handle_page_fault(addr, flags);
     drop(inner);
-    drop(current);
     if ans.is_ok() {
         unsafe { riscv::asm::sfence_vma_all() };
+    } else {
+        axhal::trap::exit();
     }
     ans
 }

@@ -1,12 +1,12 @@
 use alloc::string::ToString;
 use alloc::vec;
-use alloc::{collections::BTreeMap, format, string::String, sync::Arc, vec::Vec};
+use alloc::{collections::BTreeMap, string::String, sync::Arc, vec::Vec};
 use axerrno::{AxError, AxResult};
 use axfs::monolithic_fs::flags::OpenFlags;
 use axfs::monolithic_fs::FileIO;
 use axhal::arch::{write_page_table_root, TrapFrame};
 use axhal::mem::phys_to_virt;
-use axlog::debug;
+use axlog::{debug, error, info};
 use axtask::monolithic_task::task::TaskState;
 use axtask::{AxTaskRef, TaskId};
 
@@ -148,8 +148,12 @@ impl Process {
         ];
 
         let (entry, user_stack_bottom, heap_bottom) =
-            load_app(path.clone(), args, envs, &mut memory_set)
-                .expect(format!("Failed to load app: {}", path).as_str());
+            if let Ok(ans) = load_app(path.clone(), args, envs, &mut memory_set) {
+                ans
+            } else {
+                error!("Failed to load app {}", path);
+                return Err(AxError::NotFound);
+            };
         // 切换页表
         // 以这种方式建立的线程，不通过某一个具体的函数开始，而是通过地址来运行函数，所以entry不会被用到
         let new_process = Arc::new(Self {
@@ -232,7 +236,7 @@ impl Process {
     /// 将当前进程替换为指定的用户程序
     /// args为传入的参数
     /// 任务的统计时间会被重置
-    pub fn exec(&self, name: String, args: Vec<String>, envs: Vec<String>) {
+    pub fn exec(&self, name: String, args: Vec<String>, envs: Vec<String>) -> AxResult<()> {
         // 首先要处理原先进程的资源
         // 处理分配的页帧
         let mut inner = self.inner.lock();
@@ -268,8 +272,12 @@ impl Process {
             args
         };
         let (entry, user_stack_bottom, heap_bottom) =
-            load_app(name.clone(), args, envs, &mut inner.memory_set.lock())
-                .expect(format!("Failed to load app: {}", name).as_str());
+            if let Ok(ans) = load_app(name.clone(), args, envs, &mut inner.memory_set.lock()) {
+                ans
+            } else {
+                error!("Failed to load app {}", name);
+                return Err(AxError::NotFound);
+            };
         // 切换了地址空间， 需要切换token
         let page_table_token = if self.pid == KERNEL_PROCESS_ID {
             0
@@ -287,7 +295,6 @@ impl Process {
         // 重置用户堆
         inner.heap_bottom = heap_bottom.as_usize();
         inner.heap_top = inner.heap_bottom;
-
         // 重置robust list
         inner.robust_list.clear();
         inner
@@ -306,6 +313,7 @@ impl Process {
             TrapFrame::app_init_context(entry.as_usize(), user_stack_bottom.as_usize());
         curr.set_trap_context(new_trap_frame);
         curr.set_trap_in_kernel_stack();
+        Ok(())
     }
     /// 实现简易的clone系统调用
     /// 返回值为新产生的任务的id
@@ -588,7 +596,7 @@ pub fn exit(exit_code: i32) -> ! {
     let process = current_process();
     let curr = current();
     let curr_id = curr.id();
-    debug!(
+    info!(
         "curr_id: {}, exit_code: {}",
         curr_id.as_u64(),
         exit_code as i32
