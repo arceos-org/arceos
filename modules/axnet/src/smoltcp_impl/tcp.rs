@@ -7,6 +7,7 @@ use axio::{PollState, Read, Write};
 use axprocess::process::current_process;
 use axsync::Mutex;
 
+use axtask::yield_now;
 use smoltcp::iface::SocketHandle;
 use smoltcp::socket::tcp::{self, ConnectError, State};
 use smoltcp::wire::{IpAddress, IpListenEndpoint};
@@ -160,6 +161,9 @@ impl TcpSocket {
             Ok(())
         })
         .unwrap_or_else(|_| ax_err!(AlreadyExists, "socket connect() failed: already connected"))?; // EISCONN
+
+        // HACK: yield() to let server to listen
+        yield_now();
 
         // Here our state must be `CONNECTING`, and only one thread can run here.
         if self.is_nonblocking() {
