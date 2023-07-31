@@ -5,8 +5,8 @@
 #include <limits.h>
 #include <stddef.h>
 
+typedef unsigned socklen_t;
 typedef unsigned short sa_family_t;
-typedef unsigned int socklen_t;
 
 struct msghdr {
     void *msg_name;
@@ -52,8 +52,6 @@ struct sockaddr_storage {
     char __ss_padding[128 - sizeof(long) - sizeof(sa_family_t)];
     unsigned long __ss_align;
 };
-
-typedef unsigned socklen_t;
 
 int socket(int, int, int);
 int shutdown(int, int);

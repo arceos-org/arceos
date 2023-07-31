@@ -191,7 +191,7 @@ clean: clean_c
 	rm -rf $(APP)/*.bin $(APP)/*.elf
 	cargo clean
 
-clean_c:
+clean_c::
 	rm -rf ulib/axlibc/build_*
 	rm -rf $(app-objs)
 

@@ -1,0 +1,10 @@
+alloc
+paging
+fp_simd
+irq
+multitask
+fs
+net
+use-ramdisk
+pipe
+epoll

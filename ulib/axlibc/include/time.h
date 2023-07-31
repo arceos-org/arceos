@@ -4,8 +4,6 @@
 #include <stddef.h>
 #include <sys/time.h>
 
-typedef long time_t;
-
 #define CLOCK_REALTIME  0
 #define CLOCK_MONOTONIC 1
 #define CLOCKS_PER_SEC  1000000L

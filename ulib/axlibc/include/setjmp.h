@@ -1,6 +1,8 @@
 #ifndef _SETJMP_H
 #define _SETJMP_H
 
+#include <features.h>
+
 #if defined(__aarch64__)
 typedef unsigned long __jmp_buf[22];
 #elif defined(__riscv__) || defined(__riscv)
