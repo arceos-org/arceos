@@ -19,15 +19,18 @@
 //!     - `sched_fifo`: Use the FIFO cooperative scheduler.
 //!     - `sched_rr`: Use the Round-robin preemptive scheduler.
 //!     - `sched_cfs`: Use the Completely Fair Scheduler (CFS) preemptive scheduler.
-//! - Device and upperlayer stack
+//! - Upperlayer stacks
 //!     - `fs`: Enable file system support.
 //!     - `myfs`: Allow users to define their custom filesystems to override the default.
-//!     - `use-ramdisk`: Use the RAM disk to emulate the block device.
 //!     - `net`: Enable networking support.
 //!     - `dns`: Enable DNS lookup support.
 //!     - `display`: Enable graphics support.
+//! - Device drivers
 //!     - `bus-mmio`: Use device tree to probe all MMIO devices.
 //!     - `bus-pci`: Use PCI bus to probe all PCI devices.
+//!     - `driver-ramdisk`: Use the RAM disk to emulate the block device.
+//!     - `driver-ixgbe`: Enable the Intel 82599 10Gbit NIC driver.
+//!     - `driver-bcm2835-sdhci`: Enable the BCM2835 SDHCI driver (Raspberry Pi SD card).
 //! - Logging
 //!     - `log-level-off`: Disable all logging.
 //!     - `log-level-error`, `log-level-warn`, `log-level-info`, `log-level-debug`,

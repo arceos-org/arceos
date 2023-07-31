@@ -75,6 +75,8 @@
 | [helloworld](../apps/c/helloworld/) | | | A minimal C app that just prints a string |
 | [memtest](../apps/c/memtest/) | axalloc | alloc, paging | Dynamic memory allocation test in C |
 | [sqlite3](../apps/c/sqlite3/) | axalloc, axdriver, axfs | alloc, paging, fp_simd, fs | Porting of [SQLite3](https://sqlite.org/index.html) |
+| [iperf](../apps/c/iperf/) | axalloc, axdriver, axfs, axnet | alloc, paging, fp_simd, fs, net, select | Porting of [iPerf3](https://iperf.fr/) |
+| [redis](../apps/c/redis/) | axalloc, axdriver, axtask, axfs, axnet | alloc, paging, fp_simd, irq, multitask, fs, net, pipe, epoll | Porting of [Redis](https://redis.io/) |
 
 ## Dependencies
 

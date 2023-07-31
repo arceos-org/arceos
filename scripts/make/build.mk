@@ -10,7 +10,10 @@ else
   rust_elf := $(rust_target_dir)/$(rust_package)
 endif
 
-ifeq ($(filter $(MAKECMDGOALS),build run debug chainboot),$(MAKECMDGOALS))
+ifneq ($(filter $(MAKECMDGOALS),doc doc_check_missing),)  # run `cargo doc`
+  $(if $(V), $(info RUSTDOCFLAGS: "$(RUSTDOCFLAGS)"))
+  export RUSTDOCFLAGS
+else ifeq ($(filter $(MAKECMDGOALS),clippy unittest unittest_no_fail_fast),) # not run `cargo test` or `cargo clippy`
   ifneq ($(V),)
     $(info APP: "$(APP)")
     $(info APP_TYPE: "$(APP_TYPE)")
@@ -21,9 +24,6 @@ ifeq ($(filter $(MAKECMDGOALS),build run debug chainboot),$(MAKECMDGOALS))
     $(if $(V), $(info RUSTFLAGS: "$(RUSTFLAGS)"))
     export RUSTFLAGS
   endif
-else ifneq ($(filter $(MAKECMDGOALS),doc doc_check_missing),)
-  $(if $(V), $(info RUSTDOCFLAGS: "$(RUSTDOCFLAGS)"))
-  export RUSTDOCFLAGS
 endif
 
 _cargo_build:
@@ -32,7 +32,7 @@ ifeq ($(APP_TYPE), rust)
 	$(call cargo_rustc,--manifest-path $(APP)/Cargo.toml)
 	@cp $(rust_elf) $(OUT_ELF)
 else ifeq ($(APP_TYPE), c)
-	$(call cargo_rustc,-p axlibc --crate-type staticlib)
+	$(call cargo_rustc,-p axlibc)
 endif
 
 $(OUT_DIR):

@@ -8,7 +8,7 @@ family = "x86-pc"
 # Base address of the whole physical memory.
 phys-memory-base = "0"
 # Size of the whole physical memory.
-phys-memory-size = "0x800_0000"     # 128M
+phys-memory-size = "0x8000_0000"    # 2G
 # Base physical address of the kernel image.
 kernel-base-paddr = "0x20_0000"
 # Base virtual address of the kernel image.

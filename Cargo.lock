@@ -416,7 +416,6 @@ dependencies = [
  "kernel_guard",
  "lazy_init",
  "percpu",
- "spinlock",
 ]
 
 [[package]]

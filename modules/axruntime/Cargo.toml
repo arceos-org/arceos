@@ -12,15 +12,15 @@ documentation = "https://rcore-os.github.io/arceos/axruntime/index.html"
 [features]
 default = []
 
-smp = ["axhal/smp", "spinlock/smp"]
+smp = ["axhal/smp"]
 irq = ["axhal/irq", "axtask?/irq", "percpu", "kernel_guard"]
 alloc = ["axalloc"]
-paging = ["alloc", "axhal/paging", "lazy_init"]
+paging = ["axhal/paging", "lazy_init"]
 
-multitask = ["alloc", "axtask/multitask"]
-fs = ["alloc", "paging", "axdriver/virtio-blk", "dep:axfs"] # TODO: remove "paging"
-net = ["alloc", "paging", "axdriver/virtio-net", "dep:axnet"]
-display = ["alloc", "paging", "axdriver/virtio-gpu", "dep:axdisplay"]
+multitask = ["axtask/multitask"]
+fs = ["axdriver", "axfs"]
+net = ["axdriver", "axnet"]
+display = ["axdriver", "axdisplay"]
 
 [dependencies]
 axhal = { path = "../axhal" }
@@ -37,4 +37,3 @@ crate_interface = { path = "../../crates/crate_interface" }
 percpu = { path = "../../crates/percpu", optional = true }
 kernel_guard = { path = "../../crates/kernel_guard", optional = true }
 lazy_init = { path = "../../crates/lazy_init", optional = true }
-spinlock = { path = "../../crates/spinlock", optional = true }

@@ -94,6 +94,42 @@ jobs:
     - name: Build c/redis
       run: make ARCH=${{ matrix.arch }} A=apps/c/redis SMP=4
 
+  build-apps-for-other-platforms:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: ${{ env.rust-toolchain }}
+        components: rust-src
+    - uses: actions-rs/install@v0.1
+      with:
+        crate: cargo-binutils
+        version: latest
+        use-tool-cache: true
+    - uses: ./.github/workflows/actions/setup-musl
+      with:
+        arch: x86_64
+
+    - name: Build helloworld for x86_64-pc-oslab
+      run: make PLATFORM=x86_64-pc-oslab A=apps/helloworld
+    - name: Build net/httpserver for x86_64-pc-oslab
+      run: make PLATFORM=x86_64-pc-oslab A=apps/net/httpserver APP_FEATURES=axstd/driver-ixgbe
+    - name: Build c/iperf for x86_64-pc-oslab
+      run: make PLATFORM=x86_64-pc-oslab A=apps/c/iperf APP_FEATURES=axstd/driver-ixgbe,axstd/driver-ramdisk
+    - name: Build c/redis for x86_64-pc-oslab
+      run: make PLATFORM=x86_64-pc-oslab A=apps/c/redis APP_FEATURES=axstd/driver-ixgbe,axstd/driver-ramdisk SMP=4
+
+    - name: Build helloworld for aarch64-raspi4
+      run: make PLATFORM=aarch64-raspi4 A=apps/helloworld
+    - name: Build fs/shell for aarch64-raspi4
+      run: make PLATFORM=aarch64-raspi4 A=apps/fs/shell APP_FEATURES=axstd/driver-bcm2835-sdhci
+
   build-apps-for-std:
     runs-on: ${{ matrix.os }}
     strategy:

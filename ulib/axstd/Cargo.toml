@@ -42,20 +42,22 @@ sched_rr = ["axtask/sched_rr", "irq"]
 sched_cfs = ["axtask/sched_cfs", "irq"]
 
 # File system
-fs = ["alloc", "axruntime/fs", "dep:axdriver", "dep:axfs"]
+fs = ["alloc", "paging", "axruntime/fs", "axdriver/virtio-blk", "dep:axfs"] # TODO: remove "paging"
 myfs = ["axfs?/myfs"]
-use-ramdisk = ["axdriver?/ramdisk", "axfs?/use-ramdisk"]
 
 # Networking
-net = ["alloc", "axruntime/net", "dep:axdriver", "dep:axnet"]
+net = ["alloc", "paging", "axruntime/net", "axdriver/virtio-net", "dep:axnet"]
 dns = []
 
 # Display
-display = ["axruntime/display", "dep:axdriver", "dep:axdisplay"]
+display = ["paging", "axruntime/display", "axdriver/virtio-gpu", "dep:axdisplay"]
 
 # Device drivers
 bus-mmio = ["axdriver?/bus-mmio"]
 bus-pci = ["axdriver?/bus-pci"]
+driver-ramdisk = ["axdriver?/ramdisk", "axfs?/use-ramdisk"]
+driver-ixgbe = ["axdriver?/ixgbe"]
+driver-bcm2835-sdhci = ["axdriver?/bcm2835-sdhci"]
 
 # Logging
 log-level-off = ["axlog/log-level-off"]

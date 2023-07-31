@@ -16,6 +16,9 @@ homepage = "https://github.com/rcore-os/arceos"
 repository = "https://github.com/rcore-os/arceos/tree/main/ulib/axlibc"
 documentation = "https://rcore-os.github.io/arceos/axlibc/index.html"
 
+[lib]
+crate-type = ["staticlib"]
+
 [features]
 default = []
 
@@ -27,9 +30,6 @@ fp_simd = ["axstd/fp_simd"]
 
 # Memory
 alloc = ["axstd/alloc", "dep:axalloc"]
-alloc_tlsf = ["axalloc/tlsf"]
-alloc_slab = ["axalloc/slab"]
-alloc_buddy = ["axalloc/buddy"]
 paging = ["axstd/paging"]
 
 # Interrupts
@@ -37,13 +37,9 @@ irq = ["axstd/irq"]
 
 # Multi-task
 multitask = ["axstd/multitask", "axtask/multitask"]
-sched_fifo = ["axstd/sched_fifo"]
-sched_rr = ["axstd/sched_rr"]
-sched_cfs = ["axstd/sched_cfs"]
 
 # File system
 fs = ["axstd/fs", "fd"]
-use-ramdisk = ["axstd/use-ramdisk"]
 
 # Networking
 net = ["axstd/net", "dep:axnet", "fd"]

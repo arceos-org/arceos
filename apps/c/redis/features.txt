@@ -5,6 +5,5 @@ irq
 multitask
 fs
 net
-use-ramdisk
 pipe
 epoll

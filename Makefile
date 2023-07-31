@@ -27,6 +27,7 @@
 
 # General options
 ARCH ?= x86_64
+PLATFORM ?=
 SMP ?= 1
 MODE ?= release
 LOG ?= warn
@@ -63,40 +64,51 @@ else
   APP_TYPE := c
 endif
 
-# Platform and target
+# Architecture, platform and target
+ifneq ($(filter $(MAKECMDGOALS),unittest unittest_no_fail_fast),)
+  PLATFORM_NAME :=
+else ifneq ($(PLATFORM),)
+  # `PLATFORM` is specified, override the `ARCH` variables
+  builtin_platforms := $(patsubst platforms/%.toml,%,$(wildcard platforms/*))
+  ifneq ($(filter $(PLATFORM),$(builtin_platforms)),)
+    # builtin platform
+    PLATFORM_NAME := $(PLATFORM)
+    _arch := $(word 1,$(subst -, ,$(PLATFORM)))
+  else ifneq ($(wildcard $(PLATFORM)),)
+    # custom platform, read the "platform" field from the toml file
+    PLATFORM_NAME := $(shell cat $(PLATFORM) | sed -n 's/^platform = "\([a-z0-9A-Z_\-]*\)"/\1/p')
+    _arch := $(shell cat $(PLATFORM) | sed -n 's/^arch = "\([a-z0-9A-Z_\-]*\)"/\1/p')
+  else
+    $(error "PLATFORM" must be one of "$(builtin_platforms)" or a valid path to a toml file)
+  endif
+  ifeq ($(origin ARCH),command line)
+    ifneq ($(ARCH),$(_arch))
+      $(error "ARCH=$(ARCH)" is not compatible with "PLATFORM=$(PLATFORM)")
+    endif
+  endif
+  ARCH := $(_arch)
+endif
+
 ifeq ($(ARCH), x86_64)
   # Don't enable kvm for WSL/WSL2.
   ACCEL ?= $(if $(findstring -microsoft, $(shell uname -r | tr '[:upper:]' '[:lower:]')),n,y)
-  PLATFORM ?= x86_64-qemu-q35
+  PLATFORM_NAME ?= x86_64-qemu-q35
   TARGET := x86_64-unknown-none
   BUS := pci
 else ifeq ($(ARCH), riscv64)
   ACCEL ?= n
-  PLATFORM ?= riscv64-qemu-virt
+  PLATFORM_NAME ?= riscv64-qemu-virt
   TARGET := riscv64gc-unknown-none-elf
 else ifeq ($(ARCH), aarch64)
   ACCEL ?= n
-  PLATFORM ?= aarch64-qemu-virt
+  PLATFORM_NAME ?= aarch64-qemu-virt
   TARGET := aarch64-unknown-none-softfloat
 else
   $(error "ARCH" must be one of "x86_64", "riscv64", or "aarch64")
 endif
 
-ifneq ($(filter $(MAKECMDGOALS),unittest unittest_no_fail_fast),)
-  PLATFORM :=
-endif
-
-builtin_platforms := $(patsubst platforms/%.toml,%,$(wildcard platforms/*))
-ifneq ($(filter $(PLATFORM),$(builtin_platforms)),)
-  # builtin platform
-  PLATFORM_NAME := $(PLATFORM)
-else ifneq ($(wildcard $(PLATFORM)),)
-  # custom platform, read the "platform" field from the toml file
-  PLATFORM_NAME := $(shell cat $(PLATFORM) | sed -n 's/^platform = "\([a-z0-9A-Z_\-]*\)"/\1/p')
-endif
-
 export AX_ARCH=$(ARCH)
-export AX_PLATFORM=$(PLATFORM)
+export AX_PLATFORM=$(PLATFORM_NAME)
 export AX_SMP=$(SMP)
 export AX_MODE=$(MODE)
 export AX_LOG=$(LOG)

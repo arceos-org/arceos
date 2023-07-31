@@ -10,13 +10,6 @@ ArceOS was inspired a lot by [Unikraft](https://github.com/unikraft/unikraft).
 
 🚧 Working In Progress.
 
-## Contributing to arceos
-1. fork this repo's branch `dev` to your own repo
-2. add&update codes in your own repo's `dev` branch, pass CI test
-3. create PR to this repo's branch `dev`
-4. discuss with other contributors, merge PR to this repo's branch `dev`
-5. owners merge this repo's branch `dev` to `main`
-
 ## Features & TODOs
 
 * [x] Architecture: x86_64, riscv64, aarch64
@@ -167,6 +160,24 @@ Note that the `NET=y` argument is required to enable the network device in QEMU.
     make -C /path/to/arceos A=$(pwd) ARCH=<arch> run
     # more args: LOG=<log> SMP=<smp> NET=[y|n] ...
     ```
+
+### How to build ArceOS for specific platforms and devices
+
+Set the `PLATFORM` variable when run `make`:
+
+```bash
+# Build helloworld for raspi4
+make PLATFORM=aarch64-raspi4 A=apps/helloworld
+```
+
+You may also need to select the corrsponding device drivers by setting the `APP_FEATURES` variable:
+
+```bash
+# Build the shell app for raspi4, and use the SD card driver
+make PLATFORM=aarch64-raspi4 A=apps/fs/shell APP_FEATURES=axstd/driver-bcm2835-sdhci
+# Build Redis for the bare-metal x86_64 platform, and use the ixgbe and ramdisk driver
+make PLATFORM=x86_64-pc-oslab A=apps/c/redis APP_FEATURES=axstd/driver-ixgbe,axstd/driver-ramdisk SMP=4
+```
 
 ## Design
 
