@@ -20,7 +20,7 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use axprocess::{
     link::FilePath,
-    process::{wait_pid, yield_now_task, Process, KERNEL_PROCESS_ID, PID2PC},
+    process::{wait_pid, yield_now_task, Process, KERNEL_PROCESS_ID, PID2PC, TID2TASK},
 };
 use riscv::asm;
 
@@ -401,14 +401,13 @@ pub const BUSYBOX_TESTCASES: &[&str] = &[
 
     // "echo latency measurements",
     // "lmbench_all lat_syscall -P 1 null",
-    // "busybox sh libctest_testcode.sh",
-    // "busybox sh lua_testcode.sh",
-    // "busybox sh busybox_testcode.sh",
-    // "busybox sh lmbench_testcode.sh",
     "busybox sh unixbench_testcode.sh",
+    "busybox sh libctest_testcode.sh",
+    "busybox sh lua_testcode.sh",
+    "busybox sh busybox_testcode.sh",
     "libc-bench",
-    // "busybox sh ./netperf_testcode.sh",
-    // "busybox sh ./iperf_testcode.sh",
+    "busybox sh ./netperf_testcode.sh",
+    "busybox sh ./iperf_testcode.sh",
     // "busybox mkdir -p /var/tmp",
     // "busybox echo latency measurements",
     // "lmbench_all lat_syscall -P 1 null",
@@ -689,13 +688,12 @@ pub fn run_testcases(case: &'static str) {
         EXITED_TASKS.lock().clear();
         if let Some(exit_code) = ans {
             let kernel_process = Arc::clone(PID2PC.lock().get(&KERNEL_PROCESS_ID).unwrap());
-            kernel_process
-                .inner
-                .lock()
-                .children
-                .retain(|x| x.pid == KERNEL_PROCESS_ID);
+            kernel_process.inner.lock().children.clear();
             // 去除指针引用，此时process_id对应的进程已经被释放
             // 释放所有非内核进程
+            PID2PC.lock().clear();
+            PID2PC.lock().insert(KERNEL_PROCESS_ID, kernel_process);
+            TID2TASK.lock().clear();
             finish_one_test(exit_code);
         } else {
             // 已经测试完所有的测例

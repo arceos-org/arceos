@@ -303,7 +303,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[4] as *mut u32,
         ),
         SHUTDOWN => syscall_shutdown(args[0], args[1]),
-
+        MADVISE => 0,
         _ => {
             error!("Invalid Syscall Id: {}!", syscall_id);
             // return -1;
