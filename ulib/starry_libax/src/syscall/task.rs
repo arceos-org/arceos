@@ -9,11 +9,13 @@ use axprocess::{
     // handle_signals,
     process::{
         current_process, current_task, exit, set_child_tid, sleep_now_task, wait_pid,
-        yield_now_task,
+        yield_now_task, Process, ProcessInner, PID2PC,
     },
+    SignalModule,
 };
 use axsync::Mutex;
 use log::info;
+use spinlock::SpinNoIrq;
 extern crate alloc;
 use super::{
     flags::{
@@ -27,6 +29,7 @@ use super::{
 use alloc::{
     collections::BTreeMap,
     string::{String, ToString},
+    sync::Arc,
     vec::Vec,
 };
 use axsignal::signal_no::SignalNo;
@@ -442,4 +445,45 @@ pub fn syscall_get_robust_list(pid: i32, head: *mut usize, len: *mut usize) -> i
         }
     }
     -1
+}
+
+pub fn syscall_setsid() -> isize {
+    let process = current_process();
+    let task = current_task();
+
+    let task_id = task.id().as_u64();
+
+    // 当前 process 已经是 process group leader
+    if process.pid == task_id {
+        return ErrorNo::EPERM as isize;
+    }
+
+    // 从当前 process group 中移除 calling process
+    let mut inner = process.inner.lock();
+    inner.tasks.retain(|t| t.id().as_u64() != task_id);
+
+    // 新建 process group 并加入
+    let mut new_process = ProcessInner::new(
+        inner.parent,
+        inner.memory_set.clone(),
+        inner.heap_bottom,
+        inner.fd_manager.fd_table.clone(),
+    );
+    new_process
+        .signal_module
+        .insert(task_id, SignalModule::init_signal(None));
+
+    new_process.tasks.push(task.as_task_ref().clone());
+    task.set_leader(true);
+    task.set_process_id(task_id);
+
+    let new_process = Process {
+        pid: task_id,
+        inner: SpinNoIrq::new(new_process),
+    };
+
+    // 修改 PID2PC
+    PID2PC.lock().insert(new_process.pid, Arc::new(new_process));
+
+    task_id as isize
 }

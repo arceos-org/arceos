@@ -224,7 +224,7 @@ impl<'a, IO: ReadWriteSeek, TP: TimeProvider, OCC: OemCpConverter> Dir<'a, IO, T
     /// * `Error::InvalidInput` will be returned if `path` points to a file that is a directory.
     /// * `Error::Io` will be returned if the underlying storage object returned an I/O error.
     pub fn open_file(&self, path: &str) -> Result<File<'a, IO, TP, OCC>, Error<IO::Error>> {
-        info!("Dir::open_file {}", path);
+        trace!("Dir::open_file {}", path);
         // traverse path
         let (name, rest_opt) = split_path(path);
         if let Some(rest) = rest_opt {

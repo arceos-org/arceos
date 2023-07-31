@@ -57,6 +57,7 @@ pub enum SyscallId {
     GETTIMER = 102,
     SETITIMER = 103,
     SYSLOG = 116,
+    SETSID = 157,
     GETRUSAGE = 165,
     UMASK = 166,
     GETPID = 172,
@@ -70,6 +71,7 @@ pub enum SyscallId {
     CLONE = 220,
     EXECVE = 221,
     WAIT4 = 260,
+    GETRANDOM = 278,
     // 内存管理
     BRK = 214,
     MUNMAP = 215,
@@ -101,10 +103,13 @@ pub enum SyscallId {
     ACCEPT = 202,
     CONNECT = 203,
     GETSOCKNAME = 204,
+    GETPEERNAME = 205,
     SENDTO = 206,
     RECVFROM = 207,
     SETSOCKOPT = 208,
     MADVISE = 233,
+    GETSOCKOPT = 209,
+    SHUTDOWN = 210,
 }
 }
 
@@ -142,10 +147,12 @@ pub enum ErrorNo {
     EMFILE = -24,
     /// 对文件进行了无效的 seek
     ESPIPE = -29,
+    EPIPE = -32,
     /// 超过范围。例如用户提供的buffer不够长
     ERANGE = -34,
     /// fd 不是 Socket
     ENOTSOCK = -88,
+    ENOPROTOOPT = -92,
     /// Operation not supported on transport endpoint
     EOPNOTSUPP = -95,
     /// 不支持的协议
@@ -154,6 +161,7 @@ pub enum ErrorNo {
     EAFNOSUPPORT = -97,
     /// Transport endpoint is already connected
     EISCONN = -106,
+    ENOTCONN = -107,
     /// 拒绝连接
     ECONNREFUSED = -111,
     /// Operation now in progress

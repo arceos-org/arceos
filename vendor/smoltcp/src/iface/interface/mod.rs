@@ -1249,6 +1249,7 @@ impl InterfaceInner {
         #[cfg(feature = "socket-udp")]
         for udp_socket in sockets
             .items_mut()
+            .rev()
             .filter_map(|i| udp::Socket::downcast_mut(&mut i.socket))
         {
             if udp_socket.accepts(self, &ip_repr, &udp_repr) {

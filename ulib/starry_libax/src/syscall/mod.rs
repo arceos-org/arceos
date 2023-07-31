@@ -94,6 +94,8 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[1] as *mut i32,
             WaitFlags::from_bits(args[2] as u32).unwrap(),
         ),
+        GETRANDOM => syscall_getrandom(args[0] as *mut u8, args[1], args[2]),
+
         BRK => syscall_brk(args[0] as usize),
         MUNMAP => syscall_munmap(args[0], args[1]),
         MMAP => syscall_mmap(
@@ -181,6 +183,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[2] as *mut ITimerVal,
         ),
         GETTIMER => syscall_gettimer(args[0] as usize, args[1] as *mut ITimerVal),
+        SETSID => syscall_setsid(),
         GETRUSAGE => syscall_getrusage(args[0] as i32, args[1] as *mut TimeVal),
         UMASK => syscall_umask(args[0] as i32),
         PPOLL => syscall_ppoll(
@@ -268,6 +271,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         ACCEPT => syscall_accept(args[0], args[1] as *mut u8, args[2] as *mut u32),
         CONNECT => syscall_connect(args[0], args[1] as *const u8, args[2]),
         GETSOCKNAME => syscall_get_sock_name(args[0], args[1] as *mut u8, args[2] as *mut u32),
+        GETPEERNAME => syscall_getpeername(args[0], args[1] as *mut u8, args[2] as *mut u32),
         SENDTO => syscall_sendto(
             args[0],
             args[1] as *const u8,
@@ -284,10 +288,22 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[4] as *mut u8,
             args[5] as *mut u32,
         ),
-        SETSOCKOPT => {
-            syscall_set_sock_opt(args[0], args[1], args[2], args[3] as *const u8, args[4])
-        }
-        MADVISE => 0,
+        SETSOCKOPT => syscall_set_sock_opt(
+            args[0],
+            args[1],
+            args[2],
+            args[3] as *const u8,
+            args[4] as u32,
+        ),
+        GETSOCKOPT => syscall_get_sock_opt(
+            args[0],
+            args[1],
+            args[2],
+            args[3] as *mut u8,
+            args[4] as *mut u32,
+        ),
+        SHUTDOWN => syscall_shutdown(args[0], args[1]),
+
         _ => {
             error!("Invalid Syscall Id: {}!", syscall_id);
             // return -1;

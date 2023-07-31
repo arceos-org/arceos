@@ -3,24 +3,25 @@ use crate::fs::mount::{check_mounted, get_stat_in_fs, mount_fat_fs, umount_fat_f
 use crate::fs::pipe::make_pipe;
 use crate::fs::{new_dir, new_fd, DirEnt, DirEntType, FileDesc, FileIOType};
 use crate::syscall::flags::raw_ptr_to_ref_str;
+use crate::syscall::socket::Socket;
 extern crate alloc;
 
 use alloc::format;
 use alloc::string::ToString;
 use alloc::sync::Arc;
 use alloc::vec;
+use axerrno::AxError;
 use axfs::api;
 use axfs::api::Permissions;
 use axfs::monolithic_fs::file_io::Kstat;
 use axfs::monolithic_fs::flags::OpenFlags;
 use axfs::monolithic_fs::fs_stat::*;
-use axhal::time::TimeValue;
 use axio::SeekFrom;
 use axprocess::link::{real_path, FilePath};
 use axprocess::process::current_process;
 use core::mem::transmute;
 use core::ptr::copy_nonoverlapping;
-use log::{debug, error, info};
+use log::{debug, error, info, trace};
 use memory_addr::VirtAddr;
 use spinlock::SpinNoIrq;
 
@@ -117,47 +118,65 @@ pub fn deal_with_path(
 ///     - count：要读取的字节数。
 /// 返回值：成功执行，返回读取的字节数。如为0，表示文件结束。错误，则返回-1。
 pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
-    info!(
-        "Into syscall_read. fd: {}, buf: {:X}, len: {}",
-        fd, buf as usize, count
-    );
-    let process = current_process();
-    let process_inner = process.inner.lock();
-    // let start: VirtAddr = (buf as usize).into();
-    // let end = start + count;
-    // if process_inner
-    //     .memory_set
-    //     .lock()
-    //     .manual_alloc_range_for_lazy(start, end)
-    //     .is_err()
-    // {
-    //     return ErrorNo::EFAULT as isize;
-    // }
-    if fd >= process_inner.fd_manager.fd_table.len() {
-        return ErrorNo::EBADF as isize;
-    }
-    if process_inner.fd_manager.fd_table[fd].is_none() {
-        return ErrorNo::EBADF as isize;
-    }
-    let file = process_inner.fd_manager.fd_table[fd].clone().unwrap();
-    drop(process_inner);
-    if file.lock().get_type() == FileIOType::DirDesc {
-        debug!("fd is a dir");
-        return -1;
-    }
-    if !file.lock().readable() {
-        return -1;
+    trace!("[read()] fd: {fd}, buf: {buf:?}, len: {count}",);
+
+    if buf.is_null() {
+        return ErrorNo::EFAULT as isize;
     }
 
-    // // debug
-    // file.print_content();
-    // info!("file type: {:?}", file.lock().get_type());
-    // release current inner manually to avoid multi-borrow
-    let read_size = file
-        .lock()
-        .read(unsafe { core::slice::from_raw_parts_mut(buf, count) })
-        .unwrap() as isize;
-    read_size as isize
+    let process = current_process();
+    let process_inner = process.inner.lock();
+
+    // TODO: 左闭右开
+    let buf = match process_inner.memory_set.lock().manual_alloc_range_for_lazy(
+        (buf as usize).into(),
+        (unsafe { buf.add(count) as usize } - 1).into(),
+    ) {
+        Ok(_) => unsafe { core::slice::from_raw_parts_mut(buf, count) },
+        Err(_) => return ErrorNo::EFAULT as isize,
+    };
+
+    let file = match process_inner.fd_manager.fd_table.get(fd) {
+        Some(Some(f)) => f.clone(),
+        _ => return ErrorNo::EBADF as isize,
+    };
+    drop(process_inner);
+
+    let mut file = file.lock();
+
+    if file.get_type() == FileIOType::DirDesc {
+        error!("fd is a dir");
+        return ErrorNo::EISDIR as isize;
+    }
+    if !file.readable() {
+        // 1. nonblocking socket
+        //
+        // Normal socket will block while trying to read, so we don't return here.
+        if let Some(socket) = file.as_any().downcast_ref::<Socket>() {
+            if socket.is_nonblocking() && socket.is_connected() {
+                return ErrorNo::EAGAIN as isize;
+            }
+        } else {
+            // 2. nonblock file
+            // return ErrorNo::EAGAIN as isize;
+
+            // 3. regular file
+            return ErrorNo::EBADF as isize;
+        }
+    }
+
+    // for sockets:
+    // Sockets are "readable" when:
+    // - have some data to read without blocking
+    // - remote end send FIN packet, local read half is closed (this will return 0 immediately)
+    //   this will return Ok(0)
+    // - ready to accept new connections
+
+    match file.read(buf) {
+        Ok(len) => len as isize,
+        Err(AxError::WouldBlock) => ErrorNo::EAGAIN as isize,
+        Err(_) => -1,
+    }
 }
 
 /// 功能：从一个文件描述符中写入；
@@ -167,41 +186,66 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
 ///     - count：要写入的字节数。
 /// 返回值：成功执行，返回写入的字节数。错误，则返回-1。
 pub fn syscall_write(fd: usize, buf: *const u8, count: usize) -> isize {
-    info!("fd: {}, buf: {:X}, len: {}", fd, buf as usize, count);
-    let process = current_process();
-    let process_inner = process.inner.lock();
-    let start: VirtAddr = (buf as usize).into();
-    let end = start + count;
-    if process_inner
-        .memory_set
-        .lock()
-        .manual_alloc_range_for_lazy(start, end)
-        .is_err()
-    {
+    trace!("[write()] fd: {fd}, buf: {buf:?}, len: {count}");
+
+    if buf.is_null() {
         return ErrorNo::EFAULT as isize;
     }
-    if fd >= process_inner.fd_manager.fd_table.len() {
-        return ErrorNo::EBADF as isize;
-    }
 
-    let file = process_inner.fd_manager.fd_table[fd].clone().unwrap();
+    let process = current_process();
+    let process_inner = process.inner.lock();
+
+    // TODO: 左闭右开
+    let buf = match process_inner.memory_set.lock().manual_alloc_range_for_lazy(
+        (buf as usize).into(),
+        (unsafe { buf.add(count) as usize } - 1).into(),
+    ) {
+        Ok(_) => unsafe { core::slice::from_raw_parts(buf, count) },
+        Err(_) => return ErrorNo::EFAULT as isize,
+    };
+
+    let file = match process_inner.fd_manager.fd_table.get(fd) {
+        Some(Some(f)) => f.clone(),
+        _ => return ErrorNo::EBADF as isize,
+    };
     drop(process_inner); // release current inner manually to avoid multi-borrow
 
-    if file.lock().get_type() == FileIOType::DirDesc {
+    let mut file = file.lock();
+
+    if file.get_type() == FileIOType::DirDesc {
         debug!("fd is a dir");
         return ErrorNo::EBADF as isize;
     }
-    if !file.lock().writable() {
-        return -1;
-    }
-    let file = file.clone();
+    if !file.writable() {
+        // 1. socket
+        //
+        // Normal socket will block while trying to write, so we don't return here.
+        if let Some(socket) = file.as_any().downcast_ref::<Socket>() {
+            if socket.is_nonblocking() && socket.is_connected() {
+                return ErrorNo::EAGAIN as isize;
+            }
+        } else {
+            // 2. nonblock file
+            // return ErrorNo::EAGAIN as isize;
 
-    let ans = file
-        .lock()
-        .write(unsafe { core::slice::from_raw_parts(buf, count) })
-        .unwrap() as isize;
-    drop(file);
-    ans
+            // 3. regular file
+            return ErrorNo::EBADF as isize;
+        }
+    }
+
+    // for sockets:
+    // Sockets are "writable" when:
+    // - connected and have space in tx buffer to write
+    // - sent FIN packet, local send half is closed (this will return 0 immediately)
+    //   this will return Err(ConnectionReset)
+
+    match file.write(buf) {
+        Ok(len) => len as isize,
+        // socket with send half closed
+        // TODO: send a SIGPIPE signal to the process
+        Err(axerrno::AxError::ConnectionReset) => ErrorNo::EPIPE as isize,
+        Err(_) => -1,
+    }
 }
 
 /// 从同一个文件描述符读取多个字符串
@@ -210,11 +254,13 @@ pub fn syscall_readv(fd: usize, iov: *mut IoVec, iov_cnt: usize) -> isize {
     // 似乎要判断iov是否分配，但是懒了，反正能过测例
     for i in 0..iov_cnt {
         let io: &IoVec = unsafe { &*iov.add(i) };
-        let len = syscall_read(fd, io.base, io.len);
-        if len == -1 {
-            break;
-        } else {
-            read_len += len;
+        if io.base.is_null() || io.len == 0 {
+            continue;
+        }
+        match syscall_read(fd, io.base, io.len) {
+            len if len >= 0 => read_len += len,
+
+            err => return err,
         }
     }
     read_len
@@ -226,14 +272,13 @@ pub fn syscall_writev(fd: usize, iov: *const IoVec, iov_cnt: usize) -> isize {
     // 似乎要判断iov是否分配，但是懒了，反正能过测例
     for i in 0..iov_cnt {
         let io: &IoVec = unsafe { &(*iov.add(i)) };
-        if io.base as usize == 0 {
+        if io.base.is_null() || io.len == 0 {
             continue;
         }
-        let len = syscall_write(fd, io.base, io.len);
-        if len == -1 {
-            break;
-        } else {
-            write_len += len;
+        match syscall_write(fd, io.base, io.len) {
+            len if len >= 0 => write_len += len,
+
+            err => return err,
         }
     }
     write_len
@@ -1165,20 +1210,6 @@ pub fn syscall_sendfile64(out_fd: usize, in_fd: usize, offset: *mut usize, count
         info!("write len: {}", buf.as_slice().len());
         out_file.lock().write(buf.as_slice()).unwrap() as isize
     }
-}
-
-/// 72
-/// pselect6
-/// 与select类似，但是可以指定信号集
-pub fn syscall_pselect6(
-    _nfds: usize,
-    _readfds: *mut usize,
-    _writefds: *mut usize,
-    _exceptfds: *mut usize,
-    _timeout: *mut TimeValue,
-    _sigmask: *mut usize,
-) -> isize {
-    -1
 }
 
 /// 78

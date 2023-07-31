@@ -1,6 +1,11 @@
 [source.crates-io]
 replace-with = "vendored-sources"
 
+[source."git+https://github.com/c0per/smoltcp?branch=starryos"]
+git = "https://github.com/c0per/smoltcp"
+branch = "starryos"
+replace-with = "vendored-sources"
+
 [source."git+https://github.com/mexus/numeric-enum-macro"]
 git = "https://github.com/mexus/numeric-enum-macro"
 replace-with = "vendored-sources"
@@ -15,11 +20,6 @@ git = "https://github.com/rcore-os/bitmap-allocator.git"
 rev = "88e871a"
 replace-with = "vendored-sources"
 
-[source."git+https://github.com/rcore-os/smoltcp.git?rev=2ade274"]
-git = "https://github.com/rcore-os/smoltcp.git"
-rev = "2ade274"
-replace-with = "vendored-sources"
-
 [source."git+https://github.com/rcore-os/virtio-drivers.git?rev=409ee72"]
 git = "https://github.com/rcore-os/virtio-drivers.git"
 rev = "409ee72"
@@ -27,3 +27,4 @@ replace-with = "vendored-sources"
 
 [source.vendored-sources]
 directory = "vendor"
+

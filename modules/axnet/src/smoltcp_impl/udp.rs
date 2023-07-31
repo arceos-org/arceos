@@ -1,4 +1,5 @@
 use axerrno::{ax_err, ax_err_type, AxError, AxResult};
+use axhal::time::current_ticks;
 use axio::{PollState, Read, Write};
 use axsync::Mutex;
 
@@ -146,6 +147,27 @@ impl UdpSocket {
         )
     }
 
+    /// Receives data from the socket, stores it in the given buffer.
+    ///
+    /// It will return [`Err(Timeout)`](AxError::Timeout) if expired.
+    pub fn recv_from_timeout(&self, buf: &mut [u8], ticks: u64) -> AxResult<(usize, SocketAddr)> {
+        let expire_at = current_ticks() + ticks;
+
+        self.recv_impl(
+            |socket| match socket.recv_slice(buf) {
+                Ok((len, meta)) => Ok((len, meta.endpoint)),
+                Err(_) => {
+                    if current_ticks() > expire_at {
+                        Err(AxError::Timeout)
+                    } else {
+                        Err(AxError::WouldBlock)
+                    }
+                }
+            },
+            "socket recv_from() failed",
+        )
+    }
+
     /// Connects to the given address and port.
     ///
     /// The local port will be generated automatically if the socket is not bound.
@@ -239,6 +261,10 @@ impl UdpSocket {
                 }
             }
         }
+    }
+
+    pub fn with_socket<R>(&self, f: impl FnOnce(&udp::Socket) -> R) -> R {
+        SOCKET_SET.with_socket(self.handle, |s| f(s))
     }
 }
 

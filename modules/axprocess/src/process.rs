@@ -11,7 +11,7 @@ use axtask::monolithic_task::task::TaskState;
 use axtask::{AxTaskRef, TaskId};
 
 const KERNEL_STACK_SIZE: usize = 0x40000;
-const FD_LIMIT_ORIGIN: usize = 256;
+const FD_LIMIT_ORIGIN: usize = 1025;
 use crate::fd_manager::FdManager;
 use crate::flags::{CloneFlags, WaitStatus};
 use crate::futex::{clear_wait, FutexRobustList};
