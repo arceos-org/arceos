@@ -303,7 +303,7 @@ pub fn poll_interfaces() {
     SOCKET_SET.poll_interfaces();
 }
 
-pub(crate) fn init(_net_dev: AxNetDevice) {
+pub(crate) fn init() {
     // let ether_addr = EthernetAddress(net_dev.mac_address().0);
     // let eth0 = InterfaceWrapper::new("eth0", net_dev, ether_addr);
     // eth0.setup_ip_addr(IP, IP_PREFIX);
