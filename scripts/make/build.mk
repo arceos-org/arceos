@@ -10,7 +10,7 @@ else
   rust_elf := $(rust_target_dir)/$(rust_package)
 endif
 
-ifeq ($(filter $(MAKECMDGOALS),build run debug),$(MAKECMDGOALS))
+ifeq ($(filter $(MAKECMDGOALS),build run debug chainboot),$(MAKECMDGOALS))
   ifneq ($(V),)
     $(info APP: "$(APP)")
     $(info APP_TYPE: "$(APP_TYPE)")

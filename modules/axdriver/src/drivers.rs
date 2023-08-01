@@ -68,6 +68,20 @@ cfg_if::cfg_if! {
 }
 
 cfg_if::cfg_if! {
+    if #[cfg(block_dev = "bcm2835-sdhci")]{
+        pub struct BcmSdhciDriver;
+        register_block_driver!(MmckDriver, driver_block::bcm2835sdhci::SDHCIDriver);
+
+        impl DriverProbe for BcmSdhciDriver {
+            fn probe_global() -> Option<AxDeviceEnum> {
+                debug!("mmc probe");
+                driver_block::bcm2835sdhci::SDHCIDriver::try_new().ok().map(AxDeviceEnum::from_block)
+            }
+        }
+    }
+}
+
+cfg_if::cfg_if! {
     if #[cfg(net_dev = "ixgbe")] {
         use crate::ixgbe::IxgbeHalImpl;
         use axhal::mem::phys_to_virt;

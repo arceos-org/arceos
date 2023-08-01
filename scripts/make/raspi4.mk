@@ -92,3 +92,6 @@ openocd:
 ## Start GDB session
 ##------------------------------------------------------------------------------
 gdb: RUSTC_MISC_ARGS += -C debuginfo=2
+gdb: $(KERNEL_ELF)
+	$(call color_header, "Launching GDB")
+	@$(DOCKER_GDB) gdb-multiarch -q $(KERNEL_ELF)
