@@ -8,6 +8,7 @@ use axprocess::process::current_process;
 use bitflags::bitflags;
 use log::{debug, info};
 use memory_addr::VirtAddr;
+use page_table_entry::MappingFlags;
 const MAX_HEAP_SIZE: usize = 0x20000;
 /// 修改用户堆大小，
 ///
@@ -196,4 +197,72 @@ pub fn syscall_shmget(key: i32, size: usize, flags: i32) -> isize {
             }
         }
     }
+}
+
+bitflags! {
+    #[derive(Debug)]
+    struct ShmAtFlags: i32 {
+        const SHM_RND = 0o20000;
+        const SHM_EXEC = 0o100000;
+        const SHM_RDONLY = 0o10000;
+        const SHM_REMAP = 0o40000;
+    }
+}
+
+pub fn syscall_shmat(shmid: i32, addr: usize, flags: i32) -> isize {
+    let curr = current_process();
+    let inner = curr.inner.lock();
+    let mut memory = inner.memory_set.lock();
+
+    let flags = ShmAtFlags::from_bits(flags).unwrap();
+
+    let Some(mem) = memory
+        .get_private_shared_mem(shmid)
+        .or_else(|| MemorySet::get_shared_mem(shmid)) else {
+        return ErrorNo::EINVAL as isize;
+    };
+    let size = mem.size();
+
+    let addr = if addr == 0 {
+        match memory.find_free_area(addr.into(), size) {
+            Some(addr) => addr,
+            None => return ErrorNo::ENOMEM as isize,
+        }
+    } else {
+        let addr: VirtAddr = addr.into();
+        let addr = if addr.is_aligned_4k() {
+            addr
+        } else {
+            if flags.contains(ShmAtFlags::SHM_RND) {
+                addr.align_up_4k()
+            } else {
+                return ErrorNo::EINVAL as isize;
+            }
+        };
+
+        if flags.contains(ShmAtFlags::SHM_REMAP) {
+            memory.split_for_area(addr, size);
+            unsafe { riscv::asm::sfence_vma_all() };
+        } else {
+            unimplemented!()
+        }
+
+        addr
+    };
+
+    let mut map_flags = MappingFlags::USER;
+    if flags.contains(ShmAtFlags::SHM_RDONLY) {
+        map_flags |= MappingFlags::READ;
+    } else {
+        map_flags |= MappingFlags::READ | MappingFlags::WRITE;
+    }
+    if flags.contains(ShmAtFlags::SHM_EXEC) {
+        map_flags |= MappingFlags::EXECUTE;
+    }
+
+    memory.attach_shared_mem(mem, addr, map_flags);
+
+    unsafe { riscv::asm::sfence_vma_all() };
+
+    addr.as_usize() as isize
 }

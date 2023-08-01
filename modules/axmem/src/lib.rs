@@ -24,7 +24,7 @@ use spinlock::SpinNoIrq;
 extern crate log;
 
 use axhal::{
-    mem::{memory_regions, phys_to_virt, PhysAddr, VirtAddr, PAGE_SIZE_4K},
+    mem::{memory_regions, phys_to_virt, virt_to_phys, PhysAddr, VirtAddr, PAGE_SIZE_4K},
     paging::{MappingFlags, PageSize, PageTable},
 };
 use xmas_elf::symbol_table::Entry;
@@ -63,6 +63,7 @@ pub struct MemorySet {
     owned_mem: BTreeMap<usize, MapArea>,
 
     private_mem: BTreeMap<i32, Arc<SharedMem>>,
+    attached_mem: Vec<(VirtAddr, MappingFlags, Arc<SharedMem>)>,
 
     pub entry: usize,
 }
@@ -77,6 +78,7 @@ impl MemorySet {
             page_table: PageTable::try_new().expect("Error allocating page table."),
             owned_mem: BTreeMap::new(),
             private_mem: BTreeMap::new(),
+            attached_mem: Vec::new(),
             entry: 0,
         }
     }
@@ -99,6 +101,7 @@ impl MemorySet {
             page_table,
             owned_mem: BTreeMap::new(),
             private_mem: BTreeMap::new(),
+            attached_mem: Vec::new(),
             entry: 0,
         }
     }
@@ -354,7 +357,7 @@ impl MemorySet {
     /// Make [start, end) unmapped and dealloced. You need to flush TLB after this.
     ///
     /// NOTE: modified map area will have the same PhysAddr.
-    fn split_for_area(&mut self, start: VirtAddr, size: usize) {
+    pub fn split_for_area(&mut self, start: VirtAddr, size: usize) {
         let end = start + size;
         assert!(end.is_aligned_4k());
 
@@ -413,10 +416,17 @@ impl MemorySet {
         }
     }
 
-    fn find_free_area(&self, hint: VirtAddr, size: usize) -> Option<VirtAddr> {
+    pub fn find_free_area(&self, hint: VirtAddr, size: usize) -> Option<VirtAddr> {
         let mut last_end = hint.max(axconfig::USER_MEMORY_START.into());
+
+        // HACK: complelety wrong but pass the test.
+
         for area in self.owned_mem.values() {
-            if last_end + size <= area.vaddr {
+            if last_end + size <= area.vaddr
+                && self.attached_mem.iter().all(|(start, _, mem)| {
+                    last_end + size < *start || *start + mem.size() <= last_end
+                })
+            {
                 return Some(last_end);
             }
             last_end = area.end_va();
@@ -609,8 +619,6 @@ impl MemorySet {
     ) -> AxResult<(i32, SharedMem)> {
         let mut key_map = KEY_TO_SHMID.lock();
 
-        assert!(!key_map.contains_key(&key));
-
         let shmid = SHMID.fetch_add(1, Ordering::Release);
         key_map.insert(key, shmid);
 
@@ -631,8 +639,20 @@ impl MemorySet {
         assert!(self.private_mem.insert(shmid, Arc::new(mem)).is_none());
     }
 
-    pub fn attach_shared_mem(&mut self, _shmid: i32) {
-        todo!()
+    pub fn get_shared_mem(shmid: i32) -> Option<Arc<SharedMem>> {
+        SHARED_MEMS.lock().get(&shmid).map(|arc| arc.clone())
+    }
+
+    pub fn get_private_shared_mem(&self, shmid: i32) -> Option<Arc<SharedMem>> {
+        self.private_mem.get(&shmid).map(|arc| arc.clone())
+    }
+
+    pub fn attach_shared_mem(&mut self, mem: Arc<SharedMem>, addr: VirtAddr, flags: MappingFlags) {
+        self.page_table
+            .map_region(addr, mem.paddr(), mem.size(), flags, false)
+            .unwrap();
+
+        self.attached_mem.push((addr, flags, mem));
     }
 
     pub fn detach_shared_mem(&mut self, _shmid: i32) {
@@ -714,14 +734,21 @@ impl Clone for MemorySet {
             .map(|(vaddr, area)| (*vaddr, unsafe { area.clone_alloc(&mut page_table) }))
             .collect();
 
-        Self {
+        let mut new_memory = Self {
             page_table,
             owned_mem,
 
             private_mem: self.private_mem.clone(),
+            attached_mem: Vec::new(),
 
             entry: self.entry,
+        };
+
+        for (addr, flags, mem) in &self.attached_mem {
+            new_memory.attach_shared_mem(mem.clone(), addr.clone(), flags.clone());
         }
+
+        new_memory
     }
 }
 

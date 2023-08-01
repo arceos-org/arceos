@@ -1,11 +1,14 @@
 use axalloc::GlobalPage;
 use axerrno::AxResult;
-use axhal::{mem::PAGE_SIZE_4K, time::current_time};
+use axhal::{
+    mem::{virt_to_phys, PhysAddr, PAGE_SIZE_4K},
+    time::current_time,
+};
 
 #[allow(dead_code)]
 pub struct SharedMem {
     pages: GlobalPage,
-    info: SharedMemInfo,
+    pub info: SharedMemInfo,
 }
 
 impl SharedMem {
@@ -26,6 +29,14 @@ impl SharedMem {
             pages,
             info: SharedMemInfo::new(key, size, pid, uid, gid, mode),
         })
+    }
+
+    pub fn size(&self) -> usize {
+        self.pages.size()
+    }
+
+    pub fn paddr(&self) -> PhysAddr {
+        self.pages.start_paddr(virt_to_phys)
     }
 }
 
