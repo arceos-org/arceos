@@ -87,13 +87,13 @@ impl MapArea {
         page_table.unmap_region(self.vaddr, self.size()).unwrap();
         self.pages.clear();
     }
-
+    /// 如果处理失败，返回false，此时直接退出当前程序
     pub fn handle_page_fault(
         &mut self,
         addr: VirtAddr,
         flags: MappingFlags,
         page_table: &mut PageTable,
-    ) {
+    ) -> bool {
         trace!(
             "handling {:?} page fault in area [{:?}, {:?})",
             addr,
@@ -106,20 +106,20 @@ impl MapArea {
         );
         if !self.flags.contains(flags) {
             error!(
-                "Try to access {:?} memory with {:?} flag",
-                self.flags, flags
+                "Try to access {:?} memory addr: {:?} with {:?} flag",
+                self.flags, addr, flags
             );
-            axhal::trap::exit();
+            return false;
         }
 
         let page_index = (usize::from(addr) - usize::from(self.vaddr)) / PAGE_SIZE_4K;
         if page_index >= self.pages.len() {
             error!("Phys page index out of bound");
-            axhal::trap::exit();
+            return false;
         }
         if self.pages[page_index].is_some() {
             error!("Page fault in page already loaded");
-            axhal::trap::exit();
+            return false;
         }
 
         debug!("page index {}", page_index);
@@ -162,6 +162,7 @@ impl MapArea {
             sfence_vma(0, addr.align_down_4k().into());
         }
         self.pages[page_index] = Some(page);
+        true
     }
 
     /// Sync pages in index back to `self.backend` (if there is one).

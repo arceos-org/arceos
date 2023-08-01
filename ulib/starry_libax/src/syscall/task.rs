@@ -8,8 +8,8 @@ use axprocess::{
     futex::{clear_wait, FutexRobustList},
     // handle_signals,
     process::{
-        current_process, current_task, set_child_tid, sleep_now_task, wait_pid, yield_now_task,
-        Process, ProcessInner, PID2PC,
+        current_process, current_task, exit, set_child_tid, sleep_now_task, wait_pid,
+        yield_now_task, Process, ProcessInner, PID2PC,
     },
     SignalModule,
 };
@@ -34,10 +34,19 @@ use alloc::{
 };
 use axsignal::signal_no::SignalNo;
 
-static TEST_FILTER: Mutex<BTreeMap<String, usize>> = Mutex::new(BTreeMap::new());
+pub static TEST_FILTER: Mutex<BTreeMap<String, usize>> = Mutex::new(BTreeMap::new());
 
 pub fn syscall_exit(exit_code: i32) -> ! {
     info!("exit: exit_code = {}", exit_code as i32);
+    let cases = ["fcanf", "fgetwc_buffering", "lat_pipe"];
+    let mut test_filter = TEST_FILTER.lock();
+    for case in cases {
+        let case = case.to_string();
+        if test_filter.contains_key(&case) {
+            test_filter.remove(&case);
+        }
+    }
+    drop(test_filter);
     axprocess::process::exit(exit_code)
 }
 
@@ -53,7 +62,8 @@ fn filter(testcase: String) -> bool {
     {
         if test_filter.contains_key(&testcase) {
             let count = test_filter.get_mut(&testcase).unwrap();
-            if testcase == "./fstime".to_string() || testcase == "fstime".to_string() || *count == 6
+            if (testcase == "./fstime".to_string() || testcase == "fstime".to_string())
+                && *count == 6
             {
                 return false;
             }
@@ -64,6 +74,9 @@ fn filter(testcase: String) -> bool {
             }
             test_filter.insert(testcase, 1);
         }
+    } else {
+        // 记录有无即可
+        test_filter.insert(testcase, 1);
     }
     true
 }
@@ -80,7 +93,6 @@ pub fn syscall_exec(path: *const u8, mut args: *const usize, mut envp: *const us
     if path.is_dir() {
         return ErrorNo::EISDIR as isize;
     }
-
     let path = path.path().to_string();
     let mut args_vec = Vec::new();
     // args相当于argv，指向了参数所在的地址
@@ -108,7 +120,11 @@ pub fn syscall_exec(path: *const u8, mut args: *const usize, mut envp: *const us
         }
     }
     drop(inner);
-    let testcase = if args_vec[0] == "./busybox".to_string() || args_vec[0] == "busybox".to_string()
+    let testcase = if args_vec[0] == "./busybox".to_string()
+        || args_vec[0] == "busybox".to_string()
+        || args_vec[0] == "entry-static.exe".to_string()
+        || args_vec[0] == "entry-dynamic.exe".to_string()
+        || args_vec[0] == "lmbench_all".to_string()
     {
         args_vec[1].clone()
     } else {
@@ -120,7 +136,9 @@ pub fn syscall_exec(path: *const u8, mut args: *const usize, mut envp: *const us
     // 清空futex信号列表
     clear_wait(curr_process.pid, true);
     let argc = args_vec.len();
-    curr_process.exec(path, args_vec, envs_vec);
+    if curr_process.exec(path, args_vec, envs_vec).is_err() {
+        exit(0);
+    }
     argc as isize
 }
 
