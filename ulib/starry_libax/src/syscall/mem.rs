@@ -3,8 +3,9 @@ use crate::{fs::FileDesc, syscall::syscall_id::ErrorNo};
 use super::flags::{MMAPFlags, MMAPPROT};
 extern crate alloc;
 use alloc::boxed::Box;
-use axmem::MemBackend;
+use axmem::{MemBackend, MemorySet};
 use axprocess::process::current_process;
+use bitflags::bitflags;
 use log::{debug, info};
 use memory_addr::VirtAddr;
 const MAX_HEAP_SIZE: usize = 0x20000;
@@ -131,4 +132,68 @@ pub fn syscall_mprotect(start: usize, len: usize, prot: MMAPPROT) -> isize {
     unsafe { riscv::asm::sfence_vma_all() };
 
     0
+}
+
+const IPC_PRIVATE: i32 = 0;
+
+bitflags! {
+    #[derive(Debug)]
+    struct ShmFlags: i32 {
+        const IPC_CREAT = 0o1000;
+        const IPC_EXCL = 0o2000;
+        // unimplemented:
+        const SHM_HUGETLB = 0o4000;
+        const SHM_NORESERVE = 0o10000;
+    }
+}
+
+// TODO: uid and gid support
+pub fn syscall_shmget(key: i32, size: usize, flags: i32) -> isize {
+    let pid = current_process().pid;
+
+    // 9 bits for permission
+    let mode: u16 = (flags as u16) & ((1 << 10) - 1);
+
+    let Some(flags) = ShmFlags::from_bits(flags - mode as i32) else {
+        return -1;
+    };
+
+    if key == IPC_PRIVATE {
+        let Ok((shmid, mem)) = MemorySet::create_shared_mem(key, size, pid, 0, 0, mode) else {
+            return -1;
+        };
+
+        let curr = current_process();
+        let inner = curr.inner.lock();
+
+        inner.memory_set.lock().add_private_shared_mem(shmid, mem);
+
+        shmid as isize
+    } else {
+        let mut key_map = axmem::KEY_TO_SHMID.lock();
+
+        match key_map.get(&key) {
+            Some(shmid) => {
+                if flags.contains(ShmFlags::IPC_CREAT) && flags.contains(ShmFlags::IPC_EXCL) {
+                    ErrorNo::EEXIST as isize
+                } else {
+                    *shmid as isize
+                }
+            }
+            None => {
+                if flags.contains(ShmFlags::IPC_CREAT) {
+                    let Ok((shmid, mem)) = MemorySet::create_shared_mem(key, size, pid, 0, 0, mode) else {
+                        return -1;
+                    };
+
+                    key_map.insert(key, shmid);
+                    MemorySet::add_shared_mem(shmid, mem);
+
+                    shmid as isize
+                } else {
+                    ErrorNo::ENOENT as isize
+                }
+            }
+        }
+    }
 }

@@ -4,15 +4,22 @@
 
 mod area;
 mod backend;
+mod shared;
 pub use area::MapArea;
 use axerrno::{AxError, AxResult};
 pub use backend::MemBackend;
 
 extern crate alloc;
-use alloc::{collections::BTreeMap, vec::Vec};
-use core::{mem::size_of, ptr::copy_nonoverlapping};
+use alloc::{collections::BTreeMap, sync::Arc, vec::Vec};
+use core::{
+    mem::size_of,
+    ptr::copy_nonoverlapping,
+    sync::atomic::{AtomicI32, Ordering},
+};
 use page_table_entry::GenericPTE;
 use riscv::asm::sfence_vma_all;
+use shared::SharedMem;
+use spinlock::SpinNoIrq;
 #[macro_use]
 extern crate log;
 
@@ -38,10 +45,25 @@ pub(crate) const AT_BASE: u8 = 7;
 pub(crate) const AT_ENTRY: u8 = 9;
 pub(crate) const AT_RANDOM: u8 = 25;
 
+// TODO: a real allocator
+static SHMID: AtomicI32 = AtomicI32::new(1);
+
+/// This struct only hold SharedMem that are not IPC_PRIVATE. IPC_PRIVATE SharedMem will be stored
+/// in MemorySet::detached_mem.
+///
+/// This is the only place we can query a SharedMem using its shmid.
+///
+/// It holds an Arc to the SharedMem. If the Arc::strong_count() is 1, SharedMem will be dropped.
+pub static SHARED_MEMS: SpinNoIrq<BTreeMap<i32, Arc<SharedMem>>> = SpinNoIrq::new(BTreeMap::new());
+pub static KEY_TO_SHMID: SpinNoIrq<BTreeMap<i32, i32>> = SpinNoIrq::new(BTreeMap::new());
+
 /// PageTable + MemoryArea for a process (task)
 pub struct MemorySet {
     page_table: PageTable,
     owned_mem: BTreeMap<usize, MapArea>,
+
+    private_mem: BTreeMap<i32, Arc<SharedMem>>,
+
     pub entry: usize,
 }
 
@@ -54,6 +76,7 @@ impl MemorySet {
         Self {
             page_table: PageTable::try_new().expect("Error allocating page table."),
             owned_mem: BTreeMap::new(),
+            private_mem: BTreeMap::new(),
             entry: 0,
         }
     }
@@ -75,6 +98,7 @@ impl MemorySet {
         Self {
             page_table,
             owned_mem: BTreeMap::new(),
+            private_mem: BTreeMap::new(),
             entry: 0,
         }
     }
@@ -570,6 +594,50 @@ impl MemorySet {
             Err(AxError::InvalidInput)
         }
     }
+
+    /// Create a new SharedMem with given key.
+    /// You need to add the returned SharedMem to global SHARED_MEMS or process's private_mem.
+    ///
+    /// Panics: SharedMem with the key already exist.
+    pub fn create_shared_mem(
+        key: i32,
+        size: usize,
+        pid: u64,
+        uid: u32,
+        gid: u32,
+        mode: u16,
+    ) -> AxResult<(i32, SharedMem)> {
+        let mut key_map = KEY_TO_SHMID.lock();
+
+        assert!(!key_map.contains_key(&key));
+
+        let shmid = SHMID.fetch_add(1, Ordering::Release);
+        key_map.insert(key, shmid);
+
+        let mem = SharedMem::try_new(key, size, pid, uid, gid, mode)?;
+
+        Ok((shmid, mem))
+    }
+
+    /// Panics: shmid is already taken.
+    pub fn add_shared_mem(shmid: i32, mem: SharedMem) {
+        let mut mem_map = SHARED_MEMS.lock();
+
+        assert!(mem_map.insert(shmid, Arc::new(mem)).is_none());
+    }
+
+    /// Panics: shmid is already taken in the process.
+    pub fn add_private_shared_mem(&mut self, shmid: i32, mem: SharedMem) {
+        assert!(self.private_mem.insert(shmid, Arc::new(mem)).is_none());
+    }
+
+    pub fn attach_shared_mem(&mut self, _shmid: i32) {
+        todo!()
+    }
+
+    pub fn detach_shared_mem(&mut self, _shmid: i32) {
+        todo!()
+    }
 }
 
 impl MemorySet {
@@ -649,6 +717,9 @@ impl Clone for MemorySet {
         Self {
             page_table,
             owned_mem,
+
+            private_mem: self.private_mem.clone(),
+
             entry: self.entry,
         }
     }

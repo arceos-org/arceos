@@ -258,7 +258,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         IOCTL => syscall_ioctl(args[0] as usize, args[1] as usize, args[2] as *mut usize),
         // 不做处理即可
         SYNC => 0,
-        SHMGET => 0,
+        SHMGET => syscall_shmget(args[0] as i32, args[1], args[2] as i32),
         SHMCTL => 0,
         SHMAT => 0,
         MEMBARRIER => 0,
