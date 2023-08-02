@@ -13,6 +13,12 @@ typedef double double_t;
 #define INFINITY 1e5000f
 #endif
 
+#define M_PI 3.14159265358979323846 /* pi */
+
+#define LOG_TABLE_BITS  7
+#define LOG_POLY_ORDER  6
+#define LOG_POLY1_ORDER 12
+
 #define HUGE_VALF INFINITY
 #define HUGE_VAL  ((double)INFINITY)
 #define HUGE_VALL ((long double)INFINITY)

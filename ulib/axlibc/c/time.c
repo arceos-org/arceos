@@ -21,13 +21,13 @@ const int HOUR_PER_DAY = 24;
 #define DAYS_PER_100Y (365 * 100 + 24)
 #define DAYS_PER_4Y   (365 * 4 + 1)
 
-// TODO:
-size_t strftime(char *__restrict__ _Buf, size_t _SizeInBytes, const char *__restrict__ _Format,
-                const struct tm *__restrict__ _Tm)
+#ifdef AX_CONFIG_ALLOC
+size_t strftime(char *restrict buf, size_t size, const char *restrict format,
+                const struct tm *restrict timeptr)
 {
-    unimplemented();
-    return 0;
+    return ax_strftime(buf, size, format, timeptr);
 }
+#endif
 
 int __secs_to_tm(long long t, struct tm *tm)
 {
@@ -125,13 +125,21 @@ struct tm *gmtime(const time_t *timer)
     return __gmtime_r(timer, &tm);
 }
 
-// TODO: more field should be added
 struct tm *localtime_r(const time_t *restrict t, struct tm *restrict tm)
 {
-    time_t sec = *t;
-    tm->tm_sec = sec % SEC_PER_MIN;
-    tm->tm_min = (sec / SEC_PER_MIN) % MIN_PER_HOUR;
-    tm->tm_hour = (sec / SEC_PER_HOUR) % HOUR_PER_DAY;
+    if (*t < INT_MIN * 31622400LL || *t > INT_MAX * 31622400LL) {
+        errno = EOVERFLOW;
+        return 0;
+    }
+
+    if (__secs_to_tm(*t, tm) < 0) {
+        errno = EOVERFLOW;
+        return 0;
+    }
+
+    tm->tm_isdst = 0;
+    tm->__tm_gmtoff = 0;
+    tm->__tm_zone = 0;
 
     return tm;
 }

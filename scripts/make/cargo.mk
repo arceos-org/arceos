@@ -33,8 +33,9 @@ ifeq ($(APP_TYPE),c)
     ifneq ($(strip $(foreach feat,fs net pipe select epoll,$(filter $(feat),$(features_c)))),)
       features_c += fd
     endif
-    CFLAGS += $(addprefix -DAX_CONFIG_,$(shell echo $(features_c) | tr 'a-z' 'A-Z'))
+    CFLAGS += $(addprefix -DAX_CONFIG_,$(shell echo $(features_c) | tr 'a-z' 'A-Z' | tr '-' '_'))
   endif
+  CFLAGS += -DAX_LOG_$(shell echo $(LOG) | tr 'a-z' 'A-Z')
   features-y += $(addprefix axlibc/,$(features_c))
   features-y += $(APP_FEATURES)
 else ifeq ($(APP_TYPE),rust)

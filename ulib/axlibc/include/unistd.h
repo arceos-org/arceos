@@ -2,6 +2,7 @@
 #define __UNISTD_H__
 
 #include <stddef.h>
+#include <features.h>
 #include <sys/stat.h>
 
 #define STDIN_FILENO  0
@@ -62,6 +63,7 @@ char *getcwd(char *, size_t);
 unsigned alarm(unsigned);
 unsigned sleep(unsigned);
 int pause(void);
+int usleep(unsigned);
 
 pid_t fork(void);
 int execve(const char *, char *const[], char *const[]);

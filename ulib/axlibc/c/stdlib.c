@@ -9,8 +9,8 @@
 
 #include <axlibc.h>
 
-char *program_invocation_short_name = NULL;
-char *program_invocation_name = NULL;
+char *program_invocation_short_name = "dummy";
+char *program_invocation_name = "dummy";
 
 #define __DECONST(type, var) ((type)(uintptr_t)(const void *)(var))
 
@@ -411,6 +411,13 @@ void qsort(void *base, size_t nel, size_t width, cmpfun cmp)
 {
     unimplemented();
     return;
+}
+
+// TODO
+int mkstemp(char *__template)
+{
+    unimplemented();
+    return 0;
 }
 
 // TODO

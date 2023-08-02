@@ -8,7 +8,7 @@
 #define ITIMER_PROF    2
 
 extern long timezone;
-typedef long time_t;
+typedef long long time_t;
 
 struct timeval {
     time_t tv_sec; /* seconds */

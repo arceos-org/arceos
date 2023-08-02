@@ -36,7 +36,7 @@ typedef struct {{
     long __l[{mutex_size}];
 }} pthread_mutex_t;
 
-#define PTHREAD_MUTEX_INITIALIZER {{ __l: {mutex_init}}}
+#define PTHREAD_MUTEX_INITIALIZER {{ .__l = {mutex_init}}}
 "#
         )?;
         std::fs::write(out_file, output)?;

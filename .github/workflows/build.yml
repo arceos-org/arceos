@@ -91,6 +91,8 @@ jobs:
       run: make ARCH=${{ matrix.arch }} A=apps/c/udpserver
     - name: Build c/iperf
       run: make ARCH=${{ matrix.arch }} A=apps/c/iperf
+    - name: Build c/redis
+      run: make ARCH=${{ matrix.arch }} A=apps/c/redis SMP=4
 
   build-apps-for-std:
     runs-on: ${{ matrix.os }}
