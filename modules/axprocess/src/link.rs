@@ -2,7 +2,7 @@
 //! fat32本身不支持符号链接和硬链接，两个指向相同文件的目录条目将会被chkdsk报告为交叉链接并修复
 extern crate alloc;
 use alloc::collections::BTreeMap;
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use axerrno::{AxError, AxResult};
 use axfs::api::canonicalize;
 use axlog::trace;
@@ -24,6 +24,7 @@ impl FilePath {
             // 如果原始路径以 '/' 结尾，那么canonicalize后的路径也应该以 '/' 结尾
             new_path.push('/');
         }
+        let new_path = real_path(&new_path);
         // assert!(!path.ends_with("/"), "path should not end with '/', link only support file");      // 链接只支持文件
         Ok(Self(new_path))
     }
@@ -119,6 +120,23 @@ pub fn real_path(src_path: &String) -> String {
     // 找到对应的链接
     match map.get(src_path) {
         Some(dest_path) => dest_path.clone(),
-        None => src_path.clone(),
+        None => {
+            // 特判gcc的文件夹链接情况，即将一个文件夹前缀换成另一个文件夹前缀
+            static GCC_DIR_SRC: &str =
+                "/riscv64-linux-musl-native/lib/gcc/riscv64-linux-musl/11.2.1/include";
+            static GCC_DIR_DST: &str = "/riscv64-linux-musl-native/include";
+
+            static MUSL_DIR_SRC: &str = "/riscv64-linux-musl-native/riscv64-linux-musl/include";
+            static MUSL_DIR_DST: &str = "/riscv64-linux-musl-native/include";
+            if src_path.starts_with(GCC_DIR_SRC) {
+                // 替换src为dst
+                GCC_DIR_DST.to_string() + src_path.strip_prefix(GCC_DIR_SRC).unwrap()
+            } else if src_path.starts_with(MUSL_DIR_SRC) {
+                // 替换src为dst
+                MUSL_DIR_DST.to_string() + src_path.strip_prefix(MUSL_DIR_SRC).unwrap()
+            } else {
+                src_path.clone()
+            }
+        }
     }
 }

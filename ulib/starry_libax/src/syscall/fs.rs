@@ -104,8 +104,7 @@ pub fn deal_with_path(
             }
         }
     }
-    let path = real_path(&path);
-    match FilePath::new(&path) {
+    match FilePath::new(path.as_str()) {
         Ok(path) => Some(path),
         Err(_) => None,
     }

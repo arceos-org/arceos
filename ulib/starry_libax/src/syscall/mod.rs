@@ -303,7 +303,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[4] as *mut u32,
         ),
         SHUTDOWN => syscall_shutdown(args[0], args[1]),
-        MADVISE => 0,
+        MADVICE => 0,
         _ => {
             error!("Invalid Syscall Id: {}!", syscall_id);
             // return -1;
@@ -314,15 +314,15 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
 
     // let sstatus = riscv::register::sstatus::read();
     // error!("irq: {}", riscv::register::sstatus::Sstatus::sie(&sstatus));
-    if syscall_id != GETPPID as usize
-        && syscall_id != CLOCK_GET_TIME as usize
-        && syscall_id != GETRUSAGE as usize
-    // if syscall_id == CLONE as usize {
-    {
-        info!(
-            "curr id: {}, Syscall {} return: {}",
-            curr_id, syscall_id, ans,
-        );
-    }
+    // if syscall_id != GETPPID as usize
+    //     && syscall_id != CLOCK_GET_TIME as usize
+    //     && syscall_id != GETRUSAGE as usize
+    // if curr_id == 6 {
+    //     // if syscall_id == CLONE as usize {
+    //     error!(
+    //         "curr id: {}, Syscall {} return: {}",
+    //         curr_id, syscall_id, ans,
+    //     );
+    // };
     ans
 }

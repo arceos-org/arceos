@@ -1,4 +1,4 @@
-use alloc::sync::Arc;
+use alloc::{format, sync::Arc};
 use axfs::{
     api::{self},
     monolithic_fs::flags::OpenFlags,
@@ -20,7 +20,7 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use axprocess::{
     link::FilePath,
-    process::{wait_pid, yield_now_task, Process, KERNEL_PROCESS_ID, PID2PC, TID2TASK},
+    process::{wait_pid, yield_now_task, Process, KERNEL_PROCESS_ID, PID2PC},
 };
 use riscv::asm;
 
@@ -192,107 +192,107 @@ pub const LIBC_DYNAMIC_TESTCASES: &[&str] = &[
     // "env.dout",
     // "fdopen.dout", // 62
     // "fnmatch.dout",
-    // "fscanf.dout", //62
-                   // "fwscanf.dout", //29
-                   // "iconv_open.dout",
-                   // "inet_pton.dout",
-                   // "mbc.dout",
-                   // "memstream.dout",
-                   // "pthread_cancel_points.dout", // 226
-                   // "pthread_cancel.dout",        // 226
-                   // "pthread_cond.dout",          //226
-                   // "pthread_tsd.dout",           //226
-                   // "qsort.dout",
-                   // "random.dout",
-                   // "search_hsearch.dout",
-                   // "search_insque.dout",
-                   // "search_lsearch.dout",
-                   // "search_tsearch.dout",
-                   // "sem_init.dout", //226
-                   // "setjmp.dout",
-                   // "snprintf.dout",
-                   // "socket", //198
-                   // "sscanf.dout",
-                   // "sscanf_long.dout",
-                   // "stat.dout", //79
-                   // "strftime.dout",
-                   // "string.dout",
-                   // "string_memcpy.dout",
-                   // "string_memmem.dout",
-                   // "string_memset.dout",
-                   // "string_strchr.dout",
-                   // "string_strcspn.dout",
-                   // "string_strstr.dout",
-                   // "strptime.dout",
-                   // "strtod.dout",
-                   // "strtod_simple.dout",
-                   // "strtof.dout",
-                   // "strtol.dout",
-                   // "strtold.dout",
-                   // "swprintf.dout",
-                   // "tgmath.dout",
-                   // "time.dout",
-                   // "tls_init.dout",       //226
-                   // "tls_local_exec.dout", //226
-                   // "udiv.dout",
-                   // "ungetc.dout", // 29
-                   // "utime.dout",  //88
-                   // "wcsstr.dout",
-                   // "wcstol.dout",
-                   // "daemon_failure.dout",
-                   // "dn_expand_empty.dout",
-                   // "dn_expand_ptr_0.dout",
-                   // "fflush_exit.dout", //29 + 67
-                   // "fgets_eof.dout",
-                   // "fgetwc_buffering.dout",
-                   // "fpclassify_invalid_ld80.dout",
-                   // "ftello_unflushed_append.dout", //25
-                   // "getpwnam_r_crash.dout",
-                   // "getpwnam_r_errno.dout",
-                   // "iconv_roundtrips.dout",
-                   // "inet_ntop_v4mapped.dout",
-                   // "inet_pton_empty_last_field.dout",
-                   // "iswspace_null.dout",
-                   // "lrand48_signextend.dout",
-                   // "lseek_large.dout", //29
-                   // "malloc_0.dout",
-                   // "mbsrtowcs_overflow.dout",
-                   // "memmem_oob_read.dout",
-                   // "memmem_oob.dout",
-                   // "mkdtemp_failure.dout",
-                   // "mkstemp_failure.dout",
-                   // "printf_1e9_oob.dout",
-                   // "printf_fmt_g_round.dout",
-                   // "printf_fmt_g_zeros.dout",
-                   // "printf_fmt_n.dout",
-                   // "pthread_robust_detach.dout", //226
-                   // "pthread_cond_smasher.dout",  //226
-                   // "pthread_condattr_setclock.dout",
-                   // "pthread_exit_cancel.dout",   //226
-                   // "pthread_once_deadlock.dout", //226
-                   // "pthread_rwlock_ebusy.dout",  //226
-                   // "putenv_doublefree.dout",
-                   // "regex_backref_0.dout",
-                   // "regex_bracket_icase.dout",
-                   // "regex_ere_backref.dout",
-                   // "regex_escaped_high_byte.dout",
-                   // "regex_negated_range.dout",
-                   // "regexec_nosub.dout",
-                   // "rewind_clear_error.dout", //62
-                   // "rlimit_open_files.dout",
-                   // "scanf_bytes_consumed.dout",
-                   // "scanf_match_literal_eof.dout",
-                   // "scanf_nullbyte_char.dout",
-                   // "setvbuf_unget.dout", //62
-                   // "sigprocmask_internal.dout",
-                   // "sscanf_eof.dout",
-                   // "statvfs.dout", //43
-                   // "strverscmp.dout",
-                   // "syscall_sign_extend.dout",
-                   // "tls_get_new_dtv.dout",
-                   // "uselocale_0.dout",
-                   // "wcsncpy_read_overflow.dout",
-                   // "wcsstr_false_negative.dout",
+    // "fscanf.dout",  //62
+    // "fwscanf.dout", //29
+    // "iconv_open.dout",
+    // "inet_pton.dout",
+    // "mbc.dout",
+    // "memstream.dout",
+    // "pthread_cancel_points.dout", // 226
+    // "pthread_cancel.dout",        // 226
+    // "pthread_cond.dout",          //226
+    // "pthread_tsd.dout",           //226
+    // "qsort.dout",
+    // "random.dout",
+    // "search_hsearch.dout",
+    // "search_insque.dout",
+    // "search_lsearch.dout",
+    // "search_tsearch.dout",
+    // "sem_init.dout", //226
+    // "setjmp.dout",
+    // "snprintf.dout",
+    "socket", //198
+             // "sscanf.dout",
+             // "sscanf_long.dout",
+             // "stat.dout", //79
+             // "strftime.dout",
+             // "string.dout",
+             // "string_memcpy.dout",
+             // "string_memmem.dout",
+             // "string_memset.dout",
+             // "string_strchr.dout",
+             // "string_strcspn.dout",
+             // "string_strstr.dout",
+             // "strptime.dout",
+             // "strtod.dout",
+             // "strtod_simple.dout",
+             // "strtof.dout",
+             // "strtol.dout",
+             // "strtold.dout",
+             // "swprintf.dout",
+             // "tgmath.dout",
+             // "time.dout",
+             // "tls_init.dout",       //226
+             // "tls_local_exec.dout", //226
+             // "udiv.dout",
+             // "ungetc.dout", // 29
+             // "utime.dout",  //88
+             // "wcsstr.dout",
+             // "wcstol.dout",
+             // "daemon_failure.dout",
+             // "dn_expand_empty.dout",
+             // "dn_expand_ptr_0.dout",
+             // "fflush_exit.dout", //29 + 67
+             // "fgets_eof.dout",
+             // "fgetwc_buffering.dout",
+             // "fpclassify_invalid_ld80.dout",
+             // "ftello_unflushed_append.dout", //25
+             // "getpwnam_r_crash.dout",
+             // "getpwnam_r_errno.dout",
+             // "iconv_roundtrips.dout",
+             // "inet_ntop_v4mapped.dout",
+             // "inet_pton_empty_last_field.dout",
+             // "iswspace_null.dout",
+             // "lrand48_signextend.dout",
+             // "lseek_large.dout", //29
+             // "malloc_0.dout",
+             // "mbsrtowcs_overflow.dout",
+             // "memmem_oob_read.dout",
+             // "memmem_oob.dout",
+             // "mkdtemp_failure.dout",
+             // "mkstemp_failure.dout",
+             // "printf_1e9_oob.dout",
+             // "printf_fmt_g_round.dout",
+             // "printf_fmt_g_zeros.dout",
+             // "printf_fmt_n.dout",
+             // "pthread_robust_detach.dout", //226
+             // "pthread_cond_smasher.dout",  //226
+             // "pthread_condattr_setclock.dout",
+             // "pthread_exit_cancel.dout",   //226
+             // "pthread_once_deadlock.dout", //226
+             // "pthread_rwlock_ebusy.dout",  //226
+             // "putenv_doublefree.dout",
+             // "regex_backref_0.dout",
+             // "regex_bracket_icase.dout",
+             // "regex_ere_backref.dout",
+             // "regex_escaped_high_byte.dout",
+             // "regex_negated_range.dout",
+             // "regexec_nosub.dout",
+             // "rewind_clear_error.dout", //62
+             // "rlimit_open_files.dout",
+             // "scanf_bytes_consumed.dout",
+             // "scanf_match_literal_eof.dout",
+             // "scanf_nullbyte_char.dout",
+             // "setvbuf_unget.dout", //62
+             // "sigprocmask_internal.dout",
+             // "sscanf_eof.dout",
+             // "statvfs.dout", //43
+             // "strverscmp.dout",
+             // "syscall_sign_extend.dout",
+             // "tls_get_new_dtv.dout",
+             // "uselocale_0.dout",
+             // "wcsncpy_read_overflow.dout",
+             // "wcsstr_false_negative.dout",
 ];
 
 #[allow(dead_code)]
@@ -311,6 +311,9 @@ pub const LUA_TESTCASES: &[&str] = &[
 
 #[allow(dead_code)]
 pub const BUSYBOX_TESTCASES: &[&str] = &[
+    // gcc测例
+    "./riscv64-linux-musl-native/bin/riscv64-linux-musl-gcc ./hello.c -static",
+    "./a.out",
     // "busybox echo iozone automatic measurements",
     // "busybox sh cyclictest_testcode.sh",
     // "busybox echo \"run iozone_testcode.sh\"",
@@ -321,7 +324,6 @@ pub const BUSYBOX_TESTCASES: &[&str] = &[
     // "iozone -t 4 -i 0 -i 2 -r 1k -s 1m",
     // "busybox sh ./test_all.sh",
     // "busybox echo \"run libctest_testcode.sh\"",
-    // "busybox sh unixbench_testcode.sh",
     // "./looper 20 ./multi.sh 16",
     // "./fstime -w -t 20 -b 1024 -m 2000",
     // "./fstime -w -t 20 -b 4096 -m 8000",
@@ -401,13 +403,10 @@ pub const BUSYBOX_TESTCASES: &[&str] = &[
 
     // "echo latency measurements",
     // "lmbench_all lat_syscall -P 1 null",
-    "busybox sh unixbench_testcode.sh",
-    "busybox sh libctest_testcode.sh",
-    "busybox sh lua_testcode.sh",
-    "busybox sh busybox_testcode.sh",
-    "libc-bench",
-    "busybox sh ./netperf_testcode.sh",
-    "busybox sh ./iperf_testcode.sh",
+    // "busybox sh libctest_testcode.sh",
+    // "busybox sh lua_testcode.sh",
+    // "busybox sh busybox_testcode.sh",
+    // "busybox sh lmbench_testcode.sh",
     // "busybox mkdir -p /var/tmp",
     // "busybox echo latency measurements",
     // "lmbench_all lat_syscall -P 1 null",
@@ -567,7 +566,7 @@ fn get_args(command_line: &[u8]) -> Vec<String> {
 /// 在执行系统调用前初始化文件系统
 ///
 /// 包括建立软连接，提前准备好一系列的文件与文件夹
-pub fn fs_init(case: &'static str) {
+pub fn fs_init(_case: &'static str) {
     // 需要对libc-dynamic进行特殊处理，因为它需要先加载libc.so
     // 建立一个硬链接
 
@@ -589,44 +588,85 @@ pub fn fs_init(case: &'static str) {
         &(FilePath::new("tls_get_new-dtv_dso.so").unwrap()),
     );
 
-    if case == "busybox" {
-        create_link(
-            &(FilePath::new("./sbin/busybox").unwrap()),
-            &(FilePath::new("busybox").unwrap()),
-        );
-        assert!(create_link(
-            &(FilePath::new("./sbin/ls").unwrap()),
-            &(FilePath::new("busybox").unwrap()),
-        ));
-        create_link(
-            &(FilePath::new("./ls").unwrap()),
-            &(FilePath::new("./busybox").unwrap()),
-        );
-        create_link(
-            &(FilePath::new(".sh").unwrap()),
-            &(FilePath::new("./busybox").unwrap()),
-        );
-        // create_link(
-        //     &(FilePath::new("/bin/sh").unwrap()),
-        //     &(FilePath::new("./busybox").unwrap()),
-        // );
-        create_link(
-            &(FilePath::new("./bin/lmbench_all").unwrap()),
-            &(FilePath::new("./lmbench_all").unwrap()),
-        );
-        create_link(
-            &(FilePath::new("./bin/iozone").unwrap()),
-            &(FilePath::new("./iozone").unwrap()),
-        );
-        let _ = new_file("/lat_sig", &(OpenFlags::CREATE | OpenFlags::RDWR));
-        // let path = "/lat_sig\0";
-        // assert!(syscall_openat(0, path.as_ptr(), 0, 0) > 0);
-    }
+    // if case == "busybox" {
+    create_link(
+        &(FilePath::new("./sbin/busybox").unwrap()),
+        &(FilePath::new("busybox").unwrap()),
+    );
+    create_link(
+        &(FilePath::new("./sbin/ls").unwrap()),
+        &(FilePath::new("busybox").unwrap()),
+    );
+    create_link(
+        &(FilePath::new("./ls").unwrap()),
+        &(FilePath::new("./bin/busybox").unwrap()),
+    );
+    create_link(
+        &(FilePath::new(".sh").unwrap()),
+        &(FilePath::new("./bin/busybox").unwrap()),
+    );
+    create_link(
+        &(FilePath::new("./bin/lmbench_all").unwrap()),
+        &(FilePath::new("./lmbench_all").unwrap()),
+    );
+    create_link(
+        &(FilePath::new("./bin/iozone").unwrap()),
+        &(FilePath::new("./iozone").unwrap()),
+    );
+    let _ = new_file("/lat_sig", &(OpenFlags::CREATE | OpenFlags::RDWR));
+    // }
+
+    // gcc相关的链接，可以在testcases/gcc/riscv64-linux-musl-native/lib目录下使用ls -al指令查看
+    let src_dir = "riscv64-linux-musl-native/lib";
+    create_link(
+        &FilePath::new(format!("{}/ld-musl-riscv64.so.1", src_dir).as_str()).unwrap(),
+        &FilePath::new("/lib/libc.so").unwrap(),
+    );
+    create_link(
+        &FilePath::new(format!("{}/libatomic.so", src_dir).as_str()).unwrap(),
+        &FilePath::new(format!("{}/libatomic.so.1.2.0", src_dir).as_str()).unwrap(),
+    );
+    create_link(
+        &FilePath::new(format!("{}/libatomic.so.1", src_dir).as_str()).unwrap(),
+        &FilePath::new(format!("{}/libatomic.so.1.2.0", src_dir).as_str()).unwrap(),
+    );
+    create_link(
+        &FilePath::new(format!("{}/libgfortran.so", src_dir).as_str()).unwrap(),
+        &FilePath::new(format!("{}/libgfortran.so.5.0.0", src_dir).as_str()).unwrap(),
+    );
+    create_link(
+        &FilePath::new(format!("{}/libgfortran.so.5", src_dir).as_str()).unwrap(),
+        &FilePath::new(format!("{}/libgfortran.so.5.0.0", src_dir).as_str()).unwrap(),
+    );
+    create_link(
+        &FilePath::new(format!("{}/libgomp.so", src_dir).as_str()).unwrap(),
+        &FilePath::new(format!("{}/libgomp.so.1.0.0", src_dir).as_str()).unwrap(),
+    );
+    create_link(
+        &FilePath::new(format!("{}/libgomp.so.1", src_dir).as_str()).unwrap(),
+        &FilePath::new(format!("{}/libgomp.so.1.0.0", src_dir).as_str()).unwrap(),
+    );
+    create_link(
+        &FilePath::new(format!("{}/libssp.so", src_dir).as_str()).unwrap(),
+        &FilePath::new(format!("{}/libssp.so.0.0.0", src_dir).as_str()).unwrap(),
+    );
+    create_link(
+        &FilePath::new(format!("{}/libssp.so.0", src_dir).as_str()).unwrap(),
+        &FilePath::new(format!("{}/libssp.so.0.0.0", src_dir).as_str()).unwrap(),
+    );
+    create_link(
+        &FilePath::new(format!("{}/libstdc++.so", src_dir).as_str()).unwrap(),
+        &FilePath::new(format!("{}/libstdc++.so.6.0.29", src_dir).as_str()).unwrap(),
+    );
+    create_link(
+        &FilePath::new(format!("{}/libstdc++.so.6", src_dir).as_str()).unwrap(),
+        &FilePath::new(format!("{}/libstdc++.so.6.0.29", src_dir).as_str()).unwrap(),
+    );
 }
 
 /// 执行运行所有测例的任务
 pub fn run_testcases(case: &'static str) {
-    debug!("run_testcases :{}", case);
+    // debug!("run_testcases :{}", case);
     fs_init(case);
     let mut test_iter: LazyInit<Box<dyn Iterator<Item = &'static &'static str> + Send>> =
         LazyInit::new();
@@ -658,7 +698,6 @@ pub fn run_testcases(case: &'static str) {
             panic!("unknown test case: {}", case);
         }
     };
-
     loop {
         let mut ans = None;
         if let Some(command_line) = test_iter.next() {
@@ -688,12 +727,13 @@ pub fn run_testcases(case: &'static str) {
         EXITED_TASKS.lock().clear();
         if let Some(exit_code) = ans {
             let kernel_process = Arc::clone(PID2PC.lock().get(&KERNEL_PROCESS_ID).unwrap());
-            kernel_process.inner.lock().children.clear();
+            kernel_process
+                .inner
+                .lock()
+                .children
+                .retain(|x| x.pid == KERNEL_PROCESS_ID);
             // 去除指针引用，此时process_id对应的进程已经被释放
             // 释放所有非内核进程
-            PID2PC.lock().clear();
-            PID2PC.lock().insert(KERNEL_PROCESS_ID, kernel_process);
-            TID2TASK.lock().clear();
             finish_one_test(exit_code);
         } else {
             // 已经测试完所有的测例

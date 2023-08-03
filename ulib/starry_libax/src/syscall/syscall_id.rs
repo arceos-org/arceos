@@ -70,6 +70,7 @@ pub enum SyscallId {
     SYSINFO = 179,
     CLONE = 220,
     EXECVE = 221,
+    MADVICE = 233,
     WAIT4 = 260,
     GETRANDOM = 278,
     // 内存管理
@@ -107,7 +108,6 @@ pub enum SyscallId {
     SENDTO = 206,
     RECVFROM = 207,
     SETSOCKOPT = 208,
-    MADVISE = 233,
     GETSOCKOPT = 209,
     SHUTDOWN = 210,
 }

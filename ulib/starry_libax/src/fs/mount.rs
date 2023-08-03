@@ -151,7 +151,7 @@ pub fn get_stat_in_fs(path: &FilePath) -> Result<Kstat, isize> {
             }
         }
     }
-    if !real_path.ends_with("/") {
+    if !real_path.ends_with("/") && !real_path.ends_with("include") {
         // 是文件
         return if let Ok(file) = new_fd(real_path.to_string(), 0.into()) {
             match file.get_stat() {

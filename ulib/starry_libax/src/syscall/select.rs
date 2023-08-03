@@ -137,6 +137,7 @@ pub fn syscall_pselect6(
     } else {
         usize::MAX
     };
+
     drop(inner);
 
     debug!("[pselect6()]: r: {rfds:?}, w: {wfds:?}, e: {efds:?}");
