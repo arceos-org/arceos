@@ -8,9 +8,8 @@
 #     - `V`: Verbose level: (empty), 1, 2
 # * App options:
 #     - `A` or `APP`: Path to the application
-#     - `FEATURES`: Features to be enabled. Each feature need to start with one
-#       of the prefix `ax/`, `lib/` or `app/`. See "scripts/make/features.mk"
-#       for more details.
+#     - `FEATURES`: Features os ArceOS modules to be enabled.
+#     - `APP_FEATURES`: Features of (rust) apps to be enabled.
 # * QEMU options:
 #     - `BLK`: Enable storage devices (virtio-blk)
 #     - `NET`: Enable network devices (virtio-net)
@@ -36,6 +35,7 @@ V ?=
 # App options
 A ?= apps/helloworld
 APP ?= $(A)
+FEATURES ?=
 APP_FEATURES ?=
 
 # QEMU options

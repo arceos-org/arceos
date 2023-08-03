@@ -8,47 +8,12 @@ else
   verbose :=
 endif
 
-features-y :=
-
-ifeq ($(shell test $(SMP) -gt 1; echo $$?),0)
-  features-y += axstd/smp
-  ifeq ($(APP_TYPE), c)
-    features-y += axlibc/smp
-  endif
-endif
-
-ifneq ($(filter $(LOG),off error warn info debug trace),)
-  features-y += axstd/log-level-$(LOG)
-else
-  $(error "LOG" must be one of "off", "error", "warn", "info", "debug", "trace")
-endif
-
-ifeq ($(BUS),pci)
-  features-y += axstd/bus-pci
-endif
-
-ifeq ($(APP_TYPE),c)
-  ifneq ($(wildcard $(APP)/features.txt),)    # check features.txt exists
-    features_c := $(shell cat $(APP)/features.txt)
-    ifneq ($(strip $(foreach feat,fs net pipe select epoll,$(filter $(feat),$(features_c)))),)
-      features_c += fd
-    endif
-    CFLAGS += $(addprefix -DAX_CONFIG_,$(shell echo $(features_c) | tr 'a-z' 'A-Z' | tr '-' '_'))
-  endif
-  CFLAGS += -DAX_LOG_$(shell echo $(LOG) | tr 'a-z' 'A-Z')
-  features-y += $(addprefix axlibc/,$(features_c))
-  features-y += $(APP_FEATURES)
-else ifeq ($(APP_TYPE),rust)
-  features-y += $(APP_FEATURES)
-endif
-
 build_args-release := --release
 
 build_args := \
   --target $(TARGET) \
   --target-dir $(CURDIR)/target \
   $(build_args-$(MODE)) \
-  --features "$(features-y)" \
   $(verbose)
 
 RUSTFLAGS := -C link-arg=-T$(LD_SCRIPT) -C link-arg=-no-pie
@@ -58,8 +23,8 @@ ifeq ($(MAKECMDGOALS), doc_check_missing)
   RUSTDOCFLAGS += -D missing-docs
 endif
 
-define cargo_rustc
-  $(call run_cmd,cargo rustc,$(build_args) $(1))
+define cargo_build
+  $(call run_cmd,cargo build,$(build_args) $(1) --features "$(strip $(2))")
 endef
 
 define cargo_clippy
@@ -70,7 +35,7 @@ endef
 all_packages := \
   $(shell ls $(CURDIR)/crates) \
   $(shell ls $(CURDIR)/modules) \
-  axstd axlibc
+  axfeat axstd axlibc
 
 define cargo_doc
   $(call run_cmd,cargo doc,--no-deps --all-features --workspace --exclude "arceos-*" $(verbose))

@@ -123,6 +123,7 @@ dependencies = [
 name = "arceos-parallel"
 version = "0.1.0"
 dependencies = [
+ "axfeat",
  "axstd",
  "rand",
 ]
@@ -131,6 +132,7 @@ dependencies = [
 name = "arceos-priority"
 version = "0.1.0"
 dependencies = [
+ "axfeat",
  "axstd",
 ]
 
@@ -138,6 +140,7 @@ dependencies = [
 name = "arceos-shell"
 version = "0.1.0"
 dependencies = [
+ "axfeat",
  "axfs_ramfs",
  "axfs_vfs",
  "axstd",
@@ -148,6 +151,7 @@ dependencies = [
 name = "arceos-sleep"
 version = "0.1.0"
 dependencies = [
+ "axfeat",
  "axstd",
 ]
 
@@ -162,6 +166,7 @@ dependencies = [
 name = "arceos-yield"
 version = "0.1.0"
 dependencies = [
+ "axfeat",
  "axstd",
 ]
 
@@ -261,6 +266,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "axfeat"
+version = "0.1.0"
+dependencies = [
+ "axalloc",
+ "axdisplay",
+ "axdriver",
+ "axfs",
+ "axhal",
+ "axlog",
+ "axnet",
+ "axruntime",
+ "axsync",
+ "axtask",
+ "spinlock",
+]
+
+[[package]]
 name = "axfs"
 version = "0.1.0"
 dependencies = [
@@ -355,6 +377,7 @@ dependencies = [
  "axalloc",
  "axconfig",
  "axerrno",
+ "axfeat",
  "axhal",
  "axio",
  "axlog",
@@ -425,8 +448,8 @@ dependencies = [
  "axalloc",
  "axconfig",
  "axdisplay",
- "axdriver",
  "axerrno",
+ "axfeat",
  "axfs",
  "axhal",
  "axio",
@@ -605,9 +628,12 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.0.79"
+version = "1.0.81"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50d30906286121d95be3d479533b458f87493b30a4b5f79a607db8f5d11aa91f"
+checksum = "6c6b2562119bf28c3439f7f02db99faf0aa1a8cdfe5772a2ee155d32227239f0"
+dependencies = [
+ "libc",
+]
 
 [[package]]
 name = "cexpr"
@@ -1236,9 +1262,9 @@ version = "0.1.0"
 
 [[package]]
 name = "linux-raw-sys"
-version = "0.4.3"
+version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "09fc20d2ca12cb9f044c93e3bd6d32d523e6e2ec3db4f7b2939cd99026ecd3f0"
+checksum = "57bcfdad1b858c2db7c38303a6d2ad4dfaf5eb53dfeb0910128b2c26d6158503"
 
 [[package]]
 name = "lock_api"
@@ -1644,9 +1670,9 @@ dependencies = [
 
 [[package]]
 name = "rustix"
-version = "0.38.4"
+version = "0.38.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a962918ea88d644592894bc6dc55acc6c0956488adcebbfb6e273506b7fd6e5"
+checksum = "1ee020b1716f0a80e2ace9b03441a749e402e86712f15f16fe8a8f75afac732f"
 dependencies = [
  "bitflags 2.3.3",
  "errno",
@@ -1715,18 +1741,18 @@ checksum = "b0293b4b29daaf487284529cc2f5675b8e57c61f70167ba415a463651fd6a918"
 
 [[package]]
 name = "serde"
-version = "1.0.179"
+version = "1.0.180"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a5bf42b8d227d4abf38a1ddb08602e229108a517cd4e5bb28f9c7eaafdce5c0"
+checksum = "0ea67f183f058fe88a4e3ec6e2788e003840893b91bac4559cabedd00863b3ed"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.179"
+version = "1.0.180"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "741e124f5485c7e60c03b043f79f320bff3527f4bbf12cf3831750dc46a0ec2c"
+checksum = "24e744d7782b686ab3b73267ef05697159cc0e5abbed3f47f9933165e5219036"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2218,9 +2244,9 @@ checksum = "1a515f5799fe4961cb532f983ce2b23082366b898e52ffbce459c86f67c8378a"
 
 [[package]]
 name = "winnow"
-version = "0.5.2"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8bd122eb777186e60c3fdf765a58ac76e41c582f1f535fbf3314434c6b58f3f7"
+checksum = "f46aab759304e4d7b2075a9aecba26228bb073ee8c50db796b2c72c676b5d807"
 dependencies = [
  "memchr",
 ]

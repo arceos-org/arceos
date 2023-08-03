@@ -15,6 +15,9 @@ ulib_src := $(wildcard $(src_dir)/*.c)
 ulib_hdr := $(wildcard $(inc_dir)/*.h)
 ulib_obj := $(patsubst $(src_dir)/%.c,$(obj_dir)/%.o,$(ulib_src))
 
+CFLAGS += $(addprefix -DAX_CONFIG_,$(shell echo $(lib_feat) | tr 'a-z' 'A-Z' | tr '-' '_'))
+CFLAGS += -DAX_LOG_$(shell echo $(LOG) | tr 'a-z' 'A-Z')
+
 CFLAGS += -nostdinc -static -no-pie -fno-builtin -ffreestanding -Wall
 CFLAGS += -I$(CURDIR)/$(inc_dir)
 LDFLAGS += -nostdlib -static -no-pie --gc-sections -T$(LD_SCRIPT)
@@ -23,15 +26,11 @@ ifeq ($(MODE), release)
   CFLAGS += -O3
 endif
 
-ifneq ($(wildcard $(APP)/features.txt),)	# check if features.txt contains "fp_simd"
-  fp_simd := $(shell grep "fp_simd" < $(APP)/features.txt)
-endif
-
 ifeq ($(ARCH), riscv64)
   CFLAGS += -march=rv64gc -mabi=lp64d -mcmodel=medany
 endif
 
-ifeq ($(fp_simd),)
+ifeq ($(findstring fp_simd,$(FEATURES)),)
   ifeq ($(ARCH), x86_64)
     CFLAGS += -mno-sse
   else ifeq ($(ARCH), aarch64)
@@ -46,7 +45,8 @@ endif
 
 _check_need_rebuild: $(obj_dir)
 	@if [ "$(CFLAGS)" != "`cat $(last_cflags) 2>&1`" ]; then \
-		echo $(CFLAGS) > $(last_cflags); \
+		echo "CFLAGS changed, rebuild"; \
+		echo "$(CFLAGS)" > $(last_cflags); \
 	fi
 
 $(obj_dir):

@@ -1,8 +1,8 @@
 
 # How to run?
 - Run:
-  - `make A=apps/c/redis/ LOG=error NET=y ARCH=aarch64 SMP=4 run`(for aarch64)
-  - `make A=apps/c/redis/ LOG=error NET=y ARCH=x86_64 SMP=4 run`(for x86_64)
+  - `make A=apps/c/redis/ LOG=error NET=y BLK=y ARCH=aarch64 SMP=4 run`(for aarch64)
+  - `make A=apps/c/redis/ LOG=error NET=y BLK=y ARCH=x86_64 SMP=4 run`(for x86_64)
 
 # How to test?
 - Use `redis-cli -p 5555` to connect to redis-server, and enjoy ArceOS-Redis world!
@@ -269,7 +269,7 @@ MSET (10 keys): 183150.19 requests per second
 
 ## Compile and Run
 
-- `make A=apps/c/redis LOG=error PLATFORM=x86_64-pc-oslab SMP=4 APP_FEATURES=axstd/driver-ixgbe,axstd/driver-ramdisk IP=10.2.2.2 GW=10.2.2.1`
+- `make A=apps/c/redis LOG=error PLATFORM=x86_64-pc-oslab SMP=4 FEATURES=driver-ixgbe,driver-ramdisk IP=10.2.2.2 GW=10.2.2.1`
 - Copy `redis_x86_64-pc-oslab.elf` to `/boot`, then reboot.
 - Enter `grub` then boot the PC by ArceOS Redis.
 - Connect to ArceOS-Redis server by:

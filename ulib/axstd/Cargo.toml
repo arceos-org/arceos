@@ -20,61 +20,61 @@ documentation = "https://rcore-os.github.io/arceos/axstd/index.html"
 default = []
 
 # Multicore
-smp = ["axruntime/smp", "spinlock/smp"]
+smp = ["axfeat/smp"]
 
 # Floating point/SIMD
-fp_simd = ["axhal/fp_simd"]
-
-# Memory
-alloc = ["dep:axalloc", "axruntime/alloc", "axio/alloc"]
-alloc_tlsf = ["axalloc/tlsf"]
-alloc_slab = ["axalloc/slab"]
-alloc_buddy = ["axalloc/buddy"]
-paging = ["axruntime/paging"]
+fp_simd = ["axfeat/fp_simd"]
 
 # Interrupts
-irq = ["axruntime/irq"]
+irq = ["axfeat/irq"]
 
-# Multi-task
-multitask = ["alloc", "axtask", "axruntime/multitask", "axsync/multitask"]
-sched_fifo = ["axtask/sched_fifo"]
-sched_rr = ["axtask/sched_rr", "irq"]
-sched_cfs = ["axtask/sched_cfs", "irq"]
+# Memory
+alloc = ["dep:axalloc", "axfeat/alloc", "axio/alloc"]
+alloc-tlsf = ["axfeat/alloc-tlsf"]
+alloc-slab = ["axfeat/alloc-slab"]
+alloc-buddy = ["axfeat/alloc-buddy"]
+paging = ["axfeat/paging"]
+
+# Multi-threading and scheduler
+multitask = ["axtask/multitask", "axsync/multitask", "axfeat/multitask"]
+sched_fifo = ["axfeat/sched_fifo"]
+sched_rr = ["axfeat/sched_rr"]
+sched_cfs = ["axfeat/sched_cfs"]
 
 # File system
-fs = ["alloc", "paging", "axruntime/fs", "axdriver/virtio-blk", "dep:axfs"] # TODO: remove "paging"
-myfs = ["axfs?/myfs"]
+fs = ["dep:axfs", "axfeat/fs"]
+myfs = ["axfeat/myfs"]
 
 # Networking
-net = ["alloc", "paging", "axruntime/net", "axdriver/virtio-net", "dep:axnet"]
+net = ["dep:axnet", "axfeat/net"]
 dns = []
 
 # Display
-display = ["paging", "axruntime/display", "axdriver/virtio-gpu", "dep:axdisplay"]
+display = ["dep:axdisplay", "axfeat/display"]
 
 # Device drivers
-bus-mmio = ["axdriver?/bus-mmio"]
-bus-pci = ["axdriver?/bus-pci"]
-driver-ramdisk = ["axdriver?/ramdisk", "axfs?/use-ramdisk"]
-driver-ixgbe = ["axdriver?/ixgbe"]
-driver-bcm2835-sdhci = ["axdriver?/bcm2835-sdhci"]
+bus-mmio = ["axfeat/bus-mmio"]
+bus-pci = ["axfeat/bus-pci"]
+driver-ramdisk = ["axfeat/driver-ramdisk"]
+driver-ixgbe = ["axfeat/driver-ixgbe"]
+driver-bcm2835-sdhci = ["axfeat/driver-bcm2835-sdhci"]
 
 # Logging
-log-level-off = ["axlog/log-level-off"]
-log-level-error = ["axlog/log-level-error"]
-log-level-warn = ["axlog/log-level-warn"]
-log-level-info = ["axlog/log-level-info"]
-log-level-debug = ["axlog/log-level-debug"]
-log-level-trace = ["axlog/log-level-trace"]
+log-level-off = ["axfeat/log-level-off"]
+log-level-error = ["axfeat/log-level-error"]
+log-level-warn = ["axfeat/log-level-warn"]
+log-level-info = ["axfeat/log-level-info"]
+log-level-debug = ["axfeat/log-level-debug"]
+log-level-trace = ["axfeat/log-level-trace"]
 
 [dependencies]
 # ArceOS modules
+axfeat = { path = "../../api/axfeat" }
 axruntime = { path = "../../modules/axruntime" }
 axhal = { path = "../../modules/axhal" }
 axlog = { path = "../../modules/axlog" }
 axconfig = { path = "../../modules/axconfig" }
 axalloc = { path = "../../modules/axalloc", optional = true }
-axdriver = { path = "../../modules/axdriver", optional = true }
 axfs = { path = "../../modules/axfs", optional = true }
 axnet = { path = "../../modules/axnet", optional = true }
 axdisplay = { path = "../../modules/axdisplay", optional = true }

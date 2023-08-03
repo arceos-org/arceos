@@ -170,13 +170,13 @@ Set the `PLATFORM` variable when run `make`:
 make PLATFORM=aarch64-raspi4 A=apps/helloworld
 ```
 
-You may also need to select the corrsponding device drivers by setting the `APP_FEATURES` variable:
+You may also need to select the corrsponding device drivers by setting the `FEATURES` variable:
 
 ```bash
 # Build the shell app for raspi4, and use the SD card driver
-make PLATFORM=aarch64-raspi4 A=apps/fs/shell APP_FEATURES=axstd/driver-bcm2835-sdhci
+make PLATFORM=aarch64-raspi4 A=apps/fs/shell FEATURES=driver-bcm2835-sdhci
 # Build Redis for the bare-metal x86_64 platform, and use the ixgbe and ramdisk driver
-make PLATFORM=x86_64-pc-oslab A=apps/c/redis APP_FEATURES=axstd/driver-ixgbe,axstd/driver-ramdisk SMP=4
+make PLATFORM=x86_64-pc-oslab A=apps/c/redis FEATURES=driver-ixgbe,driver-ramdisk SMP=4
 ```
 
 ## Design

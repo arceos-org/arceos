@@ -2,21 +2,6 @@
 resolver = "2"
 
 members = [
-    "apps/display",
-    "apps/exception",
-    "apps/helloworld",
-    "apps/memtest",
-    "apps/fs/shell",
-    "apps/net/echoserver",
-    "apps/net/httpclient",
-    "apps/net/httpserver",
-    "apps/net/udpserver",
-    "apps/net/bwbench",
-    "apps/task/parallel",
-    "apps/task/sleep",
-    "apps/task/yield",
-    "apps/task/priority",
-
     "crates/allocator",
     "crates/arm_gic",
     "crates/arm_pl011",
@@ -62,8 +47,25 @@ members = [
     "modules/axsync",
     "modules/axtask",
 
+    "api/axfeat",
+
     "ulib/axstd",
     "ulib/axlibc",
+
+    "apps/display",
+    "apps/exception",
+    "apps/helloworld",
+    "apps/memtest",
+    "apps/fs/shell",
+    "apps/net/echoserver",
+    "apps/net/httpclient",
+    "apps/net/httpserver",
+    "apps/net/udpserver",
+    "apps/net/bwbench",
+    "apps/task/parallel",
+    "apps/task/sleep",
+    "apps/task/yield",
+    "apps/task/priority",
 ]
 
 [profile.release]

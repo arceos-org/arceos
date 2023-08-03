@@ -30,10 +30,6 @@ fp_simd = ["axstd/fp_simd"]
 
 # Memory
 alloc = ["axstd/alloc", "dep:axalloc"]
-paging = ["axstd/paging"]
-
-# Interrupts
-irq = ["axstd/irq"]
 
 # Multi-task
 multitask = ["axstd/multitask", "axtask/multitask"]
@@ -52,6 +48,7 @@ epoll = ["fd"]
 
 [dependencies]
 # ArceOS modules
+axfeat = { path = "../../api/axfeat" }
 axstd = { path = "../axstd" }
 axhal = { path = "../../modules/axhal" }
 axlog = { path = "../../modules/axlog" }

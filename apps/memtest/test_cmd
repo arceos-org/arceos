@@ -1,1 +1,1 @@
-test_one "LOG=trace APP_FEATURES=axstd/paging" "expect_trace.out"
+test_one "LOG=trace FEATURES=paging" "expect_trace.out"

@@ -1,6 +1,7 @@
 # Main building script
 
 include scripts/make/cargo.mk
+include scripts/make/features.mk
 
 ifeq ($(APP_TYPE), c)
   include scripts/make/build_c.mk
@@ -17,6 +18,10 @@ else ifeq ($(filter $(MAKECMDGOALS),clippy unittest unittest_no_fail_fast),) # n
   ifneq ($(V),)
     $(info APP: "$(APP)")
     $(info APP_TYPE: "$(APP_TYPE)")
+    $(info FEATURES: "$(FEATURES)")
+    $(info arceos features: "$(AX_FEAT)")
+    $(info lib features: "$(LIB_FEAT)")
+    $(info app features: "$(APP_FEAT)")
   endif
   ifeq ($(APP_TYPE), c)
     $(if $(V), $(info CFLAGS: "$(CFLAGS)") $(info LDFLAGS: "$(LDFLAGS)"))
@@ -29,10 +34,10 @@ endif
 _cargo_build:
 	@printf "    $(GREEN_C)Building$(END_C) App: $(APP_NAME), Arch: $(ARCH), Platform: $(PLATFORM_NAME), App type: $(APP_TYPE)\n"
 ifeq ($(APP_TYPE), rust)
-	$(call cargo_rustc,--manifest-path $(APP)/Cargo.toml)
+	$(call cargo_build,--manifest-path $(APP)/Cargo.toml,$(AX_FEAT) $(LIB_FEAT) $(APP_FEAT))
 	@cp $(rust_elf) $(OUT_ELF)
 else ifeq ($(APP_TYPE), c)
-	$(call cargo_rustc,-p axlibc)
+	$(call cargo_build,-p axlibc,$(AX_FEAT) $(LIB_FEAT))
 endif
 
 $(OUT_DIR):

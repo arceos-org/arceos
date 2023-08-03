@@ -119,16 +119,16 @@ jobs:
     - name: Build helloworld for x86_64-pc-oslab
       run: make PLATFORM=x86_64-pc-oslab A=apps/helloworld
     - name: Build net/httpserver for x86_64-pc-oslab
-      run: make PLATFORM=x86_64-pc-oslab A=apps/net/httpserver APP_FEATURES=axstd/driver-ixgbe
+      run: make PLATFORM=x86_64-pc-oslab A=apps/net/httpserver FEATURES=driver-ixgbe
     - name: Build c/iperf for x86_64-pc-oslab
-      run: make PLATFORM=x86_64-pc-oslab A=apps/c/iperf APP_FEATURES=axstd/driver-ixgbe,axstd/driver-ramdisk
+      run: make PLATFORM=x86_64-pc-oslab A=apps/c/iperf FEATURES=driver-ixgbe,driver-ramdisk
     - name: Build c/redis for x86_64-pc-oslab
-      run: make PLATFORM=x86_64-pc-oslab A=apps/c/redis APP_FEATURES=axstd/driver-ixgbe,axstd/driver-ramdisk SMP=4
+      run: make PLATFORM=x86_64-pc-oslab A=apps/c/redis FEATURES=driver-ixgbe,driver-ramdisk SMP=4
 
     - name: Build helloworld for aarch64-raspi4
       run: make PLATFORM=aarch64-raspi4 A=apps/helloworld
     - name: Build fs/shell for aarch64-raspi4
-      run: make PLATFORM=aarch64-raspi4 A=apps/fs/shell APP_FEATURES=axstd/driver-bcm2835-sdhci
+      run: make PLATFORM=aarch64-raspi4 A=apps/fs/shell FEATURES=driver-bcm2835-sdhci
 
   build-apps-for-std:
     runs-on: ${{ matrix.os }}

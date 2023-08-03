@@ -7,8 +7,9 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-sched_rr = ["axstd/sched_rr"]
-sched_cfs = ["axstd/sched_cfs"]
+sched_rr = ["axfeat/sched_rr"]
+sched_cfs = ["axfeat/sched_cfs"]
 
 [dependencies]
 axstd = { path = "../../../ulib/axstd", features = ["multitask"], optional = true }
+axfeat = { path = "../../../api/axfeat", optional = true }

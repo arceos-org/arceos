@@ -7,9 +7,12 @@ pub fn terminate() -> ! {
     info!("Shutting down...");
 
     #[cfg(platform = "x86_64-pc-oslab")]
-    unsafe {
-        PortWriteOnly::new(0x64).write(0xfeu8)
-    };
+    {
+        axlog::ax_println!("System will reboot, press any key to continue ...");
+        while super::console::getchar().is_none() {}
+        axlog::ax_println!("Rebooting ...");
+        unsafe { PortWriteOnly::new(0x64).write(0xfeu8) };
+    }
 
     #[cfg(platform = "x86_64-qemu-q35")]
     unsafe {

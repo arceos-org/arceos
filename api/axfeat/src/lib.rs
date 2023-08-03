@@ -1,14 +1,6 @@
-//! # The ArceOS Standard Library
+//! Top-level feature selection for [ArceOS].
 //!
-//! The [ArceOS] Standard Library is a mini-std library, with an interface similar
-//! to rust [std], but calling the functions directly in ArceOS modules, instead
-//! of using libc and system calls.
-//!
-//! These features are exactly the same as those in [axfeat], they are used to
-//! provide users with the selection of features in axfeat, without import
-//! [axfeat] additionally:
-//!
-//! ## Cargo Features
+//! # Cargo Features
 //!
 //! - CPU
 //!     - `smp`: Enable SMP (symmetric multiprocessing) support.
@@ -26,11 +18,10 @@
 //!     - `sched_fifo`: Use the FIFO cooperative scheduler.
 //!     - `sched_rr`: Use the Round-robin preemptive scheduler.
 //!     - `sched_cfs`: Use the Completely Fair Scheduler (CFS) preemptive scheduler.
-//! - Upperlayer stacks
+//! - Upperlayer stacks (fs, net, display)
 //!     - `fs`: Enable file system support.
 //!     - `myfs`: Allow users to define their custom filesystems to override the default.
 //!     - `net`: Enable networking support.
-//!     - `dns`: Enable DNS lookup support.
 //!     - `display`: Enable graphics support.
 //! - Device drivers
 //!     - `bus-mmio`: Use device tree to probe all MMIO devices.
@@ -45,36 +36,4 @@
 //!
 //! [ArceOS]: https://github.com/rcore-os/arceos
 
-#![cfg_attr(all(not(test), not(doc)), no_std)]
-#![feature(doc_cfg)]
-#![feature(doc_auto_cfg)]
-#![feature(ip_in_core)]
-
-#[cfg(not(test))]
-extern crate axruntime;
-
-#[cfg(feature = "alloc")]
-extern crate alloc;
-
-#[cfg(feature = "alloc")]
-#[doc(no_inline)]
-pub use alloc::{boxed, collections, format, string, vec};
-
-#[doc(no_inline)]
-pub use core::{arch, cell, cmp, hint, marker, mem, ops, ptr, slice, str};
-
-#[macro_use]
-mod macros;
-
-pub mod env;
-pub mod io;
-pub mod os;
-pub mod process;
-pub mod sync;
-pub mod thread;
-pub mod time;
-
-#[cfg(feature = "fs")]
-pub mod fs;
-#[cfg(feature = "net")]
-pub mod net;
+#![no_std]
