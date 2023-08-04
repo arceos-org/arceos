@@ -33,6 +33,9 @@ struct itimerval {
 };
 
 int gettimeofday(struct timeval *tv, struct timezone *tz);
+
+int getitimer(int, struct itimerval *);
+int setitimer(int, const struct itimerval *__restrict, struct itimerval *__restrict);
 int utimes(const char *filename, const struct timeval times[2]);
 
 #endif

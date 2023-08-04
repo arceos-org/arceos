@@ -106,7 +106,7 @@ int __secs_to_tm(long long t, struct tm *tm)
     return 0;
 }
 
-struct tm *__gmtime_r(const time_t *restrict t, struct tm *restrict tm)
+struct tm *gmtime_r(const time_t *restrict t, struct tm *restrict tm)
 {
     if (__secs_to_tm(*t, tm) < 0) {
         errno = EOVERFLOW;
@@ -114,15 +114,14 @@ struct tm *__gmtime_r(const time_t *restrict t, struct tm *restrict tm)
     }
     tm->tm_isdst = 0;
     tm->__tm_gmtoff = 0;
-    // TODO: set timezone
-    // tm->__tm_zone = __utc;
+    tm->__tm_zone = __utc;
     return tm;
 }
 
 struct tm *gmtime(const time_t *timer)
 {
     static struct tm tm;
-    return __gmtime_r(timer, &tm);
+    return gmtime_r(timer, &tm);
 }
 
 struct tm *localtime_r(const time_t *restrict t, struct tm *restrict tm)
@@ -139,7 +138,7 @@ struct tm *localtime_r(const time_t *restrict t, struct tm *restrict tm)
 
     tm->tm_isdst = 0;
     tm->__tm_gmtoff = 0;
-    tm->__tm_zone = 0;
+    tm->__tm_zone = __utc;
 
     return tm;
 }

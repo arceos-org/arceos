@@ -1,8 +1,8 @@
 #ifndef __STDLIB_H__
 #define __STDLIB_H__
 
-#include <stddef.h>
 #include <features.h>
+#include <stddef.h>
 
 #define RAND_MAX (0x7fffffff)
 
@@ -51,7 +51,7 @@ int abs(int);
 long labs(long);
 long long llabs(long long);
 
-int mkstemp (char *);
+int mkstemp(char *);
 int mkostemp(char *, int);
 int setenv(const char *, const char *, int);
 int unsetenv(const char *);

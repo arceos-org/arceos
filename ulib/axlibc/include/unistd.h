@@ -1,8 +1,8 @@
 #ifndef __UNISTD_H__
 #define __UNISTD_H__
 
-#include <stddef.h>
 #include <features.h>
+#include <stddef.h>
 #include <sys/stat.h>
 
 #define STDIN_FILENO  0

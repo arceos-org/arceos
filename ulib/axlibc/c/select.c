@@ -1,7 +1,7 @@
 #ifdef AX_CONFIG_SELECT
 
-#include <errno.h>
 #include <axlibc.h>
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/select.h>

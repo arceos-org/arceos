@@ -22,25 +22,22 @@ struct tm {
     const char *__tm_zone;
 };
 
-size_t strftime(char *__restrict__ _Buf, size_t _SizeInBytes, const char *__restrict__ _Format,
-                const struct tm *__restrict__ _Tm);
+clock_t clock(void);
+time_t time(time_t *);
+double difftime(time_t, time_t);
+time_t mktime(struct tm *);
+size_t strftime(char *__restrict, size_t, const char *__restrict, const struct tm *__restrict);
+struct tm *gmtime(const time_t *);
+struct tm *localtime(const time_t *);
 
-struct tm *gmtime(const time_t *timer);
+struct tm *gmtime_r(const time_t *__restrict, struct tm *__restrict);
+struct tm *localtime_r(const time_t *__restrict, struct tm *__restrict);
+char *asctime_r(const struct tm *__restrict, char *__restrict);
+char *ctime_r(const time_t *, char *);
 
-struct tm *localtime(const time_t *timep);
-struct tm *localtime_r(const time_t *__restrict__ __timer, struct tm *__restrict__ __tp);
-
-time_t time(time_t *t);
-int clock_gettime(clockid_t _clk, struct timespec *ts);
-int nanosleep(const struct timespec *requested_time, struct timespec *remaining);
 void tzset(void);
 
-int setitimer(int which, const struct itimerval *restrict new, struct itimerval *restrict old);
-char *ctime_r(const time_t *t, char *buf);
-clock_t clock(void);
-
-double difftime(time_t, time_t);
-
-time_t mktime(struct tm *);
+int nanosleep(const struct timespec *requested_time, struct timespec *remaining);
+int clock_gettime(clockid_t _clk, struct timespec *ts);
 
 #endif // __TIME_H__

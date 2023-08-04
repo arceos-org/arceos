@@ -35,7 +35,9 @@ extern FILE *const stderr;
            ##__VA_ARGS__)
 #else
 
-#define unimplemented(fmt, ...) do {} while (0)
+#define unimplemented(fmt, ...) \
+    do {                        \
+    } while (0)
 
 #endif
 
@@ -58,7 +60,7 @@ FILE *freopen(const char *__restrict, const char *__restrict, FILE *__restrict);
 int fclose(FILE *);
 
 int remove(const char *);
-int rename(const char *__old, const char *__new);
+int rename(const char *, const char *);
 
 int feof(FILE *__stream);
 int ferror(FILE *);

@@ -1,9 +1,8 @@
 #ifndef _PTHREAD_H
 #define _PTHREAD_H
 
-#include <stddef.h>
-#include <stdint.h>
 #include <features.h>
+#include <time.h>
 
 #define PTHREAD_CANCEL_ENABLE  0
 #define PTHREAD_CANCEL_DISABLE 1
