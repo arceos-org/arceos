@@ -26,31 +26,31 @@ smp = ["axfeat/smp"]
 fp_simd = ["axfeat/fp_simd"]
 
 # Interrupts
-irq = ["axfeat/irq"]
+irq = ["arceos_api/irq", "axfeat/irq"]
 
 # Memory
-alloc = ["dep:axalloc", "axfeat/alloc", "axio/alloc"]
+alloc = ["arceos_api/alloc", "axfeat/alloc", "axio/alloc"]
 alloc-tlsf = ["axfeat/alloc-tlsf"]
 alloc-slab = ["axfeat/alloc-slab"]
 alloc-buddy = ["axfeat/alloc-buddy"]
 paging = ["axfeat/paging"]
 
 # Multi-threading and scheduler
-multitask = ["axtask/multitask", "axsync/multitask", "axfeat/multitask"]
+multitask = ["arceos_api/multitask", "axsync/multitask", "axfeat/multitask"]
 sched_fifo = ["axfeat/sched_fifo"]
 sched_rr = ["axfeat/sched_rr"]
 sched_cfs = ["axfeat/sched_cfs"]
 
 # File system
-fs = ["dep:axfs", "axfeat/fs"]
+fs = ["dep:axfs", "arceos_api/fs", "axfeat/fs"]
 myfs = ["axfeat/myfs"]
 
 # Networking
-net = ["dep:axnet", "axfeat/net"]
+net = ["arceos_api/net", "axfeat/net"]
 dns = []
 
 # Display
-display = ["dep:axdisplay", "axfeat/display"]
+display = ["arceos_api/display", "axfeat/display"]
 
 # Device drivers
 bus-mmio = ["axfeat/bus-mmio"]
@@ -68,20 +68,10 @@ log-level-debug = ["axfeat/log-level-debug"]
 log-level-trace = ["axfeat/log-level-trace"]
 
 [dependencies]
-# ArceOS modules
-axfeat = { path = "../../api/axfeat" }
-axruntime = { path = "../../modules/axruntime" }
-axhal = { path = "../../modules/axhal" }
-axlog = { path = "../../modules/axlog" }
-axconfig = { path = "../../modules/axconfig" }
-axalloc = { path = "../../modules/axalloc", optional = true }
 axfs = { path = "../../modules/axfs", optional = true }
-axnet = { path = "../../modules/axnet", optional = true }
-axdisplay = { path = "../../modules/axdisplay", optional = true }
 axsync = { path = "../../modules/axsync", optional = true }
-axtask = { path = "../../modules/axtask", optional = true }
-
-# Other crates
+axfeat = { path = "../../api/axfeat" }
+arceos_api = { path = "../../api/arceos_api" }
 axio = { path = "../../crates/axio" }
 axerrno = { path = "../../crates/axerrno" }
 spinlock = { path = "../../crates/spinlock" }

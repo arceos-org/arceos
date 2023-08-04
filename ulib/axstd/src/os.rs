@@ -2,10 +2,7 @@
 
 /// ArceOS-specific definitions.
 pub mod arceos {
-    #[cfg(feature = "display")]
-    pub use axdisplay;
+    pub use arceos_api as api;
     #[cfg(feature = "fs")]
     pub use axfs;
-    #[cfg(feature = "multitask")]
-    pub use axtask;
 }

@@ -10,7 +10,7 @@ use std::thread;
 use std::{sync::Arc, vec::Vec};
 
 #[cfg(feature = "axstd")]
-use std::os::arceos::axtask::WaitQueue;
+use std::os::arceos::api::task::{self as api, AxWaitQueueHandle};
 
 const NUM_DATA: usize = 2_000_000;
 const NUM_TASKS: usize = 16;
@@ -18,12 +18,16 @@ const NUM_TASKS: usize = 16;
 #[cfg(feature = "axstd")]
 fn barrier() {
     use std::sync::atomic::{AtomicUsize, Ordering};
-    static BARRIER_WQ: WaitQueue = WaitQueue::new();
+    static BARRIER_WQ: AxWaitQueueHandle = AxWaitQueueHandle::new();
     static BARRIER_COUNT: AtomicUsize = AtomicUsize::new(0);
 
     BARRIER_COUNT.fetch_add(1, Ordering::Relaxed);
-    BARRIER_WQ.wait_until(|| BARRIER_COUNT.load(Ordering::Relaxed) == NUM_TASKS);
-    BARRIER_WQ.notify_all(true); // wakeup all
+    api::ax_wait_queue_wait(
+        &BARRIER_WQ,
+        || BARRIER_COUNT.load(Ordering::Relaxed) == NUM_TASKS,
+        None,
+    );
+    api::ax_wait_queue_wake(&BARRIER_WQ, u32::MAX); // wakeup all
 }
 
 #[cfg(not(feature = "axstd"))]
@@ -56,7 +60,11 @@ fn main() {
     #[cfg(feature = "axstd")]
     {
         // equals to sleep(500ms)
-        let timeout = WaitQueue::new().wait_timeout(std::time::Duration::from_millis(500));
+        let timeout = api::ax_wait_queue_wait(
+            &AxWaitQueueHandle::new(),
+            || false,
+            Some(std::time::Duration::from_millis(500)),
+        );
         assert!(timeout);
     }
 

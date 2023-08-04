@@ -50,9 +50,6 @@
 #![feature(doc_auto_cfg)]
 #![feature(ip_in_core)]
 
-#[cfg(not(test))]
-extern crate axruntime;
-
 #[cfg(feature = "alloc")]
 extern crate alloc;
 

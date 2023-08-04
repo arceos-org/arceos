@@ -6,8 +6,8 @@ use crate::io;
 use alloc::{string::String, sync::Arc};
 use core::{cell::UnsafeCell, num::NonZeroU64};
 
+use arceos_api::task::{self as api, AxTaskHandle};
 use axerrno::ax_err_type;
-use axtask::AxTaskRef;
 
 /// A unique identifier for a running thread.
 #[derive(Eq, PartialEq, Clone, Copy, Debug)]
@@ -96,7 +96,9 @@ impl Builder {
         T: Send + 'static,
     {
         let name = self.name.unwrap_or_default();
-        let stack_size = self.stack_size.unwrap_or(axconfig::TASK_STACK_SIZE);
+        let stack_size = self
+            .stack_size
+            .unwrap_or(arceos_api::config::TASK_STACK_SIZE);
 
         let my_packet = Arc::new(Packet {
             result: UnsafeCell::new(None),
@@ -113,9 +115,9 @@ impl Builder {
             drop(their_packet);
         };
 
-        let task = axtask::spawn_raw(main, name, stack_size);
+        let task = api::ax_spawn(main, name, stack_size);
         Ok(JoinHandle {
-            thread: Thread::from_id(task.id().as_u64()),
+            thread: Thread::from_id(task.id()),
             native: task,
             packet: my_packet,
         })
@@ -124,7 +126,7 @@ impl Builder {
 
 /// Gets a handle to the thread that invokes it.
 pub fn current() -> Thread {
-    let id = axtask::current().id().as_u64();
+    let id = api::ax_current_task_id();
     Thread::from_id(id)
 }
 
@@ -134,7 +136,7 @@ pub fn current() -> Thread {
 /// spawned thread.
 ///
 /// The default task name is an empty string. The default thread stack size is
-/// [`axconfig::TASK_STACK_SIZE`].
+/// [`arceos_api::config::TASK_STACK_SIZE`].
 ///
 /// [`join`]: JoinHandle::join
 pub fn spawn<T, F>(f: F) -> JoinHandle<T>
@@ -157,7 +159,7 @@ unsafe impl<T> Sync for Packet<T> {}
 /// means that there is no longer any handle to the thread and no way to `join`
 /// on it.
 pub struct JoinHandle<T> {
-    native: AxTaskRef,
+    native: AxTaskHandle,
     thread: Thread,
     packet: Arc<Packet<T>>,
 }
@@ -176,7 +178,7 @@ impl<T> JoinHandle<T> {
     /// This function will return immediately if the associated thread has
     /// already finished.
     pub fn join(mut self) -> io::Result<T> {
-        self.native.join().ok_or_else(|| ax_err_type!(BadState))?;
+        api::ax_wait_for_exit(self.native).ok_or_else(|| ax_err_type!(BadState))?;
         Arc::get_mut(&mut self.packet)
             .unwrap()
             .result

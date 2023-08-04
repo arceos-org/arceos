@@ -12,7 +12,7 @@ impl Read for StdinRaw {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let mut read_len = 0;
         while read_len < buf.len() {
-            if let Some(c) = axhal::console::getchar() {
+            if let Some(c) = arceos_api::stdio::ax_console_read_byte() {
                 buf[read_len] = c;
                 read_len += 1;
             } else {
@@ -25,8 +25,7 @@ impl Read for StdinRaw {
 
 impl Write for StdoutRaw {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        axhal::console::write_bytes(buf);
-        Ok(buf.len())
+        arceos_api::stdio::ax_console_write_bytes(buf)
     }
     fn flush(&mut self) -> io::Result<()> {
         Ok(())
@@ -167,7 +166,7 @@ pub fn __print_impl(args: core::fmt::Arguments) {
     if cfg!(feature = "smp") {
         // synchronize using the lock in axlog, to avoid interleaving
         // with kernel logs
-        axlog::print_fmt(args).unwrap();
+        arceos_api::stdio::ax_console_write_fmt(args).unwrap();
     } else {
         stdout().lock().write_fmt(args).unwrap();
     }
