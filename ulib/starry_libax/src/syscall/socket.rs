@@ -71,6 +71,7 @@ pub enum SocketOptionLevel {
 #[allow(non_camel_case_types)]
 pub enum SocketOption {
     SO_REUSEADDR = 2,
+    SO_ERROR = 4,
     SO_DONTROUTE = 5,
     SO_SNDBUF = 7,
     SO_RCVBUF = 8,
@@ -165,6 +166,9 @@ impl SocketOption {
                 } else {
                     Some(timeout)
                 };
+            }
+            SocketOption::SO_ERROR => {
+                panic!("can't set SO_ERROR");
             }
         }
     }
@@ -264,6 +268,9 @@ impl SocketOption {
 
                     *opt_len = size_of::<TimeVal>() as u32;
                 }
+            }
+            SocketOption::SO_ERROR => {
+                // 当前没有存储错误列表，因此不做处理
             }
         }
     }
@@ -860,6 +867,7 @@ pub fn syscall_get_sock_name(fd: usize, addr: *mut u8, addr_len: *mut u32) -> is
     unsafe { socket_address_to(name, addr, addr_len) }.map_or(-1, |_| 0)
 }
 
+#[allow(unused)]
 pub fn syscall_getpeername(fd: usize, addr_buf: *mut u8, addr_len: *mut u32) -> isize {
     let curr = current_process();
     let inner = curr.inner.lock();
@@ -899,10 +907,7 @@ pub fn syscall_getpeername(fd: usize, addr_buf: *mut u8, addr_len: *mut u32) -> 
     };
 
     match socket.peer_name() {
-        Ok(name) => {
-            error!("ok");
-            unsafe { socket_address_to(name, addr_buf, addr_len) }.map_or(-1, |_| 0)
-        }
+        Ok(name) => unsafe { socket_address_to(name, addr_buf, addr_len) }.map_or(-1, |_| 0),
         Err(AxError::NotConnected) => ErrorNo::ENOTCONN as isize,
         Err(_) => unreachable!(),
     }
@@ -1107,24 +1112,26 @@ pub fn syscall_set_sock_opt(
     let opt = unsafe { from_raw_parts(opt_value, opt_len as usize) };
 
     match level {
-        SocketOptionLevel::Ip => {}
+        SocketOptionLevel::Ip => 0,
         SocketOptionLevel::Socket => {
             let Ok(option) = SocketOption::try_from(opt_name) else {
-                panic!("[setsockopt()] option {opt_name} not supported in socket level");
+                warn!("[setsockopt()] option {opt_name} not supported in socket level");
+                return 0;
             };
 
             option.set(socket, opt);
+            0
         }
         SocketOptionLevel::Tcp => {
             let Ok(option) = TcpSocketOption::try_from(opt_name) else {
-                panic!("[setsockopt()] option {opt_name} not supported in tcp level");
+                warn!("[setsockopt()] option {opt_name} not supported in tcp level");
+                return 0;
             };
 
             option.set(socket, opt);
+            0
         }
     }
-
-    0
 }
 
 pub fn syscall_get_sock_opt(

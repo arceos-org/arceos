@@ -32,7 +32,7 @@ qemu_args-$(FS) += \
 
 qemu_args-$(NET) += \
   -device virtio-net-$(vdev-suffix),netdev=net0 \
-  -netdev user,id=net0,hostfwd=tcp::5555-:5555,hostfwd=udp::5555-:5555
+  -netdev user,id=net0,hostfwd=tcp::5556-:5556,hostfwd=udp::5556-:5556
 
 ifeq ($(NET_DUMP), y)
   qemu_args-$(NET) += -object filter-dump,id=dump0,netdev=net0,file=qemu-net0.pcap

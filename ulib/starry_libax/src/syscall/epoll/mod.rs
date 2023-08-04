@@ -118,12 +118,11 @@ pub fn syscall_epoll_wait(
     };
     drop(inner);
 
-    let timeout = if timeout >= 0 {
+    let timeout = if timeout > 0 {
         riscv::register::time::read() + timeout as usize
     } else {
         usize::MAX
     };
-
     let ret_events = epoll_file.epoll_wait(timeout);
     let real_len = ret_events.len().min(max_event);
     for i in 0..real_len {

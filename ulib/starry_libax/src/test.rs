@@ -312,8 +312,12 @@ pub const LUA_TESTCASES: &[&str] = &[
 #[allow(dead_code)]
 pub const BUSYBOX_TESTCASES: &[&str] = &[
     // gcc测例
-    "./riscv64-linux-musl-native/bin/riscv64-linux-musl-gcc ./hello.c -static",
-    "./a.out",
+    // "./riscv64-linux-musl-native/bin/riscv64-linux-musl-gcc ./hello.c -static",
+    // "./a.out",
+    // redis测例
+    "busybox sh",
+    // "./redis-server /redis.conf --loglevel verbose &", // 打开 redis 服务端，后台运行
+    // "./redis-cli-static", // 打开 redis 客户端
     // "busybox echo iozone automatic measurements",
     // "busybox sh cyclictest_testcode.sh",
     // "busybox echo \"run iozone_testcode.sh\"",
@@ -590,28 +594,28 @@ pub fn fs_init(_case: &'static str) {
 
     // if case == "busybox" {
     create_link(
-        &(FilePath::new("./sbin/busybox").unwrap()),
+        &(FilePath::new("/sbin/busybox").unwrap()),
         &(FilePath::new("busybox").unwrap()),
     );
     create_link(
-        &(FilePath::new("./sbin/ls").unwrap()),
+        &(FilePath::new("/sbin/ls").unwrap()),
         &(FilePath::new("busybox").unwrap()),
     );
     create_link(
-        &(FilePath::new("./ls").unwrap()),
-        &(FilePath::new("./bin/busybox").unwrap()),
+        &(FilePath::new("/ls").unwrap()),
+        &(FilePath::new("/busybox").unwrap()),
     );
     create_link(
-        &(FilePath::new(".sh").unwrap()),
-        &(FilePath::new("./bin/busybox").unwrap()),
+        &(FilePath::new("/sh").unwrap()),
+        &(FilePath::new("/busybox").unwrap()),
     );
     create_link(
-        &(FilePath::new("./bin/lmbench_all").unwrap()),
-        &(FilePath::new("./lmbench_all").unwrap()),
+        &(FilePath::new("/bin/lmbench_all").unwrap()),
+        &(FilePath::new("/lmbench_all").unwrap()),
     );
     create_link(
-        &(FilePath::new("./bin/iozone").unwrap()),
-        &(FilePath::new("./iozone").unwrap()),
+        &(FilePath::new("/bin/iozone").unwrap()),
+        &(FilePath::new("/iozone").unwrap()),
     );
     let _ = new_file("/lat_sig", &(OpenFlags::CREATE | OpenFlags::RDWR));
     // }

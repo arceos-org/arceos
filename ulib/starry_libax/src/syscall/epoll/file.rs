@@ -143,6 +143,7 @@ impl EpollFile {
             if riscv::register::time::read() > expire_time {
                 return ret_events;
             }
+            drop(inner);
             yield_now_task();
         }
     }
