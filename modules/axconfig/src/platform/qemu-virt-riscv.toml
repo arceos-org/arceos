@@ -5,8 +5,9 @@ platform = "qemu-virt-riscv"
 
 # Base address of the whole physical memory.
 phys-memory-base = "0x8000_0000"
-# Size of the whole physical memory.
-phys-memory-size = "0xc000_0000"     # 2048M
+# Size of the pre physical memory.
+# If now it is in patch, then it will have the other physical memory.
+phys-memory-size = "0x800_0000"         # 128M    
 # Base physical address of the kernel image.
 kernel-base-paddr = "0x8020_0000"
 # Base virtual address of the kernel image.
@@ -18,6 +19,11 @@ phys-virt-offset = "0xffff_ffc0_0000_0000"
 # user memory
 user-memory-start = "0x1000"
 user-memory-limit = "0xffff_ffff"
+
+# Testcase memory
+testcase-memory-start = "0x9000_0000"
+testcase-memory-size = "0x200_0000"    # 如果是要手动加载进来，认为镜像大小是32MB
+qemu-memory-size = "0x4000_0000"    # 如果用qemu挂载镜像，镜像大小认为是1G，但实际远小于1G
 
 # MMIO regions with format (`base_paddr`, `size`).
 mmio-regions = [

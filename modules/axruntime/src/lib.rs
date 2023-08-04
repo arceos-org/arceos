@@ -94,6 +94,9 @@ fn is_init_ok() -> bool {
     INITED_CPUS.load(Ordering::Acquire) == axconfig::SMP
 }
 
+#[cfg(feature = "test")]
+core::arch::global_asm!(include_str!("../../axdriver/image.S"));
+
 /// The main entry point of the ArceOS runtime.
 ///
 /// It is called from the bootstrapping code in [axhal]. `cpu_id` is the ID of
@@ -246,6 +249,24 @@ cfg_if::cfg_if! {
                         r.flags.into(),
                         true,
                     )?;
+                }
+
+                // 插入文件系统的镜像映射
+                #[cfg(feature = "test")]
+                {
+                    use axconfig::{TESTCASE_MEMORY_SIZE, TESTCASE_MEMORY_START};
+                    use axhal::mem::{virt_to_phys, MemRegionFlags};
+                    extern "C" {
+                        fn img_start();
+                    }
+                    let img_start = img_start as usize;
+                    kernel_page_table.map_region(
+                        phys_to_virt(TESTCASE_MEMORY_START.into()),
+                        virt_to_phys(img_start.into()),
+                        TESTCASE_MEMORY_SIZE,
+                        MemRegionFlags::from_bits(1 << 0 | 1 << 1 | 1 << 4).unwrap().into(),
+                        true,
+                    ).unwrap();
                 }
                 KERNEL_PAGE_TABLE.init_by(kernel_page_table);
             }

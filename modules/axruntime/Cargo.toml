@@ -25,6 +25,8 @@ monolithic = ["axtask/monolithic", "axhal/monolithic", "axprocess/monolithic", "
 # 任务抢占
 preempt = ["axtask/preempt", "irq"]
 
+test = ["axdriver/test"]
+
 default = ["axtask?/default"]
 
 [dependencies]

@@ -1,3 +1,9 @@
+#[cfg(feature = "test")]
+use std::{
+    fs::File,
+    io::{Result, Write},
+};
+
 const NET_DEV_FEATURES: &[&str] = &["virtio-net"];
 const BLOCK_DEV_FEATURES: &[&str] = &["ramdisk", "virtio-blk"];
 const DISPLAY_DEV_FEATURES: &[&str] = &["virtio-gpu"];
@@ -14,12 +20,34 @@ fn enable_cfg(key: &str, value: &str) {
     println!("cargo:rustc-cfg={key}=\"{value}\"");
 }
 
+#[cfg(feature = "test")]
+fn new_fs_img() -> Result<()> {
+    let mut f = File::create("./image.S").unwrap();
+    let img_path = "./../sdcard.img";
+    writeln!(
+        f,
+        r#"
+    .section .data
+    .global img_start
+    .global img_end
+    .align 16
+img_start:
+    .incbin "{}"
+img_end:"#,
+        img_path,
+    )?;
+    Ok(())
+}
+
 fn main() {
     if has_feature("bus-pci") {
         enable_cfg("bus", "pci");
     } else {
         enable_cfg("bus", "mmio");
     }
+
+    #[cfg(feature = "test")]
+    new_fs_img().unwrap();
 
     // Generate cfgs like `net_dev="virtio-net"`. if `dyn` is not enabled, only one device is
     // selected for each device category. If no device is selected, `dummy` is selected.

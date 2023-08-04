@@ -39,6 +39,10 @@ impl RamDisk {
         Self { size, data }
     }
 
+    pub fn copy_from_slice(&mut self, vaddr: *const u8) {
+        self.data = unsafe { core::slice::from_raw_parts(vaddr, self.size) }.to_vec();
+    }
+
     /// Returns the size of the RAM disk in bytes.
     pub const fn size(&self) -> usize {
         self.size

@@ -312,9 +312,9 @@ pub const LUA_TESTCASES: &[&str] = &[
 #[allow(dead_code)]
 pub const BUSYBOX_TESTCASES: &[&str] = &[
     // gcc测例
-    "./riscv64-linux-musl-native/bin/riscv64-linux-musl-gcc ./hello.c -static",
-    "./a.out",
-    // "busybox echo iozone automatic measurements",
+    // "./riscv64-linux-musl-native/bin/riscv64-linux-musl-gcc ./hello.c -static",
+    // "./a.out",
+    "busybox echo \"hello world\"",
     // "busybox sh cyclictest_testcode.sh",
     // "busybox echo \"run iozone_testcode.sh\"",
     // "busybox sh ./iozone_testcode.sh",

@@ -68,7 +68,7 @@ platform-qemu-virt-aarch64 = ["axhal/platform-qemu-virt-aarch64", "bus-mmio"]
 monolithic = ["axruntime/monolithic", "fs"]
 
 # Test
-test = []
+test = ["axruntime/test", "axhal/test"]
 
 # Preempt
 preempt = ["axruntime/preempt", "axprocess/preempt", "irq"]
