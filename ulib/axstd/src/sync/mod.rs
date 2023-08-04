@@ -8,7 +8,12 @@ pub use core::sync::atomic;
 pub use alloc::sync::{Arc, Weak};
 
 #[cfg(feature = "multitask")]
-pub use axsync::{Mutex, MutexGuard};
+mod mutex;
+
+#[cfg(feature = "multitask")]
+#[doc(cfg(feature = "multitask"))]
+pub use self::mutex::{Mutex, MutexGuard};
 
 #[cfg(not(feature = "multitask"))]
-pub use spinlock::{SpinNoIrq as Mutex, SpinNoIrqGuard as MutexGuard};
+#[doc(cfg(not(feature = "multitask")))]
+pub use spinlock::{SpinRaw as Mutex, SpinRawGuard as MutexGuard}; // never used in IRQ context

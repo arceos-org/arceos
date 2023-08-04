@@ -468,7 +468,6 @@ dependencies = [
  "axfeat",
  "axfs",
  "axio",
- "axsync",
  "spinlock",
 ]
 

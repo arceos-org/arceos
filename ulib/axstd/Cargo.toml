@@ -20,7 +20,7 @@ documentation = "https://rcore-os.github.io/arceos/axstd/index.html"
 default = []
 
 # Multicore
-smp = ["axfeat/smp"]
+smp = ["axfeat/smp", "spinlock/smp"]
 
 # Floating point/SIMD
 fp_simd = ["axfeat/fp_simd"]
@@ -36,7 +36,7 @@ alloc-buddy = ["axfeat/alloc-buddy"]
 paging = ["axfeat/paging"]
 
 # Multi-threading and scheduler
-multitask = ["arceos_api/multitask", "axsync/multitask", "axfeat/multitask"]
+multitask = ["arceos_api/multitask", "axfeat/multitask"]
 sched_fifo = ["axfeat/sched_fifo"]
 sched_rr = ["axfeat/sched_rr"]
 sched_cfs = ["axfeat/sched_cfs"]
@@ -69,7 +69,6 @@ log-level-trace = ["axfeat/log-level-trace"]
 
 [dependencies]
 axfs = { path = "../../modules/axfs", optional = true }
-axsync = { path = "../../modules/axsync", optional = true }
 axfeat = { path = "../../api/axfeat" }
 arceos_api = { path = "../../api/arceos_api" }
 axio = { path = "../../crates/axio" }
