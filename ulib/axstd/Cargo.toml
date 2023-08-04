@@ -42,8 +42,8 @@ sched_rr = ["axfeat/sched_rr"]
 sched_cfs = ["axfeat/sched_cfs"]
 
 # File system
-fs = ["dep:axfs", "arceos_api/fs", "axfeat/fs"]
-myfs = ["axfeat/myfs"]
+fs = ["arceos_api/fs", "axfeat/fs"]
+myfs = ["arceos_api/myfs", "axfeat/myfs"]
 
 # Networking
 net = ["arceos_api/net", "axfeat/net"]
@@ -68,7 +68,6 @@ log-level-debug = ["axfeat/log-level-debug"]
 log-level-trace = ["axfeat/log-level-trace"]
 
 [dependencies]
-axfs = { path = "../../modules/axfs", optional = true }
 axfeat = { path = "../../api/axfeat" }
 arceos_api = { path = "../../api/arceos_api" }
 axio = { path = "../../crates/axio" }

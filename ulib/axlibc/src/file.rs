@@ -40,9 +40,8 @@ impl FileLike for File {
 
     fn stat(&self) -> LinuxResult<ctypes::stat> {
         let metadata = self.0.lock().metadata()?;
-        let metadata = metadata.raw_metadata();
         let ty = metadata.file_type() as u8;
-        let perm = metadata.perm().bits() as u32;
+        let perm = metadata.permissions().bits() as u32;
         let st_mode = ((ty as u32) << 12) | perm;
         Ok(ctypes::stat {
             st_ino: 1,

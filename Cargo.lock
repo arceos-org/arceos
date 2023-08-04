@@ -140,7 +140,6 @@ dependencies = [
 name = "arceos-shell"
 version = "0.1.0"
 dependencies = [
- "axfeat",
  "axfs_ramfs",
  "axfs_vfs",
  "axstd",
@@ -466,7 +465,6 @@ dependencies = [
  "arceos_api",
  "axerrno",
  "axfeat",
- "axfs",
  "axio",
  "spinlock",
 ]
