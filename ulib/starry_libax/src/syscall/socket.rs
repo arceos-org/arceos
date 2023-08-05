@@ -835,6 +835,7 @@ pub fn syscall_connect(fd: usize, addr_buf: *const u8, _addr_len: usize) -> isiz
         Ok(_) => 0,
         Err(AxError::WouldBlock) => ErrorNo::EINPROGRESS as isize,
         Err(AxError::Interrupted) => ErrorNo::EINTR as isize,
+        Err(AxError::AlreadyExists) => ErrorNo::EISCONN as isize,
         Err(_) => -1,
     }
 }
