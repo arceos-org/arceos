@@ -2,7 +2,7 @@ use embedded_graphics::pixelcolor::Rgb888;
 use embedded_graphics::prelude::{RgbColor, Size};
 use embedded_graphics::{draw_target::DrawTarget, prelude::OriginDimensions};
 
-pub use axstd::os::arceos::axdisplay::{framebuffer_flush, framebuffer_info, DisplayInfo};
+use axstd::os::arceos::api::display as api;
 
 pub struct Display {
     size: Size,
@@ -11,11 +11,15 @@ pub struct Display {
 
 impl Display {
     pub fn new() -> Self {
-        let info = framebuffer_info();
+        let info = api::ax_framebuffer_info();
         let fb =
             unsafe { core::slice::from_raw_parts_mut(info.fb_base_vaddr as *mut u8, info.fb_size) };
         let size = Size::new(info.width, info.height);
         Self { size, fb }
+    }
+
+    pub fn flush(&self) {
+        api::ax_framebuffer_flush();
     }
 }
 

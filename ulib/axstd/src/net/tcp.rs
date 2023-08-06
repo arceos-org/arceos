@@ -1,13 +1,13 @@
 use super::{SocketAddr, ToSocketAddrs};
 use crate::io::{self, prelude::*};
 
-use axnet::TcpSocket;
+use arceos_api::net::{self as api, AxTcpSocketHandle};
 
 /// A TCP stream between a local and a remote socket.
-pub struct TcpStream(TcpSocket);
+pub struct TcpStream(AxTcpSocketHandle);
 
 /// A TCP socket server, listening for connections.
-pub struct TcpListener(TcpSocket);
+pub struct TcpListener(AxTcpSocketHandle);
 
 impl TcpStream {
     /// Opens a TCP connection to a remote host.
@@ -23,37 +23,37 @@ impl TcpStream {
     pub fn connect<A: ToSocketAddrs>(addr: A) -> io::Result<TcpStream> {
         super::each_addr(addr, |addr: io::Result<&SocketAddr>| {
             let addr = addr?;
-            let socket = TcpSocket::new();
-            socket.connect(*addr)?;
+            let socket = api::ax_tcp_socket();
+            api::ax_tcp_connect(&socket, *addr)?;
             Ok(TcpStream(socket))
         })
     }
 
     /// Returns the socket address of the local half of this TCP connection.
     pub fn local_addr(&self) -> io::Result<SocketAddr> {
-        self.0.local_addr()
+        api::ax_tcp_socket_addr(&self.0)
     }
 
     /// Returns the socket address of the remote peer of this TCP connection.
     pub fn peer_addr(&self) -> io::Result<SocketAddr> {
-        self.0.peer_addr()
+        api::ax_tcp_peer_addr(&self.0)
     }
 
     /// Shuts down the connection.
     pub fn shutdown(&self) -> io::Result<()> {
-        self.0.shutdown()
+        api::ax_tcp_shutdown(&self.0)
     }
 }
 
 impl Read for TcpStream {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.0.recv(buf)
+        api::ax_tcp_recv(&self.0, buf)
     }
 }
 
 impl Write for TcpStream {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.0.send(buf)
+        api::ax_tcp_send(&self.0, buf)
     }
 
     fn flush(&mut self) -> io::Result<()> {
@@ -81,16 +81,17 @@ impl TcpListener {
     pub fn bind<A: ToSocketAddrs>(addr: A) -> io::Result<TcpListener> {
         super::each_addr(addr, |addr: io::Result<&SocketAddr>| {
             let addr = addr?;
-            let socket = TcpSocket::new();
-            socket.bind(*addr)?;
-            socket.listen()?;
+            let backlog = 128;
+            let socket = api::ax_tcp_socket();
+            api::ax_tcp_bind(&socket, *addr)?;
+            api::ax_tcp_listen(&socket, backlog)?;
             Ok(TcpListener(socket))
         })
     }
 
     /// Returns the local socket address of this listener.
     pub fn local_addr(&self) -> io::Result<SocketAddr> {
-        self.0.local_addr()
+        api::ax_tcp_socket_addr(&self.0)
     }
 
     /// Accept a new incoming connection from this listener.
@@ -99,8 +100,6 @@ impl TcpListener {
     /// is established. When established, the corresponding [`TcpStream`] and the
     /// remote peer's address will be returned.
     pub fn accept(&self) -> io::Result<(TcpStream, SocketAddr)> {
-        let socket = self.0.accept()?;
-        let addr = socket.peer_addr()?;
-        Ok((TcpStream(socket), addr))
+        api::ax_tcp_accept(&self.0).map(|(a, b)| (TcpStream(a), b))
     }
 }

@@ -1,8 +1,10 @@
 use super::{SocketAddr, ToSocketAddrs};
 use crate::io;
 
+use arceos_api::net::{self as api, AxUdpSocketHandle};
+
 /// A UDP socket.
-pub struct UdpSocket(axnet::UdpSocket);
+pub struct UdpSocket(AxUdpSocketHandle);
 
 impl UdpSocket {
     /// Creates a UDP socket from the given address.
@@ -17,32 +19,32 @@ impl UdpSocket {
     pub fn bind<A: ToSocketAddrs>(addr: A) -> io::Result<UdpSocket> {
         super::each_addr(addr, |addr: io::Result<&SocketAddr>| {
             let addr = addr?;
-            let socket = axnet::UdpSocket::new();
-            socket.bind(*addr)?;
+            let socket = api::ax_udp_socket();
+            api::ax_udp_bind(&socket, *addr)?;
             Ok(UdpSocket(socket))
         })
     }
 
     /// Returns the socket address that this socket was created from.
     pub fn local_addr(&self) -> io::Result<SocketAddr> {
-        self.0.local_addr()
+        api::ax_udp_socket_addr(&self.0)
     }
 
     /// Returns the socket address of the remote peer this socket was connected to.
     pub fn peer_addr(&self) -> io::Result<SocketAddr> {
-        self.0.peer_addr()
+        api::ax_udp_peer_addr(&self.0)
     }
 
     /// Receives a single datagram message on the socket. On success, returns
     /// the number of bytes read and the origin.
     pub fn recv_from(&self, buf: &mut [u8]) -> io::Result<(usize, SocketAddr)> {
-        self.0.recv_from(buf)
+        api::ax_udp_recv_from(&self.0, buf)
     }
 
     /// Receives a single datagram message on the socket, without removing it from
     /// the queue. On success, returns the number of bytes read and the origin.
     pub fn peek_from(&self, buf: &mut [u8]) -> io::Result<(usize, SocketAddr)> {
-        self.0.peek_from(buf)
+        api::ax_udp_peek_from(&self.0, buf)
     }
 
     /// Sends data on the socket to the given address. On success, returns the
@@ -55,7 +57,7 @@ impl UdpSocket {
     /// will only send data to the first address yielded by `addr`.
     pub fn send_to<A: ToSocketAddrs>(&self, buf: &[u8], addr: A) -> io::Result<usize> {
         match addr.to_socket_addrs()?.next() {
-            Some(addr) => self.0.send_to(buf, addr),
+            Some(addr) => api::ax_udp_send_to(&self.0, buf, addr),
             None => axerrno::ax_err!(InvalidInput, "no addresses to send data to"),
         }
     }
@@ -74,7 +76,7 @@ impl UdpSocket {
     pub fn connect(&self, addr: SocketAddr) -> io::Result<()> {
         super::each_addr(addr, |addr: io::Result<&SocketAddr>| {
             let addr = addr?;
-            self.0.connect(*addr)
+            api::ax_udp_connect(&self.0, *addr)
         })
     }
 
@@ -83,12 +85,12 @@ impl UdpSocket {
     /// [`UdpSocket::connect`] will connect this socket to a remote address. This
     /// method will fail if the socket is not connected.
     pub fn send(&self, buf: &[u8]) -> io::Result<usize> {
-        self.0.send(buf)
+        api::ax_udp_send(&self.0, buf)
     }
 
     /// Receives a single datagram message on the socket from the remote address to
     /// which it is connected. On success, returns the number of bytes read.
     pub fn recv(&self, buf: &mut [u8]) -> io::Result<usize> {
-        self.0.recv(buf)
+        api::ax_udp_recv(&self.0, buf)
     }
 }

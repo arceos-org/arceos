@@ -141,7 +141,7 @@ mod dns {
                 return Ok(vec![SocketAddr::V4(addr)].into_iter());
             }
 
-            Ok(axnet::dns_query(host)?
+            Ok(arceos_api::net::ax_dns_query(host)?
                 .into_iter()
                 .map(|ip| SocketAddr::new(ip, port))
                 .collect::<Vec<_>>()
@@ -166,7 +166,7 @@ mod dns {
                 .parse()
                 .map_err(|_| axerrno::ax_err_type!(InvalidInput, "invalid port value"))?;
 
-            Ok(axnet::dns_query(host)?
+            Ok(arceos_api::net::ax_dns_query(host)?
                 .into_iter()
                 .map(|ip| SocketAddr::new(ip, port))
                 .collect::<Vec<_>>()

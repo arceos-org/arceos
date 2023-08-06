@@ -48,6 +48,7 @@ members = [
     "modules/axtask",
 
     "api/axfeat",
+    "api/arceos_api",
 
     "ulib/axstd",
     "ulib/axlibc",

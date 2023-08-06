@@ -1,31 +1,31 @@
-use axio::{prelude::*, Result, SeekFrom};
+use crate::io::{prelude::*, Result, SeekFrom};
 use core::fmt;
 
-use crate::fops;
+use arceos_api::fs as api;
 
 /// A structure representing a type of file with accessors for each file type.
 /// It is returned by [`Metadata::file_type`] method.
-pub type FileType = fops::FileType;
+pub type FileType = api::AxFileType;
 
 /// Representation of the various permissions on a file.
-pub type Permissions = fops::FilePerm;
+pub type Permissions = api::AxFilePerm;
 
 /// An object providing access to an open file on the filesystem.
 pub struct File {
-    inner: fops::File,
+    inner: api::AxFileHandle,
 }
 
 /// Metadata information about a file.
-pub struct Metadata(fops::FileAttr);
+pub struct Metadata(api::AxFileAttr);
 
 /// Options and flags which can be used to configure how a file is opened.
 #[derive(Clone, Debug)]
-pub struct OpenOptions(fops::OpenOptions);
+pub struct OpenOptions(api::AxOpenOptions);
 
 impl OpenOptions {
     /// Creates a blank new set of options ready for configuration.
     pub const fn new() -> Self {
-        OpenOptions(fops::OpenOptions::new())
+        OpenOptions(api::AxOpenOptions::new())
     }
 
     /// Sets the option for read access.
@@ -66,7 +66,7 @@ impl OpenOptions {
 
     /// Opens a file at `path` with the options specified by `self`.
     pub fn open(&self, path: &str) -> Result<File> {
-        fops::File::open(path, &self.0).map(|inner| File { inner })
+        api::ax_open_file(path, &self.0).map(|inner| File { inner })
     }
 }
 
@@ -155,33 +155,33 @@ impl File {
     /// Truncates or extends the underlying file, updating the size of
     /// this file to become `size`.
     pub fn set_len(&self, size: u64) -> Result<()> {
-        self.inner.truncate(size)
+        api::ax_truncate_file(&self.inner, size)
     }
 
     /// Queries metadata about the underlying file.
     pub fn metadata(&self) -> Result<Metadata> {
-        self.inner.get_attr().map(Metadata)
+        api::ax_file_attr(&self.inner).map(Metadata)
     }
 }
 
 impl Read for File {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
-        self.inner.read(buf)
+        api::ax_read_file(&mut self.inner, buf)
     }
 }
 
 impl Write for File {
     fn write(&mut self, buf: &[u8]) -> Result<usize> {
-        self.inner.write(buf)
+        api::ax_write_file(&mut self.inner, buf)
     }
 
     fn flush(&mut self) -> Result<()> {
-        self.inner.flush()
+        api::ax_flush_file(&self.inner)
     }
 }
 
 impl Seek for File {
     fn seek(&mut self, pos: SeekFrom) -> Result<u64> {
-        self.inner.seek(pos)
+        api::ax_seek_file(&mut self.inner, pos)
     }
 }

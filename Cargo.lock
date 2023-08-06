@@ -140,7 +140,6 @@ dependencies = [
 name = "arceos-shell"
 version = "0.1.0"
 dependencies = [
- "axfeat",
  "axfs_ramfs",
  "axfs_vfs",
  "axstd",
@@ -168,6 +167,24 @@ version = "0.1.0"
 dependencies = [
  "axfeat",
  "axstd",
+]
+
+[[package]]
+name = "arceos_api"
+version = "0.1.0"
+dependencies = [
+ "axalloc",
+ "axconfig",
+ "axdisplay",
+ "axerrno",
+ "axfeat",
+ "axfs",
+ "axhal",
+ "axio",
+ "axlog",
+ "axnet",
+ "axruntime",
+ "axtask",
 ]
 
 [[package]]
@@ -445,19 +462,10 @@ dependencies = [
 name = "axstd"
 version = "0.1.0"
 dependencies = [
- "axalloc",
- "axconfig",
- "axdisplay",
+ "arceos_api",
  "axerrno",
  "axfeat",
- "axfs",
- "axhal",
  "axio",
- "axlog",
- "axnet",
- "axruntime",
- "axsync",
- "axtask",
  "spinlock",
 ]
 

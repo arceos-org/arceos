@@ -10,7 +10,7 @@ use std::{thread, time};
 use std::{vec, vec::Vec};
 
 #[cfg(any(feature = "axstd", target_os = "arceos"))]
-use std::os::arceos::axtask;
+use std::os::arceos::api::task::ax_set_current_priority;
 
 struct TaskParam {
     data_len: usize,
@@ -62,7 +62,7 @@ fn load(n: &u64) -> u64 {
 #[cfg_attr(feature = "axstd", no_mangle)]
 fn main() {
     #[cfg(feature = "axstd")]
-    axtask::set_priority(-20);
+    ax_set_current_priority(-20).ok();
 
     let data = (0..PAYLOAD_KIND)
         .map(|i| Arc::new(vec![TASK_PARAMS[i].value; TASK_PARAMS[i].data_len]))
@@ -80,7 +80,7 @@ fn main() {
         let nice = TASK_PARAMS[i].nice;
         tasks.push(thread::spawn(move || {
             #[cfg(feature = "axstd")]
-            axtask::set_priority(nice);
+            ax_set_current_priority(nice).ok();
 
             let left = 0;
             let right = data_len;

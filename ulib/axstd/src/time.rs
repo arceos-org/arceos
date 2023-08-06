@@ -1,6 +1,6 @@
 //! Temporal quantification.
 
-use axhal::time::TimeValue;
+use arceos_api::time::AxTimeValue;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 
 pub use core::time::Duration;
@@ -8,12 +8,12 @@ pub use core::time::Duration;
 /// A measurement of a monotonically nondecreasing clock.
 /// Opaque and useful only with [`Duration`].
 #[derive(Clone, Copy)]
-pub struct Instant(TimeValue);
+pub struct Instant(AxTimeValue);
 
 impl Instant {
     /// Returns an instant corresponding to "now".
     pub fn now() -> Instant {
-        Instant(axhal::time::current_time())
+        Instant(arceos_api::time::ax_current_time())
     }
 
     /// Returns the amount of time elapsed from another instant to this one,
