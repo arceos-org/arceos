@@ -770,7 +770,7 @@ pub fn syscall_listen(fd: usize, _backlog: usize) -> isize {
     socket.listen().map_or(-1, |_| 0)
 }
 
-pub fn syscall_accept(fd: usize, addr_buf: *mut u8, addr_len: *mut u32) -> isize {
+pub fn syscall_accept4(fd: usize, addr_buf: *mut u8, addr_len: *mut u32, flags: usize) -> isize {
     let curr = current_process();
     let inner = curr.inner.lock();
 
@@ -790,7 +790,7 @@ pub fn syscall_accept(fd: usize, addr_buf: *mut u8, addr_len: *mut u32) -> isize
     drop(inner);
 
     match socket.accept() {
-        Ok((s, addr)) => {
+        Ok((mut s, addr)) => {
             let _ = unsafe { socket_address_to(addr, addr_buf, addr_len) };
 
             let mut inner = curr.inner.lock();
@@ -801,8 +801,15 @@ pub fn syscall_accept(fd: usize, addr_buf: *mut u8, addr_len: *mut u32) -> isize
 
             debug!("[accept()] socket {fd} accept new socket {new_fd} {addr:?}");
 
-            inner.fd_manager.fd_table[new_fd] = Some(Arc::new(SpinNoIrq::new(s)));
+            // handle flags
+            if flags & SOCK_NONBLOCK != 0 {
+                s.set_nonblocking(true);
+            }
+            if flags & SOCK_CLOEXEC != 0 {
+                s.close_exec = true;
+            }
 
+            inner.fd_manager.fd_table[new_fd] = Some(Arc::new(SpinNoIrq::new(s)));
             new_fd as isize
         }
         Err(AxError::Unsupported) => ErrorNo::EOPNOTSUPP as isize,

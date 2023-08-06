@@ -268,7 +268,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         SOCKET => syscall_socket(args[0], args[1], args[2]),
         BIND => syscall_bind(args[0], args[1] as *const u8, args[2]),
         LISTEN => syscall_listen(args[0], args[1]),
-        ACCEPT => syscall_accept(args[0], args[1] as *mut u8, args[2] as *mut u32),
+        ACCEPT => syscall_accept4(args[0], args[1] as *mut u8, args[2] as *mut u32, 0),
         CONNECT => syscall_connect(args[0], args[1] as *const u8, args[2]),
         GETSOCKNAME => syscall_get_sock_name(args[0], args[1] as *mut u8, args[2] as *mut u32),
         GETPEERNAME => syscall_getpeername(args[0], args[1] as *mut u8, args[2] as *mut u32),
@@ -304,7 +304,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[3] as *mut u8,
             args[4] as *mut u32,
         ),
-        ACCEPT4 => syscall_accept(args[0], args[1] as *mut u8, args[2] as *mut u32),
+        ACCEPT4 => syscall_accept4(args[0], args[1] as *mut u8, args[2] as *mut u32, args[3]),
         SHUTDOWN => syscall_shutdown(args[0], args[1]),
         MADVICE => 0,
         _ => {
