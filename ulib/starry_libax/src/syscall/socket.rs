@@ -814,6 +814,7 @@ pub fn syscall_accept4(fd: usize, addr_buf: *mut u8, addr_len: *mut u32, flags: 
         }
         Err(AxError::Unsupported) => ErrorNo::EOPNOTSUPP as isize,
         Err(AxError::Interrupted) => ErrorNo::EINTR as isize,
+        Err(AxError::WouldBlock) => ErrorNo::EAGAIN as isize,
         Err(_) => -1,
     }
 }
