@@ -318,6 +318,7 @@ pub const BUSYBOX_TESTCASES: &[&str] = &[
     "busybox sh",
     // "./redis-server /redis.conf --loglevel verbose &", // 打开 redis 服务端，后台运行
     // "./redis-cli-static", // 打开 redis 客户端
+    // "./redis-benchmark -c 2 -n 10", // 进行小规模的 redis-benchmark 测试
     // "busybox echo iozone automatic measurements",
     // "busybox sh cyclictest_testcode.sh",
     // "busybox echo \"run iozone_testcode.sh\"",
