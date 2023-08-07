@@ -176,6 +176,12 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         init_interrupt();
     }
 
+    #[cfg(all(feature = "tls", not(feature = "multitask")))]
+    {
+        info!("Initialize thread local storage...");
+        init_tls();
+    }
+
     info!("Primary CPU {} init OK.", cpu_id);
     INITED_CPUS.fetch_add(1, Ordering::Relaxed);
 
@@ -279,4 +285,11 @@ fn init_interrupt() {
 
     // Enable IRQs before starting app
     axhal::arch::enable_irqs();
+}
+
+#[cfg(all(feature = "tls", not(feature = "multitask")))]
+fn init_tls() {
+    let main_tls = axhal::tls::TlsArea::alloc();
+    unsafe { axhal::arch::write_thread_pointer(main_tls.tls_ptr() as usize) };
+    core::mem::forget(main_tls);
 }

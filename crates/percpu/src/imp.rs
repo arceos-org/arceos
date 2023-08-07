@@ -71,7 +71,7 @@ pub fn get_local_thread_pointer() -> usize {
                     unimplemented!()
                 };
             } else if #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))] {
-                core::arch::asm!("mv {}, tp", out(reg) tp)
+                core::arch::asm!("mv {}, gp", out(reg) tp)
             } else if #[cfg(target_arch = "aarch64")] {
                 core::arch::asm!("mrs {}, TPIDR_EL1", out(reg) tp)
             }
@@ -105,7 +105,7 @@ pub fn set_local_thread_pointer(cpu_id: usize) {
                 }
                 SELF_PTR.write_current_raw(tp);
             } else if #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))] {
-                core::arch::asm!("mv tp, {}", in(reg) tp)
+                core::arch::asm!("mv gp, {}", in(reg) tp)
             } else if #[cfg(target_arch = "aarch64")] {
                 core::arch::asm!("msr TPIDR_EL1, {}", in(reg) tp)
             }

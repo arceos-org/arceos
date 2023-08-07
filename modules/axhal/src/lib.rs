@@ -42,6 +42,9 @@ pub mod mem;
 pub mod time;
 pub mod trap;
 
+#[cfg(feature = "tls")]
+pub mod tls;
+
 #[cfg(feature = "irq")]
 pub mod irq;
 

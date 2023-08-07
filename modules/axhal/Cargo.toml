@@ -11,9 +11,12 @@ documentation = "https://rcore-os.github.io/arceos/axhal/index.html"
 
 [features]
 smp = []
+alloc = []
 fp_simd = []
 paging = ["axalloc", "page_table"]
 irq = []
+tls = ["alloc"]
+default = []
 
 [dependencies]
 log = "0.4"

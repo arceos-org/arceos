@@ -17,6 +17,7 @@ multitask = [
     "dep:scheduler", "dep:timer_list", "dep:kernel_guard", "dep:crate_interface",
 ]
 irq = []
+tls = ["axhal/tls"]
 preempt = ["irq", "percpu?/preempt", "kernel_guard/preempt"]
 
 sched_fifo = ["multitask"]
