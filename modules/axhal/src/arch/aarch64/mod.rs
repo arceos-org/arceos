@@ -3,7 +3,7 @@ pub(crate) mod trap;
 
 use core::arch::asm;
 
-use aarch64_cpu::registers::{DAIF, TTBR1_EL1, VBAR_EL1};
+use aarch64_cpu::registers::{DAIF, TPIDR_EL0, TTBR0_EL1, TTBR1_EL1, VBAR_EL1};
 use memory_addr::{PhysAddr, VirtAddr};
 use tock_registers::interfaces::{Readable, Writeable};
 
@@ -51,6 +51,12 @@ pub fn read_page_table_root() -> PhysAddr {
     PhysAddr::from(root as usize)
 }
 
+/// Reads the `TTBR0_EL1` register.
+pub fn read_page_table_root0() -> PhysAddr {
+    let root = TTBR0_EL1.get();
+    PhysAddr::from(root as usize)
+}
+
 /// Writes the register to update the current page table root.
 ///
 /// # Safety
@@ -64,6 +70,16 @@ pub unsafe fn write_page_table_root(root_paddr: PhysAddr) {
         TTBR1_EL1.set(root_paddr.as_usize() as _);
         flush_tlb(None);
     }
+}
+
+/// Writes the `TTBR0_EL1` register.
+///
+/// # Safety
+///
+/// This function is unsafe as it changes the virtual memory address space.
+pub unsafe fn write_page_table_root0(root_paddr: PhysAddr) {
+    TTBR0_EL1.set(root_paddr.as_usize() as _);
+    flush_tlb(None);
 }
 
 /// Flushes the TLB.

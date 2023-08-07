@@ -1,46 +1,16 @@
 use crate::mem::*;
 use page_table_entry::{aarch64::A64PTE, GenericPTE, MappingFlags};
 
-/// Number of physical memory regions.
-pub(crate) fn memory_regions_num() -> usize {
-    common_memory_regions_num() + 2
-}
-
-/// Returns the physical memory region at the given index, or [`None`] if the
-/// index is out of bounds.
-pub(crate) fn memory_region_at(idx: usize) -> Option<MemRegion> {
-    use core::cmp::Ordering;
-    match idx.cmp(&common_memory_regions_num()) {
-        Ordering::Less => common_memory_region_at(idx),
-        Ordering::Equal => {
-            // free memory
-            extern "C" {
-                fn ekernel();
-            }
-            let start = virt_to_phys((ekernel as usize).into()).align_up_4k();
-            let end = PhysAddr::from(axconfig::PHYS_MEMORY_END).align_down_4k();
-            Some(MemRegion {
-                paddr: start,
-                size: end.as_usize() - start.as_usize(),
-                flags: MemRegionFlags::FREE | MemRegionFlags::READ | MemRegionFlags::WRITE,
-                name: "free memory",
-            })
-        }
-        Ordering::Greater => extern_memory_region_at(idx - common_memory_regions_num()),
-    }
-}
-
-pub(crate) fn extern_memory_region_at(idx: usize) -> Option<MemRegion> {
-    if idx == 1 {
-        Some(MemRegion {
-            paddr: 0x0.into(),
-            size: 0x1000,
-            flags: MemRegionFlags::READ | MemRegionFlags::WRITE,
-            name: "spintable",
-        })
-    } else {
-        None
-    }
+/// Returns platform-specific memory regions.
+pub(crate) fn platform_regions() -> impl Iterator<Item = MemRegion> {
+    core::iter::once(MemRegion {
+        paddr: 0x0.into(),
+        size: 0x1000,
+        flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
+        name: "spintable",
+    })
+    .chain(crate::mem::default_free_regions())
+    .chain(crate::mem::default_mmio_regions())
 }
 
 pub(crate) unsafe fn init_boot_page_table(

@@ -12,7 +12,7 @@ Secondary CPU [0-9]\+ init OK.
 Found physcial memory regions:
  .text (READ | EXECUTE | RESERVED)
  .rodata (READ | RESERVED)
- .data (READ | WRITE | RESERVED)
+ .data .tdata .tbss .percpu (READ | WRITE | RESERVED)
  .percpu (READ | WRITE | RESERVED)
  boot stack (READ | WRITE | RESERVED)
  .bss (READ | WRITE | RESERVED)
