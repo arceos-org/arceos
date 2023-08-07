@@ -63,6 +63,8 @@ jobs:
       run: make ARCH=${{ matrix.arch }} A=apps/task/sleep
     - name: Build task/priority
       run: make ARCH=${{ matrix.arch }} A=apps/task/priority
+    - name: Build task/tls
+      run: make ARCH=${{ matrix.arch }} A=apps/task/tls
     - name: Build fs/shell
       run: make ARCH=${{ matrix.arch }} A=apps/fs/shell
     - name: Build net/echoserver
@@ -157,6 +159,8 @@ jobs:
       run: cargo build -p arceos-sleep
     - name: Build task/priority
       run: cargo build -p arceos-priority
+    - name: Build task/tls
+      run: cargo build -p arceos-tls
     - name: Build fs/shell
       run: cargo build -p arceos-shell
     - name: Build net/echoserver
