@@ -14,6 +14,7 @@ default = []
 
 smp = ["axhal/smp"]
 irq = ["axhal/irq", "axtask?/irq", "percpu", "kernel_guard"]
+tls = ["axhal/tls", "axtask?/tls"]
 alloc = ["axalloc"]
 paging = ["axhal/paging", "lazy_init"]
 

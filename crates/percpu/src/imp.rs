@@ -6,15 +6,15 @@ const fn align_up(val: usize) -> usize {
 #[cfg(not(target_os = "none"))]
 static PERCPU_AREA_BASE: spin::once::Once<usize> = spin::once::Once::new();
 
-/// Returns the per-CPU data area size for each CPUs.
+/// Returns the per-CPU data area size for one CPU.
 #[doc(cfg(not(feature = "sp-naive")))]
 pub fn percpu_area_size() -> usize {
     extern "C" {
-        fn __percpu_offset_start();
-        fn __percpu_offset_end();
+        fn _percpu_load_start();
+        fn _percpu_load_end();
     }
     use percpu_macros::percpu_symbol_offset;
-    percpu_symbol_offset!(__percpu_offset_end) - percpu_symbol_offset!(__percpu_offset_start)
+    percpu_symbol_offset!(_percpu_load_end) - percpu_symbol_offset!(_percpu_load_start)
 }
 
 /// Returns the base address of the per-CPU data area on the given CPU.
@@ -25,9 +25,9 @@ pub fn percpu_area_base(cpu_id: usize) -> usize {
     cfg_if::cfg_if! {
         if #[cfg(target_os = "none")] {
             extern "C" {
-                fn percpu_start();
+                fn _percpu_start();
             }
-            let base = percpu_start as usize;
+            let base = _percpu_start as usize;
         } else {
             let base = *PERCPU_AREA_BASE.get().unwrap();
         }
@@ -71,7 +71,7 @@ pub fn get_local_thread_pointer() -> usize {
                     unimplemented!()
                 };
             } else if #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))] {
-                core::arch::asm!("mv {}, tp", out(reg) tp)
+                core::arch::asm!("mv {}, gp", out(reg) tp)
             } else if #[cfg(target_arch = "aarch64")] {
                 core::arch::asm!("mrs {}, TPIDR_EL1", out(reg) tp)
             }
@@ -105,7 +105,7 @@ pub fn set_local_thread_pointer(cpu_id: usize) {
                 }
                 SELF_PTR.write_current_raw(tp);
             } else if #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))] {
-                core::arch::asm!("mv tp, {}", in(reg) tp)
+                core::arch::asm!("mv gp, {}", in(reg) tp)
             } else if #[cfg(target_arch = "aarch64")] {
                 core::arch::asm!("msr TPIDR_EL1, {}", in(reg) tp)
             }

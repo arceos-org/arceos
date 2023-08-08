@@ -16,9 +16,9 @@ multiboot_header:
     .int    {mb_hdr_flags}                      # flags
     .int    -({mb_hdr_magic} + {mb_hdr_flags})  # checksum
     .int    multiboot_header - {offset}         # header_addr
-    .int    skernel - {offset}                  # load_addr
-    .int    edata - {offset}                    # load_end
-    .int    ebss - {offset}                     # bss_end_addr
+    .int    _skernel - {offset}                 # load_addr
+    .int    _edata - {offset}                   # load_end
+    .int    _ebss - {offset}                    # bss_end_addr
     .int    _start - {offset}                   # entry_addr
 
 # Common code in 32-bit, prepare states to enter 64-bit.

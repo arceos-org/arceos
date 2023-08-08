@@ -21,6 +21,7 @@
 //!     - `alloc-slab`: Use the slab allocator.
 //!     - `alloc-buddy`: Use the buddy system allocator.
 //!     - `paging`: Enable page table manipulation.
+//!     - `tls`: Enable thread-local storage.
 //! - Task management
 //!     - `multitask`: Enable multi-threading support.
 //!     - `sched_fifo`: Use the FIFO cooperative scheduler.

@@ -67,6 +67,7 @@ members = [
     "apps/task/sleep",
     "apps/task/yield",
     "apps/task/priority",
+    "apps/task/tls",
 ]
 
 [profile.release]
