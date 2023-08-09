@@ -9,6 +9,6 @@ fs_:
     .global fs_start
     .global fs_end
 fs_start:
-    .incbin "apps/fs/ramfs/fat32.img"
+    .incbin "apps/fs/ramfs/fat16.img"
 fs_end:
 

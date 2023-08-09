@@ -27,4 +27,4 @@ create_test_img() {
 }
 
 create_test_img "$CUR_DIR/fat16.img" 2500 16
-create_test_img "$CUR_DIR/fat32.img" 34000 32
+
