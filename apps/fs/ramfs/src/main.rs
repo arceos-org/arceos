@@ -4,7 +4,6 @@
 #[cfg(feature = "axstd")]
 use axstd::println;
 
-#[macro_use]
 extern crate alloc;
 
 use core::arch::global_asm;
@@ -46,7 +45,7 @@ fn main() {
         core::slice::from_raw_parts(fs_start as *mut u8, fs_end as usize - fs_start as usize)
     };
 
-    let ramdisk = RamDisk::from(&fs_data);
+    let ramdisk = RamDisk::from(fs_data);
     axfs::init_filesystems(AxDeviceContainer::from_one(ramdisk));
 
     test_read_dir().expect("test_read_dir() failed");
