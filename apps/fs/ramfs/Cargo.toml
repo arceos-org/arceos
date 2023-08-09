@@ -1,0 +1,19 @@
+[package]
+name = "ramfs"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+
+
+
+
+[dependencies]
+axstd = { path = "../../../ulib/axstd", optional = true, features = ["paging"] }
+axtask = { path = "../../../modules/axtask" }
+axalloc = { path = "../../../modules/axalloc" }
+axfs = { path = "../../../modules/axfs"}
+axio = { path = "../../../crates/axio", features = ["alloc"] }
+axdriver = { path = "../../../modules/axdriver", features = ["block", "ramdisk"]}
+driver_block = { path = "../../../crates/driver_block", features = ["ramdisk"]}

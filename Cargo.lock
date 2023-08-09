@@ -1534,6 +1534,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "ramfs"
+version = "0.1.0"
+dependencies = [
+ "axalloc",
+ "axdriver",
+ "axfs",
+ "axio",
+ "axstd",
+ "axtask",
+ "driver_block",
+]
+
+[[package]]
 name = "rand"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
