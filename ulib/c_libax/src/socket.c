@@ -61,4 +61,26 @@ ssize_t recvfrom(int fd, void *restrict buf, size_t n, int flags, struct sockadd
     else
         return ax_recvfrom(fd, buf, n, flags, addr, addr_len);
 }
+
+int getsockopt(int fd, int level, int optname, void *restrict optval, socklen_t *restrict optlen)
+{
+    unimplemented();
+    return -1;
+}
+
+int setsockopt(int fd, int level, int optname, const void *optval, socklen_t optlen)
+{
+    unimplemented();
+    return 0;
+}
+
+int getsockname(int sockfd, struct sockaddr *restrict addr, socklen_t *restrict addrlen)
+{
+    return ax_getsockname(sockfd, addr, addrlen);
+}
+
+int getpeername(int sockfd, struct sockaddr *restrict addr, socklen_t *restrict addrlen)
+{
+    return ax_getpeername(sockfd, addr, addrlen);
+}
 #endif

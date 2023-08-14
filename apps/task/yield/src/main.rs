@@ -15,18 +15,19 @@ fn main() {
         thread::spawn(move || {
             println!("Hello, task {}! id = {:?}", i, thread::current().id());
 
-            #[cfg(not(feature = "preempt"))]
+            #[cfg(all(not(feature = "sched_rr"), not(feature = "sched_cfs")))]
             thread::yield_now();
 
-            let order = FINISHED_TASKS.fetch_add(1, Ordering::Relaxed);
+            let _order = FINISHED_TASKS.fetch_add(1, Ordering::Relaxed);
+            #[cfg(not(feature = "sched_cfs"))]
             if option_env!("SMP") == Some("1") {
-                assert!(order == i); // FIFO scheduler
+                assert!(_order == i); // FIFO scheduler
             }
         });
     }
     println!("Hello, main task!");
     while FINISHED_TASKS.load(Ordering::Relaxed) < NUM_TASKS {
-        #[cfg(not(feature = "preempt"))]
+        #[cfg(all(not(feature = "sched_rr"), not(feature = "sched_cfs")))]
         thread::yield_now();
     }
     println!("Task yielding tests run OK!");

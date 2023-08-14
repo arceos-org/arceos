@@ -6,6 +6,7 @@ use axhal::{
 };
 use axio::{Seek, SeekFrom};
 use core::ptr::copy_nonoverlapping;
+use riscv::asm::sfence_vma;
 
 use crate::MemBackend;
 
@@ -58,7 +59,12 @@ impl MapArea {
     ) -> Self {
         let pages = PhysPage::alloc_contiguous(num_pages, PAGE_SIZE_4K, data)
             .expect("Error allocating memory when trying to map");
-
+        trace!(
+            "start: {:X?}, size: {:X},  page start: {:X?}",
+            start,
+            num_pages * PAGE_SIZE_4K,
+            pages[0].as_ref().unwrap().start_vaddr
+        );
         let _ = page_table
             .map_region(
                 start,
@@ -77,13 +83,18 @@ impl MapArea {
         }
     }
 
+    pub fn dealloc(&mut self, page_table: &mut PageTable) {
+        page_table.unmap_region(self.vaddr, self.size()).unwrap();
+        self.pages.clear();
+    }
+    /// 如果处理失败，返回false，此时直接退出当前程序
     pub fn handle_page_fault(
         &mut self,
         addr: VirtAddr,
         flags: MappingFlags,
         page_table: &mut PageTable,
-    ) {
-        info!(
+    ) -> bool {
+        trace!(
             "handling {:?} page fault in area [{:?}, {:?})",
             addr,
             self.vaddr,
@@ -94,26 +105,29 @@ impl MapArea {
             "Try to handle page fault address out of bound"
         );
         if !self.flags.contains(flags) {
-            panic!(
-                "Try to access {:?} memory with {:?} flag",
-                self.flags, flags
+            error!(
+                "Try to access {:?} memory addr: {:?} with {:?} flag",
+                self.flags, addr, flags
             );
+            return false;
         }
 
         let page_index = (usize::from(addr) - usize::from(self.vaddr)) / PAGE_SIZE_4K;
         if page_index >= self.pages.len() {
-            unreachable!("Phys page index out of bound");
+            error!("Phys page index out of bound");
+            return false;
         }
         if self.pages[page_index].is_some() {
-            panic!("Page fault in page already loaded");
+            error!("Page fault in page already loaded");
+            return false;
         }
 
-        info!("page index {}", page_index);
+        debug!("page index {}", page_index);
 
         // Allocate new page
         let mut page = PhysPage::alloc().expect("Error allocating new phys page for page fault");
 
-        info!(
+        debug!(
             "new phys page virtual (offset) address {:?}",
             page.start_vaddr
         );
@@ -144,21 +158,25 @@ impl MapArea {
                 self.flags,
             )
             .expect("Map in page fault handler failed");
-
+        unsafe {
+            sfence_vma(0, addr.align_down_4k().into());
+        }
         self.pages[page_index] = Some(page);
+        true
     }
 
+    /// Sync pages in index back to `self.backend` (if there is one).
+    ///
+    /// # Panics
+    ///
+    /// Panics if index is out of bounds.
     pub fn sync_page_with_backend(&mut self, page_index: usize) {
-        if page_index >= self.pages.len() {
-            panic!("Sync page index out of bound");
-        }
-
         if let Some(page) = &self.pages[page_index] {
             if let Some(backend) = &mut self.backend {
                 if backend.writable() {
                     let _ = backend
                         .write_to_seek(
-                            SeekFrom::Current((page_index * PAGE_SIZE_4K) as i64),
+                            SeekFrom::Start((page_index * PAGE_SIZE_4K) as u64),
                             page.as_slice(),
                         )
                         .unwrap();
@@ -176,15 +194,6 @@ impl MapArea {
 
         let delete_size = new_start.as_usize() - self.vaddr.as_usize();
         let delete_pages = delete_size / PAGE_SIZE_4K;
-
-        // sync allocated pages to file
-        if self.backend.is_some() {
-            for idx in 0..delete_pages {
-                if self.pages[idx].is_some() {
-                    self.sync_page_with_backend(idx);
-                }
-            }
-        }
 
         // move backend offset
         if let Some(backend) = &mut self.backend {
@@ -207,15 +216,6 @@ impl MapArea {
 
         let delete_size = self.end_va().as_usize() - new_end.as_usize();
         let delete_pages = delete_size / PAGE_SIZE_4K;
-
-        if self.backend.is_some() {
-            // sync allocated pages to file
-            for idx in (self.pages.len() - delete_pages)..self.pages.len() {
-                if self.pages[idx].is_some() {
-                    self.sync_page_with_backend(idx);
-                }
-            }
-        };
 
         // remove (dealloc) phys pages
         drop(
@@ -252,8 +252,6 @@ impl MapArea {
                 backend
             }),
         }
-
-        // TODO: maybe we need to sync back to file
     }
 
     /// Split this area into 3.
@@ -337,13 +335,6 @@ impl MapArea {
         let delete_range = ((left_end.as_usize() - self.vaddr.as_usize()) / PAGE_SIZE_4K)
             ..((right_start.as_usize() - self.vaddr.as_usize()) / PAGE_SIZE_4K);
 
-        // sync allocated pages to file
-        for idx in delete_range.clone() {
-            if self.pages[idx].is_some() {
-                self.sync_page_with_backend(idx);
-            }
-        }
-
         // create a right area
         let pages = self
             .pages
@@ -422,9 +413,8 @@ impl MapArea {
     /// this function.
     pub fn update_flags(&mut self, flags: MappingFlags, page_table: &mut PageTable) {
         self.flags = flags;
-
         let _ = page_table
-            .update_region(self.vaddr, PAGE_SIZE_4K, flags)
+            .update_region(self.vaddr, self.size(), flags)
             .unwrap();
     }
 
@@ -483,16 +473,6 @@ impl MapArea {
                 vaddr: self.vaddr,
                 flags: self.flags,
                 backend: self.backend.clone(),
-            }
-        }
-    }
-}
-
-impl Drop for MapArea {
-    fn drop(&mut self) {
-        for idx in 0..self.pages.len() {
-            if self.pages[idx].is_some() {
-                self.sync_page_with_backend(idx);
             }
         }
     }

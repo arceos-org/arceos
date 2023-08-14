@@ -17,7 +17,7 @@ documentation = "https://rcore-os.github.io/arceos/libax/index.html"
 [features]
 
 # Multicore
-smp = ["axruntime/smp"]
+smp = ["axruntime/smp", "spinlock/smp"]
 
 # Floating point/SIMD
 fp_simd = ["axhal/fp_simd"]
@@ -64,16 +64,25 @@ platform-pc-x86 = ["axhal/platform-pc-x86", "bus-pci"]
 platform-qemu-virt-riscv = ["axhal/platform-qemu-virt-riscv", "bus-mmio"]
 platform-qemu-virt-aarch64 = ["axhal/platform-qemu-virt-aarch64", "bus-mmio"]
 
-# Macro
-macro = ["axruntime/macro", "fs"]
+# Monolithic kernel
+monolithic = ["axruntime/monolithic", "fs"]
 
 # Test
 test = []
 
-default = ["axtask?/sched_fifo", "axtask", "axmem", "macro", "test", "paging"]
+# Preempt
+preempt = ["axruntime/preempt", "axprocess/preempt", "irq"]
+
+# Signal
+signal = ["axprocess/signal", "multitask", "preempt"]
+
+default = ["axtask?/sched_fifo", "axtask", "axmem", "monolithic", "test", "paging", "signal", "net", "smp"]
 [dependencies]
+numeric-enum-macro = { git = "https://github.com/mexus/numeric-enum-macro" }
+# base-file = { git = "https://github.com/scPointer/maturin/tree/master/modules/base-file" }
+# poll ={ git = "https://github.com/scPointer/maturin/tree/master/modules/poll" }
 spin = { version = "0.9", optional = true }
-lazy_static = { version = "1.4", features = ["spin_no_std"]}
+lazy_static = { version = "1.4", features = ["spin_no_std"] }
 page_table_entry = { path = "../../crates/page_table_entry" }
 spinlock = { path = "../../crates/spinlock" }
 flatten_objects = { path = "../../crates/flatten_objects" }
@@ -92,6 +101,7 @@ axsync = { path = "../../modules/axsync", default-features = false }
 axtask = { path = "../../modules/axtask", default-features = false, optional = true }
 axmem = { path = "../../modules/axmem", default-features = false, optional = true }
 axprocess = { path = "../../modules/axprocess", default-features = false }
+axsignal = { path = "../../modules/axsignal", default-features = false }
 log = "0.4.0"
 bitflags = "2.0"
 memory_addr = { path = "../../crates/memory_addr" }
@@ -100,3 +110,7 @@ riscv = { path = "../../extern_crates/riscv-0.10.1" }
 crate_interface = { path = "../../crates/crate_interface" }
 kernel_guard = { path = "../../crates/kernel_guard" }
 lazy_init = { path = "../../crates/lazy_init" }
+num_enum = { version = "0.5.11", default-features = false }
+rand = { path = "../../extern_crates/rand-0.8.5", default-features = false, features = [
+    "small_rng",
+] }

@@ -119,6 +119,63 @@
 #define AF_XDP        PF_XDP
 #define AF_MAX        PF_MAX
 
+#define SO_DEBUG       1
+#define SO_REUSEADDR   2
+#define SO_TYPE        3
+#define SO_ERROR       4
+#define SO_DONTROUTE   5
+#define SO_BROADCAST   6
+#define SO_SNDBUF      7
+#define SO_RCVBUF      8
+#define SO_KEEPALIVE   9
+#define SO_OOBINLINE   10
+#define SO_NO_CHECK    11
+#define SO_PRIORITY    12
+#define SO_LINGER      13
+#define SO_BSDCOMPAT   14
+#define SO_REUSEPORT   15
+#define SO_PASSCRED    16
+#define SO_PEERCRED    17
+#define SO_RCVLOWAT    18
+#define SO_SNDLOWAT    19
+#define SO_ACCEPTCONN  30
+#define SO_PEERSEC     31
+#define SO_SNDBUFFORCE 32
+#define SO_RCVBUFFORCE 33
+#define SO_PROTOCOL    38
+#define SO_DOMAIN      39
+
+#define SOL_SOCKET 1
+
+#define SOL_IP     0
+#define SOL_IPV6   41
+#define SOL_ICMPV6 58
+
+#define SOL_RAW       255
+#define SOL_DECNET    261
+#define SOL_X25       262
+#define SOL_PACKET    263
+#define SOL_ATM       264
+#define SOL_AAL       265
+#define SOL_IRDA      266
+#define SOL_NETBEUI   267
+#define SOL_LLC       268
+#define SOL_DCCP      269
+#define SOL_NETLINK   270
+#define SOL_TIPC      271
+#define SOL_RXRPC     272
+#define SOL_PPPOL2TP  273
+#define SOL_BLUETOOTH 274
+#define SOL_PNPIPE    275
+#define SOL_RDS       276
+#define SOL_IUCV      277
+#define SOL_CAIF      278
+#define SOL_ALG       279
+#define SOL_NFC       280
+#define SOL_KCM       281
+#define SOL_TLS       282
+#define SOL_XDP       283
+
 typedef unsigned short sa_family_t;
 struct sockaddr {
     sa_family_t sa_family;
@@ -147,6 +204,12 @@ ssize_t recv(int, void *, size_t, int);
 ssize_t sendto(int, const void *, size_t, int, const struct sockaddr *, socklen_t);
 ssize_t recvfrom(int, void *__restrict, size_t, int, struct sockaddr *__restrict,
                  socklen_t *__restrict);
+
+int getsockopt(int, int, int, void *__restrict, socklen_t *__restrict);
+int setsockopt(int, int, int, const void *, socklen_t);
+
+int getsockname(int sockfd, struct sockaddr *restrict addr, socklen_t *restrict addrlen);
+int getpeername(int sockfd, struct sockaddr *restrict addr, socklen_t *restrict addrlen);
 
 #endif
 #endif

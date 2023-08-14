@@ -1,19 +1,29 @@
-use crate::fs::FilePath;
+extern crate alloc;
 
-use super::flags::OpenFlags;
+use crate::syscall::flags::TimeSecs;
+
 use super::link::get_link_count;
 use super::types::{normal_file_mode, StMode};
-extern crate alloc;
+use alloc::borrow::ToOwned;
+use alloc::collections::BTreeMap;
 use alloc::string::{String, ToString};
 use alloc::sync::Arc;
+use alloc::vec;
+use alloc::vec::Vec;
 use axerrno::AxResult;
 use axfs::api::File;
-use axfs::macro_fs::file_io::{FileExt, Kstat};
-use axfs::macro_fs::FileIO;
-use axfs::macro_fs::FileIOType;
+use axfs::monolithic_fs::file_io::{FileExt, Kstat};
+use axfs::monolithic_fs::flags::OpenFlags;
+use axfs::monolithic_fs::FileIO;
+use axfs::monolithic_fs::FileIOType;
+use axhal::time::TimeValue;
+
 use axio::{Read, Seek, SeekFrom, Write};
+use axprocess::link::FilePath;
 use axsync::Mutex;
-use log::debug;
+use log::{debug, info};
+
+use axfs::BLOCK_SIZE;
 
 /// 文件描述符
 pub struct FileDesc {
@@ -31,11 +41,11 @@ pub struct FileDesc {
 /// TODO: 暂时全部记为usize
 pub struct FileMetaData {
     /// 最后一次访问时间
-    pub atime: usize,
+    pub atime: TimeSecs,
     /// 最后一次改变(modify)内容的时间
-    pub mtime: usize,
+    pub mtime: TimeSecs,
     /// 最后一次改变(change)属性的时间
-    pub ctime: usize,
+    pub ctime: TimeSecs,
     // /// 打开时的选项。
     // /// 主要用于判断 CLOEXEC，即 exec 时是否关闭。默认为 false。
     // pub flags: OpenFlags,
@@ -60,7 +70,32 @@ impl Write for FileDesc {
 
 impl Seek for FileDesc {
     fn seek(&mut self, pos: SeekFrom) -> AxResult<u64> {
-        self.file.lock().seek(pos)
+        let mut file = self.file.lock();
+        let size = file.metadata().unwrap().raw_metadata().size();
+        let old_offset = file.seek(SeekFrom::Current(0)).unwrap();
+        let new_offset = match pos {
+            SeekFrom::Start(offset) => Some(offset),
+            SeekFrom::Current(offset) => {
+                let new_offset = old_offset as i64 + offset;
+                if new_offset < 0 {
+                    None
+                } else {
+                    Some(new_offset as u64)
+                }
+            }
+            SeekFrom::End(_) => None,
+        };
+        if new_offset.is_some() {
+            let new_offset = new_offset.unwrap();
+            if new_offset > size {
+                // 手动写入足够数目的0
+                file.seek(SeekFrom::End(0)).unwrap();
+                let buf = vec![0u8; (new_offset - size) as usize];
+                file.write(&buf)?;
+                file.seek(SeekFrom::Start(old_offset)).unwrap();
+            }
+        }
+        file.seek(pos)
     }
 }
 
@@ -75,13 +110,17 @@ impl FileExt for FileDesc {
         self.file.lock().executable()
     }
 }
-
+/// 为FileDesc实现FileIO trait
 impl FileIO for FileDesc {
     fn get_type(&self) -> FileIOType {
         FileIOType::FileDesc
     }
     fn get_path(&self) -> String {
         self.path.clone()
+    }
+
+    fn truncate(&mut self, len: usize) -> AxResult<()> {
+        self.file.lock().truncate(len)
     }
 
     fn get_stat(&self) -> AxResult<Kstat> {
@@ -93,29 +132,72 @@ impl FileIO for FileDesc {
             st_dev: 1,
             st_ino: 1,
             st_mode: normal_file_mode(StMode::S_IFREG).bits(),
-            st_nlink: get_link_count(&FilePath::new(self.path.as_str())) as u32,
+            st_nlink: get_link_count(&(self.path.as_str().to_string())) as u32,
             st_uid: 0,
             st_gid: 0,
             st_rdev: 0,
             _pad0: 0,
-            st_size: raw_metadata.size() as u64,
+            st_size: raw_metadata.size(),
             st_blksize: 0,
             _pad1: 0,
             st_blocks: raw_metadata.blocks() as u64,
-            st_atime_sec: stat.atime as isize,
-            st_atime_nsec: 0,
-            st_mtime_sec: stat.mtime as isize,
-            st_mtime_nsec: 0,
-            st_ctime_sec: stat.ctime as isize,
-            st_ctime_nsec: 0,
-            _unused: [0; 2],
+            st_atime_sec: stat.atime.tv_sec as isize,
+            st_atime_nsec: stat.atime.tv_nsec as isize,
+            st_mtime_sec: stat.mtime.tv_sec as isize,
+            st_mtime_nsec: stat.mtime.tv_nsec as isize,
+            st_ctime_sec: stat.ctime.tv_sec as isize,
+            st_ctime_nsec: stat.ctime.tv_nsec as isize,
         };
         debug!("kstat: {:?}", kstat);
         Ok(kstat)
     }
+
+    fn set_status(&mut self, flags: OpenFlags) -> bool {
+        self.flags = flags;
+        true
+    }
+
+    fn get_status(&self) -> OpenFlags {
+        self.flags
+    }
+
+    fn set_close_on_exec(&mut self, is_set: bool) -> bool {
+        if is_set {
+            // 设置close_on_exec位置
+            self.flags |= OpenFlags::CLOEXEC;
+        } else {
+            self.flags &= !OpenFlags::CLOEXEC;
+        }
+        true
+    }
+
+    fn ready_to_read(&mut self) -> bool {
+        if !self.readable() {
+            return false;
+        }
+        // 获取当前的位置
+        let now_pos = self.seek(SeekFrom::Current(0)).unwrap();
+        // 获取最后的位置
+        let len = self.seek(SeekFrom::End(0)).unwrap();
+        // 把文件指针复原，因为获取len的时候指向了尾部
+        self.seek(SeekFrom::Start(now_pos)).unwrap();
+        now_pos != len
+    }
+
+    fn ready_to_write(&mut self) -> bool {
+        if !self.writable() {
+            return false;
+        }
+        // 获取当前的位置
+        let now_pos = self.seek(SeekFrom::Current(0)).unwrap();
+        // 获取最后的位置
+        let len = self.seek(SeekFrom::End(0)).unwrap();
+        // 把文件指针复原，因为获取len的时候指向了尾部
+        self.seek(SeekFrom::Start(now_pos)).unwrap();
+        now_pos != len
+    }
 }
 
-/// 为FileDesc实现FileIO trait
 impl FileDesc {
     /// debug
 
@@ -126,23 +208,28 @@ impl FileDesc {
             file,
             flags,
             stat: Mutex::new(FileMetaData {
-                atime: 0,
-                mtime: 0,
-                ctime: 0,
+                atime: TimeSecs::default(),
+                mtime: TimeSecs::default(),
+                ctime: TimeSecs::default(),
             }),
         }
     }
 }
 
-/// 新建一个文件描述符
-pub fn new_fd(path: String, flags: OpenFlags) -> AxResult<FileDesc> {
-    debug!("Into function new_fd, path: {}", path);
+/// 若使用多次new file打开同名文件，那么不同new file之间读写指针不共享，但是修改的内容是共享的
+pub fn new_file(path: &str, flags: &OpenFlags) -> AxResult<File> {
     let mut file = File::options();
     file.read(flags.readable());
     file.write(flags.writable());
     file.create(flags.creatable());
     file.create_new(flags.new_creatable());
-    let file = file.open(path.as_str())?;
+    file.open(path)
+}
+
+/// 新建一个文件描述符
+pub fn new_fd(path: String, flags: OpenFlags) -> AxResult<FileDesc> {
+    debug!("Into function new_fd, path: {}", path);
+    let file = new_file(path.as_str(), &flags)?;
     // let file_size = file.metadata()?.len();
     let fd = FileDesc::new(path.as_str(), Arc::new(Mutex::new(file)), flags);
     Ok(fd)

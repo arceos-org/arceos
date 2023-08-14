@@ -4,11 +4,12 @@
 #![feature(naked_functions)]
 #![feature(result_option_inspect)]
 
+extern crate alloc;
 #[cfg(not(test))]
 extern crate axruntime;
 
 #[allow(unused_imports)]
-mod fs;
+pub mod fs;
 pub mod io;
 pub mod syscall;
 

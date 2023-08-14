@@ -3,6 +3,7 @@ use axerrno::{LinuxError, LinuxResult};
 use core::ffi::c_int;
 
 use super::{ctypes, fd_ops::FileLike};
+use crate::io::PollState;
 use crate::sync::Mutex;
 use crate::thread::yield_now;
 
@@ -173,6 +174,18 @@ impl FileLike for Pipe {
 
     fn into_any(self: Arc<Self>) -> Arc<dyn core::any::Any + Send + Sync> {
         self
+    }
+
+    fn poll(&self) -> LinuxResult<PollState> {
+        let buf = self.buffer.lock();
+        Ok(PollState {
+            readable: self.readable() && buf.available_read() > 0,
+            writable: self.writable() && buf.available_write() > 0,
+        })
+    }
+
+    fn set_nonblocking(&self, _nonblocking: bool) -> LinuxResult {
+        Ok(())
     }
 }
 

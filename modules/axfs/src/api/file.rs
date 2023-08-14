@@ -1,7 +1,10 @@
 use axio::{prelude::*, Result, SeekFrom};
 use core::fmt;
 
-use crate::{fops, macro_fs::file_io::FileExt};
+use crate::{fops, monolithic_fs::file_io::FileExt};
+
+extern crate alloc;
+use alloc::vec::Vec;
 
 /// A structure representing a type of file with accessors for each file type.
 /// It is returned by [`Metadata::file_type`] method.
@@ -102,6 +105,11 @@ impl Metadata {
         self.0.perm()
     }
 
+    /// Sets the permissions of the file this metadata is for.
+    pub fn set_permissions(&mut self, perm: Permissions) {
+        self.0.set_perm(perm)
+    }
+
     /// Returns the inner raw metadata [`fops::FileAttr`].
     pub const fn raw_metadata(&self) -> &fops::FileAttr {
         &self.0
@@ -161,11 +169,27 @@ impl File {
     pub fn executable(&self) -> bool {
         self.inner.executable()
     }
+
+    pub fn truncate(&mut self, len: usize) -> Result<()> {
+        self.inner.truncate(len as u64)
+    }
 }
 
 impl Read for File {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
         self.inner.read(buf)
+    }
+    /// Read all bytes until EOF in this source, placing them into `buf`.
+    fn read_to_end(&mut self, buf: &mut Vec<u8>) -> Result<usize> {
+        let start_len = buf.len();
+        let mut probe = [0u8; 0x20000];
+        loop {
+            match self.read(&mut probe) {
+                Ok(0) => return Ok(buf.len() - start_len),
+                Ok(n) => buf.extend_from_slice(&probe[..n]),
+                Err(e) => return Err(e),
+            }
+        }
     }
 }
 
@@ -185,7 +209,7 @@ impl Seek for File {
     }
 }
 
-// #[cfg(feature = "macro")]
+// #[cfg(feature = "monolithic")]
 impl FileExt for File {
     fn readable(&self) -> bool {
         self.inner.readable()

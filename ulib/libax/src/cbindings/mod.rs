@@ -16,18 +16,19 @@ mod fd_ops;
 #[cfg(feature = "fs")]
 mod file;
 #[cfg(feature = "alloc")]
+mod io_mpx;
+#[cfg(feature = "alloc")]
 mod malloc;
 #[cfg(feature = "pipe")]
 mod pipe;
+#[cfg(feature = "multitask")]
+mod pthread;
 #[cfg(feature = "net")]
 mod socket;
-#[cfg(feature = "multitask")]
-mod thread;
+#[cfg(feature = "fp_simd")]
+mod strtod;
 
-<<<<<<< HEAD
-=======
 mod errno;
->>>>>>> 322a8c34d08df4a657daf4bb67e4031480162883
 mod setjmp;
 mod stdio;
 mod sys;
@@ -68,20 +69,27 @@ pub use self::file::{ax_getcwd, ax_lseek, ax_lstat, ax_open, ax_stat};
 
 #[cfg(feature = "net")]
 pub use self::socket::{
-    ax_accept, ax_bind, ax_connect, ax_listen, ax_recv, ax_recvfrom, ax_resolve_sockaddr, ax_send,
-    ax_sendto, ax_shutdown, ax_socket,
+    ax_accept, ax_bind, ax_connect, ax_getpeername, ax_getsockname, ax_listen, ax_recv,
+    ax_recvfrom, ax_resolve_sockaddr, ax_send, ax_sendto, ax_shutdown, ax_socket,
 };
 
 #[cfg(feature = "multitask")]
-pub use self::thread::ax_getpid;
+pub use self::pthread::mutex::{
+    ax_pthread_mutex_init, ax_pthread_mutex_lock, ax_pthread_mutex_unlock,
+};
+#[cfg(feature = "multitask")]
+pub use self::pthread::{ax_getpid, ax_pthread_create, ax_pthread_exit, ax_pthread_join};
 
 #[cfg(feature = "pipe")]
 pub use self::pipe::ax_pipe;
 
-<<<<<<< HEAD
-=======
+#[cfg(feature = "alloc")]
+pub use self::io_mpx::{ax_epoll_create, ax_epoll_ctl, ax_epoll_wait, ax_select};
+
+#[cfg(feature = "fp_simd")]
+pub use self::strtod::{ax_strtod, ax_strtof};
+
 pub use self::errno::ax_errno_string;
->>>>>>> 322a8c34d08df4a657daf4bb67e4031480162883
 pub use self::stdio::{ax_print_str, ax_println_str};
 pub use self::sys::ax_sysconf;
 pub use self::time::{ax_clock_gettime, ax_nanosleep};

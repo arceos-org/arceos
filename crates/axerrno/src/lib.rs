@@ -10,6 +10,9 @@
 //! [`std::io::ErrorKind`]: https://doc.rust-lang.org/std/io/enum.ErrorKind.html
 
 #![no_std]
+#![feature(variant_count)]
+
+use core::fmt;
 
 mod linux_errno {
     include!(concat!(env!("OUT_DIR"), "/linux_errno.rs"));
@@ -27,7 +30,7 @@ pub use linux_errno::LinuxError;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum AxError {
     /// A socket address could not be bound because the address is already in use elsewhere.
-    AddrInUse,
+    AddrInUse = 1,
     /// An entity already exists, often a file.
     AlreadyExists,
     /// Bad address.
@@ -36,6 +39,8 @@ pub enum AxError {
     BadState,
     /// The connection was refused by the remote server,
     ConnectionRefused,
+    /// The connection was reset by the remote server.
+    ConnectionReset,
     /// A non-empty directory was specified where an empty directory was expected.
     DirectoryNotEmpty,
     /// Data not valid for the operation were encountered.
@@ -80,6 +85,10 @@ pub enum AxError {
     /// An error returned when an operation could not be completed because a
     /// call to `write()` returned [`Ok(0)`](Ok).
     WriteZero,
+    /// Syscall interrupted by a caught signal
+    Interrupted,
+    /// Syscall timed out
+    Timeout,
 }
 
 /// A specialized [`Result`] type with [`AxError`] as the error type.
@@ -183,13 +192,55 @@ impl AxError {
     pub fn as_str(&self) -> &'static str {
         use AxError::*;
         match *self {
+            AddrInUse => "Address in use",
+            BadAddress => "Bad address",
             BadState => "Bad internal state",
+            AlreadyExists => "Entity already exists",
+            ConnectionRefused => "Connection refused",
+            ConnectionReset => "Connection reset",
+            DirectoryNotEmpty => "Directory not empty",
             InvalidData => "Invalid data",
-            Unsupported => "Operation not supported",
+            InvalidInput => "Invalid input parameter",
+            Io => "I/O error",
+            IsADirectory => "Is a directory",
+            NoMemory => "Out of memory",
+            NotADirectory => "Not a directory",
+            NotConnected => "Not connected",
+            NotFound => "Entity not found",
+            PermissionDenied => "Permission denied",
+            ResourceBusy => "Resource busy",
+            StorageFull => "No storage space",
             UnexpectedEof => "Unexpected end of file",
+            Unsupported => "Operation not supported",
+            WouldBlock => "Operation would block",
             WriteZero => "Write zero",
-            _ => LinuxError::from(*self).as_str(),
+            Interrupted => "Interrupted",
+            Timeout => "Timeout",
         }
+    }
+
+    /// Returns the error code value in `i32`.
+    pub const fn code(self) -> i32 {
+        self as i32
+    }
+}
+
+impl TryFrom<i32> for AxError {
+    type Error = i32;
+
+    #[inline]
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        if value > 0 && value <= core::mem::variant_count::<AxError>() as i32 {
+            Ok(unsafe { core::mem::transmute(value) })
+        } else {
+            Err(value)
+        }
+    }
+}
+
+impl fmt::Display for AxError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
     }
 }
 
@@ -201,6 +252,7 @@ impl From<AxError> for LinuxError {
             AlreadyExists => LinuxError::EEXIST,
             BadAddress | BadState => LinuxError::EFAULT,
             ConnectionRefused => LinuxError::ECONNREFUSED,
+            ConnectionReset => LinuxError::ECONNRESET,
             DirectoryNotEmpty => LinuxError::ENOTEMPTY,
             InvalidInput | InvalidData => LinuxError::EINVAL,
             Io => LinuxError::EIO,
@@ -215,11 +267,40 @@ impl From<AxError> for LinuxError {
             Unsupported => LinuxError::ENOSYS,
             UnexpectedEof | WriteZero => LinuxError::EIO,
             WouldBlock => LinuxError::EAGAIN,
+            Interrupted => LinuxError::EINTR,
+            Timeout => LinuxError::ETIME,
         }
+    }
+}
+
+impl fmt::Display for LinuxError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
     }
 }
 
 #[doc(hidden)]
 pub mod __priv {
     pub use log::warn;
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::AxError;
+
+    #[test]
+    fn test_try_from() {
+        let max_code = core::mem::variant_count::<AxError>() as i32;
+        assert_eq!(max_code, 22);
+        assert_eq!(max_code, AxError::WriteZero.code());
+
+        assert_eq!(AxError::AddrInUse.code(), 1);
+        assert_eq!(Ok(AxError::AddrInUse), AxError::try_from(1));
+        assert_eq!(Ok(AxError::AlreadyExists), AxError::try_from(2));
+        assert_eq!(Ok(AxError::WriteZero), AxError::try_from(max_code));
+        assert_eq!(Err(max_code + 1), AxError::try_from(max_code + 1));
+        assert_eq!(Err(0), AxError::try_from(0));
+        assert_eq!(Err(-1), AxError::try_from(-1));
+        assert_eq!(Err(i32::MAX), AxError::try_from(i32::MAX));
+    }
 }

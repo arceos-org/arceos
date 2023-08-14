@@ -25,7 +25,7 @@ extern crate axlog;
 #[cfg(all(target_os = "none", not(test)))]
 mod lang_items;
 
-#[cfg(not(feature = "macro"))]
+#[cfg(not(feature = "monolithic"))]
 mod trap;
 
 #[cfg(feature = "smp")]
@@ -148,12 +148,11 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) {
         info!("Initialize kernel page table...");
         remap_kernel_memory().expect("remap kernel memoy failed");
     }
-
     info!("Initialize platform devices...");
     axhal::platform_init();
 
     cfg_if::cfg_if! {
-        if #[cfg(feature = "macro")] {
+        if #[cfg(feature = "monolithic")] {
             axprocess::process::init_kernel_process();
         }
         else {
@@ -192,7 +191,6 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) {
     while !is_init_ok() {
         core::hint::spin_loop();
     }
-
     unsafe { main() };
 
     #[cfg(feature = "multitask")]
@@ -261,7 +259,6 @@ cfg_if::cfg_if! {
 #[cfg(feature = "irq")]
 fn init_interrupt() {
     use axhal::time::TIMER_IRQ_NUM;
-
     // Setup timer interrupt handler
     const PERIODIC_INTERVAL_NANOS: u64 =
         axhal::time::NANOS_PER_SEC / axconfig::TICKS_PER_SEC as u64;
@@ -285,7 +282,5 @@ fn init_interrupt() {
         #[cfg(feature = "multitask")]
         axtask::on_timer_tick();
     });
-
-    // Enable IRQs before starting app
     axhal::arch::enable_irqs();
 }

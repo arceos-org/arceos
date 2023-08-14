@@ -1,7 +1,9 @@
 #![cfg_attr(not(test), no_std)]
 #![feature(drain_filter)]
+#![feature(btree_drain_filter)]
+use axerrno::AxResult;
 use axhal::{arch::TaskContext, mem::VirtAddr, paging::MappingFlags};
-use axtask::{current, macro_task::task::CurrentTask, macro_task::task::TaskState};
+use axtask::{current, monolithic_task::task::CurrentTask, monolithic_task::task::TaskState};
 
 use crate::process::current_process;
 mod loader;
@@ -11,6 +13,16 @@ pub mod flags;
 pub mod process;
 pub mod stdin;
 // mod test;
+pub mod futex;
+pub mod link;
+
+#[cfg(feature = "signal")]
+mod signal;
+
+#[cfg(feature = "signal")]
+pub use signal::{
+    handle_signals, send_signal_to_process, send_signal_to_thread, signal_return, SignalModule,
+};
 
 /// 开始进行调度，我们先执行gc任务，通过gc任务逐个执行并收集RUN_QUEUE中的任务
 /// 所以先切换到gc对应的任务上下文即可
@@ -19,6 +31,7 @@ pub fn start_schedule() {
     let curr: CurrentTask = current();
     #[cfg(feature = "preempt")]
     curr.set_preempt_pending(false);
+
     curr.set_state(TaskState::Running);
     unsafe {
         let prev_ctx_ptr = TaskContext::new_empty();
@@ -48,12 +61,20 @@ pub fn time_stat_output() -> (usize, usize, usize, usize) {
     curr_task.time_stat_output()
 }
 
-pub fn handle_page_fault(addr: VirtAddr, flags: MappingFlags) {
-    axlog::info!("'page fault' addr: {:?}, flags: {:?}", addr, flags);
+pub fn handle_page_fault(addr: VirtAddr, flags: MappingFlags) -> AxResult<()> {
+    axlog::debug!("'page fault' addr: {:?}, flags: {:?}", addr, flags);
     let current = current_process();
     let inner = current.inner.lock();
-    inner.memory_set.lock().handle_page_fault(addr, flags);
+    axlog::debug!(
+        "memory token : {}",
+        inner.memory_set.lock().page_table_token()
+    );
+    let ans = inner.memory_set.lock().handle_page_fault(addr, flags);
     drop(inner);
-    drop(current);
-    unsafe { riscv::asm::sfence_vma_all() };
+    if ans.is_ok() {
+        unsafe { riscv::asm::sfence_vma_all() };
+    } else {
+        axhal::trap::exit();
+    }
+    ans
 }

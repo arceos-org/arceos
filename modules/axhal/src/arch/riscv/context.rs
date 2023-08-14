@@ -52,6 +52,8 @@ pub struct TrapFrame {
     pub sepc: usize,
     /// Supervisor Status Register.
     pub sstatus: usize,
+    /// 浮点数寄存器
+    pub fs: [usize; 2],
 }
 
 impl TrapFrame {
@@ -66,7 +68,9 @@ impl TrapFrame {
         let mut trap_frame = TrapFrame::default();
         trap_frame.set_user_sp(user_sp);
         trap_frame.sepc = app_entry;
-        trap_frame.sstatus = unsafe { *(&sstatus as *const Sstatus as *const usize) & !(1 << 8) };
+        trap_frame.sstatus =
+            unsafe { (*(&sstatus as *const Sstatus as *const usize) & !(1 << 8)) & !(1 << 1) };
+        // 保证sstatus不支持sie使能
         unsafe {
             // a0为参数个数
             // a1存储的是用户栈底，即argv
@@ -135,6 +139,10 @@ impl TaskContext {
     /// It first saves the current task's context from CPU to this place, and then
     /// restores the next task's context from `next_ctx` to CPU.
     pub fn switch_to(&mut self, next_ctx: &Self) {
+        // let trap: usize = 0xFFFFFFC0805BFEF8;
+        // let trap_frame: *const TrapFrame = trap as *const TrapFrame;
+        // info!("trap_frame: {:?}", unsafe { &*trap_frame });
+        // info!("next task: {:X?}", (*next_ctx).ra);
         unsafe {
             // TODO: switch TLS
             context_switch(self, next_ctx)

@@ -2,9 +2,6 @@
 
 struct TrapHandlerImpl;
 
-#[cfg(feature = "paging")]
-use axprocess::handle_page_fault;
-
 #[crate_interface::impl_interface]
 impl axhal::trap::TrapHandler for TrapHandlerImpl {
     fn handle_irq(_irq_num: usize) {
@@ -18,6 +15,11 @@ impl axhal::trap::TrapHandler for TrapHandlerImpl {
 
     #[cfg(feature = "paging")]
     fn handle_page_fault(addr: memory_addr::VirtAddr, flags: page_table::MappingFlags) {
-        handle_page_fault(addr, flags);
+        unimplemented!();
+    }
+
+    #[cfg(feature = "signal")]
+    fn handle_signal() {
+        unimplemented!();
     }
 }

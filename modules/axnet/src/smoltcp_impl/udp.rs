@@ -1,17 +1,23 @@
 use axerrno::{ax_err, ax_err_type, AxError, AxResult};
+use axhal::time::current_ticks;
+use axio::{PollState, Read, Write};
 use axsync::Mutex;
 
 use smoltcp::iface::SocketHandle;
 use smoltcp::socket::udp::{self, BindError, SendError};
+use smoltcp::wire::{IpAddress, IpListenEndpoint};
 
-use super::{SocketSetWrapper, ETH0, SOCKET_SET};
+use super::{SocketSetWrapper, LOOPBACK, SOCKET_SET};
 use crate::SocketAddr;
+
+const UNSPECIFIED_IP: IpAddress = IpAddress::v4(0, 0, 0, 0);
 
 /// A UDP socket that provides POSIX-like APIs.
 pub struct UdpSocket {
-    handle: Option<SocketHandle>,
+    handle: SocketHandle,
     local_addr: Option<SocketAddr>,
     peer_addr: Option<SocketAddr>,
+    nonblock: bool,
 }
 
 impl UdpSocket {
@@ -19,11 +25,12 @@ impl UdpSocket {
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         let socket = SocketSetWrapper::new_udp_socket();
-        let handle = Some(SOCKET_SET.add(socket));
+        let handle = SOCKET_SET.add(socket);
         Self {
             handle,
             local_addr: None,
             peer_addr: None,
+            nonblock: false,
         }
     }
 
@@ -39,44 +46,56 @@ impl UdpSocket {
         self.peer_addr.ok_or(AxError::NotConnected)
     }
 
+    /// Moves this UDP socket into or out of nonblocking mode.
+    ///
+    /// This will result in `recv`, `recv_from`, `send`, and `send_to`
+    /// operations becoming nonblocking, i.e., immediately returning from their
+    /// calls. If the IO operation is successful, `Ok` is returned and no
+    /// further action is required. If the IO operation could not be completed
+    /// and needs to be retried, an error with kind
+    /// [`Err(WouldBlock)`](AxError::WouldBlock) is returned.
+    pub fn set_nonblocking(&mut self, nonblocking: bool) {
+        self.nonblock = nonblocking;
+    }
+
+    pub fn is_nonblocking(&self) -> bool {
+        self.nonblock
+    }
+
     /// Binds an unbound socket to the given address and port.
     ///
     /// It's must be called before [`send_to`](Self::send_to) and
     /// [`recv_from`](Self::recv_from).
-    pub fn bind(&mut self, addr: SocketAddr) -> AxResult {
-        let handle = self
-            .handle
-            .ok_or_else(|| ax_err_type!(InvalidInput, "socket bind() failed"))?;
-        let mut addr = addr;
-        if addr.port == 0 {
-            addr.port = get_ephemeral_port()?;
+    pub fn bind(&mut self, mut local_addr: SocketAddr) -> AxResult {
+        if local_addr.addr.is_unspecified() && local_addr.addr != UNSPECIFIED_IP {
+            return ax_err!(InvalidInput, "socket bind() failed: invalid addr");
+        }
+        if local_addr.port == 0 {
+            local_addr.port = get_ephemeral_port()?;
         }
         if self.local_addr.is_some() {
             return ax_err!(InvalidInput, "socket bind() failed: already bound");
         }
-        SOCKET_SET.with_socket_mut::<udp::Socket, _, _>(handle, |socket| {
-            socket.bind(addr).or_else(|e| match e {
-                BindError::InvalidState => {
-                    ax_err!(AlreadyExists, "socket bind() failed")
-                }
-                BindError::Unaddressable => {
-                    ax_err!(InvalidInput, "socket bind() failed")
-                }
-            })?;
-            Ok(socket.endpoint())
+
+        let endpoint = IpListenEndpoint {
+            addr: (!local_addr.addr.is_unspecified()).then_some(local_addr.addr),
+            port: local_addr.port,
+        };
+        SOCKET_SET.with_socket_mut::<udp::Socket, _, _>(self.handle, |socket| {
+            socket.bind(endpoint).or_else(|e| match e {
+                BindError::InvalidState => ax_err!(AlreadyExists, "socket bind() failed"),
+                BindError::Unaddressable => ax_err!(InvalidInput, "socket bind() failed"),
+            })
         })?;
-        self.local_addr = Some(addr);
+        self.local_addr = Some(local_addr);
+        debug!("UDP socket bound on {}", endpoint);
         Ok(())
     }
 
     /// Transmits data in the given buffer to the given address.
     pub fn send_to(&self, buf: &[u8], addr: SocketAddr) -> AxResult<usize> {
-        let handle = self
-            .handle
-            .ok_or_else(|| ax_err_type!(InvalidInput, "socket bind() failed"))?;
-        loop {
-            SOCKET_SET.poll_interfaces();
-            match SOCKET_SET.with_socket_mut::<udp::Socket, _, _>(handle, |socket| {
+        self.block_on(|| {
+            SOCKET_SET.with_socket_mut::<udp::Socket, _, _>(self.handle, |socket| {
                 if !socket.is_open() {
                     // not bound
                     ax_err!(NotConnected, "socket send() failed")
@@ -93,48 +112,60 @@ impl UdpSocket {
                     // tx buffer is full
                     Err(AxError::WouldBlock)
                 }
-            }) {
-                Ok(n) => {
-                    SOCKET_SET.poll_interfaces();
-                    return Ok(n);
-                }
-                Err(AxError::WouldBlock) => axtask::yield_now(),
-                Err(e) => return Err(e),
-            }
-        }
+            })
+        })
     }
 
-    /// Receives data from the socket, stores it in the given buffer.
-    pub fn recv_from(&self, buf: &mut [u8]) -> AxResult<(usize, SocketAddr)> {
-        let handle = self
-            .handle
-            .ok_or_else(|| ax_err_type!(InvalidInput, "socket recv_from() failed"))?;
-        loop {
-            SOCKET_SET.poll_interfaces();
-            match SOCKET_SET.with_socket_mut::<udp::Socket, _, _>(handle, |socket| {
+    fn recv_impl<F, T>(&self, mut op: F, err: &str) -> AxResult<T>
+    where
+        F: FnMut(&mut udp::Socket) -> AxResult<T>,
+    {
+        self.block_on(|| {
+            SOCKET_SET.with_socket_mut::<udp::Socket, _, _>(self.handle, |socket| {
                 if !socket.is_open() {
                     // not connected
-                    ax_err!(NotConnected, "socket recv_from() failed")
+                    ax_err!(NotConnected, err)
                 } else if socket.can_recv() {
                     // data available
-                    // TODO: use socket.recv(|buf| {...})
-                    match socket.recv_slice(buf) {
-                        Ok(x) => Ok(x),
-                        Err(_) => Err(AxError::WouldBlock),
-                    }
+                    op(socket)
                 } else {
                     // no more data
                     Err(AxError::WouldBlock)
                 }
-            }) {
-                Ok(x) => {
-                    SOCKET_SET.poll_interfaces();
-                    return Ok(x);
+            })
+        })
+    }
+
+    /// Receives data from the socket, stores it in the given buffer.
+    pub fn recv_from(&self, buf: &mut [u8]) -> AxResult<(usize, SocketAddr)> {
+        self.recv_impl(
+            |socket| match socket.recv_slice(buf) {
+                Ok((len, meta)) => Ok((len, meta.endpoint)),
+                Err(_) => Err(AxError::WouldBlock),
+            },
+            "socket recv_from() failed",
+        )
+    }
+
+    /// Receives data from the socket, stores it in the given buffer.
+    ///
+    /// It will return [`Err(Timeout)`](AxError::Timeout) if expired.
+    pub fn recv_from_timeout(&self, buf: &mut [u8], ticks: u64) -> AxResult<(usize, SocketAddr)> {
+        let expire_at = current_ticks() + ticks;
+
+        self.recv_impl(
+            |socket| match socket.recv_slice(buf) {
+                Ok((len, meta)) => Ok((len, meta.endpoint)),
+                Err(_) => {
+                    if current_ticks() > expire_at {
+                        Err(AxError::Timeout)
+                    } else {
+                        Err(AxError::WouldBlock)
+                    }
                 }
-                Err(AxError::WouldBlock) => axtask::yield_now(),
-                Err(e) => return Err(e),
-            }
-        }
+            },
+            "socket recv_from() failed",
+        )
     }
 
     /// Connects to the given address and port.
@@ -143,9 +174,11 @@ impl UdpSocket {
     /// It's must be called before [`send`](Self::send) and
     /// [`recv`](Self::recv).
     pub fn connect(&mut self, addr: SocketAddr) -> AxResult {
-        if self.peer_addr.is_none() {
+        if self.local_addr.is_none() {
             self.bind(SocketAddr::new(
-                ETH0.iface
+                // ETH0.iface
+                //     .lock()
+                LOOPBACK
                     .lock()
                     .ipv4_addr()
                     .ok_or_else(|| ax_err_type!(BadAddress, "No IPv4 address"))?
@@ -165,99 +198,96 @@ impl UdpSocket {
     /// Recv data in the given buffer from the remote address to which it is connected.
     pub fn recv(&self, buf: &mut [u8]) -> AxResult<usize> {
         let peeraddr = self.peer_addr()?;
-        let handle = self
-            .handle
-            .ok_or_else(|| ax_err_type!(InvalidInput, "socket recv() failed"))?;
-        loop {
-            SOCKET_SET.poll_interfaces();
-            match SOCKET_SET.with_socket_mut::<udp::Socket, _, _>(handle, |socket| {
-                if !socket.is_open() {
-                    // not connected
-                    ax_err!(NotConnected, "socket recv() failed")
-                } else if socket.can_recv() {
-                    // data available
-                    // TODO: use socket.recv(|buf| {...})
-                    match socket.recv_slice(buf) {
-                        Ok(x) => {
-                            if x.1 == peeraddr {
-                                // filter data from the remote address to which it is connected.
-                                Ok(x.0)
-                            } else {
-                                Err(AxError::WouldBlock)
-                            }
-                        }
-                        Err(_) => Err(AxError::WouldBlock),
+        self.recv_impl(
+            |socket| match socket.recv_slice(buf) {
+                Ok((len, meta)) => {
+                    if meta.endpoint == peeraddr {
+                        // filter data from the remote address to which it is connected.
+                        Ok(len)
+                    } else {
+                        Err(AxError::WouldBlock)
                     }
-                } else {
-                    // no more data
-                    Err(AxError::WouldBlock)
                 }
-            }) {
-                Ok(x) => {
-                    SOCKET_SET.poll_interfaces();
-                    return Ok(x);
-                }
-                Err(AxError::WouldBlock) => axtask::yield_now(),
-                Err(e) => return Err(e),
-            }
-        }
+                Err(_) => Err(AxError::WouldBlock),
+            },
+            "socket recv() failed",
+        )
     }
 
     /// Close the socket.
     pub fn shutdown(&self) -> AxResult {
+        SOCKET_SET.with_socket_mut::<udp::Socket, _, _>(self.handle, |socket| {
+            debug!("UDP socket {}: shutting down", self.handle);
+            socket.close();
+        });
         SOCKET_SET.poll_interfaces();
-        if let Some(handle) = self.handle {
-            // stream
-            SOCKET_SET.with_socket_mut::<udp::Socket, _, _>(handle, |socket| {
-                debug!("socket {}: shutting down", handle);
-                socket.close();
-            });
-        } else {
-            return ax_err!(InvalidInput, "socket shutdown() failed");
-        }
         Ok(())
     }
 
     /// Receives data from the socket, stores it in the given buffer, without removing it from the queue.
     pub fn peek_from(&self, buf: &mut [u8]) -> AxResult<(usize, SocketAddr)> {
-        let handle = self
-            .handle
-            .ok_or_else(|| ax_err_type!(InvalidInput, "socket recv() failed"))?;
-        loop {
-            SOCKET_SET.poll_interfaces();
-            match SOCKET_SET.with_socket_mut::<udp::Socket, _, _>(handle, |socket| {
-                if !socket.is_open() {
-                    // not connected
-                    ax_err!(NotConnected, "socket recv() failed")
-                } else if socket.can_recv() {
-                    // data available
-                    // TODO: use socket.recv(|buf| {...})
-                    match socket.peek_slice(buf) {
-                        Ok(x) => Ok((x.0, *x.1)),
-                        Err(_) => Err(AxError::WouldBlock),
-                    }
-                } else {
-                    // no more data
-                    Err(AxError::WouldBlock)
+        self.recv_impl(
+            |socket| match socket.peek_slice(buf) {
+                Ok((len, meta)) => Ok((len, meta.endpoint)),
+                Err(_) => Err(AxError::WouldBlock),
+            },
+            "socket peek_from() failed",
+        )
+    }
+
+    /// Whether the socket is readable or writable.
+    pub fn poll(&self) -> AxResult<PollState> {
+        SOCKET_SET.with_socket_mut::<udp::Socket, _, _>(self.handle, |socket| {
+            Ok(PollState {
+                readable: socket.is_open() && socket.can_recv(),
+                writable: socket.is_open() && socket.can_send(),
+            })
+        })
+    }
+
+    fn block_on<F, T>(&self, mut f: F) -> AxResult<T>
+    where
+        F: FnMut() -> AxResult<T>,
+    {
+        if self.nonblock {
+            f()
+        } else {
+            loop {
+                SOCKET_SET.poll_interfaces();
+                match f() {
+                    Ok(t) => return Ok(t),
+                    Err(AxError::WouldBlock) => axtask::yield_now(),
+                    Err(e) => return Err(e),
                 }
-            }) {
-                Ok(x) => {
-                    SOCKET_SET.poll_interfaces();
-                    return Ok(x);
-                }
-                Err(AxError::WouldBlock) => axtask::yield_now(),
-                Err(e) => return Err(e),
             }
         }
+    }
+
+    pub fn with_socket<R>(&self, f: impl FnOnce(&udp::Socket) -> R) -> R {
+        SOCKET_SET.with_socket(self.handle, |s| f(s))
+    }
+}
+
+impl Read for UdpSocket {
+    fn read(&mut self, buf: &mut [u8]) -> AxResult<usize> {
+        self.recv(buf)
+    }
+}
+
+impl Write for UdpSocket {
+    fn write(&mut self, buf: &[u8]) -> AxResult<usize> {
+        self.send(buf)
+    }
+
+    fn flush(&mut self) -> AxResult {
+        Err(AxError::Unsupported)
     }
 }
 
 impl Drop for UdpSocket {
     fn drop(&mut self) {
         self.shutdown().ok();
-        if let Some(handle) = self.handle {
-            SOCKET_SET.remove(handle);
-        }
+        SOCKET_SET.remove(self.handle);
     }
 }
 

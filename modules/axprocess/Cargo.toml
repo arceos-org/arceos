@@ -8,12 +8,18 @@ authors = ["Youjie Zheng <zyj578335934@gmail.com>"]
 
 [features]
 fs = []
-macro = ["axhal/macro"]
-default = ["macro", "fs"]
+preempt = ["axtask/preempt"]
+
+signal = ["axhal/signal", "axsignal/signal"]
+monolithic = ["axhal/monolithic"]
+
+default = ["monolithic", "fs", "signal"]
 
 [dependencies]
+cfg-if = "1.0"
 spinlock = { path = "../../crates/spinlock" }
 axtask = { path = "../axtask" }
+axsync = { path = "../axsync" }
 axalloc = { path = "../axalloc" }
 axio = { path = "../../crates/axio", features = ["alloc"] }
 axhal = { path = "../axhal" }
@@ -22,6 +28,7 @@ axmem = { path = "../axmem" }
 axerrno = { path = "../../crates/axerrno" }
 axconfig = { path = "../axconfig" }
 axfs = { path = "../axfs" }
+axsignal = { path = "../axsignal" }
 #riscv = "0.10"
 riscv = { path = "../../extern_crates/riscv-0.10.1" }
 bitflags = "2.0"
@@ -29,3 +36,4 @@ lazy_static = { version = "1.4", features = ["spin_no_std"] }
 #lazy_static = { path = "../../extern_crates/lazy_static-1.4.0" }
 #xmas-elf = "0.9.0"
 xmas-elf = { path = "../../extern_crates/xmas-elf-0.9.0" }
+crate_interface = { path = "../../crates/crate_interface" }

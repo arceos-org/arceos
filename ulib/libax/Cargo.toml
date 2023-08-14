@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 authors = [
     "Yuekai Jia <equation618@gmail.com>",
+    "yanjuguang <coolyanjg@163.com>",
+    "wudashuai <wu-ds20@mails.tsinghua.edu.cn>",
     "yfblock <321353225@qq.com>",
     "scPointer <bhy18@mails.tsinghua.edu.cn>",
     "Shiping Yuan <robert_yuan@pku.edu.com>",
@@ -19,7 +21,7 @@ documentation = "https://rcore-os.github.io/arceos/libax/index.html"
 cbindings = ["cbindgen", "bindgen", "dep:spin", "dep:lazy_static"]
 
 # Multicore
-smp = ["axruntime/smp"]
+smp = ["axruntime/smp", "spinlock/smp"]
 
 # Floating point/SIMD
 fp_simd = ["axhal/fp_simd"]
@@ -66,11 +68,13 @@ log-level-trace = ["axlog/log-level-trace"]
 platform-pc-x86 = ["axhal/platform-pc-x86", "bus-pci"]
 platform-qemu-virt-riscv = ["axhal/platform-qemu-virt-riscv", "bus-mmio"]
 platform-qemu-virt-aarch64 = ["axhal/platform-qemu-virt-aarch64", "bus-mmio"]
+platform-raspi4-aarch64 = ["axhal/platform-raspi4-aarch64", "bus-mmio"]
 
 default = ["axtask?/sched_fifo"]
 
 [dependencies]
 spin = { version = "0.9", optional = true }
+static_assertions = "1.1.0"
 lazy_static = { version = "1.4", features = ["spin_no_std"], optional = true }
 spinlock = { path = "../../crates/spinlock" }
 flatten_objects = { path = "../../crates/flatten_objects" }
@@ -90,5 +94,5 @@ axtask = { path = "../../modules/axtask", default-features = false, optional = t
 
 [build-dependencies]
 cbindgen = { version = "0.24", optional = true }
-bindgen ={ version = "0.65", optional = true }
+bindgen ={ version = "0.66", optional = true }
 axconfig = { path = "../../modules/axconfig" }

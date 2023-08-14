@@ -109,7 +109,9 @@ impl VfsNodeOps for RootDirectory {
     }
 
     fn lookup(self: Arc<Self>, path: &str) -> VfsResult<VfsNodeRef> {
-        self.lookup_mounted_fs(path, |fs, rest_path| fs.root_dir().lookup(rest_path))
+        self.lookup_mounted_fs(path, |fs: Arc<dyn VfsOps>, rest_path| {
+            fs.root_dir().lookup(rest_path)
+        })
     }
 
     fn create(&self, path: &str, ty: VfsNodeType) -> VfsResult {
@@ -152,11 +154,29 @@ pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
         let null = fs::devfs::NullDev;
         let zero = fs::devfs::ZeroDev;
         let bar = fs::devfs::ZeroDev;
+        let random = fs::devfs::RandomDev::default();
+        let urandom = fs::devfs::RandomDev::default();
+
         let devfs = fs::devfs::DeviceFileSystem::new();
         let foo_dir = devfs.mkdir("foo");
         devfs.add("null", Arc::new(null));
         devfs.add("zero", Arc::new(zero));
+        devfs.add("random", Arc::new(random));
+        devfs.add("urandom", Arc::new(urandom));
         foo_dir.add("bar", Arc::new(bar));
+
+        #[cfg(feature = "monolithic")]
+        {
+            // 添加dev文件系统下的配置文件
+            // busybox的时候要用到
+            // devfs不支持可修改的file，因此取巧直接用了ramfs提供的file实现
+            let testshm = fs::ramfs::FileNode::new();
+            let testrtc = fs::ramfs::FileNode::new();
+            let shm_dir = devfs.mkdir("shm");
+            shm_dir.add("testshm", Arc::new(testshm));
+            let rtc_dir = devfs.mkdir("misc");
+            rtc_dir.add("rtc", Arc::new(testrtc));
+        }
 
         root_dir
             .mount("/dev", Arc::new(devfs))
@@ -169,6 +189,26 @@ pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
         root_dir
             .mount("/tmp", Arc::new(ramfs))
             .expect("failed to mount ramfs at /tmp");
+        let ramfs = fs::ramfs::RamFileSystem::new();
+        root_dir
+            .mount("/var", Arc::new(ramfs))
+            .expect("failed to mount ramfs at /var");
+    }
+
+    #[cfg(feature = "monolithic")]
+    {
+        let procfs = fs::ramfs::RamFileSystem::new();
+        procfs
+            .root_dir_node()
+            .create("meminfo", VfsNodeType::File)
+            .expect("failed to create file meminfo");
+        procfs
+            .root_dir_node()
+            .create("mounts", VfsNodeType::File)
+            .expect("failed to create file mounts");
+        root_dir
+            .mount("/proc", Arc::new(procfs))
+            .expect("failed to mount ramfs at /proc");
     }
 
     ROOT_DIR.init_by(Arc::new(root_dir));

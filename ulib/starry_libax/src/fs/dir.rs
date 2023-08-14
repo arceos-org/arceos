@@ -1,10 +1,12 @@
-use super::flags::OpenFlags;
+use super::types::{normal_file_mode, StMode};
 use super::FileIOType;
 extern crate alloc;
 use alloc::string::{String, ToString};
 use axerrno::{AxError, AxResult};
-use axfs::macro_fs::FileIO;
-use axfs::{api, macro_fs::file_io::FileExt};
+use axfs::monolithic_fs::file_io::Kstat;
+use axfs::monolithic_fs::flags::OpenFlags;
+use axfs::monolithic_fs::FileIO;
+use axfs::{api, monolithic_fs::file_io::FileExt};
 use axio::{Read, Seek, SeekFrom, Write};
 use log::debug;
 
@@ -62,6 +64,30 @@ impl FileIO for DirDesc {
 
     fn get_path(&self) -> String {
         self.dir_path.to_string().clone()
+    }
+
+    fn get_stat(&self) -> AxResult<Kstat> {
+        let kstat = Kstat {
+            st_dev: 1,
+            st_ino: 0,
+            st_mode: normal_file_mode(StMode::S_IFDIR).bits(),
+            st_nlink: 1,
+            st_uid: 0,
+            st_gid: 0,
+            st_rdev: 0,
+            _pad0: 0,
+            st_size: 0,
+            st_blksize: 0,
+            _pad1: 0,
+            st_blocks: 0,
+            st_atime_sec: 0,
+            st_atime_nsec: 0,
+            st_mtime_sec: 0,
+            st_mtime_nsec: 0,
+            st_ctime_sec: 0,
+            st_ctime_nsec: 0,
+        };
+        Ok(kstat)
     }
 }
 

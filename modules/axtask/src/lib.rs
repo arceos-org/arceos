@@ -40,8 +40,8 @@ cfg_if::cfg_if! {
 }
 
 cfg_if::cfg_if! {
-    if #[cfg(feature = "macro")] {
-        pub mod macro_task;
+    if #[cfg(feature = "monolithic")] {
+        pub mod monolithic_task;
     }
     else {
         mod task;

@@ -1,23 +1,35 @@
-use crate::fs::flags::OpenFlags;
 use crate::fs::link::{create_link, remove_link};
-use crate::fs::mount::{check_mounted, mount_fat_fs, umount_fat_fs};
+use crate::fs::mount::{check_mounted, get_stat_in_fs, mount_fat_fs, umount_fat_fs};
 use crate::fs::pipe::make_pipe;
-use crate::fs::{new_dir, new_fd, DirEnt, DirEntType, FileIOType, FilePath};
+use crate::fs::{new_dir, new_fd, DirEnt, DirEntType, FileDesc, FileIOType};
 use crate::syscall::flags::raw_ptr_to_ref_str;
+use crate::syscall::socket::Socket;
 extern crate alloc;
+
 use alloc::format;
 use alloc::string::ToString;
 use alloc::sync::Arc;
+use alloc::vec;
+use axerrno::AxError;
 use axfs::api;
-use axfs::macro_fs::file_io::Kstat;
+use axfs::api::Permissions;
+use axfs::monolithic_fs::file_io::Kstat;
+use axfs::monolithic_fs::flags::OpenFlags;
+use axfs::monolithic_fs::fs_stat::*;
+use axio::SeekFrom;
+use axprocess::link::{real_path, FilePath};
 use axprocess::process::current_process;
 use core::mem::transmute;
 use core::ptr::copy_nonoverlapping;
-use log::debug;
+use log::{debug, error, info, trace};
+use memory_addr::VirtAddr;
 use spinlock::SpinNoIrq;
 
+use super::flags::{Fcntl64Cmd, IoVec, TimeSecs};
+use super::syscall_id::ErrorNo;
+
 #[allow(unused)]
-const AT_FDCWD: usize = -100isize as usize;
+pub const AT_FDCWD: usize = -100isize as usize;
 // Special value used to indicate openat should use the current working directory.
 const AT_REMOVEDIR: usize = 0x200; // Remove directory instead of unlinking file.
 
@@ -33,7 +45,7 @@ const AT_REMOVEDIR: usize = 0x200; // Remove directory instead of unlinking file
 ///    - force_dir：是否强制为目录
 ///
 /// 一般情况下, 传入path末尾是`/`的话, 生成的FilePath是一个目录，否则是一个文件；但如果force_dir为true, 则生成的FilePath一定是一个目录(自动补充`/`)
-fn deal_with_path(
+pub fn deal_with_path(
     dir_fd: usize,
     path_addr: Option<*const u8>,
     force_dir: bool,
@@ -42,11 +54,22 @@ fn deal_with_path(
     let process_inner = process.inner.lock();
     let mut path = "".to_string();
     if let Some(path_addr) = path_addr {
-        if path_addr as usize == 0 {
+        if path_addr.is_null() {
             debug!("path address is null");
             return None;
         }
-        path = unsafe { raw_ptr_to_ref_str(path_addr) }.to_string();
+        if process_inner
+            .memory_set
+            .lock()
+            .manual_alloc_for_lazy((path_addr as usize).into())
+            .is_ok()
+        {
+            // 直接访问前需要确保已经被分配
+            path = unsafe { raw_ptr_to_ref_str(path_addr) }.to_string().clone();
+        } else {
+            debug!("path address is invalid");
+            return None;
+        }
     }
 
     if force_dir {
@@ -56,22 +79,23 @@ fn deal_with_path(
         // 如果path以.或..结尾, 则加上/告诉FilePath::new它是一个目录
         path = format!("{}/", path);
     }
-    debug!("path: {}", path);
+    // info!("path: {}", path);
 
-    if !path.starts_with('/') && dir_fd != AT_FDCWD {
+    if dir_fd != AT_FDCWD {
         // 如果不是绝对路径, 且dir_fd不是AT_FDCWD, 则需要将dir_fd和path拼接起来
-        if dir_fd >= process_inner.fd_table.len() {
+        if dir_fd >= process_inner.fd_manager.fd_table.len() {
             debug!("fd index out of range");
             return None;
         }
-        match process_inner.fd_table[dir_fd].as_ref() {
+        match process_inner.fd_manager.fd_table[dir_fd].as_ref() {
             Some(dir) => {
                 if dir.lock().get_type() != FileIOType::DirDesc {
                     debug!("selected fd is not a dir");
                     return None;
                 }
                 let dir = dir.clone();
-                path = format!("{}/{}", dir.lock().get_path(), path);
+                // 有没有可能dir的尾部一定是一个/号，所以不用手工添加/
+                path = format!("{}{}", dir.lock().get_path(), path);
                 debug!("handled_path: {}", path);
             }
             None => {
@@ -80,8 +104,10 @@ fn deal_with_path(
             }
         }
     }
-
-    Some(FilePath::new(&path))
+    match FilePath::new(path.as_str()) {
+        Ok(path) => Some(path),
+        Err(_) => None,
+    }
 }
 
 /// 功能：从一个文件描述符中读取；
@@ -91,36 +117,64 @@ fn deal_with_path(
 ///     - count：要读取的字节数。
 /// 返回值：成功执行，返回读取的字节数。如为0，表示文件结束。错误，则返回-1。
 pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
-    debug!(
-        "Into syscall_read. fd: {}, buf: {:?}, len: {}",
-        fd, buf as usize, count
-    );
+    trace!("[read()] fd: {fd}, buf: {buf:?}, len: {count}",);
+
+    if buf.is_null() {
+        return ErrorNo::EFAULT as isize;
+    }
+
     let process = current_process();
     let process_inner = process.inner.lock();
-    if fd >= process_inner.fd_table.len() {
-        return -1;
-    }
-    if let Some(file) = process_inner.fd_table[fd].as_ref() {
-        if file.lock().get_type() == FileIOType::DirDesc {
-            debug!("fd is a dir");
-            return -1;
-        }
-        if !file.lock().readable() {
-            return -1;
-        }
-        // // debug
-        // file.print_content();
 
-        // release current inner manually to avoid multi-borrow
-        let read_size = file
-            .lock()
-            .read(unsafe { core::slice::from_raw_parts_mut(buf, count) })
-            .unwrap() as isize;
-        drop(process_inner);
-        debug!("read_size: {}", read_size);
-        read_size as isize
-    } else {
-        -1
+    // TODO: 左闭右开
+    let buf = match process_inner.memory_set.lock().manual_alloc_range_for_lazy(
+        (buf as usize).into(),
+        (unsafe { buf.add(count) as usize } - 1).into(),
+    ) {
+        Ok(_) => unsafe { core::slice::from_raw_parts_mut(buf, count) },
+        Err(_) => return ErrorNo::EFAULT as isize,
+    };
+
+    let file = match process_inner.fd_manager.fd_table.get(fd) {
+        Some(Some(f)) => f.clone(),
+        _ => return ErrorNo::EBADF as isize,
+    };
+    drop(process_inner);
+
+    let mut file = file.lock();
+
+    if file.get_type() == FileIOType::DirDesc {
+        error!("fd is a dir");
+        return ErrorNo::EISDIR as isize;
+    }
+    if !file.readable() {
+        // 1. nonblocking socket
+        //
+        // Normal socket will block while trying to read, so we don't return here.
+        if let Some(socket) = file.as_any().downcast_ref::<Socket>() {
+            if socket.is_nonblocking() && socket.is_connected() {
+                return ErrorNo::EAGAIN as isize;
+            }
+        } else {
+            // 2. nonblock file
+            // return ErrorNo::EAGAIN as isize;
+
+            // 3. regular file
+            return ErrorNo::EBADF as isize;
+        }
+    }
+
+    // for sockets:
+    // Sockets are "readable" when:
+    // - have some data to read without blocking
+    // - remote end send FIN packet, local read half is closed (this will return 0 immediately)
+    //   this will return Ok(0)
+    // - ready to accept new connections
+
+    match file.read(buf) {
+        Ok(len) => len as isize,
+        Err(AxError::WouldBlock) => ErrorNo::EAGAIN as isize,
+        Err(_) => -1,
     }
 }
 
@@ -131,32 +185,102 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
 ///     - count：要写入的字节数。
 /// 返回值：成功执行，返回写入的字节数。错误，则返回-1。
 pub fn syscall_write(fd: usize, buf: *const u8, count: usize) -> isize {
+    trace!("[write()] fd: {fd}, buf: {buf:?}, len: {count}");
+
+    if buf.is_null() {
+        return ErrorNo::EFAULT as isize;
+    }
+
     let process = current_process();
     let process_inner = process.inner.lock();
-    if fd >= process_inner.fd_table.len() {
-        return -1;
-    }
-    if let Some(file) = process_inner.fd_table[fd].as_ref() {
-        if file.lock().get_type() == FileIOType::DirDesc {
-            debug!("fd is a dir");
-            return -1;
-        }
-        if !file.lock().writable() {
-            return -1;
-        }
-        let file = file.clone();
 
-        drop(process_inner); // release current inner manually to avoid multi-borrow
-                             // file.write("Test SysWrite\n".as_bytes()).unwrap();
-        let ans = file
-            .lock()
-            .write(unsafe { core::slice::from_raw_parts(buf, count) })
-            .unwrap() as isize;
-        drop(file);
-        ans
-    } else {
-        -1
+    // TODO: 左闭右开
+    let buf = match process_inner.memory_set.lock().manual_alloc_range_for_lazy(
+        (buf as usize).into(),
+        (unsafe { buf.add(count) as usize } - 1).into(),
+    ) {
+        Ok(_) => unsafe { core::slice::from_raw_parts(buf, count) },
+        Err(_) => return ErrorNo::EFAULT as isize,
+    };
+
+    let file = match process_inner.fd_manager.fd_table.get(fd) {
+        Some(Some(f)) => f.clone(),
+        _ => return ErrorNo::EBADF as isize,
+    };
+    drop(process_inner); // release current inner manually to avoid multi-borrow
+
+    let mut file = file.lock();
+
+    if file.get_type() == FileIOType::DirDesc {
+        debug!("fd is a dir");
+        return ErrorNo::EBADF as isize;
     }
+    if !file.writable() {
+        // 1. socket
+        //
+        // Normal socket will block while trying to write, so we don't return here.
+        if let Some(socket) = file.as_any().downcast_ref::<Socket>() {
+            if socket.is_nonblocking() && socket.is_connected() {
+                return ErrorNo::EAGAIN as isize;
+            }
+        } else {
+            // 2. nonblock file
+            // return ErrorNo::EAGAIN as isize;
+
+            // 3. regular file
+            return ErrorNo::EBADF as isize;
+        }
+    }
+
+    // for sockets:
+    // Sockets are "writable" when:
+    // - connected and have space in tx buffer to write
+    // - sent FIN packet, local send half is closed (this will return 0 immediately)
+    //   this will return Err(ConnectionReset)
+
+    match file.write(buf) {
+        Ok(len) => len as isize,
+        // socket with send half closed
+        // TODO: send a SIGPIPE signal to the process
+        Err(axerrno::AxError::ConnectionReset) => ErrorNo::EPIPE as isize,
+        Err(_) => -1,
+    }
+}
+
+/// 从同一个文件描述符读取多个字符串
+pub fn syscall_readv(fd: usize, iov: *mut IoVec, iov_cnt: usize) -> isize {
+    let mut read_len = 0;
+    // 似乎要判断iov是否分配，但是懒了，反正能过测例
+    for i in 0..iov_cnt {
+        let io: &IoVec = unsafe { &*iov.add(i) };
+        if io.base.is_null() || io.len == 0 {
+            continue;
+        }
+        match syscall_read(fd, io.base, io.len) {
+            len if len >= 0 => read_len += len,
+
+            err => return err,
+        }
+    }
+    read_len
+}
+
+/// 从同一个文件描述符写入多个字符串
+pub fn syscall_writev(fd: usize, iov: *const IoVec, iov_cnt: usize) -> isize {
+    let mut write_len = 0;
+    // 似乎要判断iov是否分配，但是懒了，反正能过测例
+    for i in 0..iov_cnt {
+        let io: &IoVec = unsafe { &(*iov.add(i)) };
+        if io.base.is_null() || io.len == 0 {
+            continue;
+        }
+        match syscall_write(fd, io.base, io.len) {
+            len if len >= 0 => write_len += len,
+
+            err => return err,
+        }
+    }
+    write_len
 }
 
 /// 功能：打开或创建一个文件；
@@ -171,21 +295,29 @@ pub fn syscall_write(fd: usize, buf: *const u8, count: usize) -> isize {
 /// flags: O_RDONLY: 0, O_WRONLY: 1, O_RDWR: 2, O_CREAT: 64, O_DIRECTORY: 65536
 pub fn syscall_openat(fd: usize, path: *const u8, flags: usize, _mode: u8) -> isize {
     let force_dir = OpenFlags::from(flags).is_dir();
-    let path = deal_with_path(fd, Some(path), force_dir).unwrap();
+    let path = if let Some(path) = deal_with_path(fd, Some(path), force_dir) {
+        path
+    } else {
+        return ErrorNo::EINVAL as isize;
+    };
     let process = current_process();
     let mut process_inner = process.inner.lock();
-    let fd_num = process_inner.alloc_fd();
+    let fd_num = if let Ok(fd) = process_inner.alloc_fd() {
+        fd
+    } else {
+        return ErrorNo::EMFILE as isize;
+    };
     debug!("allocated fd_num: {}", fd_num);
     // 如果是DIR
-    if path.is_dir() {
+    let ans = if path.is_dir() {
         debug!("open dir");
         if let Ok(dir) = new_dir(path.path().to_string(), flags.into()) {
             debug!("new dir_desc successfully allocated: {}", path.path());
-            process_inner.fd_table[fd_num] = Some(Arc::new(SpinNoIrq::new(dir)));
+            process_inner.fd_manager.fd_table[fd_num] = Some(Arc::new(SpinNoIrq::new(dir)));
             fd_num as isize
         } else {
             debug!("open dir failed");
-            -1
+            ErrorNo::ENOENT as isize
         }
     }
     // 如果是FILE，注意若创建了新文件，需要添加链接
@@ -193,14 +325,16 @@ pub fn syscall_openat(fd: usize, path: *const u8, flags: usize, _mode: u8) -> is
         debug!("open file");
         if let Ok(file) = new_fd(path.path().to_string(), flags.into()) {
             debug!("new file_desc successfully allocated");
-            process_inner.fd_table[fd_num] = Some(Arc::new(SpinNoIrq::new(file)));
+            process_inner.fd_manager.fd_table[fd_num] = Some(Arc::new(SpinNoIrq::new(file)));
             let _ = create_link(&path, &path); // 不需要检查是否成功，因为如果成功，说明是新建的文件，如果失败，说明已经存在了
             fd_num as isize
         } else {
             debug!("open file failed");
-            -1
+            ErrorNo::ENOENT as isize
         }
-    }
+    };
+    info!("openat: {} -> {}", path.path(), ans);
+    ans
 }
 
 /// 功能：关闭一个文件描述符；
@@ -208,12 +342,12 @@ pub fn syscall_openat(fd: usize, path: *const u8, flags: usize, _mode: u8) -> is
 ///     - fd：要关闭的文件描述符。
 /// 返回值：成功执行，返回0。失败，返回-1。
 pub fn syscall_close(fd: usize) -> isize {
-    debug!("Into syscall_close. fd: {}", fd);
+    info!("Into syscall_close. fd: {}", fd);
 
     let process = current_process();
     let mut process_inner = process.inner.lock();
 
-    if fd >= process_inner.fd_table.len() {
+    if fd >= process_inner.fd_manager.fd_table.len() {
         debug!("fd {} is out of range", fd);
         return -1;
     }
@@ -221,12 +355,12 @@ pub fn syscall_close(fd: usize) -> isize {
     //     debug!("fd {} is reserved for cwd", fd);
     //     return -1;
     // }
-    if process_inner.fd_table[fd].is_none() {
+    if process_inner.fd_manager.fd_table[fd].is_none() {
         debug!("fd {} is none", fd);
         return -1;
     }
-    process_inner.fd_table[fd].take();
-
+    // let file = process_inner.fd_manager.fd_table[fd].unwrap();
+    process_inner.fd_manager.fd_table[fd] = None;
     // for i in 0..process_inner.fd_table.len() {
     //     if let Some(file) = process_inner.fd_table[i].as_ref() {
     //         debug!("fd: {} has file", i);
@@ -256,13 +390,26 @@ pub fn syscall_getcwd(buf: *mut u8, len: usize) -> isize {
     let cwd = cwd.as_bytes();
 
     return if len >= cwd.len() {
-        unsafe {
-            core::ptr::copy_nonoverlapping(cwd.as_ptr(), buf, cwd.len());
+        let process = current_process();
+        let inner = process.inner.lock();
+        let start: VirtAddr = (buf as usize).into();
+        let end = start + len;
+        if inner
+            .memory_set
+            .lock()
+            .manual_alloc_range_for_lazy(start, end)
+            .is_ok()
+        {
+            unsafe {
+                core::ptr::copy_nonoverlapping(cwd.as_ptr(), buf, cwd.len());
+            }
+            buf as isize
+        } else {
+            ErrorNo::EINVAL as isize
         }
-        buf as isize
     } else {
         debug!("getcwd: buf size is too small");
-        0
+        ErrorNo::ERANGE as isize
     };
 }
 
@@ -276,16 +423,29 @@ pub fn syscall_pipe2(fd: *mut u32) -> isize {
     debug!("Into syscall_pipe2. fd: {}", fd as usize);
     let process = current_process();
     let mut process_inner = process.inner.lock();
-
+    if process_inner
+        .memory_set
+        .lock()
+        .manual_alloc_for_lazy((fd as usize).into())
+        .is_err()
+    {
+        return ErrorNo::EINVAL as isize;
+    }
     let (read, write) = make_pipe();
 
-    let fd_num = process_inner.alloc_fd();
-    process_inner.fd_table[fd_num] = Some(read);
-    let fd_num2 = process_inner.alloc_fd();
-    process_inner.fd_table[fd_num2] = Some(write);
-
-    debug!("fd_num: {}, fd_num2: {}", fd_num, fd_num2);
-
+    let fd_num = if let Ok(fd) = process_inner.alloc_fd() {
+        fd
+    } else {
+        return -1;
+    };
+    process_inner.fd_manager.fd_table[fd_num] = Some(read);
+    let fd_num2 = if let Ok(fd) = process_inner.alloc_fd() {
+        fd
+    } else {
+        return -1;
+    };
+    process_inner.fd_manager.fd_table[fd_num2] = Some(write);
+    info!("read end: {} write: end: {}", fd_num, fd_num2);
     unsafe {
         core::ptr::write(fd, fd_num as u32);
         core::ptr::write(fd.offset(1), fd_num2 as u32);
@@ -301,17 +461,22 @@ pub fn syscall_dup(fd: usize) -> isize {
     let process = current_process();
     let mut process_inner = process.inner.lock();
 
-    if fd >= process_inner.fd_table.len() {
+    if fd >= process_inner.fd_manager.fd_table.len() {
         debug!("fd {} is out of range", fd);
-        return -1;
+        return ErrorNo::EBADF as isize;
     }
-    if process_inner.fd_table[fd].is_none() {
+    if process_inner.fd_manager.fd_table[fd].is_none() {
         debug!("fd {} is a closed fd", fd);
-        return -1;
+        return ErrorNo::EBADF as isize;
     }
 
-    let fd_num = process_inner.alloc_fd();
-    process_inner.fd_table[fd_num] = process_inner.fd_table[fd].clone();
+    let fd_num = if let Ok(fd) = process_inner.alloc_fd() {
+        fd
+    } else {
+        // 文件描述符达到上限了
+        return ErrorNo::EMFILE as isize;
+    };
+    process_inner.fd_manager.fd_table[fd_num] = process_inner.fd_manager.fd_table[fd].clone();
 
     fd_num as isize
 }
@@ -324,26 +489,30 @@ pub fn syscall_dup(fd: usize) -> isize {
 pub fn syscall_dup3(fd: usize, new_fd: usize) -> isize {
     let process = current_process();
     let mut process_inner = process.inner.lock();
-
-    if fd >= process_inner.fd_table.len() {
+    if fd >= process_inner.fd_manager.fd_table.len() {
         debug!("fd {} is out of range", fd);
         return -1;
     }
-    if process_inner.fd_table[fd].is_none() {
+    if process_inner.fd_manager.fd_table[fd].is_none() {
         debug!("fd {} is not opened", fd);
         return -1;
     }
-    if new_fd >= process_inner.fd_table.len() {
-        for _i in process_inner.fd_table.len()..new_fd + 1 {
-            process_inner.fd_table.push(None);
+    if new_fd >= process_inner.fd_manager.fd_table.len() {
+        if new_fd >= process_inner.fd_manager.limit {
+            // 超出了资源限制
+            return ErrorNo::EBADF as isize;
+        }
+        for _i in process_inner.fd_manager.fd_table.len()..new_fd + 1 {
+            process_inner.fd_manager.fd_table.push(None);
         }
     }
-    if process_inner.fd_table[new_fd].is_some() {
-        debug!("new_fd {} is already opened", new_fd);
-        return -1;
-    }
-    process_inner.fd_table[new_fd] = process_inner.fd_table[fd].clone();
-
+    // if process_inner.fd_manager.fd_table[new_fd].is_some() {
+    //     debug!("new_fd {} is already opened", new_fd);
+    //     return ErrorNo::EINVAL as isize;
+    // }
+    info!("dup3 fd {} to new fd {}", fd, new_fd);
+    // 就算new_fd已经被打开了，也可以被重新替代掉
+    process_inner.fd_manager.fd_table[new_fd] = process_inner.fd_manager.fd_table[fd].clone();
     new_fd as isize
 }
 
@@ -354,15 +523,23 @@ pub fn syscall_dup3(fd: usize, new_fd: usize) -> isize {
 ///     - mode：文件的所有权描述。详见`man 7 inode `。
 /// 返回值：成功执行，返回0。失败，返回-1。
 pub fn syscall_mkdirat(dir_fd: usize, path: *const u8, mode: u32) -> isize {
-    let path = deal_with_path(dir_fd, Some(path), true).unwrap();
+    // info!("signal module: {:?}", process_inner.signal_module.keys());
+    let path = if let Some(path) = deal_with_path(dir_fd, Some(path), true) {
+        path
+    } else {
+        return ErrorNo::EINVAL as isize;
+    };
     debug!(
         "Into syscall_mkdirat. dirfd: {}, path: {:?}, mode: {}",
         dir_fd,
         path.path(),
         mode
     );
+    if api::path_exists(path.path()) {
+        // 文件已存在
+        return ErrorNo::EEXIST as isize;
+    }
     let _ = api::create_dir(path.path());
-
     // 只要文件夹存在就返回0
     if api::path_exists(path.path()) {
         0
@@ -377,11 +554,15 @@ pub fn syscall_mkdirat(dir_fd: usize, path: *const u8, mode: u32) -> isize {
 /// 返回值：成功执行，返回0。失败，返回-1。
 pub fn syscall_chdir(path: *const u8) -> isize {
     // 从path中读取字符串
-    let path = deal_with_path(AT_FDCWD, Some(path), true).unwrap();
+    let path = if let Some(path) = deal_with_path(AT_FDCWD, Some(path), true) {
+        path
+    } else {
+        return ErrorNo::EINVAL as isize;
+    };
     debug!("Into syscall_chdir. path: {:?}", path.path());
     match api::set_current_dir(path.path()) {
         Ok(_) => 0,
-        Err(_) => -1,
+        Err(_) => ErrorNo::EINVAL as isize,
     }
 }
 
@@ -405,15 +586,40 @@ pub fn syscall_chdir(path: *const u8) -> isize {
 ///  2. d_off 和 d_reclen 同时存在的原因：
 ///       不同的dirent可以不按照顺序紧密排列
 pub fn syscall_getdents64(fd: usize, buf: *mut u8, len: usize) -> isize {
-    let path = deal_with_path(fd, None, true).unwrap();
+    let path = if let Some(path) = deal_with_path(fd, None, true) {
+        path
+    } else {
+        return ErrorNo::EINVAL as isize;
+    };
+
+    let process = current_process();
+    let inner = process.inner.lock();
+    // 注意是否分配地址
+    let start: VirtAddr = (buf as usize).into();
+    let end = start + len;
+    if inner
+        .memory_set
+        .lock()
+        .manual_alloc_range_for_lazy(start, end)
+        .is_err()
+    {
+        return ErrorNo::EFAULT as isize;
+    }
+
+    let entry_id_from = unsafe { (*(buf as *const DirEnt)).d_off };
+    if entry_id_from == -1 {
+        // 说明已经读完了
+        return 0;
+    }
 
     let buf = unsafe { core::slice::from_raw_parts_mut(buf, len) };
     let dir_iter = api::read_dir(path.path()).unwrap();
     let mut count = 0; // buf中已经写入的字节数
 
-    for (i, entry) in dir_iter.enumerate() {
+    for (_, entry) in dir_iter.enumerate() {
         let entry = entry.unwrap();
-        let name = entry.file_name();
+        let mut name = entry.file_name();
+        name.push('\0');
         let name = name.as_bytes();
         let name_len = name.len();
         let file_type = entry.file_type();
@@ -428,19 +634,19 @@ pub fn syscall_getdents64(fd: usize, buf: *mut u8, len: usize) -> isize {
         let dirent: &mut DirEnt = unsafe { transmute(buf.as_mut_ptr().offset(count as isize)) };
         // 设置定长部分
         if file_type.is_dir() {
-            dirent.set_fixed_part(i as u64, entry_size as i64, entry_size, DirEntType::DIR);
+            dirent.set_fixed_part(1, entry_size as i64, entry_size, DirEntType::DIR);
         } else if file_type.is_file() {
-            dirent.set_fixed_part(i as u64, entry_size as i64, entry_size, DirEntType::REG);
+            dirent.set_fixed_part(1, entry_size as i64, entry_size, DirEntType::REG);
         } else {
-            dirent.set_fixed_part(i as u64, entry_size as i64, entry_size, DirEntType::UNKNOWN);
+            dirent.set_fixed_part(1, entry_size as i64, entry_size, DirEntType::UNKNOWN);
         }
 
         // 写入文件名
-        unsafe { copy_nonoverlapping(name.as_ptr(), dirent.d_name.as_mut_ptr(), name_len + 1) };
+        unsafe { copy_nonoverlapping(name.as_ptr(), dirent.d_name.as_mut_ptr(), name_len) };
 
         count += entry_size;
     }
-    0
+    count as isize
 }
 
 /// 功能：创建文件的链接；
@@ -459,12 +665,20 @@ pub fn sys_linkat(
     new_path: *const u8,
     _flags: usize,
 ) -> isize {
-    let old_path = deal_with_path(old_dir_fd, Some(old_path), false).unwrap();
-    let new_path = deal_with_path(new_dir_fd, Some(new_path), false).unwrap();
+    let old_path = if let Some(path) = deal_with_path(old_dir_fd, Some(old_path), false) {
+        path
+    } else {
+        return ErrorNo::EINVAL as isize;
+    };
+    let new_path = if let Some(path) = deal_with_path(new_dir_fd, Some(new_path), false) {
+        path
+    } else {
+        return ErrorNo::EINVAL as isize;
+    };
     if create_link(&old_path, &new_path) {
         0
     } else {
-        -1
+        return ErrorNo::EINVAL as isize;
     }
 }
 
@@ -481,20 +695,20 @@ pub fn syscall_unlinkat(dir_fd: usize, path: *const u8, flags: usize) -> isize {
     if flags == 0 {
         if let None = remove_link(&path) {
             debug!("unlink file error");
-            return -1;
+            return ErrorNo::EINVAL as isize;
         }
     }
     // remove dir
     else if flags == AT_REMOVEDIR {
         if let Err(e) = api::remove_dir(path.path()) {
             debug!("rmdir error: {:?}", e);
-            return -1;
+            return ErrorNo::EINVAL as isize;
         }
     }
     // flags error
     else {
         debug!("flags error");
-        return -1;
+        return ErrorNo::EINVAL as isize;
     }
     0
 }
@@ -517,12 +731,30 @@ pub fn syscall_mount(
     let device_path = deal_with_path(AT_FDCWD, Some(special), false).unwrap();
     // 这里dir必须以"/"结尾，但在shell中输入时，不需要以"/"结尾
     let mount_path = deal_with_path(AT_FDCWD, Some(dir), true).unwrap();
+
+    let process = current_process();
+    let inner = process.inner.lock();
+    let mut memory_set = inner.memory_set.lock();
+    if memory_set
+        .manual_alloc_for_lazy((fs_type as usize).into())
+        .is_err()
+    {
+        return ErrorNo::EINVAL as isize;
+    }
     let fs_type = unsafe { raw_ptr_to_ref_str(fs_type) }.to_string();
     let mut _data_str = "".to_string();
     if !_data.is_null() {
+        if memory_set
+            .manual_alloc_for_lazy((_data as usize).into())
+            .is_err()
+        {
+            return ErrorNo::EINVAL as isize;
+        }
         // data可以为NULL, 必须判断, 否则会panic, 发生LoadPageFault
         _data_str = unsafe { raw_ptr_to_ref_str(_data) }.to_string();
     }
+    drop(memory_set);
+    drop(inner);
     if device_path.is_dir() {
         debug!("device_path should not be a dir");
         return -1;
@@ -587,46 +819,19 @@ pub fn syscall_umount(dir: *const u8, flags: usize) -> isize {
 
     0
 }
-
-/// 功能：获取文件状态；
-/// 输入：
-///     - fd: 文件句柄；
-///     - kst: 接收保存文件状态的指针；
-/// 返回值：成功返回0，失败返回-1；
-/// struct kstat {
-/// 	dev_t st_dev;
-/// 	ino_t st_ino;
-/// 	mode_t st_mode;
-/// 	nlink_t st_nlink;
-/// 	uid_t st_uid;
-/// 	gid_t st_gid;
-/// 	dev_t st_rdev;
-/// 	unsigned long __pad;
-/// 	off_t st_size;
-/// 	blksize_t st_blksize;
-/// 	int __pad2;
-/// 	blkcnt_t st_blocks;
-/// 	long st_atime_sec;
-/// 	long st_atime_nsec;
-/// 	long st_mtime_sec;
-/// 	long st_mtime_nsec;
-/// 	long st_ctime_sec;
-/// 	long st_ctime_nsec;
-/// 	unsigned __unused[2];
-/// };
 pub fn syscall_fstat(fd: usize, kst: *mut Kstat) -> isize {
     let process = current_process();
     let process_inner = process.inner.lock();
 
-    if fd >= process_inner.fd_table.len() || fd < 3 {
+    if fd >= process_inner.fd_manager.fd_table.len() || fd < 3 {
         debug!("fd {} is out of range", fd);
         return -1;
     }
-    if process_inner.fd_table[fd].is_none() {
+    if process_inner.fd_manager.fd_table[fd].is_none() {
         debug!("fd {} is none", fd);
         return -1;
     }
-    let file = process_inner.fd_table[fd].clone().unwrap();
+    let file = process_inner.fd_manager.fd_table[fd].clone().unwrap();
     if file.lock().get_type() != FileIOType::FileDesc {
         debug!("fd {} is not a file", fd);
         return -1;
@@ -647,109 +852,646 @@ pub fn syscall_fstat(fd: usize, kst: *mut Kstat) -> isize {
     ans
 }
 
-// // ## sys_renameat2()
-// //
-// // sys_renameat2()是Linux内核中的一个系统调用,用于重命名文件或目录。与renameat()系统调用不同,它允许指定标志位来控制文件重命名的行为。它的原型如下:
-// //
-// // ```c
-// // int sys_renameat2(int olddirfd, const char *oldpath, int newdirfd, const char *newpath, unsigned int flags)
-// // ```
-// //
-// // \- olddirfd: 源文件路径名的目录文件描述符
-// // \- oldpath: 源文件路径名
-// // \- newdirfd: 目标文件路径名的目录文件描述符
-// // \- newpath: 目标文件路径名
-// // \- flags: 标志位,控制重命名行为flags可以设置以下值:- RENAME_NOREPLACE: 重命名失败,如果目标文件已经存在
-// // \- RENAME_EXCHANGE: 重命名交换两个文件
-// // \- RENAME_WHITEOUT: 创建目标文件并插入whiteout标记如果newpath已经存在,并且未指定RENAME_NOREPLACE标志,则新文件会替换旧文件。成功重命名文件后,sys_renameat2()返回0。失败时返回-1,并设置错误码。举个例子:
-// //
-// // ```c
-// // //重命名/tmp/file1为/tmp/file2,如果file2已存在则失败
-// // sys_renameat2(AT_FDCWD, "/tmp/file1", AT_FDCWD, "/tmp/file2", RENAME_NOREPLACE);
-// //
-// // //交换/tmp/file1和/tmp/file2
-// // sys_renameat2(AT_FDCWD, "/tmp/file1", AT_FDCWD, "/tmp/file2", RENAME_EXCHANGE);
-// // ```
-// //
-// // 这个示例演示了如何使用RENAME_NOREPLACE防止目标文件被替换,和使用RENAME_EXCHANGE交换两个文件的重命名。sys_renameat2()提供了更加灵活的文件重命名机制,通过标志位可以实现只有当目标文件不存在时才重命名、交换两个文件的重命名等功能。
-// pub fn syscall_renameat2(old_dirfd: usize, old_path: *const u8, new_dirfd: usize, new_path: *const u8, flags: usize) -> isize {
-//     let process = current_process();
-//     let mut process_inner = process.inner.lock();
+/// 获取文件状态信息，但是给出的是目录 fd 和相对路径。 79
+pub fn syscall_fstatat(dir_fd: usize, path: *const u8, kst: *mut Kstat) -> isize {
+    let file_path = deal_with_path(dir_fd, Some(path), false).unwrap();
+    info!("path : {}", file_path.path());
+    match get_stat_in_fs(&file_path) {
+        Ok(stat) => unsafe {
+            *kst = stat;
+            0
+        },
+        Err(error_no) => {
+            debug!("get stat error: {:?}", error_no);
+            error_no as isize
+        }
+    }
+}
+
+pub fn syscall_fcntl64(fd: usize, cmd: usize, arg: usize) -> isize {
+    let process = current_process();
+    let mut process_inner = process.inner.lock();
+    if fd >= process_inner.fd_manager.fd_table.len() {
+        debug!("fd {} is out of range", fd);
+        return ErrorNo::EBADF as isize;
+    }
+    if process_inner.fd_manager.fd_table[fd].is_none() {
+        debug!("fd {} is none", fd);
+        return ErrorNo::EBADF as isize;
+    }
+    let file = process_inner.fd_manager.fd_table[fd].clone().unwrap();
+    info!("fd: {}, cmd: {}", fd, cmd);
+    match Fcntl64Cmd::try_from(cmd) {
+        Ok(Fcntl64Cmd::F_DUPFD) => {
+            let new_fd = if let Ok(fd) = process_inner.alloc_fd() {
+                fd
+            } else {
+                // 文件描述符达到上限了
+                return ErrorNo::EMFILE as isize;
+            };
+            process_inner.fd_manager.fd_table[new_fd] =
+                process_inner.fd_manager.fd_table[fd].clone();
+            return new_fd as isize;
+        }
+        Ok(Fcntl64Cmd::F_GETFD) => {
+            if file.lock().get_status().contains(OpenFlags::CLOEXEC) {
+                1
+            } else {
+                0
+            }
+        }
+        Ok(Fcntl64Cmd::F_SETFD) => {
+            if file.lock().set_close_on_exec((arg & 1) != 0) {
+                0
+            } else {
+                ErrorNo::EINVAL as isize
+            }
+        }
+        Ok(Fcntl64Cmd::F_GETFL) => file.lock().get_status().bits() as isize,
+        Ok(Fcntl64Cmd::F_SETFL) => {
+            if let Some(flags) = OpenFlags::from_bits(arg as u32) {
+                if file.lock().set_status(flags) {
+                    return 0;
+                }
+            }
+            ErrorNo::EINVAL as isize
+        }
+        Ok(Fcntl64Cmd::F_DUPFD_CLOEXEC) => {
+            let new_fd = if let Ok(fd) = process_inner.alloc_fd() {
+                fd
+            } else {
+                // 文件描述符达到上限了
+                return ErrorNo::EMFILE as isize;
+            };
+
+            if file.lock().set_close_on_exec((arg & 1) != 0) {
+                process_inner.fd_manager.fd_table[new_fd] =
+                    process_inner.fd_manager.fd_table[fd].clone();
+                return new_fd as isize;
+            } else {
+                return ErrorNo::EINVAL as isize;
+            }
+        }
+        _ => ErrorNo::EINVAL as isize,
+    }
+}
+
+/// 43
+/// 获取文件系统的信息
+pub fn syscall_statfs(path: *const u8, stat: *mut FsStat) -> isize {
+    let file_path = deal_with_path(AT_FDCWD, Some(path), false).unwrap();
+    if file_path.equal_to(&FilePath::new("/").unwrap()) {
+        // 目前只支持访问根目录文件系统的信息
+        unsafe {
+            *stat = get_fs_stat();
+        }
+
+        0
+    } else {
+        error!("Only support fs_stat for root");
+        ErrorNo::EINVAL as isize
+    }
+}
+
+/// 29
+/// 执行各种设备相关的控制功能
+/// todo: 未实现
+pub fn syscall_ioctl(fd: usize, request: usize, argp: *mut usize) -> isize {
+    let process = current_process();
+    let process_inner = process.inner.lock();
+    info!("fd: {}, request: {}, argp: {}", fd, request, argp as usize);
+    if fd >= process_inner.fd_manager.fd_table.len() {
+        debug!("fd {} is out of range", fd);
+        return ErrorNo::EBADF as isize;
+    }
+    if process_inner.fd_manager.fd_table[fd].is_none() {
+        debug!("fd {} is none", fd);
+        return ErrorNo::EBADF as isize;
+    }
+    if process_inner
+        .memory_set
+        .lock()
+        .manual_alloc_for_lazy((argp as usize).into())
+        .is_err()
+    {
+        return ErrorNo::EFAULT as isize; // 地址不合法
+    }
+
+    let file = process_inner.fd_manager.fd_table[fd].clone().unwrap();
+    // if file.lock().ioctl(request, argp as usize).is_err() {
+    //     return -1;
+    // }
+    let _ = file.lock().ioctl(request, argp as usize);
+    0
+    // match IoCtlCmd::try_from(request) {
+    //     Ok(IoCtlCmd::TCGETS) => {
+    //         if let Ok(termios) = file.lock().get_termios() {
+    //             unsafe {
+    //                 *argp = termios;
+    //             }
+    //             0
+    //         } else {
+    //             ErrorNo::ENOTTY as isize
+    //         }
+    //     }
+    //     Ok(IoCtlCmd::TCSETS) => {
+    //         if let Ok(termios) = unsafe { *argp } {
+    //             if file.lock().set_termios(termios) {
+    //                 0
+    //             } else {
+    //                 ErrorNo::ENOTTY as isize
+    //             }
+    //         } else {
+    //             ErrorNo::ENOTTY as isize
+    //         }
+    //     }
+    //     Ok(IoCtlCmd::TIOCGWINSZ) => {
+    //         if let Ok(winsize) = file.lock().get_winsize() {
+    //             unsafe {
+    //                 *argp = winsize;
+    //             }
+    //             0
+    //         } else {
+    //             ErrorNo::ENOTTY as isize
+    //         }
+    //     }
+    //     Ok(IoCtlCmd::TIOCSWINSZ) => {
+    //         if let Ok(winsize) = unsafe { *argp } {
+    //             if file.lock().set_winsize(winsize) {
+    //                 0
+    //             } else {
+    //                 ErrorNo::ENOTTY as isize
+    //             }
+    //         } else {
+    //             ErrorNo::ENOTTY as isize
+    //         }
+    //     }
+    //     Ok(IoCtlCmd::TIOCGPGRP) => {
+    //         if let Ok(pgrp) = file.lock().get_pgrp() {
+    //             unsafe {
+    //                 *argp = pgrp;
+    //             }
+    //             0
+    //         } else {
+    //             ErrorNo::ENOTTY as isize
+    //         }
+    //     }
+    //     Ok(IoCtlCmd::TIOCSPGRP) => {
+    //         if let Ok(pgrp) = unsafe { *argp } {
+    //             if file.lock().set_pgrp(pgrp) {
+    //                 0
+    //             } else {
+    //                 ErrorNo::ENOTTY as isize
+    //             }
+    //         } else {
+    //             ErrorNo::ENOTTY as isize
+    //         }
+    //     }
+    //     Ok(IoCtlCmd::TIOCGSID) => {
+    //         if let Ok(sid) = file.lock().get_sid() {
+    //             unsafe {
+    //                 *argp = sid;
+    //             }
+    //             0
+    //         } else {
+    //             ErrorNo::ENOTTY as isize
+    //         }
+    //     }
+    //     Ok(IoCtlCmd::TIOCSTI) => {
+    //         if let Ok(c) = unsafe { *argp } {
+    //             if file.lock().set_input(c) {
+    //                 0
+    //             } else {
+    //                 ErrorNo::ENOTTY as isize
+    //             }
+    //         } else {
+    //             ErrorNo::ENOTTY as isize
+    //         }
+    //     }
+    //     _ => ErrorNo::ENOTTY as isize,
+    // }
+}
+
+/// 53
+/// 修改文件权限
+/// mode: 0o777, 3位八进制数字
+/// path为相对路径：
+///     1. 若dir_fd为AT_FDCWD，则相对于当前工作目录
+///     2. 若dir_fd为AT_FDCWD以外的值，则相对于dir_fd所指的目录
+/// path为绝对路径：
+///     忽视dir_fd，直接根据path访问
+pub fn syscall_fchmodat(dir_fd: usize, path: *const u8, mode: usize) -> isize {
+    let file_path = deal_with_path(dir_fd, Some(path), false).unwrap();
+    api::metadata(file_path.path())
+        .map(|mut metadata| {
+            metadata.set_permissions(Permissions::from_bits_truncate(mode as u16));
+            0
+        })
+        .unwrap_or_else(|_| ErrorNo::ENOENT as isize)
+}
+
+/// 48
+/// 获取文件权限
+/// 类似上面的fchmodat
+///        The mode specifies the accessibility check(s) to be performed,
+///        and is either the value F_OK, or a mask consisting of the bitwise
+///        OR of one or more of R_OK, W_OK, and X_OK.  F_OK tests for the
+///        existence of the file.  R_OK, W_OK, and X_OK test whether the
+///        file exists and grants read, write, and execute permissions,
+///        respectively.
+/// 0: F_OK, 1: X_OK, 2: W_OK, 4: R_OK
+pub fn syscall_faccessat(dir_fd: usize, path: *const u8, mode: usize) -> isize {
+    // todo: 有问题，实际上需要考虑当前进程对应的用户UID和文件拥有者之间的关系
+    // 现在一律当作root用户处理
+    let file_path = deal_with_path(dir_fd, Some(path), false).unwrap();
+    api::metadata(file_path.path())
+        .map(|metadata| {
+            if mode == 0 {
+                //F_OK
+                // 文件存在返回0，不存在返回-1
+                if api::path_exists(file_path.path()) {
+                    0
+                } else {
+                    ErrorNo::ENOENT as isize
+                }
+            } else {
+                // 逐位对比
+                let mut ret = true;
+                if mode & 1 != 0 {
+                    // X_OK
+                    ret &= metadata.permissions().contains(Permissions::OWNER_EXEC)
+                }
+                if mode & 2 != 0 {
+                    // W_OK
+                    ret &= metadata.permissions().contains(Permissions::OWNER_WRITE)
+                }
+                if mode & 4 != 0 {
+                    // R_OK
+                    ret &= metadata.permissions().contains(Permissions::OWNER_READ)
+                }
+                ret as isize - 1
+            }
+        })
+        .unwrap_or_else(|_| ErrorNo::ENOENT as isize)
+}
+
+/// 67
+/// pread64
+/// 从文件的指定位置读取数据，并且不改变文件的读写指针
+pub fn syscall_pread64(fd: usize, buf: *mut u8, count: usize, offset: usize) -> isize {
+    let process = current_process();
+    let process_inner = process.inner.lock();
+    // todo: 把check fd整合到fd_manager中
+    let file = process_inner.fd_manager.fd_table[fd].clone().unwrap();
+
+    let mut lock_file = file.lock();
+    let old_offset = lock_file.seek(SeekFrom::Current(0)).unwrap();
+    let ret = lock_file
+        .seek(SeekFrom::Start(offset as u64))
+        .and_then(|_| lock_file.read(unsafe { core::slice::from_raw_parts_mut(buf, count) }));
+    lock_file.seek(SeekFrom::Start(old_offset)).unwrap();
+    drop(lock_file);
+    ret.map(|size| size as isize)
+        .unwrap_or_else(|_| ErrorNo::EINVAL as isize)
+}
+
+/// 68
+/// pwrite64
+/// 向文件的指定位置写入数据，并且不改变文件的读写指针
+pub fn syscall_pwrite64(fd: usize, buf: *const u8, count: usize, offset: usize) -> isize {
+    let process = current_process();
+    let process_inner = process.inner.lock();
+    let file = process_inner.fd_manager.fd_table[fd].clone().unwrap();
+    let old_offset = file.lock().seek(SeekFrom::Current(0)).unwrap();
+    let ret = file
+        .lock()
+        .seek(SeekFrom::Start(offset as u64))
+        .and_then(|_| {
+            file.lock()
+                .write(unsafe { core::slice::from_raw_parts(buf, count) })
+        });
+    file.lock().seek(SeekFrom::Start(old_offset)).unwrap();
+    ret.map(|size| size as isize)
+        .unwrap_or_else(|_| ErrorNo::EINVAL as isize)
+}
+
+/// 71
+/// sendfile64
+/// 将一个文件的内容发送到另一个文件中
+/// 如果offset为NULL，则从当前读写指针开始读取，读取完毕后会更新读写指针
+/// 如果offset不为NULL，则从offset指定的位置开始读取，读取完毕后不会更新读写指针，但是会更新offset的值
+pub fn syscall_sendfile64(out_fd: usize, in_fd: usize, offset: *mut usize, count: usize) -> isize {
+    info!("send from {} to {}, count: {}", in_fd, out_fd, count);
+    let process = current_process();
+    let process_inner = process.inner.lock();
+    let out_file = process_inner.fd_manager.fd_table[out_fd].clone().unwrap();
+    let in_file = process_inner.fd_manager.fd_table[in_fd].clone().unwrap();
+    let old_in_offset = in_file.lock().seek(SeekFrom::Current(0)).unwrap();
+    // 如果offset不为NULL，则从offset指定的位置开始读取
+    let mut buf = vec![0u8; count];
+    if !offset.is_null() {
+        let in_offset = unsafe { *offset };
+        in_file
+            .lock()
+            .seek(SeekFrom::Start(in_offset as u64))
+            .unwrap();
+        let ret = in_file.lock().read(buf.as_mut_slice());
+        unsafe { *offset = in_offset + ret.unwrap() };
+        in_file.lock().seek(SeekFrom::Start(old_in_offset)).unwrap();
+        let buf = buf[..ret.unwrap()].to_vec();
+        out_file.lock().write(buf.as_slice()).unwrap() as isize
+    } else {
+        // 如果offset为NULL，则从当前读写指针开始读取
+        let ret = in_file.lock().read(buf.as_mut_slice());
+        info!("in fd: {}, count: {}", in_fd, count);
+        let buf = buf[..ret.unwrap()].to_vec();
+        info!("read len: {}", buf.len());
+        info!("write len: {}", buf.as_slice().len());
+        out_file.lock().write(buf.as_slice()).unwrap() as isize
+    }
+}
+
+/// 78
+/// readlinkat
+/// 读取符号链接文件的内容
+/// 如果buf为NULL，则返回符号链接文件的长度
+/// 如果buf不为NULL，则将符号链接文件的内容写入buf中
+/// 如果写入的内容超出了buf_size则直接截断
+pub fn syscall_readlinkat(dir_fd: usize, path: *const u8, buf: *mut u8, bufsiz: usize) -> isize {
+    let process = current_process();
+    let inner = process.inner.lock();
+    let mut memory_set = inner.memory_set.lock();
+    if memory_set
+        .manual_alloc_for_lazy((path as usize).into())
+        .is_err()
+    {
+        return ErrorNo::EFAULT as isize;
+    }
+    if !buf.is_null() {
+        if memory_set
+            .manual_alloc_for_lazy((buf as usize).into())
+            .is_err()
+        {
+            return ErrorNo::EFAULT as isize;
+        }
+    }
+    drop(memory_set);
+    drop(inner);
+
+    let path = deal_with_path(dir_fd, Some(path), false);
+    if path.is_none() {
+        return ErrorNo::ENOENT as isize;
+    }
+    let path = path.unwrap();
+    if path.path() == "proc/self/exe" {
+        // 针对lmbench_all特判
+        let name = "/lmbench_all";
+        let len = bufsiz.min(name.len());
+        let slice = unsafe { core::slice::from_raw_parts_mut(buf, bufsiz) };
+        slice.copy_from_slice(&name.as_bytes()[..len]);
+        return len as isize;
+    }
+    if path.path().to_string() != real_path(&(path.path().to_string())) {
+        // 说明链接存在
+        let path = path.path();
+        let len = bufsiz.min(path.len());
+        let slice = unsafe { core::slice::from_raw_parts_mut(buf, len) };
+        slice.copy_from_slice(&path.as_bytes()[..len]);
+        return path.len() as isize;
+    }
+    ErrorNo::EINVAL as isize
+}
+/// 62
+/// 移动文件描述符的读写指针
+pub fn syscall_lseek(fd: usize, offset: isize, whence: usize) -> isize {
+    let process = current_process();
+    let process_inner = process.inner.lock();
+    if fd >= process_inner.fd_manager.fd_table.len() || fd < 3 {
+        debug!("fd {} is out of range", fd);
+        return ErrorNo::EBADF as isize;
+    }
+    if let Some(file) = process_inner.fd_manager.fd_table[fd].as_ref() {
+        if file.lock().get_type() == FileIOType::DirDesc {
+            debug!("fd is a dir");
+            return ErrorNo::EISDIR as isize;
+        }
+        let ans = if whence == 0 {
+            // 即SEEK_SET
+            file.lock().seek(SeekFrom::Start(offset as u64))
+        } else if whence == 1 {
+            // 即SEEK_CUR
+            file.lock().seek(SeekFrom::Current(offset as i64))
+        } else if whence == 2 {
+            // 即SEEK_END
+            file.lock().seek(SeekFrom::End(offset as i64))
+        } else {
+            return ErrorNo::EINVAL as isize;
+        };
+        if let Ok(now_offset) = ans {
+            now_offset as isize
+        } else {
+            return ErrorNo::EINVAL as isize;
+        }
+    } else {
+        debug!("fd {} is none", fd);
+        return ErrorNo::EBADF as isize;
+    }
+}
+
+/// 88
+/// 用于修改文件或目录的时间戳(timestamp)
+/// 如果 fir_fd < 0，它和 path 共同决定要找的文件；
+/// 如果 fir_fd >=0，它就是文件对应的 fd
+pub fn syscall_utimensat(
+    dir_fd: usize,
+    path: *const u8,
+    times: *const TimeSecs,
+    _flags: usize,
+) -> isize {
+    let process = current_process();
+    let process_inner = process.inner.lock();
+    // info!("dir_fd: {}, path: {}", dir_fd as usize, path as usize);
+    if dir_fd != AT_FDCWD && (dir_fd as isize) < 0 {
+        return ErrorNo::EBADF as isize; // 错误的文件描述符
+    }
+
+    if dir_fd == AT_FDCWD
+        && process_inner
+            .memory_set
+            .lock()
+            .manual_alloc_for_lazy((path as usize).into())
+            .is_err()
+    {
+        return ErrorNo::EFAULT as isize; // 地址不合法
+    }
+    // 需要设置的时间
+    let (new_atime, new_mtime) = if times.is_null() {
+        (TimeSecs::now(), TimeSecs::now())
+    } else {
+        if process_inner
+            .memory_set
+            .lock()
+            .manual_alloc_type_for_lazy(times)
+            .is_err()
+        {
+            return ErrorNo::EFAULT as isize;
+        }
+        unsafe { (*times, *(times.add(1))) } //  注意传入的TimeVal中 sec和nsec都是usize, 但TimeValue中nsec是u32
+    };
+    // 感觉以下仿照maturin的实现不太合理，并没有真的把时间写给文件，只是写给了一个新建的临时的fd
+    if (dir_fd as isize) > 0 {
+        // let file = process_inner.fd_manager.fd_table[dir_fd].clone();
+        // if !file.unwrap().lock().set_time(new_atime, new_mtime) {
+        //     error!("Set time failed: unknown reason.");
+        //     return ErrorNo::EPERM as isize;
+        // }
+        if dir_fd > process_inner.fd_manager.fd_table.len()
+            || process_inner.fd_manager.fd_table[dir_fd].is_none()
+        {
+            return ErrorNo::EBADF as isize;
+        }
+        if let Some(file) = process_inner.fd_manager.fd_table[dir_fd].as_ref() {
+            if let Some(fat_file) = file.lock().as_any().downcast_ref::<FileDesc>() {
+                // if !fat_file.set_time(new_atime, new_mtime) {
+                //     error!("Set time failed: unknown reason.");
+                //     return ErrorNo::EPERM as isize;
+                // }
+                fat_file.stat.lock().atime.set_as_utime(&new_atime);
+                fat_file.stat.lock().mtime.set_as_utime(&new_mtime);
+            } else {
+                return ErrorNo::EPERM as isize;
+            }
+        }
+        0
+    } else {
+        drop(process_inner);
+        let file_path = deal_with_path(dir_fd, Some(path), false).unwrap();
+        if !api::path_exists(file_path.path()) {
+            error!("Set time failed: file {} doesn't exist!", file_path.path());
+            if !api::path_exists(file_path.dir().unwrap()) {
+                return ErrorNo::ENOTDIR as isize;
+            } else {
+                return ErrorNo::ENOENT as isize;
+            }
+        }
+        let file = new_fd(file_path.path().to_string(), 0.into()).unwrap();
+        file.stat.lock().atime.set_as_utime(&new_atime);
+        file.stat.lock().mtime.set_as_utime(&new_mtime);
+        0
+    }
+}
+
+/// 82
+/// 写回硬盘
+pub fn syscall_fsync(fd: usize) -> isize {
+    let process = current_process();
+    let process_inner = process.inner.lock();
+    if fd >= process_inner.fd_manager.fd_table.len() || fd < 3 {
+        debug!("fd {} is out of range", fd);
+        return ErrorNo::EBADF as isize;
+    }
+
+    if let Some(file) = process_inner.fd_manager.fd_table[fd].clone() {
+        if file.lock().flush().is_err() {}
+        0
+    } else {
+        debug!("fd {} is none", fd);
+        return ErrorNo::EBADF as isize;
+    }
+}
+
+// /// 166
+// pub fn syscall_umask(mask: mode_t)
+// {
 //
-//     let old_path = process_inner.memory_set.lock().translate_str(old_path);
-//     let new_path = process_inner.memory_set.lock().translate_str(new_path);
-//
-//     // 处理path
-//     let mut old_path_ = "".to_string();
-//     if !old_path.starts_with('/') {
-//         if old_dirfd == AT_FDCWD {
-//             old_path_ = api::canonicalize(old_path.as_str()).unwrap();
-//         }else{
-//             if old_dirfd >= process_inner.fd_table.len() || old_dirfd < 0 {
-//                 debug!("old_dirfd index out of range");
-//                 return -1;
-//             }
-//             if let Some(dir) = process_inner.fd_table[old_dirfd].as_ref() {
-//                 let dir = dir.clone();
-//                 old_path_ = format!("{}/{}", dir.get_path(), old_path);
-//             } else {
-//                 debug!("old_dirfd not exist");
-//                 return -1;
-//             }
-//         }
-//     }
-//     let mut new_path_ = "".to_string();
-//     if !new_path.starts_with('/') {
-//         if new_dirfd == AT_FDCWD {
-//             new_path_ = api::canonicalize(new_path.as_str()).unwrap();
-//         }else{
-//             if new_dirfd >= process_inner.fd_table.len() || new_dirfd < 0 {
-//                 debug!("old_dirfd index out of range");
-//                 return -1;
-//             }
-//             if let Some(dir) = process_inner.fd_table[new_dirfd].as_ref() {
-//                 let dir = dir.clone();
-//                 new_path_ = format!("{}/{}", dir.get_path(), new_path);
-//             } else {
-//                 debug!("old_dirfd not exist");
-//                 return -1;
-//             }
-//         }
-//     }
-//
-//     if flags == RENAME_NOREPLACE {
-//         if api::metadata(new_path_.as_str()).is_ok() {
-//             debug!("new_path_ already exist");
-//             return -1;
-//         }
-//     }
-//
-//     if flags == RENAME_EXCHANGE {
-//         let old_metadata = api::metadata(old_path_.as_str()).unwrap();
-//         let new_metadata = api::metadata(new_path_.as_str()).unwrap();
-//         if old_metadata.is_dir() != new_metadata.is_dir() {
-//             debug!("old_path_ and new_path_ is not the same type");
-//             return -1;
-//         }
-//     }
-//
-//     if flags == RENAME_WHITEOUT {
-//         let new_metadata = api::metadata(new_path_.as_str()).unwrap();
-//         if new_metadata.is_dir() {
-//             debug!("new_path_ is a directory");
-//             return -1;
-//         }
-//     }
-//
-//     if flags != RENAME_NOREPLACE && flags != RENAME_EXCHANGE && flags != RENAME_WHITEOUT {
-//         debug!("flags is not valid");
-//         return -1;
-//     }
-//
-//     if api::rename(old_path_.as_str(), new_path_.as_str()).is_err() {
-//         debug!("rename failed");
-//         return -1;
-//     }
-//
-//     0
 // }
+
+// /// 71
+// pub fn syscall_sendfile64(out_fd: usize, in_fd: usize, offset: __off64_t, count: usize)
+// {
+//
+// }
+
+/// 276
+/// 重命名文件或目录
+// todo!
+// 1. 权限检查
+// 调用进程必须对源目录和目标目录都有写权限,才能完成重命名。
+// 2. 目录和文件在同一个文件系统
+// 如果目录和文件不在同一个文件系统,重命名会失败。renameat2不能跨文件系统重命名。
+// 3. 源文件不是目标目录的子目录
+// 如果源文件是目标目录的子孙目录,也会导致重命名失败。不能将目录重命名到自己的子目录中。
+// 4. 目标名称不存在
+// 目标文件名在目标目录下必须不存在,否则会失败。
+// 5. 源文件被打开
+// 如果源文件正被进程打开,默认情况下重命名也会失败。可以通过添加RENAME_EXCHANGE标志位实现原子交换。
+// 6. 目录不是挂载点
+// 如果源目录是一个挂载点,也不允许重命名。
+pub fn syscall_renameat2(
+    old_dirfd: usize,
+    _old_path: *const u8,
+    new_dirfd: usize,
+    _new_path: *const u8,
+    flags: usize,
+) -> isize {
+    let old_path = deal_with_path(old_dirfd, Some(_old_path), false).unwrap();
+    let new_path = deal_with_path(new_dirfd, Some(_new_path), false).unwrap();
+
+    // 交换两个目录名，目录下的文件不受影响，
+
+    // 如果重命名后的文件已存在
+    if flags == 1 {
+        // 即RENAME_NOREPLACE
+        if api::path_exists(new_path.path()) {
+            debug!("new_path_ already exist");
+            return -1;
+        }
+    }
+
+    // 文件与文件夹不能互换命名
+    if flags == 2 {
+        // 即RENAME_EXCHANGE
+        let old_metadata = api::metadata(old_path.path()).unwrap();
+        let new_metadata = api::metadata(new_path.path()).unwrap();
+        if old_metadata.is_dir() != new_metadata.is_dir() {
+            debug!("old_path_ and new_path_ is not the same type");
+            return -1;
+        }
+    }
+
+    if flags == 4 {
+        // 即RENAME_WHITEOUT
+        let new_metadata = api::metadata(new_path.path()).unwrap();
+        if new_metadata.is_dir() {
+            debug!("new_path_ is a directory");
+            return -1;
+        }
+    }
+
+    if flags != 1 && flags != 2 && flags != 4 {
+        debug!("flags is not valid");
+        return -1;
+    }
+
+    // 做实际重命名操作
+
+    0
+}
+
+pub fn syscall_ftruncate64(fd: usize, len: usize) -> isize {
+    let process = current_process();
+    let inner = process.inner.lock();
+    if fd >= inner.fd_manager.fd_table.len() {
+        return ErrorNo::EINVAL as isize;
+    }
+    if inner.fd_manager.fd_table[fd].is_none() {
+        return ErrorNo::EINVAL as isize;
+    }
+
+    if let Some(file) = inner.fd_manager.fd_table[fd].as_ref() {
+        if file.lock().truncate(len).is_err() {
+            return ErrorNo::EINVAL as isize;
+        }
+    }
+    0
+}

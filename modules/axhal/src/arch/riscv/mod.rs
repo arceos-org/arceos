@@ -4,11 +4,11 @@ mod macros;
 mod context;
 mod trap;
 
+pub use self::context::{GeneralRegisters, TaskContext, TrapFrame};
 use memory_addr::{PhysAddr, VirtAddr};
 use riscv::asm;
 use riscv::register::{satp, sstatus, stvec};
-
-pub use self::context::{GeneralRegisters, TaskContext, TrapFrame};
+pub use trap::SIGNAL_RETURN_TRAP;
 
 /// Allows the current CPU to respond to interrupts.
 #[inline]

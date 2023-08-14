@@ -2,31 +2,36 @@
 ARCH ?= riscv64
 SMP ?= 1
 MODE ?= release
-LOG ?= warn
+LOG ?= off
+V ?=
 
-A ?= apps/syscall/junior
+A ?= apps/syscall/busybox
 APP ?= $(A)
 APP_FEATURES ?=
 DISK_IMG ?= sdcard.img
 
-MACRO ?= y
+SIGNAL ?= y
+MONOLITHIC ?= y
 MULTITASK ?= y
 PAGING ?= y
 FS ?= y
-NET ?= n
+NET ?= y
 GRAPHIC ?= n
 BUS ?= mmio
+PREEMPT ?= y
+OFFLINE ?= y
 
 QEMU_LOG ?= n
+NET_DUMP ?= n
 
 ifeq ($(wildcard $(APP)),)
   $(error Application path "$(APP)" is not valid)
 endif
 
 ifneq ($(wildcard $(APP)/Cargo.toml),)
-  APP_LANG ?= rust
+  APP_TYPE ?= rust
 else
-  APP_LANG ?= c
+  APP_TYPE ?= c
 endif
 
 # Platform
@@ -38,7 +43,7 @@ ifeq ($(ARCH), x86_64)
 else ifeq ($(ARCH), riscv64)
   ACCEL ?= n
   PLATFORM ?= qemu-virt-riscv
-  TARGET := riscv64gc-unknown-none-elf
+  TARGET := riscv64imac-unknown-none-elf
 else ifeq ($(ARCH), aarch64)
   ACCEL ?= n
   PLATFORM ?= qemu-virt-aarch64
@@ -54,13 +59,11 @@ export MODE
 export LOG
 
 # Binutils
-ifeq ($(APP_LANG), c)
-  CROSS_COMPILE ?= $(ARCH)-linux-musl-
-  CC := $(CROSS_COMPILE)gcc
-  AR := $(CROSS_COMPILE)ar
-  RANLIB := $(CROSS_COMPILE)ranlib
-  LD := rust-lld -flavor gnu
-endif
+CROSS_COMPILE ?= $(ARCH)-linux-musl-
+CC := $(CROSS_COMPILE)gcc
+AR := $(CROSS_COMPILE)ar
+RANLIB := $(CROSS_COMPILE)ranlib
+LD := rust-lld -flavor gnu
 
 OBJDUMP ?= rust-objdump -d --print-imm-hex --x86-asm-syntax=intel
 OBJCOPY ?= rust-objcopy --binary-architecture=$(ARCH)
@@ -70,19 +73,26 @@ GDB ?= gdb-multiarch
 OUT_DIR ?= $(APP)
 
 APP_NAME := $(shell basename $(APP))
-LD_SCRIPT := $(CURDIR)/modules/axhal/linker_$(ARCH).lds
+LD_SCRIPT := $(CURDIR)/modules/axhal/linker_$(PLATFORM).lds
 OUT_ELF := $(OUT_DIR)/$(APP_NAME)_$(PLATFORM).elf
 OUT_BIN := $(OUT_DIR)/$(APP_NAME)_$(PLATFORM).bin
 
 all: build
 
 include scripts/make/utils.mk
-include scripts/make/cargo.mk
-include scripts/make/qemu.mk
 include scripts/make/build.mk
+include scripts/make/qemu.mk
 include scripts/make/test.mk
+ifeq ($(PLATFORM), raspi4-aarch64)
+  include scripts/make/raspi4.mk
+endif
 
-build: $(OUT_DIR) $(OUT_BIN)
+pre_build:
+	if [ ! -d ".cargo" ]; then cp -r cargo .cargo; fi
+
+
+build: pre_build $(OUT_DIR) $(OUT_BIN)
+	cp $(OUT_BIN) ./os.bin
 
 disasm:
 	$(OBJDUMP) $(OUT_ELF) | less
@@ -138,6 +148,6 @@ clean: clean_c
 
 clean_c:
 	rm -rf ulib/c_libax/build_*
-	rm -rf $(APP)/*.o
+	rm -rf $(app-objs)
 
 .PHONY: all build disasm run justrun debug clippy fmt fmt_c test test_no_fail_fast clean clean_c doc disk_image

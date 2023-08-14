@@ -1,7 +1,7 @@
 extern crate alloc;
 
-use crate::{DevError, DevResult};
-use alloc::{boxed::Box, vec, vec::Vec};
+use crate::{DevError, DevResult, NetBufPtr};
+use alloc::{boxed::Box, sync::Arc, vec, vec::Vec};
 use core::ptr::NonNull;
 use spin::Mutex;
 
@@ -9,11 +9,11 @@ const MIN_BUFFER_LEN: usize = 1526;
 const MAX_BUFFER_LEN: usize = 65535;
 
 /// A RAII network buffer wrapped in a [`Box`].
-pub type NetBufferBox<'a> = Box<NetBuffer<'a>>;
+pub type NetBufBox = Box<NetBuf>;
 
 /// A RAII network buffer.
 ///
-/// It should be allocated from the [`NetBufferPool`], and it will be
+/// It should be allocated from the [`NetBufPool`], and it will be
 /// deallocated into the pool automatically when dropped.
 ///
 /// The layout of the buffer is:
@@ -28,19 +28,19 @@ pub type NetBufferBox<'a> = Box<NetBuffer<'a>>;
 /// |
 /// buf_ptr
 /// ```
-pub struct NetBuffer<'a> {
+pub struct NetBuf {
     header_len: usize,
     packet_len: usize,
     capacity: usize,
     buf_ptr: NonNull<u8>,
     pool_offset: usize,
-    pool: &'a NetBufferPool,
+    pool: Arc<NetBufPool>,
 }
 
-unsafe impl Send for NetBuffer<'_> {}
-unsafe impl Sync for NetBuffer<'_> {}
+unsafe impl Send for NetBuf {}
+unsafe impl Sync for NetBuf {}
 
-impl<'a> NetBuffer<'a> {
+impl NetBuf {
     const unsafe fn get_slice(&self, start: usize, len: usize) -> &[u8] {
         core::slice::from_raw_parts(self.buf_ptr.as_ptr().add(start), len)
     }
@@ -52,6 +52,11 @@ impl<'a> NetBuffer<'a> {
     /// Returns the capacity of the buffer.
     pub const fn capacity(&self) -> usize {
         self.capacity
+    }
+
+    /// Returns the length of the header part.
+    pub const fn header_len(&self) -> usize {
+        self.header_len
     }
 
     /// Returns the header part of the buffer.
@@ -95,29 +100,50 @@ impl<'a> NetBuffer<'a> {
         debug_assert!(self.header_len + packet_len <= self.capacity);
         self.packet_len = packet_len;
     }
+
+    /// Converts the buffer into a [`NetBufPtr`].
+    pub fn into_buf_ptr(mut self: Box<Self>) -> NetBufPtr {
+        let buf_ptr = self.packet_mut().as_mut_ptr();
+        let len = self.packet_len;
+        NetBufPtr::new(
+            NonNull::new(Box::into_raw(self) as *mut u8).unwrap(),
+            NonNull::new(buf_ptr).unwrap(),
+            len,
+        )
+    }
+
+    /// Restore [`NetBuf`] struct from a raw pointer.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it may cause some memory issues,
+    /// so we must ensure that it is called after calling `into_buf_ptr`.
+    pub unsafe fn from_buf_ptr(ptr: NetBufPtr) -> Box<Self> {
+        Box::from_raw(ptr.raw_ptr::<Self>())
+    }
 }
 
-impl Drop for NetBuffer<'_> {
-    /// Deallocates the buffer into the [`NetBufferPool`].
+impl Drop for NetBuf {
+    /// Deallocates the buffer into the [`NetBufPool`].
     fn drop(&mut self) {
         self.pool.dealloc(self.pool_offset);
     }
 }
 
-/// A pool of [`NetBuffer`]s to speed up buffer allocation.
+/// A pool of [`NetBuf`]s to speed up buffer allocation.
 ///
 /// It divides a large memory into several equal parts for each buffer.
-pub struct NetBufferPool {
+pub struct NetBufPool {
     capacity: usize,
     buf_len: usize,
     pool: Vec<u8>,
     free_list: Mutex<Vec<usize>>,
 }
 
-impl NetBufferPool {
+impl NetBufPool {
     /// Creates a new pool with the given `capacity`, and all buffer lengths are
     /// set to `buf_len`.
-    pub fn new(capacity: usize, buf_len: usize) -> DevResult<Self> {
+    pub fn new(capacity: usize, buf_len: usize) -> DevResult<Arc<Self>> {
         if capacity == 0 {
             return Err(DevError::InvalidParam);
         }
@@ -130,12 +156,12 @@ impl NetBufferPool {
         for i in 0..capacity {
             free_list.push(i * buf_len);
         }
-        Ok(Self {
+        Ok(Arc::new(Self {
             capacity,
             buf_len,
             pool,
             free_list: Mutex::new(free_list),
-        })
+        }))
     }
 
     /// Returns the capacity of the pool.
@@ -151,24 +177,24 @@ impl NetBufferPool {
     /// Allocates a buffer from the pool.
     ///
     /// Returns `None` if no buffer is available.
-    pub fn alloc(&self) -> Option<NetBuffer> {
+    pub fn alloc(self: &Arc<Self>) -> Option<NetBuf> {
         let pool_offset = self.free_list.lock().pop()?;
         let buf_ptr =
             unsafe { NonNull::new(self.pool.as_ptr().add(pool_offset) as *mut u8).unwrap() };
-        Some(NetBuffer {
+        Some(NetBuf {
             header_len: 0,
             packet_len: 0,
             capacity: self.buf_len,
             buf_ptr,
             pool_offset,
-            pool: self,
+            pool: Arc::clone(self),
         })
     }
 
     /// Allocates a buffer wrapped in a [`Box`] from the pool.
     ///
     /// Returns `None` if no buffer is available.
-    pub fn alloc_boxed(&self) -> Option<NetBufferBox> {
+    pub fn alloc_boxed(self: &Arc<Self>) -> Option<NetBufBox> {
         Some(Box::new(self.alloc()?))
     }
 

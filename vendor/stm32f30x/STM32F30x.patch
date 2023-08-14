@@ -1,0 +1,3007 @@
+--- a/STM32F30x.svd	2018-05-07 15:18:41.694913230 +0200
++++ b/STM32F30x.svd	2018-05-07 15:18:38.281559224 +0200
+@@ -3,6 +3,16 @@
+ xmlns:xs="http://www.w3.org/2001/XMLSchema-instance"
+ xs:noNamespaceSchemaLocation="CMSIS-SVD_Schema_1_1.xsd">
+   <name>STM32F30x</name>
++  <cpu>
++    <name>CM4</name>
++    <revision>r0p0</revision>
++    <endian>little</endian>
++    <fpuPresent>true</fpuPresent>
++    <mpuPresent>true</mpuPresent>
++    <vtorPresent>true</vtorPresent>
++    <nvicPrioBits>4</nvicPrioBits>
++    <vendorSystickConfig>false</vendorSystickConfig>
++  </cpu>
+   <version>1.4</version>
+   <description>STM32F30x</description>
+   <!--Bus Interface Properties-->
+@@ -33,7 +43,7 @@
+           <addressOffset>0x0</addressOffset>
+           <size>0x20</size>
+           <access>read-write</access>
+-          <resetValue>0x28000000</resetValue>
++          <resetValue>0xa8000000</resetValue>
+           <fields>
+             <field>
+               <name>MODER15</name>
+@@ -41,6 +51,29 @@
+               0..15)</description>
+               <bitOffset>30</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues>
++                <name>MODE</name>
++                <enumeratedValue>
++                  <name>Input</name>
++                  <description>Input mode (reset state)</description>
++                  <value>0</value>
++                </enumeratedValue>
++                <enumeratedValue>
++                  <name>Output</name>
++                  <description>General purpose output mode</description>
++                  <value>1</value>
++                </enumeratedValue>
++                <enumeratedValue>
++                  <name>Alternate</name>
++                  <description>Alternate function mode</description>
++                  <value>2</value>
++                </enumeratedValue>
++                <enumeratedValue>
++                  <name>Analog</name>
++                  <description>Analog mode</description>
++                  <value>3</value>
++                </enumeratedValue>
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER14</name>
+@@ -48,6 +81,8 @@
+               0..15)</description>
+               <bitOffset>28</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER13</name>
+@@ -55,6 +90,8 @@
+               0..15)</description>
+               <bitOffset>26</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER12</name>
+@@ -62,6 +99,8 @@
+               0..15)</description>
+               <bitOffset>24</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER11</name>
+@@ -69,6 +108,8 @@
+               0..15)</description>
+               <bitOffset>22</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER10</name>
+@@ -76,6 +117,8 @@
+               0..15)</description>
+               <bitOffset>20</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER9</name>
+@@ -83,6 +126,8 @@
+               0..15)</description>
+               <bitOffset>18</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER8</name>
+@@ -90,6 +135,8 @@
+               0..15)</description>
+               <bitOffset>16</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER7</name>
+@@ -97,6 +144,8 @@
+               0..15)</description>
+               <bitOffset>14</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER6</name>
+@@ -104,6 +153,8 @@
+               0..15)</description>
+               <bitOffset>12</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER5</name>
+@@ -111,6 +162,8 @@
+               0..15)</description>
+               <bitOffset>10</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER4</name>
+@@ -118,6 +171,8 @@
+               0..15)</description>
+               <bitOffset>8</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER3</name>
+@@ -125,6 +180,8 @@
+               0..15)</description>
+               <bitOffset>6</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER2</name>
+@@ -132,6 +189,8 @@
+               0..15)</description>
+               <bitOffset>4</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER1</name>
+@@ -139,6 +198,8 @@
+               0..15)</description>
+               <bitOffset>2</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER0</name>
+@@ -146,6 +207,8 @@
+               0..15)</description>
+               <bitOffset>0</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+           </fields>
+         </register>
+@@ -280,7 +343,7 @@
+           <addressOffset>0x8</addressOffset>
+           <size>0x20</size>
+           <access>read-write</access>
+-          <resetValue>0x00000000</resetValue>
++          <resetValue>0x0c000000</resetValue>
+           <fields>
+             <field>
+               <name>OSPEEDR15</name>
+@@ -404,7 +467,7 @@
+           <addressOffset>0xC</addressOffset>
+           <size>0x20</size>
+           <access>read-write</access>
+-          <resetValue>0x24000000</resetValue>
++          <resetValue>0x64000000</resetValue>
+           <fields>
+             <field>
+               <name>PUPDR15</name>
+@@ -782,6 +845,15 @@
+               0..15)</description>
+               <bitOffset>31</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues>
++                <name>RESET</name>
++                <usage>write</usage>
++                <enumeratedValue>
++                  <name>Reset</name>
++                  <description>Resets the corresponding ODRx bit</description>
++                  <value>1</value>
++                </enumeratedValue>
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR14</name>
+@@ -789,6 +861,8 @@
+               0..15)</description>
+               <bitOffset>30</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR13</name>
+@@ -796,6 +870,8 @@
+               0..15)</description>
+               <bitOffset>29</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR12</name>
+@@ -803,6 +879,8 @@
+               0..15)</description>
+               <bitOffset>28</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR11</name>
+@@ -810,6 +888,8 @@
+               0..15)</description>
+               <bitOffset>27</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR10</name>
+@@ -817,6 +897,8 @@
+               0..15)</description>
+               <bitOffset>26</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR9</name>
+@@ -824,6 +906,8 @@
+               0..15)</description>
+               <bitOffset>25</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR8</name>
+@@ -831,6 +915,8 @@
+               0..15)</description>
+               <bitOffset>24</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR7</name>
+@@ -838,6 +924,8 @@
+               0..15)</description>
+               <bitOffset>23</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR6</name>
+@@ -845,6 +933,8 @@
+               0..15)</description>
+               <bitOffset>22</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR5</name>
+@@ -852,6 +942,8 @@
+               0..15)</description>
+               <bitOffset>21</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR4</name>
+@@ -859,6 +951,8 @@
+               0..15)</description>
+               <bitOffset>20</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR3</name>
+@@ -866,6 +960,8 @@
+               0..15)</description>
+               <bitOffset>19</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR2</name>
+@@ -873,6 +969,8 @@
+               0..15)</description>
+               <bitOffset>18</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR1</name>
+@@ -880,6 +978,8 @@
+               0..15)</description>
+               <bitOffset>17</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR0</name>
+@@ -887,6 +987,8 @@
+               0..15)</description>
+               <bitOffset>16</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS15</name>
+@@ -894,6 +996,15 @@
+               0..15)</description>
+               <bitOffset>15</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues>
++                <name>SET</name>
++                <usage>write</usage>
++                <enumeratedValue>
++                  <name>Set</name>
++                  <description>Sets the corresponding ODRx bit</description>
++                  <value>1</value>
++                </enumeratedValue>
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS14</name>
+@@ -901,6 +1012,8 @@
+               0..15)</description>
+               <bitOffset>14</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS13</name>
+@@ -908,6 +1021,8 @@
+               0..15)</description>
+               <bitOffset>13</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS12</name>
+@@ -915,6 +1030,8 @@
+               0..15)</description>
+               <bitOffset>12</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS11</name>
+@@ -922,6 +1039,8 @@
+               0..15)</description>
+               <bitOffset>11</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS10</name>
+@@ -929,6 +1048,8 @@
+               0..15)</description>
+               <bitOffset>10</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS9</name>
+@@ -936,6 +1057,8 @@
+               0..15)</description>
+               <bitOffset>9</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS8</name>
+@@ -943,6 +1066,8 @@
+               0..15)</description>
+               <bitOffset>8</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS7</name>
+@@ -950,6 +1075,8 @@
+               0..15)</description>
+               <bitOffset>7</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS6</name>
+@@ -957,6 +1084,8 @@
+               0..15)</description>
+               <bitOffset>6</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS5</name>
+@@ -964,6 +1093,8 @@
+               0..15)</description>
+               <bitOffset>5</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS4</name>
+@@ -971,6 +1102,8 @@
+               0..15)</description>
+               <bitOffset>4</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS3</name>
+@@ -978,6 +1111,8 @@
+               0..15)</description>
+               <bitOffset>3</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS2</name>
+@@ -985,6 +1120,8 @@
+               0..15)</description>
+               <bitOffset>2</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS1</name>
+@@ -992,6 +1129,8 @@
+               0..15)</description>
+               <bitOffset>1</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS0</name>
+@@ -999,6 +1138,8 @@
+               0..15)</description>
+               <bitOffset>0</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+           </fields>
+         </register>
+@@ -1395,7 +1536,7 @@
+           <addressOffset>0x0</addressOffset>
+           <size>0x20</size>
+           <access>read-write</access>
+-          <resetValue>0x00000000</resetValue>
++          <resetValue>0x00000280</resetValue>
+           <fields>
+             <field>
+               <name>MODER15</name>
+@@ -1403,6 +1544,29 @@
+               0..15)</description>
+               <bitOffset>30</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues>
++                <name>MODE</name>
++                <enumeratedValue>
++                  <name>Input</name>
++                  <description>Input mode (reset state)</description>
++                  <value>0</value>
++                </enumeratedValue>
++                <enumeratedValue>
++                  <name>Output</name>
++                  <description>General purpose output mode</description>
++                  <value>1</value>
++                </enumeratedValue>
++                <enumeratedValue>
++                  <name>Alternate</name>
++                  <description>Alternate function mode</description>
++                  <value>2</value>
++                </enumeratedValue>
++                <enumeratedValue>
++                  <name>Analog</name>
++                  <description>Analog mode</description>
++                  <value>3</value>
++                </enumeratedValue>
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER14</name>
+@@ -1410,6 +1574,8 @@
+               0..15)</description>
+               <bitOffset>28</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER13</name>
+@@ -1417,6 +1583,8 @@
+               0..15)</description>
+               <bitOffset>26</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER12</name>
+@@ -1424,6 +1592,8 @@
+               0..15)</description>
+               <bitOffset>24</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER11</name>
+@@ -1431,6 +1601,8 @@
+               0..15)</description>
+               <bitOffset>22</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER10</name>
+@@ -1438,6 +1610,8 @@
+               0..15)</description>
+               <bitOffset>20</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER9</name>
+@@ -1445,6 +1619,8 @@
+               0..15)</description>
+               <bitOffset>18</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER8</name>
+@@ -1452,6 +1628,8 @@
+               0..15)</description>
+               <bitOffset>16</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER7</name>
+@@ -1459,6 +1637,8 @@
+               0..15)</description>
+               <bitOffset>14</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER6</name>
+@@ -1466,6 +1646,8 @@
+               0..15)</description>
+               <bitOffset>12</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER5</name>
+@@ -1473,6 +1655,8 @@
+               0..15)</description>
+               <bitOffset>10</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER4</name>
+@@ -1480,6 +1664,8 @@
+               0..15)</description>
+               <bitOffset>8</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER3</name>
+@@ -1487,6 +1673,8 @@
+               0..15)</description>
+               <bitOffset>6</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER2</name>
+@@ -1494,6 +1682,8 @@
+               0..15)</description>
+               <bitOffset>4</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER1</name>
+@@ -1501,6 +1691,8 @@
+               0..15)</description>
+               <bitOffset>2</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>MODER0</name>
+@@ -1508,6 +1700,8 @@
+               0..15)</description>
+               <bitOffset>0</bitOffset>
+               <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
+             </field>
+           </fields>
+         </register>
+@@ -1632,7 +1826,7 @@
+           <addressOffset>0x8</addressOffset>
+           <size>0x20</size>
+           <access>read-write</access>
+-          <resetValue>0x00000000</resetValue>
++          <resetValue>0x000000c0</resetValue>
+           <fields>
+             <field>
+               <name>OSPEEDR15</name>
+@@ -1756,7 +1950,7 @@
+           <addressOffset>0xC</addressOffset>
+           <size>0x20</size>
+           <access>read-write</access>
+-          <resetValue>0x00000000</resetValue>
++          <resetValue>0x00000100</resetValue>
+           <fields>
+             <field>
+               <name>PUPDR15</name>
+@@ -2134,6 +2328,15 @@
+               0..15)</description>
+               <bitOffset>31</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues>
++                <name>RESET</name>
++                <usage>write</usage>
++                <enumeratedValue>
++                  <name>Reset</name>
++                  <description>Resets the corresponding ODRx bit</description>
++                  <value>1</value>
++                </enumeratedValue>
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR14</name>
+@@ -2141,6 +2344,8 @@
+               0..15)</description>
+               <bitOffset>30</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR13</name>
+@@ -2148,6 +2353,8 @@
+               0..15)</description>
+               <bitOffset>29</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR12</name>
+@@ -2155,6 +2362,8 @@
+               0..15)</description>
+               <bitOffset>28</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR11</name>
+@@ -2162,6 +2371,8 @@
+               0..15)</description>
+               <bitOffset>27</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR10</name>
+@@ -2169,6 +2380,8 @@
+               0..15)</description>
+               <bitOffset>26</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR9</name>
+@@ -2176,6 +2389,8 @@
+               0..15)</description>
+               <bitOffset>25</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR8</name>
+@@ -2183,6 +2398,8 @@
+               0..15)</description>
+               <bitOffset>24</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR7</name>
+@@ -2190,6 +2407,8 @@
+               0..15)</description>
+               <bitOffset>23</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR6</name>
+@@ -2197,6 +2416,8 @@
+               0..15)</description>
+               <bitOffset>22</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR5</name>
+@@ -2204,6 +2425,8 @@
+               0..15)</description>
+               <bitOffset>21</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR4</name>
+@@ -2211,6 +2434,8 @@
+               0..15)</description>
+               <bitOffset>20</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR3</name>
+@@ -2218,6 +2443,8 @@
+               0..15)</description>
+               <bitOffset>19</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR2</name>
+@@ -2225,6 +2452,8 @@
+               0..15)</description>
+               <bitOffset>18</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR1</name>
+@@ -2232,6 +2461,8 @@
+               0..15)</description>
+               <bitOffset>17</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BR0</name>
+@@ -2239,6 +2470,8 @@
+               0..15)</description>
+               <bitOffset>16</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS15</name>
+@@ -2246,6 +2479,15 @@
+               0..15)</description>
+               <bitOffset>15</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues>
++                <name>SET</name>
++                <usage>write</usage>
++                <enumeratedValue>
++                  <name>Set</name>
++                  <description>Sets the corresponding ODRx bit</description>
++                  <value>1</value>
++                </enumeratedValue>
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS14</name>
+@@ -2253,6 +2495,8 @@
+               0..15)</description>
+               <bitOffset>14</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS13</name>
+@@ -2260,6 +2504,8 @@
+               0..15)</description>
+               <bitOffset>13</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS12</name>
+@@ -2267,6 +2513,8 @@
+               0..15)</description>
+               <bitOffset>12</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS11</name>
+@@ -2274,6 +2522,8 @@
+               0..15)</description>
+               <bitOffset>11</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS10</name>
+@@ -2281,6 +2531,8 @@
+               0..15)</description>
+               <bitOffset>10</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS9</name>
+@@ -2288,6 +2540,8 @@
+               0..15)</description>
+               <bitOffset>9</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS8</name>
+@@ -2295,6 +2549,8 @@
+               0..15)</description>
+               <bitOffset>8</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS7</name>
+@@ -2302,6 +2558,8 @@
+               0..15)</description>
+               <bitOffset>7</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS6</name>
+@@ -2309,6 +2567,8 @@
+               0..15)</description>
+               <bitOffset>6</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS5</name>
+@@ -2316,6 +2576,8 @@
+               0..15)</description>
+               <bitOffset>5</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS4</name>
+@@ -2323,6 +2585,8 @@
+               0..15)</description>
+               <bitOffset>4</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS3</name>
+@@ -2330,6 +2594,8 @@
+               0..15)</description>
+               <bitOffset>3</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS2</name>
+@@ -2337,6 +2603,8 @@
+               0..15)</description>
+               <bitOffset>2</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS1</name>
+@@ -2344,6 +2612,8 @@
+               0..15)</description>
+               <bitOffset>1</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>BS0</name>
+@@ -2351,6 +2621,8 @@
+               0..15)</description>
+               <bitOffset>0</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
+             </field>
+           </fields>
+         </register>
+@@ -2729,19 +3001,1498 @@
+         </register>
+       </registers>
+     </peripheral>
+-    <peripheral derivedFrom="GPIOB">
++    <peripheral>
+       <name>GPIOC</name>
++      <description>General-purpose I/Os</description>
++      <groupName>GPIO</groupName>
+       <baseAddress>0x48000800</baseAddress>
++      <addressBlock>
++        <offset>0x0</offset>
++        <size>0x400</size>
++        <usage>registers</usage>
++      </addressBlock>
++      <registers>
++        <register>
++          <name>MODER</name>
++          <displayName>MODER</displayName>
++          <description>GPIO port mode register</description>
++          <addressOffset>0x0</addressOffset>
++          <size>0x20</size>
++          <access>read-write</access>
++          <resetValue>0x00000000</resetValue>
++          <fields>
++            <field>
++              <name>MODER15</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>30</bitOffset>
++              <bitWidth>2</bitWidth>
++              <enumeratedValues>
++                <name>MODE</name>
++                <enumeratedValue>
++                  <name>Input</name>
++                  <description>Input mode (reset state)</description>
++                  <value>0</value>
++                </enumeratedValue>
++                <enumeratedValue>
++                  <name>Output</name>
++                  <description>General purpose output mode</description>
++                  <value>1</value>
++                </enumeratedValue>
++                <enumeratedValue>
++                  <name>Alternate</name>
++                  <description>Alternate function mode</description>
++                  <value>2</value>
++                </enumeratedValue>
++                <enumeratedValue>
++                  <name>Analog</name>
++                  <description>Analog mode</description>
++                  <value>3</value>
++                </enumeratedValue>
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>MODER14</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>28</bitOffset>
++              <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>MODER13</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>26</bitOffset>
++              <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>MODER12</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>24</bitOffset>
++              <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>MODER11</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>22</bitOffset>
++              <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>MODER10</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>20</bitOffset>
++              <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>MODER9</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>18</bitOffset>
++              <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>MODER8</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>16</bitOffset>
++              <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>MODER7</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>14</bitOffset>
++              <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>MODER6</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>12</bitOffset>
++              <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>MODER5</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>10</bitOffset>
++              <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>MODER4</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>8</bitOffset>
++              <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>MODER3</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>6</bitOffset>
++              <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>MODER2</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>4</bitOffset>
++              <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>MODER1</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>2</bitOffset>
++              <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>MODER0</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>0</bitOffset>
++              <bitWidth>2</bitWidth>
++              <enumeratedValues derivedFrom="MODE">
++              </enumeratedValues>
++            </field>
++          </fields>
++        </register>
++        <register>
++          <name>OTYPER</name>
++          <displayName>OTYPER</displayName>
++          <description>GPIO port output type register</description>
++          <addressOffset>0x4</addressOffset>
++          <size>0x20</size>
++          <access>read-write</access>
++          <resetValue>0x00000000</resetValue>
++          <fields>
++            <field>
++              <name>OT15</name>
++              <description>Port x configuration bit
++              15</description>
++              <bitOffset>15</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>OT14</name>
++              <description>Port x configuration bit
++              14</description>
++              <bitOffset>14</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>OT13</name>
++              <description>Port x configuration bit
++              13</description>
++              <bitOffset>13</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>OT12</name>
++              <description>Port x configuration bit
++              12</description>
++              <bitOffset>12</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>OT11</name>
++              <description>Port x configuration bit
++              11</description>
++              <bitOffset>11</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>OT10</name>
++              <description>Port x configuration bit
++              10</description>
++              <bitOffset>10</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>OT9</name>
++              <description>Port x configuration bit 9</description>
++              <bitOffset>9</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>OT8</name>
++              <description>Port x configuration bit 8</description>
++              <bitOffset>8</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>OT7</name>
++              <description>Port x configuration bit 7</description>
++              <bitOffset>7</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>OT6</name>
++              <description>Port x configuration bit 6</description>
++              <bitOffset>6</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>OT5</name>
++              <description>Port x configuration bit 5</description>
++              <bitOffset>5</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>OT4</name>
++              <description>Port x configuration bit 4</description>
++              <bitOffset>4</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>OT3</name>
++              <description>Port x configuration bit 3</description>
++              <bitOffset>3</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>OT2</name>
++              <description>Port x configuration bit 2</description>
++              <bitOffset>2</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>OT1</name>
++              <description>Port x configuration bit 1</description>
++              <bitOffset>1</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>OT0</name>
++              <description>Port x configuration bit 0</description>
++              <bitOffset>0</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++          </fields>
++        </register>
++        <register>
++          <name>OSPEEDR</name>
++          <displayName>OSPEEDR</displayName>
++          <description>GPIO port output speed
++          register</description>
++          <addressOffset>0x8</addressOffset>
++          <size>0x20</size>
++          <access>read-write</access>
++          <resetValue>0x00000000</resetValue>
++          <fields>
++            <field>
++              <name>OSPEEDR15</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>30</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>OSPEEDR14</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>28</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>OSPEEDR13</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>26</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>OSPEEDR12</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>24</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>OSPEEDR11</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>22</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>OSPEEDR10</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>20</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>OSPEEDR9</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>18</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>OSPEEDR8</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>16</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>OSPEEDR7</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>14</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>OSPEEDR6</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>12</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>OSPEEDR5</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>10</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>OSPEEDR4</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>8</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>OSPEEDR3</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>6</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>OSPEEDR2</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>4</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>OSPEEDR1</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>2</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>OSPEEDR0</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>0</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++          </fields>
++        </register>
++        <register>
++          <name>PUPDR</name>
++          <displayName>PUPDR</displayName>
++          <description>GPIO port pull-up/pull-down
++          register</description>
++          <addressOffset>0xC</addressOffset>
++          <size>0x20</size>
++          <access>read-write</access>
++          <resetValue>0x00000000</resetValue>
++          <fields>
++            <field>
++              <name>PUPDR15</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>30</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>PUPDR14</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>28</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>PUPDR13</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>26</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>PUPDR12</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>24</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>PUPDR11</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>22</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>PUPDR10</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>20</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>PUPDR9</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>18</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>PUPDR8</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>16</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>PUPDR7</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>14</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>PUPDR6</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>12</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>PUPDR5</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>10</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>PUPDR4</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>8</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>PUPDR3</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>6</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>PUPDR2</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>4</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>PUPDR1</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>2</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++            <field>
++              <name>PUPDR0</name>
++              <description>Port x configuration bits (y =
++              0..15)</description>
++              <bitOffset>0</bitOffset>
++              <bitWidth>2</bitWidth>
++            </field>
++          </fields>
++        </register>
++        <register>
++          <name>IDR</name>
++          <displayName>IDR</displayName>
++          <description>GPIO port input data register</description>
++          <addressOffset>0x10</addressOffset>
++          <size>0x20</size>
++          <access>read-only</access>
++          <resetValue>0x00000000</resetValue>
++          <fields>
++            <field>
++              <name>IDR15</name>
++              <description>Port input data (y =
++              0..15)</description>
++              <bitOffset>15</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>IDR14</name>
++              <description>Port input data (y =
++              0..15)</description>
++              <bitOffset>14</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>IDR13</name>
++              <description>Port input data (y =
++              0..15)</description>
++              <bitOffset>13</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>IDR12</name>
++              <description>Port input data (y =
++              0..15)</description>
++              <bitOffset>12</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>IDR11</name>
++              <description>Port input data (y =
++              0..15)</description>
++              <bitOffset>11</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>IDR10</name>
++              <description>Port input data (y =
++              0..15)</description>
++              <bitOffset>10</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>IDR9</name>
++              <description>Port input data (y =
++              0..15)</description>
++              <bitOffset>9</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>IDR8</name>
++              <description>Port input data (y =
++              0..15)</description>
++              <bitOffset>8</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>IDR7</name>
++              <description>Port input data (y =
++              0..15)</description>
++              <bitOffset>7</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>IDR6</name>
++              <description>Port input data (y =
++              0..15)</description>
++              <bitOffset>6</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>IDR5</name>
++              <description>Port input data (y =
++              0..15)</description>
++              <bitOffset>5</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>IDR4</name>
++              <description>Port input data (y =
++              0..15)</description>
++              <bitOffset>4</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>IDR3</name>
++              <description>Port input data (y =
++              0..15)</description>
++              <bitOffset>3</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>IDR2</name>
++              <description>Port input data (y =
++              0..15)</description>
++              <bitOffset>2</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>IDR1</name>
++              <description>Port input data (y =
++              0..15)</description>
++              <bitOffset>1</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>IDR0</name>
++              <description>Port input data (y =
++              0..15)</description>
++              <bitOffset>0</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++          </fields>
++        </register>
++        <register>
++          <name>ODR</name>
++          <displayName>ODR</displayName>
++          <description>GPIO port output data register</description>
++          <addressOffset>0x14</addressOffset>
++          <size>0x20</size>
++          <access>read-write</access>
++          <resetValue>0x00000000</resetValue>
++          <fields>
++            <field>
++              <name>ODR15</name>
++              <description>Port output data (y =
++              0..15)</description>
++              <bitOffset>15</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>ODR14</name>
++              <description>Port output data (y =
++              0..15)</description>
++              <bitOffset>14</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>ODR13</name>
++              <description>Port output data (y =
++              0..15)</description>
++              <bitOffset>13</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>ODR12</name>
++              <description>Port output data (y =
++              0..15)</description>
++              <bitOffset>12</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>ODR11</name>
++              <description>Port output data (y =
++              0..15)</description>
++              <bitOffset>11</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>ODR10</name>
++              <description>Port output data (y =
++              0..15)</description>
++              <bitOffset>10</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>ODR9</name>
++              <description>Port output data (y =
++              0..15)</description>
++              <bitOffset>9</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>ODR8</name>
++              <description>Port output data (y =
++              0..15)</description>
++              <bitOffset>8</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>ODR7</name>
++              <description>Port output data (y =
++              0..15)</description>
++              <bitOffset>7</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>ODR6</name>
++              <description>Port output data (y =
++              0..15)</description>
++              <bitOffset>6</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>ODR5</name>
++              <description>Port output data (y =
++              0..15)</description>
++              <bitOffset>5</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>ODR4</name>
++              <description>Port output data (y =
++              0..15)</description>
++              <bitOffset>4</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>ODR3</name>
++              <description>Port output data (y =
++              0..15)</description>
++              <bitOffset>3</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>ODR2</name>
++              <description>Port output data (y =
++              0..15)</description>
++              <bitOffset>2</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>ODR1</name>
++              <description>Port output data (y =
++              0..15)</description>
++              <bitOffset>1</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>ODR0</name>
++              <description>Port output data (y =
++              0..15)</description>
++              <bitOffset>0</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++          </fields>
++        </register>
++        <register>
++          <name>BSRR</name>
++          <displayName>BSRR</displayName>
++          <description>GPIO port bit set/reset
++          register</description>
++          <addressOffset>0x18</addressOffset>
++          <size>0x20</size>
++          <access>write-only</access>
++          <resetValue>0x00000000</resetValue>
++          <fields>
++            <field>
++              <name>BR15</name>
++              <description>Port x reset bit y (y =
++              0..15)</description>
++              <bitOffset>31</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues>
++                <name>RESET</name>
++                <usage>write</usage>
++                <enumeratedValue>
++                  <name>Reset</name>
++                  <description>Resets the corresponding ODRx bit</description>
++                  <value>1</value>
++                </enumeratedValue>
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BR14</name>
++              <description>Port x reset bit y (y =
++              0..15)</description>
++              <bitOffset>30</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BR13</name>
++              <description>Port x reset bit y (y =
++              0..15)</description>
++              <bitOffset>29</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BR12</name>
++              <description>Port x reset bit y (y =
++              0..15)</description>
++              <bitOffset>28</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BR11</name>
++              <description>Port x reset bit y (y =
++              0..15)</description>
++              <bitOffset>27</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BR10</name>
++              <description>Port x reset bit y (y =
++              0..15)</description>
++              <bitOffset>26</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BR9</name>
++              <description>Port x reset bit y (y =
++              0..15)</description>
++              <bitOffset>25</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BR8</name>
++              <description>Port x reset bit y (y =
++              0..15)</description>
++              <bitOffset>24</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BR7</name>
++              <description>Port x reset bit y (y =
++              0..15)</description>
++              <bitOffset>23</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BR6</name>
++              <description>Port x reset bit y (y =
++              0..15)</description>
++              <bitOffset>22</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BR5</name>
++              <description>Port x reset bit y (y =
++              0..15)</description>
++              <bitOffset>21</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BR4</name>
++              <description>Port x reset bit y (y =
++              0..15)</description>
++              <bitOffset>20</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BR3</name>
++              <description>Port x reset bit y (y =
++              0..15)</description>
++              <bitOffset>19</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BR2</name>
++              <description>Port x reset bit y (y =
++              0..15)</description>
++              <bitOffset>18</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BR1</name>
++              <description>Port x reset bit y (y =
++              0..15)</description>
++              <bitOffset>17</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BR0</name>
++              <description>Port x set bit y (y=
++              0..15)</description>
++              <bitOffset>16</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="RESET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BS15</name>
++              <description>Port x set bit y (y=
++              0..15)</description>
++              <bitOffset>15</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues>
++                <name>SET</name>
++                <usage>write</usage>
++                <enumeratedValue>
++                  <name>Set</name>
++                  <description>Sets the corresponding ODRx bit</description>
++                  <value>1</value>
++                </enumeratedValue>
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BS14</name>
++              <description>Port x set bit y (y=
++              0..15)</description>
++              <bitOffset>14</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BS13</name>
++              <description>Port x set bit y (y=
++              0..15)</description>
++              <bitOffset>13</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BS12</name>
++              <description>Port x set bit y (y=
++              0..15)</description>
++              <bitOffset>12</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BS11</name>
++              <description>Port x set bit y (y=
++              0..15)</description>
++              <bitOffset>11</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BS10</name>
++              <description>Port x set bit y (y=
++              0..15)</description>
++              <bitOffset>10</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BS9</name>
++              <description>Port x set bit y (y=
++              0..15)</description>
++              <bitOffset>9</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BS8</name>
++              <description>Port x set bit y (y=
++              0..15)</description>
++              <bitOffset>8</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BS7</name>
++              <description>Port x set bit y (y=
++              0..15)</description>
++              <bitOffset>7</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BS6</name>
++              <description>Port x set bit y (y=
++              0..15)</description>
++              <bitOffset>6</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BS5</name>
++              <description>Port x set bit y (y=
++              0..15)</description>
++              <bitOffset>5</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BS4</name>
++              <description>Port x set bit y (y=
++              0..15)</description>
++              <bitOffset>4</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BS3</name>
++              <description>Port x set bit y (y=
++              0..15)</description>
++              <bitOffset>3</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BS2</name>
++              <description>Port x set bit y (y=
++              0..15)</description>
++              <bitOffset>2</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BS1</name>
++              <description>Port x set bit y (y=
++              0..15)</description>
++              <bitOffset>1</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>BS0</name>
++              <description>Port x set bit y (y=
++              0..15)</description>
++              <bitOffset>0</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="SET">
++              </enumeratedValues>
++            </field>
++          </fields>
++        </register>
++        <register>
++          <name>LCKR</name>
++          <displayName>LCKR</displayName>
++          <description>GPIO port configuration lock
++          register</description>
++          <addressOffset>0x1C</addressOffset>
++          <size>0x20</size>
++          <access>read-write</access>
++          <resetValue>0x00000000</resetValue>
++          <fields>
++            <field>
++              <name>LCKK</name>
++              <description>Lok Key</description>
++              <bitOffset>16</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>LCK15</name>
++              <description>Port x lock bit y (y=
++              0..15)</description>
++              <bitOffset>15</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>LCK14</name>
++              <description>Port x lock bit y (y=
++              0..15)</description>
++              <bitOffset>14</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>LCK13</name>
++              <description>Port x lock bit y (y=
++              0..15)</description>
++              <bitOffset>13</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>LCK12</name>
++              <description>Port x lock bit y (y=
++              0..15)</description>
++              <bitOffset>12</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>LCK11</name>
++              <description>Port x lock bit y (y=
++              0..15)</description>
++              <bitOffset>11</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>LCK10</name>
++              <description>Port x lock bit y (y=
++              0..15)</description>
++              <bitOffset>10</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>LCK9</name>
++              <description>Port x lock bit y (y=
++              0..15)</description>
++              <bitOffset>9</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>LCK8</name>
++              <description>Port x lock bit y (y=
++              0..15)</description>
++              <bitOffset>8</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>LCK7</name>
++              <description>Port x lock bit y (y=
++              0..15)</description>
++              <bitOffset>7</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>LCK6</name>
++              <description>Port x lock bit y (y=
++              0..15)</description>
++              <bitOffset>6</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>LCK5</name>
++              <description>Port x lock bit y (y=
++              0..15)</description>
++              <bitOffset>5</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>LCK4</name>
++              <description>Port x lock bit y (y=
++              0..15)</description>
++              <bitOffset>4</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>LCK3</name>
++              <description>Port x lock bit y (y=
++              0..15)</description>
++              <bitOffset>3</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>LCK2</name>
++              <description>Port x lock bit y (y=
++              0..15)</description>
++              <bitOffset>2</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>LCK1</name>
++              <description>Port x lock bit y (y=
++              0..15)</description>
++              <bitOffset>1</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>LCK0</name>
++              <description>Port x lock bit y (y=
++              0..15)</description>
++              <bitOffset>0</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++          </fields>
++        </register>
++        <register>
++          <name>AFRL</name>
++          <displayName>AFRL</displayName>
++          <description>GPIO alternate function low
++          register</description>
++          <addressOffset>0x20</addressOffset>
++          <size>0x20</size>
++          <access>read-write</access>
++          <resetValue>0x00000000</resetValue>
++          <fields>
++            <field>
++              <name>AFRL7</name>
++              <description>Alternate function selection for port x
++              bit y (y = 0..7)</description>
++              <bitOffset>28</bitOffset>
++              <bitWidth>4</bitWidth>
++            </field>
++            <field>
++              <name>AFRL6</name>
++              <description>Alternate function selection for port x
++              bit y (y = 0..7)</description>
++              <bitOffset>24</bitOffset>
++              <bitWidth>4</bitWidth>
++            </field>
++            <field>
++              <name>AFRL5</name>
++              <description>Alternate function selection for port x
++              bit y (y = 0..7)</description>
++              <bitOffset>20</bitOffset>
++              <bitWidth>4</bitWidth>
++            </field>
++            <field>
++              <name>AFRL4</name>
++              <description>Alternate function selection for port x
++              bit y (y = 0..7)</description>
++              <bitOffset>16</bitOffset>
++              <bitWidth>4</bitWidth>
++            </field>
++            <field>
++              <name>AFRL3</name>
++              <description>Alternate function selection for port x
++              bit y (y = 0..7)</description>
++              <bitOffset>12</bitOffset>
++              <bitWidth>4</bitWidth>
++            </field>
++            <field>
++              <name>AFRL2</name>
++              <description>Alternate function selection for port x
++              bit y (y = 0..7)</description>
++              <bitOffset>8</bitOffset>
++              <bitWidth>4</bitWidth>
++            </field>
++            <field>
++              <name>AFRL1</name>
++              <description>Alternate function selection for port x
++              bit y (y = 0..7)</description>
++              <bitOffset>4</bitOffset>
++              <bitWidth>4</bitWidth>
++            </field>
++            <field>
++              <name>AFRL0</name>
++              <description>Alternate function selection for port x
++              bit y (y = 0..7)</description>
++              <bitOffset>0</bitOffset>
++              <bitWidth>4</bitWidth>
++            </field>
++          </fields>
++        </register>
++        <register>
++          <name>AFRH</name>
++          <displayName>AFRH</displayName>
++          <description>GPIO alternate function high
++          register</description>
++          <addressOffset>0x24</addressOffset>
++          <size>0x20</size>
++          <access>read-write</access>
++          <resetValue>0x00000000</resetValue>
++          <fields>
++            <field>
++              <name>AFRH15</name>
++              <description>Alternate function selection for port x
++              bit y (y = 8..15)</description>
++              <bitOffset>28</bitOffset>
++              <bitWidth>4</bitWidth>
++            </field>
++            <field>
++              <name>AFRH14</name>
++              <description>Alternate function selection for port x
++              bit y (y = 8..15)</description>
++              <bitOffset>24</bitOffset>
++              <bitWidth>4</bitWidth>
++            </field>
++            <field>
++              <name>AFRH13</name>
++              <description>Alternate function selection for port x
++              bit y (y = 8..15)</description>
++              <bitOffset>20</bitOffset>
++              <bitWidth>4</bitWidth>
++            </field>
++            <field>
++              <name>AFRH12</name>
++              <description>Alternate function selection for port x
++              bit y (y = 8..15)</description>
++              <bitOffset>16</bitOffset>
++              <bitWidth>4</bitWidth>
++            </field>
++            <field>
++              <name>AFRH11</name>
++              <description>Alternate function selection for port x
++              bit y (y = 8..15)</description>
++              <bitOffset>12</bitOffset>
++              <bitWidth>4</bitWidth>
++            </field>
++            <field>
++              <name>AFRH10</name>
++              <description>Alternate function selection for port x
++              bit y (y = 8..15)</description>
++              <bitOffset>8</bitOffset>
++              <bitWidth>4</bitWidth>
++            </field>
++            <field>
++              <name>AFRH9</name>
++              <description>Alternate function selection for port x
++              bit y (y = 8..15)</description>
++              <bitOffset>4</bitOffset>
++              <bitWidth>4</bitWidth>
++            </field>
++            <field>
++              <name>AFRH8</name>
++              <description>Alternate function selection for port x
++              bit y (y = 8..15)</description>
++              <bitOffset>0</bitOffset>
++              <bitWidth>4</bitWidth>
++            </field>
++          </fields>
++        </register>
++        <register>
++          <name>BRR</name>
++          <displayName>BRR</displayName>
++          <description>Port bit reset register</description>
++          <addressOffset>0x28</addressOffset>
++          <size>0x20</size>
++          <access>write-only</access>
++          <resetValue>0x00000000</resetValue>
++          <fields>
++            <field>
++              <name>BR0</name>
++              <description>Port x Reset bit y</description>
++              <bitOffset>0</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>BR1</name>
++              <description>Port x Reset bit y</description>
++              <bitOffset>1</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>BR2</name>
++              <description>Port x Reset bit y</description>
++              <bitOffset>2</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>BR3</name>
++              <description>Port x Reset bit y</description>
++              <bitOffset>3</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>BR4</name>
++              <description>Port x Reset bit y</description>
++              <bitOffset>4</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>BR5</name>
++              <description>Port x Reset bit y</description>
++              <bitOffset>5</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>BR6</name>
++              <description>Port x Reset bit y</description>
++              <bitOffset>6</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>BR7</name>
++              <description>Port x Reset bit y</description>
++              <bitOffset>7</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>BR8</name>
++              <description>Port x Reset bit y</description>
++              <bitOffset>8</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>BR9</name>
++              <description>Port x Reset bit y</description>
++              <bitOffset>9</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>BR10</name>
++              <description>Port x Reset bit y</description>
++              <bitOffset>10</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>BR11</name>
++              <description>Port x Reset bit y</description>
++              <bitOffset>11</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>BR12</name>
++              <description>Port x Reset bit y</description>
++              <bitOffset>12</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>BR13</name>
++              <description>Port x Reset bit y</description>
++              <bitOffset>13</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>BR14</name>
++              <description>Port x Reset bit y</description>
++              <bitOffset>14</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++            <field>
++              <name>BR15</name>
++              <description>Port x Reset bit y</description>
++              <bitOffset>15</bitOffset>
++              <bitWidth>1</bitWidth>
++            </field>
++          </fields>
++        </register>
++      </registers>
+     </peripheral>
+-    <peripheral derivedFrom="GPIOB">
++    <peripheral derivedFrom="GPIOC">
+       <name>GPIOD</name>
+       <baseAddress>0x48000C00</baseAddress>
+     </peripheral>
+-    <peripheral derivedFrom="GPIOB">
++    <peripheral derivedFrom="GPIOC">
+       <name>GPIOE</name>
+       <baseAddress>0x48001000</baseAddress>
+     </peripheral>
+-    <peripheral derivedFrom="GPIOB">
++    <peripheral derivedFrom="GPIOC">
+       <name>GPIOF</name>
+       <baseAddress>0x48001400</baseAddress>
+     </peripheral>
+@@ -5019,12 +6770,27 @@
+               <description>DMA1 clock enable</description>
+               <bitOffset>0</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues>
++                <name>ENABLED</name>
++                <enumeratedValue>
++                  <name>Disabled</name>
++                  <description>Disabled.</description>
++                  <value>0</value>
++                </enumeratedValue>
++                <enumeratedValue>
++                  <name>Enabled</name>
++                  <description>Enabled.</description>
++                  <value>1</value>
++                </enumeratedValue>
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>DMA2EN</name>
+               <description>DMA2 clock enable</description>
+               <bitOffset>1</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>SRAMEN</name>
+@@ -5032,54 +6798,72 @@
+               enable</description>
+               <bitOffset>2</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>FLITFEN</name>
+               <description>FLITF clock enable</description>
+               <bitOffset>4</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>CRCEN</name>
+               <description>CRC clock enable</description>
+               <bitOffset>6</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>IOPAEN</name>
+               <description>I/O port A clock enable</description>
+               <bitOffset>17</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>IOPBEN</name>
+               <description>I/O port B clock enable</description>
+               <bitOffset>18</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>IOPCEN</name>
+               <description>I/O port C clock enable</description>
+               <bitOffset>19</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>IOPDEN</name>
+               <description>I/O port D clock enable</description>
+               <bitOffset>20</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>IOPEEN</name>
+               <description>I/O port E clock enable</description>
+               <bitOffset>21</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>IOPFEN</name>
+               <description>I/O port F clock enable</description>
+               <bitOffset>22</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>TSCEN</name>
+@@ -5087,18 +6871,24 @@
+               enable</description>
+               <bitOffset>24</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>ADC12EN</name>
+               <description>ADC1 and ADC2 clock enable</description>
+               <bitOffset>28</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>ADC34EN</name>
+               <description>ADC3 and ADC4 clock enable</description>
+               <bitOffset>29</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="ENABLED">
++              </enumeratedValues>
+             </field>
+           </fields>
+         </register>
+@@ -5117,48 +6907,64 @@
+               <description>SYSCFG clock enable</description>
+               <bitOffset>0</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="AHBENR.DMAEN.ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>TIM1EN</name>
+               <description>TIM1 Timer clock enable</description>
+               <bitOffset>11</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="AHBENR.DMAEN.ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>SPI1EN</name>
+               <description>SPI 1 clock enable</description>
+               <bitOffset>12</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="AHBENR.DMAEN.ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>TIM8EN</name>
+               <description>TIM8 Timer clock enable</description>
+               <bitOffset>13</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="AHBENR.DMAEN.ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>USART1EN</name>
+               <description>USART1 clock enable</description>
+               <bitOffset>14</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="AHBENR.DMAEN.ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>TIM15EN</name>
+               <description>TIM15 timer clock enable</description>
+               <bitOffset>16</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="AHBENR.DMAEN.ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>TIM16EN</name>
+               <description>TIM16 timer clock enable</description>
+               <bitOffset>17</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="AHBENR.DMAEN.ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>TIM17EN</name>
+               <description>TIM17 timer clock enable</description>
+               <bitOffset>18</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="AHBENR.DMAEN.ENABLED">
++              </enumeratedValues>
+             </field>
+           </fields>
+         </register>
+@@ -5177,30 +6983,40 @@
+               <description>Timer 2 clock enable</description>
+               <bitOffset>0</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="AHBENR.DMAEN.ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>TIM3EN</name>
+               <description>Timer 3 clock enable</description>
+               <bitOffset>1</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="AHBENR.DMAEN.ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>TIM4EN</name>
+               <description>Timer 4 clock enable</description>
+               <bitOffset>2</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="AHBENR.DMAEN.ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>TIM6EN</name>
+               <description>Timer 6 clock enable</description>
+               <bitOffset>4</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="AHBENR.DMAEN.ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>TIM7EN</name>
+               <description>Timer 7 clock enable</description>
+               <bitOffset>5</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="AHBENR.DMAEN.ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>WWDGEN</name>
+@@ -5208,48 +7024,72 @@
+               enable</description>
+               <bitOffset>11</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="AHBENR.DMAEN.ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>SPI2EN</name>
+               <description>SPI 2 clock enable</description>
+               <bitOffset>14</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="AHBENR.DMAEN.ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>SPI3EN</name>
+               <description>SPI 3 clock enable</description>
+               <bitOffset>15</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="AHBENR.DMAEN.ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>USART2EN</name>
+               <description>USART 2 clock enable</description>
+               <bitOffset>17</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="AHBENR.DMAEN.ENABLED">
++              </enumeratedValues>
++            </field>
++            <field>
++              <name>USART3EN</name>
++              <description>USART 3 clock enable</description>
++              <bitOffset>18</bitOffset>
++              <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="AHBENR.DMAEN.ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>I2C1EN</name>
+               <description>I2C 1 clock enable</description>
+               <bitOffset>21</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="AHBENR.DMAEN.ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>I2C2EN</name>
+               <description>I2C 2 clock enable</description>
+               <bitOffset>22</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="AHBENR.DMAEN.ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>USBEN</name>
+               <description>USB clock enable</description>
+               <bitOffset>23</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="AHBENR.DMAEN.ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>CANEN</name>
+               <description>CAN clock enable</description>
+               <bitOffset>25</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="AHBENR.DMAEN.ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>PWREN</name>
+@@ -5257,12 +7097,16 @@
+               enable</description>
+               <bitOffset>28</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="AHBENR.DMAEN.ENABLED">
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>DACEN</name>
+               <description>DAC interface clock enable</description>
+               <bitOffset>29</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues derivedFrom="AHBENR.DMAEN.ENABLED">
++              </enumeratedValues>
+             </field>
+           </fields>
+         </register>
+@@ -10838,6 +12682,12 @@
+               <description>Transmit data value</description>
+               <bitOffset>0</bitOffset>
+               <bitWidth>9</bitWidth>
++              <writeConstraint>
++                <range>
++                  <minimum>0</minimum>
++                  <maximum>511</maximum>
++                </range>
++              </writeConstraint>
+             </field>
+           </fields>
+         </register>
+@@ -11005,7 +12855,7 @@
+           <addressOffset>0x4</addressOffset>
+           <size>0x20</size>
+           <access>read-write</access>
+-          <resetValue>0x0000</resetValue>
++          <resetValue>0x0700</resetValue>
+           <fields>
+             <field>
+               <name>RXDMAEN</name>
+@@ -11309,7 +13159,7 @@
+           <addressOffset>0x20</addressOffset>
+           <size>0x20</size>
+           <access>read-write</access>
+-          <resetValue>0x00000010</resetValue>
++          <resetValue>0x0002</resetValue>
+           <fields>
+             <field>
+               <name>MCKOE</name>
+@@ -28249,6 +30099,12 @@
+               <description>Number of bytes</description>
+               <bitOffset>16</bitOffset>
+               <bitWidth>8</bitWidth>
++              <writeConstraint>
++                <range>
++                  <minimum>0</minimum>
++                  <maximum>255</maximum>
++                </range>
++              </writeConstraint>
+             </field>
+             <field>
+               <name>NACK</name>
+@@ -28297,6 +30153,12 @@
+               mode)</description>
+               <bitOffset>8</bitOffset>
+               <bitWidth>2</bitWidth>
++              <writeConstraint>
++                <range>
++                  <minimum>0</minimum>
++                  <maximum>3</maximum>
++                </range>
++              </writeConstraint>
+             </field>
+             <field>
+               <name>SADD1</name>
+@@ -28304,6 +30166,12 @@
+               mode)</description>
+               <bitOffset>1</bitOffset>
+               <bitWidth>7</bitWidth>
++              <writeConstraint>
++                <range>
++                  <minimum>0</minimum>
++                  <maximum>127</maximum>
++                </range>
++              </writeConstraint>
+             </field>
+             <field>
+               <name>SADD0</name>
+@@ -28726,6 +30594,12 @@
+               <description>8-bit transmit data</description>
+               <bitOffset>0</bitOffset>
+               <bitWidth>8</bitWidth>
++              <writeConstraint>
++                <range>
++                  <minimum>0</minimum>
++                  <maximum>255</maximum>
++                </range>
++              </writeConstraint>
+             </field>
+           </fields>
+         </register>
+@@ -30535,6 +32409,18 @@
+               <description>Counter enable</description>
+               <bitOffset>0</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues>
++                <enumeratedValue>
++                  <name>Disabled</name>
++                  <description>Counter disabled</description>
++                  <value>0</value>
++                </enumeratedValue>
++                <enumeratedValue>
++                  <name>Enabled</name>
++                  <description>Counter enabled</description>
++                  <value>1</value>
++                </enumeratedValue>
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>UDIS</name>
+@@ -30553,6 +32439,18 @@
+               <description>One-pulse mode</description>
+               <bitOffset>3</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues>
++                <enumeratedValue>
++                  <name>Continuous</name>
++                  <description>Counter is not stopped at update event</description>
++                  <value>0</value>
++                </enumeratedValue>
++                <enumeratedValue>
++                  <name>OnePulse</name>
++                  <description>Counter stops counting at the next update event (clearing the CEN bit)</description>
++                  <value>1</value>
++                </enumeratedValue>
++              </enumeratedValues>
+             </field>
+             <field>
+               <name>ARPE</name>
+@@ -30622,6 +32520,27 @@
+               <description>Update interrupt flag</description>
+               <bitOffset>0</bitOffset>
+               <bitWidth>1</bitWidth>
++              <enumeratedValues>
++                <usage>read</usage>
++                <enumeratedValue>
++                  <name>NoUpdate</name>
++                  <description>No update occurred</description>
++                  <value>0</value>
++                </enumeratedValue>
++                <enumeratedValue>
++                  <name>Pending</name>
++                  <description>Update interrupt pending</description>
++                  <value>1</value>
++                </enumeratedValue>
++              </enumeratedValues>
++              <enumeratedValues>
++                <usage>write</usage>
++                <enumeratedValue>
++                  <name>Clear</name>
++                  <description>Clears the update interrupt flag</description>
++                  <value>0</value>
++                </enumeratedValue>
++              </enumeratedValues>
+             </field>
+           </fields>
+         </register>
+@@ -30680,6 +32599,12 @@
+               <description>Prescaler value</description>
+               <bitOffset>0</bitOffset>
+               <bitWidth>16</bitWidth>
++              <writeConstraint>
++                <range>
++                  <minimum>0</minimum>
++                  <maximum>65535</maximum>
++                </range>
++              </writeConstraint>
+             </field>
+           </fields>
+         </register>
+@@ -30697,6 +32622,12 @@
+               <description>Low Auto-reload value</description>
+               <bitOffset>0</bitOffset>
+               <bitWidth>16</bitWidth>
++              <writeConstraint>
++                <range>
++                  <minimum>0</minimum>
++                  <maximum>65535</maximum>
++                </range>
++              </writeConstraint>
+             </field>
+           </fields>
+         </register>

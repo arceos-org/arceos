@@ -1,0 +1,12 @@
+[package]
+name = "bit"
+version = "0.1.1"
+description = "A library which provides helpers to manipulate bits and bit ranges."
+license = "MIT/Apache-2.0"
+readme = "README.md"
+authors = ["José Miguel Sánchez García <jmi2k@openmailbox.org>"]
+repository = "https://github.com/jmi2k/bit-rs"
+documentation = "https://docs.rs/bit"
+keywords = ["no_std", "bit"]
+
+[dependencies]

@@ -4,7 +4,7 @@ use core::ffi::{c_char, c_int};
 
 use super::{ctypes, fd_ops::FileLike, utils::char_ptr_to_str};
 use crate::fs::OpenOptions;
-use crate::io::{prelude::*, SeekFrom};
+use crate::io::{prelude::*, PollState, SeekFrom};
 use crate::sync::Mutex;
 
 pub struct File(Mutex<crate::fs::File>);
@@ -51,13 +51,24 @@ impl FileLike for File {
             st_gid: 1000,
             st_size: metadata.size() as _,
             st_blocks: metadata.blocks() as _,
-            st_blksize: 512,
+            st_blksize: 1024,
             ..Default::default()
         })
     }
 
     fn into_any(self: Arc<Self>) -> Arc<dyn core::any::Any + Send + Sync> {
         self
+    }
+
+    fn poll(&self) -> LinuxResult<PollState> {
+        Ok(PollState {
+            readable: true,
+            writable: true,
+        })
+    }
+
+    fn set_nonblocking(&self, _nonblocking: bool) -> LinuxResult {
+        Ok(())
     }
 }
 

@@ -204,4 +204,28 @@ FILE *fopen(const char *filename, const char *mode)
     return f;
 }
 
+char *fgets(char *restrict s, int n, FILE *restrict f)
+{
+    if (n == 0)
+        return NULL;
+    if (n == 1) {
+        *s = '\0';
+        return s;
+    }
+
+    int cnt = 0;
+    while (cnt < n - 1) {
+        char c;
+        if (ax_read(f->fd, (void *)&c, 1) > 0) {
+            if (c != '\n')
+                s[cnt++] = c;
+            else
+                break;
+        } else
+            break;
+    }
+    s[cnt] = '\0';
+    return s;
+}
+
 #endif

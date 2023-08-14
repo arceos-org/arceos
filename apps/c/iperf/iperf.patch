@@ -1,0 +1,664 @@
+diff --git a/src/cjson.c b/src/cjson.c
+index 595d919..43264e6 100644
+--- a/src/cjson.c
++++ b/src/cjson.c
+@@ -105,7 +105,7 @@ void cJSON_Delete(cJSON *c)
+ /* Parse the input text to generate a number, and populate the result into item. */
+ static const char *parse_number(cJSON *item,const char *num)
+ {
+-	double n=0,sign=1,scale=0;int subscale=0,signsubscale=1;
++	double n=0,sign=1;int subscale=0,signsubscale=1,scale=0;
+ 
+ 	if (*num=='-') sign=-1,num++;	/* Has sign? */
+ 	if (*num=='0') num++;			/* is zero */
+@@ -116,8 +116,11 @@ static const char *parse_number(cJSON *item,const char *num)
+ 		while (*num>='0' && *num<='9') subscale=(subscale*10)+(*num++ - '0');	/* Number? */
+ 	}
+ 
+-	n=sign*n*pow(10.0,(scale+subscale*signsubscale));	/* number = +/- number.fraction * 10^+/- exponent */
+-	
++    scale += subscale * signsubscale;
++    n = sign * n;
++    while (scale != 0) 
++    {   if (scale > 0) n *= 10.0,scale--; else n /= 10.0,scale++;
++    }
+ 	item->valuedouble=n;
+ 	item->valueint=(int64_t)n;
+ 	item->type=cJSON_Number;
+diff --git a/src/iperf.h b/src/iperf.h
+index 8ff25d7..4e96d9f 100755
+--- a/src/iperf.h
++++ b/src/iperf.h
+@@ -37,6 +37,7 @@
+ #include <sys/select.h>
+ #include <sys/socket.h>
+ #include <netinet/tcp.h>
++#include <stdio.h>
+ 
+ #if defined(HAVE_CPUSET_SETAFFINITY)
+ #include <sys/param.h>
+diff --git a/src/iperf_api.c b/src/iperf_api.c
+index 5b56af6..1e12a81 100755
+--- a/src/iperf_api.c
++++ b/src/iperf_api.c
+@@ -32,7 +32,6 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+-#include <getopt.h>
+ #include <errno.h>
+ #include <signal.h>
+ #include <unistd.h>
+@@ -52,7 +51,6 @@
+ #include <sys/resource.h>
+ #include <sys/mman.h>
+ #include <sys/stat.h>
+-#include <sched.h>
+ #include <setjmp.h>
+ #include <stdarg.h>
+ 
+@@ -95,7 +93,7 @@ static cJSON *JSON_read(int fd);
+ void
+ usage()
+ {
+-    fputs(usage_shortstr, stderr);
++    puts(usage_shortstr);
+ }
+ 
+ 
+@@ -613,6 +611,7 @@ iperf_on_test_finish(struct iperf_test *test)
+ 
+ /******************************************************************************/
+ 
++#if 0
+ int
+ iperf_parse_arguments(struct iperf_test *test, int argc, char **argv)
+ {
+@@ -1035,6 +1034,7 @@ iperf_parse_arguments(struct iperf_test *test, int argc, char **argv)
+ 
+     return 0;
+ }
++#endif
+ 
+ int
+ iperf_set_send_state(struct iperf_test *test, signed char state)
+@@ -2639,8 +2639,7 @@ iperf_free_stream(struct iperf_stream *sp)
+     struct iperf_interval_results *irp, *nirp;
+ 
+     /* XXX: need to free interval list too! */
+-    munmap(sp->buffer, sp->test->settings->blksize);
+-    close(sp->buffer_fd);
++    free(sp->buffer);
+     if (sp->diskfile_fd >= 0)
+ 	close(sp->diskfile_fd);
+     for (irp = TAILQ_FIRST(&sp->result->interval_results); irp != NULL; irp = nirp) {
+@@ -2691,35 +2690,10 @@ iperf_new_stream(struct iperf_test *test, int s)
+     TAILQ_INIT(&sp->result->interval_results);
+     
+     /* Create and randomize the buffer */
+-    sp->buffer_fd = mkstemp(template);
+-    if (sp->buffer_fd == -1) {
+-        i_errno = IECREATESTREAM;
+-        free(sp->result);
+-        free(sp);
+-        return NULL;
+-    }
+-    if (unlink(template) < 0) {
+-        i_errno = IECREATESTREAM;
+-        free(sp->result);
+-        free(sp);
+-        return NULL;
+-    }
+-    if (ftruncate(sp->buffer_fd, test->settings->blksize) < 0) {
+-        i_errno = IECREATESTREAM;
+-        free(sp->result);
+-        free(sp);
+-        return NULL;
+-    }
+-    sp->buffer = (char *) mmap(NULL, test->settings->blksize, PROT_READ|PROT_WRITE, MAP_PRIVATE, sp->buffer_fd, 0);
+-    if (sp->buffer == MAP_FAILED) {
+-        i_errno = IECREATESTREAM;
+-        free(sp->result);
+-        free(sp);
+-        return NULL;
+-    }
+-    srandom(time(NULL));
++    sp->buffer = (char *)malloc(test->settings->blksize);
++    srand(time(NULL));
+     for (i = 0; i < test->settings->blksize; ++i)
+-        sp->buffer[i] = random();
++        sp->buffer[i] = rand();
+ 
+     /* Set socket */
+     sp->socket = s;
+@@ -2731,7 +2705,7 @@ iperf_new_stream(struct iperf_test *test, int s)
+ 	sp->diskfile_fd = open(test->diskfile_name, test->sender ? O_RDONLY : (O_WRONLY|O_CREAT|O_TRUNC), S_IRUSR|S_IWUSR);
+ 	if (sp->diskfile_fd == -1) {
+ 	    i_errno = IEFILE;
+-            munmap(sp->buffer, sp->test->settings->blksize);
++            free(sp->buffer);
+             free(sp->result);
+             free(sp);
+ 	    return NULL;
+@@ -2745,8 +2719,7 @@ iperf_new_stream(struct iperf_test *test, int s)
+ 
+     /* Initialize stream */
+     if (iperf_init_stream(sp, test) < 0) {
+-        close(sp->buffer_fd);
+-        munmap(sp->buffer, sp->test->settings->blksize);
++        free(sp->buffer);
+         free(sp->result);
+         free(sp);
+         return NULL;
+@@ -2774,25 +2747,6 @@ iperf_init_stream(struct iperf_stream *sp, struct iperf_test *test)
+         return -1;
+     }
+ 
+-    /* Set IP TOS */
+-    if ((opt = test->settings->tos)) {
+-        if (getsockdomain(sp->socket) == AF_INET6) {
+-#ifdef IPV6_TCLASS
+-            if (setsockopt(sp->socket, IPPROTO_IPV6, IPV6_TCLASS, &opt, sizeof(opt)) < 0) {
+-                i_errno = IESETCOS;
+-                return -1;
+-            }
+-#else
+-            i_errno = IESETCOS;
+-            return -1;
+-#endif
+-        } else {
+-            if (setsockopt(sp->socket, IPPROTO_IP, IP_TOS, &opt, sizeof(opt)) < 0) {
+-                i_errno = IESETTOS;
+-                return -1;
+-            }
+-        }
+-    }
+ 
+     return 0;
+ }
+diff --git a/src/iperf_api.h b/src/iperf_api.h
+index 0f153fe..f2ff9bc 100755
+--- a/src/iperf_api.h
++++ b/src/iperf_api.h
+@@ -29,6 +29,7 @@
+ 
+ #include <sys/time.h>
+ #include <setjmp.h>
++#include <sys/select.h>
+ 
+ struct iperf_test;
+ struct iperf_stream_result;
+diff --git a/src/iperf_client_api.c b/src/iperf_client_api.c
+index f19f6f1..ff0a4c8 100644
+--- a/src/iperf_client_api.c
++++ b/src/iperf_client_api.c
+@@ -33,7 +33,6 @@
+ #include <signal.h>
+ #include <sys/types.h>
+ #include <sys/select.h>
+-#include <sys/uio.h>
+ #include <arpa/inet.h>
+ 
+ #include "iperf.h"
+diff --git a/src/iperf_config.h b/src/iperf_config.h
+new file mode 100644
+index 0000000..979b858
+--- /dev/null
++++ b/src/iperf_config.h
+@@ -0,0 +1,98 @@
++/* src/iperf_config.h.  Generated from iperf_config.h.in by configure.  */
++/* src/iperf_config.h.in.  Generated from configure.ac by autoheader.  */
++
++/* Define to 1 if you have the `cpuset_setaffinity' function. */
++/* #undef HAVE_CPUSET_SETAFFINITY */
++
++/* Have CPU affinity support. */
++// #define HAVE_CPU_AFFINITY 1
++
++/* Define to 1 if you have the <dlfcn.h> header file. */
++// #define HAVE_DLFCN_H 1
++
++/* Have IPv6 flowlabel support. */
++// #define HAVE_FLOWLABEL 1
++
++/* Define to 1 if you have the <inttypes.h> header file. */
++// #define HAVE_INTTYPES_H 1
++
++/* Define to 1 if you have the <memory.h> header file. */
++// #define HAVE_MEMORY_H 1
++
++/* Define to 1 if you have the <netinet/sctp.h> header file. */
++/* #undef HAVE_NETINET_SCTP_H */
++
++/* Define to 1 if you have the `sched_setaffinity' function. */
++// #define HAVE_SCHED_SETAFFINITY 1
++
++/* Have SCTP support. */
++/* #undef HAVE_SCTP */
++
++/* Define to 1 if you have the `sendfile' function. */
++// #define HAVE_SENDFILE 1
++
++/* Have SO_MAX_PACING_RATE sockopt. */
++// #define HAVE_SO_MAX_PACING_RATE 1
++
++/* Define to 1 if you have the <stdint.h> header file. */
++#define HAVE_STDINT_H 1
++
++/* Define to 1 if you have the <stdlib.h> header file. */
++#define HAVE_STDLIB_H 1
++
++/* Define to 1 if you have the <strings.h> header file. */
++// #define HAVE_STRINGS_H 1
++
++/* Define to 1 if you have the <string.h> header file. */
++#define HAVE_STRING_H 1
++
++/* Define to 1 if the system has the type `struct sctp_assoc_value'. */
++/* #undef HAVE_STRUCT_SCTP_ASSOC_VALUE */
++
++/* Define to 1 if you have the <sys/socket.h> header file. */
++#define HAVE_SYS_SOCKET_H 1
++
++/* Define to 1 if you have the <sys/stat.h> header file. */
++#define HAVE_SYS_STAT_H 1
++
++/* Define to 1 if you have the <sys/types.h> header file. */
++#define HAVE_SYS_TYPES_H 1
++
++/* Have TCP_CONGESTION sockopt. */
++#define HAVE_TCP_CONGESTION 1
++
++/* Define to 1 if you have the <unistd.h> header file. */
++#define HAVE_UNISTD_H 1
++
++// /* Define to the sub-directory where libtool stores uninstalled libraries. */
++// #define LT_OBJDIR ".libs/"
++
++/* Name of package */
++#define PACKAGE "iperf"
++
++/* Define to the address where bug reports for this package should be sent. */
++#define PACKAGE_BUGREPORT "https://github.com/esnet/iperf"
++
++/* Define to the full name of this package. */
++#define PACKAGE_NAME "iperf"
++
++/* Define to the full name and version of this package. */
++#define PACKAGE_STRING "iperf 3.1.3"
++
++/* Define to the one symbol short name of this package. */
++#define PACKAGE_TARNAME "iperf"
++
++/* Define to the home page for this package. */
++#define PACKAGE_URL "http://software.es.net/iperf/"
++
++/* Define to the version of this package. */
++#define PACKAGE_VERSION "3.1.3"
++
++/* Define to 1 if you have the ANSI C header files. */
++#define STDC_HEADERS 1
++
++/* Version number of package */
++#define VERSION "3.1.3"
++
++/* Define to empty if `const' does not conform to ANSI C. */
++/* #undef const */
+diff --git a/src/iperf_server_api.c b/src/iperf_server_api.c
+index 227ec78..f0a4a30 100644
+--- a/src/iperf_server_api.c
++++ b/src/iperf_server_api.c
+@@ -30,7 +30,6 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+-#include <getopt.h>
+ #include <errno.h>
+ #include <unistd.h>
+ #include <assert.h>
+@@ -47,7 +46,6 @@
+ #include <netinet/tcp.h>
+ #include <sys/time.h>
+ #include <sys/resource.h>
+-#include <sched.h>
+ #include <setjmp.h>
+ 
+ #include "iperf.h"
+diff --git a/src/iperf_util.c b/src/iperf_util.c
+index 73dc362..4bfe6f9 100644
+--- a/src/iperf_util.c
++++ b/src/iperf_util.c
+@@ -40,7 +40,6 @@
+ #include <sys/types.h>
+ #include <sys/time.h>
+ #include <sys/resource.h>
+-#include <sys/utsname.h>
+ #include <time.h>
+ #include <errno.h>
+ 
+@@ -59,17 +58,17 @@ void
+ make_cookie(char *cookie)
+ {
+     static int randomized = 0;
+-    char hostname[500];
++    char hostname[500] = "arceos-iperf";
+     struct timeval tv;
+     char temp[1000];
+ 
+     if ( ! randomized )
+-        srandom((int) time(0) ^ getpid());
++        srand((int) time(0) ^ getpid());
+ 
+     /* Generate a string based on hostname, time, randomness, and filler. */
+-    (void) gethostname(hostname, sizeof(hostname));
++    // (void) gethostname(hostname, sizeof(hostname));
+     (void) gettimeofday(&tv, 0);
+-    (void) snprintf(temp, sizeof(temp), "%s.%ld.%06ld.%08lx%08lx.%s", hostname, (unsigned long int) tv.tv_sec, (unsigned long int) tv.tv_usec, (unsigned long int) random(), (unsigned long int) random(), "1234567890123456789012345678901234567890");
++    (void) snprintf(temp, sizeof(temp), "%s.%ld.%06ld.%08lx%08lx.%s", hostname, (unsigned long int) tv.tv_sec, (unsigned long int) tv.tv_usec, (unsigned long int) rand(), (unsigned long int) rand(), "1234567890123456789012345678901234567890");
+ 
+     /* Now truncate it to 36 bytes and terminate. */
+     memcpy(cookie, temp, 36);
+@@ -178,50 +177,25 @@ delay(int us)
+ void
+ cpu_util(double pcpu[3])
+ {
+-    static struct timeval last;
+-    static clock_t clast;
+-    static struct rusage rlast;
+-    struct timeval temp;
+-    clock_t ctemp;
+-    struct rusage rtemp;
+-    double timediff;
+-    double userdiff;
+-    double systemdiff;
+-
+     if (pcpu == NULL) {
+-        gettimeofday(&last, NULL);
+-        clast = clock();
+-	getrusage(RUSAGE_SELF, &rlast);
+         return;
+     }
+ 
+-    gettimeofday(&temp, NULL);
+-    ctemp = clock();
+-    getrusage(RUSAGE_SELF, &rtemp);
+-
+-    timediff = ((temp.tv_sec * 1000000.0 + temp.tv_usec) -
+-                (last.tv_sec * 1000000.0 + last.tv_usec));
+-    userdiff = ((rtemp.ru_utime.tv_sec * 1000000.0 + rtemp.ru_utime.tv_usec) -
+-                (rlast.ru_utime.tv_sec * 1000000.0 + rlast.ru_utime.tv_usec));
+-    systemdiff = ((rtemp.ru_stime.tv_sec * 1000000.0 + rtemp.ru_stime.tv_usec) -
+-                  (rlast.ru_stime.tv_sec * 1000000.0 + rlast.ru_stime.tv_usec));
+-
+-    pcpu[0] = (((ctemp - clast) * 1000000.0 / CLOCKS_PER_SEC) / timediff) * 100;
+-    pcpu[1] = (userdiff / timediff) * 100;
+-    pcpu[2] = (systemdiff / timediff) * 100;
++    pcpu[0] =0;
++    pcpu[1] =0;
++    pcpu[2] =0;
+ }
+ 
+ const char *
+ get_system_info(void)
+ {
+     static char buf[1024];
+-    struct utsname  uts;
++    // struct utsname  uts;
+ 
+     memset(buf, 0, 1024);
+-    uname(&uts);
++    // uname(&uts);
+ 
+-    snprintf(buf, sizeof(buf), "%s %s %s %s %s", uts.sysname, uts.nodename, 
+-	     uts.release, uts.version, uts.machine);
++    snprintf(buf, sizeof(buf), "%s %s %s %s %s", "arceos", "iperf", "0", "0","null");
+ 
+     return buf;
+ }
+diff --git a/src/main_server.c b/src/main_server.c
+new file mode 100644
+index 0000000..c9964ba
+--- /dev/null
++++ b/src/main_server.c
+@@ -0,0 +1,42 @@
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <unistd.h>
++
++#include <stdint.h>
++
++#include "iperf_api.h"
++
++int main() {
++    int port;
++    struct iperf_test *test;
++    int consecutive_errors;
++
++    port = 5555;
++
++    test = iperf_new_test();
++    if (test == NULL) {
++        printf("failed to create test\n");
++        exit(-1);
++    }
++    iperf_defaults(test);
++    iperf_set_test_role(test, 's');
++    iperf_set_test_server_port(test, port);
++    iperf_set_test_bind_address(test, "0.0.0.0");
++    consecutive_errors = 0;
++    for (;;) {
++        if (iperf_run_server(test) < 0) {
++            printf("error - %s\n\n", iperf_strerror(i_errno));
++            ++consecutive_errors;
++            if (consecutive_errors >= 5) {
++                printf("too many errors, exiting\n");
++                break;
++            }
++        } else
++            consecutive_errors = 0;
++        iperf_reset_test(test);
++    }
++
++    iperf_free_test(test);
++    return 0;
++}
+diff --git a/src/net.c b/src/net.c
+index aa4a15c..80271e2 100644
+--- a/src/net.c
++++ b/src/net.c
+@@ -31,13 +31,13 @@
+ #include <errno.h>
+ #include <sys/socket.h>
+ #include <sys/types.h>
+-#include <sys/errno.h>
++#include <errno.h>
+ #include <netinet/in.h>
+ #include <netinet/tcp.h>
+ #include <assert.h>
+ #include <netdb.h>
+ #include <string.h>
+-#include <sys/fcntl.h>
++#include <fcntl.h>
+ 
+ #ifdef HAVE_SENDFILE
+ #ifdef linux
+diff --git a/src/tcp_info.c b/src/tcp_info.c
+index 76b117a..950ab41 100644
+--- a/src/tcp_info.c
++++ b/src/tcp_info.c
+@@ -45,7 +45,7 @@
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
+-#include <sys/param.h>
++// #include <sys/param.h>
+ #include <sys/types.h>
+ #include <sys/socket.h>
+ #include <netinet/tcp.h>
+diff --git a/src/units.c b/src/units.c
+index ed1ea60..3d590db 100644
+--- a/src/units.c
++++ b/src/units.c
+@@ -78,116 +78,6 @@ extern    "C"
+     const long MEGA_RATE_UNIT = 1000 * 1000;
+     const long GIGA_RATE_UNIT = 1000 * 1000 * 1000;
+ 
+-/* -------------------------------------------------------------------
+- * unit_atof
+- *
+- * Given a string of form #x where # is a number and x is a format
+- * character listed below, this returns the interpreted integer.
+- * Gg, Mm, Kk are giga, mega, kilo respectively
+- * ------------------------------------------------------------------- */
+-
+-    double    unit_atof(const char *s)
+-    {
+-	double    n;
+-	char      suffix = '\0';
+-
+-	          assert(s != NULL);
+-
+-	/* scan the number and any suffices */
+-	          sscanf(s, "%lf%c", &n, &suffix);
+-
+-	/* convert according to [Gg Mm Kk] */
+-	switch    (suffix)
+-	{
+-	case 'g': case 'G':
+-	    n *= GIGA_UNIT;
+-	    break;
+-	case 'm': case 'M':
+-	    n *= MEGA_UNIT;
+-	    break;
+-	case 'k': case 'K':
+-	    n *= KILO_UNIT;
+-	    break;
+-	default:
+-	    break;
+-	}
+-	          return n;
+-    }				/* end unit_atof */
+-
+-
+-/* -------------------------------------------------------------------
+- * unit_atof_rate
+- *
+- * Similar to unit_atof, but uses 10-based rather than 2-based
+- * suffixes.
+- * ------------------------------------------------------------------- */
+-
+-    double    unit_atof_rate(const char *s)
+-    {
+-	double    n;
+-	char      suffix = '\0';
+-
+-	          assert(s != NULL);
+-
+-	/* scan the number and any suffices */
+-	          sscanf(s, "%lf%c", &n, &suffix);
+-
+-	/* convert according to [Gg Mm Kk] */
+-	switch    (suffix)
+-	{
+-	case 'g': case 'G':
+-	    n *= GIGA_RATE_UNIT;
+-	    break;
+-	case 'm': case 'M':
+-	    n *= MEGA_RATE_UNIT;
+-	    break;
+-	case 'k': case 'K':
+-	    n *= KILO_RATE_UNIT;
+-	    break;
+-	default:
+-	    break;
+-	}
+-	          return n;
+-    }				/* end unit_atof_rate */
+-
+-
+-
+-/* -------------------------------------------------------------------
+- * unit_atoi
+- *
+- * Given a string of form #x where # is a number and x is a format
+- * character listed below, this returns the interpreted integer.
+- * Gg, Mm, Kk are giga, mega, kilo respectively
+- * ------------------------------------------------------------------- */
+-
+-    iperf_size_t unit_atoi(const char *s)
+-    {
+-	double    n;
+-	char      suffix = '\0';
+-
+-	          assert(s != NULL);
+-
+-	/* scan the number and any suffices */
+-	          sscanf(s, "%lf%c", &n, &suffix);
+-
+-	/* convert according to [Gg Mm Kk] */
+-	switch    (suffix)
+-	{
+-	case 'g': case 'G':
+-	    n *= GIGA_UNIT;
+-	    break;
+-	case 'm': case 'M':
+-	    n *= MEGA_UNIT;
+-	    break;
+-	case 'k': case 'K':
+-	    n *= KILO_UNIT;
+-	    break;
+-	default:
+-	    break;
+-	}
+-	          return (iperf_size_t) n;
+-    }				/* end unit_atof */
+-
+ /* -------------------------------------------------------------------
+  * constants for byte_printf
+  * ------------------------------------------------------------------- */
+diff --git a/src/units.h b/src/units.h
+index 6ab9216..437c89d 100644
+--- a/src/units.h
++++ b/src/units.h
+@@ -28,7 +28,4 @@ enum {
+     UNIT_LEN = 32
+ };
+ 
+-double unit_atof( const char *s );
+-double unit_atof_rate( const char *s );
+-iperf_size_t unit_atoi( const char *s );
+ void unit_snprintf( char *s, int inLen, double inNum, char inFormat );
+diff --git a/src/version.h b/src/version.h
+new file mode 100644
+index 0000000..db8f001
+--- /dev/null
++++ b/src/version.h
+@@ -0,0 +1,27 @@
++/*
++ * iperf, Copyright (c) 2014, The Regents of the University of
++ * California, through Lawrence Berkeley National Laboratory (subject
++ * to receipt of any required approvals from the U.S. Dept. of
++ * Energy).  All rights reserved.
++ *
++ * If you have questions about your rights to use or distribute this
++ * software, please contact Berkeley Lab's Technology Transfer
++ * Department at TTD@lbl.gov.
++ *
++ * NOTICE.  This software is owned by the U.S. Department of Energy.
++ * As such, the U.S. Government has been granted for itself and others
++ * acting on its behalf a paid-up, nonexclusive, irrevocable,
++ * worldwide license in the Software to reproduce, prepare derivative
++ * works, and perform publicly and display publicly.  Beginning five
++ * (5) years after the date permission to assert copyright is obtained
++ * from the U.S. Department of Energy, and subject to any subsequent
++ * five (5) year renewals, the U.S. Government is granted for itself
++ * and others acting on its behalf a paid-up, nonexclusive,
++ * irrevocable, worldwide license in the Software to reproduce,
++ * prepare derivative works, distribute copies to the public, perform
++ * publicly and display publicly, and to permit others to do so.
++ *
++ * This code is distributed under a BSD style license, see the LICENSE
++ * file for complete information.
++ */
++#define IPERF_VERSION "3.1.3"

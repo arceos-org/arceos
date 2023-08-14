@@ -5,18 +5,20 @@
 mod area;
 mod backend;
 pub use area::MapArea;
+use axerrno::{AxError, AxResult};
 pub use backend::MemBackend;
 
 extern crate alloc;
 use alloc::{collections::BTreeMap, vec::Vec};
 use core::{mem::size_of, ptr::copy_nonoverlapping};
-
+use page_table_entry::GenericPTE;
+use riscv::asm::sfence_vma_all;
 #[macro_use]
 extern crate log;
 
 use axhal::{
     mem::{memory_regions, phys_to_virt, PhysAddr, VirtAddr, PAGE_SIZE_4K},
-    paging::{MappingFlags, PageTable},
+    paging::{MappingFlags, PageSize, PageTable},
 };
 use xmas_elf::symbol_table::Entry;
 
@@ -191,12 +193,12 @@ impl MemorySet {
                             let value = base_addr + entry.get_addend() as usize;
                             let addr = base_addr + entry.get_offset() as usize;
 
-                            info!(
-                                "write: {:#x} @ {:#x} type = {}",
-                                value,
-                                addr,
-                                entry.get_type() as usize
-                            );
+                            // info!(
+                            //     "write: {:#x} @ {:#x} type = {}",
+                            //     value,
+                            //     addr,
+                            //     entry.get_type() as usize
+                            // );
 
                             unsafe {
                                 copy_nonoverlapping(
@@ -264,6 +266,7 @@ impl MemorySet {
             }
         }
 
+        info!("Relocating done");
         self.entry = elf.header.pt2.entry_point() as usize + base_addr;
 
         let mut map = BTreeMap::new();
@@ -344,6 +347,7 @@ impl MemorySet {
         for (_, mut area) in overlapped_area {
             if area.contained_in(start, end) {
                 info!("  drop [{:?}, {:?})", area.vaddr, area.end_va());
+                area.dealloc(&mut self.page_table);
                 // drop area
                 drop(area);
             } else if area.strict_contain(start, end) {
@@ -393,7 +397,6 @@ impl MemorySet {
             }
             last_end = area.end_va();
         }
-
         None
     }
 
@@ -409,7 +412,7 @@ impl MemorySet {
         // align up to 4k
         let size = (size + PAGE_SIZE_4K - 1) / PAGE_SIZE_4K * PAGE_SIZE_4K;
 
-        debug!(
+        info!(
             "[mmap] vaddr: [{:?}, {:?}), {:?}, fixed: {}, backend: {}",
             start,
             start + size,
@@ -432,7 +435,7 @@ impl MemorySet {
 
             match start {
                 Some(start) => {
-                    debug!("found area [{:?}, {:?})", start, start + size);
+                    info!("found area [{:?}, {:?})", start, start + size);
                     self.new_region(start, size, flags, None, backend);
 
                     start.as_usize() as isize
@@ -455,6 +458,25 @@ impl MemorySet {
         self.split_for_area(start, size);
     }
 
+    /// msync
+    pub fn msync(&mut self, start: VirtAddr, size: usize) {
+        let end = start + size;
+        for area in self.owned_mem.values_mut() {
+            if area.backend.is_none() {
+                continue;
+            }
+            if area.overlap_with(start, end) {
+                for page_index in 0..area.pages.len() {
+                    let page_vaddr = area.vaddr + page_index * PAGE_SIZE_4K;
+
+                    if page_vaddr >= start && page_vaddr < end {
+                        area.sync_page_with_backend(page_index);
+                    }
+                }
+            }
+        }
+    }
+
     /// Edit the page table to update flags in given virt address segment. You need to flush TLB
     /// after calling this function.
     ///
@@ -470,6 +492,9 @@ impl MemorySet {
         let end = start + size;
         assert!(end.is_aligned_4k());
 
+        // 在更新flags前需要保证该区域的所有页都已经分配了物理内存
+        // 否则会因为flag被更新，导致本应该是page fault 而出现了fault
+        self.manual_alloc_range_for_lazy(start, end - 1).unwrap();
         // NOTE: There will be new areas but all old aree's start address won't change. But we
         // can't iterating through `value_mut()` while `insert()` to BTree at the same time, so we
         // `drain_filter()` out the overlapped areas first.
@@ -485,7 +510,6 @@ impl MemorySet {
             } else if area.strict_contain(start, end) {
                 // split into 3 areas, update the middle one
                 let (mut mid, right) = area.split3(start, end);
-
                 mid.update_flags(flags, &mut self.page_table);
 
                 assert!(self.owned_mem.insert(mid.vaddr.into(), mid).is_none());
@@ -493,14 +517,12 @@ impl MemorySet {
             } else if start <= area.vaddr && area.vaddr < end {
                 // split into 2 areas, update the left one
                 let right = area.split(end);
-
                 area.update_flags(flags, &mut self.page_table);
 
                 assert!(self.owned_mem.insert(right.vaddr.into(), right).is_none());
             } else {
                 // split into 2 areas, update the right one
                 let mut right = area.split(start);
-
                 right.update_flags(flags, &mut self.page_table);
 
                 assert!(self.owned_mem.insert(right.vaddr.into(), right).is_none());
@@ -508,28 +530,98 @@ impl MemorySet {
 
             assert!(self.owned_mem.insert(area.vaddr.into(), area).is_none());
         }
+        unsafe {
+            sfence_vma_all();
+        }
     }
 
     /// It will map newly allocated page in the page table. You need to flush TLB after this.
-    pub fn handle_page_fault(&mut self, addr: VirtAddr, flags: MappingFlags) {
+    pub fn handle_page_fault(&mut self, addr: VirtAddr, flags: MappingFlags) -> AxResult<()> {
         match self
             .owned_mem
             .values_mut()
             .find(|area| area.vaddr <= addr && addr < area.end_va())
         {
-            Some(area) => area.handle_page_fault(addr, flags, &mut self.page_table),
-            None => error!("Page fault address {:?} not found in memory set", addr),
+            Some(area) => {
+                if !area.handle_page_fault(addr, flags, &mut self.page_table) {
+                    return Err(AxError::BadAddress);
+                }
+                Ok(())
+            }
+            None => {
+                error!("Page fault address {:?} not found in memory set", addr);
+                Err(AxError::BadAddress)
+            }
         }
     }
 
     /// 将用户分配的页面从页表中直接解映射，内核分配的页面依然保留
     pub fn unmap_user_areas(&mut self) {
-        for (_, area) in &self.owned_mem {
-            self.page_table
-                .unmap_region(area.vaddr, area.size())
-                .unwrap();
+        for (_, area) in self.owned_mem.iter_mut() {
+            area.dealloc(&mut self.page_table);
         }
         self.owned_mem.clear();
+    }
+
+    pub fn query(&self, vaddr: VirtAddr) -> AxResult<(PhysAddr, MappingFlags, PageSize)> {
+        if let Ok((paddr, flags, size)) = self.page_table.query(vaddr) {
+            Ok((paddr, flags, size))
+        } else {
+            Err(AxError::InvalidInput)
+        }
+    }
+}
+
+impl MemorySet {
+    /// 判断某一个虚拟地址是否在内存集中。
+    /// 若当前虚拟地址在内存集中，且对应的是lazy分配，暂未分配物理页的情况下，
+    /// 则为其分配物理页面。
+    ///
+    /// 若不在内存集中，则返回None。
+    ///
+    /// 若在内存集中，且已经分配了物理页面，则不做处理。
+    pub fn manual_alloc_for_lazy(&mut self, addr: VirtAddr) -> AxResult<()> {
+        if let Some((_, area)) = self
+            .owned_mem
+            .iter_mut()
+            .find(|(_, area)| area.vaddr <= addr && addr < area.end_va())
+        {
+            let entry = self.page_table.get_entry_mut(addr);
+            if entry.is_err() {
+                // 地址不合法
+                return Err(AxError::InvalidInput);
+            }
+
+            let entry = entry.unwrap().0;
+            if !entry.is_present() {
+                // 若未分配物理页面，则手动为其分配一个页面，写入到对应页表中
+                area.handle_page_fault(addr, entry.flags(), &mut self.page_table);
+            }
+            Ok(())
+        } else {
+            Err(AxError::InvalidInput)
+        }
+    }
+    /// 暴力实现区间强制分配
+    /// 传入区间左闭右闭
+    pub fn manual_alloc_range_for_lazy(&mut self, start: VirtAddr, end: VirtAddr) -> AxResult<()> {
+        if start > end {
+            return Err(AxError::InvalidInput);
+        }
+        let start: usize = start.align_down_4k().into();
+        let end: usize = end.align_down_4k().into();
+        for addr in (start..=end).step_by(PAGE_SIZE_4K) {
+            // 逐页访问，主打暴力
+            debug!("allocating page at {:x}", addr);
+            self.manual_alloc_for_lazy(addr.into())?;
+        }
+        Ok(())
+    }
+    /// 判断某一个类型的某一个对象是否被分配
+    pub fn manual_alloc_type_for_lazy<T: Sized>(&mut self, obj: *const T) -> AxResult<()> {
+        let start = obj as usize;
+        let end = start + core::mem::size_of::<T>() - 1;
+        self.manual_alloc_range_for_lazy(start.into(), end.into())
     }
 }
 
@@ -559,5 +651,11 @@ impl Clone for MemorySet {
             owned_mem,
             entry: self.entry,
         }
+    }
+}
+
+impl Drop for MemorySet {
+    fn drop(&mut self) {
+        self.unmap_user_areas();
     }
 }
