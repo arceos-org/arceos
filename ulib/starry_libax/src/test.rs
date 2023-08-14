@@ -666,7 +666,7 @@ pub fn fs_init(_case: &'static str) {
 
 /// 执行运行所有测例的任务
 pub fn run_testcases(case: &'static str) {
-    // debug!("run_testcases :{}", case);
+    axlog::ax_println!("run_testcases :{}", case);
     fs_init(case);
     let mut test_iter: LazyInit<Box<dyn Iterator<Item = &'static &'static str> + Send>> =
         LazyInit::new();
