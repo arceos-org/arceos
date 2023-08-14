@@ -1,0 +1,39 @@
+/*
+ * Simple U-Boot uImage source file containing a single kernel and FDT blob
+ */
+
+/dts-v1/;
+
+/ {
+	description = "Simple image with single ArceOS kernel and FDT blob for fu740";
+	#address-cells = <1>;
+
+	images {
+		kernel {
+			description = "ArceOS kernel for fu740";
+			data = /incbin/("../../arceos-fu740.bin.gz");
+			type = "kernel";
+			arch = "riscv";
+			os = "linux";
+			compression = "gzip";
+			load = <0x80200000>;
+			entry = <0x80200000>;
+		};
+		fdt-1 {
+			description = "Flattened Device Tree blob";
+			data = /incbin/("./hifive-unmatched-a00.dtb");
+			type = "flat_dt";
+			arch = "riscv";
+			compression = "none";
+		};
+	};
+
+	configurations {
+		default = "ArceOS-for-fu740";
+		ArceOS-for-fu740 {
+			description = "Boot ArceOS kernel with FDT blob for fu740";
+			kernel = "kernel";
+			fdt = "fdt-1";
+		};
+	};
+};
