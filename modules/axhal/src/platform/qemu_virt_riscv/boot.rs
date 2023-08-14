@@ -34,6 +34,15 @@ unsafe extern "C" fn _start() -> ! {
     core::arch::asm!("
         mv      s0, a0                  // save hartid
         mv      s1, a1                  // save DTB pointer
+        // clear sections: .percpu, .stack, .bss
+        la t0, percpu_start
+        la t1, ebss
+        bgeu t0, t1, 2f
+    1:
+        sd zero, (t0)
+        addi t0, t0, 8
+        bltu t0, t1, 1b
+    2:
         la      sp, {boot_stack}
         li      t0, {boot_stack_size}
         add     sp, sp, t0              // setup boot stack
