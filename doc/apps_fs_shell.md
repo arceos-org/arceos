@@ -132,10 +132,7 @@ pub fn run_cmd(line: &[u8]) {
 ```mermaid
 graph TD
 	run_cmd["cmd::run_cmd"]
-<<<<<<< HEAD
-=======
 
->>>>>>> dev
 	cat["cmd::do_cat"]
 	cd["cmd:do_cd"]
 	echo["cmd::do_echo"]
@@ -146,10 +143,7 @@ graph TD
 	pwd["cmd::do_pwd"]
 	rm["cmd::do_rm"]
 	uname["cmd::do_uname"]
-<<<<<<< HEAD
-=======
 
->>>>>>> dev
 	run_cmd --> cat
 	run_cmd --> cd
 	run_cmd --> echo
@@ -160,10 +154,7 @@ graph TD
 	run_cmd --> pwd
 	run_cmd --> rm
 	run_cmd --> uname
-<<<<<<< HEAD
-=======
 
->>>>>>> dev
   stdout_w["libax::io::stdout().write()"]
 	fopen["libax::fs::File::open"]
 	fread["libax::fs::file::File::read"]
@@ -174,10 +165,7 @@ graph TD
 	fs_createdir[libax::fs::create_dir]
 	fs_rmdir[libax::fs::remove_dir]
 	fs_rmfile[libax::fs::remove_file]
-<<<<<<< HEAD
-=======
 
->>>>>>> dev
 	cat --> fopen
 	cat --> fread
 	cat --> stdout_w
@@ -224,10 +212,7 @@ graph TD
 	create_file --> vfs_create
 	create_file --> vfs_truncate
 	create_file --> vfs_open
-<<<<<<< HEAD
-=======
 
->>>>>>> dev
 	vfs_lookup["axfs_vfs::VfsNodeOps::lookup"] --> fs_impl
 	vfs_create["axfs_vfs::VfsNodeOps::create"] --> fs_impl
 	vfs_getattr["axfs_vfs::VfsNodeOps::get_attr"] --> fs_impl
@@ -314,10 +299,7 @@ graph TD
 ```mermaid
 graph TD
 	lib_rm[libax::fs::remove_file] --> root_rm[axfs::root::remove_file]
-<<<<<<< HEAD
-=======
 
->>>>>>> dev
   root_rm --> lookup[axfs::root::lookup] --> vfs_lookup["axfs_vfs::VfsNodeOps::lookup"]
   	---> fs_impl[[FS implementation]]
   lookup -.-> |not found| ret_err

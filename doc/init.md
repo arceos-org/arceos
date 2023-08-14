@@ -39,9 +39,6 @@ graph TD;
     I --> M["allocator::bitmap::BitmapPageAllocator::init()"];
     J -->L["allocator::slab::SlabByteAllocator::init() self.inner = unsafe { Some(Heap::new(start, size))"];
     K --> N["allocator::slab::SlabByteAllocator::add_memory:  self.inner_mut().add_memory(start, size);"];
-<<<<<<< HEAD
-=======
 
->>>>>>> dev
 ```
 

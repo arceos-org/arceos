@@ -65,10 +65,7 @@ fn main(){
 ```mermaid
 graph TD;
     S["libax::task::sleep()"]
-<<<<<<< HEAD
-=======
 
->>>>>>> dev
     S-->arg["libax::time::Duration::from_secs()"]
     arg-->argA["libax::time::Duration::new(secs)"]
 
