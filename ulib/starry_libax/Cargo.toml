@@ -76,7 +76,7 @@ preempt = ["axruntime/preempt", "axprocess/preempt", "irq"]
 # Signal
 signal = ["axprocess/signal", "multitask", "preempt"]
 
-default = ["axtask?/sched_fifo", "axtask", "axmem", "monolithic", "test", "paging", "signal", "net", "smp"]
+default = ["axtask?/sched_fifo", "axtask", "axmem", "monolithic", "paging", "signal", "net", "smp"]
 [dependencies]
 numeric-enum-macro = { git = "https://github.com/mexus/numeric-enum-macro" }
 # base-file = { git = "https://github.com/scPointer/maturin/tree/master/modules/base-file" }

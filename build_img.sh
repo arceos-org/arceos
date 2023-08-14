@@ -1,5 +1,5 @@
 rm sdcard.img
-dd if=/dev/zero of=sdcard.img bs=3M count=10
+dd if=/dev/zero of=sdcard.img bs=3M count=16
 mkfs.vfat -F 32 sdcard.img
 mkdir -p mnt
 sudo mount sdcard.img mnt
