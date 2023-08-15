@@ -31,6 +31,8 @@ mod trap;
 #[cfg(feature = "smp")]
 mod mp;
 
+use memory_addr::PhysAddr;
+
 #[cfg(feature = "smp")]
 pub use self::mp::rust_main_secondary;
 
@@ -93,6 +95,9 @@ static INITED_CPUS: AtomicUsize = AtomicUsize::new(0);
 fn is_init_ok() -> bool {
     INITED_CPUS.load(Ordering::Acquire) == axconfig::SMP
 }
+
+#[cfg(feature = "test")]
+core::arch::global_asm!(include_str!("../../axdriver/image.S"));
 
 /// The main entry point of the ArceOS runtime.
 ///
@@ -247,6 +252,32 @@ cfg_if::cfg_if! {
                         true,
                     )?;
                 }
+
+                // 插入文件系统的镜像映射
+                use axconfig::{TESTCASE_MEMORY_SIZE, TESTCASE_MEMORY_START};
+                use axhal::mem::MemRegionFlags;
+                let img_start_addr: PhysAddr;
+                #[cfg(feature = "test")]
+                {
+                    extern "C" {
+                        fn img_start();
+                    }
+                    // 此时qemu运行，文件镜像的位置需要由汇编确定
+                    img_start_addr = axhal::mem::virt_to_phys((img_start as usize).into());
+                }
+                #[cfg(not(feature = "test"))]
+                {
+                    // 此时上板运行，文件镜像的位置固定
+                    img_start_addr = TESTCASE_MEMORY_START.into();
+                }
+
+                kernel_page_table.map_region(
+                    phys_to_virt(TESTCASE_MEMORY_START.into()),
+                    img_start_addr,
+                    TESTCASE_MEMORY_SIZE,
+                    MemRegionFlags::from_bits(1 << 0 | 1 << 1 | 1 << 4).unwrap().into(),
+                    true,
+                ).unwrap();
                 KERNEL_PAGE_TABLE.init_by(kernel_page_table);
             }
 
