@@ -13,7 +13,6 @@ pub mod fs;
 pub mod io;
 pub mod syscall;
 
-#[cfg(feature = "test")]
 pub mod test;
 
 mod trap;

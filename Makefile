@@ -15,12 +15,12 @@ MONOLITHIC ?= y
 MULTITASK ?= y
 PAGING ?= y
 FS ?= y
-NET ?= y
+NET ?= n
 GRAPHIC ?= n
 BUS ?= mmio
 PREEMPT ?= y
 OFFLINE ?= y
-
+IMG ?= n
 QEMU_LOG ?= n
 NET_DUMP ?= n
 

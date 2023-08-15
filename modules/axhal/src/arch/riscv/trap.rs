@@ -101,11 +101,12 @@ fn riscv_trap_handler(tf: &mut TrapFrame, mut from_user: bool) {
         }
         _ => {
             error!(
-                "Unhandled trap {:?} @ {:#x}:\n{:#x?} from_user: {}",
+                "Unhandled trap {:?} @ {:#x}:\n{:#x?} from_user: {} stval: {:X?}",
                 scause.cause(),
                 tf.sepc,
                 tf,
-                from_user
+                from_user,
+                riscv::register::stval::read(),
             );
             exit();
         }
