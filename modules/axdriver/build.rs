@@ -23,7 +23,7 @@ fn enable_cfg(key: &str, value: &str) {
 #[cfg(feature = "test")]
 fn new_fs_img() -> Result<()> {
     let mut f = File::create("./image.S").unwrap();
-    let img_path = "./../sdcard.img";
+    let img_path = "./sdcard.img";
     writeln!(
         f,
         r#"

@@ -2,18 +2,10 @@ use crate::mem::*;
 
 /// Number of physical memory regions.
 pub(crate) fn memory_regions_num() -> usize {
-    #[cfg(feature = "test")]
-    {
-        common_memory_regions_num() + 2
-    }
-
-    #[cfg(not(feature = "test"))]
-    {
-        common_memory_regions_num() + 1
-    }
+    // 多了两个free memory，中间被0x90000000隔断
+    common_memory_regions_num() + 2
 }
 
-#[cfg(feature = "test")]
 fn extend_physical_memory(idx: usize) -> Option<MemRegion> {
     if idx == common_memory_regions_num() + 1 {
         let start = virt_to_phys(0xffff_ffc0_a000_0000.into()).align_up_4k();
@@ -49,13 +41,6 @@ pub(crate) fn memory_region_at(idx: usize) -> Option<MemRegion> {
                 name: "free memory",
             })
         }
-        Ordering::Greater => {
-            #[cfg(feature = "test")]
-            {
-                extend_physical_memory(idx)
-            }
-            #[cfg(not(feature = "test"))]
-            None
-        }
+        Ordering::Greater => extend_physical_memory(idx),
     }
 }

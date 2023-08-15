@@ -26,8 +26,8 @@ virtio-net = ["net", "virtio", "driver_virtio/net"]
 virtio-gpu = ["display", "virtio", "driver_virtio/gpu"]
 ramdisk = ["block", "driver_block/ramdisk"]
 # more devices example: e1000 = ["net", "driver_net/e1000"]
-test = ["ramdisk"]
-default = ["bus-mmio"]
+test = []
+default = ["bus-mmio", "ramdisk"]
 
 [dependencies]
 log = "0.4"

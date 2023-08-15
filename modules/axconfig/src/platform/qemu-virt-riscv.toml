@@ -22,7 +22,7 @@ user-memory-limit = "0xffff_ffff"
 
 # Testcase memory
 testcase-memory-start = "0x9000_0000"
-testcase-memory-size = "0x200_0000"    # 如果是要手动加载进来，认为镜像大小是32MB
+testcase-memory-size = "0x400_0000"    # 如果是要手动加载进来，认为镜像大小是64MB
 qemu-memory-size = "0x4000_0000"    # 如果用qemu挂载镜像，镜像大小认为是1G，但实际远小于1G
 
 # MMIO regions with format (`base_paddr`, `size`).

@@ -4,5 +4,5 @@
     .global img_end
     .align 16
 img_start:
-    .incbin "./../sdcard.img"
+    .incbin "./sdcard.img"
 img_end:

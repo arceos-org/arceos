@@ -65,7 +65,7 @@ platform-qemu-virt-riscv = ["axhal/platform-qemu-virt-riscv", "bus-mmio"]
 platform-qemu-virt-aarch64 = ["axhal/platform-qemu-virt-aarch64", "bus-mmio"]
 
 # Monolithic kernel
-monolithic = ["axruntime/monolithic", "fs"]
+monolithic = ["axruntime/monolithic"]
 
 # Test
 test = ["axruntime/test", "axhal/test"]
