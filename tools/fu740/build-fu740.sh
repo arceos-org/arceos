@@ -28,3 +28,7 @@ echo 'Built the FIT-uImage arceos-fu740.itb'
 # # 运行
 # bootm 0xa0000000
 # ```
+
+###
+# go
+# u-boot go 命令传给内核的命令参数会减掉"go"程序本身字符, a0是u-boot命令参数的个数，a0是保存命令参数的字符指针数组;
