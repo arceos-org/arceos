@@ -16,12 +16,8 @@ irq = ["axhal/irq", "axtask?/irq"]
 multitask = ["alloc", "axtask/multitask"]
 smp = ["axhal/smp", "spinlock/smp"]
 
-#fs = ["alloc", "paging", "axdriver/virtio-blk", "dep:axfs"] # TODO: remove "paging"
-#net = ["alloc", "paging", "axdriver/virtio-net", "dep:axnet"]
-# for fu740
-fs = ["alloc", "paging", "axdriver", "dep:axfs"] # TODO: remove "paging"
-net = ["alloc", "paging", "axdriver", "dep:axnet"]
-
+fs = ["alloc", "paging", "axdriver/virtio-blk", "dep:axfs"] # TODO: remove "paging"
+net = ["alloc", "paging", "axdriver/virtio-net", "dep:axnet"]
 display = ["alloc", "paging", "axdriver/virtio-gpu", "dep:axdisplay"]
 # 是否使用宏内核架构
 monolithic = ["axtask/monolithic", "axhal/monolithic", "axprocess/monolithic", "axfs?/monolithic"]
