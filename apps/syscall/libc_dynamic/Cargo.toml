@@ -7,4 +7,4 @@ authors = ["Jiayu Chen <c0percn@gmail.com>", "Youjie Zheng <zyj578335934@gmail.c
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-libax = { path = "../../../ulib/starry_libax", package = "starry_libax", features = ["monolithic", "test"] }
+libax = { path = "../../../ulib/starry_libax", package = "starry_libax", features = ["monolithic"] }

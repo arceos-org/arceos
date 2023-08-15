@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 libax = { path = "../../../ulib/starry_libax", package = "starry_libax", features = [
     "monolithic",
-    "test",
+    "img",
     "net",
     "signal",
 ] }

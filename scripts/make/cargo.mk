@@ -28,7 +28,7 @@ features-$(MULTITASK) += libax/multitask
 features-$(PAGING) += libax/paging
 features-$(SIGNAL) += libax/signal
 features-$(PREEMPT) += libax/preempt
-features-$(TEST) += libax/test
+features-$(IMG) += libax/img
 ifeq ($(BUS),pci)
   features-y += libax/bus-pci
 endif
