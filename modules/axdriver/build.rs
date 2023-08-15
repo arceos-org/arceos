@@ -1,4 +1,4 @@
-#[cfg(feature = "test")]
+#[cfg(feature = "img")]
 use std::{
     fs::File,
     io::{Result, Write},
@@ -20,7 +20,7 @@ fn enable_cfg(key: &str, value: &str) {
     println!("cargo:rustc-cfg={key}=\"{value}\"");
 }
 
-#[cfg(feature = "test")]
+#[cfg(feature = "img")]
 fn new_fs_img() -> Result<()> {
     let mut f = File::create("./image.S").unwrap();
     let img_path = "./sdcard.img";
@@ -46,7 +46,7 @@ fn main() {
         enable_cfg("bus", "mmio");
     }
 
-    #[cfg(feature = "test")]
+    #[cfg(feature = "img")]
     new_fs_img().unwrap();
 
     // Generate cfgs like `net_dev="virtio-net"`. if `dyn` is not enabled, only one device is

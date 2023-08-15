@@ -96,7 +96,7 @@ fn is_init_ok() -> bool {
     INITED_CPUS.load(Ordering::Acquire) == axconfig::SMP
 }
 
-#[cfg(feature = "test")]
+#[cfg(feature = "img")]
 core::arch::global_asm!(include_str!("../../axdriver/image.S"));
 
 /// The main entry point of the ArceOS runtime.
@@ -257,7 +257,7 @@ cfg_if::cfg_if! {
                 use axconfig::{TESTCASE_MEMORY_SIZE, TESTCASE_MEMORY_START};
                 use axhal::mem::MemRegionFlags;
                 let img_start_addr: PhysAddr;
-                #[cfg(feature = "test")]
+                #[cfg(feature = "img")]
                 {
                     extern "C" {
                         fn img_start();
@@ -265,7 +265,7 @@ cfg_if::cfg_if! {
                     // 此时qemu运行，文件镜像的位置需要由汇编确定
                     img_start_addr = axhal::mem::virt_to_phys((img_start as usize).into());
                 }
-                #[cfg(not(feature = "test"))]
+                #[cfg(not(feature = "img"))]
                 {
                     // 此时上板运行，文件镜像的位置固定
                     img_start_addr = TESTCASE_MEMORY_START.into();

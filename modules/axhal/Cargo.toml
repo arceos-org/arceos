@@ -31,7 +31,7 @@ platform-raspi4-aarch64 = [
     "dep:page_table_entry", "dep:ratio",
 ]
 
-test = []
+img = []
 
 default = []
 

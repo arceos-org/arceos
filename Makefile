@@ -20,7 +20,7 @@ GRAPHIC ?= n
 BUS ?= mmio
 PREEMPT ?= y
 OFFLINE ?= y
-TEST ?= n
+IMG ?= n
 QEMU_LOG ?= n
 NET_DUMP ?= n
 
