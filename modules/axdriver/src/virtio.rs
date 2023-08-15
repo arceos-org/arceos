@@ -80,6 +80,7 @@ impl<D: VirtIoDevMeta> DriverProbe for VirtIoDriver<D> {
     #[cfg(bus = "mmio")]
     fn probe_mmio(mmio_base: usize, mmio_size: usize) -> Option<AxDeviceEnum> {
         let base_vaddr = phys_to_virt(mmio_base.into());
+        info!("Probe mmio @ {:#x}", base_vaddr);
         if let Some((ty, transport)) =
             driver_virtio::probe_mmio_device(base_vaddr.as_mut_ptr(), mmio_size)
         {

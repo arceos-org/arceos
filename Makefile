@@ -2,7 +2,7 @@
 ARCH ?= riscv64
 SMP ?= 1
 MODE ?= release
-LOG ?= off
+LOG ?= debug
 V ?=
 
 A ?= apps/syscall/busybox

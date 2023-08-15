@@ -311,6 +311,7 @@ pub const LUA_TESTCASES: &[&str] = &[
 
 #[allow(dead_code)]
 pub const BUSYBOX_TESTCASES: &[&str] = &[
+    "busybox sh",
     // gcc测例
     "./riscv64-linux-musl-native/bin/riscv64-linux-musl-gcc ./hello.c -static",
     "./a.out",

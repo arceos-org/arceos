@@ -6,6 +6,7 @@
 actual.out
 qemu.log
 *.bin
+*.vi
 
 # use cargo instead!
 .cargo
