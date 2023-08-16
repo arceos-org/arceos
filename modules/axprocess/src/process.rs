@@ -576,12 +576,6 @@ pub fn init_kernel_process() {
     // );
 }
 
-/// 将进程转化为调度进程，此时会运行所有的测例文件
-pub fn init_user_process() {
-    let main_task = Process::new(["execve".to_string()].to_vec()).unwrap();
-    RUN_QUEUE.lock().add_task(main_task);
-}
-
 /// 获取当前任务对应的进程
 pub fn current_process() -> Arc<Process> {
     let curr = current();
