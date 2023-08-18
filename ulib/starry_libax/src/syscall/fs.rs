@@ -1265,6 +1265,7 @@ pub fn syscall_readlinkat(dir_fd: usize, path: *const u8, buf: *mut u8, bufsiz: 
 /// 移动文件描述符的读写指针
 pub fn syscall_lseek(fd: usize, offset: isize, whence: usize) -> isize {
     let process = current_process();
+    info!("offset: {} whence: {}", offset, whence);
     let process_inner = process.inner.lock();
     if fd >= process_inner.fd_manager.fd_table.len() || fd < 3 {
         debug!("fd {} is out of range", fd);

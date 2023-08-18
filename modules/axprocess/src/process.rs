@@ -327,6 +327,11 @@ impl Process {
         ctid: usize,
     ) -> AxResult<u64> {
         let mut inner = self.inner.lock();
+        if inner.tasks.len() > 100 {
+            // 任务过多，手动特判结束，用来作为QEMU内存不足的应对方法
+            return Err(AxError::NoMemory);
+        }
+
         // 是否共享虚拟地址空间
         let new_memory_set = if flags.contains(CloneFlags::CLONE_VM) {
             Arc::clone(&inner.memory_set)

@@ -56,4 +56,4 @@ pci-ranges = [
 ]
 
 # Timer interrupt frequency in Hz.
-timer-frequency = "1000_0000"      # 10MHz
+timer-frequency = "1000_000"      # 10MHz

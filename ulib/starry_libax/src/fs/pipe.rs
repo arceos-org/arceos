@@ -122,6 +122,7 @@ pub fn make_pipe() -> (Arc<SpinNoIrq<Pipe>>, Arc<SpinNoIrq<Pipe>>) {
 fn filter_pipe() -> bool {
     let cases = ["fscanf", "fgetwc_buffering", "lat_pipe"];
     for case in cases {
+        error!("filter: {:?}", TEST_FILTER.lock().keys());
         if TEST_FILTER.lock().contains_key(&case.to_string()) {
             return true;
         }
