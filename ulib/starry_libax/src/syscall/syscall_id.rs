@@ -60,6 +60,7 @@ pub enum SyscallId {
     SETSID = 157,
     GETRUSAGE = 165,
     UMASK = 166,
+    PRCTL = 167,
     GETPID = 172,
     GETPPID = 173,
     GETUID = 174,
@@ -110,6 +111,7 @@ pub enum SyscallId {
     SETSOCKOPT = 208,
     GETSOCKOPT = 209,
     SHUTDOWN = 210,
+    ACCEPT4 = 242,
 }
 }
 

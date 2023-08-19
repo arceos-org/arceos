@@ -314,7 +314,12 @@ pub const BUSYBOX_TESTCASES: &[&str] = &[
     // gcc测例
     // "./riscv64-linux-musl-native/bin/riscv64-linux-musl-gcc ./hello.c -static",
     // "./a.out",
-    "busybox echo \"hello world\"",
+    // redis测例
+    "busybox sh",
+    // "./redis-server /redis.conf --loglevel verbose &", // 打开 redis 服务端，后台运行
+    // "./redis-cli-static", // 打开 redis 客户端
+    // "./redis-benchmark -c 2 -n 10", // 进行小规模的 redis-benchmark 测试
+    // "busybox echo iozone automatic measurements",
     // "busybox sh cyclictest_testcode.sh",
     // "busybox echo \"run iozone_testcode.sh\"",
     // "busybox sh ./iozone_testcode.sh",
@@ -338,76 +343,21 @@ pub const BUSYBOX_TESTCASES: &[&str] = &[
     // "./fstime -w -t 20 -b 256 -m 500",
     // "./runtest.exe -w entry-dynamic.exe fscanf",
     // "./libctest_testcode.sh",
-    "busybox echo \"run lua_testcode.sh\"",
-    "./lua_testcode.sh",
+    // "busybox echo \"run lua_testcode.sh\"",
+    // "./lua_testcode.sh",
     // "lua strings.lua",
     // "busybox echo \"run busybox_testcode.sh\"",
     // "./busybox_testcode.sh",
-    // "busybox du",
-    // "busybox echo \"#### independent command test\"",
-    // "busybox ash -c exit",
-    // "busybox sh -c exit",
-    // "busybox basename /aaa/bbb",
-    // "busybox cal",
-    // "busybox clear",
-    // "busybox date",
-    // "busybox df",
-    // "busybox dirname /aaa/bbb",
-    // "busybox dmesg",
-    // "busybox du",
-    // "busybox expr 1 + 1", // 需要29
-    // "busybox false",
-    // "busybox true",
-    // "busybox which ls",
-    // "busybox uname",    // 需要29
-    // "busybox uptime",   // 需要179
-    // "busybox printf \"abc\n\"",
-    // "busybox ps",      // 需要179
-    // "busybox pwd",     // 需要29
-    // "busybox free",    // 需要29
-    // "busybox hwclock", // 需要29
-    // "busybox kill 10",
-    // "busybox ls", // 29
-    // "busybox sleep 1",
-    // "busybox echo \"#### file opration test\"",
-    // "busybox touch test.txt",
-    // "busybox echo \"hello world\" > test.txt",
-    // "busybox cat test.txt",
-    //   "busybox cut -c 3 test.txt",
-    //   "busybox od test.txt",
-    //   "busybox head test.txt",
-    //   "busybox tail test.txt",
-    //   "busybox hexdump -C test.txt",
-    //   "busybox md5sum test.txt",
-    //   "busybox echo \"ccccccc\" >> test.txt",
-    //   "busybox echo \"bbbbbbb\" >> test.txt",
-    //   "busybox echo \"aaaaaaa\" >> test.txt",
-    //   "busybox echo \"2222222\" >> test.txt",
-    //   "busybox echo \"1111111\" >> test.txt",
-    //   "busybox echo \"bbbbbbb\" >> test.txt",
-    //   "busybox sort test.txt | ./busybox uniq",
-    // "busybox stat test.txt",
-    // "busybox strings test.txt",
-    // "busybox wc test.txt",
-    // "busybox [ -f test.txt ]",
-    // "busybox more test.txt",
-    // "busybox rm test.txt",
-    // "busybox mkdir test_dir",
-    // "busybox mv test_dir test",                   // 需要79
-    // "busybox rmdir test",                         // 依赖上一条
-    // "busybox grep hello busybox_cmd.txt",         //需要29
-    // "busybox cp busybox_cmd.txt busybox_cmd.bak", // 依赖前文
-    // "busybox rm busybox_cmd.bak",
-    // "busybox find -name \"busybox_cmd.txt\"",
-    // "busybox sh busybox echo \"hello\"",
-
-    // "echo latency measurements",
-    // "lmbench_all lat_syscall -P 1 null",
+    // "./time-test",
+    // "busybox sh ./netperf_testcode.sh",
+    // "busybox sh ./iperf_testcode.sh",
+    // "busybox sh unixbench_testcode.sh",
+    // // "./runtest.exe -w entry-static.exe lseek_large",
     // "busybox sh libctest_testcode.sh",
     // "busybox sh lua_testcode.sh",
     // "busybox sh busybox_testcode.sh",
-    // "busybox sh lmbench_testcode.sh",
-    // "busybox mkdir -p /var/tmp",
+    // "libc-bench",
+    // // "busybox mkdir -p /var/tmp",
     // "busybox echo latency measurements",
     // "lmbench_all lat_syscall -P 1 null",
     // "lmbench_all lat_syscall -P 1 read",
@@ -590,28 +540,28 @@ pub fn fs_init(_case: &'static str) {
 
     // if case == "busybox" {
     create_link(
-        &(FilePath::new("./sbin/busybox").unwrap()),
+        &(FilePath::new("/sbin/busybox").unwrap()),
         &(FilePath::new("busybox").unwrap()),
     );
     create_link(
-        &(FilePath::new("./sbin/ls").unwrap()),
+        &(FilePath::new("/sbin/ls").unwrap()),
         &(FilePath::new("busybox").unwrap()),
     );
     create_link(
-        &(FilePath::new("./ls").unwrap()),
-        &(FilePath::new("./bin/busybox").unwrap()),
+        &(FilePath::new("/ls").unwrap()),
+        &(FilePath::new("/busybox").unwrap()),
     );
     create_link(
-        &(FilePath::new(".sh").unwrap()),
-        &(FilePath::new("./bin/busybox").unwrap()),
+        &(FilePath::new("/sh").unwrap()),
+        &(FilePath::new("/busybox").unwrap()),
     );
     create_link(
-        &(FilePath::new("./bin/lmbench_all").unwrap()),
-        &(FilePath::new("./lmbench_all").unwrap()),
+        &(FilePath::new("/bin/lmbench_all").unwrap()),
+        &(FilePath::new("/lmbench_all").unwrap()),
     );
     create_link(
-        &(FilePath::new("./bin/iozone").unwrap()),
-        &(FilePath::new("./iozone").unwrap()),
+        &(FilePath::new("/bin/iozone").unwrap()),
+        &(FilePath::new("/iozone").unwrap()),
     );
     let _ = new_file("/lat_sig", &(OpenFlags::CREATE | OpenFlags::RDWR));
     // }

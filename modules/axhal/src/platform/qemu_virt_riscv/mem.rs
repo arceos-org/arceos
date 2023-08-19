@@ -9,7 +9,7 @@ pub(crate) fn memory_regions_num() -> usize {
 fn extend_physical_memory(idx: usize) -> Option<MemRegion> {
     if idx == common_memory_regions_num() + 1 {
         let start = virt_to_phys(0xffff_ffc0_a000_0000.into()).align_up_4k();
-        let end = PhysAddr::from(0xc000_0000).align_down_4k();
+        let end = PhysAddr::from(0xf000_0000).align_down_4k();
         Some(MemRegion {
             paddr: start,
             size: end.as_usize() - start.as_usize(),

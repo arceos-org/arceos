@@ -16,3 +16,5 @@ gcc测例运行方法：
    ```
 
    即可生成gcc测例镜像。
+
+http://download.redis.io/releases/redis-7.0.0.tar.gz

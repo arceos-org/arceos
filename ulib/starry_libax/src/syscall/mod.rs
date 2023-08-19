@@ -50,21 +50,21 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
     check_dead_wait();
     // let start = riscv::register::time::read();
     let curr_id = current().id().as_u64();
-    if syscall_id != GETPPID as usize
-        && syscall_id != CLOCK_GET_TIME as usize
-        && syscall_id != GETRUSAGE as usize
-    {
-        // if syscall_id == CLONE as usize {
+    // if syscall_id != GETPPID as usize
+    //     && syscall_id != CLOCK_GET_TIME as usize
+    //     && syscall_id != GETRUSAGE as usize
+    // {
+    // if syscall_id == CLONE as usize {
 
-        info!(
-            "cpu id: {}, task id: {}, process id: {}, syscall: id: {} name: {:?}",
-            this_cpu_id(),
-            curr_id,
-            current().get_process_id(),
-            syscall_id,
-            syscall_name,
-        );
-    }
+    info!(
+        "cpu id: {}, task id: {}, process id: {}, syscall: id: {} name: {:?}",
+        this_cpu_id(),
+        curr_id,
+        current().get_process_id(),
+        syscall_id,
+        syscall_name,
+    );
+    // }
     let ans = match syscall_name {
         OPENAT => syscall_openat(
             args[0],
@@ -264,14 +264,15 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         MEMBARRIER => 0,
         SIGTIMEDWAIT => 0,
         SYSLOG => 0,
-
+        PRCTL => 0,
         SOCKET => syscall_socket(args[0], args[1], args[2]),
         BIND => syscall_bind(args[0], args[1] as *const u8, args[2]),
         LISTEN => syscall_listen(args[0], args[1]),
-        ACCEPT => syscall_accept(args[0], args[1] as *mut u8, args[2] as *mut u32),
+        ACCEPT => syscall_accept4(args[0], args[1] as *mut u8, args[2] as *mut u32, 0),
         CONNECT => syscall_connect(args[0], args[1] as *const u8, args[2]),
         GETSOCKNAME => syscall_get_sock_name(args[0], args[1] as *mut u8, args[2] as *mut u32),
         GETPEERNAME => syscall_getpeername(args[0], args[1] as *mut u8, args[2] as *mut u32),
+        // GETPEERNAME => 0,
         SENDTO => syscall_sendto(
             args[0],
             args[1] as *const u8,
@@ -295,6 +296,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[3] as *const u8,
             args[4] as u32,
         ),
+        // SETSOCKOPT => 0,
         GETSOCKOPT => syscall_get_sock_opt(
             args[0],
             args[1],
@@ -302,6 +304,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[3] as *mut u8,
             args[4] as *mut u32,
         ),
+        ACCEPT4 => syscall_accept4(args[0], args[1] as *mut u8, args[2] as *mut u32, args[3]),
         SHUTDOWN => syscall_shutdown(args[0], args[1]),
         MADVICE => 0,
         _ => {
@@ -318,11 +321,11 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
     //     && syscall_id != CLOCK_GET_TIME as usize
     //     && syscall_id != GETRUSAGE as usize
     // if curr_id == 6 {
-    //     // if syscall_id == CLONE as usize {
-    //     error!(
-    //         "curr id: {}, Syscall {} return: {}",
-    //         curr_id, syscall_id, ans,
-    //     );
+    // if syscall_id == CLONE as usize {
+    info!(
+        "curr id: {}, Syscall {} return: {}",
+        curr_id, syscall_id, ans,
+    );
     // };
     ans
 }

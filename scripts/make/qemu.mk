@@ -24,7 +24,7 @@ qemu_args-aarch64 := \
   -machine virt \
   -kernel $(OUT_BIN)
 
-qemu_args-y := -m 3072M -smp $(SMP) $(qemu_args-$(ARCH))
+qemu_args-y := -m 8G -smp $(SMP) $(qemu_args-$(ARCH))
 
 qemu_args-$(FS) += \
   -device virtio-blk-$(vdev-suffix),drive=disk0 \
@@ -32,7 +32,7 @@ qemu_args-$(FS) += \
 
 qemu_args-$(NET) += \
   -device virtio-net-$(vdev-suffix),netdev=net0 \
-  -netdev user,id=net0,hostfwd=tcp::5555-:5555,hostfwd=udp::5555-:5555
+  -netdev user,id=net0,hostfwd=tcp::5556-:5556,hostfwd=udp::5556-:5556
 
 ifeq ($(NET_DUMP), y)
   qemu_args-$(NET) += -object filter-dump,id=dump0,netdev=net0,file=qemu-net0.pcap
