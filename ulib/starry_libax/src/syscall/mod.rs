@@ -50,21 +50,21 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
     check_dead_wait();
     // let start = riscv::register::time::read();
     let curr_id = current().id().as_u64();
-    if syscall_id != GETPPID as usize
-        && syscall_id != CLOCK_GET_TIME as usize
-        && syscall_id != GETRUSAGE as usize
-    {
-        // if syscall_id == CLONE as usize {
+    // if syscall_id != GETPPID as usize
+    //     && syscall_id != CLOCK_GET_TIME as usize
+    //     && syscall_id != GETRUSAGE as usize
+    // {
+    //     // if syscall_id == CLONE as usize {
 
-        info!(
-            "cpu id: {}, task id: {}, process id: {}, syscall: id: {} name: {:?}",
-            this_cpu_id(),
-            curr_id,
-            current().get_process_id(),
-            syscall_id,
-            syscall_name,
-        );
-    }
+    //     error!(
+    //         "cpu id: {}, task id: {}, process id: {}, syscall: id: {} name: {:?}",
+    //         this_cpu_id(),
+    //         curr_id,
+    //         current().get_process_id(),
+    //         syscall_id,
+    //         syscall_name,
+    //     );
+    // }
     let ans = match syscall_name {
         OPENAT => syscall_openat(
             args[0],
@@ -317,7 +317,8 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
     // if syscall_id != GETPPID as usize
     //     && syscall_id != CLOCK_GET_TIME as usize
     //     && syscall_id != GETRUSAGE as usize
-    // if curr_id == 6 {
+    // // if curr_id == 6 {
+    // {
     //     // if syscall_id == CLONE as usize {
     //     error!(
     //         "curr id: {}, Syscall {} return: {}",

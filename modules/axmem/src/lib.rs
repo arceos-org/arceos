@@ -549,7 +549,11 @@ impl MemorySet {
                 Ok(())
             }
             None => {
-                error!("Page fault address {:?} not found in memory set", addr);
+                error!(
+                    "Page fault address {:?} not found in memory set sepc: {:X?}",
+                    addr,
+                    riscv::register::sepc::read()
+                );
                 Err(AxError::BadAddress)
             }
         }
