@@ -315,6 +315,14 @@ pub const LUA_TESTCASES: &[&str] = &[
 #[allow(dead_code)]
 pub const BUSYBOX_TESTCASES: &[&str] = &[
     "./time-test",
+    "iozone -a -r 1k -s 4m",
+    "iozone -t 4 -i 0 -i 1 -r 1k -s 1m",
+    "iozone -t 4 -i 0 -i 2 -r 1k -s 1m",
+    "iozone -t 4 -i 0 -i 3 -r 1k -s 1m",
+    "iozone -t 4 -i 0 -i 5 -r 1k -s 1m",
+    "iozone -t 4 -i 6 -i 7 -r 1k -s 1m",
+    "iozone -t 4 -i 9 -i 10 -r 1k -s 1m",
+    "iozone -t 4 -i 11 -i 12 -r 1k -s 1m",
     "busybox sh ./netperf_testcode.sh",
     "busybox sh ./iperf_testcode.sh",
     "busybox sh unixbench_testcode.sh",
