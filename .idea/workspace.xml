@@ -16,13 +16,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7c62798e-00ca-45fb-8290-e63c15b16cfe" name="更改" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/Starry.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Starry.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/doc/上板说明.md" beforeDir="false" afterPath="$PROJECT_DIR$/doc/上板说明.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ulib/starry_libax/src/syscall/fs.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/starry_libax/src/syscall/fs.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ulib/starry_libax/src/syscall/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/starry_libax/src/syscall/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ulib/starry_libax/src/syscall/syscall_id.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/starry_libax/src/syscall/syscall_id.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ulib/starry_libax/src/test.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/starry_libax/src/test.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -74,7 +69,7 @@
     "cf.advertisement.text.overridden": "true",
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
-    "git-widget-placeholder": "fix/memory",
+    "git-widget-placeholder": "problem2",
     "last_opened_file_path": "//wsl$/Ubuntu-22.04/home/ccyd/Local_Coding/OS/Starry",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
@@ -118,7 +113,7 @@
       <workItem from="1689694907253" duration="11797000" />
       <workItem from="1690628912203" duration="1833000" />
       <workItem from="1690764849588" duration="611000" />
-      <workItem from="1692447315345" duration="6156000" />
+      <workItem from="1692447315345" duration="8137000" />
     </task>
     <servers />
   </component>

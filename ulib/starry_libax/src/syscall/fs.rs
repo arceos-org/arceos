@@ -21,7 +21,7 @@ use axprocess::link::{real_path, FilePath};
 use axprocess::process::current_process;
 use core::mem::transmute;
 use core::ptr::copy_nonoverlapping;
-use log::{debug, error, info, trace};
+use log::{debug, error, info};
 use memory_addr::VirtAddr;
 use spinlock::SpinNoIrq;
 
@@ -117,7 +117,7 @@ pub fn deal_with_path(
 ///     - count：要读取的字节数。
 /// 返回值：成功执行，返回读取的字节数。如为0，表示文件结束。错误，则返回-1。
 pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
-    trace!("[read()] fd: {fd}, buf: {buf:?}, len: {count}",);
+    info!("[read()] fd: {fd}, buf: {buf:?}, len: {count}",);
 
     if buf.is_null() {
         return ErrorNo::EFAULT as isize;
@@ -185,7 +185,7 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
 ///     - count：要写入的字节数。
 /// 返回值：成功执行，返回写入的字节数。错误，则返回-1。
 pub fn syscall_write(fd: usize, buf: *const u8, count: usize) -> isize {
-    trace!("[write()] fd: {fd}, buf: {buf:?}, len: {count}");
+    info!("[write()] fd: {fd}, buf: {buf:?}, len: {count}");
 
     if buf.is_null() {
         return ErrorNo::EFAULT as isize;
@@ -1507,9 +1507,13 @@ pub fn syscall_ftruncate64(fd: usize, len: usize) -> isize {
  */
 
 pub fn syscall_copyfilerange(fd_in: usize, off_in: *mut usize, fd_out: usize, off_out: *mut usize, len: usize, flags: usize) -> isize {
-    info!(
-        "copyfilerange: fd_in: {}, fd_out: {}, len: {}, flags: {}",
-        fd_in, fd_out, len, flags);
+    let in_offset = if off_in.is_null() { -1 } else {
+        unsafe { *off_in as isize}
+    };
+    let out_offset = if off_out.is_null() { -1 } else {
+        unsafe { *off_out as isize}
+    };
+    info!("copyfilerange: fd_in: {}, fd_out: {}, off_in: {}, off_out: {}, len: {}, flags: {}", fd_in, fd_out, in_offset, out_offset, len, flags);
     let process = current_process();
     let process_inner = process.inner.lock();
     let out_file = process_inner.fd_manager.fd_table[fd_out].clone().unwrap();
@@ -1519,17 +1523,17 @@ pub fn syscall_copyfilerange(fd_in: usize, off_in: *mut usize, fd_out: usize, of
 
     // set offset
     if !off_in.is_null(){
-        let in_offset = unsafe { *off_in };
         in_file.lock().seek(SeekFrom::Start(in_offset as u64)).unwrap();
     }
     if !off_out.is_null(){
-        let out_offset = unsafe { *off_out };
         out_file.lock().seek(SeekFrom::Start(out_offset as u64)).unwrap();
     }
 
     // copy
     let mut buf = vec![0; len];
     let read_len = in_file.lock().read(buf.as_mut_slice()).unwrap();
+    debug!("copy content: {:?}", &buf[..read_len]);
+
     let write_len = out_file.lock().write(&buf[..read_len]).unwrap();
     // assert_eq!(read_len, write_len);    // tmp
 

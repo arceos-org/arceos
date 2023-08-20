@@ -314,7 +314,8 @@ pub const LUA_TESTCASES: &[&str] = &[
 
 #[allow(dead_code)]
 pub const BUSYBOX_TESTCASES: &[&str] = &[
-    "./copy",
+    "./copy3",
+    "busybox cat ./test2",
     // "./time-test",
     // "busybox sh ./netperf_testcode.sh",
     // "busybox sh ./iperf_testcode.sh",
