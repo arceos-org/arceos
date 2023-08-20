@@ -1187,9 +1187,10 @@ pub fn syscall_sendfile64(out_fd: usize, in_fd: usize, offset: *mut usize, count
     let out_file = process_inner.fd_manager.fd_table[out_fd].clone().unwrap();
     let in_file = process_inner.fd_manager.fd_table[in_fd].clone().unwrap();
     let old_in_offset = in_file.lock().seek(SeekFrom::Current(0)).unwrap();
-    // 如果offset不为NULL，则从offset指定的位置开始读取
+
     let mut buf = vec![0u8; count];
     if !offset.is_null() {
+        // 如果offset不为NULL，则从offset指定的位置开始读取
         let in_offset = unsafe { *offset };
         in_file
             .lock()
@@ -1495,4 +1496,52 @@ pub fn syscall_ftruncate64(fd: usize, len: usize) -> isize {
         }
     }
     0
+}
+
+/**
+该系统调用应复制文件描述符 fd_in 中的至多 len 个字节到文件描述符 fd_out 中。
+若 off_in 为 NULL，则复制时应从文件描述符 fd_in 本身的文件偏移处开始读取，并将其文件偏移增加成功复制的字节数；否则，从 *off_in 指定的文件偏移处开始读取，不改变 fd_in 的文件偏移，而是将 *off_in 增加成功复制的字节数。
+参数 off_out 的行为类似：若 off_out 为 NULL，则复制时从文件描述符 fd_out 本身的文件偏移处开始写入，并将其文件偏移增加成功复制的字节数；否则，从 *off_out 指定的文件偏移处开始写入，不改变 fd_out 的文件偏移，而是将 *off_out 增加成功复制的字节数。
+该系统调用的返回值为成功复制的字节数，出现错误时返回负值。若读取 fd_in 时的文件偏移超过其大小，则直接返回 0，不进行复制。
+本题中，fd_in 和 fd_out 总指向文件系统中两个不同的普通文件；flags 总为 0，没有实际作用。
+ */
+
+pub fn syscall_copyfilerange(fd_in: usize, off_in: *mut usize, fd_out: usize, off_out: *mut usize, len: usize, flags: usize) -> isize {
+    info!(
+        "copyfilerange: fd_in: {}, fd_out: {}, len: {}, flags: {}",
+        fd_in, fd_out, len, flags);
+    let process = current_process();
+    let process_inner = process.inner.lock();
+    let out_file = process_inner.fd_manager.fd_table[fd_out].clone().unwrap();
+    let in_file = process_inner.fd_manager.fd_table[fd_in].clone().unwrap();
+    let old_in_offset = in_file.lock().seek(SeekFrom::Current(0)).unwrap();
+    let old_out_offset = out_file.lock().seek(SeekFrom::Current(0)).unwrap();
+
+    // set offset
+    if !off_in.is_null(){
+        let in_offset = unsafe { *off_in };
+        in_file.lock().seek(SeekFrom::Start(in_offset as u64)).unwrap();
+    }
+    if !off_out.is_null(){
+        let out_offset = unsafe { *off_out };
+        out_file.lock().seek(SeekFrom::Start(out_offset as u64)).unwrap();
+    }
+
+    // copy
+    let mut buf = vec![0; len];
+    let read_len = in_file.lock().read(buf.as_mut_slice()).unwrap();
+    let write_len = out_file.lock().write(&buf[..read_len]).unwrap();
+    // assert_eq!(read_len, write_len);    // tmp
+
+    // set offset | modify off_in & off_out
+    if !off_in.is_null(){
+        in_file.lock().seek(SeekFrom::Start(old_in_offset)).unwrap();
+        unsafe { *off_in += read_len; }
+    }
+    if !off_out.is_null(){
+        out_file.lock().seek(SeekFrom::Start(old_out_offset)).unwrap();
+        unsafe { *off_out += write_len; }
+    }
+
+    write_len as isize
 }

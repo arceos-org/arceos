@@ -304,6 +304,14 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         ),
         SHUTDOWN => syscall_shutdown(args[0], args[1]),
         MADVICE => 0,
+        COPYFILERANGE => syscall_copyfilerange(
+            args[0],
+            args[1] as *mut usize,
+            args[2],
+            args[3] as *mut usize,
+            args[4],
+            args[5],
+        ),
         _ => {
             error!("Invalid Syscall Id: {}!", syscall_id);
             // return -1;

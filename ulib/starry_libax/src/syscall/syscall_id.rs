@@ -110,6 +110,7 @@ pub enum SyscallId {
     SETSOCKOPT = 208,
     GETSOCKOPT = 209,
     SHUTDOWN = 210,
+    COPYFILERANGE = 285,
 }
 }
 
