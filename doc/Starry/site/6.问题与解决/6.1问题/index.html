@@ -1,0 +1,1050 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Starry设计文档">
+      
+      
+      
+      
+        <link rel="prev" href="../../5.%E5%AE%9E%E7%8E%B0%E9%87%8D%E7%82%B9/5.2%E5%85%BC%E5%AE%B9%E9%97%AE%E9%A2%98/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.1.21">
+    
+    
+      
+        <title>6.1 问题 - Starry</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.eebd395e.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ecc896b0.min.css">
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../resources/css/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="grey" data-md-color-accent="cyan">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#csr" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Starry" class="md-header__button md-logo" aria-label="Starry" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Starry
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              6.1 问题
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="grey" data-md-color-accent="cyan"  aria-label="切换至夜间模式"  type="radio" name="__palette" id="__palette_1">
+            
+              <label class="md-header__button md-icon" title="切换至夜间模式" for="__palette_2" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3 3.19.09m3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95 2.06.05m-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31Z"/></svg>
+              </label>
+            
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="cyan"  aria-label="切换至日间模式"  type="radio" name="__palette" id="__palette_2">
+            
+              <label class="md-header__button md-icon" title="切换至日间模式" for="__palette_1" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5c-.84 0-1.65.15-2.39.42L12 2M3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29L3.34 7m.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14L3.36 17M20.65 7l-1.77 3.79a7.023 7.023 0 0 0-2.38-4.15l4.15.36m-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29L20.64 17M12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44L12 22Z"/></svg>
+              </label>
+            
+          
+        </form>
+      
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Starry" class="md-nav__button md-logo" aria-label="Starry" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    Starry
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        Starry
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../1.%E6%A6%82%E8%BF%B0/1.1%E8%83%8C%E6%99%AF/" class="md-nav__link">
+        1.概述
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          2.架构设计
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          2.架构设计
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../2.%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/2.1ArceOS%E4%BB%8B%E7%BB%8D/" class="md-nav__link">
+        2.1 ArceOS介绍
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../2.%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/2.2Starry%E7%BB%93%E6%9E%84%E8%AF%B4%E6%98%8E/" class="md-nav__link">
+        2.2 Starry结构说明
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          3.设计思路
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          3.设计思路
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../3.%E8%AE%BE%E8%AE%A1%E6%80%9D%E8%B7%AF/3.1%E6%A8%A1%E5%9D%97%E5%88%92%E5%88%86/" class="md-nav__link">
+        3.1 模块划分
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../3.%E8%AE%BE%E8%AE%A1%E6%80%9D%E8%B7%AF/3.2%E8%BF%9B%E7%A8%8B%E5%BC%95%E5%85%A5/" class="md-nav__link">
+        3.2 进程引入
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../3.%E8%AE%BE%E8%AE%A1%E6%80%9D%E8%B7%AF/3.3%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4%E5%BC%95%E5%85%A5/" class="md-nav__link">
+        3.3 地址空间引入
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../3.%E8%AE%BE%E8%AE%A1%E6%80%9D%E8%B7%AF/3.4%E7%89%B9%E6%9D%83%E7%BA%A7%E5%88%87%E6%8D%A2/" class="md-nav__link">
+        3.4 特权级切换
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+          4. 模块介绍
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          4. 模块介绍
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../4.%E6%A8%A1%E5%9D%97%E4%BB%8B%E7%BB%8D/4.1%E5%86%85%E6%A0%B8%E5%BA%95%E5%B1%82%E6%A8%A1%E5%9D%97-axhal/" class="md-nav__link">
+        4.1 内核底层模块-axhal
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../4.%E6%A8%A1%E5%9D%97%E4%BB%8B%E7%BB%8D/4.2%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%A8%A1%E5%9D%97-axdriver/" class="md-nav__link">
+        4.2 设备驱动模块-axdriver
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../4.%E6%A8%A1%E5%9D%97%E4%BB%8B%E7%BB%8D/4.3%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E6%A8%A1%E5%9D%97-axmem/" class="md-nav__link">
+        4.3 内存管理模块-axmem
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../4.%E6%A8%A1%E5%9D%97%E4%BB%8B%E7%BB%8D/4.4%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9D%97-axnet/" class="md-nav__link">
+        4.4 网络模块-axnet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../4.%E6%A8%A1%E5%9D%97%E4%BB%8B%E7%BB%8D/4.5%E4%BF%A1%E5%8F%B7%E6%A8%A1%E5%9D%97-axsignal/" class="md-nav__link">
+        4.5 信号模块-axsignal
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../4.%E6%A8%A1%E5%9D%97%E4%BB%8B%E7%BB%8D/4.6%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6%E6%A8%A1%E5%9D%97-axtask/" class="md-nav__link">
+        4.6 任务调度模块-axtask
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../4.%E6%A8%A1%E5%9D%97%E4%BB%8B%E7%BB%8D/4.7%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E6%A8%A1%E5%9D%97-axfs/" class="md-nav__link">
+        4.7 文件系统模块-axfs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../4.%E6%A8%A1%E5%9D%97%E4%BB%8B%E7%BB%8D/4.8%E8%BF%9B%E7%A8%8B%E6%8E%A7%E5%88%B6%E6%A8%A1%E5%9D%97-axprocess/" class="md-nav__link">
+        4.8 进程控制模块-axprocess
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../4.%E6%A8%A1%E5%9D%97%E4%BB%8B%E7%BB%8D/4.9%E5%86%85%E6%A0%B8%E8%BF%90%E8%A1%8C%E6%97%B6%E6%A8%A1%E5%9D%97-axruntime/" class="md-nav__link">
+        4.9 内核运行时模块-axruntime
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../4.%E6%A8%A1%E5%9D%97%E4%BB%8B%E7%BB%8D/4.10%E5%AE%8F%E5%86%85%E6%A0%B8%E7%94%A8%E6%88%B7%E5%BA%93-starry/" class="md-nav__link">
+        4.10 宏内核用户库-starry
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+          5. 实现重点
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_6">
+          <span class="md-nav__icon md-icon"></span>
+          5. 实现重点
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../5.%E5%AE%9E%E7%8E%B0%E9%87%8D%E7%82%B9/5.1%E4%BE%9D%E8%B5%96%E9%97%AE%E9%A2%98/" class="md-nav__link">
+        5.1 依赖问题
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../5.%E5%AE%9E%E7%8E%B0%E9%87%8D%E7%82%B9/5.2%E5%85%BC%E5%AE%B9%E9%97%AE%E9%A2%98/" class="md-nav__link">
+        5.2 兼容问题
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+      
+      
+      
+        <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+          6. 问题与解决
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+        <label class="md-nav__title" for="__nav_7">
+          <span class="md-nav__icon md-icon"></span>
+          6. 问题与解决
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          6.1 问题
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        6.1 问题
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#csr" class="md-nav__link">
+    操作CSR寄存器时关闭时钟中断
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    读取长度不足
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    文件的链接与初始化
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#libc" class="md-nav__link">
+    多核情况下libc测例结果不可测
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lmbench" class="md-nav__link">
+    lmbench测例的结束
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#csr" class="md-nav__link">
+    操作CSR寄存器时关闭时钟中断
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    读取长度不足
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    文件的链接与初始化
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#libc" class="md-nav__link">
+    多核情况下libc测例结果不可测
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lmbench" class="md-nav__link">
+    lmbench测例的结束
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  <h1>6.1 问题</h1>
+
+<h3 id="csr">操作CSR寄存器时关闭时钟中断<a class="headerlink" href="#csr" title="Permanent link">&para;</a></h3>
+<p>由于要运行多个测例，每一个测例都是单独的可执行文件，而当测例量加大时，会经常性出现准备开始运行某个测例的时候卡死或者循环发生内核trap的现象，错误的内容是随机的，可能呈现为store fault、卡死甚至unknown trap等内容。</p>
+<p>通过gdb调试，定位了第一次发生错误的地址均在下列函数中：</p>
+<div class="highlight"><pre><span></span><code><span class="cp">#[no_mangle]</span>
+<span class="c1">// #[cfg(feature = &quot;user&quot;)]</span>
+<span class="k">fn</span> <span class="nf">first_into_user</span><span class="p">(</span><span class="n">kernel_sp</span>: <span class="kt">usize</span><span class="p">,</span><span class="w"> </span><span class="n">frame_base</span>: <span class="kt">usize</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="o">!</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">trap_frame_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">core</span>::<span class="n">mem</span>::<span class="n">size_of</span>::<span class="o">&lt;</span><span class="n">TrapFrame</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">kernel_base</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kernel_sp</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">trap_frame_size</span><span class="p">;</span>
+<span class="w">    </span><span class="k">unsafe</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">asm</span>::<span class="n">sfence_vma_all</span><span class="p">();</span>
+<span class="w">        </span><span class="n">core</span>::<span class="n">arch</span>::<span class="fm">asm!</span><span class="p">(</span>
+<span class="w">            </span><span class="s">r&quot;</span>
+<span class="s">            mv      sp, {frame_base}</span>
+<span class="s">            .short  0x2432                      // fld fs0,264(sp)</span>
+<span class="s">            .short  0x24d2                      // fld fs1,272(sp)</span>
+<span class="s">            LDR     gp, sp, 2                   // load user gp and tp</span>
+<span class="s">            LDR     t0, sp, 3</span>
+<span class="s">            mv      t1, {kernel_base}</span>
+<span class="s">            STR     tp, t1, 3                   // save supervisor tp，注意是存储到内核栈上而不是sp中，此时存储的应该是当前运行的CPU的ID</span>
+<span class="s">            mv      tp, t0                      // tp：本来存储的是CPU ID，在这个时候变成了对应线程的TLS 指针</span>
+<span class="s">            csrw    sscratch, {kernel_sp}       // put supervisor sp to scratch</span>
+<span class="s">            LDR     t0, sp, 31</span>
+<span class="s">            LDR     t1, sp, 32</span>
+<span class="s">            csrw    sepc, t0</span>
+<span class="s">            csrw    sstatus, t1</span>
+<span class="s">            POP_GENERAL_REGS</span>
+<span class="s">            LDR     sp, sp, 1</span>
+<span class="s">            sret</span>
+<span class="s">        &quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="n">frame_base</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">in</span><span class="p">(</span><span class="n">reg</span><span class="p">)</span><span class="w"> </span><span class="n">frame_base</span><span class="p">,</span>
+<span class="w">            </span><span class="n">kernel_sp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">in</span><span class="p">(</span><span class="n">reg</span><span class="p">)</span><span class="w"> </span><span class="n">kernel_sp</span><span class="p">,</span>
+<span class="w">            </span><span class="n">kernel_base</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">in</span><span class="p">(</span><span class="n">reg</span><span class="p">)</span><span class="w"> </span><span class="n">kernel_base</span><span class="p">,</span>
+<span class="w">        </span><span class="p">);</span>
+<span class="w">    </span><span class="p">};</span>
+<span class="w">    </span><span class="n">core</span>::<span class="fm">panic!</span><span class="p">(</span><span class="s">&quot;already in user mode!&quot;</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>继续定位gdb汇编代码，将错误地址进一步确定为：</p>
+<div class="highlight"><pre><span></span><code><span class="n">csrw</span><span class="w">    </span><span class="n">sstatus</span><span class="p">,</span><span class="w"> </span><span class="n">t1</span>
+</code></pre></div>
+<p>当执行这一条汇编代码，会出现不可预测的错误。</p>
+<p>考虑到sstatus的功能，其可以控制时钟中断、特权级等一系列的内容，通过查阅资料了解到当使用sstatus屏蔽内核中时钟中断时，并非是阻止了中断发出，而是阻止对中断进行处理，一旦内核中时钟中断屏蔽关闭，原先积累的时钟中断会被用来处理。sstatus是控制中断的关键寄存器，查阅资料得知，riscv要求在修改sstatus信息的时候需要保证时钟中断使能关闭，否则会产生不可预料的行为。</p>
+<p>因此在调用<code>first_into_user</code>函数前需要手动调用<code>axhal::arch::enable_irqs()</code>关闭中断使能。  </p>
+<h3 id="_1">读取长度不足<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h3>
+<p>当读取<code>strings.lua</code>测例时，常会有报错：<code>strings.lua:1: unexpected symbol</code>。但其他lua测例运行结果正常且正确。</p>
+<p>strings.lua内容如下：</p>
+<div class="highlight"><pre><span></span><code><span class="kd">local</span> <span class="n">str</span> <span class="o">=</span> <span class="s2">&quot;Jelly Think&quot;</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="mi">0</span>
+
+<span class="c1">-- string.len可以获得字符串的长度</span>
+
+<span class="kr">if</span> <span class="nb">string.len</span><span class="p">(</span><span class="n">str</span><span class="p">)</span> <span class="o">~=</span> <span class="mi">11</span> <span class="kr">then</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+<span class="kr">end</span>
+
+<span class="c1">-- string.rep返回字符串重复n次的结果</span>
+
+<span class="n">str</span> <span class="o">=</span> <span class="s2">&quot;ab&quot;</span>
+
+<span class="kr">if</span> <span class="nb">string.rep</span><span class="p">(</span><span class="n">str</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="o">~=</span> <span class="s2">&quot;abab&quot;</span> <span class="kr">then</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+<span class="kr">end</span>
+
+<span class="c1">-- string.lower将字符串小写变成大写形式，并返回一个改变以后的副本</span>
+
+<span class="n">str</span> <span class="o">=</span> <span class="s2">&quot;Jelly Think&quot;</span>
+
+<span class="kr">if</span> <span class="nb">string.lower</span><span class="p">(</span><span class="n">str</span><span class="p">)</span> <span class="o">~=</span> <span class="s2">&quot;jelly think&quot;</span> <span class="kr">then</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+<span class="kr">end</span>
+
+<span class="c1">-- string.upper将字符串大写变成小写形式，并返回一个改变以后的副本</span>
+
+<span class="kr">if</span> <span class="nb">string.upper</span><span class="p">(</span><span class="n">str</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;JELLY THINK&quot;</span> <span class="kr">then</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+<span class="kr">end</span>
+
+<span class="kr">return</span> <span class="n">result</span>
+</code></pre></div>
+<p>考虑是否是文件编码问题：将strings.lua测例内容复制到其他lua文件，运行对应文件，报错不变。将其他lua文件内容复制到strings.lua，运行strings.lua，结果正常，因此排除了编码问题。</p>
+<p>再考虑内核是否成功读入文件，输出<code>read</code>系统调用内容，发现read系统调用确实正确读入并返回了文件长度591。</p>
+<p>考虑到strings.lua测试内容由多个断言形成，考虑逐个断言逐个断言验证，但发现一旦删除了strings.lua的部分内容之后，运行结果就正常了。即当缩短了strings.lua的长度之后，结果正常。</p>
+<p>考虑输出read系统调用中读入的buf的内容，发现读入的892位buf中，前512位buf被修改为了0，后面的buf仍然正常。而当限制buf长度为512时，此时前512位buf读取结果正常。</p>
+<p>arceos原先在fat32节点的读取函数定义如下：</p>
+<div class="highlight"><pre><span></span><code><span class="k">fn</span> <span class="nf">read_at</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">offset</span>: <span class="kt">u64</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span>: <span class="kp">&amp;</span><span class="nc">mut</span><span class="w"> </span><span class="p">[</span><span class="kt">u8</span><span class="p">])</span><span class="w"> </span>-&gt; <span class="nc">VfsResult</span><span class="o">&lt;</span><span class="kt">usize</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="mf">0.</span><span class="n">lock</span><span class="p">();</span>
+<span class="w">    </span><span class="n">file</span><span class="p">.</span><span class="n">seek</span><span class="p">(</span><span class="n">SeekFrom</span>::<span class="n">Start</span><span class="p">(</span><span class="n">offset</span><span class="p">)).</span><span class="n">map_err</span><span class="p">(</span><span class="n">as_vfs_err</span><span class="p">)</span><span class="o">?</span><span class="p">;</span><span class="w"> </span><span class="c1">// TODO: more efficient</span>
+<span class="w">    </span><span class="n">file</span><span class="p">.</span><span class="n">read</span><span class="p">(</span><span class="n">buf</span><span class="p">).</span><span class="n">map_err</span><span class="p">(</span><span class="n">as_vfs_err</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>依据上述debug结果，发现starry的文件系统驱动中fat32的块大小定义为512。查询read语义知，每一次实际读取长度不一定等于传入的buf长度，因此不可以直接通过传入buf来实现文件的读入，而需要进行循环判断：</p>
+<div class="highlight"><pre><span></span><code><span class="n">n</span><span class="w"> </span><span class="n">read_at</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">offset</span>: <span class="kt">u64</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span>: <span class="kp">&amp;</span><span class="nc">mut</span><span class="w"> </span><span class="p">[</span><span class="kt">u8</span><span class="p">])</span><span class="w"> </span>-&gt; <span class="nc">VfsResult</span><span class="o">&lt;</span><span class="kt">usize</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="mf">0.</span><span class="n">lock</span><span class="p">();</span>
+<span class="w">    </span><span class="n">file</span><span class="p">.</span><span class="n">seek</span><span class="p">(</span><span class="n">SeekFrom</span>::<span class="n">Start</span><span class="p">(</span><span class="n">offset</span><span class="p">)).</span><span class="n">map_err</span><span class="p">(</span><span class="n">as_vfs_err</span><span class="p">)</span><span class="o">?</span><span class="p">;</span><span class="w"> </span><span class="c1">// TODO: more efficient</span>
+<span class="w">    </span><span class="c1">// file.read(buf).map_err(as_vfs_err)</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">buf_len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">buf</span><span class="p">.</span><span class="n">len</span><span class="p">();</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">now_offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">probe</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">buf</span><span class="p">.</span><span class="n">to_vec</span><span class="p">();</span>
+<span class="w">    </span><span class="k">while</span><span class="w"> </span><span class="n">now_offset</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">buf_len</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">ans</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">file</span><span class="p">.</span><span class="n">read</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">probe</span><span class="p">).</span><span class="n">map_err</span><span class="p">(</span><span class="n">as_vfs_err</span><span class="p">);</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">ans</span><span class="p">.</span><span class="n">is_err</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">ans</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">read_len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ans</span><span class="p">.</span><span class="n">unwrap</span><span class="p">();</span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">read_len</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">break</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="n">buf</span><span class="p">[</span><span class="n">now_offset</span><span class="o">..</span><span class="n">now_offset</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">read_len</span><span class="p">].</span><span class="n">copy_from_slice</span><span class="p">(</span><span class="o">&amp;</span><span class="n">probe</span><span class="p">[</span><span class="o">..</span><span class="n">read_len</span><span class="p">]);</span>
+<span class="w">        </span><span class="n">now_offset</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">read_len</span><span class="p">;</span>
+<span class="w">        </span><span class="n">probe</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">probe</span><span class="p">[</span><span class="n">read_len</span><span class="o">..</span><span class="p">].</span><span class="n">to_vec</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="nb">Ok</span><span class="p">(</span><span class="n">now_offset</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>依据上述写法，即可实现大文件的读入。</p>
+<h3 id="_2">文件的链接与初始化<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h3>
+<p>fat32文件系统自身不支持符号链接，因此需要在内核中手动维护一个链接映射。但是不同的文件名称字符串可能指向同一个文件， 因此不能单纯地将传入的文件名作为映射的键值。</p>
+<p>比如我们建立了一个从<code>a.out</code>到<code>b.out</code>的链接，此时传入的文件名叫做<code>./a.out</code>，此时它应该被连接到<code>b.out</code>，但在链接中找不到对应程序。</p>
+<p>为了规范化起见，starry引用了arceos提供的<code>canonicalize</code>函数，将文件名转化为统一格式的绝对路径，并以此建立文件名到链接实际文件的映射。</p>
+<p>因此从<code>a.out</code>到<code>b.out</code>的链接，会被转化为<code>./a.out</code>到<code>./b.out</code>的链接，通过规范的字符串使得误判的情况可以被减少。</p>
+<p>实现busybox、lua、lmbench过程中，需要用到一系列的链接，对应实现在<code>starry_libax/test.rs</code>的<code>fs_init</code>函数中。如程序会寻找<code>/lib/tls_get_new-dtv_dso.so</code>，而它会被定向到<code>./tls_get_new-dtv_dso.so</code>文件，这个过程需要我们手动建立链接。</p>
+<p>另外，busybox等测例也需要我们手动建立一系列的文件系统与文件夹，如dev_fs与ram_fs，其中dev_fs并不允许动态增删文件内容，需要初始化时就确定好。相关的实现在<code>axfs/src/root.rs</code>的<code>init_rootfs</code>函数，需要添加<code>dev/shm、dev/misc</code>等文件夹。</p>
+<h3 id="libc">多核情况下libc测例结果不可测<a class="headerlink" href="#libc" title="Permanent link">&para;</a></h3>
+<p>musl-libc测例中有一个测例为pthread_cancel，主要是测试线程是否可以正常被取消。但这个测例经常会运行失败，即能够成功退出，但是报错并未取消新建的线程。</p>
+<p>查阅对应的代码如下：</p>
+<div class="highlight"><pre><span></span><code><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="nf">start_single</span><span class="p">(</span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">arg</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">pthread_cleanup_push</span><span class="p">(</span><span class="n">cleanup1</span><span class="p">,</span><span class="w"> </span><span class="n">arg</span><span class="p">);</span>
+<span class="w">    </span><span class="n">sleep</span><span class="p">(</span><span class="mi">3</span><span class="p">);</span>
+<span class="w">    </span><span class="n">pthread_cleanup_pop</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="cm">/* Cancellation cleanup handlers */</span>
+<span class="w">    </span><span class="n">foo</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="n">TESTR</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="n">pthread_create</span><span class="p">(</span><span class="o">&amp;</span><span class="n">td</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">start_single</span><span class="p">,</span><span class="w"> </span><span class="n">foo</span><span class="p">),</span><span class="w"> </span><span class="s">&quot;failed to create thread&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">TESTR</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="n">pthread_cancel</span><span class="p">(</span><span class="n">td</span><span class="p">),</span><span class="w"> </span><span class="s">&quot;cancelling&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">TESTR</span><span class="p">(</span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="n">pthread_join</span><span class="p">(</span><span class="n">td</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">res</span><span class="p">),</span><span class="w"> </span><span class="s">&quot;joining canceled thread&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">TESTC</span><span class="p">(</span><span class="n">res</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">PTHREAD_CANCELED</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;canceled thread exit status&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">TESTC</span><span class="p">(</span><span class="n">foo</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;cleanup handler failed to run&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>其测试的原理是在<code>pthread_cleanup_push</code>加入线程取消时调用的处理函数。若线程成功被取消，那么<code>cleanup1</code>函数会被调用，此时会修改f00[0]为1，代表成功取消。</p>
+<p>但测试时经常报错：<code>cleanup handler failed to run</code>，通过输出f00[0]发现其值仍然为0，即线程取消函数没有被调用。但是输出内核接受到的系统调用以及信号处理流程会发现确实发出并且处理了取消线程的信号。那么问题出在了哪里呢？</p>
+<p>输出任务调度队列信息发现，主任务在调用了<code>pthread_create</code>之后，并没有被阻塞，反而继续调用了<code>pthread_cancel</code>函数，发出了取消线程信号，之后再被<code>pthread_join</code>函数阻塞。此时才调度到子线程，并且立即进入了信号处理函数的流程，即立即被取消。此时子线程甚至没有进入到<code>start_single</code>函数就被取消了。此时没有注册取消线程函数为<code>cleanup1</code>，因此自然不会修改f00[0]。</p>
+<p>但是问题在于<code>pthread_create</code>的语义要求本任务会被yield，即子线程应当在创建之后被立即执行。继续debug，输出任务调度列表和对应CPU编号发现，虽然在当前CPU上主任务被yield了，但当前启动了多核，闲置的CPU立即将刚被yield的主任务接管并且继续运行。则此时主任务有概率在子线程开始之前调用cancel函数发出取消信号，从而导致线程取消函数注册失败。</p>
+<p>将内核改为单核启动之后，问题消失。总结而言，在无法改动测例代码的情况下，跑musl-libc测例应当以单核的形式进行，多核可能会遇到各种奇怪的问题。。</p>
+<h3 id="lmbench">lmbench测例的结束<a class="headerlink" href="#lmbench" title="Permanent link">&para;</a></h3>
+<p>运行lmbench测例时发现时，程序总是会访问<code>0x2,0x4,0x6,0x8</code>等地址，导致<code>page fault</code>。gdb进行debug无果，发现<strong>程序已经输出了预期输出</strong>，之后会直接访问该非法地址。</p>
+<p>询问往年参加比赛的学长，了解到去年的lmbench会在每个测例结束的时候直接让pc跳到堆栈上，从而触发I fault，通过内核捕获该信号并进行特判，从而手动调用exit结束当前的lmbench测例，进入到下一个lmbench测例。</p>
+<p>而在今年编译得到的lmbench版本，pc不再跳转到堆栈，而是跳转到低地址如0x6，此时也是要求内核直接做出特判，结束当前任务。</p>
+<p>查阅riscv规范得知，非法访问内存，内核处理失败之后应当发送SIGSEGV信号到对应线程，从而结束当前任务。因此修改代码如下：</p>
+<div class="highlight"><pre><span></span><code><span class="cp">#[cfg(feature = </span><span class="s">&quot;paging&quot;</span><span class="cp">)]</span>
+<span class="k">fn</span> <span class="nf">handle_page_fault</span><span class="p">(</span><span class="n">addr</span>: <span class="nc">VirtAddr</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span>: <span class="nc">MappingFlags</span><span class="p">,</span><span class="w"> </span><span class="n">tf</span>: <span class="kp">&amp;</span><span class="nc">mut</span><span class="w"> </span><span class="n">TrapFrame</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">use</span><span class="w"> </span><span class="n">axprocess</span>::<span class="n">handle_page_fault</span><span class="p">;</span>
+<span class="w">    </span><span class="k">use</span><span class="w"> </span><span class="n">axsignal</span>::<span class="n">signal_no</span>::<span class="n">SignalNo</span><span class="p">;</span>
+<span class="w">    </span><span class="k">use</span><span class="w"> </span><span class="n">axtask</span>::<span class="n">current</span><span class="p">;</span>
+<span class="w">    </span><span class="n">axprocess</span>::<span class="n">time_stat_from_user_to_kernel</span><span class="p">();</span>
+<span class="w">    </span><span class="k">use</span><span class="w"> </span><span class="k">crate</span>::<span class="n">syscall</span>::<span class="n">signal</span>::<span class="p">{</span><span class="n">syscall_sigreturn</span><span class="p">,</span><span class="w"> </span><span class="n">syscall_tkill</span><span class="p">};</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">addr</span><span class="p">.</span><span class="n">as_usize</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">SIGNAL_RETURN_TRAP</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// 说明是信号执行完毕，此时应当执行sig return</span>
+<span class="w">        </span><span class="n">tf</span><span class="p">.</span><span class="n">regs</span><span class="p">.</span><span class="n">a0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">syscall_sigreturn</span><span class="p">()</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="kt">usize</span><span class="p">;</span>
+<span class="w">        </span><span class="k">return</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">handle_page_fault</span><span class="p">(</span><span class="n">addr</span><span class="p">,</span><span class="w"> </span><span class="n">flags</span><span class="p">).</span><span class="n">is_err</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// 如果处理失败，则发出sigsegv信号</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">curr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current</span><span class="p">().</span><span class="n">id</span><span class="p">().</span><span class="n">as_u64</span><span class="p">()</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="kt">isize</span><span class="p">;</span>
+<span class="w">        </span><span class="n">axlog</span>::<span class="n">error</span><span class="o">!</span><span class="p">(</span><span class="s">&quot;kill task: {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">curr</span><span class="p">);</span>
+<span class="w">        </span><span class="n">syscall_tkill</span><span class="p">(</span><span class="n">curr</span><span class="p">,</span><span class="w"> </span><span class="n">SignalNo</span>::<span class="n">SIGSEGV</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="kt">isize</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="n">axprocess</span>::<span class="n">time_stat_from_kernel_to_user</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>这种情况不仅可以处理pc跳转到低地址的情况，也可以处理跳转到堆栈的情况，更加地规范化。</p>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.74e28a9f.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.220ee61c.min.js"></script>
+      
+    
+  </body>
+</html>
