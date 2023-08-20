@@ -88,13 +88,13 @@ ArceOS采用模块化组件化的设计思维，通过使用内核组件 + 组�
 
 原先Arceos结构图：
 
-![ArceOS](/figures\ArceOS.svg)
+![ArceOS](/figures/ArceOS.svg)
 
 
 
 重构后StarryOS架构图：
 
-![Starry](/figures\Starry.svg)
+![Starry](/figures/Starry.svg)
 
 Starry的模块依赖图如下：
 
@@ -141,8 +141,10 @@ axlog-->axtask
 
 axfs-->axmem
 axalloc-->axmem
-axhal-->axme
+axhal-->axmem
+axhal-->axsignal
 axmem-->axprocess
+axsignal-->axprocess
 ```
 
 
@@ -791,17 +793,33 @@ pub fn switch_to(&mut self, tid: isize) {
 
 ### 文件系统模块--axfs
 
+介绍文件系统时，不仅需要介绍axfs这个模块，还需要介绍其依赖的crate以及调用这个模块的package，他们共同构成了文件系统的上下层，使得文件系统可以正常发挥作用。
+
 文件系统主要由四个部分组成，分别是外部依赖fatfs、crates/axfs_vfs、modules/axfs以及作为用户库的starry_libax/src/fs。
 
-> fatfs作为外部库，提供了一个基础的fat32文件系统。
->
-> axfs_vfs则提供对文件和目录的抽象，为本os实现的任何文件系统都需要实现它的定义的VfsOps特征，同时对应文件系统的file/directory结构体需要实现它的VfsNodeOps特征。
+![avatar](./figures/axfs.png)
+
+各自部分的额外补充说明如下
+
+#### fatfs
+
+fatfs作为外部库，提供了一个基础的fat32文件系统。
+
+#### crates/axfs_vfs
+
+axfs_vfs提供了对文件和目录的抽象，为本os实现的任何文件系统都需要实现它的定义的VfsOps特征，同时对应文件系统的file/directory结构体需要实现它的VfsNodeOps特征。
+
+#### modules/axfs
 
 在modules/axfs中：
 
 1. axfs::fatfs作为中介连接了文件系统、vfs和块设备三个模块，它封装了外部的fat32提供的文件系统和file/directory，并为它们实现axfs_vfs中的对应特征，同时调用了axfs::dev对硬件进行操作；
 2. axfs::fops封装了ax_vfs中的各种VfsNode操作，向上提供给axfs::api模块暴露给外部；
 3. axfs::monolithic_fs是将文件系统适配到宏内核的核心，它提供了文件系统信息Kstat、文件输入输出操作FileIO、文件-虚存映射FileExt等结构体和特征的抽象。
+
+
+
+#### starry_libax/fs
 
 在starry_libax中所做的工作主要有：
 
