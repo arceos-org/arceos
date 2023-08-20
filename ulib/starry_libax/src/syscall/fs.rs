@@ -1165,16 +1165,20 @@ pub fn syscall_pread64(fd: usize, buf: *mut u8, count: usize, offset: usize) -> 
 pub fn syscall_pwrite64(fd: usize, buf: *const u8, count: usize, offset: usize) -> isize {
     let process = current_process();
     let process_inner = process.inner.lock();
+
     let file = process_inner.fd_manager.fd_table[fd].clone().unwrap();
-    let old_offset = file.lock().seek(SeekFrom::Current(0)).unwrap();
-    let ret = file
-        .lock()
-        .seek(SeekFrom::Start(offset as u64))
-        .and_then(|_| {
-            file.lock()
-                .write(unsafe { core::slice::from_raw_parts(buf, count) })
-        });
-    file.lock().seek(SeekFrom::Start(old_offset)).unwrap();
+    let mut file = file.lock();
+
+    let old_offset = file.seek(SeekFrom::Current(0)).unwrap();
+
+    let ret = file.seek(SeekFrom::Start(offset as u64)).and_then(|_| {
+        let res = file.write(unsafe { core::slice::from_raw_parts(buf, count) });
+        res
+    });
+
+    file.seek(SeekFrom::Start(old_offset)).unwrap();
+    drop(file);
+
     ret.map(|size| size as isize)
         .unwrap_or_else(|_| ErrorNo::EINVAL as isize)
 }

@@ -314,13 +314,30 @@ pub const LUA_TESTCASES: &[&str] = &[
 
 #[allow(dead_code)]
 pub const BUSYBOX_TESTCASES: &[&str] = &[
-    "./time-test",
-    "lua date.lua",
-    "lua date.lua",
-    // 
+    // "./time-test",
+    //
+    "./interrupts-test-1",
+    "./interrupts-test-2",
+    "./copy-file-range-test-1",
+    "./copy-file-range-test-2",
+    "./copy-file-range-test-3",
+    "./copy-file-range-test-4",
+    "busybox echo hello",
     "busybox sh ./unixbench_testcode.sh",
-    "busybox sh ./netperf_testcode.sh",
+    "./copy-file-range-test-1",
+    "./copy-file-range-test-2",
+    "./copy-file-range-test-3",
+    "./copy-file-range-test-4",
+    "busybox echo hello",
     "busybox sh ./iperf_testcode.sh",
+    "./interrupts-test-1",
+    "./interrupts-test-1",
+    "busybox echo hello",
+    "busybox sh busybox_testcode.sh",
+    "./interrupts-test-2",
+    "./interrupts-test-2",
+    "busybox echo hello",
+    "busybox sh ./iozone_testcode.sh",
     "busybox echo latency measurements",
     "lmbench_all lat_syscall -P 1 null",
     "lmbench_all lat_syscall -P 1 read",
@@ -354,14 +371,8 @@ pub const BUSYBOX_TESTCASES: &[&str] = &[
     "lmbench_all lat_ctx -P 1 -s 32 2 4 8 16 24 32 64 96",
     "busybox sh libctest_testcode.sh",
     "busybox sh lua_testcode.sh",
-    "busybox sh busybox_testcode.sh",
     "libc-bench",
-    "./copy-file-range-test-1",
-    "./copy-file-range-test-2",
-    "./copy-file-range-test-3",
-    "./copy-file-range-test-4",
-    "./interrupts-test-1",
-    "./interrupts-test-2",
+    "busybox sh ./netperf_testcode.sh",
 ];
 
 pub const NETPERF_TESTCASES: &[&str] = &[

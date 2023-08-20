@@ -4,15 +4,22 @@
 
 mod area;
 mod backend;
+mod shared;
 pub use area::MapArea;
 use axerrno::{AxError, AxResult};
 pub use backend::MemBackend;
 
 extern crate alloc;
-use alloc::{collections::BTreeMap, vec::Vec};
-use core::{mem::size_of, ptr::copy_nonoverlapping};
+use alloc::{collections::BTreeMap, sync::Arc, vec::Vec};
+use core::{
+    mem::size_of,
+    ptr::copy_nonoverlapping,
+    sync::atomic::{AtomicI32, Ordering},
+};
 use page_table_entry::GenericPTE;
 use riscv::asm::sfence_vma_all;
+use shared::SharedMem;
+use spinlock::SpinNoIrq;
 #[macro_use]
 extern crate log;
 
@@ -38,10 +45,26 @@ pub(crate) const AT_BASE: u8 = 7;
 pub(crate) const AT_ENTRY: u8 = 9;
 pub(crate) const AT_RANDOM: u8 = 25;
 
+// TODO: a real allocator
+static SHMID: AtomicI32 = AtomicI32::new(1);
+
+/// This struct only hold SharedMem that are not IPC_PRIVATE. IPC_PRIVATE SharedMem will be stored
+/// in MemorySet::detached_mem.
+///
+/// This is the only place we can query a SharedMem using its shmid.
+///
+/// It holds an Arc to the SharedMem. If the Arc::strong_count() is 1, SharedMem will be dropped.
+pub static SHARED_MEMS: SpinNoIrq<BTreeMap<i32, Arc<SharedMem>>> = SpinNoIrq::new(BTreeMap::new());
+pub static KEY_TO_SHMID: SpinNoIrq<BTreeMap<i32, i32>> = SpinNoIrq::new(BTreeMap::new());
+
 /// PageTable + MemoryArea for a process (task)
 pub struct MemorySet {
     page_table: PageTable,
     owned_mem: BTreeMap<usize, MapArea>,
+
+    private_mem: BTreeMap<i32, Arc<SharedMem>>,
+    attached_mem: Vec<(VirtAddr, MappingFlags, Arc<SharedMem>)>,
+
     pub entry: usize,
 }
 
@@ -54,6 +77,8 @@ impl MemorySet {
         Self {
             page_table: PageTable::try_new().expect("Error allocating page table."),
             owned_mem: BTreeMap::new(),
+            private_mem: BTreeMap::new(),
+            attached_mem: Vec::new(),
             entry: 0,
         }
     }
@@ -75,6 +100,8 @@ impl MemorySet {
         Self {
             page_table,
             owned_mem: BTreeMap::new(),
+            private_mem: BTreeMap::new(),
+            attached_mem: Vec::new(),
             entry: 0,
         }
     }
@@ -330,7 +357,7 @@ impl MemorySet {
     /// Make [start, end) unmapped and dealloced. You need to flush TLB after this.
     ///
     /// NOTE: modified map area will have the same PhysAddr.
-    fn split_for_area(&mut self, start: VirtAddr, size: usize) {
+    pub fn split_for_area(&mut self, start: VirtAddr, size: usize) {
         let end = start + size;
         assert!(end.is_aligned_4k());
 
@@ -389,14 +416,30 @@ impl MemorySet {
         }
     }
 
-    fn find_free_area(&self, hint: VirtAddr, size: usize) -> Option<VirtAddr> {
-        let mut last_end = hint.max(axconfig::USER_MEMORY_START.into());
-        for area in self.owned_mem.values() {
-            if last_end + size <= area.vaddr {
-                return Some(last_end);
+    pub fn find_free_area(&self, hint: VirtAddr, size: usize) -> Option<VirtAddr> {
+        let mut last_end = hint.max(axconfig::USER_MEMORY_START.into()).as_usize();
+
+        // TODO: performance optimization
+        let mut segments: Vec<_> = self
+            .owned_mem
+            .iter()
+            .map(|(start, mem)| (*start, *start + mem.size()))
+            .collect();
+        segments.extend(
+            self.attached_mem
+                .iter()
+                .map(|(start, _, mem)| (start.as_usize(), start.as_usize() + mem.size())),
+        );
+
+        segments.sort();
+
+        for (start, end) in segments {
+            if last_end + size <= start {
+                return Some(last_end.into());
             }
-            last_end = area.end_va();
+            last_end = end;
         }
+
         None
     }
 
@@ -574,6 +617,60 @@ impl MemorySet {
             Err(AxError::InvalidInput)
         }
     }
+
+    /// Create a new SharedMem with given key.
+    /// You need to add the returned SharedMem to global SHARED_MEMS or process's private_mem.
+    ///
+    /// Panics: SharedMem with the key already exist.
+    pub fn create_shared_mem(
+        key: i32,
+        size: usize,
+        pid: u64,
+        uid: u32,
+        gid: u32,
+        mode: u16,
+    ) -> AxResult<(i32, SharedMem)> {
+        let mut key_map = KEY_TO_SHMID.lock();
+
+        let shmid = SHMID.fetch_add(1, Ordering::Release);
+        key_map.insert(key, shmid);
+
+        let mem = SharedMem::try_new(key, size, pid, uid, gid, mode)?;
+
+        Ok((shmid, mem))
+    }
+
+    /// Panics: shmid is already taken.
+    pub fn add_shared_mem(shmid: i32, mem: SharedMem) {
+        let mut mem_map = SHARED_MEMS.lock();
+
+        assert!(mem_map.insert(shmid, Arc::new(mem)).is_none());
+    }
+
+    /// Panics: shmid is already taken in the process.
+    pub fn add_private_shared_mem(&mut self, shmid: i32, mem: SharedMem) {
+        assert!(self.private_mem.insert(shmid, Arc::new(mem)).is_none());
+    }
+
+    pub fn get_shared_mem(shmid: i32) -> Option<Arc<SharedMem>> {
+        SHARED_MEMS.lock().get(&shmid).map(|arc| arc.clone())
+    }
+
+    pub fn get_private_shared_mem(&self, shmid: i32) -> Option<Arc<SharedMem>> {
+        self.private_mem.get(&shmid).map(|arc| arc.clone())
+    }
+
+    pub fn attach_shared_mem(&mut self, mem: Arc<SharedMem>, addr: VirtAddr, flags: MappingFlags) {
+        self.page_table
+            .map_region(addr, mem.paddr(), mem.size(), flags, false)
+            .unwrap();
+
+        self.attached_mem.push((addr, flags, mem));
+    }
+
+    pub fn detach_shared_mem(&mut self, _shmid: i32) {
+        todo!()
+    }
 }
 
 impl MemorySet {
@@ -650,11 +747,21 @@ impl Clone for MemorySet {
             .map(|(vaddr, area)| (*vaddr, unsafe { area.clone_alloc(&mut page_table) }))
             .collect();
 
-        Self {
+        let mut new_memory = Self {
             page_table,
             owned_mem,
+
+            private_mem: self.private_mem.clone(),
+            attached_mem: Vec::new(),
+
             entry: self.entry,
+        };
+
+        for (addr, flags, mem) in &self.attached_mem {
+            new_memory.attach_shared_mem(mem.clone(), addr.clone(), flags.clone());
         }
+
+        new_memory
     }
 }
 

@@ -231,6 +231,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[2] as usize,
             args[3] as usize,
         ),
+        PWRITE64 => syscall_pwrite64(args[0], args[1] as *const u8, args[2], args[3]),
         SENDFILE64 => syscall_sendfile64(
             args[0] as usize,
             args[1] as usize,
@@ -265,9 +266,9 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         IOCTL => syscall_ioctl(args[0] as usize, args[1] as usize, args[2] as *mut usize),
         // 不做处理即可
         SYNC => 0,
-        SHMGET => 0,
+        SHMGET => syscall_shmget(args[0] as i32, args[1], args[2] as i32),
         SHMCTL => 0,
-        SHMAT => 0,
+        SHMAT => syscall_shmat(args[0] as i32, args[1], args[2] as i32),
         MEMBARRIER => 0,
         SIGTIMEDWAIT => 0,
         SYSLOG => 0,
@@ -321,8 +322,8 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         ),
         _ => {
             error!("Invalid Syscall Id: {}!", syscall_id);
-            // return -1;
-            exit(-1)
+            return -1;
+            // exit(-1)
         }
     };
     // let end = riscv::register::time::read();
