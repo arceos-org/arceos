@@ -87,19 +87,27 @@ axmem-->axprocess
 
 ## 测例切换和执行
 
-通过修改`build_img.sh`可以切换生成的文件镜像中包含的测例。
+执行如下指令可以生成sdcard文件镜像
 
 ```shell
-rm sdcard.img
-dd if=/dev/zero of=sdcard.img bs=3M count=1024
-mkfs.vfat -F 32 sdcard.img
-mkdir -p mnt
-sudo mount sdcard.img mnt
-# 此处生成的是初赛的测例
-sudo cp -r ./testcases/junior/* ./mnt/
-sudo umount mnt
-rm -rf mnt
-sudo chmod 777 sdcard.img
+$ ./build_img.sh sdcard
 ```
 
-将上图中`junior`换为`libc`即可生成决赛部分的`libc-test`测例。
+
+
+通过修改指令可以切换生成的文件镜像中包含的测例。相应测例存放在`testcases/`文件夹下，如执行`./build_img.sh libc-static`可以生成libc静态测例。
+
+
+
+## 文档
+
+内核文档存放在`doc/Starry决赛设计文档.pdf`，另外可以在`doc/Starry`下执行
+
+```shell
+$ mkdocs serve
+```
+
+
+
+另外，可以通过静态部署网页`azure-stars.github.io/Starry`查看更好排版的文档。
+

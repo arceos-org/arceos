@@ -481,8 +481,6 @@ percpu_end = .;
 
 
 
-### 设备驱动模块--axdriver
-
 
 
 ### 内存管理模块--axmem
