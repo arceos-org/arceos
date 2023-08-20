@@ -224,6 +224,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[2] as usize,
             args[3] as usize,
         ),
+        PWRITE64 => syscall_pwrite64(args[0], args[1] as *const u8, args[2], args[3]),
         SENDFILE64 => syscall_sendfile64(
             args[0] as usize,
             args[1] as usize,
