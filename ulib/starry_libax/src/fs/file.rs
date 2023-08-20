@@ -60,7 +60,15 @@ impl Read for FileDesc {
 
 impl Write for FileDesc {
     fn write(&mut self, buf: &[u8]) -> AxResult<usize> {
-        self.file.lock().write(buf)
+        let mut file = self.file.lock();
+        let old_offset = file.seek(SeekFrom::Current(0)).unwrap();
+        let size = file.metadata().unwrap().raw_metadata().size();
+        if old_offset > size {
+            file.seek(SeekFrom::Start(size)).unwrap();
+            let temp_buf: Vec<u8> = vec![0u8; (old_offset - size) as usize];
+            file.write(&temp_buf)?;
+        }
+        file.write(buf)
     }
 
     fn flush(&mut self) -> AxResult {
@@ -148,7 +156,7 @@ impl FileIO for FileDesc {
             st_ctime_sec: stat.ctime.tv_sec as isize,
             st_ctime_nsec: stat.ctime.tv_nsec as isize,
         };
-        debug!("kstat: {:?}", kstat);
+        info!("kstat: {:?}", kstat);
         Ok(kstat)
     }
 

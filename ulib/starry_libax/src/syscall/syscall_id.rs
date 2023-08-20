@@ -52,6 +52,7 @@ pub enum SyscallId {
     FUTEX = 98,
     SET_ROBUST_LIST = 99,
     GET_ROBUST_LIST = 100,
+    RENAMEAT2 = 276,
     // 其他
     NANO_SLEEP = 101,
     GETTIMER = 102,

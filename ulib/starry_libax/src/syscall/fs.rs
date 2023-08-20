@@ -691,6 +691,10 @@ pub fn sys_linkat(
 pub fn syscall_unlinkat(dir_fd: usize, path: *const u8, flags: usize) -> isize {
     let path = deal_with_path(dir_fd, Some(path), false).unwrap();
 
+    if path.start_with(&FilePath::new("/proc").unwrap()) {
+        return -1;
+    }
+
     // unlink file
     if flags == 0 {
         if let None = remove_link(&path) {
@@ -1439,6 +1443,11 @@ pub fn syscall_renameat2(
     let old_path = deal_with_path(old_dirfd, Some(_old_path), false).unwrap();
     let new_path = deal_with_path(new_dirfd, Some(_new_path), false).unwrap();
 
+    let proc_path = FilePath::new("/proc").unwrap();
+    if old_path.start_with(&proc_path) || new_path.start_with(&proc_path) {
+        return -1;
+    }
+
     // 交换两个目录名，目录下的文件不受影响，
 
     // 如果重命名后的文件已存在
@@ -1506,14 +1515,28 @@ pub fn syscall_ftruncate64(fd: usize, len: usize) -> isize {
 本题中，fd_in 和 fd_out 总指向文件系统中两个不同的普通文件；flags 总为 0，没有实际作用。
  */
 
-pub fn syscall_copyfilerange(fd_in: usize, off_in: *mut usize, fd_out: usize, off_out: *mut usize, len: usize, flags: usize) -> isize {
-    let in_offset = if off_in.is_null() { -1 } else {
-        unsafe { *off_in as isize}
+pub fn syscall_copyfilerange(
+    fd_in: usize,
+    off_in: *mut usize,
+    fd_out: usize,
+    off_out: *mut usize,
+    len: usize,
+    flags: usize,
+) -> isize {
+    let in_offset = if off_in.is_null() {
+        -1
+    } else {
+        unsafe { *off_in as isize }
     };
-    let out_offset = if off_out.is_null() { -1 } else {
-        unsafe { *off_out as isize}
+    let out_offset = if off_out.is_null() {
+        -1
+    } else {
+        unsafe { *off_out as isize }
     };
-    info!("copyfilerange: fd_in: {}, fd_out: {}, off_in: {}, off_out: {}, len: {}, flags: {}", fd_in, fd_out, in_offset, out_offset, len, flags);
+    info!(
+        "copyfilerange: fd_in: {}, fd_out: {}, off_in: {}, off_out: {}, len: {}, flags: {}",
+        fd_in, fd_out, in_offset, out_offset, len, flags
+    );
     let process = current_process();
     let process_inner = process.inner.lock();
     let out_file = process_inner.fd_manager.fd_table[fd_out].clone().unwrap();
@@ -1521,12 +1544,22 @@ pub fn syscall_copyfilerange(fd_in: usize, off_in: *mut usize, fd_out: usize, of
     let old_in_offset = in_file.lock().seek(SeekFrom::Current(0)).unwrap();
     let old_out_offset = out_file.lock().seek(SeekFrom::Current(0)).unwrap();
 
-    // set offset
-    if !off_in.is_null(){
-        in_file.lock().seek(SeekFrom::Start(in_offset as u64)).unwrap();
+    if in_file.lock().get_stat().unwrap().st_size < (in_offset as u64) + len as u64 {
+        return 0;
     }
-    if !off_out.is_null(){
-        out_file.lock().seek(SeekFrom::Start(out_offset as u64)).unwrap();
+
+    // set offset
+    if !off_in.is_null() {
+        in_file
+            .lock()
+            .seek(SeekFrom::Start(in_offset as u64))
+            .unwrap();
+    }
+    if !off_out.is_null() {
+        out_file
+            .lock()
+            .seek(SeekFrom::Start(out_offset as u64))
+            .unwrap();
     }
 
     // copy
@@ -1538,13 +1571,20 @@ pub fn syscall_copyfilerange(fd_in: usize, off_in: *mut usize, fd_out: usize, of
     // assert_eq!(read_len, write_len);    // tmp
 
     // set offset | modify off_in & off_out
-    if !off_in.is_null(){
+    if !off_in.is_null() {
         in_file.lock().seek(SeekFrom::Start(old_in_offset)).unwrap();
-        unsafe { *off_in += read_len; }
+        unsafe {
+            *off_in += read_len;
+        }
     }
-    if !off_out.is_null(){
-        out_file.lock().seek(SeekFrom::Start(old_out_offset)).unwrap();
-        unsafe { *off_out += write_len; }
+    if !off_out.is_null() {
+        out_file
+            .lock()
+            .seek(SeekFrom::Start(old_out_offset))
+            .unwrap();
+        unsafe {
+            *off_out += write_len;
+        }
     }
 
     write_len as isize

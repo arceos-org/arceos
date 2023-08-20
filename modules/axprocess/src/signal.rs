@@ -179,9 +179,10 @@ pub fn handle_signals() {
 
     // 新的trap上下文的sp指针位置，由于SIGINFO会存放内容，所以需要开个保护区域
     let mut sp = trap_frame.regs.sp - USER_SIGNAL_PROTECT;
-    info!(
+    error!(
         "restorer :{}, handler: {}",
-        action.restorer, action.sa_handler
+        action.get_storer(),
+        action.sa_handler
     );
     let old_pc = trap_frame.sepc;
     trap_frame.regs.ra = action.get_storer();
@@ -242,11 +243,12 @@ pub fn handle_signals() {
 ///
 /// 返回的值与原先syscall应当返回的值相同，即返回原先保存的trap上下文的a0的值
 pub fn signal_return() -> isize {
-    // error!("id: {}, test", current_task().id().as_u64());
+    error!("id: {}, test", current_task().id().as_u64());
     if load_trap_for_signal() {
         // 说明确实存在着信号处理函数的trap上下文
         // 此时内核栈上存储的是调用信号处理前的trap上下文
         let trap_frame = current_task().get_first_trap_frame();
+        error!("trap: {:X?}", unsafe { *trap_frame });
         unsafe { (*trap_frame).regs.a0 as isize }
     } else {
         // 没有进行信号处理，但是调用了sig_return

@@ -314,18 +314,16 @@ pub const LUA_TESTCASES: &[&str] = &[
 
 #[allow(dead_code)]
 pub const BUSYBOX_TESTCASES: &[&str] = &[
-    "./copy3",
-    "busybox cat ./test2",
     // "./time-test",
+    // "lua date.lua",
+    // "./copy-file-range-test-1",
+    // "./copy-file-range-test-2",
+    "./copy-file-range-test-3",
+    // "./interrupts-test-1",
+    // "./interrupts-test-2",
     // "busybox sh ./netperf_testcode.sh",
+    // "busybox sh ./unixbench_testcode.sh",
     // "busybox sh ./iperf_testcode.sh",
-    // "busybox sh unixbench_testcode.sh",
-    // // "./runtest.exe -w entry-static.exe lseek_large",
-    // "busybox sh libctest_testcode.sh",
-    // "busybox sh lua_testcode.sh",
-    // "busybox sh busybox_testcode.sh",
-    // "libc-bench",
-    // // "busybox mkdir -p /var/tmp",
     // "busybox echo latency measurements",
     // "lmbench_all lat_syscall -P 1 null",
     // "lmbench_all lat_syscall -P 1 read",
@@ -357,6 +355,10 @@ pub const BUSYBOX_TESTCASES: &[&str] = &[
     // "lmbench_all bw_mmap_rd -P 1 512k open2close /var/tmp/XXX",
     // "busybox echo context switch overhead",
     // "lmbench_all lat_ctx -P 1 -s 32 2 4 8 16 24 32 64 96",
+    // "busybox sh libctest_testcode.sh",
+    // "busybox sh lua_testcode.sh",
+    // "busybox sh busybox_testcode.sh",
+    // "libc-bench",
 ];
 
 pub const NETPERF_TESTCASES: &[&str] = &[
@@ -620,6 +622,7 @@ pub fn run_testcases(case: &'static str) {
         let mut ans = None;
         if let Some(command_line) = test_iter.next() {
             let args = get_args(command_line.as_bytes());
+            axlog::ax_println!("run newtestcase: {:?}", args);
             let testcase = args.clone();
             let real_testcase = if testcase[0] == "./busybox".to_string()
                 || testcase[0] == "busybox".to_string()

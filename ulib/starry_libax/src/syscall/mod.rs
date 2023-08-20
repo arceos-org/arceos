@@ -166,6 +166,13 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         GET_ROBUST_LIST => {
             syscall_get_robust_list(args[0] as i32, args[1] as *mut usize, args[2] as *mut usize)
         }
+        RENAMEAT2 => syscall_renameat2(
+            args[0],
+            args[1] as *const u8,
+            args[2],
+            args[3] as *const u8,
+            args[4],
+        ),
 
         READV => syscall_readv(args[0] as usize, args[1] as *mut IoVec, args[2] as usize),
         WRITEV => syscall_writev(args[0] as usize, args[1] as *const IoVec, args[2] as usize),
@@ -252,8 +259,8 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[5] as usize,
         ),
         FTRUNCATE64 => {
-            // syscall_ftruncate64(args[0] as usize, args[1] as usize)
-            0
+            syscall_ftruncate64(args[0] as usize, args[1] as usize)
+            // 0
         }
         IOCTL => syscall_ioctl(args[0] as usize, args[1] as usize, args[2] as *mut usize),
         // 不做处理即可
@@ -322,15 +329,16 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
 
     // let sstatus = riscv::register::sstatus::read();
     // error!("irq: {}", riscv::register::sstatus::Sstatus::sie(&sstatus));
-    // if syscall_id != GETPPID as usize
-    //     && syscall_id != CLOCK_GET_TIME as usize
-    //     && syscall_id != GETRUSAGE as usize
+    if syscall_id != GETPPID as usize
+        && syscall_id != CLOCK_GET_TIME as usize
+        && syscall_id != GETRUSAGE as usize
     // if curr_id == 6 {
-    //     // if syscall_id == CLONE as usize {
-    //     error!(
-    //         "curr id: {}, Syscall {} return: {}",
-    //         curr_id, syscall_id, ans,
-    //     );
-    // };
+    {
+        // if syscall_id == CLONE as usize {
+        info!(
+            "curr id: {}, Syscall {} return: {}",
+            curr_id, syscall_id, ans,
+        );
+    };
     ans
 }
