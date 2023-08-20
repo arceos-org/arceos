@@ -201,14 +201,8 @@ pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
         let interrupts = fs::devfs::Interrupts::default();
 
         proc_fs.add("interrupts", Arc::new(interrupts));
-        proc_fs
-            .root_dir()
-            .create("meminfo", VfsNodeType::File)
-            .expect("failed to create file meminfo");
-        proc_fs
-            .root_dir()
-            .create("mounts", VfsNodeType::File)
-            .expect("failed to create file mounts");
+        proc_fs.add("meminfo", Arc::new(fs::devfs::ZeroDev));
+        proc_fs.add("mounts", Arc::new(fs::devfs::ZeroDev));
 
         root_dir
             .mount("/proc", Arc::new(proc_fs))
