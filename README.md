@@ -101,13 +101,7 @@ $ ./build_img.sh sdcard
 
 ## 文档
 
-内核文档存放在`doc/Starry决赛设计文档.pdf`，另外可以在`doc/Starry`下执行
-
-```shell
-$ mkdocs serve
-```
-
-
+内核文档存放在`doc/Starry决赛设计文档.pdf`。
 
 另外，可以通过静态部署网页`azure-stars.github.io/Starry`查看更好排版的文档。
 
