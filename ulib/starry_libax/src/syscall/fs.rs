@@ -691,6 +691,10 @@ pub fn sys_linkat(
 pub fn syscall_unlinkat(dir_fd: usize, path: *const u8, flags: usize) -> isize {
     let path = deal_with_path(dir_fd, Some(path), false).unwrap();
 
+    if path.start_with(&FilePath::new("/proc").unwrap()) {
+        return -1;
+    }
+
     // unlink file
     if flags == 0 {
         if let None = remove_link(&path) {
@@ -1441,6 +1445,11 @@ pub fn syscall_renameat2(
 ) -> isize {
     let old_path = deal_with_path(old_dirfd, Some(_old_path), false).unwrap();
     let new_path = deal_with_path(new_dirfd, Some(_new_path), false).unwrap();
+
+    let proc_path = FilePath::new("/proc").unwrap();
+    if old_path.start_with(&proc_path) || new_path.start_with(&proc_path) {
+        return -1;
+    }
 
     // 交换两个目录名，目录下的文件不受影响，
 
