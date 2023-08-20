@@ -24,7 +24,7 @@ use spinlock::SpinNoIrq;
 extern crate log;
 
 use axhal::{
-    mem::{memory_regions, phys_to_virt, virt_to_phys, PhysAddr, VirtAddr, PAGE_SIZE_4K},
+    mem::{memory_regions, phys_to_virt, PhysAddr, VirtAddr, PAGE_SIZE_4K},
     paging::{MappingFlags, PageSize, PageTable},
 };
 use xmas_elf::symbol_table::Entry;
@@ -417,20 +417,29 @@ impl MemorySet {
     }
 
     pub fn find_free_area(&self, hint: VirtAddr, size: usize) -> Option<VirtAddr> {
-        let mut last_end = hint.max(axconfig::USER_MEMORY_START.into());
+        let mut last_end = hint.max(axconfig::USER_MEMORY_START.into()).as_usize();
 
-        // HACK: complelety wrong but pass the test.
+        // TODO: performance optimization
+        let mut segments: Vec<_> = self
+            .owned_mem
+            .iter()
+            .map(|(start, mem)| (*start, *start + mem.size()))
+            .collect();
+        segments.extend(
+            self.attached_mem
+                .iter()
+                .map(|(start, _, mem)| (start.as_usize(), start.as_usize() + mem.size())),
+        );
 
-        for area in self.owned_mem.values() {
-            if last_end + size <= area.vaddr
-                && self.attached_mem.iter().all(|(start, _, mem)| {
-                    last_end + size < *start || *start + mem.size() <= last_end
-                })
-            {
-                return Some(last_end);
+        segments.sort();
+
+        for (start, end) in segments {
+            if last_end + size <= start {
+                return Some(last_end.into());
             }
-            last_end = area.end_va();
+            last_end = end;
         }
+
         None
     }
 
