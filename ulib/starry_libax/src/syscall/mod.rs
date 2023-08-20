@@ -166,6 +166,13 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         GET_ROBUST_LIST => {
             syscall_get_robust_list(args[0] as i32, args[1] as *mut usize, args[2] as *mut usize)
         }
+        RENAMEAT2 => syscall_renameat2(
+            args[0],
+            args[1] as *const u8,
+            args[2],
+            args[3] as *const u8,
+            args[4],
+        ),
 
         READV => syscall_readv(args[0] as usize, args[1] as *mut IoVec, args[2] as usize),
         WRITEV => syscall_writev(args[0] as usize, args[1] as *const IoVec, args[2] as usize),
