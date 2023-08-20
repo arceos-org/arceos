@@ -197,18 +197,16 @@ pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
 
     #[cfg(feature = "monolithic")]
     {
-        let procfs = fs::ramfs::RamFileSystem::new();
-        procfs
-            .root_dir_node()
-            .create("meminfo", VfsNodeType::File)
-            .expect("failed to create file meminfo");
-        procfs
-            .root_dir_node()
-            .create("mounts", VfsNodeType::File)
-            .expect("failed to create file mounts");
+        let proc_fs = fs::devfs::DeviceFileSystem::new();
+        let interrupts = fs::devfs::Interrupts::default();
+
+        proc_fs.add("interrupts", Arc::new(interrupts));
+        proc_fs.add("meminfo", Arc::new(fs::devfs::ZeroDev));
+        proc_fs.add("mounts", Arc::new(fs::devfs::ZeroDev));
+
         root_dir
-            .mount("/proc", Arc::new(procfs))
-            .expect("failed to mount ramfs at /proc");
+            .mount("/proc", Arc::new(proc_fs))
+            .expect("failed to mount devfs at /proc");
     }
 
     ROOT_DIR.init_by(Arc::new(root_dir));

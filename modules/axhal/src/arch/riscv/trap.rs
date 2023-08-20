@@ -37,6 +37,8 @@ fn riscv_trap_handler(tf: &mut TrapFrame, mut from_user: bool) {
         from_user = false;
     }
 
+    axfs_devfs::INTERRUPT.lock().record(scause.code());
+
     match scause.cause() {
         Trap::Exception(E::Breakpoint) => handle_breakpoint(&mut tf.sepc),
         Trap::Interrupt(_) => crate::trap::handle_irq_extern(scause.bits()),
