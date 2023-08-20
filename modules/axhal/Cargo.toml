@@ -18,7 +18,8 @@ platform-pc-x86 = ["axconfig/platform-pc-x86", "dep:ratio"]
 platform-qemu-virt-riscv = ["axconfig/platform-qemu-virt-riscv"]
 platform-qemu-virt-aarch64 = [
     "axconfig/platform-qemu-virt-aarch64",
-    "dep:page_table_entry", "dep:ratio",
+    "dep:page_table_entry",
+    "dep:ratio",
 ]
 
 monolithic = []
@@ -28,7 +29,8 @@ signal = []
 
 platform-raspi4-aarch64 = [
     "axconfig/platform-raspi4-aarch64",
-    "dep:page_table_entry", "dep:ratio",
+    "dep:page_table_entry",
+    "dep:ratio",
 ]
 
 img = []
@@ -54,6 +56,7 @@ memory_addr = { path = "../../crates/memory_addr" }
 handler_table = { path = "../../crates/handler_table" }
 crate_interface = { path = "../../crates/crate_interface" }
 riscv = "0.10"
+axfs_devfs = { path = "../../crates/axfs_devfs" }
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 x86 = "0.52"
 x86_64 = "0.14"

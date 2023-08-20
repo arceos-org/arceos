@@ -166,6 +166,13 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         GET_ROBUST_LIST => {
             syscall_get_robust_list(args[0] as i32, args[1] as *mut usize, args[2] as *mut usize)
         }
+        RENAMEAT2 => syscall_renameat2(
+            args[0],
+            args[1] as *const u8,
+            args[2],
+            args[3] as *const u8,
+            args[4],
+        ),
 
         READV => syscall_readv(args[0] as usize, args[1] as *mut IoVec, args[2] as usize),
         WRITEV => syscall_writev(args[0] as usize, args[1] as *const IoVec, args[2] as usize),
@@ -224,6 +231,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[2] as usize,
             args[3] as usize,
         ),
+        PWRITE64 => syscall_pwrite64(args[0], args[1] as *const u8, args[2], args[3]),
         SENDFILE64 => syscall_sendfile64(
             args[0] as usize,
             args[1] as usize,
@@ -252,15 +260,15 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[5] as usize,
         ),
         FTRUNCATE64 => {
-            // syscall_ftruncate64(args[0] as usize, args[1] as usize)
-            0
+            syscall_ftruncate64(args[0] as usize, args[1] as usize)
+            // 0
         }
         IOCTL => syscall_ioctl(args[0] as usize, args[1] as usize, args[2] as *mut usize),
         // 不做处理即可
         SYNC => 0,
-        SHMGET => 0,
+        SHMGET => syscall_shmget(args[0] as i32, args[1], args[2] as i32),
         SHMCTL => 0,
-        SHMAT => 0,
+        SHMAT => syscall_shmat(args[0] as i32, args[1], args[2] as i32),
         MEMBARRIER => 0,
         SIGTIMEDWAIT => 0,
         SYSLOG => 0,
@@ -304,25 +312,34 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
         ),
         SHUTDOWN => syscall_shutdown(args[0], args[1]),
         MADVICE => 0,
+        COPYFILERANGE => syscall_copyfilerange(
+            args[0],
+            args[1] as *mut usize,
+            args[2],
+            args[3] as *mut usize,
+            args[4],
+            args[5],
+        ),
         _ => {
             error!("Invalid Syscall Id: {}!", syscall_id);
-            // return -1;
-            exit(-1)
+            return -1;
+            // exit(-1)
         }
     };
     // let end = riscv::register::time::read();
 
     // let sstatus = riscv::register::sstatus::read();
     // error!("irq: {}", riscv::register::sstatus::Sstatus::sie(&sstatus));
-    // if syscall_id != GETPPID as usize
-    //     && syscall_id != CLOCK_GET_TIME as usize
-    //     && syscall_id != GETRUSAGE as usize
+    if syscall_id != GETPPID as usize
+        && syscall_id != CLOCK_GET_TIME as usize
+        && syscall_id != GETRUSAGE as usize
     // if curr_id == 6 {
-    //     // if syscall_id == CLONE as usize {
-    //     error!(
-    //         "curr id: {}, Syscall {} return: {}",
-    //         curr_id, syscall_id, ans,
-    //     );
-    // };
+    {
+        // if syscall_id == CLONE as usize {
+        info!(
+            "curr id: {}, Syscall {} return: {}",
+            curr_id, syscall_id, ans,
+        );
+    };
     ans
 }

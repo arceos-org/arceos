@@ -59,7 +59,7 @@ impl MapArea {
     ) -> Self {
         let pages = PhysPage::alloc_contiguous(num_pages, PAGE_SIZE_4K, data)
             .expect("Error allocating memory when trying to map");
-        trace!(
+        info!(
             "start: {:X?}, size: {:X},  page start: {:X?}",
             start,
             num_pages * PAGE_SIZE_4K,
