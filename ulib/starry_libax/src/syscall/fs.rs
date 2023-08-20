@@ -1270,13 +1270,14 @@ pub fn syscall_readlinkat(dir_fd: usize, path: *const u8, buf: *mut u8, bufsiz: 
 /// 移动文件描述符的读写指针
 pub fn syscall_lseek(fd: usize, offset: isize, whence: usize) -> isize {
     let process = current_process();
-    info!("offset: {} whence: {}", offset, whence);
+    info!("fd: {} offset: {} whence: {}", fd, offset, whence);
     let process_inner = process.inner.lock();
     if fd >= process_inner.fd_manager.fd_table.len() || fd < 3 {
         debug!("fd {} is out of range", fd);
         return ErrorNo::EBADF as isize;
     }
     if let Some(file) = process_inner.fd_manager.fd_table[fd].as_ref() {
+        info!("size: {}", file.lock().get_stat().unwrap().st_size);
         if file.lock().get_type() == FileIOType::DirDesc {
             debug!("fd is a dir");
             return ErrorNo::EISDIR as isize;
@@ -1491,6 +1492,7 @@ pub fn syscall_renameat2(
 
 pub fn syscall_ftruncate64(fd: usize, len: usize) -> isize {
     let process = current_process();
+    info!("fd: {}, len: {}", fd, len);
     let inner = process.inner.lock();
     if fd >= inner.fd_manager.fd_table.len() {
         return ErrorNo::EINVAL as isize;
@@ -1533,6 +1535,9 @@ pub fn syscall_copyfilerange(
     } else {
         unsafe { *off_out as isize }
     };
+    if len == 0 {
+        return 0;
+    }
     info!(
         "copyfilerange: fd_in: {}, fd_out: {}, off_in: {}, off_out: {}, len: {}, flags: {}",
         fd_in, fd_out, in_offset, out_offset, len, flags
@@ -1544,9 +1549,9 @@ pub fn syscall_copyfilerange(
     let old_in_offset = in_file.lock().seek(SeekFrom::Current(0)).unwrap();
     let old_out_offset = out_file.lock().seek(SeekFrom::Current(0)).unwrap();
 
-    if in_file.lock().get_stat().unwrap().st_size < (in_offset as u64) + len as u64 {
-        return 0;
-    }
+    // if in_file.lock().get_stat().unwrap().st_size < (in_offset as u64) + len as u64 {
+    //     return 0;
+    // }
 
     // set offset
     if !off_in.is_null() {
@@ -1565,7 +1570,7 @@ pub fn syscall_copyfilerange(
     // copy
     let mut buf = vec![0; len];
     let read_len = in_file.lock().read(buf.as_mut_slice()).unwrap();
-    debug!("copy content: {:?}", &buf[..read_len]);
+    // debug!("copy content: {:?}", &buf[..read_len]);
 
     let write_len = out_file.lock().write(&buf[..read_len]).unwrap();
     // assert_eq!(read_len, write_len);    // tmp

@@ -156,7 +156,7 @@ impl FileIO for FileDesc {
             st_ctime_sec: stat.ctime.tv_sec as isize,
             st_ctime_nsec: stat.ctime.tv_nsec as isize,
         };
-        info!("kstat: {:?}", kstat);
+        // info!("kstat: {:?}", kstat);
         Ok(kstat)
     }
 

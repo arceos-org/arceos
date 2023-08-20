@@ -208,7 +208,6 @@ impl File {
     /// position after the seek.
     pub fn seek(&mut self, pos: SeekFrom) -> AxResult<u64> {
         let size = self.get_attr()?.size();
-        info!("size: {}", size);
         let new_offset = match pos {
             SeekFrom::Start(pos) => Some(pos),
             SeekFrom::Current(off) => self.offset.checked_add_signed(off),
@@ -216,7 +215,6 @@ impl File {
         }
         .ok_or_else(|| ax_err_type!(InvalidInput))?;
         self.offset = new_offset;
-        info!("size: {}", size);
         Ok(new_offset)
     }
 
