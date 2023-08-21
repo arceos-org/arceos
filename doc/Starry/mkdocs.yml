@@ -2,31 +2,26 @@ site_name: Starry
 site_description: Starry设计文档
 nav:
   - Starry: index.md
-  - 1.概述: 1.概述/1.1背景.md
-  - 2.架构设计: 
-    - 2.1 ArceOS介绍: 2.架构设计/2.1ArceOS介绍.md
-    - 2.2 Starry结构说明: 2.架构设计/2.2Starry结构说明.md
-  - 3.设计思路: 
-    - 3.1 模块划分: 3.设计思路/3.1模块划分.md
-    - 3.2 进程引入: 3.设计思路/3.2进程引入.md
-    - 3.3 地址空间引入: 3.设计思路/3.3地址空间引入.md
-    - 3.4 特权级切换: 3.设计思路/3.4特权级切换.md
-  - 4. 模块介绍:
-    - 4.1 内核底层模块-axhal: 4.模块介绍/4.1内核底层模块-axhal.md
-    - 4.2 设备驱动模块-axdriver: 4.模块介绍/4.2设备驱动模块-axdriver.md
-    - 4.3 内存管理模块-axmem: 4.模块介绍/4.3内存管理模块-axmem.md
-    - 4.4 网络模块-axnet: 4.模块介绍/4.4网络模块-axnet.md
-    - 4.5 信号模块-axsignal: 4.模块介绍/4.5信号模块-axsignal.md
-    - 4.6 任务调度模块-axtask: 4.模块介绍/4.6任务调度模块-axtask.md
-    - 4.7 文件系统模块-axfs: 4.模块介绍/4.7文件系统模块-axfs.md
-    - 4.8 进程控制模块-axprocess: 4.模块介绍/4.8进程控制模块-axprocess.md
-    - 4.9 内核运行时模块-axruntime: 4.模块介绍/4.9内核运行时模块-axruntime.md
-    - 4.10 宏内核用户库-starry: 4.模块介绍/4.10宏内核用户库-starry.md
-  - 5. 实现重点:
-    - 5.1 依赖问题: 5.实现重点/5.1依赖问题.md
-    - 5.2 兼容问题: 5.实现重点/5.2兼容问题.md
-  - 6. 问题与解决:
-    - 6.1 问题: 6.问题与解决/6.1问题.md
+  - 概述: 概述.md
+  - 架构设计: 
+    - ArceOS介绍: 架构设计/ArceOS介绍.md
+    - Starry结构说明: 架构设计/Starry结构说明.md
+  - 设计思路: 设计思路.md
+  - 模块介绍:
+    - 内核底层模块-axhal: 模块介绍/内核底层模块-axhal.md
+    - 内存管理模块-axmem: 模块介绍/内存管理模块-axmem.md
+    - 网络模块-axnet: 模块介绍/网络模块-axnet.md
+    - 信号模块-axsignal: 模块介绍/信号模块-axsignal.md
+    - 任务调度模块-axtask: 模块介绍/任务调度模块-axtask.md
+    - 文件系统模块-axfs: 模块介绍/文件系统模块-axfs.md
+    - 进程控制模块-axprocess: 模块介绍/进程控制模块-axprocess.md
+    - 内核运行时模块-axruntime: 模块介绍/内核运行时模块-axruntime.md
+    - 宏内核用户库-starry: 模块介绍/宏内核用户库-starry.md
+  - 实现重点:
+    - 依赖问题: 实现重点/依赖问题.md
+    - 兼容问题: 实现重点/兼容问题.md
+    - 宏内核化探讨: 实现重点/宏内核化探讨.md
+  - 问题与解决: 问题与解决.md
 
 # 主题
 # theme:
@@ -45,7 +40,7 @@ theme:
     #primary: blue grey
   
     - scheme: default # 日间模式
-      primary: grey # 上方的
+      primary: blue # 上方的
       accent: cyan # 链接等可交互元件的高亮色
       toggle:
         icon: material/weather-night # 图标
@@ -86,8 +81,7 @@ markdown_extensions:
 # PDF导出插件
 plugins:
   - search
-#  - pdf-export #这个插件还有点问题，没有更新
-
+  # - pdf-export #这个插件还有点问题，没有更新
 #扩展样式
 extra_css:
   - resources/css/extra.css

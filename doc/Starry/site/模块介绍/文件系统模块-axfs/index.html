@@ -11,22 +11,24 @@
       
       
       
+        <link rel="prev" href="../%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6%E6%A8%A1%E5%9D%97-axtask/">
       
-        <link rel="next" href="%E6%A6%82%E8%BF%B0/">
       
-      <link rel="icon" href="assets/images/favicon.png">
+        <link rel="next" href="../%E8%BF%9B%E7%A8%8B%E6%8E%A7%E5%88%B6%E6%A8%A1%E5%9D%97-axprocess/">
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.1.21">
     
     
       
-        <title>Starry</title>
+        <title>文件系统模块-axfs - Starry</title>
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.eebd395e.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.eebd395e.min.css">
       
         
-        <link rel="stylesheet" href="assets/stylesheets/palette.ecc896b0.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ecc896b0.min.css">
       
       
 
@@ -42,9 +44,9 @@
       
     
     
-      <link rel="stylesheet" href="resources/css/extra.css">
+      <link rel="stylesheet" href="../../resources/css/extra.css">
     
-    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -73,7 +75,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#starry" class="md-skip">
+        <a href="#fatfs" class="md-skip">
           Skip to content
         </a>
       
@@ -89,7 +91,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="." title="Starry" class="md-header__button md-logo" aria-label="Starry" data-md-component="logo">
+    <a href="../.." title="Starry" class="md-header__button md-logo" aria-label="Starry" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -108,7 +110,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Starry
+              文件系统模块-axfs
             
           </span>
         </div>
@@ -201,7 +203,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="." title="Starry" class="md-nav__button md-logo" aria-label="Starry" data-md-component="logo">
+    <a href="../.." title="Starry" class="md-nav__button md-logo" aria-label="Starry" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -218,59 +220,11 @@
 
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          Starry
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="." class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
         Starry
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
-    成员
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
-    说明
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -283,7 +237,7 @@
   
   
     <li class="md-nav__item">
-      <a href="%E6%A6%82%E8%BF%B0/" class="md-nav__link">
+      <a href="../../%E6%A6%82%E8%BF%B0/" class="md-nav__link">
         概述
       </a>
     </li>
@@ -325,7 +279,7 @@
   
   
     <li class="md-nav__item">
-      <a href="%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/ArceOS%E4%BB%8B%E7%BB%8D/" class="md-nav__link">
+      <a href="../../%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/ArceOS%E4%BB%8B%E7%BB%8D/" class="md-nav__link">
         ArceOS介绍
       </a>
     </li>
@@ -339,7 +293,7 @@
   
   
     <li class="md-nav__item">
-      <a href="%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/Starry%E7%BB%93%E6%9E%84%E8%AF%B4%E6%98%8E/" class="md-nav__link">
+      <a href="../../%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1/Starry%E7%BB%93%E6%9E%84%E8%AF%B4%E6%98%8E/" class="md-nav__link">
         Starry结构说明
       </a>
     </li>
@@ -361,7 +315,7 @@
   
   
     <li class="md-nav__item">
-      <a href="%E8%AE%BE%E8%AE%A1%E6%80%9D%E8%B7%AF/" class="md-nav__link">
+      <a href="../../%E8%AE%BE%E8%AE%A1%E6%80%9D%E8%B7%AF/" class="md-nav__link">
         设计思路
       </a>
     </li>
@@ -374,14 +328,16 @@
 
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
       
       
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
       
       
       
@@ -390,7 +346,7 @@
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
         <label class="md-nav__title" for="__nav_5">
           <span class="md-nav__icon md-icon"></span>
           模块介绍
@@ -403,7 +359,7 @@
   
   
     <li class="md-nav__item">
-      <a href="%E6%A8%A1%E5%9D%97%E4%BB%8B%E7%BB%8D/%E5%86%85%E6%A0%B8%E5%BA%95%E5%B1%82%E6%A8%A1%E5%9D%97-axhal/" class="md-nav__link">
+      <a href="../%E5%86%85%E6%A0%B8%E5%BA%95%E5%B1%82%E6%A8%A1%E5%9D%97-axhal/" class="md-nav__link">
         内核底层模块-axhal
       </a>
     </li>
@@ -417,7 +373,7 @@
   
   
     <li class="md-nav__item">
-      <a href="%E6%A8%A1%E5%9D%97%E4%BB%8B%E7%BB%8D/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E6%A8%A1%E5%9D%97-axmem/" class="md-nav__link">
+      <a href="../%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E6%A8%A1%E5%9D%97-axmem/" class="md-nav__link">
         内存管理模块-axmem
       </a>
     </li>
@@ -431,7 +387,7 @@
   
   
     <li class="md-nav__item">
-      <a href="%E6%A8%A1%E5%9D%97%E4%BB%8B%E7%BB%8D/%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9D%97-axnet/" class="md-nav__link">
+      <a href="../%E7%BD%91%E7%BB%9C%E6%A8%A1%E5%9D%97-axnet/" class="md-nav__link">
         网络模块-axnet
       </a>
     </li>
@@ -445,7 +401,7 @@
   
   
     <li class="md-nav__item">
-      <a href="%E6%A8%A1%E5%9D%97%E4%BB%8B%E7%BB%8D/%E4%BF%A1%E5%8F%B7%E6%A8%A1%E5%9D%97-axsignal/" class="md-nav__link">
+      <a href="../%E4%BF%A1%E5%8F%B7%E6%A8%A1%E5%9D%97-axsignal/" class="md-nav__link">
         信号模块-axsignal
       </a>
     </li>
@@ -459,7 +415,7 @@
   
   
     <li class="md-nav__item">
-      <a href="%E6%A8%A1%E5%9D%97%E4%BB%8B%E7%BB%8D/%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6%E6%A8%A1%E5%9D%97-axtask/" class="md-nav__link">
+      <a href="../%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6%E6%A8%A1%E5%9D%97-axtask/" class="md-nav__link">
         任务调度模块-axtask
       </a>
     </li>
@@ -471,11 +427,69 @@
               
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="%E6%A8%A1%E5%9D%97%E4%BB%8B%E7%BB%8D/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E6%A8%A1%E5%9D%97-axfs/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          文件系统模块-axfs
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         文件系统模块-axfs
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#fatfs" class="md-nav__link">
+    fatfs
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cratesaxfs_vfs" class="md-nav__link">
+    crates/axfs_vfs
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modulesaxfs" class="md-nav__link">
+    modules/axfs
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#starry_libaxfs" class="md-nav__link">
+    starry_libax/fs
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -487,7 +501,7 @@
   
   
     <li class="md-nav__item">
-      <a href="%E6%A8%A1%E5%9D%97%E4%BB%8B%E7%BB%8D/%E8%BF%9B%E7%A8%8B%E6%8E%A7%E5%88%B6%E6%A8%A1%E5%9D%97-axprocess/" class="md-nav__link">
+      <a href="../%E8%BF%9B%E7%A8%8B%E6%8E%A7%E5%88%B6%E6%A8%A1%E5%9D%97-axprocess/" class="md-nav__link">
         进程控制模块-axprocess
       </a>
     </li>
@@ -501,7 +515,7 @@
   
   
     <li class="md-nav__item">
-      <a href="%E6%A8%A1%E5%9D%97%E4%BB%8B%E7%BB%8D/%E5%86%85%E6%A0%B8%E8%BF%90%E8%A1%8C%E6%97%B6%E6%A8%A1%E5%9D%97-axruntime/" class="md-nav__link">
+      <a href="../%E5%86%85%E6%A0%B8%E8%BF%90%E8%A1%8C%E6%97%B6%E6%A8%A1%E5%9D%97-axruntime/" class="md-nav__link">
         内核运行时模块-axruntime
       </a>
     </li>
@@ -515,7 +529,7 @@
   
   
     <li class="md-nav__item">
-      <a href="%E6%A8%A1%E5%9D%97%E4%BB%8B%E7%BB%8D/%E5%AE%8F%E5%86%85%E6%A0%B8%E7%94%A8%E6%88%B7%E5%BA%93-starry/" class="md-nav__link">
+      <a href="../%E5%AE%8F%E5%86%85%E6%A0%B8%E7%94%A8%E6%88%B7%E5%BA%93-starry/" class="md-nav__link">
         宏内核用户库-starry
       </a>
     </li>
@@ -564,7 +578,7 @@
   
   
     <li class="md-nav__item">
-      <a href="%E5%AE%9E%E7%8E%B0%E9%87%8D%E7%82%B9/%E4%BE%9D%E8%B5%96%E9%97%AE%E9%A2%98/" class="md-nav__link">
+      <a href="../../%E5%AE%9E%E7%8E%B0%E9%87%8D%E7%82%B9/%E4%BE%9D%E8%B5%96%E9%97%AE%E9%A2%98/" class="md-nav__link">
         依赖问题
       </a>
     </li>
@@ -578,7 +592,7 @@
   
   
     <li class="md-nav__item">
-      <a href="%E5%AE%9E%E7%8E%B0%E9%87%8D%E7%82%B9/%E5%85%BC%E5%AE%B9%E9%97%AE%E9%A2%98/" class="md-nav__link">
+      <a href="../../%E5%AE%9E%E7%8E%B0%E9%87%8D%E7%82%B9/%E5%85%BC%E5%AE%B9%E9%97%AE%E9%A2%98/" class="md-nav__link">
         兼容问题
       </a>
     </li>
@@ -592,7 +606,7 @@
   
   
     <li class="md-nav__item">
-      <a href="%E5%AE%9E%E7%8E%B0%E9%87%8D%E7%82%B9/%E5%AE%8F%E5%86%85%E6%A0%B8%E5%8C%96%E6%8E%A2%E8%AE%A8/" class="md-nav__link">
+      <a href="../../%E5%AE%9E%E7%8E%B0%E9%87%8D%E7%82%B9/%E5%AE%8F%E5%86%85%E6%A0%B8%E5%8C%96%E6%8E%A2%E8%AE%A8/" class="md-nav__link">
         宏内核化探讨
       </a>
     </li>
@@ -614,7 +628,7 @@
   
   
     <li class="md-nav__item">
-      <a href="%E9%97%AE%E9%A2%98%E4%B8%8E%E8%A7%A3%E5%86%B3/" class="md-nav__link">
+      <a href="../../%E9%97%AE%E9%A2%98%E4%B8%8E%E8%A7%A3%E5%86%B3/" class="md-nav__link">
         问题与解决
       </a>
     </li>
@@ -638,8 +652,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -648,15 +660,29 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
-    成员
+  <a href="#fatfs" class="md-nav__link">
+    fatfs
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
-    说明
+  <a href="#cratesaxfs_vfs" class="md-nav__link">
+    crates/axfs_vfs
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#modulesaxfs" class="md-nav__link">
+    modules/axfs
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#starry_libaxfs" class="md-nav__link">
+    starry_libax/fs
   </a>
   
 </li>
@@ -676,20 +702,81 @@
                   
 
 
-<h1 id="starry">Starry 设计文档<a class="headerlink" href="#starry" title="Permanent link">&para;</a></h1>
+  <h1>文件系统模块-axfs</h1>
+
+<p>介绍文件系统时，不仅需要介绍axfs这个模块，还需要介绍其依赖的crate以及调用这个模块的package，他们共同构成了文件系统的上下层，使得文件系统可以正常发挥作用。</p>
+<p>文件系统主要由四个部分组成，分别是外部依赖fatfs、crates/axfs_vfs、modules/axfs以及作为用户库的starry_libax/src/fs。</p>
+<p><img alt="avatar" src="../../figures/axfs.png" /></p>
+<p>各自部分的额外补充说明如下</p>
+<h3 id="fatfs">fatfs<a class="headerlink" href="#fatfs" title="Permanent link">&para;</a></h3>
+<p>fatfs作为外部库，提供了一个基础的fat32文件系统。</p>
+<h3 id="cratesaxfs_vfs">crates/axfs_vfs<a class="headerlink" href="#cratesaxfs_vfs" title="Permanent link">&para;</a></h3>
+<p>axfs_vfs提供了对文件和目录的抽象，为本os实现的任何文件系统都需要实现它的定义的VfsOps特征，同时对应文件系统的file/directory结构体需要实现它的VfsNodeOps特征。</p>
+<h3 id="modulesaxfs">modules/axfs<a class="headerlink" href="#modulesaxfs" title="Permanent link">&para;</a></h3>
+<p>在modules/axfs中：</p>
+<ol>
+<li>axfs::fatfs作为中介连接了文件系统、vfs和块设备三个模块，它封装了外部的fat32提供的文件系统和file/directory，并为它们实现axfs_vfs中的对应特征，同时调用了axfs::dev对硬件进行操作；</li>
+<li>axfs::fops封装了ax_vfs中的各种VfsNode操作，向上提供给axfs::api模块暴露给外部；</li>
+<li>axfs::monolithic_fs是将文件系统适配到宏内核的核心，它提供了文件系统信息Kstat、文件输入输出操作FileIO、文件-虚存映射FileExt等结构体和特征的抽象。</li>
+</ol>
+<h3 id="starry_libaxfs">starry_libax/fs<a class="headerlink" href="#starry_libaxfs" title="Permanent link">&para;</a></h3>
+<p>在starry_libax中所做的工作主要有：</p>
+<ol>
+<li>定义文件夹、文件、管道等结构体，并为它们实现monolithic_fs中定义的一些特征，以文件为例：</li>
+</ol>
+<div class="highlight"><pre><span></span><code><span class="sd">/// 文件描述符</span>
+<span class="k">pub</span><span class="w"> </span><span class="k">struct</span> <span class="nc">FileDesc</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="sd">/// 文件路径</span>
+<span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">path</span>: <span class="nb">String</span><span class="p">,</span>
+<span class="w">    </span><span class="sd">/// 文件</span>
+<span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">file</span>: <span class="nc">Arc</span><span class="o">&lt;</span><span class="n">Mutex</span><span class="o">&lt;</span><span class="n">File</span><span class="o">&gt;&gt;</span><span class="p">,</span>
+<span class="w">    </span><span class="sd">/// 文件打开的标志位</span>
+<span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">flags</span>: <span class="nc">OpenFlags</span><span class="p">,</span>
+<span class="w">    </span><span class="sd">/// 文件信息</span>
+<span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">stat</span>: <span class="nc">Mutex</span><span class="o">&lt;</span><span class="n">FileMetaData</span><span class="o">&gt;</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="sd">/// 文件在os中运行时的可变信息</span>
+<span class="k">pub</span><span class="w"> </span><span class="k">struct</span> <span class="nc">FileMetaData</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="sd">/// 最后一次访问时间</span>
+<span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">atime</span>: <span class="nc">TimeSecs</span><span class="p">,</span>
+<span class="w">    </span><span class="sd">/// 最后一次改变(modify)内容的时间</span>
+<span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">mtime</span>: <span class="nc">TimeSecs</span><span class="p">,</span>
+<span class="w">    </span><span class="sd">/// 最后一次改变(change)属性的时间</span>
+<span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">ctime</span>: <span class="nc">TimeSecs</span><span class="p">,</span>
+<span class="p">}</span>
+<span class="k">impl</span><span class="w"> </span><span class="n">Read</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">FileDesc</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="o">..</span>
+<span class="p">}</span>
+
+<span class="k">impl</span><span class="w"> </span><span class="n">Write</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">FileDesc</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="o">..</span>
+<span class="p">}</span>
+
+<span class="k">impl</span><span class="w"> </span><span class="n">Seek</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">FileDesc</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="o">..</span>
+<span class="p">}</span>
+
+<span class="k">impl</span><span class="w"> </span><span class="n">FileExt</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">FileDesc</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="o">..</span>
+<span class="p">}</span>
+<span class="sd">/// 为FileDesc实现FileIO trait</span>
+<span class="k">impl</span><span class="w"> </span><span class="n">FileIO</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">FileDesc</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="o">..</span>
+<span class="p">}</span>
+</code></pre></div>
+<ol>
+<li>实现文件链接、文件系统挂载、目录项遍历等功能。</li>
+</ol>
+<p>需要注意的是，fat32文件系统不支持硬连接，我们做的工作实际上是在内存里模拟硬连接的过程。在目前的实现里，每个对于文件的访问传入的“文件路径”实际上都是一个虚拟的路径，只是作为KEY存入模拟硬连接的BTreeMap里，映射到它在文件镜像中的实际位置，包括恒等映射。</p>
 <blockquote>
-<p>Starry意指布满星星的，寓意本OS的开发学习借鉴了许多前辈的思路，并将其汇总归一为这个内核。</p>
+<p>由于硬连接的一些特性，这种模拟在某些情境下会出现一些问题。</p>
+<p>例如，假设A路径是位于硬盘上的A文件的实际路径，B路径则是后创建的一个指向A文件的硬连接，删除A后因为有B存在，实际上只会减少A文件的硬连接数，不会删除实际文件A。这时再创建一个新的A文件时便会报错。</p>
+<p>针对这个问题，我们采用过的一个解决办法是对每个实际的文件维护一个记录指向它的硬连接的列表，删除实际路径时，弹出出列表首项并将实际文件移动到对应路径，然后从BTreeMap中删除该项，让它成为新的实际路径。</p>
 </blockquote>
-<h2 id="_1">成员<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
-<p>陈嘉钰、郑友捷、王昱栋</p>
-<h2 id="_2">说明<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
-<ul>
-<li>一个内核</li>
-<li>以riscv64指令集运行</li>
-<li>支持在qemu、sifive开发板等平台上运行</li>
-<li>支持gcc、redis等Linux应用</li>
-<li>支持编译时选择启动架构为Unikernel或者宏内核</li>
-</ul>
+<ol>
+<li>实现所需的各类文件系统相关的系统调用。</li>
+</ol>
 
 
 
@@ -727,10 +814,10 @@
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": ".", "features": [], "search": "assets/javascripts/workers/search.74e28a9f.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.74e28a9f.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="assets/javascripts/bundle.220ee61c.min.js"></script>
+      <script src="../../assets/javascripts/bundle.220ee61c.min.js"></script>
       
     
   </body>

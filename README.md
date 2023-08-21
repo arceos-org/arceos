@@ -6,6 +6,8 @@
 
 > Starry意指布满星星的，寓意本OS的开发学习借鉴了许多前辈的思路，并将其汇总归一为这个内核。
 
+在线文档详见：[Starry (azure-stars.github.io)](https://azure-stars.github.io/Starry/)
+
 ## 成员
 
 陈嘉钰、郑友捷、王昱栋
@@ -72,7 +74,7 @@ axlog-->axtask
 
 axfs-->axmem
 axalloc-->axmem
-axhal-->axme
+axhal-->axmem
 axmem-->axprocess
 ```
 
@@ -103,5 +105,5 @@ $ ./build_img.sh sdcard
 
 内核文档存放在`doc/Starry决赛设计文档.pdf`。
 
-另外，可以通过静态部署网页`azure-stars.github.io/Starry`查看更好排版的文档。
+另外，可以通过静态部署网页[Starry (azure-stars.github.io)](https://azure-stars.github.io/Starry/)查看更好排版的文档。
 
