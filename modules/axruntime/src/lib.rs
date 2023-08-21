@@ -44,7 +44,10 @@ d88P     888 888      "Y8888P  "Y8888   "Y88888P"   "Y8888P"
 "#;
 
 extern "C" {
+    #[cfg(not(feature = "std"))]
     fn main();
+    #[cfg(feature = "std")]
+    fn runtime_entry(argc: i32, argv: *const *const u8, env: *const *const u8);
 }
 
 struct LogIfImpl;
@@ -189,7 +192,37 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         core::hint::spin_loop();
     }
 
-    unsafe { main() };
+    #[cfg(not(feature = "std"))]
+    unsafe {
+        main();
+    }
+
+    #[cfg(feature = "std")]
+    unsafe {
+        fn get_application_parameters() -> (i32, *const *const u8, *const *const u8) {
+            extern crate alloc;
+            use alloc::boxed::Box;
+            use alloc::vec::Vec;
+
+            let mut argv = Vec::new();
+            let name = Box::leak(Box::new("{name}\0")).as_ptr();
+            argv.push(name);
+
+            let envv = alloc::vec![core::ptr::null::<u8>()];
+
+            let argc = argv.len() as i32;
+            let argv = argv.leak().as_ptr();
+            let envv = envv.leak().as_ptr();
+
+            (argc, argv, envv)
+        }
+
+        let (argc, argv, environ) = get_application_parameters();
+
+        info!("Start std::runtime_entry ...");
+        // And finally start the application.
+        runtime_entry(argc, argv, environ);
+    }
 
     #[cfg(feature = "multitask")]
     axtask::exit(0);

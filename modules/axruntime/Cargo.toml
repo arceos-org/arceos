@@ -23,6 +23,8 @@ fs = ["axdriver", "axfs"]
 net = ["axdriver", "axnet"]
 display = ["axdriver", "axdisplay"]
 
+std = []
+
 [dependencies]
 axhal = { path = "../axhal" }
 axlog = { path = "../axlog" }

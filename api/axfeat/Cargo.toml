@@ -12,6 +12,8 @@ documentation = "https://rcore-os.github.io/arceos/axfeat/index.html"
 [features]
 default = []
 
+std = ["tls", "axruntime/std"]
+
 # Multicore
 smp = ["axhal/smp", "axruntime/smp", "spinlock/smp"]
 

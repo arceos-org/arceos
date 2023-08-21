@@ -8,3 +8,6 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 
 [dependencies]
 axstd = { path = "../../../ulib/axstd", features = ["alloc", "multitask", "net"], optional = true }
+
+[package.metadata.arceos]
+features = ["multitask", "net"]

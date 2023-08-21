@@ -9,3 +9,6 @@ authors = ["Shiping Yuan <robert_yuan@pku.edu.com>"]
 [dependencies]
 axstd = { path = "../../ulib/axstd", features = ["display"], optional = true }
 embedded-graphics = "0.8"
+
+[package.metadata.arceos]
+features = ["display"]

@@ -12,3 +12,6 @@ axstd = { path = "../../../ulib/axstd", features = ["net"], optional = true }
 [features]
 default = []
 dns = ["axstd?/dns"]
+
+[package.metadata.arceos]
+features = ["net"]

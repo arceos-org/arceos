@@ -6,3 +6,6 @@ authors = ["Dashuai Wu <wudashuaijss@foxmail.com>"]
 
 [dependencies]
 axstd = { path = "../../../ulib/axstd", features = ["net"], optional = true }
+
+[package.metadata.arceos]
+features = ["net"]

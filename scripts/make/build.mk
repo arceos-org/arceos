@@ -3,6 +3,12 @@
 include scripts/make/cargo.mk
 include scripts/make/features.mk
 
+ifeq ($(APP_TYPE), rust_std)
+  include scripts/make/build_std.mk
+else
+build_std:
+endif
+
 ifeq ($(APP_TYPE), c)
   include scripts/make/build_c.mk
 else
@@ -31,10 +37,15 @@ else ifeq ($(filter $(MAKECMDGOALS),clippy unittest unittest_no_fail_fast),) # n
   endif
 endif
 
-_cargo_build:
+_cargo_build: build_std
 	@printf "    $(GREEN_C)Building$(END_C) App: $(APP_NAME), Arch: $(ARCH), Platform: $(PLATFORM_NAME), App type: $(APP_TYPE)\n"
 ifeq ($(APP_TYPE), rust)
 	$(call cargo_build,--manifest-path $(APP)/Cargo.toml,$(AX_FEAT) $(LIB_FEAT) $(APP_FEAT))
+	@cp $(rust_elf) $(OUT_ELF)
+else ifeq ($(APP_TYPE), rust_std)
+#	force rebuild the app to link the up-to-date std library
+	@rm -rf $(rust_target_dir)/deps
+	$(call cargo_build,--manifest-path $(APP)/Cargo.toml,$(APP_FEAT))
 	@cp $(rust_elf) $(OUT_ELF)
 else ifeq ($(APP_TYPE), c)
 	$(call cargo_build,-p axlibc,$(AX_FEAT) $(LIB_FEAT))
@@ -46,4 +57,4 @@ $(OUT_DIR):
 $(OUT_BIN): _cargo_build $(OUT_ELF)
 	$(call run_cmd,$(OBJCOPY),$(OUT_ELF) --strip-all -O binary $@)
 
-.PHONY: _cargo_build
+.PHONY: _cargo_build build_std

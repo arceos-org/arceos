@@ -1,0 +1,3 @@
+# For building rust std library that not in ArceOS's workspace
+[patch.crates-io]
+crate_interface = { path = "crates/crate_interface" }

@@ -12,3 +12,6 @@ sched_cfs = ["axstd?/sched_cfs"]
 
 [dependencies]
 axstd = { path = "../../../ulib/axstd", features = ["multitask"], optional = true }
+
+[package.metadata.arceos]
+features = ["multitask"]

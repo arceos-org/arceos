@@ -15,6 +15,10 @@ ifeq ($(APP_TYPE),c)
   ax_feat_prefix := axfeat/
   lib_feat_prefix := axlibc/
   lib_features := fp_simd alloc multitask fs net fd pipe select epoll
+else ifeq ($(APP_TYPE),rust_std)
+  ax_feat_prefix := axfeat/
+  lib_feat_prefix := arceos_api/
+  lib_features := irq multitask fs net display
 else
   # TODO: it's better to use `axfeat/` as `ax_feat_prefix`, but all apps need to have `axfeat` as a dependency
   ax_feat_prefix := axstd/
@@ -31,6 +35,11 @@ ifeq ($(APP_TYPE), c)
   ifneq ($(filter fs net pipe select epoll,$(FEATURES)),)
     override FEATURES += fd
   endif
+else ifeq ($(APP_TYPE), rust_std)
+  # [package.metadata.arceos]
+  # features = ["foo", "bar"]
+  std_feat := $(shell cat $(APP)/Cargo.toml | grep "^\[package.metadata.arceos\]" -A1 | sed -n 's/^features = \[\(.*\)\]/\1/p' | tr ',"' ' ')
+  override FEATURES += $(std_feat)
 endif
 
 override FEATURES := $(strip $(FEATURES))
@@ -49,7 +58,11 @@ ifeq ($(BUS),pci)
 endif
 
 ifeq ($(shell test $(SMP) -gt 1; echo $$?),0)
-  lib_feat += smp
+  ifeq ($(APP_TYPE), rust_std)
+    ax_feat += smp
+  else
+    lib_feat += smp
+  endif
 endif
 
 ax_feat += $(filter-out $(lib_features),$(FEATURES))

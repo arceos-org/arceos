@@ -9,13 +9,13 @@ use rand::{rngs::SmallRng, RngCore, SeedableRng};
 use std::thread;
 use std::{sync::Arc, vec::Vec};
 
-#[cfg(feature = "axstd")]
+#[cfg(any(feature = "axstd", target_os = "arceos"))]
 use std::os::arceos::api::task::{self as api, AxWaitQueueHandle};
 
 const NUM_DATA: usize = 2_000_000;
 const NUM_TASKS: usize = 16;
 
-#[cfg(feature = "axstd")]
+#[cfg(any(feature = "axstd", target_os = "arceos"))]
 fn barrier() {
     use std::sync::atomic::{AtomicUsize, Ordering};
     static BARRIER_WQ: AxWaitQueueHandle = AxWaitQueueHandle::new();
@@ -30,7 +30,7 @@ fn barrier() {
     api::ax_wait_queue_wake(&BARRIER_WQ, u32::MAX); // wakeup all
 }
 
-#[cfg(not(feature = "axstd"))]
+#[cfg(not(any(feature = "axstd", target_os = "arceos")))]
 fn barrier() {
     use std::sync::{Barrier, OnceLock};
     static BARRIER: OnceLock<Barrier> = OnceLock::new();

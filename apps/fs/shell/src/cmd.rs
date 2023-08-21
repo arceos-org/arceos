@@ -2,6 +2,8 @@ use std::fs::{self, File, FileType};
 use std::io::{self, prelude::*};
 use std::{string::String, vec::Vec};
 
+#[cfg(all(not(feature = "axstd"), target_os = "arceos"))]
+use std::os::arceos::fs::{FileTypeExt, PermissionsExt};
 #[cfg(all(not(feature = "axstd"), unix))]
 use std::os::unix::fs::{FileTypeExt, PermissionsExt};
 

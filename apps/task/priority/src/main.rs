@@ -61,7 +61,7 @@ fn load(n: &u64) -> u64 {
 
 #[cfg_attr(feature = "axstd", no_mangle)]
 fn main() {
-    #[cfg(feature = "axstd")]
+    #[cfg(any(feature = "axstd", target_os = "arceos"))]
     ax_set_current_priority(-20).ok();
 
     let data = (0..PAYLOAD_KIND)
@@ -79,7 +79,7 @@ fn main() {
         let data_len = TASK_PARAMS[i].data_len;
         let nice = TASK_PARAMS[i].nice;
         tasks.push(thread::spawn(move || {
-            #[cfg(feature = "axstd")]
+            #[cfg(any(feature = "axstd", target_os = "arceos"))]
             ax_set_current_priority(nice).ok();
 
             let left = 0;
@@ -110,7 +110,7 @@ fn main() {
         println!("task {} = {}ms", i, time);
     }
 
-    #[cfg(feature = "axstd")]
+    #[cfg(any(feature = "axstd", target_os = "arceos"))]
     if cfg!(feature = "sched_cfs") && option_env!("AX_SMP") == Some("1") {
         assert!(
             leave_times[0] > leave_times[1]
