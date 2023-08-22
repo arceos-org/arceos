@@ -71,8 +71,11 @@ pci-ranges = [
 ]
 # UART Address
 uart-paddr = "0x0900_0000"
-uart-irq-num = "33"
+uart-irq = "1"
 
 # GICC Address
 gicc-paddr = "0x0801_0000"
 gicd-paddr = "0x0800_0000"
+
+# PSCI
+psci-method = "hvc"

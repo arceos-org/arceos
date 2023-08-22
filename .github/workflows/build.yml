@@ -132,6 +132,9 @@ jobs:
     - name: Build fs/shell for aarch64-raspi4
       run: make PLATFORM=aarch64-raspi4 A=apps/fs/shell FEATURES=driver-bcm2835-sdhci
 
+    - name: Build helloworld for aarch64-bsta1000b
+      run: make PLATFORM=aarch64-bsta1000b A=apps/helloworld
+
   build-apps-for-std:
     runs-on: ${{ matrix.os }}
     strategy:

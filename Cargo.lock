@@ -367,6 +367,7 @@ dependencies = [
  "bitflags 2.3.3",
  "cfg-if",
  "crate_interface",
+ "dw_apb_uart",
  "handler_table",
  "kernel_guard",
  "lazy_init",
@@ -957,6 +958,13 @@ dependencies = [
  "driver_display",
  "driver_net",
  "virtio-drivers",
+]
+
+[[package]]
+name = "dw_apb_uart"
+version = "0.1.0"
+dependencies = [
+ "tock-registers",
 ]
 
 [[package]]
