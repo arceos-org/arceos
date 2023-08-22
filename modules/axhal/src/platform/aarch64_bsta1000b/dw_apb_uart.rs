@@ -1,21 +1,19 @@
-//! PL011 UART.
+//! snps,dw-apb-uart serial driver
 
-use arm_pl011::pl011::Pl011Uart;
+use crate::mem::phys_to_virt;
+use dw_apb_uart::DW8250;
 use memory_addr::PhysAddr;
 use spinlock::SpinNoIrq;
 
-use crate::mem::phys_to_virt;
-
 const UART_BASE: PhysAddr = PhysAddr::from(axconfig::UART_PADDR);
 
-static UART: SpinNoIrq<Pl011Uart> =
-    SpinNoIrq::new(Pl011Uart::new(phys_to_virt(UART_BASE).as_mut_ptr()));
+static UART: SpinNoIrq<DW8250> = SpinNoIrq::new(DW8250::new(phys_to_virt(UART_BASE).as_usize()));
 
 /// Writes a byte to the console.
 pub fn putchar(c: u8) {
     let mut uart = UART.lock();
     match c {
-        b'\n' => {
+        b'\r' | b'\n' => {
             uart.putchar(b'\r');
             uart.putchar(b'\n');
         }
@@ -28,24 +26,19 @@ pub fn getchar() -> Option<u8> {
     UART.lock().getchar()
 }
 
-/// Initialize the UART
+/// UART simply initialize
 pub fn init_early() {
     UART.lock().init();
 }
 
 /// Set UART IRQ Enable
-pub fn init() {
-    #[cfg(feature = "irq")]
-    crate::irq::set_enable(crate::platform::irq::UART_IRQ_NUM, true);
+#[cfg(feature = "irq")]
+pub fn init_irq() {
+    UART.lock().set_ier(true);
+    crate::irq::register_handler(crate::platform::irq::UART_IRQ_NUM, handle);
 }
 
 /// UART IRQ Handler
 pub fn handle() {
-    let is_receive_interrupt = UART.lock().is_receive_interrupt();
-    UART.lock().ack_interrupts();
-    if is_receive_interrupt {
-        while let Some(c) = getchar() {
-            putchar(c);
-        }
-    }
+    trace!("Uart IRQ Handler");
 }

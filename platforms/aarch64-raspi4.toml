@@ -24,7 +24,7 @@ mmio-regions = [
 virtio-mmio-regions = []
 # UART Address
 uart-paddr = "0xFE20_1000"
-uart-irq-num = "153"
+uart-irq = "0x79"
 
 # GIC Address
 gicc-paddr = "0xFF84_2000"

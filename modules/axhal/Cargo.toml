@@ -52,6 +52,7 @@ aarch64-cpu = "9.3"
 tock-registers = "0.8"
 arm_gic = { path = "../../crates/arm_gic" }
 arm_pl011 = { path = "../../crates/arm_pl011" }
+dw_apb_uart = { path = "../../crates/dw_apb_uart" }
 
 [build-dependencies]
 axconfig = { path = "../axconfig" }
