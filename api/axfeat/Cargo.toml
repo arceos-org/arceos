@@ -22,7 +22,7 @@ fp_simd = ["axhal/fp_simd"]
 irq = ["axhal/irq", "axruntime/irq", "axtask?/irq"]
 
 # Memory
-alloc = ["dep:axalloc", "axruntime/alloc"]
+alloc = ["axalloc", "axruntime/alloc"]
 alloc-tlsf = ["axalloc/tlsf"]
 alloc-slab = ["axalloc/slab"]
 alloc-buddy = ["axalloc/buddy"]

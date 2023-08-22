@@ -14,7 +14,7 @@ default = []
 
 multitask = [
     "dep:axconfig", "dep:percpu", "dep:spinlock", "dep:lazy_init", "dep:memory_addr",
-    "dep:scheduler", "dep:timer_list", "dep:kernel_guard", "dep:crate_interface",
+    "dep:scheduler", "dep:timer_list", "kernel_guard", "dep:crate_interface",
 ]
 irq = []
 tls = ["axhal/tls"]

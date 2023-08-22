@@ -46,7 +46,6 @@ macro_rules! add {
 }
 
 #[cfg_attr(feature = "axstd", no_mangle)]
-#[inline(never)]
 fn main() {
     println!("Running TLS tests...");
 
