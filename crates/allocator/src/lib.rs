@@ -9,7 +9,6 @@
 //! - [`IdAllocator`]: Used to allocate unique IDs.
 
 #![no_std]
-#![feature(strict_provenance)]
 #![feature(result_option_inspect)]
 #![cfg_attr(feature = "allocator_api", feature(allocator_api))]
 
