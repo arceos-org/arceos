@@ -15,16 +15,16 @@ Initialize global memory allocator...
 Initialize scheduling...
   use FIFO scheduler.
 Primary CPU 0 init OK.
-part 0: ThreadId(4) \[0, 40)
-part 0: ThreadId(4) finished
-part 1: ThreadId(5) \[0, 40)
-part 1: ThreadId(5) finished
-part 2: ThreadId(6) \[0, 40)
-part 2: ThreadId(6) finished
-part 3: ThreadId(7) \[0, 40)
-part 3: ThreadId(7) finished
-part 4: ThreadId(8) \[0, 4)
-part 4: ThreadId(8) finished
+part 0: ThreadId([0-9]) \[0, 40)
+part 0: ThreadId([0-9]) finished
+part 1: ThreadId([0-9]) \[0, 40)
+part 1: ThreadId([0-9]) finished
+part 2: ThreadId([0-9]) \[0, 40)
+part 2: ThreadId([0-9]) finished
+part 3: ThreadId([0-9]) \[0, 40)
+part 3: ThreadId([0-9]) finished
+part 4: ThreadId([0-9]) \[0, 4)
+part 4: ThreadId([0-9]) finished
 sum = 3318102132
 leave time:
 task 0 =

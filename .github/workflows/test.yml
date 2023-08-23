@@ -48,3 +48,34 @@ jobs:
       run: |
         make disk_img
         make test ARCH=${{ matrix.arch }}
+
+  std-apps-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        arch: [x86_64, riscv64, aarch64]
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: ${{ env.rust-toolchain }}
+    - uses: actions-rs/install@v0.1
+      with:
+        crate: cargo-binutils
+        version: latest
+        use-tool-cache: true
+    - uses: ./.github/workflows/actions/setup-qemu
+      with:
+        qemu-version: ${{ env.qemu-version }}
+    - name: Build std library
+      run: |
+        make build_std ARCH=${{ matrix.arch }} STD=y
+    - name: Run stdapp tests
+      run: |
+        make disk_img
+        make test ARCH=${{ matrix.arch }} STD=y

@@ -17,16 +17,16 @@ Initialize scheduling...
   use FIFO scheduler.
 Primary CPU 0 init OK.
 Hello, main task!
-Hello, task 0! id = ThreadId(4)
-Hello, task 1! id = ThreadId(5)
-Hello, task 2! id = ThreadId(6)
-Hello, task 3! id = ThreadId(7)
-Hello, task 4! id = ThreadId(8)
-Hello, task 5! id = ThreadId(9)
-Hello, task 6! id = ThreadId(10)
-Hello, task 7! id = ThreadId(11)
-Hello, task 8! id = ThreadId(12)
-Hello, task 9! id = ThreadId(13)
+Hello, task 0! id = ThreadId([0-9]\+)
+Hello, task 1! id = ThreadId([0-9]\+)
+Hello, task 2! id = ThreadId([0-9]\+)
+Hello, task 3! id = ThreadId([0-9]\+)
+Hello, task 4! id = ThreadId([0-9]\+)
+Hello, task 5! id = ThreadId([0-9]\+)
+Hello, task 6! id = ThreadId([0-9]\+)
+Hello, task 7! id = ThreadId([0-9]\+)
+Hello, task 8! id = ThreadId([0-9]\+)
+Hello, task 9! id = ThreadId([0-9]\+)
 task block: Task(3, "gc")
 task exit: Task(4, ""), exit_code=0
 task unblock: Task(3, "gc")

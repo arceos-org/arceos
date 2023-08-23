@@ -77,8 +77,12 @@ function test_one() {
     local args=$1
     local expect="$APP/$2"
     local actual="$APP/actual.out"
-    args="$args ARCH=$ARCH ACCEL=n"
     rm -f "$actual"
+
+    args="$args ARCH=$ARCH ACCEL=n"
+    if [ "$STD" == "y" ]; then
+        args="$args STD=y"
+    fi
 
     MSG=
     run_and_compare "$args" "$expect" "$actual"
@@ -115,15 +119,19 @@ if [ -z "$1" ]; then
         "apps/task/priority"
         "apps/task/tls"
         "apps/net/httpclient"
-        "apps/c/helloworld"
-        "apps/c/memtest"
-        "apps/c/sqlite3"
-        "apps/c/httpclient"
-        "apps/c/pthread/basic"
-        "apps/c/pthread/sleep"
-        "apps/c/pthread/pipe"
-        "apps/c/pthread/parallel"
     )
+    if [ "$STD" != "y" ]; then
+        test_list+=(
+            "apps/c/helloworld"
+            "apps/c/memtest"
+            "apps/c/sqlite3"
+            "apps/c/httpclient"
+            "apps/c/pthread/basic"
+            "apps/c/pthread/sleep"
+            "apps/c/pthread/pipe"
+            "apps/c/pthread/parallel"
+        )
+    fi
 else
     test_list="$@"
 fi
