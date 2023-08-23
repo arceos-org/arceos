@@ -69,6 +69,9 @@ members = [
     "apps/task/yield",
     "apps/task/priority",
     "apps/task/tls",
+
+    "apps/std/mio-httpserver",
+    "apps/std/mio-tcpserver",
 ]
 
 [profile.release]
@@ -76,3 +79,4 @@ lto = true
 
 [patch.crates-io]
 crate_interface = { path = "crates/crate_interface" }
+mio = { git = "https://github.com/arceos-os/mio.git", branch = "arceos" }
