@@ -3,11 +3,7 @@ cfg_alloc! {
     use core::ptr::NonNull;
 
     pub fn ax_alloc(layout: Layout) -> Option<NonNull<u8>> {
-        if let Ok(vaddr) = axalloc::global_allocator().alloc(layout) {
-            Some(vaddr)
-        } else {
-            None
-        }
+        axalloc::global_allocator().alloc(layout).ok()
     }
 
     pub fn ax_dealloc(ptr: NonNull<u8>, layout: Layout) {
