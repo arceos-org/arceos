@@ -1,6 +1,5 @@
 #![feature(btreemap_alloc)]
 #![feature(allocator_api)]
-#![feature(strict_provenance)]
 
 use std::alloc::{Allocator, Layout};
 use std::collections::BTreeMap;

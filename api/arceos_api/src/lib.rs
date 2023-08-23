@@ -4,7 +4,6 @@
 
 #![no_std]
 #![feature(ip_in_core)]
-#![feature(strict_provenance)]
 #![feature(doc_auto_cfg)]
 #![feature(doc_cfg)]
 #![allow(unused_imports)]
