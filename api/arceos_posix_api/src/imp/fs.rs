@@ -2,17 +2,22 @@ use alloc::sync::Arc;
 use core::ffi::{c_char, c_int};
 
 use axerrno::{LinuxError, LinuxResult};
-use axio::{prelude::*, PollState, SeekFrom};
-use axstd::fs::OpenOptions;
-use axstd::sync::Mutex;
+use axfs::fops::OpenOptions;
+use axio::{PollState, SeekFrom};
+use axsync::Mutex;
 
-use crate::{ctypes, fd_ops::FileLike, utils::char_ptr_to_str};
+use super::fd_ops::{get_file_like, FileLike};
+use crate::{ctypes, utils::char_ptr_to_str};
 
-pub struct File(Mutex<axstd::fs::File>);
+pub struct File {
+    inner: Mutex<axfs::fops::File>,
+}
 
 impl File {
-    fn new(inner: axstd::fs::File) -> Self {
-        Self(Mutex::new(inner))
+    fn new(inner: axfs::fops::File) -> Self {
+        Self {
+            inner: Mutex::new(inner),
+        }
     }
 
     fn add_to_fd_table(self) -> LinuxResult<c_int> {
@@ -29,19 +34,17 @@ impl File {
 
 impl FileLike for File {
     fn read(&self, buf: &mut [u8]) -> LinuxResult<usize> {
-        let len = self.0.lock().read(buf)?;
-        Ok(len)
+        Ok(self.inner.lock().read(buf)?)
     }
 
     fn write(&self, buf: &[u8]) -> LinuxResult<usize> {
-        let len = self.0.lock().write(buf)?;
-        Ok(len)
+        Ok(self.inner.lock().write(buf)?)
     }
 
     fn stat(&self) -> LinuxResult<ctypes::stat> {
-        let metadata = self.0.lock().metadata()?;
+        let metadata = self.inner.lock().get_attr()?;
         let ty = metadata.file_type() as u8;
-        let perm = metadata.permissions().bits() as u32;
+        let perm = metadata.perm().bits() as u32;
         let st_mode = ((ty as u32) << 12) | perm;
         Ok(ctypes::stat {
             st_ino: 1,
@@ -79,7 +82,10 @@ fn flags_to_options(flags: c_int, _mode: ctypes::mode_t) -> OpenOptions {
     match flags & 0b11 {
         ctypes::O_RDONLY => options.read(true),
         ctypes::O_WRONLY => options.write(true),
-        _ => options.read(true).write(true),
+        _ => {
+            options.read(true);
+            options.write(true);
+        }
     };
     if flags & ctypes::O_APPEND != 0 {
         options.append(true);
@@ -100,17 +106,12 @@ fn flags_to_options(flags: c_int, _mode: ctypes::mode_t) -> OpenOptions {
 ///
 /// Return its index in the file table (`fd`). Return `EMFILE` if it already
 /// has the maximum number of files open.
-#[no_mangle]
-pub unsafe extern "C" fn ax_open(
-    filename: *const c_char,
-    flags: c_int,
-    mode: ctypes::mode_t,
-) -> c_int {
+pub fn sys_open(filename: *const c_char, flags: c_int, mode: ctypes::mode_t) -> c_int {
     let filename = char_ptr_to_str(filename);
-    debug!("ax_open <= {:?} {:#o} {:#o}", filename, flags, mode);
-    ax_call_body!(ax_open, {
+    debug!("sys_open <= {:?} {:#o} {:#o}", filename, flags, mode);
+    syscall_body!(sys_open, {
         let options = flags_to_options(flags, mode);
-        let file = options.open(filename?)?;
+        let file = axfs::fops::File::open(filename?, &options)?;
         File::new(file).add_to_fd_table()
     })
 }
@@ -118,21 +119,16 @@ pub unsafe extern "C" fn ax_open(
 /// Set the position of the file indicated by `fd`.
 ///
 /// Return its position after seek.
-#[no_mangle]
-pub unsafe extern "C" fn ax_lseek(
-    fd: c_int,
-    offset: ctypes::off_t,
-    whence: c_int,
-) -> ctypes::off_t {
-    debug!("ax_lseek <= {} {} {}", fd, offset, whence);
-    ax_call_body!(ax_lseek, {
+pub fn sys_lseek(fd: c_int, offset: ctypes::off_t, whence: c_int) -> ctypes::off_t {
+    debug!("sys_lseek <= {} {} {}", fd, offset, whence);
+    syscall_body!(sys_lseek, {
         let pos = match whence {
             0 => SeekFrom::Start(offset as _),
             1 => SeekFrom::Current(offset as _),
             2 => SeekFrom::End(offset as _),
             _ => return Err(LinuxError::EINVAL),
         };
-        let off = File::from_fd(fd)?.0.lock().seek(pos)?;
+        let off = File::from_fd(fd)?.inner.lock().seek(pos)?;
         Ok(off)
     })
 }
@@ -140,17 +136,33 @@ pub unsafe extern "C" fn ax_lseek(
 /// Get the file metadata by `path` and write into `buf`.
 ///
 /// Return 0 if success.
-#[no_mangle]
-pub unsafe extern "C" fn ax_stat(path: *const c_char, buf: *mut ctypes::stat) -> ctypes::ssize_t {
+pub unsafe fn sys_stat(path: *const c_char, buf: *mut ctypes::stat) -> c_int {
     let path = char_ptr_to_str(path);
-    debug!("ax_stat <= {:?} {:#x}", path, buf as usize);
-    ax_call_body!(ax_stat, {
+    debug!("sys_stat <= {:?} {:#x}", path, buf as usize);
+    syscall_body!(sys_stat, {
         if buf.is_null() {
             return Err(LinuxError::EFAULT);
         }
-        let file = axstd::fs::File::open(path?)?;
+        let mut options = OpenOptions::new();
+        options.read(true);
+        let file = axfs::fops::File::open(path?, &options)?;
         let st = File::new(file).stat()?;
         unsafe { *buf = st };
+        Ok(0)
+    })
+}
+
+/// Get file metadata by `fd` and write into `buf`.
+///
+/// Return 0 if success.
+pub unsafe fn sys_fstat(fd: c_int, buf: *mut ctypes::stat) -> c_int {
+    debug!("sys_fstat <= {} {:#x}", fd, buf as usize);
+    syscall_body!(sys_fstat, {
+        if buf.is_null() {
+            return Err(LinuxError::EFAULT);
+        }
+
+        unsafe { *buf = get_file_like(fd)?.stat()? };
         Ok(0)
     })
 }
@@ -158,11 +170,10 @@ pub unsafe extern "C" fn ax_stat(path: *const c_char, buf: *mut ctypes::stat) ->
 /// Get the metadata of the symbolic link and write into `buf`.
 ///
 /// Return 0 if success.
-#[no_mangle]
-pub unsafe extern "C" fn ax_lstat(path: *const c_char, buf: *mut ctypes::stat) -> ctypes::ssize_t {
+pub unsafe fn sys_lstat(path: *const c_char, buf: *mut ctypes::stat) -> ctypes::ssize_t {
     let path = char_ptr_to_str(path);
-    debug!("ax_lstat <= {:?} {:#x}", path, buf as usize);
-    ax_call_body!(ax_lstat, {
+    debug!("sys_lstat <= {:?} {:#x}", path, buf as usize);
+    syscall_body!(sys_lstat, {
         if buf.is_null() {
             return Err(LinuxError::EFAULT);
         }
@@ -172,15 +183,14 @@ pub unsafe extern "C" fn ax_lstat(path: *const c_char, buf: *mut ctypes::stat) -
 }
 
 /// Get the path of the current directory.
-#[no_mangle]
-pub unsafe extern "C" fn ax_getcwd(buf: *mut c_char, size: usize) -> *mut c_char {
-    debug!("ax_getcwd <= {:#x} {}", buf as usize, size);
-    ax_call_body!(ax_getcwd, {
+pub fn sys_getcwd(buf: *mut c_char, size: usize) -> *mut c_char {
+    debug!("sys_getcwd <= {:#x} {}", buf as usize, size);
+    syscall_body!(sys_getcwd, {
         if buf.is_null() {
             return Ok(core::ptr::null::<c_char>() as _);
         }
         let dst = unsafe { core::slice::from_raw_parts_mut(buf as *mut u8, size as _) };
-        let cwd = axstd::env::current_dir()?;
+        let cwd = axfs::api::current_dir()?;
         let cwd = cwd.as_bytes();
         if cwd.len() < size {
             dst[..cwd.len()].copy_from_slice(cwd);
@@ -196,13 +206,12 @@ pub unsafe extern "C" fn ax_getcwd(buf: *mut c_char, size: usize) -> *mut c_char
 /// If new exists, it is first removed.
 ///
 /// Return 0 if the operation succeeds, otherwise return -1.
-#[no_mangle]
-pub unsafe extern "C" fn ax_rename(old: *const c_char, new: *const c_char) -> c_int {
-    ax_call_body!(ax_rename, {
+pub fn sys_rename(old: *const c_char, new: *const c_char) -> c_int {
+    syscall_body!(sys_rename, {
         let old_path = char_ptr_to_str(old)?;
         let new_path = char_ptr_to_str(new)?;
-        debug!("ax_rename <= old: {:?}, new: {:?}", old_path, new_path);
-        axstd::fs::rename(old_path, new_path)?;
+        debug!("sys_rename <= old: {:?}, new: {:?}", old_path, new_path);
+        axfs::api::rename(old_path, new_path)?;
         Ok(0)
     })
 }

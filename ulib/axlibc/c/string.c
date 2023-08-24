@@ -5,8 +5,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <axlibc.h>
-
 size_t strlen(const char *s)
 {
     const char *a = s;
@@ -219,11 +217,6 @@ char *strrchr(const char *s, int c)
         } while (*s++);
     }
     return isCharFind;
-}
-
-char *strerror(int e)
-{
-    return ax_errno_string(e);
 }
 
 int strerror_r(int err, char *buf, size_t buflen)

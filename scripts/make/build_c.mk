@@ -5,7 +5,6 @@ ulib_dir := ulib/axlibc
 src_dir := $(ulib_dir)/c
 obj_dir := $(ulib_dir)/build_$(ARCH)
 inc_dir := $(ulib_dir)/include
-inc_gen_dir = $(ulib_dir)/include_gen
 c_lib := $(obj_dir)/libc.a
 libgcc :=
 
@@ -55,7 +54,7 @@ $(obj_dir):
 	$(call run_cmd,mkdir,-p $@)
 
 $(obj_dir)/%.o: $(src_dir)/%.c $(last_cflags)
-	$(call run_cmd,$(CC),$(CFLAGS) -I$(inc_gen_dir) -c -o $@ $<)
+	$(call run_cmd,$(CC),$(CFLAGS) -c -o $@ $<)
 
 $(c_lib): $(obj_dir) _check_need_rebuild $(ulib_obj)
 	$(call run_cmd,$(AR),rcs $@ $(ulib_obj))
