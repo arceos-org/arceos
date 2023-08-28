@@ -18,7 +18,7 @@ ulib_obj := $(patsubst $(src_dir)/%.c,$(obj_dir)/%.o,$(ulib_src))
 CFLAGS += $(addprefix -DAX_CONFIG_,$(shell echo $(lib_feat) | tr 'a-z' 'A-Z' | tr '-' '_'))
 CFLAGS += -DAX_LOG_$(shell echo $(LOG) | tr 'a-z' 'A-Z')
 
-CFLAGS += -nostdinc -static -no-pie -fno-builtin -ffreestanding -Wall
+CFLAGS += -nostdinc -fno-builtin -ffreestanding -Wall
 CFLAGS += -I$(CURDIR)/$(inc_dir)
 LDFLAGS += -nostdlib -static -no-pie --gc-sections -T$(LD_SCRIPT)
 
@@ -26,7 +26,9 @@ ifeq ($(MODE), release)
   CFLAGS += -O3
 endif
 
-ifeq ($(ARCH), riscv64)
+ifeq ($(ARCH), x86_64)
+  LDFLAGS += --no-relax
+else ifeq ($(ARCH), riscv64)
   CFLAGS += -march=rv64gc -mabi=lp64d -mcmodel=medany
 endif
 

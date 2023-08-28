@@ -5,11 +5,6 @@ redis-objs := redis-$(redis-version)/src/redis-server.o
 app-objs := $(redis-objs)
 
 CFLAGS += -Wno-format
-ifeq ($(AX_ARCH), x86_64)
-  CFLAGS += -mcmodel=large
-else ifeq ($(ARCH), riscv64)
-  LDFLAGS += --no-relax
-endif
 
 redis-build-args := \
   CC=$(CC) \

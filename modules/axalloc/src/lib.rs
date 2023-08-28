@@ -15,7 +15,7 @@ mod page;
 
 use allocator::{AllocResult, BaseAllocator, BitmapPageAllocator, ByteAllocator, PageAllocator};
 use core::alloc::{GlobalAlloc, Layout};
-use core::num::NonZeroUsize;
+use core::ptr::NonNull;
 use spinlock::SpinNoIrq;
 
 const PAGE_SIZE: usize = 0x1000;
@@ -102,7 +102,7 @@ impl GlobalAllocator {
     ///
     /// `align_pow2` must be a power of 2, and the returned region bound will be
     ///  aligned to it.
-    pub fn alloc(&self, layout: Layout) -> AllocResult<NonZeroUsize> {
+    pub fn alloc(&self, layout: Layout) -> AllocResult<NonNull<u8>> {
         // simple two-level allocator: if no heap memory, allocate from the page allocator.
         let mut balloc = self.balloc.lock();
         loop {
@@ -132,7 +132,7 @@ impl GlobalAllocator {
     /// undefined.
     ///
     /// [`alloc`]: GlobalAllocator::alloc
-    pub fn dealloc(&self, pos: NonZeroUsize, layout: Layout) {
+    pub fn dealloc(&self, pos: NonNull<u8>, layout: Layout) {
         self.balloc.lock().dealloc(pos, layout)
     }
 
@@ -181,18 +181,14 @@ impl GlobalAllocator {
 unsafe impl GlobalAlloc for GlobalAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         if let Ok(ptr) = GlobalAllocator::alloc(self, layout) {
-            ptr.get() as _
+            ptr.as_ptr()
         } else {
             alloc::alloc::handle_alloc_error(layout)
         }
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        GlobalAllocator::dealloc(
-            self,
-            NonZeroUsize::new(ptr as _).expect("dealloc null ptr"),
-            layout,
-        )
+        GlobalAllocator::dealloc(self, NonNull::new(ptr).expect("dealloc null ptr"), layout)
     }
 }
 

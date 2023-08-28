@@ -33,6 +33,8 @@ ifeq ($(APP_TYPE), c)
   endif
 endif
 
+override FEATURES := $(strip $(FEATURES))
+
 ax_feat :=
 lib_feat :=
 

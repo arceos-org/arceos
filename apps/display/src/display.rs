@@ -2,7 +2,7 @@ use embedded_graphics::pixelcolor::Rgb888;
 use embedded_graphics::prelude::{RgbColor, Size};
 use embedded_graphics::{draw_target::DrawTarget, prelude::OriginDimensions};
 
-use axstd::os::arceos::api::display as api;
+use std::os::arceos::api::display as api;
 
 pub struct Display {
     size: Size,

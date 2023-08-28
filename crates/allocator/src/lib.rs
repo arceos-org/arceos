@@ -9,7 +9,6 @@
 //! - [`IdAllocator`]: Used to allocate unique IDs.
 
 #![no_std]
-#![feature(strict_provenance)]
 #![feature(result_option_inspect)]
 #![cfg_attr(feature = "allocator_api", feature(allocator_api))]
 
@@ -34,7 +33,7 @@ mod tlsf;
 pub use tlsf::TlsfByteAllocator;
 
 use core::alloc::Layout;
-use core::num::NonZeroUsize;
+use core::ptr::NonNull;
 
 /// The error type used for allocation.
 #[derive(Debug)]
@@ -64,10 +63,10 @@ pub trait BaseAllocator {
 /// Byte-granularity allocator.
 pub trait ByteAllocator: BaseAllocator {
     /// Allocate memory with the given size (in bytes) and alignment.
-    fn alloc(&mut self, layout: Layout) -> AllocResult<NonZeroUsize>;
+    fn alloc(&mut self, layout: Layout) -> AllocResult<NonNull<u8>>;
 
     /// Deallocate memory at the given position, size, and alignment.
-    fn dealloc(&mut self, pos: NonZeroUsize, layout: Layout);
+    fn dealloc(&mut self, pos: NonNull<u8>, layout: Layout);
 
     /// Returns total memory size in bytes.
     fn total_bytes(&self) -> usize;
@@ -161,14 +160,13 @@ mod allocator_api {
                 0 => Ok(NonNull::slice_from_raw_parts(NonNull::dangling(), 0)),
                 size => {
                     let raw_addr = self.0.borrow_mut().alloc(layout).map_err(|_| AllocError)?;
-                    let ptr = unsafe { NonNull::new_unchecked(raw_addr.get() as _) };
-                    Ok(NonNull::slice_from_raw_parts(ptr, size))
+                    Ok(NonNull::slice_from_raw_parts(raw_addr, size))
                 }
             }
         }
 
         unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {
-            self.0.borrow_mut().dealloc(ptr.addr(), layout)
+            self.0.borrow_mut().dealloc(ptr, layout)
         }
     }
 

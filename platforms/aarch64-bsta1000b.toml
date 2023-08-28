@@ -1,0 +1,54 @@
+# Architecture identifier.
+arch = "aarch64"
+# Platform identifier.
+platform = "aarch64-bsta1000b"
+# Platform family.
+family = "aarch64-bsta1000b"
+
+# Base address of the whole physical memory.
+phys-memory-base = "0x80000000"
+# Size of the whole physical memory.
+phys-memory-size = "0x70000000"
+# Base physical address of the kernel image.
+kernel-base-paddr = "0x81000000"
+# Base virtual address of the kernel image.
+kernel-base-vaddr = "0xffff_0000_8100_0000"
+# Linear mapping offset, for quick conversions between physical and virtual
+# addresses.
+phys-virt-offset = "0xffff_0000_0000_0000"
+# MMIO regions with format (`base_paddr`, `size`).
+mmio-regions = [
+    ["0x20008000", "0x1000"], # uart8250 UART0
+    ["0x32000000", "0x8000"], # arm,gic-400
+    ["0x32011000", "0x1000"], # CPU CSR
+    ["0x33002000", "0x1000"], # Top CRM
+    ["0x70035000", "0x1000"], # CRM reg
+    ["0x70038000", "0x1000"], # aon pinmux
+]
+
+virtio-mmio-regions = []
+
+# Base physical address of the PCIe ECAM space.
+# pci-ecam-base = "0x40_1000_0000"
+# End PCI bus number (`bus-range` property in device tree).
+# pci-bus-end = "0xff"
+# PCI device memory ranges (`ranges` property in device tree).
+# pci-ranges = []
+
+# UART Address
+uart-paddr = "0x20008000"
+# UART irq from device tree
+uart-irq = "0xd5"
+# GICD Address
+gicd-paddr = "0x32001000"
+# GICC Address
+gicc-paddr = "0x32002000"
+
+# BST A1000B board registers
+CPU_CSR_BASE = "0x32011000"
+A1000BASE_TOPCRM = "0x33002000"
+A1000BASE_SAFETYCRM = "0x70035000"
+A1000BASE_AONCFG = "0x70038000"
+
+# PSCI
+psci-method = "smc"

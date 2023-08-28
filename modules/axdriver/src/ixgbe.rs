@@ -9,18 +9,17 @@ unsafe impl IxgbeHal for IxgbeHalImpl {
     fn dma_alloc(size: usize) -> (IxgbePhysAddr, NonNull<u8>) {
         let layout = Layout::from_size_align(size, 8).unwrap();
         let vaddr = if let Ok(vaddr) = global_allocator().alloc(layout) {
-            vaddr.get()
+            vaddr
         } else {
             return (0, NonNull::dangling());
         };
-        let paddr = virt_to_phys(vaddr.into());
-        let ptr = NonNull::new(vaddr as _).unwrap();
-        (paddr.as_usize(), ptr)
+        let paddr = virt_to_phys((vaddr.as_ptr() as usize).into());
+        (paddr.as_usize(), vaddr)
     }
 
     unsafe fn dma_dealloc(_paddr: IxgbePhysAddr, vaddr: NonNull<u8>, size: usize) -> i32 {
         let layout = Layout::from_size_align(size, 8).unwrap();
-        global_allocator().dealloc(vaddr.addr(), layout);
+        global_allocator().dealloc(vaddr, layout);
         0
     }
 

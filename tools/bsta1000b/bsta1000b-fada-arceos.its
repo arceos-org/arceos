@@ -1,0 +1,50 @@
+/*
+ * U-Boot uImage source file with multiple kernels, ramdisks and FDT blobs
+ */
+
+/dts-v1/;
+
+/ {
+	description = "Various kernels, ramdisks and FDT blobs";
+	#address-cells = <1>;
+
+	images {
+		kernel {
+			description = "ArceOS for BST A1000B";
+			data = /incbin/("../../arceos-fada.bin.gz");
+			type = "kernel";
+			arch = "arm64";
+			os = "linux";
+			compression = "gzip";
+			load = <0x81000000>;
+			entry = <0x81000000>;
+			hash-1 {
+				algo = "md5";
+			};
+			hash-2 {
+				algo = "sha1";
+			};
+		};
+
+		fdt-fada {
+			description = "bsta1000b-fada fdt";
+			data = /incbin/("./bsta1000b-fada.dtb");
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			hash-1 {
+				algo = "crc32";
+			};
+		};
+	};
+
+	configurations {
+		default = "config-fada";
+
+		config-fada {
+			description = "bsta1000b fada configuration";
+			kernel = "kernel";
+			fdt = "fdt-fada";
+		};
+	};
+};

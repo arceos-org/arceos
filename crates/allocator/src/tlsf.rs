@@ -4,7 +4,6 @@
 
 use super::{AllocError, AllocResult, BaseAllocator, ByteAllocator};
 use core::alloc::Layout;
-use core::num::NonZeroUsize;
 use core::ptr::NonNull;
 use rlsf::Tlsf;
 
@@ -53,17 +52,14 @@ impl BaseAllocator for TlsfByteAllocator {
 }
 
 impl ByteAllocator for TlsfByteAllocator {
-    fn alloc(&mut self, layout: Layout) -> AllocResult<NonZeroUsize> {
+    fn alloc(&mut self, layout: Layout) -> AllocResult<NonNull<u8>> {
         let ptr = self.inner.allocate(layout).ok_or(AllocError::NoMemory)?;
         self.used_bytes += layout.size();
-        Ok(ptr.addr())
+        Ok(ptr)
     }
 
-    fn dealloc(&mut self, pos: NonZeroUsize, layout: Layout) {
-        unsafe {
-            self.inner
-                .deallocate(NonNull::new_unchecked(pos.get() as _), layout.align())
-        }
+    fn dealloc(&mut self, pos: NonNull<u8>, layout: Layout) {
+        unsafe { self.inner.deallocate(pos, layout.align()) }
         self.used_bytes -= layout.size();
     }
 
