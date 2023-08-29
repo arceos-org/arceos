@@ -327,6 +327,11 @@ impl Process {
         ctid: usize,
     ) -> AxResult<u64> {
         let mut inner = self.inner.lock();
+        if inner.tasks.len() > 100 {
+            // 任务过多，手动特判结束，用来作为QEMU内存不足的应对方法
+            return Err(AxError::NoMemory);
+        }
+
         // 是否共享虚拟地址空间
         let new_memory_set = if flags.contains(CloneFlags::CLONE_VM) {
             Arc::clone(&inner.memory_set)
@@ -574,12 +579,6 @@ pub fn init_kernel_process() {
     //     unsafe { IDLE_TASK.current_ref_raw().id() },
     //     Arc::clone(unsafe { &IDLE_TASK.current_ref_raw().get_unchecked() }),
     // );
-}
-
-/// 将进程转化为调度进程，此时会运行所有的测例文件
-pub fn init_user_process() {
-    let main_task = Process::new(["execve".to_string()].to_vec()).unwrap();
-    RUN_QUEUE.lock().add_task(main_task);
 }
 
 /// 获取当前任务对应的进程

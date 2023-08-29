@@ -24,7 +24,10 @@ use axprocess::{
 };
 use riscv::asm;
 
-use crate::fs::{file::new_file, link::create_link};
+use crate::{
+    fs::{file::new_file, link::create_link},
+    syscall::task::filter,
+};
 
 /// 初赛测例
 #[allow(dead_code)]
@@ -311,84 +314,65 @@ pub const LUA_TESTCASES: &[&str] = &[
 
 #[allow(dead_code)]
 pub const BUSYBOX_TESTCASES: &[&str] = &[
-    // gcc测例
-    // "./riscv64-linux-musl-native/bin/riscv64-linux-musl-gcc ./hello.c -static",
-    // "./a.out",
-    // redis测例
-    "busybox sh",
-    // "./redis-server /redis.conf --loglevel verbose &", // 打开 redis 服务端，后台运行
-    // "./redis-cli-static", // 打开 redis 客户端
-    // "./redis-benchmark -c 2 -n 10", // 进行小规模的 redis-benchmark 测试
-    // "busybox echo iozone automatic measurements",
-    // "busybox sh cyclictest_testcode.sh",
-    // "busybox echo \"run iozone_testcode.sh\"",
-    // "busybox sh ./iozone_testcode.sh",
-    // "busybox echo iozone throughput write/read measurements",
-    // "iozone -t 4 -i 0 -i 1 -r 1k -s 1m",
-    // "busybox echo iozone throughput random-read measurements",
-    // "iozone -t 4 -i 0 -i 2 -r 1k -s 1m",
-    // "busybox sh ./test_all.sh",
-    // "busybox echo \"run libctest_testcode.sh\"",
-    // "./looper 20 ./multi.sh 16",
-    // "./fstime -w -t 20 -b 1024 -m 2000",
-    // "./fstime -w -t 20 -b 4096 -m 8000",
-    // "./fstime -w -t 20 -b 1024 -m 2000",
-    // "./arithoh 10",
-    // "./looper 20 ./multi.sh 1",
-    // "./looper 20 ./multi.sh 8",
-    // "./syscall 10",
-    // "./dhry2reg 10",
-    // "./looper 20 ./multi.sh 1",
-    // "./looper 20 ./multi.sh 8",
-    // "./fstime -w -t 20 -b 256 -m 500",
-    // "./runtest.exe -w entry-dynamic.exe fscanf",
-    // "./libctest_testcode.sh",
-    // "busybox echo \"run lua_testcode.sh\"",
-    // "./lua_testcode.sh",
-    // "lua strings.lua",
-    // "busybox echo \"run busybox_testcode.sh\"",
-    // "./busybox_testcode.sh",
     // "./time-test",
-    // "busybox sh ./netperf_testcode.sh",
-    // "busybox sh ./iperf_testcode.sh",
-    // "busybox sh unixbench_testcode.sh",
-    // // "./runtest.exe -w entry-static.exe lseek_large",
-    // "busybox sh libctest_testcode.sh",
-    // "busybox sh lua_testcode.sh",
-    // "busybox sh busybox_testcode.sh",
-    // "libc-bench",
-    // // "busybox mkdir -p /var/tmp",
-    // "busybox echo latency measurements",
-    // "lmbench_all lat_syscall -P 1 null",
-    // "lmbench_all lat_syscall -P 1 read",
-    // "lmbench_all lat_syscall -P 1 write",
-    // "busybox mkdir -p /var/tmp",
-    // "busybox touch /var/tmp/lmbench",
-    // "lmbench_all lat_syscall -P 1 stat /var/tmp/lmbench",
-    // "lmbench_all lat_syscall -P 1 fstat /var/tmp/lmbench",
-    // "lmbench_all lat_syscall -P 1 open /var/tmp/lmbench",
-    // "lmbench_all lat_select -n 100 -P 1 file",
-    // "lmbench_all lat_sig -P 1 install",
-    // "lmbench_all lat_sig -P 1 catch",
-    // "lmbench_all lat_sig -P 1 prot lat_sig",
-    // "lmbench_all lat_pipe -P 1",
-    // "lmbench_all lat_proc -P 1 fork",
-    // "lmbench_all lat_proc -P 1 exec",
-    // "busybox cp hello /tmp",
-    // "lmbench_all lat_proc -P 1 shell",
-    // "lmbench_all lmdd label=\"File /var/tmp/XXX write bandwidth:\" of=/var/tmp/XXX move=1m fsync=1 print=3",
-    // "lmbench_all lat_pagefault -P 1 /var/tmp/XXX",
-    // "lmbench_all lat_mmap -P 1 512k /var/tmp/XXX",
-    // "busybox echo file system latency",
-    // "lmbench_all lat_fs /var/tmp",
-    // "busybox echo Bandwidth measurements",
-    // "lmbench_all bw_pipe -P 1",
-    // "lmbench_all bw_file_rd -P 1 512k io_only /var/tmp/XXX",
-    // "lmbench_all bw_file_rd -P 1 512k open2close /var/tmp/XXX",
-    // "lmbench_all bw_mmap_rd -P 1 512k mmap_only /var/tmp/XXX",
-    // "lmbench_all bw_mmap_rd -P 1 512k open2close /var/tmp/XXX",
-    // "busybox echo context switch overhead",
-    // "lmbench_all lat_ctx -P 1 -s 32 2 4 8 16 24 32 64 96",
+    //
+    "./interrupts-test-1",
+    "./interrupts-test-2",
+    "./copy-file-range-test-1",
+    "./copy-file-range-test-2",
+    "./copy-file-range-test-3",
+    "./copy-file-range-test-4",
+    "busybox echo hello",
+    "busybox sh ./unixbench_testcode.sh",
+    "./copy-file-range-test-1",
+    "./copy-file-range-test-2",
+    "./copy-file-range-test-3",
+    "./copy-file-range-test-4",
+    "busybox echo hello",
+    "busybox sh ./iperf_testcode.sh",
+    "./interrupts-test-1",
+    "./interrupts-test-1",
+    "busybox echo hello",
+    "busybox sh busybox_testcode.sh",
+    "./interrupts-test-2",
+    "./interrupts-test-2",
+    "busybox echo hello",
+    // "busybox sh ./iozone_testcode.sh",
+    "busybox echo latency measurements",
+    "lmbench_all lat_syscall -P 1 null",
+    "lmbench_all lat_syscall -P 1 read",
+    "lmbench_all lat_syscall -P 1 write",
+    "busybox mkdir -p /var/tmp",
+    "busybox touch /var/tmp/lmbench",
+    "lmbench_all lat_syscall -P 1 stat /var/tmp/lmbench",
+    "lmbench_all lat_syscall -P 1 fstat /var/tmp/lmbench",
+    "lmbench_all lat_syscall -P 1 open /var/tmp/lmbench",
+    "lmbench_all lat_select -n 100 -P 1 file",
+    "lmbench_all lat_sig -P 1 install",
+    "lmbench_all lat_sig -P 1 catch",
+    "lmbench_all lat_sig -P 1 prot lat_sig",
+    "lmbench_all lat_pipe -P 1",
+    "lmbench_all lat_proc -P 1 fork",
+    "lmbench_all lat_proc -P 1 exec",
+    "busybox cp hello /tmp",
+    "lmbench_all lat_proc -P 1 shell",
+    "lmbench_all lmdd label=\"File /var/tmp/XXX write bandwidth:\" of=/var/tmp/XXX move=1m fsync=1 print=3",
+    "lmbench_all lat_pagefault -P 1 /var/tmp/XXX",
+    "lmbench_all lat_mmap -P 1 512k /var/tmp/XXX",
+    "busybox echo file system latency",
+    "lmbench_all lat_fs /var/tmp",
+    "busybox echo Bandwidth measurements",
+    "lmbench_all bw_pipe -P 1",
+    "lmbench_all bw_file_rd -P 1 512k io_only /var/tmp/XXX",
+    "lmbench_all bw_file_rd -P 1 512k open2close /var/tmp/XXX",
+    "lmbench_all bw_mmap_rd -P 1 512k mmap_only /var/tmp/XXX",
+    "lmbench_all bw_mmap_rd -P 1 512k open2close /var/tmp/XXX",
+    "busybox echo context switch overhead",
+    "lmbench_all lat_ctx -P 1 -s 32 2 4 8 16 24 32 64 96",
+    "busybox sh libctest_testcode.sh",
+    "busybox sh lua_testcode.sh",
+    "libc-bench",
+    "busybox sh ./netperf_testcode.sh",
 ];
 
 pub const NETPERF_TESTCASES: &[&str] = &[
@@ -652,7 +636,19 @@ pub fn run_testcases(case: &'static str) {
         let mut ans = None;
         if let Some(command_line) = test_iter.next() {
             let args = get_args(command_line.as_bytes());
+            axlog::ax_println!("run newtestcase: {:?}", args);
             let testcase = args.clone();
+            let real_testcase = if testcase[0] == "./busybox".to_string()
+                || testcase[0] == "busybox".to_string()
+                || testcase[0] == "entry-static.exe".to_string()
+                || testcase[0] == "entry-dynamic.exe".to_string()
+                || testcase[0] == "lmbench_all".to_string()
+            {
+                testcase[1].clone()
+            } else {
+                testcase[0].clone()
+            };
+            filter(real_testcase);
             let main_task = Process::new(args).unwrap();
             let now_process_id = main_task.get_process_id() as isize;
             TESTRESULT.lock().load(&(testcase));

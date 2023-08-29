@@ -53,7 +53,7 @@ pub fn syscall_exit(exit_code: i32) -> ! {
 /// 过滤掉不想测的测例，比赛时使用
 ///
 /// 若不想测该测例，返回false
-fn filter(testcase: String) -> bool {
+pub fn filter(testcase: String) -> bool {
     let mut test_filter = TEST_FILTER.lock();
     if testcase == "./fstime".to_string()
         || testcase == "fstime".to_string()
@@ -76,6 +76,7 @@ fn filter(testcase: String) -> bool {
         }
     } else {
         // 记录有无即可
+
         test_filter.insert(testcase, 1);
     }
     true

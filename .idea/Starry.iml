@@ -101,6 +101,11 @@
       <sourceFolder url="file://$MODULE_DIR$/modules/axtask/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/ulib/libax/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/ulib/starry_libax/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/apps/syscall/iperf/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/apps/syscall/netperf/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/extern_crates/rand-0.8.5/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/extern_crates/rand_chacha-0.3.1/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/extern_crates/rand_core-0.6.4/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />

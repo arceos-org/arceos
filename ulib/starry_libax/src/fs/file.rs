@@ -60,7 +60,15 @@ impl Read for FileDesc {
 
 impl Write for FileDesc {
     fn write(&mut self, buf: &[u8]) -> AxResult<usize> {
-        self.file.lock().write(buf)
+        let mut file = self.file.lock();
+        let old_offset = file.seek(SeekFrom::Current(0)).unwrap();
+        let size = file.metadata().unwrap().raw_metadata().size();
+        if old_offset > size {
+            file.seek(SeekFrom::Start(size)).unwrap();
+            let temp_buf: Vec<u8> = vec![0u8; (old_offset - size) as usize];
+            file.write(&temp_buf)?;
+        }
+        file.write(buf)
     }
 
     fn flush(&mut self) -> AxResult {
@@ -70,32 +78,32 @@ impl Write for FileDesc {
 
 impl Seek for FileDesc {
     fn seek(&mut self, pos: SeekFrom) -> AxResult<u64> {
-        let mut file = self.file.lock();
-        let size = file.metadata().unwrap().raw_metadata().size();
-        let old_offset = file.seek(SeekFrom::Current(0)).unwrap();
-        let new_offset = match pos {
-            SeekFrom::Start(offset) => Some(offset),
-            SeekFrom::Current(offset) => {
-                let new_offset = old_offset as i64 + offset;
-                if new_offset < 0 {
-                    None
-                } else {
-                    Some(new_offset as u64)
-                }
-            }
-            SeekFrom::End(_) => None,
-        };
-        if new_offset.is_some() {
-            let new_offset = new_offset.unwrap();
-            if new_offset > size {
-                // 手动写入足够数目的0
-                file.seek(SeekFrom::End(0)).unwrap();
-                let buf = vec![0u8; (new_offset - size) as usize];
-                file.write(&buf)?;
-                file.seek(SeekFrom::Start(old_offset)).unwrap();
-            }
-        }
-        file.seek(pos)
+        // let mut file = self.file.lock();
+        // let size = file.metadata().unwrap().raw_metadata().size();
+        // let old_offset = file.seek(SeekFrom::Current(0)).unwrap();
+        // let new_offset = match pos {
+        //     SeekFrom::Start(offset) => Some(offset),
+        //     SeekFrom::Current(offset) => {
+        //         let new_offset = old_offset as i64 + offset;
+        //         if new_offset < 0 {
+        //             None
+        //         } else {
+        //             Some(new_offset as u64)
+        //         }
+        //     }
+        //     SeekFrom::End(_) => None,
+        // };
+        // if new_offset.is_some() {
+        //     let new_offset = new_offset.unwrap();
+        //     if new_offset > size {
+        //         // 手动写入足够数目的0
+        //         file.seek(SeekFrom::End(0)).unwrap();
+        //         let buf = vec![0u8; (new_offset - size) as usize];
+        //         file.write(&buf)?;
+        //         file.seek(SeekFrom::Start(old_offset)).unwrap();
+        //     }
+        // }
+        self.file.lock().seek(pos)
     }
 }
 
@@ -148,7 +156,7 @@ impl FileIO for FileDesc {
             st_ctime_sec: stat.ctime.tv_sec as isize,
             st_ctime_nsec: stat.ctime.tv_nsec as isize,
         };
-        debug!("kstat: {:?}", kstat);
+        // info!("kstat: {:?}", kstat);
         Ok(kstat)
     }
 

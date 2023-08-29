@@ -24,7 +24,7 @@ qemu_args-aarch64 := \
   -machine virt \
   -kernel $(OUT_BIN)
 
-qemu_args-y := -m 8G -smp $(SMP) $(qemu_args-$(ARCH))
+qemu_args-y := -m 7G -smp $(SMP) $(qemu_args-$(ARCH))
 
 qemu_args-$(FS) += \
   -device virtio-blk-$(vdev-suffix),drive=disk0 \

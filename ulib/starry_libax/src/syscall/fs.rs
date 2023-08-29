@@ -21,7 +21,7 @@ use axprocess::link::{real_path, FilePath};
 use axprocess::process::current_process;
 use core::mem::transmute;
 use core::ptr::copy_nonoverlapping;
-use log::{debug, error, info, trace};
+use log::{debug, error, info};
 use memory_addr::VirtAddr;
 use spinlock::SpinNoIrq;
 
@@ -117,7 +117,7 @@ pub fn deal_with_path(
 ///     - count：要读取的字节数。
 /// 返回值：成功执行，返回读取的字节数。如为0，表示文件结束。错误，则返回-1。
 pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
-    trace!("[read()] fd: {fd}, buf: {buf:?}, len: {count}",);
+    info!("[read()] fd: {fd}, buf: {buf:?}, len: {count}",);
 
     if buf.is_null() {
         return ErrorNo::EFAULT as isize;
@@ -185,7 +185,7 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
 ///     - count：要写入的字节数。
 /// 返回值：成功执行，返回写入的字节数。错误，则返回-1。
 pub fn syscall_write(fd: usize, buf: *const u8, count: usize) -> isize {
-    trace!("[write()] fd: {fd}, buf: {buf:?}, len: {count}");
+    info!("[write()] fd: {fd}, buf: {buf:?}, len: {count}");
 
     if buf.is_null() {
         return ErrorNo::EFAULT as isize;
@@ -691,6 +691,10 @@ pub fn sys_linkat(
 pub fn syscall_unlinkat(dir_fd: usize, path: *const u8, flags: usize) -> isize {
     let path = deal_with_path(dir_fd, Some(path), false).unwrap();
 
+    if path.start_with(&FilePath::new("/proc").unwrap()) {
+        return -1;
+    }
+
     // unlink file
     if flags == 0 {
         if let None = remove_link(&path) {
@@ -1161,16 +1165,20 @@ pub fn syscall_pread64(fd: usize, buf: *mut u8, count: usize, offset: usize) -> 
 pub fn syscall_pwrite64(fd: usize, buf: *const u8, count: usize, offset: usize) -> isize {
     let process = current_process();
     let process_inner = process.inner.lock();
+
     let file = process_inner.fd_manager.fd_table[fd].clone().unwrap();
-    let old_offset = file.lock().seek(SeekFrom::Current(0)).unwrap();
-    let ret = file
-        .lock()
-        .seek(SeekFrom::Start(offset as u64))
-        .and_then(|_| {
-            file.lock()
-                .write(unsafe { core::slice::from_raw_parts(buf, count) })
-        });
-    file.lock().seek(SeekFrom::Start(old_offset)).unwrap();
+    let mut file = file.lock();
+
+    let old_offset = file.seek(SeekFrom::Current(0)).unwrap();
+
+    let ret = file.seek(SeekFrom::Start(offset as u64)).and_then(|_| {
+        let res = file.write(unsafe { core::slice::from_raw_parts(buf, count) });
+        res
+    });
+
+    file.seek(SeekFrom::Start(old_offset)).unwrap();
+    drop(file);
+
     ret.map(|size| size as isize)
         .unwrap_or_else(|_| ErrorNo::EINVAL as isize)
 }
@@ -1187,9 +1195,10 @@ pub fn syscall_sendfile64(out_fd: usize, in_fd: usize, offset: *mut usize, count
     let out_file = process_inner.fd_manager.fd_table[out_fd].clone().unwrap();
     let in_file = process_inner.fd_manager.fd_table[in_fd].clone().unwrap();
     let old_in_offset = in_file.lock().seek(SeekFrom::Current(0)).unwrap();
-    // 如果offset不为NULL，则从offset指定的位置开始读取
+
     let mut buf = vec![0u8; count];
     if !offset.is_null() {
+        // 如果offset不为NULL，则从offset指定的位置开始读取
         let in_offset = unsafe { *offset };
         in_file
             .lock()
@@ -1265,12 +1274,14 @@ pub fn syscall_readlinkat(dir_fd: usize, path: *const u8, buf: *mut u8, bufsiz: 
 /// 移动文件描述符的读写指针
 pub fn syscall_lseek(fd: usize, offset: isize, whence: usize) -> isize {
     let process = current_process();
+    info!("fd: {} offset: {} whence: {}", fd, offset, whence);
     let process_inner = process.inner.lock();
     if fd >= process_inner.fd_manager.fd_table.len() || fd < 3 {
         debug!("fd {} is out of range", fd);
         return ErrorNo::EBADF as isize;
     }
     if let Some(file) = process_inner.fd_manager.fd_table[fd].as_ref() {
+        info!("size: {}", file.lock().get_stat().unwrap().st_size);
         if file.lock().get_type() == FileIOType::DirDesc {
             debug!("fd is a dir");
             return ErrorNo::EISDIR as isize;
@@ -1437,6 +1448,11 @@ pub fn syscall_renameat2(
     let old_path = deal_with_path(old_dirfd, Some(_old_path), false).unwrap();
     let new_path = deal_with_path(new_dirfd, Some(_new_path), false).unwrap();
 
+    let proc_path = FilePath::new("/proc").unwrap();
+    if old_path.start_with(&proc_path) || new_path.start_with(&proc_path) {
+        return -1;
+    }
+
     // 交换两个目录名，目录下的文件不受影响，
 
     // 如果重命名后的文件已存在
@@ -1480,6 +1496,7 @@ pub fn syscall_renameat2(
 
 pub fn syscall_ftruncate64(fd: usize, len: usize) -> isize {
     let process = current_process();
+    info!("fd: {}, len: {}", fd, len);
     let inner = process.inner.lock();
     if fd >= inner.fd_manager.fd_table.len() {
         return ErrorNo::EINVAL as isize;
@@ -1494,4 +1511,90 @@ pub fn syscall_ftruncate64(fd: usize, len: usize) -> isize {
         }
     }
     0
+}
+
+/**
+该系统调用应复制文件描述符 fd_in 中的至多 len 个字节到文件描述符 fd_out 中。
+若 off_in 为 NULL，则复制时应从文件描述符 fd_in 本身的文件偏移处开始读取，并将其文件偏移增加成功复制的字节数；否则，从 *off_in 指定的文件偏移处开始读取，不改变 fd_in 的文件偏移，而是将 *off_in 增加成功复制的字节数。
+参数 off_out 的行为类似：若 off_out 为 NULL，则复制时从文件描述符 fd_out 本身的文件偏移处开始写入，并将其文件偏移增加成功复制的字节数；否则，从 *off_out 指定的文件偏移处开始写入，不改变 fd_out 的文件偏移，而是将 *off_out 增加成功复制的字节数。
+该系统调用的返回值为成功复制的字节数，出现错误时返回负值。若读取 fd_in 时的文件偏移超过其大小，则直接返回 0，不进行复制。
+本题中，fd_in 和 fd_out 总指向文件系统中两个不同的普通文件；flags 总为 0，没有实际作用。
+ */
+
+pub fn syscall_copyfilerange(
+    fd_in: usize,
+    off_in: *mut usize,
+    fd_out: usize,
+    off_out: *mut usize,
+    len: usize,
+    flags: usize,
+) -> isize {
+    let in_offset = if off_in.is_null() {
+        -1
+    } else {
+        unsafe { *off_in as isize }
+    };
+    let out_offset = if off_out.is_null() {
+        -1
+    } else {
+        unsafe { *off_out as isize }
+    };
+    if len == 0 {
+        return 0;
+    }
+    info!(
+        "copyfilerange: fd_in: {}, fd_out: {}, off_in: {}, off_out: {}, len: {}, flags: {}",
+        fd_in, fd_out, in_offset, out_offset, len, flags
+    );
+    let process = current_process();
+    let process_inner = process.inner.lock();
+    let out_file = process_inner.fd_manager.fd_table[fd_out].clone().unwrap();
+    let in_file = process_inner.fd_manager.fd_table[fd_in].clone().unwrap();
+    let old_in_offset = in_file.lock().seek(SeekFrom::Current(0)).unwrap();
+    let old_out_offset = out_file.lock().seek(SeekFrom::Current(0)).unwrap();
+
+    // if in_file.lock().get_stat().unwrap().st_size < (in_offset as u64) + len as u64 {
+    //     return 0;
+    // }
+
+    // set offset
+    if !off_in.is_null() {
+        in_file
+            .lock()
+            .seek(SeekFrom::Start(in_offset as u64))
+            .unwrap();
+    }
+    if !off_out.is_null() {
+        out_file
+            .lock()
+            .seek(SeekFrom::Start(out_offset as u64))
+            .unwrap();
+    }
+
+    // copy
+    let mut buf = vec![0; len];
+    let read_len = in_file.lock().read(buf.as_mut_slice()).unwrap();
+    // debug!("copy content: {:?}", &buf[..read_len]);
+
+    let write_len = out_file.lock().write(&buf[..read_len]).unwrap();
+    // assert_eq!(read_len, write_len);    // tmp
+
+    // set offset | modify off_in & off_out
+    if !off_in.is_null() {
+        in_file.lock().seek(SeekFrom::Start(old_in_offset)).unwrap();
+        unsafe {
+            *off_in += read_len;
+        }
+    }
+    if !off_out.is_null() {
+        out_file
+            .lock()
+            .seek(SeekFrom::Start(old_out_offset))
+            .unwrap();
+        unsafe {
+            *off_out += write_len;
+        }
+    }
+
+    write_len as isize
 }
