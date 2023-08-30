@@ -101,6 +101,14 @@ pub fn syscall_mmap(
 pub fn syscall_munmap(start: usize, len: usize) -> isize {
     let curr = current_process();
     let inner = curr.inner.lock();
+    if inner
+        .memory_set
+        .lock()
+        .manual_alloc_for_lazy(start.into())
+        .is_err()
+    {
+        return ErrorNo::EFAULT as isize;
+    }
     inner.memory_set.lock().munmap(start.into(), len);
     drop(inner);
     drop(curr);
@@ -183,7 +191,8 @@ pub fn syscall_shmget(key: i32, size: usize, flags: i32) -> isize {
             }
             None => {
                 if flags.contains(ShmFlags::IPC_CREAT) {
-                    let Ok((shmid, mem)) = MemorySet::create_shared_mem(key, size, pid, 0, 0, mode) else {
+                    let Ok((shmid, mem)) = MemorySet::create_shared_mem(key, size, pid, 0, 0, mode)
+                    else {
                         return -1;
                     };
 
@@ -218,7 +227,8 @@ pub fn syscall_shmat(shmid: i32, addr: usize, flags: i32) -> isize {
 
     let Some(mem) = memory
         .get_private_shared_mem(shmid)
-        .or_else(|| MemorySet::get_shared_mem(shmid)) else {
+        .or_else(|| MemorySet::get_shared_mem(shmid))
+    else {
         return ErrorNo::EINVAL as isize;
     };
     let size = mem.size();

@@ -39,17 +39,15 @@ pub fn clear_wait(id: u64, leader: bool) {
     if leader {
         // 清空所有所属进程为指定进程的线程
         futex_wait_task.iter_mut().for_each(|(_, tasks)| {
-            // tasks.drain_filter(|task| task.get_process_id() == id);
             tasks.retain(|(task, _)| task.get_process_id() != id);
         });
     } else {
-        futex_wait_task.iter_mut().for_each(|(_, tasks)| {
-            // tasks.drain_filter(|task| task.id().as_u64() == id);
-            tasks.retain(|(task, _)| task.id().as_u64() != id)
-        });
+        futex_wait_task
+            .iter_mut()
+            .for_each(|(_, tasks)| tasks.retain(|(task, _)| task.id().as_u64() != id));
     }
 
     // 如果一个共享变量不会被线程所使用了，那么直接把他移除
     // info!("clean pre keys: {:?}", futex_wait_task.keys());
-    futex_wait_task.drain_filter(|_, tasks| tasks.is_empty());
+    futex_wait_task.retain(|_, tasks| !tasks.is_empty());
 }

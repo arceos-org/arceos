@@ -1,6 +1,4 @@
 #![cfg_attr(not(test), no_std)]
-#![feature(drain_filter)]
-#![feature(btree_drain_filter)]
 use axerrno::AxResult;
 use axhal::{arch::TaskContext, mem::VirtAddr, paging::MappingFlags};
 use axtask::{current, monolithic_task::task::CurrentTask, monolithic_task::task::TaskState};

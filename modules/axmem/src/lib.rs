@@ -1,6 +1,4 @@
 #![no_std]
-#![feature(drain_filter)]
-#![feature(btree_drain_filter)]
 
 mod area;
 mod backend;
@@ -329,7 +327,6 @@ impl MemorySet {
         backend: Option<MemBackend>,
     ) {
         let num_pages = (size + PAGE_SIZE_4K - 1) / PAGE_SIZE_4K;
-
         let area = match data {
             Some(data) => MapArea::new_alloc(
                 vaddr,
@@ -363,10 +360,22 @@ impl MemorySet {
 
         // Note: Some areas will have to shrink its left part, so its key in BTree (start vaddr) have to change.
         // We get all the overlapped areas out first.
-        let overlapped_area: Vec<_> = self
-            .owned_mem
-            .drain_filter(|_, area| area.overlap_with(start, end))
-            .collect();
+
+        // UPDATE: draif_filter is an unstable feature, so we implement it manually.
+        let mut overlapped_area: Vec<(usize, MapArea)> = Vec::new();
+
+        let mut prev_area: BTreeMap<usize, MapArea> = BTreeMap::new();
+
+        for _ in 0..self.owned_mem.len() {
+            let (idx, area) = self.owned_mem.pop_first().unwrap();
+            if area.overlap_with(start, end) {
+                overlapped_area.push((idx, area));
+            } else {
+                prev_area.insert(idx, area);
+            }
+        }
+
+        self.owned_mem = prev_area;
 
         info!("splitting for [{:?}, {:?})", start, end);
 
@@ -399,7 +408,6 @@ impl MemorySet {
                     area.end_va()
                 );
                 area.shrink_left(end, &mut self.page_table);
-
                 assert!(self.owned_mem.insert(area.vaddr.into(), area).is_none());
             } else {
                 info!(
@@ -410,7 +418,6 @@ impl MemorySet {
                     start
                 );
                 area.shrink_right(start, &mut self.page_table);
-
                 assert!(self.owned_mem.insert(area.vaddr.into(), area).is_none());
             }
         }
@@ -497,7 +504,6 @@ impl MemorySet {
         // align up to 4k
         let size = (size + PAGE_SIZE_4K - 1) / PAGE_SIZE_4K * PAGE_SIZE_4K;
         info!("[munmap] [{:?}, {:?})", start, (start + size).align_up_4k());
-
         self.split_for_area(start, size);
     }
 
@@ -541,11 +547,22 @@ impl MemorySet {
         // NOTE: There will be new areas but all old aree's start address won't change. But we
         // can't iterating through `value_mut()` while `insert()` to BTree at the same time, so we
         // `drain_filter()` out the overlapped areas first.
-        let overlapped_area: Vec<_> = self
-            .owned_mem
-            .drain_filter(|_, area| area.overlap_with(start, end))
-            .collect();
 
+        // UPDATE: draif_filter is an unstable feature, so we implement it manually.
+        let mut overlapped_area: Vec<(usize, MapArea)> = Vec::new();
+
+        let mut prev_area: BTreeMap<usize, MapArea> = BTreeMap::new();
+
+        for _ in 0..self.owned_mem.len() {
+            let (idx, area) = self.owned_mem.pop_first().unwrap();
+            if area.overlap_with(start, end) {
+                overlapped_area.push((idx, area));
+            } else {
+                prev_area.insert(idx, area);
+            }
+        }
+
+        self.owned_mem = prev_area;
         for (_, mut area) in overlapped_area {
             if area.contained_in(start, end) {
                 // update whole area

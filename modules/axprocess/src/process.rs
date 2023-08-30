@@ -253,14 +253,16 @@ impl Process {
 
         let curr = current();
         // 再考虑手动结束其他所有的task
-        let _ = inner
-            .tasks
-            .drain_filter(|task: &mut AxTaskRef| task.id() != curr.id())
-            .map(|task| {
-                // 原有task的指针不变
+
+        for _ in 0..inner.tasks.len() {
+            let task = inner.tasks.pop().unwrap();
+            if task.id() == curr.id() {
+                inner.tasks.push(task);
+            } else {
                 TID2TASK.lock().remove(&task.id().as_u64());
-                RUN_QUEUE.lock().remove_task(&task)
-            });
+                RUN_QUEUE.lock().remove_task(&task);
+            }
+        }
         // 当前任务被设置为主线程
         curr.set_leader(true);
         // 重置统计时间

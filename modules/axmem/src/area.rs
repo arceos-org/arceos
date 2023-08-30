@@ -35,7 +35,6 @@ impl MapArea {
         for _ in 0..num_pages {
             pages.push(None);
         }
-
         let _ = page_table
             .map_fault_region(start, num_pages * PAGE_SIZE_4K)
             .unwrap();
