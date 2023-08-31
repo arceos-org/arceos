@@ -9,7 +9,29 @@ homepage = "https://github.com/rcore-os/arceos"
 repository = "https://github.com/rcore-os/arceos/tree/main/crates/allocator"
 documentation = "https://rcore-os.github.io/arceos/allocator/index.html"
 
+[features]
+default = []
+full = ["bitmap", "tlsf", "slab", "buddy", "allocator_api"]
+
+bitmap = ["dep:bitmap-allocator"]
+
+tlsf = ["dep:rlsf"]
+slab = ["dep:slab_allocator"]
+buddy = ["dep:buddy_system_allocator"]
+
+allocator_api = []
+
 [dependencies]
-buddy_system_allocator = { version = "0.9", default-features = false }
-bitmap-allocator = { git = "https://github.com/rcore-os/bitmap-allocator.git", rev = "88e871a" }
-slab_allocator = { path = "../slab_allocator" }
+buddy_system_allocator = { version = "0.9", default-features = false, optional = true }
+slab_allocator = { path = "../slab_allocator", optional = true }
+rlsf = { version = "0.2", optional = true }
+bitmap-allocator = { git = "https://github.com/rcore-os/bitmap-allocator.git", rev = "88e871a", optional = true }
+
+[dev-dependencies]
+allocator = { path = ".", features = ["full"] }
+rand = { version = "0.8", features = ["small_rng"] }
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "collections"
+harness = false

@@ -10,7 +10,7 @@ pub struct FileNode {
 }
 
 impl FileNode {
-    pub const fn new() -> Self {
+    pub(super) const fn new() -> Self {
         Self {
             content: RwLock::new(Vec::new()),
         }

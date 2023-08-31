@@ -106,6 +106,7 @@ impl WaitQueue {
             deadline
         );
         crate::timers::set_alarm_wakeup(deadline, curr.clone());
+
         RUN_QUEUE.lock().block_current(|task| {
             task.set_in_wait_queue(true);
             self.queue.lock().push_back(task)
@@ -184,7 +185,7 @@ impl WaitQueue {
     ///
     /// If `resched` is true, the current task will be preempted when the
     /// preemption is enabled.
-    pub fn notify_task(&self, resched: bool, task: &AxTaskRef) -> bool {
+    pub fn notify_task(&mut self, resched: bool, task: &AxTaskRef) -> bool {
         let mut rq = RUN_QUEUE.lock();
         let mut wq = self.queue.lock();
         if let Some(index) = wq.iter().position(|t| Arc::ptr_eq(t, task)) {

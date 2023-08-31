@@ -6,18 +6,16 @@
 //! ab -n 5000 -c 20 http://X.X.X.X:5555/
 //! ```
 
-#![no_std]
-#![no_main]
+#![cfg_attr(feature = "axstd", no_std)]
+#![cfg_attr(feature = "axstd", no_main)]
 
 #[macro_use]
-extern crate libax;
-extern crate alloc;
+#[cfg(feature = "axstd")]
+extern crate axstd as std;
 
-use core::str::FromStr;
-
-use libax::io::{self, prelude::*};
-use libax::net::{IpAddr, TcpListener, TcpStream};
-use libax::thread;
+use std::io::{self, prelude::*};
+use std::net::{TcpListener, TcpStream};
+use std::thread;
 
 const LOCAL_IP: &str = "0.0.0.0";
 const LOCAL_PORT: u16 = 5555;
@@ -50,19 +48,29 @@ const CONTENT: &str = r#"<html>
 </html>
 "#;
 
-fn http_server(mut stream: TcpStream) -> io::Result {
-    let mut buf = [0u8; 1024];
-    stream.read(&mut buf)?;
+macro_rules! info {
+    ($($arg:tt)*) => {
+        match option_env!("LOG") {
+            Some("info") | Some("debug") | Some("trace") => {
+                print!("[INFO] {}\n", format_args!($($arg)*));
+            }
+            _ => {}
+        }
+    };
+}
 
-    let reponse = alloc::format!(header!(), CONTENT.len(), CONTENT);
-    stream.write_all(reponse.as_bytes())?;
+fn http_server(mut stream: TcpStream) -> io::Result<()> {
+    let mut buf = [0u8; 4096];
+    let _len = stream.read(&mut buf)?;
+
+    let response = format!(header!(), CONTENT.len(), CONTENT);
+    stream.write_all(response.as_bytes())?;
 
     Ok(())
 }
 
-fn accept_loop() -> io::Result {
-    let (addr, port) = (IpAddr::from_str(LOCAL_IP).unwrap(), LOCAL_PORT);
-    let listener = TcpListener::bind((addr, port).into())?;
+fn accept_loop() -> io::Result<()> {
+    let listener = TcpListener::bind((LOCAL_IP, LOCAL_PORT))?;
     println!("listen on: http://{}/", listener.local_addr().unwrap());
 
     let mut i = 0;
@@ -71,7 +79,7 @@ fn accept_loop() -> io::Result {
             Ok((stream, addr)) => {
                 info!("new client {}: {}", i, addr);
                 thread::spawn(move || match http_server(stream) {
-                    Err(e) => error!("client connection error: {:?}", e),
+                    Err(e) => info!("client connection error: {:?}", e),
                     Ok(()) => info!("client {} closed successfully", i),
                 });
             }
@@ -81,7 +89,7 @@ fn accept_loop() -> io::Result {
     }
 }
 
-#[no_mangle]
+#[cfg_attr(feature = "axstd", no_mangle)]
 fn main() {
     println!("Hello, ArceOS HTTP server!");
     accept_loop().expect("test HTTP server failed");

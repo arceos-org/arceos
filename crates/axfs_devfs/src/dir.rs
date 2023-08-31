@@ -88,13 +88,18 @@ impl VfsNodeOps for DirNode {
     }
 
     fn create(&self, path: &str, ty: VfsNodeType) -> VfsResult {
-        log::debug!("create at devfs: {}", path);
+        log::debug!("create {:?} at devfs: {}", ty, path);
         let (name, rest) = split_path(path);
         if let Some(rest) = rest {
             match name {
                 "" | "." => self.create(rest, ty),
                 ".." => self.parent().ok_or(VfsError::NotFound)?.create(rest, ty),
-                _ => self.children.read().get(name).unwrap().create(rest, ty),
+                _ => self
+                    .children
+                    .read()
+                    .get(name)
+                    .ok_or(VfsError::NotFound)?
+                    .create(rest, ty),
             }
         } else if name.is_empty() || name == "." || name == ".." {
             Ok(()) // already exists

@@ -57,7 +57,7 @@ pub fn gen_current_ptr(symbol: &Ident, ty: &Type) -> proc_macro2::TokenStream {
             #[cfg(target_arch = "aarch64")]
             ::core::arch::asm!("mrs {}, TPIDR_EL1", out(reg) base);
             #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
-            ::core::arch::asm!("mv {}, tp", out(reg) base);
+            ::core::arch::asm!("mv {}, gp", out(reg) base);
             (base + self.offset()) as *const #ty
         }
     })
@@ -77,7 +77,7 @@ pub fn gen_read_current_raw(symbol: &Ident, ty: &Type) -> proc_macro2::TokenStre
     let rv64_asm = quote! {
         ::core::arch::asm!(
             "lui {0}, %hi({VAR})",
-            "add {0}, {0}, tp",
+            "add {0}, {0}, gp",
             concat!(#rv64_op, " {0}, %lo({VAR})({0})"),
             out(reg) value,
             VAR = sym #symbol,
@@ -154,7 +154,7 @@ pub fn gen_write_current_raw(symbol: &Ident, val: &Ident, ty: &Type) -> proc_mac
     let rv64_code = quote! {
         ::core::arch::asm!(
             "lui {0}, %hi({VAR})",
-            "add {0}, {0}, tp",
+            "add {0}, {0}, gp",
             concat!(#rv64_op, " {1}, %lo({VAR})({0})"),
             out(reg) _,
             in(reg) #val as #ty_fixup,

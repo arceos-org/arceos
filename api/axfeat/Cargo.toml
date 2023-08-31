@@ -1,0 +1,74 @@
+[package]
+name = "axfeat"
+version = "0.1.0"
+edition = "2021"
+authors = ["Yuekai Jia <equation618@gmail.com>"]
+description = "Top-level feature selection for ArceOS"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+repository = "https://github.com/rcore-os/arceos/tree/main/api/axfeat"
+documentation = "https://rcore-os.github.io/arceos/axfeat/index.html"
+
+[features]
+default = []
+
+# Multicore
+smp = ["axhal/smp", "axruntime/smp", "spinlock/smp"]
+
+# Floating point/SIMD
+fp_simd = ["axhal/fp_simd"]
+
+# Interrupts
+irq = ["axhal/irq", "axruntime/irq", "axtask?/irq"]
+
+# Memory
+alloc = ["axalloc", "axruntime/alloc"]
+alloc-tlsf = ["axalloc/tlsf"]
+alloc-slab = ["axalloc/slab"]
+alloc-buddy = ["axalloc/buddy"]
+paging = ["alloc", "axhal/paging", "axruntime/paging"]
+tls = ["alloc", "axhal/tls", "axruntime/tls", "axtask?/tls"]
+
+# Multi-threading and scheduler
+multitask = ["alloc", "axtask/multitask", "axsync/multitask", "axruntime/multitask"]
+sched_fifo = ["axtask/sched_fifo"]
+sched_rr = ["axtask/sched_rr", "irq"]
+sched_cfs = ["axtask/sched_cfs", "irq"]
+
+# File system
+fs = ["alloc", "paging", "axdriver/virtio-blk", "dep:axfs", "axruntime/fs"] # TODO: try to remove "paging"
+myfs = ["axfs?/myfs"]
+
+# Networking
+net = ["alloc", "paging", "axdriver/virtio-net", "dep:axnet", "axruntime/net"]
+
+# Display
+display = ["alloc", "paging", "axdriver/virtio-gpu", "dep:axdisplay", "axruntime/display"]
+
+# Device drivers
+bus-mmio = ["axdriver?/bus-mmio"]
+bus-pci = ["axdriver?/bus-pci"]
+driver-ramdisk = ["axdriver?/ramdisk", "axfs?/use-ramdisk"]
+driver-ixgbe = ["axdriver?/ixgbe"]
+driver-bcm2835-sdhci = ["axdriver?/bcm2835-sdhci"]
+
+# Logging
+log-level-off = ["axlog/log-level-off"]
+log-level-error = ["axlog/log-level-error"]
+log-level-warn = ["axlog/log-level-warn"]
+log-level-info = ["axlog/log-level-info"]
+log-level-debug = ["axlog/log-level-debug"]
+log-level-trace = ["axlog/log-level-trace"]
+
+[dependencies]
+axruntime = { path = "../../modules/axruntime" }
+axhal = { path = "../../modules/axhal" }
+axlog = { path = "../../modules/axlog" }
+axalloc = { path = "../../modules/axalloc", optional = true }
+axdriver = { path = "../../modules/axdriver", optional = true }
+axfs = { path = "../../modules/axfs", optional = true }
+axnet = { path = "../../modules/axnet", optional = true }
+axdisplay = { path = "../../modules/axdisplay", optional = true }
+axsync = { path = "../../modules/axsync", optional = true }
+axtask = { path = "../../modules/axtask", optional = true }
+spinlock = { path = "../../crates/spinlock", optional = true }

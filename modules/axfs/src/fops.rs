@@ -21,7 +21,6 @@ pub type FileAttr = axfs_vfs::VfsNodeAttr;
 pub type FilePerm = axfs_vfs::VfsNodePerm;
 
 /// An opened file object, with open permissions and a cursor.
-#[derive(Clone)]
 pub struct File {
     node: WithCap<VfsNodeRef>,
     is_append: bool,
@@ -183,6 +182,15 @@ impl File {
         Ok(read_len)
     }
 
+    /// Reads the file at the given position. Returns the number of bytes read.
+    ///
+    /// It does not update the file cursor.
+    pub fn read_at(&self, offset: u64, buf: &mut [u8]) -> AxResult<usize> {
+        let node = self.node.access(Cap::READ)?;
+        let read_len = node.read_at(offset, buf)?;
+        Ok(read_len)
+    }
+
     /// Writes the file at the current position. Returns the number of bytes
     /// written.
     ///
@@ -195,6 +203,16 @@ impl File {
         };
         let write_len = node.write_at(self.offset, buf)?;
         self.offset += write_len as u64;
+        Ok(write_len)
+    }
+
+    /// Writes the file at the given position. Returns the number of bytes
+    /// written.
+    ///
+    /// It does not update the file cursor.
+    pub fn write_at(&self, offset: u64, buf: &[u8]) -> AxResult<usize> {
+        let node = self.node.access(Cap::WRITE)?;
+        let write_len = node.write_at(offset, buf)?;
         Ok(write_len)
     }
 
@@ -221,18 +239,6 @@ impl File {
     /// Gets the file attributes.
     pub fn get_attr(&self) -> AxResult<FileAttr> {
         self.node.access(Cap::empty())?.get_attr()
-    }
-
-    pub fn readable(&self) -> bool {
-        self.node.can_access(Cap::READ)
-    }
-
-    pub fn writable(&self) -> bool {
-        self.node.can_access(Cap::WRITE)
-    }
-
-    pub fn executable(&self) -> bool {
-        self.node.can_access(Cap::EXECUTE)
     }
 }
 
@@ -321,6 +327,14 @@ impl Directory {
             .read_dir(self.entry_idx, dirents)?;
         self.entry_idx += n;
         Ok(n)
+    }
+
+    /// Rename a file or directory to a new name.
+    /// Delete the original file if `old` already exists.
+    ///
+    /// This only works then the new path is in the same mounted fs.
+    pub fn rename(&self, old: &str, new: &str) -> AxResult {
+        crate::root::rename(old, new)
     }
 }
 

@@ -1,0 +1,41 @@
+# Architecture identifier.
+arch = "unknown"
+# Platform identifier.
+platform = "dummy"
+# Platform family.
+family = "dummy"
+
+# Base address of the whole physical memory.
+phys-memory-base = "0"
+# Size of the whole physical memory.
+phys-memory-size = "0"
+# Base physical address of the kernel image.
+kernel-base-paddr = "0"
+# Base virtual address of the kernel image.
+kernel-base-vaddr = "0"
+# Linear mapping offset, for quick conversions between physical and virtual
+# addresses.
+phys-virt-offset = "0"
+# MMIO regions with format (`base_paddr`, `size`).
+mmio-regions = []
+# VirtIO MMIO regions with format (`base_paddr`, `size`).
+virtio-mmio-regions = []
+# Base physical address of the PCIe ECAM space.
+pci-ecam-base = "0"
+# End PCI bus number.
+pci-bus-end = "0"
+# PCI device memory ranges.
+pci-ranges = []
+
+# Timer interrupt frequency in Hz.
+timer-frequency = "0"
+
+# Stack size of each task.
+task-stack-size = "0x40000"   # 256 K
+
+# Number of timer ticks per second (Hz). A timer tick may contain several timer
+# interrupts.
+ticks-per-sec = "100"
+
+# Number of CPUs
+smp = "1"

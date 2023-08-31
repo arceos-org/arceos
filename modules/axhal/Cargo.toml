@@ -11,30 +11,11 @@ documentation = "https://rcore-os.github.io/arceos/axhal/index.html"
 
 [features]
 smp = []
+alloc = []
 fp_simd = []
 paging = ["axalloc", "page_table"]
 irq = []
-platform-pc-x86 = ["axconfig/platform-pc-x86", "dep:ratio"]
-platform-qemu-virt-riscv = ["axconfig/platform-qemu-virt-riscv"]
-platform-qemu-virt-aarch64 = [
-    "axconfig/platform-qemu-virt-aarch64",
-    "dep:page_table_entry",
-    "dep:ratio",
-]
-
-monolithic = []
-
-# 是否引入信号
-signal = []
-
-platform-raspi4-aarch64 = [
-    "axconfig/platform-raspi4-aarch64",
-    "dep:page_table_entry",
-    "dep:ratio",
-]
-
-img = []
-
+tls = ["alloc"]
 default = []
 
 [dependencies]
@@ -47,16 +28,15 @@ axconfig = { path = "../axconfig" }
 axalloc = { path = "../axalloc", optional = true }
 kernel_guard = { path = "../../crates/kernel_guard" }
 spinlock = { path = "../../crates/spinlock" }
-ratio = { path = "../../crates/ratio", optional = true }
+ratio = { path = "../../crates/ratio" }
 lazy_init = { path = "../../crates/lazy_init" }
 page_table = { path = "../../crates/page_table", optional = true }
-page_table_entry = { path = "../../crates/page_table_entry", optional = true }
+page_table_entry = { path = "../../crates/page_table_entry" }
 percpu = { path = "../../crates/percpu" }
 memory_addr = { path = "../../crates/memory_addr" }
 handler_table = { path = "../../crates/handler_table" }
 crate_interface = { path = "../../crates/crate_interface" }
-riscv = "0.10"
-axfs_devfs = { path = "../../crates/axfs_devfs" }
+
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 x86 = "0.52"
 x86_64 = "0.14"
@@ -72,6 +52,7 @@ aarch64-cpu = "9.3"
 tock-registers = "0.8"
 arm_gic = { path = "../../crates/arm_gic" }
 arm_pl011 = { path = "../../crates/arm_pl011" }
+dw_apb_uart = { path = "../../crates/dw_apb_uart" }
 
 [build-dependencies]
 axconfig = { path = "../axconfig" }

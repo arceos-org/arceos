@@ -8,8 +8,7 @@
     STR     t0, sp, 31                  // tf.sepc
     STR     t1, sp, 32                  // tf.sstatus
     STR     t2, sp, 1                   // tf.regs.sp
-    .short  0xa622                      // fsd fs0,264(sp)
-    .short  0xaa26                      // fsd fs1,272(sp)
+
 .if \from_user == 1
     LDR     t0, sp, 3                   // load supervisor tp
     STR     gp, sp, 2                   // save user gp and tp
@@ -32,8 +31,7 @@
     LDR     t1, sp, 32
     csrw    sepc, t0
     csrw    sstatus, t1
-    .short  0x2432                      // fld fs0,264(sp)
-    .short  0x24d2                      // fld fs1,272(sp)
+
     POP_GENERAL_REGS
     LDR     sp, sp, 1                   // load sp from tf.regs.sp
 .endm

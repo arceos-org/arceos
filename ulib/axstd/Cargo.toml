@@ -1,0 +1,76 @@
+[package]
+name = "axstd"
+version = "0.1.0"
+edition = "2021"
+authors = [
+    "Yuekai Jia <equation618@gmail.com>",
+    "yanjuguang <coolyanjg@163.com>",
+    "wudashuai <wu-ds20@mails.tsinghua.edu.cn>",
+    "yfblock <321353225@qq.com>",
+    "scPointer <bhy18@mails.tsinghua.edu.cn>",
+    "Shiping Yuan <robert_yuan@pku.edu.com>",
+]
+description = "ArceOS user library with an interface similar to rust std"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+repository = "https://github.com/rcore-os/arceos/tree/main/ulib/axstd"
+documentation = "https://rcore-os.github.io/arceos/axstd/index.html"
+
+[features]
+default = []
+
+# Multicore
+smp = ["axfeat/smp", "spinlock/smp"]
+
+# Floating point/SIMD
+fp_simd = ["axfeat/fp_simd"]
+
+# Interrupts
+irq = ["arceos_api/irq", "axfeat/irq"]
+
+# Memory
+alloc = ["arceos_api/alloc", "axfeat/alloc", "axio/alloc"]
+alloc-tlsf = ["axfeat/alloc-tlsf"]
+alloc-slab = ["axfeat/alloc-slab"]
+alloc-buddy = ["axfeat/alloc-buddy"]
+paging = ["axfeat/paging"]
+tls = ["axfeat/tls"]
+
+# Multi-threading and scheduler
+multitask = ["arceos_api/multitask", "axfeat/multitask"]
+sched_fifo = ["axfeat/sched_fifo"]
+sched_rr = ["axfeat/sched_rr"]
+sched_cfs = ["axfeat/sched_cfs"]
+
+# File system
+fs = ["arceos_api/fs", "axfeat/fs"]
+myfs = ["arceos_api/myfs", "axfeat/myfs"]
+
+# Networking
+net = ["arceos_api/net", "axfeat/net"]
+dns = []
+
+# Display
+display = ["arceos_api/display", "axfeat/display"]
+
+# Device drivers
+bus-mmio = ["axfeat/bus-mmio"]
+bus-pci = ["axfeat/bus-pci"]
+driver-ramdisk = ["axfeat/driver-ramdisk"]
+driver-ixgbe = ["axfeat/driver-ixgbe"]
+driver-bcm2835-sdhci = ["axfeat/driver-bcm2835-sdhci"]
+
+# Logging
+log-level-off = ["axfeat/log-level-off"]
+log-level-error = ["axfeat/log-level-error"]
+log-level-warn = ["axfeat/log-level-warn"]
+log-level-info = ["axfeat/log-level-info"]
+log-level-debug = ["axfeat/log-level-debug"]
+log-level-trace = ["axfeat/log-level-trace"]
+
+[dependencies]
+axfeat = { path = "../../api/axfeat" }
+arceos_api = { path = "../../api/arceos_api" }
+axio = { path = "../../crates/axio" }
+axerrno = { path = "../../crates/axerrno" }
+spinlock = { path = "../../crates/spinlock" }

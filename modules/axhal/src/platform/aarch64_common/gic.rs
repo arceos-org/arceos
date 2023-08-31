@@ -1,5 +1,6 @@
 use crate::{irq::IrqHandler, mem::phys_to_virt};
 use arm_gic::gic_v2::{GicCpuInterface, GicDistributor};
+use arm_gic::{translate_irq, InterruptType};
 use memory_addr::PhysAddr;
 use spinlock::SpinNoIrq;
 
@@ -7,7 +8,10 @@ use spinlock::SpinNoIrq;
 pub const MAX_IRQ_COUNT: usize = 1024;
 
 /// The timer IRQ number.
-pub const TIMER_IRQ_NUM: usize = 30; // physical timer, type=PPI, id=14
+pub const TIMER_IRQ_NUM: usize = translate_irq(14, InterruptType::PPI).unwrap();
+
+/// The UART IRQ number.
+pub const UART_IRQ_NUM: usize = translate_irq(axconfig::UART_IRQ, InterruptType::SPI).unwrap();
 
 const GICD_BASE: PhysAddr = PhysAddr::from(axconfig::GICD_PADDR);
 const GICC_BASE: PhysAddr = PhysAddr::from(axconfig::GICC_PADDR);
@@ -20,6 +24,7 @@ static GICC: GicCpuInterface = GicCpuInterface::new(phys_to_virt(GICC_BASE).as_m
 
 /// Enables or disables the given IRQ.
 pub fn set_enable(irq_num: usize, enabled: bool) {
+    trace!("GICD set enable: {} {}", irq_num, enabled);
     GICD.lock().set_enable(irq_num as _, enabled);
 }
 
@@ -28,6 +33,7 @@ pub fn set_enable(irq_num: usize, enabled: bool) {
 /// It also enables the IRQ if the registration succeeds. It returns `false` if
 /// the registration failed.
 pub fn register_handler(irq_num: usize, handler: IrqHandler) -> bool {
+    trace!("register handler irq {}", irq_num);
     crate::irq::register_handler_common(irq_num, handler)
 }
 

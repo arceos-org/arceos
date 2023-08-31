@@ -6,9 +6,5 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[features]
-preempt = ["libax/sched_rr"]
-default = ["libax/default"]
-
 [dependencies]
-libax = { path = "../../../ulib/libax", default-features = false, features = ["paging", "multitask", "irq"] }
+axstd = { path = "../../../ulib/axstd", features = ["multitask", "irq"], optional = true }

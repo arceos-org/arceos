@@ -4,14 +4,7 @@ use lazy_init::LazyInit;
 use scheduler::BaseScheduler;
 use spinlock::SpinNoIrq;
 
-cfg_if::cfg_if! {
-    if #[cfg(feature = "monolithic")]  {
-        pub use crate::monolithic_task::task::{CurrentTask, TaskState};
-    } else {
-        pub use crate::task::{CurrentTask, TaskState};
-    }
-}
-
+use crate::task::{CurrentTask, TaskState};
 use crate::{AxTaskRef, Scheduler, TaskInner, WaitQueue};
 
 // TODO: per-CPU

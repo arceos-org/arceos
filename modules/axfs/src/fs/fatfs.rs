@@ -8,7 +8,7 @@ use fatfs::{Dir, File, LossyOemCpConverter, NullTimeProvider, Read, Seek, SeekFr
 
 use crate::dev::Disk;
 
-pub const BLOCK_SIZE: usize = 512;
+const BLOCK_SIZE: usize = 512;
 
 pub struct FatFileSystem {
     inner: fatfs::FileSystem<Disk, NullTimeProvider, LossyOemCpConverter>,
@@ -76,48 +76,13 @@ impl VfsNodeOps for FileWrapper<'static> {
     fn read_at(&self, offset: u64, buf: &mut [u8]) -> VfsResult<usize> {
         let mut file = self.0.lock();
         file.seek(SeekFrom::Start(offset)).map_err(as_vfs_err)?; // TODO: more efficient
-                                                                 // file.read(buf).map_err(as_vfs_err)
-        let buf_len = buf.len();
-        let mut now_offset = 0;
-        let mut probe = buf.to_vec();
-        while now_offset < buf_len {
-            let ans = file.read(&mut probe).map_err(as_vfs_err);
-            if ans.is_err() {
-                return ans;
-            }
-            let read_len = ans.unwrap();
-
-            if read_len == 0 {
-                break;
-            }
-            buf[now_offset..now_offset + read_len].copy_from_slice(&probe[..read_len]);
-            now_offset += read_len;
-            probe = probe[read_len..].to_vec();
-        }
-        Ok(now_offset)
+        file.read(buf).map_err(as_vfs_err)
     }
 
     fn write_at(&self, offset: u64, buf: &[u8]) -> VfsResult<usize> {
         let mut file = self.0.lock();
         file.seek(SeekFrom::Start(offset)).map_err(as_vfs_err)?; // TODO: more efficient
-                                                                 // file.write(buf).map_err(as_vfs_err)
-        let buf_len = buf.len();
-        let mut now_offset = 0;
-        let mut probe = buf.to_vec();
-        while now_offset < buf_len {
-            let ans = file.write(&probe).map_err(as_vfs_err);
-            if ans.is_err() {
-                return ans;
-            }
-            let write_len = ans.unwrap();
-
-            if write_len == 0 {
-                break;
-            }
-            now_offset += write_len;
-            probe = probe[write_len..].to_vec();
-        }
-        Ok(now_offset)
+        file.write(buf).map_err(as_vfs_err)
     }
 
     fn truncate(&self, size: u64) -> VfsResult {
@@ -147,7 +112,7 @@ impl VfsNodeOps for DirWrapper<'static> {
     }
 
     fn lookup(self: Arc<Self>, path: &str) -> VfsResult<VfsNodeRef> {
-        info!("lookup at fatfs: {}", path);
+        debug!("lookup at fatfs: {}", path);
         let path = path.trim_matches('/');
         if path.is_empty() || path == "." {
             return Ok(self.clone());
@@ -155,6 +120,7 @@ impl VfsNodeOps for DirWrapper<'static> {
         if let Some(rest) = path.strip_prefix("./") {
             return self.lookup(rest);
         }
+
         // TODO: use `fatfs::Dir::find_entry`, but it's not public.
         if let Ok(file) = self.0.open_file(path) {
             Ok(FatFileSystem::new_file(file))
@@ -166,7 +132,7 @@ impl VfsNodeOps for DirWrapper<'static> {
     }
 
     fn create(&self, path: &str, ty: VfsNodeType) -> VfsResult {
-        info!("create {:?} at fatfs: {}", ty, path);
+        debug!("create {:?} at fatfs: {}", ty, path);
         let path = path.trim_matches('/');
         if path.is_empty() || path == "." {
             return Ok(());
@@ -217,6 +183,18 @@ impl VfsNodeOps for DirWrapper<'static> {
             }
         }
         Ok(dirents.len())
+    }
+
+    fn rename(&self, src_path: &str, dst_path: &str) -> VfsResult {
+        // `src_path` and `dst_path` should in the same mounted fs
+        debug!(
+            "rename at fatfs, src_path: {}, dst_path: {}",
+            src_path, dst_path
+        );
+
+        self.0
+            .rename(src_path, &self.0, dst_path)
+            .map_err(as_vfs_err)
     }
 }
 

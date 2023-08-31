@@ -1,0 +1,81 @@
+# Architecture identifier.
+arch = "aarch64"
+# Platform identifier.
+platform = "aarch64-qemu-virt"
+# Platform family.
+family = "aarch64-qemu-virt"
+
+# Base address of the whole physical memory.
+phys-memory-base = "0x4000_0000"
+# Size of the whole physical memory.
+phys-memory-size = "0x800_0000"     # 128M
+# Base physical address of the kernel image.
+kernel-base-paddr = "0x4008_0000"
+# Base virtual address of the kernel image.
+kernel-base-vaddr = "0xffff_0000_4008_0000"
+# Linear mapping offset, for quick conversions between physical and virtual
+# addresses.
+phys-virt-offset = "0xffff_0000_0000_0000"
+# MMIO regions with format (`base_paddr`, `size`).
+mmio-regions = [
+    ["0x0900_0000", "0x1000"],      # PL011 UART
+    ["0x0800_0000", "0x2_0000"],    # GICv2
+    ["0x0a00_0000", "0x4000"],      # VirtIO
+    ["0x1000_0000", "0x2eff_0000"],     # PCI memory ranges (ranges 1: 32-bit MMIO space)
+    ["0x40_1000_0000", "0x1000_0000"],  # PCI config space
+]
+# VirtIO MMIO regions with format (`base_paddr`, `size`).
+virtio-mmio-regions = [
+    ["0x0a00_0000", "0x200"],
+    ["0x0a00_0200", "0x200"],
+    ["0x0a00_0400", "0x200"],
+    ["0x0a00_0600", "0x200"],
+    ["0x0a00_0800", "0x200"],
+    ["0x0a00_0a00", "0x200"],
+    ["0x0a00_0c00", "0x200"],
+    ["0x0a00_0e00", "0x200"],
+    ["0x0a00_1000", "0x200"],
+    ["0x0a00_1200", "0x200"],
+    ["0x0a00_1400", "0x200"],
+    ["0x0a00_1600", "0x200"],
+    ["0x0a00_1800", "0x200"],
+    ["0x0a00_1a00", "0x200"],
+    ["0x0a00_1c00", "0x200"],
+    ["0x0a00_1e00", "0x200"],
+    ["0x0a00_3000", "0x200"],
+    ["0x0a00_2200", "0x200"],
+    ["0x0a00_2400", "0x200"],
+    ["0x0a00_2600", "0x200"],
+    ["0x0a00_2800", "0x200"],
+    ["0x0a00_2a00", "0x200"],
+    ["0x0a00_2c00", "0x200"],
+    ["0x0a00_2e00", "0x200"],
+    ["0x0a00_3000", "0x200"],
+    ["0x0a00_3200", "0x200"],
+    ["0x0a00_3400", "0x200"],
+    ["0x0a00_3600", "0x200"],
+    ["0x0a00_3800", "0x200"],
+    ["0x0a00_3a00", "0x200"],
+    ["0x0a00_3c00", "0x200"],
+    ["0x0a00_3e00", "0x200"],
+]
+# Base physical address of the PCIe ECAM space.
+pci-ecam-base = "0x40_1000_0000"
+# End PCI bus number (`bus-range` property in device tree).
+pci-bus-end = "0xff"
+# PCI device memory ranges (`ranges` property in device tree).
+pci-ranges = [
+    ["0x3ef_f0000", "0x1_0000"],            # PIO space
+    ["0x1000_0000", "0x2eff_0000"],         # 32-bit MMIO space
+    ["0x80_0000_0000", "0x80_0000_0000"],   # 64-but MMIO space
+]
+# UART Address
+uart-paddr = "0x0900_0000"
+uart-irq = "1"
+
+# GICC Address
+gicc-paddr = "0x0801_0000"
+gicd-paddr = "0x0800_0000"
+
+# PSCI
+psci-method = "hvc"

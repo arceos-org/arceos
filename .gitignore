@@ -5,7 +5,4 @@
 *.img
 actual.out
 qemu.log
-*.bin
-
-# use cargo instead!
-.cargo
+rusty-tags.vi

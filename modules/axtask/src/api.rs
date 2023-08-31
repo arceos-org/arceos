@@ -2,17 +2,10 @@
 
 use alloc::{string::String, sync::Arc};
 
-#[cfg(feature = "multitask")]
-cfg_if::cfg_if! {
-    if #[cfg(feature = "monolithic")]  {
-        pub(crate) use crate::monolithic_task::run_queue::{AxRunQueue, RUN_QUEUE, init, init_secondary};
-        pub use crate::monolithic_task::task::{CurrentTask, TaskId, TaskInner, KERNEL_PROCESS_ID};
-    } else {
-        pub(crate) use crate::run_queue::{AxRunQueue, RUN_QUEUE, init, init_secondary};
-        pub use crate::task::{CurrentTask, TaskId, TaskInner};
-    }
-}
+pub(crate) use crate::run_queue::{AxRunQueue, RUN_QUEUE};
 
+#[doc(cfg(feature = "multitask"))]
+pub use crate::task::{CurrentTask, TaskId, TaskInner};
 #[doc(cfg(feature = "multitask"))]
 pub use crate::wait_queue::WaitQueue;
 
@@ -20,16 +13,17 @@ pub use crate::wait_queue::WaitQueue;
 pub type AxTaskRef = Arc<AxTask>;
 
 cfg_if::cfg_if! {
-    if #[cfg(feature = "sched_fifo")] {
-        pub(crate) type AxTask = scheduler::FifoTask<TaskInner>;
-        pub(crate) type Scheduler = scheduler::FifoScheduler<TaskInner>;
-    } else if #[cfg(feature = "sched_rr")] {
+    if #[cfg(feature = "sched_rr")] {
         const MAX_TIME_SLICE: usize = 5;
         pub(crate) type AxTask = scheduler::RRTask<TaskInner, MAX_TIME_SLICE>;
         pub(crate) type Scheduler = scheduler::RRScheduler<TaskInner, MAX_TIME_SLICE>;
     } else if #[cfg(feature = "sched_cfs")] {
         pub(crate) type AxTask = scheduler::CFSTask<TaskInner>;
         pub(crate) type Scheduler = scheduler::CFScheduler<TaskInner>;
+    } else {
+        // If no scheduler features are set, use FIFO as the default.
+        pub(crate) type AxTask = scheduler::FifoTask<TaskInner>;
+        pub(crate) type Scheduler = scheduler::FifoScheduler<TaskInner>;
     }
 }
 
@@ -71,8 +65,7 @@ pub fn current() -> CurrentTask {
 pub fn init_scheduler() {
     info!("Initialize scheduling...");
 
-    init();
-
+    crate::run_queue::init();
     #[cfg(feature = "irq")]
     crate::timers::init();
 
@@ -81,7 +74,7 @@ pub fn init_scheduler() {
 
 /// Initializes the task scheduler for secondary CPUs.
 pub fn init_scheduler_secondary() {
-    init_secondary();
+    crate::run_queue::init_secondary();
 }
 
 /// Handles periodic timer ticks for the task manager.
@@ -101,11 +94,7 @@ pub fn spawn_raw<F>(f: F, name: String, stack_size: usize) -> AxTaskRef
 where
     F: FnOnce() + Send + 'static,
 {
-    #[cfg(feature = "monolithic")]
-    let task = TaskInner::new(f, name, stack_size, KERNEL_PROCESS_ID, 0, false);
-    #[cfg(not(feature = "monolithic"))]
     let task = TaskInner::new(f, name, stack_size);
-
     RUN_QUEUE.lock().add_task(task.clone());
     task
 }
@@ -160,7 +149,7 @@ pub fn sleep_until(deadline: axhal::time::TimeValue) {
 }
 
 /// Exits the current task.
-pub fn exit(exit_code: i32) {
+pub fn exit(exit_code: i32) -> ! {
     RUN_QUEUE.lock().exit_current(exit_code)
 }
 

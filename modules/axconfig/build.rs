@@ -1,19 +1,46 @@
 use std::io::{Result, Write};
-use std::{convert::AsRef, fs, path::Path};
+use std::path::{Path, PathBuf};
 use toml_edit::{Decor, Document, Item, Table, Value};
 
-fn main() {
-    // generate config_*.rs for all platforms
-    for fname in fs::read_dir("src/platform").unwrap() {
-        let fname = fname.unwrap().path();
-        if fname.extension().unwrap() == "toml" {
-            let platform = fname.file_stem().unwrap().to_str().unwrap();
-            gen_config_rs(platform).unwrap();
-            println!("cargo:rerun-if-changed={}", fname.display());
+fn resolve_config_path(platform: Option<&str>) -> Result<PathBuf> {
+    let mut root_dir = PathBuf::from(std::env!("CARGO_MANIFEST_DIR"));
+    root_dir.extend(["..", ".."]);
+    let config_dir = root_dir.join("platforms");
+
+    let builtin_platforms = std::fs::read_dir(&config_dir)?
+        .filter_map(|e| {
+            e.unwrap()
+                .file_name()
+                .to_str()?
+                .strip_suffix(".toml")
+                .map(String::from)
+        })
+        .collect::<Vec<_>>();
+
+    let path = match platform {
+        None | Some("") => "defconfig.toml".into(),
+        Some(plat) if builtin_platforms.contains(&plat.to_string()) => {
+            config_dir.join(format!("{plat}.toml"))
         }
-    }
-    println!("cargo:rerun-if-changed=src/defconfig.toml");
-    println!("cargo:rerun-if-env-changed=SMP");
+        Some(plat) => {
+            let path = PathBuf::from(&plat);
+            if path.is_absolute() {
+                path
+            } else {
+                root_dir.join(plat)
+            }
+        }
+    };
+
+    Ok(path)
+}
+
+fn get_comments<'a>(config: &'a Table, key: &str) -> Option<&'a str> {
+    config
+        .key_decor(key)
+        .and_then(|d| d.prefix())
+        .and_then(|s| s.as_str())
+        .map(|s| s.trim())
 }
 
 fn add_config(config: &mut Table, key: &str, item: Item, comments: Option<&str>) {
@@ -25,69 +52,70 @@ fn add_config(config: &mut Table, key: &str, item: Item, comments: Option<&str>)
     }
 }
 
-fn parse_config_toml(result: &mut Table, path: impl AsRef<Path>) -> Result<()> {
-    println!("Reading config file: {}", path.as_ref().display());
-    let config_content = std::fs::read_to_string(path)?;
-    let config = config_content
+fn load_config_toml(config_path: &Path) -> Result<Table> {
+    let config_content = std::fs::read_to_string(config_path)?;
+    let toml = config_content
         .parse::<Document>()
-        .expect("failed to parse config file");
-    for (key, item) in config.iter() {
-        add_config(
-            result,
-            key,
-            item.clone(),
-            config
-                .key_decor(key)
-                .and_then(|d| d.prefix())
-                .and_then(|s| s.as_str()),
-        );
-    }
-    Ok(())
+        .expect("failed to parse config file")
+        .as_table()
+        .clone();
+    Ok(toml)
 }
 
-fn is_num(s: &str) -> bool {
-    let s = s.replace('_', "");
-    if s.parse::<usize>().is_ok() {
-        true
-    } else if let Some(s) = s.strip_prefix("0x") {
-        usize::from_str_radix(s, 16).is_ok()
-    } else {
-        false
+fn gen_config_rs(config_path: &Path) -> Result<Vec<u8>> {
+    fn is_num(s: &str) -> bool {
+        let s = s.replace('_', "");
+        if s.parse::<usize>().is_ok() {
+            true
+        } else if let Some(s) = s.strip_prefix("0x") {
+            usize::from_str_radix(s, 16).is_ok()
+        } else {
+            false
+        }
     }
-}
 
-fn gen_config_rs(platform: &str) -> Result<()> {
     // Load TOML config file
-    let mut config = Table::new();
-    parse_config_toml(&mut config, "src/defconfig.toml").unwrap();
-    parse_config_toml(&mut config, format!("src/platform/{platform}.toml")).unwrap();
+    let mut config = if config_path == Path::new("defconfig.toml") {
+        load_config_toml(config_path)?
+    } else {
+        // Set default values for missing items
+        let defconfig = load_config_toml(Path::new("defconfig.toml"))?;
+        let mut config = load_config_toml(config_path)?;
+
+        for (key, item) in defconfig.iter() {
+            if !config.contains_key(key) {
+                add_config(
+                    &mut config,
+                    key,
+                    item.clone(),
+                    get_comments(&defconfig, key),
+                );
+            }
+        }
+        config
+    };
 
     add_config(
         &mut config,
         "smp",
-        toml_edit::value(std::env::var("SMP").unwrap_or("1".into())),
+        toml_edit::value(std::env::var("AX_SMP").unwrap_or("1".into())),
         Some("# Number of CPUs"),
     );
-
-    // println!("{config:#x?}");
 
     // Generate config.rs
     let mut output = Vec::new();
     writeln!(
         output,
-        "//! Platform constants and parameters for {platform}."
+        "// Platform constants and parameters for {}.",
+        config["platform"].as_str().unwrap(),
     )?;
-    writeln!(output, "//! Generated by build.rs, DO NOT edit!\n")?;
+    writeln!(output, "// Generated by build.rs, DO NOT edit!\n")?;
 
     for (key, item) in config.iter() {
         let var_name = key.to_uppercase().replace('-', "_");
         if let Item::Value(value) = item {
-            let comments = config
-                .key_decor(key)
-                .and_then(|d| d.prefix())
-                .and_then(|s| s.as_str())
-                .unwrap_or("")
-                .trim()
+            let comments = get_comments(&config, key)
+                .unwrap_or_default()
                 .replace('#', "///");
             match value {
                 Value::String(s) => {
@@ -122,8 +150,23 @@ fn gen_config_rs(platform: &str) -> Result<()> {
         }
     }
 
-    let out_path = format!("src/config_{}.rs", platform.replace('-', "_"));
-    fs::write(out_path, output)?;
+    Ok(output)
+}
 
+fn main() -> Result<()> {
+    let platform = option_env!("AX_PLATFORM");
+    let config_path = resolve_config_path(platform)?;
+
+    println!("Reading config file: {:?}", config_path);
+    let config_rs = gen_config_rs(&config_path)?;
+
+    let out_dir = std::env::var("OUT_DIR").unwrap();
+    let out_path = Path::new(&out_dir).join("config.rs");
+    println!("Generating config file: {}", out_path.display());
+    std::fs::write(out_path, config_rs)?;
+
+    println!("cargo:rerun-if-changed={}", config_path.display());
+    println!("cargo:rerun-if-env-changed=AX_PLATFORM");
+    println!("cargo:rerun-if-env-changed=AX_SMP");
     Ok(())
 }

@@ -12,7 +12,7 @@ pub struct ReadDir<'a> {
     buf_pos: usize,
     buf_end: usize,
     end_of_stream: bool,
-    dirent_buf: [fops::DirEntry; 127],
+    dirent_buf: [fops::DirEntry; 31],
 }
 
 /// Entries returned by the [`ReadDir`] iterator.
@@ -34,7 +34,7 @@ impl<'a> ReadDir<'a> {
         opts.read(true);
         let inner = fops::Directory::open_dir(path, &opts)?;
         const EMPTY: fops::DirEntry = fops::DirEntry::default();
-        let dirent_buf = [EMPTY; 127];
+        let dirent_buf = [EMPTY; 31];
         Ok(ReadDir {
             path,
             inner,

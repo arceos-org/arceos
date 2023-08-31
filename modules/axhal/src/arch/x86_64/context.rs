@@ -39,10 +39,6 @@ impl TrapFrame {
     pub const fn is_user(&self) -> bool {
         self.cs & 0b11 == 3
     }
-
-    pub fn app_init_context(_app_entry: usize, _user_sp: usize) -> Self {
-        Self::default()
-    }
 }
 
 #[repr(C)]
@@ -140,6 +136,8 @@ pub struct TaskContext {
     pub kstack_top: VirtAddr,
     /// `RSP` after all callee-saved registers are pushed.
     pub rsp: u64,
+    /// Thread Local Storage (TLS).
+    pub fs_base: usize,
     /// Extended states, i.e., FP/SIMD states.
     #[cfg(feature = "fp_simd")]
     pub ext_state: ExtendedState,
@@ -151,20 +149,15 @@ impl TaskContext {
         Self {
             kstack_top: VirtAddr::from(0),
             rsp: 0,
+            fs_base: 0,
             #[cfg(feature = "fp_simd")]
             ext_state: ExtendedState::default(),
         }
     }
 
-    pub fn new_empty() -> *mut TaskContext {
-        let task_ctx = TaskContext::new();
-        let task_ctx_ptr = &task_ctx as *const TaskContext as *mut TaskContext;
-        task_ctx_ptr
-    }
-
     /// Initializes the context for a new task, with the given entry point and
     /// kernel stack.
-    pub fn init(&mut self, entry: usize, kstack_top: VirtAddr) {
+    pub fn init(&mut self, entry: usize, kstack_top: VirtAddr, tls_area: VirtAddr) {
         unsafe {
             // x86_64 calling convention: the stack must be 16-byte aligned before
             // calling a function. That means when entering a new task (`ret` in `context_switch`
@@ -181,6 +174,7 @@ impl TaskContext {
             self.rsp = frame_ptr as u64;
         }
         self.kstack_top = kstack_top;
+        self.fs_base = tls_area.as_usize();
     }
 
     /// Switches to another task.
@@ -193,10 +187,12 @@ impl TaskContext {
             self.ext_state.save();
             next_ctx.ext_state.restore();
         }
-        unsafe {
-            // TODO: swtich tls
-            context_switch(&mut self.rsp, &next_ctx.rsp)
+        #[cfg(feature = "tls")]
+        {
+            self.fs_base = super::read_thread_pointer();
+            unsafe { super::write_thread_pointer(next_ctx.fs_base) };
         }
+        unsafe { context_switch(&mut self.rsp, &next_ctx.rsp) }
     }
 }
 

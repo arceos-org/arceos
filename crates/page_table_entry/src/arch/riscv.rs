@@ -86,10 +86,6 @@ impl GenericPTE for Rv64PTE {
         debug_assert!(flags.intersects(PTEFlags::R | PTEFlags::X));
         Self(flags.bits() as u64 | ((paddr.as_usize() >> 2) as u64 & Self::PHYS_ADDR_MASK))
     }
-    fn new_fault_page(_is_huge: bool) -> Self {
-        let flags = PTEFlags::A | PTEFlags::D;
-        Self(flags.bits() as u64)
-    }
     fn new_table(paddr: PhysAddr) -> Self {
         Self(PTEFlags::V.bits() as u64 | ((paddr.as_usize() >> 2) as u64 & Self::PHYS_ADDR_MASK))
     }
@@ -99,6 +95,16 @@ impl GenericPTE for Rv64PTE {
     fn flags(&self) -> MappingFlags {
         PTEFlags::from_bits_truncate(self.0 as usize).into()
     }
+    fn set_paddr(&mut self, paddr: PhysAddr) {
+        self.0 = (self.0 & !Self::PHYS_ADDR_MASK)
+            | ((paddr.as_usize() as u64 >> 2) & Self::PHYS_ADDR_MASK);
+    }
+    fn set_flags(&mut self, flags: MappingFlags, _is_huge: bool) {
+        let flags = PTEFlags::from(flags) | PTEFlags::A | PTEFlags::D;
+        debug_assert!(flags.intersects(PTEFlags::R | PTEFlags::X));
+        self.0 = (self.0 & Self::PHYS_ADDR_MASK) | flags.bits() as u64;
+    }
+
     fn is_unused(&self) -> bool {
         self.0 == 0
     }

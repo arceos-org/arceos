@@ -6,7 +6,7 @@ Primary CPU 0 started,
 Found physcial memory regions:
  .text (READ | EXECUTE | RESERVED)
  .rodata (READ | RESERVED)
- .data (READ | WRITE | RESERVED)
+ .data .tdata .tbss .percpu (READ | WRITE | RESERVED)
  .percpu (READ | WRITE | RESERVED)
  boot stack (READ | WRITE | RESERVED)
  .bss (READ | WRITE | RESERVED)
@@ -24,8 +24,7 @@ created net interface "eth0":
   gateway:  10.0.2.2
 Primary CPU 0 init OK.
 Hello, simple http client!
-dest IP: [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+
-
+dest: [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+:80 ([0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+:80)
 HTTP/1.1 200 OK
 Server: nginx
 Date:

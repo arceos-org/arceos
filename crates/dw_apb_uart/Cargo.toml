@@ -1,0 +1,13 @@
+[package]
+name = "dw_apb_uart"
+authors = ["Luoyuan Xiao <xiaoluoyuan@163.com>"]
+version = "0.1.0"
+edition = "2021"
+license = "GPL-2.0"
+repository = "https://github.com/elliott10/arceos/tree/main/crates/dw_apb_uart"
+description = "Uart snps,dw-apb-uart driver in Rust for BST A1000b FADA board."
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tock-registers = "0.8"

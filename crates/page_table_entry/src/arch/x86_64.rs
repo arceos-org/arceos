@@ -23,7 +23,7 @@ impl From<PTF> for MappingFlags {
             ret |= Self::USER;
         }
         if f.contains(PTF::NO_CACHE) {
-            ret |= Self::DEVICE;
+            ret |= Self::UNCACHED;
         }
         ret
     }
@@ -44,7 +44,7 @@ impl From<MappingFlags> for PTF {
         if f.contains(MappingFlags::USER) {
             ret |= Self::USER_ACCESSIBLE;
         }
-        if f.contains(MappingFlags::DEVICE) {
+        if f.contains(MappingFlags::DEVICE) || f.contains(MappingFlags::UNCACHED) {
             ret |= Self::NO_CACHE | Self::WRITE_THROUGH;
         }
         ret
@@ -78,6 +78,17 @@ impl GenericPTE for X64PTE {
     fn flags(&self) -> MappingFlags {
         PTF::from_bits_truncate(self.0).into()
     }
+    fn set_paddr(&mut self, paddr: PhysAddr) {
+        self.0 = (self.0 & !Self::PHYS_ADDR_MASK) | (paddr.as_usize() as u64 & Self::PHYS_ADDR_MASK)
+    }
+    fn set_flags(&mut self, flags: MappingFlags, is_huge: bool) {
+        let mut flags = PTF::from(flags);
+        if is_huge {
+            flags |= PTF::HUGE_PAGE;
+        }
+        self.0 = (self.0 & Self::PHYS_ADDR_MASK) | flags.bits()
+    }
+
     fn is_unused(&self) -> bool {
         self.0 == 0
     }

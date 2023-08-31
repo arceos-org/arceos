@@ -10,33 +10,26 @@ repository = "https://github.com/rcore-os/arceos/tree/main/modules/axtask"
 documentation = "https://rcore-os.github.io/arceos/axtask/index.html"
 
 [features]
-test = ["percpu?/sp-naive"]
+default = []
+
 multitask = [
-    "dep:axconfig", "dep:percpu", "dep:spinlock", "dep:lazy_init",
-    "dep:memory_addr", "dep:scheduler", "dep:timer_list"
+    "dep:axconfig", "dep:percpu", "dep:spinlock", "dep:lazy_init", "dep:memory_addr",
+    "dep:scheduler", "dep:timer_list", "kernel_guard", "dep:crate_interface",
 ]
 irq = []
+tls = ["axhal/tls"]
 preempt = ["irq", "percpu?/preempt", "kernel_guard/preempt"]
 
 sched_fifo = ["multitask"]
 sched_rr = ["multitask", "preempt"]
 sched_cfs = ["multitask", "preempt"]
 
-# 是否使用宏内核架构
-monolithic = ["axhal/monolithic"]
-
-# 是否引入信号架构
-signal = ["axhal/signal", "axsignal/signal"]
-
-default = ["sched_fifo", "signal"]
+test = ["percpu?/sp-naive"]
 
 [dependencies]
-numeric-enum-macro = { git = "https://github.com/mexus/numeric-enum-macro" }
 cfg-if = "1.0"
 log = "0.4"
-axalloc = { path = "../axalloc", optional = true }
 axhal = { path = "../axhal" }
-axsignal = { path = "../axsignal", optional = true }
 axconfig = { path = "../axconfig", optional = true }
 percpu = { path = "../../crates/percpu", optional = true }
 spinlock = { path = "../../crates/spinlock", optional = true }
@@ -44,9 +37,9 @@ lazy_init = { path = "../../crates/lazy_init", optional = true }
 memory_addr = { path = "../../crates/memory_addr", optional = true }
 scheduler = { path = "../../crates/scheduler", optional = true }
 timer_list = { path = "../../crates/timer_list", optional = true }
-kernel_guard = { path = "../../crates/kernel_guard" }
-crate_interface = { path = "../../crates/crate_interface" }
-riscv = { path = "../../extern_crates/riscv-0.10.1" }
+kernel_guard = { path = "../../crates/kernel_guard", optional = true }
+crate_interface = { path = "../../crates/crate_interface", optional = true }
+
 [dev-dependencies]
 rand = "0.8"
 axhal = { path = "../axhal", features = ["fp_simd"] }

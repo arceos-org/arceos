@@ -7,18 +7,14 @@
 extern crate alloc;
 
 mod dir;
-mod interrupts;
 mod null;
-mod random;
 mod zero;
 
 #[cfg(test)]
 mod tests;
 
 pub use self::dir::DirNode;
-pub use self::interrupts::{Interrupts, INTERRUPT};
 pub use self::null::NullDev;
-pub use self::random::RandomDev;
 pub use self::zero::ZeroDev;
 
 use alloc::sync::Arc;

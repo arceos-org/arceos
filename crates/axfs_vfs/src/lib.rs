@@ -155,6 +155,11 @@ pub trait VfsNodeOps: Send + Sync {
         ax_err!(Unsupported)
     }
 
+    /// Renames or moves existing file or directory.
+    fn rename(&self, _src_path: &str, _dst_path: &str) -> VfsResult {
+        ax_err!(Unsupported)
+    }
+
     /// Convert `&self` to [`&dyn Any`][1] that can use
     /// [`Any::downcast_ref`][2].
     ///

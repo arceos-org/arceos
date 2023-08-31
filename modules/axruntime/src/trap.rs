@@ -1,5 +1,3 @@
-/// 仅用作非宏内核下的trap入口
-
 struct TrapHandlerImpl;
 
 #[crate_interface::impl_interface]
@@ -11,15 +9,5 @@ impl axhal::trap::TrapHandler for TrapHandlerImpl {
             axhal::irq::dispatch_irq(_irq_num);
             drop(guard); // rescheduling may occur when preemption is re-enabled.
         }
-    }
-
-    #[cfg(feature = "paging")]
-    fn handle_page_fault(addr: memory_addr::VirtAddr, flags: page_table::MappingFlags) {
-        unimplemented!();
-    }
-
-    #[cfg(feature = "signal")]
-    fn handle_signal() {
-        unimplemented!();
     }
 }

@@ -1,0 +1,71 @@
+[package]
+name = "axlibc"
+version = "0.1.0"
+edition = "2021"
+authors = [
+    "Yuekai Jia <equation618@gmail.com>",
+    "yanjuguang <coolyanjg@163.com>",
+    "wudashuai <wu-ds20@mails.tsinghua.edu.cn>",
+    "yfblock <321353225@qq.com>",
+    "scPointer <bhy18@mails.tsinghua.edu.cn>",
+    "Shiping Yuan <robert_yuan@pku.edu.com>",
+]
+description = "ArceOS user program library for C apps"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+repository = "https://github.com/rcore-os/arceos/tree/main/ulib/axlibc"
+documentation = "https://rcore-os.github.io/arceos/axlibc/index.html"
+
+[lib]
+crate-type = ["staticlib"]
+
+[features]
+default = []
+
+# Multicore
+smp = ["axstd/smp"]
+
+# Floating point/SIMD
+fp_simd = ["axstd/fp_simd"]
+
+# Memory
+alloc = ["axstd/alloc", "dep:axalloc"]
+
+# Multi-task
+multitask = ["axstd/multitask", "axtask/multitask"]
+
+# File system
+fs = ["axstd/fs", "fd"]
+
+# Networking
+net = ["axstd/net", "dep:axnet", "fd"]
+
+# Libc features
+fd = ["alloc"]
+pipe = ["fd"]
+select = ["fd"]
+epoll = ["fd"]
+
+[dependencies]
+# ArceOS modules
+axfeat = { path = "../../api/axfeat" }
+axstd = { path = "../axstd" }
+axhal = { path = "../../modules/axhal" }
+axlog = { path = "../../modules/axlog" }
+axconfig = { path = "../../modules/axconfig" }
+axalloc = { path = "../../modules/axalloc", optional = true }
+axnet = { path = "../../modules/axnet", optional = true }
+axtask = { path = "../../modules/axtask", optional = true }
+
+# Other crates
+axio = { path = "../../crates/axio" }
+axerrno = { path = "../../crates/axerrno" }
+static_assertions = "1.1.0"
+spin = { version = "0.9" }
+lazy_static = { version = "1.4", features = ["spin_no_std"] }
+flatten_objects = { path = "../../crates/flatten_objects" }
+
+[build-dependencies]
+cbindgen = { version = "0.24" }
+bindgen ={ version = "0.66" }
+axconfig = { path = "../../modules/axconfig" }

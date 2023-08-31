@@ -36,6 +36,8 @@ bitflags::bitflags! {
         const USER          = 1 << 3;
         /// The memory is device memory.
         const DEVICE        = 1 << 4;
+        /// The memory is uncached.
+        const UNCACHED      = 1 << 5;
     }
 }
 
@@ -45,10 +47,6 @@ bitflags::bitflags! {
 pub trait GenericPTE: Debug + Clone + Copy + Sync + Send + Sized {
     /// Creates a page table entry point to a terminate page or block.
     fn new_page(paddr: PhysAddr, flags: MappingFlags, is_huge: bool) -> Self;
-
-    fn new_fault_page(_is_huge: bool) -> Self {
-        panic!("Only implemented for riscv for now.");
-    }
     /// Creates a page table entry point to a next level page table.
     fn new_table(paddr: PhysAddr) -> Self;
 
@@ -56,6 +54,12 @@ pub trait GenericPTE: Debug + Clone + Copy + Sync + Send + Sized {
     fn paddr(&self) -> PhysAddr;
     /// Returns the flags of this entry.
     fn flags(&self) -> MappingFlags;
+
+    /// Set mapped physical address of the entry.
+    fn set_paddr(&mut self, paddr: PhysAddr);
+    /// Set flags of the entry.
+    fn set_flags(&mut self, flags: MappingFlags, is_huge: bool);
+
     /// Returns whether this entry is zero.
     fn is_unused(&self) -> bool;
     /// Returns whether this entry flag indicates present.
