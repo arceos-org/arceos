@@ -35,6 +35,9 @@
 #[macro_use]
 extern crate log;
 
+#[cfg(feature = "monolithic")]
+pub const KERNEL_PROCESS_ID: u64 = 1;
+
 mod platform;
 
 pub mod arch;

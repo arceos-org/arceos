@@ -23,7 +23,10 @@ fs = ["axdriver", "axfs"]
 net = ["axdriver", "axnet"]
 display = ["axdriver", "axdisplay"]
 
+monolithic = ["axprocess/monolithic", "axhal/monolithic", "axtask/monolithic", "axmem/monolithic"]
+
 [dependencies]
+cfg-if = "1.0"
 axhal = { path = "../axhal" }
 axlog = { path = "../axlog" }
 axconfig = { path = "../axconfig" }
@@ -33,7 +36,8 @@ axfs = { path = "../axfs", optional = true }
 axnet = { path = "../axnet", optional = true }
 axdisplay = { path = "../axdisplay", optional = true }
 axtask = { path = "../axtask", optional = true }
-
+axprocess = { path = "../axprocess", optional = true }
+axmem = { path = "../axmem", optional = true }
 crate_interface = { path = "../../crates/crate_interface" }
 percpu = { path = "../../crates/percpu", optional = true }
 kernel_guard = { path = "../../crates/kernel_guard", optional = true }

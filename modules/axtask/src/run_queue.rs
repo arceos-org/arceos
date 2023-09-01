@@ -1,5 +1,7 @@
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
+#[cfg(feature = "monolithic")]
+use axhal::KERNEL_PROCESS_ID;
 use lazy_init::LazyInit;
 use scheduler::BaseScheduler;
 use spinlock::SpinNoIrq;
@@ -8,7 +10,7 @@ use crate::task::{CurrentTask, TaskState};
 use crate::{AxTaskRef, Scheduler, TaskInner, WaitQueue};
 
 // TODO: per-CPU
-pub(crate) static RUN_QUEUE: LazyInit<SpinNoIrq<AxRunQueue>> = LazyInit::new();
+pub static RUN_QUEUE: LazyInit<SpinNoIrq<AxRunQueue>> = LazyInit::new();
 
 // TODO: per-CPU
 static EXITED_TASKS: SpinNoIrq<VecDeque<AxTaskRef>> = SpinNoIrq::new(VecDeque::new());
@@ -16,15 +18,21 @@ static EXITED_TASKS: SpinNoIrq<VecDeque<AxTaskRef>> = SpinNoIrq::new(VecDeque::n
 static WAIT_FOR_EXIT: WaitQueue = WaitQueue::new();
 
 #[percpu::def_percpu]
-static IDLE_TASK: LazyInit<AxTaskRef> = LazyInit::new();
+pub static IDLE_TASK: LazyInit<AxTaskRef> = LazyInit::new();
 
-pub(crate) struct AxRunQueue {
+pub struct AxRunQueue {
     scheduler: Scheduler,
 }
 
 impl AxRunQueue {
     pub fn new() -> SpinNoIrq<Self> {
-        let gc_task = TaskInner::new(gc_entry, "gc".into(), axconfig::TASK_STACK_SIZE);
+        let gc_task = TaskInner::new(
+            gc_entry,
+            "gc".into(),
+            axconfig::TASK_STACK_SIZE,
+            #[cfg(feature = "monolithic")]
+            KERNEL_PROCESS_ID,
+        );
         let mut scheduler = Scheduler::new();
         scheduler.add_task(gc_task);
         SpinNoIrq::new(Self { scheduler })
@@ -215,7 +223,13 @@ fn gc_entry() {
 
 pub(crate) fn init() {
     const IDLE_TASK_STACK_SIZE: usize = 4096;
-    let idle_task = TaskInner::new(|| crate::run_idle(), "idle".into(), IDLE_TASK_STACK_SIZE);
+    let idle_task = TaskInner::new(
+        || crate::run_idle(),
+        "idle".into(),
+        IDLE_TASK_STACK_SIZE,
+        #[cfg(feature = "monolithic")]
+        KERNEL_PROCESS_ID,
+    );
     IDLE_TASK.with_current(|i| i.init_by(idle_task.clone()));
 
     let main_task = TaskInner::new_init("main".into());

@@ -1,6 +1,21 @@
+#[cfg(feature = "monolithic")]
+use page_table_entry::MappingFlags;
+
+#[cfg(feature = "monolithic")]
+use riscv::register::{sepc, stval};
+
 use riscv::register::scause::{self, Exception as E, Trap};
 
+#[cfg(feature = "paging")]
+use crate::trap::handle_page_fault;
+
 use super::TrapFrame;
+
+#[cfg(feature = "monolithic")]
+use super::enable_irqs;
+
+#[cfg(feature = "monolithic")]
+use crate::trap::handle_syscall;
 
 include_asm_marcos!();
 
@@ -15,11 +30,65 @@ fn handle_breakpoint(sepc: &mut usize) {
 }
 
 #[no_mangle]
-fn riscv_trap_handler(tf: &mut TrapFrame, _from_user: bool) {
+#[allow(unused)]
+fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
     let scause = scause::read();
     match scause.cause() {
         Trap::Exception(E::Breakpoint) => handle_breakpoint(&mut tf.sepc),
         Trap::Interrupt(_) => crate::trap::handle_irq_extern(scause.bits()),
+        #[cfg(feature = "monolithic")]
+        Trap::Exception(E::UserEnvCall) => {
+            enable_irqs();
+            // info!("syscall: id: {}, cpu: {}", tf.regs.a7, cpu_id);
+            // jump to next instruction anyway
+            tf.sepc += 4;
+            // get system call return value
+            let result = handle_syscall(
+                tf.regs.a7,
+                [
+                    tf.regs.a0, tf.regs.a1, tf.regs.a2, tf.regs.a3, tf.regs.a4, tf.regs.a5,
+                ],
+            );
+            // cx is changed during sys_exec, so we have to call it again
+            tf.regs.a0 = result as usize;
+        }
+        #[cfg(feature = "paging")]
+        Trap::Exception(E::InstructionPageFault) => {
+            let addr = stval::read();
+            if !from_user {
+                unimplemented!(
+                    "I page fault from kernel, addr: {:X}, sepc: {:X}",
+                    addr,
+                    tf.sepc
+                );
+            }
+            handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::EXECUTE, tf);
+        }
+
+        #[cfg(feature = "paging")]
+        Trap::Exception(E::LoadPageFault) => {
+            let addr = stval::read();
+            if !from_user {
+                error!("L page fault from kernel, addr: {:#x}", addr);
+                unimplemented!("L page fault from kernel");
+            }
+            handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::READ, tf);
+        }
+
+        #[cfg(feature = "paging")]
+        Trap::Exception(E::StorePageFault) => {
+            if !from_user {
+                error!(
+                    "S page fault from kernel, addr: {:#x} sepc:{:X}",
+                    stval::read(),
+                    sepc::read()
+                );
+                unimplemented!("S page fault from kernel");
+            }
+            let addr = stval::read();
+            handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::WRITE, tf);
+        }
+
         _ => {
             panic!(
                 "Unhandled trap {:?} @ {:#x}:\n{:#x?}",

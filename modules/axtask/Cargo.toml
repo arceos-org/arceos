@@ -26,9 +26,12 @@ sched_cfs = ["multitask", "preempt"]
 
 test = ["percpu?/sp-naive"]
 
+monolithic = []
+
 [dependencies]
 cfg-if = "1.0"
 log = "0.4"
+numeric-enum-macro = { git = "https://github.com/mexus/numeric-enum-macro" }
 axhal = { path = "../axhal" }
 axconfig = { path = "../axconfig", optional = true }
 percpu = { path = "../../crates/percpu", optional = true }
@@ -39,6 +42,7 @@ scheduler = { path = "../../crates/scheduler", optional = true }
 timer_list = { path = "../../crates/timer_list", optional = true }
 kernel_guard = { path = "../../crates/kernel_guard", optional = true }
 crate_interface = { path = "../../crates/crate_interface", optional = true }
+riscv = "0.10"
 
 [dev-dependencies]
 rand = "0.8"

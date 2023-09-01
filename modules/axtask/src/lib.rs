@@ -28,7 +28,7 @@
 #![cfg_attr(not(test), no_std)]
 #![feature(doc_cfg)]
 #![feature(doc_auto_cfg)]
-
+#![feature(stmt_expr_attributes)]
 cfg_if::cfg_if! {
     if #[cfg(feature = "multitask")] {
         #[macro_use]
@@ -36,9 +36,12 @@ cfg_if::cfg_if! {
         extern crate alloc;
 
         mod run_queue;
+        pub use run_queue::{IDLE_TASK, RUN_QUEUE};
         mod task;
+        pub use task::TaskState;
         mod api;
         mod wait_queue;
+        mod stat;
 
         #[cfg(feature = "irq")]
         mod timers;

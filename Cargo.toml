@@ -47,12 +47,14 @@ members = [
     "modules/axruntime",
     "modules/axsync",
     "modules/axtask",
+    "modules/axprocess",
 
     "api/axfeat",
     "api/arceos_api",
 
     "ulib/axstd",
     "ulib/axlibc",
+    "ulib/axstarry",
 
     "apps/display",
     "apps/exception",
@@ -69,6 +71,7 @@ members = [
     "apps/task/yield",
     "apps/task/priority",
     "apps/task/tls",
+    "apps/oscomp",
 ]
 
 [profile.release]

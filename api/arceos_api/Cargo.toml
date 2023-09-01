@@ -24,6 +24,8 @@ myfs = ["axfeat/myfs"]
 # Use dummy functions if the feature is not enabled
 dummy-if-not-enabled = []
 
+monolithic = ["axruntime/monolithic"]
+
 [dependencies]
 axfeat = { path = "../axfeat" }
 axruntime = { path = "../../modules/axruntime" }

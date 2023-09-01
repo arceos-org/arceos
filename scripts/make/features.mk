@@ -17,8 +17,8 @@ ifeq ($(APP_TYPE),c)
   lib_features := fp_simd alloc multitask fs net fd pipe select epoll
 else
   # TODO: it's better to use `axfeat/` as `ax_feat_prefix`, but all apps need to have `axfeat` as a dependency
-  ax_feat_prefix := axstd/
-  lib_feat_prefix := axstd/
+  ax_feat_prefix := axstarry/
+  lib_feat_prefix := axstarry/
   lib_features :=
 endif
 

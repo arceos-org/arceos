@@ -39,7 +39,7 @@ endef
 all_packages := \
   $(shell ls $(CURDIR)/crates) \
   $(shell ls $(CURDIR)/modules) \
-  axfeat arceos_api axstd axlibc
+  axfeat arceos_api axstd axlibc axstarry
 
 define cargo_doc
   $(call run_cmd,cargo doc,--no-deps --all-features --workspace --exclude "arceos-*" $(verbose))

@@ -17,7 +17,7 @@ sysfs = ["dep:axfs_ramfs"]
 fatfs = ["dep:fatfs"]
 myfs = ["dep:crate_interface"]
 use-ramdisk = []
-
+monolithic = []
 default = ["devfs", "ramfs", "fatfs", "procfs", "sysfs"]
 
 [dependencies]
@@ -34,6 +34,7 @@ axfs_ramfs = { path = "../../crates/axfs_ramfs", optional = true }
 axdriver = { path = "../axdriver", features = ["block"] }
 axsync = { path = "../axsync" }
 crate_interface = { path = "../../crates/crate_interface", optional = true }
+bitflags = "2.0"
 
 [dependencies.fatfs]
 git = "https://github.com/rafalh/rust-fatfs"

@@ -1,6 +1,8 @@
 //! Task APIs for multi-task configuration.
 
 use alloc::{string::String, sync::Arc};
+#[cfg(feature = "monolithic")]
+use axhal::KERNEL_PROCESS_ID;
 
 pub(crate) use crate::run_queue::{AxRunQueue, RUN_QUEUE};
 
@@ -94,7 +96,13 @@ pub fn spawn_raw<F>(f: F, name: String, stack_size: usize) -> AxTaskRef
 where
     F: FnOnce() + Send + 'static,
 {
-    let task = TaskInner::new(f, name, stack_size);
+    let task = TaskInner::new(
+        f,
+        name,
+        stack_size,
+        #[cfg(feature = "monolithic")]
+        KERNEL_PROCESS_ID,
+    );
     RUN_QUEUE.lock().add_task(task.clone());
     task
 }

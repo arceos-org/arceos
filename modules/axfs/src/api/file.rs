@@ -1,6 +1,8 @@
 use axio::{prelude::*, Result, SeekFrom};
 use core::fmt;
 
+#[cfg(feature = "monolithic")]
+use super::FileExt;
 use crate::fops;
 
 /// A structure representing a type of file with accessors for each file type.
@@ -11,6 +13,7 @@ pub type FileType = fops::FileType;
 pub type Permissions = fops::FilePerm;
 
 /// An object providing access to an open file on the filesystem.
+#[derive(Clone)]
 pub struct File {
     inner: fops::File,
 }
@@ -183,5 +186,20 @@ impl Write for File {
 impl Seek for File {
     fn seek(&mut self, pos: SeekFrom) -> Result<u64> {
         self.inner.seek(pos)
+    }
+}
+
+#[cfg(feature = "monolithic")]
+impl FileExt for File {
+    fn readable(&self) -> bool {
+        self.inner.readable()
+    }
+
+    fn writable(&self) -> bool {
+        self.inner.writable()
+    }
+
+    fn executable(&self) -> bool {
+        self.inner.executable()
     }
 }

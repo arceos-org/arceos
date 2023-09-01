@@ -12,10 +12,10 @@ extern crate log;
 extern crate alloc;
 
 mod page;
-
 use allocator::{AllocResult, BaseAllocator, BitmapPageAllocator, ByteAllocator, PageAllocator};
 use core::alloc::{GlobalAlloc, Layout};
 use core::ptr::NonNull;
+pub use page::PhysPage;
 use spinlock::SpinNoIrq;
 
 const PAGE_SIZE: usize = 0x1000;

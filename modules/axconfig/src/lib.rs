@@ -17,3 +17,6 @@ pub use config::*;
 
 /// End address of the whole physical memory.
 pub const PHYS_MEMORY_END: usize = PHYS_MEMORY_BASE + PHYS_MEMORY_SIZE;
+
+/// user memory
+pub const USER_MEMORY_START: usize = 0x1000;

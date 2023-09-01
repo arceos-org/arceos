@@ -1,4 +1,5 @@
 use alloc::{boxed::Box, string::String, sync::Arc};
+
 use core::ops::Deref;
 use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, AtomicU8, Ordering};
 use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
@@ -12,6 +13,13 @@ use axhal::tls::TlsArea;
 use axhal::arch::TaskContext;
 use memory_addr::{align_up_4k, VirtAddr};
 
+#[cfg(feature = "monolithic")]
+core::arch::global_asm!(include_str!("copy.S"));
+
+#[cfg(feature = "monolithic")]
+use axhal::arch::TrapFrame;
+
+use crate::stat::TimeStat;
 use crate::{AxRunQueue, AxTask, AxTaskRef, WaitQueue};
 
 /// A unique identifier for a thread.
@@ -21,7 +29,7 @@ pub struct TaskId(u64);
 /// The possible states of a task.
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub(crate) enum TaskState {
+pub enum TaskState {
     Running = 1,
     Ready = 2,
     Blocked = 3,
@@ -55,10 +63,24 @@ pub struct TaskInner {
 
     #[cfg(feature = "tls")]
     tls: TlsArea,
+
+    #[cfg(feature = "monolithic")]
+    process_id: AtomicU64,
+
+    #[cfg(feature = "monolithic")]
+    /// 是否是所属进程下的主线程
+    is_leader: AtomicBool,
+
+    #[cfg(feature = "monolithic")]
+    /// 初始化的trap上下文
+    pub trap_frame: UnsafeCell<TrapFrame>,
+
+    // 时间统计, 无论是否为宏内核架构都可能被使用到
+    time: UnsafeCell<TimeStat>,
 }
 
 impl TaskId {
-    fn new() -> Self {
+    pub fn new() -> Self {
         static ID_COUNTER: AtomicU64 = AtomicU64::new(1);
         Self(ID_COUNTER.fetch_add(1, Ordering::Relaxed))
     }
@@ -134,17 +156,37 @@ impl TaskInner {
             ctx: UnsafeCell::new(TaskContext::new()),
             #[cfg(feature = "tls")]
             tls: TlsArea::alloc(),
+
+            time: UnsafeCell::new(TimeStat::new()),
+
+            #[cfg(feature = "monolithic")]
+            process_id: AtomicU64::new(0),
+
+            #[cfg(feature = "monolithic")]
+            is_leader: AtomicBool::new(false),
+
+            #[cfg(feature = "monolithic")]
+            // 初始化的trap上下文
+            trap_frame: UnsafeCell::new(TrapFrame::default()),
         }
     }
 
     /// Create a new task with the given entry function and stack size.
-    pub(crate) fn new<F>(entry: F, name: String, stack_size: usize) -> AxTaskRef
+    pub fn new<F>(
+        entry: F,
+        name: String,
+        stack_size: usize,
+        #[cfg(feature = "monolithic")] process_id: u64,
+    ) -> AxTaskRef
     where
         F: FnOnce() + Send + 'static,
     {
         let mut t = Self::new_common(TaskId::new(), name);
         debug!("new task: {}", t.id_name());
         let kstack = TaskStack::alloc(align_up_4k(stack_size));
+
+        #[cfg(feature = "monolithic")]
+        t.process_id.store(process_id, Ordering::Release);
 
         #[cfg(feature = "tls")]
         let tls = VirtAddr::from(t.tls.tls_ptr() as usize);
@@ -178,12 +220,12 @@ impl TaskInner {
     }
 
     #[inline]
-    pub(crate) fn state(&self) -> TaskState {
+    pub fn state(&self) -> TaskState {
         self.state.load(Ordering::Acquire).into()
     }
 
     #[inline]
-    pub(crate) fn set_state(&self, state: TaskState) {
+    pub fn set_state(&self, state: TaskState) {
         self.state.store(state as u8, Ordering::Release)
     }
 
@@ -271,6 +313,143 @@ impl TaskInner {
             }
         }
     }
+    #[inline]
+    pub fn time_stat_from_user_to_kernel(&self) {
+        let time = self.time.get();
+        unsafe {
+            (*time).into_kernel_mode(self.id.as_u64() as isize);
+        }
+    }
+
+    #[inline]
+    pub fn time_stat_from_kernel_to_user(&self) {
+        let time = self.time.get();
+        unsafe {
+            (*time).into_user_mode(self.id.as_u64() as isize);
+        }
+    }
+
+    #[inline]
+    pub fn time_stat_when_switch_from(&self) {
+        let time = self.time.get();
+        unsafe {
+            (*time).swtich_from(self.id.as_u64() as isize);
+        }
+    }
+
+    #[inline]
+    pub fn time_stat_when_switch_to(&self) {
+        let time = self.time.get();
+        unsafe {
+            (*time).switch_to(self.id.as_u64() as isize);
+        }
+    }
+
+    #[inline]
+    /// 将内核统计的运行时时间转为秒与微妙的形式输出，方便进行sys_time
+    /// (用户态秒，用户态微妙，内核态秒，内核态微妙)
+    pub fn time_stat_output(&self) -> (usize, usize, usize, usize) {
+        let time = self.time.get();
+        unsafe { (*time).output_as_us() }
+    }
+
+    #[inline]
+    /// 输出计时器信息
+    /// (计时器周期，当前计时器剩余时间)
+    /// 单位为us
+    pub fn timer_output(&self) -> (usize, usize) {
+        let time = self.time.get();
+        unsafe { (*time).output_timer_as_us() }
+    }
+
+    #[inline]
+    /// 设置计时器信息
+    ///
+    /// 若type不为None则返回成功
+    pub fn set_timer(
+        &self,
+        timer_interval_ns: usize,
+        timer_remained_ns: usize,
+        timer_type: usize,
+    ) -> bool {
+        let time = self.time.get();
+        unsafe { (*time).set_timer(timer_interval_ns, timer_remained_ns, timer_type) }
+    }
+
+    #[inline]
+    /// 重置统计时间
+    pub fn time_stat_clear(&self) {
+        let time = self.time.get();
+        unsafe {
+            (*time).clear();
+        }
+    }
+
+    #[inline]
+    #[cfg(feature = "monolithic")]
+    pub fn get_process_id(&self) -> u64 {
+        self.process_id.load(Ordering::Acquire)
+    }
+
+    #[inline]
+    #[cfg(feature = "monolithic")]
+    pub fn set_process_id(&self, process_id: u64) {
+        self.process_id.store(process_id, Ordering::Release);
+    }
+
+    /// 获取内核栈栈顶
+    #[inline]
+    pub fn get_kernel_stack_top(&self) -> Option<usize> {
+        if let Some(kstack) = &self.kstack {
+            return Some(kstack.top().as_usize());
+        }
+        None
+    }
+
+    /// 获取内核栈的第一个trap上下文
+    #[inline]
+    pub fn get_first_trap_frame(&self) -> *mut TrapFrame {
+        if let Some(kstack) = &self.kstack {
+            return kstack.get_first_trap_frame();
+        }
+        unreachable!("get_first_trap_frame: kstack is None");
+    }
+
+    #[cfg(feature = "monolithic")]
+    pub fn set_leader(&self, is_lead: bool) {
+        self.is_leader.store(is_lead, Ordering::Release);
+    }
+
+    #[cfg(feature = "monolithic")]
+    pub fn is_leader(&self) -> bool {
+        self.is_leader.load(Ordering::Acquire)
+    }
+
+    #[cfg(feature = "monolithic")]
+    /// 设置Trap上下文
+    pub fn set_trap_context(&self, trap_frame: TrapFrame) {
+        let now_trap_frame = self.trap_frame.get();
+        unsafe {
+            *now_trap_frame = trap_frame;
+        }
+    }
+
+    #[cfg(feature = "monolithic")]
+    /// 将trap上下文直接写入到内核栈上
+    /// 注意此时保持sp不变
+    /// 返回值为压入了trap之后的内核栈的栈顶，可以用于多层trap压入
+    pub fn set_trap_in_kernel_stack(&self) -> usize {
+        extern "C" {
+            pub fn __copy(frame_address: *mut TrapFrame, kernel_base: usize);
+        }
+        let trap_frame_size = core::mem::size_of::<TrapFrame>();
+        let frame_address = self.trap_frame.get();
+        let kernel_base = self.get_kernel_stack_top().unwrap() - trap_frame_size;
+        unsafe {
+            __copy(frame_address, kernel_base);
+        }
+        kernel_base
+    }
 
     pub(crate) fn notify_exit(&self, exit_code: i32, rq: &mut AxRunQueue) {
         self.exit_code.store(exit_code, Ordering::Release);
@@ -315,6 +494,12 @@ impl TaskStack {
 
     pub const fn top(&self) -> VirtAddr {
         unsafe { core::mem::transmute(self.ptr.as_ptr().add(self.layout.size())) }
+    }
+
+    #[cfg(feature = "monolithic")]
+    /// 获取内核栈第一个压入的trap上下文，防止出现内核trap嵌套
+    pub fn get_first_trap_frame(&self) -> *mut TrapFrame {
+        (self.top().as_usize() - core::mem::size_of::<TrapFrame>()) as *mut TrapFrame
     }
 }
 
@@ -378,6 +563,51 @@ impl Deref for CurrentTask {
     }
 }
 
+/// 初始化主进程的trap上下文
+#[no_mangle]
+#[cfg(feature = "monolithic")]
+fn first_into_user(kernel_sp: usize, frame_base: usize) -> ! {
+    let trap_frame_size = core::mem::size_of::<TrapFrame>();
+    let kernel_base = kernel_sp - trap_frame_size;
+    // 在保证将寄存器都存储好之后，再开启中断
+    // 否则此时会因为写入csr寄存器过程中出现中断，导致出现异常
+    axhal::arch::disable_irqs();
+    // 在内核态中，tp寄存器存储的是当前任务的CPU ID
+    // 而当从内核态进入到用户态时，会将tp寄存器的值先存储在内核栈上，即把该任务对应的CPU ID存储在内核栈上
+    // 然后将tp寄存器的值改为对应线程的tls指针的值
+    // 因此在用户态中，tp寄存器存储的值是线程的tls指针的值
+    // 而当从用户态进入到内核态时，会先将内核栈上的值读取到某一个中间寄存器t0中，然后将tp的值存入内核栈
+    // 然后再将t0的值赋给tp，因此此时tp的值是当前任务的CPU ID
+    // 对应实现在axhal/src/arch/riscv/trap.S中
+    unsafe {
+        riscv::asm::sfence_vma_all();
+        core::arch::asm!(
+            r"
+            mv      sp, {frame_base}
+            .short  0x2432                      // fld fs0,264(sp)
+            .short  0x24d2                      // fld fs1,272(sp)
+            LDR     gp, sp, 2                   // load user gp and tp
+            LDR     t0, sp, 3
+            mv      t1, {kernel_base}
+            STR     tp, t1, 3                   // save supervisor tp，注意是存储到内核栈上而不是sp中，此时存储的应该是当前运行的CPU的ID
+            mv      tp, t0                      // tp：本来存储的是CPU ID，在这个时候变成了对应线程的TLS 指针
+            csrw    sscratch, {kernel_sp}       // put supervisor sp to scratch
+            LDR     t0, sp, 31
+            LDR     t1, sp, 32
+            csrw    sepc, t0
+            csrw    sstatus, t1
+            POP_GENERAL_REGS
+            LDR     sp, sp, 1
+            sret
+        ",
+            frame_base = in(reg) frame_base,
+            kernel_sp = in(reg) kernel_sp,
+            kernel_base = in(reg) kernel_base,
+        );
+    };
+    core::panic!("already in user mode!")
+}
+
 extern "C" fn task_entry() -> ! {
     // release the lock that was implicitly held across the reschedule
     unsafe { crate::RUN_QUEUE.force_unlock() };
@@ -385,7 +615,29 @@ extern "C" fn task_entry() -> ! {
     axhal::arch::enable_irqs();
     let task = crate::current();
     if let Some(entry) = task.entry {
-        unsafe { Box::from_raw(entry)() };
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "monolithic")] {
+                use axhal::KERNEL_PROCESS_ID;
+                if task.get_process_id() == KERNEL_PROCESS_ID {
+                    // 是初始调度进程，直接执行即可
+                    unsafe { Box::from_raw(entry)() };
+                    // 继续执行对应的函数
+                } else {
+                    // 需要通过切换特权级进入到对应的应用程序
+                    let kernel_sp = task.get_kernel_stack_top().unwrap();
+
+                    let frame_address = task.get_first_trap_frame();
+
+                    // 切换页表已经在switch实现了
+                    first_into_user(kernel_sp, frame_address as usize);
+                }
+            }
+            else {
+                unsafe { Box::from_raw(entry)() };
+            }
+
+        }
     }
+    // only for kernel task
     crate::exit(0);
 }

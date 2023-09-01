@@ -1,0 +1,69 @@
+[package]
+name = "axstarry"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = ["monolithic"]
+
+monolithic = ["arceos_api/monolithic", "axfeat/monolithic", "paging", "fs", "tls", "multitask", "irq"]
+
+# Multicore
+smp = ["axfeat/smp", "spinlock/smp"]
+
+# Floating point/SIMD
+fp_simd = ["axfeat/fp_simd"]
+
+# Interrupts
+irq = ["arceos_api/irq", "axfeat/irq"]
+
+# Memory
+alloc = ["arceos_api/alloc", "axfeat/alloc", "axio/alloc"]
+alloc-tlsf = ["axfeat/alloc-tlsf"]
+alloc-slab = ["axfeat/alloc-slab"]
+alloc-buddy = ["axfeat/alloc-buddy"]
+paging = ["axfeat/paging"]
+tls = ["axfeat/tls"]
+
+# Multi-threading and scheduler
+multitask = ["arceos_api/multitask", "axfeat/multitask"]
+sched_fifo = ["axfeat/sched_fifo"]
+sched_rr = ["axfeat/sched_rr"]
+sched_cfs = ["axfeat/sched_cfs"]
+
+# Display
+display = ["arceos_api/display", "axfeat/display"]
+
+# Fs
+fs = ["axruntime/fs"]
+
+# Logging
+log-level-off = ["axfeat/log-level-off"]
+log-level-error = ["axfeat/log-level-error"]
+log-level-warn = ["axfeat/log-level-warn"]
+log-level-info = ["axfeat/log-level-info"]
+log-level-debug = ["axfeat/log-level-debug"]
+log-level-trace = ["axfeat/log-level-trace"]
+
+
+[dependencies]
+numeric-enum-macro = { git = "https://github.com/mexus/numeric-enum-macro" }
+crate_interface = { path = "../../crates/crate_interface" }
+axfeat = { path = "../../api/axfeat" }
+arceos_api = { path = "../../api/arceos_api" }
+axruntime = { path = "../../modules/axruntime" }
+axconfig = { path = "../../modules/axconfig" }
+axlog = { path = "../../modules/axlog" }
+axio = { path = "../../crates/axio" }
+axerrno = { path = "../../crates/axerrno" }
+axhal = { path = "../../modules/axhal" }
+axalloc = { path = "../../modules/axalloc", optional = true }
+axtask = { path = "../../modules/axtask", optional = true }
+axfs = { path = "../../modules/axfs", optional = true }
+axnet = { path = "../../modules/axnet", optional = true }
+axprocess = { path = "../../modules/axprocess" }
+axmem = { path = "../../modules/axmem" } 
+lazy_init = { path = "../../crates/lazy_init" }
+spinlock = { path = "../../crates/spinlock" }

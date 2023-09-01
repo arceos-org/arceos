@@ -1,0 +1,10 @@
+[package]
+name = "oscomp"
+version = "0.1.0"
+edition = "2021"
+authors = ["Jiayu Chen <c0percn@gmail.com>", "Youjie Zheng <zyj578335934@gmail.com>"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+axstarry = { path = "../../ulib/axstarry",  features = ["monolithic"] }

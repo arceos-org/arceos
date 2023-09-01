@@ -24,6 +24,8 @@ extern crate axlog;
 
 #[cfg(all(target_os = "none", not(test)))]
 mod lang_items;
+
+#[cfg(not(feature = "monolithic"))]
 mod trap;
 
 #[cfg(feature = "smp")]
@@ -149,9 +151,15 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     info!("Initialize platform devices...");
     axhal::platform_init();
 
-    #[cfg(feature = "multitask")]
-    axtask::init_scheduler();
-
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "monolithic")] {
+            axprocess::init_kernel_process();
+        }
+        else {
+            #[cfg(feature = "multitask")]
+            axtask::init_scheduler();
+        }
+    }
     #[cfg(any(feature = "fs", feature = "net", feature = "display"))]
     {
         #[allow(unused_variables)]

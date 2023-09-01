@@ -3,6 +3,12 @@
 mod dir;
 mod file;
 
+#[cfg(feature = "monolithic")]
+mod port;
+
+#[cfg(feature = "monolithic")]
+pub use port::*;
+
 pub use self::dir::{DirBuilder, DirEntry, ReadDir};
 pub use self::file::{File, FileType, Metadata, OpenOptions, Permissions};
 
