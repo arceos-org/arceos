@@ -46,7 +46,7 @@ scheduler = { path = "../../crates/scheduler", optional = true }
 timer_list = { path = "../../crates/timer_list", optional = true }
 kernel_guard = { path = "../../crates/kernel_guard" }
 crate_interface = { path = "../../crates/crate_interface" }
-riscv = { path = "../../extern_crates/riscv-0.10.1" }
+riscv = "0.10"
 [dev-dependencies]
 rand = "0.8"
 axhal = { path = "../axhal", features = ["fp_simd"] }

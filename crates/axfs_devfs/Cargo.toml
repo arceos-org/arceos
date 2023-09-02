@@ -11,9 +11,7 @@ documentation = "https://rcore-os.github.io/arceos/axfs_devfs/index.html"
 
 [dependencies]
 axfs_vfs = { path = "../axfs_vfs" }
-rand = { path = "../../extern_crates/rand-0.8.5", default-features = false, features = [
-    "small_rng",
-] }
+rand = { version = "0.8.5", default-features = false, features = ["small_rng"]}
 spin = "0.9"
 log = "0.4"
 lazy_static = { version = "1.4", features = ["spin_no_std"] }

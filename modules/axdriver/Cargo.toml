@@ -27,6 +27,8 @@ virtio-gpu = ["display", "virtio", "driver_virtio/gpu"]
 ramdisk = ["block", "driver_block/ramdisk"]
 # more devices example: e1000 = ["net", "driver_net/e1000"]
 img = []
+
+# 为了将测例加载到内存需要打开ramdisk，否则需要关闭
 default = ["bus-mmio", "ramdisk"]
 
 [dependencies]

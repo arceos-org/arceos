@@ -314,7 +314,7 @@ pub const LUA_TESTCASES: &[&str] = &[
 
 #[allow(dead_code)]
 pub const BUSYBOX_TESTCASES: &[&str] = &[
-    // "./time-test",
+    "./time-test",
     //
     "./interrupts-test-1",
     "./interrupts-test-2",
@@ -324,18 +324,10 @@ pub const BUSYBOX_TESTCASES: &[&str] = &[
     "./copy-file-range-test-4",
     "busybox echo hello",
     "busybox sh ./unixbench_testcode.sh",
-    "./copy-file-range-test-1",
-    "./copy-file-range-test-2",
-    "./copy-file-range-test-3",
-    "./copy-file-range-test-4",
     "busybox echo hello",
     "busybox sh ./iperf_testcode.sh",
-    "./interrupts-test-1",
-    "./interrupts-test-1",
     "busybox echo hello",
     "busybox sh busybox_testcode.sh",
-    "./interrupts-test-2",
-    "./interrupts-test-2",
     "busybox echo hello",
     // "busybox sh ./iozone_testcode.sh",
     "busybox echo latency measurements",
