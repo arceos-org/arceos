@@ -307,3 +307,47 @@ impl<T: Any> AsAny for T {
         self
     }
 }
+bitflags! {
+    /// 指定文件打开时的权限
+    #[derive(Clone, Copy)]
+    pub struct AccessMode: u16 {
+        /// 用户读权限
+        const S_IRUSR = 1 << 8;
+        /// 用户写权限
+        const S_IWUSR = 1 << 7;
+        /// 用户执行权限
+        const S_IXUSR = 1 << 6;
+        /// 用户组读权限
+        const S_IRGRP = 1 << 5;
+        /// 用户组写权限
+        const S_IWGRP = 1 << 4;
+        /// 用户组执行权限
+        const S_IXGRP = 1 << 3;
+        /// 其他用户读权限
+        const S_IROTH = 1 << 2;
+        /// 其他用户写权限
+        const S_IWOTH = 1 << 1;
+        /// 其他用户执行权限
+        const S_IXOTH = 1 << 0;
+    }
+}
+
+impl From<usize> for AccessMode {
+    fn from(val: usize) -> Self {
+        Self::from_bits_truncate(val as u16)
+    }
+}
+
+/// IOCTL系统调用支持
+pub const TCGETS: usize = 0x5401;
+pub const TIOCGPGRP: usize = 0x540F;
+pub const TIOCSPGRP: usize = 0x5410;
+pub const TIOCGWINSZ: usize = 0x5413;
+#[repr(C)]
+#[derive(Clone, Copy, Default)]
+pub struct ConsoleWinSize {
+    pub ws_row: u16,
+    pub ws_col: u16,
+    pub ws_xpixel: u16,
+    pub ws_ypixel: u16,
+}

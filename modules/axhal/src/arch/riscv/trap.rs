@@ -39,7 +39,7 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
         #[cfg(feature = "monolithic")]
         Trap::Exception(E::UserEnvCall) => {
             enable_irqs();
-            // info!("syscall: id: {}, cpu: {}", tf.regs.a7, cpu_id);
+            // info!("syscall: id: {}", tf.regs.a7);
             // jump to next instruction anyway
             tf.sepc += 4;
             // get system call return value

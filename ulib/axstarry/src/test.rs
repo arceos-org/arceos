@@ -1,7 +1,15 @@
 extern crate alloc;
 use alloc::boxed::Box;
 use alloc::string::{String, ToString};
+use alloc::sync::Arc;
 use alloc::vec::Vec;
+use axhal::arch::write_page_table_root;
+use axhal::KERNEL_PROCESS_ID;
+use axlog::info;
+use axprocess::{wait_pid, yield_now_task, PID2PC};
+use axruntime::KERNEL_PAGE_TABLE;
+use axsync::Mutex;
+use axtask::{TaskId, EXITED_TASKS, RUN_QUEUE};
 use lazy_init::LazyInit;
 /// 初赛测例
 #[allow(dead_code)]
@@ -287,12 +295,12 @@ pub const LUA_TESTCASES: &[&str] = &[
 #[allow(dead_code)]
 pub const SDCARD_TESTCASES: &[&str] = &[
     // "./time-test",
-    "./interrupts-test-1",
-    "./interrupts-test-2",
-    "./copy-file-range-test-1",
-    "./copy-file-range-test-2",
-    "./copy-file-range-test-3",
-    "./copy-file-range-test-4",
+    // "./interrupts-test-1",
+    // "./interrupts-test-2",
+    // "./copy-file-range-test-1",
+    // "./copy-file-range-test-2",
+    // "./copy-file-range-test-3",
+    // "./copy-file-range-test-4",
     "busybox echo hello",
     "busybox sh ./unixbench_testcode.sh",
     "./copy-file-range-test-1",
@@ -362,7 +370,76 @@ pub const IPERF_TESTCASES: &[&str] = &[
     "iperf3 -c 127.0.0.1 -p 5001 -t 2 -i 0 -R", // reverse tcp
     "iperf3 -c 127.0.0.1 -p 5001 -t 2 -i 0 -u -R -b 1000G", // reverse udp
 ];
+/// 运行测试时的状态机，记录测试结果与内容
+struct TestResult {
+    sum: usize,
+    accepted: usize,
+    now_testcase: Option<Vec<String>>,
+    // 同时记录名称与进程号
+    failed_testcases: Vec<Vec<String>>,
+}
 
+impl TestResult {
+    pub fn new(case_num: usize) -> Self {
+        Self {
+            sum: case_num,
+            accepted: 0,
+            now_testcase: None,
+            failed_testcases: Vec::new(),
+        }
+    }
+    pub fn load(&mut self, testcase: &Vec<String>) {
+        info!(
+            " --------------- load testcase: {:?} --------------- ",
+            testcase
+        );
+        self.now_testcase = Some(testcase.clone());
+    }
+    /// 调用这个函数的应当是测例最开始的进程，而不是它fork出来的一系列进程
+    /// 认为exit_code为负数时代表不正常
+    pub fn finish_one_test(&mut self, exit_code: i32) {
+        match exit_code {
+            0 => {
+                info!(" --------------- test passed --------------- ");
+                self.accepted += 1;
+                self.now_testcase.take();
+            }
+            _ => {
+                info!(
+                    " --------------- TEST FAILED, exit code = {} --------------- ",
+                    exit_code
+                );
+                self.failed_testcases
+                    .push(self.now_testcase.take().unwrap());
+            }
+        }
+    }
+
+    /// 完成了所有测例之后，打印测试结果
+    pub fn show_result(&self) {
+        info!(
+            " --------------- all test ended, passed {} / {} --------------- ",
+            self.accepted, self.sum
+        );
+        info!(" --------------- failed tests: --------------- ");
+        for test in &self.failed_testcases {
+            info!("{:?}", test);
+        }
+        info!(" --------------- end --------------- ");
+    }
+}
+
+static TESTRESULT: LazyInit<Mutex<TestResult>> = LazyInit::new();
+
+/// 某一个测试用例完成之后调用，记录测试结果
+pub fn finish_one_test(exit_code: i32) {
+    TESTRESULT.lock().finish_one_test(exit_code);
+}
+
+#[allow(dead_code)]
+pub fn show_result() {
+    TESTRESULT.lock().show_result();
+}
 #[allow(unused)]
 /// 分割命令行参数
 fn get_args(command_line: &[u8]) -> Vec<String> {
@@ -398,100 +475,185 @@ fn get_args(command_line: &[u8]) -> Vec<String> {
     }
     args
 }
+// /// 在执行系统调用前初始化文件系统
+// ///
+// /// 包括建立软连接，提前准备好一系列的文件与文件夹
+// pub fn fs_init(_case: &'static str) {
+//     // 需要对libc-dynamic进行特殊处理，因为它需要先加载libc.so
+//     // 建立一个硬链接
+
+//     let libc_so = &"ld-musl-riscv64-sf.so.1";
+//     let libc_so2 = &"ld-musl-riscv64.so.1"; // 另一种名字的 libc.so，非 libc-test 测例库用
+
+//     create_link(
+//         &(FilePath::new(("/lib/".to_string() + libc_so).as_str()).unwrap()),
+//         &(FilePath::new("libc.so").unwrap()),
+//     );
+//     create_link(
+//         &(FilePath::new(("/lib/".to_string() + libc_so2).as_str()).unwrap()),
+//         &(FilePath::new("libc.so").unwrap()),
+//     );
+
+//     let tls_so = &"tls_get_new-dtv_dso.so";
+//     create_link(
+//         &(FilePath::new(("/lib/".to_string() + tls_so).as_str()).unwrap()),
+//         &(FilePath::new("tls_get_new-dtv_dso.so").unwrap()),
+//     );
+
+//     // if case == "busybox" {
+//     create_link(
+//         &(FilePath::new("/sbin/busybox").unwrap()),
+//         &(FilePath::new("busybox").unwrap()),
+//     );
+//     create_link(
+//         &(FilePath::new("/sbin/ls").unwrap()),
+//         &(FilePath::new("busybox").unwrap()),
+//     );
+//     create_link(
+//         &(FilePath::new("/ls").unwrap()),
+//         &(FilePath::new("/busybox").unwrap()),
+//     );
+//     create_link(
+//         &(FilePath::new("/sh").unwrap()),
+//         &(FilePath::new("/busybox").unwrap()),
+//     );
+//     create_link(
+//         &(FilePath::new("/bin/lmbench_all").unwrap()),
+//         &(FilePath::new("/lmbench_all").unwrap()),
+//     );
+//     create_link(
+//         &(FilePath::new("/bin/iozone").unwrap()),
+//         &(FilePath::new("/iozone").unwrap()),
+//     );
+//     let _ = new_file("/lat_sig", &(OpenFlags::CREATE | OpenFlags::RDWR));
+//     // }
+
+//     // gcc相关的链接，可以在testcases/gcc/riscv64-linux-musl-native/lib目录下使用ls -al指令查看
+//     let src_dir = "riscv64-linux-musl-native/lib";
+//     create_link(
+//         &FilePath::new(format!("{}/ld-musl-riscv64.so.1", src_dir).as_str()).unwrap(),
+//         &FilePath::new("/lib/libc.so").unwrap(),
+//     );
+//     create_link(
+//         &FilePath::new(format!("{}/libatomic.so", src_dir).as_str()).unwrap(),
+//         &FilePath::new(format!("{}/libatomic.so.1.2.0", src_dir).as_str()).unwrap(),
+//     );
+//     create_link(
+//         &FilePath::new(format!("{}/libatomic.so.1", src_dir).as_str()).unwrap(),
+//         &FilePath::new(format!("{}/libatomic.so.1.2.0", src_dir).as_str()).unwrap(),
+//     );
+//     create_link(
+//         &FilePath::new(format!("{}/libgfortran.so", src_dir).as_str()).unwrap(),
+//         &FilePath::new(format!("{}/libgfortran.so.5.0.0", src_dir).as_str()).unwrap(),
+//     );
+//     create_link(
+//         &FilePath::new(format!("{}/libgfortran.so.5", src_dir).as_str()).unwrap(),
+//         &FilePath::new(format!("{}/libgfortran.so.5.0.0", src_dir).as_str()).unwrap(),
+//     );
+//     create_link(
+//         &FilePath::new(format!("{}/libgomp.so", src_dir).as_str()).unwrap(),
+//         &FilePath::new(format!("{}/libgomp.so.1.0.0", src_dir).as_str()).unwrap(),
+//     );
+//     create_link(
+//         &FilePath::new(format!("{}/libgomp.so.1", src_dir).as_str()).unwrap(),
+//         &FilePath::new(format!("{}/libgomp.so.1.0.0", src_dir).as_str()).unwrap(),
+//     );
+//     create_link(
+//         &FilePath::new(format!("{}/libssp.so", src_dir).as_str()).unwrap(),
+//         &FilePath::new(format!("{}/libssp.so.0.0.0", src_dir).as_str()).unwrap(),
+//     );
+//     create_link(
+//         &FilePath::new(format!("{}/libssp.so.0", src_dir).as_str()).unwrap(),
+//         &FilePath::new(format!("{}/libssp.so.0.0.0", src_dir).as_str()).unwrap(),
+//     );
+//     create_link(
+//         &FilePath::new(format!("{}/libstdc++.so", src_dir).as_str()).unwrap(),
+//         &FilePath::new(format!("{}/libstdc++.so.6.0.29", src_dir).as_str()).unwrap(),
+//     );
+//     create_link(
+//         &FilePath::new(format!("{}/libstdc++.so.6", src_dir).as_str()).unwrap(),
+//         &FilePath::new(format!("{}/libstdc++.so.6.0.29", src_dir).as_str()).unwrap(),
+//     );
+// }
 
 pub fn run_testcases(case: &'static str) {
-    axlog::ax_println!("run_testcases :{}", case);
-    let test_iter: LazyInit<Box<dyn Iterator<Item = &'static &'static str> + Send>> =
-        LazyInit::new();
+    let (mut test_iter, case_len) = match case {
+        "junior" => (Box::new(JUNIOR_TESTCASES.iter()), JUNIOR_TESTCASES.len()),
+        "libc-static" => (
+            Box::new(LIBC_STATIC_TESTCASES.iter()),
+            LIBC_STATIC_TESTCASES.len(),
+        ),
+        "libc-dynamic" => (
+            Box::new(LIBC_STATIC_TESTCASES.iter()),
+            LIBC_STATIC_TESTCASES.len(),
+        ),
+        "lua" => (Box::new(LUA_TESTCASES.iter()), LUA_TESTCASES.len()),
+        "netperf" => (Box::new(NETPERF_TESTCASES.iter()), NETPERF_TESTCASES.len()),
 
-    match case {
-        "junior" => {
-            test_iter.init_by(Box::new(JUNIOR_TESTCASES.iter()));
-            // TESTRESULT.init_by(SpinNoIrq::new(TestResult::new(JUNIOR_TESTCASES.len())));
-        }
-        "libc-static" => {
-            test_iter.init_by(Box::new(LIBC_STATIC_TESTCASES.iter()));
-            // TESTRESULT.init_by(SpinNoIrq::new(TestResult::new(LIBC_STATIC_TESTCASES.len())));
-        }
-        "libc-dynamic" => {
-            test_iter.init_by(Box::new(LIBC_DYNAMIC_TESTCASES.iter()));
-            // TESTRESULT.init_by(SpinNoIrq::new(TestResult::new(
-            // LIBC_DYNAMIC_TESTCASES.len(),
-            // )));
-        }
-        "lua" => {
-            test_iter.init_by(Box::new(LUA_TESTCASES.iter()));
-            // TESTRESULT.init_by(SpinNoIrq::new(TestResult::new(LUA_TESTCASES.len())));
-        }
-        "netperf" => test_iter.init_by(Box::new(NETPERF_TESTCASES.iter())),
+        "ipref" => (Box::new(IPERF_TESTCASES.iter()), IPERF_TESTCASES.len()),
 
-        "ipref" => test_iter.init_by(Box::new(IPERF_TESTCASES.iter())),
-
-        "sdcard" => {
-            test_iter.init_by(Box::new(SDCARD_TESTCASES.iter()));
-            // TESTRESULT.init_by(SpinNoIrq::new(TestResult::new(BUSYBOX_TESTCASES.len())));
-        }
+        "sdcard" => (Box::new(SDCARD_TESTCASES.iter()), SDCARD_TESTCASES.len()),
         _ => {
             panic!("unknown test case: {}", case);
         }
     };
-    // loop {
-    //     let mut ans = None;
-    //     if let Some(command_line) = test_iter.next() {
-    //         let args = get_args(command_line.as_bytes());
-    //         axlog::ax_println!("run newtestcase: {:?}", args);
-    //         let testcase = args.clone();
-    //         let real_testcase = if testcase[0] == "./busybox".to_string()
-    //             || testcase[0] == "busybox".to_string()
-    //             || testcase[0] == "entry-static.exe".to_string()
-    //             || testcase[0] == "entry-dynamic.exe".to_string()
-    //             || testcase[0] == "lmbench_all".to_string()
-    //         {
-    //             testcase[1].clone()
-    //         } else {
-    //             testcase[0].clone()
-    //         };
-    //         // filter(real_testcase);
+    TESTRESULT.init_by(Mutex::new(TestResult::new(case_len)));
+    loop {
+        let mut ans = None;
+        if let Some(command_line) = test_iter.next() {
+            let args = get_args(command_line.as_bytes());
+            axlog::ax_println!("run new testcase: {:?}", args);
+            let testcase = args.clone();
+            // let real_testcase = if testcase[0] == "./busybox".to_string()
+            //     || testcase[0] == "busybox".to_string()
+            //     || testcase[0] == "entry-static.exe".to_string()
+            //     || testcase[0] == "entry-dynamic.exe".to_string()
+            //     || testcase[0] == "lmbench_all".to_string()
+            // {
+            //     testcase[1].clone()
+            // } else {
+            //     testcase[0].clone()
+            // };
+            // filter(real_testcase);
 
-    //         let main_task = axprocess::Process::new(args).unwrap();
-    //         let now_process_id = main_task.get_process_id() as isize;
-    //         TESTRESULT.lock().load(&(testcase));
-    //         RUN_QUEUE.lock().add_task(main_task);
-    //         let mut exit_code = 0;
-    //         ans = loop {
-    //             if wait_pid(now_process_id, &mut exit_code as *mut i32).is_ok() {
-    //                 break Some(exit_code);
-    //             }
-    //             // let trap: usize = 0xFFFFFFC0805BFEF8;
-    //             // let trap_frame: *const TrapFrame = trap as *const TrapFrame;
-    //             // info!("trap_frame: {:?}", unsafe { &*trap_frame });
-    //             yield_now_task();
-    //             // axhal::arch::enable_irqs();
-    //         };
-    //     }
-    //     TaskId::clear();
-    //     unsafe {
-    //         write_page_table_root(KERNEL_PAGE_TABLE.root_paddr());
-    //         asm::sfence_vma_all();
-    //     };
-    //     EXITED_TASKS.lock().clear();
-    //     if let Some(exit_code) = ans {
-    //         let kernel_process = Arc::clone(PID2PC.lock().get(&KERNEL_PROCESS_ID).unwrap());
-    //         kernel_process
-    //             .inner
-    //             .lock()
-    //             .children
-    //             .retain(|x| x.pid == KERNEL_PROCESS_ID);
-    //         // 去除指针引用，此时process_id对应的进程已经被释放
-    //         // 释放所有非内核进程
-    //         finish_one_test(exit_code);
-    //     } else {
-    //         // 已经测试完所有的测例
-    //         TESTRESULT.lock().show_result();
-    //         break;
-    //     }
-    //     // chdir会改变当前目录，需要重新设置
-    //     api::set_current_dir("/").expect("reset current dir failed");
-    // }
+            let main_task = axprocess::Process::init(args).unwrap();
+            let now_process_id = main_task.get_process_id() as isize;
+            TESTRESULT.lock().load(&(testcase));
+            RUN_QUEUE.lock().add_task(main_task);
+            let mut exit_code = 0;
+            ans = loop {
+                if wait_pid(now_process_id, &mut exit_code as *mut i32).is_ok() {
+                    break Some(exit_code);
+                }
+                // let trap: usize = 0xFFFFFFC0805BFEF8;
+                // let trap_frame: *const TrapFrame = trap as *const TrapFrame;
+                // info!("trap_frame: {:?}", unsafe { &*trap_frame });
+                yield_now_task();
+                // axhal::arch::enable_irqs();
+            };
+        }
+        TaskId::clear();
+        unsafe {
+            write_page_table_root(KERNEL_PAGE_TABLE.root_paddr());
+            riscv::asm::sfence_vma_all();
+        };
+        EXITED_TASKS.lock().clear();
+        if let Some(exit_code) = ans {
+            let kernel_process = Arc::clone(PID2PC.lock().get(&KERNEL_PROCESS_ID).unwrap());
+            kernel_process
+                .children
+                .lock()
+                .retain(|x| x.pid() == KERNEL_PROCESS_ID);
+            // 去除指针引用，此时process_id对应的进程已经被释放
+            // 释放所有非内核进程
+            finish_one_test(exit_code);
+        } else {
+            // 已经测试完所有的测例
+            TESTRESULT.lock().show_result();
+            break;
+        }
+        // chdir会改变当前目录，需要重新设置
+        axfs::api::set_current_dir("/").expect("reset current dir failed");
+    }
     axlog::ax_println!("hello world!");
 }

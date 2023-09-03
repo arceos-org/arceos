@@ -137,7 +137,6 @@ impl File {
             // just open the existing
             node_option?
         };
-
         let attr = node.get_attr()?;
         if attr.is_dir()
             && (opts.create || opts.create_new || opts.write || opts.append || opts.truncate)
@@ -148,7 +147,6 @@ impl File {
         if !perm_to_cap(attr.perm()).contains(access_cap) {
             return ax_err!(PermissionDenied);
         }
-
         node.open()?;
         if opts.truncate {
             node.truncate(0)?;

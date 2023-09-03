@@ -13,7 +13,7 @@ use crate::{AxTaskRef, Scheduler, TaskInner, WaitQueue};
 pub static RUN_QUEUE: LazyInit<SpinNoIrq<AxRunQueue>> = LazyInit::new();
 
 // TODO: per-CPU
-static EXITED_TASKS: SpinNoIrq<VecDeque<AxTaskRef>> = SpinNoIrq::new(VecDeque::new());
+pub static EXITED_TASKS: SpinNoIrq<VecDeque<AxTaskRef>> = SpinNoIrq::new(VecDeque::new());
 
 static WAIT_FOR_EXIT: WaitQueue = WaitQueue::new();
 
@@ -32,6 +32,8 @@ impl AxRunQueue {
             axconfig::TASK_STACK_SIZE,
             #[cfg(feature = "monolithic")]
             KERNEL_PROCESS_ID,
+            #[cfg(feature = "monolithic")]
+            0,
         );
         let mut scheduler = Scheduler::new();
         scheduler.add_task(gc_task);
@@ -105,6 +107,21 @@ impl AxRunQueue {
             self.resched(false);
         }
         unreachable!("task exited!");
+    }
+
+    #[cfg(feature = "monolithic")]
+    /// 仅用于exec与exit时清除其他后台线程
+    pub fn remove_task(&mut self, task: &AxTaskRef) {
+        debug!("task remove: {}", task.id_name());
+        // 当前任务不予清除
+        // assert!(!task.is_running());
+        assert!(!task.is_running());
+        assert!(!task.is_idle());
+        if task.is_ready() {
+            task.set_state(TaskState::Exited);
+            EXITED_TASKS.lock().push_back(task.clone());
+            self.scheduler.remove_task(task);
+        }
     }
 
     pub fn block_current<F>(&mut self, wait_queue_push: F)
@@ -229,6 +246,8 @@ pub(crate) fn init() {
         IDLE_TASK_STACK_SIZE,
         #[cfg(feature = "monolithic")]
         KERNEL_PROCESS_ID,
+        #[cfg(feature = "monolithic")]
+        0,
     );
     IDLE_TASK.with_current(|i| i.init_by(idle_task.clone()));
 

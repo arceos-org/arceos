@@ -6,7 +6,7 @@ include_asm_marcos!();
 /// General registers of RISC-V.
 #[allow(missing_docs)]
 #[repr(C)]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct GeneralRegisters {
     pub ra: usize,
     pub sp: usize,
@@ -43,7 +43,7 @@ pub struct GeneralRegisters {
 
 /// Saved registers when a trap (interrupt or exception) occurs.
 #[repr(C)]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct TrapFrame {
     /// All general registers.
     pub regs: GeneralRegisters,

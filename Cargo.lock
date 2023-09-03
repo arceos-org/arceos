@@ -328,7 +328,9 @@ dependencies = [
 name = "axfs_devfs"
 version = "0.1.0"
 dependencies = [
+ "axerrno",
  "axfs_vfs",
+ "lazy_static",
  "log",
  "spin 0.9.8",
 ]
@@ -523,10 +525,14 @@ dependencies = [
  "axnet",
  "axprocess",
  "axruntime",
+ "axsync",
  "axtask",
+ "bitflags 2.4.0",
  "crate_interface",
+ "kernel_guard",
  "lazy_init",
  "numeric-enum-macro",
+ "riscv",
  "spinlock",
 ]
 

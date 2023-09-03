@@ -8,7 +8,7 @@ edition = "2021"
 [features]
 default = ["monolithic"]
 
-monolithic = ["arceos_api/monolithic", "axfeat/monolithic", "paging", "fs", "tls", "multitask", "irq"]
+monolithic = ["arceos_api/monolithic", "axfeat/monolithic", "paging", "fs", "multitask", "irq"]
 
 # Multicore
 smp = ["axfeat/smp", "spinlock/smp"]
@@ -37,7 +37,7 @@ sched_cfs = ["axfeat/sched_cfs"]
 display = ["arceos_api/display", "axfeat/display"]
 
 # Fs
-fs = ["axruntime/fs"]
+fs = ["axruntime/fs", "arceos_api/fs"]
 
 # Logging
 log-level-off = ["axfeat/log-level-off"]
@@ -60,10 +60,14 @@ axio = { path = "../../crates/axio" }
 axerrno = { path = "../../crates/axerrno" }
 axhal = { path = "../../modules/axhal" }
 axalloc = { path = "../../modules/axalloc", optional = true }
-axtask = { path = "../../modules/axtask", optional = true }
-axfs = { path = "../../modules/axfs", optional = true }
+axtask = { path = "../../modules/axtask" }
+axsync = { path = "../../modules/axsync" }
+axfs = { path = "../../modules/axfs" }
 axnet = { path = "../../modules/axnet", optional = true }
 axprocess = { path = "../../modules/axprocess" }
 axmem = { path = "../../modules/axmem" } 
 lazy_init = { path = "../../crates/lazy_init" }
 spinlock = { path = "../../crates/spinlock" }
+kernel_guard = { path = "../../crates/kernel_guard" }
+riscv = "0.10"
+bitflags = "2.0"

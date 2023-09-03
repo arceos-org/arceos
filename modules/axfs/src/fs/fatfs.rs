@@ -74,15 +74,56 @@ impl VfsNodeOps for FileWrapper<'static> {
     }
 
     fn read_at(&self, offset: u64, buf: &mut [u8]) -> VfsResult<usize> {
+        // let mut file = self.0.lock();
+        // file.seek(SeekFrom::Start(offset)).map_err(as_vfs_err)?; // TODO: more efficient
+        // file.read(buf).map_err(as_vfs_err)
         let mut file = self.0.lock();
         file.seek(SeekFrom::Start(offset)).map_err(as_vfs_err)?; // TODO: more efficient
-        file.read(buf).map_err(as_vfs_err)
+                                                                 // file.read(buf).map_err(as_vfs_err)
+        let buf_len = buf.len();
+        let mut now_offset = 0;
+        let mut probe = buf.to_vec();
+        while now_offset < buf_len {
+            let ans = file.read(&mut probe).map_err(as_vfs_err);
+            if ans.is_err() {
+                return ans;
+            }
+            let read_len = ans.unwrap();
+
+            if read_len == 0 {
+                break;
+            }
+            buf[now_offset..now_offset + read_len].copy_from_slice(&probe[..read_len]);
+            now_offset += read_len;
+            probe = probe[read_len..].to_vec();
+        }
+        Ok(now_offset)
     }
 
     fn write_at(&self, offset: u64, buf: &[u8]) -> VfsResult<usize> {
+        // let mut file = self.0.lock();
+        // file.seek(SeekFrom::Start(offset)).map_err(as_vfs_err)?; // TODO: more efficient
+        // file.write(buf).map_err(as_vfs_err)
         let mut file = self.0.lock();
         file.seek(SeekFrom::Start(offset)).map_err(as_vfs_err)?; // TODO: more efficient
-        file.write(buf).map_err(as_vfs_err)
+                                                                 // file.write(buf).map_err(as_vfs_err)
+        let buf_len = buf.len();
+        let mut now_offset = 0;
+        let mut probe = buf.to_vec();
+        while now_offset < buf_len {
+            let ans = file.write(&probe).map_err(as_vfs_err);
+            if ans.is_err() {
+                return ans;
+            }
+            let write_len = ans.unwrap();
+
+            if write_len == 0 {
+                break;
+            }
+            now_offset += write_len;
+            probe = probe[write_len..].to_vec();
+        }
+        Ok(now_offset)
     }
 
     fn truncate(&self, size: u64) -> VfsResult {

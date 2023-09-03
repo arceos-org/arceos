@@ -4,7 +4,7 @@ mod dir;
 mod file;
 
 #[cfg(feature = "monolithic")]
-mod port;
+pub mod port;
 
 #[cfg(feature = "monolithic")]
 pub use port::*;

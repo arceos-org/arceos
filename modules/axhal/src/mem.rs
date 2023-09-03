@@ -139,6 +139,20 @@ pub(crate) fn default_free_regions() -> impl Iterator<Item = MemRegion> {
     })
 }
 
+/// Return the extend free memory regions to prepare for the OSCOMP
+///
+/// extend to [0xffff_ffc0_a000_0000, 0xffff_ffc0_f000_0000)
+#[allow(dead_code)]
+pub(crate) fn extend_free_regions() -> impl Iterator<Item = MemRegion> {
+    let start = virt_to_phys(VirtAddr::from(0xffff_ffc0_a000_0000)).align_up_4k();
+    let end: PhysAddr = PhysAddr::from(0xf000_0000).align_down_4k();
+    core::iter::once(MemRegion {
+        paddr: start,
+        size: end.as_usize() - start.as_usize(),
+        flags: MemRegionFlags::FREE | MemRegionFlags::READ | MemRegionFlags::WRITE,
+        name: "extend free memory",
+    })
+}
 /// Fills the `.bss` section with zeros.
 #[allow(dead_code)]
 pub(crate) fn clear_bss() {

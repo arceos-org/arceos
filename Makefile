@@ -39,7 +39,7 @@ FEATURES ?=
 APP_FEATURES ?=
 
 # QEMU options
-BLK ?= n
+BLK ?= y
 NET ?= n
 GRAPHIC ?= n
 BUS ?= mmio

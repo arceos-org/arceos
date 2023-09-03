@@ -13,6 +13,18 @@ pub(crate) fn devfs() -> Arc<fs::devfs::DeviceFileSystem> {
     devfs.add("null", Arc::new(null));
     devfs.add("zero", Arc::new(zero));
     foo_dir.add("bar", Arc::new(bar));
+    #[cfg(feature = "monolithic")]
+    {
+        // 添加dev文件系统下的配置文件
+        // busybox的时候要用到
+        // devfs不支持可修改的file，因此取巧直接用了ramfs提供的file实现
+        let testshm = fs::ramfs::FileNode::new();
+        let testrtc = fs::ramfs::FileNode::new();
+        let shm_dir = devfs.mkdir("shm");
+        shm_dir.add("testshm", Arc::new(testshm));
+        let rtc_dir = devfs.mkdir("misc");
+        rtc_dir.add("rtc", Arc::new(testrtc));
+    }
     Arc::new(devfs)
 }
 
@@ -44,6 +56,14 @@ pub(crate) fn procfs() -> VfsResult<Arc<fs::ramfs::RamFileSystem>> {
     proc_root.create("self", VfsNodeType::Dir)?;
     proc_root.create("self/stat", VfsNodeType::File)?;
 
+    #[cfg(feature = "monolithic")]
+    {
+        // Create other file to pass the testcases
+        proc_root.create("meminfo", VfsNodeType::File)?;
+        proc_root.create("mounts", VfsNodeType::File)?;
+
+        procfs.mount("interrupts", Arc::new(fs::devfs::Interrupts::default()))?;
+    }
     Ok(Arc::new(procfs))
 }
 

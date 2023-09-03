@@ -7,16 +7,16 @@
 extern crate alloc;
 
 mod dir;
+mod interrupts;
 mod null;
-mod zero;
-
 #[cfg(test)]
 mod tests;
+mod zero;
 
 pub use self::dir::DirNode;
+pub use self::interrupts::{Interrupts, INTERRUPT};
 pub use self::null::NullDev;
 pub use self::zero::ZeroDev;
-
 use alloc::sync::Arc;
 use axfs_vfs::{VfsNodeRef, VfsOps, VfsResult};
 use spin::once::Once;

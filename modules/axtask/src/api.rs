@@ -102,6 +102,8 @@ where
         stack_size,
         #[cfg(feature = "monolithic")]
         KERNEL_PROCESS_ID,
+        #[cfg(feature = "monolithic")]
+        0,
     );
     RUN_QUEUE.lock().add_task(task.clone());
     task
