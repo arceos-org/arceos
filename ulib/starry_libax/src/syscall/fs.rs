@@ -1197,7 +1197,7 @@ pub fn syscall_sendfile64(out_fd: usize, in_fd: usize, offset: *mut usize, count
     let old_in_offset = in_file.lock().seek(SeekFrom::Current(0)).unwrap();
 
     let mut buf = vec![0u8; count];
-    if !offset.is_null() {
+    let ans = if !offset.is_null() {
         // 如果offset不为NULL，则从offset指定的位置开始读取
         let in_offset = unsafe { *offset };
         in_file
@@ -1217,7 +1217,9 @@ pub fn syscall_sendfile64(out_fd: usize, in_fd: usize, offset: *mut usize, count
         info!("read len: {}", buf.len());
         info!("write len: {}", buf.as_slice().len());
         out_file.lock().write(buf.as_slice()).unwrap() as isize
-    }
+    };
+    info!("ans: {}", ans);
+    ans
 }
 
 /// 78

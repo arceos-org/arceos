@@ -3,7 +3,7 @@
 use alloc::sync::Arc;
 use axerrno::{AxError, AxResult};
 use axhal::{arch::TrapFrame, cpu::this_cpu_id};
-use axlog::{error, warn};
+use axlog::{info, warn};
 use axsignal::{
     action::{SigActionFlags, SignalDefault, SIG_IGN},
     info::SigInfo,
@@ -179,7 +179,7 @@ pub fn handle_signals() {
 
     // 新的trap上下文的sp指针位置，由于SIGINFO会存放内容，所以需要开个保护区域
     let mut sp = trap_frame.regs.sp - USER_SIGNAL_PROTECT;
-    error!(
+    info!(
         "restorer :{}, handler: {}",
         action.get_storer(),
         action.sa_handler
@@ -243,17 +243,14 @@ pub fn handle_signals() {
 ///
 /// 返回的值与原先syscall应当返回的值相同，即返回原先保存的trap上下文的a0的值
 pub fn signal_return() -> isize {
-    error!("id: {}, test", current_task().id().as_u64());
     if load_trap_for_signal() {
         // 说明确实存在着信号处理函数的trap上下文
         // 此时内核栈上存储的是调用信号处理前的trap上下文
         let trap_frame = current_task().get_first_trap_frame();
-        error!("trap: {:X?}", unsafe { *trap_frame });
         unsafe { (*trap_frame).regs.a0 as isize }
     } else {
         // 没有进行信号处理，但是调用了sig_return
         // 此时直接返回-1
-        error!("test");
         -1
     }
 }

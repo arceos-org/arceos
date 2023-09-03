@@ -181,7 +181,7 @@ pub fn global_allocator() -> &'static GlobalAllocator {
 ///
 /// This function should be called only once, and before any allocation.
 pub fn global_init(start_vaddr: usize, size: usize) {
-    error!(
+    info!(
         "initialize global allocator at: [{:#x}, {:#x})",
         start_vaddr,
         start_vaddr + size

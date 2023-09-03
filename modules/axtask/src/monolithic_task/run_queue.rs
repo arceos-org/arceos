@@ -1,5 +1,6 @@
-use alloc::collections::VecDeque;
+use alloc::collections::{BTreeSet, VecDeque};
 use alloc::sync::Arc;
+use axhal::cpu::this_cpu_id;
 use lazy_init::LazyInit;
 use scheduler::BaseScheduler;
 use spinlock::SpinNoIrq;
@@ -84,7 +85,6 @@ impl AxRunQueue {
     pub fn resched(&mut self) {
         let curr = crate::current();
         assert!(curr.is_running());
-
         // When we get the mutable reference of the run queue, we must
         // have held the `SpinNoIrq` lock with both IRQs and preemption
         // disabled. So we need to set `current_disable_count` to 1 in
@@ -133,11 +133,6 @@ impl AxRunQueue {
         assert!(curr.is_running());
         assert!(!curr.is_idle());
         // we must not block current task with preemption disabled.
-        // info!(
-        //     "curr preempt: {}",
-        //     curr.preempt_disable_count
-        //         .load(core::sync::atomic::Ordering::Acquire)
-        // );
         #[cfg(feature = "preempt")]
         assert!(curr.can_preempt(1));
 
@@ -184,15 +179,36 @@ impl AxRunQueue {
                 self.scheduler.put_prev_task(prev.clone(), preempt);
             }
         }
-        let next = self.scheduler.pick_next_task().unwrap_or_else(|| unsafe {
-            // Safety: IRQs must be disabled at this time.
-            IDLE_TASK.current_ref_raw().get_unchecked().clone()
-        });
+        let mut task_set = BTreeSet::new();
+        let next = loop {
+            let task = self.scheduler.pick_next_task();
+            if task.is_none() {
+                break unsafe {
+                    // Safety: IRQs must be disabled at this time.
+                    IDLE_TASK.current_ref_raw().get_unchecked().clone()
+                };
+            }
+            let task = task.unwrap();
+            // 原先队列有任务，但是全部不满足CPU适配集，则还是返回IDLE
+            if task_set.contains(&task.id().as_u64()) {
+                break unsafe {
+                    // Safety: IRQs must be disabled at this time.
+                    IDLE_TASK.current_ref_raw().get_unchecked().clone()
+                };
+            }
+            let mask = task.get_cpu_set();
+            let curr_cpu = this_cpu_id();
+            if mask & (1 << curr_cpu) != 0 {
+                break task;
+            }
+            task_set.insert(task.id().as_u64());
+            self.scheduler.put_prev_task(task, false);
+        };
         self.switch_to(prev, next);
     }
 
     fn switch_to(&mut self, prev_task: CurrentTask, next_task: AxTaskRef) {
-        info!(
+        trace!(
             "context switch: {} -> {}",
             prev_task.id_name(),
             next_task.id_name()

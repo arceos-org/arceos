@@ -1,10 +1,10 @@
 use alloc::{boxed::Box, string::String, sync::Arc};
+use axconfig::SMP;
 use core::ops::Deref;
-use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, AtomicU8, Ordering};
-use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
-
 #[cfg(feature = "preempt")]
 use core::sync::atomic::AtomicUsize;
+use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, AtomicU8, Ordering};
+use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 
 use crate::{monolithic_task::run_queue::AxRunQueue, AxTask, AxTaskRef, WaitQueue};
 use axhal::arch::{TaskContext, TrapFrame};
@@ -145,6 +145,12 @@ pub struct TaskInner {
     #[cfg(feature = "monolithic")]
     /// 退出时是否向父进程发送SIG_CHILD
     pub send_sigchld_when_exit: bool,
+
+    #[cfg(feature = "monolithic")]
+    pub cpu_set: AtomicU64,
+
+    #[cfg(feature = "monolithic")]
+    pub sched_status: UnsafeCell<SchedStatus>,
 }
 
 static ID_COUNTER: AtomicU64 = AtomicU64::new(1);
@@ -178,6 +184,51 @@ impl From<u8> for TaskState {
     }
 }
 
+#[derive(PartialEq, Eq, Clone, Copy)]
+#[allow(non_camel_case_types)]
+pub enum SchedPolicy {
+    SCHED_OTHER = 0,
+    SCHED_FIFO = 1,
+    SCHED_RR = 2,
+    SCHED_BATCH = 3,
+    SCHED_IDLE = 5,
+    SCHED_UNKNOWN,
+}
+
+impl From<usize> for SchedPolicy {
+    #[inline]
+    fn from(policy: usize) -> Self {
+        match policy {
+            0 => SchedPolicy::SCHED_OTHER,
+            1 => SchedPolicy::SCHED_FIFO,
+            2 => SchedPolicy::SCHED_RR,
+            3 => SchedPolicy::SCHED_BATCH,
+            5 => SchedPolicy::SCHED_IDLE,
+            _ => SchedPolicy::SCHED_UNKNOWN,
+        }
+    }
+}
+
+impl From<SchedPolicy> for isize {
+    #[inline]
+    fn from(policy: SchedPolicy) -> Self {
+        match policy {
+            SchedPolicy::SCHED_OTHER => 0,
+            SchedPolicy::SCHED_FIFO => 1,
+            SchedPolicy::SCHED_RR => 2,
+            SchedPolicy::SCHED_BATCH => 3,
+            SchedPolicy::SCHED_IDLE => 5,
+            SchedPolicy::SCHED_UNKNOWN => -1,
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct SchedStatus {
+    pub policy: SchedPolicy,
+    pub priority: usize,
+}
+
 unsafe impl Send for TaskInner {}
 unsafe impl Sync for TaskInner {}
 
@@ -207,7 +258,6 @@ impl TaskInner {
     }
 }
 
-// private methods
 impl TaskInner {
     fn new_common(
         id: TaskId,
@@ -242,6 +292,12 @@ impl TaskInner {
             set_child_tid: AtomicU64::new(0),
             clear_child_tid: AtomicU64::new(0),
             send_sigchld_when_exit: sig_child,
+            // 一开始默认都可以运行在每个CPU上
+            cpu_set: AtomicU64::new(((1 << SMP) - 1) as u64),
+            sched_status: UnsafeCell::new(SchedStatus {
+                policy: SchedPolicy::SCHED_FIFO,
+                priority: 1,
+            }),
         }
     }
 
@@ -540,6 +596,33 @@ impl TaskInner {
     #[inline]
     pub(crate) const fn page_table_token(&self) -> usize {
         self.page_table_token
+    }
+
+    /// 设置CPU set，其中set_size为bytes长度
+    pub fn set_cpu_set(&self, mask: usize, set_size: usize) {
+        let len = if set_size * 4 > SMP {
+            SMP
+        } else {
+            set_size * 4
+        };
+        let now_mask = mask & (1 << (len) - 1);
+        self.cpu_set.store(now_mask as u64, Ordering::Release)
+    }
+
+    pub fn get_cpu_set(&self) -> usize {
+        self.cpu_set.load(Ordering::Acquire) as usize
+    }
+
+    pub fn set_sched_status(&self, status: SchedStatus) {
+        let prev_status = self.sched_status.get();
+        unsafe {
+            *prev_status = status;
+        }
+    }
+
+    pub fn get_sched_status(&self) -> SchedStatus {
+        let status = self.sched_status.get();
+        unsafe { *status }
     }
 }
 

@@ -1,7 +1,7 @@
 /// 处理与任务（线程）有关的系统调用
 use core::time::Duration;
 
-use axconfig::{TASK_STACK_SIZE, USER_MEMORY_LIMIT};
+use axconfig::{SMP, TASK_STACK_SIZE, USER_MEMORY_LIMIT};
 use axhal::time::current_time;
 use axprocess::{
     flags::{CloneFlags, WaitStatus},
@@ -9,18 +9,24 @@ use axprocess::{
     // handle_signals,
     process::{
         current_process, current_task, exit, set_child_tid, sleep_now_task, wait_pid,
-        yield_now_task, Process, ProcessInner, PID2PC,
+        yield_now_task, Process, ProcessInner, PID2PC, TID2TASK,
     },
     SignalModule,
 };
 use axsync::Mutex;
+use axtask::{
+    monolithic_task::task::{SchedPolicy, SchedStatus},
+    AxTaskRef,
+};
+use lazy_init::LazyInit;
 use log::info;
+use memory_addr::VirtAddr;
 use spinlock::SpinNoIrq;
 extern crate alloc;
 use super::{
     flags::{
-        raw_ptr_to_ref_str, RLimit, RobustList, TimeSecs, WaitFlags, RLIMIT_AS, RLIMIT_NOFILE,
-        RLIMIT_STACK,
+        raw_ptr_to_ref_str, RLimit, RobustList, SchedParam, TimeSecs, WaitFlags, RLIMIT_AS,
+        RLIMIT_NOFILE, RLIMIT_STACK,
     },
     fs::{deal_with_path, AT_FDCWD},
     futex::futex,
@@ -487,4 +493,216 @@ pub fn syscall_setsid() -> isize {
     PID2PC.lock().insert(new_process.pid, Arc::new(new_process));
 
     task_id as isize
+}
+
+/// 获取对应任务的CPU适配集
+///
+/// 若pid是进程ID，则获取对应的进程的主线程的信息
+///
+/// 若pid是线程ID，则获取对应线程信息
+///
+/// 若pid为0，则获取当前运行任务的信息
+///
+/// mask为即将写入的cpu set的地址指针
+pub fn syscall_sched_getaffinity(pid: usize, cpu_set_size: usize, mask: *mut usize) -> isize {
+    let task: LazyInit<AxTaskRef> = LazyInit::new();
+    let tid2task = TID2TASK.lock();
+    let pid2task = PID2PC.lock();
+    let pid = pid as u64;
+    if tid2task.contains_key(&pid) {
+        task.init_by(Arc::clone(&tid2task.get(&pid).unwrap()));
+    } else if pid2task.contains_key(&pid) {
+        let process = pid2task.get(&pid).unwrap();
+        task.init_by(
+            process
+                .inner
+                .lock()
+                .tasks
+                .iter()
+                .find(|task| task.is_leader())
+                .map(|task| Arc::clone(task))
+                .unwrap(),
+        )
+    } else if pid == 0 {
+        task.init_by(Arc::clone(current_task().as_task_ref()));
+    } else {
+        // 找不到对应任务
+        return ErrorNo::ESRCH as isize;
+    }
+
+    drop(pid2task);
+    drop(tid2task);
+
+    let process = current_process();
+    let inner = process.inner.lock();
+    if inner
+        .memory_set
+        .lock()
+        .manual_alloc_for_lazy(VirtAddr::from(mask as usize))
+        .is_err()
+    {
+        return ErrorNo::EFAULT as isize;
+    }
+    let cpu_set = task.get_cpu_set();
+    let mut prev_mask = unsafe { *mask };
+    let len = SMP.min(cpu_set_size * 4);
+    prev_mask &= !((1 << len) - 1);
+    prev_mask &= cpu_set & ((1 << len) - 1);
+    unsafe {
+        *mask = prev_mask;
+    }
+    // 返回成功填充的缓冲区的长度
+    SMP as isize
+}
+
+pub fn syscall_sched_setaffinity(pid: usize, cpu_set_size: usize, mask: *const usize) -> isize {
+    let task: LazyInit<AxTaskRef> = LazyInit::new();
+    let tid2task = TID2TASK.lock();
+    let pid2task = PID2PC.lock();
+    let pid = pid as u64;
+    if tid2task.contains_key(&pid) {
+        task.init_by(Arc::clone(&tid2task.get(&pid).unwrap()));
+    } else if pid2task.contains_key(&pid) {
+        let process = pid2task.get(&pid).unwrap();
+        task.init_by(
+            process
+                .inner
+                .lock()
+                .tasks
+                .iter()
+                .find(|task| task.is_leader())
+                .map(|task| Arc::clone(task))
+                .unwrap(),
+        )
+    } else if pid == 0 {
+        task.init_by(Arc::clone(current_task().as_task_ref()));
+    } else {
+        // 找不到对应任务
+        return ErrorNo::ESRCH as isize;
+    }
+
+    drop(pid2task);
+    drop(tid2task);
+
+    let process = current_process();
+    let inner = process.inner.lock();
+    if inner
+        .memory_set
+        .lock()
+        .manual_alloc_for_lazy(VirtAddr::from(mask as usize))
+        .is_err()
+    {
+        return ErrorNo::EFAULT as isize;
+    }
+
+    let mask = unsafe { *mask };
+
+    task.set_cpu_set(mask, cpu_set_size);
+
+    0
+}
+
+pub fn syscall_sched_setscheduler(pid: usize, policy: usize, param: *const SchedParam) -> isize {
+    if (pid as isize) < 0 || param.is_null() {
+        return ErrorNo::EINVAL as isize;
+    }
+    let task: LazyInit<AxTaskRef> = LazyInit::new();
+    let tid2task = TID2TASK.lock();
+    let pid2task = PID2PC.lock();
+    let pid = pid as u64;
+    if tid2task.contains_key(&pid) {
+        task.init_by(Arc::clone(&tid2task.get(&pid).unwrap()));
+    } else if pid2task.contains_key(&pid) {
+        let process = pid2task.get(&pid).unwrap();
+        task.init_by(
+            process
+                .inner
+                .lock()
+                .tasks
+                .iter()
+                .find(|task| task.is_leader())
+                .map(|task| Arc::clone(task))
+                .unwrap(),
+        )
+    } else if pid == 0 {
+        task.init_by(Arc::clone(current_task().as_task_ref()));
+    } else {
+        // 找不到对应任务
+        return ErrorNo::ESRCH as isize;
+    }
+
+    drop(pid2task);
+    drop(tid2task);
+
+    let process = current_process();
+    let inner = process.inner.lock();
+    if inner
+        .memory_set
+        .lock()
+        .manual_alloc_for_lazy(VirtAddr::from(param as usize))
+        .is_err()
+    {
+        return ErrorNo::EFAULT as isize;
+    }
+
+    let param = unsafe { *param };
+    let policy = SchedPolicy::from(policy);
+    if policy == SchedPolicy::SCHED_UNKNOWN {
+        return ErrorNo::EINVAL as isize;
+    }
+    if policy == SchedPolicy::SCHED_OTHER
+        || policy == SchedPolicy::SCHED_BATCH
+        || policy == SchedPolicy::SCHED_IDLE
+    {
+        if param.sched_priority != 0 {
+            return ErrorNo::EINVAL as isize;
+        }
+    } else {
+        if param.sched_priority < 1 || param.sched_priority > 99 {
+            return ErrorNo::EINVAL as isize;
+        }
+    }
+
+    task.set_sched_status(SchedStatus {
+        policy,
+        priority: param.sched_priority,
+    });
+
+    0
+}
+
+pub fn syscall_sched_getscheduler(pid: usize) -> isize {
+    if (pid as isize) < 0 {
+        return ErrorNo::EINVAL as isize;
+    }
+    let task: LazyInit<AxTaskRef> = LazyInit::new();
+    let tid2task = TID2TASK.lock();
+    let pid2task = PID2PC.lock();
+    let pid = pid as u64;
+    if tid2task.contains_key(&pid) {
+        task.init_by(Arc::clone(&tid2task.get(&pid).unwrap()));
+    } else if pid2task.contains_key(&pid) {
+        let process = pid2task.get(&pid).unwrap();
+        task.init_by(
+            process
+                .inner
+                .lock()
+                .tasks
+                .iter()
+                .find(|task| task.is_leader())
+                .map(|task| Arc::clone(task))
+                .unwrap(),
+        )
+    } else if pid == 0 {
+        task.init_by(Arc::clone(current_task().as_task_ref()));
+    } else {
+        // 找不到对应任务
+        return ErrorNo::ESRCH as isize;
+    }
+
+    drop(pid2task);
+    drop(tid2task);
+
+    let policy: isize = task.get_sched_status().policy.into();
+    policy
 }

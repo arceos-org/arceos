@@ -1,6 +1,6 @@
-use core::slice::from_raw_parts_mut;
+use core::{slice::from_raw_parts_mut, time::Duration};
 
-use axhal::time::{current_time_nanos, nanos_to_ticks, NANOS_PER_SEC};
+use axhal::time::{current_time, current_time_nanos, nanos_to_ticks, NANOS_PER_SEC};
 use axprocess::{
     process::{current_process, current_task},
     time_stat_output,
@@ -8,7 +8,7 @@ use axprocess::{
 use rand::{rngs::SmallRng, Fill, SeedableRng};
 
 use super::{
-    flags::{ITimerVal, RusageFlags, SysInfo, TimeSecs, TimeVal, UtsName, TMS},
+    flags::{ClockId, ITimerVal, RusageFlags, SysInfo, TimeSecs, TimeVal, UtsName, TMS},
     syscall_id::ErrorNo,
 };
 
@@ -190,4 +190,122 @@ pub fn syscall_getrandom(buf: *mut u8, len: usize, _flags: usize) -> isize {
     buf.try_fill(&mut rng).unwrap();
 
     buf.len() as isize
+}
+
+/// # 获取时钟精度
+///
+/// ## args：
+/// * id：时钟种类，当前仅支持CLOCK_MONOTONIC
+///
+/// * res：存储时钟精度的结构体的地址
+pub fn syscall_clock_getres(id: usize, res: *mut TimeSecs) -> isize {
+    let id = if let Ok(opt) = ClockId::try_from(id) {
+        opt
+    } else {
+        return ErrorNo::EINVAL as isize;
+    };
+
+    if id != ClockId::CLOCK_MONOTONIC {
+        // 暂时不支持其他类型
+        return ErrorNo::EINVAL as isize;
+    }
+
+    let process = current_process();
+    let inner = process.inner.lock();
+    if inner
+        .memory_set
+        .lock()
+        .manual_alloc_type_for_lazy(res)
+        .is_err()
+    {
+        return ErrorNo::EFAULT as isize;
+    }
+
+    unsafe {
+        (*res) = TimeSecs {
+            tv_nsec: 1,
+            tv_sec: 0,
+        };
+    }
+
+    0
+}
+
+/// # 指定任务进行睡眠
+///
+/// ## args:
+/// * id: 指定使用的时钟ID，对应结构体为ClockId
+///
+/// * flags：指定是使用相对时间还是绝对时间
+///
+/// * request：指定睡眠的时间，根据flags划分为相对时间或者绝对时间
+///
+/// * remain：存储剩余睡眠时间。当任务提前醒来时，如果flags不为绝对时间，且remain不为空，则将剩余存储时间存进remain所指向地址。
+///
+/// 若睡眠被信号处理打断或者遇到未知错误，则返回对应错误码
+pub fn syscall_clock_nanosleep(
+    id: usize,
+    flags: usize,
+    request: *const TimeSecs,
+    remain: *mut TimeSecs,
+) -> isize {
+    const TIMER_ABSTIME: usize = 1;
+    let id = if let Ok(opt) = ClockId::try_from(id) {
+        opt
+    } else {
+        return ErrorNo::EINVAL as isize;
+    };
+
+    if id != ClockId::CLOCK_MONOTONIC {
+        // 暂时不支持其他类型
+        return ErrorNo::EINVAL as isize;
+    }
+
+    let process = current_process();
+    let inner = process.inner.lock();
+
+    if inner
+        .memory_set
+        .lock()
+        .manual_alloc_type_for_lazy(request)
+        .is_err()
+    {
+        return ErrorNo::EFAULT as isize;
+    }
+    let request_time = unsafe { *request };
+    let request_time = Duration::new(request_time.tv_sec as u64, request_time.tv_nsec as u32);
+    let deadline = if flags != TIMER_ABSTIME {
+        current_time() + request_time
+    } else {
+        if request_time < current_time() {
+            return 0;
+        }
+        request_time
+    };
+    drop(inner);
+
+    axtask::sleep_until(deadline);
+
+    let inner = process.inner.lock();
+    let current_time = current_time();
+    if current_time < deadline && !remain.is_null() {
+        if inner
+            .memory_set
+            .lock()
+            .manual_alloc_type_for_lazy(remain)
+            .is_err()
+        {
+            return ErrorNo::EFAULT as isize;
+        } else {
+            let delta = (deadline - current_time).as_nanos() as usize;
+            unsafe {
+                *remain = TimeSecs {
+                    tv_sec: delta / 1000_000_000,
+                    tv_nsec: delta % 1000_000_000,
+                }
+            };
+            return ErrorNo::EINTR as isize;
+        }
+    }
+    0
 }

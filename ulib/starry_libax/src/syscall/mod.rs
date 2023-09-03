@@ -323,9 +323,27 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             args[4],
             args[5],
         ),
+        SCHED_SETAFFINITY => 0,
+        SCHED_GETAFFINITY => {
+            syscall_sched_getaffinity(args[0] as usize, args[1] as usize, args[2] as *mut usize)
+        }
+        SCHED_SETSCHEDULER => syscall_sched_setscheduler(
+            args[0] as usize,
+            args[1] as usize,
+            args[2] as *const SchedParam,
+        ),
+        SCHED_GETSCHEDULER => syscall_sched_getscheduler(args[0] as usize),
+        CLOCK_GETRES => syscall_clock_getres(args[0] as usize, args[1] as *mut TimeSecs),
+        CLOCK_NANOSLEEP => syscall_clock_nanosleep(
+            args[0] as usize,
+            args[1] as usize,
+            args[2] as *const TimeSecs,
+            args[3] as *mut TimeSecs,
+        ),
+        SOCKETPAIR => ErrorNo::EAFNOSUPPORT as isize,
         _ => {
-            error!("Invalid Syscall Id: {}!", syscall_id);
-            return -1;
+            panic!("Invalid Syscall Id: {}!", syscall_id);
+            // return -1;
             // exit(-1)
         }
     };

@@ -18,9 +18,9 @@ FS ?= y
 NET ?= n
 GRAPHIC ?= n
 BUS ?= mmio
-PREEMPT ?= y
+PREEMPT ?= n
 OFFLINE ?= n
-IMG ?= n
+IMG ?= y
 QEMU_LOG ?= n
 NET_DUMP ?= n
 

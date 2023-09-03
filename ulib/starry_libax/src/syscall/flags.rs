@@ -77,7 +77,7 @@ pub const UTIME_NOW: usize = 0x3fffffff;
 /// 当 nsec 为这个特殊值时，指示不修改时间
 pub const UTIME_OMIT: usize = 0x3ffffffe;
 impl TimeSecs {
-    /// 从秒数和纳秒数构造一个 TimeSecs
+    /// 根据当前的时间构造一个 TimeSecs
     pub fn now() -> Self {
         let nano = current_time_nanos() as usize;
         let tv_sec = nano / NSEC_PER_SEC;
@@ -355,5 +355,35 @@ impl RusageFlags {
             1 => Some(RusageFlags::RUSAGE_THREAD),
             _ => None,
         }
+    }
+}
+
+/// sched_setscheduler时指定子进程是否继承父进程的调度策略
+pub const SCHED_RESET_ON_FORK: usize = 0x40000000;
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct SchedParam {
+    pub sched_priority: usize,
+}
+
+numeric_enum_macro::numeric_enum! {
+    #[repr(usize)]
+    #[allow(non_camel_case_types)]
+    #[derive(PartialEq,Eq)]
+    /// sys_fcntl64 使用的选项
+    pub enum ClockId {
+        CLOCK_REALTIME = 0  ,
+        CLOCK_MONOTONIC = 1     ,
+        CLOCK_PROCESS_CPUTIME_ID = 2,
+        CLOCK_THREAD_CPUTIME_ID = 3,
+        CLOCK_MONOTONIC_RAW = 4,
+        CLOCK_REALTIME_COARSE = 5,
+        CLOCK_MONOTONIC_COARSE = 6,
+        CLOCK_BOOTTIME = 7,
+        CLOCK_REALTIME_ALARM = 8,
+        CLOCK_BOOTTIME_ALARM = 9,
+        CLOCK_SGI_CYCLE = 10,
+        CLOCK_TAI = 11,
     }
 }
