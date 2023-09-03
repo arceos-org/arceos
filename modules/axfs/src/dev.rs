@@ -50,9 +50,11 @@ impl Disk {
             let mut data = [0u8; BLOCK_SIZE];
             let start = self.offset;
             let count = buf.len().min(BLOCK_SIZE - self.offset);
+            if start > BLOCK_SIZE {
+                info!("block size: {} start {}", BLOCK_SIZE, start);
+            }
 
             self.dev.read_block(self.block_id, &mut data)?;
-            // info!("start: {} count: {}", start, count);
             buf[..count].copy_from_slice(&data[start..start + count]);
 
             self.offset += count;

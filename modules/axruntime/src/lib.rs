@@ -225,6 +225,7 @@ fn init_allocator() {
     }
     for r in memory_regions() {
         if r.flags.contains(MemRegionFlags::FREE) && r.paddr == max_region_paddr {
+            info!("alloc region size: {:X}", r.size);
             axalloc::global_init(phys_to_virt(r.paddr).as_usize(), r.size);
             break;
         }

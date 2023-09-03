@@ -1,4 +1,5 @@
 use alloc::{boxed::Box, string::String, sync::Arc};
+use axhal::KERNEL_PROCESS_ID;
 
 use core::ops::Deref;
 use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, AtomicU8, Ordering};
@@ -334,7 +335,7 @@ impl TaskInner {
             time: UnsafeCell::new(TimeStat::new()),
 
             #[cfg(feature = "monolithic")]
-            process_id: AtomicU64::new(0),
+            process_id: AtomicU64::new(KERNEL_PROCESS_ID),
 
             #[cfg(feature = "monolithic")]
             is_leader: AtomicBool::new(false),
@@ -633,8 +634,6 @@ fn first_into_user(kernel_sp: usize, frame_base: usize) -> ! {
         core::arch::asm!(
             r"
             mv      sp, {frame_base}
-            .short  0x2432                      // fld fs0,264(sp)
-            .short  0x24d2                      // fld fs1,272(sp)
             LDR     gp, sp, 2                   // load user gp and tp
             LDR     t0, sp, 3
             mv      t1, {kernel_base}

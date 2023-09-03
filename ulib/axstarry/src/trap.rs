@@ -20,7 +20,7 @@ impl axhal::trap::TrapHandler for TrapHandlerImpl {
         // let ans = syscall(syscall_id, args);
         // axprocess::time_stat_from_kernel_to_user();
         // ans
-        unimplemented!()
+        panic!();
         // 0
     }
 

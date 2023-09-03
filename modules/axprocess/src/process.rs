@@ -18,7 +18,6 @@ use crate::flags::CloneFlags;
 use crate::load_app;
 pub static TID2TASK: Mutex<BTreeMap<u64, AxTaskRef>> = Mutex::new(BTreeMap::new());
 pub static PID2PC: Mutex<BTreeMap<u64, Arc<Process>>> = Mutex::new(BTreeMap::new());
-const KERNEL_STACK_SIZE: usize = 0x40000;
 pub struct Process {
     /// 进程号
     pid: u64,
@@ -158,7 +157,7 @@ impl Process {
         let new_task = TaskInner::new(
             || {},
             path,
-            KERNEL_STACK_SIZE,
+            axconfig::TASK_STACK_SIZE,
             new_process.pid(),
             page_table_token,
         );
@@ -316,7 +315,7 @@ impl Process {
         let new_task = TaskInner::new(
             || {},
             String::new(),
-            KERNEL_STACK_SIZE,
+            axconfig::TASK_STACK_SIZE,
             process_id,
             new_memory_set.lock().page_table_token(),
         );
