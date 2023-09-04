@@ -673,9 +673,7 @@ extern "C" fn task_entry() -> ! {
                 } else {
                     // 需要通过切换特权级进入到对应的应用程序
                     let kernel_sp = task.get_kernel_stack_top().unwrap();
-
-                    let frame_address = task.get_first_trap_frame();
-
+                    let frame_address = task.trap_frame.get();
                     // 切换页表已经在switch实现了
                     first_into_user(kernel_sp, frame_address as usize);
                 }

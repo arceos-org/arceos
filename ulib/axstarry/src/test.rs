@@ -9,7 +9,7 @@ use axlog::info;
 use axprocess::{wait_pid, yield_now_task, PID2PC};
 use axruntime::KERNEL_PAGE_TABLE;
 use axsync::Mutex;
-use axtask::{TaskId, EXITED_TASKS, RUN_QUEUE};
+use axtask::{TaskId, EXITED_TASKS};
 use lazy_init::LazyInit;
 /// 初赛测例
 #[allow(dead_code)]
@@ -619,17 +619,12 @@ pub fn run_testcases(case: &'static str) {
             let main_task = axprocess::Process::init(args).unwrap();
             let now_process_id = main_task.get_process_id() as isize;
             TESTRESULT.lock().load(&(testcase));
-            RUN_QUEUE.lock().add_task(main_task);
             let mut exit_code = 0;
             ans = loop {
                 if wait_pid(now_process_id, &mut exit_code as *mut i32).is_ok() {
                     break Some(exit_code);
                 }
-                // let trap: usize = 0xFFFFFFC0805BFEF8;
-                // let trap_frame: *const TrapFrame = trap as *const TrapFrame;
-                // info!("trap_frame: {:?}", unsafe { &*trap_frame });
                 yield_now_task();
-                // axhal::arch::enable_irqs();
             };
         }
         TaskId::clear();

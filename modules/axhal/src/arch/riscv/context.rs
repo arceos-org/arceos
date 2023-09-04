@@ -51,8 +51,6 @@ pub struct TrapFrame {
     pub sepc: usize,
     /// Supervisor Status Register.
     pub sstatus: usize,
-    /// 浮点数寄存器
-    pub fs: [usize; 2],
 }
 
 impl TrapFrame {

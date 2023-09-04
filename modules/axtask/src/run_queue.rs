@@ -200,7 +200,9 @@ impl AxRunQueue {
         if prev_task.ptr_eq(&next_task) {
             return;
         }
-
+        // 当任务进行切换时，更新两个任务的时间统计信息
+        next_task.time_stat_when_switch_to();
+        prev_task.time_stat_when_switch_from();
         unsafe {
             let prev_ctx_ptr = prev_task.ctx_mut_ptr();
             let next_ctx_ptr = next_task.ctx_mut_ptr();
@@ -209,7 +211,10 @@ impl AxRunQueue {
             // but won't be dropped until `gc_entry()` is called.
             assert!(Arc::strong_count(prev_task.as_task_ref()) > 1);
             assert!(Arc::strong_count(&next_task) >= 1);
-
+            let page_table_token = next_task.page_table_token;
+            if page_table_token != 0 {
+                axhal::arch::write_page_table_root(page_table_token.into());
+            }
             CurrentTask::set_current(prev_task, next_task);
             (*prev_ctx_ptr).switch_to(&*next_ctx_ptr);
         }

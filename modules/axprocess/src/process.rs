@@ -165,12 +165,9 @@ impl Process {
             .lock()
             .insert(new_task.id().as_u64(), Arc::clone(&new_task));
         new_task.set_leader(true);
-
         let new_trap_frame =
             TrapFrame::app_init_context(entry.as_usize(), user_stack_bottom.as_usize());
-
         new_task.set_trap_context(new_trap_frame);
-
         new_process.tasks.lock().push(Arc::clone(&new_task));
         PID2PC
             .lock()
@@ -184,6 +181,7 @@ impl Process {
                 return Err(AxError::NotFound);
             }
         }
+        RUN_QUEUE.lock().add_task(Arc::clone(&new_task));
         Ok(new_task)
     }
 }

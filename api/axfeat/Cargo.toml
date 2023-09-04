@@ -13,7 +13,7 @@ documentation = "https://rcore-os.github.io/arceos/axfeat/index.html"
 default = []
 
 # Monolithic kernel
-monolithic = ["axruntime/monolithic"]
+monolithic = ["axruntime/monolithic", "axhal/monolithic"]
 
 # Multicore
 smp = ["axhal/smp", "axruntime/smp", "spinlock/smp"]
