@@ -23,49 +23,35 @@ crate-type = ["staticlib"]
 default = []
 
 # Multicore
-smp = ["axstd/smp"]
+smp = ["arceos_posix_api/smp"]
 
 # Floating point/SIMD
-fp_simd = ["axstd/fp_simd"]
+fp_simd = ["axfeat/fp_simd"]
 
 # Memory
-alloc = ["axstd/alloc", "dep:axalloc"]
+alloc = ["arceos_posix_api/alloc"]
+tls = ["alloc", "axfeat/tls"]
 
 # Multi-task
-multitask = ["axstd/multitask", "axtask/multitask"]
+multitask = ["arceos_posix_api/multitask"]
 
 # File system
-fs = ["axstd/fs", "fd"]
+fs = ["arceos_posix_api/fs", "fd"]
 
 # Networking
-net = ["axstd/net", "dep:axnet", "fd"]
+net = ["arceos_posix_api/net", "fd"]
 
 # Libc features
-fd = ["alloc"]
-pipe = ["fd"]
-select = ["fd"]
-epoll = ["fd"]
+fd = []
+pipe = ["arceos_posix_api/pipe"]
+select = ["arceos_posix_api/select"]
+epoll = ["arceos_posix_api/epoll"]
 
 [dependencies]
-# ArceOS modules
 axfeat = { path = "../../api/axfeat" }
-axstd = { path = "../axstd" }
-axhal = { path = "../../modules/axhal" }
-axlog = { path = "../../modules/axlog" }
-axconfig = { path = "../../modules/axconfig" }
-axalloc = { path = "../../modules/axalloc", optional = true }
-axnet = { path = "../../modules/axnet", optional = true }
-axtask = { path = "../../modules/axtask", optional = true }
-
-# Other crates
+arceos_posix_api = { path = "../../api/arceos_posix_api" }
 axio = { path = "../../crates/axio" }
 axerrno = { path = "../../crates/axerrno" }
-static_assertions = "1.1.0"
-spin = { version = "0.9" }
-lazy_static = { version = "1.4", features = ["spin_no_std"] }
-flatten_objects = { path = "../../crates/flatten_objects" }
 
 [build-dependencies]
-cbindgen = { version = "0.24" }
 bindgen ={ version = "0.66" }
-axconfig = { path = "../../modules/axconfig" }

@@ -2,18 +2,17 @@
 //!
 //! TODO: do not support `EPOLLET` flag
 
-use crate::{
-    ctypes,
-    fd_ops::{add_file_like, get_file_like, FileLike},
-};
-use axerrno::{LinuxError, LinuxResult};
-use axhal::time::current_time;
-use axstd::sync::Mutex;
-
 use alloc::collections::btree_map::Entry;
 use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
 use core::{ffi::c_int, time::Duration};
+
+use axerrno::{LinuxError, LinuxResult};
+use axhal::time::current_time;
+use axsync::Mutex;
+
+use crate::ctypes;
+use crate::imp::fd_ops::{add_file_like, get_file_like, FileLike};
 
 pub struct EpollInstance {
     events: Mutex<BTreeMap<usize, ctypes::epoll_event>>,
@@ -138,13 +137,12 @@ impl FileLike for EpollInstance {
     }
 }
 
-/// `ax_epoll_create()` creates a new epoll instance.
+/// Creates a new epoll instance.
 ///
-/// `ax_epoll_create()` returns a file descriptor referring to the new epoll instance.
-#[no_mangle]
-pub unsafe extern "C" fn ax_epoll_create(size: c_int) -> c_int {
-    debug!("ax_epoll_create <= {}", size);
-    ax_call_body!(ax_epoll_create, {
+/// It returns a file descriptor referring to the new epoll instance.
+pub fn sys_epoll_create(size: c_int) -> c_int {
+    debug!("sys_epoll_create <= {}", size);
+    syscall_body!(sys_epoll_create, {
         if size < 0 {
             return Err(LinuxError::EINVAL);
         }
@@ -154,39 +152,38 @@ pub unsafe extern "C" fn ax_epoll_create(size: c_int) -> c_int {
 }
 
 /// Control interface for an epoll file descriptor
-#[no_mangle]
-pub unsafe extern "C" fn ax_epoll_ctl(
+pub unsafe fn sys_epoll_ctl(
     epfd: c_int,
     op: c_int,
     fd: c_int,
     event: *mut ctypes::epoll_event,
 ) -> c_int {
-    debug!("ax_epoll_ctl <= epfd: {} op: {} fd: {}", epfd, op, fd);
-    ax_call_body!(ax_epoll_ctl, {
-        let ret =
-            EpollInstance::from_fd(epfd)?.control(op as usize, fd as usize, &(*event))? as c_int;
+    debug!("sys_epoll_ctl <= epfd: {} op: {} fd: {}", epfd, op, fd);
+    syscall_body!(sys_epoll_ctl, {
+        let ret = unsafe {
+            EpollInstance::from_fd(epfd)?.control(op as usize, fd as usize, &(*event))? as c_int
+        };
         Ok(ret)
     })
 }
 
-/// `ax_epoll_wait()` waits for events on the epoll instance referred to by the file descriptor epfd.
-#[no_mangle]
-pub unsafe extern "C" fn ax_epoll_wait(
+/// Waits for events on the epoll instance referred to by the file descriptor epfd.
+pub unsafe fn sys_epoll_wait(
     epfd: c_int,
     events: *mut ctypes::epoll_event,
     maxevents: c_int,
     timeout: c_int,
 ) -> c_int {
     debug!(
-        "ax_epoll_wait <= epfd: {}, maxevents: {}, timeout: {}",
+        "sys_epoll_wait <= epfd: {}, maxevents: {}, timeout: {}",
         epfd, maxevents, timeout
     );
 
-    ax_call_body!(ax_epoll_wait, {
+    syscall_body!(sys_epoll_wait, {
         if maxevents <= 0 {
             return Err(LinuxError::EINVAL);
         }
-        let events = core::slice::from_raw_parts_mut(events, maxevents as usize);
+        let events = unsafe { core::slice::from_raw_parts_mut(events, maxevents as usize) };
         let deadline = (!timeout.is_negative())
             .then(|| current_time() + Duration::from_millis(timeout as u64));
         let epoll_instance = EpollInstance::from_fd(epfd)?;
@@ -202,7 +199,7 @@ pub unsafe extern "C" fn ax_epoll_wait(
                 debug!("    timeout!");
                 return Ok(0);
             }
-            axstd::thread::yield_now();
+            crate::sys_sched_yield();
         }
     })
 }

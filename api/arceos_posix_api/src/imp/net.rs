@@ -1,4 +1,4 @@
-use alloc::{sync::Arc, vec};
+use alloc::{sync::Arc, vec, vec::Vec};
 use core::ffi::{c_char, c_int, c_void};
 use core::mem::size_of;
 use core::net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4};
@@ -6,9 +6,11 @@ use core::net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4};
 use axerrno::{LinuxError, LinuxResult};
 use axio::PollState;
 use axnet::{TcpSocket, UdpSocket};
-use axstd::sync::Mutex;
+use axsync::Mutex;
 
-use crate::{ctypes, fd_ops::FileLike, utils::char_ptr_to_str};
+use super::fd_ops::FileLike;
+use crate::ctypes;
+use crate::utils::char_ptr_to_str;
 
 pub enum Socket {
     Udp(Mutex<UdpSocket>),
@@ -227,11 +229,10 @@ fn from_sockaddr(
 /// Create an socket for communication.
 ///
 /// Return the socket file descriptor.
-#[no_mangle]
-pub unsafe extern "C" fn ax_socket(domain: c_int, socktype: c_int, protocol: c_int) -> c_int {
-    debug!("ax_socket <= {} {} {}", domain, socktype, protocol);
+pub fn sys_socket(domain: c_int, socktype: c_int, protocol: c_int) -> c_int {
+    debug!("sys_socket <= {} {} {}", domain, socktype, protocol);
     let (domain, socktype, protocol) = (domain as u32, socktype as u32, protocol as u32);
-    ax_call_body!(ax_socket, {
+    syscall_body!(sys_socket, {
         match (domain, socktype, protocol) {
             (ctypes::AF_INET, ctypes::SOCK_STREAM, ctypes::IPPROTO_TCP)
             | (ctypes::AF_INET, ctypes::SOCK_STREAM, 0) => {
@@ -249,17 +250,16 @@ pub unsafe extern "C" fn ax_socket(domain: c_int, socktype: c_int, protocol: c_i
 /// Bind a address to a socket.
 ///
 /// Return 0 if success.
-#[no_mangle]
-pub unsafe extern "C" fn ax_bind(
+pub fn sys_bind(
     socket_fd: c_int,
     socket_addr: *const ctypes::sockaddr,
     addrlen: ctypes::socklen_t,
 ) -> c_int {
     debug!(
-        "ax_bind <= {} {:#x} {}",
+        "sys_bind <= {} {:#x} {}",
         socket_fd, socket_addr as usize, addrlen
     );
-    ax_call_body!(ax_bind, {
+    syscall_body!(sys_bind, {
         let addr = from_sockaddr(socket_addr, addrlen)?;
         Socket::from_fd(socket_fd)?.bind(addr)?;
         Ok(0)
@@ -269,17 +269,16 @@ pub unsafe extern "C" fn ax_bind(
 /// Connects the socket to the address specified.
 ///
 /// Return 0 if success.
-#[no_mangle]
-pub unsafe extern "C" fn ax_connect(
+pub fn sys_connect(
     socket_fd: c_int,
     socket_addr: *const ctypes::sockaddr,
     addrlen: ctypes::socklen_t,
 ) -> c_int {
     debug!(
-        "ax_connect <= {} {:#x} {}",
+        "sys_connect <= {} {:#x} {}",
         socket_fd, socket_addr as usize, addrlen
     );
-    ax_call_body!(ax_connect, {
+    syscall_body!(sys_connect, {
         let addr = from_sockaddr(socket_addr, addrlen)?;
         Socket::from_fd(socket_fd)?.connect(addr)?;
         Ok(0)
@@ -289,8 +288,7 @@ pub unsafe extern "C" fn ax_connect(
 /// Send a message on a socket to the address specified.
 ///
 /// Return the number of bytes sent if success.
-#[no_mangle]
-pub unsafe extern "C" fn ax_sendto(
+pub fn sys_sendto(
     socket_fd: c_int,
     buf_ptr: *const c_void,
     len: ctypes::size_t,
@@ -299,10 +297,10 @@ pub unsafe extern "C" fn ax_sendto(
     addrlen: ctypes::socklen_t,
 ) -> ctypes::ssize_t {
     debug!(
-        "ax_sendto <= {} {:#x} {} {} {:#x} {}",
+        "sys_sendto <= {} {:#x} {} {} {:#x} {}",
         socket_fd, buf_ptr as usize, len, flag, socket_addr as usize, addrlen
     );
-    ax_call_body!(ax_sendto, {
+    syscall_body!(sys_sendto, {
         if buf_ptr.is_null() {
             return Err(LinuxError::EFAULT);
         }
@@ -315,18 +313,17 @@ pub unsafe extern "C" fn ax_sendto(
 /// Send a message on a socket to the address connected.
 ///
 /// Return the number of bytes sent if success.
-#[no_mangle]
-pub unsafe extern "C" fn ax_send(
+pub fn sys_send(
     socket_fd: c_int,
     buf_ptr: *const c_void,
     len: ctypes::size_t,
     flag: c_int, // currently not used
 ) -> ctypes::ssize_t {
     debug!(
-        "ax_sendto <= {} {:#x} {} {}",
+        "sys_sendto <= {} {:#x} {} {}",
         socket_fd, buf_ptr as usize, len, flag
     );
-    ax_call_body!(ax_send, {
+    syscall_body!(sys_send, {
         if buf_ptr.is_null() {
             return Err(LinuxError::EFAULT);
         }
@@ -338,8 +335,7 @@ pub unsafe extern "C" fn ax_send(
 /// Receive a message on a socket and get its source address.
 ///
 /// Return the number of bytes received if success.
-#[no_mangle]
-pub unsafe extern "C" fn ax_recvfrom(
+pub unsafe fn sys_recvfrom(
     socket_fd: c_int,
     buf_ptr: *mut c_void,
     len: ctypes::size_t,
@@ -348,10 +344,10 @@ pub unsafe extern "C" fn ax_recvfrom(
     addrlen: *mut ctypes::socklen_t,
 ) -> ctypes::ssize_t {
     debug!(
-        "ax_recvfrom <= {} {:#x} {} {} {:#x} {:#x}",
+        "sys_recvfrom <= {} {:#x} {} {} {:#x} {:#x}",
         socket_fd, buf_ptr as usize, len, flag, socket_addr as usize, addrlen as usize
     );
-    ax_call_body!(ax_recvfrom, {
+    syscall_body!(sys_recvfrom, {
         if buf_ptr.is_null() || socket_addr.is_null() || addrlen.is_null() {
             return Err(LinuxError::EFAULT);
         }
@@ -371,18 +367,17 @@ pub unsafe extern "C" fn ax_recvfrom(
 /// Receive a message on a socket.
 ///
 /// Return the number of bytes received if success.
-#[no_mangle]
-pub unsafe extern "C" fn ax_recv(
+pub fn sys_recv(
     socket_fd: c_int,
     buf_ptr: *mut c_void,
     len: ctypes::size_t,
     flag: c_int, // currently not used
 ) -> ctypes::ssize_t {
     debug!(
-        "ax_recv <= {} {:#x} {} {}",
+        "sys_recv <= {} {:#x} {} {}",
         socket_fd, buf_ptr as usize, len, flag
     );
-    ax_call_body!(ax_recv, {
+    syscall_body!(sys_recv, {
         if buf_ptr.is_null() {
             return Err(LinuxError::EFAULT);
         }
@@ -394,13 +389,12 @@ pub unsafe extern "C" fn ax_recv(
 /// Listen for connections on a socket
 ///
 /// Return 0 if success.
-#[no_mangle]
-pub unsafe extern "C" fn ax_listen(
+pub fn sys_listen(
     socket_fd: c_int,
     backlog: c_int, // currently not used
-) -> ctypes::ssize_t {
-    debug!("ax_listen <= {} {}", socket_fd, backlog);
-    ax_call_body!(ax_listen, {
+) -> c_int {
+    debug!("sys_listen <= {} {}", socket_fd, backlog);
+    syscall_body!(sys_listen, {
         Socket::from_fd(socket_fd)?.listen()?;
         Ok(0)
     })
@@ -409,17 +403,16 @@ pub unsafe extern "C" fn ax_listen(
 /// Accept for connections on a socket
 ///
 /// Return file descriptor for the accepted socket if success.
-#[no_mangle]
-pub unsafe extern "C" fn ax_accept(
+pub unsafe fn sys_accept(
     socket_fd: c_int,
     socket_addr: *mut ctypes::sockaddr,
     socket_len: *mut ctypes::socklen_t,
-) -> ctypes::ssize_t {
+) -> c_int {
     debug!(
-        "ax_accept <= {} {:#x} {:#x}",
+        "sys_accept <= {} {:#x} {:#x}",
         socket_fd, socket_addr as usize, socket_len as usize
     );
-    ax_call_body!(ax_accept, {
+    syscall_body!(sys_accept, {
         if socket_addr.is_null() || socket_len.is_null() {
             return Err(LinuxError::EFAULT);
         }
@@ -437,13 +430,12 @@ pub unsafe extern "C" fn ax_accept(
 /// Shut down a full-duplex connection.
 ///
 /// Return 0 if success.
-#[no_mangle]
-pub unsafe extern "C" fn ax_shutdown(
+pub fn sys_shutdown(
     socket_fd: c_int,
     flag: c_int, // currently not used
-) -> ctypes::ssize_t {
-    debug!("ax_shutdown <= {} {}", socket_fd, flag);
-    ax_call_body!(ax_shutdown, {
+) -> c_int {
+    debug!("sys_shutdown <= {} {}", socket_fd, flag);
+    syscall_body!(sys_shutdown, {
         Socket::from_fd(socket_fd)?.shutdown()?;
         Ok(0)
     })
@@ -451,26 +443,29 @@ pub unsafe extern "C" fn ax_shutdown(
 
 /// Query addresses for a domain name.
 ///
+/// Only IPv4. Ports are always 0. Ignore servname and hint.
+/// Results' ai_flags and ai_canonname are 0 or NULL.
+///
 /// Return address number if success.
-#[no_mangle]
-pub unsafe extern "C" fn ax_getaddrinfo(
-    node: *const c_char,
-    service: *const c_char,
-    addrs: *mut ctypes::sockaddr,
-    len: ctypes::size_t,
+pub unsafe fn sys_getaddrinfo(
+    nodename: *const c_char,
+    servname: *const c_char,
+    _hints: *const ctypes::addrinfo,
+    res: *mut *mut ctypes::addrinfo,
 ) -> c_int {
-    let name = char_ptr_to_str(node);
-    let port = char_ptr_to_str(service);
-    debug!(
-        "ax_getaddrinfo <= {:?} {:?} {:#x} {}",
-        name, port, addrs as usize, len
-    );
-    ax_call_body!(ax_getaddrinfo, {
-        if addrs.is_null() || (node.is_null() && service.is_null()) {
+    let name = char_ptr_to_str(nodename);
+    let port = char_ptr_to_str(servname);
+    debug!("sys_getaddrinfo <= {:?} {:?}", name, port);
+    syscall_body!(sys_getaddrinfo, {
+        if nodename.is_null() && servname.is_null() {
+            return Ok(0);
+        }
+        if res.is_null() {
             return Err(LinuxError::EFAULT);
         }
-        let addr_slice = unsafe { core::slice::from_raw_parts_mut(addrs, len) };
-        let res = if let Ok(domain) = name {
+
+        let port = port.map_or(0, |p| p.parse::<u16>().unwrap_or(0));
+        let ip_addrs = if let Ok(domain) = name {
             if let Ok(a) = domain.parse::<IpAddr>() {
                 vec![a]
             } else {
@@ -480,29 +475,74 @@ pub unsafe extern "C" fn ax_getaddrinfo(
             vec![Ipv4Addr::LOCALHOST.into()]
         };
 
-        for (i, item) in res.iter().enumerate().take(len) {
-            addr_slice[i] = into_sockaddr(SocketAddr::new(
-                *item,
-                port.map_or(0, |p| p.parse::<u16>().unwrap_or(0)),
-            ))
-            .0;
+        let len = ip_addrs.len().min(ctypes::MAXADDRS as usize);
+        if len == 0 {
+            return Ok(0);
         }
-        Ok(res.len().min(len))
+
+        let mut out: Vec<ctypes::aibuf> = Vec::with_capacity(len);
+        for (i, &ip) in ip_addrs.iter().enumerate().take(len) {
+            let buf = match ip {
+                IpAddr::V4(ip) => ctypes::aibuf {
+                    ai: ctypes::addrinfo {
+                        ai_family: ctypes::AF_INET as _,
+                        // TODO: This is a hard-code part, only return TCP parameters
+                        ai_socktype: ctypes::SOCK_STREAM as _,
+                        ai_protocol: ctypes::IPPROTO_TCP as _,
+                        ai_addrlen: size_of::<ctypes::sockaddr_in>() as _,
+                        ai_addr: core::ptr::null_mut(),
+                        ai_canonname: core::ptr::null_mut(),
+                        ai_next: core::ptr::null_mut(),
+                        ai_flags: 0,
+                    },
+                    sa: ctypes::aibuf_sa {
+                        sin: SocketAddrV4::new(ip, port).into(),
+                    },
+                    slot: i as i16,
+                    lock: [0],
+                    ref_: 0,
+                },
+                _ => panic!("IPv6 is not supported"),
+            };
+            out.push(buf);
+            out[i].ai.ai_addr =
+                unsafe { core::ptr::addr_of_mut!(out[i].sa.sin) as *mut ctypes::sockaddr };
+            if i > 0 {
+                out[i - 1].ai.ai_next = core::ptr::addr_of_mut!(out[i].ai);
+            }
+        }
+
+        out[0].ref_ = len as i16;
+        unsafe { *res = core::ptr::addr_of_mut!(out[0].ai) };
+        core::mem::forget(out); // drop in `sys_freeaddrinfo`
+        Ok(len)
     })
 }
 
+/// Free queried `addrinfo` struct
+pub unsafe fn sys_freeaddrinfo(res: *mut ctypes::addrinfo) {
+    if res.is_null() {
+        return;
+    }
+    let aibuf_ptr = res as *mut ctypes::aibuf;
+    let len = (*aibuf_ptr).ref_ as usize;
+    assert!((*aibuf_ptr).slot == 0);
+    assert!(len > 0);
+    let vec = Vec::from_raw_parts(aibuf_ptr, len, len); // TODO: lock
+    drop(vec);
+}
+
 /// Get current address to which the socket sockfd is bound.
-#[no_mangle]
-pub unsafe extern "C" fn ax_getsockname(
+pub unsafe fn sys_getsockname(
     sock_fd: c_int,
     addr: *mut ctypes::sockaddr,
     addrlen: *mut ctypes::socklen_t,
 ) -> c_int {
     debug!(
-        "ax_getsockname <= {} {:#x} {:#x}",
+        "sys_getsockname <= {} {:#x} {:#x}",
         sock_fd, addr as usize, addrlen as usize
     );
-    ax_call_body!(ax_getsockname, {
+    syscall_body!(sys_getsockname, {
         if addr.is_null() || addrlen.is_null() {
             return Err(LinuxError::EFAULT);
         }
@@ -517,17 +557,16 @@ pub unsafe extern "C" fn ax_getsockname(
 }
 
 /// Get peer address to which the socket sockfd is connected.
-#[no_mangle]
-pub unsafe extern "C" fn ax_getpeername(
+pub unsafe fn sys_getpeername(
     sock_fd: c_int,
     addr: *mut ctypes::sockaddr,
     addrlen: *mut ctypes::socklen_t,
 ) -> c_int {
     debug!(
-        "ax_getpeername <= {} {:#x} {:#x}",
+        "sys_getpeername <= {} {:#x} {:#x}",
         sock_fd, addr as usize, addrlen as usize
     );
-    ax_call_body!(ax_getpeername, {
+    syscall_body!(sys_getpeername, {
         if addr.is_null() || addrlen.is_null() {
             return Err(LinuxError::EFAULT);
         }

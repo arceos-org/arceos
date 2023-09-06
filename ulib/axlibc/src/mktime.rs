@@ -14,9 +14,9 @@ fn leap_year(year: c_int) -> bool {
     year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
 }
 
-/// `mktime` implementation
+/// Convert broken-down time into time since the Epoch.
 #[no_mangle]
-pub unsafe extern "C" fn ax_mktime(t: *mut ctypes::tm) -> ctypes::time_t {
+pub unsafe extern "C" fn mktime(t: *mut ctypes::tm) -> ctypes::time_t {
     let mut year = (*t).tm_year + 1900;
     let mut month = (*t).tm_mon;
     let mut day = (*t).tm_mday as i64 - 1;

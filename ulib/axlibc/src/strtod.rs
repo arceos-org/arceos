@@ -118,14 +118,14 @@ fn isspace(c: c_int) -> bool {
         || c == 0x0c
 }
 
-/// `strtod` implementation
+/// Convert a string to a double-precision number.
 #[no_mangle]
-pub unsafe extern "C" fn ax_strtod(s: *const c_char, endptr: *mut *mut c_char) -> c_double {
+pub unsafe extern "C" fn strtod(s: *const c_char, endptr: *mut *mut c_char) -> c_double {
     strto_float_impl!(c_double, s, endptr)
 }
 
-/// `strtof`implementation
+/// Convert a string to a float number.
 #[no_mangle]
-pub unsafe extern "C" fn ax_strtof(s: *const c_char, endptr: *mut *mut c_char) -> c_float {
+pub unsafe extern "C" fn strtof(s: *const c_char, endptr: *mut *mut c_char) -> c_float {
     strto_float_impl!(c_float, s, endptr)
 }
