@@ -1,6 +1,8 @@
 //! 负责任务时间统计的实现
-
 use axhal::time::{current_time_nanos, NANOS_PER_MICROS, NANOS_PER_SEC};
+use axsignal::signal_no::SignalNo;
+#[cfg(feature = "signal")]
+use crate_interface::{call_interface, def_interface};
 numeric_enum_macro::numeric_enum! {
     #[repr(i32)]
     #[allow(non_camel_case_types)]
@@ -45,6 +47,13 @@ pub struct TimeStat {
     ///
     /// 根据timer_type的种类来进行计算，当归零的时候触发信号，同时进行更新
     timer_remained_ns: usize,
+}
+
+#[cfg(feature = "signal")]
+#[def_interface]
+pub trait SignalCaller {
+    /// Handles interrupt requests for the given IRQ number.
+    fn send_signal(tid: isize, signum: isize);
 }
 
 impl TimeStat {
@@ -146,7 +155,7 @@ impl TimeStat {
     }
 
     /// 更新计时器，同时判断是否要发出信号
-    pub fn update_timer(&mut self, delta: usize, _tid: isize) {
+    pub fn update_timer(&mut self, delta: usize, tid: isize) {
         if self.timer_remained_ns == 0 {
             // 计时器已经结束了
             return;
@@ -158,5 +167,18 @@ impl TimeStat {
         }
         // 此时计时器已经结束了，需要进行重置
         self.timer_remained_ns = self.timer_interval_ns;
+
+        #[cfg(feature = "signal")]
+        {
+            let signal_num = match &self.timer_type {
+                TimerType::REAL => SignalNo::SIGALRM,
+                TimerType::VIRTUAL => SignalNo::SIGVTALRM,
+                TimerType::PROF => SignalNo::SIGPROF,
+                _ => SignalNo::ERR,
+            };
+            if signal_num != SignalNo::ERR {
+                call_interface!(SignalCaller::send_signal(tid, signal_num as isize));
+            }
+        }
     }
 }

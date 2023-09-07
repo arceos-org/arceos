@@ -9,7 +9,9 @@ edition = "2021"
 
 fs = ["axfs"]
 
-monolithic = ["fs", "axfs/monolithic"]
+signal = ["axhal/signal", "axsignal/signal", "axtask/signal"]
+
+monolithic = ["fs", "axfs/monolithic", "signal"]
 
 default = []
 
@@ -26,6 +28,7 @@ axlog = { path = "../axlog" }
 axerrno = { path = "../../crates/axerrno" }
 axconfig = { path = "../axconfig" }
 axfs = { path = "../axfs", optional = true }
+axsignal = { path = "../axsignal", optional = true }
 riscv = "0.10"
 bitflags = "2.0"
 lazy_static = { version = "1.4", features = ["spin_no_std"] }

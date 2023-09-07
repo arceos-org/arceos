@@ -8,7 +8,7 @@ edition = "2021"
 [features]
 default = ["monolithic"]
 
-monolithic = ["arceos_api/monolithic", "axfeat/monolithic", "paging", "fs", "multitask", "irq"]
+monolithic = ["arceos_api/monolithic", "axfeat/monolithic", "paging", "fs", "multitask", "irq", "signal"]
 
 # Multicore
 smp = ["axfeat/smp", "spinlock/smp"]
@@ -39,6 +39,9 @@ display = ["arceos_api/display", "axfeat/display"]
 # Fs
 fs = ["axruntime/fs", "arceos_api/fs"]
 
+# Signal
+signal = ["axruntime/signal"]
+
 # Logging
 log-level-off = ["axfeat/log-level-off"]
 log-level-error = ["axfeat/log-level-error"]
@@ -63,11 +66,14 @@ axalloc = { path = "../../modules/axalloc", optional = true }
 axtask = { path = "../../modules/axtask" }
 axsync = { path = "../../modules/axsync" }
 axfs = { path = "../../modules/axfs" }
-axnet = { path = "../../modules/axnet", optional = true }
+axnet = { path = "../../modules/axnet" }
 axprocess = { path = "../../modules/axprocess" }
 axmem = { path = "../../modules/axmem" } 
 lazy_init = { path = "../../crates/lazy_init" }
 spinlock = { path = "../../crates/spinlock" }
 kernel_guard = { path = "../../crates/kernel_guard" }
+axsignal = { path = "../../modules/axsignal" }
 riscv = "0.10"
 bitflags = "2.0"
+num_enum = { version = "0.5.11", default-features = false }
+rand = { version = "0.8.5", default-features = false, features = ["small_rng"] }

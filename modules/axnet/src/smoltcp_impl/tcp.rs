@@ -3,9 +3,11 @@ use core::net::SocketAddr;
 use core::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 
 use axerrno::{ax_err, ax_err_type, AxError, AxResult};
-use axio::PollState;
+use axhal::time::current_ticks;
+use axio::{PollState, Read, Write};
 use axsync::Mutex;
 
+use axtask::yield_now;
 use smoltcp::iface::SocketHandle;
 use smoltcp::socket::tcp::{self, ConnectError, State};
 use smoltcp::wire::{IpEndpoint, IpListenEndpoint};
@@ -156,6 +158,9 @@ impl TcpSocket {
         })
         .unwrap_or_else(|_| ax_err!(AlreadyExists, "socket connect() failed: already connected"))?; // EISCONN
 
+        // HACK: yield() to let server to listen
+        yield_now();
+
         // Here our state must be `CONNECTING`, and only one thread can run here.
         if self.is_nonblocking() {
             Err(AxError::WouldBlock)
@@ -269,6 +274,22 @@ impl TcpSocket {
         Ok(())
     }
 
+    /// Close the transmit half of the tcp socket.
+    /// It will call `close()` on smoltcp::socket::tcp::Socket. It should send FIN to remote half.
+    ///
+    /// This function is for shutdown(fd, SHUT_WR) syscall.
+    ///
+    /// It won't change TCP state.
+    /// It won't affect unconnected sockets (listener).
+    pub fn close(&mut self) {
+        let handle = match unsafe { self.handle.get().read() } {
+            Some(h) => h,
+            None => return,
+        };
+        SOCKET_SET.with_socket_mut::<tcp::Socket, _, _>(handle, |socket| socket.close());
+        SOCKET_SET.poll_interfaces();
+    }
+
     /// Receives data from the socket, stores it in the given buffer.
     pub fn recv(&self, buf: &mut [u8]) -> AxResult<usize> {
         if self.is_connecting() {
@@ -297,6 +318,46 @@ impl TcpSocket {
                 } else {
                     // no more data
                     Err(AxError::WouldBlock)
+                }
+            })
+        })
+    }
+    /// Receives data from the socket, stores it in the given buffer.
+    ///
+    /// It will return [`Err(Timeout)`](AxError::Timeout) if expired.
+    pub fn recv_timeout(&self, buf: &mut [u8], ticks: u64) -> AxResult<usize> {
+        if self.is_connecting() {
+            return Err(AxError::WouldBlock);
+        } else if !self.is_connected() {
+            return ax_err!(NotConnected, "socket recv() failed");
+        }
+
+        let expire_at = current_ticks() + ticks;
+
+        // SAFETY: `self.handle` should be initialized in a connected socket.
+        let handle = unsafe { self.handle.get().read().unwrap() };
+        self.block_on(|| {
+            SOCKET_SET.with_socket_mut::<tcp::Socket, _, _>(handle, |socket| {
+                if !socket.is_active() {
+                    // not open
+                    ax_err!(ConnectionRefused, "socket recv() failed")
+                } else if !socket.may_recv() {
+                    // connection closed
+                    Ok(0)
+                } else if socket.recv_queue() > 0 {
+                    // data available
+                    // TODO: use socket.recv(|buf| {...})
+                    let len = socket
+                        .recv_slice(buf)
+                        .map_err(|_| ax_err_type!(BadState, "socket recv() failed"))?;
+                    Ok(len)
+                } else {
+                    // no more data
+                    if current_ticks() > expire_at {
+                        Err(AxError::Timeout)
+                    } else {
+                        Err(AxError::WouldBlock)
+                    }
                 }
             })
         })
@@ -342,6 +403,54 @@ impl TcpSocket {
                 readable: false,
                 writable: false,
             }),
+        }
+    }
+
+    pub fn set_nagle_enabled(&self, enabled: bool) -> AxResult {
+        let handle = unsafe { self.handle.get().read() };
+
+        let Some(handle) = handle else {
+            return Err(AxError::NotConnected);
+        };
+
+        SOCKET_SET.with_socket_mut::<tcp::Socket, _, _>(handle, |socket| {
+            socket.set_nagle_enabled(enabled)
+        });
+
+        Ok(())
+    }
+
+    pub fn nagle_enabled(&self) -> bool {
+        let handle = unsafe { self.handle.get().read() };
+
+        match handle {
+            Some(handle) => {
+                SOCKET_SET.with_socket::<tcp::Socket, _, _>(handle, |socket| socket.nagle_enabled())
+            }
+            // Nagle algorithm will be enabled by default once the socket is created
+            None => true,
+        }
+    }
+
+    pub fn with_socket<R>(&self, f: impl FnOnce(Option<&tcp::Socket>) -> R) -> R {
+        let handle = unsafe { self.handle.get().read() };
+
+        match handle {
+            Some(handle) => {
+                SOCKET_SET.with_socket::<tcp::Socket, _, _>(handle, |socket| f(Some(socket)))
+            }
+            None => f(None),
+        }
+    }
+
+    pub fn with_socket_mut<R>(&mut self, f: impl FnOnce(Option<&mut tcp::Socket>) -> R) -> R {
+        let handle = unsafe { self.handle.get().read() };
+
+        match handle {
+            Some(handle) => {
+                SOCKET_SET.with_socket_mut::<tcp::Socket, _, _>(handle, |socket| f(Some(socket)))
+            }
+            None => f(None),
         }
     }
 }
@@ -393,7 +502,7 @@ impl TcpSocket {
     }
 
     #[inline]
-    fn is_connected(&self) -> bool {
+    pub fn is_connected(&self) -> bool {
         self.get_state() == STATE_CONNECTED
     }
 
@@ -490,6 +599,22 @@ impl TcpSocket {
                 }
             }
         }
+    }
+}
+
+impl Read for TcpSocket {
+    fn read(&mut self, buf: &mut [u8]) -> AxResult<usize> {
+        self.recv(buf)
+    }
+}
+
+impl Write for TcpSocket {
+    fn write(&mut self, buf: &[u8]) -> AxResult<usize> {
+        self.send(buf)
+    }
+
+    fn flush(&mut self) -> AxResult {
+        Err(AxError::Unsupported)
     }
 }
 

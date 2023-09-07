@@ -8,14 +8,17 @@ use riscv::register::scause::{self, Exception as E, Trap};
 
 #[cfg(feature = "paging")]
 use crate::trap::handle_page_fault;
+use crate::trap::handle_signal;
 
-use super::TrapFrame;
+use super::{disable_irqs, TrapFrame};
 
 #[cfg(feature = "monolithic")]
 use super::enable_irqs;
 
 #[cfg(feature = "monolithic")]
 use crate::trap::handle_syscall;
+/// 信号处理跳板，当未指定SA_RESTORER时使用这个地址触发page fault，从而进行跳转
+pub const SIGNAL_RETURN_TRAP: usize = 0xFFFFFF8000000000;
 
 include_asm_marcos!();
 
@@ -33,13 +36,13 @@ fn handle_breakpoint(sepc: &mut usize) {
 #[allow(unused)]
 fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
     let scause = scause::read();
+    axfs_devfs::INTERRUPT.lock().record(scause.code());
     match scause.cause() {
         Trap::Exception(E::Breakpoint) => handle_breakpoint(&mut tf.sepc),
         Trap::Interrupt(_) => crate::trap::handle_irq_extern(scause.bits()),
-        // #[cfg(feature = "monolithic")]
+        #[cfg(feature = "monolithic")]
         Trap::Exception(E::UserEnvCall) => {
             enable_irqs();
-            info!("syscall: id: {}", tf.regs.a7);
             // jump to next instruction anyway
             tf.sepc += 4;
             // get system call return value
@@ -52,7 +55,7 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
             // cx is changed during sys_exec, so we have to call it again
             tf.regs.a0 = result as usize;
         }
-        // #[cfg(feature = "paging")]
+        #[cfg(feature = "monolithic")]
         Trap::Exception(E::InstructionPageFault) => {
             let addr = stval::read();
             if !from_user {
@@ -65,7 +68,7 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
             handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::EXECUTE, tf);
         }
 
-        // #[cfg(feature = "paging")]
+        #[cfg(feature = "monolithic")]
         Trap::Exception(E::LoadPageFault) => {
             let addr = stval::read();
             if !from_user {
@@ -75,7 +78,7 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
             handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::READ, tf);
         }
 
-        // #[cfg(feature = "paging")]
+        #[cfg(feature = "monolithic")]
         Trap::Exception(E::StorePageFault) => {
             if !from_user {
                 error!(
@@ -98,4 +101,14 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
             );
         }
     }
+
+    #[cfg(feature = "signal")]
+    if from_user == true && stval::read() != SIGNAL_RETURN_TRAP {
+        handle_signal();
+    }
+
+    #[cfg(feature = "monolithic")]
+    // 在保证将寄存器都存储好之后，再开启中断
+    // 否则此时会因为写入csr寄存器过程中出现中断，导致出现异常
+    disable_irqs();
 }

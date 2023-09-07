@@ -48,6 +48,7 @@ members = [
     "modules/axsync",
     "modules/axtask",
     "modules/axprocess",
+    "modules/axsignal",
 
     "api/axfeat",
     "api/arceos_api",

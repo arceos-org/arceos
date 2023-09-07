@@ -362,6 +362,7 @@ dependencies = [
  "arm_pl011",
  "axalloc",
  "axconfig",
+ "axfs_devfs",
  "axlog",
  "bitflags 2.4.0",
  "cfg-if",
@@ -475,6 +476,7 @@ dependencies = [
  "axio",
  "axlog",
  "axmem",
+ "axsignal",
  "axsync",
  "axtask",
  "bitflags 2.4.0",
@@ -509,6 +511,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "axsignal"
+version = "0.1.0"
+dependencies = [
+ "axhal",
+ "bitflags 2.4.0",
+ "numeric-enum-macro",
+]
+
+[[package]]
 name = "axstarry"
 version = "0.1.0"
 dependencies = [
@@ -525,13 +536,16 @@ dependencies = [
  "axnet",
  "axprocess",
  "axruntime",
+ "axsignal",
  "axsync",
  "axtask",
  "bitflags 2.4.0",
  "crate_interface",
  "kernel_guard",
  "lazy_init",
+ "num_enum",
  "numeric-enum-macro",
+ "rand",
  "riscv",
  "spinlock",
 ]
@@ -563,6 +577,7 @@ version = "0.1.0"
 dependencies = [
  "axconfig",
  "axhal",
+ "axsignal",
  "axtask",
  "cfg-if",
  "crate_interface",
@@ -1456,6 +1471,26 @@ checksum = "4161fcb6d602d4d2081af7c3a45852d875a03dd337a6bfdd6e06407b61342a43"
 dependencies = [
  "hermit-abi 0.3.2",
  "libc",
+]
+
+[[package]]
+name = "num_enum"
+version = "0.5.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1f646caf906c20226733ed5b1374287eb97e3c2a5c227ce668c1f2ce20ae57c9"
+dependencies = [
+ "num_enum_derive",
+]
+
+[[package]]
+name = "num_enum_derive"
+version = "0.5.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dcbff9bc912032c62bf65ef1d5aea88983b420f4f839db1e9b0c281a25c9c799"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]

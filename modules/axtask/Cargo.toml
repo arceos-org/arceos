@@ -24,6 +24,8 @@ sched_fifo = ["multitask"]
 sched_rr = ["multitask", "preempt"]
 sched_cfs = ["multitask", "preempt"]
 
+signal = ["axhal/signal", "dep:axsignal", "dep:crate_interface"]
+
 test = ["percpu?/sp-naive"]
 
 monolithic = []
@@ -33,6 +35,7 @@ cfg-if = "1.0"
 log = "0.4"
 numeric-enum-macro = { git = "https://github.com/mexus/numeric-enum-macro" }
 axhal = { path = "../axhal" }
+axsignal = { path = "../axsignal", optional = true }
 axconfig = { path = "../axconfig", optional = true }
 percpu = { path = "../../crates/percpu", optional = true }
 spinlock = { path = "../../crates/spinlock", optional = true }

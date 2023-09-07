@@ -26,6 +26,7 @@ pub fn init_kernel_process() {
         0,
         Arc::new(Mutex::new(MemorySet::new_empty())),
         0,
+        vec![],
     ));
 
     axtask::init_scheduler();
@@ -76,6 +77,9 @@ pub fn exit_current_task(exit_code: i32) -> ! {
         process.set_zombie(true);
 
         process.tasks.lock().clear();
+
+        process.signal_modules.lock().clear();
+
         let mut pid2pc = PID2PC.lock();
         let kernel_process = pid2pc.get(&KERNEL_PROCESS_ID).unwrap();
         // 将子进程交给idle进程
@@ -88,6 +92,7 @@ pub fn exit_current_task(exit_code: i32) -> ! {
         drop(process);
     } else {
         TID2TASK.lock().remove(&curr_id);
+        process.signal_modules.lock().clear();
         drop(process);
     }
     RUN_QUEUE.lock().exit_current(exit_code);
@@ -104,7 +109,6 @@ pub fn load_app(
         args = [vec![String::from("busybox"), String::from("sh")], args].concat();
         return load_app("busybox".to_string(), args, envs, memory_set);
     }
-    info!("name: {}", name.as_str());
     let elf_data = if let Ok(ans) = axfs::api::read(name.as_str()) {
         ans
     } else {
@@ -123,6 +127,7 @@ pub fn time_stat_from_kernel_to_user() {
     curr_task.time_stat_from_kernel_to_user();
 }
 
+#[no_mangle]
 /// 当从用户态到内核态时，统计对应进程的时间信息
 pub fn time_stat_from_user_to_kernel() {
     let curr_task = current();
@@ -223,6 +228,7 @@ pub fn current_task() -> CurrentTask {
 }
 
 pub fn set_child_tid(tid: usize) {
+    info!("current!");
     let curr = current_task();
     curr.set_clear_child_tid(tid);
 }

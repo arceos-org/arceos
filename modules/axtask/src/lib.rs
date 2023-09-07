@@ -42,6 +42,8 @@ cfg_if::cfg_if! {
         mod api;
         mod wait_queue;
         mod stat;
+        pub use stat::SignalCaller;
+        pub use task::{SchedPolicy, SchedStatus};
 
         #[cfg(feature = "irq")]
         mod timers;

@@ -2,7 +2,11 @@
 //!
 //! TODO: it doesn't work very well if the mount points have containment relationships.
 
-use alloc::{string::String, sync::Arc, vec::Vec};
+use alloc::{
+    string::{String, ToString},
+    sync::Arc,
+    vec::Vec,
+};
 use axerrno::{ax_err, AxError, AxResult};
 use axfs_vfs::{VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsNodeType, VfsOps, VfsResult};
 use axsync::Mutex;
@@ -85,14 +89,16 @@ impl RootDirectory {
 
         // Find the filesystem that has the longest mounted path match
         // TODO: more efficient, e.g. trie
+
+        // 原有arceos处理存在bug：当查询./syscall文件时，会进入到/sys文件系统
         for (i, mp) in self.mounts.iter().enumerate() {
             // skip the first '/'
-            if path.starts_with(&mp.path[1..]) && mp.path.len() - 1 > max_len {
+            let prev = mp.path[1..].to_string() + "/";
+            if path.starts_with(prev.as_str()) && mp.path.len() - 1 > max_len {
                 max_len = mp.path.len() - 1;
                 idx = i;
             }
         }
-
         if max_len == 0 {
             f(self.main_fs.clone(), path) // not matched any mount point
         } else {
@@ -109,7 +115,10 @@ impl VfsNodeOps for RootDirectory {
     }
 
     fn lookup(self: Arc<Self>, path: &str) -> VfsResult<VfsNodeRef> {
-        self.lookup_mounted_fs(path, |fs, rest_path| fs.root_dir().lookup(rest_path))
+        self.lookup_mounted_fs(path, |fs, rest_path| {
+            let dir = fs.root_dir();
+            dir.lookup(rest_path)
+        })
     }
 
     fn create(&self, path: &str, ty: VfsNodeType) -> VfsResult {

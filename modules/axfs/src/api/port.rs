@@ -220,8 +220,33 @@ pub trait FileExt: Read + Write + Seek + AsAny + Send + Sync {
     }
 }
 
-/// File I/O trait. 文件I/O操作，用于设置文件描述符
-pub trait FileIO: FileExt {
+/// File I/O trait. 文件I/O操作，用于设置文件描述符，值得注意的是，这里的read/write/seek都是不可变引用
+///
+/// 因为文件描述符读取的时候，是用到内部File成员的读取函数，自身应当为不可变，从而可以被Arc指针调用
+pub trait FileIO: AsAny + Send + Sync {
+    /// 读取操作
+    fn read(&self, _buf: &mut [u8]) -> AxResult<usize> {
+        Err(AxError::Unsupported) // 如果没有实现, 则返回Unsupported
+    }
+
+    /// 写入操作
+    fn write(&self, _buf: &[u8]) -> AxResult<usize> {
+        Err(AxError::Unsupported) // 如果没有实现, 则返回Unsupported
+    }
+
+    fn flush(&self) -> AxResult<()> {
+        Err(AxError::Unsupported) // 如果没有实现, 则返回Unsupported
+    }
+
+    /// 移动指针操作
+    fn seek(&self, _pos: SeekFrom) -> AxResult<u64> {
+        Err(AxError::Unsupported) // 如果没有实现, 则返回Unsupported
+    }
+
+    fn readable(&self) -> bool;
+    fn writable(&self) -> bool;
+    fn executable(&self) -> bool;
+
     /// 获取类型
     fn get_type(&self) -> FileIOType;
 
@@ -236,7 +261,7 @@ pub trait FileIO: FileExt {
     }
 
     /// 截断文件到指定长度
-    fn truncate(&mut self, _len: usize) -> AxResult<()> {
+    fn truncate(&self, _len: usize) -> AxResult<()> {
         debug!("Function truncate not implemented");
         Err(AxError::Unsupported)
     }
@@ -247,7 +272,7 @@ pub trait FileIO: FileExt {
     }
 
     /// 设置文件状态
-    fn set_status(&mut self, _flags: OpenFlags) -> bool {
+    fn set_status(&self, _flags: OpenFlags) -> bool {
         false
     }
 
@@ -258,7 +283,7 @@ pub trait FileIO: FileExt {
 
     /// 设置 close_on_exec 位
     /// 设置成功返回false
-    fn set_close_on_exec(&mut self, _is_set: bool) -> bool {
+    fn set_close_on_exec(&self, _is_set: bool) -> bool {
         false
     }
 
@@ -277,15 +302,15 @@ pub trait FileIO: FileExt {
     }
 
     /// 已准备好读。对于 pipe 来说，这意味着读端的buffer内有值
-    fn ready_to_read(&mut self) -> bool {
+    fn ready_to_read(&self) -> bool {
         false
     }
     /// 已准备好写。对于 pipe 来说，这意味着写端的buffer未满
-    fn ready_to_write(&mut self) -> bool {
+    fn ready_to_write(&self) -> bool {
         false
     }
 
-    fn ioctl(&mut self, _request: usize, _arg1: usize) -> AxResult<()> {
+    fn ioctl(&self, _request: usize, _arg1: usize) -> AxResult<()> {
         Err(AxError::Unsupported)
     }
 }

@@ -2,7 +2,8 @@ use core::net::SocketAddr;
 use core::sync::atomic::{AtomicBool, Ordering};
 
 use axerrno::{ax_err, ax_err_type, AxError, AxResult};
-use axio::PollState;
+use axhal::time::current_ticks;
+use axio::{PollState, Read, Write};
 use axsync::Mutex;
 use spin::RwLock;
 
@@ -115,6 +116,24 @@ impl UdpSocket {
         self.recv_impl(|socket| match socket.recv_slice(buf) {
             Ok((len, meta)) => Ok((len, into_core_sockaddr(meta.endpoint))),
             Err(_) => ax_err!(BadState, "socket recv_from() failed"),
+        })
+    }
+
+    /// Receives data from the socket, stores it in the given buffer.
+    ///
+    /// It will return [`Err(Timeout)`](AxError::Timeout) if expired.
+    pub fn recv_from_timeout(&self, buf: &mut [u8], ticks: u64) -> AxResult<(usize, SocketAddr)> {
+        let expire_at = current_ticks() + ticks;
+
+        self.recv_impl(|socket| match socket.recv_slice(buf) {
+            Ok((len, meta)) => Ok((len, into_core_sockaddr(meta.endpoint))),
+            Err(_) => {
+                if current_ticks() > expire_at {
+                    Err(AxError::Timeout)
+                } else {
+                    Err(AxError::WouldBlock)
+                }
+            }
         })
     }
 
@@ -268,6 +287,26 @@ impl UdpSocket {
                 }
             }
         }
+    }
+
+    pub fn with_socket<R>(&self, f: impl FnOnce(&udp::Socket) -> R) -> R {
+        SOCKET_SET.with_socket(self.handle, |s| f(s))
+    }
+}
+
+impl Read for UdpSocket {
+    fn read(&mut self, buf: &mut [u8]) -> AxResult<usize> {
+        self.recv(buf)
+    }
+}
+
+impl Write for UdpSocket {
+    fn write(&mut self, buf: &[u8]) -> AxResult<usize> {
+        self.send(buf)
+    }
+
+    fn flush(&mut self) -> AxResult {
+        Err(AxError::Unsupported)
     }
 }
 

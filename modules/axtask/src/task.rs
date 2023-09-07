@@ -1,4 +1,5 @@
 use alloc::{boxed::Box, string::String, sync::Arc};
+use axconfig::SMP;
 use axhal::KERNEL_PROCESS_ID;
 
 use core::ops::Deref;
@@ -37,6 +38,49 @@ pub enum TaskState {
     Exited = 4,
 }
 
+#[derive(PartialEq, Eq, Clone, Copy)]
+#[allow(non_camel_case_types)]
+pub enum SchedPolicy {
+    SCHED_OTHER = 0,
+    SCHED_FIFO = 1,
+    SCHED_RR = 2,
+    SCHED_BATCH = 3,
+    SCHED_IDLE = 5,
+    SCHED_UNKNOWN,
+}
+
+impl From<usize> for SchedPolicy {
+    #[inline]
+    fn from(policy: usize) -> Self {
+        match policy {
+            0 => SchedPolicy::SCHED_OTHER,
+            1 => SchedPolicy::SCHED_FIFO,
+            2 => SchedPolicy::SCHED_RR,
+            3 => SchedPolicy::SCHED_BATCH,
+            5 => SchedPolicy::SCHED_IDLE,
+            _ => SchedPolicy::SCHED_UNKNOWN,
+        }
+    }
+}
+
+impl From<SchedPolicy> for isize {
+    #[inline]
+    fn from(policy: SchedPolicy) -> Self {
+        match policy {
+            SchedPolicy::SCHED_OTHER => 0,
+            SchedPolicy::SCHED_FIFO => 1,
+            SchedPolicy::SCHED_RR => 2,
+            SchedPolicy::SCHED_BATCH => 3,
+            SchedPolicy::SCHED_IDLE => 5,
+            SchedPolicy::SCHED_UNKNOWN => -1,
+        }
+    }
+}
+#[derive(Clone, Copy)]
+pub struct SchedStatus {
+    pub policy: SchedPolicy,
+    pub priority: usize,
+}
 /// The inner task structure.
 pub struct TaskInner {
     id: TaskId,
@@ -87,6 +131,12 @@ pub struct TaskInner {
 
     // 时间统计, 无论是否为宏内核架构都可能被使用到
     time: UnsafeCell<TimeStat>,
+
+    #[cfg(feature = "monolithic")]
+    pub cpu_set: AtomicU64,
+
+    #[cfg(feature = "monolithic")]
+    pub sched_status: UnsafeCell<SchedStatus>,
 }
 static ID_COUNTER: AtomicU64 = AtomicU64::new(1);
 impl TaskId {
@@ -294,7 +344,7 @@ impl TaskInner {
     /// 将trap上下文直接写入到内核栈上
     /// 注意此时保持sp不变
     /// 返回值为压入了trap之后的内核栈的栈顶，可以用于多层trap压入
-    pub fn set_trap_in_kernel_stack(&self) -> usize {
+    pub fn set_trap_in_kernel_stack(&self) {
         extern "C" {
             pub fn __copy(frame_address: *mut TrapFrame, kernel_base: usize);
         }
@@ -304,7 +354,43 @@ impl TaskInner {
         unsafe {
             __copy(frame_address, kernel_base);
         }
-        kernel_base
+    }
+    #[inline]
+    pub fn state(&self) -> TaskState {
+        self.state.load(Ordering::Acquire).into()
+    }
+
+    #[inline]
+    pub fn set_state(&self, state: TaskState) {
+        self.state.store(state as u8, Ordering::Release)
+    }
+
+    #[cfg(feature = "monolithic")]
+    /// 设置CPU set，其中set_size为bytes长度
+    pub fn set_cpu_set(&self, mask: usize, set_size: usize) {
+        let len = if set_size * 4 > SMP {
+            SMP
+        } else {
+            set_size * 4
+        };
+        let now_mask = mask & (1 << (len) - 1);
+        self.cpu_set.store(now_mask as u64, Ordering::Release)
+    }
+
+    pub fn get_cpu_set(&self) -> usize {
+        self.cpu_set.load(Ordering::Acquire) as usize
+    }
+
+    pub fn set_sched_status(&self, status: SchedStatus) {
+        let prev_status = self.sched_status.get();
+        unsafe {
+            *prev_status = status;
+        }
+    }
+
+    pub fn get_sched_status(&self) -> SchedStatus {
+        let status = self.sched_status.get();
+        unsafe { *status }
     }
 }
 
@@ -352,6 +438,16 @@ impl TaskInner {
 
             #[cfg(feature = "monolithic")]
             clear_child_tid: AtomicU64::new(0),
+
+            #[cfg(feature = "monolithic")]
+             // 一开始默认都可以运行在每个CPU上
+            cpu_set: AtomicU64::new(((1 << SMP) - 1) as u64),
+
+             #[cfg(feature = "monolithic")]
+            sched_status: UnsafeCell::new(SchedStatus {
+                policy: SchedPolicy::SCHED_FIFO,
+                priority: 1,
+            }),
         }
     }
 
@@ -381,7 +477,18 @@ impl TaskInner {
         #[cfg(not(feature = "tls"))]
         let tls = VirtAddr::from(0);
         t.entry = Some(Box::into_raw(Box::new(entry)));
+
+        #[cfg(feature = "monolithic")]
+        // 需要修改ctx存储的栈地址，否则内核trap上下文会被修改
+        t.ctx.get_mut().init(
+            task_entry as usize,
+            kstack.top() - core::mem::size_of::<TrapFrame>(),
+            tls,
+        );
+
+        #[cfg(not(feature = "monolithic"))]
         t.ctx.get_mut().init(task_entry as usize, kstack.top(), tls);
+
         t.kstack = Some(kstack);
         if t.name == "idle" {
             t.is_idle = true;
@@ -404,16 +511,6 @@ impl TaskInner {
             t.is_idle = true;
         }
         Arc::new(AxTask::new(t))
-    }
-
-    #[inline]
-    pub fn state(&self) -> TaskState {
-        self.state.load(Ordering::Acquire).into()
-    }
-
-    #[inline]
-    pub fn set_state(&self, state: TaskState) {
-        self.state.store(state as u8, Ordering::Release)
     }
 
     #[inline]
@@ -613,15 +710,26 @@ impl Deref for CurrentTask {
     }
 }
 
-/// 初始化主进程的trap上下文
 #[no_mangle]
 #[cfg(feature = "monolithic")]
-fn first_into_user(kernel_sp: usize, frame_base: usize) -> ! {
+/// 手动进入用户态
+///
+/// 1. 将对应trap上下文压入内核栈
+/// 2. 返回用户态
+///
+/// args：
+///
+/// 1. kernel_sp：内核栈顶
+///
+/// 2. frame_base：对应即将压入内核栈的trap上下文的地址
+pub fn first_into_user(kernel_sp: usize, frame_base: usize) -> ! {
+    use axhal::arch::disable_irqs;
+
     let trap_frame_size = core::mem::size_of::<TrapFrame>();
     let kernel_base = kernel_sp - trap_frame_size;
     // 在保证将寄存器都存储好之后，再开启中断
     // 否则此时会因为写入csr寄存器过程中出现中断，导致出现异常
-    axhal::arch::disable_irqs();
+    disable_irqs();
     // 在内核态中，tp寄存器存储的是当前任务的CPU ID
     // 而当从内核态进入到用户态时，会将tp寄存器的值先存储在内核栈上，即把该任务对应的CPU ID存储在内核栈上
     // 然后将tp寄存器的值改为对应线程的tls指针的值
@@ -634,9 +742,11 @@ fn first_into_user(kernel_sp: usize, frame_base: usize) -> ! {
         core::arch::asm!(
             r"
             mv      sp, {frame_base}
-            LDR     gp, sp, 2                   // load user gp and tp
-            LDR     t0, sp, 3
             mv      t1, {kernel_base}
+            LDR     t0, sp, 2
+            STR     gp, t1, 2
+            mv      gp, t0
+            LDR     t0, sp, 3
             STR     tp, t1, 3                   // save supervisor tp，注意是存储到内核栈上而不是sp中，此时存储的应该是当前运行的CPU的ID
             mv      tp, t0                      // tp：本来存储的是CPU ID，在这个时候变成了对应线程的TLS 指针
             csrw    sscratch, {kernel_sp}       // put supervisor sp to scratch
@@ -673,7 +783,7 @@ extern "C" fn task_entry() -> ! {
                 } else {
                     // 需要通过切换特权级进入到对应的应用程序
                     let kernel_sp = task.get_kernel_stack_top().unwrap();
-                    let frame_address = task.trap_frame.get();
+                    let frame_address = task.get_first_trap_frame();
                     // 切换页表已经在switch实现了
                     first_into_user(kernel_sp, frame_address as usize);
                 }

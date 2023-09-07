@@ -5,8 +5,9 @@ use alloc::vec;
 use alloc::vec::Vec;
 use alloc::{collections::BTreeMap, string::String};
 use axerrno::{AxError, AxResult};
+use axfs::api::{FileIO, OpenFlags};
 use axhal::arch::{write_page_table_root, TrapFrame};
-use axhal::mem::phys_to_virt;
+use axhal::mem::{phys_to_virt, VirtAddr};
 use axhal::KERNEL_PROCESS_ID;
 use axlog::{debug, error};
 use axmem::MemorySet;
@@ -14,10 +15,15 @@ use axsync::Mutex;
 use axtask::{current, AxTaskRef, TaskId, TaskInner, RUN_QUEUE};
 use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, Ordering};
 
+use crate::fd_manager::FdManager;
 use crate::flags::CloneFlags;
-use crate::load_app;
+use crate::futex::FutexRobustList;
+use crate::signal::SignalModule;
+use crate::stdio::{Stderr, Stdin, Stdout};
+use crate::{current_task, load_app};
 pub static TID2TASK: Mutex<BTreeMap<u64, AxTaskRef>> = Mutex::new(BTreeMap::new());
 pub static PID2PC: Mutex<BTreeMap<u64, Arc<Process>>> = Mutex::new(BTreeMap::new());
+const FD_LIMIT_ORIGIN: usize = 1025;
 pub struct Process {
     /// 进程号
     pid: u64,
@@ -31,7 +37,8 @@ pub struct Process {
     /// 所管理的线程
     pub tasks: Mutex<Vec<AxTaskRef>>,
 
-    /// 地址空间
+    /// 文件描述符管理器
+    pub fd_manager: FdManager,
 
     /// 进程状态
     pub is_zombie: AtomicBool,
@@ -47,6 +54,15 @@ pub struct Process {
 
     /// 当前用户堆的堆顶，不能小于基址，不能大于基址加堆的最大大小
     pub heap_top: AtomicU64,
+
+    /// 信号处理模块
+    /// 第一维代表TaskID，第二维代表对应的信号处理模块
+    pub signal_modules: Mutex<BTreeMap<u64, SignalModule>>,
+
+    /// robust list存储模块
+    /// 用来存储线程对共享变量的使用地址
+    /// 具体使用交给了用户空间
+    pub robust_list: Mutex<BTreeMap<u64, FutexRobustList>>,
 }
 
 impl Process {
@@ -105,7 +121,13 @@ impl Process {
 }
 
 impl Process {
-    pub fn new(pid: u64, parent: u64, memory_set: Arc<Mutex<MemorySet>>, heap_bottom: u64) -> Self {
+    pub fn new(
+        pid: u64,
+        parent: u64,
+        memory_set: Arc<Mutex<MemorySet>>,
+        heap_bottom: u64,
+        fd_table: Vec<Option<Arc<dyn FileIO>>>,
+    ) -> Self {
         Self {
             pid,
             parent: AtomicU64::new(parent),
@@ -116,6 +138,9 @@ impl Process {
             memory_set,
             heap_bottom: AtomicU64::new(heap_bottom),
             heap_top: AtomicU64::new(heap_bottom),
+            fd_manager: FdManager::new(fd_table, FD_LIMIT_ORIGIN),
+            signal_modules: Mutex::new(BTreeMap::new()),
+            robust_list: Mutex::new(BTreeMap::new()),
         }
     }
     /// 根据给定参数创建一个新的进程，作为应用程序初始进程
@@ -153,6 +178,20 @@ impl Process {
             KERNEL_PROCESS_ID,
             Arc::new(Mutex::new(memory_set)),
             heap_bottom.as_usize() as u64,
+            vec![
+                // 标准输入
+                Some(Arc::new(Stdin {
+                    flags: Mutex::new(OpenFlags::empty()),
+                })),
+                // 标准输出
+                Some(Arc::new(Stdout {
+                    flags: Mutex::new(OpenFlags::empty()),
+                })),
+                // 标准错误
+                Some(Arc::new(Stderr {
+                    flags: Mutex::new(OpenFlags::empty()),
+                })),
+            ],
         ));
         let new_task = TaskInner::new(
             || {},
@@ -168,7 +207,17 @@ impl Process {
         let new_trap_frame =
             TrapFrame::app_init_context(entry.as_usize(), user_stack_bottom.as_usize());
         new_task.set_trap_context(new_trap_frame);
+        // 需要将完整内容写入到内核栈上，first_into_user并不会复制到内核栈上
+        new_task.set_trap_in_kernel_stack();
         new_process.tasks.lock().push(Arc::clone(&new_task));
+        new_process
+            .signal_modules
+            .lock()
+            .insert(new_task.id().as_u64(), SignalModule::init_signal(None));
+        new_process
+            .robust_list
+            .lock()
+            .insert(new_task.id().as_u64(), FutexRobustList::default());
         PID2PC
             .lock()
             .insert(new_process.pid(), Arc::clone(&new_process));
@@ -203,7 +252,6 @@ impl Process {
 
         // 关闭 `CLOEXEC` 的文件
         // inner.fd_manager.close_on_exec();
-
         let current_task = current();
         // 再考虑手动结束其他所有的task
         let mut tasks = self.tasks.lock();
@@ -220,7 +268,8 @@ impl Process {
         current_task.set_leader(true);
         // 重置统计时间
         current_task.time_stat_clear();
-        assert!(self.tasks.lock().len() == 1);
+        assert!(tasks.len() == 1);
+        drop(tasks);
         let args = if args.len() == 0 {
             vec![name.clone()]
         } else {
@@ -251,17 +300,17 @@ impl Process {
         self.set_heap_bottom(heap_bottom.as_usize() as u64);
         self.set_heap_top(heap_bottom.as_usize() as u64);
         // // 重置robust list
-        // inner.robust_list.clear();
-        // inner
-        //     .robust_list
-        //     .insert(curr.id().as_u64(), FutexRobustList::default());
+        self.robust_list.lock().clear();
+        self.robust_list
+            .lock()
+            .insert(current_task.id().as_u64(), FutexRobustList::default());
 
-        // // 重置信号处理模块
-        // // 此时只会留下一个线程
-        // inner.signal_module.clear();
-        // inner
-        //     .signal_module
-        //     .insert(curr.id().as_u64(), SignalModule::init_signal(None));
+        // 重置信号处理模块
+        // 此时只会留下一个线程
+        self.signal_modules.lock().clear();
+        self.signal_modules
+            .lock()
+            .insert(current_task.id().as_u64(), SignalModule::init_signal(None));
         // user_stack_top = user_stack_top / PAGE_SIZE_4K * PAGE_SIZE_4K;
         let new_trap_frame =
             TrapFrame::app_init_context(entry.as_usize(), user_stack_bottom.as_usize());
@@ -324,32 +373,24 @@ impl Process {
         #[cfg(feature = "signal")]
         let new_handler = if flags.contains(CloneFlags::CLONE_SIGHAND) {
             // let curr_id = current_task().id().as_u64();
-            inner
-                .signal_module
+            self.signal_modules
+                .lock()
                 .get_mut(&current_task().id().as_u64())
                 .unwrap()
                 .signal_handler
                 .clone()
         } else {
             // info!("curr_id: {:X}", (&curr_id as *const _ as usize));
-            Arc::new(SpinNoIrq::new(
-                inner
-                    .signal_module
-                    .get_mut(&current_task().id().as_u64())
-                    .unwrap()
-                    .signal_handler
-                    .lock()
-                    .clone(),
-            ))
+            self.signal_modules
+                .lock()
+                .get_mut(&current_task().id().as_u64())
+                .unwrap()
+                .signal_handler
+                .clone()
         };
         // 检查是否在父任务中写入当前新任务的tid
         if flags.contains(CloneFlags::CLONE_PARENT_SETTID) {
-            if self
-                .memory_set
-                .lock()
-                .manual_alloc_for_lazy(ptid.into())
-                .is_ok()
-            {
+            if self.manual_alloc_for_lazy(ptid.into()).is_ok() {
                 unsafe {
                     *(ptid as *mut i32) = new_task.id().as_u64() as i32;
                 }
@@ -371,12 +412,7 @@ impl Process {
             if flags.contains(CloneFlags::CLONE_VM) {
                 // 此时地址空间不会发生改变
                 // 在当前地址空间下进行分配
-                if self
-                    .memory_set
-                    .lock()
-                    .manual_alloc_for_lazy(ctid.into())
-                    .is_ok()
-                {
+                if self.manual_alloc_for_lazy(ctid.into()).is_ok() {
                     // 正常分配了地址
                     unsafe {
                         *(ctid as *mut i32) = if flags.contains(CloneFlags::CLONE_CHILD_SETTID) {
@@ -430,13 +466,13 @@ impl Process {
             // );
             self.tasks.lock().push(Arc::clone(&new_task));
             #[cfg(feature = "signal")]
-            inner.signal_module.insert(
+            self.signal_modules.lock().insert(
                 new_task.id().as_u64(),
                 SignalModule::init_signal(Some(new_handler)),
             );
-            // inner
-            //     .robust_list
-            //     .insert(new_task.id().as_u64(), FutexRobustList::default());
+            self.robust_list
+                .lock()
+                .insert(new_task.id().as_u64(), FutexRobustList::default());
             return_id = new_task.id().as_u64();
         } else {
             // 若创建的是进程，那么需要新建进程
@@ -446,22 +482,22 @@ impl Process {
                 parent_id,
                 new_memory_set,
                 self.get_heap_bottom(),
+                self.fd_manager.fd_table.lock().clone(),
             ));
             // 记录该进程，防止被回收
             PID2PC.lock().insert(process_id, Arc::clone(&new_process));
             new_process.tasks.lock().push(Arc::clone(&new_task));
             // 若是新建了进程，那么需要把进程的父子关系进行记录
             #[cfg(feature = "signal")]
-            new_process.inner.lock().signal_module.insert(
+            new_process.signal_modules.lock().insert(
                 new_task.id().as_u64(),
                 SignalModule::init_signal(Some(new_handler)),
             );
 
-            // new_process
-            // .inner
-            // .lock()
-            // .robust_list
-            // .insert(new_task.id().as_u64(), FutexRobustList::default());
+            new_process
+                .robust_list
+                .lock()
+                .insert(new_task.id().as_u64(), FutexRobustList::default());
             return_id = new_process.pid;
             self.children.lock().push(new_process);
         };
@@ -492,5 +528,57 @@ impl Process {
         new_task.set_trap_in_kernel_stack();
         RUN_QUEUE.lock().add_task(new_task);
         Ok(return_id)
+    }
+}
+
+/// 与地址空间相关的进程方法
+impl Process {
+    pub fn manual_alloc_for_lazy(&self, addr: VirtAddr) -> AxResult<()> {
+        self.memory_set.lock().manual_alloc_for_lazy(addr)
+    }
+
+    pub fn manual_alloc_range_for_lazy(&self, start: VirtAddr, end: VirtAddr) -> AxResult<()> {
+        self.memory_set
+            .lock()
+            .manual_alloc_range_for_lazy(start, end)
+    }
+
+    pub fn manual_alloc_type_for_lazy<T: Sized>(&self, obj: *const T) -> AxResult<()> {
+        self.memory_set.lock().manual_alloc_type_for_lazy(obj)
+    }
+}
+
+/// 与文件相关的进程方法
+impl Process {
+    pub fn alloc_fd(&self, fd_table: &mut Vec<Option<Arc<dyn FileIO>>>) -> AxResult<usize> {
+        for (i, fd) in fd_table.iter().enumerate() {
+            if fd.is_none() {
+                return Ok(i);
+            }
+        }
+        if fd_table.len() >= self.fd_manager.get_limit() as usize {
+            debug!("fd table is full");
+            return Err(AxError::StorageFull);
+        }
+        fd_table.push(None);
+        Ok(fd_table.len() - 1)
+    }
+    pub fn get_cwd(&self) -> String {
+        self.fd_manager.cwd.lock().clone()
+    }
+}
+
+/// 与信号相关的方法
+impl Process {
+    /// 查询当前任务是否存在未决信号
+    pub fn have_signals(&self) -> bool {
+        let current_task = current_task();
+        self.signal_modules
+            .lock()
+            .get(&current_task.id().as_u64())
+            .unwrap()
+            .signal_set
+            .find_signal()
+            .is_some()
     }
 }

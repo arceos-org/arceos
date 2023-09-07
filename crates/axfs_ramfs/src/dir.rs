@@ -4,6 +4,7 @@ use alloc::{string::String, vec::Vec};
 
 use axfs_vfs::{VfsDirEntry, VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsNodeType};
 use axfs_vfs::{VfsError, VfsResult};
+use log::info;
 use spin::RwLock;
 
 use crate::file::FileNode;
@@ -80,6 +81,7 @@ impl VfsNodeOps for DirNode {
 
     fn lookup(self: Arc<Self>, path: &str) -> VfsResult<VfsNodeRef> {
         let (name, rest) = split_path(path);
+        info!("test name: {} path: {}", name, path);
         let node = match name {
             "" | "." => Ok(self.clone() as VfsNodeRef),
             ".." => self.parent().ok_or(VfsError::NotFound),
@@ -90,7 +92,7 @@ impl VfsNodeOps for DirNode {
                 .cloned()
                 .ok_or(VfsError::NotFound),
         }?;
-
+        info!("test");
         if let Some(rest) = rest {
             node.lookup(rest)
         } else {

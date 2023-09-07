@@ -1,4 +1,4 @@
-//! 记录系统调用用到的各种返回码与错误码
+//! 记录系统调用用到的各种调用码与错误码
 //!
 //!
 numeric_enum_macro::numeric_enum! {
@@ -58,7 +58,13 @@ pub enum SyscallId {
     NANO_SLEEP = 101,
     GETTIMER = 102,
     SETITIMER = 103,
+    CLOCK_GETRES = 114,
+    CLOCK_NANOSLEEP = 115,
     SYSLOG = 116,
+    SCHED_SETSCHEDULER = 119,
+    SCHED_GETSCHEDULER = 120,
+    SCHED_SETAFFINITY = 122,
+    SCHED_GETAFFINITY = 123,
     SETSID = 157,
     GETRUSAGE = 165,
     UMASK = 166,
@@ -71,6 +77,7 @@ pub enum SyscallId {
     GETEGID = 177,
     GETTID = 178,
     SYSINFO = 179,
+    SOCKETPAIR = 199,
     CLONE = 220,
     EXECVE = 221,
     MADVICE = 233,

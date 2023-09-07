@@ -1,16 +1,23 @@
 extern crate alloc;
 use alloc::boxed::Box;
+use alloc::format;
 use alloc::string::{String, ToString};
 use alloc::sync::Arc;
 use alloc::vec::Vec;
+use axfs::api::OpenFlags;
 use axhal::arch::write_page_table_root;
 use axhal::KERNEL_PROCESS_ID;
 use axlog::info;
+use axprocess::link::FilePath;
 use axprocess::{wait_pid, yield_now_task, PID2PC};
 use axruntime::KERNEL_PAGE_TABLE;
 use axsync::Mutex;
 use axtask::{TaskId, EXITED_TASKS};
 use lazy_init::LazyInit;
+
+use crate::fs::file::new_file;
+use crate::fs::link::create_link;
+use crate::syscall::filter;
 /// 初赛测例
 #[allow(dead_code)]
 const JUNIOR_TESTCASES: &[&str] = &[
@@ -301,57 +308,57 @@ pub const SDCARD_TESTCASES: &[&str] = &[
     // "./copy-file-range-test-2",
     // "./copy-file-range-test-3",
     // "./copy-file-range-test-4",
+    // "busybox echo hello",
+    // "busybox sh ./unixbench_testcode.sh",
+    // "./copy-file-range-test-1",
+    // "./copy-file-range-test-2",
+    // "./copy-file-range-test-3",
+    // "./copy-file-range-test-4",
+    // "busybox echo hello",
+    // "busybox sh ./iperf_testcode.sh",
+    // "./interrupts-test-1",
+    // "./interrupts-test-1",
     "busybox echo hello",
-    "busybox sh ./unixbench_testcode.sh",
-    "./copy-file-range-test-1",
-    "./copy-file-range-test-2",
-    "./copy-file-range-test-3",
-    "./copy-file-range-test-4",
-    "busybox echo hello",
-    "busybox sh ./iperf_testcode.sh",
-    "./interrupts-test-1",
-    "./interrupts-test-1",
-    "busybox echo hello",
-    "busybox sh busybox_testcode.sh",
-    "./interrupts-test-2",
-    "./interrupts-test-2",
-    "busybox echo hello",
-    "busybox sh ./iozone_testcode.sh",
-    "busybox echo latency measurements",
-    "lmbench_all lat_syscall -P 1 null",
-    "lmbench_all lat_syscall -P 1 read",
-    "lmbench_all lat_syscall -P 1 write",
-    "busybox mkdir -p /var/tmp",
-    "busybox touch /var/tmp/lmbench",
-    "lmbench_all lat_syscall -P 1 stat /var/tmp/lmbench",
-    "lmbench_all lat_syscall -P 1 fstat /var/tmp/lmbench",
-    "lmbench_all lat_syscall -P 1 open /var/tmp/lmbench",
-    "lmbench_all lat_select -n 100 -P 1 file",
-    "lmbench_all lat_sig -P 1 install",
-    "lmbench_all lat_sig -P 1 catch",
-    "lmbench_all lat_sig -P 1 prot lat_sig",
-    "lmbench_all lat_pipe -P 1",
-    "lmbench_all lat_proc -P 1 fork",
-    "lmbench_all lat_proc -P 1 exec",
-    "busybox cp hello /tmp",
-    "lmbench_all lat_proc -P 1 shell",
-    "lmbench_all lmdd label=\"File /var/tmp/XXX write bandwidth:\" of=/var/tmp/XXX move=1m fsync=1 print=3",
-    "lmbench_all lat_pagefault -P 1 /var/tmp/XXX",
-    "lmbench_all lat_mmap -P 1 512k /var/tmp/XXX",
-    "busybox echo file system latency",
-    "lmbench_all lat_fs /var/tmp",
-    "busybox echo Bandwidth measurements",
-    "lmbench_all bw_pipe -P 1",
-    "lmbench_all bw_file_rd -P 1 512k io_only /var/tmp/XXX",
-    "lmbench_all bw_file_rd -P 1 512k open2close /var/tmp/XXX",
-    "lmbench_all bw_mmap_rd -P 1 512k mmap_only /var/tmp/XXX",
-    "lmbench_all bw_mmap_rd -P 1 512k open2close /var/tmp/XXX",
-    "busybox echo context switch overhead",
-    "lmbench_all lat_ctx -P 1 -s 32 2 4 8 16 24 32 64 96",
-    "busybox sh libctest_testcode.sh",
-    "busybox sh lua_testcode.sh",
-    "libc-bench",
-    "busybox sh ./netperf_testcode.sh",
+    // "busybox sh busybox_testcode.sh",
+    // "./interrupts-test-2",
+    // "./interrupts-test-2",
+    // "busybox echo hello",
+    // "busybox sh ./iozone_testcode.sh",
+    // "busybox echo latency measurements",
+    // "lmbench_all lat_syscall -P 1 null",
+    // "lmbench_all lat_syscall -P 1 read",
+    // "lmbench_all lat_syscall -P 1 write",
+    // "busybox mkdir -p /var/tmp",
+    // "busybox touch /var/tmp/lmbench",
+    // "lmbench_all lat_syscall -P 1 stat /var/tmp/lmbench",
+    // "lmbench_all lat_syscall -P 1 fstat /var/tmp/lmbench",
+    // "lmbench_all lat_syscall -P 1 open /var/tmp/lmbench",
+    // "lmbench_all lat_select -n 100 -P 1 file",
+    // "lmbench_all lat_sig -P 1 install",
+    // "lmbench_all lat_sig -P 1 catch",
+    // "lmbench_all lat_sig -P 1 prot lat_sig",
+    // "lmbench_all lat_pipe -P 1",
+    // "lmbench_all lat_proc -P 1 fork",
+    // "lmbench_all lat_proc -P 1 exec",
+    // "busybox cp hello /tmp",
+    // "lmbench_all lat_proc -P 1 shell",
+    // "lmbench_all lmdd label=\"File /var/tmp/XXX write bandwidth:\" of=/var/tmp/XXX move=1m fsync=1 print=3",
+    // "lmbench_all lat_pagefault -P 1 /var/tmp/XXX",
+    // "lmbench_all lat_mmap -P 1 512k /var/tmp/XXX",
+    // "busybox echo file system latency",
+    // "lmbench_all lat_fs /var/tmp",
+    // "busybox echo Bandwidth measurements",
+    // "lmbench_all bw_pipe -P 1",
+    // "lmbench_all bw_file_rd -P 1 512k io_only /var/tmp/XXX",
+    // "lmbench_all bw_file_rd -P 1 512k open2close /var/tmp/XXX",
+    // "lmbench_all bw_mmap_rd -P 1 512k mmap_only /var/tmp/XXX",
+    // "lmbench_all bw_mmap_rd -P 1 512k open2close /var/tmp/XXX",
+    // "busybox echo context switch overhead",
+    // "lmbench_all lat_ctx -P 1 -s 32 2 4 8 16 24 32 64 96",
+    // "busybox sh libctest_testcode.sh",
+    // "busybox sh lua_testcode.sh",
+    // "libc-bench",
+    // "busybox sh ./netperf_testcode.sh",
 ];
 
 pub const NETPERF_TESTCASES: &[&str] = &[
@@ -475,108 +482,109 @@ fn get_args(command_line: &[u8]) -> Vec<String> {
     }
     args
 }
-// /// 在执行系统调用前初始化文件系统
-// ///
-// /// 包括建立软连接，提前准备好一系列的文件与文件夹
-// pub fn fs_init(_case: &'static str) {
-//     // 需要对libc-dynamic进行特殊处理，因为它需要先加载libc.so
-//     // 建立一个硬链接
+/// 在执行系统调用前初始化文件系统
+///
+/// 包括建立软连接，提前准备好一系列的文件与文件夹
+pub fn fs_init(_case: &'static str) {
+    // 需要对libc-dynamic进行特殊处理，因为它需要先加载libc.so
+    // 建立一个硬链接
 
-//     let libc_so = &"ld-musl-riscv64-sf.so.1";
-//     let libc_so2 = &"ld-musl-riscv64.so.1"; // 另一种名字的 libc.so，非 libc-test 测例库用
+    let libc_so = &"ld-musl-riscv64-sf.so.1";
+    let libc_so2 = &"ld-musl-riscv64.so.1"; // 另一种名字的 libc.so，非 libc-test 测例库用
 
-//     create_link(
-//         &(FilePath::new(("/lib/".to_string() + libc_so).as_str()).unwrap()),
-//         &(FilePath::new("libc.so").unwrap()),
-//     );
-//     create_link(
-//         &(FilePath::new(("/lib/".to_string() + libc_so2).as_str()).unwrap()),
-//         &(FilePath::new("libc.so").unwrap()),
-//     );
+    create_link(
+        &(FilePath::new(("/lib/".to_string() + libc_so).as_str()).unwrap()),
+        &(FilePath::new("libc.so").unwrap()),
+    );
+    create_link(
+        &(FilePath::new(("/lib/".to_string() + libc_so2).as_str()).unwrap()),
+        &(FilePath::new("libc.so").unwrap()),
+    );
 
-//     let tls_so = &"tls_get_new-dtv_dso.so";
-//     create_link(
-//         &(FilePath::new(("/lib/".to_string() + tls_so).as_str()).unwrap()),
-//         &(FilePath::new("tls_get_new-dtv_dso.so").unwrap()),
-//     );
+    let tls_so = &"tls_get_new-dtv_dso.so";
+    create_link(
+        &(FilePath::new(("/lib/".to_string() + tls_so).as_str()).unwrap()),
+        &(FilePath::new("tls_get_new-dtv_dso.so").unwrap()),
+    );
 
-//     // if case == "busybox" {
-//     create_link(
-//         &(FilePath::new("/sbin/busybox").unwrap()),
-//         &(FilePath::new("busybox").unwrap()),
-//     );
-//     create_link(
-//         &(FilePath::new("/sbin/ls").unwrap()),
-//         &(FilePath::new("busybox").unwrap()),
-//     );
-//     create_link(
-//         &(FilePath::new("/ls").unwrap()),
-//         &(FilePath::new("/busybox").unwrap()),
-//     );
-//     create_link(
-//         &(FilePath::new("/sh").unwrap()),
-//         &(FilePath::new("/busybox").unwrap()),
-//     );
-//     create_link(
-//         &(FilePath::new("/bin/lmbench_all").unwrap()),
-//         &(FilePath::new("/lmbench_all").unwrap()),
-//     );
-//     create_link(
-//         &(FilePath::new("/bin/iozone").unwrap()),
-//         &(FilePath::new("/iozone").unwrap()),
-//     );
-//     let _ = new_file("/lat_sig", &(OpenFlags::CREATE | OpenFlags::RDWR));
-//     // }
+    // if case == "busybox" {
+    create_link(
+        &(FilePath::new("/sbin/busybox").unwrap()),
+        &(FilePath::new("busybox").unwrap()),
+    );
+    create_link(
+        &(FilePath::new("/sbin/ls").unwrap()),
+        &(FilePath::new("busybox").unwrap()),
+    );
+    create_link(
+        &(FilePath::new("/ls").unwrap()),
+        &(FilePath::new("/busybox").unwrap()),
+    );
+    create_link(
+        &(FilePath::new("/sh").unwrap()),
+        &(FilePath::new("/busybox").unwrap()),
+    );
+    create_link(
+        &(FilePath::new("/bin/lmbench_all").unwrap()),
+        &(FilePath::new("/lmbench_all").unwrap()),
+    );
+    create_link(
+        &(FilePath::new("/bin/iozone").unwrap()),
+        &(FilePath::new("/iozone").unwrap()),
+    );
+    let _ = new_file("/lat_sig", &(OpenFlags::CREATE | OpenFlags::RDWR));
+    // }
 
-//     // gcc相关的链接，可以在testcases/gcc/riscv64-linux-musl-native/lib目录下使用ls -al指令查看
-//     let src_dir = "riscv64-linux-musl-native/lib";
-//     create_link(
-//         &FilePath::new(format!("{}/ld-musl-riscv64.so.1", src_dir).as_str()).unwrap(),
-//         &FilePath::new("/lib/libc.so").unwrap(),
-//     );
-//     create_link(
-//         &FilePath::new(format!("{}/libatomic.so", src_dir).as_str()).unwrap(),
-//         &FilePath::new(format!("{}/libatomic.so.1.2.0", src_dir).as_str()).unwrap(),
-//     );
-//     create_link(
-//         &FilePath::new(format!("{}/libatomic.so.1", src_dir).as_str()).unwrap(),
-//         &FilePath::new(format!("{}/libatomic.so.1.2.0", src_dir).as_str()).unwrap(),
-//     );
-//     create_link(
-//         &FilePath::new(format!("{}/libgfortran.so", src_dir).as_str()).unwrap(),
-//         &FilePath::new(format!("{}/libgfortran.so.5.0.0", src_dir).as_str()).unwrap(),
-//     );
-//     create_link(
-//         &FilePath::new(format!("{}/libgfortran.so.5", src_dir).as_str()).unwrap(),
-//         &FilePath::new(format!("{}/libgfortran.so.5.0.0", src_dir).as_str()).unwrap(),
-//     );
-//     create_link(
-//         &FilePath::new(format!("{}/libgomp.so", src_dir).as_str()).unwrap(),
-//         &FilePath::new(format!("{}/libgomp.so.1.0.0", src_dir).as_str()).unwrap(),
-//     );
-//     create_link(
-//         &FilePath::new(format!("{}/libgomp.so.1", src_dir).as_str()).unwrap(),
-//         &FilePath::new(format!("{}/libgomp.so.1.0.0", src_dir).as_str()).unwrap(),
-//     );
-//     create_link(
-//         &FilePath::new(format!("{}/libssp.so", src_dir).as_str()).unwrap(),
-//         &FilePath::new(format!("{}/libssp.so.0.0.0", src_dir).as_str()).unwrap(),
-//     );
-//     create_link(
-//         &FilePath::new(format!("{}/libssp.so.0", src_dir).as_str()).unwrap(),
-//         &FilePath::new(format!("{}/libssp.so.0.0.0", src_dir).as_str()).unwrap(),
-//     );
-//     create_link(
-//         &FilePath::new(format!("{}/libstdc++.so", src_dir).as_str()).unwrap(),
-//         &FilePath::new(format!("{}/libstdc++.so.6.0.29", src_dir).as_str()).unwrap(),
-//     );
-//     create_link(
-//         &FilePath::new(format!("{}/libstdc++.so.6", src_dir).as_str()).unwrap(),
-//         &FilePath::new(format!("{}/libstdc++.so.6.0.29", src_dir).as_str()).unwrap(),
-//     );
-// }
+    // gcc相关的链接，可以在testcases/gcc/riscv64-linux-musl-native/lib目录下使用ls -al指令查看
+    let src_dir = "riscv64-linux-musl-native/lib";
+    create_link(
+        &FilePath::new(format!("{}/ld-musl-riscv64.so.1", src_dir).as_str()).unwrap(),
+        &FilePath::new("/lib/libc.so").unwrap(),
+    );
+    create_link(
+        &FilePath::new(format!("{}/libatomic.so", src_dir).as_str()).unwrap(),
+        &FilePath::new(format!("{}/libatomic.so.1.2.0", src_dir).as_str()).unwrap(),
+    );
+    create_link(
+        &FilePath::new(format!("{}/libatomic.so.1", src_dir).as_str()).unwrap(),
+        &FilePath::new(format!("{}/libatomic.so.1.2.0", src_dir).as_str()).unwrap(),
+    );
+    create_link(
+        &FilePath::new(format!("{}/libgfortran.so", src_dir).as_str()).unwrap(),
+        &FilePath::new(format!("{}/libgfortran.so.5.0.0", src_dir).as_str()).unwrap(),
+    );
+    create_link(
+        &FilePath::new(format!("{}/libgfortran.so.5", src_dir).as_str()).unwrap(),
+        &FilePath::new(format!("{}/libgfortran.so.5.0.0", src_dir).as_str()).unwrap(),
+    );
+    create_link(
+        &FilePath::new(format!("{}/libgomp.so", src_dir).as_str()).unwrap(),
+        &FilePath::new(format!("{}/libgomp.so.1.0.0", src_dir).as_str()).unwrap(),
+    );
+    create_link(
+        &FilePath::new(format!("{}/libgomp.so.1", src_dir).as_str()).unwrap(),
+        &FilePath::new(format!("{}/libgomp.so.1.0.0", src_dir).as_str()).unwrap(),
+    );
+    create_link(
+        &FilePath::new(format!("{}/libssp.so", src_dir).as_str()).unwrap(),
+        &FilePath::new(format!("{}/libssp.so.0.0.0", src_dir).as_str()).unwrap(),
+    );
+    create_link(
+        &FilePath::new(format!("{}/libssp.so.0", src_dir).as_str()).unwrap(),
+        &FilePath::new(format!("{}/libssp.so.0.0.0", src_dir).as_str()).unwrap(),
+    );
+    create_link(
+        &FilePath::new(format!("{}/libstdc++.so", src_dir).as_str()).unwrap(),
+        &FilePath::new(format!("{}/libstdc++.so.6.0.29", src_dir).as_str()).unwrap(),
+    );
+    create_link(
+        &FilePath::new(format!("{}/libstdc++.so.6", src_dir).as_str()).unwrap(),
+        &FilePath::new(format!("{}/libstdc++.so.6.0.29", src_dir).as_str()).unwrap(),
+    );
+}
 
 pub fn run_testcases(case: &'static str) {
+    fs_init(case);
     let (mut test_iter, case_len) = match case {
         "junior" => (Box::new(JUNIOR_TESTCASES.iter()), JUNIOR_TESTCASES.len()),
         "libc-static" => (
@@ -604,17 +612,17 @@ pub fn run_testcases(case: &'static str) {
             let args = get_args(command_line.as_bytes());
             axlog::ax_println!("run new testcase: {:?}", args);
             let testcase = args.clone();
-            // let real_testcase = if testcase[0] == "./busybox".to_string()
-            //     || testcase[0] == "busybox".to_string()
-            //     || testcase[0] == "entry-static.exe".to_string()
-            //     || testcase[0] == "entry-dynamic.exe".to_string()
-            //     || testcase[0] == "lmbench_all".to_string()
-            // {
-            //     testcase[1].clone()
-            // } else {
-            //     testcase[0].clone()
-            // };
-            // filter(real_testcase);
+            let real_testcase = if testcase[0] == "./busybox".to_string()
+                || testcase[0] == "busybox".to_string()
+                || testcase[0] == "entry-static.exe".to_string()
+                || testcase[0] == "entry-dynamic.exe".to_string()
+                || testcase[0] == "lmbench_all".to_string()
+            {
+                testcase[1].clone()
+            } else {
+                testcase[0].clone()
+            };
+            filter(real_testcase);
 
             let main_task = axprocess::Process::init(args).unwrap();
             let now_process_id = main_task.get_process_id() as isize;
@@ -624,6 +632,7 @@ pub fn run_testcases(case: &'static str) {
                 if wait_pid(now_process_id, &mut exit_code as *mut i32).is_ok() {
                     break Some(exit_code);
                 }
+
                 yield_now_task();
             };
         }

@@ -22,7 +22,7 @@ multitask = ["axtask/multitask"]
 fs = ["axdriver", "axfs"]
 net = ["axdriver", "axnet"]
 display = ["axdriver", "axdisplay"]
-
+signal = ["axprocess/signal", "axhal/signal"]
 monolithic = ["axprocess/monolithic", "axhal/monolithic", "axtask/monolithic", "axmem/monolithic"]
 
 [dependencies]
