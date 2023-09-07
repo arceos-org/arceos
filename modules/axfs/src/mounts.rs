@@ -61,8 +61,8 @@ pub(crate) fn procfs() -> VfsResult<Arc<fs::ramfs::RamFileSystem>> {
         // Create other file to pass the testcases
         proc_root.create("meminfo", VfsNodeType::File)?;
         proc_root.create("mounts", VfsNodeType::File)?;
-
-        procfs.mount("interrupts", Arc::new(fs::devfs::Interrupts::default()))?;
+        proc_root.create("interrupts", VfsNodeType::File)?;
+        // procfs.mount("interrupts", Arc::new(fs::devfs::Interrupts::default()))?;
     }
     Ok(Arc::new(procfs))
 }

@@ -4,10 +4,10 @@ use alloc::{string::String, vec::Vec};
 
 use axfs_vfs::{VfsDirEntry, VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsNodeType};
 use axfs_vfs::{VfsError, VfsResult};
-use log::info;
 use spin::RwLock;
 
 use crate::file::FileNode;
+use crate::Interrupts;
 
 /// The directory node in the RAM filesystem.
 ///
@@ -48,7 +48,14 @@ impl DirNode {
             return Err(VfsError::AlreadyExists);
         }
         let node: VfsNodeRef = match ty {
-            VfsNodeType::File => Arc::new(FileNode::new()),
+            VfsNodeType::File => {
+                // 当前仅是将interrups作为一个特殊的节点，未来应该进行统一
+                if name == "interrupts" {
+                    Arc::new(Interrupts::default())
+                } else {
+                    Arc::new(FileNode::new())
+                }
+            }
             VfsNodeType::Dir => Self::new(Some(self.this.clone())),
             _ => return Err(VfsError::Unsupported),
         };
@@ -81,7 +88,6 @@ impl VfsNodeOps for DirNode {
 
     fn lookup(self: Arc<Self>, path: &str) -> VfsResult<VfsNodeRef> {
         let (name, rest) = split_path(path);
-        info!("test name: {} path: {}", name, path);
         let node = match name {
             "" | "." => Ok(self.clone() as VfsNodeRef),
             ".." => self.parent().ok_or(VfsError::NotFound),
@@ -92,7 +98,6 @@ impl VfsNodeOps for DirNode {
                 .cloned()
                 .ok_or(VfsError::NotFound),
         }?;
-        info!("test");
         if let Some(rest) = rest {
             node.lookup(rest)
         } else {

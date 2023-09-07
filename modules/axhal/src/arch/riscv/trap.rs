@@ -36,7 +36,7 @@ fn handle_breakpoint(sepc: &mut usize) {
 #[allow(unused)]
 fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
     let scause = scause::read();
-    axfs_devfs::INTERRUPT.lock().record(scause.code());
+    axfs_ramfs::INTERRUPT.lock().record(scause.code());
     match scause.cause() {
         Trap::Exception(E::Breakpoint) => handle_breakpoint(&mut tf.sepc),
         Trap::Interrupt(_) => crate::trap::handle_irq_extern(scause.bits()),

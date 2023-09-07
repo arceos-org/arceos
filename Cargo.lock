@@ -328,9 +328,7 @@ dependencies = [
 name = "axfs_devfs"
 version = "0.1.0"
 dependencies = [
- "axerrno",
  "axfs_vfs",
- "lazy_static",
  "log",
  "spin 0.9.8",
 ]
@@ -339,7 +337,9 @@ dependencies = [
 name = "axfs_ramfs"
 version = "0.1.0"
 dependencies = [
+ "axerrno",
  "axfs_vfs",
+ "lazy_static",
  "log",
  "spin 0.9.8",
 ]
@@ -362,7 +362,7 @@ dependencies = [
  "arm_pl011",
  "axalloc",
  "axconfig",
- "axfs_devfs",
+ "axfs_ramfs",
  "axlog",
  "bitflags 2.4.0",
  "cfg-if",

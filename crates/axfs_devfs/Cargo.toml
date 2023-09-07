@@ -13,5 +13,3 @@ documentation = "https://rcore-os.github.io/arceos/axfs_devfs/index.html"
 axfs_vfs = { path = "../axfs_vfs" }
 spin = "0.9"
 log = "0.4"
-lazy_static = { version = "1.4", features = ["spin_no_std"] }
-axerrno = { path = "../axerrno" }
