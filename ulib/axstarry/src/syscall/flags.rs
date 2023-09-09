@@ -50,7 +50,7 @@ impl TimeVal {
     }
 
     pub fn to_ticks(&self) -> u64 {
-        (self.sec * axconfig::TICKS_PER_SEC) as u64
+        (self.sec * axconfig::TIMER_FREQUENCY) as u64
             + nanos_to_ticks((self.usec as u64) * NANOS_PER_MICROS)
     }
 }
@@ -88,7 +88,7 @@ impl TimeSecs {
     }
 
     pub fn get_ticks(&self) -> usize {
-        self.tv_sec * axconfig::TICKS_PER_SEC + (nanos_to_ticks(self.tv_nsec as u64) as usize)
+        self.tv_sec * axconfig::TIMER_FREQUENCY + (nanos_to_ticks(self.tv_nsec as u64) as usize)
     }
 
     pub fn set_as_utime(&mut self, other: &TimeSecs) {

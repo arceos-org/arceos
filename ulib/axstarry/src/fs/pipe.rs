@@ -118,11 +118,10 @@ pub fn make_pipe() -> (Arc<Pipe>, Arc<Pipe>) {
 fn filter_pipe() -> bool {
     let cases = ["fscanf", "fgetwc_buffering", "lat_pipe"];
     for case in cases {
-        axlog::error!("filter: {:?}", TEST_FILTER.lock().keys());
         if TEST_FILTER.lock().contains_key(&case.to_string()) {
+            axlog::error!("filter: {:?}", TEST_FILTER.lock().keys());
             return true;
         }
-        return true;
     }
     false
 }

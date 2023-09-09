@@ -181,7 +181,7 @@ pub fn syscall_pselect6(
             return 0;
         }
 
-        if process.have_signals() {
+        if process.have_signals().is_some() {
             return ErrorNo::EINTR as isize;
         }
     }

@@ -91,7 +91,7 @@ pub fn futex(
                     yield_now_task();
                 } else {
                     let timeout = WAIT_FOR_FUTEX.wait_timeout(Duration::from_nanos(timeout as u64));
-                    if !timeout && process.have_signals() {
+                    if !timeout && process.have_signals().is_some() {
                         // 被信号打断
                         return Err(ErrorNo::EINTR);
                     }

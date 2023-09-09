@@ -30,7 +30,7 @@ pub fn syscall_sigaction(
     let signal_module = signal_modules
         .get_mut(&current_task().id().as_u64())
         .unwrap();
-    let signal_handler = &mut signal_module.signal_handler;
+    let mut signal_handler = signal_module.signal_handler.lock();
     let old_address = old_action as usize;
 
     if old_address != 0 {
@@ -60,6 +60,7 @@ pub fn syscall_sigaction(
             // 无法分配
             return -1;
         }
+        info!("test task: {}", current_task().id().as_u64());
         signal_handler.set_action(signum, action);
     }
     0
@@ -96,7 +97,7 @@ pub fn syscall_sigsuspend(mask: *const usize) -> isize {
             // 记得释放锁
             drop(signal_modules);
             yield_now_task();
-            if process.have_signals() {
+            if process.have_signals().is_some() {
                 return ErrorNo::EINTR as isize;
             }
         }

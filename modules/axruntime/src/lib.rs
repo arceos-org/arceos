@@ -48,6 +48,8 @@ d88P     888 888      "Y8888P  "Y8888   "Y88888P"   "Y8888P"
 extern "C" {
     fn main();
 }
+#[cfg(feature = "img")]
+core::arch::global_asm!(include_str!("../../axdriver/image.S"));
 
 struct LogIfImpl;
 
@@ -255,6 +257,27 @@ cfg_if::cfg_if! {
                         r.flags.into(),
                         true,
                     )?;
+                }
+
+                #[cfg(feature = "img")]
+                {
+                    // 此时将测例加载到内存中，通过ramdisk和页表定向映射的方式来读取测例
+                    use axconfig::{TESTCASE_MEMORY_START,TESTCASE_MEMORY_SIZE};
+                    use axhal::mem::PhysAddr;
+                    use axhal::mem::MemRegionFlags;
+                    extern "C" {
+                        fn img_start();
+                    }
+
+                    // 此时qemu运行，文件镜像的位置需要由汇编确定
+                    let img_start_addr:PhysAddr = axhal::mem::virt_to_phys((img_start as usize).into());
+                    kernel_page_table.map_region(
+                        phys_to_virt(TESTCASE_MEMORY_START.into()),
+                        img_start_addr,
+                        TESTCASE_MEMORY_SIZE,
+                        MemRegionFlags::from_bits(1 << 0 | 1 << 1 | 1 << 4).unwrap().into(),
+                        true,
+                    ).unwrap();
                 }
                 KERNEL_PAGE_TABLE.init_by(kernel_page_table);
             }

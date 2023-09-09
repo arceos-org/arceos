@@ -1,5 +1,6 @@
 use alloc::vec::Vec;
 use axalloc::PhysPage;
+use axerrno::AxResult;
 use axhal::{
     mem::{virt_to_phys, VirtAddr, PAGE_SIZE_4K},
     paging::{MappingFlags, PageSize, PageTable},
@@ -56,9 +57,8 @@ impl MapArea {
         data: Option<&[u8]>,
         backend: Option<MemBackend>,
         page_table: &mut PageTable,
-    ) -> Self {
-        let pages = PhysPage::alloc_contiguous(num_pages, PAGE_SIZE_4K, data)
-            .expect("Error allocating memory when trying to map");
+    ) -> AxResult<Self> {
+        let pages = PhysPage::alloc_contiguous(num_pages, PAGE_SIZE_4K, data)?;
         info!(
             "start: {:X?}, size: {:X},  page start: {:X?}",
             start,
@@ -74,13 +74,12 @@ impl MapArea {
                 false,
             )
             .unwrap();
-
-        Self {
+        Ok(Self {
             pages,
             vaddr: start,
             flags,
             backend,
-        }
+        })
     }
 
     pub fn dealloc(&mut self, page_table: &mut PageTable) {
@@ -420,7 +419,7 @@ impl MapArea {
 
     /// Allocating new phys pages and clone it self.
     /// This function will modify the page table as well.
-    pub unsafe fn clone_alloc(&self, page_table: &mut PageTable) -> Self {
+    pub unsafe fn clone_alloc(&self, page_table: &mut PageTable) -> AxResult<Self> {
         // All the pages have been allocated. Allocate a contiguous area in phys memory.
         if self.allocated() {
             MapArea::new_alloc(
@@ -467,13 +466,12 @@ impl MapArea {
                     }
                 })
                 .collect();
-
-            Self {
+            Ok(Self {
                 pages,
                 vaddr: self.vaddr,
                 flags: self.flags,
                 backend: self.backend.clone(),
-            }
+            })
         }
     }
 }

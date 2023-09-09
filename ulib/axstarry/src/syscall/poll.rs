@@ -80,7 +80,7 @@ fn ppoll(mut fds: Vec<PollFd>, expire_time: usize) -> (isize, Vec<PollFd>) {
             return (0, fds);
         }
         yield_now_task();
-        if process.have_signals() {
+        if process.have_signals().is_some() {
             // 有信号，此时停止处理，直接返回
             return (0, fds);
         }

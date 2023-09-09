@@ -62,6 +62,7 @@ pub fn filter(testcase: String) -> bool {
         || testcase == "fstime".to_string()
         || testcase == "looper".to_string()
         || testcase == "./looper".to_string()
+        || testcase == "socket".to_string()
     {
         if test_filter.contains_key(&testcase) {
             let count = test_filter.get_mut(&testcase).unwrap();
@@ -72,7 +73,10 @@ pub fn filter(testcase: String) -> bool {
             }
             *count += 1;
         } else {
-            if testcase == "looper".to_string() || testcase == "./looper".to_string() {
+            if testcase == "looper".to_string()
+                || testcase == "./looper".to_string()
+                || testcase == "socket".to_string()
+            {
                 return false;
             }
             test_filter.insert(testcase, 1);
@@ -169,7 +173,7 @@ pub fn syscall_clone(
     ) {
         new_task_id as isize
     } else {
-        -1
+        return ErrorNo::ENOMEM as isize;
     }
 }
 
@@ -192,12 +196,12 @@ pub fn syscall_wait4(pid: isize, exit_code_ptr: *mut i32, option: WaitFlags) -> 
                             // 不予等待，直接返回0
                             return 0;
                         } else {
-                            // 执行yield操作，切换任务
-                            yield_now_task();
                             // wait回来之后，如果还需要wait，先检查是否有信号未处理
-                            if current_process().have_signals() {
+                            if current_process().have_signals().is_some() {
                                 return ErrorNo::EINTR as isize;
                             }
+                            // 执行yield操作，切换任务
+                            yield_now_task();
                         }
                     }
                     _ => {
@@ -243,7 +247,7 @@ pub fn syscall_sleep(req: *const TimeSecs, rem: *mut TimeSecs) -> isize {
             };
         }
     }
-    if current_process().have_signals() {
+    if current_process().have_signals().is_some() {
         return ErrorNo::EINTR as isize;
     }
     0

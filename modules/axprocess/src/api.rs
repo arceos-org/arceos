@@ -12,12 +12,15 @@ use axhal::paging::MappingFlags;
 use axhal::KERNEL_PROCESS_ID;
 use axlog::{debug, info};
 use axmem::MemorySet;
+use axsignal::signal_no::SignalNo;
 use axsync::Mutex;
 use axtask::{current, yield_now, CurrentTask, TaskId, TaskState, IDLE_TASK, RUN_QUEUE};
 
 use crate::flags::WaitStatus;
+use crate::futex::clear_wait;
 use crate::loader::Loader;
 use crate::process::{Process, PID2PC, TID2TASK};
+use crate::signal::{send_signal_to_process, send_signal_to_thread};
 
 /// 初始化内核调度进程
 pub fn init_kernel_process() {
@@ -52,7 +55,35 @@ pub fn exit_current_task(exit_code: i32) -> ! {
     let curr_id = current_task.id().as_u64();
 
     info!("exit task id {} with code {}", curr_id, exit_code);
-
+    clear_wait(
+        if current_task.is_leader() {
+            process.pid()
+        } else {
+            curr_id
+        },
+        current_task.is_leader(),
+    );
+    // 检查这个任务是否有sig_child信号
+    if current_task.get_sig_child() || current_task.is_leader() {
+        let parent = process.get_parent();
+        if parent != KERNEL_PROCESS_ID {
+            // 发送sigchild
+            send_signal_to_process(parent as isize, 17).unwrap();
+        }
+    }
+    // clear_child_tid 的值不为 0，则将这个用户地址处的值写为0
+    let clear_child_tid = current_task.get_clear_child_tid();
+    if clear_child_tid != 0 {
+        // 先确认是否在用户空间
+        if process
+            .manual_alloc_for_lazy(clear_child_tid.into())
+            .is_ok()
+        {
+            unsafe {
+                *(clear_child_tid as *mut i32) = 0;
+            }
+        }
+    }
     if current_task.is_leader() {
         loop {
             let mut all_exited = true;
@@ -69,20 +100,19 @@ pub fn exit_current_task(exit_code: i32) -> ! {
                 break;
             }
         }
-
         TID2TASK.lock().remove(&curr_id);
-
         process.set_exit_code(exit_code);
 
         process.set_zombie(true);
 
         process.tasks.lock().clear();
-
+        process.fd_manager.fd_table.lock().clear();
         process.signal_modules.lock().clear();
 
         let mut pid2pc = PID2PC.lock();
         let kernel_process = pid2pc.get(&KERNEL_PROCESS_ID).unwrap();
         // 将子进程交给idle进程
+        // process.memory_set = Arc::clone(&kernel_process.memory_set);
         for child in process.children.lock().deref() {
             child.set_parent(KERNEL_PROCESS_ID);
             kernel_process.children.lock().push(Arc::clone(&child));
@@ -92,7 +122,7 @@ pub fn exit_current_task(exit_code: i32) -> ! {
         drop(process);
     } else {
         TID2TASK.lock().remove(&curr_id);
-        process.signal_modules.lock().clear();
+        process.signal_modules.lock().remove(&curr_id);
         drop(process);
     }
     RUN_QUEUE.lock().exit_current(exit_code);
@@ -141,26 +171,24 @@ pub fn time_stat_output() -> (usize, usize, usize, usize) {
     curr_task.time_stat_output()
 }
 
-pub fn handle_page_fault(addr: VirtAddr, flags: MappingFlags) -> AxResult<()> {
+pub fn handle_page_fault(addr: VirtAddr, flags: MappingFlags) {
     axlog::debug!("'page fault' addr: {:?}, flags: {:?}", addr, flags);
     let current_process = current_process();
     axlog::debug!(
         "memory token : {}",
         current_process.memory_set.lock().page_table_token()
     );
-    let ans = current_process
+
+    if current_process
         .memory_set
         .lock()
-        .handle_page_fault(addr, flags);
-
-    if ans.is_ok() {
+        .handle_page_fault(addr, flags)
+        .is_ok()
+    {
         unsafe { riscv::asm::sfence_vma_all() };
     } else {
-        // exit_current_task(-1);
-        // 应当发送SIGSEGV信号给对应进程
-        unimplemented!()
+        let _ = send_signal_to_thread(current().id().as_u64() as isize, SignalNo::SIGSEGV as isize);
     }
-    ans
 }
 
 /// 在当前进程找对应的子进程，并等待子进程结束

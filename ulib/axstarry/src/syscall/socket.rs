@@ -34,7 +34,7 @@ pub enum Domain {
     AF_INET = 2,
 }
 
-#[derive(TryFromPrimitive, PartialEq, Eq, Clone)]
+#[derive(TryFromPrimitive, PartialEq, Eq, Clone, Debug)]
 #[repr(usize)]
 #[allow(non_camel_case_types)]
 pub enum SocketType {
@@ -774,7 +774,6 @@ pub fn syscall_socket(domain: usize, s_type: usize, _protocol: usize) -> isize {
     let Ok(socket_type) = SocketType::try_from(s_type & SOCKET_TYPE_MASK) else {
         return ErrorNo::EINVAL as isize;
     };
-
     let mut socket = Socket::new(domain, socket_type);
     if s_type & SOCK_NONBLOCK != 0 {
         socket.set_nonblocking(true)
@@ -782,7 +781,6 @@ pub fn syscall_socket(domain: usize, s_type: usize, _protocol: usize) -> isize {
     if s_type & SOCK_CLOEXEC != 0 {
         socket.close_exec = true;
     }
-
     let curr = current_process();
     let mut fd_table = curr.fd_manager.fd_table.lock();
     let Ok(fd) = curr.alloc_fd(&mut fd_table) else {
@@ -1024,7 +1022,6 @@ pub fn syscall_sendto(
                 )))
                 .unwrap();
             }
-
             match addr {
                 Some(addr) => s.send_to(buf, into_core_sockaddr(addr)),
                 None => {
@@ -1073,7 +1070,6 @@ pub fn syscall_recvfrom(
         Some(Some(file)) => file.clone(),
         _ => return ErrorNo::EBADF as isize,
     };
-
     let Some(socket) = file.as_any().downcast_ref::<Socket>() else {
         return ErrorNo::ENOTSOCK as isize;
     };
@@ -1086,7 +1082,6 @@ pub fn syscall_recvfrom(
         error!("[recvfrom()] addr_len address {addr_len:?} invalid");
         return ErrorNo::EFAULT as isize;
     }
-
     if !addr_buf.is_null()
         && !addr_len.is_null()
         && curr
@@ -1102,9 +1097,7 @@ pub fn syscall_recvfrom(
         );
         return ErrorNo::EFAULT as isize;
     }
-
     let buf = unsafe { from_raw_parts_mut(buf, len) };
-
     match socket.recv_from(buf) {
         Ok((len, addr)) => {
             info!("socket {fd} recv {len} bytes from {addr:?}");

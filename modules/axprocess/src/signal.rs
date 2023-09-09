@@ -11,19 +11,20 @@ use axsignal::{
     ucontext::SignalUserContext,
     SignalHandler, SignalSet,
 };
-use axtask::{exit, SignalCaller, TaskState, RUN_QUEUE};
+use axsync::Mutex;
+use axtask::{SignalCaller, TaskState, RUN_QUEUE};
 
 pub struct SignalModule {
     pub sig_info: bool,
     pub last_trap_frame_for_signal: Option<TrapFrame>,
-    pub signal_handler: SignalHandler,
+    pub signal_handler: Arc<Mutex<SignalHandler>>,
     pub signal_set: SignalSet,
 }
 
 impl SignalModule {
-    pub fn init_signal(signal_handler: Option<SignalHandler>) -> Self {
+    pub fn init_signal(signal_handler: Option<Arc<Mutex<SignalHandler>>>) -> Self {
         let signal_handler = if signal_handler.is_none() {
-            SignalHandler::new()
+            Arc::new(Mutex::new(SignalHandler::new()))
         } else {
             signal_handler.unwrap()
         };
@@ -42,7 +43,7 @@ impl SignalModule {
 const USER_SIGNAL_PROTECT: usize = 512;
 
 use crate::{
-    current_process, current_task,
+    current_process, current_task, exit_current_task,
     process::{PID2PC, TID2TASK},
 };
 
@@ -94,7 +95,7 @@ pub fn handle_signals() {
             return;
         }
         // 进程退出了，在测试环境下非主线程应该立即退出
-        exit(0);
+        exit_current_task(0);
     }
 
     if process.pid() == KERNEL_PROCESS_ID {
@@ -124,7 +125,8 @@ pub fn handle_signals() {
         // 说明之前的信号处理函数还未返回，即出现了信号嵌套。
         if signal == SignalNo::SIGSEGV || signal == SignalNo::SIGBUS {
             // 在处理信号的过程中又触发 SIGSEGV 或 SIGBUS，此时会导致死循环，所以直接结束当前进程
-            exit(-1);
+            drop(signal_modules);
+            exit_current_task(-1);
         } else {
             return;
         }
@@ -137,9 +139,10 @@ pub fn handle_signals() {
     // current_task.set_siginfo(false);
     signal_module.sig_info = false;
     // 调取处理函数
-    let signal_handler = &signal_module.signal_handler;
+    let signal_handler = signal_module.signal_handler.lock();
     let action = signal_handler.get_action(sig_num);
     if action.is_none() {
+        drop(signal_handler);
         drop(signal_modules);
         drop(current_task);
         // 未显式指定处理函数，使用默认处理函数
@@ -149,7 +152,7 @@ pub fn handle_signals() {
                 load_trap_for_signal();
             }
             SignalDefault::Terminate => {
-                exit(0);
+                exit_current_task(0);
             }
         }
         return;
@@ -176,6 +179,7 @@ pub fn handle_signals() {
         action.get_storer(),
         action.sa_handler
     );
+
     let old_pc = trap_frame.sepc;
     trap_frame.regs.ra = action.get_storer();
     trap_frame.sepc = action.sa_handler;
@@ -204,6 +208,7 @@ pub fn handle_signals() {
         trap_frame.regs.a2 = sp;
     }
     trap_frame.regs.sp = sp;
+    drop(signal_handler);
     drop(signal_modules);
 }
 

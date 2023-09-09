@@ -335,7 +335,8 @@ impl MemorySet {
                 Some(data),
                 backend,
                 &mut self.page_table,
-            ),
+            )
+            .unwrap(),
             None => MapArea::new_lazy(vaddr, num_pages, flags, backend, &mut self.page_table),
         };
 
@@ -611,7 +612,7 @@ impl MemorySet {
                 Ok(())
             }
             None => {
-                error!(
+                warn!(
                     "Page fault address {:?} not found in memory set sepc: {:X?}",
                     addr,
                     riscv::register::sepc::read()
@@ -745,8 +746,8 @@ impl MemorySet {
     }
 }
 
-impl Clone for MemorySet {
-    fn clone(&self) -> Self {
+impl MemorySet {
+    pub fn clone(&self) -> AxResult<Self> {
         let mut page_table = PageTable::try_new().expect("Error allocating page table.");
 
         for r in memory_regions() {
@@ -760,11 +761,23 @@ impl Clone for MemorySet {
                 .expect("Error mapping kernel memory");
         }
 
-        let owned_mem = self
-            .owned_mem
-            .iter()
-            .map(|(vaddr, area)| (*vaddr, unsafe { area.clone_alloc(&mut page_table) }))
-            .collect();
+        // let owned_mem = self
+        //     .owned_mem
+        //     .iter()
+        //     .map(|(vaddr, area)| (*vaddr, unsafe { area.clone_alloc(&mut page_table)? }))
+        //     .collect();
+        let mut owned_mem: BTreeMap<usize, MapArea> = BTreeMap::new();
+        for (vaddr, area) in self.owned_mem.iter() {
+            unsafe {
+                match area.clone_alloc(&mut page_table) {
+                    Ok(new_area) => {
+                        owned_mem.insert(*vaddr, new_area);
+                        Ok(())
+                    }
+                    Err(err) => Err(err),
+                }?;
+            }
+        }
 
         let mut new_memory = Self {
             page_table,
@@ -780,7 +793,7 @@ impl Clone for MemorySet {
             new_memory.attach_shared_mem(mem.clone(), addr.clone(), flags.clone());
         }
 
-        new_memory
+        Ok(new_memory)
     }
 }
 

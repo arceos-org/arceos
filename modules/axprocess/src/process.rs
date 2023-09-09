@@ -199,6 +199,7 @@ impl Process {
             axconfig::TASK_STACK_SIZE,
             new_process.pid(),
             page_table_token,
+            false,
         );
         TID2TASK
             .lock()
@@ -324,22 +325,22 @@ impl Process {
     pub fn clone_task(
         &self,
         flags: CloneFlags,
-        _sig_child: bool,
+        sig_child: bool,
         stack: Option<usize>,
         ptid: usize,
         tls: usize,
         ctid: usize,
     ) -> AxResult<u64> {
-        if self.tasks.lock().len() > 100 {
-            // 任务过多，手动特判结束，用来作为QEMU内存不足的应对方法
-            return Err(AxError::NoMemory);
-        }
+        // if self.tasks.lock().len() > 100 {
+        //     // 任务过多，手动特判结束，用来作为QEMU内存不足的应对方法
+        //     return Err(AxError::NoMemory);
+        // }
 
         // 是否共享虚拟地址空间
         let new_memory_set = if flags.contains(CloneFlags::CLONE_VM) {
             Arc::clone(&self.memory_set)
         } else {
-            Arc::new(Mutex::new(MemorySet::clone(&self.memory_set.lock())))
+            Arc::new(Mutex::new(MemorySet::clone(&self.memory_set.lock())?))
         };
 
         // 在生成新的进程前，需要决定其所属进程是谁
@@ -365,6 +366,7 @@ impl Process {
             axconfig::TASK_STACK_SIZE,
             process_id,
             new_memory_set.lock().page_table_token(),
+            sig_child,
         );
         debug!("new task:{}", new_task.id().as_u64());
         TID2TASK
@@ -380,13 +382,16 @@ impl Process {
                 .signal_handler
                 .clone()
         } else {
+            Arc::new(Mutex::new(
+                self.signal_modules
+                    .lock()
+                    .get_mut(&current_task().id().as_u64())
+                    .unwrap()
+                    .signal_handler
+                    .lock()
+                    .clone(),
+            ))
             // info!("curr_id: {:X}", (&curr_id as *const _ as usize));
-            self.signal_modules
-                .lock()
-                .get_mut(&current_task().id().as_u64())
-                .unwrap()
-                .signal_handler
-                .clone()
         };
         // 检查是否在父任务中写入当前新任务的tid
         if flags.contains(CloneFlags::CLONE_PARENT_SETTID) {
@@ -571,7 +576,7 @@ impl Process {
 /// 与信号相关的方法
 impl Process {
     /// 查询当前任务是否存在未决信号
-    pub fn have_signals(&self) -> bool {
+    pub fn have_signals(&self) -> Option<usize> {
         let current_task = current_task();
         self.signal_modules
             .lock()
@@ -579,6 +584,5 @@ impl Process {
             .unwrap()
             .signal_set
             .find_signal()
-            .is_some()
     }
 }

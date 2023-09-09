@@ -145,7 +145,7 @@ pub(crate) fn default_free_regions() -> impl Iterator<Item = MemRegion> {
 #[allow(dead_code)]
 pub(crate) fn extend_free_regions() -> impl Iterator<Item = MemRegion> {
     let start = virt_to_phys(VirtAddr::from(0xffff_ffc0_a000_0000)).align_up_4k();
-    let end: PhysAddr = PhysAddr::from(0xf000_0000).align_down_4k();
+    let end: PhysAddr = PhysAddr::from(0x1_a000_0000).align_down_4k();
     core::iter::once(MemRegion {
         paddr: start,
         size: end.as_usize() - start.as_usize(),

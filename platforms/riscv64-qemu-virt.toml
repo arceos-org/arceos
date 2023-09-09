@@ -13,6 +13,10 @@ phys-memory-size = "0x800_0000"     # 128M
 kernel-base-paddr = "0x8020_0000"
 # Base virtual address of the kernel image.
 kernel-base-vaddr = "0xffff_ffc0_8020_0000"
+# Testcase memory
+testcase-memory-start = "0x9000_0000"
+testcase-memory-size = "0x400_0000"    # 如果是要手动加载进来，认为镜像大小是64MB
+qemu-memory-size = "0x4000_0000"    # 如果用qemu挂载镜像，镜像大小认为是1G，但实际远小于1G
 # Linear mapping offset, for quick conversions between physical and virtual
 # addresses.
 phys-virt-offset = "0xffff_ffc0_0000_0000"
@@ -47,4 +51,5 @@ pci-ranges = [
 ]
 
 # Timer interrupt frequency in Hz.
-timer-frequency = "10_000_000"      # 10MHz
+timer-frequency = "1_000_000"      # 10MHz
+

@@ -13,6 +13,10 @@ phys-memory-size = "0"
 kernel-base-paddr = "0"
 # Base virtual address of the kernel image.
 kernel-base-vaddr = "0"
+# Testcase memory
+testcase-memory-start = "0"
+testcase-memory-size = "0"  
+qemu-memory-size = "0" 
 # Linear mapping offset, for quick conversions between physical and virtual
 # addresses.
 phys-virt-offset = "0"

@@ -1,6 +1,7 @@
 use core::{slice::from_raw_parts_mut, time::Duration};
 
 use axhal::time::{current_time, current_time_nanos, nanos_to_ticks, NANOS_PER_SEC};
+
 use axprocess::{current_process, current_task, time_stat_output};
 use rand::{rngs::SmallRng, Fill, SeedableRng};
 
@@ -39,7 +40,6 @@ pub fn syscall_get_time_of_day(ts: *mut TimeVal) -> isize {
 pub fn syscall_clock_get_time(_clock_id: usize, ts: *mut TimeSecs) -> isize {
     unsafe {
         (*ts) = TimeSecs::now();
-        // info!("ts: {:?}", *ts);
     }
     0
 }

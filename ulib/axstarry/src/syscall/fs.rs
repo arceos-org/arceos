@@ -1143,7 +1143,6 @@ pub fn syscall_lseek(fd: usize, offset: isize, whence: usize) -> isize {
     }
     let fd_table = process.fd_manager.fd_table.lock();
     if let Some(file) = fd_table[fd].as_ref() {
-        info!("size: {}", file.get_stat().unwrap().st_size);
         if file.get_type() == FileIOType::DirDesc {
             debug!("fd is a dir");
             return ErrorNo::EISDIR as isize;
@@ -1401,6 +1400,7 @@ pub fn syscall_copyfilerange(
     if !off_in.is_null() {
         in_file.seek(SeekFrom::Start(in_offset as u64)).unwrap();
     }
+
     if !off_out.is_null() {
         out_file.seek(SeekFrom::Start(out_offset as u64)).unwrap();
     }

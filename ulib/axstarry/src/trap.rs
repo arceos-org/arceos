@@ -11,6 +11,7 @@ impl axhal::trap::TrapHandler for TrapHandlerImpl {
         {
             let guard = kernel_guard::NoPreempt::new();
             // trap进来，统计时间信息
+            // 只有当trap是来自用户态才进行统计
             axprocess::time_stat_from_user_to_kernel();
             axhal::irq::dispatch_irq(_irq_num);
             axprocess::time_stat_from_kernel_to_user();
@@ -29,21 +30,14 @@ impl axhal::trap::TrapHandler for TrapHandlerImpl {
     fn handle_page_fault(addr: VirtAddr, flags: MappingFlags, tf: &mut TrapFrame) {
         use axhal::arch::SIGNAL_RETURN_TRAP;
         use axprocess::handle_page_fault;
-        use axsignal::signal_no::SignalNo;
-        use axtask::current;
         axprocess::time_stat_from_user_to_kernel();
-        use crate::syscall::signal::{syscall_sigreturn, syscall_tkill};
+        use crate::syscall::signal::syscall_sigreturn;
         if addr.as_usize() == SIGNAL_RETURN_TRAP {
             // 说明是信号执行完毕，此时应当执行sig return
             tf.regs.a0 = syscall_sigreturn() as usize;
             return;
         }
-        if handle_page_fault(addr, flags).is_err() {
-            // 如果处理失败，则发出sigsegv信号
-            let curr = current().id().as_u64() as isize;
-            axlog::error!("kill task: {}", curr);
-            syscall_tkill(curr, SignalNo::SIGSEGV as isize);
-        }
+        handle_page_fault(addr, flags);
         axprocess::time_stat_from_kernel_to_user();
     }
 

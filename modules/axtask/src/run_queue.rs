@@ -35,6 +35,8 @@ impl AxRunQueue {
             KERNEL_PROCESS_ID,
             #[cfg(feature = "monolithic")]
             0,
+            #[cfg(feature = "monolithic")]
+            false,
         );
         let mut scheduler = Scheduler::new();
         scheduler.add_task(gc_task);
@@ -275,6 +277,8 @@ pub(crate) fn init() {
         KERNEL_PROCESS_ID,
         #[cfg(feature = "monolithic")]
         0,
+        #[cfg(feature = "monolithic")]
+        false,
     );
     IDLE_TASK.with_current(|i| i.init_by(idle_task.clone()));
 

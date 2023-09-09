@@ -124,7 +124,6 @@ impl UdpSocket {
     /// It will return [`Err(Timeout)`](AxError::Timeout) if expired.
     pub fn recv_from_timeout(&self, buf: &mut [u8], ticks: u64) -> AxResult<(usize, SocketAddr)> {
         let expire_at = current_ticks() + ticks;
-
         self.recv_impl(|socket| match socket.recv_slice(buf) {
             Ok((len, meta)) => Ok((len, into_core_sockaddr(meta.endpoint))),
             Err(_) => {
@@ -257,7 +256,6 @@ impl UdpSocket {
         if self.local_addr.read().is_none() {
             return ax_err!(NotConnected, "socket send() failed");
         }
-
         self.block_on(|| {
             SOCKET_SET.with_socket_mut::<udp::Socket, _, _>(self.handle, |socket| {
                 if socket.can_recv() {

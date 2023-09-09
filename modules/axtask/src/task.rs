@@ -137,6 +137,10 @@ pub struct TaskInner {
 
     #[cfg(feature = "monolithic")]
     pub sched_status: UnsafeCell<SchedStatus>,
+
+    #[cfg(feature = "monolithic")]
+    /// 退出时是否向父进程发送SIG_CHILD
+    pub send_sigchld_when_exit: bool,
 }
 static ID_COUNTER: AtomicU64 = AtomicU64::new(1);
 impl TaskId {
@@ -392,6 +396,10 @@ impl TaskInner {
         let status = self.sched_status.get();
         unsafe { *status }
     }
+
+    pub fn get_sig_child(&self) -> bool {
+        self.send_sigchld_when_exit
+    }
 }
 
 // private methods
@@ -443,11 +451,14 @@ impl TaskInner {
              // 一开始默认都可以运行在每个CPU上
             cpu_set: AtomicU64::new(((1 << SMP) - 1) as u64),
 
-             #[cfg(feature = "monolithic")]
+            #[cfg(feature = "monolithic")]
             sched_status: UnsafeCell::new(SchedStatus {
                 policy: SchedPolicy::SCHED_FIFO,
                 priority: 1,
             }),
+
+            #[cfg(feature = "monolithic")]
+            send_sigchld_when_exit: false,
         }
     }
 
@@ -458,6 +469,7 @@ impl TaskInner {
         stack_size: usize,
         #[cfg(feature = "monolithic")] process_id: u64,
         #[cfg(feature = "monolithic")] page_table_token: usize,
+        #[cfg(feature = "monolithic")] sig_child: bool,
     ) -> AxTaskRef
     where
         F: FnOnce() + Send + 'static,
@@ -477,6 +489,9 @@ impl TaskInner {
         #[cfg(not(feature = "tls"))]
         let tls = VirtAddr::from(0);
         t.entry = Some(Box::into_raw(Box::new(entry)));
+
+        #[cfg(feature = "monolithic")]
+        t.send_sigchld_when_exit = sig_child;
 
         #[cfg(feature = "monolithic")]
         // 需要修改ctx存储的栈地址，否则内核trap上下文会被修改
@@ -742,6 +757,8 @@ pub fn first_into_user(kernel_sp: usize, frame_base: usize) -> ! {
         core::arch::asm!(
             r"
             mv      sp, {frame_base}
+            .short  0x2432                      // fld fs0,264(sp)
+            .short  0x24d2                      // fld fs1,272(sp)
             mv      t1, {kernel_base}
             LDR     t0, sp, 2
             STR     gp, t1, 2
@@ -785,6 +802,8 @@ extern "C" fn task_entry() -> ! {
                     let kernel_sp = task.get_kernel_stack_top().unwrap();
                     let frame_address = task.get_first_trap_frame();
                     // 切换页表已经在switch实现了
+                    // 记得更新时间
+                    task.time_stat_from_kernel_to_user();
                     first_into_user(kernel_sp, frame_address as usize);
                 }
             }

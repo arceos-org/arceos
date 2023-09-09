@@ -46,7 +46,16 @@ impl FileIO for FileDesc {
     }
 
     fn write(&self, buf: &[u8]) -> AxResult<usize> {
-        self.file.lock().write(buf)
+        // 如果seek时超出了文件原有大小，则在write的时候进行补零操作
+        let mut file = self.file.lock();
+        let old_offset = file.seek(SeekFrom::Current(0)).unwrap();
+        let size = file.metadata().unwrap().size();
+        if old_offset > size {
+            file.seek(SeekFrom::Start(size)).unwrap();
+            let temp_buf: Vec<u8> = vec![0u8; (old_offset - size) as usize];
+            file.write(&temp_buf)?;
+        }
+        file.write(buf)
     }
 
     fn flush(&self) -> AxResult {

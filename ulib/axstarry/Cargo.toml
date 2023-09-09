@@ -8,10 +8,13 @@ edition = "2021"
 [features]
 default = ["monolithic"]
 
-monolithic = ["arceos_api/monolithic", "axfeat/monolithic", "paging", "fs", "multitask", "irq", "signal"]
+monolithic = ["arceos_api/monolithic", "axfeat/monolithic", "paging", "fs", "net", "multitask", "irq", "signal"]
+
+img = ["axruntime/img"]
 
 # Multicore
 smp = ["axfeat/smp", "spinlock/smp"]
+
 
 # Floating point/SIMD
 fp_simd = ["axfeat/fp_simd"]
@@ -38,6 +41,10 @@ display = ["arceos_api/display", "axfeat/display"]
 
 # Fs
 fs = ["axruntime/fs", "arceos_api/fs"]
+
+# Networking
+net = ["arceos_api/net", "axfeat/net"]
+dns = []
 
 # Signal
 signal = ["axruntime/signal"]
