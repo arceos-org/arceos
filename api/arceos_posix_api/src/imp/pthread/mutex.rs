@@ -1,6 +1,8 @@
 use crate::{ctypes, utils::check_null_mut_ptr};
+
 use axerrno::LinuxResult;
-use axstd::sync::Mutex;
+use axsync::Mutex;
+
 use core::ffi::c_int;
 use core::mem::{size_of, ManuallyDrop};
 
@@ -29,37 +31,40 @@ impl PthreadMutex {
 }
 
 /// Initialize a mutex.
-#[no_mangle]
-pub unsafe extern "C" fn ax_pthread_mutex_init(
+pub fn sys_pthread_mutex_init(
     mutex: *mut ctypes::pthread_mutex_t,
     _attr: *const ctypes::pthread_mutexattr_t,
 ) -> c_int {
-    debug!("ax_pthread_mutex_init <= {:#x}", mutex as usize);
-    ax_call_body!(ax_pthread_mutex_init, {
+    debug!("sys_pthread_mutex_init <= {:#x}", mutex as usize);
+    syscall_body!(sys_pthread_mutex_init, {
         check_null_mut_ptr(mutex)?;
-        mutex.cast::<PthreadMutex>().write(PthreadMutex::new());
+        unsafe {
+            mutex.cast::<PthreadMutex>().write(PthreadMutex::new());
+        }
         Ok(0)
     })
 }
 
 /// Lock the given mutex.
-#[no_mangle]
-pub unsafe extern "C" fn ax_pthread_mutex_lock(mutex: *mut ctypes::pthread_mutex_t) -> c_int {
-    debug!("ax_pthread_mutex_lock <= {:#x}", mutex as usize);
-    ax_call_body!(ax_pthread_mutex_lock, {
+pub fn sys_pthread_mutex_lock(mutex: *mut ctypes::pthread_mutex_t) -> c_int {
+    debug!("sys_pthread_mutex_lock <= {:#x}", mutex as usize);
+    syscall_body!(sys_pthread_mutex_lock, {
         check_null_mut_ptr(mutex)?;
-        (*mutex.cast::<PthreadMutex>()).lock()?;
+        unsafe {
+            (*mutex.cast::<PthreadMutex>()).lock()?;
+        }
         Ok(0)
     })
 }
 
 /// Unlock the given mutex.
-#[no_mangle]
-pub unsafe extern "C" fn ax_pthread_mutex_unlock(mutex: *mut ctypes::pthread_mutex_t) -> c_int {
-    debug!("ax_pthread_mutex_unlock <= {:#x}", mutex as usize);
-    ax_call_body!(ax_pthread_mutex_unlock, {
+pub fn sys_pthread_mutex_unlock(mutex: *mut ctypes::pthread_mutex_t) -> c_int {
+    debug!("sys_pthread_mutex_unlock <= {:#x}", mutex as usize);
+    syscall_body!(sys_pthread_mutex_unlock, {
         check_null_mut_ptr(mutex)?;
-        (*mutex.cast::<PthreadMutex>()).unlock()?;
+        unsafe {
+            (*mutex.cast::<PthreadMutex>()).unlock()?;
+        }
         Ok(0)
     })
 }

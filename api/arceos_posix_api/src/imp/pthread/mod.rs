@@ -6,7 +6,7 @@ use axerrno::{LinuxError, LinuxResult};
 use axtask::AxTaskRef;
 use spin::RwLock;
 
-use super::ctypes;
+use crate::ctypes;
 
 pub mod mutex;
 
@@ -103,18 +103,8 @@ impl Pthread {
     }
 }
 
-/// Get current thread ID.
-#[no_mangle]
-pub unsafe extern "C" fn ax_getpid() -> c_int {
-    ax_call_body!(ax_getpid, {
-        let pid = axtask::current().id().as_u64() as c_int;
-        Ok(pid)
-    })
-}
-
 /// Returns the `pthread` struct of current thread.
-#[no_mangle]
-pub unsafe extern "C" fn ax_pthread_self() -> ctypes::pthread_t {
+pub fn sys_pthread_self() -> ctypes::pthread_t {
     Pthread::current().expect("fail to get current thread") as *const Pthread as _
 }
 
@@ -122,18 +112,17 @@ pub unsafe extern "C" fn ax_pthread_self() -> ctypes::pthread_t {
 ///
 /// If successful, it stores the pointer to the newly created `struct __pthread`
 /// in `res` and returns 0.
-#[no_mangle]
-pub unsafe extern "C" fn ax_pthread_create(
+pub unsafe fn sys_pthread_create(
     res: *mut ctypes::pthread_t,
     attr: *const ctypes::pthread_attr_t,
     start_routine: extern "C" fn(arg: *mut c_void) -> *mut c_void,
     arg: *mut c_void,
 ) -> c_int {
     debug!(
-        "ax_pthread_create <= {:#x}, {:#x}",
+        "sys_pthread_create <= {:#x}, {:#x}",
         start_routine as usize, arg as usize
     );
-    ax_call_body!(ax_pthread_create, {
+    syscall_body!(sys_pthread_create, {
         let ptr = Pthread::create(attr, start_routine, arg)?;
         unsafe { core::ptr::write(res, ptr) };
         Ok(0)
@@ -141,20 +130,15 @@ pub unsafe extern "C" fn ax_pthread_create(
 }
 
 /// Exits the current thread. The value `retval` will be returned to the joiner.
-#[no_mangle]
-pub unsafe extern "C" fn ax_pthread_exit(retval: *mut c_void) -> ! {
-    debug!("ax_pthread_exit <= {:#x}", retval as usize);
+pub fn sys_pthread_exit(retval: *mut c_void) -> ! {
+    debug!("sys_pthread_exit <= {:#x}", retval as usize);
     Pthread::exit_current(retval);
 }
 
 /// Waits for the given thread to exit, and stores the return value in `retval`.
-#[no_mangle]
-pub unsafe extern "C" fn ax_pthread_join(
-    thread: ctypes::pthread_t,
-    retval: *mut *mut c_void,
-) -> c_int {
-    debug!("ax_pthread_join <= {:#x}", retval as usize);
-    ax_call_body!(ax_pthread_join, {
+pub unsafe fn sys_pthread_join(thread: ctypes::pthread_t, retval: *mut *mut c_void) -> c_int {
+    debug!("sys_pthread_join <= {:#x}", retval as usize);
+    syscall_body!(sys_pthread_join, {
         let ret = Pthread::join(thread)?;
         if !retval.is_null() {
             unsafe { core::ptr::write(retval, ret) };

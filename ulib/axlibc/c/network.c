@@ -1,6 +1,5 @@
 #ifdef AX_CONFIG_NET
 
-#include <axlibc.h>
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
@@ -13,39 +12,6 @@
 #include <netinet/in.h>
 
 int h_errno;
-
-/*Only IPv4. Ports are always 0. Ignore service and hint. Results' ai_flags, ai_socktype,
- * ai_protocol and ai_canonname are 0 or NULL.  */
-int getaddrinfo(const char *__restrict node, const char *__restrict service,
-                const struct addrinfo *__restrict hints, struct addrinfo **__restrict res)
-{
-    struct sockaddr *addrs = (struct sockaddr *)malloc(MAXADDRS * sizeof(struct sockaddr));
-    int res_len = ax_getaddrinfo(node, service, addrs, MAXADDRS);
-    if (res_len < 0)
-        return EAI_FAIL;
-    if (res_len == 0)
-        return EAI_NONAME;
-    struct addrinfo *_res = (struct addrinfo *)calloc(res_len, sizeof(struct addrinfo));
-    for (int i = 0; i < res_len; i++) {
-        (_res + i)->ai_family = AF_INET;
-        (_res + i)->ai_addrlen = sizeof(struct sockaddr);
-        (_res + i)->ai_addr = (addrs + i);
-        (_res + i)->ai_next = (_res + i + 1);
-        // TODO: This is a hard-code part, only return TCP parameters
-        (_res + i)->ai_socktype = SOCK_STREAM;
-        (_res + i)->ai_protocol = IPPROTO_TCP;
-    }
-    (_res + res_len - 1)->ai_next = NULL;
-    *res = _res;
-    return 0;
-}
-
-void freeaddrinfo(struct addrinfo *__restrict res)
-{
-    free(res->ai_addr);
-    free(res);
-    return;
-}
 
 static const char gai_msgs[] = "Invalid flags\0"
                                "Name does not resolve\0"

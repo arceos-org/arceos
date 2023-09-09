@@ -1,8 +1,9 @@
-use axerrno::{LinuxError, LinuxResult};
-use axhal::time::current_time;
 use core::ffi::c_int;
 
-use crate::{ctypes, fd_ops::get_file_like};
+use axerrno::{LinuxError, LinuxResult};
+use axhal::time::current_time;
+
+use crate::{ctypes, imp::fd_ops::get_file_like};
 
 const FD_SETSIZE: usize = 1024;
 const BITS_PER_USIZE: usize = usize::BITS as usize;
@@ -107,8 +108,7 @@ impl FdSets {
 }
 
 /// Monitor multiple file descriptors, waiting until one or more of the file descriptors become "ready" for some class of I/O operation
-#[no_mangle]
-pub unsafe extern "C" fn ax_select(
+pub unsafe fn sys_select(
     nfds: c_int,
     readfds: *mut ctypes::fd_set,
     writefds: *mut ctypes::fd_set,
@@ -116,20 +116,22 @@ pub unsafe extern "C" fn ax_select(
     timeout: *mut ctypes::timeval,
 ) -> c_int {
     debug!(
-        "ax_select <= {} {:#x} {:#x} {:#x}",
+        "sys_select <= {} {:#x} {:#x} {:#x}",
         nfds, readfds as usize, writefds as usize, exceptfds as usize
     );
-    ax_call_body!(ax_select, {
+    syscall_body!(sys_select, {
         if nfds < 0 {
             return Err(LinuxError::EINVAL);
         }
         let nfds = (nfds as usize).min(FD_SETSIZE);
-        let deadline = timeout.as_ref().map(|t| current_time() + (*t).into());
+        let deadline = unsafe { timeout.as_ref().map(|t| current_time() + (*t).into()) };
         let fd_sets = FdSets::from(nfds, readfds, writefds, exceptfds);
 
-        zero_fd_set(readfds, nfds);
-        zero_fd_set(writefds, nfds);
-        zero_fd_set(exceptfds, nfds);
+        unsafe {
+            zero_fd_set(readfds, nfds);
+            zero_fd_set(writefds, nfds);
+            zero_fd_set(exceptfds, nfds);
+        }
 
         loop {
             #[cfg(feature = "net")]
@@ -143,7 +145,7 @@ pub unsafe extern "C" fn ax_select(
                 debug!("    timeout!");
                 return Ok(0);
             }
-            axstd::thread::yield_now();
+            crate::sys_sched_yield();
         }
     })
 }
