@@ -2,7 +2,7 @@
 name = "axnet"
 version = "0.1.0"
 edition = "2021"
-authors = ["Yuekai Jia <equation618@gmail.com>"]
+authors = ["Yuekai Jia <equation618@gmail.com>", "ChengXiang Qi <kuangjux@outlook.com>"]
 description = "ArceOS network module"
 license = "GPL-3.0-or-later OR Apache-2.0"
 homepage = "https://github.com/rcore-os/arceos"
@@ -16,13 +16,13 @@ default = ["smoltcp"]
 [dependencies]
 log = "0.4"
 cfg-if = "1.0"
+spin = "0.9"
 driver_net = { path = "../../crates/driver_net" }
 lazy_init = { path = "../../crates/lazy_init" }
 axerrno = { path = "../../crates/axerrno" }
 axhal = { path = "../axhal" }
-axsync = { path = "../axsync", default-features = false }
-axtask = { path = "../axtask", default-features = false }
-axprocess = { path = "../axprocess", default-features = false }
+axsync = { path = "../axsync" }
+axtask = { path = "../axtask" }
 axdriver = { path = "../axdriver", features = ["net"] }
 axio = { path = "../../crates/axio" }
 
@@ -33,7 +33,6 @@ default-features = false
 features = [
   "alloc", "log",   # no std
   "medium-ethernet",
-  "medium-ip",
   "proto-ipv4",
   "socket-raw", "socket-icmp", "socket-udp", "socket-tcp", "socket-dns",
   # "fragmentation-buffer-size-65536", "proto-ipv4-fragmentation",

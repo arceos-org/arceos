@@ -1,7 +1,4 @@
-#![no_std]
-#![feature(drain_filter)]
-#![feature(btree_drain_filter)]
-
+#![cfg_attr(not(test), no_std)]
 mod area;
 mod backend;
 mod shared;
@@ -338,7 +335,8 @@ impl MemorySet {
                 Some(data),
                 backend,
                 &mut self.page_table,
-            ),
+            )
+            .unwrap(),
             None => MapArea::new_lazy(vaddr, num_pages, flags, backend, &mut self.page_table),
         };
 
@@ -363,10 +361,22 @@ impl MemorySet {
 
         // Note: Some areas will have to shrink its left part, so its key in BTree (start vaddr) have to change.
         // We get all the overlapped areas out first.
-        let overlapped_area: Vec<_> = self
-            .owned_mem
-            .drain_filter(|_, area| area.overlap_with(start, end))
-            .collect();
+
+        // UPDATE: draif_filter is an unstable feature, so we implement it manually.
+        let mut overlapped_area: Vec<(usize, MapArea)> = Vec::new();
+
+        let mut prev_area: BTreeMap<usize, MapArea> = BTreeMap::new();
+
+        for _ in 0..self.owned_mem.len() {
+            let (idx, area) = self.owned_mem.pop_first().unwrap();
+            if area.overlap_with(start, end) {
+                overlapped_area.push((idx, area));
+            } else {
+                prev_area.insert(idx, area);
+            }
+        }
+
+        self.owned_mem = prev_area;
 
         info!("splitting for [{:?}, {:?})", start, end);
 
@@ -541,10 +551,20 @@ impl MemorySet {
         // NOTE: There will be new areas but all old aree's start address won't change. But we
         // can't iterating through `value_mut()` while `insert()` to BTree at the same time, so we
         // `drain_filter()` out the overlapped areas first.
-        let overlapped_area: Vec<_> = self
-            .owned_mem
-            .drain_filter(|_, area| area.overlap_with(start, end))
-            .collect();
+        let mut overlapped_area: Vec<(usize, MapArea)> = Vec::new();
+
+        let mut prev_area: BTreeMap<usize, MapArea> = BTreeMap::new();
+
+        for _ in 0..self.owned_mem.len() {
+            let (idx, area) = self.owned_mem.pop_first().unwrap();
+            if area.overlap_with(start, end) {
+                overlapped_area.push((idx, area));
+            } else {
+                prev_area.insert(idx, area);
+            }
+        }
+
+        self.owned_mem = prev_area;
 
         for (_, mut area) in overlapped_area {
             if area.contained_in(start, end) {
@@ -592,7 +612,7 @@ impl MemorySet {
                 Ok(())
             }
             None => {
-                error!(
+                warn!(
                     "Page fault address {:?} not found in memory set sepc: {:X?}",
                     addr,
                     riscv::register::sepc::read()
@@ -726,8 +746,8 @@ impl MemorySet {
     }
 }
 
-impl Clone for MemorySet {
-    fn clone(&self) -> Self {
+impl MemorySet {
+    pub fn clone(&self) -> AxResult<Self> {
         let mut page_table = PageTable::try_new().expect("Error allocating page table.");
 
         for r in memory_regions() {
@@ -741,11 +761,23 @@ impl Clone for MemorySet {
                 .expect("Error mapping kernel memory");
         }
 
-        let owned_mem = self
-            .owned_mem
-            .iter()
-            .map(|(vaddr, area)| (*vaddr, unsafe { area.clone_alloc(&mut page_table) }))
-            .collect();
+        // let owned_mem = self
+        //     .owned_mem
+        //     .iter()
+        //     .map(|(vaddr, area)| (*vaddr, unsafe { area.clone_alloc(&mut page_table)? }))
+        //     .collect();
+        let mut owned_mem: BTreeMap<usize, MapArea> = BTreeMap::new();
+        for (vaddr, area) in self.owned_mem.iter() {
+            unsafe {
+                match area.clone_alloc(&mut page_table) {
+                    Ok(new_area) => {
+                        owned_mem.insert(*vaddr, new_area);
+                        Ok(())
+                    }
+                    Err(err) => Err(err),
+                }?;
+            }
+        }
 
         let mut new_memory = Self {
             page_table,
@@ -761,7 +793,7 @@ impl Clone for MemorySet {
             new_memory.attach_shared_mem(mem.clone(), addr.clone(), flags.clone());
         }
 
-        new_memory
+        Ok(new_memory)
     }
 }
 

@@ -28,9 +28,6 @@ ifeq ($(BSP),rpi4)
     RUSTC_MISC_ARGS   = -C target-cpu=cortex-a72
 endif
 
-# Export for build.rs.
-export LD_SCRIPT_PATH
-
 EXEC_MINIPUSH      = ruby tools/raspi4/common/serial/minipush.rb
 
 ##------------------------------------------------------------------------------
@@ -92,3 +89,6 @@ openocd:
 ## Start GDB session
 ##------------------------------------------------------------------------------
 gdb: RUSTC_MISC_ARGS += -C debuginfo=2
+gdb: $(KERNEL_ELF)
+	$(call color_header, "Launching GDB")
+	@$(DOCKER_GDB) gdb-multiarch -q $(KERNEL_ELF)

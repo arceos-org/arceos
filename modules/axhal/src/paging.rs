@@ -23,6 +23,9 @@ impl From<MemRegionFlags> for MappingFlags {
         if f.contains(MemRegionFlags::DEVICE) {
             ret |= Self::DEVICE;
         }
+        if f.contains(MemRegionFlags::UNCACHED) {
+            ret |= Self::UNCACHED;
+        }
         ret
     }
 }

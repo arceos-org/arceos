@@ -28,4 +28,5 @@ $(APP)/%.c:
 	@echo "Download iperf source code"
 	wget https://downloads.es.net/pub/iperf/$(iperf_pkg).tar.gz -P $(APP)
 	tar -zxvf $(APP)/$(iperf_pkg).tar.gz -C $(APP) && rm -f $(APP)/$(iperf_pkg).tar.gz
+	cd $(iperf_dir) && git init && git add .
 	patch -p1 -N -d $(iperf_dir) --no-backup-if-mismatch -r - < $(APP)/iperf.patch

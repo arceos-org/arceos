@@ -1,10 +1,10 @@
-rm sdcard.img
-dd if=/dev/zero of=sdcard.img bs=3M count=16
-mkfs.vfat -F 32 sdcard.img
+rm disk.img
+dd if=/dev/zero of=disk.img bs=3M count=24
+mkfs.vfat -F 32 disk.img
 mkdir -p mnt
-sudo mount sdcard.img mnt
+sudo mount disk.img mnt
 # 根据命令行参数生成对应的测例
 sudo cp -r ./testcases/$1/* ./mnt/
 sudo umount mnt
 rm -rf mnt
-sudo chmod 777 sdcard.img
+sudo chmod 777 disk.img

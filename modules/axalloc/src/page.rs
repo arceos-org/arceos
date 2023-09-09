@@ -1,8 +1,10 @@
 use allocator::AllocError;
 use axerrno::{AxError, AxResult};
 use memory_addr::{PhysAddr, VirtAddr};
-extern crate alloc;
+
 use crate::{global_allocator, PAGE_SIZE};
+
+extern crate alloc;
 use alloc::vec::Vec;
 
 /// A RAII wrapper of contiguous 4K-sized pages.
@@ -99,6 +101,15 @@ impl Drop for GlobalPage {
     }
 }
 
+const fn alloc_err_to_ax_err(e: AllocError) -> AxError {
+    match e {
+        AllocError::InvalidParam | AllocError::MemoryOverlap | AllocError::NotAllocated => {
+            AxError::InvalidInput
+        }
+        AllocError::NoMemory => AxError::NoMemory,
+    }
+}
+
 /// A safe wrapper of a single 4K page.
 /// It holds the page's VirtAddr (PhysAddr + offset)
 pub struct PhysPage {
@@ -171,14 +182,5 @@ impl PhysPage {
 impl Drop for PhysPage {
     fn drop(&mut self) {
         global_allocator().dealloc_pages(self.start_vaddr.into(), 1);
-    }
-}
-
-const fn alloc_err_to_ax_err(e: AllocError) -> AxError {
-    match e {
-        AllocError::InvalidParam | AllocError::MemoryOverlap | AllocError::NotAllocated => {
-            AxError::InvalidInput
-        }
-        AllocError::NoMemory => AxError::NoMemory,
     }
 }

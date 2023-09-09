@@ -1,37 +1,43 @@
-use alloc::collections::VecDeque;
+use alloc::collections::{BTreeSet, VecDeque};
 use alloc::sync::Arc;
+use axhal::cpu::this_cpu_id;
+#[cfg(feature = "monolithic")]
+use axhal::KERNEL_PROCESS_ID;
 use lazy_init::LazyInit;
 use scheduler::BaseScheduler;
 use spinlock::SpinNoIrq;
 
-cfg_if::cfg_if! {
-    if #[cfg(feature = "monolithic")]  {
-        pub use crate::monolithic_task::task::{CurrentTask, TaskState};
-    } else {
-        pub use crate::task::{CurrentTask, TaskState};
-    }
-}
-
+use crate::task::{CurrentTask, TaskState};
 use crate::{AxTaskRef, Scheduler, TaskInner, WaitQueue};
 
 // TODO: per-CPU
-pub(crate) static RUN_QUEUE: LazyInit<SpinNoIrq<AxRunQueue>> = LazyInit::new();
+pub static RUN_QUEUE: LazyInit<SpinNoIrq<AxRunQueue>> = LazyInit::new();
 
 // TODO: per-CPU
-static EXITED_TASKS: SpinNoIrq<VecDeque<AxTaskRef>> = SpinNoIrq::new(VecDeque::new());
+pub static EXITED_TASKS: SpinNoIrq<VecDeque<AxTaskRef>> = SpinNoIrq::new(VecDeque::new());
 
 static WAIT_FOR_EXIT: WaitQueue = WaitQueue::new();
 
 #[percpu::def_percpu]
-static IDLE_TASK: LazyInit<AxTaskRef> = LazyInit::new();
+pub static IDLE_TASK: LazyInit<AxTaskRef> = LazyInit::new();
 
-pub(crate) struct AxRunQueue {
+pub struct AxRunQueue {
     scheduler: Scheduler,
 }
 
 impl AxRunQueue {
     pub fn new() -> SpinNoIrq<Self> {
-        let gc_task = TaskInner::new(gc_entry, "gc".into(), axconfig::TASK_STACK_SIZE);
+        let gc_task = TaskInner::new(
+            gc_entry,
+            "gc".into(),
+            axconfig::TASK_STACK_SIZE,
+            #[cfg(feature = "monolithic")]
+            KERNEL_PROCESS_ID,
+            #[cfg(feature = "monolithic")]
+            0,
+            #[cfg(feature = "monolithic")]
+            false,
+        );
         let mut scheduler = Scheduler::new();
         scheduler.add_task(gc_task);
         SpinNoIrq::new(Self { scheduler })
@@ -54,7 +60,7 @@ impl AxRunQueue {
 
     pub fn yield_current(&mut self) {
         let curr = crate::current();
-        trace!("task yield: {}", curr.id_name());
+        debug!("task yield: {}", curr.id_name());
         assert!(curr.is_running());
         self.resched(false);
     }
@@ -104,6 +110,21 @@ impl AxRunQueue {
             self.resched(false);
         }
         unreachable!("task exited!");
+    }
+
+    #[cfg(feature = "monolithic")]
+    /// 仅用于exec与exit时清除其他后台线程
+    pub fn remove_task(&mut self, task: &AxTaskRef) {
+        debug!("task remove: {}", task.id_name());
+        // 当前任务不予清除
+        // assert!(!task.is_running());
+        assert!(!task.is_running());
+        assert!(!task.is_idle());
+        if task.is_ready() {
+            task.set_state(TaskState::Exited);
+            EXITED_TASKS.lock().push_back(task.clone());
+            self.scheduler.remove_task(task);
+        }
     }
 
     pub fn block_current<F>(&mut self, wait_queue_push: F)
@@ -163,10 +184,31 @@ impl AxRunQueue {
                 self.scheduler.put_prev_task(prev.clone(), preempt);
             }
         }
-        let next = self.scheduler.pick_next_task().unwrap_or_else(|| unsafe {
-            // Safety: IRQs must be disabled at this time.
-            IDLE_TASK.current_ref_raw().get_unchecked().clone()
-        });
+        let mut task_set = BTreeSet::new();
+        let next = loop {
+            let task = self.scheduler.pick_next_task();
+            if task.is_none() {
+                break unsafe {
+                    // Safety: IRQs must be disabled at this time.
+                    IDLE_TASK.current_ref_raw().get_unchecked().clone()
+                };
+            }
+            let task = task.unwrap();
+            // 原先队列有任务，但是全部不满足CPU适配集，则还是返回IDLE
+            if task_set.contains(&task.id().as_u64()) {
+                break unsafe {
+                    // Safety: IRQs must be disabled at this time.
+                    IDLE_TASK.current_ref_raw().get_unchecked().clone()
+                };
+            }
+            let mask = task.get_cpu_set();
+            let curr_cpu = this_cpu_id();
+            if mask & (1 << curr_cpu) != 0 {
+                break task;
+            }
+            task_set.insert(task.id().as_u64());
+            self.scheduler.put_prev_task(task, false);
+        };
         self.switch_to(prev, next);
     }
 
@@ -182,7 +224,9 @@ impl AxRunQueue {
         if prev_task.ptr_eq(&next_task) {
             return;
         }
-
+        // 当任务进行切换时，更新两个任务的时间统计信息
+        next_task.time_stat_when_switch_to();
+        prev_task.time_stat_when_switch_from();
         unsafe {
             let prev_ctx_ptr = prev_task.ctx_mut_ptr();
             let next_ctx_ptr = next_task.ctx_mut_ptr();
@@ -191,7 +235,10 @@ impl AxRunQueue {
             // but won't be dropped until `gc_entry()` is called.
             assert!(Arc::strong_count(prev_task.as_task_ref()) > 1);
             assert!(Arc::strong_count(&next_task) >= 1);
-
+            let page_table_token = next_task.page_table_token;
+            if page_table_token != 0 {
+                axhal::arch::write_page_table_root(page_table_token.into());
+            }
             CurrentTask::set_current(prev_task, next_task);
             (*prev_ctx_ptr).switch_to(&*next_ctx_ptr);
         }
@@ -222,7 +269,17 @@ fn gc_entry() {
 
 pub(crate) fn init() {
     const IDLE_TASK_STACK_SIZE: usize = 4096;
-    let idle_task = TaskInner::new(|| crate::run_idle(), "idle".into(), IDLE_TASK_STACK_SIZE);
+    let idle_task = TaskInner::new(
+        || crate::run_idle(),
+        "idle".into(),
+        IDLE_TASK_STACK_SIZE,
+        #[cfg(feature = "monolithic")]
+        KERNEL_PROCESS_ID,
+        #[cfg(feature = "monolithic")]
+        0,
+        #[cfg(feature = "monolithic")]
+        false,
+    );
     IDLE_TASK.with_current(|i| i.init_by(idle_task.clone()));
 
     let main_task = TaskInner::new_init("main".into());

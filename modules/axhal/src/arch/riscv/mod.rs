@@ -85,3 +85,25 @@ pub fn flush_tlb(vaddr: Option<VirtAddr>) {
 pub fn set_trap_vector_base(stvec: usize) {
     unsafe { stvec::write(stvec, stvec::TrapMode::Direct) }
 }
+
+/// Reads the thread pointer of the current CPU.
+///
+/// It is used to implement TLS (Thread Local Storage).
+#[inline]
+pub fn read_thread_pointer() -> usize {
+    let tp;
+    unsafe { core::arch::asm!("mv {}, tp", out(reg) tp) };
+    tp
+}
+
+/// Writes the thread pointer of the current CPU.
+///
+/// It is used to implement TLS (Thread Local Storage).
+///
+/// # Safety
+///
+/// This function is unsafe as it changes the CPU states.
+#[inline]
+pub unsafe fn write_thread_pointer(tp: usize) {
+    core::arch::asm!("mv tp, {}", in(reg) tp)
+}

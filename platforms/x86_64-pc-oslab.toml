@@ -1,0 +1,37 @@
+# Architecture identifier.
+arch = "x86_64"
+# Platform identifier.
+platform = "x86_64-pc-oslab"
+# Platform family.
+family = "x86-pc"
+
+# Base address of the whole physical memory.
+phys-memory-base = "0"
+# Size of the whole physical memory.
+phys-memory-size = "0x8000_0000"    # 2G
+# Base physical address of the kernel image.
+kernel-base-paddr = "0x20_0000"
+# Base virtual address of the kernel image.
+kernel-base-vaddr = "0xffff_ff80_0020_0000"
+# Linear mapping offset, for quick conversions between physical and virtual
+# addresses.
+phys-virt-offset = "0xffff_ff80_0000_0000"
+# MMIO regions with format (`base_paddr`, `size`).
+mmio-regions = [
+    ["0xfec0_0000", "0x1000"],      # IO APIC
+    ["0xfed0_0000", "0x1000"],      # HPET
+    ["0xfee0_0000", "0x1000"],      # Local APIC
+    ["0xf000_0000", "0x0800_0000"], # PCI config space
+    ["0xfcd8_0000", "0x0008_0000"], # Ixgbe BAR0
+]
+# VirtIO MMIO regions with format (`base_paddr`, `size`).
+virtio-mmio-regions = []
+# Base physical address of the PCIe ECAM space (should read from ACPI 'MCFG' table).
+pci-ecam-base = "0xf000_0000"
+# End PCI bus number.
+pci-bus-end = "0x7f"
+# PCI device memory ranges (not used on x86).
+pci-ranges = []
+
+# Timer interrupt frequencyin Hz.
+timer-frequency = "4_000_000_000"   # 4.0GHz

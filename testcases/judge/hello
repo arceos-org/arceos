@@ -1,1 +1,0 @@
-/home/coder/testsuits-for-oskernel/lmbench/bin/riscv64/lmbench_all hello "$@"

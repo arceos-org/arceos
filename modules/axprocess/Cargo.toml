@@ -2,33 +2,33 @@
 name = "axprocess"
 version = "0.1.0"
 edition = "2021"
-authors = ["Youjie Zheng <zyj578335934@gmail.com>"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-fs = []
-preempt = ["axtask/preempt"]
 
-signal = ["axhal/signal", "axsignal/signal"]
-monolithic = ["axhal/monolithic"]
+fs = ["axfs"]
 
-default = ["monolithic", "fs", "signal"]
+signal = ["axhal/signal", "axsignal/signal", "axtask/signal"]
+
+monolithic = ["fs", "axfs/monolithic", "signal"]
+
+default = []
 
 [dependencies]
 cfg-if = "1.0"
 spinlock = { path = "../../crates/spinlock" }
 axtask = { path = "../axtask" }
 axsync = { path = "../axsync" }
+axmem = { path = "../axmem" }
 axalloc = { path = "../axalloc" }
 axio = { path = "../../crates/axio", features = ["alloc"] }
 axhal = { path = "../axhal" }
 axlog = { path = "../axlog" }
-axmem = { path = "../axmem" }
 axerrno = { path = "../../crates/axerrno" }
 axconfig = { path = "../axconfig" }
-axfs = { path = "../axfs" }
-axsignal = { path = "../axsignal" }
+axfs = { path = "../axfs", optional = true }
+axsignal = { path = "../axsignal", optional = true }
 riscv = "0.10"
 bitflags = "2.0"
 lazy_static = { version = "1.4", features = ["spin_no_std"] }

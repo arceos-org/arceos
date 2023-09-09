@@ -2,30 +2,10 @@
 resolver = "2"
 
 members = [
-    "apps/display",
-    "apps/exception",
-    "apps/helloworld",
-    "apps/memtest",
-    "apps/fs/shell",
-    "apps/net/echoserver",
-    "apps/net/httpclient",
-    "apps/net/httpserver",
-    "apps/net/udpserver",
-    "apps/task/parallel",
-    "apps/task/sleep",
-    "apps/task/yield",
-    "apps/task/priority",
-    "apps/syscall/junior",
-    "apps/syscall/libc_static",
-    "apps/syscall/libc_dynamic",
-    "apps/syscall/lua",
-    "apps/syscall/busybox",
-    "apps/syscall/netperf",
-    "apps/syscall/iperf",
-
     "crates/allocator",
     "crates/arm_gic",
     "crates/arm_pl011",
+    "crates/dw_apb_uart",
     "crates/axerrno",
     "crates/axfs_devfs",
     "crates/axfs_ramfs",
@@ -67,13 +47,33 @@ members = [
     "modules/axruntime",
     "modules/axsync",
     "modules/axtask",
-    "modules/axmem",
     "modules/axprocess",
     "modules/axsignal",
 
-    "ulib/libax",
-    "ulib/starry_libax",
+    "api/axfeat",
+    "api/arceos_api",
+    
+    "api/arceos_posix_api",
 
+    "ulib/axstd",
+    "ulib/axlibc",
+    "ulib/axstarry",
+    "apps/display",
+    "apps/exception",
+    "apps/helloworld",
+    "apps/memtest",
+    "apps/fs/shell",
+    "apps/net/echoserver",
+    "apps/net/httpclient",
+    "apps/net/httpserver",
+    "apps/net/udpserver",
+    "apps/net/bwbench",
+    "apps/task/parallel",
+    "apps/task/sleep",
+    "apps/task/yield",
+    "apps/task/priority",
+    "apps/task/tls",
+    "apps/oscomp",
 ]
 
 [profile.release]
@@ -81,6 +81,3 @@ lto = true
 
 [patch.crates-io]
 crate_interface = { path = "crates/crate_interface" }
-
-[patch."https://github.com/rcore-os/smoltcp.git"]
-smoltcp = { git = "https://github.com/c0per/smoltcp", branch = "starryos" }

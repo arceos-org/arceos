@@ -2,7 +2,6 @@
 use crate::{prelude::*, AllDevices};
 
 impl AllDevices {
-    #[allow(unused)]
     pub(crate) fn probe_bus_devices(&mut self) {
         // TODO: parse device tree
         #[cfg(feature = "virtio")]

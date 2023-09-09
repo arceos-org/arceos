@@ -8,9 +8,7 @@
 //!
 //! - [`TcpSocket`]: A TCP socket that provides POSIX-like APIs.
 //! - [`UdpSocket`]: A UDP socket that provides POSIX-like APIs.
-//! - [`IpAddr`], [`Ipv4Addr`]: IP addresses (either v4 or v6) and IPv4 addresses.
-//! - [`SocketAddr`]: IP address with a port number.
-//! - [`resolve_socket_addr`]: Function for DNS query.
+//! - [`dns_query`]: Function for DNS query.
 //!
 //! # Cargo Features
 //!
@@ -20,6 +18,7 @@
 //! [smoltcp]: https://github.com/smoltcp-rs/smoltcp
 
 #![no_std]
+#![feature(ip_in_core)]
 #![feature(new_uninit)]
 
 #[macro_use]
@@ -35,17 +34,18 @@ cfg_if::cfg_if! {
 
 pub use self::net_impl::TcpSocket;
 pub use self::net_impl::UdpSocket;
-pub use self::net_impl::{poll_interfaces, resolve_socket_addr};
+pub use self::net_impl::{bench_receive, bench_transmit};
+pub use self::net_impl::{dns_query, from_core_sockaddr, into_core_sockaddr, poll_interfaces};
 pub use smoltcp::time::Duration;
 pub use smoltcp::wire::{IpAddress as IpAddr, IpEndpoint as SocketAddr, Ipv4Address as Ipv4Addr};
 
 use axdriver::{prelude::*, AxDeviceContainer};
 
 /// Initializes the network subsystem by NIC devices.
-pub fn init_network(mut _net_devs: AxDeviceContainer<AxNetDevice>) {
+pub fn init_network(mut net_devs: AxDeviceContainer<AxNetDevice>) {
     info!("Initialize network subsystem...");
 
-    // let dev = net_devs.take_one().expect("No NIC device found!");
-    // info!("  use NIC 0: {:?}", dev.device_name());
-    net_impl::init();
+    let dev = net_devs.take_one().expect("No NIC device found!");
+    info!("  use NIC 0: {:?}", dev.device_name());
+    net_impl::init(dev);
 }

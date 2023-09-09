@@ -87,6 +87,12 @@ impl VfsNodePerm {
         Self::from_bits_truncate(0o755)
     }
 
+    /// Returns the underlying raw `st_mode` bits that contain the standard
+    /// Unix permissions for this file.
+    pub const fn mode(&self) -> u32 {
+        self.bits() as u32
+    }
+
     /// Returns a 9-bytes string representation of the permission.
     ///
     /// For example, `0o755` is represented as `rwxr-xr-x`.
@@ -139,14 +145,39 @@ impl VfsNodePerm {
 }
 
 impl VfsNodeType {
-    /// Whether the node is a file.
+    /// Tests whether this node type represents a regular file.
     pub const fn is_file(self) -> bool {
         matches!(self, Self::File)
     }
 
-    /// Whether the node is a directory.
+    /// Tests whether this node type represents a directory.
     pub const fn is_dir(self) -> bool {
         matches!(self, Self::Dir)
+    }
+
+    /// Tests whether this node type represents a symbolic link.
+    pub const fn is_symlink(self) -> bool {
+        matches!(self, Self::SymLink)
+    }
+
+    /// Returns `true` if this node type is a block device.
+    pub const fn is_block_device(self) -> bool {
+        matches!(self, Self::BlockDevice)
+    }
+
+    /// Returns `true` if this node type is a char device.
+    pub const fn is_char_device(self) -> bool {
+        matches!(self, Self::CharDevice)
+    }
+
+    /// Returns `true` if this node type is a fifo.
+    pub const fn is_fifo(self) -> bool {
+        matches!(self, Self::Fifo)
+    }
+
+    /// Returns `true` if this node type is a socket.
+    pub const fn is_socket(self) -> bool {
+        matches!(self, Self::Socket)
     }
 
     /// Returns a character representation of the node type.

@@ -49,5 +49,8 @@ int main()
     }
     rebuf[l] = '\0';
     printf("%s\n", rebuf);
+
+    freeaddrinfo(res);
+
     return 0;
 }

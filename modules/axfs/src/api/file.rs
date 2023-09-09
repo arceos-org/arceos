@@ -1,10 +1,9 @@
 use axio::{prelude::*, Result, SeekFrom};
 use core::fmt;
 
-use crate::{fops, monolithic_fs::file_io::FileExt};
-
-extern crate alloc;
-use alloc::vec::Vec;
+#[cfg(feature = "monolithic")]
+use super::FileExt;
+use crate::fops;
 
 /// A structure representing a type of file with accessors for each file type.
 /// It is returned by [`Metadata::file_type`] method.
@@ -96,12 +95,12 @@ impl Metadata {
 
     /// Returns the size of the file, in bytes, this metadata is for.
     #[allow(clippy::len_without_is_empty)]
-    pub fn len(&self) -> u64 {
+    pub const fn len(&self) -> u64 {
         self.0.size()
     }
 
     /// Returns the permissions of the file this metadata is for.
-    pub fn permissions(&self) -> Permissions {
+    pub const fn permissions(&self) -> Permissions {
         self.0.perm()
     }
 
@@ -110,18 +109,24 @@ impl Metadata {
         self.0.set_perm(perm)
     }
 
-    /// Returns the inner raw metadata [`fops::FileAttr`].
-    pub const fn raw_metadata(&self) -> &fops::FileAttr {
-        &self.0
+    /// Returns the total size of this file in bytes.
+    pub const fn size(&self) -> u64 {
+        self.0.size()
+    }
+
+    /// Returns the number of blocks allocated to the file, in 512-byte units.
+    pub const fn blocks(&self) -> u64 {
+        self.0.blocks()
     }
 }
 
 impl fmt::Debug for Metadata {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Metadata")
-            .field("file_type", &self.0.file_type())
-            .field("is_dir", &self.0.is_dir())
-            .field("is_file", &self.0.is_file())
+            .field("file_type", &self.file_type())
+            .field("is_dir", &self.is_dir())
+            .field("is_file", &self.is_file())
+            .field("permissions", &self.permissions())
             .finish_non_exhaustive()
     }
 }
@@ -179,18 +184,6 @@ impl Read for File {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
         self.inner.read(buf)
     }
-    /// Read all bytes until EOF in this source, placing them into `buf`.
-    fn read_to_end(&mut self, buf: &mut Vec<u8>) -> Result<usize> {
-        let start_len = buf.len();
-        let mut probe = [0u8; 0x20000];
-        loop {
-            match self.read(&mut probe) {
-                Ok(0) => return Ok(buf.len() - start_len),
-                Ok(n) => buf.extend_from_slice(&probe[..n]),
-                Err(e) => return Err(e),
-            }
-        }
-    }
 }
 
 impl Write for File {
@@ -209,7 +202,7 @@ impl Seek for File {
     }
 }
 
-// #[cfg(feature = "monolithic")]
+#[cfg(feature = "monolithic")]
 impl FileExt for File {
     fn readable(&self) -> bool {
         self.inner.readable()

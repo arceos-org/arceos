@@ -34,7 +34,7 @@
 * [driver_net](../crates/driver_net): Common traits and types for network device (NIC) drivers.
 * [driver_pci](../crates/driver_pci): Structures and functions for PCI bus operations.
 * [driver_virtio](../crates/driver_virtio): Wrappers of some devices in the `virtio-drivers` crate, that implement traits in the `driver_common` series crates.
-* [flatten_objects](../../crates/flatten_objects): A container that stores numbered objects. Each object can be assigned with a unique ID.
+* [flatten_objects](../crates/flatten_objects): A container that stores numbered objects. Each object can be assigned with a unique ID.
 * [handler_table](../crates/handler_table): A lock-free table of event handlers. [![Crates.io](https://img.shields.io/crates/v/handler_table)](https://crates.io/crates/handler_table)
 * [kernel_guard](../crates/kernel_guard): RAII wrappers to create a critical section with local IRQs or preemption disabled. [![Crates.io](https://img.shields.io/crates/v/kernel_guard)](https://crates.io/crates/kernel_guard)
 * [lazy_init](../crates/lazy_init): A wrapper for lazy initialized values without concurrency safety but more efficient.
@@ -75,6 +75,8 @@
 | [helloworld](../apps/c/helloworld/) | | | A minimal C app that just prints a string |
 | [memtest](../apps/c/memtest/) | axalloc | alloc, paging | Dynamic memory allocation test in C |
 | [sqlite3](../apps/c/sqlite3/) | axalloc, axdriver, axfs | alloc, paging, fp_simd, fs | Porting of [SQLite3](https://sqlite.org/index.html) |
+| [iperf](../apps/c/iperf/) | axalloc, axdriver, axfs, axnet | alloc, paging, fp_simd, fs, net, select | Porting of [iPerf3](https://iperf.fr/) |
+| [redis](../apps/c/redis/) | axalloc, axdriver, axtask, axfs, axnet | alloc, paging, fp_simd, irq, multitask, fs, net, pipe, epoll | Porting of [Redis](https://redis.io/) |
 
 ## Dependencies
 

@@ -1,14 +1,14 @@
 //! 实现与futex相关的系统调用
 use alloc::collections::{BTreeMap, VecDeque};
 use axhal::mem::VirtAddr;
+use axsync::Mutex;
 use axtask::{AxTaskRef, WaitQueue};
-use spinlock::SpinNoIrq;
 
 extern crate alloc;
 
 /// vec中的元素分别是任务指针,对应存储时的futex变量的值
-pub static FUTEX_WAIT_TASK: SpinNoIrq<BTreeMap<VirtAddr, VecDeque<(AxTaskRef, u32)>>> =
-    SpinNoIrq::new(BTreeMap::new());
+pub static FUTEX_WAIT_TASK: Mutex<BTreeMap<VirtAddr, VecDeque<(AxTaskRef, u32)>>> =
+    Mutex::new(BTreeMap::new());
 
 pub static WAIT_FOR_FUTEX: WaitQueue = WaitQueue::new();
 
@@ -51,5 +51,5 @@ pub fn clear_wait(id: u64, leader: bool) {
 
     // 如果一个共享变量不会被线程所使用了，那么直接把他移除
     // info!("clean pre keys: {:?}", futex_wait_task.keys());
-    futex_wait_task.drain_filter(|_, tasks| tasks.is_empty());
+    futex_wait_task.retain(|_, tasks| !tasks.is_empty());
 }

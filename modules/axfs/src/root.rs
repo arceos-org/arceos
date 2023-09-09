@@ -2,13 +2,17 @@
 //!
 //! TODO: it doesn't work very well if the mount points have containment relationships.
 
-use alloc::{string::String, sync::Arc, vec::Vec};
+use alloc::{
+    string::{String, ToString},
+    sync::Arc,
+    vec::Vec,
+};
 use axerrno::{ax_err, AxError, AxResult};
 use axfs_vfs::{VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsNodeType, VfsOps, VfsResult};
 use axsync::Mutex;
 use lazy_init::LazyInit;
 
-use crate::{api::FileType, fs};
+use crate::{api::FileType, fs, mounts};
 
 static CURRENT_DIR_PATH: Mutex<String> = Mutex::new(String::new());
 static CURRENT_DIR: LazyInit<Mutex<VfsNodeRef>> = LazyInit::new();
@@ -85,14 +89,16 @@ impl RootDirectory {
 
         // Find the filesystem that has the longest mounted path match
         // TODO: more efficient, e.g. trie
+
+        // 原有arceos处理存在bug：当查询./syscall文件时，会进入到/sys文件系统
         for (i, mp) in self.mounts.iter().enumerate() {
             // skip the first '/'
-            if path.starts_with(&mp.path[1..]) && mp.path.len() - 1 > max_len {
+            let prev = mp.path[1..].to_string() + "/";
+            if path.starts_with(prev.as_str()) && mp.path.len() - 1 > max_len {
                 max_len = mp.path.len() - 1;
                 idx = i;
             }
         }
-
         if max_len == 0 {
             f(self.main_fs.clone(), path) // not matched any mount point
         } else {
@@ -109,8 +115,9 @@ impl VfsNodeOps for RootDirectory {
     }
 
     fn lookup(self: Arc<Self>, path: &str) -> VfsResult<VfsNodeRef> {
-        self.lookup_mounted_fs(path, |fs: Arc<dyn VfsOps>, rest_path| {
-            fs.root_dir().lookup(rest_path)
+        self.lookup_mounted_fs(path, |fs, rest_path| {
+            let dir = fs.root_dir();
+            dir.lookup(rest_path)
         })
     }
 
@@ -133,6 +140,16 @@ impl VfsNodeOps for RootDirectory {
             }
         })
     }
+
+    fn rename(&self, src_path: &str, dst_path: &str) -> VfsResult {
+        self.lookup_mounted_fs(src_path, |fs, rest_path| {
+            if rest_path.is_empty() {
+                ax_err!(PermissionDenied) // cannot rename mount points
+            } else {
+                fs.root_dir().rename(rest_path, dst_path)
+            }
+        })
+    }
 }
 
 pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
@@ -150,64 +167,31 @@ pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
     let mut root_dir = RootDirectory::new(main_fs);
 
     #[cfg(feature = "devfs")]
-    {
-        let null = fs::devfs::NullDev;
-        let zero = fs::devfs::ZeroDev;
-        let bar = fs::devfs::ZeroDev;
-        let random = fs::devfs::RandomDev::default();
-        let urandom = fs::devfs::RandomDev::default();
-
-        let devfs = fs::devfs::DeviceFileSystem::new();
-        let foo_dir = devfs.mkdir("foo");
-        devfs.add("null", Arc::new(null));
-        devfs.add("zero", Arc::new(zero));
-        devfs.add("random", Arc::new(random));
-        devfs.add("urandom", Arc::new(urandom));
-        foo_dir.add("bar", Arc::new(bar));
-
-        #[cfg(feature = "monolithic")]
-        {
-            // 添加dev文件系统下的配置文件
-            // busybox的时候要用到
-            // devfs不支持可修改的file，因此取巧直接用了ramfs提供的file实现
-            let testshm = fs::ramfs::FileNode::new();
-            let testrtc = fs::ramfs::FileNode::new();
-            let shm_dir = devfs.mkdir("shm");
-            shm_dir.add("testshm", Arc::new(testshm));
-            let rtc_dir = devfs.mkdir("misc");
-            rtc_dir.add("rtc", Arc::new(testrtc));
-        }
-
-        root_dir
-            .mount("/dev", Arc::new(devfs))
-            .expect("failed to mount devfs at /dev");
-    }
+    root_dir
+        .mount("/dev", mounts::devfs())
+        .expect("failed to mount devfs at /dev");
 
     #[cfg(feature = "ramfs")]
-    {
-        let ramfs = fs::ramfs::RamFileSystem::new();
-        root_dir
-            .mount("/tmp", Arc::new(ramfs))
-            .expect("failed to mount ramfs at /tmp");
-        let ramfs = fs::ramfs::RamFileSystem::new();
-        root_dir
-            .mount("/var", Arc::new(ramfs))
-            .expect("failed to mount ramfs at /var");
-    }
+    root_dir
+        .mount("/tmp", mounts::ramfs())
+        .expect("failed to mount ramfs at /tmp");
 
-    #[cfg(feature = "monolithic")]
-    {
-        let proc_fs = fs::devfs::DeviceFileSystem::new();
-        let interrupts = fs::devfs::Interrupts::default();
+    #[cfg(feature = "ramfs")]
+    root_dir
+        .mount("/var", mounts::ramfs())
+        .expect("failed to mount ramfs at /tmp");
 
-        proc_fs.add("interrupts", Arc::new(interrupts));
-        proc_fs.add("meminfo", Arc::new(fs::devfs::NullDev));
-        proc_fs.add("mounts", Arc::new(fs::devfs::NullDev));
+    // Mount another ramfs as procfs
+    #[cfg(feature = "procfs")]
+    root_dir // should not fail
+        .mount("/proc", mounts::procfs().unwrap())
+        .expect("fail to mount procfs at /proc");
 
-        root_dir
-            .mount("/proc", Arc::new(proc_fs))
-            .expect("failed to mount devfs at /proc");
-    }
+    // Mount another ramfs as sysfs
+    #[cfg(feature = "sysfs")]
+    root_dir // should not fail
+        .mount("/sys", mounts::sysfs().unwrap())
+        .expect("fail to mount sysfs at /sys");
 
     ROOT_DIR.init_by(Arc::new(root_dir));
     CURRENT_DIR.init_by(Mutex::new(ROOT_DIR.clone()));
@@ -329,4 +313,12 @@ pub(crate) fn set_current_dir(path: &str) -> AxResult {
         *CURRENT_DIR_PATH.lock() = abs_path;
         Ok(())
     }
+}
+
+pub(crate) fn rename(old: &str, new: &str) -> AxResult {
+    if parent_node_of(None, new).lookup(new).is_ok() {
+        warn!("dst file already exist, now remove it");
+        remove_file(None, new)?;
+    }
+    parent_node_of(None, old).rename(old, new)
 }

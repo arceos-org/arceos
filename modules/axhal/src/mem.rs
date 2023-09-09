@@ -14,12 +14,14 @@ bitflags::bitflags! {
         const WRITE         = 1 << 1;
         /// Executable.
         const EXECUTE       = 1 << 2;
-        /// Device memory.
+        /// Device memory. (e.g., MMIO regions)
         const DEVICE        = 1 << 4;
+        /// Uncachable memory. (e.g., framebuffer)
+        const UNCACHED      = 1 << 5;
         /// Reserved memory, do not use for allocation.
-        const RESERVED      = 1 << 5;
+        const RESERVED      = 1 << 6;
         /// Free memory for allocation.
-        const FREE          = 1 << 6;
+        const FREE          = 1 << 7;
     }
 }
 
@@ -40,26 +42,6 @@ pub struct MemRegion {
     pub flags: MemRegionFlags,
     /// The region name, used for identification.
     pub name: &'static str,
-}
-
-/// The iterator over all physical memory regions.
-struct MemRegionIter {
-    idx: usize,
-}
-
-impl Iterator for MemRegionIter {
-    type Item = MemRegion;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        use crate::platform::mem::{memory_region_at, memory_regions_num};
-        let ret = if self.idx < memory_regions_num() {
-            memory_region_at(self.idx)
-        } else {
-            None
-        };
-        self.idx += 1;
-        ret
-    }
 }
 
 /// Converts a virtual address to a physical address.
@@ -90,92 +72,106 @@ pub const fn phys_to_virt(paddr: PhysAddr) -> VirtAddr {
 
 /// Returns an iterator over all physical memory regions.
 pub fn memory_regions() -> impl Iterator<Item = MemRegion> {
-    MemRegionIter { idx: 0 }
+    kernel_image_regions().chain(crate::platform::mem::platform_regions())
 }
 
-/// Number of common physical memory regions for all platforms.
-#[allow(dead_code)]
-pub(crate) const fn common_memory_regions_num() -> usize {
-    6 + axconfig::MMIO_REGIONS.len()
-}
-
-/// Returns the common physical memory region at the given index, or [`None`] if
-/// out of bounds.
-#[allow(dead_code)]
-pub(crate) fn common_memory_region_at(idx: usize) -> Option<MemRegion> {
-    let mmio_regions = axconfig::MMIO_REGIONS;
-    let r = match idx {
-        0 => MemRegion {
-            paddr: virt_to_phys((stext as usize).into()),
-            size: etext as usize - stext as usize,
+/// Returns the memory regions of the kernel image (code and data sections).
+fn kernel_image_regions() -> impl Iterator<Item = MemRegion> {
+    [
+        MemRegion {
+            paddr: virt_to_phys((_stext as usize).into()),
+            size: _etext as usize - _stext as usize,
             flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::EXECUTE,
             name: ".text",
         },
-        1 => MemRegion {
-            paddr: virt_to_phys((srodata as usize).into()),
-            size: erodata as usize - srodata as usize,
+        MemRegion {
+            paddr: virt_to_phys((_srodata as usize).into()),
+            size: _erodata as usize - _srodata as usize,
             flags: MemRegionFlags::RESERVED | MemRegionFlags::READ,
             name: ".rodata",
         },
-        2 => MemRegion {
-            paddr: virt_to_phys((sdata as usize).into()),
-            size: edata as usize - sdata as usize,
+        MemRegion {
+            paddr: virt_to_phys((_sdata as usize).into()),
+            size: _edata as usize - _sdata as usize,
             flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
-            name: ".data",
+            name: ".data .tdata .tbss .percpu",
         },
-        // 这里是每一个CPU内核所使用的内核栈的地址，在linker.lds.S种已经为不同的CPU核加入了保护页面
-        3 => MemRegion {
-            paddr: virt_to_phys((percpu_start as usize).into()),
-            size: percpu_end as usize - percpu_start as usize,
-            flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
-            name: ".percpu",
-        },
-        4 => MemRegion {
+        MemRegion {
             paddr: virt_to_phys((boot_stack as usize).into()),
             size: boot_stack_top as usize - boot_stack as usize,
             flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
             name: "boot stack",
         },
-        5 => MemRegion {
-            paddr: virt_to_phys((sbss as usize).into()),
-            size: ebss as usize - sbss as usize,
+        MemRegion {
+            paddr: virt_to_phys((_sbss as usize).into()),
+            size: _ebss as usize - _sbss as usize,
             flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
             name: ".bss",
         },
-        i if i < 6 + mmio_regions.len() => MemRegion {
-            paddr: mmio_regions[i - 6].0.into(),
-            size: mmio_regions[i - 6].1,
-            flags: MemRegionFlags::RESERVED
-                | MemRegionFlags::DEVICE
-                | MemRegionFlags::READ
-                | MemRegionFlags::WRITE,
-            name: "mmio",
-        },
-        _ => return None,
-    };
-    Some(r)
+    ]
+    .into_iter()
 }
 
+/// Returns the default MMIO memory regions (from [`axconfig::MMIO_REGIONS`]).
+#[allow(dead_code)]
+pub(crate) fn default_mmio_regions() -> impl Iterator<Item = MemRegion> {
+    axconfig::MMIO_REGIONS.iter().map(|reg| MemRegion {
+        paddr: reg.0.into(),
+        size: reg.1,
+        flags: MemRegionFlags::RESERVED
+            | MemRegionFlags::DEVICE
+            | MemRegionFlags::READ
+            | MemRegionFlags::WRITE,
+        name: "mmio",
+    })
+}
+
+/// Returns the default free memory regions (kernel image end to physical memory end).
+#[allow(dead_code)]
+pub(crate) fn default_free_regions() -> impl Iterator<Item = MemRegion> {
+    let start = virt_to_phys((_ekernel as usize).into()).align_up_4k();
+    let end = PhysAddr::from(axconfig::PHYS_MEMORY_END).align_down_4k();
+    core::iter::once(MemRegion {
+        paddr: start,
+        size: end.as_usize() - start.as_usize(),
+        flags: MemRegionFlags::FREE | MemRegionFlags::READ | MemRegionFlags::WRITE,
+        name: "free memory",
+    })
+}
+
+/// Return the extend free memory regions to prepare for the OSCOMP
+///
+/// extend to [0xffff_ffc0_a000_0000, 0xffff_ffc0_f000_0000)
+#[allow(dead_code)]
+pub(crate) fn extend_free_regions() -> impl Iterator<Item = MemRegion> {
+    let start = virt_to_phys(VirtAddr::from(0xffff_ffc0_a000_0000)).align_up_4k();
+    let end: PhysAddr = PhysAddr::from(0x1_a000_0000).align_down_4k();
+    core::iter::once(MemRegion {
+        paddr: start,
+        size: end.as_usize() - start.as_usize(),
+        flags: MemRegionFlags::FREE | MemRegionFlags::READ | MemRegionFlags::WRITE,
+        name: "extend free memory",
+    })
+}
 /// Fills the `.bss` section with zeros.
 #[allow(dead_code)]
 pub(crate) fn clear_bss() {
     unsafe {
-        core::slice::from_raw_parts_mut(sbss as usize as *mut u8, ebss as usize - sbss as usize)
+        core::slice::from_raw_parts_mut(_sbss as usize as *mut u8, _ebss as usize - _sbss as usize)
             .fill(0);
     }
 }
 
 extern "C" {
-    fn stext();
-    fn etext();
-    fn srodata();
-    fn erodata();
-    fn sdata();
-    fn edata();
-    fn sbss();
-    fn ebss();
+    fn _stext();
+    fn _etext();
+    fn _srodata();
+    fn _erodata();
+    fn _sdata();
+    fn _edata();
+    fn _sbss();
+    fn _ebss();
+    fn _ekernel();
     fn boot_stack();
     fn boot_stack_top();
-    fn percpu_start();
-    fn percpu_end();
 }

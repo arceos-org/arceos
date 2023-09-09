@@ -14,7 +14,8 @@
 //!    [`WaitQueue::wait_timeout`].
 //! - `preempt`: Enable preemptive scheduling.
 //! - `sched_fifo`: Use the [FIFO cooperative scheduler][1]. It also enables the
-//!   `multitask` feature if it is enabled. This feature is enabled by default.
+//!   `multitask` feature if it is enabled. This feature is enabled by default,
+//!   and it can be overriden by other scheduler features.
 //! - `sched_rr`: Use the [Round-robin preemptive scheduler][2]. It also enables
 //!   the `multitask` and `preempt` features if it is enabled.
 //! - `sched_cfs`: Use the [Completely Fair Scheduler][3]. It also enables the
@@ -27,34 +28,31 @@
 #![cfg_attr(not(test), no_std)]
 #![feature(doc_cfg)]
 #![feature(doc_auto_cfg)]
-
+#![feature(stmt_expr_attributes)]
 cfg_if::cfg_if! {
     if #[cfg(feature = "multitask")] {
         #[macro_use]
         extern crate log;
         extern crate alloc;
+
+        mod run_queue;
+        pub use run_queue::{IDLE_TASK, RUN_QUEUE, EXITED_TASKS};
+        mod task;
+        pub use task::TaskState;
+        mod api;
         mod wait_queue;
+        mod stat;
+        pub use stat::SignalCaller;
+        pub use task::{SchedPolicy, SchedStatus};
+
         #[cfg(feature = "irq")]
         mod timers;
+
+        #[doc(cfg(feature = "multitask"))]
+        pub use self::api::*;
+        pub use self::api::{sleep, sleep_until, yield_now};
+    } else {
+        mod api_s;
+        pub use self::api_s::{sleep, sleep_until, yield_now};
     }
 }
-
-cfg_if::cfg_if! {
-    if #[cfg(feature = "monolithic")] {
-        pub mod monolithic_task;
-    }
-    else {
-        mod task;
-        mod run_queue;
-    }
-}
-
-#[cfg_attr(not(feature = "multitask"), path = "api_s.rs")]
-mod api;
-
-#[cfg(test)]
-mod tests;
-
-#[doc(cfg(feature = "multitask"))]
-pub use self::api::*;
-pub use self::api::{sleep, sleep_until, yield_now};

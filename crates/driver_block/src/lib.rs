@@ -7,6 +7,9 @@
 #[cfg(feature = "ramdisk")]
 pub mod ramdisk;
 
+#[cfg(feature = "bcm2835-sdhci")]
+pub mod bcm2835sdhci;
+
 #[doc(no_inline)]
 pub use driver_common::{BaseDriverOps, DevError, DevResult, DeviceType};
 

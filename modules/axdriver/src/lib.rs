@@ -75,6 +75,9 @@ mod structs;
 #[cfg(feature = "virtio")]
 mod virtio;
 
+#[cfg(feature = "ixgbe")]
+mod ixgbe;
+
 pub mod prelude;
 
 #[allow(unused_imports)]
@@ -114,7 +117,6 @@ impl AllDevices {
         }
     }
 
-    #[allow(unused)]
     /// Probes all supported devices.
     fn probe(&mut self) {
         for_each_drivers!(type Driver, {
@@ -128,7 +130,7 @@ impl AllDevices {
             }
         });
 
-        // self.probe_bus_devices();
+        self.probe_bus_devices();
     }
 
     /// Adds one device into the corresponding container, according to its device category.
@@ -152,10 +154,13 @@ pub fn init_drivers() -> AllDevices {
 
     let mut all_devs = AllDevices::default();
 
-    use axconfig::{PHYS_VIRT_OFFSET, TESTCASE_MEMORY_SIZE, TESTCASE_MEMORY_START};
-    let mut ram_disk = driver_block::ramdisk::RamDisk::new(TESTCASE_MEMORY_SIZE);
-    ram_disk.copy_from_slice((TESTCASE_MEMORY_START + PHYS_VIRT_OFFSET) as *const u8);
-    all_devs.add_device(AxDeviceEnum::Block(ram_disk));
+    #[cfg(feature = "img")]
+    {
+        use axconfig::{PHYS_VIRT_OFFSET, TESTCASE_MEMORY_SIZE, TESTCASE_MEMORY_START};
+        let mut ram_disk = driver_block::ramdisk::RamDisk::new(TESTCASE_MEMORY_SIZE);
+        ram_disk.copy_from_slice((TESTCASE_MEMORY_START + PHYS_VIRT_OFFSET) as *const u8);
+        all_devs.add_device(AxDeviceEnum::Block(ram_disk));
+    }
 
     all_devs.probe();
 

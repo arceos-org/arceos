@@ -1,0 +1,11 @@
+[package]
+name = "arceos-bwbench"
+version = "0.1.0"
+edition = "2021"
+authors = ["ChengXiang Qi <kuangjux@outlook.com>"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+axstd = { path = "../../../ulib/axstd", features = ["net"] }
+axnet = { path = "../../../modules/axnet" }

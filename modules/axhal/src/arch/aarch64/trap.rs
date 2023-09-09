@@ -28,7 +28,7 @@ enum TrapSource {
 }
 
 #[no_mangle]
-fn invalid_exception(tf: &mut TrapFrame, kind: TrapKind, source: TrapSource) {
+fn invalid_exception(tf: &TrapFrame, kind: TrapKind, source: TrapSource) {
     panic!(
         "Invalid exception {:?} from {:?}:\n{:#x?}",
         kind, source, tf
@@ -81,6 +81,6 @@ fn handle_sync_exception(tf: &mut TrapFrame) {
 }
 
 #[no_mangle]
-fn handle_irq_exception(_tf: &mut TrapFrame) {
+fn handle_irq_exception(_tf: &TrapFrame) {
     crate::trap::handle_irq_extern(0)
 }

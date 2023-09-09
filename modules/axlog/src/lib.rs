@@ -7,6 +7,13 @@
 //! If it is used in `no_std` environment, the users need to implement the
 //! [`LogIf`] to provide external functions such as console output.
 //!
+//! To use in the `std` environment, please enable the `std` feature:
+//!
+//! ```toml
+//! [dependencies]
+//! axlog = { version = "0.1", features = ["std"] }
+//! ```
+//!
 //! # Cargo features:
 //!
 //! - `std`: Use in the `std` environment. If it is enabled, you can use console
@@ -18,6 +25,26 @@
 //!   optimized out to a no-op.
 //! - `log-level-warn`, `log-level-info`, `log-level-debug`, `log-level-trace`:
 //!   Similar to `log-level-error`.
+//!
+//! # Examples
+//!
+//! ```
+//! use axlog::{debug, error, info, trace, warn};
+//!
+//! // Initialize the logger.
+//! axlog::init();
+//! // Set the maximum log level to `info`.
+//! axlog::set_max_level("info");
+//!
+//! // The following logs will be printed.
+//! error!("error");
+//! warn!("warn");
+//! info!("info");
+//!
+//! // The following logs will not be printed.
+//! debug!("debug");
+//! trace!("trace");
+//! ```
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -39,17 +66,17 @@ pub use log::{debug, error, info, trace, warn};
 /// the end of the message.
 #[macro_export]
 macro_rules! ax_print {
-    ($fmt: literal $(, $($arg: tt)+)?) => {
-        $crate::__print_impl(format_args!($fmt $(, $($arg)+)?));
+    ($($arg:tt)*) => {
+        $crate::__print_impl(format_args!($($arg)*));
     }
 }
 
 /// Prints to the console, with a newline.
 #[macro_export]
 macro_rules! ax_println {
-    () => { ax_print!("\n") };
-    ($fmt: literal $(, $($arg: tt)+)?) => {
-        $crate::__print_impl(format_args!(concat!($fmt, "\n") $(, $($arg)+)?));
+    () => { $crate::ax_print!("\n") };
+    ($($arg:tt)*) => {
+        $crate::__print_impl(format_args!("{}\n", format_args!($($arg)*)));
     }
 }
 
@@ -197,13 +224,18 @@ impl Log for Logger {
     fn flush(&self) {}
 }
 
-#[doc(hidden)]
-pub fn __print_impl(args: fmt::Arguments) {
+/// Prints the formatted string to the console.
+pub fn print_fmt(args: fmt::Arguments) -> fmt::Result {
     use spinlock::SpinNoIrq; // TODO: more efficient
     static LOCK: SpinNoIrq<()> = SpinNoIrq::new(());
 
     let _guard = LOCK.lock();
-    Logger.write_fmt(args).unwrap();
+    Logger.write_fmt(args)
+}
+
+#[doc(hidden)]
+pub fn __print_impl(args: fmt::Arguments) {
+    print_fmt(args).unwrap();
 }
 
 /// Initializes the logger.

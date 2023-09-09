@@ -1,4 +1,5 @@
 /// 用于进行文件加载
+extern crate alloc;
 use alloc::{
     string::{String, ToString},
     vec,
@@ -9,10 +10,10 @@ pub const USER_HEAP_OFFSET: usize = 0x3FA0_0000;
 pub const USER_STACK_OFFSET: usize = 0x3FE0_0000;
 pub const MAX_HEAP_SIZE: usize = 0x40_0000;
 pub const USER_STACK_SIZE: usize = 0x20_0000;
-use axerrno::{AxError, AxResult};
+use axerrno::AxResult;
 mod user_stack;
 use axhal::{mem::VirtAddr, paging::MappingFlags};
-use axlog::{debug, info};
+use axlog::info;
 use axmem::MemorySet;
 use core::str::from_utf8;
 use xmas_elf::{program::SegmentData, ElfFile};
@@ -125,27 +126,4 @@ impl<'a> Loader<'a> {
             heap_start.into(),
         ))
     }
-}
-
-/// 返回应用程序入口，用户栈底，用户堆底
-pub fn load_app(
-    name: String,
-    mut args: Vec<String>,
-    envs: Vec<String>,
-    memory_set: &mut MemorySet,
-) -> AxResult<(VirtAddr, VirtAddr, VirtAddr)> {
-    if name.ends_with(".sh") {
-        args = [vec![String::from("busybox"), String::from("sh")], args].concat();
-        return load_app("busybox".to_string(), args, envs, memory_set);
-    }
-    let elf_data = if let Ok(ans) = axfs::api::read(name.as_str()) {
-        ans
-    } else {
-        // exit(0)
-        return Err(AxError::NotFound);
-    };
-    debug!("app elf data length: {}", elf_data.len());
-    let loader = Loader::new(&elf_data);
-
-    loader.load(args, envs, memory_set)
 }

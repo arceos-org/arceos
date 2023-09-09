@@ -4,8 +4,8 @@ use std::{
     io::{Result, Write},
 };
 
-const NET_DEV_FEATURES: &[&str] = &["virtio-net"];
-const BLOCK_DEV_FEATURES: &[&str] = &["ramdisk", "virtio-blk"];
+const NET_DEV_FEATURES: &[&str] = &["ixgbe", "virtio-net"];
+const BLOCK_DEV_FEATURES: &[&str] = &["ramdisk", "bcm2835-sdhci", "virtio-blk"];
 const DISPLAY_DEV_FEATURES: &[&str] = &["virtio-gpu"];
 
 fn has_feature(feature: &str) -> bool {
@@ -23,7 +23,7 @@ fn enable_cfg(key: &str, value: &str) {
 #[cfg(feature = "img")]
 fn new_fs_img() -> Result<()> {
     let mut f = File::create("./image.S").unwrap();
-    let img_path = "./sdcard.img";
+    let img_path = "./disk.img";
     writeln!(
         f,
         r#"
@@ -47,6 +47,7 @@ fn main() {
     }
 
     #[cfg(feature = "img")]
+    // 将测例镜像放置在ram-disk中
     new_fs_img().unwrap();
 
     // Generate cfgs like `net_dev="virtio-net"`. if `dyn` is not enabled, only one device is

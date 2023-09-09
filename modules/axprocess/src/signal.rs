@@ -1,8 +1,8 @@
 //! 负责处理进程中与信号相关的内容
-
+extern crate alloc;
 use alloc::sync::Arc;
 use axerrno::{AxError, AxResult};
-use axhal::{arch::TrapFrame, cpu::this_cpu_id};
+use axhal::{arch::TrapFrame, cpu::this_cpu_id, KERNEL_PROCESS_ID};
 use axlog::{info, warn};
 use axsignal::{
     action::{SigActionFlags, SignalDefault, SIG_IGN},
@@ -11,23 +11,20 @@ use axsignal::{
     ucontext::SignalUserContext,
     SignalHandler, SignalSet,
 };
-use axtask::{
-    monolithic_task::{task::TaskState, SignalCaller, RUN_QUEUE},
-    KERNEL_PROCESS_ID,
-};
-use spinlock::SpinNoIrq;
+use axsync::Mutex;
+use axtask::{SignalCaller, TaskState, RUN_QUEUE};
 
 pub struct SignalModule {
     pub sig_info: bool,
     pub last_trap_frame_for_signal: Option<TrapFrame>,
-    pub signal_handler: Arc<SpinNoIrq<SignalHandler>>,
+    pub signal_handler: Arc<Mutex<SignalHandler>>,
     pub signal_set: SignalSet,
 }
 
 impl SignalModule {
-    pub fn init_signal(signal_handler: Option<Arc<SpinNoIrq<SignalHandler>>>) -> Self {
+    pub fn init_signal(signal_handler: Option<Arc<Mutex<SignalHandler>>>) -> Self {
         let signal_handler = if signal_handler.is_none() {
-            Arc::new(SpinNoIrq::new(SignalHandler::new()))
+            Arc::new(Mutex::new(SignalHandler::new()))
         } else {
             signal_handler.unwrap()
         };
@@ -45,7 +42,10 @@ impl SignalModule {
 
 const USER_SIGNAL_PROTECT: usize = 512;
 
-use crate::process::{current_process, current_task, exit, PID2PC, TID2TASK};
+use crate::{
+    current_process, current_task, exit_current_task,
+    process::{PID2PC, TID2TASK},
+};
 
 /// 将保存的trap上下文填入内核栈中
 ///
@@ -55,7 +55,6 @@ use crate::process::{current_process, current_task, exit, PID2PC, TID2TASK};
 #[no_mangle]
 pub fn load_trap_for_signal() -> bool {
     let current_process = current_process();
-    let mut inner = current_process.inner.lock();
     let current_task = current_task();
     // let signal_module = inner
     //     .signal_module
@@ -63,10 +62,8 @@ pub fn load_trap_for_signal() -> bool {
     //     .find(|(id, _)| *id == current_task.id().as_u64())
     //     .map(|(_, handler)| handler)
     //     .unwrap();
-    let signal_module = inner
-        .signal_module
-        .get_mut(&current_task.id().as_u64())
-        .unwrap();
+    let mut signal_modules = current_process.signal_modules.lock();
+    let signal_module = signal_modules.get_mut(&current_task.id().as_u64()).unwrap();
     if let Some(old_trap_frame) = signal_module.last_trap_frame_for_signal.take() {
         unsafe {
             let now_trap_frame = current_task.get_first_trap_frame();
@@ -88,27 +85,26 @@ pub fn load_trap_for_signal() -> bool {
 }
 
 /// 处理当前进程的信号
+///
+/// 若返回值为真，代表需要进入处理信号，因此需要执行trap的返回
 pub fn handle_signals() {
     let process = current_process();
-    let mut inner = process.inner.lock();
     let current_task = current_task();
-    if inner.is_zombie {
+    if process.get_zombie() {
         if current_task.is_leader() {
             return;
         }
-        drop(inner);
-        // 进程退出了，在测试环境下线程应该立即退出
-        exit(0);
+        // 进程退出了，在测试环境下非主线程应该立即退出
+        exit_current_task(0);
     }
 
-    if process.pid == KERNEL_PROCESS_ID {
+    if process.pid() == KERNEL_PROCESS_ID {
         // 内核进程不处理信号
         return;
     }
-    let signal_module = inner
-        .signal_module
-        .get_mut(&current_task.id().as_u64())
-        .unwrap();
+    let mut signal_modules = process.signal_modules.lock();
+
+    let signal_module = signal_modules.get_mut(&current_task.id().as_u64()).unwrap();
     let signal_set = &mut signal_module.signal_set;
     let sig_num = if let Some(sig_num) = signal_set.get_one_signal() {
         sig_num
@@ -127,10 +123,10 @@ pub fn handle_signals() {
     if signal_module.last_trap_frame_for_signal.is_some() {
         // 之前的trap frame还未被处理
         // 说明之前的信号处理函数还未返回，即出现了信号嵌套。
-        drop(inner);
         if signal == SignalNo::SIGSEGV || signal == SignalNo::SIGBUS {
             // 在处理信号的过程中又触发 SIGSEGV 或 SIGBUS，此时会导致死循环，所以直接结束当前进程
-            exit(-1);
+            drop(signal_modules);
+            exit_current_task(-1);
         } else {
             return;
         }
@@ -147,8 +143,7 @@ pub fn handle_signals() {
     let action = signal_handler.get_action(sig_num);
     if action.is_none() {
         drop(signal_handler);
-
-        drop(inner);
+        drop(signal_modules);
         drop(current_task);
         // 未显式指定处理函数，使用默认处理函数
         match SignalDefault::get_action(signal) {
@@ -157,7 +152,7 @@ pub fn handle_signals() {
                 load_trap_for_signal();
             }
             SignalDefault::Terminate => {
-                exit(0);
+                exit_current_task(0);
             }
         }
         return;
@@ -184,6 +179,7 @@ pub fn handle_signals() {
         action.get_storer(),
         action.sa_handler
     );
+
     let old_pc = trap_frame.sepc;
     trap_frame.regs.ra = action.get_storer();
     trap_frame.sepc = action.sa_handler;
@@ -212,31 +208,8 @@ pub fn handle_signals() {
         trap_frame.regs.a2 = sp;
     }
     trap_frame.regs.sp = sp;
-    //     let frame_base = current_task.get_first_trap_frame() as usize;
-    //     unsafe {
-    //         sfence_vma_all();
-    //         core::arch::asm!(
-    //             r"
-    //             mv      sp, {frame_base}
-    //             LDR     gp, sp, 2                   // load user gp and tp
-    //             LDR     t0, sp, 3
-    //             STR     tp, sp, 3                   // save supervisor tp
-    //             mv      tp, t0
-    //             addi    t0, sp, 280                 // put supervisor sp to scratch
-    //             csrw    sscratch, t0
-    //             LDR     t0, sp, 31
-    //             LDR     t1, sp, 32
-    //             csrw    sepc, t0
-    //             csrw    sstatus, t1
-    //             .short  0x2432                      // fld fs0,264(sp)
-    //             .short  0x24d2                      // fld fs1,272(sp)
-    //             POP_GENERAL_REGS
-    //             LDR     sp, sp, 1                   // load sp from tf.regs.sp
-    //             sret
-    //             ",
-    //             frame_base = in(reg) frame_base,
-    //         );
-    //     }
+    drop(signal_handler);
+    drop(signal_modules);
 }
 
 /// 从信号处理函数返回
@@ -264,17 +237,23 @@ pub fn send_signal_to_process(pid: isize, signum: isize) -> AxResult<()> {
         return Err(axerrno::AxError::NotFound);
     }
     let process = pid2pc.get_mut(&(pid as u64)).unwrap();
-    let mut inner = process.inner.lock();
     let mut now_id: Option<u64> = None;
-    for task in inner.tasks.iter_mut() {
+    for task in process.tasks.lock().iter_mut() {
         if task.is_leader() {
             now_id = Some(task.id().as_u64());
             break;
         }
     }
     if now_id.is_some() {
-        let signal_module = inner.signal_module.get_mut(&now_id.unwrap()).unwrap();
+        let mut signal_modules = process.signal_modules.lock();
+        let signal_module = signal_modules.get_mut(&now_id.unwrap()).unwrap();
         signal_module.signal_set.try_add_signal(signum as usize);
+        let tid2task = TID2TASK.lock();
+        let main_task = Arc::clone(&tid2task.get(&now_id.unwrap()).unwrap());
+        // 如果这个时候对应的线程是处于休眠状态的，则唤醒之，进入信号处理阶段
+        if main_task.state() == TaskState::Blocked {
+            RUN_QUEUE.lock().unblock_task(main_task, false);
+        }
     }
     Ok(())
 }
@@ -296,19 +275,16 @@ pub fn send_signal_to_thread(tid: isize, signum: isize) -> AxResult<()> {
         return Err(AxError::NotFound);
     };
     drop(pid2pc);
-    let mut inner = process.inner.lock();
-    if inner.signal_module.contains_key(&(tid as u64)) == false {
+    let mut signal_modules = process.signal_modules.lock();
+    if signal_modules.contains_key(&(tid as u64)) == false {
         return Err(axerrno::AxError::NotFound);
     }
-    let signal_module = inner.signal_module.get_mut(&(tid as u64)).unwrap();
+    let signal_module = signal_modules.get_mut(&(tid as u64)).unwrap();
     signal_module.signal_set.try_add_signal(signum as usize);
-    for task in inner.tasks.iter() {
-        if task.id().as_u64() == tid as u64 && task.state() == TaskState::Blocked {
-            RUN_QUEUE.lock().unblock_task(Arc::clone(task), false);
-            break;
-        }
+    // 如果这个时候对应的线程是处于休眠状态的，则唤醒之，进入信号处理阶段
+    if task.state() == TaskState::Blocked {
+        RUN_QUEUE.lock().unblock_task(task, false);
     }
-    drop(inner);
     Ok(())
 }
 

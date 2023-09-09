@@ -8,13 +8,13 @@ extern crate alloc;
 
 mod dir;
 mod file;
-
+mod interrupts;
 #[cfg(test)]
 mod tests;
 
 pub use self::dir::DirNode;
 pub use self::file::FileNode;
-
+pub use self::interrupts::{Interrupts, INTERRUPT};
 use alloc::sync::Arc;
 use axfs_vfs::{VfsNodeRef, VfsOps, VfsResult};
 use spin::once::Once;
