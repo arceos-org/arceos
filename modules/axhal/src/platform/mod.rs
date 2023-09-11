@@ -13,6 +13,9 @@ cfg_if::cfg_if! {
     } else if #[cfg(all(target_arch = "riscv64", platform_family = "riscv64-qemu-virt"))] {
         mod riscv64_qemu_virt;
         pub use self::riscv64_qemu_virt::*;
+    } else if #[cfg(all(target_arch = "riscv64", platform_family = "riscv64-starfive"))] {
+        mod riscv64_starfive;
+        pub use self::riscv64_starfive::*;
     } else if #[cfg(all(target_arch = "aarch64", platform_family = "aarch64-qemu-virt"))] {
         mod aarch64_qemu_virt;
         pub use self::aarch64_qemu_virt::*;
