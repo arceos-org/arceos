@@ -267,13 +267,10 @@ fn init_interrupt() {
     static NEXT_DEADLINE: u64 = 0;
 
     fn update_timer() {
-        let now_ns = axhal::time::current_time_nanos();
         // Safety: we have disabled preemption in IRQ handler.
         let mut deadline = unsafe { NEXT_DEADLINE.read_current_raw() };
-        if now_ns >= deadline {
-            deadline = now_ns + PERIODIC_INTERVAL_NANOS;
-        }
-        unsafe { NEXT_DEADLINE.write_current_raw(deadline + PERIODIC_INTERVAL_NANOS) };
+        deadline = deadline + PERIODIC_INTERVAL_NANOS;
+        unsafe { NEXT_DEADLINE.write_current_raw(deadline) };
         axhal::time::set_oneshot_timer(deadline);
     }
 
