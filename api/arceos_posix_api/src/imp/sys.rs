@@ -1,29 +1,57 @@
-use core::ffi::{c_int, c_long};
+use core::ffi::{c_int, c_long, c_ulong};
 
 use crate::ctypes;
 
-const PAGE_SIZE_4K: usize = 4096;
+pub const PAGE_SIZE_4K: usize = 4096;
 
-/// Return system configuration infomation
-///
-/// Notice: currently only support what unikraft covers
-pub fn sys_sysconf(name: c_int) -> c_long {
-    debug!("sys_sysconf <= {}", name);
-    syscall_body!(sys_sysconf, {
-        match name as u32 {
-            // Page size
-            ctypes::_SC_PAGE_SIZE => Ok(PAGE_SIZE_4K),
-            // Total physical pages
-            ctypes::_SC_PHYS_PAGES => Ok(axconfig::PHYS_MEMORY_SIZE / PAGE_SIZE_4K),
-            // Number of processors in use
-            ctypes::_SC_NPROCESSORS_ONLN => Ok(axconfig::SMP),
-            // Avaliable physical pages
-            #[cfg(feature = "alloc")]
-            ctypes::_SC_AVPHYS_PAGES => Ok(axalloc::global_allocator().available_pages()),
-            // Maximum number of files per process
-            #[cfg(feature = "fd")]
-            ctypes::_SC_OPEN_MAX => Ok(super::fd_ops::AX_FILE_LIMIT),
-            _ => Ok(0),
+/// Return sysinfo struct
+#[no_mangle]
+pub unsafe extern "C" fn sys_sysinfo(info: *mut ctypes::sysinfo) -> c_int {
+    debug!("sys_sysinfo");
+    syscall_body!(ax_sysinfo, {
+        let info_mut = info.as_mut().unwrap();
+
+        // If the kernel booted less than 1 second, it will be 0.
+        info_mut.uptime = axhal::time::current_time().as_secs() as c_long;
+
+        info_mut.loads = [0; 3];
+        #[cfg(feature = "axtask")]
+        {
+            // calc the ratio of idle and others
+            axtask::loadavg::get_avenrun(&mut info_mut.loads);
         }
+
+        info_mut.sharedram = 0;
+        // TODO
+        info_mut.bufferram = 0;
+
+        info_mut.totalram = 0;
+        info_mut.freeram = 0;
+        #[cfg(feature = "alloc")]
+        {
+            let allocator = axalloc::global_allocator();
+            debug!("available_bytes: {:X}", allocator.available_bytes());
+            debug!("available_pages: {:X}", allocator.available_pages());
+            debug!("used_bytes: {:X}", allocator.used_bytes());
+            debug!("used_pages: {:X}", allocator.used_pages());
+            info_mut.freeram = (allocator.available_bytes()
+                + allocator.available_pages() * PAGE_SIZE_4K)
+                as c_ulong;
+            info_mut.totalram = info_mut.freeram + allocator.used_bytes() as c_ulong;
+        }
+
+        // TODO
+        info_mut.totalswap = 0;
+        info_mut.freeswap = 0;
+
+        info_mut.procs = 1;
+
+        // unused in 64-bit
+        info_mut.totalhigh = 0;
+        info_mut.freehigh = 0;
+
+        info_mut.mem_unit = 1;
+
+        Ok(0)
     })
 }

@@ -38,7 +38,9 @@ impl AxRunQueue {
 
     #[cfg(feature = "irq")]
     pub fn scheduler_timer_tick(&mut self) {
+        use crate::loadavg;
         let curr = crate::current();
+        loadavg::calc_load_tick(curr.is_idle());
         if !curr.is_idle() && self.scheduler.task_tick(curr.as_task_ref()) {
             #[cfg(feature = "preempt")]
             curr.set_preempt_pending(true);

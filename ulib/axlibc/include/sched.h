@@ -18,6 +18,9 @@ typedef struct cpu_set_t {
 #define CPU_SET(i, set) CPU_SET_S(i, sizeof(cpu_set_t), set);
 #define CPU_ZERO(set)   CPU_ZERO_S(sizeof(cpu_set_t), set)
 
+#define FSHIFT  11            /* nr of bits of precision */
+#define FIXED_1 (1 << FSHIFT) /* 1.0 as fixed-point */
+
 int sched_setaffinity(pid_t, size_t, const cpu_set_t *);
 
 #endif // _SCHED_H

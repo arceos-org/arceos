@@ -39,6 +39,7 @@ cfg_if::cfg_if! {
         mod task;
         mod api;
         mod wait_queue;
+        pub mod loadavg;
 
         #[cfg(feature = "irq")]
         mod timers;
