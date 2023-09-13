@@ -1,4 +1,4 @@
-use core::ffi::{c_int, c_long, c_ulong};
+use core::ffi::{c_int, c_long};
 
 use crate::ctypes;
 
@@ -28,6 +28,7 @@ pub unsafe extern "C" fn sys_sysinfo(info: *mut ctypes::sysinfo) -> c_int {
         info_mut.freeram = 0;
         #[cfg(feature = "alloc")]
         {
+            use core::ffi::c_ulong;
             let allocator = axalloc::global_allocator();
             info_mut.freeram = (allocator.available_bytes()
                 + allocator.available_pages() * PAGE_SIZE_4K)
