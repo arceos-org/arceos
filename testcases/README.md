@@ -1,5 +1,5 @@
 gcc测例运行方法：
-1. 下载riscv64-linux-musl-native库，内含gcc可执行文件，源码网址为[(musl.cc)](https://musl.cc/riscv64-linux-musl-native.tgz)，将其解压到本文件夹下。
+1. 下载riscv64-linux-musl-native库，内含gcc可执行文件，源码网址为[(musl.cc)](https://musl.cc/riscv64-linux-musl-native.tgz)，将其解压到testcases目录下。
 
 2. 在本目录下执行如下指令
 
@@ -16,5 +16,3 @@ gcc测例运行方法：
    ```
 
    即可生成gcc测例镜像。
-
-http://download.redis.io/releases/redis-7.0.0.tar.gz
