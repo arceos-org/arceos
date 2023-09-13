@@ -28,13 +28,14 @@ extern crate alloc;
 
 mod dev;
 mod fs;
+mod mounts;
 mod root;
 
 pub mod api;
 pub mod fops;
 
-#[cfg(feature = "macro")]
-pub mod macro_fs;
+pub use axfs_devfs;
+pub use axfs_ramfs;
 
 use axdriver::{prelude::*, AxDeviceContainer};
 

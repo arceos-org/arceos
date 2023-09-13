@@ -5,7 +5,7 @@ use crate::{Config, GraphFormat};
 static APP_ROOT: &str = "../../apps/";
 static CRATE_ROOT: &str = "../../crates/";
 static MODULE_ROOT: &str = "../../modules/";
-static LIBAX_ROOT: &str = "../../ulib/";
+static ULIB_ROOT: &str = "../../ulib/";
 
 
 /// Ex: exe --default=false --format=mermaid --features=f1 f2 f3
@@ -75,7 +75,7 @@ pub fn check_app_name(name: &String) -> bool {
 }
 
 pub fn check_lib_name(name: &String) -> bool {
-    Path::new(&(LIBAX_ROOT.to_string() + name)).exists()
+    Path::new(&(ULIB_ROOT.to_string() + name)).exists()
 }
 
 pub fn is_arceos_crate(name: &String) -> bool {

@@ -1,4 +1,3 @@
-default
 alloc
 paging
 multitask

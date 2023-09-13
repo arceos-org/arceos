@@ -1,9 +1,7 @@
-/// 仅用作非宏内核下的trap入口
-
 struct TrapHandlerImpl;
 
 #[cfg(feature = "paging")]
-use axprocess::handle_page_fault;
+use axhal::{arch::TrapFrame, mem::VirtAddr, paging::MappingFlags};
 
 #[crate_interface::impl_interface]
 impl axhal::trap::TrapHandler for TrapHandlerImpl {
@@ -17,7 +15,7 @@ impl axhal::trap::TrapHandler for TrapHandlerImpl {
     }
 
     #[cfg(feature = "paging")]
-    fn handle_page_fault(addr: memory_addr::VirtAddr, flags: page_table::MappingFlags) {
-        handle_page_fault(addr, flags);
+    fn handle_page_fault(_addr: VirtAddr, _flags: MappingFlags, _tf: &mut TrapFrame) {
+        unimplemented!();
     }
 }

@@ -1,11 +1,8 @@
 //! Trap handling.
-
+use super::arch::TrapFrame;
 use crate_interface::{call_interface, def_interface};
-
 use memory_addr::VirtAddr;
-
-use page_table::MappingFlags;
-
+use page_table_entry::MappingFlags;
 /// Trap handler interface.
 ///
 /// This trait is defined with the [`#[def_interface]`][1] attribute. Users
@@ -18,12 +15,17 @@ pub trait TrapHandler {
     /// Handles interrupt requests for the given IRQ number.
     fn handle_irq(irq_num: usize);
     // more e.g.: handle_page_fault();
+
     // 需要分离用户态使用
-    #[cfg(feature = "macro")]
+    #[cfg(feature = "monolithic")]
     fn handle_syscall(syscall_id: usize, args: [usize; 6]) -> isize;
 
     #[cfg(feature = "paging")]
-    fn handle_page_fault(addr: VirtAddr, flags: MappingFlags);
+    fn handle_page_fault(addr: VirtAddr, flags: MappingFlags, tf: &mut TrapFrame);
+
+    /// 处理当前进程的信号
+    #[cfg(feature = "signal")]
+    fn handle_signal();
 }
 
 /// Call the external IRQ handler.
@@ -32,15 +34,22 @@ pub(crate) fn handle_irq_extern(irq_num: usize) {
     call_interface!(TrapHandler::handle_irq, irq_num);
 }
 
-/// Call the syscall handler
 #[allow(dead_code)]
-#[cfg(feature = "macro")]
+#[cfg(feature = "monolithic")]
 /// 分割token流
+#[no_mangle]
 pub(crate) fn handle_syscall(syscall_id: usize, args: [usize; 6]) -> isize {
     call_interface!(TrapHandler::handle_syscall, syscall_id, args)
 }
 
+#[allow(dead_code)]
 #[cfg(feature = "paging")]
-pub(crate) fn handle_page_fault(addr: VirtAddr, flags: MappingFlags) {
-    call_interface!(TrapHandler::handle_page_fault, addr, flags);
+pub(crate) fn handle_page_fault(addr: VirtAddr, flags: MappingFlags, tf: &mut TrapFrame) {
+    call_interface!(TrapHandler::handle_page_fault, addr, flags, tf);
+}
+
+/// 信号处理函数
+#[cfg(feature = "signal")]
+pub(crate) fn handle_signal() {
+    call_interface!(TrapHandler::handle_signal);
 }

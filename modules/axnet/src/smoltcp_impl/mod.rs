@@ -1,16 +1,18 @@
+mod addr;
+mod bench;
 mod dns;
 mod listen_table;
 mod tcp;
 mod udp;
 
-use alloc::{collections::VecDeque, vec};
+use alloc::vec;
 use core::cell::RefCell;
 use core::ops::DerefMut;
 
 use axdriver::prelude::*;
 use axhal::time::{current_time_nanos, NANOS_PER_MICROS};
 use axsync::Mutex;
-use driver_net::{DevError, NetBufferBox, NetBufferPool};
+use driver_net::{DevError, NetBufPtr};
 use lazy_init::LazyInit;
 use smoltcp::iface::{Config, Interface, SocketHandle, SocketSet};
 use smoltcp::phy::{Device, DeviceCapabilities, Medium, RxToken, TxToken};
@@ -20,14 +22,25 @@ use smoltcp::wire::{EthernetAddress, HardwareAddress, IpAddress, IpCidr};
 
 use self::listen_table::ListenTable;
 
-pub use self::dns::resolve_socket_addr;
+pub use self::dns::dns_query;
 pub use self::tcp::TcpSocket;
 pub use self::udp::UdpSocket;
+pub use addr::{from_core_sockaddr, into_core_sockaddr};
+macro_rules! env_or_default {
+    ($key:literal) => {
+        match option_env!($key) {
+            Some(val) => val,
+            None => "",
+        }
+    };
+}
 
-const IP: IpAddress = IpAddress::v4(10, 0, 2, 15); // QEMU user networking default IP
-const GATEWAY: IpAddress = IpAddress::v4(10, 0, 2, 2); // QEMU user networking gateway
-const DNS_SEVER: IpAddress = IpAddress::v4(8, 8, 8, 8);
+const IP: &str = env_or_default!("AX_IP");
+const GATEWAY: &str = env_or_default!("AX_GW");
+const DNS_SEVER: &str = "8.8.8.8";
 const IP_PREFIX: u8 = 24;
+
+const STANDARD_MTU: usize = 1500;
 
 const RANDOM_SEED: u64 = 0xA2CE_05A2_CE05_A2CE;
 
@@ -35,13 +48,7 @@ const TCP_RX_BUF_LEN: usize = 64 * 1024;
 const TCP_TX_BUF_LEN: usize = 64 * 1024;
 const UDP_RX_BUF_LEN: usize = 64 * 1024;
 const UDP_TX_BUF_LEN: usize = 64 * 1024;
-const RX_BUF_QUEUE_SIZE: usize = 64;
 const LISTEN_QUEUE_SIZE: usize = 512;
-
-const NET_BUF_LEN: usize = 1526;
-const NET_BUF_POOL_SIZE: usize = 128;
-
-static NET_BUF_POOL: LazyInit<NetBufferPool> = LazyInit::new();
 
 static LISTEN_TABLE: LazyInit<ListenTable> = LazyInit::new();
 static SOCKET_SET: LazyInit<SocketSetWrapper> = LazyInit::new();
@@ -51,7 +58,6 @@ struct SocketSetWrapper<'a>(Mutex<SocketSet<'a>>);
 
 struct DeviceWrapper {
     inner: RefCell<AxNetDevice>, // use `RefCell` is enough since it's wrapped in `Mutex` in `InterfaceWrapper`.
-    rx_buf_queue: VecDeque<NetBufferBox<'static>>,
 }
 
 struct InterfaceWrapper {
@@ -85,7 +91,8 @@ impl<'a> SocketSetWrapper<'a> {
     }
 
     pub fn new_dns_socket() -> socket::dns::Socket<'a> {
-        socket::dns::Socket::new(&[DNS_SEVER], vec![])
+        let server_addr = DNS_SEVER.parse().expect("invalid DNS server address");
+        socket::dns::Socket::new(&[server_addr], vec![])
     }
 
     pub fn add<T: AnySocket<'a>>(&self, socket: T) -> SocketHandle {
@@ -165,13 +172,9 @@ impl InterfaceWrapper {
 
     pub fn poll(&self, sockets: &Mutex<SocketSet>) {
         let mut dev = self.dev.lock();
-        dev.poll(|buf| {
-            snoop_tcp_packet(buf).ok(); // preprocess TCP packets
-        });
-
-        let timestamp = Self::current_time();
         let mut iface = self.iface.lock();
         let mut sockets = sockets.lock();
+        let timestamp = Self::current_time();
         iface.poll(timestamp, dev.deref_mut(), &mut sockets);
     }
 }
@@ -180,31 +183,7 @@ impl DeviceWrapper {
     fn new(inner: AxNetDevice) -> Self {
         Self {
             inner: RefCell::new(inner),
-            rx_buf_queue: VecDeque::with_capacity(RX_BUF_QUEUE_SIZE),
         }
-    }
-
-    fn poll<F>(&mut self, f: F)
-    where
-        F: Fn(&[u8]),
-    {
-        while self.rx_buf_queue.len() < RX_BUF_QUEUE_SIZE {
-            match self.inner.borrow_mut().receive() {
-                Ok(buf) => {
-                    f(buf.packet());
-                    self.rx_buf_queue.push_back(buf);
-                }
-                Err(DevError::Again) => break, // TODO: better method to avoid error type conversion
-                Err(err) => {
-                    warn!("receive failed: {:?}", err);
-                    break;
-                }
-            }
-        }
-    }
-
-    fn receive(&mut self) -> Option<NetBufferBox<'static>> {
-        self.rx_buf_queue.pop_front()
     }
 }
 
@@ -213,12 +192,38 @@ impl Device for DeviceWrapper {
     type TxToken<'a> = AxNetTxToken<'a> where Self: 'a;
 
     fn receive(&mut self, _timestamp: Instant) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
-        let rx_buf = self.receive()?;
+        let mut dev = self.inner.borrow_mut();
+        if let Err(e) = dev.recycle_tx_buffers() {
+            warn!("recycle_tx_buffers failed: {:?}", e);
+            return None;
+        }
+
+        if !dev.can_transmit() {
+            return None;
+        }
+        let rx_buf = match dev.receive() {
+            Ok(buf) => buf,
+            Err(err) => {
+                if !matches!(err, DevError::Again) {
+                    warn!("receive failed: {:?}", err);
+                }
+                return None;
+            }
+        };
         Some((AxNetRxToken(&self.inner, rx_buf), AxNetTxToken(&self.inner)))
     }
 
     fn transmit(&mut self, _timestamp: Instant) -> Option<Self::TxToken<'_>> {
-        Some(AxNetTxToken(&self.inner))
+        let mut dev = self.inner.borrow_mut();
+        if let Err(e) = dev.recycle_tx_buffers() {
+            warn!("recycle_tx_buffers failed: {:?}", e);
+            return None;
+        }
+        if dev.can_transmit() {
+            Some(AxNetTxToken(&self.inner))
+        } else {
+            None
+        }
     }
 
     fn capabilities(&self) -> DeviceCapabilities {
@@ -230,10 +235,14 @@ impl Device for DeviceWrapper {
     }
 }
 
-struct AxNetRxToken<'a>(&'a RefCell<AxNetDevice>, NetBufferBox<'static>);
+struct AxNetRxToken<'a>(&'a RefCell<AxNetDevice>, NetBufPtr);
 struct AxNetTxToken<'a>(&'a RefCell<AxNetDevice>);
 
 impl<'a> RxToken for AxNetRxToken<'a> {
+    fn preprocess(&self, sockets: &mut SocketSet<'_>) {
+        snoop_tcp_packet(self.1.packet(), sockets).ok();
+    }
+
     fn consume<R, F>(self, f: F) -> R
     where
         F: FnOnce(&mut [u8]) -> R,
@@ -241,7 +250,7 @@ impl<'a> RxToken for AxNetRxToken<'a> {
         let mut rx_buf = self.1;
         trace!(
             "RECV {} bytes: {:02X?}",
-            rx_buf.packet().len(),
+            rx_buf.packet_len(),
             rx_buf.packet()
         );
         let result = f(rx_buf.packet_mut());
@@ -256,17 +265,15 @@ impl<'a> TxToken for AxNetTxToken<'a> {
         F: FnOnce(&mut [u8]) -> R,
     {
         let mut dev = self.0.borrow_mut();
-        let mut tx_buf = NET_BUF_POOL.alloc().unwrap();
-        dev.prepare_tx_buffer(&mut tx_buf, len).unwrap();
-        let result = f(tx_buf.packet_mut());
+        let mut tx_buf = dev.alloc_tx_buffer(len).unwrap();
+        let ret = f(tx_buf.packet_mut());
         trace!("SEND {} bytes: {:02X?}", len, tx_buf.packet());
-        dev.transmit(&tx_buf).unwrap();
-        result
+        dev.transmit(tx_buf).unwrap();
+        ret
     }
 }
 
-fn snoop_tcp_packet(buf: &[u8]) -> Result<(), smoltcp::wire::Error> {
-    use crate::SocketAddr;
+fn snoop_tcp_packet(buf: &[u8], sockets: &mut SocketSet<'_>) -> Result<(), smoltcp::wire::Error> {
     use smoltcp::wire::{EthernetFrame, IpProtocol, Ipv4Packet, TcpPacket};
 
     let ether_frame = EthernetFrame::new_checked(buf)?;
@@ -274,26 +281,43 @@ fn snoop_tcp_packet(buf: &[u8]) -> Result<(), smoltcp::wire::Error> {
 
     if ipv4_packet.next_header() == IpProtocol::Tcp {
         let tcp_packet = TcpPacket::new_checked(ipv4_packet.payload())?;
-        let src_addr = SocketAddr::new(ipv4_packet.src_addr().into(), tcp_packet.src_port());
-        let dst_addr = SocketAddr::new(ipv4_packet.dst_addr().into(), tcp_packet.dst_port());
+        let src_addr = (ipv4_packet.src_addr(), tcp_packet.src_port()).into();
+        let dst_addr = (ipv4_packet.dst_addr(), tcp_packet.dst_port()).into();
         let is_first = tcp_packet.syn() && !tcp_packet.ack();
         if is_first {
             // create a socket for the first incoming TCP packet, as the later accept() returns.
-            LISTEN_TABLE.incoming_tcp_packet(src_addr, dst_addr);
+            LISTEN_TABLE.incoming_tcp_packet(src_addr, dst_addr, sockets);
         }
     }
     Ok(())
 }
 
-pub(crate) fn init(mut net_dev: AxNetDevice) {
-    let pool = NetBufferPool::new(NET_BUF_POOL_SIZE, NET_BUF_LEN).unwrap();
-    NET_BUF_POOL.init_by(pool);
-    net_dev.fill_rx_buffers(&NET_BUF_POOL).unwrap();
+/// Poll the network stack.
+///
+/// It may receive packets from the NIC and process them, and transmit queued
+/// packets to the NIC.
+pub fn poll_interfaces() {
+    SOCKET_SET.poll_interfaces();
+}
 
+/// Benchmark raw socket transmit bandwidth.
+pub fn bench_transmit() {
+    ETH0.dev.lock().bench_transmit_bandwidth();
+}
+
+/// Benchmark raw socket receive bandwidth.
+pub fn bench_receive() {
+    ETH0.dev.lock().bench_receive_bandwidth();
+}
+
+pub(crate) fn init(net_dev: AxNetDevice) {
     let ether_addr = EthernetAddress(net_dev.mac_address().0);
     let eth0 = InterfaceWrapper::new("eth0", net_dev, ether_addr);
-    eth0.setup_ip_addr(IP, IP_PREFIX);
-    eth0.setup_gateway(GATEWAY);
+
+    let ip = IP.parse().expect("invalid IP address");
+    let gateway = GATEWAY.parse().expect("invalid gateway IP address");
+    eth0.setup_ip_addr(ip, IP_PREFIX);
+    eth0.setup_gateway(gateway);
 
     ETH0.init_by(eth0);
     SOCKET_SET.init_by(SocketSetWrapper::new());
@@ -301,6 +325,6 @@ pub(crate) fn init(mut net_dev: AxNetDevice) {
 
     info!("created net interface {:?}:", ETH0.name());
     info!("  ether:    {}", ETH0.ethernet_address());
-    info!("  ip:       {}/{}", IP, IP_PREFIX);
-    info!("  gateway:  {}", GATEWAY);
+    info!("  ip:       {}/{}", ip, IP_PREFIX);
+    info!("  gateway:  {}", gateway);
 }

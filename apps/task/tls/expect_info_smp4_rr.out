@@ -1,0 +1,38 @@
+smp = 4
+build_mode = release
+log_level = info
+
+CPU 0 started
+Found physcial memory regions:
+ .text (READ | EXECUTE | RESERVED)
+ .rodata (READ | RESERVED)
+ .data .tdata .tbss .percpu (READ | WRITE | RESERVED)
+ boot stack (READ | WRITE | RESERVED)
+ .bss (READ | WRITE | RESERVED)
+ free memory (READ | WRITE | FREE)
+Initialize global memory allocator...
+Initialize platform devices...
+Initialize scheduling...
+  use Round-robin scheduler.
+Initialize interrupt handlers...
+CPU 0 init OK
+CPU 1 started
+CPU 2 started
+CPU 3 started
+CPU 1 init OK
+CPU 2 init OK
+CPU 3 init OK
+Running TLS tests...
+main: true 0xaa 0xcafe 0xdeadbeed 0xa2ce05a2ce05 Hello, world!
+1: false 0xab 0xcaff 0xdeadbeee 0xa2ce05a2ce06 Hello1 world!
+2: true 0xac 0xcb00 0xdeadbeef 0xa2ce05a2ce07 Hello2 world!
+3: false 0xad 0xcb01 0xdeadbef0 0xa2ce05a2ce08 Hello3 world!
+4: true 0xae 0xcb02 0xdeadbef1 0xa2ce05a2ce09 Hello4 world!
+5: false 0xaf 0xcb03 0xdeadbef2 0xa2ce05a2ce0a Hello5 world!
+6: true 0xb0 0xcb04 0xdeadbef3 0xa2ce05a2ce0b Hello6 world!
+7: false 0xb1 0xcb05 0xdeadbef4 0xa2ce05a2ce0c Hello7 world!
+8: true 0xb2 0xcb06 0xdeadbef5 0xa2ce05a2ce0d Hello8 world!
+9: false 0xb3 0xcb07 0xdeadbef6 0xa2ce05a2ce0e Hello9 world!
+10: true 0xb4 0xcb08 0xdeadbef7 0xa2ce05a2ce0f Hello: world!
+TLS tests run OK!
+Shutting down...

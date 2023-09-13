@@ -15,7 +15,7 @@ make disk_img
 Run the app:
 
 ```shell
-make A=apps/fs/shell ARCH=aarch64 LOG=debug FS=y run
+make A=apps/fs/shell ARCH=aarch64 LOG=debug BLK=y run
 ```
 
 # RESULT

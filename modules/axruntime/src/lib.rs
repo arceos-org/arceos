@@ -25,7 +25,7 @@ extern crate axlog;
 #[cfg(all(target_os = "none", not(test)))]
 mod lang_items;
 
-#[cfg(not(feature = "macro"))]
+#[cfg(not(feature = "monolithic"))]
 mod trap;
 
 #[cfg(feature = "smp")]
@@ -48,6 +48,8 @@ d88P     888 888      "Y8888P  "Y8888   "Y88888P"   "Y8888P"
 extern "C" {
     fn main();
 }
+#[cfg(feature = "img")]
+core::arch::global_asm!(include_str!("../../axdriver/image.S"));
 
 struct LogIfImpl;
 
@@ -104,25 +106,27 @@ fn is_init_ok() -> bool {
 /// In multi-core environment, this function is called on the primary CPU,
 /// and the secondary CPUs call [`rust_main_secondary`].
 #[cfg_attr(not(test), no_mangle)]
-pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) {
+pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     ax_println!("{}", LOGO);
     ax_println!(
         "\
         arch = {}\n\
         platform = {}\n\
+        target = {}\n\
         smp = {}\n\
         build_mode = {}\n\
         log_level = {}\n\
         ",
-        option_env!("ARCH").unwrap_or(""),
-        option_env!("PLATFORM").unwrap_or(""),
-        option_env!("SMP").unwrap_or(""),
-        option_env!("MODE").unwrap_or(""),
-        option_env!("LOG").unwrap_or(""),
+        option_env!("AX_ARCH").unwrap_or(""),
+        option_env!("AX_PLATFORM").unwrap_or(""),
+        option_env!("AX_TARGET").unwrap_or(""),
+        option_env!("AX_SMP").unwrap_or(""),
+        option_env!("AX_MODE").unwrap_or(""),
+        option_env!("AX_LOG").unwrap_or(""),
     );
 
     axlog::init();
-    axlog::set_max_level(option_env!("LOG").unwrap_or("")); // no effect if set `log-level-*` features
+    axlog::set_max_level(option_env!("AX_LOG").unwrap_or("")); // no effect if set `log-level-*` features
     info!("Logging is enabled.");
     info!("Primary CPU {} started, dtb = {:#x}.", cpu_id, dtb);
 
@@ -138,10 +142,7 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) {
     }
 
     #[cfg(feature = "alloc")]
-    {
-        info!("Initialize global memory allocator...");
-        init_allocator();
-    }
+    init_allocator();
 
     #[cfg(feature = "paging")]
     {
@@ -153,15 +154,14 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) {
     axhal::platform_init();
 
     cfg_if::cfg_if! {
-        if #[cfg(feature = "macro")] {
-            axprocess::process::init_kernel_process();
+        if #[cfg(feature = "monolithic")] {
+            axprocess::init_kernel_process();
         }
         else {
             #[cfg(feature = "multitask")]
             axtask::init_scheduler();
         }
     }
-
     #[cfg(any(feature = "fs", feature = "net", feature = "display"))]
     {
         #[allow(unused_variables)]
@@ -186,6 +186,12 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) {
         init_interrupt();
     }
 
+    #[cfg(all(feature = "tls", not(feature = "multitask")))]
+    {
+        info!("Initialize thread local storage...");
+        init_tls();
+    }
+
     info!("Primary CPU {} init OK.", cpu_id);
     INITED_CPUS.fetch_add(1, Ordering::Relaxed);
 
@@ -208,6 +214,9 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) {
 fn init_allocator() {
     use axhal::mem::{memory_regions, phys_to_virt, MemRegionFlags};
 
+    info!("Initialize global memory allocator...");
+    info!("  use {} allocator.", axalloc::global_allocator().name());
+
     let mut max_region_size = 0;
     let mut max_region_paddr = 0.into();
     for r in memory_regions() {
@@ -218,6 +227,7 @@ fn init_allocator() {
     }
     for r in memory_regions() {
         if r.flags.contains(MemRegionFlags::FREE) && r.paddr == max_region_paddr {
+            info!("alloc region size: {:X}", r.size);
             axalloc::global_init(phys_to_virt(r.paddr).as_usize(), r.size);
             break;
         }
@@ -235,10 +245,9 @@ cfg_if::cfg_if! {
         use axhal::paging::PageTable;
         use lazy_init::LazyInit;
         pub static KERNEL_PAGE_TABLE: LazyInit<PageTable> = LazyInit::new();
-
         fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
+            use axhal::mem::{memory_regions, phys_to_virt};
             if axhal::cpu::this_cpu_is_bsp() {
-                use axhal::mem::{memory_regions, phys_to_virt};
                 let mut kernel_page_table = PageTable::try_new()?;
                 for r in memory_regions() {
                     kernel_page_table.map_region(
@@ -249,6 +258,27 @@ cfg_if::cfg_if! {
                         true,
                     )?;
                 }
+
+                #[cfg(feature = "img")]
+                {
+                    // 此时将测例加载到内存中，通过ramdisk和页表定向映射的方式来读取测例
+                    use axconfig::{TESTCASE_MEMORY_START,TESTCASE_MEMORY_SIZE};
+                    use axhal::mem::PhysAddr;
+                    use axhal::mem::MemRegionFlags;
+                    extern "C" {
+                        fn img_start();
+                    }
+
+                    // 此时qemu运行，文件镜像的位置需要由汇编确定
+                    let img_start_addr:PhysAddr = axhal::mem::virt_to_phys((img_start as usize).into());
+                    kernel_page_table.map_region(
+                        phys_to_virt(TESTCASE_MEMORY_START.into()),
+                        img_start_addr,
+                        TESTCASE_MEMORY_SIZE,
+                        MemRegionFlags::from_bits(1 << 0 | 1 << 1 | 1 << 4).unwrap().into(),
+                        true,
+                    ).unwrap();
+                }
                 KERNEL_PAGE_TABLE.init_by(kernel_page_table);
             }
 
@@ -257,7 +287,6 @@ cfg_if::cfg_if! {
         }
     }
 }
-
 #[cfg(feature = "irq")]
 fn init_interrupt() {
     use axhal::time::TIMER_IRQ_NUM;
@@ -288,4 +317,11 @@ fn init_interrupt() {
 
     // Enable IRQs before starting app
     axhal::arch::enable_irqs();
+}
+
+#[cfg(all(feature = "tls", not(feature = "multitask")))]
+fn init_tls() {
+    let main_tls = axhal::tls::TlsArea::alloc();
+    unsafe { axhal::arch::write_thread_pointer(main_tls.tls_ptr() as usize) };
+    core::mem::forget(main_tls);
 }

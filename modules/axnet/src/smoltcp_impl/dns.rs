@@ -1,10 +1,12 @@
 use alloc::vec::Vec;
 use axerrno::{ax_err_type, AxError, AxResult};
+use core::net::IpAddr;
 
 use smoltcp::iface::SocketHandle;
 use smoltcp::socket::dns::{self, GetQueryResultError, StartQueryError};
-use smoltcp::wire::{DnsQueryType, IpAddress};
+use smoltcp::wire::DnsQueryType;
 
+use super::addr::into_core_ipaddr;
 use super::{SocketSetWrapper, ETH0, SOCKET_SET};
 
 /// A DNS socket.
@@ -30,7 +32,7 @@ impl DnsSocket {
     }
 
     /// Query a address with given DNS query type.
-    pub fn query(&self, name: &str, query_type: DnsQueryType) -> AxResult<Vec<IpAddress>> {
+    pub fn query(&self, name: &str, query_type: DnsQueryType) -> AxResult<Vec<IpAddr>> {
         // let local_addr = self.local_addr.unwrap_or_else(f);
         let handle = self.handle.ok_or_else(|| ax_err_type!(InvalidInput))?;
         let iface = &ETH0.iface;
@@ -53,25 +55,20 @@ impl DnsSocket {
             SOCKET_SET.poll_interfaces();
             match SOCKET_SET.with_socket_mut::<dns::Socket, _, _>(handle, |socket| {
                 socket.get_query_result(query_handle).map_err(|e| match e {
-<<<<<<< HEAD
-                    GetQueryResultError::Pending => AxError::Again,
-=======
                     GetQueryResultError::Pending => AxError::WouldBlock,
->>>>>>> 322a8c34d08df4a657daf4bb67e4031480162883
                     GetQueryResultError::Failed => {
                         ax_err_type!(ConnectionRefused, "socket query() failed")
                     }
                 })
             }) {
                 Ok(n) => {
-                    SOCKET_SET.poll_interfaces();
-                    return Ok(n.to_vec());
+                    let mut res = Vec::with_capacity(n.capacity());
+                    for ip in n {
+                        res.push(into_core_ipaddr(ip))
+                    }
+                    return Ok(res);
                 }
-<<<<<<< HEAD
-                Err(AxError::Again) => axtask::yield_now(),
-=======
                 Err(AxError::WouldBlock) => axtask::yield_now(),
->>>>>>> 322a8c34d08df4a657daf4bb67e4031480162883
                 Err(e) => return Err(e),
             }
         }
@@ -87,7 +84,7 @@ impl Drop for DnsSocket {
 }
 
 /// Public function for DNS query.
-pub fn resolve_socket_addr(name: &str) -> AxResult<alloc::vec::Vec<IpAddress>> {
+pub fn dns_query(name: &str) -> AxResult<alloc::vec::Vec<IpAddr>> {
     let socket = DnsSocket::new();
     socket.query(name, DnsQueryType::A)
 }

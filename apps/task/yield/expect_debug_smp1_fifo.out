@@ -1,0 +1,54 @@
+smp = 1
+build_mode = release
+log_level = debug
+
+Primary CPU 0 started,
+Found physcial memory regions:
+ .text (READ | EXECUTE | RESERVED)
+ .rodata (READ | RESERVED)
+ .data .tdata .tbss .percpu (READ | WRITE | RESERVED)
+ .percpu (READ | WRITE | RESERVED)
+ boot stack (READ | WRITE | RESERVED)
+ .bss (READ | WRITE | RESERVED)
+ free memory (READ | WRITE | FREE)
+Initialize global memory allocator...
+Initialize platform devices...
+Initialize scheduling...
+  use FIFO scheduler.
+Primary CPU 0 init OK.
+Hello, main task!
+Hello, task 0! id = ThreadId(4)
+Hello, task 1! id = ThreadId(5)
+Hello, task 2! id = ThreadId(6)
+Hello, task 3! id = ThreadId(7)
+Hello, task 4! id = ThreadId(8)
+Hello, task 5! id = ThreadId(9)
+Hello, task 6! id = ThreadId(10)
+Hello, task 7! id = ThreadId(11)
+Hello, task 8! id = ThreadId(12)
+Hello, task 9! id = ThreadId(13)
+task block: Task(3, "gc")
+task exit: Task(4, ""), exit_code=0
+task unblock: Task(3, "gc")
+task exit: Task(5, ""), exit_code=0
+task exit: Task(6, ""), exit_code=0
+task exit: Task(7, ""), exit_code=0
+task exit: Task(8, ""), exit_code=0
+task exit: Task(9, ""), exit_code=0
+task exit: Task(10, ""), exit_code=0
+task exit: Task(11, ""), exit_code=0
+task exit: Task(12, ""), exit_code=0
+task exit: Task(13, ""), exit_code=0
+Task yielding tests run OK!
+task exit: Task(2, "main"), exit_code=0
+task drop: Task(4, "")
+task drop: Task(5, "")
+task drop: Task(6, "")
+task drop: Task(7, "")
+task drop: Task(8, "")
+task drop: Task(9, "")
+task drop: Task(10, "")
+task drop: Task(11, "")
+task drop: Task(12, "")
+task drop: Task(13, "")
+Shutting down...

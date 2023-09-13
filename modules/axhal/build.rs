@@ -2,8 +2,13 @@ use std::io::Result;
 
 fn main() {
     let arch = std::env::var("CARGO_CFG_TARGET_ARCH").unwrap();
-    let platform = std::env::var("PLATFORM").unwrap_or("dummy".to_string());
-    gen_linker_script(&arch, &platform).unwrap();
+    let platform = axconfig::PLATFORM;
+    if platform != "dummy" {
+        gen_linker_script(&arch, platform).unwrap();
+    }
+
+    println!("cargo:rustc-cfg=platform=\"{}\"", platform);
+    println!("cargo:rustc-cfg=platform_family=\"{}\"", axconfig::FAMILY);
 }
 
 fn gen_linker_script(arch: &str, platform: &str) -> Result<()> {

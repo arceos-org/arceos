@@ -1,7 +1,9 @@
 use axio::{prelude::*, Result, SeekFrom};
 use core::fmt;
 
-use crate::{fops, macro_fs::file_io::FileExt};
+#[cfg(feature = "monolithic")]
+use super::FileExt;
+use crate::fops;
 
 /// A structure representing a type of file with accessors for each file type.
 /// It is returned by [`Metadata::file_type`] method.
@@ -93,27 +95,38 @@ impl Metadata {
 
     /// Returns the size of the file, in bytes, this metadata is for.
     #[allow(clippy::len_without_is_empty)]
-    pub fn len(&self) -> u64 {
+    pub const fn len(&self) -> u64 {
         self.0.size()
     }
 
     /// Returns the permissions of the file this metadata is for.
-    pub fn permissions(&self) -> Permissions {
+    pub const fn permissions(&self) -> Permissions {
         self.0.perm()
     }
 
-    /// Returns the inner raw metadata [`fops::FileAttr`].
-    pub const fn raw_metadata(&self) -> &fops::FileAttr {
-        &self.0
+    /// Sets the permissions of the file this metadata is for.
+    pub fn set_permissions(&mut self, perm: Permissions) {
+        self.0.set_perm(perm)
+    }
+
+    /// Returns the total size of this file in bytes.
+    pub const fn size(&self) -> u64 {
+        self.0.size()
+    }
+
+    /// Returns the number of blocks allocated to the file, in 512-byte units.
+    pub const fn blocks(&self) -> u64 {
+        self.0.blocks()
     }
 }
 
 impl fmt::Debug for Metadata {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Metadata")
-            .field("file_type", &self.0.file_type())
-            .field("is_dir", &self.0.is_dir())
-            .field("is_file", &self.0.is_file())
+            .field("file_type", &self.file_type())
+            .field("is_dir", &self.is_dir())
+            .field("is_file", &self.is_file())
+            .field("permissions", &self.permissions())
             .finish_non_exhaustive()
     }
 }
@@ -161,6 +174,10 @@ impl File {
     pub fn executable(&self) -> bool {
         self.inner.executable()
     }
+
+    pub fn truncate(&mut self, len: usize) -> Result<()> {
+        self.inner.truncate(len as u64)
+    }
 }
 
 impl Read for File {
@@ -185,7 +202,7 @@ impl Seek for File {
     }
 }
 
-// #[cfg(feature = "macro")]
+#[cfg(feature = "monolithic")]
 impl FileExt for File {
     fn readable(&self) -> bool {
         self.inner.readable()

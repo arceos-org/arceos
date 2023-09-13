@@ -66,6 +66,7 @@ pub trait Read {
             Ok(())
         }
     }
+
     fn read_full(&mut self, mut buf: &mut [u8]) -> Result<usize> {
         let buf_len = buf.len();
 
@@ -265,8 +266,8 @@ where
     }
 }
 
-/// Struct for poll result.
-#[derive(Debug, Default)]
+/// I/O poll results.
+#[derive(Debug, Default, Clone, Copy)]
 pub struct PollState {
     /// Object can be read now.
     pub readable: bool,

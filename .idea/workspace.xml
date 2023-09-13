@@ -17,15 +17,16 @@
   <component name="ChangeListManager">
     <list default="true" id="7c62798e-00ca-45fb-8290-e63c15b16cfe" name="更改" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axfs_os/src/dir.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axfs_os/src/dir.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axprocess/src/test.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axprocess/src/test.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axsyscall/src/fs.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axsyscall/src/fs.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/axsyscall/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axsyscall/src/lib.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ulib/starry_libax/src/syscall/fs.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/starry_libax/src/syscall/fs.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ulib/starry_libax/src/test.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/starry_libax/src/test.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
   </component>
   <component name="ExternalProjectsData">
     <projectState path="$PROJECT_DIR$">
@@ -50,33 +51,6 @@
   <component name="MacroExpansionManager">
     <option name="directoryName" value="5k26v953" />
   </component>
-  <component name="MakefileLocalSettings">
-    <option name="availableProjects">
-      <map>
-        <entry>
-          <key>
-            <ExternalProjectPojo>
-              <option name="name" value="arceos" />
-              <option name="path" value="$PROJECT_DIR$" />
-            </ExternalProjectPojo>
-          </key>
-          <value>
-            <list>
-              <ExternalProjectPojo>
-                <option name="name" value="arceos" />
-                <option name="path" value="$PROJECT_DIR$" />
-              </ExternalProjectPojo>
-            </list>
-          </value>
-        </entry>
-      </map>
-    </option>
-    <option name="projectSyncType">
-      <map>
-        <entry key="$PROJECT_DIR$" value="RE_IMPORT" />
-      </map>
-    </option>
-  </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
   </component>
@@ -85,27 +59,28 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
-    &quot;cf.advertisement.text.has.clang-format&quot;: &quot;true&quot;,
-    &quot;cf.advertisement.text.overridden&quot;: &quot;true&quot;,
-    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
-    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;merge__fs&quot;,
-    &quot;last_opened_file_path&quot;: &quot;//wsl$/Ubuntu-20.04/home/ccyd/.cargo/git/checkouts/rust-fatfs-168a09f1b9eebca0/a3a834e&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;language.rust.cargo.check&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "cf.advertisement.text.has.clang-format": "true",
+    "cf.advertisement.text.overridden": "true",
+    "cf.first.check.clang-format": "false",
+    "cidr.known.project.marker": "true",
+    "git-widget-placeholder": "problem2",
+    "last_opened_file_path": "//wsl$/Ubuntu-22.04/home/ccyd/Local_Coding/OS/Starry",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
+    "settings.editor.selected.configurable": "preferences.keymap",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="\\wsl$\Ubuntu-20.04\home\ccyd\HW\RustOS\ArceOS\arceos\testcases\oscomp" />
@@ -113,16 +88,8 @@
       <recent name="\\wsl$\Ubuntu-20.04\home\ccyd\HW\RustOS\ArceOS\arceos" />
     </key>
   </component>
-  <component name="RunManager">
-    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
-      <method v="2">
-        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
-      </method>
-    </configuration>
-  </component>
   <component name="RustProjectSettings">
-    <option name="toolchainHomeDirectory" value="$PROJECT_DIR$/../../../../.cargo/bin" />
-    <option name="version" value="2" />
+    <option name="toolchainHomeDirectory" value="$PROJECT_DIR$/../../../.cargo/bin" />
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="应用程序级" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
@@ -138,6 +105,15 @@
       <workItem from="1683970396971" duration="121000" />
       <workItem from="1683970525838" duration="205000" />
       <workItem from="1683996445819" duration="12554000" />
+      <workItem from="1689655993420" duration="1007000" />
+      <workItem from="1689657124347" duration="9550000" />
+      <workItem from="1689666902569" duration="1622000" />
+      <workItem from="1689672948690" duration="9465000" />
+      <workItem from="1689694863365" duration="33000" />
+      <workItem from="1689694907253" duration="11797000" />
+      <workItem from="1690628912203" duration="1833000" />
+      <workItem from="1690764849588" duration="611000" />
+      <workItem from="1692447315345" duration="8137000" />
     </task>
     <servers />
   </component>
@@ -145,8 +121,18 @@
     <option name="version" value="3" />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
+    <option name="OPEN_GENERIC_TABS">
+      <map>
+        <entry key="44a40c0b-7662-411c-b349-e41911ab1b02" value="TOOL_WINDOW" />
+      </map>
+    </option>
     <option name="TAB_STATES">
       <map>
+        <entry key="44a40c0b-7662-411c-b349-e41911ab1b02">
+          <value>
+            <State />
+          </value>
+        </entry>
         <entry key="MAIN">
           <value>
             <State>
@@ -155,7 +141,7 @@
                   <entry key="branch">
                     <value>
                       <list>
-                        <option value="merge_fs" />
+                        <option value="origin/dev" />
                       </list>
                     </value>
                   </entry>

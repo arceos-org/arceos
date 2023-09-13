@@ -18,6 +18,7 @@ void *ChildFunc(void *arg)
         sleep(1);
     }
     close(fd[1]);
+    return NULL;
 }
 
 void main()

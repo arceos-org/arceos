@@ -10,35 +10,36 @@ repository = "https://github.com/rcore-os/arceos/tree/main/modules/axruntime"
 documentation = "https://rcore-os.github.io/arceos/axruntime/index.html"
 
 [features]
-alloc = ["dep:axalloc"]
-paging = ["alloc", "axhal/paging", "dep:lazy_init"]
-irq = ["axhal/irq", "axtask?/irq"]
-multitask = ["alloc", "axtask/multitask"]
-smp = ["axhal/smp", "spinlock/smp"]
+default = []
 
-fs = ["alloc", "paging", "axdriver/virtio-blk", "dep:axfs"] # TODO: remove "paging"
-net = ["alloc", "paging", "axdriver/virtio-net", "dep:axnet"]
-display = ["alloc", "paging", "axdriver/virtio-gpu", "dep:axdisplay"]
-# 是否使用宏内核架构
-macro = ["axtask/macro", "axhal/macro", "axprocess/macro", "axfs/macro"]
+smp = ["axhal/smp"]
+irq = ["axhal/irq", "axtask?/irq", "percpu", "kernel_guard"]
+tls = ["axhal/tls", "axtask?/tls"]
+alloc = ["axalloc"]
+paging = ["axhal/paging", "lazy_init"]
 
-default = ["axtask?/default", "macro"]
+multitask = ["axtask/multitask"]
+fs = ["axdriver", "axfs"]
+net = ["axdriver", "axnet"]
+display = ["axdriver", "axdisplay"]
+signal = ["axprocess/signal", "axhal/signal"]
+img = ["axdriver/img"]
+monolithic = ["axprocess/monolithic", "axhal/monolithic", "axtask/monolithic", "axmem/monolithic"]
 
 [dependencies]
-percpu = { path = "../../crates/percpu" }
-kernel_guard = { path = "../../crates/kernel_guard" }
-spinlock = { path = "../../crates/spinlock" }
-lazy_init = { path = "../../crates/lazy_init", optional = true }
-crate_interface = { path = "../../crates/crate_interface" }
-axalloc = { path = "../axalloc", optional = true }
-axconfig = { path = "../axconfig" }
-axdriver = { path = "../axdriver", optional = true }
+cfg-if = "1.0"
 axhal = { path = "../axhal" }
 axlog = { path = "../axlog" }
+axconfig = { path = "../axconfig" }
+axalloc = { path = "../axalloc", optional = true }
+axdriver = { path = "../axdriver", optional = true }
 axfs = { path = "../axfs", optional = true }
 axnet = { path = "../axnet", optional = true }
 axdisplay = { path = "../axdisplay", optional = true }
-axtask = { path = "../axtask", default-features = false, optional = true }
-axmem = { path = "../axmem" }
+axtask = { path = "../axtask", optional = true }
 axprocess = { path = "../axprocess", optional = true }
-cfg-if = "1.0"
+axmem = { path = "../axmem", optional = true }
+crate_interface = { path = "../../crates/crate_interface" }
+percpu = { path = "../../crates/percpu", optional = true }
+kernel_guard = { path = "../../crates/kernel_guard", optional = true }
+lazy_init = { path = "../../crates/lazy_init", optional = true }

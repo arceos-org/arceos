@@ -185,7 +185,7 @@ impl WaitQueue {
     ///
     /// If `resched` is true, the current task will be preempted when the
     /// preemption is enabled.
-    pub fn notify_task(&mut self, resched: bool, task: &AxTaskRef) -> bool {
+    pub fn notify_task(&self, resched: bool, task: &AxTaskRef) -> bool {
         let mut rq = RUN_QUEUE.lock();
         let mut wq = self.queue.lock();
         if let Some(index) = wq.iter().position(|t| Arc::ptr_eq(t, task)) {

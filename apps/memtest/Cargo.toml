@@ -7,4 +7,5 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-libax = { path = "../../ulib/libax", features = ["alloc", "paging"] }
+rand = { version = "0.8", default-features = false, features = ["small_rng"] }
+axstd = { path = "../../ulib/axstd", features = ["alloc"], optional = true }

@@ -7,6 +7,7 @@ use axfs_vfs::{VfsError, VfsResult};
 use spin::RwLock;
 
 use crate::file::FileNode;
+use crate::Interrupts;
 
 /// The directory node in the RAM filesystem.
 ///
@@ -47,7 +48,14 @@ impl DirNode {
             return Err(VfsError::AlreadyExists);
         }
         let node: VfsNodeRef = match ty {
-            VfsNodeType::File => Arc::new(FileNode::new()),
+            VfsNodeType::File => {
+                // 当前仅是将interrups作为一个特殊的节点，未来应该进行统一
+                if name == "interrupts" {
+                    Arc::new(Interrupts::default())
+                } else {
+                    Arc::new(FileNode::new())
+                }
+            }
             VfsNodeType::Dir => Self::new(Some(self.this.clone())),
             _ => return Err(VfsError::Unsupported),
         };
@@ -90,7 +98,6 @@ impl VfsNodeOps for DirNode {
                 .cloned()
                 .ok_or(VfsError::NotFound),
         }?;
-
         if let Some(rest) = rest {
             node.lookup(rest)
         } else {

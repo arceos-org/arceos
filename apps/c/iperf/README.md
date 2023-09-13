@@ -6,7 +6,7 @@ Build and start the [`iperf3`](https://github.com/esnet/iperf) server on ArceOS:
 
 ```bash
 # in arceos root directory
-make A=apps/c/iperf FS=y NET=y ARCH=<arch> run
+make A=apps/c/iperf BLK=y NET=y ARCH=<arch> run
 ```
 
 ## Benchmark

@@ -10,6 +10,12 @@
 //! pointer register to obtain the corresponding per-CPU data area, and then add
 //! an offset to access the corresponding field.
 //!
+//! # Notes
+//!
+//! Since RISC-V does not provide separate thread pointer registers for user and
+//! kernel mode, we temporarily use the `gp` register to point to the per-CPU data
+//! area, while the `tp` register is used for thread-local storage.
+//!
 //! # Examples
 //!
 //! ```no_run
