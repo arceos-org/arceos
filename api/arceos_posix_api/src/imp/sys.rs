@@ -17,7 +17,6 @@ pub unsafe extern "C" fn sys_sysinfo(info: *mut ctypes::sysinfo) -> c_int {
         info_mut.loads = [0; 3];
         #[cfg(feature = "axtask")]
         {
-            // calc the ratio of idle and others
             axtask::loadavg::get_avenrun(&mut info_mut.loads);
         }
 
@@ -30,10 +29,6 @@ pub unsafe extern "C" fn sys_sysinfo(info: *mut ctypes::sysinfo) -> c_int {
         #[cfg(feature = "alloc")]
         {
             let allocator = axalloc::global_allocator();
-            debug!("available_bytes: {:X}", allocator.available_bytes());
-            debug!("available_pages: {:X}", allocator.available_pages());
-            debug!("used_bytes: {:X}", allocator.used_bytes());
-            debug!("used_pages: {:X}", allocator.used_pages());
             info_mut.freeram = (allocator.available_bytes()
                 + allocator.available_pages() * PAGE_SIZE_4K)
                 as c_ulong;
