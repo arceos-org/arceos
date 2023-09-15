@@ -71,6 +71,7 @@ members = [
     "apps/task/priority",
     "apps/task/tls",
     "apps/cli",
+    "apps/boards/raspi4",
 ]
 
 
