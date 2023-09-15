@@ -69,6 +69,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "arceos-cli"
+version = "0.1.0"
+dependencies = [
+ "axstd",
+]
+
+[[package]]
 name = "arceos-display"
 version = "0.1.0"
 dependencies = [
