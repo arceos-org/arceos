@@ -8,7 +8,7 @@ edition = "2021"
 [features]
 default = ["monolithic"]
 
-monolithic = ["arceos_api/monolithic", "axfeat/monolithic", "paging", "fs", "net", "multitask", "irq", "signal"]
+monolithic = ["arceos_api/monolithic", "axfeat/monolithic", "paging", "fs", "net", "multitask", "irq", "signal", "axnet/ip"]
 
 img = ["axruntime/img"]
 

@@ -8,13 +8,14 @@ extern crate alloc;
 
 mod dir;
 mod null;
+mod random;
 #[cfg(test)]
 mod tests;
 mod zero;
-
 pub use self::dir::DirNode;
 
 pub use self::null::NullDev;
+pub use self::random::RandomDev;
 pub use self::zero::ZeroDev;
 use alloc::sync::Arc;
 use axfs_vfs::{VfsNodeRef, VfsOps, VfsResult};

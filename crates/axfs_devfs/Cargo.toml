@@ -13,3 +13,6 @@ documentation = "https://rcore-os.github.io/arceos/axfs_devfs/index.html"
 axfs_vfs = { path = "../axfs_vfs" }
 spin = "0.9"
 log = "0.4"
+rand = { version = "0.8.5" , default-features = false, features = [
+    "small_rng",
+]}
