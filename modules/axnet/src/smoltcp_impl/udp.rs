@@ -231,7 +231,10 @@ impl UdpSocket {
         // info!("send to addr: {:?}", remote_endpoint);
         self.block_on(|| {
             SOCKET_SET.with_socket_mut::<udp::Socket, _, _>(self.handle, |socket| {
-                if socket.can_send() {
+                if !socket.is_open() {
+                    // not connected
+                    ax_err!(NotConnected, "socket send() failed")
+                } else if socket.can_send() {
                     socket
                         .send_slice(buf, remote_endpoint)
                         .map_err(|e| match e {
@@ -258,7 +261,10 @@ impl UdpSocket {
         }
         self.block_on(|| {
             SOCKET_SET.with_socket_mut::<udp::Socket, _, _>(self.handle, |socket| {
-                if socket.can_recv() {
+                if !socket.is_open() {
+                    // not bound
+                    ax_err!(NotConnected, "socket recv() failed")
+                } else if socket.can_recv() {
                     // data available
                     op(socket)
                 } else {

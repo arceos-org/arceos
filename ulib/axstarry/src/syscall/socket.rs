@@ -1048,7 +1048,7 @@ pub fn syscall_sendto(
 
     match send_result {
         Ok(len) => {
-            info!("[sendto()] socket {fd} sent {len} bytes");
+            info!("[sendto()] socket {fd} sent {len} bytes to addr {:?}", addr);
             len as isize
         }
         Err(AxError::Interrupted) => ErrorNo::EINTR as isize,
