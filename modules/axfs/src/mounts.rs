@@ -8,11 +8,16 @@ pub(crate) fn devfs() -> Arc<fs::devfs::DeviceFileSystem> {
     let null = fs::devfs::NullDev;
     let zero = fs::devfs::ZeroDev;
     let bar = fs::devfs::ZeroDev;
+    let random = fs::devfs::RandomDev::default();
+    let urandom = fs::devfs::RandomDev::default();
+
     let devfs = fs::devfs::DeviceFileSystem::new();
     let foo_dir = devfs.mkdir("foo");
     devfs.add("null", Arc::new(null));
     devfs.add("zero", Arc::new(zero));
     foo_dir.add("bar", Arc::new(bar));
+    devfs.add("random", Arc::new(random));
+    devfs.add("urandom", Arc::new(urandom));
     #[cfg(feature = "monolithic")]
     {
         // 添加dev文件系统下的配置文件

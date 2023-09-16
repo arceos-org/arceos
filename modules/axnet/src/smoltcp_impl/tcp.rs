@@ -13,7 +13,7 @@ use smoltcp::socket::tcp::{self, ConnectError, State};
 use smoltcp::wire::{IpEndpoint, IpListenEndpoint};
 
 use super::addr::{from_core_sockaddr, into_core_sockaddr, is_unspecified, UNSPECIFIED_ENDPOINT};
-use super::{SocketSetWrapper, ETH0, LISTEN_TABLE, SOCKET_SET};
+use super::{SocketSetWrapper, LISTEN_TABLE, SOCKET_SET};
 
 // State transitions:
 // CLOSED -(connect)-> BUSY -> CONNECTING -> CONNECTED -(shutdown)-> BUSY -> CLOSED
@@ -78,8 +78,9 @@ impl TcpSocket {
     /// [`Err(NotConnected)`](AxError::NotConnected) if not connected.
     #[inline]
     pub fn local_addr(&self) -> AxResult<SocketAddr> {
+        // 为了通过测例，已经`bind`但未`listen`的socket也可以返回地址
         match self.get_state() {
-            STATE_CONNECTED | STATE_LISTENING => {
+            STATE_CONNECTED | STATE_LISTENING | STATE_CLOSED => {
                 Ok(into_core_sockaddr(unsafe { self.local_addr.get().read() }))
             }
             _ => Err(AxError::NotConnected),
@@ -129,7 +130,11 @@ impl TcpSocket {
             // TODO: check remote addr unreachable
             let remote_endpoint = from_core_sockaddr(remote_addr);
             let bound_endpoint = self.bound_endpoint()?;
-            let iface = &ETH0.iface;
+            #[cfg(not(feature = "ip"))]
+            let iface = &super::ETH0.iface;
+
+            #[cfg(feature = "ip")]
+            let iface = super::LOOPBACK.try_get().unwrap();
             let (local_endpoint, remote_endpoint) = SOCKET_SET
                 .with_socket_mut::<tcp::Socket, _, _>(handle, |socket| {
                     socket

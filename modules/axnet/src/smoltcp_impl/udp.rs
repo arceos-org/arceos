@@ -228,7 +228,7 @@ impl UdpSocket {
         if self.local_addr.read().is_none() {
             return ax_err!(NotConnected, "socket send() failed");
         }
-
+        // info!("send to addr: {:?}", remote_endpoint);
         self.block_on(|| {
             SOCKET_SET.with_socket_mut::<udp::Socket, _, _>(self.handle, |socket| {
                 if socket.can_send() {

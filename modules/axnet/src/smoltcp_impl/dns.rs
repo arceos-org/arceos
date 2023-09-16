@@ -7,7 +7,7 @@ use smoltcp::socket::dns::{self, GetQueryResultError, StartQueryError};
 use smoltcp::wire::DnsQueryType;
 
 use super::addr::into_core_ipaddr;
-use super::{SocketSetWrapper, ETH0, SOCKET_SET};
+use super::{SocketSetWrapper, SOCKET_SET};
 
 /// A DNS socket.
 struct DnsSocket {
@@ -35,7 +35,10 @@ impl DnsSocket {
     pub fn query(&self, name: &str, query_type: DnsQueryType) -> AxResult<Vec<IpAddr>> {
         // let local_addr = self.local_addr.unwrap_or_else(f);
         let handle = self.handle.ok_or_else(|| ax_err_type!(InvalidInput))?;
-        let iface = &ETH0.iface;
+        #[cfg(not(feature = "ip"))]
+        let iface = &super::ETH0.iface;
+        #[cfg(feature = "ip")]
+        let iface = super::LOOPBACK.try_get().unwrap();
         let query_handle = SOCKET_SET
             .with_socket_mut::<dns::Socket, _, _>(handle, |socket| {
                 socket.start_query(iface.lock().context(), name, query_type)

@@ -11,6 +11,10 @@ documentation = "https://rcore-os.github.io/arceos/axnet/index.html"
 
 [features]
 smoltcp = []
+
+# 启用ip协议与否
+ip = []
+
 default = ["smoltcp"]
 
 [dependencies]
@@ -33,6 +37,7 @@ default-features = false
 features = [
   "alloc", "log",   # no std
   "medium-ethernet",
+  "medium-ip",
   "proto-ipv4",
   "socket-raw", "socket-icmp", "socket-udp", "socket-tcp", "socket-dns",
   # "fragmentation-buffer-size-65536", "proto-ipv4-fragmentation",

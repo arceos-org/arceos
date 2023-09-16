@@ -342,6 +342,7 @@ version = "0.1.0"
 dependencies = [
  "axfs_vfs",
  "log",
+ "rand",
  "spin 0.9.8",
 ]
 

@@ -1098,6 +1098,7 @@ pub fn syscall_recvfrom(
         return ErrorNo::EFAULT as isize;
     }
     let buf = unsafe { from_raw_parts_mut(buf, len) };
+    info!("recv addr: {:?}", socket.name().unwrap());
     match socket.recv_from(buf) {
         Ok((len, addr)) => {
             info!("socket {fd} recv {len} bytes from {addr:?}");

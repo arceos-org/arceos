@@ -62,7 +62,6 @@ pub fn filter(testcase: String) -> bool {
         || testcase == "fstime".to_string()
         || testcase == "looper".to_string()
         || testcase == "./looper".to_string()
-        || testcase == "socket".to_string()
     {
         if test_filter.contains_key(&testcase) {
             let count = test_filter.get_mut(&testcase).unwrap();
@@ -73,10 +72,7 @@ pub fn filter(testcase: String) -> bool {
             }
             *count += 1;
         } else {
-            if testcase == "looper".to_string()
-                || testcase == "./looper".to_string()
-                || testcase == "socket".to_string()
-            {
+            if testcase == "looper".to_string() || testcase == "./looper".to_string() {
                 return false;
             }
             test_filter.insert(testcase, 1);
@@ -142,7 +138,6 @@ pub fn syscall_exec(path: *const u8, mut args: *const usize, mut envp: *const us
     // 清空futex信号列表
     clear_wait(curr_process.pid(), true);
     let argc = args_vec.len();
-    info!("test");
     if curr_process.exec(path, args_vec, envs_vec).is_err() {
         exit_current_task(0);
     }
@@ -446,7 +441,7 @@ pub fn syscall_setsid() -> isize {
         return ErrorNo::EPERM as isize;
     }
 
-    // 从当前 process group 中移除 calling thread
+    // 从当前 process 的 thread group 中移除 calling thread
     process.tasks.lock().retain(|t| t.id().as_u64() != task_id);
 
     // 新建 process group 并加入
@@ -464,7 +459,7 @@ pub fn syscall_setsid() -> isize {
 
     new_process.tasks.lock().push(task.as_task_ref().clone());
     task.set_leader(true);
-    task.set_process_id(task_id);
+    task.set_process_id(new_process.pid());
 
     // 修改 PID2PC
     PID2PC
