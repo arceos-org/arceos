@@ -57,7 +57,7 @@ fn main() {
             uart.putchar(0x00);
             uart.putchar(0x7e);
         }
-        delay(4);
+        delay(6);
 
         println!("stop");
         {
@@ -74,9 +74,64 @@ fn main() {
         }
         delay(1);
 
-        println!("turn left");
+        println!("turn right");
         {
-            // 左转：0xff_fc_07_11_01_05_64_00_82
+            // // 左转：0xff_fc_07_11_01_05_64_00_82
+            // uart.putchar(0xff);
+            // uart.putchar(0xfc);
+            // uart.putchar(0x07);
+            // uart.putchar(0x11);
+            // uart.putchar(0x01);
+            // uart.putchar(0x05);
+            // uart.putchar(0x64);
+            // uart.putchar(0x00);
+            // uart.putchar(0x82);
+
+            // 右转：0xff_fc_07_11_01_06_64_00_83
+            uart.putchar(0xff);
+            uart.putchar(0xfc);
+            uart.putchar(0x07);
+            uart.putchar(0x11);
+            uart.putchar(0x01);
+            uart.putchar(0x06);
+            uart.putchar(0x64);
+            uart.putchar(0x00);
+            uart.putchar(0x83);
+        }
+        delay(1);
+        // println!("forward");
+        // {
+        //     // 前进：0xff_fc_07_11_01_01_64_00_7e
+        //     uart.putchar(0xff);
+        //     uart.putchar(0xfc);
+        //     uart.putchar(0x07);
+        //     uart.putchar(0x11);
+        //     uart.putchar(0x01);
+        //     uart.putchar(0x01);
+        //     uart.putchar(0x64);
+        //     uart.putchar(0x00);
+        //     uart.putchar(0x7e);
+        // }
+        // delay(4);
+
+        println!("stop");
+        {
+            // 停止：0xff_fc_07_11_01_00_00_00_19
+            uart.putchar(0xff);
+            uart.putchar(0xfc);
+            uart.putchar(0x07);
+            uart.putchar(0x11);
+            uart.putchar(0x01);
+            uart.putchar(0x00);
+            uart.putchar(0x00);
+            uart.putchar(0x00);
+            uart.putchar(0x19);
+        }
+        delay(1);
+
+        println!("turn right");
+        {
+            // // 左转：0xff_fc_07_11_01_05_64_00_82
             // uart.putchar(0xff);
             // uart.putchar(0xfc);
             // uart.putchar(0x07);

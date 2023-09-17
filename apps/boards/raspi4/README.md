@@ -1,4 +1,11 @@
 
+### 编译生成 img 文件的命令
+```
+make A=apps/boards/raspi4 ARCH=aarch64 PLATFORM=aarch64-raspi4 LOG=debug SMP=4 run
+cat ../rust-raspberrypi-OS-tutorials/06_uart_chainloader/kernel8.img apps/boards/raspi4/raspi4_aarch64-raspi4.bin > kernel8.img
+```
+
+### 编译过程记录
 ```
 # make A=apps/boards/raspi4 ARCH=aarch64 PLATFORM=aarch64-raspi4 LOG=debug SMP=4 run
     Building App: raspi4, Arch: aarch64, Platform: aarch64-raspi4, App type: rust
