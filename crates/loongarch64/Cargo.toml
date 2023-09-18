@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 bit_field = "0.10.1"
 log = "0.4"
+cfg-if = "1.0"

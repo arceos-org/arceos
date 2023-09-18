@@ -1229,6 +1229,7 @@ name = "loongarch64"
 version = "0.1.0"
 dependencies = [
  "bit_field",
+ "cfg-if",
  "log",
 ]
 
