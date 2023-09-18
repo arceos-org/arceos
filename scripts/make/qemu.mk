@@ -24,7 +24,18 @@ qemu_args-aarch64 := \
   -machine virt \
   -kernel $(OUT_BIN)
 
+LOONGARCH_BIOS = tools/la64/loongarch_bios_0310.bin
+qemu_args-loongarch64 := \
+  -bios $(LOONGARCH_BIOS) \
+  -kernel $(OUT_ELF) \
+  -vga none \
+
+
+ifeq ($(ARCH), loongarch64)
+qemu_args-y := -m 1G -smp $(SMP) $(qemu_args-$(ARCH))
+else
 qemu_args-y := -m 128M -smp $(SMP) $(qemu_args-$(ARCH))
+endif
 
 qemu_args-$(BLK) += \
   -device virtio-blk-$(vdev-suffix),drive=disk0 \
@@ -67,11 +78,25 @@ else
 endif
 
 define run_qemu
+  $(call before_run_qemu)
   @printf "    $(CYAN_C)Running$(END_C) on qemu...\n"
   $(call run_cmd,$(QEMU),$(qemu_args-y))
+  $(call after_run_qemu)
 endef
 
 define run_qemu_debug
   @printf "    $(CYAN_C)Debugging$(END_C) on qemu...\n"
   $(call run_cmd,$(QEMU),$(qemu_args-debug))
+endef
+
+define before_run_qemu
+	$(if $(filter $(ARCH), loongarch64), \
+		@cp tools/la64/efi-virtio.rom . \
+	)
+endef
+
+define after_run_qemu
+	$(if $(filter $(ARCH), loongarch64), \
+		@rm efi-virtio.rom \
+	)
 endef

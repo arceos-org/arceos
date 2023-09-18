@@ -1,0 +1,35 @@
+# Architecture identifier.
+arch = "loongarch64"
+# Platform identifier.
+platform = "loongarch64-qemu-virt"
+# Platform family.
+family = "loongarch64-qemu-virt"
+
+# Base address of the whole physical memory.
+phys-memory-base = "0x0"
+# Size of the whole physical memory.
+phys-memory-size = "0x800_0000"     # 128M
+# Base physical address of the kernel image.
+kernel-base-paddr = "0x000_1000"
+# Base virtual address of the kernel image.
+kernel-base-vaddr = "0x9000_0000_0000_1000"
+# Linear mapping offset, for quick conversions between physical and virtual
+# addresses.
+phys-virt-offset = "0x9000_0000_0000_0000"
+# MMIO regions with format (`base_paddr`, `size`).
+mmio-regions = [
+    ["0xfec0_0000", "0x1000"],      # IO APIC
+    ["0xfed0_0000", "0x1000"],      # HPET
+    ["0xfee0_0000", "0x1000"],      # Local APIC
+]
+# VirtIO MMIO regions with format (`base_paddr`, `size`).
+virtio-mmio-regions = [
+    ["0x4004_0000", "0x1000"],      # virtio-pci-common-virtio-net
+    ["0x4004_1000", "0x1000"],      # virtio-pci-isr-virtio-net
+    ["0x4004_2000", "0x1000"],      # virtio-pci-device-virtio-net
+    ["0x4004_3000", "0x1000"],      # virtio-pci-notify-virtio-net
+]
+# Timer interrupt frequency in Hz.
+timer-frequency = "1_000_000_000"      # 10MHz
+
+

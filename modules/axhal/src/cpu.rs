@@ -45,6 +45,10 @@ pub fn current_task_ptr<T>() -> *const T {
         use tock_registers::interfaces::Readable;
         aarch64_cpu::registers::SP_EL0.get() as _
     }
+    #[cfg(target_arch = "loongarch64")]
+    unsafe {
+        CURRENT_TASK_PTR.read_current_raw() as _
+    }
 }
 
 /// Sets the pointer to the current task with preemption-safety.
@@ -70,6 +74,10 @@ pub unsafe fn set_current_task_ptr<T>(ptr: *const T) {
     {
         use tock_registers::interfaces::Writeable;
         aarch64_cpu::registers::SP_EL0.set(ptr as u64)
+    }
+    #[cfg(target_arch = "loongarch64")]
+    unsafe {
+        CURRENT_TASK_PTR.write_current_raw(ptr as usize)
     }
 }
 
