@@ -6,24 +6,17 @@ static mut BOOT_STACK: [u8; TASK_STACK_SIZE] = [0; TASK_STACK_SIZE];
 pub static mut SMP_BOOT_STACK_TOP: usize = 0;
 
 unsafe fn init_mmu() {
-    use loongarch64::register::csr::Register;
-    use loongarch64::tlb::Pwch;
-    use loongarch64::tlb::Pwcl;
-
-    Pwcl::read()
-        .set_ptbase(12) //页表起始位置
-        .set_ptwidth(9) //页表宽度为9位
-        .set_dir1_base(21) //第一级页目录表起始位置
-        .set_dir1_width(9) //第一级页目录表宽度为9位
-        .set_dir2_base(30) //第二级页目录表起始位置
-        .set_dir2_width(9) //第二级页目录表宽度为9位
-        .write();
-    Pwch::read()
-        .set_dir3_base(39) //第三级页目录表
-        .set_dir3_width(8) //第三级页目录表宽度为9位
-        //.set_dir4_base(48) //第四级页目录表
-        .set_dir4_width(0) //第四级页目录表
-        .write();
+    use loongarch64::register::{pwch, pwcl};
+    pwcl::set_ptbase(12); //页表起始位置
+    pwcl::set_ptwidth(9); //页表宽度为9位
+    pwcl::set_dir1_base(21); //第一级页目录表起始位置
+    pwcl::set_dir1_width(9); //第一级页目录表宽度为9位
+    pwcl::set_dir2_base(30); //第二级页目录表起始位置
+    pwcl::set_dir2_width(9); //第二级页目录表宽度为9位
+    pwch::set_dir3_base(39); //第三级页目录表
+    pwch::set_dir3_width(8); //第三级页目录表宽度为9位
+                             //.set_dir4_base(48) //第四级页目录表
+    pwch::set_dir4_width(0) //第四级页目录表
 }
 
 /// The earliest entry point for the primary CPU.

@@ -1,7 +1,6 @@
 use crate::irq::IrqHandler;
 use lazy_init::LazyInit;
-use loongarch64::register::csr::Register;
-use loongarch64::register::tcfg::Tcfg;
+use loongarch64::register::tcfg;
 pub(super) const CSR_ECFG_VS_SHIFT: usize = 16;
 pub(super) const CSR_ECFG_LIE_TI_SHIFT: usize = 11;
 pub(super) const TI_VEC: usize = 0x1 << CSR_ECFG_LIE_TI_SHIFT;
@@ -31,11 +30,11 @@ macro_rules! with_cause {
 pub fn set_enable(vector: usize, enabled: bool) {
     if vector == 11 {
         if enabled {
-            Tcfg::read()
-                .set_enable(true)
-                .set_initval(800000000 as usize)
-                .set_loop(false)
-                .write();
+            // Tcfg::read()
+            //     .set_enable(true)
+            //     .set_initval(800000000 as usize)
+            //     .set_loop(false)
+            //     .write();
         }
     }
 }

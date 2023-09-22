@@ -35,7 +35,6 @@ members = [
     "crates/spinlock",
     "crates/timer_list",
     "crates/tuple_for_each",
-    "crates/loongarch64",
 
     "modules/axalloc",
     "modules/axconfig",

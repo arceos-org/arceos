@@ -1,8 +1,7 @@
 use super::context::TrapFrame;
-use loongarch64::register::csr::Register;
 
-use loongarch64::register::estat::{Estat, Exception, Interrupt, Trap};
-use loongarch64::register::ticlr::Ticlr;
+use loongarch64::register::estat::{self, Exception, Interrupt, Trap};
+use loongarch64::register::ticlr;
 
 core::arch::global_asm!(
     include_str!("trap.S"),
@@ -15,11 +14,11 @@ fn handle_breakpoint(era: &mut usize) {
 
 #[no_mangle]
 fn loongarch64_trap_handler(tf: &mut TrapFrame) {
-    let cause = Estat::read().cause();
+    let cause = estat::read().cause();
     match cause {
         Trap::Exception(Exception::Breakpoint) => handle_breakpoint(&mut tf.era),
         Trap::Interrupt(Interrupt::Timer) => {
-            Ticlr::read().clear_timer().write();
+            ticlr::clear_timer_interrupt();
             let irq_num: usize = tf.estat.trailing_zeros() as usize;
             crate::trap::handle_irq_extern(irq_num)
         }

@@ -55,8 +55,6 @@ arm_pl011 = { path = "../../crates/arm_pl011" }
 dw_apb_uart = { path = "../../crates/dw_apb_uart" }
 
 [target.'cfg(target_arch = "loongarch64")'.dependencies]
-bit_field = "0.10.1"
-loongarch64 = { path = "../../crates/loongarch64" }
-
+loongarch64 = {git = "https://github.com/Godones/loongArch64",package = "loongArch64" }
 [build-dependencies]
 axconfig = { path = "../axconfig" }
