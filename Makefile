@@ -145,6 +145,8 @@ ifeq ($(PLATFORM_NAME), aarch64-raspi4)
   include scripts/make/raspi4.mk
 else ifeq ($(PLATFORM_NAME), aarch64-bsta1000b)
   include scripts/make/bsta1000b-fada.mk
+else ifeq ($(PLATFORM_NAME), riscv64-lpi4a)
+  include scripts/make/lpi4a.mk
 endif
 
 build: $(OUT_DIR) $(OUT_BIN)

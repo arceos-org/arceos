@@ -1,0 +1,35 @@
+# Architecture identifier.
+arch = "riscv64"
+# Platform identifier.
+platform = "riscv64-lpi4a"
+# Platform family.
+family = "riscv64-thead"
+
+# Base address of the whole physical memory.
+phys-memory-base = "0"
+# Size of the whole physical memory.
+phys-memory-size = "0x4000_0000"
+# Base physical address of the kernel image.
+kernel-base-paddr = "0x0020_0000"
+# Base virtual address of the kernel image.
+kernel-base-vaddr = "0xffff_ffc0_0020_0000"
+# Linear mapping offset, for quick conversions between physical and virtual
+# addresses.
+phys-virt-offset = "0xffff_ffc0_0000_0000"
+# MMIO regions with format (`base_paddr`, `size`).
+mmio-regions = [
+    ["0xff_d800_0000", "0x0400_0000"],   # PLIC
+    ["0xff_e701_4000", "0x4000"],      # UART
+    ["0xff_e707_0000", "0x2000"],      # Ethernet
+]
+
+# VirtIO MMIO regions with format (`base_paddr`, `size`).
+virtio-mmio-regions = []
+
+# Timer interrupt frequency in Hz.
+timer-frequency = "3000000"
+
+# UART Address
+uart-paddr = "0xffe7014000"
+# UART irq from device tree
+uart-irq = "0x24"
