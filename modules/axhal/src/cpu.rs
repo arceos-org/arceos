@@ -47,6 +47,7 @@ pub fn current_task_ptr<T>() -> *const T {
     }
     #[cfg(target_arch = "loongarch64")]
     unsafe {
+        let _guard = kernel_guard::IrqSave::new();
         CURRENT_TASK_PTR.read_current_raw() as _
     }
 }
@@ -77,6 +78,7 @@ pub unsafe fn set_current_task_ptr<T>(ptr: *const T) {
     }
     #[cfg(target_arch = "loongarch64")]
     unsafe {
+        let _guard = kernel_guard::IrqSave::new();
         CURRENT_TASK_PTR.write_current_raw(ptr as usize)
     }
 }

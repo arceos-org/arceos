@@ -106,7 +106,7 @@ unsafe extern "C" fn context_switch(_current_task: &mut TaskContext, _next_task:
         ld.d     $tp, $a1, 12 * 8
         ld.d     $sp, $a1, 1 * 8
 
-        jr $ra",
+        ret",
         options(noreturn),
     )
 }

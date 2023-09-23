@@ -65,7 +65,7 @@ pub fn gen_current_ptr(symbol: &Ident, ty: &Type) -> proc_macro2::TokenStream {
             #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
             ::core::arch::asm!("mv {}, gp", out(reg) base);
             #[cfg(any(target_arch = "loongarch64"))]
-            ::core::arch::asm!("move {}, $tp", out(reg) base);
+            ::core::arch::asm!("move {}, $r21", out(reg) base);
             (base + self.offset()) as *const #ty
         }
     })
