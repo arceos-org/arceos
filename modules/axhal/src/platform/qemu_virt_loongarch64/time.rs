@@ -26,16 +26,11 @@ pub const fn nanos_to_ticks(nanos: u64) -> u64 {
 #[cfg(feature = "irq")]
 pub fn set_oneshot_timer(deadline_ns: u64) {
     use loongarch64::register::tcfg;
-    tcfg::set_en(true);
-    tcfg::set_periodic(false);
-    tcfg::set_init_val(nanos_to_ticks(deadline_ns) as usize);
+    tcfg::set_en(true); // enable timer
+    tcfg::set_periodic(false); // set timer to one-shot mode
+    tcfg::set_init_val(nanos_to_ticks(deadline_ns) as usize); // set timer initial value
 }
-#[cfg(feature = "irq")]
-pub(super) fn init_primary() {
-    {
-        use crate::arch::disable_irqs;
-        disable_irqs();
-        // 清除时钟中断
-        ticlr::clear_timer_interrupt();
-    }
+
+pub(super) fn init_percpu() {
+    // #[cfg(feature = "irq")]
 }

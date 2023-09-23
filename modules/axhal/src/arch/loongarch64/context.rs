@@ -41,6 +41,7 @@ pub struct TaskContext {
     pub ra: usize,      // return address
     pub sp: usize,      // stack pointer
     pub s: [usize; 10], // loongArch need to save 10 static registers from $r22 to $r31
+    pub tp: usize,
 }
 
 impl TaskContext {
@@ -51,9 +52,10 @@ impl TaskContext {
 
     /// Initializes the context for a new task, with the given entry point and
     /// kernel stack.
-    pub fn init(&mut self, entry: usize, kstack_top: VirtAddr) {
+    pub fn init(&mut self, entry: usize, kstack_top: VirtAddr, tls_area: VirtAddr) {
         self.sp = kstack_top.as_usize();
         self.ra = entry;
+        self.tp = tls_area.as_usize();
     }
 
     /// Switches to another task.
@@ -61,10 +63,12 @@ impl TaskContext {
     /// It first saves the current task's context from CPU to this place, and then
     /// restores the next task's context from `next_ctx` to CPU.
     pub fn switch_to(&mut self, next_ctx: &Self) {
-        unsafe {
-            // TODO: switch TLS
-            context_switch(self, next_ctx)
+        #[cfg(feature = "tls")]
+        {
+            self.tp = super::read_thread_pointer();
+            unsafe { super::write_thread_pointer(next_ctx.tp) };
         }
+        unsafe { context_switch(self, next_ctx) }
     }
 }
 
@@ -85,6 +89,7 @@ unsafe extern "C" fn context_switch(_current_task: &mut TaskContext, _next_task:
         st.d     $s7, $a0, 9 * 8
         st.d     $s8, $a0, 10 * 8
         st.d     $fp, $a0, 11 * 8
+        st.d     $tp, $a0, 12 * 8
 
         // restore new context
         ld.d     $ra, $a1, 0
@@ -98,6 +103,7 @@ unsafe extern "C" fn context_switch(_current_task: &mut TaskContext, _next_task:
         ld.d     $s7, $a1, 9 * 8
         ld.d     $s8, $a1, 10 * 8
         ld.d     $fp, $a1, 11 * 8
+        ld.d     $tp, $a1, 12 * 8
         ld.d     $sp, $a1, 1 * 8
 
         jr $ra",

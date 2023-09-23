@@ -1,10 +1,9 @@
 #[macro_use]
-
 mod context;
 mod trap;
 
 use core::arch::asm;
-use loongarch64::register::{crmd, eentry, pgd, pgdl, stlbps, tlbrehi, tlbrentry};
+use loongarch64::register::{crmd, eentry, pgd};
 use memory_addr::{PhysAddr, VirtAddr};
 
 pub use self::context::{TaskContext, TrapFrame};
@@ -38,8 +37,8 @@ pub fn wait_for_irqs() {
 /// Halt the current CPU.
 #[inline]
 pub fn halt() {
-    unsafe { loongarch64::asm::idle() } // should never return
     disable_irqs();
+    unsafe { loongarch64::asm::idle() } // should never return
 }
 
 /// Reads the register that stores the current page table root.
@@ -58,11 +57,7 @@ pub fn read_page_table_root() -> PhysAddr {
 pub unsafe fn write_page_table_root(root_paddr: PhysAddr) {
     let old_root = read_page_table_root();
     trace!("set page table root: {:#x} => {:#x}", old_root, root_paddr);
-    if old_root != root_paddr {
-        // 设置新的页基址
-        pgdl::set_base(root_paddr.into());
-        // Pgdh::read().set_val(root_paddr.into()).write(); //设置新的页基址
-    }
+    trace!("loongarch64 don't need to set page table");
 }
 
 /// Flushes the TLB.
@@ -71,42 +66,33 @@ pub unsafe fn write_page_table_root(root_paddr: PhysAddr) {
 /// entry that maps the given virtual address.
 #[inline]
 pub fn flush_tlb(_vaddr: Option<VirtAddr>) {
-    unsafe {
-        /*
-        if let Some(vaddr) = vaddr {
-            asm!("invtlb 0x6,$r0,{}", in(reg) vaddr.as_usize());
-        } else {
-            asm!("invtlb 0,$r0,$r0");
-        }*/
-        asm!("tlbflush");
-    }
+    trace!("loongarch64 don't need to flush tlb now");
 }
 
 /// Writes Exception Entry Base Address Register (`eentry`).
 #[inline]
 pub fn set_trap_vector_base(eentry: usize) {
-    // TODO!(记录状态并恢复)
-    crmd::set_ie(false); //关闭全局中断
-    eentry::set_eentry(eentry); //设置例外入口
-    crmd::set_ie(true); //开启全局中断
+    eentry::set_eentry(eentry);
 }
 
-core::arch::global_asm!(include_str!("tlb.S"));
-
-extern "C" {
-    fn tlb_refill_handler();
-}
-
-/// Writes TLB Refill Exception Entry Base Address (`tlbrentry`).
+/// Reads the thread pointer of the current CPU.
+///
+/// It is used to implement TLS (Thread Local Storage).
 #[inline]
-pub fn init_tlb() {
-    stlbps::set_ps(0xc); //设置TLB的页面大小为4KiB
-    tlbrehi::set_ps(0xc); //设置TLB的页面大小为4KiB
-    set_tlb_handler(tlb_refill_handler as usize);
+pub fn read_thread_pointer() -> usize {
+    let tp;
+    unsafe { asm!("move {}, tp", out(reg) tp) };
+    tp
 }
 
-/// Writes TLB Refill Exception Entry Base Address (`tlbrentry`).
+/// Writes the thread pointer of the current CPU.
+///
+/// It is used to implement TLS (Thread Local Storage).
+///
+/// # Safety
+///
+/// This function is unsafe as it changes the CPU states.
 #[inline]
-pub fn set_tlb_handler(tlb_refill_entry: usize) {
-    tlbrentry::set_tlbrentry(tlb_refill_entry);
+pub unsafe fn write_thread_pointer(tp: usize) {
+    asm!("move tp, {}", in(reg) tp)
 }

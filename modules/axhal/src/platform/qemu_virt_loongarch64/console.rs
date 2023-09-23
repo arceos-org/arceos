@@ -17,7 +17,7 @@ impl Uart {
     }
 
     pub fn putchar(&mut self, c: u8) {
-        let mut ptr = self.base_address as *mut u8;
+        let ptr = self.base_address as *mut u8;
         loop {
             unsafe {
                 let c = ptr.add(5).read_volatile();
@@ -26,7 +26,6 @@ impl Uart {
                 }
             }
         }
-        ptr = self.base_address as *mut u8;
         unsafe {
             ptr.add(0).write_volatile(c);
         }

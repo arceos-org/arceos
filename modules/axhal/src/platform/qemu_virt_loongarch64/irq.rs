@@ -1,13 +1,7 @@
 use crate::irq::IrqHandler;
 use lazy_init::LazyInit;
-use loongarch64::register::tcfg;
-pub(super) const CSR_ECFG_VS_SHIFT: usize = 16;
-pub(super) const CSR_ECFG_LIE_TI_SHIFT: usize = 11;
-pub(super) const TI_VEC: usize = 0x1 << CSR_ECFG_LIE_TI_SHIFT;
-/// HWI mask
-pub(super) const HWI_VEC: usize = 0x3fc;
-
-pub(super) const SWI_IRQ_NUM: usize = 0;
+use loongarch64::register::ecfg;
+use loongarch64::register::ecfg::LineBasedInterrupt;
 
 /// The maximum number of IRQs.
 pub const MAX_IRQ_COUNT: usize = 1024;
@@ -28,14 +22,9 @@ macro_rules! with_cause {
 }
 /// Enables or disables the given IRQ.
 pub fn set_enable(vector: usize, enabled: bool) {
+    warn!("set_enable: vector = {}, enabled = {}", vector, enabled);
     if vector == 11 {
-        if enabled {
-            // Tcfg::read()
-            //     .set_enable(true)
-            //     .set_initval(800000000 as usize)
-            //     .set_loop(false)
-            //     .write();
-        }
+        ecfg::set_lie(LineBasedInterrupt::TIMER); // enable local interrupt for timer
     }
 }
 
@@ -43,7 +32,6 @@ pub fn set_enable(vector: usize, enabled: bool) {
 ///
 /// It also enables the IRQ if the registration succeeds. It returns `false` if
 /// the registration failed.
-///
 pub fn register_handler(vector: usize, handler: IrqHandler) -> bool {
     crate::irq::register_handler_common(vector, handler)
 }
@@ -57,7 +45,11 @@ pub fn dispatch_irq(vector: usize) {
     crate::irq::dispatch_irq_common(vector);
 }
 
-pub(super) fn init_primary() {
+pub(super) fn init_percpu() {
     // enable soft interrupts, timer interrupts, and external interrupts
-    // disable_irqs();
+    let inter = LineBasedInterrupt::TIMER
+        | LineBasedInterrupt::SWI0
+        | LineBasedInterrupt::SWI1
+        | LineBasedInterrupt::HWI0;
+    ecfg::set_lie(inter);
 }
