@@ -4,11 +4,12 @@
 //!
 //! 当前采用在trap return时进行信号的处理。因此为了防止信号处理延时过长，需要开启时钟中断，使得OS每隔一段时间触发
 //! 一次trap，从而检查是否有需要处理的信号。
-#![no_std]
+#![cfg_attr(not(test), no_std)]
 
 use action::SigAction;
 use signal_no::{SignalNo, MAX_SIG_NUM};
 
+pub use action::SIGNAL_RETURN_TRAP;
 pub mod action;
 pub mod info;
 pub mod signal_no;

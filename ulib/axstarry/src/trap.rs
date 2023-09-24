@@ -28,8 +28,8 @@ impl axhal::trap::TrapHandler for TrapHandlerImpl {
 
     #[cfg(feature = "paging")]
     fn handle_page_fault(addr: VirtAddr, flags: MappingFlags, tf: &mut TrapFrame) {
-        use axhal::arch::SIGNAL_RETURN_TRAP;
         use axprocess::handle_page_fault;
+        use axsignal::SIGNAL_RETURN_TRAP;
         axprocess::time_stat_from_user_to_kernel();
         use crate::syscall::signal::syscall_sigreturn;
         if addr.as_usize() == SIGNAL_RETURN_TRAP {

@@ -19,6 +19,8 @@ extern crate alloc;
 #[macro_use]
 mod utils;
 
+mod monolithic_imp;
+
 mod imp;
 
 /// Platform-specific constants and parameters.

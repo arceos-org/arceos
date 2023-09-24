@@ -1,4 +1,4 @@
-use axhal::arch::SIGNAL_RETURN_TRAP;
+pub const SIGNAL_RETURN_TRAP: usize = 0xFFFF_FF80_0000_0000;
 
 use crate::signal_no::SignalNo;
 
