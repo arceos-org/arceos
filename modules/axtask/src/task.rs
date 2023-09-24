@@ -1,5 +1,8 @@
 use alloc::{boxed::Box, string::String, sync::Arc};
+#[cfg(feature = "monolithic")]
 use axconfig::SMP;
+
+#[cfg(feature = "monolithic")]
 use axhal::KERNEL_PROCESS_ID;
 
 use core::ops::Deref;
@@ -22,6 +25,7 @@ core::arch::global_asm!(include_str!("copy.S"));
 use axhal::arch::TrapFrame;
 
 use crate::stat::TimeStat;
+
 use crate::{AxRunQueue, AxTask, AxTaskRef, WaitQueue};
 
 /// A unique identifier for a thread.
@@ -130,6 +134,7 @@ pub struct TaskInner {
     clear_child_tid: AtomicU64,
 
     // 时间统计, 无论是否为宏内核架构都可能被使用到
+    #[allow(unused)]
     time: UnsafeCell<TimeStat>,
 
     #[cfg(feature = "monolithic")]
@@ -202,22 +207,30 @@ impl TaskInner {
         Some(self.exit_code.load(Ordering::Acquire))
     }
 
-    #[cfg(feature = "monolithic")]
+    /// 获取内核栈栈顶
+    #[inline]
+    pub fn get_kernel_stack_top(&self) -> Option<usize> {
+        if let Some(kstack) = &self.kstack {
+            return Some(kstack.top().as_usize());
+        }
+        None
+    }
+}
+
+#[cfg(feature = "monolithic")]
+impl TaskInner {
     pub fn set_child_tid(&self, tid: usize) {
         self.set_child_tid.store(tid as u64, Ordering::Release)
     }
 
-    #[cfg(feature = "monolithic")]
     pub fn set_clear_child_tid(&self, tid: usize) {
         self.clear_child_tid.store(tid as u64, Ordering::Release)
     }
 
-    #[cfg(feature = "monolithic")]
     pub fn get_clear_child_tid(&self) -> usize {
         self.clear_child_tid.load(Ordering::Acquire) as usize
     }
 
-    #[cfg(feature = "monolithic")]
     #[inline]
     pub fn get_page_table_token(&self) -> usize {
         self.page_table_token
@@ -296,24 +309,13 @@ impl TaskInner {
     }
 
     #[inline]
-    #[cfg(feature = "monolithic")]
     pub fn get_process_id(&self) -> u64 {
         self.process_id.load(Ordering::Acquire)
     }
 
     #[inline]
-    #[cfg(feature = "monolithic")]
     pub fn set_process_id(&self, process_id: u64) {
         self.process_id.store(process_id, Ordering::Release);
-    }
-
-    /// 获取内核栈栈顶
-    #[inline]
-    pub fn get_kernel_stack_top(&self) -> Option<usize> {
-        if let Some(kstack) = &self.kstack {
-            return Some(kstack.top().as_usize());
-        }
-        None
     }
 
     /// 获取内核栈的第一个trap上下文
@@ -325,17 +327,14 @@ impl TaskInner {
         unreachable!("get_first_trap_frame: kstack is None");
     }
 
-    #[cfg(feature = "monolithic")]
     pub fn set_leader(&self, is_lead: bool) {
         self.is_leader.store(is_lead, Ordering::Release);
     }
 
-    #[cfg(feature = "monolithic")]
     pub fn is_leader(&self) -> bool {
         self.is_leader.load(Ordering::Acquire)
     }
 
-    #[cfg(feature = "monolithic")]
     /// 设置Trap上下文
     pub fn set_trap_context(&self, trap_frame: TrapFrame) {
         let now_trap_frame = self.trap_frame.get();
@@ -343,8 +342,6 @@ impl TaskInner {
             *now_trap_frame = trap_frame;
         }
     }
-
-    #[cfg(feature = "monolithic")]
     /// 将trap上下文直接写入到内核栈上
     /// 注意此时保持sp不变
     /// 返回值为压入了trap之后的内核栈的栈顶，可以用于多层trap压入
@@ -359,17 +356,6 @@ impl TaskInner {
             __copy(frame_address, kernel_base);
         }
     }
-    #[inline]
-    pub fn state(&self) -> TaskState {
-        self.state.load(Ordering::Acquire).into()
-    }
-
-    #[inline]
-    pub fn set_state(&self, state: TaskState) {
-        self.state.store(state as u8, Ordering::Release)
-    }
-
-    #[cfg(feature = "monolithic")]
     /// 设置CPU set，其中set_size为bytes长度
     pub fn set_cpu_set(&self, mask: usize, set_size: usize) {
         let len = if set_size * 4 > SMP {
@@ -396,7 +382,6 @@ impl TaskInner {
         let status = self.sched_status.get();
         unsafe { *status }
     }
-
     pub fn get_sig_child(&self) -> bool {
         self.send_sigchld_when_exit
     }
@@ -478,12 +463,6 @@ impl TaskInner {
         debug!("new task: {}", t.id_name());
         let kstack = TaskStack::alloc(align_up_4k(stack_size));
 
-        #[cfg(feature = "monolithic")]
-        t.process_id.store(process_id, Ordering::Release);
-
-        #[cfg(feature = "monolithic")]
-        t.page_table_token = page_table_token;
-
         #[cfg(feature = "tls")]
         let tls = VirtAddr::from(t.tls.tls_ptr() as usize);
         #[cfg(not(feature = "tls"))]
@@ -491,15 +470,20 @@ impl TaskInner {
         t.entry = Some(Box::into_raw(Box::new(entry)));
 
         #[cfg(feature = "monolithic")]
-        t.send_sigchld_when_exit = sig_child;
+        {
+            t.process_id.store(process_id, Ordering::Release);
 
-        #[cfg(feature = "monolithic")]
-        // 需要修改ctx存储的栈地址，否则内核trap上下文会被修改
-        t.ctx.get_mut().init(
-            task_entry as usize,
-            kstack.top() - core::mem::size_of::<TrapFrame>(),
-            tls,
-        );
+            t.page_table_token = page_table_token;
+
+            t.send_sigchld_when_exit = sig_child;
+
+            // 需要修改ctx存储的栈地址，否则内核trap上下文会被修改
+            t.ctx.get_mut().init(
+                task_entry as usize,
+                kstack.top() - core::mem::size_of::<TrapFrame>(),
+                tls,
+            );
+        }
 
         #[cfg(not(feature = "monolithic"))]
         t.ctx.get_mut().init(task_entry as usize, kstack.top(), tls);
@@ -526,6 +510,16 @@ impl TaskInner {
             t.is_idle = true;
         }
         Arc::new(AxTask::new(t))
+    }
+
+    #[inline]
+    pub fn state(&self) -> TaskState {
+        self.state.load(Ordering::Acquire).into()
+    }
+
+    #[inline]
+    pub fn set_state(&self, state: TaskState) {
+        self.state.store(state as u8, Ordering::Release)
     }
 
     #[inline]

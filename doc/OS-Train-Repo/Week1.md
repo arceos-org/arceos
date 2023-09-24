@@ -85,7 +85,27 @@ StarryOS 的可插拔 syscall 模块实现
    
    将这个文件加上条件编译，同时设置`axfs_ramfs`为可选引入模块，从而解决了问题。
 
+* task/yield 测例
 
+  需要对 axtask 中一系列结构体成员与其对应的方法加上对应的条件编译语句。为了简约起见，为`TaskInner`新加了一个`impl`，集中存放为宏内核实现加上的内容。
+
+* net/bwbench 测例
+
+  没有串口输出，需要打开 `LOG=info` 开关才可以看到对应输出，部分输出截取如下：
+
+  ```shell
+  [  1.066117 0 axnet::smoltcp_impl::bench:35] Transmit: 0.773GBytes, Bandwidth: 6.184Gbits/sec.
+  [  2.065980 0 axnet::smoltcp_impl::bench:35] Transmit: 0.840GBytes, Bandwidth: 6.720Gbits/sec.
+  [  3.065980 0 axnet::smoltcp_impl::bench:35] Transmit: 0.744GBytes, Bandwidth: 5.956Gbits/sec.
+  [  4.066010 0 axnet::smoltcp_impl::bench:35] Transmit: 0.768GBytes, Bandwidth: 6.150Gbits/sec.
+  [  5.066014 0 axnet::smoltcp_impl::bench:35] Transmit: 0.745GBytes, Bandwidth: 5.962Gbits/sec.
+  [  6.066012 0 axnet::smoltcp_impl::bench:35] Transmit: 0.742GBytes, Bandwidth: 5.937Gbits/sec.
+  [  7.066013 0 axnet::smoltcp_impl::bench:35] Transmit: 0.741GBytes, Bandwidth: 5.930Gbits/sec.
+  [  8.066012 0 axnet::smoltcp_impl::bench:35] Transmit: 0.747GBytes, Bandwidth: 5.978Gbits/sec.
+  [  9.066032 0 axnet::smoltcp_impl::bench:35] Transmit: 0.744GBytes, Bandwidth: 5.955Gbits/sec.
+  ```
+
+  
 
 
 

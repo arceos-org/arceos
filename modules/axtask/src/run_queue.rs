@@ -1,6 +1,5 @@
-use alloc::collections::{BTreeSet, VecDeque};
+use alloc::collections::VecDeque;
 use alloc::sync::Arc;
-use axhal::cpu::this_cpu_id;
 #[cfg(feature = "monolithic")]
 use axhal::KERNEL_PROCESS_ID;
 use lazy_init::LazyInit;
@@ -184,32 +183,45 @@ impl AxRunQueue {
                 self.scheduler.put_prev_task(prev.clone(), preempt);
             }
         }
-        let mut task_set = BTreeSet::new();
-        let next = loop {
-            let task = self.scheduler.pick_next_task();
-            if task.is_none() {
-                break unsafe {
-                    // Safety: IRQs must be disabled at this time.
-                    IDLE_TASK.current_ref_raw().get_unchecked().clone()
-                };
-            }
-            let task = task.unwrap();
-            // 原先队列有任务，但是全部不满足CPU适配集，则还是返回IDLE
-            if task_set.contains(&task.id().as_u64()) {
-                break unsafe {
-                    // Safety: IRQs must be disabled at this time.
-                    IDLE_TASK.current_ref_raw().get_unchecked().clone()
-                };
-            }
-            let mask = task.get_cpu_set();
-            let curr_cpu = this_cpu_id();
-            if mask & (1 << curr_cpu) != 0 {
-                break task;
-            }
-            task_set.insert(task.id().as_u64());
-            self.scheduler.put_prev_task(task, false);
-        };
-        self.switch_to(prev, next);
+        #[cfg(feature = "monolithic")]
+        {
+            use alloc::collections::BTreeSet;
+            use axhal::cpu::this_cpu_id;
+            let mut task_set = BTreeSet::new();
+            let next = loop {
+                let task = self.scheduler.pick_next_task();
+                if task.is_none() {
+                    break unsafe {
+                        // Safety: IRQs must be disabled at this time.
+                        IDLE_TASK.current_ref_raw().get_unchecked().clone()
+                    };
+                }
+                let task = task.unwrap();
+                // 原先队列有任务，但是全部不满足CPU适配集，则还是返回IDLE
+                if task_set.contains(&task.id().as_u64()) {
+                    break unsafe {
+                        // Safety: IRQs must be disabled at this time.
+                        IDLE_TASK.current_ref_raw().get_unchecked().clone()
+                    };
+                }
+                let mask = task.get_cpu_set();
+                let curr_cpu = this_cpu_id();
+                if mask & (1 << curr_cpu) != 0 {
+                    break task;
+                }
+                task_set.insert(task.id().as_u64());
+                self.scheduler.put_prev_task(task, false);
+            };
+            self.switch_to(prev, next);
+        }
+        #[cfg(not(feature = "monolithic"))]
+        {
+            let next = self.scheduler.pick_next_task().unwrap_or_else(|| unsafe {
+                // Safety: IRQs must be disabled at this time.
+                IDLE_TASK.current_ref_raw().get_unchecked().clone()
+            });
+            self.switch_to(prev, next);
+        }
     }
 
     fn switch_to(&mut self, prev_task: CurrentTask, next_task: AxTaskRef) {
@@ -225,8 +237,11 @@ impl AxRunQueue {
             return;
         }
         // 当任务进行切换时，更新两个任务的时间统计信息
-        next_task.time_stat_when_switch_to();
-        prev_task.time_stat_when_switch_from();
+        #[cfg(feature = "monolithic")]
+        {
+            next_task.time_stat_when_switch_to();
+            prev_task.time_stat_when_switch_from();
+        }
         unsafe {
             let prev_ctx_ptr = prev_task.ctx_mut_ptr();
             let next_ctx_ptr = next_task.ctx_mut_ptr();
@@ -235,10 +250,14 @@ impl AxRunQueue {
             // but won't be dropped until `gc_entry()` is called.
             assert!(Arc::strong_count(prev_task.as_task_ref()) > 1);
             assert!(Arc::strong_count(&next_task) >= 1);
-            let page_table_token = next_task.page_table_token;
-            if page_table_token != 0 {
-                axhal::arch::write_page_table_root(page_table_token.into());
+            #[cfg(feature = "monolithic")]
+            {
+                let page_table_token = next_task.page_table_token;
+                if page_table_token != 0 {
+                    axhal::arch::write_page_table_root(page_table_token.into());
+                }
             }
+
             CurrentTask::set_current(prev_task, next_task);
             (*prev_ctx_ptr).switch_to(&*next_ctx_ptr);
         }

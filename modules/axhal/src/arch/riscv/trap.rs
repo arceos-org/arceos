@@ -6,7 +6,7 @@ use riscv::register::{sepc, stval};
 
 use riscv::register::scause::{self, Exception as E, Trap};
 
-#[cfg(feature = "paging")]
+#[cfg(feature = "monolithic")]
 use crate::trap::handle_page_fault;
 
 #[cfg(feature = "monolithic")]
