@@ -30,6 +30,6 @@ virtio-mmio-regions = [
     ["0x4004_3000", "0x1000"],      # virtio-pci-notify-virtio-net
 ]
 # Timer interrupt frequency in Hz.
-timer-frequency = "1_000_000_000"      # 10MHz
+timer-frequency = "1_00_000_000"      # 1GMHz
 
 

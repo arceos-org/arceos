@@ -3,7 +3,7 @@ mod context;
 mod trap;
 
 use core::arch::asm;
-use loongarch64::register::{crmd, eentry, pgd};
+use loongarch64::register::{crmd, ecfg, eentry, pgd};
 use memory_addr::{PhysAddr, VirtAddr};
 
 pub use self::context::{TaskContext, TrapFrame};
@@ -72,6 +72,7 @@ pub fn flush_tlb(_vaddr: Option<VirtAddr>) {
 /// Writes Exception Entry Base Address Register (`eentry`).
 #[inline]
 pub fn set_trap_vector_base(eentry: usize) {
+    ecfg::set_vs(0);
     eentry::set_eentry(eentry);
 }
 
@@ -81,7 +82,7 @@ pub fn set_trap_vector_base(eentry: usize) {
 #[inline]
 pub fn read_thread_pointer() -> usize {
     let tp;
-    unsafe { asm!("move {}, tp", out(reg) tp) };
+    unsafe { asm!("move {}, $tp", out(reg) tp) };
     tp
 }
 
@@ -94,5 +95,5 @@ pub fn read_thread_pointer() -> usize {
 /// This function is unsafe as it changes the CPU states.
 #[inline]
 pub unsafe fn write_thread_pointer(tp: usize) {
-    asm!("move tp, {}", in(reg) tp)
+    asm!("move $tp, {}", in(reg) tp)
 }

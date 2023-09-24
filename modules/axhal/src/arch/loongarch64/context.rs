@@ -7,20 +7,10 @@ use memory_addr::VirtAddr;
 pub struct TrapFrame {
     /// All general registers.
     pub regs: [usize; 32],
-    /// Current Mode Information
-    pub crmd: usize,
     /// Pre-exception Mode Information
     pub prmd: usize,
-    /// Extended Component Unit Enable
-    pub euen: usize,
-    /// Exception Configuration
-    pub ecfg: usize,
-    /// Exception Status
-    pub estat: usize,
     /// Exception Return Address
     pub era: usize,
-    /// Bad Virtual Address
-    pub badv: usize,
 }
 
 /// Saved hardware states of a task.
@@ -89,7 +79,6 @@ unsafe extern "C" fn context_switch(_current_task: &mut TaskContext, _next_task:
         st.d     $s7, $a0, 9 * 8
         st.d     $s8, $a0, 10 * 8
         st.d     $fp, $a0, 11 * 8
-        st.d     $tp, $a0, 12 * 8
 
         // restore new context
         ld.d     $ra, $a1, 0
@@ -103,7 +92,6 @@ unsafe extern "C" fn context_switch(_current_task: &mut TaskContext, _next_task:
         ld.d     $s7, $a1, 9 * 8
         ld.d     $s8, $a1, 10 * 8
         ld.d     $fp, $a1, 11 * 8
-        ld.d     $tp, $a1, 12 * 8
         ld.d     $sp, $a1, 1 * 8
 
         ret",
