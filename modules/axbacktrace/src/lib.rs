@@ -1,4 +1,15 @@
+//! backtrace实现
+//! 
+//! NOTITE:
+//! 开启本模块需要：
+//! 1. 在根目录的 Makefile 中设置 `RUSTFLAGS ?= -Cforce-frame-pointers=yes`
+//! 2. 在根目录的 Makefile 中，保证编译目标为 riscv64，因为 backtrace 目前只支持了该架构
+//! 3. 在 app 的 Cargo.toml 设置加入名为 `axruntime/backtrace` 的 feature
+
 #![no_std]
+
+#[cfg(not(target_arch = "riscv64"))]
+compile_error!("backtrace has only impl on riscv64");
 
 #[macro_use]
 extern crate log;

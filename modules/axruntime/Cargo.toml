@@ -24,7 +24,8 @@ net = ["axdriver", "axnet"]
 display = ["axdriver", "axdisplay"]
 signal = ["axprocess/signal", "axhal/signal"]
 img = ["axdriver/img"]
-monolithic = ["axprocess/monolithic", "axhal/monolithic", "axtask/monolithic", "axmem/monolithic", "axbacktrace"]
+backtrace = ["axbacktrace"]
+monolithic = ["axprocess/monolithic", "axhal/monolithic", "axtask/monolithic", "axmem/monolithic"]
 
 [dependencies]
 cfg-if = "1.0"

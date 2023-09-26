@@ -38,7 +38,7 @@ A ?= apps/oscomp
 APP ?= $(A)
 FEATURES ?=
 APP_FEATURES ?=
-RUSTFLAGS ?= -Cforce-frame-pointers=yes 
+RUSTFLAGS ?=
 
 # QEMU options
 BLK ?= y
