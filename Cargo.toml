@@ -37,6 +37,7 @@ members = [
     "crates/tuple_for_each",
 
     "modules/axalloc",
+    "modules/axbacktrace",
     "modules/axconfig",
     "modules/axdisplay",
     "modules/axdriver",

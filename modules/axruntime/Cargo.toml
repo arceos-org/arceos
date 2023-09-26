@@ -24,7 +24,7 @@ net = ["axdriver", "axnet"]
 display = ["axdriver", "axdisplay"]
 signal = ["axprocess/signal", "axhal/signal"]
 img = ["axdriver/img"]
-monolithic = ["axprocess/monolithic", "axhal/monolithic", "axtask/monolithic", "axmem/monolithic"]
+monolithic = ["axprocess/monolithic", "axhal/monolithic", "axtask/monolithic", "axmem/monolithic", "axbacktrace"]
 
 [dependencies]
 cfg-if = "1.0"
@@ -43,3 +43,4 @@ crate_interface = { path = "../../crates/crate_interface" }
 percpu = { path = "../../crates/percpu", optional = true }
 kernel_guard = { path = "../../crates/kernel_guard", optional = true }
 lazy_init = { path = "../../crates/lazy_init", optional = true }
+axbacktrace = { path = "../axbacktrace", optional = true }

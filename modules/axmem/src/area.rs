@@ -6,7 +6,7 @@ use axhal::{
     paging::{MappingFlags, PageSize, PageTable},
 };
 use axio::{Seek, SeekFrom};
-use core::ptr::copy_nonoverlapping;
+use core::{ptr::copy_nonoverlapping, panic};
 use riscv::asm::sfence_vma;
 
 use crate::MemBackend;

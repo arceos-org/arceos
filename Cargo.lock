@@ -255,6 +255,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "axbacktrace"
+version = "0.1.0"
+dependencies = [
+ "log",
+]
+
+[[package]]
 name = "axconfig"
 version = "0.1.0"
 dependencies = [
@@ -495,6 +502,7 @@ name = "axruntime"
 version = "0.1.0"
 dependencies = [
  "axalloc",
+ "axbacktrace",
  "axconfig",
  "axdisplay",
  "axdriver",
