@@ -25,20 +25,69 @@ use alter_trap_guard::AlterTrapGuard;
 core::arch::global_asm!(include_str!("trap.S"));
 
 extern "C" {
-    fn __alter_trap_read_at(addr: usize, _: usize) -> TestResult;
-    fn __alter_trap_write_at(addr: usize, _: usize, value: usize) -> TestResult;
+    fn __alter_trap_read_usize(addr: usize, _: usize) -> TestResult;
+    fn __alter_trap_write_usize(addr: usize, _: usize, value: usize) -> TestResult;
+    fn __alter_trap_read_write_usize(addr: usize, _: usize) -> TestResult;
 }
 
+/// 测试 addr 是否可读。
+/// 返回读取到的值或错误信息，包装在 [TestResult](crate::test_result::TestResult)
+/// 
+/// 例：
+/// ```ignore
+/// let value = alter_trap_read_usize(addr).as_option()?;
+/// ```
+/// 
 /// SAFETY: AlterTrapGuard 实现保证了执行过程中不会有其他异常中断干扰，
 /// 因此对外部调用来说，此函数是 safe 的
-pub fn alter_trap_read_at(addr: usize) -> TestResult {
+pub fn alter_trap_read_usize(addr: usize) -> TestResult {
     let _guard = AlterTrapGuard::new();
-    unsafe { __alter_trap_read_at(addr, 0) }
+    unsafe { __alter_trap_read_usize(addr, 0) }
 }
 
+/// 测试 addr 是否可写。
+/// 如不可写则返回错误信息，包装在 [TestResult](crate::test_result::TestResult)
+/// 
+/// 例：
+/// ```ignore
+/// let write_ok = alter_trap_write_usize(addr, value).as_bool();
+/// // or you can
+/// match alter_trap_write_usize(addr, value).as_result() {
+///     Ok(_) => {},
+///     Err(scause) => {}
+/// }
+/// ```
+/// 
+/// 尝试写入 addr，返回一个 [TestResult](crate::test_result::TestResult)
 /// SAFETY: AlterTrapGuard 实现保证了执行过程中不会有其他异常中断干扰，
 /// 因此对外部调用来说，此函数是 safe 的
-pub fn alter_trap_write_at(addr: usize, value: usize) -> TestResult {
+pub fn alter_trap_write_usize(addr: usize, value: usize) -> TestResult {
     let _guard = AlterTrapGuard::new();
-    unsafe { __alter_trap_write_at(addr, 0, value) }
+    unsafe { __alter_trap_write_usize(addr, 0, value) }
+}
+
+/// 测试 addr 是否可读可写。
+/// 返回读取到的值或错误信息，包装在 [TestResult](crate::test_result::TestResult)
+/// 
+/// 读取/写入错误可以通过具体错误信息分辨，见下。
+/// 
+/// 例：
+/// ```ignore
+/// let value = alter_trap_read_write_usize(addr).as_option()?;
+/// // or you can
+/// let value = match alter_trap_read_write_usize(addr).as_result() {
+///     Ok(v) => {v},
+///     Err(TestResult::LOAD_PAGE_FAULT) => {panic!("read failed");},
+///     Err(TestResult::STORE_PAGE_FAULT) => {panic!("write failed");},
+///     _ => {panic!("Oops the crate itself failed");},
+/// };
+/// ```
+/// 
+/// 尝试写入 addr，返回一个 [TestResult](crate::test_result::TestResult)
+/// SAFETY: AlterTrapGuard 实现保证了执行过程中不会有其他异常中断干扰，
+/// 因此对外部调用来说，此函数是 safe 的
+pub fn alter_trap_read_write_usize(addr: usize) -> TestResult {
+    //let _guard = black_box(AlterTrapGuard::new());
+    let _guard = AlterTrapGuard::new();
+    unsafe { __alter_trap_read_write_usize(addr, 0) }
 }

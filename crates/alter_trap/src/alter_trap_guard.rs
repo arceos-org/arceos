@@ -4,12 +4,12 @@
 //!
 //! 为了保证此过程中不被其他异常中断干扰，在切换前后会提前关闭中断
 
-use kernel_guard::{BaseGuard, IrqSave};
+use kernel_guard::{BaseGuard, NoPreemptIrqSave};
 use riscv::register::{stvec, stvec::Stvec};
 
 pub struct AlterTrapGuard {
     old_stvec: Stvec,
-    _irq_guard: IrqSave,
+    _irq_guard: NoPreemptIrqSave,
 }
 
 extern "C" {
@@ -41,7 +41,7 @@ impl AlterTrapGuard {
     /// Creates a new [`AlterTrapGuard`] guard.
     pub fn new() -> Self {
         // get irq_guard first
-        let irq_guard = IrqSave::new();
+        let irq_guard = NoPreemptIrqSave::new();
         Self {
             old_stvec: Self::acquire(),
             _irq_guard: irq_guard,
