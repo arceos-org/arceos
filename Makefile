@@ -10,6 +10,7 @@
 #     - `A` or `APP`: Path to the application
 #     - `FEATURES`: Features os ArceOS modules to be enabled.
 #     - `APP_FEATURES`: Features of (rust) apps to be enabled.
+#     - `RUSTFLAGS`: Pass custom flags to (rust) apps
 # * QEMU options:
 #     - `BLK`: Enable storage devices (virtio-blk)
 #     - `NET`: Enable network devices (virtio-net)
@@ -37,6 +38,7 @@ A ?= apps/oscomp
 APP ?= $(A)
 FEATURES ?=
 APP_FEATURES ?=
+RUSTFLAGS ?=
 
 # QEMU options
 BLK ?= y
