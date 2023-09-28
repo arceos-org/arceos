@@ -122,6 +122,9 @@ export AX_GW=$(GW)
 
 # Binutils
 CROSS_COMPILE ?= $(ARCH)-linux-musl-
+ifeq ($(ARCH), loongarch64)
+	CROSS_COMPILE := $(ARCH)-unknown-linux-gnu-
+endif
 CC := $(CROSS_COMPILE)gcc
 AR := $(CROSS_COMPILE)ar
 RANLIB := $(CROSS_COMPILE)ranlib
