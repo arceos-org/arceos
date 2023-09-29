@@ -27,8 +27,7 @@ qemu_args-aarch64 := \
 LOONGARCH_BIOS = tools/la64/loongarch_bios_0310.bin
 qemu_args-loongarch64 := \
   -bios $(LOONGARCH_BIOS) \
-  -kernel $(OUT_ELF) \
-  -vga none \
+  -kernel $(OUT_ELF)
 
 
 ifeq ($(ARCH), loongarch64)
@@ -61,7 +60,10 @@ qemu_args-$(GRAPHIC) += \
   -serial mon:stdio
 
 ifeq ($(GRAPHIC), n)
-  qemu_args-y += -nographic
+  	qemu_args-y += -nographic
+	ifeq ($(ARCH), loongarch64)
+		qemu_args-y += -vga none
+	endif
 endif
 
 ifeq ($(QEMU_LOG), y)

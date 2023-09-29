@@ -107,6 +107,7 @@ else ifeq ($(ARCH), loongarch64)
   ACCEL ?= n
   PLATFORM_NAME ?= loongarch64-qemu-virt
   TARGET := loongarch64-unknown-none
+  BUS := pci
 else
   $(error "ARCH" must be one of "x86_64", "riscv64", "aarch64" or "loongarch64")
 endif
