@@ -301,6 +301,7 @@ pub const LUA_TESTCASES: &[&str] = &[
 
 #[allow(dead_code)]
 pub const SDCARD_TESTCASES: &[&str] = &[
+    "main",
     // "./runtest.exe -w entry-dynamic.exe socket",
     // "./riscv64-linux-musl-native/bin/riscv64-linux-musl-gcc ./hello.c -static",
     // "./a.out",
@@ -354,7 +355,7 @@ pub const SDCARD_TESTCASES: &[&str] = &[
     // "busybox sh lua_testcode.sh",
     // "libc-bench",
     // "busybox sh ./netperf_testcode.sh",
-    "busybox sh ./cyclictest_testcode.sh",
+    // "busybox sh ./cyclictest_testcode.sh",
 ];
 
 pub const NETPERF_TESTCASES: &[&str] = &[

@@ -16,7 +16,7 @@ ifeq ($(APP_TYPE),c)
   lib_feat_prefix := axlibc/
   lib_features := fp_simd alloc multitask fs net fd pipe select epoll
 else
-  ifeq ($(A), apps/oscomp)
+  ifeq ($(APP), apps/oscomp)
     ax_feat_prefix := axstarry/
     lib_feat_prefix := axstarry/
   else 

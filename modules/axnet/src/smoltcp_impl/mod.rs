@@ -26,6 +26,7 @@ pub use self::dns::dns_query;
 pub use self::tcp::TcpSocket;
 pub use self::udp::UdpSocket;
 pub use addr::{from_core_sockaddr, into_core_sockaddr};
+#[allow(unused)]
 macro_rules! env_or_default {
     ($key:literal) => {
         match option_env!($key) {

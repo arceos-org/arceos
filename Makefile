@@ -39,6 +39,7 @@ APP ?= $(A)
 FEATURES ?=
 APP_FEATURES ?=
 RUSTFLAGS ?=
+STRUCT ?= Unikernel
 
 # QEMU options
 BLK ?= y
@@ -64,6 +65,12 @@ ifneq ($(wildcard $(APP)/Cargo.toml),)
   APP_TYPE := rust
 else
   APP_TYPE := c
+endif
+
+ifeq ($(STRUCT), Monolithic)
+  APP := apps/oscomp
+  APP_TYPE := rust
+  FEATURES += img
 endif
 
 # Architecture, platform and target
@@ -149,7 +156,12 @@ else ifeq ($(PLATFORM_NAME), aarch64-bsta1000b)
   include scripts/make/bsta1000b-fada.mk
 endif
 
-build: $(OUT_DIR) $(OUT_BIN)
+pre_build:
+  ifeq ($(STRUCT), Monolithic)
+		$(call make_bin)
+  endif
+
+build: pre_build $(OUT_DIR) $(OUT_BIN)
 
 disasm:
 	$(OBJDUMP) $(OUT_ELF) | less
@@ -200,7 +212,7 @@ disk_img:
 ifneq ($(wildcard $(DISK_IMG)),)
 	@printf "$(YELLOW_C)warning$(END_C): disk image \"$(DISK_IMG)\" already exists!\n"
 else
-	$(call make_disk_image,fat32,$(DISK_IMG))
+	$(call make_bin)
 endif
 
 clean: clean_c
