@@ -1106,6 +1106,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "fileopen"
+version = "0.1.0"
+dependencies = [
+ "axstd",
+]
+
+[[package]]
+name = "fileread"
+version = "0.1.0"
+dependencies = [
+ "axstd",
+]
+
+[[package]]
+name = "filewrite"
+version = "0.1.0"
+dependencies = [
+ "axstd",
+]
+
+[[package]]
 name = "flatten_objects"
 version = "0.1.0"
 dependencies = [
@@ -1931,6 +1952,13 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "taskspawn"
+version = "0.1.0"
+dependencies = [
+ "axstd",
 ]
 
 [[package]]

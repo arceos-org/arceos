@@ -17,7 +17,7 @@ repository = "https://github.com/rcore-os/arceos/tree/main/ulib/axstd"
 documentation = "https://rcore-os.github.io/arceos/axstd/index.html"
 
 [features]
-default = []
+default = ["fs", "alloc"]
 
 # Multicore
 smp = ["axfeat/smp", "spinlock/smp"]

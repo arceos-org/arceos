@@ -76,6 +76,10 @@ members = [
     "apps/task/priority",
     "apps/task/tls",
     "apps/oscomp",
+    "apps/ostrain/fileopen",
+    "apps/ostrain/fileread",
+    "apps/ostrain/filewrite",
+    "apps/ostrain/taskspawn",
 ]
 
 [profile.release]
