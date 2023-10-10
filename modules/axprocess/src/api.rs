@@ -122,6 +122,16 @@ pub fn exit_current_task(exit_code: i32) -> ! {
         drop(process);
     } else {
         TID2TASK.lock().remove(&curr_id);
+        // 从进程中删除当前线程
+        let mut tasks = process.tasks.lock();
+        let len = tasks.len();
+        for index in 0..len {
+            if tasks[index].id().as_u64() == curr_id {
+                tasks.remove(index);
+                break;
+            }
+        }
+        drop(tasks);
         process.signal_modules.lock().remove(&curr_id);
         drop(process);
     }

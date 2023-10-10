@@ -1,5 +1,6 @@
 //! 负责任务时间统计的实现
 use axhal::time::{current_time_nanos, NANOS_PER_MICROS, NANOS_PER_SEC};
+#[cfg(feature = "signal")]
 use axsignal::signal_no::SignalNo;
 #[cfg(feature = "signal")]
 use crate_interface::{call_interface, def_interface};
@@ -56,6 +57,7 @@ pub trait SignalCaller {
     fn send_signal(tid: isize, signum: isize);
 }
 
+#[allow(unused)]
 impl TimeStat {
     /// 新建一个进程时需要初始化时间
     pub fn new() -> Self {
@@ -155,7 +157,7 @@ impl TimeStat {
     }
 
     /// 更新计时器，同时判断是否要发出信号
-    pub fn update_timer(&mut self, delta: usize, tid: isize) {
+    pub fn update_timer(&mut self, delta: usize, _tid: isize) {
         if self.timer_remained_ns == 0 {
             // 计时器已经结束了
             return;
@@ -177,7 +179,7 @@ impl TimeStat {
                 _ => SignalNo::ERR,
             };
             if signal_num != SignalNo::ERR {
-                call_interface!(SignalCaller::send_signal(tid, signal_num as isize));
+                call_interface!(SignalCaller::send_signal(_tid, signal_num as isize));
             }
         }
     }

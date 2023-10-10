@@ -6,10 +6,13 @@ use riscv::register::{sepc, stval};
 
 use riscv::register::scause::{self, Exception as E, Trap};
 
-#[cfg(feature = "paging")]
+#[cfg(feature = "monolithic")]
 use crate::trap::handle_page_fault;
+
+#[cfg(feature = "monolithic")]
 use crate::trap::handle_signal;
 
+#[allow(unused)]
 use super::{disable_irqs, TrapFrame};
 
 #[cfg(feature = "monolithic")]
@@ -17,8 +20,6 @@ use super::enable_irqs;
 
 #[cfg(feature = "monolithic")]
 use crate::trap::handle_syscall;
-/// 信号处理跳板，当未指定SA_RESTORER时使用这个地址触发page fault，从而进行跳转
-pub const SIGNAL_RETURN_TRAP: usize = 0xFFFFFF8000000000;
 
 include_asm_marcos!();
 
@@ -36,6 +37,7 @@ fn handle_breakpoint(sepc: &mut usize) {
 #[allow(unused)]
 fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
     let scause = scause::read();
+    #[cfg(feature = "monolithic")]
     axfs_ramfs::INTERRUPT.lock().record(scause.code());
     match scause.cause() {
         Trap::Exception(E::Breakpoint) => handle_breakpoint(&mut tf.sepc),
@@ -103,7 +105,7 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
     }
 
     #[cfg(feature = "signal")]
-    if from_user == true && stval::read() != SIGNAL_RETURN_TRAP {
+    if from_user == true {
         handle_signal();
     }
 
