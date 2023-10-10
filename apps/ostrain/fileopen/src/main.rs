@@ -24,5 +24,5 @@ fn main() {
     }
 
     // 以纳秒单位输出消耗的时间
-    println!("Time: {}", sum / 10);
+    println!("Open: Time: {}", sum / 10);
 }

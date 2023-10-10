@@ -1,0 +1,5 @@
+alloc
+paging
+multitask
+select
+irq

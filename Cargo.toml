@@ -80,6 +80,8 @@ members = [
     "apps/ostrain/fileread",
     "apps/ostrain/filewrite",
     "apps/ostrain/taskspawn",
+    "apps/ostrain/taskyield",
+    "apps/ostrain/danger_access"
 ]
 
 [profile.release]

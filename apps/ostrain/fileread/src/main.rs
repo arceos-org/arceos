@@ -31,5 +31,5 @@ fn main() {
     }
 
     // 以纳秒单位输出消耗的时间
-    println!("Time: {}", sum / 10);
+    println!("Read: Time: {}", sum / 10);
 }

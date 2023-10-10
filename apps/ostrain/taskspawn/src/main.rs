@@ -25,5 +25,5 @@ fn main() {
     }
 
     // 以纳秒单位输出消耗的时间
-    println!("Time: {}", sum / 100);
+    println!("Spawn: Time: {}", sum / 100);
 }

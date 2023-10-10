@@ -944,6 +944,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "danger_access"
+version = "0.1.0"
+dependencies = [
+ "axstd",
+]
+
+[[package]]
 name = "defmt"
 version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1956,6 +1963,13 @@ dependencies = [
 
 [[package]]
 name = "taskspawn"
+version = "0.1.0"
+dependencies = [
+ "axstd",
+]
+
+[[package]]
+name = "taskyield"
 version = "0.1.0"
 dependencies = [
  "axstd",

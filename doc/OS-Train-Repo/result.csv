@@ -1,20 +1,7 @@
-测例	ArceOS	Starry
-fileopen		8959390030
-fileread		10170843910
-filewrite		13322163750
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
+测例,ArceOS,Starry,本地Linux真机
+fileopen,,8959390030,
+fileread,,10170843910,
+filewrite,,13322163750,
+taskspawn,285558,40420828,1263537
+taskyield yield 10次,552242,43036406,1326769
+taskyield yield 100次,2914789,66377785,1425088
