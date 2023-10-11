@@ -84,6 +84,24 @@ pub fn load_trap_for_signal() -> bool {
     }
 }
 
+/// 处理 Terminate 类型的信号
+fn terminate_process(signal: SignalNo) {
+    let current_task = current_task();
+    warn!("Terminate process: {}", current_task.get_process_id());
+    if current_task.is_leader() {
+        axlog::ax_println!(
+            "segmentation fault for process {}",
+            current_task.get_process_id()
+        );
+        exit_current_task(signal as i32);
+    } else {
+        // 此时应当关闭当前进程
+        // 选择向主线程发送信号内部来关闭
+        send_signal_to_process(current_task.get_process_id() as isize, signal as isize).unwrap();
+        exit_current_task(-1);
+    }
+}
+
 /// 处理当前进程的信号
 ///
 /// 若返回值为真，代表需要进入处理信号，因此需要执行trap的返回
@@ -152,7 +170,16 @@ pub fn handle_signals() {
                 load_trap_for_signal();
             }
             SignalDefault::Terminate => {
-                exit_current_task(0);
+                terminate_process(signal);
+            }
+            SignalDefault::Stop => {
+                unimplemented!();
+            }
+            SignalDefault::Cont => {
+                unimplemented!();
+            }
+            SignalDefault::Core => {
+                terminate_process(signal);
             }
         }
         return;

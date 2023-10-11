@@ -309,7 +309,8 @@ pub const SDCARD_TESTCASES: &[&str] = &[
     // "task_yield",
     // "getpid",
     // "malloc",
-    "danger_access",
+    "thread_sigsegv",
+    "process_sigsegv",
     // "./runtest.exe -w entry-dynamic.exe socket",
     // "./riscv64-linux-musl-native/bin/riscv64-linux-musl-gcc ./hello.c -static",
     // "./a.out",
@@ -664,5 +665,4 @@ pub fn run_testcases(case: &'static str) {
         // chdir会改变当前目录，需要重新设置
         axfs::api::set_current_dir("/").expect("reset current dir failed");
     }
-    axlog::ax_println!("hello world!");
 }

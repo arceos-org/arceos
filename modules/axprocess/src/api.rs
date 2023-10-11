@@ -233,7 +233,7 @@ pub fn wait_pid(pid: isize, exit_code_ptr: *mut i32) -> Result<u64, WaitStatus> 
                 exit_task_id = index;
                 if !exit_code_ptr.is_null() {
                     unsafe {
-                        *exit_code_ptr = exit_code << 8;
+                        *exit_code_ptr = exit_code;
                         // 用于WEXITSTATUS设置编码
                     }
                 }
