@@ -103,8 +103,13 @@ else ifeq ($(ARCH), aarch64)
   ACCEL ?= n
   PLATFORM_NAME ?= aarch64-qemu-virt
   TARGET := aarch64-unknown-none-softfloat
+else ifeq ($(ARCH), loongarch64)
+  ACCEL ?= n
+  PLATFORM_NAME ?= loongarch64-qemu-virt
+  TARGET := loongarch64-unknown-none
+  BUS := pci
 else
-  $(error "ARCH" must be one of "x86_64", "riscv64", or "aarch64")
+  $(error "ARCH" must be one of "x86_64", "riscv64", "aarch64" or "loongarch64")
 endif
 
 export AX_ARCH=$(ARCH)
@@ -118,6 +123,9 @@ export AX_GW=$(GW)
 
 # Binutils
 CROSS_COMPILE ?= $(ARCH)-linux-musl-
+ifeq ($(ARCH), loongarch64)
+	CROSS_COMPILE := $(ARCH)-unknown-linux-gnu-
+endif
 CC := $(CROSS_COMPILE)gcc
 AR := $(CROSS_COMPILE)ar
 RANLIB := $(CROSS_COMPILE)ranlib

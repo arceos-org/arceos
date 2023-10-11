@@ -8,6 +8,8 @@ typedef unsigned long __jmp_buf[22];
 #elif defined(__riscv__) || defined(__riscv)
 typedef unsigned long __jmp_buf[26];
 #elif defined(__x86_64__)
+typedef unsigned long __jmp_buf[21];
+#elif defined(__loongarch__)
 typedef unsigned long __jmp_buf[8];
 #endif
 

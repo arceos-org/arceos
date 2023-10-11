@@ -62,5 +62,8 @@ cfg_if::cfg_if! {
     } else if #[cfg(target_arch = "aarch64")]{
         /// The architecture-specific page table.
         pub type PageTable = page_table::aarch64::A64PageTable<PagingIfImpl>;
+    }else if #[cfg(target_arch = "loongarch64")]{
+        /// The architecture-specific page table.
+        pub type PageTable = page_table::loongarch64::LA64PageTable<PagingIfImpl>;
     }
 }
