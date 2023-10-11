@@ -37,8 +37,8 @@ pub fn wait_for_irqs() {
 /// Halt the current CPU.
 #[inline]
 pub fn halt() {
+    unsafe { loongarch64::asm::idle() } // `idle` instruction in LA is different from other Archs, which should run when irqs enabled
     disable_irqs();
-    unsafe { loongarch64::asm::idle() } // should never return
 }
 
 /// Reads the register that stores the current page table root.
