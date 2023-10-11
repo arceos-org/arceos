@@ -6,5 +6,5 @@ use axstarry::run_testcases;
 
 #[no_mangle]
 fn main() {
-    run_testcases("sdcard");
+    run_testcases("ostrain");
 }

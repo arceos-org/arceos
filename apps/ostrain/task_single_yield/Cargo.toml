@@ -1,5 +1,5 @@
 [package]
-name = "taskspawn"
+name = "task_single_yield"
 version = "0.1.0"
 edition = "2021"
 authors = ["Youjie Zheng <zyj578335934@gmail.com>"]
@@ -9,4 +9,4 @@ authors = ["Youjie Zheng <zyj578335934@gmail.com>"]
 [features]
 
 [dependencies]
-axstd = { path = "../../../ulib/axstd", features = ["multitask"], optional = true }
+axstd = { path = "../../../ulib/axstd", features = ["multitask", "alloc"], optional = true }

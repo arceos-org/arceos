@@ -79,8 +79,8 @@ members = [
     "apps/ostrain/fileopen",
     "apps/ostrain/fileread",
     "apps/ostrain/filewrite",
-    "apps/ostrain/taskspawn",
     "apps/ostrain/taskyield",
+    "apps/ostrain/task_single_yield",
     "apps/ostrain/danger_access"
 ]
 

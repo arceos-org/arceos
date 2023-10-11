@@ -1962,7 +1962,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "taskspawn"
+name = "task_single_yield"
 version = "0.1.0"
 dependencies = [
  "axstd",
