@@ -1,6 +1,6 @@
 pub const SIGNAL_RETURN_TRAP: usize = 0xFFFF_FF80_0000_0000;
 
-use crate::signal_no::SignalNo;
+use crate::signal_no::SignalNo::{self, *};
 
 /// 特殊取值，代表默认处理函数
 pub const SIG_DFL: usize = 0;
@@ -28,13 +28,46 @@ pub enum SignalDefault {
     Terminate,
     /// 忽略信号
     Ignore,
+    /// 终止进程并转储核心，即程序当时的内存状态记录下来，保存在一个文件中，但当前未实现保存，直接退出进程
+    Core,
+    /// 暂停进程执行
+    Stop,
+    /// 恢复进程执行
+    Cont,
 }
 
 impl SignalDefault {
     pub fn get_action(signal: SignalNo) -> Self {
         match signal {
-            SignalNo::SIGCHLD | SignalNo::SIGURG => SignalDefault::Ignore,
-            _ => SignalDefault::Terminate,
+            SIGABRT => Self::Core,
+            SIGALRM => Self::Terminate,
+            SIGBUS => Self::Core,
+            SIGCHLD => Self::Ignore,
+            SIGCONT => Self::Cont,
+            SIGFPE => Self::Core,
+            SIGHUP => Self::Terminate,
+            SIGILL => Self::Core,
+            SIGINT => Self::Terminate,
+            SIGKILL => Self::Terminate,
+            SIGPIPE => Self::Terminate,
+            SIGQUIT => Self::Core,
+            SIGSEGV => Self::Core,
+            SIGSTOP => Self::Stop,
+            SIGTERM => Self::Terminate,
+            SIGTSTP => Self::Stop,
+            SIGTTIN => Self::Stop,
+            SIGTTOU => Self::Stop,
+            SIGUSR1 => Self::Terminate,
+            SIGUSR2 => Self::Terminate,
+            SIGXCPU => Self::Core,
+            SIGXFSZ => Self::Core,
+            SIGVTALRM => Self::Terminate,
+            SIGPROF => Self::Terminate,
+            SIGWINCH => Self::Ignore,
+            SIGIO => Self::Terminate,
+            SIGPWR => Self::Terminate,
+            SIGSYS => Self::Core,
+            _ => Self::Terminate,
         }
     }
 }
