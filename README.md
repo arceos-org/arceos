@@ -80,7 +80,10 @@ tar zxf x86_64-linux-musl-cross.tgz
 # exec below command in bash OR add below info in ~/.bashrc
 export PATH=`pwd`/x86_64-linux-musl-cross/bin:`pwd`/aarch64-linux-musl-cross/bin:`pwd`/riscv64-linux-musl-cross/bin:$PATH
 ```
-
+### 荔枝派硬件平台运行
+```
+make A=apps/fs/shell ARCH=riscv64 SMP=4 PLATFORM=riscv64-lpi4a LOG=debug FS=y APP_FEATURES="axstd/driver-ramdisk,axstd/irq" lpi4a
+```
 ### Example apps
 
 ```bash
