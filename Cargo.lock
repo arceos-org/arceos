@@ -1579,6 +1579,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "rosmaster-x3"
+version = "0.1.0"
+dependencies = [
+ "axstd",
+ "dw_apb_uart",
+]
+
+[[package]]
 name = "rustc-hash"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

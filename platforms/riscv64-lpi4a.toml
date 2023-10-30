@@ -12,14 +12,19 @@ phys-memory-size = "0x4000_0000"
 # Base physical address of the kernel image.
 kernel-base-paddr = "0x0020_0000"
 # Base virtual address of the kernel image.
-kernel-base-vaddr = "0xffff_ffc0_0020_0000"
+# kernel-base-vaddr = "0xffff_ffc0_0020_0000"
+kernel-base-vaddr = "0x0020_0000"
+
 # Linear mapping offset, for quick conversions between physical and virtual
 # addresses.
-phys-virt-offset = "0xffff_ffc0_0000_0000"
+# phys-virt-offset = "0xffff_ffc0_0000_0000"
+phys-virt-offset = "0"
+
 # MMIO regions with format (`base_paddr`, `size`).
 mmio-regions = [
     ["0xff_d800_0000", "0x0400_0000"],   # PLIC
-    ["0xff_e701_4000", "0x4000"],      # UART
+    ["0xff_e701_4000", "0x4000"],      # UART0
+    ["0xff_e7f0_0000", "0x4000"],      # UART1
     ["0xff_e707_0000", "0x2000"],      # Ethernet
 ]
 

@@ -86,11 +86,41 @@ impl DW8250 {
         self.regs().lcr.set(self.regs().lcr.get() | 0b11);
     }
 
+    /// ns16550 initialize
+    pub fn ns16550_init(&mut self) {
+        const UART_SRC_CLK: u32 = 100000000;
+        const BAUDRATE: u32 = 115200;
+
+        let get_baud_divider = |baudrate| { (UART_SRC_CLK + (baudrate * 16)/2) / (baudrate * 16)};
+        let divider = get_baud_divider(BAUDRATE);
+
+        // Waiting to be UART_LSR_TEMT
+        while self.regs().lsr.get() & 0x40 == 0 {}
+
+        // Disable interrupts
+        self.regs().ier.set(0);
+
+        self.regs().mcr.set(0x3);
+        self.regs().fcr.set(0x7);
+        self.regs().lcr.set(0x3);
+
+        /* Enable access DLL & DLH. Set LCR_DLAB */
+        self.regs().lcr.set(0x80 | self.regs().lcr.get());
+
+        /* Set baud rate. Set DLL, DLH, DLF */
+        self.regs().rbr.set(divider & 0xff);
+        self.regs().ier.set((divider >> 8) & 0xff);
+
+        /* Clear DLAB bit */
+        self.regs().lcr.set(self.regs().lcr.get() & !0x80);
+    }
+
     /// DW8250 serial output
     pub fn putchar(&mut self, c: u8) {
         // Check LSR_TEMT
         // Wait for last character to go.
-        while self.regs().lsr.get() & (1 << 6) == 0 {}
+        // while self.regs().lsr.get() & (1 << 6) == 0 {}
+        while self.regs().lsr.get() & 0x20 == 0 {}
         self.regs().rbr.set(c as u32);
     }
 

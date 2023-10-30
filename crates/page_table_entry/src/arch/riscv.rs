@@ -27,6 +27,8 @@ bitflags::bitflags! {
         /// Indicates the virtual page has been written since the last time the
         /// D bit was cleared.
         const D =   1 << 7;
+        /// Kernel
+        const K =   7 << 60;
     }
 }
 
@@ -54,6 +56,7 @@ impl From<MappingFlags> for PTEFlags {
         if f.is_empty() {
             return Self::empty();
         }
+        //let mut ret = Self::V | Self::K;
         let mut ret = Self::V;
         if f.contains(MappingFlags::READ) {
             ret |= Self::R;
@@ -84,10 +87,12 @@ impl GenericPTE for Rv64PTE {
     fn new_page(paddr: PhysAddr, flags: MappingFlags, _is_huge: bool) -> Self {
         let flags = PTEFlags::from(flags) | PTEFlags::A | PTEFlags::D;
         debug_assert!(flags.intersects(PTEFlags::R | PTEFlags::X));
-        Self(flags.bits() as u64 | ((paddr.as_usize() >> 2) as u64 & Self::PHYS_ADDR_MASK))
+        let flags = thead_flags(paddr.as_usize(), flags.bits() as u64);
+        Self(flags | ((paddr.as_usize() >> 2) as u64 & Self::PHYS_ADDR_MASK))
     }
     fn new_table(paddr: PhysAddr) -> Self {
-        Self(PTEFlags::V.bits() as u64 | ((paddr.as_usize() >> 2) as u64 & Self::PHYS_ADDR_MASK))
+        let flags = thead_flags(paddr.as_usize(), PTEFlags::V.bits() as u64);
+        Self(flags | ((paddr.as_usize() >> 2) as u64 & Self::PHYS_ADDR_MASK))
     }
     fn paddr(&self) -> PhysAddr {
         PhysAddr::from(((self.0 & Self::PHYS_ADDR_MASK) << 2) as usize)
@@ -102,7 +107,8 @@ impl GenericPTE for Rv64PTE {
     fn set_flags(&mut self, flags: MappingFlags, _is_huge: bool) {
         let flags = PTEFlags::from(flags) | PTEFlags::A | PTEFlags::D;
         debug_assert!(flags.intersects(PTEFlags::R | PTEFlags::X));
-        self.0 = (self.0 & Self::PHYS_ADDR_MASK) | flags.bits() as u64;
+        let flags = thead_flags(self.paddr().as_usize(), flags.bits() as u64);
+        self.0 = (self.0 & Self::PHYS_ADDR_MASK) | flags;
     }
 
     fn is_unused(&self) -> bool {
@@ -116,6 +122,16 @@ impl GenericPTE for Rv64PTE {
     }
     fn clear(&mut self) {
         self.0 = 0
+    }
+}
+
+fn thead_flags(paddr: usize, flags: u64) -> u64 {
+    if paddr >= 0xff_c0000000 {
+        // C910 IOREMAP
+        flags | (0x9 << 60)
+    } else {
+        // C910 Kernel Page
+        flags | (0x7 << 60)
     }
 }
 
