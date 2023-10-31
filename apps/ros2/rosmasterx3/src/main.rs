@@ -49,6 +49,41 @@ fn main() {
     }
     delay(1);
 
+    // 画圆
+    loop {
+        println!("forward");
+        {
+            //前进
+            uart.putchar(0xff);
+            uart.putchar(0xfc);
+            uart.putchar(0x07);
+            uart.putchar(0x11);
+            uart.putchar(0x01);
+            uart.putchar(0x01);
+            uart.putchar(0x32);
+            uart.putchar(0x00);
+            uart.putchar(0x4c);
+        }
+        delay(4);
+        {
+            //偏航角PID设置
+            uart.putchar(0xff);
+            uart.putchar(0xfc);
+            uart.putchar(0x0a);
+            uart.putchar(0x14);
+            uart.putchar(0x20);
+            uart.putchar(0x00);
+            uart.putchar(0x20);
+            uart.putchar(0x00);
+            uart.putchar(0x20);
+            uart.putchar(0x00);
+            uart.putchar(0x00);
+            uart.putchar(0x7e);
+        }
+        delay(1);
+    }
+
+    /*
     loop {
         println!("forward");
         {
@@ -160,6 +195,6 @@ fn main() {
             uart.putchar(0x83);
         }
         delay(1);
-    }
+    }*/
 
 }

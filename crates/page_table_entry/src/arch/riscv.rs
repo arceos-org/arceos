@@ -56,7 +56,7 @@ impl From<MappingFlags> for PTEFlags {
         if f.is_empty() {
             return Self::empty();
         }
-        //let mut ret = Self::V | Self::K;
+        // let mut ret = Self::V | Self::K;
         let mut ret = Self::V;
         if f.contains(MappingFlags::READ) {
             ret |= Self::R;

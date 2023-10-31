@@ -80,10 +80,7 @@ tar zxf x86_64-linux-musl-cross.tgz
 # exec below command in bash OR add below info in ~/.bashrc
 export PATH=`pwd`/x86_64-linux-musl-cross/bin:`pwd`/aarch64-linux-musl-cross/bin:`pwd`/riscv64-linux-musl-cross/bin:$PATH
 ```
-### 荔枝派硬件平台运行
-```
-make A=apps/fs/shell ARCH=riscv64 SMP=4 PLATFORM=riscv64-lpi4a LOG=debug FS=y APP_FEATURES="axstd/driver-ramdisk,axstd/irq" lpi4a
-```
+
 ### Example apps
 
 ```bash
@@ -106,6 +103,28 @@ make A=apps/net/httpserver ARCH=aarch64 LOG=info SMP=4 run NET=y
 ```
 
 Note that the `NET=y` argument is required to enable the network device in QEMU. These arguments (`BLK`, `GRAPHIC`, etc.) only take effect at runtime not build time.
+
+### 荔枝派Lichee Pi 4A硬件平台支持
+
+* 编译荔枝派 for RosMasterX3 系统镜像
+
+```
+make A=apps/ros2/rosmasterx3 ARCH=riscv64 SMP=4 PLATFORM=riscv64-lpi4a LOG=debug FS=y APP_FEATURES="axstd/driver-ramdisk" lpi4a
+```
+
+生成镜像文件：`arceos-lpi4a.uImage`
+
+* 镜像烧写
+
+将编译好的ArceOS系统镜像`arceos-lpi4a.uImage`，以及OpenSBI镜像`fw_dynamic.bin` 放置于荔枝派的boot分区目录，例如可以通过自带的Linux网络传输的方式。
+
+* 上机运行
+
+启动荔枝派，在u-boot命令行界面，执行ArceOS内核引导命令：
+
+```
+ext4load mmc 0:2 $kernel_addr arceos-lpi4a.uImage; bootm $kernel_addr - $dtb_addr;'
+```
 
 ### Your custom apps
 
