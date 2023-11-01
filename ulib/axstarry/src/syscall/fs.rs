@@ -3,7 +3,9 @@ use crate::fs::mount::{check_mounted, get_stat_in_fs, mount_fat_fs, umount_fat_f
 use crate::fs::pipe::make_pipe;
 use crate::fs::{new_dir, new_fd, FileDesc};
 use crate::syscall::flags::raw_ptr_to_ref_str;
-use crate::syscall::socket::Socket;
+
+#[cfg(feature = "net")]
+use syscall_net::Socket;
 extern crate alloc;
 use alloc::format;
 use alloc::string::ToString;
@@ -140,6 +142,7 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
         // 1. nonblocking socket
         //
         // Normal socket will block while trying to read, so we don't return here.
+        #[cfg(feature = "net")]
         if let Some(socket) = file.as_any().downcast_ref::<Socket>() {
             if socket.is_nonblocking() && socket.is_connected() {
                 return ErrorNo::EAGAIN as isize;
@@ -147,10 +150,12 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> isize {
         } else {
             // 2. nonblock file
             // return ErrorNo::EAGAIN as isize;
-
             // 3. regular file
             return ErrorNo::EBADF as isize;
         }
+
+        #[cfg(not(feature = "net"))]
+        return ErrorNo::EBADF as isize;
     }
 
     // for sockets:
@@ -204,6 +209,7 @@ pub fn syscall_write(fd: usize, buf: *const u8, count: usize) -> isize {
         // 1. socket
         //
         // Normal socket will block while trying to write, so we don't return here.
+        #[cfg(feature = "net")]
         if let Some(socket) = file.as_any().downcast_ref::<Socket>() {
             if socket.is_nonblocking() && socket.is_connected() {
                 return ErrorNo::EAGAIN as isize;
@@ -215,6 +221,9 @@ pub fn syscall_write(fd: usize, buf: *const u8, count: usize) -> isize {
             // 3. regular file
             return ErrorNo::EBADF as isize;
         }
+
+        #[cfg(not(feature = "net"))]
+        return ErrorNo::EBADF as isize;
     }
 
     // for sockets:

@@ -3,12 +3,14 @@ name = "axstarry"
 version = "0.1.0"
 edition = "2021"
 
+authors = ["Youjie Zheng <zyj578335934@gmail.com>"]
+description = "ArceOS user program library for linux apps with posix_syscall"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
 default = ["monolithic"]
 
-monolithic = ["arceos_api/monolithic", "axfeat/monolithic", "paging", "fs", "net", "multitask", "irq", "signal", "axnet/ip"]
+monolithic = ["arceos_api/monolithic", "axfeat/monolithic", "paging", "fs", "multitask", "irq", "signal"]
 
 img = ["axruntime/img"]
 
@@ -43,7 +45,7 @@ display = ["arceos_api/display", "axfeat/display"]
 fs = ["axruntime/fs", "arceos_api/fs"]
 
 # Networking
-net = ["arceos_api/net", "axfeat/net"]
+net = ["arceos_api/net", "axfeat/net", "syscall_net/net"]
 dns = []
 
 # Signal
@@ -73,7 +75,8 @@ axalloc = { path = "../../modules/axalloc", optional = true }
 axtask = { path = "../../modules/axtask" }
 axsync = { path = "../../modules/axsync" }
 axfs = { path = "../../modules/axfs" }
-axnet = { path = "../../modules/axnet" }
+syscall_utils = { path = "../../modules/axsyscall/syscall_utils" }
+syscall_net = { path = "../../modules/axsyscall/syscall_net", optional = true }
 axprocess = { path = "../../modules/axprocess" }
 axmem = { path = "../../modules/axmem" } 
 lazy_init = { path = "../../crates/lazy_init" }

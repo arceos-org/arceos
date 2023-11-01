@@ -52,6 +52,10 @@ members = [
     "modules/axprocess",
     "modules/axsignal",
 
+    "modules/axsyscall/syscall_net",
+    "modules/axsyscall/syscall_utils",
+
+
     "api/axfeat",
     "api/arceos_api",
     

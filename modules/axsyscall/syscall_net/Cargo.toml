@@ -1,0 +1,25 @@
+[package]
+name = "syscall_net"
+version = "0.1.0"
+edition = "2021"
+
+authors = ["Youjie Zheng <zyj578335934@gmail.com>"]
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+
+# Networking
+net = ["axnet/ip"]
+dns = []
+
+[dependencies]
+axnet = { path = "../../axnet" }
+axerrno = { path = "../../../crates/axerrno" }
+axprocess = { path = "../../axprocess" }
+axfs = { path = "../../axfs" }
+axio = { path = "../../../crates/axio" }
+axlog = { path = "../../axlog" }
+axsync = { path = "../../axsync" }
+num_enum = { version = "0.5.11", default-features = false }
+syscall_utils = { path = "../syscall_utils" }
+numeric-enum-macro = { git = "https://github.com/mexus/numeric-enum-macro" }

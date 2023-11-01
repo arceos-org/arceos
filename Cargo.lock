@@ -552,7 +552,6 @@ dependencies = [
  "axio",
  "axlog",
  "axmem",
- "axnet",
  "axprocess",
  "axruntime",
  "axsignal",
@@ -567,6 +566,8 @@ dependencies = [
  "rand",
  "riscv",
  "spinlock",
+ "syscall_net",
+ "syscall_utils",
 ]
 
 [[package]]
@@ -1959,6 +1960,35 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "syscall_net"
+version = "0.1.0"
+dependencies = [
+ "axerrno",
+ "axfs",
+ "axio",
+ "axlog",
+ "axnet",
+ "axprocess",
+ "axsync",
+ "num_enum",
+ "numeric-enum-macro",
+ "syscall_utils",
+]
+
+[[package]]
+name = "syscall_utils"
+version = "0.1.0"
+dependencies = [
+ "axconfig",
+ "axerrno",
+ "axhal",
+ "axlog",
+ "bitflags 2.4.0",
+ "num_enum",
+ "numeric-enum-macro",
 ]
 
 [[package]]
