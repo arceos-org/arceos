@@ -1,12 +1,15 @@
-use crate::{fs::FileDesc, syscall::ErrorNo};
+#[cfg(feature = "fs")]
+use crate::fs::FileDesc;
 
-use super::flags::{MMAPFlags, MMAPPROT};
+#[cfg(feature = "fs")]
+use syscall_utils::MMAPFlags;
+
+use syscall_utils::{SyscallError, SyscallResult, MMAPPROT};
 extern crate alloc;
-use alloc::boxed::Box;
-use axhal::{mem::VirtAddr, paging::MappingFlags};
-use axmem::{MemBackend, MemorySet};
 
-use axlog::debug;
+use axhal::{arch::flush_tlb, mem::VirtAddr, paging::MappingFlags};
+use axmem::MemorySet;
+
 use axprocess::current_process;
 use bitflags::bitflags;
 
@@ -15,7 +18,7 @@ const MAX_HEAP_SIZE: usize = 0x20000;
 ///
 /// - 如输入 brk 为 0 ，则返回堆顶地址
 /// - 重新设置堆顶地址，如成功则返回设置后的堆顶地址，否则保持不变，并返回之前的堆顶地址。
-pub fn syscall_brk(brk: usize) -> isize {
+pub fn syscall_brk(brk: usize) -> SyscallResult {
     let curr_process = current_process();
     let mut return_val: isize = curr_process.get_heap_top() as isize;
     let heap_bottom = curr_process.get_heap_bottom() as usize;
@@ -25,9 +28,10 @@ pub fn syscall_brk(brk: usize) -> isize {
             return_val = brk as isize;
         }
     }
-    return_val
+    Ok(return_val)
 }
 
+#[cfg(feature = "fs")]
 /// 将文件内容映射到内存中
 /// offset参数指定了从文件区域中的哪个字节开始映射，它必须是系统分页大小的倍数
 /// len指定了映射文件的长度
@@ -40,7 +44,11 @@ pub fn syscall_mmap(
     flags: MMAPFlags,
     fd: i32,
     offset: usize,
-) -> isize {
+) -> SyscallResult {
+    use alloc::boxed::Box;
+    use axlog::debug;
+    use axmem::MemBackend;
+
     debug!(
         "mmap start={:x} len={:x} prot=[{:#?}] flags=[{:#?}] fd={} offset={:x}",
         start, len, prot, flags, fd, offset
@@ -48,7 +56,7 @@ pub fn syscall_mmap(
     let fixed = flags.contains(MMAPFlags::MAP_FIXED);
     // try to map to NULL
     if fixed && start == 0 {
-        return ErrorNo::EINVAL as isize;
+        return Err(SyscallError::EINVAL);
     }
 
     let process = current_process();
@@ -56,7 +64,7 @@ pub fn syscall_mmap(
     let addr = if flags.contains(MMAPFlags::MAP_ANONYMOUS) {
         // no file
         if !(fd == -1 && offset == 0) {
-            return ErrorNo::EINVAL as isize;
+            return Err(SyscallError::EINVAL);
         }
         process
             .memory_set
@@ -66,7 +74,7 @@ pub fn syscall_mmap(
         // file backend
         debug!("[mmap] fd: {}, offset: 0x{:x}", fd, offset);
         if fd >= process.fd_manager.fd_table.lock().len() as i32 || fd < 0 {
-            return ErrorNo::EINVAL as isize;
+            return Err(SyscallError::EINVAL);
         }
         let file = match &process.fd_manager.fd_table.lock()[fd as usize] {
             // 文件描述符表里面存的是文件描述符，这很合理罢
@@ -79,7 +87,7 @@ pub fn syscall_mmap(
                     .clone(),
             ),
             // fd not found
-            None => return ErrorNo::EINVAL as isize,
+            None => return Err(SyscallError::EINVAL),
         };
 
         let backend = MemBackend::new(file, offset as u64);
@@ -89,27 +97,27 @@ pub fn syscall_mmap(
             .mmap(start.into(), len, prot.into(), fixed, Some(backend))
     };
 
-    unsafe { riscv::asm::sfence_vma_all() };
+    flush_tlb(None);
     debug!("mmap: 0x{:x}", addr);
     // info!("val: {}", unsafe { *(addr as *const usize) });
-    addr
+    Ok(addr)
 }
 
-pub fn syscall_munmap(start: usize, len: usize) -> isize {
+pub fn syscall_munmap(start: usize, len: usize) -> SyscallResult {
     let process = current_process();
     process.memory_set.lock().munmap(start.into(), len);
-    unsafe { riscv::asm::sfence_vma_all() };
-    0
+    flush_tlb(None);
+    Ok(0)
 }
 
-pub fn syscall_msync(start: usize, len: usize) -> isize {
+pub fn syscall_msync(start: usize, len: usize) -> SyscallResult {
     let process = current_process();
     process.memory_set.lock().msync(start.into(), len);
 
-    0
+    Ok(0)
 }
 
-pub fn syscall_mprotect(start: usize, len: usize, prot: MMAPPROT) -> isize {
+pub fn syscall_mprotect(start: usize, len: usize, prot: MMAPPROT) -> SyscallResult {
     let process = current_process();
 
     process
@@ -117,9 +125,8 @@ pub fn syscall_mprotect(start: usize, len: usize, prot: MMAPPROT) -> isize {
         .lock()
         .mprotect(VirtAddr::from(start), len, prot.into());
 
-    unsafe { riscv::asm::sfence_vma_all() };
-
-    0
+    flush_tlb(None);
+    Ok(0)
 }
 
 const IPC_PRIVATE: i32 = 0;
@@ -136,19 +143,20 @@ bitflags! {
 }
 
 // TODO: uid and gid support
-pub fn syscall_shmget(key: i32, size: usize, flags: i32) -> isize {
+pub fn syscall_shmget(key: i32, size: usize, flags: i32) -> SyscallResult {
     let pid = current_process().pid();
 
     // 9 bits for permission
     let mode: u16 = (flags as u16) & ((1 << 10) - 1);
 
     let Some(flags) = ShmFlags::from_bits(flags - mode as i32) else {
-        return -1;
+        // return -1;
+        return Err(SyscallError::EINVAL);
     };
 
     if key == IPC_PRIVATE {
         let Ok((shmid, mem)) = MemorySet::create_shared_mem(key, size, pid, 0, 0, mode) else {
-            return -1;
+            return Err(SyscallError::EINVAL);
         };
 
         current_process()
@@ -156,31 +164,30 @@ pub fn syscall_shmget(key: i32, size: usize, flags: i32) -> isize {
             .lock()
             .add_private_shared_mem(shmid, mem);
 
-        shmid as isize
+        Ok(shmid as isize)
     } else {
         let mut key_map = axmem::KEY_TO_SHMID.lock();
 
         match key_map.get(&key) {
             Some(shmid) => {
                 if flags.contains(ShmFlags::IPC_CREAT) && flags.contains(ShmFlags::IPC_EXCL) {
-                    ErrorNo::EEXIST as isize
+                    Err(SyscallError::EEXIST)
                 } else {
-                    *shmid as isize
+                    Ok(*shmid as isize)
                 }
             }
             None => {
                 if flags.contains(ShmFlags::IPC_CREAT) {
                     let Ok((shmid, mem)) = MemorySet::create_shared_mem(key, size, pid, 0, 0, mode)
                     else {
-                        return -1;
+                        return Err(SyscallError::EINVAL);
                     };
 
                     key_map.insert(key, shmid);
                     MemorySet::add_shared_mem(shmid, mem);
-
-                    shmid as isize
+                    Ok(shmid as isize)
                 } else {
-                    ErrorNo::ENOENT as isize
+                    Err(SyscallError::ENOENT)
                 }
             }
         }
@@ -197,7 +204,7 @@ bitflags! {
     }
 }
 
-pub fn syscall_shmat(shmid: i32, addr: usize, flags: i32) -> isize {
+pub fn syscall_shmat(shmid: i32, addr: usize, flags: i32) -> SyscallResult {
     let process = current_process();
 
     let mut memory = process.memory_set.lock();
@@ -208,14 +215,14 @@ pub fn syscall_shmat(shmid: i32, addr: usize, flags: i32) -> isize {
         .get_private_shared_mem(shmid)
         .or_else(|| MemorySet::get_shared_mem(shmid))
     else {
-        return ErrorNo::EINVAL as isize;
+        return Err(SyscallError::EINVAL);
     };
     let size = mem.size();
 
     let addr = if addr == 0 {
         match memory.find_free_area(addr.into(), size) {
             Some(addr) => addr,
-            None => return ErrorNo::ENOMEM as isize,
+            None => return Err(SyscallError::ENOMEM),
         }
     } else {
         let addr: VirtAddr = addr.into();
@@ -225,13 +232,13 @@ pub fn syscall_shmat(shmid: i32, addr: usize, flags: i32) -> isize {
             if flags.contains(ShmAtFlags::SHM_RND) {
                 addr.align_up_4k()
             } else {
-                return ErrorNo::EINVAL as isize;
+                return Err(SyscallError::EINVAL);
             }
         };
 
         if flags.contains(ShmAtFlags::SHM_REMAP) {
             memory.split_for_area(addr, size);
-            unsafe { riscv::asm::sfence_vma_all() };
+            flush_tlb(None);
         } else {
             unimplemented!()
         }
@@ -250,8 +257,7 @@ pub fn syscall_shmat(shmid: i32, addr: usize, flags: i32) -> isize {
     }
 
     memory.attach_shared_mem(mem, addr, map_flags);
+    flush_tlb(None);
 
-    unsafe { riscv::asm::sfence_vma_all() };
-
-    addr.as_usize() as isize
+    Ok(addr.as_usize() as isize)
 }

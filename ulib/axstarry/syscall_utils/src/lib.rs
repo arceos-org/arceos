@@ -5,6 +5,14 @@ use axerrno::LinuxError;
 use axlog::error;
 pub use ctypes::*;
 pub type SyscallResult = Result<isize, LinuxError>;
+
+pub fn deal_result(result: SyscallResult) -> isize {
+    match result {
+        Ok(x) => x,
+        Err(error) => error.code() as isize,
+    }
+}
+
 pub type SyscallError = axerrno::LinuxError;
 #[allow(unused)]
 pub(crate) unsafe fn get_str_len(start: *const u8) -> usize {

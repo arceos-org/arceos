@@ -539,38 +539,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "axstarry"
-version = "0.1.0"
-dependencies = [
- "arceos_api",
- "axalloc",
- "axconfig",
- "axerrno",
- "axfeat",
- "axfs",
- "axhal",
- "axio",
- "axlog",
- "axmem",
- "axprocess",
- "axruntime",
- "axsignal",
- "axsync",
- "axtask",
- "bitflags 2.4.0",
- "crate_interface",
- "kernel_guard",
- "lazy_init",
- "num_enum",
- "numeric-enum-macro",
- "rand",
- "riscv",
- "spinlock",
- "syscall_net",
- "syscall_utils",
-]
-
-[[package]]
 name = "axstd"
 version = "0.1.0"
 dependencies = [
@@ -1482,7 +1450,7 @@ checksum = "0ab1bc2a289d34bd04a330323ac98a1b4bc82c9d9fcb1e66b63caa84da26b575"
 name = "oscomp"
 version = "0.1.0"
 dependencies = [
- "axstarry",
+ "syscall_entry",
 ]
 
 [[package]]
@@ -1960,6 +1928,52 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "syscall_entry"
+version = "0.1.0"
+dependencies = [
+ "arceos_api",
+ "axalloc",
+ "axconfig",
+ "axerrno",
+ "axfeat",
+ "axfs",
+ "axhal",
+ "axio",
+ "axlog",
+ "axprocess",
+ "axruntime",
+ "axsignal",
+ "axsync",
+ "axtask",
+ "bitflags 2.4.0",
+ "crate_interface",
+ "kernel_guard",
+ "lazy_init",
+ "num_enum",
+ "numeric-enum-macro",
+ "rand",
+ "riscv",
+ "spinlock",
+ "syscall_mem",
+ "syscall_net",
+ "syscall_utils",
+]
+
+[[package]]
+name = "syscall_mem"
+version = "0.1.0"
+dependencies = [
+ "axerrno",
+ "axhal",
+ "axlog",
+ "axmem",
+ "axprocess",
+ "bitflags 2.4.0",
+ "numeric-enum-macro",
+ "syscall_utils",
 ]
 
 [[package]]

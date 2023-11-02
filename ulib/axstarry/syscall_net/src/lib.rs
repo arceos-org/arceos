@@ -7,10 +7,10 @@ mod imp;
 mod socket;
 use imp::*;
 mod net_syscall_id;
-pub use net_syscall_id::SyscallId::{self, *};
+pub use net_syscall_id::NetSyscallId::{self, *};
 pub use socket::Socket;
 /// 进行 syscall 的分发
-pub fn net_syscall(syscall_id: net_syscall_id::SyscallId, args: [usize; 6]) -> SyscallResult {
+pub fn net_syscall(syscall_id: net_syscall_id::NetSyscallId, args: [usize; 6]) -> SyscallResult {
     match syscall_id {
         SOCKET => syscall_socket(args[0], args[1], args[2]),
         BIND => syscall_bind(args[0], args[1] as *const u8, args[2]),

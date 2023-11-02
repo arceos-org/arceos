@@ -52,10 +52,6 @@ members = [
     "modules/axprocess",
     "modules/axsignal",
 
-    "modules/axsyscall/syscall_net",
-    "modules/axsyscall/syscall_utils",
-
-
     "api/axfeat",
     "api/arceos_api",
     
@@ -63,7 +59,10 @@ members = [
 
     "ulib/axstd",
     "ulib/axlibc",
-    "ulib/axstarry",
+    "ulib/axstarry/syscall_mem",
+    "ulib/axstarry/syscall_net",
+    "ulib/axstarry/syscall_utils",
+    "ulib/axstarry/syscall_entry",
     "apps/display",
     "apps/exception",
     "apps/helloworld",

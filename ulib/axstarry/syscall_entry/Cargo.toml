@@ -1,5 +1,5 @@
 [package]
-name = "axstarry"
+name = "syscall_entry"
 version = "0.1.0"
 edition = "2021"
 
@@ -45,7 +45,7 @@ display = ["arceos_api/display", "axfeat/display"]
 fs = ["axruntime/fs", "arceos_api/fs"]
 
 # Networking
-net = ["arceos_api/net", "axfeat/net", "syscall_net/net"]
+net = ["arceos_api/net", "axfeat/net"]
 dns = []
 
 # Signal
@@ -59,31 +59,35 @@ log-level-info = ["axfeat/log-level-info"]
 log-level-debug = ["axfeat/log-level-debug"]
 log-level-trace = ["axfeat/log-level-trace"]
 
+# Syscall Select
+syscall_net = ["dep:syscall_net", "net"]
+syscall_mem = ["dep:syscall_mem"]
+syscall_mem_fs = ["syscall_mem", "syscall_mem/fs"]
 
 [dependencies]
 numeric-enum-macro = { git = "https://github.com/mexus/numeric-enum-macro" }
-crate_interface = { path = "../../crates/crate_interface" }
-axfeat = { path = "../../api/axfeat" }
-arceos_api = { path = "../../api/arceos_api" }
-axruntime = { path = "../../modules/axruntime" }
-axconfig = { path = "../../modules/axconfig" }
-axlog = { path = "../../modules/axlog" }
-axio = { path = "../../crates/axio" }
-axerrno = { path = "../../crates/axerrno" }
-axhal = { path = "../../modules/axhal" }
-axalloc = { path = "../../modules/axalloc", optional = true }
-axtask = { path = "../../modules/axtask" }
-axsync = { path = "../../modules/axsync" }
-axfs = { path = "../../modules/axfs" }
-syscall_utils = { path = "../../modules/axsyscall/syscall_utils" }
-syscall_net = { path = "../../modules/axsyscall/syscall_net", optional = true }
-axprocess = { path = "../../modules/axprocess" }
-axmem = { path = "../../modules/axmem" } 
-lazy_init = { path = "../../crates/lazy_init" }
-spinlock = { path = "../../crates/spinlock" }
-kernel_guard = { path = "../../crates/kernel_guard" }
-axsignal = { path = "../../modules/axsignal" }
+crate_interface = { path = "../../../crates/crate_interface" }
+axfeat = { path = "../../../api/axfeat" }
+arceos_api = { path = "../../../api/arceos_api" }
+axruntime = { path = "../../../modules/axruntime" }
+axconfig = { path = "../../../modules/axconfig" }
+axlog = { path = "../../../modules/axlog" }
+axio = { path = "../../../crates/axio" }
+axerrno = { path = "../../../crates/axerrno" }
+axhal = { path = "../../../modules/axhal" }
+axalloc = { path = "../../../modules/axalloc", optional = true }
+axtask = { path = "../../../modules/axtask" }
+axsync = { path = "../../../modules/axsync" }
+axfs = { path = "../../../modules/axfs" }
+axprocess = { path = "../../../modules/axprocess" }
+lazy_init = { path = "../../../crates/lazy_init" }
+spinlock = { path = "../../../crates/spinlock" }
+kernel_guard = { path = "../../../crates/kernel_guard" }
+axsignal = { path = "../../../modules/axsignal" }
 riscv = "0.10"
 bitflags = "2.0"
 num_enum = { version = "0.5.11", default-features = false }
 rand = { version = "0.8.5", default-features = false, features = ["small_rng"] }
+syscall_utils = { path = "../syscall_utils" }
+syscall_net = { path = "../syscall_net", optional = true }
+syscall_mem = { path = "../syscall_mem", optional = true }

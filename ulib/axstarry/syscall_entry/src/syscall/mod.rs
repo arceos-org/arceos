@@ -4,13 +4,12 @@ use axhal::cpu::this_cpu_id;
 use axprocess::exit_current_task;
 use axsignal::action::SigAction;
 pub use code::{ErrorNo, SyscallId};
-use syscall_utils::SyscallResult;
+use syscall_utils::deal_result;
 pub mod epoll;
 #[allow(unused)]
 pub mod flags;
 pub mod fs;
 pub mod futex;
-pub mod mem;
 pub mod poll;
 pub mod select;
 #[cfg(feature = "signal")]
@@ -24,7 +23,6 @@ use axtask::current;
 use epoll::*;
 use flags::*;
 use fs::*;
-use mem::*;
 use poll::*;
 use select::syscall_pselect6;
 use signal::*;
@@ -33,13 +31,6 @@ use task::*;
 pub use task::{filter, TEST_FILTER};
 use utils::*;
 use SyscallId::*;
-
-fn deal_result(result: SyscallResult) -> isize {
-    match result {
-        Ok(x) => x,
-        Err(error) => error.code() as isize,
-    }
-}
 
 #[no_mangle]
 pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
@@ -67,10 +58,17 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
     );
     // }
     let ans = loop {
-        #[cfg(feature = "net")]
+        #[cfg(feature = "syscall_net")]
         {
-            if let Ok(net_syscall_id) = syscall_net::SyscallId::try_from(syscall_id) {
+            if let Ok(net_syscall_id) = syscall_net::NetSyscallId::try_from(syscall_id) {
                 break syscall_net::net_syscall(net_syscall_id, args);
+            }
+        }
+
+        #[cfg(feature = "syscall_mem")]
+        {
+            if let Ok(mem_syscall_id) = syscall_mem::MemSyscallId::try_from(syscall_id) {
+                break syscall_mem::mem_syscall(mem_syscall_id, args);
             }
         }
 
@@ -104,18 +102,6 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
                 WaitFlags::from_bits(args[2] as u32).unwrap(),
             ),
             GETRANDOM => syscall_getrandom(args[0] as *mut u8, args[1], args[2]),
-
-            BRK => syscall_brk(args[0] as usize),
-            MUNMAP => syscall_munmap(args[0], args[1]),
-            MMAP => syscall_mmap(
-                args[0],
-                args[1],
-                MMAPPROT::from_bits_truncate(args[2] as u32),
-                MMAPFlags::from_bits_truncate(args[3] as u32),
-                args[4] as i32,
-                args[5],
-            ),
-            MSYNC => syscall_msync(args[0], args[1]),
             GETCWD => syscall_getcwd(args[0] as *mut u8, args[1]),
             PIPE2 => syscall_pipe2(args[0] as *mut u32),
             DUP => syscall_dup(args[0]),
@@ -187,12 +173,6 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
 
             READV => syscall_readv(args[0] as usize, args[1] as *mut IoVec, args[2] as usize),
             WRITEV => syscall_writev(args[0] as usize, args[1] as *const IoVec, args[2] as usize),
-            MPROTECT => syscall_mprotect(
-                args[0] as usize,
-                args[1] as usize,
-                MMAPPROT::from_bits_truncate(args[2] as u32),
-            ),
-
             FCNTL64 => syscall_fcntl64(args[0] as usize, args[1] as usize, args[2] as usize),
             SYSINFO => syscall_sysinfo(args[0] as *mut SysInfo),
             SETITIMER => syscall_settimer(
@@ -279,10 +259,6 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             IOCTL => syscall_ioctl(args[0] as usize, args[1] as usize, args[2] as *mut usize),
             // 不做处理即可
             SYNC => 0,
-            SHMGET => syscall_shmget(args[0] as i32, args[1], args[2] as i32),
-            SHMCTL => 0,
-            SHMAT => syscall_shmat(args[0] as i32, args[1], args[2] as i32),
-            MEMBARRIER => 0,
             SIGTIMEDWAIT => 0,
             SYSLOG => 0,
             PRCTL => 0,

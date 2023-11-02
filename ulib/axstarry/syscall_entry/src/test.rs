@@ -315,7 +315,7 @@ pub const OSTRAIN_TESTCASES: &[&str] = &[
 #[allow(dead_code)]
 pub const SDCARD_TESTCASES: &[&str] = &[
     // "main",
-    "./runtest.exe -w entry-dynamic.exe socket",
+    // "./runtest.exe -w entry-dynamic.exe socket",
     // "./riscv64-linux-musl-native/bin/riscv64-linux-musl-gcc ./hello.c -static",
     // "./a.out",
     // "./time-test",

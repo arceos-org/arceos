@@ -6,7 +6,7 @@ numeric_enum_macro::numeric_enum! {
 #[allow(non_camel_case_types)]
 #[allow(missing_docs)]
 #[derive(Eq, PartialEq, Debug, Copy, Clone)]
-pub enum SyscallId {
+pub enum NetSyscallId {
     // Socket
     SOCKET = 198,
     BIND = 200,

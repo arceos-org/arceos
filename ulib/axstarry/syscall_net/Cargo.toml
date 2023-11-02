@@ -13,13 +13,13 @@ net = ["axnet/ip"]
 dns = []
 
 [dependencies]
-axnet = { path = "../../axnet" }
+axnet = { path = "../../../modules/axnet" }
 axerrno = { path = "../../../crates/axerrno" }
-axprocess = { path = "../../axprocess" }
-axfs = { path = "../../axfs" }
+axprocess = { path = "../../../modules/axprocess" }
+axfs = { path = "../../../modules/axfs" }
 axio = { path = "../../../crates/axio" }
-axlog = { path = "../../axlog" }
-axsync = { path = "../../axsync" }
+axlog = { path = "../../../modules/axlog" }
+axsync = { path = "../../../modules/axsync" }
 num_enum = { version = "0.5.11", default-features = false }
 syscall_utils = { path = "../syscall_utils" }
 numeric-enum-macro = { git = "https://github.com/mexus/numeric-enum-macro" }
