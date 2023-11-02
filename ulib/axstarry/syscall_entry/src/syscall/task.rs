@@ -7,6 +7,7 @@ use axprocess::{
     current_process, current_task, exit_current_task,
     flags::{CloneFlags, WaitStatus},
     futex::{clear_wait, FutexRobustList},
+    link::{deal_with_path, AT_FDCWD},
     set_child_tid,
     signal::SignalModule,
     sleep_now_task, wait_pid, yield_now_task, Process, PID2PC, TID2TASK,
@@ -25,7 +26,6 @@ use super::{
         raw_ptr_to_ref_str, RLimit, RobustList, SchedParam, TimeSecs, WaitFlags, RLIMIT_AS,
         RLIMIT_NOFILE, RLIMIT_STACK,
     },
-    fs::{deal_with_path, AT_FDCWD},
     futex::futex,
     ErrorNo,
 };

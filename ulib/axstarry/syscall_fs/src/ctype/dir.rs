@@ -1,4 +1,4 @@
-use super::{normal_file_mode, StMode};
+use syscall_utils::{normal_file_mode, StMode};
 extern crate alloc;
 use alloc::string::{String, ToString};
 use axerrno::{AxError, AxResult};

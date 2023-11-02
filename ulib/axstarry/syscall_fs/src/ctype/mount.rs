@@ -5,10 +5,16 @@ use axfs::api::{lookup, path_exists, FileIO, Kstat, OpenFlags};
 use axlog::{debug, info};
 use axprocess::link::FilePath;
 use axsync::Mutex;
+use syscall_utils::{normal_file_mode, StMode, SyscallError};
 
-use crate::syscall::ErrorNo;
+use super::{dir::new_dir, file::new_fd};
 
-use super::{new_dir, new_fd, normal_file_mode, StMode};
+// use crate::{
+//     dir::new_dir,
+//     file::new_fd,
+//     link::{deal_with_path, AT_FDCWD},
+// };
+
 // use crate::link::{real_path};
 
 /// 挂载的文件系统。
@@ -92,7 +98,7 @@ pub fn check_mounted(path: &FilePath) -> bool {
 }
 
 /// 根据给定的路径获取对应的文件stat
-pub fn get_stat_in_fs(path: &FilePath) -> Result<Kstat, isize> {
+pub fn get_stat_in_fs(path: &FilePath) -> Result<Kstat, SyscallError> {
     // 根目录算作一个简单的目录文件，不使用特殊的stat
     // 否则在fat32中查找
     let real_path = path.path();
@@ -152,11 +158,11 @@ pub fn get_stat_in_fs(path: &FilePath) -> Result<Kstat, isize> {
                 Ok(stat) => Ok(stat),
                 Err(e) => {
                     debug!("get stat error: {:?}", e);
-                    Err(ErrorNo::EINVAL as isize)
+                    Err(SyscallError::EINVAL)
                 }
             }
         } else {
-            Err(ErrorNo::ENOENT as isize)
+            Err(SyscallError::ENONET)
         };
     } else {
         // 是目录
@@ -165,11 +171,11 @@ pub fn get_stat_in_fs(path: &FilePath) -> Result<Kstat, isize> {
                 Ok(stat) => Ok(stat),
                 Err(e) => {
                     debug!("get stat error: {:?}", e);
-                    Err(ErrorNo::EINVAL as isize)
+                    Err(SyscallError::EINVAL)
                 }
             }
         } else {
-            Err(ErrorNo::ENOENT as isize)
+            Err(SyscallError::ENONET)
         };
     }
 }

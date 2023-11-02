@@ -1,4 +1,5 @@
-//! 定义epoll使用到的文件
+use axhal::time::current_ticks;
+use bitflags::bitflags;
 extern crate alloc;
 use alloc::{
     collections::{BTreeMap, BTreeSet},
@@ -12,10 +13,52 @@ use axio::SeekFrom;
 
 use axprocess::{current_process, yield_now_task};
 use axsync::Mutex;
+use syscall_utils::SyscallError;
 
-use crate::syscall::ErrorNo;
+bitflags! {
+    /// 定义epoll事件的类别
+    #[derive(Clone, Copy,Debug)]
+    pub struct EpollEventType: u32{
+        const EPOLLIN = 0x001;
+        const EPOLLOUT = 0x004;
+        const EPOLLERR = 0x008;
+        const EPOLLHUP = 0x010;
+        const EPOLLPRI = 0x002;
+        const EPOLLRDNORM = 0x040;
+        const EPOLLRDBAND = 0x080;
+        const EPOLLWRNORM = 0x100;
+        const EPOLLWRBAND= 0x200;
+        const EPOLLMSG = 0x400;
+        const EPOLLRDHUP = 0x2000;
+        const EPOLLEXCLUSIVE = 0x1000_0000;
+        const EPOLLWAKEUP = 0x2000_0000;
+        const EPOLLONESHOT = 0x4000_0000;
+        const EPOLLET = 0x8000_0000;
+    }
+}
 
-use super::flags::{EpollCtl, EpollEvent, EpollEventType};
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+/// 定义一个epoll事件
+pub struct EpollEvent {
+    /// 事件类型
+    pub event_type: EpollEventType,
+    /// 事件中使用到的数据，如fd等
+    pub data: u64,
+}
+
+numeric_enum_macro::numeric_enum! {
+    #[repr(i32)]
+    #[derive(Clone, Copy, Debug)]
+    pub enum EpollCtl {
+        /// 添加一个文件对应的事件
+        ADD = 1,
+        /// 删除一个文件对应的事件
+        DEL = 2,
+        /// 修改一个文件对应的事件
+        MOD = 3,
+    }
+}
 
 pub struct EpollFile {
     /// 定义内部可变变量
@@ -52,20 +95,25 @@ impl EpollFile {
     /// 控制指定的事件，改变其对应的事件内容
     ///
     /// 成功返回0，错误返回对应的编号
-    pub fn epoll_ctl(&self, op: EpollCtl, fd: i32, event: EpollEvent) -> isize {
+    pub fn epoll_ctl(
+        &self,
+        op: EpollCtl,
+        fd: i32,
+        event: EpollEvent,
+    ) -> Result<isize, SyscallError> {
         let mut inner = self.inner.lock();
         match op {
             // 添加事件
             EpollCtl::ADD => {
                 if inner.monitor_list.contains_key(&fd) {
-                    return ErrorNo::EEXIST as isize;
+                    return Err(SyscallError::EEXIST);
                 }
                 inner.monitor_list.insert(fd, event);
             }
             // 删除事件
             EpollCtl::DEL => {
                 if !inner.monitor_list.contains_key(&fd) {
-                    return ErrorNo::ENOENT as isize;
+                    return Err(SyscallError::ENOENT);
                 }
                 inner.monitor_list.remove(&fd);
             }
@@ -74,12 +122,12 @@ impl EpollFile {
                 // 对于不存在的事件，返回错误
                 // 即modify要求原先文件存在对应事件，才能进行“修改”
                 if !inner.monitor_list.contains_key(&fd) {
-                    return ErrorNo::ENOENT as isize;
+                    return Err(SyscallError::ENOENT);
                 }
                 inner.monitor_list.insert(fd, event);
             }
         }
-        0
+        Ok(0)
     }
 
     /// 获取list中所有的epoll事件
@@ -142,7 +190,7 @@ impl EpollFile {
                 return Ok(ret_events);
             }
             // 否则直接block
-            if riscv::register::time::read() > expire_time {
+            if current_ticks() as usize > expire_time {
                 return Ok(ret_events);
             }
             yield_now_task();

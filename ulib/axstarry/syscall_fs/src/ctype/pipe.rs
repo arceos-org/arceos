@@ -1,13 +1,11 @@
 use axfs::api::{FileIO, FileIOType};
 extern crate alloc;
-use alloc::string::ToString;
 use alloc::sync::{Arc, Weak};
-use axerrno::{AxError, AxResult};
+use axerrno::AxResult;
 use axlog::{info, trace};
+
 use axsync::Mutex;
 use axtask::yield_now;
-
-use crate::syscall::TEST_FILTER;
 
 /// IPC pipe
 pub struct Pipe {
@@ -115,17 +113,6 @@ pub fn make_pipe() -> (Arc<Pipe>, Arc<Pipe>) {
     (read_end, write_end)
 }
 
-fn filter_pipe() -> bool {
-    let cases = ["fscanf", "fgetwc_buffering", "lat_pipe"];
-    for case in cases {
-        if TEST_FILTER.lock().contains_key(&case.to_string()) {
-            axlog::error!("filter: {:?}", TEST_FILTER.lock().keys());
-            return true;
-        }
-    }
-    false
-}
-
 impl FileIO for Pipe {
     fn read(&self, buf: &mut [u8]) -> AxResult<usize> {
         info!("kernel: Pipe::read");
@@ -133,15 +120,17 @@ impl FileIO for Pipe {
         let want_to_read = buf.len();
         let mut buf_iter = buf.iter_mut();
         let mut already_read = 0usize;
-        let mut cnt = 0;
         loop {
             let mut ring_buffer = self.buffer.lock();
             let loop_read = ring_buffer.available_read();
             info!("kernel: Pipe::read: loop_read = {}", loop_read);
-            cnt += 1;
             if loop_read == 0 {
                 drop(ring_buffer);
-                if Arc::strong_count(&self.buffer) < 2 || (filter_pipe() && cnt > 3) {
+                // if Arc::strong_count(&self.buffer) < 2 || (filter_pipe() && cnt > 3) {
+                //     // info!("close");
+                //     return Ok(already_read);
+                // }
+                if Arc::strong_count(&self.buffer) < 2 {
                     // info!("close");
                     return Ok(already_read);
                 }
@@ -170,16 +159,18 @@ impl FileIO for Pipe {
         assert!(self.writable());
         let want_to_write = buf.len();
         let mut buf_iter = buf.iter();
-        let mut cnt = 0;
         let mut already_write = 0usize;
         loop {
             let mut ring_buffer = self.buffer.lock();
             let loop_write = ring_buffer.available_write();
-            cnt += 1;
             if loop_write == 0 {
                 drop(ring_buffer);
 
-                if Arc::strong_count(&self.buffer) < 2 || (filter_pipe() && cnt > 3) {
+                // if Arc::strong_count(&self.buffer) < 2 || (filter_pipe() && cnt > 3) {
+                //     // 读入端关闭
+                //     return Ok(already_write);
+                // }
+                if Arc::strong_count(&self.buffer) < 2 {
                     // 读入端关闭
                     return Ok(already_write);
                 }

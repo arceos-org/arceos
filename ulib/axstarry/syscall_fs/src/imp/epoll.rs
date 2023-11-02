@@ -3,18 +3,11 @@
 //! them.  
 extern crate alloc;
 use alloc::sync::Arc;
-use axhal::mem::VirtAddr;
+use axhal::{mem::VirtAddr, time::current_ticks};
 use axprocess::current_process;
+use syscall_utils::{SyscallError, SyscallResult};
 
-use self::{
-    file::EpollFile,
-    flags::{EpollCtl, EpollEvent},
-};
-
-use super::ErrorNo;
-
-mod file;
-pub mod flags;
+use crate::ctype::epoll::{EpollCtl, EpollEvent, EpollFile};
 
 /// For epoll_create, Since Linux 2.6.8, the size argument is ignored, but must be greater than zero;
 ///
@@ -23,15 +16,16 @@ pub mod flags;
 ///  is the same as epoll_create().
 ///
 /// If flag equals to EPOLL_CLOEXEC, than set the cloexec flag for the fd
-pub fn syscall_epoll_create1(_flag: usize) -> isize {
-    let file = file::EpollFile::new();
+pub fn syscall_epoll_create1(_flag: usize) -> SyscallResult {
+    let file = EpollFile::new();
     let process = current_process();
     let mut fd_table = process.fd_manager.fd_table.lock();
     if let Ok(num) = process.alloc_fd(&mut fd_table) {
         fd_table[num] = Some(Arc::new(file));
-        num as isize
+        Ok(num as isize)
     } else {
-        ErrorNo::EMFILE as isize
+        // ErrorNo::EMFILE as isize
+        Err(SyscallError::EMFILE)
     }
 }
 
@@ -44,32 +38,32 @@ pub fn syscall_epoll_create1(_flag: usize) -> isize {
 /// - op: 修改操作的类型
 /// - fd: 接受事件的文件的fd
 /// - event: 接受的事件
-pub fn syscall_epoll_ctl(epfd: i32, op: i32, fd: i32, event: *const EpollEvent) -> isize {
+pub fn syscall_epoll_ctl(epfd: i32, op: i32, fd: i32, event: *const EpollEvent) -> SyscallResult {
     let process = current_process();
     if process
         .manual_alloc_type_for_lazy(event as *const EpollEvent)
         .is_err()
     {
-        return ErrorNo::EFAULT as isize;
+        return Err(SyscallError::EFAULT);
     }
     let fd_table = process.fd_manager.fd_table.lock();
     let event = unsafe { *event };
     if fd_table[fd as usize].is_none() {
-        return ErrorNo::EBADF as isize;
+        return Err(SyscallError::EBADF);
     }
     let op = if let Ok(val) = EpollCtl::try_from(op) {
         val
     } else {
-        return ErrorNo::EINVAL as isize;
+        return Err(SyscallError::EINVAL);
     };
     if let Some(file) = fd_table[epfd as usize].as_ref() {
         if let Some(epoll_file) = file.as_any().downcast_ref::<EpollFile>() {
             epoll_file.epoll_ctl(op, fd, event)
         } else {
-            ErrorNo::EBADF as isize
+            Err(SyscallError::EBADF)
         }
     } else {
-        ErrorNo::EBADF as isize
+        Err(SyscallError::EBADF)
     }
 }
 
@@ -87,16 +81,16 @@ pub fn syscall_epoll_wait(
     event: *mut EpollEvent,
     max_event: i32,
     timeout: i32,
-) -> isize {
+) -> SyscallResult {
     if max_event <= 0 {
-        return ErrorNo::EINVAL as isize;
+        return Err(SyscallError::EINVAL);
     }
     let max_event = max_event as usize;
     let process = current_process();
     let start: VirtAddr = (event as usize).into();
     let end = start + max_event * core::mem::size_of::<EpollEvent>();
     if process.manual_alloc_range_for_lazy(start, end).is_err() {
-        return ErrorNo::EFAULT as isize;
+        return Err(SyscallError::EFAULT);
     }
 
     let fd_table = process.fd_manager.fd_table.lock();
@@ -104,20 +98,20 @@ pub fn syscall_epoll_wait(
         if let Some(epoll_file) = file.as_any().downcast_ref::<EpollFile>() {
             epoll_file.clone()
         } else {
-            return ErrorNo::EBADF as isize;
+            return Err(SyscallError::EBADF);
         }
     } else {
-        return ErrorNo::EBADF as isize;
+        return Err(SyscallError::EBADF);
     };
 
     let timeout = if timeout > 0 {
-        riscv::register::time::read() + timeout as usize
+        current_ticks() as usize + timeout as usize
     } else {
         usize::MAX
     };
     let ret_events = epoll_file.epoll_wait(timeout);
     if ret_events.is_err() {
-        return ErrorNo::EINTR as isize;
+        return Err(SyscallError::EINTR);
     }
     let ret_events = ret_events.unwrap();
     let real_len = ret_events.len().min(max_event);
@@ -127,5 +121,5 @@ pub fn syscall_epoll_wait(
             *(event.add(i)) = ret_events[i];
         }
     }
-    real_len as isize
+    Ok(real_len as isize)
 }

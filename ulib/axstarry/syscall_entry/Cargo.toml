@@ -25,10 +25,6 @@ fp_simd = ["axfeat/fp_simd"]
 irq = ["arceos_api/irq", "axfeat/irq"]
 
 # Memory
-alloc = ["arceos_api/alloc", "axfeat/alloc", "axio/alloc"]
-alloc-tlsf = ["axfeat/alloc-tlsf"]
-alloc-slab = ["axfeat/alloc-slab"]
-alloc-buddy = ["axfeat/alloc-buddy"]
 paging = ["axfeat/paging"]
 tls = ["axfeat/tls"]
 
@@ -44,10 +40,6 @@ display = ["arceos_api/display", "axfeat/display"]
 # Fs
 fs = ["axruntime/fs", "arceos_api/fs"]
 
-# Networking
-net = ["arceos_api/net", "axfeat/net"]
-dns = []
-
 # Signal
 signal = ["axruntime/signal"]
 
@@ -60,9 +52,10 @@ log-level-debug = ["axfeat/log-level-debug"]
 log-level-trace = ["axfeat/log-level-trace"]
 
 # Syscall Select
-syscall_net = ["dep:syscall_net", "net"]
+syscall_net = ["syscall_net/net"]
+# 只有当 syscall_mem 和 syscall_fs 同时启动时，才会启动 syscall_mem/fs
+syscall_fs = ["dep:syscall_fs", "syscall_mem?/fs", "fs"]
 syscall_mem = ["dep:syscall_mem"]
-syscall_mem_fs = ["syscall_mem", "syscall_mem/fs"]
 
 [dependencies]
 numeric-enum-macro = { git = "https://github.com/mexus/numeric-enum-macro" }
@@ -72,10 +65,8 @@ arceos_api = { path = "../../../api/arceos_api" }
 axruntime = { path = "../../../modules/axruntime" }
 axconfig = { path = "../../../modules/axconfig" }
 axlog = { path = "../../../modules/axlog" }
-axio = { path = "../../../crates/axio" }
 axerrno = { path = "../../../crates/axerrno" }
 axhal = { path = "../../../modules/axhal" }
-axalloc = { path = "../../../modules/axalloc", optional = true }
 axtask = { path = "../../../modules/axtask" }
 axsync = { path = "../../../modules/axsync" }
 axfs = { path = "../../../modules/axfs" }
@@ -89,5 +80,6 @@ bitflags = "2.0"
 num_enum = { version = "0.5.11", default-features = false }
 rand = { version = "0.8.5", default-features = false, features = ["small_rng"] }
 syscall_utils = { path = "../syscall_utils" }
+syscall_fs = { path = "../syscall_fs", optional = true }
 syscall_net = { path = "../syscall_net", optional = true }
 syscall_mem = { path = "../syscall_mem", optional = true }

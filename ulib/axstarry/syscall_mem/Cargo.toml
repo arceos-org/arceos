@@ -6,7 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-fs = []
+
+fs = ["dep:syscall_fs"]
 
 [dependencies]
 axprocess = { path = "../../../modules/axprocess" }
@@ -16,4 +17,5 @@ axlog = { path = "../../../modules/axlog" }
 bitflags = "2.0"
 axhal = { path = "../../../modules/axhal" }
 axmem = { path = "../../../modules/axmem" }
+syscall_fs = { path = "../syscall_fs", optional = true }
 numeric-enum-macro = { git = "https://github.com/mexus/numeric-enum-macro" }

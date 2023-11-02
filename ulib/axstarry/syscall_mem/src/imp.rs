@@ -1,5 +1,5 @@
 #[cfg(feature = "fs")]
-use crate::fs::FileDesc;
+use syscall_fs::FileDesc;
 
 #[cfg(feature = "fs")]
 use syscall_utils::MMAPFlags;
@@ -45,7 +45,6 @@ pub fn syscall_mmap(
     fd: i32,
     offset: usize,
 ) -> SyscallResult {
-    use alloc::boxed::Box;
     use axlog::debug;
     use axmem::MemBackend;
 
@@ -78,7 +77,7 @@ pub fn syscall_mmap(
         }
         let file = match &process.fd_manager.fd_table.lock()[fd as usize] {
             // 文件描述符表里面存的是文件描述符，这很合理罢
-            Some(file) => Box::new(
+            Some(file) => alloc::boxed::Box::new(
                 file.as_any()
                     .downcast_ref::<FileDesc>()
                     .expect("Try to mmap with a non-file backend")

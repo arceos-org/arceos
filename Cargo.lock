@@ -1935,13 +1935,11 @@ name = "syscall_entry"
 version = "0.1.0"
 dependencies = [
  "arceos_api",
- "axalloc",
  "axconfig",
  "axerrno",
  "axfeat",
  "axfs",
  "axhal",
- "axio",
  "axlog",
  "axprocess",
  "axruntime",
@@ -1957,8 +1955,26 @@ dependencies = [
  "rand",
  "riscv",
  "spinlock",
+ "syscall_fs",
  "syscall_mem",
  "syscall_net",
+ "syscall_utils",
+]
+
+[[package]]
+name = "syscall_fs"
+version = "0.1.0"
+dependencies = [
+ "axerrno",
+ "axfs",
+ "axhal",
+ "axio",
+ "axlog",
+ "axprocess",
+ "axsync",
+ "axtask",
+ "bitflags 2.4.0",
+ "numeric-enum-macro",
  "syscall_utils",
 ]
 
@@ -1973,6 +1989,7 @@ dependencies = [
  "axprocess",
  "bitflags 2.4.0",
  "numeric-enum-macro",
+ "syscall_fs",
  "syscall_utils",
 ]
 
@@ -1980,7 +1997,9 @@ dependencies = [
 name = "syscall_net"
 version = "0.1.0"
 dependencies = [
+ "arceos_api",
  "axerrno",
+ "axfeat",
  "axfs",
  "axio",
  "axlog",

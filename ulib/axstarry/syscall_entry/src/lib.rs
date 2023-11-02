@@ -13,6 +13,4 @@ mod trap;
 mod syscall;
 mod test;
 
-mod fs;
-
 pub use test::run_testcases;

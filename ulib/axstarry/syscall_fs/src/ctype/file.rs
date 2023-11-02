@@ -1,17 +1,18 @@
 extern crate alloc;
-use super::link::get_link_count;
-use super::{normal_file_mode, StMode};
-use crate::syscall::flags::TimeSecs;
+
 use alloc::string::{String, ToString};
 use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 use axerrno::AxResult;
-use axfs::api::{File, FileIO, FileIOType, Kstat, OpenFlags};
-use axio::SeekFrom;
-use axio::{Read, Seek, Write};
-use axlog::{debug, info};
+use axfs::api::{new_file, File, FileIO, FileIOType, Kstat, OpenFlags};
+use axio::{Read, Seek, SeekFrom, Write};
+use axlog::debug;
+
+use axprocess::link::get_link_count;
 use axsync::Mutex;
+use syscall_utils::TimeSecs;
+use syscall_utils::{normal_file_mode, StMode};
 
 /// 文件描述符
 pub struct FileDesc {
@@ -177,16 +178,6 @@ impl FileDesc {
             }),
         }
     }
-}
-
-/// 若使用多次new file打开同名文件，那么不同new file之间读写指针不共享，但是修改的内容是共享的
-pub fn new_file(path: &str, flags: &OpenFlags) -> AxResult<File> {
-    let mut file = File::options();
-    file.read(flags.readable());
-    file.write(flags.writable());
-    file.create(flags.creatable());
-    file.create_new(flags.new_creatable());
-    file.open(path)
 }
 
 /// 新建一个文件描述符

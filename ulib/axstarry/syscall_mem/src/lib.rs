@@ -1,6 +1,5 @@
 #![cfg_attr(all(not(test), not(doc)), no_std)]
-
-use syscall_utils::{SyscallResult, MMAPPROT};
+use syscall_utils::{MMAPFlags, SyscallResult, MMAPPROT};
 
 mod imp;
 
@@ -33,6 +32,7 @@ pub fn mem_syscall(syscall_id: mem_syscall_id::MemSyscallId, args: [usize; 6]) -
         SHMGET => syscall_shmget(args[0] as i32, args[1], args[2] as i32),
         SHMCTL => Ok(0),
         SHMAT => syscall_shmat(args[0] as i32, args[1], args[2] as i32),
+        #[allow(unused)]
         _ => {
             panic!("Invalid Syscall Id: {:?}!", syscall_id);
         }

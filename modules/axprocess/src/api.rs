@@ -266,7 +266,6 @@ pub fn current_task() -> CurrentTask {
 }
 
 pub fn set_child_tid(tid: usize) {
-    info!("current!");
     let curr = current_task();
     curr.set_clear_child_tid(tid);
 }

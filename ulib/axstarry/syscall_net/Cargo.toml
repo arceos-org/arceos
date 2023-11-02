@@ -9,7 +9,8 @@ authors = ["Youjie Zheng <zyj578335934@gmail.com>"]
 [features]
 
 # Networking
-net = ["axnet/ip"]
+# Networking
+net = ["arceos_api/net", "axfeat/net", "axnet/ip"]
 dns = []
 
 [dependencies]
@@ -23,3 +24,5 @@ axsync = { path = "../../../modules/axsync" }
 num_enum = { version = "0.5.11", default-features = false }
 syscall_utils = { path = "../syscall_utils" }
 numeric-enum-macro = { git = "https://github.com/mexus/numeric-enum-macro" }
+axfeat = { path = "../../../api/axfeat" }
+arceos_api = { path = "../../../api/arceos_api" }
