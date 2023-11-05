@@ -8,7 +8,7 @@ description = "ArceOS user program library for linux apps with posix_syscall"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["monolithic"]
+default = ["monolithic", "syscall_fs"]
 
 monolithic = ["arceos_api/monolithic", "axfeat/monolithic", "paging", "fs", "multitask", "irq", "signal"]
 
@@ -69,13 +69,11 @@ axerrno = { path = "../../../crates/axerrno" }
 axhal = { path = "../../../modules/axhal" }
 axtask = { path = "../../../modules/axtask" }
 axsync = { path = "../../../modules/axsync" }
-axfs = { path = "../../../modules/axfs" }
 axprocess = { path = "../../../modules/axprocess" }
 lazy_init = { path = "../../../crates/lazy_init" }
 spinlock = { path = "../../../crates/spinlock" }
 kernel_guard = { path = "../../../crates/kernel_guard" }
 axsignal = { path = "../../../modules/axsignal" }
-riscv = "0.10"
 bitflags = "2.0"
 num_enum = { version = "0.5.11", default-features = false }
 rand = { version = "0.8.5", default-features = false, features = ["small_rng"] }

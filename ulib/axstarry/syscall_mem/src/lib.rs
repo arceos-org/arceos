@@ -1,5 +1,5 @@
 #![cfg_attr(all(not(test), not(doc)), no_std)]
-use syscall_utils::{MMAPFlags, SyscallResult, MMAPPROT};
+use syscall_utils::{SyscallResult, MMAPPROT};
 
 mod imp;
 

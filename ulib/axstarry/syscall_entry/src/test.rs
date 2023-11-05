@@ -4,8 +4,8 @@ use alloc::format;
 use alloc::string::{String, ToString};
 use alloc::sync::Arc;
 use alloc::vec::Vec;
-use axfs::api::{new_file, OpenFlags};
-use axhal::arch::write_page_table_root;
+
+use axhal::arch::{flush_tlb, write_page_table_root};
 use axhal::KERNEL_PROCESS_ID;
 use axlog::info;
 use axprocess::link::{create_link, FilePath};
@@ -14,6 +14,7 @@ use axruntime::KERNEL_PAGE_TABLE;
 use axsync::Mutex;
 use axtask::{TaskId, EXITED_TASKS};
 use lazy_init::LazyInit;
+use syscall_utils::{init_current_dir, new_file, FileFlags};
 
 use crate::syscall::filter;
 /// 初赛测例
@@ -312,7 +313,7 @@ pub const OSTRAIN_TESTCASES: &[&str] = &[
 
 #[allow(dead_code)]
 pub const SDCARD_TESTCASES: &[&str] = &[
-    // "main",
+    "main",
     // "./riscv64-linux-musl-native/bin/riscv64-linux-musl-gcc ./hello.c -static",
     // "./a.out",
     // "./time-test",
@@ -362,7 +363,7 @@ pub const SDCARD_TESTCASES: &[&str] = &[
     // "busybox echo context switch overhead",
     // "lmbench_all lat_ctx -P 1 -s 32 2 4 8 16 24 32 64 96",
     // "busybox sh libctest_testcode.sh",
-    "busybox sh lua_testcode.sh",
+    // "busybox sh lua_testcode.sh",
     // "libc-bench",
     // "busybox sh ./netperf_testcode.sh",
     // "busybox sh ./cyclictest_testcode.sh",
@@ -539,7 +540,7 @@ pub fn fs_init(_case: &'static str) {
         &(FilePath::new("/bin/iozone").unwrap()),
         &(FilePath::new("/iozone").unwrap()),
     );
-    let _ = new_file("/lat_sig", &(OpenFlags::CREATE | OpenFlags::RDWR));
+    let _ = new_file("/lat_sig", &(FileFlags::CREATE | FileFlags::RDWR));
     // }
 
     // gcc相关的链接，可以在testcases/gcc/riscv64-linux-musl-native/lib目录下使用ls -al指令查看
@@ -648,7 +649,7 @@ pub fn run_testcases(case: &'static str) {
         TaskId::clear();
         unsafe {
             write_page_table_root(KERNEL_PAGE_TABLE.root_paddr());
-            riscv::asm::sfence_vma_all();
+            flush_tlb(None);
         };
         EXITED_TASKS.lock().clear();
         if let Some(exit_code) = ans {
@@ -666,6 +667,6 @@ pub fn run_testcases(case: &'static str) {
             break;
         }
         // chdir会改变当前目录，需要重新设置
-        axfs::api::set_current_dir("/").expect("reset current dir failed");
+        init_current_dir();
     }
 }

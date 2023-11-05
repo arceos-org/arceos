@@ -4,7 +4,8 @@ mod ctypes;
 use axerrno::LinuxError;
 pub use ctypes::*;
 pub type SyscallResult = Result<isize, LinuxError>;
-
+mod file;
+pub use file::*;
 pub fn deal_result(result: SyscallResult) -> isize {
     match result {
         Ok(x) => x,

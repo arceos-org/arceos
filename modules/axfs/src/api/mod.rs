@@ -17,15 +17,6 @@ pub use self::file::{File, FileType, Metadata, OpenOptions, Permissions};
 use alloc::{string::String, vec::Vec};
 use axio::{self as io, prelude::*};
 
-/// 若使用多次new file打开同名文件，那么不同new file之间读写指针不共享，但是修改的内容是共享的
-pub fn new_file(path: &str, flags: &OpenFlags) -> AxResult<File> {
-    let mut file = File::options();
-    file.read(flags.readable());
-    file.write(flags.writable());
-    file.create(flags.creatable());
-    file.create_new(flags.new_creatable());
-    file.open(path)
-}
 
 /// Returns an iterator over the entries within a directory.
 pub fn read_dir(path: &str) -> io::Result<ReadDir> {

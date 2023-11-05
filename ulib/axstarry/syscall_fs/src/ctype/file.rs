@@ -5,13 +5,13 @@ use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
 use axerrno::AxResult;
-use axfs::api::{new_file, File, FileIO, FileIOType, Kstat, OpenFlags};
+use axfs::api::{File, FileIO, FileIOType, Kstat, OpenFlags};
 use axio::{Read, Seek, SeekFrom, Write};
 use axlog::debug;
 
 use axprocess::link::get_link_count;
 use axsync::Mutex;
-use syscall_utils::TimeSecs;
+use syscall_utils::{new_file, TimeSecs};
 use syscall_utils::{normal_file_mode, StMode};
 
 /// 文件描述符
