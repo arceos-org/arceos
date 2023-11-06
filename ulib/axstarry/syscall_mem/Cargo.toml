@@ -1,0 +1,21 @@
+[package]
+name = "syscall_mem"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+
+fs = ["dep:syscall_fs"]
+
+[dependencies]
+axprocess = { path = "../../../modules/axprocess" }
+axerrno = { path = "../../../crates/axerrno" }
+syscall_utils = { path = "../syscall_utils" }
+axlog = { path = "../../../modules/axlog" }
+bitflags = "2.0"
+axhal = { path = "../../../modules/axhal" }
+axmem = { path = "../../../modules/axmem" }
+syscall_fs = { path = "../syscall_fs", optional = true }
+numeric-enum-macro = { git = "https://github.com/mexus/numeric-enum-macro" }

@@ -1,0 +1,32 @@
+[package]
+name = "syscall_task"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+
+# Signal
+signal = ["axfeat/signal", "dep:axsignal"]
+
+# Futex support
+futex = ["axfeat/futex"]
+
+# Schedule
+schedule = []
+
+default = []
+
+[dependencies]
+numeric-enum-macro = { git = "https://github.com/mexus/numeric-enum-macro" }
+axfeat = { path = "../../../api/axfeat" }
+arceos_api = { path = "../../../api/arceos_api" }
+axsignal = { path = "../../../modules/axsignal", optional = true }
+axtask = { path = "../../../modules/axtask" }
+axprocess = { path = "../../../modules/axprocess" }
+axconfig = { path = "../../../modules/axconfig" }
+axlog = { path = "../../../modules/axlog" }
+axhal = { path = "../../../modules/axhal" }
+syscall_utils = { path = "../syscall_utils" }
+rand = { version = "0.8.5", default-features = false, features = ["small_rng"] }

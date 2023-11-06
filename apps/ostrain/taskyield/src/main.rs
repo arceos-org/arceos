@@ -11,9 +11,7 @@ extern crate alloc;
 use alloc::vec;
 #[cfg_attr(feature = "axstd", no_mangle)]
 fn main() {
-    let test_list = [
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 50, 60, 70, 80, 90, 100,
-    ];
+    let test_list = [1, 2, 5, 10, 15, 20, 25, 50, 60, 70, 80, 90, 100];
     for test_num in test_list {
         let mut sum: u128 = 0;
 
@@ -37,6 +35,6 @@ fn main() {
         }
 
         // 以纳秒单位输出消耗的时间
-        println!("Yield: Num: {}, Time: {}", test_num, sum / 100);
+        println!("Yield: Num: {}, Time: {}", test_num, sum / 10);
     }
 }

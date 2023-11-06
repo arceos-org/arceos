@@ -59,7 +59,12 @@ members = [
 
     "ulib/axstd",
     "ulib/axlibc",
-    "ulib/axstarry",
+    "ulib/axstarry/syscall_mem",
+    "ulib/axstarry/syscall_fs",
+    "ulib/axstarry/syscall_net",
+    "ulib/axstarry/syscall_utils",
+    "ulib/axstarry/syscall_task",
+    "ulib/axstarry/syscall_entry",
     "apps/display",
     "apps/exception",
     "apps/helloworld",
@@ -79,8 +84,8 @@ members = [
     "apps/ostrain/fileopen",
     "apps/ostrain/fileread",
     "apps/ostrain/filewrite",
-    "apps/ostrain/taskspawn",
     "apps/ostrain/taskyield",
+    "apps/ostrain/task_single_yield",
     "apps/ostrain/danger_access"
 ]
 

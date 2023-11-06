@@ -19,6 +19,10 @@
 ./build_img.sh sdcard
 # 运行内核
 make run
+
+# 使用 ramdisk 加载测例并且运行内核，可以显著提高文件 IO 速度
+make FEATURES=img run
+
 ```
 
 ## 项目结构
@@ -96,10 +100,12 @@ $ ./build_img.sh sdcard
 ```
 
 如果想要切换到其他测例，如切换到gcc，请在保证testcases/gcc文件夹下对应文件夹内容满足需求之后，执行如下指令
+
 ```shell
 $ ./build_img.sh gcc
 ```
 
+当使用 gcc 测例时，由于 gcc 测例内容过大，不直接拷贝到 ramdisk 上，因此不能启动 `FEATURES=img`。
 
 通过修改指令可以切换生成的文件镜像中包含的测例。相应测例存放在`testcases/`文件夹下，如执行`./build_img.sh libc-static`可以生成libc静态测例。
 

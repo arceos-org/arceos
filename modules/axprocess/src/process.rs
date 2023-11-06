@@ -199,6 +199,7 @@ impl Process {
             axconfig::TASK_STACK_SIZE,
             new_process.pid(),
             page_table_token,
+            #[cfg(feature = "signal")]
             false,
         );
         TID2TASK
@@ -325,11 +326,11 @@ impl Process {
     pub fn clone_task(
         &self,
         flags: CloneFlags,
-        sig_child: bool,
         stack: Option<usize>,
         ptid: usize,
         tls: usize,
         ctid: usize,
+        #[cfg(feature = "signal")] sig_child: bool,
     ) -> AxResult<u64> {
         // if self.tasks.lock().len() > 100 {
         //     // 任务过多，手动特判结束，用来作为QEMU内存不足的应对方法
@@ -366,6 +367,7 @@ impl Process {
             axconfig::TASK_STACK_SIZE,
             process_id,
             new_memory_set.lock().page_table_token(),
+            #[cfg(feature = "signal")]
             sig_child,
         );
         debug!("new task:{}", new_task.id().as_u64());

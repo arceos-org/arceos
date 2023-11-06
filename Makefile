@@ -70,7 +70,6 @@ endif
 ifeq ($(STRUCT), Monolithic)
   APP := apps/oscomp
   APP_TYPE := rust
-  FEATURES += img
 endif
 
 # Architecture, platform and target
