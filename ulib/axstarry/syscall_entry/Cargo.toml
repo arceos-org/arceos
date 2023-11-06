@@ -8,9 +8,9 @@ description = "ArceOS user program library for linux apps with posix_syscall"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["monolithic", "syscall_fs"]
+default = ["monolithic", "syscall_task", "syscall_net", "syscall_mem", "syscall_fs", "signal", "futex", "schedule"]
 
-monolithic = ["arceos_api/monolithic", "axfeat/monolithic", "paging", "fs", "multitask", "irq", "signal"]
+monolithic = ["arceos_api/monolithic", "axfeat/monolithic", "paging", "fs", "multitask", "irq"]
 
 img = ["axruntime/img"]
 
@@ -41,7 +41,13 @@ display = ["arceos_api/display", "axfeat/display"]
 fs = ["axruntime/fs", "arceos_api/fs"]
 
 # Signal
-signal = ["axruntime/signal"]
+signal = ["syscall_task/signal", "dep:axsignal"]
+
+# Futex
+futex = ["syscall_task/futex"]
+
+# Schedule
+schedule = ["syscall_task/schedule"]
 
 # Logging
 log-level-off = ["axfeat/log-level-off"]
@@ -52,32 +58,29 @@ log-level-debug = ["axfeat/log-level-debug"]
 log-level-trace = ["axfeat/log-level-trace"]
 
 # Syscall Select
-syscall_net = ["syscall_net/net"]
+syscall_net = ["dep:syscall_net"]
 # 只有当 syscall_mem 和 syscall_fs 同时启动时，才会启动 syscall_mem/fs
 syscall_fs = ["dep:syscall_fs", "syscall_mem?/fs", "fs"]
 syscall_mem = ["dep:syscall_mem"]
+syscall_task = ["dep:syscall_task"]
 
 [dependencies]
-numeric-enum-macro = { git = "https://github.com/mexus/numeric-enum-macro" }
-crate_interface = { path = "../../../crates/crate_interface" }
 axfeat = { path = "../../../api/axfeat" }
 arceos_api = { path = "../../../api/arceos_api" }
-axruntime = { path = "../../../modules/axruntime" }
-axconfig = { path = "../../../modules/axconfig" }
 axlog = { path = "../../../modules/axlog" }
-axerrno = { path = "../../../crates/axerrno" }
+axruntime = { path = "../../../modules/axruntime" }
 axhal = { path = "../../../modules/axhal" }
 axtask = { path = "../../../modules/axtask" }
-axsync = { path = "../../../modules/axsync" }
 axprocess = { path = "../../../modules/axprocess" }
-lazy_init = { path = "../../../crates/lazy_init" }
-spinlock = { path = "../../../crates/spinlock" }
-kernel_guard = { path = "../../../crates/kernel_guard" }
-axsignal = { path = "../../../modules/axsignal" }
-bitflags = "2.0"
-num_enum = { version = "0.5.11", default-features = false }
-rand = { version = "0.8.5", default-features = false, features = ["small_rng"] }
+axsignal = { path = "../../../modules/axsignal", optional = true }
+
 syscall_utils = { path = "../syscall_utils" }
 syscall_fs = { path = "../syscall_fs", optional = true }
 syscall_net = { path = "../syscall_net", optional = true }
+syscall_task = { path = "../syscall_task", optional = true }
 syscall_mem = { path = "../syscall_mem", optional = true }
+
+crate_interface = { path = "../../../crates/crate_interface" }
+lazy_init = { path = "../../../crates/lazy_init" }
+spinlock = { path = "../../../crates/spinlock" }
+kernel_guard = { path = "../../../crates/kernel_guard" }

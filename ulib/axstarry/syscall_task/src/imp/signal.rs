@@ -1,3 +1,4 @@
+//! 支持信号相关的 syscall
 //! 与信号处理相关的系统调用
 
 use axhal::cpu::this_cpu_id;
@@ -6,23 +7,20 @@ use axprocess::{current_process, current_task, yield_now_task};
 use axsignal::action::SigAction;
 use axsignal::signal_no::SignalNo;
 
-use super::{
-    flags::{SigMaskFlag, SIGSET_SIZE_IN_BYTE},
-    ErrorNo,
-};
+use syscall_utils::{SigMaskFlag, SyscallError, SyscallResult, SIGSET_SIZE_IN_BYTE};
 
 pub fn syscall_sigaction(
     signum: usize,
     action: *const SigAction,
     old_action: *mut SigAction,
-) -> isize {
+) -> SyscallResult {
     info!(
         "signum: {}, action: {:X}, old_action: {:X}",
         signum, action as usize, old_action as usize
     );
     if signum == SignalNo::SIGKILL as usize || signum == SignalNo::SIGSTOP as usize {
         // 特殊参数不能被覆盖
-        return -1;
+        return Err(SyscallError::EPERM);
     }
 
     let current_process = current_process();
@@ -41,7 +39,7 @@ pub fn syscall_sigaction(
             .is_err()
         {
             // 无法分配
-            return -1;
+            return Err(SyscallError::EPERM);
         }
         if let Some(action) = signal_handler.get_action(signum) {
             // 将原有的action存储到old_address
@@ -58,22 +56,22 @@ pub fn syscall_sigaction(
             .is_err()
         {
             // 无法分配
-            return -1;
+            return Err(SyscallError::EPERM);
         }
         info!("test task: {}", current_task().id().as_u64());
         signal_handler.set_action(signum, action);
     }
-    0
+    Ok(0)
 }
 
 /// 实现sigsuspend系统调用
-pub fn syscall_sigsuspend(mask: *const usize) -> isize {
+pub fn syscall_sigsuspend(mask: *const usize) -> SyscallResult {
     let process = current_process();
     if process
         .manual_alloc_for_lazy((mask as usize).into())
         .is_err()
     {
-        return ErrorNo::EFAULT as isize;
+        return Err(SyscallError::EFAULT);
     }
     let mut signal_modules = process.signal_modules.lock();
 
@@ -83,7 +81,7 @@ pub fn syscall_sigsuspend(mask: *const usize) -> isize {
     // 设置新的掩码
     if signal_module.last_trap_frame_for_signal.is_some() {
         // 信号嵌套的情况下触发这个调用
-        return ErrorNo::EINTR as isize;
+        return Err(SyscallError::EINTR);
     }
     signal_module.signal_set.mask = unsafe { *mask };
     drop(signal_modules);
@@ -98,16 +96,16 @@ pub fn syscall_sigsuspend(mask: *const usize) -> isize {
             drop(signal_modules);
             yield_now_task();
             if process.have_signals().is_some() {
-                return ErrorNo::EINTR as isize;
+                return Err(SyscallError::EINTR);
             }
         }
         break;
     }
-    return -1;
+    return Err(SyscallError::EINTR);
 }
 
-pub fn syscall_sigreturn() -> isize {
-    axprocess::signal::signal_return()
+pub fn syscall_sigreturn() -> SyscallResult {
+    Ok(axprocess::signal::signal_return())
 }
 
 pub fn syscall_sigprocmask(
@@ -115,10 +113,10 @@ pub fn syscall_sigprocmask(
     new_mask: *const usize,
     old_mask: *mut usize,
     sigsetsize: usize,
-) -> isize {
+) -> SyscallResult {
     if sigsetsize != SIGSET_SIZE_IN_BYTE {
         // 若sigsetsize不是正确的大小，则返回错误
-        return ErrorNo::EINVAL as isize;
+        return Err(SyscallError::EINVAL);
     }
 
     let current_process = current_process();
@@ -127,14 +125,14 @@ pub fn syscall_sigprocmask(
             .manual_alloc_for_lazy((old_mask as usize).into())
             .is_err()
     {
-        return ErrorNo::EFAULT as isize;
+        return Err(SyscallError::EFAULT);
     }
     if new_mask as usize != 0
         && current_process
             .manual_alloc_for_lazy((new_mask as usize).into())
             .is_err()
     {
-        return -1;
+        return Err(SyscallError::EPERM);
     }
 
     let mut signal_modules = current_process.signal_modules.lock();
@@ -161,26 +159,26 @@ pub fn syscall_sigprocmask(
             }
         }
     }
-    0
+    Ok(0)
 }
 
 /// 向pid指定的进程发送信号
 ///
 /// 由于处理信号的单位在线程上，所以若进程中有多个线程，则会发送给主线程
-pub fn syscall_kill(pid: isize, signum: isize) -> isize {
+pub fn syscall_kill(pid: isize, signum: isize) -> SyscallResult {
     if pid > 0 && signum > 0 {
         // 不关心是否成功
         let _ = axprocess::signal::send_signal_to_process(pid, signum);
-        0
+        Ok(0)
     } else if pid == 0 {
-        ErrorNo::ESRCH as isize
+        Err(SyscallError::ESRCH)
     } else {
-        ErrorNo::EINVAL as isize
+        Err(SyscallError::EINVAL)
     }
 }
 
 /// 向tid指定的线程发送信号
-pub fn syscall_tkill(tid: isize, signum: isize) -> isize {
+pub fn syscall_tkill(tid: isize, signum: isize) -> SyscallResult {
     debug!(
         "cpu: {}, send singal: {} to: {}",
         this_cpu_id(),
@@ -189,8 +187,8 @@ pub fn syscall_tkill(tid: isize, signum: isize) -> isize {
     );
     if tid > 0 && signum > 0 {
         let _ = axprocess::signal::send_signal_to_thread(tid, signum);
-        0
+        Ok(0)
     } else {
-        ErrorNo::EINVAL as isize
+        Err(SyscallError::EINVAL)
     }
 }

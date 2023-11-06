@@ -143,7 +143,7 @@ pub struct TaskInner {
     #[cfg(feature = "monolithic")]
     pub sched_status: UnsafeCell<SchedStatus>,
 
-    #[cfg(feature = "monolithic")]
+    #[cfg(feature = "signal")]
     /// 退出时是否向父进程发送SIG_CHILD
     pub send_sigchld_when_exit: bool,
 }
@@ -382,6 +382,8 @@ impl TaskInner {
         let status = self.sched_status.get();
         unsafe { *status }
     }
+
+    #[cfg(feature = "signal")]
     pub fn get_sig_child(&self) -> bool {
         self.send_sigchld_when_exit
     }
@@ -442,7 +444,7 @@ impl TaskInner {
                 priority: 1,
             }),
 
-            #[cfg(feature = "monolithic")]
+            #[cfg(feature = "signal")]
             send_sigchld_when_exit: false,
         }
     }
@@ -454,7 +456,7 @@ impl TaskInner {
         stack_size: usize,
         #[cfg(feature = "monolithic")] process_id: u64,
         #[cfg(feature = "monolithic")] page_table_token: usize,
-        #[cfg(feature = "monolithic")] sig_child: bool,
+        #[cfg(feature = "signal")] sig_child: bool,
     ) -> AxTaskRef
     where
         F: FnOnce() + Send + 'static,
@@ -475,8 +477,6 @@ impl TaskInner {
 
             t.page_table_token = page_table_token;
 
-            t.send_sigchld_when_exit = sig_child;
-
             // 需要修改ctx存储的栈地址，否则内核trap上下文会被修改
             t.ctx.get_mut().init(
                 task_entry as usize,
@@ -484,6 +484,9 @@ impl TaskInner {
                 tls,
             );
         }
+
+        #[cfg(feature = "signal")]
+        t.send_sigchld_when_exit = sig_child;
 
         #[cfg(not(feature = "monolithic"))]
         t.ctx.get_mut().init(task_entry as usize, kstack.top(), tls);

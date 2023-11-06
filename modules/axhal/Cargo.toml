@@ -17,7 +17,7 @@ paging = ["axalloc", "page_table"]
 irq = []
 tls = ["alloc"]
 signal = []
-monolithic = ["paging", "signal", "dep:axfs_ramfs"]
+monolithic = ["paging", "dep:axfs_ramfs"]
 default = []
 
 [dependencies]

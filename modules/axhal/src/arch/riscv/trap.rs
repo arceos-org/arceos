@@ -9,7 +9,7 @@ use riscv::register::scause::{self, Exception as E, Trap};
 #[cfg(feature = "monolithic")]
 use crate::trap::handle_page_fault;
 
-#[cfg(feature = "monolithic")]
+#[cfg(feature = "signal")]
 use crate::trap::handle_signal;
 
 #[allow(unused)]

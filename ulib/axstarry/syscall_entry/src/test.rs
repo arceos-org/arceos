@@ -4,19 +4,17 @@ use alloc::format;
 use alloc::string::{String, ToString};
 use alloc::sync::Arc;
 use alloc::vec::Vec;
-
 use axhal::arch::{flush_tlb, write_page_table_root};
 use axhal::KERNEL_PROCESS_ID;
 use axlog::info;
 use axprocess::link::{create_link, FilePath};
 use axprocess::{wait_pid, yield_now_task, PID2PC};
 use axruntime::KERNEL_PAGE_TABLE;
-use axsync::Mutex;
 use axtask::{TaskId, EXITED_TASKS};
 use lazy_init::LazyInit;
+use spinlock::SpinNoIrq;
 use syscall_utils::{init_current_dir, new_file, FileFlags};
 
-use crate::syscall::filter;
 /// 初赛测例
 #[allow(dead_code)]
 const JUNIOR_TESTCASES: &[&str] = &[
@@ -444,7 +442,7 @@ impl TestResult {
     }
 }
 
-static TESTRESULT: LazyInit<Mutex<TestResult>> = LazyInit::new();
+static TESTRESULT: LazyInit<SpinNoIrq<TestResult>> = LazyInit::new();
 
 /// 某一个测试用例完成之后调用，记录测试结果
 pub fn finish_one_test(exit_code: i32) {
@@ -615,24 +613,22 @@ pub fn run_testcases(case: &'static str) {
             panic!("unknown test case: {}", case);
         }
     };
-    TESTRESULT.init_by(Mutex::new(TestResult::new(case_len)));
+    TESTRESULT.init_by(SpinNoIrq::new(TestResult::new(case_len)));
     loop {
         let mut ans = None;
         if let Some(command_line) = test_iter.next() {
             let args = get_args(command_line.as_bytes());
-            axlog::ax_println!("run new testcase: {:?}", args);
             let testcase = args.clone();
-            let real_testcase = if testcase[0] == "./busybox".to_string()
-                || testcase[0] == "busybox".to_string()
-                || testcase[0] == "entry-static.exe".to_string()
-                || testcase[0] == "entry-dynamic.exe".to_string()
-                || testcase[0] == "lmbench_all".to_string()
-            {
-                testcase[1].clone()
-            } else {
-                testcase[0].clone()
-            };
-            filter(real_testcase);
+            // let real_testcase = if testcase[0] == "./busybox".to_string()
+            //     || testcase[0] == "busybox".to_string()
+            //     || testcase[0] == "entry-static.exe".to_string()
+            //     || testcase[0] == "entry-dynamic.exe".to_string()
+            //     || testcase[0] == "lmbench_all".to_string()
+            // {
+            //     testcase[1].clone()
+            // } else {
+            //     testcase[0].clone()
+            // };
 
             let main_task = axprocess::Process::init(args).unwrap();
             let now_process_id = main_task.get_process_id() as isize;

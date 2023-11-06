@@ -324,6 +324,7 @@ dependencies = [
  "axhal",
  "axlog",
  "axnet",
+ "axprocess",
  "axruntime",
  "axsync",
  "axtask",
@@ -1935,27 +1936,21 @@ name = "syscall_entry"
 version = "0.1.0"
 dependencies = [
  "arceos_api",
- "axconfig",
- "axerrno",
  "axfeat",
  "axhal",
  "axlog",
  "axprocess",
  "axruntime",
  "axsignal",
- "axsync",
  "axtask",
- "bitflags 2.4.0",
  "crate_interface",
  "kernel_guard",
  "lazy_init",
- "num_enum",
- "numeric-enum-macro",
- "rand",
  "spinlock",
  "syscall_fs",
  "syscall_mem",
  "syscall_net",
+ "syscall_task",
  "syscall_utils",
 ]
 
@@ -2006,6 +2001,23 @@ dependencies = [
  "axsync",
  "num_enum",
  "numeric-enum-macro",
+ "syscall_utils",
+]
+
+[[package]]
+name = "syscall_task"
+version = "0.1.0"
+dependencies = [
+ "arceos_api",
+ "axconfig",
+ "axfeat",
+ "axhal",
+ "axlog",
+ "axprocess",
+ "axsignal",
+ "axtask",
+ "numeric-enum-macro",
+ "rand",
  "syscall_utils",
 ]
 

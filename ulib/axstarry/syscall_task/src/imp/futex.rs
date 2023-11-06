@@ -1,7 +1,8 @@
+//! 支持 futex 相关的 syscall
 use core::time::Duration;
 extern crate alloc;
 use alloc::collections::VecDeque;
-use axhal::{cpu::this_cpu_id, mem::VirtAddr};
+use axhal::mem::VirtAddr;
 use axlog::info;
 use axprocess::{
     current_process, current_task,
@@ -10,7 +11,7 @@ use axprocess::{
 };
 use axtask::TaskState;
 
-use super::{flags::FutexFlags, ErrorNo};
+use syscall_utils::{FutexFlags, SyscallError, SyscallResult, TimeSecs};
 
 // / Futex requeue操作
 // /
@@ -56,24 +57,17 @@ pub fn futex(
     timeout: usize,
     vaddr2: VirtAddr,
     _val3: u32,
-) -> Result<usize, ErrorNo> {
+) -> Result<usize, SyscallError> {
     let flag = FutexFlags::new(futex_op);
     let current_task = current_task();
     match flag {
         FutexFlags::WAIT => {
-            // info!(
-            //     "cpu: {}, wait addr: {:X} val: {} process: {}",
-            //     this_cpu_id(),
-            //     vaddr,
-            //     val,
-            //     current_task.get_process_id()
-            // );
             let process = current_process();
             if process.manual_alloc_for_lazy(vaddr).is_ok() {
                 let real_futex_val = unsafe { (vaddr.as_usize() as *const u32).read_volatile() };
                 info!("real val: {}, expected val: {}", real_futex_val, val);
                 if real_futex_val != val {
-                    return Err(ErrorNo::EAGAIN);
+                    return Err(SyscallError::EAGAIN);
                 }
                 let mut futex_wait_task = FUTEX_WAIT_TASK.lock();
                 let wait_list = if futex_wait_task.contains_key(&vaddr) {
@@ -93,16 +87,15 @@ pub fn futex(
                     let timeout = WAIT_FOR_FUTEX.wait_timeout(Duration::from_nanos(timeout as u64));
                     if !timeout && process.have_signals().is_some() {
                         // 被信号打断
-                        return Err(ErrorNo::EINTR);
+                        return Err(SyscallError::EINTR);
                     }
                 }
                 return Ok(0);
             } else {
-                return Err(ErrorNo::EFAULT);
+                return Err(SyscallError::EFAULT);
             }
         }
         FutexFlags::WAKE => {
-            info!("cpu: {}, wake addr: {:X}", this_cpu_id(), vaddr);
             // // 当前任务释放了锁，所以不需要再次释放
             let mut futex_wait_task = FUTEX_WAIT_TASK.lock();
             if futex_wait_task.contains_key(&vaddr) {
@@ -135,7 +128,7 @@ pub fn futex(
             return Ok(0);
         }
         _ => {
-            return Err(ErrorNo::EINVAL);
+            return Err(SyscallError::EINVAL);
             // return Ok(0);
         }
     }
@@ -156,5 +149,36 @@ pub fn check_dead_wait() {
             wait_list
                 .retain(|(task, val)| real_futex_val == *val && task.state() == TaskState::Blocked);
         }
+    }
+}
+
+pub fn syscall_futex(
+    vaddr: usize,
+    futex_op: i32,
+    futex_val: u32,
+    time_out_val: usize,
+    vaddr2: usize,
+    val3: u32,
+) -> SyscallResult {
+    let process = current_process();
+    let timeout = if time_out_val != 0 && process.manual_alloc_for_lazy(time_out_val.into()).is_ok()
+    {
+        let time_sepc: TimeSecs = unsafe { *(time_out_val as *const TimeSecs) };
+        time_sepc.to_nano()
+    } else {
+        // usize::MAX
+        0
+    };
+    // 释放锁，防止任务无法被调度
+    match futex(
+        vaddr.into(),
+        futex_op,
+        futex_val,
+        timeout,
+        vaddr2.into(),
+        val3,
+    ) {
+        Ok(ans) => Ok(ans as isize),
+        Err(errno) => Err(errno),
     }
 }
