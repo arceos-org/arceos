@@ -53,6 +53,7 @@ pub fn net_syscall(syscall_id: net_syscall_id::NetSyscallId, args: [usize; 6]) -
         ),
         ACCEPT4 => syscall_accept4(args[0], args[1] as *mut u8, args[2] as *mut u32, args[3]),
         SHUTDOWN => syscall_shutdown(args[0], args[1]),
+        #[allow(unused)]
         _ => {
             panic!("Invalid Syscall Id: {:?}!", syscall_id);
             // return -1;

@@ -89,10 +89,6 @@ fn terminate_process(signal: SignalNo) {
     let current_task = current_task();
     warn!("Terminate process: {}", current_task.get_process_id());
     if current_task.is_leader() {
-        axlog::ax_println!(
-            "segmentation fault for process {}",
-            current_task.get_process_id()
-        );
         exit_current_task(signal as i32);
     } else {
         // 此时应当关闭当前进程

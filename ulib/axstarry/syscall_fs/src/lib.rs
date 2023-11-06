@@ -21,7 +21,7 @@ pub fn fs_syscall(syscall_id: fs_syscall_id::FsSyscallId, args: [usize; 6]) -> S
         READ => syscall_read(args[0], args[1] as *mut u8, args[2]),
         WRITE => syscall_write(args[0], args[1] as *const u8, args[2]),
         GETCWD => syscall_getcwd(args[0] as *mut u8, args[1]),
-        PIPE2 => syscall_pipe2(args[0] as *mut u32),
+        PIPE2 => syscall_pipe2(args[0] as *mut u32, args[1]),
         DUP => syscall_dup(args[0]),
         DUP3 => syscall_dup3(args[0], args[1]),
         MKDIRAT => syscall_mkdirat(args[0], args[1] as *const u8, args[2] as u32),

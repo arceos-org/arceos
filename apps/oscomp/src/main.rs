@@ -6,5 +6,5 @@ use syscall_entry::run_testcases;
 
 #[no_mangle]
 fn main() {
-    run_testcases("libc-static");
+    run_testcases("sdcard");
 }

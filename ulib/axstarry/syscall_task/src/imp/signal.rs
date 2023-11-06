@@ -58,7 +58,6 @@ pub fn syscall_sigaction(
             // 无法分配
             return Err(SyscallError::EPERM);
         }
-        info!("test task: {}", current_task().id().as_u64());
         signal_handler.set_action(signum, action);
     }
     Ok(0)

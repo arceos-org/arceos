@@ -191,13 +191,14 @@ pub fn syscall_writev(fd: usize, iov: *const IoVec, iov_cnt: usize) -> SyscallRe
 /// 返回值：成功执行，返回0。失败，返回-1。
 ///
 /// 注意：fd[2]是32位数组，所以这里的 fd 是 u32 类型的指针，而不是 usize 类型的指针。
-pub fn syscall_pipe2(fd: *mut u32) -> SyscallResult {
-    axlog::debug!("Into syscall_pipe2. fd: {}", fd as usize);
+pub fn syscall_pipe2(fd: *mut u32, flags: usize) -> SyscallResult {
+    axlog::info!("Into syscall_pipe2. fd: {} flags: {}", fd as usize, flags);
     let process = current_process();
     if process.manual_alloc_for_lazy((fd as usize).into()).is_err() {
         return Err(SyscallError::EINVAL);
     }
-    let (read, write) = make_pipe();
+    let non_block = (flags & 0x800) != 0;
+    let (read, write) = make_pipe(non_block);
     let mut fd_table = process.fd_manager.fd_table.lock();
     let fd_num = if let Ok(fd) = process.alloc_fd(&mut fd_table) {
         fd

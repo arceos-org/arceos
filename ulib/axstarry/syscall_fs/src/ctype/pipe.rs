@@ -14,23 +14,26 @@ pub struct Pipe {
     #[allow(unused)]
     writable: bool,
     buffer: Arc<Mutex<PipeRingBuffer>>,
+    non_block: bool,
 }
 
 impl Pipe {
     /// create readable pipe
-    pub fn read_end_with_buffer(buffer: Arc<Mutex<PipeRingBuffer>>) -> Self {
+    pub fn read_end_with_buffer(buffer: Arc<Mutex<PipeRingBuffer>>, non_block: bool) -> Self {
         Self {
             readable: true,
             writable: false,
             buffer,
+            non_block,
         }
     }
     /// create writable pipe
-    pub fn write_end_with_buffer(buffer: Arc<Mutex<PipeRingBuffer>>) -> Self {
+    pub fn write_end_with_buffer(buffer: Arc<Mutex<PipeRingBuffer>>, non_block: bool) -> Self {
         Self {
             readable: false,
             writable: true,
             buffer,
+            non_block,
         }
     }
 }
@@ -104,11 +107,11 @@ impl PipeRingBuffer {
 }
 
 /// Return (read_end, write_end)
-pub fn make_pipe() -> (Arc<Pipe>, Arc<Pipe>) {
+pub fn make_pipe(non_block: bool) -> (Arc<Pipe>, Arc<Pipe>) {
     trace!("kernel: make_pipe");
     let buffer = Arc::new(Mutex::new(PipeRingBuffer::new()));
-    let read_end = Arc::new(Pipe::read_end_with_buffer(buffer.clone()));
-    let write_end = Arc::new(Pipe::write_end_with_buffer(buffer.clone()));
+    let read_end = Arc::new(Pipe::read_end_with_buffer(buffer.clone(), non_block));
+    let write_end = Arc::new(Pipe::write_end_with_buffer(buffer.clone(), non_block));
     buffer.lock().set_write_end(&write_end);
     (read_end, write_end)
 }
@@ -125,15 +128,13 @@ impl FileIO for Pipe {
             let loop_read = ring_buffer.available_read();
             info!("kernel: Pipe::read: loop_read = {}", loop_read);
             if loop_read == 0 {
-                drop(ring_buffer);
-                // if Arc::strong_count(&self.buffer) < 2 || (filter_pipe() && cnt > 3) {
-                //     // info!("close");
-                //     return Ok(already_read);
-                // }
-                if Arc::strong_count(&self.buffer) < 2 {
-                    // info!("close");
+                if Arc::strong_count(&self.buffer) < 2
+                    || ring_buffer.all_write_ends_closed()
+                    || self.non_block
+                {
                     return Ok(already_read);
                 }
+                drop(ring_buffer);
                 yield_now();
                 continue;
             }
@@ -145,12 +146,11 @@ impl FileIO for Pipe {
                         return Ok(want_to_read);
                     }
                 } else {
-                    // break;
-                    return Ok(already_read);
+                    break;
                 }
             }
 
-            // return Ok(already_read);
+            return Ok(already_read);
         }
     }
 
@@ -166,11 +166,7 @@ impl FileIO for Pipe {
             if loop_write == 0 {
                 drop(ring_buffer);
 
-                // if Arc::strong_count(&self.buffer) < 2 || (filter_pipe() && cnt > 3) {
-                //     // 读入端关闭
-                //     return Ok(already_write);
-                // }
-                if Arc::strong_count(&self.buffer) < 2 {
+                if Arc::strong_count(&self.buffer) < 2 || self.non_block {
                     // 读入端关闭
                     return Ok(already_write);
                 }
@@ -181,7 +177,6 @@ impl FileIO for Pipe {
             // write at most loop_write bytes
             for _ in 0..loop_write {
                 if let Some(byte_ref) = buf_iter.next() {
-                    // info!("write to pipe");
                     ring_buffer.write_byte(*byte_ref);
                     already_write += 1;
                     if already_write == want_to_write {
@@ -189,13 +184,10 @@ impl FileIO for Pipe {
                         return Ok(want_to_write);
                     }
                 } else {
-                    // break;
-                    drop(ring_buffer);
-                    return Ok(already_write);
+                    break;
                 }
             }
-
-            // return Ok(already_write);
+            return Ok(already_write);
         }
     }
 
