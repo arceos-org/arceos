@@ -8,14 +8,14 @@ numeric_enum_macro::numeric_enum! {
 #[derive(Eq, PartialEq, Debug, Copy, Clone)]
 pub enum MemSyscallId {
     // mem
+    SHMGET = 194,
+    SHMCTL = 195,
+    SHMAT = 196,
     BRK = 214,
     MUNMAP = 215,
     MMAP = 222,
     MSYNC = 227,
     MPROTECT = 226,
     MEMBARRIER = 283,
-    SHMGET = 194,
-    SHMCTL = 195,
-    SHMAT = 196,
 }
 }

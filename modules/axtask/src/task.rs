@@ -140,12 +140,12 @@ pub struct TaskInner {
     #[cfg(feature = "monolithic")]
     pub cpu_set: AtomicU64,
 
-    #[cfg(feature = "monolithic")]
-    pub sched_status: UnsafeCell<SchedStatus>,
-
     #[cfg(feature = "signal")]
     /// 退出时是否向父进程发送SIG_CHILD
     pub send_sigchld_when_exit: bool,
+
+    #[cfg(feature = "monolithic")]
+    pub sched_status: UnsafeCell<SchedStatus>,
 }
 static ID_COUNTER: AtomicU64 = AtomicU64::new(1);
 impl TaskId {
@@ -387,6 +387,11 @@ impl TaskInner {
     pub fn get_sig_child(&self) -> bool {
         self.send_sigchld_when_exit
     }
+
+    #[cfg(feature = "signal")]
+    pub fn set_sig_child(&mut self, sig_child: bool) {
+        self.send_sigchld_when_exit = sig_child;
+    }
 }
 
 // private methods
@@ -471,6 +476,9 @@ impl TaskInner {
         let tls = VirtAddr::from(0);
         t.entry = Some(Box::into_raw(Box::new(entry)));
 
+        #[cfg(feature = "signal")]
+        t.set_sig_child(sig_child);
+
         #[cfg(feature = "monolithic")]
         {
             t.process_id.store(process_id, Ordering::Release);
@@ -484,9 +492,6 @@ impl TaskInner {
                 tls,
             );
         }
-
-        #[cfg(feature = "signal")]
-        t.send_sigchld_when_exit = sig_child;
 
         #[cfg(not(feature = "monolithic"))]
         t.ctx.get_mut().init(task_entry as usize, kstack.top(), tls);

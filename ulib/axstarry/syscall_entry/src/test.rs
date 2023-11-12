@@ -311,17 +311,17 @@ pub const OSTRAIN_TESTCASES: &[&str] = &[
 
 #[allow(dead_code)]
 pub const SDCARD_TESTCASES: &[&str] = &[
-    // "main",
+    "main",
     // "busybox sh",
     // "./riscv64-linux-musl-native/bin/riscv64-linux-musl-gcc ./hello.c -static",
     // "./a.out",
     // "./time-test",
     // "./interrupts-test-1",
     // "./interrupts-test-2",
-    "./copy-file-range-test-1",
-    "./copy-file-range-test-2",
-    "./copy-file-range-test-3",
-    "./copy-file-range-test-4",
+    // "./copy-file-range-test-1",
+    // "./copy-file-range-test-2",
+    // "./copy-file-range-test-3",
+    // "./copy-file-range-test-4",
     // "busybox echo hello",
     // "busybox sh ./unixbench_testcode.sh",
     // "busybox echo hello",

@@ -5,10 +5,13 @@ mod task_syscall_id;
 
 use axsignal::action::SigAction;
 use syscall_utils::{
-    ITimerVal, RLimit, SchedParam, SigMaskFlag, SysInfo, SyscallError, SyscallResult, TimeSecs,
-    TimeVal, UtsName, WaitFlags, TMS,
+    ITimerVal, RLimit, SigMaskFlag, SysInfo, SyscallError, SyscallResult, TimeSecs, TimeVal,
+    UtsName, WaitFlags, TMS,
 };
 pub use task_syscall_id::TaskSyscallId::{self, *};
+
+#[cfg(feature = "schedule")]
+use syscall_utils::SchedParam;
 
 mod imp;
 

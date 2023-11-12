@@ -1,8 +1,6 @@
-syscall_task
-syscall_net
-syscall_mem
 syscall_fs
-signal
+syscall_mem
+syscall_task
 futex
-schedule
+signal
 img
