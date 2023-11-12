@@ -8,7 +8,7 @@ description = "ArceOS user program library for linux apps with posix_syscall"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["monolithic", "syscall_task", "syscall_net", "syscall_mem", "syscall_fs", "signal", "futex", "schedule"]
+default = ["monolithic"]
 
 monolithic = ["arceos_api/monolithic", "axfeat/monolithic", "paging", "fs", "multitask", "irq"]
 
