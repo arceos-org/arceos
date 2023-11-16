@@ -95,7 +95,7 @@ impl<H: Hal, T: Transport, const QS: usize> NetDriverOps for VirtIoNetDev<H, T, 
 
     #[inline]
     fn can_receive(&self) -> bool {
-        self.inner.can_recv()
+        self.inner.poll_receive().is_some()
     }
 
     #[inline]
