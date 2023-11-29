@@ -27,7 +27,11 @@ feature 的使用基本有两种情况：
 1. 通过 feature 添加成员域或者额外处理语句
 2. 通过 feature 选择不同的分支语句
 
-一个使用例子如下：![avatar](../figures/train-report1.png)
+一个使用例子如下：
+
+
+
+![avatar](../figures/train-report1.png)
 
 依据 ArceOS 良好的模块化特性，我们能够仅在顶层模块的少数语句中加入条件编译区分就实现了区分两种架构不同执行流的目的。
 
