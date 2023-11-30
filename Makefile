@@ -129,6 +129,7 @@ export AX_GW=$(GW)
 CROSS_COMPILE ?= $(ARCH)-linux-musl-
 ifeq ($(ARCH), loongarch64)
 	CROSS_COMPILE := $(ARCH)-unknown-linux-gnu-
+  # CROSS_COMPILE := $(ARCH)-linux-gnu-
 endif
 CC := $(CROSS_COMPILE)gcc
 AR := $(CROSS_COMPILE)ar
