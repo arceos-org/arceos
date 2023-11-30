@@ -82,6 +82,7 @@ typedef struct {{
 
         let mut builder = bindgen::Builder::default()
             .header(in_file)
+            .clang_arg("--target=x86_64-pc-linux-gnu")
             .clang_arg("-I./../../ulib/axlibc/include")
             .parse_callbacks(Box::new(MyCallbacks))
             .derive_default(true)
