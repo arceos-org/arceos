@@ -1,0 +1,11 @@
+[package]
+name = "axbacktrace"
+version = "0.1.0"
+edition = "2021"
+authors = ["scPointer <responsibilities@foxmail.com>"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+log = "0.4"
+alter_trap = { path = "../../crates/alter_trap" }

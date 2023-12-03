@@ -612,7 +612,7 @@ impl MemorySet {
                 Ok(())
             }
             None => {
-                warn!(
+                error!(
                     "Page fault address {:?} not found in memory set sepc: {:X?}",
                     addr,
                     riscv::register::sepc::read()

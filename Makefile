@@ -10,6 +10,7 @@
 #     - `A` or `APP`: Path to the application
 #     - `FEATURES`: Features os ArceOS modules to be enabled.
 #     - `APP_FEATURES`: Features of (rust) apps to be enabled.
+#     - `RUSTFLAGS`: Pass custom flags to (rust) apps
 # * QEMU options:
 #     - `BLK`: Enable storage devices (virtio-blk)
 #     - `NET`: Enable network devices (virtio-net)
@@ -19,7 +20,9 @@
 #     - `ACCEL`: Enable hardware acceleration (KVM on linux)
 #     - `QEMU_LOG`: Enable QEMU logging (log file is "qemu.log")
 #     - `NET_DUMP`: Enable network packet dump (log file is "netdump.pcap")
-#     - `NET_DEV`: QEMU netdev backend types: user, tap
+#     - `NET_DEV`: QEMU netdev backend types: user, tap, bridge
+#     - `VFIO_PCI`: PCI device address in the format "bus:dev.func" to passthrough
+#     - `VHOST`: Enable vhost-net for tap backend (only for `NET_DEV=tap`)
 # * Network options:
 #     - `IP`: ArceOS IPv4 address (default is 10.0.2.15 for QEMU user netdev)
 #     - `GW`: Gateway IPv4 address (default is 10.0.2.2 for QEMU user netdev)
@@ -37,6 +40,8 @@ A ?= apps/oscomp
 APP ?= $(A)
 FEATURES ?=
 APP_FEATURES ?=
+RUSTFLAGS ?=
+STRUCT ?= Unikernel
 
 # QEMU options
 BLK ?= y
@@ -48,6 +53,8 @@ DISK_IMG ?= disk.img
 QEMU_LOG ?= n
 NET_DUMP ?= n
 NET_DEV ?= user
+VFIO_PCI ?=
+VHOST ?= n
 
 # Network options
 IP ?= 10.0.2.15
@@ -62,6 +69,11 @@ ifneq ($(wildcard $(APP)/Cargo.toml),)
   APP_TYPE := rust
 else
   APP_TYPE := c
+endif
+
+ifeq ($(STRUCT), Monolithic)
+  APP := apps/oscomp
+  APP_TYPE := rust
 endif
 
 # Architecture, platform and target
@@ -147,7 +159,12 @@ else ifeq ($(PLATFORM_NAME), aarch64-bsta1000b)
   include scripts/make/bsta1000b-fada.mk
 endif
 
-build: $(OUT_DIR) $(OUT_BIN)
+make_bin: 
+  ifeq ($(STRUCT), Monolithic)
+		$(call make_bin)
+  endif
+
+build: make_bin $(OUT_DIR) $(OUT_BIN)
 
 disasm:
 	$(OBJDUMP) $(OUT_ELF) | less
@@ -198,7 +215,7 @@ disk_img:
 ifneq ($(wildcard $(DISK_IMG)),)
 	@printf "$(YELLOW_C)warning$(END_C): disk image \"$(DISK_IMG)\" already exists!\n"
 else
-	$(call make_disk_image,fat32,$(DISK_IMG))
+	$(call make_bin)
 endif
 
 clean: clean_c
@@ -209,4 +226,4 @@ clean_c::
 	rm -rf ulib/axlibc/build_*
 	rm -rf $(app-objs)
 
-.PHONY: all build disasm run justrun debug clippy fmt fmt_c test test_no_fail_fast clean clean_c doc disk_image
+.PHONY: all build disasm run justrun debug clippy fmt fmt_c test test_no_fail_fast clean clean_c doc disk_image make_bin

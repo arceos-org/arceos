@@ -21,3 +21,13 @@ endef
 define make_disk_image
   $(if $(filter $(1),fat32), $(call make_disk_image_fat32,$(2)))
 endef
+
+# 用于宏内核启动时预先编译应用程序，当前仅支持riscv架构
+define make_bin
+  @printf "Make bin for Starry\n"
+	@$(CC) -static $(A)/main.c -o testcases/sdcard/main
+  @rust-objdump testcases/sdcard/main -S testcases/sdcard/main -l > $(A)/syscall.S
+  @python $(APP)/build.py $(A)/syscall.S $(APP)/features.txt img
+  @rm -rf $(A)/syscall.S
+  @sh ./build_img.sh sdcard
+endef

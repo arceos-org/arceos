@@ -104,7 +104,7 @@ where
         KERNEL_PROCESS_ID,
         #[cfg(feature = "monolithic")]
         0,
-        #[cfg(feature = "monolithic")]
+        #[cfg(feature = "signal")]
         false,
     );
     RUN_QUEUE.lock().add_task(task.clone());

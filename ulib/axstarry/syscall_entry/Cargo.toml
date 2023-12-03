@@ -1,0 +1,86 @@
+[package]
+name = "syscall_entry"
+version = "0.1.0"
+edition = "2021"
+
+authors = ["Youjie Zheng <zyj578335934@gmail.com>"]
+description = "ArceOS user program library for linux apps with posix_syscall"
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = ["monolithic"]
+
+monolithic = ["arceos_api/monolithic", "axfeat/monolithic", "paging", "fs", "multitask", "irq"]
+
+img = ["axruntime/img"]
+
+# Multicore
+smp = ["axfeat/smp", "spinlock/smp"]
+
+
+# Floating point/SIMD
+fp_simd = ["axfeat/fp_simd"]
+
+# Interrupts
+irq = ["arceos_api/irq", "axfeat/irq"]
+
+# Memory
+paging = ["axfeat/paging"]
+tls = ["axfeat/tls"]
+
+# Multi-threading and scheduler
+multitask = ["arceos_api/multitask", "axfeat/multitask"]
+sched_fifo = ["axfeat/sched_fifo"]
+sched_rr = ["axfeat/sched_rr"]
+sched_cfs = ["axfeat/sched_cfs"]
+
+# Display
+display = ["arceos_api/display", "axfeat/display"]
+
+# Fs
+fs = ["axruntime/fs", "arceos_api/fs"]
+
+# Signal
+signal = ["syscall_task/signal", "syscall_fs/signal", "dep:axsignal"]
+
+# Futex
+futex = ["syscall_task/futex"]
+
+# Schedule
+schedule = ["syscall_task/schedule"]
+
+# Logging
+log-level-off = ["axfeat/log-level-off"]
+log-level-error = ["axfeat/log-level-error"]
+log-level-warn = ["axfeat/log-level-warn"]
+log-level-info = ["axfeat/log-level-info"]
+log-level-debug = ["axfeat/log-level-debug"]
+log-level-trace = ["axfeat/log-level-trace"]
+
+# Syscall Select
+syscall_net = ["dep:syscall_net"]
+# 只有当 syscall_mem 和 syscall_fs 同时启动时，才会启动 syscall_mem/fs
+syscall_fs = ["dep:syscall_fs", "syscall_mem?/fs", "fs"]
+syscall_mem = ["dep:syscall_mem"]
+syscall_task = ["dep:syscall_task"]
+
+[dependencies]
+axfeat = { path = "../../../api/axfeat" }
+arceos_api = { path = "../../../api/arceos_api" }
+axlog = { path = "../../../modules/axlog" }
+axruntime = { path = "../../../modules/axruntime" }
+axhal = { path = "../../../modules/axhal" }
+axtask = { path = "../../../modules/axtask" }
+axprocess = { path = "../../../modules/axprocess" }
+axsignal = { path = "../../../modules/axsignal", optional = true }
+
+syscall_utils = { path = "../syscall_utils" }
+syscall_fs = { path = "../syscall_fs", optional = true }
+syscall_net = { path = "../syscall_net", optional = true }
+syscall_task = { path = "../syscall_task", optional = true }
+syscall_mem = { path = "../syscall_mem", optional = true }
+
+crate_interface = { path = "../../../crates/crate_interface" }
+lazy_init = { path = "../../../crates/lazy_init" }
+spinlock = { path = "../../../crates/spinlock" }
+kernel_guard = { path = "../../../crates/kernel_guard" }

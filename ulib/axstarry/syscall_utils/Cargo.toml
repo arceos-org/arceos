@@ -1,0 +1,16 @@
+[package]
+name = "syscall_utils"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+axhal = { path = "../../../modules/axhal" }
+axlog = { path = "../../../modules/axlog" }
+num_enum = { version = "0.5.11", default-features = false }
+bitflags = "2.0"
+axfs = { path = "../../../modules/axfs" }
+axconfig = { path = "../../../modules/axconfig" }
+axerrno = { path = "../../../crates/axerrno" }
+numeric-enum-macro = { git = "https://github.com/mexus/numeric-enum-macro" }

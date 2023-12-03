@@ -20,7 +20,7 @@ pub trait TrapHandler {
     #[cfg(feature = "monolithic")]
     fn handle_syscall(syscall_id: usize, args: [usize; 6]) -> isize;
 
-    #[cfg(feature = "paging")]
+    #[cfg(feature = "monolithic")]
     fn handle_page_fault(addr: VirtAddr, flags: MappingFlags, tf: &mut TrapFrame);
 
     /// 处理当前进程的信号
@@ -43,7 +43,7 @@ pub(crate) fn handle_syscall(syscall_id: usize, args: [usize; 6]) -> isize {
 }
 
 #[allow(dead_code)]
-#[cfg(feature = "paging")]
+#[cfg(feature = "monolithic")]
 pub(crate) fn handle_page_fault(addr: VirtAddr, flags: MappingFlags, tf: &mut TrapFrame) {
     call_interface!(TrapHandler::handle_page_fault, addr, flags, tf);
 }

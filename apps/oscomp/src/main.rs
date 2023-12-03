@@ -2,7 +2,7 @@
 #![no_main]
 // extern crate axstarry;
 
-use axstarry::run_testcases;
+use syscall_entry::run_testcases;
 
 #[no_mangle]
 fn main() {

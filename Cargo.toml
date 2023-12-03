@@ -3,6 +3,7 @@ resolver = "2"
 
 members = [
     "crates/allocator",
+    "crates/alter_trap",
     "crates/arm_gic",
     "crates/arm_pl011",
     "crates/dw_apb_uart",
@@ -37,6 +38,7 @@ members = [
     "crates/tuple_for_each",
 
     "modules/axalloc",
+    "modules/axbacktrace",
     "modules/axconfig",
     "modules/axdisplay",
     "modules/axdriver",
@@ -57,7 +59,12 @@ members = [
 
     "ulib/axstd",
     "ulib/axlibc",
-    "ulib/axstarry",
+    "ulib/axstarry/syscall_mem",
+    "ulib/axstarry/syscall_fs",
+    "ulib/axstarry/syscall_net",
+    "ulib/axstarry/syscall_utils",
+    "ulib/axstarry/syscall_task",
+    "ulib/axstarry/syscall_entry",
     "apps/display",
     "apps/exception",
     "apps/helloworld",
@@ -74,6 +81,12 @@ members = [
     "apps/task/priority",
     "apps/task/tls",
     "apps/oscomp",
+    "apps/ostrain/fileopen",
+    "apps/ostrain/fileread",
+    "apps/ostrain/filewrite",
+    "apps/ostrain/taskyield",
+    "apps/ostrain/task_single_yield",
+    "apps/ostrain/danger_access"
 ]
 
 [profile.release]

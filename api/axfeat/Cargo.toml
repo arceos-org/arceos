@@ -13,7 +13,13 @@ documentation = "https://rcore-os.github.io/arceos/axfeat/index.html"
 default = []
 
 # Monolithic kernel
-monolithic = ["axruntime/monolithic", "axhal/monolithic"]
+monolithic = ["axruntime/monolithic", "axhal/monolithic", "dep:axprocess"]
+
+# Signal
+signal = ["axruntime/signal"]
+
+# Futex support
+futex = ["axprocess/futex"]
 
 # Multicore
 smp = ["axhal/smp", "axruntime/smp", "spinlock/smp"]
@@ -74,4 +80,5 @@ axnet = { path = "../../modules/axnet", optional = true }
 axdisplay = { path = "../../modules/axdisplay", optional = true }
 axsync = { path = "../../modules/axsync", optional = true }
 axtask = { path = "../../modules/axtask", optional = true }
+axprocess = { path = "../../modules/axprocess", optional = true }
 spinlock = { path = "../../crates/spinlock", optional = true }
