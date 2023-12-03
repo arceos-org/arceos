@@ -41,7 +41,7 @@ display = ["arceos_api/display", "axfeat/display"]
 fs = ["axruntime/fs", "arceos_api/fs"]
 
 # Signal
-signal = ["syscall_task/signal", "dep:axsignal"]
+signal = ["syscall_task/signal", "syscall_fs/signal", "dep:axsignal"]
 
 # Futex
 futex = ["syscall_task/futex"]

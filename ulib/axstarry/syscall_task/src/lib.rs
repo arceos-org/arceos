@@ -2,11 +2,11 @@
 #![cfg_attr(all(not(test), not(doc)), no_std)]
 
 mod task_syscall_id;
-
+#[cfg(feature = "signal")]
 use axsignal::action::SigAction;
 use syscall_utils::{
-    ITimerVal, RLimit, SigMaskFlag, SysInfo, SyscallError, SyscallResult, TimeSecs, TimeVal,
-    UtsName, WaitFlags, TMS,
+    ITimerVal, RLimit, SysInfo, SyscallError, SyscallResult, TimeSecs, TimeVal, UtsName, WaitFlags,
+    TMS,
 };
 pub use task_syscall_id::TaskSyscallId::{self, *};
 
@@ -54,7 +54,7 @@ pub fn task_syscall(syscall_id: task_syscall_id::TaskSyscallId, args: [usize; 6]
         TKILL => syscall_tkill(args[0] as isize, args[1] as isize),
         #[cfg(feature = "signal")]
         SIGPROCMASK => syscall_sigprocmask(
-            SigMaskFlag::from(args[0]),
+            syscall_utils::SigMaskFlag::from(args[0]),
             args[1] as *const usize,
             args[2] as *mut usize,
             args[3],

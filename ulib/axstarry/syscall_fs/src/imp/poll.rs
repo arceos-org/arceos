@@ -125,6 +125,8 @@ fn ppoll(mut fds: Vec<PollFd>, expire_time: usize) -> (isize, Vec<PollFd>) {
             return (0, fds);
         }
         yield_now_task();
+
+        #[cfg(feature = "signal")]
         if process.have_signals().is_some() {
             // 有信号，此时停止处理，直接返回
             return (0, fds);
@@ -303,7 +305,7 @@ pub fn syscall_pselect6(
         if current_ticks() as usize > expire_time {
             return Ok(0);
         }
-
+        #[cfg(feature = "signal")]
         if process.have_signals().is_some() {
             return Err(SyscallError::EINTR);
         }

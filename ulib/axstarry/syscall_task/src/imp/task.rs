@@ -8,10 +8,9 @@ use axprocess::{
     flags::{CloneFlags, WaitStatus},
     futex::clear_wait,
     link::{deal_with_path, raw_ptr_to_ref_str, AT_FDCWD},
-    set_child_tid,
-    signal::SignalModule,
-    sleep_now_task, wait_pid, yield_now_task, Process, PID2PC,
+    set_child_tid, sleep_now_task, wait_pid, yield_now_task, Process, PID2PC,
 };
+
 // use axtask::{
 //     monolithic_task::task::{SchedPolicy, SchedStatus},
 //     AxTaskRef,
@@ -26,6 +25,8 @@ use syscall_utils::{RLimit, TimeSecs, WaitFlags, RLIMIT_AS, RLIMIT_NOFILE, RLIMI
 #[cfg(feature = "signal")]
 use axsignal::signal_no::SignalNo;
 
+#[cfg(feature = "signal")]
+use axprocess::signal::SignalModule;
 // pub static TEST_FILTER: Mutex<BTreeMap<String, usize>> = Mutex::new(BTreeMap::new());
 
 pub fn syscall_exit(exit_code: i32) -> ! {
@@ -189,6 +190,7 @@ pub fn syscall_wait4(pid: isize, exit_code_ptr: *mut i32, option: WaitFlags) -> 
                             return Ok(0);
                         } else {
                             // wait回来之后，如果还需要wait，先检查是否有信号未处理
+                            #[cfg(feature = "signal")]
                             if current_process().have_signals().is_some() {
                                 return Err(SyscallError::EINTR);
                             }
@@ -239,6 +241,7 @@ pub fn syscall_sleep(req: *const TimeSecs, rem: *mut TimeSecs) -> SyscallResult 
             };
         }
     }
+    #[cfg(feature = "signal")]
     if current_process().have_signals().is_some() {
         return Err(SyscallError::EINTR);
     }
@@ -367,6 +370,7 @@ pub fn syscall_setsid() -> SyscallResult {
         process.get_heap_bottom(),
         process.fd_manager.fd_table.lock().clone(),
     );
+    #[cfg(feature = "signal")]
     new_process
         .signal_modules
         .lock()
