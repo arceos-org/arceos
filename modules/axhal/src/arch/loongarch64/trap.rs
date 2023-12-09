@@ -1,5 +1,5 @@
 use super::context::TrapFrame;
-use loongarch64::register::estat::{self, Exception, Trap};
+use loongArch64::register::estat::{self, Exception, Trap};
 
 core::arch::global_asm!(
     include_str!("trap.S"),

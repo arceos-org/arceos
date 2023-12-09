@@ -74,8 +74,8 @@ pub fn get_local_thread_pointer() -> usize {
                 core::arch::asm!("mv {}, gp", out(reg) tp)
             } else if #[cfg(target_arch = "aarch64")] {
                 core::arch::asm!("mrs {}, TPIDR_EL1", out(reg) tp)
-            }else if #[cfg(target_arch = "loongarch64")] {
-                core::arch::asm!("move {}, $tp", out(reg) tp)
+            } else if #[cfg(target_arch = "loongarch64")] {
+                core::arch::asm!("move {}, $21", out(reg) tp)
             }
         }
     }

@@ -1,5 +1,5 @@
 use crate::mem::{phys_to_virt, PhysAddr};
-use loongarch64::ipi::{csr_mail_send, send_ipi_single};
+use loongArch64::ipi::{csr_mail_send, send_ipi_single};
 
 /// Starts the given secondary CPU with its boot stack.
 pub fn start_secondary_cpu(hartid: usize, stack_top: PhysAddr) {

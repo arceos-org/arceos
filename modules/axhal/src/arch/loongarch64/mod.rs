@@ -3,7 +3,7 @@ mod context;
 mod trap;
 
 use core::arch::asm;
-use loongarch64::register::{crmd, ecfg, eentry, pgd};
+use loongArch64::register::{crmd, ecfg, eentry, pgd};
 use memory_addr::{PhysAddr, VirtAddr};
 
 pub use self::context::{TaskContext, TrapFrame};
@@ -31,14 +31,14 @@ pub fn irqs_enabled() -> bool {
 /// It must be called with interrupts enabled, otherwise it will never return.
 #[inline]
 pub fn wait_for_irqs() {
-    unsafe { loongarch64::asm::idle() }
+    unsafe { loongArch64::asm::idle() }
 }
 
 /// Halt the current CPU.
 #[inline]
 pub fn halt() {
     disable_irqs();
-    unsafe { loongarch64::asm::idle() } // should never return
+    unsafe { loongArch64::asm::idle() } // should never return
 }
 
 /// Reads the register that stores the current page table root.

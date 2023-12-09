@@ -1,8 +1,8 @@
 use crate::irq::IrqHandler;
 use lazy_init::LazyInit;
-use loongarch64::register::ecfg;
-use loongarch64::register::ecfg::LineBasedInterrupt;
-use loongarch64::register::ticlr;
+use loongArch64::register::ecfg;
+use loongArch64::register::ecfg::LineBasedInterrupt;
+use loongArch64::register::ticlr;
 /// The maximum number of IRQs.
 pub const MAX_IRQ_COUNT: usize = 1024;
 

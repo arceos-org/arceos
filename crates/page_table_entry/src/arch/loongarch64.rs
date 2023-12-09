@@ -33,7 +33,7 @@ bitflags::bitflags! {
         /// Whether the page is not executable.
         const NX = 1 << 62;
         /// Whether the privilege Level is restricted. When RPLV is 0, the PTE
-        /// can be accessed by any program with privilege Level highter than PLV.
+        /// can be accessed by any program with privilege Level higher than PLV.
         const RPLV = 1 << 63;
     }
 }
@@ -50,15 +50,14 @@ impl From<PTEFlags> for MappingFlags {
         if !f.contains(PTEFlags::NX) {
             ret |= Self::EXECUTE;
         }
-        if f.contains(PTEFlags::PLVL) {
-            if f.contains(PTEFlags::PLVH) {
-                ret |= Self::USER;
-            }
+        if f.contains(PTEFlags::PLVL | PTEFlags::PLVH) {
+            ret |= Self::USER;
         }
         if !f.contains(PTEFlags::MATL) {
             ret |= Self::DEVICE;
+        } else {
+            ret |= Self::UNCACHED;
         }
-
         ret
     }
 }
