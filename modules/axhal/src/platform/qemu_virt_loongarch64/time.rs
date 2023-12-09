@@ -1,4 +1,4 @@
-use loongArch64::time::Time;
+use loongarch64::time::Time;
 const NANOS_PER_TICK: u64 = crate::time::NANOS_PER_SEC / axconfig::TIMER_FREQUENCY as u64;
 
 /// Returns the current clock time in hardware ticks.
@@ -24,7 +24,7 @@ pub const fn nanos_to_ticks(nanos: u64) -> u64 {
 /// A timer interrupt will be triggered at the given deadline (in nanoseconds).
 #[cfg(feature = "irq")]
 pub fn set_oneshot_timer(deadline_ns: u64) {
-    use loongArch64::register::tcfg;
+    use loongarch64::register::tcfg;
     let old_ticks = current_ticks();
     let ticks = nanos_to_ticks(deadline_ns) as usize;
     let ticks = ticks - old_ticks as usize;

@@ -1,6 +1,7 @@
 //! loongarch64 page table entries.
 
 use crate::{GenericPTE, MappingFlags};
+use aarch64_cpu::registers::SPSR_EL1::M;
 use core::fmt;
 use memory_addr::PhysAddr;
 
@@ -53,10 +54,12 @@ impl From<PTEFlags> for MappingFlags {
         if f.contains(PTEFlags::PLVL | PTEFlags::PLVH) {
             ret |= Self::USER;
         }
-        if !f.contains(PTEFlags::MATL) {
-            ret |= Self::DEVICE;
-        } else {
+        if f.contains(PTEFlags::MATH) {
+            // MAT = 2 (Weakly-ordered UnCached) -> UNCACHED
             ret |= Self::UNCACHED;
+        } else if !f.contains(PTEFlags::MATL) {
+            // MAT = 0 (Strongly-ordered UnCached) -> DEVICE
+            ret |= Self::DEVICE;
         }
         ret
     }
@@ -80,8 +83,13 @@ impl From<MappingFlags> for PTEFlags {
         if f.contains(MappingFlags::USER) {
             ret |= Self::PLVH | Self::PLVL;
         }
-        if !f.contains(MappingFlags::DEVICE) {
-            ret |= Self::MATL;
+        if !f.contains(MappingFlags::DEVICE | MappingFlags::UNCACHED) {
+            // MAT = 1 (Coherent Cached)
+            ret |= Self::MATL
+        }
+        if f.contains(MappingFlags::UNCACHED) {
+            // MAT = 2 (WUC)
+            ret |= Self::MATH
         }
         ret
     }
@@ -96,8 +104,11 @@ impl LA64PTE {
 }
 
 impl GenericPTE for LA64PTE {
-    fn new_page(paddr: PhysAddr, flags: MappingFlags, _is_huge: bool) -> Self {
-        let flags = PTEFlags::from(flags);
+    fn new_page(paddr: PhysAddr, flags: MappingFlags, is_huge: bool) -> Self {
+        let mut flags = PTEFlags::from(flags);
+        if is_huge {
+            flags |= PTEFlags::GH;
+        }
         Self(flags.bits() as u64 | ((paddr.as_usize()) as u64 & Self::PHYS_ADDR_MASK))
     }
     fn new_table(paddr: PhysAddr) -> Self {
@@ -114,8 +125,11 @@ impl GenericPTE for LA64PTE {
         self.0 = (self.0 & !Self::PHYS_ADDR_MASK) | (paddr.as_usize() as u64 & Self::PHYS_ADDR_MASK)
     }
 
-    fn set_flags(&mut self, flags: MappingFlags, _is_huge: bool) {
-        let flags = PTEFlags::from(flags);
+    fn set_flags(&mut self, flags: MappingFlags, is_huge: bool) {
+        let mut flags = PTEFlags::from(flags);
+        if is_huge {
+            flags |= PTEFlags::GH;
+        }
         self.0 = (self.0 & Self::PHYS_ADDR_MASK) | flags.bits() as u64;
     }
 
@@ -126,7 +140,7 @@ impl GenericPTE for LA64PTE {
         PTEFlags::from_bits_truncate(self.0 as usize).contains(PTEFlags::V)
     }
     fn is_huge(&self) -> bool {
-        false
+        PTEFlags::from_bits_truncate(self.0 as usize).contains(PTEFlags::GH)
     }
     fn clear(&mut self) {
         self.0 = 0
