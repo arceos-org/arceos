@@ -8,4 +8,4 @@ mkdir build
 cd build
 ../configure --target-list=loongarch64-softmmu,loongarch64-linux-user --enable-kvm --enable-debug --disable-werror
 make -j$(nproc)
-#make install
+make install
