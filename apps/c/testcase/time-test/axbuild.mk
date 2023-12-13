@@ -1,0 +1,1 @@
+app-objs := time-test.o

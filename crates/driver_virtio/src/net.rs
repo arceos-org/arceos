@@ -90,12 +90,12 @@ impl<H: Hal, T: Transport, const QS: usize> NetDriverOps for VirtIoNetDev<H, T, 
 
     #[inline]
     fn can_transmit(&self) -> bool {
-        !self.free_tx_bufs.is_empty() && self.inner.can_transmit()
+        !self.free_tx_bufs.is_empty() && self.inner.can_send()
     }
 
     #[inline]
     fn can_receive(&self) -> bool {
-        self.inner.can_receive()
+        self.inner.poll_receive().is_some()
     }
 
     #[inline]

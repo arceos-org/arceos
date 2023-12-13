@@ -30,7 +30,6 @@
 //! ```
 
 #![no_std]
-#![feature(const_maybe_uninit_zeroed)]
 #![feature(maybe_uninit_uninit_array)]
 #![feature(const_maybe_uninit_uninit_array)]
 

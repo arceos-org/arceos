@@ -7,3 +7,5 @@ actual.out
 qemu.log
 rusty-tags.vi
 .idea
+*.log
+riscv64-linux-musl-cross/

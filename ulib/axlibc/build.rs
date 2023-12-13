@@ -5,6 +5,7 @@ fn main() {
         let allow_types = ["tm", "jmp_buf"];
         let mut builder = bindgen::Builder::default()
             .header(in_file)
+            .clang_arg("--target=x86_64-pc-linux-gnu")
             .clang_arg("-I./include")
             .derive_default(true)
             .size_t_is_usize(false)
