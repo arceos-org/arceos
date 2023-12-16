@@ -13,6 +13,7 @@ pub static mut SMP_BOOT_STACK_TOP: usize = 0;
 #[link_section = ".text.boot"]
 unsafe extern "C" fn _start() -> ! {
     core::arch::asm!("
+    # Direct Mapped Address Translation Mode in Mapped Address Translation Mode
         ori         $t0, $zero, 0x1     # CSR_DMW1_PLV0
         lu52i.d     $t0, $t0, -2048     # UC, PLV0, 0x8000 xxxx xxxx xxxx
         csrwr       $t0, 0x180          # LOONGARCH_CSR_DMWIN0
@@ -28,7 +29,6 @@ unsafe extern "C" fn _start() -> ! {
         li.w		$t0, 0x00		# FPE=0, SXE=0, ASXE=0, BTE=0
         csrwr		$t0, 0x2        # LOONGARCH_CSR_EUEN
 
-
         la.global   $sp, {boot_stack}
         li.d        $t0, {boot_stack_size}
         add.d       $sp, $sp, $t0       # setup boot stack
@@ -38,7 +38,7 @@ unsafe extern "C" fn _start() -> ! {
         ",
         boot_stack_size = const TASK_STACK_SIZE,
         boot_stack = sym BOOT_STACK,
-        entry = sym super::rust_entry,
+        entry = sym crate::platform::rust_entry,
         options(noreturn),
     )
 }
@@ -64,7 +64,7 @@ unsafe extern "C" fn _start_secondary() -> ! {
             jirl $zero,$t0,0
     ",
         sm_boot_stack_top = sym SMP_BOOT_STACK_TOP,
-        entry = sym super::rust_entry_secondary,
+        entry = sym crate::platform::rust_entry_secondary,
         options(noreturn),
     )
 }

@@ -1,18 +1,18 @@
 # Architecture identifier.
 arch = "loongarch64"
 # Platform identifier.
-platform = "loongarch64-qemu-virt"
+platform = "loongarch64-2k500"
 # Platform family.
-family = "loongarch64-qemu-virt"
+family = "loongarch64-2k500"
 
 # Base address of the whole physical memory.
 phys-memory-base = "0x0"
 # Size of the whole physical memory.
 phys-memory-size = "0x800_0000"     # 128M
 # Base physical address of the kernel image.
-kernel-base-paddr = "0x0000_1000"
+kernel-base-paddr = "0x0200_0000"
 # Base virtual address of the kernel image.
-kernel-base-vaddr = "0x9000_0000_0000_1000"
+kernel-base-vaddr = "0x9000_0000_0200_0000"
 # Linear mapping offset, for quick conversions between physical and virtual
 # addresses.
 phys-virt-offset = "0x9000_0000_0000_0000"
@@ -28,8 +28,9 @@ virtio-mmio-regions = [
 pci-ecam-base = "0x2000_0000"
 # End PCI bus number (`bus-range` property in device tree).
 pci-bus-end = "0x7f"
+
 # Timer interrupt frequency in Hz.
-timer-frequency = "1_00_000_000"      # 100MHz
+timer-frequency = "500_000_000"      # 500MHz
 
 # Base Address for UART
-uart-base-addr = "0x800000001FE001E0"
+uart-base-addr = "0x800000001FF40800"

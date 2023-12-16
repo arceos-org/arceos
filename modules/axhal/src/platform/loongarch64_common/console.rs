@@ -2,10 +2,11 @@
 
 use core::fmt::Write;
 use spinlock::SpinNoIrq;
+use memory_addr::PhysAddr;
 
-const UART_ADDR: usize = 0x900000001FE001E0;
+const UART_BASE: PhysAddr = PhysAddr::from(axconfig::UART_BASE_ADDR);
 
-static COM1: SpinNoIrq<Uart> = SpinNoIrq::new(Uart::new(UART_ADDR));
+static COM1: SpinNoIrq<Uart> = SpinNoIrq::new(Uart::new(UART_BASE.as_usize()));
 
 pub struct Uart {
     base_address: usize,

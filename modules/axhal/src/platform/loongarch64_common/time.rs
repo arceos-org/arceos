@@ -35,7 +35,7 @@ pub fn set_oneshot_timer(deadline_ns: u64) {
     tcfg::set_en(true); // enable timer
 }
 
-pub(super) fn init_percpu() {
+pub(crate) fn init_percpu() {
     // #[cfg(feature = "irq")]
     // ticlr::clear_timer_interrupt();
 }

@@ -3,6 +3,8 @@
 cfg_if::cfg_if! {
     if #[cfg(target_arch = "aarch64")]{
         mod aarch64_common;
+    } else if #[cfg(target_arch = "loongarch64")]{
+        mod loongarch64_common;
     }
 }
 
@@ -23,9 +25,15 @@ cfg_if::cfg_if! {
         mod aarch64_bsta1000b;
         pub use self::aarch64_bsta1000b::*;
     } else if #[cfg(all(target_arch = "loongarch64", platform_family = "loongarch64-qemu-virt"))] {
-        mod qemu_virt_loongarch64;
-        pub use self::qemu_virt_loongarch64::*;
-    }else {
+        mod loongarch64_qemu_virt;
+        pub use self::loongarch64_qemu_virt::*;
+    } else if #[cfg(all(target_arch = "loongarch64", platform_family = "loongarch64-2k500"))] {
+        mod loongarch64_2k500;
+        pub use self::loongarch64_2k500::*;
+    } else if #[cfg(all(target_arch = "loongarch64", platform_family = "loongarch64-2k1000"))] {
+        mod loongarch64_2k1000;
+        pub use self::loongarch64_2k1000::*;
+    } else {
         mod dummy;
         pub use self::dummy::*;
     }

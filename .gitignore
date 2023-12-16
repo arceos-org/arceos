@@ -8,4 +8,7 @@ qemu.log
 rusty-tags.vi
 .idea
 *.log
+*.bin.gz
+uImage
+efi-virtio.rom
 riscv64-linux-musl-cross/

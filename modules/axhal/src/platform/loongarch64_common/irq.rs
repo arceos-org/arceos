@@ -61,7 +61,7 @@ pub fn dispatch_irq(vector: usize) {
     );
 }
 
-pub(super) fn init_percpu() {
+pub(crate) fn init_percpu() {
     // enable soft interrupts, timer interrupts, and external interrupts
     let inter = LineBasedInterrupt::TIMER
         | LineBasedInterrupt::SWI0
