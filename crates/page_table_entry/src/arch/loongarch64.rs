@@ -83,14 +83,15 @@ impl From<MappingFlags> for PTEFlags {
         if f.contains(MappingFlags::USER) {
             ret |= Self::PLVH | Self::PLVL;
         }
-        if !f.contains(MappingFlags::DEVICE | MappingFlags::UNCACHED) {
-            // MAT = 1 (Coherent Cached)
-            ret |= Self::MATL
-        }
-        if f.contains(MappingFlags::UNCACHED) {
-            // MAT = 2 (WUC)
-            ret |= Self::MATH
-        }
+        if !f.contains(MappingFlags::DEVICE) {
+            if f.contains(MappingFlags::UNCACHED) {
+                // MAT = 2 (WUC)
+                ret |= Self::MATH
+            } else {
+                // MAT = 1 (Coherent Cached)
+                ret |= Self::MATL
+            }
+        } // else, MAT = 0 (SUC)
         ret
     }
 }

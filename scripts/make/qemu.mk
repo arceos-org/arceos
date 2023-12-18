@@ -80,25 +80,11 @@ else
 endif
 
 define run_qemu
-  $(call before_run_qemu)
   @printf "    $(CYAN_C)Running$(END_C) on qemu...\n"
   $(call run_cmd,$(QEMU),$(qemu_args-y))
-  $(call after_run_qemu)
 endef
 
 define run_qemu_debug
   @printf "    $(CYAN_C)Debugging$(END_C) on qemu...\n"
   $(call run_cmd,$(QEMU),$(qemu_args-debug))
-endef
-
-define before_run_qemu
-	$(if $(filter $(ARCH), loongarch64), \
-		@cp tools/la64/efi-virtio.rom . \
-	)
-endef
-
-define after_run_qemu
-	$(if $(filter $(ARCH), loongarch64), \
-		@rm efi-virtio.rom \
-	)
 endef
