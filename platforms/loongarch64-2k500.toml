@@ -10,25 +10,31 @@ phys-memory-base = "0x0"
 # Size of the whole physical memory.
 phys-memory-size = "0x800_0000"     # 128M
 # Base physical address of the kernel image.
-kernel-base-paddr = "0x0200_0000"
+kernel-base-paddr = "0x0020_0000"
 # Base virtual address of the kernel image.
-kernel-base-vaddr = "0x9000_0000_0200_0000"
+kernel-base-vaddr = "0x9000_0000_0020_0000"
 # Linear mapping offset, for quick conversions between physical and virtual
 # addresses.
 phys-virt-offset = "0x9000_0000_0000_0000"
 # MMIO regions with format (`base_paddr`, `size`).
 mmio-regions = [
-    ["0x2000_0000", "0x07ff_ffff"], # PCI config space
-    ["0x4000-0000", "0x3fff_ffff"]  # PCI memory ranges
+    ["0x1ff4_0800", "0xf"],             # uart2
 ]
 # VirtIO MMIO regions with format (`base_paddr`, `size`).
 virtio-mmio-regions = [
 ]
 # Base physical address of the PCIe ECAM space.
-pci-ecam-base = "0x2000_0000"
-# End PCI bus number (`bus-range` property in device tree).
-pci-bus-end = "0x7f"
+pci-ecam-base = "0xfe_0000_0000"
 
+
+# End PCI bus number (`bus-range` property in device tree).
+pci-bus-end = "0x6"
+# PCI device memory ranges.
+pci-ranges = [
+    ["0xfe_0000_0000", "0x2000_0000"],      # PCI config space
+    ["0x4000_0000", "0x4000_0000"],         # PCIE memory ranges
+    ["0x1600_0000", "0x0100_0000"],         # PCIE IO
+]
 # Timer interrupt frequency in Hz.
 timer-frequency = "500_000_000"      # 500MHz
 

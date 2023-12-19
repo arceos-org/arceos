@@ -5,6 +5,10 @@ use spinlock::SpinNoIrq;
 use memory_addr::PhysAddr;
 
 const UART_BASE: PhysAddr = PhysAddr::from(axconfig::UART_BASE_ADDR);
+const UART_DAT_OFFSET: usize = 0x0;
+const UART_LSR_OFFSET: usize = 0x5;
+const UART_LSR_TFE_OFFSET: usize = 0x5;
+const UART_LSR_DR_OFFSET: usize = 0x0;
 
 static COM1: SpinNoIrq<Uart> = SpinNoIrq::new(Uart::new(UART_BASE.as_usize()));
 
@@ -21,26 +25,26 @@ impl Uart {
         let ptr = self.base_address as *mut u8;
         loop {
             unsafe {
-                let c = ptr.add(5).read_volatile();
-                if c & (1 << 5) != 0 {
+                let c = ptr.add(UART_LSR_OFFSET).read_volatile();
+                if c & (1 << UART_LSR_TFE_OFFSET) != 0 {
                     break;
                 }
             }
         }
         unsafe {
-            ptr.add(0).write_volatile(c);
+            ptr.add(UART_DAT_OFFSET).write_volatile(c);
         }
     }
 
     pub fn getchar(&mut self) -> Option<u8> {
         let ptr = self.base_address as *mut u8;
         unsafe {
-            if ptr.add(5).read_volatile() & 1 == 0 {
+            if ptr.add(UART_LSR_OFFSET).read_volatile() & (1 << UART_LSR_DR_OFFSET) == 0 {
                 // The DR bit is 0, meaning no data
                 None
             } else {
                 // The DR bit is 1, meaning data!
-                Some(ptr.add(0).read_volatile())
+                Some(ptr.add(UART_DAT_OFFSET).read_volatile())
             }
         }
     }

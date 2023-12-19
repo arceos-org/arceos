@@ -138,8 +138,11 @@ LD := rust-lld -flavor gnu
 
 OBJDUMP ?= rust-objdump -d --print-imm-hex --x86-asm-syntax=intel
 OBJCOPY ?= rust-objcopy --binary-architecture=$(ARCH)
-GDB ?= gdb-multiarch
-
+ifeq ($(ARCH), loongarch64)
+  GDB :=gdb
+else 
+  GDB ?= gdb-multiarch
+endif
 # Paths
 OUT_DIR ?= $(APP)
 
@@ -179,8 +182,8 @@ debug: build
 	sleep 1
 	$(GDB) $(OUT_ELF) \
 	  -ex 'target remote localhost:1234' \
-	  -ex 'b rust_entry' \
-	  -ex 'continue' \
+	  -ex 'b *0x9000000000001000' \
+    -ex 'b *0x1000' \
 	  -ex 'disp /16i $$pc'
 
 clippy:
