@@ -36,6 +36,13 @@ ifeq ($(APP_TYPE), c)
   ifneq ($(filter fs net pipe select epoll,$(FEATURES)),)
     override FEATURES += fd
   endif
+else ifeq ($(APP), apps/oscomp)
+  ifneq ($(wildcard $(APP)/features.txt),)    # check features.txt exists
+    override FEATURES += $(shell cat $(APP)/features.txt)
+  endif
+  ifneq ($(filter fs net pipe select epoll,$(FEATURES)),)
+    override FEATURES += fd
+  endif
 endif
 
 override FEATURES := $(strip $(FEATURES))

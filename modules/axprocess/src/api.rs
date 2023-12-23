@@ -12,6 +12,7 @@ use axhal::paging::MappingFlags;
 use axhal::KERNEL_PROCESS_ID;
 use axlog::{debug, info};
 use axmem::MemorySet;
+#[cfg(feature = "signal")]
 use axsignal::signal_no::SignalNo;
 use axsync::Mutex;
 use axtask::{current, yield_now, CurrentTask, TaskId, TaskState, IDLE_TASK, RUN_QUEUE};
@@ -20,6 +21,7 @@ use crate::flags::WaitStatus;
 use crate::futex::clear_wait;
 use crate::loader::Loader;
 use crate::process::{Process, PID2PC, TID2TASK};
+#[cfg(feature = "signal")]
 use crate::signal::{send_signal_to_process, send_signal_to_thread};
 
 /// 初始化内核调度进程
@@ -64,6 +66,7 @@ pub fn exit_current_task(exit_code: i32) -> ! {
         current_task.is_leader(),
     );
     // 检查这个任务是否有sig_child信号
+    #[cfg(feature = "signal")]
     if current_task.get_sig_child() || current_task.is_leader() {
         let parent = process.get_parent();
         if parent != KERNEL_PROCESS_ID {
@@ -107,6 +110,7 @@ pub fn exit_current_task(exit_code: i32) -> ! {
 
         process.tasks.lock().clear();
         process.fd_manager.fd_table.lock().clear();
+        #[cfg(feature = "signal")]
         process.signal_modules.lock().clear();
 
         let mut pid2pc = PID2PC.lock();
@@ -132,6 +136,7 @@ pub fn exit_current_task(exit_code: i32) -> ! {
             }
         }
         drop(tasks);
+        #[cfg(feature = "signal")]
         process.signal_modules.lock().remove(&curr_id);
         drop(process);
     }
@@ -197,6 +202,7 @@ pub fn handle_page_fault(addr: VirtAddr, flags: MappingFlags) {
     {
         unsafe { riscv::asm::sfence_vma_all() };
     } else {
+        #[cfg(feature = "signal")]
         let _ = send_signal_to_thread(current().id().as_u64() as isize, SignalNo::SIGSEGV as isize);
     }
 }

@@ -6,12 +6,12 @@ use axhal::mem::VirtAddr;
 use axlog::info;
 use axprocess::{
     current_process, current_task,
-    futex::{FUTEX_WAIT_TASK, WAIT_FOR_FUTEX},
+    futex::{FutexRobustList, FUTEX_WAIT_TASK, WAIT_FOR_FUTEX},
     yield_now_task,
 };
 use axtask::TaskState;
 
-use syscall_utils::{FutexFlags, SyscallError, SyscallResult, TimeSecs};
+use syscall_utils::{FutexFlags, RobustList, SyscallError, SyscallResult, TimeSecs};
 
 // / Futex requeue操作
 // /
@@ -181,4 +181,54 @@ pub fn syscall_futex(
         Ok(ans) => Ok(ans as isize),
         Err(errno) => Err(errno),
     }
+}
+
+/// 内核只发挥存储的作用
+/// 但要保证head对应的地址已经被分配
+pub fn syscall_set_robust_list(head: usize, len: usize) -> SyscallResult {
+    let process = current_process();
+    if len != core::mem::size_of::<RobustList>() {
+        return Err(SyscallError::EINVAL);
+    }
+    let curr_id = current_task().id().as_u64();
+    if process.manual_alloc_for_lazy(head.into()).is_ok() {
+        let mut robust_list = process.robust_list.lock();
+        if robust_list.contains_key(&curr_id) {
+            let list = robust_list.get_mut(&curr_id).unwrap();
+            list.head = head;
+            list.len = len;
+        } else {
+            robust_list.insert(curr_id, FutexRobustList::new(head, len));
+        }
+        Ok(0)
+    } else {
+        Err(SyscallError::EINVAL)
+    }
+}
+
+/// 取出对应线程的robust list
+pub fn syscall_get_robust_list(pid: i32, head: *mut usize, len: *mut usize) -> SyscallResult {
+    if pid == 0 {
+        let process = current_process();
+        let curr_id = current_task().id().as_u64();
+        if process
+            .manual_alloc_for_lazy((head as usize).into())
+            .is_ok()
+        {
+            let robust_list = process.robust_list.lock();
+            if robust_list.contains_key(&curr_id) {
+                let list = robust_list.get(&curr_id).unwrap();
+                unsafe {
+                    *head = list.head;
+                    *len = list.len;
+                }
+            } else {
+                return Err(SyscallError::EPERM);
+            }
+            return Ok(0);
+        } else {
+            return Err(SyscallError::EPERM);
+        }
+    }
+    Err(SyscallError::EPERM)
 }

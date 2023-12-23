@@ -18,9 +18,10 @@ use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, Ordering};
 use crate::fd_manager::FdManager;
 use crate::flags::CloneFlags;
 use crate::futex::FutexRobustList;
+use crate::load_app;
+#[cfg(feature = "signal")]
 use crate::signal::SignalModule;
 use crate::stdio::{Stderr, Stdin, Stdout};
-use crate::{current_task, load_app};
 pub static TID2TASK: Mutex<BTreeMap<u64, AxTaskRef>> = Mutex::new(BTreeMap::new());
 pub static PID2PC: Mutex<BTreeMap<u64, Arc<Process>>> = Mutex::new(BTreeMap::new());
 const FD_LIMIT_ORIGIN: usize = 1025;
@@ -55,6 +56,7 @@ pub struct Process {
     /// 当前用户堆的堆顶，不能小于基址，不能大于基址加堆的最大大小
     pub heap_top: AtomicU64,
 
+    #[cfg(feature = "signal")]
     /// 信号处理模块
     /// 第一维代表TaskID，第二维代表对应的信号处理模块
     pub signal_modules: Mutex<BTreeMap<u64, SignalModule>>,
@@ -139,6 +141,7 @@ impl Process {
             heap_bottom: AtomicU64::new(heap_bottom),
             heap_top: AtomicU64::new(heap_bottom),
             fd_manager: FdManager::new(fd_table, FD_LIMIT_ORIGIN),
+            #[cfg(feature = "signal")]
             signal_modules: Mutex::new(BTreeMap::new()),
             robust_list: Mutex::new(BTreeMap::new()),
         }
@@ -212,6 +215,7 @@ impl Process {
         // 需要将完整内容写入到内核栈上，first_into_user并不会复制到内核栈上
         new_task.set_trap_in_kernel_stack();
         new_process.tasks.lock().push(Arc::clone(&new_task));
+        #[cfg(feature = "signal")]
         new_process
             .signal_modules
             .lock()
@@ -307,12 +311,16 @@ impl Process {
             .lock()
             .insert(current_task.id().as_u64(), FutexRobustList::default());
 
-        // 重置信号处理模块
-        // 此时只会留下一个线程
-        self.signal_modules.lock().clear();
-        self.signal_modules
-            .lock()
-            .insert(current_task.id().as_u64(), SignalModule::init_signal(None));
+        #[cfg(feature = "signal")]
+        {
+            // 重置信号处理模块
+            // 此时只会留下一个线程
+            self.signal_modules.lock().clear();
+            self.signal_modules
+                .lock()
+                .insert(current_task.id().as_u64(), SignalModule::init_signal(None));
+        }
+
         // user_stack_top = user_stack_top / PAGE_SIZE_4K * PAGE_SIZE_4K;
         let new_trap_frame =
             TrapFrame::app_init_context(entry.as_usize(), user_stack_bottom.as_usize());
@@ -376,10 +384,10 @@ impl Process {
             .insert(new_task.id().as_u64(), Arc::clone(&new_task));
         #[cfg(feature = "signal")]
         let new_handler = if flags.contains(CloneFlags::CLONE_SIGHAND) {
-            // let curr_id = current_task().id().as_u64();
+            // let curr_id = current().id().as_u64();
             self.signal_modules
                 .lock()
-                .get_mut(&current_task().id().as_u64())
+                .get_mut(&current().id().as_u64())
                 .unwrap()
                 .signal_handler
                 .clone()
@@ -387,7 +395,7 @@ impl Process {
             Arc::new(Mutex::new(
                 self.signal_modules
                     .lock()
-                    .get_mut(&current_task().id().as_u64())
+                    .get_mut(&current().id().as_u64())
                     .unwrap()
                     .signal_handler
                     .lock()
@@ -574,12 +582,12 @@ impl Process {
         self.fd_manager.cwd.lock().clone()
     }
 }
-
+#[cfg(feature = "signal")]
 /// 与信号相关的方法
 impl Process {
     /// 查询当前任务是否存在未决信号
     pub fn have_signals(&self) -> Option<usize> {
-        let current_task = current_task();
+        let current_task = current();
         self.signal_modules
             .lock()
             .get(&current_task.id().as_u64())
