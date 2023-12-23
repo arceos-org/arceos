@@ -13,4 +13,5 @@ impl const PagingMetaData for LA64MetaData {
     const VA_MAX_BITS: usize = 48;
 }
 
+/// Page table for LoongArch64 systems.
 pub type LA64PageTable<I> = PageTable64<LA64MetaData, LA64PTE, I>;
