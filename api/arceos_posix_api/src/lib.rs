@@ -3,7 +3,6 @@
 //! [ArceOS]: https://github.com/rcore-os/arceos
 
 #![cfg_attr(all(not(test), not(doc)), no_std)]
-#![feature(ip_in_core)]
 #![feature(doc_cfg)]
 #![feature(doc_auto_cfg)]
 #![allow(clippy::missing_safety_doc)]

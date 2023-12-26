@@ -7,8 +7,8 @@ use core::ffi::c_int;
 use core::mem::{size_of, ManuallyDrop};
 
 static_assertions::const_assert_eq!(
-    size_of::<PthreadMutex>(),
-    size_of::<ctypes::pthread_mutex_t>()
+    size_of::<ctypes::pthread_mutex_t>(),
+    size_of::<PthreadMutex>()
 );
 
 #[repr(C)]
