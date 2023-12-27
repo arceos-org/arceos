@@ -43,7 +43,7 @@ pci-bus-end = "0xff"
 pci-ranges = [
     ["0x0300_0000", "0x1_0000"],          # PIO space
     ["0x4000_0000", "0x4000_0000"],       # 32-bit MMIO space
-    ["0x4_0000_0000", "0x4_0000_0000"],   # 64-but MMIO space
+    ["0x4_0000_0000", "0x4_0000_0000"],   # 64-bit MMIO space
 ]
 
 # Timer interrupt frequency in Hz.

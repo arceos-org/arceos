@@ -26,7 +26,13 @@ pub const fn nanos_to_ticks(nanos: u64) -> u64 {
 pub fn set_oneshot_timer(deadline_ns: u64) {
     use loongarch64::register::tcfg;
     let old_ticks = current_ticks();
-    let ticks = nanos_to_ticks(deadline_ns) as usize;
+    let mut ticks = nanos_to_ticks(deadline_ns) as usize;
+    // Normally, deadline_ns should be increasing.
+    // These two lines of code are mainly used by the init_percpu function.
+    // We need to trigger a clock interrupt before the interrupt is turned on.
+    if ticks <= old_ticks as usize {
+        ticks = old_ticks as usize + 16;
+    }
     let ticks = ticks - old_ticks as usize;
     // align to 4
     let ticks = (ticks + 3) & !3;
@@ -35,4 +41,9 @@ pub fn set_oneshot_timer(deadline_ns: u64) {
     tcfg::set_en(true); // enable timer
 }
 
-pub(super) fn init_percpu() {}
+pub(super) fn init_percpu() {
+    #[cfg(feature = "irq")]
+    {
+        set_oneshot_timer(0);
+    }
+}

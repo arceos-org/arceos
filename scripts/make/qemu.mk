@@ -26,9 +26,7 @@ qemu_args-aarch64 := \
 
 LOONGARCH_BIOS = tools/la64/loongarch_bios_0310.bin
 qemu_args-loongarch64 := \
-  -bios $(LOONGARCH_BIOS) \
   -kernel $(OUT_ELF)
-
 
 ifeq ($(ARCH), loongarch64)
 qemu_args-y := -m 1G -smp $(SMP) $(qemu_args-$(ARCH))

@@ -66,7 +66,6 @@ pub fn putchar(c: u8) {
 }
 
 pub fn write_fmt(args: core::fmt::Arguments) {
-    use core::fmt::Write;
     COM1.lock().write_fmt(args).unwrap();
 }
 
