@@ -1,4 +1,4 @@
-name: Build CI
+name: Build-Latest-Rust-Nightly CI
 
 on: [push, pull_request]
 
