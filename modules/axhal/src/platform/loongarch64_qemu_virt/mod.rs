@@ -1,11 +1,12 @@
-pub mod boot {
+#[allow(unused_imports)]
+mod boot {
     pub use crate::platform::loongarch64_common::boot::*;
 }
 pub mod console {
     pub use crate::platform::loongarch64_common::console::*;
 }
 pub mod mem {
-    pub use crate::platform::loongarch64_common::mem::*;
+    pub(crate) use crate::platform::loongarch64_common::mem::*;
 }
 
 pub mod misc {

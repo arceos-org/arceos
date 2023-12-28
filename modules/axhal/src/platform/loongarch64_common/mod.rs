@@ -9,5 +9,3 @@ pub mod irq;
 
 #[cfg(feature = "smp")]
 pub mod mp;
-
-

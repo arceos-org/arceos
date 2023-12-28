@@ -50,10 +50,8 @@ impl From<PTEFlags> for MappingFlags {
         if !f.contains(PTEFlags::NX) {
             ret |= Self::EXECUTE;
         }
-        if f.contains(PTEFlags::PLVL) {
-            if f.contains(PTEFlags::PLVH) {
-                ret |= Self::USER;
-            }
+        if f.contains(PTEFlags::PLVL) && f.contains(PTEFlags::PLVH) {
+            ret |= Self::USER;
         }
         if !f.contains(PTEFlags::MATL) {
             ret |= Self::DEVICE;

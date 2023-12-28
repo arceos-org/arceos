@@ -1,8 +1,8 @@
 //! Uart 16550.
 
 use core::fmt::Write;
-use spinlock::SpinNoIrq;
 use memory_addr::PhysAddr;
+use spinlock::SpinNoIrq;
 
 const UART_BASE: PhysAddr = PhysAddr::from(axconfig::UART_BASE_ADDR);
 const UART_DAT_OFFSET: usize = 0x0;

@@ -116,6 +116,12 @@ else
   $(error "ARCH" must be one of "x86_64", "riscv64", "aarch64" or "loongarch64")
 endif
 
+ifeq ($(PLATFORM_NAME), loongarch64-2k500)
+  BUS := mmio
+else ifeq ($(PLATFORM_NAME), loongarch64-2k1000)
+  BUS := mmio
+endif
+
 export AX_ARCH=$(ARCH)
 export AX_PLATFORM=$(PLATFORM_NAME)
 export AX_SMP=$(SMP)

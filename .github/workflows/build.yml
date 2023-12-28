@@ -25,6 +25,8 @@ jobs:
       run: make clippy ARCH=riscv64
     - name: Clippy for aarch64
       run: make clippy ARCH=aarch64
+    - name: Clippy for loongarch64
+      run: make clippy ARCH=loongarch64
     - name: Check code format
       run: cargo fmt --all -- --check
 
@@ -34,7 +36,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        arch: [x86_64, riscv64, aarch64]
+        arch: [x86_64, riscv64, aarch64, loongarch64]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -134,6 +136,16 @@ jobs:
 
     - name: Build helloworld for aarch64-bsta1000b
       run: make PLATFORM=aarch64-bsta1000b A=apps/helloworld
+
+    - name: Build helloworld for loongarch-2k500
+      run: make PLATFORM=loongarch-2k500 A=apps/helloworld
+    - name: Build fs/shell for loongarch-2k500
+      run: make PLATFORM=loongarch-2k500 A=apps/fs/shell FEATURES=driver-ramdisk
+
+    - name: Build helloworld for loongarch-2k1000
+      run: make PLATFORM=loongarch-2k1000 A=apps/helloworld
+    - name: Build fs/shell for loongarch-2k1000
+      run: make PLATFORM=loongarch-2k1000 A=apps/fs/shell FEATURES=driver-ramdisk
 
   build-apps-for-std:
     runs-on: ${{ matrix.os }}

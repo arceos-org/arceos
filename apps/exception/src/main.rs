@@ -15,7 +15,7 @@ fn raise_break_exception() {
         asm!("brk #0");
         #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
         asm!("ebreak");
-        #[cfg(any(target_arch = "loongarch64"))]
+        #[cfg(target_arch = "loongarch64")]
         asm!("break 0");
     }
 }

@@ -11,28 +11,67 @@ runs:
   steps:
   - name: Cache musl
     id: cache-musl
+    if: inputs.arch != 'loongarch64'
     uses: actions/cache/restore@v3
     with:
       path: ${{ inputs.arch }}-linux-musl-cross
       key: ${{ inputs.arch }}-linux-musl-cross
+
+  - name: Cache loongarch64 GNU
+    id: cache-GNU
+    if: inputs.arch == 'loongarch64'
+    uses: actions/cache/restore@v3
+    with:
+      path: loongarch64-unknown-linux-gnu-cross
+      key: loongarch64-unknown-linux-gnu-cross
+
   - name: Download musl toolchain
-    if: steps.cache-musl.outputs.cache-hit != 'true'
+    if: steps.cache-musl.outputs.cache-hit != 'true' && inputs.arch != 'loongarch64'
     shell: bash
     run: |
       MUSL_PATH=${{ inputs.arch }}-linux-musl-cross
       wget https://musl.cc/${MUSL_PATH}.tgz
       tar -xf ${MUSL_PATH}.tgz
+
+  - name: Download GNU toolchain for loongarch64
+    if: inputs.arch == 'loongarch64'
+    shell: bash
+    run: |
+      wget https://github.com/jtzhpf/loongarch64-unknown-linux-gnu-cross/releases/download/12.2.0/loongarch64-unknown-linux-gnu-cross.tgz
+      tar -xf loongarch64-unknown-linux-gnu-cross.tgz loongarch64-unknown-linux-gnu-cross
+
   - uses: actions/cache/save@v3
-    if: steps.cache-musl.outputs.cache-hit != 'true'
+    if: steps.cache-musl.outputs.cache-hit != 'true' && inputs.arch != 'loongarch64'
     with:
       path: ${{ inputs.arch }}-linux-musl-cross
       key: ${{ inputs.arch }}-linux-musl-cross
 
+  - uses: actions/cache/save@v3
+    if: steps.cache-musl.outputs.cache-hit != 'true' && inputs.arch == 'loongarch64'
+    with:
+      path: loongarch64-unknown-linux-gnu-cross
+      key: loongarch64-unknown-linux-gnu-cross
+
   - name: Add to PATH environment variable
+    if: inputs.arch != 'loongarch64'
     shell: bash
     run: |
       echo "$PWD/${{ inputs.arch }}-linux-musl-cross/bin" >> $GITHUB_PATH
+
+  - name: Add to PATH environment variable for loongarch64
+    if: inputs.arch == 'loongarch64'
+    shell: bash
+    run: |
+      echo "$PWD/loongarch64-unknown-linux-gnu-cross/bin" >> $GITHUB_PATH
+
   - name: Verify installation
+    if: inputs.arch != 'loongarch64'
     shell: bash
     run: |
       ${{ inputs.arch }}-linux-musl-gcc --version
+
+  - name: Verify installation for loongarch64
+    if: inputs.arch == 'loongarch64'
+    shell: bash
+    run: |
+      loongarch64-unknown-linux-gnu-gcc --version

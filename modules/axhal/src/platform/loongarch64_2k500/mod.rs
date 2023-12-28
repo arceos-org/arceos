@@ -1,3 +1,4 @@
+#[allow(unused_imports)]
 pub mod boot {
     pub use crate::platform::loongarch64_common::boot::*;
 }

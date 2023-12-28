@@ -94,8 +94,7 @@
 #define LDBL_MAX_10_EXP 4932
 
 #define DECIMAL_DIG 21
-#endif
-#elif defined(__loonarch__)
+#elif defined(__loongarch64)
 #define FLT_EVAL_METHOD 0
 
 #define LDBL_TRUE_MIN 6.47517511943802511092443895822764655e-4966L
@@ -110,4 +109,7 @@
 #define LDBL_DIG        33
 #define LDBL_MIN_10_EXP (-4931)
 #define LDBL_MAX_10_EXP 4932
+
+#define DECIMAL_DIG 36
+#endif
 #endif

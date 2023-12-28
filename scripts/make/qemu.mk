@@ -24,7 +24,7 @@ qemu_args-aarch64 := \
   -machine virt \
   -kernel $(OUT_BIN)
 
-LOONGARCH_BIOS = tools/la64/loongarch_bios_0310.bin
+LOONGARCH_BIOS = tools/loongarch64/loongarch_bios_0310.bin
 qemu_args-loongarch64 := \
   -bios $(LOONGARCH_BIOS) \
   -kernel $(OUT_ELF)
@@ -102,7 +102,7 @@ endef
 
 define before_run_qemu
 	$(if $(filter $(ARCH), loongarch64), \
-		@cp tools/la64/efi-virtio.rom . \
+		@cp tools/loongarch64/efi-virtio.rom . \
 	)
 endef
 
