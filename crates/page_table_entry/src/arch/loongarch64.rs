@@ -15,10 +15,11 @@ bitflags::bitflags! {
         const D = 1 << 1;
         /// Privilege Level with 2 bits.
         const PLVL = 1 << 2;
+        /// Privilege Level with 2 bits.
         const PLVH = 1 << 3;
-        /// Memory Access Type controls the type of access, such as whether it
-        /// can be cached by Cache, etc.
+        /// Memory Access Type controls the type of access, such as whether it can be cached by Cache, etc.
         const MATL = 1 << 4;
+        /// Memory Access Type controls the type of access, such as whether it can be cached by Cache, etc.
         const MATH = 1 << 5;
         /// Designates a global mapping OR Whether the page is huge page.
         const GH = 1 << 6;
@@ -86,6 +87,7 @@ impl From<MappingFlags> for PTEFlags {
     }
 }
 
+/// page table entry for LoongArch64 systems.
 #[derive(Clone, Copy)]
 #[repr(transparent)]
 pub struct LA64PTE(u64);

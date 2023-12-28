@@ -120,6 +120,16 @@ jobs:
       with:
         arch: x86_64
 
+    - name: Build helloworld for loongarch-2k500
+      run: make PLATFORM=loongarch64-2k500 A=apps/helloworld
+    - name: Build fs/shell for loongarch-2k500
+      run: make PLATFORM=loongarch64-2k500 A=apps/fs/shell FEATURES=driver-ramdisk
+
+    - name: Build helloworld for loongarch-2k1000
+      run: make PLATFORM=loongarch64-2k1000 A=apps/helloworld
+    - name: Build fs/shell for loongarch-2k1000
+      run: make PLATFORM=loongarch64-2k1000 A=apps/fs/shell FEATURES=driver-ramdisk
+      
     - name: Build helloworld for x86_64-pc-oslab
       run: make PLATFORM=x86_64-pc-oslab A=apps/helloworld
     - name: Build net/httpserver for x86_64-pc-oslab
@@ -136,16 +146,6 @@ jobs:
 
     - name: Build helloworld for aarch64-bsta1000b
       run: make PLATFORM=aarch64-bsta1000b A=apps/helloworld
-
-    - name: Build helloworld for loongarch-2k500
-      run: make PLATFORM=loongarch-2k500 A=apps/helloworld
-    - name: Build fs/shell for loongarch-2k500
-      run: make PLATFORM=loongarch-2k500 A=apps/fs/shell FEATURES=driver-ramdisk
-
-    - name: Build helloworld for loongarch-2k1000
-      run: make PLATFORM=loongarch-2k1000 A=apps/helloworld
-    - name: Build fs/shell for loongarch-2k1000
-      run: make PLATFORM=loongarch-2k1000 A=apps/fs/shell FEATURES=driver-ramdisk
 
   build-apps-for-std:
     runs-on: ${{ matrix.os }}

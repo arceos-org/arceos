@@ -2,7 +2,7 @@
 /.vscode
 .DS_Store
 *.asm
-*.img
+disk.img
 actual.out
 qemu.log
 rusty-tags.vi
@@ -10,5 +10,4 @@ rusty-tags.vi
 *.log
 *.bin.gz
 uImage
-efi-virtio.rom
 riscv64-linux-musl-cross/
