@@ -90,13 +90,18 @@ impl RootDirectory {
         // Find the filesystem that has the longest mounted path match
         // TODO: more efficient, e.g. trie
 
-        // 原有arceos处理存在bug：当查询./syscall文件时，会进入到/sys文件系统
         for (i, mp) in self.mounts.iter().enumerate() {
             // skip the first '/'
+            // two conditions
+            // 1. path == mp.path, e.g. dev
+            // 2. path == mp.path + '/', e.g. dev/
             let prev = mp.path[1..].to_string() + "/";
-            if path.starts_with(prev.as_str()) && mp.path.len() - 1 > max_len {
-                max_len = mp.path.len() - 1;
-                idx = i;
+            if path.starts_with(&mp.path[1..]) {
+                if (path.len() == prev.len() - 1 || path.starts_with(&prev)) && prev.len() > max_len
+                {
+                    max_len = mp.path.len() - 1;
+                    idx = i;
+                }
             }
         }
         if max_len == 0 {

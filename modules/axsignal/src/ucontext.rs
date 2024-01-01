@@ -15,7 +15,7 @@ impl Default for SignalStack {
     fn default() -> Self {
         Self {
             sp: 0,
-            /// 代表SS_DISABLE，即不使用栈
+            // 代表SS_DISABLE，即不使用栈
             flags: 2,
             size: 0,
         }

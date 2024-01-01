@@ -38,5 +38,6 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
     };
 
     let ans = deal_result(ans);
+    axlog::info!("syscall: {} -> {}", syscall_id, ans);
     ans
 }

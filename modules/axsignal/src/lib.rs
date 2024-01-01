@@ -21,6 +21,12 @@ pub struct SignalHandler {
     pub handlers: [Option<SigAction>; MAX_SIG_NUM],
 }
 
+impl Default for SignalHandler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SignalHandler {
     /// 新建一个信号处理函数
     pub fn new() -> Self {
@@ -41,18 +47,16 @@ impl SignalHandler {
 
     pub fn get_action(&self, sig_num: usize) -> Option<&SigAction> {
         // 若未设置对应函数或者对应函数为SIG_DFL，则代表默认处理，直接返回空
-        if let Some(action) = self.handlers[sig_num - 1].as_ref() {
-            if action.sa_handler == action::SIG_DFL {
-                return None;
-            } else {
-                return Some(action);
-            }
-        } else {
-            return None;
-        }
+        self.handlers[sig_num - 1]
+            .as_ref()
+            .filter(|&action| action.sa_handler != action::SIG_DFL)
     }
-
-    pub fn set_action(&mut self, sig_num: usize, action: *const SigAction) {
+    /// 设置信号处理函数
+    ///
+    /// # Safety
+    ///
+    /// 传入的action必须是合法的指针
+    pub unsafe fn set_action(&mut self, sig_num: usize, action: *const SigAction) {
         self.handlers[sig_num - 1] = Some(unsafe { *action });
     }
 }
@@ -64,6 +68,12 @@ pub struct SignalSet {
     pub mask: usize,
     /// 未决信号集
     pub pending: usize,
+}
+
+impl Default for SignalSet {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl SignalSet {

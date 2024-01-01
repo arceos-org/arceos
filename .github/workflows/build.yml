@@ -75,6 +75,8 @@ jobs:
       run: make ARCH=${{ matrix.arch }} A=apps/net/httpserver
     - name: Build net/udpserver
       run: make ARCH=${{ matrix.arch }} A=apps/net/udpserver
+    - name: Bulld monolithic-oscomp
+      run: ./build_img.sh sdcard & make ARCH=${{ matrix.arch }} A=apps/oscomp
 
     - uses: ./.github/workflows/actions/setup-musl
       with:

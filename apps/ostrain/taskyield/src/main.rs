@@ -31,7 +31,7 @@ fn main() {
                 handle.join().unwrap();
             }
             let duration = start.elapsed();
-            sum = sum + duration.as_nanos();
+            sum += duration.as_nanos();
         }
 
         // 以纳秒单位输出消耗的时间

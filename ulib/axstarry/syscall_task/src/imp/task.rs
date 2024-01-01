@@ -174,7 +174,7 @@ pub fn syscall_clone(
 /// 当前仅支持WNOHANG选项，即若未完成时则不予等待，直接返回0
 pub fn syscall_wait4(pid: isize, exit_code_ptr: *mut i32, option: WaitFlags) -> SyscallResult {
     loop {
-        let answer = wait_pid(pid, exit_code_ptr);
+        let answer = unsafe { wait_pid(pid, exit_code_ptr) };
         match answer {
             Ok(pid) => {
                 return Ok(pid as isize);

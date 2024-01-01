@@ -524,11 +524,11 @@ pub fn syscall_lseek(fd: usize, offset: isize, whence: usize) -> SyscallResult {
         if let Ok(now_offset) = ans {
             Ok(now_offset as isize)
         } else {
-            return Err(SyscallError::EINVAL);
+            Err(SyscallError::EINVAL)
         }
     } else {
         debug!("fd {} is none", fd);
-        return Err(SyscallError::EBADF);
+        Err(SyscallError::EBADF)
     }
 }
 
@@ -547,7 +547,7 @@ pub fn syscall_fsync(fd: usize) -> SyscallResult {
         Ok(0)
     } else {
         debug!("fd {} is none", fd);
-        return Err(SyscallError::EBADF);
+        Err(SyscallError::EBADF)
     }
 }
 

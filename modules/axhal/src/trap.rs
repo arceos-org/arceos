@@ -49,6 +49,7 @@ pub(crate) fn handle_page_fault(addr: VirtAddr, flags: MappingFlags, tf: &mut Tr
 }
 
 /// 信号处理函数
+#[allow(dead_code)]
 #[cfg(feature = "signal")]
 pub(crate) fn handle_signal() {
     call_interface!(TrapHandler::handle_signal);

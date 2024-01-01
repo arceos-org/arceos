@@ -35,7 +35,8 @@ pub fn syscall_mount(
     {
         return Err(SyscallError::EINVAL);
     }
-    let fs_type = unsafe { raw_ptr_to_ref_str(fs_type) }.to_string();
+
+    let fs_type = unsafe { raw_ptr_to_ref_str(fs_type).to_string() };
     let mut _data_str = "".to_string();
     if !_data.is_null() {
         if process

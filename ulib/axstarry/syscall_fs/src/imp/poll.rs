@@ -222,6 +222,7 @@ fn init_fd_set(
     Ok((files, fds, shadow_bitset))
 }
 
+/// 实现pselect6系统调用
 pub fn syscall_pselect6(
     nfds: usize,
     readfds: *mut usize,

@@ -162,7 +162,7 @@ pub fn get_stat_in_fs(path: &FilePath) -> Result<Kstat, SyscallError> {
                 }
             }
         } else {
-            Err(SyscallError::ENONET)
+            Err(SyscallError::ENOENT)
         };
     } else {
         // 是目录
@@ -175,7 +175,7 @@ pub fn get_stat_in_fs(path: &FilePath) -> Result<Kstat, SyscallError> {
                 }
             }
         } else {
-            Err(SyscallError::ENONET)
+            Err(SyscallError::ENOENT)
         };
     }
 }

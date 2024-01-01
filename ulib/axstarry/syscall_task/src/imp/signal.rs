@@ -58,7 +58,7 @@ pub fn syscall_sigaction(
             // 无法分配
             return Err(SyscallError::EPERM);
         }
-        signal_handler.set_action(signum, action);
+        unsafe { signal_handler.set_action(signum, action) };
     }
     Ok(0)
 }

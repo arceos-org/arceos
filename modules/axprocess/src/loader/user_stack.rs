@@ -20,10 +20,9 @@ pub struct UserStack {
 impl UserStack {
     pub fn new(sp: usize) -> Self {
         let mut data: Vec<u8> = Vec::with_capacity(USER_INIT_STACK_SIZE);
-        unsafe {
-            // 规定好初始的用户栈大小，防止越界
-            data.set_len(USER_INIT_STACK_SIZE);
-        }
+
+        data.resize(USER_INIT_STACK_SIZE, 0);
+
         Self {
             sp,
             bottom: sp,

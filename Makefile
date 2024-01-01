@@ -28,15 +28,15 @@
 #     - `GW`: Gateway IPv4 address (default is 10.0.2.2 for QEMU user netdev)
 
 # General options
-ARCH ?= riscv64
+ARCH ?= x86_64
 PLATFORM ?=
 SMP ?= 1
 MODE ?= release
-LOG ?= warn
+LOG ?= off
 V ?=
 
 # App options
-A ?= apps/oscomp
+A ?= apps/helloworld
 APP ?= $(A)
 FEATURES ?=
 APP_FEATURES ?=
@@ -215,7 +215,7 @@ disk_img:
 ifneq ($(wildcard $(DISK_IMG)),)
 	@printf "$(YELLOW_C)warning$(END_C): disk image \"$(DISK_IMG)\" already exists!\n"
 else
-	$(call make_bin)
+	$(call make_disk_image,fat32,$(DISK_IMG))
 endif
 
 clean: clean_c

@@ -105,7 +105,7 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
     }
 
     #[cfg(feature = "signal")]
-    if from_user == true {
+    if from_user {
         handle_signal();
     }
 

@@ -363,7 +363,7 @@ impl TaskInner {
         } else {
             set_size * 4
         };
-        let now_mask = mask & (1 << (len) - 1);
+        let now_mask = mask & 1 << ((len) - 1);
         self.cpu_set.store(now_mask as u64, Ordering::Release)
     }
 

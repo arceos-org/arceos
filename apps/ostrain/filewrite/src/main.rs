@@ -19,7 +19,7 @@ fn main() {
         let start = Instant::now();
         for _ in 0..50 {
             let mut f = File::create(path).unwrap();
-            f.write(buffer).unwrap();
+            f.write_all(buffer).unwrap();
             drop(f);
             // 不需要关闭文件
         }

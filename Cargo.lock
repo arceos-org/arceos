@@ -34,14 +34,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "alter_trap"
-version = "0.1.0"
-dependencies = [
- "kernel_guard",
- "riscv",
-]
-
-[[package]]
 name = "android-tzdata"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -260,14 +252,6 @@ dependencies = [
  "log",
  "memory_addr",
  "spinlock",
-]
-
-[[package]]
-name = "axbacktrace"
-version = "0.1.0"
-dependencies = [
- "alter_trap",
- "log",
 ]
 
 [[package]]
@@ -512,7 +496,6 @@ name = "axruntime"
 version = "0.1.0"
 dependencies = [
  "axalloc",
- "axbacktrace",
  "axconfig",
  "axdisplay",
  "axdriver",

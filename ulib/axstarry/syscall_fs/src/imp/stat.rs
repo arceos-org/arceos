@@ -11,6 +11,7 @@ use syscall_utils::{get_fs_stat, FsStat, SyscallError, SyscallResult};
 
 use crate::ctype::mount::get_stat_in_fs;
 
+/// 实现 stat 系列系统调用
 pub fn syscall_fstat(fd: usize, kst: *mut Kstat) -> SyscallResult {
     let process = current_process();
     let fd_table = process.fd_manager.fd_table.lock();
@@ -43,7 +44,7 @@ pub fn syscall_fstat(fd: usize, kst: *mut Kstat) -> SyscallResult {
     }
 }
 
-/// 获取文件状态信息，但是给出的是目录 fd 和相对路径。 79
+/// 获取文件状态信息，但是给出的是目录 fd 和相对路径。
 pub fn syscall_fstatat(dir_fd: usize, path: *const u8, kst: *mut Kstat) -> SyscallResult {
     let file_path = deal_with_path(dir_fd, Some(path), false).unwrap();
     info!("path : {}", file_path.path());
@@ -59,7 +60,6 @@ pub fn syscall_fstatat(dir_fd: usize, path: *const u8, kst: *mut Kstat) -> Sysca
     }
 }
 
-/// 43
 /// 获取文件系统的信息
 pub fn syscall_statfs(path: *const u8, stat: *mut FsStat) -> SyscallResult {
     let file_path = deal_with_path(AT_FDCWD, Some(path), false).unwrap();

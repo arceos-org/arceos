@@ -158,8 +158,10 @@ pub fn init_drivers() -> AllDevices {
     {
         use axconfig::{PHYS_VIRT_OFFSET, TESTCASE_MEMORY_SIZE, TESTCASE_MEMORY_START};
         let mut ram_disk = driver_block::ramdisk::RamDisk::new(TESTCASE_MEMORY_SIZE);
-        ram_disk.copy_from_slice((TESTCASE_MEMORY_START + PHYS_VIRT_OFFSET) as *const u8);
-        all_devs.add_device(AxDeviceEnum::Block(ram_disk));
+        unsafe {
+            ram_disk.copy_from_slice((TESTCASE_MEMORY_START + PHYS_VIRT_OFFSET) as *const u8)
+        };
+        all_devs.add_device(AxDeviceEnum::from_block(ram_disk));
     }
 
     all_devs.probe();

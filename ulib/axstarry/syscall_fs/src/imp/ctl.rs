@@ -276,7 +276,7 @@ pub fn syscall_fcntl64(fd: usize, cmd: usize, arg: usize) -> SyscallResult {
                 return Err(SyscallError::EMFILE);
             };
             fd_table[new_fd] = fd_table[fd].clone();
-            return Ok(new_fd as isize);
+            Ok(new_fd as isize)
         }
         Ok(Fcntl64Cmd::F_GETFD) => {
             if file.get_status().contains(OpenFlags::CLOEXEC) {
@@ -311,9 +311,9 @@ pub fn syscall_fcntl64(fd: usize, cmd: usize, arg: usize) -> SyscallResult {
 
             if file.set_close_on_exec((arg & 1) != 0) {
                 fd_table[new_fd] = fd_table[fd].clone();
-                return Ok(new_fd as isize);
+                Ok(new_fd as isize)
             } else {
-                return Err(SyscallError::EINVAL);
+                Err(SyscallError::EINVAL)
             }
         }
         _ => Err(SyscallError::EINVAL),

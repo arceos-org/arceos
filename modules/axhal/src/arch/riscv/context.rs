@@ -73,7 +73,7 @@ impl TrapFrame {
             // a0为参数个数
             // a1存储的是用户栈底，即argv
             trap_frame.regs.a0 = *(user_sp as *const usize);
-            trap_frame.regs.a1 = *(user_sp as *const usize).add(1) as usize;
+            trap_frame.regs.a1 = *(user_sp as *const usize).add(1);
         }
         trap_frame
     }
@@ -123,8 +123,7 @@ impl TaskContext {
 
     pub fn new_empty() -> *mut TaskContext {
         let task_ctx = TaskContext::new();
-        let task_ctx_ptr = &task_ctx as *const TaskContext as *mut TaskContext;
-        task_ctx_ptr
+        &task_ctx as *const TaskContext as *mut TaskContext
     }
 
     /// Initializes the context for a new task, with the given entry point and

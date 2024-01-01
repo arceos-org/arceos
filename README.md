@@ -17,11 +17,14 @@
 ```shell
 # 构建镜像
 ./build_img.sh sdcard
-# 运行内核
+# 运行 Unikernel 架构内核
 make run
 
+# 以宏内核形式启动(当前仅支持 riscv 架构)
+make A=apps/oscomp ARCH=riscv64 run
+
 # 使用 ramdisk 加载测例并且运行内核，可以显著提高文件 IO 速度
-make FEATURES=img run
+make A=apps/oscomp ARCH=riscv64 FEATURES=img run
 
 ```
 

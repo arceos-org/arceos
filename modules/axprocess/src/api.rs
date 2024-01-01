@@ -210,7 +210,11 @@ pub fn handle_page_fault(addr: VirtAddr, flags: MappingFlags) {
 /// 在当前进程找对应的子进程，并等待子进程结束
 /// 若找到了则返回对应的pid
 /// 否则返回一个状态
-pub fn wait_pid(pid: isize, exit_code_ptr: *mut i32) -> Result<u64, WaitStatus> {
+///
+/// # Safety
+///
+/// 保证传入的 ptr 是有效的
+pub unsafe fn wait_pid(pid: isize, exit_code_ptr: *mut i32) -> Result<u64, WaitStatus> {
     // 获取当前进程
     let curr_process = current_process();
     let mut exit_task_id: usize = 0;
