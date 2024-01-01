@@ -28,6 +28,25 @@ make A=apps/oscomp ARCH=riscv64 FEATURES=img run
 
 ```
 
+## CI 说明
+本项目的 CI 结构继承了 arceos 的 CI 结构，同时在其上加入了宏内核的测试用例，以求保证该项目可以在宏内核和 Unikernel 架构以及不同的指令集架构下正常运行。
+
+当前的 Unikernel 基本适配了 arceos 测例，而宏内核仅支持在 riscv 架构上运行。各个 CI 含义如下：
+
+* Clippy CI：代码风格检查
+
+* Test CI / unit-test：单元测试，当前由于宏内核代码紧耦合 riscv 而导致无法通过单元测试
+
+* build CI / build：默认架构 ( Unikernel + x86_64 ) 构建测试
+
+* build CI / build-apps-for-unikernel + ARCH：Unikernel 架构下不同指令集的测例构建测试
+
+* build CI / build-apps-for-monolithic + ARCH：宏内核架构下不同指令集的测例构建测试
+
+* Test CI / app-test-for-unikernel + ARCH：Unikernel 架构下不同指令集的测例运行测试
+
+* Test CI / app-test-for-monolithic + ARCH：宏内核架构下不同指令集的测例运行测试
+
 ## 项目结构
 
 ### 整体结构图

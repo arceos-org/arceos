@@ -52,6 +52,9 @@ function run_and_compare() {
 
     echo -ne "    run with \"${BLOD_C}$args${END_C}\": "
     # if the app contain "apps/oscomp", then make disk img
+    if [[ $APP =~ "apps/oscomp" ]]; then
+        sh ./build_img.sh sdcard
+    fi
     make -C "$ROOT" A="$APP" $args > "$actual" 2>&1
     if [ $? -ne 0 ]; then
         return $S_BUILD_FAILED
@@ -107,23 +110,7 @@ function test_one() {
 
 if [ -z "$1" ]; then
     test_list=(
-        "apps/helloworld"
-        "apps/memtest"
-        "apps/exception"
-        "apps/task/yield"
-        "apps/task/parallel"
-        "apps/task/sleep"
-        "apps/task/priority"
-        "apps/task/tls"
-        "apps/net/httpclient"
-        "apps/c/helloworld"
-        "apps/c/memtest"
-        "apps/c/sqlite3"
-        "apps/c/httpclient"
-        "apps/c/pthread/basic"
-        "apps/c/pthread/sleep"
-        "apps/c/pthread/pipe"
-        "apps/c/pthread/parallel"
+        "apps/oscomp"
     )
 else
     test_list="$@"

@@ -205,6 +205,9 @@ fmt_c:
 test:
 	$(call app_test)
 
+test_monolithic: 
+	$(call app_test_for_monolithic)
+
 unittest:
 	$(call unit_test)
 

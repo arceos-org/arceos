@@ -28,7 +28,7 @@ jobs:
     - name: Check code format
       run: cargo fmt --all -- --check
 
-  build:
+  build-apps-for-unikernel:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -75,8 +75,6 @@ jobs:
       run: make ARCH=${{ matrix.arch }} A=apps/net/httpserver
     - name: Build net/udpserver
       run: make ARCH=${{ matrix.arch }} A=apps/net/udpserver
-    - name: Bulld monolithic-oscomp
-      run: ./build_img.sh sdcard & make ARCH=${{ matrix.arch }} A=apps/oscomp
 
     - uses: ./.github/workflows/actions/setup-musl
       with:
@@ -176,3 +174,25 @@ jobs:
       run: cargo build -p arceos-httpserver
     - name: Build net/udpserver
       run: cargo build -p arceos-udpserver
+
+  build-apps-for-monolithic:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        arch: [x86_64, riscv64, aarch64]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ env.rust-toolchain }}
+          components: rust-src
+      - uses: actions-rs/install@v0.1
+        with:
+          crate: cargo-binutils
+          version: latest
+          use-tool-cache: true
+      - name: Bulld monolithic-oscomp
+        run: ./build_img.sh sdcard & make ARCH=${{ matrix.arch }} A=apps/oscomp
