@@ -70,7 +70,7 @@ $(APP)/%.o: $(APP)/%.c $(ulib_hdr)
 
 $(OUT_ELF): $(c_lib) $(rust_lib) $(libgcc) $(app-objs)
 	@printf "    $(CYAN_C)Linking$(END_C) $(OUT_ELF)\n"
-	$(call run_cmd,$(LD),$(LDFLAGS) $(c_lib) $(libgcc) $(app-objs) -o $@)
+	$(call run_cmd,$(LD),$(LDFLAGS) $^ -o $@)
 
 $(APP)/axbuild.mk: ;
 
