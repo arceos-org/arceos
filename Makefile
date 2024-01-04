@@ -107,8 +107,19 @@ else ifeq ($(ARCH), aarch64)
   ACCEL ?= n
   PLATFORM_NAME ?= aarch64-qemu-virt
   TARGET := aarch64-unknown-none-softfloat
+else ifeq ($(ARCH), loongarch64)
+  ACCEL ?= n
+  PLATFORM_NAME ?= loongarch64-qemu-virt
+  TARGET := loongarch64-unknown-none-softfloat
+  BUS := pci
 else
-  $(error "ARCH" must be one of "x86_64", "riscv64", or "aarch64")
+  $(error "ARCH" must be one of "x86_64", "riscv64", "aarch64" or "loongarch64")
+endif
+
+ifeq ($(PLATFORM_NAME), loongarch64-2k500)
+  BUS := mmio
+else ifeq ($(PLATFORM_NAME), loongarch64-2k1000)
+  BUS := mmio
 endif
 
 export AX_ARCH=$(ARCH)
@@ -122,6 +133,10 @@ export AX_GW=$(GW)
 
 # Binutils
 CROSS_COMPILE ?= $(ARCH)-linux-musl-
+ifeq ($(ARCH), loongarch64)
+	CROSS_COMPILE := $(ARCH)-linux-gnu-
+  # CROSS_COMPILE := $(ARCH)-unknown-linux-gnu-
+endif
 CC := $(CROSS_COMPILE)gcc
 AR := $(CROSS_COMPILE)ar
 RANLIB := $(CROSS_COMPILE)ranlib
@@ -129,8 +144,11 @@ LD := rust-lld -flavor gnu
 
 OBJDUMP ?= rust-objdump -d --print-imm-hex --x86-asm-syntax=intel
 OBJCOPY ?= rust-objcopy --binary-architecture=$(ARCH)
-GDB ?= gdb-multiarch
-
+ifeq ($(ARCH), loongarch64)
+  GDB :=gdb
+else 
+  GDB ?= gdb-multiarch
+endif
 # Paths
 OUT_DIR ?= $(APP)
 
@@ -149,6 +167,10 @@ ifeq ($(PLATFORM_NAME), aarch64-raspi4)
   include scripts/make/raspi4.mk
 else ifeq ($(PLATFORM_NAME), aarch64-bsta1000b)
   include scripts/make/bsta1000b-fada.mk
+else ifeq ($(PLATFORM_NAME), loongarch64-2k500)
+  include scripts/make/2k500.mk
+else ifeq ($(PLATFORM_NAME), loongarch64-2k1000)
+  include scripts/make/2k1000.mk
 endif
 
 build: $(OUT_DIR) $(OUT_BIN)
@@ -167,7 +189,7 @@ debug: build
 	$(GDB) $(OUT_ELF) \
 	  -ex 'target remote localhost:1234' \
 	  -ex 'b rust_entry' \
-	  -ex 'continue' \
+    -ex 'continue' \
 	  -ex 'disp /16i $$pc'
 
 clippy:

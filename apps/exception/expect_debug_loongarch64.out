@@ -1,0 +1,19 @@
+smp = 1
+build_mode = release
+log_level = debug
+
+Primary CPU 0 started,
+Found physcial memory regions:
+ .text (READ | EXECUTE | RESERVED)
+ .rodata (READ | RESERVED)
+ .data .tdata .tbss .percpu (READ | WRITE | RESERVED)
+ .percpu (READ | WRITE | RESERVED)
+ boot stack (READ | WRITE | RESERVED)
+ .bss (READ | WRITE | RESERVED)
+ free memory (READ | WRITE | FREE)
+Initialize platform devices...
+Primary CPU 0 init OK.
+Running exception tests...
+Exception(Breakpoint) @ 0x[0-9a-f]\{16\}
+Exception tests run OK!
+Shutting down...

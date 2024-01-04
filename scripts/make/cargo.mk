@@ -23,6 +23,11 @@ ifeq ($(ARCH), x86_64)
   RUSTFLAGS += -C link-arg=--no-relax
 endif
 
+ifeq ($(ARCH),loongarch64)
+	build_args += -Z build-std
+  RUSTFLAGS += -C target-feature=-ual
+endif
+
 ifeq ($(MAKECMDGOALS), doc_check_missing)
   RUSTDOCFLAGS += -D missing-docs
 endif

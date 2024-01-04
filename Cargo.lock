@@ -380,6 +380,7 @@ dependencies = [
  "kernel_guard",
  "lazy_init",
  "log",
+ "loongArch64",
  "memory_addr",
  "page_table",
  "page_table_entry",
@@ -1221,6 +1222,15 @@ name = "log"
 version = "0.4.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b06a4cde4c0f271a446782e3eff8de789548ce57dbc8eca9292c27f4a42004b4"
+
+[[package]]
+name = "loongArch64"
+version = "0.2.1"
+source = "git+https://github.com/Godones/loongArch64#46f5ceccb0e291f632b914ce83cee217e2a64246"
+dependencies = [
+ "bit_field",
+ "bitflags 1.3.2",
+]
 
 [[package]]
 name = "managed"

@@ -1,0 +1,40 @@
+# Architecture identifier.
+arch = "loongarch64"
+# Platform identifier.
+platform = "loongarch64-2k1000"
+# Platform family.
+family = "loongarch64-2k1000"
+
+# Base address of the whole physical memory.
+phys-memory-base = "0x0"
+# Size of the whole physical memory.
+phys-memory-size = "0x800_0000"     # 128M
+# Base physical address of the kernel image.
+kernel-base-paddr = "0x0200_0000"
+# Base virtual address of the kernel image.
+kernel-base-vaddr = "0x9000_0000_0200_0000"
+# Linear mapping offset, for quick conversions between physical and virtual
+# addresses.
+phys-virt-offset = "0x9000_0000_0000_0000"
+# MMIO regions with format (`base_paddr`, `size`).
+mmio-regions = [
+    ["0x1800_0000", "0x0200_0000"],  # PCI memory ranges
+    ["0x1fe2_0000", "0xf"], # uart0
+    ["0x6000_0000", "0x2000_0000"],  # PCI memory ranges
+    ["0xfe_0000_0000", "0x2000_0000"]  # PCI config space
+]
+# VirtIO MMIO regions with format (`base_paddr`, `size`).
+virtio-mmio-regions = [
+]
+# Base physical address of the PCIe ECAM space.
+pci-ecam-base = "0xfe_0000_0000"
+# End PCI bus number (`bus-range` property in device tree).
+# 0x20000000
+pci-bus-end = "0x7f"
+# Timer interrupt frequency in Hz.
+timer-frequency = "100_000_000"      # 100MHz
+
+# Base Address for UART
+uart-base-addr = "0x800000001FE20000"
+
+

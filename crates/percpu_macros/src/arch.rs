@@ -33,6 +33,12 @@ pub fn gen_offset(symbol: &Ident) -> proc_macro2::TokenStream {
                 out(reg) value,
                 VAR = sym #symbol,
             );
+            #[cfg(any(target_arch = "loongarch64"))]
+            ::core::arch::asm!(
+                "la.abs {0}, {VAR}",
+                out(reg) value,
+                VAR = sym #symbol,
+            );
         }
         value
     }
@@ -58,6 +64,8 @@ pub fn gen_current_ptr(symbol: &Ident, ty: &Type) -> proc_macro2::TokenStream {
             ::core::arch::asm!("mrs {}, TPIDR_EL1", out(reg) base);
             #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
             ::core::arch::asm!("mv {}, gp", out(reg) base);
+            #[cfg(any(target_arch = "loongarch64"))]
+            ::core::arch::asm!("move {}, $r21", out(reg) base);
             (base + self.offset()) as *const #ty
         }
     })

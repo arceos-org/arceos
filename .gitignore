@@ -2,7 +2,12 @@
 /.vscode
 .DS_Store
 *.asm
-*.img
+disk.img
 actual.out
 qemu.log
 rusty-tags.vi
+.idea
+*.log
+*.bin.gz
+uImage
+riscv64-linux-musl-cross/

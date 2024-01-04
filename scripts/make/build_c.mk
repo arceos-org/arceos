@@ -29,6 +29,8 @@ ifeq ($(ARCH), x86_64)
   LDFLAGS += --no-relax
 else ifeq ($(ARCH), riscv64)
   CFLAGS += -march=rv64gc -mabi=lp64d -mcmodel=medany
+else ifeq ($(ARCH), loongarch64)
+  CFLAGS += -mstrict-align -msoft-float -mno-relax
 endif
 
 ifeq ($(findstring fp_simd,$(FEATURES)),)
@@ -56,8 +58,15 @@ $(obj_dir):
 $(obj_dir)/%.o: $(src_dir)/%.c $(last_cflags)
 	$(call run_cmd,$(CC),$(CFLAGS) -c -o $@ $<)
 
+ifeq ($(ARCH), loongarch64)
+$(c_lib): $(obj_dir) _check_need_rebuild $(ulib_obj)
+	$(call run_cmd,cp,tools/loongarch64/libgcc.a $(c_lib))
+	$(call run_cmd,$(AR),rcs $@ $(ulib_obj))
+else
 $(c_lib): $(obj_dir) _check_need_rebuild $(ulib_obj)
 	$(call run_cmd,$(AR),rcs $@ $(ulib_obj))
+endif
+
 
 app-objs := main.o
 
