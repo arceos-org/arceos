@@ -14,7 +14,7 @@ runs:
     uses: actions/cache/restore@v3
     with:
       path: qemu_build
-      key: qemu-${{ inputs.qemu-version }}
+      key: qemu-${{ inputs.qemu-version }}-slirp
   - name: Download and build QEMU
     if: steps.cache-qemu.outputs.cache-hit != 'true'
     env:
@@ -32,7 +32,7 @@ runs:
     if: steps.cache-qemu.outputs.cache-hit != 'true'
     with:
       path: qemu_build
-      key: qemu-${{ inputs.qemu-version }}
+      key: qemu-${{ inputs.qemu-version }}-slirp
 
   - name: Install QEMU
     shell: bash
