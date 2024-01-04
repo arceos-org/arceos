@@ -25,6 +25,8 @@ else ifeq ($(filter $(MAKECMDGOALS),clippy unittest unittest_no_fail_fast),) # n
   endif
   ifeq ($(APP_TYPE), c)
     $(if $(V), $(info CFLAGS: "$(CFLAGS)") $(info LDFLAGS: "$(LDFLAGS)"))
+    $(if $(V), $(info RUSTFLAGS: "$(RUSTFLAGS)"))
+    export RUSTFLAGS
   else
     $(if $(V), $(info RUSTFLAGS: "$(RUSTFLAGS)"))
     export RUSTFLAGS

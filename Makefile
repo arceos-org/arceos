@@ -110,7 +110,7 @@ else ifeq ($(ARCH), aarch64)
 else ifeq ($(ARCH), loongarch64)
   ACCEL ?= n
   PLATFORM_NAME ?= loongarch64-qemu-virt
-  TARGET := loongarch64-unknown-none
+  TARGET := loongarch64-unknown-none-softfloat
   BUS := pci
 else
   $(error "ARCH" must be one of "x86_64", "riscv64", "aarch64" or "loongarch64")
@@ -134,8 +134,8 @@ export AX_GW=$(GW)
 # Binutils
 CROSS_COMPILE ?= $(ARCH)-linux-musl-
 ifeq ($(ARCH), loongarch64)
-	CROSS_COMPILE := $(ARCH)-unknown-linux-gnu-
-  # CROSS_COMPILE := $(ARCH)-linux-gnu-
+	CROSS_COMPILE := $(ARCH)-linux-gnu-
+  # CROSS_COMPILE := $(ARCH)-unknown-linux-gnu-
 endif
 CC := $(CROSS_COMPILE)gcc
 AR := $(CROSS_COMPILE)ar
@@ -188,8 +188,8 @@ debug: build
 	sleep 1
 	$(GDB) $(OUT_ELF) \
 	  -ex 'target remote localhost:1234' \
-	  -ex 'b *0x9000000000001000' \
-    -ex 'b *0x1000' \
+	  -ex 'b rust_entry' \
+    -ex 'continue' \
 	  -ex 'disp /16i $$pc'
 
 clippy:

@@ -29,6 +29,8 @@ ifeq ($(ARCH), x86_64)
   LDFLAGS += --no-relax
 else ifeq ($(ARCH), riscv64)
   CFLAGS += -march=rv64gc -mabi=lp64d -mcmodel=medany
+else ifeq ($(ARCH), loongarch64)
+  CFLAGS += -mstrict-align -msoft-float -mno-relax
 endif
 
 ifeq ($(findstring fp_simd,$(FEATURES)),)
