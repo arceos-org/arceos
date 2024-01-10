@@ -22,7 +22,7 @@ runs:
       PREFIX: ${{ github.workspace }}/qemu_build
     shell: bash
     run: |
-      sudo apt-get update && sudo apt-get install -y ninja-build
+      sudo apt-get update && sudo apt-get install -y ninja-build libslirp-dev
       wget https://download.qemu.org/$QEMU_PATH.tar.xz && tar -xJf $QEMU_PATH.tar.xz
       cd $QEMU_PATH \
         && ./configure --prefix=$PREFIX --target-list=x86_64-softmmu,riscv64-softmmu,aarch64-softmmu --enable-slirp \
