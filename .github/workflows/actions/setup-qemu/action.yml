@@ -14,7 +14,7 @@ runs:
     uses: actions/cache/restore@v3
     with:
       path: qemu_build
-      key: qemu-${{ inputs.qemu-version }}-slirp
+      key: qemu-${{ inputs.qemu-version }}-slirp-1
   - name: Download and build QEMU
     if: steps.cache-qemu.outputs.cache-hit != 'true'
     env:
