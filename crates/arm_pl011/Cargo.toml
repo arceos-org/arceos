@@ -11,3 +11,4 @@ documentation = "https://rcore-os.github.io/arceos/arm_pl011/index.html"
 
 [dependencies]
 tock-registers = "0.8"
+driver_common = {path = "../../crates/driver_common" }

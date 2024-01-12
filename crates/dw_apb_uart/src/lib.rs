@@ -2,6 +2,8 @@
 //! Uart snps,dw-apb-uart driver in Rust for BST A1000b FADA board.
 #![no_std]
 
+use driver_common::UartDriver;
+
 use tock_registers::{
     interfaces::{Readable, Writeable},
     register_structs,
@@ -44,8 +46,11 @@ impl DW8250 {
         unsafe { &*(self.base_vaddr as *const _) }
     }
 
+}
+
+impl UartDriver for DW8250 {
     /// DW8250 initialize
-    pub fn init(&mut self) {
+    fn init(&self) {
         const UART_SRC_CLK: u32 = 25000000;
         const BST_UART_DLF_LEN: u32 = 6;
         const BAUDRATE: u32 = 115200;
@@ -87,7 +92,7 @@ impl DW8250 {
     }
 
     /// DW8250 serial output
-    pub fn putchar(&mut self, c: u8) {
+    fn putchar(&self, c: u8) {
         // Check LSR_TEMT
         // Wait for last character to go.
         while self.regs().lsr.get() & (1 << 6) == 0 {}
@@ -95,7 +100,7 @@ impl DW8250 {
     }
 
     /// DW8250 serial input
-    pub fn getchar(&mut self) -> Option<u8> {
+    fn getchar(&self) -> Option<u8> {
         // Check LSR_DR
         // Wait for a character to arrive.
         if self.regs().lsr.get() & 0b1 != 0 {
@@ -106,7 +111,7 @@ impl DW8250 {
     }
 
     /// DW8250 serial interrupt enable or disable
-    pub fn set_ier(&mut self, enable: bool) {
+    fn set_ier(&self, enable: bool) {
         if enable {
             // Enable interrupts
             self.regs().ier.set(1);

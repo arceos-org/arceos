@@ -62,3 +62,13 @@ pub trait BaseDriverOps: Send + Sync {
     /// The type of the device.
     fn device_type(&self) -> DeviceType;
 }
+
+/// Common operations that require all Uart drivers to implement.
+pub trait UartDriver: Sync {
+    fn init(&self);
+    fn putchar(&self, c: u8);
+    fn getchar(&self) -> Option<u8>;
+    fn set_ier(&self, _: bool) {}
+    fn is_receive_interrupt(&self) -> bool {false}
+    fn ack_interrupts(&self) {}
+}

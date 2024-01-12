@@ -3,6 +3,7 @@
 //! The official documentation: <https://developer.arm.com/documentation/ddi0183/latest>
 
 use core::ptr::NonNull;
+use driver_common::UartDriver;
 
 use tock_registers::{
     interfaces::{Readable, Writeable},
@@ -50,22 +51,11 @@ pub struct Pl011Uart {
 unsafe impl Send for Pl011Uart {}
 unsafe impl Sync for Pl011Uart {}
 
-impl Pl011Uart {
-    /// Constrcut a new Pl011 UART instance from the base address.
-    pub const fn new(base: *mut u8) -> Self {
-        Self {
-            base: NonNull::new(base).unwrap().cast(),
-        }
-    }
-
-    const fn regs(&self) -> &Pl011UartRegs {
-        unsafe { self.base.as_ref() }
-    }
-
+impl UartDriver for Pl011Uart {
     /// Initializes the Pl011 UART.
     ///
     /// It clears all irqs, sets fifo trigger level, enables rx interrupt, enables receives
-    pub fn init(&mut self) {
+    fn init(&self) {
         // clear all irqs
         self.regs().icr.set(0x7ff);
 
@@ -80,13 +70,13 @@ impl Pl011Uart {
     }
 
     /// Output a char c to data register
-    pub fn putchar(&mut self, c: u8) {
+    fn putchar(&self, c: u8) {
         while self.regs().fr.get() & (1 << 5) != 0 {}
         self.regs().dr.set(c as u32);
     }
 
     /// Return a byte if pl011 has received, or it will return `None`.
-    pub fn getchar(&mut self) -> Option<u8> {
+    fn getchar(&self) -> Option<u8> {
         if self.regs().fr.get() & (1 << 4) == 0 {
             Some(self.regs().dr.get() as u8)
         } else {
@@ -95,13 +85,27 @@ impl Pl011Uart {
     }
 
     /// Return true if pl011 has received an interrupt
-    pub fn is_receive_interrupt(&self) -> bool {
+    fn is_receive_interrupt(&self) -> bool {
         let pending = self.regs().mis.get();
         pending & (1 << 4) != 0
     }
 
     /// Clear all interrupts
-    pub fn ack_interrupts(&mut self) {
+    fn ack_interrupts(&self) {
         self.regs().icr.set(0x7ff);
     }
+}
+
+impl Pl011Uart {
+    /// Constrcut a new Pl011 UART instance from the base address.
+    pub const fn new(base: *mut u8) -> Self {
+        Self {
+            base: NonNull::new(base).unwrap().cast(),
+        }
+    }
+
+    const fn regs(&self) -> &Pl011UartRegs {
+        unsafe { self.base.as_ref() }
+    }
+
 }

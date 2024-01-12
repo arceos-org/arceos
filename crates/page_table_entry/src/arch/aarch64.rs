@@ -183,6 +183,10 @@ impl A64PTE {
     pub const fn empty() -> Self {
         Self(0)
     }
+
+    pub fn is_empty(self) -> bool {
+        self.0 == 0
+    }
 }
 
 impl GenericPTE for A64PTE {

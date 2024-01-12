@@ -11,3 +11,4 @@ description = "Uart snps,dw-apb-uart driver in Rust for BST A1000b FADA board."
 
 [dependencies]
 tock-registers = "0.8"
+driver_common = { path = "../../crates/driver_common"}

@@ -224,6 +224,7 @@ dependencies = [
 name = "arm_pl011"
 version = "0.1.0"
 dependencies = [
+ "driver_common",
  "tock-registers",
 ]
 
@@ -375,12 +376,16 @@ dependencies = [
  "bitflags 2.4.0",
  "cfg-if",
  "crate_interface",
+ "driver_common",
  "dw_apb_uart",
+ "either",
  "handler_table",
  "kernel_guard",
  "lazy_init",
+ "lazy_static",
  "log",
  "memory_addr",
+ "of",
  "page_table",
  "page_table_entry",
  "percpu",
@@ -458,6 +463,7 @@ dependencies = [
  "axnet",
  "axtask",
  "crate_interface",
+ "fdt",
  "kernel_guard",
  "lazy_init",
  "percpu",
@@ -918,6 +924,7 @@ dependencies = [
 name = "dw_apb_uart"
 version = "0.1.0"
 dependencies = [
+ "driver_common",
  "tock-registers",
 ]
 
@@ -995,6 +1002,12 @@ dependencies = [
  "bitflags 1.3.2",
  "log",
 ]
+
+[[package]]
+name = "fdt"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "784a4df722dc6267a04af36895398f59d21d07dce47232adf31ec0ff2fa45e67"
 
 [[package]]
 name = "flatten_objects"
@@ -1301,6 +1314,14 @@ checksum = "4161fcb6d602d4d2081af7c3a45852d875a03dd337a6bfdd6e06407b61342a43"
 dependencies = [
  "hermit-abi",
  "libc",
+]
+
+[[package]]
+name = "of"
+version = "0.1.0"
+dependencies = [
+ "fdt",
+ "lazy_static",
 ]
 
 [[package]]

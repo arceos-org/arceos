@@ -48,3 +48,6 @@ pub fn platform_init_secondary() {
     self::irq::init_percpu();
     self::time::init_percpu();
 }
+pub fn platform_name() -> &'static str {
+    "riscv64_qemu_virt"
+}
