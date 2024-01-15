@@ -24,6 +24,7 @@ mmio-regions = [
     ["0x33002000", "0x1000"], # Top CRM
     ["0x70035000", "0x1000"], # CRM reg
     ["0x70038000", "0x1000"], # aon pinmux
+    ["0x1ce7e9000", "0x200000"], # dtb
 ]
 
 virtio-mmio-regions = []

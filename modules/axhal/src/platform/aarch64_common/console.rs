@@ -6,7 +6,6 @@ use spinlock::SpinNoIrq;
 use dw_apb_uart::DW8250;
 use arm_pl011::pl011::Pl011Uart;
 use driver_common::UartDriver;
-use crate::console::write_bytes;
 
 const UART_BASE: PhysAddr = PhysAddr::from(axconfig::UART_PADDR);
 
@@ -16,7 +15,7 @@ static DRIVER_PL011: Pl011Uart = Pl011Uart::new(phys_to_virt(UART_BASE).as_mut_p
 lazy_static::lazy_static! {
     static ref MACHINE: &'static str = of::machin_name();
     static ref UART: SpinNoIrq<&'static dyn UartDriver> = {
-        if MACHINE.contains("bst") {
+        if MACHINE.contains("BST") {
             SpinNoIrq::new(&DRIVER_8250)
         } else {
             SpinNoIrq::new(&DRIVER_PL011)
@@ -59,13 +58,14 @@ fn init_pl011_irq() {
     #[cfg(feature = "irq")]
     crate::irq::set_enable(crate::platform::irq::UART_IRQ_NUM, true);
 }
+
 /// Set UART IRQ Enable
 #[cfg(feature = "irq")]
 pub fn init_irq() {
-    if MACHINE.contains("bst") {
+    if MACHINE.contains("BST") {
         init_8250_irq();
     } else {
-        init_pl011_irq();
+       init_pl011_irq();
     }
 }
 

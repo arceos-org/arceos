@@ -36,6 +36,7 @@ pub(crate) unsafe extern "C" fn rust_entry(cpu_id: usize, dtb: usize) {
     crate::cpu::init_primary(cpu_id);
 
     // init fdt
+    crate::platform::mem::idmap_device(dtb);
     of::init_fdt_ptr(phys_to_virt(dtb.into()).as_usize() as *const u8);
 
     self::console::console_early_init();

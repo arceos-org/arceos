@@ -74,13 +74,28 @@ pub(crate) unsafe fn idmap_kernel(kernel_phys_addr: usize) {
 
     // 0x0000_0000_0000 ~ 0x0080_0000_0000, table
     BOOT_PT_L0[0] = A64PTE::new_table(PhysAddr::from(BOOT_PT_L1.as_ptr() as usize));
-
-    // 1G block, kernel img, include dtb
+    
+    // 1G block, kernel img
     BOOT_PT_L1[l1_index] = A64PTE::new_page(
         PhysAddr::from(aligned_address),
         MappingFlags::READ | MappingFlags::WRITE | MappingFlags::EXECUTE,
         true,
     );
+/*
+    // 0x0000_0000_0000..0x0000_4000_0000, 1G block, device memory
+    BOOT_PT_L1[0] = A64PTE::new_page(
+        PhysAddr::from(0),
+        MappingFlags::READ | MappingFlags::WRITE | MappingFlags::DEVICE,
+        true,
+    );
+
+    // 1G block, device memory
+    BOOT_PT_L1[1] = A64PTE::new_page(
+        PhysAddr::from(0x40000000),
+        MappingFlags::READ | MappingFlags::WRITE | MappingFlags::DEVICE,
+        true,
+    );
+*/
 }
 
 pub(crate) unsafe fn idmap_device(phys_addr: usize) {
