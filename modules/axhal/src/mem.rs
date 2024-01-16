@@ -72,21 +72,10 @@ pub const fn phys_to_virt(paddr: PhysAddr) -> VirtAddr {
 
 /// Returns an iterator over all physical memory regions.
 pub fn memory_regions() -> impl Iterator<Item = MemRegion> {
-    kernel_image_regions().chain(crate::platform::mem::platform_regions())
+    kernel_image_regions()
+        .chain(crate::platform::mem::platform_regions())
 }
 
-pub const FDT_SIZE:usize = 0x20000;
-
-fn fdt_region(phy_addr: usize) -> impl Iterator<Item = MemRegion> {
-    [
-        MemRegion {
-        paddr: PhysAddr::from(phy_addr),
-        size: FDT_SIZE,
-        flags: MemRegionFlags::RESERVED
-            | MemRegionFlags::READ,
-        name: "fdt",
-    }].into_iter()
-}
 
 /// Returns the memory regions of the kernel image (code and data sections).
 fn kernel_image_regions() -> impl Iterator<Item = MemRegion> {

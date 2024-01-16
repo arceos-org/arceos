@@ -4,6 +4,7 @@ use tock_registers::interfaces::{ReadWriteable, Writeable};
 use page_table_entry::aarch64::{MemAttr, A64PTE};
 use page_table_entry::{GenericPTE, MappingFlags};
 use crate::mem::{MemRegion, PhysAddr, MemRegionFlags};
+use crate::mem::virt_to_phys;
 
 use either::{Either, Left, Right};
 
@@ -17,14 +18,78 @@ pub(crate) fn platform_regions() -> impl Iterator<Item = MemRegion> {
                 flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
                 name: "spintable",
             })
-            .chain(crate::mem::default_free_regions())
+            .chain(core::iter::once(fdt_region()))
+            .chain(free_regions())
             .chain(crate::mem::default_mmio_regions())
         )
     } else {
-        Right(crate::mem::default_free_regions().chain(crate::mem::default_mmio_regions()))
+        Right(
+            core::iter::once(fdt_region())
+            .chain(free_regions())
+            .chain(crate::mem::default_mmio_regions())
+        )
+    };
+    iterator.into_iter()
+}
+
+fn split_region(region: MemRegion, region2: &MemRegion) -> Either<[MemRegion; 2], [MemRegion; 1]> {
+    let start1  = region.paddr.as_usize();
+    let end1 = region.paddr.as_usize() + region.size;
+
+    let start2 = region2.paddr.as_usize();
+    let end2 = region2.paddr.as_usize() + region2.size;
+
+    if start1 <= start2 && end1 >= end2 {
+        Left([
+            MemRegion {
+                paddr: region.paddr,
+                size: start2 - start1,
+                flags:MemRegionFlags::FREE | MemRegionFlags::READ | MemRegionFlags::WRITE,
+                name: region.name,
+            },
+            MemRegion {
+                paddr: PhysAddr::from(end2),
+                size:  end1 - end2,
+                flags: MemRegionFlags::FREE | MemRegionFlags::READ | MemRegionFlags::WRITE,
+                name: region.name,
+            }
+        ])
+    } else {
+        Right([region])
+    }
+}
+
+// Free mem regions equal memory minus kernel and fdt region
+fn free_regions() -> impl Iterator<Item = MemRegion> {
+    let all_mem = of::memory_nodes().flat_map(|m|
+        m.regions().map(|r|
+                MemRegion {
+                    paddr: PhysAddr::from(r.starting_address as usize).align_up_4k(),
+                    size: r.size.unwrap(),
+                    flags:MemRegionFlags::FREE | MemRegionFlags::READ | MemRegionFlags::WRITE,
+                    name: "free memory",
+                })
+    );
+
+    let hack_k_region = MemRegion {
+                    paddr:  virt_to_phys((_stext as usize).into()).align_up_4k(),
+                    size:  _ekernel as usize - _stext as usize,
+                    flags: MemRegionFlags::FREE,
+                    name: "kernel memory",
     };
 
-    iterator.into_iter()
+    let filter_kernel_mem = all_mem.map(move |m| split_region(m, &hack_k_region).into_iter()).flatten();
+    filter_kernel_mem.map(move |m| split_region(m, &fdt_region()).into_iter()).flatten()
+}
+
+fn fdt_region() -> MemRegion {
+    let fdt_ptr = of::get_fdt_ptr();
+    MemRegion {
+        paddr: virt_to_phys((fdt_ptr.unwrap() as usize).into()).align_up_4k(),
+        size: of::fdt_size(),
+        flags: MemRegionFlags::RESERVED | MemRegionFlags::READ,
+        name: "fdt reserved",
+    }
 }
 
 #[link_section = ".data.boot_page_table"]
@@ -81,21 +146,6 @@ pub(crate) unsafe fn idmap_kernel(kernel_phys_addr: usize) {
         MappingFlags::READ | MappingFlags::WRITE | MappingFlags::EXECUTE,
         true,
     );
-/*
-    // 0x0000_0000_0000..0x0000_4000_0000, 1G block, device memory
-    BOOT_PT_L1[0] = A64PTE::new_page(
-        PhysAddr::from(0),
-        MappingFlags::READ | MappingFlags::WRITE | MappingFlags::DEVICE,
-        true,
-    );
-
-    // 1G block, device memory
-    BOOT_PT_L1[1] = A64PTE::new_page(
-        PhysAddr::from(0x40000000),
-        MappingFlags::READ | MappingFlags::WRITE | MappingFlags::DEVICE,
-        true,
-    );
-*/
 }
 
 pub(crate) unsafe fn idmap_device(phys_addr: usize) {
@@ -109,4 +159,9 @@ pub(crate) unsafe fn idmap_device(phys_addr: usize) {
             true,
         );
     }
+}
+
+extern "C" {
+    fn _stext();
+    fn _ekernel();
 }

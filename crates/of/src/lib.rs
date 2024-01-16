@@ -3,15 +3,19 @@
 
 #![no_std]
 
-pub const FDT_SIZE:usize = 0x200000;  // 2MB
-
 pub struct MachineFdt<'a>(fdt::Fdt<'a>);
+pub mod kernel_nodes;
+pub use kernel_nodes::*;
 
 static mut MY_FDT_PTR: Option<*const u8> = None;
 
 lazy_static::lazy_static! {
     static ref MY_MACHINE_FDT: MachineFdt<'static> = 
         unsafe {init_from_ptr(MY_FDT_PTR.unwrap())};
+}
+
+pub fn get_fdt_ptr() -> Option<*const u8> {
+    unsafe  {MY_FDT_PTR}
 }
 
 pub unsafe fn init_fdt_ptr(virt_addr: *const u8) {
@@ -47,4 +51,12 @@ pub fn find_compatible_node(with: &'static[&'static str]) -> impl Iterator<Item 
 
 pub fn bootargs() -> Option<&'static str> {
     MY_MACHINE_FDT.0.chosen().bootargs()
+}
+
+pub fn fdt_size() -> usize {
+    MY_MACHINE_FDT.0.total_size()
+}
+
+pub fn memory_nodes() -> impl Iterator<Item = Memory> {
+     MY_MACHINE_FDT.0.find_all_nodes("/memory").map(|m|kernel_nodes::Memory {node:m})
 }
