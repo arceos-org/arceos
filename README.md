@@ -179,6 +179,11 @@ make PLATFORM=aarch64-raspi4 A=apps/fs/shell FEATURES=driver-bcm2835-sdhci
 make PLATFORM=x86_64-pc-oslab A=apps/c/redis FEATURES=driver-ixgbe,driver-ramdisk SMP=4
 ```
 
+```bash
+# Build the shell app for bsta1000b, and use the ramdisk driver
+make A=apps/fs/shell PLATFORM=aarch64-bsta1000b LOG=info SMP=8 FEATURES="driver-ramdisk,irq" fada
+```
+
 ## Design
 
 ![](doc/figures/ArceOS.svg)
