@@ -36,9 +36,9 @@ LOG ?= off
 V ?=
 
 # App options
-A ?= apps/helloworld
+A ?= apps/oscomp
 APP ?= $(A)
-FEATURES ?=
+FEATURES ?= fp_simd
 APP_FEATURES ?=
 RUSTFLAGS ?=
 STRUCT ?= Unikernel
