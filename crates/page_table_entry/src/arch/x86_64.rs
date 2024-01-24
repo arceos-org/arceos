@@ -68,6 +68,10 @@ impl GenericPTE for X64PTE {
         }
         Self(flags.bits() | (paddr.as_usize() as u64 & Self::PHYS_ADDR_MASK))
     }
+    fn new_fault_page(_is_huge: bool) -> Self {
+        let flags = PTF::ACCESSED | PTF::DIRTY;
+        Self(flags.bits())
+    }
     fn new_table(paddr: PhysAddr) -> Self {
         let flags = PTF::PRESENT | PTF::WRITABLE | PTF::USER_ACCESSIBLE;
         Self(flags.bits() | (paddr.as_usize() as u64 & Self::PHYS_ADDR_MASK))

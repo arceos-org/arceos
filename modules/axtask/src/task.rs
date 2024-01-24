@@ -19,9 +19,6 @@ use axhal::arch::TaskContext;
 use memory_addr::{align_up_4k, VirtAddr};
 
 #[cfg(feature = "monolithic")]
-core::arch::global_asm!(include_str!("copy.S"));
-
-#[cfg(feature = "monolithic")]
 use axhal::arch::TrapFrame;
 
 use crate::stat::TimeStat;
@@ -346,14 +343,11 @@ impl TaskInner {
     /// 注意此时保持sp不变
     /// 返回值为压入了trap之后的内核栈的栈顶，可以用于多层trap压入
     pub fn set_trap_in_kernel_stack(&self) {
-        extern "C" {
-            pub fn __copy(frame_address: *mut TrapFrame, kernel_base: usize);
-        }
         let trap_frame_size = core::mem::size_of::<TrapFrame>();
         let frame_address = self.trap_frame.get();
         let kernel_base = self.get_kernel_stack_top().unwrap() - trap_frame_size;
         unsafe {
-            __copy(frame_address, kernel_base);
+            *(kernel_base as *mut TrapFrame) = *frame_address;
         }
     }
     /// 设置CPU set，其中set_size为bytes长度
@@ -383,6 +377,12 @@ impl TaskInner {
         unsafe { *status }
     }
 
+    pub fn get_ctx(&self) -> &TaskContext {
+        unsafe {
+            self.ctx.get().as_ref().unwrap()
+        }
+    }
+
     #[cfg(feature = "signal")]
     pub fn get_sig_child(&self) -> bool {
         self.send_sigchld_when_exit
@@ -391,6 +391,11 @@ impl TaskInner {
     #[cfg(feature = "signal")]
     pub fn set_sig_child(&mut self, sig_child: bool) {
         self.send_sigchld_when_exit = sig_child;
+    }
+
+    #[cfg(target_arch = "x86_64")]
+    pub unsafe fn set_tls_force(&self, value: usize) {
+        self.ctx.get().as_mut().unwrap().fs_base = value;
     }
 }
 
@@ -740,48 +745,90 @@ impl Deref for CurrentTask {
 ///
 /// 2. frame_base：对应即将压入内核栈的trap上下文的地址
 pub fn first_into_user(kernel_sp: usize, frame_base: usize) -> ! {
-    use axhal::arch::disable_irqs;
-
-    let trap_frame_size = core::mem::size_of::<TrapFrame>();
-    let kernel_base = kernel_sp - trap_frame_size;
+    use axhal::arch::{disable_irqs, flush_tlb};
     // 在保证将寄存器都存储好之后，再开启中断
     // 否则此时会因为写入csr寄存器过程中出现中断，导致出现异常
     disable_irqs();
-    // 在内核态中，tp寄存器存储的是当前任务的CPU ID
-    // 而当从内核态进入到用户态时，会将tp寄存器的值先存储在内核栈上，即把该任务对应的CPU ID存储在内核栈上
-    // 然后将tp寄存器的值改为对应线程的tls指针的值
-    // 因此在用户态中，tp寄存器存储的值是线程的tls指针的值
-    // 而当从用户态进入到内核态时，会先将内核栈上的值读取到某一个中间寄存器t0中，然后将tp的值存入内核栈
-    // 然后再将t0的值赋给tp，因此此时tp的值是当前任务的CPU ID
-    // 对应实现在axhal/src/arch/riscv/trap.S中
-    unsafe {
-        riscv::asm::sfence_vma_all();
-        core::arch::asm!(
-            r"
-            mv      sp, {frame_base}
-            .short  0x2432                      // fld fs0,264(sp)
-            .short  0x24d2                      // fld fs1,272(sp)
-            mv      t1, {kernel_base}
-            LDR     t0, sp, 2
-            STR     gp, t1, 2
-            mv      gp, t0
-            LDR     t0, sp, 3
-            STR     tp, t1, 3                   // save supervisor tp，注意是存储到内核栈上而不是sp中，此时存储的应该是当前运行的CPU的ID
-            mv      tp, t0                      // tp：本来存储的是CPU ID，在这个时候变成了对应线程的TLS 指针
-            csrw    sscratch, {kernel_sp}       // put supervisor sp to scratch
-            LDR     t0, sp, 31
-            LDR     t1, sp, 32
-            csrw    sepc, t0
-            csrw    sstatus, t1
-            POP_GENERAL_REGS
-            LDR     sp, sp, 1
-            sret
-        ",
-            frame_base = in(reg) frame_base,
-            kernel_sp = in(reg) kernel_sp,
-            kernel_base = in(reg) kernel_base,
-        );
-    };
+    flush_tlb(None);
+
+    let trap_frame_size = core::mem::size_of::<TrapFrame>();
+    let kernel_base = kernel_sp - trap_frame_size;
+
+    cfg_if::cfg_if! {
+        if #[cfg(target_arch = "x86_64")] {
+            axhal::set_tss_stack_top(VirtAddr::from(kernel_sp));
+            unsafe {
+                *(kernel_base as *mut TrapFrame) = *(frame_base as *const TrapFrame);
+                core::arch::asm!(
+                    r"
+                    mov     gs:[offset __PERCPU_KERNEL_RSP_OFFSET], {kernel_sp}
+
+                    mov      rsp, {kernel_base}
+
+                    pop rax
+                    pop rcx
+                    pop rdx
+                    pop rbx
+                    pop rbp
+                    pop rsi
+                    pop rdi
+                    pop r8
+                    pop r9
+                    pop r10
+                    pop r11
+                    pop r12
+                    pop r13
+                    pop r14
+                    pop r15
+                    add rsp, 16
+
+                    swapgs
+                    iretq
+                ",
+                    kernel_sp = in(reg) kernel_sp,
+                    kernel_base = in(reg) kernel_base,
+                );
+            };        
+        } else if #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))] {
+            // 在内核态中，tp寄存器存储的是当前任务的CPU ID
+            // 而当从内核态进入到用户态时，会将tp寄存器的值先存储在内核栈上，即把该任务对应的CPU ID存储在内核栈上
+            // 然后将tp寄存器的值改为对应线程的tls指针的值
+            // 因此在用户态中，tp寄存器存储的值是线程的tls指针的值
+            // 而当从用户态进入到内核态时，会先将内核栈上的值读取到某一个中间寄存器t0中，然后将tp的值存入内核栈
+            // 然后再将t0的值赋给tp，因此此时tp的值是当前任务的CPU ID
+            // 对应实现在axhal/src/arch/riscv/trap.S中
+            
+            unsafe {
+                core::arch::asm!(
+                    r"
+                    mv      sp, {frame_base}
+                    .short  0x2432                      // fld fs0,264(sp)
+                    .short  0x24d2                      // fld fs1,272(sp)
+                    mv      t1, {kernel_base}
+                    LDR     t0, sp, 2
+                    STR     gp, t1, 2
+                    mv      gp, t0
+                    LDR     t0, sp, 3
+                    STR     tp, t1, 3                   // save supervisor tp，注意是存储到内核栈上而不是sp中，此时存储的应该是当前运行的CPU的ID
+                    mv      tp, t0                      // tp：本来存储的是CPU ID，在这个时候变成了对应线程的TLS 指针
+                    csrw    sscratch, {kernel_sp}       // put supervisor sp to scratch
+                    LDR     t0, sp, 31
+                    LDR     t1, sp, 32
+                    csrw    sepc, t0
+                    csrw    sstatus, t1
+                    POP_GENERAL_REGS
+                    LDR     sp, sp, 1
+                    sret
+                ",
+                    frame_base = in(reg) frame_base,
+                    kernel_sp = in(reg) kernel_sp,
+                    kernel_base = in(reg) kernel_base,
+                );
+            };        
+        } else if #[cfg(target_arch = "aarch64")]{
+    
+        }
+    }
     core::panic!("already in user mode!")
 }
 
@@ -812,7 +859,6 @@ extern "C" fn task_entry() -> ! {
             else {
                 unsafe { Box::from_raw(entry)() };
             }
-
         }
     }
     // only for kernel task

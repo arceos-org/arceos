@@ -6,7 +6,7 @@ use alloc::vec::Vec;
 use alloc::{collections::BTreeMap, string::String};
 use axerrno::{AxError, AxResult};
 use axfs::api::{FileIO, OpenFlags};
-use axhal::arch::{write_page_table_root, TrapFrame};
+use axhal::arch::{flush_tlb, write_page_table_root, TrapFrame};
 use axhal::mem::{phys_to_virt, VirtAddr};
 use axhal::KERNEL_PROCESS_ID;
 use axlog::{debug, error};
@@ -154,6 +154,7 @@ impl Process {
         if page_table_token != 0 {
             unsafe {
                 write_page_table_root(page_table_token.into());
+                #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
                 riscv::register::sstatus::set_sum();
             };
         }
@@ -252,9 +253,7 @@ impl Process {
         // 不是直接删除原有地址空间，否则构建成本较高。
         self.memory_set.lock().unmap_user_areas();
         // 清空用户堆，重置堆顶
-        unsafe {
-            riscv::asm::sfence_vma_all();
-        }
+        flush_tlb(None);
 
         // 关闭 `CLOEXEC` 的文件
         // inner.fd_manager.close_on_exec();
@@ -264,6 +263,12 @@ impl Process {
         for _ in 0..tasks.len() {
             let task = tasks.pop().unwrap();
             if task.id() == current_task.id() {
+                // FIXME: This will reset tls forcefully
+                #[cfg(target_arch = "x86_64")]
+                unsafe { 
+                    task.set_tls_force(0); 
+                    axhal::arch::write_thread_pointer(0);
+                }
                 tasks.push(task);
             } else {
                 TID2TASK.lock().remove(&task.id().as_u64());
@@ -298,7 +303,7 @@ impl Process {
             // axhal::arch::write_page_table_root(page_table_token.into());
             unsafe {
                 write_page_table_root(page_table_token.into());
-                riscv::asm::sfence_vma_all();
+                flush_tlb(None);
             };
             // 清空用户堆，重置堆顶
         }
@@ -378,6 +383,12 @@ impl Process {
             #[cfg(feature = "signal")]
             sig_child,
         );
+        #[cfg(target_arch = "x86_64")]
+        if tls == 0 {
+            unsafe {
+                new_task.set_tls_force(axhal::arch::read_thread_pointer());
+            }
+        }
         debug!("new task:{}", new_task.id().as_u64());
         TID2TASK
             .lock()
@@ -522,18 +533,24 @@ impl Process {
         let current_task = current();
         // 复制原有的trap上下文
         let mut trap_frame = unsafe { *(current_task.get_first_trap_frame()) }.clone();
-        drop(current_task);
+        // drop(current_task);
         // 新开的进程/线程返回值为0
-        trap_frame.regs.a0 = 0;
+        // trap_frame.regs.a0 = 0;
+        trap_frame.set_ret(0);
         if flags.contains(CloneFlags::CLONE_SETTLS) {
-            trap_frame.regs.tp = tls;
+            #[cfg(not(target_arch = "x86_64"))]
+            trap_frame.set_tls(tls);
+            #[cfg(target_arch = "x86_64")]
+            unsafe {
+                new_task.set_tls_force(tls);
+            }
         }
         // 设置用户栈
         // 若给定了用户栈，则使用给定的用户栈
         // 若没有给定用户栈，则使用当前用户栈
         // 没有给定用户栈的时候，只能是共享了地址空间，且原先调用clone的有用户栈，此时已经在之前的trap clone时复制了
         if let Some(stack) = stack {
-            trap_frame.regs.sp = stack;
+            trap_frame.set_user_sp(stack)
             // info!(
             //     "New user stack: sepc:{:X}, stack:{:X}",
             //     trap_frame.sepc, trap_frame.regs.sp

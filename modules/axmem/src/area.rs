@@ -3,11 +3,10 @@ use axalloc::PhysPage;
 use axerrno::AxResult;
 use axhal::{
     mem::{virt_to_phys, VirtAddr, PAGE_SIZE_4K},
-    paging::{MappingFlags, PageSize, PageTable},
+    paging::{MappingFlags, PageSize, PageTable}, arch::flush_tlb,
 };
 use axio::{Seek, SeekFrom};
 use core::ptr::copy_nonoverlapping;
-use riscv::asm::sfence_vma;
 
 use crate::MemBackend;
 
@@ -157,9 +156,7 @@ impl MapArea {
                 self.flags,
             )
             .expect("Map in page fault handler failed");
-        unsafe {
-            sfence_vma(0, addr.align_down_4k().into());
-        }
+        flush_tlb(Some(addr));
         self.pages[page_index] = Some(page);
         true
     }

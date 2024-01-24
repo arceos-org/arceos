@@ -60,6 +60,16 @@ pub fn syscall_fstatat(dir_fd: usize, path: *const u8, kst: *mut Kstat) -> Sysca
     }
 }
 
+/// 获取文件状态信息
+pub fn syscall_lstat(path: *const u8, kst: *mut Kstat) -> SyscallResult {
+    syscall_fstatat(AT_FDCWD, path, kst)
+}
+
+/// 获取文件状态信息
+pub fn syscall_stat(path: *const u8, stat_ptr: *mut Kstat) -> SyscallResult {
+    syscall_fstatat(AT_FDCWD, path, stat_ptr)
+}
+
 /// 获取文件系统的信息
 pub fn syscall_statfs(path: *const u8, stat: *mut FsStat) -> SyscallResult {
     let file_path = deal_with_path(AT_FDCWD, Some(path), false).unwrap();

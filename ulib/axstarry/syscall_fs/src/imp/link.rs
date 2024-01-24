@@ -8,7 +8,7 @@ use axprocess::link::{create_link, deal_with_path, remove_link, FilePath};
 use syscall_utils::{SyscallError, SyscallResult};
 
 // Special value used to indicate openat should use the current working directory.
-const AT_REMOVEDIR: usize = 0x200; // Remove directory instead of unlinking file.
+pub const AT_REMOVEDIR: usize = 0x200; // Remove directory instead of unlinking file.
 
 /// 功能：创建文件的链接；
 /// 输入：
@@ -41,6 +41,14 @@ pub fn sys_linkat(
     } else {
         Err(SyscallError::EINVAL)
     }
+}
+
+/// 功能：移除指定文件的链接
+/// 输入：
+///     - path：要删除的链接的名字。
+/// 返回值：成功执行，返回0。失败，返回-1。
+pub fn syscall_unlink(path: *const u8) -> SyscallResult {
+    syscall_unlinkat(axprocess::link::AT_FDCWD, path, 0)
 }
 
 /// 功能：移除指定文件的链接(可用于删除文件)；

@@ -79,5 +79,8 @@ pub mod mp {
 
 pub use self::platform::platform_init;
 
+#[cfg(all(target_arch = "x86_64", platform_family = "x86-pc"))]
+pub use self::platform::set_tss_stack_top;
+
 #[cfg(feature = "smp")]
 pub use self::platform::platform_init_secondary;

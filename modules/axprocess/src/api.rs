@@ -7,6 +7,7 @@ use alloc::{
     vec::Vec,
 };
 use axerrno::{AxError, AxResult};
+use axhal::arch::flush_tlb;
 use axhal::mem::VirtAddr;
 use axhal::paging::MappingFlags;
 use axhal::KERNEL_PROCESS_ID;
@@ -190,7 +191,7 @@ pub fn handle_page_fault(addr: VirtAddr, flags: MappingFlags) {
     axlog::debug!("'page fault' addr: {:?}, flags: {:?}", addr, flags);
     let current_process = current_process();
     axlog::debug!(
-        "memory token : {}",
+        "memory token : {:#x}",
         current_process.memory_set.lock().page_table_token()
     );
 
@@ -200,7 +201,8 @@ pub fn handle_page_fault(addr: VirtAddr, flags: MappingFlags) {
         .handle_page_fault(addr, flags)
         .is_ok()
     {
-        unsafe { riscv::asm::sfence_vma_all() };
+        // Change flush all memory to just the error page addr.
+        flush_tlb(Some(addr));
     } else {
         #[cfg(feature = "signal")]
         let _ = send_signal_to_thread(current().id().as_u64() as isize, SignalNo::SIGSEGV as isize);
@@ -278,4 +280,9 @@ pub fn current_task() -> CurrentTask {
 pub fn set_child_tid(tid: usize) {
     let curr = current_task();
     curr.set_clear_child_tid(tid);
+}
+
+#[crate_interface::def_interface]
+pub trait KernelPageTable {
+    fn switch(&self);
 }

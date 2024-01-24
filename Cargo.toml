@@ -90,6 +90,9 @@ members = [
 [profile.release]
 lto = true
 
+[profile.dev]
+lto = true
+
 [patch.crates-io]
 crate_interface = { path = "crates/crate_interface" }
 

@@ -127,6 +127,17 @@ pub fn task_syscall(syscall_id: task_syscall_id::TaskSyscallId, args: [usize; 6]
             args[3] as *mut TimeSecs,
         ),
         SOCKETPAIR => Err(SyscallError::EAFNOSUPPORT),
+        // syscall below just for x86_64 
+        #[cfg(target_arch = "x86_64")]
+        ARCH_PRCTL => syscall_arch_prctl(args[0], args[1]),
+        #[cfg(target_arch = "x86_64")]
+        FORK => syscall_fork(),
+        #[cfg(target_arch = "x86_64")]
+        GETPGID => syscall_getpgid(),
+        #[cfg(target_arch = "x86_64")]
+        SETPGID => syscall_setpgid(),
+        #[cfg(target_arch = "x86_64")]
+        ALARM => Ok(0),
         #[allow(unused)]
         _ => {
             panic!("Invalid Syscall Id: {:?}!", syscall_id);

@@ -1,6 +1,8 @@
 mod context;
 mod gdt;
 mod idt;
+#[cfg(feature = "monolithic")]
+mod syscall;
 
 #[cfg(target_os = "none")]
 mod trap;
@@ -20,7 +22,9 @@ pub use x86_64::structures::tss::TaskStateSegment;
 #[inline]
 pub fn enable_irqs() {
     #[cfg(target_os = "none")]
-    interrupts::enable()
+    interrupts::enable();
+    #[cfg(feature = "monolithic")]
+    syscall::init_syscall();
 }
 
 /// Makes the current CPU to ignore interrupts.

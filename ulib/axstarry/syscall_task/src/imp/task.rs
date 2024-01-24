@@ -15,7 +15,7 @@ use axprocess::{
 //     monolithic_task::task::{SchedPolicy, SchedStatus},
 //     AxTaskRef,
 // };
-use axlog::info;
+use axlog::{info, warn};
 use axtask::TaskId;
 use syscall_utils::{SyscallError, SyscallResult};
 extern crate alloc;
@@ -137,12 +137,23 @@ pub fn syscall_exec(
     Ok(argc as isize)
 }
 
+
+// FIXME: This below is just before 
+// pub fn syscall_clone(
+//     flags: usize,
+//     user_stack: usize,
+//     ptid: usize,
+//     tls: usize,
+//     ctid: usize,
+// ) -> SyscallResult {
+// This is for x86_64
 pub fn syscall_clone(
     flags: usize,
     user_stack: usize,
     ptid: usize,
-    tls: usize,
+    #[cfg(not(target_arch = "x86_64"))]tls: usize,
     ctid: usize,
+    #[cfg(target_arch = "x86_64")]tls: usize,
 ) -> SyscallResult {
     let clone_flags = CloneFlags::from_bits((flags & !0x3f) as u32).unwrap();
 
@@ -344,6 +355,14 @@ pub fn syscall_getegid() -> SyscallResult {
     Ok(0)
 }
 
+pub fn syscall_getpgid() -> SyscallResult {
+    Ok(0)
+}
+
+pub fn syscall_setpgid() -> SyscallResult {
+    Ok(0)
+}
+
 pub fn syscall_gettid() -> SyscallResult {
     Ok(current_task().id().as_u64() as isize)
 }
@@ -386,4 +405,33 @@ pub fn syscall_setsid() -> SyscallResult {
         .insert(new_process.pid(), Arc::new(new_process));
 
     Ok(task_id as isize)
+}
+
+/// arch_prc
+#[cfg(target_arch = "x86_64")]
+pub fn syscall_arch_prctl(code: usize, addr: usize) -> SyscallResult {
+    /*
+    #define ARCH_SET_GS			0x1001
+    #define ARCH_SET_FS			0x1002
+    #define ARCH_GET_FS			0x1003
+    #define ARCH_GET_GS			0x1004
+    */
+    match code {
+        0x1002 => {
+            #[cfg(target_arch = "x86_64")]
+            unsafe {
+                axhal::arch::write_thread_pointer(addr);
+                // *(read_thread_pointer() as *mut usize) = addr;
+            }
+            Ok(0)
+        }
+        0x1001 | 0x1003 | 0x1004 => todo!(),
+        _ => Err(SyscallError::EINVAL)
+    }
+    // Ok(0)
+}
+
+pub fn syscall_fork() -> SyscallResult {
+    warn!("transfer syscall_fork to syscall_clone");
+    syscall_clone(1, 0, 0, 0, 0)
 }

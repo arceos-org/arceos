@@ -96,7 +96,7 @@ impl FileIO for FileDesc {
             st_dev: 1,
             st_ino: 1,
             st_mode: normal_file_mode(StMode::S_IFREG).bits(),
-            st_nlink: get_link_count(&(self.path.as_str().to_string())) as u32,
+            st_nlink: get_link_count(&(self.path.as_str().to_string())) as _,
             st_uid: 0,
             st_gid: 0,
             st_rdev: 0,
@@ -112,7 +112,6 @@ impl FileIO for FileDesc {
             st_ctime_sec: stat.ctime.tv_sec as isize,
             st_ctime_nsec: stat.ctime.tv_nsec as isize,
         };
-        // info!("kstat: {:?}", kstat);
         Ok(kstat)
     }
 

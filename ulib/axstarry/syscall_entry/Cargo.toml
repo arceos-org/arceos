@@ -37,6 +37,9 @@ sched_cfs = ["axfeat/sched_cfs"]
 # Display
 display = ["arceos_api/display", "axfeat/display"]
 
+# Bus-Pci
+bus-pci = ["axfeat/bus-pci"]
+
 # Fs
 fs = ["axruntime/fs", "arceos_api/fs"]
 
@@ -63,6 +66,8 @@ syscall_net = ["dep:syscall_net"]
 syscall_fs = ["dep:syscall_fs", "syscall_mem?/fs", "fs"]
 syscall_mem = ["dep:syscall_mem"]
 syscall_task = ["dep:syscall_task"]
+
+devfs = []
 
 [dependencies]
 axfeat = { path = "../../../api/axfeat" }

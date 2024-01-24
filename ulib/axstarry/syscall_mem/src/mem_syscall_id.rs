@@ -1,6 +1,7 @@
 //! 记录该模块使用到的系统调用 id
 //!
 //!
+#[cfg(target_arch = "riscv64")]
 numeric_enum_macro::numeric_enum! {
 #[repr(usize)]
 #[allow(non_camel_case_types)]
@@ -18,4 +19,24 @@ pub enum MemSyscallId {
     MPROTECT = 226,
     MEMBARRIER = 283,
 }
+}
+
+#[cfg(target_arch = "x86_64")]
+numeric_enum_macro::numeric_enum! {
+    #[repr(usize)]
+    #[allow(non_camel_case_types)]
+    #[allow(missing_docs)]
+    #[derive(Eq, PartialEq, Debug, Copy, Clone)]
+    pub enum MemSyscallId {
+        // mem
+        SHMGET = 29,
+        SHMCTL = 31,
+        SHMAT = 30,
+        BRK = 12,
+        MUNMAP = 11,
+        MMAP = 9,
+        MSYNC = 26,
+        MPROTECT = 10,
+        MEMBARRIER = 324,
+    }
 }

@@ -56,7 +56,7 @@ pub struct TrapFrame {
 }
 
 impl TrapFrame {
-    fn set_user_sp(&mut self, user_sp: usize) {
+    pub fn set_user_sp(&mut self, user_sp: usize) {
         self.regs.sp = user_sp;
     }
     /// 用于第一次进入应用程序时的初始化
@@ -76,6 +76,73 @@ impl TrapFrame {
             trap_frame.regs.a1 = *(user_sp as *const usize).add(1);
         }
         trap_frame
+    }
+
+    /// 设置返回值
+    pub fn set_ret(&mut self, ret_value: usize) {
+        self.regs.a0 = ret_value;
+    }
+
+    /// 设置TLS
+    pub fn set_tls(&mut self, tls_value: usize) {
+        self.regs.tp = tls_value;
+    }
+
+    /// 获取 sp
+    pub fn get_sp(&self) -> usize {
+        self.regs.sp
+    }
+
+    /// 设置 pc
+    pub fn set_pc(&mut self, pc: usize) {
+        self.sepc = pc;
+    }
+
+    /// 设置 arg0
+    pub fn set_arg0(&mut self, arg: usize) {
+        self.regs.a0 = arg;
+    }
+
+    /// 设置 arg1
+    pub fn set_arg1(&mut self, arg: usize) {
+        self.regs.a1 = arg;
+    }
+
+    /// 设置 arg2
+    pub fn set_arg2(&mut self, arg: usize) {
+        self.regs.a2 = arg;
+    }
+
+    /// 获取 pc
+    pub fn get_pc(&self) -> usize {
+        self.sepc
+    }
+
+    /// 获取 ret
+    pub fn get_ret(&self) -> usize {
+        self.regs.a0
+    }
+
+    /// 设置返回地址
+    pub fn set_ra(&mut self, ra: usize) {
+        self.regs.ra = ra;
+    }
+
+    /// 获取所有 syscall 参数
+    pub fn get_syscall_args(&self) -> [usize; 6] {
+        [
+            self.regs.a0,
+            self.regs.a1,
+            self.regs.a2,
+            self.regs.a3,
+            self.regs.a4,
+            self.regs.a5,
+        ]
+    }
+
+    /// 获取 syscall id 
+    pub fn get_syscall_num(&self) -> usize {
+        self.regs.a7 as _
     }
 }
 

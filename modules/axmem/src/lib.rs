@@ -14,7 +14,6 @@ use core::{
     sync::atomic::{AtomicI32, Ordering},
 };
 use page_table_entry::GenericPTE;
-use riscv::asm::sfence_vma_all;
 use shared::SharedMem;
 use spinlock::SpinNoIrq;
 #[macro_use]
@@ -22,7 +21,7 @@ extern crate log;
 
 use axhal::{
     mem::{memory_regions, phys_to_virt, PhysAddr, VirtAddr, PAGE_SIZE_4K},
-    paging::{MappingFlags, PageSize, PageTable},
+    paging::{MappingFlags, PageSize, PageTable}, arch::flush_tlb,
 };
 use xmas_elf::symbol_table::Entry;
 
@@ -244,50 +243,53 @@ impl MemorySet {
                 Ok(xmas_elf::sections::SectionData::Rela64(data)) => data,
                 _ => panic!("Invalid data in .rela.plt section"),
             };
-            let dyn_sym_table = match elf
-                .find_section_by_name(".dynsym")
-                .expect("Dynamic Symbol Table not found for .rela.plt section")
-                .get_data(&elf)
-            {
-                Ok(xmas_elf::sections::SectionData::DynSymbolTable64(dyn_sym_table)) => {
-                    dyn_sym_table
-                }
-                _ => panic!("Invalid data in .dynsym section"),
-            };
-
-            info!("Relocating .rela.plt");
-            for entry in data {
-                match entry.get_type() {
-                    5 => {
-                        let dyn_sym = &dyn_sym_table[entry.get_symbol_table_index() as usize];
-                        let sym_val = if dyn_sym.shndx() == 0 {
-                            let name = dyn_sym.get_name(&elf).unwrap();
-                            panic!(r#"Symbol "{}" not found"#, name);
-                        } else {
-                            dyn_sym.value() as usize
-                        };
-
-                        let value = base_addr + sym_val;
-                        let addr = base_addr + entry.get_offset() as usize;
-
-                        info!(
-                            "write: {:#x} @ {:#x} type = {}",
-                            value,
-                            addr,
-                            entry.get_type() as usize
-                        );
-
-                        unsafe {
-                            copy_nonoverlapping(
-                                value.to_ne_bytes().as_ptr(),
-                                addr as *mut u8,
-                                size_of::<usize>(),
-                            );
-                        }
+            if elf.find_section_by_name(".dynsym").is_some(){
+                let dyn_sym_table = match elf
+                    .find_section_by_name(".dynsym")
+                    .expect("Dynamic Symbol Table not found for .rela.plt section")
+                    .get_data(&elf)
+                {
+                    Ok(xmas_elf::sections::SectionData::DynSymbolTable64(dyn_sym_table)) => {
+                        dyn_sym_table
                     }
-                    other => panic!("Unknown relocation type: {}", other),
+                    _ => panic!("Invalid data in .dynsym section"),
+                };
+
+                info!("Relocating .rela.plt");
+                for entry in data {
+                    match entry.get_type() {
+                        5 | 7 => {
+                            let dyn_sym = &dyn_sym_table[entry.get_symbol_table_index() as usize];
+                            let sym_val = if dyn_sym.shndx() == 0 {
+                                let name = dyn_sym.get_name(&elf).unwrap();
+                                panic!(r#"Symbol "{}" not found"#, name);
+                            } else {
+                                dyn_sym.value() as usize
+                            };
+
+                            let value = base_addr + sym_val;
+                            let addr = base_addr + entry.get_offset() as usize;
+
+                            info!(
+                                "write: {:#x} @ {:#x} type = {}",
+                                value,
+                                addr,
+                                entry.get_type() as usize
+                            );
+
+                            unsafe {
+                                copy_nonoverlapping(
+                                    value.to_ne_bytes().as_ptr(),
+                                    addr as *mut u8,
+                                    size_of::<usize>(),
+                                );
+                            }
+                        }
+                        other => panic!("Unknown relocation type: {}", other),
+                    }
                 }
             }
+            
         }
 
         info!("Relocating done");
@@ -337,7 +339,21 @@ impl MemorySet {
                 &mut self.page_table,
             )
             .unwrap(),
-            None => MapArea::new_lazy(vaddr, num_pages, flags, backend, &mut self.page_table),
+            None => {
+                match backend {
+                    Some(backend) => MapArea::new_lazy(vaddr, num_pages, flags, Some(backend), &mut self.page_table),
+                    None => MapArea::new_alloc(
+                        vaddr,
+                        num_pages,
+                        flags,
+                        None,
+                        None,
+                        &mut self.page_table,
+                    )
+                    .unwrap()
+                }
+            },
+            // None => MapArea::new_lazy(vaddr, num_pages, flags, backend, &mut self.page_table)
         };
 
         debug!(
@@ -479,7 +495,7 @@ impl MemorySet {
 
             self.new_region(start, size, flags, None, backend);
 
-            unsafe { riscv::asm::sfence_vma_all() };
+            flush_tlb(None);
 
             start.as_usize() as isize
         } else {
@@ -490,7 +506,7 @@ impl MemorySet {
                 Some(start) => {
                     info!("found area [{:?}, {:?})", start, start + size);
                     self.new_region(start, size, flags, None, backend);
-
+                    flush_tlb(None);
                     start.as_usize() as isize
                 }
                 None => -1,
@@ -593,9 +609,7 @@ impl MemorySet {
 
             assert!(self.owned_mem.insert(area.vaddr.into(), area).is_none());
         }
-        unsafe {
-            sfence_vma_all();
-        }
+        flush_tlb(None);
     }
 
     /// It will map newly allocated page in the page table. You need to flush TLB after this.
@@ -612,10 +626,14 @@ impl MemorySet {
                 Ok(())
             }
             None => {
+                #[cfg(target_arch="riscv64")]
+                let sepc = riscv::register::sepc::read();
+                #[cfg(target_arch="x86_64")]
+                let sepc = "not supported now for x86";
                 error!(
                     "Page fault address {:?} not found in memory set sepc: {:X?}",
                     addr,
-                    riscv::register::sepc::read()
+                    sepc
                 );
                 Err(AxError::BadAddress)
             }

@@ -141,7 +141,7 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     "./runtest.exe -w entry-static.exe pthread_condattr_setclock",
     "./runtest.exe -w entry-static.exe pthread_exit_cancel",
     "./runtest.exe -w entry-static.exe pthread_once_deadlock",
-    "./runtest.exe -w entry-static.exe pthread_rwlock_ebusy",
+    "./runtest.exe -w entry-static.exe pthread_rwlock_ebusy",    
     "./runtest.exe -w entry-static.exe putenv_doublefree",
     "./runtest.exe -w entry-static.exe regex_backref_0",
     "./runtest.exe -w entry-static.exe regex_bracket_icase",
@@ -311,7 +311,8 @@ pub const OSTRAIN_TESTCASES: &[&str] = &[
 
 #[allow(dead_code)]
 pub const SDCARD_TESTCASES: &[&str] = &[
-    // "busybox sh ./test_all.sh",
+    // "busybox sh"
+    "busybox sh ./test_all.sh",
     // "./riscv64-linux-musl-native/bin/riscv64-linux-musl-gcc ./hello.c -static",
     // "./a.out",
     // "./time-test",
@@ -319,7 +320,7 @@ pub const SDCARD_TESTCASES: &[&str] = &[
     // "./interrupts-test-2",
     // "./copy-file-range-test-1",
     // "./copy-file-range-test-2",
-    // "./copy-file-range-test-3",
+    // "./copy-file-range-test-3","./runtest.exe -w entry-static.exe daemon_failure",
     // "./copy-file-range-test-4",
     // "busybox echo hello",
     // "busybox sh ./unixbench_testcode.sh",
@@ -360,7 +361,7 @@ pub const SDCARD_TESTCASES: &[&str] = &[
     // "lmbench_all bw_mmap_rd -P 1 512k open2close /var/tmp/XXX",
     // "busybox echo context switch overhead",
     // "lmbench_all lat_ctx -P 1 -s 32 2 4 8 16 24 32 64 96",
-    "busybox sh libctest_testcode.sh",
+    // "busybox sh libctest_testcode.sh",
     // "busybox sh lua_testcode.sh",
     // "libc-bench",
     // "busybox sh ./netperf_testcode.sh",
@@ -495,8 +496,15 @@ pub fn fs_init(_case: &'static str) {
     // 需要对libc-dynamic进行特殊处理，因为它需要先加载libc.so
     // 建立一个硬链接
 
+    #[cfg(target_arch = "riscv64")]
     let libc_so = &"ld-musl-riscv64-sf.so.1";
+    #[cfg(target_arch = "riscv64")]
     let libc_so2 = &"ld-musl-riscv64.so.1"; // 另一种名字的 libc.so，非 libc-test 测例库用
+
+    #[cfg(target_arch = "x86_64")]
+    let libc_so = &"ld-musl-x86_64-sf.so.1";
+    #[cfg(target_arch = "x86_64")]
+    let libc_so2 = &"ld-musl-x86_64.so.1"; // 另一种名字的 libc.so，非 libc-test 测例库用
 
     create_link(
         &(FilePath::new(("/lib/".to_string() + libc_so).as_str()).unwrap()),

@@ -519,6 +519,7 @@ version = "0.1.0"
 dependencies = [
  "axhal",
  "bitflags 2.4.0",
+ "cfg-if",
  "numeric-enum-macro",
 ]
 

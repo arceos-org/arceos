@@ -2,6 +2,7 @@ use alloc::collections::VecDeque;
 use alloc::sync::Arc;
 #[cfg(feature = "monolithic")]
 use axhal::KERNEL_PROCESS_ID;
+use axhal::arch::flush_tlb;
 use lazy_init::LazyInit;
 use scheduler::BaseScheduler;
 use spinlock::SpinNoIrq;
@@ -255,6 +256,7 @@ impl AxRunQueue {
                 let page_table_token = next_task.page_table_token;
                 if page_table_token != 0 {
                     axhal::arch::write_page_table_root(page_table_token.into());
+                    flush_tlb(None);
                 }
             }
 

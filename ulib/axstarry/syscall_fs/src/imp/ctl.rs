@@ -10,7 +10,7 @@ use axprocess::{
 };
 use syscall_utils::{DirEnt, DirEntType, Fcntl64Cmd, SyscallError, SyscallResult, TimeSecs};
 
-use crate::{ctype::file::new_fd, FileDesc};
+use crate::{ctype::file::new_fd, syscall_unlinkat, FileDesc};
 
 extern crate alloc;
 use alloc::string::ToString;
@@ -85,6 +85,15 @@ pub fn syscall_mkdirat(dir_fd: usize, path: *const u8, mode: u32) -> SyscallResu
     } else {
         Err(SyscallError::EPERM)
     }
+}
+
+/// 功能：创建目录；
+/// 输入：
+///     - path：要创建的目录的名称。如果path是相对路径，则它是相对于dirfd目录而言的。如果path是相对路径，且dirfd的值为AT_FDCWD，则它是相对于当前路径而言的。如果path是绝对路径，则dirfd被忽略。
+///     - mode：文件的所有权描述。详见`man 7 inode `。
+/// 返回值：成功执行，返回0。失败，返回-1。
+pub fn syscall_mkdir(path: *const u8, mode: u32) -> SyscallResult {
+    syscall_mkdirat(AT_FDCWD, path, mode)
 }
 
 /// 功能：切换工作目录；
@@ -253,6 +262,14 @@ pub fn syscall_renameat2(
     Ok(0)
 }
 
+/// 重命名文件或目录
+pub fn syscall_rename(
+    old_path: *const u8,
+    new_path: *const u8,
+) -> SyscallResult {
+    syscall_renameat2(AT_FDCWD, old_path, AT_FDCWD, new_path, 1)
+}
+
 pub fn syscall_fcntl64(fd: usize, cmd: usize, arg: usize) -> SyscallResult {
     let process = current_process();
     let mut fd_table = process.fd_manager.fd_table.lock();
@@ -411,6 +428,20 @@ pub fn syscall_faccessat(dir_fd: usize, path: *const u8, mode: usize) -> Syscall
             }
         })
         .unwrap_or_else(|_| Err(SyscallError::ENOENT))
+}
+
+/// 48
+/// 获取文件权限
+/// 0: F_OK, 1: X_OK, 2: W_OK, 4: R_OK
+pub fn syscall_access(path: *const u8, mode: usize) -> SyscallResult {
+    // todo: 有问题，实际上需要考虑当前进程对应的用户UID和文件拥有者之间的关系
+    // 现在一律当作root用户处理
+    syscall_faccessat(AT_FDCWD, path, mode)
+}
+
+/// 删除目录
+pub fn syscall_rmdir(path: *const u8) -> SyscallResult {
+    syscall_unlinkat(AT_FDCWD, path, crate::imp::link::AT_REMOVEDIR)
 }
 
 /// 88

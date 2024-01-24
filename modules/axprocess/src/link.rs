@@ -297,8 +297,7 @@ pub fn deal_with_path(
         path = format!("{}/", path);
     }
     // info!("path: {}", path);
-
-    if dir_fd != AT_FDCWD {
+    if dir_fd != AT_FDCWD && dir_fd as u32 != AT_FDCWD as u32 {
         // 如果不是绝对路径, 且dir_fd不是AT_FDCWD, 则需要将dir_fd和path拼接起来
         let fd_table = process.fd_manager.fd_table.lock();
         if dir_fd >= fd_table.len() {

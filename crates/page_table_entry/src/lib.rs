@@ -48,7 +48,8 @@ pub trait GenericPTE: Debug + Clone + Copy + Sync + Send + Sized {
     /// Creates a page table entry point to a terminate page or block.
     fn new_page(paddr: PhysAddr, flags: MappingFlags, is_huge: bool) -> Self;
     fn new_fault_page(_is_huge: bool) -> Self {
-        panic!("Only implemented for riscv for now.");
+        panic!("Only implemented for riscv for now. 
+            \rTIPS: this function is to build a page table entry to trigger page fault.");
     }
     /// Creates a page table entry point to a next level page table.
     fn new_table(paddr: PhysAddr) -> Self;

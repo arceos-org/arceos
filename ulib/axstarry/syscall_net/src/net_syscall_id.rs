@@ -1,6 +1,7 @@
 //! 记录该模块使用到的系统调用 id
 //!
 //!
+#[cfg(target_arch = "riscv64")]
 numeric_enum_macro::numeric_enum! {
 #[repr(usize)]
 #[allow(non_camel_case_types)]
@@ -22,4 +23,28 @@ pub enum NetSyscallId {
     SHUTDOWN = 210,
     ACCEPT4 = 242,
 }
+}
+
+#[cfg(target_arch = "x86_64")]
+numeric_enum_macro::numeric_enum! {
+    #[repr(usize)]
+    #[allow(non_camel_case_types)]
+    #[allow(missing_docs)]
+    #[derive(Eq, PartialEq, Debug, Copy, Clone)]
+    pub enum NetSyscallId {
+        // Socket
+        SOCKET = 41,
+        BIND = 49,
+        LISTEN = 50,
+        ACCEPT = 43,
+        CONNECT = 42,
+        GETSOCKNAME = 51,
+        GETPEERNAME = 52,
+        SENDTO = 44,
+        RECVFROM = 45,
+        SETSOCKOPT = 54,
+        GETSOCKOPT = 55,
+        SHUTDOWN = 48,
+        ACCEPT4 = 288,
+    }
 }
