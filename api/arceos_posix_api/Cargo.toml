@@ -50,3 +50,4 @@ flatten_objects = { path = "../../crates/flatten_objects" }
 
 [build-dependencies]
 bindgen ={ version = "0.66" }
+axsync = { path = "../../modules/axsync" }

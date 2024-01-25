@@ -7,7 +7,7 @@ fn main() {
             if cfg!(feature = "smp") {
                 (6, "{0, 0, 8, 0, 0, 0}") // core::mem::transmute::<_, [usize; 6]>(axsync::Mutex::new(()))
             } else {
-                (5, "{8, 0, 0, 0, 0}") // core::mem::transmute::<_, [usize; 5]>(axsync::Mutex::new(()))
+                (5, "{0, 8, 0, 0, 0}") // core::mem::transmute::<_, [usize; 5]>(axsync::Mutex::new(()))
             }
         } else {
             (1, "{0}")
