@@ -16,7 +16,7 @@ pub fn set_errno(code: i32) {
 /// Returns a pointer to the global errno variable.
 #[no_mangle]
 pub unsafe extern "C" fn __errno_location() -> *mut c_int {
-    &mut errno
+    core::ptr::addr_of_mut!(errno)
 }
 
 /// Returns a pointer to the string representation of the given error code.

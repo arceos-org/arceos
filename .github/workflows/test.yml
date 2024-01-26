@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 env:
   qemu-version: 8.2.0
-  rust-toolchain: nightly-2023-12-25
+  rust-toolchain: nightly-2024-01-19
 
 jobs:
   unit-test:
