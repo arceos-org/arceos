@@ -82,7 +82,6 @@ pub fn def_percpu(attr: TokenStream, item: TokenStream) -> TokenStream {
             /// Returns the value of the per-CPU data on the current CPU. Preemption will
             /// be disabled during the call.
             pub fn read_current(&self) -> #ty {
-                #[cfg(feature = "preempt")]
                 #no_preempt_guard
                 unsafe { self.read_current_raw() }
             }
@@ -90,7 +89,6 @@ pub fn def_percpu(attr: TokenStream, item: TokenStream) -> TokenStream {
             /// Set the value of the per-CPU data on the current CPU. Preemption will
             /// be disabled during the call.
             pub fn write_current(&self, val: #ty) {
-                #[cfg(feature = "preempt")]
                 #no_preempt_guard
                 unsafe { self.write_current_raw(val) }
             }
@@ -157,7 +155,6 @@ pub fn def_percpu(attr: TokenStream, item: TokenStream) -> TokenStream {
             where
                 F: FnOnce(&mut #ty) -> T,
             {
-                #[cfg(feature = "preempt")]
                 #no_preempt_guard
                 f(unsafe { self.current_ref_mut_raw() })
             }
