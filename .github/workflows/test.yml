@@ -3,8 +3,8 @@ name: Test CI
 on: [push, pull_request]
 
 env:
-  qemu-version: 7.1.0
-  rust-toolchain: nightly
+  qemu-version: 8.2.0
+  rust-toolchain: nightly-2024-01-19
 
 jobs:
   unit-test:

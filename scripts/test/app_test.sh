@@ -34,7 +34,7 @@ function compare() {
     fi
     IFS=''
     while read -r line; do
-        local matched=$(grep -m1 "$line" < "$actual")
+        local matched=$(grep -m1 -a "$line" < "$actual")
         if [ -z "$matched" ]; then
             MSG="pattern \"${BLOD_C}$line${END_C}\" not matched!"
             unset IFS

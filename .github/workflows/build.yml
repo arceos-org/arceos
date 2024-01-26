@@ -2,20 +2,19 @@ name: Build CI
 
 on: [push, pull_request]
 
-env:
-  rust-toolchain: nightly
-
 jobs:
   clippy:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      matrix: 
+        rust-toolchain: [nightly, nightly-2024-01-19]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: ${{ env.rust-toolchain }}
+        toolchain: ${{ matrix.rust-toolchain }}
         components: rust-src, clippy, rustfmt
     - name: Clippy for the default target
       run: make clippy
@@ -35,12 +34,13 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         arch: [x86_64, riscv64, aarch64]
+        rust-toolchain: [nightly, nightly-2024-01-19]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: ${{ env.rust-toolchain }}
+        toolchain: ${{ matrix.rust-toolchain }}
         components: rust-src
     - uses: actions-rs/install@v0.1
       with:
@@ -102,12 +102,13 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
+        rust-toolchain: [nightly, nightly-2024-01-19]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: ${{ env.rust-toolchain }}
+        toolchain: ${{ matrix.rust-toolchain }}
         components: rust-src
     - uses: actions-rs/install@v0.1
       with:
@@ -142,12 +143,13 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         arch: [x86_64]
+        rust-toolchain: [nightly, nightly-2024-01-19]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
-        toolchain: ${{ env.rust-toolchain }}
+        toolchain: ${{ matrix.rust-toolchain }}
     - name: Build helloworld
       run: cargo build -p arceos-helloworld
     - name: Build memtest

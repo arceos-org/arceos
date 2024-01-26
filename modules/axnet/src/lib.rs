@@ -18,7 +18,6 @@
 //! [smoltcp]: https://github.com/smoltcp-rs/smoltcp
 
 #![no_std]
-#![feature(ip_in_core)]
 #![feature(new_uninit)]
 
 #[macro_use]

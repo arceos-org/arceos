@@ -100,11 +100,13 @@ impl<H: IxgbeHal, const QS: usize, const QN: u16> NetDriverOps for IxgbeNic<H, Q
             // RX buffer have received packets.
             Ok(self.rx_buffer_queue.pop_front().unwrap())
         } else {
-            // RX queue is empty, receive from ixgbe NIC.
-            match self.inner.receive_packets(0, RECV_BATCH_SIZE, |rx_buf| {
+            let f = |rx_buf| {
                 let rx_buf = NetBufPtr::from(rx_buf);
                 self.rx_buffer_queue.push_back(rx_buf);
-            }) {
+            };
+
+            // RX queue is empty, receive from ixgbe NIC.
+            match self.inner.receive_packets(0, RECV_BATCH_SIZE, f) {
                 Ok(recv_nums) => {
                     if recv_nums == 0 {
                         // No packet is received, it is impossible things.

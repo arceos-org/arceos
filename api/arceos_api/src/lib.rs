@@ -3,7 +3,6 @@
 //! [ArceOS]: https://github.com/rcore-os/arceos
 
 #![no_std]
-#![feature(ip_in_core)]
 #![feature(doc_auto_cfg)]
 #![feature(doc_cfg)]
 #![allow(unused_imports)]
