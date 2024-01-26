@@ -5,7 +5,7 @@ use axfs::api::{FileIOType, Kstat};
 use axlog::{debug, error, info};
 use axprocess::{
     current_process,
-    link::{deal_with_path, FilePath, AT_FDCWD},
+    link::{deal_with_path, raw_ptr_to_ref_str, FilePath, AT_FDCWD},
 };
 use syscall_utils::{get_fs_stat, FsStat, SyscallError, SyscallResult};
 
@@ -46,7 +46,22 @@ pub fn syscall_fstat(fd: usize, kst: *mut Kstat) -> SyscallResult {
 
 /// 获取文件状态信息，但是给出的是目录 fd 和相对路径。
 pub fn syscall_fstatat(dir_fd: usize, path: *const u8, kst: *mut Kstat) -> SyscallResult {
-    let file_path = deal_with_path(dir_fd, Some(path), false).unwrap();
+    let file_path = if let Some(file_path) = deal_with_path(dir_fd, Some(path), false) {
+        file_path
+    } else {
+        // x86 下应用会调用 newfstatat(1, "", {st_mode=S_IFCHR|0620, st_rdev=makedev(0x88, 0xe), ...}, AT_EMPTY_PATH) = 0
+        // 去尝试检查 STDOUT 的属性。这里暂时先特判，以后再改成真正的 stdout 的属性
+        let path = unsafe { raw_ptr_to_ref_str(path) };
+        if path.len() == 0 && dir_fd == 1 {
+            unsafe {
+                (*kst).st_mode = 0o20000 | 0o220u32;
+                (*kst).st_ino = 1;
+                (*kst).st_nlink = 1;
+            }
+            return Ok(0)
+        }
+        panic!("Wrong path at syscall_fstatat: {}(dir_fd={})", path, dir_fd);
+    };
     info!("path : {}", file_path.path());
     match get_stat_in_fs(&file_path) {
         Ok(stat) => unsafe {

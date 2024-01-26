@@ -110,6 +110,7 @@ numeric_enum_macro::numeric_enum! {
         UNAME = 63,
         GETTIMEOFDAY = 96,
         PRLIMIT64 = 302,
+        RSEQ = 334,
         // 信号模块
         KILL = 62,
         TKILL = 200,
