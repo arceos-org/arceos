@@ -274,7 +274,7 @@ pub fn deal_with_path(
     let mut path = "".to_string();
     if let Some(path_addr) = path_addr {
         if path_addr.is_null() {
-            axlog::debug!("path address is null");
+            axlog::warn!("path address is null");
             return None;
         }
         if process
@@ -284,7 +284,7 @@ pub fn deal_with_path(
             // 直接访问前需要确保已经被分配
             path = unsafe { raw_ptr_to_ref_str(path_addr) }.to_string().clone();
         } else {
-            axlog::debug!("path address is invalid");
+            axlog::warn!("path address is invalid");
             return None;
         }
     }
@@ -297,32 +297,35 @@ pub fn deal_with_path(
         path = format!("{}/", path);
     }
     // info!("path: {}", path);
-    if dir_fd != AT_FDCWD && dir_fd as u32 != AT_FDCWD as u32 {
+    if path.starts_with("/") && dir_fd != AT_FDCWD && dir_fd as u32 != AT_FDCWD as u32 {
         // 如果不是绝对路径, 且dir_fd不是AT_FDCWD, 则需要将dir_fd和path拼接起来
         let fd_table = process.fd_manager.fd_table.lock();
         if dir_fd >= fd_table.len() {
-            axlog::debug!("fd index out of range");
+            axlog::warn!("fd index out of range");
             return None;
         }
         match fd_table[dir_fd].as_ref() {
             Some(dir) => {
                 if dir.get_type() != FileIOType::DirDesc {
-                    axlog::debug!("selected fd is not a dir");
+                    axlog::warn!("selected fd {} is not a dir", dir_fd);
                     return None;
                 }
                 let dir = dir.clone();
                 // 有没有可能dir的尾部一定是一个/号，所以不用手工添加/
                 path = format!("{}{}", dir.get_path(), path);
-                axlog::debug!("handled_path: {}", path);
+                axlog::warn!("handled_path: {}", path);
             }
             None => {
-                axlog::debug!("fd not exist");
+                axlog::warn!("fd not exist");
                 return None;
             }
         }
     }
     match FilePath::new(path.as_str()) {
         Ok(path) => Some(path),
-        Err(_) => None,
+        Err(err) => {
+            axlog::warn!("error when creating FilePath: {:?}", err);
+            None
+        }
     }
 }

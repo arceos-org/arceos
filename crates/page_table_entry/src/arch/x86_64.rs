@@ -69,7 +69,9 @@ impl GenericPTE for X64PTE {
         Self(flags.bits() | (paddr.as_usize() as u64 & Self::PHYS_ADDR_MASK))
     }
     fn new_fault_page(_is_huge: bool) -> Self {
-        let flags = PTF::ACCESSED | PTF::DIRTY;
+        // x86_64 doesn't support the execute bit.
+        // it need to set the no_execute bit to ban the execute.
+        let flags = PTF::ACCESSED | PTF::DIRTY | PTF::NO_EXECUTE;
         Self(flags.bits())
     }
     fn new_table(paddr: PhysAddr) -> Self {
