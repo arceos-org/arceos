@@ -25,6 +25,8 @@ use crate::stat::TimeStat;
 
 use crate::{AxRunQueue, AxTask, AxTaskRef, WaitQueue};
 
+use crate_interface::call_interface;
+
 /// A unique identifier for a thread.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct TaskId(u64);
@@ -77,6 +79,7 @@ impl From<SchedPolicy> for isize {
         }
     }
 }
+
 #[derive(Clone, Copy)]
 pub struct SchedStatus {
     pub policy: SchedPolicy,
@@ -212,6 +215,13 @@ impl TaskInner {
         }
         None
     }
+}
+
+#[crate_interface::def_interface]
+pub trait VforkCheck {
+    // Called to check whether vforked
+    // if this process was blocked by vfork, return true
+    fn check_vfork(&self, process_id: u64) -> bool;
 }
 
 #[cfg(feature = "monolithic")]
@@ -396,6 +406,11 @@ impl TaskInner {
     #[cfg(target_arch = "x86_64")]
     pub unsafe fn set_tls_force(&self, value: usize) {
         self.ctx.get().as_mut().unwrap().fs_base = value;
+    }
+
+    pub fn is_vfork(&self) -> bool {
+        // 获取父进程blocked_by_vfork布尔值
+        call_interface!(VforkCheck::check_vfork(self.get_process_id()))
     }
 }
 

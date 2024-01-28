@@ -1,5 +1,5 @@
 rm disk.img
-dd if=/dev/zero of=disk.img bs=3M count=24
+dd if=/dev/zero of=disk.img bs=4M count=30
 mkfs.vfat -F 32 disk.img
 mkdir -p mnt
 sudo mount disk.img mnt
