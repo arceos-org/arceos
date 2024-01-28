@@ -1,5 +1,6 @@
 /// 处理与任务（线程）有关的系统调用
 use core::time::Duration;
+use core::ptr::slice_from_raw_parts_mut;
 use axtask::current;
 
 use axconfig::TASK_STACK_SIZE;
@@ -437,10 +438,13 @@ pub fn syscall_fork() -> SyscallResult {
     warn!("transfer syscall_fork to syscall_clone");
     syscall_clone(1, 0, 0, 0, 0)
 }
- 
+
+pub const PR_NAME_SIZE: usize = 16;
 /// prctl
 #[cfg(target_arch = "x86_64")]
-pub fn syscall_prctl(code: usize, arg2: *mut usize) -> SyscallResult {
+pub fn syscall_prctl(code: usize, arg2: *mut u8) -> SyscallResult {
+
+
     let code_enum = match code {
         16 => PR_OPTION::PR_GET_NAME,
         15 => PR_OPTION::PR_SET_NAME,
@@ -449,32 +453,26 @@ pub fn syscall_prctl(code: usize, arg2: *mut usize) -> SyscallResult {
 
     match code_enum {
         PR_OPTION::PR_GET_NAME => {
-            // 获取进程名称
+            // 获取进程名称。
             let mut process_name = current().name().to_string();
-            
-            // 检查是否有./前缀，并去掉
-            if process_name.starts_with("./") {
-                process_name = process_name.trim_start_matches("./").to_string();
-            }
-            unsafe {
-                // 检查 arg2 是否为空指针
-                if !arg2.is_null() {
-                    core::ptr::copy_nonoverlapping(
-                        process_name.as_ptr(),
-                        arg2 as *mut u8,
-                        process_name.len() + 1,
-                    );
-                    Ok(0) // 表示成功
-                } else {
-                    Err(SyscallError::EINVAL)
+            process_name += "\0";
+            // [syscall 定义](https://man7.org/linux/man-pages/man2/prctl.2.html)要求 NAME 应该不超过 16 Byte
+            process_name.truncate(PR_NAME_SIZE);
+            // 把 arg2 转换成可写的 buffer
+            if current_process()
+            .manual_alloc_for_lazy((arg2 as usize).into())
+            .is_ok() // 直接访问前需要确保地址已经被分配
+            {
+                unsafe {
+                    let name = &mut * slice_from_raw_parts_mut(arg2, PR_NAME_SIZE);
+                    name[..process_name.len()].copy_from_slice(process_name.as_bytes());
                 }
+                Ok(0)
+            } else {
+                Err(SyscallError::EINVAL)
             }
         }
-        PR_OPTION::PR_SET_NAME => {
-            Ok(0)
-        }
-        PR_OPTION::OTHER => {
-            Ok(0)
-        }
+        PR_OPTION::PR_SET_NAME => { Ok(0) }
+        PR_OPTION::OTHER => { Ok(0) }
     }
 }

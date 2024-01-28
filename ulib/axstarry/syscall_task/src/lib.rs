@@ -103,7 +103,7 @@ pub fn task_syscall(syscall_id: task_syscall_id::TaskSyscallId, args: [usize; 6]
         // 不做处理即可
         SIGTIMEDWAIT => Ok(0),
         SYSLOG => Ok(0),
-        PRCTL => syscall_prctl(args[0], args[1] as *mut usize),
+        PRCTL => syscall_prctl(args[0], args[1] as *mut u8),
         MADVICE => Ok(0),
         #[cfg(feature = "schedule")]
         SCHED_SETAFFINITY => Ok(0),
