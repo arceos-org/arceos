@@ -183,6 +183,7 @@ pub fn syscall_clone(
 
 /// 等待子进程完成任务，若子进程没有完成，则自身yield
 /// 当前仅支持WNOHANG选项，即若未完成时则不予等待，直接返回0
+/// WIFEXITED(s) WEXITSTATUS(s)
 pub fn syscall_wait4(pid: isize, exit_code_ptr: *mut i32, option: WaitFlags) -> SyscallResult {
     loop {
         let answer = unsafe { wait_pid(pid, exit_code_ptr) };

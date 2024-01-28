@@ -57,7 +57,7 @@ pub fn exit_current_task(exit_code: i32) -> ! {
 
     let curr_id = current_task.id().as_u64();
 
-    info!("exit task id {} with code {}", curr_id, exit_code);
+    info!("exit task id {} with code _{}_", curr_id, exit_code);
     clear_wait(
         if current_task.is_leader() {
             process.pid()
@@ -228,11 +228,12 @@ pub unsafe fn wait_pid(pid: isize, exit_code_ptr: *mut i32) -> Result<u64, WaitS
             answer_status = WaitStatus::Running;
             if let Some(exit_code) = child.get_code_if_exit() {
                 answer_status = WaitStatus::Exited;
+                info!("wait pid _{}_ with code _{}_", child.pid(), exit_code);
                 exit_task_id = index;
                 if !exit_code_ptr.is_null() {
                     unsafe {
                         // 因为没有切换页表，所以可以直接填写
-                        *exit_code_ptr = exit_code;
+                        *exit_code_ptr = exit_code << 8;
                     }
                 }
                 answer_id = child.pid();
@@ -242,10 +243,11 @@ pub unsafe fn wait_pid(pid: isize, exit_code_ptr: *mut i32) -> Result<u64, WaitS
             // 找到了对应的进程
             if let Some(exit_code) = child.get_code_if_exit() {
                 answer_status = WaitStatus::Exited;
+                info!("wait pid _{}_ with code _{:?}_", child.pid(), exit_code);
                 exit_task_id = index;
                 if !exit_code_ptr.is_null() {
                     unsafe {
-                        *exit_code_ptr = exit_code;
+                        *exit_code_ptr = exit_code << 8;
                         // 用于WEXITSTATUS设置编码
                     }
                 }
