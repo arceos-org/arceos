@@ -22,6 +22,7 @@ use syscall_utils::{SyscallError, SyscallResult};
 extern crate alloc;
 use alloc::{string::ToString, sync::Arc, vec::Vec};
 use syscall_utils::{RLimit, TimeSecs, WaitFlags, RLIMIT_AS, RLIMIT_NOFILE, RLIMIT_STACK};
+use syscall_utils::PR_OPTION;
 
 #[cfg(feature = "signal")]
 use axsignal::signal_no::SignalNo;
@@ -436,19 +437,25 @@ pub fn syscall_fork() -> SyscallResult {
     warn!("transfer syscall_fork to syscall_clone");
     syscall_clone(1, 0, 0, 0, 0)
 }
-
+ 
 /// prctl
 #[cfg(target_arch = "x86_64")]
 pub fn syscall_prctl(code: usize, arg2: *mut usize) -> SyscallResult {
-    match code {
-        16 => {
+    let code_enum = match code {
+        16 => PR_OPTION::PR_GET_NAME,
+        15 => PR_OPTION::PR_SET_NAME,
+        _ => PR_OPTION::OTHER,
+    };
+
+    match code_enum {
+        PR_OPTION::PR_GET_NAME => {
             // 获取进程名称
             let mut process_name = current().name().to_string();
+            
+            // 检查是否有./前缀，并去掉
             if process_name.starts_with("./") {
                 process_name = process_name.trim_start_matches("./").to_string();
             }
-
-            // 将进程名称写入到 arg2 指向的内存中
             unsafe {
                 // 检查 arg2 是否为空指针
                 if !arg2.is_null() {
@@ -463,6 +470,11 @@ pub fn syscall_prctl(code: usize, arg2: *mut usize) -> SyscallResult {
                 }
             }
         }
-        _ => Ok(0), // 对于其他 code，也返回成功
+        PR_OPTION::PR_SET_NAME => {
+            Ok(0)
+        }
+        PR_OPTION::OTHER => {
+            Ok(0)
+        }
     }
 }

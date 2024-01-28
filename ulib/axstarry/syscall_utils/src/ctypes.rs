@@ -503,3 +503,10 @@ bitflags! {
 pub fn normal_file_mode(file_type: StMode) -> StMode {
     file_type | StMode::S_IWUSR | StMode::S_IWUSR | StMode::S_IWGRP | StMode::S_IRGRP
 }
+
+/// syscall_prctl的结构体
+pub enum PR_OPTION {
+    PR_SET_NAME ,
+    PR_GET_NAME ,
+    OTHER
+ }
