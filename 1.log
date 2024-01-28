@@ -29,43 +29,43 @@ smp = 1
 build_mode = release
 log_level = error
 
-[37m[  0.148485 0 fatfs::dir:140] [31mIs a directory[m
-[m[37m[  0.152005 0 fatfs::dir:140] [31mIs a directory[m
-[m[37m[  0.154689 0 fatfs::dir:140] [31mIs a directory[m
-[m[37m[  0.158171 0 fatfs::dir:140] [31mIs a directory[m
-[m[37m[  0.161364 0 fatfs::dir:140] [31mIs a directory[m
-[m[37m[  0.224035 0:6 syscall_entry::syscall:37] [31m[syscall] id = GETEUID, args = [1073741376, 0, 4822080, 4096, 0, 1], entry[m
-[m[37m[  0.224964 0:6 syscall_entry::syscall:47] [31m[syscall] id = 107, args = [1073741376, 0, 4822080, 4096, 0, 1], return 0[m
-[m[37m[  0.225327 0:6 syscall_entry::syscall:37] [31m[syscall] id = GETUID, args = [1073741376, 0, 4822080, 4096, 0, 1], entry[m
-[m[37m[  0.225572 0:6 syscall_entry::syscall:47] [31m[syscall] id = 102, args = [1073741376, 0, 4822080, 4096, 0, 1], return 0[m
-[m[37m[  0.225762 0:6 syscall_entry::syscall:37] [31m[syscall] id = GETEGID, args = [1073741376, 0, 4822080, 4096, 0, 1], entry[m
-[m[37m[  0.225997 0:6 syscall_entry::syscall:47] [31m[syscall] id = 108, args = [1073741376, 0, 4822080, 4096, 0, 1], return 0[m
-[m[37m[  0.226215 0:6 syscall_entry::syscall:37] [31m[syscall] id = GETGID, args = [1073741376, 0, 4822080, 4096, 0, 1], entry[m
-[m[37m[  0.226412 0:6 syscall_entry::syscall:47] [31m[syscall] id = 104, args = [1073741376, 0, 4822080, 4096, 0, 1], return 0[m
-[m[37m[  0.226783 0:6 syscall_entry::syscall:37] [31m[syscall] id = ARCH_PRCTL, args = [12289, 1073741024, 4549856, 4821736, 3, 1073740964], entry[m
-[m[37m[  0.227031 0:6 syscall_entry::syscall:47] [31m[syscall] id = 158, args = [12289, 1073741024, 4549856, 4821736, 3, 1073740964], return -22[m
-[m[37m[  0.227579 0:6 syscall_entry::syscall:20] [31m[syscall] id = BRK, args = [0, 1073741024, 31, 4821736, 4968640, 1073740964], entry[m
-[m[37m[  0.227870 0:6 syscall_entry::syscall:47] [31m[syscall] id = 12, args = [0, 1073741024, 31, 4821736, 4968640, 1073740964], return 1067450368[m
-[m[37m[  0.228168 0:6 syscall_entry::syscall:20] [31m[syscall] id = BRK, args = [1067454912, 1073741024, 31, 4821736, 4968640, 1073740964], entry[m
-[m[37m[  0.228397 0:6 syscall_entry::syscall:47] [31m[syscall] id = 12, args = [1067454912, 1073741024, 31, 4821736, 4968640, 1073740964], return 1067454912[m
-[m[37m[  0.228679 0:6 syscall_entry::syscall:37] [31m[syscall] id = ARCH_PRCTL, args = [4098, 1067452544, 32, 4821736, 4968640, 1073740964], entry[m
-[m[37m[  0.228877 0:6 syscall_entry::syscall:47] [31m[syscall] id = 158, args = [4098, 1067452544, 32, 4821736, 4968640, 1073740964], return 0[m
-[m[37m[  0.236575 0:6 syscall_entry::syscall:37] [31m[syscall] id = UNAME, args = [1073740480, 1067452544, 32, 4821736, 4968640, 1073740964], entry[m
-[m[37m[  0.236993 0:6 syscall_entry::syscall:47] [31m[syscall] id = 63, args = [1073740480, 1067452544, 32, 4821736, 4968640, 1073740964], return 0[m
-[m[37m[  0.237486 0:6 syscall_entry::syscall:28] [31m[syscall] id = READLINK, args = [4896419, 1073736608, 4096, 4821736, 1, 1073740964], entry[m
-[m[37m[  0.238446 0:6 syscall_entry::syscall:47] [31m[syscall] id = 89, args = [4896419, 1073736608, 4096, 4821736, 1, 1073740964], return -22[m
-[m[37m[  0.239656 0:6 syscall_entry::syscall:20] [31m[syscall] id = BRK, args = [1067590080, 135168, 18446744073709547520, 18446744073709547520, 4982784, 1073740964], entry[m
-[m[37m[  0.239966 0:6 syscall_entry::syscall:47] [31m[syscall] id = 12, args = [1067590080, 135168, 18446744073709547520, 18446744073709547520, 4982784, 1073740964], return 1067454912[m
-[m[37m[  0.240323 0:6 syscall_entry::syscall:20] [31m[syscall] id = MMAP, args = [0, 1048576, 3, 34, 4294967295, 0], entry[m
-[m[37m[  0.241785 0:6 syscall_entry::syscall:47] [31m[syscall] id = 9, args = [0, 1048576, 3, 34, 4294967295, 0], return 4096[m
-[m[37m[  0.243258 0:6 syscall_entry::syscall:20] [31m[syscall] id = MPROTECT, args = [4968448, 12288, 1, 12096, 1, 6], entry[m
-[m[37m[  0.244135 0:6 syscall_entry::syscall:47] [31m[syscall] id = 10, args = [4968448, 12288, 1, 12096, 1, 6], return 0[m
-[m[37m[  0.244875 0:6 syscall_entry::syscall:37] [31m[syscall] id = PRCTL, args = [16, 1073740864, 1073741216, 4540176, 0, 6], entry[m
-[m[37m[  0.245387 0:6 syscall_entry::syscall:47] [31m[syscall] id = 157, args = [16, 1073740864, 1073741216, 4540176, 0, 6], return 0[m
-[m[37m[  0.245880 0:6 syscall_entry::syscall:28] [31m[syscall] id = FSTAT, args = [1, 1073738912, 1073738912, 4804618, 1, 6], entry[m
-[m[37m[  0.246192 0:6 syscall_entry::syscall:47] [31m[syscall] id = 5, args = [1, 1073738912, 1073738912, 4804618, 1, 6], return -1[m
-[m[37m[  0.247140 0:6 syscall_entry::syscall:28] [31m[syscall] id = WRITE, args = [1, 5312, 20, 4294967291, 0, 20], entry[m
+[37m[  0.165365 0 fatfs::dir:140] [31mIs a directory[m
+[m[37m[  0.169128 0 fatfs::dir:140] [31mIs a directory[m
+[m[37m[  0.171957 0 fatfs::dir:140] [31mIs a directory[m
+[m[37m[  0.175490 0 fatfs::dir:140] [31mIs a directory[m
+[m[37m[  0.178545 0 fatfs::dir:140] [31mIs a directory[m
+[m[37m[  0.241353 0:6 syscall_entry::syscall:37] [31m[syscall] id = GETEUID, args = [1073741376, 0, 4822080, 4096, 0, 1], entry[m
+[m[37m[  0.242323 0:6 syscall_entry::syscall:47] [31m[syscall] id = 107, args = [1073741376, 0, 4822080, 4096, 0, 1], return 0[m
+[m[37m[  0.242679 0:6 syscall_entry::syscall:37] [31m[syscall] id = GETUID, args = [1073741376, 0, 4822080, 4096, 0, 1], entry[m
+[m[37m[  0.242881 0:6 syscall_entry::syscall:47] [31m[syscall] id = 102, args = [1073741376, 0, 4822080, 4096, 0, 1], return 0[m
+[m[37m[  0.243074 0:6 syscall_entry::syscall:37] [31m[syscall] id = GETEGID, args = [1073741376, 0, 4822080, 4096, 0, 1], entry[m
+[m[37m[  0.243258 0:6 syscall_entry::syscall:47] [31m[syscall] id = 108, args = [1073741376, 0, 4822080, 4096, 0, 1], return 0[m
+[m[37m[  0.243453 0:6 syscall_entry::syscall:37] [31m[syscall] id = GETGID, args = [1073741376, 0, 4822080, 4096, 0, 1], entry[m
+[m[37m[  0.243654 0:6 syscall_entry::syscall:47] [31m[syscall] id = 104, args = [1073741376, 0, 4822080, 4096, 0, 1], return 0[m
+[m[37m[  0.244029 0:6 syscall_entry::syscall:37] [31m[syscall] id = ARCH_PRCTL, args = [12289, 1073741024, 4549856, 4821736, 3, 1073740964], entry[m
+[m[37m[  0.244281 0:6 syscall_entry::syscall:47] [31m[syscall] id = 158, args = [12289, 1073741024, 4549856, 4821736, 3, 1073740964], return -22[m
+[m[37m[  0.244818 0:6 syscall_entry::syscall:20] [31m[syscall] id = BRK, args = [0, 1073741024, 31, 4821736, 4968640, 1073740964], entry[m
+[m[37m[  0.245095 0:6 syscall_entry::syscall:47] [31m[syscall] id = 12, args = [0, 1073741024, 31, 4821736, 4968640, 1073740964], return 1067450368[m
+[m[37m[  0.245398 0:6 syscall_entry::syscall:20] [31m[syscall] id = BRK, args = [1067454912, 1073741024, 31, 4821736, 4968640, 1073740964], entry[m
+[m[37m[  0.245652 0:6 syscall_entry::syscall:47] [31m[syscall] id = 12, args = [1067454912, 1073741024, 31, 4821736, 4968640, 1073740964], return 1067454912[m
+[m[37m[  0.245902 0:6 syscall_entry::syscall:37] [31m[syscall] id = ARCH_PRCTL, args = [4098, 1067452544, 32, 4821736, 4968640, 1073740964], entry[m
+[m[37m[  0.246105 0:6 syscall_entry::syscall:47] [31m[syscall] id = 158, args = [4098, 1067452544, 32, 4821736, 4968640, 1073740964], return 0[m
+[m[37m[  0.246727 0:6 syscall_entry::syscall:37] [31m[syscall] id = UNAME, args = [1073740480, 1067452544, 32, 4821736, 4968640, 1073740964], entry[m
+[m[37m[  0.247094 0:6 syscall_entry::syscall:47] [31m[syscall] id = 63, args = [1073740480, 1067452544, 32, 4821736, 4968640, 1073740964], return 0[m
+[m[37m[  0.247405 0:6 syscall_entry::syscall:28] [31m[syscall] id = READLINK, args = [4896419, 1073736608, 4096, 4821736, 1, 1073740964], entry[m
+[m[37m[  0.248027 0:6 syscall_entry::syscall:47] [31m[syscall] id = 89, args = [4896419, 1073736608, 4096, 4821736, 1, 1073740964], return -22[m
+[m[37m[  0.248751 0:6 syscall_entry::syscall:20] [31m[syscall] id = BRK, args = [1067590080, 135168, 18446744073709547520, 18446744073709547520, 4982784, 1073740964], entry[m
+[m[37m[  0.248972 0:6 syscall_entry::syscall:47] [31m[syscall] id = 12, args = [1067590080, 135168, 18446744073709547520, 18446744073709547520, 4982784, 1073740964], return 1067454912[m
+[m[37m[  0.249242 0:6 syscall_entry::syscall:20] [31m[syscall] id = MMAP, args = [0, 1048576, 3, 34, 4294967295, 0], entry[m
+[m[37m[  0.250320 0:6 syscall_entry::syscall:47] [31m[syscall] id = 9, args = [0, 1048576, 3, 34, 4294967295, 0], return 4096[m
+[m[37m[  0.251340 0:6 syscall_entry::syscall:20] [31m[syscall] id = MPROTECT, args = [4968448, 12288, 1, 12096, 1, 6], entry[m
+[m[37m[  0.252067 0:6 syscall_entry::syscall:47] [31m[syscall] id = 10, args = [4968448, 12288, 1, 12096, 1, 6], return 0[m
+[m[37m[  0.252657 0:6 syscall_entry::syscall:37] [31m[syscall] id = PRCTL, args = [16, 1073740864, 1073741216, 4540176, 0, 6], entry[m
+[m[37m[  0.253065 0:6 syscall_entry::syscall:47] [31m[syscall] id = 157, args = [16, 1073740864, 1073741216, 4540176, 0, 6], return 0[m
+[m[37m[  0.253468 0:6 syscall_entry::syscall:28] [31m[syscall] id = FSTAT, args = [1, 1073738912, 1073738912, 4804618, 1, 6], entry[m
+[m[37m[  0.253717 0:6 syscall_entry::syscall:47] [31m[syscall] id = 5, args = [1, 1073738912, 1073738912, 4804618, 1, 6], return -1[m
+[m[37m[  0.254489 0:6 syscall_entry::syscall:28] [31m[syscall] id = WRITE, args = [1, 5312, 20, 4294967291, 0, 20], entry[m
 [mProcess name: prctl
-[37m[  0.247577 0:6 syscall_entry::syscall:47] [31m[syscall] id = 1, args = [1, 5312, 20, 4294967291, 0, 20], return 20[m
-[m[37m[  0.248036 0:6 syscall_entry::syscall:37] [31m[syscall] id = EXIT_GROUP, args = [0, 60, 0, 4294967291, 231, 18446744073709551552], entry[m
+[37m[  0.254884 0:6 syscall_entry::syscall:47] [31m[syscall] id = 1, args = [1, 5312, 20, 4294967291, 0, 20], return 20[m
+[m[37m[  0.255284 0:6 syscall_entry::syscall:37] [31m[syscall] id = EXIT_GROUP, args = [0, 60, 0, 4294967291, 231, 18446744073709551552], entry[m
 [m
