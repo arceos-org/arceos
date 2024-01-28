@@ -279,7 +279,7 @@ impl Process {
         current_task.set_leader(true);
         // 重置统计时间
         current_task.time_stat_clear();
-        current_task.set_name(&name);
+        current_task.set_name(name.split('/').last().unwrap());
         assert!(tasks.len() == 1);
         drop(tasks);
         let args = if args.len() == 0 {

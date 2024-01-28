@@ -192,9 +192,9 @@ impl TaskInner {
         }
     }
 
-    pub fn set_name(&self, name: &String) {
+    pub fn set_name(&self, name: &str) {
         unsafe {
-            *(self.name.get() as *mut String) = name.clone();    
+            *(self.name.get() as *mut String) = String::from(name);
         }
     }
 

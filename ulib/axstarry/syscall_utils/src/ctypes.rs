@@ -504,9 +504,17 @@ pub fn normal_file_mode(file_type: StMode) -> StMode {
     file_type | StMode::S_IWUSR | StMode::S_IWUSR | StMode::S_IWGRP | StMode::S_IRGRP
 }
 
-/// syscall_prctl的结构体
-pub enum PR_OPTION {
-    PR_SET_NAME ,
-    PR_GET_NAME ,
-    OTHER
- }
+/// prctl 中 PR_NAME_SIZE 要求的缓冲区长度
+pub const PR_NAME_SIZE: usize = 16;
+
+numeric_enum_macro::numeric_enum! {
+    #[repr(usize)]
+    #[allow(missing_docs)]
+    #[allow(non_camel_case_types)]
+    #[derive(Eq, PartialEq, Debug, Copy, Clone)]
+    /// syscall_prctl的结构体
+    pub enum PrctlOption {
+        PR_SET_NAME = 15,
+        PR_GET_NAME = 16,
+    }
+}

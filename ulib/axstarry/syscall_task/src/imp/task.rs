@@ -23,7 +23,7 @@ use syscall_utils::{SyscallError, SyscallResult};
 extern crate alloc;
 use alloc::{string::ToString, sync::Arc, vec::Vec};
 use syscall_utils::{RLimit, TimeSecs, WaitFlags, RLIMIT_AS, RLIMIT_NOFILE, RLIMIT_STACK};
-use syscall_utils::PR_OPTION;
+use syscall_utils::{PrctlOption, PR_NAME_SIZE};
 
 #[cfg(feature = "signal")]
 use axsignal::signal_no::SignalNo;
@@ -439,20 +439,11 @@ pub fn syscall_fork() -> SyscallResult {
     syscall_clone(1, 0, 0, 0, 0)
 }
 
-pub const PR_NAME_SIZE: usize = 16;
 /// prctl
 #[cfg(target_arch = "x86_64")]
-pub fn syscall_prctl(code: usize, arg2: *mut u8) -> SyscallResult {
-
-
-    let code_enum = match code {
-        16 => PR_OPTION::PR_GET_NAME,
-        15 => PR_OPTION::PR_SET_NAME,
-        _ => PR_OPTION::OTHER,
-    };
-
-    match code_enum {
-        PR_OPTION::PR_GET_NAME => {
+pub fn syscall_prctl(option: usize, arg2: *mut u8) -> SyscallResult {
+    match PrctlOption::try_from(option) {
+        Ok(PrctlOption::PR_GET_NAME) => {
             // 获取进程名称。
             let mut process_name = current().name().to_string();
             process_name += "\0";
@@ -472,7 +463,7 @@ pub fn syscall_prctl(code: usize, arg2: *mut u8) -> SyscallResult {
                 Err(SyscallError::EINVAL)
             }
         }
-        PR_OPTION::PR_SET_NAME => { Ok(0) }
-        PR_OPTION::OTHER => { Ok(0) }
+        Ok(PrctlOption::PR_SET_NAME) => { Ok(0) }
+        _ => { Ok(0) }
     }
 }
