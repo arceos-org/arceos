@@ -1,5 +1,6 @@
 /// 处理与任务（线程）有关的系统调用
 use core::time::Duration;
+use axtask::current;
 
 use axconfig::TASK_STACK_SIZE;
 use axhal::time::current_time;
@@ -434,4 +435,34 @@ pub fn syscall_arch_prctl(code: usize, addr: usize) -> SyscallResult {
 pub fn syscall_fork() -> SyscallResult {
     warn!("transfer syscall_fork to syscall_clone");
     syscall_clone(1, 0, 0, 0, 0)
+}
+
+/// prctl
+#[cfg(target_arch = "x86_64")]
+pub fn syscall_prctl(code: usize, arg2: *mut usize) -> SyscallResult {
+    match code {
+        16 => {
+            // 获取进程名称
+            let mut process_name = current().name().to_string();
+            if process_name.starts_with("./") {
+                process_name = process_name.trim_start_matches("./").to_string();
+            }
+
+            // 将进程名称写入到 arg2 指向的内存中
+            unsafe {
+                // 检查 arg2 是否为空指针
+                if !arg2.is_null() {
+                    core::ptr::copy_nonoverlapping(
+                        process_name.as_ptr(),
+                        arg2 as *mut u8,
+                        process_name.len() + 1,
+                    );
+                    Ok(0) // 表示成功
+                } else {
+                    Err(SyscallError::EINVAL)
+                }
+            }
+        }
+        _ => Ok(0), // 对于其他 code，也返回成功
+    }
 }
