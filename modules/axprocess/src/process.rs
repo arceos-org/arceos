@@ -279,6 +279,7 @@ impl Process {
         current_task.set_leader(true);
         // 重置统计时间
         current_task.time_stat_clear();
+        current_task.set_name(&name);
         assert!(tasks.len() == 1);
         drop(tasks);
         let args = if args.len() == 0 {
@@ -376,7 +377,7 @@ impl Process {
         };
         let new_task = TaskInner::new(
             || {},
-            String::new(),
+            String::from(self.tasks.lock()[0].name().split('/').last().unwrap()),
             axconfig::TASK_STACK_SIZE,
             process_id,
             new_memory_set.lock().page_table_token(),

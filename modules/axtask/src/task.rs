@@ -85,7 +85,7 @@ pub struct SchedStatus {
 /// The inner task structure.
 pub struct TaskInner {
     id: TaskId,
-    name: String,
+    name: UnsafeCell<String>,
     is_idle: bool,
     is_init: bool,
 
@@ -187,7 +187,15 @@ impl TaskInner {
 
     /// Gets the name of the task.
     pub fn name(&self) -> &str {
-        self.name.as_str()
+        unsafe {
+            (*self.name.get()).as_str()
+        }
+    }
+
+    pub fn set_name(&self, name: &String) {
+        unsafe {
+            *(self.name.get() as *mut String) = name.clone();    
+        }
     }
 
     /// Get a combined string of the task ID and name.
@@ -404,7 +412,7 @@ impl TaskInner {
     fn new_common(id: TaskId, name: String) -> Self {
         Self {
             id,
-            name,
+            name: UnsafeCell::new(name),
             is_idle: false,
             is_init: false,
             entry: None,
@@ -502,7 +510,7 @@ impl TaskInner {
         t.ctx.get_mut().init(task_entry as usize, kstack.top(), tls);
 
         t.kstack = Some(kstack);
-        if t.name == "idle" {
+        if unsafe {&*t.name.get() }.as_str() == "idle" { // FIXME: name 现已被用作 prctl 使用的程序名，应另选方式判断 idle 进程
             t.is_idle = true;
         }
         Arc::new(AxTask::new(t))
@@ -519,7 +527,7 @@ impl TaskInner {
     pub(crate) fn new_init(name: String) -> AxTaskRef {
         let mut t = Self::new_common(TaskId::new(), name);
         t.is_init = true;
-        if t.name == "idle" {
+        if unsafe {&*t.name.get() }.as_str() == "idle" { // FIXME: name 现已被用作 prctl 使用的程序名，应另选方式判断 idle 进程
             t.is_idle = true;
         }
         Arc::new(AxTask::new(t))

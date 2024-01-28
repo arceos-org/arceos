@@ -292,7 +292,7 @@ pub(crate) fn init() {
     const IDLE_TASK_STACK_SIZE: usize = 4096;
     let idle_task = TaskInner::new(
         || crate::run_idle(),
-        "idle".into(),
+        "idle".into(), // FIXME: name 现已被用作 prctl 使用的程序名，应另选方式判断 idle 进程
         IDLE_TASK_STACK_SIZE,
         #[cfg(feature = "monolithic")]
         KERNEL_PROCESS_ID,
@@ -311,7 +311,7 @@ pub(crate) fn init() {
 }
 
 pub(crate) fn init_secondary() {
-    let idle_task = TaskInner::new_init("idle".into());
+    let idle_task = TaskInner::new_init("idle".into()); // FIXME: name 现已被用作 prctl 使用的程序名，应另选方式判断 idle 进程
     idle_task.set_state(TaskState::Running);
     IDLE_TASK.with_current(|i| i.init_by(idle_task.clone()));
     unsafe { CurrentTask::init_current(idle_task) }
