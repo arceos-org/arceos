@@ -1,12 +1,20 @@
 mod boot;
 
-pub mod generic_timer;
 #[cfg(not(platform_family = "aarch64-raspi"))]
 pub mod psci;
 
 #[cfg(feature = "irq")]
-pub mod gic;
+mod gic;
 
+#[cfg(feature = "irq")]
+pub mod irq {
+    pub use super::gic::*;
+}
+
+mod generic_timer;
+pub mod time {
+    pub use super::generic_timer::*;
+}
 
 #[cfg(platform_family = "aarch64-bsta1000b")]
 mod dw_apb_uart;

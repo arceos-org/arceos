@@ -4,15 +4,6 @@ pub mod misc;
 #[cfg(feature = "smp")]
 pub mod mp;
 
-#[cfg(feature = "irq")]
-pub mod irq {
-    pub use crate::platform::aarch64_common::gic::*;
-}
-
-pub mod time {
-    pub use crate::platform::aarch64_common::generic_timer::*;
-}
-
 extern "C" {
     fn exception_vector_base();
     fn rust_main(cpu_id: usize, dtb: usize);
@@ -41,7 +32,7 @@ pub(crate) unsafe extern "C" fn rust_entry_secondary(cpu_id: usize) {
 /// For example, the interrupt controller and the timer.
 pub fn platform_init() {
     #[cfg(feature = "irq")]
-    super::aarch64_common::gic::init_primary();
+    crate::platform::irq::init_primary();
     crate::platform::time::init_percpu();
     #[cfg(feature = "irq")]
     crate::platform::console::init_irq();
@@ -51,6 +42,6 @@ pub fn platform_init() {
 #[cfg(feature = "smp")]
 pub fn platform_init_secondary() {
     #[cfg(feature = "irq")]
-    super::aarch64_common::gic::init_secondary();
+    crate::platform::irq::init_secondary();
     crate::platform::time::init_percpu();
 }
