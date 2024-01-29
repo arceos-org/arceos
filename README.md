@@ -159,3 +159,5 @@ $ ./build_img.sh gcc
 内核文档存放在`doc/Starry决赛设计文档.pdf`。
 
 另外，可以通过静态部署网页[Starry (azure-stars.github.io)](https://azure-stars.github.io/Starry/)查看更好排版的文档。
+
+[关于ZLMediaKit 的支持文档](./doc/ZLMediaKit/README.md)

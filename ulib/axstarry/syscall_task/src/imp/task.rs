@@ -1,5 +1,7 @@
 /// 处理与任务（线程）有关的系统调用
 use core::time::Duration;
+use core::ptr::slice_from_raw_parts_mut;
+use axtask::current;
 
 use axconfig::TASK_STACK_SIZE;
 use axhal::time::current_time;
@@ -21,6 +23,7 @@ use syscall_utils::{SyscallError, SyscallResult};
 extern crate alloc;
 use alloc::{string::ToString, sync::Arc, vec::Vec};
 use syscall_utils::{RLimit, TimeSecs, WaitFlags, RLIMIT_AS, RLIMIT_NOFILE, RLIMIT_STACK};
+use syscall_utils::{PrctlOption, PR_NAME_SIZE};
 
 #[cfg(feature = "signal")]
 use axsignal::signal_no::SignalNo;
@@ -179,6 +182,11 @@ pub fn syscall_clone(
     } else {
         return Err(SyscallError::ENOMEM);
     }
+}
+
+/// 创建一个子进程，挂起父进程，直到子进程exec或者exit，父进程才继续执行
+pub fn syscall_vfork() -> SyscallResult {
+    syscall_clone(0x4011, 0, 0, 0, 0)
 }
 
 /// 等待子进程完成任务，若子进程没有完成，则自身yield
@@ -434,4 +442,33 @@ pub fn syscall_arch_prctl(code: usize, addr: usize) -> SyscallResult {
 pub fn syscall_fork() -> SyscallResult {
     warn!("transfer syscall_fork to syscall_clone");
     syscall_clone(1, 0, 0, 0, 0)
+}
+
+/// prctl
+#[cfg(target_arch = "x86_64")]
+pub fn syscall_prctl(option: usize, arg2: *mut u8) -> SyscallResult {
+    match PrctlOption::try_from(option) {
+        Ok(PrctlOption::PR_GET_NAME) => {
+            // 获取进程名称。
+            let mut process_name = current().name().to_string();
+            process_name += "\0";
+            // [syscall 定义](https://man7.org/linux/man-pages/man2/prctl.2.html)要求 NAME 应该不超过 16 Byte
+            process_name.truncate(PR_NAME_SIZE);
+            // 把 arg2 转换成可写的 buffer
+            if current_process()
+            .manual_alloc_for_lazy((arg2 as usize).into())
+            .is_ok() // 直接访问前需要确保地址已经被分配
+            {
+                unsafe {
+                    let name = &mut * slice_from_raw_parts_mut(arg2, PR_NAME_SIZE);
+                    name[..process_name.len()].copy_from_slice(process_name.as_bytes());
+                }
+                Ok(0)
+            } else {
+                Err(SyscallError::EINVAL)
+            }
+        }
+        Ok(PrctlOption::PR_SET_NAME) => { Ok(0) }
+        _ => { Ok(0) }
+    }
 }

@@ -25,6 +25,8 @@ use crate::stat::TimeStat;
 
 use crate::{AxRunQueue, AxTask, AxTaskRef, WaitQueue};
 
+use crate_interface::call_interface;
+
 /// A unique identifier for a thread.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct TaskId(u64);
@@ -77,6 +79,7 @@ impl From<SchedPolicy> for isize {
         }
     }
 }
+
 #[derive(Clone, Copy)]
 pub struct SchedStatus {
     pub policy: SchedPolicy,
@@ -85,7 +88,7 @@ pub struct SchedStatus {
 /// The inner task structure.
 pub struct TaskInner {
     id: TaskId,
-    name: String,
+    name: UnsafeCell<String>,
     is_idle: bool,
     is_init: bool,
 
@@ -187,7 +190,15 @@ impl TaskInner {
 
     /// Gets the name of the task.
     pub fn name(&self) -> &str {
-        self.name.as_str()
+        unsafe {
+            (*self.name.get()).as_str()
+        }
+    }
+
+    pub fn set_name(&self, name: &str) {
+        unsafe {
+            *(self.name.get() as *mut String) = String::from(name);
+        }
     }
 
     /// Get a combined string of the task ID and name.
@@ -212,6 +223,13 @@ impl TaskInner {
         }
         None
     }
+}
+
+#[crate_interface::def_interface]
+pub trait VforkCheck {
+    // Called to check whether vforked
+    // if this process was blocked by vfork, return true
+    fn check_vfork(&self, process_id: u64) -> bool;
 }
 
 #[cfg(feature = "monolithic")]
@@ -397,6 +415,11 @@ impl TaskInner {
     pub unsafe fn set_tls_force(&self, value: usize) {
         self.ctx.get().as_mut().unwrap().fs_base = value;
     }
+
+    pub fn is_vfork(&self) -> bool {
+        // 获取父进程blocked_by_vfork布尔值
+        call_interface!(VforkCheck::check_vfork(self.get_process_id()))
+    }
 }
 
 // private methods
@@ -404,7 +427,7 @@ impl TaskInner {
     fn new_common(id: TaskId, name: String) -> Self {
         Self {
             id,
-            name,
+            name: UnsafeCell::new(name),
             is_idle: false,
             is_init: false,
             entry: None,
@@ -502,7 +525,7 @@ impl TaskInner {
         t.ctx.get_mut().init(task_entry as usize, kstack.top(), tls);
 
         t.kstack = Some(kstack);
-        if t.name == "idle" {
+        if unsafe {&*t.name.get() }.as_str() == "idle" { // FIXME: name 现已被用作 prctl 使用的程序名，应另选方式判断 idle 进程
             t.is_idle = true;
         }
         Arc::new(AxTask::new(t))
@@ -519,7 +542,7 @@ impl TaskInner {
     pub(crate) fn new_init(name: String) -> AxTaskRef {
         let mut t = Self::new_common(TaskId::new(), name);
         t.is_init = true;
-        if t.name == "idle" {
+        if unsafe {&*t.name.get() }.as_str() == "idle" { // FIXME: name 现已被用作 prctl 使用的程序名，应另选方式判断 idle 进程
             t.is_idle = true;
         }
         Arc::new(AxTask::new(t))

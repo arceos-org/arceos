@@ -10,6 +10,8 @@ use spinlock::SpinNoIrq;
 use crate::task::{CurrentTask, TaskState};
 use crate::{AxTaskRef, Scheduler, TaskInner, WaitQueue};
 
+use crate_interface::call_interface;
+
 // TODO: per-CPU
 pub static RUN_QUEUE: LazyInit<SpinNoIrq<AxRunQueue>> = LazyInit::new();
 
@@ -23,6 +25,12 @@ pub static IDLE_TASK: LazyInit<AxTaskRef> = LazyInit::new();
 
 pub struct AxRunQueue {
     scheduler: Scheduler,
+}
+
+#[crate_interface::def_interface]
+pub trait VforkSet {
+    // Set vfork status through process_id
+    fn vfork_set(&self, process_id: u64, value: bool);
 }
 
 impl AxRunQueue {
@@ -105,6 +113,8 @@ impl AxRunQueue {
         } else {
             curr.set_state(TaskState::Exited);
             curr.notify_exit(exit_code, self);
+            //将父进程 blocked_by_vfork 设置为 false
+            call_interface!(VforkSet::vfork_set(curr.get_process_id(), false));
             EXITED_TASKS.lock().push_back(curr.clone());
             WAIT_FOR_EXIT.notify_one_locked(false, self);
             self.resched(false);
@@ -207,7 +217,8 @@ impl AxRunQueue {
                 }
                 let mask = task.get_cpu_set();
                 let curr_cpu = this_cpu_id();
-                if mask & (1 << curr_cpu) != 0 {
+                // 如果当前进程没有被 vfork 阻塞，弹出任务
+                if mask & (1 << curr_cpu) != 0 && !task.is_vfork() {
                     break task;
                 }
                 task_set.insert(task.id().as_u64());
@@ -292,7 +303,7 @@ pub(crate) fn init() {
     const IDLE_TASK_STACK_SIZE: usize = 4096;
     let idle_task = TaskInner::new(
         || crate::run_idle(),
-        "idle".into(),
+        "idle".into(), // FIXME: name 现已被用作 prctl 使用的程序名，应另选方式判断 idle 进程
         IDLE_TASK_STACK_SIZE,
         #[cfg(feature = "monolithic")]
         KERNEL_PROCESS_ID,
@@ -311,7 +322,7 @@ pub(crate) fn init() {
 }
 
 pub(crate) fn init_secondary() {
-    let idle_task = TaskInner::new_init("idle".into());
+    let idle_task = TaskInner::new_init("idle".into()); // FIXME: name 现已被用作 prctl 使用的程序名，应另选方式判断 idle 进程
     idle_task.set_state(TaskState::Running);
     IDLE_TASK.with_current(|i| i.init_by(idle_task.clone()));
     unsafe { CurrentTask::init_current(idle_task) }
