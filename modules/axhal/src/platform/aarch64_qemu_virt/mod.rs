@@ -33,7 +33,7 @@ pub(crate) unsafe extern "C" fn rust_entry(cpu_id: usize, dtb: usize) {
     crate::arch::write_page_table_root0(0.into()); // disable low address access
     crate::cpu::init_primary(cpu_id);
     crate::platform::console::init_early();
-    super::aarch64_common::generic_timer::init_early();
+    crate::platform::time::init_early();
     rust_main(cpu_id, dtb);
 }
 
@@ -51,7 +51,7 @@ pub(crate) unsafe extern "C" fn rust_entry_secondary(cpu_id: usize) {
 pub fn platform_init() {
     #[cfg(feature = "irq")]
     super::aarch64_common::gic::init_primary();
-    super::aarch64_common::generic_timer::init_percpu();
+    crate::platform::time::init_percpu();
     #[cfg(feature = "irq")]
     crate::platform::console::init_irq();
 }
@@ -61,5 +61,5 @@ pub fn platform_init() {
 pub fn platform_init_secondary() {
     #[cfg(feature = "irq")]
     super::aarch64_common::gic::init_secondary();
-    super::aarch64_common::generic_timer::init_percpu();
+    crate::platform::time::init_percpu();
 }
