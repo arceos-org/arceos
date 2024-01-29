@@ -5,10 +5,6 @@ platform = "aarch64-qemu-virt"
 # Platform family.
 family = "aarch64-qemu-virt"
 
-# Base address of the whole physical memory.
-phys-memory-base = "0x4000_0000"
-# Size of the whole physical memory.
-phys-memory-size = "0x800_0000"     # 128M
 # Base physical address of the kernel image.
 kernel-base-paddr = "0x4008_0000"
 # Base virtual address of the kernel image.

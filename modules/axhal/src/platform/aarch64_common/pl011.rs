@@ -30,6 +30,7 @@ pub fn getchar() -> Option<u8> {
 
 /// Initialize the UART
 pub fn init_early() {
+    unsafe {crate::platform::aarch64_common::mem::idmap_device(UART_BASE.as_usize());}
     UART.lock().init();
 }
 
