@@ -514,6 +514,18 @@ pub fn syscall_readlinkat(
         slice.copy_from_slice(&name.as_bytes()[..len]);
         return Ok(len as isize);
     }
+
+    // 获取进程自身的符号链接信息
+    if path.path() == "/proc/self/exe" {
+        // 获取该进程符号链接对应的真正地址
+        let file_real_path = process.get_file_path();
+        let len = bufsiz.min(file_real_path.len());
+        let slice = unsafe { core::slice::from_raw_parts_mut(buf, len) };
+        slice.copy_from_slice(&file_real_path.as_bytes()[..len]);
+
+        return Ok(file_real_path.len() as isize)
+    }
+
     if path.path().to_string() != real_path(&(path.path().to_string())) {
         // 说明链接存在
         let path = path.path();

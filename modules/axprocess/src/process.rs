@@ -67,6 +67,9 @@ pub struct Process {
     pub robust_list: Mutex<BTreeMap<u64, FutexRobustList>>,
 
     pub blocked_by_vfork: Mutex<bool>,
+    // 该进程可执行文件所在的路径
+    pub file_path: Mutex<String>,
+
 }
 
 impl Process {
@@ -117,6 +120,15 @@ impl Process {
     pub fn set_vfork_block(&self, value: bool) {
         *self.blocked_by_vfork.lock() = value;
     }
+    
+    pub fn set_file_path(&self, path: String) {
+        let mut file_path = self.file_path.lock();
+        *file_path = path;
+    }
+
+    pub fn get_file_path(&self) -> String {
+        (*self.file_path.lock()).clone()
+    }
 
     /// 若进程运行完成，则获取其返回码
     /// 若正在运行（可能上锁或没有上锁），则返回None
@@ -151,6 +163,7 @@ impl Process {
             signal_modules: Mutex::new(BTreeMap::new()),
             robust_list: Mutex::new(BTreeMap::new()),
             blocked_by_vfork: Mutex::new(false),
+            file_path: Mutex::new(String::new()),
         }
     }
     /// 根据给定参数创建一个新的进程，作为应用程序初始进程

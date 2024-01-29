@@ -5,6 +5,7 @@ use axlog::error;
 pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
     #[cfg(feature = "futex")]
     syscall_task::check_dead_wait();
+
     let ans = loop {
         #[cfg(feature = "syscall_net")]
         {

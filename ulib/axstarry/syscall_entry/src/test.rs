@@ -312,6 +312,7 @@ pub const OSTRAIN_TESTCASES: &[&str] = &[
 #[allow(dead_code)]
 pub const SDCARD_TESTCASES: &[&str] = &[
     "busybox sh",
+    // "./readlink_parent"
     //"./prctl",
     //"./test-vfork-exit-x86_64",
     //"./test-vfork-exec-x86_64",

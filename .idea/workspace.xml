@@ -17,8 +17,12 @@
   <component name="ChangeListManager">
     <list default="true" id="7c62798e-00ca-45fb-8290-e63c15b16cfe" name="更改" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ulib/starry_libax/src/syscall/fs.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/starry_libax/src/syscall/fs.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ulib/starry_libax/src/test.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/starry_libax/src/test.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/axfs/src/mounts.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axfs/src/mounts.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modules/axprocess/src/process.rs" beforeDir="false" afterPath="$PROJECT_DIR$/modules/axprocess/src/process.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ulib/axstarry/syscall_entry/src/syscall.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/axstarry/syscall_entry/src/syscall.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ulib/axstarry/syscall_entry/src/test.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/axstarry/syscall_entry/src/test.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ulib/axstarry/syscall_fs/src/imp/io.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/axstarry/syscall_fs/src/imp/io.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ulib/axstarry/syscall_task/src/imp/task.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ulib/axstarry/syscall_task/src/imp/task.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -54,6 +58,9 @@
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
   </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 5
+}</component>
   <component name="ProjectId" id="2PKwRLrJdA5cco52bR783Ht7J7S" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -61,6 +68,7 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "ASKED_ADD_EXTERNAL_FILES": "true",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.cidr.known.project.marker": "true",
@@ -69,15 +77,15 @@
     "cf.advertisement.text.overridden": "true",
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
-    "git-widget-placeholder": "problem2",
-    "last_opened_file_path": "//wsl$/Ubuntu-22.04/home/ccyd/Local_Coding/OS/Starry",
+    "git-widget-placeholder": "x86__64",
+    "last_opened_file_path": "/home/sakana/myrealhome/workshop/QuanChengLab/Starry-readlink",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
-    "settings.editor.selected.configurable": "preferences.keymap",
+    "settings.editor.selected.configurable": "language.rust",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
@@ -114,6 +122,8 @@
       <workItem from="1690628912203" duration="1833000" />
       <workItem from="1690764849588" duration="611000" />
       <workItem from="1692447315345" duration="8137000" />
+      <workItem from="1706448085426" duration="6823000" />
+      <workItem from="1706455903169" duration="1406000" />
     </task>
     <servers />
   </component>

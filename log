@@ -1,0 +1,1437 @@
+    [92;1mBuilding[0m App: oscomp, Arch: x86_64, Platform: x86_64-qemu-q35, App type: rust
+[37mcargo build[0m [90m--target x86_64-unknown-none --target-dir /home/sakana/myrealhome/workshop/QuanChengLab/Starry-readlink/target --release  --manifest-path apps/oscomp/Cargo.toml --features "syscall_entry/log-level-debug syscall_entry/bus-pci syscall_entry/fp_simd syscall_entry/syscall_fs syscall_entry/syscall_mem syscall_entry/syscall_task syscall_entry/futex syscall_entry/signal syscall_entry/img syscall_entry/syscall_net"[0m
+[37mrust-objcopy --binary-architecture=x86_64[0m [90mapps/oscomp/oscomp_x86_64-qemu-q35.elf --strip-all -O binary apps/oscomp/oscomp_x86_64-qemu-q35.bin[0m
+    [96;1mRunning[0m on qemu...
+[37mqemu-system-x86_64[0m [90m-m 2G -smp 1 -machine q35 -kernel apps/oscomp/oscomp_x86_64-qemu-q35.elf -device virtio-blk-pci,drive=disk0 -drive id=disk0,if=none,format=raw,file=disk.img -device virtio-net-pci,netdev=net0 -netdev user,id=net0,hostfwd=tcp::5555-:5555,hostfwd=udp::5555-:5555 -nographic[0m
+c[?7l[2J[0mSeaBIOS (version Arch Linux 1.16.3-1-1)
+
+
+iPXE (http://ipxe.org) 00:03.0 C900 PCI2.10 PnP PMM+7EFD2F40+7EF32F40 C900
+Press Ctrl-B to configure iPXE (PCI 00:03.0)...                                                                               
+
+
+Booting from ROM..
+Initialize IDT & GDT...
+
+       d8888                            .d88888b.   .d8888b.
+      d88888                           d88P" "Y88b d88P  Y88b
+     d88P888                           888     888 Y88b.
+    d88P 888 888d888  .d8888b  .d88b.  888     888  "Y888b.
+   d88P  888 888P"   d88P"    d8P  Y8b 888     888     "Y88b.
+  d88P   888 888     888      88888888 888     888       "888
+ d8888888888 888     Y88b.    Y8b.     Y88b. .d88P Y88b  d88P
+d88P     888 888      "Y8888P  "Y8888   "Y88888P"   "Y8888P"
+
+arch = x86_64
+platform = x86_64-qemu-q35
+target = x86_64-unknown-none
+smp = 1
+build_mode = release
+log_level = debug
+
+[37m[  0.002568 0 axruntime:130] [32mLogging is enabled.[m
+[m[37m[  0.003233 0 axruntime:131] [32mPrimary CPU 0 started, dtb = 0x0.[m
+[m[37m[  0.003579 0 axruntime:133] [32mFound physcial memory regions:[m
+[m[37m[  0.003928 0 axruntime:135] [32m  [PA:0x200000, PA:0x2d7000) .text (READ | EXECUTE | RESERVED)[m
+[m[37m[  0.004419 0 axruntime:135] [32m  [PA:0x2d7000, PA:0x2ed000) .rodata (READ | RESERVED)[m
+[m[37m[  0.004798 0 axruntime:135] [32m  [PA:0x2ed000, PA:0x4b00000) .data .tdata .tbss .percpu (READ | WRITE | RESERVED)[m
+[m[37m[  0.005260 0 axruntime:135] [32m  [PA:0x4b00000, PA:0x4b40000) boot stack (READ | WRITE | RESERVED)[m
+[m[37m[  0.005667 0 axruntime:135] [32m  [PA:0x4b40000, PA:0x4b66000) .bss (READ | WRITE | RESERVED)[m
+[m[37m[  0.006073 0 axruntime:135] [32m  [PA:0x1000, PA:0x9f000) low memory (READ | WRITE | RESERVED)[m
+[m[37m[  0.006482 0 axruntime:135] [32m  [PA:0x4b66000, PA:0x80000000) free memory (READ | WRITE | FREE)[m
+[m[37m[  0.006900 0 axruntime:135] [32m  [PA:0xb0000000, PA:0xc0000000) mmio (READ | WRITE | DEVICE | RESERVED)[m
+[m[37m[  0.007329 0 axruntime:135] [32m  [PA:0xfe000000, PA:0xfec00000) mmio (READ | WRITE | DEVICE | RESERVED)[m
+[m[37m[  0.007753 0 axruntime:135] [32m  [PA:0xfec00000, PA:0xfec01000) mmio (READ | WRITE | DEVICE | RESERVED)[m
+[m[37m[  0.008180 0 axruntime:135] [32m  [PA:0xfed00000, PA:0xfed01000) mmio (READ | WRITE | DEVICE | RESERVED)[m
+[m[37m[  0.008689 0 axruntime:135] [32m  [PA:0xfee00000, PA:0xfee01000) mmio (READ | WRITE | DEVICE | RESERVED)[m
+[m[37m[  0.009326 0 axruntime:217] [32mInitialize global memory allocator...[m
+[m[37m[  0.009669 0 axruntime:218] [32m  use TLSF allocator.[m
+[m[37m[  0.010144 0 axruntime:230] [32malloc region size: 7B49A000[m
+[m[37m[  0.010626 0 axalloc:212] [36minitialize global allocator at: [0xffffff8004b66000, 0xffffff8080000000)[m
+[m[37m[  0.011743 0 axruntime:149] [32mInitialize kernel page table...[m
+[m[37m[  0.013234 0 axruntime:153] [32mInitialize platform devices...[m
+[m[37m[  0.013550 0 axhal::platform::x86_pc::apic:87] [32mInitialize Local APIC...[m
+[m[37m[  0.013904 0 axhal::platform::x86_pc::apic:105] [32mUsing xAPIC.[m
+[m[37m[  0.014459 0 axhal::platform::x86_pc::apic:116] [32mInitialize IO APIC...[m
+[m[37m[  0.014965 0 axtask::api:68] [32mInitialize scheduling...[m
+[m[37m[  0.015512 0 axtask::task:476] [36mnew task: Task(2, "idle")[m
+[m[37m[  0.016014 0 axtask::task:476] [36mnew task: Task(4, "gc")[m
+[m[37m[  0.016394 0 axalloc:118] [36mexpand heap memory: [0xffffff8004b9a000, 0xffffff8004bda000)[m
+[m[37m[  0.016875 0 axalloc:118] [36mexpand heap memory: [0xffffff8004bda000, 0xffffff8004c5a000)[m
+[m[37m[  0.017494 0 axtask::api:74] [32m  use FIFO scheduler.[m
+[m[37m[  0.017915 0 axdriver:152] [32mInitialize device drivers...[m
+[m[37m[  0.018218 0 axdriver:153] [32m  device model: static[m
+[m[37m[  0.018910 0 axalloc:118] [36mexpand heap memory: [0xffffff8004c5a000, 0xffffff8008c5a000)[m
+[m[37m[  0.020229 0 axalloc:118] [36mexpand heap memory: [0xffffff8008c5a000, 0xffffff8010c5a000)[m
+[m[37m[  0.037603 0 axalloc:118] [36mexpand heap memory: [0xffffff8010c5a000, 0xffffff8020c5a000)[m
+[m[37m[  0.059781 0 axdriver:124] [32mregistered a new Block device: "ramdisk"[m
+[m[37m[  0.060226 0 axdriver::bus::pci:97] [36mPCI 00:00.0: 8086:29c0 (class 06.00, rev 00) Standard[m
+[m[37m[  0.060970 0 axdriver::bus::pci:97] [36mPCI 00:01.0: 1234:1111 (class 03.00, rev 02) Standard[m
+[m[37m[  0.061591 0 axdriver::bus::pci:54] [36m  BAR 0: MEM [0xfd000000, 0xfe000000) pref[m
+[m[37m[  0.062175 0 axdriver::bus::pci:54] [36m  BAR 2: MEM [0xfebd0000, 0xfebd1000)[m
+[m[37m[  0.062578 0 axdriver::bus::pci:97] [36mPCI 00:02.0: 1af4:1001 (class 01.00, rev 00) Standard[m
+[m[37m[  0.063282 0 axdriver::bus::pci:44] [36m  BAR 0: IO  [0xc000, 0xc080)[m
+[m[37m[  0.063992 0 axdriver::bus::pci:54] [36m  BAR 1: MEM [0xfebd1000, 0xfebd2000)[m
+[m[37m[  0.065128 0 axdriver::bus::pci:54] [36m  BAR 4: MEM [0xfe000000, 0xfe004000) 64bit pref[m
+[m[37m[  0.065522 0 axdriver::bus::pci:97] [36mPCI 00:03.0: 1af4:1000 (class 02.00, rev 00) Standard[m
+[m[37m[  0.066338 0 axdriver::bus::pci:44] [36m  BAR 0: IO  [0xc0c0, 0xc0e0)[m
+[m[37m[  0.067101 0 axdriver::bus::pci:54] [36m  BAR 1: MEM [0xfebd2000, 0xfebd3000)[m
+[m[37m[  0.067798 0 axdriver::bus::pci:54] [36m  BAR 4: MEM [0xfe004000, 0xfe008000) 64bit pref[m
+[m[37m[  0.069551 0 virtio_drivers::transport:78] [36mDevice features: Features(CTRL_GUEST_OFFLOADS | MAC | MRG_RXBUF | STATUS | CTRL_VQ | CTRL_RX | CTRL_VLAN | CTRL_RX_EXTRA | GUEST_ANNOUNCE | CTL_MAC_ADDR | RING_INDIRECT_DESC | RING_EVENT_IDX | VERSION_1)[m
+[m[37m[  0.070674 0 virtio_drivers::device::net::dev_raw:30] [32mnegotiated_features Features(MAC | STATUS | RING_EVENT_IDX)[m
+[m[37m[  0.071231 0 virtio_drivers::device::net::dev_raw:37] [36mGot MAC=[52, 54, 00, 12, 34, 56], status=Status(LINK_UP)[m
+[m[37m[  0.072642 0 axdriver::bus::pci:104] [32mregistered a new Net device at 00:03.0: "virtio-net"[m
+[m[37m[  0.073125 0 axdriver::bus::pci:97] [36mPCI 00:1f.0: 8086:2918 (class 06.01, rev 02) Standard[m
+[m[37m[  0.073848 0 axdriver::bus::pci:97] [36mPCI 00:1f.2: 8086:2922 (class 01.06, rev 02) Standard[m
+[m[37m[  0.074508 0 axdriver::bus::pci:44] [36m  BAR 4: IO  [0xc0e0, 0xc100)[m
+[m[37m[  0.074957 0 axdriver::bus::pci:54] [36m  BAR 5: MEM [0xfebd3000, 0xfebd4000)[m
+[m[37m[  0.075293 0 axdriver::bus::pci:97] [36mPCI 00:1f.3: 8086:2930 (class 0c.05, rev 02) Standard[m
+[m[37m[  0.075851 0 axdriver::bus::pci:44] [36m  BAR 4: IO  [0x700, 0x740)[m
+[m[37m[  0.090685 0 axdriver:171] [36mnumber of NICs: 1[m
+[m[37m[  0.090927 0 axdriver:174] [36m  NIC 0: "virtio-net"[m
+[m[37m[  0.091169 0 axdriver:179] [36mnumber of block devices: 1[m
+[m[37m[  0.091443 0 axdriver:182] [36m  block device 0: "ramdisk"[m
+[m[37m[  0.091727 0 axfs:44] [32mInitialize filesystems...[m
+[m[37m[  0.091996 0 axfs:47] [32m  use block device 0: "ramdisk"[m
+[m[37m[  0.093440 0 axfs::fs::fatfs:176] [36mcreate Dir at fatfs: /dev[m
+[m[37m[  0.098095 0 axfs::fs::fatfs:156] [36mlookup at fatfs: /dev[m
+[m[37m[  0.099308 0 fatfs::dir:140] [31mIs a directory[m
+[m[37m[  0.100849 0 axfs::fs::fatfs:176] [36mcreate Dir at fatfs: /tmp[m
+[m[37m[  0.102856 0 axfs::fs::fatfs:156] [36mlookup at fatfs: /tmp[m
+[m[37m[  0.103961 0 fatfs::dir:140] [31mIs a directory[m
+[m[37m[  0.105138 0 axfs::fs::fatfs:176] [36mcreate Dir at fatfs: /var[m
+[m[37m[  0.107157 0 axfs::fs::fatfs:156] [36mlookup at fatfs: /var[m
+[m[37m[  0.108259 0 fatfs::dir:140] [31mIs a directory[m
+[m[37m[  0.109423 0 axfs_ramfs::dir:128] [36mcreate Dir at ramfs: sys[m
+[m[37m[  0.109845 0 axfs_ramfs::dir:128] [36mcreate Dir at ramfs: sys/net[m
+[m[37m[  0.110224 0 axfs_ramfs::dir:128] [36mcreate Dir at ramfs: net[m
+[m[37m[  0.110516 0 axfs_ramfs::dir:128] [36mcreate Dir at ramfs: sys/net/core[m
+[m[37m[  0.110820 0 axfs_ramfs::dir:128] [36mcreate Dir at ramfs: net/core[m
+[m[37m[  0.111118 0 axfs_ramfs::dir:128] [36mcreate Dir at ramfs: core[m
+[m[37m[  0.111407 0 axfs_ramfs::dir:128] [36mcreate File at ramfs: sys/net/core/somaxconn[m
+[m[37m[  0.111781 0 axfs_ramfs::dir:128] [36mcreate File at ramfs: net/core/somaxconn[m
+[m[37m[  0.112123 0 axfs_ramfs::dir:128] [36mcreate File at ramfs: core/somaxconn[m
+[m[37m[  0.112450 0 axfs_ramfs::dir:128] [36mcreate File at ramfs: somaxconn[m
+[m[37m[  0.112967 0 axfs_ramfs::dir:128] [36mcreate Dir at ramfs: sys/vm[m
+[m[37m[  0.113257 0 axfs_ramfs::dir:128] [36mcreate Dir at ramfs: vm[m
+[m[37m[  0.113597 0 axfs_ramfs::dir:128] [36mcreate File at ramfs: sys/vm/overcommit_memory[m
+[m[37m[  0.113950 0 axfs_ramfs::dir:128] [36mcreate File at ramfs: vm/overcommit_memory[m
+[m[37m[  0.114295 0 axfs_ramfs::dir:128] [36mcreate File at ramfs: overcommit_memory[m
+[m[37m[  0.114679 0 axfs_ramfs::dir:128] [36mcreate Dir at ramfs: self[m
+[m[37m[  0.114994 0 axfs_ramfs::dir:128] [36mcreate File at ramfs: self/stat[m
+[m[37m[  0.115294 0 axfs_ramfs::dir:128] [36mcreate File at ramfs: stat[m
+[m[37m[  0.115585 0 axfs_ramfs::dir:128] [36mcreate File at ramfs: self/exe[m
+[m[37m[  0.115884 0 axfs_ramfs::dir:128] [36mcreate File at ramfs: exe[m
+[m[37m[  0.116173 0 axfs_ramfs::dir:128] [36mcreate File at ramfs: meminfo[m
+[m[37m[  0.116474 0 axfs_ramfs::dir:128] [36mcreate File at ramfs: mounts[m
+[m[37m[  0.116780 0 axfs_ramfs::dir:128] [36mcreate File at ramfs: interrupts[m
+[m[37m[  0.117153 0 axfs::fs::fatfs:176] [36mcreate Dir at fatfs: /proc[m
+[m[37m[  0.119193 0 axfs::fs::fatfs:156] [36mlookup at fatfs: /proc[m
+[m[37m[  0.120306 0 fatfs::dir:140] [31mIs a directory[m
+[m[37m[  0.121461 0 axfs_ramfs::dir:128] [36mcreate Dir at ramfs: kernel[m
+[m[37m[  0.121758 0 axfs_ramfs::dir:128] [36mcreate Dir at ramfs: kernel/mm[m
+[m[37m[  0.122057 0 axfs_ramfs::dir:128] [36mcreate Dir at ramfs: mm[m
+[m[37m[  0.122327 0 axfs_ramfs::dir:128] [36mcreate Dir at ramfs: kernel/mm/transparent_hugepage[m
+[m[37m[  0.122692 0 axfs_ramfs::dir:128] [36mcreate Dir at ramfs: mm/transparent_hugepage[m
+[m[37m[  0.123041 0 axfs_ramfs::dir:128] [36mcreate Dir at ramfs: transparent_hugepage[m
+[m[37m[  0.123388 0 axfs_ramfs::dir:128] [36mcreate File at ramfs: kernel/mm/transparent_hugepage/enabled[m
+[m[37m[  0.123823 0 axfs_ramfs::dir:128] [36mcreate File at ramfs: mm/transparent_hugepage/enabled[m
+[m[37m[  0.124202 0 axfs_ramfs::dir:128] [36mcreate File at ramfs: transparent_hugepage/enabled[m
+[m[37m[  0.124573 0 axfs_ramfs::dir:128] [36mcreate File at ramfs: enabled[m
+[m[37m[  0.124900 0 axfs_ramfs::dir:128] [36mcreate Dir at ramfs: devices[m
+[m[37m[  0.125197 0 axfs_ramfs::dir:128] [36mcreate Dir at ramfs: devices/system[m
+[m[37m[  0.125514 0 axfs_ramfs::dir:128] [36mcreate Dir at ramfs: system[m
+[m[37m[  0.125806 0 axfs_ramfs::dir:128] [36mcreate Dir at ramfs: devices/system/clocksource[m
+[m[37m[  0.126167 0 axfs_ramfs::dir:128] [36mcreate Dir at ramfs: system/clocksource[m
+[m[37m[  0.126505 0 axfs_ramfs::dir:128] [36mcreate Dir at ramfs: clocksource[m
+[m[37m[  0.126834 0 axfs_ramfs::dir:128] [36mcreate Dir at ramfs: devices/system/clocksource/clocksource0[m
+[m[37m[  0.127243 0 axfs_ramfs::dir:128] [36mcreate Dir at ramfs: system/clocksource/clocksource0[m
+[m[37m[  0.127616 0 axfs_ramfs::dir:128] [36mcreate Dir at ramfs: clocksource/clocksource0[m
+[m[37m[  0.127971 0 axfs_ramfs::dir:128] [36mcreate Dir at ramfs: clocksource0[m
+[m[37m[  0.128285 0 axfs_ramfs::dir:128] [36mcreate File at ramfs: devices/system/clocksource/clocksource0/current_clocksource[m
+[m[37m[  0.128780 0 axfs_ramfs::dir:128] [36mcreate File at ramfs: system/clocksource/clocksource0/current_clocksource[m
+[m[37m[  0.129240 0 axfs_ramfs::dir:128] [36mcreate File at ramfs: clocksource/clocksource0/current_clocksource[m
+[m[37m[  0.129666 0 axfs_ramfs::dir:128] [36mcreate File at ramfs: clocksource0/current_clocksource[m
+[m[37m[  0.130049 0 axfs_ramfs::dir:128] [36mcreate File at ramfs: current_clocksource[m
+[m[37m[  0.130439 0 axfs::fs::fatfs:176] [36mcreate Dir at fatfs: /sys[m
+[m[37m[  0.132500 0 axfs::fs::fatfs:156] [36mlookup at fatfs: /sys[m
+[m[37m[  0.133630 0 fatfs::dir:140] [31mIs a directory[m
+[m[37m[  0.134897 0 axnet:46] [32mInitialize network subsystem...[m
+[m[37m[  0.135189 0 axnet:49] [32m  use NIC 0: "virtio-net"[m
+[m[37m[  0.136138 0 axruntime:185] [32mInitialize interrupt handlers...[m
+[m[37m[  0.136727 0 axruntime:195] [32mPrimary CPU 0 init OK.[m
+[m[37m[  0.138342 0:3 axprocess::link:238] [32mcreate_link: /lib/ld-musl-x86_64-sf.so.1 -> /libc.so[m
+[m[37m[  0.138869 0:3 axfs::root:81] [36mlookup at root: /libc.so[m
+[m[37m[  0.139485 0:3 axfs::fs::fatfs:156] [36mlookup at fatfs: libc.so[m
+[m[37m[  0.142279 0:3 axprocess::link:238] [32mcreate_link: /lib/ld-musl-x86_64.so.1 -> /libc.so[m
+[m[37m[  0.142640 0:3 axfs::root:81] [36mlookup at root: /libc.so[m
+[m[37m[  0.142899 0:3 axfs::fs::fatfs:156] [36mlookup at fatfs: libc.so[m
+[m[37m[  0.143887 0:3 axprocess::link:238] [32mcreate_link: /lib/tls_get_new-dtv_dso.so -> /tls_get_new-dtv_dso.so[m
+[m[37m[  0.144332 0:3 axfs::root:81] [36mlookup at root: /tls_get_new-dtv_dso.so[m
+[m[37m[  0.144655 0:3 axfs::fs::fatfs:156] [36mlookup at fatfs: tls_get_new-dtv_dso.so[m
+[m[37m[  0.145935 0:3 axprocess::link:238] [32mcreate_link: /sbin/busybox -> /busybox[m
+[m[37m[  0.146264 0:3 axfs::root:81] [36mlookup at root: /busybox[m
+[m[37m[  0.146520 0:3 axfs::fs::fatfs:156] [36mlookup at fatfs: busybox[m
+[m[37m[  0.146923 0:3 axprocess::link:238] [32mcreate_link: /sbin/ls -> /busybox[m
+[m[37m[  0.147239 0:3 axfs::root:81] [36mlookup at root: /busybox[m
+[m[37m[  0.147507 0:3 axfs::fs::fatfs:156] [36mlookup at fatfs: busybox[m
+[m[37m[  0.147885 0:3 axprocess::link:238] [32mcreate_link: /ls -> /busybox[m
+[m[37m[  0.148186 0:3 axfs::root:81] [36mlookup at root: /busybox[m
+[m[37m[  0.148451 0:3 axfs::fs::fatfs:156] [36mlookup at fatfs: busybox[m
+[m[37m[  0.148837 0:3 axprocess::link:238] [32mcreate_link: /sh -> /busybox[m
+[m[37m[  0.149138 0:3 axfs::root:81] [36mlookup at root: /busybox[m
+[m[37m[  0.149405 0:3 axfs::fs::fatfs:156] [36mlookup at fatfs: busybox[m
+[m[37m[  0.149791 0:3 axprocess::link:238] [32mcreate_link: /bin/lmbench_all -> /lmbench_all[m
+[m[37m[  0.150151 0:3 axfs::root:81] [36mlookup at root: /lmbench_all[m
+[m[37m[  0.150429 0:3 axfs::fs::fatfs:156] [36mlookup at fatfs: lmbench_all[m
+[m[37m[  0.151254 0:3 axprocess::link:238] [32mcreate_link: /bin/iozone -> /iozone[m
+[m[37m[  0.151589 0:3 axfs::root:81] [36mlookup at root: /iozone[m
+[m[37m[  0.151849 0:3 axfs::fs::fatfs:156] [36mlookup at fatfs: iozone[m
+[m[37m[  0.152547 0:3 axfs::fops:117] [36mopen file: /lat_sig READ | WRITE | CREATE[m
+[m[37m[  0.152964 0:3 axfs::root:81] [36mlookup at root: /lat_sig[m
+[m[37m[  0.153232 0:3 axfs::fs::fatfs:156] [36mlookup at fatfs: lat_sig[m
+[m[37m[  0.155412 0:3 axfs::root:81] [36mlookup at root: /lat_sig[m
+[m[37m[  0.155776 0:3 axfs::fs::fatfs:176] [36mcreate File at fatfs: lat_sig[m
+[m[37m[  0.158910 0:3 axfs::root:81] [36mlookup at root: /lat_sig[m
+[m[37m[  0.159183 0:3 axfs::fs::fatfs:156] [36mlookup at fatfs: lat_sig[m
+[m[37m[  0.160639 0:3 axprocess::link:238] [32mcreate_link: /riscv64-linux-musl-native/lib/ld-musl-riscv64.so.1 -> /lib/libc.so[m
+[m[37m[  0.161113 0:3 axfs::root:81] [36mlookup at root: /lib/libc.so[m
+[m[37m[  0.161387 0:3 axfs::fs::fatfs:156] [36mlookup at fatfs: lib/libc.so[m
+[m[37m[  0.162780 0:3 axprocess::link:248] [36mlink dest file not exists[m
+[m[37m[  0.163158 0:3 axprocess::link:238] [32mcreate_link: /riscv64-linux-musl-native/lib/libatomic.so -> /riscv64-linux-musl-native/lib/libatomic.so.1.2.0[m
+[m[37m[  0.163737 0:3 axfs::root:81] [36mlookup at root: /riscv64-linux-musl-native/lib/libatomic.so.1.2.0[m
+[m[37m[  0.164146 0:3 axfs::fs::fatfs:156] [36mlookup at fatfs: riscv64-linux-musl-native/lib/libatomic.so.1.2.0[m
+[m[37m[  0.166401 0:3 axprocess::link:248] [36mlink dest file not exists[m
+[m[37m[  0.166750 0:3 axprocess::link:238] [32mcreate_link: /riscv64-linux-musl-native/lib/libatomic.so.1 -> /riscv64-linux-musl-native/lib/libatomic.so.1.2.0[m
+[m[37m[  0.167333 0:3 axfs::root:81] [36mlookup at root: /riscv64-linux-musl-native/lib/libatomic.so.1.2.0[m
+[m[37m[  0.167742 0:3 axfs::fs::fatfs:156] [36mlookup at fatfs: riscv64-linux-musl-native/lib/libatomic.so.1.2.0[m
+[m[37m[  0.170283 0:3 axprocess::link:248] [36mlink dest file not exists[m
+[m[37m[  0.170709 0:3 axprocess::link:238] [32mcreate_link: /riscv64-linux-musl-native/lib/libgfortran.so -> /riscv64-linux-musl-native/lib/libgfortran.so.5.0.0[m
+[m[37m[  0.171281 0:3 axfs::root:81] [36mlookup at root: /riscv64-linux-musl-native/lib/libgfortran.so.5.0.0[m
+[m[37m[  0.171691 0:3 axfs::fs::fatfs:156] [36mlookup at fatfs: riscv64-linux-musl-native/lib/libgfortran.so.5.0.0[m
+[m[37m[  0.173926 0:3 axprocess::link:248] [36mlink dest file not exists[m
+[m[37m[  0.174286 0:3 axprocess::link:238] [32mcreate_link: /riscv64-linux-musl-native/lib/libgfortran.so.5 -> /riscv64-linux-musl-native/lib/libgfortran.so.5.0.0[m
+[m[37m[  0.174866 0:3 axfs::root:81] [36mlookup at root: /riscv64-linux-musl-native/lib/libgfortran.so.5.0.0[m
+[m[37m[  0.175268 0:3 axfs::fs::fatfs:156] [36mlookup at fatfs: riscv64-linux-musl-native/lib/libgfortran.so.5.0.0[m
+[m[37m[  0.177664 0:3 axprocess::link:248] [36mlink dest file not exists[m
+[m[37m[  0.178090 0:3 axprocess::link:238] [32mcreate_link: /riscv64-linux-musl-native/lib/libgomp.so -> /riscv64-linux-musl-native/lib/libgomp.so.1.0.0[m
+[m[37m[  0.178660 0:3 axfs::root:81] [36mlookup at root: /riscv64-linux-musl-native/lib/libgomp.so.1.0.0[m
+[m[37m[  0.179068 0:3 axfs::fs::fatfs:156] [36mlookup at fatfs: riscv64-linux-musl-native/lib/libgomp.so.1.0.0[m
+[m[37m[  0.181292 0:3 axprocess::link:248] [36mlink dest file not exists[m
+[m[37m[  0.181648 0:3 axprocess::link:238] [32mcreate_link: /riscv64-linux-musl-native/lib/libgomp.so.1 -> /riscv64-linux-musl-native/lib/libgomp.so.1.0.0[m
+[m[37m[  0.182191 0:3 axfs::root:81] [36mlookup at root: /riscv64-linux-musl-native/lib/libgomp.so.1.0.0[m
+[m[37m[  0.182586 0:3 axfs::fs::fatfs:156] [36mlookup at fatfs: riscv64-linux-musl-native/lib/libgomp.so.1.0.0[m
+[m[37m[  0.184924 0:3 axprocess::link:248] [36mlink dest file not exists[m
+[m[37m[  0.185304 0:3 axprocess::link:238] [32mcreate_link: /riscv64-linux-musl-native/lib/libssp.so -> /riscv64-linux-musl-native/lib/libssp.so.0.0.0[m
+[m[37m[  0.185856 0:3 axfs::root:81] [36mlookup at root: /riscv64-linux-musl-native/lib/libssp.so.0.0.0[m
+[m[37m[  0.186250 0:3 axfs::fs::fatfs:156] [36mlookup at fatfs: riscv64-linux-musl-native/lib/libssp.so.0.0.0[m
+[m[37m[  0.188478 0:3 axprocess::link:248] [36mlink dest file not exists[m
+[m[37m[  0.188825 0:3 axprocess::link:238] [32mcreate_link: /riscv64-linux-musl-native/lib/libssp.so.0 -> /riscv64-linux-musl-native/lib/libssp.so.0.0.0[m
+[m[37m[  0.189380 0:3 axfs::root:81] [36mlookup at root: /riscv64-linux-musl-native/lib/libssp.so.0.0.0[m
+[m[37m[  0.189783 0:3 axfs::fs::fatfs:156] [36mlookup at fatfs: riscv64-linux-musl-native/lib/libssp.so.0.0.0[m
+[m[37m[  0.191995 0:3 axprocess::link:248] [36mlink dest file not exists[m
+[m[37m[  0.192346 0:3 axprocess::link:238] [32mcreate_link: /riscv64-linux-musl-native/lib/libstdc++.so -> /riscv64-linux-musl-native/lib/libstdc++.so.6.0.29[m
+[m[37m[  0.192906 0:3 axfs::root:81] [36mlookup at root: /riscv64-linux-musl-native/lib/libstdc++.so.6.0.29[m
+[m[37m[  0.193322 0:3 axfs::fs::fatfs:156] [36mlookup at fatfs: riscv64-linux-musl-native/lib/libstdc++.so.6.0.29[m
+[m[37m[  0.195638 0:3 axprocess::link:248] [36mlink dest file not exists[m
+[m[37m[  0.195987 0:3 axprocess::link:238] [32mcreate_link: /riscv64-linux-musl-native/lib/libstdc++.so.6 -> /riscv64-linux-musl-native/lib/libstdc++.so.6.0.29[m
+[m[37m[  0.196561 0:3 axfs::root:81] [36mlookup at root: /riscv64-linux-musl-native/lib/libstdc++.so.6.0.29[m
+[m[37m[  0.196967 0:3 axfs::fs::fatfs:156] [36mlookup at fatfs: riscv64-linux-musl-native/lib/libstdc++.so.6.0.29[m
+[m[37m[  0.199204 0:3 axprocess::link:248] [36mlink dest file not exists[m
+[m[37m[  0.200008 0:3 axmem:86] [36mmapping kernel region [0xffffff8000200000, 0xffffff80002d7000)[m
+[m[37m[  0.200650 0:3 axmem:86] [36mmapping kernel region [0xffffff80002d7000, 0xffffff80002ed000)[m
+[m[37m[  0.201035 0:3 axmem:86] [36mmapping kernel region [0xffffff80002ed000, 0xffffff8004b00000)[m
+[m[37m[  0.201452 0:3 axmem:86] [36mmapping kernel region [0xffffff8004b00000, 0xffffff8004b40000)[m
+[m[37m[  0.201837 0:3 axmem:86] [36mmapping kernel region [0xffffff8004b40000, 0xffffff8004b66000)[m
+[m[37m[  0.202239 0:3 axmem:86] [36mmapping kernel region [0xffffff8000001000, 0xffffff800009f000)[m
+[m[37m[  0.202644 0:3 axmem:86] [36mmapping kernel region [0xffffff8004b66000, 0xffffff8080000000)[m
+[m[37m[  0.203070 0:3 axmem:86] [36mmapping kernel region [0xffffff80b0000000, 0xffffff80c0000000)[m
+[m[37m[  0.203458 0:3 axmem:86] [36mmapping kernel region [0xffffff80fe000000, 0xffffff80fec00000)[m
+[m[37m[  0.203840 0:3 axmem:86] [36mmapping kernel region [0xffffff80fec00000, 0xffffff80fec01000)[m
+[m[37m[  0.204220 0:3 axmem:86] [36mmapping kernel region [0xffffff80fed00000, 0xffffff80fed01000)[m
+[m[37m[  0.204601 0:3 axmem:86] [36mmapping kernel region [0xffffff80fee00000, 0xffffff80fee01000)[m
+[m[37m[  0.205170 0:3 axfs::fops:117] [36mopen file: busybox READ[m
+[m[37m[  0.205484 0:3 axfs::root:81] [36mlookup at root: busybox[m
+[m[37m[  0.205750 0:3 axfs::fs::fatfs:156] [36mlookup at fatfs: busybox[m
+[m[37m[  0.235694 0:3 axprocess::api:164] [36mapp elf data length: 1145320[m
+[m[37m[  0.236083 0:3 axprocess::loader:53] [32margs: ["busybox", "sh", "./readlink"][m
+[m[37m[  0.236719 0:3 axmem:126] [32mBase addr for the elf: 0x4000000[m
+[m[37m[  0.237055 0:3 axmem:154] [36m[new region] elf section [0x4000000, 0x4113584)[m
+[m[37m[  0.238196 0:3 axmem::area:61] [32mstart: VA:0x4000000, size: 114000,  page start: VA:0xffffff8020c64000[m
+[m[37m[  0.238804 0:3 axmem:359] [36mallocating [0x4000000, 0x4113584) to [0x4000000, 0x4114000) flag: MappingFlags(READ | EXECUTE | USER)[m
+[m[37m[  0.239499 0:3 axmem:154] [36m[new region] elf section [0x4313000, 0x4318c40)[m
+[m[37m[  0.239854 0:3 axmem::area:61] [32mstart: VA:0x4313000, size: 6000,  page start: VA:0xffffff8020d7b000[m
+[m[37m[  0.240283 0:3 axmem:359] [36mallocating [0x4313000, 0x4318c40) to [0x4313000, 0x4319000) flag: MappingFlags(READ | WRITE | USER)[m
+[m[37m[  0.240875 0:3 axmem:168] [32m[loader] base addr: 0x4000000[m
+[m[37m[  0.241410 0:3 axmem:185] [32mRelocating .rela.dyn[m
+[m[37m[  0.241711 0:3 axmem:295] [32mRelocating done[m
+[m[37m[  0.244753 0:3 axmem::area:61] [32mstart: VA:0x3fa00000, size: 400000,  page start: VA:0xffffff8020d82000[m
+[m[37m[  0.245261 0:3 axmem:359] [36mallocating [0x3fa00000, 0x3fe00000) to [0x3fa00000, 0x3fe00000) flag: MappingFlags(READ | WRITE | USER)[m
+[m[37m[  0.245847 0:3 axprocess::loader:98] [32m[new region] user heap: [VA:0x3fa00000, VA:0x3fe00000)[m
+[m[37m[  0.246265 0:3 axprocess::loader:105] [32m[new region] user stack: [VA:0x3fe00000, VA:0x40000000)[m
+[m[37m[  0.248692 0:3 axmem::area:61] [32mstart: VA:0x3fe00000, size: 200000,  page start: VA:0xffffff8021184000[m
+[m[37m[  0.249173 0:3 axmem:359] [36mallocating [0x3fe00000, 0x40000000) to [0x3fe00000, 0x40000000) flag: MappingFlags(READ | WRITE | USER)[m
+[m[37m[  0.249999 0:3 axtask::task:476] [36mnew task: Task(6, "busybox")[m
+[m[37m[  0.251326 0:3 axtask::run_queue:47] [36mtask spawn: Task(6, "busybox")[m
+[m[37m[  0.251678 0:3 syscall_entry::test:408] [32m --------------- load testcase: ["busybox", "sh", "./readlink"] --------------- [m
+[m[37m[  0.252332 0:3 axtask::run_queue:63] [36mtask yield: Task(3, "main")[m
+[m[37m[  0.252864 0:4 axtask::run_queue:135] [36mtask block: Task(4, "gc")[m
+[m[37m[  0.253732 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.254189 0:6 syscall_entry::syscall:45] [32msyscall: ARCH_PRCTL[m
+[m[37m[  0.254521 0:6 syscall_entry::syscall:47] [31m[syscall] id = ARCH_PRCTL, args = [4098, 70353528, 0, 0, 1685382482, 0], entry[m
+[m[37m[  0.255190 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 158 -> 0x0[m
+[m[37m[  0.255532 0:6 syscall_entry::syscall:59] [31m[syscall] id = 158, args = [4098, 70353528, 0, 0, 1685382482, 0], return 0[m
+[m[37m[  0.256136 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.256538 0:6 syscall_entry::syscall:45] [32msyscall: SET_TID_ADDRESS[m
+[m[37m[  0.256845 0:6 syscall_entry::syscall:47] [31m[syscall] id = SET_TID_ADDRESS, args = [70355960, 70353528, 0, 0, 0, 0], entry[m
+[m[37m[  0.257357 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 218 -> 0x6[m
+[m[37m[  0.257683 0:6 syscall_entry::syscall:59] [31m[syscall] id = 218, args = [70355960, 70353528, 0, 0, 0, 0], return 6[m
+[m[37m[  0.258308 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.258711 0:6 syscall_entry::syscall:45] [32msyscall: GETUID[m
+[m[37m[  0.258987 0:6 syscall_entry::syscall:47] [31m[syscall] id = GETUID, args = [1073741393, 47, 98, 0, 0, 0], entry[m
+[m[37m[  0.259452 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 102 -> 0x0[m
+[m[37m[  0.259768 0:6 syscall_entry::syscall:59] [31m[syscall] id = 102, args = [1073741393, 47, 98, 0, 0, 0], return 0[m
+[m[37m[  0.260537 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.260962 0:6 syscall_entry::syscall:25] [32msyscall: BRK[m
+[m[37m[  0.261271 0:6 syscall_entry::syscall:26] [31m[syscall] id = BRK, args = [0, 1073741824, 1073741280, 0, 3, 0], entry[m
+[m[37m[  0.261777 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 12 -> 0x3fa00000[m
+[m[37m[  0.262124 0:6 syscall_entry::syscall:59] [31m[syscall] id = 12, args = [0, 1073741824, 1073741280, 0, 3, 0], return 1067450368[m
+[m[37m[  0.262670 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.263074 0:6 syscall_entry::syscall:25] [32msyscall: BRK[m
+[m[37m[  0.263336 0:6 syscall_entry::syscall:26] [31m[syscall] id = BRK, args = [1067458560, 1073741824, 1, 0, 3, 0], entry[m
+[m[37m[  0.263815 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 12 -> 0x3fa02000[m
+[m[37m[  0.264150 0:6 syscall_entry::syscall:59] [31m[syscall] id = 12, args = [1067458560, 1073741824, 1, 0, 3, 0], return 1067458560[m
+[m[37m[  0.264698 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.265101 0:6 syscall_entry::syscall:25] [32msyscall: MMAP[m
+[m[37m[  0.265377 0:6 syscall_entry::syscall:26] [31m[syscall] id = MMAP, args = [1067450368, 4096, 0, 50, 18446744073709551615, 0], entry[m
+[m[37m[  0.265951 0:6 syscall_mem::imp:51] [36mmmap start=3fa00000 len=1000 prot=[MMAPPROT(
+    0x0,
+)] flags=[MMAPFlags(
+    MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS,
+)] fd=-1 offset=0[m
+[m[37m[  0.267188 0:6 axmem:484] [32m[mmap] vaddr: [VA:0x3fa00000, VA:0x3fa01000), MappingFlags(USER), fixed: true, backend: false[m
+[m[37m[  0.267994 0:6 axmem:397] [32msplitting for [VA:0x3fa00000, VA:0x3fa01000)[m
+[m[37m[  0.268387 0:6 axmem:420] [32m  shrink_left [VA:0x3fa00000, VA:0x3fe00000) to [VA:0x3fa01000, VA:0x3fe00000)[m
+[m[37m[  0.269106 0:6 axmem::area:61] [32mstart: VA:0x3fa00000, size: 1000,  page start: VA:0xffffff8020d82000[m
+[m[37m[  0.269538 0:6 axmem:359] [36mallocating [0x3fa00000, 0x3fa01000) to [0x3fa00000, 0x3fa01000) flag: MappingFlags(USER)[m
+[m[37m[  0.270057 0:6 axmem:516] [36m[mmap] return addr: 0x3fa00000[m
+[m[37m[  0.270388 0:6 syscall_mem::imp:100] [36mmmap: 0x3fa00000[m
+[m[37m[  0.270658 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 9 -> 0x3fa00000[m
+[m[37m[  0.270992 0:6 syscall_entry::syscall:59] [31m[syscall] id = 9, args = [1067450368, 4096, 0, 50, 18446744073709551615, 0], return 1067450368[m
+[m[37m[  0.271689 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.272094 0:6 syscall_entry::syscall:25] [32msyscall: MMAP[m
+[m[37m[  0.272359 0:6 syscall_entry::syscall:26] [31m[syscall] id = MMAP, args = [0, 4096, 3, 34, 18446744073709551615, 0], entry[m
+[m[37m[  0.272869 0:6 syscall_mem::imp:51] [36mmmap start=0 len=1000 prot=[MMAPPROT(
+    PROT_READ | PROT_WRITE,
+)] flags=[MMAPFlags(
+    MAP_PRIVATE | MAP_ANONYMOUS,
+)] fd=-1 offset=0[m
+[m[37m[  0.273706 0:6 axmem:484] [32m[mmap] vaddr: [VA:0x0, VA:0x1000), MappingFlags(READ | WRITE | USER), fixed: false, backend: false[m
+[m[37m[  0.274312 0:6 axmem:502] [32mfind free area[m
+[m[37m[  0.274837 0:6 axmem:507] [32mfound area [VA:0x1000, VA:0x2000)[m
+[m[37m[  0.275149 0:6 axmem::area:61] [32mstart: VA:0x1000, size: 1000,  page start: VA:0xffffff8021385000[m
+[m[37m[  0.275578 0:6 axmem:359] [36mallocating [0x1000, 0x2000) to [0x1000, 0x2000) flag: MappingFlags(READ | WRITE | USER)[m
+[m[37m[  0.276080 0:6 axmem:516] [36m[mmap] return addr: 0x1000[m
+[m[37m[  0.276343 0:6 syscall_mem::imp:100] [36mmmap: 0x1000[m
+[m[37m[  0.276590 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 9 -> 0x1000[m
+[m[37m[  0.276922 0:6 syscall_entry::syscall:59] [31m[syscall] id = 9, args = [0, 4096, 3, 34, 18446744073709551615, 0], return 4096[m
+[m[37m[  0.277745 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.278152 0:6 syscall_entry::syscall:25] [32msyscall: MMAP[m
+[m[37m[  0.278416 0:6 syscall_entry::syscall:26] [31m[syscall] id = MMAP, args = [0, 4096, 3, 34, 18446744073709551615, 0], entry[m
+[m[37m[  0.278908 0:6 syscall_mem::imp:51] [36mmmap start=0 len=1000 prot=[MMAPPROT(
+    PROT_READ | PROT_WRITE,
+)] flags=[MMAPFlags(
+    MAP_PRIVATE | MAP_ANONYMOUS,
+)] fd=-1 offset=0[m
+[m[37m[  0.279623 0:6 axmem:484] [32m[mmap] vaddr: [VA:0x0, VA:0x1000), MappingFlags(READ | WRITE | USER), fixed: false, backend: false[m
+[m[37m[  0.280136 0:6 axmem:502] [32mfind free area[m
+[m[37m[  0.280360 0:6 axmem:507] [32mfound area [VA:0x2000, VA:0x3000)[m
+[m[37m[  0.280643 0:6 axmem::area:61] [32mstart: VA:0x2000, size: 1000,  page start: VA:0xffffff8021387000[m
+[m[37m[  0.281054 0:6 axmem:359] [36mallocating [0x2000, 0x3000) to [0x2000, 0x3000) flag: MappingFlags(READ | WRITE | USER)[m
+[m[37m[  0.281532 0:6 axmem:516] [36m[mmap] return addr: 0x2000[m
+[m[37m[  0.281793 0:6 syscall_mem::imp:100] [36mmmap: 0x2000[m
+[m[37m[  0.282038 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 9 -> 0x2000[m
+[m[37m[  0.282359 0:6 syscall_entry::syscall:59] [31m[syscall] id = 9, args = [0, 4096, 3, 34, 18446744073709551615, 0], return 8192[m
+[m[37m[  0.282911 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.283312 0:6 syscall_entry::syscall:45] [32msyscall: GETPID[m
+[m[37m[  0.283590 0:6 syscall_entry::syscall:47] [31m[syscall] id = GETPID, args = [1073740648, 248, 67545110, 8876, 8592, 1], entry[m
+[m[37m[  0.284112 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 39 -> 0x5[m
+[m[37m[  0.284426 0:6 syscall_entry::syscall:59] [31m[syscall] id = 39, args = [1073740648, 248, 67545110, 8876, 8592, 1], return 5[m
+[m[37m[  0.284949 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.285350 0:6 syscall_entry::syscall:25] [32msyscall: MMAP[m
+[m[37m[  0.285619 0:6 syscall_entry::syscall:26] [31m[syscall] id = MMAP, args = [0, 4096, 3, 34, 18446744073709551615, 0], entry[m
+[m[37m[  0.286120 0:6 syscall_mem::imp:51] [36mmmap start=0 len=1000 prot=[MMAPPROT(
+    PROT_READ | PROT_WRITE,
+)] flags=[MMAPFlags(
+    MAP_PRIVATE | MAP_ANONYMOUS,
+)] fd=-1 offset=0[m
+[m[37m[  0.286840 0:6 axmem:484] [32m[mmap] vaddr: [VA:0x0, VA:0x1000), MappingFlags(READ | WRITE | USER), fixed: false, backend: false[m
+[m[37m[  0.287369 0:6 axmem:502] [32mfind free area[m
+[m[37m[  0.287593 0:6 axmem:507] [32mfound area [VA:0x3000, VA:0x4000)[m
+[m[37m[  0.287882 0:6 axmem::area:61] [32mstart: VA:0x3000, size: 1000,  page start: VA:0xffffff8021388000[m
+[m[37m[  0.288301 0:6 axmem:359] [36mallocating [0x3000, 0x4000) to [0x3000, 0x4000) flag: MappingFlags(READ | WRITE | USER)[m
+[m[37m[  0.288788 0:6 axmem:516] [36m[mmap] return addr: 0x3000[m
+[m[37m[  0.289051 0:6 syscall_mem::imp:100] [36mmmap: 0x3000[m
+[m[37m[  0.289307 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 9 -> 0x3000[m
+[m[37m[  0.289633 0:6 syscall_entry::syscall:59] [31m[syscall] id = 9, args = [0, 4096, 3, 34, 18446744073709551615, 0], return 12288[m
+[m[37m[  0.290264 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.290678 0:6 syscall_entry::syscall:45] [32msyscall: SIGPROCMASK[m
+[m[37m[  0.290990 0:6 syscall_entry::syscall:47] [31m[syscall] id = SIGPROCMASK, args = [1, 1073739696, 0, 8, 12352, 0], entry[m
+[m[37m[  0.291679 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 14 -> 0x0[m
+[m[37m[  0.292001 0:6 syscall_entry::syscall:59] [31m[syscall] id = 14, args = [1, 1073739696, 0, 8, 12352, 0], return 0[m
+[m[37m[  0.292493 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.292908 0:6 syscall_entry::syscall:45] [32msyscall: SIGACTION[m
+[m[37m[  0.293200 0:6 syscall_entry::syscall:47] [31m[syscall] id = SIGACTION, args = [17, 1073739664, 0, 8, 12352, 0], entry[m
+[m[37m[  0.293716 0:6 syscall_task::imp::signal:17] [32msignum: 17, action: 3FFFF790, old_action: 0[m
+[m[37m[  0.294196 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 13 -> 0x0[m
+[m[37m[  0.294519 0:6 syscall_entry::syscall:59] [31m[syscall] id = 13, args = [17, 1073739664, 0, 8, 12352, 0], return 0[m
+[m[37m[  0.295330 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.295739 0:6 syscall_entry::syscall:45] [32msyscall: GETPPID[m
+[m[37m[  0.296018 0:6 syscall_entry::syscall:47] [31m[syscall] id = GETPPID, args = [68190691, 68190690, 4, 9644, 5272, 5728], entry[m
+[m[37m[  0.296613 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 110 -> 0x1[m
+[m[37m[  0.296929 0:6 syscall_entry::syscall:59] [31m[syscall] id = 110, args = [68190691, 68190690, 4, 9644, 5272, 5728], return 1[m
+[m[37m[  0.297596 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.298004 0:6 syscall_entry::syscall:45] [32msyscall: UNAME[m
+[m[37m[  0.298280 0:6 syscall_entry::syscall:47] [31m[syscall] id = UNAME, args = [1073740168, 68187234, 9, 9788, 5224, 0], entry[m
+[m[37m[  0.298836 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 63 -> 0x0[m
+[m[37m[  0.299151 0:6 syscall_entry::syscall:59] [31m[syscall] id = 63, args = [1073740168, 68187234, 9, 9788, 5224, 0], return 0[m
+[m[37m[  0.299688 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.300111 0:6 syscall_entry::syscall:34] [32msyscall: STAT[m
+[m[37m[  0.300415 0:6 syscall_entry::syscall:35] [31m[syscall] id = STAT, args = [1073741763, 1073739840, 1073739840, 10332, 5456, 4294967196], entry[m
+[m[37m[  0.301196 0:6 syscall_fs::imp::stat:65] [32mpath : /[m
+[m[37m[  0.301495 0:6 syscall_fs::ctype::dir:79] [36mInto function new_dir, dir_path: /[m
+[m[37m[  0.301848 0:6 axfs::root:81] [36mlookup at root: /[m
+[m[37m[  0.302113 0:6 axfs::fs::fatfs:156] [36mlookup at fatfs: [m
+[m[37m[  0.302469 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 4 -> 0x0[m
+[m[37m[  0.302782 0:6 syscall_entry::syscall:59] [31m[syscall] id = 4, args = [1073741763, 1073739840, 1073739840, 10332, 5456, 4294967196], return 0[m
+[m[37m[  0.303386 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.303792 0:6 syscall_entry::syscall:34] [32msyscall: STAT[m
+[m[37m[  0.304061 0:6 syscall_entry::syscall:35] [31m[syscall] id = STAT, args = [68205368, 1073739840, 1073739840, 10332, 0, 4294967196], entry[m
+[m[37m[  0.304669 0:6 syscall_fs::imp::stat:65] [32mpath : /[m
+[m[37m[  0.304925 0:6 syscall_fs::ctype::dir:79] [36mInto function new_dir, dir_path: /[m
+[m[37m[  0.305271 0:6 axfs::root:81] [36mlookup at root: /[m
+[m[37m[  0.305521 0:6 axfs::fs::fatfs:156] [36mlookup at fatfs: [m
+[m[37m[  0.305788 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 4 -> 0x0[m
+[m[37m[  0.306100 0:6 syscall_entry::syscall:59] [31m[syscall] id = 4, args = [68205368, 1073739840, 1073739840, 10332, 0, 4294967196], return 0[m
+[m[37m[  0.306851 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.307254 0:6 syscall_entry::syscall:34] [32msyscall: OPEN[m
+[m[37m[  0.307523 0:6 syscall_entry::syscall:35] [31m[syscall] id = OPEN, args = [1073741380, 557056, 0, 0, 0, 0], entry[m
+[m[37m[  0.308119 0:6 syscall_fs::imp::io:326] [36mallocated fd_num: 3[m
+[m[37m[  0.308438 0:6 syscall_fs::imp::io:341] [36mopen file[m
+[m[37m[  0.308742 0:6 syscall_fs::ctype::file:184] [36mInto function new_fd, path: /readlink[m
+[m[37m[  0.309127 0:6 axfs::fops:117] [36mopen file: /readlink READ[m
+[m[37m[  0.309407 0:6 axfs::root:81] [36mlookup at root: /readlink[m
+[m[37m[  0.309679 0:6 axfs::fs::fatfs:156] [36mlookup at fatfs: readlink[m
+[m[37m[  0.311345 0:6 syscall_fs::imp::io:343] [36mnew file_desc successfully allocated[m
+[m[37m[  0.311693 0:6 axprocess::link:238] [32mcreate_link: /readlink -> /readlink[m
+[m[37m[  0.312003 0:6 axfs::root:81] [36mlookup at root: /readlink[m
+[m[37m[  0.312257 0:6 axfs::fs::fatfs:156] [36mlookup at fatfs: readlink[m
+[m[37m[  0.313237 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 2 -> 0x3[m
+[m[37m[  0.313553 0:6 syscall_entry::syscall:59] [31m[syscall] id = 2, args = [1073741380, 557056, 0, 0, 0, 0], return 3[m
+[m[37m[  0.314014 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.314403 0:6 syscall_entry::syscall:34] [32msyscall: FCNTL64[m
+[m[37m[  0.314683 0:6 syscall_entry::syscall:35] [31m[syscall] id = FCNTL64, args = [3, 2, 1, 0, 0, 0], entry[m
+[m[37m[  0.315266 0:6 syscall_fs::imp::ctl:286] [32mfd: 3, cmd: 2[m
+[m[37m[  0.315619 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 72 -> 0x0[m
+[m[37m[  0.315934 0:6 syscall_entry::syscall:59] [31m[syscall] id = 72, args = [3, 2, 1, 0, 0, 0], return 0[m
+[m[37m[  0.316384 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.316792 0:6 syscall_entry::syscall:34] [32msyscall: FCNTL64[m
+[m[37m[  0.317088 0:6 syscall_entry::syscall:35] [31m[syscall] id = FCNTL64, args = [3, 1030, 10, 10, 72, 0], entry[m
+[m[37m[  0.317533 0:6 syscall_fs::imp::ctl:286] [32mfd: 3, cmd: 1030[m
+[m[37m[  0.317863 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 72 -> 0x4[m
+[m[37m[  0.318176 0:6 syscall_entry::syscall:59] [31m[syscall] id = 72, args = [3, 1030, 10, 10, 72, 0], return 4[m
+[m[37m[  0.318622 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.319043 0:6 syscall_entry::syscall:34] [32msyscall: FCNTL64[m
+[m[37m[  0.319327 0:6 syscall_entry::syscall:35] [31m[syscall] id = FCNTL64, args = [4, 2, 1, 10, 72, 0], entry[m
+[m[37m[  0.319787 0:6 syscall_fs::imp::ctl:286] [32mfd: 4, cmd: 2[m
+[m[37m[  0.320107 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 72 -> 0x0[m
+[m[37m[  0.320466 0:6 syscall_entry::syscall:59] [31m[syscall] id = 72, args = [4, 2, 1, 10, 72, 0], return 0[m
+[m[37m[  0.320950 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.321355 0:6 syscall_entry::syscall:34] [32msyscall: CLOSE[m
+[m[37m[  0.321631 0:6 syscall_entry::syscall:35] [31m[syscall] id = CLOSE, args = [3, 0, 0, 0, 0, 0], entry[m
+[m[37m[  0.322114 0:6 syscall_fs::imp::io:372] [32mInto syscall_close. fd: 3[m
+[m[37m[  0.322457 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 3 -> 0x0[m
+[m[37m[  0.322766 0:6 syscall_entry::syscall:59] [31m[syscall] id = 3, args = [3, 0, 0, 0, 0, 0], return 0[m
+[m[37m[  0.323253 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.323658 0:6 syscall_entry::syscall:45] [32msyscall: SIGACTION[m
+[m[37m[  0.323943 0:6 syscall_entry::syscall:47] [31m[syscall] id = SIGACTION, args = [2, 0, 1073740256, 8, 0, 0], entry[m
+[m[37m[  0.324411 0:6 syscall_task::imp::signal:17] [32msignum: 2, action: 0, old_action: 3FFFF9E0[m
+[m[37m[  0.324821 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 13 -> 0x0[m
+[m[37m[  0.325166 0:6 syscall_entry::syscall:59] [31m[syscall] id = 13, args = [2, 0, 1073740256, 8, 0, 0], return 0[m
+[m[37m[  0.325636 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.326046 0:6 syscall_entry::syscall:45] [32msyscall: SIGACTION[m
+[m[37m[  0.326329 0:6 syscall_entry::syscall:47] [31m[syscall] id = SIGACTION, args = [2, 1073740224, 0, 8, 0, 0], entry[m
+[m[37m[  0.326788 0:6 syscall_task::imp::signal:17] [32msignum: 2, action: 3FFFF9C0, old_action: 0[m
+[m[37m[  0.327169 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 13 -> 0x0[m
+[m[37m[  0.327482 0:6 syscall_entry::syscall:59] [31m[syscall] id = 13, args = [2, 1073740224, 0, 8, 0, 0], return 0[m
+[m[37m[  0.327941 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.328343 0:6 syscall_entry::syscall:45] [32msyscall: SIGACTION[m
+[m[37m[  0.328626 0:6 syscall_entry::syscall:47] [31m[syscall] id = SIGACTION, args = [3, 0, 1073740256, 8, 0, 0], entry[m
+[m[37m[  0.329086 0:6 syscall_task::imp::signal:17] [32msignum: 3, action: 0, old_action: 3FFFF9E0[m
+[m[37m[  0.329471 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 13 -> 0x0[m
+[m[37m[  0.329784 0:6 syscall_entry::syscall:59] [31m[syscall] id = 13, args = [3, 0, 1073740256, 8, 0, 0], return 0[m
+[m[37m[  0.330245 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.330648 0:6 syscall_entry::syscall:45] [32msyscall: SIGACTION[m
+[m[37m[  0.330929 0:6 syscall_entry::syscall:47] [31m[syscall] id = SIGACTION, args = [3, 1073740224, 0, 8, 0, 0], entry[m
+[m[37m[  0.331399 0:6 syscall_task::imp::signal:17] [32msignum: 3, action: 3FFFF9C0, old_action: 0[m
+[m[37m[  0.331779 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 13 -> 0x0[m
+[m[37m[  0.332090 0:6 syscall_entry::syscall:59] [31m[syscall] id = 13, args = [3, 1073740224, 0, 8, 0, 0], return 0[m
+[m[37m[  0.332554 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.332962 0:6 syscall_entry::syscall:45] [32msyscall: SIGACTION[m
+[m[37m[  0.333246 0:6 syscall_entry::syscall:47] [31m[syscall] id = SIGACTION, args = [15, 0, 1073740256, 8, 0, 0], entry[m
+[m[37m[  0.333707 0:6 syscall_task::imp::signal:17] [32msignum: 15, action: 0, old_action: 3FFFF9E0[m
+[m[37m[  0.334091 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 13 -> 0x0[m
+[m[37m[  0.334400 0:6 syscall_entry::syscall:59] [31m[syscall] id = 13, args = [15, 0, 1073740256, 8, 0, 0], return 0[m
+[m[37m[  0.335078 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.335481 0:6 syscall_entry::syscall:34] [32msyscall: READ[m
+[m[37m[  0.335750 0:6 syscall_entry::syscall:35] [31m[syscall] id = READ, args = [4, 12352, 1023, 0, 0, 0], entry[m
+[m[37m[  0.336220 0:6 syscall_fs::imp::io:23] [32m[read()] fd: 4, buf: 0x3040, len: 1023[m
+[m[37m[  0.336656 0:6 axmem:754] [36mallocating page at 3000[m
+[m[37m[  0.337058 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 0 -> 0x3ff[m
+[m[37m[  0.337375 0:6 syscall_entry::syscall:59] [31m[syscall] id = 0, args = [4, 12352, 1023, 0, 0, 0], return 1023[m
+[m[37m[  0.338931 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.339331 0:6 syscall_entry::syscall:34] [32msyscall: OPEN[m
+[m[37m[  0.339592 0:6 syscall_entry::syscall:35] [31m[syscall] id = OPEN, args = [6440, 33345, 438, 0, 0, 0], entry[m
+[m[37m[  0.340026 0:6 syscall_fs::imp::io:326] [36mallocated fd_num: 3[m
+[m[37m[  0.340308 0:6 syscall_fs::imp::io:341] [36mopen file[m
+[m[37m[  0.340552 0:6 syscall_fs::ctype::file:184] [36mInto function new_fd, path: /p@@p@8[m
+[m[37m[  0.340921 0:6 axfs::fops:117] [36mopen file: /p@@p@8 WRITE | CREATE[m
+[m[37m[  0.341248 0:6 axfs::root:81] [36mlookup at root: /p@@p@8[m
+[m[37m[  0.341528 0:6 axfs::fs::fatfs:156] [36mlookup at fatfs: p@@p@8[m
+[m[37m[  0.343637 0:6 axfs::root:81] [36mlookup at root: /p@@p@8[m
+[m[37m[  0.343903 0:6 axfs::fs::fatfs:176] [36mcreate File at fatfs: p@@p@8[m
+[m[37m[  0.345209 0:6 syscall_fs::imp::io:348] [36mopen file failed[m
+[m[37m[  0.345490 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 2 -> 0xfffffffffffffffe[m
+[m[37m[  0.345851 0:6 syscall_entry::syscall:59] [31m[syscall] id = 2, args = [6440, 33345, 438, 0, 0, 0], return -2[m
+[m[37m[  0.346669 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.347078 0:6 syscall_entry::syscall:34] [32msyscall: WRITEV[m
+[m[37m[  0.347351 0:6 syscall_entry::syscall:35] [31m[syscall] id = WRITEV, args = [2, 1073738624, 2, 10, 70348832, 68236477], entry[m
+[m[37m[  0.347906 0:6 syscall_fs::imp::io:90] [32m[write()] fd: 2, buf: 0x3ffff440, len: 12[m
+[m[37m[  0.348276 0:6 axmem:754] [36mallocating page at 3ffff000[m
+[m./readlink: [37m[  0.348691 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 20 -> 0xc[m
+[m[37m[  0.349005 0:6 syscall_entry::syscall:59] [31m[syscall] id = 20, args = [2, 1073738624, 2, 10, 70348832, 68236477], return 12[m
+[m[37m[  0.349597 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.349995 0:6 syscall_entry::syscall:34] [32msyscall: WRITEV[m
+[m[37m[  0.350269 0:6 syscall_entry::syscall:35] [31m[syscall] id = WRITEV, args = [2, 1073738624, 2, 1, 70348832, 68236477], entry[m
+[m[37m[  0.350765 0:6 syscall_fs::imp::io:90] [32m[write()] fd: 2, buf: 0x3ffff440, len: 8[m
+[m[37m[  0.351114 0:6 axmem:754] [36mallocating page at 3ffff000[m
+[mline 1: [37m[  0.351402 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 20 -> 0x8[m
+[m[37m[  0.351713 0:6 syscall_entry::syscall:59] [31m[syscall] id = 20, args = [2, 1073738624, 2, 1, 70348832, 68236477], return 8[m
+[m[37m[  0.352230 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.352630 0:6 syscall_entry::syscall:34] [32msyscall: WRITEV[m
+[m[37m[  0.352901 0:6 syscall_entry::syscall:35] [31m[syscall] id = WRITEV, args = [2, 1073738848, 2, 21, 8192, 68236477], entry[m
+[m[37m[  0.353389 0:6 syscall_fs::imp::io:90] [32m[write()] fd: 2, buf: 0x3ffff520, len: 46[m
+[m[37m[  0.353744 0:6 axmem:754] [36mallocating page at 3ffff000[m
+[mcan't create p@@p@8: nonexistent directory[37m[  0.354186 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 20 -> 0x2e[m
+[m[37m[  0.354500 0:6 syscall_entry::syscall:59] [31m[syscall] id = 20, args = [2, 1073738848, 2, 21, 8192, 68236477], return 46[m
+[m[37m[  0.355022 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.355423 0:6 syscall_entry::syscall:34] [32msyscall: WRITEV[m
+[m[37m[  0.355698 0:6 syscall_entry::syscall:35] [31m[syscall] id = WRITEV, args = [2, 1073739264, 2, 21, 8192, 68236477], entry[m
+[m[37m[  0.356183 0:6 syscall_fs::imp::io:90] [32m[write()] fd: 2, buf: 0x3ffff66f, len: 1[m
+[m[37m[  0.356535 0:6 axmem:754] [36mallocating page at 3ffff000[m
+[m
+[37m[  0.356821 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 20 -> 0x1[m
+[m[37m[  0.357132 0:6 syscall_entry::syscall:59] [31m[syscall] id = 20, args = [2, 1073739264, 2, 21, 8192, 68236477], return 1[m
+[m[37m[  0.358269 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.358674 0:6 syscall_entry::syscall:34] [32msyscall: STAT[m
+[m[37m[  0.358940 0:6 syscall_entry::syscall:35] [31m[syscall] id = STAT, args = [6544, 1073739648, 1073739648, 4294967295, 6554, 4294967196], entry[m
+[m[37m[  0.359479 0:6 syscall_fs::imp::stat:65] [32mpath : /usr/sbin/@@@[m
+[m[37m[  0.359814 0:6 syscall_fs::ctype::file:184] [36mInto function new_fd, path: /usr/sbin/@@@[m
+[m[37m[  0.360204 0:6 axfs::fops:117] [36mopen file: /usr/sbin/@@@ READ[m
+[m[37m[  0.360502 0:6 axfs::root:81] [36mlookup at root: /usr/sbin/@@@[m
+[m[37m[  0.360804 0:6 axfs::fs::fatfs:156] [36mlookup at fatfs: usr/sbin/@@@[m
+[m[37m[  0.362952 0:6 syscall_fs::imp::stat:72] [36mget stat error: ENOENT[m
+[m[37m[  0.363260 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 4 -> 0xfffffffffffffffe[m
+[m[37m[  0.363595 0:6 syscall_entry::syscall:59] [31m[syscall] id = 4, args = [6544, 1073739648, 1073739648, 4294967295, 6554, 4294967196], return -2[m
+[m[37m[  0.364164 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.364570 0:6 syscall_entry::syscall:34] [32msyscall: STAT[m
+[m[37m[  0.364838 0:6 syscall_entry::syscall:35] [31m[syscall] id = STAT, args = [6544, 1073739648, 1073739648, 4294967295, 6553, 4294967196], entry[m
+[m[37m[  0.365401 0:6 syscall_fs::imp::stat:65] [32mpath : /usr/bin/@@@[m
+[m[37m[  0.365698 0:6 syscall_fs::ctype::file:184] [36mInto function new_fd, path: /usr/bin/@@@[m
+[m[37m[  0.366086 0:6 axfs::fops:117] [36mopen file: /usr/bin/@@@ READ[m
+[m[37m[  0.366381 0:6 axfs::root:81] [36mlookup at root: /usr/bin/@@@[m
+[m[37m[  0.366673 0:6 axfs::fs::fatfs:156] [36mlookup at fatfs: usr/bin/@@@[m
+[m[37m[  0.368777 0:6 syscall_fs::imp::stat:72] [36mget stat error: ENOENT[m
+[m[37m[  0.369043 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 4 -> 0xfffffffffffffffe[m
+[m[37m[  0.369380 0:6 syscall_entry::syscall:59] [31m[syscall] id = 4, args = [6544, 1073739648, 1073739648, 4294967295, 6553, 4294967196], return -2[m
+[m[37m[  0.369907 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.370309 0:6 syscall_entry::syscall:34] [32msyscall: STAT[m
+[m[37m[  0.370576 0:6 syscall_entry::syscall:35] [31m[syscall] id = STAT, args = [6544, 1073739648, 1073739648, 4294967295, 6550, 4294967196], entry[m
+[m[37m[  0.371144 0:6 syscall_fs::imp::stat:65] [32mpath : /sbin/@@@[m
+[m[37m[  0.371433 0:6 syscall_fs::ctype::file:184] [36mInto function new_fd, path: /sbin/@@@[m
+[m[37m[  0.371808 0:6 axfs::fops:117] [36mopen file: /sbin/@@@ READ[m
+[m[37m[  0.372093 0:6 axfs::root:81] [36mlookup at root: /sbin/@@@[m
+[m[37m[  0.372377 0:6 axfs::fs::fatfs:156] [36mlookup at fatfs: sbin/@@@[m
+[m[37m[  0.374476 0:6 syscall_fs::imp::stat:72] [36mget stat error: ENOENT[m
+[m[37m[  0.374753 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 4 -> 0xfffffffffffffffe[m
+[m[37m[  0.375114 0:6 syscall_entry::syscall:59] [31m[syscall] id = 4, args = [6544, 1073739648, 1073739648, 4294967295, 6550, 4294967196], return -2[m
+[m[37m[  0.375662 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.376058 0:6 syscall_entry::syscall:34] [32msyscall: STAT[m
+[m[37m[  0.376325 0:6 syscall_entry::syscall:35] [31m[syscall] id = STAT, args = [6544, 1073739648, 1073739648, 4294967295, 6549, 4294967196], entry[m
+[m[37m[  0.376895 0:6 syscall_fs::imp::stat:65] [32mpath : /bin/@@@[m
+[m[37m[  0.377180 0:6 syscall_fs::ctype::file:184] [36mInto function new_fd, path: /bin/@@@[m
+[m[37m[  0.377551 0:6 axfs::fops:117] [36mopen file: /bin/@@@ READ[m
+[m[37m[  0.377832 0:6 axfs::root:81] [36mlookup at root: /bin/@@@[m
+[m[37m[  0.378113 0:6 axfs::fs::fatfs:156] [36mlookup at fatfs: bin/@@@[m
+[m[37m[  0.378509 0:6 syscall_fs::imp::stat:72] [36mget stat error: ENOENT[m
+[m[37m[  0.378803 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 4 -> 0xfffffffffffffffe[m
+[m[37m[  0.379166 0:6 syscall_entry::syscall:59] [31m[syscall] id = 4, args = [6544, 1073739648, 1073739648, 4294967295, 6549, 4294967196], return -2[m
+[m[37m[  0.379769 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.380176 0:6 syscall_entry::syscall:34] [32msyscall: WRITEV[m
+[m[37m[  0.380447 0:6 syscall_entry::syscall:35] [31m[syscall] id = WRITEV, args = [2, 1073738816, 2, 10, 70348832, 68236477], entry[m
+[m[37m[  0.380947 0:6 syscall_fs::imp::io:90] [32m[write()] fd: 2, buf: 0x3ffff500, len: 12[m
+[m[37m[  0.381304 0:6 axmem:754] [36mallocating page at 3ffff000[m
+[m./readlink: [37m[  0.381610 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 20 -> 0xc[m
+[m[37m[  0.381923 0:6 syscall_entry::syscall:59] [31m[syscall] id = 20, args = [2, 1073738816, 2, 10, 70348832, 68236477], return 12[m
+[m[37m[  0.382427 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.382847 0:6 syscall_entry::syscall:34] [32msyscall: WRITEV[m
+[m[37m[  0.383120 0:6 syscall_entry::syscall:35] [31m[syscall] id = WRITEV, args = [2, 1073738816, 2, 1, 70348832, 68236477], entry[m
+[m[37m[  0.383624 0:6 syscall_fs::imp::io:90] [32m[write()] fd: 2, buf: 0x3ffff500, len: 8[m
+[m[37m[  0.383973 0:6 axmem:754] [36mallocating page at 3ffff000[m
+[mline 2: [37m[  0.384263 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 20 -> 0x8[m
+[m[37m[  0.384572 0:6 syscall_entry::syscall:59] [31m[syscall] id = 20, args = [2, 1073738816, 2, 1, 70348832, 68236477], return 8[m
+[m[37m[  0.385068 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.385472 0:6 syscall_entry::syscall:34] [32msyscall: WRITEV[m
+[m[37m[  0.385745 0:6 syscall_entry::syscall:35] [31m[syscall] id = WRITEV, args = [2, 1073739040, 2, 9, 8192, 68236477], entry[m
+[m[37m[  0.386229 0:6 syscall_fs::imp::io:90] [32m[write()] fd: 2, buf: 0x3ffff5e0, len: 18[m
+[m[37m[  0.386584 0:6 axmem:754] [36mallocating page at 3ffff000[m
+[m@@@: not found[37m[  0.386909 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 20 -> 0x12[m
+[m[37m[  0.387223 0:6 syscall_entry::syscall:59] [31m[syscall] id = 20, args = [2, 1073739040, 2, 9, 8192, 68236477], return 18[m
+[m[37m[  0.387708 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.388113 0:6 syscall_entry::syscall:34] [32msyscall: WRITEV[m
+[m[37m[  0.388388 0:6 syscall_entry::syscall:35] [31m[syscall] id = WRITEV, args = [2, 1073739456, 2, 9, 8192, 68236477], entry[m
+[m[37m[  0.388874 0:6 syscall_fs::imp::io:90] [32m[write()] fd: 2, buf: 0x3ffff72f, len: 1[m
+[m[37m[  0.389226 0:6 axmem:754] [36mallocating page at 3ffff000[m
+[m
+[37m[  0.389495 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 20 -> 0x1[m
+[m[37m[  0.389806 0:6 syscall_entry::syscall:59] [31m[syscall] id = 20, args = [2, 1073739456, 2, 9, 8192, 68236477], return 1[m
+[m[37m[  0.390356 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.390764 0:6 syscall_entry::syscall:34] [32msyscall: STAT[m
+[m[37m[  0.391029 0:6 syscall_entry::syscall:35] [31m[syscall] id = STAT, args = [6416, 1073739648, 1073739648, 4294967295, 6426, 4294967196], entry[m
+[m[37m[  0.391634 0:6 axprocess::link:131] [31mnot utf8 slice[m
+[m[37m[  0.391910 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.392144 0:6 axprocess::link:133] [31m117 [m
+[m[37m[  0.392386 0:6 axprocess::link:133] [31m115 [m
+[m[37m[  0.392598 0:6 axprocess::link:133] [31m114 [m
+[m[37m[  0.392810 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.393016 0:6 axprocess::link:133] [31m115 [m
+[m[37m[  0.393227 0:6 axprocess::link:133] [31m98 [m
+[m[37m[  0.393435 0:6 axprocess::link:133] [31m105 [m
+[m[37m[  0.393647 0:6 axprocess::link:133] [31m110 [m
+[m[37m[  0.393859 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.394069 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.394282 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.394489 0:6 axprocess::link:133] [31m74 [m
+[m[37m[  0.394697 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.394907 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.395114 0:6 axprocess::link:133] [31m74 [m
+[m[37m[  0.395321 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.395532 0:6 axprocess::link:133] [31m94 [m
+[m[37m[  0.395741 0:6 axprocess::link:133] [31m120 [m
+[m[37m[  0.395951 0:6 axprocess::link:133] [31m183 [m
+[m[37m[  0.396163 0:6 axprocess::link:133] [31m16 [m
+[m[37m[  0.396370 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.396576 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.396780 0:6 axprocess::link:133] [31m112 [m
+[m[37m[  0.396991 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.397195 0:6 axprocess::link:133] [31m112 [m
+[m[37m[  0.397408 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.397613 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.397820 0:6 axprocess::link:133] [31m112 [m
+[m[37m[  0.398032 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.398237 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.398445 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.398652 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.398860 0:6 axprocess::link:133] [31m8 [m
+[m[37m[  0.399063 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.399271 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.399478 0:6 axprocess::link:133] [31m176 [m
+[m[37m[  0.399689 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.399898 0:6 axprocess::link:133] [31m176 [m
+[m[37m[  0.400109 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.400312 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.400519 0:6 axprocess::link:133] [31m176 [m
+[m[37m[  0.400727 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.400936 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.401146 0:6 axprocess::link:133] [31m68 [m
+[m[37m[  0.401354 0:6 axprocess::link:133] [31m68 [m
+[m[37m[  0.401561 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.401766 0:6 axprocess::link:133] [31m7 [m
+[m[37m[  0.401970 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.402178 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.402389 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.402626 0:6 axprocess::link:135] [31m[m
+[m[37m[  0.402847 0:6 syscall_fs::imp::stat:65] [32mpath : /p[m
+[m[37m[  0.403097 0:6 syscall_fs::ctype::file:184] [36mInto function new_fd, path: /p[m
+[m[37m[  0.403431 0:6 axfs::fops:117] [36mopen file: /p READ[m
+[m[37m[  0.403680 0:6 axfs::root:81] [36mlookup at root: /p[m
+[m[37m[  0.403925 0:6 axfs::fs::fatfs:156] [36mlookup at fatfs: p[m
+[m[37m[  0.405999 0:6 syscall_fs::imp::stat:72] [36mget stat error: ENOENT[m
+[m[37m[  0.406286 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 4 -> 0xfffffffffffffffe[m
+[m[37m[  0.406627 0:6 syscall_entry::syscall:59] [31m[syscall] id = 4, args = [6416, 1073739648, 1073739648, 4294967295, 6426, 4294967196], return -2[m
+[m[37m[  0.407149 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.407541 0:6 syscall_entry::syscall:34] [32msyscall: STAT[m
+[m[37m[  0.407809 0:6 syscall_entry::syscall:35] [31m[syscall] id = STAT, args = [6416, 1073739648, 1073739648, 4294967295, 6425, 4294967196], entry[m
+[m[37m[  0.408375 0:6 axprocess::link:131] [31mnot utf8 slice[m
+[m[37m[  0.408623 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.408830 0:6 axprocess::link:133] [31m117 [m
+[m[37m[  0.409045 0:6 axprocess::link:133] [31m115 [m
+[m[37m[  0.409257 0:6 axprocess::link:133] [31m114 [m
+[m[37m[  0.409471 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.409681 0:6 axprocess::link:133] [31m98 [m
+[m[37m[  0.409888 0:6 axprocess::link:133] [31m105 [m
+[m[37m[  0.410100 0:6 axprocess::link:133] [31m110 [m
+[m[37m[  0.410312 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.410521 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.410732 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.410940 0:6 axprocess::link:133] [31m74 [m
+[m[37m[  0.411148 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.411365 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.411593 0:6 axprocess::link:133] [31m74 [m
+[m[37m[  0.411801 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.412013 0:6 axprocess::link:133] [31m94 [m
+[m[37m[  0.412222 0:6 axprocess::link:133] [31m120 [m
+[m[37m[  0.412433 0:6 axprocess::link:133] [31m183 [m
+[m[37m[  0.412646 0:6 axprocess::link:133] [31m16 [m
+[m[37m[  0.412854 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.413056 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.413262 0:6 axprocess::link:133] [31m112 [m
+[m[37m[  0.413475 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.413680 0:6 axprocess::link:133] [31m112 [m
+[m[37m[  0.413898 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.414105 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.414312 0:6 axprocess::link:133] [31m112 [m
+[m[37m[  0.414524 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.414729 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.414938 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.415145 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.415353 0:6 axprocess::link:133] [31m8 [m
+[m[37m[  0.415557 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.415761 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.415961 0:6 axprocess::link:133] [31m176 [m
+[m[37m[  0.416173 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.416377 0:6 axprocess::link:133] [31m176 [m
+[m[37m[  0.416589 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.416798 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.417008 0:6 axprocess::link:133] [31m176 [m
+[m[37m[  0.417219 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.417425 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.417633 0:6 axprocess::link:133] [31m68 [m
+[m[37m[  0.417845 0:6 axprocess::link:133] [31m68 [m
+[m[37m[  0.418054 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.418259 0:6 axprocess::link:133] [31m7 [m
+[m[37m[  0.418465 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.418670 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.418883 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.419090 0:6 axprocess::link:135] [31m[m
+[m[37m[  0.419296 0:6 syscall_fs::imp::stat:65] [32mpath : /p[m
+[m[37m[  0.419545 0:6 syscall_fs::ctype::file:184] [36mInto function new_fd, path: /p[m
+[m[37m[  0.419876 0:6 axfs::fops:117] [36mopen file: /p READ[m
+[m[37m[  0.420123 0:6 axfs::root:81] [36mlookup at root: /p[m
+[m[37m[  0.420368 0:6 axfs::fs::fatfs:156] [36mlookup at fatfs: p[m
+[m[37m[  0.422426 0:6 syscall_fs::imp::stat:72] [36mget stat error: ENOENT[m
+[m[37m[  0.422702 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 4 -> 0xfffffffffffffffe[m
+[m[37m[  0.423043 0:6 syscall_entry::syscall:59] [31m[syscall] id = 4, args = [6416, 1073739648, 1073739648, 4294967295, 6425, 4294967196], return -2[m
+[m[37m[  0.423571 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.423977 0:6 syscall_entry::syscall:34] [32msyscall: STAT[m
+[m[37m[  0.424246 0:6 syscall_entry::syscall:35] [31m[syscall] id = STAT, args = [6416, 1073739648, 1073739648, 4294967295, 6422, 4294967196], entry[m
+[m[37m[  0.424810 0:6 axprocess::link:131] [31mnot utf8 slice[m
+[m[37m[  0.425060 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.425271 0:6 axprocess::link:133] [31m115 [m
+[m[37m[  0.425484 0:6 axprocess::link:133] [31m98 [m
+[m[37m[  0.425696 0:6 axprocess::link:133] [31m105 [m
+[m[37m[  0.425907 0:6 axprocess::link:133] [31m110 [m
+[m[37m[  0.426120 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.426327 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.426540 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.426748 0:6 axprocess::link:133] [31m74 [m
+[m[37m[  0.426957 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.427170 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.427381 0:6 axprocess::link:133] [31m74 [m
+[m[37m[  0.427589 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.427800 0:6 axprocess::link:133] [31m94 [m
+[m[37m[  0.428007 0:6 axprocess::link:133] [31m120 [m
+[m[37m[  0.428219 0:6 axprocess::link:133] [31m183 [m
+[m[37m[  0.428432 0:6 axprocess::link:133] [31m16 [m
+[m[37m[  0.428640 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.428847 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.429050 0:6 axprocess::link:133] [31m112 [m
+[m[37m[  0.429261 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.429464 0:6 axprocess::link:133] [31m112 [m
+[m[37m[  0.429675 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.429881 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.430089 0:6 axprocess::link:133] [31m112 [m
+[m[37m[  0.430301 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.430506 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.430717 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.430927 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.431141 0:6 axprocess::link:133] [31m8 [m
+[m[37m[  0.431344 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.431549 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.431753 0:6 axprocess::link:133] [31m176 [m
+[m[37m[  0.431964 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.432170 0:6 axprocess::link:133] [31m176 [m
+[m[37m[  0.432386 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.432591 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.432802 0:6 axprocess::link:133] [31m176 [m
+[m[37m[  0.433019 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.433233 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.433453 0:6 axprocess::link:133] [31m68 [m
+[m[37m[  0.433670 0:6 axprocess::link:133] [31m68 [m
+[m[37m[  0.433885 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.434095 0:6 axprocess::link:133] [31m7 [m
+[m[37m[  0.434297 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.434503 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.434719 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.434927 0:6 axprocess::link:135] [31m[m
+[m[37m[  0.435137 0:6 syscall_fs::imp::stat:65] [32mpath : /p[m
+[m[37m[  0.435384 0:6 syscall_fs::ctype::file:184] [36mInto function new_fd, path: /p[m
+[m[37m[  0.435716 0:6 axfs::fops:117] [36mopen file: /p READ[m
+[m[37m[  0.435971 0:6 axfs::root:81] [36mlookup at root: /p[m
+[m[37m[  0.436213 0:6 axfs::fs::fatfs:156] [36mlookup at fatfs: p[m
+[m[37m[  0.438280 0:6 syscall_fs::imp::stat:72] [36mget stat error: ENOENT[m
+[m[37m[  0.438544 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 4 -> 0xfffffffffffffffe[m
+[m[37m[  0.438879 0:6 syscall_entry::syscall:59] [31m[syscall] id = 4, args = [6416, 1073739648, 1073739648, 4294967295, 6422, 4294967196], return -2[m
+[m[37m[  0.439428 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.439828 0:6 syscall_entry::syscall:34] [32msyscall: STAT[m
+[m[37m[  0.440093 0:6 syscall_entry::syscall:35] [31m[syscall] id = STAT, args = [6416, 1073739648, 1073739648, 4294967295, 6421, 4294967196], entry[m
+[m[37m[  0.440689 0:6 axprocess::link:131] [31mnot utf8 slice[m
+[m[37m[  0.440938 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.441151 0:6 axprocess::link:133] [31m98 [m
+[m[37m[  0.441360 0:6 axprocess::link:133] [31m105 [m
+[m[37m[  0.441572 0:6 axprocess::link:133] [31m110 [m
+[m[37m[  0.441784 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.441994 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.442205 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.442412 0:6 axprocess::link:133] [31m74 [m
+[m[37m[  0.442621 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.442836 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.443044 0:6 axprocess::link:133] [31m74 [m
+[m[37m[  0.443251 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.443462 0:6 axprocess::link:133] [31m94 [m
+[m[37m[  0.443671 0:6 axprocess::link:133] [31m120 [m
+[m[37m[  0.443883 0:6 axprocess::link:133] [31m183 [m
+[m[37m[  0.444097 0:6 axprocess::link:133] [31m16 [m
+[m[37m[  0.444303 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.444508 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.444714 0:6 axprocess::link:133] [31m112 [m
+[m[37m[  0.444926 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.445130 0:6 axprocess::link:133] [31m112 [m
+[m[37m[  0.445343 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.445547 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.445755 0:6 axprocess::link:133] [31m112 [m
+[m[37m[  0.445967 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.446171 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.446380 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.446587 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.446798 0:6 axprocess::link:133] [31m8 [m
+[m[37m[  0.447003 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.447206 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.447409 0:6 axprocess::link:133] [31m176 [m
+[m[37m[  0.447619 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.447821 0:6 axprocess::link:133] [31m176 [m
+[m[37m[  0.448035 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.448240 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.448448 0:6 axprocess::link:133] [31m176 [m
+[m[37m[  0.448658 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.448862 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.449068 0:6 axprocess::link:133] [31m68 [m
+[m[37m[  0.449277 0:6 axprocess::link:133] [31m68 [m
+[m[37m[  0.449484 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.449687 0:6 axprocess::link:133] [31m7 [m
+[m[37m[  0.449893 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.450096 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.450308 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.450516 0:6 axprocess::link:135] [31m[m
+[m[37m[  0.450716 0:6 syscall_fs::imp::stat:65] [32mpath : /p[m
+[m[37m[  0.450961 0:6 syscall_fs::ctype::file:184] [36mInto function new_fd, path: /p[m
+[m[37m[  0.451291 0:6 axfs::fops:117] [36mopen file: /p READ[m
+[m[37m[  0.451536 0:6 axfs::root:81] [36mlookup at root: /p[m
+[m[37m[  0.451776 0:6 axfs::fs::fatfs:156] [36mlookup at fatfs: p[m
+[m[37m[  0.453832 0:6 syscall_fs::imp::stat:72] [36mget stat error: ENOENT[m
+[m[37m[  0.454124 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 4 -> 0xfffffffffffffffe[m
+[m[37m[  0.454486 0:6 syscall_entry::syscall:59] [31m[syscall] id = 4, args = [6416, 1073739648, 1073739648, 4294967295, 6421, 4294967196], return -2[m
+[m[37m[  0.455060 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.455462 0:6 syscall_entry::syscall:34] [32msyscall: WRITEV[m
+[m[37m[  0.455735 0:6 syscall_entry::syscall:35] [31m[syscall] id = WRITEV, args = [2, 1073738816, 2, 10, 70348832, 68236477], entry[m
+[m[37m[  0.456239 0:6 syscall_fs::imp::io:90] [32m[write()] fd: 2, buf: 0x3ffff500, len: 12[m
+[m[37m[  0.456593 0:6 axmem:754] [36mallocating page at 3ffff000[m
+[m./readlink: [37m[  0.456897 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 20 -> 0xc[m
+[m[37m[  0.457209 0:6 syscall_entry::syscall:59] [31m[syscall] id = 20, args = [2, 1073738816, 2, 10, 70348832, 68236477], return 12[m
+[m[37m[  0.457713 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.458112 0:6 syscall_entry::syscall:34] [32msyscall: WRITEV[m
+[m[37m[  0.458383 0:6 syscall_entry::syscall:35] [31m[syscall] id = WRITEV, args = [2, 1073738816, 2, 1, 70348832, 68236477], entry[m
+[m[37m[  0.458885 0:6 syscall_fs::imp::io:90] [32m[write()] fd: 2, buf: 0x3ffff500, len: 8[m
+[m[37m[  0.459234 0:6 axmem:754] [36mallocating page at 3ffff000[m
+[mline 3: [37m[  0.459518 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 20 -> 0x8[m
+[m[37m[  0.459829 0:6 syscall_entry::syscall:59] [31m[syscall] id = 20, args = [2, 1073738816, 2, 1, 70348832, 68236477], return 8[m
+[m[37m[  0.460327 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.460727 0:6 syscall_entry::syscall:34] [32msyscall: WRITEV[m
+[m[37m[  0.460999 0:6 syscall_entry::syscall:35] [31m[syscall] id = WRITEV, args = [2, 1073739040, 2, 9, 8192, 68236477], entry[m
+[m[37m[  0.461479 0:6 syscall_fs::imp::io:90] [32m[write()] fd: 2, buf: 0x3ffff5e0, len: 52[m
+[m[37m[  0.461858 0:6 axmem:754] [36mallocating page at 3ffff000[m
+[mÐKJÐKJÐ^x·pp@p@@@°°@°@DDÐK: not found[37m[  0.462308 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 20 -> 0x34[m
+[m[37m[  0.462622 0:6 syscall_entry::syscall:59] [31m[syscall] id = 20, args = [2, 1073739040, 2, 9, 8192, 68236477], return 52[m
+[m[37m[  0.463107 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.463507 0:6 syscall_entry::syscall:34] [32msyscall: WRITEV[m
+[m[37m[  0.463781 0:6 syscall_entry::syscall:35] [31m[syscall] id = WRITEV, args = [2, 1073739456, 2, 9, 8192, 68236477], entry[m
+[m[37m[  0.464261 0:6 syscall_fs::imp::io:90] [32m[write()] fd: 2, buf: 0x3ffff72f, len: 1[m
+[m[37m[  0.464614 0:6 axmem:754] [36mallocating page at 3ffff000[m
+[m
+[37m[  0.464881 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 20 -> 0x1[m
+[m[37m[  0.465192 0:6 syscall_entry::syscall:59] [31m[syscall] id = 20, args = [2, 1073739456, 2, 9, 8192, 68236477], return 1[m
+[m[37m[  0.465726 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.466130 0:6 syscall_entry::syscall:34] [32msyscall: STAT[m
+[m[37m[  0.466394 0:6 syscall_entry::syscall:35] [31m[syscall] id = STAT, args = [6400, 1073739648, 1073739648, 4294967295, 6410, 4294967196], entry[m
+[m[37m[  0.466952 0:6 axprocess::link:131] [31mnot utf8 slice[m
+[m[37m[  0.467200 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.467409 0:6 axprocess::link:133] [31m117 [m
+[m[37m[  0.467620 0:6 axprocess::link:133] [31m115 [m
+[m[37m[  0.467834 0:6 axprocess::link:133] [31m114 [m
+[m[37m[  0.468044 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.468251 0:6 axprocess::link:133] [31m115 [m
+[m[37m[  0.468462 0:6 axprocess::link:133] [31m98 [m
+[m[37m[  0.468669 0:6 axprocess::link:133] [31m105 [m
+[m[37m[  0.468889 0:6 axprocess::link:133] [31m110 [m
+[m[37m[  0.469119 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.469327 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.469538 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.469745 0:6 axprocess::link:133] [31m74 [m
+[m[37m[  0.469952 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.470162 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.470370 0:6 axprocess::link:133] [31m74 [m
+[m[37m[  0.470578 0:6 axprocess::link:133] [31m24 [m
+[m[37m[  0.470786 0:6 axprocess::link:133] [31m88 [m
+[m[37m[  0.470991 0:6 axprocess::link:133] [31m8 [m
+[m[37m[  0.471194 0:6 axprocess::link:133] [31m83 [m
+[m[37m[  0.471400 0:6 axprocess::link:133] [31m229 [m
+[m[37m[  0.471610 0:6 axprocess::link:133] [31m116 [m
+[m[37m[  0.471820 0:6 axprocess::link:133] [31m100 [m
+[m[37m[  0.472030 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.472233 0:6 axprocess::link:133] [31m112 [m
+[m[37m[  0.472443 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.472649 0:6 axprocess::link:133] [31m112 [m
+[m[37m[  0.472860 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.473063 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.473282 0:6 axprocess::link:133] [31m112 [m
+[m[37m[  0.473495 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.473700 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.473907 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.474115 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.474333 0:6 axprocess::link:133] [31m8 [m
+[m[37m[  0.474537 0:6 axprocess::link:133] [31m81 [m
+[m[37m[  0.474796 0:6 axprocess::link:133] [31m229 [m
+[m[37m[  0.475010 0:6 axprocess::link:133] [31m116 [m
+[m[37m[  0.475229 0:6 axprocess::link:133] [31m100 [m
+[m[37m[  0.475445 0:6 axprocess::link:133] [31m6 [m
+[m[37m[  0.475653 0:6 axprocess::link:133] [31m16 [m
+[m[37m[  0.475860 0:6 axprocess::link:133] [31m82 [m
+[m[37m[  0.476075 0:6 axprocess::link:133] [31m229 [m
+[m[37m[  0.476286 0:6 axprocess::link:133] [31m116 [m
+[m[37m[  0.476497 0:6 axprocess::link:133] [31m100 [m
+[m[37m[  0.476709 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.476913 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.477124 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.477332 0:6 axprocess::link:135] [31m[m
+[m[37m[  0.477544 0:6 syscall_fs::imp::stat:65] [32mpath : /p[m
+[m[37m[  0.477797 0:6 syscall_fs::ctype::file:184] [36mInto function new_fd, path: /p[m
+[m[37m[  0.478130 0:6 axfs::fops:117] [36mopen file: /p READ[m
+[m[37m[  0.478378 0:6 axfs::root:81] [36mlookup at root: /p[m
+[m[37m[  0.478622 0:6 axfs::fs::fatfs:156] [36mlookup at fatfs: p[m
+[m[37m[  0.480699 0:6 syscall_fs::imp::stat:72] [36mget stat error: ENOENT[m
+[m[37m[  0.480962 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 4 -> 0xfffffffffffffffe[m
+[m[37m[  0.481329 0:6 syscall_entry::syscall:59] [31m[syscall] id = 4, args = [6400, 1073739648, 1073739648, 4294967295, 6410, 4294967196], return -2[m
+[m[37m[  0.481869 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.482273 0:6 syscall_entry::syscall:34] [32msyscall: STAT[m
+[m[37m[  0.482538 0:6 syscall_entry::syscall:35] [31m[syscall] id = STAT, args = [6400, 1073739648, 1073739648, 4294967295, 6409, 4294967196], entry[m
+[m[37m[  0.483107 0:6 axprocess::link:131] [31mnot utf8 slice[m
+[m[37m[  0.483360 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.483570 0:6 axprocess::link:133] [31m117 [m
+[m[37m[  0.483781 0:6 axprocess::link:133] [31m115 [m
+[m[37m[  0.483994 0:6 axprocess::link:133] [31m114 [m
+[m[37m[  0.484205 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.484412 0:6 axprocess::link:133] [31m98 [m
+[m[37m[  0.484620 0:6 axprocess::link:133] [31m105 [m
+[m[37m[  0.484833 0:6 axprocess::link:133] [31m110 [m
+[m[37m[  0.485043 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.485251 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.485469 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.485677 0:6 axprocess::link:133] [31m74 [m
+[m[37m[  0.485884 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.486093 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.486300 0:6 axprocess::link:133] [31m74 [m
+[m[37m[  0.486509 0:6 axprocess::link:133] [31m24 [m
+[m[37m[  0.486716 0:6 axprocess::link:133] [31m88 [m
+[m[37m[  0.486923 0:6 axprocess::link:133] [31m8 [m
+[m[37m[  0.487129 0:6 axprocess::link:133] [31m83 [m
+[m[37m[  0.487336 0:6 axprocess::link:133] [31m229 [m
+[m[37m[  0.487547 0:6 axprocess::link:133] [31m116 [m
+[m[37m[  0.487757 0:6 axprocess::link:133] [31m100 [m
+[m[37m[  0.487967 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.488171 0:6 axprocess::link:133] [31m112 [m
+[m[37m[  0.488384 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.488589 0:6 axprocess::link:133] [31m112 [m
+[m[37m[  0.488803 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.489007 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.489215 0:6 axprocess::link:133] [31m112 [m
+[m[37m[  0.489426 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.489630 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.489839 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.490049 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.490257 0:6 axprocess::link:133] [31m8 [m
+[m[37m[  0.490460 0:6 axprocess::link:133] [31m81 [m
+[m[37m[  0.490668 0:6 axprocess::link:133] [31m229 [m
+[m[37m[  0.490878 0:6 axprocess::link:133] [31m116 [m
+[m[37m[  0.491088 0:6 axprocess::link:133] [31m100 [m
+[m[37m[  0.491301 0:6 axprocess::link:133] [31m6 [m
+[m[37m[  0.491505 0:6 axprocess::link:133] [31m16 [m
+[m[37m[  0.491713 0:6 axprocess::link:133] [31m82 [m
+[m[37m[  0.491921 0:6 axprocess::link:133] [31m229 [m
+[m[37m[  0.492132 0:6 axprocess::link:133] [31m116 [m
+[m[37m[  0.492345 0:6 axprocess::link:133] [31m100 [m
+[m[37m[  0.492557 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.492761 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.492974 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.493180 0:6 axprocess::link:135] [31m[m
+[m[37m[  0.493382 0:6 syscall_fs::imp::stat:65] [32mpath : /p[m
+[m[37m[  0.493631 0:6 syscall_fs::ctype::file:184] [36mInto function new_fd, path: /p[m
+[m[37m[  0.493965 0:6 axfs::fops:117] [36mopen file: /p READ[m
+[m[37m[  0.494207 0:6 axfs::root:81] [36mlookup at root: /p[m
+[m[37m[  0.494449 0:6 axfs::fs::fatfs:156] [36mlookup at fatfs: p[m
+[m[37m[  0.496508 0:6 syscall_fs::imp::stat:72] [36mget stat error: ENOENT[m
+[m[37m[  0.496774 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 4 -> 0xfffffffffffffffe[m
+[m[37m[  0.497111 0:6 syscall_entry::syscall:59] [31m[syscall] id = 4, args = [6400, 1073739648, 1073739648, 4294967295, 6409, 4294967196], return -2[m
+[m[37m[  0.497643 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.498071 0:6 syscall_entry::syscall:34] [32msyscall: STAT[m
+[m[37m[  0.498339 0:6 syscall_entry::syscall:35] [31m[syscall] id = STAT, args = [6400, 1073739648, 1073739648, 4294967295, 6406, 4294967196], entry[m
+[m[37m[  0.498905 0:6 axprocess::link:131] [31mnot utf8 slice[m
+[m[37m[  0.499150 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.499358 0:6 axprocess::link:133] [31m115 [m
+[m[37m[  0.499569 0:6 axprocess::link:133] [31m98 [m
+[m[37m[  0.499778 0:6 axprocess::link:133] [31m105 [m
+[m[37m[  0.499990 0:6 axprocess::link:133] [31m110 [m
+[m[37m[  0.500199 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.500406 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.500621 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.500830 0:6 axprocess::link:133] [31m74 [m
+[m[37m[  0.501038 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.501251 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.501459 0:6 axprocess::link:133] [31m74 [m
+[m[37m[  0.501667 0:6 axprocess::link:133] [31m24 [m
+[m[37m[  0.501876 0:6 axprocess::link:133] [31m88 [m
+[m[37m[  0.502087 0:6 axprocess::link:133] [31m8 [m
+[m[37m[  0.502293 0:6 axprocess::link:133] [31m83 [m
+[m[37m[  0.502501 0:6 axprocess::link:133] [31m229 [m
+[m[37m[  0.502711 0:6 axprocess::link:133] [31m116 [m
+[m[37m[  0.502921 0:6 axprocess::link:133] [31m100 [m
+[m[37m[  0.503132 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.503337 0:6 axprocess::link:133] [31m112 [m
+[m[37m[  0.503551 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.503755 0:6 axprocess::link:133] [31m112 [m
+[m[37m[  0.503970 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.504175 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.504382 0:6 axprocess::link:133] [31m112 [m
+[m[37m[  0.504593 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.504797 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.505005 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.505213 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.505421 0:6 axprocess::link:133] [31m8 [m
+[m[37m[  0.505627 0:6 axprocess::link:133] [31m81 [m
+[m[37m[  0.505836 0:6 axprocess::link:133] [31m229 [m
+[m[37m[  0.506046 0:6 axprocess::link:133] [31m116 [m
+[m[37m[  0.506258 0:6 axprocess::link:133] [31m100 [m
+[m[37m[  0.506469 0:6 axprocess::link:133] [31m6 [m
+[m[37m[  0.506675 0:6 axprocess::link:133] [31m16 [m
+[m[37m[  0.506881 0:6 axprocess::link:133] [31m82 [m
+[m[37m[  0.507088 0:6 axprocess::link:133] [31m229 [m
+[m[37m[  0.507299 0:6 axprocess::link:133] [31m116 [m
+[m[37m[  0.507513 0:6 axprocess::link:133] [31m100 [m
+[m[37m[  0.507726 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.507931 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.508145 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.508353 0:6 axprocess::link:135] [31m[m
+[m[37m[  0.508553 0:6 syscall_fs::imp::stat:65] [32mpath : /p[m
+[m[37m[  0.508801 0:6 syscall_fs::ctype::file:184] [36mInto function new_fd, path: /p[m
+[m[37m[  0.509134 0:6 axfs::fops:117] [36mopen file: /p READ[m
+[m[37m[  0.509379 0:6 axfs::root:81] [36mlookup at root: /p[m
+[m[37m[  0.509621 0:6 axfs::fs::fatfs:156] [36mlookup at fatfs: p[m
+[m[37m[  0.511774 0:6 syscall_fs::imp::stat:72] [36mget stat error: ENOENT[m
+[m[37m[  0.512040 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 4 -> 0xfffffffffffffffe[m
+[m[37m[  0.512375 0:6 syscall_entry::syscall:59] [31m[syscall] id = 4, args = [6400, 1073739648, 1073739648, 4294967295, 6406, 4294967196], return -2[m
+[m[37m[  0.512913 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.513315 0:6 syscall_entry::syscall:34] [32msyscall: STAT[m
+[m[37m[  0.513581 0:6 syscall_entry::syscall:35] [31m[syscall] id = STAT, args = [6400, 1073739648, 1073739648, 4294967295, 6405, 4294967196], entry[m
+[m[37m[  0.514138 0:6 axprocess::link:131] [31mnot utf8 slice[m
+[m[37m[  0.514389 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.514601 0:6 axprocess::link:133] [31m98 [m
+[m[37m[  0.514807 0:6 axprocess::link:133] [31m105 [m
+[m[37m[  0.515019 0:6 axprocess::link:133] [31m110 [m
+[m[37m[  0.515228 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.515434 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.515645 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.515853 0:6 axprocess::link:133] [31m74 [m
+[m[37m[  0.516061 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.516276 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.516485 0:6 axprocess::link:133] [31m74 [m
+[m[37m[  0.516692 0:6 axprocess::link:133] [31m24 [m
+[m[37m[  0.516900 0:6 axprocess::link:133] [31m88 [m
+[m[37m[  0.517108 0:6 axprocess::link:133] [31m8 [m
+[m[37m[  0.517313 0:6 axprocess::link:133] [31m83 [m
+[m[37m[  0.517521 0:6 axprocess::link:133] [31m229 [m
+[m[37m[  0.517733 0:6 axprocess::link:133] [31m116 [m
+[m[37m[  0.517947 0:6 axprocess::link:133] [31m100 [m
+[m[37m[  0.518159 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.518364 0:6 axprocess::link:133] [31m112 [m
+[m[37m[  0.518581 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.518785 0:6 axprocess::link:133] [31m112 [m
+[m[37m[  0.518996 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.519202 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.519409 0:6 axprocess::link:133] [31m112 [m
+[m[37m[  0.519621 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.519827 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.520035 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.520243 0:6 axprocess::link:133] [31m64 [m
+[m[37m[  0.520451 0:6 axprocess::link:133] [31m8 [m
+[m[37m[  0.520655 0:6 axprocess::link:133] [31m81 [m
+[m[37m[  0.520862 0:6 axprocess::link:133] [31m229 [m
+[m[37m[  0.521076 0:6 axprocess::link:133] [31m116 [m
+[m[37m[  0.521292 0:6 axprocess::link:133] [31m100 [m
+[m[37m[  0.521507 0:6 axprocess::link:133] [31m6 [m
+[m[37m[  0.521711 0:6 axprocess::link:133] [31m16 [m
+[m[37m[  0.521918 0:6 axprocess::link:133] [31m82 [m
+[m[37m[  0.522125 0:6 axprocess::link:133] [31m229 [m
+[m[37m[  0.522337 0:6 axprocess::link:133] [31m116 [m
+[m[37m[  0.522548 0:6 axprocess::link:133] [31m100 [m
+[m[37m[  0.522759 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.522964 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.523177 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.523383 0:6 axprocess::link:135] [31m[m
+[m[37m[  0.523583 0:6 syscall_fs::imp::stat:65] [32mpath : /p[m
+[m[37m[  0.523831 0:6 syscall_fs::ctype::file:184] [36mInto function new_fd, path: /p[m
+[m[37m[  0.524164 0:6 axfs::fops:117] [36mopen file: /p READ[m
+[m[37m[  0.524406 0:6 axfs::root:81] [36mlookup at root: /p[m
+[m[37m[  0.524647 0:6 axfs::fs::fatfs:156] [36mlookup at fatfs: p[m
+[m[37m[  0.526709 0:6 syscall_fs::imp::stat:72] [36mget stat error: ENOENT[m
+[m[37m[  0.527012 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 4 -> 0xfffffffffffffffe[m
+[m[37m[  0.527350 0:6 syscall_entry::syscall:59] [31m[syscall] id = 4, args = [6400, 1073739648, 1073739648, 4294967295, 6405, 4294967196], return -2[m
+[m[37m[  0.527913 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.528314 0:6 syscall_entry::syscall:34] [32msyscall: WRITEV[m
+[m[37m[  0.528592 0:6 syscall_entry::syscall:35] [31m[syscall] id = WRITEV, args = [2, 1073738816, 2, 10, 70348832, 68236477], entry[m
+[m[37m[  0.529094 0:6 syscall_fs::imp::io:90] [32m[write()] fd: 2, buf: 0x3ffff500, len: 12[m
+[m[37m[  0.529448 0:6 axmem:754] [36mallocating page at 3ffff000[m
+[m./readlink: [37m[  0.529753 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 20 -> 0xc[m
+[m[37m[  0.530065 0:6 syscall_entry::syscall:59] [31m[syscall] id = 20, args = [2, 1073738816, 2, 10, 70348832, 68236477], return 12[m
+[m[37m[  0.530572 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.530970 0:6 syscall_entry::syscall:34] [32msyscall: WRITEV[m
+[m[37m[  0.531241 0:6 syscall_entry::syscall:35] [31m[syscall] id = WRITEV, args = [2, 1073738816, 2, 1, 70348832, 68236477], entry[m
+[m[37m[  0.531740 0:6 syscall_fs::imp::io:90] [32m[write()] fd: 2, buf: 0x3ffff500, len: 8[m
+[m[37m[  0.532092 0:6 axmem:754] [36mallocating page at 3ffff000[m
+[mline 4: [37m[  0.532379 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 20 -> 0x8[m
+[m[37m[  0.532691 0:6 syscall_entry::syscall:59] [31m[syscall] id = 20, args = [2, 1073738816, 2, 1, 70348832, 68236477], return 8[m
+[m[37m[  0.533187 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.533595 0:6 syscall_entry::syscall:34] [32msyscall: WRITEV[m
+[m[37m[  0.533880 0:6 syscall_entry::syscall:35] [31m[syscall] id = WRITEV, args = [2, 1073739040, 2, 9, 8192, 68236477], entry[m
+[m[37m[  0.534364 0:6 syscall_fs::imp::io:90] [32m[write()] fd: 2, buf: 0x3ffff5e0, len: 49[m
+[m[37m[  0.534733 0:6 axmem:754] [36mallocating page at 3ffff000[m
+[mÐKJÐKJXSåtdpp@p@@@QåtdRåtdÐK: not found[37m[  0.535185 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 20 -> 0x31[m
+[m[37m[  0.535515 0:6 syscall_entry::syscall:59] [31m[syscall] id = 20, args = [2, 1073739040, 2, 9, 8192, 68236477], return 49[m
+[m[37m[  0.536036 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.536449 0:6 syscall_entry::syscall:34] [32msyscall: WRITEV[m
+[m[37m[  0.536738 0:6 syscall_entry::syscall:35] [31m[syscall] id = WRITEV, args = [2, 1073739456, 2, 9, 8192, 68236477], entry[m
+[m[37m[  0.537263 0:6 syscall_fs::imp::io:90] [32m[write()] fd: 2, buf: 0x3ffff72f, len: 1[m
+[m[37m[  0.537634 0:6 axmem:754] [36mallocating page at 3ffff000[m
+[m
+[37m[  0.537918 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 20 -> 0x1[m
+[m[37m[  0.538248 0:6 syscall_entry::syscall:59] [31m[syscall] id = 20, args = [2, 1073739456, 2, 9, 8192, 68236477], return 1[m
+[m[37m[  0.538809 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.539228 0:6 syscall_entry::syscall:34] [32msyscall: STAT[m
+[m[37m[  0.539492 0:6 syscall_entry::syscall:35] [31m[syscall] id = STAT, args = [6384, 1073739648, 1073739648, 4294967295, 6394, 4294967196], entry[m
+[m[37m[  0.540054 0:6 axprocess::link:131] [31mnot utf8 slice[m
+[m[37m[  0.540301 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.540515 0:6 axprocess::link:133] [31m117 [m
+[m[37m[  0.540732 0:6 axprocess::link:133] [31m115 [m
+[m[37m[  0.540943 0:6 axprocess::link:133] [31m114 [m
+[m[37m[  0.541150 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.541358 0:6 axprocess::link:133] [31m115 [m
+[m[37m[  0.541568 0:6 axprocess::link:133] [31m98 [m
+[m[37m[  0.541774 0:6 axprocess::link:133] [31m105 [m
+[m[37m[  0.541983 0:6 axprocess::link:133] [31m110 [m
+[m[37m[  0.542194 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.542402 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.542612 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.542820 0:6 axprocess::link:133] [31m74 [m
+[m[37m[  0.543027 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.543237 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.543442 0:6 axprocess::link:133] [31m74 [m
+[m[37m[  0.543649 0:6 axprocess::link:133] [31m48 [m
+[m[37m[  0.543858 0:6 axprocess::link:133] [31m68 [m
+[m[37m[  0.544063 0:6 axprocess::link:133] [31m48 [m
+[m[37m[  0.544271 0:6 axprocess::link:133] [31m68 [m
+[m[37m[  0.544479 0:6 axprocess::link:133] [31m1 [m
+[m[37m[  0.544681 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.544884 0:6 axprocess::link:133] [31m48 [m
+[m[37m[  0.545091 0:6 axprocess::link:133] [31m5 [m
+[m[37m[  0.545295 0:6 axprocess::link:133] [31m71 [m
+[m[37m[  0.545502 0:6 axprocess::link:133] [31m78 [m
+[m[37m[  0.545708 0:6 axprocess::link:133] [31m85 [m
+[m[37m[  0.545918 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.546123 0:6 axprocess::link:133] [31m128 [m
+[m[37m[  0.546333 0:6 axprocess::link:133] [31m192 [m
+[m[37m[  0.546559 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.546762 0:6 axprocess::link:133] [31m1 [m
+[m[37m[  0.546969 0:6 axprocess::link:133] [31m1 [m
+[m[37m[  0.547172 0:6 axprocess::link:133] [31m1 [m
+[m[37m[  0.547376 0:6 axprocess::link:133] [31m192 [m
+[m[37m[  0.547587 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.547802 0:6 axprocess::link:133] [31m251 [m
+[m[37m[  0.548017 0:6 axprocess::link:135] [31m[m
+[m[37m[  0.548229 0:6 syscall_fs::imp::stat:65] [32mpath : /p[m
+[m[37m[  0.548477 0:6 syscall_fs::ctype::file:184] [36mInto function new_fd, path: /p[m
+[m[37m[  0.548813 0:6 axfs::fops:117] [36mopen file: /p READ[m
+[m[37m[  0.549060 0:6 axfs::root:81] [36mlookup at root: /p[m
+[m[37m[  0.549305 0:6 axfs::fs::fatfs:156] [36mlookup at fatfs: p[m
+[m[37m[  0.551391 0:6 syscall_fs::imp::stat:72] [36mget stat error: ENOENT[m
+[m[37m[  0.551664 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 4 -> 0xfffffffffffffffe[m
+[m[37m[  0.552014 0:6 syscall_entry::syscall:59] [31m[syscall] id = 4, args = [6384, 1073739648, 1073739648, 4294967295, 6394, 4294967196], return -2[m
+[m[37m[  0.552579 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.552985 0:6 syscall_entry::syscall:34] [32msyscall: STAT[m
+[m[37m[  0.553253 0:6 syscall_entry::syscall:35] [31m[syscall] id = STAT, args = [6384, 1073739648, 1073739648, 4294967295, 6393, 4294967196], entry[m
+[m[37m[  0.553818 0:6 axprocess::link:131] [31mnot utf8 slice[m
+[m[37m[  0.554065 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.554274 0:6 axprocess::link:133] [31m117 [m
+[m[37m[  0.554484 0:6 axprocess::link:133] [31m115 [m
+[m[37m[  0.554699 0:6 axprocess::link:133] [31m114 [m
+[m[37m[  0.554913 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.555119 0:6 axprocess::link:133] [31m98 [m
+[m[37m[  0.555336 0:6 axprocess::link:133] [31m105 [m
+[m[37m[  0.555576 0:6 axprocess::link:133] [31m110 [m
+[m[37m[  0.555787 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.555994 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.556207 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.556420 0:6 axprocess::link:133] [31m74 [m
+[m[37m[  0.556627 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.556838 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.557047 0:6 axprocess::link:133] [31m74 [m
+[m[37m[  0.557255 0:6 axprocess::link:133] [31m48 [m
+[m[37m[  0.557465 0:6 axprocess::link:133] [31m68 [m
+[m[37m[  0.557673 0:6 axprocess::link:133] [31m48 [m
+[m[37m[  0.557880 0:6 axprocess::link:133] [31m68 [m
+[m[37m[  0.558093 0:6 axprocess::link:133] [31m1 [m
+[m[37m[  0.558299 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.558502 0:6 axprocess::link:133] [31m48 [m
+[m[37m[  0.558709 0:6 axprocess::link:133] [31m5 [m
+[m[37m[  0.558913 0:6 axprocess::link:133] [31m71 [m
+[m[37m[  0.559121 0:6 axprocess::link:133] [31m78 [m
+[m[37m[  0.559329 0:6 axprocess::link:133] [31m85 [m
+[m[37m[  0.559536 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.559741 0:6 axprocess::link:133] [31m128 [m
+[m[37m[  0.559958 0:6 axprocess::link:133] [31m192 [m
+[m[37m[  0.560170 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.560375 0:6 axprocess::link:133] [31m1 [m
+[m[37m[  0.560582 0:6 axprocess::link:133] [31m1 [m
+[m[37m[  0.560786 0:6 axprocess::link:133] [31m1 [m
+[m[37m[  0.560989 0:6 axprocess::link:133] [31m192 [m
+[m[37m[  0.561200 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.561403 0:6 axprocess::link:133] [31m251 [m
+[m[37m[  0.561619 0:6 axprocess::link:135] [31m[m
+[m[37m[  0.561824 0:6 syscall_fs::imp::stat:65] [32mpath : /p[m
+[m[37m[  0.562070 0:6 syscall_fs::ctype::file:184] [36mInto function new_fd, path: /p[m
+[m[37m[  0.562401 0:6 axfs::fops:117] [36mopen file: /p READ[m
+[m[37m[  0.562643 0:6 axfs::root:81] [36mlookup at root: /p[m
+[m[37m[  0.562886 0:6 axfs::fs::fatfs:156] [36mlookup at fatfs: p[m
+[m[37m[  0.564944 0:6 syscall_fs::imp::stat:72] [36mget stat error: ENOENT[m
+[m[37m[  0.565222 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 4 -> 0xfffffffffffffffe[m
+[m[37m[  0.565579 0:6 syscall_entry::syscall:59] [31m[syscall] id = 4, args = [6384, 1073739648, 1073739648, 4294967295, 6393, 4294967196], return -2[m
+[m[37m[  0.566163 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.566568 0:6 syscall_entry::syscall:34] [32msyscall: STAT[m
+[m[37m[  0.566835 0:6 syscall_entry::syscall:35] [31m[syscall] id = STAT, args = [6384, 1073739648, 1073739648, 4294967295, 6390, 4294967196], entry[m
+[m[37m[  0.567395 0:6 axprocess::link:131] [31mnot utf8 slice[m
+[m[37m[  0.567643 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.567851 0:6 axprocess::link:133] [31m115 [m
+[m[37m[  0.568065 0:6 axprocess::link:133] [31m98 [m
+[m[37m[  0.568273 0:6 axprocess::link:133] [31m105 [m
+[m[37m[  0.568490 0:6 axprocess::link:133] [31m110 [m
+[m[37m[  0.568704 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.568912 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.569124 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.569332 0:6 axprocess::link:133] [31m74 [m
+[m[37m[  0.569540 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.569753 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.569960 0:6 axprocess::link:133] [31m74 [m
+[m[37m[  0.570167 0:6 axprocess::link:133] [31m48 [m
+[m[37m[  0.570378 0:6 axprocess::link:133] [31m68 [m
+[m[37m[  0.570587 0:6 axprocess::link:133] [31m48 [m
+[m[37m[  0.570794 0:6 axprocess::link:133] [31m68 [m
+[m[37m[  0.571003 0:6 axprocess::link:133] [31m1 [m
+[m[37m[  0.571206 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.571410 0:6 axprocess::link:133] [31m48 [m
+[m[37m[  0.571620 0:6 axprocess::link:133] [31m5 [m
+[m[37m[  0.571825 0:6 axprocess::link:133] [31m71 [m
+[m[37m[  0.572032 0:6 axprocess::link:133] [31m78 [m
+[m[37m[  0.572241 0:6 axprocess::link:133] [31m85 [m
+[m[37m[  0.572450 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.572653 0:6 axprocess::link:133] [31m128 [m
+[m[37m[  0.572864 0:6 axprocess::link:133] [31m192 [m
+[m[37m[  0.573077 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.573281 0:6 axprocess::link:133] [31m1 [m
+[m[37m[  0.573485 0:6 axprocess::link:133] [31m1 [m
+[m[37m[  0.573689 0:6 axprocess::link:133] [31m1 [m
+[m[37m[  0.573906 0:6 axprocess::link:133] [31m192 [m
+[m[37m[  0.574118 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.574322 0:6 axprocess::link:133] [31m251 [m
+[m[37m[  0.574534 0:6 axprocess::link:135] [31m[m
+[m[37m[  0.574734 0:6 syscall_fs::imp::stat:65] [32mpath : /p[m
+[m[37m[  0.574985 0:6 syscall_fs::ctype::file:184] [36mInto function new_fd, path: /p[m
+[m[37m[  0.575319 0:6 axfs::fops:117] [36mopen file: /p READ[m
+[m[37m[  0.575564 0:6 axfs::root:81] [36mlookup at root: /p[m
+[m[37m[  0.575808 0:6 axfs::fs::fatfs:156] [36mlookup at fatfs: p[m
+[m[37m[  0.577855 0:6 syscall_fs::imp::stat:72] [36mget stat error: ENOENT[m
+[m[37m[  0.578130 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 4 -> 0xfffffffffffffffe[m
+[m[37m[  0.578470 0:6 syscall_entry::syscall:59] [31m[syscall] id = 4, args = [6384, 1073739648, 1073739648, 4294967295, 6390, 4294967196], return -2[m
+[m[37m[  0.579002 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.579406 0:6 syscall_entry::syscall:34] [32msyscall: STAT[m
+[m[37m[  0.579672 0:6 syscall_entry::syscall:35] [31m[syscall] id = STAT, args = [6384, 1073739648, 1073739648, 4294967295, 6389, 4294967196], entry[m
+[m[37m[  0.580236 0:6 axprocess::link:131] [31mnot utf8 slice[m
+[m[37m[  0.580481 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.580691 0:6 axprocess::link:133] [31m98 [m
+[m[37m[  0.580900 0:6 axprocess::link:133] [31m105 [m
+[m[37m[  0.581114 0:6 axprocess::link:133] [31m110 [m
+[m[37m[  0.581324 0:6 axprocess::link:133] [31m47 [m
+[m[37m[  0.581532 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.581745 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.581952 0:6 axprocess::link:133] [31m74 [m
+[m[37m[  0.582161 0:6 axprocess::link:133] [31m208 [m
+[m[37m[  0.582373 0:6 axprocess::link:133] [31m75 [m
+[m[37m[  0.582591 0:6 axprocess::link:133] [31m74 [m
+[m[37m[  0.582800 0:6 axprocess::link:133] [31m48 [m
+[m[37m[  0.583008 0:6 axprocess::link:133] [31m68 [m
+[m[37m[  0.583218 0:6 axprocess::link:133] [31m48 [m
+[m[37m[  0.583427 0:6 axprocess::link:133] [31m68 [m
+[m[37m[  0.583635 0:6 axprocess::link:133] [31m1 [m
+[m[37m[  0.583839 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.584045 0:6 axprocess::link:133] [31m48 [m
+[m[37m[  0.584275 0:6 axprocess::link:133] [31m5 [m
+[m[37m[  0.584481 0:6 axprocess::link:133] [31m71 [m
+[m[37m[  0.584689 0:6 axprocess::link:133] [31m78 [m
+[m[37m[  0.584902 0:6 axprocess::link:133] [31m85 [m
+[m[37m[  0.585109 0:6 axprocess::link:133] [31m2 [m
+[m[37m[  0.585315 0:6 axprocess::link:133] [31m128 [m
+[m[37m[  0.585528 0:6 axprocess::link:133] [31m192 [m
+[m[37m[  0.585740 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.585946 0:6 axprocess::link:133] [31m1 [m
+[m[37m[  0.586156 0:6 axprocess::link:133] [31m1 [m
+[m[37m[  0.586361 0:6 axprocess::link:133] [31m1 [m
+[m[37m[  0.586565 0:6 axprocess::link:133] [31m192 [m
+[m[37m[  0.586777 0:6 axprocess::link:133] [31m4 [m
+[m[37m[  0.586981 0:6 axprocess::link:133] [31m251 [m
+[m[37m[  0.587194 0:6 axprocess::link:135] [31m[m
+[m[37m[  0.587396 0:6 syscall_fs::imp::stat:65] [32mpath : /p[m
+[m[37m[  0.587643 0:6 syscall_fs::ctype::file:184] [36mInto function new_fd, path: /p[m
+[m[37m[  0.587992 0:6 axfs::fops:117] [36mopen file: /p READ[m
+[m[37m[  0.588235 0:6 axfs::root:81] [36mlookup at root: /p[m
+[m[37m[  0.588477 0:6 axfs::fs::fatfs:156] [36mlookup at fatfs: p[m
+[m[37m[  0.590529 0:6 syscall_fs::imp::stat:72] [36mget stat error: ENOENT[m
+[m[37m[  0.590804 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 4 -> 0xfffffffffffffffe[m
+[m[37m[  0.591146 0:6 syscall_entry::syscall:59] [31m[syscall] id = 4, args = [6384, 1073739648, 1073739648, 4294967295, 6389, 4294967196], return -2[m
+[m[37m[  0.591695 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.592097 0:6 syscall_entry::syscall:34] [32msyscall: WRITEV[m
+[m[37m[  0.592365 0:6 syscall_entry::syscall:35] [31m[syscall] id = WRITEV, args = [2, 1073738816, 2, 10, 70348832, 68236477], entry[m
+[m[37m[  0.592866 0:6 syscall_fs::imp::io:90] [32m[write()] fd: 2, buf: 0x3ffff500, len: 12[m
+[m[37m[  0.593226 0:6 axmem:754] [36mallocating page at 3ffff000[m
+[m./readlink: [37m[  0.593530 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 20 -> 0xc[m
+[m[37m[  0.593842 0:6 syscall_entry::syscall:59] [31m[syscall] id = 20, args = [2, 1073738816, 2, 10, 70348832, 68236477], return 12[m
+[m[37m[  0.594349 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.594749 0:6 syscall_entry::syscall:34] [32msyscall: WRITEV[m
+[m[37m[  0.595025 0:6 syscall_entry::syscall:35] [31m[syscall] id = WRITEV, args = [2, 1073738816, 2, 1, 70348832, 68236477], entry[m
+[m[37m[  0.595522 0:6 syscall_fs::imp::io:90] [32m[write()] fd: 2, buf: 0x3ffff500, len: 8[m
+[m[37m[  0.595875 0:6 axmem:754] [36mallocating page at 3ffff000[m
+[mline 5: [37m[  0.596161 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 20 -> 0x8[m
+[m[37m[  0.596472 0:6 syscall_entry::syscall:59] [31m[syscall] id = 20, args = [2, 1073738816, 2, 1, 70348832, 68236477], return 8[m
+[m[37m[  0.596975 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.597375 0:6 syscall_entry::syscall:34] [32msyscall: WRITEV[m
+[m[37m[  0.597647 0:6 syscall_entry::syscall:35] [31m[syscall] id = WRITEV, args = [2, 1073739040, 2, 9, 8192, 68236477], entry[m
+[m[37m[  0.598130 0:6 syscall_fs::imp::io:90] [32m[write()] fd: 2, buf: 0x3ffff5e0, len: 38[m
+[m[37m[  0.598487 0:6 axmem:754] [36mallocating page at 3ffff000[m
+[mÐKJÐKJ0D0D0GNU€ÀÀû: not found[37m[  0.598880 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 20 -> 0x26[m
+[m[37m[  0.599194 0:6 syscall_entry::syscall:59] [31m[syscall] id = 20, args = [2, 1073739040, 2, 9, 8192, 68236477], return 38[m
+[m[37m[  0.599680 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.600085 0:6 syscall_entry::syscall:34] [32msyscall: WRITEV[m
+[m[37m[  0.600356 0:6 syscall_entry::syscall:35] [31m[syscall] id = WRITEV, args = [2, 1073739456, 2, 9, 8192, 68236477], entry[m
+[m[37m[  0.600840 0:6 syscall_fs::imp::io:90] [32m[write()] fd: 2, buf: 0x3ffff72f, len: 1[m
+[m[37m[  0.601195 0:6 axmem:754] [36mallocating page at 3ffff000[m
+[m
+[37m[  0.601463 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 20 -> 0x1[m
+[m[37m[  0.601778 0:6 syscall_entry::syscall:59] [31m[syscall] id = 20, args = [2, 1073739456, 2, 9, 8192, 68236477], return 1[m
+[m[37m[  0.602531 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.602936 0:6 syscall_entry::syscall:34] [32msyscall: READ[m
+[m[37m[  0.603200 0:6 syscall_entry::syscall:35] [31m[syscall] id = READ, args = [4, 12352, 1023, 0, 0, 0], entry[m
+[m[37m[  0.603635 0:6 syscall_fs::imp::io:23] [32m[read()] fd: 4, buf: 0x3040, len: 1023[m
+[m[37m[  0.603977 0:6 axmem:754] [36mallocating page at 3000[m
+[m[37m[  0.604231 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 0 -> 0x3ff[m
+[m[37m[  0.604545 0:6 syscall_entry::syscall:59] [31m[syscall] id = 0, args = [4, 12352, 1023, 0, 0, 0], return 1023[m
+[m[37m[  0.605119 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.605524 0:6 syscall_entry::syscall:34] [32msyscall: READ[m
+[m[37m[  0.605789 0:6 syscall_entry::syscall:35] [31m[syscall] id = READ, args = [4, 12352, 1023, 0, 0, 0], entry[m
+[m[37m[  0.606219 0:6 syscall_fs::imp::io:23] [32m[read()] fd: 4, buf: 0x3040, len: 1023[m
+[m[37m[  0.606562 0:6 axmem:754] [36mallocating page at 3000[m
+[m[37m[  0.606809 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 0 -> 0x3ff[m
+[m[37m[  0.607128 0:6 syscall_entry::syscall:59] [31m[syscall] id = 0, args = [4, 12352, 1023, 0, 0, 0], return 1023[m
+[m[37m[  0.607684 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.608083 0:6 syscall_entry::syscall:34] [32msyscall: READ[m
+[m[37m[  0.608347 0:6 syscall_entry::syscall:35] [31m[syscall] id = READ, args = [4, 12352, 1023, 0, 0, 0], entry[m
+[m[37m[  0.608781 0:6 syscall_fs::imp::io:23] [32m[read()] fd: 4, buf: 0x3040, len: 1023[m
+[m[37m[  0.609125 0:6 axmem:754] [36mallocating page at 3000[m
+[m[37m[  0.609374 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 0 -> 0x3ff[m
+[m[37m[  0.609690 0:6 syscall_entry::syscall:59] [31m[syscall] id = 0, args = [4, 12352, 1023, 0, 0, 0], return 1023[m
+[m[37m[  0.610245 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.610647 0:6 syscall_entry::syscall:34] [32msyscall: READ[m
+[m[37m[  0.610911 0:6 syscall_entry::syscall:35] [31m[syscall] id = READ, args = [4, 12352, 1023, 0, 0, 0], entry[m
+[m[37m[  0.611343 0:6 syscall_fs::imp::io:23] [32m[read()] fd: 4, buf: 0x3040, len: 1023[m
+[m[37m[  0.611688 0:6 axmem:754] [36mallocating page at 3000[m
+[m[37m[  0.611937 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 0 -> 0x3ff[m
+[m[37m[  0.612256 0:6 syscall_entry::syscall:59] [31m[syscall] id = 0, args = [4, 12352, 1023, 0, 0, 0], return 1023[m
+[m[37m[  0.612933 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.613334 0:6 syscall_entry::syscall:34] [32msyscall: WRITEV[m
+[m[37m[  0.613606 0:6 syscall_entry::syscall:35] [31m[syscall] id = WRITEV, args = [2, 1073738544, 2, 10, 70348832, 68236477], entry[m
+[m[37m[  0.614111 0:6 syscall_fs::imp::io:90] [32m[write()] fd: 2, buf: 0x3ffff3f0, len: 12[m
+[m[37m[  0.614465 0:6 axmem:754] [36mallocating page at 3ffff000[m
+[m./readlink: [37m[  0.614767 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 20 -> 0xc[m
+[m[37m[  0.615077 0:6 syscall_entry::syscall:59] [31m[syscall] id = 20, args = [2, 1073738544, 2, 10, 70348832, 68236477], return 12[m
+[m[37m[  0.615585 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.615990 0:6 syscall_entry::syscall:34] [32msyscall: WRITEV[m
+[m[37m[  0.616264 0:6 syscall_entry::syscall:35] [31m[syscall] id = WRITEV, args = [2, 1073738544, 2, 1, 70348832, 68236477], entry[m
+[m[37m[  0.616763 0:6 syscall_fs::imp::io:90] [32m[write()] fd: 2, buf: 0x3ffff3f0, len: 8[m
+[m[37m[  0.617117 0:6 axmem:754] [36mallocating page at 3ffff000[m
+[mline 1: [37m[  0.617406 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 20 -> 0x8[m
+[m[37m[  0.617721 0:6 syscall_entry::syscall:59] [31m[syscall] id = 20, args = [2, 1073738544, 2, 1, 70348832, 68236477], return 8[m
+[m[37m[  0.618220 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.618619 0:6 syscall_entry::syscall:34] [32msyscall: WRITEV[m
+[m[37m[  0.618891 0:6 syscall_entry::syscall:35] [31m[syscall] id = WRITEV, args = [2, 1073738768, 2, 31, 8192, 68236477], entry[m
+[m[37m[  0.619379 0:6 syscall_fs::imp::io:90] [32m[write()] fd: 2, buf: 0x3ffff4d0, len: 45[m
+[m[37m[  0.619735 0:6 axmem:754] [36mallocating page at 3ffff000[m
+[msyntax error: unexpected word (expecting ")")[37m[  0.620157 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 20 -> 0x2d[m
+[m[37m[  0.620473 0:6 syscall_entry::syscall:59] [31m[syscall] id = 20, args = [2, 1073738768, 2, 31, 8192, 68236477], return 45[m
+[m[37m[  0.620965 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.621365 0:6 syscall_entry::syscall:34] [32msyscall: WRITEV[m
+[m[37m[  0.621636 0:6 syscall_entry::syscall:35] [31m[syscall] id = WRITEV, args = [2, 1073739184, 2, 31, 8192, 68236477], entry[m
+[m[37m[  0.622125 0:6 syscall_fs::imp::io:90] [32m[write()] fd: 2, buf: 0x3ffff61f, len: 1[m
+[m[37m[  0.622475 0:6 axmem:754] [36mallocating page at 3ffff000[m
+[m
+[37m[  0.622745 0:6 syscall_entry::syscall:57] [32m[tid: 6]syscall: 20 -> 0x1[m
+[m[37m[  0.623055 0:6 syscall_entry::syscall:59] [31m[syscall] id = 20, args = [2, 1073739184, 2, 31, 8192, 68236477], return 1[m
+[m[37m[  0.623607 0:6 syscall_entry::syscall:10] [31m---------------------------------------------------[m
+[m[37m[  0.624008 0:6 syscall_entry::syscall:45] [32msyscall: EXIT_GROUP[m
+[m[37m[  0.624297 0:6 syscall_entry::syscall:47] [31m[syscall] id = EXIT_GROUP, args = [2, 0, 4144, 31, 8192, 68236477], entry[m
+[m[37m[  0.624821 0:6 syscall_task::imp::task:33] [32mexit: exit_code = 2[m
+[m[37m[  0.625177 0:6 axprocess::api:60] [32mexit task id 6 with code 2[m
+[m[37m[  0.625995 0:6 axtask::run_queue:99] [36mtask exit: Task(6, "busybox"), exit_code=2[m
+[m[37m[  0.626453 0:6 axtask::run_queue:149] [36mtask unblock: Task(4, "gc")[m
+[m[37m[  0.627554 0:3 axtask::task:647] [36mtask drop: Task(6, "busybox")[m
+[m[37m[  0.628039 0:3 syscall_entry::test:424] [32m --------------- TEST FAILED, exit code = 2 --------------- [m
+[m[37m[  0.628617 0:3 syscall_entry::test:436] [32m --------------- all test ended, passed 0 / 1 --------------- [m
+[m[37m[  0.629066 0:3 syscall_entry::test:440] [32m --------------- failed tests: --------------- [m
+[m[37m[  0.629475 0:3 syscall_entry::test:442] [32m["busybox", "sh", "./readlink"][m
+[m[37m[  0.629828 0:3 syscall_entry::test:444] [32m --------------- end --------------- [m
+[m[37m[  0.630206 0:3 axtask::run_queue:99] [36mtask exit: Task(3, "main"), exit_code=0[m
+[m[37m[  0.630589 0:3 axhal::platform::x86_pc::misc:7] [32mShutting down...[m
+[m
