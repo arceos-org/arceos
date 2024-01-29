@@ -32,7 +32,7 @@ pub(crate) unsafe extern "C" fn rust_entry(cpu_id: usize, dtb: usize) {
     crate::arch::set_exception_vector_base(exception_vector_base as usize);
     crate::arch::write_page_table_root0(0.into()); // disable low address access
     crate::cpu::init_primary(cpu_id);
-    super::aarch64_common::pl011::init_early();
+    crate::platform::console::init_early();
     super::aarch64_common::generic_timer::init_early();
     rust_main(cpu_id, dtb);
 }
@@ -52,7 +52,8 @@ pub fn platform_init() {
     #[cfg(feature = "irq")]
     super::aarch64_common::gic::init_primary();
     super::aarch64_common::generic_timer::init_percpu();
-    super::aarch64_common::pl011::init();
+    #[cfg(feature = "irq")]
+    crate::platform::console::init_irq();
 }
 
 /// Initializes the platform devices for secondary CPUs.
