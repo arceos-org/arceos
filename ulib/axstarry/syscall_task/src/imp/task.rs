@@ -89,6 +89,7 @@ pub fn syscall_exec(
         return Err(SyscallError::EISDIR);
     }
     let path = path.path().to_string();
+
     let mut args_vec = Vec::new();
     // args相当于argv，指向了参数所在的地址
     loop {
@@ -128,6 +129,10 @@ pub fn syscall_exec(
     //     return -1;
     // }
     let curr_process = current_process();
+
+    // 设置 file_path
+    curr_process.set_file_path(path.clone());
+
     // 清空futex信号列表
     clear_wait(curr_process.pid(), true);
     let argc = args_vec.len();

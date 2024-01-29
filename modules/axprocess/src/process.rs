@@ -65,6 +65,10 @@ pub struct Process {
     /// 用来存储线程对共享变量的使用地址
     /// 具体使用交给了用户空间
     pub robust_list: Mutex<BTreeMap<u64, FutexRobustList>>,
+
+    // 该进程可执行文件所在的路径
+    pub file_path: Mutex<String>,
+
 }
 
 impl Process {
@@ -112,6 +116,15 @@ impl Process {
         self.heap_bottom.store(bottom, Ordering::Release)
     }
 
+    pub fn set_file_path(&self, path: String) {
+        let mut file_path = self.file_path.lock();
+        *file_path = path;
+    }
+
+    pub fn get_file_path(&self) -> String {
+        (*self.file_path.lock()).clone()
+    }
+
     /// 若进程运行完成，则获取其返回码
     /// 若正在运行（可能上锁或没有上锁），则返回None
     pub fn get_code_if_exit(&self) -> Option<i32> {
@@ -144,6 +157,7 @@ impl Process {
             #[cfg(feature = "signal")]
             signal_modules: Mutex::new(BTreeMap::new()),
             robust_list: Mutex::new(BTreeMap::new()),
+            file_path: Mutex::new(String::new()),
         }
     }
     /// 根据给定参数创建一个新的进程，作为应用程序初始进程

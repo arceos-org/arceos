@@ -5,6 +5,7 @@ use syscall_utils::deal_result;
 pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
     #[cfg(feature = "futex")]
     syscall_task::check_dead_wait();
+
     let ans = loop {
         #[cfg(feature = "syscall_net")]
         {
@@ -41,7 +42,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             }
         }
 
-        panic!("unknown syscall id: {} td: {}", syscall_id, current_task().id().as_u64());
+        // panic!("unknown syscall id: {} td: {}", syscall_id, current_task().id().as_u64());
     };
 
     let ans = deal_result(ans);
