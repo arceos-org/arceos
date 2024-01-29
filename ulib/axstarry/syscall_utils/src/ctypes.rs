@@ -481,17 +481,17 @@ bitflags! {
         //const S_ISGID = 1 << 13;
         //const S_ISVTX = 1 << 12;
         /// 所有者权限
-        const S_IXUSR = 1 << 10;
-        const S_IWUSR = 1 << 9;
         const S_IRUSR = 1 << 8;
+        const S_IWUSR = 1 << 7;
+        const S_IXUSR = 1 << 6;
         /// 用户组权限
-        const S_IXGRP = 1 << 6;
-        const S_IWGRP = 1 << 5;
-        const S_IRGRP = 1 << 4;
+        const S_IRGRP = 1 << 5;
+        const S_IWGRP = 1 << 4;
+        const S_IXGRP = 1 << 3;
         /// 其他用户权限
-        const S_IXOTH = 1 << 2;
+        const S_IROTH = 1 << 2;
         const S_IWOTH = 1 << 1;
-        const S_IROTH = 1 << 0;
+        const S_IXOTH = 1 << 0;
         /// 报告已执行结束的用户进程的状态
         const WIMTRACED = 1 << 1;
         /// 报告还未结束的用户进程的状态
@@ -501,5 +501,5 @@ bitflags! {
 /// 文件类型，输入 IFCHR / IFDIR / IFREG 等具体类型，
 /// 输出这些类型加上普遍的文件属性后得到的 mode 参数
 pub fn normal_file_mode(file_type: StMode) -> StMode {
-    file_type | StMode::S_IWUSR | StMode::S_IWUSR | StMode::S_IWGRP | StMode::S_IRGRP
+    file_type | StMode::S_IWUSR | StMode::S_IRUSR | StMode::S_IRGRP | StMode::S_IROTH
 }

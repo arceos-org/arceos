@@ -263,10 +263,7 @@ pub fn syscall_renameat2(
 }
 
 /// 重命名文件或目录
-pub fn syscall_rename(
-    old_path: *const u8,
-    new_path: *const u8,
-) -> SyscallResult {
+pub fn syscall_rename(old_path: *const u8, new_path: *const u8) -> SyscallResult {
     syscall_renameat2(AT_FDCWD, old_path, AT_FDCWD, new_path, 1)
 }
 

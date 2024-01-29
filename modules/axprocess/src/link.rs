@@ -296,8 +296,31 @@ pub fn deal_with_path(
         // 如果path以.或..结尾, 则加上/告诉FilePath::new它是一个目录
         path = format!("{}/", path);
     }
-    // info!("path: {}", path);
-    if path.starts_with("/") && dir_fd != AT_FDCWD && dir_fd as u32 != AT_FDCWD as u32 {
+    if path.len() == 0 {
+        // If pathname is an empty string, in this case, dirfd can refer to any type of file, not just a directory
+        // and the behavior of fstatat() is similar to that of fstat()
+        // If dirfd is AT_FDCWD, the call operates on the current working directory.
+        if dir_fd == AT_FDCWD && dir_fd as u32 == AT_FDCWD as u32 {
+            // return Some(FilePath::new(".").unwrap());
+            path = String::from(".");
+        } else {
+            let fd_table = process.fd_manager.fd_table.lock();
+            if dir_fd >= fd_table.len() {
+                axlog::warn!("fd index out of range");
+                return None;
+            }
+            match fd_table[dir_fd].as_ref() {
+                Some(dir) => {
+                    let dir = dir.clone();
+                    path = dir.get_path();
+                }
+                None => {
+                    axlog::warn!("fd not exist");
+                    return None;
+                }
+            }
+        }
+    } else if path.starts_with("/") && dir_fd != AT_FDCWD && dir_fd as u32 != AT_FDCWD as u32 {
         // 如果不是绝对路径, 且dir_fd不是AT_FDCWD, 则需要将dir_fd和path拼接起来
         let fd_table = process.fd_manager.fd_table.lock();
         if dir_fd >= fd_table.len() {
@@ -320,6 +343,8 @@ pub fn deal_with_path(
                 return None;
             }
         }
+    } else if dir_fd == AT_FDCWD && dir_fd as u32 == AT_FDCWD as u32 {
+        path = String::from(".");
     }
     match FilePath::new(path.as_str()) {
         Ok(path) => Some(path),

@@ -169,6 +169,7 @@ impl Process {
             "COLLECT_GCC_OPTIONS='-march=rv64gc' '-mabi=lp64d' '-march=rv64imafdc' '-dumpdir' 'a.'".into(),
             "LIBRARY_PATH=/lib/".into(),
             "LD_LIBRARY_PATH=/lib/".into(),
+            "LD_DEBUG=files".into(),
         ];
         let (entry, user_stack_bottom, heap_bottom) =
             if let Ok(ans) = load_app(path.clone(), args, envs, &mut memory_set) {
@@ -265,8 +266,8 @@ impl Process {
             if task.id() == current_task.id() {
                 // FIXME: This will reset tls forcefully
                 #[cfg(target_arch = "x86_64")]
-                unsafe { 
-                    task.set_tls_force(0); 
+                unsafe {
+                    task.set_tls_force(0);
                     axhal::arch::write_thread_pointer(0);
                 }
                 tasks.push(task);
