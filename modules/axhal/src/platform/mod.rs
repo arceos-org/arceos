@@ -3,6 +3,7 @@
 cfg_if::cfg_if! {
     if #[cfg(target_arch = "aarch64")]{
         mod aarch64_common;
+        pub use self::aarch64_common::console;
     }
 }
 

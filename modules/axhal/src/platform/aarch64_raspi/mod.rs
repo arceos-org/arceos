@@ -8,10 +8,6 @@ pub mod irq {
     pub use crate::platform::aarch64_common::gic::*;
 }
 
-pub mod console {
-    pub use crate::platform::aarch64_common::pl011::*;
-}
-
 pub mod time {
     pub use crate::platform::aarch64_common::generic_timer::*;
 }
