@@ -85,3 +85,7 @@ pub fn platform_init() {}
 /// Initializes the platform devices for secondary CPUs.
 #[cfg(feature = "smp")]
 pub fn platform_init_secondary() {}
+
+pub fn platform_name() -> &'static str {
+    "dummy"
+}

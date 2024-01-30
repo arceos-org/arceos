@@ -129,6 +129,7 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     axlog::set_max_level(option_env!("AX_LOG").unwrap_or("")); // no effect if set `log-level-*` features
     info!("Logging is enabled.");
     info!("Primary CPU {} started, dtb = {:#x}.", cpu_id, dtb);
+    info!("Platform name {}.", axhal::platform_name());
 
     info!("Found physcial memory regions:");
     for r in axhal::mem::memory_regions() {

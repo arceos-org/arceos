@@ -88,3 +88,7 @@ pub fn platform_init_secondary() {
     crate::platform::irq::init_secondary();
     crate::platform::time::init_percpu();
 }
+
+pub fn platform_name() -> &'static str {
+    of::machin_name()
+}
