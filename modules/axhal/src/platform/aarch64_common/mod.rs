@@ -1,5 +1,9 @@
 mod boot;
 
+#[cfg(feature = "smp")]
+#[cfg(not(platform_family = "aarch64-raspi"))]
+pub mod mp;
+
 #[cfg(not(platform_family = "aarch64-raspi"))]
 pub mod psci;
 
