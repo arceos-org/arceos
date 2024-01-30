@@ -24,7 +24,8 @@ qemu_args-aarch64 := \
   -machine virt \
   -kernel $(OUT_BIN)
 
-qemu_args-y := -m 16G -smp $(SMP) $(qemu_args-$(ARCH))
+# bitmap_allocator is hard coding, support max 4GB mem
+qemu_args-y := -m 2G -smp $(SMP) $(qemu_args-$(ARCH))
 
 qemu_args-$(BLK) += \
   -device virtio-blk-$(vdev-suffix),drive=disk0 \
