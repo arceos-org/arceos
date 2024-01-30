@@ -71,6 +71,8 @@ qemu_args-debug := $(qemu_args-y) -s -S
 # Do not use KVM for debugging
 ifeq ($(shell uname), Darwin)
   qemu_args-$(ACCEL) += -cpu host -accel hvf
+else ifeq ($(wildcard /dev/kvm),)
+  qemu_args-$(ACCEL) += -accel tcg
 else
   qemu_args-$(ACCEL) += -cpu host -accel kvm
 endif
