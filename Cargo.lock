@@ -382,11 +382,13 @@ dependencies = [
  "cfg-if",
  "crate_interface",
  "dw_apb_uart",
+ "either",
  "handler_table",
  "kernel_guard",
  "lazy_init",
  "log",
  "memory_addr",
+ "of",
  "page_table",
  "page_table_entry",
  "percpu",
@@ -1066,6 +1068,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "fdt"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "784a4df722dc6267a04af36895398f59d21d07dce47232adf31ec0ff2fa45e67"
+
+[[package]]
 name = "fileopen"
 version = "0.1.0"
 dependencies = [
@@ -1417,6 +1425,14 @@ dependencies = [
 name = "numeric-enum-macro"
 version = "0.2.0"
 source = "git+https://github.com/mexus/numeric-enum-macro#20aef288b2ecd2381ab6627c2a6c9e0436d8c8ff"
+
+[[package]]
+name = "of"
+version = "0.1.0"
+dependencies = [
+ "fdt",
+ "lazy_static",
+]
 
 [[package]]
 name = "once_cell"
