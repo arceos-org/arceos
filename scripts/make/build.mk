@@ -3,6 +3,9 @@
 include scripts/make/cargo.mk
 include scripts/make/features.mk
 
+include scripts/make/build_lwext4.mk
+build_deplibs += lwext4_libc
+
 ifeq ($(APP_TYPE), c)
   include scripts/make/build_c.mk
 else
@@ -31,7 +34,7 @@ else ifeq ($(filter $(MAKECMDGOALS),clippy unittest unittest_no_fail_fast),) # n
   endif
 endif
 
-_cargo_build:
+_cargo_build: $(build_deplibs)
 	@printf "    $(GREEN_C)Building$(END_C) App: $(APP_NAME), Arch: $(ARCH), Platform: $(PLATFORM_NAME), App type: $(APP_TYPE)\n"
 ifeq ($(APP_TYPE), rust)
 	$(call cargo_build,--manifest-path $(APP)/Cargo.toml,$(AX_FEAT) $(LIB_FEAT) $(APP_FEAT))

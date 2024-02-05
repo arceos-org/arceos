@@ -1,6 +1,7 @@
 rm disk.img
 dd if=/dev/zero of=disk.img bs=4M count=30
-mkfs.vfat -F 32 disk.img
+#mkfs.vfat -F 32 disk.img
+mkfs.ext4 -t ext4 disk.img
 mkdir -p mnt
 sudo mount disk.img mnt
 # 根据命令行参数生成对应的测例
