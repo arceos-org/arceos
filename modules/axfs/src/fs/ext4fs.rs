@@ -5,13 +5,14 @@ use axfs_vfs::{VfsDirEntry, VfsError, VfsNodePerm, VfsResult};
 use axfs_vfs::{VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsNodeType, VfsOps};
 use axsync::Mutex;
 use lwext4_rust::bindings::{
-    O_APPEND, O_CREAT, O_RDONLY, O_RDWR, O_TRUNC, O_WRONLY, SEEK_CUR, SEEK_END, SEEK_SET,
+    O_CREAT, O_RDONLY, O_RDWR, O_TRUNC, O_WRONLY, SEEK_CUR, SEEK_END, SEEK_SET,
 };
 use lwext4_rust::{Ext4BlockWrapper, Ext4File, InodeTypes, KernelDevOp};
 
 use crate::dev::Disk;
 const BLOCK_SIZE: usize = 512;
 
+#[allow(dead_code)]
 pub struct Ext4FileSystem {
     inner: Ext4BlockWrapper<Disk>,
     root: VfsNodeRef,
@@ -121,7 +122,7 @@ impl VfsNodeOps for FileWrapper {
             file.file_open(path, O_RDONLY)
                 .map_err(|e| <i32 as TryInto<AxError>>::try_into(e).unwrap())?;
             let fsize = file.file_size();
-            file.file_close();
+            let _ = file.file_close();
             fsize
         } else {
             0 // DIR size ?
@@ -155,7 +156,6 @@ impl VfsNodeOps for FileWrapper {
             VfsNodeType::File => InodeTypes::EXT4_DE_REG_FILE,
             VfsNodeType::SymLink => InodeTypes::EXT4_DE_SYMLINK,
             VfsNodeType::Socket => InodeTypes::EXT4_DE_SOCK,
-            _ => InodeTypes::EXT4_DE_UNKNOWN,
         };
 
         let mut file = self.0.lock();
@@ -164,13 +164,13 @@ impl VfsNodeOps for FileWrapper {
         } else {
             if types == InodeTypes::EXT4_DE_DIR {
                 file.dir_mk(fpath)
-                    .map(|v| ())
+                    .map(|_v| ())
                     .map_err(|e| e.try_into().unwrap())
             } else {
                 file.file_open(fpath, O_WRONLY | O_CREAT | O_TRUNC)
                     .expect("create file failed");
                 file.file_close()
-                    .map(|v| ())
+                    .map(|_v| ())
                     .map_err(|e| e.try_into().unwrap())
             }
         }
@@ -187,11 +187,11 @@ impl VfsNodeOps for FileWrapper {
         if file.check_inode_exist(fpath, InodeTypes::EXT4_DE_DIR) {
             // Recursive directory remove
             file.dir_rm(fpath)
-                .map(|v| ())
+                .map(|_v| ())
                 .map_err(|e| e.try_into().unwrap())
         } else {
             file.file_remove(fpath)
-                .map(|v| ())
+                .map(|_v| ())
                 .map_err(|e| e.try_into().unwrap())
         }
     }
@@ -199,7 +199,7 @@ impl VfsNodeOps for FileWrapper {
     /// Get the parent directory of this directory.
     /// Return `None` if the node is a file.
     fn parent(&self) -> Option<VfsNodeRef> {
-        let mut file = self.0.lock();
+        let file = self.0.lock();
         if file.get_type() == InodeTypes::EXT4_DE_DIR {
             let path = file.get_path();
             let path = path.to_str().unwrap();
@@ -214,7 +214,7 @@ impl VfsNodeOps for FileWrapper {
 
     /// Read directory entries into `dirents`, starting from `start_idx`.
     fn read_dir(&self, start_idx: usize, dirents: &mut [VfsDirEntry]) -> VfsResult<usize> {
-        let mut file = self.0.lock();
+        let file = self.0.lock();
         let (name, inode_type) = file.lwext4_dir_entries().unwrap();
 
         let mut name_iter = name.iter().skip(start_idx);
@@ -283,7 +283,7 @@ impl VfsNodeOps for FileWrapper {
             .map_err(|e| <i32 as TryInto<AxError>>::try_into(e).unwrap())?;
         let r = file.file_read(buf);
 
-        file.file_close();
+        let _ = file.file_close();
         r.map_err(|e| e.try_into().unwrap())
     }
 
@@ -299,7 +299,7 @@ impl VfsNodeOps for FileWrapper {
             .map_err(|e| <i32 as TryInto<AxError>>::try_into(e).unwrap())?;
         let r = file.file_write(buf);
 
-        file.file_close();
+        let _ = file.file_close();
         r.map_err(|e| e.try_into().unwrap())
     }
 
@@ -308,19 +308,20 @@ impl VfsNodeOps for FileWrapper {
         let mut file = self.0.lock();
         let path = file.get_path();
         let path = path.to_str().unwrap();
-        file.file_open(path, O_RDWR | O_CREAT | O_TRUNC);
+        file.file_open(path, O_RDWR | O_CREAT | O_TRUNC)
+            .map_err(|e| <i32 as TryInto<AxError>>::try_into(e).unwrap())?;
 
         let t = file.file_truncate(size);
 
-        file.file_close();
-        t.map(|v| ()).map_err(|e| e.try_into().unwrap())
+        let _ = file.file_close();
+        t.map(|_v| ()).map_err(|e| e.try_into().unwrap())
     }
 
     fn rename(&self, src_path: &str, dst_path: &str) -> VfsResult {
         info!("rename from {} to {}", src_path, dst_path);
         let mut file = self.0.lock();
         file.file_rename(src_path, dst_path)
-            .map(|v| ())
+            .map(|_v| ())
             .map_err(|e| e.try_into().unwrap())
     }
 }
@@ -349,7 +350,7 @@ impl KernelDevOp for Disk {
                     buf = &mut tmp[n..];
                     read_len += n;
                 }
-                Err(e) => return Err(-1),
+                Err(_e) => return Err(-1),
             }
         }
         debug!("READ rt len={}", read_len);
@@ -365,13 +366,13 @@ impl KernelDevOp for Disk {
                     buf = &buf[n..];
                     write_len += n;
                 }
-                Err(e) => return Err(-1),
+                Err(_e) => return Err(-1),
             }
         }
         debug!("WRITE rt len={}", write_len);
         Ok(write_len)
     }
-    fn flush(dev: &mut Self::DevType) -> Result<usize, i32> {
+    fn flush(_dev: &mut Self::DevType) -> Result<usize, i32> {
         Ok(0)
     }
     fn seek(dev: &mut Disk, off: i64, whence: i32) -> Result<i64, i32> {

@@ -62,7 +62,6 @@ pub(crate) fn procfs() -> VfsResult<Arc<fs::ramfs::RamFileSystem>> {
     proc_root.create("self/stat", VfsNodeType::File)?;
     proc_root.create("self/exe", VfsNodeType::File)?;
 
-
     #[cfg(feature = "monolithic")]
     {
         // Create other file to pass the testcases

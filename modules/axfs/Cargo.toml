@@ -32,7 +32,7 @@ axerrno = { path = "../../crates/axerrno" }
 axfs_vfs = { path = "../../crates/axfs_vfs" }
 axfs_devfs = { path = "../../crates/axfs_devfs", optional = true }
 axfs_ramfs = { path = "../../crates/axfs_ramfs", optional = true }
-lwext4_rust = { git = "https://github.com/elliott10/lwext4_rust.git", rev = "5af1518d", optional = true }
+lwext4_rust = { git = "https://github.com/elliott10/lwext4_rust.git", rev = "4068f635", optional = true }
 
 axdriver = { path = "../axdriver", features = ["block"] }
 axsync = { path = "../axsync" }
