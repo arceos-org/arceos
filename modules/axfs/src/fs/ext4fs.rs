@@ -66,7 +66,7 @@ impl FileWrapper {
 
     fn path_deal_with(&self, path: &str) -> String {
         if path.starts_with('/') {
-            warn!("path_deal_with: {}", path);
+            info!("path_deal_with: {}", path);
         }
         let p = path.trim_matches('/'); // 首尾去除
         if p.is_empty() || p == "." {
