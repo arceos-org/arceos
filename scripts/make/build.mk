@@ -3,8 +3,10 @@
 include scripts/make/cargo.mk
 include scripts/make/features.mk
 
+ifneq ($(filter ext4fs, $(FEATURES)),)
 include scripts/make/build_lwext4.mk
 build_deplibs += lwext4_libc
+endif
 
 ifeq ($(APP_TYPE), c)
   include scripts/make/build_c.mk

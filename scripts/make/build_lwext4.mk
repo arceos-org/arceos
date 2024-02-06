@@ -10,7 +10,7 @@ local_ulib_dir := ulib/axlibc
 local_src_dir := $(local_ulib_dir)/c
 local_inc_dir := $(local_ulib_dir)/include
 local_obj_dir := $(local_ulib_dir)/lwext4_libc_$(ARCH)
-lwext4_c_lib := $(local_obj_dir)/libc.a
+lwext4_c_lib := $(local_obj_dir)/libc-$(ARCH).a
 
 local_last_cflags := $(local_obj_dir)/.cflags
 
@@ -54,9 +54,17 @@ $(local_obj_dir)/%.o: $(local_src_dir)/%.c $(local_last_cflags)
 $(lwext4_c_lib): $(local_obj_dir) _check_lw_need_rebuild $(local_ulib_obj)
 	$(call run_cmd,$(AR),rcs $@ $(local_ulib_obj))
 
-lwext4_libc: $(lwext4_c_lib) make_disk_image_ext4
+lwext4_libc: gen_libc_header $(lwext4_c_lib) make_disk_image_ext4
 	@echo local_lib_feat: $(local_lib_feat)
 	@echo 'Built $(lwext4_c_lib) for lwext4'
+
+ax_libc_header := $(local_inc_dir)/ax_pthread_mutex.h
+gen_libc_header:
+ifeq ($(wildcard $(ax_libc_header)),)
+	@echo Generating libc header
+	@echo "typedef struct { long __l[1]; } pthread_mutex_t;\n#define PTHREAD_MUTEX_INITIALIZER { .__l = {0}}" > $(ax_libc_header)
+#@cargo build --target $(TARGET) --manifest-path $(local_ulib_dir)/Cargo.toml $(build_args-$(MODE)) --features fs
+endif
 
 disk_image_ext4 := $(CURDIR)/disk-ext4.img
 make_disk_image_ext4:
@@ -64,6 +72,7 @@ ifeq ($(wildcard $(disk_image_ext4)),)
 	@printf "Creating EXT4 disk image \"$(disk_image_ext4)\" ...\n"
 	@dd if=/dev/zero of=$(disk_image_ext4) bs=1M count=128
 	@mkfs.ext4 -t ext4 $(disk_image_ext4)
+	@ln -s $(disk_image_ext4) $(CURDIR)/disk.img
 else
 	@printf "EXT4 disk image \"$(disk_image_ext4)\" exist\n"
 endif

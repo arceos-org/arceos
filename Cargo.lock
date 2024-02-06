@@ -206,7 +206,7 @@ dependencies = [
  "axruntime",
  "axsync",
  "axtask",
- "bindgen 0.66.1",
+ "bindgen",
  "flatten_objects",
  "lazy_static",
  "spin 0.9.8",
@@ -418,7 +418,7 @@ dependencies = [
  "axerrno",
  "axfeat",
  "axio",
- "bindgen 0.66.1",
+ "bindgen",
 ]
 
 [[package]]
@@ -604,29 +604,6 @@ dependencies = [
  "lazycell",
  "log",
  "peeking_take_while",
- "prettyplease",
- "proc-macro2",
- "quote",
- "regex",
- "rustc-hash",
- "shlex",
- "syn 2.0.39",
- "which",
-]
-
-[[package]]
-name = "bindgen"
-version = "0.69.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a00dc851838a2120612785d195287475a3ac45514741da670b735818822129a0"
-dependencies = [
- "bitflags 2.4.0",
- "cexpr",
- "clang-sys",
- "itertools",
- "lazy_static",
- "lazycell",
- "log",
  "prettyplease",
  "proc-macro2",
  "quote",
@@ -1340,9 +1317,9 @@ checksum = "b06a4cde4c0f271a446782e3eff8de789548ce57dbc8eca9292c27f4a42004b4"
 [[package]]
 name = "lwext4_rust"
 version = "0.1.0"
-source = "git+https://github.com/elliott10/lwext4_rust.git?rev=4068f635#4068f635a211bdc86a2bd8e4984472c767760d95"
+source = "git+https://github.com/elliott10/lwext4_rust.git?rev=562fbfce#562fbfceabe51228ad144ba5ac7b7573ba8f4f4e"
 dependencies = [
- "bindgen 0.69.4",
+ "bindgen",
  "log",
 ]
 

@@ -43,6 +43,9 @@ else ifeq ($(APP), apps/oscomp)
   ifneq ($(filter fs net pipe select epoll,$(FEATURES)),)
     override FEATURES += fd
   endif
+  ifeq ($(filter ext4fs,$(FEATURES)),)
+    override FEATURES += fatfs
+  endif
 endif
 
 override FEATURES := $(strip $(FEATURES))
