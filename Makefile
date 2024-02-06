@@ -32,7 +32,7 @@ ARCH ?= x86_64
 PLATFORM ?=
 SMP ?= 1
 MODE ?= release
-LOG ?= warn
+LOG ?= off
 V ?=
 
 # App options

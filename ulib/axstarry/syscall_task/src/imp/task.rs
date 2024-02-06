@@ -17,7 +17,7 @@ use axprocess::{
 //     monolithic_task::task::{SchedPolicy, SchedStatus},
 //     AxTaskRef,
 // };
-use axlog::*;
+use axlog::{info, warn};
 use axtask::TaskId;
 use syscall_utils::{SyscallError, SyscallResult};
 extern crate alloc;
@@ -445,7 +445,7 @@ pub fn syscall_arch_prctl(code: usize, addr: usize) -> SyscallResult {
 }
 
 pub fn syscall_fork() -> SyscallResult {
-    info!("transfer syscall_fork to syscall_clone");
+    warn!("transfer syscall_fork to syscall_clone");
     syscall_clone(1, 0, 0, 0, 0)
 }
 

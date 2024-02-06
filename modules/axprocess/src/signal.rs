@@ -124,7 +124,7 @@ pub fn handle_signals() {
     } else {
         return;
     };
-    info!(
+    warn!(
         "cpu: {}, task: {}, handler signal: {}",
         this_cpu_id(),
         current_task.id().as_u64(),
