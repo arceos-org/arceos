@@ -38,10 +38,12 @@ V ?=
 # App options
 A ?= apps/oscomp
 APP ?= $(A)
-FEATURES ?= fp_simd
+FEATURES ?=
 APP_FEATURES ?=
 RUSTFLAGS ?=
 STRUCT ?= Unikernel
+
+override FEATURES += fp_simd
 
 # QEMU options
 BLK ?= y

@@ -20,10 +20,17 @@
 
 ```shell
 # 构建镜像
-./build_x86.sh
+# 默认构建x86_64架构的fat32磁盘镜像
+./build_img.sh
+
+# 或构建ext4格式的磁盘文件
+# ./build_img.sh x86_64 ext4
 
 # 运行宏内核
 make run
+
+# 或运行ext4文件系统的宏内核
+# make run FEATURES=ext4fs
 
 # 显式指定参数并运行（实际上这些参数已在根目录 Makefile 中给出）
 # make A=apps/oscomp AARCH=x86_64 FEATURES=fp_simd run

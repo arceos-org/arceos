@@ -42,6 +42,8 @@ bus-pci = ["axfeat/bus-pci"]
 
 # Fs
 fs = ["axruntime/fs", "arceos_api/fs"]
+fatfs = ["axfeat/fatfs"]
+ext4fs = ["axfeat/ext4fs"]
 
 # Signal
 signal = ["syscall_task/signal", "syscall_fs/signal", "dep:axsignal"]
