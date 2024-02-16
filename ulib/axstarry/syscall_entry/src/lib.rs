@@ -12,4 +12,8 @@ mod trap;
 mod syscall;
 mod test;
 
+#[cfg(feature = "ext4fs")]
+#[allow(unused_imports)]
+use axlibc::ax_open;
+
 pub use test::run_testcases;
