@@ -1445,7 +1445,6 @@ checksum = "0ab1bc2a289d34bd04a330323ac98a1b4bc82c9d9fcb1e66b63caa84da26b575"
 name = "oscomp"
 version = "0.1.0"
 dependencies = [
- "axlibc",
  "syscall_entry",
 ]
 
@@ -1933,6 +1932,7 @@ dependencies = [
  "arceos_api",
  "axfeat",
  "axhal",
+ "axlibc",
  "axlog",
  "axprocess",
  "axruntime",

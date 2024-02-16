@@ -8,4 +8,3 @@ authors = ["Jiayu Chen <c0percn@gmail.com>", "Youjie Zheng <zyj578335934@gmail.c
 
 [dependencies]
 syscall_entry = { path = "../../ulib/axstarry/syscall_entry" }
-axlibc = { path = "../../ulib/axlibc", features = ["fp_simd", "alloc", "fs", "fd"] }
