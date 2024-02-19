@@ -1,8 +1,8 @@
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
+use axhal::arch::flush_tlb;
 #[cfg(feature = "monolithic")]
 use axhal::KERNEL_PROCESS_ID;
-use axhal::arch::flush_tlb;
 use lazy_init::LazyInit;
 use scheduler::BaseScheduler;
 use spinlock::SpinNoIrq;
@@ -113,6 +113,7 @@ impl AxRunQueue {
         } else {
             curr.set_state(TaskState::Exited);
             curr.notify_exit(exit_code, self);
+            #[cfg(feature = "monolithic")]
             //将父进程 blocked_by_vfork 设置为 false
             call_interface!(VforkSet::vfork_set(curr.get_process_id(), false));
             EXITED_TASKS.lock().push_back(curr.clone());

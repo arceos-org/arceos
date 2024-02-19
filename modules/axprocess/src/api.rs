@@ -17,10 +17,11 @@ use axmem::MemorySet;
 use axsignal::signal_no::SignalNo;
 use axsync::Mutex;
 use axtask::{current, yield_now, CurrentTask, TaskId, TaskState, IDLE_TASK, RUN_QUEUE};
+use elf_parser::{load_elf, PathParser};
 
 use crate::flags::WaitStatus;
 use crate::futex::clear_wait;
-use crate::loader::Loader;
+use crate::link::{real_path, FilePath};
 use crate::process::{Process, PID2PC, TID2TASK};
 #[cfg(feature = "signal")]
 use crate::signal::{send_signal_to_process, send_signal_to_thread};
@@ -124,7 +125,7 @@ pub fn exit_current_task(exit_code: i32) -> ! {
         }
         if let Some(parent_process) = pid2pc.get(&process.get_parent()) {
             parent_process.set_vfork_block(false);
-        }       
+        }
         pid2pc.remove(&process.pid());
         drop(pid2pc);
         drop(process);
@@ -165,9 +166,30 @@ pub fn load_app(
         return Err(AxError::NotFound);
     };
     debug!("app elf data length: {}", elf_data.len());
-    let loader = Loader::new(&elf_data);
 
-    loader.load(args, envs, memory_set)
+    struct ELFReader;
+    impl PathParser for ELFReader {
+        fn read(&self, _path: &str) -> AxResult<Vec<u8>> {
+            axfs::api::read(_path)
+        }
+        fn real_path(&self, path: &str) -> AxResult<String> {
+            let interp_path = FilePath::new(path)?;
+            let real_interp_path = real_path(&(interp_path.path().to_string()));
+            Ok(real_interp_path)
+        }
+    }
+    let reader = ELFReader;
+    let heap_loc: (VirtAddr, usize) = (
+        axconfig::USER_HEAP_BASE.into(),
+        axconfig::MAX_USER_HEAP_SIZE,
+    );
+    let stack_loc: (VirtAddr, usize) = (
+        axconfig::USER_STACK_TOP.into(),
+        axconfig::MAX_USER_STACK_SIZE,
+    );
+    load_elf(
+        elf_data, args, envs, memory_set, &reader, heap_loc, stack_loc,
+    )
 }
 
 /// 当从内核态到用户态时，统计对应进程的时间信息
@@ -283,9 +305,4 @@ pub fn current_task() -> CurrentTask {
 pub fn set_child_tid(tid: usize) {
     let curr = current_task();
     curr.set_clear_child_tid(tid);
-}
-
-#[crate_interface::def_interface]
-pub trait KernelPageTable {
-    fn switch(&self);
 }

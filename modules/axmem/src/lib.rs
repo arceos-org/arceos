@@ -13,6 +13,7 @@ use core::{
     ptr::copy_nonoverlapping,
     sync::atomic::{AtomicI32, Ordering},
 };
+use elf_parser::MapELF;
 use page_table_entry::GenericPTE;
 use shared::SharedMem;
 use spinlock::SpinNoIrq;
@@ -847,5 +848,17 @@ impl MemorySet {
 impl Drop for MemorySet {
     fn drop(&mut self) {
         self.unmap_user_areas();
+    }
+}
+
+impl MapELF for MemorySet {
+    fn map_elf_region(
+        &mut self,
+        vaddr: VirtAddr,
+        size: usize,
+        flags: MappingFlags,
+        data: Option<&[u8]>,
+    ) {
+        self.new_region(vaddr, size, flags, data, None);
     }
 }

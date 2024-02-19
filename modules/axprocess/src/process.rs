@@ -18,10 +18,10 @@ use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, Ordering};
 use crate::fd_manager::FdManager;
 use crate::flags::CloneFlags;
 use crate::futex::FutexRobustList;
-use crate::{load_app, yield_now_task};
 #[cfg(feature = "signal")]
 use crate::signal::SignalModule;
 use crate::stdio::{Stderr, Stdin, Stdout};
+use crate::{load_app, yield_now_task};
 pub static TID2TASK: Mutex<BTreeMap<u64, AxTaskRef>> = Mutex::new(BTreeMap::new());
 pub static PID2PC: Mutex<BTreeMap<u64, Arc<Process>>> = Mutex::new(BTreeMap::new());
 const FD_LIMIT_ORIGIN: usize = 1025;
@@ -260,7 +260,7 @@ impl VforkCheck for VforkHandler {
         let pid2pc = PID2PC.lock();
         match pid2pc.get(&process_id) {
             Some(process) => process.blocked_by_vfork.lock().clone(),
-            None => panic!("the process_id {} will be checked nonexists", process_id)
+            None => panic!("the process_id {} will be checked nonexists", process_id),
         }
     }
 }
@@ -600,7 +600,7 @@ impl Process {
         // 判断是否为VFORK
         if flags.contains(CloneFlags::CLONE_VFORK) {
             self.set_vfork_block(true);
-            yield_now_task(); 
+            yield_now_task();
         }
         Ok(return_id)
     }

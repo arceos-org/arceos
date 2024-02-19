@@ -1,7 +1,7 @@
+use axtask::current;
+use core::ptr::slice_from_raw_parts_mut;
 /// 处理与任务（线程）有关的系统调用
 use core::time::Duration;
-use core::ptr::slice_from_raw_parts_mut;
-use axtask::current;
 
 use axconfig::TASK_STACK_SIZE;
 use axhal::time::current_time;
@@ -22,8 +22,8 @@ use axtask::TaskId;
 use syscall_utils::{SyscallError, SyscallResult};
 extern crate alloc;
 use alloc::{string::ToString, sync::Arc, vec::Vec};
-use syscall_utils::{RLimit, TimeSecs, WaitFlags, RLIMIT_AS, RLIMIT_NOFILE, RLIMIT_STACK};
 use syscall_utils::{PrctlOption, PR_NAME_SIZE};
+use syscall_utils::{RLimit, TimeSecs, WaitFlags, RLIMIT_AS, RLIMIT_NOFILE, RLIMIT_STACK};
 
 #[cfg(feature = "signal")]
 use axsignal::signal_no::SignalNo;
@@ -140,8 +140,7 @@ pub fn syscall_exec(
     Ok(argc as isize)
 }
 
-
-// FIXME: This below is just before 
+// FIXME: This below is just before
 // pub fn syscall_clone(
 //     flags: usize,
 //     user_stack: usize,
@@ -154,9 +153,9 @@ pub fn syscall_clone(
     flags: usize,
     user_stack: usize,
     ptid: usize,
-    #[cfg(not(target_arch = "x86_64"))]tls: usize,
+    #[cfg(not(target_arch = "x86_64"))] tls: usize,
     ctid: usize,
-    #[cfg(target_arch = "x86_64")]tls: usize,
+    #[cfg(target_arch = "x86_64")] tls: usize,
 ) -> SyscallResult {
     let clone_flags = CloneFlags::from_bits((flags & !0x3f) as u32).unwrap();
 
@@ -434,7 +433,7 @@ pub fn syscall_arch_prctl(code: usize, addr: usize) -> SyscallResult {
             Ok(0)
         }
         0x1001 | 0x1003 | 0x1004 => todo!(),
-        _ => Err(SyscallError::EINVAL)
+        _ => Err(SyscallError::EINVAL),
     }
     // Ok(0)
 }
@@ -445,7 +444,6 @@ pub fn syscall_fork() -> SyscallResult {
 }
 
 /// prctl
-#[cfg(target_arch = "x86_64")]
 pub fn syscall_prctl(option: usize, arg2: *mut u8) -> SyscallResult {
     match PrctlOption::try_from(option) {
         Ok(PrctlOption::PR_GET_NAME) => {
@@ -456,11 +454,12 @@ pub fn syscall_prctl(option: usize, arg2: *mut u8) -> SyscallResult {
             process_name.truncate(PR_NAME_SIZE);
             // 把 arg2 转换成可写的 buffer
             if current_process()
-            .manual_alloc_for_lazy((arg2 as usize).into())
-            .is_ok() // 直接访问前需要确保地址已经被分配
+                .manual_alloc_for_lazy((arg2 as usize).into())
+                .is_ok()
+            // 直接访问前需要确保地址已经被分配
             {
                 unsafe {
-                    let name = &mut * slice_from_raw_parts_mut(arg2, PR_NAME_SIZE);
+                    let name = &mut *slice_from_raw_parts_mut(arg2, PR_NAME_SIZE);
                     name[..process_name.len()].copy_from_slice(process_name.as_bytes());
                 }
                 Ok(0)
@@ -468,7 +467,7 @@ pub fn syscall_prctl(option: usize, arg2: *mut u8) -> SyscallResult {
                 Err(SyscallError::EINVAL)
             }
         }
-        Ok(PrctlOption::PR_SET_NAME) => { Ok(0) }
-        _ => { Ok(0) }
+        Ok(PrctlOption::PR_SET_NAME) => Ok(0),
+        _ => Ok(0),
     }
 }

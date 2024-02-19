@@ -331,6 +331,7 @@ pub fn syscall_openat(fd: usize, path: *const u8, flags: usize, _mode: u8) -> Sy
     // 分配 inode
     new_inode(path.path().to_string()).unwrap();
     // 如果是DIR
+    info!("path: {:?}", path.path());
     if path.is_dir() {
         debug!("open dir");
         if let Ok(dir) = new_dir(path.path().to_string(), flags.into()) {

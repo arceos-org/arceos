@@ -79,3 +79,12 @@ gicd-paddr = "0x0800_0000"
 
 # PSCI
 psci-method = "hvc"
+
+# Testcase memory
+testcase-memory-start = "0x9000_0000"
+testcase-memory-size = "0x800_0000"    # 如果是要手动加载进来，认为镜像大小是128MB
+qemu-memory-size = "0x4000_0000"    # 如果用qemu挂载镜像，镜像大小认为是1G，但实际远小于1G
+user-heap-base: usize = "0x3FA0_0000"
+user-stack-top: usize = "0x3FE0_0000"
+max-user-heap-size: usize = "0x40_0000"
+max-user-stack-size: usize = "0x20_0000"

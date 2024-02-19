@@ -110,7 +110,7 @@ impl FileIO for FileDesc {
             st_rdev: 0,
             _pad0: 0,
             st_size: attr.size(),
-            st_blksize: axfs::FAT_BLOCK_SIZE as u32,
+            st_blksize: axfs::BLOCK_SIZE as u32,
             _pad1: 0,
             st_blocks: attr.blocks(),
             st_atime_sec: stat.atime.tv_sec as isize,
