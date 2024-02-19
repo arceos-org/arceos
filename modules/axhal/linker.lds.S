@@ -29,18 +29,22 @@ SECTIONS
         _sdata = .;
         *(.data.boot_page_table)
         . = ALIGN(4K);
+        _img_start = .;
+        . = ALIGN(4K);
+        _img_end = .;
+        . = ALIGN(4K);
         *(.data .data.*)
         *(.sdata .sdata.*)
         *(.got .got.*)
     }
 
-    .tdata : ALIGN(0x10) {
+    .tdata : ALIGN(4K) {
         _stdata = .;
         *(.tdata .tdata.*)
         _etdata = .;
     }
 
-    .tbss : ALIGN(0x10) {
+    .tbss : ALIGN(4K) {
         _stbss = .;
         *(.tbss .tbss.*)
         *(.tcommon)

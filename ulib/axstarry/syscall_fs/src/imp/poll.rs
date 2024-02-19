@@ -4,7 +4,7 @@ use axprocess::{current_process, yield_now_task};
 use bitflags::bitflags;
 extern crate alloc;
 use alloc::{sync::Arc, vec::Vec};
-use syscall_utils::{SyscallError, SyscallResult, TimeSecs};
+use syscall_utils::{SyscallError, SyscallResult, TimeSecs, TimeVal};
 bitflags! {
     /// 在文件上等待或者发生过的事件
     #[derive(Clone, Copy,Debug)]
@@ -178,6 +178,41 @@ pub fn syscall_ppoll(
     Ok(set)
 }
 
+/// 实现ppoll系统调用
+///
+/// 其中timeout是一段相对时间，需要计算出相对于当前时间戳的绝对时间戳
+pub fn syscall_poll(
+    ufds: *mut PollFd,
+    nfds: usize,
+    timeout_msecs: usize
+) -> SyscallResult {
+    let process = current_process();
+
+    let start: VirtAddr = (ufds as usize).into();
+    let end = start + nfds * core::mem::size_of::<PollFd>();
+    if process.manual_alloc_range_for_lazy(start, end).is_err() {
+        return Err(SyscallError::EFAULT);
+    }
+
+    let mut fds: Vec<PollFd> = Vec::new();
+
+    for i in 0..nfds {
+        unsafe {
+            fds.push(*(ufds.add(i)));
+        }
+    }
+    let expire_time = current_ticks() as usize + TimeVal::from_micro(timeout_msecs).to_ticks() as usize;
+
+    let (set, ret_fds) = ppoll(fds, expire_time);
+    // 将得到的fd存储到原先的指针中
+    for i in 0..ret_fds.len() {
+        unsafe {
+            *(ufds.add(i)) = ret_fds[i];
+        }
+    }
+    Ok(set)
+}
+
 /// 根据给定的地址和长度新建一个fd set，包括文件描述符指针数组，文件描述符数值数组，以及一个bitset
 fn init_fd_set(
     addr: *mut usize,
@@ -222,6 +257,16 @@ fn init_fd_set(
     Ok((files, fds, shadow_bitset))
 }
 
+// 实现 select 系统调用
+pub fn syscall_select(
+    nfds: usize,
+    readfds: *mut usize,
+    writefds: *mut usize,
+    exceptfds: *mut usize,
+    timeout: *const TimeSecs
+) -> SyscallResult {
+    syscall_pselect6(nfds, readfds, writefds, exceptfds, timeout, 0)
+}
 /// 实现pselect6系统调用
 pub fn syscall_pselect6(
     nfds: usize,

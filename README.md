@@ -14,6 +14,27 @@
 
 ## Usage
 
+通过修改 `ulib/axstarry/syscall_entry/test.rs` 中的 `SDCARD_TESTCASES` 常量，可以选择内核启动后运行的程序。例如如果想要开机启动终端，则需要将常量的值改为 `"busybox sh"`。
+
+### x86_64
+
+```shell
+# 构建镜像
+./build_x86.sh
+
+# 运行宏内核
+make run
+
+# 显式指定参数并运行（实际上这些参数已在根目录 Makefile 中给出）
+# make A=apps/oscomp AARCH=x86_64 FEATURES=fp_simd run
+
+```
+
+如果 `./build_x86.sh` 卡住，可以[手动下载](https://github.com/oscomp/testsuits-for-oskernel/releases/download/final-x86_64/testsuits-x86_64-linux-musl.tgz)测例文件，然后把其中的 `wget` 一行注释掉并再次执行。
+
+
+### RISC-V
+
 ```shell
 # 构建镜像
 ./build_img.sh sdcard
@@ -138,3 +159,5 @@ $ ./build_img.sh gcc
 内核文档存放在`doc/Starry决赛设计文档.pdf`。
 
 另外，可以通过静态部署网页[Starry (azure-stars.github.io)](https://azure-stars.github.io/Starry/)查看更好排版的文档。
+
+[关于ZLMediaKit 的支持文档](./doc/ZLMediaKit/README.md)

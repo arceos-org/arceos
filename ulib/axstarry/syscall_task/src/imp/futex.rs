@@ -65,7 +65,7 @@ pub fn futex(
             let process = current_process();
             if process.manual_alloc_for_lazy(vaddr).is_ok() {
                 let real_futex_val = unsafe { (vaddr.as_usize() as *const u32).read_volatile() };
-                info!("real val: {}, expected val: {}", real_futex_val, val);
+                info!("real val: {:#x}, expected val: {:#x}", real_futex_val, val);
                 if real_futex_val != val {
                     return Err(SyscallError::EAGAIN);
                 }

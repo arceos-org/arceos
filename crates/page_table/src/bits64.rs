@@ -87,6 +87,8 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
         flags: MappingFlags,
     ) -> PagingResult {
         let entry = self.get_entry_mut_or_create(vaddr, page_size)?;
+                
+        // FIXME: return already mapped if it was unused?
         if entry.is_unused() {
             return Err(PagingError::AlreadyMapped);
         }

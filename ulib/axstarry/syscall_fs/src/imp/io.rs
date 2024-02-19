@@ -8,9 +8,10 @@ use axfs::api::{FileIOType, OpenFlags};
 use axio::SeekFrom;
 use axlog::{debug, info};
 use axprocess::current_process;
-use axprocess::link::{create_link, deal_with_path, real_path};
+use axprocess::link::{create_link, deal_with_path, real_path, AT_FDCWD};
 use syscall_utils::{IoVec, SyscallError, SyscallResult};
 
+use crate::ctype::file::new_inode;
 use crate::ctype::pipe::make_pipe;
 use crate::ctype::{dir::new_dir, file::new_fd};
 /// 功能：从一个文件描述符中读取；
@@ -74,7 +75,10 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> SyscallResult {
     // - ready to accept new connections
 
     match file.read(buf) {
-        Ok(len) => Ok(len as isize),
+        Ok(len) => {
+            info!("buf: {:?}, len: {}", buf, len);
+            Ok(len as isize)
+        }
         Err(AxError::WouldBlock) => Err(SyscallError::EAGAIN),
         Err(_) => Err(SyscallError::EPERM),
     }
@@ -87,8 +91,7 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> SyscallResult {
 ///     - count：要写入的字节数。
 /// 返回值：成功执行，返回写入的字节数。错误，则返回-1。
 pub fn syscall_write(fd: usize, buf: *const u8, count: usize) -> SyscallResult {
-    info!("[write()] fd: {fd}, buf: {buf:?}, len: {count}");
-
+    info!("[write()] fd: {}, buf: {buf:?}, len: {count}", fd as i32);
     if buf.is_null() {
         return Err(SyscallError::EFAULT);
     }
@@ -220,6 +223,16 @@ pub fn syscall_pipe2(fd: *mut u32, flags: usize) -> SyscallResult {
     Ok(0)
 }
 
+/// 功能：创建管道；
+/// 输入：
+///     - fd[2]：用于保存2个文件描述符。其中，fd[0]为管道的读出端，fd[1]为管道的写入端。
+/// 返回值：成功执行，返回0。失败，返回-1。
+///
+/// 注意：fd[2]是32位数组，所以这里的 fd 是 u32 类型的指针，而不是 usize 类型的指针。
+pub fn syscall_pipe(fds: *mut u32) -> SyscallResult {
+    syscall_pipe2(fds, 0)
+}
+
 /// 功能：复制文件描述符；
 /// 输入：
 ///     - fd：被复制的文件描述符。
@@ -245,6 +258,14 @@ pub fn syscall_dup(fd: usize) -> SyscallResult {
     fd_table[new_fd] = fd_table[fd].clone();
 
     Ok(new_fd as isize)
+}
+
+/// 功能：复制文件描述符；
+/// 输入：
+///     - fd：被复制的文件描述符。
+/// 返回值：成功执行，返回新的文件描述符。失败，返回-1。
+pub fn syscall_dup2(fd: usize, new_fd: usize) -> SyscallResult {
+    syscall_dup3(fd, new_fd)
 }
 
 /// 功能：复制文件描述符，并指定了新的文件描述符；
@@ -301,12 +322,14 @@ pub fn syscall_openat(fd: usize, path: *const u8, flags: usize, _mode: u8) -> Sy
     };
     let process = current_process();
     let mut fd_table = process.fd_manager.fd_table.lock();
-    let fd_num = if let Ok(fd) = process.alloc_fd(&mut fd_table) {
+    let fd_num: usize = if let Ok(fd) = process.alloc_fd(&mut fd_table) {
         fd
     } else {
         return Err(SyscallError::EMFILE);
     };
     debug!("allocated fd_num: {}", fd_num);
+    // 分配 inode
+    new_inode(path.path().to_string()).unwrap();
     // 如果是DIR
     if path.is_dir() {
         debug!("open dir");
@@ -332,6 +355,19 @@ pub fn syscall_openat(fd: usize, path: *const u8, flags: usize, _mode: u8) -> Sy
             Err(SyscallError::ENOENT)
         }
     }
+}
+
+/// 功能：打开或创建一个文件；
+/// 输入：
+///     - filename：filename是相对于当前工作目录来说的。
+///     - flags：必须包含如下访问模式的其中一种：O_RDONLY，O_WRONLY，O_RDWR。还可以包含文件创建标志和文件状态标志。
+///     - mode：文件的所有权描述。详见`man 7 inode `。
+/// 返回值：成功执行，返回新的文件描述符。失败，返回-1。
+///
+/// 说明：如果打开的是一个目录，那么返回的文件描述符指向的是该目录的描述符。(后面会用到针对目录的文件描述符)
+/// flags: O_RDONLY: 0, O_WRONLY: 1, O_RDWR: 2, O_CREAT: 64, O_DIRECTORY: 65536
+pub fn syscall_open(path: *const u8, flags: usize, mode: u8) -> SyscallResult {
+    syscall_openat(axprocess::link::AT_FDCWD, path, flags, mode)
 }
 
 /// 功能：关闭一个文件描述符；
@@ -494,6 +530,16 @@ pub fn syscall_readlinkat(
     }
     Err(SyscallError::EINVAL)
 }
+
+/// readlinkat
+/// 读取符号链接文件的内容
+/// 如果buf为NULL，则返回符号链接文件的长度
+/// 如果buf不为NULL，则将符号链接文件的内容写入buf中
+/// 如果写入的内容超出了buf_size则直接截断
+pub fn syscall_readlink(path: *const u8, buf: *mut u8, bufsiz: usize) -> SyscallResult {
+    syscall_readlinkat(AT_FDCWD, path, buf, bufsiz)
+}
+
 /// 62
 /// 移动文件描述符的读写指针
 pub fn syscall_lseek(fd: usize, offset: isize, whence: usize) -> SyscallResult {

@@ -6,7 +6,7 @@ use alloc::vec::Vec;
 use alloc::{collections::BTreeMap, string::String};
 use axerrno::{AxError, AxResult};
 use axfs::api::{FileIO, OpenFlags};
-use axhal::arch::{write_page_table_root, TrapFrame};
+use axhal::arch::{flush_tlb, write_page_table_root, TrapFrame};
 use axhal::mem::{phys_to_virt, VirtAddr};
 use axhal::KERNEL_PROCESS_ID;
 use axlog::{debug, error};
@@ -18,7 +18,7 @@ use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, Ordering};
 use crate::fd_manager::FdManager;
 use crate::flags::CloneFlags;
 use crate::futex::FutexRobustList;
-use crate::load_app;
+use crate::{load_app, yield_now_task};
 #[cfg(feature = "signal")]
 use crate::signal::SignalModule;
 use crate::stdio::{Stderr, Stdin, Stdout};
@@ -65,6 +65,8 @@ pub struct Process {
     /// 用来存储线程对共享变量的使用地址
     /// 具体使用交给了用户空间
     pub robust_list: Mutex<BTreeMap<u64, FutexRobustList>>,
+
+    pub blocked_by_vfork: Mutex<bool>,
 }
 
 impl Process {
@@ -112,6 +114,10 @@ impl Process {
         self.heap_bottom.store(bottom, Ordering::Release)
     }
 
+    pub fn set_vfork_block(&self, value: bool) {
+        *self.blocked_by_vfork.lock() = value;
+    }
+
     /// 若进程运行完成，则获取其返回码
     /// 若正在运行（可能上锁或没有上锁），则返回None
     pub fn get_code_if_exit(&self) -> Option<i32> {
@@ -144,6 +150,7 @@ impl Process {
             #[cfg(feature = "signal")]
             signal_modules: Mutex::new(BTreeMap::new()),
             robust_list: Mutex::new(BTreeMap::new()),
+            blocked_by_vfork: Mutex::new(false),
         }
     }
     /// 根据给定参数创建一个新的进程，作为应用程序初始进程
@@ -154,6 +161,7 @@ impl Process {
         if page_table_token != 0 {
             unsafe {
                 write_page_table_root(page_table_token.into());
+                #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
                 riscv::register::sstatus::set_sum();
             };
         }
@@ -168,6 +176,7 @@ impl Process {
             "COLLECT_GCC_OPTIONS='-march=rv64gc' '-mabi=lp64d' '-march=rv64imafdc' '-dumpdir' 'a.'".into(),
             "LIBRARY_PATH=/lib/".into(),
             "LD_LIBRARY_PATH=/lib/".into(),
+            "LD_DEBUG=files".into(),
         ];
         let (entry, user_stack_bottom, heap_bottom) =
             if let Ok(ans) = load_app(path.clone(), args, envs, &mut memory_set) {
@@ -241,20 +250,47 @@ impl Process {
     }
 }
 
+struct VforkHandler;
+
+use axtask::{VforkCheck, VforkSet};
+
+#[crate_interface::impl_interface]
+impl VforkCheck for VforkHandler {
+    fn check_vfork(&self, process_id: u64) -> bool {
+        let pid2pc = PID2PC.lock();
+        match pid2pc.get(&process_id) {
+            Some(process) => process.blocked_by_vfork.lock().clone(),
+            None => panic!("the process_id {} will be checked nonexists", process_id)
+        }
+    }
+}
+
+#[crate_interface::impl_interface]
+impl VforkSet for VforkHandler {
+    /// set parent process's vfork to false
+    fn vfork_set(&self, process_id: u64, status: bool) {
+        let pid2pc = PID2PC.lock();
+        // 如果 process_id 对应的进程存在，则设置阻塞状态
+        if let Some(process) = pid2pc.get(&process_id) {
+            process.set_vfork_block(status)
+        }
+    }
+}
+
 impl Process {
     /// 将当前进程替换为指定的用户程序
     /// args为传入的参数
     /// 任务的统计时间会被重置
     pub fn exec(&self, name: String, args: Vec<String>, envs: Vec<String>) -> AxResult<()> {
+        let parent_pid = self.get_parent();
+        VforkHandler.vfork_set(parent_pid, false);
         // 首先要处理原先进程的资源
         // 处理分配的页帧
         // 之后加入额外的东西之后再处理其他的包括信号等因素
         // 不是直接删除原有地址空间，否则构建成本较高。
         self.memory_set.lock().unmap_user_areas();
         // 清空用户堆，重置堆顶
-        unsafe {
-            riscv::asm::sfence_vma_all();
-        }
+        flush_tlb(None);
 
         // 关闭 `CLOEXEC` 的文件
         // inner.fd_manager.close_on_exec();
@@ -264,6 +300,12 @@ impl Process {
         for _ in 0..tasks.len() {
             let task = tasks.pop().unwrap();
             if task.id() == current_task.id() {
+                // FIXME: This will reset tls forcefully
+                #[cfg(target_arch = "x86_64")]
+                unsafe {
+                    task.set_tls_force(0);
+                    axhal::arch::write_thread_pointer(0);
+                }
                 tasks.push(task);
             } else {
                 TID2TASK.lock().remove(&task.id().as_u64());
@@ -274,6 +316,7 @@ impl Process {
         current_task.set_leader(true);
         // 重置统计时间
         current_task.time_stat_clear();
+        current_task.set_name(name.split('/').last().unwrap());
         assert!(tasks.len() == 1);
         drop(tasks);
         let args = if args.len() == 0 {
@@ -298,7 +341,7 @@ impl Process {
             // axhal::arch::write_page_table_root(page_table_token.into());
             unsafe {
                 write_page_table_root(page_table_token.into());
-                riscv::asm::sfence_vma_all();
+                flush_tlb(None);
             };
             // 清空用户堆，重置堆顶
         }
@@ -371,13 +414,19 @@ impl Process {
         };
         let new_task = TaskInner::new(
             || {},
-            String::new(),
+            String::from(self.tasks.lock()[0].name().split('/').last().unwrap()),
             axconfig::TASK_STACK_SIZE,
             process_id,
             new_memory_set.lock().page_table_token(),
             #[cfg(feature = "signal")]
             sig_child,
         );
+        #[cfg(target_arch = "x86_64")]
+        if tls == 0 {
+            unsafe {
+                new_task.set_tls_force(axhal::arch::read_thread_pointer());
+            }
+        }
         debug!("new task:{}", new_task.id().as_u64());
         TID2TASK
             .lock()
@@ -522,18 +571,24 @@ impl Process {
         let current_task = current();
         // 复制原有的trap上下文
         let mut trap_frame = unsafe { *(current_task.get_first_trap_frame()) }.clone();
-        drop(current_task);
+        // drop(current_task);
         // 新开的进程/线程返回值为0
-        trap_frame.regs.a0 = 0;
+        // trap_frame.regs.a0 = 0;
+        trap_frame.set_ret(0);
         if flags.contains(CloneFlags::CLONE_SETTLS) {
-            trap_frame.regs.tp = tls;
+            #[cfg(not(target_arch = "x86_64"))]
+            trap_frame.set_tls(tls);
+            #[cfg(target_arch = "x86_64")]
+            unsafe {
+                new_task.set_tls_force(tls);
+            }
         }
         // 设置用户栈
         // 若给定了用户栈，则使用给定的用户栈
         // 若没有给定用户栈，则使用当前用户栈
         // 没有给定用户栈的时候，只能是共享了地址空间，且原先调用clone的有用户栈，此时已经在之前的trap clone时复制了
         if let Some(stack) = stack {
-            trap_frame.regs.sp = stack;
+            trap_frame.set_user_sp(stack)
             // info!(
             //     "New user stack: sepc:{:X}, stack:{:X}",
             //     trap_frame.sepc, trap_frame.regs.sp
@@ -542,6 +597,11 @@ impl Process {
         new_task.set_trap_context(trap_frame);
         new_task.set_trap_in_kernel_stack();
         RUN_QUEUE.lock().add_task(new_task);
+        // 判断是否为VFORK
+        if flags.contains(CloneFlags::CLONE_VFORK) {
+            self.set_vfork_block(true);
+            yield_now_task(); 
+        }
         Ok(return_id)
     }
 }

@@ -4,6 +4,7 @@ use bitflags::*;
 
 bitflags! {
     /// 用于 sys_clone 的选项
+    #[derive(Debug, Clone, Copy)]
     pub struct CloneFlags: u32 {
         /// .
         const CLONE_NEWTIME = 1 << 7;

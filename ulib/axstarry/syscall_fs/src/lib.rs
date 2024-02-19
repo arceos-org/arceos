@@ -131,5 +131,52 @@ pub fn fs_syscall(syscall_id: fs_syscall_id::FsSyscallId, args: [usize; 6]) -> S
             args[4] as *const TimeSecs,
             args[5] as usize,
         ),
+
+        #[cfg(target_arch = "x86_64")]
+        DUP2 => syscall_dup2(args[0], args[1]),
+        #[cfg(target_arch = "x86_64")]
+        LSTAT => syscall_lstat(args[0] as *const u8, args[1] as *mut Kstat),
+        #[cfg(target_arch = "x86_64")]
+        OPEN => syscall_open(
+            args[0] as *const u8, 
+            args[1], 
+            args[2] as u8
+        ),
+        #[cfg(target_arch = "x86_64")]
+        PIPE => syscall_pipe(args[0] as * mut u32),
+        #[cfg(target_arch = "x86_64")]
+        POLL => syscall_poll(
+            args[0] as *mut PollFd,
+            args[1] as usize,
+            args[2],
+        ),
+        #[cfg(target_arch = "x86_64")]
+        STAT => syscall_stat(args[0] as *const u8, args[1] as *mut Kstat),
+        #[cfg(target_arch = "x86_64")]
+        UNLINK => syscall_unlink(args[0] as * const u8),
+        #[cfg(target_arch = "x86_64")]
+        ACCESS => syscall_access(args[0] as * const u8, args[1]),
+        #[cfg(target_arch = "x86_64")]
+        MKDIR => syscall_mkdir(args[0] as * const u8, args[1] as _),
+        #[cfg(target_arch = "x86_64")]
+        RENAME => syscall_rename(args[0] as * const u8, args[1] as * const u8),
+        #[cfg(target_arch = "x86_64")]
+        RMDIR => syscall_rmdir(args[0] as * const u8),
+        #[cfg(target_arch = "x86_64")]
+        SELECT => syscall_select(
+            args[0] as usize,
+            args[1] as *mut usize,
+            args[2] as *mut usize,
+            args[3] as *mut usize,
+            args[4] as *const TimeSecs        
+        ),
+        #[cfg(target_arch = "x86_64")]
+        READLINK => syscall_readlink(
+            args[0] as *const u8,
+            args[1] as *mut u8,
+        args[2] as usize,
+        ),
+        #[cfg(target_arch = "x86_64")]
+        CREAT => Err(axerrno::LinuxError::EPERM)
     }
 }

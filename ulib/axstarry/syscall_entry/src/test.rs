@@ -311,6 +311,8 @@ pub const OSTRAIN_TESTCASES: &[&str] = &[
 
 #[allow(dead_code)]
 pub const SDCARD_TESTCASES: &[&str] = &[
+    // "busybox sh",
+    "./MediaServer -h",
     // "busybox sh ./test_all.sh",
     // "./riscv64-linux-musl-native/bin/riscv64-linux-musl-gcc ./hello.c -static",
     // "./a.out",
@@ -319,7 +321,7 @@ pub const SDCARD_TESTCASES: &[&str] = &[
     // "./interrupts-test-2",
     // "./copy-file-range-test-1",
     // "./copy-file-range-test-2",
-    // "./copy-file-range-test-3",
+    // "./copy-file-range-test-3","./runtest.exe -w entry-static.exe daemon_failure",
     // "./copy-file-range-test-4",
     // "busybox echo hello",
     // "busybox sh ./unixbench_testcode.sh",
@@ -360,7 +362,7 @@ pub const SDCARD_TESTCASES: &[&str] = &[
     // "lmbench_all bw_mmap_rd -P 1 512k open2close /var/tmp/XXX",
     // "busybox echo context switch overhead",
     // "lmbench_all lat_ctx -P 1 -s 32 2 4 8 16 24 32 64 96",
-    "busybox sh libctest_testcode.sh",
+    // "busybox sh libctest_testcode.sh",
     // "busybox sh lua_testcode.sh",
     // "libc-bench",
     // "busybox sh ./netperf_testcode.sh",
@@ -495,8 +497,61 @@ pub fn fs_init(_case: &'static str) {
     // 需要对libc-dynamic进行特殊处理，因为它需要先加载libc.so
     // 建立一个硬链接
 
+    #[cfg(target_arch = "riscv64")]
     let libc_so = &"ld-musl-riscv64-sf.so.1";
+    #[cfg(target_arch = "riscv64")]
     let libc_so2 = &"ld-musl-riscv64.so.1"; // 另一种名字的 libc.so，非 libc-test 测例库用
+
+    #[cfg(target_arch = "x86_64")]
+    let libc_so = &"ld-musl-x86_64-sf.so.1";
+    #[cfg(target_arch = "x86_64")]
+    let libc_so2 = &"ld-musl-x86_64.so.1"; // 另一种名字的 libc.so，非 libc-test 测例库用
+    #[cfg(target_arch = "x86_64")]
+    {
+        let libc_zlm = &"/lib64/ld-linux-x86-64.so.2";
+        create_link(
+            &(FilePath::new(libc_zlm).unwrap()),
+            &(FilePath::new("ld-linux-x86-64.so.2").unwrap()),
+        );
+
+        // create the link like:
+        // /lib/libssl.so.3 -> libssl.so.3
+        // /lib/libcrypto.so.3 -> libcrypto.so
+        // /lib/libstdc++.so.6 -> libstdc++.so.6
+        // /lib/libm.so.6 -> libm.so.6
+        // /lib/libgcc_s.so.1 -> libgcc_s.so.1
+        // /lib/libc.so.6 -> libc.so.6
+
+        create_link(
+            &(FilePath::new("/lib/libssl.so.3").unwrap()),
+            &(FilePath::new("libssl.so.3").unwrap()),
+        );
+
+        create_link(
+            &(FilePath::new("/lib/libcrypto.so.3").unwrap()),
+            &(FilePath::new("libcrypto.so.3").unwrap()),
+        );
+
+        create_link(
+            &(FilePath::new("/lib/libstdc++.so.6").unwrap()),
+            &(FilePath::new("libstdc++.so.6").unwrap()),
+        );
+
+        create_link(
+            &(FilePath::new("/lib/libm.so.6").unwrap()),
+            &(FilePath::new("libm.so.6").unwrap()),
+        );
+
+        create_link(
+            &(FilePath::new("/lib/libgcc_s.so.1").unwrap()),
+            &(FilePath::new("libgcc_s.so.1").unwrap()),
+        );
+
+        create_link(
+            &(FilePath::new("/lib/libc.so.6").unwrap()),
+            &(FilePath::new("libc.so.6").unwrap()),
+        );
+    }
 
     create_link(
         &(FilePath::new(("/lib/".to_string() + libc_so).as_str()).unwrap()),

@@ -244,7 +244,17 @@ cfg_if::cfg_if! {
     if #[cfg(feature = "paging")] {
         use axhal::paging::PageTable;
         use lazy_init::LazyInit;
+        use axprocess::KernelPageTable;
         pub static KERNEL_PAGE_TABLE: LazyInit<PageTable> = LazyInit::new();
+
+        struct SwitchKernelPageImpl;
+        #[crate_interface::impl_interface]
+        impl KernelPageTable for SwitchKernelPageImpl {
+            fn switch(&self) {
+                unsafe { axhal::arch::write_page_table_root(KERNEL_PAGE_TABLE.root_paddr()) };
+            }
+        }
+
         fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
             use axhal::mem::{memory_regions, phys_to_virt};
             if axhal::cpu::this_cpu_is_bsp() {
@@ -268,7 +278,6 @@ cfg_if::cfg_if! {
                     extern "C" {
                         fn img_start();
                     }
-
                     // 此时qemu运行，文件镜像的位置需要由汇编确定
                     let img_start_addr:PhysAddr = axhal::mem::virt_to_phys((img_start as usize).into());
                     kernel_page_table.map_region(
