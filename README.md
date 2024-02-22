@@ -81,10 +81,23 @@ tar zxf x86_64-linux-musl-cross.tgz
 export PATH=`pwd`/x86_64-linux-musl-cross/bin:`pwd`/aarch64-linux-musl-cross/bin:`pwd`/riscv64-linux-musl-cross/bin:$PATH
 ```
 
+### Dependencies for running apps
+
+```bash
+# for Debian/Ubuntu
+sudo apt-get install qemu-system
+```
+
+```bash
+# for macos
+brew install qemu
+```
+other systems and arch please refer to [Qemu Download](https://www.qemu.org/download/#linux)
+
 ### Example apps
 
 ```bash
-# in arceos directory
+# build app in arceos directory
 make A=path/to/app ARCH=<arch> LOG=<log>
 ```
 
