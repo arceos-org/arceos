@@ -6,6 +6,7 @@
 
 /// 需要手动引入这个库，否则会报错：`#[panic_handler]` function required, but not found.
 extern crate axruntime;
+extern crate alloc;
 
 mod trap;
 
