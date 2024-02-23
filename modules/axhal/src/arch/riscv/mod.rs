@@ -4,10 +4,20 @@ mod macros;
 mod context;
 mod trap;
 
+#[cfg(feature = "monolithic")]
+pub use trap::first_into_user;
 pub use self::context::{GeneralRegisters, TaskContext, TrapFrame};
 use memory_addr::{PhysAddr, VirtAddr};
 use riscv::asm;
 use riscv::register::{satp, sstatus, stvec};
+
+extern "C" {
+    fn __copy(frame_address: *mut TrapFrame, kernel_base: usize);
+}
+
+pub unsafe fn copy_trap_frame(frame_address: *mut TrapFrame, kernel_base: usize) {
+    __copy(frame_address, kernel_base)
+}
 
 /// Allows the current CPU to respond to interrupts.
 #[inline]
@@ -63,7 +73,6 @@ pub unsafe fn write_page_table_root(root_paddr: PhysAddr) {
         asm::sfence_vma_all();
     }
 }
-
 pub use self::write_page_table_root as write_page_table_root0;
 
 /// Flushes the TLB.

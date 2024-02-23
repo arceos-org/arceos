@@ -19,9 +19,6 @@ use axhal::arch::TaskContext;
 use memory_addr::{align_up_4k, VirtAddr};
 
 #[cfg(feature = "monolithic")]
-core::arch::global_asm!(include_str!("copy.S"));
-
-#[cfg(feature = "monolithic")]
 use axhal::arch::TrapFrame;
 
 use crate::stat::TimeStat;
@@ -346,14 +343,11 @@ impl TaskInner {
     /// 注意此时保持sp不变
     /// 返回值为压入了trap之后的内核栈的栈顶，可以用于多层trap压入
     pub fn set_trap_in_kernel_stack(&self) {
-        extern "C" {
-            pub fn __copy(frame_address: *mut TrapFrame, kernel_base: usize);
-        }
         let trap_frame_size = core::mem::size_of::<TrapFrame>();
         let frame_address = self.trap_frame.get();
         let kernel_base = self.get_kernel_stack_top().unwrap() - trap_frame_size;
         unsafe {
-            __copy(frame_address, kernel_base);
+            axhal::arch::copy_trap_frame(frame_address, kernel_base);
         }
     }
     /// 设置CPU set，其中set_size为bytes长度
@@ -727,64 +721,6 @@ impl Deref for CurrentTask {
     }
 }
 
-#[no_mangle]
-#[cfg(feature = "monolithic")]
-/// 手动进入用户态
-///
-/// 1. 将对应trap上下文压入内核栈
-/// 2. 返回用户态
-///
-/// args：
-///
-/// 1. kernel_sp：内核栈顶
-///
-/// 2. frame_base：对应即将压入内核栈的trap上下文的地址
-pub fn first_into_user(kernel_sp: usize, frame_base: usize) -> ! {
-    use axhal::arch::disable_irqs;
-
-    let trap_frame_size = core::mem::size_of::<TrapFrame>();
-    let kernel_base = kernel_sp - trap_frame_size;
-    // 在保证将寄存器都存储好之后，再开启中断
-    // 否则此时会因为写入csr寄存器过程中出现中断，导致出现异常
-    disable_irqs();
-    // 在内核态中，tp寄存器存储的是当前任务的CPU ID
-    // 而当从内核态进入到用户态时，会将tp寄存器的值先存储在内核栈上，即把该任务对应的CPU ID存储在内核栈上
-    // 然后将tp寄存器的值改为对应线程的tls指针的值
-    // 因此在用户态中，tp寄存器存储的值是线程的tls指针的值
-    // 而当从用户态进入到内核态时，会先将内核栈上的值读取到某一个中间寄存器t0中，然后将tp的值存入内核栈
-    // 然后再将t0的值赋给tp，因此此时tp的值是当前任务的CPU ID
-    // 对应实现在axhal/src/arch/riscv/trap.S中
-    unsafe {
-        riscv::asm::sfence_vma_all();
-        core::arch::asm!(
-            r"
-            mv      sp, {frame_base}
-            .short  0x2432                      // fld fs0,264(sp)
-            .short  0x24d2                      // fld fs1,272(sp)
-            mv      t1, {kernel_base}
-            LDR     t0, sp, 2
-            STR     gp, t1, 2
-            mv      gp, t0
-            LDR     t0, sp, 3
-            STR     tp, t1, 3                   // save supervisor tp，注意是存储到内核栈上而不是sp中，此时存储的应该是当前运行的CPU的ID
-            mv      tp, t0                      // tp：本来存储的是CPU ID，在这个时候变成了对应线程的TLS 指针
-            csrw    sscratch, {kernel_sp}       // put supervisor sp to scratch
-            LDR     t0, sp, 31
-            LDR     t1, sp, 32
-            csrw    sepc, t0
-            csrw    sstatus, t1
-            POP_GENERAL_REGS
-            LDR     sp, sp, 1
-            sret
-        ",
-            frame_base = in(reg) frame_base,
-            kernel_sp = in(reg) kernel_sp,
-            kernel_base = in(reg) kernel_base,
-        );
-    };
-    core::panic!("already in user mode!")
-}
-
 extern "C" fn task_entry() -> ! {
     // release the lock that was implicitly held across the reschedule
     unsafe { crate::RUN_QUEUE.force_unlock() };
@@ -806,7 +742,7 @@ extern "C" fn task_entry() -> ! {
                     // 切换页表已经在switch实现了
                     // 记得更新时间
                     task.time_stat_from_kernel_to_user();
-                    first_into_user(kernel_sp, frame_address as usize);
+                    axhal::arch::first_into_user(kernel_sp, frame_address as usize);
                 }
             }
             else {
