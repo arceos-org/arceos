@@ -31,6 +31,9 @@ pub(crate) const REL_RELATIVE: u32 = 8;
 pub(crate) const R_RISCV_64: u32 = 2;
 pub(crate) const R_RISCV_RELATIVE: u32 = 3;
 
+pub(crate) const R_AARCH64_RELATIVE: u32 = 0x403;
+pub(crate) const R_AARCH64_GLOBAL_DATA: u32 = 0x401;
+
 pub(crate) const AT_PHDR: u8 = 3;
 pub(crate) const AT_PHENT: u8 = 4;
 pub(crate) const AT_PHNUM: u8 = 5;
@@ -212,7 +215,7 @@ impl MemorySet {
                                 );
                             }
                         }
-                        REL_RELATIVE | R_RISCV_RELATIVE => {
+                        REL_RELATIVE | R_RISCV_RELATIVE | R_AARCH64_RELATIVE => {
                             let value = base_addr + entry.get_addend() as usize;
                             let addr = base_addr + entry.get_offset() as usize;
 

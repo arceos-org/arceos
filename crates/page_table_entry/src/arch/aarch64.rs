@@ -193,6 +193,12 @@ impl GenericPTE for A64PTE {
         }
         Self(attr.bits() | (paddr.as_usize() as u64 & Self::PHYS_ADDR_MASK))
     }
+
+    fn new_fault_page(_is_huge: bool) -> Self {
+        let attr =  DescriptorAttr::VALID;
+        Self(attr.bits() as u64)
+    }
+
     fn new_table(paddr: PhysAddr) -> Self {
         let attr = DescriptorAttr::NON_BLOCK | DescriptorAttr::VALID;
         Self(attr.bits() | (paddr.as_usize() as u64 & Self::PHYS_ADDR_MASK))

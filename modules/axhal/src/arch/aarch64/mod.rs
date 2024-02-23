@@ -3,11 +3,25 @@ pub(crate) mod trap;
 
 use core::arch::asm;
 
+#[cfg(feature = "monolithic")]
+pub use trap::first_into_user;
+
 use aarch64_cpu::registers::{DAIF, TPIDR_EL0, TTBR0_EL1, TTBR1_EL1, VBAR_EL1};
 use memory_addr::{PhysAddr, VirtAddr};
 use tock_registers::interfaces::{Readable, Writeable};
 
 pub use self::context::{FpState, TaskContext, TrapFrame};
+
+#[cfg(feature = "monolithic")]
+mod mem_fault;
+
+extern "C" {
+    fn __copy(frame_address: *mut TrapFrame, kernel_base: usize);
+}
+
+pub unsafe fn copy_trap_frame(frame_address: *mut TrapFrame, kernel_base: usize) {
+    __copy(frame_address, kernel_base)
+}
 
 /// Allows the current CPU to respond to interrupts.
 #[inline]
