@@ -41,7 +41,7 @@ impl axhal::trap::TrapHandler for TrapHandlerImpl {
         if addr.as_usize() == axsignal::SIGNAL_RETURN_TRAP {
             use syscall_task::syscall_sigreturn;
             // 说明是信号执行完毕，此时应当执行sig return
-            tf.regs.a0 = deal_result(syscall_sigreturn()) as usize;
+            tf.set_ret_code(deal_result(syscall_sigreturn()) as usize);
             return;
         }
         handle_page_fault(addr, flags);

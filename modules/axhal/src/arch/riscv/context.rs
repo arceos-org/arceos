@@ -55,10 +55,73 @@ pub struct TrapFrame {
     pub fs: [usize; 2],
 }
 
+// 实现一个从 *mut MyType 的转换
+impl From<*mut TrapFrame> for TrapFrame {
+    fn from(ptr: *mut TrapFrame) -> Self {
+        unsafe {
+            *ptr
+        }
+    }
+}
+
 impl TrapFrame {
-    fn set_user_sp(&mut self, user_sp: usize) {
+    pub fn set_user_sp(&mut self, user_sp: usize) {
         self.regs.sp = user_sp;
     }
+
+    pub fn sp(&mut self) -> usize {
+        self.regs.sp
+    }
+
+    pub unsafe fn sp_from_raw(ptr: *mut TrapFrame) -> usize {
+        (*ptr).regs.sp
+    }
+
+    pub unsafe fn pc_from_raw(ptr: *mut TrapFrame) -> usize {
+        (*ptr).sepc
+    }
+
+    pub fn pc(&mut self) -> usize {
+        self.sepc
+    }
+
+    pub fn set_pc(&mut self, pc: usize) {
+        self.sepc = pc;
+    }
+
+    pub unsafe fn set_pc_from_raw(ptr: *mut TrapFrame, pc: usize) {
+        (*ptr).sepc = pc;
+    }
+
+    pub fn set_tls(&mut self, tls: usize) {
+        self.regs.tp = tls;
+    }
+
+    #[cfg(feature = "monolithic")]
+    pub fn set_ret_code(&mut self, ret: usize) {
+        self.regs.a0 = ret;
+    }
+
+    pub fn set_param0(&mut self, param: usize) {
+        self.regs.a0 = param;
+    }
+
+    pub fn set_param1(&mut self, param: usize) {
+        self.regs.a1 = param;
+    }
+
+    pub fn set_param2(&mut self, param: usize) {
+        self.regs.a2 = param;
+    }
+
+    pub unsafe fn ret_from_raw(ptr: *mut TrapFrame) -> usize {
+         (*ptr).regs.a0
+    }
+
+    pub fn set_lr(&mut self, param: usize) {
+        self.regs.ra = param;
+    }
+
     /// 用于第一次进入应用程序时的初始化
     pub fn app_init_context(app_entry: usize, user_sp: usize) -> Self {
         let sstatus = sstatus::read();

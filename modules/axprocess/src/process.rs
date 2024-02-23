@@ -521,9 +521,9 @@ impl Process {
         let mut trap_frame = unsafe { *(current_task.get_first_trap_frame()) }.clone();
         drop(current_task);
         // 新开的进程/线程返回值为0
-        trap_frame.regs.a0 = 0;
+        trap_frame.set_ret_code(0);
         if flags.contains(CloneFlags::CLONE_SETTLS) {
-            trap_frame.regs.tp = tls;
+            trap_frame.set_tls(tls);
         }
 
         // 设置用户栈
@@ -531,7 +531,7 @@ impl Process {
         // 若没有给定用户栈，则使用当前用户栈
         // 没有给定用户栈的时候，只能是共享了地址空间，且原先调用clone的有用户栈，此时已经在之前的trap clone时复制了
         if let Some(stack) = stack {
-            trap_frame.regs.sp = stack;
+            trap_frame.set_user_sp(stack);
             // info!(
             //     "New user stack: sepc:{:X}, stack:{:X}",
             //     trap_frame.sepc, trap_frame.regs.sp

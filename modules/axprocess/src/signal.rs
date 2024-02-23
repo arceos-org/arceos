@@ -70,12 +70,12 @@ pub fn load_trap_for_signal() -> bool {
             // 考虑当时调用信号处理函数时，sp对应的地址上的内容即是SignalUserContext
             // 此时认为一定通过sig_return调用这个函数
             // 所以此时sp的位置应该是SignalUserContext的位置
-            let sp = (*now_trap_frame).regs.sp;
+            let sp = TrapFrame::sp_from_raw(now_trap_frame);
             *now_trap_frame = old_trap_frame;
             // 若存在SIG_INFO，此时pc可能发生变化
             if signal_module.sig_info {
                 let pc = (*(sp as *const SignalUserContext)).get_pc();
-                (*now_trap_frame).sepc = pc;
+                TrapFrame::set_pc_from_raw(now_trap_frame, pc);
             }
         }
         true
@@ -196,18 +196,21 @@ pub fn handle_signals() {
     let trap_frame = unsafe { &mut *(current_task.get_first_trap_frame()) };
 
     // 新的trap上下文的sp指针位置，由于SIGINFO会存放内容，所以需要开个保护区域
-    let mut sp = trap_frame.regs.sp - USER_SIGNAL_PROTECT;
+    let mut sp = trap_frame.sp() - USER_SIGNAL_PROTECT;
     info!(
         "restorer :{}, handler: {}",
         action.get_storer(),
         action.sa_handler
     );
 
-    let old_pc = trap_frame.sepc;
-    trap_frame.regs.ra = action.get_storer();
-    trap_frame.sepc = action.sa_handler;
+    let old_pc = trap_frame.pc();
+
+    trap_frame.set_lr(action.get_storer());
+
+    trap_frame.set_pc(action.sa_handler);
+
     // 传参
-    trap_frame.regs.a0 = sig_num;
+    trap_frame.set_param0(sig_num);
     // 若带有SIG_INFO参数，则函数原型为fn(sig: SignalNo, info: &SigInfo, ucontext: &mut UContext)
     if action.sa_flags.contains(SigActionFlags::SA_SIGINFO) {
         // current_task.set_siginfo(true);
@@ -219,7 +222,7 @@ pub fn handle_signals() {
         unsafe {
             *(sp as *mut SigInfo) = info;
         }
-        trap_frame.regs.a1 = sp;
+        trap_frame.set_param1(sp);
 
         // 接下来存储ucontext
         sp = (sp - core::mem::size_of::<SignalUserContext>()) & !0xf;
@@ -228,9 +231,9 @@ pub fn handle_signals() {
         unsafe {
             *(sp as *mut SignalUserContext) = ucontext;
         }
-        trap_frame.regs.a2 = sp;
+        trap_frame.set_param2(sp);
     }
-    trap_frame.regs.sp = sp;
+    trap_frame.set_user_sp(sp);
     drop(signal_handler);
     drop(signal_modules);
 }
@@ -243,7 +246,7 @@ pub fn signal_return() -> isize {
         // 说明确实存在着信号处理函数的trap上下文
         // 此时内核栈上存储的是调用信号处理前的trap上下文
         let trap_frame = current_task().get_first_trap_frame();
-        unsafe { (*trap_frame).regs.a0 as isize }
+        unsafe { TrapFrame::ret_from_raw(trap_frame) as isize }
     } else {
         // 没有进行信号处理，但是调用了sig_return
         // 此时直接返回-1
