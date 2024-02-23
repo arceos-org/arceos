@@ -13,7 +13,7 @@ use page_table_entry::MappingFlags;
 #[def_interface]
 pub trait TrapHandler {
     /// Handles interrupt requests for the given IRQ number.
-    fn handle_irq(irq_num: usize);
+    fn handle_irq(irq_num: usize, from_user: bool);
     // more e.g.: handle_page_fault();
 
     // 需要分离用户态使用
@@ -30,8 +30,8 @@ pub trait TrapHandler {
 
 /// Call the external IRQ handler.
 #[allow(dead_code)]
-pub(crate) fn handle_irq_extern(irq_num: usize) {
-    call_interface!(TrapHandler::handle_irq, irq_num);
+pub(crate) fn handle_irq_extern(irq_num: usize, from_user: bool) {
+    call_interface!(TrapHandler::handle_irq, irq_num, from_user);
 }
 
 #[allow(dead_code)]

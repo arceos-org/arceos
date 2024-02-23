@@ -41,7 +41,7 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
     axfs_ramfs::INTERRUPT.lock().record(scause.code());
     match scause.cause() {
         Trap::Exception(E::Breakpoint) => handle_breakpoint(&mut tf.sepc),
-        Trap::Interrupt(_) => crate::trap::handle_irq_extern(scause.bits()),
+        Trap::Interrupt(_) => crate::trap::handle_irq_extern(scause.bits(), from_user),
         #[cfg(feature = "monolithic")]
         Trap::Exception(E::UserEnvCall) => {
             enable_irqs();
