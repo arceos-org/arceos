@@ -311,6 +311,16 @@ pub fn syscall_prlimit64(
     Ok(0)
 }
 
+/// not support
+pub fn syscall_getpgid() -> SyscallResult {
+    Ok(0)
+}
+
+pub fn syscall_setpgid(pgid: usize) -> SyscallResult {
+    info!("not support setpgid, try to set {}", pgid);
+    Ok(0)
+}
+
 /// 当前不涉及多核情况
 pub fn syscall_getpid() -> SyscallResult {
     Ok(current_process().pid() as isize)

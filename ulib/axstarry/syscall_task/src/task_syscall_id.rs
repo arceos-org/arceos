@@ -23,6 +23,8 @@ pub enum TaskSyscallId {
     SCHED_GETSCHEDULER = 120,
     SCHED_SETAFFINITY = 122,
     SCHED_GETAFFINITY = 123,
+    SETPGID = 154,
+    GETPGID = 155,
     SETSID = 157,
     GETRUSAGE = 165,
     UMASK = 166,
