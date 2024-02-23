@@ -6,7 +6,7 @@ use alloc::vec::Vec;
 use alloc::{collections::BTreeMap, string::String};
 use axerrno::{AxError, AxResult};
 use axfs::api::{FileIO, OpenFlags};
-use axhal::arch::{write_page_table_root, TrapFrame};
+use axhal::arch::{write_page_table_root0, TrapFrame};
 use axhal::mem::{phys_to_virt, VirtAddr};
 use axhal::KERNEL_PROCESS_ID;
 use axlog::{debug, error};
@@ -153,7 +153,8 @@ impl Process {
         let page_table_token = memory_set.page_table_token();
         if page_table_token != 0 {
             unsafe {
-                write_page_table_root(page_table_token.into());
+                write_page_table_root0(page_table_token.into());
+                #[cfg(target_arch = "riscv64")]
                 riscv::register::sstatus::set_sum();
             };
         }
@@ -252,9 +253,7 @@ impl Process {
         // 不是直接删除原有地址空间，否则构建成本较高。
         self.memory_set.lock().unmap_user_areas();
         // 清空用户堆，重置堆顶
-        unsafe {
-            riscv::asm::sfence_vma_all();
-        }
+        axhal::arch::flush_tlb(None);
 
         // 关闭 `CLOEXEC` 的文件
         // inner.fd_manager.close_on_exec();
@@ -295,10 +294,8 @@ impl Process {
             self.memory_set.lock().page_table_token()
         };
         if page_table_token != 0 {
-            // axhal::arch::write_page_table_root(page_table_token.into());
             unsafe {
-                write_page_table_root(page_table_token.into());
-                riscv::asm::sfence_vma_all();
+                write_page_table_root0(page_table_token.into());
             };
             // 清空用户堆，重置堆顶
         }
@@ -528,6 +525,7 @@ impl Process {
         if flags.contains(CloneFlags::CLONE_SETTLS) {
             trap_frame.regs.tp = tls;
         }
+
         // 设置用户栈
         // 若给定了用户栈，则使用给定的用户栈
         // 若没有给定用户栈，则使用当前用户栈

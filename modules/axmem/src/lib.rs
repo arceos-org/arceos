@@ -14,7 +14,6 @@ use core::{
     sync::atomic::{AtomicI32, Ordering},
 };
 use page_table_entry::GenericPTE;
-use riscv::asm::sfence_vma_all;
 use shared::SharedMem;
 use spinlock::SpinNoIrq;
 #[macro_use]
@@ -479,7 +478,7 @@ impl MemorySet {
 
             self.new_region(start, size, flags, None, backend);
 
-            unsafe { riscv::asm::sfence_vma_all() };
+            axhal::arch::flush_tlb(None);
 
             start.as_usize() as isize
         } else {
@@ -593,9 +592,7 @@ impl MemorySet {
 
             assert!(self.owned_mem.insert(area.vaddr.into(), area).is_none());
         }
-        unsafe {
-            sfence_vma_all();
-        }
+        axhal::arch::flush_tlb(None);
     }
 
     /// It will map newly allocated page in the page table. You need to flush TLB after this.
@@ -613,9 +610,8 @@ impl MemorySet {
             }
             None => {
                 error!(
-                    "Page fault address {:?} not found in memory set sepc: {:X?}",
-                    addr,
-                    riscv::register::sepc::read()
+                    "Page fault address {:?} not found in memory set ",
+                    addr
                 );
                 Err(AxError::BadAddress)
             }

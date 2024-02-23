@@ -64,6 +64,8 @@ pub unsafe fn write_page_table_root(root_paddr: PhysAddr) {
     }
 }
 
+pub use self::write_page_table_root as write_page_table_root0;
+
 /// Flushes the TLB.
 ///
 /// If `vaddr` is [`None`], flushes the entire TLB. Otherwise, flushes the TLB
