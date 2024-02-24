@@ -33,6 +33,7 @@ alloc = ["arceos_api/alloc", "axfeat/alloc", "axio/alloc"]
 alloc-tlsf = ["axfeat/alloc-tlsf"]
 alloc-slab = ["axfeat/alloc-slab"]
 alloc-buddy = ["axfeat/alloc-buddy"]
+alloc-new = ["axfeat/alloc-new"]
 paging = ["axfeat/paging"]
 tls = ["axfeat/tls"]
 

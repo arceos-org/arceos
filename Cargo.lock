@@ -40,6 +40,7 @@ dependencies = [
  "bitmap-allocator",
  "buddy_system_allocator",
  "criterion",
+ "linked_list_allocator",
  "rand",
  "rlsf",
  "slab_allocator",
@@ -1224,6 +1225,15 @@ name = "linked_list"
 version = "0.1.0"
 
 [[package]]
+name = "linked_list_allocator"
+version = "0.10.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9afa463f5405ee81cdb9cc2baf37e08ec7e4c8209442b5d72c04cfb2cd6e6286"
+dependencies = [
+ "spinning_top",
+]
+
+[[package]]
 name = "linux-raw-sys"
 version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1766,6 +1776,15 @@ version = "0.1.0"
 dependencies = [
  "cfg-if",
  "kernel_guard",
+]
+
+[[package]]
+name = "spinning_top"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5b9eb1a2f4c41445a3a0ff9abc5221c5fcd28e1f13cd7c0397706f9ac938ddb0"
+dependencies = [
+ "lock_api",
 ]
 
 [[package]]

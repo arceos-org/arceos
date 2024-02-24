@@ -31,6 +31,11 @@ mod tlsf;
 #[cfg(feature = "tlsf")]
 pub use tlsf::TlsfByteAllocator;
 
+#[cfg(feature = "new")]
+mod linked_list;
+#[cfg(feature = "new")]
+pub use linked_list::LinkedListByteAllocator;
+
 use core::alloc::Layout;
 use core::ptr::NonNull;
 

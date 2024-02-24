@@ -14,6 +14,7 @@ default = ["tlsf"]
 tlsf = ["allocator/tlsf"]
 slab = ["allocator/slab"]
 buddy = ["allocator/buddy"]
+new = ["allocator/new"]
 
 [dependencies]
 log = "0.4"
