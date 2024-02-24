@@ -69,6 +69,7 @@ log-level-debug = ["axfeat/log-level-debug"]
 log-level-trace = ["axfeat/log-level-trace"]
 
 [dependencies]
+hashbrown = "0.14.3"
 axfeat = { path = "../../api/axfeat" }
 arceos_api = { path = "../../api/arceos_api" }
 axio = { path = "../../crates/axio" }
