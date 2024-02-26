@@ -200,7 +200,7 @@ pub fn handle_page_fault(addr: VirtAddr, flags: MappingFlags) {
         .handle_page_fault(addr, flags)
         .is_ok()
     {
-        unsafe { riscv::asm::sfence_vma_all() };
+        axhal::arch::flush_tlb(None);
     } else {
         #[cfg(feature = "signal")]
         let _ = send_signal_to_thread(current().id().as_u64() as isize, SignalNo::SIGSEGV as isize);

@@ -254,7 +254,7 @@ impl AxRunQueue {
             {
                 let page_table_token = next_task.page_table_token;
                 if page_table_token != 0 {
-                    axhal::arch::write_page_table_root(page_table_token.into());
+                    axhal::arch::write_page_table_root0(page_table_token.into());
                 }
             }
 

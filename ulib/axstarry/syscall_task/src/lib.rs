@@ -32,6 +32,8 @@ pub fn task_syscall(syscall_id: task_syscall_id::TaskSyscallId, args: [usize; 6]
         TIMES => syscall_time(args[0] as *mut TMS),
         UNAME => syscall_uname(args[0] as *mut UtsName),
         GETTIMEOFDAY => syscall_get_time_of_day(args[0] as *mut TimeVal),
+        SETPGID => syscall_setpgid(args[0]),
+        GETPGID => syscall_getpgid(),
         GETPID => syscall_getpid(),
         GETPPID => syscall_getppid(),
         WAIT4 => syscall_wait4(

@@ -6,15 +6,19 @@ struct TrapHandlerImpl;
 
 #[crate_interface::impl_interface]
 impl axhal::trap::TrapHandler for TrapHandlerImpl {
-    fn handle_irq(_irq_num: usize) {
+    fn handle_irq(_irq_num: usize, from_user: bool) {
         #[cfg(feature = "irq")]
         {
             let guard = kernel_guard::NoPreempt::new();
             // trap进来，统计时间信息
             // 只有当trap是来自用户态才进行统计
-            axprocess::time_stat_from_user_to_kernel();
+            if from_user {
+                axprocess::time_stat_from_user_to_kernel();
+            }
             axhal::irq::dispatch_irq(_irq_num);
-            axprocess::time_stat_from_kernel_to_user();
+            if from_user {
+                axprocess::time_stat_from_kernel_to_user();
+            }
             drop(guard); // rescheduling may occur when preemption is re-enabled.
         }
     }
@@ -37,7 +41,7 @@ impl axhal::trap::TrapHandler for TrapHandlerImpl {
         if addr.as_usize() == axsignal::SIGNAL_RETURN_TRAP {
             use syscall_task::syscall_sigreturn;
             // 说明是信号执行完毕，此时应当执行sig return
-            tf.regs.a0 = deal_result(syscall_sigreturn()) as usize;
+            tf.set_ret_code(deal_result(syscall_sigreturn()) as usize);
             return;
         }
         handle_page_fault(addr, flags);

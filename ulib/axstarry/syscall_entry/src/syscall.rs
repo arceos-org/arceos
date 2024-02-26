@@ -1,4 +1,39 @@
 use syscall_utils::deal_result;
+use alloc::format;
+use alloc::string::String;
+
+pub fn syscall_name(syscall_id: usize) -> String {
+    let name = loop {
+        {
+            if let Ok(syscall_num) = syscall_net::NetSyscallId::try_from(syscall_id) {
+                break format!("{:?}", syscall_num);
+            }
+        }
+
+        {
+            if let Ok(syscall_num) = syscall_mem::MemSyscallId::try_from(syscall_id) {
+                break format!("{:?}", syscall_num);
+            }
+        }
+
+        {
+            if let Ok(syscall_num) = syscall_fs::FsSyscallId::try_from(syscall_id) {
+                break format!("{:?}", syscall_num);
+            }
+        }
+
+
+        {
+            if let Ok(syscall_num) = syscall_task::TaskSyscallId::try_from(syscall_id) {
+                break format!("{:?}", syscall_num);
+            }
+        }
+
+        panic!("unknown syscall id: {}", syscall_id);
+    };
+
+    name
+}
 
 #[no_mangle]
 pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
@@ -38,6 +73,6 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
     };
 
     let ans = deal_result(ans);
-    axlog::info!("syscall: {} -> {}", syscall_id, ans);
+    axlog::info!("syscall: {} -> {}", syscall_name(syscall_id), ans);
     ans
 }
