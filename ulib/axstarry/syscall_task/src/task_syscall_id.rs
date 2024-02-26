@@ -49,6 +49,7 @@ pub enum TaskSyscallId {
     UNAME = 160,
     GETTIMEOFDAY = 169,
     PRLIMIT64 = 261,
+    VFORK = 435,        // equal to clone3
     // 信号模块
     KILL = 129,
     TKILL = 130,

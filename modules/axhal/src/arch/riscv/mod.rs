@@ -3,6 +3,7 @@ mod macros;
 
 mod context;
 mod trap;
+pub use trap::first_into_user;
 
 pub use self::context::{GeneralRegisters, TaskContext, TrapFrame};
 use memory_addr::{PhysAddr, VirtAddr};

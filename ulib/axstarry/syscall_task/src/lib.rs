@@ -139,6 +139,7 @@ pub fn task_syscall(syscall_id: task_syscall_id::TaskSyscallId, args: [usize; 6]
         SETPGID => syscall_setpgid(),
         #[cfg(target_arch = "x86_64")]
         ALARM => Ok(0),
+        #[cfg(target_arch = "x86_64")]
         RSEQ => Ok(0),
         #[allow(unused)]
         _ => {
