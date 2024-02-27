@@ -417,7 +417,7 @@ pub fn syscall_setsid() -> SyscallResult {
 
 /// arch_prc
 #[cfg(target_arch = "x86_64")]
-pub fn syscall_arch_prctl(code: usize, addr: usize) -> SyscallResult {
+pub fn syscall_arch_prctl(code: usize, addr: *mut usize) -> SyscallResult {
     /*
     #define ARCH_SET_GS			0x1001
     #define ARCH_SET_FS			0x1002
@@ -428,15 +428,22 @@ pub fn syscall_arch_prctl(code: usize, addr: usize) -> SyscallResult {
         0x1002 => {
             #[cfg(target_arch = "x86_64")]
             unsafe {
-                axhal::arch::write_thread_pointer(addr);
+                axhal::arch::write_thread_pointer(*addr as usize);
                 // *(read_thread_pointer() as *mut usize) = addr;
             }
             Ok(0)
         }
-        0x1001 | 0x1003 | 0x1004 => todo!(),
+        0x1003 => {
+            #[cfg(target_arch = "x86_64")]
+            unsafe {
+                *addr = *(axhal::arch::read_thread_pointer() as *mut usize);
+            }
+            Ok(0)
+        }
+        0x1001 | 0x1004 => todo!(),
         _ => Err(SyscallError::EINVAL)
     }
-    // Ok(0)
+    //Ok(0)
 }
 
 pub fn syscall_fork() -> SyscallResult {

@@ -313,6 +313,7 @@ pub const OSTRAIN_TESTCASES: &[&str] = &[
 pub const SDCARD_TESTCASES: &[&str] = &[
     // "busybox sh",
     "./MediaServer -h",
+    // "./arch_prctl",
     // "busybox sh ./test_all.sh",
     // "./riscv64-linux-musl-native/bin/riscv64-linux-musl-gcc ./hello.c -static",
     // "./a.out",
