@@ -997,6 +997,7 @@ name = "elf_parser"
 version = "0.1.0"
 dependencies = [
  "axerrno",
+ "cfg-if",
  "log",
  "memory_addr",
  "page_table_entry",

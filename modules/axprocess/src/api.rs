@@ -1,4 +1,6 @@
 use core::ops::Deref;
+use core::ptr::copy_nonoverlapping;
+use core::str::from_utf8;
 extern crate alloc;
 use alloc::sync::Arc;
 use alloc::{
@@ -6,6 +8,7 @@ use alloc::{
     vec,
     vec::Vec,
 };
+use axconfig::{MAX_USER_HEAP_SIZE, MAX_USER_STACK_SIZE, USER_HEAP_BASE, USER_STACK_TOP};
 use axerrno::{AxError, AxResult};
 use axhal::arch::flush_tlb;
 use axhal::mem::VirtAddr;
@@ -17,11 +20,12 @@ use axmem::MemorySet;
 use axsignal::signal_no::SignalNo;
 use axsync::Mutex;
 use axtask::{current, yield_now, CurrentTask, TaskId, TaskState, IDLE_TASK, RUN_QUEUE};
-use elf_parser::{load_elf, PathParser};
+use elf_parser::{get_app_stack_region, get_auxv_vector, parse_elf};
+use xmas_elf::program::SegmentData;
 
 use crate::flags::WaitStatus;
 use crate::futex::clear_wait;
-use crate::link::{real_path, FilePath};
+use crate::link::real_path;
 use crate::process::{Process, PID2PC, TID2TASK};
 #[cfg(feature = "signal")]
 use crate::signal::{send_signal_to_process, send_signal_to_thread};
@@ -165,31 +169,80 @@ pub fn load_app(
         // exit(0)
         return Err(AxError::NotFound);
     };
+    let elf = xmas_elf::ElfFile::new(&elf_data).expect("Error parsing app ELF file.");
     debug!("app elf data length: {}", elf_data.len());
+    if let Some(interp) = elf
+        .program_iter()
+        .find(|ph| ph.get_type() == Ok(xmas_elf::program::Type::Interp))
+    {
+        let interp = match interp.get_data(&elf) {
+            Ok(SegmentData::Undefined(data)) => data,
+            _ => panic!("Invalid data in Interp Elf Program Header"),
+        };
 
-    struct ELFReader;
-    impl PathParser for ELFReader {
-        fn read(&self, _path: &str) -> AxResult<Vec<u8>> {
-            axfs::api::read(_path)
-        }
-        fn real_path(&self, path: &str) -> AxResult<String> {
-            let interp_path = FilePath::new(path)?;
-            let real_interp_path = real_path(&(interp_path.path().to_string()));
-            Ok(real_interp_path)
-        }
+        let interp_path = from_utf8(interp).expect("Interpreter path isn't valid UTF-8");
+        // remove trailing '\0'
+        let interp_path = interp_path.trim_matches(char::from(0)).to_string();
+        let real_interp_path = real_path(&interp_path);
+        args = [vec![real_interp_path.clone()], args].concat();
+        return load_app(real_interp_path, args, envs, memory_set);
     }
-    let reader = ELFReader;
-    let heap_loc: (VirtAddr, usize) = (
-        axconfig::USER_HEAP_BASE.into(),
-        axconfig::MAX_USER_HEAP_SIZE,
+
+    let elf_base_addr = Some(0x400_0000);
+    axlog::warn!("The elf base addr may be different in different arch!");
+    let (entry, segments, relocate_pairs) = parse_elf(&elf, elf_base_addr);
+    for segment in segments {
+        memory_set.new_region(
+            segment.vaddr,
+            segment.size,
+            segment.flags,
+            segment.data.as_deref(),
+            None,
+        );
+    }
+
+    for relocate_pair in relocate_pairs {
+        let src: usize = relocate_pair.src.into();
+        let dst: usize = relocate_pair.dst.into();
+        let count = relocate_pair.count;
+        unsafe { copy_nonoverlapping(src.to_ne_bytes().as_ptr(), dst as *mut u8, count) }
+    }
+
+    // Now map the stack and the heap
+    let heap_start = VirtAddr::from(USER_HEAP_BASE);
+    let heap_data = [0 as u8].repeat(MAX_USER_HEAP_SIZE);
+    memory_set.new_region(
+        heap_start,
+        MAX_USER_HEAP_SIZE,
+        MappingFlags::READ | MappingFlags::WRITE | MappingFlags::USER,
+        Some(&heap_data),
+        None,
     );
-    let stack_loc: (VirtAddr, usize) = (
-        axconfig::USER_STACK_TOP.into(),
-        axconfig::MAX_USER_STACK_SIZE,
+    info!(
+        "[new region] user heap: [{:?}, {:?})",
+        heap_start,
+        heap_start + MAX_USER_HEAP_SIZE
     );
-    load_elf(
-        elf_data, args, envs, memory_set, &reader, heap_loc, stack_loc,
-    )
+
+    let auxv = get_auxv_vector(&elf, elf_base_addr);
+
+    let stack_top = VirtAddr::from(USER_STACK_TOP);
+    let stack_size = MAX_USER_STACK_SIZE;
+
+    let (stack_data, stack_bottom) = get_app_stack_region(args, envs, auxv, stack_top, stack_size);
+    memory_set.new_region(
+        stack_top,
+        stack_size,
+        MappingFlags::USER | MappingFlags::READ | MappingFlags::WRITE,
+        Some(&stack_data),
+        None,
+    );
+    info!(
+        "[new region] user stack: [{:?}, {:?})",
+        stack_top,
+        stack_top + stack_size
+    );
+    Ok((entry.into(), stack_bottom.into(), heap_start.into()))
 }
 
 /// 当从内核态到用户态时，统计对应进程的时间信息

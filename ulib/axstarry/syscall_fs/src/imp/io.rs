@@ -75,10 +75,7 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> SyscallResult {
     // - ready to accept new connections
 
     match file.read(buf) {
-        Ok(len) => {
-            info!("buf: {:?}, len: {}", buf, len);
-            Ok(len as isize)
-        }
+        Ok(len) => Ok(len as isize),
         Err(AxError::WouldBlock) => Err(SyscallError::EAGAIN),
         Err(_) => Err(SyscallError::EPERM),
     }

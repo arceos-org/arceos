@@ -11,3 +11,4 @@ page_table_entry = { path = "../page_table_entry" }
 xmas-elf = "0.9.0"
 memory_addr = { path = "../memory_addr" }
 log = "0.4"
+cfg-if = "1.0"
