@@ -10,6 +10,7 @@ repository = "https://github.com/rcore-os/arceos/tree/main/crates/page_table_ent
 documentation = "https://rcore-os.github.io/arceos/page_table_entry/index.html"
 
 [dependencies]
+log = "0.4"
 bitflags = "2.2"
 memory_addr = { path = "../memory_addr" }
 aarch64-cpu = "9.3" # TODO: put it in [target.'cfg(target_arch = "aarch64")'.dependencies]

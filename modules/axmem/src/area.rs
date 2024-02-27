@@ -31,13 +31,14 @@ impl MapArea {
         backend: Option<MemBackend>,
         page_table: &mut PageTable,
     ) -> Self {
+
         let mut pages = Vec::with_capacity(num_pages);
         for _ in 0..num_pages {
             pages.push(None);
         }
 
         let _ = page_table
-            .map_fault_region(start, num_pages * PAGE_SIZE_4K)
+            .map_fault_region(start, num_pages * PAGE_SIZE_4K, flags)
             .unwrap();
 
         Self {
@@ -458,7 +459,7 @@ impl MapArea {
                             Some(new_page)
                         }
                         None => {
-                            let _ = page_table.map_fault(vaddr, PageSize::Size4K).unwrap();
+                            let _ = page_table.map_fault(vaddr, PageSize::Size4K, self.flags).unwrap();
                             None
                         }
                     }
