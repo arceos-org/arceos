@@ -38,7 +38,7 @@ impl Pipe {
     }
 }
 
-const RING_BUFFER_SIZE: usize = 0x40_000;
+const RING_BUFFER_SIZE: usize = 0x4000;
 
 #[derive(Copy, Clone, PartialEq)]
 enum RingBufferStatus {
@@ -65,9 +65,11 @@ impl PipeRingBuffer {
             write_end: None,
         }
     }
+
     pub fn set_write_end(&mut self, write_end: &Arc<Pipe>) {
         self.write_end = Some(Arc::downgrade(write_end));
     }
+
     pub fn write_byte(&mut self, byte: u8) {
         self.status = RingBufferStatus::Normal;
         self.arr[self.tail] = byte;
