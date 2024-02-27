@@ -27,7 +27,6 @@ pub fn task_syscall(syscall_id: task_syscall_id::TaskSyscallId, args: [usize; 6]
             args[2] as *const usize,
         ),
         CLONE => syscall_clone(args[0], args[1], args[2], args[3], args[4]),
-        VFORK => syscall_vfork(),
         NANO_SLEEP => syscall_sleep(args[0] as *const TimeSecs, args[1] as *mut TimeSecs),
         SCHED_YIELD => syscall_yield(),
         TIMES => syscall_time(args[0] as *mut TMS),
@@ -104,7 +103,6 @@ pub fn task_syscall(syscall_id: task_syscall_id::TaskSyscallId, args: [usize; 6]
         // 不做处理即可
         SIGTIMEDWAIT => Ok(0),
         SYSLOG => Ok(0),
-        PRCTL => syscall_prctl(args[0], args[1] as *mut u8),
         MADVICE => Ok(0),
         #[cfg(feature = "schedule")]
         SCHED_SETAFFINITY => Ok(0),
@@ -129,6 +127,10 @@ pub fn task_syscall(syscall_id: task_syscall_id::TaskSyscallId, args: [usize; 6]
         ),
         SOCKETPAIR => Err(SyscallError::EAFNOSUPPORT),
         // syscall below just for x86_64 
+        #[cfg(target_arch = "x86_64")]
+        PRCTL => syscall_prctl(args[0], args[1] as *mut u8),
+        #[cfg(target_arch = "x86_64")]
+        VFORK => syscall_vfork(),
         #[cfg(target_arch = "x86_64")]
         ARCH_PRCTL => syscall_arch_prctl(args[0], args[1]),
         #[cfg(target_arch = "x86_64")]
