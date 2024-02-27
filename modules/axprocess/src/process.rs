@@ -18,7 +18,7 @@ use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, Ordering};
 use crate::fd_manager::FdManager;
 use crate::flags::CloneFlags;
 use crate::futex::FutexRobustList;
-use crate::load_app;
+use crate::{load_app, yield_now_task};
 #[cfg(feature = "signal")]
 use crate::signal::SignalModule;
 use crate::stdio::{Stderr, Stdin, Stdout};
@@ -65,6 +65,8 @@ pub struct Process {
     /// 用来存储线程对共享变量的使用地址
     /// 具体使用交给了用户空间
     pub robust_list: Mutex<BTreeMap<u64, FutexRobustList>>,
+
+    pub blocked_by_vfork: Mutex<bool>,
 }
 
 impl Process {
@@ -112,6 +114,10 @@ impl Process {
         self.heap_bottom.store(bottom, Ordering::Release)
     }
 
+    pub fn set_vfork_block(&self, value: bool) {
+        *self.blocked_by_vfork.lock() = value;
+    }
+
     /// 若进程运行完成，则获取其返回码
     /// 若正在运行（可能上锁或没有上锁），则返回None
     pub fn get_code_if_exit(&self) -> Option<i32> {
@@ -144,6 +150,7 @@ impl Process {
             #[cfg(feature = "signal")]
             signal_modules: Mutex::new(BTreeMap::new()),
             robust_list: Mutex::new(BTreeMap::new()),
+            blocked_by_vfork: Mutex::new(false),
         }
     }
     /// 根据给定参数创建一个新的进程，作为应用程序初始进程
@@ -169,6 +176,7 @@ impl Process {
             "COLLECT_GCC_OPTIONS='-march=rv64gc' '-mabi=lp64d' '-march=rv64imafdc' '-dumpdir' 'a.'".into(),
             "LIBRARY_PATH=/lib/".into(),
             "LD_LIBRARY_PATH=/lib/".into(),
+            "LD_DEBUG=files".into(),
         ];
         let (entry, user_stack_bottom, heap_bottom) =
             if let Ok(ans) = load_app(path.clone(), args, envs, &mut memory_set) {
@@ -242,11 +250,40 @@ impl Process {
     }
 }
 
+struct VforkHandler;
+
+use axtask::{VforkCheck, VforkSet};
+
+#[crate_interface::impl_interface]
+impl VforkCheck for VforkHandler {
+    fn check_vfork(&self, process_id: u64) -> bool {
+        let pid2pc = PID2PC.lock();
+        match pid2pc.get(&process_id) {
+            Some(process) => process.blocked_by_vfork.lock().clone(),
+            None => panic!("the process_id {} will be checked nonexists", process_id)
+        }
+    }
+}
+
+#[crate_interface::impl_interface]
+impl VforkSet for VforkHandler {
+    /// set parent process's vfork to false
+    fn vfork_set(&self, process_id: u64, status: bool) {
+        let pid2pc = PID2PC.lock();
+        // 如果 process_id 对应的进程存在，则设置阻塞状态
+        if let Some(process) = pid2pc.get(&process_id) {
+            process.set_vfork_block(status)
+        }
+    }
+}
+
 impl Process {
     /// 将当前进程替换为指定的用户程序
     /// args为传入的参数
     /// 任务的统计时间会被重置
     pub fn exec(&self, name: String, args: Vec<String>, envs: Vec<String>) -> AxResult<()> {
+        let parent_pid = self.get_parent();
+        VforkHandler.vfork_set(parent_pid, false);
         // 首先要处理原先进程的资源
         // 处理分配的页帧
         // 之后加入额外的东西之后再处理其他的包括信号等因素
@@ -265,8 +302,8 @@ impl Process {
             if task.id() == current_task.id() {
                 // FIXME: This will reset tls forcefully
                 #[cfg(target_arch = "x86_64")]
-                unsafe { 
-                    task.set_tls_force(0); 
+                unsafe {
+                    task.set_tls_force(0);
                     axhal::arch::write_thread_pointer(0);
                 }
                 tasks.push(task);
@@ -279,6 +316,7 @@ impl Process {
         current_task.set_leader(true);
         // 重置统计时间
         current_task.time_stat_clear();
+        current_task.set_name(name.split('/').last().unwrap());
         assert!(tasks.len() == 1);
         drop(tasks);
         let args = if args.len() == 0 {
@@ -376,7 +414,7 @@ impl Process {
         };
         let new_task = TaskInner::new(
             || {},
-            String::new(),
+            String::from(self.tasks.lock()[0].name().split('/').last().unwrap()),
             axconfig::TASK_STACK_SIZE,
             process_id,
             new_memory_set.lock().page_table_token(),
@@ -559,6 +597,11 @@ impl Process {
         new_task.set_trap_context(trap_frame);
         new_task.set_trap_in_kernel_stack();
         RUN_QUEUE.lock().add_task(new_task);
+        // 判断是否为VFORK
+        if flags.contains(CloneFlags::CLONE_VFORK) {
+            self.set_vfork_block(true);
+            yield_now_task(); 
+        }
         Ok(return_id)
     }
 }

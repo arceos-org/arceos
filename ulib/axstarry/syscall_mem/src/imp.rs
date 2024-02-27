@@ -48,10 +48,6 @@ pub fn syscall_mmap(
     use axlog::debug;
     use axmem::MemBackend;
 
-    debug!(
-        "mmap start={:x} len={:x} prot=[{:#?}] flags=[{:#?}] fd={} offset={:x}",
-        start, len, prot, flags, fd, offset
-    );
     let fixed = flags.contains(MMAPFlags::MAP_FIXED);
     // try to map to NULL
     if fixed && start == 0 {

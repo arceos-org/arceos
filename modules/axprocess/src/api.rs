@@ -122,6 +122,9 @@ pub fn exit_current_task(exit_code: i32) -> ! {
             child.set_parent(KERNEL_PROCESS_ID);
             kernel_process.children.lock().push(Arc::clone(&child));
         }
+        if let Some(parent_process) = pid2pc.get(&process.get_parent()) {
+            parent_process.set_vfork_block(false);
+        }       
         pid2pc.remove(&process.pid());
         drop(pid2pc);
         drop(process);

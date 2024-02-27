@@ -38,4 +38,4 @@ timer-frequency = "4_000_000_000"   # 4.0GHz
 
 # Testcase 
 testcase-memory-start = "0x1_8000_0000"
-testcase-memory-size = "0x400_0000"    # 如果是要手动加载进来，认为镜像大小是64MB
+testcase-memory-size = "0x800_0000"    # 如果是要手动加载进来，认为镜像大小是128MB
