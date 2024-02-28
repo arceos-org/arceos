@@ -3,5 +3,4 @@ syscall_mem
 syscall_task
 futex
 signal
-img
 syscall_net
