@@ -188,27 +188,34 @@ fn kernel_main() -> ! {
     println!("[ML] Loaded! Executing the payload now\n");
     console().flush();
 
-    if cfg!(features = "enable_jtag_debug") {
-        println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-        println!("@ You're using a JTAG debug mirror. @");
-        println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-        println!("@ 1. open openocd, gdb              @");
-        println!("@ 2. target extended-remote :3333;  @");
-        println!("@ 3. set $pc=0x80000                @");
-        println!("@ 4. break rust_entry/others        @");
-        println!("@ 5. break $previous_addr           @");
-        println!("@ 6. delete 1                       @");
-        println!("@ 7. load                           @");
-        println!("@ 8. continue                       @");
-        println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+    #[cfg(feature = "enable_jtag_debug")]
+    print_jtag_info_and_wait_forever();
 
-        // wait for gdb connect
-        cpu::wait_forever()
-    } else {
-        // Use black magic to create a function pointer.
-        let kernel: fn() -> ! = unsafe { core::mem::transmute(kernel_addr) };
+    println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+    println!("@ You're using chainboot image    . @");
+    println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+    // Use black magic to create a function pointer.
+    let kernel: fn() -> ! = unsafe { core::mem::transmute(kernel_addr) };
 
-        // Jump to loaded kernel!
-        kernel()
-    }
+    // Jump to loaded kernel!
+    kernel()
+}
+
+#[cfg(feature = "enable_jtag_debug")]
+fn print_jtag_info_and_wait_forever() {
+    println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+    println!("@ You're using a JTAG debug image.  @");
+    println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+    println!("@ 1. open openocd, gdb              @");
+    println!("@ 2. target extended-remote :3333;  @");
+    println!("@ 3. set $pc=0x80000                @");
+    println!("@ 4. break rust_entry/others        @");
+    println!("@ 5. break $previous_addr           @");
+    println!("@ 6. delete 1                       @");
+    println!("@ 7. load                           @");
+    println!("@ 8. continue                       @");
+    println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+
+    // wait for gdb connect
+    cpu::wait_forever()
 }
