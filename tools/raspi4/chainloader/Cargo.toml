@@ -1,0 +1,33 @@
+[package]
+name = "mingo"
+version = "0.6.0"
+authors = ["Andre Richter <andre.o.richter@gmail.com>"]
+edition = "2021"
+
+[profile.release]
+lto = true
+
+[features]
+default = []
+bsp_rpi3 = ["tock-registers"]
+bsp_rpi4 = ["tock-registers"]
+enable_jtag_debug = []
+
+[[bin]]
+name = "kernel"
+path = "src/main.rs"
+
+##--------------------------------------------------------------------------------------------------
+## Dependencies
+##--------------------------------------------------------------------------------------------------
+
+[dependencies]
+
+# Optional dependencies
+tock-registers = { version = "0.8.x", default-features = false, features = ["register_types"], optional = true }
+
+# Platform specific dependencies
+[target.'cfg(target_arch = "aarch64")'.dependencies]
+aarch64-cpu = { version = "9.x.x" }
+
+[workspace]
