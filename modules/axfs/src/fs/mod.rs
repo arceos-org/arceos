@@ -3,6 +3,7 @@ cfg_if::cfg_if! {
         pub mod myfs;
     } else if #[cfg(feature = "fatfs")] {
         pub mod fatfs;
+        pub use fatfs::BLOCK_SIZE as FAT_BLOCK_SIZE;
     }
 }
 

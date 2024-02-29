@@ -31,6 +31,7 @@ mod fs;
 mod mounts;
 mod root;
 
+pub use fs::FAT_BLOCK_SIZE;
 pub mod api;
 pub mod fops;
 

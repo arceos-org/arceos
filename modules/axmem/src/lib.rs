@@ -20,8 +20,9 @@ use spinlock::SpinNoIrq;
 extern crate log;
 
 use axhal::{
+    arch::flush_tlb,
     mem::{memory_regions, phys_to_virt, PhysAddr, VirtAddr, PAGE_SIZE_4K},
-    paging::{MappingFlags, PageSize, PageTable}, arch::flush_tlb,
+    paging::{MappingFlags, PageSize, PageTable},
 };
 use xmas_elf::symbol_table::Entry;
 
@@ -30,6 +31,9 @@ pub(crate) const REL_PLT: u32 = 7;
 pub(crate) const REL_RELATIVE: u32 = 8;
 pub(crate) const R_RISCV_64: u32 = 2;
 pub(crate) const R_RISCV_RELATIVE: u32 = 3;
+
+// #[cfg(target_arch = "x86_64")]
+pub(crate) const R_X86_64_IRELATIVE: u32 = 37;
 
 pub(crate) const AT_PHDR: u8 = 3;
 pub(crate) const AT_PHENT: u8 = 4;
@@ -110,7 +114,7 @@ impl MemorySet {
         // Some elf will load ELF Header (offset == 0) to vaddr 0. In that case, base_addr will be added to all the LOAD.
         let (base_addr, elf_header_vaddr): (usize, usize) = if let Some(header) = elf
             .program_iter()
-            .find(|ph| ph.get_type() == Ok(xmas_elf::program::Type::Load) && ph.offset() == 0)
+            .find(|ph| ph.get_type() == Ok(xmas_elf::program::Type::Load))
         {
             // Loading ELF Header into memory.
             let vaddr = header.virtual_addr() as usize;
@@ -168,6 +172,9 @@ impl MemorySet {
         info!("[loader] base addr: 0x{:x}", base_addr);
 
         // Relocate .rela.dyn sections
+        // R_TYPE 与处理器架构有关，相关文档详见
+        // x86_64: https://gitlab.com/x86-psABIs/x86-64-ABI/-/jobs/artifacts/master/raw/x86-64-ABI/abi.pdf?job=build
+        // riscv64: https://d3s.mff.cuni.cz/files/teaching/nswi200/202324/doc/riscv-abi.pdf
         if let Some(rela_dyn) = elf.find_section_by_name(".rela.dyn") {
             let data = match rela_dyn.get_data(&elf) {
                 Ok(xmas_elf::sections::SectionData::Rela64(data)) => data,
@@ -216,12 +223,39 @@ impl MemorySet {
                             let value = base_addr + entry.get_addend() as usize;
                             let addr = base_addr + entry.get_offset() as usize;
 
-                            // info!(
-                            //     "write: {:#x} @ {:#x} type = {}",
-                            //     value,
-                            //     addr,
-                            //     entry.get_type() as usize
-                            // );
+                            info!(
+                                "write: {:#x} @ {:#x} type = {}",
+                                value,
+                                addr,
+                                entry.get_type() as usize
+                            );
+
+                            unsafe {
+                                copy_nonoverlapping(
+                                    value.to_ne_bytes().as_ptr(),
+                                    addr as *mut u8,
+                                    size_of::<usize>() / size_of::<u8>(),
+                                );
+                            }
+                        }
+                        // #[cfg(target_arch = "x86_64")]
+                        R_X86_64_IRELATIVE => {
+                            // TODO: 这里的 value 应当是调用 value_function() 得到的内容，但是会导致卡死
+                            // let value_function = base_addr + entry.get_addend() as usize;
+                            // // 值是在相应的R_X86_64_RELATIVE重定位结果地址处执行的无参数函数返回的程序地址
+                            // // 结果地址应当是 base + addend
+                            // // let value = unsafe {
+                            // //     core::mem::transmute::<_, fn() -> usize>(value_function)
+                            // // }();
+                            let value = 0 as usize;
+                            let addr = base_addr + entry.get_offset() as usize;
+
+                            info!(
+                                "write: {:#x} @ {:#x} type = {}",
+                                value,
+                                addr,
+                                entry.get_type() as usize
+                            );
 
                             unsafe {
                                 copy_nonoverlapping(
@@ -243,7 +277,7 @@ impl MemorySet {
                 Ok(xmas_elf::sections::SectionData::Rela64(data)) => data,
                 _ => panic!("Invalid data in .rela.plt section"),
             };
-            if elf.find_section_by_name(".dynsym").is_some(){
+            if elf.find_section_by_name(".dynsym").is_some() {
                 let dyn_sym_table = match elf
                     .find_section_by_name(".dynsym")
                     .expect("Dynamic Symbol Table not found for .rela.plt section")
@@ -289,7 +323,6 @@ impl MemorySet {
                     }
                 }
             }
-            
         }
 
         info!("Relocating done");
@@ -339,18 +372,13 @@ impl MemorySet {
                 &mut self.page_table,
             )
             .unwrap(),
-            None => {
-                match backend {
-                    Some(backend) => MapArea::new_lazy(vaddr, num_pages, flags, Some(backend), &mut self.page_table),
-                    None => MapArea::new_alloc(
-                        vaddr,
-                        num_pages,
-                        flags,
-                        None,
-                        None,
-                        &mut self.page_table,
-                    )
-                    .unwrap()
+            None => match backend {
+                Some(backend) => {
+                    MapArea::new_lazy(vaddr, num_pages, flags, Some(backend), &mut self.page_table)
+                }
+                None => {
+                    MapArea::new_alloc(vaddr, num_pages, flags, None, None, &mut self.page_table)
+                        .unwrap()
                 }
             },
             // None => MapArea::new_lazy(vaddr, num_pages, flags, backend, &mut self.page_table)
@@ -562,13 +590,13 @@ impl MemorySet {
         assert!(end.is_aligned_4k());
 
         // 在更新flags前需要保证该区域的所有页都已经分配了物理内存
-        // 否则会因为flag被更新，导致本应该是page fault 而出现了fault
+        // 否则会因为flag被更新，导致本应该是 page fault 而出现了fault
+        flush_tlb(None);
         self.manual_alloc_range_for_lazy(start, end - 1).unwrap();
         // NOTE: There will be new areas but all old aree's start address won't change. But we
         // can't iterating through `value_mut()` while `insert()` to BTree at the same time, so we
         // `drain_filter()` out the overlapped areas first.
         let mut overlapped_area: Vec<(usize, MapArea)> = Vec::new();
-
         let mut prev_area: BTreeMap<usize, MapArea> = BTreeMap::new();
 
         for _ in 0..self.owned_mem.len() {
@@ -626,14 +654,13 @@ impl MemorySet {
                 Ok(())
             }
             None => {
-                #[cfg(target_arch="riscv64")]
+                #[cfg(target_arch = "riscv64")]
                 let sepc = riscv::register::sepc::read();
-                #[cfg(target_arch="x86_64")]
+                #[cfg(target_arch = "x86_64")]
                 let sepc = "not supported now for x86";
                 error!(
                     "Page fault address {:?} not found in memory set sepc: {:X?}",
-                    addr,
-                    sepc
+                    addr, sepc
                 );
                 Err(AxError::BadAddress)
             }
@@ -734,7 +761,9 @@ impl MemorySet {
             let entry = entry.unwrap().0;
             if !entry.is_present() {
                 // 若未分配物理页面，则手动为其分配一个页面，写入到对应页表中
-                area.handle_page_fault(addr, entry.flags(), &mut self.page_table);
+                if !area.handle_page_fault(addr, entry.flags(), &mut self.page_table) {
+                    return Err(AxError::BadAddress);
+                }
             }
             Ok(())
         } else {

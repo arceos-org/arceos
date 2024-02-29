@@ -1,15 +1,18 @@
-
 use core::arch::global_asm;
 
-use x86_64::{registers::{model_specific::{LStar, Star, SFMask, Efer, EferFlags, KernelGsBase}, rflags::RFlags}, VirtAddr};
+use x86_64::{
+    registers::{
+        model_specific::{Efer, EferFlags, KernelGsBase, LStar, SFMask, Star},
+        rflags::RFlags,
+    },
+    VirtAddr,
+};
 
 use crate::{arch::GdtStruct, trap::handle_syscall};
 
 use super::TrapFrame;
 
-global_asm!(
-    include_str!("syscall.S")
-);
+global_asm!(include_str!("syscall.S"));
 
 #[no_mangle]
 fn x86_syscall_handler(tf: &mut TrapFrame) {
@@ -38,7 +41,8 @@ pub fn init_syscall() {
         GdtStruct::UDATA_SELECTOR,
         GdtStruct::KCODE64_SELECTOR,
         GdtStruct::KDATA_SELECTOR,
-    ).unwrap();
+    )
+    .unwrap();
     SFMask::write(
         RFlags::TRAP_FLAG
             | RFlags::INTERRUPT_FLAG

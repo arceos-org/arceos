@@ -11,6 +11,7 @@ use axprocess::current_process;
 use axprocess::link::{create_link, deal_with_path, real_path, AT_FDCWD};
 use syscall_utils::{IoVec, SyscallError, SyscallResult};
 
+use crate::ctype::file::new_inode;
 use crate::ctype::pipe::make_pipe;
 use crate::ctype::{dir::new_dir, file::new_fd};
 /// 功能：从一个文件描述符中读取；
@@ -74,7 +75,10 @@ pub fn syscall_read(fd: usize, buf: *mut u8, count: usize) -> SyscallResult {
     // - ready to accept new connections
 
     match file.read(buf) {
-        Ok(len) => Ok(len as isize),
+        Ok(len) => {
+            info!("buf: {:?}, len: {}", buf, len);
+            Ok(len as isize)
+        }
         Err(AxError::WouldBlock) => Err(SyscallError::EAGAIN),
         Err(_) => Err(SyscallError::EPERM),
     }
@@ -318,12 +322,14 @@ pub fn syscall_openat(fd: usize, path: *const u8, flags: usize, _mode: u8) -> Sy
     };
     let process = current_process();
     let mut fd_table = process.fd_manager.fd_table.lock();
-    let fd_num = if let Ok(fd) = process.alloc_fd(&mut fd_table) {
+    let fd_num: usize = if let Ok(fd) = process.alloc_fd(&mut fd_table) {
         fd
     } else {
         return Err(SyscallError::EMFILE);
     };
     debug!("allocated fd_num: {}", fd_num);
+    // 分配 inode
+    new_inode(path.path().to_string()).unwrap();
     // 如果是DIR
     if path.is_dir() {
         debug!("open dir");
@@ -530,11 +536,7 @@ pub fn syscall_readlinkat(
 /// 如果buf为NULL，则返回符号链接文件的长度
 /// 如果buf不为NULL，则将符号链接文件的内容写入buf中
 /// 如果写入的内容超出了buf_size则直接截断
-pub fn syscall_readlink(
-    path: *const u8,
-    buf: *mut u8,
-    bufsiz: usize,
-) -> SyscallResult {
+pub fn syscall_readlink(path: *const u8, buf: *mut u8, bufsiz: usize) -> SyscallResult {
     syscall_readlinkat(AT_FDCWD, path, buf, bufsiz)
 }
 

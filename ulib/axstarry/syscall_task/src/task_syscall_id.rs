@@ -119,6 +119,7 @@ numeric_enum_macro::numeric_enum! {
         SIGPROCMASK = 14,
         SIGRETURN = 15,
         FORK = 57,
+        VFORK = 58,
         ALARM = 37,
     }
 }
