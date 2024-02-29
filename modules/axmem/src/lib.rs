@@ -25,14 +25,17 @@ use axhal::{
 };
 use xmas_elf::symbol_table::Entry;
 
-pub(crate) const REL_GOT: u32 = 6;
-pub(crate) const REL_PLT: u32 = 7;
-pub(crate) const REL_RELATIVE: u32 = 8;
+pub(crate) const R_X86_64_GLOB_DAT: u32 = 6;    /* Create GOT entry */
+pub(crate) const R_X86_64_JUMP_SLOT: u32 = 7;   /* Create PLT entry */
+pub(crate) const R_X86_64_RELATIVE: u32 = 8;    /* Adjust by program base */
+
 pub(crate) const R_RISCV_64: u32 = 2;
 pub(crate) const R_RISCV_RELATIVE: u32 = 3;
+pub(crate) const R_RISCV_JUMP_SLOT: u32 = 5;
 
-pub(crate) const R_AARCH64_RELATIVE: u32 = 0x403;
-pub(crate) const R_AARCH64_GLOBAL_DATA: u32 = 0x401;
+pub(crate) const R_AARCH64_GLOBAL_DATA: u32 = 1025;
+pub(crate) const R_AARCH64_JUMP_SLOT: u32 = 1026;
+pub(crate) const R_AARCH64_RELATIVE: u32 = 1027;
 
 pub(crate) const AT_PHDR: u8 = 3;
 pub(crate) const AT_PHENT: u8 = 4;
@@ -188,7 +191,8 @@ impl MemorySet {
                 info!("Relocating .rela.dyn");
                 for entry in data {
                     match entry.get_type() {
-                        REL_GOT | REL_PLT | R_RISCV_64 => {
+                        R_X86_64_GLOB_DAT | R_X86_64_JUMP_SLOT |
+                        R_RISCV_64 | R_AARCH64_GLOBAL_DATA| R_AARCH64_JUMP_SLOT => {
                             let dyn_sym = &dyn_sym_table[entry.get_symbol_table_index() as usize];
                             let sym_val = if dyn_sym.shndx() == 0 {
                                 let name = dyn_sym.get_name(&elf).unwrap();
@@ -200,7 +204,7 @@ impl MemorySet {
                             let value = sym_val + entry.get_addend() as usize;
                             let addr = base_addr + entry.get_offset() as usize;
 
-                            info!(
+                            debug!(
                                 "write: {:#x} @ {:#x} type = {}",
                                 value,
                                 addr,
@@ -215,16 +219,16 @@ impl MemorySet {
                                 );
                             }
                         }
-                        REL_RELATIVE | R_RISCV_RELATIVE | R_AARCH64_RELATIVE => {
+                        R_X86_64_RELATIVE | R_RISCV_RELATIVE | R_AARCH64_RELATIVE => { 
                             let value = base_addr + entry.get_addend() as usize;
                             let addr = base_addr + entry.get_offset() as usize;
 
-                            // info!(
-                            //     "write: {:#x} @ {:#x} type = {}",
-                            //     value,
-                            //     addr,
-                            //     entry.get_type() as usize
-                            // );
+                            debug!(
+                                 "write: {:#x} @ {:#x} type = {}",
+                                 value,
+                                 addr,
+                                 entry.get_type() as usize
+                            );
 
                             unsafe {
                                 copy_nonoverlapping(
@@ -260,7 +264,7 @@ impl MemorySet {
             info!("Relocating .rela.plt");
             for entry in data {
                 match entry.get_type() {
-                    5 => {
+                    R_RISCV_JUMP_SLOT | R_AARCH64_JUMP_SLOT => {
                         let dyn_sym = &dyn_sym_table[entry.get_symbol_table_index() as usize];
                         let sym_val = if dyn_sym.shndx() == 0 {
                             let name = dyn_sym.get_name(&elf).unwrap();

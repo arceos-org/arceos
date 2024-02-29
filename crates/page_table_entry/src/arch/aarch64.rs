@@ -127,8 +127,11 @@ impl From<DescriptorAttr> for MappingFlags {
             if !attr.contains(DescriptorAttr::UXN) {
                 flags |= Self::EXECUTE;
             }
-        } else if !attr.intersects(DescriptorAttr::PXN) {
-            flags |= Self::EXECUTE;
+        } else {
+            if !attr.intersects(DescriptorAttr::PXN) {
+                flags |= Self::EXECUTE;
+            }
+
             match attr.mem_attr() {
                 Some(MemAttr::Device) => flags |= Self::DEVICE,
                 Some(MemAttr::NormalNonCacheable) => flags |= Self::UNCACHED,
@@ -152,6 +155,7 @@ impl From<MappingFlags> for DescriptorAttr {
         if flags.contains(MappingFlags::READ) {
             attr |= Self::VALID;
         }
+
         if !flags.contains(MappingFlags::WRITE) {
             attr |= Self::AP_RO;
         }
