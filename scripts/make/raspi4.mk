@@ -23,8 +23,9 @@ ifeq ($(BSP),rpi4)
     OBJDUMP_BINARY    = aarch64-none-elf-objdump
     NM_BINARY         = aarch64-none-elf-nm
     READELF_BINARY    = aarch64-none-elf-readelf
-    OPENOCD_ARG       = -f /openocd/tcl/interface/ftdi/olimex-arm-usb-tiny-h.cfg -f /openocd/rpi4.cfg
-    JTAG_BOOT_IMAGE   = tools/raspi4/X1_JTAG_boot/jtag_boot_rpi4.img
+    # OPENOCD_ARG       = -f /openocd/tcl/interface/ftdi/olimex-arm-usb-tiny-h.cfg -f /openocd/rpi4.cfg
+    OPENOCD_ARG       = -f /openocd/tcl/interface/jlink.cfg -f /openocd/rpi4.cfg
+	JTAG_BOOT_IMAGE   := $(OUT_BIN)
     RUSTC_MISC_ARGS   = -C target-cpu=cortex-a72
 endif
 
