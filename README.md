@@ -38,6 +38,7 @@ make run
 ```shell
 # 构建镜像
 ./build_img.sh sdcard
+
 # 运行 Unikernel 架构内核
 make run
 
