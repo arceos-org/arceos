@@ -112,7 +112,7 @@ endif
 ##--------------------------------------------------------------------------------------------------
 .PHONY: all doc qemu chainboot clippy clean readelf objdump nm check
 
-all: $(KERNEL_BIN)
+all: clean $(KERNEL_BIN)
 
 ##------------------------------------------------------------------------------
 ## Save the configuration as a file, so make understands if it changed.
