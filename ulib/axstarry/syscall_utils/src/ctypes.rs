@@ -370,11 +370,12 @@ numeric_enum_macro::numeric_enum! {
 
 /// 目录项
 #[repr(C)]
+#[derive(Clone, Copy, Debug)]
 pub struct DirEnt {
     /// 索引结点号
     pub d_ino: u64,
     /// 到下一个dirent的偏移
-    pub d_off: i64,
+    pub d_off: u64,
     /// 当前dirent的长度
     pub d_reclen: u16,
     /// 文件类型
@@ -410,11 +411,23 @@ impl DirEnt {
         8 + 8 + 2 + 1
     }
     /// 设置定长部分
-    pub fn set_fixed_part(&mut self, ino: u64, _off: i64, reclen: usize, type_: DirEntType) {
+    pub fn set_fixed_part(&mut self, ino: u64, off: u64, reclen: usize, type_: DirEntType) {
         self.d_ino = ino;
-        self.d_off = -1;
+        self.d_off = off;
         self.d_reclen = reclen as u16;
         self.d_type = type_ as u8;
+    }
+}
+bitflags! {
+    /// sys_renameat2 用到的选项
+    pub struct RenameFlags: u32 {
+        const NONE = 0;
+        /// 不要替换目标位置的文件，如果预定位置已经有文件，不要删除它
+        const NOREPLACE = 1 << 0;
+        /// 交换原位置和目标位置的文件
+        const EXCHANGE = 1 << 1;
+        /// 替换后在原位置放一个 "whiteout" 类型对象，仅在一些文件系统中有用，这里不考虑
+        const WHITEOUT = 1 << 2;
     }
 }
 

@@ -126,7 +126,7 @@ pub fn task_syscall(syscall_id: task_syscall_id::TaskSyscallId, args: [usize; 6]
             args[3] as *mut TimeSecs,
         ),
         SOCKETPAIR => Err(SyscallError::EAFNOSUPPORT),
-        // syscall below just for x86_64 
+        // syscall below just for x86_64
         #[cfg(target_arch = "x86_64")]
         PRCTL => syscall_prctl(args[0], args[1] as *mut u8),
         #[cfg(target_arch = "x86_64")]
@@ -141,6 +141,7 @@ pub fn task_syscall(syscall_id: task_syscall_id::TaskSyscallId, args: [usize; 6]
         SETPGID => syscall_setpgid(),
         #[cfg(target_arch = "x86_64")]
         ALARM => Ok(0),
+        #[cfg(target_arch = "x86_64")]
         RSEQ => Ok(0),
         #[allow(unused)]
         _ => {

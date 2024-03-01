@@ -58,11 +58,14 @@ pub fn syscall_fstatat(dir_fd: usize, path: *const u8, kst: *mut Kstat) -> Sysca
                 (*kst).st_ino = 1;
                 (*kst).st_nlink = 1;
             }
-            return Ok(0)
+            return Ok(0);
         }
         panic!("Wrong path at syscall_fstatat: {}(dir_fd={})", path, dir_fd);
     };
     info!("path : {}", file_path.path());
+    if axfs::api::path_exists(file_path.path()) == false {
+        return Err(SyscallError::ENOENT);
+    }
     match get_stat_in_fs(&file_path) {
         Ok(stat) => unsafe {
             *kst = stat;

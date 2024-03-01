@@ -151,9 +151,10 @@ pub fn get_stat_in_fs(path: &FilePath) -> Result<Kstat, SyscallError> {
             }
         }
     }
-    if !real_path.ends_with("/") && !real_path.ends_with("include") {
-        // 是文件
-        return if let Ok(file) = new_fd(real_path.to_string(), 0.into()) {
+    // 是文件
+    let metadata = axfs::api::metadata(path.path()).unwrap();
+    if metadata.is_file() {
+        if let Ok(file) = new_fd(real_path.to_string(), 0.into()) {
             match file.get_stat() {
                 Ok(stat) => Ok(stat),
                 Err(e) => {
@@ -163,10 +164,10 @@ pub fn get_stat_in_fs(path: &FilePath) -> Result<Kstat, SyscallError> {
             }
         } else {
             Err(SyscallError::ENOENT)
-        };
+        }
     } else {
         // 是目录
-        return if let Ok(dir) = new_dir(real_path.to_string(), OpenFlags::DIR) {
+        if let Ok(dir) = new_dir(real_path.to_string(), OpenFlags::DIR) {
             match dir.get_stat() {
                 Ok(stat) => Ok(stat),
                 Err(e) => {
@@ -176,6 +177,6 @@ pub fn get_stat_in_fs(path: &FilePath) -> Result<Kstat, SyscallError> {
             }
         } else {
             Err(SyscallError::ENOENT)
-        };
+        }
     }
 }

@@ -1,5 +1,5 @@
 //! 对文件系统的管理，包括目录项的创建、文件权限设置等内容
-use axfs::api::{OpenFlags, Permissions};
+use axfs::api::{remove_dir, remove_file, rename, OpenFlags, Permissions};
 use axlog::{debug, error, info};
 use core::{mem::transmute, ptr::copy_nonoverlapping};
 
@@ -8,7 +8,9 @@ use axprocess::{
     current_process,
     link::{deal_with_path, FilePath, AT_FDCWD},
 };
-use syscall_utils::{DirEnt, DirEntType, Fcntl64Cmd, SyscallError, SyscallResult, TimeSecs};
+use syscall_utils::{
+    DirEnt, DirEntType, Fcntl64Cmd, RenameFlags, SyscallError, SyscallResult, TimeSecs,
+};
 
 use crate::{ctype::file::new_fd, syscall_unlinkat, FileDesc};
 
@@ -122,7 +124,7 @@ pub fn syscall_chdir(path: *const u8) -> SyscallResult {
 /// 返回值：成功执行，返回读取的字节数。当到目录结尾，则返回0。失败，则返回-1。
 ///  struct dirent {
 ///      uint64 d_ino;	// 索引结点号
-///      int64 d_off;	// 到下一个dirent的偏移
+///      int64 d_off;	// 记录的是这整个目录最开始的目录项到当前目录项的下一个的偏移量
 ///      unsigned short d_reclen;	// 当前dirent的长度
 ///      unsigned char d_type;	// 文件类型 0:
 ///      char d_name[];	//文件名
@@ -147,17 +149,35 @@ pub fn syscall_getdents64(fd: usize, buf: *mut u8, len: usize) -> SyscallResult 
     if process.manual_alloc_range_for_lazy(start, end).is_err() {
         return Err(SyscallError::EFAULT);
     }
-
-    let entry_id_from = unsafe { (*(buf as *const DirEnt)).d_off };
-    if entry_id_from == -1 {
-        // 说明已经读完了
-        return Ok(0);
+    if len < DirEnt::fixed_size() {
+        return Err(SyscallError::EINVAL);
+    }
+    // let entry_id_from = unsafe { (*(buf as *const DirEnt)).d_off };
+    // error!("entry_id_from: {}", entry_id_from);
+    // 先获取buffer里面最后一个长度
+    let mut all_offset = 0; // 记录上一次调用时进行到的目录项距离文件夹开始时的偏移量
+    let mut buf_offset = 0; // 记录当前buf里面的目录项的指针偏移量
+    loop {
+        if buf_offset + DirEnt::fixed_size() >= len {
+            break;
+        }
+        let dir_ent = unsafe { *(buf.add(buf_offset) as *const DirEnt) };
+        if dir_ent.d_reclen == 0 {
+            break;
+        }
+        buf_offset += dir_ent.d_reclen as usize;
+        // all_offset = dir_ent.d_off; // 记录最新的 offset
+        if all_offset < dir_ent.d_off {
+            all_offset = dir_ent.d_off;
+        } else {
+            break;
+        }
     }
 
     let buf = unsafe { core::slice::from_raw_parts_mut(buf, len) };
     let dir_iter = axfs::api::read_dir(path.path()).unwrap();
     let mut count = 0; // buf中已经写入的字节数
-
+    let mut offset: u64 = 0; // 当前目录项在文件夹中的偏移
     for (_, entry) in dir_iter.enumerate() {
         let entry = entry.unwrap();
         let mut name = entry.file_name();
@@ -168,25 +188,38 @@ pub fn syscall_getdents64(fd: usize, buf: *mut u8, len: usize) -> SyscallResult 
         let entry_size = DirEnt::fixed_size() + name_len + 1;
 
         // buf不够大，写不下新的entry
-        if count + entry_size > len {
+        if count + entry_size + DirEnt::fixed_size() + 1 > len {
             debug!("buf not big enough");
-            return Ok(count as isize);
+            break;
+        }
+        offset += entry_size as u64;
+        if offset <= all_offset {
+            continue;
         }
         // 转换为DirEnt
         let dirent: &mut DirEnt = unsafe { transmute(buf.as_mut_ptr().offset(count as isize)) };
         // 设置定长部分
         if file_type.is_dir() {
-            dirent.set_fixed_part(1, entry_size as i64, entry_size, DirEntType::DIR);
+            dirent.set_fixed_part(1, offset, entry_size, DirEntType::DIR);
         } else if file_type.is_file() {
-            dirent.set_fixed_part(1, entry_size as i64, entry_size, DirEntType::REG);
+            dirent.set_fixed_part(1, offset, entry_size, DirEntType::REG);
         } else {
-            dirent.set_fixed_part(1, entry_size as i64, entry_size, DirEntType::UNKNOWN);
+            dirent.set_fixed_part(1, offset, entry_size, DirEntType::UNKNOWN);
         }
 
         // 写入文件名
         unsafe { copy_nonoverlapping(name.as_ptr(), dirent.d_name.as_mut_ptr(), name_len) };
 
         count += entry_size;
+    }
+
+    // 为了保证下一次访问的时候边界是存在的，因此需要手动写入一个空的目录项
+    if count != 0 && count + DirEnt::fixed_size() <= len {
+        // 转换为DirEnt
+        let dirent: &mut DirEnt = unsafe { transmute(buf.as_mut_ptr().offset(count as isize)) };
+        // 设置定长部分
+        dirent.set_fixed_part(1, offset, DirEnt::fixed_size(), DirEntType::REG);
+        count += DirEnt::fixed_size();
     }
     Ok(count as isize)
 }
@@ -206,67 +239,95 @@ pub fn syscall_getdents64(fd: usize, buf: *mut u8, len: usize) -> SyscallResult 
 // 如果源文件正被进程打开,默认情况下重命名也会失败。可以通过添加RENAME_EXCHANGE标志位实现原子交换。
 // 6. 目录不是挂载点
 // 如果源目录是一个挂载点,也不允许重命名。
+// 语义为：把 old_file 重命名为 new_file
 pub fn syscall_renameat2(
     old_dirfd: usize,
-    _old_path: *const u8,
+    old_path: *const u8,
     new_dirfd: usize,
-    _new_path: *const u8,
+    new_path: *const u8,
     flags: usize,
 ) -> SyscallResult {
-    let old_path = deal_with_path(old_dirfd, Some(_old_path), false).unwrap();
-    let new_path = deal_with_path(new_dirfd, Some(_new_path), false).unwrap();
-
+    let old_path = deal_with_path(old_dirfd, Some(old_path), false).unwrap();
+    let new_path = deal_with_path(new_dirfd, Some(new_path), false).unwrap();
     let proc_path = FilePath::new("/proc").unwrap();
     if old_path.start_with(&proc_path) || new_path.start_with(&proc_path) {
         return Err(SyscallError::EPERM);
     }
-
-    // 交换两个目录名，目录下的文件不受影响，
-
+    let flags = if let Some(ans) = RenameFlags::from_bits(flags as u32) {
+        ans
+    } else {
+        return Err(SyscallError::EINVAL);
+    };
     // 如果重命名后的文件已存在
-    if flags == 1 {
-        // 即RENAME_NOREPLACE
+    if flags.contains(RenameFlags::NOREPLACE) {
+        if flags.contains(RenameFlags::EXCHANGE) {
+            return Err(SyscallError::EINVAL);
+        }
         if axfs::api::path_exists(new_path.path()) {
             debug!("new_path_ already exist");
-            return Err(SyscallError::EPERM);
+            return Err(SyscallError::EEXIST);
         }
     }
 
-    // 文件与文件夹不能互换命名
-    if flags == 2 {
-        // 即RENAME_EXCHANGE
-        let old_metadata = axfs::api::metadata(old_path.path()).unwrap();
-        let new_metadata = axfs::api::metadata(new_path.path()).unwrap();
-        if old_metadata.is_dir() != new_metadata.is_dir() {
-            debug!("old_path_ and new_path_ is not the same type");
-            return Err(SyscallError::EPERM);
+    if !flags.contains(RenameFlags::EXCHANGE) {
+        // 此时不是交换，而是移动，那么需要
+        if axfs::api::path_exists(new_path.path()) {
+            let old_metadata = axfs::api::metadata(old_path.path()).unwrap();
+            let new_metadata = axfs::api::metadata(new_path.path()).unwrap();
+            if old_metadata.is_dir() ^ new_metadata.is_dir() {
+                debug!("old_path_ and new_path_ is not the same type");
+                if old_metadata.is_dir() {
+                    return Err(SyscallError::ENOTDIR);
+                }
+                return Err(SyscallError::EISDIR);
+            }
         }
-    }
-
-    if flags == 4 {
-        // 即RENAME_WHITEOUT
-        let new_metadata = axfs::api::metadata(new_path.path()).unwrap();
-        if new_metadata.is_dir() {
-            debug!("new_path_ is a directory");
-            return Err(SyscallError::EPERM);
+    } else {
+        if flags.contains(RenameFlags::WHITEOUT) {
+            return Err(SyscallError::EINVAL);
         }
-    }
-
-    if flags != 1 && flags != 2 && flags != 4 {
-        debug!("flags is not valid");
-        return Err(SyscallError::EPERM);
     }
 
     // 做实际重命名操作
-    axlog::warn!("renameat2 not implemented");
+    if axfs::api::path_exists(old_path.path()) == false {
+        return Err(SyscallError::ENOENT);
+    }
+
+    if old_path.path() == new_path.path() {
+        // 相同文件不用改
+        return Ok(0);
+    }
+    if flags.contains(RenameFlags::EXCHANGE) == false {
+        // 当新文件存在，先删掉新文件
+        // 此时若存在新文件，默认是没有 NOREPLACE 的
+        if axfs::api::path_exists(new_path.path()) {
+            let new_metadata = axfs::api::metadata(new_path.path()).unwrap();
+            if new_metadata.is_dir() {
+                if let Err(err) = remove_dir(new_path.path()) {
+                    error!("error: {:?}", err);
+                    return Err(SyscallError::EPERM);
+                }
+            } else if new_metadata.is_file() {
+                if let Err(err) = remove_file(new_path.path()) {
+                    error!("error: {:?}", err);
+                    return Err(SyscallError::EPERM);
+                }
+            }
+        }
+        if let Err(err) = rename(old_path.path(), new_path.path()) {
+            error!("error: {:?}", err);
+            return Err(SyscallError::EPERM);
+        }
+    } else {
+        // 当前不支持交换
+        axlog::warn!("renameat2 exchange not implemented");
+        return Err(SyscallError::EPERM);
+    }
     Ok(0)
 }
 
 /// 重命名文件或目录
-pub fn syscall_rename(
-    old_path: *const u8,
-    new_path: *const u8,
-) -> SyscallResult {
+pub fn syscall_rename(old_path: *const u8, new_path: *const u8) -> SyscallResult {
     syscall_renameat2(AT_FDCWD, old_path, AT_FDCWD, new_path, 1)
 }
 
