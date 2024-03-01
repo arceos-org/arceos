@@ -3,7 +3,6 @@
 pub mod arch;
 extern crate alloc;
 use alloc::vec::Vec;
-use arch::RelocatePair;
 use log::info;
 use memory_addr::{VirtAddr, PAGE_SIZE_4K};
 
@@ -13,7 +12,7 @@ mod auxv;
 pub use auxv::{get_app_stack_region, get_auxv_vector};
 mod user_stack;
 
-use crate::arch::get_relocate_pairs;
+pub use crate::arch::get_relocate_pairs;
 
 pub struct ELFSegment {
     pub vaddr: VirtAddr,
@@ -27,7 +26,6 @@ pub struct ELFSegment {
 /// # Arguments
 ///
 /// * `elf_data` - The elf file data
-/// * `reader` - The file reader which can access the file system
 /// * `elf_base_addr` - The base address of the elf file if the file will be loaded to the memory
 ///
 /// # Return
@@ -35,10 +33,7 @@ pub struct ELFSegment {
 ///
 /// # Warning
 /// It can't be used to parse the elf file which need the dynamic linker, but you can do this by calling this function recursively
-pub fn parse_elf(
-    elf: &xmas_elf::ElfFile,
-    elf_base_addr: Option<usize>,
-) -> (VirtAddr, Vec<ELFSegment>, Vec<RelocatePair>) {
+pub fn get_elf_segments(elf: &xmas_elf::ElfFile, elf_base_addr: Option<usize>) -> Vec<ELFSegment> {
     let elf_header = elf.header;
     let magic = elf_header.pt1.magic;
     assert_eq!(magic, [0x7f, 0x45, 0x4c, 0x46], "invalid elf!");
@@ -100,7 +95,49 @@ pub fn parse_elf(
             });
         });
 
-    let relocate_pairs = get_relocate_pairs(elf, elf_base_addr);
+    segments
+}
+
+/// To parse the elf file and return the segments of the elf file
+///
+/// # Arguments
+///
+/// * `elf_data` - The elf file data
+/// * `elf_base_addr` - The base address of the elf file if the file will be loaded to the memory
+///
+/// # Return
+/// Return the entry point
+///
+/// # Warning
+/// It can't be used to parse the elf file which need the dynamic linker, but you can do this by calling this function recursively
+pub fn get_elf_entry(elf: &xmas_elf::ElfFile, elf_base_addr: Option<usize>) -> VirtAddr {
+    let elf_header = elf.header;
+    let magic = elf_header.pt1.magic;
+    assert_eq!(magic, [0x7f, 0x45, 0x4c, 0x46], "invalid elf!");
+
+    // Some elf will load ELF Header (offset == 0) to vaddr 0. In that case, base_addr will be added to all the LOAD.
+    let base_addr = if let Some(header) = elf
+        .program_iter()
+        .find(|ph| ph.get_type() == Ok(xmas_elf::program::Type::Load))
+    {
+        // Loading ELF Header into memory.
+        let vaddr = header.virtual_addr() as usize;
+
+        if vaddr == 0 {
+            if elf_base_addr.is_some() {
+                let loaded_addr = elf_base_addr.unwrap();
+                loaded_addr
+            } else {
+                panic!("ELF Header is loaded to vaddr 0, but no base_addr is provided");
+            }
+        } else {
+            0
+        }
+    } else {
+        0
+    };
+    info!("Base addr for the elf: 0x{:x}", base_addr);
+
     let entry = elf.header.pt2.entry_point() as usize + base_addr;
-    (entry.into(), segments, relocate_pairs)
+    entry.into()
 }

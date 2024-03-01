@@ -134,7 +134,7 @@ pub fn syscall_exec(
     // 清空futex信号列表
     clear_wait(curr_process.pid(), true);
     let argc = args_vec.len();
-    if curr_process.exec(path, args_vec, envs_vec).is_err() {
+    if curr_process.exec(path, args_vec, &envs_vec).is_err() {
         exit_current_task(0);
     }
     Ok(argc as isize)

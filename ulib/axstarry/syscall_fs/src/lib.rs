@@ -8,6 +8,8 @@ use syscall_utils::{FsStat, IoVec, SyscallResult, TimeSecs};
 mod fs_syscall_id;
 pub use fs_syscall_id::FsSyscallId;
 use fs_syscall_id::FsSyscallId::*;
+extern crate alloc;
+use alloc::string::String;
 use imp::*;
 pub fn fs_syscall(syscall_id: fs_syscall_id::FsSyscallId, args: [usize; 6]) -> SyscallResult {
     match syscall_id {
@@ -137,46 +139,38 @@ pub fn fs_syscall(syscall_id: fs_syscall_id::FsSyscallId, args: [usize; 6]) -> S
         #[cfg(target_arch = "x86_64")]
         LSTAT => syscall_lstat(args[0] as *const u8, args[1] as *mut Kstat),
         #[cfg(target_arch = "x86_64")]
-        OPEN => syscall_open(
-            args[0] as *const u8, 
-            args[1], 
-            args[2] as u8
-        ),
+        OPEN => syscall_open(args[0] as *const u8, args[1], args[2] as u8),
         #[cfg(target_arch = "x86_64")]
-        PIPE => syscall_pipe(args[0] as * mut u32),
+        PIPE => syscall_pipe(args[0] as *mut u32),
         #[cfg(target_arch = "x86_64")]
-        POLL => syscall_poll(
-            args[0] as *mut PollFd,
-            args[1] as usize,
-            args[2],
-        ),
+        POLL => syscall_poll(args[0] as *mut PollFd, args[1] as usize, args[2]),
         #[cfg(target_arch = "x86_64")]
         STAT => syscall_stat(args[0] as *const u8, args[1] as *mut Kstat),
         #[cfg(target_arch = "x86_64")]
-        UNLINK => syscall_unlink(args[0] as * const u8),
+        UNLINK => syscall_unlink(args[0] as *const u8),
         #[cfg(target_arch = "x86_64")]
-        ACCESS => syscall_access(args[0] as * const u8, args[1]),
+        ACCESS => syscall_access(args[0] as *const u8, args[1]),
         #[cfg(target_arch = "x86_64")]
-        MKDIR => syscall_mkdir(args[0] as * const u8, args[1] as _),
+        MKDIR => syscall_mkdir(args[0] as *const u8, args[1] as _),
         #[cfg(target_arch = "x86_64")]
-        RENAME => syscall_rename(args[0] as * const u8, args[1] as * const u8),
+        RENAME => syscall_rename(args[0] as *const u8, args[1] as *const u8),
         #[cfg(target_arch = "x86_64")]
-        RMDIR => syscall_rmdir(args[0] as * const u8),
+        RMDIR => syscall_rmdir(args[0] as *const u8),
         #[cfg(target_arch = "x86_64")]
         SELECT => syscall_select(
             args[0] as usize,
             args[1] as *mut usize,
             args[2] as *mut usize,
             args[3] as *mut usize,
-            args[4] as *const TimeSecs        
+            args[4] as *const TimeSecs,
         ),
         #[cfg(target_arch = "x86_64")]
-        READLINK => syscall_readlink(
-            args[0] as *const u8,
-            args[1] as *mut u8,
-        args[2] as usize,
-        ),
+        READLINK => syscall_readlink(args[0] as *const u8, args[1] as *mut u8, args[2] as usize),
         #[cfg(target_arch = "x86_64")]
-        CREAT => Err(axerrno::LinuxError::EPERM)
+        CREAT => Err(axerrno::LinuxError::EPERM),
     }
+}
+
+pub fn read_file(path: &str) -> Option<String> {
+    axfs::api::read_to_string(path).map_or(None, |ans| Some(ans))
 }

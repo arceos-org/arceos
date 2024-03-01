@@ -82,7 +82,7 @@ pub fn get_auxv_vector(
 /// The detailed format is described in https://articles.manugarg.com/aboutelfauxiliaryvectors.html
 pub fn get_app_stack_region(
     args: Vec<String>,
-    envs: Vec<String>,
+    envs: &Vec<String>,
     auxv: BTreeMap<u8, usize>,
     stack_top: VirtAddr,
     stack_size: usize,

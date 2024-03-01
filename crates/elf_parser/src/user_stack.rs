@@ -70,7 +70,7 @@ impl UserStack {
 /// 初始化用户栈
 pub fn init_stack(
     args: Vec<String>,
-    envs: Vec<String>,
+    envs: &Vec<String>,
     auxv: BTreeMap<u8, usize>,
     sp: usize,
 ) -> UserStack {
@@ -79,11 +79,11 @@ pub fn init_stack(
     stack.push(random_str.as_slice());
     let random_str_pos = stack.get_sp();
     // 按照栈的结构，先加入envs和argv的对应实际内容
-    let envs: Vec<_> = envs
+    let envs_slice: Vec<_> = envs
         .iter()
         .map(|env| stack.push_str(env.as_str()))
         .collect();
-    let argv: Vec<_> = args
+    let argv_slice: Vec<_> = args
         .iter()
         .map(|arg| stack.push_str(arg.as_str()))
         .collect();
@@ -101,9 +101,9 @@ pub fn init_stack(
     }
     // 加入envs和argv的地址
     stack.push(&[null::<u8>()]);
-    stack.push(envs.as_slice());
+    stack.push(envs_slice.as_slice());
     stack.push(&[null::<u8>()]);
-    stack.push(argv.as_slice());
+    stack.push(argv_slice.as_slice());
     // 加入argc
     stack.push(&[args.len()]);
     stack

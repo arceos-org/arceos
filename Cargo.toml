@@ -79,8 +79,8 @@ members = [
     "apps/task/yield",
     "apps/task/priority",
     "apps/task/tls",
-    "apps/oscomp"
-, "crates/elf_parser"]
+    "apps/monolithic_userboot"
+, "crates/elf_parser", "apps/monolithic_userboot"]
 
 [profile.release]
 lto = true

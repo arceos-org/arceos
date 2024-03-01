@@ -20,7 +20,9 @@ use axmem::MemorySet;
 use axsignal::signal_no::SignalNo;
 use axsync::Mutex;
 use axtask::{current, yield_now, CurrentTask, TaskId, TaskState, IDLE_TASK, RUN_QUEUE};
-use elf_parser::{get_app_stack_region, get_auxv_vector, parse_elf};
+use elf_parser::{
+    get_app_stack_region, get_auxv_vector, get_elf_entry, get_elf_segments, get_relocate_pairs,
+};
 use xmas_elf::program::SegmentData;
 
 use crate::flags::WaitStatus;
@@ -156,7 +158,7 @@ pub fn exit_current_task(exit_code: i32) -> ! {
 pub fn load_app(
     name: String,
     mut args: Vec<String>,
-    envs: Vec<String>,
+    envs: &Vec<String>,
     memory_set: &mut MemorySet,
 ) -> AxResult<(VirtAddr, VirtAddr, VirtAddr)> {
     if name.ends_with(".sh") {
@@ -190,7 +192,10 @@ pub fn load_app(
 
     let elf_base_addr = Some(0x400_0000);
     axlog::warn!("The elf base addr may be different in different arch!");
-    let (entry, segments, relocate_pairs) = parse_elf(&elf, elf_base_addr);
+    // let (entry, segments, relocate_pairs) = parse_elf(&elf, elf_base_addr);
+    let entry = get_elf_entry(&elf, elf_base_addr);
+    let segments = get_elf_segments(&elf, elf_base_addr);
+    let relocate_pairs = get_relocate_pairs(&elf, elf_base_addr);
     for segment in segments {
         memory_set.new_region(
             segment.vaddr,

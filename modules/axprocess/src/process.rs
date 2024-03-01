@@ -154,30 +154,19 @@ impl Process {
         }
     }
     /// 根据给定参数创建一个新的进程，作为应用程序初始进程
-    pub fn init(args: Vec<String>) -> AxResult<AxTaskRef> {
+    pub fn init(args: Vec<String>, envs: &Vec<String>) -> AxResult<AxTaskRef> {
         let path = args[0].clone();
         let mut memory_set = MemorySet::new_with_kernel_mapped();
         let page_table_token = memory_set.page_table_token();
         if page_table_token != 0 {
             unsafe {
                 write_page_table_root(page_table_token.into());
+                // when do the relocation for the elf in the supervisor mode, the SUM bit should be set
                 #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
                 riscv::register::sstatus::set_sum();
             };
         }
-        // 运行gcc程序时需要预先加载的环境变量
-        let envs:Vec<String> = vec![
-            "SHLVL=1".into(),
-            "PATH=/usr/sbin:/usr/bin:/sbin:/bin".into(),
-            "PWD=/".into(),
-            "GCC_EXEC_PREFIX=/riscv64-linux-musl-native/bin/../lib/gcc/".into(),
-            "COLLECT_GCC=./riscv64-linux-musl-native/bin/riscv64-linux-musl-gcc".into(),
-            "COLLECT_LTO_WRAPPER=/riscv64-linux-musl-native/bin/../libexec/gcc/riscv64-linux-musl/11.2.1/lto-wrapper".into(),
-            "COLLECT_GCC_OPTIONS='-march=rv64gc' '-mabi=lp64d' '-march=rv64imafdc' '-dumpdir' 'a.'".into(),
-            "LIBRARY_PATH=/lib/".into(),
-            "LD_LIBRARY_PATH=/lib/".into(),
-            "LD_DEBUG=files".into(),
-        ];
+
         let (entry, user_stack_bottom, heap_bottom) =
             if let Ok(ans) = load_app(path.clone(), args, envs, &mut memory_set) {
                 ans
@@ -281,7 +270,7 @@ impl Process {
     /// 将当前进程替换为指定的用户程序
     /// args为传入的参数
     /// 任务的统计时间会被重置
-    pub fn exec(&self, name: String, args: Vec<String>, envs: Vec<String>) -> AxResult<()> {
+    pub fn exec(&self, name: String, args: Vec<String>, envs: &Vec<String>) -> AxResult<()> {
         let parent_pid = self.get_parent();
         VforkHandler.vfork_set(parent_pid, false);
         // 首先要处理原先进程的资源
