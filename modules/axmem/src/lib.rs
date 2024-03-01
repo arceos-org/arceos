@@ -245,53 +245,55 @@ impl MemorySet {
         }
 
         // Relocate .rela.plt sections
-        if let Some(rela_plt) = elf.find_section_by_name(".rela.plt") {
-            let data = match rela_plt.get_data(&elf) {
-                Ok(xmas_elf::sections::SectionData::Rela64(data)) => data,
-                _ => panic!("Invalid data in .rela.plt section"),
-            };
-            let dyn_sym_table = match elf
-                .find_section_by_name(".dynsym")
-                .expect("Dynamic Symbol Table not found for .rela.plt section")
-                .get_data(&elf)
-            {
-                Ok(xmas_elf::sections::SectionData::DynSymbolTable64(dyn_sym_table)) => {
-                    dyn_sym_table
-                }
-                _ => panic!("Invalid data in .dynsym section"),
-            };
+        // static binary may have .rela.plt section but not have dynsym section
+        if let Some(rela_plt) = elf.find_section_by_name(".rela.plt")  {
+            if let Some(dynsym_section) = elf.find_section_by_name(".dynsym") {
 
-            info!("Relocating .rela.plt");
-            for entry in data {
-                match entry.get_type() {
-                    R_RISCV_JUMP_SLOT | R_AARCH64_JUMP_SLOT => {
-                        let dyn_sym = &dyn_sym_table[entry.get_symbol_table_index() as usize];
-                        let sym_val = if dyn_sym.shndx() == 0 {
-                            let name = dyn_sym.get_name(&elf).unwrap();
-                            panic!(r#"Symbol "{}" not found"#, name);
-                        } else {
-                            dyn_sym.value() as usize
-                        };
+                let data = match rela_plt.get_data(&elf) {
+                    Ok(xmas_elf::sections::SectionData::Rela64(data)) => data,
+                    _ => panic!("Invalid data in .rela.plt section"),
+                };
 
-                        let value = base_addr + sym_val;
-                        let addr = base_addr + entry.get_offset() as usize;
-
-                        info!(
-                            "write: {:#x} @ {:#x} type = {}",
-                            value,
-                            addr,
-                            entry.get_type() as usize
-                        );
-
-                        unsafe {
-                            copy_nonoverlapping(
-                                value.to_ne_bytes().as_ptr(),
-                                addr as *mut u8,
-                                size_of::<usize>(),
-                            );
-                        }
+                let dyn_sym_table = match dynsym_section.get_data(&elf)
+                {
+                    Ok(xmas_elf::sections::SectionData::DynSymbolTable64(dyn_sym_table)) => {
+                        dyn_sym_table
                     }
-                    other => panic!("Unknown relocation type: {}", other),
+                    _ => panic!("Invalid data in .dynsym section"),
+                };
+    
+                info!("Relocating .rela.plt");
+                for entry in data {
+                    match entry.get_type() {
+                        R_RISCV_JUMP_SLOT | R_AARCH64_JUMP_SLOT => {
+                            let dyn_sym = &dyn_sym_table[entry.get_symbol_table_index() as usize];
+                            let sym_val = if dyn_sym.shndx() == 0 {
+                                let name = dyn_sym.get_name(&elf).unwrap();
+                                panic!(r#"Symbol "{}" not found"#, name);
+                            } else {
+                                dyn_sym.value() as usize
+                            };
+    
+                            let value = base_addr + sym_val;
+                            let addr = base_addr + entry.get_offset() as usize;
+    
+                            info!(
+                                "write: {:#x} @ {:#x} type = {}",
+                                value,
+                                addr,
+                                entry.get_type() as usize
+                            );
+    
+                            unsafe {
+                                copy_nonoverlapping(
+                                    value.to_ne_bytes().as_ptr(),
+                                    addr as *mut u8,
+                                    size_of::<usize>(),
+                                );
+                            }
+                        }
+                        other => panic!("Unknown relocation type: {}", other),
+                    }
                 }
             }
         }
