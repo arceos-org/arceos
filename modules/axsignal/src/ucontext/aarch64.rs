@@ -70,7 +70,7 @@ pub struct SignalUserContext {
 }
 
 impl SignalUserContext {
-    pub fn init(pc: usize, mask: usize) -> Self {
+    pub fn init(pc: usize, _mask: usize) -> Self {
         Self {
             flags: 0,
             link: 0,
