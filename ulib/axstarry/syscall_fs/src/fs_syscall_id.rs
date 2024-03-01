@@ -19,6 +19,7 @@ pub enum FsSyscallId {
     MKDIRAT = 34,
     UNLINKAT = 35,
     LINKAT = 37,
+    RENAMEAT = 38,
     UNMOUNT = 39,
     MOUNT = 40,
     STATFS = 43,
