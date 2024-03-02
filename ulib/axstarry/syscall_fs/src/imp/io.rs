@@ -496,13 +496,12 @@ pub fn syscall_readlinkat(
     {
         return Err(SyscallError::EFAULT);
     }
-    if !buf.is_null() {
-        if process
+    if !buf.is_null()
+        && process
             .manual_alloc_for_lazy((buf as usize).into())
             .is_err()
-        {
-            return Err(SyscallError::EFAULT);
-        }
+    {
+        return Err(SyscallError::EFAULT);
     }
 
     let path = deal_with_path(dir_fd, Some(path), false);
@@ -518,7 +517,7 @@ pub fn syscall_readlinkat(
         slice.copy_from_slice(&name.as_bytes()[..len]);
         return Ok(len as isize);
     }
-    if path.path().to_string() != real_path(&(path.path().to_string())) {
+    if *path.path() != real_path(&(path.path().to_string())) {
         // 说明链接存在
         let path = path.path();
         let len = bufsiz.min(path.len());
@@ -587,7 +586,7 @@ pub fn syscall_fsync(fd: usize) -> SyscallResult {
     }
     let fd_table = process.fd_manager.fd_table.lock();
     if let Some(file) = fd_table[fd].clone() {
-        if file.flush().is_err() {}
+        // if file.flush().is_err() {}
         Ok(0)
     } else {
         debug!("fd {} is none", fd);

@@ -1,10 +1,7 @@
 extern crate alloc;
-use core::{
-    mem::{align_of, size_of},
-    ptr::null,
-};
+use core::{mem::align_of, ptr::null};
 
-use alloc::{collections::BTreeMap, string::String, vec::Vec};
+use alloc::{collections::BTreeMap, string::String, vec, vec::Vec};
 
 pub const USER_INIT_STACK_SIZE: usize = 0x4000;
 /// 规定用户栈初始化时的内容
@@ -19,10 +16,7 @@ pub struct UserStack {
 
 impl UserStack {
     pub fn new(sp: usize) -> Self {
-        let mut data: Vec<u8> = Vec::with_capacity(USER_INIT_STACK_SIZE);
-
-        data.resize(USER_INIT_STACK_SIZE, 0);
-
+        let data = vec![0; USER_INIT_STACK_SIZE];
         Self {
             sp,
             bottom: sp,
@@ -41,7 +35,7 @@ impl UserStack {
     /// 插入一段数据到用户栈中
     /// 返回的是插入后的用户栈顶，即这段数据的起始位置
     pub fn push<T: Copy>(&mut self, data: &[T]) {
-        self.sp -= data.len() * size_of::<T>();
+        self.sp -= core::mem::size_of_val(data);
         self.sp -= self.sp % align_of::<T>();
         let offset = self.data.len() - (self.bottom - self.sp);
         unsafe {
@@ -70,7 +64,7 @@ impl UserStack {
 /// 初始化用户栈
 pub fn init_stack(
     args: Vec<String>,
-    envs: &Vec<String>,
+    envs: &[String],
     auxv: BTreeMap<u8, usize>,
     sp: usize,
 ) -> UserStack {

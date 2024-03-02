@@ -40,10 +40,7 @@ pub fn syscall_epoll_create1(_flag: usize) -> SyscallResult {
 /// - event: 接受的事件
 pub fn syscall_epoll_ctl(epfd: i32, op: i32, fd: i32, event: *const EpollEvent) -> SyscallResult {
     let process = current_process();
-    if process
-        .manual_alloc_type_for_lazy(event as *const EpollEvent)
-        .is_err()
-    {
+    if process.manual_alloc_type_for_lazy(event).is_err() {
         return Err(SyscallError::EFAULT);
     }
     let fd_table = process.fd_manager.fd_table.lock();
@@ -115,10 +112,9 @@ pub fn syscall_epoll_wait(
     }
     let ret_events = ret_events.unwrap();
     let real_len = ret_events.len().min(max_event);
-    for i in 0..real_len {
-        // 写入响应事件
+    for (i, e) in ret_events.iter().enumerate().take(real_len) {
         unsafe {
-            *(event.add(i)) = ret_events[i];
+            *(event.add(i)) = *e;
         }
     }
     Ok(real_len as isize)

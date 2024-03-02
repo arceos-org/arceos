@@ -40,12 +40,7 @@ pub fn futex_requeue(wake_num: u32, move_num: usize, src_addr: VirtAddr, dst_add
         let move_num = move_num.min(src_wait_task.len());
 
         let mut temp_move_task = src_wait_task.drain(..move_num).collect::<VecDeque<_>>();
-        let dst_wait_task = if futex_wait_task.contains_key(&dst_addr) {
-            futex_wait_task.get_mut(&dst_addr).unwrap()
-        } else {
-            futex_wait_task.insert(dst_addr, VecDeque::new());
-            futex_wait_task.get_mut(&dst_addr).unwrap()
-        };
+        let dst_wait_task = futex_wait_task.entry(dst_addr).or_default();
         dst_wait_task.append(&mut temp_move_task);
     }
 }
@@ -70,12 +65,7 @@ pub fn futex(
                     return Err(SyscallError::EAGAIN);
                 }
                 let mut futex_wait_task = FUTEX_WAIT_TASK.lock();
-                let wait_list = if futex_wait_task.contains_key(&vaddr) {
-                    futex_wait_task.get_mut(&vaddr).unwrap()
-                } else {
-                    futex_wait_task.insert(vaddr, VecDeque::new());
-                    futex_wait_task.get_mut(&vaddr).unwrap()
-                };
+                let wait_list = futex_wait_task.entry(vaddr).or_default();
                 wait_list.push_back((current_task.as_task_ref().clone(), val));
                 // // 输出每一个键值对应的vec的长度
                 drop(futex_wait_task);
@@ -90,9 +80,9 @@ pub fn futex(
                         return Err(SyscallError::EINTR);
                     }
                 }
-                return Ok(0);
+                Ok(0)
             } else {
-                return Err(SyscallError::EFAULT);
+                Err(SyscallError::EFAULT)
             }
         }
         FutexFlags::WAKE => {
@@ -120,15 +110,15 @@ pub fn futex(
                 drop(futex_wait_task);
             }
             yield_now_task();
-            return Ok(val as usize);
+            Ok(val as usize)
         }
         FutexFlags::REQUEUE => {
             // 此时timeout相当于val2，即是move_num
             futex_requeue(val, timeout, vaddr, vaddr2);
-            return Ok(0);
+            Ok(0)
         }
         _ => {
-            return Err(SyscallError::EINVAL);
+            Err(SyscallError::EINVAL)
             // return Ok(0);
         }
     }
@@ -193,13 +183,7 @@ pub fn syscall_set_robust_list(head: usize, len: usize) -> SyscallResult {
     let curr_id = current_task().id().as_u64();
     if process.manual_alloc_for_lazy(head.into()).is_ok() {
         let mut robust_list = process.robust_list.lock();
-        if robust_list.contains_key(&curr_id) {
-            let list = robust_list.get_mut(&curr_id).unwrap();
-            list.head = head;
-            list.len = len;
-        } else {
-            robust_list.insert(curr_id, FutexRobustList::new(head, len));
-        }
+        robust_list.insert(curr_id, FutexRobustList::new(head, len));
         Ok(0)
     } else {
         Err(SyscallError::EINVAL)

@@ -117,16 +117,16 @@ bitflags! {
     }
 }
 
-impl Into<MappingFlags> for MMAPPROT {
-    fn into(self) -> MappingFlags {
+impl From<MMAPPROT> for MappingFlags {
+    fn from(value: MMAPPROT) -> Self {
         let mut flags = MappingFlags::USER;
-        if self.contains(MMAPPROT::PROT_READ) {
+        if value.contains(MMAPPROT::PROT_READ) {
             flags |= MappingFlags::READ;
         }
-        if self.contains(MMAPPROT::PROT_WRITE) {
+        if value.contains(MMAPPROT::PROT_WRITE) {
             flags |= MappingFlags::WRITE;
         }
-        if self.contains(MMAPPROT::PROT_EXEC) {
+        if value.contains(MMAPPROT::PROT_EXEC) {
             flags |= MappingFlags::EXECUTE;
         }
         flags
@@ -168,9 +168,8 @@ pub struct UtsName {
     pub domainname: [u8; 65],
 }
 
-impl UtsName {
-    /// 默认的 UtsName，并没有统一标准
-    pub fn default() -> Self {
+impl Default for UtsName {
+    fn default() -> Self {
         Self {
             sysname: Self::from_str("YoimiyaOS"),
             nodename: Self::from_str("YoimiyaOS - machine[0]"),
@@ -180,7 +179,9 @@ impl UtsName {
             domainname: Self::from_str("https://github.com/Azure-stars/arceos"),
         }
     }
+}
 
+impl UtsName {
     fn from_str(info: &str) -> [u8; 65] {
         let mut data: [u8; 65] = [0; 65];
         data[..info.len()].copy_from_slice(info.as_bytes());

@@ -13,12 +13,7 @@ use alloc::string::String;
 use imp::*;
 pub fn fs_syscall(syscall_id: fs_syscall_id::FsSyscallId, args: [usize; 6]) -> SyscallResult {
     match syscall_id {
-        OPENAT => syscall_openat(
-            args[0],
-            args[1] as *const u8,
-            args[2] as usize,
-            args[3] as u8,
-        ),
+        OPENAT => syscall_openat(args[0], args[1] as *const u8, args[2], args[3] as u8),
         CLOSE => syscall_close(args[0]),
         READ => syscall_read(args[0], args[1] as *mut u8, args[2]),
         WRITE => syscall_write(args[0], args[1] as *const u8, args[2]),
@@ -28,15 +23,15 @@ pub fn fs_syscall(syscall_id: fs_syscall_id::FsSyscallId, args: [usize; 6]) -> S
         DUP3 => syscall_dup3(args[0], args[1]),
         MKDIRAT => syscall_mkdirat(args[0], args[1] as *const u8, args[2] as u32),
         CHDIR => syscall_chdir(args[0] as *const u8),
-        GETDENTS64 => syscall_getdents64(args[0], args[1] as *mut u8, args[2] as usize),
+        GETDENTS64 => syscall_getdents64(args[0], args[1] as *mut u8, args[2]),
         MOUNT => syscall_mount(
             args[0] as *const u8,
             args[1] as *const u8,
             args[2] as *const u8,
-            args[3] as usize,
+            args[3],
             args[4] as *const u8,
         ),
-        UNMOUNT => syscall_umount(args[0] as *const u8, args[1] as usize),
+        UNMOUNT => syscall_umount(args[0] as *const u8, args[1]),
         FSTAT => syscall_fstat(args[0], args[1] as *mut Kstat),
         RENAMEAT2 => syscall_renameat2(
             args[0],
@@ -45,43 +40,26 @@ pub fn fs_syscall(syscall_id: fs_syscall_id::FsSyscallId, args: [usize; 6]) -> S
             args[3] as *const u8,
             args[4],
         ),
-        READV => syscall_readv(args[0] as usize, args[1] as *mut IoVec, args[2] as usize),
-        WRITEV => syscall_writev(args[0] as usize, args[1] as *const IoVec, args[2] as usize),
-        FCNTL64 => syscall_fcntl64(args[0] as usize, args[1] as usize, args[2] as usize),
-        FSTATAT => syscall_fstatat(
-            args[0] as usize,
-            args[1] as *const u8,
-            args[2] as *mut Kstat,
-        ),
+        READV => syscall_readv(args[0], args[1] as *mut IoVec, args[2]),
+        WRITEV => syscall_writev(args[0], args[1] as *const IoVec, args[2]),
+        FCNTL64 => syscall_fcntl64(args[0], args[1], args[2]),
+        FSTATAT => syscall_fstatat(args[0], args[1] as *const u8, args[2] as *mut Kstat),
         STATFS => syscall_statfs(args[0] as *const u8, args[1] as *mut FsStat),
-        FCHMODAT => syscall_fchmodat(args[0] as usize, args[1] as *const u8, args[2] as usize),
-        FACCESSAT => syscall_faccessat(args[0] as usize, args[1] as *const u8, args[2] as usize),
-        LSEEK => syscall_lseek(args[0] as usize, args[1] as isize, args[2] as usize),
-        PREAD64 => syscall_pread64(
-            args[0] as usize,
-            args[1] as *mut u8,
-            args[2] as usize,
-            args[3] as usize,
-        ),
-        PREADLINKAT => syscall_readlinkat(
-            args[0] as usize,
-            args[1] as *const u8,
-            args[2] as *mut u8,
-            args[3] as usize,
-        ),
+        FCHMODAT => syscall_fchmodat(args[0], args[1] as *const u8, args[2]),
+        FACCESSAT => syscall_faccessat(args[0], args[1] as *const u8, args[2]),
+        LSEEK => syscall_lseek(args[0], args[1] as isize, args[2]),
+        PREAD64 => syscall_pread64(args[0], args[1] as *mut u8, args[2], args[3]),
+        PREADLINKAT => {
+            syscall_readlinkat(args[0], args[1] as *const u8, args[2] as *mut u8, args[3])
+        }
         PWRITE64 => syscall_pwrite64(args[0], args[1] as *const u8, args[2], args[3]),
-        SENDFILE64 => syscall_sendfile64(
-            args[0] as usize,
-            args[1] as usize,
-            args[2] as *mut usize,
-            args[3] as usize,
-        ),
+        SENDFILE64 => syscall_sendfile64(args[0], args[1], args[2] as *mut usize, args[3]),
         FSYNC => Ok(0),
         FTRUNCATE64 => {
-            syscall_ftruncate64(args[0] as usize, args[1] as usize)
+            syscall_ftruncate64(args[0], args[1])
             // 0
         }
-        IOCTL => syscall_ioctl(args[0] as usize, args[1] as usize, args[2] as *mut usize),
+        IOCTL => syscall_ioctl(args[0], args[1], args[2] as *mut usize),
         // 不做处理即可
         SYNC => Ok(0),
         COPYFILERANGE => syscall_copyfilerange(
@@ -99,14 +77,14 @@ pub fn fs_syscall(syscall_id: fs_syscall_id::FsSyscallId, args: [usize; 6]) -> S
             args[3] as *const u8,
             args[4],
         ),
-        UNLINKAT => syscall_unlinkat(args[0], args[1] as *const u8, args[2] as usize),
+        UNLINKAT => syscall_unlinkat(args[0], args[1] as *const u8, args[2]),
         UTIMENSAT => syscall_utimensat(
             args[0],
             args[1] as *const u8,
             args[2] as *const TimeSecs,
             args[3],
         ),
-        EPOLL_CREATE => syscall_epoll_create1(args[0] as usize),
+        EPOLL_CREATE => syscall_epoll_create1(args[0]),
         EPOLL_CTL => syscall_epoll_ctl(
             args[0] as i32,
             args[1] as i32,
@@ -121,17 +99,17 @@ pub fn fs_syscall(syscall_id: fs_syscall_id::FsSyscallId, args: [usize; 6]) -> S
         ),
         PPOLL => syscall_ppoll(
             args[0] as *mut PollFd,
-            args[1] as usize,
+            args[1],
             args[2] as *const TimeSecs,
-            args[3] as usize,
+            args[3],
         ),
         PSELECT6 => syscall_pselect6(
-            args[0] as usize,
+            args[0],
             args[1] as *mut usize,
             args[2] as *mut usize,
             args[3] as *mut usize,
             args[4] as *const TimeSecs,
-            args[5] as usize,
+            args[5],
         ),
 
         #[cfg(target_arch = "x86_64")]
@@ -143,7 +121,7 @@ pub fn fs_syscall(syscall_id: fs_syscall_id::FsSyscallId, args: [usize; 6]) -> S
         #[cfg(target_arch = "x86_64")]
         PIPE => syscall_pipe(args[0] as *mut u32),
         #[cfg(target_arch = "x86_64")]
-        POLL => syscall_poll(args[0] as *mut PollFd, args[1] as usize, args[2]),
+        POLL => syscall_poll(args[0] as *mut PollFd, args[1], args[2]),
         #[cfg(target_arch = "x86_64")]
         STAT => syscall_stat(args[0] as *const u8, args[1] as *mut Kstat),
         #[cfg(target_arch = "x86_64")]
@@ -158,19 +136,19 @@ pub fn fs_syscall(syscall_id: fs_syscall_id::FsSyscallId, args: [usize; 6]) -> S
         RMDIR => syscall_rmdir(args[0] as *const u8),
         #[cfg(target_arch = "x86_64")]
         SELECT => syscall_select(
-            args[0] as usize,
+            args[0],
             args[1] as *mut usize,
             args[2] as *mut usize,
             args[3] as *mut usize,
             args[4] as *const TimeSecs,
         ),
         #[cfg(target_arch = "x86_64")]
-        READLINK => syscall_readlink(args[0] as *const u8, args[1] as *mut u8, args[2] as usize),
+        READLINK => syscall_readlink(args[0] as *const u8, args[1] as *mut u8, args[2]),
         #[cfg(target_arch = "x86_64")]
         CREAT => Err(axerrno::LinuxError::EPERM),
     }
 }
 
 pub fn read_file(path: &str) -> Option<String> {
-    axfs::api::read_to_string(path).map_or(None, |ans| Some(ans))
+    axfs::api::read_to_string(path).ok()
 }

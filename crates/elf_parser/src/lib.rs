@@ -47,9 +47,8 @@ pub fn get_elf_segments(elf: &xmas_elf::ElfFile, elf_base_addr: Option<usize>) -
         let vaddr = header.virtual_addr() as usize;
 
         if vaddr == 0 {
-            if elf_base_addr.is_some() {
-                let loaded_addr = elf_base_addr.unwrap();
-                loaded_addr
+            if let Some(addr) = elf_base_addr {
+                addr
             } else {
                 panic!("ELF Header is loaded to vaddr 0, but no base_addr is provided");
             }
@@ -124,9 +123,8 @@ pub fn get_elf_entry(elf: &xmas_elf::ElfFile, elf_base_addr: Option<usize>) -> V
         let vaddr = header.virtual_addr() as usize;
 
         if vaddr == 0 {
-            if elf_base_addr.is_some() {
-                let loaded_addr = elf_base_addr.unwrap();
-                loaded_addr
+            if let Some(addr) = elf_base_addr {
+                addr
             } else {
                 panic!("ELF Header is loaded to vaddr 0, but no base_addr is provided");
             }

@@ -1,7 +1,7 @@
 //! 对文件系统的管理，包括目录项的创建、文件权限设置等内容
 use axfs::api::{OpenFlags, Permissions};
 use axlog::{debug, error, info};
-use core::{mem::transmute, ptr::copy_nonoverlapping};
+use core::ptr::copy_nonoverlapping;
 
 use axhal::mem::VirtAddr;
 use axprocess::{
@@ -36,7 +36,7 @@ pub fn syscall_getcwd(buf: *mut u8, len: usize) -> SyscallResult {
 
     let cwd = cwd.as_bytes();
 
-    return if len >= cwd.len() {
+    if len >= cwd.len() {
         let process = current_process();
         let start: VirtAddr = (buf as usize).into();
         let end = start + len;
@@ -52,7 +52,7 @@ pub fn syscall_getcwd(buf: *mut u8, len: usize) -> SyscallResult {
     } else {
         debug!("getcwd: buf size is too small");
         Err(SyscallError::ERANGE)
-    };
+    }
 }
 
 /// 功能：创建目录；
@@ -114,25 +114,15 @@ pub fn syscall_chdir(path: *const u8) -> SyscallResult {
     }
 }
 
-/// 功能：获取目录的条目;
-/// 参数：
-///     -fd：所要读取目录的文件描述符。
-///     -buf：一个缓存区，用于保存所读取目录的信息。缓存区的结构如下
-///     -len：buf的大小。
-/// 返回值：成功执行，返回读取的字节数。当到目录结尾，则返回0。失败，则返回-1。
-///  struct dirent {
-///      uint64 d_ino;	// 索引结点号
-///      int64 d_off;	// 到下一个dirent的偏移
-///      unsigned short d_reclen;	// 当前dirent的长度
-///      unsigned char d_type;	// 文件类型 0:
-///      char d_name[];	//文件名
-///  };
-///  1. 内存布局：
-///       0x61fef8
-///       0x61fef8 0x61ff00 0x61ff08 0x61ff0a 0x61ff0b
-///       实测结果在我的电脑上是这样的，没有按最大对齐方式8字节对齐
-///  2. d_off 和 d_reclen 同时存在的原因：
-///       不同的dirent可以不按照顺序紧密排列
+/// To get the dirent structures from the directory referred to by the open file descriptor fd into the buffer
+/// # Arguments
+/// * `fd`: the file descriptor of the directory to be read
+/// * `buf`: the buffer to store the dirent structures
+/// * `len`: the size of the buffer
+///
+/// # Return
+/// * On success, the number of bytes read is returned. On end of directory, 0 is returned.
+/// * On error, -1 is returned.
 pub fn syscall_getdents64(fd: usize, buf: *mut u8, len: usize) -> SyscallResult {
     let path = if let Some(path) = deal_with_path(fd, None, true) {
         path
@@ -158,7 +148,7 @@ pub fn syscall_getdents64(fd: usize, buf: *mut u8, len: usize) -> SyscallResult 
     let dir_iter = axfs::api::read_dir(path.path()).unwrap();
     let mut count = 0; // buf中已经写入的字节数
 
-    for (_, entry) in dir_iter.enumerate() {
+    for entry in dir_iter {
         let entry = entry.unwrap();
         let mut name = entry.file_name();
         name.push('\0');
@@ -173,7 +163,7 @@ pub fn syscall_getdents64(fd: usize, buf: *mut u8, len: usize) -> SyscallResult 
             return Ok(count as isize);
         }
         // 转换为DirEnt
-        let dirent: &mut DirEnt = unsafe { transmute(buf.as_mut_ptr().offset(count as isize)) };
+        let dirent: &mut DirEnt = unsafe { &mut *(buf.as_mut_ptr().add(count) as *mut DirEnt) };
         // 设置定长部分
         if file_type.is_dir() {
             dirent.set_fixed_part(1, entry_size as i64, entry_size, DirEntType::DIR);

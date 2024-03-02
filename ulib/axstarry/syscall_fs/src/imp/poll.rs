@@ -22,6 +22,13 @@ bitflags! {
     }
 }
 
+#[derive(Default)]
+struct PpollFdSet {
+    files: Vec<Arc<dyn FileIO>>,
+    fds: Vec<usize>,
+    shadow_bitset: ShadowBitset,
+}
+
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
 pub struct PollFd {
@@ -37,6 +44,15 @@ pub struct PollFd {
 struct ShadowBitset {
     addr: *mut usize,
     len: usize, // 是包含的bit数目，而不是字节数目
+}
+
+impl Default for ShadowBitset {
+    fn default() -> Self {
+        Self {
+            addr: core::ptr::null_mut(),
+            len: 0,
+        }
+    }
 }
 
 impl ShadowBitset {
@@ -170,9 +186,9 @@ pub fn syscall_ppoll(
 
     let (set, ret_fds) = ppoll(fds, expire_time);
     // 将得到的fd存储到原先的指针中
-    for i in 0..ret_fds.len() {
+    for (i, fd) in ret_fds.iter().enumerate() {
         unsafe {
-            *(ufds.add(i)) = ret_fds[i];
+            *(ufds.add(i)) = *fd;
         }
     }
     Ok(set)
@@ -181,11 +197,7 @@ pub fn syscall_ppoll(
 /// 实现ppoll系统调用
 ///
 /// 其中timeout是一段相对时间，需要计算出相对于当前时间戳的绝对时间戳
-pub fn syscall_poll(
-    ufds: *mut PollFd,
-    nfds: usize,
-    timeout_msecs: usize
-) -> SyscallResult {
+pub fn syscall_poll(ufds: *mut PollFd, nfds: usize, timeout_msecs: usize) -> SyscallResult {
     let process = current_process();
 
     let start: VirtAddr = (ufds as usize).into();
@@ -201,23 +213,21 @@ pub fn syscall_poll(
             fds.push(*(ufds.add(i)));
         }
     }
-    let expire_time = current_ticks() as usize + TimeVal::from_micro(timeout_msecs).to_ticks() as usize;
+    let expire_time =
+        current_ticks() as usize + TimeVal::from_micro(timeout_msecs).to_ticks() as usize;
 
     let (set, ret_fds) = ppoll(fds, expire_time);
     // 将得到的fd存储到原先的指针中
-    for i in 0..ret_fds.len() {
+    for (i, fd) in ret_fds.iter().enumerate() {
         unsafe {
-            *(ufds.add(i)) = ret_fds[i];
+            *(ufds.add(i)) = *fd;
         }
     }
     Ok(set)
 }
 
 /// 根据给定的地址和长度新建一个fd set，包括文件描述符指针数组，文件描述符数值数组，以及一个bitset
-fn init_fd_set(
-    addr: *mut usize,
-    len: usize,
-) -> Result<(Vec<Arc<dyn FileIO>>, Vec<usize>, ShadowBitset), SyscallError> {
+fn init_fd_set(addr: *mut usize, len: usize) -> Result<PpollFdSet, SyscallError> {
     let process = current_process();
     if len >= process.fd_manager.get_limit() as usize {
         axlog::error!(
@@ -229,7 +239,10 @@ fn init_fd_set(
 
     let shadow_bitset = ShadowBitset::new(addr, len);
     if addr.is_null() {
-        return Ok((Vec::new(), Vec::new(), shadow_bitset));
+        return Ok(PpollFdSet {
+            shadow_bitset,
+            ..Default::default()
+        });
     }
 
     let start: VirtAddr = (addr as usize).into();
@@ -254,7 +267,12 @@ fn init_fd_set(
     }
 
     shadow_bitset.clear();
-    Ok((files, fds, shadow_bitset))
+
+    Ok(PpollFdSet {
+        files,
+        fds,
+        shadow_bitset,
+    })
 }
 
 // 实现 select 系统调用
@@ -263,7 +281,7 @@ pub fn syscall_select(
     readfds: *mut usize,
     writefds: *mut usize,
     exceptfds: *mut usize,
-    timeout: *const TimeSecs
+    timeout: *const TimeSecs,
 ) -> SyscallResult {
     syscall_pselect6(nfds, readfds, writefds, exceptfds, timeout, 0)
 }
@@ -277,15 +295,15 @@ pub fn syscall_pselect6(
     _mask: usize,
 ) -> SyscallResult {
     let (rfiles, rfds, mut rset) = match init_fd_set(readfds, nfds) {
-        Ok(ans) => ans,
+        Ok(ans) => (ans.files, ans.fds, ans.shadow_bitset),
         Err(e) => return Err(e),
     };
     let (wfiles, wfds, mut wset) = match init_fd_set(writefds, nfds) {
-        Ok(ans) => ans,
+        Ok(ans) => (ans.files, ans.fds, ans.shadow_bitset),
         Err(e) => return Err(e),
     };
     let (efiles, efds, mut eset) = match init_fd_set(exceptfds, nfds) {
-        Ok(ans) => ans,
+        Ok(ans) => (ans.files, ans.fds, ans.shadow_bitset),
         Err(e) => return Err(e),
     };
     let process = current_process();

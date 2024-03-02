@@ -66,7 +66,7 @@ pub fn syscall_unlinkat(dir_fd: usize, path: *const u8, flags: usize) -> Syscall
 
     // unlink file
     if flags == 0 {
-        if let None = remove_link(&path) {
+        if remove_link(&path).is_none() {
             debug!("unlink file error");
             return Err(SyscallError::EINVAL);
         }

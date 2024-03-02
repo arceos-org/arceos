@@ -29,8 +29,8 @@ pub fn syscall_get_time_of_day(ts: *mut TimeVal) -> SyscallResult {
     let current_us = current_time_nanos() as usize / 1000;
     unsafe {
         *ts = TimeVal {
-            sec: current_us / 1000_000,
-            usec: current_us % 1000_000,
+            sec: current_us / 1_000_000,
+            usec: current_us % 1_000_000,
         }
     }
     Ok(0)
@@ -257,8 +257,8 @@ pub fn syscall_clock_nanosleep(
             let delta = (deadline - current_time).as_nanos() as usize;
             unsafe {
                 *remain = TimeSecs {
-                    tv_sec: delta / 1000_000_000,
-                    tv_nsec: delta % 1000_000_000,
+                    tv_sec: delta / 1_000_000_000,
+                    tv_nsec: delta % 1_000_000_000,
                 }
             };
             return Err(SyscallError::EINTR);

@@ -44,7 +44,7 @@ pub fn init_kernel_process() {
 
     axtask::init_scheduler();
     kernel_process.tasks.lock().push(Arc::clone(unsafe {
-        &IDLE_TASK.current_ref_raw().get_unchecked()
+        IDLE_TASK.current_ref_raw().get_unchecked()
     }));
     PID2PC.lock().insert(kernel_process.pid(), kernel_process);
 }
@@ -127,7 +127,7 @@ pub fn exit_current_task(exit_code: i32) -> ! {
         // process.memory_set = Arc::clone(&kernel_process.memory_set);
         for child in process.children.lock().deref() {
             child.set_parent(KERNEL_PROCESS_ID);
-            kernel_process.children.lock().push(Arc::clone(&child));
+            kernel_process.children.lock().push(Arc::clone(child));
         }
         if let Some(parent_process) = pid2pc.get(&process.get_parent()) {
             parent_process.set_vfork_block(false);
@@ -215,7 +215,7 @@ pub fn load_app(
 
     // Now map the stack and the heap
     let heap_start = VirtAddr::from(USER_HEAP_BASE);
-    let heap_data = [0 as u8].repeat(MAX_USER_HEAP_SIZE);
+    let heap_data = [0_u8].repeat(MAX_USER_HEAP_SIZE);
     memory_set.new_region(
         heap_start,
         MAX_USER_HEAP_SIZE,
@@ -247,7 +247,7 @@ pub fn load_app(
         stack_top,
         stack_top + stack_size
     );
-    Ok((entry.into(), stack_bottom.into(), heap_start.into()))
+    Ok((entry, stack_bottom.into(), heap_start))
 }
 
 /// 当从内核态到用户态时，统计对应进程的时间信息
@@ -341,7 +341,7 @@ pub unsafe fn wait_pid(pid: isize, exit_code_ptr: *mut i32) -> Result<u64, WaitS
     }
     // 若进程成功结束，需要将其从父进程的children中删除
     if answer_status == WaitStatus::Exited {
-        curr_process.children.lock().remove(exit_task_id as usize);
+        curr_process.children.lock().remove(exit_task_id);
         return Ok(answer_id);
     }
     Err(answer_status)

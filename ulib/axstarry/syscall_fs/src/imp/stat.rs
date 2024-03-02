@@ -52,13 +52,13 @@ pub fn syscall_fstatat(dir_fd: usize, path: *const u8, kst: *mut Kstat) -> Sysca
         // x86 下应用会调用 newfstatat(1, "", {st_mode=S_IFCHR|0620, st_rdev=makedev(0x88, 0xe), ...}, AT_EMPTY_PATH) = 0
         // 去尝试检查 STDOUT 的属性。这里暂时先特判，以后再改成真正的 stdout 的属性
         let path = unsafe { raw_ptr_to_ref_str(path) };
-        if path.len() == 0 && dir_fd == 1 {
+        if path.is_empty() && dir_fd == 1 {
             unsafe {
                 (*kst).st_mode = 0o20000 | 0o220u32;
                 (*kst).st_ino = 1;
                 (*kst).st_nlink = 1;
             }
-            return Ok(0)
+            return Ok(0);
         }
         panic!("Wrong path at syscall_fstatat: {}(dir_fd={})", path, dir_fd);
     };

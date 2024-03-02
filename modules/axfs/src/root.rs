@@ -96,12 +96,12 @@ impl RootDirectory {
             // 1. path == mp.path, e.g. dev
             // 2. path == mp.path + '/', e.g. dev/
             let prev = mp.path[1..].to_string() + "/";
-            if path.starts_with(&mp.path[1..]) {
-                if (path.len() == prev.len() - 1 || path.starts_with(&prev)) && prev.len() > max_len
-                {
-                    max_len = mp.path.len() - 1;
-                    idx = i;
-                }
+            if path.starts_with(&mp.path[1..])
+                && (path.len() == prev.len() - 1 || path.starts_with(&prev))
+                && prev.len() > max_len
+            {
+                max_len = mp.path.len() - 1;
+                idx = i;
             }
         }
         if max_len == 0 {

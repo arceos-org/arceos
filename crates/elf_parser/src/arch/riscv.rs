@@ -39,8 +39,8 @@ pub fn get_relocate_pairs(
         let vaddr = header.virtual_addr() as usize;
 
         if vaddr == 0 {
-            if elf_base_addr.is_some() {
-                elf_base_addr.unwrap()
+            if let Some(addr) = elf_base_addr {
+                addr
             } else {
                 panic!("ELF Header is loaded to vaddr 0, but no base_addr is provided");
             }
@@ -52,13 +52,13 @@ pub fn get_relocate_pairs(
     };
     info!("Base addr for the elf: 0x{:x}", base_addr);
     if let Some(rela_dyn) = elf.find_section_by_name(".rela.dyn") {
-        let data = match rela_dyn.get_data(&elf) {
+        let data = match rela_dyn.get_data(elf) {
             Ok(xmas_elf::sections::SectionData::Rela64(data)) => data,
             _ => panic!("Invalid data in .rela.dyn section"),
         };
 
         if let Some(dyn_sym_table) = elf.find_section_by_name(".dynsym") {
-            let dyn_sym_table = match dyn_sym_table.get_data(&elf) {
+            let dyn_sym_table = match dyn_sym_table.get_data(elf) {
                 Ok(xmas_elf::sections::SectionData::DynSymbolTable64(dyn_sym_table)) => {
                     dyn_sym_table
                 }
@@ -80,7 +80,7 @@ pub fn get_relocate_pairs(
                     }),
                     R_RISCV_64 => {
                         if dyn_sym.shndx() == 0 {
-                            let name = dyn_sym.get_name(&elf).unwrap();
+                            let name = dyn_sym.get_name(elf).unwrap();
                             panic!(r#"Symbol "{}" not found"#, name);
                         }
                         pairs.push(RelocatePair {
@@ -96,7 +96,7 @@ pub fn get_relocate_pairs(
                     }),
                     R_JUMP_SLOT => {
                         if dyn_sym.shndx() == 0 {
-                            let name = dyn_sym.get_name(&elf).unwrap();
+                            let name = dyn_sym.get_name(elf).unwrap();
                             panic!(r#"Symbol "{}" not found"#, name);
                         }
                         pairs.push(RelocatePair {
@@ -113,7 +113,7 @@ pub fn get_relocate_pairs(
 
     // Relocate .rela.plt sections
     if let Some(rela_plt) = elf.find_section_by_name(".rela.plt") {
-        let data = match rela_plt.get_data(&elf) {
+        let data = match rela_plt.get_data(elf) {
             Ok(xmas_elf::sections::SectionData::Rela64(data)) => data,
             _ => panic!("Invalid data in .rela.plt section"),
         };
@@ -121,7 +121,7 @@ pub fn get_relocate_pairs(
             let dyn_sym_table = match elf
                 .find_section_by_name(".dynsym")
                 .expect("Dynamic Symbol Table not found for .rela.plt section")
-                .get_data(&elf)
+                .get_data(elf)
             {
                 Ok(xmas_elf::sections::SectionData::DynSymbolTable64(dyn_sym_table)) => {
                     dyn_sym_table
@@ -138,7 +138,7 @@ pub fn get_relocate_pairs(
                         let symbol_value = if dyn_sym.shndx() != 0 {
                             dyn_sym.value() as usize
                         } else {
-                            let name = dyn_sym.get_name(&elf).unwrap();
+                            let name = dyn_sym.get_name(elf).unwrap();
                             panic!(r#"Symbol "{}" not found"#, name);
                         }; // Represents the value of the symbol whose index resides in the relocation entry.
                         pairs.push(RelocatePair {

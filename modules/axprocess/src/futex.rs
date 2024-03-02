@@ -12,16 +12,13 @@ pub static FUTEX_WAIT_TASK: Mutex<BTreeMap<VirtAddr, VecDeque<(AxTaskRef, u32)>>
 
 pub static WAIT_FOR_FUTEX: WaitQueue = WaitQueue::new();
 
+#[derive(Default)]
+
 pub struct FutexRobustList {
     pub head: usize,
     pub len: usize,
 }
 
-impl Default for FutexRobustList {
-    fn default() -> Self {
-        Self { head: 0, len: 0 }
-    }
-}
 impl FutexRobustList {
     pub fn new(head: usize, len: usize) -> Self {
         Self { head, len }

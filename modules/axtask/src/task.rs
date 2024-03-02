@@ -166,6 +166,12 @@ impl TaskId {
     }
 }
 
+impl Default for TaskId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl From<u8> for TaskState {
     #[inline]
     fn from(state: u8) -> Self {
@@ -195,7 +201,7 @@ impl TaskInner {
 
     pub fn set_name(&self, name: &str) {
         unsafe {
-            *(self.name.get() as *mut String) = String::from(name);
+            *self.name.get() = String::from(name);
         }
     }
 
@@ -253,7 +259,7 @@ impl TaskInner {
     pub fn time_stat_from_user_to_kernel(&self) {
         let time = self.time.get();
         unsafe {
-            (*time).into_kernel_mode(self.id.as_u64() as isize);
+            (*time).switch_into_kernel_mode(self.id.as_u64() as isize);
         }
     }
 
@@ -261,7 +267,7 @@ impl TaskInner {
     pub fn time_stat_from_kernel_to_user(&self) {
         let time = self.time.get();
         unsafe {
-            (*time).into_user_mode(self.id.as_u64() as isize);
+            (*time).switch_into_user_mode(self.id.as_u64() as isize);
         }
     }
 
@@ -269,7 +275,7 @@ impl TaskInner {
     pub fn time_stat_when_switch_from(&self) {
         let time = self.time.get();
         unsafe {
-            (*time).swtich_from(self.id.as_u64() as isize);
+            (*time).swtich_from_old_task(self.id.as_u64() as isize);
         }
     }
 
@@ -277,7 +283,7 @@ impl TaskInner {
     pub fn time_stat_when_switch_to(&self) {
         let time = self.time.get();
         unsafe {
-            (*time).switch_to(self.id.as_u64() as isize);
+            (*time).switch_to_new_task(self.id.as_u64() as isize);
         }
     }
 

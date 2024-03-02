@@ -33,7 +33,7 @@ use axprocess::signal::SignalModule;
 // pub static TEST_FILTER: Mutex<BTreeMap<String, usize>> = Mutex::new(BTreeMap::new());
 
 pub fn syscall_exit(exit_code: i32) -> ! {
-    info!("exit: exit_code = {}", exit_code as i32);
+    info!("exit: exit_code = {}", exit_code);
     // let cases = ["fcanf", "fgetwc_buffering", "lat_pipe"];
     // let mut test_filter = TEST_FILTER.lock();
     // for case in cases {
@@ -166,7 +166,7 @@ pub fn syscall_clone(
     };
     let curr_process = current_process();
     #[cfg(feature = "signal")]
-    let sig_child = SignalNo::from(flags as usize & 0x3f) == SignalNo::SIGCHLD;
+    let sig_child = SignalNo::from(flags & 0x3f) == SignalNo::SIGCHLD;
 
     if let Ok(new_task_id) = curr_process.clone_task(
         clone_flags,
@@ -179,7 +179,7 @@ pub fn syscall_clone(
     ) {
         Ok(new_task_id as isize)
     } else {
-        return Err(SyscallError::ENOMEM);
+        Err(SyscallError::ENOMEM)
     }
 }
 
@@ -246,8 +246,8 @@ pub fn syscall_sleep(req: *const TimeSecs, rem: *mut TimeSecs) -> SyscallResult 
             let delta = (dur - sleep_time).as_nanos() as usize;
             unsafe {
                 *rem = TimeSecs {
-                    tv_sec: delta / 1000_000_000,
-                    tv_nsec: delta % 1000_000_000,
+                    tv_sec: delta / 1_000_000_000,
+                    tv_nsec: delta % 1_000_000_000,
                 }
             };
         } else {

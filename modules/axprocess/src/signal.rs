@@ -23,11 +23,8 @@ pub struct SignalModule {
 
 impl SignalModule {
     pub fn init_signal(signal_handler: Option<Arc<Mutex<SignalHandler>>>) -> Self {
-        let signal_handler = if signal_handler.is_none() {
-            Arc::new(Mutex::new(SignalHandler::new()))
-        } else {
-            signal_handler.unwrap()
-        };
+        let signal_handler =
+            signal_handler.unwrap_or_else(|| Arc::new(Mutex::new(SignalHandler::new())));
         let signal_set = SignalSet::new();
         let last_trap_frame_for_signal = None;
         let sig_info = false;
@@ -140,15 +137,14 @@ pub fn handle_signals() {
             // 在处理信号的过程中又触发 SIGSEGV 或 SIGBUS，此时会导致死循环，所以直接结束当前进程
             drop(signal_modules);
             exit_current_task(-1);
-        } else {
-            return;
         }
+        return;
     }
     // 之前的trap frame已经被处理
     // 说明之前的信号处理函数已经返回，即没有信号嵌套。
     // 此时可以将当前的trap frame保存起来
     signal_module.last_trap_frame_for_signal =
-        Some((unsafe { *current_task.get_first_trap_frame() }).clone());
+        Some(unsafe { *current_task.get_first_trap_frame() });
     // current_task.set_siginfo(false);
     signal_module.sig_info = false;
     // 调取处理函数
@@ -157,7 +153,6 @@ pub fn handle_signals() {
     if action.is_none() {
         drop(signal_handler);
         drop(signal_modules);
-        drop(current_task);
         // 未显式指定处理函数，使用默认处理函数
         match SignalDefault::get_action(signal) {
             SignalDefault::Ignore => {
@@ -214,8 +209,10 @@ pub fn handle_signals() {
         signal_module.sig_info = true;
         // 注意16字节对齐
         sp = (sp - core::mem::size_of::<SigInfo>()) & !0xf;
-        let mut info = SigInfo::default();
-        info.si_signo = sig_num as i32;
+        let info = SigInfo {
+            si_signo: sig_num as i32,
+            ..Default::default()
+        };
         unsafe {
             *(sp as *mut SigInfo) = info;
         }
@@ -230,7 +227,7 @@ pub fn handle_signals() {
         }
         trap_frame.set_arg2(sp);
     }
-    
+
     #[cfg(target_arch = "x86_64")]
     unsafe {
         // set return rip
@@ -264,7 +261,7 @@ pub fn signal_return() -> isize {
 /// 默认发送到该进程下的主线程
 pub fn send_signal_to_process(pid: isize, signum: isize) -> AxResult<()> {
     let mut pid2pc = PID2PC.lock();
-    if pid2pc.contains_key(&(pid as u64)) == false {
+    if !pid2pc.contains_key(&(pid as u64)) {
         return Err(axerrno::AxError::NotFound);
     }
     let process = pid2pc.get_mut(&(pid as u64)).unwrap();
@@ -280,7 +277,7 @@ pub fn send_signal_to_process(pid: isize, signum: isize) -> AxResult<()> {
         let signal_module = signal_modules.get_mut(&now_id.unwrap()).unwrap();
         signal_module.signal_set.try_add_signal(signum as usize);
         let tid2task = TID2TASK.lock();
-        let main_task = Arc::clone(&tid2task.get(&now_id.unwrap()).unwrap());
+        let main_task = Arc::clone(tid2task.get(&now_id.unwrap()).unwrap());
         // 如果这个时候对应的线程是处于休眠状态的，则唤醒之，进入信号处理阶段
         if main_task.state() == TaskState::Blocked {
             RUN_QUEUE.lock().unblock_task(main_task, false);
@@ -307,7 +304,7 @@ pub fn send_signal_to_thread(tid: isize, signum: isize) -> AxResult<()> {
     };
     drop(pid2pc);
     let mut signal_modules = process.signal_modules.lock();
-    if signal_modules.contains_key(&(tid as u64)) == false {
+    if !signal_modules.contains_key(&(tid as u64)) {
         return Err(axerrno::AxError::NotFound);
     }
     let signal_module = signal_modules.get_mut(&(tid as u64)).unwrap();

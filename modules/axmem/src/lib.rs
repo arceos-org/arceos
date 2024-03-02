@@ -456,11 +456,11 @@ impl MemorySet {
     }
 
     pub fn get_shared_mem(shmid: i32) -> Option<Arc<SharedMem>> {
-        SHARED_MEMS.lock().get(&shmid).map(|arc| arc.clone())
+        SHARED_MEMS.lock().get(&shmid).cloned()
     }
 
     pub fn get_private_shared_mem(&self, shmid: i32) -> Option<Arc<SharedMem>> {
-        self.private_mem.get(&shmid).map(|arc| arc.clone())
+        self.private_mem.get(&shmid).cloned()
     }
 
     pub fn attach_shared_mem(&mut self, mem: Arc<SharedMem>, addr: VirtAddr, flags: MappingFlags) {
@@ -532,7 +532,7 @@ impl MemorySet {
 }
 
 impl MemorySet {
-    pub fn clone(&self) -> AxResult<Self> {
+    pub fn clone_or_err(&self) -> AxResult<Self> {
         let mut page_table = PageTable::try_new().expect("Error allocating page table.");
 
         for r in memory_regions() {
@@ -546,22 +546,15 @@ impl MemorySet {
                 .expect("Error mapping kernel memory");
         }
 
-        // let owned_mem = self
-        //     .owned_mem
-        //     .iter()
-        //     .map(|(vaddr, area)| (*vaddr, unsafe { area.clone_alloc(&mut page_table)? }))
-        //     .collect();
         let mut owned_mem: BTreeMap<usize, MapArea> = BTreeMap::new();
         for (vaddr, area) in self.owned_mem.iter() {
-            unsafe {
-                match area.clone_alloc(&mut page_table) {
-                    Ok(new_area) => {
-                        owned_mem.insert(*vaddr, new_area);
-                        Ok(())
-                    }
-                    Err(err) => Err(err),
-                }?;
-            }
+            match area.clone_alloc(&mut page_table) {
+                Ok(new_area) => {
+                    owned_mem.insert(*vaddr, new_area);
+                    Ok(())
+                }
+                Err(err) => Err(err),
+            }?;
         }
 
         let mut new_memory = Self {
@@ -573,7 +566,7 @@ impl MemorySet {
         };
 
         for (addr, flags, mem) in &self.attached_mem {
-            new_memory.attach_shared_mem(mem.clone(), addr.clone(), flags.clone());
+            new_memory.attach_shared_mem(mem.clone(), *addr, *flags);
         }
 
         Ok(new_memory)

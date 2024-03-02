@@ -34,8 +34,8 @@ pub fn get_auxv_vector(
         let vaddr = header.virtual_addr() as usize;
 
         if vaddr == 0 {
-            if elf_base_addr.is_some() {
-                elf_base_addr.unwrap()
+            if let Some(addr) = elf_base_addr {
+                addr
             } else {
                 panic!("ELF Header is loaded to vaddr 0, but no base_addr is provided");
             }
@@ -82,7 +82,7 @@ pub fn get_auxv_vector(
 /// The detailed format is described in https://articles.manugarg.com/aboutelfauxiliaryvectors.html
 pub fn get_app_stack_region(
     args: Vec<String>,
-    envs: &Vec<String>,
+    envs: &[String],
     auxv: BTreeMap<u8, usize>,
     stack_top: VirtAddr,
     stack_size: usize,
@@ -92,7 +92,7 @@ pub fn get_app_stack_region(
     // The stack variable is actually the information carried by the stack
     let stack = init_stack(args, envs, auxv, ustack_bottom.into());
     let ustack_bottom = stack.get_sp();
-    let mut data = [0 as u8].repeat(stack_size - stack.get_len());
+    let mut data = [0_u8].repeat(stack_size - stack.get_len());
     data.extend(stack.get_data_front_ref());
     (data, ustack_bottom)
 }

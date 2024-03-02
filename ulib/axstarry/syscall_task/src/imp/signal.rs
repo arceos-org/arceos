@@ -64,6 +64,7 @@ pub fn syscall_sigaction(
 }
 
 /// 实现sigsuspend系统调用
+/// TODO: 这里实现的似乎和文档有出入，应该有 BUG
 pub fn syscall_sigsuspend(mask: *const usize) -> SyscallResult {
     let process = current_process();
     if process
@@ -97,10 +98,12 @@ pub fn syscall_sigsuspend(mask: *const usize) -> SyscallResult {
             if process.have_signals().is_some() {
                 return Err(SyscallError::EINTR);
             }
+        } else {
+            // 说明来了一个信号
+            break;
         }
-        break;
     }
-    return Err(SyscallError::EINTR);
+    Err(SyscallError::EINTR)
 }
 
 pub fn syscall_sigreturn() -> SyscallResult {

@@ -248,7 +248,7 @@ impl VforkCheck for VforkHandler {
     fn check_vfork(&self, process_id: u64) -> bool {
         let pid2pc = PID2PC.lock();
         match pid2pc.get(&process_id) {
-            Some(process) => process.blocked_by_vfork.lock().clone(),
+            Some(process) => *process.blocked_by_vfork.lock(),
             None => panic!("the process_id {} will be checked nonexists", process_id),
         }
     }
@@ -308,7 +308,7 @@ impl Process {
         current_task.set_name(name.split('/').last().unwrap());
         assert!(tasks.len() == 1);
         drop(tasks);
-        let args = if args.len() == 0 {
+        let args = if args.is_empty() {
             vec![name.clone()]
         } else {
             args
@@ -381,7 +381,9 @@ impl Process {
         let new_memory_set = if flags.contains(CloneFlags::CLONE_VM) {
             Arc::clone(&self.memory_set)
         } else {
-            Arc::new(Mutex::new(MemorySet::clone(&self.memory_set.lock())?))
+            Arc::new(Mutex::new(MemorySet::clone_or_err(
+                &self.memory_set.lock(),
+            )?))
         };
 
         // 在生成新的进程前，需要决定其所属进程是谁
@@ -442,11 +444,11 @@ impl Process {
             // info!("curr_id: {:X}", (&curr_id as *const _ as usize));
         };
         // 检查是否在父任务中写入当前新任务的tid
-        if flags.contains(CloneFlags::CLONE_PARENT_SETTID) {
-            if self.manual_alloc_for_lazy(ptid.into()).is_ok() {
-                unsafe {
-                    *(ptid as *mut i32) = new_task.id().as_u64() as i32;
-                }
+        if flags.contains(CloneFlags::CLONE_PARENT_SETTID)
+            & self.manual_alloc_for_lazy(ptid.into()).is_ok()
+        {
+            unsafe {
+                *(ptid as *mut i32) = new_task.id().as_u64() as i32;
             }
         }
         // 若包含CLONE_CHILD_SETTID或者CLONE_CHILD_CLEARTID
@@ -559,7 +561,7 @@ impl Process {
         }
         let current_task = current();
         // 复制原有的trap上下文
-        let mut trap_frame = unsafe { *(current_task.get_first_trap_frame()) }.clone();
+        let mut trap_frame = unsafe { *(current_task.get_first_trap_frame()) };
         // drop(current_task);
         // 新开的进程/线程返回值为0
         // trap_frame.regs.a0 = 0;
