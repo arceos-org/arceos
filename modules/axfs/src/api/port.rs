@@ -48,7 +48,7 @@ pub struct Kstat {
 }
 #[derive(Debug, Clone, Copy, Default)]
 #[repr(C)]
-#[cfg(target_arch = "riscv64")]
+#[cfg(not(target_arch = "x86_64"))]
 pub struct Kstat {
     /// 设备
     pub st_dev: u64,

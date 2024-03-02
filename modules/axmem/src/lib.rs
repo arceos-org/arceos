@@ -392,14 +392,7 @@ impl MemorySet {
                 Ok(())
             }
             None => {
-                #[cfg(target_arch = "riscv64")]
-                let sepc = riscv::register::sepc::read();
-                #[cfg(target_arch = "x86_64")]
-                let sepc = "not supported now for x86";
-                error!(
-                    "Page fault address {:?} not found in memory set sepc: {:X?}",
-                    addr, sepc
-                );
+                error!("Page fault address {:?} not found in memory set ", addr);
                 Err(AxError::BadAddress)
             }
         }

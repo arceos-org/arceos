@@ -63,8 +63,8 @@ pub const SOCK_CLOEXEC: usize = 0x80000;
 #[allow(non_camel_case_types)]
 pub enum SocketOptionLevel {
     IP = 0,
-    SOCKET = 1,
-    TCP = 6,
+    Socket = 1,
+    Tcp = 6,
 }
 
 #[derive(TryFromPrimitive, Debug)]

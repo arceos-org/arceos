@@ -4,18 +4,19 @@ use alloc::{boxed::Box, string::String, string::ToString, vec::Vec};
 
 #[allow(dead_code)]
 pub const SDCARD_TESTCASES: &[&str] = &[
+    "./runtest.exe -w entry-static.exe pthread_cancel_points",
     // "busybox sh",
     // "./MediaServer -h",
     // "busybox sh ./test_all.sh",
     // "./riscv64-linux-musl-native/bin/riscv64-linux-musl-gcc ./hello.c -static",
     // "./a.out",
-    "./time-test",
+    // "./time-test",
     // "./interrupts-test-1",
     // "./interrupts-test-2",
-    "./copy-file-range-test-1",
-    "./copy-file-range-test-2",
-    "./copy-file-range-test-3",
-    "./copy-file-range-test-4",
+    // "./copy-file-range-test-1",
+    // "./copy-file-range-test-2",
+    // "./copy-file-range-test-3",
+    // "./copy-file-range-test-4",
     // "busybox echo hello",
     // "busybox sh ./unixbench_testcode.sh",
     // "busybox echo hello",
@@ -55,7 +56,7 @@ pub const SDCARD_TESTCASES: &[&str] = &[
     // "lmbench_all bw_mmap_rd -P 1 512k open2close /var/tmp/XXX",
     // "busybox echo context switch overhead",
     // "lmbench_all lat_ctx -P 1 -s 32 2 4 8 16 24 32 64 96",
-    "busybox sh libctest_testcode.sh",
+    // "busybox sh libctest_testcode.sh",
     // "busybox sh lua_testcode.sh",
     // "libc-bench",
     // "busybox sh ./netperf_testcode.sh",
@@ -71,10 +72,10 @@ fn get_args(command_line: &[u8]) -> Vec<String> {
     let mut in_quote = false;
     let mut arg_start = 0; // 一个新的参数的开始位置
     for pos in 0..command_line.len() {
-        if command_line[pos] == '\"' as u8 {
+        if command_line[pos] == b'\"' {
             in_quote = !in_quote;
         }
-        if command_line[pos] == ' ' as u8 && !in_quote {
+        if command_line[pos] == b' ' && !in_quote {
             // 代表要进行分割
             // 首先要防止是否有空串
             if arg_start != pos {
@@ -101,7 +102,7 @@ fn get_args(command_line: &[u8]) -> Vec<String> {
 #[allow(unused)]
 pub fn run_batch_testcases(envs: &Vec<String>) {
     let mut test_iter = Box::new(SDCARD_TESTCASES.iter());
-    while let Some(testcase) = test_iter.next() {
+    for testcase in test_iter {
         let args = get_args(testcase.as_bytes());
         let user_process = syscall_entry::Process::init(args, envs).unwrap();
         let now_process_id = user_process.get_process_id() as isize;

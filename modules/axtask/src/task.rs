@@ -414,6 +414,8 @@ impl TaskInner {
     }
 
     #[cfg(target_arch = "x86_64")]
+    /// # Safety
+    /// It is unsafe because it may cause undefined behavior if the `fs_base` is not a valid address.
     pub unsafe fn set_tls_force(&self, value: usize) {
         self.ctx.get().as_mut().unwrap().fs_base = value;
     }

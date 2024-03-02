@@ -97,6 +97,6 @@ fn handle_irq_exception(_tf: &TrapFrame) {
 /// 1. kernel_sp: the top of the kernel stack
 ///
 /// 2. frame_base: the address of the trap frame which will be pushed into the kernel stack
-pub fn first_into_user(kernel_sp: usize, frame_base: usize) {
+pub fn first_into_user(_kernel_sp: usize, _frame_base: usize) {
     panic!("Not implemented!");
 }
