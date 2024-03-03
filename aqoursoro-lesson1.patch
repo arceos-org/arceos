@@ -1,0 +1,62 @@
+diff --git a/apps/memtest/src/main.rs b/apps/memtest/src/main.rs
+index e23e95e..c05bc5c 100644
+--- a/apps/memtest/src/main.rs
++++ b/apps/memtest/src/main.rs
+@@ -6,7 +6,7 @@
+ extern crate axstd as std;
+ 
+ use rand::{rngs::SmallRng, RngCore, SeedableRng};
+-use std::collections::BTreeMap;
++use std::collections::HashMap;
+ use std::vec::Vec;
+ 
+ fn test_vec(rng: &mut impl RngCore) {
+@@ -22,9 +22,9 @@ fn test_vec(rng: &mut impl RngCore) {
+     println!("test_vec() OK!");
+ }
+ 
+-fn test_btree_map(rng: &mut impl RngCore) {
++fn test_hashmap_map(rng: &mut impl RngCore) {
+     const N: usize = 50_000;
+-    let mut m = BTreeMap::new();
++    let mut m = HashMap::new();
+     for _ in 0..N {
+         let value = rng.next_u32();
+         let key = format!("key_{value}");
+@@ -35,7 +35,7 @@ fn test_btree_map(rng: &mut impl RngCore) {
+             assert_eq!(k.parse::<u32>().unwrap(), *v);
+         }
+     }
+-    println!("test_btree_map() OK!");
++    println!("test_hashmap_map() OK!");
+ }
+ 
+ #[cfg_attr(feature = "axstd", no_mangle)]
+@@ -44,7 +44,7 @@ fn main() {
+ 
+     let mut rng = SmallRng::seed_from_u64(0xdead_beef);
+     test_vec(&mut rng);
+-    test_btree_map(&mut rng);
++    test_hashmap_map(&mut rng);
+ 
+     println!("Memory tests run OK!");
+ }
+diff --git a/ulib/axstd/src/lib.rs b/ulib/axstd/src/lib.rs
+index d256cd5..d2242d0 100644
+--- a/ulib/axstd/src/lib.rs
++++ b/ulib/axstd/src/lib.rs
+@@ -55,7 +55,7 @@ extern crate alloc;
+ 
+ #[cfg(feature = "alloc")]
+ #[doc(no_inline)]
+-pub use alloc::{boxed, collections, format, string, vec};
++pub use alloc::{boxed, format, string, vec};
+ 
+ #[doc(no_inline)]
+ pub use core::{arch, cell, cmp, hint, marker, mem, ops, ptr, slice, str};
+@@ -75,3 +75,5 @@ pub mod time;
+ pub mod fs;
+ #[cfg(feature = "net")]
+ pub mod net;
++
++pub mod collections;
