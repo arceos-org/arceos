@@ -1,5 +1,5 @@
 use axtask::current;
-use core::ptr::slice_from_raw_parts_mut;
+use core::{mem::size_of, ptr::slice_from_raw_parts_mut};
 /// 处理与任务（线程）有关的系统调用
 use core::time::Duration;
 
@@ -23,6 +23,7 @@ use syscall_utils::{SyscallError, SyscallResult};
 extern crate alloc;
 use alloc::{string::ToString, sync::Arc, vec::Vec};
 use syscall_utils::{PrctlOption, PR_NAME_SIZE};
+use syscall_utils::CloneArgs;
 use syscall_utils::{RLimit, TimeSecs, WaitFlags, RLIMIT_AS, RLIMIT_NOFILE, RLIMIT_STACK};
 
 #[cfg(feature = "signal")]
@@ -179,6 +180,46 @@ pub fn syscall_clone(
         ptid,
         tls,
         ctid,
+        #[cfg(feature = "signal")]
+        sig_child,
+    ) {
+        Ok(new_task_id as isize)
+    } else {
+        return Err(SyscallError::ENOMEM);
+    }
+}
+
+/// 创建子进程的新函数，所有信息保存在 CloneArgs
+pub fn syscall_clone3(
+    args: *const CloneArgs,
+    size: usize,
+) -> SyscallResult {
+    assert!(size >= size_of::<CloneArgs>());
+
+    let curr_process = current_process();
+
+    let args = match curr_process.manual_alloc_type_for_lazy(args) {
+        Ok(_) => unsafe { &*args },
+        Err(_) => return Err(SyscallError::EFAULT),
+    };
+
+    let clone_flags = CloneFlags::from_bits(args.flags as u32).unwrap();
+
+    let stack = if args.stack == 0 {
+        None
+    } else {
+        Some(args.stack as usize)
+    };
+    #[cfg(feature = "signal")]
+    let sig_child = SignalNo::from(args.exit_signal as usize & 0x3f) == SignalNo::SIGCHLD;
+
+    warn!("stack size  {}", args.stack_size);
+    if let Ok(new_task_id) = curr_process.clone_task(
+        clone_flags,
+        stack,
+        args.parent_tid as usize,
+        args.tls as usize,
+        args.child_tid as usize,
         #[cfg(feature = "signal")]
         sig_child,
     ) {

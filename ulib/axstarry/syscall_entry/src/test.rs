@@ -543,6 +543,10 @@ pub fn fs_init(_case: &'static str) {
         &(FilePath::new("/busybox").unwrap()),
     );
     create_link(
+        &(FilePath::new("/sbin/sleep").unwrap()),
+        &(FilePath::new("/busybox").unwrap()),
+    );
+    create_link(
         &(FilePath::new("/bin/lmbench_all").unwrap()),
         &(FilePath::new("/lmbench_all").unwrap()),
     );

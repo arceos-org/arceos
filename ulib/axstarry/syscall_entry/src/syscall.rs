@@ -40,7 +40,7 @@ pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
             }
         }
 
-        panic!("unknown syscall id: {}", syscall_id);
+        panic!("unknown syscall id: {}, args = {:?}", syscall_id, args);
     };
 
     let ans = deal_result(ans);

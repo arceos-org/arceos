@@ -5,8 +5,7 @@ mod task_syscall_id;
 #[cfg(feature = "signal")]
 use axsignal::action::SigAction;
 use syscall_utils::{
-    ITimerVal, RLimit, SysInfo, SyscallError, SyscallResult, TimeSecs, TimeVal, UtsName, WaitFlags,
-    TMS,
+    CloneArgs, ITimerVal, RLimit, SysInfo, SyscallError, SyscallResult, TimeSecs, TimeVal, UtsName, WaitFlags, TMS,
 };
 pub use task_syscall_id::TaskSyscallId::{self, *};
 
@@ -27,6 +26,7 @@ pub fn task_syscall(syscall_id: task_syscall_id::TaskSyscallId, args: [usize; 6]
             args[2] as *const usize,
         ),
         CLONE => syscall_clone(args[0], args[1], args[2], args[3], args[4]),
+        CLONE3 => syscall_clone3(args[0] as *const CloneArgs, args[1]),
         NANO_SLEEP => syscall_sleep(args[0] as *const TimeSecs, args[1] as *mut TimeSecs),
         SCHED_YIELD => syscall_yield(),
         TIMES => syscall_time(args[0] as *mut TMS),
@@ -52,6 +52,8 @@ pub fn task_syscall(syscall_id: task_syscall_id::TaskSyscallId, args: [usize; 6]
         KILL => syscall_kill(args[0] as isize, args[1] as isize),
         #[cfg(feature = "signal")]
         TKILL => syscall_tkill(args[0] as isize, args[1] as isize),
+        #[cfg(feature = "signal")]
+        TGKILL => syscall_tkill(args[1] as isize, args[2] as isize),
         #[cfg(feature = "signal")]
         SIGPROCMASK => syscall_sigprocmask(
             syscall_utils::SigMaskFlag::from(args[0]),
@@ -107,9 +109,11 @@ pub fn task_syscall(syscall_id: task_syscall_id::TaskSyscallId, args: [usize; 6]
         #[cfg(feature = "schedule")]
         SCHED_SETAFFINITY => Ok(0),
         #[cfg(feature = "schedule")]
-        SCHED_GETAFFINITY => {
-            syscall_sched_getaffinity(args[0] as usize, args[1] as usize, args[2] as *mut usize)
-        }
+        SCHED_GETAFFINITY => syscall_sched_getaffinity( // 这样写就可以
+            args[0] as usize,
+            args[1] as usize,
+            args[2] as *mut usize
+        ),
         #[cfg(feature = "schedule")]
         SCHED_SETSCHEDULER => syscall_sched_setscheduler(
             args[0] as usize,
@@ -118,6 +122,8 @@ pub fn task_syscall(syscall_id: task_syscall_id::TaskSyscallId, args: [usize; 6]
         ),
         #[cfg(feature = "schedule")]
         SCHED_GETSCHEDULER => syscall_sched_getscheduler(args[0] as usize),
+        #[cfg(feature = "schedule")]
+        GET_MEMPOLICY => Ok(0),
         CLOCK_GETRES => syscall_clock_getres(args[0] as usize, args[1] as *mut TimeSecs),
         CLOCK_NANOSLEEP => syscall_clock_nanosleep(
             args[0] as usize,

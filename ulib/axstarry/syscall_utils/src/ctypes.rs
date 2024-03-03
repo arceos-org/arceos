@@ -531,3 +531,21 @@ numeric_enum_macro::numeric_enum! {
         PR_GET_NAME = 16,
     }
 }
+
+
+#[repr(C)]
+#[derive(Debug)]
+/// sys_clone3 中使用的结构体
+pub struct CloneArgs {
+    pub flags: u64, // 符号位，对应 axprocess 的 CloneFlags
+    pub pidfd: u64, // 存储 PID 的文件描述符。Starry 暂未使用
+    pub child_tid: u64, // 同 sys_clone 的 ctid
+    pub parent_tid: u64, // 同 sys_clone 的 ptid
+    pub exit_signal: u64, // 子进程退出时向父进程发送的信号
+    pub stack: u64, // 同 sys_clone 的 stack
+    pub stack_size: u64, // 指定子进程的栈的大小
+    pub tls: u64, // 同 sys_clone 的 tls
+    pub set_tid: u64, // 该信息 Starry 暂未支持
+    pub set_tid_size: u64, // 该信息 Starry 暂未支持
+    pub cgroup: u64, // 该信息 Starry 暂未支持
+}
