@@ -1,7 +1,7 @@
 use axtask::current;
-use core::{mem::size_of, ptr::slice_from_raw_parts_mut};
 /// 处理与任务（线程）有关的系统调用
 use core::time::Duration;
+use core::{mem::size_of, ptr::slice_from_raw_parts_mut};
 
 use axconfig::TASK_STACK_SIZE;
 use axhal::time::current_time;
@@ -22,8 +22,8 @@ use axtask::TaskId;
 use syscall_utils::{SyscallError, SyscallResult};
 extern crate alloc;
 use alloc::{string::ToString, sync::Arc, vec::Vec};
-use syscall_utils::{PrctlOption, PR_NAME_SIZE};
 use syscall_utils::CloneArgs;
+use syscall_utils::{PrctlOption, PR_NAME_SIZE};
 use syscall_utils::{RLimit, TimeSecs, WaitFlags, RLIMIT_AS, RLIMIT_NOFILE, RLIMIT_STACK};
 
 #[cfg(feature = "signal")]
@@ -190,10 +190,7 @@ pub fn syscall_clone(
 }
 
 /// 创建子进程的新函数，所有信息保存在 CloneArgs
-pub fn syscall_clone3(
-    args: *const CloneArgs,
-    size: usize,
-) -> SyscallResult {
+pub fn syscall_clone3(args: *const CloneArgs, size: usize) -> SyscallResult {
     assert!(size >= size_of::<CloneArgs>());
 
     let curr_process = current_process();

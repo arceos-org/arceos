@@ -141,7 +141,7 @@ pub const LIBC_STATIC_TESTCASES: &[&str] = &[
     "./runtest.exe -w entry-static.exe pthread_condattr_setclock",
     "./runtest.exe -w entry-static.exe pthread_exit_cancel",
     "./runtest.exe -w entry-static.exe pthread_once_deadlock",
-    "./runtest.exe -w entry-static.exe pthread_rwlock_ebusy",    
+    "./runtest.exe -w entry-static.exe pthread_rwlock_ebusy",
     "./runtest.exe -w entry-static.exe putenv_doublefree",
     "./runtest.exe -w entry-static.exe regex_backref_0",
     "./runtest.exe -w entry-static.exe regex_bracket_icase",

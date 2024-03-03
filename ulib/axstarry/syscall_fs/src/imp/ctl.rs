@@ -220,6 +220,7 @@ pub fn syscall_getdents64(fd: usize, buf: *mut u8, len: usize) -> SyscallResult 
         // 设置定长部分
         dirent.set_fixed_part(1, offset, DirEnt::fixed_size(), DirEntType::REG);
         count += DirEnt::fixed_size();
+        return Ok((count - DirEnt::fixed_size()) as isize);
     }
     Ok(count as isize)
 }
