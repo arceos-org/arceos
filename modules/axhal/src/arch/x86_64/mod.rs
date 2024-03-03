@@ -113,3 +113,6 @@ pub fn read_thread_pointer() -> usize {
 pub unsafe fn write_thread_pointer(fs_base: usize) {
     unsafe { msr::wrmsr(msr::IA32_FS_BASE, fs_base as u64) }
 }
+
+#[cfg(feature = "signal")]
+core::arch::global_asm!(include_str!("signal.S"));

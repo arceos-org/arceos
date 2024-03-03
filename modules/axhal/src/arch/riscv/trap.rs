@@ -67,7 +67,7 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
                     tf.sepc
                 );
             }
-            handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::EXECUTE, tf);
+            handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::EXECUTE);
         }
 
         #[cfg(feature = "monolithic")]
@@ -77,7 +77,7 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
                 error!("L page fault from kernel, addr: {:#x}", addr);
                 unimplemented!("L page fault from kernel");
             }
-            handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::READ, tf);
+            handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::READ);
         }
 
         #[cfg(feature = "monolithic")]
@@ -91,7 +91,7 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
                 unimplemented!("S page fault from kernel");
             }
             let addr = stval::read();
-            handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::WRITE, tf);
+            handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::WRITE);
         }
 
         _ => {

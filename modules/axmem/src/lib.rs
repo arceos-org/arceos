@@ -414,6 +414,18 @@ impl MemorySet {
         }
     }
 
+    /// Map a 4K region without allocating physical memory.
+    pub fn map_page_without_alloc(
+        &mut self,
+        vaddr: VirtAddr,
+        paddr: PhysAddr,
+        flags: MappingFlags,
+    ) -> AxResult<()> {
+        self.page_table
+            .map_region(vaddr, paddr, PAGE_SIZE_4K, flags, false)
+            .map_err(|_| AxError::InvalidInput)
+    }
+
     /// Create a new SharedMem with given key.
     /// You need to add the returned SharedMem to global SHARED_MEMS or process's private_mem.
     ///

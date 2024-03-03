@@ -113,17 +113,10 @@ impl TrapFrame {
 
     /// 获取所有 syscall 参数
     pub fn get_syscall_args(&self) -> [usize; 6] {
-        [
-            self.rdi,
-            self.rsi,
-            self.rdx,
-            self.r10,
-            self.r8,
-            self.r9,
-        ].map(|n| n as _)
+        [self.rdi, self.rsi, self.rdx, self.r10, self.r8, self.r9].map(|n| n as _)
     }
 
-    /// 获取 syscall id 
+    /// 获取 syscall id
     pub fn get_syscall_num(&self) -> usize {
         self.rax as _
     }

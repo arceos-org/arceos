@@ -44,7 +44,7 @@ fn x86_trap_handler(tf: &mut TrapFrame) {
                         map_flags |= MappingFlags::EXECUTE;
                     }
                     axlog::debug!("error_code: {:?}", tf.error_code);
-                    handle_page_fault(unsafe { cr2() }.into(), map_flags, tf);
+                    handle_page_fault(unsafe { cr2() }.into(), map_flags);
                 }
             } else {
                 panic!(

@@ -137,3 +137,6 @@ pub fn read_thread_pointer() -> usize {
 pub unsafe fn write_thread_pointer(tpidr_el0: usize) {
     TPIDR_EL0.set(tpidr_el0 as _)
 }
+
+#[cfg(feature = "signal")]
+core::arch::global_asm!(include_str!("signal.S"));

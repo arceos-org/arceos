@@ -53,17 +53,12 @@ use crate::{
 pub fn load_trap_for_signal() -> bool {
     let current_process = current_process();
     let current_task = current_task();
-    // let signal_module = inner
-    //     .signal_module
-    //     .iter_mut()
-    //     .find(|(id, _)| *id == current_task.id().as_u64())
-    //     .map(|(_, handler)| handler)
-    //     .unwrap();
+
     let mut signal_modules = current_process.signal_modules.lock();
     let signal_module = signal_modules.get_mut(&current_task.id().as_u64()).unwrap();
     if let Some(old_trap_frame) = signal_module.last_trap_frame_for_signal.take() {
         unsafe {
-            let now_trap_frame = current_task.get_first_trap_frame();
+            let now_trap_frame: *mut TrapFrame = current_task.get_first_trap_frame();
             // 考虑当时调用信号处理函数时，sp对应的地址上的内容即是SignalUserContext
             // 此时认为一定通过sig_return调用这个函数
             // 所以此时sp的位置应该是SignalUserContext的位置
@@ -121,7 +116,7 @@ pub fn handle_signals() {
     } else {
         return;
     };
-    warn!(
+    info!(
         "cpu: {}, task: {}, handler signal: {}",
         this_cpu_id(),
         current_task.id().as_u64(),
@@ -191,15 +186,21 @@ pub fn handle_signals() {
 
     // // 新的trap上下文的sp指针位置，由于SIGINFO会存放内容，所以需要开个保护区域
     let mut sp = trap_frame.get_sp() - USER_SIGNAL_PROTECT;
+    let restorer = if let Some(addr) = action.get_storer() {
+        addr
+    } else {
+        axconfig::SIGNAL_TRAMPOLINE as usize
+    };
+
     info!(
         "restorer :{:#x}, handler: {:#x}",
-        action.get_storer(),
-        action.sa_handler
+        restorer, action.sa_handler
     );
+    #[cfg(not(target_arch = "x86_64"))]
+    trap_frame.set_ra(restorer);
 
     let old_pc = trap_frame.get_pc();
-    #[cfg(not(target_arch = "x86_64"))]
-    trap_frame.set_ra(action.get_storer());
+
     trap_frame.set_pc(action.sa_handler);
     // 传参
     trap_frame.set_arg0(sig_num);
@@ -232,7 +233,7 @@ pub fn handle_signals() {
     unsafe {
         // set return rip
         sp -= core::mem::size_of::<usize>();
-        *(sp as *mut usize) = action.get_storer();
+        *(sp as *mut usize) = restorer;
     }
 
     trap_frame.set_user_sp(sp);

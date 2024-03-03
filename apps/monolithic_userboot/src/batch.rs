@@ -4,7 +4,7 @@ use alloc::{boxed::Box, string::String, string::ToString, vec::Vec};
 
 #[allow(dead_code)]
 pub const SDCARD_TESTCASES: &[&str] = &[
-    "./runtest.exe -w entry-static.exe pthread_cancel_points",
+    // "./runtest.exe -w entry-static.exe pthread_cancel_points",
     // "busybox sh",
     // "./MediaServer -h",
     // "busybox sh ./test_all.sh",
@@ -37,7 +37,7 @@ pub const SDCARD_TESTCASES: &[&str] = &[
     // "lmbench_all lat_select -n 100 -P 1 file",
     // "lmbench_all lat_sig -P 1 install",
     // "lmbench_all lat_sig -P 1 catch",
-    // "lmbench_all lat_sig -P 1 prot lat_sig",
+    "lmbench_all lat_sig -P 1 prot lat_sig",
     // "lmbench_all lat_pipe -P 1",
     // "lmbench_all lat_proc -P 1 fork",
     // "lmbench_all lat_proc -P 1 exec",

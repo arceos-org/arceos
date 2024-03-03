@@ -1,5 +1,5 @@
 //! Trap handling.
-use super::arch::TrapFrame;
+
 use crate_interface::{call_interface, def_interface};
 use memory_addr::VirtAddr;
 use page_table_entry::MappingFlags;
@@ -21,7 +21,7 @@ pub trait TrapHandler {
     fn handle_syscall(syscall_id: usize, args: [usize; 6]) -> isize;
 
     #[cfg(feature = "monolithic")]
-    fn handle_page_fault(addr: VirtAddr, flags: MappingFlags, tf: &mut TrapFrame);
+    fn handle_page_fault(addr: VirtAddr, flags: MappingFlags);
 
     /// 处理当前进程的信号
     #[cfg(feature = "signal")]
@@ -44,8 +44,8 @@ pub(crate) fn handle_syscall(syscall_id: usize, args: [usize; 6]) -> isize {
 
 #[allow(dead_code)]
 #[cfg(feature = "monolithic")]
-pub(crate) fn handle_page_fault(addr: VirtAddr, flags: MappingFlags, tf: &mut TrapFrame) {
-    call_interface!(TrapHandler::handle_page_fault, addr, flags, tf);
+pub(crate) fn handle_page_fault(addr: VirtAddr, flags: MappingFlags) {
+    call_interface!(TrapHandler::handle_page_fault, addr, flags);
 }
 
 /// 信号处理函数

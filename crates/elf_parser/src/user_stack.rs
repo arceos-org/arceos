@@ -8,7 +8,7 @@ pub const USER_INIT_STACK_SIZE: usize = 0x4000;
 pub struct UserStack {
     /// 当前的用户栈的栈顶(低地址)
     sp: usize,
-    /// 当前的用户栈的栈顶(高地址)
+    /// 当前的用户栈的栈底(高地址)
     bottom: usize,
     /// data保存了用户栈上的信息
     pub data: Vec<u8>,

@@ -7,7 +7,8 @@ use alloc::{collections::BTreeMap, string::String};
 use axerrno::{AxError, AxResult};
 use axfs::api::{FileIO, OpenFlags};
 use axhal::arch::{flush_tlb, write_page_table_root, TrapFrame};
-use axhal::mem::{phys_to_virt, VirtAddr};
+use axhal::mem::{phys_to_virt, virt_to_phys, VirtAddr};
+use axhal::paging::MappingFlags;
 use axhal::KERNEL_PROCESS_ID;
 use axlog::{debug, error};
 use axmem::MemorySet;
@@ -25,6 +26,12 @@ use crate::{load_app, yield_now_task};
 pub static TID2TASK: Mutex<BTreeMap<u64, AxTaskRef>> = Mutex::new(BTreeMap::new());
 pub static PID2PC: Mutex<BTreeMap<u64, Arc<Process>>> = Mutex::new(BTreeMap::new());
 const FD_LIMIT_ORIGIN: usize = 1025;
+
+#[cfg(feature = "signal")]
+extern "C" {
+    fn start_signal_trampoline();
+}
+
 pub struct Process {
     /// 进程号
     pid: u64,
@@ -157,6 +164,20 @@ impl Process {
     pub fn init(args: Vec<String>, envs: &Vec<String>) -> AxResult<AxTaskRef> {
         let path = args[0].clone();
         let mut memory_set = MemorySet::new_with_kernel_mapped();
+        #[cfg(feature = "signal")]
+        {
+            // 生成信号跳板
+            let signal_trampoline_vaddr: VirtAddr = (axconfig::SIGNAL_TRAMPOLINE as usize).into();
+            let signal_trampoline_paddr = virt_to_phys((start_signal_trampoline as usize).into());
+            memory_set.map_page_without_alloc(
+                signal_trampoline_vaddr,
+                signal_trampoline_paddr,
+                MappingFlags::READ
+                    | MappingFlags::EXECUTE
+                    | MappingFlags::USER
+                    | MappingFlags::WRITE,
+            )?;
+        }
         let page_table_token = memory_set.page_table_token();
         if page_table_token != 0 {
             unsafe {
@@ -351,6 +372,18 @@ impl Process {
             self.signal_modules
                 .lock()
                 .insert(current_task.id().as_u64(), SignalModule::init_signal(None));
+
+            // 生成信号跳板
+            let signal_trampoline_vaddr: VirtAddr = (axconfig::SIGNAL_TRAMPOLINE as usize).into();
+            let signal_trampoline_paddr = virt_to_phys((start_signal_trampoline as usize).into());
+            self.memory_set.lock().map_page_without_alloc(
+                signal_trampoline_vaddr,
+                signal_trampoline_paddr,
+                MappingFlags::READ
+                    | MappingFlags::EXECUTE
+                    | MappingFlags::USER
+                    | MappingFlags::WRITE,
+            )?;
         }
 
         // user_stack_top = user_stack_top / PAGE_SIZE_4K * PAGE_SIZE_4K;
@@ -381,9 +414,26 @@ impl Process {
         let new_memory_set = if flags.contains(CloneFlags::CLONE_VM) {
             Arc::clone(&self.memory_set)
         } else {
-            Arc::new(Mutex::new(MemorySet::clone_or_err(
+            let memory_set = Arc::new(Mutex::new(MemorySet::clone_or_err(
                 &self.memory_set.lock(),
-            )?))
+            )?));
+            #[cfg(feature = "signal")]
+            {
+                // 生成信号跳板
+                let signal_trampoline_vaddr: VirtAddr =
+                    (axconfig::SIGNAL_TRAMPOLINE as usize).into();
+                let signal_trampoline_paddr =
+                    virt_to_phys((start_signal_trampoline as usize).into());
+                memory_set.lock().map_page_without_alloc(
+                    signal_trampoline_vaddr,
+                    signal_trampoline_paddr,
+                    MappingFlags::READ
+                        | MappingFlags::EXECUTE
+                        | MappingFlags::USER
+                        | MappingFlags::WRITE,
+                )?;
+            }
+            memory_set
         };
 
         // 在生成新的进程前，需要决定其所属进程是谁
