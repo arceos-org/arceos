@@ -109,7 +109,7 @@ pub fn task_syscall(syscall_id: task_syscall_id::TaskSyscallId, args: [usize; 6]
         #[cfg(feature = "schedule")]
         SCHED_SETAFFINITY => Ok(0),
         #[cfg(feature = "schedule")]
-        SCHED_GETAFFINITY => syscall_sched_getaffinity( // 这样写就可以
+        SCHED_GETAFFINITY => syscall_sched_getaffinity(
             args[0] as usize,
             args[1] as usize,
             args[2] as *mut usize
