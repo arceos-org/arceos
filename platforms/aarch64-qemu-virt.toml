@@ -9,6 +9,11 @@ family = "aarch64-qemu-virt"
 kernel-base-paddr = "0x4008_0000"
 # Base virtual address of the kernel image.
 kernel-base-vaddr = "0xffff_0000_4008_0000"
+
+# Testcase memory
+testcase-memory-start = "0xd000_0000"
+testcase-memory-size = "0x400_0000"    # 如果是要手动加载进来，认为镜像大小是80MB
+
 # Linear mapping offset, for quick conversions between physical and virtual
 # addresses.
 phys-virt-offset = "0xffff_0000_0000_0000"

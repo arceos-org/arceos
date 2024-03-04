@@ -65,6 +65,7 @@ syscall_mem = ["dep:syscall_mem"]
 syscall_task = ["dep:syscall_task"]
 
 [dependencies]
+cfg-if = "1.0"
 axfeat = { path = "../../../api/axfeat" }
 arceos_api = { path = "../../../api/arceos_api" }
 axlog = { path = "../../../modules/axlog" }

@@ -488,15 +488,27 @@ fn get_args(command_line: &[u8]) -> Vec<String> {
     }
     args
 }
+
+fn libc_name() -> (&'static str, &'static str) {
+    cfg_if::cfg_if! {
+        if #[cfg(target_arch = "riscv64")] {
+            let libc_so = &"ld-musl-riscv64-sf.so.1";
+            let libc_so2 = &"ld-musl-riscv64.so.1"; // 另一种名字的 libc.so，非 libc-test 测例库用
+            (libc_so, libc_so2)
+        } else if #[cfg(target_arch = "aarch64")]{
+            let libc_so = &"ld-musl-aarch64-sf.so.1";
+            let libc_so2 = &"ld-musl-aarch64.so.1"; // 另一种名字的 libc.so，非 libc-test 测例库用
+            (libc_so, libc_so2)
+        }
+    }
+}
 /// 在执行系统调用前初始化文件系统
 ///
 /// 包括建立软连接，提前准备好一系列的文件与文件夹
 pub fn fs_init(_case: &'static str) {
     // 需要对libc-dynamic进行特殊处理，因为它需要先加载libc.so
     // 建立一个硬链接
-
-    let libc_so = &"ld-musl-riscv64-sf.so.1";
-    let libc_so2 = &"ld-musl-riscv64.so.1"; // 另一种名字的 libc.so，非 libc-test 测例库用
+    let (libc_so, libc_so2) = libc_name();
 
     create_link(
         &(FilePath::new(("/lib/".to_string() + libc_so).as_str()).unwrap()),
@@ -619,17 +631,6 @@ pub fn run_testcases(case: &'static str) {
         if let Some(command_line) = test_iter.next() {
             let args = get_args(command_line.as_bytes());
             let testcase = args.clone();
-            // let real_testcase = if testcase[0] == "./busybox".to_string()
-            //     || testcase[0] == "busybox".to_string()
-            //     || testcase[0] == "entry-static.exe".to_string()
-            //     || testcase[0] == "entry-dynamic.exe".to_string()
-            //     || testcase[0] == "lmbench_all".to_string()
-            // {
-            //     testcase[1].clone()
-            // } else {
-            //     testcase[0].clone()
-            // };
-
             let main_task = axprocess::Process::init(args).unwrap();
             let now_process_id = main_task.get_process_id() as isize;
             TESTRESULT.lock().load(&(testcase));

@@ -36,7 +36,7 @@ pub fn fs_syscall(syscall_id: fs_syscall_id::FsSyscallId, args: [usize; 6]) -> S
         ),
         UNMOUNT => syscall_umount(args[0] as *const u8, args[1] as usize),
         FSTAT => syscall_fstat(args[0], args[1] as *mut Kstat),
-        RENAMEAT2 => syscall_renameat2(
+        RENAMEAT|RENAMEAT2 => syscall_renameat2(
             args[0],
             args[1] as *const u8,
             args[2],

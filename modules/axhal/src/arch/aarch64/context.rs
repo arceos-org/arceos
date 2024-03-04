@@ -6,13 +6,15 @@ use memory_addr::VirtAddr;
 #[derive(Debug, Default, Clone, Copy)]
 pub struct TrapFrame {
     /// General-purpose registers (R0..R30).
-    pub r: [u64; 31],
-    /// User Stack Pointer (SP_EL0).
-    pub usp: u64,
+    pub r: [usize; 31],
+    /// Stack Poiter
+    pub usp: usize,
     /// Exception Link Register (ELR_EL1).
-    pub elr: u64,
+    pub elr: usize,
     /// Saved Process Status Register (SPSR_EL1).
-    pub spsr: u64,
+    pub spsr: usize,
+    /// Saved tpidr_el0.
+    pub tpidr_el0: usize,
 }
 
 /// FP & SIMD registers.
@@ -31,6 +33,74 @@ pub struct FpState {
 impl FpState {
     fn switch_to(&mut self, next_fpstate: &FpState) {
         unsafe { fpstate_switch(self, next_fpstate) }
+    }
+}
+
+impl TrapFrame {
+    pub fn set_user_sp(&mut self, user_sp: usize) {
+        self.usp = user_sp;
+    }
+
+    pub fn sp(&mut self) -> usize {
+        self.usp
+    }
+
+    pub unsafe fn sp_from_raw(ptr: *mut TrapFrame) -> usize {
+        (*ptr).usp
+    }
+
+    pub unsafe fn set_pc_from_raw(ptr: *mut TrapFrame, pc: usize) {
+        (*ptr).elr = pc;
+    }
+
+    pub unsafe fn pc_from_raw(ptr: *mut TrapFrame) -> usize {
+        (*ptr).elr
+    }
+
+    pub fn pc(&mut self) -> usize {
+        self.elr
+    }
+
+    pub fn set_pc(&mut self, pc: usize) {
+        self.elr = pc;
+    }
+
+    pub fn set_tls(&mut self, tls: usize) {
+        self.tpidr_el0 = tls;
+    }
+
+    #[cfg(feature = "monolithic")]
+    pub fn set_ret_code(&mut self, ret: usize) {
+        self.r[0] = ret;
+    }
+
+    pub fn set_param0(&mut self, param: usize) {
+        self.r[0] = param;
+    }
+
+    pub fn set_param1(&mut self, param: usize) {
+        self.r[1] = param;
+    }
+
+    pub fn set_param2(&mut self, param: usize) {
+        self.r[2] = param;
+    }
+
+    pub fn set_lr(&mut self, param: usize) {
+        self.r[30] = param;
+    }
+
+    pub unsafe fn ret_from_raw(ptr: *mut TrapFrame) -> usize {
+         (*ptr).r[0]
+    }
+
+    /// 用于第一次进入应用程序时的初始化
+    pub fn app_init_context(app_entry: usize, user_sp: usize) -> Self {
+        let mut trap_frame = TrapFrame::default();
+        trap_frame.set_user_sp(user_sp);
+        trap_frame.elr = app_entry;
+        trap_frame.spsr = 0x00000000;
+        trap_frame
     }
 }
 

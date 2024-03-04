@@ -86,7 +86,7 @@ impl GenericPTE for Rv64PTE {
         debug_assert!(flags.intersects(PTEFlags::R | PTEFlags::X));
         Self(flags.bits() as u64 | ((paddr.as_usize() >> 2) as u64 & Self::PHYS_ADDR_MASK))
     }
-    fn new_fault_page(_is_huge: bool) -> Self {
+    fn new_fault_page(_flags: MappingFlags, _is_huge: bool) -> Self {
         let flags = PTEFlags::A | PTEFlags::D;
         Self(flags.bits() as u64)
     }
