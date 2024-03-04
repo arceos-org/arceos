@@ -11,7 +11,10 @@ use syscall_utils::{
 };
 
 /// 返回值为当前经过的时钟中断数
-pub fn syscall_time(tms: *mut TMS) -> SyscallResult {
+/// # Arguments
+/// * `tms` - *mut TMS
+pub fn syscall_time(args: [usize; 6]) -> SyscallResult {
+    let tms = args[0] as *mut TMS;
     let (_, utime_us, _, stime_us) = time_stat_output();
     unsafe {
         *tms = TMS {
@@ -25,19 +28,27 @@ pub fn syscall_time(tms: *mut TMS) -> SyscallResult {
 }
 
 /// 获取当前系统时间并且存储在给定结构体中
-pub fn syscall_get_time_of_day(ts: *mut TimeVal) -> SyscallResult {
+/// # Arguments
+/// * `ts` - *mut TimeVal
+pub fn syscall_get_time_of_day(args: [usize; 6]) -> SyscallResult {
+    let ts = args[0] as *mut TimeVal;
     let current_us = current_time_nanos() as usize / 1000;
     unsafe {
         *ts = TimeVal {
-            sec: current_us / 1000_000,
-            usec: current_us % 1000_000,
+            sec: current_us / 1_000_000,
+            usec: current_us % 1_000_000,
         }
     }
     Ok(0)
 }
 
 /// 用于获取当前系统时间并且存储在对应的结构体中
-pub fn syscall_clock_get_time(_clock_id: usize, ts: *mut TimeSecs) -> SyscallResult {
+/// # Arguments
+/// * `clock_id` - usize
+/// * `ts` - *mut TimeSecs
+pub fn syscall_clock_get_time(args: [usize; 6]) -> SyscallResult {
+    let _clock_id = args[0];
+    let ts = args[1] as *mut TimeSecs;
     unsafe {
         (*ts) = TimeSecs::now();
     }
@@ -45,7 +56,10 @@ pub fn syscall_clock_get_time(_clock_id: usize, ts: *mut TimeSecs) -> SyscallRes
 }
 
 /// 获取系统信息
-pub fn syscall_uname(uts: *mut UtsName) -> SyscallResult {
+/// # Arguments
+/// * `uts` - *mut UtsName
+pub fn syscall_uname(args: [usize; 6]) -> SyscallResult {
+    let uts = args[0] as *mut UtsName;
     unsafe {
         *uts = UtsName::default();
     }
@@ -53,7 +67,10 @@ pub fn syscall_uname(uts: *mut UtsName) -> SyscallResult {
 }
 
 /// 获取系统的启动时间和内存信息，当前仅支持启动时间
-pub fn syscall_sysinfo(info: *mut SysInfo) -> SyscallResult {
+/// # Arguments
+/// * `info` - *mut SysInfo
+pub fn syscall_sysinfo(args: [usize; 6]) -> SyscallResult {
+    let info = args[0] as *mut SysInfo;
     let process = current_process();
     if process
         .manual_alloc_type_for_lazy(info as *const SysInfo)
@@ -69,11 +86,14 @@ pub fn syscall_sysinfo(info: *mut SysInfo) -> SyscallResult {
     Ok(0)
 }
 
-pub fn syscall_settimer(
-    which: usize,
-    new_value: *const ITimerVal,
-    old_value: *mut ITimerVal,
-) -> SyscallResult {
+/// # Arguments
+/// * `which` - usize
+/// * `new_value` - *const ITimerVal
+/// * `old_value` - *mut ITimerVal
+pub fn syscall_settimer(args: [usize; 6]) -> SyscallResult {
+    let which = args[0];
+    let new_value = args[1] as *const ITimerVal;
+    let old_value = args[2] as *mut ITimerVal;
     let process = current_process();
 
     if new_value.is_null() {
@@ -108,7 +128,12 @@ pub fn syscall_settimer(
     }
 }
 
-pub fn syscall_gettimer(_which: usize, value: *mut ITimerVal) -> SyscallResult {
+/// # Arguments
+/// * `which` - usize
+/// * `value` - *mut ITimerVal
+pub fn syscall_gettimer(args: [usize; 6]) -> SyscallResult {
+    let _which = args[0];
+    let value = args[1] as *mut ITimerVal;
     let process = current_process();
     if process
         .manual_alloc_type_for_lazy(value as *const ITimerVal)
@@ -124,7 +149,12 @@ pub fn syscall_gettimer(_which: usize, value: *mut ITimerVal) -> SyscallResult {
     Ok(0)
 }
 
-pub fn syscall_getrusage(who: i32, utime: *mut TimeVal) -> SyscallResult {
+/// # Arguments
+/// * `who` - i32
+/// * `utime` - *mut TimeVal
+pub fn syscall_getrusage(args: [usize; 6]) -> SyscallResult {
+    let who = args[0] as i32;
+    let utime = args[1] as *mut TimeVal;
     let stime: *mut TimeVal = unsafe { utime.add(1) };
     let process = current_process();
     if process.manual_alloc_type_for_lazy(utime).is_err()
@@ -144,7 +174,14 @@ pub fn syscall_getrusage(who: i32, utime: *mut TimeVal) -> SyscallResult {
     }
 }
 
-pub fn syscall_getrandom(buf: *mut u8, len: usize, _flags: usize) -> SyscallResult {
+/// # Arguments
+/// * `buf` - *mut u8
+/// * `len` - usize
+/// * `flags` - usize
+pub fn syscall_getrandom(args: [usize; 6]) -> SyscallResult {
+    let buf = args[0] as *mut u8;
+    let len = args[1];
+    let _flags = args[2];
     let process = current_process();
 
     if process
@@ -170,11 +207,12 @@ pub fn syscall_getrandom(buf: *mut u8, len: usize, _flags: usize) -> SyscallResu
 
 /// # 获取时钟精度
 ///
-/// ## args：
-/// * id：时钟种类，当前仅支持CLOCK_MONOTONIC
-///
-/// * res：存储时钟精度的结构体的地址
-pub fn syscall_clock_getres(id: usize, res: *mut TimeSecs) -> SyscallResult {
+/// # Arguments
+/// * `id` - usize, 时钟种类,当前仅支持CLOCK_MONOTONIC
+/// * `res` - *mut TimeSecs, 存储时钟精度的结构体的地址
+pub fn syscall_clock_getres(args: [usize; 6]) -> SyscallResult {
+    let id = args[0];
+    let res = args[1] as *mut TimeSecs;
     let id = if let Ok(opt) = ClockId::try_from(id) {
         opt
     } else {
@@ -203,22 +241,21 @@ pub fn syscall_clock_getres(id: usize, res: *mut TimeSecs) -> SyscallResult {
 
 /// # 指定任务进行睡眠
 ///
-/// ## args:
-/// * id: 指定使用的时钟ID，对应结构体为ClockId
+/// # Arguments
+/// * id: usize,指定使用的时钟ID,对应结构体为ClockId
 ///
-/// * flags：指定是使用相对时间还是绝对时间
+/// * flags: usize,指定是使用相对时间还是绝对时间
 ///
-/// * request：指定睡眠的时间，根据flags划分为相对时间或者绝对时间
+/// * request: *const TimeSecs指定睡眠的时间,根据flags划分为相对时间或者绝对时间
 ///
-/// * remain：存储剩余睡眠时间。当任务提前醒来时，如果flags不为绝对时间，且remain不为空，则将剩余存储时间存进remain所指向地址。
+/// * remain: *mut TimeSecs存储剩余睡眠时间。当任务提前醒来时,如果flags不为绝对时间,且remain不为空,则将剩余存储时间存进remain所指向地址。
 ///
 /// 若睡眠被信号处理打断或者遇到未知错误，则返回对应错误码
-pub fn syscall_clock_nanosleep(
-    id: usize,
-    flags: usize,
-    request: *const TimeSecs,
-    remain: *mut TimeSecs,
-) -> SyscallResult {
+pub fn syscall_clock_nanosleep(args: [usize; 6]) -> SyscallResult {
+    let id = args[0];
+    let flags = args[1];
+    let request = args[2] as *const TimeSecs;
+    let remain = args[3] as *mut TimeSecs;
     const TIMER_ABSTIME: usize = 1;
     let id = if let Ok(opt) = ClockId::try_from(id) {
         opt
@@ -257,8 +294,8 @@ pub fn syscall_clock_nanosleep(
             let delta = (deadline - current_time).as_nanos() as usize;
             unsafe {
                 *remain = TimeSecs {
-                    tv_sec: delta / 1000_000_000,
-                    tv_nsec: delta % 1000_000_000,
+                    tv_sec: delta / 1_000_000_000,
+                    tv_nsec: delta % 1_000_000_000,
                 }
             };
             return Err(SyscallError::EINTR);

@@ -10,6 +10,7 @@ numeric_enum_macro::numeric_enum! {
 pub enum NetSyscallId {
     // Socket
     SOCKET = 198,
+    SOCKETPAIR = 199,
     BIND = 200,
     LISTEN = 201,
     ACCEPT = 202,
@@ -40,6 +41,7 @@ numeric_enum_macro::numeric_enum! {
         CONNECT = 42,
         GETSOCKNAME = 51,
         GETPEERNAME = 52,
+        SOCKETPAIR = 53,
         SENDTO = 44,
         RECVFROM = 45,
         SETSOCKOPT = 54,

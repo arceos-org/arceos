@@ -103,9 +103,12 @@ pub fn get_stat_in_fs(path: &FilePath) -> Result<Kstat, SyscallError> {
     // 否则在fat32中查找
     let real_path = path.path();
     let mut ans = Kstat::default();
+    info!("get_stat_in_fs: {}", real_path);
     if real_path.starts_with("/var")
         || real_path.starts_with("/dev")
         || real_path.starts_with("/tmp")
+        || real_path.starts_with("/proc")
+        || real_path.starts_with("/sys")
     {
         if path.is_dir() {
             ans.st_dev = 2;
@@ -113,8 +116,10 @@ pub fn get_stat_in_fs(path: &FilePath) -> Result<Kstat, SyscallError> {
             return Ok(ans);
         }
         if let Ok(node) = lookup(path.path()) {
-            let mut stat = Kstat::default();
-            stat.st_nlink = 1;
+            let mut stat = Kstat {
+                st_nlink: 1,
+                ..Kstat::default()
+            };
             // 先检查是否在vfs中存在对应文件
             // 判断是在哪个vfs中
             if node
@@ -129,7 +134,8 @@ pub fn get_stat_in_fs(path: &FilePath) -> Result<Kstat, SyscallError> {
                 stat.st_dev = 2;
                 stat.st_mode = normal_file_mode(StMode::S_IFDIR).bits();
                 return Ok(stat);
-            } else if node
+            }
+            if node
                 .as_any()
                 .downcast_ref::<axfs::axfs_devfs::ZeroDev>()
                 .is_some()
@@ -137,10 +143,15 @@ pub fn get_stat_in_fs(path: &FilePath) -> Result<Kstat, SyscallError> {
                     .as_any()
                     .downcast_ref::<axfs::axfs_devfs::NullDev>()
                     .is_some()
+                || node
+                    .as_any()
+                    .downcast_ref::<axfs::axfs_devfs::RandomDev>()
+                    .is_some()
             {
                 stat.st_mode = normal_file_mode(StMode::S_IFCHR).bits();
                 return Ok(stat);
-            } else if node
+            }
+            if node
                 .as_any()
                 .downcast_ref::<axfs::axfs_ramfs::FileNode>()
                 .is_some()
@@ -165,7 +176,7 @@ pub fn get_stat_in_fs(path: &FilePath) -> Result<Kstat, SyscallError> {
         } else {
             Err(SyscallError::ENOENT)
         }
-    } else {
+    } else if metadata.is_dir() {
         // 是目录
         if let Ok(dir) = new_dir(real_path.to_string(), OpenFlags::DIR) {
             match dir.get_stat() {
@@ -178,5 +189,12 @@ pub fn get_stat_in_fs(path: &FilePath) -> Result<Kstat, SyscallError> {
         } else {
             Err(SyscallError::ENOENT)
         }
+    } else {
+        // 是字符设备
+        Ok(Kstat {
+            st_nlink: 1,
+            st_mode: normal_file_mode(StMode::S_IFCHR).bits(),
+            ..Kstat::default()
+        })
     }
 }

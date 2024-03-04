@@ -18,15 +18,17 @@ const MAX_HEAP_SIZE: usize = 0x20000;
 ///
 /// - 如输入 brk 为 0 ，则返回堆顶地址
 /// - 重新设置堆顶地址，如成功则返回设置后的堆顶地址，否则保持不变，并返回之前的堆顶地址。
-pub fn syscall_brk(brk: usize) -> SyscallResult {
+///
+/// # Arguments
+/// * `brk` - usize
+pub fn syscall_brk(args: [usize; 6]) -> SyscallResult {
+    let brk = args[0];
     let curr_process = current_process();
     let mut return_val: isize = curr_process.get_heap_top() as isize;
     let heap_bottom = curr_process.get_heap_bottom() as usize;
-    if brk != 0 {
-        if brk >= heap_bottom && brk <= heap_bottom + MAX_HEAP_SIZE {
-            curr_process.set_heap_top(brk as u64);
-            return_val = brk as isize;
-        }
+    if brk != 0 && brk >= heap_bottom && brk <= heap_bottom + MAX_HEAP_SIZE {
+        curr_process.set_heap_top(brk as u64);
+        return_val = brk as isize;
     }
     Ok(return_val)
 }
@@ -37,21 +39,23 @@ pub fn syscall_brk(brk: usize) -> SyscallResult {
 /// len指定了映射文件的长度
 /// prot指定了页面的权限
 /// flags指定了映射的方法
-pub fn syscall_mmap(
-    start: usize,
-    len: usize,
-    prot: MMAPPROT,
-    flags: MMAPFlags,
-    fd: i32,
-    offset: usize,
-) -> SyscallResult {
+/// # Arguments
+/// * `start` - usize
+/// * `len` - usize
+/// * `prot` - MMAPPROT
+/// * `flags` - MMAPFlags
+/// * `fd` - i32
+/// * `offset` - usize
+pub fn syscall_mmap(args: [usize; 6]) -> SyscallResult {
+    let start = args[0];
+    let len = args[1];
+    let prot = MMAPPROT::from_bits_truncate(args[2] as u32);
+    let flags = MMAPFlags::from_bits_truncate(args[3] as u32);
+    let fd = args[4] as i32;
+    let offset = args[5];
     use axlog::debug;
     use axmem::MemBackend;
 
-    debug!(
-        "mmap start={:x} len={:x} prot=[{:#?}] flags=[{:#?}] fd={} offset={:x}",
-        start, len, prot, flags, fd, offset
-    );
     let fixed = flags.contains(MMAPFlags::MAP_FIXED);
     // try to map to NULL
     if fixed && start == 0 {
@@ -102,21 +106,38 @@ pub fn syscall_mmap(
     Ok(addr)
 }
 
-pub fn syscall_munmap(start: usize, len: usize) -> SyscallResult {
+/// # Arguments
+/// * `start` - usize
+/// * `len` - usize
+pub fn syscall_munmap(args: [usize; 6]) -> SyscallResult {
+    let start = args[0];
+    let len = args[1];
     let process = current_process();
     process.memory_set.lock().munmap(start.into(), len);
     flush_tlb(None);
     Ok(0)
 }
 
-pub fn syscall_msync(start: usize, len: usize) -> SyscallResult {
+/// # Arguments
+/// * `start` - usize
+/// * `len` - usize
+pub fn syscall_msync(args: [usize; 6]) -> SyscallResult {
+    let start = args[0];
+    let len = args[1];
     let process = current_process();
     process.memory_set.lock().msync(start.into(), len);
 
     Ok(0)
 }
 
-pub fn syscall_mprotect(start: usize, len: usize, prot: MMAPPROT) -> SyscallResult {
+/// # Arguments
+/// * `start` - usize
+/// * `len` - usize
+/// * `prot` - MMAPPROT
+pub fn syscall_mprotect(args: [usize; 6]) -> SyscallResult {
+    let start = args[0];
+    let len = args[1];
+    let prot = MMAPPROT::from_bits_truncate(args[2] as u32);
     let process = current_process();
 
     process
@@ -142,7 +163,15 @@ bitflags! {
 }
 
 // TODO: uid and gid support
-pub fn syscall_shmget(key: i32, size: usize, flags: i32) -> SyscallResult {
+/// # Arguments
+/// * `key` - i32
+/// * `size` - usize
+/// * `flags` - i32
+pub fn syscall_shmget(args: [usize; 6]) -> SyscallResult {
+    let key = args[0] as i32;
+    let size = args[1];
+    let flags = args[2] as i32;
+
     let pid = current_process().pid();
 
     // 9 bits for permission
@@ -203,7 +232,14 @@ bitflags! {
     }
 }
 
-pub fn syscall_shmat(shmid: i32, addr: usize, flags: i32) -> SyscallResult {
+/// # Arguments
+/// * `shmid` - i32
+/// * `addr` - usize
+/// * `flags` - i32
+pub fn syscall_shmat(args: [usize; 6]) -> SyscallResult {
+    let shmid = args[0] as i32;
+    let addr = args[1];
+    let flags = args[2] as i32;
     let process = current_process();
 
     let mut memory = process.memory_set.lock();
@@ -227,12 +263,10 @@ pub fn syscall_shmat(shmid: i32, addr: usize, flags: i32) -> SyscallResult {
         let addr: VirtAddr = addr.into();
         let addr = if addr.is_aligned_4k() {
             addr
+        } else if flags.contains(ShmAtFlags::SHM_RND) {
+            addr.align_up_4k()
         } else {
-            if flags.contains(ShmAtFlags::SHM_RND) {
-                addr.align_up_4k()
-            } else {
-                return Err(SyscallError::EINVAL);
-            }
+            return Err(SyscallError::EINVAL);
         };
 
         if flags.contains(ShmAtFlags::SHM_REMAP) {

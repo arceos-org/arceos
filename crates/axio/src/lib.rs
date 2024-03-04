@@ -66,7 +66,7 @@ pub trait Read {
             Ok(())
         }
     }
-
+    /// Read the exact number of bytes required to fill `buf`.
     fn read_full(&mut self, mut buf: &mut [u8]) -> Result<usize> {
         let buf_len = buf.len();
 

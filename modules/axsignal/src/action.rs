@@ -1,5 +1,3 @@
-pub const SIGNAL_RETURN_TRAP: usize = 0xFFFF_FF80_0000_0000;
-
 use crate::signal_no::SignalNo::{self, *};
 
 /// 特殊取值，代表默认处理函数
@@ -9,8 +7,8 @@ pub const SIG_DFL: usize = 0;
 pub const SIG_IGN: usize = 1;
 
 bitflags::bitflags! {
-    #[derive(Default,Clone, Copy)]
-    pub struct SigActionFlags: usize {
+    #[derive(Default,Clone, Copy, Debug)]
+    pub struct SigActionFlags: u32 {
         const SA_NOCLDSTOP = 1;
         const SA_NOCLDWAIT = 2;
         const SA_SIGINFO = 4;
@@ -18,7 +16,7 @@ bitflags::bitflags! {
         const SA_RESTART = 0x10000000;
         const SA_NODEFER = 0x40000000;
         const SA_RESETHAND = 0x80000000;
-        const SA_RESTORER = 0x04000000;
+        const SA_RESTORER = 0x4000000;
     }
 }
 
@@ -73,7 +71,7 @@ impl SignalDefault {
 }
 
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct SigAction {
     /// 信号处理函数的地址
     /// 1. 如果是上述特殊值 SIG_DFL 或 SIG_IGN，则按描述处理
@@ -94,11 +92,11 @@ pub struct SigAction {
 }
 
 impl SigAction {
-    pub fn get_storer(&self) -> usize {
+    pub fn get_storer(&self) -> Option<usize> {
         if self.sa_flags.contains(SigActionFlags::SA_RESTORER) {
-            self.restorer
+            Some(self.restorer)
         } else {
-            SIGNAL_RETURN_TRAP
+            None
         }
     }
 }

@@ -84,3 +84,19 @@ fn handle_sync_exception(tf: &mut TrapFrame) {
 fn handle_irq_exception(_tf: &TrapFrame) {
     crate::trap::handle_irq_extern(0)
 }
+
+#[no_mangle]
+#[cfg(feature = "monolithic")]
+/// To handle the first time into the user space
+///
+/// 1. push the given trap frame into the kernel stack
+/// 2. go into the user space
+///
+/// args:
+///
+/// 1. kernel_sp: the top of the kernel stack
+///
+/// 2. frame_base: the address of the trap frame which will be pushed into the kernel stack
+pub fn first_into_user(_kernel_sp: usize, _frame_base: usize) {
+    panic!("Not implemented!");
+}

@@ -19,7 +19,7 @@ use-ramdisk = []
 monolithic = []
 fatfs = ["dep:fatfs", "devfs", "ramfs", "procfs", "sysfs",]
 ext4fs = ["dep:lwext4_rust", "devfs", "ramfs", "procfs", "sysfs",]
-default = []
+default = ["devfs", "ramfs", "fatfs", "procfs", "sysfs"]
 
 [dependencies]
 log = "0.4"

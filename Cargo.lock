@@ -443,6 +443,7 @@ dependencies = [
  "axfs",
  "axhal",
  "axio",
+ "elf_parser",
  "log",
  "page_table_entry",
  "riscv",
@@ -486,6 +487,7 @@ dependencies = [
  "bitflags 2.4.0",
  "cfg-if",
  "crate_interface",
+ "elf_parser",
  "lazy_static",
  "riscv",
  "spinlock",
@@ -551,6 +553,7 @@ version = "0.1.0"
 dependencies = [
  "axconfig",
  "axhal",
+ "axlog",
  "axsignal",
  "axtask",
  "cfg-if",
@@ -899,13 +902,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "danger_access"
-version = "0.1.0"
-dependencies = [
- "axstd",
-]
-
-[[package]]
 name = "defmt"
 version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -999,6 +995,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a26ae43d7bcc3b814de94796a5e736d4029efb0ee900c12e2d54c993ad1a1e07"
 
 [[package]]
+name = "elf_parser"
+version = "0.1.0"
+dependencies = [
+ "axerrno",
+ "cfg-if",
+ "log",
+ "memory_addr",
+ "page_table_entry",
+ "xmas-elf",
+]
+
+[[package]]
 name = "embedded-graphics"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1065,27 +1073,6 @@ source = "git+https://github.com/rafalh/rust-fatfs?rev=a3a834e#a3a834ef92d94dd22
 dependencies = [
  "bitflags 1.3.2",
  "log",
-]
-
-[[package]]
-name = "fileopen"
-version = "0.1.0"
-dependencies = [
- "axstd",
-]
-
-[[package]]
-name = "fileread"
-version = "0.1.0"
-dependencies = [
- "axstd",
-]
-
-[[package]]
-name = "filewrite"
-version = "0.1.0"
-dependencies = [
- "axstd",
 ]
 
 [[package]]
@@ -1361,6 +1348,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 
 [[package]]
+name = "monolithic_userboot"
+version = "0.1.0"
+dependencies = [
+ "syscall_entry",
+]
+
+[[package]]
 name = "nb"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1440,13 +1434,6 @@ name = "oorandom"
 version = "11.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ab1bc2a289d34bd04a330323ac98a1b4bc82c9d9fcb1e66b63caa84da26b575"
-
-[[package]]
-name = "oscomp"
-version = "0.1.0"
-dependencies = [
- "syscall_entry",
-]
 
 [[package]]
 name = "page_table"
@@ -2028,20 +2015,6 @@ dependencies = [
  "bitflags 2.4.0",
  "num_enum",
  "numeric-enum-macro",
-]
-
-[[package]]
-name = "task_single_yield"
-version = "0.1.0"
-dependencies = [
- "axstd",
-]
-
-[[package]]
-name = "taskyield"
-version = "0.1.0"
-dependencies = [
- "axstd",
 ]
 
 [[package]]

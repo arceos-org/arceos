@@ -1,5 +1,5 @@
 //! 支持 futex 相关的 syscall
-use core::time::Duration;
+
 extern crate alloc;
 use alloc::collections::VecDeque;
 use axhal::mem::VirtAddr;
@@ -40,12 +40,7 @@ pub fn futex_requeue(wake_num: u32, move_num: usize, src_addr: VirtAddr, dst_add
         let move_num = move_num.min(src_wait_task.len());
 
         let mut temp_move_task = src_wait_task.drain(..move_num).collect::<VecDeque<_>>();
-        let dst_wait_task = if futex_wait_task.contains_key(&dst_addr) {
-            futex_wait_task.get_mut(&dst_addr).unwrap()
-        } else {
-            futex_wait_task.insert(dst_addr, VecDeque::new());
-            futex_wait_task.get_mut(&dst_addr).unwrap()
-        };
+        let dst_wait_task = futex_wait_task.entry(dst_addr).or_default();
         dst_wait_task.append(&mut temp_move_task);
     }
 }
@@ -70,12 +65,7 @@ pub fn futex(
                     return Err(SyscallError::EAGAIN);
                 }
                 let mut futex_wait_task = FUTEX_WAIT_TASK.lock();
-                let wait_list = if futex_wait_task.contains_key(&vaddr) {
-                    futex_wait_task.get_mut(&vaddr).unwrap()
-                } else {
-                    futex_wait_task.insert(vaddr, VecDeque::new());
-                    futex_wait_task.get_mut(&vaddr).unwrap()
-                };
+                let wait_list = futex_wait_task.entry(vaddr).or_default();
                 wait_list.push_back((current_task.as_task_ref().clone(), val));
                 // // 输出每一个键值对应的vec的长度
                 drop(futex_wait_task);
@@ -83,16 +73,22 @@ pub fn futex(
                 // debug!("ready wait!");
                 if timeout == 0 {
                     yield_now_task();
-                } else {
-                    let timeout = WAIT_FOR_FUTEX.wait_timeout(Duration::from_nanos(timeout as u64));
-                    if !timeout && process.have_signals().is_some() {
+                }
+                #[cfg(feature = "signal")]
+                {
+                    use core::time::Duration;
+                    if timeout != 0
+                        && !WAIT_FOR_FUTEX.wait_timeout(Duration::from_nanos(timeout as u64))
+                        && process.have_signals().is_some()
+                    {
                         // 被信号打断
                         return Err(SyscallError::EINTR);
                     }
                 }
-                return Ok(0);
+
+                Ok(0)
             } else {
-                return Err(SyscallError::EFAULT);
+                Err(SyscallError::EFAULT)
             }
         }
         FutexFlags::WAKE => {
@@ -120,15 +116,15 @@ pub fn futex(
                 drop(futex_wait_task);
             }
             yield_now_task();
-            return Ok(val as usize);
+            Ok(val as usize)
         }
         FutexFlags::REQUEUE => {
             // 此时timeout相当于val2，即是move_num
             futex_requeue(val, timeout, vaddr, vaddr2);
-            return Ok(0);
+            Ok(0)
         }
         _ => {
-            return Err(SyscallError::EINVAL);
+            Err(SyscallError::EINVAL)
             // return Ok(0);
         }
     }
@@ -152,14 +148,20 @@ pub fn check_dead_wait() {
     }
 }
 
-pub fn syscall_futex(
-    vaddr: usize,
-    futex_op: i32,
-    futex_val: u32,
-    time_out_val: usize,
-    vaddr2: usize,
-    val3: u32,
-) -> SyscallResult {
+/// # Arguments
+/// * vaddr: usize
+/// * futex_op: i32
+/// * futex_val: u32
+/// * time_out_val: usize
+/// * vaddr2: usize
+/// * val3: u32
+pub fn syscall_futex(args: [usize; 6]) -> SyscallResult {
+    let vaddr = args[0];
+    let futex_op = args[1] as i32;
+    let futex_val = args[2] as u32;
+    let time_out_val = args[3];
+    let vaddr2 = args[4];
+    let val3 = args[5] as u32;
     let process = current_process();
     let timeout = if time_out_val != 0 && process.manual_alloc_for_lazy(time_out_val.into()).is_ok()
     {
@@ -185,7 +187,12 @@ pub fn syscall_futex(
 
 /// 内核只发挥存储的作用
 /// 但要保证head对应的地址已经被分配
-pub fn syscall_set_robust_list(head: usize, len: usize) -> SyscallResult {
+/// # Arguments
+/// * head: usize
+/// * len: usize
+pub fn syscall_set_robust_list(args: [usize; 6]) -> SyscallResult {
+    let head = args[0];
+    let len = args[1];
     let process = current_process();
     if len != core::mem::size_of::<RobustList>() {
         return Err(SyscallError::EINVAL);
@@ -193,13 +200,7 @@ pub fn syscall_set_robust_list(head: usize, len: usize) -> SyscallResult {
     let curr_id = current_task().id().as_u64();
     if process.manual_alloc_for_lazy(head.into()).is_ok() {
         let mut robust_list = process.robust_list.lock();
-        if robust_list.contains_key(&curr_id) {
-            let list = robust_list.get_mut(&curr_id).unwrap();
-            list.head = head;
-            list.len = len;
-        } else {
-            robust_list.insert(curr_id, FutexRobustList::new(head, len));
-        }
+        robust_list.insert(curr_id, FutexRobustList::new(head, len));
         Ok(0)
     } else {
         Err(SyscallError::EINVAL)
@@ -207,7 +208,15 @@ pub fn syscall_set_robust_list(head: usize, len: usize) -> SyscallResult {
 }
 
 /// 取出对应线程的robust list
-pub fn syscall_get_robust_list(pid: i32, head: *mut usize, len: *mut usize) -> SyscallResult {
+/// # Arguments
+/// * pid: i32
+/// * head: *mut usize
+/// * len: *mut usize
+pub fn syscall_get_robust_list(args: [usize; 6]) -> SyscallResult {
+    let pid = args[0] as i32;
+    let head = args[1] as *mut usize;
+    let len = args[2] as *mut usize;
+
     if pid == 0 {
         let process = current_process();
         let curr_id = current_task().id().as_u64();
@@ -226,9 +235,8 @@ pub fn syscall_get_robust_list(pid: i32, head: *mut usize, len: *mut usize) -> S
                 return Err(SyscallError::EPERM);
             }
             return Ok(0);
-        } else {
-            return Err(SyscallError::EPERM);
         }
+        return Err(SyscallError::EPERM);
     }
     Err(SyscallError::EPERM)
 }

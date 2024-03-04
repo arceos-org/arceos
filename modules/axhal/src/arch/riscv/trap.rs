@@ -67,7 +67,7 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
                     tf.sepc
                 );
             }
-            handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::EXECUTE, tf);
+            handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::EXECUTE);
         }
 
         #[cfg(feature = "monolithic")]
@@ -77,7 +77,7 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
                 error!("L page fault from kernel, addr: {:#x}", addr);
                 unimplemented!("L page fault from kernel");
             }
-            handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::READ, tf);
+            handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::READ);
         }
 
         #[cfg(feature = "monolithic")]
@@ -91,7 +91,7 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
                 unimplemented!("S page fault from kernel");
             }
             let addr = stval::read();
-            handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::WRITE, tf);
+            handle_page_fault(addr.into(), MappingFlags::USER | MappingFlags::WRITE);
         }
 
         _ => {
@@ -113,4 +113,54 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
     // 在保证将寄存器都存储好之后，再开启中断
     // 否则此时会因为写入csr寄存器过程中出现中断，导致出现异常
     disable_irqs();
+}
+
+#[no_mangle]
+#[cfg(feature = "monolithic")]
+/// To handle the first time into the user space
+///
+/// 1. push the given trap frame into the kernel stack
+/// 2. go into the user space
+///
+/// args:
+///
+/// 1. kernel_sp: the top of the kernel stack
+///
+/// 2. frame_base: the address of the trap frame which will be pushed into the kernel stack
+pub fn first_into_user(kernel_sp: usize, frame_base: usize) {
+    // Make sure that all csr registers are stored before enable the interrupt
+    use crate::arch::flush_tlb;
+
+    disable_irqs();
+    flush_tlb(None);
+
+    let trap_frame_size = core::mem::size_of::<TrapFrame>();
+    let kernel_base = kernel_sp - trap_frame_size;
+    unsafe {
+        core::arch::asm!(
+            r"
+            mv      sp, {frame_base}
+            .short  0x2432                      // fld fs0,264(sp)
+            .short  0x24d2                      // fld fs1,272(sp)
+            mv      t1, {kernel_base}
+            LDR     t0, sp, 2
+            STR     gp, t1, 2
+            mv      gp, t0
+            LDR     t0, sp, 3
+            STR     tp, t1, 3                   // save supervisor tp. Note that it is stored on the kernel stack rather than in sp, in which case the ID of the currently running CPU should be stored
+            mv      tp, t0                      // tp: now it stores the TLS pointer to the corresponding thread
+            csrw    sscratch, {kernel_sp}       // put supervisor sp to scratch
+            LDR     t0, sp, 31
+            LDR     t1, sp, 32
+            csrw    sepc, t0
+            csrw    sstatus, t1
+            POP_GENERAL_REGS
+            LDR     sp, sp, 1
+            sret
+        ",
+            frame_base = in(reg) frame_base,
+            kernel_sp = in(reg) kernel_sp,
+            kernel_base = in(reg) kernel_base,
+        );
+    };
 }

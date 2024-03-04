@@ -1,4 +1,4 @@
-use alloc::{collections::VecDeque, vec::Vec};
+use alloc::{collections::VecDeque, vec, vec::Vec};
 use smoltcp::{
     iface::SocketSet,
     phy::{Device, DeviceCapabilities, Medium},
@@ -66,8 +66,7 @@ impl<'a> smoltcp::phy::TxToken for TxToken<'a> {
     where
         F: FnOnce(&mut [u8]) -> R,
     {
-        let mut buffer = Vec::new();
-        buffer.resize(len, 0);
+        let mut buffer = vec![0; len];
         let result = f(&mut buffer);
         self.queue.push_back(buffer);
         result

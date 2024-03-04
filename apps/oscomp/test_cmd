@@ -1,1 +1,0 @@
-test_one "LOG=off FEATURES=monolithic,img,syscall_fs,syscall_mem,syscall_task,syscall_net,futex,signal" "expect_off.out"

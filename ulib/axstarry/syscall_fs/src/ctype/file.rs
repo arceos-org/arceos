@@ -1,5 +1,6 @@
 extern crate alloc;
 
+use alloc::collections::BTreeMap;
 use alloc::string::{String, ToString};
 use alloc::sync::Arc;
 use alloc::vec;
@@ -13,6 +14,8 @@ use axprocess::link::get_link_count;
 use axsync::Mutex;
 use syscall_utils::{new_file, TimeSecs};
 use syscall_utils::{normal_file_mode, StMode};
+
+pub static INODE_NAME_MAP: Mutex<BTreeMap<String, u64>> = Mutex::new(BTreeMap::new());
 
 /// 文件描述符
 pub struct FileDesc {
@@ -90,21 +93,35 @@ impl FileIO for FileDesc {
 
     fn get_stat(&self) -> AxResult<Kstat> {
         let file = self.file.lock();
-        let metadata = file.metadata()?;
+        let attr = file.get_attr()?;
         let stat = self.stat.lock();
+        let inode_map = INODE_NAME_MAP.lock();
+        let inode_number = if let Some(inode_number) = inode_map.get(&self.path) {
+            *inode_number
+        } else {
+            // return Err(axerrno::AxError::NotFound);
+            // Now the file exists but it wasn't opened
+            drop(inode_map);
+            new_inode(self.path.clone())?;
+            let inode_map = INODE_NAME_MAP.lock();
+            assert!(inode_map.contains_key(&self.path));
+            let number = *(inode_map.get(&self.path).unwrap());
+            drop(inode_map);
+            number
+        };
         let kstat = Kstat {
             st_dev: 1,
-            st_ino: 1,
-            st_mode: normal_file_mode(StMode::S_IFREG).bits(),
+            st_ino: inode_number,
+            st_mode: normal_file_mode(StMode::S_IFREG).bits() | 0o644,
             st_nlink: get_link_count(&(self.path.as_str().to_string())) as _,
             st_uid: 0,
             st_gid: 0,
             st_rdev: 0,
             _pad0: 0,
-            st_size: metadata.size(),
-            st_blksize: 0,
+            st_size: attr.size(),
+            st_blksize: axfs::BLOCK_SIZE as u32,
             _pad1: 0,
-            st_blocks: metadata.blocks() as u64,
+            st_blocks: attr.blocks(),
             st_atime_sec: stat.atime.tv_sec as isize,
             st_atime_nsec: stat.atime.tv_nsec as isize,
             st_mtime_sec: stat.mtime.tv_sec as isize,
@@ -187,4 +204,16 @@ pub fn new_fd(path: String, flags: OpenFlags) -> AxResult<FileDesc> {
 
     let fd = FileDesc::new(path.as_str(), Arc::new(Mutex::new(file)), flags);
     Ok(fd)
+}
+
+/// 当新建一个文件或者目录节点时，需要为其分配一个新的inode号
+/// 由于我们不涉及删除文件，因此我们可以简单地使用一个全局增的计数器来分配inode号
+pub fn new_inode(path: String) -> AxResult<()> {
+    let mut inode_name_map = INODE_NAME_MAP.lock();
+    if inode_name_map.contains_key(&path) {
+        return Ok(());
+    }
+    let inode_number = inode_name_map.len() as u64 + 1;
+    inode_name_map.insert(path, inode_number);
+    Ok(())
 }

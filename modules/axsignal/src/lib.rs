@@ -9,7 +9,6 @@
 use action::SigAction;
 use signal_no::{SignalNo, MAX_SIG_NUM};
 
-pub use action::SIGNAL_RETURN_TRAP;
 pub mod action;
 pub mod info;
 pub mod signal_no;

@@ -37,3 +37,4 @@ bitflags = "2.0"
 lazy_static = { version = "1.4", features = ["spin_no_std"] }
 xmas-elf = "0.9.0"
 crate_interface = { path = "../../crates/crate_interface" }
+elf_parser = { path = "../../crates/elf_parser" }

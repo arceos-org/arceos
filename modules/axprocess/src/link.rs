@@ -24,7 +24,7 @@ impl FilePath {
         }
         let mut new_path = String::from(new_path.unwrap().trim());
         // canonicalize中没有处理末尾的空格、换行符等
-        if path.ends_with("/") && !new_path.ends_with("/") {
+        if path.ends_with('/') && !new_path.ends_with('/') {
             // 如果原始路径以 '/' 结尾，那么canonicalize后的路径也应该以 '/' 结尾
             new_path.push('/');
         }
@@ -42,14 +42,14 @@ impl FilePath {
         if self.is_root() {
             return Ok("/");
         }
-        let mut pos = if let Some(pos) = self.0.rfind("/") {
+        let mut pos = if let Some(pos) = self.0.rfind('/') {
             pos
         } else {
             return Err(AxError::NotADirectory);
         };
         if pos == self.0.len() - 1 {
             // 如果是以 '/' 结尾，那么再往前找一次
-            pos = if let Some(pos) = self.0[..pos].rfind("/") {
+            pos = if let Some(pos) = self.0[..pos].rfind('/') {
                 pos
             } else {
                 return Err(AxError::NotADirectory);
@@ -63,13 +63,13 @@ impl FilePath {
         if self.is_root() {
             return Ok("/");
         }
-        let mut pos = if let Some(pos) = self.0.rfind("/") {
+        let mut pos = if let Some(pos) = self.0.rfind('/') {
             pos
         } else {
             return Err(AxError::NotFound);
         };
         if pos == self.0.len() - 1 {
-            pos = if let Some(pos) = self.0[..pos].rfind("/") {
+            pos = if let Some(pos) = self.0[..pos].rfind('/') {
                 pos
             } else {
                 return Err(AxError::NotFound);
@@ -84,11 +84,11 @@ impl FilePath {
     }
     /// 返回是否是目录
     pub fn is_dir(&self) -> bool {
-        self.0.ends_with("/")
+        self.0.ends_with('/')
     }
     /// 返回是否是文件
     pub fn is_file(&self) -> bool {
-        !self.0.ends_with("/")
+        !self.0.ends_with('/')
     }
     /// 判断是否相同
     pub fn equal_to(&self, other: &Self) -> bool {
@@ -110,6 +110,10 @@ impl FilePath {
     }
 }
 #[allow(unused)]
+/// # Safety
+///
+/// The caller must ensure that the pointer is valid and points to a valid C string.
+/// The string must be null-terminated.
 pub unsafe fn get_str_len(start: *const u8) -> usize {
     let mut ptr = start as usize;
     while *(ptr as *const u8) != 0 {
@@ -119,10 +123,13 @@ pub unsafe fn get_str_len(start: *const u8) -> usize {
 }
 
 #[allow(unused)]
+/// # Safety
+///
+/// The caller must ensure that the pointer is valid and points to a valid C string.
 pub unsafe fn raw_ptr_to_ref_str(start: *const u8) -> &'static str {
-    let len = get_str_len(start);
+    let len = unsafe { get_str_len(start) };
     // 因为这里直接用用户空间提供的虚拟地址来访问，所以一定能连续访问到字符串，不需要考虑物理地址是否连续
-    let slice = core::slice::from_raw_parts(start, len);
+    let slice = unsafe { core::slice::from_raw_parts(start, len) };
     if let Ok(s) = core::str::from_utf8(slice) {
         s
     } else {
@@ -131,7 +138,7 @@ pub unsafe fn raw_ptr_to_ref_str(start: *const u8) -> &'static str {
             axlog::error!("{c} ");
         }
         axlog::error!("");
-        &"p"
+        ""
     }
 }
 
@@ -186,10 +193,7 @@ pub fn remove_link(src_path: &FilePath) -> Option<String> {
             // 更新链接数
             let mut count_map = LINK_COUNT_MAP.lock();
             let count = count_map.entry(dest_path.clone()).or_insert(0);
-            assert!(
-                count.clone() > 0,
-                "before removing, the link count should > 0"
-            );
+            assert!(*count > 0, "before removing, the link count should > 0");
             *count -= 1;
             // 如果链接数为0，那么删除文件
             if *count == 0 {
@@ -215,7 +219,7 @@ pub fn get_link_count(src_path: &String) -> usize {
         Some(dest_path) => {
             let count_map = LINK_COUNT_MAP.lock();
             let count = count_map.get(dest_path).unwrap();
-            count.clone()
+            *count
         }
         None => {
             // if path_exists(src_path.path()) {
@@ -274,7 +278,7 @@ pub fn deal_with_path(
     let mut path = "".to_string();
     if let Some(path_addr) = path_addr {
         if path_addr.is_null() {
-            axlog::debug!("path address is null");
+            axlog::warn!("path address is null");
             return None;
         }
         if process
@@ -284,45 +288,71 @@ pub fn deal_with_path(
             // 直接访问前需要确保已经被分配
             path = unsafe { raw_ptr_to_ref_str(path_addr) }.to_string().clone();
         } else {
-            axlog::debug!("path address is invalid");
+            axlog::warn!("path address is invalid");
             return None;
         }
     }
 
-    if force_dir {
+    if path.is_empty() {
+        // If pathname is an empty string, in this case, dirfd can refer to any type of file, not just a directory
+        // and the behavior of fstatat() is similar to that of fstat()
+        // If dirfd is AT_FDCWD, the call operates on the current working directory.
+        if dir_fd == AT_FDCWD && dir_fd as u32 == AT_FDCWD as u32 {
+            // return Some(FilePath::new(".").unwrap());
+            path = String::from(".");
+        } else {
+            let fd_table = process.fd_manager.fd_table.lock();
+            if dir_fd >= fd_table.len() {
+                axlog::warn!("fd index out of range");
+                return None;
+            }
+            match fd_table[dir_fd].as_ref() {
+                Some(dir) => {
+                    let dir = dir.clone();
+                    path = dir.get_path();
+                }
+                None => {
+                    axlog::warn!("fd not exist");
+                    return None;
+                }
+            }
+        }
+    } else if !path.starts_with('/') && dir_fd != AT_FDCWD && dir_fd as u32 != AT_FDCWD as u32 {
+        // 如果不是绝对路径, 且dir_fd不是AT_FDCWD, 则需要将dir_fd和path拼接起来
+        let fd_table = process.fd_manager.fd_table.lock();
+        if dir_fd >= fd_table.len() {
+            axlog::warn!("fd index out of range");
+            return None;
+        }
+        match fd_table[dir_fd].as_ref() {
+            Some(dir) => {
+                if dir.get_type() != FileIOType::DirDesc {
+                    axlog::warn!("selected fd {} is not a dir", dir_fd);
+                    return None;
+                }
+                let dir = dir.clone();
+                // 有没有可能dir的尾部一定是一个/号，所以不用手工添加/
+                path = format!("{}{}", dir.get_path(), path);
+                axlog::warn!("handled_path: {}", path);
+            }
+            None => {
+                axlog::warn!("fd not exist");
+                return None;
+            }
+        }
+    }
+    if force_dir && !path.ends_with('/') {
         path = format!("{}/", path);
     }
     if path.ends_with('.') {
         // 如果path以.或..结尾, 则加上/告诉FilePath::new它是一个目录
         path = format!("{}/", path);
     }
-    // info!("path: {}", path);
-    if dir_fd != AT_FDCWD && dir_fd as u32 != AT_FDCWD as u32 {
-        // 如果不是绝对路径, 且dir_fd不是AT_FDCWD, 则需要将dir_fd和path拼接起来
-        let fd_table = process.fd_manager.fd_table.lock();
-        if dir_fd >= fd_table.len() {
-            axlog::debug!("fd index out of range");
-            return None;
-        }
-        match fd_table[dir_fd].as_ref() {
-            Some(dir) => {
-                if dir.get_type() != FileIOType::DirDesc {
-                    axlog::debug!("selected fd is not a dir");
-                    return None;
-                }
-                let dir = dir.clone();
-                // 有没有可能dir的尾部一定是一个/号，所以不用手工添加/
-                path = format!("{}{}", dir.get_path(), path);
-                axlog::debug!("handled_path: {}", path);
-            }
-            None => {
-                axlog::debug!("fd not exist");
-                return None;
-            }
-        }
-    }
     match FilePath::new(path.as_str()) {
         Ok(path) => Some(path),
-        Err(_) => None,
+        Err(err) => {
+            axlog::warn!("error when creating FilePath: {:?}", err);
+            None
+        }
     }
 }

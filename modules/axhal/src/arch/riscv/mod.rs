@@ -3,6 +3,8 @@ mod macros;
 
 mod context;
 mod trap;
+#[cfg(feature = "monolithic")]
+pub use trap::first_into_user;
 
 pub use self::context::{GeneralRegisters, TaskContext, TrapFrame};
 use memory_addr::{PhysAddr, VirtAddr};
@@ -106,3 +108,8 @@ pub fn read_thread_pointer() -> usize {
 pub unsafe fn write_thread_pointer(tp: usize) {
     core::arch::asm!("mv tp, {}", in(reg) tp)
 }
+
+include_asm_marcos!();
+
+#[cfg(feature = "signal")]
+core::arch::global_asm!(include_str!("signal.S"));

@@ -16,7 +16,7 @@ futex = ["axfeat/futex"]
 # Schedule
 schedule = []
 
-default = []
+default = ["futex"]
 
 [dependencies]
 numeric-enum-macro = { git = "https://github.com/mexus/numeric-enum-macro" }

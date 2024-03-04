@@ -19,7 +19,6 @@ pub mod console {
     pub use super::uart16550::*;
 }
 
-#[cfg(target_arch = "x86_64")]
 pub use dtables::set_tss_stack_top;
 
 extern "C" {

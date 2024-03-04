@@ -117,16 +117,16 @@ bitflags! {
     }
 }
 
-impl Into<MappingFlags> for MMAPPROT {
-    fn into(self) -> MappingFlags {
+impl From<MMAPPROT> for MappingFlags {
+    fn from(value: MMAPPROT) -> Self {
         let mut flags = MappingFlags::USER;
-        if self.contains(MMAPPROT::PROT_READ) {
+        if value.contains(MMAPPROT::PROT_READ) {
             flags |= MappingFlags::READ;
         }
-        if self.contains(MMAPPROT::PROT_WRITE) {
+        if value.contains(MMAPPROT::PROT_WRITE) {
             flags |= MappingFlags::WRITE;
         }
-        if self.contains(MMAPPROT::PROT_EXEC) {
+        if value.contains(MMAPPROT::PROT_EXEC) {
             flags |= MappingFlags::EXECUTE;
         }
         flags
@@ -168,19 +168,20 @@ pub struct UtsName {
     pub domainname: [u8; 65],
 }
 
-impl UtsName {
-    /// 默认的 UtsName，并没有统一标准
-    pub fn default() -> Self {
+impl Default for UtsName {
+    fn default() -> Self {
         Self {
-            sysname: Self::from_str("YoimiyaOS"),
-            nodename: Self::from_str("YoimiyaOS - machine[0]"),
-            release: Self::from_str("114"),
+            sysname: Self::from_str("Starry"),
+            nodename: Self::from_str("Starry - machine[0]"),
+            release: Self::from_str("100"),
             version: Self::from_str("1.0"),
             machine: Self::from_str("RISC-V 64 on SIFIVE FU740"),
             domainname: Self::from_str("https://github.com/Azure-stars/arceos"),
         }
     }
+}
 
+impl UtsName {
     fn from_str(info: &str) -> [u8; 65] {
         let mut data: [u8; 65] = [0; 65];
         data[..info.len()].copy_from_slice(info.as_bytes());
@@ -494,17 +495,17 @@ bitflags! {
         //const S_ISGID = 1 << 13;
         //const S_ISVTX = 1 << 12;
         /// 所有者权限
-        const S_IXUSR = 1 << 10;
-        const S_IWUSR = 1 << 9;
         const S_IRUSR = 1 << 8;
+        const S_IWUSR = 1 << 7;
+        const S_IXUSR = 1 << 6;
         /// 用户组权限
-        const S_IXGRP = 1 << 6;
-        const S_IWGRP = 1 << 5;
-        const S_IRGRP = 1 << 4;
+        const S_IRGRP = 1 << 5;
+        const S_IWGRP = 1 << 4;
+        const S_IXGRP = 1 << 3;
         /// 其他用户权限
-        const S_IXOTH = 1 << 2;
+        const S_IROTH = 1 << 2;
         const S_IWOTH = 1 << 1;
-        const S_IROTH = 1 << 0;
+        const S_IXOTH = 1 << 0;
         /// 报告已执行结束的用户进程的状态
         const WIMTRACED = 1 << 1;
         /// 报告还未结束的用户进程的状态
@@ -514,7 +515,7 @@ bitflags! {
 /// 文件类型，输入 IFCHR / IFDIR / IFREG 等具体类型，
 /// 输出这些类型加上普遍的文件属性后得到的 mode 参数
 pub fn normal_file_mode(file_type: StMode) -> StMode {
-    file_type | StMode::S_IWUSR | StMode::S_IWUSR | StMode::S_IWGRP | StMode::S_IRGRP
+    file_type | StMode::S_IWUSR | StMode::S_IRUSR | StMode::S_IRGRP | StMode::S_IROTH
 }
 
 /// prctl 中 PR_NAME_SIZE 要求的缓冲区长度
@@ -532,20 +533,19 @@ numeric_enum_macro::numeric_enum! {
     }
 }
 
-
 #[repr(C)]
 #[derive(Debug)]
 /// sys_clone3 中使用的结构体
 pub struct CloneArgs {
-    pub flags: u64, // 符号位，对应 axprocess 的 CloneFlags
-    pub pidfd: u64, // 存储 PID 的文件描述符。Starry 暂未使用
-    pub child_tid: u64, // 同 sys_clone 的 ctid
-    pub parent_tid: u64, // 同 sys_clone 的 ptid
-    pub exit_signal: u64, // 子进程退出时向父进程发送的信号
-    pub stack: u64, // 同 sys_clone 的 stack
-    pub stack_size: u64, // 指定子进程的栈的大小
-    pub tls: u64, // 同 sys_clone 的 tls
-    pub set_tid: u64, // 该信息 Starry 暂未支持
+    pub flags: u64,        // 符号位，对应 axprocess 的 CloneFlags
+    pub pidfd: u64,        // 存储 PID 的文件描述符。Starry 暂未使用
+    pub child_tid: u64,    // 同 sys_clone 的 ctid
+    pub parent_tid: u64,   // 同 sys_clone 的 ptid
+    pub exit_signal: u64,  // 子进程退出时向父进程发送的信号
+    pub stack: u64,        // 同 sys_clone 的 stack
+    pub stack_size: u64,   // 指定子进程的栈的大小
+    pub tls: u64,          // 同 sys_clone 的 tls
+    pub set_tid: u64,      // 该信息 Starry 暂未支持
     pub set_tid_size: u64, // 该信息 Starry 暂未支持
-    pub cgroup: u64, // 该信息 Starry 暂未支持
+    pub cgroup: u64,       // 该信息 Starry 暂未支持
 }

@@ -36,7 +36,7 @@ LOG ?= off
 V ?=
 
 # App options
-A ?= apps/oscomp
+A ?= apps/monolithic_userboot
 APP ?= $(A)
 FEATURES ?=
 APP_FEATURES ?=
@@ -71,11 +71,6 @@ ifneq ($(wildcard $(APP)/Cargo.toml),)
   APP_TYPE := rust
 else
   APP_TYPE := c
-endif
-
-ifeq ($(STRUCT), Monolithic)
-  APP := apps/oscomp
-  APP_TYPE := rust
 endif
 
 # Architecture, platform and target

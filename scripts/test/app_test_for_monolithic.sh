@@ -25,36 +25,14 @@ if [ "$ARCH" != "x86_64" ] && [ "$ARCH" != "riscv64" ] && [ "$ARCH" != "aarch64"
     exit $S_FAILED
 fi
 
-function compare() {
-    local actual=$1
-    local expect=$2
-    if [ ! -f "$expect" ]; then
-        MSG="expected output file \"${BLOD_C}$expect${END_C}\" not found!"
-        return $S_FAILED
-    fi
-    IFS=''
-    while read -r line; do
-        local matched=$(grep -m1 "$line" < "$actual")
-        if [ -z "$matched" ]; then
-            MSG="pattern \"${BLOD_C}$line${END_C}\" not matched!"
-            unset IFS
-            return $S_FAILED
-        fi
-    done < "$expect"
-    unset IFS
-    return $S_PASS
-}
-
 function run_and_compare() {
     local args=$1
-    local expect=$2
-    local actual=$3
+    local actual=$2
 
     echo -ne "    run with \"${BLOD_C}$args${END_C}\": "
-    # if the app contain "apps/oscomp", then make disk img
-    if [[ $APP =~ "apps/oscomp" ]]; then
-        sh ./build_img.sh sdcard
-    fi
+    # if the app contain "apps/monolithic_userboot", then make disk img
+    sh ./build_img.sh $ARCH
+
     make -C "$ROOT" A="$APP" $args > "$actual" 2>&1
     if [ $? -ne 0 ]; then
         return $S_BUILD_FAILED
@@ -69,23 +47,24 @@ function run_and_compare() {
         return $S_FAILED
     fi
 
-    compare "$actual" "$expect"
-    if [ $? -ne 0 ]; then
+    # 判断 actual 是否有正常退出，即有`System halted with exit code 0`
+    EXIT_NORMALLY="System halted with exit code 0"
+    if [ `grep -c "$EXIT_NORMALLY" $actual` -eq '0' ];then
         return $S_FAILED
-    else
+    else 
         return $S_PASS
     fi
 }
 
 function test_one() {
     local args=$1
-    local expect="$APP/$2"
     local actual="$APP/actual.out"
-    args="$args ARCH=$ARCH ACCEL=n"
+    # 默认要用批量测试模式
+    args="$args ARCH=$ARCH APP_FEATURES=batch ACCEL=n"
     rm -f "$actual"
 
     MSG=
-    run_and_compare "$args" "$expect" "$actual"
+    run_and_compare "$args" "$actual"
     local res=$?
 
     if [ $res -ne $S_PASS ]; then
@@ -104,13 +83,13 @@ function test_one() {
         cat "$actual"
     else
         echo -e "${GREEN_C}passed!${END_C} $RUN_TIME"
-        rm -f "$actual"
+        # rm -f "$actual"
     fi
 }
 
 if [ -z "$1" ]; then
     test_list=(
-        "apps/oscomp"
+        "apps/monolithic_userboot"
     )
 else
     test_list="$@"

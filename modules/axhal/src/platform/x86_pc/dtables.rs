@@ -37,7 +37,6 @@ pub(super) fn init_secondary() {
 }
 
 /// set tss stack top
-#[cfg(target_arch = "x86_64")]
 pub fn set_tss_stack_top(kernel_stack_top: memory_addr::VirtAddr) {
     TSS.with_current(|tss| {
         tss.privilege_stack_table[0] = x86_64::VirtAddr::new(kernel_stack_top.as_usize() as u64);

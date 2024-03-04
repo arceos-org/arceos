@@ -175,6 +175,10 @@ impl File {
         self.inner.executable()
     }
 
+    pub fn get_attr(&self) -> Result<fops::FileAttr> {
+        self.inner.get_attr()
+    }
+
     pub fn truncate(&mut self, len: usize) -> Result<()> {
         self.inner.truncate(len as u64)
     }
