@@ -199,6 +199,7 @@ fn handle_el0t_64_sync_exception(tf: &mut TrapFrame) {
 #[cfg(feature = "monolithic")]
 fn handle_el0t_64_irq_exception(_tf: &TrapFrame) {
     crate::trap::handle_irq_extern(0, true);
+    handle_signal();
 }
 
 #[no_mangle]
