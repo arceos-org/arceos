@@ -87,7 +87,7 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
         flags: MappingFlags,
     ) -> PagingResult {
         let entry = self.get_entry_mut_or_create(vaddr, page_size)?;
-                
+
         // FIXME: return already mapped if it was unused?
         if entry.is_unused() {
             return Err(PagingError::AlreadyMapped);
@@ -109,6 +109,8 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
         entry.clear();
         Ok((paddr, size))
     }
+
+    /// Maps a fault page starts with `vaddr`.
     pub fn map_fault(&mut self, vaddr: VirtAddr, page_size: PageSize) -> PagingResult {
         let entry = self.get_entry_mut_or_create(vaddr, page_size)?;
         if !entry.is_unused() {
@@ -279,6 +281,9 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
         }
         Ok(())
     }
+
+    /// Update the mapping flags of a contiguous virtual memory region.
+    /// The region must be mapped before using [`PageTable64::map_region`], or it will return an error.
     pub fn update_region(
         &mut self,
         mut vaddr: VirtAddr,
@@ -359,6 +364,7 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
         }
     }
 
+    /// To get the mutable reference of the page table entry of the given virtual address.
     pub fn get_entry_mut(&self, vaddr: VirtAddr) -> PagingResult<(&mut PTE, PageSize)> {
         let p3 = if M::LEVELS == 3 {
             self.table_of_mut(self.root_paddr())

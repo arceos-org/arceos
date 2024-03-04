@@ -4,9 +4,12 @@ use memory_addr::VirtAddr;
 #[derive(Debug)]
 /// To describe the relocation pair in the ELF
 pub struct RelocatePair {
-    pub src: VirtAddr, // the source address of the relocation
-    pub dst: VirtAddr, // the destination address of the relocation
-    pub count: usize,  // the set of bits affected by this relocation
+    /// the source address of the relocation
+    pub src: VirtAddr,
+    /// the destination address of the relocation
+    pub dst: VirtAddr,
+    /// the set of bits affected by this relocation
+    pub count: usize,
 }
 
 cfg_if::cfg_if! {

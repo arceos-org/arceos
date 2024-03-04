@@ -5,7 +5,7 @@ mod idt;
 mod syscall;
 
 mod trap;
-
+#[cfg(feature = "monolithic")]
 pub use trap::first_into_user;
 
 use core::arch::asm;

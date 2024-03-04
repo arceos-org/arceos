@@ -194,5 +194,5 @@ jobs:
           crate: cargo-binutils
           version: latest
           use-tool-cache: true
-      - name: Bulld monolithic-oscomp
-        run: ./build_img.sh sdcard & make ARCH=${{ matrix.arch }} A=apps/oscomp
+      - name: Bulld monolithic-userboot
+        run: ./build_img.sh ${{ matrix.arch }} & make ARCH=${{ matrix.arch }} A=apps/monolithic_userboot

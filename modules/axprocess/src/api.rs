@@ -189,7 +189,7 @@ pub fn load_app(
         args = [vec![real_interp_path.clone()], args].concat();
         return load_app(real_interp_path, args, envs, memory_set);
     }
-
+    info!("args: {:?}", args);
     let elf_base_addr = Some(0x400_0000);
     axlog::warn!("The elf base addr may be different in different arch!");
     // let (entry, segments, relocate_pairs) = parse_elf(&elf, elf_base_addr);

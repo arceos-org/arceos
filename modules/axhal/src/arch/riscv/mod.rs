@@ -3,6 +3,7 @@ mod macros;
 
 mod context;
 mod trap;
+#[cfg(feature = "monolithic")]
 pub use trap::first_into_user;
 
 pub use self::context::{GeneralRegisters, TaskContext, TrapFrame};

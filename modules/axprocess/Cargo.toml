@@ -16,7 +16,7 @@ monolithic = ["fs", "axfs/monolithic"]
 # Futex support
 futex = []
 
-default = ["signal"]
+default = []
 
 [dependencies]
 cfg-if = "1.0"

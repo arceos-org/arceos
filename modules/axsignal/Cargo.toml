@@ -7,7 +7,7 @@ edition = "2021"
 
 [features]
 
-default = ["signal"]
+default = []
 
 signal = ["axhal/signal"]
 

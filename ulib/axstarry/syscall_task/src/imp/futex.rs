@@ -1,5 +1,5 @@
 //! 支持 futex 相关的 syscall
-use core::time::Duration;
+
 extern crate alloc;
 use alloc::collections::VecDeque;
 use axhal::mem::VirtAddr;
@@ -73,13 +73,19 @@ pub fn futex(
                 // debug!("ready wait!");
                 if timeout == 0 {
                     yield_now_task();
-                } else {
-                    let timeout = WAIT_FOR_FUTEX.wait_timeout(Duration::from_nanos(timeout as u64));
-                    if !timeout && process.have_signals().is_some() {
+                }
+                #[cfg(feature = "signal")]
+                {
+                    use core::time::Duration;
+                    if timeout != 0
+                        && !WAIT_FOR_FUTEX.wait_timeout(Duration::from_nanos(timeout as u64))
+                        && process.have_signals().is_some()
+                    {
                         // 被信号打断
                         return Err(SyscallError::EINTR);
                     }
                 }
+
                 Ok(0)
             } else {
                 Err(SyscallError::EFAULT)

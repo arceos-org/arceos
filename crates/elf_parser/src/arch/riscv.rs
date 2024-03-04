@@ -1,6 +1,6 @@
 //! Relocate .rela.dyn sections
 //! R_TYPE 与处理器架构有关，相关文档详见
-//! riscv: https://d3s.mff.cuni.cz/files/teaching/nswi200/202324/doc/riscv-abi.pdf
+//! riscv: <https://d3s.mff.cuni.cz/files/teaching/nswi200/202324/doc/riscv-abi.pdf>
 
 use core::mem::size_of;
 

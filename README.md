@@ -20,13 +20,13 @@
 
 ```shell
 # 构建镜像
-./build_x86.sh
+./build_img.sh x86_64
 
 # 运行宏内核
 make run
 
 # 显式指定参数并运行（实际上这些参数已在根目录 Makefile 中给出）
-# make A=apps/oscomp AARCH=x86_64 FEATURES=fp_simd run
+# make A=apps//build_img.sh sdcard AARCH=x86_64 FEATURES=fp_simd run
 
 ```
 
@@ -37,16 +37,16 @@ make run
 
 ```shell
 # 构建镜像
-./build_img.sh sdcard
+./build_img.sh riscv
 
 # 运行 Unikernel 架构内核
 make run
 
 # 以宏内核形式启动(当前仅支持 riscv 架构)
-make A=apps/oscomp ARCH=riscv64 run
+make A=apps/monolithic_userboot ARCH=riscv64 run
 
 # 使用 ramdisk 加载测例并且运行内核，可以显著提高文件 IO 速度
-make A=apps/oscomp ARCH=riscv64 FEATURES=img run
+make A=apps/monolithic_userboot ARCH=riscv64 FEATURES=img run
 
 ```
 

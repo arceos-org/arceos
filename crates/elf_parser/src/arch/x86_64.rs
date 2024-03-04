@@ -1,6 +1,6 @@
 //! Relocate .rela.dyn sections
 //! R_TYPE 与处理器架构有关，相关文档详见
-//! x86_64: https://gitlab.com/x86-psABIs/x86-64-ABI/-/jobs/artifacts/master/raw/x86-64-ABI/abi.pdf?job=build
+//! x86_64: <https://gitlab.com/x86-psABIs/x86-64-ABI/-/jobs/artifacts/master/raw/x86-64-ABI/abi.pdf?job=build>
 use core::mem::size_of;
 
 use super::RelocatePair;
@@ -70,12 +70,7 @@ pub fn get_relocate_pairs(
             for entry in data {
                 let dyn_sym = &dyn_sym_table[entry.get_symbol_table_index() as usize];
                 let destination = base_addr + entry.get_offset() as usize;
-                let symbol_value = if dyn_sym.shndx() != 0 {
-                    dyn_sym.value() as usize
-                } else {
-                    let name = dyn_sym.get_name(elf).unwrap();
-                    panic!(r#"Symbol "{}" not found"#, name);
-                }; // Represents the value of the symbol whose index resides in the relocation entry.
+                let symbol_value = dyn_sym.value() as usize; // Represents the value of the symbol whose index resides in the relocation entry.
                 let addend = entry.get_addend() as usize; // Represents the addend used to compute the value of the relocatable field.
                 match entry.get_type() {
                     R_X86_64_64 => {
@@ -89,11 +84,17 @@ pub fn get_relocate_pairs(
                             count: size_of::<usize>() / size_of::<u8>(),
                         })
                     }
-                    R_X86_64_PC32 => pairs.push(RelocatePair {
-                        src: VirtAddr::from(symbol_value + addend - destination),
-                        dst: VirtAddr::from(destination),
-                        count: 4,
-                    }),
+                    R_X86_64_PC32 => {
+                        if dyn_sym.shndx() == 0 {
+                            let name = dyn_sym.get_name(elf).unwrap();
+                            panic!(r#"Symbol "{}" not found"#, name);
+                        }
+                        pairs.push(RelocatePair {
+                            src: VirtAddr::from(symbol_value + addend - destination),
+                            dst: VirtAddr::from(destination),
+                            count: 4,
+                        })
+                    }
                     R_X86_64_GLOB_DAT | R_X86_64_JUMP_SLOT => {
                         if dyn_sym.shndx() == 0 {
                             let name = dyn_sym.get_name(elf).unwrap();

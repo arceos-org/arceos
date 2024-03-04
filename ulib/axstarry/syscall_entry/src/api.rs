@@ -51,10 +51,10 @@ pub fn println(s: &str) {
     axlog::ax_println!("{}", s);
 }
 
-pub fn read_file(path: &str) -> Option<String> {
+pub fn read_file(_path: &str) -> Option<String> {
     #[cfg(feature = "syscall_fs")]
     {
-        syscall_fs::read_file(path)
+        syscall_fs::read_file(_path)
     }
     #[cfg(not(feature = "syscall_fs"))]
     {

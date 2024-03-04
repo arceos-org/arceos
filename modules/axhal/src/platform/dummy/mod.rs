@@ -85,3 +85,5 @@ pub fn platform_init() {}
 /// Initializes the platform devices for secondary CPUs.
 #[cfg(feature = "smp")]
 pub fn platform_init_secondary() {}
+
+pub fn set_tss_stack_top(_kernel_stack_top: memory_addr::VirtAddr) {}

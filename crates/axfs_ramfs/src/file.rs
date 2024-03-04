@@ -10,6 +10,7 @@ pub struct FileNode {
 }
 
 impl FileNode {
+    /// To get the environment variables of the application
     pub const fn new() -> Self {
         Self {
             content: RwLock::new(Vec::new()),

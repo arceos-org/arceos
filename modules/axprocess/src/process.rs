@@ -7,8 +7,8 @@ use alloc::{collections::BTreeMap, string::String};
 use axerrno::{AxError, AxResult};
 use axfs::api::{FileIO, OpenFlags};
 use axhal::arch::{flush_tlb, write_page_table_root, TrapFrame};
-use axhal::mem::{phys_to_virt, virt_to_phys, VirtAddr};
-use axhal::paging::MappingFlags;
+use axhal::mem::{phys_to_virt, VirtAddr};
+
 use axhal::KERNEL_PROCESS_ID;
 use axlog::{debug, error};
 use axmem::MemorySet;
@@ -166,6 +166,8 @@ impl Process {
         let mut memory_set = MemorySet::new_with_kernel_mapped();
         #[cfg(feature = "signal")]
         {
+            use axhal::mem::virt_to_phys;
+            use axhal::paging::MappingFlags;
             // 生成信号跳板
             let signal_trampoline_vaddr: VirtAddr = (axconfig::SIGNAL_TRAMPOLINE).into();
             let signal_trampoline_paddr = virt_to_phys((start_signal_trampoline as usize).into());
@@ -366,6 +368,8 @@ impl Process {
 
         #[cfg(feature = "signal")]
         {
+            use axhal::mem::virt_to_phys;
+            use axhal::paging::MappingFlags;
             // 重置信号处理模块
             // 此时只会留下一个线程
             self.signal_modules.lock().clear();
@@ -376,6 +380,8 @@ impl Process {
             // 生成信号跳板
             let signal_trampoline_vaddr: VirtAddr = (axconfig::SIGNAL_TRAMPOLINE).into();
             let signal_trampoline_paddr = virt_to_phys((start_signal_trampoline as usize).into());
+            // let mut memory_set = self.memory_set.lock();
+            // if memory_set.query(signal_trampoline_vaddr).is_err() {
             let _ = self.memory_set.lock().map_page_without_alloc(
                 signal_trampoline_vaddr,
                 signal_trampoline_paddr,
@@ -384,6 +390,8 @@ impl Process {
                     | MappingFlags::USER
                     | MappingFlags::WRITE,
             );
+            // }
+            // drop(memory_set);
         }
 
         // user_stack_top = user_stack_top / PAGE_SIZE_4K * PAGE_SIZE_4K;
@@ -419,6 +427,8 @@ impl Process {
             )?));
             #[cfg(feature = "signal")]
             {
+                use axhal::mem::virt_to_phys;
+                use axhal::paging::MappingFlags;
                 // 生成信号跳板
                 let signal_trampoline_vaddr: VirtAddr = (axconfig::SIGNAL_TRAMPOLINE).into();
                 let signal_trampoline_paddr =

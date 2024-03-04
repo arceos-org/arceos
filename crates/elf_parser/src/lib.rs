@@ -14,10 +14,15 @@ mod user_stack;
 
 pub use crate::arch::get_relocate_pairs;
 
+/// The segment of the elf file, which is used to map the elf file to the memory space
 pub struct ELFSegment {
+    /// The start virtual address of the segment
     pub vaddr: VirtAddr,
+    /// The size of the segment
     pub size: usize,
+    /// The flags of the segment which is used to set the page table entry
     pub flags: MappingFlags,
+    /// The data of the segment
     pub data: Option<Vec<u8>>,
 }
 

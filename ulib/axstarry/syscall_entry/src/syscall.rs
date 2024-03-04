@@ -5,6 +5,7 @@ use syscall_utils::{deal_result, SyscallResult};
 pub fn syscall(syscall_id: usize, args: [usize; 6]) -> isize {
     #[cfg(feature = "futex")]
     syscall_task::check_dead_wait();
+    #[allow(unused_mut)]
     let mut ans: Option<SyscallResult> = None;
     #[cfg(feature = "syscall_net")]
     {

@@ -79,7 +79,7 @@ pub fn get_auxv_vector(
 /// * The first part is the free stack content, which is all 0.
 /// * The second part is the content carried by the user stack when it is initialized, such as args, auxv, etc.
 ///
-/// The detailed format is described in https://articles.manugarg.com/aboutelfauxiliaryvectors.html
+/// The detailed format is described in <https://articles.manugarg.com/aboutelfauxiliaryvectors.html>
 pub fn get_app_stack_region(
     args: Vec<String>,
     envs: &[String],

@@ -15,9 +15,8 @@ use alloc::{
     vec,
     vec::Vec,
 };
-
+/// To get the environment variables of the application
 pub fn get_envs() -> Vec<String> {
-    // 运行gcc程序时需要预先加载的环境变量
     let mut envs:Vec<String> = vec![
         "SHLVL=1".into(),
         "PWD=/".into(),
