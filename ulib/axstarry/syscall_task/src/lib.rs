@@ -27,6 +27,7 @@ pub fn task_syscall(syscall_id: task_syscall_id::TaskSyscallId, args: [usize; 6]
             args[2] as *const usize,
         ),
         CLONE => syscall_clone(args[0], args[1], args[2], args[3], args[4]),
+        #[cfg(target_arch = "x86_64")]
         VFORK => syscall_vfork(),
         NANO_SLEEP => syscall_sleep(args[0] as *const TimeSecs, args[1] as *mut TimeSecs),
         SCHED_YIELD => syscall_yield(),

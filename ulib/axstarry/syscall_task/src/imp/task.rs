@@ -453,7 +453,6 @@ pub fn syscall_fork() -> SyscallResult {
 }
 
 /// prctl
-#[cfg(target_arch = "x86_64")]
 pub fn syscall_prctl(option: usize, arg2: *mut u8) -> SyscallResult {
     match PrctlOption::try_from(option) {
         Ok(PrctlOption::PR_GET_NAME) => {
