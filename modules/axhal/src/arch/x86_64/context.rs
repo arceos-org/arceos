@@ -113,17 +113,10 @@ impl TrapFrame {
 
     /// 获取所有 syscall 参数
     pub fn get_syscall_args(&self) -> [usize; 6] {
-        [
-            self.rdi,
-            self.rsi,
-            self.rdx,
-            self.r10,
-            self.r8,
-            self.r9,
-        ].map(|n| n as _)
+        [self.rdi, self.rsi, self.rdx, self.r10, self.r8, self.r9].map(|n| n as _)
     }
 
-    /// 获取 syscall id 
+    /// 获取 syscall id
     pub fn get_syscall_num(&self) -> usize {
         self.rax as _
     }
@@ -286,7 +279,7 @@ impl TaskContext {
             asm!("mov     gs:[offset __PERCPU_KERNEL_RSP_OFFSET], {kernel_sp}", 
                 kernel_sp = in(reg) next_ctx.kstack_top.as_usize() + core::mem::size_of::<TrapFrame>());
         }
-        crate::set_tss_stack_top(next_ctx.kstack_top);
+        crate::set_tss_stack_top(next_ctx.kstack_top + core::mem::size_of::<TrapFrame>());
         unsafe { context_switch(&mut self.rsp, &next_ctx.rsp) }
     }
 }

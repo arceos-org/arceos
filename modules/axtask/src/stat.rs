@@ -80,7 +80,7 @@ impl TimeStat {
         self.kernel_tick = current_time_nanos() as usize;
     }
     /// 从用户态进入内核态，记录当前时间戳，统计用户态时间
-    pub fn into_kernel_mode(&mut self, tid: isize) {
+    pub fn switch_into_kernel_mode(&mut self, tid: isize) {
         let now_time_ns = current_time_nanos() as usize;
         let delta = now_time_ns - self.user_tick;
         self.utime_ns += delta;
@@ -90,7 +90,7 @@ impl TimeStat {
         };
     }
     /// 从内核态进入用户态，记录当前时间戳，统计内核态时间
-    pub fn into_user_mode(&mut self, tid: isize) {
+    pub fn switch_into_user_mode(&mut self, tid: isize) {
         // 获取当前时间，单位为纳秒
         let now_time_ns = current_time_nanos() as usize;
         let delta = now_time_ns - self.kernel_tick;
@@ -101,7 +101,7 @@ impl TimeStat {
         };
     }
     /// 内核态下，当前任务被切换掉，统计内核态时间
-    pub fn swtich_from(&mut self, tid: isize) {
+    pub fn swtich_from_old_task(&mut self, tid: isize) {
         // 获取当前时间，单位为纳秒
         let now_time_ns = current_time_nanos() as usize;
         let delta = now_time_ns - self.kernel_tick;
@@ -113,7 +113,7 @@ impl TimeStat {
         };
     }
     /// 内核态下，切换到当前任务，更新内核态时间戳
-    pub fn switch_to(&mut self, tid: isize) {
+    pub fn switch_to_new_task(&mut self, tid: isize) {
         // 获取当前时间，单位为纳秒
         let now_time_ns = current_time_nanos() as usize;
         let delta = now_time_ns - self.kernel_tick;

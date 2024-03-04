@@ -7,7 +7,7 @@ use core::any::Any;
 use log::debug;
 
 /// 文件系统信息
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 #[repr(C)]
 #[cfg(target_arch = "x86_64")]
 pub struct Kstat {
@@ -46,9 +46,9 @@ pub struct Kstat {
     /// 最后一次改变状态时间(纳秒)
     pub st_ctime_nsec: isize,
 }
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 #[repr(C)]
-#[cfg(target_arch = "riscv64")]
+#[cfg(not(target_arch = "x86_64"))]
 pub struct Kstat {
     /// 设备
     pub st_dev: u64,
@@ -84,31 +84,6 @@ pub struct Kstat {
     pub st_ctime_sec: isize,
     /// 最后一次改变状态时间(纳秒)
     pub st_ctime_nsec: isize,
-}
-
-impl Default for Kstat {
-    fn default() -> Self {
-        Self {
-            st_dev: 0,
-            st_ino: 0,
-            st_mode: 0,
-            st_nlink: 0,
-            st_uid: 0,
-            st_gid: 0,
-            st_rdev: 0,
-            _pad0: 0,
-            st_size: 0,
-            st_blksize: 0,
-            _pad1: 0,
-            st_blocks: 0,
-            st_atime_sec: 0,
-            st_atime_nsec: 0,
-            st_mtime_sec: 0,
-            st_mtime_nsec: 0,
-            st_ctime_sec: 0,
-            st_ctime_nsec: 0,
-        }
-    }
 }
 
 use bitflags::*;

@@ -1,6 +1,8 @@
 mod context;
 pub(crate) mod trap;
 
+pub use trap::first_into_user;
+
 use core::arch::asm;
 
 use aarch64_cpu::registers::{DAIF, TPIDR_EL0, TTBR0_EL1, TTBR1_EL1, VBAR_EL1};
@@ -135,3 +137,6 @@ pub fn read_thread_pointer() -> usize {
 pub unsafe fn write_thread_pointer(tpidr_el0: usize) {
     TPIDR_EL0.set(tpidr_el0 as _)
 }
+
+#[cfg(feature = "signal")]
+core::arch::global_asm!(include_str!("signal.S"));

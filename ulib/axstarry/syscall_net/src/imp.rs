@@ -14,7 +14,14 @@ use syscall_utils::{SyscallError, SyscallResult};
 
 pub const SOCKET_TYPE_MASK: usize = 0xFF;
 
-pub fn syscall_socket(domain: usize, s_type: usize, _protocol: usize) -> SyscallResult {
+/// # Arguments
+/// * `domain` - usize
+/// * `s_type` - usize
+/// * `protocol` - usize
+pub fn syscall_socket(args: [usize; 6]) -> SyscallResult {
+    let domain = args[0];
+    let s_type = args[1];
+    let _protocol = args[2];
     let Ok(domain) = Domain::try_from(domain) else {
         error!("[socket()] Address Family not supported: {domain}");
         // return ErrorNo::EAFNOSUPPORT as isize;
@@ -44,7 +51,14 @@ pub fn syscall_socket(domain: usize, s_type: usize, _protocol: usize) -> Syscall
     Ok(fd as isize)
 }
 
-pub fn syscall_bind(fd: usize, addr: *const u8, _addr_len: usize) -> SyscallResult {
+/// # Arguments
+/// * `fd` - usize
+/// * `addr` - *const u8
+/// * `addr_len` - usize
+pub fn syscall_bind(args: [usize; 6]) -> SyscallResult {
+    let fd = args[0];
+    let addr = args[1] as *const u8;
+    let _addr_len = args[2];
     let curr = current_process();
 
     let file = match curr.fd_manager.fd_table.lock().get(fd) {
@@ -64,7 +78,12 @@ pub fn syscall_bind(fd: usize, addr: *const u8, _addr_len: usize) -> SyscallResu
 }
 
 // TODO: support change `backlog` for tcp socket
-pub fn syscall_listen(fd: usize, _backlog: usize) -> SyscallResult {
+/// # Arguments
+/// * `fd` - usize
+/// * `backlog` - usize
+pub fn syscall_listen(args: [usize; 6]) -> SyscallResult {
+    let fd = args[0];
+    let _backlog = args[1];
     let curr = current_process();
 
     let file = match curr.fd_manager.fd_table.lock().get(fd) {
@@ -79,12 +98,16 @@ pub fn syscall_listen(fd: usize, _backlog: usize) -> SyscallResult {
     Ok(socket.listen().map_or(-1, |_| 0))
 }
 
-pub fn syscall_accept4(
-    fd: usize,
-    addr_buf: *mut u8,
-    addr_len: *mut u32,
-    flags: usize,
-) -> SyscallResult {
+/// # Arguments
+/// * `fd` - usize
+/// * `addr_buf` - *mut u8
+/// * `addr_len` - *mut u32
+/// * `flags` - usize
+pub fn syscall_accept4(args: [usize; 6]) -> SyscallResult {
+    let fd = args[0];
+    let addr_buf = args[1] as *mut u8;
+    let addr_len = args[2] as *mut u32;
+    let flags = args[3];
     let curr = current_process();
 
     let file = match curr.fd_manager.fd_table.lock().get(fd) {
@@ -129,7 +152,14 @@ pub fn syscall_accept4(
     }
 }
 
-pub fn syscall_connect(fd: usize, addr_buf: *const u8, _addr_len: usize) -> SyscallResult {
+/// # Arguments
+/// * `fd` - usize
+/// * `addr_buf` - *const u8
+/// * `addr_len` - usize
+pub fn syscall_connect(args: [usize; 6]) -> SyscallResult {
+    let fd = args[0];
+    let addr_buf = args[1] as *const u8;
+    let _addr_len = args[2];
     let curr = current_process();
 
     let file = match curr.fd_manager.fd_table.lock().get(fd) {
@@ -155,7 +185,14 @@ pub fn syscall_connect(fd: usize, addr_buf: *const u8, _addr_len: usize) -> Sysc
 }
 
 /// NOTE: linux man 中没有说明若socket未bound应返回什么错误
-pub fn syscall_get_sock_name(fd: usize, addr: *mut u8, addr_len: *mut u32) -> SyscallResult {
+/// # Arguments
+/// * `fd` - usize
+/// * `addr` - *mut u8
+/// * `addr_len` - *mut u32
+pub fn syscall_get_sock_name(args: [usize; 6]) -> SyscallResult {
+    let fd = args[0];
+    let addr = args[1] as *mut u8;
+    let addr_len = args[2] as *mut u32;
     let curr = current_process();
 
     let file = match curr.fd_manager.fd_table.lock().get(fd) {
@@ -179,7 +216,14 @@ pub fn syscall_get_sock_name(fd: usize, addr: *mut u8, addr_len: *mut u32) -> Sy
 }
 
 #[allow(unused)]
-pub fn syscall_getpeername(fd: usize, addr_buf: *mut u8, addr_len: *mut u32) -> SyscallResult {
+/// # Arguments
+/// * `fd` - usize
+/// * `addr_buf` - *mut u8
+/// * `addr_len` - *mut u32
+pub fn syscall_getpeername(args: [usize; 6]) -> SyscallResult {
+    let fd = args[0];
+    let addr_buf = args[1] as *mut u8;
+    let addr_len = args[2] as *mut u32;
     let curr = current_process();
 
     let file = match curr.fd_manager.fd_table.lock().get(fd) {
@@ -219,14 +263,20 @@ pub fn syscall_getpeername(fd: usize, addr_buf: *mut u8, addr_len: *mut u32) -> 
 
 // TODO: flags
 /// Calling sendto() will bind the socket if it's not bound.
-pub fn syscall_sendto(
-    fd: usize,
-    buf: *const u8,
-    len: usize,
-    _flags: usize,
-    addr: *const u8,
-    addr_len: usize,
-) -> SyscallResult {
+/// # Arguments
+/// * `fd` - usize
+/// * `buf` - *const u8
+/// * `len` - usize
+/// * `flags` - usize
+/// * `addr` - *const u8
+/// * `addr_len` - usize
+pub fn syscall_sendto(args: [usize; 6]) -> SyscallResult {
+    let fd = args[0];
+    let buf = args[1] as *const u8;
+    let len = args[2];
+    let _flags = args[3];
+    let addr = args[4] as *const u8;
+    let addr_len = args[5];
     let curr = current_process();
 
     let file = match curr.fd_manager.fd_table.lock().get(fd) {
@@ -311,14 +361,20 @@ pub fn syscall_sendto(
     }
 }
 
-pub fn syscall_recvfrom(
-    fd: usize,
-    buf: *mut u8,
-    len: usize,
-    _flags: usize,
-    addr_buf: *mut u8,
-    addr_len: *mut u32,
-) -> SyscallResult {
+/// # Arguments
+/// * `fd` - usize
+/// * `buf` - *mut u8
+/// * `len` - usize
+/// * `flags` - usize
+/// * `addr_buf` - *mut u8
+/// * `addr_len` - *mut u32
+pub fn syscall_recvfrom(args: [usize; 6]) -> SyscallResult {
+    let fd = args[0];
+    let buf = args[1] as *mut u8;
+    let len = args[2];
+    let _flags = args[3];
+    let addr_buf = args[4] as *mut u8;
+    let addr_len = args[5] as *mut u32;
     let curr = current_process();
 
     let file = match curr.fd_manager.fd_table.lock().get(fd) {
@@ -372,13 +428,18 @@ pub fn syscall_recvfrom(
 }
 
 /// NOTE: only support socket level options (SOL_SOCKET)
-pub fn syscall_set_sock_opt(
-    fd: usize,
-    level: usize,
-    opt_name: usize,
-    opt_value: *const u8,
-    opt_len: u32,
-) -> SyscallResult {
+/// # Arguments
+/// * `fd` - usize
+/// * `level` - usize
+/// * `opt_name` - usize
+/// * `opt_value` - *const u8
+/// * `opt_len` - u32
+pub fn syscall_set_sock_opt(args: [usize; 6]) -> SyscallResult {
+    let fd = args[0];
+    let level = args[1];
+    let opt_name = args[2];
+    let opt_value = args[3] as *const u8;
+    let opt_len = args[4] as u32;
     let Ok(level) = SocketOptionLevel::try_from(level) else {
         error!("[setsockopt()] level {level} not supported");
         unimplemented!();
@@ -399,7 +460,7 @@ pub fn syscall_set_sock_opt(
 
     match level {
         SocketOptionLevel::IP => Ok(0),
-        SocketOptionLevel::SOCKET => {
+        SocketOptionLevel::Socket => {
             let Ok(option) = SocketOption::try_from(opt_name) else {
                 warn!("[setsockopt()] option {opt_name} not supported in socket level");
                 return Ok(0);
@@ -408,7 +469,7 @@ pub fn syscall_set_sock_opt(
             option.set(socket, opt);
             Ok(0)
         }
-        SocketOptionLevel::TCP => {
+        SocketOptionLevel::Tcp => {
             let Ok(option) = TcpSocketOption::try_from(opt_name) else {
                 warn!("[setsockopt()] option {opt_name} not supported in tcp level");
                 return Ok(0);
@@ -420,13 +481,18 @@ pub fn syscall_set_sock_opt(
     }
 }
 
-pub fn syscall_get_sock_opt(
-    fd: usize,
-    level: usize,
-    opt_name: usize,
-    opt_value: *mut u8,
-    opt_len: *mut u32,
-) -> SyscallResult {
+/// # Arguments
+/// * `fd` - usize
+/// * `level` - usize
+/// * `opt_name` - usize
+/// * `opt_value` - *mut u8
+/// * `opt_len` - *mut u32
+pub fn syscall_get_sock_opt(args: [usize; 6]) -> SyscallResult {
+    let fd = args[0];
+    let level = args[1];
+    let opt_name = args[2];
+    let opt_value = args[3] as *mut u8;
+    let opt_len = args[4] as *mut u32;
     let Ok(level) = SocketOptionLevel::try_from(level) else {
         error!("[setsockopt()] level {level} not supported");
         unimplemented!();
@@ -470,14 +536,14 @@ pub fn syscall_get_sock_opt(
 
     match level {
         SocketOptionLevel::IP => {}
-        SocketOptionLevel::SOCKET => {
+        SocketOptionLevel::Socket => {
             let Ok(option) = SocketOption::try_from(opt_name) else {
                 panic!("[setsockopt()] option {opt_name} not supported in socket level");
             };
 
             option.get(socket, opt_value, opt_len);
         }
-        SocketOptionLevel::TCP => {
+        SocketOptionLevel::Tcp => {
             let Ok(option) = TcpSocketOption::try_from(opt_name) else {
                 panic!("[setsockopt()] option {opt_name} not supported in tcp level");
             };
@@ -501,7 +567,12 @@ enum SocketShutdown {
     ReadWrite = 2,
 }
 
-pub fn syscall_shutdown(fd: usize, how: usize) -> SyscallResult {
+/// # Arguments
+/// * `fd` - usize
+/// * `how` - usize
+pub fn syscall_shutdown(args: [usize; 6]) -> SyscallResult {
+    let fd = args[0];
+    let how = args[1];
     let curr = current_process();
 
     let file = match curr.fd_manager.fd_table.lock().get(fd) {
@@ -528,4 +599,8 @@ pub fn syscall_shutdown(fd: usize, how: usize) -> SyscallResult {
     }
 
     Ok(0)
+}
+
+pub fn syscall_socketpair() -> SyscallResult {
+    Err(SyscallError::EAFNOSUPPORT)
 }

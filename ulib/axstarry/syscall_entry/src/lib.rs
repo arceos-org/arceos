@@ -10,6 +10,12 @@ extern crate axruntime;
 mod trap;
 
 mod syscall;
-mod test;
-
-pub use test::run_testcases;
+extern crate alloc;
+pub use axprocess::{
+    link::{create_link, FilePath},
+    wait_pid, Process,
+};
+pub use axprocess::{yield_now_task, PID2PC};
+pub use syscall_utils::{new_file, FileFlags};
+mod api;
+pub use api::*;

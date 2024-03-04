@@ -1,7 +1,7 @@
-//! 对文件系统的管理，包括目录项的创建、文件权限设置等内容
+//! 对文件系统的管理,包括目录项的创建、文件权限设置等内容
 use axfs::api::{OpenFlags, Permissions};
 use axlog::{debug, error, info};
-use core::{mem::transmute, ptr::copy_nonoverlapping};
+use core::ptr::copy_nonoverlapping;
 
 use axhal::mem::VirtAddr;
 use axprocess::{
@@ -15,15 +15,18 @@ use crate::{ctype::file::new_fd, syscall_unlinkat, FileDesc};
 extern crate alloc;
 use alloc::string::ToString;
 
-/// 功能：获取当前工作目录；
-/// 输入：
-///     - char *buf：一块缓存区，用于保存当前工作目录的字符串。当buf设为NULL，由系统来分配缓存区。
-///     - size：buf缓存区的大小。
-/// 返回值：成功执行，则返回当前工作目录的字符串的指针。失败，则返回NULL。
-///  暂时：成功执行，则返回当前工作目录的字符串的指针 as isize。失败，则返回0。
+/// 功能:获取当前工作目录；
+/// # Arguments
+/// * `buf`: *mut u8, 一块缓存区,用于保存当前工作目录的字符串。当buf设为NULL,由系统来分配缓存区。
+/// * `len`: usize, buf缓存区的大小。
+/// # Return
+/// 成功执行,则返回当前工作目录的字符串的指针。失败,则返回NULL。
+/// 暂时:成功执行,则返回当前工作目录的字符串的指针 as isize。失败,返回0。
 ///
-/// 注意：当前写法存在问题，cwd应当是各个进程独立的，而这里修改的是整个fs的目录
-pub fn syscall_getcwd(buf: *mut u8, len: usize) -> SyscallResult {
+/// TODO: 当前写法存在问题,cwd应当是各个进程独立的,而这里修改的是整个fs的目录
+pub fn syscall_getcwd(args: [usize; 6]) -> SyscallResult {
+    let buf = args[0] as *mut u8;
+    let len = args[1];
     debug!("Into syscall_getcwd. buf: {}, len: {}", buf as usize, len);
     let cwd = axfs::api::current_dir().unwrap();
 
@@ -36,7 +39,7 @@ pub fn syscall_getcwd(buf: *mut u8, len: usize) -> SyscallResult {
 
     let cwd = cwd.as_bytes();
 
-    return if len >= cwd.len() {
+    if len >= cwd.len() {
         let process = current_process();
         let start: VirtAddr = (buf as usize).into();
         let end = start + len;
@@ -52,16 +55,19 @@ pub fn syscall_getcwd(buf: *mut u8, len: usize) -> SyscallResult {
     } else {
         debug!("getcwd: buf size is too small");
         Err(SyscallError::ERANGE)
-    };
+    }
 }
 
-/// 功能：创建目录；
-/// 输入：
-///     - dirfd：要创建的目录所在的目录的文件描述符。
-///     - path：要创建的目录的名称。如果path是相对路径，则它是相对于dirfd目录而言的。如果path是相对路径，且dirfd的值为AT_FDCWD，则它是相对于当前路径而言的。如果path是绝对路径，则dirfd被忽略。
-///     - mode：文件的所有权描述。详见`man 7 inode `。
-/// 返回值：成功执行，返回0。失败，返回-1。
-pub fn syscall_mkdirat(dir_fd: usize, path: *const u8, mode: u32) -> SyscallResult {
+/// 功能:创建目录；
+/// # Arguments
+/// * dirfd: usize, 要创建的目录所在的目录的文件描述符。
+/// * path: *const u8, 要创建的目录的名称。如果path是相对路径,则它是相对于dirfd目录而言的。如果path是相对路径,且dirfd的值为AT_FDCWD,则它是相对于当前路径而言的。如果path是绝对路径,则dirfd被忽略。
+/// * mode: u32, 文件的所有权描述。详见`man 7 inode `。
+/// 返回值:成功执行,返回0。失败,返回-1。
+pub fn syscall_mkdirat(args: [usize; 6]) -> SyscallResult {
+    let dir_fd = args[0];
+    let path = args[1] as *const u8;
+    let mode = args[2] as u32;
     // info!("signal module: {:?}", process_inner.signal_module.keys());
     let path = if let Some(path) = deal_with_path(dir_fd, Some(path), true) {
         path
@@ -87,20 +93,26 @@ pub fn syscall_mkdirat(dir_fd: usize, path: *const u8, mode: u32) -> SyscallResu
     }
 }
 
-/// 功能：创建目录；
-/// 输入：
-///     - path：要创建的目录的名称。如果path是相对路径，则它是相对于dirfd目录而言的。如果path是相对路径，且dirfd的值为AT_FDCWD，则它是相对于当前路径而言的。如果path是绝对路径，则dirfd被忽略。
-///     - mode：文件的所有权描述。详见`man 7 inode `。
-/// 返回值：成功执行，返回0。失败，返回-1。
-pub fn syscall_mkdir(path: *const u8, mode: u32) -> SyscallResult {
-    syscall_mkdirat(AT_FDCWD, path, mode)
+/// 功能:创建目录；
+/// # Arguments
+/// * `path`: *const u8, 要创建的目录的名称。如果path是相对路径,则它是相对于dirfd目录而言的。如果path是相对路径,且dirfd的值为AT_FDCWD,则它是相对于当前路径而言的。如果path是绝对路径,则dirfd被忽略。
+/// * `mode`: u32, 文件的所有权描述。详见`man 7 inode `。
+/// # Return
+/// 成功执行,返回0。失败,返回-1。
+pub fn syscall_mkdir(args: [usize; 6]) -> SyscallResult {
+    let path = args[0];
+    let mode = args[1];
+    let temp_args = [AT_FDCWD, path, mode, 0, 0, 0];
+    syscall_mkdirat(temp_args)
 }
 
-/// 功能：切换工作目录；
-/// 输入：
-///     - path：需要切换到的目录。
-/// 返回值：成功执行，返回0。失败，返回-1。
-pub fn syscall_chdir(path: *const u8) -> SyscallResult {
+/// 功能:切换工作目录；
+/// # Arguments
+/// * `path``: *const u8, 需要切换到的目录。
+/// # Return
+/// 成功执行:返回0。失败, 返回-1。
+pub fn syscall_chdir(args: [usize; 6]) -> SyscallResult {
+    let path = args[0] as *const u8;
     // 从path中读取字符串
     let path = if let Some(path) = deal_with_path(AT_FDCWD, Some(path), true) {
         path
@@ -114,26 +126,19 @@ pub fn syscall_chdir(path: *const u8) -> SyscallResult {
     }
 }
 
-/// 功能：获取目录的条目;
-/// 参数：
-///     -fd：所要读取目录的文件描述符。
-///     -buf：一个缓存区，用于保存所读取目录的信息。缓存区的结构如下
-///     -len：buf的大小。
-/// 返回值：成功执行，返回读取的字节数。当到目录结尾，则返回0。失败，则返回-1。
-///  struct dirent {
-///      uint64 d_ino;	// 索引结点号
-///      int64 d_off;	// 到下一个dirent的偏移
-///      unsigned short d_reclen;	// 当前dirent的长度
-///      unsigned char d_type;	// 文件类型 0:
-///      char d_name[];	//文件名
-///  };
-///  1. 内存布局：
-///       0x61fef8
-///       0x61fef8 0x61ff00 0x61ff08 0x61ff0a 0x61ff0b
-///       实测结果在我的电脑上是这样的，没有按最大对齐方式8字节对齐
-///  2. d_off 和 d_reclen 同时存在的原因：
-///       不同的dirent可以不按照顺序紧密排列
-pub fn syscall_getdents64(fd: usize, buf: *mut u8, len: usize) -> SyscallResult {
+/// To get the dirent structures from the directory referred to by the open file descriptor fd into the buffer
+/// # Arguments
+/// * `fd`: usize, the file descriptor of the directory to be read
+/// * `buf`: *mut u8, the buffer to store the dirent structures
+/// * `len`: usize, the size of the buffer
+///
+/// # Return
+/// * On success, the number of bytes read is returned. On end of directory, 0 is returned.
+/// * On error, -1 is returned.
+pub fn syscall_getdents64(args: [usize; 6]) -> SyscallResult {
+    let fd = args[0];
+    let buf = args[1] as *mut u8;
+    let len = args[2];
     let path = if let Some(path) = deal_with_path(fd, None, true) {
         path
     } else {
@@ -158,7 +163,7 @@ pub fn syscall_getdents64(fd: usize, buf: *mut u8, len: usize) -> SyscallResult 
     let dir_iter = axfs::api::read_dir(path.path()).unwrap();
     let mut count = 0; // buf中已经写入的字节数
 
-    for (_, entry) in dir_iter.enumerate() {
+    for entry in dir_iter {
         let entry = entry.unwrap();
         let mut name = entry.file_name();
         name.push('\0');
@@ -167,13 +172,13 @@ pub fn syscall_getdents64(fd: usize, buf: *mut u8, len: usize) -> SyscallResult 
         let file_type = entry.file_type();
         let entry_size = DirEnt::fixed_size() + name_len + 1;
 
-        // buf不够大，写不下新的entry
+        // buf不够大,写不下新的entry
         if count + entry_size > len {
             debug!("buf not big enough");
             return Ok(count as isize);
         }
         // 转换为DirEnt
-        let dirent: &mut DirEnt = unsafe { transmute(buf.as_mut_ptr().offset(count as isize)) };
+        let dirent: &mut DirEnt = unsafe { &mut *(buf.as_mut_ptr().add(count) as *mut DirEnt) };
         // 设置定长部分
         if file_type.is_dir() {
             dirent.set_fixed_part(1, entry_size as i64, entry_size, DirEntType::DIR);
@@ -206,13 +211,18 @@ pub fn syscall_getdents64(fd: usize, buf: *mut u8, len: usize) -> SyscallResult 
 // 如果源文件正被进程打开,默认情况下重命名也会失败。可以通过添加RENAME_EXCHANGE标志位实现原子交换。
 // 6. 目录不是挂载点
 // 如果源目录是一个挂载点,也不允许重命名。
-pub fn syscall_renameat2(
-    old_dirfd: usize,
-    _old_path: *const u8,
-    new_dirfd: usize,
-    _new_path: *const u8,
-    flags: usize,
-) -> SyscallResult {
+/// # Arguments
+/// * `old_dirfd`: usize, 旧文件所在的目录的文件描述符。
+/// * `old_path`: *const u8, 旧文件的名称。如果old_path是相对路径,则它是相对于old_dirfd目录而言的。如果old_path是相对路径,且old_dirfd的值为AT_FDCWD,则它是相对于当前路径而言的。如果old_path是绝对路径,则old_dirfd被忽略。
+/// * `new_dirfd`: usize, 新文件所在的目录的文件描述符。
+/// * `new_path`: *const u8, 新文件的名称。如果new_path是相对路径,则它是相对于new_dirfd目录而言的。如果new_path是相对路径,且new_dirfd的值为AT_FDCWD,则它是相对于当前路径而言的。如果new_path是绝对路径,则new_dirfd被忽略。
+/// * `flags`: usize, 重命名的标志位。目前只支持RENAME_NOREPLACE、RENAME_EXCHANGE和RENAME_WHITEOUT。
+pub fn syscall_renameat2(args: [usize; 6]) -> SyscallResult {
+    let old_dirfd = args[0];
+    let _old_path = args[1] as *const u8;
+    let new_dirfd = args[2];
+    let _new_path = args[3] as *const u8;
+    let flags = args[4];
     let old_path = deal_with_path(old_dirfd, Some(_old_path), false).unwrap();
     let new_path = deal_with_path(new_dirfd, Some(_new_path), false).unwrap();
 
@@ -221,7 +231,7 @@ pub fn syscall_renameat2(
         return Err(SyscallError::EPERM);
     }
 
-    // 交换两个目录名，目录下的文件不受影响，
+    // 交换两个目录名,目录下的文件不受影响,
 
     // 如果重命名后的文件已存在
     if flags == 1 {
@@ -263,11 +273,25 @@ pub fn syscall_renameat2(
 }
 
 /// 重命名文件或目录
-pub fn syscall_rename(old_path: *const u8, new_path: *const u8) -> SyscallResult {
-    syscall_renameat2(AT_FDCWD, old_path, AT_FDCWD, new_path, 1)
+/// # Arguments
+/// * `old_path`: *const u8
+/// * `new_path`: *const u8
+/// To rename the file from old_path to new_path
+pub fn syscall_rename(args: [usize; 6]) -> SyscallResult {
+    let old_path = args[0];
+    let new_path = args[1];
+    let temp_args = [AT_FDCWD, old_path, AT_FDCWD, new_path, 1, 0];
+    syscall_renameat2(temp_args)
 }
 
-pub fn syscall_fcntl64(fd: usize, cmd: usize, arg: usize) -> SyscallResult {
+/// # Arguments
+/// * `fd`: usize
+/// * `cmd`: usize
+/// * `arg`: usize
+pub fn syscall_fcntl64(args: [usize; 6]) -> SyscallResult {
+    let fd = args[0];
+    let cmd = args[1];
+    let arg = args[2];
     let process = current_process();
     let mut fd_table = process.fd_manager.fd_table.lock();
 
@@ -337,10 +361,17 @@ pub fn syscall_fcntl64(fd: usize, cmd: usize, arg: usize) -> SyscallResult {
 /// 29
 /// 执行各种设备相关的控制功能
 /// todo: 未实现
-pub fn syscall_ioctl(fd: usize, request: usize, argp: *mut usize) -> SyscallResult {
+/// # Arguments
+/// * `fd`: usize, 文件描述符
+/// * `request`: usize, 控制命令
+/// * `argp`: *mut usize, 参数
+pub fn syscall_ioctl(args: [usize; 6]) -> SyscallResult {
+    let fd = args[0];
+    let request = args[1];
+    let argp = args[2];
     let process = current_process();
     let fd_table = process.fd_manager.fd_table.lock();
-    info!("fd: {}, request: {}, argp: {}", fd, request, argp as usize);
+    info!("fd: {}, request: {}, argp: {}", fd, request, argp);
     if fd >= fd_table.len() {
         debug!("fd {} is out of range", fd);
         return Err(SyscallError::EBADF);
@@ -349,30 +380,31 @@ pub fn syscall_ioctl(fd: usize, request: usize, argp: *mut usize) -> SyscallResu
         debug!("fd {} is none", fd);
         return Err(SyscallError::EBADF);
     }
-    if process
-        .manual_alloc_for_lazy((argp as usize).into())
-        .is_err()
-    {
+    if process.manual_alloc_for_lazy(argp.into()).is_err() {
         return Err(SyscallError::EFAULT); // 地址不合法
     }
 
     let file = fd_table[fd].clone().unwrap();
-    // if file.lock().ioctl(request, argp as usize).is_err() {
-    //     return -1;
-    // }
-    let _ = file.ioctl(request, argp as usize);
+    let _ = file.ioctl(request, argp);
     Ok(0)
 }
 
 /// 53
 /// 修改文件权限
 /// mode: 0o777, 3位八进制数字
-/// path为相对路径：
-///     1. 若dir_fd为AT_FDCWD，则相对于当前工作目录
-///     2. 若dir_fd为AT_FDCWD以外的值，则相对于dir_fd所指的目录
-/// path为绝对路径：
-///     忽视dir_fd，直接根据path访问
-pub fn syscall_fchmodat(dir_fd: usize, path: *const u8, mode: usize) -> SyscallResult {
+/// path为相对路径:
+///     1. 若dir_fd为AT_FDCWD,则相对于当前工作目录
+///     2. 若dir_fd为AT_FDCWD以外的值,则相对于dir_fd所指的目录
+/// path为绝对路径:
+///     忽视dir_fd,直接根据path访问
+/// # Arguments
+/// * `dir_fd`: usize, 目录的文件描述符
+/// * `path`: *const u8, 文件的路径
+/// * `mode`: usize, 文件的权限
+pub fn syscall_fchmodat(args: [usize; 6]) -> SyscallResult {
+    let dir_fd = args[0];
+    let path = args[1] as *const u8;
+    let mode = args[2];
     let file_path = deal_with_path(dir_fd, Some(path), false).unwrap();
     axfs::api::metadata(file_path.path())
         .map(|mut metadata| {
@@ -392,15 +424,22 @@ pub fn syscall_fchmodat(dir_fd: usize, path: *const u8, mode: usize) -> SyscallR
 ///        file exists and grants read, write, and execute permissions,
 ///        respectively.
 /// 0: F_OK, 1: X_OK, 2: W_OK, 4: R_OK
-pub fn syscall_faccessat(dir_fd: usize, path: *const u8, mode: usize) -> SyscallResult {
-    // todo: 有问题，实际上需要考虑当前进程对应的用户UID和文件拥有者之间的关系
+/// # Arguments
+/// * `dir_fd`: usize, 目录的文件描述符
+/// * `path`: *const u8, 文件的路径
+/// * `mode`: usize, 文件的权限
+pub fn syscall_faccessat(args: [usize; 6]) -> SyscallResult {
+    let dir_fd = args[0];
+    let path = args[1] as *const u8;
+    let mode = args[2];
+    // todo: 有问题,实际上需要考虑当前进程对应的用户UID和文件拥有者之间的关系
     // 现在一律当作root用户处理
     let file_path = deal_with_path(dir_fd, Some(path), false).unwrap();
     axfs::api::metadata(file_path.path())
         .map(|metadata| {
             if mode == 0 {
                 //F_OK
-                // 文件存在返回0，不存在返回-1
+                // 文件存在返回0,不存在返回-1
                 if axfs::api::path_exists(file_path.path()) {
                     Ok(0)
                 } else {
@@ -430,27 +469,41 @@ pub fn syscall_faccessat(dir_fd: usize, path: *const u8, mode: usize) -> Syscall
 /// 48
 /// 获取文件权限
 /// 0: F_OK, 1: X_OK, 2: W_OK, 4: R_OK
-pub fn syscall_access(path: *const u8, mode: usize) -> SyscallResult {
-    // todo: 有问题，实际上需要考虑当前进程对应的用户UID和文件拥有者之间的关系
+/// # Arguments
+/// * `path`: *const u8, 文件的路径
+/// * `mode`: usize, 文件的权限
+pub fn syscall_access(args: [usize; 6]) -> SyscallResult {
+    let path = args[0];
+    let mode = args[1];
+    let temp_args = [AT_FDCWD, path, mode, 0, 0, 0];
+    // todo: 有问题,实际上需要考虑当前进程对应的用户UID和文件拥有者之间的关系
     // 现在一律当作root用户处理
-    syscall_faccessat(AT_FDCWD, path, mode)
+    syscall_faccessat(temp_args)
 }
 
 /// 删除目录
-pub fn syscall_rmdir(path: *const u8) -> SyscallResult {
-    syscall_unlinkat(AT_FDCWD, path, crate::imp::link::AT_REMOVEDIR)
+/// # Arguments
+/// * `path`: *const u8, 文件的路径
+pub fn syscall_rmdir(args: [usize; 6]) -> SyscallResult {
+    let path = args[0];
+    let temp_args = [AT_FDCWD, path, crate::imp::link::AT_REMOVEDIR, 0, 0, 0];
+    syscall_unlinkat(temp_args)
 }
 
 /// 88
 /// 用于修改文件或目录的时间戳(timestamp)
-/// 如果 fir_fd < 0，它和 path 共同决定要找的文件；
-/// 如果 fir_fd >=0，它就是文件对应的 fd
-pub fn syscall_utimensat(
-    dir_fd: usize,
-    path: *const u8,
-    times: *const TimeSecs,
-    _flags: usize,
-) -> SyscallResult {
+/// 如果 fir_fd < 0,它和 path 共同决定要找的文件；
+/// 如果 fir_fd >=0,它就是文件对应的 fd
+/// # Arguments
+/// * `dir_fd`: usize, 目录的文件描述符
+/// * `path`: *const u8, 文件的路径
+/// * `times`: *const TimeSecs, 时间戳
+/// * `flags`: usize, 选项
+pub fn syscall_utimensat(args: [usize; 6]) -> SyscallResult {
+    let dir_fd = args[0];
+    let path = args[1] as *const u8;
+    let times = args[2] as *const TimeSecs;
+    let _flags = args[3];
     let process = current_process();
     // info!("dir_fd: {}, path: {}", dir_fd as usize, path as usize);
     if dir_fd != AT_FDCWD && (dir_fd as isize) < 0 {
@@ -473,7 +526,7 @@ pub fn syscall_utimensat(
         }
         unsafe { (*times, *(times.add(1))) } //  注意传入的TimeVal中 sec和nsec都是usize, 但TimeValue中nsec是u32
     };
-    // 感觉以下仿照maturin的实现不太合理，并没有真的把时间写给文件，只是写给了一个新建的临时的fd
+    // 感觉以下仿照maturin的实现不太合理,并没有真的把时间写给文件,只是写给了一个新建的临时的fd
     if (dir_fd as isize) > 0 {
         // let file = process_inner.fd_manager.fd_table[dir_fd].clone();
         // if !file.unwrap().lock().set_time(new_atime, new_mtime) {

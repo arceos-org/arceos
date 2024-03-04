@@ -51,7 +51,7 @@ impl DirNode {
             VfsNodeType::File => {
                 // 当前仅是将interrups作为一个特殊的节点，未来应该进行统一
                 if name == "interrupts" {
-                    Arc::new(Interrupts::default())
+                    Arc::new(Interrupts)
                 } else {
                     Arc::new(FileNode::new())
                 }

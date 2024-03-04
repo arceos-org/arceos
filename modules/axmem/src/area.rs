@@ -2,8 +2,9 @@ use alloc::vec::Vec;
 use axalloc::PhysPage;
 use axerrno::AxResult;
 use axhal::{
+    arch::flush_tlb,
     mem::{virt_to_phys, VirtAddr, PAGE_SIZE_4K},
-    paging::{MappingFlags, PageSize, PageTable}, arch::flush_tlb,
+    paging::{MappingFlags, PageSize, PageTable},
 };
 use axio::{Seek, SeekFrom};
 use core::ptr::copy_nonoverlapping;
@@ -36,7 +37,7 @@ impl MapArea {
             pages.push(None);
         }
 
-        let _ = page_table
+        page_table
             .map_fault_region(start, num_pages * PAGE_SIZE_4K)
             .unwrap();
 
@@ -64,7 +65,7 @@ impl MapArea {
             num_pages * PAGE_SIZE_4K,
             pages[0].as_ref().unwrap().start_vaddr
         );
-        let _ = page_table
+        page_table
             .map_region(
                 start,
                 virt_to_phys(pages[0].as_ref().unwrap().start_vaddr),
@@ -200,7 +201,7 @@ impl MapArea {
         drop(self.pages.drain(0..delete_pages));
 
         // unmap deleted pages
-        let _ = page_table.unmap_region(self.vaddr, delete_size).unwrap();
+        page_table.unmap_region(self.vaddr, delete_size).unwrap();
 
         self.vaddr = new_start;
     }
@@ -220,7 +221,7 @@ impl MapArea {
         );
 
         // unmap deleted pages
-        let _ = page_table.unmap_region(new_end, delete_size).unwrap();
+        page_table.unmap_region(new_end, delete_size).unwrap();
     }
 
     /// Split this area into 2.
@@ -356,7 +357,7 @@ impl MapArea {
         // remove pages
         let _ = self.pages.drain(delete_range);
 
-        let _ = page_table.unmap_region(left_end, delete_size).unwrap();
+        page_table.unmap_region(left_end, delete_size).unwrap();
 
         right_area
     }
@@ -374,7 +375,9 @@ impl MapArea {
     pub fn allocated(&self) -> bool {
         self.pages.iter().all(|page| page.is_some())
     }
-
+    /// # Safety
+    /// This function is unsafe because it dereferences a raw pointer.
+    /// It will return a slice of the area's memory, whose len is the same as the area's size.
     pub unsafe fn as_slice(&self) -> &[u8] {
         unsafe { core::slice::from_raw_parts(self.vaddr.as_ptr(), self.size()) }
     }
@@ -409,21 +412,20 @@ impl MapArea {
     /// this function.
     pub fn update_flags(&mut self, flags: MappingFlags, page_table: &mut PageTable) {
         self.flags = flags;
-        let _ = page_table
+        page_table
             .update_region(self.vaddr, self.size(), flags)
             .unwrap();
     }
-
     /// Allocating new phys pages and clone it self.
     /// This function will modify the page table as well.
-    pub unsafe fn clone_alloc(&self, page_table: &mut PageTable) -> AxResult<Self> {
+    pub fn clone_alloc(&self, page_table: &mut PageTable) -> AxResult<Self> {
         // All the pages have been allocated. Allocate a contiguous area in phys memory.
         if self.allocated() {
             MapArea::new_alloc(
                 self.vaddr,
                 self.pages.len(),
                 self.flags,
-                Some(self.as_slice()),
+                Some(unsafe { self.as_slice() }),
                 self.backend.clone(),
                 page_table,
             )
@@ -445,7 +447,7 @@ impl MapArea {
                                 );
                             }
 
-                            let _ = page_table
+                            page_table
                                 .map(
                                     vaddr,
                                     virt_to_phys(new_page.start_vaddr),
@@ -457,7 +459,7 @@ impl MapArea {
                             Some(new_page)
                         }
                         None => {
-                            let _ = page_table.map_fault(vaddr, PageSize::Size4K).unwrap();
+                            page_table.map_fault(vaddr, PageSize::Size4K).unwrap();
                             None
                         }
                     }

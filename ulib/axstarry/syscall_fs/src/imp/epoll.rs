@@ -16,7 +16,10 @@ use crate::ctype::epoll::{EpollCtl, EpollEvent, EpollFile};
 ///  is the same as epoll_create().
 ///
 /// If flag equals to EPOLL_CLOEXEC, than set the cloexec flag for the fd
-pub fn syscall_epoll_create1(_flag: usize) -> SyscallResult {
+/// # Arguments
+/// * `flag` - usize
+pub fn syscall_epoll_create1(args: [usize; 6]) -> SyscallResult {
+    let _flag = args[0];
     let file = EpollFile::new();
     let process = current_process();
     let mut fd_table = process.fd_manager.fd_table.lock();
@@ -33,17 +36,18 @@ pub fn syscall_epoll_create1(_flag: usize) -> SyscallResult {
 ///
 /// 需要一个epoll事件的fd，用来执行修改操作
 ///
-/// args:
-/// - epfd: epoll文件的fd
-/// - op: 修改操作的类型
-/// - fd: 接受事件的文件的fd
-/// - event: 接受的事件
-pub fn syscall_epoll_ctl(epfd: i32, op: i32, fd: i32, event: *const EpollEvent) -> SyscallResult {
+/// # Arguments
+/// * `epfd`: i32, epoll文件的fd
+/// * `op`: i32, 修改操作的类型
+/// * `fd`: i32, 接受事件的文件的fd
+/// * `event`: *const EpollEvent, 接受的事件
+pub fn syscall_epoll_ctl(args: [usize; 6]) -> SyscallResult {
+    let epfd = args[0] as i32;
+    let op = args[1] as i32;
+    let fd = args[2] as i32;
+    let event = args[3] as *const EpollEvent;
     let process = current_process();
-    if process
-        .manual_alloc_type_for_lazy(event as *const EpollEvent)
-        .is_err()
-    {
+    if process.manual_alloc_type_for_lazy(event).is_err() {
         return Err(SyscallError::EFAULT);
     }
     let fd_table = process.fd_manager.fd_table.lock();
@@ -69,19 +73,18 @@ pub fn syscall_epoll_ctl(epfd: i32, op: i32, fd: i32, event: *const EpollEvent) 
 
 /// 执行syscall_epoll_wait系统调用
 ///
-/// args:
-/// - epfd: epoll文件的fd
-/// - event: 接受事件的数组
-/// - max_event: 最大的响应事件数量，必须大于0
-/// - timeout: 超时时间，是一段相对时间，需要手动转化为绝对时间
+/// # Arguments
+/// * `epfd`: i32, epoll文件的fd
+/// * `event`: *mut EpollEvent, 接受事件的数组
+/// * `max_event`: i32, 最大的响应事件数量,必须大于0
+/// * `timeout`: i32, 超时时间，是一段相对时间，需要手动转化为绝对时间
 ///
 /// ret: 实际写入的响应事件数目
-pub fn syscall_epoll_wait(
-    epfd: i32,
-    event: *mut EpollEvent,
-    max_event: i32,
-    timeout: i32,
-) -> SyscallResult {
+pub fn syscall_epoll_wait(args: [usize; 6]) -> SyscallResult {
+    let epfd = args[0] as i32;
+    let event = args[1] as *mut EpollEvent;
+    let max_event = args[2] as i32;
+    let timeout = args[3] as i32;
     if max_event <= 0 {
         return Err(SyscallError::EINVAL);
     }
@@ -115,10 +118,9 @@ pub fn syscall_epoll_wait(
     }
     let ret_events = ret_events.unwrap();
     let real_len = ret_events.len().min(max_event);
-    for i in 0..real_len {
-        // 写入响应事件
+    for (i, e) in ret_events.iter().enumerate().take(real_len) {
         unsafe {
-            *(event.add(i)) = ret_events[i];
+            *(event.add(i)) = *e;
         }
     }
     Ok(real_len as isize)

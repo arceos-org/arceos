@@ -1,4 +1,4 @@
-use axhal::{arch::TrapFrame, mem::VirtAddr, paging::MappingFlags};
+use axhal::{mem::VirtAddr, paging::MappingFlags};
 
 use crate::syscall::syscall;
 
@@ -27,20 +27,10 @@ impl axhal::trap::TrapHandler for TrapHandlerImpl {
     }
 
     #[cfg(feature = "paging")]
-    fn handle_page_fault(addr: VirtAddr, flags: MappingFlags, tf: &mut TrapFrame) {
+    fn handle_page_fault(addr: VirtAddr, flags: MappingFlags) {
         use axprocess::handle_page_fault;
-        #[cfg(feature = "signal")]
-        use syscall_utils::deal_result;
-
         axprocess::time_stat_from_user_to_kernel();
 
-        #[cfg(feature = "signal")]
-        if addr.as_usize() == axsignal::SIGNAL_RETURN_TRAP {
-            use syscall_task::syscall_sigreturn;
-            // 说明是信号执行完毕，此时应当执行sig return
-            tf.set_ret(deal_result(syscall_sigreturn()) as usize);
-            return;
-        }
         handle_page_fault(addr, flags);
         axprocess::time_stat_from_kernel_to_user();
     }

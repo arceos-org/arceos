@@ -19,17 +19,20 @@ use syscall_utils::{SchedParam, SyscallError, SyscallResult};
 /// 若pid为0，则获取当前运行任务的信息
 ///
 /// mask为即将写入的cpu set的地址指针
-pub fn syscall_sched_getaffinity(
-    pid: usize,
-    cpu_set_size: usize,
-    mask: *mut usize,
-) -> SyscallResult {
+/// # Arguments
+/// * `pid` - usize
+/// * `cpu_set_size` - usize
+/// * `mask` - *mut usize
+pub fn syscall_sched_getaffinity(args: [usize; 6]) -> SyscallResult {
+    let pid = args[0];
+    let cpu_set_size = args[1];
+    let mask = args[2] as *mut usize;
     // let task: LazyInit<AxTaskRef> = LazyInit::new();
     let tid2task = TID2TASK.lock();
     let pid2task = PID2PC.lock();
     let pid = pid as u64;
     let task = if tid2task.contains_key(&pid) {
-        Arc::clone(&tid2task.get(&pid).unwrap())
+        Arc::clone(tid2task.get(&pid).unwrap())
     } else if pid2task.contains_key(&pid) {
         let process = pid2task.get(&pid).unwrap();
 
@@ -38,7 +41,7 @@ pub fn syscall_sched_getaffinity(
             .lock()
             .iter()
             .find(|task| task.is_leader())
-            .map(|task| Arc::clone(task))
+            .map(Arc::clone)
             .unwrap()
     } else if pid == 0 {
         Arc::clone(current_task().as_task_ref())
@@ -69,17 +72,20 @@ pub fn syscall_sched_getaffinity(
     Ok(SMP as isize)
 }
 
+/// # Arguments
+/// * `pid` - usize
+/// * `cpu_set_size` - usize
+/// * `mask` - *const usize
 #[allow(unused)]
-pub fn syscall_sched_setaffinity(
-    pid: usize,
-    cpu_set_size: usize,
-    mask: *const usize,
-) -> SyscallResult {
+pub fn syscall_sched_setaffinity(args: [usize; 6]) -> SyscallResult {
+    let pid = args[0];
+    let cpu_set_size = args[1];
+    let mask = args[2] as *const usize;
     let tid2task = TID2TASK.lock();
     let pid2task = PID2PC.lock();
     let pid = pid as u64;
     let task = if tid2task.contains_key(&pid) {
-        Arc::clone(&tid2task.get(&pid).unwrap())
+        Arc::clone(tid2task.get(&pid).unwrap())
     } else if pid2task.contains_key(&pid) {
         let process = pid2task.get(&pid).unwrap();
 
@@ -88,7 +94,7 @@ pub fn syscall_sched_setaffinity(
             .lock()
             .iter()
             .find(|task| task.is_leader())
-            .map(|task| Arc::clone(task))
+            .map(Arc::clone)
             .unwrap()
     } else if pid == 0 {
         Arc::clone(current_task().as_task_ref())
@@ -115,11 +121,14 @@ pub fn syscall_sched_setaffinity(
     Ok(0)
 }
 
-pub fn syscall_sched_setscheduler(
-    pid: usize,
-    policy: usize,
-    param: *const SchedParam,
-) -> SyscallResult {
+/// # Arguments
+/// * `pid` - usize
+/// * `policy` - usize
+/// * `param` - *const SchedParam
+pub fn syscall_sched_setscheduler(args: [usize; 6]) -> SyscallResult {
+    let pid = args[0];
+    let policy = args[1];
+    let param = args[2] as *const SchedParam;
     if (pid as isize) < 0 || param.is_null() {
         return Err(SyscallError::EINVAL);
     }
@@ -128,7 +137,7 @@ pub fn syscall_sched_setscheduler(
     let pid2task = PID2PC.lock();
     let pid = pid as u64;
     let task = if tid2task.contains_key(&pid) {
-        Arc::clone(&tid2task.get(&pid).unwrap())
+        Arc::clone(tid2task.get(&pid).unwrap())
     } else if pid2task.contains_key(&pid) {
         let process = pid2task.get(&pid).unwrap();
 
@@ -137,7 +146,7 @@ pub fn syscall_sched_setscheduler(
             .lock()
             .iter()
             .find(|task| task.is_leader())
-            .map(|task| Arc::clone(task))
+            .map(Arc::clone)
             .unwrap()
     } else if pid == 0 {
         Arc::clone(current_task().as_task_ref())
@@ -169,10 +178,8 @@ pub fn syscall_sched_setscheduler(
         if param.sched_priority != 0 {
             return Err(SyscallError::EINVAL);
         }
-    } else {
-        if param.sched_priority < 1 || param.sched_priority > 99 {
-            return Err(SyscallError::EINVAL);
-        }
+    } else if param.sched_priority < 1 || param.sched_priority > 99 {
+        return Err(SyscallError::EINVAL);
     }
 
     task.set_sched_status(SchedStatus {
@@ -183,7 +190,10 @@ pub fn syscall_sched_setscheduler(
     Ok(0)
 }
 
-pub fn syscall_sched_getscheduler(pid: usize) -> SyscallResult {
+/// # Arguments
+/// * `pid` - usize
+pub fn syscall_sched_getscheduler(args: [usize; 6]) -> SyscallResult {
+    let pid = args[0];
     if (pid as isize) < 0 {
         return Err(SyscallError::EINVAL);
     }
@@ -192,7 +202,7 @@ pub fn syscall_sched_getscheduler(pid: usize) -> SyscallResult {
     let pid2task = PID2PC.lock();
     let pid = pid as u64;
     let task = if tid2task.contains_key(&pid) {
-        Arc::clone(&tid2task.get(&pid).unwrap())
+        Arc::clone(tid2task.get(&pid).unwrap())
     } else if pid2task.contains_key(&pid) {
         let process = pid2task.get(&pid).unwrap();
 
@@ -201,7 +211,7 @@ pub fn syscall_sched_getscheduler(pid: usize) -> SyscallResult {
             .lock()
             .iter()
             .find(|task| task.is_leader())
-            .map(|task| Arc::clone(task))
+            .map(Arc::clone)
             .unwrap()
     } else if pid == 0 {
         Arc::clone(current_task().as_task_ref())

@@ -113,8 +113,10 @@ pub fn get_stat_in_fs(path: &FilePath) -> Result<Kstat, SyscallError> {
             return Ok(ans);
         }
         if let Ok(node) = lookup(path.path()) {
-            let mut stat = Kstat::default();
-            stat.st_nlink = 1;
+            let mut stat = Kstat {
+                st_nlink: 1,
+                ..Kstat::default()
+            };
             // 先检查是否在vfs中存在对应文件
             // 判断是在哪个vfs中
             if node
@@ -129,7 +131,8 @@ pub fn get_stat_in_fs(path: &FilePath) -> Result<Kstat, SyscallError> {
                 stat.st_dev = 2;
                 stat.st_mode = normal_file_mode(StMode::S_IFDIR).bits();
                 return Ok(stat);
-            } else if node
+            }
+            if node
                 .as_any()
                 .downcast_ref::<axfs::axfs_devfs::ZeroDev>()
                 .is_some()
@@ -140,7 +143,8 @@ pub fn get_stat_in_fs(path: &FilePath) -> Result<Kstat, SyscallError> {
             {
                 stat.st_mode = normal_file_mode(StMode::S_IFCHR).bits();
                 return Ok(stat);
-            } else if node
+            }
+            if node
                 .as_any()
                 .downcast_ref::<axfs::axfs_ramfs::FileNode>()
                 .is_some()
@@ -151,9 +155,9 @@ pub fn get_stat_in_fs(path: &FilePath) -> Result<Kstat, SyscallError> {
             }
         }
     }
-    if !real_path.ends_with("/") && !real_path.ends_with("include") {
+    if !real_path.ends_with('/') && !real_path.ends_with("include") {
         // 是文件
-        return if let Ok(file) = new_fd(real_path.to_string(), 0.into()) {
+        if let Ok(file) = new_fd(real_path.to_string(), 0.into()) {
             match file.get_stat() {
                 Ok(stat) => Ok(stat),
                 Err(e) => {
@@ -163,10 +167,10 @@ pub fn get_stat_in_fs(path: &FilePath) -> Result<Kstat, SyscallError> {
             }
         } else {
             Err(SyscallError::ENOENT)
-        };
+        }
     } else {
         // 是目录
-        return if let Ok(dir) = new_dir(real_path.to_string(), OpenFlags::DIR) {
+        if let Ok(dir) = new_dir(real_path.to_string(), OpenFlags::DIR) {
             match dir.get_stat() {
                 Ok(stat) => Ok(stat),
                 Err(e) => {
@@ -176,6 +180,6 @@ pub fn get_stat_in_fs(path: &FilePath) -> Result<Kstat, SyscallError> {
             }
         } else {
             Err(SyscallError::ENOENT)
-        };
+        }
     }
 }

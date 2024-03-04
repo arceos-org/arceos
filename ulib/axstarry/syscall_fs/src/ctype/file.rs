@@ -95,10 +95,19 @@ impl FileIO for FileDesc {
         let file = self.file.lock();
         let attr = file.get_attr()?;
         let stat = self.stat.lock();
-        let inode_number = if let Some(inode_number) = INODE_NAME_MAP.lock().get(&self.path) {
+        let inode_map = INODE_NAME_MAP.lock();
+        let inode_number = if let Some(inode_number) = inode_map.get(&self.path) {
             *inode_number
         } else {
-            return Err(axerrno::AxError::NotFound);
+            // return Err(axerrno::AxError::NotFound);
+            // Now the file exists but it wasn't opened
+            drop(inode_map);
+            new_inode(self.path.clone())?;
+            let inode_map = INODE_NAME_MAP.lock();
+            assert!(inode_map.contains_key(&self.path));
+            let number = *(inode_map.get(&self.path).unwrap());
+            drop(inode_map);
+            number
         };
         let kstat = Kstat {
             st_dev: 1,
@@ -110,7 +119,7 @@ impl FileIO for FileDesc {
             st_rdev: 0,
             _pad0: 0,
             st_size: attr.size(),
-            st_blksize: axfs::FAT_BLOCK_SIZE as u32,
+            st_blksize: axfs::BLOCK_SIZE as u32,
             _pad1: 0,
             st_blocks: attr.blocks(),
             st_atime_sec: stat.atime.tv_sec as isize,

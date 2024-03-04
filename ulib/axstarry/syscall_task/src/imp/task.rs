@@ -1,7 +1,7 @@
+use axtask::current;
+use core::ptr::slice_from_raw_parts_mut;
 /// 处理与任务（线程）有关的系统调用
 use core::time::Duration;
-use core::ptr::slice_from_raw_parts_mut;
-use axtask::current;
 
 use axconfig::TASK_STACK_SIZE;
 use axhal::time::current_time;
@@ -22,8 +22,8 @@ use axtask::TaskId;
 use syscall_utils::{SyscallError, SyscallResult};
 extern crate alloc;
 use alloc::{string::ToString, sync::Arc, vec::Vec};
-use syscall_utils::{RLimit, TimeSecs, WaitFlags, RLIMIT_AS, RLIMIT_NOFILE, RLIMIT_STACK};
 use syscall_utils::{PrctlOption, PR_NAME_SIZE};
+use syscall_utils::{RLimit, TimeSecs, WaitFlags, RLIMIT_AS, RLIMIT_NOFILE, RLIMIT_STACK};
 
 #[cfg(feature = "signal")]
 use axsignal::signal_no::SignalNo;
@@ -32,8 +32,11 @@ use axsignal::signal_no::SignalNo;
 use axprocess::signal::SignalModule;
 // pub static TEST_FILTER: Mutex<BTreeMap<String, usize>> = Mutex::new(BTreeMap::new());
 
-pub fn syscall_exit(exit_code: i32) -> ! {
-    info!("exit: exit_code = {}", exit_code as i32);
+/// # Arguments
+/// * `exit_code` - i32
+pub fn syscall_exit(args: [usize; 6]) -> ! {
+    let exit_code = args[0] as i32;
+    info!("exit: exit_code = {}", exit_code);
     // let cases = ["fcanf", "fgetwc_buffering", "lat_pipe"];
     // let mut test_filter = TEST_FILTER.lock();
     // for case in cases {
@@ -78,11 +81,14 @@ pub fn syscall_exit(exit_code: i32) -> ! {
 //     true
 // }
 
-pub fn syscall_exec(
-    path: *const u8,
-    mut args: *const usize,
-    mut envp: *const usize,
-) -> SyscallResult {
+/// # Arguments
+/// * `path` - *const u8
+/// * `argv` - *const usize
+/// * `envp` - *const usize
+pub fn syscall_exec(args: [usize; 6]) -> SyscallResult {
+    let path = args[0] as *const u8;
+    let mut argv = args[1] as *const usize;
+    let mut envp = args[2] as *const usize;
     let path = deal_with_path(AT_FDCWD, Some(path), false);
     if path.is_none() {
         return Err(SyscallError::EINVAL);
@@ -95,13 +101,13 @@ pub fn syscall_exec(
     let mut args_vec = Vec::new();
     // args相当于argv，指向了参数所在的地址
     loop {
-        let args_str_ptr = unsafe { *args };
+        let args_str_ptr = unsafe { *argv };
         if args_str_ptr == 0 {
             break;
         }
         args_vec.push(unsafe { raw_ptr_to_ref_str(args_str_ptr as *const u8) }.to_string());
         unsafe {
-            args = args.add(1);
+            argv = argv.add(1);
         }
     }
     let mut envs_vec = Vec::new();
@@ -134,30 +140,41 @@ pub fn syscall_exec(
     // 清空futex信号列表
     clear_wait(curr_process.pid(), true);
     let argc = args_vec.len();
-    if curr_process.exec(path, args_vec, envs_vec).is_err() {
+    if curr_process.exec(path, args_vec, &envs_vec).is_err() {
         exit_current_task(0);
     }
     Ok(argc as isize)
 }
 
-
-// FIXME: This below is just before 
-// pub fn syscall_clone(
-//     flags: usize,
-//     user_stack: usize,
-//     ptid: usize,
-//     tls: usize,
-//     ctid: usize,
-// ) -> SyscallResult {
-// This is for x86_64
-pub fn syscall_clone(
-    flags: usize,
-    user_stack: usize,
-    ptid: usize,
-    #[cfg(not(target_arch = "x86_64"))]tls: usize,
-    ctid: usize,
-    #[cfg(target_arch = "x86_64")]tls: usize,
-) -> SyscallResult {
+/// # Arguments for riscv
+/// * `flags` - usize
+/// * `user_stack` - usize
+/// * `ptid` - usize
+/// * `tls` - usize
+/// * `ctid` - usize
+///
+/// # Arguments for x86_64
+/// * `flags` - usize
+/// * `user_stack` - usize
+/// * `ptid` - usize
+/// * `ctid` - usize
+/// * `tls` - usize
+pub fn syscall_clone(args: [usize; 6]) -> SyscallResult {
+    let flags = args[0];
+    let user_stack = args[1];
+    let ptid = args[2];
+    let tls: usize;
+    let ctid: usize;
+    #[cfg(target_arch = "x86_64")]
+    {
+        ctid = args[3];
+        tls = args[4];
+    }
+    #[cfg(not(target_arch = "x86_64"))]
+    {
+        tls = args[3];
+        ctid = args[4];
+    }
     let clone_flags = CloneFlags::from_bits((flags & !0x3f) as u32).unwrap();
 
     let stack = if user_stack == 0 {
@@ -167,7 +184,7 @@ pub fn syscall_clone(
     };
     let curr_process = current_process();
     #[cfg(feature = "signal")]
-    let sig_child = SignalNo::from(flags as usize & 0x3f) == SignalNo::SIGCHLD;
+    let sig_child = SignalNo::from(flags & 0x3f) == SignalNo::SIGCHLD;
 
     if let Ok(new_task_id) = curr_process.clone_task(
         clone_flags,
@@ -180,19 +197,26 @@ pub fn syscall_clone(
     ) {
         Ok(new_task_id as isize)
     } else {
-        return Err(SyscallError::ENOMEM);
+        Err(SyscallError::ENOMEM)
     }
 }
 
 /// 创建一个子进程，挂起父进程，直到子进程exec或者exit，父进程才继续执行
 pub fn syscall_vfork() -> SyscallResult {
-    syscall_clone(0x4011, 0, 0, 0, 0)
+    let args: [usize; 6] = [0x4011, 0, 0, 0, 0, 0];
+    syscall_clone(args)
 }
 
 /// 等待子进程完成任务，若子进程没有完成，则自身yield
 /// 当前仅支持WNOHANG选项，即若未完成时则不予等待，直接返回0
-/// WIFEXITED(s) WEXITSTATUS(s)
-pub fn syscall_wait4(pid: isize, exit_code_ptr: *mut i32, option: WaitFlags) -> SyscallResult {
+/// # Arguments
+/// * `pid` - isize
+/// * `exit_code_ptr` - *mut i32
+/// * `option` - WaitFlags
+pub fn syscall_wait4(args: [usize; 6]) -> SyscallResult {
+    let pid = args[0] as isize;
+    let exit_code_ptr = args[1] as *mut i32;
+    let option = WaitFlags::from_bits(args[2] as u32).unwrap();
     loop {
         let answer = unsafe { wait_pid(pid, exit_code_ptr) };
         match answer {
@@ -234,8 +258,12 @@ pub fn syscall_yield() -> SyscallResult {
 
 /// 当前任务进入睡眠，req指定了睡眠的时间
 /// rem存储当睡眠完成时，真实睡眠时间和预期睡眠时间之间的差值
-pub fn syscall_sleep(req: *const TimeSecs, rem: *mut TimeSecs) -> SyscallResult {
-    // error!("req: {:X}, rem: {:X}", req as us, rem);
+/// # Arguments
+/// * `req` - *const TimeSecs
+/// * `rem` - *mut TimeSecs
+pub fn syscall_sleep(args: [usize; 6]) -> SyscallResult {
+    let req = args[0] as *const TimeSecs;
+    let rem = args[1] as *mut TimeSecs;
     let req_time = unsafe { *req };
     let start_to_sleep = current_time();
     // info!("sleep: req_time = {:?}", req_time);
@@ -248,8 +276,8 @@ pub fn syscall_sleep(req: *const TimeSecs, rem: *mut TimeSecs) -> SyscallResult 
             let delta = (dur - sleep_time).as_nanos() as usize;
             unsafe {
                 *rem = TimeSecs {
-                    tv_sec: delta / 1000_000_000,
-                    tv_nsec: delta % 1000_000_000,
+                    tv_sec: delta / 1_000_000_000,
+                    tv_nsec: delta % 1_000_000_000,
                 }
             };
         } else {
@@ -270,7 +298,10 @@ pub fn syscall_sleep(req: *const TimeSecs, rem: *mut TimeSecs) -> SyscallResult 
 
 /// 设置tid对应的指针
 /// 返回值为当前的tid
-pub fn syscall_set_tid_address(tid: usize) -> SyscallResult {
+/// # Arguments
+/// * `tid` - usize
+pub fn syscall_set_tid_address(args: [usize; 6]) -> SyscallResult {
+    let tid = args[0];
     set_child_tid(tid);
     Ok(current_task().id().as_u64() as isize)
 }
@@ -278,12 +309,17 @@ pub fn syscall_set_tid_address(tid: usize) -> SyscallResult {
 /// 设置任务资源限制
 ///
 /// pid 设为0时，表示应用于自己
-pub fn syscall_prlimit64(
-    pid: usize,
-    resource: i32,
-    new_limit: *const RLimit,
-    old_limit: *mut RLimit,
-) -> SyscallResult {
+///
+/// # Arguments
+/// * `pid` - usize
+/// * `resource` - i32
+/// * `new_limit` - *const RLimit
+/// * `old_limit` - *mut RLimit
+pub fn syscall_prlimit64(args: [usize; 6]) -> SyscallResult {
+    let pid = args[0];
+    let resource = args[1] as i32;
+    let new_limit = args[2] as *const RLimit;
+    let old_limit = args[3] as *mut RLimit;
     // 当pid不为0，其实没有权利去修改其他的进程的资源限制
     let curr_process = current_process();
     if pid == 0 || pid == curr_process.pid() as usize {
@@ -340,7 +376,10 @@ pub fn syscall_getppid() -> SyscallResult {
     Ok(current_process().get_parent() as isize)
 }
 
-pub fn syscall_umask(new_mask: i32) -> SyscallResult {
+/// # Arguments
+/// * `new_mask` - i32
+pub fn syscall_umask(args: [usize; 6]) -> SyscallResult {
+    let new_mask = args[0] as i32;
     Ok(current_process().fd_manager.set_mask(new_mask) as isize)
 }
 
@@ -418,13 +457,18 @@ pub fn syscall_setsid() -> SyscallResult {
 
 /// arch_prc
 #[cfg(target_arch = "x86_64")]
-pub fn syscall_arch_prctl(code: usize, addr: *mut usize) -> SyscallResult {
+/// # Arguments
+/// * `code` - usize
+/// * `addr` - *mut usize
+pub fn syscall_arch_prctl(args: [usize; 6]) -> SyscallResult {
     /*
     #define ARCH_SET_GS			0x1001
     #define ARCH_SET_FS			0x1002
     #define ARCH_GET_FS			0x1003
     #define ARCH_GET_GS			0x1004
     */
+    let code = args[0];
+    let addr = args[1] as *mut usize;
     match code {
         0x1002 => {
             #[cfg(target_arch = "x86_64")]
@@ -442,18 +486,24 @@ pub fn syscall_arch_prctl(code: usize, addr: *mut usize) -> SyscallResult {
             Ok(0)
         }
         0x1001 | 0x1004 => todo!(),
-        _ => Err(SyscallError::EINVAL)
+        _ => Err(SyscallError::EINVAL),
     }
     //Ok(0)
 }
 
 pub fn syscall_fork() -> SyscallResult {
     warn!("transfer syscall_fork to syscall_clone");
-    syscall_clone(1, 0, 0, 0, 0)
+    let args = [1, 0, 0, 0, 0, 0];
+    syscall_clone(args)
 }
 
 /// prctl
-pub fn syscall_prctl(option: usize, arg2: *mut u8) -> SyscallResult {
+/// # Arguments
+/// * `option` - usize
+/// * `arg2` - *mut u8
+pub fn syscall_prctl(args: [usize; 6]) -> SyscallResult {
+    let option = args[0];
+    let arg2 = args[1] as *mut u8;
     match PrctlOption::try_from(option) {
         Ok(PrctlOption::PR_GET_NAME) => {
             // 获取进程名称。
@@ -463,11 +513,12 @@ pub fn syscall_prctl(option: usize, arg2: *mut u8) -> SyscallResult {
             process_name.truncate(PR_NAME_SIZE);
             // 把 arg2 转换成可写的 buffer
             if current_process()
-            .manual_alloc_for_lazy((arg2 as usize).into())
-            .is_ok() // 直接访问前需要确保地址已经被分配
+                .manual_alloc_for_lazy((arg2 as usize).into())
+                .is_ok()
+            // 直接访问前需要确保地址已经被分配
             {
                 unsafe {
-                    let name = &mut * slice_from_raw_parts_mut(arg2, PR_NAME_SIZE);
+                    let name = &mut *slice_from_raw_parts_mut(arg2, PR_NAME_SIZE);
                     name[..process_name.len()].copy_from_slice(process_name.as_bytes());
                 }
                 Ok(0)
@@ -475,7 +526,7 @@ pub fn syscall_prctl(option: usize, arg2: *mut u8) -> SyscallResult {
                 Err(SyscallError::EINVAL)
             }
         }
-        Ok(PrctlOption::PR_SET_NAME) => { Ok(0) }
-        _ => { Ok(0) }
+        Ok(PrctlOption::PR_SET_NAME) => Ok(0),
+        _ => Ok(0),
     }
 }

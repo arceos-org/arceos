@@ -17,6 +17,10 @@ kernel-base-vaddr = "0"
 testcase-memory-start = "0"
 testcase-memory-size = "0"  
 qemu-memory-size = "0" 
+user-heap-base = "0"
+user-stack-top = "0"
+max-user-heap-size = "0"
+max-user-stack-size = "0"
 # Linear mapping offset, for quick conversions between physical and virtual
 # addresses.
 phys-virt-offset = "0"

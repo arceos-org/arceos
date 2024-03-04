@@ -9,11 +9,14 @@ use axsignal::signal_no::SignalNo;
 
 use syscall_utils::{SigMaskFlag, SyscallError, SyscallResult, SIGSET_SIZE_IN_BYTE};
 
-pub fn syscall_sigaction(
-    signum: usize,
-    action: *const SigAction,
-    old_action: *mut SigAction,
-) -> SyscallResult {
+/// # Arguments
+/// * `signum` - usize
+/// * `action` - *const SigAction
+/// * `old_action` - *mut SigAction
+pub fn syscall_sigaction(args: [usize; 6]) -> SyscallResult {
+    let signum = args[0];
+    let action = args[1] as *const SigAction;
+    let old_action = args[2] as *mut SigAction;
     info!(
         "signum: {}, action: {:X}, old_action: {:X}",
         signum, action as usize, old_action as usize
@@ -64,7 +67,11 @@ pub fn syscall_sigaction(
 }
 
 /// 实现sigsuspend系统调用
-pub fn syscall_sigsuspend(mask: *const usize) -> SyscallResult {
+/// TODO: 这里实现的似乎和文档有出入，应该有 BUG
+/// # Arguments
+/// * `mask` - *const usize
+pub fn syscall_sigsuspend(args: [usize; 6]) -> SyscallResult {
+    let mask = args[0] as *const usize;
     let process = current_process();
     if process
         .manual_alloc_for_lazy((mask as usize).into())
@@ -97,22 +104,28 @@ pub fn syscall_sigsuspend(mask: *const usize) -> SyscallResult {
             if process.have_signals().is_some() {
                 return Err(SyscallError::EINTR);
             }
+        } else {
+            // 说明来了一个信号
+            break;
         }
-        break;
     }
-    return Err(SyscallError::EINTR);
+    Err(SyscallError::EINTR)
 }
 
 pub fn syscall_sigreturn() -> SyscallResult {
     Ok(axprocess::signal::signal_return())
 }
 
-pub fn syscall_sigprocmask(
-    flag: SigMaskFlag,
-    new_mask: *const usize,
-    old_mask: *mut usize,
-    sigsetsize: usize,
-) -> SyscallResult {
+/// # Arguments
+/// * `flag` - SigMaskFlag
+/// * `new_mask` - *const usize
+/// * `old_mask` - *mut usize
+/// * `sigsetsize` - usize
+pub fn syscall_sigprocmask(args: [usize; 6]) -> SyscallResult {
+    let flag = SigMaskFlag::from(args[0]);
+    let new_mask = args[1] as *const usize;
+    let old_mask = args[2] as *mut usize;
+    let sigsetsize = args[3];
     if sigsetsize != SIGSET_SIZE_IN_BYTE {
         // 若sigsetsize不是正确的大小，则返回错误
         return Err(SyscallError::EINVAL);
@@ -164,7 +177,12 @@ pub fn syscall_sigprocmask(
 /// 向pid指定的进程发送信号
 ///
 /// 由于处理信号的单位在线程上，所以若进程中有多个线程，则会发送给主线程
-pub fn syscall_kill(pid: isize, signum: isize) -> SyscallResult {
+/// # Arguments
+/// * `pid` - isize
+/// * `signum` - isize
+pub fn syscall_kill(args: [usize; 6]) -> SyscallResult {
+    let pid = args[0] as isize;
+    let signum = args[1] as isize;
     if pid > 0 && signum > 0 {
         // 不关心是否成功
         let _ = axprocess::signal::send_signal_to_process(pid, signum);
@@ -177,7 +195,12 @@ pub fn syscall_kill(pid: isize, signum: isize) -> SyscallResult {
 }
 
 /// 向tid指定的线程发送信号
-pub fn syscall_tkill(tid: isize, signum: isize) -> SyscallResult {
+/// # Arguments
+/// * `tid` - isize
+/// * `signum` - isize
+pub fn syscall_tkill(args: [usize; 6]) -> SyscallResult {
+    let tid = args[0] as isize;
+    let signum = args[1] as isize;
     debug!(
         "cpu: {}, send singal: {} to: {}",
         this_cpu_id(),

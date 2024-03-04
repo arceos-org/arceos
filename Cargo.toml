@@ -35,6 +35,7 @@ members = [
     "crates/spinlock",
     "crates/timer_list",
     "crates/tuple_for_each",
+    "crates/elf_parser",
 
     "modules/axalloc",
     "modules/axconfig",
@@ -78,14 +79,8 @@ members = [
     "apps/task/yield",
     "apps/task/priority",
     "apps/task/tls",
-    "apps/oscomp",
-    "apps/ostrain/fileopen",
-    "apps/ostrain/fileread",
-    "apps/ostrain/filewrite",
-    "apps/ostrain/taskyield",
-    "apps/ostrain/task_single_yield",
-    "apps/ostrain/danger_access"
-]
+    "apps/monolithic_userboot"
+, "crates/elf_parser", "apps/monolithic_userboot"]
 
 [profile.release]
 lto = true

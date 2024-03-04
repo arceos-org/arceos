@@ -16,7 +16,7 @@ ifeq ($(APP_TYPE),c)
   lib_feat_prefix := axlibc/
   lib_features := fp_simd alloc multitask fs net fd pipe select epoll
 else
-  ifneq ($(findstring apps/oscomp,$(APP)),)
+  ifneq ($(findstring monolithic,$(APP)),)
     ax_feat_prefix := syscall_entry/
     lib_feat_prefix := syscall_entry/
   else 
@@ -36,7 +36,7 @@ ifeq ($(APP_TYPE), c)
   ifneq ($(filter fs net pipe select epoll,$(FEATURES)),)
     override FEATURES += fd
   endif
-else ifeq ($(APP), apps/oscomp)
+else ifneq ($(findstring monolithic,$(APP)),)
   ifneq ($(wildcard $(APP)/features.txt),)    # check features.txt exists
     override FEATURES += $(shell cat $(APP)/features.txt)
   endif

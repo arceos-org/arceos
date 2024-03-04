@@ -60,10 +60,11 @@ pub const SOCK_CLOEXEC: usize = 0x80000;
 
 #[derive(TryFromPrimitive, Debug)]
 #[repr(usize)]
+#[allow(non_camel_case_types)]
 pub enum SocketOptionLevel {
     IP = 0,
-    SOCKET = 1,
-    TCP = 6,
+    Socket = 1,
+    Tcp = 6,
 }
 
 #[derive(TryFromPrimitive, Debug)]
@@ -484,7 +485,7 @@ impl Socket {
             SocketInner::Tcp(s) => s.local_addr(),
             SocketInner::Udp(s) => s.local_addr(),
         }
-        .map(|addr| from_core_sockaddr(addr))
+        .map(from_core_sockaddr)
     }
 
     /// Return peer address.
@@ -494,7 +495,7 @@ impl Socket {
             SocketInner::Tcp(s) => s.peer_addr(),
             SocketInner::Udp(s) => s.peer_addr(),
         }
-        .map(|addr| from_core_sockaddr(addr))
+        .map(from_core_sockaddr)
     }
 
     pub fn bind(&self, addr: SocketAddr) -> AxResult {
@@ -603,9 +604,9 @@ impl Socket {
     /// For shutdown(fd, SHUT_WR)
     pub fn shutdown(&self) {
         let mut inner = self.inner.lock();
-        let _ = match &mut *inner {
+        match &mut *inner {
             SocketInner::Udp(s) => {
-                let _ = s.shutdown();
+                s.shutdown();
             }
             SocketInner::Tcp(s) => s.close(),
         };
@@ -678,11 +679,11 @@ impl FileIO for Socket {
         let mut flags = OpenFlags::default();
 
         if self.close_exec {
-            flags = flags | OpenFlags::CLOEXEC;
+            flags |= OpenFlags::CLOEXEC;
         }
 
         if self.is_nonblocking() {
-            flags = flags | OpenFlags::NON_BLOCK;
+            flags |= OpenFlags::NON_BLOCK;
         }
 
         flags

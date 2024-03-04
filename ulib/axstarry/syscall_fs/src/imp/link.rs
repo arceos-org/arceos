@@ -10,22 +10,23 @@ use syscall_utils::{SyscallError, SyscallResult};
 // Special value used to indicate openat should use the current working directory.
 pub const AT_REMOVEDIR: usize = 0x200; // Remove directory instead of unlinking file.
 
-/// 功能：创建文件的链接；
-/// 输入：
-///     - old_dir_fd：原来的文件所在目录的文件描述符。
-///     - old_path：文件原来的名字。如果old_path是相对路径，则它是相对于old_dir_fd目录而言的。如果old_path是相对路径，且old_dir_fd的值为AT_FDCWD，则它是相对于当前路径而言的。如果old_path是绝对路径，则old_dir_fd被忽略。
-///     - new_dir_fd：新文件名所在的目录。
-///     - new_path：文件的新名字。new_path的使用规则同old_path。
-///     - flags：在2.6.18内核之前，应置为0。其它的值详见`man 2 linkat`。
-/// 返回值：成功执行，返回0。失败，返回-1。
+/// 功能:创建文件的链接；
+/// # Arguments
+/// * `old_dir_fd`: usize, 原来的文件所在目录的文件描述符。
+/// * `old_path`: *const u8, 文件原来的名字。如果old_path是相对路径,则它是相对于old_dir_fd目录而言的。如果old_path是相对路径,且old_dir_fd的值为AT_FDCWD,则它是相对于当前路径而言的。如果old_path是绝对路径,则old_dir_fd被忽略。
+/// * `new_dir_fd`: usize, 新文件名所在的目录。
+/// * `new_path`: *const u8, 文件的新名字。new_path的使用规则同old_path。
+/// * `flags`: usize, 在2.6.18内核之前,应置为0。其它的值详见`man 2 linkat`。
+/// # Return
+/// 成功执行,返回0。失败,返回-1。
 #[allow(dead_code)]
-pub fn sys_linkat(
-    old_dir_fd: usize,
-    old_path: *const u8,
-    new_dir_fd: usize,
-    new_path: *const u8,
-    _flags: usize,
-) -> SyscallResult {
+pub fn sys_linkat(args: [usize; 6]) -> SyscallResult {
+    let old_dir_fd = args[0];
+    let old_path = args[1] as *const u8;
+    let new_dir_fd = args[2];
+    let new_path = args[3] as *const u8;
+    let _flags = args[4];
+
     let old_path = if let Some(path) = deal_with_path(old_dir_fd, Some(old_path), false) {
         path
     } else {
@@ -43,21 +44,28 @@ pub fn sys_linkat(
     }
 }
 
-/// 功能：移除指定文件的链接
-/// 输入：
-///     - path：要删除的链接的名字。
-/// 返回值：成功执行，返回0。失败，返回-1。
-pub fn syscall_unlink(path: *const u8) -> SyscallResult {
-    syscall_unlinkat(axprocess::link::AT_FDCWD, path, 0)
+/// 功能:移除指定文件的链接
+/// # Arguments
+/// * `path`: *const u8, 要删除的链接的名字。
+/// # Return
+/// 成功执行,返回0。失败,返回-1。
+pub fn syscall_unlink(args: [usize; 6]) -> SyscallResult {
+    let path = args[0] as *const u8;
+    let temp_args = [axprocess::link::AT_FDCWD, path as usize, 0, 0, 0, 0];
+    syscall_unlinkat(temp_args)
 }
 
-/// 功能：移除指定文件的链接(可用于删除文件)；
-/// 输入：
-///     - dir_fd：要删除的链接所在的目录。
-///     - path：要删除的链接的名字。如果path是相对路径，则它是相对于dir_fd目录而言的。如果path是相对路径，且dir_fd的值为AT_FDCWD，则它是相对于当前路径而言的。如果path是绝对路径，则dir_fd被忽略。
-///     - flags：可设置为0或AT_REMOVEDIR。
-/// 返回值：成功执行，返回0。失败，返回-1。
-pub fn syscall_unlinkat(dir_fd: usize, path: *const u8, flags: usize) -> SyscallResult {
+/// 功能:移除指定文件的链接(可用于删除文件);
+/// # Arguments
+/// * `dir_fd`: usize, 要删除的链接所在的目录。
+/// * `path`: *const u8, 要删除的链接的名字。如果path是相对路径,则它是相对于dir_fd目录而言的。如果path是相对路径,且dir_fd的值为AT_FDCWD,则它是相对于当前路径而言的。如果path是绝对路径,则dir_fd被忽略。
+/// * `flags`: usize, 可设置为0或AT_REMOVEDIR。
+/// # Return
+/// 成功执行,返回0。失败,返回-1。
+pub fn syscall_unlinkat(args: [usize; 6]) -> SyscallResult {
+    let dir_fd = args[0];
+    let path = args[1] as *const u8;
+    let flags = args[2];
     let path = deal_with_path(dir_fd, Some(path), false).unwrap();
 
     if path.start_with(&FilePath::new("/proc").unwrap()) {
@@ -66,7 +74,7 @@ pub fn syscall_unlinkat(dir_fd: usize, path: *const u8, flags: usize) -> Syscall
 
     // unlink file
     if flags == 0 {
-        if let None = remove_link(&path) {
+        if remove_link(&path).is_none() {
             debug!("unlink file error");
             return Err(SyscallError::EINVAL);
         }

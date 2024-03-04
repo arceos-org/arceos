@@ -1,0 +1,14 @@
+[package]
+name = "elf_parser"
+version = "0.1.0"
+edition = "2021"
+authors = ["Youjie Zheng <zyj578335934@gmail.com>"]
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+axerrno = { path = "../axerrno" }
+page_table_entry = { path = "../page_table_entry" }
+xmas-elf = "0.9.0"
+memory_addr = { path = "../memory_addr" }
+log = "0.4"
+cfg-if = "1.0"

@@ -1,9 +1,10 @@
 cfg_if::cfg_if! {
     if #[cfg(feature = "myfs")] {
         pub mod myfs;
+        pub const BLOCK_SIZE: usize = 512;
     } else if #[cfg(feature = "fatfs")] {
         pub mod fatfs;
-        pub use fatfs::BLOCK_SIZE as FAT_BLOCK_SIZE;
+        pub use fatfs::BLOCK_SIZE;
     }
 }
 
