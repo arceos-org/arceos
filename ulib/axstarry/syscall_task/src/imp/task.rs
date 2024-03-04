@@ -473,7 +473,7 @@ pub fn syscall_arch_prctl(args: [usize; 6]) -> SyscallResult {
         0x1002 => {
             #[cfg(target_arch = "x86_64")]
             unsafe {
-                axhal::arch::write_thread_pointer(*addr as usize);
+                axhal::arch::write_thread_pointer(*addr);
                 // *(read_thread_pointer() as *mut usize) = addr;
             }
             Ok(0)
