@@ -15,7 +15,8 @@ const R_RISCV_32: u32 = 1;
 const R_RISCV_64: u32 = 2;
 const R_RISCV_RELATIVE: u32 = 3;
 const R_JUMP_SLOT: u32 = 5;
-
+const TLS_DTPREL32: u32 = 8;
+const TLS_DTV_OFFSET: usize = 0x800;
 /// To parse the elf file and get the relocate pairs
 ///
 /// # Arguments
@@ -105,6 +106,11 @@ pub fn get_relocate_pairs(
                             count: size_of::<usize>() / size_of::<u8>(),
                         })
                     }
+                    TLS_DTPREL32 => pairs.push(RelocatePair {
+                        src: VirtAddr::from(symbol_value + addend - TLS_DTV_OFFSET),
+                        dst: VirtAddr::from(destination),
+                        count: 4,
+                    }),
                     other => panic!("Unknown relocation type: {}", other),
                 }
             }

@@ -189,7 +189,7 @@ pub fn handle_signals() {
     let restorer = if let Some(addr) = action.get_storer() {
         addr
     } else {
-        axconfig::SIGNAL_TRAMPOLINE as usize
+        axconfig::SIGNAL_TRAMPOLINE
     };
 
     info!(

@@ -167,7 +167,7 @@ impl Process {
         #[cfg(feature = "signal")]
         {
             // 生成信号跳板
-            let signal_trampoline_vaddr: VirtAddr = (axconfig::SIGNAL_TRAMPOLINE as usize).into();
+            let signal_trampoline_vaddr: VirtAddr = (axconfig::SIGNAL_TRAMPOLINE).into();
             let signal_trampoline_paddr = virt_to_phys((start_signal_trampoline as usize).into());
             memory_set.map_page_without_alloc(
                 signal_trampoline_vaddr,
@@ -374,16 +374,16 @@ impl Process {
                 .insert(current_task.id().as_u64(), SignalModule::init_signal(None));
 
             // 生成信号跳板
-            let signal_trampoline_vaddr: VirtAddr = (axconfig::SIGNAL_TRAMPOLINE as usize).into();
+            let signal_trampoline_vaddr: VirtAddr = (axconfig::SIGNAL_TRAMPOLINE).into();
             let signal_trampoline_paddr = virt_to_phys((start_signal_trampoline as usize).into());
-            self.memory_set.lock().map_page_without_alloc(
+            let _ = self.memory_set.lock().map_page_without_alloc(
                 signal_trampoline_vaddr,
                 signal_trampoline_paddr,
                 MappingFlags::READ
                     | MappingFlags::EXECUTE
                     | MappingFlags::USER
                     | MappingFlags::WRITE,
-            )?;
+            );
         }
 
         // user_stack_top = user_stack_top / PAGE_SIZE_4K * PAGE_SIZE_4K;
@@ -420,8 +420,7 @@ impl Process {
             #[cfg(feature = "signal")]
             {
                 // 生成信号跳板
-                let signal_trampoline_vaddr: VirtAddr =
-                    (axconfig::SIGNAL_TRAMPOLINE as usize).into();
+                let signal_trampoline_vaddr: VirtAddr = (axconfig::SIGNAL_TRAMPOLINE).into();
                 let signal_trampoline_paddr =
                     virt_to_phys((start_signal_trampoline as usize).into());
                 memory_set.lock().map_page_without_alloc(

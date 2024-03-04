@@ -368,11 +368,6 @@ impl TaskInner {
         let trap_frame_size = core::mem::size_of::<TrapFrame>();
         let frame_address = self.trap_frame.get();
         let kernel_base = self.get_kernel_stack_top().unwrap() - trap_frame_size;
-        axlog::error!(
-            "kernel_base: {:#x} top: {:#x}",
-            kernel_base,
-            self.get_kernel_stack_top().unwrap()
-        );
         unsafe {
             *(kernel_base as *mut TrapFrame) = *frame_address;
         }
