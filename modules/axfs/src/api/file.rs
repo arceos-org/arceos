@@ -1,7 +1,6 @@
 use axio::{prelude::*, Result, SeekFrom};
 use core::fmt;
 
-#[cfg(feature = "monolithic")]
 use super::FileExt;
 use crate::fops;
 
@@ -206,7 +205,6 @@ impl Seek for File {
     }
 }
 
-#[cfg(feature = "monolithic")]
 impl FileExt for File {
     fn readable(&self) -> bool {
         self.inner.readable()

@@ -3,12 +3,10 @@
 mod dir;
 mod file;
 
-#[cfg(feature = "monolithic")]
 pub mod port;
 
 use axerrno::AxResult;
 use axfs_vfs::VfsNodeRef;
-#[cfg(feature = "monolithic")]
 pub use port::*;
 
 pub use self::dir::{DirBuilder, DirEntry, ReadDir};

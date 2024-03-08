@@ -12,6 +12,7 @@ use crate::{arch::GdtStruct, trap::handle_syscall};
 
 use super::TrapFrame;
 
+#[cfg(feature = "monolithic")]
 global_asm!(include_str!("syscall.S"));
 
 #[no_mangle]
@@ -21,12 +22,10 @@ fn x86_syscall_handler(tf: &mut TrapFrame) {
     crate::trap::handle_signal();
 }
 
-#[cfg(target_arch = "x86_64")]
 #[no_mangle]
 #[percpu::def_percpu]
 static USER_RSP_OFFSET: usize = 0;
 
-#[cfg(target_arch = "x86_64")]
 #[no_mangle]
 #[percpu::def_percpu]
 static KERNEL_RSP_OFFSET: usize = 0;

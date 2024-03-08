@@ -6,3 +6,4 @@ signal
 img
 syscall_net
 schedule
+monolithic
