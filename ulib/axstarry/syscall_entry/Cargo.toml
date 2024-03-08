@@ -72,6 +72,7 @@ syscall_task = ["dep:syscall_task"]
 devfs = []
 
 [dependencies]
+cfg-if = "1.0"
 axfeat = { path = "../../../api/axfeat" }
 arceos_api = { path = "../../../api/arceos_api" }
 axlog = { path = "../../../modules/axlog" }

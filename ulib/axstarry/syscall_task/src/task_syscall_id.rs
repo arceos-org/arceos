@@ -1,7 +1,11 @@
 //! 记录该模块使用到的系统调用 id
 //!
 //!
-#[cfg(target_arch = "riscv64")]
+#[cfg(any(
+    target_arch = "riscv32",
+    target_arch = "riscv64",
+    target_arch = "aarch64"
+))]
 numeric_enum_macro::numeric_enum! {
 #[repr(usize)]
 #[allow(non_camel_case_types)]
@@ -25,6 +29,8 @@ pub enum TaskSyscallId {
     SCHED_SETAFFINITY = 122,
     SCHED_GETAFFINITY = 123,
     GET_MEMPOLICY = 236,
+    SETPGID = 154,
+    GETPGID = 155,
     SETSID = 157,
     GETRUSAGE = 165,
     UMASK = 166,

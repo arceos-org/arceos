@@ -10,7 +10,6 @@ use alloc::{
 };
 use axconfig::{MAX_USER_HEAP_SIZE, MAX_USER_STACK_SIZE, USER_HEAP_BASE, USER_STACK_TOP};
 use axerrno::{AxError, AxResult};
-use axhal::arch::flush_tlb;
 use axhal::mem::VirtAddr;
 use axhal::paging::MappingFlags;
 use axhal::KERNEL_PROCESS_ID;
@@ -284,8 +283,7 @@ pub fn handle_page_fault(addr: VirtAddr, flags: MappingFlags) {
         .handle_page_fault(addr, flags)
         .is_ok()
     {
-        // Change flush all memory to just the error page addr.
-        flush_tlb(Some(addr));
+        axhal::arch::flush_tlb(None);
     } else {
         #[cfg(feature = "signal")]
         let _ = send_signal_to_thread(current().id().as_u64() as isize, SignalNo::SIGSEGV as isize);

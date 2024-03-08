@@ -2,7 +2,6 @@ use alloc::vec::Vec;
 use axalloc::PhysPage;
 use axerrno::AxResult;
 use axhal::{
-    arch::flush_tlb,
     mem::{virt_to_phys, VirtAddr, PAGE_SIZE_4K},
     paging::{MappingFlags, PageSize, PageTable},
 };
@@ -38,7 +37,7 @@ impl MapArea {
         }
 
         page_table
-            .map_fault_region(start, num_pages * PAGE_SIZE_4K)
+            .map_fault_region(start, num_pages * PAGE_SIZE_4K, flags)
             .unwrap();
 
         Self {
@@ -59,11 +58,12 @@ impl MapArea {
         page_table: &mut PageTable,
     ) -> AxResult<Self> {
         let pages = PhysPage::alloc_contiguous(num_pages, PAGE_SIZE_4K, data)?;
-        info!(
-            "start: {:X?}, size: {:X},  page start: {:X?}",
+        debug!(
+            "start: {:X?}, size: {:X},  page start: {:X?} flags: {:?}",
             start,
             num_pages * PAGE_SIZE_4K,
-            pages[0].as_ref().unwrap().start_vaddr
+            pages[0].as_ref().unwrap().start_vaddr,
+            flags
         );
         page_table
             .map_region(
@@ -157,7 +157,8 @@ impl MapArea {
                 self.flags,
             )
             .expect("Map in page fault handler failed");
-        flush_tlb(Some(addr));
+
+        axhal::arch::flush_tlb(addr.align_down_4k().into());
         self.pages[page_index] = Some(page);
         true
     }
@@ -459,7 +460,9 @@ impl MapArea {
                             Some(new_page)
                         }
                         None => {
-                            page_table.map_fault(vaddr, PageSize::Size4K).unwrap();
+                            page_table
+                                .map_fault(vaddr, PageSize::Size4K, self.flags)
+                                .unwrap();
                             None
                         }
                     }

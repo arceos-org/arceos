@@ -17,7 +17,7 @@ sysfs = ["dep:axfs_ramfs"]
 myfs = ["dep:crate_interface"]
 use-ramdisk = []
 monolithic = []
-fatfs = ["dep:fatfs", "devfs", "ramfs", "procfs", "sysfs",]
+fatfs = ["dep:fatfs"]
 ext4fs = ["dep:lwext4_rust", "devfs", "ramfs", "procfs", "sysfs",]
 default = ["devfs", "ramfs", "fatfs", "procfs", "sysfs"]
 
@@ -33,7 +33,6 @@ axfs_vfs = { path = "../../crates/axfs_vfs" }
 axfs_devfs = { path = "../../crates/axfs_devfs", optional = true }
 axfs_ramfs = { path = "../../crates/axfs_ramfs", optional = true }
 lwext4_rust = { git = "https://github.com/elliott10/lwext4_rust.git", rev = "562fbfce", optional = true }
-
 axdriver = { path = "../axdriver", features = ["block"] }
 axsync = { path = "../axsync" }
 crate_interface = { path = "../../crates/crate_interface", optional = true }

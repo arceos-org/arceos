@@ -68,7 +68,8 @@ impl GenericPTE for X64PTE {
         }
         Self(flags.bits() | (paddr.as_usize() as u64 & Self::PHYS_ADDR_MASK))
     }
-    fn new_fault_page(_is_huge: bool) -> Self {
+    /// Creates a fault page table entry.
+    fn new_fault_page(_flags: MappingFlags, _is_huge: bool) -> Self {
         // x86_64 doesn't support the execute bit.
         // it need to set the no_execute bit to ban the execute.
         let flags = PTF::ACCESSED | PTF::DIRTY | PTF::NO_EXECUTE;

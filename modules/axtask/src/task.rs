@@ -25,6 +25,7 @@ use crate::stat::TimeStat;
 
 use crate::{AxRunQueue, AxTask, AxTaskRef, WaitQueue};
 
+#[allow(unused)]
 use crate_interface::call_interface;
 
 /// A unique identifier for a thread.

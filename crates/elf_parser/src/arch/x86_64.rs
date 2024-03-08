@@ -69,7 +69,8 @@ pub fn get_relocate_pairs(
             info!("Relocating .rela.dyn");
             for entry in data {
                 let dyn_sym = &dyn_sym_table[entry.get_symbol_table_index() as usize];
-                let destination = base_addr + entry.get_offset() as usize;
+                let offset = entry.get_offset() as usize;
+                let destination = base_addr + offset;
                 let symbol_value = dyn_sym.value() as usize; // Represents the value of the symbol whose index resides in the relocation entry.
                 let addend = entry.get_addend() as usize; // Represents the addend used to compute the value of the relocatable field.
                 match entry.get_type() {
@@ -90,7 +91,7 @@ pub fn get_relocate_pairs(
                             panic!(r#"Symbol "{}" not found"#, name);
                         }
                         pairs.push(RelocatePair {
-                            src: VirtAddr::from(symbol_value + addend - destination),
+                            src: VirtAddr::from(symbol_value + addend - offset),
                             dst: VirtAddr::from(destination),
                             count: 4,
                         })

@@ -110,16 +110,16 @@ impl MemorySet {
                 &mut self.page_table,
             )
             .unwrap(),
-            None => match backend {
-                Some(backend) => {
-                    MapArea::new_lazy(vaddr, num_pages, flags, Some(backend), &mut self.page_table)
-                }
-                None => {
-                    MapArea::new_alloc(vaddr, num_pages, flags, None, None, &mut self.page_table)
-                        .unwrap()
-                }
-            },
-            // None => MapArea::new_lazy(vaddr, num_pages, flags, backend, &mut self.page_table)
+            // None => match backend {
+            //     Some(backend) => {
+            //         MapArea::new_lazy(vaddr, num_pages, flags, Some(backend), &mut self.page_table)
+            //     }
+            //     None => {
+            //         MapArea::new_alloc(vaddr, num_pages, flags, None, None, &mut self.page_table)
+            //             .unwrap()
+            //     }
+            // },
+            None => MapArea::new_lazy(vaddr, num_pages, flags, backend, &mut self.page_table),
         };
 
         debug!(
@@ -130,6 +130,7 @@ impl MemorySet {
             usize::from(area.vaddr) + area.size(),
             flags
         );
+
         // self.owned_mem.insert(area.vaddr.into(), area);
         assert!(self.owned_mem.insert(area.vaddr.into(), area).is_none());
     }
@@ -261,7 +262,7 @@ impl MemorySet {
 
             self.new_region(start, size, flags, None, backend);
 
-            flush_tlb(None);
+            axhal::arch::flush_tlb(None);
 
             start.as_usize() as isize
         } else {
@@ -375,7 +376,7 @@ impl MemorySet {
 
             assert!(self.owned_mem.insert(area.vaddr.into(), area).is_none());
         }
-        flush_tlb(None);
+        axhal::arch::flush_tlb(None);
     }
 
     /// It will map newly allocated page in the page table. You need to flush TLB after this.
@@ -550,11 +551,12 @@ impl MemorySet {
                 .map_region(phys_to_virt(r.paddr), r.paddr, r.size, r.flags.into(), true)
                 .expect("Error mapping kernel memory");
         }
-
         let mut owned_mem: BTreeMap<usize, MapArea> = BTreeMap::new();
         for (vaddr, area) in self.owned_mem.iter() {
+            info!("vaddr: {:X?}, new_area: {:X?}", vaddr, area.vaddr);
             match area.clone_alloc(&mut page_table) {
                 Ok(new_area) => {
+                    info!("new area: {:X?}", new_area.vaddr);
                     owned_mem.insert(*vaddr, new_area);
                     Ok(())
                 }

@@ -5,10 +5,6 @@ platform = "aarch64-bsta1000b"
 # Platform family.
 family = "aarch64-bsta1000b"
 
-# Base address of the whole physical memory.
-phys-memory-base = "0x80000000"
-# Size of the whole physical memory.
-phys-memory-size = "0x70000000"
 # Base physical address of the kernel image.
 kernel-base-paddr = "0x81000000"
 # Base virtual address of the kernel image.

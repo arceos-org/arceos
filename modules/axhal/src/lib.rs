@@ -78,6 +78,7 @@ pub mod mp {
 }
 
 pub use self::platform::platform_init;
+pub use self::platform::platform_name;
 
 #[cfg(target_arch = "x86_64")]
 pub use self::platform::set_tss_stack_top;

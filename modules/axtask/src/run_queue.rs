@@ -1,6 +1,6 @@
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
-use axhal::arch::flush_tlb;
+
 #[cfg(feature = "monolithic")]
 use axhal::KERNEL_PROCESS_ID;
 use lazy_init::LazyInit;
@@ -9,7 +9,7 @@ use spinlock::SpinNoIrq;
 
 use crate::task::{CurrentTask, TaskState};
 use crate::{AxTaskRef, Scheduler, TaskInner, WaitQueue};
-
+#[cfg(feature = "monolithic")]
 use crate_interface::call_interface;
 
 // TODO: per-CPU
@@ -267,8 +267,7 @@ impl AxRunQueue {
             {
                 let page_table_token = next_task.page_table_token;
                 if page_table_token != 0 {
-                    axhal::arch::write_page_table_root(page_table_token.into());
-                    flush_tlb(None);
+                    axhal::arch::write_page_table_root0(page_table_token.into());
                 }
             }
 

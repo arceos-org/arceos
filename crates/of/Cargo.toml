@@ -1,0 +1,11 @@
+[package]
+name = "of"
+version = "0.1.0"
+edition = "2021"
+authors = ["Guo Weikang <guoweikang.kernel@gmail.com>"]
+description = ""
+license = "GPL-3.0-or-later OR Apache-2.0"
+
+[dependencies]
+fdt = "0.1.5"
+lazy_static = { version = "1.4", features = ["spin_no_std"] }

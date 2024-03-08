@@ -10,3 +10,5 @@ rusty-tags.vi
 /testcases/gcc/riscv64-linux-musl-native
 testsuits-x86_64-linux-musl.tgz
 .idea/
+arceos-fada.bin.gz
+arceos-fada.itb

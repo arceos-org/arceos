@@ -111,12 +111,17 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
     }
 
     /// Maps a fault page starts with `vaddr`.
-    pub fn map_fault(&mut self, vaddr: VirtAddr, page_size: PageSize) -> PagingResult {
+    pub fn map_fault(
+        &mut self,
+        vaddr: VirtAddr,
+        page_size: PageSize,
+        flags: MappingFlags,
+    ) -> PagingResult {
         let entry = self.get_entry_mut_or_create(vaddr, page_size)?;
         if !entry.is_unused() {
             return Err(PagingError::AlreadyMapped);
         }
-        *entry = GenericPTE::new_fault_page(page_size.is_huge());
+        *entry = GenericPTE::new_fault_page(flags, page_size.is_huge());
         Ok(())
     }
 
@@ -228,28 +233,35 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
     }
 
     /// TODO: huge page
-    pub fn map_fault_region(&mut self, mut vaddr: VirtAddr, mut size: usize) -> PagingResult {
+    pub fn map_fault_region(
+        &mut self,
+        mut vaddr: VirtAddr,
+        mut size: usize,
+        flags: MappingFlags,
+    ) -> PagingResult {
         if !vaddr.is_aligned(PageSize::Size4K)
             || !memory_addr::is_aligned(size, PageSize::Size4K as usize)
         {
             return Err(PagingError::NotAligned);
         }
         trace!(
-            "map_fulat_region({:#x}): [{:#x}, {:#x})",
+            "map_fulat_region({:#x}): [{:#x}, {:#x} {:?})",
             self.root_paddr(),
             vaddr,
             vaddr + size,
+            flags,
         );
 
         while size > 0 {
-            self.map_fault(vaddr, PageSize::Size4K).inspect_err(|e| {
-                error!(
-                    "failed to map fault page: {:#x?}({:?}), {:?}",
-                    vaddr,
-                    PageSize::Size4K,
-                    e
-                )
-            })?;
+            self.map_fault(vaddr, PageSize::Size4K, flags)
+                .inspect_err(|e| {
+                    error!(
+                        "failed to map fault page: {:#x?}({:?}), {:?}",
+                        vaddr,
+                        PageSize::Size4K,
+                        e
+                    )
+                })?;
             vaddr += PageSize::Size4K as usize;
             size -= PageSize::Size4K as usize;
         }

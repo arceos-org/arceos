@@ -6,7 +6,7 @@ use alloc::vec::Vec;
 use alloc::{collections::BTreeMap, string::String};
 use axerrno::{AxError, AxResult};
 use axfs::api::{FileIO, OpenFlags};
-use axhal::arch::{flush_tlb, write_page_table_root, TrapFrame};
+use axhal::arch::{write_page_table_root0, TrapFrame};
 use axhal::mem::{phys_to_virt, VirtAddr};
 
 use axhal::KERNEL_PROCESS_ID;
@@ -195,9 +195,8 @@ impl Process {
         let page_table_token = memory_set.page_table_token();
         if page_table_token != 0 {
             unsafe {
-                write_page_table_root(page_table_token.into());
-                // when do the relocation for the elf in the supervisor mode, the SUM bit should be set
-                #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
+                write_page_table_root0(page_table_token.into());
+                #[cfg(target_arch = "riscv64")]
                 riscv::register::sstatus::set_sum();
             };
         }
@@ -314,7 +313,7 @@ impl Process {
         // 不是直接删除原有地址空间，否则构建成本较高。
         self.memory_set.lock().unmap_user_areas();
         // 清空用户堆，重置堆顶
-        flush_tlb(None);
+        axhal::arch::flush_tlb(None);
 
         // 关闭 `CLOEXEC` 的文件
         // inner.fd_manager.close_on_exec();
@@ -362,10 +361,8 @@ impl Process {
             self.memory_set.lock().page_table_token()
         };
         if page_table_token != 0 {
-            // axhal::arch::write_page_table_root(page_table_token.into());
             unsafe {
-                write_page_table_root(page_table_token.into());
-                flush_tlb(None);
+                write_page_table_root0(page_table_token.into());
             };
             // 清空用户堆，重置堆顶
         }
@@ -429,7 +426,6 @@ impl Process {
         //     // 任务过多，手动特判结束，用来作为QEMU内存不足的应对方法
         //     return Err(AxError::NoMemory);
         // }
-
         // 是否共享虚拟地址空间
         let new_memory_set = if flags.contains(CloneFlags::CLONE_VM) {
             Arc::clone(&self.memory_set)
@@ -635,8 +631,7 @@ impl Process {
         let mut trap_frame = unsafe { *(current_task.get_first_trap_frame()) };
         // drop(current_task);
         // 新开的进程/线程返回值为0
-        // trap_frame.regs.a0 = 0;
-        trap_frame.set_ret(0);
+        trap_frame.set_ret_code(0);
         if flags.contains(CloneFlags::CLONE_SETTLS) {
             #[cfg(not(target_arch = "x86_64"))]
             trap_frame.set_tls(tls);
@@ -650,7 +645,7 @@ impl Process {
         // 若没有给定用户栈，则使用当前用户栈
         // 没有给定用户栈的时候，只能是共享了地址空间，且原先调用clone的有用户栈，此时已经在之前的trap clone时复制了
         if let Some(stack) = stack {
-            trap_frame.set_user_sp(stack)
+            trap_frame.set_user_sp(stack);
             // info!(
             //     "New user stack: sepc:{:X}, stack:{:X}",
             //     trap_frame.sepc, trap_frame.regs.sp

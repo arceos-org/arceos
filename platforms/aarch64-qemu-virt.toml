@@ -5,14 +5,12 @@ platform = "aarch64-qemu-virt"
 # Platform family.
 family = "aarch64-qemu-virt"
 
-# Base address of the whole physical memory.
-phys-memory-base = "0x4000_0000"
-# Size of the whole physical memory.
-phys-memory-size = "0x800_0000"     # 128M
 # Base physical address of the kernel image.
 kernel-base-paddr = "0x4008_0000"
 # Base virtual address of the kernel image.
 kernel-base-vaddr = "0xffff_0000_4008_0000"
+
+
 # Linear mapping offset, for quick conversions between physical and virtual
 # addresses.
 phys-virt-offset = "0xffff_0000_0000_0000"
@@ -81,11 +79,11 @@ gicd-paddr = "0x0800_0000"
 psci-method = "hvc"
 
 # Testcase memory
-testcase-memory-start = "0x9000_0000"
-testcase-memory-size = "0x800_0000"    # 如果是要手动加载进来，认为镜像大小是128MB
+testcase-memory-start = "0xd000_0000"
+testcase-memory-size = "0x400_0000"    # 如果是要手动加载进来，认为镜像大小是128MB
 qemu-memory-size = "0x4000_0000"    # 如果用qemu挂载镜像，镜像大小认为是1G，但实际远小于1G
 user-heap-base = "0x3FA0_0000"
 user-stack-top = "0x3FE0_0000"
 max-user-heap-size = "0x40_0000"
 max-user-stack-size = "0x20_0000"
-signal-trampoline = "0x4000_0000"
+signal-trampoline = "0xc000_0000"

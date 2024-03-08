@@ -65,6 +65,7 @@ pub unsafe fn write_page_table_root(root_paddr: PhysAddr) {
         asm::sfence_vma_all();
     }
 }
+pub use self::write_page_table_root as write_page_table_root0;
 
 /// Flushes the TLB.
 ///

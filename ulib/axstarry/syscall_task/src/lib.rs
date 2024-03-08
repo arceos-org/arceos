@@ -22,6 +22,8 @@ pub fn task_syscall(syscall_id: task_syscall_id::TaskSyscallId, args: [usize; 6]
         TIMES => syscall_time(args),
         UNAME => syscall_uname(args),
         GETTIMEOFDAY => syscall_get_time_of_day(args),
+        GETPGID => syscall_getpgid(),
+        SETPGID => syscall_setpgid(args),
         GETPID => syscall_getpid(),
         GETPPID => syscall_getppid(),
         WAIT4 => syscall_wait4(args),
@@ -86,10 +88,6 @@ pub fn task_syscall(syscall_id: task_syscall_id::TaskSyscallId, args: [usize; 6]
         ARCH_PRCTL => syscall_arch_prctl(args),
         #[cfg(target_arch = "x86_64")]
         FORK => syscall_fork(),
-        #[cfg(target_arch = "x86_64")]
-        GETPGID => syscall_getpgid(),
-        #[cfg(target_arch = "x86_64")]
-        SETPGID => syscall_setpgid(),
         #[cfg(target_arch = "x86_64")]
         ALARM => Ok(0),
         #[cfg(target_arch = "x86_64")]

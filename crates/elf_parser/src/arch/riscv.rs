@@ -74,11 +74,17 @@ pub fn get_relocate_pairs(
                 let addend = entry.get_addend() as usize; // Represents the addend used to compute the value of the relocatable field.
 
                 match entry.get_type() {
-                    R_RISCV_32 => pairs.push(RelocatePair {
-                        src: VirtAddr::from(symbol_value + addend),
-                        dst: VirtAddr::from(destination),
-                        count: 4,
-                    }),
+                    R_RISCV_32 => {
+                        if dyn_sym.shndx() == 0 {
+                            let name = dyn_sym.get_name(elf).unwrap();
+                            panic!(r#"Symbol "{}" not found"#, name);
+                        }
+                        pairs.push(RelocatePair {
+                            src: VirtAddr::from(symbol_value + addend),
+                            dst: VirtAddr::from(destination),
+                            count: 4,
+                        })
+                    }
                     R_RISCV_64 => {
                         if dyn_sym.shndx() == 0 {
                             let name = dyn_sym.get_name(elf).unwrap();

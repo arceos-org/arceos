@@ -3,7 +3,7 @@
 arch=$1
 fs=$2
 
-if [ "$arch" != "riscv64" ]; then
+if [ "$arch" != "riscv64" ] && [ "$arch" != "aarch64" ]; then
 	arch=x86_64
 	FILE=testsuits-x86_64-linux-musl
 	if [ ! -e testcases/$FILE ]; then
@@ -16,7 +16,11 @@ else
 	if [ -n "$3" ]; then
 		FILE=$3
 	else
-		FILE=sdcard
+		if [ "$arch" = "riscv64" ]; then
+			FILE=sdcard
+		else
+			FILE=aarch64
+		fi
 	fi
 fi
 

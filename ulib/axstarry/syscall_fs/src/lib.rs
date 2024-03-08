@@ -25,7 +25,7 @@ pub fn fs_syscall(syscall_id: fs_syscall_id::FsSyscallId, args: [usize; 6]) -> S
         MOUNT => syscall_mount(args),
         UNMOUNT => syscall_umount(args),
         FSTAT => syscall_fstat(args),
-        RENAMEAT2 => syscall_renameat2(args),
+        RENAMEAT | RENAMEAT2 => syscall_renameat2(args),
         READV => syscall_readv(args),
         WRITEV => syscall_writev(args),
         FCNTL64 => syscall_fcntl64(args),

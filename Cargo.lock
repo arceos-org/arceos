@@ -155,6 +155,7 @@ dependencies = [
 name = "arceos-tls"
 version = "0.1.0"
 dependencies = [
+ "axhal",
  "axstd",
 ]
 
@@ -383,11 +384,13 @@ dependencies = [
  "cfg-if",
  "crate_interface",
  "dw_apb_uart",
+ "either",
  "handler_table",
  "kernel_guard",
  "lazy_init",
  "log",
  "memory_addr",
+ "of",
  "page_table",
  "page_table_entry",
  "percpu",
@@ -565,7 +568,6 @@ dependencies = [
  "numeric-enum-macro",
  "percpu",
  "rand",
- "riscv",
  "scheduler",
  "spinlock",
  "timer_list",
@@ -1076,6 +1078,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "fdt"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "784a4df722dc6267a04af36895398f59d21d07dce47232adf31ec0ff2fa45e67"
+
+[[package]]
 name = "flatten_objects"
 version = "0.1.0"
 dependencies = [
@@ -1318,9 +1326,9 @@ checksum = "0ca88d725a0a943b096803bd34e73a4437208b6077654cc4ecb2947a5f91618d"
 
 [[package]]
 name = "memchr"
-version = "2.5.0"
+version = "2.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
+checksum = "523dc4f511e55ab87b694dc30d0f820d60906ef06413f93d4d7a1385599cc149"
 
 [[package]]
 name = "memoffset"
@@ -1422,6 +1430,14 @@ dependencies = [
 name = "numeric-enum-macro"
 version = "0.2.0"
 source = "git+https://github.com/mexus/numeric-enum-macro#20aef288b2ecd2381ab6627c2a6c9e0436d8c8ff"
+
+[[package]]
+name = "of"
+version = "0.1.0"
+dependencies = [
+ "fdt",
+ "lazy_static",
+]
 
 [[package]]
 name = "once_cell"
@@ -1925,6 +1941,7 @@ dependencies = [
  "axruntime",
  "axsignal",
  "axtask",
+ "cfg-if",
  "crate_interface",
  "kernel_guard",
  "lazy_init",

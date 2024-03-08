@@ -1,8 +1,12 @@
 //! 记录该模块使用到的系统调用 id
 //!
 //!
-//! 
-#[cfg(target_arch = "riscv64")]
+//!
+#[cfg(any(
+    target_arch = "riscv32",
+    target_arch = "riscv64",
+    target_arch = "aarch64"
+))]
 numeric_enum_macro::numeric_enum! {
 #[repr(usize)]
 #[allow(non_camel_case_types)]
@@ -21,6 +25,7 @@ pub enum FsSyscallId {
     MKDIRAT = 34,
     UNLINKAT = 35,
     LINKAT = 37,
+    RENAMEAT = 38,
     UNMOUNT = 39,
     MOUNT = 40,
     STATFS = 43,
@@ -113,7 +118,8 @@ numeric_enum_macro::numeric_enum! {
         SYNC = 162,
         FSYNC = 74,
         UTIMENSAT = 280,
-        RENAMEAT2 = 264,
+        RENAMEAT = 264,
+        RENAMEAT2 = 316,
         COPYFILERANGE = 326,
     }
 }

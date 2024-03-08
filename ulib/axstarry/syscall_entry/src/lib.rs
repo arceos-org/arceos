@@ -4,13 +4,14 @@
 #![feature(naked_functions)]
 #![deny(warnings)]
 
+extern crate alloc;
 /// 需要手动引入这个库，否则会报错：`#[panic_handler]` function required, but not found.
 extern crate axruntime;
 
 mod trap;
 
 mod syscall;
-extern crate alloc;
+
 pub use axprocess::{
     link::{create_link, FilePath},
     wait_pid, Process,

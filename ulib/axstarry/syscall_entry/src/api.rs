@@ -16,22 +16,13 @@ pub fn recycle_user_process() {
     let kernel_process = Arc::clone(PID2PC.lock().get(&KERNEL_PROCESS_ID).unwrap());
 
     loop {
-        let mut all_finished = true;
         let pid2pc = PID2PC.lock();
-        for children in kernel_process.children.lock().iter() {
-            if children.pid() == KERNEL_PROCESS_ID {
-                continue;
-            }
-            if pid2pc.contains_key(&children.pid()) {
-                all_finished = false;
-                break;
-            }
-            // remove the exited process
-            kernel_process
-                .children
-                .lock()
-                .retain(|x| x.pid() != children.pid());
-        }
+
+        kernel_process
+            .children
+            .lock()
+            .retain(|x| x.pid() == KERNEL_PROCESS_ID || pid2pc.contains_key(&x.pid()));
+        let all_finished = pid2pc.len() == 1;
         drop(pid2pc);
         if all_finished {
             break;

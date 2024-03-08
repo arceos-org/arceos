@@ -116,22 +116,27 @@ impl From<DescriptorAttr> for MappingFlags {
         let mut flags = Self::empty();
         if attr.contains(DescriptorAttr::VALID) {
             flags |= Self::READ;
+
+            if !attr.contains(DescriptorAttr::AP_RO) {
+                flags |= Self::WRITE;
+            }
         }
-        if !attr.contains(DescriptorAttr::AP_RO) {
-            flags |= Self::WRITE;
-        }
+
         if attr.contains(DescriptorAttr::AP_EL0) {
             flags |= Self::USER;
             if !attr.contains(DescriptorAttr::UXN) {
                 flags |= Self::EXECUTE;
             }
-        } else if !attr.intersects(DescriptorAttr::PXN) {
-            flags |= Self::EXECUTE;
-        }
-        match attr.mem_attr() {
-            Some(MemAttr::Device) => flags |= Self::DEVICE,
-            Some(MemAttr::NormalNonCacheable) => flags |= Self::UNCACHED,
-            _ => {}
+        } else {
+            if !attr.intersects(DescriptorAttr::PXN) {
+                flags |= Self::EXECUTE;
+            }
+
+            match attr.mem_attr() {
+                Some(MemAttr::Device) => flags |= Self::DEVICE,
+                Some(MemAttr::NormalNonCacheable) => flags |= Self::UNCACHED,
+                _ => {}
+            }
         }
         flags
     }
@@ -146,12 +151,15 @@ impl From<MappingFlags> for DescriptorAttr {
         } else {
             Self::from_mem_attr(MemAttr::Normal)
         };
+
         if flags.contains(MappingFlags::READ) {
             attr |= Self::VALID;
         }
+
         if !flags.contains(MappingFlags::WRITE) {
             attr |= Self::AP_RO;
         }
+
         if flags.contains(MappingFlags::USER) {
             attr |= Self::AP_EL0 | Self::PXN;
             if !flags.contains(MappingFlags::EXECUTE) {
@@ -193,6 +201,13 @@ impl GenericPTE for A64PTE {
         }
         Self(attr.bits() | (paddr.as_usize() as u64 & Self::PHYS_ADDR_MASK))
     }
+
+    fn new_fault_page(flags: MappingFlags, _is_huge: bool) -> Self {
+        let mut attr = DescriptorAttr::from(flags) | DescriptorAttr::AF;
+        attr &= !DescriptorAttr::VALID;
+        Self(attr.bits())
+    }
+
     fn new_table(paddr: PhysAddr) -> Self {
         let attr = DescriptorAttr::NON_BLOCK | DescriptorAttr::VALID;
         Self(attr.bits() | (paddr.as_usize() as u64 & Self::PHYS_ADDR_MASK))

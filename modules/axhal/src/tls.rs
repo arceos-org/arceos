@@ -103,7 +103,7 @@ impl TlsArea {
     pub fn alloc() -> Self {
         let layout = Layout::from_size_align(tls_area_size(), TLS_ALIGN).unwrap();
         let area_base = unsafe { alloc::alloc::alloc_zeroed(layout) };
-
+        info!("layout size: {}", layout.size());
         let tls_load_base = _stdata as *mut u8;
         let tls_load_size = _etbss as usize - _stdata as usize;
         unsafe {
@@ -125,7 +125,12 @@ impl TlsArea {
 }
 
 fn static_tls_size() -> usize {
-    align_up(_etbss as usize - _stdata as usize, TLS_ALIGN)
+    let ans = align_up(_etbss as usize - _stdata as usize, TLS_ALIGN);
+    info!(
+        "static_tls_size: {} _etbss: {:X} _stdata: {:X} ",
+        ans, _etbss as usize, _stdata as usize
+    );
+    ans
 }
 
 fn static_tls_offset() -> usize {

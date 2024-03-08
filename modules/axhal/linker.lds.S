@@ -41,13 +41,13 @@ SECTIONS
         *(.got .got.*)
     }
 
-    .tdata : ALIGN(4K) {
+    .tdata : ALIGN(0x10) {
         _stdata = .;
         *(.tdata .tdata.*)
         _etdata = .;
     }
 
-    .tbss : ALIGN(4K) {
+    .tbss : ALIGN(0x10) {
         _stbss = .;
         *(.tbss .tbss.*)
         *(.tcommon)

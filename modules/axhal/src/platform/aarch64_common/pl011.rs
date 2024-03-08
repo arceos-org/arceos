@@ -30,12 +30,13 @@ pub fn getchar() -> Option<u8> {
 
 /// Initialize the UART
 pub fn init_early() {
+    unsafe {crate::platform::aarch64_common::mem::idmap_device(UART_BASE.as_usize());}
     UART.lock().init();
 }
 
 /// Set UART IRQ Enable
-pub fn init() {
-    #[cfg(feature = "irq")]
+#[cfg(feature = "irq")]
+pub fn init_irq() {
     crate::irq::set_enable(crate::platform::irq::UART_IRQ_NUM, true);
 }
 

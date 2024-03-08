@@ -5,10 +5,6 @@ platform = "aarch64-raspi4"
 # Platform family.
 family = "aarch64-raspi"
 
-# Base address of the whole physical memory.
-phys-memory-base = "0x0"
-# Size of the whole physical memory.
-phys-memory-size = "0xFC00_0000"     # 3G 960M
 # Base physical address of the kernel image.
 kernel-base-paddr = "0x8_0000"
 # Base virtual address of the kernel image.

@@ -415,6 +415,19 @@ pub fn syscall_prlimit64(args: [usize; 6]) -> SyscallResult {
     Ok(0)
 }
 
+/// not support
+pub fn syscall_getpgid() -> SyscallResult {
+    Ok(0)
+}
+
+/// # Arguments
+/// * `pgid`: usize
+pub fn syscall_setpgid(args: [usize; 6]) -> SyscallResult {
+    let pgid = args[0];
+    info!("not support setpgid, try to set {}", pgid);
+    Ok(0)
+}
+
 /// 当前不涉及多核情况
 pub fn syscall_getpid() -> SyscallResult {
     Ok(current_process().pid() as isize)
@@ -448,14 +461,6 @@ pub fn syscall_getgid() -> SyscallResult {
 
 /// 获取有效用户组 id，即相当于哪个用户的权限。在实现多用户权限前默认为最高权限
 pub fn syscall_getegid() -> SyscallResult {
-    Ok(0)
-}
-
-pub fn syscall_getpgid() -> SyscallResult {
-    Ok(0)
-}
-
-pub fn syscall_setpgid() -> SyscallResult {
     Ok(0)
 }
 

@@ -59,6 +59,7 @@ impl TrapFrame {
     pub fn set_user_sp(&mut self, user_sp: usize) {
         self.regs.sp = user_sp;
     }
+
     /// 用于第一次进入应用程序时的初始化
     pub fn app_init_context(app_entry: usize, user_sp: usize) -> Self {
         let sstatus = sstatus::read();
@@ -79,7 +80,7 @@ impl TrapFrame {
     }
 
     /// 设置返回值
-    pub fn set_ret(&mut self, ret_value: usize) {
+    pub fn set_ret_code(&mut self, ret_value: usize) {
         self.regs.a0 = ret_value;
     }
 
@@ -119,7 +120,7 @@ impl TrapFrame {
     }
 
     /// 获取 ret
-    pub fn get_ret(&self) -> usize {
+    pub fn get_ret_code(&self) -> usize {
         self.regs.a0
     }
 
@@ -140,7 +141,7 @@ impl TrapFrame {
         ]
     }
 
-    /// 获取 syscall id 
+    /// 获取 syscall id
     pub fn get_syscall_num(&self) -> usize {
         self.regs.a7 as _
     }

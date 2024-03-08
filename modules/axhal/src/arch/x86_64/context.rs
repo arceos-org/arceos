@@ -58,7 +58,8 @@ impl TrapFrame {
         trap_frame
     }
 
-    pub fn set_ret(&mut self, ret_value: usize) {
+    /// set the return code
+    pub fn set_ret_code(&mut self, ret_value: usize) {
         self.rax = ret_value as _;
     }
 
@@ -102,7 +103,7 @@ impl TrapFrame {
     }
 
     /// 获取 ret
-    pub fn get_ret(&self) -> usize {
+    pub fn get_ret_code(&self) -> usize {
         self.rax as _
     }
 

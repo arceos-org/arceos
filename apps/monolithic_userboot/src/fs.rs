@@ -19,6 +19,11 @@ pub fn fs_init() {
     #[cfg(target_arch = "x86_64")]
     let libc_so2 = &"ld-musl-x86_64.so.1"; // 另一种名字的 libc.so，非 libc-test 测例库用
 
+    #[cfg(target_arch = "aarch64")]
+    let libc_so = &"ld-musl-aarch64-sf.so.1";
+    #[cfg(target_arch = "aarch64")]
+    let libc_so2 = &"ld-musl-aarch64.so.1"; // 另一种名字的 libc.so，非 libc-test 测例库用
+
     create_link(
         &(FilePath::new(("/lib/".to_string() + libc_so).as_str()).unwrap()),
         &(FilePath::new("libc.so").unwrap()),

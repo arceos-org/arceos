@@ -1,18 +1,10 @@
+use crate::platform::mem::init_mmu;
 use aarch64_cpu::{asm, asm::barrier, registers::*};
-use memory_addr::PhysAddr;
-use page_table_entry::aarch64::{MemAttr, A64PTE};
-use tock_registers::interfaces::{ReadWriteable, Readable, Writeable};
-
 use axconfig::TASK_STACK_SIZE;
+use tock_registers::interfaces::{ReadWriteable, Readable, Writeable};
 
 #[link_section = ".bss.stack"]
 static mut BOOT_STACK: [u8; TASK_STACK_SIZE] = [0; TASK_STACK_SIZE];
-
-#[link_section = ".data.boot_page_table"]
-static mut BOOT_PT_L0: [A64PTE; 512] = [A64PTE::empty(); 512];
-
-#[link_section = ".data.boot_page_table"]
-static mut BOOT_PT_L1: [A64PTE; 512] = [A64PTE::empty(); 512];
 
 unsafe fn switch_to_el1() {
     SPSel.write(SPSel::SP::ELx);
@@ -57,47 +49,11 @@ unsafe fn switch_to_el1() {
     }
 }
 
-unsafe fn init_mmu() {
-    MAIR_EL1.set(MemAttr::MAIR_VALUE);
-
-    // Enable TTBR0 and TTBR1 walks, page size = 4K, vaddr size = 48 bits, paddr size = 40 bits.
-    let tcr_flags0 = TCR_EL1::EPD0::EnableTTBR0Walks
-        + TCR_EL1::TG0::KiB_4
-        + TCR_EL1::SH0::Inner
-        + TCR_EL1::ORGN0::WriteBack_ReadAlloc_WriteAlloc_Cacheable
-        + TCR_EL1::IRGN0::WriteBack_ReadAlloc_WriteAlloc_Cacheable
-        + TCR_EL1::T0SZ.val(16);
-    let tcr_flags1 = TCR_EL1::EPD1::EnableTTBR1Walks
-        + TCR_EL1::TG1::KiB_4
-        + TCR_EL1::SH1::Inner
-        + TCR_EL1::ORGN1::WriteBack_ReadAlloc_WriteAlloc_Cacheable
-        + TCR_EL1::IRGN1::WriteBack_ReadAlloc_WriteAlloc_Cacheable
-        + TCR_EL1::T1SZ.val(16);
-    TCR_EL1.write(TCR_EL1::IPS::Bits_48 + tcr_flags0 + tcr_flags1);
-    barrier::isb(barrier::SY);
-
-    // Set both TTBR0 and TTBR1
-    let root_paddr = PhysAddr::from(BOOT_PT_L0.as_ptr() as usize).as_usize() as _;
-    TTBR0_EL1.set(root_paddr);
-    TTBR1_EL1.set(root_paddr);
-
-    // Flush the entire TLB
-    crate::arch::flush_tlb(None);
-
-    // Enable the MMU and turn on I-cache and D-cache
-    SCTLR_EL1.modify(SCTLR_EL1::M::Enable + SCTLR_EL1::C::Cacheable + SCTLR_EL1::I::Cacheable);
-    barrier::isb(barrier::SY);
-}
-
 unsafe fn enable_fp() {
     if cfg!(feature = "fp_simd") {
         CPACR_EL1.write(CPACR_EL1::FPEN::TrapNothing);
         barrier::isb(barrier::SY);
     }
-}
-
-unsafe fn init_boot_page_table() {
-    crate::platform::mem::init_boot_page_table(&mut BOOT_PT_L0, &mut BOOT_PT_L1);
 }
 
 /// The earliest entry point for the primary CPU.
@@ -117,7 +73,10 @@ unsafe extern "C" fn _start() -> ! {
         mov     sp, x8
 
         bl      {switch_to_el1}         // switch to EL1
-        bl      {init_boot_page_table}
+
+        adrp    x0, {start}                // kernel image phys addr
+        bl      {idmap_kernel}
+
         bl      {init_mmu}              // setup MMU
         bl      {enable_fp}             // enable fp/neon
 
@@ -130,10 +89,11 @@ unsafe extern "C" fn _start() -> ! {
         blr     x8
         b      .",
         switch_to_el1 = sym switch_to_el1,
-        init_boot_page_table = sym init_boot_page_table,
         init_mmu = sym init_mmu,
         enable_fp = sym enable_fp,
         boot_stack = sym BOOT_STACK,
+        start = sym _start,
+        idmap_kernel = sym crate::platform::mem::idmap_kernel,
         boot_stack_size = const TASK_STACK_SIZE,
         phys_virt_offset = const axconfig::PHYS_VIRT_OFFSET,
         entry = sym crate::platform::rust_entry,

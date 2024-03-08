@@ -1,15 +1,19 @@
 mod context;
 pub(crate) mod trap;
-#[cfg(feature = "monolithic")]
-pub use trap::first_into_user;
 
 use core::arch::asm;
+
+#[cfg(feature = "monolithic")]
+pub use trap::first_into_user;
 
 use aarch64_cpu::registers::{DAIF, TPIDR_EL0, TTBR0_EL1, TTBR1_EL1, VBAR_EL1};
 use memory_addr::{PhysAddr, VirtAddr};
 use tock_registers::interfaces::{Readable, Writeable};
 
 pub use self::context::{FpState, TaskContext, TrapFrame};
+
+#[cfg(feature = "monolithic")]
+mod mem_fault;
 
 /// Allows the current CPU to respond to interrupts.
 #[inline]

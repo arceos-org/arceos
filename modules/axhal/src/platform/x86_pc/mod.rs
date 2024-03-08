@@ -68,3 +68,7 @@ pub fn platform_init_secondary() {
     self::apic::init_secondary();
     self::time::init_secondary();
 }
+
+pub fn platform_name() -> &'static str {
+    "x86_pc"
+}
