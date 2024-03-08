@@ -17,6 +17,15 @@ jobs:
         profile: minimal
         toolchain: ${{ env.rust-toolchain }}
         components: rust-src, clippy, rustfmt
+    - uses: ./.github/workflows/actions/setup-musl
+      with:
+        arch: x86_64
+    - uses: ./.github/workflows/actions/setup-musl
+      with:
+        arch: riscv64
+    - uses: ./.github/workflows/actions/setup-musl
+      with:
+        arch: aarch64
     - name: Clippy for the default target
       run: make clippy
     - name: Clippy for x86_64
