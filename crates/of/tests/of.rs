@@ -1,4 +1,3 @@
-
 static BST_DTB_DATA: &[u8] = include_bytes!("./bsta1000b-fada-bus.dtb");
 
 fn setup() {
@@ -26,9 +25,9 @@ fn test_find_compatible() {
 #[test]
 fn test_pcsi() {
     setup();
-    let of_pcsi= of::pcsi();
+    let of_pcsi = of::pcsi();
     assert!(of_pcsi.is_some());
-    let of_pcsi= of_pcsi.unwrap();
+    let of_pcsi = of_pcsi.unwrap();
     assert_eq!(of_pcsi.method(), "smc");
     assert_eq!(of_pcsi.cpu_on().unwrap(), 0xC4000003);
     assert_eq!(of_pcsi.cpu_off().unwrap(), 0x84000002);
