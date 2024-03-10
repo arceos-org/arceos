@@ -4,7 +4,7 @@ ARCH ?= x86_64
 
 CC := $(ARCH)-linux-musl-gcc
 
-CFLAGS :=
+CFLAGS := -fPIC
 LDFLAGS := -static -no-pie
 
 redis-version := 7.0.12
@@ -14,6 +14,8 @@ redis-bin := redis-server
 
 redis-build-args := \
   CC=$(CC) \
+  AR=$(AR) \
+  RANLIB=$(RANLIB) \
   CFLAGS="$(CFLAGS)" \
   USE_JEMALLOC=no \
   -j
