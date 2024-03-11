@@ -13,23 +13,28 @@ use crate::{AxTaskRef, Scheduler, TaskInner, WaitQueue};
 use crate_interface::call_interface;
 
 // TODO: per-CPU
+/// The running task-queue of the kernel.
 pub static RUN_QUEUE: LazyInit<SpinNoIrq<AxRunQueue>> = LazyInit::new();
 
 // TODO: per-CPU
+/// The exited task-queue of the kernel.
 pub static EXITED_TASKS: SpinNoIrq<VecDeque<AxTaskRef>> = SpinNoIrq::new(VecDeque::new());
 
 static WAIT_FOR_EXIT: WaitQueue = WaitQueue::new();
 
 #[percpu::def_percpu]
+/// The idle task of the kernel.
 pub static IDLE_TASK: LazyInit<AxTaskRef> = LazyInit::new();
 
+/// The struct to define the running task-queue of the kernel.
 pub struct AxRunQueue {
     scheduler: Scheduler,
 }
 
 #[crate_interface::def_interface]
+/// VforkSet for syscall vfork
 pub trait VforkSet {
-    // Set vfork status through process_id
+    /// Set vfork status through process_id
     fn vfork_set(&self, process_id: u64, value: bool);
 }
 

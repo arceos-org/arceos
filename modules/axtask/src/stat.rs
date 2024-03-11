@@ -52,6 +52,7 @@ pub struct TimeStat {
 
 #[cfg(feature = "signal")]
 #[def_interface]
+/// Handler to send signals.
 pub trait SignalCaller {
     /// Handles interrupt requests for the given IRQ number.
     fn send_signal(tid: isize, signum: isize);

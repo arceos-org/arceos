@@ -58,12 +58,7 @@ members = [
 
     "ulib/axstd",
     "ulib/axlibc",
-    "ulib/axstarry/syscall_mem",
-    "ulib/axstarry/syscall_fs",
-    "ulib/axstarry/syscall_net",
-    "ulib/axstarry/syscall_utils",
-    "ulib/axstarry/syscall_task",
-    "ulib/axstarry/syscall_entry",
+    "ulib/axstarry",
     "apps/display",
     "apps/exception",
     "apps/helloworld",
@@ -80,7 +75,7 @@ members = [
     "apps/task/priority",
     "apps/task/tls",
     "apps/monolithic_userboot"
-, "crates/elf_parser", "apps/monolithic_userboot"]
+]
 
 [profile.release]
 lto = true

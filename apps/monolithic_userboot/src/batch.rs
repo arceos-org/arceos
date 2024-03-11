@@ -104,17 +104,15 @@ pub fn run_batch_testcases(envs: &Vec<String>) {
     let mut test_iter = Box::new(SDCARD_TESTCASES.iter());
     for testcase in test_iter {
         let args = get_args(testcase.as_bytes());
-        let user_process = syscall_entry::Process::init(args, envs).unwrap();
+        let user_process = axstarry::Process::init(args, envs).unwrap();
         let now_process_id = user_process.get_process_id() as isize;
         let mut exit_code = 0;
         loop {
-            if unsafe { syscall_entry::wait_pid(now_process_id, &mut exit_code as *mut i32) }
-                .is_ok()
-            {
+            if unsafe { axstarry::wait_pid(now_process_id, &mut exit_code as *mut i32) }.is_ok() {
                 break;
             }
-            syscall_entry::yield_now_task();
+            axstarry::yield_now_task();
         }
-        syscall_entry::recycle_user_process();
+        axstarry::recycle_user_process();
     }
 }

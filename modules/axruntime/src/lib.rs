@@ -244,6 +244,7 @@ cfg_if::cfg_if! {
     if #[cfg(feature = "paging")] {
         use axhal::paging::PageTable;
         use lazy_init::LazyInit;
+        /// The kernel page table.
         pub static KERNEL_PAGE_TABLE: LazyInit<PageTable> = LazyInit::new();
 
         fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {

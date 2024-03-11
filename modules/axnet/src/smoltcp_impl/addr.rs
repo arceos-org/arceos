@@ -15,6 +15,7 @@ pub const fn into_core_ipaddr(ip: IpAddress) -> IpAddr {
     }
 }
 
+/// Convert from `std::net::SocketAddr` to `smoltcp::wire::IpEndpoint`.
 pub const fn from_core_sockaddr(addr: SocketAddr) -> IpEndpoint {
     IpEndpoint {
         addr: from_core_ipaddr(addr.ip()),
@@ -22,6 +23,7 @@ pub const fn from_core_sockaddr(addr: SocketAddr) -> IpEndpoint {
     }
 }
 
+/// Convert from `smoltcp::wire::IpEndpoint` to `std::net::SocketAddr`.
 pub const fn into_core_sockaddr(addr: IpEndpoint) -> SocketAddr {
     SocketAddr::new(into_core_ipaddr(addr.addr), addr.port)
 }

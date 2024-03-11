@@ -48,6 +48,7 @@ pub fn init_kernel_process() {
     PID2PC.lock().insert(kernel_process.pid(), kernel_process);
 }
 
+/// return the `Arc<Process>` of the current process
 pub fn current_process() -> Arc<Process> {
     let current_task = current();
 
@@ -269,6 +270,7 @@ pub fn time_stat_output() -> (usize, usize, usize, usize) {
     curr_task.time_stat_output()
 }
 
+/// To deal with the page fault
 pub fn handle_page_fault(addr: VirtAddr, flags: MappingFlags) {
     axlog::debug!("'page fault' addr: {:?}, flags: {:?}", addr, flags);
     let current_process = current_process();
@@ -352,14 +354,17 @@ pub fn yield_now_task() {
     axtask::yield_now();
 }
 
+/// 以进程作为中转调用task的sleep
 pub fn sleep_now_task(dur: core::time::Duration) {
     axtask::sleep(dur);
 }
 
+/// current running task
 pub fn current_task() -> CurrentTask {
     axtask::current()
 }
 
+/// 设置当前任务的clear_child_tid
 pub fn set_child_tid(tid: usize) {
     let curr = current_task();
     curr.set_clear_child_tid(tid);

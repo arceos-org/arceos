@@ -42,6 +42,7 @@ impl TrapFrame {
         self.cs & 0b11 == 3
     }
 
+    /// To set the stack pointer
     pub fn set_user_sp(&mut self, user_sp: usize) {
         self.rsp = user_sp as _;
     }

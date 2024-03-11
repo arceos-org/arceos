@@ -17,6 +17,7 @@ pub mod ucontext;
 /// 处理所有信号的结构
 #[derive(Clone)]
 pub struct SignalHandler {
+    /// handlers`[i]` stands for the handler of signal `i+1`
     pub handlers: [Option<SigAction>; MAX_SIG_NUM],
 }
 
@@ -44,6 +45,7 @@ impl SignalHandler {
         }
     }
 
+    /// To get the action of a signal with the signal number
     pub fn get_action(&self, sig_num: usize) -> Option<&SigAction> {
         // 若未设置对应函数或者对应函数为SIG_DFL，则代表默认处理，直接返回空
         self.handlers[sig_num - 1]

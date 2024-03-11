@@ -14,7 +14,9 @@
 
 ## Usage
 
-通过修改 `ulib/axstarry/syscall_entry/test.rs` 中的 `SDCARD_TESTCASES` 常量，可以选择内核启动后运行的程序。例如如果想要开机启动终端，则需要将常量的值改为 `"busybox sh"`。
+通过修改 `apps/monolithic_userboot/src/batch.rs` 中的 `SDCARD_TESTCASES` 常量，并且在启动时加入编译参数`APP_FEATURES=batch`，可以选择让内核启动后以批处理形式运行给定程序。
+
+如果未添加 `APP_FEATURES=batch` 参数，内核将以交互式的形式运行，默认开机之后直接进入`busybox sh`终端。
 
 ### x86_64
 
@@ -52,8 +54,11 @@ make run
 # 以宏内核形式启动(当前仅支持 riscv 架构)
 make A=apps/monolithic_userboot ARCH=riscv64 run
 
-# 使用 ramdisk 加载测例并且运行内核，可以显著提高文件 IO 速度
+# 使用 ramdisk 加载文件镜像并且运行内核，可以显著提高文件 IO 速度
 make A=apps/monolithic_userboot ARCH=riscv64 FEATURES=img run
+
+# 使用批处理模式启动宏内核并且运行给定测例
+make A=apps/monolithic_userboot ARCH=riscv64 APP_FEATURES=batch run
 
 ```
 

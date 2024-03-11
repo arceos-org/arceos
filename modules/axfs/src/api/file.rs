@@ -170,14 +170,17 @@ impl File {
         self.inner.get_attr().map(Metadata)
     }
 
+    /// Whether the file is executable.
     pub fn executable(&self) -> bool {
         self.inner.executable()
     }
 
+    /// Get the file attributes.
     pub fn get_attr(&self) -> Result<fops::FileAttr> {
         self.inner.get_attr()
     }
 
+    /// To truncate the file to a specified length.
     pub fn truncate(&mut self, len: usize) -> Result<()> {
         self.inner.truncate(len as u64)
     }

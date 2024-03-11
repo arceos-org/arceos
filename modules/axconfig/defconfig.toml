@@ -41,12 +41,17 @@ ticks-per-sec = "100"
 # Number of CPUs
 smp = "1"
 
-# Testcase memory
+# Testcase memory start address.
 testcase-memory-start = "0"
-testcase-memory-size = "0"  
-qemu-memory-size = "0" 
+# Testcase memory size.
+testcase-memory-size = "0"
+# The base address of the user heap.
 user-heap-base = "0"
+# The base address of the user stack. And the stack bottom is `user-stack-top + max-user-stack-size`.
 user-stack-top = "0"
+# The size of the user heap.
 max-user-heap-size = "0"
+# The size of the user stack.
 max-user-stack-size = "0"
-signal-trampoline = "0x4000_0000"
+# The base address of the signal trampoline.
+signal-trampoline = "0"

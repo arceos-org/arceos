@@ -1,9 +1,5 @@
-syscall_fs
-syscall_mem
-syscall_task
+net
 futex
 signal
 img
-syscall_net
-schedule
 monolithic

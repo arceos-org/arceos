@@ -29,7 +29,7 @@ bcm2835-sdhci = ["block", "driver_block/bcm2835-sdhci"]
 ixgbe = ["net", "driver_net/ixgbe", "dep:axalloc", "dep:axhal"]
 # more devices example: e1000 = ["net", "driver_net/e1000"]
 
-img = ["ramdisk"]
+img = ["ramdisk", "dep:axconfig"]
 
 default = ["bus-mmio"]
 

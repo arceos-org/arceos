@@ -11,12 +11,12 @@ fs = ["axfs"]
 
 signal = ["axhal/signal", "axsignal/signal", "axtask/signal"]
 
-monolithic = ["fs", "axfs/monolithic"]
+monolithic = ["fs", "axfs/monolithic", "axhal/monolithic", "axtask/monolithic"]
 
 # Futex support
 futex = []
 
-default = []
+default = ["monolithic"]
 
 [dependencies]
 cfg-if = "1.0"

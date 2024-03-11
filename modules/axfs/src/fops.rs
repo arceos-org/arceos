@@ -241,16 +241,19 @@ impl File {
     }
 
     #[allow(unused)]
+    /// whether the file is readable.
     pub fn readable(&self) -> bool {
         self.node.can_access(Cap::READ)
     }
 
     #[allow(unused)]
+    /// whether the file is writable.
     pub fn writable(&self) -> bool {
         self.node.can_access(Cap::WRITE)
     }
 
     #[allow(unused)]
+    /// whether the file is executable.
     pub fn executable(&self) -> bool {
         self.node.can_access(Cap::EXECUTE)
     }

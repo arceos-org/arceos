@@ -69,6 +69,7 @@ pub fn platform_init_secondary() {
     self::time::init_secondary();
 }
 
+/// Returns the name of the platform.
 pub fn platform_name() -> &'static str {
     "x86_pc"
 }

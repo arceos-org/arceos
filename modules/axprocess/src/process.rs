@@ -23,7 +23,11 @@ use crate::futex::FutexRobustList;
 use crate::signal::SignalModule;
 use crate::stdio::{Stderr, Stdin, Stdout};
 use crate::{load_app, yield_now_task};
+
+/// Map from task id to arc pointer of task
 pub static TID2TASK: Mutex<BTreeMap<u64, AxTaskRef>> = Mutex::new(BTreeMap::new());
+
+/// Map from process id to arc pointer of process
 pub static PID2PC: Mutex<BTreeMap<u64, Arc<Process>>> = Mutex::new(BTreeMap::new());
 const FD_LIMIT_ORIGIN: usize = 1025;
 
@@ -32,6 +36,7 @@ extern "C" {
     fn start_signal_trampoline();
 }
 
+/// The process control block
 pub struct Process {
     /// 进程号
     pid: u64,
@@ -73,65 +78,81 @@ pub struct Process {
     /// 具体使用交给了用户空间
     pub robust_list: Mutex<BTreeMap<u64, FutexRobustList>>,
 
+    /// 是否被vfork阻塞
     pub blocked_by_vfork: Mutex<bool>,
-    // 该进程可执行文件所在的路径
+
+    /// 该进程可执行文件所在的路径
     pub file_path: Mutex<String>,
 }
 
 impl Process {
+    /// get the process id
     pub fn pid(&self) -> u64 {
         self.pid
     }
 
+    /// get the parent process id
     pub fn get_parent(&self) -> u64 {
         self.parent.load(Ordering::Acquire)
     }
 
+    /// set the parent process id
     pub fn set_parent(&self, parent: u64) {
         self.parent.store(parent, Ordering::Release)
     }
 
+    /// get the exit code of the process
     pub fn get_exit_code(&self) -> i32 {
         self.exit_code.load(Ordering::Acquire)
     }
 
+    /// set the exit code of the process
     pub fn set_exit_code(&self, exit_code: i32) {
         self.exit_code.store(exit_code, Ordering::Release)
     }
 
+    /// whether the process is a zombie process
     pub fn get_zombie(&self) -> bool {
         self.is_zombie.load(Ordering::Acquire)
     }
 
+    /// set the process as a zombie process
     pub fn set_zombie(&self, status: bool) {
         self.is_zombie.store(status, Ordering::Release)
     }
 
+    /// get the heap top of the process
     pub fn get_heap_top(&self) -> u64 {
         self.heap_top.load(Ordering::Acquire)
     }
 
+    /// set the heap top of the process
     pub fn set_heap_top(&self, top: u64) {
         self.heap_top.store(top, Ordering::Release)
     }
 
+    /// get the heap bottom of the process
     pub fn get_heap_bottom(&self) -> u64 {
         self.heap_bottom.load(Ordering::Acquire)
     }
 
+    /// set the heap bottom of the process
     pub fn set_heap_bottom(&self, bottom: u64) {
         self.heap_bottom.store(bottom, Ordering::Release)
     }
 
+    /// set the process as blocked by vfork
     pub fn set_vfork_block(&self, value: bool) {
         *self.blocked_by_vfork.lock() = value;
     }
 
+    /// set the executable file path of the process
     pub fn set_file_path(&self, path: String) {
         let mut file_path = self.file_path.lock();
         *file_path = path;
     }
 
+    /// get the executable file path of the process
     pub fn get_file_path(&self) -> String {
         (*self.file_path.lock()).clone()
     }
@@ -147,6 +168,7 @@ impl Process {
 }
 
 impl Process {
+    /// 创建一个新的进程
     pub fn new(
         pid: u64,
         parent: u64,
@@ -666,16 +688,19 @@ impl Process {
 
 /// 与地址空间相关的进程方法
 impl Process {
+    /// alloc physical memory for lazy allocation manually
     pub fn manual_alloc_for_lazy(&self, addr: VirtAddr) -> AxResult<()> {
         self.memory_set.lock().manual_alloc_for_lazy(addr)
     }
 
+    /// alloc range physical memory for lazy allocation manually
     pub fn manual_alloc_range_for_lazy(&self, start: VirtAddr, end: VirtAddr) -> AxResult<()> {
         self.memory_set
             .lock()
             .manual_alloc_range_for_lazy(start, end)
     }
 
+    /// alloc physical memory with the given type size for lazy allocation manually
     pub fn manual_alloc_type_for_lazy<T: Sized>(&self, obj: *const T) -> AxResult<()> {
         self.memory_set.lock().manual_alloc_type_for_lazy(obj)
     }
@@ -683,6 +708,7 @@ impl Process {
 
 /// 与文件相关的进程方法
 impl Process {
+    /// 为进程分配一个文件描述符
     pub fn alloc_fd(&self, fd_table: &mut Vec<Option<Arc<dyn FileIO>>>) -> AxResult<usize> {
         for (i, fd) in fd_table.iter().enumerate() {
             if fd.is_none() {
@@ -696,6 +722,8 @@ impl Process {
         fd_table.push(None);
         Ok(fd_table.len() - 1)
     }
+
+    /// 获取当前进程的工作目录
     pub fn get_cwd(&self) -> String {
         self.fd_manager.cwd.lock().clone()
     }

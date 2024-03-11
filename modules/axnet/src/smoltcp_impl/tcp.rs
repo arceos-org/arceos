@@ -411,6 +411,7 @@ impl TcpSocket {
         }
     }
 
+    /// To set the nagle algorithm enabled or not.
     pub fn set_nagle_enabled(&self, enabled: bool) -> AxResult {
         let handle = unsafe { self.handle.get().read() };
 
@@ -425,6 +426,7 @@ impl TcpSocket {
         Ok(())
     }
 
+    /// To get the nagle algorithm enabled or not.
     pub fn nagle_enabled(&self) -> bool {
         let handle = unsafe { self.handle.get().read() };
 
@@ -437,6 +439,11 @@ impl TcpSocket {
         }
     }
 
+    /// To get the socket and call the given function.
+    ///
+    /// If the socket is not connected, it will return None.
+    ///
+    /// Or it will return the result of the given function.
     pub fn with_socket<R>(&self, f: impl FnOnce(Option<&tcp::Socket>) -> R) -> R {
         let handle = unsafe { self.handle.get().read() };
 
@@ -448,6 +455,11 @@ impl TcpSocket {
         }
     }
 
+    /// To get the mutable socket and call the given function.
+    ///
+    /// If the socket is not connected, it will return None.
+    ///
+    /// Or it will return the result of the given function.
     pub fn with_socket_mut<R>(&mut self, f: impl FnOnce(Option<&mut tcp::Socket>) -> R) -> R {
         let handle = unsafe { self.handle.get().read() };
 
@@ -507,6 +519,7 @@ impl TcpSocket {
     }
 
     #[inline]
+    /// Whether the socket is connected.
     pub fn is_connected(&self) -> bool {
         self.get_state() == STATE_CONNECTED
     }

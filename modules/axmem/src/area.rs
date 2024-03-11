@@ -15,10 +15,13 @@ use crate::MemBackend;
 /// NOTE: Cloning a `MapArea` needs allocating new phys pages and modifying a page table. So
 /// `Clone` trait won't implemented.
 pub struct MapArea {
+    /// phys pages of this area
     pub pages: Vec<Option<PhysPage>>,
-    /// 起始虚拟地址
+    /// start virtual address
     pub vaddr: VirtAddr,
+    /// mapping flags of this area
     pub flags: MappingFlags,
+    /// whether the area is backed by a file
     pub backend: Option<MemBackend>,
 }
 
@@ -82,10 +85,12 @@ impl MapArea {
         })
     }
 
+    /// Deallocate all phys pages and unmap the area in page table.
     pub fn dealloc(&mut self, page_table: &mut PageTable) {
         page_table.unmap_region(self.vaddr, self.size()).unwrap();
         self.pages.clear();
     }
+
     /// 如果处理失败，返回false，此时直接退出当前程序
     pub fn handle_page_fault(
         &mut self,
@@ -365,14 +370,17 @@ impl MapArea {
 }
 
 impl MapArea {
+    /// return the size of the area, which thinks the page size is default 4K.
     pub fn size(&self) -> usize {
         self.pages.len() * PAGE_SIZE_4K
     }
 
+    /// return the end virtual address of the area.
     pub fn end_va(&self) -> VirtAddr {
         self.vaddr + self.size()
     }
 
+    /// return whether all the pages have been allocated.
     pub fn allocated(&self) -> bool {
         self.pages.iter().all(|page| page.is_some())
     }
@@ -397,14 +405,17 @@ impl MapArea {
         self.vaddr <= start && start < self.end_va() || start <= self.vaddr && self.vaddr < end
     }
 
+    /// If [start, end] contains self.
     pub fn contained_in(&self, start: VirtAddr, end: VirtAddr) -> bool {
         start <= self.vaddr && self.end_va() <= end
     }
 
+    /// If self contains [start, end].
     pub fn contains(&self, start: VirtAddr, end: VirtAddr) -> bool {
         self.vaddr <= start && end <= self.end_va()
     }
 
+    /// If self strictly contains [start, end], which stands for the start and end are not equal to self's.
     pub fn strict_contain(&self, start: VirtAddr, end: VirtAddr) -> bool {
         self.vaddr < start && end < self.end_va()
     }

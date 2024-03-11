@@ -1,3 +1,6 @@
+//! Define signal numbers.
+
+/// The maximum number of signals.
 pub const MAX_SIG_NUM: usize = 64;
 numeric_enum_macro::numeric_enum! {
 #[repr(u8)]

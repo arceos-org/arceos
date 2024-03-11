@@ -11,4 +11,4 @@ authors = ["Youjie Zheng <zyj578335934@gmail.com>"]
 batch = []
 
 [dependencies]
-syscall_entry = { path = "../../ulib/axstarry/syscall_entry" }
+axstarry = { path = "../../ulib/axstarry" }

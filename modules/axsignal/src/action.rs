@@ -1,3 +1,5 @@
+//! To define the signal action and its flags
+
 use crate::signal_no::SignalNo::{self, *};
 
 /// 特殊取值，代表默认处理函数
@@ -7,15 +9,25 @@ pub const SIG_DFL: usize = 0;
 pub const SIG_IGN: usize = 1;
 
 bitflags::bitflags! {
+    #[allow(missing_docs)]
     #[derive(Default,Clone, Copy, Debug)]
+    /// The flags of the signal action
     pub struct SigActionFlags: u32 {
+        /// do not receive notification when child processes stop
         const SA_NOCLDSTOP = 1;
+        /// do not create zombie on child process exit
         const SA_NOCLDWAIT = 2;
+        /// use signal handler with 3 arguments, and sa_sigaction should be set instead of sa_handler.
         const SA_SIGINFO = 4;
+        /// call the signal handler on an alternate signal stack provided by `sigaltstack(2)`
         const SA_ONSTACK = 0x08000000;
+        /// restart system calls if possible
         const SA_RESTART = 0x10000000;
+        /// do not automatically block the signal when its handler is being executed
         const SA_NODEFER = 0x40000000;
+        /// restore the signal action to the default upon entry to the signal handler
         const SA_RESETHAND = 0x80000000;
+        /// use the restorer field as the signal trampoline
         const SA_RESTORER = 0x4000000;
     }
 }
@@ -35,6 +47,7 @@ pub enum SignalDefault {
 }
 
 impl SignalDefault {
+    /// Get the default action of a signal
     pub fn get_action(signal: SignalNo) -> Self {
         match signal {
             SIGABRT => Self::Core,
@@ -72,6 +85,7 @@ impl SignalDefault {
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
+/// The structure of the signal action
 pub struct SigAction {
     /// 信号处理函数的地址
     /// 1. 如果是上述特殊值 SIG_DFL 或 SIG_IGN，则按描述处理
@@ -92,6 +106,11 @@ pub struct SigAction {
 }
 
 impl SigAction {
+    /// get the restorer address of the signal action
+    ///
+    /// When the SA_RESTORER flag is set, the restorer address is valid
+    ///
+    /// or it will return None, and the core will set the restore address as the signal trampoline
     pub fn get_storer(&self) -> Option<usize> {
         if self.sa_flags.contains(SigActionFlags::SA_RESTORER) {
             Some(self.restorer)

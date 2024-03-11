@@ -28,7 +28,7 @@ signal = ["axhal/signal", "dep:axsignal", "dep:crate_interface"]
 
 test = ["percpu?/sp-naive"]
 
-monolithic = []
+monolithic = ["multitask", "axhal/monolithic"]
 
 [dependencies]
 cfg-if = "1.0"

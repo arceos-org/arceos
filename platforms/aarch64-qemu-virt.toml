@@ -78,12 +78,17 @@ gicd-paddr = "0x0800_0000"
 # PSCI
 psci-method = "hvc"
 
-# Testcase memory
+# Testcase memory start address.
 testcase-memory-start = "0xd000_0000"
-testcase-memory-size = "0x400_0000"    # 如果是要手动加载进来，认为镜像大小是128MB
-qemu-memory-size = "0x4000_0000"    # 如果用qemu挂载镜像，镜像大小认为是1G，但实际远小于1G
+# Testcase memory size.
+testcase-memory-size = "0x400_0000"
+# The base address of the user heap.
 user-heap-base = "0x3FA0_0000"
+# The base address of the user stack. And the stack bottom is `user-stack-top + max-user-stack-size`.
 user-stack-top = "0x3FE0_0000"
+# The size of the user heap.
 max-user-heap-size = "0x40_0000"
+# The size of the user stack.
 max-user-stack-size = "0x20_0000"
+# The base address of the signal trampoline.
 signal-trampoline = "0xc000_0000"

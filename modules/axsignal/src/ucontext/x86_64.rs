@@ -6,9 +6,9 @@
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
 pub struct SignalStack {
-    pub sp: usize,
-    pub flags: u32,
-    pub size: usize,
+    sp: usize,
+    flags: u32,
+    size: usize,
 }
 
 impl Default for SignalStack {
@@ -23,39 +23,40 @@ impl Default for SignalStack {
 }
 #[repr(C)]
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
+/// The `mcontext` struct for the signal action
 pub struct MContext {
     // gregs
-    pub r8: usize,
-    pub r9: usize,
-    pub r10: usize,
-    pub r11: usize,
-    pub r12: usize,
-    pub r13: usize,
-    pub r14: usize,
-    pub r15: usize,
-    pub rdi: usize,
-    pub rsi: usize,
-    pub rbp: usize,
-    pub rbx: usize,
-    pub rdx: usize,
-    pub rax: usize,
-    pub rcx: usize,
-    pub rsp: usize,
-    pub rip: usize,
-    pub eflags: usize,
-    pub cs: u16,
-    pub gs: u16,
-    pub fs: u16,
-    pub _pad: u16,
-    pub err: usize,
-    pub trapno: usize,
-    pub oldmask: usize,
-    pub cr2: usize,
+    r8: usize,
+    r9: usize,
+    r10: usize,
+    r11: usize,
+    r12: usize,
+    r13: usize,
+    r14: usize,
+    r15: usize,
+    rdi: usize,
+    rsi: usize,
+    rbp: usize,
+    rbx: usize,
+    rdx: usize,
+    rax: usize,
+    rcx: usize,
+    rsp: usize,
+    rip: usize,
+    eflags: usize,
+    cs: u16,
+    gs: u16,
+    fs: u16,
+    _pad: u16,
+    err: usize,
+    trapno: usize,
+    oldmask: usize,
+    cr2: usize,
     // fpregs
     // TODO
-    pub fpstate: usize,
+    fpstate: usize,
     // reserved
-    pub _reserved1: [usize; 8],
+    _reserved1: [usize; 8],
 }
 
 impl MContext {
@@ -73,16 +74,18 @@ impl MContext {
 
 #[repr(C)]
 #[derive(Clone)]
+/// The user context saved for the signal action, which can be accessed by the signal handler
 pub struct SignalUserContext {
-    pub flags: usize,
-    pub link: usize,
-    pub stack: SignalStack,
-    pub mcontext: MContext,
-    pub sigmask: u64,
-    pub _fpregs: [usize; 64],
+    flags: usize,
+    link: usize,
+    stack: SignalStack,
+    mcontext: MContext,
+    sigmask: u64,
+    _fpregs: [usize; 64],
 }
 
 impl SignalUserContext {
+    /// init the user context by the pc and the mask
     pub fn init(pc: usize, mask: usize) -> Self {
         Self {
             flags: 0,
@@ -94,6 +97,7 @@ impl SignalUserContext {
         }
     }
 
+    /// get the pc from the user context
     pub fn get_pc(&self) -> usize {
         self.mcontext.get_pc()
     }

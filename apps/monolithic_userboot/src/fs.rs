@@ -1,7 +1,7 @@
 //! Init some files and links for the apps
 
 use alloc::{format, string::ToString};
-use syscall_entry::{create_link, new_file, FileFlags, FilePath};
+use axstarry::{create_link, new_file, FileFlags, FilePath};
 
 /// 在执行系统调用前初始化文件系统
 ///

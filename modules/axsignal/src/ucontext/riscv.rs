@@ -6,9 +6,9 @@
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
 pub struct SignalStack {
-    pub sp: usize,
-    pub flags: u32,
-    pub size: usize,
+    sp: usize,
+    flags: u32,
+    size: usize,
 }
 
 impl Default for SignalStack {
@@ -24,11 +24,12 @@ impl Default for SignalStack {
 
 #[repr(C)]
 #[derive(Clone, Debug)]
+/// The `mcontext` struct for the signal action
 pub struct MContext {
-    pub reserved1: [usize; 16],
-    pub pc: usize,
-    pub reserved2: [usize; 17],
-    pub fpstate: [usize; 66],
+    reserved1: [usize; 16],
+    pc: usize,
+    reserved2: [usize; 17],
+    fpstate: [usize; 66],
 }
 
 impl Default for MContext {
@@ -59,15 +60,17 @@ impl MContext {
 
 #[repr(C)]
 #[derive(Clone)]
+/// The user context saved for the signal action, which can be accessed by the signal handler
 pub struct SignalUserContext {
-    pub flags: usize,
-    pub link: usize,
-    pub stack: SignalStack,
-    pub sigmask: u64,
-    pub mcontext: MContext,
+    flags: usize,
+    link: usize,
+    stack: SignalStack,
+    sigmask: u64,
+    mcontext: MContext,
 }
 
 impl SignalUserContext {
+    /// init the user context by the pc and the mask
     pub fn init(pc: usize, mask: usize) -> Self {
         Self {
             flags: 0,
@@ -78,6 +81,7 @@ impl SignalUserContext {
         }
     }
 
+    /// get the pc from the user context
     pub fn get_pc(&self) -> usize {
         self.mcontext.get_pc()
     }

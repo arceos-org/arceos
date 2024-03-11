@@ -37,6 +37,7 @@ impl FpState {
 }
 
 impl TrapFrame {
+    /// To set the stack pointer
     pub fn set_user_sp(&mut self, user_sp: usize) {
         self.usp = user_sp;
     }

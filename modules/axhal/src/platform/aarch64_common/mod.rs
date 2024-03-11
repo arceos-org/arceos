@@ -99,6 +99,7 @@ pub fn platform_init_secondary() {
     crate::platform::time::init_percpu();
 }
 
+/// Returns the name of the platform.
 pub fn platform_name() -> &'static str {
     of::machin_name()
 }

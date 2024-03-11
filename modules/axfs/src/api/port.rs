@@ -1,4 +1,4 @@
-/// 定义与文件I/O操作相关的trait泛型
+//! 定义与文件I/O操作相关的trait泛型
 extern crate alloc;
 use alloc::string::String;
 use axerrno::{AxError, AxResult};
@@ -23,6 +23,7 @@ pub struct Kstat {
     pub st_uid: u32,
     /// 用户组id
     pub st_gid: u32,
+    /// padding
     pub _pad0: u32,
     /// 设备号
     pub st_rdev: u64,
@@ -30,6 +31,7 @@ pub struct Kstat {
     pub st_size: u64,
     /// 块大小
     pub st_blksize: u32,
+    /// padding
     pub _pad1: u32,
     /// 块个数
     pub st_blocks: u64,
@@ -64,11 +66,13 @@ pub struct Kstat {
     pub st_gid: u32,
     /// 设备号
     pub st_rdev: u64,
+    /// padding
     pub _pad0: u64,
     /// 文件大小
     pub st_size: u64,
     /// 块大小
     pub st_blksize: u32,
+    /// padding
     pub _pad1: u32,
     /// 块个数
     pub st_blocks: u64,
@@ -178,9 +182,11 @@ pub enum FileIOType {
     FileDesc,
     /// 目录
     DirDesc,
-    /// 标准输入输出错误流
+    /// 标准输入
     Stdin,
+    /// 标准输出
     Stdout,
+    /// 标准错误
     Stderr,
     /// 管道
     Pipe,
@@ -194,8 +200,13 @@ pub enum FileIOType {
 
 /// 用于给虚存空间进行懒分配
 pub trait FileExt: Read + Write + Seek + AsAny + Send + Sync {
+    /// whether the file is readable
     fn readable(&self) -> bool;
+
+    /// whether the file is writable
     fn writable(&self) -> bool;
+
+    /// whether the file is executable
     fn executable(&self) -> bool;
     /// Read from position without changing cursor.
     fn read_from_seek(&mut self, pos: SeekFrom, buf: &mut [u8]) -> AxResult<usize> {
@@ -249,6 +260,7 @@ pub trait FileIO: AsAny + Send + Sync {
         Err(AxError::Unsupported) // 如果没有实现, 则返回Unsupported
     }
 
+    /// 刷新操作
     fn flush(&self) -> AxResult<()> {
         Err(AxError::Unsupported) // 如果没有实现, 则返回Unsupported
     }
@@ -258,8 +270,13 @@ pub trait FileIO: AsAny + Send + Sync {
         Err(AxError::Unsupported) // 如果没有实现, 则返回Unsupported
     }
 
+    /// whether the file is readable
     fn readable(&self) -> bool;
+
+    /// whether the file is writable
     fn writable(&self) -> bool;
+
+    /// whether the file is executable
     fn executable(&self) -> bool;
 
     /// 获取类型
@@ -325,6 +342,7 @@ pub trait FileIO: AsAny + Send + Sync {
         false
     }
 
+    /// To control the file descriptor
     fn ioctl(&self, _request: usize, _arg1: usize) -> AxResult<()> {
         Err(AxError::Unsupported)
     }
@@ -334,7 +352,7 @@ pub trait FileIO: AsAny + Send + Sync {
 pub trait AsAny {
     /// 把当前对象转化为 `Any` 类型，供后续 downcast 使用
     fn as_any(&self) -> &dyn Any;
-    // 供 downcast_mut 使用
+    /// 供 downcast_mut 使用
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
@@ -379,15 +397,20 @@ impl From<usize> for AccessMode {
 }
 
 /// IOCTL系统调用支持
+#[allow(missing_docs)]
 pub const TCGETS: usize = 0x5401;
+#[allow(missing_docs)]
 pub const TIOCGPGRP: usize = 0x540F;
+#[allow(missing_docs)]
 pub const TIOCSPGRP: usize = 0x5410;
+#[allow(missing_docs)]
 pub const TIOCGWINSZ: usize = 0x5413;
 #[repr(C)]
 #[derive(Clone, Copy, Default)]
+/// the size of the console window
 pub struct ConsoleWinSize {
-    pub ws_row: u16,
-    pub ws_col: u16,
-    pub ws_xpixel: u16,
-    pub ws_ypixel: u16,
+    ws_row: u16,
+    ws_col: u16,
+    ws_xpixel: u16,
+    ws_ypixel: u16,
 }

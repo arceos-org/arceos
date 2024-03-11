@@ -14,14 +14,20 @@ use axsignal::{
 use axsync::Mutex;
 use axtask::{SignalCaller, TaskState, RUN_QUEUE};
 
+/// 信号处理模块，进程间不共享
 pub struct SignalModule {
+    /// 是否存在siginfo
     pub sig_info: bool,
+    /// 保存的trap上下文
     pub last_trap_frame_for_signal: Option<TrapFrame>,
+    /// 信号处理函数集
     pub signal_handler: Arc<Mutex<SignalHandler>>,
+    /// 未决信号集
     pub signal_set: SignalSet,
 }
 
 impl SignalModule {
+    /// 初始化信号模块
     pub fn init_signal(signal_handler: Option<Arc<Mutex<SignalHandler>>>) -> Self {
         let signal_handler =
             signal_handler.unwrap_or_else(|| Arc::new(Mutex::new(SignalHandler::new())));

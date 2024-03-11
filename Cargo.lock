@@ -530,6 +530,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "axstarry"
+version = "0.1.0"
+dependencies = [
+ "arceos_api",
+ "axconfig",
+ "axerrno",
+ "axfeat",
+ "axfs",
+ "axhal",
+ "axlibc",
+ "axlog",
+ "axmem",
+ "axnet",
+ "axprocess",
+ "axruntime",
+ "axsignal",
+ "axsync",
+ "axtask",
+ "bitflags 2.4.0",
+ "cfg-if",
+ "crate_interface",
+ "kernel_guard",
+ "lazy_init",
+ "num_enum",
+ "numeric-enum-macro",
+ "rand",
+ "spinlock",
+]
+
+[[package]]
 name = "axstd"
 version = "0.1.0"
 dependencies = [
@@ -1382,7 +1412,7 @@ checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 name = "monolithic_userboot"
 version = "0.1.0"
 dependencies = [
- "syscall_entry",
+ "axstarry",
 ]
 
 [[package]]
@@ -1949,112 +1979,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
-]
-
-[[package]]
-name = "syscall_entry"
-version = "0.1.0"
-dependencies = [
- "arceos_api",
- "axfeat",
- "axhal",
- "axlibc",
- "axlog",
- "axprocess",
- "axruntime",
- "axsignal",
- "axtask",
- "cfg-if",
- "crate_interface",
- "kernel_guard",
- "lazy_init",
- "spinlock",
- "syscall_fs",
- "syscall_mem",
- "syscall_net",
- "syscall_task",
- "syscall_utils",
-]
-
-[[package]]
-name = "syscall_fs"
-version = "0.1.0"
-dependencies = [
- "axerrno",
- "axfs",
- "axhal",
- "axio",
- "axlog",
- "axprocess",
- "axsync",
- "axtask",
- "bitflags 2.4.0",
- "numeric-enum-macro",
- "syscall_utils",
-]
-
-[[package]]
-name = "syscall_mem"
-version = "0.1.0"
-dependencies = [
- "axerrno",
- "axhal",
- "axlog",
- "axmem",
- "axprocess",
- "bitflags 2.4.0",
- "numeric-enum-macro",
- "syscall_fs",
- "syscall_utils",
-]
-
-[[package]]
-name = "syscall_net"
-version = "0.1.0"
-dependencies = [
- "arceos_api",
- "axerrno",
- "axfeat",
- "axfs",
- "axio",
- "axlog",
- "axnet",
- "axprocess",
- "axsync",
- "num_enum",
- "numeric-enum-macro",
- "syscall_utils",
-]
-
-[[package]]
-name = "syscall_task"
-version = "0.1.0"
-dependencies = [
- "arceos_api",
- "axconfig",
- "axfeat",
- "axhal",
- "axlog",
- "axprocess",
- "axsignal",
- "axtask",
- "numeric-enum-macro",
- "rand",
- "syscall_utils",
-]
-
-[[package]]
-name = "syscall_utils"
-version = "0.1.0"
-dependencies = [
- "axconfig",
- "axerrno",
- "axfs",
- "axhal",
- "axlog",
- "bitflags 2.4.0",
- "num_enum",
- "numeric-enum-macro",
 ]
 
 [[package]]

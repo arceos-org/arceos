@@ -1,3 +1,4 @@
+//! The memory management module, which implements the memory space management of the process.
 #![cfg_attr(not(test), no_std)]
 mod area;
 mod backend;
@@ -31,6 +32,8 @@ static SHMID: AtomicI32 = AtomicI32::new(1);
 ///
 /// It holds an Arc to the SharedMem. If the Arc::strong_count() is 1, SharedMem will be dropped.
 pub static SHARED_MEMS: SpinNoIrq<BTreeMap<i32, Arc<SharedMem>>> = SpinNoIrq::new(BTreeMap::new());
+
+/// The map from key to shmid. It's used to query shmid from key.
 pub static KEY_TO_SHMID: SpinNoIrq<BTreeMap<i32, i32>> = SpinNoIrq::new(BTreeMap::new());
 
 /// PageTable + MemoryArea for a process (task)
@@ -43,10 +46,12 @@ pub struct MemorySet {
 }
 
 impl MemorySet {
+    /// Get the root page table token.
     pub fn page_table_token(&self) -> usize {
         self.page_table.root_paddr().as_usize()
     }
 
+    /// Create a new empty MemorySet.
     pub fn new_empty() -> Self {
         Self {
             page_table: PageTable::try_new().expect("Error allocating page table."),
@@ -56,6 +61,7 @@ impl MemorySet {
         }
     }
 
+    /// Create a new MemorySet with kernel mapped regions.
     pub fn new_with_kernel_mapped() -> Self {
         let mut page_table = PageTable::try_new().expect("Error allocating page table.");
 
@@ -78,10 +84,12 @@ impl MemorySet {
         }
     }
 
+    /// The root page table physical address.
     pub fn page_table_root_ppn(&self) -> PhysAddr {
         self.page_table.root_paddr()
     }
 
+    /// The max virtual address of the areas in this memory set.
     pub fn max_va(&self) -> VirtAddr {
         self.owned_mem
             .last_key_value()
@@ -209,6 +217,7 @@ impl MemorySet {
         }
     }
 
+    /// Find a free area with given start virtual address and size. Return the start address of the area.
     pub fn find_free_area(&self, hint: VirtAddr, size: usize) -> Option<VirtAddr> {
         let mut last_end = hint.max(axconfig::USER_MEMORY_START.into()).as_usize();
 
@@ -407,6 +416,7 @@ impl MemorySet {
         self.owned_mem.clear();
     }
 
+    /// Query the page table to get the physical address, flags and page size of the given virtual
     pub fn query(&self, vaddr: VirtAddr) -> AxResult<(PhysAddr, MappingFlags, PageSize)> {
         if let Ok((paddr, flags, size)) = self.page_table.query(vaddr) {
             Ok((paddr, flags, size))
@@ -461,14 +471,17 @@ impl MemorySet {
         assert!(self.private_mem.insert(shmid, Arc::new(mem)).is_none());
     }
 
+    /// Get a SharedMem by shmid.
     pub fn get_shared_mem(shmid: i32) -> Option<Arc<SharedMem>> {
         SHARED_MEMS.lock().get(&shmid).cloned()
     }
 
+    /// Get a private SharedMem by shmid.
     pub fn get_private_shared_mem(&self, shmid: i32) -> Option<Arc<SharedMem>> {
         self.private_mem.get(&shmid).cloned()
     }
 
+    /// Attach a SharedMem to the memory set.
     pub fn attach_shared_mem(&mut self, mem: Arc<SharedMem>, addr: VirtAddr, flags: MappingFlags) {
         self.page_table
             .map_region(addr, mem.paddr(), mem.size(), flags, false)
@@ -477,6 +490,9 @@ impl MemorySet {
         self.attached_mem.push((addr, flags, mem));
     }
 
+    /// Detach a SharedMem from the memory set.
+    ///
+    /// TODO: implement this
     pub fn detach_shared_mem(&mut self, _shmid: i32) {
         todo!()
     }
@@ -538,6 +554,10 @@ impl MemorySet {
 }
 
 impl MemorySet {
+    /// Clone the MemorySet. This will create a new page table and map all the regions in the old
+    /// page table to the new one.
+    ///
+    /// If it occurs error, the new MemorySet will be dropped and return the error.
     pub fn clone_or_err(&self) -> AxResult<Self> {
         let mut page_table = PageTable::try_new().expect("Error allocating page table.");
 

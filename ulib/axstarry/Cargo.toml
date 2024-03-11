@@ -1,0 +1,94 @@
+[package]
+name = "axstarry"
+version = "0.1.0"
+edition = "2021"
+
+authors = ["Youjie Zheng <zyj578335934@gmail.com>"]
+description = "ArceOS user program library for linux apps with posix_syscall"
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = ["monolithic", "futex", "signal", "net"]
+
+monolithic = ["arceos_api/monolithic", "axfeat/monolithic", "paging", "fs", "multitask", "irq"]
+
+img = ["axruntime/img"]
+
+# Multicore
+smp = ["axfeat/smp", "spinlock/smp"]
+
+
+# Floating point/SIMD
+fp_simd = ["axfeat/fp_simd"]
+
+# Interrupts
+irq = ["arceos_api/irq", "axfeat/irq"]
+
+# Memory
+paging = ["axfeat/paging"]
+tls = ["axfeat/tls"]
+
+# Multi-threading and scheduler
+multitask = ["arceos_api/multitask", "axfeat/multitask"]
+sched_fifo = ["axfeat/sched_fifo"]
+sched_rr = ["axfeat/sched_rr"]
+sched_cfs = ["axfeat/sched_cfs"]
+
+# Display
+display = ["arceos_api/display", "axfeat/display"]
+
+# Bus-Pci
+bus-pci = ["axfeat/bus-pci"]
+
+# Fs
+fd = []
+fs = ["axruntime/fs", "arceos_api/fs", "fd"]
+fatfs = ["axfeat/fatfs"]
+ext4fs = ["axfeat/ext4fs", "dep:axlibc"]
+
+# Signal
+signal = ["axfeat/signal", "dep:axsignal"]
+
+# Futex
+futex = ["axfeat/futex"]
+
+# Network
+ip = ["axnet/ip"]
+net = ["ip", "arceos_api/net", "axfeat/net", "dep:axsync"]
+
+# Logging
+log-level-off = ["axfeat/log-level-off"]
+log-level-error = ["axfeat/log-level-error"]
+log-level-warn = ["axfeat/log-level-warn"]
+log-level-info = ["axfeat/log-level-info"]
+log-level-debug = ["axfeat/log-level-debug"]
+log-level-trace = ["axfeat/log-level-trace"]
+
+devfs = []
+
+[dependencies]
+cfg-if = "1.0"
+axfeat = { path = "../../api/axfeat" }
+arceos_api = { path = "../../api/arceos_api" }
+axlog = { path = "../../modules/axlog" }
+axfs = { path = "../../modules/axfs" }
+axruntime = { path = "../../modules/axruntime" }
+axhal = { path = "../../modules/axhal" }
+axtask = { path = "../../modules/axtask" }
+axnet = { path = "../../modules/axnet", optional = true }
+axprocess = { path = "../../modules/axprocess" }
+axsignal = { path = "../../modules/axsignal", optional = true }
+axlibc = { path = "../../ulib/axlibc", features = ["fp_simd", "alloc", "fs", "fd"], optional = true }
+axconfig = { path = "../../modules/axconfig" }
+axsync = { path = "../../modules/axsync", optional = true }
+axmem = { path = "../../modules/axmem" }
+
+crate_interface = { path = "../../crates/crate_interface" }
+lazy_init = { path = "../../crates/lazy_init" }
+spinlock = { path = "../../crates/spinlock" }
+kernel_guard = { path = "../../crates/kernel_guard" }
+axerrno = { path = "../../crates/axerrno" }
+numeric-enum-macro = { git = "https://github.com/mexus/numeric-enum-macro" }
+bitflags = "2.0"
+rand = { version = "0.8.5", default-features = false, features = ["small_rng"] }
+num_enum = { version = "0.5.11", default-features = false }

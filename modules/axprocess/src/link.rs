@@ -11,8 +11,10 @@ use axsync::Mutex;
 
 use crate::current_process;
 #[allow(unused)]
+/// The file descriptor used to specify the current working directory of a process
 pub const AT_FDCWD: usize = -100isize as usize;
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
+/// A struct to represent a file path, which will be canonicalized
 pub struct FilePath(String);
 
 impl FilePath {
@@ -269,6 +271,15 @@ pub fn create_link(src_path: &FilePath, dest_path: &FilePath) -> bool {
     true
 }
 
+/// To deal with the path and return the canonicalized path
+///
+/// * `dir_fd` - The file descriptor of the directory, if it is AT_FDCWD, the call operates on the current working directory
+///
+/// * `path_addr` - The address of the path, if it is null, the call operates on the file that is specified by `dir_fd`
+///
+/// * `force_dir` - If true, the path will be treated as a directory
+///
+/// The path will be dealt with links and the path will be canonicalized
 pub fn deal_with_path(
     dir_fd: usize,
     path_addr: Option<*const u8>,

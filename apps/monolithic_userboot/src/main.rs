@@ -1,8 +1,9 @@
+//! The userboot of the operating system, which will start the first user process and go into the user mode
 #![cfg_attr(not(test), no_std)]
 #![no_main]
 
 #[allow(unused)]
-use syscall_entry::{println, recycle_user_process, wait_pid, yield_now_task, Process};
+use axstarry::{println, recycle_user_process, wait_pid, yield_now_task, Process};
 
 mod batch;
 mod fs;
@@ -31,7 +32,7 @@ pub fn get_envs() -> Vec<String> {
     // read the file "/etc/environment"
     // if exist, then append the content to envs
     // else set the environment variable to default value
-    if let Some(environment_vars) = syscall_entry::read_file("/etc/environment") {
+    if let Some(environment_vars) = axstarry::read_file("/etc/environment") {
         envs.push(environment_vars);
     } else {
         envs.push("PATH=/usr/sbin:/usr/bin:/sbin:/bin".into());
