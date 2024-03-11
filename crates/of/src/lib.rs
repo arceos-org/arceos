@@ -2,7 +2,7 @@
 //! with the goal of having a very ergonomic and idiomatic API.
 
 #![no_std]
-
+#![allow(missing_docs)]
 pub struct MachineFdt<'a>(fdt::Fdt<'a>);
 pub mod kernel_nodes;
 pub use fdt::standard_nodes::Cpu;
