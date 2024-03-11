@@ -87,6 +87,7 @@ pub fn platform_init() {}
 pub fn platform_init_secondary() {}
 
 pub fn set_tss_stack_top(_kernel_stack_top: memory_addr::VirtAddr) {}
+
 pub fn platform_name() -> &'static str {
     "dummy"
 }

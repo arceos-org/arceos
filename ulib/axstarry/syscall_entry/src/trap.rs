@@ -15,7 +15,6 @@ impl axhal::trap::TrapHandler for TrapHandlerImpl {
             if from_user {
                 axprocess::time_stat_from_user_to_kernel();
             }
-
             axhal::irq::dispatch_irq(_irq_num);
             if from_user {
                 axprocess::time_stat_from_kernel_to_user();

@@ -139,7 +139,6 @@ pub(crate) unsafe fn idmap_kernel(kernel_phys_addr: usize) {
 
     // 0x0000_0000_0000 ~ 0x0080_0000_0000, table
     BOOT_PT_L0[0] = A64PTE::new_table(PhysAddr::from(BOOT_PT_L1.as_ptr() as usize));
-
     // 1G block, kernel img
     BOOT_PT_L1[l1_index] = A64PTE::new_page(
         PhysAddr::from(aligned_address),
@@ -151,7 +150,6 @@ pub(crate) unsafe fn idmap_kernel(kernel_phys_addr: usize) {
 pub(crate) unsafe fn idmap_device(phys_addr: usize) {
     let aligned_address = (phys_addr) & !(BOOT_MAP_SIZE - 1);
     let l1_index = phys_addr >> BOOT_MAP_SHIFT;
-
     if BOOT_PT_L1[l1_index].is_unused() {
         BOOT_PT_L1[l1_index] = A64PTE::new_page(
             PhysAddr::from(aligned_address),
