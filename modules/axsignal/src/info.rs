@@ -2,9 +2,15 @@
 //!
 //! 错误信息：详细定义见 `https://man7.org/linux/man-pages/man2/rt_sigaction.2.html`
 
+/// The information of the signal
+///
+/// When the `SigAction` specifies that it needs information, it will return it to the user
 pub struct SigInfo {
+    /// The signal number
     pub si_signo: i32,
+    /// An errno value
     pub si_errno: i32,
+    /// The code of the signal
     pub si_code: i32,
 }
 

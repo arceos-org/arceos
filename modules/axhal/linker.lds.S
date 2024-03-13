@@ -11,6 +11,9 @@ SECTIONS
     .text : ALIGN(4K) {
         _stext = .;
         *(.text.boot)
+        . = ALIGN(4K);
+        *(.text.signal_trampoline)
+        . = ALIGN(4K);
         *(.text .text.*)
         . = ALIGN(4K);
         _etext = .;
@@ -28,6 +31,10 @@ SECTIONS
     .data : ALIGN(4K) {
         _sdata = .;
         *(.data.boot_page_table)
+        . = ALIGN(4K);
+        _img_start = .;
+        . = ALIGN(4K);
+        _img_end = .;
         . = ALIGN(4K);
         *(.data .data.*)
         *(.sdata .sdata.*)

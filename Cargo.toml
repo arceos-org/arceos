@@ -35,6 +35,7 @@ members = [
     "crates/spinlock",
     "crates/timer_list",
     "crates/tuple_for_each",
+    "crates/elf_parser",
 
     "modules/axalloc",
     "modules/axconfig",
@@ -57,12 +58,7 @@ members = [
 
     "ulib/axstd",
     "ulib/axlibc",
-    "ulib/axstarry/syscall_mem",
-    "ulib/axstarry/syscall_fs",
-    "ulib/axstarry/syscall_net",
-    "ulib/axstarry/syscall_utils",
-    "ulib/axstarry/syscall_task",
-    "ulib/axstarry/syscall_entry",
+    "ulib/axstarry",
     "apps/display",
     "apps/exception",
     "apps/helloworld",
@@ -78,16 +74,13 @@ members = [
     "apps/task/yield",
     "apps/task/priority",
     "apps/task/tls",
-    "apps/oscomp",
-    "apps/ostrain/fileopen",
-    "apps/ostrain/fileread",
-    "apps/ostrain/filewrite",
-    "apps/ostrain/taskyield",
-    "apps/ostrain/task_single_yield",
-    "apps/ostrain/danger_access"
+    "apps/monolithic_userboot"
 ]
 
 [profile.release]
+lto = true
+
+[profile.dev]
 lto = true
 
 [patch.crates-io]

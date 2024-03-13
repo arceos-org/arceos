@@ -112,11 +112,14 @@ const fn alloc_err_to_ax_err(e: AllocError) -> AxError {
 
 /// A safe wrapper of a single 4K page.
 /// It holds the page's VirtAddr (PhysAddr + offset)
+#[derive(Debug)]
 pub struct PhysPage {
+    /// The start virtual address of this page.
     pub start_vaddr: VirtAddr,
 }
 
 impl PhysPage {
+    /// Allocate one 4K-sized page.
     pub fn alloc() -> AxResult<Self> {
         global_allocator()
             .alloc_pages(1, PAGE_SIZE)
@@ -126,6 +129,7 @@ impl PhysPage {
             .map_err(alloc_err_to_ax_err)
     }
 
+    /// Allocate some 4K-sized pages and fill with zero.
     pub fn alloc_contiguous(
         num_pages: usize,
         align_pow2: usize,

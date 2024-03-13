@@ -2,11 +2,11 @@
 //! with the goal of having a very ergonomic and idiomatic API.
 
 #![no_std]
-
+#![allow(missing_docs)]
 pub struct MachineFdt<'a>(fdt::Fdt<'a>);
 pub mod kernel_nodes;
-pub use kernel_nodes::*;
 pub use fdt::standard_nodes::Cpu;
+pub use kernel_nodes::*;
 
 mod parsing;
 
@@ -18,9 +18,11 @@ lazy_static::lazy_static! {
 }
 
 pub fn get_fdt_ptr() -> Option<*const u8> {
-    unsafe  {MY_FDT_PTR}
+    unsafe { MY_FDT_PTR }
 }
 
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer.
 pub unsafe fn init_fdt_ptr(virt_addr: *const u8) {
     MY_FDT_PTR = Some(virt_addr);
 }
@@ -36,20 +38,29 @@ pub fn machin_name() -> &'static str {
     let model = root_node
         .properties()
         .find(|p| p.name == "model")
-        .and_then(|p| core::str::from_utf8(p.value).map(|s| s.trim_end_matches('\0')).ok());
-    if model != None {
-        return model.unwrap();
-    }
+        .and_then(|p| {
+            core::str::from_utf8(p.value)
+                .map(|s| s.trim_end_matches('\0'))
+                .ok()
+        });
 
-    return root_node.compatible().first();
+    if let Some(name) = model {
+        name
+    } else {
+        root_node.compatible().first()
+    }
 }
 
 /// Searches for a node which contains a `compatible` property and contains
 /// one of the strings inside of `with`
-pub fn find_compatible_node(with: &'static[&'static str]) -> impl Iterator<Item = fdt::node::FdtNode<'static, 'static>> {
+pub fn find_compatible_node(
+    with: &'static [&'static str],
+) -> impl Iterator<Item = fdt::node::FdtNode<'static, 'static>> {
     MY_MACHINE_FDT.0.all_nodes().filter(|n| {
-       n.compatible().and_then(|compats|
-           compats.all().find(|c| with.contains(c))).is_some()})
+        n.compatible()
+            .and_then(|compats| compats.all().find(|c| with.contains(c)))
+            .is_some()
+    })
 }
 
 pub fn bootargs() -> Option<&'static str> {
@@ -61,13 +72,19 @@ pub fn fdt_size() -> usize {
 }
 
 pub fn memory_nodes() -> impl Iterator<Item = Memory> {
-     MY_MACHINE_FDT.0.find_all_nodes("/memory").map(|m|kernel_nodes::Memory {node:m})
+    MY_MACHINE_FDT
+        .0
+        .find_all_nodes("/memory")
+        .map(|m| kernel_nodes::Memory { node: m })
 }
 
 pub fn pcsi() -> Option<kernel_nodes::Pcsi> {
-     MY_MACHINE_FDT.0.find_node("/psci").map(|n| kernel_nodes::Pcsi {node: n})
+    MY_MACHINE_FDT
+        .0
+        .find_node("/psci")
+        .map(|n| kernel_nodes::Pcsi { node: n })
 }
 
 pub fn cpus() -> impl Iterator<Item = fdt::standard_nodes::Cpu<'static, 'static>> {
-     MY_MACHINE_FDT.0.cpus()
+    MY_MACHINE_FDT.0.cpus()
 }

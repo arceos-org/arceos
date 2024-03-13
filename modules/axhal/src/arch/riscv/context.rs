@@ -55,71 +55,9 @@ pub struct TrapFrame {
     pub fs: [usize; 2],
 }
 
-// 实现一个从 *mut MyType 的转换
-impl From<*mut TrapFrame> for TrapFrame {
-    fn from(ptr: *mut TrapFrame) -> Self {
-        unsafe {
-            *ptr
-        }
-    }
-}
-
 impl TrapFrame {
     pub fn set_user_sp(&mut self, user_sp: usize) {
         self.regs.sp = user_sp;
-    }
-
-    pub fn sp(&mut self) -> usize {
-        self.regs.sp
-    }
-
-    pub unsafe fn sp_from_raw(ptr: *mut TrapFrame) -> usize {
-        (*ptr).regs.sp
-    }
-
-    pub unsafe fn pc_from_raw(ptr: *mut TrapFrame) -> usize {
-        (*ptr).sepc
-    }
-
-    pub fn pc(&mut self) -> usize {
-        self.sepc
-    }
-
-    pub fn set_pc(&mut self, pc: usize) {
-        self.sepc = pc;
-    }
-
-    pub unsafe fn set_pc_from_raw(ptr: *mut TrapFrame, pc: usize) {
-        (*ptr).sepc = pc;
-    }
-
-    pub fn set_tls(&mut self, tls: usize) {
-        self.regs.tp = tls;
-    }
-
-    #[cfg(feature = "monolithic")]
-    pub fn set_ret_code(&mut self, ret: usize) {
-        self.regs.a0 = ret;
-    }
-
-    pub fn set_param0(&mut self, param: usize) {
-        self.regs.a0 = param;
-    }
-
-    pub fn set_param1(&mut self, param: usize) {
-        self.regs.a1 = param;
-    }
-
-    pub fn set_param2(&mut self, param: usize) {
-        self.regs.a2 = param;
-    }
-
-    pub unsafe fn ret_from_raw(ptr: *mut TrapFrame) -> usize {
-         (*ptr).regs.a0
-    }
-
-    pub fn set_lr(&mut self, param: usize) {
-        self.regs.ra = param;
     }
 
     /// 用于第一次进入应用程序时的初始化
@@ -139,6 +77,73 @@ impl TrapFrame {
             trap_frame.regs.a1 = *(user_sp as *const usize).add(1);
         }
         trap_frame
+    }
+
+    /// 设置返回值
+    pub fn set_ret_code(&mut self, ret_value: usize) {
+        self.regs.a0 = ret_value;
+    }
+
+    /// 设置TLS
+    pub fn set_tls(&mut self, tls_value: usize) {
+        self.regs.tp = tls_value;
+    }
+
+    /// 获取 sp
+    pub fn get_sp(&self) -> usize {
+        self.regs.sp
+    }
+
+    /// 设置 pc
+    pub fn set_pc(&mut self, pc: usize) {
+        self.sepc = pc;
+    }
+
+    /// 设置 arg0
+    pub fn set_arg0(&mut self, arg: usize) {
+        self.regs.a0 = arg;
+    }
+
+    /// 设置 arg1
+    pub fn set_arg1(&mut self, arg: usize) {
+        self.regs.a1 = arg;
+    }
+
+    /// 设置 arg2
+    pub fn set_arg2(&mut self, arg: usize) {
+        self.regs.a2 = arg;
+    }
+
+    /// 获取 pc
+    pub fn get_pc(&self) -> usize {
+        self.sepc
+    }
+
+    /// 获取 ret
+    pub fn get_ret_code(&self) -> usize {
+        self.regs.a0
+    }
+
+    /// 设置返回地址
+    pub fn set_ra(&mut self, ra: usize) {
+        self.regs.ra = ra;
+    }
+
+    /// 获取所有 syscall 参数
+    pub fn get_syscall_args(&self) -> [usize; 6] {
+        [
+            self.regs.a0,
+            self.regs.a1,
+            self.regs.a2,
+            self.regs.a3,
+            self.regs.a4,
+            self.regs.a5,
+        ]
+    }
+
+    /// 获取 syscall id
+    pub fn get_syscall_num(&self) -> usize {
+        self.regs.a7 as _
     }
 }
 

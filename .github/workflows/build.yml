@@ -12,11 +12,22 @@ jobs:
       fail-fast: false
     steps:
     - uses: actions/checkout@v3
+    - name: Setup C++ environment
+      run: sudo apt-get update && sudo apt-get install -y build-essential
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
         toolchain: ${{ env.rust-toolchain }}
         components: rust-src, clippy, rustfmt
+    - uses: ./.github/workflows/actions/setup-musl
+      with:
+        arch: x86_64
+    - uses: ./.github/workflows/actions/setup-musl
+      with:
+        arch: riscv64
+    - uses: ./.github/workflows/actions/setup-musl
+      with:
+        arch: aarch64
     - name: Clippy for the default target
       run: make clippy
     - name: Clippy for x86_64
@@ -194,5 +205,5 @@ jobs:
           crate: cargo-binutils
           version: latest
           use-tool-cache: true
-      - name: Bulld monolithic-oscomp
-        run: ./build_img.sh sdcard & make ARCH=${{ matrix.arch }} A=apps/oscomp
+      - name: Bulld monolithic-userboot
+        run: ./build_img.sh ${{ matrix.arch }} & make ARCH=${{ matrix.arch }} A=apps/monolithic_userboot

@@ -1,10 +1,12 @@
 use core::{arch::asm, fmt};
 use memory_addr::VirtAddr;
 
+use super::GdtStruct;
+
 /// Saved registers when a trap (interrupt or exception) occurs.
 #[allow(missing_docs)]
 #[repr(C)]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct TrapFrame {
     pub rax: u64,
     pub rcx: u64,
@@ -38,6 +40,87 @@ impl TrapFrame {
     /// Whether the trap is from userspace.
     pub const fn is_user(&self) -> bool {
         self.cs & 0b11 == 3
+    }
+
+    /// To set the stack pointer
+    pub fn set_user_sp(&mut self, user_sp: usize) {
+        self.rsp = user_sp as _;
+    }
+
+    /// 用于第一次进入应用程序时的初始化
+    pub fn app_init_context(app_entry: usize, user_sp: usize) -> Self {
+        // 当前版本的riscv不支持使用set_spp函数，需要手动修改
+        // 修改当前的sstatus为User，即是第8位置0
+        let mut trap_frame = TrapFrame::default();
+        trap_frame.set_user_sp(user_sp);
+        trap_frame.cs = GdtStruct::UCODE64_SELECTOR.0 as _;
+        trap_frame.ss = GdtStruct::UDATA_SELECTOR.0 as _;
+        trap_frame.rip = app_entry as _;
+        trap_frame
+    }
+
+    /// set the return code
+    pub fn set_ret_code(&mut self, ret_value: usize) {
+        self.rax = ret_value as _;
+    }
+
+    /// 设置TLS
+    pub fn set_tls(&mut self, _tls_value: usize) {
+        // panic!("set tls: {:#x}", tls_value);
+        // unsafe {
+        //     write_thread_pointer(tls_value);
+        // }
+        todo!("set tls");
+    }
+
+    /// 获取 sp
+    pub fn get_sp(&self) -> usize {
+        self.rsp as _
+    }
+
+    /// 设置 pc
+    pub fn set_pc(&mut self, pc: usize) {
+        self.rip = pc as _;
+    }
+
+    /// 设置 arg0
+    pub fn set_arg0(&mut self, arg: usize) {
+        self.rdi = arg as _;
+    }
+
+    /// 设置 arg1
+    pub fn set_arg1(&mut self, arg: usize) {
+        self.rsi = arg as _;
+    }
+
+    /// 设置 arg2
+    pub fn set_arg2(&mut self, arg: usize) {
+        self.rdx = arg as _;
+    }
+
+    /// 获取 pc
+    pub fn get_pc(&self) -> usize {
+        self.rip as _
+    }
+
+    /// 获取 ret
+    pub fn get_ret_code(&self) -> usize {
+        self.rax as _
+    }
+
+    /// 设置返回地址
+    pub fn set_ra(&mut self, _ra: usize) {
+        todo!()
+    }
+
+    /// 获取所有 syscall 参数
+    pub fn get_syscall_args(&self) -> [usize; 6] {
+        [self.rdi, self.rsi, self.rdx, self.r10, self.r8, self.r9].map(|n| n as _)
+    }
+
+    /// 获取 syscall id
+    pub fn get_syscall_num(&self) -> usize {
+        self.rax as _
     }
 }
 
@@ -187,11 +270,18 @@ impl TaskContext {
             self.ext_state.save();
             next_ctx.ext_state.restore();
         }
-        #[cfg(feature = "tls")]
+        #[cfg(any(feature = "tls", feature = "monolithic"))]
         {
             self.fs_base = super::read_thread_pointer();
             unsafe { super::write_thread_pointer(next_ctx.fs_base) };
         }
+        #[cfg(feature = "monolithic")]
+        unsafe {
+            // change gs data
+            asm!("mov     gs:[offset __PERCPU_KERNEL_RSP_OFFSET], {kernel_sp}", 
+                kernel_sp = in(reg) next_ctx.kstack_top.as_usize() + core::mem::size_of::<TrapFrame>());
+        }
+        crate::set_tss_stack_top(next_ctx.kstack_top + core::mem::size_of::<TrapFrame>());
         unsafe { context_switch(&mut self.rsp, &next_ctx.rsp) }
     }
 }

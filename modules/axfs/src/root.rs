@@ -96,12 +96,12 @@ impl RootDirectory {
             // 1. path == mp.path, e.g. dev
             // 2. path == mp.path + '/', e.g. dev/
             let prev = mp.path[1..].to_string() + "/";
-            if path.starts_with(&mp.path[1..]) {
-                if (path.len() == prev.len() - 1 || path.starts_with(&prev)) && prev.len() > max_len
-                {
-                    max_len = mp.path.len() - 1;
-                    idx = i;
-                }
+            if path.starts_with(&mp.path[1..])
+                && (path.len() == prev.len() - 1 || path.starts_with(&prev))
+                && prev.len() > max_len
+            {
+                max_len = mp.path.len() - 1;
+                idx = i;
             }
         }
         if max_len == 0 {
@@ -166,6 +166,10 @@ pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
             FAT_FS.init_by(Arc::new(fs::fatfs::FatFileSystem::new(disk)));
             FAT_FS.init();
             let main_fs = FAT_FS.clone();
+        } else if #[cfg(feature = "ext4fs")] {
+            static EXT4_FS: LazyInit<Arc<fs::ext4fs::Ext4FileSystem>> = LazyInit::new();
+            EXT4_FS.init_by(Arc::new(fs::ext4fs::Ext4FileSystem::new(disk)));
+            let main_fs = EXT4_FS.clone();
         }
     }
 

@@ -51,7 +51,7 @@ function run_and_compare() {
     local actual=$3
 
     echo -ne "    run with \"${BLOD_C}$args${END_C}\": "
-    # if the app contain "apps/oscomp", then make disk img
+
     make -C "$ROOT" A="$APP" $args > "$actual" 2>&1
     if [ $? -ne 0 ]; then
         return $S_BUILD_FAILED

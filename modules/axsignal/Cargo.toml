@@ -7,9 +7,12 @@ edition = "2021"
 
 [features]
 
+default = []
+
 signal = ["axhal/signal"]
 
 [dependencies]
 numeric-enum-macro = { git = "https://github.com/mexus/numeric-enum-macro" }
 bitflags = "2.0"
 axhal = { path = "../axhal" }
+cfg-if = "1.0"

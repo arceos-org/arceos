@@ -1,9 +1,12 @@
 mod context;
 mod gdt;
 mod idt;
+#[cfg(feature = "monolithic")]
+mod syscall;
 
-#[cfg(target_os = "none")]
 mod trap;
+#[cfg(feature = "monolithic")]
+pub use trap::first_into_user;
 
 use core::arch::asm;
 
@@ -20,7 +23,9 @@ pub use x86_64::structures::tss::TaskStateSegment;
 #[inline]
 pub fn enable_irqs() {
     #[cfg(target_os = "none")]
-    interrupts::enable()
+    interrupts::enable();
+    #[cfg(feature = "monolithic")]
+    syscall::init_syscall();
 }
 
 /// Makes the current CPU to ignore interrupts.
@@ -110,3 +115,6 @@ pub fn read_thread_pointer() -> usize {
 pub unsafe fn write_thread_pointer(fs_base: usize) {
     unsafe { msr::wrmsr(msr::IA32_FS_BASE, fs_base as u64) }
 }
+
+#[cfg(feature = "signal")]
+core::arch::global_asm!(include_str!("signal.S"));

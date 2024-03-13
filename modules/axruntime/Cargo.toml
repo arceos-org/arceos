@@ -23,7 +23,7 @@ fs = ["axdriver", "axfs"]
 net = ["axdriver", "axnet"]
 display = ["axdriver", "axdisplay"]
 signal = ["axprocess/signal", "axhal/signal"]
-img = ["axdriver/img"]
+img = ["axdriver/img", "paging"]
 monolithic = ["axprocess/monolithic", "axhal/monolithic", "axtask/monolithic", "axmem/monolithic"]
 
 [dependencies]

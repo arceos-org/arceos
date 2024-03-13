@@ -8,7 +8,8 @@ impl BigEndianU32 {
     }
 
     pub(crate) fn from_bytes(bytes: &[u8]) -> Option<Self> {
-        Some(BigEndianU32(u32::from_be_bytes(bytes.get(..4)?.try_into().unwrap())))
+        Some(BigEndianU32(u32::from_be_bytes(
+            bytes.get(..4)?.try_into().unwrap(),
+        )))
     }
 }
-

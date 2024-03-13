@@ -1,0 +1,1 @@
+/home/xly/oscomp/testsuits-for-oskernel/lmbench/bin/x86_64/lmbench_all hello "$@"

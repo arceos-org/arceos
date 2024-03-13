@@ -8,10 +8,14 @@ use axhal::{
 #[allow(dead_code)]
 pub struct SharedMem {
     pages: GlobalPage,
+    /// The information of the shared memory.
     pub info: SharedMemInfo,
 }
 
 impl SharedMem {
+    /// Allocate a new shared memory.
+    ///
+    /// If the allocation fails, return an error.
     pub fn try_new(
         key: i32,
         size: usize,
@@ -31,34 +35,38 @@ impl SharedMem {
         })
     }
 
+    /// Return the size of the shared memory.
     pub fn size(&self) -> usize {
         self.pages.size()
     }
 
+    /// Return the start physical address of the shared memory.
     pub fn paddr(&self) -> PhysAddr {
         self.pages.start_paddr(virt_to_phys)
     }
 }
 
+#[allow(dead_code)]
 pub struct SharedMemInfo {
-    pub perm: SharedMemPermInfo,
-    pub size: usize,
+    perm: SharedMemPermInfo,
+    size: usize,
 
-    pub a_time: usize,
-    pub d_time: usize,
-    pub c_time: usize,
+    a_time: usize,
+    d_time: usize,
+    c_time: usize,
 
-    pub c_pid: u64,
-    pub l_pid: u64,
+    c_pid: u64,
+    l_pid: u64,
 }
 
+#[allow(dead_code)]
 pub struct SharedMemPermInfo {
-    pub key: i32,
-    pub uid: u32,
-    pub gid: u32,
-    pub cuid: u32,
-    pub cgid: u32,
-    pub mode: u16,
+    key: i32,
+    uid: u32,
+    gid: u32,
+    cuid: u32,
+    cgid: u32,
+    mode: u16,
 }
 
 impl SharedMemInfo {

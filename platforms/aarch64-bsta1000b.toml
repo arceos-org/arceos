@@ -48,3 +48,4 @@ A1000BASE_AONCFG = "0x70038000"
 
 # PSCI
 psci-method = "smc"
+

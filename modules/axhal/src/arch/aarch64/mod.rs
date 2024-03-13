@@ -15,14 +15,6 @@ pub use self::context::{FpState, TaskContext, TrapFrame};
 #[cfg(feature = "monolithic")]
 mod mem_fault;
 
-extern "C" {
-    fn __copy(frame_address: *mut TrapFrame, kernel_base: usize);
-}
-
-pub unsafe fn copy_trap_frame(frame_address: *mut TrapFrame, kernel_base: usize) {
-    __copy(frame_address, kernel_base)
-}
-
 /// Allows the current CPU to respond to interrupts.
 #[inline]
 pub fn enable_irqs() {
@@ -149,3 +141,6 @@ pub fn read_thread_pointer() -> usize {
 pub unsafe fn write_thread_pointer(tpidr_el0: usize) {
     TPIDR_EL0.set(tpidr_el0 as _)
 }
+
+#[cfg(feature = "signal")]
+core::arch::global_asm!(include_str!("signal.S"));

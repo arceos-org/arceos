@@ -139,7 +139,7 @@ pub(crate) fn default_free_regions() -> impl Iterator<Item = MemRegion> {
     })
 }
 
-/// Return the extend free memory regions to prepare for the OSCOMP
+/// Return the extend free memory regions to prepare for the monolithic_userboot
 ///
 /// extend to [0xffff_ffc0_a000_0000, 0xffff_ffc0_f000_0000)
 #[allow(dead_code)]

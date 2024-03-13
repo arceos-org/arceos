@@ -29,11 +29,13 @@ impl InterruptCounter {
 }
 
 lazy_static! {
+    /// To record the interrupt count
     pub static ref INTERRUPT: Mutex<InterruptCounter> =
         Mutex::new(InterruptCounter(BTreeMap::default()));
 }
 
 #[derive(Default)]
+/// The file node in the RAM filesystem, which records the interrupt count.
 pub struct Interrupts;
 
 impl VfsNodeOps for Interrupts {

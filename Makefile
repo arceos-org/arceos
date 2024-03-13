@@ -36,12 +36,14 @@ LOG ?= off
 V ?=
 
 # App options
-A ?= apps/helloworld
+A ?= apps/monolithic_userboot
 APP ?= $(A)
 FEATURES ?=
 APP_FEATURES ?=
 RUSTFLAGS ?=
 STRUCT ?= Unikernel
+
+override FEATURES += fp_simd
 
 # QEMU options
 BLK ?= y
@@ -71,11 +73,6 @@ else
   APP_TYPE := c
 endif
 
-ifeq ($(STRUCT), Monolithic)
-  APP := apps/oscomp
-  APP_TYPE := rust
-endif
-
 # Architecture, platform and target
 ifneq ($(filter $(MAKECMDGOALS),unittest unittest_no_fail_fast),)
   PLATFORM_NAME :=
@@ -103,7 +100,8 @@ endif
 
 ifeq ($(ARCH), x86_64)
   # Don't enable kvm for WSL/WSL2.
-  ACCEL ?= $(if $(findstring -microsoft, $(shell uname -r | tr '[:upper:]' '[:lower:]')),n,y)
+  # ACCEL ?= $(if $(findstring -microsoft, $(shell uname -r | tr '[:upper:]' '[:lower:]')),n,y)
+  ACCEL ?= n # TODO: 开启 kvm 会导致一些异常，以后再去追踪
   PLATFORM_NAME ?= x86_64-qemu-q35
   TARGET := x86_64-unknown-none
   BUS := pci
@@ -179,7 +177,7 @@ debug: build
 	sleep 1
 	$(GDB) $(OUT_ELF) \
 	  -ex 'target remote localhost:1234' \
-	  -ex 'b rust_entry' \
+	  -ex 'b rust_main' \
 	  -ex 'continue' \
 	  -ex 'disp /16i $$pc'
 

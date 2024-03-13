@@ -10,4 +10,9 @@ impl axhal::trap::TrapHandler for TrapHandlerImpl {
             drop(guard); // rescheduling may occur when preemption is re-enabled.
         }
     }
+
+    #[cfg(feature = "signal")]
+    fn handle_signal() {
+        unimplemented();
+    }
 }

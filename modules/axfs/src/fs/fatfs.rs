@@ -8,7 +8,7 @@ use fatfs::{Dir, File, LossyOemCpConverter, NullTimeProvider, Read, Seek, SeekFr
 
 use crate::dev::Disk;
 
-const BLOCK_SIZE: usize = 512;
+pub const BLOCK_SIZE: usize = 512;
 
 pub struct FatFileSystem {
     inner: fatfs::FileSystem<Disk, NullTimeProvider, LossyOemCpConverter>,
@@ -232,7 +232,7 @@ impl VfsNodeOps for DirWrapper<'static> {
             "rename at fatfs, src_path: {}, dst_path: {}",
             src_path, dst_path
         );
-
+        let dst_path = dst_path.trim_matches('/');
         self.0
             .rename(src_path, &self.0, dst_path)
             .map_err(as_vfs_err)

@@ -36,36 +36,9 @@ enum TrapSource {
     LowerAArch32 = 3,
 }
 
+#[allow(dead_code)]
 extern "C" {
     fn ret_to_first_user(sp: usize);
-}
-
-#[no_mangle]
-#[cfg(feature = "monolithic")]
-/// 手动进入用户态
-///
-/// 1. 将对应trap上下文压入内核栈
-/// 2. 返回用户态
-///
-/// args：
-///
-/// 1. kernel_sp：内核栈顶
-///
-/// 2. frame_base：对应即将压入内核栈的trap上下文的地址
-pub fn first_into_user(kernel_sp: usize, frame_base: usize) -> ! {
-    let trap_frame_size = core::mem::size_of::<TrapFrame>();
-    let kernel_base = kernel_sp - trap_frame_size;
-    warn!("frame_base sp {:#x} kernel_sp{:#x}", frame_base, kernel_sp);
-    // 在保证将寄存器都存储好之后，再开启中断
-    disable_irqs();
-    crate::arch::flush_tlb(None);
-    crate::arch::flush_icache_all();
-    //crate::arch::flush_dcache_all();
-    assert_eq!(kernel_base, frame_base);
-    unsafe {
-        ret_to_first_user(kernel_base);
-    };
-    core::panic!("already in user mode!")
 }
 
 #[no_mangle]
@@ -152,17 +125,19 @@ fn handle_el0t_64_sync_exception(tf: &mut TrapFrame) {
 
     match esr.read_as_enum(ESR_EL1::EC) {
         Some(ESR_EL1::EC::Value::SVC64) => {
-            warn!("task: {:p} into svc {}", crate::cpu::current_task_ptr::<u8>(), tf.r[8]);
+            info!(
+                "task: {:p} into svc {}",
+                crate::cpu::current_task_ptr::<u8>(),
+                tf.r[8]
+            );
             enable_irqs();
             let result = handle_syscall(
                 tf.r[8],
-                [
-                    tf.r[0], tf.r[1], tf.r[2], tf.r[3], tf.r[4], tf.r[5],
-                ],
+                [tf.r[0], tf.r[1], tf.r[2], tf.r[3], tf.r[4], tf.r[5]],
             );
             tf.r[0] = result as usize;
         }
-        Some(ESR_EL1::EC::Value::DataAbortLowerEL) =>  {
+        Some(ESR_EL1::EC::Value::DataAbortLowerEL) => {
             let far = FAR_EL1.get() as usize;
             enable_irqs();
             super::mem_fault::el0_da(far, esr.get(), tf);
@@ -236,4 +211,32 @@ fn handle_el0t_32_fiq_exception(tf: &TrapFrame) {
 #[no_mangle]
 fn handle_el0t_32_error_exception(tf: &TrapFrame) {
     invalid_exception(tf, TrapKind::SError, TrapSource::LowerAArch32);
+}
+
+#[no_mangle]
+#[cfg(feature = "monolithic")]
+/// To handle the first time into the user space
+///
+/// 1. push the given trap frame into the kernel stack
+/// 2. go into the user space
+///
+/// args:
+///
+/// 1. kernel_sp: the top of the kernel stack
+///
+/// 2. frame_base: the address of the trap frame which will be pushed into the kernel stack
+pub fn first_into_user(kernel_sp: usize, frame_base: usize) -> ! {
+    let trap_frame_size = core::mem::size_of::<TrapFrame>();
+    let kernel_base = kernel_sp - trap_frame_size;
+    info!("frame_base sp {:#x} kernel_sp{:#x}", frame_base, kernel_sp);
+    // 在保证将寄存器都存储好之后，再开启中断
+    disable_irqs();
+    crate::arch::flush_tlb(None);
+    crate::arch::flush_icache_all();
+    //crate::arch::flush_dcache_all();
+    assert_eq!(kernel_base, frame_base);
+    unsafe {
+        ret_to_first_user(kernel_base);
+    };
+    core::panic!("already in user mode!")
 }

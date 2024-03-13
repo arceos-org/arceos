@@ -15,10 +15,13 @@ use crate::MemBackend;
 /// NOTE: Cloning a `MapArea` needs allocating new phys pages and modifying a page table. So
 /// `Clone` trait won't implemented.
 pub struct MapArea {
+    /// phys pages of this area
     pub pages: Vec<Option<PhysPage>>,
-    /// 起始虚拟地址
+    /// start virtual address
     pub vaddr: VirtAddr,
+    /// mapping flags of this area
     pub flags: MappingFlags,
+    /// whether the area is backed by a file
     pub backend: Option<MemBackend>,
 }
 
@@ -31,13 +34,12 @@ impl MapArea {
         backend: Option<MemBackend>,
         page_table: &mut PageTable,
     ) -> Self {
-
         let mut pages = Vec::with_capacity(num_pages);
         for _ in 0..num_pages {
             pages.push(None);
         }
 
-        let _ = page_table
+        page_table
             .map_fault_region(start, num_pages * PAGE_SIZE_4K, flags)
             .unwrap();
 
@@ -59,13 +61,14 @@ impl MapArea {
         page_table: &mut PageTable,
     ) -> AxResult<Self> {
         let pages = PhysPage::alloc_contiguous(num_pages, PAGE_SIZE_4K, data)?;
-        info!(
-            "start: {:X?}, size: {:X},  page start: {:X?}",
+        debug!(
+            "start: {:X?}, size: {:X},  page start: {:X?} flags: {:?}",
             start,
             num_pages * PAGE_SIZE_4K,
-            pages[0].as_ref().unwrap().start_vaddr
+            pages[0].as_ref().unwrap().start_vaddr,
+            flags
         );
-        let _ = page_table
+        page_table
             .map_region(
                 start,
                 virt_to_phys(pages[0].as_ref().unwrap().start_vaddr),
@@ -82,10 +85,12 @@ impl MapArea {
         })
     }
 
+    /// Deallocate all phys pages and unmap the area in page table.
     pub fn dealloc(&mut self, page_table: &mut PageTable) {
         page_table.unmap_region(self.vaddr, self.size()).unwrap();
         self.pages.clear();
     }
+
     /// 如果处理失败，返回false，此时直接退出当前程序
     pub fn handle_page_fault(
         &mut self,
@@ -202,7 +207,7 @@ impl MapArea {
         drop(self.pages.drain(0..delete_pages));
 
         // unmap deleted pages
-        let _ = page_table.unmap_region(self.vaddr, delete_size).unwrap();
+        page_table.unmap_region(self.vaddr, delete_size).unwrap();
 
         self.vaddr = new_start;
     }
@@ -222,7 +227,7 @@ impl MapArea {
         );
 
         // unmap deleted pages
-        let _ = page_table.unmap_region(new_end, delete_size).unwrap();
+        page_table.unmap_region(new_end, delete_size).unwrap();
     }
 
     /// Split this area into 2.
@@ -358,25 +363,30 @@ impl MapArea {
         // remove pages
         let _ = self.pages.drain(delete_range);
 
-        let _ = page_table.unmap_region(left_end, delete_size).unwrap();
+        page_table.unmap_region(left_end, delete_size).unwrap();
 
         right_area
     }
 }
 
 impl MapArea {
+    /// return the size of the area, which thinks the page size is default 4K.
     pub fn size(&self) -> usize {
         self.pages.len() * PAGE_SIZE_4K
     }
 
+    /// return the end virtual address of the area.
     pub fn end_va(&self) -> VirtAddr {
         self.vaddr + self.size()
     }
 
+    /// return whether all the pages have been allocated.
     pub fn allocated(&self) -> bool {
         self.pages.iter().all(|page| page.is_some())
     }
-
+    /// # Safety
+    /// This function is unsafe because it dereferences a raw pointer.
+    /// It will return a slice of the area's memory, whose len is the same as the area's size.
     pub unsafe fn as_slice(&self) -> &[u8] {
         unsafe { core::slice::from_raw_parts(self.vaddr.as_ptr(), self.size()) }
     }
@@ -395,14 +405,17 @@ impl MapArea {
         self.vaddr <= start && start < self.end_va() || start <= self.vaddr && self.vaddr < end
     }
 
+    /// If [start, end] contains self.
     pub fn contained_in(&self, start: VirtAddr, end: VirtAddr) -> bool {
         start <= self.vaddr && self.end_va() <= end
     }
 
+    /// If self contains [start, end].
     pub fn contains(&self, start: VirtAddr, end: VirtAddr) -> bool {
         self.vaddr <= start && end <= self.end_va()
     }
 
+    /// If self strictly contains [start, end], which stands for the start and end are not equal to self's.
     pub fn strict_contain(&self, start: VirtAddr, end: VirtAddr) -> bool {
         self.vaddr < start && end < self.end_va()
     }
@@ -411,21 +424,20 @@ impl MapArea {
     /// this function.
     pub fn update_flags(&mut self, flags: MappingFlags, page_table: &mut PageTable) {
         self.flags = flags;
-        let _ = page_table
+        page_table
             .update_region(self.vaddr, self.size(), flags)
             .unwrap();
     }
-
     /// Allocating new phys pages and clone it self.
     /// This function will modify the page table as well.
-    pub unsafe fn clone_alloc(&self, page_table: &mut PageTable) -> AxResult<Self> {
+    pub fn clone_alloc(&self, page_table: &mut PageTable) -> AxResult<Self> {
         // All the pages have been allocated. Allocate a contiguous area in phys memory.
         if self.allocated() {
             MapArea::new_alloc(
                 self.vaddr,
                 self.pages.len(),
                 self.flags,
-                Some(self.as_slice()),
+                Some(unsafe { self.as_slice() }),
                 self.backend.clone(),
                 page_table,
             )
@@ -447,7 +459,7 @@ impl MapArea {
                                 );
                             }
 
-                            let _ = page_table
+                            page_table
                                 .map(
                                     vaddr,
                                     virt_to_phys(new_page.start_vaddr),
@@ -459,7 +471,9 @@ impl MapArea {
                             Some(new_page)
                         }
                         None => {
-                            let _ = page_table.map_fault(vaddr, PageSize::Size4K, self.flags).unwrap();
+                            page_table
+                                .map_fault(vaddr, PageSize::Size4K, self.flags)
+                                .unwrap();
                             None
                         }
                     }

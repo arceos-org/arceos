@@ -35,3 +35,10 @@ pub(super) fn init_primary() {
 pub(super) fn init_secondary() {
     init_percpu();
 }
+
+/// set tss stack top
+pub fn set_tss_stack_top(kernel_stack_top: memory_addr::VirtAddr) {
+    TSS.with_current(|tss| {
+        tss.privilege_stack_table[0] = x86_64::VirtAddr::new(kernel_stack_top.as_usize() as u64);
+    })
+}

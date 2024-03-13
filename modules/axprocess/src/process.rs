@@ -8,6 +8,7 @@ use axerrno::{AxError, AxResult};
 use axfs::api::{FileIO, OpenFlags};
 use axhal::arch::{write_page_table_root0, TrapFrame};
 use axhal::mem::{phys_to_virt, VirtAddr};
+
 use axhal::KERNEL_PROCESS_ID;
 use axlog::{debug, error};
 use axmem::MemorySet;
@@ -18,13 +19,24 @@ use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, Ordering};
 use crate::fd_manager::FdManager;
 use crate::flags::CloneFlags;
 use crate::futex::FutexRobustList;
-use crate::load_app;
 #[cfg(feature = "signal")]
 use crate::signal::SignalModule;
 use crate::stdio::{Stderr, Stdin, Stdout};
+use crate::{load_app, yield_now_task};
+
+/// Map from task id to arc pointer of task
 pub static TID2TASK: Mutex<BTreeMap<u64, AxTaskRef>> = Mutex::new(BTreeMap::new());
+
+/// Map from process id to arc pointer of process
 pub static PID2PC: Mutex<BTreeMap<u64, Arc<Process>>> = Mutex::new(BTreeMap::new());
 const FD_LIMIT_ORIGIN: usize = 1025;
+
+#[cfg(feature = "signal")]
+extern "C" {
+    fn start_signal_trampoline();
+}
+
+/// The process control block
 pub struct Process {
     /// 进程号
     pid: u64,
@@ -65,51 +77,84 @@ pub struct Process {
     /// 用来存储线程对共享变量的使用地址
     /// 具体使用交给了用户空间
     pub robust_list: Mutex<BTreeMap<u64, FutexRobustList>>,
+
+    /// 是否被vfork阻塞
+    pub blocked_by_vfork: Mutex<bool>,
+
+    /// 该进程可执行文件所在的路径
+    pub file_path: Mutex<String>,
 }
 
 impl Process {
+    /// get the process id
     pub fn pid(&self) -> u64 {
         self.pid
     }
 
+    /// get the parent process id
     pub fn get_parent(&self) -> u64 {
         self.parent.load(Ordering::Acquire)
     }
 
+    /// set the parent process id
     pub fn set_parent(&self, parent: u64) {
         self.parent.store(parent, Ordering::Release)
     }
 
+    /// get the exit code of the process
     pub fn get_exit_code(&self) -> i32 {
         self.exit_code.load(Ordering::Acquire)
     }
 
+    /// set the exit code of the process
     pub fn set_exit_code(&self, exit_code: i32) {
         self.exit_code.store(exit_code, Ordering::Release)
     }
 
+    /// whether the process is a zombie process
     pub fn get_zombie(&self) -> bool {
         self.is_zombie.load(Ordering::Acquire)
     }
 
+    /// set the process as a zombie process
     pub fn set_zombie(&self, status: bool) {
         self.is_zombie.store(status, Ordering::Release)
     }
 
+    /// get the heap top of the process
     pub fn get_heap_top(&self) -> u64 {
         self.heap_top.load(Ordering::Acquire)
     }
 
+    /// set the heap top of the process
     pub fn set_heap_top(&self, top: u64) {
         self.heap_top.store(top, Ordering::Release)
     }
 
+    /// get the heap bottom of the process
     pub fn get_heap_bottom(&self) -> u64 {
         self.heap_bottom.load(Ordering::Acquire)
     }
 
+    /// set the heap bottom of the process
     pub fn set_heap_bottom(&self, bottom: u64) {
         self.heap_bottom.store(bottom, Ordering::Release)
+    }
+
+    /// set the process as blocked by vfork
+    pub fn set_vfork_block(&self, value: bool) {
+        *self.blocked_by_vfork.lock() = value;
+    }
+
+    /// set the executable file path of the process
+    pub fn set_file_path(&self, path: String) {
+        let mut file_path = self.file_path.lock();
+        *file_path = path;
+    }
+
+    /// get the executable file path of the process
+    pub fn get_file_path(&self) -> String {
+        (*self.file_path.lock()).clone()
     }
 
     /// 若进程运行完成，则获取其返回码
@@ -123,6 +168,7 @@ impl Process {
 }
 
 impl Process {
+    /// 创建一个新的进程
     pub fn new(
         pid: u64,
         parent: u64,
@@ -144,12 +190,30 @@ impl Process {
             #[cfg(feature = "signal")]
             signal_modules: Mutex::new(BTreeMap::new()),
             robust_list: Mutex::new(BTreeMap::new()),
+            blocked_by_vfork: Mutex::new(false),
+            file_path: Mutex::new(String::new()),
         }
     }
     /// 根据给定参数创建一个新的进程，作为应用程序初始进程
-    pub fn init(args: Vec<String>) -> AxResult<AxTaskRef> {
+    pub fn init(args: Vec<String>, envs: &Vec<String>) -> AxResult<AxTaskRef> {
         let path = args[0].clone();
         let mut memory_set = MemorySet::new_with_kernel_mapped();
+        #[cfg(feature = "signal")]
+        {
+            use axhal::mem::virt_to_phys;
+            use axhal::paging::MappingFlags;
+            // 生成信号跳板
+            let signal_trampoline_vaddr: VirtAddr = (axconfig::SIGNAL_TRAMPOLINE).into();
+            let signal_trampoline_paddr = virt_to_phys((start_signal_trampoline as usize).into());
+            memory_set.map_page_without_alloc(
+                signal_trampoline_vaddr,
+                signal_trampoline_paddr,
+                MappingFlags::READ
+                    | MappingFlags::EXECUTE
+                    | MappingFlags::USER
+                    | MappingFlags::WRITE,
+            )?;
+        }
         let page_table_token = memory_set.page_table_token();
         if page_table_token != 0 {
             unsafe {
@@ -158,18 +222,7 @@ impl Process {
                 riscv::register::sstatus::set_sum();
             };
         }
-        // 运行gcc程序时需要预先加载的环境变量
-        let envs:Vec<String> = vec![
-            "SHLVL=1".into(),
-            "PATH=/usr/sbin:/usr/bin:/sbin:/bin".into(),
-            "PWD=/".into(),
-            "GCC_EXEC_PREFIX=/riscv64-linux-musl-native/bin/../lib/gcc/".into(),
-            "COLLECT_GCC=./riscv64-linux-musl-native/bin/riscv64-linux-musl-gcc".into(),
-            "COLLECT_LTO_WRAPPER=/riscv64-linux-musl-native/bin/../libexec/gcc/riscv64-linux-musl/11.2.1/lto-wrapper".into(),
-            "COLLECT_GCC_OPTIONS='-march=rv64gc' '-mabi=lp64d' '-march=rv64imafdc' '-dumpdir' 'a.'".into(),
-            "LIBRARY_PATH=/lib/".into(),
-            "LD_LIBRARY_PATH=/lib/".into(),
-        ];
+
         let (entry, user_stack_bottom, heap_bottom) =
             if let Ok(ans) = load_app(path.clone(), args, envs, &mut memory_set) {
                 ans
@@ -242,11 +295,40 @@ impl Process {
     }
 }
 
+struct VforkHandler;
+
+use axtask::{VforkCheck, VforkSet};
+
+#[crate_interface::impl_interface]
+impl VforkCheck for VforkHandler {
+    fn check_vfork(&self, process_id: u64) -> bool {
+        let pid2pc = PID2PC.lock();
+        match pid2pc.get(&process_id) {
+            Some(process) => *process.blocked_by_vfork.lock(),
+            None => panic!("the process_id {} will be checked nonexists", process_id),
+        }
+    }
+}
+
+#[crate_interface::impl_interface]
+impl VforkSet for VforkHandler {
+    /// set parent process's vfork to false
+    fn vfork_set(&self, process_id: u64, status: bool) {
+        let pid2pc = PID2PC.lock();
+        // 如果 process_id 对应的进程存在，则设置阻塞状态
+        if let Some(process) = pid2pc.get(&process_id) {
+            process.set_vfork_block(status)
+        }
+    }
+}
+
 impl Process {
     /// 将当前进程替换为指定的用户程序
     /// args为传入的参数
     /// 任务的统计时间会被重置
-    pub fn exec(&self, name: String, args: Vec<String>, envs: Vec<String>) -> AxResult<()> {
+    pub fn exec(&self, name: String, args: Vec<String>, envs: &Vec<String>) -> AxResult<()> {
+        let parent_pid = self.get_parent();
+        VforkHandler.vfork_set(parent_pid, false);
         // 首先要处理原先进程的资源
         // 处理分配的页帧
         // 之后加入额外的东西之后再处理其他的包括信号等因素
@@ -263,6 +345,12 @@ impl Process {
         for _ in 0..tasks.len() {
             let task = tasks.pop().unwrap();
             if task.id() == current_task.id() {
+                // FIXME: This will reset tls forcefully
+                #[cfg(target_arch = "x86_64")]
+                unsafe {
+                    task.set_tls_force(0);
+                    axhal::arch::write_thread_pointer(0);
+                }
                 tasks.push(task);
             } else {
                 TID2TASK.lock().remove(&task.id().as_u64());
@@ -273,9 +361,10 @@ impl Process {
         current_task.set_leader(true);
         // 重置统计时间
         current_task.time_stat_clear();
+        current_task.set_name(name.split('/').last().unwrap());
         assert!(tasks.len() == 1);
         drop(tasks);
-        let args = if args.len() == 0 {
+        let args = if args.is_empty() {
             vec![name.clone()]
         } else {
             args
@@ -310,12 +399,30 @@ impl Process {
 
         #[cfg(feature = "signal")]
         {
+            use axhal::mem::virt_to_phys;
+            use axhal::paging::MappingFlags;
             // 重置信号处理模块
             // 此时只会留下一个线程
             self.signal_modules.lock().clear();
             self.signal_modules
                 .lock()
                 .insert(current_task.id().as_u64(), SignalModule::init_signal(None));
+
+            // 生成信号跳板
+            let signal_trampoline_vaddr: VirtAddr = (axconfig::SIGNAL_TRAMPOLINE).into();
+            let signal_trampoline_paddr = virt_to_phys((start_signal_trampoline as usize).into());
+            let mut memory_set = self.memory_set.lock();
+            if memory_set.query(signal_trampoline_vaddr).is_err() {
+                let _ = memory_set.map_page_without_alloc(
+                    signal_trampoline_vaddr,
+                    signal_trampoline_paddr,
+                    MappingFlags::READ
+                        | MappingFlags::EXECUTE
+                        | MappingFlags::USER
+                        | MappingFlags::WRITE,
+                );
+            }
+            drop(memory_set);
         }
 
         // user_stack_top = user_stack_top / PAGE_SIZE_4K * PAGE_SIZE_4K;
@@ -341,12 +448,31 @@ impl Process {
         //     // 任务过多，手动特判结束，用来作为QEMU内存不足的应对方法
         //     return Err(AxError::NoMemory);
         // }
-
         // 是否共享虚拟地址空间
         let new_memory_set = if flags.contains(CloneFlags::CLONE_VM) {
             Arc::clone(&self.memory_set)
         } else {
-            Arc::new(Mutex::new(MemorySet::clone(&self.memory_set.lock())?))
+            let memory_set = Arc::new(Mutex::new(MemorySet::clone_or_err(
+                &self.memory_set.lock(),
+            )?));
+            #[cfg(feature = "signal")]
+            {
+                use axhal::mem::virt_to_phys;
+                use axhal::paging::MappingFlags;
+                // 生成信号跳板
+                let signal_trampoline_vaddr: VirtAddr = (axconfig::SIGNAL_TRAMPOLINE).into();
+                let signal_trampoline_paddr =
+                    virt_to_phys((start_signal_trampoline as usize).into());
+                memory_set.lock().map_page_without_alloc(
+                    signal_trampoline_vaddr,
+                    signal_trampoline_paddr,
+                    MappingFlags::READ
+                        | MappingFlags::EXECUTE
+                        | MappingFlags::USER
+                        | MappingFlags::WRITE,
+                )?;
+            }
+            memory_set
         };
 
         // 在生成新的进程前，需要决定其所属进程是谁
@@ -368,13 +494,19 @@ impl Process {
         };
         let new_task = TaskInner::new(
             || {},
-            String::new(),
+            String::from(self.tasks.lock()[0].name().split('/').last().unwrap()),
             axconfig::TASK_STACK_SIZE,
             process_id,
             new_memory_set.lock().page_table_token(),
             #[cfg(feature = "signal")]
             sig_child,
         );
+        #[cfg(target_arch = "x86_64")]
+        if tls == 0 {
+            unsafe {
+                new_task.set_tls_force(axhal::arch::read_thread_pointer());
+            }
+        }
         debug!("new task:{}", new_task.id().as_u64());
         TID2TASK
             .lock()
@@ -401,11 +533,11 @@ impl Process {
             // info!("curr_id: {:X}", (&curr_id as *const _ as usize));
         };
         // 检查是否在父任务中写入当前新任务的tid
-        if flags.contains(CloneFlags::CLONE_PARENT_SETTID) {
-            if self.manual_alloc_for_lazy(ptid.into()).is_ok() {
-                unsafe {
-                    *(ptid as *mut i32) = new_task.id().as_u64() as i32;
-                }
+        if flags.contains(CloneFlags::CLONE_PARENT_SETTID)
+            & self.manual_alloc_for_lazy(ptid.into()).is_ok()
+        {
+            unsafe {
+                *(ptid as *mut i32) = new_task.id().as_u64() as i32;
             }
         }
         // 若包含CLONE_CHILD_SETTID或者CLONE_CHILD_CLEARTID
@@ -518,12 +650,17 @@ impl Process {
         }
         let current_task = current();
         // 复制原有的trap上下文
-        let mut trap_frame = unsafe { *(current_task.get_first_trap_frame()) }.clone();
-        drop(current_task);
+        let mut trap_frame = unsafe { *(current_task.get_first_trap_frame()) };
+        // drop(current_task);
         // 新开的进程/线程返回值为0
         trap_frame.set_ret_code(0);
         if flags.contains(CloneFlags::CLONE_SETTLS) {
+            #[cfg(not(target_arch = "x86_64"))]
             trap_frame.set_tls(tls);
+            #[cfg(target_arch = "x86_64")]
+            unsafe {
+                new_task.set_tls_force(tls);
+            }
         }
 
         // 设置用户栈
@@ -540,22 +677,30 @@ impl Process {
         new_task.set_trap_context(trap_frame);
         new_task.set_trap_in_kernel_stack();
         RUN_QUEUE.lock().add_task(new_task);
+        // 判断是否为VFORK
+        if flags.contains(CloneFlags::CLONE_VFORK) {
+            self.set_vfork_block(true);
+            yield_now_task();
+        }
         Ok(return_id)
     }
 }
 
 /// 与地址空间相关的进程方法
 impl Process {
+    /// alloc physical memory for lazy allocation manually
     pub fn manual_alloc_for_lazy(&self, addr: VirtAddr) -> AxResult<()> {
         self.memory_set.lock().manual_alloc_for_lazy(addr)
     }
 
+    /// alloc range physical memory for lazy allocation manually
     pub fn manual_alloc_range_for_lazy(&self, start: VirtAddr, end: VirtAddr) -> AxResult<()> {
         self.memory_set
             .lock()
             .manual_alloc_range_for_lazy(start, end)
     }
 
+    /// alloc physical memory with the given type size for lazy allocation manually
     pub fn manual_alloc_type_for_lazy<T: Sized>(&self, obj: *const T) -> AxResult<()> {
         self.memory_set.lock().manual_alloc_type_for_lazy(obj)
     }
@@ -563,6 +708,7 @@ impl Process {
 
 /// 与文件相关的进程方法
 impl Process {
+    /// 为进程分配一个文件描述符
     pub fn alloc_fd(&self, fd_table: &mut Vec<Option<Arc<dyn FileIO>>>) -> AxResult<usize> {
         for (i, fd) in fd_table.iter().enumerate() {
             if fd.is_none() {
@@ -576,6 +722,8 @@ impl Process {
         fd_table.push(None);
         Ok(fd_table.len() - 1)
     }
+
+    /// 获取当前进程的工作目录
     pub fn get_cwd(&self) -> String {
         self.fd_manager.cwd.lock().clone()
     }

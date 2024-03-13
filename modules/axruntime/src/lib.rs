@@ -228,7 +228,6 @@ fn init_allocator() {
     }
     for r in memory_regions() {
         if r.flags.contains(MemRegionFlags::FREE) && r.paddr == max_region_paddr {
-            info!("alloc region size: {:X}", r.size);
             axalloc::global_init(phys_to_virt(r.paddr).as_usize(), r.size);
             break;
         }
@@ -245,7 +244,9 @@ cfg_if::cfg_if! {
     if #[cfg(feature = "paging")] {
         use axhal::paging::PageTable;
         use lazy_init::LazyInit;
+        /// The kernel page table.
         pub static KERNEL_PAGE_TABLE: LazyInit<PageTable> = LazyInit::new();
+
         fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
             use axhal::mem::{memory_regions, phys_to_virt};
             if axhal::cpu::this_cpu_is_bsp() {
@@ -269,7 +270,6 @@ cfg_if::cfg_if! {
                     extern "C" {
                         fn img_start();
                     }
-
                     // 此时qemu运行，文件镜像的位置需要由汇编确定
                     let img_start_addr:PhysAddr = axhal::mem::virt_to_phys((img_start as usize).into());
                     kernel_page_table.map_region(

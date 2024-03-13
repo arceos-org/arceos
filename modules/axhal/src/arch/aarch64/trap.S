@@ -172,23 +172,3 @@ ret_to_user:
 ret_to_first_user:
     mov sp, x0
     b ret_to_user
-
-.altmacro
-.macro COPY n
-    ldr x3, [x0, (\n)*8]
-    str x3, [x1, (\n)*8]
-.endm
-
-.section .text
-.globl __copy
-__copy:
-    # __copy(
-    #     frame_address: *const TrapFrame,
-    #     kernel_base: *mut T
-    # )
-    .set n, 0
-    .rept 35
-        COPY %n
-        .set n, n + 1
-    .endr
-    ret

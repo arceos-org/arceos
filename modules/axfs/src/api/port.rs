@@ -1,4 +1,4 @@
-/// 定义与文件I/O操作相关的trait泛型
+//! 定义与文件I/O操作相关的trait泛型
 extern crate alloc;
 use alloc::string::String;
 use axerrno::{AxError, AxResult};
@@ -7,28 +7,31 @@ use core::any::Any;
 use log::debug;
 
 /// 文件系统信息
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 #[repr(C)]
+#[cfg(target_arch = "x86_64")]
 pub struct Kstat {
     /// 设备
     pub st_dev: u64,
     /// inode 编号
     pub st_ino: u64,
+    /// 硬链接数
+    pub st_nlink: u64,
     /// 文件类型
     pub st_mode: u32,
-    /// 硬链接数
-    pub st_nlink: u32,
     /// 用户id
     pub st_uid: u32,
     /// 用户组id
     pub st_gid: u32,
+    /// padding
+    pub _pad0: u32,
     /// 设备号
     pub st_rdev: u64,
-    pub _pad0: u64,
     /// 文件大小
     pub st_size: u64,
     /// 块大小
     pub st_blksize: u32,
+    /// padding
     pub _pad1: u32,
     /// 块个数
     pub st_blocks: u64,
@@ -45,30 +48,46 @@ pub struct Kstat {
     /// 最后一次改变状态时间(纳秒)
     pub st_ctime_nsec: isize,
 }
-
-impl Default for Kstat {
-    fn default() -> Self {
-        Self {
-            st_dev: 0,
-            st_ino: 0,
-            st_mode: 0,
-            st_nlink: 0,
-            st_uid: 0,
-            st_gid: 0,
-            st_rdev: 0,
-            _pad0: 0,
-            st_size: 0,
-            st_blksize: 0,
-            _pad1: 0,
-            st_blocks: 0,
-            st_atime_sec: 0,
-            st_atime_nsec: 0,
-            st_mtime_sec: 0,
-            st_mtime_nsec: 0,
-            st_ctime_sec: 0,
-            st_ctime_nsec: 0,
-        }
-    }
+#[derive(Debug, Clone, Copy, Default)]
+#[repr(C)]
+#[cfg(not(target_arch = "x86_64"))]
+pub struct Kstat {
+    /// 设备
+    pub st_dev: u64,
+    /// inode 编号
+    pub st_ino: u64,
+    /// 文件类型
+    pub st_mode: u32,
+    /// 硬链接数
+    pub st_nlink: u32,
+    /// 用户id
+    pub st_uid: u32,
+    /// 用户组id
+    pub st_gid: u32,
+    /// 设备号
+    pub st_rdev: u64,
+    /// padding
+    pub _pad0: u64,
+    /// 文件大小
+    pub st_size: u64,
+    /// 块大小
+    pub st_blksize: u32,
+    /// padding
+    pub _pad1: u32,
+    /// 块个数
+    pub st_blocks: u64,
+    /// 最后一次访问时间(秒)
+    pub st_atime_sec: isize,
+    /// 最后一次访问时间(纳秒)
+    pub st_atime_nsec: isize,
+    /// 最后一次修改时间(秒)
+    pub st_mtime_sec: isize,
+    /// 最后一次修改时间(纳秒)
+    pub st_mtime_nsec: isize,
+    /// 最后一次改变状态时间(秒)
+    pub st_ctime_sec: isize,
+    /// 最后一次改变状态时间(纳秒)
+    pub st_ctime_nsec: isize,
 }
 
 use bitflags::*;
@@ -163,9 +182,11 @@ pub enum FileIOType {
     FileDesc,
     /// 目录
     DirDesc,
-    /// 标准输入输出错误流
+    /// 标准输入
     Stdin,
+    /// 标准输出
     Stdout,
+    /// 标准错误
     Stderr,
     /// 管道
     Pipe,
@@ -179,8 +200,13 @@ pub enum FileIOType {
 
 /// 用于给虚存空间进行懒分配
 pub trait FileExt: Read + Write + Seek + AsAny + Send + Sync {
+    /// whether the file is readable
     fn readable(&self) -> bool;
+
+    /// whether the file is writable
     fn writable(&self) -> bool;
+
+    /// whether the file is executable
     fn executable(&self) -> bool;
     /// Read from position without changing cursor.
     fn read_from_seek(&mut self, pos: SeekFrom, buf: &mut [u8]) -> AxResult<usize> {
@@ -234,6 +260,7 @@ pub trait FileIO: AsAny + Send + Sync {
         Err(AxError::Unsupported) // 如果没有实现, 则返回Unsupported
     }
 
+    /// 刷新操作
     fn flush(&self) -> AxResult<()> {
         Err(AxError::Unsupported) // 如果没有实现, 则返回Unsupported
     }
@@ -243,8 +270,13 @@ pub trait FileIO: AsAny + Send + Sync {
         Err(AxError::Unsupported) // 如果没有实现, 则返回Unsupported
     }
 
+    /// whether the file is readable
     fn readable(&self) -> bool;
+
+    /// whether the file is writable
     fn writable(&self) -> bool;
+
+    /// whether the file is executable
     fn executable(&self) -> bool;
 
     /// 获取类型
@@ -310,6 +342,7 @@ pub trait FileIO: AsAny + Send + Sync {
         false
     }
 
+    /// To control the file descriptor
     fn ioctl(&self, _request: usize, _arg1: usize) -> AxResult<()> {
         Err(AxError::Unsupported)
     }
@@ -319,7 +352,7 @@ pub trait FileIO: AsAny + Send + Sync {
 pub trait AsAny {
     /// 把当前对象转化为 `Any` 类型，供后续 downcast 使用
     fn as_any(&self) -> &dyn Any;
-    // 供 downcast_mut 使用
+    /// 供 downcast_mut 使用
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
@@ -364,15 +397,20 @@ impl From<usize> for AccessMode {
 }
 
 /// IOCTL系统调用支持
+#[allow(missing_docs)]
 pub const TCGETS: usize = 0x5401;
+#[allow(missing_docs)]
 pub const TIOCGPGRP: usize = 0x540F;
+#[allow(missing_docs)]
 pub const TIOCSPGRP: usize = 0x5410;
+#[allow(missing_docs)]
 pub const TIOCGWINSZ: usize = 0x5413;
 #[repr(C)]
 #[derive(Clone, Copy, Default)]
+/// the size of the console window
 pub struct ConsoleWinSize {
-    pub ws_row: u16,
-    pub ws_col: u16,
-    pub ws_xpixel: u16,
-    pub ws_ypixel: u16,
+    ws_row: u16,
+    ws_col: u16,
+    ws_xpixel: u16,
+    ws_ypixel: u16,
 }

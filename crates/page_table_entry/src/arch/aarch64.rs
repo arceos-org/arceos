@@ -204,8 +204,8 @@ impl GenericPTE for A64PTE {
 
     fn new_fault_page(flags: MappingFlags, _is_huge: bool) -> Self {
         let mut attr = DescriptorAttr::from(flags) | DescriptorAttr::AF;
-        attr &=  !DescriptorAttr::VALID;
-        Self(attr.bits() as u64)
+        attr &= !DescriptorAttr::VALID;
+        Self(attr.bits())
     }
 
     fn new_table(paddr: PhysAddr) -> Self {

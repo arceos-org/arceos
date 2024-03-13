@@ -293,6 +293,11 @@ impl UdpSocket {
         }
     }
 
+    /// To get the socket and call the given function.
+    ///
+    /// If the socket is not connected, it will return None.
+    ///
+    /// Or it will return the result of the given function.
     pub fn with_socket<R>(&self, f: impl FnOnce(&udp::Socket) -> R) -> R {
         SOCKET_SET.with_socket(self.handle, |s| f(s))
     }

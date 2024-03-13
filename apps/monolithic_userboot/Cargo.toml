@@ -1,0 +1,14 @@
+[package]
+name = "monolithic_userboot"
+version = "0.1.0"
+edition = "2021"
+authors = ["Youjie Zheng <zyj578335934@gmail.com>"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+# Use "APP_FEATURES=batch" to enable batch mode
+batch = []
+
+[dependencies]
+axstarry = { path = "../../ulib/axstarry" }

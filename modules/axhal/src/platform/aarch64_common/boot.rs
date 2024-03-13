@@ -1,7 +1,7 @@
-use aarch64_cpu::{asm, asm::barrier, registers::*};
-use tock_registers::interfaces::{ReadWriteable, Readable, Writeable};
 use crate::platform::mem::init_mmu;
+use aarch64_cpu::{asm, asm::barrier, registers::*};
 use axconfig::TASK_STACK_SIZE;
+use tock_registers::interfaces::{ReadWriteable, Readable, Writeable};
 
 #[link_section = ".bss.stack"]
 static mut BOOT_STACK: [u8; TASK_STACK_SIZE] = [0; TASK_STACK_SIZE];

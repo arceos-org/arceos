@@ -35,6 +35,7 @@
 extern crate log;
 
 #[cfg(feature = "monolithic")]
+/// The kernel process ID, which is always 1.
 pub const KERNEL_PROCESS_ID: u64 = 1;
 
 mod platform;
@@ -79,6 +80,9 @@ pub mod mp {
 
 pub use self::platform::platform_init;
 pub use self::platform::platform_name;
+
+#[cfg(target_arch = "x86_64")]
+pub use self::platform::set_tss_stack_top;
 
 #[cfg(feature = "smp")]
 pub use self::platform::platform_init_secondary;

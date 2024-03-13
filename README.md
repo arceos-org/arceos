@@ -14,17 +14,51 @@
 
 ## Usage
 
+通过修改 `apps/monolithic_userboot/src/batch.rs` 中的 `SDCARD_TESTCASES` 常量，并且在启动时加入编译参数`APP_FEATURES=batch`，可以选择让内核启动后以批处理形式运行给定程序。
+
+如果未添加 `APP_FEATURES=batch` 参数，内核将以交互式的形式运行，默认开机之后直接进入`busybox sh`终端。
+
+### x86_64
+
 ```shell
 # 构建镜像
-./build_img.sh sdcard
+# 默认构建x86_64架构的fat32磁盘镜像
+./build_img.sh
+
+# 或构建ext4格式的磁盘文件
+# ./build_img.sh x86_64 ext4
+
+# 运行宏内核
+make run
+
+# 或运行ext4文件系统的宏内核
+# make run FEATURES=ext4fs
+
+# 显式指定参数并运行（实际上这些参数已在根目录 Makefile 中给出）
+# make A=apps//build_img.sh sdcard AARCH=x86_64 FEATURES=fp_simd run
+
+```
+
+如果 `./build_x86.sh` 卡住，可以[手动下载](https://github.com/oscomp/testsuits-for-oskernel/releases/download/final-x86_64/testsuits-x86_64-linux-musl.tgz)测例文件，然后把其中的 `wget` 一行注释掉并再次执行。
+
+
+### RISC-V
+
+```shell
+# 构建镜像
+./build_img.sh riscv
+
 # 运行 Unikernel 架构内核
 make run
 
 # 以宏内核形式启动(当前仅支持 riscv 架构)
-make A=apps/oscomp ARCH=riscv64 run
+make A=apps/monolithic_userboot ARCH=riscv64 run
 
-# 使用 ramdisk 加载测例并且运行内核，可以显著提高文件 IO 速度
-make A=apps/oscomp ARCH=riscv64 FEATURES=img run
+# 使用 ramdisk 加载文件镜像并且运行内核，可以显著提高文件 IO 速度
+make A=apps/monolithic_userboot ARCH=riscv64 FEATURES=img run
+
+# 使用批处理模式启动宏内核并且运行给定测例
+make A=apps/monolithic_userboot ARCH=riscv64 APP_FEATURES=batch run
 
 ```
 
@@ -138,3 +172,5 @@ $ ./build_img.sh gcc
 内核文档存放在`doc/Starry决赛设计文档.pdf`。
 
 另外，可以通过静态部署网页[Starry (azure-stars.github.io)](https://azure-stars.github.io/Starry/)查看更好排版的文档。
+
+[关于ZLMediaKit 的支持文档](./doc/ZLMediaKit/README.md)

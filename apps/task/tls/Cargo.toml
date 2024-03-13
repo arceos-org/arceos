@@ -8,3 +8,4 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 
 [dependencies]
 axstd = { path = "../../../ulib/axstd", features = ["tls", "alloc", "multitask"], optional = true }
+axhal = { path = "../../../modules/axhal", features = ["tls"] }

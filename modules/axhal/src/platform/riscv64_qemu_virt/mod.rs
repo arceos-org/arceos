@@ -49,6 +49,7 @@ pub fn platform_init_secondary() {
     self::time::init_percpu();
 }
 
+/// Returns the name of the platform.
 pub fn platform_name() -> &'static str {
     "riscv64_qemu_virt"
 }

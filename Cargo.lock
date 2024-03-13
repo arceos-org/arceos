@@ -155,6 +155,7 @@ dependencies = [
 name = "arceos-tls"
 version = "0.1.0"
 dependencies = [
+ "axhal",
  "axstd",
 ]
 
@@ -206,7 +207,7 @@ dependencies = [
  "axruntime",
  "axsync",
  "axtask",
- "bindgen",
+ "bindgen 0.66.1",
  "flatten_objects",
  "lazy_static",
  "spin 0.9.8",
@@ -335,6 +336,7 @@ dependencies = [
  "fatfs",
  "lazy_init",
  "log",
+ "lwext4_rust",
 ]
 
 [[package]]
@@ -419,7 +421,7 @@ dependencies = [
  "axerrno",
  "axfeat",
  "axio",
- "bindgen",
+ "bindgen 0.66.1",
 ]
 
 [[package]]
@@ -444,6 +446,7 @@ dependencies = [
  "axfs",
  "axhal",
  "axio",
+ "elf_parser",
  "log",
  "page_table_entry",
  "riscv",
@@ -487,6 +490,7 @@ dependencies = [
  "bitflags 2.4.0",
  "cfg-if",
  "crate_interface",
+ "elf_parser",
  "lazy_static",
  "riscv",
  "spinlock",
@@ -521,7 +525,38 @@ version = "0.1.0"
 dependencies = [
  "axhal",
  "bitflags 2.4.0",
+ "cfg-if",
  "numeric-enum-macro",
+]
+
+[[package]]
+name = "axstarry"
+version = "0.1.0"
+dependencies = [
+ "arceos_api",
+ "axconfig",
+ "axerrno",
+ "axfeat",
+ "axfs",
+ "axhal",
+ "axlibc",
+ "axlog",
+ "axmem",
+ "axnet",
+ "axprocess",
+ "axruntime",
+ "axsignal",
+ "axsync",
+ "axtask",
+ "bitflags 2.4.0",
+ "cfg-if",
+ "crate_interface",
+ "kernel_guard",
+ "lazy_init",
+ "num_enum",
+ "numeric-enum-macro",
+ "rand",
+ "spinlock",
 ]
 
 [[package]]
@@ -551,6 +586,7 @@ version = "0.1.0"
 dependencies = [
  "axconfig",
  "axhal",
+ "axlog",
  "axsignal",
  "axtask",
  "cfg-if",
@@ -562,7 +598,6 @@ dependencies = [
  "numeric-enum-macro",
  "percpu",
  "rand",
- "riscv",
  "scheduler",
  "spinlock",
  "timer_list",
@@ -604,6 +639,29 @@ dependencies = [
  "lazycell",
  "log",
  "peeking_take_while",
+ "prettyplease",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "rustc-hash",
+ "shlex",
+ "syn 2.0.39",
+ "which",
+]
+
+[[package]]
+name = "bindgen"
+version = "0.69.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a00dc851838a2120612785d195287475a3ac45514741da670b735818822129a0"
+dependencies = [
+ "bitflags 2.4.0",
+ "cexpr",
+ "clang-sys",
+ "itertools",
+ "lazy_static",
+ "lazycell",
+ "log",
  "prettyplease",
  "proc-macro2",
  "quote",
@@ -899,13 +957,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "danger_access"
-version = "0.1.0"
-dependencies = [
- "axstd",
-]
-
-[[package]]
 name = "defmt"
 version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -999,6 +1050,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a26ae43d7bcc3b814de94796a5e736d4029efb0ee900c12e2d54c993ad1a1e07"
 
 [[package]]
+name = "elf_parser"
+version = "0.1.0"
+dependencies = [
+ "axerrno",
+ "cfg-if",
+ "log",
+ "memory_addr",
+ "page_table_entry",
+ "xmas-elf",
+]
+
+[[package]]
 name = "embedded-graphics"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1072,27 +1135,6 @@ name = "fdt"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "784a4df722dc6267a04af36895398f59d21d07dce47232adf31ec0ff2fa45e67"
-
-[[package]]
-name = "fileopen"
-version = "0.1.0"
-dependencies = [
- "axstd",
-]
-
-[[package]]
-name = "fileread"
-version = "0.1.0"
-dependencies = [
- "axstd",
-]
-
-[[package]]
-name = "filewrite"
-version = "0.1.0"
-dependencies = [
- "axstd",
-]
 
 [[package]]
 name = "flatten_objects"
@@ -1321,6 +1363,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b06a4cde4c0f271a446782e3eff8de789548ce57dbc8eca9292c27f4a42004b4"
 
 [[package]]
+name = "lwext4_rust"
+version = "0.1.0"
+source = "git+https://github.com/elliott10/lwext4_rust.git?rev=f3048f87#f3048f8762ebf0f750ec923112e135244a153d50"
+dependencies = [
+ "bindgen 0.69.4",
+ "log",
+]
+
+[[package]]
 name = "managed"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1356,6 +1407,13 @@ name = "minimal-lexical"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
+
+[[package]]
+name = "monolithic_userboot"
+version = "0.1.0"
+dependencies = [
+ "axstarry",
+]
 
 [[package]]
 name = "nb"
@@ -1445,13 +1503,6 @@ name = "oorandom"
 version = "11.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ab1bc2a289d34bd04a330323ac98a1b4bc82c9d9fcb1e66b63caa84da26b575"
-
-[[package]]
-name = "oscomp"
-version = "0.1.0"
-dependencies = [
- "syscall_entry",
-]
 
 [[package]]
 name = "page_table"
@@ -1928,125 +1979,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
-]
-
-[[package]]
-name = "syscall_entry"
-version = "0.1.0"
-dependencies = [
- "arceos_api",
- "axfeat",
- "axhal",
- "axlog",
- "axprocess",
- "axruntime",
- "axsignal",
- "axtask",
- "cfg-if",
- "crate_interface",
- "kernel_guard",
- "lazy_init",
- "spinlock",
- "syscall_fs",
- "syscall_mem",
- "syscall_net",
- "syscall_task",
- "syscall_utils",
-]
-
-[[package]]
-name = "syscall_fs"
-version = "0.1.0"
-dependencies = [
- "axerrno",
- "axfs",
- "axhal",
- "axio",
- "axlog",
- "axprocess",
- "axsync",
- "axtask",
- "bitflags 2.4.0",
- "numeric-enum-macro",
- "syscall_utils",
-]
-
-[[package]]
-name = "syscall_mem"
-version = "0.1.0"
-dependencies = [
- "axerrno",
- "axhal",
- "axlog",
- "axmem",
- "axprocess",
- "bitflags 2.4.0",
- "numeric-enum-macro",
- "syscall_fs",
- "syscall_utils",
-]
-
-[[package]]
-name = "syscall_net"
-version = "0.1.0"
-dependencies = [
- "arceos_api",
- "axerrno",
- "axfeat",
- "axfs",
- "axio",
- "axlog",
- "axnet",
- "axprocess",
- "axsync",
- "num_enum",
- "numeric-enum-macro",
- "syscall_utils",
-]
-
-[[package]]
-name = "syscall_task"
-version = "0.1.0"
-dependencies = [
- "arceos_api",
- "axconfig",
- "axfeat",
- "axhal",
- "axlog",
- "axprocess",
- "axsignal",
- "axtask",
- "numeric-enum-macro",
- "rand",
- "syscall_utils",
-]
-
-[[package]]
-name = "syscall_utils"
-version = "0.1.0"
-dependencies = [
- "axconfig",
- "axerrno",
- "axfs",
- "axhal",
- "axlog",
- "bitflags 2.4.0",
- "num_enum",
- "numeric-enum-macro",
-]
-
-[[package]]
-name = "task_single_yield"
-version = "0.1.0"
-dependencies = [
- "axstd",
-]
-
-[[package]]
-name = "taskyield"
-version = "0.1.0"
-dependencies = [
- "axstd",
 ]
 
 [[package]]

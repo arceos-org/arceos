@@ -14,20 +14,23 @@ use axsignal::{
 use axsync::Mutex;
 use axtask::{SignalCaller, TaskState, RUN_QUEUE};
 
+/// 信号处理模块，进程间不共享
 pub struct SignalModule {
+    /// 是否存在siginfo
     pub sig_info: bool,
+    /// 保存的trap上下文
     pub last_trap_frame_for_signal: Option<TrapFrame>,
+    /// 信号处理函数集
     pub signal_handler: Arc<Mutex<SignalHandler>>,
+    /// 未决信号集
     pub signal_set: SignalSet,
 }
 
 impl SignalModule {
+    /// 初始化信号模块
     pub fn init_signal(signal_handler: Option<Arc<Mutex<SignalHandler>>>) -> Self {
-        let signal_handler = if signal_handler.is_none() {
-            Arc::new(Mutex::new(SignalHandler::new()))
-        } else {
-            signal_handler.unwrap()
-        };
+        let signal_handler =
+            signal_handler.unwrap_or_else(|| Arc::new(Mutex::new(SignalHandler::new())));
         let signal_set = SignalSet::new();
         let last_trap_frame_for_signal = None;
         let sig_info = false;
@@ -56,26 +59,20 @@ use crate::{
 pub fn load_trap_for_signal() -> bool {
     let current_process = current_process();
     let current_task = current_task();
-    // let signal_module = inner
-    //     .signal_module
-    //     .iter_mut()
-    //     .find(|(id, _)| *id == current_task.id().as_u64())
-    //     .map(|(_, handler)| handler)
-    //     .unwrap();
+
     let mut signal_modules = current_process.signal_modules.lock();
     let signal_module = signal_modules.get_mut(&current_task.id().as_u64()).unwrap();
     if let Some(old_trap_frame) = signal_module.last_trap_frame_for_signal.take() {
         unsafe {
-            let now_trap_frame = current_task.get_first_trap_frame();
+            let now_trap_frame: *mut TrapFrame = current_task.get_first_trap_frame();
             // 考虑当时调用信号处理函数时，sp对应的地址上的内容即是SignalUserContext
             // 此时认为一定通过sig_return调用这个函数
             // 所以此时sp的位置应该是SignalUserContext的位置
-            let sp = TrapFrame::sp_from_raw(now_trap_frame);
+            let sp = (*now_trap_frame).get_sp();
             *now_trap_frame = old_trap_frame;
-            // 若存在SIG_INFO，此时pc可能发生变化
             if signal_module.sig_info {
                 let pc = (*(sp as *const SignalUserContext)).get_pc();
-                TrapFrame::set_pc_from_raw(now_trap_frame, pc);
+                (*now_trap_frame).set_pc(pc);
             }
         }
         true
@@ -125,7 +122,7 @@ pub fn handle_signals() {
     } else {
         return;
     };
-    warn!(
+    info!(
         "cpu: {}, task: {}, handler signal: {}",
         this_cpu_id(),
         current_task.id().as_u64(),
@@ -141,15 +138,14 @@ pub fn handle_signals() {
             // 在处理信号的过程中又触发 SIGSEGV 或 SIGBUS，此时会导致死循环，所以直接结束当前进程
             drop(signal_modules);
             exit_current_task(-1);
-        } else {
-            return;
         }
+        return;
     }
     // 之前的trap frame已经被处理
     // 说明之前的信号处理函数已经返回，即没有信号嵌套。
     // 此时可以将当前的trap frame保存起来
     signal_module.last_trap_frame_for_signal =
-        Some((unsafe { *current_task.get_first_trap_frame() }).clone());
+        Some(unsafe { *current_task.get_first_trap_frame() });
     // current_task.set_siginfo(false);
     signal_module.sig_info = false;
     // 调取处理函数
@@ -158,7 +154,6 @@ pub fn handle_signals() {
     if action.is_none() {
         drop(signal_handler);
         drop(signal_modules);
-        drop(current_task);
         // 未显式指定处理函数，使用默认处理函数
         match SignalDefault::get_action(signal) {
             SignalDefault::Ignore => {
@@ -195,34 +190,40 @@ pub fn handle_signals() {
     // 注意是直接修改内核栈上的内容
     let trap_frame = unsafe { &mut *(current_task.get_first_trap_frame()) };
 
-    // 新的trap上下文的sp指针位置，由于SIGINFO会存放内容，所以需要开个保护区域
-    let mut sp = trap_frame.sp() - USER_SIGNAL_PROTECT;
+    // // 新的trap上下文的sp指针位置，由于SIGINFO会存放内容，所以需要开个保护区域
+    let mut sp = trap_frame.get_sp() - USER_SIGNAL_PROTECT;
+    let restorer = if let Some(addr) = action.get_storer() {
+        addr
+    } else {
+        axconfig::SIGNAL_TRAMPOLINE
+    };
+
     info!(
-        "restorer :{}, handler: {}",
-        action.get_storer(),
-        action.sa_handler
+        "restorer :{:#x}, handler: {:#x}",
+        restorer, action.sa_handler
     );
+    #[cfg(not(target_arch = "x86_64"))]
+    trap_frame.set_ra(restorer);
 
-    let old_pc = trap_frame.pc();
-
-    trap_frame.set_lr(action.get_storer());
+    let old_pc = trap_frame.get_pc();
 
     trap_frame.set_pc(action.sa_handler);
-
     // 传参
-    trap_frame.set_param0(sig_num);
+    trap_frame.set_arg0(sig_num);
     // 若带有SIG_INFO参数，则函数原型为fn(sig: SignalNo, info: &SigInfo, ucontext: &mut UContext)
     if action.sa_flags.contains(SigActionFlags::SA_SIGINFO) {
         // current_task.set_siginfo(true);
         signal_module.sig_info = true;
         // 注意16字节对齐
         sp = (sp - core::mem::size_of::<SigInfo>()) & !0xf;
-        let mut info = SigInfo::default();
-        info.si_signo = sig_num as i32;
+        let info = SigInfo {
+            si_signo: sig_num as i32,
+            ..Default::default()
+        };
         unsafe {
             *(sp as *mut SigInfo) = info;
         }
-        trap_frame.set_param1(sp);
+        trap_frame.set_arg1(sp);
 
         // 接下来存储ucontext
         sp = (sp - core::mem::size_of::<SignalUserContext>()) & !0xf;
@@ -231,8 +232,16 @@ pub fn handle_signals() {
         unsafe {
             *(sp as *mut SignalUserContext) = ucontext;
         }
-        trap_frame.set_param2(sp);
+        trap_frame.set_arg2(sp);
     }
+
+    #[cfg(target_arch = "x86_64")]
+    unsafe {
+        // set return rip
+        sp -= core::mem::size_of::<usize>();
+        *(sp as *mut usize) = restorer;
+    }
+
     trap_frame.set_user_sp(sp);
     drop(signal_handler);
     drop(signal_modules);
@@ -246,7 +255,7 @@ pub fn signal_return() -> isize {
         // 说明确实存在着信号处理函数的trap上下文
         // 此时内核栈上存储的是调用信号处理前的trap上下文
         let trap_frame = current_task().get_first_trap_frame();
-        unsafe { TrapFrame::ret_from_raw(trap_frame) as isize }
+        unsafe { (*trap_frame).get_ret_code() as isize }
     } else {
         // 没有进行信号处理，但是调用了sig_return
         // 此时直接返回-1
@@ -259,7 +268,7 @@ pub fn signal_return() -> isize {
 /// 默认发送到该进程下的主线程
 pub fn send_signal_to_process(pid: isize, signum: isize) -> AxResult<()> {
     let mut pid2pc = PID2PC.lock();
-    if pid2pc.contains_key(&(pid as u64)) == false {
+    if !pid2pc.contains_key(&(pid as u64)) {
         return Err(axerrno::AxError::NotFound);
     }
     let process = pid2pc.get_mut(&(pid as u64)).unwrap();
@@ -275,7 +284,7 @@ pub fn send_signal_to_process(pid: isize, signum: isize) -> AxResult<()> {
         let signal_module = signal_modules.get_mut(&now_id.unwrap()).unwrap();
         signal_module.signal_set.try_add_signal(signum as usize);
         let tid2task = TID2TASK.lock();
-        let main_task = Arc::clone(&tid2task.get(&now_id.unwrap()).unwrap());
+        let main_task = Arc::clone(tid2task.get(&now_id.unwrap()).unwrap());
         // 如果这个时候对应的线程是处于休眠状态的，则唤醒之，进入信号处理阶段
         if main_task.state() == TaskState::Blocked {
             RUN_QUEUE.lock().unblock_task(main_task, false);
@@ -302,7 +311,7 @@ pub fn send_signal_to_thread(tid: isize, signum: isize) -> AxResult<()> {
     };
     drop(pid2pc);
     let mut signal_modules = process.signal_modules.lock();
-    if signal_modules.contains_key(&(tid as u64)) == false {
+    if !signal_modules.contains_key(&(tid as u64)) {
         return Err(axerrno::AxError::NotFound);
     }
     let signal_module = signal_modules.get_mut(&(tid as u64)).unwrap();

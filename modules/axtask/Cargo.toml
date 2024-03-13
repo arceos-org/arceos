@@ -28,7 +28,7 @@ signal = ["axhal/signal", "dep:axsignal", "dep:crate_interface"]
 
 test = ["percpu?/sp-naive"]
 
-monolithic = []
+monolithic = ["multitask", "axhal/monolithic"]
 
 [dependencies]
 cfg-if = "1.0"
@@ -45,7 +45,7 @@ scheduler = { path = "../../crates/scheduler", optional = true }
 timer_list = { path = "../../crates/timer_list", optional = true }
 kernel_guard = { path = "../../crates/kernel_guard", optional = true }
 crate_interface = { path = "../../crates/crate_interface", optional = true }
-riscv = "0.10"
+axlog = { path = "../axlog" }
 
 [dev-dependencies]
 rand = "0.8"

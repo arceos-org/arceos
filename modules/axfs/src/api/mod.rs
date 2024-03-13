@@ -3,18 +3,17 @@
 mod dir;
 mod file;
 
-#[cfg(feature = "monolithic")]
 pub mod port;
-
-use axerrno::AxResult;
-use axfs_vfs::VfsNodeRef;
-#[cfg(feature = "monolithic")]
-pub use port::*;
 
 pub use self::dir::{DirBuilder, DirEntry, ReadDir};
 pub use self::file::{File, FileType, Metadata, OpenOptions, Permissions};
+use axerrno::AxResult;
+use axfs_vfs::VfsNodeRef;
+pub use axio::{Read, Seek, SeekFrom, Write};
+pub use port::*;
 
 use alloc::{string::String, vec::Vec};
+#[allow(unused_imports)]
 use axio::{self as io, prelude::*};
 
 /// Returns an iterator over the entries within a directory.

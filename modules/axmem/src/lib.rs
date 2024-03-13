@@ -1,3 +1,4 @@
+//! The memory management module, which implements the memory space management of the process.
 #![cfg_attr(not(test), no_std)]
 mod area;
 mod backend;
@@ -8,11 +9,7 @@ pub use backend::MemBackend;
 
 extern crate alloc;
 use alloc::{collections::BTreeMap, sync::Arc, vec::Vec};
-use core::{
-    mem::size_of,
-    ptr::copy_nonoverlapping,
-    sync::atomic::{AtomicI32, Ordering},
-};
+use core::sync::atomic::{AtomicI32, Ordering};
 use page_table_entry::GenericPTE;
 use shared::SharedMem;
 use spinlock::SpinNoIrq;
@@ -20,32 +17,10 @@ use spinlock::SpinNoIrq;
 extern crate log;
 
 use axhal::{
+    arch::flush_tlb,
     mem::{memory_regions, phys_to_virt, PhysAddr, VirtAddr, PAGE_SIZE_4K},
     paging::{MappingFlags, PageSize, PageTable},
 };
-use xmas_elf::symbol_table::Entry;
-
-pub(crate) const R_X86_64_GLOB_DAT: u32 = 6;    /* Create GOT entry */
-pub(crate) const R_X86_64_JUMP_SLOT: u32 = 7;   /* Create PLT entry */
-pub(crate) const R_X86_64_RELATIVE: u32 = 8;    /* Adjust by program base */
-
-pub(crate) const R_RISCV_64: u32 = 2;
-pub(crate) const R_RISCV_RELATIVE: u32 = 3;
-pub(crate) const R_RISCV_JUMP_SLOT: u32 = 5;
-
-pub(crate) const R_AARCH64_GLOBAL_DATA: u32 = 1025;
-pub(crate) const R_AARCH64_JUMP_SLOT: u32 = 1026;
-pub(crate) const R_AARCH64_RELATIVE: u32 = 1027;
-
-pub(crate) const AT_PHDR: u8 = 3;
-pub(crate) const AT_PHENT: u8 = 4;
-pub(crate) const AT_PHNUM: u8 = 5;
-pub(crate) const AT_PAGESZ: u8 = 6;
-#[allow(unused)]
-pub(crate) const AT_BASE: u8 = 7;
-#[allow(unused)]
-pub(crate) const AT_ENTRY: u8 = 9;
-pub(crate) const AT_RANDOM: u8 = 25;
 
 // TODO: a real allocator
 static SHMID: AtomicI32 = AtomicI32::new(1);
@@ -57,6 +32,8 @@ static SHMID: AtomicI32 = AtomicI32::new(1);
 ///
 /// It holds an Arc to the SharedMem. If the Arc::strong_count() is 1, SharedMem will be dropped.
 pub static SHARED_MEMS: SpinNoIrq<BTreeMap<i32, Arc<SharedMem>>> = SpinNoIrq::new(BTreeMap::new());
+
+/// The map from key to shmid. It's used to query shmid from key.
 pub static KEY_TO_SHMID: SpinNoIrq<BTreeMap<i32, i32>> = SpinNoIrq::new(BTreeMap::new());
 
 /// PageTable + MemoryArea for a process (task)
@@ -66,25 +43,25 @@ pub struct MemorySet {
 
     private_mem: BTreeMap<i32, Arc<SharedMem>>,
     attached_mem: Vec<(VirtAddr, MappingFlags, Arc<SharedMem>)>,
-
-    pub entry: usize,
 }
 
 impl MemorySet {
+    /// Get the root page table token.
     pub fn page_table_token(&self) -> usize {
         self.page_table.root_paddr().as_usize()
     }
 
+    /// Create a new empty MemorySet.
     pub fn new_empty() -> Self {
         Self {
             page_table: PageTable::try_new().expect("Error allocating page table."),
             owned_mem: BTreeMap::new(),
             private_mem: BTreeMap::new(),
             attached_mem: Vec::new(),
-            entry: 0,
         }
     }
 
+    /// Create a new MemorySet with kernel mapped regions.
     pub fn new_with_kernel_mapped() -> Self {
         let mut page_table = PageTable::try_new().expect("Error allocating page table.");
 
@@ -104,219 +81,15 @@ impl MemorySet {
             owned_mem: BTreeMap::new(),
             private_mem: BTreeMap::new(),
             attached_mem: Vec::new(),
-            entry: 0,
         }
     }
 
-    pub fn map_elf(&mut self, elf: &xmas_elf::ElfFile) -> BTreeMap<u8, usize> {
-        let elf_header = elf.header;
-        let magic = elf_header.pt1.magic;
-        assert_eq!(magic, [0x7f, 0x45, 0x4c, 0x46], "invalid elf!");
-
-        // Some elf will load ELF Header (offset == 0) to vaddr 0. In that case, base_addr will be added to all the LOAD.
-        let (base_addr, elf_header_vaddr): (usize, usize) = if let Some(header) = elf
-            .program_iter()
-            .find(|ph| ph.get_type() == Ok(xmas_elf::program::Type::Load) && ph.offset() == 0)
-        {
-            // Loading ELF Header into memory.
-            let vaddr = header.virtual_addr() as usize;
-
-            if vaddr == 0 {
-                (0x400_0000, 0x400_0000)
-            } else {
-                (0, vaddr)
-            }
-        } else {
-            (0, 0)
-        };
-        info!("Base addr for the elf: 0x{:x}", base_addr);
-
-        // Load Elf "LOAD" segments at base_addr.
-        elf.program_iter()
-            .filter(|ph| ph.get_type() == Ok(xmas_elf::program::Type::Load))
-            .for_each(|ph| {
-                let mut start_va = ph.virtual_addr() as usize + base_addr;
-                let end_va = (ph.virtual_addr() + ph.mem_size()) as usize + base_addr;
-                let mut start_offset = ph.offset() as usize;
-                let end_offset = (ph.offset() + ph.file_size()) as usize;
-
-                // Virtual address from elf may not be aligned.
-                assert_eq!(start_va % PAGE_SIZE_4K, start_offset % PAGE_SIZE_4K);
-                let front_pad = start_va % PAGE_SIZE_4K;
-                start_va -= front_pad;
-                start_offset -= front_pad;
-
-                let mut flags = MappingFlags::USER;
-                if ph.flags().is_read() {
-                    flags |= MappingFlags::READ;
-                }
-                if ph.flags().is_write() {
-                    flags |= MappingFlags::WRITE;
-                }
-                if ph.flags().is_execute() {
-                    flags |= MappingFlags::EXECUTE;
-                }
-
-                debug!(
-                    "[new region] elf section [0x{:x}, 0x{:x})",
-                    start_va, end_va
-                );
-
-                self.new_region(
-                    VirtAddr::from(start_va),
-                    end_va - start_va,
-                    flags,
-                    Some(&elf.input[start_offset..end_offset]),
-                    None,
-                );
-            });
-
-        info!("[loader] base addr: 0x{:x}", base_addr);
-
-        // Relocate .rela.dyn sections
-        if let Some(rela_dyn) = elf.find_section_by_name(".rela.dyn") {
-            let data = match rela_dyn.get_data(&elf) {
-                Ok(xmas_elf::sections::SectionData::Rela64(data)) => data,
-                _ => panic!("Invalid data in .rela.dyn section"),
-            };
-
-            if let Some(dyn_sym_table) = elf.find_section_by_name(".dynsym") {
-                let dyn_sym_table = match dyn_sym_table.get_data(&elf) {
-                    Ok(xmas_elf::sections::SectionData::DynSymbolTable64(dyn_sym_table)) => {
-                        dyn_sym_table
-                    }
-                    _ => panic!("Invalid data in .dynsym section"),
-                };
-
-                info!("Relocating .rela.dyn");
-                for entry in data {
-                    match entry.get_type() {
-                        R_X86_64_GLOB_DAT | R_X86_64_JUMP_SLOT |
-                        R_RISCV_64 | R_AARCH64_GLOBAL_DATA| R_AARCH64_JUMP_SLOT => {
-                            let dyn_sym = &dyn_sym_table[entry.get_symbol_table_index() as usize];
-                            let sym_val = if dyn_sym.shndx() == 0 {
-                                let name = dyn_sym.get_name(&elf).unwrap();
-                                panic!(r#"Symbol "{}" not found"#, name);
-                            } else {
-                                base_addr + dyn_sym.value() as usize
-                            };
-
-                            let value = sym_val + entry.get_addend() as usize;
-                            let addr = base_addr + entry.get_offset() as usize;
-
-                            debug!(
-                                "write: {:#x} @ {:#x} type = {}",
-                                value,
-                                addr,
-                                entry.get_type() as usize
-                            );
-
-                            unsafe {
-                                copy_nonoverlapping(
-                                    value.to_ne_bytes().as_ptr(),
-                                    addr as *mut u8,
-                                    size_of::<usize>() / size_of::<u8>(),
-                                );
-                            }
-                        }
-                        R_X86_64_RELATIVE | R_RISCV_RELATIVE | R_AARCH64_RELATIVE => { 
-                            let value = base_addr + entry.get_addend() as usize;
-                            let addr = base_addr + entry.get_offset() as usize;
-
-                            debug!(
-                                 "write: {:#x} @ {:#x} type = {}",
-                                 value,
-                                 addr,
-                                 entry.get_type() as usize
-                            );
-
-                            unsafe {
-                                copy_nonoverlapping(
-                                    value.to_ne_bytes().as_ptr(),
-                                    addr as *mut u8,
-                                    size_of::<usize>() / size_of::<u8>(),
-                                );
-                            }
-                        }
-                        other => panic!("Unknown relocation type: {}", other),
-                    }
-                }
-            }
-        }
-
-        // Relocate .rela.plt sections
-        // static binary may have .rela.plt section but not have dynsym section
-        if let Some(rela_plt) = elf.find_section_by_name(".rela.plt")  {
-            if let Some(dynsym_section) = elf.find_section_by_name(".dynsym") {
-
-                let data = match rela_plt.get_data(&elf) {
-                    Ok(xmas_elf::sections::SectionData::Rela64(data)) => data,
-                    _ => panic!("Invalid data in .rela.plt section"),
-                };
-
-                let dyn_sym_table = match dynsym_section.get_data(&elf)
-                {
-                    Ok(xmas_elf::sections::SectionData::DynSymbolTable64(dyn_sym_table)) => {
-                        dyn_sym_table
-                    }
-                    _ => panic!("Invalid data in .dynsym section"),
-                };
-    
-                info!("Relocating .rela.plt");
-                for entry in data {
-                    match entry.get_type() {
-                        R_RISCV_JUMP_SLOT | R_AARCH64_JUMP_SLOT => {
-                            let dyn_sym = &dyn_sym_table[entry.get_symbol_table_index() as usize];
-                            let sym_val = if dyn_sym.shndx() == 0 {
-                                let name = dyn_sym.get_name(&elf).unwrap();
-                                panic!(r#"Symbol "{}" not found"#, name);
-                            } else {
-                                dyn_sym.value() as usize
-                            };
-    
-                            let value = base_addr + sym_val;
-                            let addr = base_addr + entry.get_offset() as usize;
-    
-                            info!(
-                                "write: {:#x} @ {:#x} type = {}",
-                                value,
-                                addr,
-                                entry.get_type() as usize
-                            );
-    
-                            unsafe {
-                                copy_nonoverlapping(
-                                    value.to_ne_bytes().as_ptr(),
-                                    addr as *mut u8,
-                                    size_of::<usize>(),
-                                );
-                            }
-                        }
-                        other => panic!("Unknown relocation type: {}", other),
-                    }
-                }
-            }
-        }
-
-        info!("Relocating done");
-        self.entry = elf.header.pt2.entry_point() as usize + base_addr;
-
-        let mut map = BTreeMap::new();
-        map.insert(
-            AT_PHDR,
-            elf_header_vaddr + elf.header.pt2.ph_offset() as usize,
-        );
-        map.insert(AT_PHENT, elf.header.pt2.ph_entry_size() as usize);
-        map.insert(AT_PHNUM, elf.header.pt2.ph_count() as usize);
-        map.insert(AT_RANDOM, 0);
-        map.insert(AT_PAGESZ, PAGE_SIZE_4K);
-        map
-    }
-
+    /// The root page table physical address.
     pub fn page_table_root_ppn(&self) -> PhysAddr {
         self.page_table.root_paddr()
     }
 
+    /// The max virtual address of the areas in this memory set.
     pub fn max_va(&self) -> VirtAddr {
         self.owned_mem
             .last_key_value()
@@ -345,6 +118,15 @@ impl MemorySet {
                 &mut self.page_table,
             )
             .unwrap(),
+            // None => match backend {
+            //     Some(backend) => {
+            //         MapArea::new_lazy(vaddr, num_pages, flags, Some(backend), &mut self.page_table)
+            //     }
+            //     None => {
+            //         MapArea::new_alloc(vaddr, num_pages, flags, None, None, &mut self.page_table)
+            //             .unwrap()
+            //     }
+            // },
             None => MapArea::new_lazy(vaddr, num_pages, flags, backend, &mut self.page_table),
         };
 
@@ -356,6 +138,7 @@ impl MemorySet {
             usize::from(area.vaddr) + area.size(),
             flags
         );
+
         // self.owned_mem.insert(area.vaddr.into(), area);
         assert!(self.owned_mem.insert(area.vaddr.into(), area).is_none());
     }
@@ -434,6 +217,7 @@ impl MemorySet {
         }
     }
 
+    /// Find a free area with given start virtual address and size. Return the start address of the area.
     pub fn find_free_area(&self, hint: VirtAddr, size: usize) -> Option<VirtAddr> {
         let mut last_end = hint.max(axconfig::USER_MEMORY_START.into()).as_usize();
 
@@ -498,7 +282,7 @@ impl MemorySet {
                 Some(start) => {
                     info!("found area [{:?}, {:?})", start, start + size);
                     self.new_region(start, size, flags, None, backend);
-
+                    flush_tlb(None);
                     start.as_usize() as isize
                 }
                 None => -1,
@@ -554,13 +338,13 @@ impl MemorySet {
         assert!(end.is_aligned_4k());
 
         // 在更新flags前需要保证该区域的所有页都已经分配了物理内存
-        // 否则会因为flag被更新，导致本应该是page fault 而出现了fault
+        // 否则会因为flag被更新，导致本应该是 page fault 而出现了fault
+        flush_tlb(None);
         self.manual_alloc_range_for_lazy(start, end - 1).unwrap();
         // NOTE: There will be new areas but all old aree's start address won't change. But we
         // can't iterating through `value_mut()` while `insert()` to BTree at the same time, so we
         // `drain_filter()` out the overlapped areas first.
         let mut overlapped_area: Vec<(usize, MapArea)> = Vec::new();
-
         let mut prev_area: BTreeMap<usize, MapArea> = BTreeMap::new();
 
         for _ in 0..self.owned_mem.len() {
@@ -618,10 +402,7 @@ impl MemorySet {
                 Ok(())
             }
             None => {
-                error!(
-                    "Page fault address {:?} not found in memory set ",
-                    addr
-                );
+                error!("Page fault address {:?} not found in memory set ", addr);
                 Err(AxError::BadAddress)
             }
         }
@@ -635,12 +416,25 @@ impl MemorySet {
         self.owned_mem.clear();
     }
 
+    /// Query the page table to get the physical address, flags and page size of the given virtual
     pub fn query(&self, vaddr: VirtAddr) -> AxResult<(PhysAddr, MappingFlags, PageSize)> {
         if let Ok((paddr, flags, size)) = self.page_table.query(vaddr) {
             Ok((paddr, flags, size))
         } else {
             Err(AxError::InvalidInput)
         }
+    }
+
+    /// Map a 4K region without allocating physical memory.
+    pub fn map_page_without_alloc(
+        &mut self,
+        vaddr: VirtAddr,
+        paddr: PhysAddr,
+        flags: MappingFlags,
+    ) -> AxResult<()> {
+        self.page_table
+            .map_region(vaddr, paddr, PAGE_SIZE_4K, flags, false)
+            .map_err(|_| AxError::InvalidInput)
     }
 
     /// Create a new SharedMem with given key.
@@ -677,14 +471,17 @@ impl MemorySet {
         assert!(self.private_mem.insert(shmid, Arc::new(mem)).is_none());
     }
 
+    /// Get a SharedMem by shmid.
     pub fn get_shared_mem(shmid: i32) -> Option<Arc<SharedMem>> {
-        SHARED_MEMS.lock().get(&shmid).map(|arc| arc.clone())
+        SHARED_MEMS.lock().get(&shmid).cloned()
     }
 
+    /// Get a private SharedMem by shmid.
     pub fn get_private_shared_mem(&self, shmid: i32) -> Option<Arc<SharedMem>> {
-        self.private_mem.get(&shmid).map(|arc| arc.clone())
+        self.private_mem.get(&shmid).cloned()
     }
 
+    /// Attach a SharedMem to the memory set.
     pub fn attach_shared_mem(&mut self, mem: Arc<SharedMem>, addr: VirtAddr, flags: MappingFlags) {
         self.page_table
             .map_region(addr, mem.paddr(), mem.size(), flags, false)
@@ -693,6 +490,9 @@ impl MemorySet {
         self.attached_mem.push((addr, flags, mem));
     }
 
+    /// Detach a SharedMem from the memory set.
+    ///
+    /// TODO: implement this
     pub fn detach_shared_mem(&mut self, _shmid: i32) {
         todo!()
     }
@@ -721,7 +521,9 @@ impl MemorySet {
             let entry = entry.unwrap().0;
             if !entry.is_present() {
                 // 若未分配物理页面，则手动为其分配一个页面，写入到对应页表中
-                area.handle_page_fault(addr, entry.flags(), &mut self.page_table);
+                if !area.handle_page_fault(addr, entry.flags(), &mut self.page_table) {
+                    return Err(AxError::BadAddress);
+                }
             }
             Ok(())
         } else {
@@ -752,7 +554,11 @@ impl MemorySet {
 }
 
 impl MemorySet {
-    pub fn clone(&self) -> AxResult<Self> {
+    /// Clone the MemorySet. This will create a new page table and map all the regions in the old
+    /// page table to the new one.
+    ///
+    /// If it occurs error, the new MemorySet will be dropped and return the error.
+    pub fn clone_or_err(&self) -> AxResult<Self> {
         let mut page_table = PageTable::try_new().expect("Error allocating page table.");
 
         for r in memory_regions() {
@@ -765,23 +571,17 @@ impl MemorySet {
                 .map_region(phys_to_virt(r.paddr), r.paddr, r.size, r.flags.into(), true)
                 .expect("Error mapping kernel memory");
         }
-
-        // let owned_mem = self
-        //     .owned_mem
-        //     .iter()
-        //     .map(|(vaddr, area)| (*vaddr, unsafe { area.clone_alloc(&mut page_table)? }))
-        //     .collect();
         let mut owned_mem: BTreeMap<usize, MapArea> = BTreeMap::new();
         for (vaddr, area) in self.owned_mem.iter() {
-            unsafe {
-                match area.clone_alloc(&mut page_table) {
-                    Ok(new_area) => {
-                        owned_mem.insert(*vaddr, new_area);
-                        Ok(())
-                    }
-                    Err(err) => Err(err),
-                }?;
-            }
+            info!("vaddr: {:X?}, new_area: {:X?}", vaddr, area.vaddr);
+            match area.clone_alloc(&mut page_table) {
+                Ok(new_area) => {
+                    info!("new area: {:X?}", new_area.vaddr);
+                    owned_mem.insert(*vaddr, new_area);
+                    Ok(())
+                }
+                Err(err) => Err(err),
+            }?;
         }
 
         let mut new_memory = Self {
@@ -790,12 +590,10 @@ impl MemorySet {
 
             private_mem: self.private_mem.clone(),
             attached_mem: Vec::new(),
-
-            entry: self.entry,
         };
 
         for (addr, flags, mem) in &self.attached_mem {
-            new_memory.attach_shared_mem(mem.clone(), addr.clone(), flags.clone());
+            new_memory.attach_shared_mem(mem.clone(), *addr, *flags);
         }
 
         Ok(new_memory)

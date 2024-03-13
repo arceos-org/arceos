@@ -1,5 +1,5 @@
-use fdt::standard_nodes::MemoryRegion;
 use crate::parsing::BigEndianU32;
+use fdt::standard_nodes::MemoryRegion;
 
 #[derive(Clone, Copy)]
 pub struct Memory {
@@ -8,7 +8,7 @@ pub struct Memory {
 
 impl Memory {
     /// Returns an iterator over all of the available memory regions
-    pub fn regions(self) -> impl Iterator<Item = MemoryRegion> +'static {
+    pub fn regions(self) -> impl Iterator<Item = MemoryRegion> + 'static {
         self.node.reg().unwrap()
     }
 }
@@ -29,7 +29,11 @@ impl Pcsi {
         self.node
             .properties()
             .find(|p| p.name == "method")
-            .and_then(|p| core::str::from_utf8(p.value).map(|s| s.trim_end_matches('\0')).ok())
+            .and_then(|p| {
+                core::str::from_utf8(p.value)
+                    .map(|s| s.trim_end_matches('\0'))
+                    .ok()
+            })
             .unwrap()
     }
     /// Optional`cpu_suspend` property
@@ -64,4 +68,3 @@ impl Pcsi {
             .map(|p| BigEndianU32::from_bytes(p.value).unwrap().get())
     }
 }
-

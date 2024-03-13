@@ -17,7 +17,7 @@ repository = "https://github.com/rcore-os/arceos/tree/main/ulib/axlibc"
 documentation = "https://rcore-os.github.io/arceos/axlibc/index.html"
 
 [lib]
-crate-type = ["staticlib"]
+crate-type = ["lib", "staticlib"]
 
 [features]
 default = []

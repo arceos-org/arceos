@@ -1,10 +1,10 @@
-use aarch64_cpu::{ asm::barrier, registers::*};
+use aarch64_cpu::{asm::barrier, registers::*};
 use tock_registers::interfaces::{ReadWriteable, Writeable};
 
+use crate::mem::virt_to_phys;
+use crate::mem::{MemRegion, MemRegionFlags, PhysAddr};
 use page_table_entry::aarch64::{MemAttr, A64PTE};
 use page_table_entry::{GenericPTE, MappingFlags};
-use crate::mem::{MemRegion, PhysAddr, MemRegionFlags};
-use crate::mem::virt_to_phys;
 
 use either::{Either, Left, Right};
 
@@ -12,7 +12,8 @@ use either::{Either, Left, Right};
 pub(crate) fn platform_regions() -> impl Iterator<Item = MemRegion> {
     // Feature, should registerd by user, should'n use hard coding
     let iterator: Either<_, _> = if of::machin_name().contains("raspi") {
-        Left(core::iter::once(MemRegion {
+        Left(
+            core::iter::once(MemRegion {
                 paddr: 0x0.into(),
                 size: 0x1000,
                 flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
@@ -20,20 +21,20 @@ pub(crate) fn platform_regions() -> impl Iterator<Item = MemRegion> {
             })
             .chain(core::iter::once(fdt_region()))
             .chain(free_regions())
-            .chain(crate::mem::default_mmio_regions())
+            .chain(crate::mem::default_mmio_regions()),
         )
     } else {
         Right(
             core::iter::once(fdt_region())
-            .chain(free_regions())
-            .chain(crate::mem::default_mmio_regions())
+                .chain(free_regions())
+                .chain(crate::mem::default_mmio_regions()),
         )
     };
     iterator.into_iter()
 }
 
 fn split_region(region: MemRegion, region2: &MemRegion) -> Either<[MemRegion; 2], [MemRegion; 1]> {
-    let start1  = region.paddr.as_usize();
+    let start1 = region.paddr.as_usize();
     let end1 = region.paddr.as_usize() + region.size;
 
     let start2 = region2.paddr.as_usize();
@@ -44,15 +45,15 @@ fn split_region(region: MemRegion, region2: &MemRegion) -> Either<[MemRegion; 2]
             MemRegion {
                 paddr: region.paddr,
                 size: start2 - start1,
-                flags:MemRegionFlags::FREE | MemRegionFlags::READ | MemRegionFlags::WRITE,
+                flags: MemRegionFlags::FREE | MemRegionFlags::READ | MemRegionFlags::WRITE,
                 name: region.name,
             },
             MemRegion {
                 paddr: PhysAddr::from(end2),
-                size:  end1 - end2,
+                size: end1 - end2,
                 flags: MemRegionFlags::FREE | MemRegionFlags::READ | MemRegionFlags::WRITE,
                 name: region.name,
-            }
+            },
         ])
     } else {
         Right([region])
@@ -61,25 +62,24 @@ fn split_region(region: MemRegion, region2: &MemRegion) -> Either<[MemRegion; 2]
 
 // Free mem regions equal memory minus kernel and fdt region
 fn free_regions() -> impl Iterator<Item = MemRegion> {
-    let all_mem = of::memory_nodes().flat_map(|m|
-        m.regions().map(|r|
-                MemRegion {
-                    paddr: PhysAddr::from(r.starting_address as usize).align_up_4k(),
-                    size: r.size.unwrap(),
-                    flags:MemRegionFlags::FREE | MemRegionFlags::READ | MemRegionFlags::WRITE,
-                    name: "free memory",
-                })
-    );
+    let all_mem = of::memory_nodes().flat_map(|m| {
+        m.regions().map(|r| MemRegion {
+            paddr: PhysAddr::from(r.starting_address as usize).align_up_4k(),
+            size: r.size.unwrap(),
+            flags: MemRegionFlags::FREE | MemRegionFlags::READ | MemRegionFlags::WRITE,
+            name: "free memory",
+        })
+    });
 
     let hack_k_region = MemRegion {
-                    paddr:  virt_to_phys((_stext as usize).into()).align_up_4k(),
-                    size:  _ekernel as usize - _stext as usize,
-                    flags: MemRegionFlags::FREE,
-                    name: "kernel memory",
+        paddr: virt_to_phys((_stext as usize).into()).align_up_4k(),
+        size: _ekernel as usize - _stext as usize,
+        flags: MemRegionFlags::FREE,
+        name: "kernel memory",
     };
 
-    let filter_kernel_mem = all_mem.map(move |m| split_region(m, &hack_k_region).into_iter()).flatten();
-    filter_kernel_mem.map(move |m| split_region(m, &fdt_region()).into_iter()).flatten()
+    let filter_kernel_mem = all_mem.flat_map(move |m| split_region(m, &hack_k_region).into_iter());
+    filter_kernel_mem.flat_map(move |m| split_region(m, &fdt_region()).into_iter())
 }
 
 fn fdt_region() -> MemRegion {
@@ -139,7 +139,6 @@ pub(crate) unsafe fn idmap_kernel(kernel_phys_addr: usize) {
 
     // 0x0000_0000_0000 ~ 0x0080_0000_0000, table
     BOOT_PT_L0[0] = A64PTE::new_table(PhysAddr::from(BOOT_PT_L1.as_ptr() as usize));
-    
     // 1G block, kernel img
     BOOT_PT_L1[l1_index] = A64PTE::new_page(
         PhysAddr::from(aligned_address),
@@ -151,7 +150,6 @@ pub(crate) unsafe fn idmap_kernel(kernel_phys_addr: usize) {
 pub(crate) unsafe fn idmap_device(phys_addr: usize) {
     let aligned_address = (phys_addr) & !(BOOT_MAP_SIZE - 1);
     let l1_index = phys_addr >> BOOT_MAP_SHIFT;
-    
     if BOOT_PT_L1[l1_index].is_unused() {
         BOOT_PT_L1[l1_index] = A64PTE::new_page(
             PhysAddr::from(aligned_address),
