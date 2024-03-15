@@ -9,6 +9,9 @@
 /// ixgbe NIC device driver.
 pub mod ixgbe;
 mod net_buf;
+#[cfg(feature = "axi-ethernet")]
+/// The Axi Ethernet device driver
+pub mod axi_ethernet;
 
 use core::ptr::NonNull;
 
