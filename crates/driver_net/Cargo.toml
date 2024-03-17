@@ -10,9 +10,9 @@ repository = "https://github.com/rcore-os/arceos/tree/main/crates/driver_net"
 documentation = "https://rcore-os.github.io/arceos/driver_net/index.html"
 
 [features]
-default = ["axi-ethernet"]
+default = []
 ixgbe = ["dep:ixgbe-driver"]
-axi-ethernet = ["dep:axi-ethernet", "dep:axi-dma"]
+axi-eth = ["dep:axi-ethernet", "dep:axi-dma"]
 
 [dependencies]
 spin = "0.9"
@@ -20,4 +20,4 @@ log = "0.4"
 driver_common = { path = "../driver_common" }
 ixgbe-driver = {git = "https://github.com/KuangjuX/ixgbe-driver.git", rev = "8e5eb74", optional = true}
 axi-ethernet = { git = "https://github.com/zflcs/axi-ethernet.git", optional = true }
-axi-dma = { git = "https://github.com/zflcs/axi-dma.git", rev = "63a0909", default-features = false, optional = true }
+axi-dma = { git = "https://github.com/zflcs/axi-dma.git", rev = "aec3682", default-features = false, optional = true }

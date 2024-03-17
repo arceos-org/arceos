@@ -399,7 +399,7 @@ dependencies = [
 [[package]]
 name = "axi-dma"
 version = "0.1.0"
-source = "git+https://github.com/zflcs/axi-dma.git?rev=63a0909#63a0909b201524df3db486588c455f032b34d715"
+source = "git+https://github.com/zflcs/axi-dma.git?rev=aec3682#aec368283c3042eb591f95dc36bbd005dfb171cd"
 dependencies = [
  "axidma-pac",
  "embedded-dma",
@@ -430,7 +430,7 @@ dependencies = [
 [[package]]
 name = "axidma-pac"
 version = "0.1.0"
-source = "git+https://github.com/zflcs/axi-dma.git?rev=63a0909#63a0909b201524df3db486588c455f032b34d715"
+source = "git+https://github.com/zflcs/axi-dma.git?rev=aec3682#aec368283c3042eb591f95dc36bbd005dfb171cd"
 dependencies = [
  "cortex-m",
  "vcell",

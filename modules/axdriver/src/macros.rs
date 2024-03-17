@@ -64,5 +64,10 @@ macro_rules! for_each_drivers {
             type $drv_type = crate::drivers::IxgbeDriver;
             $code
         }
+        #[cfg(net_dev = "axi-eth")]
+        {
+            type $drv_type = crate::drivers::AxiEthDriver;
+            $code
+        }
     }};
 }

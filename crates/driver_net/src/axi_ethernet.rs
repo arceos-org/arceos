@@ -7,7 +7,7 @@ use alloc::collections::VecDeque;
 use alloc::sync::Arc;
 use alloc::vec;
 use driver_common::{BaseDriverOps, DevError, DevResult, DeviceType};
-use axi_dma::{AxiDma, Transfer};
+use axi_dma::*;
 use axi_ethernet::*;
 use spin::Mutex;
 
@@ -20,18 +20,37 @@ const MAC_ADDR: [u8; 6] = [0x00, 0x0A, 0x35, 0x01, 0x02, 0x03];
 const RX_BUFFER_SIZE: usize = 9000;
 
 /// The Axi Ethernet device driver
-pub struct AxiNic {
+pub struct AxiEth {
     dma: Arc<AxiDma>,
     eth: Arc<Mutex<AxiEthernet>>,
     tx_transfers: VecDeque<Transfer<Box<[u8]>>>,
     rx_transfers: VecDeque<Transfer<Box<[u8]>>>,
 }
 
-impl AxiNic {
+impl AxiEth {
     /// Creates a net Axi NIC instance and initialize, or returns a error if
     /// any step fails.
     pub fn init(eth_base: usize, dma_base: usize) -> DevResult<Self> {
-        let dma = Arc::new(AxiDma::default());
+        /// The default configuration of the AxiDMA
+        let cfg = AxiDmaConfig {
+            base_address: dma_base,
+            rx_channel_offset: 0x30,
+            tx_channel_offset: 0,
+            has_sts_cntrl_strm: false,
+            is_micro_dma: false,
+            has_mm2s: true,
+            has_mm2s_dre: false,
+            mm2s_data_width: 32,
+            mm2s_burst_size: 16,
+            has_s2mm: true,
+            has_s2mm_dre: false,
+            s2mm_data_width: 32,
+            s2mm_burst_size: 16,
+            has_sg: true,
+            sg_length_width: 16,
+            addr_width: 32,
+        };
+        let dma = Arc::new(AxiDma::new(cfg));
 
         dma.reset().map_err(|_| DevError::ResourceBusy)?;
         // enable cyclic mode
@@ -42,11 +61,7 @@ impl AxiNic {
         // enable tx & rx intr
         dma.intr_enable();
 
-        let slice = vec![0u8; RX_BUFFER_SIZE].into_boxed_slice();
-        let rx_buf = Pin::new(slice);
-        let rx_transfer = dma.rx_submit(rx_buf).map_err(|_| panic!("Unexpected error"))?;
         let mut rx_transfers = VecDeque::new();
-        rx_transfers.push_back(rx_transfer);
 
         let eth = Arc::new(Mutex::new(AxiEthernet::new(eth_base, dma_base)));
 
@@ -79,7 +94,7 @@ impl AxiNic {
     }
 }
 
-impl BaseDriverOps for AxiNic {
+impl BaseDriverOps for AxiEth {
     fn device_name(&self) -> &str {
         "axi-ethernet"
     }
@@ -89,7 +104,7 @@ impl BaseDriverOps for AxiNic {
     }
 }
 
-impl NetDriverOps for AxiNic {
+impl NetDriverOps for AxiEth {
     fn mac_address(&self) -> EthernetAddress {
         let mut mac_address = [0; 6];
         self.eth.lock().get_mac_address(&mut mac_address);
@@ -105,7 +120,7 @@ impl NetDriverOps for AxiNic {
     }
 
     fn can_receive(&self) -> bool {
-        self.eth.lock().is_ready()
+        self.eth.lock().can_receive()
     }
 
     fn can_transmit(&self) -> bool {
@@ -120,7 +135,7 @@ impl NetDriverOps for AxiNic {
     }
 
     fn recycle_tx_buffers(&mut self) -> DevResult {
-        self.tx_transfers.pop_front().unwrap();
+        self.tx_transfers.pop_front();
         Ok(())
     }
 
@@ -130,12 +145,24 @@ impl NetDriverOps for AxiNic {
         }
         if let Some(transfer) = self.rx_transfers.pop_front() {
             let buf = transfer.wait().map_err(|_| panic!("Unexpected error"))?;
+            let slice = vec![0u8; RX_BUFFER_SIZE].into_boxed_slice();
+            let rx_buf = Pin::new(slice);
+            match self.dma.rx_submit(rx_buf) {
+                Ok(transfer) => self.rx_transfers.push_back(transfer),
+                Err(err) => panic!("Unexpected err: {:?}", err),
+            };
             Ok(NetBufPtr::from(buf))
         } else {
             // RX queue is empty, receive from AxiNIC.
             let slice = vec![0u8; RX_BUFFER_SIZE].into_boxed_slice();
             let rx_buf = Pin::new(slice);
             let completed_buf = self.dma.rx_submit(rx_buf).map_err(|_| panic!("Unexpected error"))?.wait().unwrap();
+            let slice = vec![0u8; RX_BUFFER_SIZE].into_boxed_slice();
+            let rx_buf = Pin::new(slice);
+            match self.dma.rx_submit(rx_buf) {
+                Ok(transfer) => self.rx_transfers.push_back(transfer),
+                Err(err) => panic!("Unexpected err: {:?}", err),
+            };
             Ok(NetBufPtr::from(completed_buf))
         }
     }
@@ -165,7 +192,7 @@ impl From<Pin<Box<[u8]>>> for NetBufPtr {
         let len = raw_buf.len();
         let buf_ptr = Box::into_raw(raw_buf);
         Self { 
-            raw_ptr: NonNull::new(core::ptr::null_mut()).unwrap(), 
+            raw_ptr: NonNull::dangling(), 
             buf_ptr: NonNull::new(buf_ptr as *mut u8).unwrap(), 
             len 
         }

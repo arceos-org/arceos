@@ -59,6 +59,7 @@ bus-pci = ["axfeat/bus-pci"]
 driver-ramdisk = ["axfeat/driver-ramdisk"]
 driver-ixgbe = ["axfeat/driver-ixgbe"]
 driver-bcm2835-sdhci = ["axfeat/driver-bcm2835-sdhci"]
+driver-axi-eth = ["axfeat/driver-axi-eth"]
 
 # Logging
 log-level-off = ["axfeat/log-level-off"]

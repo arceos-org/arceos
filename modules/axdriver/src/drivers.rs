@@ -128,3 +128,20 @@ cfg_if::cfg_if! {
         }
     }
 }
+
+cfg_if::cfg_if! {
+    if #[cfg(net_dev = "axi-eth")] {
+        use axhal::mem::{PhysAddr, phys_to_virt};
+        pub struct AxiEthDriver;
+        register_net_driver!(AxiEthDriver, driver_net::axi_ethernet::AxiEth);
+        impl DriverProbe for AxiEthDriver {
+            fn probe_global() -> Option<AxDeviceEnum> {
+                let eth_base = phys_to_virt(0x6014_0000.into());
+                let dma_base = phys_to_virt(0x6010_0000.into());
+                Some(AxDeviceEnum::from_net(
+                    driver_net::axi_ethernet::AxiEth::init(eth_base.as_usize(), dma_base.as_usize()).unwrap()
+                ))
+            }
+        }
+    }
+}

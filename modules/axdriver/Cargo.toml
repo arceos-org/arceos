@@ -27,6 +27,7 @@ virtio-gpu = ["display", "virtio", "driver_virtio/gpu"]
 ramdisk = ["block", "driver_block/ramdisk"]
 bcm2835-sdhci = ["block", "driver_block/bcm2835-sdhci"]
 ixgbe = ["net", "driver_net/ixgbe", "dep:axalloc", "dep:axhal"]
+axi-eth = ["net", "driver_net/axi-eth", "dep:axalloc", "dep:axhal"]
 # more devices example: e1000 = ["net", "driver_net/e1000"]
 
 default = ["bus-mmio"]

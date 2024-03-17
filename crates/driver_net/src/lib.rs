@@ -9,7 +9,7 @@
 /// ixgbe NIC device driver.
 pub mod ixgbe;
 mod net_buf;
-#[cfg(feature = "axi-ethernet")]
+#[cfg(feature = "axi-eth")]
 /// The Axi Ethernet device driver
 pub mod axi_ethernet;
 
