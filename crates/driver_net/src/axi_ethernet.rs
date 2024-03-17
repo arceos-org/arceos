@@ -71,7 +71,7 @@ impl AxiEth {
         eth_inner.set_options(options | XAE_JUMBO_OPTION);
         eth_inner.detect_phy();
         let speed = eth_inner.get_phy_speed_ksz9031();
-        log::debug!("speed is: {}", speed);
+        log::trace!("speed is: {}", speed);
         eth_inner.set_operating_speed(speed as u16);
         if speed == 0 {
             eth_inner.link_status = LinkStatus::EthLinkDown;
@@ -79,7 +79,7 @@ impl AxiEth {
             eth_inner.link_status = LinkStatus::EthLinkUp;
         }
         eth_inner.set_mac_address(&MAC_ADDR);
-        log::debug!("link_status: {:?}", eth_inner.link_status);
+        log::trace!("link_status: {:?}", eth_inner.link_status);
         eth_inner.enable_rx_memovr();
         eth_inner.enable_rx_rject();
         eth_inner.enable_rx_cmplt();
@@ -135,7 +135,10 @@ impl NetDriverOps for AxiEth {
     }
 
     fn recycle_tx_buffers(&mut self) -> DevResult {
-        self.tx_transfers.pop_front();
+        if let Some(transfer) = self.tx_transfers.pop_front() {
+            let buf = transfer.wait().map_err(|_| panic!("Unexpected error"))?;
+            drop(buf);
+        }
         Ok(())
     }
 
