@@ -83,6 +83,16 @@ pub fn init_stack(
         .collect();
     // 加入envs和argv的地址
     stack.push(&[null::<u8>(), null::<u8>()]);
+    let final_sp = stack.get_sp()
+        - (auxv.len() * 2 + envs_slice.len() + argv_slice.len()) * core::mem::size_of::<usize>()
+        - 8 // auxv 与 envs 之间的空位
+        - 8 // envs 与 args 之间的空位
+        - 8; // argc 占用空间
+    if final_sp % 16 != 0 {
+        // 按照 SIMD 要求，保证最终用户栈是 16 Bytes 对齐的
+        // 更高的对齐要求理应对其他环境也适用，因此这里没有特殊指定 feature("fp_simd")
+        stack.push(&[null::<u8>()]);
+    }
     // 再加入auxv
     // 注意若是atrandom，则要指向栈上的一个16字节长度的随机字符串
     for (key, value) in auxv.iter() {

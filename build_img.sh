@@ -1,27 +1,50 @@
 #!/bin/sh
 
-arch=$1
-fs=$2
+# default setting
+arch=x86_64
+fs=fat32
+FILE=
 
-if [ "$arch" != "riscv64" ] && [ "$arch" != "aarch64" ]; then
-	arch=x86_64
-	FILE=testsuits-x86_64-linux-musl
-	if [ ! -e testcases/$FILE ]; then
-		wget https://github.com/oscomp/testsuits-for-oskernel/releases/download/final-x86_64/$FILE.tgz
-		tar zxvf $FILE.tgz
-		mv $FILE testcases/$FILE -f
-		rm $FILE.tgz
-	fi
-else
-	if [ -n "$3" ]; then
-		FILE=$3
-	else
-		if [ "$arch" = "riscv64" ]; then
-			FILE=sdcard
-		else
-			FILE=aarch64
+if [ -n "$1" ]; then
+	if [ "$1" = "riscv64" ] || [ "$1" = "aarch64" ] || [ "$1" = "x86_64" ]; then # $1 is arch
+		arch=$1
+		if [ -n "$2" ]; then
+			if [ "$2" = "ext4" ] || [ "$2" = "fat32" ]; then # $2 is type of file system 
+				fs=$2
+				if [ -n "$3" ]; then
+					FILE=$3
+				fi
+			else  # $2 is folder in testcases
+				FILE=$2
+			fi
 		fi
+	elif [ "$1" = "ext4" ] || [ "$1" = "fat32" ]; then # $1 is type of file system 
+		fs=$1
+		if [ -n "$2" ]; then
+			FILE=$2
+		fi
+	else # $1 is folder in testcases
+		FILE=$1
 	fi
+fi
+
+if [ ! -n $FILE ] || [ "$FILE" = "" ]; then # use default testcases
+	if [ "$arch" = "riscv64" ]; then
+		FILE=sdcard
+	elif [ "$arch" = "x86_64" ]; then
+		FILE=testsuits-x86_64-linux-musl
+	elif [ "$arch" = "aarch64" ]; then
+		FILE=aarch64
+	else
+		exit 1
+	fi
+fi
+
+if [ "$FILE" = "testsuits-x86_64-linux-musl" ] && [ ! -e testcases/$FILE ]; then # auto download
+	wget https://github.com/oscomp/testsuits-for-oskernel/releases/download/final-x86_64/$FILE.tgz
+	tar zxvf $FILE.tgz
+	mv $FILE testcases/$FILE -f
+	rm $FILE.tgz
 fi
 
 rm disk.img
