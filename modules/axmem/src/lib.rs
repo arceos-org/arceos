@@ -337,10 +337,8 @@ impl MemorySet {
         let end = start + size;
         assert!(end.is_aligned_4k());
 
-        // 在更新flags前需要保证该区域的所有页都已经分配了物理内存
-        // 否则会因为flag被更新，导致本应该是 page fault 而出现了fault
         flush_tlb(None);
-        self.manual_alloc_range_for_lazy(start, end - 1).unwrap();
+        //self.manual_alloc_range_for_lazy(start, end - 1).unwrap();
         // NOTE: There will be new areas but all old aree's start address won't change. But we
         // can't iterating through `value_mut()` while `insert()` to BTree at the same time, so we
         // `drain_filter()` out the overlapped areas first.
@@ -403,6 +401,7 @@ impl MemorySet {
             }
             None => {
                 error!("Page fault address {:?} not found in memory set ", addr);
+                panic!("FIXME: Page fault shouldn't cause a panic in kernel.");
                 Err(AxError::BadAddress)
             }
         }

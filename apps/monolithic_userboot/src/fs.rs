@@ -40,7 +40,7 @@ pub fn fs_init() {
     );
 
     // 接下来对 busybox 相关的指令建立软链接
-    let busybox_arch = ["ls", "mkdir", "touch", "mv", "busybox"];
+    let busybox_arch = ["ls", "mkdir", "touch", "mv", "busybox", "sh", "which"];
     for arch in busybox_arch {
         let src_path = "/usr/sbin/".to_string() + arch;
         create_link(
@@ -48,6 +48,11 @@ pub fn fs_init() {
             &(FilePath::new("busybox").unwrap()),
         );
         let src_path = "/usr/bin/".to_string() + arch;
+        create_link(
+            &(FilePath::new(src_path.as_str()).unwrap()),
+            &(FilePath::new("busybox").unwrap()),
+        );
+        let src_path = "/bin/".to_string() + arch;
         create_link(
             &(FilePath::new(src_path.as_str()).unwrap()),
             &(FilePath::new("busybox").unwrap()),
