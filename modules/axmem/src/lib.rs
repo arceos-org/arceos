@@ -401,7 +401,7 @@ impl MemorySet {
             }
             None => {
                 error!("Page fault address {:?} not found in memory set ", addr);
-                panic!("FIXME: Page fault shouldn't cause a panic in kernel.");
+                //panic!("FIXME: Page fault shouldn't cause a panic in kernel.");
                 Err(AxError::BadAddress)
             }
         }
