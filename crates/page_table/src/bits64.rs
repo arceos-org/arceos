@@ -156,7 +156,7 @@ impl<M: PagingMetaData, PTE: GenericPTE, IF: PagingIf> PageTable64<M, PTE, IF> {
     ) -> PagingResult<PageSize> {
         let (entry, size) = self.get_entry_mut(vaddr)?;
         if entry.paddr() == 0.into() {
-            return Ok(size)
+            return Ok(size);
         }
         if let Some(paddr) = paddr {
             entry.set_paddr(paddr);
