@@ -4,10 +4,12 @@ redis-objs := redis-$(redis-version)/src/redis-server.o
 
 app-objs := $(redis-objs)
 
-CFLAGS += -Wno-format
+CFLAGS += -Wno-format -fPIC
 
 redis-build-args := \
   CC=$(CC) \
+  AR=$(AR) \
+  RANLIB=$(RANLIB) \
   CFLAGS="$(CFLAGS)" \
   USE_JEMALLOC=no \
   -j
