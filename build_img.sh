@@ -10,7 +10,8 @@ arch=x86_64
 fs=fat32
 FILE=
 
-function echo_help() {
+display_help()
+{
 	echo ""
 	echo "./build_img.sh -m [arch] -fs [filesystem] -file [testcast]"
 	echo ""
@@ -68,7 +69,7 @@ while [ -n "$1" ]; do
 			FILE=libc-static
 			;;
 		*)
-			echo_help
+			display_help
 			;;
 	esac
 	shift
@@ -108,7 +109,7 @@ mkdir -p mnt
 
 #### 添加 MacOS 支持
 os=`uname -s`
-if [ "x$os" == "xDarwin" ];then
+if [ "x$os" = "xDarwin" ];then
 	hdiutil detach mnt > /dev/null 2>&1
 	hdiutil attach disk.img -mountpoint mnt
 	echo "Copying $arch $fs $FILE/* to disk"
