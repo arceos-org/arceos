@@ -218,6 +218,9 @@ dependencies = [
 name = "arm_gic"
 version = "0.1.0"
 dependencies = [
+ "aarch64-cpu",
+ "bitflags 2.4.0",
+ "cfg-if",
  "tock-registers",
 ]
 

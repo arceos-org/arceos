@@ -4,76 +4,11 @@
 
 use core::ptr::NonNull;
 
-use crate::{TriggerMode, GIC_MAX_IRQ, SPI_RANGE};
+use crate::registers::gicv2_regs::*;
+
+use crate::{TriggerMode, IntId, GenericArmGic};
 use tock_registers::interfaces::{Readable, Writeable};
-use tock_registers::register_structs;
-use tock_registers::registers::{ReadOnly, ReadWrite, WriteOnly};
 
-register_structs! {
-    /// GIC Distributor registers.
-    #[allow(non_snake_case)]
-    GicDistributorRegs {
-        /// Distributor Control Register.
-        (0x0000 => CTLR: ReadWrite<u32>),
-        /// Interrupt Controller Type Register.
-        (0x0004 => TYPER: ReadOnly<u32>),
-        /// Distributor Implementer Identification Register.
-        (0x0008 => IIDR: ReadOnly<u32>),
-        (0x000c => _reserved_0),
-        /// Interrupt Group Registers.
-        (0x0080 => IGROUPR: [ReadWrite<u32>; 0x20]),
-        /// Interrupt Set-Enable Registers.
-        (0x0100 => ISENABLER: [ReadWrite<u32>; 0x20]),
-        /// Interrupt Clear-Enable Registers.
-        (0x0180 => ICENABLER: [ReadWrite<u32>; 0x20]),
-        /// Interrupt Set-Pending Registers.
-        (0x0200 => ISPENDR: [ReadWrite<u32>; 0x20]),
-        /// Interrupt Clear-Pending Registers.
-        (0x0280 => ICPENDR: [ReadWrite<u32>; 0x20]),
-        /// Interrupt Set-Active Registers.
-        (0x0300 => ISACTIVER: [ReadWrite<u32>; 0x20]),
-        /// Interrupt Clear-Active Registers.
-        (0x0380 => ICACTIVER: [ReadWrite<u32>; 0x20]),
-        /// Interrupt Priority Registers.
-        (0x0400 => IPRIORITYR: [ReadWrite<u32>; 0x100]),
-        /// Interrupt Processor Targets Registers.
-        (0x0800 => ITARGETSR: [ReadWrite<u32>; 0x100]),
-        /// Interrupt Configuration Registers.
-        (0x0c00 => ICFGR: [ReadWrite<u32>; 0x40]),
-        (0x0d00 => _reserved_1),
-        /// Software Generated Interrupt Register.
-        (0x0f00 => SGIR: WriteOnly<u32>),
-        (0x0f04 => @END),
-    }
-}
-
-register_structs! {
-    /// GIC CPU Interface registers.
-    #[allow(non_snake_case)]
-    GicCpuInterfaceRegs {
-        /// CPU Interface Control Register.
-        (0x0000 => CTLR: ReadWrite<u32>),
-        /// Interrupt Priority Mask Register.
-        (0x0004 => PMR: ReadWrite<u32>),
-        /// Binary Point Register.
-        (0x0008 => BPR: ReadWrite<u32>),
-        /// Interrupt Acknowledge Register.
-        (0x000c => IAR: ReadOnly<u32>),
-        /// End of Interrupt Register.
-        (0x0010 => EOIR: WriteOnly<u32>),
-        /// Running Priority Register.
-        (0x0014 => RPR: ReadOnly<u32>),
-        /// Highest Priority Pending Interrupt Register.
-        (0x0018 => HPPIR: ReadOnly<u32>),
-        (0x001c => _reserved_1),
-        /// CPU Interface Identification Register.
-        (0x00fc => IIDR: ReadOnly<u32>),
-        (0x0100 => _reserved_2),
-        /// Deactivate Interrupt Register.
-        (0x1000 => DIR: WriteOnly<u32>),
-        (0x1004 => @END),
-    }
-}
 
 /// The GIC distributor.
 ///
@@ -93,9 +28,101 @@ register_structs! {
 /// - visibility of the state of each interrupt
 /// - a mechanism for software to set or clear the pending state of a peripheral
 ///   interrupt.
-pub struct GicDistributor {
+#[derive(Debug,Copy,Clone)]
+struct GicDistributor {
     base: NonNull<GicDistributorRegs>,
-    max_irqs: usize,
+    support_irqs: usize,
+    #[allow(dead_code)]
+    support_cpu: usize,
+}
+
+impl GicDistributor {
+
+    const GICD_DISABLE: u32 = 0;
+    const GICD_ENABLE: u32 = 1;
+
+    const CPU_NUM_SHIFT: usize = 5;
+    const CPU_NUM_MASK: u32 =  0b111;
+    const IT_LINES_NUM_MASK: u32 = 0b11111;
+
+    /// Construct a new GIC distributor instance from the base address.
+    pub const fn new(base: *mut u8) -> Self {
+        Self {
+            base: NonNull::new(base).unwrap().cast(),
+            support_irqs: 0,
+            support_cpu: 0,
+        }
+    }
+
+    const fn regs(&self) -> &GicDistributorRegs {
+        unsafe { self.base.as_ref() }
+    }
+
+    /// Configures the trigger type for the interrupt with the given ID.
+    fn set_trigger(&mut self, id: usize, tm: TriggerMode) {
+        // type is encoded with two bits, MSB of the two determine type
+        // 16 irqs encoded per ICFGR register
+        let index = id >> 4;
+        let bit_shift = ((id & 0xf) << 1) + 1;
+
+        let mut reg_val = self.regs().ICFGR[index].get();
+        match tm {
+            TriggerMode::Edge => reg_val |= 1 << bit_shift,
+            TriggerMode::Level => reg_val &= !(1 << bit_shift),
+        }
+
+        self.regs().ICFGR[index].set(reg_val);
+    }
+
+    /// Initializes the GIC distributor.
+    ///
+    /// It disables all interrupts, sets the target of all SPIs to CPU 0,
+    /// configures all SPIs to be edge-triggered, and finally enables the GICD.
+    ///
+    /// This function should be called only once.
+    pub fn init(&mut self) {
+        let typer = self.regs().TYPER.get();
+
+        // The maximum number of interrupts that the GIC supports
+        // If ITLinesNumber=N, the maximum number of interrupts is 32(N+1)
+        let irq_num = (((typer & Self::IT_LINES_NUM_MASK) + 1) * 32) as usize;
+        match irq_num {
+            0..=IntId::GIC_MAX_IRQ => self.support_irqs = irq_num,
+            _ => self.support_irqs = IntId::GIC_MAX_IRQ,
+        }
+        
+        self.support_cpu = (((typer >> Self::CPU_NUM_SHIFT) & Self::CPU_NUM_MASK) + 1) as usize;
+    
+        // disable GICD
+        self.regs().CTLR.set(Self::GICD_DISABLE);
+
+        // Set all global interrupts to CPU0.
+        for i in (IntId::SPI_START..self.support_irqs).step_by(4) {
+            // Set external interrupts to target cpu 0
+            // once time set 4 interrupts
+            self.regs().ITARGETSR[i / 4].set(0x01_01_01_01);
+        }
+
+        // Initialize all the SPIs to edge triggered
+        for i in IntId::SPI_START..self.support_irqs {
+            self.set_trigger(i, TriggerMode::Edge);
+        }
+
+        // Set priority on all global interrupts
+        for i in (IntId::SPI_START..self.support_irqs).step_by(4) {
+            // once time set 4 interrupts
+            self.regs().IPRIORITYR[i / 4].set(0xa0_a0_a0_a0);
+        }
+
+        // Deactivate and disable all SPIs
+        for i in (IntId::SPI_START..self.support_irqs).step_by(32) {
+            self.regs().ICACTIVER[i / 32].set(u32::MAX);
+            self.regs().ICENABLER[i / 32].set(u32::MAX);
+        }
+
+        // enable GIC0
+        self.regs().CTLR.set(Self::GICD_ENABLE);
+    }
 }
 
 /// The GIC CPU interface.
@@ -111,105 +138,14 @@ pub struct GicDistributor {
 /// - setting an interrupt priority mask for the processor
 /// - defining the preemption policy for the processor
 /// - determining the highest priority pending interrupt for the processor.
-pub struct GicCpuInterface {
+#[derive(Debug,Copy,Clone)]
+struct GicCpuInterface {
     base: NonNull<GicCpuInterfaceRegs>,
 }
 
-unsafe impl Send for GicDistributor {}
-unsafe impl Sync for GicDistributor {}
-
-unsafe impl Send for GicCpuInterface {}
-unsafe impl Sync for GicCpuInterface {}
-
-impl GicDistributor {
-    /// Construct a new GIC distributor instance from the base address.
-    pub const fn new(base: *mut u8) -> Self {
-        Self {
-            base: NonNull::new(base).unwrap().cast(),
-            max_irqs: GIC_MAX_IRQ,
-        }
-    }
-
-    const fn regs(&self) -> &GicDistributorRegs {
-        unsafe { self.base.as_ref() }
-    }
-
-    /// The number of implemented CPU interfaces.
-    pub fn cpu_num(&self) -> usize {
-        ((self.regs().TYPER.get() as usize >> 5) & 0b111) + 1
-    }
-
-    /// The maximum number of interrupts that the GIC supports
-    pub fn max_irqs(&self) -> usize {
-        ((self.regs().TYPER.get() as usize & 0b11111) + 1) * 32
-    }
-
-    /// Configures the trigger mode for the given interrupt.
-    pub fn configure_interrupt(&mut self, vector: usize, tm: TriggerMode) {
-        // Only configurable for SPI interrupts
-        if vector >= self.max_irqs || vector < SPI_RANGE.start {
-            return;
-        }
-
-        // type is encoded with two bits, MSB of the two determine type
-        // 16 irqs encoded per ICFGR register
-        let reg_idx = vector >> 4;
-        let bit_shift = ((vector & 0xf) << 1) + 1;
-        let mut reg_val = self.regs().ICFGR[reg_idx].get();
-        match tm {
-            TriggerMode::Edge => reg_val |= 1 << bit_shift,
-            TriggerMode::Level => reg_val &= !(1 << bit_shift),
-        }
-        self.regs().ICFGR[reg_idx].set(reg_val);
-    }
-
-    /// Enables or disables the given interrupt.
-    pub fn set_enable(&mut self, vector: usize, enable: bool) {
-        if vector >= self.max_irqs {
-            return;
-        }
-        let reg = vector / 32;
-        let mask = 1 << (vector % 32);
-        if enable {
-            self.regs().ISENABLER[reg].set(mask);
-        } else {
-            self.regs().ICENABLER[reg].set(mask);
-        }
-    }
-
-    /// Initializes the GIC distributor.
-    ///
-    /// It disables all interrupts, sets the target of all SPIs to CPU 0,
-    /// configures all SPIs to be edge-triggered, and finally enables the GICD.
-    ///
-    /// This function should be called only once.
-    pub fn init(&mut self) {
-        let max_irqs = self.max_irqs();
-        assert!(max_irqs <= GIC_MAX_IRQ);
-        self.max_irqs = max_irqs;
-
-        // Disable all interrupts
-        for i in (0..max_irqs).step_by(32) {
-            self.regs().ICENABLER[i / 32].set(u32::MAX);
-            self.regs().ICPENDR[i / 32].set(u32::MAX);
-        }
-        if self.cpu_num() > 1 {
-            for i in (SPI_RANGE.start..max_irqs).step_by(4) {
-                // Set external interrupts to target cpu 0
-                self.regs().ITARGETSR[i / 4].set(0x01_01_01_01);
-            }
-        }
-        // Initialize all the SPIs to edge triggered
-        for i in SPI_RANGE.start..max_irqs {
-            self.configure_interrupt(i, TriggerMode::Edge);
-        }
-
-        // enable GIC0
-        self.regs().CTLR.set(1);
-    }
-}
-
 impl GicCpuInterface {
+    const GICC_ENABLE: u32 = 1;
+
     /// Construct a new GIC CPU interface instance from the base address.
     pub const fn new(base: *mut u8) -> Self {
         Self {
@@ -221,55 +157,108 @@ impl GicCpuInterface {
         unsafe { self.base.as_ref() }
     }
 
-    /// Returns the interrupt ID of the highest priority pending interrupt for
-    /// the CPU interface. (read GICC_IAR)
-    ///
-    /// The read returns a spurious interrupt ID of `1023` if the distributor
-    /// or the CPU interface are disabled, or there is no pending interrupt on
-    /// the CPU interface.
-    pub fn iar(&self) -> u32 {
-        self.regs().IAR.get()
-    }
-
-    /// Informs the CPU interface that it has completed the processing of the
-    /// specified interrupt. (write GICC_EOIR)
-    ///
-    /// The value written must be the value returns from [`Self::iar`].
-    pub fn eoi(&self, iar: u32) {
-        self.regs().EOIR.set(iar);
-    }
-
-    /// handles the signaled interrupt.
-    ///
-    /// It first reads GICC_IAR to obtain the pending interrupt ID and then
-    /// calls the given handler. After the handler returns, it writes GICC_EOIR
-    /// to acknowledge the interrupt.
-    ///
-    /// If read GICC_IAR returns a spurious interrupt ID of `1023`, it does
-    /// nothing.
-    pub fn handle_irq<F>(&self, handler: F)
-    where
-        F: FnOnce(u32),
-    {
-        let iar = self.iar();
-        let vector = iar & 0x3ff;
-        if vector < 1020 {
-            handler(vector);
-            self.eoi(iar);
-        } else {
-            // spurious
-        }
-    }
-
     /// Initializes the GIC CPU interface.
     ///
     /// It unmask interrupts at all priority levels and enables the GICC.
     ///
     /// This function should be called only once.
-    pub fn init(&self) {
-        // enable GIC0
-        self.regs().CTLR.set(1);
+    pub fn init(&self, gicd: &GicDistributor) {
+        // Deactivate and disable all private interrupts
+        gicd.regs().ICACTIVER[0].set(u32::MAX);
+        gicd.regs().ICENABLER[0].set(u32::MAX);
+
+        // Set priority on private interrupts
+        for i in (0..IntId::SPI_START).step_by(4) {
+            // once time set 4 interrupts
+            gicd.regs().IPRIORITYR[i / 4].set(0xa0_a0_a0_a0);
+        }
+
         // unmask interrupts at all priority levels
         self.regs().PMR.set(0xff);
+        // enable GIC0
+        self.regs().CTLR.set(Self::GICC_ENABLE);
+    }
+}
+
+unsafe impl Send for GicDistributor {}
+unsafe impl Sync for GicDistributor {}
+
+unsafe impl Send for GicCpuInterface {}
+unsafe impl Sync for GicCpuInterface {}
+
+/// Driver for an Arm Generic Interrupt Controller version 2.
+#[derive(Debug,Copy,Clone)]
+pub struct GicV2 {
+    gicd: GicDistributor,
+    gicc: GicCpuInterface,
+}
+
+unsafe impl Send for GicV2 {}
+unsafe impl Sync for GicV2 {}
+
+impl GicV2 {
+    /// # Safety
+    ///
+    /// The given base addresses must point to the GIC distributor and redistributor registers
+    /// respectively. These regions must be mapped into the address space of the process as device
+    /// memory, and not have any other aliases, either via another instance of this driver or
+    /// otherwise.
+    pub const fn new(gicd: *mut u8, gicc: *mut u8) -> Self {
+        Self {
+            gicd: GicDistributor::new(gicd),
+            gicc: GicCpuInterface::new(gicc),
+        }
+    }
+}
+
+impl GenericArmGic for GicV2 {
+    /// Initialises the GIC.
+    fn init_primary(&mut self) {
+        self.gicd.init();
+        self.gicc.init(&self.gicd);
+    }
+
+    /// Initialises the GIC for the current CPU core.
+    fn per_cpu_init(&mut self) {
+        self.gicc.init(&self.gicd);
+    }
+
+    /// Configures the trigger type for the interrupt with the given ID.
+    fn set_trigger(&mut self, intid: IntId, tm: TriggerMode) {
+        // Only configurable for SPI interrupts
+        if intid.0 < IntId::SPI_START {
+            return
+        }
+        self.gicd.set_trigger(intid.0, tm);
+    }
+
+    /// Enables the interrupt with the given ID.
+    fn enable_interrupt(&mut self, intid: IntId) {
+        let index = intid.0 / 32;
+        let bit = 1 << (intid.0 % 32);
+        self.gicd.regs().ISENABLER[index].set(bit);
+    }
+
+    /// Disable the interrupt with the given ID.
+    fn disable_interrupt(&mut self, intid: IntId) {
+        let index = intid.0 / 32;
+        let bit = 1 << (intid.0 % 32);
+        self.gicd.regs().ICENABLER[index].set(bit);
+    }
+
+    fn get_and_acknowledge_interrupt(&self) -> Option<IntId> {
+        let iar = self.gicc.regs().IAR.get();
+        let id = (iar & 0x3ff) as usize;
+        if id >= IntId::SPECIAL_START {
+            None
+        } else {
+            Some(IntId(id))
+        }
+    }
+
+    /// Informs the interrupt controller that the CPU has completed processing the given interrupt.
+    /// This drops the interrupt priority and deactivates the interrupt.
+    fn end_interrupt(&self, intid: IntId) {
+        self.gicc.regs().EOIR.set(intid.0 as u32);
     }
 }
