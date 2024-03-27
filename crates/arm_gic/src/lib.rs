@@ -32,7 +32,6 @@ pub use crate::gic_v3::GicV3;
 pub struct IntId(usize);
 
 impl IntId {
-
     /// Maximum number of interrupts supported by the GIC.
     pub const GIC_MAX_IRQ: usize = 1020;
 

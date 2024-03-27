@@ -6,9 +6,8 @@ use core::ptr::NonNull;
 
 use crate::registers::gicv2_regs::*;
 
-use crate::{TriggerMode, IntId, GenericArmGic};
+use crate::{GenericArmGic, IntId, TriggerMode};
 use tock_registers::interfaces::{Readable, Writeable};
-
 
 /// The GIC distributor.
 ///
@@ -28,7 +27,7 @@ use tock_registers::interfaces::{Readable, Writeable};
 /// - visibility of the state of each interrupt
 /// - a mechanism for software to set or clear the pending state of a peripheral
 ///   interrupt.
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug, Copy, Clone)]
 struct GicDistributor {
     base: NonNull<GicDistributorRegs>,
     support_irqs: usize,
@@ -37,12 +36,11 @@ struct GicDistributor {
 }
 
 impl GicDistributor {
-
     const GICD_DISABLE: u32 = 0;
     const GICD_ENABLE: u32 = 1;
 
     const CPU_NUM_SHIFT: usize = 5;
-    const CPU_NUM_MASK: u32 =  0b111;
+    const CPU_NUM_MASK: u32 = 0b111;
     const IT_LINES_NUM_MASK: u32 = 0b11111;
 
     /// Construct a new GIC distributor instance from the base address.
@@ -90,9 +88,9 @@ impl GicDistributor {
             0..=IntId::GIC_MAX_IRQ => self.support_irqs = irq_num,
             _ => self.support_irqs = IntId::GIC_MAX_IRQ,
         }
-        
+
         self.support_cpu = (((typer >> Self::CPU_NUM_SHIFT) & Self::CPU_NUM_MASK) + 1) as usize;
-    
+
         // disable GICD
         self.regs().CTLR.set(Self::GICD_DISABLE);
 
@@ -138,7 +136,7 @@ impl GicDistributor {
 /// - setting an interrupt priority mask for the processor
 /// - defining the preemption policy for the processor
 /// - determining the highest priority pending interrupt for the processor.
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug, Copy, Clone)]
 struct GicCpuInterface {
     base: NonNull<GicCpuInterfaceRegs>,
 }
@@ -187,7 +185,7 @@ unsafe impl Send for GicCpuInterface {}
 unsafe impl Sync for GicCpuInterface {}
 
 /// Driver for an Arm Generic Interrupt Controller version 2.
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct GicV2 {
     gicd: GicDistributor,
     gicc: GicCpuInterface,
@@ -227,7 +225,7 @@ impl GenericArmGic for GicV2 {
     fn set_trigger(&mut self, intid: IntId, tm: TriggerMode) {
         // Only configurable for SPI interrupts
         if intid.0 < IntId::SPI_START {
-            return
+            return;
         }
         self.gicd.set_trigger(intid.0, tm);
     }

@@ -9,7 +9,7 @@ macro_rules! impl_uintlike_and_shift {
 
         impl Shl<usize> for $reg {
             type Output = Self;
-        
+
             fn shl(self, rhs: usize) -> Self::Output {
                 $reg::from_bits_truncate(self.bits() << rhs)
             }
@@ -17,7 +17,7 @@ macro_rules! impl_uintlike_and_shift {
 
         impl Shr<usize> for $reg {
             type Output = Self;
-        
+
             fn shr(self, rhs: usize) -> Self::Output {
                 $reg::from_bits_truncate(self.bits() >> rhs)
             }

@@ -1,7 +1,7 @@
 use crate::{irq::IrqHandler, mem::phys_to_virt};
+use arm_gic::{translate_irq, GenericArmGic, IntId, InterruptType};
 use memory_addr::PhysAddr;
 use spinlock::SpinNoIrq;
-use arm_gic::{GenericArmGic, translate_irq, InterruptType, IntId};
 
 /// The maximum number of IRQs.
 pub const MAX_IRQ_COUNT: usize = IntId::GIC_MAX_IRQ;
@@ -59,22 +59,24 @@ pub fn register_handler(irq_num: usize, handler: IrqHandler) -> bool {
 /// necessary, it also acknowledges the interrupt controller after handling.
 pub fn dispatch_irq(_unused: usize) {
     // actually no need to lock
-    let intid = unsafe {GIC.get_mut().get_and_acknowledge_interrupt()};
+    let intid = unsafe { GIC.get_mut().get_and_acknowledge_interrupt() };
     if let Some(id) = intid {
-            crate::irq::dispatch_irq_common(id.into());
-            unsafe {GIC.get_mut().end_interrupt(id);}
+        crate::irq::dispatch_irq_common(id.into());
+        unsafe {
+            GIC.get_mut().end_interrupt(id);
+        }
     }
 }
 
 /// Initializes GICD, GICC on the primary CPU.
 pub(crate) fn init_primary() {
     info!("Initialize GICv2...");
-    unsafe {GIC.lock().init_primary()};
+    unsafe { GIC.lock().init_primary() };
 }
 
 /// Initializes GICC on secondary CPUs.
 #[cfg(feature = "smp")]
 pub(crate) fn init_secondary() {
     // per cpu handle, no need lock
-    unsafe {GIC.get_mut().per_cpu_init()};
+    unsafe { GIC.get_mut().per_cpu_init() };
 }

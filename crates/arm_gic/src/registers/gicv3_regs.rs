@@ -137,7 +137,6 @@ register_structs! {
     }
 }
 
-
 bitflags! {
     #[repr(transparent)]
     #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -236,7 +235,7 @@ register_structs! {
         /// Interrupt priority registers Interrupt priority registers for extended PPI range.
         (0x0400 => pub(crate) IPRIORITYR: [ReadWrite<u32>; 8+16]),
         (0x0460 => _reserved8: [ReadOnly<u32>; 488]),
-        /// SGI configuration register, 
+        /// SGI configuration register,
         /// PPI configuration register and extended PPI configuration registers.
         (0x0c00 => pub(crate) ICFGR: [ReadWrite<u32>; 6]),
         (0x0c18 => _reserved9: [ReadOnly<u32>; 58]),

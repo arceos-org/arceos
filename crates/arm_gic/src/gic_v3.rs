@@ -2,14 +2,14 @@
 //!
 //! The official documentation: <https://developer.arm.com/documentation/ihi0048/latest/>
 
-use core::ptr::NonNull;
-use core::hint::spin_loop;
 use aarch64_cpu::registers::MPIDR_EL1;
+use core::hint::spin_loop;
+use core::ptr::NonNull;
 use tock_registers::interfaces::{Readable, Writeable};
 
-use crate::{TriggerMode, IntId, GenericArmGic};
 use crate::registers::gicv3_regs::*;
 use crate::sysregs::{read_sysreg, write_sysreg};
+use crate::{GenericArmGic, IntId, TriggerMode};
 
 const SGI_OFFSET: usize = 0x10000;
 
@@ -31,7 +31,7 @@ const SGI_OFFSET: usize = 0x10000;
 /// - visibility of the state of each interrupt
 /// - a mechanism for software to set or clear the pending state of a peripheral
 ///   interrupt.
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct GicDistributor {
     base: NonNull<GicDistributorRegs>,
     support_irqs: usize,
@@ -42,7 +42,7 @@ pub struct GicDistributor {
 }
 
 /// The GIC-V3 redistributor.
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct GicRedistributor {
     gicr_base: NonNull<GicRedistributorRegs>,
     support_ppi: usize,
@@ -68,11 +68,11 @@ impl GicDistributor {
     const ESPI_MASK: u32 = 0b1_0000_0000;
     const ESPI_RANGE_SHIF: u32 = 27;
 
-    const GIC_PIDR2_ARCH_MASK:u32 = 0xf0;
-    const GIC_PIDR2_ARCH_GICV3:u32 = 0x30;
-    const GIC_PIDR2_ARCH_GICV4:u32 = 0x40;
+    const GIC_PIDR2_ARCH_MASK: u32 = 0xf0;
+    const GIC_PIDR2_ARCH_GICV3: u32 = 0x30;
+    const GIC_PIDR2_ARCH_GICV4: u32 = 0x40;
 
-    const GICD_RWP_MASK: u32 = 1<<31;
+    const GICD_RWP_MASK: u32 = 1 << 31;
 
     /// The GIC-V3 erratum.
     ///
@@ -115,15 +115,15 @@ impl GicDistributor {
     }
 
     fn validate_dist_version(&self) {
-        let pidr2 = self.regs().PIDR2.get() & Self::GIC_PIDR2_ARCH_MASK; 
+        let pidr2 = self.regs().PIDR2.get() & Self::GIC_PIDR2_ARCH_MASK;
         match pidr2 {
             Self::GIC_PIDR2_ARCH_GICV3 | Self::GIC_PIDR2_ARCH_GICV4 => (),
-            _ => panic!("unvalid gic pidr2")
+            _ => panic!("unvalid gic pidr2"),
         }
     }
 
     fn check_gic_erratum(&self) {
-        let iidr = self.regs().IIDR.get(); 
+        let iidr = self.regs().IIDR.get();
         for e in Self::GICV3_QUIRKS {
             if iidr & e.mask == e.iidr {
                 panic!("gic need fix erratum")
@@ -152,7 +152,7 @@ impl GicDistributor {
         // GICD_TYPER.ESPI indicates whether the extended SPI range is supported or not.
         // Maximum Extended SPI INTID is (32*(ESPI_range + 1) + 4095)
         self.support_espi = match typer & Self::ESPI_MASK == 0 {
-            false =>  {
+            false => {
                 let espi_range = (typer >> Self::ESPI_RANGE_SHIF) & Self::IT_LINES_NUM_MASK;
                 ((espi_range + 1) * 32) as usize
             }
@@ -169,7 +169,9 @@ impl GicDistributor {
 
             // When RWP is 0b0, no register write in progress
             match self.regs().CTLR.get() & Self::GICD_RWP_MASK != 0 {
-                true => {spin_loop();},
+                true => {
+                    spin_loop();
+                }
                 false => break,
             }
             loop_count -= 1;
@@ -183,7 +185,7 @@ impl GicDistributor {
             self.regs().ICACTIVERnE[i / 32].set(u32::MAX);
         }
 
-        // Configure all ESPI as non-secure Group-1   
+        // Configure all ESPI as non-secure Group-1
         for i in (0..self.support_espi).step_by(32) {
             self.regs().IGROUPRnE[i / 32].set(u32::MAX);
         }
@@ -192,7 +194,7 @@ impl GicDistributor {
             self.regs().ICFGRnE[i / 16].set(0);
         }
 
-        // Configure all ESPI as default priority 
+        // Configure all ESPI as default priority
         for i in (0..self.support_espi).step_by(4) {
             self.regs().ICFGRnE[i / 4].set(0xa0_a0_a0_a0);
         }
@@ -209,10 +211,10 @@ impl GicDistributor {
     }
 
     fn mpidr_to_affinity_level(mpidr: u64) -> u64 {
-        Self::mpidr_affinity_level(mpidr,3) << 32 |
-            Self::mpidr_affinity_level(mpidr,2) << 16 |
-            Self::mpidr_affinity_level(mpidr,1) << 8 |
-            Self::mpidr_affinity_level(mpidr,0)
+        Self::mpidr_affinity_level(mpidr, 3) << 32
+            | Self::mpidr_affinity_level(mpidr, 2) << 16
+            | Self::mpidr_affinity_level(mpidr, 1) << 8
+            | Self::mpidr_affinity_level(mpidr, 0)
     }
 
     fn init(&mut self) {
@@ -232,7 +234,7 @@ impl GicDistributor {
         for i in (IntId::SPI_START..self.support_irqs).step_by(32) {
             self.regs().IGROUPR[i / 32].set(u32::MAX);
         }
-        
+
         // Initialize all the SPIs to edge triggered
         for i in IntId::SPI_START..self.support_irqs {
             self.set_trigger(i, TriggerMode::Edge);
@@ -251,11 +253,13 @@ impl GicDistributor {
         }
 
         // Enable affinity routing and group1
-        self.regs().CTLR.set((GicdCtlr::ARE_S | GicdCtlr::EnableGrp1NS).bits());
+        self.regs()
+            .CTLR
+            .set((GicdCtlr::ARE_S | GicdCtlr::EnableGrp1NS).bits());
         self.wait_rwp();
 
         // Set all global interrupts to current cpu.
-        let mpidr:u64 = MPIDR_EL1.get() & 0xff00ffffff;
+        let mpidr: u64 = MPIDR_EL1.get() & 0xff00ffffff;
         for i in IntId::SPI_START..self.support_irqs {
             // Set external interrupts to target cpu 0
             self.regs().IROUTER[i].set(Self::mpidr_to_affinity_level(mpidr));
@@ -301,8 +305,9 @@ impl GicRedistributor {
     const fn sgi_regs(&self) -> &GicSgiRegs {
         // SAFETY: Writing to this system register doesn't access memory in any way
         unsafe {
-            let gicr_addr = self.gicr_base.as_ptr(); 
-            let sgi_base: NonNull<GicSgiRegs> = NonNull::new(gicr_addr.byte_add(SGI_OFFSET)).unwrap().cast();
+            let gicr_addr = self.gicr_base.as_ptr();
+            let sgi_base: NonNull<GicSgiRegs> =
+                NonNull::new(gicr_addr.byte_add(SGI_OFFSET)).unwrap().cast();
             sgi_base.as_ref()
         }
     }
@@ -312,8 +317,10 @@ impl GicRedistributor {
         // Wake up this CPU redistributor
         waker &= !(WakerFlags::PROCESSOR_SLEEP.bits());
         self.gicr_regs().WAKER.set(waker);
-        
-        while WakerFlags::from_bits_truncate(self.gicr_regs().WAKER.get()).contains(WakerFlags::CHILDREN_ASLEEP) {
+
+        while WakerFlags::from_bits_truncate(self.gicr_regs().WAKER.get())
+            .contains(WakerFlags::CHILDREN_ASLEEP)
+        {
             spin_loop();
         }
     }
@@ -323,7 +330,7 @@ impl GicRedistributor {
         let mut ppinum = typer >> 27 & 0x1f;
         ppinum = match ppinum {
             0 => 16,
-            1|2 =>  16 + 32 * ppinum,
+            1 | 2 => 16 + 32 * ppinum,
             _ => panic!("invalid ppinum"),
         };
 
@@ -337,7 +344,7 @@ impl GicRedistributor {
         for i in (0..self.support_ppi + 16).step_by(32) {
             self.sgi_regs().IGROUPR0[i / 32].set(u32::MAX);
         }
-        
+
         // Deactivate and disable all private interrupts
         for i in (0..self.support_ppi + 16).step_by(32) {
             self.sgi_regs().ICACTIVER[i / 32].set(u32::MAX);
@@ -369,7 +376,7 @@ impl GicRedistributor {
 }
 
 /// Driver for an Arm Generic Interrupt Controller version 3 (or 4).
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct GicV3 {
     gicd: GicDistributor,
     gicr: GicRedistributor,
@@ -417,10 +424,9 @@ impl GicV3 {
             write_sysreg!(icc_igrpen1_el1, 0x00000001);
         }
     }
-
 }
 
-impl GenericArmGic for GicV3 { 
+impl GenericArmGic for GicV3 {
     /// Initialises the GIC.
     fn init_primary(&mut self) {
         self.gicd.init();
