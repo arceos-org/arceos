@@ -60,12 +60,9 @@ pub fn register_handler(irq_num: usize, handler: IrqHandler) -> bool {
 pub fn dispatch_irq(_unused: usize) {
     // actually no need to lock
     let intid = unsafe {GIC.get_mut().get_and_acknowledge_interrupt()};
-    match intid {
-        Some(id) => {
+    if let Some(id) = intid {
             crate::irq::dispatch_irq_common(id.into());
             unsafe {GIC.get_mut().end_interrupt(id);}
-        }
-        None => (),
     }
 }
 

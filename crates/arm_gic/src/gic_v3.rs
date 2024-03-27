@@ -117,7 +117,7 @@ impl GicDistributor {
     fn validate_dist_version(&self) {
         let pidr2 = self.regs().PIDR2.get() & Self::GIC_PIDR2_ARCH_MASK; 
         match pidr2 {
-            Self::GIC_PIDR2_ARCH_GICV3 | Self::GIC_PIDR2_ARCH_GICV4 => return,
+            Self::GIC_PIDR2_ARCH_GICV3 | Self::GIC_PIDR2_ARCH_GICV4 => (),
             _ => panic!("unvalid gic pidr2")
         }
     }
@@ -434,7 +434,7 @@ impl GenericArmGic for GicV3 {
 
     /// Enables the interrupt with the given ID.
     fn enable_interrupt(&mut self, intid: IntId) {
-        let index = (intid.0 / 32) as usize;
+        let index = intid.0 / 32;
         let bit = 1 << (intid.0 % 32);
 
         if intid.is_private() {
@@ -445,7 +445,7 @@ impl GenericArmGic for GicV3 {
     }
 
     fn disable_interrupt(&mut self, intid: IntId) {
-        let index = (intid.0 / 32) as usize;
+        let index = intid.0 / 32;
         let bit = 1 << (intid.0 % 32);
 
         if intid.is_private() {

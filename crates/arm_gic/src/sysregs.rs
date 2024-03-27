@@ -3,7 +3,7 @@ macro_rules! read_sysreg {
         {
             let mut value: u64;
             ::core::arch::asm!(
-                concat!("mrs {value:x}, ", ::core::stringify!($name)),
+                concat!("mrs {value}, ", ::core::stringify!($name)),
                 value = out(reg) value,
                 options(nomem, nostack),
             );
@@ -19,7 +19,7 @@ macro_rules! write_sysreg {
         {
             let v: u64 = $value;
             ::core::arch::asm!(
-                concat!("msr ", ::core::stringify!($name), ", {value:x}"),
+                concat!("msr ", ::core::stringify!($name), ", {value}"),
                 value = in(reg) v,
                 options(nomem, nostack),
             )
