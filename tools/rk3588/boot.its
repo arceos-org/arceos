@@ -1,0 +1,81 @@
+/*
+ * Copyright (C) 2021 Rockchip Electronics Co., Ltd
+ *
+ * SPDX-License-Identifier: GPL-2.0
+ */
+
+/dts-v1/;
+/ {
+    description = "U-Boot FIT source file for arm";
+
+    images {
+        fdt {
+            data = /incbin/("kernel/arch/arm64/boot/dts/rockchip/rk3588-evb1-lp4-v10-linux.dtb");
+            type = "flat_dt";
+            arch = "arm64";
+            compression = "none";
+            load = <0xffffff00>;
+
+            hash {
+                algo = "sha256";
+            };
+        };
+
+        kernel {
+            data = /incbin/("kernel/arch/arm64/boot/Image");
+            type = "kernel";
+            arch = "arm64";
+            os = "linux";
+            compression = "none";
+            entry = <0xffffff01>;
+            load = <0xffffff01>;
+
+            hash {
+                algo = "sha256";
+            };
+        };
+
+		ramdisk {
+			data = /incbin/("kernel/ramdisk.img");
+			type = "ramdisk";
+			arch = "arm64";
+			os = "linux";
+			compression = "none";
+			load = <0xffffff02>;
+
+			hash {
+				algo = "sha256";
+			};
+		};
+
+        resource {
+            data = /incbin/("kernel/resource.img");
+            type = "multi";
+            arch = "arm64";
+            compression = "none";
+
+            hash {
+                algo = "sha256";
+            };
+        };
+    };
+
+    configurations {
+        default = "conf";
+
+        conf {
+            rollback-index = <0x00>;
+            fdt = "fdt";
+            kernel = "kernel";
+            ramdisk = "ramdisk";
+            multi = "resource";
+
+            signature {
+                algo = "sha256,rsa2048";
+                padding = "pss";
+                key-name-hint = "dev";
+                sign-images = "fdt", "kernel", "ramdisk", "multi";
+            };
+        };
+    };
+};

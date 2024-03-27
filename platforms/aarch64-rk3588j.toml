@@ -1,0 +1,40 @@
+# Architecture identifier.
+arch = "aarch64"
+# Platform identifier.
+platform = "aarch64-rk3588j"
+# Platform family.
+family = "aarch64-rk3588j"
+# Base physical address of the kernel image.
+kernel-base-paddr = "0x40_0000"
+# Base virtual address of the kernel image.
+kernel-base-vaddr = "0xffff_0000_0040_0000"
+# Linear mapping offset, for quick conversions between physical and virtual
+# addresses.
+phys-virt-offset = "0xffff_0000_0000_0000"
+# MMIO regions with format (`base_paddr`, `size`).
+mmio-regions = [
+    ["0xfeb50000", "0x1000"], # uart8250 UART0
+    ["0xfe600000", "0x10000"], # gic-v3 gicd
+    ["0xfe680000", "0x100000"], # gic-v3 gicr
+]
+
+virtio-mmio-regions = []
+
+# Base physical address of the PCIe ECAM space.
+# pci-ecam-base = "0x40_1000_0000"
+# End PCI bus number (`bus-range` property in device tree).
+# pci-bus-end = "0xff"
+# PCI device memory ranges (`ranges` property in device tree).
+# pci-ranges = []
+
+# UART Address
+uart-paddr = "0xfeb50000"
+# UART irq from device tree
+uart-irq = "0x14d"
+# GICD Address
+gicd-paddr = "0xfe600000"
+# GICR Address
+gicc-paddr = "0xfe680000"
+
+# PSCI
+psci-method = "smc"

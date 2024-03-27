@@ -7,12 +7,13 @@ pub mod mp;
 #[cfg(not(platform_family = "aarch64-raspi"))]
 pub mod psci;
 
-#[cfg(feature = "irq")]
-mod gic;
-
-#[cfg(feature = "irq")]
-pub mod irq {
-    pub use super::gic::*;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "irq")] {
+        mod gic;
+        pub mod irq {
+            pub use super::gic::*;
+        }
+    }
 }
 
 mod generic_timer;
@@ -20,24 +21,18 @@ pub mod time {
     pub use super::generic_timer::*;
 }
 
-#[cfg(platform_family = "aarch64-bsta1000b")]
-mod dw_apb_uart;
-
-#[cfg(any(
-    platform_family = "aarch64-raspi",
-    platform_family = "aarch64-qemu-virt"
-))]
-mod pl011;
-
-pub mod console {
-    #[cfg(platform_family = "aarch64-bsta1000b")]
-    pub use super::dw_apb_uart::*;
-
-    #[cfg(any(
-        platform_family = "aarch64-raspi",
-        platform_family = "aarch64-qemu-virt"
-    ))]
-    pub use super::pl011::*;
+cfg_if::cfg_if! {
+    if #[cfg(any(platform_family = "aarch64-bsta1000b", platform_family= "aarch64-rk3588j"))] {
+        mod dw_apb_uart;
+        pub mod console {
+            pub use super::dw_apb_uart::*;
+        }
+    } else if #[cfg(any(platform_family = "aarch64-raspi", platform_family = "aarch64-qemu-virt"))] {
+        mod pl011;
+        pub mod console {
+            pub use super::pl011::*;
+        }
+    }
 }
 
 pub mod mem;
@@ -49,12 +44,11 @@ extern "C" {
     fn rust_main_secondary(cpu_id: usize);
 }
 
+/// The earliest entry point for the secondary CPUs.
 pub(crate) unsafe extern "C" fn rust_entry(cpu_id: usize, dtb: usize) {
     use crate::mem::phys_to_virt;
-
     crate::mem::clear_bss();
     crate::arch::set_exception_vector_base(exception_vector_base as usize);
-    crate::arch::write_page_table_root0(0.into()); // disable low address access
     crate::cpu::init_primary(cpu_id);
 
     // init fdt
@@ -67,8 +61,11 @@ pub(crate) unsafe extern "C" fn rust_entry(cpu_id: usize, dtb: usize) {
             crate::platform::mem::idmap_device(r.starting_address as usize);
         }
     }
+
     crate::platform::console::init_early();
     crate::platform::time::init_early();
+    // disable low address access
+    crate::arch::write_page_table_root0(0.into());
     rust_main(cpu_id, dtb);
 }
 

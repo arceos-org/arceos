@@ -28,6 +28,13 @@ pub fn getchar() -> Option<u8> {
 
 /// UART simply initialize
 pub fn init_early() {
+    // SAFETY: idmap console mmio mem before paging
+    unsafe {
+        crate::platform::aarch64_common::mem::idmap_device(UART_BASE.as_usize());
+    }
+    //rk3588 uboot init uart, kernel not init uart
+    //FEATURE: UART param init from dtb
+    #[cfg(not(platform_family = "aarch64-rk3588j"))]
     UART.lock().init();
 }
 

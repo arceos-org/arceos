@@ -12,3 +12,5 @@ testsuits-x86_64-linux-musl.tgz
 .idea/
 arceos-fada.bin.gz
 arceos-fada.itb
+.tmp_its
+!tools/rk3588/ramdisk.img
