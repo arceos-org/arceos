@@ -9,11 +9,6 @@ homepage = "https://github.com/rcore-os/arceos"
 repository = "https://github.com/rcore-os/arceos/tree/main/crates/arm_gic"
 documentation = "https://rcore-os.github.io/arceos/arm_gic/index.html"
 
-[features]
-gic-v2 = []
-gic-v3 = []
-default = []
-
 [dependencies]
 tock-registers = "0.8"
 bitflags = "2.0"
