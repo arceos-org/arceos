@@ -11,3 +11,6 @@ documentation = "https://rcore-os.github.io/arceos/arm_gic/index.html"
 
 [dependencies]
 tock-registers = "0.8"
+bitflags = "2.0"
+cfg-if = "1.0"
+aarch64-cpu = "9.3"

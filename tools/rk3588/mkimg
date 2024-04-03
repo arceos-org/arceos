@@ -1,0 +1,83 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (c) 2019 Fuzhou Rockchip Electronics Co., Ltd.
+
+set -e
+
+usage() {
+	cat >&2 << USAGE
+usage: $0 [-h] --dtb DTB --img IMAGE
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --dtb DTB             the dtb file name
+USAGE
+}
+
+# Parse command-line arguments
+while [ $# -gt 0 ]; do
+	case $1 in
+		--dtb)
+			DTB=$2
+			shift 2
+			;;
+		--img)
+			KERNEL_IMAGE=$2
+			shift 2
+			;;
+		-h)
+			usage
+			exit 0
+			;;
+		--help)
+			usage
+			exit 0
+			;;
+		*)
+			shift
+			;;
+        esac
+done
+
+SOURCE_DIR="$(pwd)"
+CUR_DIR="${SOURCE_DIR}/tools/rk3588"
+ARCH=arm64
+
+LOGO_PATH=${CUR_DIR}/logo.bmp
+[ -f ${LOGO_PATH} ] && LOGO=logo.bmp
+
+LOGO_KERNEL_PATH=${CUR_DIR}/logo_kernel.bmp
+[ -f ${LOGO_KERNEL_PATH} ] && LOGO_KERNEL=logo_kernel.bmp
+
+KERNEL_IMAGE_PATH="${SOURCE_DIR}/${KERNEL_IMAGE}"
+echo "--------${KERNEL_IMAGE_PATH}"
+KERNEL_IMAGE_ARG="--kernel ${KERNEL_IMAGE_PATH}"
+DTB_PATH=${CUR_DIR}/${DTB}
+
+if [ ! -f ${DTB_PATH} ]; then
+	echo "No dtb" >&2
+	usage
+	exit 1
+fi
+
+MKIMAGE=${MKIMAGE-"mkimage"}
+MKIMAGE_ARG="-E -p 0x800"
+
+make_boot_img()
+{
+	RAMDISK_IMG_PATH=${CUR_DIR}/ramdisk.img
+	[ -f ${RAMDISK_IMG_PATH} ] && RAMDISK_IMG=ramdisk.img && RAMDISK_ARG="--ramdisk ${RAMDISK_IMG_PATH}"
+
+	${CUR_DIR}/mkbootimg \
+		${KERNEL_IMAGE_ARG} \
+		${RAMDISK_ARG} \
+		--second resource.img \
+		-o boot.img && \
+	echo "  Image:  boot.img (with Image ${RAMDISK_IMG} resource.img) is ready";
+	${CUR_DIR}/mk-fitimage.sh ${SOURCE_DIR}/boot.img ${CUR_DIR}/boot.its ${RAMDISK_IMG_PATH} ${KERNEL_IMAGE_PATH} ${DTB_PATH}
+}
+
+${CUR_DIR}/resource_tool ${DTB_PATH} ${LOGO_PATH} ${LOGO_KERNEL_PATH} >/dev/null
+echo "  Image:  resource.img (with ${DTB} ${LOGO} ${LOGO_KERNEL}) is ready"
+
+make_boot_img

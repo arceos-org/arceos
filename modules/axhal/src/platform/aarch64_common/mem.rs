@@ -33,41 +33,55 @@ pub(crate) fn platform_regions() -> impl Iterator<Item = MemRegion> {
     iterator.into_iter()
 }
 
-fn split_region(region: MemRegion, region2: &MemRegion) -> Either<[MemRegion; 2], [MemRegion; 1]> {
+fn split_region(region: MemRegion, region2: &MemRegion) -> impl Iterator<Item = MemRegion> {
     let start1 = region.paddr.as_usize();
     let end1 = region.paddr.as_usize() + region.size;
 
     let start2 = region2.paddr.as_usize();
     let end2 = region2.paddr.as_usize() + region2.size;
 
-    if start1 <= start2 && end1 >= end2 {
-        Left([
-            MemRegion {
-                paddr: region.paddr,
-                size: start2 - start1,
-                flags: MemRegionFlags::FREE | MemRegionFlags::READ | MemRegionFlags::WRITE,
-                name: region.name,
-            },
-            MemRegion {
-                paddr: PhysAddr::from(end2),
-                size: end1 - end2,
-                flags: MemRegionFlags::FREE | MemRegionFlags::READ | MemRegionFlags::WRITE,
-                name: region.name,
-            },
-        ])
+    // mem region include region2
+    let iterator: Either<_, _> = if start1 <= start2 && end1 >= end2 {
+        let head_region = MemRegion {
+            paddr: region.paddr,
+            size: start2 - start1,
+            flags: MemRegionFlags::FREE | MemRegionFlags::READ | MemRegionFlags::WRITE,
+            name: region.name,
+        };
+        let tail_region = MemRegion {
+            paddr: PhysAddr::from(end2),
+            size: end1 - end2,
+            flags: MemRegionFlags::FREE | MemRegionFlags::READ | MemRegionFlags::WRITE,
+            name: region.name,
+        };
+        let size_tup = (head_region.size, tail_region.size);
+        // Top(down) left size < 4K, need drop
+        match size_tup {
+            (x, y) if x < 0x1000 && y < 0x1000 => panic!("no vailid left region"),
+            (x, _) if x < 0x1000 => Right([tail_region]),
+            (_, y) if y < 0x1000 => Right([head_region]),
+            _ => Left([head_region, tail_region]),
+        }
     } else {
         Right([region])
-    }
+    };
+    iterator.into_iter()
 }
 
 // Free mem regions equal memory minus kernel and fdt region
 fn free_regions() -> impl Iterator<Item = MemRegion> {
     let all_mem = of::memory_nodes().flat_map(|m| {
-        m.regions().map(|r| MemRegion {
-            paddr: PhysAddr::from(r.starting_address as usize).align_up_4k(),
-            size: r.size.unwrap(),
-            flags: MemRegionFlags::FREE | MemRegionFlags::READ | MemRegionFlags::WRITE,
-            name: "free memory",
+        m.regions().filter_map(|r| {
+            if r.size.unwrap() > 0 {
+                Some(MemRegion {
+                    paddr: PhysAddr::from(r.starting_address as usize).align_up_4k(),
+                    size: r.size.unwrap(),
+                    flags: MemRegionFlags::FREE | MemRegionFlags::READ | MemRegionFlags::WRITE,
+                    name: "free memory",
+                })
+            } else {
+                None
+            }
         })
     });
 
@@ -82,11 +96,12 @@ fn free_regions() -> impl Iterator<Item = MemRegion> {
     filter_kernel_mem.flat_map(move |m| split_region(m, &fdt_region()).into_iter())
 }
 
+const FDT_FIX_SIZE: usize = 0x10_0000; //1M
 fn fdt_region() -> MemRegion {
     let fdt_ptr = of::get_fdt_ptr();
     MemRegion {
         paddr: virt_to_phys((fdt_ptr.unwrap() as usize).into()).align_up_4k(),
-        size: of::fdt_size(),
+        size: FDT_FIX_SIZE,
         flags: MemRegionFlags::RESERVED | MemRegionFlags::READ,
         name: "fdt reserved",
     }
