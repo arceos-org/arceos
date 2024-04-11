@@ -15,6 +15,7 @@ numeric_enum_macro::numeric_enum! {
 pub enum FsSyscallId {
     // fs
     GETCWD = 17,
+    EVENT_FD = 19,
     EPOLL_CREATE = 20,
     EPOLL_CTL = 21,
     EPOLL_WAIT = 22,

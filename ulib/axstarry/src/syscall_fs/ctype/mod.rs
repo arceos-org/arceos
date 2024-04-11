@@ -9,3 +9,5 @@ pub mod pipe;
 pub use file::FileDesc;
 
 pub mod epoll;
+
+pub mod eventfd;

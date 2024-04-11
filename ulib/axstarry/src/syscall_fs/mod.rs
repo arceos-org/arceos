@@ -13,6 +13,7 @@ use imp::*;
 /// 文件系统相关系统调用
 pub fn fs_syscall(syscall_id: fs_syscall_id::FsSyscallId, args: [usize; 6]) -> SyscallResult {
     match syscall_id {
+        EVENT_FD => syscall_eventfd(args),
         OPENAT => syscall_openat(args),
         CLOSE => syscall_close(args),
         READ => syscall_read(args),

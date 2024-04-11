@@ -83,6 +83,7 @@ pub fn syscall_read(args: [usize; 6]) -> SyscallResult {
     match file.read(buf) {
         Ok(len) => Ok(len as isize),
         Err(AxError::WouldBlock) => Err(SyscallError::EAGAIN),
+        Err(AxError::InvalidInput) => Err(SyscallError::EINVAL),
         Err(_) => Err(SyscallError::EPERM),
     }
 }
@@ -155,6 +156,8 @@ pub fn syscall_write(args: [usize; 6]) -> SyscallResult {
         // socket with send half closed
         // TODO: send a SIGPIPE signal to the process
         Err(axerrno::AxError::ConnectionReset) => Err(SyscallError::EPIPE),
+        Err(AxError::WouldBlock) => Err(SyscallError::EAGAIN),
+        Err(AxError::InvalidInput) => Err(SyscallError::EINVAL),
         Err(_) => Err(SyscallError::EPERM),
     }
 }
