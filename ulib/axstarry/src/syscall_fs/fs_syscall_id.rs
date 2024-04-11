@@ -69,6 +69,7 @@ numeric_enum_macro::numeric_enum! {
         // fs
         OPEN = 2,
         STAT = 4,
+        EVENT_FD = 284,
         GETCWD = 79,
         UNLINK = 87,
         EPOLL_CREATE = 213,
