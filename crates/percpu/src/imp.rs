@@ -1,6 +1,6 @@
 const fn align_up_64(val: usize) -> usize {
-    const SIZE_64BYTE: usize = 0x40;
-    (val + SIZE_64BYTE - 1) & !(SIZE_64BYTE - 1)
+    const SIZE_64BIT: usize = 0x40;
+    (val + SIZE_64BIT - 1) & !(SIZE_64BIT - 1)
 }
 
 #[cfg(not(target_os = "none"))]
