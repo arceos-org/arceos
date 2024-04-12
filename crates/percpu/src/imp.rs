@@ -1,6 +1,6 @@
-const fn align_up(val: usize) -> usize {
-    const PAGE_SIZE: usize = 0x1000;
-    (val + PAGE_SIZE - 1) & !(PAGE_SIZE - 1)
+const fn align_up_64(val: usize) -> usize {
+    const SIZE_64BIT: usize = 0x40;
+    (val + SIZE_64BIT - 1) & !(SIZE_64BIT - 1)
 }
 
 #[cfg(not(target_os = "none"))]
@@ -32,7 +32,7 @@ pub fn percpu_area_base(cpu_id: usize) -> usize {
             let base = *PERCPU_AREA_BASE.get().unwrap();
         }
     }
-    base + cpu_id * align_up(percpu_area_size())
+    base + cpu_id * align_up_64(percpu_area_size())
 }
 
 /// Initialize the per-CPU data area for `max_cpu_num` CPUs.
@@ -42,7 +42,7 @@ pub fn init(max_cpu_num: usize) {
     #[cfg(target_os = "linux")]
     {
         // we not load the percpu section in ELF, allocate them here.
-        let total_size = align_up(size) * max_cpu_num;
+        let total_size = align_up_64(size) * max_cpu_num;
         let layout = std::alloc::Layout::from_size_align(total_size, 0x1000).unwrap();
         PERCPU_AREA_BASE.call_once(|| unsafe { std::alloc::alloc(layout) as usize });
     }
