@@ -5,9 +5,6 @@ use crate::syscall_fs::ctype::eventfd::EventFd;
 use crate::{SyscallError, SyscallResult};
 
 pub fn syscall_eventfd(args: [usize; 6]) -> SyscallResult {
-    #[cfg(target_arch = "x86_64")]
-    unimplemented!("syscall eventfd is not tested in x86_64 yet");
-
     let initval = args[0] as u64;
     let flags = args[1] as u32;
 
