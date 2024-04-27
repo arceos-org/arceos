@@ -1125,6 +1125,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "eventfd"
+version = "0.1.0"
+dependencies = [
+ "bitflags 2.4.0",
+]
+
+[[package]]
 name = "fatfs"
 version = "0.4.0"
 source = "git+https://github.com/rafalh/rust-fatfs?rev=a3a834e#a3a834ef92d94dd227c316c0887654dab00ae085"
