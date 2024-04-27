@@ -67,7 +67,7 @@ pci-bus-end = "0xff"
 pci-ranges = [
     ["0x3ef_f0000", "0x1_0000"],            # PIO space
     ["0x1000_0000", "0x2eff_0000"],         # 32-bit MMIO space
-    ["0x80_0000_0000", "0x80_0000_0000"],   # 64-but MMIO space
+    ["0x80_0000_0000", "0x80_0000_0000"],   # 64-bit MMIO space
 ]
 # UART Address
 uart-paddr = "0x0900_0000"

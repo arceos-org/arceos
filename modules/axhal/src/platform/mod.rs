@@ -22,7 +22,10 @@ cfg_if::cfg_if! {
     } else if #[cfg(all(target_arch = "aarch64", platform_family = "aarch64-bsta1000b"))] {
         mod aarch64_bsta1000b;
         pub use self::aarch64_bsta1000b::*;
-    } else {
+    } else if #[cfg(all(target_arch = "loongarch64", platform_family = "loongarch64-qemu-virt"))] {
+        mod qemu_virt_loongarch64;
+        pub use self::qemu_virt_loongarch64::*;
+    }else {
         mod dummy;
         pub use self::dummy::*;
     }

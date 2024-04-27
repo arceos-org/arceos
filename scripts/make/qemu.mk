@@ -24,7 +24,14 @@ qemu_args-aarch64 := \
   -machine virt \
   -kernel $(OUT_BIN)
 
+qemu_args-loongarch64 := \
+  -kernel $(OUT_ELF)
+
+ifeq ($(ARCH), loongarch64)
+qemu_args-y := -m 1G -smp $(SMP) $(qemu_args-$(ARCH))
+else
 qemu_args-y := -m 128M -smp $(SMP) $(qemu_args-$(ARCH))
+endif
 
 qemu_args-$(BLK) += \
   -device virtio-blk-$(vdev-suffix),drive=disk0 \
@@ -59,7 +66,10 @@ qemu_args-$(GRAPHIC) += \
   -serial mon:stdio
 
 ifeq ($(GRAPHIC), n)
-  qemu_args-y += -nographic
+  	qemu_args-y += -nographic
+	ifeq ($(ARCH), loongarch64)
+		qemu_args-y += -vga none
+	endif
 endif
 
 ifeq ($(QEMU_LOG), y)
