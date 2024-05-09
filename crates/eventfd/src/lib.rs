@@ -1,7 +1,8 @@
 use bitflags::bitflags;
+use core::convert::From;
 
 bitflags! {
-    /// https://sites.uclouvain.be/SystInfo/usr/include/sys/eventfd.h.html
+    /// <https://sites.uclouvain.be/SystInfo/usr/include/sys/eventfd.h.html>
     #[derive(Clone, Copy, Debug)]
     pub struct EventFdFlag: u32 {
         const EFD_SEMAPHORE = 0x1;
@@ -10,21 +11,28 @@ bitflags! {
     }
 }
 
+/// the write result
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum EventFdWriteResult {
+    /// the write is done successfully
     OK,
+
     /// an attempt is made to write the value 0xffffffffffffffff (f64::MAX)
     BadInput,
+
+    /// it's not writable yet
     NotReady,
 }
 
-/// https://man7.org/linux/man-pages/man2/eventfd2.2.html
+/// <https://man7.org/linux/man-pages/man2/eventfd2.2.html>
 pub struct EventFd {
     value: u64,
     flags: u32,
 }
 
+/// the eventfd data type
 impl EventFd {
+    /// create an EventFd object with initial value and flags
     pub fn new(initval: u64, flags: u32) -> EventFd {
         EventFd {
             value: initval,
@@ -32,6 +40,7 @@ impl EventFd {
         }
     }
 
+    /// read the EventFd
     pub fn read(&mut self) -> Option<u64> {
         // If EFD_SEMAPHORE was not specified and the eventfd counter has a nonzero value, then a read returns 8 bytes containing that value,
         // and the counter's value is reset to zero.
@@ -54,6 +63,7 @@ impl EventFd {
         None
     }
 
+    /// write to EventFd
     pub fn write(&mut self, val: u64) -> EventFdWriteResult {
         if val == u64::MAX {
             return EventFdWriteResult::BadInput;
@@ -70,6 +80,7 @@ impl EventFd {
         }
     }
 
+    /// check if the specified flag is set or not
     pub fn is_flag_set(&self, flag: EventFdFlag) -> bool {
         self.flags & flag.bits() != 0
     }
@@ -84,16 +95,14 @@ pub fn create_eventfd(value: u64) -> EventFd {
     value.into()
 }
 
+/// the util function to create a Eventfd object
 pub fn create_eventfd_with_flags(value: u64, flags: u32) -> EventFd {
     (value, flags).into()
 }
 
 impl From<u64> for EventFd {
     fn from(value: u64) -> Self {
-        EventFd {
-            value: value,
-            flags: 0,
-        }
+        EventFd { value, flags: 0 }
     }
 }
 
