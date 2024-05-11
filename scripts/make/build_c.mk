@@ -38,7 +38,7 @@ ifeq ($(findstring fp_simd,$(FEATURES)),)
     CFLAGS += -mgeneral-regs-only
   endif
 else
-  ifeq ($(ARCH), riscv64)
+  ifneq ($(filter $(ARCH),riscv64 aarch64),)
     # for compiler-rt fallbacks like `__divtf3`, `__multf3`, ...
     libgcc := $(shell $(CC) -print-libgcc-file-name)
   endif

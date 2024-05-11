@@ -1,7 +1,6 @@
 # Main building script
 
 include scripts/make/cargo.mk
-include scripts/make/features.mk
 
 ifeq ($(APP_TYPE), c)
   include scripts/make/build_c.mk

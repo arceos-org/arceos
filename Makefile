@@ -68,7 +68,7 @@ else
   APP_TYPE := c
 endif
 
-# Architecture, platform and target
+# Architecture and platform
 ifneq ($(filter $(MAKECMDGOALS),unittest unittest_no_fail_fast),)
   PLATFORM_NAME :=
 else ifneq ($(PLATFORM),)
@@ -97,18 +97,31 @@ ifeq ($(ARCH), x86_64)
   # Don't enable kvm for WSL/WSL2.
   ACCEL ?= $(if $(findstring -microsoft, $(shell uname -r | tr '[:upper:]' '[:lower:]')),n,y)
   PLATFORM_NAME ?= x86_64-qemu-q35
-  TARGET := x86_64-unknown-none
   BUS := pci
 else ifeq ($(ARCH), riscv64)
   ACCEL ?= n
   PLATFORM_NAME ?= riscv64-qemu-virt
-  TARGET := riscv64gc-unknown-none-elf
 else ifeq ($(ARCH), aarch64)
   ACCEL ?= n
   PLATFORM_NAME ?= aarch64-qemu-virt
-  TARGET := aarch64-unknown-none-softfloat
 else
   $(error "ARCH" must be one of "x86_64", "riscv64", or "aarch64")
+endif
+
+# Feature parsing
+include scripts/make/features.mk
+
+# Target
+ifeq ($(ARCH), x86_64)
+  TARGET := x86_64-unknown-none
+else ifeq ($(ARCH), riscv64)
+  TARGET := riscv64gc-unknown-none-elf
+else ifeq ($(ARCH), aarch64)
+  ifeq ($(findstring fp_simd,$(FEATURES)),)
+    TARGET := aarch64-unknown-none-softfloat
+  else
+    TARGET := aarch64-unknown-none
+  endif
 endif
 
 export AX_ARCH=$(ARCH)
