@@ -39,7 +39,7 @@ ifeq ($(findstring fp_simd,$(FEATURES)),)
   endif
 else
   ifeq ($(ARCH), riscv64)
-    # for compiler-rt fallbacks like `__addtf3`, `__multf3`, ...
+    # for compiler-rt fallbacks like `__divtf3`, `__multf3`, ...
     libgcc := $(shell $(CC) -print-libgcc-file-name)
   endif
 endif
@@ -68,7 +68,7 @@ app-objs := $(addprefix $(APP)/,$(app-objs))
 $(APP)/%.o: $(APP)/%.c $(ulib_hdr)
 	$(call run_cmd,$(CC),$(CFLAGS) $(APP_CFLAGS) -c -o $@ $<)
 
-$(OUT_ELF): $(c_lib) $(rust_lib) $(libgcc) $(app-objs)
+$(OUT_ELF): $(libgcc) $(app-objs) $(c_lib) $(rust_lib)
 	@printf "    $(CYAN_C)Linking$(END_C) $(OUT_ELF)\n"
 	$(call run_cmd,$(LD),$(LDFLAGS) $^ -o $@)
 
