@@ -10,4 +10,4 @@ repository = "https://github.com/rcore-os/arceos/tree/main/crates/driver_pci"
 documentation = "https://rcore-os.github.io/arceos/driver_pci/index.html"
 
 [dependencies]
-virtio-drivers = { git = "https://github.com/rcore-os/virtio-drivers.git", rev = "4b60f5d" }
+virtio-drivers = "0.7.2"
