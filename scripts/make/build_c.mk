@@ -25,9 +25,7 @@ ifeq ($(MODE), release)
   CFLAGS += -O3
 endif
 
-ifeq ($(ARCH), x86_64)
-  LDFLAGS += --no-relax
-else ifeq ($(ARCH), riscv64)
+ifeq ($(ARCH), riscv64)
   CFLAGS += -march=rv64gc -mabi=lp64d -mcmodel=medany
 endif
 
