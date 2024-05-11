@@ -29,6 +29,9 @@
 #![feature(doc_cfg)]
 #![feature(doc_auto_cfg)]
 
+#[cfg(test)]
+mod tests;
+
 cfg_if::cfg_if! {
     if #[cfg(feature = "multitask")] {
         #[macro_use]

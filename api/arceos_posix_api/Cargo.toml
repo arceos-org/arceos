@@ -18,6 +18,7 @@ repository = "https://github.com/rcore-os/arceos/tree/main/api/arceos_posix_api"
 default = []
 
 smp = ["axfeat/smp"]
+irq = ["axfeat/irq"]
 alloc = ["dep:axalloc", "axfeat/alloc"]
 multitask = ["axtask/multitask", "axfeat/multitask", "axsync/multitask"]
 fd = ["alloc"]

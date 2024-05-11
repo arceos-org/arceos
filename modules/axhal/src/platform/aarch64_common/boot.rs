@@ -1,4 +1,5 @@
 use aarch64_cpu::{asm, asm::barrier, registers::*};
+use core::ptr::addr_of_mut;
 use memory_addr::PhysAddr;
 use page_table_entry::aarch64::{MemAttr, A64PTE};
 use tock_registers::interfaces::{ReadWriteable, Readable, Writeable};
@@ -97,7 +98,7 @@ unsafe fn enable_fp() {
 }
 
 unsafe fn init_boot_page_table() {
-    crate::platform::mem::init_boot_page_table(&mut BOOT_PT_L0, &mut BOOT_PT_L1);
+    crate::platform::mem::init_boot_page_table(addr_of_mut!(BOOT_PT_L0), addr_of_mut!(BOOT_PT_L1));
 }
 
 /// The earliest entry point for the primary CPU.

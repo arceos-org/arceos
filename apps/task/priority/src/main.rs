@@ -9,7 +9,7 @@ use std::sync::Arc;
 use std::{thread, time};
 use std::{vec, vec::Vec};
 
-#[cfg(any(feature = "axstd", target_os = "arceos"))]
+#[cfg(feature = "axstd")]
 use std::os::arceos::api::task::ax_set_current_priority;
 
 struct TaskParam {
