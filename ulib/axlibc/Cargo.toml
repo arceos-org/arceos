@@ -28,6 +28,9 @@ smp = ["arceos_posix_api/smp"]
 # Floating point/SIMD
 fp_simd = ["axfeat/fp_simd"]
 
+# Interrupts
+irq = ["arceos_posix_api/irq", "axfeat/irq"]
+
 # Memory
 alloc = ["arceos_posix_api/alloc"]
 tls = ["alloc", "axfeat/tls"]

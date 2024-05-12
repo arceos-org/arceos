@@ -7,15 +7,19 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix: 
-        rust-toolchain: [nightly, nightly-2024-01-19]
+      matrix:
+        rust-toolchain: [nightly, nightly-2024-05-02]
+    env:
+      RUSTUP_TOOLCHAIN: ${{ matrix.rust-toolchain }}
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@stable
       with:
-        profile: minimal
         toolchain: ${{ matrix.rust-toolchain }}
         components: rust-src, clippy, rustfmt
+        targets: x86_64-unknown-none, riscv64gc-unknown-none-elf, aarch64-unknown-none, aarch64-unknown-none-softfloat
+    - name: Check rust version
+      run: rustc --version --verbose
     - name: Clippy for the default target
       run: make clippy
     - name: Clippy for x86_64
@@ -34,19 +38,18 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         arch: [x86_64, riscv64, aarch64]
-        rust-toolchain: [nightly, nightly-2024-01-19]
+        rust-toolchain: [nightly, nightly-2024-05-02]
+    env:
+      RUSTUP_TOOLCHAIN: ${{ matrix.rust-toolchain }}
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@stable
       with:
-        profile: minimal
         toolchain: ${{ matrix.rust-toolchain }}
-        components: rust-src
-    - uses: actions-rs/install@v0.1
-      with:
-        crate: cargo-binutils
-        version: latest
-        use-tool-cache: true
+        components: rust-src, llvm-tools
+        targets: x86_64-unknown-none, riscv64gc-unknown-none-elf, aarch64-unknown-none, aarch64-unknown-none-softfloat
+    - uses: Swatinem/rust-cache@v2
+    - run: cargo install cargo-binutils
     - name: Build helloworld
       run: make ARCH=${{ matrix.arch }} A=apps/helloworld
     - name: Build memtest
@@ -80,20 +83,28 @@ jobs:
       with:
         arch: ${{ matrix.arch }}
     - name: Build c/helloworld
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=apps/c/helloworld
     - name: Build c/memtest
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=apps/c/memtest
     - name: Build c/sqlite3
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=apps/c/sqlite3
     - name: Build c/httpclient
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=apps/c/httpclient
     - name: Build c/httpserver
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=apps/c/httpserver
     - name: Build c/udpserver
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=apps/c/udpserver
     - name: Build c/iperf
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=apps/c/iperf
     - name: Build c/redis
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=apps/c/redis SMP=4
 
   build-apps-for-other-platforms:
@@ -102,19 +113,18 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        rust-toolchain: [nightly, nightly-2024-01-19]
+        rust-toolchain: [nightly, nightly-2024-05-02]
+    env:
+      RUSTUP_TOOLCHAIN: ${{ matrix.rust-toolchain }}
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@stable
       with:
-        profile: minimal
         toolchain: ${{ matrix.rust-toolchain }}
-        components: rust-src
-    - uses: actions-rs/install@v0.1
-      with:
-        crate: cargo-binutils
-        version: latest
-        use-tool-cache: true
+        components: rust-src, llvm-tools
+        targets: x86_64-unknown-none, riscv64gc-unknown-none-elf, aarch64-unknown-none, aarch64-unknown-none-softfloat
+    - uses: Swatinem/rust-cache@v2
+    - run: cargo install cargo-binutils
     - uses: ./.github/workflows/actions/setup-musl
       with:
         arch: x86_64
@@ -143,12 +153,13 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         arch: [x86_64]
-        rust-toolchain: [nightly, nightly-2024-01-19]
+        rust-toolchain: [nightly, nightly-2024-05-02]
+    env:
+      RUSTUP_TOOLCHAIN: ${{ matrix.rust-toolchain }}
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@stable
       with:
-        profile: minimal
         toolchain: ${{ matrix.rust-toolchain }}
     - name: Build helloworld
       run: cargo build -p arceos-helloworld

@@ -242,7 +242,7 @@ impl<A: Adapter + ?Sized> List<A> {
         // SAFETY: The safety requirements of this function satisfy those of `insert_after`.
         unsafe { self.insert_after(self.inner_ref(existing).prev, new) };
 
-        if self.first.unwrap() == existing {
+        if core::ptr::eq(self.first.unwrap().as_ptr(), existing.as_ptr()) {
             // Update the pointer to the first element as we're inserting before it.
             self.first = Some(NonNull::from(new));
         }
@@ -459,7 +459,7 @@ impl<A: Adapter + ?Sized> CommonCursor<A> {
                 if let Some(head) = list.first {
                     // SAFETY: Per the function safety requirements, `cur` is in the list.
                     let links = unsafe { list.inner_ref(cur) };
-                    if links.next != head {
+                    if !core::ptr::eq(links.next.as_ptr(), head.as_ptr()) {
                         self.cur = Some(links.next);
                     }
                 }
@@ -480,7 +480,7 @@ impl<A: Adapter + ?Sized> CommonCursor<A> {
                 let next = match self.cur.take() {
                     None => head,
                     Some(cur) => {
-                        if cur == head {
+                        if core::ptr::eq(cur.as_ptr(), head.as_ptr()) {
                             return;
                         }
                         cur

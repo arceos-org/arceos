@@ -73,7 +73,7 @@ impl<E> Ord for TimerEventWrapper<E> {
 
 impl<E> PartialEq for TimerEventWrapper<E> {
     fn eq(&self, other: &Self) -> bool {
-        self.deadline.eq(&other.deadline)
+        self.deadline == other.deadline
     }
 }
 

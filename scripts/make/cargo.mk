@@ -19,10 +19,6 @@ build_args := \
 RUSTFLAGS := -C link-arg=-T$(LD_SCRIPT) -C link-arg=-no-pie
 RUSTDOCFLAGS := --enable-index-page -Zunstable-options -D rustdoc::broken_intra_doc_links
 
-ifeq ($(ARCH), x86_64)
-  RUSTFLAGS += -C link-arg=--no-relax
-endif
-
 ifeq ($(MAKECMDGOALS), doc_check_missing)
   RUSTDOCFLAGS += -D missing-docs
 endif
@@ -31,9 +27,11 @@ define cargo_build
   $(call run_cmd,cargo build,$(build_args) $(1) --features "$(strip $(2))")
 endef
 
+clippy_args := -A clippy::new_without_default
+
 define cargo_clippy
-  $(call run_cmd,cargo clippy,--all-features --workspace --exclude axlog $(1) $(verbose))
-  $(call run_cmd,cargo clippy,-p axlog -p percpu -p percpu_macros $(1) $(verbose))
+  $(call run_cmd,cargo clippy,--all-features --workspace --exclude axlog $(1) $(verbose) -- $(clippy_args))
+  $(call run_cmd,cargo clippy,-p axlog -p percpu -p percpu_macros $(1) $(verbose) -- $(clippy_args))
 endef
 
 all_packages := \

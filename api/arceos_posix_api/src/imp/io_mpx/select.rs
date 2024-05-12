@@ -24,7 +24,7 @@ impl FdSets {
         let nfds = nfds.min(FD_SETSIZE);
         let nfds_usizes = nfds.div_ceil(BITS_PER_USIZE);
         let mut bits = core::mem::MaybeUninit::<[usize; FD_SETSIZE_USIZES * 3]>::uninit();
-        let bits_ptr = unsafe { core::mem::transmute(bits.as_mut_ptr()) };
+        let bits_ptr: *mut usize = unsafe { core::mem::transmute(bits.as_mut_ptr()) };
 
         let copy_from_fd_set = |bits_ptr: *mut usize, fds: *const ctypes::fd_set| unsafe {
             let dst = core::slice::from_raw_parts_mut(bits_ptr, nfds_usizes);

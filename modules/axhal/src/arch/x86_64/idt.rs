@@ -32,6 +32,7 @@ impl IdtStruct {
             )
         };
         for i in 0..NUM_INT {
+            #[allow(clippy::missing_transmute_annotations)]
             entries[i].set_handler_fn(unsafe { core::mem::transmute(ENTRIES[i]) });
         }
         idt

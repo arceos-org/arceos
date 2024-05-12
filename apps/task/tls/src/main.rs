@@ -7,6 +7,7 @@
 #[cfg(feature = "axstd")]
 extern crate axstd as std;
 
+use std::{ptr::addr_of, str::from_utf8_unchecked};
 use std::{thread, vec::Vec};
 
 #[thread_local]
@@ -56,14 +57,14 @@ fn main() {
         get!(U16),
         get!(U32),
         get!(U64),
-        get!(std::str::from_utf8_unchecked(&STR))
+        get!(from_utf8_unchecked(&*addr_of!(STR)))
     );
     assert!(get!(BOOL));
     assert_eq!(get!(U8), 0xAA);
     assert_eq!(get!(U16), 0xcafe);
     assert_eq!(get!(U32), 0xdeadbeed);
     assert_eq!(get!(U64), 0xa2ce05_a2ce05);
-    assert_eq!(get!(&STR), b"Hello, world!");
+    assert_eq!(get!(&*addr_of!(STR)), b"Hello, world!");
 
     let mut tasks = Vec::new();
     for i in 1..=10 {
@@ -85,7 +86,7 @@ fn main() {
                 get!(U16),
                 get!(U32),
                 get!(U64),
-                get!(std::str::from_utf8_unchecked(&STR))
+                get!(from_utf8_unchecked(&*addr_of!(STR)))
             );
             assert_eq!(get!(BOOL), i % 2 == 0);
             assert_eq!(get!(U8), 0xAA + i as u8);
@@ -105,7 +106,7 @@ fn main() {
     assert_eq!(get!(U16), 0xcafe);
     assert_eq!(get!(U32), 0xdeadbeed);
     assert_eq!(get!(U64), 0xa2ce05_a2ce05);
-    assert_eq!(get!(&STR), b"Hello, world!");
+    assert_eq!(get!(&*addr_of!(STR)), b"Hello, world!");
 
     println!("TLS tests run OK!");
 }
