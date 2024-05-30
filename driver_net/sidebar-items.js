@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["ixgbe"],"struct":["EthernetAddress","NetBuf","NetBufPool","NetBufPtr"],"trait":["NetDriverOps"],"type":["NetBufBox"]};

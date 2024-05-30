@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["Cap","CapError","WithCap"]};

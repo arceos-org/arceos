@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["IrqSave","NoOp","NoPreempt","NoPreemptIrqSave"],"trait":["BaseGuard","KernelGuardIf"]};

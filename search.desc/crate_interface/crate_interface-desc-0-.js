@@ -1,0 +1,1 @@
+searchState.loadedDescShard("crate_interface", 0, "crate_interface\nCall a function in the interface.\nDefine an interface.\nImplement the interface for a struct.")

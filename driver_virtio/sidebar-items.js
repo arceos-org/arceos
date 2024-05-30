@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["BufferDirection"],"fn":["probe_mmio_device","probe_pci_device"],"mod":["pci"],"struct":["MmioTransport","PciTransport","VirtIoBlkDev","VirtIoGpuDev","VirtIoNetDev"],"trait":["Transport","VirtIoHal"],"type":["PhysAddr"]};

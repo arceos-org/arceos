@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"attr":["def_interface","impl_interface"],"macro":["call_interface"]};

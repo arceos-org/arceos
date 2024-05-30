@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["unsafe_list"],"struct":["List"],"trait":["AdapterWrapped","Wrapper"]};

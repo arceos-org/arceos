@@ -1,0 +1,1 @@
+searchState.loadedDescShard("dw_apb_uart", 0, "Definitions for snps,dw-apb-uart serial driver. Uart …\ndw-apb-uart serial driver: DW8250\nReturns the argument unchanged.\nDW8250 serial input\nDW8250 initialize\nCalls <code>U::from(self)</code>.\nNew a DW8250\nDW8250 serial output\nDW8250 serial interrupt enable or disable")

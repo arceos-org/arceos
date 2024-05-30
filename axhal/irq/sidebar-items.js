@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["dispatch_irq","register_handler","set_enable"],"type":["IrqHandler"]};

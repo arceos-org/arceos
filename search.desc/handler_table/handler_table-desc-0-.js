@@ -1,0 +1,1 @@
+searchState.loadedDescShard("handler_table", 0, "handler_table\nThe type of an event handler.\nA lock-free table of event handlers.\nReturns the argument unchanged.\nHandles the event with the given index.\nCalls <code>U::from(self)</code>.\nCreates a new handler table with all entries empty.\nRegisters a handler for the given index.")

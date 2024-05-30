@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["VfsNodeType"],"macro":["impl_vfs_dir_default","impl_vfs_non_dir_default"],"mod":["path"],"struct":["FileSystemInfo","VfsDirEntry","VfsNodeAttr","VfsNodePerm"],"trait":["VfsNodeOps","VfsOps"],"type":["VfsError","VfsNodeRef","VfsResult"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["MICROS_PER_SEC","MILLIS_PER_SEC","NANOS_PER_MICROS","NANOS_PER_MILLIS","NANOS_PER_SEC","TIMER_IRQ_NUM"],"fn":["busy_wait","busy_wait_until","current_ticks","current_time","current_time_nanos","nanos_to_ticks","set_oneshot_timer","ticks_to_nanos"],"struct":["Duration"],"type":["TimeValue"]};

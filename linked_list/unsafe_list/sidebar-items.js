@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["Cursor","Iterator","Links","List"],"trait":["Adapter"]};

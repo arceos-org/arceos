@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["INTEL_82599","INTEL_VEND"],"struct":["IxgbeNic"],"trait":["IxgbeHal"],"type":["PhysAddr"]};
