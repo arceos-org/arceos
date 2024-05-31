@@ -1,10 +1,13 @@
 use core::{arch::naked_asm, fmt};
 use memory_addr::VirtAddr;
+use x86_64::registers::rflags::RFlags;
+
+use super::gdt::GdtStruct;
 
 /// Saved registers when a trap (interrupt or exception) occurs.
 #[allow(missing_docs)]
 #[repr(C)]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct TrapFrame {
     pub rax: u64,
     pub rcx: u64,
@@ -35,9 +38,140 @@ pub struct TrapFrame {
 }
 
 impl TrapFrame {
+    /// Gets the 0th syscall argument.
+    pub const fn arg0(&self) -> usize {
+        self.rdi as _
+    }
+
+    /// Gets the 1st syscall argument.
+    pub const fn arg1(&self) -> usize {
+        self.rsi as _
+    }
+
+    /// Gets the 2nd syscall argument.
+    pub const fn arg2(&self) -> usize {
+        self.rdx as _
+    }
+
+    /// Gets the 3rd syscall argument.
+    pub const fn arg3(&self) -> usize {
+        self.r10 as _
+    }
+
+    /// Gets the 4th syscall argument.
+    pub const fn arg4(&self) -> usize {
+        self.r8 as _
+    }
+
+    /// Gets the 5th syscall argument.
+    pub const fn arg5(&self) -> usize {
+        self.r9 as _
+    }
+
     /// Whether the trap is from userspace.
     pub const fn is_user(&self) -> bool {
         self.cs & 0b11 == 3
+    }
+}
+
+/// Context to enter user space.
+#[cfg(feature = "uspace")]
+pub struct UspaceContext(TrapFrame);
+
+#[cfg(feature = "uspace")]
+impl UspaceContext {
+    /// Creates an empty context with all registers set to zero.
+    pub const fn empty() -> Self {
+        unsafe { core::mem::MaybeUninit::zeroed().assume_init() }
+    }
+
+    /// Creates a new context with the given entry point, user stack pointer,
+    /// and the argument.
+    pub fn new(entry: usize, ustack_top: VirtAddr, arg0: usize) -> Self {
+        Self(TrapFrame {
+            rdi: arg0 as _,
+            rip: entry as _,
+            cs: GdtStruct::UCODE64_SELECTOR.0 as _,
+            #[cfg(feature = "irq")]
+            rflags: RFlags::INTERRUPT_FLAG.bits(), // IOPL = 0, IF = 1
+            rsp: ustack_top.as_usize() as _,
+            ss: GdtStruct::UDATA_SELECTOR.0 as _,
+            ..Default::default()
+        })
+    }
+
+    /// Creates a new context from the given [`TrapFrame`].
+    ///
+    /// It copies almost all registers except `CS` and `SS` which need to be
+    /// set to the user segment selectors.
+    pub const fn from(tf: &TrapFrame) -> Self {
+        let mut tf = *tf;
+        tf.cs = GdtStruct::UCODE64_SELECTOR.0 as _;
+        tf.ss = GdtStruct::UDATA_SELECTOR.0 as _;
+        Self(tf)
+    }
+
+    /// Gets the instruction pointer.
+    pub const fn get_ip(&self) -> usize {
+        self.0.rip as _
+    }
+
+    /// Gets the stack pointer.
+    pub const fn get_sp(&self) -> usize {
+        self.0.rsp as _
+    }
+
+    /// Sets the instruction pointer.
+    pub const fn set_ip(&mut self, rip: usize) {
+        self.0.rip = rip as _;
+    }
+
+    /// Sets the stack pointer.
+    pub const fn set_sp(&mut self, rsp: usize) {
+        self.0.rsp = rsp as _;
+    }
+
+    /// Sets the return value register.
+    pub const fn set_retval(&mut self, rax: usize) {
+        self.0.rax = rax as _;
+    }
+
+    /// Enters user space.
+    ///
+    /// It restores the user registers and jumps to the user entry point
+    /// (saved in `rip`).
+    /// When an exception or syscall occurs, the kernel stack pointer is
+    /// switched to `kstack_top`.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it changes processor mode and the stack.
+    pub unsafe fn enter_uspace(&self, kstack_top: VirtAddr) -> ! {
+        super::disable_irqs();
+        super::tss_set_rsp0(kstack_top);
+        core::arch::asm!("
+            mov     rsp, {tf}
+            pop     rax
+            pop     rcx
+            pop     rdx
+            pop     rbx
+            pop     rbp
+            pop     rsi
+            pop     rdi
+            pop     r8
+            pop     r9
+            pop     r10
+            pop     r11
+            pop     r12
+            pop     r13
+            pop     r14
+            pop     r15
+            add     rsp, 16     // skip vector, error_code
+            swapgs
+            iretq",
+            tf = in(reg) &self.0,
+            options(noreturn),
+        )
     }
 }
 
@@ -144,7 +278,13 @@ pub struct TaskContext {
 }
 
 impl TaskContext {
-    /// Creates a new default context for a new task.
+    /// Creates a dummy context for a new task.
+    ///
+    /// Note the context is not initialized, it will be filled by [`switch_to`]
+    /// (for initial tasks) and [`init`] (for regular tasks) methods.
+    ///
+    /// [`init`]: TaskContext::init
+    /// [`switch_to`]: TaskContext::switch_to
     pub const fn new() -> Self {
         Self {
             kstack_top: va!(0),
@@ -164,10 +304,13 @@ impl TaskContext {
             // is executed), (stack pointer + 8) should be 16-byte aligned.
             let frame_ptr = (kstack_top.as_mut_ptr() as *mut u64).sub(1);
             let frame_ptr = (frame_ptr as *mut ContextSwitchFrame).sub(1);
-            core::ptr::write(frame_ptr, ContextSwitchFrame {
-                rip: entry as _,
-                ..Default::default()
-            });
+            core::ptr::write(
+                frame_ptr,
+                ContextSwitchFrame {
+                    rip: entry as _,
+                    ..Default::default()
+                },
+            );
             self.rsp = frame_ptr as u64;
         }
         self.kstack_top = kstack_top;

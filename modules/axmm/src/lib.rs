@@ -17,6 +17,9 @@ use kspin::SpinNoIrq;
 use lazyinit::LazyInit;
 use memory_addr::{PhysAddr, va};
 
+const USER_ASPACE_BASE: usize = 0x1000;
+const USER_ASPACE_SIZE: usize = 0x7fff_ffff_f000;
+
 static KERNEL_ASPACE: LazyInit<SpinNoIrq<AddrSpace>> = LazyInit::new();
 
 fn paging_err_to_ax_err(err: PagingError) -> AxError {
@@ -38,6 +41,17 @@ pub fn new_kernel_aspace() -> AxResult<AddrSpace> {
     )?;
     for r in axhal::mem::memory_regions() {
         aspace.map_linear(phys_to_virt(r.paddr), r.paddr, r.size, r.flags.into())?;
+    }
+    Ok(aspace)
+}
+
+/// Creates a new address space for user processes.
+pub fn new_user_aspace() -> AxResult<AddrSpace> {
+    let mut aspace = AddrSpace::new_empty(VirtAddr::from(USER_ASPACE_BASE), USER_ASPACE_SIZE)?;
+    if !cfg!(target_arch = "aarch64") {
+        // ARMv8 use a separate page table (TTBR0_EL1) for user space, it
+        // doesn't need to copy the kernel portion to the user page table.
+        aspace.copy_mappings_from(&kernel_aspace().lock())?;
     }
     Ok(aspace)
 }

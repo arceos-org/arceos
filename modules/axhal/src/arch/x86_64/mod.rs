@@ -2,6 +2,9 @@ mod context;
 mod gdt;
 mod idt;
 
+#[cfg(feature = "uspace")]
+mod syscall;
+
 #[cfg(target_os = "none")]
 mod trap;
 
@@ -12,9 +15,11 @@ use x86::{controlregs, msr, tlb};
 use x86_64::instructions::interrupts;
 
 pub use self::context::{ExtendedState, FxsaveArea, TaskContext, TrapFrame};
-pub use self::gdt::GdtStruct;
-pub use self::idt::IdtStruct;
-pub use x86_64::structures::tss::TaskStateSegment;
+pub use self::gdt::{init_gdt, tss_get_rsp0, tss_set_rsp0, GdtStruct};
+pub use self::idt::{init_idt, IdtStruct};
+
+#[cfg(feature = "uspace")]
+pub use self::{context::UspaceContext, syscall::init_syscall};
 
 /// Allows the current CPU to respond to interrupts.
 #[inline]
@@ -115,4 +120,16 @@ pub fn read_thread_pointer() -> usize {
 #[inline]
 pub unsafe fn write_thread_pointer(fs_base: usize) {
     unsafe { msr::wrmsr(msr::IA32_FS_BASE, fs_base as u64) }
+}
+
+/// Initializes CPU states on the current CPU.
+///
+/// In detail, it initializes the GDT, IDT on x86_64 platforms. If the `uspace`
+/// feature is enabled, it also initializes relevant model-specific registers
+/// to enable the `syscall` instruction.
+pub fn cpu_init() {
+    init_gdt();
+    init_idt();
+    #[cfg(feature = "uspace")]
+    init_syscall();
 }

@@ -21,14 +21,12 @@ unsafe extern "C" {
 unsafe extern "C" fn rust_entry(cpu_id: usize, dtb: usize) {
     crate::mem::clear_bss();
     crate::cpu::init_primary(cpu_id);
-    crate::arch::set_trap_vector_base(trap_vector_base as usize);
     self::time::init_early();
     rust_main(cpu_id, dtb);
 }
 
 #[cfg(feature = "smp")]
 unsafe extern "C" fn rust_entry_secondary(cpu_id: usize) {
-    crate::arch::set_trap_vector_base(trap_vector_base as usize);
     crate::cpu::init_secondary(cpu_id);
     rust_main_secondary(cpu_id);
 }

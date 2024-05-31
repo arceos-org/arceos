@@ -81,7 +81,7 @@
 trap_vector_base:
     // sscratch == 0: trap from S mode
     // sscratch != 0: trap from U mode
-    csrrw   sp, sscratch, sp            // switch sscratch and sp
+    csrrw   sp, sscratch, sp            // swap sscratch and sp
     bnez    sp, .Ltrap_entry_u
 
     csrr    sp, sscratch                // put supervisor sp back
