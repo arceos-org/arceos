@@ -137,3 +137,14 @@ pub fn read_thread_pointer() -> usize {
 pub unsafe fn write_thread_pointer(tpidr_el0: usize) {
     TPIDR_EL0.set(tpidr_el0 as _)
 }
+
+/// Initializes CPU states on the current CPU.
+///
+/// On AArch64, it sets the exception vector base address (`VBAR_EL1`) and `TTBR0_EL1`.
+pub fn cpu_init() {
+    extern "C" {
+        fn exception_vector_base();
+    }
+    set_exception_vector_base(exception_vector_base as usize);
+    unsafe { write_page_table_root0(0.into()) }; // disable low address access in EL1
+}

@@ -88,7 +88,13 @@ pub struct TaskContext {
 }
 
 impl TaskContext {
-    /// Creates a new default context for a new task.
+    /// Creates a dummy context for a new task.
+    ///
+    /// Note the context is not initialized, it will be filled by [`switch_to`]
+    /// (for initial tasks) and [`init`] (for regular tasks) methods.
+    ///
+    /// [`init`]: TaskContext::init
+    /// [`switch_to`]: TaskContext::switch_to
     pub const fn new() -> Self {
         unsafe { core::mem::MaybeUninit::zeroed().assume_init() }
     }

@@ -81,6 +81,7 @@ pub(crate) fn init_primary(cpu_id: usize) {
         CPU_ID.write_current_raw(cpu_id);
         IS_BSP.write_current_raw(true);
     }
+    crate::arch::cpu_init();
 }
 
 #[allow(dead_code)]
@@ -90,4 +91,5 @@ pub(crate) fn init_secondary(cpu_id: usize) {
         CPU_ID.write_current_raw(cpu_id);
         IS_BSP.write_current_raw(false);
     }
+    crate::arch::cpu_init();
 }
