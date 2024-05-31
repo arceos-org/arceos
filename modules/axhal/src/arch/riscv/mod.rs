@@ -107,3 +107,13 @@ pub fn read_thread_pointer() -> usize {
 pub unsafe fn write_thread_pointer(tp: usize) {
     core::arch::asm!("mv tp, {}", in(reg) tp)
 }
+
+/// Initializes CPU states on the current CPU.
+///
+/// On RISC-V, it sets the trap vector base address.
+pub fn cpu_init() {
+    extern "C" {
+        fn trap_vector_base();
+    }
+    set_trap_vector_base(trap_vector_base as usize);
+}
