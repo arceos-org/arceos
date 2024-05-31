@@ -21,7 +21,6 @@ pub mod misc {
 }
 
 extern "C" {
-    fn exception_vector_base();
     fn rust_main(cpu_id: usize, dtb: usize);
     #[cfg(feature = "smp")]
     fn rust_main_secondary(cpu_id: usize);
@@ -29,8 +28,6 @@ extern "C" {
 
 pub(crate) unsafe extern "C" fn rust_entry(cpu_id: usize, dtb: usize) {
     crate::mem::clear_bss();
-    crate::arch::set_exception_vector_base(exception_vector_base as usize);
-    crate::arch::write_page_table_root0(0.into()); // disable low address access
     crate::cpu::init_primary(cpu_id);
     super::aarch64_common::pl011::init_early();
     super::aarch64_common::generic_timer::init_early();
@@ -39,8 +36,6 @@ pub(crate) unsafe extern "C" fn rust_entry(cpu_id: usize, dtb: usize) {
 
 #[cfg(feature = "smp")]
 pub(crate) unsafe extern "C" fn rust_entry_secondary(cpu_id: usize) {
-    crate::arch::set_exception_vector_base(exception_vector_base as usize);
-    crate::arch::write_page_table_root0(0.into()); // disable low address access
     crate::cpu::init_secondary(cpu_id);
     rust_main_secondary(cpu_id);
 }
