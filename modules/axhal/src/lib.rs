@@ -28,6 +28,7 @@
 #![feature(asm_const)]
 #![feature(naked_functions)]
 #![feature(const_option)]
+#![feature(const_mut_refs)]
 #![feature(doc_auto_cfg)]
 
 #[allow(unused_imports)]
