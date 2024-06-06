@@ -111,8 +111,8 @@ impl<D: VirtIoDevMeta> DriverProbe for VirtIoDriver<D> {
             return None;
         }
         match (D::DEVICE_TYPE, dev_info.device_id) {
-            (DeviceType::Net, 0x1000) | (DeviceType::Net, 0x1040) => {}
-            (DeviceType::Block, 0x1001) | (DeviceType::Block, 0x1041) => {}
+            (DeviceType::Net, 0x1000) | (DeviceType::Net, 0x1041) => {}
+            (DeviceType::Block, 0x1001) | (DeviceType::Block, 0x1042) => {}
             (DeviceType::Display, 0x1050) => {}
             _ => return None,
         }
