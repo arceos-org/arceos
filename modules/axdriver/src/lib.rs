@@ -16,15 +16,15 @@
 //! This crate supports two device models depending on the `dyn` feature:
 //!
 //! - **Static**: The type of all devices is static, it is determined at compile
-//!  time by corresponding cargo features. For example, [`AxNetDevice`] will be
-//! an alias of [`VirtioNetDev`] if the `virtio-net` feature is enabled. This
-//! model provides the best performance as it avoids dynamic dispatch. But on
-//! limitation, only one device instance is supported for each device category.
+//!   time by corresponding cargo features. For example, [`AxNetDevice`] will be
+//!   an alias of [`VirtioNetDev`] if the `virtio-net` feature is enabled. This
+//!   model provides the best performance as it avoids dynamic dispatch. But on
+//!   limitation, only one device instance is supported for each device category.
 //! - **Dynamic**: All device instance is using [trait objects] and wrapped in a
-//! `Box<dyn Trait>`. For example, [`AxNetDevice`] will be [`Box<dyn NetDriverOps>`].
-//! When call a method provided by the device, it uses [dynamic dispatch][dyn]
-//! that may introduce a little overhead. But on the other hand, it is more
-//! flexible, multiple instances of each device category are supported.
+//!   `Box<dyn Trait>`. For example, [`AxNetDevice`] will be [`Box<dyn NetDriverOps>`].
+//!   When call a method provided by the device, it uses [dynamic dispatch][dyn]
+//!   that may introduce a little overhead. But on the other hand, it is more
+//!   flexible, multiple instances of each device category are supported.
 //!
 //! # Supported Devices
 //!

@@ -50,4 +50,4 @@ lazy_static = { version = "1.4", features = ["spin_no_std"] }
 flatten_objects = { path = "../../crates/flatten_objects" }
 
 [build-dependencies]
-bindgen ={ version = "0.66" }
+bindgen ={ version = "0.69" }

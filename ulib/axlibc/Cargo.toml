@@ -57,4 +57,4 @@ axio = { path = "../../crates/axio" }
 axerrno = { path = "../../crates/axerrno" }
 
 [build-dependencies]
-bindgen ={ version = "0.66" }
+bindgen ={ version = "0.69" }

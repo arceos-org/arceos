@@ -42,7 +42,7 @@ pub fn start_secondary_cpu(cpu_id: usize, stack_top: PhysAddr) {
         // set the boot stack of the given secondary CPU
         SECONDARY_STACK_TOP = stack_top.as_usize();
         crate::arch::flush_dcache_line(VirtAddr::from(
-            (&SECONDARY_STACK_TOP as *const usize) as usize,
+            core::ptr::addr_of!(SECONDARY_STACK_TOP) as usize
         ));
     }
     aarch64_cpu::asm::sev();

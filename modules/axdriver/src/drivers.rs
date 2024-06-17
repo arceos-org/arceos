@@ -13,6 +13,7 @@ use driver_pci::{DeviceFunction, DeviceFunctionInfo, PciRoot};
 
 pub use super::dummy::*;
 
+#[allow(dead_code)]
 pub trait DriverProbe {
     fn probe_global() -> Option<AxDeviceEnum> {
         None

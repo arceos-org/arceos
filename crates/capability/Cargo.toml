@@ -10,5 +10,5 @@ repository = "https://github.com/rcore-os/arceos/tree/main/crates/capability"
 documentation = "https://rcore-os.github.io/arceos/capability/index.html"
 
 [dependencies]
-bitflags = "2.2"
+bitflags = "2.5"
 axerrno = { path = "../axerrno" }
