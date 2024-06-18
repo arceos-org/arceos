@@ -37,7 +37,7 @@ crate_interface = { path = "../../crates/crate_interface", optional = true }
 
 [dependencies.fatfs]
 git = "https://github.com/rafalh/rust-fatfs"
-rev = "a3a834e"
+rev = "85f06e0"
 optional = true
 default-features = false
 features = [ # no std

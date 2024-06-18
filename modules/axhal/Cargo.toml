@@ -21,7 +21,7 @@ default = []
 [dependencies]
 log = "0.4"
 cfg-if = "1.0"
-bitflags = "2.2"
+bitflags = "2.5"
 static_assertions = "1.1.0"
 axlog = { path = "../axlog" }
 axconfig = { path = "../axconfig" }
@@ -39,16 +39,16 @@ crate_interface = { path = "../../crates/crate_interface" }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 x86 = "0.52"
-x86_64 = "0.14"
+x86_64 = "0.15"
 x2apic = "0.4"
 raw-cpuid = "11.0"
 
 [target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]
-riscv = "0.10"
-sbi-rt = { version = "0.0.2", features = ["legacy"] }
+riscv = "0.11"
+sbi-rt = { version = "0.0.3", features = ["legacy"] }
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
-aarch64-cpu = "9.3"
+aarch64-cpu = "9.4"
 tock-registers = "0.8"
 arm_gic = { path = "../../crates/arm_gic" }
 arm_pl011 = { path = "../../crates/arm_pl011" }

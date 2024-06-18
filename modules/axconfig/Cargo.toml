@@ -10,5 +10,5 @@ repository = "https://github.com/rcore-os/arceos/tree/main/modules/axconfig"
 documentation = "https://rcore-os.github.io/arceos/axconfig/index.html"
 
 [build-dependencies]
-toml_edit = "0.19"
+toml_edit = "0.22"
 serde = "1.0"

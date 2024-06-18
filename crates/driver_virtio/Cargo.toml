@@ -19,4 +19,4 @@ driver_common = { path = "../driver_common" }
 driver_block = { path = "../driver_block", optional = true }
 driver_net = { path = "../driver_net", optional = true }
 driver_display = { path = "../driver_display", optional = true}
-virtio-drivers = "0.7.2"
+virtio-drivers = "0.7.3"

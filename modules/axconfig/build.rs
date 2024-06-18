@@ -1,6 +1,6 @@
 use std::io::{Result, Write};
 use std::path::{Path, PathBuf};
-use toml_edit::{Decor, Document, Item, Table, Value};
+use toml_edit::{Decor, DocumentMut, Item, Table, Value};
 
 fn resolve_config_path(platform: Option<&str>) -> Result<PathBuf> {
     let mut root_dir = PathBuf::from(std::env!("CARGO_MANIFEST_DIR"));
@@ -37,8 +37,8 @@ fn resolve_config_path(platform: Option<&str>) -> Result<PathBuf> {
 
 fn get_comments<'a>(config: &'a Table, key: &str) -> Option<&'a str> {
     config
-        .key_decor(key)
-        .and_then(|d| d.prefix())
+        .key(key)
+        .and_then(|k| k.leaf_decor().prefix())
         .and_then(|s| s.as_str())
         .map(|s| s.trim())
 }
@@ -46,8 +46,8 @@ fn get_comments<'a>(config: &'a Table, key: &str) -> Option<&'a str> {
 fn add_config(config: &mut Table, key: &str, item: Item, comments: Option<&str>) {
     config.insert(key, item);
     if let Some(comm) = comments {
-        if let Some(dst) = config.key_decor_mut(key) {
-            *dst = Decor::new(comm, "");
+        if let Some(mut dst) = config.key_mut(key) {
+            *dst.leaf_decor_mut() = Decor::new(comm, "");
         }
     }
 }
@@ -55,7 +55,7 @@ fn add_config(config: &mut Table, key: &str, item: Item, comments: Option<&str>)
 fn load_config_toml(config_path: &Path) -> Result<Table> {
     let config_content = std::fs::read_to_string(config_path)?;
     let toml = config_content
-        .parse::<Document>()
+        .parse::<DocumentMut>()
         .expect("failed to parse config file")
         .as_table()
         .clone();
