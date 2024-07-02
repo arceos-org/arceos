@@ -233,6 +233,27 @@ impl AddrSpace {
     pub fn clear(&mut self) {
         self.areas.clear(&mut self.pt).unwrap();
     }
+
+    /// Handles a page fault at the given address.
+    ///
+    /// `access_flags` indicates the access type that caused the page fault.
+    ///
+    /// Returns `true` if the page fault is handled successfully (not a real
+    /// fault).
+    pub fn handle_page_fault(&mut self, vaddr: VirtAddr, access_flags: MappingFlags) -> bool {
+        if !self.va_range.contains(vaddr) {
+            return false;
+        }
+        if let Some(area) = self.areas.find(vaddr) {
+            let orig_flags = area.flags();
+            if orig_flags.contains(access_flags) {
+                return area
+                    .backend()
+                    .handle_page_fault(vaddr, orig_flags, &mut self.pt);
+            }
+        }
+        false
+    }
 }
 
 impl fmt::Debug for AddrSpace {
