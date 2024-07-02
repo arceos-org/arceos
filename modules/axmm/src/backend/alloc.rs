@@ -40,17 +40,25 @@ impl Backend {
             flags,
             populate
         );
-        // allocate all possible physical frames for populated mapping.
-        for addr in PageIter4K::new(start, start + size).unwrap() {
-            if let Some(frame) = alloc_frame(true) {
-                if let Ok(tlb) = pt.map(addr, frame, PageSize::Size4K, flags) {
-                    tlb.ignore(); // TLB flush on map is unnecessary, as there are no outdated mappings.
-                } else {
-                    return false;
+        if populate {
+            // allocate all possible physical frames for populated mapping.
+            for addr in PageIter4K::new(start, start + size).unwrap() {
+                if let Some(frame) = alloc_frame(true) {
+                    if let Ok(tlb) = pt.map(addr, frame, PageSize::Size4K, flags) {
+                        tlb.ignore(); // TLB flush on map is unnecessary, as there are no outdated mappings.
+                    } else {
+                        return false;
+                    }
                 }
             }
+            true
+        } else {
+            // Map to a empty entry for on-demand mapping.
+            let flags = MappingFlags::empty();
+            pt.map_region(start, |_| 0.into(), size, flags, false, false)
+                .map(|tlb| tlb.ignore())
+                .is_ok()
         }
-        true
     }
 
     pub(crate) fn unmap_alloc(
@@ -75,5 +83,26 @@ impl Backend {
             }
         }
         true
+    }
+
+    pub(crate) fn handle_page_fault_alloc(
+        &self,
+        vaddr: VirtAddr,
+        orig_flags: MappingFlags,
+        pt: &mut PageTable,
+        populate: bool,
+    ) -> bool {
+        if populate {
+            false // Populated mappings should not trigger page faults.
+        } else if let Some(frame) = alloc_frame(true) {
+            // Allocate a physical frame lazily and map it to the fault address.
+            // `vaddr` does not need to be aligned. It will be automatically
+            // aligned during `pt.remap` regardless of the page size.
+            pt.remap(vaddr, frame, orig_flags)
+                .map(|(_, tlb)| tlb.flush())
+                .is_ok()
+        } else {
+            false
+        }
     }
 }
