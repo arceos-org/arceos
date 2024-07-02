@@ -53,3 +53,19 @@ impl MappingBackend<MappingFlags, PageTable> for Backend {
         }
     }
 }
+
+impl Backend {
+    pub(crate) fn handle_page_fault(
+        &self,
+        vaddr: VirtAddr,
+        orig_flags: MappingFlags,
+        page_table: &mut PageTable,
+    ) -> bool {
+        match *self {
+            Self::Linear { .. } => false, // Linear mappings should not trigger page faults.
+            Self::Alloc { populate } => {
+                self.handle_page_fault_alloc(vaddr, orig_flags, page_table, populate)
+            }
+        }
+    }
+}
