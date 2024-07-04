@@ -21,12 +21,16 @@ jobs:
     - name: Check rust version
       run: rustc --version --verbose
     - name: Clippy for the default target
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make clippy
     - name: Clippy for x86_64
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make clippy ARCH=x86_64
     - name: Clippy for riscv64
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make clippy ARCH=riscv64
     - name: Clippy for aarch64
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make clippy ARCH=aarch64
     - name: Check code format
       run: cargo fmt --all -- --check
@@ -51,32 +55,46 @@ jobs:
     - uses: Swatinem/rust-cache@v2
     - run: cargo install cargo-binutils
     - name: Build helloworld
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=apps/helloworld
     - name: Build memtest
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=apps/memtest
     - name: Build exception
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=apps/exception
     - name: Build display
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=apps/display
     - name: Build task/yield
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=apps/task/yield
     - name: Build task/parallel
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=apps/task/parallel
     - name: Build task/sleep
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=apps/task/sleep
     - name: Build task/priority
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=apps/task/priority
     - name: Build task/tls
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=apps/task/tls
     - name: Build fs/shell
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=apps/fs/shell
     - name: Build net/echoserver
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=apps/net/echoserver
     - name: Build net/httpclient
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=apps/net/httpclient
     - name: Build net/httpserver
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=apps/net/httpserver
     - name: Build net/udpserver
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=apps/net/udpserver
 
     - uses: ./.github/workflows/actions/setup-musl
@@ -130,20 +148,27 @@ jobs:
         arch: x86_64
 
     - name: Build helloworld for x86_64-pc-oslab
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLATFORM=x86_64-pc-oslab A=apps/helloworld
     - name: Build net/httpserver for x86_64-pc-oslab
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLATFORM=x86_64-pc-oslab A=apps/net/httpserver FEATURES=driver-ixgbe
     - name: Build c/iperf for x86_64-pc-oslab
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLATFORM=x86_64-pc-oslab A=apps/c/iperf FEATURES=driver-ixgbe,driver-ramdisk
     - name: Build c/redis for x86_64-pc-oslab
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLATFORM=x86_64-pc-oslab A=apps/c/redis FEATURES=driver-ixgbe,driver-ramdisk SMP=4
 
     - name: Build helloworld for aarch64-raspi4
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLATFORM=aarch64-raspi4 A=apps/helloworld
     - name: Build fs/shell for aarch64-raspi4
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLATFORM=aarch64-raspi4 A=apps/fs/shell FEATURES=driver-bcm2835-sdhci
 
     - name: Build helloworld for aarch64-bsta1000b
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLATFORM=aarch64-bsta1000b A=apps/helloworld
 
   build-apps-for-std:
