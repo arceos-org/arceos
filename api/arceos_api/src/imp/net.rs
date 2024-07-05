@@ -64,6 +64,14 @@ pub fn ax_tcp_shutdown(socket: &AxTcpSocketHandle) -> AxResult {
     socket.0.shutdown()
 }
 
+pub fn ax_tcp_nodelay(socket: &AxTcpSocketHandle) -> AxResult<bool> {
+    socket.0.nodelay()
+}
+
+pub fn ax_tcp_set_nodelay(socket: &AxTcpSocketHandle, nodelay: bool) -> AxResult {
+    socket.0.set_nodelay(nodelay)
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // UDP socket
 ////////////////////////////////////////////////////////////////////////////////

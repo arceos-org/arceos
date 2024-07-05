@@ -14,21 +14,21 @@ pub extern "C" fn sqrt() {
     println!("sqrt");
 }
 
-
 fn main() -> eyre::Result<()> {
     ceil();
     sqrt();
     let latency = DataId::from("latency".to_owned());
     let _throughput = DataId::from("throughput".to_owned());
 
-    // let (mut node, mut events) = DoraNode::init_from_env()?;
-    let (mut node, mut events) = DoraNode::init_from_file("node.yml")?;
+    let (mut node, mut events) = DoraNode::init_from_env()?;
+    // let (mut node, mut events) = DoraNode::init_from_file("node.yml")?;
     let sizes = [1, 10 * 512, 100 * 512, 1000 * 512, 10000 * 512];
 
     // test latency first
     for size in sizes {
-        for _ in 0..100 {
+        for i in 0..100 {
             if let Some(event) = events.recv() {
+                println!("node recv event[{}] {:#?}", i, event);
                 match event {
                     Event::Input {
                         id: _,
@@ -44,6 +44,8 @@ fn main() -> eyre::Result<()> {
                         *beginning_slice = t_send;
 
                         let random_data: UInt64Array = random_data.into();
+
+                        println!("node send_output random_data[{}] {:#?}", i, random_data);
 
                         node.send_output(latency.clone(), metadata.parameters, random_data)?;
                     }

@@ -24,7 +24,7 @@ pub extern "C" fn sqrt() {
 
 fn main() -> eyre::Result<()> {
     // let (_node, mut events) = DoraNode::init_from_env()?;
-    let (mut node, mut events) = DoraNode::init_from_file("sink.yml")?;
+    let ( _node, mut events) = DoraNode::init_from_file("sink.yml")?;
 
     // latency is tested first
     let latency = true;
@@ -48,6 +48,7 @@ fn main() -> eyre::Result<()> {
     }
 
     while let Some(event) = events.recv() {
+        println!("sink recv event[{}] {:#?}", n, event);
         match event {
             Event::Input {
                 id: _,
@@ -122,4 +123,15 @@ fn record_results(
         avg_latency.as_micros().to_string(),
     ])
     .unwrap();
+    println!(
+        "{:#?}",
+        &[
+            date.to_string(),
+            LANGUAGE.to_string(),
+            PLATFORM.to_string(),
+            NAME.to_string(),
+            current_size.to_string(),
+            avg_latency.as_micros().to_string(),
+        ]
+    );
 }

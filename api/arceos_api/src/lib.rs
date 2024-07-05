@@ -269,6 +269,10 @@ pub mod net {
         pub fn ax_tcp_poll(socket: &AxTcpSocketHandle) -> AxResult<AxPollState>;
         /// Closes the connection on the TCP socket.
         pub fn ax_tcp_shutdown(socket: &AxTcpSocketHandle) -> AxResult;
+        /// Gets the value of the `TCP_NODELAY` option on this socket.
+        pub fn ax_tcp_nodelay(socket: &AxTcpSocketHandle) -> AxResult<bool>;
+        /// Sets the value of the `TCP_NODELAY` option on this socket.
+        pub fn ax_tcp_set_nodelay(socket: &AxTcpSocketHandle, nodelay: bool) -> AxResult;
 
         // UDP socket
 

@@ -344,6 +344,16 @@ impl TcpSocket {
             }),
         }
     }
+
+    pub fn nodelay(&self) -> AxResult<bool> {
+        warn!("ax_tcp_nodelay unsupported, get true");
+        Ok(true)
+    }
+
+    pub fn set_nodelay(&self, nodelay: bool) -> AxResult {
+        warn!("ax_tcp_set_nodelay {} unsupported", nodelay);
+        Ok(())
+    }
 }
 
 /// Private methods
