@@ -12,3 +12,6 @@ rand = "0.8.5"
 uhlc = "0.5.1"
 bytemuck = "1.12"
 csv = "1.1.6"
+
+[package.metadata.arceos]
+features = ["net", "multitask", "fs"]

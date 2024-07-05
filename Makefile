@@ -49,7 +49,7 @@ BUS ?= mmio
 DISK_IMG ?= disk.img
 QEMU_LOG ?= n
 NET_DUMP ?= n
-NET_DEV ?= user
+NET_DEV ?= tap
 
 # Network options
 IP ?= 10.0.2.15

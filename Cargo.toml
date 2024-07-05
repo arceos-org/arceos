@@ -74,7 +74,13 @@ members = [
     "apps/std/mio-tcpserver",
     "apps/std/tokio-echo",
     "apps/std/socket2-echoserver",
+    "apps/std/dora/node",
+    "apps/std/dora/sink",
 ]
+
+[workspace.dependencies]
+# dora-node-api = "0.3.5" # { path = "../../../dora/apis/rust/node" }
+dora-node-api = { path = "../../Dora/dora/apis/rust/node" }
 
 [profile.release]
 lto = true
@@ -82,5 +88,9 @@ lto = true
 [patch.crates-io]
 crate_interface = { path = "crates/crate_interface" }
 mio = { git = "https://github.com/arceos-os/mio.git", branch = "arceos" }
-tokio = { git = "https://github.com/arceos-os/tokio.git", branch = "arceos" }
+# tokio = { git = "https://github.com/arceos-os/tokio.git", branch = "arceos" }
 socket2 = { git = "https://github.com/arceos-os/socket2.git", branch = "arceos" }
+tokio = { path = "../third_party/tokio/tokio" }
+errno = { path = "../third_party/rust-errno" }
+rustix = { path = "../third_party/rustix" }
+# dora-node-api = { path = "../../Dora/dora/apis/rust/node" }

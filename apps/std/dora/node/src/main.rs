@@ -1,14 +1,28 @@
 use dora_node_api::Event;
 use dora_node_api::{self, arrow::array::UInt64Array, dora_core::config::DataId, DoraNode};
 use rand::Rng;
-use std::time::Duration;
+// use std::time::Duration;
 use uhlc::system_time_clock;
 
+#[no_mangle]
+pub extern "C" fn ceil() {
+    println!("ceil");
+}
+
+#[no_mangle]
+pub extern "C" fn sqrt() {
+    println!("sqrt");
+}
+
+
 fn main() -> eyre::Result<()> {
+    ceil();
+    sqrt();
     let latency = DataId::from("latency".to_owned());
     let _throughput = DataId::from("throughput".to_owned());
 
-    let (mut node, mut events) = DoraNode::init_from_env()?;
+    // let (mut node, mut events) = DoraNode::init_from_env()?;
+    let (mut node, mut events) = DoraNode::init_from_file("node.yml")?;
     let sizes = [1, 10 * 512, 100 * 512, 1000 * 512, 10000 * 512];
 
     // test latency first

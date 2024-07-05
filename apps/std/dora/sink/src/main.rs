@@ -12,8 +12,19 @@ static LANGUAGE: &str = "Rust";
 static PLATFORM: &str = "i7-8750@2.20GHz";
 static NAME: &str = "dora-rs daemon Rust";
 
+#[no_mangle]
+pub extern "C" fn ceil() {
+    println!("ceil");
+}
+
+#[no_mangle]
+pub extern "C" fn sqrt() {
+    println!("sqrt");
+}
+
 fn main() -> eyre::Result<()> {
-    let (_node, mut events) = DoraNode::init_from_env()?;
+    // let (_node, mut events) = DoraNode::init_from_env()?;
+    let (mut node, mut events) = DoraNode::init_from_file("sink.yml")?;
 
     // latency is tested first
     let latency = true;
