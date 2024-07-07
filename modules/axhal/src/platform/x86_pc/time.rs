@@ -11,17 +11,17 @@ static mut CPU_FREQ_MHZ: u64 = axconfig::TIMER_FREQUENCY as u64 / 1_000_000;
 
 /// Returns the current clock time in hardware ticks.
 pub fn current_ticks() -> u64 {
-    unsafe { core::arch::x86_64::_rdtsc() - INIT_TICK }
+    unsafe { core::arch::x86_64::_rdtsc() + INIT_TICK }
 }
 
 /// Converts hardware ticks to nanoseconds.
 pub fn ticks_to_nanos(ticks: u64) -> u64 {
-    ticks * 1_000 / unsafe { CPU_FREQ_MHZ }
+    (ticks as u128 * 1_000 / unsafe { CPU_FREQ_MHZ } as u128) as u64
 }
 
 /// Converts nanoseconds to hardware ticks.
 pub fn nanos_to_ticks(nanos: u64) -> u64 {
-    nanos * unsafe { CPU_FREQ_MHZ } / 1_000
+    (nanos as u128 * unsafe { CPU_FREQ_MHZ } as u128 / 1_000) as u64
 }
 
 /// Set a one-shot timer.
@@ -53,7 +53,13 @@ pub(super) fn init_early() {
         }
     }
 
-    unsafe { INIT_TICK = core::arch::x86_64::_rdtsc() };
+    use super::rtc::Rtc;
+    // Get the current time in microseconds since the epoch (1970-01-01) from the x86 RTC.
+    // Subtract the timer ticks to get the actual time when ArceOS was booted.
+    let current_time_nanos = Rtc::new().get_microseconds_since_epoch() * 1000;
+    let current_ticks = nanos_to_ticks(current_time_nanos);
+
+    unsafe { INIT_TICK = current_ticks - core::arch::x86_64::_rdtsc() };
 }
 
 pub(super) fn init_primary() {

@@ -74,6 +74,7 @@ members = [
     "apps/std/mio-tcpserver",
     "apps/std/tokio-echo",
     "apps/std/socket2-echoserver",
+    "apps/std/chrono",
     "apps/std/dora/node",
     "apps/std/dora/sink",
 ]
