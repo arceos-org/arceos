@@ -16,16 +16,6 @@ static NAME: &str = "dora-rs daemon Rust";
 
 static REMOTE_IP: IpAddr = IpAddr::V4(Ipv4Addr::new(10, 0, 2, 2));
 
-#[no_mangle]
-pub extern "C" fn ceil() {
-    println!("ceil");
-}
-
-#[no_mangle]
-pub extern "C" fn sqrt() {
-    println!("sqrt");
-}
-
 fn main() -> eyre::Result<()> {
     println!(
         "Dora sink-dynamic on ArceOS booted at time {}",

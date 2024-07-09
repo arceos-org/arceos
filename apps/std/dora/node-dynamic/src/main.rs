@@ -6,21 +6,9 @@ use rand::Rng;
 use std::net::{IpAddr, Ipv4Addr};
 use uhlc::system_time_clock;
 
-#[no_mangle]
-pub extern "C" fn ceil() {
-    println!("ceil");
-}
-
-#[no_mangle]
-pub extern "C" fn sqrt() {
-    println!("sqrt");
-}
-
 static REMOTE_IP: IpAddr = IpAddr::V4(Ipv4Addr::new(10, 0, 2, 2));
 
 fn main() -> eyre::Result<()> {
-    ceil();
-    sqrt();
     println!(
         "Dora node-dynamic on ArceOS booted at time {}",
         chrono::Local::now()
@@ -38,7 +26,7 @@ fn main() -> eyre::Result<()> {
 
     // test latency first
     for size in sizes {
-        for i in 0..100 {
+        for _i in 0..100 {
             if let Some(event) = events.recv() {
                 // println!("node recv event[{}] {:#?}", i, event);
                 match event {

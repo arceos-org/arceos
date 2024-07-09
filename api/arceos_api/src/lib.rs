@@ -344,3 +344,20 @@ pub mod io {
         pub type AxPollState;
     }
 }
+
+/// Mathematical calculation operations.
+/// These functions are just used to fix 
+///     rust-lld: error: undefined symbol  of
+///     `sqrt` and `cell`
+/// Todo: remove these
+pub mod math {
+    #[no_mangle]
+    pub extern "C" fn ceil() {
+        unimplemented!()
+    }
+
+    #[no_mangle]
+    pub extern "C" fn sqrt() {
+        unimplemented!()
+    }
+}

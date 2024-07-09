@@ -90,9 +90,5 @@ lto = true
 [patch.crates-io]
 crate_interface = { path = "crates/crate_interface" }
 mio = { git = "https://github.com/arceos-os/mio.git", branch = "arceos" }
-# tokio = { git = "https://github.com/arceos-os/tokio.git", branch = "arceos" }
+tokio = { git = "https://github.com/arceos-os/tokio.git", branch = "arceos-dora" }
 socket2 = { git = "https://github.com/arceos-os/socket2.git", branch = "arceos" }
-tokio = { path = "../third_party/tokio/tokio" }
-errno = { path = "../third_party/rust-errno" }
-rustix = { path = "../third_party/rustix" }
-# dora-node-api = { path = "../../Dora/dora/apis/rust/node" }
