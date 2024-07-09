@@ -1303,6 +1303,7 @@ dependencies = [
 [[package]]
 name = "dora-arrow-convert"
 version = "0.3.5"
+source = "git+https://github.com/arceos-org/dora.git?branch=arceos-porting#667d3a7d4faf08cc9618dd025c1525b1cb743722"
 dependencies = [
  "arrow",
  "eyre",
@@ -1311,6 +1312,7 @@ dependencies = [
 [[package]]
 name = "dora-core"
 version = "0.3.5"
+source = "git+https://github.com/arceos-org/dora.git?branch=arceos-porting#667d3a7d4faf08cc9618dd025c1525b1cb743722"
 dependencies = [
  "aligned-vec",
  "dora-message",
@@ -1329,6 +1331,7 @@ dependencies = [
 [[package]]
 name = "dora-message"
 version = "0.3.5"
+source = "git+https://github.com/arceos-org/dora.git?branch=arceos-porting#667d3a7d4faf08cc9618dd025c1525b1cb743722"
 dependencies = [
  "arrow-data",
  "arrow-schema",
@@ -1340,6 +1343,7 @@ dependencies = [
 [[package]]
 name = "dora-node-api"
 version = "0.3.5"
+source = "git+https://github.com/arceos-org/dora.git?branch=arceos-porting#667d3a7d4faf08cc9618dd025c1525b1cb743722"
 dependencies = [
  "aligned-vec",
  "arrow",
@@ -1360,6 +1364,7 @@ dependencies = [
 [[package]]
 name = "dora-tracing"
 version = "0.3.5"
+source = "git+https://github.com/arceos-org/dora.git?branch=arceos-porting#667d3a7d4faf08cc9618dd025c1525b1cb743722"
 dependencies = [
  "eyre",
  "opentelemetry",

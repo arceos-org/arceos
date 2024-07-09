@@ -80,10 +80,6 @@ members = [
     "apps/std/dora/node-dynamic",
 ]
 
-[workspace.dependencies]
-# dora-node-api = "0.3.5" # { path = "../../../dora/apis/rust/node" }
-dora-node-api = { path = "../../Dora/dora-arceos/apis/rust/node" }
-
 [profile.release]
 lto = true
 
