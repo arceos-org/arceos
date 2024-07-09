@@ -10,7 +10,7 @@ repository = "https://github.com/arceos-org/arceos/tree/main/crates/page_table_e
 documentation = "https://arceos-org.github.io/arceos/page_table_entry/index.html"
 
 [dependencies]
-bitflags = "2.5"
+bitflags = "2.6"
 memory_addr = { path = "../memory_addr" }
 aarch64-cpu = "9.4" # TODO: put it in [target.'cfg(target_arch = "aarch64")'.dependencies]
 

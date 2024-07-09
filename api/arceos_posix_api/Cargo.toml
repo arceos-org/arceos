@@ -47,7 +47,7 @@ axio = { path = "../../crates/axio" }
 axerrno = { path = "../../crates/axerrno" }
 static_assertions = "1.1.0"
 spin = { version = "0.9" }
-lazy_static = { version = "1.4", features = ["spin_no_std"] }
+lazy_static = { version = "1.5", features = ["spin_no_std"] }
 flatten_objects = { path = "../../crates/flatten_objects" }
 
 [build-dependencies]

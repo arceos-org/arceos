@@ -9,4 +9,4 @@ description = "Slab allocator for `no_std` systems. Uses multiple slabs with blo
 keywords = ["slab", "allocator", "no_std", "heap", "kernel"]
 
 [dependencies]
-buddy_system_allocator = { version = "0.9", default-features = false }
+buddy_system_allocator = { version = "0.10", default-features = false }

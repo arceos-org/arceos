@@ -14,5 +14,5 @@ default = []
 
 [dependencies]
 log = "0.4"
-bitflags = "2.5"
+bitflags = "2.6"
 axerrno = { path = "../axerrno" }

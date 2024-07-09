@@ -21,7 +21,7 @@ default = []
 [dependencies]
 log = "0.4"
 cfg-if = "1.0"
-bitflags = "2.5"
+bitflags = "2.6"
 static_assertions = "1.1.0"
 axlog = { path = "../axlog" }
 axconfig = { path = "../axconfig" }
