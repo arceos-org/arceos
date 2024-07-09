@@ -1,68 +1,59 @@
 # Dora on Arceos
 
 * Dora
-	* For host: https://github.com/arceos-org/dora/tree/modify_spawn
+	* For host: https://github.com/arceos-org/dora/tree/multi_machine
 	* For ArceOS: https://github.com/arceos-org/dora/tree/arceos-porting
+* Dora-benchmark
+	* https://github.com/arceos-org/dora-benchmark/tree/rs-latency-dynamic
 * ArceOS
 	* https://github.com/arceos-org/arceos/tree/dora-wip
 
-## 1. Setup Dora coordinator and daemon on host
+## 1. Compile and setup Dora on host
 
-* In dora repo under `modify_spawn` branch
+* In dora repo under `multi_machine` branch
 
 ```bash
 # Build.
 cargo build --release --all
 
-# Run coordinator.
-./target/release/dora coordinator
-
-# Run daemon.
-DORA_NODE_CONFIG_PATH=`pwd` ./target/release/dora daemon
+# Dora up (coordinator & daemon).
+./target/release/dora up
 ```
 
-## 2. Generate configuration file for Dora nodes.
-
-* In dora-benchmark repo:  `/dora-benchmark/dora-rs/rs-latency`
+You should see output like:
 ```bash
-./PATH/TO/dora/you/just/compiled start dataflow.yml
+started dora coordinator
+started dora daemon
 ```
 
-* then you can get `rust-node.yml` and `rust-sink.yml` on dora repo.
+## 2. Start Dora based on `dataflow-dynamic.yml`.
 
-## 3. Boot Dora nodes based on these configuration file.
-
-### To boot Dora nodes on host
+* In dora-benchmark repo:  `/dora-benchmark/dora-rs/rs-latency-dynamic`
 ```bash
-# Build.
-cargo build --release --all
-
-# Run nodes.
-DORA_NODE_CONFIG=`cat rust-node.yml` ./target/release/benchmark-example-node
-DORA_NODE_CONFIG=`cat rust-sink.yml` ./target/release/benchmark-example-sink
+./PATH/TO/dora/you/just/compiled start dataflow-dynamic.yml
 ```
 
-### To boot Dora nodes upon ArceOS
+## 3. Boot Dora nodes upon ArceOS or in host.
 
-In ArceOS dir under `dora-wip` branch.
+For example, we start sink in host and node upon ArceOS.
+
+* In dora-benchmark repo, start sink node:
+```bash
+./target/release/benchmark-example-sink-dynamic
+```
+
+* In ArceOS dir:
+```bash
+make A=apps/std/dora/node-dynamic SMP=1 NET=y BLK=y LOG=debug STD=y justrun
+```
 
 Pay attention to `dora-node-api` dependency,
 this is just the `arceos-porting` branch of Dora repo,
+it's a simplified and WIP version of Dora as a dependency of ArceOS std.
 We have separated their dirs to facilitate the compilation of Dora in the host and Dora dependencies for ArceOS std.
 
 ```Toml
 [workspace.dependencies]
 # dora-node-api = "0.3.5" # { path = "../../../dora/apis/rust/node" }
 dora-node-api = { path = "../../Dora/dora-arceos/apis/rust/node" }
-```
-
-* Run ArceOS on QEMU/KVM
-	* make `disk.img` for ArceOS, make sure it contains the configuration files just generated for the Dora nodes.
-	* change `socket_addr` to : `socket_addr: "10.0.2.2:44631"` in configuration files.
-
-```bash
-# make sure sink.yml in your disk.img
-make A=apps/std/dora/sink SMP=1 NET=y BLK=y LOG=debug STD=y build
-# make sure node.yml in your disk.img
-make A=apps/std/dora/node SMP=1 NET=y BLK=y LOG=debug STD=y build
 ```

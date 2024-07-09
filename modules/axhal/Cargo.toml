@@ -36,6 +36,7 @@ percpu = { path = "../../crates/percpu" }
 memory_addr = { path = "../../crates/memory_addr" }
 handler_table = { path = "../../crates/handler_table" }
 crate_interface = { path = "../../crates/crate_interface" }
+rtc = { path = "../../crates/rtc"}
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 x86 = "0.52"

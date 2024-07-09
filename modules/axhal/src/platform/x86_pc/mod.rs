@@ -2,7 +2,6 @@ mod apic;
 mod boot;
 mod dtables;
 mod uart16550;
-mod rtc;
 
 pub mod mem;
 pub mod misc;

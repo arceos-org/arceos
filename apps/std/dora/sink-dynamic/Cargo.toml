@@ -1,5 +1,5 @@
 [package]
-name = "benchmark-example-sink"
+name = "sink-dynamic"
 version = "0.1.0"
 edition = "2021"
 
@@ -12,6 +12,7 @@ rand = "0.8.5"
 uhlc = "0.5.1"
 bytemuck = "1.12"
 csv = "1.1.6"
+chrono = "0.4.38"
 
 [package.metadata.arceos]
-features = ["net", "multitask", "fs"]
+features = ["net", "multitask", "fs", "irq", "sched_rr"]

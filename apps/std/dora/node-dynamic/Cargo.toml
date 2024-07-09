@@ -1,5 +1,5 @@
 [package]
-name = "benchmark-example-node"
+name = "dora-arceos-example-node"
 version = "0.1.0"
 edition = "2021"
 
@@ -13,6 +13,7 @@ rand = "0.8.5"
 tokio = { version = "1.20.1", features = ["rt", "macros"] }
 uhlc = "0.5.1"
 bytemuck = "1.12"
+chrono = "0.4.38"
 
 [package.metadata.arceos]
-features = ["net", "multitask", "fs"]
+features = ["net", "multitask", "fs", "irq", "sched_rr"]

@@ -1,16 +1,20 @@
 use csv::Writer;
 use dora_node_api::arrow::array::{AsArray, PrimitiveArray};
 use dora_node_api::arrow::datatypes::UInt64Type;
+use dora_node_api::dora_core::config::NodeId;
 use dora_node_api::{self, DoraNode, Event};
 use eyre::ContextCompat;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
+use std::net::{IpAddr, Ipv4Addr};
 use uhlc::system_time_clock;
 use uhlc::HLC;
 
 static LANGUAGE: &str = "Rust";
-static PLATFORM: &str = "i7-8750@2.20GHz";
+static PLATFORM: &str = "ArceOS i7-8750@2.20GHz";
 static NAME: &str = "dora-rs daemon Rust";
+
+static REMOTE_IP: IpAddr = IpAddr::V4(Ipv4Addr::new(10, 0, 2, 2));
 
 #[no_mangle]
 pub extern "C" fn ceil() {
@@ -23,8 +27,15 @@ pub extern "C" fn sqrt() {
 }
 
 fn main() -> eyre::Result<()> {
-    // let (_node, mut events) = DoraNode::init_from_env()?;
-    let ( _node, mut events) = DoraNode::init_from_file("sink.yml")?;
+    println!(
+        "Dora sink-dynamic on ArceOS booted at time {}",
+        chrono::Local::now()
+    );
+
+    let (_node, mut events) = DoraNode::init_from_node_id(
+        NodeId::from("rust-sink-dynamic".to_string()),
+        Some(REMOTE_IP),
+    )?;
 
     // latency is tested first
     let latency = true;
@@ -41,14 +52,13 @@ fn main() -> eyre::Result<()> {
         .expect("Could not extract date from timestamp.");
 
     // Preallocated vector
-    let sizes = [1, 10 * 512, 100 * 512, 1000 * 512, 10000 * 512];
+    let sizes = [1, 10 * 512, 100 * 512];
     let mut root_vec = HashMap::new();
     for size in sizes {
         root_vec.insert(size, vec![0u64; size]);
     }
 
     while let Some(event) = events.recv() {
-        println!("sink recv event[{}] {:#?}", n, event);
         match event {
             Event::Input {
                 id: _,
@@ -123,15 +133,4 @@ fn record_results(
         avg_latency.as_micros().to_string(),
     ])
     .unwrap();
-    println!(
-        "{:#?}",
-        &[
-            date.to_string(),
-            LANGUAGE.to_string(),
-            PLATFORM.to_string(),
-            NAME.to_string(),
-            current_size.to_string(),
-            avg_latency.as_micros().to_string(),
-        ]
-    );
 }

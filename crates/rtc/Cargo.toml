@@ -1,0 +1,14 @@
+[package]
+name = "rtc"
+version = "0.1.0"
+edition = "2021"
+
+description = "System Real Time Clock (RTC) Drivers"
+license = "GPL-3.0-or-later OR Apache-2.0"
+homepage = "https://github.com/rcore-os/arceos"
+
+[dependencies]
+cfg-if = "1.0"
+
+[target.'cfg(target_arch = "x86_64")'.dependencies]
+x86_64 = "0.14"

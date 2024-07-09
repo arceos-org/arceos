@@ -35,6 +35,7 @@ members = [
     "crates/spinlock",
     "crates/timer_list",
     "crates/tuple_for_each",
+    "crates/rtc",
 
     "modules/axalloc",
     "modules/axconfig",
@@ -75,8 +76,8 @@ members = [
     "apps/std/tokio-echo",
     "apps/std/socket2-echoserver",
     "apps/std/chrono",
-    "apps/std/dora/node",
-    "apps/std/dora/sink",
+    "apps/std/dora/sink-dynamic",
+    "apps/std/dora/node-dynamic",
 ]
 
 [workspace.dependencies]

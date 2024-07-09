@@ -651,6 +651,7 @@ dependencies = [
  "ratio",
  "raw-cpuid 11.0.2",
  "riscv",
+ "rtc",
  "sbi-rt",
  "spinlock",
  "static_assertions",
@@ -821,31 +822,6 @@ dependencies = [
  "log",
  "tock-registers",
  "volatile 0.2.7",
-]
-
-[[package]]
-name = "benchmark-example-node"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "dora-node-api",
- "eyre",
- "futures",
- "rand",
- "tokio",
- "uhlc",
-]
-
-[[package]]
-name = "benchmark-example-sink"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "csv",
- "dora-node-api",
- "eyre",
- "rand",
- "uhlc",
 ]
 
 [[package]]
@@ -1308,6 +1284,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ff4a5fefe330e8d7f31b16a318f9ce81000d8e35e69b93eae154d16d2278f70f"
 dependencies = [
  "thiserror",
+]
+
+[[package]]
+name = "dora-arceos-example-node"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "chrono",
+ "dora-node-api",
+ "eyre",
+ "futures",
+ "rand",
+ "tokio",
+ "uhlc",
 ]
 
 [[package]]
@@ -2642,6 +2632,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "rtc"
+version = "0.1.0"
+dependencies = [
+ "cfg-if",
+ "x86_64",
+]
+
+[[package]]
 name = "rustc-demangle"
 version = "0.1.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2844,6 +2842,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a9e9e0b4211b72e7b8b6e85c807d36c212bdb33ea8587f7569562a84df5465b1"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "sink-dynamic"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "chrono",
+ "csv",
+ "dora-node-api",
+ "eyre",
+ "rand",
+ "uhlc",
 ]
 
 [[package]]

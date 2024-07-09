@@ -1,4 +1,5 @@
-use spinlock::SpinNoIrq;
+//! System Real Time Clock (RTC) Drivers for x86_64 based on CMOS.
+//! Ref: https://wiki.osdev.org/RTC
 
 const CMOS_COMMAND_PORT: u16 = 0x70;
 const CMOS_DATA_PORT: u16 = 0x71;
@@ -21,13 +22,12 @@ const CMOS_12_HOUR_PM_FLAG: u8 = 0x80;
 
 pub struct Rtc {
     cmos_format: u8,
-    _lock: SpinNoIrq<()>,
 }
+
 impl Rtc {
     pub fn new() -> Self {
         Self {
             cmos_format: Self::read_cmos_register(CMOS_STATUS_REGISTER_B),
-            _lock: SpinNoIrq::new(()),
         }
     }
 
@@ -48,16 +48,9 @@ impl Rtc {
         ((value / 16) * 10) + (value & 0xF)
     }
 
-    /// Returns the number of microseconds since the epoch from a given date.
+    /// Returns the number of seconds since the epoch from a given date.
     /// Inspired by Linux Kernel's mktime64(), see kernel/time/time.c.
-    fn microseconds_from_date(
-        year: u16,
-        month: u8,
-        day: u8,
-        hour: u8,
-        minute: u8,
-        second: u8,
-    ) -> u64 {
+    fn seconds_from_date(year: u16, month: u8, day: u8, hour: u8, minute: u8, second: u8) -> u64 {
         let (m, y) = if month > 2 {
             (u64::from(month - 2), u64::from(year))
         } else {
@@ -70,7 +63,7 @@ impl Rtc {
         let minutes_since_epoch = hours_since_epoch * 60 + u64::from(minute);
         let seconds_since_epoch = minutes_since_epoch * 60 + u64::from(second);
 
-        seconds_since_epoch * 1_000_000u64
+        seconds_since_epoch
     }
 
     fn read_cmos_register(register: u8) -> u8 {
@@ -135,11 +128,11 @@ impl Rtc {
         let minute = self.read_datetime_register(CMOS_MINUTE_REGISTER);
         let second = self.read_datetime_register(CMOS_SECOND_REGISTER);
 
-        // Convert it all to microseconds and return the result.
-        Self::microseconds_from_date(year, month, day, hour, minute, second)
+        // Convert it all to seconds and return the result.
+        Self::seconds_from_date(year, month, day, hour, minute, second)
     }
 
-    pub fn get_microseconds_since_epoch(&self) -> u64 {
+    pub fn get_unix_timestamp(&self) -> u64 {
         loop {
             // If a clock update is currently in progress, wait until it is finished.
             while Self::read_cmos_register(CMOS_STATUS_REGISTER_A) & CMOS_UPDATE_IN_PROGRESS_FLAG
@@ -148,8 +141,8 @@ impl Rtc {
                 core::hint::spin_loop();
             }
 
-            // Get the current time in microseconds since the epoch.
-            let microseconds_since_epoch_1 = self.read_all_values();
+            // Get the current time in seconds since the epoch.
+            let seconds_since_epoch_1 = self.read_all_values();
 
             // If the clock is already updating the time again, the read values may be inconsistent
             // and we have to repeat this process.
@@ -158,17 +151,11 @@ impl Rtc {
             }
 
             // Get the current time again and verify that it's the same we last read.
-            let microseconds_since_epoch_2 = self.read_all_values();
-            if microseconds_since_epoch_1 == microseconds_since_epoch_2 {
+            let seconds_since_epoch_2 = self.read_all_values();
+            if seconds_since_epoch_1 == seconds_since_epoch_2 {
                 // Both times are identical, so we have read consistent values and can exit the loop.
-                return microseconds_since_epoch_1;
+                return seconds_since_epoch_1;
             }
         }
     }
 }
-
-// impl Drop for Rtc {
-//     fn drop(&mut self) {
-//         irq::enable();
-//     }
-// }
