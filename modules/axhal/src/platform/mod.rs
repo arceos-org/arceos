@@ -23,9 +23,7 @@ cfg_if::cfg_if! {
         mod aarch64_bsta1000b;
         pub use self::aarch64_bsta1000b::*;
     } else {
-        // mod dummy;
-        // pub use self::dummy::*;
-		mod x86_pc;
-        pub use self::x86_pc::*;
+        mod dummy;
+        pub use self::dummy::*;
     }
 }

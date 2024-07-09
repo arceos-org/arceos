@@ -34,6 +34,7 @@ pub(crate) unsafe extern "C" fn rust_entry(cpu_id: usize, dtb: usize) {
     crate::cpu::init_primary(cpu_id);
     super::aarch64_common::pl011::init_early();
     super::aarch64_common::generic_timer::init_early();
+    super::aarch64_common::generic_timer::init_rtc();
     rust_main(cpu_id, dtb);
 }
 

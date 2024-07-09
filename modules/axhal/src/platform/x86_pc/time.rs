@@ -53,15 +53,15 @@ pub(super) fn init_early() {
         }
     }
 
-    use spinlock::SpinNoIrq;
     use rtc::Rtc;
+    use spinlock::SpinNoIrq;
 
     static RTC_LOCK: SpinNoIrq<()> = SpinNoIrq::new(());
 
     let _guard = RTC_LOCK.lock();
     // Get the current time in microseconds since the epoch (1970-01-01) from the x86 RTC.
     // Subtract the timer ticks to get the actual time when ArceOS was booted.
-    let current_time_nanos = Rtc::new().get_unix_timestamp() * 1_000_000_000;
+    let current_time_nanos = Rtc::new(0).get_unix_timestamp() * 1_000_000_000;
     let current_ticks = nanos_to_ticks(current_time_nanos);
 
     unsafe { INIT_TICK = current_ticks - core::arch::x86_64::_rdtsc() };

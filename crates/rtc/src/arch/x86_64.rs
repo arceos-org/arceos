@@ -25,7 +25,7 @@ pub struct Rtc {
 }
 
 impl Rtc {
-    pub fn new() -> Self {
+    pub fn new(_base: usize) -> Self {
         Self {
             cmos_format: Self::read_cmos_register(CMOS_STATUS_REGISTER_B),
         }

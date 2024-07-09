@@ -7,9 +7,9 @@ pub struct Rtc {
 }
 
 impl Rtc {
-    pub fn new() -> Self {
+    pub fn new(base_addr: usize) -> Self {
         Rtc {
-            arch_rtc: arch::Rtc::new(),
+            arch_rtc: arch::Rtc::new(base_addr),
         }
     }
 

@@ -4,13 +4,21 @@ use aarch64_cpu::registers::{CNTFRQ_EL0, CNTPCT_EL0, CNTP_CTL_EL0, CNTP_TVAL_EL0
 use ratio::Ratio;
 use tock_registers::interfaces::{Readable, Writeable};
 
+use memory_addr::{PhysAddr, VirtAddr};
+use rtc::Rtc;
+use spinlock::SpinNoIrq;
+
+use crate::mem::phys_to_virt;
+
 static mut CNTPCT_TO_NANOS_RATIO: Ratio = Ratio::zero();
 static mut NANOS_TO_CNTPCT_RATIO: Ratio = Ratio::zero();
+
+static mut INIT_TICK: u64 = 0;
 
 /// Returns the current clock time in hardware ticks.
 #[inline]
 pub fn current_ticks() -> u64 {
-    CNTPCT_EL0.get()
+    CNTPCT_EL0.get() + unsafe { INIT_TICK }
 }
 
 /// Converts hardware ticks to nanoseconds.
@@ -48,6 +56,23 @@ pub(crate) fn init_early() {
         CNTPCT_TO_NANOS_RATIO = Ratio::new(crate::time::NANOS_PER_SEC as u32, freq as u32);
         NANOS_TO_CNTPCT_RATIO = CNTPCT_TO_NANOS_RATIO.inverse();
     }
+}
+
+pub(crate) fn init_rtc() {
+    // Init system Real Time Clock (RTC).
+
+    const PL031_BASE: PhysAddr = PhysAddr::from(axconfig::RTC_PADDR);
+
+    static RTC_LOCK: SpinNoIrq<()> = SpinNoIrq::new(());
+
+    let _guard = RTC_LOCK.lock();
+    // Get the current time in microseconds since the epoch (1970-01-01) from the aarch64 RTC.
+    // Subtract the timer ticks to get the actual time when ArceOS was booted.
+    let current_time_nanos =
+        Rtc::new(phys_to_virt(PL031_BASE).as_usize()).get_unix_timestamp() * 1_000_000_000;
+    let current_ticks = nanos_to_ticks(current_time_nanos);
+
+    unsafe { INIT_TICK = current_ticks - CNTPCT_EL0.get() };
 }
 
 pub(crate) fn init_percpu() {
