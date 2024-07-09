@@ -1,4 +1,4 @@
-//! [ArceOS](https://github.com/rcore-os/arceos) global memory allocator.
+//! [ArceOS](https://github.com/arceos-org/arceos) global memory allocator.
 //!
 //! It provides [`GlobalAllocator`], which implements the trait
 //! [`core::alloc::GlobalAlloc`]. A static global variable of type

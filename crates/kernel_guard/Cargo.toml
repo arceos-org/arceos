@@ -4,10 +4,10 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
 description = "RAII wrappers to create a critical section with local IRQs or preemption disabled"
-license = "GPL-3.0-or-later OR Apache-2.0"
-homepage = "https://github.com/rcore-os/arceos"
-repository = "https://github.com/rcore-os/arceos/tree/main/crates/kernel_guard"
-documentation = "https://rcore-os.github.io/arceos/kernel_guard/index.html"
+license = "GPL-3.0-or-later OR Apache-2.0 OR MulanPSL-2.0"
+homepage = "https://github.com/arceos-org/arceos"
+repository = "https://github.com/arceos-org/arceos/tree/main/crates/kernel_guard"
+documentation = "https://docs.rs/kernel_guard"
 keywords = ["arceos", "synchronization", "preemption"]
 categories = ["os", "no-std"]
 

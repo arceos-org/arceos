@@ -2,7 +2,7 @@
 
 ## Rustdoc
 
-* https://rcore-os.github.io/arceos/
+* https://arceos-org.github.io/arceos/
 
 ## ArceOS Modules
 

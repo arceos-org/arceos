@@ -1,4 +1,4 @@
-//! Device filesystem used by [ArceOS](https://github.com/rcore-os/arceos).
+//! Device filesystem used by [ArceOS](https://github.com/arceos-org/arceos).
 //!
 //! The implementation is based on [`axfs_vfs`].
 

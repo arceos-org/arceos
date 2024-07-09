@@ -5,8 +5,8 @@ edition = "2021"
 authors = ["Wedson Almeida Filho <wedsonaf@google.com>"]
 description = "Linked lists that supports arbitrary removal in constant time"
 license = "GPL-2.0-or-later"
-homepage = "https://github.com/rcore-os/arceos"
-repository = "https://github.com/rcore-os/arceos/tree/main/crates/linked_list"
-documentation = "https://rcore-os.github.io/arceos/linked_list/index.html"
+homepage = "https://github.com/arceos-org/arceos"
+repository = "https://github.com/arceos-org/arceos/tree/main/crates/linked_list"
+documentation = "https://arceos-org.github.io/arceos/linked_list/index.html"
 
 [dependencies]

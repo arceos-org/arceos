@@ -8,7 +8,7 @@
 //! - [`driver_display`][3]: Common traits and types for graphics display drivers.
 //! - [`driver_net`][4]: Common traits and types for network (NIC) drivers.
 //!
-//! [1]: https://github.com/rcore-os/arceos
+//! [1]: https://github.com/arceos-org/arceos
 //! [2]: ../driver_block/index.html
 //! [3]: ../driver_display/index.html
 //! [4]: ../driver_net/index.html

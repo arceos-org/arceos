@@ -1,5 +1,5 @@
 //! Macros for multi-level formatted logging used by
-//! [ArceOS](https://github.com/rcore-os/arceos).
+//! [ArceOS](https://github.com/arceos-org/arceos).
 //!
 //! The log macros, in descending order of level, are: [`error!`], [`warn!`],
 //! [`info!`], [`debug!`], and [`trace!`].

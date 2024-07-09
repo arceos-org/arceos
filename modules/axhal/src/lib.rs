@@ -21,7 +21,7 @@
 //! - `paging`: Enable page table manipulation.
 //! - `irq`: Enable interrupt handling support.
 //!
-//! [ArceOS]: https://github.com/rcore-os/arceos
+//! [ArceOS]: https://github.com/arceos-org/arceos
 //! [cargo test]: https://doc.rust-lang.org/cargo/guide/tests.html
 
 #![no_std]

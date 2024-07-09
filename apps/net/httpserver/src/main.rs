@@ -38,11 +38,11 @@ const CONTENT: &str = r#"<html>
 </head>
 <body>
   <center>
-    <h1>Hello, <a href="https://github.com/rcore-os/arceos">ArceOS</a></h1>
+    <h1>Hello, <a href="https://github.com/arceos-org/arceos">ArceOS</a></h1>
   </center>
   <hr>
   <center>
-    <i>Powered by <a href="https://github.com/rcore-os/arceos/tree/main/apps/net/httpserver">ArceOS example HTTP server</a> v0.1.0</i>
+    <i>Powered by <a href="https://github.com/arceos-org/arceos/tree/main/apps/net/httpserver">ArceOS example HTTP server</a> v0.1.0</i>
   </center>
 </body>
 </html>

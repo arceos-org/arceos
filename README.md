@@ -1,8 +1,8 @@
 # ArceOS
 
-[![CI](https://github.com/rcore-os/arceos/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/rcore-os/arceos/actions/workflows/build.yml)
-[![CI](https://github.com/rcore-os/arceos/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/rcore-os/arceos/actions/workflows/test.yml)
-[![Docs](https://img.shields.io/badge/docs-pages-green)](https://rcore-os.github.io/arceos/)
+[![CI](https://github.com/arceos-org/arceos/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/arceos-org/arceos/actions/workflows/build.yml)
+[![CI](https://github.com/arceos-org/arceos/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/arceos-org/arceos/actions/workflows/test.yml)
+[![Docs](https://img.shields.io/badge/docs-pages-green)](https://arceos-org.github.io/arceos/)
 
 An experimental modular operating system (or unikernel) written in Rust.
 
@@ -191,6 +191,26 @@ make PLATFORM=aarch64-raspi4 A=apps/fs/shell FEATURES=driver-bcm2835-sdhci
 # Build Redis for the bare-metal x86_64 platform, and use the ixgbe and ramdisk driver
 make PLATFORM=x86_64-pc-oslab A=apps/c/redis FEATURES=driver-ixgbe,driver-ramdisk SMP=4
 ```
+
+### How to reuse ArceOS crates/modules in your own project
+
+* For packages have been published to crates.io (listed in [doc/README.md](doc/README.md#crates)):
+
+    ```toml
+    # In Cargo.toml
+    [dependencies]
+    memory_addr = "0.1" # crates/memory_addr
+    crate_interface = "0.1"  # crates/crate_interface
+    ```
+
+* For packages not published to crates.io:
+
+    ```toml
+    # In Cargo.toml
+    [dependencies]
+    scheduler = { git = "https://github.com/arceos-org/arceos.git", tag = "0.1.0" } # crates/scheduler
+    axhal = { git = "https://github.com/arceos-org/arceos.git", tag = "0.1.0" } # modules/axhal
+    ```
 
 ## Design
 

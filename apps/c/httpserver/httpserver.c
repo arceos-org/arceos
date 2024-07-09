@@ -20,11 +20,11 @@ const char content[] = "<html>\n\
 </head>\n\
 <body>\n\
   <center>\n\
-    <h1>Hello, <a href=\"https://github.com/rcore-os/arceos\">ArceOS</a></h1>\n\
+    <h1>Hello, <a href=\"https://github.com/arceos-org/arceos\">ArceOS</a></h1>\n\
   </center>\n\
   <hr>\n\
   <center>\n\
-    <i>Powered by <a href=\"https://github.com/rcore-os/arceos/tree/main/apps/net/httpserver\">ArceOS example HTTP server</a> v0.1.0</i>\n\
+    <i>Powered by <a href=\"https://github.com/arceos-org/arceos/tree/main/apps/net/httpserver\">ArceOS example HTTP server</a> v0.1.0</i>\n\
   </center>\n\
 </body>\n\
 </html>\n\

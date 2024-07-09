@@ -1,4 +1,4 @@
-//! [ArceOS](https://github.com/rcore-os/arceos) graphics module.
+//! [ArceOS](https://github.com/arceos-org/arceos) graphics module.
 //!
 //! Currently only supports direct writing to the framebuffer.
 
