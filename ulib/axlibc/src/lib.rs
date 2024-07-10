@@ -21,7 +21,7 @@
 //!     - `select`: Enable synchronous I/O multiplexing ([select]) support.
 //!     - `epoll`: Enable event polling ([epoll]) support.
 //!
-//! [ArceOS]: https://github.com/rcore-os/arceos
+//! [ArceOS]: https://github.com/arceos-org/arceos
 //! [select]: https://man7.org/linux/man-pages/man2/select.2.html
 //! [epoll]: https://man7.org/linux/man-pages/man7/epoll.7.html
 

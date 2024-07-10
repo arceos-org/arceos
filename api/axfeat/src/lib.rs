@@ -35,6 +35,6 @@
 //!     - `log-level-error`, `log-level-warn`, `log-level-info`, `log-level-debug`,
 //!       `log-level-trace`: Keep logging only at the specified level or higher.
 //!
-//! [ArceOS]: https://github.com/rcore-os/arceos
+//! [ArceOS]: https://github.com/arceos-org/arceos
 
 #![no_std]

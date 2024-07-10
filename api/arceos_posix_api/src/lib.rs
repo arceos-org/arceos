@@ -1,6 +1,6 @@
 //! POSIX-compatible APIs for [ArceOS] modules
 //!
-//! [ArceOS]: https://github.com/rcore-os/arceos
+//! [ArceOS]: https://github.com/arceos-org/arceos
 
 #![cfg_attr(all(not(test), not(doc)), no_std)]
 #![feature(doc_cfg)]

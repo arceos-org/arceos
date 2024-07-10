@@ -1,4 +1,4 @@
-//! [ArceOS](https://github.com/rcore-os/arceos) device drivers.
+//! [ArceOS](https://github.com/arceos-org/arceos) device drivers.
 //!
 //! # Usage
 //!

@@ -1,4 +1,4 @@
-//! [ArceOS](https://github.com/rcore-os/arceos) filesystem module.
+//! [ArceOS](https://github.com/arceos-org/arceos) filesystem module.
 //!
 //! It provides unified filesystem operations for various filesystems.
 //!

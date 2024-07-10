@@ -1,4 +1,4 @@
-//! Error code definition used by [ArceOS](https://github.com/rcore-os/arceos).
+//! Error code definition used by [ArceOS](https://github.com/arceos-org/arceos).
 //!
 //! It provides two error types and the corresponding result types:
 //!

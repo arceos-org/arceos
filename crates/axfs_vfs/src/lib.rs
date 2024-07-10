@@ -1,4 +1,4 @@
-//! Virtual filesystem interfaces used by [ArceOS](https://github.com/rcore-os/arceos).
+//! Virtual filesystem interfaces used by [ArceOS](https://github.com/arceos-org/arceos).
 //!
 //! A filesystem is a set of files and directories (symbol links are not
 //! supported currently), collectively referred to as **nodes**, which are
