@@ -1,8 +1,7 @@
 # Dora on Arceos
 
-* Dora
-	* For host: https://github.com/arceos-org/dora/tree/multi_machine
-	* For ArceOS: https://github.com/arceos-org/dora/tree/arceos-porting
+* Dora (modified version to support Dora)
+	* For ArceOS: https://github.com/arceos-org/dora/tree/noshmem-arceos
 * Dora-benchmark
 	* https://github.com/arceos-org/dora-benchmark/tree/rs-latency-dynamic
 * ArceOS
@@ -10,7 +9,7 @@
 
 ## 1. Compile and setup Dora on host
 
-* In dora repo under `multi_machine` branch
+* In dora repo.
 
 ```bash
 # Build.
@@ -47,13 +46,12 @@ For example, we start sink in host and node upon ArceOS.
 make A=apps/std/dora/node-dynamic SMP=1 NET=y BLK=y LOG=debug STD=y justrun
 ```
 
-Pay attention to `dora-node-api` dependency,
-this is just the `arceos-porting` branch of Dora repo,
-it's a simplified and WIP version of Dora as a dependency of ArceOS std.
-We have separated their dirs to facilitate the compilation of Dora in the host and Dora dependencies for ArceOS std.
+> Pay attention to `dora-node-api` dependency.
+> We use "shmem" feature to control whether Dora uses shared memory. 
+> When Dora is compiled with ArceOS unikernel, the "shmem" feature needs to be disabled.
+
 
 ```Toml
-[workspace.dependencies]
-# dora-node-api = "0.3.5" # { path = "../../../dora/apis/rust/node" }
-dora-node-api = { path = "../../Dora/dora-arceos/apis/rust/node" }
+[dependencies]
+dora-node-api = { git = "https://github.com/arceos-org/dora.git", branch = "noshmem-arceos", default-features = false }
 ```

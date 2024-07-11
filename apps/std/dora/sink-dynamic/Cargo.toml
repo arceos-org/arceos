@@ -6,7 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-dora-node-api = { git = "https://github.com/arceos-org/dora.git", branch = "arceos-porting" }
+dora-node-api = { git = "https://github.com/arceos-org/dora.git", branch = "noshmem-arceos", default-features = false }
+# dora-node-api = { path = "../../../../../../Dora/dora/apis/rust/node", default-features = false }
 eyre = "0.6.8"
 rand = "0.8.5"
 uhlc = "0.5.1"

@@ -7,8 +7,8 @@ edition = "2021"
 
 [dependencies]
 # dora-node-api = { workspace = true }
-# dora-node-api = { path = "../../../../../../Dora/dora-arceos/apis/rust/node" }
-dora-node-api = { git = "https://github.com/arceos-org/dora.git", branch = "arceos-porting" }
+# dora-node-api = { path = "../../../../../../Dora/dora/apis/rust/node", default-features = false }
+dora-node-api = { git = "https://github.com/arceos-org/dora.git", branch = "noshmem-arceos", default-features = false }
 eyre = "0.6.8"
 futures = "0.3.21"
 rand = "0.8.5"
