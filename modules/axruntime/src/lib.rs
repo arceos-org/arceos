@@ -56,7 +56,7 @@ impl axlog::LogIf for LogIfImpl {
     }
 
     fn current_time() -> core::time::Duration {
-        axhal::time::current_time()
+        axhal::time::monotonic_time()
     }
 
     fn current_cpu_id() -> Option<usize> {
@@ -119,6 +119,11 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         option_env!("AX_SMP").unwrap_or(""),
         option_env!("AX_MODE").unwrap_or(""),
         option_env!("AX_LOG").unwrap_or(""),
+    );
+    #[cfg(feature = "rtc")]
+    ax_println!(
+        "Boot at {}\n",
+        chrono::DateTime::from_timestamp_nanos(axhal::time::wall_time_nanos() as _),
     );
 
     axlog::init();
@@ -267,7 +272,7 @@ fn init_interrupt() {
     static NEXT_DEADLINE: u64 = 0;
 
     fn update_timer() {
-        let now_ns = axhal::time::current_time_nanos();
+        let now_ns = axhal::time::monotonic_time_nanos();
         // Safety: we have disabled preemption in IRQ handler.
         let mut deadline = unsafe { NEXT_DEADLINE.read_current_raw() };
         if now_ns >= deadline {

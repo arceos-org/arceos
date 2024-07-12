@@ -99,7 +99,7 @@ impl WaitQueue {
     #[cfg(feature = "irq")]
     pub fn wait_timeout(&self, dur: core::time::Duration) -> bool {
         let curr = crate::current();
-        let deadline = axhal::time::current_time() + dur;
+        let deadline = axhal::time::wall_time() + dur;
         debug!(
             "task wait_timeout: {} deadline={:?}",
             curr.id_name(),
@@ -127,7 +127,7 @@ impl WaitQueue {
         F: Fn() -> bool,
     {
         let curr = crate::current();
-        let deadline = axhal::time::current_time() + dur;
+        let deadline = axhal::time::wall_time() + dur;
         debug!(
             "task wait_timeout: {}, deadline={:?}",
             curr.id_name(),
@@ -136,7 +136,7 @@ impl WaitQueue {
         crate::timers::set_alarm_wakeup(deadline, curr.clone());
 
         let mut timeout = true;
-        while axhal::time::current_time() < deadline {
+        while axhal::time::wall_time() < deadline {
             let mut rq = RUN_QUEUE.lock();
             if condition() {
                 timeout = false;

@@ -6,6 +6,8 @@ use tock_registers::interfaces::{Readable, Writeable};
 
 static mut CNTPCT_TO_NANOS_RATIO: Ratio = Ratio::zero();
 static mut NANOS_TO_CNTPCT_RATIO: Ratio = Ratio::zero();
+/// RTC wall time offset in nanoseconds at monotonic time base.
+static mut RTC_EPOCHOFFSET_NANOS: u64 = 0;
 
 /// Returns the current clock time in hardware ticks.
 #[inline]
@@ -25,9 +27,14 @@ pub fn nanos_to_ticks(nanos: u64) -> u64 {
     unsafe { NANOS_TO_CNTPCT_RATIO.mul_trunc(nanos) }
 }
 
+/// Return epoch offset in nanoseconds (wall time offset to monotonic clock start).
+pub fn epochoffset_nanos() -> u64 {
+    unsafe { RTC_EPOCHOFFSET_NANOS }
+}
+
 /// Set a one-shot timer.
 ///
-/// A timer interrupt will be triggered at the given deadline (in nanoseconds).
+/// A timer interrupt will be triggered at the specified monotonic time deadline (in nanoseconds).
 #[cfg(feature = "irq")]
 pub fn set_oneshot_timer(deadline_ns: u64) {
     let cnptct = CNTPCT_EL0.get();
@@ -47,6 +54,24 @@ pub(crate) fn init_early() {
     unsafe {
         CNTPCT_TO_NANOS_RATIO = Ratio::new(crate::time::NANOS_PER_SEC as u32, freq as u32);
         NANOS_TO_CNTPCT_RATIO = CNTPCT_TO_NANOS_RATIO.inverse();
+    }
+
+    // Make sure `RTC_PADDR` is valid in platform config file.
+    #[cfg(feature = "rtc")]
+    if axconfig::RTC_PADDR != 0 {
+        use crate::mem::phys_to_virt;
+        use arm_pl031::Rtc;
+        use memory_addr::PhysAddr;
+
+        const PL031_BASE: PhysAddr = PhysAddr::from(axconfig::RTC_PADDR);
+        // Get the current time in microseconds since the epoch (1970-01-01) from the aarch64 pl031 RTC.
+        // Subtract the timer ticks to get the actual time when ArceOS was booted.
+        let epoch_time_nanos =
+            Rtc::new(phys_to_virt(PL031_BASE).as_usize()).get_unix_timestamp() * 1_000_000_000;
+
+        unsafe {
+            RTC_EPOCHOFFSET_NANOS = epoch_time_nanos - ticks_to_nanos(current_ticks());
+        }
     }
 }
 

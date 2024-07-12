@@ -9,6 +9,9 @@ static mut NANOS_TO_LAPIC_TICKS_RATIO: ratio::Ratio = ratio::Ratio::zero();
 static mut INIT_TICK: u64 = 0;
 static mut CPU_FREQ_MHZ: u64 = axconfig::TIMER_FREQUENCY as u64 / 1_000_000;
 
+/// RTC wall time offset in nanoseconds at monotonic time base.
+static mut RTC_EPOCHOFFSET_NANOS: u64 = 0;
+
 /// Returns the current clock time in hardware ticks.
 pub fn current_ticks() -> u64 {
     unsafe { core::arch::x86_64::_rdtsc() - INIT_TICK }
@@ -24,13 +27,18 @@ pub fn nanos_to_ticks(nanos: u64) -> u64 {
     nanos * unsafe { CPU_FREQ_MHZ } / 1_000
 }
 
+/// Return epoch offset in nanoseconds (wall time offset to monotonic clock start).
+pub fn epochoffset_nanos() -> u64 {
+    unsafe { RTC_EPOCHOFFSET_NANOS }
+}
+
 /// Set a one-shot timer.
 ///
-/// A timer interrupt will be triggered at the given deadline (in nanoseconds).
+/// A timer interrupt will be triggered at the specified monotonic time deadline (in nanoseconds).
 #[cfg(feature = "irq")]
 pub fn set_oneshot_timer(deadline_ns: u64) {
     let lapic = super::apic::local_apic();
-    let now_ns = crate::time::current_time_nanos();
+    let now_ns = crate::time::monotonic_time_nanos();
     unsafe {
         if now_ns < deadline_ns {
             let apic_ticks = NANOS_TO_LAPIC_TICKS_RATIO.mul_trunc(deadline_ns - now_ns);
@@ -53,7 +61,21 @@ pub(super) fn init_early() {
         }
     }
 
-    unsafe { INIT_TICK = core::arch::x86_64::_rdtsc() };
+    unsafe {
+        INIT_TICK = core::arch::x86_64::_rdtsc();
+    }
+
+    #[cfg(feature = "rtc")]
+    {
+        use x86_rtc::Rtc;
+
+        // Get the current time in microseconds since the epoch (1970-01-01) from the x86 RTC.
+        // Subtract the timer ticks to get the actual time when ArceOS was booted.
+        let eopch_time_nanos = Rtc::new().get_unix_timestamp() * 1_000_000_000;
+        unsafe {
+            RTC_EPOCHOFFSET_NANOS = eopch_time_nanos - ticks_to_nanos(INIT_TICK);
+        }
+    }
 }
 
 pub(super) fn init_primary() {

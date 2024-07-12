@@ -10,7 +10,7 @@ use core::cell::RefCell;
 use core::ops::DerefMut;
 
 use axdriver::prelude::*;
-use axhal::time::{current_time_nanos, NANOS_PER_MICROS};
+use axhal::time::{wall_time_nanos, NANOS_PER_MICROS};
 use axsync::Mutex;
 use driver_net::{DevError, NetBufPtr};
 use lazy_init::LazyInit;
@@ -145,7 +145,7 @@ impl InterfaceWrapper {
     }
 
     fn current_time() -> Instant {
-        Instant::from_micros_const((current_time_nanos() / NANOS_PER_MICROS) as i64)
+        Instant::from_micros_const((wall_time_nanos() / NANOS_PER_MICROS) as i64)
     }
 
     pub fn name(&self) -> &str {

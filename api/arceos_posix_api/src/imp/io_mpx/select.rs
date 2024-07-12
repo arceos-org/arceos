@@ -1,7 +1,7 @@
 use core::ffi::c_int;
 
 use axerrno::{LinuxError, LinuxResult};
-use axhal::time::current_time;
+use axhal::time::wall_time;
 
 use crate::{ctypes, imp::fd_ops::get_file_like};
 
@@ -124,7 +124,7 @@ pub unsafe fn sys_select(
             return Err(LinuxError::EINVAL);
         }
         let nfds = (nfds as usize).min(FD_SETSIZE);
-        let deadline = unsafe { timeout.as_ref().map(|t| current_time() + (*t).into()) };
+        let deadline = unsafe { timeout.as_ref().map(|t| wall_time() + (*t).into()) };
         let fd_sets = FdSets::from(nfds, readfds, writefds, exceptfds);
 
         unsafe {
@@ -141,7 +141,7 @@ pub unsafe fn sys_select(
                 return Ok(res);
             }
 
-            if deadline.map_or(false, |ddl| current_time() >= ddl) {
+            if deadline.map_or(false, |ddl| wall_time() >= ddl) {
                 debug!("    timeout!");
                 return Ok(0);
             }

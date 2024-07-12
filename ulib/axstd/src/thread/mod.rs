@@ -29,7 +29,7 @@ pub fn exit(exit_code: i32) -> ! {
 /// If one of `multitask` or `irq` features is not enabled, it uses busy-wait
 /// instead.
 pub fn sleep(dur: core::time::Duration) {
-    sleep_until(arceos_api::time::ax_current_time() + dur);
+    sleep_until(arceos_api::time::ax_wall_time() + dur);
 }
 
 /// Current thread is going to sleep, it will be woken up at the given deadline.

@@ -29,3 +29,6 @@ uart-irq = "0x79"
 # GIC Address
 gicc-paddr = "0xFF84_2000"
 gicd-paddr = "0xFF84_1000"
+
+# RTC (PL031) Address (Need to read from DTB).
+rtc-paddr = "0x0"

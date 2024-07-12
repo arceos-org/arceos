@@ -136,7 +136,7 @@ impl AxRunQueue {
         assert!(curr.is_running());
         assert!(!curr.is_idle());
 
-        let now = axhal::time::current_time();
+        let now = axhal::time::wall_time();
         if now < deadline {
             crate::timers::set_alarm_wakeup(deadline, curr.clone());
             curr.set_state(TaskState::Blocked);

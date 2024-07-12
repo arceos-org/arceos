@@ -1,5 +1,5 @@
 use alloc::sync::Arc;
-use axhal::time::current_time;
+use axhal::time::wall_time;
 use lazy_init::LazyInit;
 use spinlock::SpinNoIrq;
 use timer_list::{TimeValue, TimerEvent, TimerList};
@@ -33,7 +33,7 @@ pub fn cancel_alarm(task: &AxTaskRef) {
 
 pub fn check_events() {
     loop {
-        let now = current_time();
+        let now = wall_time();
         let event = TIMER_LIST.lock().expire_one(now);
         if let Some((_deadline, event)) = event {
             event.callback(now);

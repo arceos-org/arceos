@@ -12,7 +12,7 @@ pub type TimeValue = Duration;
 pub use crate::platform::irq::TIMER_IRQ_NUM;
 #[cfg(feature = "irq")]
 pub use crate::platform::time::set_oneshot_timer;
-pub use crate::platform::time::{current_ticks, nanos_to_ticks, ticks_to_nanos};
+pub use crate::platform::time::{current_ticks, epochoffset_nanos, nanos_to_ticks, ticks_to_nanos};
 
 /// Number of milliseconds in a second.
 pub const MILLIS_PER_SEC: u64 = 1_000;
@@ -25,24 +25,34 @@ pub const NANOS_PER_MILLIS: u64 = 1_000_000;
 /// Number of nanoseconds in a microsecond.
 pub const NANOS_PER_MICROS: u64 = 1_000;
 
-/// Returns the current clock time in nanoseconds.
-pub fn current_time_nanos() -> u64 {
+/// Returns nanoseconds elapsed since system boot.
+pub fn monotonic_time_nanos() -> u64 {
     ticks_to_nanos(current_ticks())
 }
 
-/// Returns the current clock time in [`TimeValue`].
-pub fn current_time() -> TimeValue {
-    TimeValue::from_nanos(current_time_nanos())
+/// Returns the time elapsed since system boot in [`TimeValue`].
+pub fn monotonic_time() -> TimeValue {
+    TimeValue::from_nanos(monotonic_time_nanos())
+}
+
+/// Returns nanoseconds elapsed since epoch (also known as realtime).
+pub fn wall_time_nanos() -> u64 {
+    monotonic_time_nanos() + epochoffset_nanos()
+}
+
+/// Returns the time elapsed since epoch (also known as realtime) in [`TimeValue`].
+pub fn wall_time() -> TimeValue {
+    TimeValue::from_nanos(monotonic_time_nanos() + epochoffset_nanos())
 }
 
 /// Busy waiting for the given duration.
 pub fn busy_wait(dur: Duration) {
-    busy_wait_until(current_time() + dur);
+    busy_wait_until(wall_time() + dur);
 }
 
 /// Busy waiting until reaching the given deadline.
 pub fn busy_wait_until(deadline: TimeValue) {
-    while current_time() < deadline {
+    while wall_time() < deadline {
         core::hint::spin_loop();
     }
 }
