@@ -69,6 +69,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "arceos-cli"
+version = "0.1.0"
+dependencies = [
+ "axstd",
+]
+
+[[package]]
 name = "arceos-display"
 version = "0.1.0"
 dependencies = [
@@ -131,6 +138,14 @@ dependencies = [
 name = "arceos-priority"
 version = "0.1.0"
 dependencies = [
+ "axstd",
+]
+
+[[package]]
+name = "arceos-raspi4"
+version = "0.1.0"
+dependencies = [
+ "arm_pl011",
  "axstd",
 ]
 

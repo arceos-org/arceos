@@ -70,7 +70,10 @@ members = [
     "apps/task/yield",
     "apps/task/priority",
     "apps/task/tls",
+    "apps/cli",
+    "apps/boards/raspi4",
 ]
+
 
 [profile.release]
 lto = true

@@ -27,6 +27,8 @@ const CMD_TABLE: &[(&str, CmdHandler)] = &[
     ("pwd", do_pwd),
     ("rm", do_rm),
     ("uname", do_uname),
+    ("ldr", do_ldr),
+    ("str", do_str)
 ];
 
 fn file_type_to_char(ty: FileType) -> char {
@@ -270,6 +272,83 @@ fn do_help(_args: &str) {
 fn do_exit(_args: &str) {
     println!("Bye~");
     std::process::exit(0);
+}
+
+fn do_ldr(args: &str) {
+    println!("ldr");
+    if args.is_empty() {
+        println!("try: ldr ffff0000400fe000 / ldr ffff000040080000 ffff000040080008");
+    }
+
+    fn ldr_one(addr: &str) -> io::Result<()> {
+        println!("addr = {}", addr);
+
+        if let Ok(parsed_addr) = u64::from_str_radix(addr, 16) {
+            let address: *const u64 = parsed_addr as *const u64; // 强制转换为合适的指针类型
+
+            let value: u64;
+            println!("Parsed address: {:p}", address); // 打印地址时使用 %p 格式化符号
+
+            unsafe {
+                value = *address;
+            }
+
+            println!("Value at address {}: 0x{:X}", addr, value); // 使用输入的地址打印值
+        } else {
+            println!("Failed to parse address.");
+        }
+        return Ok(());
+    }
+
+    for addr in args.split_whitespace() {
+        if let Err(e) = ldr_one(addr) {
+            print_err!("ldr", addr, e);
+        }
+    }
+}
+
+fn do_str(args: &str) {
+    println!("str");
+    if args.is_empty() {
+        println!("try: str ffff0000400fe000 12345678");
+    }
+
+    fn str_one(addr: &str, val: &str) -> io::Result<()> {
+        println!("addr = {}", addr);
+        println!("val = {}", val);
+
+        if let Ok(parsed_addr) = u64::from_str_radix(addr, 16) {
+            let address: *mut u64 = parsed_addr as *mut u64; // 强制转换为合适的指针类型
+            println!("Parsed address: {:p}", address); // 打印地址时使用 %p 格式化符号
+
+            if let Ok(parsed_val) = u64::from_str_radix(val, 16) {
+                let value: u64 = parsed_val; // 不需要将值转换为指针类型
+                println!("Parsed value: 0x{:X}", value); // 直接打印解析的值
+
+                unsafe {
+                    *address = value;
+                }
+
+                println!("Write value at address {}: 0x{:X}", addr, value); // 使用输入的地址打印值
+            }
+        } else {
+            println!("Failed to parse address.");
+        }
+
+        Ok(())
+    }
+
+    let mut split_iter = args.split_whitespace();
+
+    if let Some(addr) = split_iter.next() {
+        println!("First element: {}", addr);
+
+        if let Some(val) = split_iter.next() {
+            println!("Second element: {}", val);
+            str_one(addr, val).unwrap(); // 调用 str_one 函数并传递 addr 和 val
+        }
+    }
+
 }
 
 pub fn run_cmd(line: &[u8]) {
