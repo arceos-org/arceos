@@ -2,11 +2,13 @@
 name = "riscv_goldfish"
 version = "0.1.0"
 edition = "2021"
-authors = ["Keyang Hu <976929993@qq.com>"]
+authors = ["Keyang Hu <keyang.hu@qq.com>"]
 description = "System Real Time Clock (RTC) Drivers for riscv based on goldfish."
 license = "GPL-3.0-or-later OR Apache-2.0 OR MulanPSL-2.0"
 homepage = "https://github.com/arceos-org/arceos"
 repository = "https://github.com/arceos-org/arceos/tree/main/crates/riscv_goldfish"
-documentation = "https://arceos-org.github.io/arceos/riscv_goldfish/index.html"
+documentation = "https://docs.rs/riscv_goldfish"
+keywords = ["arceos", "riscv", "rtc"]
+categories = ["os", "driver", "no-std"]
 
 [dependencies]
