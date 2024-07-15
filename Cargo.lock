@@ -228,6 +228,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "arm_pl031"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3392676d21de757a82e91af9a38c1dad24a93fb024b8e6b9e27f113e876d2d73"
+
+[[package]]
 name = "atomic-polyfill"
 version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -369,6 +375,7 @@ dependencies = [
  "aarch64-cpu",
  "arm_gic",
  "arm_pl011",
+ "arm_pl031",
  "axalloc",
  "axconfig",
  "axlog",
@@ -387,6 +394,7 @@ dependencies = [
  "ratio",
  "raw-cpuid 11.0.2",
  "riscv",
+ "riscv_goldfish",
  "sbi-rt",
  "spinlock",
  "static_assertions",
@@ -394,6 +402,7 @@ dependencies = [
  "x2apic",
  "x86",
  "x86_64 0.15.1",
+ "x86_rtc",
 ]
 
 [[package]]
@@ -457,6 +466,7 @@ dependencies = [
  "axlog",
  "axnet",
  "axtask",
+ "chrono",
  "crate_interface",
  "kernel_guard",
  "lazy_init",
@@ -1484,6 +1494,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "riscv_goldfish"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "07aac72f95e774476db82916d79f2d303191310393830573c1ab5c821b21660a"
+
+[[package]]
 name = "rlsf"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2059,6 +2075,16 @@ dependencies = [
  "bitflags 2.6.0",
  "rustversion",
  "volatile 0.4.6",
+]
+
+[[package]]
+name = "x86_rtc"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d1a42420da20c01d82e5d42231570efa3b9e16a5515eaaf9ee4e964f49cc1313"
+dependencies = [
+ "cfg-if",
+ "x86_64 0.15.1",
 ]
 
 [[package]]

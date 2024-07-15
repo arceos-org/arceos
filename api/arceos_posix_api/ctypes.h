@@ -3,6 +3,7 @@
 #include <netinet/in.h>
 #include <pthread.h>
 #include <stddef.h>
+#include <time.h>
 #include <sys/epoll.h>
 #include <sys/resource.h>
 #include <sys/select.h>

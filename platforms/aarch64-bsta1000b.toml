@@ -52,3 +52,6 @@ A1000BASE_AONCFG = "0x70038000"
 
 # PSCI
 psci-method = "smc"
+
+# RTC (PL031) Address (Need to read from DTB).
+rtc-paddr = "0x0"

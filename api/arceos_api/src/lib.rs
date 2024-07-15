@@ -43,8 +43,10 @@ pub mod time {
     }
 
     define_api! {
-        /// Returns the current clock time.
-        pub fn ax_current_time() -> AxTimeValue;
+        /// Returns the time elapsed since system boot.
+        pub fn ax_monotonic_time() -> AxTimeValue;
+        /// Returns the time elapsed since epoch, also known as realtime.
+        pub fn ax_wall_time() -> AxTimeValue;
     }
 }
 

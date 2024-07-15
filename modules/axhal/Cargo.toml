@@ -16,6 +16,7 @@ fp_simd = []
 paging = ["axalloc", "page_table"]
 irq = []
 tls = ["alloc"]
+rtc = ["x86_rtc", "riscv_goldfish", "arm_pl031"]
 default = []
 
 [dependencies]
@@ -42,16 +43,19 @@ x86 = "0.52"
 x86_64 = "0.15"
 x2apic = "0.4"
 raw-cpuid = "11.0"
+x86_rtc = { version = "0.1.1", optional = true }
 
 [target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]
 riscv = "0.11"
 sbi-rt = { version = "0.0.3", features = ["legacy"] }
+riscv_goldfish = { version = "0.1.1", optional = true }
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 aarch64-cpu = "9.4"
 tock-registers = "0.8"
 arm_gic = { path = "../../crates/arm_gic" }
 arm_pl011 = { path = "../../crates/arm_pl011" }
+arm_pl031 = { version = "0.1.1", optional = true }
 dw_apb_uart = { path = "../../crates/dw_apb_uart" }
 
 [build-dependencies]

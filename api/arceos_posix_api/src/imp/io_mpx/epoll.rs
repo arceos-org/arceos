@@ -8,7 +8,7 @@ use alloc::sync::Arc;
 use core::{ffi::c_int, time::Duration};
 
 use axerrno::{LinuxError, LinuxResult};
-use axhal::time::current_time;
+use axhal::time::wall_time;
 use axsync::Mutex;
 
 use crate::ctypes;
@@ -184,8 +184,8 @@ pub unsafe fn sys_epoll_wait(
             return Err(LinuxError::EINVAL);
         }
         let events = unsafe { core::slice::from_raw_parts_mut(events, maxevents as usize) };
-        let deadline = (!timeout.is_negative())
-            .then(|| current_time() + Duration::from_millis(timeout as u64));
+        let deadline =
+            (!timeout.is_negative()).then(|| wall_time() + Duration::from_millis(timeout as u64));
         let epoll_instance = EpollInstance::from_fd(epfd)?;
         loop {
             #[cfg(feature = "net")]
@@ -195,7 +195,7 @@ pub unsafe fn sys_epoll_wait(
                 return Ok(events_num as c_int);
             }
 
-            if deadline.map_or(false, |ddl| current_time() >= ddl) {
+            if deadline.map_or(false, |ddl| wall_time() >= ddl) {
                 debug!("    timeout!");
                 return Ok(0);
             }

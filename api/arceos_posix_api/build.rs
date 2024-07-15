@@ -55,6 +55,7 @@ typedef struct {{
             "aibuf",
         ];
         let allow_vars = [
+            "CLOCK_.*",
             "O_.*",
             "AF_.*",
             "SOCK_.*",

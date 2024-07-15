@@ -3,6 +3,7 @@ use core::ffi::{c_int, c_long};
 use core::time::Duration;
 
 use crate::ctypes;
+use crate::ctypes::{CLOCK_MONOTONIC, CLOCK_REALTIME};
 
 impl From<ctypes::timespec> for Duration {
     fn from(ts: ctypes::timespec) -> Self {
@@ -35,12 +36,19 @@ impl From<Duration> for ctypes::timeval {
 }
 
 /// Get clock time since booting
-pub unsafe fn sys_clock_gettime(_clk: ctypes::clockid_t, ts: *mut ctypes::timespec) -> c_int {
+pub unsafe fn sys_clock_gettime(clk: ctypes::clockid_t, ts: *mut ctypes::timespec) -> c_int {
     syscall_body!(sys_clock_gettime, {
         if ts.is_null() {
             return Err(LinuxError::EFAULT);
         }
-        let now = axhal::time::current_time().into();
+        let now = match clk as u32 {
+            CLOCK_REALTIME => axhal::time::wall_time().into(),
+            CLOCK_MONOTONIC => axhal::time::monotonic_time().into(),
+            _ => {
+                warn!("Called sys_clock_gettime for unsupported clock {}", clk);
+                return Err(LinuxError::EINVAL);
+            }
+        };
         unsafe { *ts = now };
         debug!("sys_clock_gettime: {}.{:09}s", now.tv_sec, now.tv_nsec);
         Ok(0)
@@ -63,14 +71,14 @@ pub unsafe fn sys_nanosleep(req: *const ctypes::timespec, rem: *mut ctypes::time
             Duration::from(*req)
         };
 
-        let now = axhal::time::current_time();
+        let now = axhal::time::monotonic_time();
 
         #[cfg(feature = "multitask")]
         axtask::sleep(dur);
         #[cfg(not(feature = "multitask"))]
         axhal::time::busy_wait(dur);
 
-        let after = axhal::time::current_time();
+        let after = axhal::time::monotonic_time();
         let actual = after - now;
 
         if let Some(diff) = dur.checked_sub(actual) {

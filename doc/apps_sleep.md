@@ -69,7 +69,7 @@ graph TD;
     S-->arg["libax::time::Duration::from_secs()"]
     arg-->argA["libax::time::Duration::new(secs)"]
 
-	S-->A["axhal::time::current_time()"]
+	S-->A["axhal::time::wall_time()"]
 	A-->AA["axhal::time::TimeValue::from_nanos()"]
 
 	S-->B["axtask::run_queue::AxRunQueue::sleep_until()"]

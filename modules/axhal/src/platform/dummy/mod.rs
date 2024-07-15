@@ -51,8 +51,13 @@ pub mod time {
 
     /// Set a one-shot timer.
     ///
-    /// A timer interrupt will be triggered at the given deadline (in nanoseconds).
+    /// A timer interrupt will be triggered at the specified monotonic time deadline (in nanoseconds).
     pub fn set_oneshot_timer(deadline_ns: u64) {}
+
+    /// Return epoch offset in nanoseconds (wall time offset to monotonic clock start).
+    pub fn epochoffset_nanos() -> u64 {
+        0
+    }
 }
 
 #[cfg(feature = "irq")]

@@ -53,6 +53,9 @@ dns = []
 # Display
 display = ["arceos_api/display", "axfeat/display"]
 
+# Real Time Clock (RTC) Driver.
+rtc = ["axfeat/rtc"]
+
 # Device drivers
 bus-mmio = ["axfeat/bus-mmio"]
 bus-pci = ["axfeat/bus-pci"]
