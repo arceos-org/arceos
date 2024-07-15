@@ -229,7 +229,9 @@ dependencies = [
 
 [[package]]
 name = "arm_pl031"
-version = "0.1.0"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3392676d21de757a82e91af9a38c1dad24a93fb024b8e6b9e27f113e876d2d73"
 
 [[package]]
 name = "atomic-polyfill"
@@ -1493,7 +1495,9 @@ dependencies = [
 
 [[package]]
 name = "riscv_goldfish"
-version = "0.1.0"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "07aac72f95e774476db82916d79f2d303191310393830573c1ab5c821b21660a"
 
 [[package]]
 name = "rlsf"
@@ -2075,7 +2079,9 @@ dependencies = [
 
 [[package]]
 name = "x86_rtc"
-version = "0.1.0"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d1a42420da20c01d82e5d42231570efa3b9e16a5515eaaf9ee4e964f49cc1313"
 dependencies = [
  "cfg-if",
  "x86_64 0.15.1",
