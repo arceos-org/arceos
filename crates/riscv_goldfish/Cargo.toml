@@ -9,6 +9,6 @@ homepage = "https://github.com/arceos-org/arceos"
 repository = "https://github.com/arceos-org/arceos/tree/main/crates/riscv_goldfish"
 documentation = "https://docs.rs/riscv_goldfish"
 keywords = ["arceos", "riscv", "rtc"]
-categories = ["os", "driver", "no-std"]
+categories = ["os", "hardware-support", "no-std"]
 
 [dependencies]

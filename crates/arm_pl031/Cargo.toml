@@ -9,6 +9,6 @@ homepage = "https://github.com/arceos-org/arceos"
 repository = "https://github.com/arceos-org/arceos/tree/main/crates/arm_pl031"
 documentation = "https://docs.rs/arm_pl031"
 keywords = ["arceos", "aarch64", "rtc"]
-categories = ["os", "driver", "no-std"]
+categories = ["os", "hardware-support", "no-std"]
 
 [dependencies]

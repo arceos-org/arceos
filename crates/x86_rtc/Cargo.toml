@@ -9,7 +9,7 @@ homepage = "https://github.com/arceos-org/arceos"
 repository = "https://github.com/arceos-org/arceos/tree/main/crates/x86_rtc"
 documentation = "https://docs.rs/x86_rtc"
 keywords = ["arceos", "x86_64", "rtc"]
-categories = ["os", "driver", "no-std"]
+categories = ["os", "hardware-support", "no-std"]
 
 [dependencies]
 cfg-if = "1.0"
