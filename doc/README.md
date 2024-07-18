@@ -1,10 +1,16 @@
 # ArceOS Architecture Overview
 
-## Rustdoc
+The key design principle of ArceOS is to divide components based on their **relevance to the OS design concept**, in order to reduce component coupling and improving reusability.
 
-* https://arceos-org.github.io/arceos/
+## Crates
 
-## ArceOS Modules
+Crates are **OS-agnostic** components that can be reused in other OS or system software projects with almost no modification, providing the most reusability. For example, the basic data structures, algorithms, and utilities.
+
+See [arceos-crates](https://github.com/arceos-org/arceos-crates) for crates used by ArceOS.
+
+## Modules
+
+Modules are **OS-related** components that are tightly bound to the design principles of a specific OS and have relatively poor reusability. It may need to be redesigned when it is ported to another OS.
 
 * [axalloc](../modules/axalloc): ArceOS global memory allocator.
 * [axconfig](../modules/axconfig): Platform-specific constants and parameters for ArceOS.
@@ -17,39 +23,6 @@
 * [axruntime](../modules/axruntime): Runtime library of ArceOS.
 * [axsync](../modules/axsync): ArceOS synchronization primitives.
 * [axtask](../modules/axtask): ArceOS task management module.
-
-## Crates
-
-* [allocator](../crates/allocator): Various allocator algorithms in a unified interface.
-* [arm_gic](../crates/arm_gic): ARM Generic Interrupt Controller (GIC) register definitions and basic operations.
-* [axerrno](../crates/axerrno): Error code definition used by ArceOS.
-* [axfs_devfs](../crates/axfs_devfs): Device filesystem used by ArceOS.
-* [axfs_vfs](../crates/axfs_vfs): Virtual filesystem interfaces used by ArceOS.
-* [axio](../crates/axio): `std::io`-like I/O traits for `no_std` environment.
-* [capability](../crates/capability): Provide basic capability-based security.
-* [crate_interface](../crates/crate_interface): Provides a way to define an interface (trait) in a crate, but can implement or use it in any crate. [![Crates.io](https://img.shields.io/crates/v/crate_interface)](https://crates.io/crates/crate_interface)
-* [driver_block](../crates/driver_block): Common traits and types for block storage drivers.
-* [driver_common](../crates/driver_common): Device driver interfaces used by ArceOS.
-* [driver_display](../crates/driver_display): Common traits and types for graphics device drivers.
-* [driver_net](../crates/driver_net): Common traits and types for network device (NIC) drivers.
-* [driver_pci](../crates/driver_pci): Structures and functions for PCI bus operations.
-* [driver_virtio](../crates/driver_virtio): Wrappers of some devices in the `virtio-drivers` crate, that implement traits in the `driver_common` series crates.
-* [flatten_objects](../crates/flatten_objects): A container that stores numbered objects. Each object can be assigned with a unique ID.
-* [handler_table](../crates/handler_table): A lock-free table of event handlers. [![Crates.io](https://img.shields.io/crates/v/handler_table)](https://crates.io/crates/handler_table)
-* [kernel_guard](../crates/kernel_guard): RAII wrappers to create a critical section with local IRQs or preemption disabled. [![Crates.io](https://img.shields.io/crates/v/kernel_guard)](https://crates.io/crates/kernel_guard)
-* [lazy_init](../crates/lazy_init): A wrapper for lazy initialized values without concurrency safety but more efficient.
-* [linked_list](../crates/linked_list): Linked lists that supports arbitrary removal in constant time.
-* [memory_addr](../crates/memory_addr): Wrappers and helper functions for physical and virtual addresses. [![Crates.io](https://img.shields.io/crates/v/memory_addr)](https://crates.io/crates/memory_addr)
-* [page_table](../crates/page_table): Generic page table structures for various hardware architectures.
-* [page_table_entry](../crates/page_table_entry): Page table entry definition for various hardware architectures.
-* [percpu](../crates/percpu): Define and access per-CPU data structures.
-* [percpu_macros](../crates/percpu_macros): Macros to define and access a per-CPU data structure.
-* [ratio](../crates/ratio): The type of ratios and related operations.
-* [scheduler](../crates/scheduler): Various scheduler algorithms in a unified interface.
-* [slab_allocator](../crates/slab_allocator): Slab allocator for `no_std` systems. Uses multiple slabs with blocks of different sizes and a linked list for blocks larger than 4096 bytes.
-* [spinlock](../crates/spinlock): `no_std` spin lock implementation that can disable kernel local IRQs or preemption while locking.
-* [timer_list](../crates/timer_list): A list of timed events that will be triggered sequentially when the timer expires.
-* [tuple_for_each](../crates/tuple_for_each): Provides macros and methods to iterate over the fields of a tuple struct.
 
 ## Applications (Rust)
 
@@ -77,6 +50,10 @@
 | [sqlite3](../apps/c/sqlite3/) | axalloc, axdriver, axfs | alloc, paging, fp_simd, fs | Porting of [SQLite3](https://sqlite.org/index.html) |
 | [iperf](../apps/c/iperf/) | axalloc, axdriver, axfs, axnet | alloc, paging, fp_simd, fs, net, select | Porting of [iPerf3](https://iperf.fr/) |
 | [redis](../apps/c/redis/) | axalloc, axdriver, axtask, axfs, axnet | alloc, paging, fp_simd, irq, multitask, fs, net, pipe, epoll | Porting of [Redis](https://redis.io/) |
+
+## Rustdoc
+
+* https://arceos-org.github.io/arceos/
 
 ## Dependencies
 
