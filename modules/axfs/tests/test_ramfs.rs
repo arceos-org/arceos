@@ -5,12 +5,12 @@ mod test_common;
 use std::sync::Arc;
 
 use axdriver::AxDeviceContainer;
+use axdriver_block::ramdisk::RamDisk;
 use axfs::api::{self as fs, File};
 use axfs::fops::{Disk, MyFileSystemIf};
 use axfs_ramfs::RamFileSystem;
 use axfs_vfs::VfsOps;
 use axio::{Result, Write};
-use driver_block::ramdisk::RamDisk;
 
 struct MyFileSystemIfImpl;
 

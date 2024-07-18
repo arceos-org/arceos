@@ -8,4 +8,4 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 
 [dependencies]
 rand = { version = "0.8", default-features = false, features = ["small_rng"] }
-axstd = { path = "../../ulib/axstd", features = ["alloc"], optional = true }
+axstd = { workspace = true, features = ["alloc"], optional = true }

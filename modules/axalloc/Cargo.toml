@@ -18,7 +18,7 @@ buddy = ["allocator/buddy"]
 [dependencies]
 log = "0.4"
 cfg-if = "1.0"
-spinlock = { path = "../../crates/spinlock" }
-memory_addr = { path = "../../crates/memory_addr" }
-allocator = { path = "../../crates/allocator", features = ["bitmap"] }
-axerrno = { path = "../../crates/axerrno" }
+kspin = "0.1"
+memory_addr = "0.2"
+axerrno = "0.1"
+allocator = { git = "https://github.com/arceos-org/allocator.git", tag ="v0.1.0", features = ["bitmap"] }

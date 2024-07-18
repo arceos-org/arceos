@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
-use lazy_init::LazyInit;
+use kspin::SpinNoIrq;
+use lazyinit::LazyInit;
 use memory_addr::PhysAddr;
-use spinlock::SpinNoIrq;
 use x2apic::ioapic::IoApic;
 use x2apic::lapic::{xapic_base, LocalApic, LocalApicBuilder};
 use x86_64::instructions::port::Port;
@@ -115,7 +115,7 @@ pub(super) fn init_primary() {
 
     info!("Initialize IO APIC...");
     let io_apic = unsafe { IoApic::new(phys_to_virt(IO_APIC_BASE).as_usize() as u64) };
-    IO_APIC.init_by(SpinNoIrq::new(io_apic));
+    IO_APIC.init_once(SpinNoIrq::new(io_apic));
 }
 
 #[cfg(feature = "smp")]

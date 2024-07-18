@@ -2,40 +2,6 @@
 resolver = "2"
 
 members = [
-    "crates/allocator",
-    "crates/arm_gic",
-    "crates/arm_pl011",
-    "crates/dw_apb_uart",
-    "crates/axerrno",
-    "crates/axfs_devfs",
-    "crates/axfs_ramfs",
-    "crates/axfs_vfs",
-    "crates/axio",
-    "crates/capability",
-    "crates/crate_interface",
-    "crates/driver_block",
-    "crates/driver_common",
-    "crates/driver_display",
-    "crates/driver_net",
-    "crates/driver_pci",
-    "crates/driver_virtio",
-    "crates/flatten_objects",
-    "crates/handler_table",
-    "crates/kernel_guard",
-    "crates/lazy_init",
-    "crates/linked_list",
-    "crates/memory_addr",
-    "crates/page_table",
-    "crates/page_table_entry",
-    "crates/percpu",
-    "crates/percpu_macros",
-    "crates/ratio",
-    "crates/scheduler",
-    "crates/slab_allocator",
-    "crates/spinlock",
-    "crates/timer_list",
-    "crates/tuple_for_each",
-
     "modules/axalloc",
     "modules/axconfig",
     "modules/axdisplay",
@@ -72,8 +38,35 @@ members = [
     "apps/task/tls",
 ]
 
+[workspace.package]
+version = "0.1.0"
+authors = ["Yuekai Jia <equation618@gmail.com>"]
+license = "GPL-3.0-or-later OR Apache-2.0 OR MulanPSL-2.0"
+homepage = "https://github.com/arceos-org/arceos"
+documentation = "https://arceos-org.github.io/arceos"
+repository = "https://github.com/arceos-org/arceos"
+keywords = ["arceos", "kernel"]
+categories = ["os", "no-std"]
+
+[workspace.dependencies]
+axstd = { path = "ulib/axstd" }
+axlibc = { path = "ulib/axlibc" }
+
+arceos_api = { path = "api/arceos_api" }
+arceos_posix_api = { path = "api/arceos_posix_api" }
+axfeat = { path = "api/axfeat" }
+
+axalloc = { path = "modules/axalloc" }
+axconfig = { path = "modules/axconfig" }
+axdisplay = { path = "modules/axdisplay" }
+axdriver = { path = "modules/axdriver" }
+axfs = { path = "modules/axfs" }
+axhal = { path = "modules/axhal" }
+axlog = { path = "modules/axlog" }
+axnet = { path = "modules/axnet" }
+axruntime = { path = "modules/axruntime" }
+axsync = { path = "modules/axsync" }
+axtask = { path = "modules/axtask" }
+
 [profile.release]
 lto = true
-
-[patch.crates-io]
-crate_interface = { path = "crates/crate_interface" }

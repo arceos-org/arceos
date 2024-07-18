@@ -226,7 +226,7 @@ impl Log for Logger {
 
 /// Prints the formatted string to the console.
 pub fn print_fmt(args: fmt::Arguments) -> fmt::Result {
-    use spinlock::SpinNoIrq; // TODO: more efficient
+    use kspin::SpinNoIrq; // TODO: more efficient
     static LOCK: SpinNoIrq<()> = SpinNoIrq::new(());
 
     let _guard = LOCK.lock();

@@ -1,10 +1,13 @@
 use raw_cpuid::CpuId;
 
 #[cfg(feature = "irq")]
+use int_ratio::Ratio;
+
+#[cfg(feature = "irq")]
 const LAPIC_TICKS_PER_SEC: u64 = 1_000_000_000; // TODO: need to calibrate
 
 #[cfg(feature = "irq")]
-static mut NANOS_TO_LAPIC_TICKS_RATIO: ratio::Ratio = ratio::Ratio::zero();
+static mut NANOS_TO_LAPIC_TICKS_RATIO: Ratio = Ratio::zero();
 
 static mut INIT_TICK: u64 = 0;
 static mut CPU_FREQ_MHZ: u64 = axconfig::TIMER_FREQUENCY as u64 / 1_000_000;
@@ -88,7 +91,7 @@ pub(super) fn init_primary() {
         lapic.enable_timer();
 
         // TODO: calibrate with HPET
-        NANOS_TO_LAPIC_TICKS_RATIO = ratio::Ratio::new(
+        NANOS_TO_LAPIC_TICKS_RATIO = Ratio::new(
             LAPIC_TICKS_PER_SEC as u32,
             crate::time::NANOS_PER_SEC as u32,
         );

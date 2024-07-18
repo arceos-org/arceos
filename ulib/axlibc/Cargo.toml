@@ -51,10 +51,10 @@ select = ["arceos_posix_api/select"]
 epoll = ["arceos_posix_api/epoll"]
 
 [dependencies]
-axfeat = { path = "../../api/axfeat" }
-arceos_posix_api = { path = "../../api/arceos_posix_api" }
-axio = { path = "../../crates/axio" }
-axerrno = { path = "../../crates/axerrno" }
+axfeat = { workspace = true }
+arceos_posix_api = { workspace = true }
+axio = "0.1"
+axerrno = "0.1"
 
 [build-dependencies]
 bindgen ={ version = "0.69" }

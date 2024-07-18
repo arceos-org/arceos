@@ -16,4 +16,4 @@ pub use self::mutex::{Mutex, MutexGuard};
 
 #[cfg(not(feature = "multitask"))]
 #[doc(cfg(not(feature = "multitask")))]
-pub use spinlock::{SpinRaw as Mutex, SpinRawGuard as MutexGuard}; // never used in IRQ context
+pub use kspin::{SpinRaw as Mutex, SpinRawGuard as MutexGuard}; // never used in IRQ context

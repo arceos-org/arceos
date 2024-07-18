@@ -8,7 +8,7 @@ use cfg_if::cfg_if;
 
 cfg_if! {
     if #[cfg(net_dev = "dummy")] {
-        use driver_net::{EthernetAddress, NetBuf, NetBufBox, NetBufPool, NetBufPtr};
+        use axdriver_net::{EthernetAddress, NetBuf, NetBufBox, NetBufPool, NetBufPtr};
 
         pub struct DummyNetDev;
         pub struct DummyNetDrvier;
@@ -85,10 +85,10 @@ cfg_if! {
         }
 
         impl DisplayDriverOps for DummyDisplayDev {
-            fn info(&self) -> driver_display::DisplayInfo {
+            fn info(&self) -> axdriver_display::DisplayInfo {
                 unreachable!()
             }
-            fn fb(&self) -> driver_display::FrameBuffer {
+            fn fb(&self) -> axdriver_display::FrameBuffer {
                 unreachable!()
             }
             fn need_flush(&self) -> bool {

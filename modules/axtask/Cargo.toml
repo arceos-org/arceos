@@ -13,7 +13,7 @@ documentation = "https://arceos-org.github.io/arceos/axtask/index.html"
 default = []
 
 multitask = [
-    "dep:axconfig", "dep:percpu", "dep:spinlock", "dep:lazy_init", "dep:memory_addr",
+    "dep:axconfig", "dep:percpu", "dep:kspin", "dep:lazyinit", "dep:memory_addr",
     "dep:scheduler", "dep:timer_list", "kernel_guard", "dep:crate_interface",
 ]
 irq = []
@@ -29,16 +29,16 @@ test = ["percpu?/sp-naive"]
 [dependencies]
 cfg-if = "1.0"
 log = "0.4"
-axhal = { path = "../axhal" }
-axconfig = { path = "../axconfig", optional = true }
-percpu = { path = "../../crates/percpu", optional = true }
-spinlock = { path = "../../crates/spinlock", optional = true }
-lazy_init = { path = "../../crates/lazy_init", optional = true }
-memory_addr = { path = "../../crates/memory_addr", optional = true }
-scheduler = { path = "../../crates/scheduler", optional = true }
-timer_list = { path = "../../crates/timer_list", optional = true }
-kernel_guard = { path = "../../crates/kernel_guard", optional = true }
-crate_interface = { path = "../../crates/crate_interface", optional = true }
+axhal = { workspace = true }
+axconfig = { workspace = true, optional = true }
+percpu = { version = "0.1", optional = true }
+kspin = { version = "0.1", optional = true }
+lazyinit = { version = "0.2", optional = true }
+memory_addr = { version = "0.2", optional = true }
+timer_list = { version = "0.1", optional = true }
+kernel_guard = { version = "0.1", optional = true }
+crate_interface = { version = "0.1", optional = true }
+scheduler = { git = "https://github.com/arceos-org/scheduler.git", tag = "v0.1.0", optional = true }
 
 [dev-dependencies]
 rand = "0.8"
