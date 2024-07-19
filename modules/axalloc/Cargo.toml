@@ -11,9 +11,9 @@ documentation = "https://arceos-org.github.io/arceos/axalloc/index.html"
 
 [features]
 default = ["tlsf"]
-tlsf = ["allocator/tlsf"]
-slab = ["allocator/slab"]
-buddy = ["allocator/buddy"]
+tlsf = ["os-memory/tlsf"]
+slab = ["os-memory/slab"]
+buddy = ["os-memory/buddy"]
 
 [dependencies]
 log = "0.4"
@@ -21,4 +21,4 @@ cfg-if = "1.0"
 kspin = "0.1"
 memory_addr = "0.2"
 axerrno = "0.1"
-allocator = { git = "https://github.com/arceos-org/allocator.git", tag ="v0.1.0", features = ["bitmap"] }
+os-memory = { workspace = true }

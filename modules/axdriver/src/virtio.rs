@@ -1,7 +1,6 @@
 use core::marker::PhantomData;
 use core::ptr::NonNull;
 
-use axalloc::global_allocator;
 use axdriver_base::{BaseDriverOps, DevResult, DeviceType};
 use axdriver_virtio::{BufferDirection, PhysAddr, VirtIoHal};
 use axhal::mem::{phys_to_virt, virt_to_phys};

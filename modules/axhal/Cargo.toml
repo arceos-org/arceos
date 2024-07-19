@@ -37,6 +37,7 @@ page_table_multiarch = { version = "0.1", optional = true }
 axlog = { workspace = true }
 axconfig = { workspace = true }
 axalloc = { workspace = true, optional = true }
+os-memory ={ workspace = true }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 x86 = "0.52"

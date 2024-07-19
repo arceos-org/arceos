@@ -68,5 +68,6 @@ axruntime = { path = "modules/axruntime" }
 axsync = { path = "modules/axsync" }
 axtask = { path = "modules/axtask" }
 
+os-memory = { git = "https://gitee.com/zr233/os-memory.git", tag = "v0.1.0" }
 [profile.release]
 lto = true
