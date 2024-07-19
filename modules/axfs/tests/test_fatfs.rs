@@ -3,7 +3,7 @@
 mod test_common;
 
 use axdriver::AxDeviceContainer;
-use driver_block::ramdisk::RamDisk;
+use axdriver_block::ramdisk::RamDisk;
 
 const IMG_PATH: &str = "resources/fat16.img";
 

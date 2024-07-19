@@ -1,6 +1,6 @@
 [package]
 name = "axstd"
-version = "0.1.0"
+version.workspace = true
 edition = "2021"
 authors = [
     "Yuekai Jia <equation618@gmail.com>",
@@ -11,8 +11,8 @@ authors = [
     "Shiping Yuan <robert_yuan@pku.edu.com>",
 ]
 description = "ArceOS user library with an interface similar to rust std"
-license = "GPL-3.0-or-later OR Apache-2.0 OR MulanPSL-2.0"
-homepage = "https://github.com/arceos-org/arceos"
+license.workspace = true
+homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/ulib/axstd"
 documentation = "https://arceos-org.github.io/arceos/axstd/index.html"
 
@@ -20,7 +20,7 @@ documentation = "https://arceos-org.github.io/arceos/axstd/index.html"
 default = []
 
 # Multicore
-smp = ["axfeat/smp", "spinlock/smp"]
+smp = ["axfeat/smp", "kspin/smp"]
 
 # Floating point/SIMD
 fp_simd = ["axfeat/fp_simd"]
@@ -72,8 +72,8 @@ log-level-debug = ["axfeat/log-level-debug"]
 log-level-trace = ["axfeat/log-level-trace"]
 
 [dependencies]
-axfeat = { path = "../../api/axfeat" }
-arceos_api = { path = "../../api/arceos_api" }
-axio = { path = "../../crates/axio" }
-axerrno = { path = "../../crates/axerrno" }
-spinlock = { path = "../../crates/spinlock" }
+axfeat = { workspace = true }
+arceos_api = { workspace = true }
+axio = "0.1"
+axerrno = "0.1"
+kspin = "0.1"

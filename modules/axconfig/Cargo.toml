@@ -1,11 +1,11 @@
 [package]
 name = "axconfig"
-version = "0.1.0"
+version.workspace = true
 edition = "2021"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
 description = "Platform-specific constants and parameters for ArceOS"
-license = "GPL-3.0-or-later OR Apache-2.0 OR MulanPSL-2.0"
-homepage = "https://github.com/arceos-org/arceos"
+license.workspace = true
+homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/modules/axconfig"
 documentation = "https://arceos-org.github.io/arceos/axconfig/index.html"
 

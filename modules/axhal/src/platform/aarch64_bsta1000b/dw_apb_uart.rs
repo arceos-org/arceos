@@ -2,8 +2,8 @@
 
 use crate::mem::phys_to_virt;
 use dw_apb_uart::DW8250;
+use kspin::SpinNoIrq;
 use memory_addr::PhysAddr;
-use spinlock::SpinNoIrq;
 
 const UART_BASE: PhysAddr = PhysAddr::from(axconfig::UART_PADDR);
 

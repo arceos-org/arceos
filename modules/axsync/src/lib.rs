@@ -3,7 +3,7 @@
 //! Currently supported primitives:
 //!
 //! - [`Mutex`]: A mutual exclusion primitive.
-//! - mod [`spin`](spinlock): spin-locks.
+//! - mod [`spin`]: spinlocks imported from the [`kspin`] crate.
 //!
 //! # Cargo Features
 //!
@@ -14,7 +14,7 @@
 #![cfg_attr(not(test), no_std)]
 #![feature(doc_cfg)]
 
-pub use spinlock as spin;
+pub use kspin as spin;
 
 #[cfg(feature = "multitask")]
 mod mutex;
@@ -25,4 +25,4 @@ pub use self::mutex::{Mutex, MutexGuard};
 
 #[cfg(not(feature = "multitask"))]
 #[doc(cfg(not(feature = "multitask")))]
-pub use spinlock::{SpinNoIrq as Mutex, SpinNoIrqGuard as MutexGuard};
+pub use kspin::{SpinNoIrq as Mutex, SpinNoIrqGuard as MutexGuard};

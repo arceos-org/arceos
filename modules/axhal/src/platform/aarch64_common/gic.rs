@@ -1,8 +1,7 @@
 use crate::{irq::IrqHandler, mem::phys_to_virt};
-use arm_gic::gic_v2::{GicCpuInterface, GicDistributor};
-use arm_gic::{translate_irq, InterruptType};
+use arm_gicv2::{translate_irq, GicCpuInterface, GicDistributor, InterruptType};
+use kspin::SpinNoIrq;
 use memory_addr::PhysAddr;
-use spinlock::SpinNoIrq;
 
 /// The maximum number of IRQs.
 pub const MAX_IRQ_COUNT: usize = 1024;

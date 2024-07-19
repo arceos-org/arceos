@@ -1,6 +1,6 @@
 [package]
 name = "axlibc"
-version = "0.1.0"
+version.workspace = true
 edition = "2021"
 authors = [
     "Yuekai Jia <equation618@gmail.com>",
@@ -11,8 +11,8 @@ authors = [
     "Shiping Yuan <robert_yuan@pku.edu.com>",
 ]
 description = "ArceOS user program library for C apps"
-license = "GPL-3.0-or-later OR Apache-2.0 OR MulanPSL-2.0"
-homepage = "https://github.com/arceos-org/arceos"
+license.workspace = true
+homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/ulib/axlibc"
 documentation = "https://arceos-org.github.io/arceos/axlibc/index.html"
 
@@ -51,10 +51,10 @@ select = ["arceos_posix_api/select"]
 epoll = ["arceos_posix_api/epoll"]
 
 [dependencies]
-axfeat = { path = "../../api/axfeat" }
-arceos_posix_api = { path = "../../api/arceos_posix_api" }
-axio = { path = "../../crates/axio" }
-axerrno = { path = "../../crates/axerrno" }
+axfeat = { workspace = true }
+arceos_posix_api = { workspace = true }
+axio = "0.1"
+axerrno = "0.1"
 
 [build-dependencies]
 bindgen ={ version = "0.69" }

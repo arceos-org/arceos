@@ -2,7 +2,7 @@
 #[cfg_attr(not(feature = "dyn"), path = "static.rs")]
 mod imp;
 
-use driver_common::{BaseDriverOps, DeviceType};
+use axdriver_base::{BaseDriverOps, DeviceType};
 
 pub use imp::*;
 

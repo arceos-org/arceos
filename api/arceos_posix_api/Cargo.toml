@@ -1,6 +1,6 @@
 [package]
 name = "arceos_posix_api"
-version = "0.1.0"
+version.workspace = true
 edition = "2021"
 authors = [
     "Yuekai Jia <equation618@gmail.com>",
@@ -11,9 +11,10 @@ authors = [
     "Shiping Yuan <robert_yuan@pku.edu.com>",
 ]
 description = "POSIX-compatible APIs for ArceOS modules"
-license = "GPL-3.0-or-later OR Apache-2.0 OR MulanPSL-2.0"
-homepage = "https://github.com/arceos-org/arceos"
+license.workspace = true
+homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/api/arceos_posix_api"
+documentation = "https://arceos-org.github.io/arceos/arceos_posix_api/index.html"
 
 [features]
 default = []
@@ -31,24 +32,24 @@ epoll = ["fd"]
 
 [dependencies]
 # ArceOS modules
-axfeat = { path = "../axfeat" }
-axruntime = { path = "../../modules/axruntime" }
-axconfig = { path = "../../modules/axconfig" }
-axlog = { path = "../../modules/axlog" }
-axhal = { path = "../../modules/axhal" }
-axsync = { path = "../../modules/axsync" }
-axalloc = { path = "../../modules/axalloc", optional = true }
-axtask = { path = "../../modules/axtask", optional = true }
-axfs = { path = "../../modules/axfs", optional = true }
-axnet = { path = "../../modules/axnet", optional = true }
+axfeat = { workspace = true }
+axruntime = { workspace = true }
+axconfig = { workspace = true }
+axlog = { workspace = true }
+axhal = { workspace = true }
+axsync = { workspace = true }
+axalloc = { workspace = true, optional = true }
+axtask = { workspace = true, optional = true }
+axfs = { workspace = true, optional = true }
+axnet = { workspace = true, optional = true }
 
 # Other crates
-axio = { path = "../../crates/axio" }
-axerrno = { path = "../../crates/axerrno" }
+axio = "0.1"
+axerrno = "0.1"
+flatten_objects = "0.1"
 static_assertions = "1.1.0"
 spin = { version = "0.9" }
 lazy_static = { version = "1.5", features = ["spin_no_std"] }
-flatten_objects = { path = "../../crates/flatten_objects" }
 
 [build-dependencies]
 bindgen ={ version = "0.69" }

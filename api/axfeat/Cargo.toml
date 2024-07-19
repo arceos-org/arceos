@@ -1,11 +1,11 @@
 [package]
 name = "axfeat"
-version = "0.1.0"
+version.workspace = true
 edition = "2021"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
 description = "Top-level feature selection for ArceOS"
-license = "GPL-3.0-or-later OR Apache-2.0 OR MulanPSL-2.0"
-homepage = "https://github.com/arceos-org/arceos"
+license.workspace = true
+homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/api/axfeat"
 documentation = "https://arceos-org.github.io/arceos/axfeat/index.html"
 
@@ -13,7 +13,7 @@ documentation = "https://arceos-org.github.io/arceos/axfeat/index.html"
 default = []
 
 # Multicore
-smp = ["axhal/smp", "axruntime/smp", "spinlock/smp"]
+smp = ["axhal/smp", "axruntime/smp", "kspin/smp"]
 
 # Floating point/SIMD
 fp_simd = ["axhal/fp_simd"]
@@ -64,14 +64,14 @@ log-level-debug = ["axlog/log-level-debug"]
 log-level-trace = ["axlog/log-level-trace"]
 
 [dependencies]
-axruntime = { path = "../../modules/axruntime" }
-axhal = { path = "../../modules/axhal" }
-axlog = { path = "../../modules/axlog" }
-axalloc = { path = "../../modules/axalloc", optional = true }
-axdriver = { path = "../../modules/axdriver", optional = true }
-axfs = { path = "../../modules/axfs", optional = true }
-axnet = { path = "../../modules/axnet", optional = true }
-axdisplay = { path = "../../modules/axdisplay", optional = true }
-axsync = { path = "../../modules/axsync", optional = true }
-axtask = { path = "../../modules/axtask", optional = true }
-spinlock = { path = "../../crates/spinlock", optional = true }
+axruntime = { workspace = true }
+axhal = { workspace = true }
+axlog = { workspace = true }
+axalloc = { workspace = true, optional = true }
+axdriver = { workspace = true, optional = true }
+axfs = { workspace = true, optional = true }
+axnet = { workspace = true, optional = true }
+axdisplay = { workspace = true, optional = true }
+axsync = { workspace = true, optional = true }
+axtask = { workspace = true, optional = true }
+kspin = { version = "0.1", optional = true }

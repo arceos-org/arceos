@@ -1,9 +1,9 @@
 //! Low-level filesystem operations.
 
-use axerrno::{ax_err, ax_err_type, AxResult};
+use axerrno::{ax_err, ax_err_type, AxError, AxResult};
 use axfs_vfs::{VfsError, VfsNodeRef};
 use axio::SeekFrom;
-use capability::{Cap, WithCap};
+use cap_access::{Cap, WithCap};
 use core::fmt;
 
 #[cfg(feature = "myfs")]
@@ -112,6 +112,10 @@ impl OpenOptions {
 }
 
 impl File {
+    fn access_node(&self, cap: Cap) -> AxResult<&VfsNodeRef> {
+        self.node.access_or_err(cap, AxError::PermissionDenied)
+    }
+
     fn _open_at(dir: Option<&VfsNodeRef>, path: &str, opts: &OpenOptions) -> AxResult<Self> {
         debug!("open file: {} {:?}", path, opts);
         if !opts.is_valid() {
@@ -167,7 +171,7 @@ impl File {
 
     /// Truncates the file to the specified size.
     pub fn truncate(&self, size: u64) -> AxResult {
-        self.node.access(Cap::WRITE)?.truncate(size)?;
+        self.access_node(Cap::WRITE)?.truncate(size)?;
         Ok(())
     }
 
@@ -176,7 +180,7 @@ impl File {
     ///
     /// After the read, the cursor will be advanced by the number of bytes read.
     pub fn read(&mut self, buf: &mut [u8]) -> AxResult<usize> {
-        let node = self.node.access(Cap::READ)?;
+        let node = self.access_node(Cap::READ)?;
         let read_len = node.read_at(self.offset, buf)?;
         self.offset += read_len as u64;
         Ok(read_len)
@@ -186,7 +190,7 @@ impl File {
     ///
     /// It does not update the file cursor.
     pub fn read_at(&self, offset: u64, buf: &mut [u8]) -> AxResult<usize> {
-        let node = self.node.access(Cap::READ)?;
+        let node = self.access_node(Cap::READ)?;
         let read_len = node.read_at(offset, buf)?;
         Ok(read_len)
     }
@@ -197,12 +201,14 @@ impl File {
     /// After the write, the cursor will be advanced by the number of bytes
     /// written.
     pub fn write(&mut self, buf: &[u8]) -> AxResult<usize> {
-        let node = self.node.access(Cap::WRITE)?;
-        if self.is_append {
-            self.offset = self.get_attr()?.size();
+        let offset = if self.is_append {
+            self.get_attr()?.size()
+        } else {
+            self.offset
         };
-        let write_len = node.write_at(self.offset, buf)?;
-        self.offset += write_len as u64;
+        let node = self.access_node(Cap::WRITE)?;
+        let write_len = node.write_at(offset, buf)?;
+        self.offset = offset + write_len as u64;
         Ok(write_len)
     }
 
@@ -211,14 +217,14 @@ impl File {
     ///
     /// It does not update the file cursor.
     pub fn write_at(&self, offset: u64, buf: &[u8]) -> AxResult<usize> {
-        let node = self.node.access(Cap::WRITE)?;
+        let node = self.access_node(Cap::WRITE)?;
         let write_len = node.write_at(offset, buf)?;
         Ok(write_len)
     }
 
     /// Flushes the file, writes all buffered data to the underlying device.
     pub fn flush(&self) -> AxResult {
-        self.node.access(Cap::WRITE)?.fsync()?;
+        self.access_node(Cap::WRITE)?.fsync()?;
         Ok(())
     }
 
@@ -238,11 +244,15 @@ impl File {
 
     /// Gets the file attributes.
     pub fn get_attr(&self) -> AxResult<FileAttr> {
-        self.node.access(Cap::empty())?.get_attr()
+        self.access_node(Cap::empty())?.get_attr()
     }
 }
 
 impl Directory {
+    fn access_node(&self, cap: Cap) -> AxResult<&VfsNodeRef> {
+        self.node.access_or_err(cap, AxError::PermissionDenied)
+    }
+
     fn _open_dir_at(dir: Option<&VfsNodeRef>, path: &str, opts: &OpenOptions) -> AxResult<Self> {
         debug!("open dir: {}", path);
         if !opts.read {
@@ -273,7 +283,7 @@ impl Directory {
         if path.starts_with('/') {
             Ok(None)
         } else {
-            Ok(Some(self.node.access(Cap::EXECUTE)?))
+            Ok(Some(self.access_node(Cap::EXECUTE)?))
         }
     }
 
@@ -322,8 +332,7 @@ impl Directory {
     /// read.
     pub fn read_dir(&mut self, dirents: &mut [DirEntry]) -> AxResult<usize> {
         let n = self
-            .node
-            .access(Cap::READ)?
+            .access_node(Cap::READ)?
             .read_dir(self.entry_idx, dirents)?;
         self.entry_idx += n;
         Ok(n)

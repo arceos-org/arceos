@@ -238,7 +238,7 @@ fn init_allocator() {
 fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
     use axhal::mem::{memory_regions, phys_to_virt};
     use axhal::paging::PageTable;
-    use lazy_init::LazyInit;
+    use lazyinit::LazyInit;
 
     static KERNEL_PAGE_TABLE: LazyInit<PageTable> = LazyInit::new();
 
@@ -253,7 +253,7 @@ fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
                 true,
             )?;
         }
-        KERNEL_PAGE_TABLE.init_by(kernel_page_table);
+        KERNEL_PAGE_TABLE.init_once(kernel_page_table);
     }
 
     unsafe { axhal::arch::write_page_table_root(KERNEL_PAGE_TABLE.root_paddr()) };

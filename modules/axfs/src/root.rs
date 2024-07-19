@@ -6,7 +6,7 @@ use alloc::{string::String, sync::Arc, vec::Vec};
 use axerrno::{ax_err, AxError, AxResult};
 use axfs_vfs::{VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsNodeType, VfsOps, VfsResult};
 use axsync::Mutex;
-use lazy_init::LazyInit;
+use lazyinit::LazyInit;
 
 use crate::{api::FileType, fs, mounts};
 
@@ -149,7 +149,7 @@ pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
             let main_fs = fs::myfs::new_myfs(disk);
         } else if #[cfg(feature = "fatfs")] {
             static FAT_FS: LazyInit<Arc<fs::fatfs::FatFileSystem>> = LazyInit::new();
-            FAT_FS.init_by(Arc::new(fs::fatfs::FatFileSystem::new(disk)));
+            FAT_FS.init_once(Arc::new(fs::fatfs::FatFileSystem::new(disk)));
             FAT_FS.init();
             let main_fs = FAT_FS.clone();
         }
@@ -179,8 +179,8 @@ pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
         .mount("/sys", mounts::sysfs().unwrap())
         .expect("fail to mount sysfs at /sys");
 
-    ROOT_DIR.init_by(Arc::new(root_dir));
-    CURRENT_DIR.init_by(Mutex::new(ROOT_DIR.clone()));
+    ROOT_DIR.init_once(Arc::new(root_dir));
+    CURRENT_DIR.init_once(Mutex::new(ROOT_DIR.clone()));
     *CURRENT_DIR_PATH.lock() = "/".into();
 }
 

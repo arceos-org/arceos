@@ -1,11 +1,11 @@
 [package]
 name = "axfs"
-version = "0.1.0"
+version.workspace = true
 edition = "2021"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
 description = "ArceOS filesystem module"
-license = "GPL-3.0-or-later OR Apache-2.0 OR MulanPSL-2.0"
-homepage = "https://github.com/arceos-org/arceos"
+license.workspace = true
+homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/modules/axfs"
 documentation = "https://arceos-org.github.io/arceos/axfs/index.html"
 
@@ -23,17 +23,17 @@ default = ["devfs", "ramfs", "fatfs", "procfs", "sysfs"]
 [dependencies]
 log = "0.4"
 cfg-if = "1.0"
-lazy_init = { path = "../../crates/lazy_init" }
-capability = { path = "../../crates/capability" }
-driver_block = { path = "../../crates/driver_block" }
-axio = { path = "../../crates/axio", features = ["alloc"] }
-axerrno = { path = "../../crates/axerrno" }
-axfs_vfs = { path = "../../crates/axfs_vfs" }
-axfs_devfs = { path = "../../crates/axfs_devfs", optional = true }
-axfs_ramfs = { path = "../../crates/axfs_ramfs", optional = true }
-axdriver = { path = "../axdriver", features = ["block"] }
-axsync = { path = "../axsync" }
-crate_interface = { path = "../../crates/crate_interface", optional = true }
+lazyinit = "0.2"
+cap_access = "0.1"
+axio = { version = "0.1", features = ["alloc"] }
+axerrno = "0.1"
+axfs_vfs = "0.1"
+axfs_devfs = { version = "0.1", optional = true }
+axfs_ramfs = { version = "0.1", optional = true }
+crate_interface = { version = "0.1", optional = true }
+axsync = { workspace = true }
+axdriver = { workspace = true, features = ["block"] }
+axdriver_block = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.0" }
 
 [dependencies.fatfs]
 git = "https://github.com/rafalh/rust-fatfs"
@@ -48,7 +48,7 @@ features = [ # no std
 ]
 
 [dev-dependencies]
-axdriver = { path = "../axdriver", features = ["block", "ramdisk"] }
-driver_block = { path = "../../crates/driver_block", features = ["ramdisk"] }
-axsync = { path = "../axsync", features = ["multitask"] }
-axtask = { path = "../axtask", features = ["test"] }
+axdriver = { workspace = true, features = ["block", "ramdisk"] }
+axdriver_block = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.0", features = ["ramdisk"] }
+axsync = { workspace = true, features = ["multitask"] }
+axtask = { workspace = true, features = ["test"] }

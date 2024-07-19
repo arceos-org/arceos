@@ -1,7 +1,7 @@
 //! TODO: PLIC
 
 use crate::irq::IrqHandler;
-use lazy_init::LazyInit;
+use lazyinit::LazyInit;
 use riscv::register::sie;
 
 /// `Interrupt` bit in `scause`
@@ -49,8 +49,8 @@ pub fn set_enable(scause: usize, _enabled: bool) {
 pub fn register_handler(scause: usize, handler: IrqHandler) -> bool {
     with_cause!(
         scause,
-        @TIMER => if !TIMER_HANDLER.is_init() {
-            TIMER_HANDLER.init_by(handler);
+        @TIMER => if !TIMER_HANDLER.is_inited() {
+            TIMER_HANDLER.init_once(handler);
             true
         } else {
             false

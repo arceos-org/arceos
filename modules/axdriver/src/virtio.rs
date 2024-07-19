@@ -2,19 +2,19 @@ use core::marker::PhantomData;
 use core::ptr::NonNull;
 
 use axalloc::global_allocator;
+use axdriver_base::{BaseDriverOps, DevResult, DeviceType};
+use axdriver_virtio::{BufferDirection, PhysAddr, VirtIoHal};
 use axhal::mem::{phys_to_virt, virt_to_phys};
 use cfg_if::cfg_if;
-use driver_common::{BaseDriverOps, DevResult, DeviceType};
-use driver_virtio::{BufferDirection, PhysAddr, VirtIoHal};
 
 use crate::{drivers::DriverProbe, AxDeviceEnum};
 
 cfg_if! {
     if #[cfg(bus = "pci")] {
-        use driver_pci::{PciRoot, DeviceFunction, DeviceFunctionInfo};
-        type VirtIoTransport = driver_virtio::PciTransport;
+        use axdriver_pci::{PciRoot, DeviceFunction, DeviceFunctionInfo};
+        type VirtIoTransport = axdriver_virtio::PciTransport;
     } else if #[cfg(bus =  "mmio")] {
-        type VirtIoTransport = driver_virtio::MmioTransport;
+        type VirtIoTransport = axdriver_virtio::MmioTransport;
     }
 }
 
@@ -34,7 +34,7 @@ cfg_if! {
 
         impl VirtIoDevMeta for VirtIoNet {
             const DEVICE_TYPE: DeviceType = DeviceType::Net;
-            type Device = driver_virtio::VirtIoNetDev<VirtIoHalImpl, VirtIoTransport, 64>;
+            type Device = axdriver_virtio::VirtIoNetDev<VirtIoHalImpl, VirtIoTransport, 64>;
 
             fn try_new(transport: VirtIoTransport) -> DevResult<AxDeviceEnum> {
                 Ok(AxDeviceEnum::from_net(Self::Device::try_new(transport)?))
@@ -49,7 +49,7 @@ cfg_if! {
 
         impl VirtIoDevMeta for VirtIoBlk {
             const DEVICE_TYPE: DeviceType = DeviceType::Block;
-            type Device = driver_virtio::VirtIoBlkDev<VirtIoHalImpl, VirtIoTransport>;
+            type Device = axdriver_virtio::VirtIoBlkDev<VirtIoHalImpl, VirtIoTransport>;
 
             fn try_new(transport: VirtIoTransport) -> DevResult<AxDeviceEnum> {
                 Ok(AxDeviceEnum::from_block(Self::Device::try_new(transport)?))
@@ -64,7 +64,7 @@ cfg_if! {
 
         impl VirtIoDevMeta for VirtIoGpu {
             const DEVICE_TYPE: DeviceType = DeviceType::Display;
-            type Device = driver_virtio::VirtIoGpuDev<VirtIoHalImpl, VirtIoTransport>;
+            type Device = axdriver_virtio::VirtIoGpuDev<VirtIoHalImpl, VirtIoTransport>;
 
             fn try_new(transport: VirtIoTransport) -> DevResult<AxDeviceEnum> {
                 Ok(AxDeviceEnum::from_display(Self::Device::try_new(transport)?))
@@ -81,7 +81,7 @@ impl<D: VirtIoDevMeta> DriverProbe for VirtIoDriver<D> {
     fn probe_mmio(mmio_base: usize, mmio_size: usize) -> Option<AxDeviceEnum> {
         let base_vaddr = phys_to_virt(mmio_base.into());
         if let Some((ty, transport)) =
-            driver_virtio::probe_mmio_device(base_vaddr.as_mut_ptr(), mmio_size)
+            axdriver_virtio::probe_mmio_device(base_vaddr.as_mut_ptr(), mmio_size)
         {
             if ty == D::DEVICE_TYPE {
                 match D::try_new(transport) {
@@ -118,7 +118,7 @@ impl<D: VirtIoDevMeta> DriverProbe for VirtIoDriver<D> {
         }
 
         if let Some((ty, transport)) =
-            driver_virtio::probe_pci_device::<VirtIoHalImpl>(root, bdf, dev_info)
+            axdriver_virtio::probe_pci_device::<VirtIoHalImpl>(root, bdf, dev_info)
         {
             if ty == D::DEVICE_TYPE {
                 match D::try_new(transport) {

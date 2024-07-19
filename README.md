@@ -192,25 +192,14 @@ make PLATFORM=aarch64-raspi4 A=apps/fs/shell FEATURES=driver-bcm2835-sdhci
 make PLATFORM=x86_64-pc-oslab A=apps/c/redis FEATURES=driver-ixgbe,driver-ramdisk SMP=4
 ```
 
-### How to reuse ArceOS crates/modules in your own project
+### How to reuse ArceOS modules in your own project
 
-* For packages have been published to crates.io (listed in [doc/README.md](doc/README.md#crates)):
-
-    ```toml
-    # In Cargo.toml
-    [dependencies]
-    memory_addr = "0.1" # crates/memory_addr
-    crate_interface = "0.1"  # crates/crate_interface
-    ```
-
-* For packages not published to crates.io:
-
-    ```toml
-    # In Cargo.toml
-    [dependencies]
-    scheduler = { git = "https://github.com/arceos-org/arceos.git", tag = "0.1.0" } # crates/scheduler
-    axhal = { git = "https://github.com/arceos-org/arceos.git", tag = "0.1.0" } # modules/axhal
-    ```
+```toml
+# In Cargo.toml
+[dependencies]
+axalloc = { git = "https://github.com/arceos-org/arceos.git", tag = "v0.1.0" } # modules/axalloc
+axhal = { git = "https://github.com/arceos-org/arceos.git", tag = "v0.1.0" } # modules/axhal
+```
 
 ## Design
 

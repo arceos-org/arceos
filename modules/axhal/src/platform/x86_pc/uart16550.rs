@@ -1,6 +1,6 @@
 //! Uart 16550.
 
-use spinlock::SpinNoIrq;
+use kspin::SpinNoIrq;
 use x86_64::instructions::port::{Port, PortReadOnly, PortWriteOnly};
 
 const UART_CLOCK_FACTOR: usize = 16;

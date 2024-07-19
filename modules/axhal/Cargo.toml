@@ -1,11 +1,11 @@
 [package]
 name = "axhal"
-version = "0.1.0"
+version.workspace = true
 edition = "2021"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
 description = "ArceOS hardware abstraction layer, provides unified APIs for platform-specific operations"
-license = "GPL-3.0-or-later OR Apache-2.0 OR MulanPSL-2.0"
-homepage = "https://github.com/arceos-org/arceos"
+license.workspace = true
+homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/modules/axhal"
 documentation = "https://arceos-org.github.io/arceos/axhal/index.html"
 
@@ -13,7 +13,7 @@ documentation = "https://arceos-org.github.io/arceos/axhal/index.html"
 smp = []
 alloc = []
 fp_simd = []
-paging = ["axalloc", "page_table"]
+paging = ["axalloc", "page_table_multiarch"]
 irq = []
 tls = ["alloc"]
 rtc = ["x86_rtc", "riscv_goldfish", "arm_pl031"]
@@ -24,39 +24,39 @@ log = "0.4"
 cfg-if = "1.0"
 bitflags = "2.6"
 static_assertions = "1.1.0"
-axlog = { path = "../axlog" }
-axconfig = { path = "../axconfig" }
-axalloc = { path = "../axalloc", optional = true }
-kernel_guard = { path = "../../crates/kernel_guard" }
-spinlock = { path = "../../crates/spinlock" }
-ratio = { path = "../../crates/ratio" }
-lazy_init = { path = "../../crates/lazy_init" }
-page_table = { path = "../../crates/page_table", optional = true }
-page_table_entry = { path = "../../crates/page_table_entry" }
-percpu = { path = "../../crates/percpu" }
-memory_addr = { path = "../../crates/memory_addr" }
-handler_table = { path = "../../crates/handler_table" }
-crate_interface = { path = "../../crates/crate_interface" }
+kernel_guard = "0.1"
+kspin = "0.1"
+int_ratio = "0.1"
+lazyinit = "0.2"
+percpu = "0.1"
+memory_addr = "0.2"
+handler_table = "0.1"
+crate_interface = "0.1"
+page_table_entry = "0.1"
+page_table_multiarch = { version = "0.1", optional = true }
+axlog = { workspace = true }
+axconfig = { workspace = true }
+axalloc = { workspace = true, optional = true }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 x86 = "0.52"
 x86_64 = "0.15"
 x2apic = "0.4"
 raw-cpuid = "11.0"
-x86_rtc = { version = "0.1.1", optional = true }
+x86_rtc = { version = "0.1", optional = true }
 
 [target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]
 riscv = "0.11"
 sbi-rt = { version = "0.0.3", features = ["legacy"] }
-riscv_goldfish = { version = "0.1.1", optional = true }
+riscv_goldfish = { version = "0.1", optional = true }
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 aarch64-cpu = "9.4"
 tock-registers = "0.8"
-arm_gic = { path = "../../crates/arm_gic" }
-arm_pl011 = { path = "../../crates/arm_pl011" }
-arm_pl031 = { version = "0.1.1", optional = true }
-dw_apb_uart = { path = "../../crates/dw_apb_uart" }
+arm_gicv2 = "0.1"
+arm_pl011 = "0.1"
+arm_pl031 = { version = "0.1", optional = true }
+dw_apb_uart = "0.1"
 
 [build-dependencies]
-axconfig = { path = "../axconfig" }
+axconfig = { workspace = true }

@@ -1,7 +1,7 @@
 //! Description tables (per-CPU GDT, per-CPU ISS, IDT)
 
 use crate::arch::{GdtStruct, IdtStruct, TaskStateSegment};
-use lazy_init::LazyInit;
+use lazyinit::LazyInit;
 
 static IDT: LazyInit<IdtStruct> = LazyInit::new();
 
@@ -16,8 +16,8 @@ fn init_percpu() {
         IDT.load();
         let tss = TSS.current_ref_mut_raw();
         let gdt = GDT.current_ref_mut_raw();
-        tss.init_by(TaskStateSegment::new());
-        gdt.init_by(GdtStruct::new(tss));
+        tss.init_once(TaskStateSegment::new());
+        gdt.init_once(GdtStruct::new(tss));
         gdt.load();
         gdt.load_tss();
     }
@@ -26,7 +26,7 @@ fn init_percpu() {
 /// Initializes IDT, GDT on the primary CPU.
 pub(super) fn init_primary() {
     axlog::ax_println!("\nInitialize IDT & GDT...");
-    IDT.init_by(IdtStruct::new());
+    IDT.init_once(IdtStruct::new());
     init_percpu();
 }
 

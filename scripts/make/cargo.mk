@@ -31,11 +31,10 @@ clippy_args := -A clippy::new_without_default
 
 define cargo_clippy
   $(call run_cmd,cargo clippy,--all-features --workspace --exclude axlog $(1) $(verbose) -- $(clippy_args))
-  $(call run_cmd,cargo clippy,-p axlog -p percpu -p percpu_macros $(1) $(verbose) -- $(clippy_args))
+  $(call run_cmd,cargo clippy,-p axlog $(1) $(verbose) -- $(clippy_args))
 endef
 
 all_packages := \
-  $(shell ls $(CURDIR)/crates) \
   $(shell ls $(CURDIR)/modules) \
   axfeat arceos_api axstd axlibc
 
@@ -45,6 +44,4 @@ define cargo_doc
   $(foreach p,$(all_packages), \
     $(call run_cmd,cargo rustdoc,--all-features -p $(p) $(verbose))
   )
-  @# for some crates, re-generate without `--all-features`
-  $(call run_cmd,cargo doc,--no-deps -p percpu $(verbose))
 endef

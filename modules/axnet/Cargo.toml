@@ -1,11 +1,11 @@
 [package]
 name = "axnet"
-version = "0.1.0"
+version.workspace = true
 edition = "2021"
 authors = ["Yuekai Jia <equation618@gmail.com>", "ChengXiang Qi <kuangjux@outlook.com>"]
 description = "ArceOS network module"
-license = "GPL-3.0-or-later OR Apache-2.0 OR MulanPSL-2.0"
-homepage = "https://github.com/arceos-org/arceos"
+license.workspace = true
+homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/modules/axnet"
 documentation = "https://arceos-org.github.io/arceos/axnet/index.html"
 
@@ -17,14 +17,14 @@ default = ["smoltcp"]
 log = "0.4"
 cfg-if = "1.0"
 spin = "0.9"
-driver_net = { path = "../../crates/driver_net" }
-lazy_init = { path = "../../crates/lazy_init" }
-axerrno = { path = "../../crates/axerrno" }
-axhal = { path = "../axhal" }
-axsync = { path = "../axsync" }
-axtask = { path = "../axtask" }
-axdriver = { path = "../axdriver", features = ["net"] }
-axio = { path = "../../crates/axio" }
+lazyinit = "0.2"
+axerrno = "0.1"
+axio = "0.1"
+axhal = { workspace = true }
+axsync = { workspace = true }
+axtask = { workspace = true }
+axdriver = { workspace = true, features = ["net"] }
+axdriver_net = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.0" }
 
 [dependencies.smoltcp]
 git = "https://github.com/rcore-os/smoltcp.git"

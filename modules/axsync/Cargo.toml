@@ -1,11 +1,11 @@
 [package]
 name = "axsync"
-version = "0.1.0"
+version.workspace = true
 edition = "2021"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
 description = "ArceOS synchronization primitives"
-license = "GPL-3.0-or-later OR Apache-2.0 OR MulanPSL-2.0"
-homepage = "https://github.com/arceos-org/arceos"
+license.workspace = true
+homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/modules/axsync"
 documentation = "https://arceos-org.github.io/arceos/axsync/index.html"
 
@@ -14,10 +14,10 @@ multitask = ["axtask/multitask"]
 default = []
 
 [dependencies]
-spinlock = { path = "../../crates/spinlock" }
-axtask = { path = "../axtask" }
+kspin = "0.1"
+axtask = { workspace = true }
 
 [dev-dependencies]
 rand = "0.8"
-axsync = { path = ".", features = ["multitask"] }
-axtask = { path = "../axtask", features = ["test"] }
+axsync = { workspace = true, features = ["multitask"] }
+axtask = { workspace = true, features = ["test"] }
