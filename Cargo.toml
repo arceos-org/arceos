@@ -21,21 +21,11 @@ members = [
     "ulib/axstd",
     "ulib/axlibc",
 
-    "apps/display",
-    "apps/exception",
-    "apps/helloworld",
-    "apps/memtest",
-    "apps/fs/shell",
-    "apps/net/echoserver",
-    "apps/net/httpclient",
-    "apps/net/httpserver",
-    "apps/net/udpserver",
-    "apps/net/bwbench",
-    "apps/task/parallel",
-    "apps/task/sleep",
-    "apps/task/yield",
-    "apps/task/priority",
-    "apps/task/tls",
+    "examples/helloworld",
+    "examples/httpclient",
+    "examples/httpserver",
+    "examples/httpserver",
+    "examples/shell",
 ]
 
 [workspace.package]

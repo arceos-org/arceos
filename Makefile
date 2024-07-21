@@ -35,7 +35,7 @@ LOG ?= warn
 V ?=
 
 # App options
-A ?= apps/helloworld
+A ?= examples/helloworld
 APP ?= $(A)
 FEATURES ?=
 APP_FEATURES ?=
@@ -201,9 +201,6 @@ fmt:
 
 fmt_c:
 	@clang-format --style=file -i $(shell find ulib/axlibc -iname '*.c' -o -iname '*.h')
-
-test:
-	$(call app_test)
 
 unittest:
 	$(call unit_test)

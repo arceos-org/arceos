@@ -1,2 +1,0 @@
-test_one "LOG=info NET=y" "expect_info.out"
-rm -f $APP/*.o

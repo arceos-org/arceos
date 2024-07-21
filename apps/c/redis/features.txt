@@ -1,9 +1,0 @@
-alloc
-paging
-fp_simd
-irq
-multitask
-fs
-net
-pipe
-epoll

@@ -42,4 +42,5 @@ jobs:
     - name: Run app tests
       run: |
         make disk_img
-        make test ARCH=${{ matrix.arch }}
+        git clone https://github.com/arceos-org/arceos-apps.git
+        make -C arceos-apps test AX_ROOT=.. ARCH=${{ matrix.arch }}

@@ -47,36 +47,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "arceos-bwbench"
-version = "0.1.0"
-dependencies = [
- "axnet",
- "axstd",
-]
-
-[[package]]
-name = "arceos-display"
-version = "0.1.0"
-dependencies = [
- "axstd",
- "embedded-graphics",
-]
-
-[[package]]
-name = "arceos-echoserver"
-version = "0.1.0"
-dependencies = [
- "axstd",
-]
-
-[[package]]
-name = "arceos-exception"
-version = "0.1.0"
-dependencies = [
- "axstd",
-]
-
-[[package]]
 name = "arceos-helloworld"
 version = "0.1.0"
 dependencies = [
@@ -98,29 +68,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "arceos-memtest"
-version = "0.1.0"
-dependencies = [
- "axstd",
- "rand",
-]
-
-[[package]]
-name = "arceos-parallel"
-version = "0.1.0"
-dependencies = [
- "axstd",
- "rand",
-]
-
-[[package]]
-name = "arceos-priority"
-version = "0.1.0"
-dependencies = [
- "axstd",
-]
-
-[[package]]
 name = "arceos-shell"
 version = "0.1.0"
 dependencies = [
@@ -128,34 +75,6 @@ dependencies = [
  "axfs_vfs",
  "axstd",
  "crate_interface",
-]
-
-[[package]]
-name = "arceos-sleep"
-version = "0.1.0"
-dependencies = [
- "axstd",
-]
-
-[[package]]
-name = "arceos-tls"
-version = "0.1.0"
-dependencies = [
- "axstd",
-]
-
-[[package]]
-name = "arceos-udpserver"
-version = "0.1.0"
-dependencies = [
- "axstd",
-]
-
-[[package]]
-name = "arceos-yield"
-version = "0.1.0"
-dependencies = [
- "axstd",
 ]
 
 [[package]]
@@ -569,12 +488,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "az"
-version = "1.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b7e4c2464d97fe331d41de9d5db0def0a96f4d823b8b32a2efd503578988973"
-
-[[package]]
 name = "base64"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -812,29 +725,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a26ae43d7bcc3b814de94796a5e736d4029efb0ee900c12e2d54c993ad1a1e07"
 
 [[package]]
-name = "embedded-graphics"
-version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0649998afacf6d575d126d83e68b78c0ab0e00ca2ac7e9b3db11b4cbe8274ef0"
-dependencies = [
- "az",
- "byteorder",
- "embedded-graphics-core",
- "float-cmp",
- "micromath",
-]
-
-[[package]]
-name = "embedded-graphics-core"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba9ecd261f991856250d2207f6d8376946cd9f412a2165d3b75bc87a0bc7a044"
-dependencies = [
- "az",
- "byteorder",
-]
-
-[[package]]
 name = "embedded-hal"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -862,15 +752,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "640ae5c0dad96e72fe0acc974f42f9ab1e39c3e9708aa02579c160895d884244"
 dependencies = [
  "bitmaps",
-]
-
-[[package]]
-name = "float-cmp"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "98de4bbd547a563b716d8dfa9aad1cb19bfab00f4fa09a6a4ed21dbcf44ce9c4"
-dependencies = [
- "num-traits",
 ]
 
 [[package]]
@@ -1088,12 +969,6 @@ name = "memory_addr"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bea53f55564acdbe43e404118414b5fb45dfe9bea0dfc9bd80b8e5bb02aeb047"
-
-[[package]]
-name = "micromath"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "39617bc909d64b068dcffd0e3e31679195b5576d0c83fadc52690268cc2b2b55"
 
 [[package]]
 name = "minimal-lexical"
@@ -1833,9 +1708,9 @@ dependencies = [
 
 [[package]]
 name = "zerocopy"
-version = "0.7.26"
+version = "0.7.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e97e415490559a91254a2979b4829267a57d2fcd741a98eee8b722fb57289aa0"
+checksum = "1b9b4fd18abc82b8136838da5d50bae7bdea537c574d8dc1a34ed098d6c166f0"
 dependencies = [
  "byteorder",
  "zerocopy-derive",
@@ -1843,9 +1718,9 @@ dependencies = [
 
 [[package]]
 name = "zerocopy-derive"
-version = "0.7.26"
+version = "0.7.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd7e48ccf166952882ca8bd778a43502c64f33bf94c12ebe2a7f08e5a0f6689f"
+checksum = "fa4f8080344d4671fb4e831a13ad1e68092748387dfc4f55e356242fae12ce3e"
 dependencies = [
  "proc-macro2",
  "quote",

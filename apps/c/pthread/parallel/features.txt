@@ -1,3 +1,0 @@
-alloc
-paging
-multitask

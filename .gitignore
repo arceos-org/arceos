@@ -3,6 +3,8 @@
 .DS_Store
 *.asm
 *.img
-actual.out
+*.o
+*.elf
+*.bin
 qemu.log
 rusty-tags.vi

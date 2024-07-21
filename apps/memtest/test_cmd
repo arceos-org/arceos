@@ -1,1 +1,0 @@
-test_one "LOG=trace FEATURES=paging" "expect_trace.out"

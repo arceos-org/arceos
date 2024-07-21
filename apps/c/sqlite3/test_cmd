@@ -1,4 +1,0 @@
-test_one "LOG=info BLK=y" "expect_info.out"
-test_one "LOG=info BLK=y" "expect_info_again.out"
-test_one "LOG=info BLK=y FEATURES=driver-ramdisk" "expect_info_ramdisk.out"
-rm -f $APP/*.o

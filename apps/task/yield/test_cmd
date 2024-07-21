@@ -1,3 +1,0 @@
-test_one "LOG=debug" "expect_debug_smp1_fifo.out"
-test_one "SMP=4 LOG=info" "expect_info_smp4_fifo.out"
-test_one "SMP=4 LOG=info APP_FEATURES=sched_rr" "expect_info_smp4_rr.out"
