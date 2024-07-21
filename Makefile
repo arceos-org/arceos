@@ -39,6 +39,7 @@ A ?= examples/helloworld
 APP ?= $(A)
 FEATURES ?=
 APP_FEATURES ?=
+TARGET_DIR ?= $(PWD)/target
 
 # QEMU options
 BLK ?= n

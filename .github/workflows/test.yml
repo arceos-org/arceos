@@ -43,4 +43,4 @@ jobs:
       run: |
         make disk_img
         git clone https://github.com/arceos-org/arceos-apps.git
-        make -C arceos-apps test AX_ROOT=.. ARCH=${{ matrix.arch }}
+        make -C arceos-apps test AX_ROOT=$(pwd) ARCH=${{ matrix.arch }}
