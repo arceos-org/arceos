@@ -1,4 +1,5 @@
 use std::io::Result;
+use std::path::Path;
 
 const BUILTIN_PLATFORMS: &[&str] = &[
     "aarch64-bsta1000b",
@@ -61,6 +62,10 @@ fn gen_linker_script(arch: &str, platform: &str) -> Result<()> {
     );
     let ld_content = ld_content.replace("%SMP%", &format!("{}", axconfig::SMP));
 
-    std::fs::write(fname, ld_content)?;
+    // target/<target_triple>/<mode>/build/axhal-xxxx/out
+    let out_dir = std::env::var("OUT_DIR").unwrap();
+    // target/<target_triple>/<mode>/linker_xxxx.lds
+    let out_path = Path::new(&out_dir).join("../../..").join(fname);
+    std::fs::write(out_path, ld_content)?;
     Ok(())
 }
