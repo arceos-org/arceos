@@ -1,9 +1,10 @@
-use core::marker::PhantomData;
 use core::ptr::NonNull;
+use core::{alloc::Layout, marker::PhantomData};
 
 use axdriver_base::{BaseDriverOps, DevResult, DeviceType};
 use axdriver_virtio::{BufferDirection, PhysAddr, VirtIoHal};
-use axhal::mem::{phys_to_virt, virt_to_phys};
+use axhal::mem::{alloc_coherent, dealloc_coherent, phys_to_virt, virt_to_phys};
+use axhal::DMAInfo;
 use cfg_if::cfg_if;
 
 use crate::{drivers::DriverProbe, AxDeviceEnum};
@@ -140,18 +141,30 @@ pub struct VirtIoHalImpl;
 
 unsafe impl VirtIoHal for VirtIoHalImpl {
     fn dma_alloc(pages: usize, _direction: BufferDirection) -> (PhysAddr, NonNull<u8>) {
-        let vaddr = if let Ok(vaddr) = global_allocator().alloc_pages(pages, 0x1000) {
-            vaddr
-        } else {
-            return (0, NonNull::dangling());
-        };
-        let paddr = virt_to_phys(vaddr.into());
-        let ptr = NonNull::new(vaddr as _).unwrap();
-        (paddr.as_usize(), ptr)
+        unsafe {
+            if let Some(dma) =
+                alloc_coherent(Layout::from_size_align(pages * 0x1000, 0x1000).unwrap())
+            {
+                (
+                    PhysAddr::from(dma.bus_addr as usize),
+                    NonNull::new_unchecked(dma.cpu_addr as _),
+                )
+            } else {
+                (0, NonNull::dangling())
+            }
+        }
     }
 
-    unsafe fn dma_dealloc(_paddr: PhysAddr, vaddr: NonNull<u8>, pages: usize) -> i32 {
-        global_allocator().dealloc_pages(vaddr.as_ptr() as usize, pages);
+    unsafe fn dma_dealloc(paddr: PhysAddr, vaddr: NonNull<u8>, pages: usize) -> i32 {
+        unsafe {
+            dealloc_coherent(
+                DMAInfo {
+                    cpu_addr: vaddr.as_ptr() as _,
+                    bus_addr: paddr as _,
+                },
+                Layout::from_size_align(pages * 0x1000, 0x1000).unwrap(),
+            );
+        }
         0
     }
 

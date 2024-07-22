@@ -214,11 +214,13 @@ mod mm {
         fn memory_regions() -> impl Iterator<Item = axalloc::MemRegion> {
             memory_regions()
         }
+
+        fn phys_bus_offset() -> usize {
+            axconfig::PHYS_BUS_OFFSET
+        }
     }
 
     pub(super) fn init_allocator() {
-        use axhal::mem::{memory_regions, phys_to_virt, MemRegionFlags};
-
         info!("Initialize global memory allocator...");
         info!("  use {} allocator.", axalloc::name());
 

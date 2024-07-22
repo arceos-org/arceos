@@ -9,3 +9,4 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 [dependencies]
 rand = { version = "0.8", default-features = false, features = ["small_rng"] }
 axstd = { workspace = true, features = ["alloc"], optional = true }
+os-dma = { workspace = true }

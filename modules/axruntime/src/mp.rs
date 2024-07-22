@@ -34,8 +34,8 @@ pub extern "C" fn rust_main_secondary(cpu_id: usize) -> ! {
     ENTERED_CPUS.fetch_add(1, Ordering::Relaxed);
     info!("Secondary CPU {:x} started.", cpu_id);
 
-    #[cfg(feature = "paging")]
-    super::remap_kernel_memory().unwrap();
+    // #[cfg(feature = "paging")]
+    // super::remap_kernel_memory().unwrap();
 
     axhal::platform_init_secondary();
 

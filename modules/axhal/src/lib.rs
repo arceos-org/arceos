@@ -75,6 +75,7 @@ pub mod mp {
 }
 
 pub use self::platform::platform_init;
+pub use os_memory::*;
 
 #[cfg(feature = "smp")]
 pub use self::platform::platform_init_secondary;

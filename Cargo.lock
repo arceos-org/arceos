@@ -102,6 +102,7 @@ name = "arceos-memtest"
 version = "0.1.0"
 dependencies = [
  "axstd",
+ "os-dma",
  "rand",
 ]
 
@@ -273,7 +274,6 @@ dependencies = [
 name = "axdriver"
 version = "0.1.0"
 dependencies = [
- "axalloc",
  "axconfig",
  "axdriver_base",
  "axdriver_block",
@@ -813,6 +813,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a26ae43d7bcc3b814de94796a5e736d4029efb0ee900c12e2d54c993ad1a1e07"
 
 [[package]]
+name = "embedded-dma"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "994f7e5b5cb23521c22304927195f236813053eb9c065dd2226a32ba64695446"
+dependencies = [
+ "stable_deref_trait",
+]
+
+[[package]]
 name = "embedded-graphics"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1129,13 +1138,16 @@ checksum = "dd8b5dd2ae5ed71462c540258bedcb51965123ad7e7ccf4b9a8cafaa4a63576d"
 
 [[package]]
 name = "os-dma"
-version = "0.1.0"
-source = "git+https://gitee.com/zr233/os-dma.git#06f692345b261ed44e7463e0e00d70f320d1589e"
+version = "0.1.3"
+source = "git+https://gitee.com/zr233/os-dma.git?tag=v0.1.3#6e4a6a529f229de4f93e0d22cfecc6703fa5f5ce"
+dependencies = [
+ "embedded-dma",
+]
 
 [[package]]
 name = "os-memory"
-version = "0.1.0"
-source = "git+https://gitee.com/zr233/os-memory.git?tag=v0.1.0#b440dab15b891e0d6faac9294426262c209d4042"
+version = "0.1.5"
+source = "git+https://gitee.com/zr233/os-memory.git?tag=v0.1.5#f8b4dda6f5254c446d8fd9cf675f6142147878af"
 dependencies = [
  "aarch64-cpu",
  "allocator",
