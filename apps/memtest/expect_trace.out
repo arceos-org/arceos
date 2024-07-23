@@ -25,6 +25,8 @@ map_region(PA:0x[0-9a-f]\+): \[VA:0x[0-9a-f]\+, VA:0x[0-9a-f]\+) -> \[PA:0x[0-9a
 map_region(PA:0x[0-9a-f]\+): \[VA:0x[0-9a-f]\+, VA:0x[0-9a-f]\+) -> \[PA:0x[0-9a-f]\+, PA:0x[0-9a-f]\+) READ | WRITE
 Primary CPU 0 init OK.
 Running memory tests...
+map_region(PA:0x[0-9a-f]\+): \[VA:0x[0-9a-f]\+, VA:0x[0-9a-f]\+) -> \[PA:0x[0-9a-f]\+, PA:0x[0-9a-f]\+) READ | WRITE | UNCACHED
+test_dma() OK!
 test_vec() OK!
 test_btree_map() OK!
 Memory tests run OK!

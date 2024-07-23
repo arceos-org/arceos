@@ -13,7 +13,6 @@ Found physcial memory regions:
  free memory (READ | WRITE | FREE)
 Initialize global memory allocator...
   use TLSF allocator.
-initialize global allocator at: \[0x[0-9a-f]\+, 0x[0-9a-f]\+)
 Initialize kernel page table...
 Initialize platform devices...
 map_region(PA:0x[0-9a-f]\+): \[VA:0x[0-9a-f]\+, VA:0x[0-9a-f]\+) -> \[PA:0x[0-9a-f]\+, PA:0x[0-9a-f]\+) READ | EXECUTE
@@ -24,7 +23,6 @@ map_region(PA:0x[0-9a-f]\+): \[VA:0x[0-9a-f]\+, VA:0x[0-9a-f]\+) -> \[PA:0x[0-9a
 map_region(PA:0x[0-9a-f]\+): \[VA:0x[0-9a-f]\+, VA:0x[0-9a-f]\+) -> \[PA:0x[0-9a-f]\+, PA:0x[0-9a-f]\+) READ | WRITE
 map_region(PA:0x[0-9a-f]\+): \[VA:0x[0-9a-f]\+, VA:0x[0-9a-f]\+) -> \[PA:0x[0-9a-f]\+, PA:0x[0-9a-f]\+) READ | WRITE | DEVICE
 map_region(PA:0x[0-9a-f]\+): \[VA:0x[0-9a-f]\+, VA:0x[0-9a-f]\+) -> \[PA:0x[0-9a-f]\+, PA:0x[0-9a-f]\+) READ | WRITE
-set page table root: PA:0x[0-9a-f]\+ => PA:0x[0-9a-f]\+
 Primary CPU 0 init OK.
 Running memory tests...
 top of heap=0x[0-9a-f]\{16\}
