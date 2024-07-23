@@ -1,6 +1,6 @@
-use axalloc::global_allocator;
 use axdriver_net::ixgbe::{IxgbeHal, PhysAddr as IxgbePhysAddr};
-use axhal::mem::{alloc_coherent, dealloc_coherent, phys_to_virt, virt_to_phys};
+use axhal::mem::{phys_to_virt, virt_to_phys};
+use axhal::{alloc_coherent, dealloc_coherent, DMAInfo};
 use core::{alloc::Layout, ptr::NonNull};
 
 pub struct IxgbeHalImpl;
@@ -30,7 +30,7 @@ unsafe impl IxgbeHal for IxgbeHalImpl {
                     cpu_addr: vaddr.as_ptr() as _,
                     bus_addr: paddr as _,
                 },
-                Layout::from_size_align(pages * 0x1000, 0x1000).unwrap(),
+                layout,
             );
         }
         0

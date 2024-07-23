@@ -1,11 +1,10 @@
 //! Physical memory management.
 
-pub use os_memory::*;
+#[doc(no_inline)]
+pub use os_memory::{BootState, BusAddr, MemRegionFlags, MemRegion};
 
 #[doc(no_inline)]
 pub use memory_addr::{PhysAddr, VirtAddr, PAGE_SIZE_4K};
-
-
 
 /// Converts a virtual address to a physical address.
 ///

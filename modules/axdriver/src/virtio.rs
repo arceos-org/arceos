@@ -3,8 +3,8 @@ use core::{alloc::Layout, marker::PhantomData};
 
 use axdriver_base::{BaseDriverOps, DevResult, DeviceType};
 use axdriver_virtio::{BufferDirection, PhysAddr, VirtIoHal};
-use axhal::mem::{alloc_coherent, dealloc_coherent, phys_to_virt, virt_to_phys};
-use axhal::DMAInfo;
+use axhal::mem::{phys_to_virt, virt_to_phys};
+use axhal::{alloc_coherent, dealloc_coherent, DMAInfo};
 use cfg_if::cfg_if;
 
 use crate::{drivers::DriverProbe, AxDeviceEnum};

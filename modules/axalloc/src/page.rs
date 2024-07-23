@@ -1,8 +1,10 @@
-use allocator::AllocError;
+#![allow(unused)]
 use axerrno::{AxError, AxResult};
+use core::{alloc::Layout, ptr::NonNull};
 use memory_addr::{PhysAddr, VirtAddr};
+use os_memory::err::AllocError;
 
-use crate::{global_allocator, PAGE_SIZE};
+const PAGE_SIZE: usize = 0x1000;
 
 /// A RAII wrapper of contiguous 4K-sized pages.
 ///
@@ -16,10 +18,11 @@ pub struct GlobalPage {
 impl GlobalPage {
     /// Allocate one 4K-sized page.
     pub fn alloc() -> AxResult<Self> {
-        global_allocator()
-            .alloc_pages(1, PAGE_SIZE)
+        let layout = Layout::from_size_align(PAGE_SIZE, PAGE_SIZE).unwrap();
+        os_memory::global_allocator()
+            .alloc(layout)
             .map(|vaddr| Self {
-                start_vaddr: vaddr.into(),
+                start_vaddr: VirtAddr::from(vaddr.as_ptr() as usize),
                 num_pages: 1,
             })
             .map_err(alloc_err_to_ax_err)
@@ -34,10 +37,11 @@ impl GlobalPage {
 
     /// Allocate contiguous 4K-sized pages.
     pub fn alloc_contiguous(num_pages: usize, align_pow2: usize) -> AxResult<Self> {
-        global_allocator()
-            .alloc_pages(num_pages, align_pow2)
+        let layout = Layout::from_size_align(PAGE_SIZE * num_pages, align_pow2).unwrap();
+        os_memory::global_allocator()
+            .alloc(layout)
             .map(|vaddr| Self {
-                start_vaddr: vaddr.into(),
+                start_vaddr: VirtAddr::from(vaddr.as_ptr() as usize),
                 num_pages,
             })
             .map_err(alloc_err_to_ax_err)
@@ -94,7 +98,13 @@ impl GlobalPage {
 
 impl Drop for GlobalPage {
     fn drop(&mut self) {
-        global_allocator().dealloc_pages(self.start_vaddr.into(), self.num_pages);
+        let layout = Layout::from_size_align(PAGE_SIZE * self.num_pages, PAGE_SIZE).unwrap();
+        unsafe {
+            os_memory::global_allocator().dealloc(
+                NonNull::new_unchecked(self.start_vaddr().as_mut_ptr()),
+                layout,
+            );
+        }
     }
 }
 

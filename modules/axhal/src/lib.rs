@@ -48,8 +48,8 @@ pub mod tls;
 #[cfg(feature = "irq")]
 pub mod irq;
 
-#[cfg(feature = "paging")]
-pub mod paging;
+// #[cfg(feature = "paging")]
+// pub mod paging;
 
 /// Console input and output.
 pub mod console {

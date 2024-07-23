@@ -1146,8 +1146,8 @@ dependencies = [
 
 [[package]]
 name = "os-memory"
-version = "0.1.5"
-source = "git+https://gitee.com/zr233/os-memory.git?tag=v0.1.5#f8b4dda6f5254c446d8fd9cf675f6142147878af"
+version = "0.1.6"
+source = "git+https://gitee.com/zr233/os-memory.git?tag=v0.1.6#f0521cf5c8d5db8e8ee706ea89eea49d82ce0885"
 dependencies = [
  "aarch64-cpu",
  "allocator",

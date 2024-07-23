@@ -9,10 +9,12 @@
 
 extern crate alloc;
 
-pub use os_memory::{BootState, MemRegion, MemRegionFlags};
+#[doc(no_inline)]
+pub use os_memory::{BootState, MemRegion, MemRegionFlags, global_allocator};
 
 
-// mod page;
+
+mod page;
 
 pub fn name() -> &'static str {
     os_memory::allocator_name()
