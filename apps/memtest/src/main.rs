@@ -11,6 +11,7 @@ use rand::{rngs::SmallRng, RngCore, SeedableRng};
 use std::collections::BTreeMap;
 use std::vec::Vec;
 
+/// Test DMA
 #[cfg(feature = "axstd")]
 fn test_dma(rng: &mut impl RngCore) {
     const N: usize = 30;
