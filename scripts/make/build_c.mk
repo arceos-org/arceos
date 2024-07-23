@@ -1,5 +1,5 @@
 rust_lib_name := axlibc
-rust_lib := target/$(TARGET)/$(MODE)/lib$(rust_lib_name).a
+rust_lib := $(TARGET_DIR)/$(TARGET)/$(MODE)/lib$(rust_lib_name).a
 
 ulib_dir := ulib/axlibc
 src_dir := $(ulib_dir)/c

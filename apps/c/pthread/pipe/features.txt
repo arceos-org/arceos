@@ -1,4 +1,0 @@
-paging
-alloc
-multitask
-pipe

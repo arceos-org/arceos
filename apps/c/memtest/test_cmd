@@ -1,2 +1,0 @@
-test_one "LOG=trace" "expect_trace.out"
-rm -f $APP/*.o

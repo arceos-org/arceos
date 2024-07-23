@@ -25,34 +25,9 @@ ArceOS was inspired a lot by [Unikraft](https://github.com/unikraft/unikraft).
 * [ ] Interrupt driven device I/O
 * [ ] Async I/O
 
-## Example apps
+## Quick Start
 
-Example applications can be found in the [apps/](apps/) directory. All applications must at least depend on the following modules, while other modules are optional:
-
-* [axruntime](modules/axruntime/): Bootstrapping from the bare-metal environment, and initialization.
-* [axhal](modules/axhal/): Hardware abstraction layer, provides unified APIs for cross-platform.
-* [axconfig](modules/axconfig/): Platform constants and kernel parameters, such as physical memory base, kernel load addresses, stack size, etc.
-* [axlog](modules/axlog/): Multi-level formatted logging.
-
-The currently supported applications (Rust), as well as their dependent modules and features, are shown in the following table:
-
-| App | Extra modules | Enabled features | Description |
-|-|-|-|-|
-| [helloworld](apps/helloworld/) | | | A minimal app that just prints a string |
-| [exception](apps/exception/) | | paging | Exception handling test |
-| [memtest](apps/memtest/) | axalloc | alloc, paging | Dynamic memory allocation test |
-| [display](apps/display/) | axalloc, axdisplay | alloc, paging, display | Graphic/GUI test |
-| [yield](apps/task/yield/) | axalloc, axtask | alloc, paging, multitask, sched_fifo | Multi-threaded yielding test |
-| [parallel](apps/task/parallel/) | axalloc, axtask | alloc, paging, multitask, sched_fifo | Parallel computing test (to test synchronization & mutex) |
-| [sleep](apps/task/sleep/) | axalloc, axtask | alloc, paging, multitask, sched_fifo | Thread sleeping test |
-| [shell](apps/fs/shell/) | axalloc, axdriver, axfs | alloc, paging, fs | A simple shell that responds to filesystem operations |
-| [httpclient](apps/net/httpclient/) | axalloc, axdriver, axnet | alloc, paging, net | A simple client that sends an HTTP request and then prints the response |
-| [echoserver](apps/net/echoserver/) | axalloc, axdriver, axnet, axtask | alloc, paging, net, multitask | A multi-threaded TCP server that reverses messages sent by the client  |
-| [httpserver](apps/net/httpserver/) | axalloc, axdriver, axnet, axtask | alloc, paging, net, multitask | A multi-threaded HTTP server that serves a static web page |
-
-## Build & Run
-
-### Install build dependencies
+### 1. Install Build Dependencies
 
 Install [cargo-binutils](https://github.com/rust-embedded/cargo-binutils) to use `rust-objcopy` and `rust-objdump` tools:
 
@@ -60,15 +35,17 @@ Install [cargo-binutils](https://github.com/rust-embedded/cargo-binutils) to use
 cargo install cargo-binutils
 ```
 
-#### for build&run C apps
+#### Dependencies for C apps
+
 Install `libclang-dev`:
 
 ```bash
 sudo apt install libclang-dev
 ```
 
-Download&Install `cross-musl-based toolchains`:
-```
+Download & install [musl](https://musl.cc) toolchains:
+
+```bash
 # download
 wget https://musl.cc/aarch64-linux-musl-cross.tgz
 wget https://musl.cc/riscv64-linux-musl-cross.tgz
@@ -81,7 +58,7 @@ tar zxf x86_64-linux-musl-cross.tgz
 export PATH=`pwd`/x86_64-linux-musl-cross/bin:`pwd`/aarch64-linux-musl-cross/bin:`pwd`/riscv64-linux-musl-cross/bin:$PATH
 ```
 
-### Dependencies for running apps
+#### Dependencies for running apps
 
 ```bash
 # for Debian/Ubuntu
@@ -92,34 +69,38 @@ sudo apt-get install qemu-system
 # for macos
 brew install qemu
 ```
-other systems and arch please refer to [Qemu Download](https://www.qemu.org/download/#linux)
 
-### Example apps
+Other systems and arch please refer to [Qemu Download](https://www.qemu.org/download/#linux)
+
+### 2. Build & Run
 
 ```bash
 # build app in arceos directory
 make A=path/to/app ARCH=<arch> LOG=<log>
 ```
 
-Where `<arch>` should be one of `riscv64`, `aarch64`，`x86_64`.
+Where `path/to/app` is the relative path to the application. Examples applications can be found in the [examples](examples/) directory or the [arceos-apps](https://github.com/arceos-org/arceos-apps) repository.
+
+`<arch>` should be one of `riscv64`, `aarch64`, `x86_64`.
 
 `<log>` should be one of `off`, `error`, `warn`, `info`, `debug`, `trace`.
 
-`path/to/app` is the relative path to the example application.
-
 More arguments and targets can be found in [Makefile](Makefile).
 
-For example, to run the [httpserver](apps/net/httpserver/) on `qemu-system-aarch64` with 4 cores:
+For example, to run the [httpserver](examples/httpserver/) on `qemu-system-aarch64` with 4 cores and log level `info`:
 
 ```bash
-make A=apps/net/httpserver ARCH=aarch64 LOG=info SMP=4 run NET=y
+make A=examples/httpserver ARCH=aarch64 LOG=info SMP=4 run NET=y
 ```
 
 Note that the `NET=y` argument is required to enable the network device in QEMU. These arguments (`BLK`, `GRAPHIC`, etc.) only take effect at runtime not build time.
 
-### Your custom apps
+## How to write ArceOS apps
 
-#### Rust
+You can write and build your custom applications outside the ArceOS source tree.
+Examples are given below and in the [app-helloworld](https://github.com/arceos-org/app-helloworld) and [arceos-apps](https://github.com/arceos-org/arceos-apps) repositories.
+
+### Rust
 
 1. Create a new rust package with `no_std` and `no_main` environment.
 2. Add `axstd` dependency and features to enable to `Cargo.toml`:
@@ -127,6 +108,8 @@ Note that the `NET=y` argument is required to enable the network device in QEMU.
     ```toml
     [dependencies]
     axstd = { path = "/path/to/arceos/ulib/axstd", features = ["..."] }
+    # or use git repository:
+    # axstd = { git = "https://github.com/arceos-org/arceos.git", features = ["..."] }
     ```
 
 3. Call library functions from `axstd` in your code, just like the Rust [std](https://doc.rust-lang.org/std/) library.
@@ -140,7 +123,7 @@ Note that the `NET=y` argument is required to enable the network device in QEMU.
 
     All arguments and targets are the same as above.
 
-#### C
+### C
 
 1. Create `axbuild.mk` and `features.txt` in your project:
 
@@ -174,25 +157,25 @@ Note that the `NET=y` argument is required to enable the network device in QEMU.
     # more args: LOG=<log> SMP=<smp> NET=[y|n] ...
     ```
 
-### How to build ArceOS for specific platforms and devices
+## How to build ArceOS for specific platforms and devices
 
 Set the `PLATFORM` variable when run `make`:
 
 ```bash
 # Build helloworld for raspi4
-make PLATFORM=aarch64-raspi4 A=apps/helloworld
+make PLATFORM=aarch64-raspi4 A=examples/helloworld
 ```
 
 You may also need to select the corrsponding device drivers by setting the `FEATURES` variable:
 
 ```bash
 # Build the shell app for raspi4, and use the SD card driver
-make PLATFORM=aarch64-raspi4 A=apps/fs/shell FEATURES=driver-bcm2835-sdhci
-# Build Redis for the bare-metal x86_64 platform, and use the ixgbe and ramdisk driver
-make PLATFORM=x86_64-pc-oslab A=apps/c/redis FEATURES=driver-ixgbe,driver-ramdisk SMP=4
+make PLATFORM=aarch64-raspi4 A=examples/shell FEATURES=driver-bcm2835-sdhci
+# Build httpserver for the bare-metal x86_64 platform, and use the ixgbe and ramdisk driver
+make PLATFORM=x86_64-pc-oslab A=examples/httpserver FEATURES=driver-ixgbe,driver-ramdisk SMP=4
 ```
 
-### How to reuse ArceOS modules in your own project
+## How to reuse ArceOS modules in your own project
 
 ```toml
 # In Cargo.toml

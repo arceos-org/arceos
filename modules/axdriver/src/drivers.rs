@@ -1,6 +1,6 @@
 //! Defines types and probe methods of all supported devices.
 
-#![allow(unused_imports)]
+#![allow(unused_imports, dead_code)]
 
 use crate::AxDeviceEnum;
 use axdriver_base::DeviceType;
@@ -13,7 +13,6 @@ use axdriver_pci::{DeviceFunction, DeviceFunctionInfo, PciRoot};
 
 pub use super::dummy::*;
 
-#[allow(dead_code)]
 pub trait DriverProbe {
     fn probe_global() -> Option<AxDeviceEnum> {
         None
@@ -89,12 +88,12 @@ cfg_if::cfg_if! {
         pub struct IxgbeDriver;
         register_net_driver!(IxgbeDriver, axdriver_net::ixgbe::IxgbeNic<IxgbeHalImpl, 1024, 1>);
         impl DriverProbe for IxgbeDriver {
+            #[cfg(bus = "pci")]
             fn probe_pci(
                     root: &mut axdriver_pci::PciRoot,
                     bdf: axdriver_pci::DeviceFunction,
                     dev_info: &axdriver_pci::DeviceFunctionInfo,
                 ) -> Option<crate::AxDeviceEnum> {
-                    use crate::ixgbe::IxgbeHalImpl;
                     use axdriver_net::ixgbe::{INTEL_82599, INTEL_VEND, IxgbeNic};
                     if dev_info.vendor_id == INTEL_VEND && dev_info.device_id == INTEL_82599 {
                         // Intel 10Gb Network

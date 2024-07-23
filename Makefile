@@ -35,16 +35,17 @@ LOG ?= warn
 V ?=
 
 # App options
-A ?= apps/helloworld
+A ?= examples/helloworld
 APP ?= $(A)
 FEATURES ?=
 APP_FEATURES ?=
+TARGET_DIR ?= $(PWD)/target
 
 # QEMU options
 BLK ?= n
 NET ?= n
 GRAPHIC ?= n
-BUS ?= mmio
+BUS ?= pci
 
 DISK_IMG ?= disk.img
 QEMU_LOG ?= n
@@ -97,7 +98,6 @@ ifeq ($(ARCH), x86_64)
   # Don't enable kvm for WSL/WSL2.
   ACCEL ?= $(if $(findstring -microsoft, $(shell uname -r | tr '[:upper:]' '[:lower:]')),n,y)
   PLATFORM_NAME ?= x86_64-qemu-q35
-  BUS := pci
 else ifeq ($(ARCH), riscv64)
   ACCEL ?= n
   PLATFORM_NAME ?= riscv64-qemu-virt
@@ -148,7 +148,7 @@ GDB ?= gdb-multiarch
 OUT_DIR ?= $(APP)
 
 APP_NAME := $(shell basename $(APP))
-LD_SCRIPT := $(CURDIR)/modules/axhal/linker_$(PLATFORM_NAME).lds
+LD_SCRIPT := $(TARGET_DIR)/$(TARGET)/$(MODE)/linker_$(PLATFORM_NAME).lds
 OUT_ELF := $(OUT_DIR)/$(APP_NAME)_$(PLATFORM_NAME).elf
 OUT_BIN := $(OUT_DIR)/$(APP_NAME)_$(PLATFORM_NAME).bin
 
@@ -201,9 +201,6 @@ fmt:
 
 fmt_c:
 	@clang-format --style=file -i $(shell find ulib/axlibc -iname '*.c' -o -iname '*.h')
-
-test:
-	$(call app_test)
 
 unittest:
 	$(call unit_test)

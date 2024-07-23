@@ -6,8 +6,7 @@ ifeq ($(APP_TYPE), c)
   include scripts/make/build_c.mk
 else
   rust_package := $(shell cat $(APP)/Cargo.toml | sed -n 's/^name = "\([a-z0-9A-Z_\-]*\)"/\1/p')
-  rust_target_dir := $(CURDIR)/target/$(TARGET)/$(MODE)
-  rust_elf := $(rust_target_dir)/$(rust_package)
+  rust_elf := $(TARGET_DIR)/$(TARGET)/$(MODE)/$(rust_package)
 endif
 
 ifneq ($(filter $(MAKECMDGOALS),doc doc_check_missing),)  # run `cargo doc`
@@ -33,10 +32,10 @@ endif
 _cargo_build:
 	@printf "    $(GREEN_C)Building$(END_C) App: $(APP_NAME), Arch: $(ARCH), Platform: $(PLATFORM_NAME), App type: $(APP_TYPE)\n"
 ifeq ($(APP_TYPE), rust)
-	$(call cargo_build,--manifest-path $(APP)/Cargo.toml,$(AX_FEAT) $(LIB_FEAT) $(APP_FEAT))
+	$(call cargo_build,$(APP),$(AX_FEAT) $(LIB_FEAT) $(APP_FEAT))
 	@cp $(rust_elf) $(OUT_ELF)
 else ifeq ($(APP_TYPE), c)
-	$(call cargo_build,-p axlibc,$(AX_FEAT) $(LIB_FEAT))
+	$(call cargo_build,ulib/axlibc,$(AX_FEAT) $(LIB_FEAT))
 endif
 
 $(OUT_DIR):

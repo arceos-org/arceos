@@ -27,4 +27,4 @@ crate_interface = "0.1"
 chrono = { version = "0.4", optional = true }
 
 [dev-dependencies]
-axlog = { path = ".", features = ["std"] }
+axlog = { workspace = true, features = ["std"] }

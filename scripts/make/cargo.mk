@@ -11,20 +11,21 @@ endif
 build_args-release := --release
 
 build_args := \
+  -Z unstable-options \
   --target $(TARGET) \
-  --target-dir $(CURDIR)/target \
+  --target-dir $(TARGET_DIR) \
   $(build_args-$(MODE)) \
   $(verbose)
 
 RUSTFLAGS := -C link-arg=-T$(LD_SCRIPT) -C link-arg=-no-pie
-RUSTDOCFLAGS := --enable-index-page -Zunstable-options -D rustdoc::broken_intra_doc_links
+RUSTDOCFLAGS := -Z unstable-options --enable-index-page -D rustdoc::broken_intra_doc_links
 
 ifeq ($(MAKECMDGOALS), doc_check_missing)
   RUSTDOCFLAGS += -D missing-docs
 endif
 
 define cargo_build
-  $(call run_cmd,cargo build,$(build_args) $(1) --features "$(strip $(2))")
+  $(call run_cmd,cargo -C $(1) build,$(build_args) --features "$(strip $(2))")
 endef
 
 clippy_args := -A clippy::new_without_default

@@ -38,9 +38,9 @@
 //! # Other Cargo Features
 //!
 //! - `dyn`: use the dynamic device model (see above).
-//! - `bus-mmio`: use device tree to probe all MMIO devices. This feature is
+//! - `bus-mmio`: use device tree to probe all MMIO devices.
+//! - `bus-pci`: use PCI bus to probe all PCI devices. This feature is
 //!    enabeld by default.
-//! - `bus-pci`: use PCI bus to probe all PCI devices.
 //! - `virtio`: use VirtIO devices. This is enabled if any of `virtio-blk`,
 //!   `virtio-net` or `virtio-gpu` is enabled.
 //! - `net`: use network devices. This is enabled if any feature of network

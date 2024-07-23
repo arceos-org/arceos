@@ -1,6 +1,0 @@
-alloc
-paging
-net
-fs
-select
-fp_simd

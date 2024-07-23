@@ -23,10 +23,10 @@ fn enable_cfg(key: &str, value: &str) {
 }
 
 fn main() {
-    if has_feature("bus-pci") {
-        enable_cfg("bus", "pci");
-    } else {
+    if has_feature("bus-mmio") {
         enable_cfg("bus", "mmio");
+    } else {
+        enable_cfg("bus", "pci");
     }
 
     // Generate cfgs like `net_dev="virtio-net"`. if `dyn` is not enabled, only one device is
