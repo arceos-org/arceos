@@ -113,6 +113,9 @@ Examples are given below and in the [app-helloworld](https://github.com/arceos-o
     ```
 
 3. Call library functions from `axstd` in your code, just like the Rust [std](https://doc.rust-lang.org/std/) library.
+    
+    Remember to annotate the `main` function with `#[no_mangle]` (see this [example](examples/helloworld/src/main.rs)).
+
 4. Build your application with ArceOS, by running the `make` command in the application directory:
 
     ```bash
@@ -135,7 +138,7 @@ Examples are given below and in the [app-helloworld](https://github.com/arceos-o
     └── features.txt    # optional, if only use default features
     ```
 
-2. Add build targets to `axbuild.mk`, add features to enable to `features.txt` (see this [example](apps/c/sqlite3/)):
+2. Add build targets to `axbuild.mk`, add features to enable to `features.txt` (see this [example](examples/httpserver-c/)):
 
     ```bash
     # in axbuild.mk
