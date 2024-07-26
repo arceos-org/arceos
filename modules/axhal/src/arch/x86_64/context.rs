@@ -1,15 +1,7 @@
-<<<<<<< HEAD
-use core::{arch::naked_asm, fmt};
-=======
 #![allow(unused_imports)]
 
-use core::{arch::asm, fmt};
-
->>>>>>> 4f0c0a4 ([hal]: Add UspaceContext to enter user space on x86_64)
+use core::{arch::naked_asm, fmt};
 use memory_addr::VirtAddr;
-use x86_64::registers::rflags::RFlags;
-
-use super::gdt::GdtStruct;
 
 /// Saved registers when a trap (interrupt or exception) occurs.
 #[allow(missing_docs)]
@@ -155,7 +147,7 @@ impl UspaceContext {
     /// This function is unsafe because it changes processor mode and the stack.
     pub unsafe fn enter_uspace(&self, kstack_top: VirtAddr) -> ! {
         super::disable_irqs();
-        super::tss_set_rsp0(kstack_top);
+        assert_eq!(super::tss_get_rsp0(), kstack_top);
         asm!("
             mov     rsp, {tf}
             pop     rax
@@ -282,6 +274,9 @@ pub struct TaskContext {
     /// Extended states, i.e., FP/SIMD states.
     #[cfg(feature = "fp_simd")]
     pub ext_state: ExtendedState,
+    /// The `CR3` register value, i.e., the page table root.
+    #[cfg(feature = "uspace")]
+    pub cr3: PhysAddr,
 }
 
 impl TaskContext {
@@ -292,11 +287,13 @@ impl TaskContext {
     ///
     /// [`init`]: TaskContext::init
     /// [`switch_to`]: TaskContext::switch_to
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             kstack_top: va!(0),
             rsp: 0,
             fs_base: 0,
+            #[cfg(feature = "uspace")]
+            cr3: crate::paging::kernel_page_table_root(),
             #[cfg(feature = "fp_simd")]
             ext_state: ExtendedState::default(),
         }
@@ -321,6 +318,17 @@ impl TaskContext {
         self.fs_base = tls_area.as_usize();
     }
 
+    /// Changes the page table root (`CR3` register for x86_64).
+    ///
+    /// If not set, the kernel page table root is used (obtained by
+    /// [`axhal::paging::kernel_page_table_root`][1]).
+    ///
+    /// [1]: crate::paging::kernel_page_table_root
+    #[cfg(feature = "uspace")]
+    pub fn set_page_table_root(&mut self, cr3: PhysAddr) {
+        self.cr3 = cr3;
+    }
+
     /// Switches to another task.
     ///
     /// It first saves the current task's context from CPU to this place, and then
@@ -332,9 +340,16 @@ impl TaskContext {
             next_ctx.ext_state.restore();
         }
         #[cfg(feature = "tls")]
-        {
+        unsafe {
             self.fs_base = super::read_thread_pointer();
-            unsafe { super::write_thread_pointer(next_ctx.fs_base) };
+            super::write_thread_pointer(next_ctx.fs_base);
+        }
+        #[cfg(feature = "uspace")]
+        unsafe {
+            super::tss_set_rsp0(next_ctx.kstack_top);
+            if next_ctx.cr3 != self.cr3 {
+                super::write_page_table_root(next_ctx.cr3);
+            }
         }
         unsafe { context_switch(&mut self.rsp, &next_ctx.rsp) }
     }
@@ -342,8 +357,9 @@ impl TaskContext {
 
 #[naked]
 unsafe extern "C" fn context_switch(_current_stack: &mut u64, _next_stack: &u64) {
-    naked_asm!(
-        ".code64
+    unsafe {
+        naked_asm!(
+            ".code64
         push    rbp
         push    rbx
         push    r12
@@ -360,5 +376,6 @@ unsafe extern "C" fn context_switch(_current_stack: &mut u64, _next_stack: &u64)
         pop     rbx
         pop     rbp
         ret",
-    )
+        )
+    }
 }

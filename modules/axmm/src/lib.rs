@@ -15,7 +15,7 @@ use axhal::mem::phys_to_virt;
 use axhal::paging::PagingError;
 use kspin::SpinNoIrq;
 use lazyinit::LazyInit;
-use memory_addr::{PhysAddr, va};
+use memory_addr::{PhysAddr, VirtAddr, va};
 
 const USER_ASPACE_BASE: usize = 0x1000;
 const USER_ASPACE_SIZE: usize = 0x7fff_ffff_f000;
@@ -76,10 +76,10 @@ pub fn init_memory_management() {
     let kernel_aspace = new_kernel_aspace().expect("failed to initialize kernel address space");
     debug!("kernel address space init OK: {:#x?}", kernel_aspace);
     KERNEL_ASPACE.init_once(SpinNoIrq::new(kernel_aspace));
-    unsafe { axhal::arch::write_page_table_root(kernel_page_table_root()) };
+    axhal::paging::set_kernel_page_table_root(kernel_page_table_root());
 }
 
 /// Initializes kernel paging for secondary CPUs.
 pub fn init_memory_management_secondary() {
-    unsafe { axhal::arch::write_page_table_root(kernel_page_table_root()) };
+    axhal::paging::set_kernel_page_table_root(kernel_page_table_root());
 }
