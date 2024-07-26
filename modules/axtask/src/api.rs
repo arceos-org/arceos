@@ -7,6 +7,8 @@ pub(crate) use crate::run_queue::{AxRunQueue, RUN_QUEUE};
 #[doc(cfg(feature = "multitask"))]
 pub use crate::task::{CurrentTask, TaskId, TaskInner};
 #[doc(cfg(feature = "multitask"))]
+pub use crate::task_ext::{TaskExtMut, TaskExtRef};
+#[doc(cfg(feature = "multitask"))]
 pub use crate::wait_queue::WaitQueue;
 
 /// The reference type of a task.
@@ -87,6 +89,13 @@ pub fn on_timer_tick() {
     RUN_QUEUE.lock().scheduler_timer_tick();
 }
 
+/// Adds the given task to the run queue, returns the task reference.
+pub fn spawn_task(task: TaskInner) -> AxTaskRef {
+    let task_ref = task.into_arc();
+    RUN_QUEUE.lock().add_task(task_ref.clone());
+    task_ref
+}
+
 /// Spawns a new task with the given parameters.
 ///
 /// Returns the task reference.
@@ -94,9 +103,7 @@ pub fn spawn_raw<F>(f: F, name: String, stack_size: usize) -> AxTaskRef
 where
     F: FnOnce() + Send + 'static,
 {
-    let task = TaskInner::new(f, name, stack_size);
-    RUN_QUEUE.lock().add_task(task.clone());
-    task
+    spawn_task(TaskInner::new(f, name, stack_size))
 }
 
 /// Spawns a new task with the default parameters.
