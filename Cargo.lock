@@ -415,6 +415,7 @@ dependencies = [
 name = "axmm"
 version = "0.1.0"
 dependencies = [
+ "axalloc",
  "axconfig",
  "axerrno",
  "axhal",
@@ -422,6 +423,7 @@ dependencies = [
  "lazyinit",
  "log",
  "memory_addr",
+ "memory_set",
 ]
 
 [[package]]
@@ -1005,6 +1007,15 @@ name = "memory_addr"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bea53f55564acdbe43e404118414b5fb45dfe9bea0dfc9bd80b8e5bb02aeb047"
+
+[[package]]
+name = "memory_set"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e46119df8fd48e57474c6db295a4b3068ed9fcbfd9c5467745880eb97cfc7808"
+dependencies = [
+ "memory_addr",
+]
 
 [[package]]
 name = "minimal-lexical"
