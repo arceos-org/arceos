@@ -7,29 +7,29 @@ extern crate log;
 extern crate alloc;
 
 mod aspace;
+mod backend;
 
 pub use self::aspace::AddrSpace;
+pub use self::backend::Backend;
 
 use axerrno::{AxError, AxResult};
 use axhal::mem::phys_to_virt;
-use axhal::paging::PagingError;
 use kspin::SpinNoIrq;
 use lazyinit::LazyInit;
 use memory_addr::{PhysAddr, VirtAddr, va};
+use memory_set::MappingError;
 
 const USER_ASPACE_BASE: usize = 0x1000;
 const USER_ASPACE_SIZE: usize = 0x7fff_ffff_f000;
 
 static KERNEL_ASPACE: LazyInit<SpinNoIrq<AddrSpace>> = LazyInit::new();
 
-fn paging_err_to_ax_err(err: PagingError) -> AxError {
-    warn!("Paging error: {:?}", err);
+fn mapping_err_to_ax_err(err: MappingError) -> AxError {
+    warn!("Mapping error: {:?}", err);
     match err {
-        PagingError::NoMemory => AxError::NoMemory,
-        PagingError::NotAligned => AxError::InvalidInput,
-        PagingError::NotMapped => AxError::NotFound,
-        PagingError::AlreadyMapped => AxError::AlreadyExists,
-        PagingError::MappedToHugePage => AxError::InvalidInput,
+        MappingError::InvalidParam => AxError::InvalidInput,
+        MappingError::AlreadyExists => AxError::AlreadyExists,
+        MappingError::BadState => AxError::BadState,
     }
 }
 
