@@ -16,6 +16,10 @@ kernel-base-vaddr = "0xffff_0000_8100_0000"
 # Linear mapping offset, for quick conversions between physical and virtual
 # addresses.
 phys-virt-offset = "0xffff_0000_0000_0000"
+# Kernel address space base.
+kernel-aspace-base = "0xffff_0000_0000_0000"
+# Kernel address space size.
+kernel-aspace-size = "0x0000_ffff_ffff_f000"
 # MMIO regions with format (`base_paddr`, `size`).
 mmio-regions = [
     ["0x20008000", "0x1000"], # uart8250 UART0

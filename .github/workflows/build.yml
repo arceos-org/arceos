@@ -64,7 +64,7 @@ jobs:
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=examples/httpserver
     - name: Build shell
-      continue-on-error: ${{ matrix.rust-toolchain == 'shell' }}
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=examples/shell
 
     - uses: ./.github/workflows/actions/setup-musl
