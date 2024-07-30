@@ -1,0 +1,20 @@
+[package]
+name = "axmm"
+version.workspace = true
+edition = "2021"
+authors = ["Yuekai Jia <equation618@gmail.com>"]
+description = "ArceOS virtual memory management module"
+license.workspace = true
+homepage.workspace = true
+repository = "https://github.com/arceos-org/arceos/tree/main/modules/axmm"
+documentation = "https://arceos-org.github.io/arceos/axmm/index.html"
+
+[dependencies]
+axhal = { workspace = true, features = ["paging"] }
+axconfig = { workspace = true }
+
+log = "0.4"
+axerrno = "0.1"
+lazyinit = "0.2"
+memory_addr = "0.2"
+kspin = "0.1"

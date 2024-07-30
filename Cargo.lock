@@ -409,6 +409,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "axmm"
+version = "0.1.0"
+dependencies = [
+ "axconfig",
+ "axerrno",
+ "axhal",
+ "kspin",
+ "lazyinit",
+ "log",
+ "memory_addr",
+]
+
+[[package]]
 name = "axnet"
 version = "0.1.0"
 dependencies = [
@@ -437,12 +450,12 @@ dependencies = [
  "axfs",
  "axhal",
  "axlog",
+ "axmm",
  "axnet",
  "axtask",
  "chrono",
  "crate_interface",
  "kernel_guard",
- "lazyinit",
  "percpu",
 ]
 
@@ -1003,9 +1016,9 @@ checksum = "dd8b5dd2ae5ed71462c540258bedcb51965123ad7e7ccf4b9a8cafaa4a63576d"
 
 [[package]]
 name = "page_table_entry"
-version = "0.1.2"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d268ed455b6d9bb54bdbd801838090823fdba51b46292503ac72ef25326ebab7"
+checksum = "d75bcbfcef16b8ede39c4ff975e8dc12556eece0554667ed5dd2dd3ba958a5ad"
 dependencies = [
  "aarch64-cpu",
  "bitflags 2.6.0",
@@ -1015,13 +1028,15 @@ dependencies = [
 
 [[package]]
 name = "page_table_multiarch"
-version = "0.1.2"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1445dd432e6b83ccf27008835c7963cfdc107852f6f15edc7a3523dcf4da1ac"
+checksum = "4235f68d9c35dd143b4c005764bd002361407687b9cc7c57465e9f8c77f7fbd3"
 dependencies = [
  "log",
  "memory_addr",
  "page_table_entry",
+ "riscv",
+ "x86",
 ]
 
 [[package]]

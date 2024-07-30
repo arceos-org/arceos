@@ -32,8 +32,8 @@ percpu = "0.1"
 memory_addr = "0.2"
 handler_table = "0.1"
 crate_interface = "0.1"
-page_table_entry = "0.1"
-page_table_multiarch = { version = "0.1", optional = true }
+page_table_entry = "0.3"
+page_table_multiarch = { version = "0.3", optional = true }
 axlog = { workspace = true }
 axconfig = { workspace = true }
 axalloc = { workspace = true, optional = true }

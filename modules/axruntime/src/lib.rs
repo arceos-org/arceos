@@ -146,10 +146,7 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     init_allocator();
 
     #[cfg(feature = "paging")]
-    {
-        info!("Initialize kernel page table...");
-        remap_kernel_memory().expect("remap kernel memoy failed");
-    }
+    axmm::init_memory_management();
 
     info!("Initialize platform devices...");
     axhal::platform_init();
@@ -232,32 +229,6 @@ fn init_allocator() {
                 .expect("add heap memory region failed");
         }
     }
-}
-
-#[cfg(feature = "paging")]
-fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
-    use axhal::mem::{memory_regions, phys_to_virt};
-    use axhal::paging::PageTable;
-    use lazyinit::LazyInit;
-
-    static KERNEL_PAGE_TABLE: LazyInit<PageTable> = LazyInit::new();
-
-    if axhal::cpu::this_cpu_is_bsp() {
-        let mut kernel_page_table = PageTable::try_new()?;
-        for r in memory_regions() {
-            kernel_page_table.map_region(
-                phys_to_virt(r.paddr),
-                r.paddr,
-                r.size,
-                r.flags.into(),
-                true,
-            )?;
-        }
-        KERNEL_PAGE_TABLE.init_once(kernel_page_table);
-    }
-
-    unsafe { axhal::arch::write_page_table_root(KERNEL_PAGE_TABLE.root_paddr()) };
-    Ok(())
 }
 
 #[cfg(feature = "irq")]
