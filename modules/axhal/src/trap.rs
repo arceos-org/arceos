@@ -4,7 +4,7 @@ use linkme::distributed_slice as def_trap_handler;
 use memory_addr::VirtAddr;
 use page_table_entry::MappingFlags;
 
-pub use linkme::distributed_slice as reg_trap_handler;
+pub use linkme::distributed_slice as register_trap_handler;
 
 /// A slice of IRQ handler functions.
 #[def_trap_handler]
