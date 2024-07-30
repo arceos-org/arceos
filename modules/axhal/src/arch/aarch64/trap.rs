@@ -1,6 +1,8 @@
 use core::arch::global_asm;
 
 use aarch64_cpu::registers::{ESR_EL1, FAR_EL1};
+use memory_addr::VirtAddr;
+use page_table_entry::MappingFlags;
 use tock_registers::interfaces::Readable;
 
 use super::TrapFrame;
@@ -36,37 +38,77 @@ fn invalid_exception(tf: &TrapFrame, kind: TrapKind, source: TrapSource) {
 }
 
 #[no_mangle]
+fn handle_irq_exception(_tf: &TrapFrame) {
+    handle_trap!(IRQ, 0);
+}
+
+fn handle_instruction_abort(tf: &TrapFrame, iss: u64, is_user: bool) {
+    let mut access_flags = MappingFlags::EXECUTE;
+    if is_user {
+        access_flags |= MappingFlags::USER;
+    }
+    let vaddr = VirtAddr::from(FAR_EL1.get() as usize);
+
+    // Only handle Translation fault and Permission fault
+    if !matches!(iss & 0b111100, 0b0100 | 0b1100) // IFSC or DFSC bits
+        || !handle_trap!(PAGE_FAULT, vaddr, access_flags, is_user)
+    {
+        panic!(
+            "Unhandled {} Instruction Abort @ {:#x}, fault_vaddr={:#x}, ISS={:#x} ({:?}):\n{:#x?}",
+            if is_user { "EL0" } else { "EL1" },
+            tf.elr,
+            vaddr,
+            iss,
+            access_flags,
+            tf,
+        );
+    }
+}
+
+fn handle_data_abort(tf: &TrapFrame, iss: u64, is_user: bool) {
+    let wnr = (iss & (1 << 6)) != 0; // WnR: Write not Read
+    let cm = (iss & (1 << 8)) != 0; // CM: Cache maintenance
+    let mut access_flags = if wnr & !cm {
+        MappingFlags::WRITE
+    } else {
+        MappingFlags::READ
+    };
+    if is_user {
+        access_flags |= MappingFlags::USER;
+    }
+    let vaddr = VirtAddr::from(FAR_EL1.get() as usize);
+
+    // Only handle Translation fault and Permission fault
+    if !matches!(iss & 0b111100, 0b0100 | 0b1100) // IFSC or DFSC bits
+        || !handle_trap!(PAGE_FAULT, vaddr, access_flags, is_user)
+    {
+        panic!(
+            "Unhandled {} Data Abort @ {:#x}, fault_vaddr={:#x}, ISS=0b{:08b} ({:?}):\n{:#x?}",
+            if is_user { "EL0" } else { "EL1" },
+            tf.elr,
+            vaddr,
+            iss,
+            access_flags,
+            tf,
+        );
+    }
+}
+
+#[no_mangle]
 fn handle_sync_exception(tf: &mut TrapFrame) {
     let esr = ESR_EL1.extract();
+    let iss = esr.read(ESR_EL1::ISS);
     match esr.read_as_enum(ESR_EL1::EC) {
+        Some(ESR_EL1::EC::Value::SVC64) => {
+            warn!("No syscall is supported currently!");
+        }
+        Some(ESR_EL1::EC::Value::InstrAbortLowerEL) => handle_instruction_abort(tf, iss, true),
+        Some(ESR_EL1::EC::Value::InstrAbortCurrentEL) => handle_instruction_abort(tf, iss, false),
+        Some(ESR_EL1::EC::Value::DataAbortLowerEL) => handle_data_abort(tf, iss, true),
+        Some(ESR_EL1::EC::Value::DataAbortCurrentEL) => handle_data_abort(tf, iss, false),
         Some(ESR_EL1::EC::Value::Brk64) => {
-            let iss = esr.read(ESR_EL1::ISS);
             debug!("BRK #{:#x} @ {:#x} ", iss, tf.elr);
             tf.elr += 4;
-        }
-        Some(ESR_EL1::EC::Value::SVC64) => {
-            warn!("No supervisor call is supported currently!");
-        }
-        Some(ESR_EL1::EC::Value::DataAbortLowerEL)
-        | Some(ESR_EL1::EC::Value::InstrAbortLowerEL) => {
-            let iss = esr.read(ESR_EL1::ISS);
-            warn!(
-                "EL0 Page Fault @ {:#x}, FAR={:#x}, ISS={:#x}",
-                tf.elr,
-                FAR_EL1.get(),
-                iss
-            );
-        }
-        Some(ESR_EL1::EC::Value::DataAbortCurrentEL)
-        | Some(ESR_EL1::EC::Value::InstrAbortCurrentEL) => {
-            let iss = esr.read(ESR_EL1::ISS);
-            panic!(
-                "EL1 Page Fault @ {:#x}, FAR={:#x}, ISS={:#x}:\n{:#x?}",
-                tf.elr,
-                FAR_EL1.get(),
-                iss,
-                tf,
-            );
         }
         _ => {
             panic!(
@@ -78,9 +120,4 @@ fn handle_sync_exception(tf: &mut TrapFrame) {
             );
         }
     }
-}
-
-#[no_mangle]
-fn handle_irq_exception(_tf: &TrapFrame) {
-    crate::trap::handle_irq_extern(0)
 }

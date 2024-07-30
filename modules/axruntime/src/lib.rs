@@ -24,7 +24,6 @@ extern crate axlog;
 
 #[cfg(all(target_os = "none", not(test)))]
 mod lang_items;
-mod trap;
 
 #[cfg(feature = "smp")]
 mod mp;

@@ -1,4 +1,7 @@
+use memory_addr::VirtAddr;
+use page_table_entry::MappingFlags;
 use riscv::register::scause::{self, Exception as E, Trap};
+use riscv::register::stval;
 
 use super::TrapFrame;
 
@@ -14,12 +17,36 @@ fn handle_breakpoint(sepc: &mut usize) {
     *sepc += 2
 }
 
+fn handle_page_fault(tf: &TrapFrame, mut access_flags: MappingFlags, is_user: bool) {
+    if is_user {
+        access_flags |= MappingFlags::USER;
+    }
+    let vaddr = VirtAddr::from(stval::read());
+    if !handle_trap!(PAGE_FAULT, vaddr, access_flags, is_user) {
+        panic!(
+            "Unhandled {} Page Fault @ {:#x}, fault_vaddr={:#x} ({:?}):\n{:#x?}",
+            if is_user { "User" } else { "Supervisor" },
+            tf.sepc,
+            vaddr,
+            access_flags,
+            tf,
+        );
+    }
+}
+
 #[no_mangle]
-fn riscv_trap_handler(tf: &mut TrapFrame, _from_user: bool) {
+fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
     let scause = scause::read();
     match scause.cause() {
+        Trap::Exception(E::LoadPageFault) => handle_page_fault(tf, MappingFlags::READ, from_user),
+        Trap::Exception(E::StorePageFault) => handle_page_fault(tf, MappingFlags::WRITE, from_user),
+        Trap::Exception(E::InstructionPageFault) => {
+            handle_page_fault(tf, MappingFlags::EXECUTE, from_user)
+        }
         Trap::Exception(E::Breakpoint) => handle_breakpoint(&mut tf.sepc),
-        Trap::Interrupt(_) => crate::trap::handle_irq_extern(scause.bits()),
+        Trap::Interrupt(_) => {
+            handle_trap!(IRQ, scause.bits());
+        }
         _ => {
             panic!(
                 "Unhandled trap {:?} @ {:#x}:\n{:#x?}",

@@ -2,9 +2,10 @@
 
 use handler_table::HandlerTable;
 
-use crate::platform::irq::MAX_IRQ_COUNT;
+use crate::platform::irq::{dispatch_irq, MAX_IRQ_COUNT};
+use crate::trap::{register_trap_handler, IRQ};
 
-pub use crate::platform::irq::{dispatch_irq, register_handler, set_enable};
+pub use crate::platform::irq::{register_handler, set_enable};
 
 /// The type if an IRQ handler.
 pub type IrqHandler = handler_table::Handler;
@@ -32,4 +33,12 @@ pub(crate) fn register_handler_common(irq_num: usize, handler: IrqHandler) -> bo
     }
     warn!("register handler for IRQ {} failed", irq_num);
     false
+}
+
+#[register_trap_handler(IRQ)]
+fn handler_irq(irq_num: usize) -> bool {
+    let guard = kernel_guard::NoPreempt::new();
+    dispatch_irq(irq_num);
+    drop(guard); // rescheduling may occur when preemption is re-enabled.
+    true
 }

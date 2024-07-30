@@ -15,7 +15,6 @@
     feature = "dummy-if-not-enabled"
 ))]
 extern crate alloc;
-extern crate axruntime;
 
 #[macro_use]
 mod macros;
@@ -338,4 +337,31 @@ pub mod io {
     define_api_type! {
         pub type AxPollState;
     }
+}
+
+/// Re-exports of ArceOS modules.
+///
+/// You should prefer to use other APIs rather than these modules. The modules
+/// here should only be used if other APIs do not meet your requirements.
+pub mod modules {
+    pub use axconfig;
+    pub use axhal;
+    pub use axlog;
+    pub use axruntime;
+    pub use axsync;
+
+    #[cfg(feature = "alloc")]
+    pub use axalloc;
+    #[cfg(feature = "display")]
+    pub use axdisplay;
+    #[cfg(any(feature = "fs", feature = "net", feature = "display"))]
+    pub use axdriver;
+    #[cfg(feature = "fs")]
+    pub use axfs;
+    #[cfg(feature = "paging")]
+    pub use axmm;
+    #[cfg(feature = "net")]
+    pub use axnet;
+    #[cfg(feature = "multitask")]
+    pub use axtask;
 }

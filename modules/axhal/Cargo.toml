@@ -22,6 +22,7 @@ default = []
 [dependencies]
 log = "0.4"
 cfg-if = "1.0"
+linkme = "0.3"
 bitflags = "2.6"
 static_assertions = "1.1.0"
 kernel_guard = "0.1"
@@ -31,7 +32,6 @@ lazyinit = "0.2"
 percpu = "0.1"
 memory_addr = "0.2"
 handler_table = "0.1"
-crate_interface = "0.1"
 page_table_entry = "0.3"
 page_table_multiarch = { version = "0.3", optional = true }
 axlog = { workspace = true }

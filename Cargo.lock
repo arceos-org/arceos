@@ -84,14 +84,17 @@ dependencies = [
  "axalloc",
  "axconfig",
  "axdisplay",
+ "axdriver",
  "axerrno",
  "axfeat",
  "axfs",
  "axhal",
  "axio",
  "axlog",
+ "axmm",
  "axnet",
  "axruntime",
+ "axsync",
  "axtask",
 ]
 
@@ -352,13 +355,13 @@ dependencies = [
  "axlog",
  "bitflags 2.6.0",
  "cfg-if",
- "crate_interface",
  "dw_apb_uart",
  "handler_table",
  "int_ratio",
  "kernel_guard",
  "kspin",
  "lazyinit",
+ "linkme",
  "log",
  "memory_addr",
  "page_table_entry",
@@ -948,6 +951,26 @@ dependencies = [
 name = "linked_list"
 version = "0.1.0"
 source = "git+https://github.com/arceos-org/linked_list.git?tag=v0.1.0#34c8db301882cecfeb56df0f7c89978dbc62f49a"
+
+[[package]]
+name = "linkme"
+version = "0.3.27"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ccb76662d78edc9f9bf56360d6919bdacc8b7761227727e5082f128eeb90bbf5"
+dependencies = [
+ "linkme-impl",
+]
+
+[[package]]
+name = "linkme-impl"
+version = "0.3.27"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8dccda732e04fa3baf2e17cf835bfe2601c7c2edafd64417c627dabae3a8cda"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.70",
+]
 
 [[package]]
 name = "lock_api"
