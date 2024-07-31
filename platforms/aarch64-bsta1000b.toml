@@ -9,6 +9,9 @@ family = "aarch64-bsta1000b"
 phys-memory-base = "0x80000000"
 # Size of the whole physical memory.
 phys-memory-size = "0x70000000"
+# Offset of bus address and phys address. some boards, the bus address is
+# different from the physical address.
+phys-bus-offset = "0"
 # Base physical address of the kernel image.
 kernel-base-paddr = "0x81000000"
 # Base virtual address of the kernel image.

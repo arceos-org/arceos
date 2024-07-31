@@ -25,11 +25,14 @@ pub use page::GlobalPage;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "slab")] {
-        use allocator::SlabByteAllocator as DefaultByteAllocator;
+        /// The default byte allocator.
+        pub type DefaultByteAllocator = allocator::SlabByteAllocator;
     } else if #[cfg(feature = "buddy")] {
-        use allocator::BuddyByteAllocator as DefaultByteAllocator;
+        /// The default byte allocator.
+        pub type DefaultByteAllocator = allocator::BuddyByteAllocator;
     } else if #[cfg(feature = "tlsf")] {
-        use allocator::TlsfByteAllocator as DefaultByteAllocator;
+        /// The default byte allocator.
+        pub type DefaultByteAllocator = allocator::TlsfByteAllocator;
     }
 }
 
@@ -99,9 +102,6 @@ impl GlobalAllocator {
     /// It firstly tries to allocate from the byte allocator. If there is no
     /// memory, it asks the page allocator for more memory and adds it to the
     /// byte allocator.
-    ///
-    /// `align_pow2` must be a power of 2, and the returned region bound will be
-    ///  aligned to it.
     pub fn alloc(&self, layout: Layout) -> AllocResult<NonNull<u8>> {
         // simple two-level allocator: if no heap memory, allocate from the page allocator.
         let mut balloc = self.balloc.lock();

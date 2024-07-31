@@ -16,6 +16,9 @@ kernel-base-vaddr = "0"
 # Linear mapping offset, for quick conversions between physical and virtual
 # addresses.
 phys-virt-offset = "0"
+# Offset of bus address and phys address. some boards, the bus address is
+# different from the physical address.
+phys-bus-offset = "0"
 # Kernel address space base.
 kernel-aspace-base = "0"
 # Kernel address space size.
