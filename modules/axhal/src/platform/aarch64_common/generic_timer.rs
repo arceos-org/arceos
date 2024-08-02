@@ -64,10 +64,11 @@ pub(crate) fn init_early() {
         use memory_addr::PhysAddr;
 
         const PL031_BASE: PhysAddr = PhysAddr::from(axconfig::RTC_PADDR);
+
+        let rtc = unsafe { Rtc::new(phys_to_virt(PL031_BASE).as_usize() as _) };
         // Get the current time in microseconds since the epoch (1970-01-01) from the aarch64 pl031 RTC.
         // Subtract the timer ticks to get the actual time when ArceOS was booted.
-        let epoch_time_nanos =
-            Rtc::new(phys_to_virt(PL031_BASE).as_usize()).get_unix_timestamp() * 1_000_000_000;
+        let epoch_time_nanos = rtc.get_unix_timestamp() as u64 * 1_000_000_000;
 
         unsafe {
             RTC_EPOCHOFFSET_NANOS = epoch_time_nanos - ticks_to_nanos(current_ticks());
