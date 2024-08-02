@@ -86,7 +86,7 @@ impl AddrSpace {
                 false, // flush_tlb_by_page
             )
             .map_err(paging_err_to_ax_err)?
-            .flush();
+            .flush_all();
         Ok(())
     }
 
