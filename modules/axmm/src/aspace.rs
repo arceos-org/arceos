@@ -160,11 +160,9 @@ impl AddrSpace {
             return ax_err!(InvalidInput, "address not aligned");
         }
 
-        // TODO
-        self.pt
-            .protect_region(start, size, flags, true)
-            .map_err(|_| AxError::BadState)?
-            .ignore();
+        self.areas
+            .protect(start, size, flags, &mut self.pt)
+            .map_err(mapping_err_to_ax_err)?;
         Ok(())
     }
 

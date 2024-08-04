@@ -85,6 +85,33 @@ impl Backend {
         true
     }
 
+    pub(crate) fn protect_alloc(
+        &self,
+        start: VirtAddr,
+        size: usize,
+        flags: MappingFlags,
+        pt: &mut PageTable,
+        _populate: bool,
+    ) -> bool {
+        debug!(
+            "protect_alloc: [{:#x}, {:#x}) {:?}",
+            start,
+            start + size,
+            flags
+        );
+        for addr in PageIter4K::new(start, start + size).unwrap() {
+            if let Ok((page_size, tlb)) = pt.protect(addr, flags) {
+                if page_size.is_huge() {
+                    return false;
+                }
+                tlb.flush();
+            } else {
+                // Do nothing if the page is not mapped.
+            }
+        }
+        true
+    }
+
     pub(crate) fn handle_page_fault_alloc(
         &self,
         vaddr: VirtAddr,
