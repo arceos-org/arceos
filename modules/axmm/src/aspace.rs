@@ -161,7 +161,20 @@ impl AddrSpace {
         }
 
         self.areas
-            .protect(start, size, flags, &mut self.pt)
+            .protect(
+                start,
+                size,
+                |old_flags: MappingFlags| -> Option<MappingFlags> {
+                    let rwe_flags =
+                        MappingFlags::READ | MappingFlags::WRITE | MappingFlags::EXECUTE;
+                    if (flags & rwe_flags) == (old_flags & rwe_flags) {
+                        return None;
+                    }
+                    let new_flags = (flags & rwe_flags) | (old_flags & !rwe_flags);
+                    Some(new_flags)
+                },
+                &mut self.pt,
+            )
             .map_err(mapping_err_to_ax_err)?;
         Ok(())
     }
