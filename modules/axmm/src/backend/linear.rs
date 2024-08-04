@@ -43,4 +43,18 @@ impl Backend {
             .map(|tlb| tlb.ignore()) // flush each page on unmap, do not flush the entire TLB.
             .is_ok()
     }
+
+    pub(crate) fn protect_linear(
+        &self,
+        start: VirtAddr,
+        size: usize,
+        flags: MappingFlags,
+        pt: &mut PageTable,
+        _pa_va_offset: usize,
+    ) -> bool {
+        debug!("protect_linear: [{:#x}, {:#x}) {:?}", start, start + size, flags);
+        pt.protect_region(start, size, flags, true)
+            .map(|tlb| tlb.ignore())
+            .is_ok()
+    }
 }

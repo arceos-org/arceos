@@ -52,6 +52,21 @@ impl MappingBackend<MappingFlags, PageTable> for Backend {
             Self::Alloc { populate } => self.unmap_alloc(start, size, pt, populate),
         }
     }
+
+    fn protect(
+        &self,
+        start: VirtAddr,
+        size: usize,
+        new_flags: MappingFlags,
+        pt: &mut PageTable,
+    ) -> bool {
+        match *self {
+            Self::Linear { pa_va_offset } => {
+                self.protect_linear(start, size, new_flags, pt, pa_va_offset)
+            }
+            Self::Alloc { populate } => self.protect_alloc(start, size, new_flags, pt, populate),
+        }
+    }
 }
 
 impl Backend {
