@@ -62,6 +62,9 @@ impl MappingBackend<MappingFlags, PageTable> for Backend {
         pt: &mut PageTable,
     ) -> Option<MappingFlags> {
         let rwe_flags = MappingFlags::READ | MappingFlags::WRITE | MappingFlags::EXECUTE;
+        if (new_flags & rwe_flags) == (old_flags & rwe_flags) {
+            return None;
+        }
         let new_flags = (new_flags & rwe_flags) | (old_flags & !rwe_flags);
         match *self {
             Self::Linear { pa_va_offset } => {
