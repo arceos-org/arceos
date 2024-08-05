@@ -28,6 +28,7 @@ alloc-slab = ["axalloc/slab"]
 alloc-buddy = ["axalloc/buddy"]
 paging = ["alloc", "axhal/paging", "axruntime/paging"]
 tls = ["alloc", "axhal/tls", "axruntime/tls", "axtask?/tls"]
+dma = ["alloc", "paging"]
 
 # Multi-threading and scheduler
 multitask = ["alloc", "axtask/multitask", "axsync/multitask", "axruntime/multitask"]

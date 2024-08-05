@@ -10,6 +10,7 @@ members = [
     "modules/axhal",
     "modules/axlog",
     "modules/axmm",
+    "modules/axdma",
     "modules/axnet",
     "modules/axruntime",
     "modules/axsync",
@@ -59,6 +60,7 @@ axnet = { path = "modules/axnet" }
 axruntime = { path = "modules/axruntime" }
 axsync = { path = "modules/axsync" }
 axtask = { path = "modules/axtask" }
+axdma = { path = "modules/axdma" }
 
 [profile.release]
 lto = true

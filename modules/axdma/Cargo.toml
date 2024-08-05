@@ -1,0 +1,22 @@
+[package]
+name = "axdma"
+edition = "2021"
+version.workspace = true
+authors = ["Zhour Rui <zrufo747@outlook.com>"]
+license.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
+repository = "https://github.com/arceos-org/arceos/tree/main/modules/axdma"
+documentation = "https://arceos-org.github.io/arceos/axdma/index.html"
+
+[dependencies]
+log = "0.4"
+kspin = "0.1"
+memory_addr = "0.2"
+axerrno = "0.1"
+allocator = { git = "https://github.com/arceos-org/allocator.git", tag = "v0.1.0" }
+axalloc = { workspace = true }
+axmm = { workspace = true }
+axconfig = { workspace = true }
+axhal = { workspace = true, features = ["paging"]  }

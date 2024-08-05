@@ -84,6 +84,7 @@ dependencies = [
  "axalloc",
  "axconfig",
  "axdisplay",
+ "axdma",
  "axdriver",
  "axerrno",
  "axfeat",
@@ -195,11 +196,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "axdma"
+version = "0.1.0"
+dependencies = [
+ "allocator",
+ "axalloc",
+ "axconfig",
+ "axerrno",
+ "axhal",
+ "axmm",
+ "kspin",
+ "log",
+ "memory_addr",
+]
+
+[[package]]
 name = "axdriver"
 version = "0.1.0"
 dependencies = [
  "axalloc",
  "axconfig",
+ "axdma",
  "axdriver_base",
  "axdriver_block",
  "axdriver_display",

@@ -28,6 +28,14 @@ macro_rules! define_api {
             }
         )+
     };
+    ($( $(#[$attr:meta])* $vis:vis unsafe fn $name:ident( $($arg:ident : $type:ty),* $(,)? ) $( -> $ret:ty )? ; )+) => {
+        $(
+            $(#[$attr])*
+            $vis unsafe fn $name( $($arg : $type),* ) $( -> $ret )? {
+                $crate::imp::$name( $($arg),* )
+            }
+        )+
+    };
     (
         @cfg $feature:literal;
         $( $(#[$attr:meta])* $vis:vis fn $name:ident( $($arg:ident : $type:ty),* $(,)? ) $( -> $ret:ty )? ; )+
@@ -47,6 +55,25 @@ macro_rules! define_api {
             }
         )+
     };
+    (
+        @cfg $feature:literal;
+        $( $(#[$attr:meta])* $vis:vis unsafe fn $name:ident( $($arg:ident : $type:ty),* $(,)? ) $( -> $ret:ty )? ; )+
+    ) => {
+        $(
+            #[cfg(feature = $feature)]
+            $(#[$attr])*
+            $vis unsafe fn $name( $($arg : $type),* ) $( -> $ret )? {
+                $crate::imp::$name( $($arg),* )
+            }
+
+            #[allow(unused_variables)]
+            #[cfg(all(feature = "dummy-if-not-enabled", not(feature = $feature)))]
+            $(#[$attr])*
+            $vis unsafe fn $name( $($arg : $type),* ) $( -> $ret )? {
+                unimplemented!(stringify!($name))
+            }
+        )+
+    };
 }
 
 macro_rules! _cfg_common {
@@ -60,6 +87,10 @@ macro_rules! _cfg_common {
 
 macro_rules! cfg_alloc {
     ($($item:item)*) => { _cfg_common!{ "alloc" $($item)* } }
+}
+
+macro_rules! cfg_dma {
+    ($($item:item)*) => { _cfg_common!{ "dma" $($item)* } }
 }
 
 macro_rules! cfg_fs {

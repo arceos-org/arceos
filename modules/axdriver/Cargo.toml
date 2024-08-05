@@ -26,7 +26,7 @@ virtio-net = ["net", "virtio", "axdriver_virtio/net"]
 virtio-gpu = ["display", "virtio", "axdriver_virtio/gpu"]
 ramdisk = ["block", "axdriver_block/ramdisk"]
 bcm2835-sdhci = ["block", "axdriver_block/bcm2835-sdhci"]
-ixgbe = ["net", "axdriver_net/ixgbe", "dep:axalloc", "dep:axhal"]
+ixgbe = ["net", "axdriver_net/ixgbe", "dep:axalloc", "dep:axhal", "dep:axdma"]
 # more devices example: e1000 = ["net", "axdriver_net/e1000"]
 
 default = ["bus-pci"]
@@ -43,3 +43,4 @@ axdriver_virtio = { git = "https://github.com/arceos-org/axdriver_crates.git", t
 axalloc = { workspace = true, optional = true }
 axhal = { workspace = true, optional = true }
 axconfig = { workspace = true, optional = true }
+axdma = { workspace = true, optional = true }
