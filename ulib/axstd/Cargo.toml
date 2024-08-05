@@ -34,6 +34,7 @@ alloc-tlsf = ["axfeat/alloc-tlsf"]
 alloc-slab = ["axfeat/alloc-slab"]
 alloc-buddy = ["axfeat/alloc-buddy"]
 paging = ["axfeat/paging"]
+dma = ["arceos_api/dma", "axfeat/dma"]
 tls = ["axfeat/tls"]
 
 # Multi-threading and scheduler

@@ -84,6 +84,7 @@ dependencies = [
  "axalloc",
  "axconfig",
  "axdisplay",
+ "axdma",
  "axdriver",
  "axerrno",
  "axfeat",
