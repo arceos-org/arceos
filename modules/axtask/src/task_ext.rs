@@ -134,13 +134,21 @@ macro_rules! def_task_ext {
 
         impl $crate::TaskExtRef<$task_ext_struct> for $crate::TaskInner {
             fn task_ext(&self) -> &$task_ext_struct {
-                unsafe { &*(self.task_ext_ptr() as *const $task_ext_struct) }
+                unsafe {
+                    let ptr = self.task_ext_ptr() as *const $task_ext_struct;
+                    assert!(!ptr.is_null());
+                    &*ptr
+                }
             }
         }
 
         impl $crate::TaskExtMut<$task_ext_struct> for $crate::TaskInner {
             fn task_ext_mut(&mut self) -> &mut $task_ext_struct {
-                unsafe { &mut *(self.task_ext_ptr() as *mut $task_ext_struct) }
+                unsafe {
+                    let ptr = self.task_ext_ptr() as *mut $task_ext_struct;
+                    assert!(!ptr.is_null());
+                    &mut *ptr
+                }
             }
         }
     };
