@@ -1023,8 +1023,7 @@ checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 [[package]]
 name = "memory_addr"
 version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c59c2ac537a8198f50fe22e8783bdbef2011cd133d5c03748d1e5bc85c9fc4d"
+source = "git+https://github.com/arceos-hypervisor/memory_addr.git?rev=95f42c9#95f42c9421f1bd08a674a66c61c00f896b1966ef"
 
 [[package]]
 name = "minimal-lexical"
