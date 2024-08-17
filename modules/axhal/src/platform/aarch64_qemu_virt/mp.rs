@@ -1,4 +1,4 @@
-use crate::mem::{virt_to_phys, PhysAddr, VirtAddr, va};
+use crate::mem::{va, virt_to_phys, PhysAddr, VirtAddr};
 
 /// Starts the given secondary CPU with its boot stack.
 pub fn start_secondary_cpu(cpu_id: usize, stack_top: PhysAddr) {

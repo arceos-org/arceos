@@ -1,4 +1,4 @@
-use memory_addr::{VirtAddr, va};
+use memory_addr::{va, VirtAddr};
 use page_table_entry::MappingFlags;
 use riscv::register::scause::{self, Exception as E, Trap};
 use riscv::register::stval;

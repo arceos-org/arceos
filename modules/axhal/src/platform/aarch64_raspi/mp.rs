@@ -1,4 +1,4 @@
-use crate::mem::{phys_to_virt, virt_to_phys, PhysAddr, VirtAddr, pa, va};
+use crate::mem::{pa, phys_to_virt, va, virt_to_phys, PhysAddr, VirtAddr};
 
 static mut SECONDARY_STACK_TOP: usize = 0;
 
@@ -22,12 +22,7 @@ unsafe extern "C" fn modify_stack_and_start() {
     );
 }
 
-pub static CPU_SPIN_TABLE: [PhysAddr; 4] = [
-    pa!(0xd8),
-    pa!(0xe0),
-    pa!(0xe8),
-    pa!(0xf0),
-];
+pub static CPU_SPIN_TABLE: [PhysAddr; 4] = [pa!(0xd8), pa!(0xe0), pa!(0xe8), pa!(0xf0)];
 
 /// Starts the given secondary CPU with its boot stack.
 pub fn start_secondary_cpu(cpu_id: usize, stack_top: PhysAddr) {
@@ -41,9 +36,7 @@ pub fn start_secondary_cpu(cpu_id: usize, stack_top: PhysAddr) {
 
         // set the boot stack of the given secondary CPU
         SECONDARY_STACK_TOP = stack_top.as_usize();
-        crate::arch::flush_dcache_line(va!(
-            core::ptr::addr_of!(SECONDARY_STACK_TOP) as usize
-        ));
+        crate::arch::flush_dcache_line(va!(core::ptr::addr_of!(SECONDARY_STACK_TOP) as usize));
     }
     aarch64_cpu::asm::sev();
 }

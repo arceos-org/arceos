@@ -10,7 +10,7 @@ use core::sync::atomic::AtomicUsize;
 use axhal::tls::TlsArea;
 
 use axhal::arch::TaskContext;
-use memory_addr::{align_up_4k, VirtAddr, va};
+use memory_addr::{align_up_4k, va, VirtAddr};
 
 use crate::{AxRunQueue, AxTask, AxTaskRef, WaitQueue};
 

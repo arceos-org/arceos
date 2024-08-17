@@ -1,5 +1,5 @@
 use core::{arch::asm, fmt};
-use memory_addr::{VirtAddr, va};
+use memory_addr::{va, VirtAddr};
 
 /// Saved registers when a trap (interrupt or exception) occurs.
 #[allow(missing_docs)]

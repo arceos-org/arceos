@@ -3,7 +3,7 @@
 use core::fmt;
 
 #[doc(no_inline)]
-pub use memory_addr::{PhysAddr, VirtAddr, PAGE_SIZE_4K, pa, va};
+pub use memory_addr::{pa, va, PhysAddr, VirtAddr, PAGE_SIZE_4K};
 
 bitflags::bitflags! {
     /// The flags of a physical memory region.

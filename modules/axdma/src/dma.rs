@@ -5,7 +5,7 @@ use axalloc::{global_allocator, DefaultByteAllocator};
 use axhal::{mem::virt_to_phys, paging::MappingFlags};
 use kspin::SpinNoIrq;
 use log::{debug, error};
-use memory_addr::{VirtAddr, PAGE_SIZE_4K, va};
+use memory_addr::{va, VirtAddr, PAGE_SIZE_4K};
 
 use crate::{phys_to_bus, BusAddr, DMAInfo};
 

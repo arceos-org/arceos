@@ -1,5 +1,5 @@
 use axconfig::{SMP, TASK_STACK_SIZE};
-use axhal::mem::{virt_to_phys, VirtAddr, va};
+use axhal::mem::{va, virt_to_phys, VirtAddr};
 use core::sync::atomic::{AtomicUsize, Ordering};
 
 #[link_section = ".bss.stack"]
