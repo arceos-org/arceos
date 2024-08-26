@@ -43,6 +43,6 @@ jobs:
     - name: Run app tests
       run: |
         make disk_img
-        git clone https://github.com/arceos-org/arceos-apps.git
+        git clone https://github.com/arceos-org/arceos-apps.git --branch update_memory_addr # temporary branch
         cd arceos-apps && cp ../Cargo.lock . && git reset --hard ${{ env.arceos-apps }} && cd ..
         make -C arceos-apps test AX_ROOT=$(pwd) ARCH=${{ matrix.arch }}
