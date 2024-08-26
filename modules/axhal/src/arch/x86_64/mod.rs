@@ -7,7 +7,7 @@ mod trap;
 
 use core::arch::asm;
 
-use memory_addr::{pa, PhysAddr, VirtAddr};
+use memory_addr::{pa, PhysAddr, VirtAddr, MemoryAddr};
 use x86::{controlregs, msr, tlb};
 use x86_64::instructions::interrupts;
 

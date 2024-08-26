@@ -30,7 +30,7 @@ kspin = "0.1"
 int_ratio = "0.1"
 lazyinit = "0.2"
 percpu = "0.1"
-memory_addr = "0.2"
+memory_addr = "0.3"
 handler_table = "0.1"
 page_table_entry = "0.3"
 page_table_multiarch = { version = "0.3", optional = true }
