@@ -1,6 +1,6 @@
 // TODO: get memory regions from multiboot info.
 
-use crate::mem::{pa, MemRegion, MemRegionFlags, PhysAddr};
+use crate::mem::{pa, MemRegion, MemRegionFlags};
 
 /// Returns platform-specific memory regions.
 pub(crate) fn platform_regions() -> impl Iterator<Item = MemRegion> {

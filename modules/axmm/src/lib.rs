@@ -15,7 +15,7 @@ use axhal::mem::phys_to_virt;
 use axhal::paging::PagingError;
 use kspin::SpinNoIrq;
 use lazyinit::LazyInit;
-use memory_addr::{va, PhysAddr, VirtAddr};
+use memory_addr::{va, PhysAddr};
 
 static KERNEL_ASPACE: LazyInit<SpinNoIrq<AddrSpace>> = LazyInit::new();
 
