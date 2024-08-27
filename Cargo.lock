@@ -1023,7 +1023,8 @@ checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 [[package]]
 name = "memory_addr"
 version = "0.3.0"
-source = "git+https://github.com/arceos-org/memory_addr.git?rev=46c06e5#46c06e57cd4104f028a1a4844bbd656a79965c8e"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2ca25419c2b34080d526d6836a53dcab129767ab6a9904587c87265ae6d41aa9"
 
 [[package]]
 name = "minimal-lexical"
@@ -1058,8 +1059,9 @@ checksum = "dd8b5dd2ae5ed71462c540258bedcb51965123ad7e7ccf4b9a8cafaa4a63576d"
 
 [[package]]
 name = "page_table_entry"
-version = "0.3.3"
-source = "git+https://github.com/arceos-org/page_table_multiarch.git?rev=feb4aa3#feb4aa3fa4589b5738a3ff40ff875870e4ce2614"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4d911cfe86a8529a3fabfafa39a857a57cb8d00046ddca14fa609b289303bc7c"
 dependencies = [
  "aarch64-cpu",
  "bitflags 2.6.0",
@@ -1069,8 +1071,9 @@ dependencies = [
 
 [[package]]
 name = "page_table_multiarch"
-version = "0.3.3"
-source = "git+https://github.com/arceos-org/page_table_multiarch.git?rev=feb4aa3#feb4aa3fa4589b5738a3ff40ff875870e4ce2614"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "43068c68a7fee18c1749befb515f69f6b1fcc18a4908e0d96e64fc51258d301a"
 dependencies = [
  "log",
  "memory_addr",

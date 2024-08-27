@@ -64,9 +64,3 @@ axdma = { path = "modules/axdma" }
 
 [profile.release]
 lto = true
-
-[patch.crates-io]
-# todo: update to new version of `memory_addr` on `crates.io` once it get released
-memory_addr = { git = "https://github.com/arceos-org/memory_addr.git", rev = "46c06e5" }
-page_table_entry = { git = "https://github.com/arceos-org/page_table_multiarch.git", rev = "feb4aa3" }
-page_table_multiarch = { git = "https://github.com/arceos-org/page_table_multiarch.git", rev = "feb4aa3" }
