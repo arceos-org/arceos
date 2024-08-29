@@ -4,7 +4,7 @@ pub(crate) mod trap;
 use core::arch::asm;
 
 use aarch64_cpu::registers::{DAIF, TPIDR_EL0, TTBR0_EL1, TTBR1_EL1, VBAR_EL1};
-use memory_addr::{PhysAddr, VirtAddr};
+use memory_addr::{pa, PhysAddr, VirtAddr};
 use tock_registers::interfaces::{Readable, Writeable};
 
 pub use self::context::{FpState, TaskContext, TrapFrame};
@@ -48,13 +48,13 @@ pub fn halt() {
 #[inline]
 pub fn read_page_table_root() -> PhysAddr {
     let root = TTBR1_EL1.get();
-    PhysAddr::from(root as usize)
+    pa!(root as usize)
 }
 
 /// Reads the `TTBR0_EL1` register.
 pub fn read_page_table_root0() -> PhysAddr {
     let root = TTBR0_EL1.get();
-    PhysAddr::from(root as usize)
+    pa!(root as usize)
 }
 
 /// Writes the register to update the current page table root.

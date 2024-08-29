@@ -2,7 +2,7 @@
 
 use kspin::SpinNoIrq;
 use lazyinit::LazyInit;
-use memory_addr::PhysAddr;
+use memory_addr::{pa, PhysAddr};
 use x2apic::ioapic::IoApic;
 use x2apic::lapic::{xapic_base, LocalApic, LocalApicBuilder};
 use x86_64::instructions::port::Port;
@@ -22,7 +22,7 @@ pub const MAX_IRQ_COUNT: usize = 256;
 /// The timer IRQ number.
 pub const TIMER_IRQ_NUM: usize = APIC_TIMER_VECTOR as usize;
 
-const IO_APIC_BASE: PhysAddr = PhysAddr::from(0xFEC0_0000);
+const IO_APIC_BASE: PhysAddr = pa!(0xFEC0_0000);
 
 static mut LOCAL_APIC: Option<LocalApic> = None;
 static mut IS_X2APIC: bool = false;
@@ -103,7 +103,7 @@ pub(super) fn init_primary() {
         unsafe { IS_X2APIC = true };
     } else {
         info!("Using xAPIC.");
-        let base_vaddr = phys_to_virt(PhysAddr::from(unsafe { xapic_base() } as usize));
+        let base_vaddr = phys_to_virt(pa!(unsafe { xapic_base() } as usize));
         builder.set_xapic_base(base_vaddr.as_usize() as u64);
     }
 

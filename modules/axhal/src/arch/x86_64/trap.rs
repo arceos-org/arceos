@@ -1,4 +1,4 @@
-use memory_addr::VirtAddr;
+use memory_addr::{va, VirtAddr};
 use page_table_entry::MappingFlags;
 use x86::{controlregs::cr2, irq::*};
 use x86_64::structures::idt::PageFaultErrorCode;
@@ -13,7 +13,7 @@ const IRQ_VECTOR_END: u8 = 0xff;
 fn handle_page_fault(tf: &TrapFrame) {
     let access_flags = err_code_to_flags(tf.error_code)
         .unwrap_or_else(|e| panic!("Invalid #PF error code: {:#x}", e));
-    let vaddr = VirtAddr::from(unsafe { cr2() });
+    let vaddr = va!(unsafe { cr2() });
     if !handle_trap!(PAGE_FAULT, vaddr, access_flags, tf.is_user()) {
         panic!(
             "Unhandled {} #PF @ {:#x}, fault_vaddr={:#x}, error_code={:#x} ({:?}):\n{:#x?}",

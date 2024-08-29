@@ -3,9 +3,9 @@
 use crate::mem::phys_to_virt;
 use dw_apb_uart::DW8250;
 use kspin::SpinNoIrq;
-use memory_addr::PhysAddr;
+use memory_addr::{pa, PhysAddr};
 
-const UART_BASE: PhysAddr = PhysAddr::from(axconfig::UART_PADDR);
+const UART_BASE: PhysAddr = pa!(axconfig::UART_PADDR);
 
 static UART: SpinNoIrq<DW8250> = SpinNoIrq::new(DW8250::new(phys_to_virt(UART_BASE).as_usize()));
 

@@ -32,7 +32,7 @@ ixgbe = ["net", "axdriver_net/ixgbe", "dep:axalloc", "dep:axhal", "dep:axdma"]
 default = ["bus-pci"]
 
 [dependencies]
-log = "0.4"
+log = "0.4.21"
 cfg-if = "1.0"
 axdriver_base = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.0" }
 axdriver_block = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.0", optional = true }

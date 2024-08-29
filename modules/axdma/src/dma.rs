@@ -5,7 +5,7 @@ use axalloc::{global_allocator, DefaultByteAllocator};
 use axhal::{mem::virt_to_phys, paging::MappingFlags};
 use kspin::SpinNoIrq;
 use log::{debug, error};
-use memory_addr::{VirtAddr, PAGE_SIZE_4K};
+use memory_addr::{va, VirtAddr, PAGE_SIZE_4K};
 
 use crate::{phys_to_bus, BusAddr, DMAInfo};
 
@@ -40,7 +40,7 @@ impl DmaAllocator {
         let mut is_expanded = false;
         loop {
             if let Ok(data) = self.alloc.alloc(layout) {
-                let cpu_addr = VirtAddr::from(data.as_ptr() as usize);
+                let cpu_addr = va!(data.as_ptr() as usize);
                 return Ok(DMAInfo {
                     cpu_addr: data,
                     bus_addr: virt_to_bus(cpu_addr),
@@ -55,7 +55,7 @@ impl DmaAllocator {
                 let num_pages = 4.min(available_pages);
                 let expand_size = num_pages * PAGE_SIZE_4K;
                 let vaddr_raw = global_allocator().alloc_pages(num_pages, PAGE_SIZE_4K)?;
-                let vaddr = VirtAddr::from(vaddr_raw);
+                let vaddr = va!(vaddr_raw);
                 self.update_flags(
                     vaddr,
                     num_pages,
@@ -73,7 +73,7 @@ impl DmaAllocator {
         let num_pages = layout_pages(&layout);
         let vaddr_raw =
             global_allocator().alloc_pages(num_pages, PAGE_SIZE_4K.max(layout.align()))?;
-        let vaddr = VirtAddr::from(vaddr_raw);
+        let vaddr = va!(vaddr_raw);
         self.update_flags(
             vaddr,
             num_pages,
@@ -108,7 +108,7 @@ impl DmaAllocator {
             let virt_raw = dma.cpu_addr.as_ptr() as usize;
             global_allocator().dealloc_pages(virt_raw, num_pages);
             let _ = self.update_flags(
-                VirtAddr::from(virt_raw),
+                va!(virt_raw),
                 num_pages,
                 MappingFlags::READ | MappingFlags::WRITE,
             );

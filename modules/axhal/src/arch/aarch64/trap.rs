@@ -1,7 +1,7 @@
 use core::arch::global_asm;
 
 use aarch64_cpu::registers::{ESR_EL1, FAR_EL1};
-use memory_addr::VirtAddr;
+use memory_addr::{va, VirtAddr};
 use page_table_entry::MappingFlags;
 use tock_registers::interfaces::Readable;
 
@@ -47,7 +47,7 @@ fn handle_instruction_abort(tf: &TrapFrame, iss: u64, is_user: bool) {
     if is_user {
         access_flags |= MappingFlags::USER;
     }
-    let vaddr = VirtAddr::from(FAR_EL1.get() as usize);
+    let vaddr = va!(FAR_EL1.get() as usize);
 
     // Only handle Translation fault and Permission fault
     if !matches!(iss & 0b111100, 0b0100 | 0b1100) // IFSC or DFSC bits
@@ -76,7 +76,7 @@ fn handle_data_abort(tf: &TrapFrame, iss: u64, is_user: bool) {
     if is_user {
         access_flags |= MappingFlags::USER;
     }
-    let vaddr = VirtAddr::from(FAR_EL1.get() as usize);
+    let vaddr = va!(FAR_EL1.get() as usize);
 
     // Only handle Translation fault and Permission fault
     if !matches!(iss & 0b111100, 0b0100 | 0b1100) // IFSC or DFSC bits

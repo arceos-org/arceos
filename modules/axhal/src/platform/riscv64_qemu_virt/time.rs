@@ -39,10 +39,10 @@ pub(super) fn init_early() {
     #[cfg(feature = "rtc")]
     if axconfig::RTC_PADDR != 0 {
         use crate::mem::phys_to_virt;
-        use memory_addr::PhysAddr;
+        use memory_addr::{pa, PhysAddr};
         use riscv_goldfish::Rtc;
 
-        const GOLDFISH_BASE: PhysAddr = PhysAddr::from(axconfig::RTC_PADDR);
+        const GOLDFISH_BASE: PhysAddr = pa!(axconfig::RTC_PADDR);
         // Get the current time in microseconds since the epoch (1970-01-01) from the riscv RTC.
         // Subtract the timer ticks to get the actual time when ArceOS was booted.
         let epoch_time_nanos =

@@ -1,6 +1,6 @@
 use aarch64_cpu::{asm, asm::barrier, registers::*};
 use core::ptr::addr_of_mut;
-use memory_addr::PhysAddr;
+use memory_addr::{pa, PhysAddr};
 use page_table_entry::aarch64::{MemAttr, A64PTE};
 use tock_registers::interfaces::{ReadWriteable, Readable, Writeable};
 
@@ -78,7 +78,7 @@ unsafe fn init_mmu() {
     barrier::isb(barrier::SY);
 
     // Set both TTBR0 and TTBR1
-    let root_paddr = PhysAddr::from(BOOT_PT_L0.as_ptr() as usize).as_usize() as _;
+    let root_paddr = pa!(BOOT_PT_L0.as_ptr() as usize).as_usize() as _;
     TTBR0_EL1.set(root_paddr);
     TTBR1_EL1.set(root_paddr);
 

@@ -1,5 +1,5 @@
 use core::{arch::asm, fmt};
-use memory_addr::VirtAddr;
+use memory_addr::{va, VirtAddr};
 
 /// Saved registers when a trap (interrupt or exception) occurs.
 #[allow(missing_docs)]
@@ -147,7 +147,7 @@ impl TaskContext {
     /// Creates a new default context for a new task.
     pub const fn new() -> Self {
         Self {
-            kstack_top: VirtAddr::from(0),
+            kstack_top: va!(0),
             rsp: 0,
             fs_base: 0,
             #[cfg(feature = "fp_simd")]

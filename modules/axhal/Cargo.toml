@@ -20,7 +20,7 @@ rtc = ["x86_rtc", "riscv_goldfish", "arm_pl031"]
 default = []
 
 [dependencies]
-log = "0.4"
+log = "0.4.21"
 cfg-if = "1.0"
 linkme = "0.3"
 bitflags = "2.6"
@@ -30,10 +30,10 @@ kspin = "0.1"
 int_ratio = "0.1"
 lazyinit = "0.2"
 percpu = "0.1"
-memory_addr = "0.2"
+memory_addr = "0.3"
 handler_table = "0.1"
-page_table_entry = "0.3"
-page_table_multiarch = { version = "0.3", optional = true }
+page_table_entry = "0.4"
+page_table_multiarch = { version = "0.4", optional = true }
 axlog = { workspace = true }
 axconfig = { workspace = true }
 axalloc = { workspace = true, optional = true }

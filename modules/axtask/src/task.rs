@@ -10,7 +10,7 @@ use core::sync::atomic::AtomicUsize;
 use axhal::tls::TlsArea;
 
 use axhal::arch::TaskContext;
-use memory_addr::{align_up_4k, VirtAddr};
+use memory_addr::{align_up_4k, va, VirtAddr};
 
 use crate::{AxRunQueue, AxTask, AxTaskRef, WaitQueue};
 
@@ -147,9 +147,9 @@ impl TaskInner {
         let kstack = TaskStack::alloc(align_up_4k(stack_size));
 
         #[cfg(feature = "tls")]
-        let tls = VirtAddr::from(t.tls.tls_ptr() as usize);
+        let tls = va!(t.tls.tls_ptr() as usize);
         #[cfg(not(feature = "tls"))]
-        let tls = VirtAddr::from(0);
+        let tls = va!(0);
 
         t.entry = Some(Box::into_raw(Box::new(entry)));
         t.ctx.get_mut().init(task_entry as usize, kstack.top(), tls);

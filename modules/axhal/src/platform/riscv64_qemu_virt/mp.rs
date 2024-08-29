@@ -1,4 +1,4 @@
-use crate::mem::{virt_to_phys, PhysAddr, VirtAddr};
+use crate::mem::{va, virt_to_phys, PhysAddr, VirtAddr};
 
 /// Starts the given secondary CPU with its boot stack.
 pub fn start_secondary_cpu(hartid: usize, stack_top: PhysAddr) {
@@ -9,6 +9,6 @@ pub fn start_secondary_cpu(hartid: usize, stack_top: PhysAddr) {
         warn!("HSM SBI extension is not supported for current SEE.");
         return;
     }
-    let entry = virt_to_phys(VirtAddr::from(_start_secondary as usize));
+    let entry = virt_to_phys(va!(_start_secondary as usize));
     sbi_rt::hart_start(hartid, entry.as_usize(), stack_top.as_usize());
 }

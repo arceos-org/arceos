@@ -1022,9 +1022,9 @@ checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 
 [[package]]
 name = "memory_addr"
-version = "0.2.1"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c59c2ac537a8198f50fe22e8783bdbef2011cd133d5c03748d1e5bc85c9fc4d"
+checksum = "2ca25419c2b34080d526d6836a53dcab129767ab6a9904587c87265ae6d41aa9"
 
 [[package]]
 name = "minimal-lexical"
@@ -1059,9 +1059,9 @@ checksum = "dd8b5dd2ae5ed71462c540258bedcb51965123ad7e7ccf4b9a8cafaa4a63576d"
 
 [[package]]
 name = "page_table_entry"
-version = "0.3.2"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b1e80f2e33e2ba832719660f6fb216c8942fb61a7f715b7c4e9669dcef3b37a"
+checksum = "4d911cfe86a8529a3fabfafa39a857a57cb8d00046ddca14fa609b289303bc7c"
 dependencies = [
  "aarch64-cpu",
  "bitflags 2.6.0",
@@ -1071,9 +1071,9 @@ dependencies = [
 
 [[package]]
 name = "page_table_multiarch"
-version = "0.3.2"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b140289882bdff057ffdee421ae081eb9216be293621fb6f60076ed3f7cfb74"
+checksum = "43068c68a7fee18c1749befb515f69f6b1fcc18a4908e0d96e64fc51258d301a"
 dependencies = [
  "log",
  "memory_addr",

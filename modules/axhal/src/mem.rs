@@ -3,7 +3,7 @@
 use core::fmt;
 
 #[doc(no_inline)]
-pub use memory_addr::{PhysAddr, VirtAddr, PAGE_SIZE_4K};
+pub use memory_addr::{pa, va, MemoryAddr, PhysAddr, VirtAddr, PAGE_SIZE_4K};
 
 bitflags::bitflags! {
     /// The flags of a physical memory region.
@@ -54,7 +54,7 @@ pub struct MemRegion {
 /// [`PHYS_VIRT_OFFSET`]: axconfig::PHYS_VIRT_OFFSET
 #[inline]
 pub const fn virt_to_phys(vaddr: VirtAddr) -> PhysAddr {
-    PhysAddr::from(vaddr.as_usize() - axconfig::PHYS_VIRT_OFFSET)
+    pa!(vaddr.as_usize() - axconfig::PHYS_VIRT_OFFSET)
 }
 
 /// Converts a physical address to a virtual address.
@@ -67,7 +67,7 @@ pub const fn virt_to_phys(vaddr: VirtAddr) -> PhysAddr {
 /// [`PHYS_VIRT_OFFSET`]: axconfig::PHYS_VIRT_OFFSET
 #[inline]
 pub const fn phys_to_virt(paddr: PhysAddr) -> VirtAddr {
-    VirtAddr::from(paddr.as_usize() + axconfig::PHYS_VIRT_OFFSET)
+    va!(paddr.as_usize() + axconfig::PHYS_VIRT_OFFSET)
 }
 
 /// Returns an iterator over all physical memory regions.
@@ -130,7 +130,7 @@ pub(crate) fn default_mmio_regions() -> impl Iterator<Item = MemRegion> {
 #[allow(dead_code)]
 pub(crate) fn default_free_regions() -> impl Iterator<Item = MemRegion> {
     let start = virt_to_phys((_ekernel as usize).into()).align_up_4k();
-    let end = PhysAddr::from(axconfig::PHYS_MEMORY_END).align_down_4k();
+    let end = pa!(axconfig::PHYS_MEMORY_END).align_down_4k();
     core::iter::once(MemRegion {
         paddr: start,
         size: end.as_usize() - start.as_usize(),

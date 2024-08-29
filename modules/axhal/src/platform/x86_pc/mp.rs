@@ -1,8 +1,8 @@
-use crate::mem::{phys_to_virt, PhysAddr, PAGE_SIZE_4K};
+use crate::mem::{pa, phys_to_virt, PhysAddr, PAGE_SIZE_4K};
 use crate::time::{busy_wait, Duration};
 
 const START_PAGE_IDX: u8 = 6;
-const START_PAGE_PADDR: PhysAddr = PhysAddr::from(START_PAGE_IDX as usize * PAGE_SIZE_4K);
+const START_PAGE_PADDR: PhysAddr = pa!(START_PAGE_IDX as usize * PAGE_SIZE_4K);
 
 core::arch::global_asm!(
     include_str!("ap_start.S"),

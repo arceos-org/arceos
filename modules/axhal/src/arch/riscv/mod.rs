@@ -4,7 +4,7 @@ mod macros;
 mod context;
 mod trap;
 
-use memory_addr::{PhysAddr, VirtAddr};
+use memory_addr::{pa, PhysAddr, VirtAddr};
 use riscv::asm;
 use riscv::register::{satp, sstatus, stvec};
 
@@ -48,7 +48,7 @@ pub fn halt() {
 /// Returns the physical address of the page table root.
 #[inline]
 pub fn read_page_table_root() -> PhysAddr {
-    PhysAddr::from(satp::read().ppn() << 12)
+    pa!(satp::read().ppn() << 12)
 }
 
 /// Writes the register to update the current page table root.

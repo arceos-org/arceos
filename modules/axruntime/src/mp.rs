@@ -1,5 +1,5 @@
 use axconfig::{SMP, TASK_STACK_SIZE};
-use axhal::mem::{virt_to_phys, VirtAddr};
+use axhal::mem::{va, virt_to_phys};
 use core::sync::atomic::{AtomicUsize, Ordering};
 
 #[link_section = ".bss.stack"]
@@ -11,7 +11,7 @@ pub fn start_secondary_cpus(primary_cpu_id: usize) {
     let mut logic_cpu_id = 0;
     for i in 0..SMP {
         if i != primary_cpu_id {
-            let stack_top = virt_to_phys(VirtAddr::from(unsafe {
+            let stack_top = virt_to_phys(va!(unsafe {
                 SECONDARY_BOOT_STACK[logic_cpu_id].as_ptr_range().end as usize
             }));
 

@@ -10,7 +10,7 @@ repository = "https://github.com/arceos-org/arceos/tree/main/modules/axdisplay"
 documentation = "https://arceos-org.github.io/arceos/axdisplay/index.html"
 
 [dependencies]
-log = "0.4"
+log = "0.4.21"
 lazyinit = "0.2"
 axdriver = { workspace = true, features = ["display"] }
 axsync = { workspace = true }

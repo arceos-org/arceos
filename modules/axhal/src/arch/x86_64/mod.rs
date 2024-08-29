@@ -7,7 +7,7 @@ mod trap;
 
 use core::arch::asm;
 
-use memory_addr::{PhysAddr, VirtAddr};
+use memory_addr::{pa, MemoryAddr, PhysAddr, VirtAddr};
 use x86::{controlregs, msr, tlb};
 use x86_64::instructions::interrupts;
 
@@ -60,7 +60,7 @@ pub fn halt() {
 /// Returns the physical address of the page table root.
 #[inline]
 pub fn read_page_table_root() -> PhysAddr {
-    PhysAddr::from(unsafe { controlregs::cr3() } as usize).align_down_4k()
+    pa!(unsafe { controlregs::cr3() } as usize).align_down_4k()
 }
 
 /// Writes the register to update the current page table root.

@@ -2,7 +2,7 @@ use core::fmt;
 
 use axerrno::{ax_err, AxError, AxResult};
 use axhal::paging::{MappingFlags, PageTable};
-use memory_addr::{is_aligned_4k, PhysAddr, VirtAddr, VirtAddrRange};
+use memory_addr::{is_aligned_4k, pa, MemoryAddr, PhysAddr, VirtAddr, VirtAddrRange};
 
 use crate::paging_err_to_ax_err;
 
@@ -24,7 +24,7 @@ impl AddrSpace {
     }
 
     /// Returns the address space size.
-    pub const fn size(&self) -> usize {
+    pub fn size(&self) -> usize {
         self.va_range.size()
     }
 
@@ -39,7 +39,7 @@ impl AddrSpace {
     }
 
     /// Checks if the address space contains the given address range.
-    pub const fn contains_range(&self, start: VirtAddr, size: usize) -> bool {
+    pub fn contains_range(&self, start: VirtAddr, size: usize) -> bool {
         self.va_range
             .contains_range(VirtAddrRange::from_start_size(start, size))
     }
@@ -79,7 +79,7 @@ impl AddrSpace {
         self.pt
             .map_region(
                 start_vaddr,
-                |va| PhysAddr::from(va.as_usize() - offset),
+                |va| pa!(va.as_usize() - offset),
                 size,
                 flags,
                 false, // allow_huge

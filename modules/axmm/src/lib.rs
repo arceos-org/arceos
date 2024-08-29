@@ -15,7 +15,7 @@ use axhal::mem::phys_to_virt;
 use axhal::paging::PagingError;
 use kspin::SpinNoIrq;
 use lazyinit::LazyInit;
-use memory_addr::{PhysAddr, VirtAddr};
+use memory_addr::{va, PhysAddr};
 
 static KERNEL_ASPACE: LazyInit<SpinNoIrq<AddrSpace>> = LazyInit::new();
 
@@ -33,7 +33,7 @@ fn paging_err_to_ax_err(err: PagingError) -> AxError {
 /// Creates a new address space for kernel itself.
 pub fn new_kernel_aspace() -> AxResult<AddrSpace> {
     let mut aspace = AddrSpace::new_empty(
-        VirtAddr::from(axconfig::KERNEL_ASPACE_BASE),
+        va!(axconfig::KERNEL_ASPACE_BASE),
         axconfig::KERNEL_ASPACE_SIZE,
     )?;
     for r in axhal::mem::memory_regions() {
