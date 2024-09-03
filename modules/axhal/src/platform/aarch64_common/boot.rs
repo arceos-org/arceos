@@ -1,6 +1,6 @@
 use aarch64_cpu::{asm, asm::barrier, registers::*};
 use core::ptr::addr_of_mut;
-use memory_addr::{pa, PhysAddr};
+use memory_addr::pa;
 use page_table_entry::aarch64::{MemAttr, A64PTE};
 use tock_registers::interfaces::{ReadWriteable, Readable, Writeable};
 

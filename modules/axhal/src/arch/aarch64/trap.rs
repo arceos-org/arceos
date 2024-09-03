@@ -1,7 +1,7 @@
 use core::arch::global_asm;
 
 use aarch64_cpu::registers::{ESR_EL1, FAR_EL1};
-use memory_addr::{va, VirtAddr};
+use memory_addr::va;
 use page_table_entry::MappingFlags;
 use tock_registers::interfaces::Readable;
 
