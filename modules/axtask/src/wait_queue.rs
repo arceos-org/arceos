@@ -84,14 +84,18 @@ impl WaitQueue {
         F: Fn() -> bool,
     {
         loop {
-            let mut rq_locked = current_run_queue().scheduler().lock();
+            let mut wq = self.queue.lock();
             if condition() {
                 break;
             }
-            rq_locked.block_current(|task| {
-                task.set_in_wait_queue(true);
-                self.queue.lock().push_back(task)
-            });
+            current_run_queue()
+                .scheduler()
+                .lock()
+                .block_current(|task| {
+                    task.set_in_wait_queue(true);
+                    wq.push_back(task);
+                    drop(wq)
+                });
         }
         self.cancel_events(crate::current());
     }
@@ -100,7 +104,7 @@ impl WaitQueue {
     /// notify it, or the given duration has elapsed.
     #[cfg(feature = "irq")]
     pub fn wait_timeout(&self, dur: core::time::Duration) -> bool {
-        let mut rq_locked = current_run_queue().scheduler().lock();
+        let mut wq = self.queue.lock();
         let curr = crate::current();
         let deadline = axhal::time::wall_time() + dur;
         debug!(
@@ -110,10 +114,14 @@ impl WaitQueue {
         );
         crate::timers::set_alarm_wakeup(deadline, curr.clone());
 
-        rq_locked.block_current(|task| {
-            task.set_in_wait_queue(true);
-            self.queue.lock().push_back(task)
-        });
+        current_run_queue()
+            .scheduler()
+            .lock()
+            .block_current(|task| {
+                task.set_in_wait_queue(true);
+                wq.push_back(task);
+                drop(wq)
+            });
         let timeout = curr.in_wait_queue(); // still in the wait queue, must have timed out
         self.cancel_events(curr);
         timeout
@@ -140,15 +148,20 @@ impl WaitQueue {
 
         let mut timeout = true;
         while axhal::time::wall_time() < deadline {
-            let mut rq_locked = current_run_queue().scheduler().lock();
+            let mut wq = self.queue.lock();
+            // let mut rq_locked = current_run_queue().scheduler().lock();
             if condition() {
                 timeout = false;
                 break;
             }
-            rq_locked.block_current(|task| {
-                task.set_in_wait_queue(true);
-                self.queue.lock().push_back(task)
-            });
+            current_run_queue()
+                .scheduler()
+                .lock()
+                .block_current(|task| {
+                    task.set_in_wait_queue(true);
+                    wq.push_back(task);
+                    drop(wq)
+                });
         }
         self.cancel_events(curr);
         timeout

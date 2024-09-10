@@ -298,13 +298,15 @@ impl AxRunQueueInner {
         assert!(curr.is_running());
         assert!(!curr.is_idle());
 
+        wait_queue_push(curr.clone());
+
         // we must not block current task with preemption disabled.
         #[cfg(feature = "preempt")]
         assert!(curr.can_preempt(1));
 
         curr.set_state(TaskState::Blocked);
         current_run_queue().num_tasks.fetch_sub(1, Ordering::AcqRel);
-        wait_queue_push(curr.clone());
+        
         self.resched(false);
     }
 
