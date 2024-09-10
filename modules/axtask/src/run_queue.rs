@@ -289,7 +289,7 @@ impl AxRunQueueInner {
         }
     }
 
-    pub fn block_current<F>(&mut self, wait_queue_push: F)
+    pub fn block_current<F>(&mut self, wait_queue_push_locked: F)
     where
         F: FnOnce(AxTaskRef),
     {
@@ -298,7 +298,11 @@ impl AxRunQueueInner {
         assert!(curr.is_running());
         assert!(!curr.is_idle());
 
-        wait_queue_push(curr.clone());
+        // Push current task to the wait queue.
+        // The wait queue must be locked before calling this function.
+        // The lock will be released here inside this closure after the task is pushed to the wait queue.
+        // So this closure has to be moved here to ensure the lock is released and assertion is correct.
+        wait_queue_push_locked(curr.clone());
 
         // we must not block current task with preemption disabled.
         #[cfg(feature = "preempt")]
@@ -306,7 +310,7 @@ impl AxRunQueueInner {
 
         curr.set_state(TaskState::Blocked);
         current_run_queue().num_tasks.fetch_sub(1, Ordering::AcqRel);
-        
+
         self.resched(false);
     }
 
