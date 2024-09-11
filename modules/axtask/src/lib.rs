@@ -38,6 +38,7 @@ cfg_if::cfg_if! {
         extern crate log;
         extern crate alloc;
 
+        #[macro_use]
         mod run_queue;
         mod task;
         mod api;
