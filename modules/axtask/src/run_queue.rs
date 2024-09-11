@@ -240,7 +240,7 @@ impl AxRunQueueInner {
     #[cfg(feature = "preempt")]
     pub fn preempt_resched(&mut self) {
         let curr = crate::current();
-        assert!(curr.is_running());
+        // assert!(curr.is_running());
 
         // When we get the mutable reference of the run queue, we must
         // have held the `SpinNoIrq` lock with both IRQs and preemption
@@ -289,6 +289,14 @@ impl AxRunQueueInner {
             self.resched(false);
         }
         unreachable!("task exited!");
+    }
+
+    pub fn yield_blocked(&mut self) {
+        let curr = crate::current();
+        if curr.is_blocked() {
+            debug!("task yield_blocked: {}", curr.id_name());
+            self.resched(false);
+        }
     }
 
     pub fn block_current<F>(&mut self, wait_queue_push_locked: F)
