@@ -170,7 +170,10 @@ pub fn sleep_until(deadline: axhal::time::TimeValue) {
 
 /// Exits the current task.
 pub fn exit(exit_code: i32) -> ! {
-    current_run_queue().exit_current(exit_code)
+    current_run_queue()
+        .scheduler()
+        .lock()
+        .exit_current(exit_code)
 }
 
 /// The idle task routine.

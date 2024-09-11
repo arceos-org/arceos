@@ -199,34 +199,6 @@ impl AxRunQueue {
     pub(crate) fn scheduler(&self) -> &SpinNoIrq<AxRunQueueInner> {
         &self.inner
     }
-
-    pub fn exit_current(&self, exit_code: i32) -> ! {
-        // We do not own an `SpinNoIrq` lock here, so we need to disable IRQ and preempt manually.
-        let _kernel_guard = kernel_guard::IrqSave::new();
-
-        let curr = crate::current();
-        debug!("task exit: {}, exit_code={}", curr.id_name(), exit_code);
-        assert!(curr.is_running());
-        assert!(!curr.is_idle());
-        if curr.is_init() {
-            EXITED_TASKS.with_current(|exited_tasks| exited_tasks.clear());
-            axhal::misc::terminate();
-        } else {
-            curr.set_state(TaskState::Exited);
-            self.num_tasks.fetch_sub(1, Ordering::AcqRel);
-
-            // Notify the joiner task.
-            curr.notify_exit(exit_code);
-
-            // Push current task to the `EXITED_TASKS` list, which will be consumed by the GC task.
-            EXITED_TASKS.with_current(|exited_tasks| exited_tasks.push_back(curr.clone()));
-            // Wake up the GC task to drop the exited tasks.
-            WAIT_FOR_EXIT.with_current(|wq| wq.notify_one(false));
-            //  `SpinNoIrq` lock until now.
-            self.scheduler().lock().resched(false);
-        }
-        unreachable!("task exited!");
-    }
 }
 
 /// Core functions of run queue, which should be called after holding the scheduler() lock.
@@ -287,6 +259,36 @@ impl AxRunQueueInner {
         } else {
             curr.set_preempt_pending(true);
         }
+    }
+
+    pub fn exit_current(&mut self, exit_code: i32) -> ! {
+        let curr = crate::current();
+        debug!("task exit: {}, exit_code={}", curr.id_name(), exit_code);
+        assert!(curr.is_running());
+        assert!(!curr.is_idle());
+        if curr.is_init() {
+            EXITED_TASKS.with_current(|exited_tasks| exited_tasks.clear());
+            axhal::misc::terminate();
+        } else {
+            curr.set_state(TaskState::Exited);
+            current_run_queue().num_tasks.fetch_sub(1, Ordering::AcqRel);
+
+            // Unlock the run queue before notifying the joiner task.
+            unsafe {
+                current_run_queue().inner.force_unlock();
+            }
+
+            // Notify the joiner task.
+            curr.notify_exit(exit_code);
+
+            // Push current task to the `EXITED_TASKS` list, which will be consumed by the GC task.
+            EXITED_TASKS.with_current(|exited_tasks| exited_tasks.push_back(curr.clone()));
+            // Wake up the GC task to drop the exited tasks.
+            WAIT_FOR_EXIT.with_current(|wq| wq.notify_one(false));
+            //  `SpinNoIrq` lock until now.
+            self.resched(false);
+        }
+        unreachable!("task exited!");
     }
 
     pub fn block_current<F>(&mut self, wait_queue_push_locked: F)
