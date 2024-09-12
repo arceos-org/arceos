@@ -168,7 +168,6 @@ impl AxRunQueue {
             "gc".into(),
             axconfig::TASK_STACK_SIZE,
             // gc task shoule be pinned to the current CPU.
-            #[cfg(feature = "smp")]
             Some(1 << cpu_id),
         );
         let mut scheduler = Scheduler::new();
@@ -264,7 +263,7 @@ impl AxRunQueueInner {
     pub fn exit_current(&mut self, exit_code: i32) -> ! {
         let curr = crate::current();
         debug!("task exit: {}, exit_code={}", curr.id_name(), exit_code);
-        assert!(curr.is_running());
+        assert!(curr.is_running(), "task is not running: {:?}", curr.state());
         assert!(!curr.is_idle());
         if curr.is_init() {
             EXITED_TASKS.with_current(|exited_tasks| exited_tasks.clear());
@@ -291,43 +290,24 @@ impl AxRunQueueInner {
         unreachable!("task exited!");
     }
 
-    pub fn yield_blocked(&mut self) {
+    pub fn blocked_resched(&mut self) {
         let curr = crate::current();
-        if curr.is_blocked() {
-            debug!("task yield_blocked: {}", curr.id_name());
-            self.resched(false);
-        }
-    }
-
-    pub fn block_current<F>(&mut self, wait_queue_push_locked: F)
-    where
-        F: FnOnce(AxTaskRef),
-    {
-        let curr = crate::current();
+        assert!(curr.is_blocking());
         debug!("task block: {}", curr.id_name());
-        assert!(curr.is_running());
-        assert!(!curr.is_idle());
-
-        // Push current task to the wait queue.
-        // The wait queue must be locked before calling this function.
-        // The lock will be released here inside this closure after the task is pushed to the wait queue.
-        // So this closure has to be moved here to ensure the lock is released and assertion is correct.
-        wait_queue_push_locked(curr.clone());
-
-        // we must not block current task with preemption disabled.
-        #[cfg(feature = "preempt")]
-        assert!(curr.can_preempt(1));
-
-        curr.set_state(TaskState::Blocked);
-        current_run_queue().num_tasks.fetch_sub(1, Ordering::AcqRel);
-
         self.resched(false);
     }
 
     pub fn unblock_task(&mut self, task: AxTaskRef, resched: bool) {
         let cpu_id = self.cpu_id;
-        debug!("task unblock: {} on run_queue {}", task.id_name(), cpu_id);
+
+        loop {
+            if !task.is_blocking() {
+                assert!(task.is_blocked());
+                break;
+            }
+        }
         if task.is_blocked() {
+            debug!("task unblock: {} on run_queue {}", task.id_name(), cpu_id);
             task.set_state(TaskState::Ready);
             self.scheduler.add_task(task); // TODO: priority
 
@@ -354,7 +334,7 @@ impl AxRunQueueInner {
         let now = axhal::time::wall_time();
         if now < deadline {
             crate::timers::set_alarm_wakeup(deadline, curr.clone());
-            curr.set_state(TaskState::Blocked);
+            curr.set_state(TaskState::Blocking);
             get_run_queue(self.cpu_id)
                 .num_tasks
                 .fetch_sub(1, Ordering::AcqRel);
@@ -374,6 +354,11 @@ impl AxRunQueueInner {
                 self.scheduler.put_prev_task(prev.clone(), preempt);
             }
         }
+
+        if prev.is_blocking() {
+            prev.set_state(TaskState::Blocked);
+        }
+
         let next = self.scheduler.pick_next_task().unwrap_or_else(|| unsafe {
             // Safety: IRQs must be disabled at this time.
             IDLE_TASK.current_ref_raw().get_unchecked().clone()
@@ -446,7 +431,6 @@ pub(crate) fn init() {
         || crate::run_idle(),
         "idle".into(),
         IDLE_TASK_STACK_SIZE,
-        #[cfg(feature = "smp")]
         Some(1 << cpu_id),
     );
     IDLE_TASK.with_current(|i| {

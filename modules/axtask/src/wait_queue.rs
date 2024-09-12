@@ -61,16 +61,34 @@ impl WaitQueue {
         }
     }
 
+    fn push_to_wait_queue(&self) {
+        let curr = crate::current();
+        assert!(curr.is_running());
+        assert!(!curr.is_idle());
+        let mut wq_locked = self.queue.lock();
+        // we must not block current task with preemption disabled.
+        #[cfg(feature = "preempt")]
+        assert!(curr.can_preempt(1));
+        wq_locked.push_back(curr.clone());
+
+        // We set task state as `Blocking` to clarify that the task is blocked
+        // but **still NOT** finished its scheduling process.
+        //
+        // When another task (generally on another run queue) try to unblock this task,
+        // * if this task's state is still `Blocking`:
+        //      it can just change this task's state to `Running` and this task will come back to running on this run queue again.
+        // * if this task's state is `Blocked`:
+        //      it means this task is blocked and finished its scheduling process, in another word, it has left current run queue,
+        //      so this task can be scheduled on any run queue.
+        curr.set_state(TaskState::Blocking);
+        curr.set_in_wait_queue(true);
+    }
+
     /// Blocks the current task and put it into the wait queue, until other task
     /// notifies it.
     pub fn wait(&self) {
-        current_run_queue()
-            .scheduler()
-            .lock()
-            .block_current(|task| {
-                task.set_in_wait_queue(true);
-                self.queue.lock().push_back(task)
-            });
+        self.push_to_wait_queue();
+        current_run_queue().scheduler().lock().blocked_resched();
         self.cancel_events(crate::current());
     }
 
@@ -84,28 +102,24 @@ impl WaitQueue {
         F: Fn() -> bool,
     {
         loop {
-            // let mut rq = current_run_queue().scheduler().lock();
             let mut wq = self.queue.lock();
             if condition() {
                 break;
             }
             let curr = crate::current();
-            debug!("task block: {}", curr.id_name());
             assert!(curr.is_running());
             assert!(!curr.is_idle());
-
-            curr.set_in_wait_queue(true);
 
             // we must not block current task with preemption disabled.
             #[cfg(feature = "preempt")]
             assert!(curr.can_preempt(1));
-
-            curr.set_state(TaskState::Blocked);
-
             wq.push_back(curr.clone());
+
+            curr.set_state(TaskState::Blocking);
+            curr.set_in_wait_queue(true);
             drop(wq);
 
-            current_run_queue().scheduler().lock().yield_blocked()
+            current_run_queue().scheduler().lock().blocked_resched()
         }
         self.cancel_events(crate::current());
     }
@@ -123,13 +137,9 @@ impl WaitQueue {
         );
         crate::timers::set_alarm_wakeup(deadline, curr.clone());
 
-        current_run_queue()
-            .scheduler()
-            .lock()
-            .block_current(|task| {
-                task.set_in_wait_queue(true);
-                self.queue.lock().push_back(task)
-            });
+        self.push_to_wait_queue();
+        current_run_queue().scheduler().lock().blocked_resched();
+
         let timeout = curr.in_wait_queue(); // still in the wait queue, must have timed out
         self.cancel_events(curr);
         timeout
@@ -156,28 +166,24 @@ impl WaitQueue {
 
         let mut timeout = true;
         while axhal::time::wall_time() < deadline {
-            // let mut rq = current_run_queue().scheduler().lock();
             let mut wq = self.queue.lock();
             if condition() {
+                timeout = false;
                 break;
             }
-            let curr = crate::current();
-            debug!("task block: {}", curr.id_name());
             assert!(curr.is_running());
             assert!(!curr.is_idle());
-
-            curr.set_in_wait_queue(true);
 
             // we must not block current task with preemption disabled.
             #[cfg(feature = "preempt")]
             assert!(curr.can_preempt(1));
-
-            curr.set_state(TaskState::Blocked);
-
             wq.push_back(curr.clone());
+
+            curr.set_state(TaskState::Blocking);
+            curr.set_in_wait_queue(true);
             drop(wq);
 
-            current_run_queue().scheduler().lock().yield_blocked()
+            current_run_queue().scheduler().lock().blocked_resched()
         }
         self.cancel_events(curr);
         timeout

@@ -99,13 +99,7 @@ pub fn spawn_raw<F>(f: F, name: String, stack_size: usize) -> AxTaskRef
 where
     F: FnOnce() + Send + 'static,
 {
-    let task = TaskInner::new(
-        f,
-        name,
-        stack_size,
-        #[cfg(feature = "smp")]
-        None,
-    );
+    let task = TaskInner::new(f, name, stack_size, None);
     crate::select_run_queue(
         #[cfg(feature = "smp")]
         task.clone(),

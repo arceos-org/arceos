@@ -1,6 +1,5 @@
 use alloc::sync::Arc;
 
-use kspin::SpinNoIrq;
 use lazyinit::LazyInit;
 use timer_list::{TimeValue, TimerEvent, TimerList};
 
@@ -9,7 +8,7 @@ use axhal::time::wall_time;
 use crate::{select_run_queue, AxTaskRef};
 
 #[percpu::def_percpu]
-static TIMER_LIST: LazyInit<SpinNoIrq<TimerList<TaskWakeupEvent>>> = LazyInit::new();
+static TIMER_LIST: LazyInit<TimerList<TaskWakeupEvent>> = LazyInit::new();
 
 struct TaskWakeupEvent(AxTaskRef);
 
@@ -34,24 +33,22 @@ impl TimerEvent for TaskWakeupEvent {
 
 pub fn set_alarm_wakeup(deadline: TimeValue, task: AxTaskRef) {
     TIMER_LIST.with_current(|timer_list| {
-        let mut timers = timer_list.lock();
         task.set_in_timer_list(true);
-        timers.set(deadline, TaskWakeupEvent(task));
+        timer_list.set(deadline, TaskWakeupEvent(task));
     })
 }
 
 pub fn cancel_alarm(task: &AxTaskRef) {
     TIMER_LIST.with_current(|timer_list| {
-        let mut timers = timer_list.lock();
         task.set_in_timer_list(false);
-        timers.cancel(|t| Arc::ptr_eq(&t.0, task));
+        timer_list.cancel(|t| Arc::ptr_eq(&t.0, task));
     })
 }
 
 pub fn check_events() {
     loop {
         let now = wall_time();
-        let event = TIMER_LIST.with_current(|timers| timers.lock().expire_one(now));
+        let event = TIMER_LIST.with_current(|timer_list| timer_list.expire_one(now));
         if let Some((_deadline, event)) = event {
             event.callback(now);
         } else {
@@ -62,6 +59,6 @@ pub fn check_events() {
 
 pub fn init() {
     TIMER_LIST.with_current(|timer_list| {
-        timer_list.init_once(SpinNoIrq::new(TimerList::new()));
+        timer_list.init_once(TimerList::new());
     });
 }

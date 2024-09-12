@@ -5,12 +5,10 @@ use core::sync::atomic::AtomicUsize;
 use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, AtomicU8, Ordering};
 use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 
-#[cfg(feature = "smp")]
 use bitmaps::Bitmap;
 use memory_addr::{align_up_4k, va, VirtAddr};
 
 use axhal::arch::TaskContext;
-#[cfg(feature = "smp")]
 use axhal::cpu::this_cpu_id;
 #[cfg(feature = "tls")]
 use axhal::tls::TlsArea;
@@ -25,10 +23,18 @@ pub struct TaskId(u64);
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub(crate) enum TaskState {
+    /// Task is running on some CPU.
     Running = 1,
+    /// Task is ready to run on some scheduler's ready queue.
     Ready = 2,
-    Blocked = 3,
-    Exited = 4,
+    /// Task is just be blocked and inserted into the wait queue,
+    /// but still have **NOT finished** its scheduling process.
+    Blocking = 3,
+    /// Task is blocked (in the wait queue or timer list),
+    /// and it has finished its scheduling process, it can be wake up by `notify()` on any run queue safely.
+    Blocked = 4,
+    /// Task is exited and waiting for being dropped.
+    Exited = 5,
 }
 
 /// The inner task structure.
@@ -42,7 +48,6 @@ pub struct TaskInner {
     state: AtomicU8,
 
     /// CPU affinity mask.
-    #[cfg(feature = "smp")]
     cpu_set: Bitmap<{ axconfig::SMP }>,
 
     in_wait_queue: AtomicBool,
@@ -82,8 +87,9 @@ impl From<u8> for TaskState {
         match state {
             1 => Self::Running,
             2 => Self::Ready,
-            3 => Self::Blocked,
-            4 => Self::Exited,
+            3 => Self::Blocking,
+            4 => Self::Blocked,
+            5 => Self::Exited,
             _ => unreachable!(),
         }
     }
@@ -128,7 +134,6 @@ impl TaskInner {
             is_init: false,
             entry: None,
             state: AtomicU8::new(TaskState::Ready as u8),
-            #[cfg(feature = "smp")]
             cpu_set: Bitmap::new(),
             in_wait_queue: AtomicBool::new(false),
             #[cfg(feature = "irq")]
@@ -160,7 +165,7 @@ impl TaskInner {
         entry: F,
         name: String,
         stack_size: usize,
-        #[cfg(feature = "smp")] cpu_set: Option<usize>,
+        cpu_set: Option<usize>,
     ) -> AxTaskRef
     where
         F: FnOnce() + Send + 'static,
@@ -180,24 +185,21 @@ impl TaskInner {
         if t.name == "idle" {
             t.is_idle = true;
         }
-        #[cfg(feature = "smp")]
-        {
-            t.cpu_set = match cpu_set {
-                Some(cpu_set) => {
-                    let mut bit_map = Bitmap::new();
-                    let mut i = 0;
-                    while i < axconfig::SMP {
-                        if cpu_set & (1 << i) != 0 {
-                            bit_map.set(i, true);
-                        }
-                        i += 1;
+        t.cpu_set = match cpu_set {
+            Some(cpu_set) => {
+                let mut bit_map = Bitmap::new();
+                let mut i = 0;
+                while i < axconfig::SMP {
+                    if cpu_set & (1 << i) != 0 {
+                        bit_map.set(i, true);
                     }
-                    bit_map
+                    i += 1;
                 }
-                // This task can be scheduled on all CPUs by default.
-                None => Bitmap::mask(axconfig::SMP),
-            };
-        }
+                bit_map
+            }
+            // This task can be scheduled on all CPUs by default.
+            None => Bitmap::mask(axconfig::SMP),
+        };
         Arc::new(AxTask::new(t))
     }
 
@@ -212,7 +214,6 @@ impl TaskInner {
     pub(crate) fn new_init(name: String) -> AxTaskRef {
         let mut t = Self::new_common(TaskId::new(), name);
         t.is_init = true;
-        #[cfg(feature = "smp")]
         t.cpu_set.set(this_cpu_id(), true);
         if t.name == "idle" {
             t.is_idle = true;
@@ -246,6 +247,11 @@ impl TaskInner {
     }
 
     #[inline]
+    pub(crate) fn is_blocking(&self) -> bool {
+        matches!(self.state(), TaskState::Blocking)
+    }
+
+    #[inline]
     pub(crate) const fn is_init(&self) -> bool {
         self.is_init
     }
@@ -255,7 +261,6 @@ impl TaskInner {
         self.is_idle
     }
 
-    #[cfg(feature = "smp")]
     #[inline]
     pub(crate) const fn cpu_set(&self) -> Bitmap<{ axconfig::SMP }> {
         self.cpu_set
