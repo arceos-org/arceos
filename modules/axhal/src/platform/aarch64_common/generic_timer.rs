@@ -61,7 +61,7 @@ pub(crate) fn init_early() {
     if axconfig::RTC_PADDR != 0 {
         use crate::mem::phys_to_virt;
         use arm_pl031::Rtc;
-        use memory_addr::{pa, PhysAddr};
+        use memory_addr::PhysAddr;
 
         const PL031_BASE: PhysAddr = pa!(axconfig::RTC_PADDR);
 

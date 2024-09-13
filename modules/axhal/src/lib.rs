@@ -34,6 +34,10 @@
 #[macro_use]
 extern crate log;
 
+#[allow(unused_imports)]
+#[macro_use]
+extern crate memory_addr;
+
 mod platform;
 
 #[macro_use]

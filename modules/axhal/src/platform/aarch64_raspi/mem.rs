@@ -1,4 +1,4 @@
-use crate::mem::*;
+use crate::mem::{MemRegion, MemRegionFlags};
 use page_table_entry::{aarch64::A64PTE, GenericPTE, MappingFlags};
 
 /// Returns platform-specific memory regions.
@@ -17,7 +17,6 @@ pub(crate) unsafe fn init_boot_page_table(
     boot_pt_l0: *mut [A64PTE; 512],
     boot_pt_l1: *mut [A64PTE; 512],
 ) {
-    use memory_addr::pa;
     let boot_pt_l0 = &mut *boot_pt_l0;
     let boot_pt_l1 = &mut *boot_pt_l1;
     // 0x0000_0000_0000 ~ 0x0080_0000_0000, table

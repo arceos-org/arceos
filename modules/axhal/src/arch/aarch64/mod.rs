@@ -4,7 +4,7 @@ pub(crate) mod trap;
 use core::arch::asm;
 
 use aarch64_cpu::registers::{DAIF, TPIDR_EL0, TTBR0_EL1, TTBR1_EL1, VBAR_EL1};
-use memory_addr::{pa, PhysAddr, VirtAddr};
+use memory_addr::{PhysAddr, VirtAddr};
 use tock_registers::interfaces::{Readable, Writeable};
 
 pub use self::context::{FpState, TaskContext, TrapFrame};

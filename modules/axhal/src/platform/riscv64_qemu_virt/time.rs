@@ -39,7 +39,7 @@ pub(super) fn init_early() {
     #[cfg(feature = "rtc")]
     if axconfig::RTC_PADDR != 0 {
         use crate::mem::phys_to_virt;
-        use memory_addr::{pa, PhysAddr};
+        use memory_addr::PhysAddr;
         use riscv_goldfish::Rtc;
 
         const GOLDFISH_BASE: PhysAddr = pa!(axconfig::RTC_PADDR);

@@ -1,4 +1,4 @@
-use crate::mem::{pa, phys_to_virt, PhysAddr, PAGE_SIZE_4K};
+use crate::mem::{phys_to_virt, PhysAddr, PAGE_SIZE_4K};
 use crate::time::{busy_wait, Duration};
 
 const START_PAGE_IDX: u8 = 6;

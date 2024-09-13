@@ -1,4 +1,4 @@
-use crate::mem::{pa, MemRegion, PhysAddr};
+use crate::mem::MemRegion;
 use page_table_entry::{aarch64::A64PTE, GenericPTE, MappingFlags};
 
 /// Returns platform-specific memory regions.
