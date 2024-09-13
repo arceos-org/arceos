@@ -7,8 +7,9 @@ use axhal::time::wall_time;
 
 use crate::{select_run_queue, AxTaskRef};
 
-#[percpu::def_percpu]
-static TIMER_LIST: LazyInit<TimerList<TaskWakeupEvent>> = LazyInit::new();
+percpu_static! {
+    TIMER_LIST: LazyInit<TimerList<TaskWakeupEvent>> = LazyInit::new(),
+}
 
 struct TaskWakeupEvent(AxTaskRef);
 

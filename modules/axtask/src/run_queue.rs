@@ -14,17 +14,21 @@ use axhal::cpu::this_cpu_id;
 use crate::task::{CurrentTask, TaskState};
 use crate::{AxTaskRef, Scheduler, TaskInner, WaitQueue};
 
-#[percpu::def_percpu]
-static RUN_QUEUE: LazyInit<AxRunQueue> = LazyInit::new();
+macro_rules! percpu_static {
+    ($($name:ident: $ty:ty = $init:expr),* $(,)?) => {
+        $(
+            #[percpu::def_percpu]
+            static $name: $ty = $init;
+        )*
+    };
+}
 
-#[percpu::def_percpu]
-static EXITED_TASKS: VecDeque<AxTaskRef> = VecDeque::new();
-
-#[percpu::def_percpu]
-static WAIT_FOR_EXIT: WaitQueue = WaitQueue::new();
-
-#[percpu::def_percpu]
-static IDLE_TASK: LazyInit<AxTaskRef> = LazyInit::new();
+percpu_static! {
+    RUN_QUEUE: LazyInit<AxRunQueue> = LazyInit::new(),
+    EXITED_TASKS: VecDeque<AxTaskRef> = VecDeque::new(),
+    WAIT_FOR_EXIT: WaitQueue = WaitQueue::new(),
+    IDLE_TASK: LazyInit<AxTaskRef> = LazyInit::new(),
+}
 
 /// An array of references to run queues, one for each CPU, indexed by cpu_id.
 ///
