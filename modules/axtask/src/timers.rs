@@ -15,20 +15,12 @@ struct TaskWakeupEvent(AxTaskRef);
 
 impl TimerEvent for TaskWakeupEvent {
     fn callback(self, _now: TimeValue) {
-        // Originally, irq and preempt are disabled by SpinNoIrq lock hold by RUN_QUEUE.
-        // But, we can't use RUN_QUEUE here, so we need to disable irq and preempt manually.
-        // Todo: figure out if `NoPreempt` is needed here.
-        // let _guard = kernel_guard::NoPreemptIrqSave::new();
-        let mut rq_locked = select_run_queue(
+        self.0.set_in_timer_list(false);
+        select_run_queue(
             #[cfg(feature = "smp")]
             self.0.clone(),
         )
-        .scheduler()
-        .lock();
-
-        self.0.set_in_timer_list(false);
-
-        rq_locked.unblock_task(self.0, true);
+        .unblock_task(self.0, true)
     }
 }
 

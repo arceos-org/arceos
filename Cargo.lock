@@ -1315,7 +1315,7 @@ checksum = "e6e36312fb5ddc10d08ecdc65187402baba4ac34585cb9d1b78522ae2358d890"
 [[package]]
 name = "scheduler"
 version = "0.1.0"
-source = "git+https://github.com/arceos-org/scheduler.git?tag=v0.1.0#c8d25d9aed146dca28dc8987afd229b52c20361a"
+source = "git+https://github.com/arceos-org/scheduler.git?branch=num_tasks#6ca9626da9892dd85f8485a7b1649a93302ac90c"
 dependencies = [
  "linked_list",
 ]

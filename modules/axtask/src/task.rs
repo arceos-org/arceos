@@ -319,9 +319,8 @@ impl TaskInner {
     fn current_check_preempt_pending() {
         let curr = crate::current();
         if curr.need_resched.load(Ordering::Acquire) && curr.can_preempt(0) {
-            let mut rq_locked = crate::current_run_queue().scheduler().lock();
             if curr.need_resched.load(Ordering::Acquire) {
-                rq_locked.preempt_resched();
+                crate::current_run_queue().preempt_resched()
             }
         }
     }

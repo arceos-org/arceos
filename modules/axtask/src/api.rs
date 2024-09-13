@@ -86,10 +86,7 @@ pub fn init_scheduler_secondary() {
 #[doc(cfg(feature = "irq"))]
 pub fn on_timer_tick() {
     crate::timers::check_events();
-    current_run_queue()
-        .scheduler()
-        .lock()
-        .scheduler_timer_tick();
+    current_run_queue().scheduler_timer_tick();
 }
 
 /// Spawns a new task with the given parameters.
@@ -104,8 +101,6 @@ where
         #[cfg(feature = "smp")]
         task.clone(),
     )
-    .scheduler()
-    .lock()
     .add_task(task.clone());
     task
 }
@@ -133,16 +128,13 @@ where
 ///
 /// [CFS]: https://en.wikipedia.org/wiki/Completely_Fair_Scheduler
 pub fn set_priority(prio: isize) -> bool {
-    current_run_queue()
-        .scheduler()
-        .lock()
-        .set_current_priority(prio)
+    current_run_queue().set_current_priority(prio)
 }
 
 /// Current task gives up the CPU time voluntarily, and switches to another
 /// ready task.
 pub fn yield_now() {
-    current_run_queue().scheduler().lock().yield_current()
+    current_run_queue().yield_current()
 }
 
 /// Current task is going to sleep for the given duration.
@@ -157,17 +149,14 @@ pub fn sleep(dur: core::time::Duration) {
 /// If the feature `irq` is not enabled, it uses busy-wait instead.
 pub fn sleep_until(deadline: axhal::time::TimeValue) {
     #[cfg(feature = "irq")]
-    current_run_queue().scheduler().lock().sleep_until(deadline);
+    current_run_queue().sleep_until(deadline);
     #[cfg(not(feature = "irq"))]
     axhal::time::busy_wait_until(deadline);
 }
 
 /// Exits the current task.
 pub fn exit(exit_code: i32) -> ! {
-    current_run_queue()
-        .scheduler()
-        .lock()
-        .exit_current(exit_code)
+    current_run_queue().exit_current(exit_code)
 }
 
 /// The idle task routine.

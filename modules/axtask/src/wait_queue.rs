@@ -76,7 +76,7 @@ impl WaitQueue {
         //
         // When another task (generally on another run queue) try to unblock this task,
         // * if this task's state is still `Blocking`:
-        //      it can just change this task's state to `Running` and this task will come back to running on this run queue again.
+        //      it needs to wait for this task's state to be changed to `Blocked`, which means it has finished its scheduling process.
         // * if this task's state is `Blocked`:
         //      it means this task is blocked and finished its scheduling process, in another word, it has left current run queue,
         //      so this task can be scheduled on any run queue.
@@ -88,7 +88,7 @@ impl WaitQueue {
     /// notifies it.
     pub fn wait(&self) {
         self.push_to_wait_queue();
-        current_run_queue().scheduler().lock().blocked_resched();
+        current_run_queue().blocked_resched();
         self.cancel_events(crate::current());
     }
 
@@ -119,7 +119,7 @@ impl WaitQueue {
             curr.set_in_wait_queue(true);
             drop(wq);
 
-            current_run_queue().scheduler().lock().blocked_resched()
+            current_run_queue().blocked_resched()
         }
         self.cancel_events(crate::current());
     }
@@ -138,7 +138,7 @@ impl WaitQueue {
         crate::timers::set_alarm_wakeup(deadline, curr.clone());
 
         self.push_to_wait_queue();
-        current_run_queue().scheduler().lock().blocked_resched();
+        current_run_queue().blocked_resched();
 
         let timeout = curr.in_wait_queue(); // still in the wait queue, must have timed out
         self.cancel_events(curr);
@@ -183,7 +183,7 @@ impl WaitQueue {
             curr.set_in_wait_queue(true);
             drop(wq);
 
-            current_run_queue().scheduler().lock().blocked_resched()
+            current_run_queue().blocked_resched()
         }
         self.cancel_events(curr);
         timeout
@@ -237,14 +237,12 @@ impl WaitQueue {
 }
 
 pub(crate) fn unblock_one_task(task: AxTaskRef, resched: bool) {
+    // Mark task as not in wait queue.
+    task.set_in_wait_queue(false);
     // Select run queue by the CPU set of the task.
-    let mut rq = select_run_queue(
+    select_run_queue(
         #[cfg(feature = "smp")]
         task.clone(),
     )
-    .scheduler()
-    .lock();
-
-    task.set_in_wait_queue(false);
-    rq.unblock_task(task, resched)
+    .unblock_task(task, resched)
 }
