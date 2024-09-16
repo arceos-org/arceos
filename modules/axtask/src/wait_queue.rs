@@ -69,7 +69,6 @@ impl WaitQueue {
         // we must not block current task with preemption disabled.
         #[cfg(feature = "preempt")]
         assert!(curr.can_preempt(1));
-        wq_locked.push_back(curr.clone());
 
         // We set task state as `Blocking` to clarify that the task is blocked
         // but **still NOT** finished its scheduling process.
@@ -82,6 +81,8 @@ impl WaitQueue {
         //      so this task can be scheduled on any run queue.
         curr.set_state(TaskState::Blocking);
         curr.set_in_wait_queue(true);
+
+        wq_locked.push_back(curr.clone());
     }
 
     /// Blocks the current task and put it into the wait queue, until other task

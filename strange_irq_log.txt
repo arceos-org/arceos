@@ -1,0 +1,148 @@
+➜  arceos git:(percpu_run_queue) ✗ make A=../arceos-apps/rust/task/parallel SMP=4 LOG=info FEATURES=sched_cfs ARCH=aarch64 ACCEL=n run
+    Building App: parallel, Arch: aarch64, Platform: aarch64-qemu-virt, App type: rust
+cargo -C ../arceos-apps/rust/task/parallel build -Z unstable-options --target aarch64-unknown-none-softfloat --target-dir /home/hky/workspace/arceos-org/arceos/target --release  --features "axstd/log-level-info axstd/sched_cfs axstd/smp"
+    Finished `release` profile [optimized] target(s) in 0.06s
+rust-objcopy --binary-architecture=aarch64 ../arceos-apps/rust/task/parallel/parallel_aarch64-qemu-virt.elf --strip-all -O binary ../arceos-apps/rust/task/parallel/parallel_aarch64-qemu-virt.bin
+    Running on qemu...
+qemu-system-aarch64 -m 128M -smp 4 -cpu cortex-a72 -machine virt -kernel ../arceos-apps/rust/task/parallel/parallel_aarch64-qemu-virt.bin -nographic
+
+       d8888                            .d88888b.   .d8888b.
+      d88888                           d88P" "Y88b d88P  Y88b
+     d88P888                           888     888 Y88b.
+    d88P 888 888d888  .d8888b  .d88b.  888     888  "Y888b.
+   d88P  888 888P"   d88P"    d8P  Y8b 888     888     "Y88b.
+  d88P   888 888     888      88888888 888     888       "888
+ d8888888888 888     Y88b.    Y8b.     Y88b. .d88P Y88b  d88P
+d88P     888 888      "Y8888P  "Y8888   "Y88888P"   "Y8888P"
+
+arch = aarch64
+platform = aarch64-qemu-virt
+target = aarch64-unknown-none-softfloat
+smp = 4
+build_mode = release
+log_level = info
+
+[  0.002825 axruntime:130] Logging is enabled.
+[  0.003531 axruntime:131] Primary CPU 0 started, dtb = 0x44000000.
+[  0.003749 axruntime:133] Found physcial memory regions:
+[  0.003990 axruntime:135]   [PA:0x40080000, PA:0x40092000) .text (READ | EXECUTE | RESERVED)
+[  0.004268 axruntime:135]   [PA:0x40092000, PA:0x40098000) .rodata (READ | RESERVED)
+[  0.004724 axruntime:135]   [PA:0x40098000, PA:0x4009c000) .data .tdata .tbss .percpu (READ | WRITE | RESERVED)
+[  0.005142 axruntime:135]   [PA:0x4009c000, PA:0x4019c000) boot stack (READ | WRITE | RESERVED)
+[  0.005632 axruntime:135]   [PA:0x4019c000, PA:0x401c2000) .bss (READ | WRITE | RESERVED)
+[  0.006012 axruntime:135]   [PA:0x401c2000, PA:0x48000000) free memory (READ | WRITE | FREE)
+[  0.006429 axruntime:135]   [PA:0x9000000, PA:0x9001000) mmio (READ | WRITE | DEVICE | RESERVED)
+[  0.006839 axruntime:135]   [PA:0x9100000, PA:0x9101000) mmio (READ | WRITE | DEVICE | RESERVED)
+[  0.007264 axruntime:135]   [PA:0x8000000, PA:0x8020000) mmio (READ | WRITE | DEVICE | RESERVED)
+[  0.007797 axruntime:135]   [PA:0xa000000, PA:0xa004000) mmio (READ | WRITE | DEVICE | RESERVED)
+[  0.008228 axruntime:135]   [PA:0x10000000, PA:0x3eff0000) mmio (READ | WRITE | DEVICE | RESERVED)
+[  0.008365 axruntime:135]   [PA:0x4010000000, PA:0x4020000000) mmio (READ | WRITE | DEVICE | RESERVED)
+[  0.008778 axruntime:208] Initialize global memory allocator...
+[  0.009298 axruntime:209]   use TLSF allocator.
+[  0.010894 axruntime:150] Initialize platform devices...
+[  0.011335 axhal::platform::aarch64_common::gic:50] Initialize GICv2...
+[  0.012179 axtask::api:66] Initialize scheduling...
+[  0.013023 axtask::run_queue:431] Initialize RUN_QUEUES
+[  0.014408 axtask::api:72]   use Completely Fair scheduler.
+[  0.014959 axhal::platform::aarch64_common::psci:113] Starting CPU 1 ON ...
+[  0.015439 axruntime::mp:35] Secondary CPU 1 started.
+[  0.015993 axhal::platform::aarch64_common::psci:113] Starting CPU 2 ON ...
+[  0.016337 axruntime::mp:35] Secondary CPU 2 started.
+[  0.016119 axruntime::mp:45] Secondary CPU 1 init OK.
+[  0.017065 axruntime::mp:45] Secondary CPU 2 init OK.
+[  0.017056 axhal::platform::aarch64_common::psci:113] Starting CPU 3 ON ...
+[  0.022300 axruntime::mp:35] Secondary CPU 3 started.
+[  0.022418 axruntime:176] Initialize interrupt handlers...
+[  0.022716 axruntime::mp:45] Secondary CPU 3 init OK.
+[  0.023969 axruntime:186] Primary CPU 0 init OK.
+part 0: ThreadId(10) [0, 125000)
+part 4: ThreadId(14) [500000, 625000)
+part 1: ThreadId(11) [125000, 250000)
+part 2: ThreadId(12) [250000, 375000)
+part 3: ThreadId(13) [375000, 500000)
+part 8: ThreadId(18) [1000000, 1125000)
+part 5: ThreadId(15) [625000, 750000)
+part 9: ThreadId(19) [1125000, 1250000)
+part 6: ThreadId(16) [750000, 875000)
+part 7: ThreadId(17) [875000, 1000000)
+part 12: ThreadId(22) [1500000, 1625000)
+part 13: ThreadId(23) [1625000, 1750000)
+part 10: ThreadId(20) [1250000, 1375000)
+part 11: ThreadId(21) [1375000, 1500000)
+part 14: ThreadId(24) [1750000, 1875000)
+part 15: ThreadId(25) [1875000, 2000000)
+part 9: ThreadId(19) finished
+part 7: ThreadId(17) finished
+part 5: ThreadId(15) finished
+part 15: ThreadId(25) finished
+part 0: ThreadId(10) finished
+part 4: ThreadId(14) finished
+part 8: ThreadId(18) finished
+part 3: ThreadId(13) finished
+part 11: ThreadId(21) finished
+part 13: ThreadId(23) finished
+part 1: ThreadId(11) finished
+part 14: ThreadId(24) finished
+part 12: ThreadId(22) finished
+part 2: ThreadId(12) finished
+part 6: ThreadId(16) finished
+[  1.070932 0:1 axhal::irq:20] Unhandled IRQ 33
+QEMU 8.1.94 monitor - type 'help' for more information
+(qemu) info registers -a
+
+CPU#0
+ PC=ffff000040086068 X00=ffff0000401c2ff8 X01=0000000000000000
+X02=0000000000000008 X03=0000000000000128 X04=0000000000000000
+X05=0000000000000002 X06=0000000000000000 X07=0000000000000000
+X08=0000000000000000 X09=0000000000000000 X10=0000000000000000
+X11=ffff0000401c4190 X12=0000000000000003 X13=ffff0000401c4770
+X14=0000000000000008 X15=00000000a0000000 X16=0000000000000000
+X17=0000000000005000 X18=0000000000000070 X19=ffff00004009b038
+X20=ffff000040093c28 X21=0000000000000000 X22=0000000000000000
+X23=0000000000000000 X24=0000000000000000 X25=0000000000000000
+X26=0000000000000000 X27=0000000000000000 X28=0000000000000000
+X29=0000000000000000 X30=ffff000040086064  SP=ffff0000401c2ff0
+PSTATE=60000345 -ZC- EL1h    FPU disabled
+
+CPU#1
+ PC=ffff000040086068 X00=ffff0000400dbf58 X01=0000000000000000
+X02=0000000000000000 X03=ffff0000401c3710 X04=ffff000041689fc0
+X05=0000000000000002 X06=0000000000000000 X07=0000000000000000
+X08=0000000000000000 X09=0000000000000000 X10=0000000000000000
+X11=ffff0000401c41d0 X12=0000000000000004 X13=ffff0000401c61b0
+X14=ffff0000401bff00 X15=ffff00004009b338 X16=0000000000000000
+X17=0000000000081102 X18=0000000000000000 X19=ffff00004009b138
+X20=ffff000040090450 X21=ffff0000401c1000 X22=0000000000000000
+X23=0000000000000000 X24=0000000000000000 X25=0000000000000000
+X26=0000000000000000 X27=0000000000000000 X28=0000000000000000
+X29=0000000000000000 X30=ffff000040086064  SP=ffff0000400dbf50
+PSTATE=60000345 -ZC- EL1h    FPU disabled
+
+CPU#2
+ PC=ffff000040086068 X00=ffff00004011bf58 X01=0000000000000000
+X02=0000000000000000 X03=0000000000000018 X04=0000000000000000
+X05=0000000000000002 X06=0000000000000000 X07=0000000000000000
+X08=0000000000000000 X09=0000000000000000 X10=0000000000000000
+X11=ffff0000401c4210 X12=0000000000000002 X13=ffff0000401c4930
+X14=0000000000000002 X15=0000000000000001 X16=0000000000000000
+X17=0000000000081002 X18=00000000000000e8 X19=ffff00004009b238
+X20=ffff000040090450 X21=ffff0000401c1000 X22=0000000000000000
+X23=0000000000000000 X24=0000000000000000 X25=0000000000000000
+X26=0000000000000000 X27=0000000000000000 X28=0000000000000000
+X29=0000000000000000 X30=ffff000040086064  SP=ffff00004011bf50
+PSTATE=60000345 -ZC- EL1h    FPU disabled
+
+CPU#3
+ PC=ffff000040086068 X00=ffff00004015bf58 X01=0000000000000000
+X02=0000000000000000 X03=ffff0000401c3f10 X04=ffff000041609f80
+X05=0000000000000002 X06=0000000000000000 X07=0000000000000000
+X08=0000000000000000 X09=0000000000000000 X10=0000000000000000
+X11=ffff0000401c4250 X12=0000000000000001 X13=ffff0000401c51f0
+X14=0000000000000002 X15=0000000000000001 X16=0000000000000003
+X17=00000000001e8480 X18=0000000000000030 X19=ffff00004009b338
+X20=ffff000040090450 X21=ffff0000401c1000 X22=0000000000000000
+X23=0000000000000000 X24=0000000000000000 X25=0000000000000000
+X26=0000000000000000 X27=0000000000000000 X28=0000000000000000
+X29=0000000000000000 X30=ffff000040086064  SP=ffff00004015bf50
+PSTATE=60000345 -ZC- EL1h    FPU disabled
+(qemu) c

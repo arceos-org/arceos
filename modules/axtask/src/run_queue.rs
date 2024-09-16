@@ -1,11 +1,8 @@
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
 use core::mem::MaybeUninit;
-use core::sync::atomic::{AtomicUsize, Ordering};
 
-#[cfg(feature = "smp")]
 use bitmaps::Bitmap;
-use kspin::SpinNoIrq;
 use lazyinit::LazyInit;
 use scheduler::BaseScheduler;
 
@@ -39,9 +36,9 @@ percpu_static! {
 /// Access to this variable is marked as `unsafe` because it contains `MaybeUninit` references,
 /// which require careful handling to avoid undefined behavior. The array should be fully
 /// initialized before being accessed to ensure safe usage.
-static mut RUN_QUEUES: [MaybeUninit<&'static AxRunQueue>; axconfig::SMP] =
-    [MaybeUninit::uninit(); axconfig::SMP];
-
+static mut RUN_QUEUES: [MaybeUninit<&'static mut AxRunQueue>; axconfig::SMP] =
+    [ARRAY_REPEAT_VALUE; axconfig::SMP];
+const ARRAY_REPEAT_VALUE: MaybeUninit<&'static mut AxRunQueue> = MaybeUninit::uninit();
 /// Returns a reference to the current run queue.
 ///
 /// ## Safety
@@ -55,8 +52,8 @@ static mut RUN_QUEUES: [MaybeUninit<&'static AxRunQueue>; axconfig::SMP] =
 ///
 /// A static reference to the current run queue.
 #[inline]
-pub(crate) fn current_run_queue() -> &'static AxRunQueue {
-    unsafe { RUN_QUEUE.current_ref_raw() }
+pub(crate) fn current_run_queue() -> &'static mut AxRunQueue {
+    unsafe { RUN_QUEUE.current_ref_mut_raw() }
 }
 
 /// Selects the run queue index based on a CPU set bitmap, minimizing the number of tasks.
@@ -82,10 +79,10 @@ fn select_run_queue_index(cpu_set: Bitmap<{ axconfig::SMP }>) -> usize {
     unsafe {
         RUN_QUEUES
             .iter()
-            .filter(|rq| cpu_set.get(rq.assume_init().cpu_id()))
-            .min_by_key(|rq| rq.assume_init().num_tasks())
+            .filter(|rq| cpu_set.get(rq.assume_init_ref().cpu_id()))
+            .min_by_key(|rq| rq.assume_init_ref().num_tasks())
             .expect("No available run queue that matches the CPU set")
-            .assume_init()
+            .assume_init_ref()
             .cpu_id()
     }
 }
@@ -108,9 +105,9 @@ fn select_run_queue_index(cpu_set: Bitmap<{ axconfig::SMP }>) -> usize {
 /// This function will panic if the index is out of bounds.
 ///
 #[inline]
-fn get_run_queue(index: usize) -> &'static AxRunQueue {
+fn get_run_queue(index: usize) -> &'static mut AxRunQueue {
     assert!(index < axconfig::SMP);
-    unsafe { RUN_QUEUES[index].assume_init() }
+    unsafe { RUN_QUEUES[index].assume_init_mut() }
 }
 
 /// Selects the appropriate run queue for the provided task.
@@ -132,7 +129,7 @@ fn get_run_queue(index: usize) -> &'static AxRunQueue {
 /// 2. Use a more generic load balancing algorithm that can be customized or replaced.
 ///
 #[inline]
-pub(crate) fn select_run_queue(#[cfg(feature = "smp")] task: AxTaskRef) -> &'static AxRunQueue {
+pub(crate) fn select_run_queue(#[cfg(feature = "smp")] task: AxTaskRef) -> &'static mut AxRunQueue {
     #[cfg(not(feature = "smp"))]
     {
         // When SMP is disabled, all tasks are scheduled on the same global run queue.
@@ -152,8 +149,6 @@ pub(crate) struct AxRunQueue {
     cpu_id: usize,
     /// The core scheduler of this run queue.
     scheduler: Scheduler,
-    /// The lock to ensure thread safety during scheduling.
-    lock: SpinNoIrq<()>,
 }
 
 impl AxRunQueue {
@@ -168,11 +163,7 @@ impl AxRunQueue {
 
         let mut scheduler = Scheduler::new();
         scheduler.add_task(gc_task);
-        Self {
-            cpu_id,
-            scheduler,
-            lock: SpinNoIrq::new(()),
-        }
+        Self { cpu_id, scheduler }
     }
 
     /// Returns the cpu id of current run queue,
@@ -187,16 +178,9 @@ impl AxRunQueue {
     pub fn num_tasks(&self) -> usize {
         self.scheduler.num_tasks()
     }
-
-    /// Returns a reference to the inner scheduler of the run queue locked by a `SpinNoIrq` lock.
-    /// Note: the scheduler lock is explicitly held during the scheduling process where task scheduling may happen,
-    /// it is explicitly released before the context switch by `force_unlock()`.
-    pub(crate) fn scheduler(&self) -> &SpinNoIrq<()> {
-        &self.lock
-    }
 }
 
-/// Core functions of run queue, which should be called with lock held.
+/// Core functions of run queue.
 impl AxRunQueue {
     pub fn add_task(&mut self, task: AxTaskRef) {
         debug!(
@@ -205,13 +189,11 @@ impl AxRunQueue {
             self.cpu_id
         );
         assert!(task.is_ready());
-        let _lock = self.lock.lock();
         self.scheduler.add_task(task);
     }
 
     #[cfg(feature = "irq")]
     pub fn scheduler_timer_tick(&mut self) {
-        let _lock = self.lock.lock();
         let curr = crate::current();
         if !curr.is_idle() && self.scheduler.task_tick(curr.as_task_ref()) {
             #[cfg(feature = "preempt")]
@@ -220,7 +202,7 @@ impl AxRunQueue {
     }
 
     pub fn yield_current(&mut self) {
-        let _lock = self.lock.lock();
+        let _kernel_guard = kernel_guard::NoPreemptIrqSave::new();
         let curr = crate::current();
         trace!("task yield: {}", curr.id_name());
         assert!(curr.is_running());
@@ -228,22 +210,21 @@ impl AxRunQueue {
     }
 
     pub fn set_current_priority(&mut self, prio: isize) -> bool {
-        let _lock = self.lock.lock();
         self.scheduler
             .set_priority(crate::current().as_task_ref(), prio)
     }
 
     #[cfg(feature = "preempt")]
     pub fn preempt_resched(&mut self) {
-        let _lock = self.lock.lock();
+        // There is no need to disable IRQ and preemption here, because
+        // they both have been disabled in `current_check_preempt_pending`.
         let curr = crate::current();
         // assert!(curr.is_running());
 
-        // When we get the mutable reference of the run queue, we must
-        // have held the `SpinNoIrq` lock with both IRQs and preemption
-        // disabled. So we need to set `current_disable_count` to 1 in
-        // `can_preempt()` to obtain the preemption permission before
-        //  locking the run queue.
+        // When we call `preempt_resched()`, both IRQs and preemption must
+        // have been disabled by `kernel_guard::NoPreemptIrqSave`. So we need
+        // to set `current_disable_count` to 1 in `can_preempt()` to obtain
+        // the preemption permission.
         let can_preempt = curr.can_preempt(1);
 
         debug!(
@@ -259,7 +240,8 @@ impl AxRunQueue {
     }
 
     pub fn exit_current(&mut self, exit_code: i32) -> ! {
-        let _lock = self.lock.lock();
+        let _kernel_guard = kernel_guard::NoPreemptIrqSave::new();
+
         let curr = crate::current();
         debug!("task exit: {}, exit_code={}", curr.id_name(), exit_code);
         assert!(curr.is_running(), "task is not running: {:?}", curr.state());
@@ -269,12 +251,6 @@ impl AxRunQueue {
             axhal::misc::terminate();
         } else {
             curr.set_state(TaskState::Exited);
-            current_run_queue().num_tasks.fetch_sub(1, Ordering::AcqRel);
-
-            // Unlock the run queue before notifying the joiner task.
-            unsafe {
-                current_run_queue().inner.force_unlock();
-            }
 
             // Notify the joiner task.
             curr.notify_exit(exit_code);
@@ -283,22 +259,31 @@ impl AxRunQueue {
             EXITED_TASKS.with_current(|exited_tasks| exited_tasks.push_back(curr.clone()));
             // Wake up the GC task to drop the exited tasks.
             WAIT_FOR_EXIT.with_current(|wq| wq.notify_one(false));
-            //  `SpinNoIrq` lock until now.
+            // Schedule to next task.
             self.resched(false);
         }
         unreachable!("task exited!");
     }
 
     pub fn blocked_resched(&mut self) {
-        let _lock = self.lock.lock();
+        let _kernel_guard = kernel_guard::NoPreemptIrqSave::new();
         let curr = crate::current();
-        assert!(curr.is_blocking());
+        assert!(
+            curr.is_blocking() || curr.is_running(),
+            "task is not blocking or running: {:?}",
+            curr.state()
+        );
+
+        // Current task may have been woken up on another CPU.
+        if curr.is_running() {
+            return;
+        }
+
         debug!("task block: {}", curr.id_name());
         self.resched(false);
     }
 
     pub fn unblock_task(&mut self, task: AxTaskRef, resched: bool) {
-        let _lock = self.lock.lock();
         let cpu_id = self.cpu_id;
 
         // When task's state is Blocking, it has not finished its scheduling process.
@@ -326,7 +311,7 @@ impl AxRunQueue {
 
     #[cfg(feature = "irq")]
     pub fn sleep_until(&mut self, deadline: axhal::time::TimeValue) {
-        let _lock = self.lock.lock();
+        let _kernel_guard = kernel_guard::NoPreemptIrqSave::new();
         let curr = crate::current();
         debug!("task sleep: {}, deadline={:?}", curr.id_name(), deadline);
         assert!(curr.is_running());
@@ -361,6 +346,11 @@ impl AxRunQueue {
             // Safety: IRQs must be disabled at this time.
             IDLE_TASK.current_ref_raw().get_unchecked().clone()
         });
+        assert!(
+            next.is_ready(),
+            "next task is not ready: {:?}",
+            next.state()
+        );
         self.switch_to(prev, next);
     }
 
@@ -389,9 +379,6 @@ impl AxRunQueue {
             assert!(Arc::strong_count(&next_task) >= 1);
 
             CurrentTask::set_current(prev_task, next_task);
-
-            // Release the lock that was explicitly acquired.
-            crate::current_run_queue().lock.force_unlock();
 
             (*prev_ctx_ptr).switch_to(&*next_ctx_ptr);
         }
@@ -444,7 +431,7 @@ pub(crate) fn init() {
         rq.init_once(AxRunQueue::new(cpu_id));
     });
     unsafe {
-        RUN_QUEUES[cpu_id].write(RUN_QUEUE.current_ref_raw());
+        RUN_QUEUES[cpu_id].write(RUN_QUEUE.current_ref_mut_raw());
     }
 }
 
@@ -462,6 +449,6 @@ pub(crate) fn init_secondary() {
         rq.init_once(AxRunQueue::new(cpu_id));
     });
     unsafe {
-        RUN_QUEUES[cpu_id].write(RUN_QUEUE.current_ref_raw());
+        RUN_QUEUES[cpu_id].write(RUN_QUEUE.current_ref_mut_raw());
     }
 }
