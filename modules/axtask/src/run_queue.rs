@@ -219,7 +219,7 @@ impl AxRunQueue {
         // There is no need to disable IRQ and preemption here, because
         // they both have been disabled in `current_check_preempt_pending`.
         let curr = crate::current();
-        // assert!(curr.is_running());
+        assert!(curr.is_running());
 
         // When we call `preempt_resched()`, both IRQs and preemption must
         // have been disabled by `kernel_guard::NoPreemptIrqSave`. So we need
@@ -262,22 +262,18 @@ impl AxRunQueue {
             // Schedule to next task.
             self.resched(false);
         }
+        drop(_kernel_guard);
         unreachable!("task exited!");
     }
 
     pub fn blocked_resched(&mut self) {
-        let _kernel_guard = kernel_guard::NoPreemptIrqSave::new();
         let curr = crate::current();
         assert!(
-            curr.is_blocking() || curr.is_running(),
-            "task is not blocking or running: {:?}",
+            curr.is_blocking(),
+            "task is not blocking, {:?}",
             curr.state()
         );
-
-        // Current task may have been woken up on another CPU.
-        if curr.is_running() {
-            return;
-        }
+        assert!(curr.in_wait_queue());
 
         debug!("task block: {}", curr.id_name());
         self.resched(false);
@@ -311,7 +307,7 @@ impl AxRunQueue {
 
     #[cfg(feature = "irq")]
     pub fn sleep_until(&mut self, deadline: axhal::time::TimeValue) {
-        let _kernel_guard = kernel_guard::NoPreemptIrqSave::new();
+        let kernel_guard = kernel_guard::NoPreemptIrqSave::new();
         let curr = crate::current();
         debug!("task sleep: {}, deadline={:?}", curr.id_name(), deadline);
         assert!(curr.is_running());
@@ -323,6 +319,7 @@ impl AxRunQueue {
             curr.set_state(TaskState::Blocking);
             self.resched(false);
         }
+        drop(kernel_guard)
     }
 }
 
@@ -348,7 +345,8 @@ impl AxRunQueue {
         });
         assert!(
             next.is_ready(),
-            "next task is not ready: {:?}",
+            "next {} is not ready: {:?}",
+            next.id_name(),
             next.state()
         );
         self.switch_to(prev, next);
