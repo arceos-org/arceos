@@ -2,7 +2,7 @@
 
 use arm_pl011::Pl011Uart;
 use kspin::SpinNoIrq;
-use memory_addr::{pa, PhysAddr};
+use memory_addr::PhysAddr;
 
 use crate::mem::phys_to_virt;
 

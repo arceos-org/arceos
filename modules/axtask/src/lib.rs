@@ -28,6 +28,10 @@
 #![cfg_attr(not(test), no_std)]
 #![feature(doc_cfg)]
 #![feature(doc_auto_cfg)]
+#![feature(linkage)]
+#![feature(const_mut_refs)]
+#![feature(const_ptr_is_null)]
+#![feature(const_unsafecell_get_mut)]
 
 #[cfg(test)]
 mod tests;
@@ -40,6 +44,7 @@ cfg_if::cfg_if! {
 
         mod run_queue;
         mod task;
+        mod task_ext;
         mod api;
         mod wait_queue;
 

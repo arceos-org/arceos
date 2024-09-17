@@ -1,4 +1,4 @@
-use crate::mem::{pa, phys_to_virt, va, virt_to_phys, PhysAddr, VirtAddr};
+use crate::mem::{phys_to_virt, virt_to_phys, PhysAddr};
 
 static mut SECONDARY_STACK_TOP: usize = 0;
 

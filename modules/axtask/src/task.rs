@@ -10,8 +10,9 @@ use core::sync::atomic::AtomicUsize;
 use axhal::tls::TlsArea;
 
 use axhal::arch::TaskContext;
-use memory_addr::{align_up_4k, va, VirtAddr};
+use memory_addr::{align_up_4k, VirtAddr};
 
+use crate::task_ext::AxTaskExt;
 use crate::{AxRunQueue, AxTask, AxTaskRef, WaitQueue};
 
 /// A unique identifier for a thread.
@@ -52,6 +53,7 @@ pub struct TaskInner {
 
     kstack: Option<TaskStack>,
     ctx: UnsafeCell<TaskContext>,
+    task_ext: AxTaskExt,
 
     #[cfg(feature = "tls")]
     tls: TlsArea,
@@ -86,6 +88,29 @@ unsafe impl Send for TaskInner {}
 unsafe impl Sync for TaskInner {}
 
 impl TaskInner {
+    /// Create a new task with the given entry function and stack size.
+    pub fn new<F>(entry: F, name: String, stack_size: usize) -> Self
+    where
+        F: FnOnce() + Send + 'static,
+    {
+        let mut t = Self::new_common(TaskId::new(), name);
+        debug!("new task: {}", t.id_name());
+        let kstack = TaskStack::alloc(align_up_4k(stack_size));
+
+        #[cfg(feature = "tls")]
+        let tls = VirtAddr::from(t.tls.tls_ptr() as usize);
+        #[cfg(not(feature = "tls"))]
+        let tls = VirtAddr::from(0);
+
+        t.entry = Some(Box::into_raw(Box::new(entry)));
+        t.ctx_mut().init(task_entry as usize, kstack.top(), tls);
+        t.kstack = Some(kstack);
+        if t.name == "idle" {
+            t.is_idle = true;
+        }
+        t
+    }
+
     /// Gets the ID of the task.
     pub const fn id(&self) -> TaskId {
         self.id
@@ -108,6 +133,31 @@ impl TaskInner {
         self.wait_for_exit
             .wait_until(|| self.state() == TaskState::Exited);
         Some(self.exit_code.load(Ordering::Acquire))
+    }
+
+    /// Returns the pointer to the user-defined task extended data.
+    ///
+    /// # Safety
+    ///
+    /// The caller should not access the pointer directly, use [`TaskExtRef::task_ext`]
+    /// or [`TaskExtMut::task_ext_mut`] instead.
+    ///
+    /// [`TaskExtRef::task_ext`]: crate::task_ext::TaskExtRef::task_ext
+    /// [`TaskExtMut::task_ext_mut`]: crate::task_ext::TaskExtMut::task_ext_mut
+    pub unsafe fn task_ext_ptr(&self) -> *mut u8 {
+        self.task_ext.as_ptr()
+    }
+
+    /// Initialize the user-defined task extended data.
+    ///
+    /// Returns a reference to the task extended data if it has not been
+    /// initialized yet (empty), otherwise returns [`None`].
+    pub fn init_task_ext<T: Sized>(&mut self, data: T) -> Option<&T> {
+        if self.task_ext.is_empty() {
+            self.task_ext.write(data).map(|data| &*data)
+        } else {
+            None
+        }
     }
 }
 
@@ -132,32 +182,10 @@ impl TaskInner {
             wait_for_exit: WaitQueue::new(),
             kstack: None,
             ctx: UnsafeCell::new(TaskContext::new()),
+            task_ext: AxTaskExt::empty(),
             #[cfg(feature = "tls")]
             tls: TlsArea::alloc(),
         }
-    }
-
-    /// Create a new task with the given entry function and stack size.
-    pub(crate) fn new<F>(entry: F, name: String, stack_size: usize) -> AxTaskRef
-    where
-        F: FnOnce() + Send + 'static,
-    {
-        let mut t = Self::new_common(TaskId::new(), name);
-        debug!("new task: {}", t.id_name());
-        let kstack = TaskStack::alloc(align_up_4k(stack_size));
-
-        #[cfg(feature = "tls")]
-        let tls = va!(t.tls.tls_ptr() as usize);
-        #[cfg(not(feature = "tls"))]
-        let tls = va!(0);
-
-        t.entry = Some(Box::into_raw(Box::new(entry)));
-        t.ctx.get_mut().init(task_entry as usize, kstack.top(), tls);
-        t.kstack = Some(kstack);
-        if t.name == "idle" {
-            t.is_idle = true;
-        }
-        Arc::new(AxTask::new(t))
     }
 
     /// Creates an "init task" using the current CPU states, to use as the
@@ -168,13 +196,17 @@ impl TaskInner {
     ///
     /// And there is no need to set the `entry`, `kstack` or `tls` fields, as
     /// they will be filled automatically when the task is switches out.
-    pub(crate) fn new_init(name: String) -> AxTaskRef {
+    pub(crate) fn new_init(name: String) -> Self {
         let mut t = Self::new_common(TaskId::new(), name);
         t.is_init = true;
         if t.name == "idle" {
             t.is_idle = true;
         }
-        Arc::new(AxTask::new(t))
+        t
+    }
+
+    pub(crate) fn into_arc(self) -> AxTaskRef {
+        Arc::new(AxTask::new(self))
     }
 
     #[inline]
@@ -281,6 +313,21 @@ impl TaskInner {
     pub(crate) const unsafe fn ctx_mut_ptr(&self) -> *mut TaskContext {
         self.ctx.get()
     }
+
+    /// Returns a mutable reference to the task context.
+    #[inline]
+    pub const fn ctx_mut(&mut self) -> &mut TaskContext {
+        self.ctx.get_mut()
+    }
+
+    /// Returns the top address of the kernel stack.
+    #[inline]
+    pub const fn kernel_stack_top(&self) -> Option<VirtAddr> {
+        match &self.kstack {
+            Some(s) => Some(s.top()),
+            None => None,
+        }
+    }
 }
 
 impl fmt::Debug for TaskInner {
@@ -327,6 +374,8 @@ impl Drop for TaskStack {
 use core::mem::ManuallyDrop;
 
 /// A wrapper of [`AxTaskRef`] as the current task.
+///
+/// It won't change the reference count of the task when created or dropped.
 pub struct CurrentTask(ManuallyDrop<AxTaskRef>);
 
 impl CurrentTask {
@@ -357,6 +406,7 @@ impl CurrentTask {
     }
 
     pub(crate) unsafe fn init_current(init_task: AxTaskRef) {
+        assert!(init_task.is_init());
         #[cfg(feature = "tls")]
         axhal::arch::write_thread_pointer(init_task.tls.tls_ptr() as usize);
         let ptr = Arc::into_raw(init_task);

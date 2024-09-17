@@ -1,4 +1,3 @@
-use memory_addr::{va, VirtAddr};
 use page_table_entry::MappingFlags;
 use x86::{controlregs::cr2, irq::*};
 use x86_64::structures::idt::PageFaultErrorCode;

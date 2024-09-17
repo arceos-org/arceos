@@ -4,7 +4,7 @@ mod macros;
 mod context;
 mod trap;
 
-use memory_addr::{pa, PhysAddr, VirtAddr};
+use memory_addr::{PhysAddr, VirtAddr};
 use riscv::asm;
 use riscv::register::{satp, sstatus, stvec};
 

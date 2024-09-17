@@ -2,7 +2,7 @@
 
 use kspin::SpinNoIrq;
 use lazyinit::LazyInit;
-use memory_addr::{pa, PhysAddr};
+use memory_addr::PhysAddr;
 use x2apic::ioapic::IoApic;
 use x2apic::lapic::{xapic_base, LocalApic, LocalApicBuilder};
 use x86_64::instructions::port::Port;
