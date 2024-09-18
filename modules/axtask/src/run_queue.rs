@@ -273,15 +273,16 @@ impl AxRunQueue {
             "task is not blocking, {:?}",
             curr.state()
         );
-        assert!(curr.in_wait_queue());
 
         debug!("task block: {}", curr.id_name());
         self.resched(false);
     }
 
+    /// Unblock one task by inserting it into the run queue.
+    /// If task state is `BLOCKING`, it will enter a loop until the task is in `BLOCKED` state.
+    ///
+    /// Note: this function should by called with preemption and IRQ disabled.
     pub fn unblock_task(&mut self, task: AxTaskRef, resched: bool) {
-        let cpu_id = self.cpu_id;
-
         // When task's state is Blocking, it has not finished its scheduling process.
         if task.is_blocking() {
             while task.is_blocking() {
@@ -292,6 +293,7 @@ impl AxRunQueue {
         }
 
         if task.is_blocked() {
+            let cpu_id = self.cpu_id;
             debug!("task unblock: {} on run_queue {}", task.id_name(), cpu_id);
             task.set_state(TaskState::Ready);
             self.scheduler.add_task(task); // TODO: priority

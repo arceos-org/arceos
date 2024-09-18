@@ -97,6 +97,7 @@ where
     F: FnOnce() + Send + 'static,
 {
     let task = TaskInner::new(f, name, stack_size, None);
+    let _kernel_guard = kernel_guard::NoPreemptIrqSave::new();
     crate::select_run_queue(
         #[cfg(feature = "smp")]
         task.clone(),

@@ -15,7 +15,6 @@ struct TaskWakeupEvent(AxTaskRef);
 
 impl TimerEvent for TaskWakeupEvent {
     fn callback(self, _now: TimeValue) {
-        let _kernel_guard = kernel_guard::NoPreempt::new();
         self.0.set_in_timer_list(false);
         select_run_queue(
             #[cfg(feature = "smp")]

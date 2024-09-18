@@ -62,12 +62,13 @@ impl WaitQueue {
     }
 
     fn push_to_wait_queue(&self) {
+        let mut wq = self.queue.lock();
         let curr = crate::current();
         assert!(curr.is_running());
         assert!(!curr.is_idle());
         // we must not block current task with preemption disabled.
         #[cfg(feature = "preempt")]
-        assert!(curr.can_preempt(1));
+        assert!(curr.can_preempt(2));
 
         // We set task state as `Blocking` to clarify that the task is blocked
         // but **still NOT** finished its scheduling process.
@@ -83,7 +84,7 @@ impl WaitQueue {
 
         debug!("{} push to wait queue", curr.id_name());
 
-        self.queue.lock().push_back(curr.clone());
+        wq.push_back(curr.clone());
     }
 
     /// Blocks the current task and put it into the wait queue, until other task
@@ -206,6 +207,8 @@ impl WaitQueue {
     /// If `resched` is true, the current task will be preempted when the
     /// preemption is enabled.
     pub fn notify_one(&self, resched: bool) -> bool {
+        // Todo: figure out is irq save necessary here.
+        let _kernel_guard = kernel_guard::NoPreemptIrqSave::new();
         let mut wq = self.queue.lock();
         if let Some(task) = wq.pop_front() {
             task.set_in_wait_queue(false);
@@ -223,6 +226,8 @@ impl WaitQueue {
     /// preemption is enabled.
     pub fn notify_all(&self, resched: bool) {
         loop {
+            // Todo: figure out is irq save necessary here.
+            let kernel_guard = kernel_guard::NoPreemptIrqSave::new();
             let mut wq = self.queue.lock();
             if let Some(task) = wq.pop_front() {
                 task.set_in_wait_queue(false);
@@ -231,6 +236,7 @@ impl WaitQueue {
             } else {
                 break;
             }
+            drop(kernel_guard);
         }
     }
 
@@ -239,6 +245,8 @@ impl WaitQueue {
     /// If `resched` is true, the current task will be preempted when the
     /// preemption is enabled.
     pub fn notify_task(&mut self, resched: bool, task: &AxTaskRef) -> bool {
+        // Todo: figure out is irq save necessary here.
+        let _kernel_guard = kernel_guard::NoPreemptIrqSave::new();
         let mut wq = self.queue.lock();
         let task_to_be_notify = {
             if let Some(index) = wq.iter().position(|t| Arc::ptr_eq(t, task)) {
