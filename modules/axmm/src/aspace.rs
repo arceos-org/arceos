@@ -72,9 +72,9 @@ impl AddrSpace {
     }
 
     /// Finds a free area that can accommodate the given size.
-
+    ///
     /// The search starts from the given hint address, and the area should be within the given limit range.
-
+    ///
     /// Returns the start address of the free area. Returns None if no such area is found.
     pub fn find_free_area(
         &self,
