@@ -79,7 +79,7 @@ pub fn set_kernel_page_table_root(root_paddr: PhysAddr) {
 ///
 /// # Panics
 ///
-/// It must be called after [`set_kernel_page_table`], otherwise it will panic.
+/// It must be called after [`set_kernel_page_table_root`], otherwise it will panic.
 pub fn kernel_page_table_root() -> PhysAddr {
     *KERNEL_PAGE_TABLE_ROOT
         .get()

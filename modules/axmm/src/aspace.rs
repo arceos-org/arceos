@@ -74,6 +74,20 @@ impl AddrSpace {
         Ok(())
     }
 
+    /// Finds a free area that can accommodate the given size.
+    ///
+    /// The search starts from the given hint address, and the area should be within the given limit range.
+    ///
+    /// Returns the start address of the free area. Returns None if no such area is found.
+    pub fn find_free_area(
+        &self,
+        hint: VirtAddr,
+        size: usize,
+        limit: VirtAddrRange,
+    ) -> Option<VirtAddr> {
+        self.areas.find_free_area(hint, size, limit)
+    }
+
     /// Add a new linear mapping.
     ///
     /// See [`Backend`] for more details about the mapping backends.
