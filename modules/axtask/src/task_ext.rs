@@ -28,9 +28,9 @@ impl AxTaskExt {
     /// Returns the expected alignment of the task extended structure.
     pub fn align() -> usize {
         extern "C" {
-            static __AX_TASK_EXT_SIZE: usize;
+            static __AX_TASK_EXT_ALIGN: usize;
         }
-        unsafe { __AX_TASK_EXT_SIZE }
+        unsafe { __AX_TASK_EXT_ALIGN }
     }
 
     /// Construct an empty task extended structure that contains no data
