@@ -6,6 +6,7 @@ use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, AtomicU8, Ordering};
 use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 
 use bitmaps::Bitmap;
+use kspin::SpinRaw;
 use memory_addr::{align_up_4k, va, VirtAddr};
 
 use axhal::arch::TaskContext;
@@ -53,6 +54,12 @@ pub struct TaskInner {
     in_wait_queue: AtomicBool,
     #[cfg(feature = "irq")]
     in_timer_list: AtomicBool,
+
+    /// Used to protect the task from being unblocked by timer and `notify()` at the same time.
+    /// It is used in `unblock_task()`, which is called by wait queue's `notify()` and timer's callback.
+    /// Since preemption and irq are both disabled during `unblock_task()`, we can simply use a raw spin lock here.
+    #[cfg(feature = "irq")]
+    unblock_lock: SpinRaw<()>,
 
     #[cfg(feature = "preempt")]
     need_resched: AtomicBool,
@@ -138,6 +145,8 @@ impl TaskInner {
             in_wait_queue: AtomicBool::new(false),
             #[cfg(feature = "irq")]
             in_timer_list: AtomicBool::new(false),
+            #[cfg(feature = "irq")]
+            unblock_lock: SpinRaw::new(()),
             #[cfg(feature = "preempt")]
             need_resched: AtomicBool::new(false),
             #[cfg(feature = "preempt")]
@@ -286,6 +295,27 @@ impl TaskInner {
     #[cfg(feature = "irq")]
     pub(crate) fn set_in_timer_list(&self, in_timer_list: bool) {
         self.in_timer_list.store(in_timer_list, Ordering::Release);
+    }
+
+    pub(crate) fn unblock_locked<F>(&self, mut run_queue_push: F)
+    where
+        F: FnMut(),
+    {
+        // When task's state is Blocking, it has not finished its scheduling process.
+        if self.is_blocking() {
+            while self.is_blocking() {
+                // Wait for the task to finish its scheduling process.
+                core::hint::spin_loop();
+            }
+            assert!(self.is_blocked())
+        }
+
+        // When irq is enabled, use `unblock_lock` to protect the task from being unblocked by timer and `notify()` at the same time.
+        #[cfg(feature = "irq")]
+        let _lock = self.unblock_lock.lock();
+        if self.is_blocked() {
+            run_queue_push();
+        }
     }
 
     #[inline]

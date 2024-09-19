@@ -183,11 +183,7 @@ impl AxRunQueue {
 /// Core functions of run queue.
 impl AxRunQueue {
     pub fn add_task(&mut self, task: AxTaskRef) {
-        debug!(
-            "task spawn: {} on run_queue {}",
-            task.id_name(),
-            self.cpu_id
-        );
+        debug!("Add {} on run_queue {}", task.id_name(), self.cpu_id);
         assert!(task.is_ready());
         self.scheduler.add_task(task);
     }
@@ -280,23 +276,12 @@ impl AxRunQueue {
 
     /// Unblock one task by inserting it into the run queue.
     /// If task state is `BLOCKING`, it will enter a loop until the task is in `BLOCKED` state.
-    ///
-    /// Note: this function should by called with preemption and IRQ disabled.
     pub fn unblock_task(&mut self, task: AxTaskRef, resched: bool) {
-        // When task's state is Blocking, it has not finished its scheduling process.
-        if task.is_blocking() {
-            while task.is_blocking() {
-                // Wait for the task to finish its scheduling process.
-                core::hint::spin_loop();
-            }
-            assert!(task.is_blocked())
-        }
-
-        if task.is_blocked() {
+        task.clone().unblock_locked(|| {
             let cpu_id = self.cpu_id;
             debug!("task unblock: {} on run_queue {}", task.id_name(), cpu_id);
             task.set_state(TaskState::Ready);
-            self.scheduler.add_task(task); // TODO: priority
+            self.scheduler.add_task(task.clone()); // TODO: priority
 
             // Note: when the task is unblocked on another CPU's run queue,
             // we just ingiore the `resched` flag.
@@ -304,7 +289,7 @@ impl AxRunQueue {
                 #[cfg(feature = "preempt")]
                 crate::current().set_preempt_pending(true);
             }
-        }
+        })
     }
 
     #[cfg(feature = "irq")]
