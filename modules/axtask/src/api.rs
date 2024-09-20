@@ -2,7 +2,7 @@
 
 use alloc::{string::String, sync::Arc};
 
-pub(crate) use crate::run_queue::{AxRunQueue, RUN_QUEUE};
+pub(crate) use crate::run_queue::{current_run_queue, select_run_queue};
 
 #[doc(cfg(feature = "multitask"))]
 pub use crate::task::{CurrentTask, TaskId, TaskInner};
@@ -77,6 +77,8 @@ pub fn init_scheduler() {
 /// Initializes the task scheduler for secondary CPUs.
 pub fn init_scheduler_secondary() {
     crate::run_queue::init_secondary();
+    #[cfg(feature = "irq")]
+    crate::timers::init();
 }
 
 /// Handles periodic timer ticks for the task manager.
@@ -86,13 +88,18 @@ pub fn init_scheduler_secondary() {
 #[doc(cfg(feature = "irq"))]
 pub fn on_timer_tick() {
     crate::timers::check_events();
-    RUN_QUEUE.lock().scheduler_timer_tick();
+    current_run_queue().scheduler_timer_tick();
 }
 
 /// Adds the given task to the run queue, returns the task reference.
 pub fn spawn_task(task: TaskInner) -> AxTaskRef {
     let task_ref = task.into_arc();
-    RUN_QUEUE.lock().add_task(task_ref.clone());
+    let _kernel_guard = kernel_guard::NoPreemptIrqSave::new();
+    crate::select_run_queue(
+        #[cfg(feature = "smp")]
+        task_ref.clone(),
+    )
+    .add_task(task_ref.clone());
     task_ref
 }
 
@@ -103,7 +110,7 @@ pub fn spawn_raw<F>(f: F, name: String, stack_size: usize) -> AxTaskRef
 where
     F: FnOnce() + Send + 'static,
 {
-    spawn_task(TaskInner::new(f, name, stack_size))
+    spawn_task(TaskInner::new(f, name, stack_size, None))
 }
 
 /// Spawns a new task with the default parameters.
@@ -129,13 +136,13 @@ where
 ///
 /// [CFS]: https://en.wikipedia.org/wiki/Completely_Fair_Scheduler
 pub fn set_priority(prio: isize) -> bool {
-    RUN_QUEUE.lock().set_current_priority(prio)
+    current_run_queue().set_current_priority(prio)
 }
 
 /// Current task gives up the CPU time voluntarily, and switches to another
 /// ready task.
 pub fn yield_now() {
-    RUN_QUEUE.lock().yield_current();
+    current_run_queue().yield_current()
 }
 
 /// Current task is going to sleep for the given duration.
@@ -150,14 +157,14 @@ pub fn sleep(dur: core::time::Duration) {
 /// If the feature `irq` is not enabled, it uses busy-wait instead.
 pub fn sleep_until(deadline: axhal::time::TimeValue) {
     #[cfg(feature = "irq")]
-    RUN_QUEUE.lock().sleep_until(deadline);
+    current_run_queue().sleep_until(deadline);
     #[cfg(not(feature = "irq"))]
     axhal::time::busy_wait_until(deadline);
 }
 
 /// Exits the current task.
 pub fn exit(exit_code: i32) -> ! {
-    RUN_QUEUE.lock().exit_current(exit_code)
+    current_run_queue().exit_current(exit_code)
 }
 
 /// The idle task routine.

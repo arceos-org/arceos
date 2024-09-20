@@ -510,6 +510,7 @@ dependencies = [
  "axconfig",
  "axhal",
  "axtask",
+ "bitmaps",
  "cfg-if",
  "crate_interface",
  "kernel_guard",
@@ -1022,9 +1023,9 @@ checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 
 [[package]]
 name = "memory_addr"
-version = "0.3.1"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f769efcf10b9dfb4c913bebb409cda77b1a3f072b249bf5465e250bcb30eb49"
+checksum = "2ca25419c2b34080d526d6836a53dcab129767ab6a9904587c87265ae6d41aa9"
 
 [[package]]
 name = "minimal-lexical"
@@ -1314,8 +1315,9 @@ checksum = "e6e36312fb5ddc10d08ecdc65187402baba4ac34585cb9d1b78522ae2358d890"
 [[package]]
 name = "scheduler"
 version = "0.1.0"
-source = "git+https://github.com/arceos-org/scheduler.git?tag=v0.1.0#c8d25d9aed146dca28dc8987afd229b52c20361a"
+source = "git+https://github.com/arceos-org/scheduler.git?branch=num_tasks#415a620347722cb734fa440d9103065690a5853b"
 dependencies = [
+ "kspin",
  "linked_list",
 ]
 

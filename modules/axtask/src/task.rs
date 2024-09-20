@@ -1,19 +1,21 @@
 use alloc::{boxed::Box, string::String, sync::Arc};
 use core::ops::Deref;
+#[cfg(any(feature = "preempt", feature = "irq"))]
+use core::sync::atomic::AtomicUsize;
 use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, AtomicU8, Ordering};
 use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 
-#[cfg(feature = "preempt")]
-use core::sync::atomic::AtomicUsize;
+use bitmaps::Bitmap;
+use kspin::SpinRaw;
+use memory_addr::{align_up_4k, VirtAddr};
 
+use axhal::arch::TaskContext;
+use axhal::cpu::this_cpu_id;
 #[cfg(feature = "tls")]
 use axhal::tls::TlsArea;
 
-use axhal::arch::TaskContext;
-use memory_addr::{align_up_4k, VirtAddr};
-
 use crate::task_ext::AxTaskExt;
-use crate::{AxRunQueue, AxTask, AxTaskRef, WaitQueue};
+use crate::{AxTask, AxTaskRef, WaitQueue};
 
 /// A unique identifier for a thread.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -23,10 +25,18 @@ pub struct TaskId(u64);
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub(crate) enum TaskState {
+    /// Task is running on some CPU.
     Running = 1,
+    /// Task is ready to run on some scheduler's ready queue.
     Ready = 2,
-    Blocked = 3,
-    Exited = 4,
+    /// Task is just be blocked and inserted into the wait queue,
+    /// but still have **NOT finished** its scheduling process.
+    Blocking = 3,
+    /// Task is blocked (in the wait queue or timer list),
+    /// and it has finished its scheduling process, it can be wake up by `notify()` on any run queue safely.
+    Blocked = 4,
+    /// Task is exited and waiting for being dropped.
+    Exited = 5,
 }
 
 /// The inner task structure.
@@ -39,9 +49,18 @@ pub struct TaskInner {
     entry: Option<*mut dyn FnOnce()>,
     state: AtomicU8,
 
+    /// CPU affinity mask.
+    cpu_set: Bitmap<{ axconfig::SMP }>,
+
     in_wait_queue: AtomicBool,
     #[cfg(feature = "irq")]
     in_timer_list: AtomicBool,
+
+    /// Used to protect the task from being unblocked by timer and `notify()` at the same time.
+    /// It is used in `unblock_task()`, which is called by wait queue's `notify()` and timer's callback.
+    /// Since preemption and irq are both disabled during `unblock_task()`, we can simply use a raw spin lock here.
+    #[cfg(feature = "irq")]
+    unblock_lock: SpinRaw<()>,
 
     #[cfg(feature = "preempt")]
     need_resched: AtomicBool,
@@ -77,8 +96,9 @@ impl From<u8> for TaskState {
         match state {
             1 => Self::Running,
             2 => Self::Ready,
-            3 => Self::Blocked,
-            4 => Self::Exited,
+            3 => Self::Blocking,
+            4 => Self::Blocked,
+            5 => Self::Exited,
             _ => unreachable!(),
         }
     }
@@ -89,7 +109,16 @@ unsafe impl Sync for TaskInner {}
 
 impl TaskInner {
     /// Create a new task with the given entry function and stack size.
-    pub fn new<F>(entry: F, name: String, stack_size: usize) -> Self
+    ///
+    /// When "smp" feature is enabled:
+    /// `cpu_set` represents a set of physical CPUs, which is implemented as a bit mask,
+    /// refering to `cpu_set_t` in Linux.
+    /// The task will be only scheduled on the specified CPUs if `cpu_set` is set as `Some(cpu_mask)`,
+    /// Otherwise, the task will be scheduled on all CPUs under specific load balancing policy.
+    /// Reference:
+    ///     * https://man7.org/linux/man-pages/man2/sched_setaffinity.2.html
+    ///     * https://man7.org/linux/man-pages/man3/CPU_SET.3.html
+    pub fn new<F>(entry: F, name: String, stack_size: usize, cpu_set: Option<usize>) -> Self
     where
         F: FnOnce() + Send + 'static,
     {
@@ -108,6 +137,21 @@ impl TaskInner {
         if t.name == "idle" {
             t.is_idle = true;
         }
+        t.cpu_set = match cpu_set {
+            Some(cpu_set) => {
+                let mut bit_map = Bitmap::new();
+                let mut i = 0;
+                while i < axconfig::SMP {
+                    if cpu_set & (1 << i) != 0 {
+                        bit_map.set(i, true);
+                    }
+                    i += 1;
+                }
+                bit_map
+            }
+            // This task can be scheduled on all CPUs by default.
+            None => Bitmap::mask(axconfig::SMP),
+        };
         t
     }
 
@@ -171,9 +215,12 @@ impl TaskInner {
             is_init: false,
             entry: None,
             state: AtomicU8::new(TaskState::Ready as u8),
+            cpu_set: Bitmap::new(),
             in_wait_queue: AtomicBool::new(false),
             #[cfg(feature = "irq")]
             in_timer_list: AtomicBool::new(false),
+            #[cfg(feature = "irq")]
+            unblock_lock: SpinRaw::new(()),
             #[cfg(feature = "preempt")]
             need_resched: AtomicBool::new(false),
             #[cfg(feature = "preempt")]
@@ -199,6 +246,7 @@ impl TaskInner {
     pub(crate) fn new_init(name: String) -> Self {
         let mut t = Self::new_common(TaskId::new(), name);
         t.is_init = true;
+        t.cpu_set.set(this_cpu_id(), true);
         if t.name == "idle" {
             t.is_idle = true;
         }
@@ -235,6 +283,11 @@ impl TaskInner {
     }
 
     #[inline]
+    pub(crate) fn is_blocking(&self) -> bool {
+        matches!(self.state(), TaskState::Blocking)
+    }
+
+    #[inline]
     pub(crate) const fn is_init(&self) -> bool {
         self.is_init
     }
@@ -242,6 +295,11 @@ impl TaskInner {
     #[inline]
     pub(crate) const fn is_idle(&self) -> bool {
         self.is_idle
+    }
+
+    #[inline]
+    pub(crate) const fn cpu_set(&self) -> Bitmap<{ axconfig::SMP }> {
+        self.cpu_set
     }
 
     #[inline]
@@ -264,6 +322,27 @@ impl TaskInner {
     #[cfg(feature = "irq")]
     pub(crate) fn set_in_timer_list(&self, in_timer_list: bool) {
         self.in_timer_list.store(in_timer_list, Ordering::Release);
+    }
+
+    pub(crate) fn unblock_locked<F>(&self, mut run_queue_push: F)
+    where
+        F: FnMut(),
+    {
+        // When task's state is Blocking, it has not finished its scheduling process.
+        if self.is_blocking() {
+            while self.is_blocking() {
+                // Wait for the task to finish its scheduling process.
+                core::hint::spin_loop();
+            }
+            assert!(self.is_blocked())
+        }
+
+        // When irq is enabled, use `unblock_lock` to protect the task from being unblocked by timer and `notify()` at the same time.
+        #[cfg(feature = "irq")]
+        let _lock = self.unblock_lock.lock();
+        if self.is_blocked() {
+            run_queue_push();
+        }
     }
 
     #[inline]
@@ -297,16 +376,17 @@ impl TaskInner {
     fn current_check_preempt_pending() {
         let curr = crate::current();
         if curr.need_resched.load(Ordering::Acquire) && curr.can_preempt(0) {
-            let mut rq = crate::RUN_QUEUE.lock();
+            let _kernel_guard = kernel_guard::NoPreemptIrqSave::new();
             if curr.need_resched.load(Ordering::Acquire) {
-                rq.preempt_resched();
+                crate::current_run_queue().preempt_resched()
             }
         }
     }
 
-    pub(crate) fn notify_exit(&self, exit_code: i32, rq: &mut AxRunQueue) {
+    /// Notify all tasks that join on this task.
+    pub(crate) fn notify_exit(&self, exit_code: i32) {
         self.exit_code.store(exit_code, Ordering::Release);
-        self.wait_for_exit.notify_all_locked(false, rq);
+        self.wait_for_exit.notify_all(false);
     }
 
     #[inline]
@@ -429,8 +509,7 @@ impl Deref for CurrentTask {
 }
 
 extern "C" fn task_entry() -> ! {
-    // release the lock that was implicitly held across the reschedule
-    unsafe { crate::RUN_QUEUE.force_unlock() };
+    // Enable irq (if feature "irq" is enabled) before running the task entry function.
     #[cfg(feature = "irq")]
     axhal::arch::enable_irqs();
     let task = crate::current();

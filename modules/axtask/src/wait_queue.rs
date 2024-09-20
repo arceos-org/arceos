@@ -1,8 +1,8 @@
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
-use kspin::SpinRaw;
+use kspin::SpinNoIrq;
 
-use crate::{AxRunQueue, AxTaskRef, CurrentTask, RUN_QUEUE};
+use crate::{current_run_queue, select_run_queue, task::TaskState, AxTaskRef, CurrentTask};
 
 /// A queue to store sleeping tasks.
 ///
@@ -27,21 +27,21 @@ use crate::{AxRunQueue, AxTaskRef, CurrentTask, RUN_QUEUE};
 /// assert_eq!(VALUE.load(Ordering::Relaxed), 1);
 /// ```
 pub struct WaitQueue {
-    queue: SpinRaw<VecDeque<AxTaskRef>>, // we already disabled IRQs when lock the `RUN_QUEUE`
+    queue: SpinNoIrq<VecDeque<AxTaskRef>>,
 }
 
 impl WaitQueue {
     /// Creates an empty wait queue.
     pub const fn new() -> Self {
         Self {
-            queue: SpinRaw::new(VecDeque::new()),
+            queue: SpinNoIrq::new(VecDeque::new()),
         }
     }
 
     /// Creates an empty wait queue with space for at least `capacity` elements.
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
-            queue: SpinRaw::new(VecDeque::with_capacity(capacity)),
+            queue: SpinNoIrq::new(VecDeque::with_capacity(capacity)),
         }
     }
 
@@ -50,9 +50,8 @@ impl WaitQueue {
         // the event from another queue.
         if curr.in_wait_queue() {
             // wake up by timer (timeout).
-            // `RUN_QUEUE` is not locked here, so disable IRQs.
-            let _guard = kernel_guard::IrqSave::new();
-            self.queue.lock().retain(|t| !curr.ptr_eq(t));
+            let mut wq_locked = self.queue.lock();
+            wq_locked.retain(|t| !curr.ptr_eq(t));
             curr.set_in_wait_queue(false);
         }
         #[cfg(feature = "irq")]
@@ -62,14 +61,42 @@ impl WaitQueue {
         }
     }
 
+    fn push_to_wait_queue(&self) {
+        let mut wq = self.queue.lock();
+        let curr = crate::current();
+        assert!(curr.is_running());
+        assert!(!curr.is_idle());
+        // we must not block current task with preemption disabled.
+        // Current expected preempt count is 2.
+        // 1 for `NoPreemptIrqSave`, 1 for wait queue's `SpinNoIrq`.
+        #[cfg(feature = "preempt")]
+        assert!(curr.can_preempt(2));
+
+        // We set task state as `Blocking` to clarify that the task is blocked
+        // but **still NOT** finished its scheduling process.
+        //
+        // When another task (generally on another run queue) try to unblock this task,
+        // * if this task's state is still `Blocking`:
+        //      it needs to wait for this task's state to be changed to `Blocked`, which means it has finished its scheduling process.
+        // * if this task's state is `Blocked`:
+        //      it means this task is blocked and finished its scheduling process, in another word, it has left current run queue,
+        //      so this task can be scheduled on any run queue.
+        curr.set_state(TaskState::Blocking);
+        curr.set_in_wait_queue(true);
+
+        debug!("{} push to wait queue", curr.id_name());
+
+        wq.push_back(curr.clone());
+    }
+
     /// Blocks the current task and put it into the wait queue, until other task
     /// notifies it.
     pub fn wait(&self) {
-        RUN_QUEUE.lock().block_current(|task| {
-            task.set_in_wait_queue(true);
-            self.queue.lock().push_back(task)
-        });
+        let kernel_guard = kernel_guard::NoPreemptIrqSave::new();
+        self.push_to_wait_queue();
+        current_run_queue().blocked_resched();
         self.cancel_events(crate::current());
+        drop(kernel_guard);
     }
 
     /// Blocks the current task and put it into the wait queue, until the given
@@ -81,23 +108,40 @@ impl WaitQueue {
     where
         F: Fn() -> bool,
     {
+        let kernel_guard = kernel_guard::NoPreemptIrqSave::new();
         loop {
-            let mut rq = RUN_QUEUE.lock();
+            let mut wq = self.queue.lock();
             if condition() {
                 break;
             }
-            rq.block_current(|task| {
-                task.set_in_wait_queue(true);
-                self.queue.lock().push_back(task);
-            });
+            let curr = crate::current();
+            assert!(curr.is_running());
+            assert!(!curr.is_idle());
+
+            debug!("{} push to wait queue on wait_until", curr.id_name());
+
+            // we must not block current task with preemption disabled.
+            // Current expected preempt count is 2.
+            // 1 for `NoPreemptIrqSave`, 1 for wait queue's `SpinNoIrq`.
+            #[cfg(feature = "preempt")]
+            assert!(curr.can_preempt(2));
+            wq.push_back(curr.clone());
+
+            curr.set_state(TaskState::Blocking);
+            curr.set_in_wait_queue(true);
+            drop(wq);
+
+            current_run_queue().blocked_resched();
         }
         self.cancel_events(crate::current());
+        drop(kernel_guard);
     }
 
     /// Blocks the current task and put it into the wait queue, until other tasks
     /// notify it, or the given duration has elapsed.
     #[cfg(feature = "irq")]
     pub fn wait_timeout(&self, dur: core::time::Duration) -> bool {
+        let kernel_guard = kernel_guard::NoPreemptIrqSave::new();
         let curr = crate::current();
         let deadline = axhal::time::wall_time() + dur;
         debug!(
@@ -107,12 +151,12 @@ impl WaitQueue {
         );
         crate::timers::set_alarm_wakeup(deadline, curr.clone());
 
-        RUN_QUEUE.lock().block_current(|task| {
-            task.set_in_wait_queue(true);
-            self.queue.lock().push_back(task)
-        });
+        self.push_to_wait_queue();
+        current_run_queue().blocked_resched();
+
         let timeout = curr.in_wait_queue(); // still in the wait queue, must have timed out
         self.cancel_events(curr);
+        drop(kernel_guard);
         timeout
     }
 
@@ -126,6 +170,7 @@ impl WaitQueue {
     where
         F: Fn() -> bool,
     {
+        let kernel_guard = kernel_guard::NoPreemptIrqSave::new();
         let curr = crate::current();
         let deadline = axhal::time::wall_time() + dur;
         debug!(
@@ -137,17 +182,29 @@ impl WaitQueue {
 
         let mut timeout = true;
         while axhal::time::wall_time() < deadline {
-            let mut rq = RUN_QUEUE.lock();
+            let mut wq = self.queue.lock();
             if condition() {
                 timeout = false;
                 break;
             }
-            rq.block_current(|task| {
-                task.set_in_wait_queue(true);
-                self.queue.lock().push_back(task);
-            });
+            assert!(curr.is_running());
+            assert!(!curr.is_idle());
+
+            // we must not block current task with preemption disabled.
+            // Current expected preempt count is 2.
+            // 1 for `NoPreemptIrqSave`, 1 for wait queue's `SpinNoIrq`.
+            #[cfg(feature = "preempt")]
+            assert!(curr.can_preempt(2));
+            wq.push_back(curr.clone());
+
+            curr.set_state(TaskState::Blocking);
+            curr.set_in_wait_queue(true);
+            drop(wq);
+
+            current_run_queue().blocked_resched()
         }
         self.cancel_events(curr);
+        drop(kernel_guard);
         timeout
     }
 
@@ -156,9 +213,12 @@ impl WaitQueue {
     /// If `resched` is true, the current task will be preempted when the
     /// preemption is enabled.
     pub fn notify_one(&self, resched: bool) -> bool {
-        let mut rq = RUN_QUEUE.lock();
-        if !self.queue.lock().is_empty() {
-            self.notify_one_locked(resched, &mut rq)
+        let mut wq = self.queue.lock();
+        if let Some(task) = wq.pop_front() {
+            task.set_in_wait_queue(false);
+            unblock_one_task(task, resched);
+            drop(wq);
+            true
         } else {
             false
         }
@@ -170,14 +230,14 @@ impl WaitQueue {
     /// preemption is enabled.
     pub fn notify_all(&self, resched: bool) {
         loop {
-            let mut rq = RUN_QUEUE.lock();
-            if let Some(task) = self.queue.lock().pop_front() {
+            let mut wq = self.queue.lock();
+            if let Some(task) = wq.pop_front() {
                 task.set_in_wait_queue(false);
-                rq.unblock_task(task, resched);
+                unblock_one_task(task, resched);
             } else {
                 break;
             }
-            drop(rq); // we must unlock `RUN_QUEUE` after unlocking `self.queue`.
+            drop(wq);
         }
     }
 
@@ -186,31 +246,31 @@ impl WaitQueue {
     /// If `resched` is true, the current task will be preempted when the
     /// preemption is enabled.
     pub fn notify_task(&mut self, resched: bool, task: &AxTaskRef) -> bool {
-        let mut rq = RUN_QUEUE.lock();
         let mut wq = self.queue.lock();
-        if let Some(index) = wq.iter().position(|t| Arc::ptr_eq(t, task)) {
+        let task_to_be_notify = {
+            if let Some(index) = wq.iter().position(|t| Arc::ptr_eq(t, task)) {
+                wq.remove(index)
+            } else {
+                None
+            }
+        };
+        if let Some(task) = task_to_be_notify {
+            // Mark task as not in wait queue.
             task.set_in_wait_queue(false);
-            rq.unblock_task(wq.remove(index).unwrap(), resched);
+            unblock_one_task(task, resched);
+            drop(wq);
             true
         } else {
             false
         }
     }
+}
 
-    pub(crate) fn notify_one_locked(&self, resched: bool, rq: &mut AxRunQueue) -> bool {
-        if let Some(task) = self.queue.lock().pop_front() {
-            task.set_in_wait_queue(false);
-            rq.unblock_task(task, resched);
-            true
-        } else {
-            false
-        }
-    }
-
-    pub(crate) fn notify_all_locked(&self, resched: bool, rq: &mut AxRunQueue) {
-        while let Some(task) = self.queue.lock().pop_front() {
-            task.set_in_wait_queue(false);
-            rq.unblock_task(task, resched);
-        }
-    }
+pub(crate) fn unblock_one_task(task: AxTaskRef, resched: bool) {
+    // Select run queue by the CPU set of the task.
+    select_run_queue(
+        #[cfg(feature = "smp")]
+        task.clone(),
+    )
+    .unblock_task(task, resched)
 }
