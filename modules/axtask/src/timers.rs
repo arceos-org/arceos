@@ -1,5 +1,6 @@
 use alloc::sync::Arc;
 
+use kernel_guard::NoOp;
 use lazyinit::LazyInit;
 use timer_list::{TimeValue, TimerEvent, TimerList};
 
@@ -16,7 +17,7 @@ struct TaskWakeupEvent(AxTaskRef);
 impl TimerEvent for TaskWakeupEvent {
     fn callback(self, _now: TimeValue) {
         self.0.set_in_timer_list(false);
-        select_run_queue(
+        select_run_queue::<NoOp>(
             #[cfg(feature = "smp")]
             self.0.clone(),
         )

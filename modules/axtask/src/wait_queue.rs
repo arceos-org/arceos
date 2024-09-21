@@ -1,5 +1,7 @@
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
+
+use kernel_guard::{NoOp, NoPreemptIrqSave};
 use kspin::SpinNoIrq;
 
 use crate::{current_run_queue, select_run_queue, task::TaskState, AxTaskRef, CurrentTask};
@@ -92,11 +94,10 @@ impl WaitQueue {
     /// Blocks the current task and put it into the wait queue, until other task
     /// notifies it.
     pub fn wait(&self) {
-        let kernel_guard = kernel_guard::NoPreemptIrqSave::new();
+        let _kernel_guard = NoPreemptIrqSave::new();
         self.push_to_wait_queue();
-        current_run_queue().blocked_resched();
+        current_run_queue::<NoOp>().blocked_resched();
         self.cancel_events(crate::current());
-        drop(kernel_guard);
     }
 
     /// Blocks the current task and put it into the wait queue, until the given
@@ -108,7 +109,7 @@ impl WaitQueue {
     where
         F: Fn() -> bool,
     {
-        let kernel_guard = kernel_guard::NoPreemptIrqSave::new();
+        let _kernel_guard = NoPreemptIrqSave::new();
         loop {
             let mut wq = self.queue.lock();
             if condition() {
@@ -131,17 +132,16 @@ impl WaitQueue {
             curr.set_in_wait_queue(true);
             drop(wq);
 
-            current_run_queue().blocked_resched();
+            current_run_queue::<NoOp>().blocked_resched();
         }
         self.cancel_events(crate::current());
-        drop(kernel_guard);
     }
 
     /// Blocks the current task and put it into the wait queue, until other tasks
     /// notify it, or the given duration has elapsed.
     #[cfg(feature = "irq")]
     pub fn wait_timeout(&self, dur: core::time::Duration) -> bool {
-        let kernel_guard = kernel_guard::NoPreemptIrqSave::new();
+        let _kernel_guard = NoPreemptIrqSave::new();
         let curr = crate::current();
         let deadline = axhal::time::wall_time() + dur;
         debug!(
@@ -152,11 +152,10 @@ impl WaitQueue {
         crate::timers::set_alarm_wakeup(deadline, curr.clone());
 
         self.push_to_wait_queue();
-        current_run_queue().blocked_resched();
+        current_run_queue::<NoOp>().blocked_resched();
 
         let timeout = curr.in_wait_queue(); // still in the wait queue, must have timed out
         self.cancel_events(curr);
-        drop(kernel_guard);
         timeout
     }
 
@@ -170,7 +169,7 @@ impl WaitQueue {
     where
         F: Fn() -> bool,
     {
-        let kernel_guard = kernel_guard::NoPreemptIrqSave::new();
+        let _kernel_guard = NoPreemptIrqSave::new();
         let curr = crate::current();
         let deadline = axhal::time::wall_time() + dur;
         debug!(
@@ -201,10 +200,9 @@ impl WaitQueue {
             curr.set_in_wait_queue(true);
             drop(wq);
 
-            current_run_queue().blocked_resched()
+            current_run_queue::<NoOp>().blocked_resched()
         }
         self.cancel_events(curr);
-        drop(kernel_guard);
         timeout
     }
 
@@ -268,7 +266,7 @@ impl WaitQueue {
 
 pub(crate) fn unblock_one_task(task: AxTaskRef, resched: bool) {
     // Select run queue by the CPU set of the task.
-    select_run_queue(
+    select_run_queue::<NoPreemptIrqSave>(
         #[cfg(feature = "smp")]
         task.clone(),
     )

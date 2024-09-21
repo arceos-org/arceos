@@ -3,6 +3,7 @@ use alloc::sync::Arc;
 use core::mem::MaybeUninit;
 
 use bitmaps::Bitmap;
+use kernel_guard::BaseGuard;
 use lazyinit::LazyInit;
 use scheduler::BaseScheduler;
 
@@ -39,6 +40,7 @@ percpu_static! {
 static mut RUN_QUEUES: [MaybeUninit<&'static mut AxRunQueue>; axconfig::SMP] =
     [ARRAY_REPEAT_VALUE; axconfig::SMP];
 const ARRAY_REPEAT_VALUE: MaybeUninit<&'static mut AxRunQueue> = MaybeUninit::uninit();
+
 /// Returns a reference to the current run queue.
 ///
 /// ## Safety
@@ -51,9 +53,14 @@ const ARRAY_REPEAT_VALUE: MaybeUninit<&'static mut AxRunQueue> = MaybeUninit::un
 /// ## Returns
 ///
 /// A static reference to the current run queue.
-#[inline]
-pub(crate) fn current_run_queue() -> &'static mut AxRunQueue {
-    unsafe { RUN_QUEUE.current_ref_mut_raw() }
+// #[inline(always)]
+pub(crate) fn current_run_queue<G: BaseGuard>() -> AxRunQueueRef<'static, G> {
+    let irq_state = G::acquire();
+    AxRunQueueRef {
+        inner: unsafe { RUN_QUEUE.current_ref_mut_raw() },
+        state: irq_state,
+        _phantom: core::marker::PhantomData,
+    }
 }
 
 /// Selects the run queue index based on a CPU set bitmap, minimizing the number of tasks.
@@ -129,7 +136,9 @@ fn get_run_queue(index: usize) -> &'static mut AxRunQueue {
 /// 2. Use a more generic load balancing algorithm that can be customized or replaced.
 ///
 #[inline]
-pub(crate) fn select_run_queue(#[cfg(feature = "smp")] task: AxTaskRef) -> &'static mut AxRunQueue {
+pub(crate) fn select_run_queue<G: BaseGuard>(
+    #[cfg(feature = "smp")] task: AxTaskRef,
+) -> AxRunQueueRef<'static, G> {
     #[cfg(not(feature = "smp"))]
     {
         // When SMP is disabled, all tasks are scheduled on the same global run queue.
@@ -137,9 +146,14 @@ pub(crate) fn select_run_queue(#[cfg(feature = "smp")] task: AxTaskRef) -> &'sta
     }
     #[cfg(feature = "smp")]
     {
+        let irq_state = G::acquire();
         // When SMP is enabled, select the run queue based on the task's CPU affinity and load balance.
         let index = select_run_queue_index(task.cpu_set());
-        get_run_queue(index)
+        AxRunQueueRef {
+            inner: get_run_queue(index),
+            state: irq_state,
+            _phantom: core::marker::PhantomData,
+        }
     }
 }
 
@@ -149,6 +163,18 @@ pub(crate) struct AxRunQueue {
     cpu_id: usize,
     /// The core scheduler of this run queue.
     scheduler: Scheduler,
+}
+
+pub(crate) struct AxRunQueueRef<'a, G: BaseGuard> {
+    inner: &'a mut AxRunQueue,
+    state: G::State,
+    _phantom: core::marker::PhantomData<G>,
+}
+
+impl<'a, G: BaseGuard> Drop for AxRunQueueRef<'a, G> {
+    fn drop(&mut self) {
+        G::release(self.state);
+    }
 }
 
 impl AxRunQueue {
@@ -182,17 +208,17 @@ impl AxRunQueue {
 }
 
 /// Core functions of run queue.
-impl AxRunQueue {
+impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
     pub fn add_task(&mut self, task: AxTaskRef) {
-        debug!("Add {} on run_queue {}", task.id_name(), self.cpu_id);
+        debug!("Add {} on run_queue {}", task.id_name(), self.inner.cpu_id);
         assert!(task.is_ready());
-        self.scheduler.add_task(task);
+        self.inner.scheduler.add_task(task);
     }
 
     #[cfg(feature = "irq")]
     pub fn scheduler_timer_tick(&mut self) {
         let curr = crate::current();
-        if !curr.is_idle() && self.scheduler.task_tick(curr.as_task_ref()) {
+        if !curr.is_idle() && self.inner.scheduler.task_tick(curr.as_task_ref()) {
             #[cfg(feature = "preempt")]
             curr.set_preempt_pending(true);
         }
@@ -203,11 +229,12 @@ impl AxRunQueue {
         let curr = crate::current();
         trace!("task yield: {}", curr.id_name());
         assert!(curr.is_running());
-        self.resched(false);
+        self.inner.resched(false);
     }
 
     pub fn set_current_priority(&mut self, prio: isize) -> bool {
-        self.scheduler
+        self.inner
+            .scheduler
             .set_priority(crate::current().as_task_ref(), prio)
     }
 
@@ -230,15 +257,13 @@ impl AxRunQueue {
             can_preempt
         );
         if can_preempt {
-            self.resched(true);
+            self.inner.resched(true);
         } else {
             curr.set_preempt_pending(true);
         }
     }
 
     pub fn exit_current(&mut self, exit_code: i32) -> ! {
-        let _kernel_guard = kernel_guard::NoPreemptIrqSave::new();
-
         let curr = crate::current();
         debug!("task exit: {}, exit_code={}", curr.id_name(), exit_code);
         assert!(curr.is_running(), "task is not running: {:?}", curr.state());
@@ -257,9 +282,8 @@ impl AxRunQueue {
             // Wake up the GC task to drop the exited tasks.
             WAIT_FOR_EXIT.with_current(|wq| wq.notify_one(false));
             // Schedule to next task.
-            self.resched(false);
+            self.inner.resched(false);
         }
-        drop(_kernel_guard);
         unreachable!("task exited!");
     }
 
@@ -272,17 +296,17 @@ impl AxRunQueue {
         );
 
         debug!("task block: {}", curr.id_name());
-        self.resched(false);
+        self.inner.resched(false);
     }
 
     /// Unblock one task by inserting it into the run queue.
     /// If task state is `BLOCKING`, it will enter a loop until the task is in `BLOCKED` state.
     pub fn unblock_task(&mut self, task: AxTaskRef, resched: bool) {
         task.clone().unblock_locked(|| {
-            let cpu_id = self.cpu_id;
+            let cpu_id = self.inner.cpu_id;
             debug!("task unblock: {} on run_queue {}", task.id_name(), cpu_id);
             task.set_state(TaskState::Ready);
-            self.scheduler.add_task(task.clone()); // TODO: priority
+            self.inner.scheduler.add_task(task.clone()); // TODO: priority
 
             // Note: when the task is unblocked on another CPU's run queue,
             // we just ingiore the `resched` flag.
@@ -295,7 +319,7 @@ impl AxRunQueue {
 
     #[cfg(feature = "irq")]
     pub fn sleep_until(&mut self, deadline: axhal::time::TimeValue) {
-        let kernel_guard = kernel_guard::NoPreemptIrqSave::new();
+        let _kernel_guard = kernel_guard::NoPreemptIrqSave::new();
         let curr = crate::current();
         debug!("task sleep: {}, deadline={:?}", curr.id_name(), deadline);
         assert!(curr.is_running());
@@ -305,9 +329,8 @@ impl AxRunQueue {
         if now < deadline {
             crate::timers::set_alarm_wakeup(deadline, curr.clone());
             curr.set_state(TaskState::Blocking);
-            self.resched(false);
+            self.inner.resched(false);
         }
-        drop(kernel_guard)
     }
 }
 

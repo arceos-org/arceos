@@ -2,6 +2,8 @@
 
 use alloc::{string::String, sync::Arc};
 
+use kernel_guard::{NoOp, NoPreemptIrqSave};
+
 pub(crate) use crate::run_queue::{current_run_queue, select_run_queue};
 
 #[doc(cfg(feature = "multitask"))]
@@ -88,14 +90,14 @@ pub fn init_scheduler_secondary() {
 #[doc(cfg(feature = "irq"))]
 pub fn on_timer_tick() {
     crate::timers::check_events();
-    current_run_queue().scheduler_timer_tick();
+    current_run_queue::<NoOp>().scheduler_timer_tick();
 }
 
 /// Adds the given task to the run queue, returns the task reference.
 pub fn spawn_task(task: TaskInner) -> AxTaskRef {
     let task_ref = task.into_arc();
     let _kernel_guard = kernel_guard::NoPreemptIrqSave::new();
-    crate::select_run_queue(
+    crate::select_run_queue::<NoPreemptIrqSave>(
         #[cfg(feature = "smp")]
         task_ref.clone(),
     )
@@ -136,13 +138,13 @@ where
 ///
 /// [CFS]: https://en.wikipedia.org/wiki/Completely_Fair_Scheduler
 pub fn set_priority(prio: isize) -> bool {
-    current_run_queue().set_current_priority(prio)
+    current_run_queue::<NoPreemptIrqSave>().set_current_priority(prio)
 }
 
 /// Current task gives up the CPU time voluntarily, and switches to another
 /// ready task.
 pub fn yield_now() {
-    current_run_queue().yield_current()
+    current_run_queue::<NoPreemptIrqSave>().yield_current()
 }
 
 /// Current task is going to sleep for the given duration.
@@ -157,14 +159,14 @@ pub fn sleep(dur: core::time::Duration) {
 /// If the feature `irq` is not enabled, it uses busy-wait instead.
 pub fn sleep_until(deadline: axhal::time::TimeValue) {
     #[cfg(feature = "irq")]
-    current_run_queue().sleep_until(deadline);
+    current_run_queue::<NoPreemptIrqSave>().sleep_until(deadline);
     #[cfg(not(feature = "irq"))]
     axhal::time::busy_wait_until(deadline);
 }
 
 /// Exits the current task.
 pub fn exit(exit_code: i32) -> ! {
-    current_run_queue().exit_current(exit_code)
+    current_run_queue::<NoPreemptIrqSave>().exit_current(exit_code)
 }
 
 /// The idle task routine.
