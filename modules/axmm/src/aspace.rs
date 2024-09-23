@@ -1,8 +1,11 @@
 use core::fmt;
 
 use axerrno::{ax_err, AxError, AxResult};
+use axhal::mem::phys_to_virt;
 use axhal::paging::{MappingFlags, PageTable};
-use memory_addr::{is_aligned_4k, MemoryAddr, PhysAddr, VirtAddr, VirtAddrRange};
+use memory_addr::{
+    is_aligned_4k, MemoryAddr, PageIter4K, PhysAddr, VirtAddr, VirtAddrRange, PAGE_SIZE_4K,
+};
 use memory_set::{MemoryArea, MemorySet};
 
 use crate::backend::Backend;
@@ -160,6 +163,71 @@ impl AddrSpace {
             .unmap(start, size, &mut self.pt)
             .map_err(mapping_err_to_ax_err)?;
         Ok(())
+    }
+
+    /// To process data in this area with the given function.
+    ///
+    /// Now it supports reading and writing data in the given interval.
+    fn process_area_data<F>(&self, start_vaddr: VirtAddr, size: usize, mut f: F) -> AxResult
+    where
+        F: FnMut(VirtAddr, usize, usize),
+    {
+        let mut cnt = 0;
+        // If start_vaddr is aligned to 4K, start_vaddr_align_down will be equal to start_vaddr_align_up.
+        let end_vaddr_align_up = (start_vaddr + size).align_up_4k();
+        for vaddr in PageIter4K::new(start_vaddr.align_down_4k(), end_vaddr_align_up)
+            .expect("Failed to create page iterator")
+        {
+            let (mut paddr, _, _) = self.pt.query(vaddr).map_err(|_| AxError::BadAddress)?;
+
+            let mut copy_size = (size - cnt).min(PAGE_SIZE_4K);
+
+            if copy_size == 0 {
+                break;
+            }
+            if vaddr == start_vaddr.align_down_4k() && start_vaddr.align_offset_4k() != 0 {
+                let align_offset = start_vaddr.align_offset_4k();
+                copy_size = copy_size.min(PAGE_SIZE_4K - align_offset);
+                paddr += align_offset;
+            }
+            f(phys_to_virt(paddr), cnt, copy_size);
+            cnt += copy_size;
+        }
+        Ok(())
+    }
+
+    /// To read data from the address space.
+    ///
+    /// # Arguments
+    ///
+    /// * `start_vaddr` - The start virtual address to read.
+    /// * `end_vaddr` - The end virtual address to read.
+    /// * `buf` - The buffer to store the data. If the buffer is not large enough,
+    /// it will truncate the data to fit the buffer.
+    pub fn read(&self, start_vaddr: VirtAddr, buf: &mut [u8]) -> AxResult {
+        if !self.contains_range(start_vaddr, buf.len()) {
+            return ax_err!(InvalidInput, "address out of range");
+        }
+        self.process_area_data(start_vaddr, buf.len(), |src, offset, read_size| unsafe {
+            core::ptr::copy_nonoverlapping(src.as_ptr(), buf.as_mut_ptr().add(offset), read_size);
+        })
+    }
+
+    /// To write data to the address space.
+    ///
+    /// # Arguments
+    ///
+    /// * `start_vaddr` - The start virtual address to write.
+    /// * `buf` - The buffer to write to the address space.
+    ///     * If the buffer is not large enough, it will write all the data in the buffer to the space and return normally.
+    ///     * If the buffer is larger than the interval, it will write the data that can fit in the given interval.
+    pub fn write(&self, start_vaddr: VirtAddr, buf: &[u8]) -> AxResult {
+        if !self.contains_range(start_vaddr, buf.len()) {
+            return ax_err!(InvalidInput, "address out of range");
+        }
+        self.process_area_data(start_vaddr, buf.len(), |dst, offset, write_size| unsafe {
+            core::ptr::copy_nonoverlapping(buf.as_ptr().add(offset), dst.as_mut_ptr(), write_size);
+        })
     }
 
     /// Updates mapping within the specified virtual address range.
