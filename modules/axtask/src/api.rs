@@ -112,7 +112,7 @@ pub fn spawn_raw<F>(f: F, name: String, stack_size: usize) -> AxTaskRef
 where
     F: FnOnce() + Send + 'static,
 {
-    spawn_task(TaskInner::new(f, name, stack_size, None))
+    spawn_task(TaskInner::new(f, name, stack_size))
 }
 
 /// Spawns a new task with the default parameters.

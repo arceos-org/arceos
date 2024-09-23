@@ -2,7 +2,7 @@ use alloc::collections::VecDeque;
 use alloc::sync::Arc;
 use core::mem::MaybeUninit;
 
-use bitmaps::Bitmap;
+use cpumask::CpuMask;
 use kernel_guard::BaseGuard;
 use lazyinit::LazyInit;
 use scheduler::BaseScheduler;
@@ -65,12 +65,12 @@ pub(crate) fn current_run_queue<G: BaseGuard>() -> AxRunQueueRef<'static, G> {
 
 /// Selects the run queue index based on a CPU set bitmap, minimizing the number of tasks.
 ///
-/// This function filters the available run queues based on the provided `cpu_set` and
+/// This function filters the available run queues based on the provided `cpumask` and
 /// selects the one with the fewest tasks. The selected run queue's index (cpu_id) is returned.
 ///
 /// ## Arguments
 ///
-/// * `cpu_set` - A bitmap representing the CPUs that are eligible for task execution.
+/// * `cpumask` - A bitmap representing the CPUs that are eligible for task execution.
 ///
 /// ## Returns
 ///
@@ -82,11 +82,11 @@ pub(crate) fn current_run_queue<G: BaseGuard>() -> AxRunQueueRef<'static, G> {
 ///
 #[cfg(feature = "smp")]
 #[inline]
-fn select_run_queue_index(cpu_set: Bitmap<{ axconfig::SMP }>) -> usize {
+fn select_run_queue_index(cpumask: CpuMask<{ axconfig::SMP }>) -> usize {
     unsafe {
         RUN_QUEUES
             .iter()
-            .filter(|rq| cpu_set.get(rq.assume_init_ref().cpu_id()))
+            .filter(|rq| cpumask.get(rq.assume_init_ref().cpu_id()))
             .min_by_key(|rq| rq.assume_init_ref().num_tasks())
             .expect("No available run queue that matches the CPU set")
             .assume_init_ref()
@@ -148,7 +148,7 @@ pub(crate) fn select_run_queue<G: BaseGuard>(
     {
         let irq_state = G::acquire();
         // When SMP is enabled, select the run queue based on the task's CPU affinity and load balance.
-        let index = select_run_queue_index(task.cpu_set());
+        let index = select_run_queue_index(task.cpumask());
         AxRunQueueRef {
             inner: get_run_queue(index),
             state: irq_state,
@@ -179,14 +179,9 @@ impl<'a, G: BaseGuard> Drop for AxRunQueueRef<'a, G> {
 
 impl AxRunQueue {
     pub fn new(cpu_id: usize) -> Self {
-        let gc_task = TaskInner::new(
-            gc_entry,
-            "gc".into(),
-            axconfig::TASK_STACK_SIZE,
-            // gc task shoule be pinned to the current CPU.
-            Some(1 << cpu_id),
-        )
-        .into_arc();
+        let gc_task = TaskInner::new(gc_entry, "gc".into(), axconfig::TASK_STACK_SIZE).into_arc();
+        // gc task shoule be pinned to the current CPU.
+        gc_task.set_cpumask(CpuMask::from_usize(1 << cpu_id));
 
         let mut scheduler = Scheduler::new();
         scheduler.add_task(gc_task);
@@ -421,12 +416,9 @@ pub(crate) fn init() {
 
     // Create the `idle` task (not current task).
     const IDLE_TASK_STACK_SIZE: usize = 4096;
-    let idle_task = TaskInner::new(
-        || crate::run_idle(),
-        "idle".into(),
-        IDLE_TASK_STACK_SIZE,
-        Some(1 << cpu_id),
-    );
+    let idle_task = TaskInner::new(|| crate::run_idle(), "idle".into(), IDLE_TASK_STACK_SIZE);
+    // idle task should be pinned to the current CPU.
+    idle_task.set_cpumask(CpuMask::from_usize(1 << cpu_id));
     IDLE_TASK.with_current(|i| {
         i.init_once(idle_task.into_arc());
     });

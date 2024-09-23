@@ -145,7 +145,7 @@ pub trait TaskExtMut<T: Sized> {
 ///
 /// axtask::init_scheduler();
 ///
-/// let mut inner = TaskInner::new(|| {},  "".into(), 0x1000, None);
+/// let mut inner = TaskInner::new(|| {},  "".into(), 0x1000);
 /// assert!(inner.init_task_ext(TaskExtImpl { proc_id: 233 }).is_some());
 /// // cannot initialize twice
 /// assert!(inner.init_task_ext(TaskExtImpl { proc_id: 0xdead }).is_none());

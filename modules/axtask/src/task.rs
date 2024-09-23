@@ -5,8 +5,8 @@ use core::sync::atomic::AtomicUsize;
 use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, AtomicU8, Ordering};
 use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 
-use bitmaps::Bitmap;
-use kspin::SpinRaw;
+use cpumask::CpuMask;
+use kspin::{SpinNoIrq, SpinRaw};
 use memory_addr::{align_up_4k, VirtAddr};
 
 use axhal::arch::TaskContext;
@@ -50,7 +50,7 @@ pub struct TaskInner {
     state: AtomicU8,
 
     /// CPU affinity mask.
-    cpu_set: Bitmap<{ axconfig::SMP }>,
+    cpumask: SpinNoIrq<CpuMask<{ axconfig::SMP }>>,
 
     in_wait_queue: AtomicBool,
     #[cfg(feature = "irq")]
@@ -109,16 +109,7 @@ unsafe impl Sync for TaskInner {}
 
 impl TaskInner {
     /// Create a new task with the given entry function and stack size.
-    ///
-    /// When "smp" feature is enabled:
-    /// `cpu_set` represents a set of physical CPUs, which is implemented as a bit mask,
-    /// refering to `cpu_set_t` in Linux.
-    /// The task will be only scheduled on the specified CPUs if `cpu_set` is set as `Some(cpu_mask)`,
-    /// Otherwise, the task will be scheduled on all CPUs under specific load balancing policy.
-    /// Reference:
-    ///     * https://man7.org/linux/man-pages/man2/sched_setaffinity.2.html
-    ///     * https://man7.org/linux/man-pages/man3/CPU_SET.3.html
-    pub fn new<F>(entry: F, name: String, stack_size: usize, cpu_set: Option<usize>) -> Self
+    pub fn new<F>(entry: F, name: String, stack_size: usize) -> Self
     where
         F: FnOnce() + Send + 'static,
     {
@@ -137,21 +128,6 @@ impl TaskInner {
         if t.name == "idle" {
             t.is_idle = true;
         }
-        t.cpu_set = match cpu_set {
-            Some(cpu_set) => {
-                let mut bit_map = Bitmap::new();
-                let mut i = 0;
-                while i < axconfig::SMP {
-                    if cpu_set & (1 << i) != 0 {
-                        bit_map.set(i, true);
-                    }
-                    i += 1;
-                }
-                bit_map
-            }
-            // This task can be scheduled on all CPUs by default.
-            None => Bitmap::mask(axconfig::SMP),
-        };
         t
     }
 
@@ -215,7 +191,8 @@ impl TaskInner {
             is_init: false,
             entry: None,
             state: AtomicU8::new(TaskState::Ready as u8),
-            cpu_set: Bitmap::new(),
+            // By default, the task is allowed to run on all CPUs.
+            cpumask: SpinNoIrq::new(CpuMask::full()),
             in_wait_queue: AtomicBool::new(false),
             #[cfg(feature = "irq")]
             in_timer_list: AtomicBool::new(false),
@@ -246,7 +223,7 @@ impl TaskInner {
     pub(crate) fn new_init(name: String) -> Self {
         let mut t = Self::new_common(TaskId::new(), name);
         t.is_init = true;
-        t.cpu_set.set(this_cpu_id(), true);
+        t.set_cpumask(CpuMask::from_usize(1 << this_cpu_id()));
         if t.name == "idle" {
             t.is_idle = true;
         }
@@ -298,8 +275,12 @@ impl TaskInner {
     }
 
     #[inline]
-    pub(crate) const fn cpu_set(&self) -> Bitmap<{ axconfig::SMP }> {
-        self.cpu_set
+    pub(crate) fn cpumask(&self) -> CpuMask<{ axconfig::SMP }> {
+        *self.cpumask.lock()
+    }
+
+    pub(crate) fn set_cpumask(&self, cpumask: CpuMask<{ axconfig::SMP }>) {
+        *self.cpumask.lock() = cpumask
     }
 
     #[inline]
