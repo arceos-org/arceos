@@ -109,7 +109,7 @@ impl WaitQueue {
     where
         F: Fn() -> bool,
     {
-        let _kernel_guard = NoPreemptIrqSave::new();
+        let mut rq = current_run_queue::<NoPreemptIrqSave>();
         loop {
             let mut wq = self.queue.lock();
             if condition() {
@@ -132,7 +132,7 @@ impl WaitQueue {
             curr.set_in_wait_queue(true);
             drop(wq);
 
-            current_run_queue::<NoOp>().blocked_resched();
+            rq.blocked_resched();
         }
         self.cancel_events(crate::current());
     }
@@ -141,7 +141,7 @@ impl WaitQueue {
     /// notify it, or the given duration has elapsed.
     #[cfg(feature = "irq")]
     pub fn wait_timeout(&self, dur: core::time::Duration) -> bool {
-        let _kernel_guard = NoPreemptIrqSave::new();
+        let mut rq = current_run_queue::<NoPreemptIrqSave>();
         let curr = crate::current();
         let deadline = axhal::time::wall_time() + dur;
         debug!(
@@ -152,7 +152,7 @@ impl WaitQueue {
         crate::timers::set_alarm_wakeup(deadline, curr.clone());
 
         self.push_to_wait_queue();
-        current_run_queue::<NoOp>().blocked_resched();
+        rq.blocked_resched();
 
         let timeout = curr.in_wait_queue(); // still in the wait queue, must have timed out
         self.cancel_events(curr);
@@ -169,7 +169,7 @@ impl WaitQueue {
     where
         F: Fn() -> bool,
     {
-        let _kernel_guard = NoPreemptIrqSave::new();
+        let mut rq = current_run_queue::<NoPreemptIrqSave>();
         let curr = crate::current();
         let deadline = axhal::time::wall_time() + dur;
         debug!(
@@ -200,7 +200,7 @@ impl WaitQueue {
             curr.set_in_wait_queue(true);
             drop(wq);
 
-            current_run_queue::<NoOp>().blocked_resched()
+            rq.blocked_resched()
         }
         self.cancel_events(curr);
         timeout
