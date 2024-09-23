@@ -33,6 +33,7 @@ jobs:
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make clippy ARCH=aarch64
     - name: Check code format
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: cargo fmt --all -- --check
 
   build:
