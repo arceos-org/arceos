@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["memory_regions","phys_to_virt","virt_to_phys"],"struct":["MemRegion","MemRegionFlags"]};
