@@ -121,6 +121,9 @@ impl AddrSpace {
     where
         F: FnMut(VirtAddr, usize, usize),
     {
+        if !self.contains_range(start, size) {
+            return ax_err!(InvalidInput, "address out of range");
+        }
         let mut cnt = 0;
         // If start is aligned to 4K, start_align_down will be equal to start_align_up.
         let end_align_up = (start + size).align_up_4k();
@@ -150,12 +153,8 @@ impl AddrSpace {
     /// # Arguments
     ///
     /// * `start` - The start virtual address to read.
-    /// * `buf` - The buffer to store the data. If the buffer is not large enough,
-    /// it will truncate the data to fit the buffer.
+    /// * `buf` - The buffer to store the data.
     pub fn read(&self, start: VirtAddr, buf: &mut [u8]) -> AxResult {
-        if !self.contains_range(start, buf.len()) {
-            return ax_err!(InvalidInput, "address out of range");
-        }
         self.process_area_data(start, buf.len(), |src, offset, read_size| unsafe {
             core::ptr::copy_nonoverlapping(src.as_ptr(), buf.as_mut_ptr().add(offset), read_size);
         })
@@ -167,12 +166,7 @@ impl AddrSpace {
     ///
     /// * `start_vaddr` - The start virtual address to write.
     /// * `buf` - The buffer to write to the address space.
-    ///     * If the buffer is not large enough, it will write all the data in the buffer to the space and return normally.
-    ///     * If the buffer is larger than the interval, it will write the data that can fit in the given interval.
     pub fn write(&self, start: VirtAddr, buf: &[u8]) -> AxResult {
-        if !self.contains_range(start, buf.len()) {
-            return ax_err!(InvalidInput, "address out of range");
-        }
         self.process_area_data(start, buf.len(), |dst, offset, write_size| unsafe {
             core::ptr::copy_nonoverlapping(buf.as_ptr().add(offset), dst.as_mut_ptr(), write_size);
         })
