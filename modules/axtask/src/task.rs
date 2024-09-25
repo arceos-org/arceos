@@ -2,7 +2,7 @@ use alloc::{boxed::Box, string::String, sync::Arc};
 use core::ops::Deref;
 #[cfg(any(feature = "preempt", feature = "irq"))]
 use core::sync::atomic::AtomicUsize;
-use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, AtomicU8, Ordering};
+use core::sync::atomic::{AtomicBool, AtomicI32, AtomicPtr, AtomicU64, AtomicU8, Ordering};
 use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 
 use cpumask::CpuMask;
@@ -29,14 +29,11 @@ pub(crate) enum TaskState {
     Running = 1,
     /// Task is ready to run on some scheduler's ready queue.
     Ready = 2,
-    /// Task is just be blocked and inserted into the wait queue,
-    /// but still have **NOT finished** its scheduling process.
-    Blocking = 3,
     /// Task is blocked (in the wait queue or timer list),
     /// and it has finished its scheduling process, it can be wake up by `notify()` on any run queue safely.
-    Blocked = 4,
+    Blocked = 3,
     /// Task is exited and waiting for being dropped.
-    Exited = 5,
+    Exited = 4,
 }
 
 /// The inner task structure.
@@ -55,6 +52,10 @@ pub struct TaskInner {
     in_wait_queue: AtomicBool,
     #[cfg(feature = "irq")]
     in_timer_list: AtomicBool,
+
+    /// Used to indicate whether the task is running on a CPU.
+    on_cpu: AtomicBool,
+    prev_task_on_cpu_ptr: AtomicPtr<bool>,
 
     /// Used to protect the task from being unblocked by timer and `notify()` at the same time.
     /// It is used in `unblock_task()`, which is called by wait queue's `notify()` and timer's callback.
@@ -96,9 +97,8 @@ impl From<u8> for TaskState {
         match state {
             1 => Self::Running,
             2 => Self::Ready,
-            3 => Self::Blocking,
-            4 => Self::Blocked,
-            5 => Self::Exited,
+            3 => Self::Blocked,
+            4 => Self::Exited,
             _ => unreachable!(),
         }
     }
@@ -196,6 +196,8 @@ impl TaskInner {
             in_wait_queue: AtomicBool::new(false),
             #[cfg(feature = "irq")]
             in_timer_list: AtomicBool::new(false),
+            on_cpu: AtomicBool::new(false),
+            prev_task_on_cpu_ptr: AtomicPtr::new(core::ptr::null_mut()),
             #[cfg(feature = "irq")]
             unblock_lock: SpinRaw::new(()),
             #[cfg(feature = "preempt")]
@@ -260,11 +262,6 @@ impl TaskInner {
     }
 
     #[inline]
-    pub(crate) fn is_blocking(&self) -> bool {
-        matches!(self.state(), TaskState::Blocking)
-    }
-
-    #[inline]
     pub(crate) const fn is_init(&self) -> bool {
         self.is_init
     }
@@ -309,13 +306,21 @@ impl TaskInner {
     where
         F: FnMut(),
     {
-        // When task's state is Blocking, it has not finished its scheduling process.
-        if self.is_blocking() {
-            while self.is_blocking() {
+        debug!("{} unblocking", self.id_name());
+
+        // If the owning (remote) CPU is still in the middle of schedule() with
+        // this task as prev, wait until it's done referencing the task.
+        //
+        // Pairs with the `clear_prev_task_on_cpu()`.
+        //
+        // This ensures that tasks getting woken will be fully ordered against
+        // their previous state and preserve Program Order.
+        if self.on_cpu() {
+            while self.on_cpu() {
                 // Wait for the task to finish its scheduling process.
                 core::hint::spin_loop();
             }
-            assert!(self.is_blocked())
+            assert!(!self.on_cpu())
         }
 
         // When irq is enabled, use `unblock_lock` to protect the task from being unblocked by timer and `notify()` at the same time.
@@ -379,6 +384,50 @@ impl TaskInner {
     #[inline]
     pub const fn ctx_mut(&mut self) -> &mut TaskContext {
         self.ctx.get_mut()
+    }
+
+    /// Returns the raw pointer to the `on_cpu` field.
+    #[inline]
+    pub(crate) const fn on_cpu_mut_ptr(&self) -> *mut bool {
+        self.on_cpu.as_ptr()
+    }
+
+    /// Sets whether the task is running on a CPU.
+    pub fn set_on_cpu(&self, on_cpu: bool) {
+        self.on_cpu.store(on_cpu, Ordering::Release)
+    }
+
+    /// Sets `prev_task_on_cpu_ptr` to the given pointer provided by previous task running on this CPU.
+    pub fn set_prev_task_on_cpu_ptr(&self, prev_task_on_cpu_ptr: *mut bool) {
+        self.prev_task_on_cpu_ptr
+            .store(prev_task_on_cpu_ptr, Ordering::Release)
+    }
+
+    /// Clears the `on_cpu` field of previous task running on this CPU.
+    /// It is called by the current task before running.
+    /// The pointer is provided by previous task running on this CPU through `set_prev_task_on_cpu_ptr()`.
+    ///
+    /// ## Note
+    ///     This must be the very last reference to @_prev_task from this CPU.
+    ///     After `on_cpu` is cleared, the task can be moved to a different CPU.
+    ///     We must ensure this doesn't happen until the switch is completely finished.
+    ///
+    /// ## Safety
+    ///     The caller must ensure that the pointer is valid and points to a boolean value, which is
+    ///     done by the previous task running on this CPU through `set_prev_task_on_cpu_ptr()`.
+    pub unsafe fn clear_prev_task_on_cpu(&self) {
+        AtomicBool::from_ptr(self.prev_task_on_cpu_ptr.load(Ordering::Acquire))
+            .store(false, Ordering::Release);
+    }
+
+    /// Returns whether the task is running on a CPU.
+    ///
+    /// It is used to protect the task from being moved to a different run queue
+    /// while it has not finished its scheduling process.
+    /// The `on_cpu` field is set to `true` when the task is preparing to run on a CPU,
+    /// and it is set to `false` when the task has finished its scheduling process in `finish_switch`.
+    pub fn on_cpu(&self) -> bool {
+        self.on_cpu.load(Ordering::Acquire)
     }
 
     /// Returns the top address of the kernel stack.
@@ -490,6 +539,10 @@ impl Deref for CurrentTask {
 }
 
 extern "C" fn task_entry() -> ! {
+    unsafe {
+        // Clear the prev task on CPU before running the task entry function.
+        crate::current().clear_prev_task_on_cpu();
+    }
     // Enable irq (if feature "irq" is enabled) before running the task entry function.
     #[cfg(feature = "irq")]
     axhal::arch::enable_irqs();

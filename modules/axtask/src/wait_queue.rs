@@ -74,16 +74,7 @@ impl WaitQueue {
         #[cfg(feature = "preempt")]
         assert!(curr.can_preempt(2));
 
-        // We set task state as `Blocking` to clarify that the task is blocked
-        // but **still NOT** finished its scheduling process.
-        //
-        // When another task (generally on another run queue) try to unblock this task,
-        // * if this task's state is still `Blocking`:
-        //      it needs to wait for this task's state to be changed to `Blocked`, which means it has finished its scheduling process.
-        // * if this task's state is `Blocked`:
-        //      it means this task is blocked and finished its scheduling process, in another word, it has left current run queue,
-        //      so this task can be scheduled on any run queue.
-        curr.set_state(TaskState::Blocking);
+        curr.set_state(TaskState::Blocked);
         curr.set_in_wait_queue(true);
 
         debug!("{} push to wait queue", curr.id_name());
@@ -128,7 +119,7 @@ impl WaitQueue {
             assert!(curr.can_preempt(2));
             wq.push_back(curr.clone());
 
-            curr.set_state(TaskState::Blocking);
+            curr.set_state(TaskState::Blocked);
             curr.set_in_wait_queue(true);
             drop(wq);
 
@@ -196,7 +187,7 @@ impl WaitQueue {
             assert!(curr.can_preempt(2));
             wq.push_back(curr.clone());
 
-            curr.set_state(TaskState::Blocking);
+            curr.set_state(TaskState::Blocked);
             curr.set_in_wait_queue(true);
             drop(wq);
 

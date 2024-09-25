@@ -284,11 +284,7 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
 
     pub fn blocked_resched(&mut self) {
         let curr = crate::current();
-        assert!(
-            curr.is_blocking(),
-            "task is not blocking, {:?}",
-            curr.state()
-        );
+        assert!(curr.is_blocked(), "task is not blocked, {:?}", curr.state());
 
         debug!("task block: {}", curr.id_name());
         self.inner.resched(false);
@@ -323,7 +319,7 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
         let now = axhal::time::wall_time();
         if now < deadline {
             crate::timers::set_alarm_wakeup(deadline, curr.clone());
-            curr.set_state(TaskState::Blocking);
+            curr.set_state(TaskState::Blocked);
             self.inner.resched(false);
         }
     }
@@ -339,10 +335,6 @@ impl AxRunQueue {
             if !prev.is_idle() {
                 self.scheduler.put_prev_task(prev.clone(), preempt);
             }
-        }
-
-        if prev.is_blocking() {
-            prev.set_state(TaskState::Blocked);
         }
 
         let next = self.scheduler.pick_next_task().unwrap_or_else(|| unsafe {
@@ -369,6 +361,9 @@ impl AxRunQueue {
         #[cfg(feature = "preempt")]
         next_task.set_preempt_pending(false);
         next_task.set_state(TaskState::Running);
+        // Claim the task as running, we do this before switching to it
+        // such that any running task will have this set.
+        next_task.set_on_cpu(true);
         if prev_task.ptr_eq(&next_task) {
             return;
         }
@@ -376,6 +371,9 @@ impl AxRunQueue {
         unsafe {
             let prev_ctx_ptr = prev_task.ctx_mut_ptr();
             let next_ctx_ptr = next_task.ctx_mut_ptr();
+
+            // Store the pointer of `on_cpu` flag of **prev_task** in **next_task**'s struct.
+            next_task.set_prev_task_on_cpu_ptr(prev_task.on_cpu_mut_ptr());
 
             // The strong reference count of `prev_task` will be decremented by 1,
             // but won't be dropped until `gc_entry()` is called.
@@ -385,6 +383,10 @@ impl AxRunQueue {
             CurrentTask::set_current(prev_task, next_task);
 
             (*prev_ctx_ptr).switch_to(&*next_ctx_ptr);
+
+            // Current it's **next_task** running on this CPU, clear the `prev_task`'s `on_cpu` field
+            // to indicate that it has finished its scheduling process and no longer running on this CPU.
+            crate::current().clear_prev_task_on_cpu();
         }
     }
 }
