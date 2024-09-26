@@ -408,13 +408,13 @@ impl TaskInner {
     /// The pointer is provided by previous task running on this CPU through `set_prev_task_on_cpu_ptr()`.
     ///
     /// ## Note
-    ///     This must be the very last reference to @_prev_task from this CPU.
-    ///     After `on_cpu` is cleared, the task can be moved to a different CPU.
-    ///     We must ensure this doesn't happen until the switch is completely finished.
+    /// This must be the very last reference to @_prev_task from this CPU.
+    /// After `on_cpu` is cleared, the task can be moved to a different CPU.
+    /// We must ensure this doesn't happen until the switch is completely finished.
     ///
     /// ## Safety
-    ///     The caller must ensure that the pointer is valid and points to a boolean value, which is
-    ///     done by the previous task running on this CPU through `set_prev_task_on_cpu_ptr()`.
+    /// The caller must ensure that the pointer is valid and points to a boolean value, which is
+    /// done by the previous task running on this CPU through `set_prev_task_on_cpu_ptr()`.
     pub unsafe fn clear_prev_task_on_cpu(&self) {
         AtomicBool::from_ptr(self.prev_task_on_cpu_ptr.load(Ordering::Acquire))
             .store(false, Ordering::Release);
@@ -424,8 +424,8 @@ impl TaskInner {
     ///
     /// It is used to protect the task from being moved to a different run queue
     /// while it has not finished its scheduling process.
-    /// The `on_cpu` field is set to `true` when the task is preparing to run on a CPU,
-    /// and it is set to `false` when the task has finished its scheduling process in `finish_switch`.
+    /// The `on_cpu field is set to `true` when the task is preparing to run on a CPU,
+    /// and it is set to `false` when the task has finished its scheduling process in `clear_prev_task_on_cpu()`.
     pub fn on_cpu(&self) -> bool {
         self.on_cpu.load(Ordering::Acquire)
     }
