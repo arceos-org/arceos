@@ -1,5 +1,3 @@
-use alloc::sync::Arc;
-
 use kernel_guard::NoOp;
 use lazyinit::LazyInit;
 use timer_list::{TimeValue, TimerEvent, TimerList};
@@ -16,6 +14,12 @@ struct TaskWakeupEvent(AxTaskRef);
 
 impl TimerEvent for TaskWakeupEvent {
     fn callback(self, _now: TimeValue) {
+        // Ignore the timer event if the task is not in the timer list.
+        // timeout was set but not triggered (wake up by `WaitQueue::notify()`).
+        if !self.0.in_timer_list() {
+            return;
+        }
+
         self.0.set_in_timer_list(false);
         select_run_queue::<NoOp>(
             #[cfg(feature = "smp")]
@@ -29,13 +33,6 @@ pub fn set_alarm_wakeup(deadline: TimeValue, task: AxTaskRef) {
     TIMER_LIST.with_current(|timer_list| {
         task.set_in_timer_list(true);
         timer_list.set(deadline, TaskWakeupEvent(task));
-    })
-}
-
-pub fn cancel_alarm(task: &AxTaskRef) {
-    TIMER_LIST.with_current(|timer_list| {
-        task.set_in_timer_list(false);
-        timer_list.cancel(|t| Arc::ptr_eq(&t.0, task));
     })
 }
 

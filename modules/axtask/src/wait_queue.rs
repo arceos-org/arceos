@@ -1,7 +1,7 @@
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
 
-use kernel_guard::{NoOp, NoPreemptIrqSave};
+use kernel_guard::NoPreemptIrqSave;
 use kspin::SpinNoIrq;
 
 use crate::{current_run_queue, select_run_queue, task::TaskState, AxTaskRef, CurrentTask};
@@ -59,7 +59,10 @@ impl WaitQueue {
         #[cfg(feature = "irq")]
         if curr.in_timer_list() {
             // timeout was set but not triggered (wake up by `WaitQueue::notify()`)
-            crate::timers::cancel_alarm(curr.as_task_ref());
+            curr.set_in_timer_list(false);
+            // TODO:
+            // this task is still not remoted from timer list of target CPU,
+            // which may cause some redundant timer events.
         }
     }
 
