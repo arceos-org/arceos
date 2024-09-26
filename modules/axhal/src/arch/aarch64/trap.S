@@ -21,6 +21,11 @@
     mrs     x11, spsr_el1
     stp     x30, x9, [sp, 30 * 8]
     stp     x10, x11, [sp, 32 * 8]
+    
+    # We may have interrupted userspace, or a guest, or exit-from or 
+    # return-to either of those. So we can't trust sp_el0, and need to
+    # restore it.
+    bl      {cache_current_task_ptr}
 .endm
 
 .macro RESTORE_REGS
