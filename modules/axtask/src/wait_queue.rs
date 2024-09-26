@@ -85,9 +85,9 @@ impl WaitQueue {
     /// Blocks the current task and put it into the wait queue, until other task
     /// notifies it.
     pub fn wait(&self) {
-        let _kernel_guard = NoPreemptIrqSave::new();
+        let mut rq = current_run_queue::<NoPreemptIrqSave>();
         self.push_to_wait_queue();
-        current_run_queue::<NoOp>().blocked_resched();
+        rq.blocked_resched();
         self.cancel_events(crate::current());
     }
 
