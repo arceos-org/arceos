@@ -269,6 +269,9 @@ pub struct TaskContext {
     pub rsp: u64,
     /// Thread Local Storage (TLS).
     pub fs_base: usize,
+    /// The `gs_base` register value.
+    #[cfg(feature = "uspace")]
+    pub gs_base: usize,
     /// Extended states, i.e., FP/SIMD states.
     #[cfg(feature = "fp_simd")]
     pub ext_state: ExtendedState,
@@ -294,6 +297,8 @@ impl TaskContext {
             cr3: crate::paging::kernel_page_table_root(),
             #[cfg(feature = "fp_simd")]
             ext_state: ExtendedState::default(),
+            #[cfg(feature = "uspace")]
+            gs_base: 0,
         }
     }
 
@@ -347,6 +352,9 @@ impl TaskContext {
         }
         #[cfg(feature = "uspace")]
         unsafe {
+            // Switch gs base for user space.
+            self.gs_base = x86::msr::rdmsr(x86::msr::IA32_KERNEL_GSBASE) as usize;
+            x86::msr::wrmsr(x86::msr::IA32_KERNEL_GSBASE, next_ctx.gs_base as u64);
             super::tss_set_rsp0(next_ctx.kstack_top);
             if next_ctx.cr3 != self.cr3 {
                 super::write_page_table_root(next_ctx.cr3);
