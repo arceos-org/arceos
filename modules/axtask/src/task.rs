@@ -225,7 +225,7 @@ impl TaskInner {
     pub(crate) fn new_init(name: String) -> Self {
         let mut t = Self::new_common(TaskId::new(), name);
         t.is_init = true;
-        t.set_cpumask(CpuMask::from_usize(1 << this_cpu_id()));
+        t.set_cpumask(CpuMask::one_shot(this_cpu_id()));
         if t.name == "idle" {
             t.is_idle = true;
         }

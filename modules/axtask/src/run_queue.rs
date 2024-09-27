@@ -181,7 +181,7 @@ impl AxRunQueue {
     pub fn new(cpu_id: usize) -> Self {
         let gc_task = TaskInner::new(gc_entry, "gc".into(), axconfig::TASK_STACK_SIZE).into_arc();
         // gc task shoule be pinned to the current CPU.
-        gc_task.set_cpumask(CpuMask::from_usize(1 << cpu_id));
+        gc_task.set_cpumask(CpuMask::one_shot(cpu_id));
 
         let mut scheduler = Scheduler::new();
         scheduler.add_task(gc_task);
@@ -420,7 +420,7 @@ pub(crate) fn init() {
     const IDLE_TASK_STACK_SIZE: usize = 4096;
     let idle_task = TaskInner::new(|| crate::run_idle(), "idle".into(), IDLE_TASK_STACK_SIZE);
     // idle task should be pinned to the current CPU.
-    idle_task.set_cpumask(CpuMask::from_usize(1 << cpu_id));
+    idle_task.set_cpumask(CpuMask::one_shot(cpu_id));
     IDLE_TASK.with_current(|i| {
         i.init_once(idle_task.into_arc());
     });
