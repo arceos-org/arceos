@@ -83,6 +83,8 @@ pub(crate) fn current_run_queue<G: BaseGuard>() -> AxRunQueueRef<'static, G> {
 /// This function will panic if `cpu_mask` is empty, indicating that there are no available CPUs for task execution.
 ///
 #[cfg(feature = "smp")]
+// The modulo operation is safe here because `axconfig::SMP` is always greater than 1 with "smp" enabled.
+#[allow(clippy::modulo_one)]
 #[inline]
 fn select_run_queue_index(cpumask: CpuSet) -> usize {
     static RUN_QUEUE_INDEX: AtomicUsize = AtomicUsize::new(0);
