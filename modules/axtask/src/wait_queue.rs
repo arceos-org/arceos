@@ -260,9 +260,5 @@ impl WaitQueue {
 
 pub(crate) fn unblock_one_task(task: AxTaskRef, resched: bool) {
     // Select run queue by the CPU set of the task.
-    select_run_queue::<NoPreemptIrqSave>(
-        #[cfg(feature = "smp")]
-        task.clone(),
-    )
-    .unblock_task(task, resched)
+    select_run_queue::<NoPreemptIrqSave>(task.clone()).unblock_task(task, resched)
 }

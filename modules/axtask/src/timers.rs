@@ -31,11 +31,7 @@ impl TimerEvent for TaskWakeupEvent {
         self.task.set_in_timer_list(false);
         // Timer event is triggered, expire the ticket ID.
         self.task.timer_ticket_expire_one();
-        select_run_queue::<NoOp>(
-            #[cfg(feature = "smp")]
-            self.task.clone(),
-        )
-        .unblock_task(self.task, true)
+        select_run_queue::<NoOp>(self.task.clone()).unblock_task(self.task, true)
     }
 }
 

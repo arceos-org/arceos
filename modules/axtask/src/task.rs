@@ -15,7 +15,7 @@ use axhal::cpu::this_cpu_id;
 use axhal::tls::TlsArea;
 
 use crate::task_ext::AxTaskExt;
-use crate::{AxTask, AxTaskRef, WaitQueue};
+use crate::{AxTask, AxTaskRef, CpuSet, WaitQueue};
 
 /// A unique identifier for a thread.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -47,7 +47,7 @@ pub struct TaskInner {
     state: AtomicU8,
 
     /// CPU affinity mask.
-    cpumask: SpinNoIrq<CpuMask<{ axconfig::SMP }>>,
+    cpumask: SpinNoIrq<CpuSet>,
 
     /// Mark whether the task is in the wait queue.
     in_wait_queue: AtomicBool,
@@ -280,11 +280,11 @@ impl TaskInner {
     }
 
     #[inline]
-    pub(crate) fn cpumask(&self) -> CpuMask<{ axconfig::SMP }> {
+    pub(crate) fn cpumask(&self) -> CpuSet {
         *self.cpumask.lock()
     }
 
-    pub(crate) fn set_cpumask(&self, cpumask: CpuMask<{ axconfig::SMP }>) {
+    pub(crate) fn set_cpumask(&self, cpumask: CpuSet) {
         *self.cpumask.lock() = cpumask
     }
 
@@ -385,9 +385,9 @@ impl TaskInner {
     fn current_check_preempt_pending() {
         let curr = crate::current();
         if curr.need_resched.load(Ordering::Acquire) && curr.can_preempt(0) {
-            let _kernel_guard = kernel_guard::NoPreemptIrqSave::new();
+            let mut rq = crate::current_run_queue::<kernel_guard::NoPreemptIrqSave>();
             if curr.need_resched.load(Ordering::Acquire) {
-                crate::current_run_queue::<kernel_guard::NoOp>().preempt_resched()
+                rq.preempt_resched()
             }
         }
     }

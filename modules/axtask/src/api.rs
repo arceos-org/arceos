@@ -16,6 +16,8 @@ pub use crate::wait_queue::WaitQueue;
 /// The reference type of a task.
 pub type AxTaskRef = Arc<AxTask>;
 
+pub type CpuSet = cpumask::CpuMask<{ axconfig::SMP }>;
+
 cfg_if::cfg_if! {
     if #[cfg(feature = "sched_rr")] {
         const MAX_TIME_SLICE: usize = 5;
@@ -96,12 +98,7 @@ pub fn on_timer_tick() {
 /// Adds the given task to the run queue, returns the task reference.
 pub fn spawn_task(task: TaskInner) -> AxTaskRef {
     let task_ref = task.into_arc();
-    let _kernel_guard = kernel_guard::NoPreemptIrqSave::new();
-    crate::select_run_queue::<NoPreemptIrqSave>(
-        #[cfg(feature = "smp")]
-        task_ref.clone(),
-    )
-    .add_task(task_ref.clone());
+    crate::select_run_queue::<NoPreemptIrqSave>(task_ref.clone()).add_task(task_ref.clone());
     task_ref
 }
 

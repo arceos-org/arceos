@@ -1,16 +1,18 @@
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
 use core::mem::MaybeUninit;
+use core::sync::atomic::{AtomicUsize, Ordering};
 
 use cpumask::CpuMask;
 use kernel_guard::BaseGuard;
+use kspin::SpinRaw;
 use lazyinit::LazyInit;
 use scheduler::BaseScheduler;
 
 use axhal::cpu::this_cpu_id;
 
 use crate::task::{CurrentTask, TaskState};
-use crate::{AxTaskRef, Scheduler, TaskInner, WaitQueue};
+use crate::{AxTaskRef, CpuSet, Scheduler, TaskInner, WaitQueue};
 
 macro_rules! percpu_static {
     ($($name:ident: $ty:ty = $init:expr),* $(,)?) => {
@@ -63,10 +65,10 @@ pub(crate) fn current_run_queue<G: BaseGuard>() -> AxRunQueueRef<'static, G> {
     }
 }
 
-/// Selects the run queue index based on a CPU set bitmap, minimizing the number of tasks.
+/// Selects the run queue index based on a CPU set bitmap and load balancing.
 ///
 /// This function filters the available run queues based on the provided `cpumask` and
-/// selects the one with the fewest tasks. The selected run queue's index (cpu_id) is returned.
+/// selects the run queue index for the next task. The selection is based on a round-robin algorithm.
 ///
 /// ## Arguments
 ///
@@ -78,19 +80,22 @@ pub(crate) fn current_run_queue<G: BaseGuard>() -> AxRunQueueRef<'static, G> {
 ///
 /// ## Panics
 ///
-/// This function will panic if there is no available run queue that matches the CPU set.
+/// This function will panic if `cpu_mask` is empty, indicating that there are no available CPUs for task execution.
 ///
 #[cfg(feature = "smp")]
 #[inline]
-fn select_run_queue_index(cpumask: CpuMask<{ axconfig::SMP }>) -> usize {
-    unsafe {
-        RUN_QUEUES
-            .iter()
-            .filter(|rq| cpumask.get(rq.assume_init_ref().cpu_id()))
-            .min_by_key(|rq| rq.assume_init_ref().num_tasks())
-            .expect("No available run queue that matches the CPU set")
-            .assume_init_ref()
-            .cpu_id()
+fn select_run_queue_index(cpumask: CpuSet) -> usize {
+    static RUN_QUEUE_INDEX: AtomicUsize = AtomicUsize::new(0);
+
+    assert!(!cpumask.is_empty(), "No available CPU for task execution");
+
+    // Round-robin selection of the run queue index.
+    loop {
+        let index = RUN_QUEUE_INDEX.load(Ordering::SeqCst) % axconfig::SMP;
+        if cpumask.get(index) {
+            return index;
+        }
+        RUN_QUEUE_INDEX.fetch_add(1, Ordering::SeqCst);
     }
 }
 
@@ -136,9 +141,7 @@ fn get_run_queue(index: usize) -> &'static mut AxRunQueue {
 /// 2. Use a more generic load balancing algorithm that can be customized or replaced.
 ///
 #[inline]
-pub(crate) fn select_run_queue<G: BaseGuard>(
-    #[cfg(feature = "smp")] task: AxTaskRef,
-) -> AxRunQueueRef<'static, G> {
+pub(crate) fn select_run_queue<G: BaseGuard>(task: AxTaskRef) -> AxRunQueueRef<'static, G> {
     #[cfg(not(feature = "smp"))]
     {
         // When SMP is disabled, all tasks are scheduled on the same global run queue.
@@ -162,7 +165,9 @@ pub(crate) struct AxRunQueue {
     /// The ID of the CPU this run queue is associated with.
     cpu_id: usize,
     /// The core scheduler of this run queue.
-    scheduler: Scheduler,
+    /// Since irq and preempt are preserved by the kernel guard hold by `AxRunQueueRef`,
+    /// we just use a simple raw spin lock here.
+    scheduler: SpinRaw<Scheduler>,
 }
 
 pub(crate) struct AxRunQueueRef<'a, G: BaseGuard> {
@@ -185,20 +190,10 @@ impl AxRunQueue {
 
         let mut scheduler = Scheduler::new();
         scheduler.add_task(gc_task);
-        Self { cpu_id, scheduler }
-    }
-
-    /// Returns the cpu id of current run queue,
-    /// which is also its index in `RUN_QUEUES`.
-    pub fn cpu_id(&self) -> usize {
-        self.cpu_id
-    }
-
-    /// Returns the number of tasks in current run queue's scheduler,
-    /// which is used for load balance during scheduling.
-    #[cfg(feature = "smp")]
-    pub fn num_tasks(&self) -> usize {
-        self.scheduler.num_tasks()
+        Self {
+            cpu_id,
+            scheduler: SpinRaw::new(scheduler),
+        }
     }
 }
 
@@ -207,20 +202,19 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
     pub fn add_task(&mut self, task: AxTaskRef) {
         debug!("Add {} on run_queue {}", task.id_name(), self.inner.cpu_id);
         assert!(task.is_ready());
-        self.inner.scheduler.add_task(task);
+        self.inner.scheduler.lock().add_task(task);
     }
 
     #[cfg(feature = "irq")]
     pub fn scheduler_timer_tick(&mut self) {
         let curr = crate::current();
-        if !curr.is_idle() && self.inner.scheduler.task_tick(curr.as_task_ref()) {
+        if !curr.is_idle() && self.inner.scheduler.lock().task_tick(curr.as_task_ref()) {
             #[cfg(feature = "preempt")]
             curr.set_preempt_pending(true);
         }
     }
 
     pub fn yield_current(&mut self) {
-        let _kernel_guard = kernel_guard::NoPreemptIrqSave::new();
         let curr = crate::current();
         trace!("task yield: {}", curr.id_name());
         assert!(curr.is_running());
@@ -230,6 +224,7 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
     pub fn set_current_priority(&mut self, prio: isize) -> bool {
         self.inner
             .scheduler
+            .lock()
             .set_priority(crate::current().as_task_ref(), prio)
     }
 
@@ -297,7 +292,7 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
             let cpu_id = self.inner.cpu_id;
             debug!("task unblock: {} on run_queue {}", task.id_name(), cpu_id);
             task.set_state(TaskState::Ready);
-            self.inner.scheduler.add_task(task.clone()); // TODO: priority
+            self.inner.scheduler.lock().add_task(task.clone()); // TODO: priority
 
             // Note: when the task is unblocked on another CPU's run queue,
             // we just ingiore the `resched` flag.
@@ -310,7 +305,6 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
 
     #[cfg(feature = "irq")]
     pub fn sleep_until(&mut self, deadline: axhal::time::TimeValue) {
-        let _kernel_guard = kernel_guard::NoPreemptIrqSave::new();
         let curr = crate::current();
         debug!("task sleep: {}, deadline={:?}", curr.id_name(), deadline);
         assert!(curr.is_running());
@@ -333,14 +327,18 @@ impl AxRunQueue {
         if prev.is_running() {
             prev.set_state(TaskState::Ready);
             if !prev.is_idle() {
-                self.scheduler.put_prev_task(prev.clone(), preempt);
+                self.scheduler.lock().put_prev_task(prev.clone(), preempt);
             }
         }
 
-        let next = self.scheduler.pick_next_task().unwrap_or_else(|| unsafe {
-            // Safety: IRQs must be disabled at this time.
-            IDLE_TASK.current_ref_raw().get_unchecked().clone()
-        });
+        let next = self
+            .scheduler
+            .lock()
+            .pick_next_task()
+            .unwrap_or_else(|| unsafe {
+                // Safety: IRQs must be disabled at this time.
+                IDLE_TASK.current_ref_raw().get_unchecked().clone()
+            });
         assert!(
             next.is_ready(),
             "next {} is not ready: {:?}",
