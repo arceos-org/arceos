@@ -10,29 +10,45 @@ percpu_static! {
     TIMER_LIST: LazyInit<TimerList<TaskWakeupEvent>> = LazyInit::new(),
 }
 
-struct TaskWakeupEvent(AxTaskRef);
+struct TaskWakeupEvent {
+    ticket_id: usize,
+    task: AxTaskRef,
+}
 
 impl TimerEvent for TaskWakeupEvent {
     fn callback(self, _now: TimeValue) {
         // Ignore the timer event if the task is not in the timer list.
         // timeout was set but not triggered (wake up by `WaitQueue::notify()`).
-        if !self.0.in_timer_list() {
+        // Judge if this timer event is still valid by checking the ticket ID.
+        if !self.task.in_timer_list() || self.task.timer_ticket() != self.ticket_id {
+            // The task is not in the timer list or the ticket ID is not matched.
+            // Just ignore this timer event and return.
             return;
         }
 
-        self.0.set_in_timer_list(false);
+        // Timer ticket match.
+        // Mark the task as not in the timer list.
+        self.task.set_in_timer_list(false);
+        // Timer event is triggered, expire the ticket ID.
+        self.task.timer_ticket_expire_one();
         select_run_queue::<NoOp>(
             #[cfg(feature = "smp")]
-            self.0.clone(),
+            self.task.clone(),
         )
-        .unblock_task(self.0, true)
+        .unblock_task(self.task, true)
     }
 }
 
 pub fn set_alarm_wakeup(deadline: TimeValue, task: AxTaskRef) {
     TIMER_LIST.with_current(|timer_list| {
         task.set_in_timer_list(true);
-        timer_list.set(deadline, TaskWakeupEvent(task));
+        timer_list.set(
+            deadline,
+            TaskWakeupEvent {
+                ticket_id: task.timer_ticket(),
+                task,
+            },
+        );
     })
 }
 

@@ -58,10 +58,10 @@ impl WaitQueue {
         }
         #[cfg(feature = "irq")]
         if curr.in_timer_list() {
-            // timeout was set but not triggered (wake up by `WaitQueue::notify()`)
             curr.set_in_timer_list(false);
+            curr.timer_ticket_expire_one();
             // TODO:
-            // this task is still not remoted from timer list of target CPU,
+            // this task is still not removed from timer list of target CPU,
             // which may cause some redundant timer events.
         }
     }

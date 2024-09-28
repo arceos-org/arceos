@@ -49,9 +49,15 @@ pub struct TaskInner {
     /// CPU affinity mask.
     cpumask: SpinNoIrq<CpuMask<{ axconfig::SMP }>>,
 
+    /// Mark whether the task is in the wait queue.
     in_wait_queue: AtomicBool,
+    /// Mark whether the task is in the timer list.
     #[cfg(feature = "irq")]
     in_timer_list: AtomicBool,
+    /// A ticket ID used to identify the timer event.
+    /// Incremented by 1 each time the timer event is triggered or expired.
+    #[cfg(feature = "irq")]
+    timer_ticket_id: AtomicUsize,
 
     /// Used to indicate whether the task is running on a CPU.
     on_cpu: AtomicBool,
@@ -196,6 +202,8 @@ impl TaskInner {
             in_wait_queue: AtomicBool::new(false),
             #[cfg(feature = "irq")]
             in_timer_list: AtomicBool::new(false),
+            #[cfg(feature = "irq")]
+            timer_ticket_id: AtomicUsize::new(0),
             on_cpu: AtomicBool::new(false),
             prev_task_on_cpu_ptr: AtomicPtr::new(core::ptr::null_mut()),
             #[cfg(feature = "irq")]
@@ -300,6 +308,21 @@ impl TaskInner {
     #[cfg(feature = "irq")]
     pub(crate) fn set_in_timer_list(&self, in_timer_list: bool) {
         self.in_timer_list.store(in_timer_list, Ordering::Release);
+    }
+
+    /// Returns current available timer ticket ID.
+    #[inline]
+    #[cfg(feature = "irq")]
+    pub(crate) fn timer_ticket(&self) -> usize {
+        self.timer_ticket_id.load(Ordering::Acquire)
+    }
+
+    /// Expire one timer ticket ID, increment timer_ticket_id by 1,
+    /// which can be used to identify one timer event is triggered or expired.
+    #[inline]
+    #[cfg(feature = "irq")]
+    pub(crate) fn timer_ticket_expire_one(&self) {
+        self.timer_ticket_id.fetch_add(1, Ordering::Release);
     }
 
     pub(crate) fn unblock_locked<F>(&self, mut run_queue_push: F)
