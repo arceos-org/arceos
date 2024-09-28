@@ -16,6 +16,7 @@ pub use crate::wait_queue::WaitQueue;
 /// The reference type of a task.
 pub type AxTaskRef = Arc<AxTask>;
 
+/// The wrapper type for cpumask::CpuMask with SMP configuration.
 pub type CpuSet = cpumask::CpuMask<{ axconfig::SMP }>;
 
 cfg_if::cfg_if! {
