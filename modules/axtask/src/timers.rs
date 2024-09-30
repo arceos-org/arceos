@@ -17,18 +17,16 @@ struct TaskWakeupEvent {
 
 impl TimerEvent for TaskWakeupEvent {
     fn callback(self, _now: TimeValue) {
-        // Ignore the timer event if the task is not in the timer list.
-        // timeout was set but not triggered (wake up by `WaitQueue::notify()`).
+        // Ignore the timer event if timeout was set but not triggered
+        // (wake up by `WaitQueue::notify()`).
         // Judge if this timer event is still valid by checking the ticket ID.
-        if !self.task.in_timer_list() || self.task.timer_ticket() != self.ticket_id {
+        if self.task.timer_ticket() != self.ticket_id {
             // The task is not in the timer list or the ticket ID is not matched.
             // Just ignore this timer event and return.
             return;
         }
 
         // Timer ticket match.
-        // Mark the task as not in the timer list.
-        self.task.set_in_timer_list(false);
         // Timer event is triggered, expire the ticket ID.
         self.task.timer_ticket_expire_one();
         select_run_queue::<NoOp>(self.task.clone()).unblock_task(self.task, true)
@@ -37,7 +35,6 @@ impl TimerEvent for TaskWakeupEvent {
 
 pub fn set_alarm_wakeup(deadline: TimeValue, task: AxTaskRef) {
     TIMER_LIST.with_current(|timer_list| {
-        task.set_in_timer_list(true);
         timer_list.set(
             deadline,
             TaskWakeupEvent {

@@ -47,7 +47,9 @@ impl WaitQueue {
         }
     }
 
-    fn cancel_events(&self, curr: CurrentTask) {
+    /// Cancel events by removing the task from the wait queue.
+    /// If `from_timer_list` is true, the task should be removed from the timer list.
+    fn cancel_events(&self, curr: CurrentTask, from_timer_list: bool) {
         // A task can be wake up only one events (timer or `notify()`), remove
         // the event from another queue.
         if curr.in_wait_queue() {
@@ -56,9 +58,10 @@ impl WaitQueue {
             wq_locked.retain(|t| !curr.ptr_eq(t));
             curr.set_in_wait_queue(false);
         }
+        // Try to cancel a timer event from timer lists.
+        // Just mark task's current timer ticket ID as expired.
         #[cfg(feature = "irq")]
-        if curr.in_timer_list() {
-            curr.set_in_timer_list(false);
+        if from_timer_list {
             curr.timer_ticket_expire_one();
             // TODO:
             // this task is still not removed from timer list of target CPU,
@@ -91,7 +94,7 @@ impl WaitQueue {
         let mut rq = current_run_queue::<NoPreemptIrqSave>();
         self.push_to_wait_queue();
         rq.blocked_resched();
-        self.cancel_events(crate::current());
+        self.cancel_events(crate::current(), false);
     }
 
     /// Blocks the current task and put it into the wait queue, until the given
@@ -128,7 +131,7 @@ impl WaitQueue {
 
             rq.blocked_resched();
         }
-        self.cancel_events(crate::current());
+        self.cancel_events(crate::current(), false);
     }
 
     /// Blocks the current task and put it into the wait queue, until other tasks
@@ -149,7 +152,10 @@ impl WaitQueue {
         rq.blocked_resched();
 
         let timeout = curr.in_wait_queue(); // still in the wait queue, must have timed out
-        self.cancel_events(curr);
+
+        // If `timeout` is true, the task is still in the wait queue,
+        // which means timer event is triggered and the task has been removed from timer list.
+        self.cancel_events(curr, !timeout);
         timeout
     }
 
@@ -196,7 +202,7 @@ impl WaitQueue {
 
             rq.blocked_resched()
         }
-        self.cancel_events(curr);
+        self.cancel_events(curr, !timeout);
         timeout
     }
 

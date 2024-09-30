@@ -50,9 +50,6 @@ pub struct TaskInner {
 
     /// Mark whether the task is in the wait queue.
     in_wait_queue: AtomicBool,
-    /// Mark whether the task is in the timer list.
-    #[cfg(feature = "irq")]
-    in_timer_list: AtomicBool,
     /// A ticket ID used to identify the timer event.
     /// Incremented by 1 each time the timer event is triggered or expired.
     #[cfg(feature = "irq")]
@@ -200,8 +197,6 @@ impl TaskInner {
             cpumask: SpinNoIrq::new(CpuMask::full()),
             in_wait_queue: AtomicBool::new(false),
             #[cfg(feature = "irq")]
-            in_timer_list: AtomicBool::new(false),
-            #[cfg(feature = "irq")]
             timer_ticket_id: AtomicU64::new(0),
             on_cpu: AtomicBool::new(false),
             prev_task_on_cpu_ptr: AtomicPtr::new(core::ptr::null_mut()),
@@ -295,18 +290,6 @@ impl TaskInner {
     #[inline]
     pub(crate) fn set_in_wait_queue(&self, in_wait_queue: bool) {
         self.in_wait_queue.store(in_wait_queue, Ordering::Release);
-    }
-
-    #[inline]
-    #[cfg(feature = "irq")]
-    pub(crate) fn in_timer_list(&self) -> bool {
-        self.in_timer_list.load(Ordering::Acquire)
-    }
-
-    #[inline]
-    #[cfg(feature = "irq")]
-    pub(crate) fn set_in_timer_list(&self, in_timer_list: bool) {
-        self.in_timer_list.store(in_timer_list, Ordering::Release);
     }
 
     /// Returns current available timer ticket ID.
