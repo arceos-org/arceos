@@ -337,13 +337,11 @@ impl TaskInner {
         //
         // This ensures that tasks getting woken will be fully ordered against
         // their previous state and preserve Program Order.
-        if self.on_cpu() {
-            while self.on_cpu() {
-                // Wait for the task to finish its scheduling process.
-                core::hint::spin_loop();
-            }
-            assert!(!self.on_cpu())
+        while self.on_cpu() {
+            // Wait for the task to finish its scheduling process.
+            core::hint::spin_loop();
         }
+        assert!(!self.on_cpu());
 
         // When irq is enabled, use `unblock_lock` to protect the task from being unblocked by timer and `notify()` at the same time.
         #[cfg(feature = "irq")]
