@@ -62,7 +62,7 @@ impl WaitQueue {
         // Just mark task's current timer ticket ID as expired.
         #[cfg(feature = "irq")]
         if from_timer_list {
-            curr.timer_ticket_expire_one();
+            curr.timer_ticket_expired();
             // TODO:
             // this task is still not removed from timer list of target CPU,
             // which may cause some redundant timer events.

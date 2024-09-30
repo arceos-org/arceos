@@ -292,19 +292,30 @@ impl TaskInner {
         self.in_wait_queue.store(in_wait_queue, Ordering::Release);
     }
 
-    /// Returns current available timer ticket ID.
+    /// Returns task's current timer ticket ID.
     #[inline]
     #[cfg(feature = "irq")]
     pub(crate) fn timer_ticket(&self) -> u64 {
         self.timer_ticket_id.load(Ordering::Acquire)
     }
 
-    /// Expire one timer ticket ID, increment timer_ticket_id by 1,
-    /// which can be used to identify one timer event is triggered or expired.
+    /// Set the timer ticket ID.
     #[inline]
     #[cfg(feature = "irq")]
-    pub(crate) fn timer_ticket_expire_one(&self) {
-        self.timer_ticket_id.fetch_add(1, Ordering::Release);
+    pub(crate) fn set_timer_ticket(&self, timer_ticket_id: u64) {
+        // CAN NOT set timer_ticket_id to 0,
+        // because 0 is used to indicate the timer event is expired.
+        assert!(timer_ticket_id != 0);
+        self.timer_ticket_id
+            .store(timer_ticket_id, Ordering::Release);
+    }
+
+    /// Expire timer ticket ID by setting it to 0,
+    /// it can be used to identify one timer event is triggered or expired.
+    #[inline]
+    #[cfg(feature = "irq")]
+    pub(crate) fn timer_ticket_expired(&self) {
+        self.timer_ticket_id.store(0, Ordering::Release);
     }
 
     pub(crate) fn unblock_locked<F>(&self, mut run_queue_push: F)
