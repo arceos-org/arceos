@@ -11,7 +11,7 @@ percpu_static! {
 }
 
 struct TaskWakeupEvent {
-    ticket_id: usize,
+    ticket_id: u64,
     task: AxTaskRef,
 }
 

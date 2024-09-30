@@ -3,7 +3,6 @@ use alloc::sync::Arc;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
 
-use cpumask::CpuMask;
 use kernel_guard::BaseGuard;
 use kspin::SpinRaw;
 use lazyinit::LazyInit;
@@ -12,7 +11,7 @@ use scheduler::BaseScheduler;
 use axhal::cpu::this_cpu_id;
 
 use crate::task::{CurrentTask, TaskState};
-use crate::{AxTaskRef, CpuSet, Scheduler, TaskInner, WaitQueue};
+use crate::{AxTaskRef, CpuMask, Scheduler, TaskInner, WaitQueue};
 
 macro_rules! percpu_static {
     ($($name:ident: $ty:ty = $init:expr),* $(,)?) => {
@@ -55,7 +54,7 @@ const ARRAY_REPEAT_VALUE: MaybeUninit<&'static mut AxRunQueue> = MaybeUninit::un
 /// ## Returns
 ///
 /// A static reference to the current run queue.
-// #[inline(always)]
+#[inline(always)]
 pub(crate) fn current_run_queue<G: BaseGuard>() -> AxRunQueueRef<'static, G> {
     let irq_state = G::acquire();
     AxRunQueueRef {
@@ -86,7 +85,7 @@ pub(crate) fn current_run_queue<G: BaseGuard>() -> AxRunQueueRef<'static, G> {
 // The modulo operation is safe here because `axconfig::SMP` is always greater than 1 with "smp" enabled.
 #[allow(clippy::modulo_one)]
 #[inline]
-fn select_run_queue_index(cpumask: CpuSet) -> usize {
+fn select_run_queue_index(cpumask: CpuMask) -> usize {
     static RUN_QUEUE_INDEX: AtomicUsize = AtomicUsize::new(0);
 
     assert!(!cpumask.is_empty(), "No available CPU for task execution");

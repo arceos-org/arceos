@@ -17,7 +17,7 @@ pub use crate::wait_queue::WaitQueue;
 pub type AxTaskRef = Arc<AxTask>;
 
 /// The wrapper type for cpumask::CpuMask with SMP configuration.
-pub type CpuSet = cpumask::CpuMask<{ axconfig::SMP }>;
+pub type CpuMask = cpumask::CpuMask<{ axconfig::SMP }>;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "sched_rr")] {
@@ -93,6 +93,8 @@ pub fn init_scheduler_secondary() {
 #[doc(cfg(feature = "irq"))]
 pub fn on_timer_tick() {
     crate::timers::check_events();
+    // Since irq and preemption are both disabled here,
+    // we can get current run queue with the default `kernel_guard::NoOp`.
     current_run_queue::<NoOp>().scheduler_timer_tick();
 }
 

@@ -5,7 +5,6 @@ use core::sync::atomic::AtomicUsize;
 use core::sync::atomic::{AtomicBool, AtomicI32, AtomicPtr, AtomicU64, AtomicU8, Ordering};
 use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 
-use cpumask::CpuMask;
 use kspin::{SpinNoIrq, SpinRaw};
 use memory_addr::{align_up_4k, VirtAddr};
 
@@ -15,7 +14,7 @@ use axhal::cpu::this_cpu_id;
 use axhal::tls::TlsArea;
 
 use crate::task_ext::AxTaskExt;
-use crate::{AxTask, AxTaskRef, CpuSet, WaitQueue};
+use crate::{AxTask, AxTaskRef, CpuMask, WaitQueue};
 
 /// A unique identifier for a thread.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -47,7 +46,7 @@ pub struct TaskInner {
     state: AtomicU8,
 
     /// CPU affinity mask.
-    cpumask: SpinNoIrq<CpuSet>,
+    cpumask: SpinNoIrq<CpuMask>,
 
     /// Mark whether the task is in the wait queue.
     in_wait_queue: AtomicBool,
@@ -57,7 +56,7 @@ pub struct TaskInner {
     /// A ticket ID used to identify the timer event.
     /// Incremented by 1 each time the timer event is triggered or expired.
     #[cfg(feature = "irq")]
-    timer_ticket_id: AtomicUsize,
+    timer_ticket_id: AtomicU64,
 
     /// Used to indicate whether the task is running on a CPU.
     on_cpu: AtomicBool,
@@ -203,7 +202,7 @@ impl TaskInner {
             #[cfg(feature = "irq")]
             in_timer_list: AtomicBool::new(false),
             #[cfg(feature = "irq")]
-            timer_ticket_id: AtomicUsize::new(0),
+            timer_ticket_id: AtomicU64::new(0),
             on_cpu: AtomicBool::new(false),
             prev_task_on_cpu_ptr: AtomicPtr::new(core::ptr::null_mut()),
             #[cfg(feature = "irq")]
@@ -280,11 +279,11 @@ impl TaskInner {
     }
 
     #[inline]
-    pub(crate) fn cpumask(&self) -> CpuSet {
+    pub(crate) fn cpumask(&self) -> CpuMask {
         *self.cpumask.lock()
     }
 
-    pub(crate) fn set_cpumask(&self, cpumask: CpuSet) {
+    pub(crate) fn set_cpumask(&self, cpumask: CpuMask) {
         *self.cpumask.lock() = cpumask
     }
 
@@ -313,7 +312,7 @@ impl TaskInner {
     /// Returns current available timer ticket ID.
     #[inline]
     #[cfg(feature = "irq")]
-    pub(crate) fn timer_ticket(&self) -> usize {
+    pub(crate) fn timer_ticket(&self) -> u64 {
         self.timer_ticket_id.load(Ordering::Acquire)
     }
 
