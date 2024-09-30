@@ -287,7 +287,9 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
     }
 
     /// Unblock one task by inserting it into the run queue.
-    /// If task state is `BLOCKING`, it will enter a loop until the task is in `BLOCKED` state.
+    /// If task's `on_cpu` flag is true,
+    /// it will enter a loop until the task finishes its scheduling process,
+    /// see `unblock_locked` for details.
     pub fn unblock_task(&mut self, task: AxTaskRef, resched: bool) {
         task.clone().unblock_locked(|| {
             let cpu_id = self.inner.cpu_id;
