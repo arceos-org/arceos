@@ -295,7 +295,10 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
             let cpu_id = self.inner.cpu_id;
             debug!("task unblock: {} on run_queue {}", task.id_name(), cpu_id);
             task.set_state(TaskState::Ready);
-            self.inner.scheduler.lock().add_task(task.clone()); // TODO: priority
+            self.inner
+                .scheduler
+                .lock()
+                .put_prev_task(task.clone(), resched); // TODO: priority
 
             // Note: when the task is unblocked on another CPU's run queue,
             // we just ingiore the `resched` flag.

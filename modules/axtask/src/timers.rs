@@ -31,8 +31,6 @@ impl TimerEvent for TaskWakeupEvent {
         }
 
         // Timer ticket match.
-        // Timer event is triggered, expire the ticket ID.
-        self.task.timer_ticket_expired();
         select_run_queue::<NoOp>(self.task.clone()).unblock_task(self.task, true)
     }
 }
