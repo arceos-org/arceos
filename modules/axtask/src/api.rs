@@ -99,7 +99,7 @@ pub fn on_timer_tick() {
 /// Adds the given task to the run queue, returns the task reference.
 pub fn spawn_task(task: TaskInner) -> AxTaskRef {
     let task_ref = task.into_arc();
-    crate::select_run_queue::<NoPreemptIrqSave>(task_ref.clone()).add_task(task_ref.clone());
+    select_run_queue::<NoPreemptIrqSave>(task_ref.clone()).add_task(task_ref.clone());
     task_ref
 }
 
