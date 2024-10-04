@@ -222,25 +222,22 @@ To prevent a task from being awakened by both methods simultaneously, we need to
     {
         debug!("{} unblocking", self.id_name());
 
-        // If the owning (remote) CPU is still in the middle of schedule() with
-        // this task as prev, wait until it's done referencing the task.
-        //
-        // Pairs with the `clear_prev_task_on_cpu()`.
-        //
-        // This ensures that tasks getting woken will be fully ordered against
-        // their previous state and preserve Program Order.
-        if self.on_cpu() {
-            while self.on_cpu() {
-                // Wait for the task to finish its scheduling process.
-                core::hint::spin_loop();
-            }
-            assert!(!self.on_cpu())
-        }
-
         // When irq is enabled, use `unblock_lock` to protect the task from being unblocked by timer and `notify()` at the same time.
         #[cfg(feature = "irq")]
         let _lock = self.unblock_lock.lock();
         if self.is_blocked() {
+            // If the owning (remote) CPU is still in the middle of schedule() with
+            // this task as prev, wait until it's done referencing the task.
+            //
+            // Pairs with the `clear_prev_task_on_cpu()`.
+            //
+            // This ensures that tasks getting woken will be fully ordered against
+            // their previous state and preserve Program Order.
+            while self.on_cpu() {
+                // Wait for the task to finish its scheduling process.
+                core::hint::spin_loop();
+            }
+            assert!(!self.on_cpu());
             run_queue_push();
         }
     }
@@ -387,3 +384,45 @@ it is set as true for a task when yielding is about to happened, and cleared aft
         smp_cond_load_acquire(&p->on_cpu, !VAL);
     }
     ```
+
+*  `on_cpu` flag in axtask 
+    
+    Inspired by Linux's `on_cpu` flag design, we adopted a simpler logic.
+    
+    The on_cpu flag of a task running on a CPU is set to `true`, and after a task yields the CPU, the next task clears the `on_cpu` flag of the previous task using the `clear_prev_task_on_cpu` method. 
+    
+    This method requires the task structure to store a pointer to the `on_cpu` flag of the previous task:
+    ```Rust
+        next_task.set_prev_task_on_cpu_ptr(prev_task.on_cpu_mut_ptr());
+    ```
+    In the `unblock_task` method, if `the` on_cpu flag of the target task is found to be `true`, it indicates that the task has not completed its scheduling.
+    
+    We spin and wait for the task's `on_cpu` flag to become `false`, ensuring that the task being placed into the run queue has already vacated a CPU.
+
+## Potential Bugs in Per-CPU Scheduling and Solutions
+
+1. Task Stale State in Previous CPU
+
+* Bug: A task scheduled on a CPU may not have fully vacated the previous CPU, as it may not have completed saving its context (e.g., saving callee-saved registers). This can lead to a stale reference to the task on the previous CPU. If another core attempts to run this task before the context is fully saved, it may cause **read-after-write** consistency issues with the task's context.
+
+* Solution: Ensure the `on_cpu` flag is correctly used to track whether a task is still running on any CPU. A task must be fully removed from the previous CPU once its scheduling is finished. The `on_cpu` flag should be used to prevent prematurely scheduling the task on another CPU. The task should only be added to another CPU's run queue when its `on_cpu` flag has been set to `false`.
+
+    Additionally, the next task on the CPU should clear the `on_cpu` flag of the previous task using methods like `clear_prev_task_on_cpu`, ensuring the previous task is no longer active before transitioning to the next task. This ensures that context consistency is maintained across CPU cores.
+
+2. Race Condition on Wait Queue and Timer Event Wakeups
+
+* Bug: If a task is blocked using methods like `wait_timeout` or `wait_timeout_until`, it is placed in both the wait queue and the timer list. 
+This leads to a potential issue where the task may be woken up by both a notification from another core and a timer event simultaneously. 
+Both attempts may call the `unblock_task` function, trying to insert the task into a run queue. 
+This can result in the task being added to the run queue multiple times.
+
+* Solution: Introduce an `unblock_lock` mechanism to prevent simultaneous wakeups from the wait queue and the timer event. 
+Ensure that only one wakeup path can succeed at a time. In the `unblock_task` function, call the `unblock_locked` method of axtask, which involves competing for the `unblock_lock`. Only the side that acquires the lock first can proceed to invoke the `run_queue_push` closure, setting the task's state to Ready and adding it to the designated run queue. The other side, which acquires the lock later, will find that the task's state is no longer Blocked and will return without taking any action.
+
+3. Race Condition on Timer Event Not Being Cleared in Time
+
+* Bug: When a task on core0 invokes methods like `wait_timeout` or `wait_timeout_until`, it is placed in both the wait queue and the timer list. If core1 notifies the wait queue and the task starts running on core2, the task should continue executing in the `wait_xxx` function on core2 and invoke `cancel_events` to remove itself from the wait queue and disable the timer event. However, if the task on core2 has not yet disabled the timer event, the timer event on core0 may still trigger and attempt to call `unblock_task`, causing an inconsistency.
+
+* Solution: In the `unblock_locked` method, if the task’s state is no longer `Blocked`, this unblock attempt will be ignored, preventing any erroneous state changes caused by the stale timer event.
+
+* Note: The polling of the `on_cpu` flag must be placed inside the `if self.is_blocked()` code block. Otherwise, the task's `on_cpu` flag could be set to true on another CPU, leading to inconsistent states or potential deadlocks. This ensures that only blocked tasks undergo the `on_cpu` check, preventing premature or redundant wakeups from other CPUs.

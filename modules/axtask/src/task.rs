@@ -335,6 +335,11 @@ impl TaskInner {
             //
             // This ensures that tasks getting woken will be fully ordered against
             // their previous state and preserve Program Order.
+            //
+            // Note:
+            // 1. This should be placed inside `if self.is_blocked() { ... }`,
+            //    because the task may have been woken up by other cores.
+            // 2. This can be placed in the front of `switch_to()`
             while self.on_cpu() {
                 // Wait for the task to finish its scheduling process.
                 core::hint::spin_loop();
