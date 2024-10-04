@@ -324,23 +324,22 @@ impl TaskInner {
     {
         debug!("{} unblocking", self.id_name());
 
-        // If the owning (remote) CPU is still in the middle of schedule() with
-        // this task as prev, wait until it's done referencing the task.
-        //
-        // Pairs with the `clear_prev_task_on_cpu()`.
-        //
-        // This ensures that tasks getting woken will be fully ordered against
-        // their previous state and preserve Program Order.
-        while self.on_cpu() {
-            // Wait for the task to finish its scheduling process.
-            core::hint::spin_loop();
-        }
-        assert!(!self.on_cpu());
-
         // When irq is enabled, use `unblock_lock` to protect the task from being unblocked by timer and `notify()` at the same time.
         #[cfg(feature = "irq")]
         let _lock = self.unblock_lock.lock();
         if self.is_blocked() {
+            // If the owning (remote) CPU is still in the middle of schedule() with
+            // this task as prev, wait until it's done referencing the task.
+            //
+            // Pairs with the `clear_prev_task_on_cpu()`.
+            //
+            // This ensures that tasks getting woken will be fully ordered against
+            // their previous state and preserve Program Order.
+            while self.on_cpu() {
+                // Wait for the task to finish its scheduling process.
+                core::hint::spin_loop();
+            }
+            assert!(!self.on_cpu());
             run_queue_push();
         }
     }

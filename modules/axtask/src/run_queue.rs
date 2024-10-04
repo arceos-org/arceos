@@ -432,6 +432,7 @@ pub(crate) fn init() {
     // Put the subsequent execution into the `main` task.
     let main_task = TaskInner::new_init("main".into()).into_arc();
     main_task.set_state(TaskState::Running);
+    main_task.set_on_cpu(true);
     unsafe { CurrentTask::init_current(main_task) }
 
     info!("Initialize RUN_QUEUES");
@@ -452,6 +453,7 @@ pub(crate) fn init_secondary() {
     IDLE_TASK.with_current(|i| {
         i.init_once(idle_task.clone());
     });
+    idle_task.set_on_cpu(true);
     unsafe { CurrentTask::init_current(idle_task) }
     RUN_QUEUE.with_current(|rq| {
         rq.init_once(AxRunQueue::new(cpu_id));
