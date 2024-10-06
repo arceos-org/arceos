@@ -325,6 +325,12 @@ impl TaskInner {
         debug!("{} unblocking", self.id_name());
 
         // When irq is enabled, use `unblock_lock` to protect the task from being unblocked by timer and `notify()` at the same time.
+        // Note:
+        //  Since a task can not exist in two wait queues at the same time,
+        //  we do not need to worry about a task being unblocked from two different wait queues concurrently,
+        //  This `unblock_lock` is ONLY used to protect the task from being unblocked from timer list and wait queue at the same time,
+        //  because a task may exist in both timer list and wait queue due to `wait_timeout_xxx()` related functions,
+        //  eventually, this lock is only need to be used with "irq" feature enabled.
         #[cfg(feature = "irq")]
         let _lock = self.unblock_lock.lock();
         if self.is_blocked() {

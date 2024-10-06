@@ -85,18 +85,17 @@ pub(crate) fn current_run_queue<G: BaseGuard>() -> AxRunQueueRef<'static, G> {
 // The modulo operation is safe here because `axconfig::SMP` is always greater than 1 with "smp" enabled.
 #[allow(clippy::modulo_one)]
 #[inline]
-fn select_run_queue_index(cpumask: CpuMask) -> usize {
+fn select_run_queue_index(cpumask: &CpuMask) -> usize {
     static RUN_QUEUE_INDEX: AtomicUsize = AtomicUsize::new(0);
 
     assert!(!cpumask.is_empty(), "No available CPU for task execution");
 
     // Round-robin selection of the run queue index.
     loop {
-        let index = RUN_QUEUE_INDEX.load(Ordering::SeqCst) % axconfig::SMP;
+        let index = RUN_QUEUE_INDEX.fetch_add(1, Ordering::SeqCst) % axconfig::SMP;
         if cpumask.get(index) {
             return index;
         }
-        RUN_QUEUE_INDEX.fetch_add(1, Ordering::SeqCst);
     }
 }
 
@@ -119,7 +118,6 @@ fn select_run_queue_index(cpumask: CpuMask) -> usize {
 ///
 #[inline]
 fn get_run_queue(index: usize) -> &'static mut AxRunQueue {
-    assert!(index < axconfig::SMP);
     unsafe { RUN_QUEUES[index].assume_init_mut() }
 }
 
@@ -152,7 +150,7 @@ pub(crate) fn select_run_queue<G: BaseGuard>(task: AxTaskRef) -> AxRunQueueRef<'
     {
         let irq_state = G::acquire();
         // When SMP is enabled, select the run queue based on the task's CPU affinity and load balance.
-        let index = select_run_queue_index(task.cpumask());
+        let index = select_run_queue_index(&task.cpumask());
         AxRunQueueRef {
             inner: get_run_queue(index),
             state: irq_state,
@@ -161,7 +159,7 @@ pub(crate) fn select_run_queue<G: BaseGuard>(task: AxTaskRef) -> AxRunQueueRef<'
     }
 }
 
-/// AxRunQueue represents a run queue for global system or a specific CPU.
+/// `AxRunQueue` represents a run queue for global system or a specific CPU.
 pub(crate) struct AxRunQueue {
     /// The ID of the CPU this run queue is associated with.
     cpu_id: usize,
@@ -180,21 +178,6 @@ pub(crate) struct AxRunQueueRef<'a, G: BaseGuard> {
 impl<'a, G: BaseGuard> Drop for AxRunQueueRef<'a, G> {
     fn drop(&mut self) {
         G::release(self.state);
-    }
-}
-
-impl AxRunQueue {
-    pub fn new(cpu_id: usize) -> Self {
-        let gc_task = TaskInner::new(gc_entry, "gc".into(), axconfig::TASK_STACK_SIZE).into_arc();
-        // gc task shoule be pinned to the current CPU.
-        gc_task.set_cpumask(CpuMask::one_shot(cpu_id));
-
-        let mut scheduler = Scheduler::new();
-        scheduler.add_task(gc_task);
-        Self {
-            cpu_id,
-            scheduler: SpinRaw::new(scheduler),
-        }
     }
 }
 
@@ -254,6 +237,8 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
         }
     }
 
+    /// Exit the current task with the specified exit code.
+    /// This function will never return.
     pub fn exit_current(&mut self, exit_code: i32) -> ! {
         let curr = crate::current();
         debug!("task exit: {}, exit_code={}", curr.id_name(), exit_code);
@@ -326,6 +311,21 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
 }
 
 impl AxRunQueue {
+    /// Create a new run queue for the specified CPU.
+    /// The run queue is initialized with a per-CPU gc task in its scheduler.
+    pub fn new(cpu_id: usize) -> Self {
+        let gc_task = TaskInner::new(gc_entry, "gc".into(), axconfig::TASK_STACK_SIZE).into_arc();
+        // gc task should be pinned to the current CPU.
+        gc_task.set_cpumask(CpuMask::one_shot(cpu_id));
+
+        let mut scheduler = Scheduler::new();
+        scheduler.add_task(gc_task);
+        Self {
+            cpu_id,
+            scheduler: SpinRaw::new(scheduler),
+        }
+    }
+
     /// Common reschedule subroutine. If `preempt`, keep current task's time
     /// slice, otherwise reset it.
     fn resched(&mut self, preempt: bool) {
@@ -365,12 +365,13 @@ impl AxRunQueue {
         #[cfg(feature = "preempt")]
         next_task.set_preempt_pending(false);
         next_task.set_state(TaskState::Running);
-        // Claim the task as running, we do this before switching to it
-        // such that any running task will have this set.
-        next_task.set_on_cpu(true);
         if prev_task.ptr_eq(&next_task) {
             return;
         }
+
+        // Claim the task as running, we do this before switching to it
+        // such that any running task will have this set.
+        next_task.set_on_cpu(true);
 
         unsafe {
             let prev_ctx_ptr = prev_task.ctx_mut_ptr();
