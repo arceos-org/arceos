@@ -4,13 +4,14 @@ use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
 
 use kernel_guard::BaseGuard;
-use kspin::{SpinNoIrqGuard, SpinRaw};
+use kspin::SpinRaw;
 use lazyinit::LazyInit;
 use scheduler::BaseScheduler;
 
 use axhal::cpu::this_cpu_id;
 
 use crate::task::{CurrentTask, TaskState};
+use crate::wait_queue::WaitQueueGuard;
 use crate::{AxTaskRef, CpuMask, Scheduler, TaskInner, WaitQueue};
 
 macro_rules! percpu_static {
@@ -85,7 +86,7 @@ pub(crate) fn current_run_queue<G: BaseGuard>() -> AxRunQueueRef<'static, G> {
 // The modulo operation is safe here because `axconfig::SMP` is always greater than 1 with "smp" enabled.
 #[allow(clippy::modulo_one)]
 #[inline]
-fn select_run_queue_index(cpumask: &CpuMask) -> usize {
+fn select_run_queue_index(cpumask: CpuMask) -> usize {
     static RUN_QUEUE_INDEX: AtomicUsize = AtomicUsize::new(0);
 
     assert!(!cpumask.is_empty(), "No available CPU for task execution");
@@ -150,7 +151,7 @@ pub(crate) fn select_run_queue<G: BaseGuard>(task: AxTaskRef) -> AxRunQueueRef<'
     {
         let irq_state = G::acquire();
         // When SMP is enabled, select the run queue based on the task's CPU affinity and load balance.
-        let index = select_run_queue_index(&task.cpumask());
+        let index = select_run_queue_index(task.cpumask());
         AxRunQueueRef {
             inner: get_run_queue(index),
             state: irq_state,
@@ -270,7 +271,7 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
     ///     2. The caller must ensure that the current task is in the running state.
     ///     3. The caller must ensure that the current task is not the idle task.
     ///     4. The lock of the wait queue will be released explicitly after current task is pushed into it.
-    pub fn blocked_resched(&mut self, mut wq_locked: SpinNoIrqGuard<VecDeque<AxTaskRef>>) {
+    pub fn blocked_resched(&mut self, mut wq_guard: WaitQueueGuard) {
         let curr = crate::current();
         assert!(curr.is_running());
         assert!(!curr.is_idle());
@@ -285,9 +286,9 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
         curr.set_state(TaskState::Blocked);
         curr.set_in_wait_queue(true);
 
-        wq_locked.push_back(curr.clone());
+        wq_guard.push_back(curr.clone());
         // Drop the lock of wait queue explictly.
-        drop(wq_locked);
+        drop(wq_guard);
 
         assert!(curr.is_blocked(), "task is not blocked, {:?}", curr.state());
 

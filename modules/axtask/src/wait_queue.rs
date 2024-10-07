@@ -2,7 +2,7 @@ use alloc::collections::VecDeque;
 use alloc::sync::Arc;
 
 use kernel_guard::{NoOp, NoPreemptIrqSave};
-use kspin::SpinNoIrq;
+use kspin::{SpinNoIrq, SpinNoIrqGuard};
 
 use crate::{current_run_queue, select_run_queue, AxTaskRef, CurrentTask};
 
@@ -31,6 +31,8 @@ use crate::{current_run_queue, select_run_queue, AxTaskRef, CurrentTask};
 pub struct WaitQueue {
     queue: SpinNoIrq<VecDeque<AxTaskRef>>,
 }
+
+pub(crate) type WaitQueueGuard<'a> = SpinNoIrqGuard<'a, VecDeque<AxTaskRef>>;
 
 impl WaitQueue {
     /// Creates an empty wait queue.
