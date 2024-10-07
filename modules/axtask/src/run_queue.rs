@@ -263,6 +263,21 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
         unreachable!("task exited!");
     }
 
+    /// Mark the state of current task as `Blocked`, set the `in_wait_queue` flag as true.
+    pub fn block_current(&mut self) {
+        let curr = crate::current();
+        assert!(curr.is_running());
+        assert!(!curr.is_idle());
+        // we must not block current task with preemption disabled.
+        // Current expected preempt count is 2.
+        // 1 for `NoPreemptIrqSave`, 1 for wait queue's `SpinNoIrq`.
+        #[cfg(feature = "preempt")]
+        assert!(curr.can_preempt(2));
+
+        curr.set_state(TaskState::Blocked);
+        curr.set_in_wait_queue(true);
+    }
+
     pub fn blocked_resched(&mut self) {
         let curr = crate::current();
         assert!(curr.is_blocked(), "task is not blocked, {:?}", curr.state());
