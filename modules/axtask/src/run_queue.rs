@@ -301,7 +301,29 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
     /// it will enter a loop until the task finishes its scheduling process,
     /// see `unblock_locked` for details.
     pub fn unblock_task(&mut self, task: AxTaskRef, resched: bool) {
-        task.clone().unblock_locked(|| {
+        // When irq is enabled, use `unblock_lock` to protect the task from being unblocked by timer and `notify()` at the same time.
+        #[cfg(feature = "irq")]
+        let _unblock_lock = task.get_unblock_lock();
+
+        if task.is_blocked() {
+            // If the owning (remote) CPU is still in the middle of schedule() with
+            // this task as prev, wait until it's done referencing the task.
+            //
+            // Pairs with the `clear_prev_task_on_cpu()`.
+            //
+            // This ensures that tasks getting woken will be fully ordered against
+            // their previous state and preserve Program Order.
+            //
+            // Note:
+            // 1. This should be placed inside `if self.is_blocked() { ... }`,
+            //    because the task may have been woken up by other cores.
+            // 2. This can be placed in the front of `switch_to()`
+            while task.on_cpu() {
+                // Wait for the task to finish its scheduling process.
+                core::hint::spin_loop();
+            }
+            assert!(!task.on_cpu());
+
             let cpu_id = self.inner.cpu_id;
             debug!("task unblock: {} on run_queue {}", task.id_name(), cpu_id);
             task.set_state(TaskState::Ready);
@@ -316,7 +338,7 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
                 #[cfg(feature = "preempt")]
                 crate::current().set_preempt_pending(true);
             }
-        })
+        }
     }
 
     #[cfg(feature = "irq")]

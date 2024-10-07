@@ -5,7 +5,7 @@ use core::sync::atomic::AtomicUsize;
 use core::sync::atomic::{AtomicBool, AtomicI32, AtomicPtr, AtomicU64, AtomicU8, Ordering};
 use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 
-use kspin::{SpinNoIrq, SpinRaw};
+use kspin::{SpinNoIrq, SpinRaw, SpinRawGuard};
 use memory_addr::{align_up_4k, VirtAddr};
 
 use axhal::arch::TaskContext;
@@ -19,6 +19,11 @@ use crate::{AxTask, AxTaskRef, CpuMask, WaitQueue};
 /// A unique identifier for a thread.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct TaskId(u64);
+
+/// The guard of task's unblock lock.
+/// When irq is enabled, use a `SpinRaw<()>` called `unblock_lock`
+/// to protect the task from being unblocked by timer and `notify()` at the same time.
+pub(crate) type TaskUnblockGuard<'a> = SpinRawGuard<'a, ()>;
 
 /// The possible states of a task.
 #[repr(u8)]
@@ -318,41 +323,17 @@ impl TaskInner {
         self.timer_ticket_id.store(0, Ordering::Release);
     }
 
-    pub(crate) fn unblock_locked<F>(&self, mut run_queue_push: F)
-    where
-        F: FnMut(),
-    {
-        debug!("{} unblocking", self.id_name());
-
-        // When irq is enabled, use `unblock_lock` to protect the task from being unblocked by timer and `notify()` at the same time.
-        // Note:
-        //  Since a task can not exist in two wait queues at the same time,
-        //  we do not need to worry about a task being unblocked from two different wait queues concurrently,
-        //  This `unblock_lock` is ONLY used to protect the task from being unblocked from timer list and wait queue at the same time,
-        //  because a task may exist in both timer list and wait queue due to `wait_timeout_xxx()` related functions,
-        //  eventually, this lock is only need to be used with "irq" feature enabled.
-        #[cfg(feature = "irq")]
-        let _lock = self.unblock_lock.lock();
-        if self.is_blocked() {
-            // If the owning (remote) CPU is still in the middle of schedule() with
-            // this task as prev, wait until it's done referencing the task.
-            //
-            // Pairs with the `clear_prev_task_on_cpu()`.
-            //
-            // This ensures that tasks getting woken will be fully ordered against
-            // their previous state and preserve Program Order.
-            //
-            // Note:
-            // 1. This should be placed inside `if self.is_blocked() { ... }`,
-            //    because the task may have been woken up by other cores.
-            // 2. This can be placed in the front of `switch_to()`
-            while self.on_cpu() {
-                // Wait for the task to finish its scheduling process.
-                core::hint::spin_loop();
-            }
-            assert!(!self.on_cpu());
-            run_queue_push();
-        }
+    /// Get the guard of task's unblock lock.
+    /// When irq is enabled, use `unblock_lock` to protect the task from being unblocked by timer and `notify()` at the same time.
+    /// Note:
+    ///  Since a task can not exist in two wait queues at the same time,
+    ///  we do not need to worry about a task being unblocked from two different wait queues concurrently,
+    ///  This `unblock_lock` is ONLY used to protect the task from being unblocked from timer list and wait queue at the same time,
+    ///  because a task may exist in both timer list and wait queue due to `wait_timeout_xxx()` related functions,
+    ///  eventually, this lock is only need to be used with "irq" feature enabled.
+    #[cfg(feature = "irq")]
+    pub(crate) fn get_unblock_lock(&self) -> TaskUnblockGuard {
+        self.unblock_lock.lock()
     }
 
     #[inline]
