@@ -73,14 +73,7 @@ impl WaitQueue {
     /// notifies it.
     pub fn wait(&self) {
         let mut rq = current_run_queue::<NoPreemptIrqSave>();
-        let curr = crate::current();
-        let mut wq = self.queue.lock();
-        rq.block_current();
-        wq.push_back(curr.clone());
-        // Drop the lock of wq explictly.
-        drop(wq);
-
-        rq.blocked_resched();
+        rq.blocked_resched(self.queue.lock());
         self.cancel_events(crate::current(), false);
     }
 
@@ -96,16 +89,11 @@ impl WaitQueue {
         let mut rq = current_run_queue::<NoPreemptIrqSave>();
         let curr = crate::current();
         loop {
-            let mut wq = self.queue.lock();
+            let wq = self.queue.lock();
             if condition() {
                 break;
             }
-            rq.block_current();
-            wq.push_back(curr.clone());
-            // Drop the lock of wq explictly.
-            drop(wq);
-
-            rq.blocked_resched();
+            rq.blocked_resched(wq);
         }
         self.cancel_events(curr, false);
     }
@@ -124,13 +112,7 @@ impl WaitQueue {
         );
         crate::timers::set_alarm_wakeup(deadline, curr.clone());
 
-        let mut wq = self.queue.lock();
-        rq.block_current();
-        wq.push_back(curr.clone());
-        // Drop the lock of wq explictly.
-        drop(wq);
-
-        rq.blocked_resched();
+        rq.blocked_resched(self.queue.lock());
 
         let timeout = curr.in_wait_queue(); // still in the wait queue, must have timed out
 
@@ -162,18 +144,13 @@ impl WaitQueue {
 
         let mut timeout = true;
         while axhal::time::wall_time() < deadline {
-            let mut wq = self.queue.lock();
+            let wq = self.queue.lock();
             if condition() {
                 timeout = false;
                 break;
             }
 
-            rq.block_current();
-            wq.push_back(curr.clone());
-            // Drop the lock of wq explictly.
-            drop(wq);
-
-            rq.blocked_resched()
+            rq.blocked_resched(wq);
         }
         self.cancel_events(curr, !timeout);
         timeout

@@ -4,7 +4,7 @@ use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
 
 use kernel_guard::BaseGuard;
-use kspin::SpinRaw;
+use kspin::{SpinNoIrqGuard, SpinRaw};
 use lazyinit::LazyInit;
 use scheduler::BaseScheduler;
 
@@ -263,8 +263,14 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
         unreachable!("task exited!");
     }
 
+    /// Block the current task, put current task into the wait queue and reschedule.
     /// Mark the state of current task as `Blocked`, set the `in_wait_queue` flag as true.
-    pub fn block_current(&mut self) {
+    /// Note:
+    ///     1. The caller must hold the lock of the wait queue.
+    ///     2. The caller must ensure that the current task is in the running state.
+    ///     3. The caller must ensure that the current task is not the idle task.
+    ///     4. The lock of the wait queue will be released explicitly after current task is pushed into it.
+    pub fn blocked_resched(&mut self, mut wq_locked: SpinNoIrqGuard<VecDeque<AxTaskRef>>) {
         let curr = crate::current();
         assert!(curr.is_running());
         assert!(!curr.is_idle());
@@ -274,12 +280,15 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
         #[cfg(feature = "preempt")]
         assert!(curr.can_preempt(2));
 
+        // Mark the task as blocked, this has to be done before adding it to the wait queue
+        // while holding the lock of the wait queue.
         curr.set_state(TaskState::Blocked);
         curr.set_in_wait_queue(true);
-    }
 
-    pub fn blocked_resched(&mut self) {
-        let curr = crate::current();
+        wq_locked.push_back(curr.clone());
+        // Drop the lock of wait queue explictly.
+        drop(wq_locked);
+
         assert!(curr.is_blocked(), "task is not blocked, {:?}", curr.state());
 
         debug!("task block: {}", curr.id_name());
