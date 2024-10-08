@@ -10,7 +10,6 @@ use kspin::{SpinNoIrq, SpinRaw, SpinRawGuard};
 use memory_addr::{align_up_4k, VirtAddr};
 
 use axhal::arch::TaskContext;
-use axhal::cpu::this_cpu_id;
 #[cfg(feature = "tls")]
 use axhal::tls::TlsArea;
 
@@ -234,7 +233,8 @@ impl TaskInner {
     pub(crate) fn new_init(name: String) -> Self {
         let mut t = Self::new_common(TaskId::new(), name);
         t.is_init = true;
-        t.set_cpumask(CpuMask::one_shot(this_cpu_id()));
+        // Init task can be scheduled on all CPUs.
+        t.set_cpumask(CpuMask::full());
         if t.name == "idle" {
             t.is_idle = true;
         }
@@ -285,6 +285,7 @@ impl TaskInner {
         *self.cpumask.lock()
     }
 
+    #[inline]
     pub(crate) fn set_cpumask(&self, cpumask: CpuMask) {
         *self.cpumask.lock() = cpumask
     }

@@ -1,7 +1,7 @@
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
 
-use kernel_guard::{NoOp, NoPreemptIrqSave};
+use kernel_guard::{NoOp, NoPreempt, NoPreemptIrqSave};
 use kspin::{SpinNoIrq, SpinNoIrqGuard};
 
 use crate::{current_run_queue, select_run_queue, AxTaskRef, CurrentTask};
@@ -65,9 +65,11 @@ impl WaitQueue {
         #[cfg(feature = "irq")]
         if from_timer_list {
             curr.timer_ticket_expired();
-            // TODO:
-            // this task is still not removed from timer list of target CPU,
-            // which may cause some redundant timer events.
+            // Note:
+            //  this task is still not removed from timer list of target CPU,
+            //  which may cause some redundant timer events because it still needs to
+            //  go through the process of expiring an event from the timer list and invoking the callback.
+            //  (it can be considered a lazy-removal strategy, it will be ignored when it is about to take effect.)
         }
     }
 
@@ -88,7 +90,7 @@ impl WaitQueue {
     where
         F: Fn() -> bool,
     {
-        let mut rq = current_run_queue::<NoPreemptIrqSave>();
+        let mut rq = current_run_queue::<NoPreempt>();
         let curr = crate::current();
         loop {
             let wq = self.queue.lock();
@@ -165,7 +167,6 @@ impl WaitQueue {
     pub fn notify_one(&self, resched: bool) -> bool {
         let mut wq = self.queue.lock();
         if let Some(task) = wq.pop_front() {
-            task.set_in_wait_queue(false);
             unblock_one_task(task, resched);
             true
         } else {
@@ -181,7 +182,6 @@ impl WaitQueue {
         loop {
             let mut wq = self.queue.lock();
             if let Some(task) = wq.pop_front() {
-                task.set_in_wait_queue(false);
                 unblock_one_task(task, resched);
             } else {
                 break;
@@ -196,16 +196,13 @@ impl WaitQueue {
     /// preemption is enabled.
     pub fn notify_task(&mut self, resched: bool, task: &AxTaskRef) -> bool {
         let mut wq = self.queue.lock();
-        let task_to_be_notify = {
+        if let Some(task) = {
             if let Some(index) = wq.iter().position(|t| Arc::ptr_eq(t, task)) {
                 wq.remove(index)
             } else {
                 None
             }
-        };
-        if let Some(task) = task_to_be_notify {
-            // Mark task as not in wait queue.
-            task.set_in_wait_queue(false);
+        } {
             unblock_one_task(task, resched);
             true
         } else {
@@ -215,6 +212,8 @@ impl WaitQueue {
 }
 
 fn unblock_one_task(task: AxTaskRef, resched: bool) {
+    // Mark task as not in wait queue.
+    task.set_in_wait_queue(false);
     // Select run queue by the CPU set of the task.
     // Use `NoOp` kernel guard here because the function is called with holding the
     // lock of wait queue, where the irq and preemption are disabled.
