@@ -141,7 +141,7 @@ fn get_run_queue(index: usize) -> &'static mut AxRunQueue {
 /// 2. Use a more generic load balancing algorithm that can be customized or replaced.
 ///
 #[inline]
-pub(crate) fn select_run_queue<G: BaseGuard>(task: AxTaskRef) -> AxRunQueueRef<'static, G> {
+pub(crate) fn select_run_queue<G: BaseGuard>(task: &AxTaskRef) -> AxRunQueueRef<'static, G> {
     #[cfg(not(feature = "smp"))]
     {
         // When SMP is disabled, all tasks are scheduled on the same global run queue.

@@ -218,5 +218,5 @@ fn unblock_one_task(task: AxTaskRef, resched: bool) {
     // Select run queue by the CPU set of the task.
     // Use `NoOp` kernel guard here because the function is called with holding the
     // lock of wait queue, where the irq and preemption are disabled.
-    select_run_queue::<NoOp>(task.clone()).unblock_task(task, resched)
+    select_run_queue::<NoOp>(&task).unblock_task(task, resched)
 }

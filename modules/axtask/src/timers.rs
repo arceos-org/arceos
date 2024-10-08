@@ -31,7 +31,7 @@ impl TimerEvent for TaskWakeupEvent {
         }
 
         // Timer ticket match.
-        select_run_queue::<NoOp>(self.task.clone()).unblock_task(self.task, true)
+        select_run_queue::<NoOp>(&self.task).unblock_task(self.task, true)
     }
 }
 

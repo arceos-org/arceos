@@ -1,9 +1,10 @@
 use alloc::{boxed::Box, string::String, sync::Arc};
 use core::ops::Deref;
-#[cfg(any(feature = "preempt", feature = "irq"))]
-use core::sync::atomic::AtomicUsize;
 use core::sync::atomic::{AtomicBool, AtomicI32, AtomicPtr, AtomicU64, AtomicU8, Ordering};
 use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
+
+#[cfg(feature = "preempt")]
+use core::sync::atomic::AtomicUsize;
 
 use kspin::{SpinNoIrq, SpinRaw, SpinRawGuard};
 use memory_addr::{align_up_4k, VirtAddr};
@@ -55,15 +56,16 @@ pub struct TaskInner {
 
     /// Mark whether the task is in the wait queue.
     in_wait_queue: AtomicBool,
-    /// A ticket ID used to identify the timer event.
-    /// Incremented by 1 each time the timer event is triggered or expired.
-    #[cfg(feature = "irq")]
-    timer_ticket_id: AtomicU64,
 
     /// Used to indicate whether the task is running on a CPU.
     on_cpu: AtomicBool,
     prev_task_on_cpu_ptr: AtomicPtr<bool>,
 
+    /// A ticket ID used to identify the timer event.
+    /// Set by `set_timer_ticket()` when creating a timer event in `set_alarm_wakeup()`,
+    /// expired by setting it as zero in `timer_ticket_expired()`, which is called by `cancel_events()`.
+    #[cfg(feature = "irq")]
+    timer_ticket_id: AtomicU64,
     /// Used to protect the task from being unblocked by timer and `notify()` at the same time.
     /// It is used in `unblock_task()`, which is called by wait queue's `notify()` and timer's callback.
     /// Since preemption and irq are both disabled during `unblock_task()`, we can simply use a raw spin lock here.
@@ -397,6 +399,16 @@ impl TaskInner {
         self.on_cpu.as_ptr()
     }
 
+    /// Returns whether the task is running on a CPU.
+    ///
+    /// It is used to protect the task from being moved to a different run queue
+    /// while it has not finished its scheduling process.
+    /// The `on_cpu field is set to `true` when the task is preparing to run on a CPU,
+    /// and it is set to `false` when the task has finished its scheduling process in `clear_prev_task_on_cpu()`.
+    pub fn on_cpu(&self) -> bool {
+        self.on_cpu.load(Ordering::Acquire)
+    }
+
     /// Sets whether the task is running on a CPU.
     pub fn set_on_cpu(&self, on_cpu: bool) {
         self.on_cpu.store(on_cpu, Ordering::Release)
@@ -423,16 +435,6 @@ impl TaskInner {
     pub unsafe fn clear_prev_task_on_cpu(&self) {
         AtomicBool::from_ptr(self.prev_task_on_cpu_ptr.load(Ordering::Acquire))
             .store(false, Ordering::Release);
-    }
-
-    /// Returns whether the task is running on a CPU.
-    ///
-    /// It is used to protect the task from being moved to a different run queue
-    /// while it has not finished its scheduling process.
-    /// The `on_cpu field is set to `true` when the task is preparing to run on a CPU,
-    /// and it is set to `false` when the task has finished its scheduling process in `clear_prev_task_on_cpu()`.
-    pub fn on_cpu(&self) -> bool {
-        self.on_cpu.load(Ordering::Acquire)
     }
 
     /// Returns the top address of the kernel stack.
