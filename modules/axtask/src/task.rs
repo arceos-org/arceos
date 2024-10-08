@@ -58,8 +58,10 @@ pub struct TaskInner {
     in_wait_queue: AtomicBool,
 
     /// Used to indicate whether the task is running on a CPU.
+    #[cfg(feature = "smp")]
     on_cpu: AtomicBool,
     /// A weak reference to the previous task running on this CPU.
+    #[cfg(feature = "smp")]
     prev_task: UnsafeCell<Weak<AxTask>>,
 
     /// A ticket ID used to identify the timer event.
@@ -402,11 +404,13 @@ impl TaskInner {
     /// while it has not finished its scheduling process.
     /// The `on_cpu field is set to `true` when the task is preparing to run on a CPU,
     /// and it is set to `false` when the task has finished its scheduling process in `clear_prev_task_on_cpu()`.
+    #[cfg(feature = "smp")]
     pub fn on_cpu(&self) -> bool {
         self.on_cpu.load(Ordering::Acquire)
     }
 
     /// Sets whether the task is running on a CPU.
+    #[cfg(feature = "smp")]
     pub fn set_on_cpu(&self, on_cpu: bool) {
         self.on_cpu.store(on_cpu, Ordering::Release)
     }
@@ -415,6 +419,7 @@ impl TaskInner {
     ///
     /// ## Safety
     /// This function is only called by current task in `switch_to`.
+    #[cfg(feature = "smp")]
     pub unsafe fn set_prev_task(&self, prev_task: Weak<AxTask>) {
         *self.prev_task.get() = prev_task;
     }
@@ -433,6 +438,7 @@ impl TaskInner {
     /// ## Safety
     /// The caller must ensure that the weak reference to the prev task is valid, which is
     /// done by the previous task running on this CPU through `set_prev_task_on_cpu_ptr()`.
+    #[cfg(feature = "smp")]
     pub unsafe fn clear_prev_task_on_cpu(&self) {
         self.prev_task
             .get()

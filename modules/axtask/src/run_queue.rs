@@ -318,10 +318,12 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
             // 1. This should be placed inside `if self.is_blocked() { ... }`,
             //    because the task may have been woken up by other cores.
             // 2. This can be placed in the front of `switch_to()`
+            #[cfg(feature = "smp")]
             while task.on_cpu() {
                 // Wait for the task to finish its scheduling process.
                 core::hint::spin_loop();
             }
+            #[cfg(feature = "smp")]
             assert!(!task.on_cpu());
 
             let cpu_id = self.inner.cpu_id;

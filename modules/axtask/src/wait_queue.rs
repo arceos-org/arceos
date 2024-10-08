@@ -90,9 +90,9 @@ impl WaitQueue {
     where
         F: Fn() -> bool,
     {
-        let mut rq = current_run_queue::<NoPreempt>();
         let curr = crate::current();
         loop {
+            let mut rq = current_run_queue::<NoPreempt>();
             let wq = self.queue.lock();
             if condition() {
                 break;
