@@ -1,9 +1,10 @@
-use alloc::sync::Weak;
 use alloc::{boxed::Box, string::String, sync::Arc};
 use core::ops::Deref;
 use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, AtomicU8, Ordering};
 use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 
+#[cfg(feature = "smp")]
+use alloc::sync::Weak;
 #[cfg(feature = "preempt")]
 use core::sync::atomic::AtomicUsize;
 
@@ -208,7 +209,9 @@ impl TaskInner {
             in_wait_queue: AtomicBool::new(false),
             #[cfg(feature = "irq")]
             timer_ticket_id: AtomicU64::new(0),
+            #[cfg(feature = "smp")]
             on_cpu: AtomicBool::new(false),
+            #[cfg(feature = "smp")]
             prev_task: UnsafeCell::new(Weak::default()),
             #[cfg(feature = "irq")]
             unblock_lock: SpinRaw::new(()),
@@ -237,6 +240,8 @@ impl TaskInner {
     pub(crate) fn new_init(name: String) -> Self {
         let mut t = Self::new_common(TaskId::new(), name);
         t.is_init = true;
+        #[cfg(feature = "smp")]
+        t.set_on_cpu(true);
         // Init task can be scheduled on all CPUs.
         t.set_cpumask(CpuMask::full());
         if t.name == "idle" {
@@ -420,8 +425,8 @@ impl TaskInner {
     /// ## Safety
     /// This function is only called by current task in `switch_to`.
     #[cfg(feature = "smp")]
-    pub unsafe fn set_prev_task(&self, prev_task: Weak<AxTask>) {
-        *self.prev_task.get() = prev_task;
+    pub unsafe fn set_prev_task(&self, prev_task: Arc<AxTask>) {
+        *self.prev_task.get() = Arc::downgrade(&prev_task);
     }
 
     /// Clears the `on_cpu` field of previous task running on this CPU.
@@ -530,10 +535,6 @@ impl CurrentTask {
         self.0.deref().clone()
     }
 
-    pub(crate) fn weak(&self) -> Weak<AxTask> {
-        Arc::downgrade(&self.0)
-    }
-
     pub(crate) fn ptr_eq(&self, other: &AxTaskRef) -> bool {
         Arc::ptr_eq(&self.0, other)
     }
@@ -562,6 +563,7 @@ impl Deref for CurrentTask {
 }
 
 extern "C" fn task_entry() -> ! {
+    #[cfg(feature = "smp")]
     unsafe {
         // Clear the prev task on CPU before running the task entry function.
         crate::current().clear_prev_task_on_cpu();

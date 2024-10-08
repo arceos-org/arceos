@@ -1,6 +1,7 @@
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
 use core::mem::MaybeUninit;
+#[cfg(feature = "smp")]
 use core::sync::atomic::{AtomicUsize, Ordering};
 
 use kernel_guard::BaseGuard;
@@ -117,6 +118,7 @@ fn select_run_queue_index(cpumask: CpuMask) -> usize {
 ///
 /// This function will panic if the index is out of bounds.
 ///
+#[cfg(feature = "smp")]
 #[inline]
 fn get_run_queue(index: usize) -> &'static mut AxRunQueue {
     unsafe { RUN_QUEUES[index].assume_init_mut() }
@@ -420,6 +422,7 @@ impl AxRunQueue {
 
         // Claim the task as running, we do this before switching to it
         // such that any running task will have this set.
+        #[cfg(feature = "smp")]
         next_task.set_on_cpu(true);
 
         unsafe {
@@ -427,7 +430,8 @@ impl AxRunQueue {
             let next_ctx_ptr = next_task.ctx_mut_ptr();
 
             // Store the weak pointer of **prev_task** in **next_task**'s struct.
-            next_task.set_prev_task(prev_task.weak());
+            #[cfg(feature = "smp")]
+            next_task.set_prev_task(prev_task.clone());
 
             // The strong reference count of `prev_task` will be decremented by 1,
             // but won't be dropped until `gc_entry()` is called.
@@ -440,6 +444,7 @@ impl AxRunQueue {
 
             // Current it's **next_task** running on this CPU, clear the `prev_task`'s `on_cpu` field
             // to indicate that it has finished its scheduling process and no longer running on this CPU.
+            #[cfg(feature = "smp")]
             crate::current().clear_prev_task_on_cpu();
         }
     }
@@ -482,7 +487,6 @@ pub(crate) fn init() {
     // Put the subsequent execution into the `main` task.
     let main_task = TaskInner::new_init("main".into()).into_arc();
     main_task.set_state(TaskState::Running);
-    main_task.set_on_cpu(true);
     unsafe { CurrentTask::init_current(main_task) }
 
     info!("Initialize RUN_QUEUES");
@@ -503,7 +507,6 @@ pub(crate) fn init_secondary() {
     IDLE_TASK.with_current(|i| {
         i.init_once(idle_task.clone());
     });
-    idle_task.set_on_cpu(true);
     unsafe { CurrentTask::init_current(idle_task) }
     RUN_QUEUE.with_current(|rq| {
         rq.init_once(AxRunQueue::new(cpu_id));
