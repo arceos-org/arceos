@@ -424,8 +424,8 @@ impl AxRunQueue {
             let prev_ctx_ptr = prev_task.ctx_mut_ptr();
             let next_ctx_ptr = next_task.ctx_mut_ptr();
 
-            // Store the pointer of `on_cpu` flag of **prev_task** in **next_task**'s struct.
-            next_task.set_prev_task_on_cpu_ptr(prev_task.on_cpu_mut_ptr());
+            // Store the weak pointer of **prev_task** in **next_task**'s struct.
+            next_task.set_prev_task(prev_task.weak());
 
             // The strong reference count of `prev_task` will be decremented by 1,
             // but won't be dropped until `gc_entry()` is called.

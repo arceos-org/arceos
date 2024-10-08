@@ -1,6 +1,7 @@
+use alloc::sync::Weak;
 use alloc::{boxed::Box, string::String, sync::Arc};
 use core::ops::Deref;
-use core::sync::atomic::{AtomicBool, AtomicI32, AtomicPtr, AtomicU64, AtomicU8, Ordering};
+use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, AtomicU8, Ordering};
 use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 
 #[cfg(feature = "preempt")]
@@ -58,7 +59,8 @@ pub struct TaskInner {
 
     /// Used to indicate whether the task is running on a CPU.
     on_cpu: AtomicBool,
-    prev_task_on_cpu_ptr: AtomicPtr<bool>,
+    /// A weak reference to the previous task running on this CPU.
+    prev_task: UnsafeCell<Weak<AxTask>>,
 
     /// A ticket ID used to identify the timer event.
     /// Set by `set_timer_ticket()` when creating a timer event in `set_alarm_wakeup()`,
@@ -205,7 +207,7 @@ impl TaskInner {
             #[cfg(feature = "irq")]
             timer_ticket_id: AtomicU64::new(0),
             on_cpu: AtomicBool::new(false),
-            prev_task_on_cpu_ptr: AtomicPtr::new(core::ptr::null_mut()),
+            prev_task: UnsafeCell::new(Weak::default()),
             #[cfg(feature = "irq")]
             unblock_lock: SpinRaw::new(()),
             #[cfg(feature = "preempt")]
@@ -394,12 +396,6 @@ impl TaskInner {
         self.ctx.get_mut()
     }
 
-    /// Returns the raw pointer to the `on_cpu` field.
-    #[inline]
-    pub(crate) const fn on_cpu_mut_ptr(&self) -> *mut bool {
-        self.on_cpu.as_ptr()
-    }
-
     /// Returns whether the task is running on a CPU.
     ///
     /// It is used to protect the task from being moved to a different run queue
@@ -415,15 +411,19 @@ impl TaskInner {
         self.on_cpu.store(on_cpu, Ordering::Release)
     }
 
-    /// Sets `prev_task_on_cpu_ptr` to the given pointer provided by previous task running on this CPU.
-    pub fn set_prev_task_on_cpu_ptr(&self, prev_task_on_cpu_ptr: *mut bool) {
-        self.prev_task_on_cpu_ptr
-            .store(prev_task_on_cpu_ptr, Ordering::Release)
+    /// Stores a weak reference to the previous task running on this CPU.
+    ///
+    /// ## Safety
+    /// This function is only called by current task in `switch_to`.
+    pub unsafe fn set_prev_task(&self, prev_task: Weak<AxTask>) {
+        *self.prev_task.get() = prev_task;
     }
 
     /// Clears the `on_cpu` field of previous task running on this CPU.
     /// It is called by the current task before running.
-    /// The pointer is provided by previous task running on this CPU through `set_prev_task_on_cpu_ptr()`.
+    /// The weak reference of previous task running on this CPU is set through `set_prev_task()`.
+    ///
+    /// Panic if the pointer is invalid or the previous task is dropped.
     ///
     /// ## Note
     /// This must be the very last reference to @_prev_task from this CPU.
@@ -431,11 +431,16 @@ impl TaskInner {
     /// We must ensure this doesn't happen until the switch is completely finished.
     ///
     /// ## Safety
-    /// The caller must ensure that the pointer is valid and points to a boolean value, which is
+    /// The caller must ensure that the weak reference to the prev task is valid, which is
     /// done by the previous task running on this CPU through `set_prev_task_on_cpu_ptr()`.
     pub unsafe fn clear_prev_task_on_cpu(&self) {
-        AtomicBool::from_ptr(self.prev_task_on_cpu_ptr.load(Ordering::Acquire))
-            .store(false, Ordering::Release);
+        self.prev_task
+            .get()
+            .as_ref()
+            .expect("Invalid prev_task pointer")
+            .upgrade()
+            .expect("prev_task is dropped")
+            .set_on_cpu(false);
     }
 
     /// Returns the top address of the kernel stack.
@@ -517,6 +522,10 @@ impl CurrentTask {
 
     pub(crate) fn clone(&self) -> AxTaskRef {
         self.0.deref().clone()
+    }
+
+    pub(crate) fn weak(&self) -> Weak<AxTask> {
+        Arc::downgrade(&self.0)
     }
 
     pub(crate) fn ptr_eq(&self, other: &AxTaskRef) -> bool {
