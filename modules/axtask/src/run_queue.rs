@@ -300,14 +300,12 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
 
     /// Unblock one task by inserting it into the run queue.
     /// If task's `on_cpu` flag is true,
-    /// it will enter a loop until the task finishes its scheduling process,
-    /// see `unblock_locked` for details.
+    /// it will enter a loop until the task finishes its scheduling process.
     pub fn unblock_task(&mut self, task: AxTaskRef, resched: bool) {
-        // When irq is enabled, use `unblock_lock` to protect the task from being unblocked by timer and `notify()` at the same time.
-        #[cfg(feature = "irq")]
-        let _unblock_lock = task.get_unblock_lock();
-
-        if task.is_blocked() {
+        // Try to change the state of the task from `Blocked` to `Ready`,
+        // if successful, put it into the run queue,
+        // otherwise, the task is already unblocked by other cores.
+        if task.transition_state(TaskState::Blocked, TaskState::Ready) {
             // If the owning (remote) CPU is still in the middle of schedule() with
             // this task as prev, wait until it's done referencing the task.
             //
@@ -330,7 +328,6 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
 
             let cpu_id = self.inner.cpu_id;
             debug!("task unblock: {} on run_queue {}", task.id_name(), cpu_id);
-            task.set_state(TaskState::Ready);
             self.inner
                 .scheduler
                 .lock()
