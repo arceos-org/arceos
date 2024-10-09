@@ -292,7 +292,14 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
         // Drop the lock of wait queue explictly.
         drop(wq_guard);
 
-        assert!(curr.is_blocked(), "task is not blocked, {:?}", curr.state());
+        // Current task's state has been changed to `Blocked` and added to the wait queue.
+        // Note that the state may have been set as `Ready` in `unblock_task()`,
+        // see `unblock_task()` for details.
+        assert!(
+            curr.is_blocked() | curr.is_ready(),
+            "current task is not blocked or ready, state: {:?}",
+            curr.state()
+        );
 
         debug!("task block: {}", curr.id_name());
         self.inner.resched(false);
@@ -306,6 +313,8 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
         // if successful, put it into the run queue,
         // otherwise, the task is already unblocked by other cores.
         if task.transition_state(TaskState::Blocked, TaskState::Ready) {
+            // Since now, the task to be unblocked is in the `Ready` state.
+
             // If the owning (remote) CPU is still in the middle of schedule() with
             // this task as prev, wait until it's done referencing the task.
             //
@@ -315,7 +324,7 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
             // their previous state and preserve Program Order.
             //
             // Note:
-            // 1. This should be placed inside `if self.is_blocked() { ... }`,
+            // 1. This should be placed after the judgement of `TaskState::Blocked,`,
             //    because the task may have been woken up by other cores.
             // 2. This can be placed in the front of `switch_to()`
             #[cfg(feature = "smp")]
@@ -404,6 +413,7 @@ impl AxRunQueue {
 
     fn switch_to(&mut self, prev_task: CurrentTask, next_task: AxTaskRef) {
         // Make sure that IRQs are disabled by kernel guard or other means.
+        #[cfg(not(test))]
         assert!(
             !axhal::arch::irqs_enabled(),
             "IRQs must be disabled during scheduling"

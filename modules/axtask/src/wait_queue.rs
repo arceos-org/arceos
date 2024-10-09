@@ -136,6 +136,7 @@ impl WaitQueue {
     where
         F: Fn() -> bool,
     {
+        let mut rq = current_run_queue::<NoPreemptIrqSave>();
         let curr = crate::current();
         let deadline = axhal::time::wall_time() + dur;
         debug!(
@@ -147,7 +148,6 @@ impl WaitQueue {
 
         let mut timeout = true;
         while axhal::time::wall_time() < deadline {
-            let mut rq = current_run_queue::<NoPreemptIrqSave>();
             let wq = self.queue.lock();
             if condition() {
                 timeout = false;
