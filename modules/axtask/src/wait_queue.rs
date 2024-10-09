@@ -1,7 +1,7 @@
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
 
-use kernel_guard::{NoOp, NoPreempt, NoPreemptIrqSave};
+use kernel_guard::{NoOp, NoPreemptIrqSave};
 use kspin::{SpinNoIrq, SpinNoIrqGuard};
 
 use crate::{current_run_queue, select_run_queue, AxTaskRef, CurrentTask};
@@ -92,7 +92,7 @@ impl WaitQueue {
     {
         let curr = crate::current();
         loop {
-            let mut rq = current_run_queue::<NoPreempt>();
+            let mut rq = current_run_queue::<NoPreemptIrqSave>();
             let wq = self.queue.lock();
             if condition() {
                 break;
@@ -136,7 +136,6 @@ impl WaitQueue {
     where
         F: Fn() -> bool,
     {
-        let mut rq = current_run_queue::<NoPreemptIrqSave>();
         let curr = crate::current();
         let deadline = axhal::time::wall_time() + dur;
         debug!(
@@ -148,6 +147,7 @@ impl WaitQueue {
 
         let mut timeout = true;
         while axhal::time::wall_time() < deadline {
+            let mut rq = current_run_queue::<NoPreemptIrqSave>();
             let wq = self.queue.lock();
             if condition() {
                 timeout = false;
@@ -196,14 +196,8 @@ impl WaitQueue {
     /// preemption is enabled.
     pub fn notify_task(&mut self, resched: bool, task: &AxTaskRef) -> bool {
         let mut wq = self.queue.lock();
-        if let Some(task) = {
-            if let Some(index) = wq.iter().position(|t| Arc::ptr_eq(t, task)) {
-                wq.remove(index)
-            } else {
-                None
-            }
-        } {
-            unblock_one_task(task, resched);
+        if let Some(index) = wq.iter().position(|t| Arc::ptr_eq(t, task)) {
+            unblock_one_task(wq.remove(index).unwrap(), resched);
             true
         } else {
             false

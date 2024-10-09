@@ -406,13 +406,16 @@ impl AxRunQueue {
     }
 
     fn switch_to(&mut self, prev_task: CurrentTask, next_task: AxTaskRef) {
-        if !prev_task.is_idle() || !next_task.is_idle() {
-            debug!(
-                "context switch: {} -> {}",
-                prev_task.id_name(),
-                next_task.id_name()
-            );
-        }
+        // Make sure that IRQs are disabled by kernel guard or other means.
+        assert!(
+            !axhal::arch::irqs_enabled(),
+            "IRQs must be disabled during scheduling"
+        );
+        trace!(
+            "context switch: {} -> {}",
+            prev_task.id_name(),
+            next_task.id_name()
+        );
         #[cfg(feature = "preempt")]
         next_task.set_preempt_pending(false);
         next_task.set_state(TaskState::Running);
