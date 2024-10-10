@@ -19,7 +19,7 @@ ArceOS was inspired a lot by [Unikraft](https://github.com/unikraft/unikraft).
 * [x] VirtIO net/blk/gpu drivers
 * [x] TCP/UDP net stack using [smoltcp](https://github.com/smoltcp-rs/smoltcp)
 * [x] Synchronization/Mutex
-* [x] SMP scheduling with single run queue
+* [x] SMP scheduling with [per-cpu run queue](https://github.com/arceos-org/arceos/discussions/181)
 * [x] File system
 * [ ] Compatible with Linux apps
 * [ ] Interrupt driven device I/O

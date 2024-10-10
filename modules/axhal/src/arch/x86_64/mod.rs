@@ -19,6 +19,10 @@ pub use x86_64::structures::tss::TaskStateSegment;
 /// Allows the current CPU to respond to interrupts.
 #[inline]
 pub fn enable_irqs() {
+    #[cfg(not(target_os = "none"))]
+    {
+        warn!("enable_irqs: not implemented");
+    }
     #[cfg(target_os = "none")]
     interrupts::enable()
 }
@@ -26,6 +30,10 @@ pub fn enable_irqs() {
 /// Makes the current CPU to ignore interrupts.
 #[inline]
 pub fn disable_irqs() {
+    #[cfg(not(target_os = "none"))]
+    {
+        warn!("disable_irqs: not implemented");
+    }
     #[cfg(target_os = "none")]
     interrupts::disable()
 }

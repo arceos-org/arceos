@@ -12,7 +12,7 @@ documentation = "https://arceos-org.github.io/arceos/axruntime/index.html"
 [features]
 default = []
 
-smp = ["axhal/smp"]
+smp = ["axhal/smp", "axtask?/smp"]
 irq = ["axhal/irq", "axtask?/irq", "percpu", "kernel_guard"]
 tls = ["axhal/tls", "axtask?/tls"]
 alloc = ["axalloc"]
