@@ -146,6 +146,7 @@ fn get_run_queue(index: usize) -> &'static mut AxRunQueue {
 pub(crate) fn select_run_queue<G: BaseGuard>(task: &AxTaskRef) -> AxRunQueueRef<'static, G> {
     #[cfg(not(feature = "smp"))]
     {
+        let _ = task;
         // When SMP is disabled, all tasks are scheduled on the same global run queue.
         current_run_queue()
     }

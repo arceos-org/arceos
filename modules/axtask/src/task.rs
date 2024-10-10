@@ -292,6 +292,7 @@ impl TaskInner {
         self.is_idle
     }
 
+    #[allow(unused)]
     #[inline]
     pub(crate) fn cpumask(&self) -> CpuMask {
         *self.cpumask.lock()
