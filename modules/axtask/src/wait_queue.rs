@@ -50,7 +50,7 @@ impl WaitQueue {
     }
 
     /// Cancel events by removing the task from the wait queue.
-    /// If `from_timer_list` is true, the task should be removed from the timer list.
+    /// If `from_timer_list` is true, try to remove the task from the timer list.
     fn cancel_events(&self, curr: CurrentTask, from_timer_list: bool) {
         // A task can be wake up only one events (timer or `notify()`), remove
         // the event from another queue.
@@ -60,6 +60,7 @@ impl WaitQueue {
             wq_locked.retain(|t| !curr.ptr_eq(t));
             curr.set_in_wait_queue(false);
         }
+
         // Try to cancel a timer event from timer lists.
         // Just mark task's current timer ticket ID as expired.
         #[cfg(feature = "irq")]
@@ -120,9 +121,8 @@ impl WaitQueue {
 
         let timeout = curr.in_wait_queue(); // still in the wait queue, must have timed out
 
-        // If `timeout` is true, the task is still in the wait queue,
-        // which means timer event is triggered and the task has been removed from timer list.
-        self.cancel_events(curr, !timeout);
+        // Always try to remove the task from the timer list.
+        self.cancel_events(curr, true);
         timeout
     }
 
@@ -149,6 +149,7 @@ impl WaitQueue {
         loop {
             let mut rq = current_run_queue::<NoPreemptIrqSave>();
             if axhal::time::wall_time() >= deadline {
+                timeout = true;
                 break;
             }
             let wq = self.queue.lock();
@@ -158,8 +159,11 @@ impl WaitQueue {
             }
 
             rq.blocked_resched(wq);
+
+            timeout = curr.in_wait_queue(); // still in the wait queue, must have timed out
         }
-        self.cancel_events(curr, !timeout);
+        // Always try to remove the task from the timer list.
+        self.cancel_events(curr, true);
         timeout
     }
 
