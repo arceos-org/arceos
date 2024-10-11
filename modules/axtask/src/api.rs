@@ -2,7 +2,7 @@
 
 use alloc::{string::String, sync::Arc};
 
-use kernel_guard::{NoOp, NoPreemptIrqSave};
+use kernel_guard::NoPreemptIrqSave;
 
 pub(crate) use crate::run_queue::{current_run_queue, select_run_queue};
 
@@ -92,6 +92,7 @@ pub fn init_scheduler_secondary() {
 #[cfg(feature = "irq")]
 #[doc(cfg(feature = "irq"))]
 pub fn on_timer_tick() {
+    use kernel_guard::NoOp;
     crate::timers::check_events();
     // Since irq and preemption are both disabled here,
     // we can get current run queue with the default `kernel_guard::NoOp`.

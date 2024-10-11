@@ -276,11 +276,6 @@ impl TaskInner {
     }
 
     #[inline]
-    pub(crate) fn is_blocked(&self) -> bool {
-        matches!(self.state(), TaskState::Blocked)
-    }
-
-    #[inline]
     pub(crate) const fn is_init(&self) -> bool {
         self.is_init
     }

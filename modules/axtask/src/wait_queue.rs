@@ -51,7 +51,7 @@ impl WaitQueue {
 
     /// Cancel events by removing the task from the wait queue.
     /// If `from_timer_list` is true, try to remove the task from the timer list.
-    fn cancel_events(&self, curr: CurrentTask, from_timer_list: bool) {
+    fn cancel_events(&self, curr: CurrentTask, _from_timer_list: bool) {
         // A task can be wake up only one events (timer or `notify()`), remove
         // the event from another queue.
         if curr.in_wait_queue() {
@@ -64,7 +64,7 @@ impl WaitQueue {
         // Try to cancel a timer event from timer lists.
         // Just mark task's current timer ticket ID as expired.
         #[cfg(feature = "irq")]
-        if from_timer_list {
+        if _from_timer_list {
             curr.timer_ticket_expired();
             // Note:
             //  this task is still not removed from timer list of target CPU,
