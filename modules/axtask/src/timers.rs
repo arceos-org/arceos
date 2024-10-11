@@ -46,7 +46,11 @@ pub fn set_alarm_wakeup(deadline: TimeValue, task: AxTaskRef) {
 pub fn check_events() {
     loop {
         let now = wall_time();
-        let event = TIMER_LIST.with_current(|timer_list| timer_list.expire_one(now));
+        let event = unsafe {
+            // Safety: IRQs are disabled at this time.
+            TIMER_LIST.current_ref_mut_raw()
+        }
+        .expire_one(now);
         if let Some((_deadline, event)) = event {
             event.callback(now);
         } else {
