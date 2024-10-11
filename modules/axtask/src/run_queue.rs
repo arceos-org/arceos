@@ -1,8 +1,6 @@
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
 use core::mem::MaybeUninit;
-#[cfg(feature = "smp")]
-use core::sync::atomic::{AtomicUsize, Ordering};
 
 use kernel_guard::BaseGuard;
 use kspin::SpinRaw;
@@ -88,6 +86,7 @@ pub(crate) fn current_run_queue<G: BaseGuard>() -> AxRunQueueRef<'static, G> {
 #[allow(clippy::modulo_one)]
 #[inline]
 fn select_run_queue_index(cpumask: CpuMask) -> usize {
+    use core::sync::atomic::{AtomicUsize, Ordering};
     static RUN_QUEUE_INDEX: AtomicUsize = AtomicUsize::new(0);
 
     assert!(!cpumask.is_empty(), "No available CPU for task execution");
@@ -188,7 +187,11 @@ impl<'a, G: BaseGuard> Drop for AxRunQueueRef<'a, G> {
 /// Core functions of run queue.
 impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
     pub fn add_task(&mut self, task: AxTaskRef) {
-        debug!("Add {} on run_queue {}", task.id_name(), self.inner.cpu_id);
+        debug!(
+            "task add: {} on run_queue {}",
+            task.id_name(),
+            self.inner.cpu_id
+        );
         assert!(task.is_ready());
         self.inner.scheduler.lock().add_task(task);
     }
@@ -249,7 +252,11 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
         assert!(curr.is_running(), "task is not running: {:?}", curr.state());
         assert!(!curr.is_idle());
         if curr.is_init() {
-            EXITED_TASKS.with_current(|exited_tasks| exited_tasks.clear());
+            // Safety: it is called from `current_run_queue::<NoPreemptIrqSave>().exit_current(exit_code)`,
+            // which disabled IRQs and preemption.
+            unsafe {
+                EXITED_TASKS.current_ref_mut_raw().clear();
+            }
             axhal::misc::terminate();
         } else {
             curr.set_state(TaskState::Exited);
@@ -371,7 +378,7 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
 impl AxRunQueue {
     /// Create a new run queue for the specified CPU.
     /// The run queue is initialized with a per-CPU gc task in its scheduler.
-    pub fn new(cpu_id: usize) -> Self {
+    fn new(cpu_id: usize) -> Self {
         let gc_task = TaskInner::new(gc_entry, "gc".into(), axconfig::TASK_STACK_SIZE).into_arc();
         // gc task should be pinned to the current CPU.
         gc_task.set_cpumask(CpuMask::one_shot(cpu_id));
@@ -442,7 +449,7 @@ impl AxRunQueue {
 
             // Store the weak pointer of **prev_task** in **next_task**'s struct.
             #[cfg(feature = "smp")]
-            next_task.set_prev_task(prev_task.clone());
+            next_task.set_prev_task(prev_task.as_task_ref());
 
             // The strong reference count of `prev_task` will be decremented by 1,
             // but won't be dropped until `gc_entry()` is called.
@@ -479,7 +486,7 @@ fn gc_entry() {
                 }
             }
         }
-        unsafe { WAIT_FOR_EXIT.current_ref_raw() }.wait();
+        WAIT_FOR_EXIT.with_current(|wq| wq.wait());
     }
 }
 
@@ -500,7 +507,6 @@ pub(crate) fn init() {
     main_task.set_state(TaskState::Running);
     unsafe { CurrentTask::init_current(main_task) }
 
-    info!("Initialize RUN_QUEUES");
     RUN_QUEUE.with_current(|rq| {
         rq.init_once(AxRunQueue::new(cpu_id));
     });
@@ -519,6 +525,7 @@ pub(crate) fn init_secondary() {
         i.init_once(idle_task.clone());
     });
     unsafe { CurrentTask::init_current(idle_task) }
+
     RUN_QUEUE.with_current(|rq| {
         rq.init_once(AxRunQueue::new(cpu_id));
     });

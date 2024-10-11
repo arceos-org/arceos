@@ -149,7 +149,6 @@ impl WaitQueue {
         loop {
             let mut rq = current_run_queue::<NoPreemptIrqSave>();
             if axhal::time::wall_time() >= deadline {
-                timeout = true;
                 break;
             }
             let wq = self.queue.lock();
@@ -159,8 +158,6 @@ impl WaitQueue {
             }
 
             rq.blocked_resched(wq);
-
-            timeout = curr.in_wait_queue(); // still in the wait queue, must have timed out
         }
         // Always try to remove the task from the timer list.
         self.cancel_events(curr, true);
@@ -187,13 +184,10 @@ impl WaitQueue {
     /// preemption is enabled.
     pub fn notify_all(&self, resched: bool) {
         loop {
-            let mut wq = self.queue.lock();
-            if let Some(task) = wq.pop_front() {
-                unblock_one_task(task, resched);
-            } else {
+            if self.queue.lock().is_empty() {
                 break;
             }
-            drop(wq);
+            self.notify_one(resched);
         }
     }
 

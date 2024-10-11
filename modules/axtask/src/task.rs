@@ -230,8 +230,6 @@ impl TaskInner {
         t.is_init = true;
         #[cfg(feature = "smp")]
         t.set_on_cpu(true);
-        // Init task can be scheduled on all CPUs.
-        t.set_cpumask(CpuMask::full());
         if t.name == "idle" {
             t.is_idle = true;
         }
@@ -401,13 +399,13 @@ impl TaskInner {
     /// The `on_cpu field is set to `true` when the task is preparing to run on a CPU,
     /// and it is set to `false` when the task has finished its scheduling process in `clear_prev_task_on_cpu()`.
     #[cfg(feature = "smp")]
-    pub fn on_cpu(&self) -> bool {
+    pub(crate) fn on_cpu(&self) -> bool {
         self.on_cpu.load(Ordering::Acquire)
     }
 
     /// Sets whether the task is running on a CPU.
     #[cfg(feature = "smp")]
-    pub fn set_on_cpu(&self, on_cpu: bool) {
+    pub(crate) fn set_on_cpu(&self, on_cpu: bool) {
         self.on_cpu.store(on_cpu, Ordering::Release)
     }
 
@@ -416,8 +414,8 @@ impl TaskInner {
     /// ## Safety
     /// This function is only called by current task in `switch_to`.
     #[cfg(feature = "smp")]
-    pub unsafe fn set_prev_task(&self, prev_task: Arc<AxTask>) {
-        *self.prev_task.get() = Arc::downgrade(&prev_task);
+    pub(crate) unsafe fn set_prev_task(&self, prev_task: &AxTaskRef) {
+        *self.prev_task.get() = Arc::downgrade(prev_task);
     }
 
     /// Clears the `on_cpu` field of previous task running on this CPU.
@@ -433,15 +431,14 @@ impl TaskInner {
     ///
     /// ## Safety
     /// The caller must ensure that the weak reference to the prev task is valid, which is
-    /// done by the previous task running on this CPU through `set_prev_task_on_cpu_ptr()`.
+    /// done by the previous task running on this CPU through `set_prev_task()`.
     #[cfg(feature = "smp")]
-    pub unsafe fn clear_prev_task_on_cpu(&self) {
+    pub(crate) unsafe fn clear_prev_task_on_cpu(&self) {
         self.prev_task
             .get()
             .as_ref()
-            .expect("Invalid prev_task pointer")
-            .upgrade()
-            .expect("prev_task is dropped")
+            .and_then(|weak| weak.upgrade())
+            .expect("Invalid prev_task pointer or prev_task has been dropped")
             .set_on_cpu(false);
     }
 
