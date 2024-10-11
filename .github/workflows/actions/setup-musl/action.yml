@@ -11,7 +11,7 @@ runs:
   steps:
   - name: Cache musl
     id: cache-musl
-    uses: actions/cache/restore@v3
+    uses: actions/cache/restore@v4
     with:
       path: ${{ inputs.arch }}-linux-musl-cross
       key: ${{ inputs.arch }}-linux-musl-cross
@@ -22,7 +22,7 @@ runs:
       MUSL_PATH=${{ inputs.arch }}-linux-musl-cross
       wget https://musl.cc/${MUSL_PATH}.tgz
       tar -xf ${MUSL_PATH}.tgz
-  - uses: actions/cache/save@v3
+  - uses: actions/cache/save@v4
     if: steps.cache-musl.outputs.cache-hit != 'true'
     with:
       path: ${{ inputs.arch }}-linux-musl-cross
