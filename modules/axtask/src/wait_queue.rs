@@ -183,11 +183,8 @@ impl WaitQueue {
     /// If `resched` is true, the current task will be preempted when the
     /// preemption is enabled.
     pub fn notify_all(&self, resched: bool) {
-        loop {
-            if self.queue.lock().is_empty() {
-                break;
-            }
-            self.notify_one(resched);
+        while self.notify_one(resched) {
+            // loop until the wait queue is empty
         }
     }
 
