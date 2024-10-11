@@ -264,10 +264,15 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
             // Notify the joiner task.
             curr.notify_exit(exit_code);
 
-            // Push current task to the `EXITED_TASKS` list, which will be consumed by the GC task.
-            EXITED_TASKS.with_current(|exited_tasks| exited_tasks.push_back(curr.clone()));
-            // Wake up the GC task to drop the exited tasks.
-            WAIT_FOR_EXIT.with_current(|wq| wq.notify_one(false));
+            // Safety: it is called from `current_run_queue::<NoPreemptIrqSave>().exit_current(exit_code)`,
+            // which disabled IRQs and preemption.
+            unsafe {
+                // Push current task to the `EXITED_TASKS` list, which will be consumed by the GC task.
+                EXITED_TASKS.current_ref_mut_raw().push_back(curr.clone());
+                // Wake up the GC task to drop the exited tasks.
+                WAIT_FOR_EXIT.current_ref_mut_raw().notify_one(false);
+            }
+
             // Schedule to next task.
             self.inner.resched(false);
         }
@@ -486,7 +491,10 @@ fn gc_entry() {
                 }
             }
         }
-        WAIT_FOR_EXIT.with_current(|wq| wq.wait());
+        // Note: we cannot block current task with preemption disabled,
+        // use `current_ref_raw` to get the `WAIT_FOR_EXIT`'s reference here to avoid the use of `NoPreemptGuard`.
+        // Since gc task is pinned to the current CPU, there is no affection if the gc task is preempted during the process.
+        unsafe { WAIT_FOR_EXIT.current_ref_raw() }.wait();
     }
 }
 
