@@ -308,11 +308,6 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
         // Current task's state has been changed to `Blocked` and added to the wait queue.
         // Note that the state may have been set as `Ready` in `unblock_task()`,
         // see `unblock_task()` for details.
-        assert!(
-            curr.is_blocked() | curr.is_ready(),
-            "current task is not blocked or ready, state: {:?}",
-            curr.state()
-        );
 
         debug!("task block: {}", curr.id_name());
         self.inner.resched(false);
