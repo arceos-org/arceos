@@ -8,6 +8,7 @@ use alloc::sync::Weak;
 #[cfg(feature = "preempt")]
 use core::sync::atomic::AtomicUsize;
 
+use kernel_guard::IrqSave;
 use kspin::SpinNoIrq;
 use memory_addr::{align_up_4k, VirtAddr};
 
@@ -384,7 +385,7 @@ impl TaskInner {
     fn current_check_preempt_pending() {
         let curr = crate::current();
         if curr.need_resched.load(Ordering::Acquire) && curr.can_preempt(0) {
-            let mut rq = crate::current_run_queue::<kernel_guard::NoPreemptIrqSave>();
+            let mut rq = crate::current_run_queue::<IrqSave>();
             if curr.need_resched.load(Ordering::Acquire) {
                 rq.preempt_resched()
             }
