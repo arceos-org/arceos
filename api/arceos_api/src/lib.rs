@@ -155,7 +155,8 @@ pub mod task {
         pub fn ax_wait_for_exit(task: AxTaskHandle) -> Option<i32>;
         /// Sets the priority of the current task.
         pub fn ax_set_current_priority(prio: isize) -> crate::AxResult;
-
+        /// Sets the cpu affinity of the current task.
+        pub fn ax_set_current_affinity(cpumask: axtask::CpuMask) -> crate::AxResult;
         /// Blocks the current task and put it into the wait queue, until the
         /// given condition becomes true, or the the given duration has elapsed
         /// (if specified).

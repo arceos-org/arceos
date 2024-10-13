@@ -82,6 +82,17 @@ cfg_task! {
         }
     }
 
+    pub fn ax_set_current_affinity(cpumask: axtask::CpuMask) -> crate::AxResult {
+        if axtask::set_current_affinity(cpumask) {
+            Ok(())
+        } else {
+            axerrno::ax_err!(
+                BadState,
+                "ax_set_current_affinity: failed to set task affinity"
+            )
+        }
+    }
+
     pub fn ax_wait_queue_wait(
         wq: &AxWaitQueueHandle,
         until_condition: impl Fn() -> bool,
