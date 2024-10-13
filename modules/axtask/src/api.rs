@@ -142,6 +142,20 @@ pub fn set_priority(prio: isize) -> bool {
     current_run_queue::<NoPreemptIrqSave>().set_current_priority(prio)
 }
 
+/// Set the affinity for the current task.
+/// [`cpumask::CpuMask`] is used to specify the CPU affinity.
+/// Returns `true` if the affinity is set successfully.
+///
+/// TODO: support set the affinity for other tasks.
+pub fn set_current_affinity(cpumask: CpuMask) -> bool {
+    if cpumask.is_empty() {
+        false
+    } else {
+        current().set_cpumask(cpumask);
+        true
+    }
+}
+
 /// Current task gives up the CPU time voluntarily, and switches to another
 /// ready task.
 pub fn yield_now() {

@@ -182,6 +182,23 @@ impl TaskInner {
             None
         }
     }
+
+    /// Gets the cpu affinity mask of the task.
+    ///
+    /// Returns the cpu affinity mask of the task in type [`cpumask::CpuMask`].
+    #[inline]
+    pub fn cpumask(&self) -> CpuMask {
+        *self.cpumask.lock()
+    }
+
+    /// Sets the cpu affinity mask of the task.
+    ///
+    /// # Arguments
+    /// `cpumask` - The cpu affinity mask to be set in type [`cpumask::CpuMask`].
+    #[inline]
+    pub fn set_cpumask(&self, cpumask: CpuMask) {
+        *self.cpumask.lock() = cpumask
+    }
 }
 
 // private methods
@@ -283,17 +300,6 @@ impl TaskInner {
     #[inline]
     pub(crate) const fn is_idle(&self) -> bool {
         self.is_idle
-    }
-
-    #[allow(unused)]
-    #[inline]
-    pub(crate) fn cpumask(&self) -> CpuMask {
-        *self.cpumask.lock()
-    }
-
-    #[inline]
-    pub(crate) fn set_cpumask(&self, cpumask: CpuMask) {
-        *self.cpumask.lock() = cpumask
     }
 
     #[inline]
