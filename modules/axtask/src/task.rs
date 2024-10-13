@@ -183,6 +183,21 @@ impl TaskInner {
         }
     }
 
+    /// Returns a mutable reference to the task context.
+    #[inline]
+    pub const fn ctx_mut(&mut self) -> &mut TaskContext {
+        self.ctx.get_mut()
+    }
+
+    /// Returns the top address of the kernel stack.
+    #[inline]
+    pub const fn kernel_stack_top(&self) -> Option<VirtAddr> {
+        match &self.kstack {
+            Some(s) => Some(s.top()),
+            None => None,
+        }
+    }
+
     /// Gets the cpu affinity mask of the task.
     ///
     /// Returns the cpu affinity mask of the task in type [`cpumask::CpuMask`].
@@ -387,12 +402,6 @@ impl TaskInner {
         self.ctx.get()
     }
 
-    /// Returns a mutable reference to the task context.
-    #[inline]
-    pub const fn ctx_mut(&mut self) -> &mut TaskContext {
-        self.ctx.get_mut()
-    }
-
     /// Returns whether the task is running on a CPU.
     ///
     /// It is used to protect the task from being moved to a different run queue
@@ -441,15 +450,6 @@ impl TaskInner {
             .and_then(|weak| weak.upgrade())
             .expect("Invalid prev_task pointer or prev_task has been dropped")
             .set_on_cpu(false);
-    }
-
-    /// Returns the top address of the kernel stack.
-    #[inline]
-    pub const fn kernel_stack_top(&self) -> Option<VirtAddr> {
-        match &self.kstack {
-            Some(s) => Some(s.top()),
-            None => None,
-        }
     }
 }
 

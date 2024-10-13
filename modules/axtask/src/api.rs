@@ -152,6 +152,8 @@ pub fn set_current_affinity(cpumask: CpuMask) -> bool {
         false
     } else {
         current().set_cpumask(cpumask);
+        // After setting the affinity, we need to migrate the task make it work.
+        current_run_queue::<NoPreemptIrqSave>().migrate_current();
         true
     }
 }
