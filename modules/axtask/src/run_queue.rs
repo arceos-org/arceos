@@ -11,7 +11,7 @@ use axhal::cpu::this_cpu_id;
 
 use crate::task::{CurrentTask, TaskState};
 use crate::wait_queue::WaitQueueGuard;
-use crate::{AxTaskRef, CpuMask, Scheduler, TaskInner, WaitQueue};
+use crate::{AxCpuMask, AxTaskRef, Scheduler, TaskInner, WaitQueue};
 
 macro_rules! percpu_static {
     ($($name:ident: $ty:ty = $init:expr),* $(,)?) => {
@@ -85,7 +85,7 @@ pub(crate) fn current_run_queue<G: BaseGuard>() -> AxRunQueueRef<'static, G> {
 // The modulo operation is safe here because `axconfig::SMP` is always greater than 1 with "smp" enabled.
 #[allow(clippy::modulo_one)]
 #[inline]
-fn select_run_queue_index(cpumask: CpuMask) -> usize {
+fn select_run_queue_index(cpumask: AxCpuMask) -> usize {
     use core::sync::atomic::{AtomicUsize, Ordering};
     static RUN_QUEUE_INDEX: AtomicUsize = AtomicUsize::new(0);
 
@@ -378,7 +378,7 @@ impl AxRunQueue {
     fn new(cpu_id: usize) -> Self {
         let gc_task = TaskInner::new(gc_entry, "gc".into(), axconfig::TASK_STACK_SIZE).into_arc();
         // gc task should be pinned to the current CPU.
-        gc_task.set_cpumask(CpuMask::one_shot(cpu_id));
+        gc_task.set_cpumask(AxCpuMask::one_shot(cpu_id));
 
         let mut scheduler = Scheduler::new();
         scheduler.add_task(gc_task);
@@ -517,7 +517,7 @@ pub(crate) fn init() {
     const IDLE_TASK_STACK_SIZE: usize = 4096;
     let idle_task = TaskInner::new(|| crate::run_idle(), "idle".into(), IDLE_TASK_STACK_SIZE);
     // idle task should be pinned to the current CPU.
-    idle_task.set_cpumask(CpuMask::one_shot(cpu_id));
+    idle_task.set_cpumask(AxCpuMask::one_shot(cpu_id));
     IDLE_TASK.with_current(|i| {
         i.init_once(idle_task.into_arc());
     });

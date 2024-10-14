@@ -39,6 +39,9 @@ cfg_task! {
         }
     }
 
+    /// A mask to specify the CPU affinity.
+    pub use axtask::AxCpuMask;
+
     /// A handle to a wait queue.
     ///
     /// A wait queue is used to store sleeping tasks waiting for a certain event
@@ -82,7 +85,7 @@ cfg_task! {
         }
     }
 
-    pub fn ax_set_current_affinity(cpumask: axtask::CpuMask) -> crate::AxResult {
+    pub fn ax_set_current_affinity(cpumask: AxCpuMask) -> crate::AxResult {
         if axtask::set_current_affinity(cpumask) {
             Ok(())
         } else {

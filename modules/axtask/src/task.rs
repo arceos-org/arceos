@@ -16,7 +16,7 @@ use axhal::arch::TaskContext;
 use axhal::tls::TlsArea;
 
 use crate::task_ext::AxTaskExt;
-use crate::{AxTask, AxTaskRef, CpuMask, WaitQueue};
+use crate::{AxCpuMask, AxTask, AxTaskRef, WaitQueue};
 
 /// A unique identifier for a thread.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -48,7 +48,7 @@ pub struct TaskInner {
     state: AtomicU8,
 
     /// CPU affinity mask.
-    cpumask: SpinNoIrq<CpuMask>,
+    cpumask: SpinNoIrq<AxCpuMask>,
 
     /// Mark whether the task is in the wait queue.
     in_wait_queue: AtomicBool,
@@ -200,18 +200,18 @@ impl TaskInner {
 
     /// Gets the cpu affinity mask of the task.
     ///
-    /// Returns the cpu affinity mask of the task in type [`cpumask::CpuMask`].
+    /// Returns the cpu affinity mask of the task in type [`AxCpuMask`].
     #[inline]
-    pub fn cpumask(&self) -> CpuMask {
+    pub fn cpumask(&self) -> AxCpuMask {
         *self.cpumask.lock()
     }
 
     /// Sets the cpu affinity mask of the task.
     ///
     /// # Arguments
-    /// `cpumask` - The cpu affinity mask to be set in type [`cpumask::CpuMask`].
+    /// `cpumask` - The cpu affinity mask to be set in type [`AxCpuMask`].
     #[inline]
-    pub fn set_cpumask(&self, cpumask: CpuMask) {
+    pub fn set_cpumask(&self, cpumask: AxCpuMask) {
         *self.cpumask.lock() = cpumask
     }
 }
@@ -227,7 +227,7 @@ impl TaskInner {
             entry: None,
             state: AtomicU8::new(TaskState::Ready as u8),
             // By default, the task is allowed to run on all CPUs.
-            cpumask: SpinNoIrq::new(CpuMask::full()),
+            cpumask: SpinNoIrq::new(AxCpuMask::full()),
             in_wait_queue: AtomicBool::new(false),
             #[cfg(feature = "irq")]
             timer_ticket_id: AtomicU64::new(0),

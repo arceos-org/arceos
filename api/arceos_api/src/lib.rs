@@ -121,6 +121,7 @@ pub mod task {
         @cfg "multitask";
         pub type AxTaskHandle;
         pub type AxWaitQueueHandle;
+        pub type AxCpuMask;
     }
 
     define_api! {
@@ -156,7 +157,7 @@ pub mod task {
         /// Sets the priority of the current task.
         pub fn ax_set_current_priority(prio: isize) -> crate::AxResult;
         /// Sets the cpu affinity of the current task.
-        pub fn ax_set_current_affinity(cpumask: axtask::CpuMask) -> crate::AxResult;
+        pub fn ax_set_current_affinity(cpumask: AxCpuMask) -> crate::AxResult;
         /// Blocks the current task and put it into the wait queue, until the
         /// given condition becomes true, or the the given duration has elapsed
         /// (if specified).
