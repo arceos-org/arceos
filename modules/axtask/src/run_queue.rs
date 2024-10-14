@@ -236,6 +236,15 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
             .set_priority(crate::current().as_task_ref(), prio)
     }
 
+    /// Preepts the current task and reschedule.
+    /// This function is used to preempt the current task and reschedule
+    /// to next task on current run queue.
+    ///
+    /// This function is called by `current_check_preempt_pending` with IRQs and preemption disabled.
+    ///
+    /// Note:
+    /// preemption may happened in `enable_preempt`, which is called
+    /// each time a [`kspin::NoPreemptGuard`] is dropped.
     #[cfg(feature = "preempt")]
     pub fn preempt_resched(&mut self) {
         // There is no need to disable IRQ and preemption here, because
