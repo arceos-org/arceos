@@ -123,7 +123,7 @@ impl WaitQueue {
         let timeout = axhal::time::wall_time() >= deadline;
 
         // Always try to remove the task from wait list.
-        self.queue.lock().remove(&waiter).is_some();
+        self.queue.lock().remove(&waiter);
         // Always try to remove the task from the timer list.
         self.cancel_timer(curr);
         timeout
