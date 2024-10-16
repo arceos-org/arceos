@@ -104,6 +104,8 @@ impl WaitQueue {
 
     /// Blocks the current task and put it into the wait queue, until other tasks
     /// notify it, or the given duration has elapsed.
+    ///
+    /// Returns `true` if the timeout is not elapsed, otherwise `false`.
     #[cfg(feature = "irq")]
     pub fn wait_timeout(&self, dur: core::time::Duration) -> bool {
         let mut rq = current_run_queue::<NoPreemptIrqSave>();

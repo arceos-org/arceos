@@ -4,6 +4,10 @@
 //!
 //! - [`Mutex`]: A mutual exclusion primitive.
 //! - mod [`spin`]: spinlocks imported from the [`kspin`] crate.
+//! - [`Barrier`]: A barrier enables multiple threads to wait for each other.
+//! - [`Condvar`]: A condition variable enables threads to wait until a particular.
+//! - [`RwLock`]: A reader-writer lock.
+//! - [`Semaphore`]: A semaphore is a synchronization primitive that controls access to a shared resource.
 //!
 //! # Cargo Features
 //!
@@ -16,13 +20,25 @@
 
 pub use kspin as spin;
 
-#[cfg(feature = "multitask")]
-mod mutex;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "multitask")] {
+        mod mutex;
+        #[doc(cfg(feature = "multitask"))]
+        pub use self::mutex::{Mutex, MutexGuard};
+    } else {
+        #[doc(cfg(not(feature = "multitask")))]
+        pub use kspin::{SpinNoIrq as Mutex, SpinNoIrqGuard as MutexGuard};
+    }
+}
 
-#[cfg(feature = "multitask")]
-#[doc(cfg(feature = "multitask"))]
-pub use self::mutex::{Mutex, MutexGuard};
+mod barrier;
+mod condvar;
+mod rwlock;
+mod semaphore;
 
-#[cfg(not(feature = "multitask"))]
-#[doc(cfg(not(feature = "multitask")))]
-pub use kspin::{SpinNoIrq as Mutex, SpinNoIrqGuard as MutexGuard};
+pub use self::barrier::{Barrier, BarrierWaitResult};
+pub use self::condvar::Condvar;
+pub use self::rwlock::{
+    MappedRwLockReadGuard, MappedRwLockWriteGuard, RwLock, RwLockReadGuard, RwLockWriteGuard,
+};
+pub use semaphore::Semaphore;

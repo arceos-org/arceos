@@ -69,29 +69,7 @@ impl<T: ?Sized> Mutex<T> {
     /// The returned value may be dereferenced for data access
     /// and the lock will be dropped when the guard falls out of scope.
     pub fn lock(&self) -> MutexGuard<T> {
-        let current_id = current().id().as_u64();
-        loop {
-            // Can fail to lock even if the spinlock is not locked. May be more efficient than `try_lock`
-            // when called in a loop.
-            match self.owner_id.compare_exchange_weak(
-                0,
-                current_id,
-                Ordering::Acquire,
-                Ordering::Relaxed,
-            ) {
-                Ok(_) => break,
-                Err(owner_id) => {
-                    assert_ne!(
-                        owner_id,
-                        current_id,
-                        "{} tried to acquire mutex it already owns.",
-                        current().id_name()
-                    );
-                    // Wait until the lock looks unlocked before retrying
-                    self.wq.wait_until(|| !self.is_locked());
-                }
-            }
-        }
+        self.inner_lock();
         MutexGuard {
             lock: self,
             data: unsafe { &mut *self.data.get() },
@@ -149,7 +127,40 @@ impl<T: ?Sized> Mutex<T> {
     }
 }
 
-impl<T: Default> Default for Mutex<T> {
+impl<T: ?Sized> Mutex<T> {
+    /// Locks the [`Mutex`] **without** returning [`MutexGuard`].
+    ///
+    /// This method just tries to mark this mutex as locked and sets the owner id to the current task id.
+    /// If it is already locked, it will wait until it is unlocked.
+    #[inline(always)]
+    pub(crate) fn inner_lock(&self) {
+        let current_id = current().id().as_u64();
+        loop {
+            // Can fail to lock even if the spinlock is not locked. May be more efficient than `try_lock`
+            // when called in a loop.
+            match self.owner_id.compare_exchange_weak(
+                0,
+                current_id,
+                Ordering::Acquire,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => break,
+                Err(owner_id) => {
+                    assert_ne!(
+                        owner_id,
+                        current_id,
+                        "{} tried to acquire mutex it already owns.",
+                        current().id_name()
+                    );
+                    // Wait until the lock looks unlocked before retrying
+                    self.wq.wait_until(|| !self.is_locked());
+                }
+            }
+        }
+    }
+}
+
+impl<T: ?Sized + Default> Default for Mutex<T> {
     #[inline(always)]
     fn default() -> Self {
         Self::new(Default::default())
@@ -195,6 +206,10 @@ impl<T: ?Sized> Drop for MutexGuard<'_, T> {
     fn drop(&mut self) {
         unsafe { self.lock.force_unlock() }
     }
+}
+
+pub(crate) fn guard_lock<'a, T: ?Sized>(guard: &MutexGuard<'a, T>) -> &'a Mutex<T> {
+    &guard.lock
 }
 
 #[cfg(test)]
