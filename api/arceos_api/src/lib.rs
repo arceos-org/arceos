@@ -159,12 +159,13 @@ pub mod task {
         /// Sets the cpu affinity of the current task.
         pub fn ax_set_current_affinity(cpumask: AxCpuMask) -> crate::AxResult;
         /// Blocks the current task and put it into the wait queue, until
-        /// other tasks notify the wait queue.
-        pub fn ax_wait_queue_wait(wq: &AxWaitQueueHandle);
+        /// other tasks notify the wait queue, or the the given duration has
+        /// elapsed (if specified).
+        pub fn ax_wait_queue_wait(wq: &AxWaitQueueHandle, timeout: Option<core::time::Duration>) -> bool;
         /// Blocks the current task and put it into the wait queue, until the
         /// given condition becomes true, or the the given duration has elapsed
         /// (if specified).
-        pub fn ax_wait_queue_wait_cond(
+        pub fn ax_wait_queue_wait_until(
             wq: &AxWaitQueueHandle,
             until_condition: impl Fn() -> bool,
             timeout: Option<core::time::Duration>,

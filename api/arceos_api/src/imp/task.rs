@@ -96,11 +96,20 @@ cfg_task! {
         }
     }
 
-    pub fn ax_wait_queue_wait(wq: &AxWaitQueueHandle) {
-        wq.0.wait()
+    pub fn ax_wait_queue_wait(wq: &AxWaitQueueHandle, timeout: Option<Duration>) -> bool {
+        #[cfg(feature = "irq")]
+        if let Some(dur) = timeout {
+            return wq.0.wait_timeout(dur);
+        }
+
+        if timeout.is_some() {
+            axlog::warn!("ax_wait_queue_wait: the `timeout` argument is ignored without the `irq` feature");
+        }
+        wq.0.wait();
+        false
     }
 
-    pub fn ax_wait_queue_wait_cond(
+    pub fn ax_wait_queue_wait_until(
         wq: &AxWaitQueueHandle,
         until_condition: impl Fn() -> bool,
         timeout: Option<Duration>,
@@ -111,7 +120,7 @@ cfg_task! {
         }
 
         if timeout.is_some() {
-            axlog::warn!("ax_wait_queue_wait_cond: the `timeout` argument is ignored without the `irq` feature");
+            axlog::warn!("ax_wait_queue_wait_until: the `timeout` argument is ignored without the `irq` feature");
         }
         wq.0.wait_until(until_condition);
         false
