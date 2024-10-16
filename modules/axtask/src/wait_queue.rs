@@ -155,7 +155,7 @@ impl WaitQueue {
             if axhal::time::wall_time() >= deadline {
                 break;
             }
-            let wq = self.queue.lock();
+            let mut wq = self.queue.lock();
             if condition() {
                 timeout = false;
                 break;
