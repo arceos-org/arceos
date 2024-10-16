@@ -73,7 +73,8 @@ impl WaitQueue {
         declare_current_waiter!(waiter);
         let mut rq = current_run_queue::<NoPreemptIrqSave>();
         rq.blocked_resched(self.queue.lock(), waiter.clone());
-        self.queue.lock().remove(&waiter);
+        // It can only be notified, it should not be in the list 
+        assert!(self.queue.lock().remove(&waiter).is_none());
     }
 
     /// Blocks the current task and put it into the wait queue, until the given
@@ -88,13 +89,18 @@ impl WaitQueue {
         declare_current_waiter!(waiter);
         loop {
             let mut rq = current_run_queue::<NoPreemptIrqSave>();
-            let wq = self.queue.lock();
+            let mut wq = self.queue.lock();
             if condition() {
                 break;
             }
+            // It can only be notified, it should not be in the list
+            // FUTURE: Replace it with debug_assert
+            assert!(wq.remove(&waiter).is_none());
             rq.blocked_resched(wq, waiter.clone());
         }
-        self.queue.lock().remove(&waiter);
+
+        // It can only be notified, it should not be in the list 
+        assert!(self.queue.lock().remove(&waiter).is_none());
     }
 
     /// Blocks the current task and put it into the wait queue, until other tasks
@@ -117,7 +123,7 @@ impl WaitQueue {
         let timeout = axhal::time::wall_time() >= deadline;
 
         // Always try to remove the task from wait list.
-        self.queue.lock().remove(&waiter);
+        self.queue.lock().remove(&waiter).is_some();
         // Always try to remove the task from the timer list.
         self.cancel_timer(curr);
         timeout
@@ -154,7 +160,9 @@ impl WaitQueue {
                 timeout = false;
                 break;
             }
-
+            // It can only be notified, it should not be in the list 
+            // FUTURE: Replace it with debug_assert
+            assert!(wq.remove(&waiter).is_none());
             rq.blocked_resched(wq, waiter.clone());
         }
         // Always try to remove the task from wait list.
