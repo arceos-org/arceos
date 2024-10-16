@@ -9,6 +9,12 @@ use crate::wait_list::{WaitTaskList, WaitTaskNode};
 #[cfg(feature = "irq")]
 use crate::CurrentTask;
 
+macro_rules! declare_current_waiter {
+       ($name: ident) => {
+           let $name = Arc::new(WaitTaskNode::new($crate::current().as_task_ref().clone()));
+       };
+}
+
 /// A queue to store sleeping tasks.
 ///
 /// # Examples
@@ -31,14 +37,6 @@ use crate::CurrentTask;
 /// WQ.wait(); // block until `notify()` is called
 /// assert_eq!(VALUE.load(Ordering::Relaxed), 1);
 /// ```
-
-macro_rules! declare_current_waiter {
-       ($name: ident) => {
-           let $name = Arc::new(WaitTaskNode::new($crate::current().as_task_ref().clone()));
-       };
- }
-
-
 pub struct WaitQueue {
     queue: SpinNoIrq<WaitTaskList>,
 }
