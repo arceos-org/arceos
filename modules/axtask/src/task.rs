@@ -4,7 +4,7 @@ use core::sync::atomic::{AtomicI32, AtomicU64, AtomicU8, Ordering};
 use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 
 #[cfg(any(feature = "smp", feature = "preempt"))]
-use core::sync::atomic::{AtomicBool};
+use core::sync::atomic::AtomicBool;
 
 #[cfg(feature = "smp")]
 use alloc::sync::Weak;

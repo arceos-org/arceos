@@ -287,7 +287,11 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
     ///     2. The caller must ensure that the current task is in the running state.
     ///     3. The caller must ensure that the current task is not the idle task.
     ///     4. The lock of the wait queue will be released explicitly after current task is pushed into it.
-    pub fn blocked_resched(&mut self, mut wq_guard: WaitQueueGuard, curr_waiter:  Arc<WaitTaskNode>) {
+    pub fn blocked_resched(
+        &mut self,
+        mut wq_guard: WaitQueueGuard,
+        curr_waiter: Arc<WaitTaskNode>,
+    ) {
         let curr = crate::current();
         assert!(curr.is_running());
         assert!(!curr.is_idle());

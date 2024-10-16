@@ -3,16 +3,16 @@ use alloc::sync::Arc;
 use kernel_guard::{NoOp, NoPreemptIrqSave};
 use kspin::{SpinNoIrq, SpinNoIrqGuard};
 
-use crate::{current_run_queue, select_run_queue, AxTaskRef};
 use crate::wait_list::{WaitTaskList, WaitTaskNode};
+use crate::{current_run_queue, select_run_queue, AxTaskRef};
 
 #[cfg(feature = "irq")]
 use crate::CurrentTask;
 
 macro_rules! declare_current_waiter {
-       ($name: ident) => {
-           let $name = Arc::new(WaitTaskNode::new($crate::current().as_task_ref().clone()));
-       };
+    ($name: ident) => {
+        let $name = Arc::new(WaitTaskNode::new($crate::current().as_task_ref().clone()));
+    };
 }
 
 /// A queue to store sleeping tasks.
@@ -71,7 +71,7 @@ impl WaitQueue {
         declare_current_waiter!(waiter);
         let mut rq = current_run_queue::<NoPreemptIrqSave>();
         rq.blocked_resched(self.queue.lock(), waiter.clone());
-        // It can only be notified, it should not be in the list 
+        // It can only be notified, it should not be in the list
         assert!(self.queue.lock().remove(&waiter).is_none());
     }
 
@@ -97,7 +97,7 @@ impl WaitQueue {
             rq.blocked_resched(wq, waiter.clone());
         }
 
-        // It can only be notified, it should not be in the list 
+        // It can only be notified, it should not be in the list
         assert!(self.queue.lock().remove(&waiter).is_none());
     }
 
@@ -158,7 +158,7 @@ impl WaitQueue {
                 timeout = false;
                 break;
             }
-            // It can only be notified, it should not be in the list 
+            // It can only be notified, it should not be in the list
             // FUTURE: Replace it with debug_assert
             assert!(wq.remove(&waiter).is_none());
             rq.blocked_resched(wq, waiter.clone());
@@ -199,7 +199,7 @@ impl WaitQueue {
     /// If `resched` is true, the current task will be preempted when the
     /// preemption is enabled.
     pub fn notify_task(&mut self, resched: bool, task: &AxTaskRef) -> bool {
-        let mut wq = self.queue.lock(); 
+        let mut wq = self.queue.lock();
         if let Some(waiter) = wq.remove_task(task) {
             unblock_one_task(waiter.inner().clone(), resched);
             true

@@ -1,5 +1,5 @@
-use linked_list::{def_node, List};
 use alloc::sync::Arc;
+use linked_list::{def_node, List};
 
 use crate::AxTaskRef;
 
@@ -14,9 +14,7 @@ pub struct WaitTaskList {
 impl WaitTaskList {
     /// Creates a new empty [WaitList].
     pub const fn new() -> Self {
-        Self {
-            list: List::new(),
-        }
+        Self { list: List::new() }
     }
 
     /// add wait to list back
@@ -38,7 +36,7 @@ impl WaitTaskList {
                     if Arc::ptr_eq(node.inner(), task) {
                         break cursor.remove_current();
                     }
-                },
+                }
                 None => break None,
             }
             cursor.move_next();
@@ -53,7 +51,6 @@ impl WaitTaskList {
     /// Callers must ensure that `data` is either on this list or in no list. It being on another
     /// list leads to memory unsafety.
     pub fn remove(&mut self, node: &Node) -> Option<Node> {
-        unsafe { self.list.remove(node)}
+        unsafe { self.list.remove(node) }
     }
 }
-

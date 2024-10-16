@@ -250,7 +250,6 @@ mod tests {
         println!("Mutex test OK");
     }
 
-
     fn assert_mem_content<T>(val: &T, content: &[usize]) {
         let val_ptr = val as *const T as *const usize;
         let size = core::mem::size_of::<T>() / core::mem::size_of::<usize>();
@@ -265,7 +264,7 @@ mod tests {
     fn mutex_test_for_posix() {
         // Test mutex size is equal api/arceos_posix_api/build.rs
         let mutex_tuple = axsync::Mutex::new(());
-        let content: [usize;2] = [0, 0];
+        let content: [usize; 2] = [0, 0];
         assert_mem_content(&mutex_tuple, &content);
     }
 }
