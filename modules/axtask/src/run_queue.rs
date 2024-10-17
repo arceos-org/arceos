@@ -228,16 +228,17 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
 
     /// Unblock one task by inserting it into the run queue.
     pub fn unblock_task(&mut self, task: AxTaskRef, resched: bool) {
+        let task_id_name = task.id_name();
         // Try to change the state of the task from `Blocked` to `Ready`,
         // if successful, the task will be put into this run queue,
         // otherwise, the task is already unblocked by other cores.
         if self
             .inner
-            .put_task_with_state(&task, TaskState::Blocked, resched)
+            .put_task_with_state(task, TaskState::Blocked, resched)
         {
             // Since now, the task to be unblocked is in the `Ready` state.
             let cpu_id = self.inner.cpu_id;
-            debug!("task unblock: {} on run_queue {}", task.id_name(), cpu_id);
+            debug!("task unblock: {} on run_queue {}", task_id_name, cpu_id);
             // Note: when the task is unblocked on another CPU's run queue,
             // we just ingiore the `resched` flag.
             if resched && cpu_id == this_cpu_id() {
@@ -268,7 +269,7 @@ impl<'a, G: BaseGuard> CurrentRunQueueRef<'a, G> {
         assert!(curr.is_running());
 
         self.inner
-            .put_task_with_state(curr.as_task_ref(), TaskState::Running, false);
+            .put_task_with_state(curr.clone(), TaskState::Running, false);
 
         self.inner.resched();
     }
@@ -277,13 +278,13 @@ impl<'a, G: BaseGuard> CurrentRunQueueRef<'a, G> {
     /// This function will put the current task into a **new** run queue with `Ready` state,
     /// and reschedule to the next task on **this** run queue.
     pub fn migrate_current(&mut self) {
-        let curr = self.current_task.as_task_ref();
+        let curr = &self.current_task;
         trace!("task migrate: {}", curr.id_name());
         assert!(curr.is_running());
 
-        select_run_queue::<NoOp>(curr)
+        select_run_queue::<NoOp>(curr.as_task_ref())
             .inner
-            .put_task_with_state(curr, TaskState::Running, false);
+            .put_task_with_state(curr.clone(), TaskState::Running, false);
 
         self.inner.resched();
     }
@@ -317,7 +318,7 @@ impl<'a, G: BaseGuard> CurrentRunQueueRef<'a, G> {
         );
         if can_preempt {
             self.inner
-                .put_task_with_state(curr.as_task_ref(), TaskState::Running, true);
+                .put_task_with_state(curr.clone(), TaskState::Running, true);
             self.inner.resched();
         } else {
             curr.set_preempt_pending(true);
@@ -441,7 +442,7 @@ impl AxRunQueue {
     /// otherwise `false`.
     fn put_task_with_state(
         &mut self,
-        task: &AxTaskRef,
+        task: AxTaskRef,
         current_state: TaskState,
         preempt: bool,
     ) -> bool {
@@ -449,7 +450,7 @@ impl AxRunQueue {
         // put it back to the run queue (except idle task).
         if task.transition_state(current_state, TaskState::Ready) && !task.is_idle() {
             // TODO: priority
-            self.scheduler.lock().put_prev_task(task.clone(), preempt);
+            self.scheduler.lock().put_prev_task(task, preempt);
             true
         } else {
             false
