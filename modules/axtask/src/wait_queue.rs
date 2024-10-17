@@ -56,8 +56,7 @@ impl WaitQueue {
         // the event from another queue.
         if curr.in_wait_queue() {
             // wake up by timer (timeout).
-            let mut wq_locked = self.queue.lock();
-            wq_locked.retain(|t| !curr.ptr_eq(t));
+            self.queue.lock().retain(|t| !curr.ptr_eq(t));
             curr.set_in_wait_queue(false);
         }
 
@@ -77,8 +76,7 @@ impl WaitQueue {
     /// Blocks the current task and put it into the wait queue, until other task
     /// notifies it.
     pub fn wait(&self) {
-        let mut rq = current_run_queue::<NoPreemptIrqSave>();
-        rq.blocked_resched(self.queue.lock());
+        current_run_queue::<NoPreemptIrqSave>().blocked_resched(self.queue.lock());
         self.cancel_events(crate::current(), false);
     }
 
@@ -99,6 +97,7 @@ impl WaitQueue {
                 break;
             }
             rq.blocked_resched(wq);
+            // Preemption may occur here.
         }
         self.cancel_events(curr, false);
     }
@@ -158,6 +157,7 @@ impl WaitQueue {
             }
 
             rq.blocked_resched(wq);
+            // Preemption may occur here.
         }
         // Always try to remove the task from the timer list.
         self.cancel_events(curr, true);

@@ -87,7 +87,7 @@ impl<T: ?Sized> Mutex<T> {
                         current_id,
                     );
                     // Wait until the lock looks unlocked before retrying
-                    api::ax_wait_queue_wait(&self.wq, || !self.is_locked(), None);
+                    api::ax_wait_queue_wait_until(&self.wq, || !self.is_locked(), None);
                 }
             }
         }

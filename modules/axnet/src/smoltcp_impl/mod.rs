@@ -188,8 +188,14 @@ impl DeviceWrapper {
 }
 
 impl Device for DeviceWrapper {
-    type RxToken<'a> = AxNetRxToken<'a> where Self: 'a;
-    type TxToken<'a> = AxNetTxToken<'a> where Self: 'a;
+    type RxToken<'a>
+        = AxNetRxToken<'a>
+    where
+        Self: 'a;
+    type TxToken<'a>
+        = AxNetTxToken<'a>
+    where
+        Self: 'a;
 
     fn receive(&mut self, _timestamp: Instant) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
         let mut dev = self.inner.borrow_mut();

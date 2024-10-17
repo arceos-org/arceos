@@ -2,7 +2,7 @@ use alloc::collections::VecDeque;
 use alloc::sync::Arc;
 use core::mem::MaybeUninit;
 
-use kernel_guard::BaseGuard;
+use kernel_guard::{BaseGuard, NoOp};
 use kspin::SpinRaw;
 use lazyinit::LazyInit;
 use scheduler::BaseScheduler;
@@ -11,7 +11,7 @@ use axhal::cpu::this_cpu_id;
 
 use crate::task::{CurrentTask, TaskState};
 use crate::wait_queue::WaitQueueGuard;
-use crate::{AxTaskRef, CpuMask, Scheduler, TaskInner, WaitQueue};
+use crate::{AxCpuMask, AxTaskRef, Scheduler, TaskInner, WaitQueue};
 
 macro_rules! percpu_static {
     ($($name:ident: $ty:ty = $init:expr),* $(,)?) => {
@@ -42,7 +42,7 @@ static mut RUN_QUEUES: [MaybeUninit<&'static mut AxRunQueue>; axconfig::SMP] =
     [ARRAY_REPEAT_VALUE; axconfig::SMP];
 const ARRAY_REPEAT_VALUE: MaybeUninit<&'static mut AxRunQueue> = MaybeUninit::uninit();
 
-/// Returns a reference to the current run queue.
+/// Returns a reference to the current run queue in [`CurrentRunQueueRef`].
 ///
 /// ## Safety
 ///
@@ -53,12 +53,13 @@ const ARRAY_REPEAT_VALUE: MaybeUninit<&'static mut AxRunQueue> = MaybeUninit::un
 ///
 /// ## Returns
 ///
-/// A static reference to the current run queue.
+/// * [`CurrentRunQueueRef`] - a static reference to the current [`AxRunQueue`].
 #[inline(always)]
-pub(crate) fn current_run_queue<G: BaseGuard>() -> AxRunQueueRef<'static, G> {
+pub(crate) fn current_run_queue<G: BaseGuard>() -> CurrentRunQueueRef<'static, G> {
     let irq_state = G::acquire();
-    AxRunQueueRef {
+    CurrentRunQueueRef {
         inner: unsafe { RUN_QUEUE.current_ref_mut_raw() },
+        current_task: crate::current(),
         state: irq_state,
         _phantom: core::marker::PhantomData,
     }
@@ -85,7 +86,7 @@ pub(crate) fn current_run_queue<G: BaseGuard>() -> AxRunQueueRef<'static, G> {
 // The modulo operation is safe here because `axconfig::SMP` is always greater than 1 with "smp" enabled.
 #[allow(clippy::modulo_one)]
 #[inline]
-fn select_run_queue_index(cpumask: CpuMask) -> usize {
+fn select_run_queue_index(cpumask: AxCpuMask) -> usize {
     use core::sync::atomic::{AtomicUsize, Ordering};
     static RUN_QUEUE_INDEX: AtomicUsize = AtomicUsize::new(0);
 
@@ -134,7 +135,7 @@ fn get_run_queue(index: usize) -> &'static mut AxRunQueue {
 ///
 /// ## Returns
 ///
-/// A reference to the selected `AxRunQueue`.
+/// * [`AxRunQueueRef`] - a static reference to the selected [`AxRunQueue`] (current or remote).
 ///
 /// ## TODO
 ///
@@ -143,15 +144,19 @@ fn get_run_queue(index: usize) -> &'static mut AxRunQueue {
 ///
 #[inline]
 pub(crate) fn select_run_queue<G: BaseGuard>(task: &AxTaskRef) -> AxRunQueueRef<'static, G> {
+    let irq_state = G::acquire();
     #[cfg(not(feature = "smp"))]
     {
         let _ = task;
         // When SMP is disabled, all tasks are scheduled on the same global run queue.
-        current_run_queue()
+        AxRunQueueRef {
+            inner: unsafe { RUN_QUEUE.current_ref_mut_raw() },
+            state: irq_state,
+            _phantom: core::marker::PhantomData,
+        }
     }
     #[cfg(feature = "smp")]
     {
-        let irq_state = G::acquire();
         // When SMP is enabled, select the run queue based on the task's CPU affinity and load balance.
         let index = select_run_queue_index(task.cpumask());
         AxRunQueueRef {
@@ -162,7 +167,7 @@ pub(crate) fn select_run_queue<G: BaseGuard>(task: &AxTaskRef) -> AxRunQueueRef<
     }
 }
 
-/// `AxRunQueue` represents a run queue for global system or a specific CPU.
+/// [`AxRunQueue`] represents a run queue for global system or a specific CPU.
 pub(crate) struct AxRunQueue {
     /// The ID of the CPU this run queue is associated with.
     cpu_id: usize,
@@ -172,6 +177,13 @@ pub(crate) struct AxRunQueue {
     scheduler: SpinRaw<Scheduler>,
 }
 
+/// A reference to the run queue with specific guard.
+///
+/// Note:
+/// [`AxRunQueueRef`] is used to get a reference to the run queue on current CPU
+/// or a remote CPU, which is used to add tasks to the run queue or unblock tasks.
+/// If you want to perform scheduling operations on the current run queue,
+/// see [`CurrentRunQueueRef`].
 pub(crate) struct AxRunQueueRef<'a, G: BaseGuard> {
     inner: &'a mut AxRunQueue,
     state: G::State,
@@ -184,7 +196,25 @@ impl<'a, G: BaseGuard> Drop for AxRunQueueRef<'a, G> {
     }
 }
 
-/// Core functions of run queue.
+/// A reference to the current run queue with specific guard.
+///
+/// Note:
+/// [`CurrentRunQueueRef`] is used to get a reference to the run queue on current CPU,
+/// in which scheduling operations can be performed.
+pub(crate) struct CurrentRunQueueRef<'a, G: BaseGuard> {
+    inner: &'a mut AxRunQueue,
+    current_task: CurrentTask,
+    state: G::State,
+    _phantom: core::marker::PhantomData<G>,
+}
+
+impl<'a, G: BaseGuard> Drop for CurrentRunQueueRef<'a, G> {
+    fn drop(&mut self) {
+        G::release(self.state);
+    }
+}
+
+/// Management operations for run queue, including adding tasks, unblocking tasks, etc.
 impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
     pub fn add_task(&mut self, task: AxTaskRef) {
         debug!(
@@ -196,34 +226,83 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
         self.inner.scheduler.lock().add_task(task);
     }
 
+    /// Unblock one task by inserting it into the run queue.
+    pub fn unblock_task(&mut self, task: AxTaskRef, resched: bool) {
+        let task_id_name = task.id_name();
+        // Try to change the state of the task from `Blocked` to `Ready`,
+        // if successful, the task will be put into this run queue,
+        // otherwise, the task is already unblocked by other cores.
+        if self
+            .inner
+            .put_task_with_state(task, TaskState::Blocked, resched)
+        {
+            // Since now, the task to be unblocked is in the `Ready` state.
+            let cpu_id = self.inner.cpu_id;
+            debug!("task unblock: {} on run_queue {}", task_id_name, cpu_id);
+            // Note: when the task is unblocked on another CPU's run queue,
+            // we just ingiore the `resched` flag.
+            if resched && cpu_id == this_cpu_id() {
+                #[cfg(feature = "preempt")]
+                crate::current().set_preempt_pending(true);
+            }
+        }
+    }
+}
+
+/// Core functions of run queue.
+impl<'a, G: BaseGuard> CurrentRunQueueRef<'a, G> {
     #[cfg(feature = "irq")]
     pub fn scheduler_timer_tick(&mut self) {
-        let curr = crate::current();
+        let curr = &self.current_task;
         if !curr.is_idle() && self.inner.scheduler.lock().task_tick(curr.as_task_ref()) {
             #[cfg(feature = "preempt")]
             curr.set_preempt_pending(true);
         }
     }
 
+    /// Yield the current task and reschedule.
+    /// This function will put the current task into this run queue with `Ready` state,
+    /// and reschedule to the next task on this run queue.
     pub fn yield_current(&mut self) {
-        let curr = crate::current();
+        let curr = &self.current_task;
         trace!("task yield: {}", curr.id_name());
         assert!(curr.is_running());
-        self.inner.resched(false);
-    }
 
-    pub fn set_current_priority(&mut self, prio: isize) -> bool {
         self.inner
-            .scheduler
-            .lock()
-            .set_priority(crate::current().as_task_ref(), prio)
+            .put_task_with_state(curr.clone(), TaskState::Running, false);
+
+        self.inner.resched();
     }
 
+    /// Migrate the current task to a new run queue matching its CPU affinity and reschedule.
+    /// This function will put the current task into a **new** run queue with `Ready` state,
+    /// and reschedule to the next task on **this** run queue.
+    pub fn migrate_current(&mut self) {
+        let curr = &self.current_task;
+        trace!("task migrate: {}", curr.id_name());
+        assert!(curr.is_running());
+
+        select_run_queue::<NoOp>(curr.as_task_ref())
+            .inner
+            .put_task_with_state(curr.clone(), TaskState::Running, false);
+
+        self.inner.resched();
+    }
+
+    /// Preempts the current task and reschedules.
+    /// This function is used to preempt the current task and reschedule
+    /// to next task on current run queue.
+    ///
+    /// This function is called by `current_check_preempt_pending` with IRQs and preemption disabled.
+    ///
+    /// Note:
+    /// preemption may happened in `enable_preempt`, which is called
+    /// each time a [`kspin::NoPreemptGuard`] is dropped.
     #[cfg(feature = "preempt")]
     pub fn preempt_resched(&mut self) {
         // There is no need to disable IRQ and preemption here, because
         // they both have been disabled in `current_check_preempt_pending`.
-        let curr = crate::current();
+        let curr = &self.current_task;
         assert!(curr.is_running());
 
         // When we call `preempt_resched()`, both IRQs and preemption must
@@ -238,7 +317,9 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
             can_preempt
         );
         if can_preempt {
-            self.inner.resched(true);
+            self.inner
+                .put_task_with_state(curr.clone(), TaskState::Running, true);
+            self.inner.resched();
         } else {
             curr.set_preempt_pending(true);
         }
@@ -247,7 +328,7 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
     /// Exit the current task with the specified exit code.
     /// This function will never return.
     pub fn exit_current(&mut self, exit_code: i32) -> ! {
-        let curr = crate::current();
+        let curr = &self.current_task;
         debug!("task exit: {}, exit_code={}", curr.id_name(), exit_code);
         assert!(curr.is_running(), "task is not running: {:?}", curr.state());
         assert!(!curr.is_idle());
@@ -274,7 +355,7 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
             }
 
             // Schedule to next task.
-            self.inner.resched(false);
+            self.inner.resched();
         }
         unreachable!("task exited!");
     }
@@ -287,7 +368,7 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
     ///     3. The caller must ensure that the current task is not the idle task.
     ///     4. The lock of the wait queue will be released explicitly after current task is pushed into it.
     pub fn blocked_resched(&mut self, mut wq_guard: WaitQueueGuard) {
-        let curr = crate::current();
+        let curr = &self.current_task;
         assert!(curr.is_running());
         assert!(!curr.is_idle());
         // we must not block current task with preemption disabled.
@@ -310,58 +391,12 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
         // see `unblock_task()` for details.
 
         debug!("task block: {}", curr.id_name());
-        self.inner.resched(false);
-    }
-
-    /// Unblock one task by inserting it into the run queue.
-    /// If task's `on_cpu` flag is true,
-    /// it will enter a loop until the task finishes its scheduling process.
-    pub fn unblock_task(&mut self, task: AxTaskRef, resched: bool) {
-        // Try to change the state of the task from `Blocked` to `Ready`,
-        // if successful, put it into the run queue,
-        // otherwise, the task is already unblocked by other cores.
-        if task.transition_state(TaskState::Blocked, TaskState::Ready) {
-            // Since now, the task to be unblocked is in the `Ready` state.
-
-            // If the owning (remote) CPU is still in the middle of schedule() with
-            // this task as prev, wait until it's done referencing the task.
-            //
-            // Pairs with the `clear_prev_task_on_cpu()`.
-            //
-            // This ensures that tasks getting woken will be fully ordered against
-            // their previous state and preserve Program Order.
-            //
-            // Note:
-            // 1. This should be placed after the judgement of `TaskState::Blocked,`,
-            //    because the task may have been woken up by other cores.
-            // 2. This can be placed in the front of `switch_to()`
-            #[cfg(feature = "smp")]
-            while task.on_cpu() {
-                // Wait for the task to finish its scheduling process.
-                core::hint::spin_loop();
-            }
-            #[cfg(feature = "smp")]
-            assert!(!task.on_cpu());
-
-            let cpu_id = self.inner.cpu_id;
-            debug!("task unblock: {} on run_queue {}", task.id_name(), cpu_id);
-            self.inner
-                .scheduler
-                .lock()
-                .put_prev_task(task.clone(), resched); // TODO: priority
-
-            // Note: when the task is unblocked on another CPU's run queue,
-            // we just ingiore the `resched` flag.
-            if resched && cpu_id == this_cpu_id() {
-                #[cfg(feature = "preempt")]
-                crate::current().set_preempt_pending(true);
-            }
-        }
+        self.inner.resched();
     }
 
     #[cfg(feature = "irq")]
     pub fn sleep_until(&mut self, deadline: axhal::time::TimeValue) {
-        let curr = crate::current();
+        let curr = &self.current_task;
         debug!("task sleep: {}, deadline={:?}", curr.id_name(), deadline);
         assert!(curr.is_running());
         assert!(!curr.is_idle());
@@ -370,8 +405,15 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
         if now < deadline {
             crate::timers::set_alarm_wakeup(deadline, curr.clone());
             curr.set_state(TaskState::Blocked);
-            self.inner.resched(false);
+            self.inner.resched();
         }
+    }
+
+    pub fn set_current_priority(&mut self, prio: isize) -> bool {
+        self.inner
+            .scheduler
+            .lock()
+            .set_priority(self.current_task.as_task_ref(), prio)
     }
 }
 
@@ -381,7 +423,7 @@ impl AxRunQueue {
     fn new(cpu_id: usize) -> Self {
         let gc_task = TaskInner::new(gc_entry, "gc".into(), axconfig::TASK_STACK_SIZE).into_arc();
         // gc task should be pinned to the current CPU.
-        gc_task.set_cpumask(CpuMask::one_shot(cpu_id));
+        gc_task.set_cpumask(AxCpuMask::one_shot(cpu_id));
 
         let mut scheduler = Scheduler::new();
         scheduler.add_task(gc_task);
@@ -391,17 +433,33 @@ impl AxRunQueue {
         }
     }
 
-    /// Common reschedule subroutine. If `preempt`, keep current task's time
-    /// slice, otherwise reset it.
-    fn resched(&mut self, preempt: bool) {
-        let prev = crate::current();
-        if prev.is_running() {
-            prev.set_state(TaskState::Ready);
-            if !prev.is_idle() {
-                self.scheduler.lock().put_prev_task(prev.clone(), preempt);
-            }
+    /// Puts target task into current run queue with `Ready` state
+    /// if its state matches `current_state` (except idle task).
+    ///
+    /// If `preempt`, keep current task's time slice, otherwise reset it.
+    ///
+    /// Returns `true` if the target task is put into this run queue successfully,
+    /// otherwise `false`.
+    fn put_task_with_state(
+        &mut self,
+        task: AxTaskRef,
+        current_state: TaskState,
+        preempt: bool,
+    ) -> bool {
+        // If the task's state matches `current_state`, set its state to `Ready` and
+        // put it back to the run queue (except idle task).
+        if task.transition_state(current_state, TaskState::Ready) && !task.is_idle() {
+            // TODO: priority
+            self.scheduler.lock().put_prev_task(task, preempt);
+            true
+        } else {
+            false
         }
+    }
 
+    /// Core reschedule subroutine.
+    /// Pick the next task to run and switch to it.
+    fn resched(&mut self) {
         let next = self
             .scheduler
             .lock()
@@ -416,7 +474,7 @@ impl AxRunQueue {
             next.id_name(),
             next.state()
         );
-        self.switch_to(prev, next);
+        self.switch_to(crate::current(), next);
     }
 
     fn switch_to(&mut self, prev_task: CurrentTask, next_task: AxTaskRef) {
@@ -436,6 +494,22 @@ impl AxRunQueue {
         next_task.set_state(TaskState::Running);
         if prev_task.ptr_eq(&next_task) {
             return;
+        }
+
+        // Task must be scheduled atomically, wait for next task's scheduling process to complete.
+        // If the owning (remote) CPU is still in the middle of schedule() with
+        // this task (next task) as prev, wait until it's done referencing the task.
+        //
+        // Pairs with the `clear_prev_task_on_cpu()`.
+        //
+        // Note:
+        // 1. This should be placed after the judgement of `TaskState::Blocked,`,
+        //    because the task may have been woken up by other cores.
+        // 2. This can be placed in the front of `switch_to()`
+        #[cfg(feature = "smp")]
+        while next_task.on_cpu() {
+            // Wait for the task to finish its scheduling process.
+            core::hint::spin_loop();
         }
 
         // Claim the task as running, we do this before switching to it
@@ -500,7 +574,7 @@ pub(crate) fn init() {
     const IDLE_TASK_STACK_SIZE: usize = 4096;
     let idle_task = TaskInner::new(|| crate::run_idle(), "idle".into(), IDLE_TASK_STACK_SIZE);
     // idle task should be pinned to the current CPU.
-    idle_task.set_cpumask(CpuMask::one_shot(cpu_id));
+    idle_task.set_cpumask(AxCpuMask::one_shot(cpu_id));
     IDLE_TASK.with_current(|i| {
         i.init_once(idle_task.into_arc());
     });

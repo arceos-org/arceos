@@ -16,7 +16,7 @@ use axhal::arch::TaskContext;
 use axhal::tls::TlsArea;
 
 use crate::task_ext::AxTaskExt;
-use crate::{AxTask, AxTaskRef, CpuMask, WaitQueue};
+use crate::{AxCpuMask, AxTask, AxTaskRef, WaitQueue};
 
 /// A unique identifier for a thread.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -48,7 +48,7 @@ pub struct TaskInner {
     state: AtomicU8,
 
     /// CPU affinity mask.
-    cpumask: SpinNoIrq<CpuMask>,
+    cpumask: SpinNoIrq<AxCpuMask>,
 
     /// Mark whether the task is in the wait queue.
     in_wait_queue: AtomicBool,
@@ -182,6 +182,38 @@ impl TaskInner {
             None
         }
     }
+
+    /// Returns a mutable reference to the task context.
+    #[inline]
+    pub const fn ctx_mut(&mut self) -> &mut TaskContext {
+        self.ctx.get_mut()
+    }
+
+    /// Returns the top address of the kernel stack.
+    #[inline]
+    pub const fn kernel_stack_top(&self) -> Option<VirtAddr> {
+        match &self.kstack {
+            Some(s) => Some(s.top()),
+            None => None,
+        }
+    }
+
+    /// Gets the cpu affinity mask of the task.
+    ///
+    /// Returns the cpu affinity mask of the task in type [`AxCpuMask`].
+    #[inline]
+    pub fn cpumask(&self) -> AxCpuMask {
+        *self.cpumask.lock()
+    }
+
+    /// Sets the cpu affinity mask of the task.
+    ///
+    /// # Arguments
+    /// `cpumask` - The cpu affinity mask to be set in type [`AxCpuMask`].
+    #[inline]
+    pub fn set_cpumask(&self, cpumask: AxCpuMask) {
+        *self.cpumask.lock() = cpumask
+    }
 }
 
 // private methods
@@ -195,7 +227,7 @@ impl TaskInner {
             entry: None,
             state: AtomicU8::new(TaskState::Ready as u8),
             // By default, the task is allowed to run on all CPUs.
-            cpumask: SpinNoIrq::new(CpuMask::full()),
+            cpumask: SpinNoIrq::new(AxCpuMask::full()),
             in_wait_queue: AtomicBool::new(false),
             #[cfg(feature = "irq")]
             timer_ticket_id: AtomicU64::new(0),
@@ -285,17 +317,6 @@ impl TaskInner {
         self.is_idle
     }
 
-    #[allow(unused)]
-    #[inline]
-    pub(crate) fn cpumask(&self) -> CpuMask {
-        *self.cpumask.lock()
-    }
-
-    #[inline]
-    pub(crate) fn set_cpumask(&self, cpumask: CpuMask) {
-        *self.cpumask.lock() = cpumask
-    }
-
     #[inline]
     pub(crate) fn in_wait_queue(&self) -> bool {
         self.in_wait_queue.load(Ordering::Acquire)
@@ -361,9 +382,12 @@ impl TaskInner {
 
     #[cfg(feature = "preempt")]
     fn current_check_preempt_pending() {
+        use kernel_guard::NoPreemptIrqSave;
         let curr = crate::current();
         if curr.need_resched.load(Ordering::Acquire) && curr.can_preempt(0) {
-            let mut rq = crate::current_run_queue::<kernel_guard::NoPreemptIrqSave>();
+            // Note: if we want to print log msg during `preempt_resched`, we have to
+            // disable preemption here, because the axlog may cause preemption.
+            let mut rq = crate::current_run_queue::<NoPreemptIrqSave>();
             if curr.need_resched.load(Ordering::Acquire) {
                 rq.preempt_resched()
             }
@@ -379,12 +403,6 @@ impl TaskInner {
     #[inline]
     pub(crate) const unsafe fn ctx_mut_ptr(&self) -> *mut TaskContext {
         self.ctx.get()
-    }
-
-    /// Returns a mutable reference to the task context.
-    #[inline]
-    pub const fn ctx_mut(&mut self) -> &mut TaskContext {
-        self.ctx.get_mut()
     }
 
     /// Returns whether the task is running on a CPU.
@@ -435,15 +453,6 @@ impl TaskInner {
             .and_then(|weak| weak.upgrade())
             .expect("Invalid prev_task pointer or prev_task has been dropped")
             .set_on_cpu(false);
-    }
-
-    /// Returns the top address of the kernel stack.
-    #[inline]
-    pub const fn kernel_stack_top(&self) -> Option<VirtAddr> {
-        match &self.kstack {
-            Some(s) => Some(s.top()),
-            None => None,
-        }
     }
 }
 

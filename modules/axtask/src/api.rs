@@ -16,8 +16,8 @@ pub use crate::wait_queue::WaitQueue;
 /// The reference type of a task.
 pub type AxTaskRef = Arc<AxTask>;
 
-/// The wrapper type for cpumask::CpuMask with SMP configuration.
-pub type CpuMask = cpumask::CpuMask<{ axconfig::SMP }>;
+/// The wrapper type for [`cpumask::CpuMask`] with SMP configuration.
+pub type AxCpuMask = cpumask::CpuMask<{ axconfig::SMP }>;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "sched_rr")] {
@@ -140,6 +140,26 @@ where
 /// [CFS]: https://en.wikipedia.org/wiki/Completely_Fair_Scheduler
 pub fn set_priority(prio: isize) -> bool {
     current_run_queue::<NoPreemptIrqSave>().set_current_priority(prio)
+}
+
+/// Set the affinity for the current task.
+/// [`AxCpuMask`] is used to specify the CPU affinity.
+/// Returns `true` if the affinity is set successfully.
+///
+/// TODO: support set the affinity for other tasks.
+pub fn set_current_affinity(cpumask: AxCpuMask) -> bool {
+    if cpumask.is_empty() {
+        false
+    } else {
+        let mut rq = current_run_queue::<NoPreemptIrqSave>();
+        current().set_cpumask(cpumask);
+        // After setting the affinity, we need to check if current cpu matches
+        // the affinity. If not, we need to migrate the task to the correct CPU.
+        if !cpumask.get(axhal::cpu::this_cpu_id()) {
+            rq.migrate_current();
+        }
+        true
+    }
 }
 
 /// Current task gives up the CPU time voluntarily, and switches to another
