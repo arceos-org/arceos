@@ -225,21 +225,17 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
     }
 
     /// Unblock one task by inserting it into the run queue.
-    /// If task's `on_cpu` flag is true,
-    /// it will enter a loop until the task finishes its scheduling process.
     pub fn unblock_task(&mut self, task: AxTaskRef, resched: bool) {
         // Try to change the state of the task from `Blocked` to `Ready`,
-        // if successful, put it into the run queue,
+        // if successful, the task will be put into this run queue,
         // otherwise, the task is already unblocked by other cores.
-        if task.transition_state(TaskState::Blocked, TaskState::Ready) {
+        if self
+            .inner
+            .put_task_with_state(&task, TaskState::Blocked, resched)
+        {
             // Since now, the task to be unblocked is in the `Ready` state.
             let cpu_id = self.inner.cpu_id;
             debug!("task unblock: {} on run_queue {}", task.id_name(), cpu_id);
-            self.inner
-                .scheduler
-                .lock()
-                .put_prev_task(task.clone(), resched); // TODO: priority
-
             // Note: when the task is unblocked on another CPU's run queue,
             // we just ingiore the `resched` flag.
             if resched && cpu_id == this_cpu_id() {
@@ -261,35 +257,33 @@ impl<'a, G: BaseGuard> CurRunQueueRef<'a, G> {
         }
     }
 
+    /// Yield the current task and reschedule.
+    /// This function will put the current task into this run queue with `Ready` state,
+    /// and reschedule to the next task on this run queue.
     pub fn yield_current(&mut self) {
         let curr = crate::current();
         trace!("task yield: {}", curr.id_name());
         assert!(curr.is_running());
-        self.inner.put_current(false);
+
+        self.inner
+            .put_task_with_state(curr.as_task_ref(), TaskState::Running, false);
+
         self.inner.resched();
     }
 
+    /// Migrate the current task to a new run queue matching its CPU affinity and reschedule.
+    /// This function will put the current task into a **new** run queue with `Ready` state,
+    /// and reschedule to the next task on **this** run queue.
     pub fn migrate_current(&mut self) {
         let curr = crate::current();
         trace!("task migrate: {}", curr.id_name());
-
         assert!(curr.is_running());
-        curr.set_state(TaskState::Ready);
 
         select_run_queue::<NoOp>(curr.as_task_ref())
             .inner
-            .scheduler
-            .lock()
-            .put_prev_task(curr.clone(), false);
+            .put_task_with_state(curr.as_task_ref(), TaskState::Running, false);
 
         self.inner.resched();
-    }
-
-    pub fn set_current_priority(&mut self, prio: isize) -> bool {
-        self.inner
-            .scheduler
-            .lock()
-            .set_priority(crate::current().as_task_ref(), prio)
     }
 
     /// Preempts the current task and reschedules.
@@ -320,7 +314,8 @@ impl<'a, G: BaseGuard> CurRunQueueRef<'a, G> {
             can_preempt
         );
         if can_preempt {
-            self.inner.put_current(true);
+            self.inner
+                .put_task_with_state(curr.as_task_ref(), TaskState::Running, true);
             self.inner.resched();
         } else {
             curr.set_preempt_pending(true);
@@ -410,6 +405,13 @@ impl<'a, G: BaseGuard> CurRunQueueRef<'a, G> {
             self.inner.resched();
         }
     }
+
+    pub fn set_current_priority(&mut self, prio: isize) -> bool {
+        self.inner
+            .scheduler
+            .lock()
+            .set_priority(crate::current().as_task_ref(), prio)
+    }
 }
 
 impl AxRunQueue {
@@ -428,15 +430,29 @@ impl AxRunQueue {
         }
     }
 
-    /// Common reschedule subroutine.
-    /// Put the current task into the run queue (except idle task).
+    /// Common reschedule subroutine,
+    ///
+    /// which tries to put target task into this run queue (except idle task)
+    /// with `Ready` state if its state matches `current_state`.
+    ///
     /// If `preempt`, keep current task's time slice, otherwise reset it.
-    fn put_current(&mut self, preempt: bool) {
-        let curr = crate::current();
-        // If the current task is `Running`, set its state to `Ready` and
+    ///
+    /// Returns `true` if the target task is put into this run queue successfully,
+    /// otherwise `false`.
+    fn put_task_with_state(
+        &mut self,
+        task: &AxTaskRef,
+        current_state: TaskState,
+        preempt: bool,
+    ) -> bool {
+        // If the task's state matches `current_state`, set its state to `Ready` and
         // put it back to the run queue (except idle task).
-        if curr.transition_state(TaskState::Running, TaskState::Ready) && !curr.is_idle() {
-            self.scheduler.lock().put_prev_task(curr.clone(), preempt);
+        if task.transition_state(current_state, TaskState::Ready) && !task.is_idle() {
+            // TODO: priority
+            self.scheduler.lock().put_prev_task(task.clone(), preempt);
+            true
+        } else {
+            false
         }
     }
 

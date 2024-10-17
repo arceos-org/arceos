@@ -385,6 +385,8 @@ impl TaskInner {
         use kernel_guard::NoPreemptIrqSave;
         let curr = crate::current();
         if curr.need_resched.load(Ordering::Acquire) && curr.can_preempt(0) {
+            // Note: if we want to print log msg during `preempt_resched`, we have to
+            // disable preemption here, because the axlog may cause preemption.
             let mut rq = crate::current_run_queue::<NoPreemptIrqSave>();
             if curr.need_resched.load(Ordering::Acquire) {
                 rq.preempt_resched()
