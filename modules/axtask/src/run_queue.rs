@@ -10,8 +10,7 @@ use scheduler::BaseScheduler;
 use axhal::cpu::this_cpu_id;
 
 use crate::task::{CurrentTask, TaskState};
-use crate::wait_list::WaitTaskNode;
-use crate::wait_queue::WaitQueueGuard;
+use crate::wait_queue::{WaitQueueGuard, WaitTaskNode};
 use crate::{AxTaskRef, CpuMask, Scheduler, TaskInner, WaitQueue};
 
 macro_rules! percpu_static {

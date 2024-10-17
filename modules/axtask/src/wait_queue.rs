@@ -2,18 +2,22 @@ use alloc::sync::Arc;
 
 use kernel_guard::{NoOp, NoPreemptIrqSave};
 use kspin::{SpinNoIrq, SpinNoIrqGuard};
+use linked_list::{def_node, List};
 
-use crate::wait_list::{WaitTaskList, WaitTaskNode};
 use crate::{current_run_queue, select_run_queue, AxTaskRef};
 
 #[cfg(feature = "irq")]
 use crate::CurrentTask;
 
+def_node!(WaitTaskNode, AxTaskRef);
+
 macro_rules! declare_current_waiter {
     ($name: ident) => {
-        let $name = Arc::new(WaitTaskNode::new($crate::current().as_task_ref().clone()));
+        let $name = Arc::new(WaitTaskNode::new($crate::current().clone()));
     };
 }
+
+type Node = Arc<WaitTaskNode>;
 
 /// A queue to store sleeping tasks.
 ///
@@ -38,31 +42,40 @@ macro_rules! declare_current_waiter {
 /// assert_eq!(VALUE.load(Ordering::Relaxed), 1);
 /// ```
 pub struct WaitQueue {
-    queue: SpinNoIrq<WaitTaskList>,
+    list: SpinNoIrq<List<Node>>,
 }
 
-pub(crate) type WaitQueueGuard<'a> = SpinNoIrqGuard<'a, WaitTaskList>;
+pub(crate) type WaitQueueGuard<'a> = SpinNoIrqGuard<'a, List<Node>>;
 
 impl WaitQueue {
     /// Creates an empty wait queue.
     pub const fn new() -> Self {
         Self {
-            queue: SpinNoIrq::new(WaitTaskList::new()),
+            list: SpinNoIrq::new(List::new()),
         }
     }
 
-    #[cfg(feature = "irq")]
-    /// Cancel events by removing the task from the wait queue.
+    /// Cancel events by removing the task from the wait list.
     /// If `from_timer_list` is true, try to remove the task from the timer list.
-    fn cancel_timer(&self, curr: CurrentTask) {
-        // Try to cancel a timer event from timer lists.
-        // Just mark task's current timer ticket ID as expired.
-        curr.timer_ticket_expired();
-        // Note:
-        //  this task is still not removed from timer list of target CPU,
-        //  which may cause some redundant timer events because it still needs to
-        //  go through the process of expiring an event from the timer list and invoking the callback.
-        //  (it can be considered a lazy-removal strategy, it will be ignored when it is about to take effect.)
+    fn cancel_events(&self, waiter: &Node, _from_timer_list: bool) {
+        // SAFETY:
+        // Waiter is only  defined in the local function scope,
+        // therefore, it is not possible in other List.
+        unsafe {
+            self.list.lock().remove(waiter);
+        }
+
+        #[cfg(feature = "irq")]
+        if _from_timer_list {
+            // Try to cancel a timer event from timer lists.
+            // Just mark task's current timer ticket ID as expired.
+            waiter.inner().timer_ticket_expired();
+            // Note:
+            //  this task is still not removed from timer list of target CPU,
+            //  which may cause some redundant timer events because it still needs to
+            //  go through the process of expiring an event from the timer list and invoking the callback.
+            //  (it can be considered a lazy-removal strategy, it will be ignored when it is about to take effect.)
+        }
     }
 
     /// Blocks the current task and put it into the wait list, until other task
@@ -70,12 +83,11 @@ impl WaitQueue {
     pub fn wait(&self) {
         declare_current_waiter!(waiter);
         let mut rq = current_run_queue::<NoPreemptIrqSave>();
-        rq.blocked_resched(self.queue.lock(), waiter.clone());
-        // It can only be notified, it should not be in the list
-        assert!(self.queue.lock().remove(&waiter).is_none());
+        rq.blocked_resched(self.list.lock(), waiter.clone());
+        self.cancel_events(&waiter, false);
     }
 
-    /// Blocks the current task and put it into the wait queue, until the given
+    /// Blocks the current task and put it into the wait list, until the given
     /// `condition` becomes true.
     ///
     /// Note that even other tasks notify this task, it will not wake up until
@@ -87,21 +99,17 @@ impl WaitQueue {
         declare_current_waiter!(waiter);
         loop {
             let mut rq = current_run_queue::<NoPreemptIrqSave>();
-            let mut wq = self.queue.lock();
+            let wq = self.list.lock();
             if condition() {
                 break;
             }
-            // It can only be notified, it should not be in the list
-            // FUTURE: Replace it with debug_assert
-            assert!(wq.remove(&waiter).is_none());
             rq.blocked_resched(wq, waiter.clone());
         }
 
-        // It can only be notified, it should not be in the list
-        assert!(self.queue.lock().remove(&waiter).is_none());
+        self.cancel_events(&waiter, false);
     }
 
-    /// Blocks the current task and put it into the wait queue, until other tasks
+    /// Blocks the current task and put it into the wait list, until other tasks
     /// notify it, or the given duration has elapsed.
     #[cfg(feature = "irq")]
     pub fn wait_timeout(&self, dur: core::time::Duration) -> bool {
@@ -116,18 +124,16 @@ impl WaitQueue {
         );
         crate::timers::set_alarm_wakeup(deadline, curr.clone());
 
-        rq.blocked_resched(self.queue.lock(), waiter.clone());
+        rq.blocked_resched(self.list.lock(), waiter.clone());
 
         let timeout = axhal::time::wall_time() >= deadline;
 
-        // Always try to remove the task from wait list.
-        self.queue.lock().remove(&waiter);
         // Always try to remove the task from the timer list.
-        self.cancel_timer(curr);
+        self.cancel_events(&waiter, true);
         timeout
     }
 
-    /// Blocks the current task and put it into the wait queue, until the given
+    /// Blocks the current task and put it into the wait list, until the given
     /// `condition` becomes true, or the given duration has elapsed.
     ///
     /// Note that even other tasks notify this task, it will not wake up until
@@ -153,29 +159,25 @@ impl WaitQueue {
             if axhal::time::wall_time() >= deadline {
                 break;
             }
-            let mut wq = self.queue.lock();
+            let mut wq = self.list.lock();
             if condition() {
                 timeout = false;
                 break;
             }
-            // It can only be notified, it should not be in the list
-            // FUTURE: Replace it with debug_assert
-            assert!(wq.remove(&waiter).is_none());
             rq.blocked_resched(wq, waiter.clone());
         }
-        // Always try to remove the task from wait list.
-        self.queue.lock().remove(&waiter);
+
         // Always try to remove the task from the timer list.
-        self.cancel_timer(curr);
+        self.cancel_events(&waiter, true);
         timeout
     }
 
-    /// Wakes up one task in the wait queue, usually the first one.
+    /// Wakes up one task in the wait list, usually the first one.
     ///
     /// If `resched` is true, the current task will be preempted when the
     /// preemption is enabled.
     pub fn notify_one(&self, resched: bool) -> bool {
-        let mut wq = self.queue.lock();
+        let mut wq = self.list.lock();
         if let Some(waiter) = wq.pop_front() {
             unblock_one_task(waiter.inner().clone(), resched);
             true
@@ -184,7 +186,7 @@ impl WaitQueue {
         }
     }
 
-    /// Wakes all tasks in the wait queue.
+    /// Wakes all tasks in the wait list.
     ///
     /// If `resched` is true, the current task will be preempted when the
     /// preemption is enabled.
@@ -194,17 +196,25 @@ impl WaitQueue {
         }
     }
 
-    /// Wake up the given task in the wait queue.
+    /// Wake up the given task in the wait list.
     ///
     /// If `resched` is true, the current task will be preempted when the
     /// preemption is enabled.
     pub fn notify_task(&mut self, resched: bool, task: &AxTaskRef) -> bool {
-        let mut wq = self.queue.lock();
-        if let Some(waiter) = wq.remove_task(task) {
-            unblock_one_task(waiter.inner().clone(), resched);
-            true
-        } else {
-            false
+        let mut wq = self.list.lock();
+        let mut cursor = wq.cursor_front_mut();
+        loop {
+            match cursor.current() {
+                Some(node) => {
+                    if Arc::ptr_eq(node.inner(), task) {
+                        cursor.remove_current();
+                        unblock_one_task(task.clone(), resched);
+                        break true;
+                    }
+                }
+                None => break false,
+            }
+            cursor.move_next();
         }
     }
 }
