@@ -42,7 +42,7 @@ static mut RUN_QUEUES: [MaybeUninit<&'static mut AxRunQueue>; axconfig::SMP] =
     [ARRAY_REPEAT_VALUE; axconfig::SMP];
 const ARRAY_REPEAT_VALUE: MaybeUninit<&'static mut AxRunQueue> = MaybeUninit::uninit();
 
-/// Returns a reference to the current run queue in [`CurRunQueueRef`].
+/// Returns a reference to the current run queue in `CurrentRunQueueRef`.
 ///
 /// ## Safety
 ///
@@ -53,12 +53,13 @@ const ARRAY_REPEAT_VALUE: MaybeUninit<&'static mut AxRunQueue> = MaybeUninit::un
 ///
 /// ## Returns
 ///
-/// [`CurRunQueueRef`]: a static reference to the current `AxRunQueue`.
+/// `CurrentRunQueueRef`: a static reference to the current `AxRunQueue`.
 #[inline(always)]
-pub(crate) fn current_run_queue<G: BaseGuard>() -> CurRunQueueRef<'static, G> {
+pub(crate) fn current_run_queue<G: BaseGuard>() -> CurrentRunQueueRef<'static, G> {
     let irq_state = G::acquire();
-    CurRunQueueRef {
+    CurrentRunQueueRef {
         inner: unsafe { RUN_QUEUE.current_ref_mut_raw() },
+        current_task: crate::current(),
         state: irq_state,
         _phantom: core::marker::PhantomData,
     }
@@ -134,7 +135,7 @@ fn get_run_queue(index: usize) -> &'static mut AxRunQueue {
 ///
 /// ## Returns
 ///
-/// [`AxRunQueueRef`]: a static reference to the selected `AxRunQueue` (current or remote).
+/// `AxRunQueueRef`: a static reference to the selected `AxRunQueue` (current or remote).
 ///
 /// ## TODO
 ///
@@ -182,7 +183,7 @@ pub(crate) struct AxRunQueue {
 /// `AxRunQueueRef` is used to get a reference to the run queue on current CPU
 /// or a remote CPU, which is used to add tasks to the run queue or unblock tasks.
 /// If you want to perform scheduling operations on the current run queue,
-/// see [`CurRunQueueRef`].
+/// see `CurrentRunQueueRef`.
 pub(crate) struct AxRunQueueRef<'a, G: BaseGuard> {
     inner: &'a mut AxRunQueue,
     state: G::State,
@@ -198,15 +199,16 @@ impl<'a, G: BaseGuard> Drop for AxRunQueueRef<'a, G> {
 /// A reference to the current run queue with specific guard.
 ///
 /// Note:
-/// `CurRunQueueRef` is used to get a reference to the run queue on current CPU,
+/// `CurrentRunQueueRef` is used to get a reference to the run queue on current CPU,
 /// in which scheduling operations can be performed.
-pub(crate) struct CurRunQueueRef<'a, G: BaseGuard> {
+pub(crate) struct CurrentRunQueueRef<'a, G: BaseGuard> {
     inner: &'a mut AxRunQueue,
+    current_task: CurrentTask,
     state: G::State,
     _phantom: core::marker::PhantomData<G>,
 }
 
-impl<'a, G: BaseGuard> Drop for CurRunQueueRef<'a, G> {
+impl<'a, G: BaseGuard> Drop for CurrentRunQueueRef<'a, G> {
     fn drop(&mut self) {
         G::release(self.state);
     }
@@ -247,11 +249,11 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
 }
 
 /// Core functions of run queue.
-impl<'a, G: BaseGuard> CurRunQueueRef<'a, G> {
+impl<'a, G: BaseGuard> CurrentRunQueueRef<'a, G> {
     #[cfg(feature = "irq")]
     pub fn scheduler_timer_tick(&mut self) {
-        let curr = crate::current();
-        if !curr.is_idle() && self.inner.scheduler.lock().task_tick(curr.as_task_ref()) {
+        let curr = self.current_task.as_task_ref();
+        if !curr.is_idle() && self.inner.scheduler.lock().task_tick(curr) {
             #[cfg(feature = "preempt")]
             curr.set_preempt_pending(true);
         }
@@ -261,12 +263,12 @@ impl<'a, G: BaseGuard> CurRunQueueRef<'a, G> {
     /// This function will put the current task into this run queue with `Ready` state,
     /// and reschedule to the next task on this run queue.
     pub fn yield_current(&mut self) {
-        let curr = crate::current();
+        let curr = self.current_task.as_task_ref();
         trace!("task yield: {}", curr.id_name());
         assert!(curr.is_running());
 
         self.inner
-            .put_task_with_state(curr.as_task_ref(), TaskState::Running, false);
+            .put_task_with_state(curr, TaskState::Running, false);
 
         self.inner.resched();
     }
@@ -275,13 +277,13 @@ impl<'a, G: BaseGuard> CurRunQueueRef<'a, G> {
     /// This function will put the current task into a **new** run queue with `Ready` state,
     /// and reschedule to the next task on **this** run queue.
     pub fn migrate_current(&mut self) {
-        let curr = crate::current();
+        let curr = self.current_task.as_task_ref();
         trace!("task migrate: {}", curr.id_name());
         assert!(curr.is_running());
 
-        select_run_queue::<NoOp>(curr.as_task_ref())
+        select_run_queue::<NoOp>(curr)
             .inner
-            .put_task_with_state(curr.as_task_ref(), TaskState::Running, false);
+            .put_task_with_state(curr, TaskState::Running, false);
 
         self.inner.resched();
     }
@@ -299,7 +301,7 @@ impl<'a, G: BaseGuard> CurRunQueueRef<'a, G> {
     pub fn preempt_resched(&mut self) {
         // There is no need to disable IRQ and preemption here, because
         // they both have been disabled in `current_check_preempt_pending`.
-        let curr = crate::current();
+        let curr = self.current_task.as_task_ref();
         assert!(curr.is_running());
 
         // When we call `preempt_resched()`, both IRQs and preemption must
@@ -315,7 +317,7 @@ impl<'a, G: BaseGuard> CurRunQueueRef<'a, G> {
         );
         if can_preempt {
             self.inner
-                .put_task_with_state(curr.as_task_ref(), TaskState::Running, true);
+                .put_task_with_state(curr, TaskState::Running, true);
             self.inner.resched();
         } else {
             curr.set_preempt_pending(true);
@@ -325,7 +327,7 @@ impl<'a, G: BaseGuard> CurRunQueueRef<'a, G> {
     /// Exit the current task with the specified exit code.
     /// This function will never return.
     pub fn exit_current(&mut self, exit_code: i32) -> ! {
-        let curr = crate::current();
+        let curr = self.current_task.as_task_ref();
         debug!("task exit: {}, exit_code={}", curr.id_name(), exit_code);
         assert!(curr.is_running(), "task is not running: {:?}", curr.state());
         assert!(!curr.is_idle());
@@ -365,7 +367,7 @@ impl<'a, G: BaseGuard> CurRunQueueRef<'a, G> {
     ///     3. The caller must ensure that the current task is not the idle task.
     ///     4. The lock of the wait queue will be released explicitly after current task is pushed into it.
     pub fn blocked_resched(&mut self, mut wq_guard: WaitQueueGuard) {
-        let curr = crate::current();
+        let curr = self.current_task.as_task_ref();
         assert!(curr.is_running());
         assert!(!curr.is_idle());
         // we must not block current task with preemption disabled.
@@ -393,7 +395,7 @@ impl<'a, G: BaseGuard> CurRunQueueRef<'a, G> {
 
     #[cfg(feature = "irq")]
     pub fn sleep_until(&mut self, deadline: axhal::time::TimeValue) {
-        let curr = crate::current();
+        let curr = self.current_task.as_task_ref();
         debug!("task sleep: {}, deadline={:?}", curr.id_name(), deadline);
         assert!(curr.is_running());
         assert!(!curr.is_idle());
@@ -410,7 +412,7 @@ impl<'a, G: BaseGuard> CurRunQueueRef<'a, G> {
         self.inner
             .scheduler
             .lock()
-            .set_priority(crate::current().as_task_ref(), prio)
+            .set_priority(self.current_task.as_task_ref(), prio)
     }
 }
 
@@ -430,10 +432,8 @@ impl AxRunQueue {
         }
     }
 
-    /// Common reschedule subroutine,
-    ///
-    /// which tries to put target task into this run queue (except idle task)
-    /// with `Ready` state if its state matches `current_state`.
+    /// Puts target task into current run queue with `Ready` state
+    /// if its state matches `current_state` (except idle task).
     ///
     /// If `preempt`, keep current task's time slice, otherwise reset it.
     ///
