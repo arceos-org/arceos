@@ -197,6 +197,10 @@ impl<'a, T: ?Sized> Drop for MutexGuard<'a, T> {
     }
 }
 
+pub(crate) fn guard_lock<'a, T: ?Sized>(guard: &MutexGuard<'a, T>) -> &'a Mutex<T> {
+    &guard.lock
+}
+
 #[cfg(test)]
 mod tests {
     use crate::Mutex;
