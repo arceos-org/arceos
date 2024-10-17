@@ -42,7 +42,7 @@ static mut RUN_QUEUES: [MaybeUninit<&'static mut AxRunQueue>; axconfig::SMP] =
     [ARRAY_REPEAT_VALUE; axconfig::SMP];
 const ARRAY_REPEAT_VALUE: MaybeUninit<&'static mut AxRunQueue> = MaybeUninit::uninit();
 
-/// Returns a reference to the current run queue in `CurrentRunQueueRef`.
+/// Returns a reference to the current run queue in [`CurrentRunQueueRef`].
 ///
 /// ## Safety
 ///
@@ -53,7 +53,7 @@ const ARRAY_REPEAT_VALUE: MaybeUninit<&'static mut AxRunQueue> = MaybeUninit::un
 ///
 /// ## Returns
 ///
-/// `CurrentRunQueueRef`: a static reference to the current `AxRunQueue`.
+/// * [`CurrentRunQueueRef`] - a static reference to the current [`AxRunQueue`].
 #[inline(always)]
 pub(crate) fn current_run_queue<G: BaseGuard>() -> CurrentRunQueueRef<'static, G> {
     let irq_state = G::acquire();
@@ -135,7 +135,7 @@ fn get_run_queue(index: usize) -> &'static mut AxRunQueue {
 ///
 /// ## Returns
 ///
-/// `AxRunQueueRef`: a static reference to the selected `AxRunQueue` (current or remote).
+/// * [`AxRunQueueRef`] - a static reference to the selected [`AxRunQueue`] (current or remote).
 ///
 /// ## TODO
 ///
@@ -167,7 +167,7 @@ pub(crate) fn select_run_queue<G: BaseGuard>(task: &AxTaskRef) -> AxRunQueueRef<
     }
 }
 
-/// `AxRunQueue` represents a run queue for global system or a specific CPU.
+/// [`AxRunQueue`] represents a run queue for global system or a specific CPU.
 pub(crate) struct AxRunQueue {
     /// The ID of the CPU this run queue is associated with.
     cpu_id: usize,
@@ -180,10 +180,10 @@ pub(crate) struct AxRunQueue {
 /// A reference to the run queue with specific guard.
 ///
 /// Note:
-/// `AxRunQueueRef` is used to get a reference to the run queue on current CPU
+/// [`AxRunQueueRef`] is used to get a reference to the run queue on current CPU
 /// or a remote CPU, which is used to add tasks to the run queue or unblock tasks.
 /// If you want to perform scheduling operations on the current run queue,
-/// see `CurrentRunQueueRef`.
+/// see [`CurrentRunQueueRef`].
 pub(crate) struct AxRunQueueRef<'a, G: BaseGuard> {
     inner: &'a mut AxRunQueue,
     state: G::State,
@@ -199,7 +199,7 @@ impl<'a, G: BaseGuard> Drop for AxRunQueueRef<'a, G> {
 /// A reference to the current run queue with specific guard.
 ///
 /// Note:
-/// `CurrentRunQueueRef` is used to get a reference to the run queue on current CPU,
+/// [`CurrentRunQueueRef`] is used to get a reference to the run queue on current CPU,
 /// in which scheduling operations can be performed.
 pub(crate) struct CurrentRunQueueRef<'a, G: BaseGuard> {
     inner: &'a mut AxRunQueue,
@@ -252,8 +252,8 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
 impl<'a, G: BaseGuard> CurrentRunQueueRef<'a, G> {
     #[cfg(feature = "irq")]
     pub fn scheduler_timer_tick(&mut self) {
-        let curr = self.current_task.as_task_ref();
-        if !curr.is_idle() && self.inner.scheduler.lock().task_tick(curr) {
+        let curr = &self.current_task;
+        if !curr.is_idle() && self.inner.scheduler.lock().task_tick(curr.as_task_ref()) {
             #[cfg(feature = "preempt")]
             curr.set_preempt_pending(true);
         }
@@ -263,12 +263,12 @@ impl<'a, G: BaseGuard> CurrentRunQueueRef<'a, G> {
     /// This function will put the current task into this run queue with `Ready` state,
     /// and reschedule to the next task on this run queue.
     pub fn yield_current(&mut self) {
-        let curr = self.current_task.as_task_ref();
+        let curr = &self.current_task;
         trace!("task yield: {}", curr.id_name());
         assert!(curr.is_running());
 
         self.inner
-            .put_task_with_state(curr, TaskState::Running, false);
+            .put_task_with_state(curr.as_task_ref(), TaskState::Running, false);
 
         self.inner.resched();
     }
@@ -301,7 +301,7 @@ impl<'a, G: BaseGuard> CurrentRunQueueRef<'a, G> {
     pub fn preempt_resched(&mut self) {
         // There is no need to disable IRQ and preemption here, because
         // they both have been disabled in `current_check_preempt_pending`.
-        let curr = self.current_task.as_task_ref();
+        let curr = &self.current_task;
         assert!(curr.is_running());
 
         // When we call `preempt_resched()`, both IRQs and preemption must
@@ -317,7 +317,7 @@ impl<'a, G: BaseGuard> CurrentRunQueueRef<'a, G> {
         );
         if can_preempt {
             self.inner
-                .put_task_with_state(curr, TaskState::Running, true);
+                .put_task_with_state(curr.as_task_ref(), TaskState::Running, true);
             self.inner.resched();
         } else {
             curr.set_preempt_pending(true);
@@ -327,7 +327,7 @@ impl<'a, G: BaseGuard> CurrentRunQueueRef<'a, G> {
     /// Exit the current task with the specified exit code.
     /// This function will never return.
     pub fn exit_current(&mut self, exit_code: i32) -> ! {
-        let curr = self.current_task.as_task_ref();
+        let curr = &self.current_task;
         debug!("task exit: {}, exit_code={}", curr.id_name(), exit_code);
         assert!(curr.is_running(), "task is not running: {:?}", curr.state());
         assert!(!curr.is_idle());
@@ -367,7 +367,7 @@ impl<'a, G: BaseGuard> CurrentRunQueueRef<'a, G> {
     ///     3. The caller must ensure that the current task is not the idle task.
     ///     4. The lock of the wait queue will be released explicitly after current task is pushed into it.
     pub fn blocked_resched(&mut self, mut wq_guard: WaitQueueGuard) {
-        let curr = self.current_task.as_task_ref();
+        let curr = &self.current_task;
         assert!(curr.is_running());
         assert!(!curr.is_idle());
         // we must not block current task with preemption disabled.
@@ -395,7 +395,7 @@ impl<'a, G: BaseGuard> CurrentRunQueueRef<'a, G> {
 
     #[cfg(feature = "irq")]
     pub fn sleep_until(&mut self, deadline: axhal::time::TimeValue) {
-        let curr = self.current_task.as_task_ref();
+        let curr = &self.current_task;
         debug!("task sleep: {}, deadline={:?}", curr.id_name(), deadline);
         assert!(curr.is_running());
         assert!(!curr.is_idle());

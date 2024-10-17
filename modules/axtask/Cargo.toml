@@ -47,8 +47,8 @@ memory_addr = { version = "0.3", optional = true }
 timer_list = { version = "0.1", optional = true }
 kernel_guard = { version = "0.1", optional = true }
 crate_interface = { version = "0.1", optional = true }
+cpumask = { version = "0.1", optional = true }
 scheduler = { git = "https://github.com/arceos-org/scheduler.git", tag = "v0.1.0", optional = true }
-cpumask = { git = "https://github.com/arceos-org/cpumask.git", optional = true }
 
 [dev-dependencies]
 rand = "0.8"

@@ -700,7 +700,8 @@ checksum = "7f8f80099a98041a3d1622845c271458a2d73e688351bf3cb999266764b81d48"
 [[package]]
 name = "cpumask"
 version = "0.1.0"
-source = "git+https://github.com/arceos-org/cpumask.git#5b61f0136d140a529ba2ab609e47beb41dc4f1c4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fe4266f1bd910c087ff8c7848882217b2b079742877b21d29614c11c16087d70"
 dependencies = [
  "bitmaps",
 ]
