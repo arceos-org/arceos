@@ -1,26 +1,74 @@
 name: Test CI
 
-on: [push, pull_request]
+on: 
+  push:
+  pull_request:
+  workflow_call:
+    inputs:
+      TopTestDirectory:
+        description: 'The directory where the main repository will be placed'
+        required: false
+        default: '.tmp-test'
+        type: string
+      CallerPackage:
+        description: 'The package that triggers the workflow'
+        required: true
+        type: string
+      TopBranch:
+        description: 'The branch of the main repository'
+        required: false
+        default: 'main'
+        type: string
 
 env:
   qemu-version: 8.2.0
   rust-toolchain: nightly-2024-05-02
   arceos-apps: '68054e8'
+  prj-repo: "arceos-org/arceos"
 
 jobs:
-  unit-test:
+  pre_external_test:
     runs-on: ubuntu-latest
+    steps:
+      - id: set-directory
+        run: echo "TopTestDirectory=${{ inputs.CallerPackage == '' && '.' || inputs.TopTestDirectory }}" >> $GITHUB_OUTPUT
+    outputs:
+      WORKING_DIRECTORY: ${{ steps.set-directory.outputs.TopTestDirectory }} 
+
+  unit-test:
+    needs: pre_external_test
+    runs-on: ubuntu-latest
+    env:
+      WORKING_DIRECTORY: ${{ needs.pre_external_test.outputs.WORKING_DIRECTORY }}
     steps:
     - uses: actions/checkout@v4
     - uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: ${{ env.rust-toolchain }}
         components: rust-src
+    - uses: actions/checkout@v4
+      if: inputs.CallerPackage != ''
+      with:
+        repository: ${{ env.prj-repo }}
+        ref: ${{ inputs.TopBranch }}
+        path: ${{ env.WORKING_DIRECTORY }}
+    - name: Patch for the commit to be tested
+      if: inputs.CallerPackage != ''
+      run: |
+        cargo install dependencies-patch
+        dependencies-patch -c . \
+          -n ${{ inputs.CallerPackage }} \
+          -t git --git-repo ${{ github.repository }} \
+          --commit ${{ github.sha }}
     - name: Run unit tests
+      working-directory: ${{ env.WORKING_DIRECTORY }}
       run: make unittest_no_fail_fast
 
   app-test:
+    needs: pre_external_test
     runs-on: ${{ matrix.os }}
+    env:
+      WORKING_DIRECTORY: ${{ needs.pre_external_test.outputs.WORKING_DIRECTORY }}
     strategy:
       fail-fast: false
       matrix:
@@ -40,7 +88,22 @@ jobs:
     - uses: ./.github/workflows/actions/setup-musl
       with:
         arch: ${{ matrix.arch }}
+    - uses: actions/checkout@v4
+      if: inputs.CallerPackage != ''
+      with:
+        repository: ${{ env.prj-repo }}
+        ref: ${{ inputs.TopBranch }}
+        path: ${{ env.WORKING_DIRECTORY }}
+    - name: Patch for the commit to be tested
+      if: inputs.CallerPackage != ''
+      run: |
+        cargo install dependencies-patch
+        dependencies-patch -c . \
+          -n ${{ inputs.CallerPackage }} \
+          -t git --git-repo ${{ github.repository }} \
+          --commit ${{ github.sha }}
     - name: Run app tests
+      working-directory: ${{ env.WORKING_DIRECTORY }}
       run: |
         make disk_img
         git clone https://github.com/arceos-org/arceos-apps.git

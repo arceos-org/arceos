@@ -1,9 +1,39 @@
 name: Build CI
 
-on: [push, pull_request]
+on: 
+  push:
+  pull_request:
+  workflow_call:
+    inputs:
+      TopTestDirectory:
+        description: 'The directory where the main repository will be placed'
+        required: false
+        default: '.tmp-test'
+        type: string
+      CallerPackage:
+        description: 'The package that triggers the workflow'
+        required: true
+        type: string
+      TopBranch:
+        description: 'The branch of the main repository'
+        required: false
+        default: 'main'
+        type: string
+
+env:
+  prj-repo: "arceos-org/arceos"
 
 jobs:
+  pre_external_test:
+    runs-on: ubuntu-latest
+    steps:
+      - id: set-directory
+        run: echo "TopTestDirectory=${{ inputs.CallerPackage == '' && '.' || inputs.TopTestDirectory }}" >> $GITHUB_OUTPUT
+    outputs:
+      WORKING_DIRECTORY: ${{ steps.set-directory.outputs.TopTestDirectory }} 
+
   clippy:
+    needs: pre_external_test
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -11,6 +41,11 @@ jobs:
         rust-toolchain: [nightly, nightly-2024-05-02]
     env:
       RUSTUP_TOOLCHAIN: ${{ matrix.rust-toolchain }}
+      WORKING_DIRECTORY: ${{ needs.pre_external_test.outputs.WORKING_DIRECTORY }}
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+
     steps:
     - uses: actions/checkout@v4
     - uses: dtolnay/rust-toolchain@stable
@@ -18,6 +53,20 @@ jobs:
         toolchain: ${{ matrix.rust-toolchain }}
         components: rust-src, clippy, rustfmt
         targets: x86_64-unknown-none, riscv64gc-unknown-none-elf, aarch64-unknown-none, aarch64-unknown-none-softfloat
+    - uses: actions/checkout@v4
+      if: inputs.CallerPackage != ''
+      with:
+        repository: ${{ env.prj-repo }}
+        ref: ${{ inputs.TopBranch }}
+        path: ${{ env.WORKING_DIRECTORY }}
+    - name: Patch for the commit to be tested
+      if: inputs.CallerPackage != ''
+      run: |
+        cargo install dependencies-patch
+        dependencies-patch -c . \
+          -n ${{ inputs.CallerPackage }} \
+          -t git --git-repo ${{ github.repository }} \
+          --commit ${{ github.sha }}
     - name: Check rust version
       run: rustc --version --verbose
     - name: Clippy for the default target
@@ -37,6 +86,7 @@ jobs:
       run: cargo fmt --all -- --check
 
   build:
+    needs: pre_external_test
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -46,6 +96,11 @@ jobs:
         rust-toolchain: [nightly, nightly-2024-05-02]
     env:
       RUSTUP_TOOLCHAIN: ${{ matrix.rust-toolchain }}
+      WORKING_DIRECTORY: ${{ needs.pre_external_test.outputs.WORKING_DIRECTORY }}
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+
     steps:
     - uses: actions/checkout@v4
     - uses: dtolnay/rust-toolchain@stable
@@ -55,6 +110,20 @@ jobs:
         targets: x86_64-unknown-none, riscv64gc-unknown-none-elf, aarch64-unknown-none, aarch64-unknown-none-softfloat
     - uses: Swatinem/rust-cache@v2
     - run: cargo install cargo-binutils
+    - uses: actions/checkout@v4
+      if: inputs.CallerPackage != ''
+      with:
+        repository: ${{ env.prj-repo }}
+        ref: ${{ inputs.TopBranch }}
+        path: ${{ env.WORKING_DIRECTORY }}
+    - name: Patch for the commit to be tested
+      if: inputs.CallerPackage != ''
+      run: |
+        cargo install dependencies-patch
+        dependencies-patch -c . \
+          -n ${{ inputs.CallerPackage }} \
+          -t git --git-repo ${{ github.repository }} \
+          --commit ${{ github.sha }}
     - name: Build helloworld
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=examples/helloworld
