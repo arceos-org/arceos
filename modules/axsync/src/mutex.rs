@@ -249,4 +249,22 @@ mod tests {
         assert_eq!(*M.lock(), NUM_ITERS * NUM_TASKS * 3);
         println!("Mutex test OK");
     }
+
+    fn assert_mem_content<T>(val: &T, content: &[usize]) {
+        let val_ptr = val as *const T as *const usize;
+        let size = core::mem::size_of::<T>() / core::mem::size_of::<usize>();
+        assert_eq!(size, content.len());
+        let usize_slice = unsafe { core::slice::from_raw_parts(val_ptr, size) };
+        for (i, chunk) in usize_slice.iter().enumerate() {
+            assert_eq!(*chunk, content[i]);
+        }
+    }
+
+    #[test]
+    fn mutex_test_for_posix() {
+        // Test mutex size is equal api/arceos_posix_api/build.rs
+        let mutex_tuple = axsync::Mutex::new(());
+        let content: [usize; 2] = [0, 0];
+        assert_mem_content(&mutex_tuple, &content);
+    }
 }
