@@ -80,14 +80,6 @@ jobs:
       with:
         toolchain: ${{ env.rust-toolchain }}
         components: rust-src
-    - uses: Swatinem/rust-cache@v2
-    - run: cargo install cargo-binutils
-    - uses: ./.github/workflows/actions/setup-qemu
-      with:
-        qemu-version: ${{ env.qemu-version }}
-    - uses: ./.github/workflows/actions/setup-musl
-      with:
-        arch: ${{ matrix.arch }}
     - uses: actions/checkout@v4
       if: inputs.CallerPackage != ''
       with:
@@ -102,6 +94,14 @@ jobs:
           -n ${{ inputs.CallerPackage }} \
           -t git --git-repo ${{ github.repository }} \
           --commit ${{ github.sha }}
+    - uses: Swatinem/rust-cache@v2
+    - run: cargo install cargo-binutils
+    - uses: ./.github/workflows/actions/setup-qemu
+      with:
+        qemu-version: ${{ env.qemu-version }}
+    - uses: ./.github/workflows/actions/setup-musl
+      with:
+        arch: ${{ matrix.arch }}
     - name: Run app tests
       working-directory: ${{ env.WORKING_DIRECTORY }}
       run: |
