@@ -11,7 +11,7 @@ repository = "https://github.com/arceos-org/arceos/tree/main/modules/axdma"
 documentation = "https://arceos-org.github.io/arceos/axdma/index.html"
 
 [dependencies]
-log = "0.4.21"
+log = "=0.4.21"
 kspin = "0.1"
 memory_addr = "0.3"
 axerrno = "0.1"

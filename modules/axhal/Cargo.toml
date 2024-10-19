@@ -20,7 +20,7 @@ rtc = ["x86_rtc", "riscv_goldfish", "arm_pl031"]
 default = []
 
 [dependencies]
-log = "0.4.21"
+log = "=0.4.21"
 cfg-if = "1.0"
 linkme = "0.3"
 bitflags = "2.6"
