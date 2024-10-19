@@ -25,21 +25,10 @@ jobs:
   unit-test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-      if: inputs.package == ''
-    - uses: actions/checkout@v4
-      if: inputs.package != ''
+    - uses: ./actions/checkout
       with:
-        repository: ${{ env.prj-repo }}
-        ref: ${{ inputs.ref }}
-    - name: Patch for the commit to be tested
-      if: inputs.package != ''
-      run: |
-        cargo install dependencies-patch
-        dependencies-patch -c . \
-          -n ${{ inputs.package }} \
-          -t git --git-repo ${{ github.repository }} \
-          --commit ${{ github.sha }}
+        caller-package: ${{ inputs.package }}
+        main-repo: ${{ env.prj-repo }}
     - uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: ${{ env.rust-toolchain }}
@@ -55,21 +44,10 @@ jobs:
         os: [ubuntu-latest]
         arch: [x86_64, riscv64, aarch64]
     steps:
-    - uses: actions/checkout@v4
-      if: inputs.package == ''
-    - uses: actions/checkout@v4
-      if: inputs.package != ''
+    - uses: ./actions/checkout
       with:
-        repository: ${{ env.prj-repo }}
-        ref: ${{ inputs.ref }}
-    - name: Patch for the commit to be tested
-      if: inputs.package != ''
-      run: |
-        cargo install dependencies-patch
-        dependencies-patch -c . \
-          -n ${{ inputs.package }} \
-          -t git --git-repo ${{ github.repository }} \
-          --commit ${{ github.sha }}
+        caller-package: ${{ inputs.package }}
+        main-repo: ${{ env.prj-repo }}
     - uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: ${{ env.rust-toolchain }}

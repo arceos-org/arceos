@@ -1,0 +1,30 @@
+name: Checkout repo and patch dependencies
+
+inputs:
+  caller-package:
+    description: 'The package that triggers the external test'
+    required: true
+    type: string
+  main-repo:
+    description: 'The main repository that runs the test'
+    required: true
+    type: string
+
+runs:
+  using: "composite"
+  steps:
+  - uses: actions/checkout@v4
+    if: inputs.caller-package == ''
+  - uses: actions/checkout@v4
+    if: inputs.caller-package != ''
+    with:
+      repository: ${{ inputs.main-repo }}
+      ref: ${{ github.sha }}
+  - name: Patch for the commit to be tested
+    if: inputs.caller-package != ''
+    run: |
+      cargo install dependencies-patch
+      dependencies-patch -c . \
+        -n ${{ inputs.caller-package }} \
+        -t git --git-repo ${{ github.repository }} \
+        --commit ${{ github.sha }}
