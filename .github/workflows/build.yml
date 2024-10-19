@@ -5,11 +5,11 @@ on:
   pull_request:
   workflow_call:
     inputs:
-      CallerPackage:
+      package:
         description: 'The package that triggers the workflow'
         required: true
         type: string
-      TopBranch:
+      ref:
         description: 'The branch of the main repository'
         required: false
         default: 'main'
@@ -29,18 +29,18 @@ jobs:
       RUSTUP_TOOLCHAIN: ${{ matrix.rust-toolchain }}
     steps:
     - uses: actions/checkout@v4
-      if: inputs.CallerPackage == ''
+      if: inputs.package == ''
     - uses: actions/checkout@v4
-      if: inputs.CallerPackage != ''
+      if: inputs.package != ''
       with:
         repository: ${{ env.prj-repo }}
-        ref: ${{ inputs.TopBranch }}
+        ref: ${{ inputs.ref }}
     - name: Patch for the commit to be tested
-      if: inputs.CallerPackage != ''
+      if: inputs.package != ''
       run: |
         cargo install dependencies-patch
         dependencies-patch -c . \
-          -n ${{ inputs.CallerPackage }} \
+          -n ${{ inputs.package }} \
           -t git --git-repo ${{ github.repository }} \
           --commit ${{ github.sha }}
     - uses: dtolnay/rust-toolchain@stable
@@ -78,18 +78,18 @@ jobs:
       RUSTUP_TOOLCHAIN: ${{ matrix.rust-toolchain }}
     steps:
     - uses: actions/checkout@v4
-      if: inputs.CallerPackage == ''
+      if: inputs.package == ''
     - uses: actions/checkout@v4
-      if: inputs.CallerPackage != ''
+      if: inputs.package != ''
       with:
         repository: ${{ env.prj-repo }}
-        ref: ${{ inputs.TopBranch }}
+        ref: ${{ inputs.ref }}
     - name: Patch for the commit to be tested
-      if: inputs.CallerPackage != ''
+      if: inputs.package != ''
       run: |
         cargo install dependencies-patch
         dependencies-patch -c . \
-          -n ${{ inputs.CallerPackage }} \
+          -n ${{ inputs.package }} \
           -t git --git-repo ${{ github.repository }} \
           --commit ${{ github.sha }}
     - uses: dtolnay/rust-toolchain@stable
