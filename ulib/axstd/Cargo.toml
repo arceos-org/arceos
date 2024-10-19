@@ -66,6 +66,9 @@ driver-ramdisk = ["axfeat/driver-ramdisk"]
 driver-ixgbe = ["axfeat/driver-ixgbe"]
 driver-bcm2835-sdhci = ["axfeat/driver-bcm2835-sdhci"]
 
+# Hypervisor support
+hv = ["axfeat/hv"]
+
 # Logging
 log-level-off = ["axfeat/log-level-off"]
 log-level-error = ["axfeat/log-level-error"]

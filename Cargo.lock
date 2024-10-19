@@ -175,9 +175,9 @@ dependencies = [
 [[package]]
 name = "arm_gicv2"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "47d25e73c949c69f75d1b9dba39c5475523403b31eb8c2fdc99da4dc33bc1aca"
+source = "git+https://github.com/arceos-hypervisor/arm_gicv2?rev=7acc0dd#7acc0dd1e1fefa90b4cd45342072d2350a74b071"
 dependencies = [
+ "crate_interface",
  "tock-registers",
 ]
 
@@ -446,6 +446,8 @@ dependencies = [
  "axlog",
  "bitflags 2.6.0",
  "cfg-if",
+ "cortex-a",
+ "crate_interface",
  "dw_apb_uart",
  "handler_table",
  "int_ratio",
@@ -813,6 +815,15 @@ name = "core_detect"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f8f80099a98041a3d1622845c271458a2d73e688351bf3cb999266764b81d48"
+
+[[package]]
+name = "cortex-a"
+version = "8.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8256fd5103e10027467cc7a97c9ff27fcc4547ea24864da0aff2e7aef6e18e28"
+dependencies = [
+ "tock-registers",
+]
 
 [[package]]
 name = "cpumask"
