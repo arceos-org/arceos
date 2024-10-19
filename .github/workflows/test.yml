@@ -1,17 +1,45 @@
 name: Test CI
 
-on: [push, pull_request]
+on: 
+  push:
+  pull_request:
+  workflow_call:
+    inputs:
+      CallerPackage:
+        description: 'The package that triggers the workflow'
+        required: true
+        type: string
+      TopBranch:
+        description: 'The branch of the main repository'
+        required: false
+        default: 'main'
+        type: string
 
 env:
   qemu-version: 8.2.0
   rust-toolchain: nightly-2024-05-02
   arceos-apps: 'da1caa5'
+  prj-repo: "arceos-org/arceos"
 
 jobs:
   unit-test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      if: inputs.CallerPackage == ''
+    - uses: actions/checkout@v4
+      if: inputs.CallerPackage != ''
+      with:
+        repository: ${{ env.prj-repo }}
+        ref: ${{ inputs.TopBranch }}
+    - name: Patch for the commit to be tested
+      if: inputs.CallerPackage != ''
+      run: |
+        cargo install dependencies-patch
+        dependencies-patch -c . \
+          -n ${{ inputs.CallerPackage }} \
+          -t git --git-repo ${{ github.repository }} \
+          --commit ${{ github.sha }}
     - uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: ${{ env.rust-toolchain }}
@@ -28,6 +56,20 @@ jobs:
         arch: [x86_64, riscv64, aarch64]
     steps:
     - uses: actions/checkout@v4
+      if: inputs.CallerPackage == ''
+    - uses: actions/checkout@v4
+      if: inputs.CallerPackage != ''
+      with:
+        repository: ${{ env.prj-repo }}
+        ref: ${{ inputs.TopBranch }}
+    - name: Patch for the commit to be tested
+      if: inputs.CallerPackage != ''
+      run: |
+        cargo install dependencies-patch
+        dependencies-patch -c . \
+          -n ${{ inputs.CallerPackage }} \
+          -t git --git-repo ${{ github.repository }} \
+          --commit ${{ github.sha }}
     - uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: ${{ env.rust-toolchain }}

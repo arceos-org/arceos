@@ -1,6 +1,22 @@
 name: Build CI
 
-on: [push, pull_request]
+on: 
+  push:
+  pull_request:
+  workflow_call:
+    inputs:
+      CallerPackage:
+        description: 'The package that triggers the workflow'
+        required: true
+        type: string
+      TopBranch:
+        description: 'The branch of the main repository'
+        required: false
+        default: 'main'
+        type: string
+
+env:
+  prj-repo: "arceos-org/arceos"
 
 jobs:
   clippy:
@@ -13,6 +29,20 @@ jobs:
       RUSTUP_TOOLCHAIN: ${{ matrix.rust-toolchain }}
     steps:
     - uses: actions/checkout@v4
+      if: inputs.CallerPackage == ''
+    - uses: actions/checkout@v4
+      if: inputs.CallerPackage != ''
+      with:
+        repository: ${{ env.prj-repo }}
+        ref: ${{ inputs.TopBranch }}
+    - name: Patch for the commit to be tested
+      if: inputs.CallerPackage != ''
+      run: |
+        cargo install dependencies-patch
+        dependencies-patch -c . \
+          -n ${{ inputs.CallerPackage }} \
+          -t git --git-repo ${{ github.repository }} \
+          --commit ${{ github.sha }}
     - uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: ${{ matrix.rust-toolchain }}
@@ -48,6 +78,20 @@ jobs:
       RUSTUP_TOOLCHAIN: ${{ matrix.rust-toolchain }}
     steps:
     - uses: actions/checkout@v4
+      if: inputs.CallerPackage == ''
+    - uses: actions/checkout@v4
+      if: inputs.CallerPackage != ''
+      with:
+        repository: ${{ env.prj-repo }}
+        ref: ${{ inputs.TopBranch }}
+    - name: Patch for the commit to be tested
+      if: inputs.CallerPackage != ''
+      run: |
+        cargo install dependencies-patch
+        dependencies-patch -c . \
+          -n ${{ inputs.CallerPackage }} \
+          -t git --git-repo ${{ github.repository }} \
+          --commit ${{ github.sha }}
     - uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: ${{ matrix.rust-toolchain }}
