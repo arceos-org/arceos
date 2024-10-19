@@ -35,14 +35,9 @@ jobs:
       with:
         repository: ${{ env.prj-repo }}
         ref: ${{ inputs.ref }}
-    - name: Patch for the commit to be tested
-      if: inputs.package != ''
-      run: |
-        cargo install dependencies-patch
-        dependencies-patch -c . \
-          -n ${{ inputs.package }} \
-          -t git --git-repo ${{ github.repository }} \
-          --commit ${{ github.sha }}
+    - uses: ./.github/workflows/actions/ext-patch
+      with:
+        package: ${{ inputs.package }}
     - uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: ${{ matrix.rust-toolchain }}
@@ -84,14 +79,9 @@ jobs:
       with:
         repository: ${{ env.prj-repo }}
         ref: ${{ inputs.ref }}
-    - name: Patch for the commit to be tested
-      if: inputs.package != ''
-      run: |
-        cargo install dependencies-patch
-        dependencies-patch -c . \
-          -n ${{ inputs.package }} \
-          -t git --git-repo ${{ github.repository }} \
-          --commit ${{ github.sha }}
+    - uses: ./.github/workflows/actions/ext-patch
+      with:
+        package: ${{ inputs.package }}
     - uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: ${{ matrix.rust-toolchain }}

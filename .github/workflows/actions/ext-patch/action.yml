@@ -1,0 +1,22 @@
+name: Checkout repo and patch dependencies
+
+inputs:
+  package:
+    description: 'The package that triggers the external test'
+    required: true
+    type: string
+
+runs:
+  using: "composite"
+  steps:
+  - name: Install patch tool
+    if: inputs.package != ''
+    shell: bash
+    run: cargo install dependencies-patch
+  - name: Patch for the commit to be tested
+    if: inputs.package != ''
+    shell: bash
+    run: dependencies-patch -c .
+        -n ${{ inputs.package }} 
+        -t git --git-repo ${{ github.repository }}
+        --commit ${{ github.sha }}
