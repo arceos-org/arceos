@@ -21,7 +21,7 @@ default = []
 
 [dependencies]
 cfg-if = "1.0"
-log = "0.4.21"
+log = "=0.4.21"
 kspin = "0.1"
 crate_interface = "0.1"
 chrono = { version = "0.4", optional = true }
