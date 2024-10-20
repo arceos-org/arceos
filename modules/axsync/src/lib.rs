@@ -16,13 +16,25 @@
 
 pub use kspin as spin;
 
-#[cfg(feature = "multitask")]
-mod mutex;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "multitask")] {
+        mod mutex;
+        #[doc(cfg(feature = "multitask"))]
+        pub use self::mutex::{Mutex, MutexGuard};
+    } else {
+        #[doc(cfg(not(feature = "multitask")))]
+        pub use kspin::{SpinNoIrq as Mutex, SpinNoIrqGuard as MutexGuard};
+    }
+}
 
-#[cfg(feature = "multitask")]
-#[doc(cfg(feature = "multitask"))]
-pub use self::mutex::{Mutex, MutexGuard};
+mod barrier;
+mod condvar;
+mod rwlock;
+mod semaphore;
 
-#[cfg(not(feature = "multitask"))]
-#[doc(cfg(not(feature = "multitask")))]
-pub use kspin::{SpinNoIrq as Mutex, SpinNoIrqGuard as MutexGuard};
+pub use self::barrier::{Barrier, BarrierWaitResult};
+pub use self::condvar::Condvar;
+pub use self::rwlock::{
+    MappedRwLockReadGuard, MappedRwLockWriteGuard, RwLock, RwLockReadGuard, RwLockWriteGuard,
+};
+pub use semaphore::Semaphore;
