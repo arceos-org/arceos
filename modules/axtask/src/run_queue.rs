@@ -10,7 +10,6 @@ use scheduler::BaseScheduler;
 use axhal::cpu::this_cpu_id;
 
 use crate::task::{CurrentTask, TaskState};
-use crate::wait_queue::WaitQueueGuard;
 use crate::{AxCpuMask, AxTaskRef, Scheduler, TaskInner, WaitQueue};
 
 macro_rules! percpu_static {
@@ -260,6 +259,19 @@ impl<'a, G: BaseGuard> CurrentRunQueueRef<'a, G> {
         }
     }
 
+    /// Reschedule current task.
+    ///
+    /// Once current is running, need to put RQ again.
+    pub fn reschedule(&mut self) {
+        let curr = &self.current_task;
+        if curr.is_running() {
+            self.inner
+                .put_task_with_state(curr.clone(), TaskState::Running, false);
+        }
+
+        self.inner.resched();
+    }
+
     /// Yield the current task and reschedule.
     /// This function will put the current task into this run queue with `Ready` state,
     /// and reschedule to the next task on this run queue.
@@ -267,11 +279,7 @@ impl<'a, G: BaseGuard> CurrentRunQueueRef<'a, G> {
         let curr = &self.current_task;
         trace!("task yield: {}", curr.id_name());
         assert!(curr.is_running());
-
-        self.inner
-            .put_task_with_state(curr.clone(), TaskState::Running, false);
-
-        self.inner.resched();
+        self.reschedule();
     }
 
     /// Migrate the current task to a new run queue matching its CPU affinity and reschedule.
@@ -358,40 +366,6 @@ impl<'a, G: BaseGuard> CurrentRunQueueRef<'a, G> {
             self.inner.resched();
         }
         unreachable!("task exited!");
-    }
-
-    /// Block the current task, put current task into the wait queue and reschedule.
-    /// Mark the state of current task as `Blocked`, set the `in_wait_queue` flag as true.
-    /// Note:
-    ///     1. The caller must hold the lock of the wait queue.
-    ///     2. The caller must ensure that the current task is in the running state.
-    ///     3. The caller must ensure that the current task is not the idle task.
-    ///     4. The lock of the wait queue will be released explicitly after current task is pushed into it.
-    pub fn blocked_resched(&mut self, mut wq_guard: WaitQueueGuard) {
-        let curr = &self.current_task;
-        assert!(curr.is_running());
-        assert!(!curr.is_idle());
-        // we must not block current task with preemption disabled.
-        // Current expected preempt count is 2.
-        // 1 for `NoPreemptIrqSave`, 1 for wait queue's `SpinNoIrq`.
-        #[cfg(feature = "preempt")]
-        assert!(curr.can_preempt(2));
-
-        // Mark the task as blocked, this has to be done before adding it to the wait queue
-        // while holding the lock of the wait queue.
-        curr.set_state(TaskState::Blocked);
-        curr.set_in_wait_queue(true);
-
-        wq_guard.push_back(curr.clone());
-        // Drop the lock of wait queue explictly.
-        drop(wq_guard);
-
-        // Current task's state has been changed to `Blocked` and added to the wait queue.
-        // Note that the state may have been set as `Ready` in `unblock_task()`,
-        // see `unblock_task()` for details.
-
-        debug!("task block: {}", curr.id_name());
-        self.inner.resched();
     }
 
     #[cfg(feature = "irq")]
