@@ -3,6 +3,7 @@ use std::path::Path;
 
 const BUILTIN_PLATFORMS: &[&str] = &[
     "aarch64-bsta1000b",
+    "aarch64-phytium-pi",
     "aarch64-qemu-virt",
     "aarch64-raspi4",
     "riscv64-qemu-virt",
@@ -12,6 +13,7 @@ const BUILTIN_PLATFORMS: &[&str] = &[
 
 const BUILTIN_PLATFORM_FAMILIES: &[&str] = &[
     "aarch64-bsta1000b",
+    "aarch64-phytium-pi",
     "aarch64-qemu-virt",
     "aarch64-raspi",
     "riscv64-qemu-virt",
