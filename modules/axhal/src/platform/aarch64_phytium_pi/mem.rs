@@ -28,7 +28,6 @@ fn __nocache_regions() -> impl Iterator<Item = MemRegion> {
     })
 }
 
-
 /// Returns platform-specific memory regions.
 pub(crate) fn platform_regions() -> impl Iterator<Item = MemRegion> {
     core::iter::once(MemRegion {
