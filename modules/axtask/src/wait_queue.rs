@@ -2,19 +2,21 @@ use alloc::sync::Arc;
 
 use kernel_guard::{NoOp, NoPreemptIrqSave};
 use kspin::{SpinNoIrq, SpinNoIrqGuard};
-use linked_list::{def_node, List};
+use linked_list_r4l::{def_node, List};
 
 use crate::{current_run_queue, select_run_queue, AxTaskRef};
 
 #[cfg(feature = "irq")]
 use crate::CurrentTask;
 
-def_node!(WaitTaskNode, AxTaskRef);
+def_node! {
+    pub(crate) struct WaitTaskNode(AxTaskRef);
+}
 
-macro_rules! declare_current_waiter {
-    ($name: ident) => {
-        let $name = Arc::new(WaitTaskNode::new($crate::current().clone()));
-    };
+impl WaitTaskNode {
+    fn from_current() -> Self {
+        WaitTaskNode::new(crate::current().clone())
+    }
 }
 
 type Node = Arc<WaitTaskNode>;
@@ -57,19 +59,22 @@ impl WaitQueue {
 
     /// Cancel events by removing the task from the wait list.
     /// If `from_timer_list` is true, try to remove the task from the timer list.
-    fn cancel_events(&self, waiter: &Node, _from_timer_list: bool) {
+    fn cancel_events(&self, waiter: Node, _from_timer_list: bool) {
         // SAFETY:
         // Waiter is only  defined in the local function scope,
         // therefore, it is not possible in other List.
         unsafe {
-            self.list.lock().remove(waiter);
+            self.list.lock().remove(&waiter);
         }
 
         // Try to cancel a timer event from timer lists.
         // Just mark task's current timer ticket ID as expired.
         #[cfg(feature = "irq")]
         if _from_timer_list {
-            waiter.inner().timer_ticket_expired();
+            Arc::<WaitTaskNode>::into_inner(waiter)
+                .expect("into_inner")
+                .into_inner()
+                .timer_ticket_expired();
             // Note:
             //  this task is still not removed from timer list of target CPU,
             //  which may cause some redundant timer events because it still needs to
@@ -81,9 +86,9 @@ impl WaitQueue {
     /// Blocks the current task and put it into the wait list, until other task
     /// notifies it.
     pub fn wait(&self) {
-        declare_current_waiter!(waiter);
+        let waiter = Arc::new(WaitTaskNode::from_current());
         current_run_queue::<NoPreemptIrqSave>().blocked_resched(self.list.lock(), waiter.clone());
-        self.cancel_events(&waiter, false);
+        self.cancel_events(waiter, false);
     }
 
     /// Blocks the current task and put it into the wait list, until the given
@@ -95,7 +100,7 @@ impl WaitQueue {
     where
         F: Fn() -> bool,
     {
-        declare_current_waiter!(waiter);
+        let waiter = Arc::new(WaitTaskNode::from_current());
         loop {
             let mut rq = current_run_queue::<NoPreemptIrqSave>();
             let wq = self.list.lock();
@@ -106,14 +111,14 @@ impl WaitQueue {
             // Preemption may occur here.
         }
 
-        self.cancel_events(&waiter, false);
+        self.cancel_events(waiter, false);
     }
 
     /// Blocks the current task and put it into the wait list, until other tasks
     /// notify it, or the given duration has elapsed.
     #[cfg(feature = "irq")]
     pub fn wait_timeout(&self, dur: core::time::Duration) -> bool {
-        declare_current_waiter!(waiter);
+        let waiter = Arc::new(WaitTaskNode::from_current());
         let mut rq = current_run_queue::<NoPreemptIrqSave>();
         let curr = crate::current();
         let deadline = axhal::time::wall_time() + dur;
@@ -129,7 +134,7 @@ impl WaitQueue {
         let timeout = axhal::time::wall_time() >= deadline;
 
         // Always try to remove the task from the timer list.
-        self.cancel_events(&waiter, true);
+        self.cancel_events(waiter, true);
         timeout
     }
 
@@ -143,7 +148,7 @@ impl WaitQueue {
     where
         F: Fn() -> bool,
     {
-        declare_current_waiter!(waiter);
+        let waiter = Arc::new(WaitTaskNode::from_current());
         let curr = crate::current();
         let deadline = axhal::time::wall_time() + dur;
         debug!(
@@ -169,7 +174,7 @@ impl WaitQueue {
         }
 
         // Always try to remove the task from the timer list.
-        self.cancel_events(&waiter, true);
+        self.cancel_events(waiter, true);
         timeout
     }
 
