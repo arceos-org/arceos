@@ -57,7 +57,7 @@ impl WaitQueue {
         }
     }
 
-    /// Cancel events by removing the task from the wait list.
+    /// Cancel events by removing the task from the wait queue.
     /// If `from_timer_list` is true, try to remove the task from the timer list.
     fn cancel_events(&self, waiter: Node, _from_timer_list: bool) {
         // SAFETY:
@@ -83,7 +83,7 @@ impl WaitQueue {
         }
     }
 
-    /// Blocks the current task and put it into the wait list, until other task
+    /// Blocks the current task and put it into the wait queue, until other task
     /// notifies it.
     pub fn wait(&self) {
         let waiter = Arc::new(WaitTaskNode::from_current());
@@ -91,7 +91,7 @@ impl WaitQueue {
         self.cancel_events(waiter, false);
     }
 
-    /// Blocks the current task and put it into the wait list, until the given
+    /// Blocks the current task and put it into the wait queue, until the given
     /// `condition` becomes true.
     ///
     /// Note that even other tasks notify this task, it will not wake up until
@@ -114,7 +114,7 @@ impl WaitQueue {
         self.cancel_events(waiter, false);
     }
 
-    /// Blocks the current task and put it into the wait list, until other tasks
+    /// Blocks the current task and put it into the wait queue, until other tasks
     /// notify it, or the given duration has elapsed.
     #[cfg(feature = "irq")]
     pub fn wait_timeout(&self, dur: core::time::Duration) -> bool {
@@ -138,7 +138,7 @@ impl WaitQueue {
         timeout
     }
 
-    /// Blocks the current task and put it into the wait list, until the given
+    /// Blocks the current task and put it into the wait queue, until the given
     /// `condition` becomes true, or the given duration has elapsed.
     ///
     /// Note that even other tasks notify this task, it will not wake up until
@@ -178,7 +178,7 @@ impl WaitQueue {
         timeout
     }
 
-    /// Wakes up one task in the wait list, usually the first one.
+    /// Wakes up one task in the wait queue, usually the first one.
     ///
     /// If `resched` is true, the current task will be preempted when the
     /// preemption is enabled.
@@ -192,7 +192,7 @@ impl WaitQueue {
         }
     }
 
-    /// Wakes all tasks in the wait list.
+    /// Wakes all tasks in the wait queue.
     ///
     /// If `resched` is true, the current task will be preempted when the
     /// preemption is enabled.
@@ -202,7 +202,7 @@ impl WaitQueue {
         }
     }
 
-    /// Wake up the given task in the wait list.
+    /// Wake up the given task in the wait queue.
     ///
     /// If `resched` is true, the current task will be preempted when the
     /// preemption is enabled.
