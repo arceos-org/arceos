@@ -100,11 +100,46 @@ unsafe fn init_boot_page_table() {
     crate::platform::mem::init_boot_page_table(addr_of_mut!(BOOT_PT_L0), addr_of_mut!(BOOT_PT_L1));
 }
 
-/// The earliest entry point for the primary CPU.
+/// The Linux Header.
 #[naked]
 #[no_mangle]
 #[link_section = ".text.boot"]
 unsafe extern "C" fn _start() -> ! {
+    core::arch::asm!(
+        "
+    // code0/code1
+    nop
+    b _start_entry
+
+    // text_offset
+    .quad 0x80000
+
+    // image_size
+    .quad _kernel_size
+
+    // flags
+    .quad 0
+
+    // Reserved fields
+    .quad 0
+    .quad 0
+    .quad 0
+
+    // magic - yes 0x644d5241 is the same as ASCII string \"ARM\\x64\"
+    .ascii \"ARM\\x64\"
+
+    // Another reserved field at the end of the header
+    .byte 0, 0, 0, 0
+      ",
+        options(noreturn),
+    )
+}
+
+/// The earliest entry point for the primary CPU.
+#[naked]
+#[no_mangle]
+#[link_section = ".text.boot"]
+unsafe extern "C" fn _start_entry() -> ! {
     // PC = 0x8_0000
     // X0 = dtb
     core::arch::asm!("
