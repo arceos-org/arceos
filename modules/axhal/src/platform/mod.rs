@@ -25,6 +25,9 @@ cfg_if::cfg_if! {
     } else if #[cfg(all(target_arch = "aarch64", platform_family = "aarch64-phytium-pi"))] {
         mod aarch64_phytium_pi;
         pub use self::aarch64_phytium_pi::*;
+    } else if #[cfg(all(target_arch = "aarch64", platform_family = "aarch64-rk3588j"))] {
+        mod aarch64_rk3588j;
+        pub use self::aarch64_rk3588j::*;
     } else {
         mod dummy;
         pub use self::dummy::*;

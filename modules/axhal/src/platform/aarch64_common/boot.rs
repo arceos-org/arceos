@@ -276,6 +276,7 @@ unsafe extern "C" fn _start() -> ! {
     // PC = 0x8_0000
     // X0 = dtb
     core::arch::asm!("
+        mov     x20, x0                 // save DTB pointer
         // disable cache and MMU
         mrs x1, sctlr_el2
         bic x1, x1, #0xf
@@ -289,13 +290,12 @@ unsafe extern "C" fn _start() -> ! {
 
         mrs     x19, mpidr_el1
         and     x19, x19, #0xffffff     // get current CPU id
-        mov     x20, x0                 // save DTB pointer
 
         adrp    x8, {boot_stack}        // setup boot stack
         add     x8, x8, {boot_stack_size}
         mov     sp, x8
 
-        bl      {switch_to_el2}         // switch to EL1
+        bl      {switch_to_el2}         // switch to EL2
         bl      {enable_fp}             // enable fp/neon
         bl      {init_boot_page_table}
         bl      {init_mmu_el2}

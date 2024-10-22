@@ -1,0 +1,68 @@
+# Architecture identifier.
+arch = "aarch64"
+# Platform identifier.
+platform = "aarch64-rk3588j"
+# Platform family.
+family = "aarch64-rk3588j"
+
+# Base address of the whole physical memory.
+phys-memory-base = "0x20_0000"
+# Size of the whole physical memory.
+phys-memory-size = "0x800_0000"     # 128M
+# Base physical address of the kernel image.
+kernel-base-paddr = "0x48_0000"
+# Base virtual address of the kernel image.
+kernel-base-vaddr = "0x0000_0000_0048_0000"
+# Linear mapping offset, for quick conversions between physical and virtual
+# addresses.
+phys-virt-offset = "0xffff_0000_0000_0000"
+# Kernel address space base.
+kernel-aspace-base = "0xffff_0000_0000_0000"
+# Kernel address space size.
+kernel-aspace-size = "0x0000_ffff_ffff_f000"
+# MMIO regions with format (`base_paddr`, `size`).
+mmio-regions = [
+    # ["0x0900_0000", "0x1000"],      # PL011 UART
+    # ["0x0800_0000", "0x5_0000"],    # GICv2 with Virtualization (GICV@0x0803_0000, GICH@0x0804_0000)
+    # ["0x0a00_0000", "0x4000"],      # VirtIO
+    # ["0x1000_0000", "0x2eff_0000"],     # PCI memory ranges (ranges 1: 32-bit MMIO space)
+    # ["0x40_1000_0000", "0x1000_0000"],  # PCI config space
+    ["0xfeb50000", "0x1000"], # uart8250 UART0
+    ["0xfe600000", "0x10000"], # gic-v3 gicd
+    ["0xfe680000", "0x100000"], # gic-v3 gicr
+    ["0xa41000000", "0x400000"],
+    ["0xa40c00000", "0x400000"],
+    ["0xf4000000","0x1000000"],
+    ["0xf3000000","0x1000000"],
+]
+# VirtIO MMIO regions with format (`base_paddr`, `size`).
+virtio-mmio-regions = []
+
+# Base physical address of the PCIe ECAM space.
+pci-ecam-base = "0xf4000000"
+# End PCI bus number (`bus-range` property in device tree).
+pci-bus-end = "0xff"
+# PCI device memory ranges (`ranges` property in device tree).
+pci-ranges = []
+# UART Address
+uart-paddr = "0xfeb5_0000"
+uart-irq = "0x14d"
+
+# GICC Address
+gicd-paddr = "0xfe600000"
+# GICR Address
+gicc-paddr = "0xfe680000"
+gicr-paddr = "0xfe680000"
+
+# PSCI
+psci-method = "smc"
+
+# pl031@9010000 {
+#     clock-names = "apb_pclk";
+#     clocks = <0x8000>;
+#     interrupts = <0x00 0x02 0x04>;
+#     reg = <0x00 0x9010000 0x00 0x1000>;
+#     compatible = "arm,pl031\0arm,primecell";
+# };
+# RTC (PL031) Address
+# rtc-paddr = "0x901_0000"
