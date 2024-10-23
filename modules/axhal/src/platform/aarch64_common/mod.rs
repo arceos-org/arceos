@@ -1,4 +1,8 @@
+#[cfg(not(feature = "hv"))]
 mod boot;
+#[cfg(feature = "hv")]
+// Todo: maybe we can enter el2 in arm_vcpu?
+mod boot_el2;
 
 pub mod generic_timer;
 #[cfg(not(platform_family = "aarch64-raspi"))]
