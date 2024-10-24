@@ -465,6 +465,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "axns"
+version = "0.1.0"
+dependencies = [
+ "axns",
+ "crate_interface",
+ "lazyinit",
+ "log",
+]
+
+[[package]]
 name = "axruntime"
 version = "0.1.0"
 dependencies = [

@@ -19,6 +19,7 @@ documentation = "https://arceos-org.github.io/arceos/arceos_posix_api/index.html
 [features]
 default = []
 
+uspace = ["axns/thread-local"]
 smp = ["axfeat/smp"]
 irq = ["axfeat/irq"]
 alloc = ["dep:axalloc", "axfeat/alloc"]
@@ -42,6 +43,7 @@ axalloc = { workspace = true, optional = true }
 axtask = { workspace = true, optional = true }
 axfs = { workspace = true, optional = true }
 axnet = { workspace = true, optional = true }
+axns = { workspace = true }
 
 # Other crates
 axio = "0.1"

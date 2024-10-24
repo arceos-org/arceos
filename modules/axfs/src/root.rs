@@ -5,13 +5,18 @@
 use alloc::{string::String, sync::Arc, vec::Vec};
 use axerrno::{ax_err, AxError, AxResult};
 use axfs_vfs::{VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsNodeType, VfsOps, VfsResult};
+use axns::{def_resource, AxResource};
 use axsync::Mutex;
 use lazyinit::LazyInit;
 
 use crate::{api::FileType, fs, mounts};
 
-static CURRENT_DIR_PATH: Mutex<String> = Mutex::new(String::new());
-static CURRENT_DIR: LazyInit<Mutex<VfsNodeRef>> = LazyInit::new();
+def_resource! {
+    #[allow(non_camel_case_types)]
+    static CURRENT_DIR_PATH: AxResource<Mutex<String>> = AxResource::new();
+    #[allow(non_camel_case_types)]
+    static CURRENT_DIR: AxResource<Mutex<VfsNodeRef>> = AxResource::new();
+}
 
 struct MountPoint {
     path: &'static str,
@@ -180,8 +185,8 @@ pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
         .expect("fail to mount sysfs at /sys");
 
     ROOT_DIR.init_once(Arc::new(root_dir));
-    CURRENT_DIR.init_once(Mutex::new(ROOT_DIR.clone()));
-    *CURRENT_DIR_PATH.lock() = "/".into();
+    CURRENT_DIR.init_new(Mutex::new(ROOT_DIR.clone()));
+    CURRENT_DIR_PATH.init_new(Mutex::new("/".into()));
 }
 
 fn parent_node_of(dir: Option<&VfsNodeRef>, path: &str) -> VfsNodeRef {
