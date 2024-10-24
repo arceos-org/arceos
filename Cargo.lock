@@ -516,7 +516,7 @@ dependencies = [
  "kernel_guard",
  "kspin",
  "lazyinit",
- "linked_list_r4l",
+ "linked_list_r4l 0.2.0 (git+https://github.com/arceos-org/linked_list_r4l.git?branch=guoweikang/add_push_front)",
  "log",
  "memory_addr",
  "percpu",
@@ -985,6 +985,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e7d1f2ec8f8c25dfed956fe60d9069905c1350b0b17e893f3fe1d585fecadb3"
 
 [[package]]
+name = "linked_list_r4l"
+version = "0.2.0"
+source = "git+https://github.com/arceos-org/linked_list_r4l.git?branch=guoweikang/add_push_front#4a5e362563059e0f15bc7dc0cf6c25e636756e85"
+
+[[package]]
 name = "linkme"
 version = "0.3.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1328,7 +1333,7 @@ name = "scheduler"
 version = "0.2.0"
 source = "git+https://github.com/arceos-org/scheduler.git?tag=v0.2.0#076f3e18c24676cd9be63419b09a849fb1840a46"
 dependencies = [
- "linked_list_r4l",
+ "linked_list_r4l 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

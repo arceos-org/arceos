@@ -367,11 +367,7 @@ impl<'a, G: BaseGuard> CurrentRunQueueRef<'a, G> {
     ///     2. The caller must ensure that the current task is in the running state.
     ///     3. The caller must ensure that the current task is not the idle task.
     ///     4. The lock of the wait queue will be released explicitly after current task is pushed into it.
-    pub fn blocked_resched(
-        &mut self,
-        mut wq_guard: WaitQueueGuard,
-        curr_waiter: Arc<WaitTaskNode>,
-    ) {
+    pub fn blocked_resched(&mut self, mut wq_guard: WaitQueueGuard, curr_waiter: &WaitTaskNode) {
         let curr = &self.current_task;
         assert!(curr.is_running());
         assert!(!curr.is_idle());
@@ -384,7 +380,11 @@ impl<'a, G: BaseGuard> CurrentRunQueueRef<'a, G> {
         // Mark the task as blocked, this has to be done before adding it to the wait queue
         // while holding the lock of the wait queue.
         curr.set_state(TaskState::Blocked);
-        wq_guard.push_back(curr_waiter);
+        // SAFETY: The waiter was on caller stack, the lifetime ends
+        // only when the task resumes running.
+        unsafe {
+            assert!(wq_guard.push_back(curr_waiter));
+        }
         // Drop the lock of wait queue explictly.
         drop(wq_guard);
 
