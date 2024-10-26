@@ -100,6 +100,28 @@ pub fn getchar() -> Option<u8> {
     COM1.lock().getchar()
 }
 
+/// Write a slice of bytes to the console.
+pub fn write_bytes(bytes: &[u8]) {
+    for c in bytes {
+        putchar(*c);
+    }
+}
+
+/// Reads bytes from the console into the given mutable slice.
+/// Returns the number of bytes read.
+pub fn read_bytes(bytes: &mut [u8]) -> usize {
+    let mut read_len = 0;
+    while read_len < bytes.len() {
+        if let Some(c) = getchar() {
+            bytes[read_len] = c;
+        } else {
+            break;
+        }
+        read_len += 1;
+    }
+    read_len
+}
+
 pub(super) fn init() {
     COM1.lock().init(115200);
 }

@@ -60,13 +60,6 @@ pub mod paging;
 /// Console input and output.
 pub mod console {
     pub use super::platform::console::*;
-
-    /// Write a slice of bytes to the console.
-    pub fn write_bytes(bytes: &[u8]) {
-        for c in bytes {
-            putchar(*c);
-        }
-    }
 }
 
 /// Miscellaneous operation, e.g. terminate the system.

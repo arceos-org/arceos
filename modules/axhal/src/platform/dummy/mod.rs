@@ -11,6 +11,17 @@ pub mod console {
     pub fn getchar() -> Option<u8> {
         unimplemented!()
     }
+
+    /// Writes bytes to the console from input u8 slice.
+    pub fn write_bytes(_bytes: &[u8]) {
+        unimplemented!()
+    }
+
+    /// Reads bytes from the console into the given mutable slice.
+    /// Returns the number of bytes read.
+    pub fn read_bytes(_bytes: &mut [u8]) -> usize {
+        unimplemented!()
+    }
 }
 
 pub mod misc {
