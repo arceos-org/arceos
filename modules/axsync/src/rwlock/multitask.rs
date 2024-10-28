@@ -1,5 +1,4 @@
 /// A multi-tasking-friendly RwLock implementation.
-
 use core::sync::atomic::AtomicU32;
 use core::sync::atomic::Ordering::{Acquire, Relaxed, Release};
 
@@ -297,14 +296,13 @@ impl RwLock {
         }
 
         // If readers are waiting, wake them all up.
-        if state == READERS_WAITING {
-            if self
+        if state == READERS_WAITING
+            && self
                 .state
                 .compare_exchange(state, 0, Relaxed, Relaxed)
                 .is_ok()
-            {
-                self.state_wq.notify_all(true);
-            }
+        {
+            self.state_wq.notify_all(true);
         }
     }
 

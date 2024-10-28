@@ -6,10 +6,13 @@
 //!
 //! Note: [`Barrier`] is not available when the `multitask` feature is disabled.
 
+#[cfg(test)]
+mod tests;
+
 use core::fmt;
 
 use crate::condvar::Condvar;
-use crate::mutex::Mutex;
+use crate::Mutex;
 
 /// A barrier enables multiple threads to synchronize the beginning
 /// of some computation.
@@ -99,16 +102,6 @@ impl BarrierWaitResult {
     /// threads will have `false` returned.
     ///
     /// [`wait`]: struct.Barrier.html#method.wait
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use spin;
-    ///
-    /// let barrier = spin::Barrier::new(1);
-    /// let barrier_wait_result = barrier.wait();
-    /// println!("{:?}", barrier_wait_result.is_leader());
-    /// ```
     pub fn is_leader(&self) -> bool {
         self.0
     }

@@ -1,5 +1,8 @@
 //! A naïve sleeping mutex.
 
+#[cfg(test)]
+mod tests;
+
 use core::cell::UnsafeCell;
 use core::fmt;
 use core::ops::{Deref, DerefMut};
@@ -209,59 +212,5 @@ impl<T: ?Sized> Drop for MutexGuard<'_, T> {
 }
 
 pub(crate) fn guard_lock<'a, T: ?Sized>(guard: &MutexGuard<'a, T>) -> &'a Mutex<T> {
-    &guard.lock
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::Mutex;
-    use axtask as thread;
-    use std::sync::Once;
-
-    static INIT: Once = Once::new();
-
-    fn may_interrupt() {
-        // simulate interrupts
-        if rand::random::<u32>() % 3 == 0 {
-            thread::yield_now();
-        }
-    }
-
-    #[test]
-    fn lots_and_lots() {
-        INIT.call_once(thread::init_scheduler);
-
-        const NUM_TASKS: u32 = 10;
-        const NUM_ITERS: u32 = 10_000;
-        static M: Mutex<u32> = Mutex::new(0);
-
-        fn inc(delta: u32) {
-            for _ in 0..NUM_ITERS {
-                let mut val = M.lock();
-                *val += delta;
-                may_interrupt();
-                drop(val);
-                may_interrupt();
-            }
-        }
-
-        for _ in 0..NUM_TASKS {
-            thread::spawn(|| inc(1));
-            thread::spawn(|| inc(2));
-        }
-
-        println!("spawn OK");
-        loop {
-            let val = M.lock();
-            if *val == NUM_ITERS * NUM_TASKS * 3 {
-                break;
-            }
-            may_interrupt();
-            drop(val);
-            may_interrupt();
-        }
-
-        assert_eq!(*M.lock(), NUM_ITERS * NUM_TASKS * 3);
-        println!("Mutex test OK");
-    }
+    guard.lock
 }

@@ -20,6 +20,9 @@ mod no_thread;
 #[cfg(not(feature = "multitask"))]
 use no_thread as sys;
 
+#[cfg(test)]
+mod tests;
+
 /// A reader-writer lock
 ///
 /// This type of lock allows a number of readers or at most one writer at any
@@ -508,7 +511,7 @@ impl<'a, T: ?Sized> RwLockReadGuard<'a, T> {
         let orig = ManuallyDrop::new(orig);
         MappedRwLockReadGuard {
             data,
-            inner_lock: &orig.inner_lock,
+            inner_lock: orig.inner_lock,
         }
     }
 
@@ -542,7 +545,7 @@ impl<'a, T: ?Sized> RwLockReadGuard<'a, T> {
                 let orig = ManuallyDrop::new(orig);
                 Ok(MappedRwLockReadGuard {
                     data,
-                    inner_lock: &orig.inner_lock,
+                    inner_lock: orig.inner_lock,
                 })
             }
             None => Err(orig),
@@ -577,7 +580,7 @@ impl<'a, T: ?Sized> MappedRwLockReadGuard<'a, T> {
         let orig = ManuallyDrop::new(orig);
         MappedRwLockReadGuard {
             data,
-            inner_lock: &orig.inner_lock,
+            inner_lock: orig.inner_lock,
         }
     }
 
@@ -611,7 +614,7 @@ impl<'a, T: ?Sized> MappedRwLockReadGuard<'a, T> {
                 let orig = ManuallyDrop::new(orig);
                 Ok(MappedRwLockReadGuard {
                     data,
-                    inner_lock: &orig.inner_lock,
+                    inner_lock: orig.inner_lock,
                 })
             }
             None => Err(orig),

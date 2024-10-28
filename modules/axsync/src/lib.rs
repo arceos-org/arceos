@@ -42,3 +42,13 @@ pub use self::rwlock::{
     MappedRwLockReadGuard, MappedRwLockWriteGuard, RwLock, RwLockReadGuard, RwLockWriteGuard,
 };
 pub use semaphore::Semaphore;
+
+#[cfg(test)]
+mod tests {
+    use std::sync::{Mutex, Once};
+
+    /// Used for initializing the only global scheduler for test environment.
+    pub static INIT: Once = Once::new();
+    /// Used for serializing the tests in this crate.
+    pub static SEQ: Mutex<()> = Mutex::new(());
+}

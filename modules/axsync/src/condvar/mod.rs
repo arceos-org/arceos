@@ -15,8 +15,6 @@ mod multitask;
 #[cfg(feature = "multitask")]
 pub use multitask::Condvar;
 
-
-
 /// A type indicating whether a timed wait on a condition variable returned
 /// due to a time out or not.
 ///
@@ -35,3 +33,6 @@ impl WaitTimeoutResult {
         self.0
     }
 }
+
+#[cfg(test)]
+mod tests;
