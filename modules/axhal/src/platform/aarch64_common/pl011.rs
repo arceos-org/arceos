@@ -23,6 +23,11 @@ pub fn putchar(c: u8) {
     }
 }
 
+/// Reads a byte from the console, or returns [`None`] if no input is available.
+fn getchar() -> Option<u8> {
+    UART.lock().getchar()
+}
+
 /// Write a slice of bytes to the console.
 pub fn write_bytes(bytes: &[u8]) {
     for c in bytes {
@@ -43,11 +48,6 @@ pub fn read_bytes(bytes: &mut [u8]) -> usize {
         read_len += 1;
     }
     read_len
-}
-
-/// Reads a byte from the console, or returns [`None`] if no input is available.
-pub fn getchar() -> Option<u8> {
-    UART.lock().getchar()
 }
 
 /// Initialize the UART

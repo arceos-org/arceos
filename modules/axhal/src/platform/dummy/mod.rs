@@ -2,16 +2,6 @@
 #![allow(dead_code)]
 
 pub mod console {
-    /// Writes a byte to the console.
-    pub fn putchar(c: u8) {
-        unimplemented!()
-    }
-
-    /// Reads a byte from the console, or returns [`None`] if no input is available.
-    pub fn getchar() -> Option<u8> {
-        unimplemented!()
-    }
-
     /// Writes bytes to the console from input u8 slice.
     pub fn write_bytes(_bytes: &[u8]) {
         unimplemented!()
