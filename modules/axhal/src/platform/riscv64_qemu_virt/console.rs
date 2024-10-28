@@ -10,18 +10,24 @@ pub fn putchar(c: u8) {
     sbi_rt::console_write_byte(c);
 }
 
+/// Tries to write bytes to the console from input u8 slice.
+/// Returns the number of bytes written.
+fn try_write_bytes(bytes: &[u8]) -> usize {
+    sbi_rt::console_write(sbi_rt::Physical::new(
+        // A maximum of 256 bytes can be written at a time
+        // to prevent SBI from disabling IRQs for too long.
+        bytes.len().min(MAX_RW_SIZE),
+        virt_to_phys(VirtAddr::from_ptr_of(bytes.as_ptr())).as_usize(),
+        0,
+    ))
+    .value
+}
+
 /// Writes bytes to the console from input u8 slice.
 pub fn write_bytes(bytes: &[u8]) {
     let mut write_len = 0;
     while write_len < bytes.len() {
-        let len = sbi_rt::console_write(sbi_rt::Physical::new(
-            // A maximum of 256 bytes can be written at a time
-            // to prevent SBI from disabling IRQs for too long.
-            bytes[write_len..].len().min(MAX_RW_SIZE),
-            virt_to_phys(VirtAddr::from_ptr_of(bytes.as_ptr())).as_usize(),
-            0,
-        ))
-        .value;
+        let len = try_write_bytes(&bytes[write_len..]);
         if len == 0 {
             break;
         }
