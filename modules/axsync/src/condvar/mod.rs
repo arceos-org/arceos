@@ -21,11 +21,9 @@ pub use multitask::Condvar;
 /// It is returned by the [`wait_timeout`] method.
 ///
 /// [`wait_timeout`]: Condvar::wait_timeout
-#[cfg(feature = "irq")]
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct WaitTimeoutResult(bool);
 
-#[cfg(feature = "irq")]
 impl WaitTimeoutResult {
     /// Returns `true` if the wait was known to have timed out.
     #[must_use]

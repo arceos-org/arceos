@@ -1,16 +1,12 @@
 use core::fmt;
 use core::sync::atomic::AtomicU32;
 use core::sync::atomic::Ordering::Relaxed;
-
-#[cfg(feature = "irq")]
 use core::time::Duration;
 
 use axtask::WaitQueue;
 
-use crate::{mutex, MutexGuard};
-
-#[cfg(feature = "irq")]
 use crate::condvar::WaitTimeoutResult;
+use crate::{mutex, MutexGuard};
 
 /// A Condition Variable
 ///
@@ -56,6 +52,9 @@ impl Condvar {
     /// variables normally have a boolean predicate associated with them, and
     /// the predicate must always be checked each time this function returns to
     /// protect against spurious wakeups.
+    ///
+    /// [`notify_one`]: Self::notify_one
+    /// [`notify_all`]: Self::notify_all
     pub fn wait<'a, T>(&self, guard: MutexGuard<'a, T>) -> MutexGuard<'a, T> {
         // Examine the notification counter _before_ we unlock the mutex.
         let expected_counter = self.notify_counter.load(Relaxed);
@@ -86,6 +85,10 @@ impl Condvar {
     /// to [`notify_one`] or [`notify_all`] which happen logically after the
     /// mutex is unlocked are candidates to wake this thread up. When this
     /// function call returns, the lock specified will have been re-acquired.
+    ///
+    /// [`wait`]: Self::wait
+    /// [`notify_one`]: Self::notify_one
+    /// [`notify_all`]: Self::notify_all
     pub fn wait_while<'a, T, F>(
         &self,
         mut guard: MutexGuard<'a, T>,
@@ -125,6 +128,9 @@ impl Condvar {
     ///
     /// Like [`wait`], the lock specified will be re-acquired when this function
     /// returns, regardless of whether the timeout elapsed or not.
+    ///
+    /// [`wait`]: Self::wait
+    /// [`WaitTimeoutResult`]: crate::WaitTimeoutResult
     #[cfg(feature = "irq")]
     pub fn wait_timeout<'a, T>(
         &self,
@@ -148,6 +154,15 @@ impl Condvar {
 
         // Lock the mutex again.
         (mutex.lock(), WaitTimeoutResult(!success))
+    }
+
+    #[cfg(not(feature = "irq"))]
+    pub fn wait_timeout<'a, T>(
+        &self,
+        _guard: MutexGuard<'a, T>,
+        _dur: Duration,
+    ) -> (MutexGuard<'a, T>, WaitTimeoutResult) {
+        unimplemented!("wait_timeout should be used with the `irq` feature enabled")
     }
 
     /// Waits on this condition variable for a notification, timing out after a
@@ -193,6 +208,19 @@ impl Condvar {
             };
             guard = self.wait_timeout(guard, timeout).0;
         }
+    }
+
+    #[cfg(not(feature = "irq"))]
+    pub fn wait_timeout_while<'a, T, F>(
+        &self,
+        mut _guard: MutexGuard<'a, T>,
+        _dur: Duration,
+        mut _condition: F,
+    ) -> (MutexGuard<'a, T>, WaitTimeoutResult)
+    where
+        F: FnMut(&mut T) -> bool,
+    {
+        unimplemented!("wait_timeout_while should be used with the `irq` feature enabled")
     }
 
     /// Wakes up one blocked thread on this condvar.
