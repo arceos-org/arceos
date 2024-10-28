@@ -12,11 +12,21 @@ pub fn putchar(c: u8) {
 
 /// Writes bytes to the console from input u8 slice.
 pub fn write_bytes(bytes: &[u8]) {
-    sbi_rt::console_write(sbi_rt::Physical::new(
-        bytes.len().min(MAX_RW_SIZE),
-        virt_to_phys(VirtAddr::from_ptr_of(bytes.as_ptr())).as_usize(),
-        0,
-    ));
+    let mut write_len = 0;
+    while write_len < bytes.len() {
+        let len = sbi_rt::console_write(sbi_rt::Physical::new(
+            // A maximum of 256 bytes can be written at a time
+            // to prevent SBI from disabling IRQs for too long.
+            bytes[write_len..].len().min(MAX_RW_SIZE),
+            virt_to_phys(VirtAddr::from_ptr_of(bytes.as_ptr())).as_usize(),
+            0,
+        ))
+        .value;
+        if len == 0 {
+            break;
+        }
+        write_len += len;
+    }
 }
 
 /// Reads bytes from the console into the given mutable slice.
