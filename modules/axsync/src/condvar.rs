@@ -179,7 +179,9 @@ impl Condvar {
         };
 
         // Lock the mutex again.
-        (mutex.lock(), WaitTimeoutResult(!success))
+        mutex.inner_lock();
+
+        (guard, WaitTimeoutResult(!success))
     }
 
     /// Waits on this condition variable for a notification, timing out after a

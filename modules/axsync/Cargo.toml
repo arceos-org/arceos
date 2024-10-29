@@ -11,6 +11,7 @@ documentation = "https://arceos-org.github.io/arceos/axsync/index.html"
 
 [features]
 multitask = ["axtask/multitask", "dep:axhal"]
+irq = ["axtask/irq"]
 default = []
 
 [dependencies]

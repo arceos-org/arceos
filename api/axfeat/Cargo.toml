@@ -19,7 +19,7 @@ smp = ["axhal/smp", "axruntime/smp", "axtask?/smp", "kspin/smp"]
 fp_simd = ["axhal/fp_simd"]
 
 # Interrupts
-irq = ["axhal/irq", "axruntime/irq", "axtask?/irq"]
+irq = ["axhal/irq", "axruntime/irq", "axtask?/irq", "axsync/irq"]
 
 # Memory
 alloc = ["axalloc", "axruntime/alloc"]

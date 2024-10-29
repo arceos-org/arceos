@@ -28,10 +28,10 @@ cfg_if::cfg_if! {
         mod semaphore;
 
         pub use self::barrier::{Barrier, BarrierWaitResult};
-        pub use self::condvar::Condvar;
+        pub use self::condvar::{Condvar, WaitTimeoutResult};
         #[doc(cfg(feature = "multitask"))]
         pub use self::mutex::{Mutex, MutexGuard};
-        pub use semaphore::Semaphore;
+        pub use semaphore::{Semaphore, SemaphoreGuard};
     } else {
         #[doc(cfg(not(feature = "multitask")))]
         pub use kspin::{SpinNoIrq as Mutex, SpinNoIrqGuard as MutexGuard};
