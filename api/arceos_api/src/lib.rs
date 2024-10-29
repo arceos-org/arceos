@@ -106,8 +106,8 @@ pub mod mem {
 pub mod stdio {
     use core::fmt;
     define_api! {
-        /// Reads a byte from the console, or returns [`None`] if no input is available.
-        pub fn ax_console_read_byte() -> Option<u8>;
+        /// Reads a slice of bytes from the console, returns the number of bytes written.
+        pub fn ax_console_read_bytes(buf: &mut [u8]) -> crate::AxResult<usize>;
         /// Writes a slice of bytes to the console, returns the number of bytes written.
         pub fn ax_console_write_bytes(buf: &[u8]) -> crate::AxResult<usize>;
         /// Writes a formatted string to the console.

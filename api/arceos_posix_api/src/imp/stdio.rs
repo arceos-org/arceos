@@ -5,8 +5,14 @@ use axsync::Mutex;
 #[cfg(feature = "fd")]
 use {alloc::sync::Arc, axerrno::LinuxError, axerrno::LinuxResult, axio::PollState};
 
-fn console_read_bytes() -> Option<u8> {
-    axhal::console::getchar().map(|c| if c == b'\r' { b'\n' } else { c })
+fn console_read_bytes(buf: &mut [u8]) -> AxResult<usize> {
+    let len = axhal::console::read_bytes(buf);
+    for c in &mut buf[..len] {
+        if *c == b'\r' {
+            *c = b'\n';
+        }
+    }
+    Ok(len)
 }
 
 fn console_write_bytes(buf: &[u8]) -> AxResult<usize> {
@@ -22,12 +28,11 @@ impl Read for StdinRaw {
     fn read(&mut self, buf: &mut [u8]) -> AxResult<usize> {
         let mut read_len = 0;
         while read_len < buf.len() {
-            if let Some(c) = console_read_bytes() {
-                buf[read_len] = c;
-                read_len += 1;
-            } else {
+            let len = console_read_bytes(buf[read_len..].as_mut())?;
+            if len == 0 {
                 break;
             }
+            read_len += len;
         }
         Ok(read_len)
     }

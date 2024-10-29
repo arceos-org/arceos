@@ -12,12 +12,11 @@ impl Read for StdinRaw {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let mut read_len = 0;
         while read_len < buf.len() {
-            if let Some(c) = arceos_api::stdio::ax_console_read_byte() {
-                buf[read_len] = c;
-                read_len += 1;
-            } else {
+            let len = arceos_api::stdio::ax_console_read_bytes(buf[read_len..].as_mut())?;
+            if len == 0 {
                 break;
             }
+            read_len += len;
         }
         Ok(read_len)
     }
