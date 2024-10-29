@@ -22,26 +22,26 @@ pub use kspin as spin;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "multitask")] {
+        mod barrier;
+        mod condvar;
         mod mutex;
+        mod semaphore;
+
+        pub use self::barrier::{Barrier, BarrierWaitResult};
+        pub use self::condvar::Condvar;
         #[doc(cfg(feature = "multitask"))]
         pub use self::mutex::{Mutex, MutexGuard};
+        pub use semaphore::Semaphore;
     } else {
         #[doc(cfg(not(feature = "multitask")))]
         pub use kspin::{SpinNoIrq as Mutex, SpinNoIrqGuard as MutexGuard};
     }
 }
 
-mod barrier;
-mod condvar;
 mod rwlock;
-mod semaphore;
-
-pub use self::barrier::{Barrier, BarrierWaitResult};
-pub use self::condvar::Condvar;
 pub use self::rwlock::{
     MappedRwLockReadGuard, MappedRwLockWriteGuard, RwLock, RwLockReadGuard, RwLockWriteGuard,
 };
-pub use semaphore::Semaphore;
 
 #[cfg(test)]
 mod tests {

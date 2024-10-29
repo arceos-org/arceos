@@ -1,3 +1,13 @@
+//! The Condition Variable
+//!
+//! Implementation adapted from the 'RwLock' type of the standard library. See:
+//! <https://doc.rust-lang.org/stable/std/sync/struct.Condvar.html>
+//!
+//! Note: [`Condvar`] is not available when the `multitask` feature is disabled.
+
+#[cfg(test)]
+mod tests;
+
 use core::fmt;
 use core::sync::atomic::AtomicU32;
 use core::sync::atomic::Ordering::Relaxed;
@@ -5,8 +15,24 @@ use core::time::Duration;
 
 use axtask::WaitQueue;
 
-use crate::condvar::WaitTimeoutResult;
 use crate::{mutex, MutexGuard};
+
+/// A type indicating whether a timed wait on a condition variable returned
+/// due to a time out or not.
+///
+/// It is returned by the [`wait_timeout`] method.
+///
+/// [`wait_timeout`]: Condvar::wait_timeout
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub struct WaitTimeoutResult(bool);
+
+impl WaitTimeoutResult {
+    /// Returns `true` if the wait was known to have timed out.
+    #[must_use]
+    pub fn timed_out(&self) -> bool {
+        self.0
+    }
+}
 
 /// A Condition Variable
 ///
@@ -156,6 +182,10 @@ impl Condvar {
         (mutex.lock(), WaitTimeoutResult(!success))
     }
 
+    /// Waits on this condition variable for a notification, timing out after a
+    /// specified duration.
+    ///
+    /// This function is not available when the `irq` feature is disabled.
     #[cfg(not(feature = "irq"))]
     pub fn wait_timeout<'a, T>(
         &self,
@@ -210,6 +240,10 @@ impl Condvar {
         }
     }
 
+    /// Waits on this condition variable for a notification, timing out after a
+    /// specified duration.
+    ///
+    /// This function is not available when the `irq` feature is disabled.
     #[cfg(not(feature = "irq"))]
     pub fn wait_timeout_while<'a, T, F>(
         &self,
