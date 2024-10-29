@@ -81,3 +81,63 @@ jobs:
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=examples/httpserver-c
 
+  build-for-other-platforms:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        rust-toolchain: [nightly, nightly-2024-05-02]
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: ${{ matrix.rust-toolchain }}
+        components: rust-src, llvm-tools
+        targets: x86_64-unknown-none, riscv64gc-unknown-none-elf, aarch64-unknown-none, aarch64-unknown-none-softfloat
+    - uses: Swatinem/rust-cache@v2
+    - run: cargo install cargo-binutils
+    - name: Build helloworld for x86_64-pc-oslab
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=x86_64-pc-oslab A=examples/helloworld
+    - name: Build httpclient for x86_64-pc-oslab
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=x86_64-pc-oslab A=examples/httpclient FEATURES=driver-ixgbe
+    - name: Build httpserver for x86_64-pc-oslab
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=x86_64-pc-oslab A=examples/httpserver FEATURES=driver-ixgbe
+    - name: Build shell for x86_64-pc-oslab
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=x86_64-pc-oslab A=examples/shell
+    - name: Build helloworld for x86_64-pc-oslab
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=x86_64-pc-oslab A=examples/helloworld
+    - name: Build httpclient for x86_64-pc-oslab
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=x86_64-pc-oslab A=examples/httpclient FEATURES=driver-ixgbe
+    - name: Build httpserver for x86_64-pc-oslab
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=x86_64-pc-oslab A=examples/httpserver FEATURES=driver-ixgbe
+    - name: Build shell for x86_64-pc-oslab
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=x86_64-pc-oslab A=examples/shell
+    - name: Build helloworld for aarch64-raspi4
+      run: make PLATFORM=aarch64-raspi4 A=examples/helloworld
+    - name: Build shell for aarch64-raspi4
+      run: make PLATFORM=aarch64-raspi4 A=examples/shell FEATURES=driver-bcm2835-sdhci
+    - name: Build helloworld for aarch64-bsta1000b
+      run: make PLATFORM=aarch64-bsta1000b A=examples/helloworld
+    
+    - uses: ./.github/workflows/actions/setup-musl
+      with:
+        arch: x86_64
+    - name: Build helloworld-c for x86_64-pc-oslab
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=x86_64-pc-oslab A=examples/helloworld-c
+    - name: Build httpclient-c for x86_64-pc-oslab
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=x86_64-pc-oslab A=examples/httpclient-c
+    - name: Build httpserver-c for x86_64-pc-oslab
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=x86_64-pc-oslab A=examples/httpserver-c
+

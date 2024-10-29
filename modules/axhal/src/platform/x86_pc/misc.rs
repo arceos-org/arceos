@@ -9,7 +9,8 @@ pub fn terminate() -> ! {
     #[cfg(platform = "x86_64-pc-oslab")]
     {
         axlog::ax_println!("System will reboot, press any key to continue ...");
-        while super::console::getchar().is_none() {}
+        let mut buffer = [0u8; 1];
+        while super::console::read_bytes(&mut buffer) == 0 {}
         axlog::ax_println!("Rebooting ...");
         unsafe { PortWriteOnly::new(0x64).write(0xfeu8) };
     }
