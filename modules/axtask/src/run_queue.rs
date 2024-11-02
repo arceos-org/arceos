@@ -2,7 +2,7 @@ use alloc::collections::VecDeque;
 use alloc::sync::Arc;
 use core::mem::MaybeUninit;
 
-use kernel_guard::{BaseGuard, NoOp};
+use kernel_guard::BaseGuard;
 use kspin::SpinRaw;
 use lazyinit::LazyInit;
 use scheduler::BaseScheduler;
@@ -227,11 +227,16 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
     }
 
     /// Unblock one task by inserting it into the run queue.
+    ///
+    /// This function does nothing if the task is not in [`TaskState::Blocked`],
+    /// which means the task is already unblocked by other cores.
     pub fn unblock_task(&mut self, task: AxTaskRef, resched: bool) {
         let task_id_name = task.id_name();
         // Try to change the state of the task from `Blocked` to `Ready`,
         // if successful, the task will be put into this run queue,
         // otherwise, the task is already unblocked by other cores.
+        // Note:
+        // target task can not be insert into the run queue until it finishes its scheduling process.
         if self
             .inner
             .put_task_with_state(task, TaskState::Blocked, resched)
@@ -246,6 +251,18 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
                 crate::current().set_preempt_pending(true);
             }
         }
+    }
+
+    /// Migrate the task to this run queue.
+    ///
+    /// Panics if the task is not in [`TaskState::Migrating`].
+    pub fn migrate_task(&mut self, task: AxTaskRef) {
+        let task_id_name = task.id_name();
+        let cpu_id = self.inner.cpu_id;
+        debug!("task migrate: {} to run_queue {}", task_id_name, cpu_id);
+        assert!(self
+            .inner
+            .put_task_with_state(task, TaskState::Migrating, false))
     }
 }
 
@@ -282,9 +299,7 @@ impl<'a, G: BaseGuard> CurrentRunQueueRef<'a, G> {
         trace!("task migrate: {}", curr.id_name());
         assert!(curr.is_running());
 
-        select_run_queue::<NoOp>(curr.as_task_ref())
-            .inner
-            .put_task_with_state(curr.clone(), TaskState::Running, false);
+        curr.set_state(TaskState::Migrating);
 
         self.inner.resched();
     }
@@ -449,6 +464,25 @@ impl AxRunQueue {
         // If the task's state matches `current_state`, set its state to `Ready` and
         // put it back to the run queue (except idle task).
         if task.transition_state(current_state, TaskState::Ready) && !task.is_idle() {
+            // If the task is blocked, wait for the task to finish its scheduling process.
+            // See `unblock_task()` for details.
+            if current_state == TaskState::Blocked {
+                // Wait for next task's scheduling process to complete.
+                // If the owning (remote) CPU is still in the middle of schedule() with
+                // this task (next task) as prev, wait until it's done referencing the task.
+                //
+                // Pairs with the `finish_prev_task_switch()`.
+                //
+                // Note:
+                // 1. This should be placed after the judgement of `TaskState::Blocked,`,
+                //    because the task may have been woken up by other cores.
+                // 2. This can be placed in the front of `switch_to()`
+                #[cfg(feature = "smp")]
+                while task.on_cpu() {
+                    // Wait for the task to finish its scheduling process.
+                    core::hint::spin_loop();
+                }
+            }
             // TODO: priority
             self.scheduler.lock().put_prev_task(task, preempt);
             true
@@ -496,22 +530,6 @@ impl AxRunQueue {
             return;
         }
 
-        // Task must be scheduled atomically, wait for next task's scheduling process to complete.
-        // If the owning (remote) CPU is still in the middle of schedule() with
-        // this task (next task) as prev, wait until it's done referencing the task.
-        //
-        // Pairs with the `clear_prev_task_on_cpu()`.
-        //
-        // Note:
-        // 1. This should be placed after the judgement of `TaskState::Blocked,`,
-        //    because the task may have been woken up by other cores.
-        // 2. This can be placed in the front of `switch_to()`
-        #[cfg(feature = "smp")]
-        while next_task.on_cpu() {
-            // Wait for the task to finish its scheduling process.
-            core::hint::spin_loop();
-        }
-
         // Claim the task as running, we do this before switching to it
         // such that any running task will have this set.
         #[cfg(feature = "smp")]
@@ -523,7 +541,7 @@ impl AxRunQueue {
 
             // Store the weak pointer of **prev_task** in **next_task**'s struct.
             #[cfg(feature = "smp")]
-            next_task.set_prev_task(prev_task.as_task_ref());
+            next_task.set_prev_task(prev_task.clone());
 
             // The strong reference count of `prev_task` will be decremented by 1,
             // but won't be dropped until `gc_entry()` is called.
@@ -537,7 +555,7 @@ impl AxRunQueue {
             // Current it's **next_task** running on this CPU, clear the `prev_task`'s `on_cpu` field
             // to indicate that it has finished its scheduling process and no longer running on this CPU.
             #[cfg(feature = "smp")]
-            crate::current().clear_prev_task_on_cpu();
+            crate::current().finish_prev_task_switch();
         }
     }
 }
