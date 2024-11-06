@@ -73,6 +73,8 @@ members = [
 
     "apps/std/mio-httpserver",
     "apps/std/mio-tcpserver",
+    "apps/std/monoio-benchmark/config",
+    "apps/std/monoio-benchmark/tokio-server",
     "apps/std/tokio-echo",
     "apps/std/socket2-echoserver",
     "apps/std/chrono",

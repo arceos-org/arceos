@@ -346,7 +346,7 @@ pub mod io {
 }
 
 /// Mathematical calculation operations.
-/// These functions are just used to fix 
+/// These functions are just used to fix
 ///     rust-lld: error: undefined symbol  of
 ///     `sqrt` and `cell`
 /// Todo: remove these
@@ -358,6 +358,11 @@ pub mod math {
 
     #[no_mangle]
     pub extern "C" fn sqrt() {
+        unimplemented!()
+    }
+
+    #[no_mangle]
+    pub extern "C" fn pow() {
         unimplemented!()
     }
 }
