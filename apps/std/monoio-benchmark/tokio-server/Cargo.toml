@@ -1,0 +1,12 @@
+[package]
+name = "tokio-server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+config = { path = "../config" }
+
+tokio = { version = "1", features = ["full", "rt-multi-thread"] }
+
+[package.metadata.arceos]
+features = ["net", "multitask"]
