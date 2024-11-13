@@ -27,7 +27,27 @@ ArceOS was inspired a lot by [Unikraft](https://github.com/unikraft/unikraft).
 
 ## Quick Start
 
-### 1. Install Build Dependencies
+### Build and Run through Docker
+
+Install [Docker](https://www.docker.com/) in your system.
+
+Then build all dependencies through provided dockerfile:
+
+```bash
+docker build -t arceos -f Dockerfile .
+```
+
+Create a container and build/run app:
+```bash
+docker run -it -v $(pwd):/arceos -w /arceos arceos bash
+
+# Now build/run app in the container
+make A=examples/helloworld ARCH=aarch64 run
+```
+
+
+### Manually Build and Run
+#### 1. Install Build Dependencies
 
 Install [cargo-binutils](https://github.com/rust-embedded/cargo-binutils) to use `rust-objcopy` and `rust-objdump` tools:
 
@@ -35,7 +55,7 @@ Install [cargo-binutils](https://github.com/rust-embedded/cargo-binutils) to use
 cargo install cargo-binutils
 ```
 
-#### Dependencies for C apps
+##### Dependencies for C apps
 
 Install `libclang-dev`:
 
@@ -58,7 +78,7 @@ tar zxf x86_64-linux-musl-cross.tgz
 export PATH=`pwd`/x86_64-linux-musl-cross/bin:`pwd`/aarch64-linux-musl-cross/bin:`pwd`/riscv64-linux-musl-cross/bin:$PATH
 ```
 
-#### Dependencies for running apps
+##### Dependencies for running apps
 
 ```bash
 # for Debian/Ubuntu
@@ -72,7 +92,7 @@ brew install qemu
 
 Other systems and arch please refer to [Qemu Download](https://www.qemu.org/download/#linux)
 
-### 2. Build & Run
+#### 2. Build & Run
 
 ```bash
 # build app in arceos directory
