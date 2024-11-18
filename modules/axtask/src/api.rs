@@ -151,13 +151,12 @@ pub fn set_current_affinity(cpumask: AxCpuMask) -> bool {
     if cpumask.is_empty() {
         false
     } else {
-        let mut rq = current_run_queue::<NoPreemptIrqSave>();
         current().set_cpumask(cpumask);
         // After setting the affinity, we need to check if current cpu matches
         // the affinity. If not, we need to migrate the task to the correct CPU.
         #[cfg(feature = "smp")]
         if !cpumask.get(axhal::cpu::this_cpu_id()) {
-            rq.migrate_current();
+            current_run_queue::<NoPreemptIrqSave>().migrate_current();
         }
         true
     }

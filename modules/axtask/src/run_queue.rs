@@ -2,6 +2,7 @@ use alloc::collections::VecDeque;
 use alloc::sync::Arc;
 use core::mem::MaybeUninit;
 
+#[cfg(feature = "smp")]
 use alloc::sync::Weak;
 
 use kernel_guard::BaseGuard;
