@@ -19,18 +19,6 @@ use crate::{AxCpuMask, AxTaskRef, Scheduler, TaskInner, WaitQueue};
 macro_rules! percpu_static {
     ($(
         $(#[$comment:meta])*
-        #[cfg($($cfg:tt)*)]
-        $name:ident: $ty:ty = $init:expr
-    ),* $(,)?) => {
-        $(
-            $(#[$comment])*
-            #[percpu::def_percpu]
-            #[cfg($($cfg)*)]
-            static $name: $ty = $init;
-        )*
-    };
-    ($(
-        $(#[$comment:meta])*
         $name:ident: $ty:ty = $init:expr
     ),* $(,)?) => {
         $(
