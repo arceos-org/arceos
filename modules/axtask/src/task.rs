@@ -14,7 +14,7 @@ use axhal::arch::TaskContext;
 use axhal::tls::TlsArea;
 
 use crate::task_ext::AxTaskExt;
-use crate::{select_run_queue, AxCpuMask, AxTask, AxTaskRef, WaitQueue};
+use crate::{AxCpuMask, AxTask, AxTaskRef, WaitQueue};
 
 /// A unique identifier for a thread.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -33,8 +33,6 @@ pub(crate) enum TaskState {
     Blocked = 3,
     /// Task is exited and waiting for being dropped.
     Exited = 4,
-    /// Task is migrating to another run queue.
-    Migrating = 5,
 }
 
 /// The inner task structure.
@@ -56,9 +54,6 @@ pub struct TaskInner {
     /// Used to indicate whether the task is running on a CPU.
     #[cfg(feature = "smp")]
     on_cpu: AtomicBool,
-    /// A weak reference to the previous task running on this CPU.
-    #[cfg(feature = "smp")]
-    prev_task: UnsafeCell<Option<AxTaskRef>>,
 
     /// A ticket ID used to identify the timer event.
     /// Set by `set_timer_ticket()` when creating a timer event in `set_alarm_wakeup()`,
@@ -102,7 +97,6 @@ impl From<u8> for TaskState {
             2 => Self::Ready,
             3 => Self::Blocked,
             4 => Self::Exited,
-            5 => Self::Migrating,
             _ => unreachable!(),
         }
     }
@@ -234,8 +228,6 @@ impl TaskInner {
             timer_ticket_id: AtomicU64::new(0),
             #[cfg(feature = "smp")]
             on_cpu: AtomicBool::new(false),
-            #[cfg(feature = "smp")]
-            prev_task: UnsafeCell::default(),
             #[cfg(feature = "preempt")]
             need_resched: AtomicBool::new(false),
             #[cfg(feature = "preempt")]
@@ -306,11 +298,6 @@ impl TaskInner {
     #[inline]
     pub(crate) fn is_ready(&self) -> bool {
         matches!(self.state(), TaskState::Ready)
-    }
-
-    #[inline]
-    pub(crate) fn is_migrating(&self) -> bool {
-        matches!(self.state(), TaskState::Migrating)
     }
 
     #[inline]
@@ -416,7 +403,7 @@ impl TaskInner {
     /// It is used to protect the task from being moved to a different run queue
     /// while it has not finished its scheduling process.
     /// The `on_cpu field is set to `true` when the task is preparing to run on a CPU,
-    /// and it is set to `false` when the task has finished its scheduling process in `finish_prev_task_switch()`.
+    /// and it is set to `false` when the task has finished its scheduling process in `finish_task_switch()`.
     #[cfg(feature = "smp")]
     #[inline]
     pub(crate) fn on_cpu(&self) -> bool {
@@ -428,53 +415,6 @@ impl TaskInner {
     #[inline]
     pub(crate) fn set_on_cpu(&self, on_cpu: bool) {
         self.on_cpu.store(on_cpu, Ordering::Release)
-    }
-
-    /// Stores the reference to the previous task running on this CPU.
-    ///
-    /// ## Safety
-    /// This function is only called by current task in `switch_to`.
-    #[cfg(feature = "smp")]
-    pub(crate) unsafe fn set_prev_task(&self, prev_task: AxTaskRef) {
-        *self.prev_task.get() = Some(prev_task);
-    }
-
-    /// Finish task switch for the previous task running on this CPU，
-    /// including:
-    /// - Clear the `on_cpu` field of the previous task.
-    /// - Migrate the previous task to the correct CPU if necessary.
-    ///
-    /// It is called by the current task before running.
-    /// The weak reference of previous task running on this CPU is set through `set_prev_task()`.
-    ///
-    /// Panic if the pointer is invalid or the previous task is dropped.
-    ///
-    /// ## Note
-    /// This must be the very last reference to @_prev_task from this CPU.
-    /// After `on_cpu` is cleared, the task can be moved to a different CPU.
-    /// We must ensure this doesn't happen until the switch is completely finished.
-    ///
-    /// ## Safety
-    /// The caller must ensure that the weak reference to the prev task is valid, which is
-    /// done by the previous task running on this CPU through `set_prev_task()`.
-    ///
-    #[cfg(feature = "smp")]
-    pub(crate) unsafe fn finish_prev_task_switch(&self) {
-        let prev_task = (*self.prev_task.get())
-            // Takes the `Arc` reference to the previous task, setting it to None in `self`.
-            .take()
-            .expect("Invalid prev_task pointer");
-
-        // Clears the `on_cpu` field of previous task running on this CPU.
-        prev_task.set_on_cpu(false);
-
-        // Migrate the previous task to the run queue of correct CPU if necessary.
-        // If `prev_task` doesn't need to be migrated, its `AxTaskRef` will be dropped automatically.
-        if prev_task.is_migrating() {
-            select_run_queue::<kernel_guard::NoOp>(&prev_task).migrate_task(prev_task);
-        }
-
-        // No need to manually set the `prev_task` to `None` since `take()` already did it.
     }
 }
 
@@ -580,7 +520,7 @@ extern "C" fn task_entry() -> ! {
     #[cfg(feature = "smp")]
     unsafe {
         // Clear the prev task on CPU before running the task entry function.
-        crate::current().finish_prev_task_switch();
+        crate::run_queue::finish_task_switch();
     }
     // Enable irq (if feature "irq" is enabled) before running the task entry function.
     #[cfg(feature = "irq")]

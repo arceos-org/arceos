@@ -2,6 +2,8 @@ use alloc::collections::VecDeque;
 use alloc::sync::Arc;
 use core::mem::MaybeUninit;
 
+use alloc::sync::Weak;
+
 use kernel_guard::BaseGuard;
 use kspin::SpinRaw;
 use lazyinit::LazyInit;
@@ -14,8 +16,24 @@ use crate::wait_queue::WaitQueueGuard;
 use crate::{AxCpuMask, AxTaskRef, Scheduler, TaskInner, WaitQueue};
 
 macro_rules! percpu_static {
-    ($($name:ident: $ty:ty = $init:expr),* $(,)?) => {
+    ($(
+        $(#[$comment:meta])*
+        #[cfg($($cfg:tt)*)]
+        $name:ident: $ty:ty = $init:expr
+    ),* $(,)?) => {
         $(
+            $(#[$comment])*
+            #[percpu::def_percpu]
+            #[cfg($($cfg)*)]
+            static $name: $ty = $init;
+        )*
+    };
+    ($(
+        $(#[$comment:meta])*
+        $name:ident: $ty:ty = $init:expr
+    ),* $(,)?) => {
+        $(
+            $(#[$comment])*
             #[percpu::def_percpu]
             static $name: $ty = $init;
         )*
@@ -27,6 +45,12 @@ percpu_static! {
     EXITED_TASKS: VecDeque<AxTaskRef> = VecDeque::new(),
     WAIT_FOR_EXIT: WaitQueue = WaitQueue::new(),
     IDLE_TASK: LazyInit<AxTaskRef> = LazyInit::new(),
+    /// Stores the weak reference to the previous task that is running on this CPU.
+    #[cfg(feature = "smp")]
+    PREV_TASK: Weak<crate::AxTask> = Weak::new(),
+    /// Stores the migrating task that is being migrated to another CPU, if any.
+    #[cfg(feature = "smp")]
+    MIGRATING_TASK: Option<AxTaskRef> = None,
 }
 
 /// An array of references to run queues, one for each CPU, indexed by cpu_id.
@@ -252,18 +276,6 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
             }
         }
     }
-
-    /// Migrate the task to this run queue.
-    ///
-    /// Panics if the task is not in [`TaskState::Migrating`].
-    pub fn migrate_task(&mut self, task: AxTaskRef) {
-        let task_id_name = task.id_name();
-        let cpu_id = self.inner.cpu_id;
-        debug!("task migrate: {} to run_queue {}", task_id_name, cpu_id);
-        assert!(self
-            .inner
-            .put_task_with_state(task, TaskState::Migrating, false))
-    }
 }
 
 /// Core functions of run queue.
@@ -292,14 +304,24 @@ impl<'a, G: BaseGuard> CurrentRunQueueRef<'a, G> {
     }
 
     /// Migrate the current task to a new run queue matching its CPU affinity and reschedule.
-    /// This function will put the current task into a **new** run queue with `Ready` state,
+    /// This function will put the current task into per CPU variable [`MIGRATING_TASK`] with `Ready` state,
     /// and reschedule to the next task on **this** run queue.
+    ///
+    /// Note: the migrating task stored in [`MIGRATING_TASK`] will be put into the target run queue
+    /// in `finish_task_switch()` after the context switch is completed.
+    #[cfg(feature = "smp")]
     pub fn migrate_current(&mut self) {
         let curr = &self.current_task;
         trace!("task migrate: {}", curr.id_name());
         assert!(curr.is_running());
 
-        curr.set_state(TaskState::Migrating);
+        // Mark current task as Ready but do not put it back to the run queue.
+        curr.set_state(TaskState::Ready);
+        // Instead, store the task in `MIGRATING_TASK`, which will be put into the target run queue
+        // in `finish_task_switch()` after the context switch is completed.
+        unsafe {
+            *MIGRATING_TASK.current_ref_mut_raw() = Some(curr.clone());
+        }
 
         self.inner.resched();
     }
@@ -471,7 +493,7 @@ impl AxRunQueue {
                 // If the owning (remote) CPU is still in the middle of schedule() with
                 // this task (next task) as prev, wait until it's done referencing the task.
                 //
-                // Pairs with the `finish_prev_task_switch()`.
+                // Pairs with the `finish_task_switch()`.
                 //
                 // Note:
                 // 1. This should be placed after the judgement of `TaskState::Blocked,`,
@@ -539,9 +561,11 @@ impl AxRunQueue {
             let prev_ctx_ptr = prev_task.ctx_mut_ptr();
             let next_ctx_ptr = next_task.ctx_mut_ptr();
 
-            // Store the weak pointer of **prev_task** in **next_task**'s struct.
+            // Store the weak pointer of **prev_task** in percpu variable `PREV_TASK`.
             #[cfg(feature = "smp")]
-            next_task.set_prev_task(prev_task.clone());
+            {
+                *PREV_TASK.current_ref_mut_raw() = Arc::downgrade(prev_task.as_task_ref());
+            }
 
             // The strong reference count of `prev_task` will be decremented by 1,
             // but won't be dropped until `gc_entry()` is called.
@@ -555,7 +579,7 @@ impl AxRunQueue {
             // Current it's **next_task** running on this CPU, clear the `prev_task`'s `on_cpu` field
             // to indicate that it has finished its scheduling process and no longer running on this CPU.
             #[cfg(feature = "smp")]
-            crate::current().finish_prev_task_switch();
+            finish_task_switch();
         }
     }
 }
@@ -582,6 +606,21 @@ fn gc_entry() {
         // use `current_ref_raw` to get the `WAIT_FOR_EXIT`'s reference here to avoid the use of `NoPreemptGuard`.
         // Since gc task is pinned to the current CPU, there is no affection if the gc task is preempted during the process.
         unsafe { WAIT_FOR_EXIT.current_ref_raw() }.wait();
+    }
+}
+
+#[cfg(feature = "smp")]
+pub(crate) unsafe fn finish_task_switch() {
+    // Clears the `on_cpu` field of previous task running on this CPU.
+    PREV_TASK
+        .current_ref_raw()
+        .upgrade()
+        .expect("Invalid prev_task pointer or prev_task has been dropped")
+        .set_on_cpu(false);
+
+    // Migrate the previous task to the run queue of correct CPU if necessary.
+    if let Some(task) = MIGRATING_TASK.current_ref_mut_raw().take() {
+        select_run_queue::<kernel_guard::NoOp>(&task).add_task(task);
     }
 }
 
