@@ -1,10 +1,20 @@
-use alloc::collections::VecDeque;
 use alloc::sync::Arc;
 
 use kernel_guard::{NoOp, NoPreemptIrqSave};
 use kspin::{SpinNoIrq, SpinNoIrqGuard};
+use linked_list_r4l::{def_node, RawList};
 
-use crate::{current_run_queue, select_run_queue, AxTaskRef, CurrentTask};
+use crate::{current_run_queue, select_run_queue, AxTaskRef};
+
+def_node! {
+    pub(crate) struct WaitTaskNode(AxTaskRef);
+}
+
+impl WaitTaskNode {
+    fn from_current() -> Self {
+        WaitTaskNode::new(crate::current().clone())
+    }
+}
 
 /// A queue to store sleeping tasks.
 ///
@@ -29,42 +39,35 @@ use crate::{current_run_queue, select_run_queue, AxTaskRef, CurrentTask};
 /// assert_eq!(VALUE.load(Ordering::Relaxed), 1);
 /// ```
 pub struct WaitQueue {
-    queue: SpinNoIrq<VecDeque<AxTaskRef>>,
+    list: SpinNoIrq<RawList<WaitTaskNode>>,
 }
 
-pub(crate) type WaitQueueGuard<'a> = SpinNoIrqGuard<'a, VecDeque<AxTaskRef>>;
+pub(crate) type WaitQueueGuard<'a> = SpinNoIrqGuard<'a, RawList<WaitTaskNode>>;
 
 impl WaitQueue {
     /// Creates an empty wait queue.
     pub const fn new() -> Self {
         Self {
-            queue: SpinNoIrq::new(VecDeque::new()),
-        }
-    }
-
-    /// Creates an empty wait queue with space for at least `capacity` elements.
-    pub fn with_capacity(capacity: usize) -> Self {
-        Self {
-            queue: SpinNoIrq::new(VecDeque::with_capacity(capacity)),
+            list: SpinNoIrq::new(RawList::new()),
         }
     }
 
     /// Cancel events by removing the task from the wait queue.
+    /// Cancel events by removing the task from the wait queue.
     /// If `from_timer_list` is true, try to remove the task from the timer list.
-    fn cancel_events(&self, curr: CurrentTask, _from_timer_list: bool) {
-        // A task can be wake up only one events (timer or `notify()`), remove
-        // the event from another queue.
-        if curr.in_wait_queue() {
-            // wake up by timer (timeout).
-            self.queue.lock().retain(|t| !curr.ptr_eq(t));
-            curr.set_in_wait_queue(false);
+    fn cancel_events(&self, waiter: &WaitTaskNode, _from_timer_list: bool) {
+        // SAFETY:
+        // Waiter is only  defined in the local function scope,
+        // therefore, it is not possible in other List.
+        unsafe {
+            self.list.lock().remove(waiter);
         }
 
         // Try to cancel a timer event from timer lists.
         // Just mark task's current timer ticket ID as expired.
         #[cfg(feature = "irq")]
         if _from_timer_list {
-            curr.timer_ticket_expired();
+            waiter.inner().timer_ticket_expired();
             // Note:
             //  this task is still not removed from timer list of target CPU,
             //  which may cause some redundant timer events because it still needs to
@@ -76,8 +79,9 @@ impl WaitQueue {
     /// Blocks the current task and put it into the wait queue, until other task
     /// notifies it.
     pub fn wait(&self) {
-        current_run_queue::<NoPreemptIrqSave>().blocked_resched(self.queue.lock());
-        self.cancel_events(crate::current(), false);
+        let waiter = &WaitTaskNode::from_current();
+        current_run_queue::<NoPreemptIrqSave>().blocked_resched(self.list.lock(), waiter);
+        self.cancel_events(waiter, false);
     }
 
     /// Blocks the current task and put it into the wait queue, until the given
@@ -89,23 +93,25 @@ impl WaitQueue {
     where
         F: Fn() -> bool,
     {
-        let curr = crate::current();
+        let waiter = &WaitTaskNode::from_current();
         loop {
             let mut rq = current_run_queue::<NoPreemptIrqSave>();
-            let wq = self.queue.lock();
+            let wq = self.list.lock();
             if condition() {
                 break;
             }
-            rq.blocked_resched(wq);
+            rq.blocked_resched(wq, waiter);
             // Preemption may occur here.
         }
-        self.cancel_events(curr, false);
+
+        self.cancel_events(waiter, false);
     }
 
     /// Blocks the current task and put it into the wait queue, until other tasks
     /// notify it, or the given duration has elapsed.
     #[cfg(feature = "irq")]
     pub fn wait_timeout(&self, dur: core::time::Duration) -> bool {
+        let waiter = &WaitTaskNode::from_current();
         let mut rq = current_run_queue::<NoPreemptIrqSave>();
         let curr = crate::current();
         let deadline = axhal::time::wall_time() + dur;
@@ -116,12 +122,12 @@ impl WaitQueue {
         );
         crate::timers::set_alarm_wakeup(deadline, curr.clone());
 
-        rq.blocked_resched(self.queue.lock());
+        rq.blocked_resched(self.list.lock(), waiter);
 
-        let timeout = curr.in_wait_queue(); // still in the wait queue, must have timed out
+        let timeout = axhal::time::wall_time() >= deadline;
 
         // Always try to remove the task from the timer list.
-        self.cancel_events(curr, true);
+        self.cancel_events(waiter, true);
         timeout
     }
 
@@ -135,6 +141,7 @@ impl WaitQueue {
     where
         F: Fn() -> bool,
     {
+        let waiter = &WaitTaskNode::from_current();
         let curr = crate::current();
         let deadline = axhal::time::wall_time() + dur;
         debug!(
@@ -150,17 +157,17 @@ impl WaitQueue {
             if axhal::time::wall_time() >= deadline {
                 break;
             }
-            let wq = self.queue.lock();
+            let wq = self.list.lock();
             if condition() {
                 timeout = false;
                 break;
             }
-
-            rq.blocked_resched(wq);
+            rq.blocked_resched(wq, waiter);
             // Preemption may occur here.
         }
+
         // Always try to remove the task from the timer list.
-        self.cancel_events(curr, true);
+        self.cancel_events(waiter, true);
         timeout
     }
 
@@ -169,9 +176,11 @@ impl WaitQueue {
     /// If `resched` is true, the current task will be preempted when the
     /// preemption is enabled.
     pub fn notify_one(&self, resched: bool) -> bool {
-        let mut wq = self.queue.lock();
-        if let Some(task) = wq.pop_front() {
-            unblock_one_task(task, resched);
+        let mut wq = self.list.lock();
+        if let Some(waiter) = wq.pop_front() {
+            // SAFETY: waiter NonNull<T> is valid created by block
+            let waiter_ref = unsafe { waiter.as_ref() };
+            unblock_one_task(waiter_ref.inner().clone(), resched);
             true
         } else {
             false
@@ -193,19 +202,25 @@ impl WaitQueue {
     /// If `resched` is true, the current task will be preempted when the
     /// preemption is enabled.
     pub fn notify_task(&mut self, resched: bool, task: &AxTaskRef) -> bool {
-        let mut wq = self.queue.lock();
-        if let Some(index) = wq.iter().position(|t| Arc::ptr_eq(t, task)) {
-            unblock_one_task(wq.remove(index).unwrap(), resched);
-            true
-        } else {
-            false
+        let mut wq = self.list.lock();
+        let mut cursor = wq.cursor_front_mut();
+        loop {
+            match cursor.current() {
+                Some(node) => {
+                    if Arc::ptr_eq(node.inner(), task) {
+                        cursor.remove_current();
+                        unblock_one_task(task.clone(), resched);
+                        break true;
+                    }
+                }
+                None => break false,
+            }
+            cursor.move_next();
         }
     }
 }
 
 fn unblock_one_task(task: AxTaskRef, resched: bool) {
-    // Mark task as not in wait queue.
-    task.set_in_wait_queue(false);
     // Select run queue by the CPU set of the task.
     // Use `NoOp` kernel guard here because the function is called with holding the
     // lock of wait queue, where the irq and preemption are disabled.

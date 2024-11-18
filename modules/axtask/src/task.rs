@@ -1,7 +1,10 @@
 use alloc::{boxed::Box, string::String, sync::Arc};
 use core::ops::Deref;
-use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, AtomicU8, Ordering};
+use core::sync::atomic::{AtomicI32, AtomicU64, AtomicU8, Ordering};
 use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
+
+#[cfg(any(feature = "smp", feature = "preempt"))]
+use core::sync::atomic::AtomicBool;
 
 #[cfg(feature = "smp")]
 use alloc::sync::Weak;
@@ -49,9 +52,6 @@ pub struct TaskInner {
 
     /// CPU affinity mask.
     cpumask: SpinNoIrq<AxCpuMask>,
-
-    /// Mark whether the task is in the wait queue.
-    in_wait_queue: AtomicBool,
 
     /// Used to indicate whether the task is running on a CPU.
     #[cfg(feature = "smp")]
@@ -228,7 +228,6 @@ impl TaskInner {
             state: AtomicU8::new(TaskState::Ready as u8),
             // By default, the task is allowed to run on all CPUs.
             cpumask: SpinNoIrq::new(AxCpuMask::full()),
-            in_wait_queue: AtomicBool::new(false),
             #[cfg(feature = "irq")]
             timer_ticket_id: AtomicU64::new(0),
             #[cfg(feature = "smp")]
@@ -315,16 +314,6 @@ impl TaskInner {
     #[inline]
     pub(crate) const fn is_idle(&self) -> bool {
         self.is_idle
-    }
-
-    #[inline]
-    pub(crate) fn in_wait_queue(&self) -> bool {
-        self.in_wait_queue.load(Ordering::Acquire)
-    }
-
-    #[inline]
-    pub(crate) fn set_in_wait_queue(&self, in_wait_queue: bool) {
-        self.in_wait_queue.store(in_wait_queue, Ordering::Release);
     }
 
     /// Returns task's current timer ticket ID.
