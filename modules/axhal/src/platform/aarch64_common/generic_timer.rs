@@ -101,12 +101,12 @@ pub(crate) fn init_percpu() {
     }
     #[cfg(all(feature = "irq", feature = "hv"))]
     {
-        // ENABLE, bit [0]， Enables the timer.
-        let ctl = 1;
-        let tval = 0;
         unsafe {
-            core::arch::asm!("msr CNTHP_CTL_EL2, {0:x}", in(reg) ctl);
-            core::arch::asm!("msr CNTHP_TVAL_EL2, {0:x}", in(reg) tval);
+            // ENABLE, bit [0], Enables the timer.
+            // * 0b0: Timer disabled.
+            // * 0b1: Timer enabled.
+            core::arch::asm!("msr CNTHP_CTL_EL2, {0:x}", in(reg) 0b1);
+            core::arch::asm!("msr CNTHP_TVAL_EL2, {0:x}", in(reg) 0);
         }
     }
     #[cfg(feature = "irq")]

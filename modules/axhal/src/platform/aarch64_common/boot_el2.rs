@@ -38,7 +38,18 @@ unsafe fn switch_to_el2() {
 
 unsafe fn init_mmu_el2() {
     // Set EL1 to 64bit.
-    HCR_EL2.write(HCR_EL2::RW::EL1IsAarch64);
+    // Enable `IMO` and `FMO` to make sure that:
+    // * Physical IRQ interrupts are taken to EL2;
+    // * Virtual IRQ interrupts are enabled;
+    // * Physical FIQ interrupts are taken to EL2;
+    // * Virtual FIQ interrupts are enabled.
+    HCR_EL2.modify(
+        HCR_EL2::VM::Enable
+            + HCR_EL2::RW::EL1IsAarch64
+            + HCR_EL2::IMO::EnableVirtualIRQ // Physical IRQ Routing.
+            + HCR_EL2::FMO::EnableVirtualFIQ // Physical FIQ Routing.
+            + HCR_EL2::TSC::EnableTrapEl1SmcToEl2,
+    );
 
     // Device-nGnRE memory
     let attr0 = MAIR_EL2::Attr0_Device::nonGathering_nonReordering_EarlyWriteAck;

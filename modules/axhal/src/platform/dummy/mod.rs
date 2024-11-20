@@ -83,6 +83,11 @@ pub mod irq {
     /// up in the IRQ handler table and calls the corresponding handler. If
     /// necessary, it also acknowledges the interrupt controller after handling.
     pub fn dispatch_irq(irq_num: usize) {}
+
+    /// Fetches the IRQ number.
+    pub fn fetch_irq() -> usize {
+        0
+    }
 }
 
 /// Initializes the platform devices for the primary CPU.
