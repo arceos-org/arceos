@@ -41,10 +41,33 @@ fn create_init_files() -> Result<()> {
     Ok(())
 }
 
+mod axns_imp {
+    use axns::{AxNamespace, AxNamespaceIf};
+    use lazyinit::LazyInit;
+
+    thread_local! {
+        static NS: LazyInit<AxNamespace> = LazyInit::new();
+    }
+    struct AxNamespaceImpl;
+
+    #[crate_interface::impl_interface]
+    impl AxNamespaceIf for AxNamespaceImpl {
+        fn current_namespace_base() -> *mut u8 {
+            NS.with(|ns| ns.base())
+        }
+    }
+
+    pub(crate) fn thread_init_namespace() {
+        NS.with(|ns| {
+            ns.init_once(AxNamespace::global());
+        });
+    }
+}
+
 #[test]
 fn test_ramfs() {
     println!("Testing ramfs ...");
-
+    axns_imp::thread_init_namespace();
     axtask::init_scheduler(); // call this to use `axsync::Mutex`.
     axfs::init_filesystems(AxDeviceContainer::from_one(RamDisk::default())); // dummy disk, actually not used.
 

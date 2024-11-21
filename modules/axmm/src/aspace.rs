@@ -168,6 +168,15 @@ impl AddrSpace {
     /// To process data in this area with the given function.
     ///
     /// Now it supports reading and writing data in the given interval.
+    ///
+    /// # Arguments
+    /// - `start`: The start virtual address to process.
+    /// - `size`: The size of the data to process.
+    /// - `f`: The function to process the data, whose arguments are the start virtual address,
+    /// the offset and the size of the data.
+    ///
+    /// # Notes
+    /// The caller must ensure that the permission of the operation is allowed.
     fn process_area_data<F>(&self, start: VirtAddr, size: usize, mut f: F) -> AxResult
     where
         F: FnMut(VirtAddr, usize, usize),

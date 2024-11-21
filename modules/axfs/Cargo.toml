@@ -10,6 +10,7 @@ repository = "https://github.com/arceos-org/arceos/tree/main/modules/axfs"
 documentation = "https://arceos-org.github.io/arceos/axfs/index.html"
 
 [features]
+thread-local = ["axns/thread-local"]
 devfs = ["dep:axfs_devfs"]
 ramfs = ["dep:axfs_ramfs"]
 procfs = ["dep:axfs_ramfs"]
@@ -34,6 +35,7 @@ crate_interface = { version = "0.1", optional = true }
 axsync = { workspace = true }
 axdriver = { workspace = true, features = ["block"] }
 axdriver_block = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.0" }
+axns = { workspace = true }
 
 [dependencies.fatfs]
 git = "https://github.com/rafalh/rust-fatfs"
@@ -52,3 +54,5 @@ axdriver = { workspace = true, features = ["block", "ramdisk"] }
 axdriver_block = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.0", features = ["ramdisk"] }
 axsync = { workspace = true, features = ["multitask"] }
 axtask = { workspace = true, features = ["test"] }
+crate_interface = "0.1"
+axns = { workspace = true, features = ["thread-local"] }

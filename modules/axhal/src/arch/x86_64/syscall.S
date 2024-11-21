@@ -1,4 +1,5 @@
 .section .text
+.code64
 syscall_entry:
     swapgs                                                      // switch to kernel gs
     mov     gs:[offset __PERCPU_USER_RSP_OFFSET], rsp           // save user rsp
