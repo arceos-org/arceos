@@ -3,8 +3,6 @@ use core::ops::Deref;
 use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, AtomicU8, Ordering};
 use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 
-#[cfg(feature = "smp")]
-use alloc::sync::Weak;
 #[cfg(feature = "preempt")]
 use core::sync::atomic::AtomicUsize;
 
@@ -56,9 +54,6 @@ pub struct TaskInner {
     /// Used to indicate whether the task is running on a CPU.
     #[cfg(feature = "smp")]
     on_cpu: AtomicBool,
-    /// A weak reference to the previous task running on this CPU.
-    #[cfg(feature = "smp")]
-    prev_task: UnsafeCell<Weak<AxTask>>,
 
     /// A ticket ID used to identify the timer event.
     /// Set by `set_timer_ticket()` when creating a timer event in `set_alarm_wakeup()`,
@@ -233,8 +228,6 @@ impl TaskInner {
             timer_ticket_id: AtomicU64::new(0),
             #[cfg(feature = "smp")]
             on_cpu: AtomicBool::new(false),
-            #[cfg(feature = "smp")]
-            prev_task: UnsafeCell::new(Weak::default()),
             #[cfg(feature = "preempt")]
             need_resched: AtomicBool::new(false),
             #[cfg(feature = "preempt")]
@@ -412,47 +405,16 @@ impl TaskInner {
     /// The `on_cpu field is set to `true` when the task is preparing to run on a CPU,
     /// and it is set to `false` when the task has finished its scheduling process in `clear_prev_task_on_cpu()`.
     #[cfg(feature = "smp")]
+    #[inline]
     pub(crate) fn on_cpu(&self) -> bool {
         self.on_cpu.load(Ordering::Acquire)
     }
 
     /// Sets whether the task is running on a CPU.
     #[cfg(feature = "smp")]
+    #[inline]
     pub(crate) fn set_on_cpu(&self, on_cpu: bool) {
         self.on_cpu.store(on_cpu, Ordering::Release)
-    }
-
-    /// Stores a weak reference to the previous task running on this CPU.
-    ///
-    /// ## Safety
-    /// This function is only called by current task in `switch_to`.
-    #[cfg(feature = "smp")]
-    pub(crate) unsafe fn set_prev_task(&self, prev_task: &AxTaskRef) {
-        *self.prev_task.get() = Arc::downgrade(prev_task);
-    }
-
-    /// Clears the `on_cpu` field of previous task running on this CPU.
-    /// It is called by the current task before running.
-    /// The weak reference of previous task running on this CPU is set through `set_prev_task()`.
-    ///
-    /// Panic if the pointer is invalid or the previous task is dropped.
-    ///
-    /// ## Note
-    /// This must be the very last reference to @_prev_task from this CPU.
-    /// After `on_cpu` is cleared, the task can be moved to a different CPU.
-    /// We must ensure this doesn't happen until the switch is completely finished.
-    ///
-    /// ## Safety
-    /// The caller must ensure that the weak reference to the prev task is valid, which is
-    /// done by the previous task running on this CPU through `set_prev_task()`.
-    #[cfg(feature = "smp")]
-    pub(crate) unsafe fn clear_prev_task_on_cpu(&self) {
-        self.prev_task
-            .get()
-            .as_ref()
-            .and_then(|weak| weak.upgrade())
-            .expect("Invalid prev_task pointer or prev_task has been dropped")
-            .set_on_cpu(false);
     }
 }
 
@@ -558,7 +520,7 @@ extern "C" fn task_entry() -> ! {
     #[cfg(feature = "smp")]
     unsafe {
         // Clear the prev task on CPU before running the task entry function.
-        crate::current().clear_prev_task_on_cpu();
+        crate::run_queue::clear_prev_task_on_cpu();
     }
     // Enable irq (if feature "irq" is enabled) before running the task entry function.
     #[cfg(feature = "irq")]

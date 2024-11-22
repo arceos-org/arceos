@@ -151,12 +151,26 @@ pub fn set_current_affinity(cpumask: AxCpuMask) -> bool {
     if cpumask.is_empty() {
         false
     } else {
-        let mut rq = current_run_queue::<NoPreemptIrqSave>();
-        current().set_cpumask(cpumask);
+        let curr = current().clone();
+
+        curr.set_cpumask(cpumask);
         // After setting the affinity, we need to check if current cpu matches
         // the affinity. If not, we need to migrate the task to the correct CPU.
+        #[cfg(feature = "smp")]
         if !cpumask.get(axhal::cpu::this_cpu_id()) {
-            rq.migrate_current();
+            const MIGRATION_TASK_STACK_SIZE: usize = 4096;
+            // Spawn a new migration task for migrating.
+            let migration_task = TaskInner::new(
+                move || crate::run_queue::migrate_entry(curr),
+                "migration-task".into(),
+                MIGRATION_TASK_STACK_SIZE,
+            )
+            .into_arc();
+
+            // Migrate the current task to the correct CPU using the migration task.
+            current_run_queue::<NoPreemptIrqSave>().migrate_current(migration_task);
+
+            assert!(cpumask.get(axhal::cpu::this_cpu_id()), "Migration failed");
         }
         true
     }
