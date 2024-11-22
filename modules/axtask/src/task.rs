@@ -520,7 +520,7 @@ extern "C" fn task_entry() -> ! {
     #[cfg(feature = "smp")]
     unsafe {
         // Clear the prev task on CPU before running the task entry function.
-        crate::run_queue::finish_task_switch();
+        crate::run_queue::clear_prev_task_on_cpu();
     }
     // Enable irq (if feature "irq" is enabled) before running the task entry function.
     #[cfg(feature = "irq")]
