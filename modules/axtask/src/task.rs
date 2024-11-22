@@ -403,7 +403,7 @@ impl TaskInner {
     /// It is used to protect the task from being moved to a different run queue
     /// while it has not finished its scheduling process.
     /// The `on_cpu field is set to `true` when the task is preparing to run on a CPU,
-    /// and it is set to `false` when the task has finished its scheduling process in `finish_task_switch()`.
+    /// and it is set to `false` when the task has finished its scheduling process in `clear_prev_task_on_cpu()`.
     #[cfg(feature = "smp")]
     #[inline]
     pub(crate) fn on_cpu(&self) -> bool {

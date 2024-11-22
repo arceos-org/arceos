@@ -151,12 +151,24 @@ pub fn set_current_affinity(cpumask: AxCpuMask) -> bool {
     if cpumask.is_empty() {
         false
     } else {
-        current().set_cpumask(cpumask);
+        let curr = current().clone();
+
+        curr.set_cpumask(cpumask);
         // After setting the affinity, we need to check if current cpu matches
         // the affinity. If not, we need to migrate the task to the correct CPU.
         #[cfg(feature = "smp")]
         if !cpumask.get(axhal::cpu::this_cpu_id()) {
-            current_run_queue::<NoPreemptIrqSave>().migrate_current();
+            const MIGRATION_TASK_STACK_SIZE: usize = 4096;
+            // Spawn a new migration task for migrating.
+            let migration_task = TaskInner::new(
+                move || run_migrating(curr.clone()),
+                "migration-task".into(),
+                MIGRATION_TASK_STACK_SIZE,
+            )
+            .into_arc();
+
+            // Migrate the current task to the correct CPU using the migration task.
+            current_run_queue::<NoPreemptIrqSave>().migrate_current(migration_task);
         }
         true
     }
@@ -200,4 +212,12 @@ pub fn run_idle() -> ! {
         #[cfg(feature = "irq")]
         axhal::arch::wait_for_irqs();
     }
+}
+
+/// The task routine for migrating the current task to the correct CPU.
+///
+/// It calls `select_run_queue` to get the correct run queue for the task, and
+/// then puts the task to the run queue.
+fn run_migrating(migrated_task: AxTaskRef) {
+    select_run_queue::<NoPreemptIrqSave>(&migrated_task).put_prev_task(migrated_task);
 }

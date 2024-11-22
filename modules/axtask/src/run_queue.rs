@@ -226,6 +226,9 @@ impl<'a, G: BaseGuard> Drop for CurrentRunQueueRef<'a, G> {
 
 /// Management operations for run queue, including adding tasks, unblocking tasks, etc.
 impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
+    /// Adds a task to the scheduler.
+    ///
+    /// This function is used to add a new task to the scheduler.
     pub fn add_task(&mut self, task: AxTaskRef) {
         debug!(
             "task add: {} on run_queue {}",
@@ -234,6 +237,12 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
         );
         assert!(task.is_ready());
         self.inner.scheduler.lock().add_task(task);
+    }
+
+    /// Puts the previous task back to the scheduler if the run queue.
+    pub fn put_prev_task(&mut self, task: AxTaskRef) {
+        assert!(task.is_ready());
+        self.inner.scheduler.lock().put_prev_task(task, false);
     }
 
     /// Unblock one task by inserting it into the run queue.
@@ -290,34 +299,24 @@ impl<'a, G: BaseGuard> CurrentRunQueueRef<'a, G> {
     }
 
     /// Migrate the current task to a new run queue matching its CPU affinity and reschedule.
-    /// This function will spawn a new migration task to perform the migration, which will set
+    /// This function will spawn a new `migration_task` to perform the migration, which will set
     /// current task to `Ready` state and select a proper run queue for it according to its CPU affinity,
     /// switch to the migration task immediately after migration task is prepared.
     ///
-    /// Note: the ownership if migrating task's `AxTaskRef` is handed over to the migration task, before the
-    /// migration task inserted it into the target run queue.
+    /// Note: the ownership if migrating task (which is current task) is handed over to the migration task,
+    /// before the migration task inserted it into the target run queue.
     #[cfg(feature = "smp")]
-    pub fn migrate_current(&mut self) {
-        let curr = self.current_task.clone();
+    pub fn migrate_current(&mut self, migration_task: AxTaskRef) {
+        let curr = &self.current_task;
         trace!("task migrate: {}", curr.id_name());
         assert!(curr.is_running());
 
-        const MIGRATION_TASK_STACK_SIZE: usize = 4096;
-
-        // Do not put current task to the run queue,
-        // instead, spawn a new task for migrating.
-        let migration = TaskInner::new(
-            move || {
-                curr.set_state(TaskState::Ready);
-                select_run_queue::<kernel_guard::NoPreemptIrqSave>(&curr).add_task(curr);
-            },
-            "migration-task".into(),
-            MIGRATION_TASK_STACK_SIZE,
-        )
-        .into_arc();
+        // Mark current task's state as `Ready`,
+        // but, do not put current task to the scheduler of this run queue.
+        curr.set_state(TaskState::Ready);
 
         // Call `switch_to` to reschedule to the migration task that performs the migration directly.
-        self.inner.switch_to(crate::current(), migration);
+        self.inner.switch_to(crate::current(), migration_task);
     }
 
     /// Preempts the current task and reschedules.
@@ -487,7 +486,7 @@ impl AxRunQueue {
                 // If the owning (remote) CPU is still in the middle of schedule() with
                 // this task (next task) as prev, wait until it's done referencing the task.
                 //
-                // Pairs with the `finish_task_switch()`.
+                // Pairs with the `clear_prev_task_on_cpu()`.
                 //
                 // Note:
                 // 1. This should be placed after the judgement of `TaskState::Blocked,`,
