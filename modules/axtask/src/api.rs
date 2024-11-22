@@ -161,7 +161,7 @@ pub fn set_current_affinity(cpumask: AxCpuMask) -> bool {
             const MIGRATION_TASK_STACK_SIZE: usize = 4096;
             // Spawn a new migration task for migrating.
             let migration_task = TaskInner::new(
-                move || run_migrating(curr.clone()),
+                move || migrate_entry(curr.clone()),
                 "migration-task".into(),
                 MIGRATION_TASK_STACK_SIZE,
             )
@@ -169,6 +169,8 @@ pub fn set_current_affinity(cpumask: AxCpuMask) -> bool {
 
             // Migrate the current task to the correct CPU using the migration task.
             current_run_queue::<NoPreemptIrqSave>().migrate_current(migration_task);
+
+            assert!(cpumask.get(axhal::cpu::this_cpu_id()), "Migration failed");
         }
         true
     }
@@ -218,6 +220,6 @@ pub fn run_idle() -> ! {
 ///
 /// It calls `select_run_queue` to get the correct run queue for the task, and
 /// then puts the task to the run queue.
-fn run_migrating(migrated_task: AxTaskRef) {
+fn migrate_entry(migrated_task: AxTaskRef) {
     select_run_queue::<NoPreemptIrqSave>(&migrated_task).put_prev_task(migrated_task);
 }
