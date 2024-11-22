@@ -239,12 +239,6 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
         self.inner.scheduler.lock().add_task(task);
     }
 
-    /// Puts the previous task back to the scheduler if the run queue.
-    pub fn put_prev_task(&mut self, task: AxTaskRef) {
-        assert!(task.is_ready());
-        self.inner.scheduler.lock().put_prev_task(task, false);
-    }
-
     /// Unblock one task by inserting it into the run queue.
     ///
     /// This function does nothing if the task is not in [`TaskState::Blocked`],
@@ -600,6 +594,19 @@ fn gc_entry() {
         // Since gc task is pinned to the current CPU, there is no affection if the gc task is preempted during the process.
         unsafe { WAIT_FOR_EXIT.current_ref_raw() }.wait();
     }
+}
+
+/// The task routine for migrating the current task to the correct CPU.
+///
+/// It calls `select_run_queue` to get the correct run queue for the task, and
+/// then puts the task to the scheduler of target run queue.
+#[cfg(feature = "smp")]
+pub(crate) fn migrate_entry(migrated_task: AxTaskRef) {
+    select_run_queue::<kernel_guard::NoPreemptIrqSave>(&migrated_task)
+        .inner
+        .scheduler
+        .lock()
+        .put_prev_task(migrated_task, false)
 }
 
 /// Clear the `on_cpu` field of previous task running on this CPU.
