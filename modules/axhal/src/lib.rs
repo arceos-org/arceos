@@ -57,6 +57,9 @@ pub mod irq;
 #[cfg(feature = "paging")]
 pub mod paging;
 
+#[cfg(feature = "alloc")]
+mod dma;
+
 /// Console input and output.
 pub mod console {
     pub use super::platform::console::*;

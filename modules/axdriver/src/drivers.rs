@@ -31,6 +31,14 @@ pub trait DriverProbe {
     ) -> Option<AxDeviceEnum> {
         None
     }
+
+    #[cfg(bus = "pci")]
+    fn probe_pcie(
+        _root: &mut pcie::RootComplexGeneric,
+        _ep: &pcie::Endpoint,
+    ) -> Option<AxDeviceEnum> {
+        None
+    }
 }
 
 #[cfg(net_dev = "virtio-net")]
@@ -124,6 +132,26 @@ cfg_if::cfg_if! {
                         }
                     }
                     None
+            }
+        }
+    }
+}
+
+cfg_if::cfg_if! {
+    if #[cfg(block_dev="nvme")] {
+        use crate::nvme::Nvme;
+        use pcie::{Endpoint, RootComplexGeneric};
+        pub struct NvmeDriver;
+        register_block_driver!(NvmeDriver, Nvme);
+
+        impl DriverProbe for NvmeDriver {
+            #[cfg(bus = "pci")]
+            fn probe_pcie(root: &mut RootComplexGeneric, ep: &Endpoint) -> Option<crate::AxDeviceEnum> {
+                use crate::AxDeviceEnum;
+
+                let dev = Nvme::new(root, ep)?;
+
+                Some(AxDeviceEnum::from_block(dev))
             }
         }
     }
