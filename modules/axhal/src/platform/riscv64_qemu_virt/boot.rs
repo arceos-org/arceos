@@ -58,7 +58,6 @@ unsafe extern "C" fn _start() -> ! {
         init_boot_page_table = sym init_boot_page_table,
         init_mmu = sym init_mmu,
         entry = sym super::rust_entry,
-        options(noreturn),
     )
 }
 
@@ -88,6 +87,5 @@ unsafe extern "C" fn _start_secondary() -> ! {
         phys_virt_offset = const PHYS_VIRT_OFFSET,
         init_mmu = sym init_mmu,
         entry = sym super::rust_entry_secondary,
-        options(noreturn),
     )
 }

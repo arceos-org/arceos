@@ -82,7 +82,6 @@ What happens when "make A=apps/net/httpserver ARCH=aarch64 LOG=info NET=y SMP=1 
             init_mmu = sym init_mmu,
             platform_init = sym super::platform_init,
             rust_main = sym rust_main,
-            options(noreturn),
         )
     }
     ```

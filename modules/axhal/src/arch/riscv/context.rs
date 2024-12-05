@@ -1,4 +1,4 @@
-use core::arch::asm;
+use core::arch::naked_asm;
 use memory_addr::VirtAddr;
 
 include_asm_marcos!();
