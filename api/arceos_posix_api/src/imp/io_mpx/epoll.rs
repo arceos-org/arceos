@@ -195,7 +195,7 @@ pub unsafe fn sys_epoll_wait(
                 return Ok(events_num as c_int);
             }
 
-            if deadline.map_or(false, |ddl| wall_time() >= ddl) {
+            if deadline.is_some_and(|ddl| wall_time() >= ddl) {
                 debug!("    timeout!");
                 return Ok(0);
             }
