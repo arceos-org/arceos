@@ -244,7 +244,7 @@ impl Device for DeviceWrapper {
 struct AxNetRxToken<'a>(&'a RefCell<AxNetDevice>, NetBufPtr);
 struct AxNetTxToken<'a>(&'a RefCell<AxNetDevice>);
 
-impl<'a> RxToken for AxNetRxToken<'a> {
+impl RxToken for AxNetRxToken<'_> {
     fn preprocess(&self, sockets: &mut SocketSet<'_>) {
         snoop_tcp_packet(self.1.packet(), sockets).ok();
     }
@@ -265,7 +265,7 @@ impl<'a> RxToken for AxNetRxToken<'a> {
     }
 }
 
-impl<'a> TxToken for AxNetTxToken<'a> {
+impl TxToken for AxNetTxToken<'_> {
     fn consume<R, F>(self, len: usize, f: F) -> R
     where
         F: FnOnce(&mut [u8]) -> R,
