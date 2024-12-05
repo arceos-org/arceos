@@ -107,7 +107,7 @@ unsafe fn init_boot_page_table() {
 unsafe extern "C" fn _start() -> ! {
     // PC = 0x8_0000
     // X0 = dtb
-    core::arch::asm!("
+    core::arch::naked_asm!("
         mrs     x19, mpidr_el1
         and     x19, x19, #0xffffff     // get current CPU id
         mov     x20, x0                 // save DTB pointer
@@ -147,7 +147,7 @@ unsafe extern "C" fn _start() -> ! {
 #[no_mangle]
 #[link_section = ".text.boot"]
 unsafe extern "C" fn _start_secondary() -> ! {
-    core::arch::asm!("
+    core::arch::naked_asm!("
         mrs     x19, mpidr_el1
         and     x19, x19, #0xffffff     // get current CPU id
 

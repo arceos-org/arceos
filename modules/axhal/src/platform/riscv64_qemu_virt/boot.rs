@@ -33,7 +33,7 @@ unsafe extern "C" fn _start() -> ! {
     // PC = 0x8020_0000
     // a0 = hartid
     // a1 = dtb
-    core::arch::asm!("
+    core::arch::naked_asm!("
         mv      s0, a0                  // save hartid
         mv      s1, a1                  // save DTB pointer
         la      sp, {boot_stack}
@@ -70,7 +70,7 @@ unsafe extern "C" fn _start() -> ! {
 unsafe extern "C" fn _start_secondary() -> ! {
     // a0 = hartid
     // a1 = SP
-    core::arch::asm!("
+    core::arch::naked_asm!("
         mv      s0, a0                  // save hartid
         mv      sp, a1                  // set SP
 
