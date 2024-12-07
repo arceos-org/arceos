@@ -78,6 +78,9 @@ mod virtio;
 #[cfg(feature = "ixgbe")]
 mod ixgbe;
 
+#[cfg(feature = "nvme")]
+mod nvme;
+
 pub mod prelude;
 
 #[allow(unused_imports)]

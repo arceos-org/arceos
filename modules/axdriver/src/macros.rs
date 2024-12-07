@@ -64,5 +64,10 @@ macro_rules! for_each_drivers {
             type $drv_type = crate::drivers::IxgbeDriver;
             $code
         }
+        #[cfg(block_dev = "nvme")]
+        {
+            type $drv_type = crate::drivers::NvmeDriver;
+            $code
+        }
     }};
 }

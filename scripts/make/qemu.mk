@@ -27,8 +27,14 @@ qemu_args-aarch64 := \
 qemu_args-y := -m 128M -smp $(SMP) $(qemu_args-$(ARCH))
 
 qemu_args-$(BLK) += \
-  -device virtio-blk-$(vdev-suffix),drive=disk0 \
   -drive id=disk0,if=none,format=raw,file=$(DISK_IMG)
+ifeq ($(BLK_DEV), virtio)
+  qemu_args-$(BLK) += -device virtio-blk-$(vdev-suffix),drive=disk0 
+else ifeq ($(BLK_DEV), nvme)
+  qemu_args-$(BLK) += -device nvme,serial=deadbeef,drive=disk0
+else
+  $(error "BLK_DEV" must be one of "virtio", or "nvme")
+endif
 
 qemu_args-$(NET) += \
   -device virtio-net-$(vdev-suffix),netdev=net0

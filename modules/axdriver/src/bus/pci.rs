@@ -1,8 +1,11 @@
+use core::ptr::NonNull;
+
 use crate::{prelude::*, AllDevices};
 use axdriver_pci::{
     BarInfo, Cam, Command, DeviceFunction, HeaderType, MemoryBarType, PciRangeAllocator, PciRoot,
 };
 use axhal::mem::phys_to_virt;
+use pcie::{Header, RootComplexGeneric};
 
 const PCI_BAR_NUM: u8 = 6;
 
@@ -84,6 +87,33 @@ fn config_pci_device(
 
 impl AllDevices {
     pub(crate) fn probe_bus_devices(&mut self) {
+        self.probe_pci_devices();
+        self.probe_pcie_devices();
+    }
+
+    fn probe_pcie_devices(&mut self) {
+        let base_vaddr = phys_to_virt(axconfig::PCI_ECAM_BASE.into());
+        let mut root = RootComplexGeneric::new(NonNull::new(base_vaddr.as_mut_ptr()).unwrap());
+
+        for elem in root.enumerate_keep_bar(None) {
+            if let Header::Endpoint(ep) = elem.header {
+                for_each_drivers!(type Driver, {
+                    if let Some(dev) = Driver::probe_pcie(elem.root, &ep) {
+                        info!(
+                            "registered a new {:?} device at {:?}: {:?}",
+                            dev.device_type(),
+                            ep.address,
+                            dev.device_name(),
+                        );
+                        self.add_device(dev);
+                        continue; // skip to the next device
+                    }
+                })
+            }
+        }
+    }
+
+    fn probe_pci_devices(&mut self) {
         let base_vaddr = phys_to_virt(axconfig::PCI_ECAM_BASE.into());
         let mut root = unsafe { PciRoot::new(base_vaddr.as_mut_ptr(), Cam::Ecam) };
 

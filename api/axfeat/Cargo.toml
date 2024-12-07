@@ -55,6 +55,7 @@ bus-pci = ["axdriver?/bus-pci"]
 driver-ramdisk = ["axdriver?/ramdisk", "axfs?/use-ramdisk"]
 driver-ixgbe = ["axdriver?/ixgbe"]
 driver-bcm2835-sdhci = ["axdriver?/bcm2835-sdhci"]
+driver-nvme = ["axdriver?/nvme"]
 
 # Logging
 log-level-off = ["axlog/log-level-off"]
