@@ -127,24 +127,34 @@ fn gen_config_rs(config_path: &Path) -> Result<Vec<u8>> {
                         writeln!(output, "pub const {var_name}: &str = \"{s}\";")?;
                     }
                 }
-                Value::Array(regions) => {
-                    if key != "mmio-regions" && key != "virtio-mmio-regions" && key != "pci-ranges"
-                    {
+                Value::Array(regions) => match key {
+                    "cpu-id-list" => {
+                        writeln!(output, "{comments}")?;
+                        writeln!(output, "pub const {var_name}: &[usize] = &[")?;
+                        for r in regions.iter() {
+                            let r = r.as_str().unwrap();
+                            writeln!(output, "{},", r)?;
+                        }
+                        writeln!(output, "];")?;
+                    }
+                    "mmio-regions" | "virtio-mmio-regions" | "pci-ranges" => {
+                        writeln!(output, "{comments}")?;
+                        writeln!(output, "pub const {var_name}: &[(usize, usize)] = &[")?;
+                        for r in regions.iter() {
+                            let r = r.as_array().unwrap();
+                            writeln!(
+                                output,
+                                "    ({}, {}),",
+                                r.get(0).unwrap().as_str().unwrap(),
+                                r.get(1).unwrap().as_str().unwrap()
+                            )?;
+                        }
+                        writeln!(output, "];")?;
+                    }
+                    _ => {
                         continue;
                     }
-                    writeln!(output, "{comments}")?;
-                    writeln!(output, "pub const {var_name}: &[(usize, usize)] = &[")?;
-                    for r in regions.iter() {
-                        let r = r.as_array().unwrap();
-                        writeln!(
-                            output,
-                            "    ({}, {}),",
-                            r.get(0).unwrap().as_str().unwrap(),
-                            r.get(1).unwrap().as_str().unwrap()
-                        )?;
-                    }
-                    writeln!(output, "];")?;
-                }
+                },
                 _ => {}
             }
         }
