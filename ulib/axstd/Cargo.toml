@@ -75,6 +75,7 @@ log-level-trace = ["axfeat/log-level-trace"]
 [dependencies]
 axfeat = { workspace = true }
 arceos_api = { workspace = true }
+axsync = { workspace = true }
 axio = "0.1"
 axerrno = "0.1"
 kspin = "0.1"
