@@ -12,3 +12,14 @@ cfg_if::cfg_if! {
         pub use self::aarch64::*;
     }
 }
+
+/// Cache operations.
+#[derive(Debug, Clone, Copy)]
+pub enum CacheOp {
+    /// Write back to memory
+    Clean,
+    /// Invalidate cache
+    Invalidate,
+    /// Clean and invalidate
+    CleanAndInvalidate,
+}

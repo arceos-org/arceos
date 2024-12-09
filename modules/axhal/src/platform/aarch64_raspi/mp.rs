@@ -32,11 +32,14 @@ pub fn start_secondary_cpu(cpu_id: usize, stack_top: PhysAddr) {
         let spintable_vaddr = phys_to_virt(CPU_SPIN_TABLE[cpu_id]);
         let release_ptr = spintable_vaddr.as_mut_ptr() as *mut usize;
         release_ptr.write_volatile(entry_paddr);
-        crate::arch::flush_dcache_line(spintable_vaddr);
+        crate::arch::dcache_line(crate::arch::CacheOp::CleanAndInvalidate, spintable_vaddr);
 
         // set the boot stack of the given secondary CPU
         SECONDARY_STACK_TOP = stack_top.as_usize();
-        crate::arch::flush_dcache_line(va!(core::ptr::addr_of!(SECONDARY_STACK_TOP) as usize));
+        crate::arch::dcache_line(
+            crate::arch::CacheOp::CleanAndInvalidate,
+            va!(core::ptr::addr_of!(SECONDARY_STACK_TOP) as usize),
+        );
     }
     aarch64_cpu::asm::sev();
 }
