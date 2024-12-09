@@ -4,6 +4,8 @@ mod macros;
 mod context;
 mod trap;
 
+use core::ptr::NonNull;
+
 use memory_addr::{PhysAddr, VirtAddr};
 use riscv::asm;
 use riscv::register::{satp, sstatus, stvec};
@@ -106,4 +108,18 @@ pub fn read_thread_pointer() -> usize {
 #[inline]
 pub unsafe fn write_thread_pointer(tp: usize) {
     core::arch::asm!("mv tp, {}", in(reg) tp)
+}
+
+/// Invalidate data cache
+#[inline]
+pub fn dcache_invalidate_range(_addr: NonNull<u8>, _size: usize) {
+    // generic no cache and no need op
+    // TODO: some cpu specific
+}
+
+/// Flush data cache
+#[inline]
+pub fn dcache_flush_range(_addr: NonNull<u8>, _size: usize) {
+    // generic no cache and no need op
+    // TODO: some cpu specific
 }
