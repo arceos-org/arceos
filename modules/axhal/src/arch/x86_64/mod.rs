@@ -1,3 +1,4 @@
+pub(crate) mod cache;
 mod context;
 mod gdt;
 mod idt;
