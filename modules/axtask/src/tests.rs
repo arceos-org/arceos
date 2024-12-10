@@ -4,11 +4,11 @@ use std::sync::{Mutex, Once};
 use crate::{api as axtask, current, WaitQueue};
 
 static INIT: Once = Once::new();
-static SERIAL: Mutex<()> = Mutex::new(());
+static SEQ: Mutex<()> = Mutex::new(());
 
 #[test]
 fn test_sched_fifo() {
-    let _lock = SERIAL.lock();
+    let _lock = SEQ.lock();
     INIT.call_once(axtask::init_scheduler);
 
     const NUM_TASKS: usize = 10;
@@ -34,7 +34,7 @@ fn test_sched_fifo() {
 
 #[test]
 fn test_fp_state_switch() {
-    let _lock = SERIAL.lock();
+    let _lock = SEQ.lock();
     INIT.call_once(axtask::init_scheduler);
 
     const NUM_TASKS: usize = 5;
@@ -65,7 +65,7 @@ fn test_fp_state_switch() {
 
 #[test]
 fn test_wait_queue() {
-    let _lock = SERIAL.lock();
+    let _lock = SEQ.lock();
     INIT.call_once(axtask::init_scheduler);
 
     const NUM_TASKS: usize = 10;
@@ -106,7 +106,7 @@ fn test_wait_queue() {
 
 #[test]
 fn test_task_join() {
-    let _lock = SERIAL.lock();
+    let _lock = SEQ.lock();
     INIT.call_once(axtask::init_scheduler);
 
     const NUM_TASKS: usize = 10;
