@@ -1,3 +1,4 @@
+mod cache;
 mod context;
 pub(crate) mod trap;
 
@@ -8,6 +9,7 @@ use memory_addr::{PhysAddr, VirtAddr};
 use tock_registers::interfaces::{Readable, Writeable};
 
 pub use self::context::{FpState, TaskContext, TrapFrame};
+pub use cache::{dcache_flush_range, dcache_invalidate_range};
 
 /// Allows the current CPU to respond to interrupts.
 #[inline]
