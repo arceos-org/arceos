@@ -71,5 +71,8 @@ pub fn platform_init_secondary() {
 }
 
 fn cpu_hard_id_to_logic_id(hard_id: usize) -> usize {
-    CPU_ID_LIST.iter().position(|&x| x == hard_id).unwrap()
+    axconfig::CPU_ID_LIST
+        .iter()
+        .position(|&x| x == hard_id)
+        .unwrap()
 }
