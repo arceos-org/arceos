@@ -40,6 +40,8 @@ axplat = "0.1"
 axlog = { workspace = true }
 axconfig = { workspace = true }
 axalloc = { workspace = true, optional = true }
+cortex-a = { version = "8.1.1", optional = true }
+cpumask = { version = "0.1", optional = true }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 axplat-x86-pc = { version = "0.1", optional = true }

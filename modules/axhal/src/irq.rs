@@ -2,7 +2,7 @@
 
 use axcpu::trap::{IRQ, register_trap_handler};
 
-pub use axplat::irq::{handle, register, set_enable, unregister};
+pub use axplat::irq::{handle, register, set_enable, unregister, IPI_IRQ_NUM};
 
 #[register_trap_handler(IRQ)]
 fn irq_handler(vector: usize) -> bool {

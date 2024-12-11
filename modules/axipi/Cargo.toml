@@ -1,0 +1,22 @@
+[package]
+name = "axipi"
+edition = "2021"
+version.workspace = true
+authors = ["Keyang Hu <keyang.hu@qq.com>"]
+description = "ArceOS IPI management module"
+license.workspace = true
+homepage.workspace = true
+# repository = "https://github.com/arceos-org/arceos/tree/main/modules/axipi"
+# documentation = "https://arceos-org.github.io/arceos/axipi/index.html"
+
+[features]
+default = []
+
+[dependencies]
+log = "=0.4.21"
+lazyinit = { version = "0.2" }
+
+percpu = { version = "0.1.5" }
+kspin = { version = "0.1" }
+
+axhal = { workspace = true }

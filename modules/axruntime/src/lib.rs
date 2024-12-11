@@ -265,6 +265,9 @@ fn init_interrupt() {
         axtask::on_timer_tick();
     });
 
+    #[cfg(feature = "ipi")]
+    axipi::init();
+
     // Enable IRQs before starting app
     axhal::asm::enable_irqs();
 }
