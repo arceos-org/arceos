@@ -1,3 +1,4 @@
+use alloc::boxed::Box;
 use alloc::collections::VecDeque;
 
 /// A queue of IPI events.
@@ -15,7 +16,7 @@ pub trait IPIEvent: 'static {
 }
 
 struct IPIEventWrapper<E> {
-    src_cpu_id: u32,
+    src_cpu_id: usize,
     event: E,
 }
 
@@ -33,16 +34,16 @@ impl<E: IPIEvent> IPIEventQueue<E> {
         self.events.is_empty()
     }
 
-    pub fn push(&mut self, src_cpu_id: u32, event: E) {
+    pub fn push(&mut self, src_cpu_id: usize, event: E) {
         self.events.push_back(IPIEventWrapper { src_cpu_id, event });
     }
 
     /// Try to pop the latest event that exists in the queue.
     ///
     /// Returns `None` if no event is available.
-    pub fn pop_one(&mut self) -> Option<E> {
+    pub fn pop_one(&mut self) -> Option<(usize, E)> {
         if let Some(e) = self.events.pop_front() {
-            Some(e.event)
+            Some((e.src_cpu_id, e.event))
         } else {
             None
         }
@@ -58,13 +59,14 @@ impl<E: IPIEvent> Default for IPIEventQueue<E> {
 /// A simple wrapper of a closure that implements the [`IPIEvent`] trait.
 ///
 /// So that it can be used as in the [`IPIEventQueue`].
-pub struct IPIEventFn(Box<dyn FnOnce() + 'static>);
+#[derive(Clone)]
+pub struct IPIEventFn(Box<&'static dyn Fn()>);
 
 impl IPIEventFn {
     /// Constructs a new [`IPIEventFn`] from a closure.
-    pub fn new<F>(f: F) -> Self
+    pub fn new<F>(f: &'static F) -> Self
     where
-        F: FnOnce() + 'static,
+        F: Fn(),
     {
         Self(Box::new(f))
     }

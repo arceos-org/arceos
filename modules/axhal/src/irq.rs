@@ -4,6 +4,9 @@ use axcpu::trap::{IRQ, register_trap_handler};
 
 pub use axplat::irq::{handle, register, set_enable, unregister, IPI_IRQ_NUM};
 
+#[cfg(feature = "ipi")]
+pub use crate::platform::irq::{send_sgi_all, send_sgi_one, IPI_IRQ_NUM};
+
 #[register_trap_handler(IRQ)]
 fn irq_handler(vector: usize) -> bool {
     let guard = kernel_guard::NoPreempt::new();

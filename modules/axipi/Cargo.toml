@@ -20,3 +20,4 @@ percpu = { version = "0.1.5" }
 kspin = { version = "0.1" }
 
 axhal = { workspace = true }
+axconfig = { workspace = true }

@@ -391,6 +391,7 @@ pub mod modules {
     pub use axlog;
     pub use axruntime;
     pub use axsync;
+    pub use axipi;
 
     #[cfg(feature = "alloc")]
     pub use axalloc;

@@ -6,6 +6,9 @@ use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 #[cfg(feature = "preempt")]
 use core::sync::atomic::AtomicUsize;
 
+#[cfg(feature = "smp")]
+use core::sync::atomic::AtomicU32;
+
 use kspin::SpinNoIrq;
 use memory_addr::{VirtAddr, align_up_4k};
 

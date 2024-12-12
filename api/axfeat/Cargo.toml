@@ -20,7 +20,7 @@ fp-simd = ["axhal/fp-simd"]
 
 # Interrupts
 irq = ["axhal/irq", "axruntime/irq", "axtask?/irq"]
-ipi = ["axruntime/ipi"]
+ipi = ["axhal/ipi", "axruntime/ipi"]
 
 # Custom or default platforms
 myplat = ["axhal/myplat"]
