@@ -141,7 +141,7 @@ pub unsafe fn sys_select(
                 return Ok(res);
             }
 
-            if deadline.map_or(false, |ddl| wall_time() >= ddl) {
+            if deadline.is_some_and(|ddl| wall_time() >= ddl) {
                 debug!("    timeout!");
                 return Ok(0);
             }

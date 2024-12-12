@@ -1,7 +1,7 @@
 [package]
 name = "arceos_api"
 version.workspace = true
-edition = "2021"
+edition.workspace = true
 authors = ["Yuekai Jia <equation618@gmail.com>"]
 description = "Public APIs and types for ArceOS modules"
 license.workspace = true

@@ -32,6 +32,7 @@ pub unsafe extern "C" fn strerror(e: c_int) -> *mut c_char {
             .map(|e| e.as_str())
             .unwrap_or("Unknown error")
     };
+    #[allow(static_mut_refs)]
     unsafe {
         strerror_buf[..err_str.len()].copy_from_slice(err_str.as_bytes());
         strerror_buf.as_mut_ptr() as *mut c_char

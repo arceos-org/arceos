@@ -18,7 +18,6 @@
 //! [smoltcp]: https://github.com/smoltcp-rs/smoltcp
 
 #![no_std]
-#![feature(new_uninit)]
 
 #[macro_use]
 extern crate log;

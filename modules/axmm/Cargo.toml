@@ -1,7 +1,7 @@
 [package]
 name = "axmm"
 version.workspace = true
-edition = "2021"
+edition.workspace = true
 authors = ["Yuekai Jia <equation618@gmail.com>"]
 description = "ArceOS virtual memory management module"
 license.workspace = true

@@ -50,7 +50,7 @@ What happens when "make A=apps/net/httpserver ARCH=aarch64 LOG=info NET=y SMP=1 
         // PC = 0x8020_0000
         // a0 = hartid
         // a1 = dtb
-        core::arch::asm!("
+        core::arch::naked_asm!("
             mv      s0, a0                  // save hartid
             mv      s1, a1                  // save DTB pointer
             la      sp, {boot_stack}
@@ -82,7 +82,6 @@ What happens when "make A=apps/net/httpserver ARCH=aarch64 LOG=info NET=y SMP=1 
             init_mmu = sym init_mmu,
             platform_init = sym super::platform_init,
             rust_main = sym rust_main,
-            options(noreturn),
         )
     }
     ```

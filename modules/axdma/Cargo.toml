@@ -1,6 +1,6 @@
 [package]
 name = "axdma"
-edition = "2021"
+edition.workspace = true
 version.workspace = true
 authors = ["Zhour Rui <zrufo747@outlook.com>"]
 license.workspace = true

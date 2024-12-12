@@ -29,9 +29,6 @@
 #![feature(doc_cfg)]
 #![feature(doc_auto_cfg)]
 #![feature(linkage)]
-#![feature(const_mut_refs)]
-#![feature(const_ptr_is_null)]
-#![feature(const_unsafecell_get_mut)]
 
 #[cfg(test)]
 mod tests;

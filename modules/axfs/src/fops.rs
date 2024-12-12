@@ -49,6 +49,12 @@ pub struct OpenOptions {
     _mode: u32,
 }
 
+impl Default for OpenOptions {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl OpenOptions {
     /// Creates a blank new set of options ready for configuration.
     pub const fn new() -> Self {
