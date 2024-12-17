@@ -66,5 +66,7 @@ axsync = { path = "modules/axsync" }
 axtask = { path = "modules/axtask" }
 axdma = { path = "modules/axdma" }
 
+allocator = { git = "https://github.com/arceos-org/allocator.git", tag = "v0.1.1" }
+
 [profile.release]
 lto = true
