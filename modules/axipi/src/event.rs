@@ -33,9 +33,7 @@ impl MulticastCallback {
 
     /// Convert the [`MulticastCallback`] into a [`Callback`].
     pub fn into_unicast(self) -> Callback {
-        Callback(Box::new(move || {
-            (self.0)()
-        }))
+        Callback(Box::new(move || (self.0)()))
     }
 }
 

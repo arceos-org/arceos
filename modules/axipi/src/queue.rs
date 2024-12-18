@@ -27,7 +27,10 @@ impl IPIEventQueue {
 
     /// Push a new event into the queue.
     pub fn push(&mut self, src_cpu_id: usize, callback: Callback) {
-        self.events.push_back(IPIEvent { src_cpu_id, callback });
+        self.events.push_back(IPIEvent {
+            src_cpu_id,
+            callback,
+        });
     }
 
     /// Try to pop the latest event that exists in the queue.

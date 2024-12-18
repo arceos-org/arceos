@@ -16,8 +16,8 @@ use axhal::irq::IPI_IRQ_NUM;
 mod event;
 mod queue;
 
-use queue::IPIEventQueue;
 pub use event::*;
+use queue::IPIEventQueue;
 
 #[percpu::def_percpu]
 static IPI_EVENT_QUEUE: LazyInit<SpinNoIrq<IPIEventQueue>> = LazyInit::new();
