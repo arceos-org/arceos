@@ -1,27 +1,17 @@
-use alloc::boxed::Box;
 use alloc::collections::VecDeque;
+
+use crate::{Callback, IPIEvent};
 
 /// A queue of IPI events.
 ///
 /// It internally uses a `VecDeque` to store the events, make it
 /// possible to pop these events using FIFO order.
-pub struct IPIEventQueue<E: IPIEvent> {
-    events: VecDeque<IPIEventWrapper<E>>,
+pub struct IPIEventQueue {
+    events: VecDeque<IPIEvent>,
 }
 
-/// A trait that all events must implement.
-pub trait IPIEvent: Sized {
-    /// Callback function that will be called when the event is triggered.
-    fn callback(self);
-}
-
-struct IPIEventWrapper<E> {
-    src_cpu_id: usize,
-    event: E,
-}
-
-impl<E: IPIEvent> IPIEventQueue<E> {
-    /// Creates a new empty timer list.
+impl IPIEventQueue {
+    /// Create a new empty timer list.
     pub fn new() -> Self {
         Self {
             events: VecDeque::new(),
@@ -29,51 +19,32 @@ impl<E: IPIEvent> IPIEventQueue<E> {
     }
 
     /// Whether there is no event.
+    #[allow(dead_code)]
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.events.is_empty()
     }
 
-    pub fn push(&mut self, src_cpu_id: usize, event: E) {
-        self.events.push_back(IPIEventWrapper { src_cpu_id, event });
+    /// Push a new event into the queue.
+    pub fn push(&mut self, src_cpu_id: usize, callback: Callback) {
+        self.events.push_back(IPIEvent { src_cpu_id, callback });
     }
 
     /// Try to pop the latest event that exists in the queue.
     ///
-    /// Returns `None` if no event is available.
-    pub fn pop_one(&mut self) -> Option<(usize, E)> {
+    /// Return `None` if no event is available.
+    #[must_use]
+    pub fn pop_one(&mut self) -> Option<(usize, Callback)> {
         if let Some(e) = self.events.pop_front() {
-            Some((e.src_cpu_id, e.event))
+            Some((e.src_cpu_id, e.callback))
         } else {
             None
         }
     }
 }
 
-impl<E: IPIEvent> Default for IPIEventQueue<E> {
+impl Default for IPIEventQueue {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-/// A simple wrapper of a closure that implements the [`IPIEvent`] trait.
-///
-/// So that it can be used as in the [`IPIEventQueue`].
-#[derive(Clone)]
-pub struct IPIEventFn<'a>(Box<&'a dyn Fn()>);
-
-impl<'a> IPIEventFn<'a> {
-    /// Constructs a new [`IPIEventFn`] from a closure.
-    pub fn new<F>(f: &'a F) -> Self
-    where
-        F: Fn(),
-    {
-        Self(Box::new(f))
-    }
-}
-
-impl<'a> IPIEvent for IPIEventFn<'a> {
-    fn callback(self) {
-        (self.0)()
     }
 }

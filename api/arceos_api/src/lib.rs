@@ -410,4 +410,6 @@ pub mod modules {
     pub use axnet;
     #[cfg(feature = "multitask")]
     pub use axtask;
+    #[cfg(feature = "ipi")]
+    pub use axipi;
 }

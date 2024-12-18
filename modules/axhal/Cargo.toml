@@ -23,7 +23,7 @@ myplat = []
 defplat = ["dep:axplat-x86-pc", "dep:axplat-aarch64-qemu-virt", "dep:axplat-riscv64-qemu-virt", "dep:axplat-loongarch64-qemu-virt"]
 
 default = []
-ipi = []
+ipi = ["irq"]
 
 [dependencies]
 log = "=0.4.21"
