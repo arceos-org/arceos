@@ -428,6 +428,7 @@ dependencies = [
  "axdriver",
  "axfs",
  "axhal",
+ "axipi",
  "axlog",
  "axnet",
  "axruntime",
@@ -1801,6 +1802,15 @@ name = "riscv_goldfish"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "07aac72f95e774476db82916d79f2d303191310393830573c1ab5c821b21660a"
+
+[[package]]
+name = "riscv_plic"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "daae4c8e29d4d8c36fbda4c318ffa1755645766fefab8fcff61a8ecd577bb822"
+dependencies = [
+ "tock-registers",
+]
 
 [[package]]
 name = "rlsf"

@@ -10,7 +10,7 @@ pub struct IPIEventQueue<E: IPIEvent> {
 }
 
 /// A trait that all events must implement.
-pub trait IPIEvent: 'static {
+pub trait IPIEvent: Sized {
     /// Callback function that will be called when the event is triggered.
     fn callback(self);
 }
@@ -60,11 +60,11 @@ impl<E: IPIEvent> Default for IPIEventQueue<E> {
 ///
 /// So that it can be used as in the [`IPIEventQueue`].
 #[derive(Clone)]
-pub struct IPIEventFn(Box<&'static dyn Fn()>);
+pub struct IPIEventFn<'a>(Box<&'a dyn Fn()>);
 
-impl IPIEventFn {
+impl<'a> IPIEventFn<'a> {
     /// Constructs a new [`IPIEventFn`] from a closure.
-    pub fn new<F>(f: &'static F) -> Self
+    pub fn new<F>(f: &'a F) -> Self
     where
         F: Fn(),
     {
@@ -72,7 +72,7 @@ impl IPIEventFn {
     }
 }
 
-impl IPIEvent for IPIEventFn {
+impl<'a> IPIEvent for IPIEventFn<'a> {
     fn callback(self) {
         (self.0)()
     }

@@ -20,7 +20,7 @@ fp-simd = ["axhal/fp-simd"]
 
 # Interrupts
 irq = ["axhal/irq", "axruntime/irq", "axtask?/irq"]
-ipi = ["axhal/ipi", "axruntime/ipi"]
+ipi = ["irq", "dep:axipi", "axhal/ipi", "axruntime/ipi"]
 
 # Custom or default platforms
 myplat = ["axhal/myplat"]
@@ -83,4 +83,5 @@ axnet = { workspace = true, optional = true }
 axdisplay = { workspace = true, optional = true }
 axsync = { workspace = true, optional = true }
 axtask = { workspace = true, optional = true }
+axipi = { workspace = true, optional = true }
 kspin = { version = "0.1", optional = true }

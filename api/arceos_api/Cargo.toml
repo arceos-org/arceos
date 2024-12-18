@@ -13,6 +13,7 @@ documentation = "https://arceos-org.github.io/arceos/arceos_api/index.html"
 default = []
 
 irq = ["axfeat/irq"]
+ipi = ["dep:axipi", "axfeat/ipi"]
 alloc = ["dep:axalloc", "axfeat/alloc"]
 paging = ["dep:axmm", "axfeat/paging"]
 dma = ["dep:axdma", "axfeat/dma"]
@@ -43,4 +44,4 @@ axdriver = { workspace = true, optional = true }
 axfs = { workspace = true, optional = true }
 axnet = { workspace = true, optional = true }
 axdisplay = { workspace = true, optional = true }
-axipi = { workspace = true }
+axipi = { workspace = true, optional = true }
