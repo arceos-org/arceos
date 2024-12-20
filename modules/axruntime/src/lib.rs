@@ -203,7 +203,7 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
 
 #[cfg(feature = "alloc")]
 fn init_allocator() {
-    use axhal::mem::{memory_regions, phys_to_virt, MemRegionFlags};
+    use axhal::mem::{MemRegionFlags, memory_regions, phys_to_virt};
 
     info!("Initialize global memory allocator...");
     info!("  use {} allocator.", axalloc::global_allocator().name());

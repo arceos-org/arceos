@@ -1,4 +1,4 @@
-use crate::mem::{virt_to_phys, PhysAddr};
+use crate::mem::{PhysAddr, virt_to_phys};
 
 /// Hart number of bsta1000b board
 pub const MAX_HARTS: usize = 8;

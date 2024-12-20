@@ -246,9 +246,5 @@ pub unsafe extern "C" fn strftime(
     timeptr: *const ctypes::tm,
 ) -> ctypes::size_t {
     let ret = strftime_inner(StringWriter(buf as *mut u8, size), format, timeptr);
-    if ret < size {
-        ret
-    } else {
-        0
-    }
+    if ret < size { ret } else { 0 }
 }

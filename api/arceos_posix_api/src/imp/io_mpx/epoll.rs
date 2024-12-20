@@ -2,8 +2,8 @@
 //!
 //! TODO: do not support `EPOLLET` flag
 
-use alloc::collections::btree_map::Entry;
 use alloc::collections::BTreeMap;
+use alloc::collections::btree_map::Entry;
 use alloc::sync::Arc;
 use core::{ffi::c_int, time::Duration};
 
@@ -12,7 +12,7 @@ use axhal::time::wall_time;
 use axsync::Mutex;
 
 use crate::ctypes;
-use crate::imp::fd_ops::{add_file_like, get_file_like, FileLike};
+use crate::imp::fd_ops::{FileLike, add_file_like, get_file_like};
 
 pub struct EpollInstance {
     events: Mutex<BTreeMap<usize, ctypes::epoll_event>>,

@@ -5,7 +5,7 @@ use core::fmt;
 use core::ops::{Deref, DerefMut};
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use axtask::{current, WaitQueue};
+use axtask::{WaitQueue, current};
 
 /// A mutual exclusion primitive useful for protecting shared data, similar to
 /// [`std::sync::Mutex`](https://doc.rust-lang.org/std/sync/struct.Mutex.html).

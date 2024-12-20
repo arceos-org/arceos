@@ -34,11 +34,7 @@ pub struct AxDeviceContainer<D>(Option<D>);
 impl<D> AxDeviceContainer<D> {
     /// Returns number of devices in this container.
     pub const fn len(&self) -> usize {
-        if self.0.is_some() {
-            1
-        } else {
-            0
-        }
+        if self.0.is_some() { 1 } else { 0 }
     }
 
     /// Returns whether the container is empty.

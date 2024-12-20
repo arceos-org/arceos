@@ -11,7 +11,7 @@ use core::ops::DerefMut;
 
 use axdriver::prelude::*;
 use axdriver_net::{DevError, NetBufPtr};
-use axhal::time::{wall_time_nanos, NANOS_PER_MICROS};
+use axhal::time::{NANOS_PER_MICROS, wall_time_nanos};
 use axsync::Mutex;
 use lazyinit::LazyInit;
 use smoltcp::iface::{Config, Interface, SocketHandle, SocketSet};

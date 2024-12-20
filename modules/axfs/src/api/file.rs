@@ -1,4 +1,4 @@
-use axio::{prelude::*, Result, SeekFrom};
+use axio::{Result, SeekFrom, prelude::*};
 use core::fmt;
 
 use crate::fops;
