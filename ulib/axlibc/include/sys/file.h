@@ -2,7 +2,7 @@
 #define _SYS_FILE_H
 
 #ifdef __cplusplus
-extern "C" {
+unsafe extern "C" {
 #endif
 
 #define LOCK_SH 1

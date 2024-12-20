@@ -24,7 +24,9 @@ pub fn ticks_to_nanos(ticks: u64) -> u64 {
 /// Converts nanoseconds to hardware ticks.
 #[inline]
 pub fn nanos_to_ticks(nanos: u64) -> u64 {
-    unsafe { NANOS_TO_CNTPCT_RATIO.mul_trunc(nanos) }
+    unsafe { 
+        NANOS_TO_CNTPCT_RATIO.mul_trunc(nanos)
+    }
 }
 
 /// Return epoch offset in nanoseconds (wall time offset to monotonic clock start).

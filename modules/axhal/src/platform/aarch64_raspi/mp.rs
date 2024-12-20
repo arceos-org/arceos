@@ -2,12 +2,12 @@ use crate::mem::{phys_to_virt, virt_to_phys, PhysAddr};
 
 static mut SECONDARY_STACK_TOP: usize = 0;
 
-extern "C" {
+unsafe extern "C" {
     fn _start_secondary();
 }
 
 #[naked]
-#[link_section = ".text.boot"]
+#[unsafe(link_section = ".text.boot")]
 unsafe extern "C" fn modify_stack_and_start() {
     core::arch::naked_asm!("
         ldr     x21, ={secondary_boot_stack}    // the secondary CPU hasn't set the TTBR1

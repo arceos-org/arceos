@@ -42,10 +42,8 @@ pub fn epochoffset_nanos() -> u64 {
 pub fn set_oneshot_timer(deadline_ns: u64) {
     let lapic = super::apic::local_apic();
     let now_ns = crate::time::monotonic_time_nanos();
-    #[allow(static_mut_refs)]
     unsafe {
         if now_ns < deadline_ns {
-            // allow static_mut_refs because we're just reading the value
             let apic_ticks = NANOS_TO_LAPIC_TICKS_RATIO.mul_trunc(deadline_ns - now_ns);
             assert!(apic_ticks <= u32::MAX as u64);
             lapic.set_timer_initial(apic_ticks.max(1) as u32);

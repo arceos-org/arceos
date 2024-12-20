@@ -19,7 +19,7 @@ pub mod console {
     pub use super::uart16550::*;
 }
 
-extern "C" {
+unsafe extern "C" {
     fn rust_main(cpu_id: usize, dtb: usize) -> !;
     #[cfg(feature = "smp")]
     fn rust_main_secondary(cpu_id: usize) -> !;

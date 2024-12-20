@@ -2,10 +2,10 @@ use riscv::register::satp;
 
 use axconfig::{PHYS_VIRT_OFFSET, TASK_STACK_SIZE};
 
-#[link_section = ".bss.stack"]
+#[unsafe(link_section = ".bss.stack")]
 static mut BOOT_STACK: [u8; TASK_STACK_SIZE] = [0; TASK_STACK_SIZE];
 
-#[link_section = ".data.boot_page_table"]
+#[unsafe(link_section = ".data.boot_page_table")]
 static mut BOOT_PT_SV39: [u64; 512] = [0; 512];
 
 #[allow(clippy::identity_op)] // (0x0 << 10) here makes sense because it's an address
@@ -20,17 +20,16 @@ unsafe fn init_boot_page_table() {
     BOOT_PT_SV39[0x102] = (0x80000 << 10) | 0xef;
 }
 
-#[allow(static_mut_refs)] // It's safe here because we're just writing its address to satp
 unsafe fn init_mmu() {
-    let page_table_root = BOOT_PT_SV39.as_ptr() as usize;
+    let page_table_root = &raw const BOOT_PT_SV39 as usize;
     satp::set(satp::Mode::Sv39, 0, page_table_root >> 12);
     riscv::asm::sfence_vma_all();
 }
 
 /// The earliest entry point for the primary CPU.
 #[naked]
-#[no_mangle]
-#[link_section = ".text.boot"]
+#[unsafe(no_mangle)]
+#[unsafe(link_section = ".text.boot")]
 unsafe extern "C" fn _start() -> ! {
     // PC = 0x8020_0000
     // a0 = hartid
@@ -66,8 +65,8 @@ unsafe extern "C" fn _start() -> ! {
 /// The earliest entry point for secondary CPUs.
 #[cfg(feature = "smp")]
 #[naked]
-#[no_mangle]
-#[link_section = ".text.boot"]
+#[unsafe(no_mangle)]
+#[unsafe(link_section = ".text.boot")]
 unsafe extern "C" fn _start_secondary() -> ! {
     // a0 = hartid
     // a1 = SP

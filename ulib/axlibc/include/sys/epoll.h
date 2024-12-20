@@ -2,7 +2,7 @@
 #define _SYS_EPOLL_H
 
 #ifdef __cplusplus
-extern "C" {
+unsafe extern "C" {
 #endif
 
 #include <fcntl.h>

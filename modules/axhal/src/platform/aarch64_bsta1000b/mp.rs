@@ -11,7 +11,7 @@ pub fn start_secondary_cpu(cpu_id: usize, stack_top: PhysAddr) {
         error!("No support for bsta1000b core {}", cpu_id);
         return;
     }
-    extern "C" {
+    unsafe extern "C" {
         fn _start_secondary();
     }
     let entry = virt_to_phys(va!(_start_secondary as usize));

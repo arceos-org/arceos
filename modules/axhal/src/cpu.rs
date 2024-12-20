@@ -57,19 +57,21 @@ pub fn current_task_ptr<T>() -> *const T {
 /// The given `ptr` must be pointed to a valid task structure.
 #[inline]
 pub unsafe fn set_current_task_ptr<T>(ptr: *const T) {
-    #[cfg(target_arch = "x86_64")]
-    {
-        CURRENT_TASK_PTR.write_current_raw(ptr as usize)
-    }
-    #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
-    {
-        let _guard = kernel_guard::IrqSave::new();
-        CURRENT_TASK_PTR.write_current_raw(ptr as usize)
-    }
-    #[cfg(target_arch = "aarch64")]
-    {
-        use tock_registers::interfaces::Writeable;
-        aarch64_cpu::registers::SP_EL0.set(ptr as u64)
+    unsafe {
+        #[cfg(target_arch = "x86_64")]
+        {
+            CURRENT_TASK_PTR.write_current_raw(ptr as usize)
+        }
+        #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
+        {
+            let _guard = kernel_guard::IrqSave::new();
+            CURRENT_TASK_PTR.write_current_raw(ptr as usize)
+        }
+        #[cfg(target_arch = "aarch64")]
+        {
+            use tock_registers::interfaces::Writeable;
+            aarch64_cpu::registers::SP_EL0.set(ptr as u64)
+        }
     }
 }
 

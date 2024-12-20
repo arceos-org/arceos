@@ -17,7 +17,7 @@ impl IdtStruct {
     /// `trap_handler_table`.
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
-        extern "C" {
+        unsafe extern "C" {
             #[link_name = "trap_handler_table"]
             static ENTRIES: [extern "C" fn(); NUM_INT];
         }

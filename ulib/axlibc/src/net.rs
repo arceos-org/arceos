@@ -10,7 +10,7 @@ use crate::{ctypes, utils::e};
 /// Create an socket for communication.
 ///
 /// Return the socket file descriptor.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn socket(domain: c_int, socktype: c_int, protocol: c_int) -> c_int {
     e(sys_socket(domain, socktype, protocol))
 }
@@ -18,7 +18,7 @@ pub unsafe extern "C" fn socket(domain: c_int, socktype: c_int, protocol: c_int)
 /// Bind a address to a socket.
 ///
 /// Return 0 if success.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn bind(
     socket_fd: c_int,
     socket_addr: *const ctypes::sockaddr,
@@ -30,7 +30,7 @@ pub unsafe extern "C" fn bind(
 /// Connects the socket to the address specified.
 ///
 /// Return 0 if success.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn connect(
     socket_fd: c_int,
     socket_addr: *const ctypes::sockaddr,
@@ -42,7 +42,7 @@ pub unsafe extern "C" fn connect(
 /// Send a message on a socket to the address specified.
 ///
 /// Return the number of bytes sent if success.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn sendto(
     socket_fd: c_int,
     buf_ptr: *const c_void,
@@ -60,7 +60,7 @@ pub unsafe extern "C" fn sendto(
 /// Send a message on a socket to the address connected.
 ///
 /// Return the number of bytes sent if success.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn send(
     socket_fd: c_int,
     buf_ptr: *const c_void,
@@ -73,7 +73,7 @@ pub unsafe extern "C" fn send(
 /// Receive a message on a socket and get its source address.
 ///
 /// Return the number of bytes received if success.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn recvfrom(
     socket_fd: c_int,
     buf_ptr: *mut c_void,
@@ -91,7 +91,7 @@ pub unsafe extern "C" fn recvfrom(
 /// Receive a message on a socket.
 ///
 /// Return the number of bytes received if success.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn recv(
     socket_fd: c_int,
     buf_ptr: *mut c_void,
@@ -104,7 +104,7 @@ pub unsafe extern "C" fn recv(
 /// Listen for connections on a socket
 ///
 /// Return 0 if success.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn listen(
     socket_fd: c_int,
     backlog: c_int, // currently not used
@@ -115,7 +115,7 @@ pub unsafe extern "C" fn listen(
 /// Accept for connections on a socket
 ///
 /// Return file descriptor for the accepted socket if success.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn accept(
     socket_fd: c_int,
     socket_addr: *mut ctypes::sockaddr,
@@ -127,7 +127,7 @@ pub unsafe extern "C" fn accept(
 /// Shut down a full-duplex connection.
 ///
 /// Return 0 if success.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn shutdown(
     socket_fd: c_int,
     flag: c_int, // currently not used
@@ -138,7 +138,7 @@ pub unsafe extern "C" fn shutdown(
 /// Query addresses for a domain name.
 ///
 /// Return address number if success.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn getaddrinfo(
     nodename: *const c_char,
     servname: *const c_char,
@@ -154,13 +154,13 @@ pub unsafe extern "C" fn getaddrinfo(
 }
 
 /// Free queried `addrinfo` struct
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn freeaddrinfo(res: *mut ctypes::addrinfo) {
     sys_freeaddrinfo(res);
 }
 
 /// Get current address to which the socket sockfd is bound.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn getsockname(
     sock_fd: c_int,
     addr: *mut ctypes::sockaddr,
@@ -170,7 +170,7 @@ pub unsafe extern "C" fn getsockname(
 }
 
 /// Get peer address to which the socket sockfd is connected.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn getpeername(
     sock_fd: c_int,
     addr: *mut ctypes::sockaddr,

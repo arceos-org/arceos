@@ -42,7 +42,7 @@ const LOGO: &str = r#"
 d88P     888 888      "Y8888P  "Y8888   "Y88888P"   "Y8888P"
 "#;
 
-extern "C" {
+unsafe extern "C" {
     fn main();
 }
 
@@ -100,7 +100,7 @@ fn is_init_ok() -> bool {
 ///
 /// In multi-core environment, this function is called on the primary CPU,
 /// and the secondary CPUs call [`rust_main_secondary`].
-#[cfg_attr(not(test), no_mangle)]
+#[cfg_attr(not(test), unsafe(no_mangle))]
 pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     ax_println!("{}", LOGO);
     ax_println!(

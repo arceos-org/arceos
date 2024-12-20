@@ -886,9 +886,9 @@ dependencies = [
 
 [[package]]
 name = "int_ratio"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0640a6c478a68d4899fec305f97afa6e34afce49d4d952d2b9599fd52615b2a7"
+checksum = "bd361c344145620f0c02e56200ca3e3a45203121447376519a9070e546b2916f"
 
 [[package]]
 name = "itertools"

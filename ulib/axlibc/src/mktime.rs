@@ -15,7 +15,7 @@ fn leap_year(year: c_int) -> bool {
 }
 
 /// Convert broken-down time into time since the Epoch.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mktime(t: *mut ctypes::tm) -> ctypes::time_t {
     let mut year = (*t).tm_year + 1900;
     let mut month = (*t).tm_mon;

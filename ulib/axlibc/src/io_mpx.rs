@@ -11,14 +11,14 @@ use arceos_posix_api::{sys_epoll_create, sys_epoll_ctl, sys_epoll_wait};
 ///
 /// It returns a file descriptor referring to the new epoll instance.
 #[cfg(feature = "epoll")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn epoll_create(size: c_int) -> c_int {
     e(sys_epoll_create(size))
 }
 
 /// Control interface for an epoll file descriptor
 #[cfg(feature = "epoll")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn epoll_ctl(
     epfd: c_int,
     op: c_int,
@@ -30,7 +30,7 @@ pub unsafe extern "C" fn epoll_ctl(
 
 /// Waits for events on the epoll instance referred to by the file descriptor epfd.
 #[cfg(feature = "epoll")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn epoll_wait(
     epfd: c_int,
     events: *mut ctypes::epoll_event,
@@ -42,7 +42,7 @@ pub unsafe extern "C" fn epoll_wait(
 
 /// Monitor multiple file descriptors, waiting until one or more of the file descriptors become "ready" for some class of I/O operation
 #[cfg(feature = "select")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn select(
     nfds: c_int,
     readfds: *mut ctypes::fd_set,

@@ -5,13 +5,13 @@ use tock_registers::interfaces::{ReadWriteable, Readable, Writeable};
 
 use axconfig::TASK_STACK_SIZE;
 
-#[link_section = ".bss.stack"]
+#[unsafe(link_section = ".bss.stack")]
 static mut BOOT_STACK: [u8; TASK_STACK_SIZE] = [0; TASK_STACK_SIZE];
 
-#[link_section = ".data.boot_page_table"]
+#[unsafe(link_section = ".data.boot_page_table")]
 static mut BOOT_PT_L0: [A64PTE; 512] = [A64PTE::empty(); 512];
 
-#[link_section = ".data.boot_page_table"]
+#[unsafe(link_section = ".data.boot_page_table")]
 static mut BOOT_PT_L1: [A64PTE; 512] = [A64PTE::empty(); 512];
 
 unsafe fn switch_to_el1() {
@@ -77,7 +77,7 @@ unsafe fn init_mmu() {
     barrier::isb(barrier::SY);
 
     // Set both TTBR0 and TTBR1
-    let root_paddr = pa!(BOOT_PT_L0.as_ptr() as usize).as_usize() as _;
+    let root_paddr = pa!(&raw const BOOT_PT_L0 as usize).as_usize() as _;
     TTBR0_EL1.set(root_paddr);
     TTBR1_EL1.set(root_paddr);
 
@@ -102,8 +102,8 @@ unsafe fn init_boot_page_table() {
 
 /// The earliest entry point for the primary CPU.
 #[naked]
-#[no_mangle]
-#[link_section = ".text.boot"]
+#[unsafe(no_mangle)]
+#[unsafe(link_section = ".text.boot")]
 unsafe extern "C" fn _start() -> ! {
     // PC = 0x8_0000
     // X0 = dtb
@@ -143,8 +143,8 @@ unsafe extern "C" fn _start() -> ! {
 /// The earliest entry point for the secondary CPUs.
 #[cfg(feature = "smp")]
 #[naked]
-#[no_mangle]
-#[link_section = ".text.boot"]
+#[unsafe(no_mangle)]
+#[unsafe(link_section = ".text.boot")]
 unsafe extern "C" fn _start_secondary() -> ! {
     core::arch::naked_asm!("
         mrs     x19, mpidr_el1

@@ -238,7 +238,7 @@ unsafe fn strftime_inner<W: WriteByte>(
 }
 
 /// Convert date and time to a string.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn strftime(
     buf: *mut c_char,
     size: ctypes::size_t,

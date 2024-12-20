@@ -148,7 +148,7 @@ pub(crate) fn clear_bss() {
     }
 }
 
-extern "C" {
+unsafe extern "C" {
     fn _stext();
     fn _etext();
     fn _srodata();
