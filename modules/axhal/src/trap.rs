@@ -7,11 +7,11 @@ use page_table_entry::MappingFlags;
 pub use linkme::distributed_slice as register_trap_handler;
 
 /// A slice of IRQ handler functions.
-#[def_trap_handler]
+#[unsafe(def_trap_handler)]
 pub static IRQ: [fn(usize) -> bool];
 
 /// A slice of page fault handler functions.
-#[def_trap_handler]
+#[unsafe(def_trap_handler)]
 pub static PAGE_FAULT: [fn(VirtAddr, MappingFlags, bool) -> bool];
 
 #[allow(unused_macros)]
