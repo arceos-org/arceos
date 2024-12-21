@@ -2,7 +2,7 @@
 #define _DLFCN_H
 
 #ifdef __cplusplus
-unsafe extern "C" {
+extern "C" {
 #endif
 
 #include <features.h>

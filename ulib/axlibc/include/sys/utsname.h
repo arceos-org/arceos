@@ -2,7 +2,7 @@
 #define _SYS_UTSNAME_H
 
 #ifdef __cplusplus
-unsafe extern "C" {
+extern "C" {
 #endif
 
 struct utsname {

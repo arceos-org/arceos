@@ -2,7 +2,7 @@
 #define _LIBGEN_H
 
 #ifdef __cplusplus
-unsafe extern "C" {
+extern "C" {
 #endif
 
 char *dirname(char *);

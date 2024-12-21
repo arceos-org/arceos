@@ -42,7 +42,7 @@
 #ifdef __cplusplus
 #include <cstdarg>
 #include <cstddef>
-unsafe extern "C" {
+extern "C" {
 #else
 #include <stdarg.h>
 #include <stddef.h>

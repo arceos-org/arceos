@@ -2,7 +2,7 @@
 #define _FNMATCH_H
 
 #ifdef __cplusplus
-unsafe extern "C" {
+extern "C" {
 #endif
 
 #define FNM_PATHNAME    0x1
