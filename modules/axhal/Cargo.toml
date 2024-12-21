@@ -32,8 +32,8 @@ lazyinit = "0.2"
 percpu = "0.1"
 memory_addr = "0.3"
 handler_table = "0.1"
-page_table_entry = "0.4"
-page_table_multiarch = { version = "0.4", optional = true }
+page_table_entry = "0.5"
+page_table_multiarch = { version = "0.5", optional = true }
 axlog = { workspace = true }
 axconfig = { workspace = true }
 axalloc = { workspace = true, optional = true }

@@ -793,9 +793,9 @@ dependencies = [
 
 [[package]]
 name = "flatten_objects"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "149f92e8442d498549cc60781e69f091a13a92d67408f44e620d852b9847f3ef"
+checksum = "f593e2a150ea7985fb62614fac12bb1dec8d91ea3a92bc2cbd07746b289645a3"
 dependencies = [
  "bitmaps",
 ]
@@ -1069,9 +1069,9 @@ checksum = "dd8b5dd2ae5ed71462c540258bedcb51965123ad7e7ccf4b9a8cafaa4a63576d"
 
 [[package]]
 name = "page_table_entry"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d911cfe86a8529a3fabfafa39a857a57cb8d00046ddca14fa609b289303bc7c"
+checksum = "069d6f06c815a18754ddf47c44a3b70ece3ce62ac092e078024cfcc0c12185f4"
 dependencies = [
  "aarch64-cpu",
  "bitflags 2.6.0",
@@ -1081,9 +1081,9 @@ dependencies = [
 
 [[package]]
 name = "page_table_multiarch"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43068c68a7fee18c1749befb515f69f6b1fcc18a4908e0d96e64fc51258d301a"
+checksum = "7c738806353b61519d78f1d8813b06360b5c5ee1d3daca9b12597cf1b7cb568b"
 dependencies = [
  "log",
  "memory_addr",
