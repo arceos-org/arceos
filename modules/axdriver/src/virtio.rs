@@ -7,7 +7,7 @@ use axdriver_virtio::{BufferDirection, PhysAddr, VirtIoHal};
 use axhal::mem::{phys_to_virt, virt_to_phys};
 use cfg_if::cfg_if;
 
-use crate::{drivers::DriverProbe, AxDeviceEnum};
+use crate::{AxDeviceEnum, drivers::DriverProbe};
 
 cfg_if! {
     if #[cfg(bus = "pci")] {

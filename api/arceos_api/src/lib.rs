@@ -265,7 +265,7 @@ pub mod fs {
 
 /// Networking primitives for TCP/UDP communication.
 pub mod net {
-    use crate::{io::AxPollState, AxResult};
+    use crate::{AxResult, io::AxPollState};
     use core::net::{IpAddr, SocketAddr};
 
     define_api_type! {

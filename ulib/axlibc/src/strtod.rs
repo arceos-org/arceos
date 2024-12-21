@@ -119,13 +119,13 @@ fn isspace(c: c_int) -> bool {
 }
 
 /// Convert a string to a double-precision number.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn strtod(s: *const c_char, endptr: *mut *mut c_char) -> c_double {
     strto_float_impl!(c_double, s, endptr)
 }
 
 /// Convert a string to a float number.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn strtof(s: *const c_char, endptr: *mut *mut c_char) -> c_float {
     strto_float_impl!(c_float, s, endptr)
 }

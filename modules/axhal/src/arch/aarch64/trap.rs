@@ -28,7 +28,7 @@ enum TrapSource {
     LowerAArch32 = 3,
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 fn invalid_exception(tf: &TrapFrame, kind: TrapKind, source: TrapSource) {
     panic!(
         "Invalid exception {:?} from {:?}:\n{:#x?}",
@@ -36,7 +36,7 @@ fn invalid_exception(tf: &TrapFrame, kind: TrapKind, source: TrapSource) {
     );
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 fn handle_irq_exception(_tf: &TrapFrame) {
     handle_trap!(IRQ, 0);
 }
@@ -93,7 +93,7 @@ fn handle_data_abort(tf: &TrapFrame, iss: u64, is_user: bool) {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 fn handle_sync_exception(tf: &mut TrapFrame) {
     let esr = ESR_EL1.extract();
     let iss = esr.read(ESR_EL1::ISS);

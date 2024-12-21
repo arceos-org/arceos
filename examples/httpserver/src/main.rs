@@ -89,7 +89,7 @@ fn accept_loop() -> io::Result<()> {
     }
 }
 
-#[cfg_attr(feature = "axstd", no_mangle)]
+#[cfg_attr(feature = "axstd", unsafe(no_mangle))]
 fn main() {
     println!("Hello, ArceOS HTTP server!");
     accept_loop().expect("test HTTP server failed");

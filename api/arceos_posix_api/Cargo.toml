@@ -1,7 +1,7 @@
 [package]
 name = "arceos_posix_api"
 version.workspace = true
-edition = "2021"
+edition.workspace = true
 authors = [
     "Yuekai Jia <equation618@gmail.com>",
     "yanjuguang <coolyanjg@163.com>",
@@ -46,7 +46,7 @@ axnet = { workspace = true, optional = true }
 # Other crates
 axio = "0.1"
 axerrno = "0.1"
-flatten_objects = "0.1"
+flatten_objects = "0.2"
 static_assertions = "1.1.0"
 spin = { version = "0.9" }
 lazy_static = { version = "1.5", features = ["spin_no_std"] }

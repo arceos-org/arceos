@@ -4,7 +4,7 @@ use core::ffi::{c_int, c_long};
 /// Return system configuration infomation
 ///
 /// Notice: currently only support what unikraft covers
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn sysconf(name: c_int) -> c_long {
     sys_sysconf(name)
 }

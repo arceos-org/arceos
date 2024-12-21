@@ -2,8 +2,8 @@
 
 use handler_table::HandlerTable;
 
-use crate::platform::irq::{dispatch_irq, MAX_IRQ_COUNT};
-use crate::trap::{register_trap_handler, IRQ};
+use crate::platform::irq::{MAX_IRQ_COUNT, dispatch_irq};
+use crate::trap::{IRQ, register_trap_handler};
 
 pub use crate::platform::irq::{register_handler, set_enable};
 

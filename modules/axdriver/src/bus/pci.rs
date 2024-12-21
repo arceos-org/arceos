@@ -1,4 +1,4 @@
-use crate::{prelude::*, AllDevices};
+use crate::{AllDevices, prelude::*};
 use axdriver_pci::{
     BarInfo, Cam, Command, DeviceFunction, HeaderType, MemoryBarType, PciRangeAllocator, PciRoot,
 };

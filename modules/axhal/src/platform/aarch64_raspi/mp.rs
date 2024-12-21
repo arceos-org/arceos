@@ -1,15 +1,15 @@
-use crate::mem::{phys_to_virt, virt_to_phys, PhysAddr};
+use crate::mem::{PhysAddr, phys_to_virt, virt_to_phys};
 
 static mut SECONDARY_STACK_TOP: usize = 0;
 
-extern "C" {
+unsafe extern "C" {
     fn _start_secondary();
 }
 
 #[naked]
-#[link_section = ".text.boot"]
+#[unsafe(link_section = ".text.boot")]
 unsafe extern "C" fn modify_stack_and_start() {
-    core::arch::asm!("
+    core::arch::naked_asm!("
         ldr     x21, ={secondary_boot_stack}    // the secondary CPU hasn't set the TTBR1
         mov     x8, {phys_virt_offset}          // minus the offset to get the phys addr of the boot stack
         sub     x21, x21, x8
@@ -18,7 +18,6 @@ unsafe extern "C" fn modify_stack_and_start() {
         b       _start_secondary",
         secondary_boot_stack = sym SECONDARY_STACK_TOP,
         phys_virt_offset = const axconfig::PHYS_VIRT_OFFSET,
-        options(noreturn)
     );
 }
 

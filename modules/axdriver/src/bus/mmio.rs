@@ -1,5 +1,5 @@
 #[allow(unused_imports)]
-use crate::{prelude::*, AllDevices};
+use crate::{AllDevices, prelude::*};
 
 impl AllDevices {
     pub(crate) fn probe_bus_devices(&mut self) {

@@ -3,11 +3,11 @@
 use core::alloc::Layout;
 use core::mem::{align_of, size_of};
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 #[linkage = "weak"]
 static __AX_TASK_EXT_SIZE: usize = 0;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 #[linkage = "weak"]
 static __AX_TASK_EXT_ALIGN: usize = 0;
 
@@ -19,7 +19,7 @@ pub(crate) struct AxTaskExt {
 impl AxTaskExt {
     /// Returns the expected size of the task extended structure.
     pub fn size() -> usize {
-        extern "C" {
+        unsafe extern "C" {
             static __AX_TASK_EXT_SIZE: usize;
         }
         unsafe { __AX_TASK_EXT_SIZE }
@@ -27,7 +27,7 @@ impl AxTaskExt {
 
     /// Returns the expected alignment of the task extended structure.
     pub fn align() -> usize {
-        extern "C" {
+        unsafe extern "C" {
             static __AX_TASK_EXT_ALIGN: usize;
         }
         unsafe { __AX_TASK_EXT_ALIGN }
@@ -158,10 +158,10 @@ pub trait TaskExtMut<T: Sized> {
 #[macro_export]
 macro_rules! def_task_ext {
     ($task_ext_struct:ty) => {
-        #[no_mangle]
+        #[unsafe(no_mangle)]
         static __AX_TASK_EXT_SIZE: usize = ::core::mem::size_of::<$task_ext_struct>();
 
-        #[no_mangle]
+        #[unsafe(no_mangle)]
         static __AX_TASK_EXT_ALIGN: usize = ::core::mem::align_of::<$task_ext_struct>();
 
         impl $crate::TaskExtRef<$task_ext_struct> for $crate::TaskInner {

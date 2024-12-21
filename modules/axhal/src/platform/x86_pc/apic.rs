@@ -1,10 +1,12 @@
 #![allow(dead_code)]
 
+use core::{cell::SyncUnsafeCell, mem::MaybeUninit};
+
 use kspin::SpinNoIrq;
 use lazyinit::LazyInit;
 use memory_addr::PhysAddr;
 use x2apic::ioapic::IoApic;
-use x2apic::lapic::{xapic_base, LocalApic, LocalApicBuilder};
+use x2apic::lapic::{LocalApic, LocalApicBuilder, xapic_base};
 use x86_64::instructions::port::Port;
 
 use self::vectors::*;
@@ -24,7 +26,8 @@ pub const TIMER_IRQ_NUM: usize = APIC_TIMER_VECTOR as usize;
 
 const IO_APIC_BASE: PhysAddr = pa!(0xFEC0_0000);
 
-static mut LOCAL_APIC: Option<LocalApic> = None;
+static LOCAL_APIC: SyncUnsafeCell<MaybeUninit<LocalApic>> =
+    SyncUnsafeCell::new(MaybeUninit::uninit());
 static mut IS_X2APIC: bool = false;
 static IO_APIC: LazyInit<SpinNoIrq<IoApic>> = LazyInit::new();
 
@@ -64,8 +67,8 @@ pub fn dispatch_irq(vector: usize) {
 }
 
 pub(super) fn local_apic<'a>() -> &'a mut LocalApic {
-    // It's safe as LAPIC is per-cpu.
-    unsafe { LOCAL_APIC.as_mut().unwrap() }
+    // It's safe as `LOCAL_APIC` is initialized in `init_primary`.
+    unsafe { LOCAL_APIC.get().as_mut().unwrap().assume_init_mut() }
 }
 
 pub(super) fn raw_apic_id(id_u8: u8) -> u32 {
@@ -110,7 +113,7 @@ pub(super) fn init_primary() {
     let mut lapic = builder.build().unwrap();
     unsafe {
         lapic.enable();
-        LOCAL_APIC = Some(lapic);
+        LOCAL_APIC.get().as_mut().unwrap().write(lapic);
     }
 
     info!("Initialize IO APIC...");

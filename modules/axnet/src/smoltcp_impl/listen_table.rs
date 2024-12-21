@@ -1,13 +1,13 @@
 use alloc::{boxed::Box, collections::VecDeque};
 use core::ops::{Deref, DerefMut};
 
-use axerrno::{ax_err, AxError, AxResult};
+use axerrno::{AxError, AxResult, ax_err};
 use axsync::Mutex;
 use smoltcp::iface::{SocketHandle, SocketSet};
 use smoltcp::socket::tcp::{self, State};
 use smoltcp::wire::{IpAddress, IpEndpoint, IpListenEndpoint};
 
-use super::{SocketSetWrapper, LISTEN_QUEUE_SIZE, SOCKET_SET};
+use super::{LISTEN_QUEUE_SIZE, SOCKET_SET, SocketSetWrapper};
 
 const PORT_NUM: usize = 65536;
 

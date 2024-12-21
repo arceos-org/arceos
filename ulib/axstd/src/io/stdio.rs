@@ -1,4 +1,4 @@
-use crate::io::{self, prelude::*, BufReader};
+use crate::io::{self, BufReader, prelude::*};
 use crate::sync::{Mutex, MutexGuard};
 
 #[cfg(feature = "alloc")]

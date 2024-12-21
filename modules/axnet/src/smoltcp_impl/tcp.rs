@@ -2,7 +2,7 @@ use core::cell::UnsafeCell;
 use core::net::SocketAddr;
 use core::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 
-use axerrno::{ax_err, ax_err_type, AxError, AxResult};
+use axerrno::{AxError, AxResult, ax_err, ax_err_type};
 use axio::PollState;
 use axsync::Mutex;
 
@@ -10,8 +10,8 @@ use smoltcp::iface::SocketHandle;
 use smoltcp::socket::tcp::{self, ConnectError, State};
 use smoltcp::wire::{IpEndpoint, IpListenEndpoint};
 
-use super::addr::{from_core_sockaddr, into_core_sockaddr, is_unspecified, UNSPECIFIED_ENDPOINT};
-use super::{SocketSetWrapper, ETH0, LISTEN_TABLE, SOCKET_SET};
+use super::addr::{UNSPECIFIED_ENDPOINT, from_core_sockaddr, into_core_sockaddr, is_unspecified};
+use super::{ETH0, LISTEN_TABLE, SOCKET_SET, SocketSetWrapper};
 
 // State transitions:
 // CLOSED -(connect)-> BUSY -> CONNECTING -> CONNECTED -(shutdown)-> BUSY -> CLOSED

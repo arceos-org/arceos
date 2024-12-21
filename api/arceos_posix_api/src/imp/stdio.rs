@@ -1,5 +1,5 @@
 use axerrno::AxResult;
-use axio::{prelude::*, BufReader};
+use axio::{BufReader, prelude::*};
 use axsync::Mutex;
 
 #[cfg(feature = "fd")]

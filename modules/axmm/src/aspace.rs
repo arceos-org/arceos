@@ -1,12 +1,12 @@
 use core::fmt;
 
-use axerrno::{ax_err, AxError, AxResult};
+use axerrno::{AxError, AxResult, ax_err};
 use axhal::{
     mem::phys_to_virt,
     paging::{MappingFlags, PageTable},
 };
 use memory_addr::{
-    is_aligned_4k, pa, MemoryAddr, PageIter4K, PhysAddr, VirtAddr, VirtAddrRange, PAGE_SIZE_4K,
+    MemoryAddr, PAGE_SIZE_4K, PageIter4K, PhysAddr, VirtAddr, VirtAddrRange, is_aligned_4k, pa,
 };
 
 use crate::paging_err_to_ax_err;

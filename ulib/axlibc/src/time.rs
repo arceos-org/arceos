@@ -4,7 +4,7 @@ use core::ffi::c_int;
 use crate::{ctypes, utils::e};
 
 /// Get clock time since booting
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn clock_gettime(clk: ctypes::clockid_t, ts: *mut ctypes::timespec) -> c_int {
     e(sys_clock_gettime(clk, ts))
 }
@@ -12,7 +12,7 @@ pub unsafe extern "C" fn clock_gettime(clk: ctypes::clockid_t, ts: *mut ctypes::
 /// Sleep some nanoseconds
 ///
 /// TODO: should be woken by signals, and set errno
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn nanosleep(
     req: *const ctypes::timespec,
     rem: *mut ctypes::timespec,

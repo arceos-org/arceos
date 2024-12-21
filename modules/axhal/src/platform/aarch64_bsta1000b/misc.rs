@@ -1,7 +1,7 @@
 pub use crate::platform::aarch64_common::psci::system_off as terminate;
 
 use crate::mem::phys_to_virt;
-use crate::time::{busy_wait, Duration};
+use crate::time::{Duration, busy_wait};
 use core::ptr::{read_volatile, write_volatile};
 
 /// Do QSPI reset

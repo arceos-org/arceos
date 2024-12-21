@@ -1,13 +1,13 @@
 use core::{alloc::Layout, ptr::NonNull};
 
 use allocator::{AllocError, AllocResult, BaseAllocator, ByteAllocator};
-use axalloc::{global_allocator, DefaultByteAllocator};
+use axalloc::{DefaultByteAllocator, global_allocator};
 use axhal::{mem::virt_to_phys, paging::MappingFlags};
 use kspin::SpinNoIrq;
 use log::{debug, error};
-use memory_addr::{va, VirtAddr, PAGE_SIZE_4K};
+use memory_addr::{PAGE_SIZE_4K, VirtAddr, va};
 
-use crate::{phys_to_bus, BusAddr, DMAInfo};
+use crate::{BusAddr, DMAInfo, phys_to_bus};
 
 pub(crate) static ALLOCATOR: SpinNoIrq<DmaAllocator> = SpinNoIrq::new(DmaAllocator::new());
 

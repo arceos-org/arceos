@@ -8,7 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust-toolchain: [nightly, nightly-2024-05-02]
+        rust-toolchain: [nightly, nightly-2024-12-12]
     env:
       RUSTUP_TOOLCHAIN: ${{ matrix.rust-toolchain }}
     steps:
@@ -43,7 +43,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         arch: [x86_64, riscv64, aarch64]
-        rust-toolchain: [nightly, nightly-2024-05-02]
+        rust-toolchain: [nightly, nightly-2024-12-12]
     env:
       RUSTUP_TOOLCHAIN: ${{ matrix.rust-toolchain }}
     steps:
@@ -87,7 +87,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        rust-toolchain: [nightly, nightly-2024-05-02]
+        rust-toolchain: [nightly, nightly-2024-12-12]
     steps:
     - uses: actions/checkout@v4
     - uses: dtolnay/rust-toolchain@stable

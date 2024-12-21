@@ -6,7 +6,7 @@ use timer_list::{TimeValue, TimerEvent, TimerList};
 
 use axhal::time::wall_time;
 
-use crate::{select_run_queue, AxTaskRef};
+use crate::{AxTaskRef, select_run_queue};
 
 static TIMER_TICKET_ID: AtomicU64 = AtomicU64::new(1);
 

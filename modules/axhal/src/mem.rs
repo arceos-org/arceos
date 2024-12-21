@@ -3,7 +3,7 @@
 use core::fmt;
 
 #[doc(no_inline)]
-pub use memory_addr::{MemoryAddr, PhysAddr, VirtAddr, PAGE_SIZE_4K};
+pub use memory_addr::{MemoryAddr, PAGE_SIZE_4K, PhysAddr, VirtAddr};
 
 bitflags::bitflags! {
     /// The flags of a physical memory region.
@@ -148,7 +148,7 @@ pub(crate) fn clear_bss() {
     }
 }
 
-extern "C" {
+unsafe extern "C" {
     fn _stext();
     fn _etext();
     fn _srodata();

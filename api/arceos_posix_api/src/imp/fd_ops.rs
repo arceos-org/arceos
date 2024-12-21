@@ -24,9 +24,9 @@ pub trait FileLike: Send + Sync {
 lazy_static::lazy_static! {
     static ref FD_TABLE: RwLock<FlattenObjects<Arc<dyn FileLike>, AX_FILE_LIMIT>> = {
         let mut fd_table = FlattenObjects::new();
-        fd_table.add_at(0, Arc::new(stdin()) as _).unwrap(); // stdin
-        fd_table.add_at(1, Arc::new(stdout()) as _).unwrap(); // stdout
-        fd_table.add_at(2, Arc::new(stdout()) as _).unwrap(); // stderr
+        fd_table.add_at(0, Arc::new(stdin()) as _).unwrap_or_else(|_| panic!()); // stdin
+        fd_table.add_at(1, Arc::new(stdout()) as _).unwrap_or_else(|_| panic!()); // stdout
+        fd_table.add_at(2, Arc::new(stdout()) as _).unwrap_or_else(|_| panic!()); // stderr
         RwLock::new(fd_table)
     };
 }
@@ -40,7 +40,7 @@ pub fn get_file_like(fd: c_int) -> LinuxResult<Arc<dyn FileLike>> {
 }
 
 pub fn add_file_like(f: Arc<dyn FileLike>) -> LinuxResult<c_int> {
-    Ok(FD_TABLE.write().add(f).ok_or(LinuxError::EMFILE)? as c_int)
+    Ok(FD_TABLE.write().add(f).map_err(|_| LinuxError::EMFILE)? as c_int)
 }
 
 pub fn close_file_like(fd: c_int) -> LinuxResult {
@@ -95,7 +95,7 @@ pub fn sys_dup2(old_fd: c_int, new_fd: c_int) -> c_int {
         FD_TABLE
             .write()
             .add_at(new_fd as usize, f)
-            .ok_or(LinuxError::EMFILE)?;
+            .map_err(|_| LinuxError::EMFILE)?;
 
         Ok(new_fd)
     })

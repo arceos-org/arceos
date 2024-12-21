@@ -1,5 +1,5 @@
 use crate::{irq::IrqHandler, mem::phys_to_virt};
-use arm_gicv2::{translate_irq, GicCpuInterface, GicDistributor, InterruptType};
+use arm_gicv2::{GicCpuInterface, GicDistributor, InterruptType, translate_irq};
 use kspin::SpinNoIrq;
 use memory_addr::PhysAddr;
 

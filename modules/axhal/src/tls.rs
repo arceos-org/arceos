@@ -71,7 +71,7 @@ cfg_if::cfg_if! {
     }
 }
 
-extern "C" {
+unsafe extern "C" {
     fn _stdata();
     fn _etdata();
     fn _etbss();

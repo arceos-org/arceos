@@ -1,7 +1,7 @@
 use core::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Mutex, Once};
 
-use crate::{api as axtask, current, WaitQueue};
+use crate::{WaitQueue, api as axtask, current};
 
 static INIT: Once = Once::new();
 static SERIAL: Mutex<()> = Mutex::new(());

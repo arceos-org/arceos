@@ -59,12 +59,12 @@ pub fn current_task_ptr<T>() -> *const T {
 pub unsafe fn set_current_task_ptr<T>(ptr: *const T) {
     #[cfg(target_arch = "x86_64")]
     {
-        CURRENT_TASK_PTR.write_current_raw(ptr as usize)
+        unsafe { CURRENT_TASK_PTR.write_current_raw(ptr as usize) }
     }
     #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
     {
         let _guard = kernel_guard::IrqSave::new();
-        CURRENT_TASK_PTR.write_current_raw(ptr as usize)
+        unsafe { CURRENT_TASK_PTR.write_current_raw(ptr as usize) }
     }
     #[cfg(target_arch = "aarch64")]
     {

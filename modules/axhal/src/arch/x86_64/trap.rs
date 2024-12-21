@@ -26,7 +26,7 @@ fn handle_page_fault(tf: &TrapFrame) {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 fn x86_trap_handler(tf: &TrapFrame) {
     match tf.vector as u8 {
         PAGE_FAULT_VECTOR => handle_page_fault(tf),

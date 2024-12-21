@@ -1,6 +1,6 @@
 //! Low-level filesystem operations.
 
-use axerrno::{ax_err, ax_err_type, AxError, AxResult};
+use axerrno::{AxError, AxResult, ax_err, ax_err_type};
 use axfs_vfs::{VfsError, VfsNodeRef};
 use axio::SeekFrom;
 use cap_access::{Cap, WithCap};
@@ -47,6 +47,12 @@ pub struct OpenOptions {
     // system-specific
     _custom_flags: i32,
     _mode: u32,
+}
+
+impl Default for OpenOptions {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl OpenOptions {

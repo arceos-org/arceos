@@ -89,7 +89,7 @@ impl<'a> Iterator for ReadDir<'a> {
     }
 }
 
-impl<'a> DirEntry<'a> {
+impl DirEntry<'_> {
     /// Returns the full path to the file that this entry represents.
     ///
     /// The full path is created by joining the original path to `read_dir`
