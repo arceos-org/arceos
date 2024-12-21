@@ -183,6 +183,7 @@ pub unsafe fn sys_lstat(path: *const c_char, buf: *mut ctypes::stat) -> ctypes::
 }
 
 /// Get the path of the current directory.
+#[allow(clippy::unnecessary_cast)] // `c_char` is either `i8` or `u8`
 pub fn sys_getcwd(buf: *mut c_char, size: usize) -> *mut c_char {
     debug!("sys_getcwd <= {:#x} {}", buf as usize, size);
     syscall_body!(sys_getcwd, {

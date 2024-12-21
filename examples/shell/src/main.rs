@@ -11,8 +11,8 @@ fn path_to_str(path: &impl AsRef<std::ffi::OsStr>) -> &str {
 }
 
 #[cfg(feature = "axstd")]
-fn path_to_str(path: &std::string::String) -> &str {
-    path.as_str()
+fn path_to_str(path: &str) -> &str {
+    path
 }
 
 mod cmd;
