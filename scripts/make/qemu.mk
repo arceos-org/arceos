@@ -10,21 +10,35 @@ else
   $(error "BUS" must be one of "mmio" or "pci")
 endif
 
+mem_size := 128M
+ifeq ($(ARCH), x86_64)
+  machine := q35
+else ifeq ($(ARCH), riscv64)
+  machine := virt
+else ifeq ($(ARCH), aarch64)
+  ifeq ($(PLAT_NAME), aarch64-raspi4)
+    machine := raspi4b
+    mem_size := 2G
+  else
+    machine := virt
+  endif
+endif
+
 qemu_args-x86_64 := \
-  -machine q35 \
+  -machine $(machine) \
   -kernel $(OUT_ELF)
 
 qemu_args-riscv64 := \
-  -machine virt \
+  -machine $(machine) \
   -bios default \
   -kernel $(OUT_BIN)
 
 qemu_args-aarch64 := \
   -cpu cortex-a72 \
-  -machine virt \
+  -machine $(machine) \
   -kernel $(OUT_BIN)
 
-qemu_args-y := -m 128M -smp $(SMP) $(qemu_args-$(ARCH))
+qemu_args-y := -m $(mem_size) -smp $(SMP) $(qemu_args-$(ARCH))
 
 qemu_args-$(BLK) += \
   -device virtio-blk-$(vdev-suffix),drive=disk0 \

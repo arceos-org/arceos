@@ -18,7 +18,6 @@ unsafe extern "C" fn modify_stack_and_start() {
         b       _start_secondary",
         secondary_boot_stack = sym SECONDARY_STACK_TOP,
         phys_virt_offset = const axconfig::plat::PHYS_VIRT_OFFSET,
-        options(noreturn)
     );
 }
 
