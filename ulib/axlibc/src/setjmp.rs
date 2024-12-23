@@ -4,10 +4,10 @@ use crate::ctypes;
 
 /// `setjmp` implementation
 #[naked]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn setjmp(_buf: *mut ctypes::__jmp_buf_tag) {
     #[cfg(all(target_arch = "aarch64", feature = "fp_simd"))]
-    core::arch::asm!(
+    core::arch::naked_asm!(
         "
         stp x19, x20, [x0,#0]
         stp x21, x22, [x0,#16]
@@ -23,10 +23,9 @@ pub unsafe extern "C" fn setjmp(_buf: *mut ctypes::__jmp_buf_tag) {
         stp d14, d15, [x0,#160]
         mov x0, #0
         ret",
-        options(noreturn),
     );
     #[cfg(all(target_arch = "aarch64", not(feature = "fp_simd")))]
-    core::arch::asm!(
+    core::arch::naked_asm!(
         "
         stp x19, x20, [x0,#0]
         stp x21, x22, [x0,#16]
@@ -38,10 +37,9 @@ pub unsafe extern "C" fn setjmp(_buf: *mut ctypes::__jmp_buf_tag) {
         str x2, [x0,#104]
         mov x0, #0
         ret",
-        options(noreturn),
     );
     #[cfg(target_arch = "x86_64")]
-    core::arch::asm!(
+    core::arch::naked_asm!(
         "mov [rdi], rbx
         mov [rdi + 8], rbp
         mov [rdi + 16], r12
@@ -54,10 +52,9 @@ pub unsafe extern "C" fn setjmp(_buf: *mut ctypes::__jmp_buf_tag) {
         mov [rdi + 56], rdx
         xor rax, rax
         ret",
-        options(noreturn),
     );
     #[cfg(all(target_arch = "riscv64", feature = "fp_simd"))]
-    core::arch::asm!(
+    core::arch::naked_asm!(
         "sd s0,    0(a0)
         sd s1,    8(a0)
         sd s2,    16(a0)
@@ -88,10 +85,9 @@ pub unsafe extern "C" fn setjmp(_buf: *mut ctypes::__jmp_buf_tag) {
 
         li a0, 0
         ret",
-        options(noreturn),
     );
     #[cfg(all(target_arch = "riscv64", not(feature = "fp_simd")))]
-    core::arch::asm!(
+    core::arch::naked_asm!(
         "sd s0,    0(a0)
         sd s1,    8(a0)
         sd s2,    16(a0)
@@ -109,22 +105,21 @@ pub unsafe extern "C" fn setjmp(_buf: *mut ctypes::__jmp_buf_tag) {
 
         li a0, 0
         ret",
-        options(noreturn),
     );
     #[cfg(not(any(
         target_arch = "aarch64",
         target_arch = "x86_64",
         target_arch = "riscv64"
     )))]
-    core::arch::asm!("ret", options(noreturn))
+    core::arch::naked_asm!("ret")
 }
 
 /// `longjmp` implementation
 #[naked]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) -> ! {
     #[cfg(all(target_arch = "aarch64", feature = "fp_simd"))]
-    core::arch::asm!(
+    core::arch::naked_asm!(
         "ldp x19, x20, [x0,#0]
         ldp x21, x22, [x0,#16]
         ldp x23, x24, [x0,#32]
@@ -141,10 +136,9 @@ pub unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) 
         cmp w1, 0
         csinc w0, w1, wzr, ne
         br x30",
-        options(noreturn),
     );
     #[cfg(all(target_arch = "aarch64", not(feature = "fp_simd")))]
-    core::arch::asm!(
+    core::arch::naked_asm!(
         "ldp x19, x20, [x0,#0]
         ldp x21, x22, [x0,#16]
         ldp x23, x24, [x0,#32]
@@ -157,15 +151,14 @@ pub unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) 
         cmp w1, 0
         csinc w0, w1, wzr, ne
         br x30",
-        options(noreturn),
     );
     #[cfg(target_arch = "x86_64")]
-    core::arch::asm!(
+    core::arch::naked_asm!(
         "mov rax,rsi
         test rax,rax
-        jnz 1f
+        jnz 2f
         inc rax
-    1:
+    2:
         mov rbx, [rdi]
         mov rbp, [rdi + 8]
         mov r12, [rdi + 16]
@@ -176,10 +169,9 @@ pub unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) 
         mov rsp, rdx
         mov rdx, [rdi + 56]
         jmp rdx",
-        options(noreturn),
     );
     #[cfg(all(target_arch = "riscv64", feature = "fp_simd"))]
-    core::arch::asm!(
+    core::arch::naked_asm!(
         "ld s0,    0(a0)
         ld s1,    8(a0)
         ld s2,    16(a0)
@@ -211,10 +203,9 @@ pub unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) 
         seqz a0, a1
         add a0, a0, a1
         ret",
-        options(noreturn),
     );
     #[cfg(all(target_arch = "riscv64", not(feature = "fp_simd")))]
-    core::arch::asm!(
+    core::arch::naked_asm!(
         "ld s0,    0(a0)
         ld s1,    8(a0)
         ld s2,    16(a0)
@@ -233,6 +224,5 @@ pub unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) 
         seqz a0, a1
         add a0, a0, a1
         ret",
-        options(noreturn),
     );
 }

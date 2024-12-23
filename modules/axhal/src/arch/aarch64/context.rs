@@ -1,4 +1,4 @@
-use core::arch::asm;
+use core::arch::naked_asm;
 use memory_addr::VirtAddr;
 
 /// Saved registers when a trap (exception) occurs.
@@ -94,7 +94,7 @@ impl TaskContext {
 
 #[naked]
 unsafe extern "C" fn context_switch(_current_task: &mut TaskContext, _next_task: &TaskContext) {
-    asm!(
+    naked_asm!(
         "
         // save old context (callee-saved registers)
         stp     x29, x30, [x0, 12 * 8]
@@ -119,14 +119,13 @@ unsafe extern "C" fn context_switch(_current_task: &mut TaskContext, _next_task:
         ldp     x29, x30, [x1, 12 * 8]
 
         ret",
-        options(noreturn),
     )
 }
 
 #[naked]
 #[cfg(feature = "fp_simd")]
 unsafe extern "C" fn fpstate_switch(_current_fpstate: &mut FpState, _next_fpstate: &FpState) {
-    asm!(
+    naked_asm!(
         "
         // save fp/neon context
         mrs     x9, fpcr
@@ -174,6 +173,5 @@ unsafe extern "C" fn fpstate_switch(_current_fpstate: &mut FpState, _next_fpstat
 
         isb
         ret",
-        options(noreturn),
     )
 }

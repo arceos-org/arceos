@@ -1,4 +1,4 @@
-use crate::io::{prelude::*, Result, SeekFrom};
+use crate::io::{Result, SeekFrom, prelude::*};
 use core::fmt;
 
 use arceos_api::fs as api;

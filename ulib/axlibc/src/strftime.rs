@@ -102,6 +102,7 @@ unsafe fn strftime_inner<W: WriteByte>(
     format: *const c_char,
     t: *const ctypes::tm,
 ) -> ctypes::size_t {
+    #[allow(clippy::unnecessary_cast)]
     pub unsafe fn inner_strftime<W: WriteByte>(
         w: &mut W,
         mut format: *const c_char,
@@ -238,7 +239,8 @@ unsafe fn strftime_inner<W: WriteByte>(
 }
 
 /// Convert date and time to a string.
-#[no_mangle]
+#[unsafe(no_mangle)]
+#[allow(clippy::unnecessary_cast)] // casting c_char to u8, c_char is either i8 or u8
 pub unsafe extern "C" fn strftime(
     buf: *mut c_char,
     size: ctypes::size_t,
@@ -246,9 +248,5 @@ pub unsafe extern "C" fn strftime(
     timeptr: *const ctypes::tm,
 ) -> ctypes::size_t {
     let ret = strftime_inner(StringWriter(buf as *mut u8, size), format, timeptr);
-    if ret < size {
-        ret
-    } else {
-        0
-    }
+    if ret < size { ret } else { 0 }
 }

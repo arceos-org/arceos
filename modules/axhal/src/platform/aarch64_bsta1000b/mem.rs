@@ -1,5 +1,5 @@
 use crate::mem::MemRegion;
-use page_table_entry::{aarch64::A64PTE, GenericPTE, MappingFlags};
+use page_table_entry::{GenericPTE, MappingFlags, aarch64::A64PTE};
 
 /// Returns platform-specific memory regions.
 pub(crate) fn platform_regions() -> impl Iterator<Item = MemRegion> {

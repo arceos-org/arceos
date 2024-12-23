@@ -3,7 +3,7 @@
 use axalloc::global_allocator;
 use page_table_multiarch::PagingHandler;
 
-use crate::mem::{phys_to_virt, virt_to_phys, MemRegionFlags, PhysAddr, VirtAddr, PAGE_SIZE_4K};
+use crate::mem::{MemRegionFlags, PAGE_SIZE_4K, PhysAddr, VirtAddr, phys_to_virt, virt_to_phys};
 
 #[doc(no_inline)]
 pub use page_table_multiarch::{MappingFlags, PageSize, PagingError, PagingResult};

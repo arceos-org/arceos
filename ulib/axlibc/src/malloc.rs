@@ -21,7 +21,7 @@ const CTRL_BLK_SIZE: usize = core::mem::size_of::<MemoryControlBlock>();
 /// Allocate memory and return the memory address.
 ///
 /// Returns 0 on failure (the current implementation does not trigger an exception)
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn malloc(size: ctypes::size_t) -> *mut c_void {
     // Allocate `(actual length) + 8`. The lowest 8 Bytes are stored in the actual allocated space size.
     // This is because free(uintptr_t) has only one parameter representing the address,
@@ -40,7 +40,7 @@ pub unsafe extern "C" fn malloc(size: ctypes::size_t) -> *mut c_void {
 /// (WARNING) If the address to be released does not match the allocated address, an error should
 /// occur, but it will NOT be checked out. This is due to the global allocator `Buddy_system`
 /// (currently used) does not check the validity of address to be released.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn free(ptr: *mut c_void) {
     if ptr.is_null() {
         return;

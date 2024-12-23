@@ -1,6 +1,6 @@
 use axconfig::CPU_ID_LIST;
 
-use crate::mem::{virt_to_phys, PhysAddr};
+use crate::mem::{PhysAddr, virt_to_phys};
 
 extern "C" {
     fn _start_secondary();

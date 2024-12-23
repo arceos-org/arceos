@@ -1,7 +1,7 @@
 use core::net::SocketAddr;
 use core::sync::atomic::{AtomicBool, Ordering};
 
-use axerrno::{ax_err, ax_err_type, AxError, AxResult};
+use axerrno::{AxError, AxResult, ax_err, ax_err_type};
 use axio::PollState;
 use axsync::Mutex;
 use spin::RwLock;
@@ -10,8 +10,8 @@ use smoltcp::iface::SocketHandle;
 use smoltcp::socket::udp::{self, BindError, SendError};
 use smoltcp::wire::{IpEndpoint, IpListenEndpoint};
 
-use super::addr::{from_core_sockaddr, into_core_sockaddr, is_unspecified, UNSPECIFIED_ENDPOINT};
-use super::{SocketSetWrapper, SOCKET_SET};
+use super::addr::{UNSPECIFIED_ENDPOINT, from_core_sockaddr, into_core_sockaddr, is_unspecified};
+use super::{SOCKET_SET, SocketSetWrapper};
 
 /// A UDP socket that provides POSIX-like APIs.
 pub struct UdpSocket {

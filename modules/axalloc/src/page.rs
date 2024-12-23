@@ -2,7 +2,7 @@ use allocator::AllocError;
 use axerrno::{AxError, AxResult};
 use memory_addr::{PhysAddr, VirtAddr};
 
-use crate::{global_allocator, PAGE_SIZE};
+use crate::{PAGE_SIZE, global_allocator};
 
 /// A RAII wrapper of contiguous 4K-sized pages.
 ///

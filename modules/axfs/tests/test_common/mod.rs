@@ -2,7 +2,7 @@ use axfs::api as fs;
 use axio as io;
 
 use fs::{File, FileType, OpenOptions};
-use io::{prelude::*, Error, Result};
+use io::{Error, Result, prelude::*};
 
 macro_rules! assert_err {
     ($expr: expr) => {

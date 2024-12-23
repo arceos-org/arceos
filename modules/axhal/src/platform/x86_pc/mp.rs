@@ -1,5 +1,5 @@
-use crate::mem::{phys_to_virt, PhysAddr, PAGE_SIZE_4K};
-use crate::time::{busy_wait, Duration};
+use crate::mem::{PAGE_SIZE_4K, PhysAddr, phys_to_virt};
+use crate::time::{Duration, busy_wait};
 
 const START_PAGE_IDX: u8 = 6;
 const START_PAGE_PADDR: PhysAddr = pa!(START_PAGE_IDX as usize * PAGE_SIZE_4K);
@@ -10,7 +10,7 @@ core::arch::global_asm!(
 );
 
 unsafe fn setup_startup_page(stack_top: PhysAddr) {
-    extern "C" {
+    unsafe extern "C" {
         fn ap_entry32();
         fn ap_start();
         fn ap_end();

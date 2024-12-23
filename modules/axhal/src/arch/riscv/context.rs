@@ -1,4 +1,4 @@
-use core::arch::asm;
+use core::arch::naked_asm;
 use memory_addr::VirtAddr;
 
 include_asm_marcos!();
@@ -122,7 +122,7 @@ impl TaskContext {
 
 #[naked]
 unsafe extern "C" fn context_switch(_current_task: &mut TaskContext, _next_task: &TaskContext) {
-    asm!(
+    naked_asm!(
         "
         // save old context (callee-saved registers)
         STR     ra, a0, 0
@@ -157,6 +157,5 @@ unsafe extern "C" fn context_switch(_current_task: &mut TaskContext, _next_task:
         LDR     ra, a1, 0
 
         ret",
-        options(noreturn),
     )
 }

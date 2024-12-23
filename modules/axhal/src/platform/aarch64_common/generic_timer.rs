@@ -1,6 +1,6 @@
 #![allow(unused_imports)]
 
-use aarch64_cpu::registers::{CNTFRQ_EL0, CNTPCT_EL0, CNTP_CTL_EL0, CNTP_TVAL_EL0};
+use aarch64_cpu::registers::{CNTFRQ_EL0, CNTP_CTL_EL0, CNTP_TVAL_EL0, CNTPCT_EL0};
 use int_ratio::Ratio;
 use tock_registers::interfaces::{Readable, Writeable};
 

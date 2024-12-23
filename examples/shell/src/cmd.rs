@@ -5,6 +5,8 @@ use std::{string::String, vec::Vec};
 #[cfg(all(not(feature = "axstd"), unix))]
 use std::os::unix::fs::{FileTypeExt, PermissionsExt};
 
+use crate::path_to_str;
+
 macro_rules! print_err {
     ($cmd: literal, $msg: expr) => {
         println!("{}: {}", $cmd, $msg);
@@ -69,7 +71,7 @@ const fn file_perm_to_rwx(mode: u32) -> [u8; 9] {
 fn do_ls(args: &str) {
     let current_dir = std::env::current_dir().unwrap();
     let args = if args.is_empty() {
-        path_to_str!(current_dir)
+        path_to_str(&current_dir)
     } else {
         args
     };
@@ -102,7 +104,7 @@ fn do_ls(args: &str) {
         entries.sort();
 
         for entry in entries {
-            let entry = path_to_str!(entry);
+            let entry = path_to_str(&entry);
             let path = String::from(name) + "/" + entry;
             if let Err(e) = show_entry_info(&path, entry) {
                 print_err!("ls", path, e);
@@ -240,7 +242,7 @@ fn do_cd(mut args: &str) {
 
 fn do_pwd(_args: &str) {
     let pwd = std::env::current_dir().unwrap();
-    println!("{}", path_to_str!(pwd));
+    println!("{}", path_to_str(&pwd));
 }
 
 fn do_uname(_args: &str) {

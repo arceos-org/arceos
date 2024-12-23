@@ -5,17 +5,14 @@
 #[cfg(feature = "axstd")]
 extern crate axstd as std;
 
-macro_rules! path_to_str {
-    ($path:expr) => {{
-        #[cfg(not(feature = "axstd"))]
-        {
-            $path.to_str().unwrap() // Path/OsString -> &str
-        }
-        #[cfg(feature = "axstd")]
-        {
-            $path.as_str() // String -> &str
-        }
-    }};
+#[cfg(not(feature = "axstd"))]
+fn path_to_str(path: &impl AsRef<std::ffi::OsStr>) -> &str {
+    path.as_ref().to_str().unwrap()
+}
+
+#[cfg(feature = "axstd")]
+fn path_to_str(path: &str) -> &str {
+    path
 }
 
 mod cmd;
@@ -36,12 +33,12 @@ const MAX_CMD_LEN: usize = 256;
 fn print_prompt() {
     print!(
         "arceos:{}$ ",
-        path_to_str!(std::env::current_dir().unwrap())
+        path_to_str(&std::env::current_dir().unwrap())
     );
     std::io::stdout().flush().unwrap();
 }
 
-#[cfg_attr(feature = "axstd", no_mangle)]
+#[cfg_attr(feature = "axstd", unsafe(no_mangle))]
 fn main() {
     let mut stdin = std::io::stdin();
     let mut stdout = std::io::stdout();
