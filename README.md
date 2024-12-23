@@ -182,14 +182,14 @@ Set the `PLATFORM` variable when run `make`:
 
 ```bash
 # Build helloworld for raspi4
-make PLATFORM=aarch64-raspi4 A=examples/helloworld
+make PLATFORM=aarch64-raspi4 SMP=4 A=examples/helloworld
 ```
 
 You may also need to select the corrsponding device drivers by setting the `FEATURES` variable:
 
 ```bash
 # Build the shell app for raspi4, and use the SD card driver
-make PLATFORM=aarch64-raspi4 A=examples/shell FEATURES=driver-bcm2835-sdhci
+make PLATFORM=aarch64-raspi4 SMP=4 A=examples/shell FEATURES=driver-bcm2835-sdhci BUS=mmio
 # Build httpserver for the bare-metal x86_64 platform, and use the ixgbe and ramdisk driver
 make PLATFORM=x86_64-pc-oslab A=examples/httpserver FEATURES=driver-ixgbe,driver-ramdisk SMP=4
 ```

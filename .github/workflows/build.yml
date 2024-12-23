@@ -121,16 +121,29 @@ jobs:
     - name: Build shell for x86_64-pc-oslab
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLATFORM=x86_64-pc-oslab A=examples/shell
+
+    - run: make PLATFORM=aarch64-raspi4 defconfig
     - name: Build helloworld for aarch64-raspi4
-      run: make PLATFORM=aarch64-raspi4 A=examples/helloworld
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=aarch64-raspi4 SMP=4 A=examples/helloworld
     - name: Build shell for aarch64-raspi4
-      run: make PLATFORM=aarch64-raspi4 A=examples/shell FEATURES=driver-bcm2835-sdhci
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=aarch64-raspi4 SMP=4 A=examples/shell FEATURES=driver-bcm2835-sdhci BUS=mmio
+
+    - run: make PLATFORM=aarch64-bsta1000b defconfig
     - name: Build helloworld for aarch64-bsta1000b
-      run: make PLATFORM=aarch64-bsta1000b A=examples/helloworld
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=aarch64-bsta1000b A=examples/helloworld SMP=8
+
+    - run: make PLATFORM=aarch64-phytium-pi defconfig
+    - name: Build helloworld for aarch64-phytium-pi
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=aarch64-phytium-pi A=examples/helloworld SMP=4
 
     - uses: ./.github/workflows/actions/setup-musl
       with:
         arch: x86_64
+    - run: make PLATFORM=x86_64-pc-oslab defconfig
     - name: Build helloworld-c for x86_64-pc-oslab
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLATFORM=x86_64-pc-oslab A=examples/helloworld-c
