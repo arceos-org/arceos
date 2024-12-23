@@ -1,4 +1,4 @@
-use axconfig::CPU_ID_LIST;
+use axconfig::devices::CPU_ID_LIST;
 
 use crate::mem::{PhysAddr, virt_to_phys};
 

@@ -68,12 +68,22 @@ endif
 
 qemu_args-debug := $(qemu_args-y) -s -S
 
+ifeq ($(ACCEL),)
+  ifneq ($(findstring -microsoft, $(shell uname -r | tr '[:upper:]' '[:lower:]')),)
+    ACCEL := n  # Don't enable kvm for WSL/WSL2
+  else ifeq ($(ARCH), x86_64)
+    ACCEL := $(if $(findstring x86_64, $(shell uname -m)),y,n)
+  else ifeq ($(ARCH), aarch64)
+    ACCEL := $(if $(findstring arm64, $(shell uname -m)),y,n)
+  else
+    ACCEL := n
+  endif
+endif
+
 # Do not use KVM for debugging
 ifeq ($(shell uname), Darwin)
   qemu_args-$(ACCEL) += -cpu host -accel hvf
-else ifeq ($(wildcard /dev/kvm),)
-  qemu_args-$(ACCEL) += -accel tcg
-else
+else ifneq ($(wildcard /dev/kvm),)
   qemu_args-$(ACCEL) += -cpu host -accel kvm
 endif
 

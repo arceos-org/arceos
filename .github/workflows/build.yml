@@ -127,7 +127,7 @@ jobs:
       run: make PLATFORM=aarch64-raspi4 A=examples/shell FEATURES=driver-bcm2835-sdhci
     - name: Build helloworld for aarch64-bsta1000b
       run: make PLATFORM=aarch64-bsta1000b A=examples/helloworld
-    
+
     - uses: ./.github/workflows/actions/setup-musl
       with:
         arch: x86_64

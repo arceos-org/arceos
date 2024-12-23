@@ -45,17 +45,25 @@ docker run -it -v $(pwd):/arceos -w /arceos arceos bash
 make A=examples/helloworld ARCH=aarch64 run
 ```
 
-
 ### Manually Build and Run
 #### 1. Install Build Dependencies
 
-Install [cargo-binutils](https://github.com/rust-embedded/cargo-binutils) to use `rust-objcopy` and `rust-objdump` tools:
+Install [cargo-binutils](https://github.com/rust-embedded/cargo-binutils) to use `rust-objcopy` and `rust-objdump` tools, and [axconfig-gen](https://github.com/arceos-org/axconfig-gen) for kernel configuration:
 
 ```bash
-cargo install cargo-binutils
+cargo install cargo-binutils axconfig-gen
 ```
 
-##### Dependencies for C apps
+##### Dependencies for running apps
+
+```bash
+# for Debian/Ubuntu
+sudo apt-get install qemu-system
+# for macos
+brew install qemu
+```
+
+##### Dependencies for building C apps (optional)
 
 Install `libclang-dev`:
 
@@ -76,18 +84,6 @@ tar zxf riscv64-linux-musl-cross.tgz
 tar zxf x86_64-linux-musl-cross.tgz
 # exec below command in bash OR add below info in ~/.bashrc
 export PATH=`pwd`/x86_64-linux-musl-cross/bin:`pwd`/aarch64-linux-musl-cross/bin:`pwd`/riscv64-linux-musl-cross/bin:$PATH
-```
-
-##### Dependencies for running apps
-
-```bash
-# for Debian/Ubuntu
-sudo apt-get install qemu-system
-```
-
-```bash
-# for macos
-brew install qemu
 ```
 
 Other systems and arch please refer to [Qemu Download](https://www.qemu.org/download/#linux)
@@ -133,7 +129,7 @@ Examples are given below and in the [app-helloworld](https://github.com/arceos-o
     ```
 
 3. Call library functions from `axstd` in your code, just like the Rust [std](https://doc.rust-lang.org/std/) library.
-    
+
     Remember to annotate the `main` function with `#[unsafe(no_mangle)]` (see this [example](examples/helloworld/src/main.rs)).
 
 4. Build your application with ArceOS, by running the `make` command in the application directory:

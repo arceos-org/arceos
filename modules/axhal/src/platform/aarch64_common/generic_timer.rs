@@ -58,12 +58,12 @@ pub(crate) fn init_early() {
 
     // Make sure `RTC_PADDR` is valid in platform config file.
     #[cfg(feature = "rtc")]
-    if axconfig::RTC_PADDR != 0 {
+    if axconfig::devices::RTC_PADDR != 0 {
         use crate::mem::phys_to_virt;
         use arm_pl031::Rtc;
         use memory_addr::PhysAddr;
 
-        const PL031_BASE: PhysAddr = pa!(axconfig::RTC_PADDR);
+        const PL031_BASE: PhysAddr = pa!(axconfig::devices::RTC_PADDR);
 
         let rtc = unsafe { Rtc::new(phys_to_virt(PL031_BASE).as_usize() as _) };
         // Get the current time in microseconds since the epoch (1970-01-01) from the aarch64 pl031 RTC.
