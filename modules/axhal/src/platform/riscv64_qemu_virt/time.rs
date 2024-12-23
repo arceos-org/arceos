@@ -1,6 +1,6 @@
 use riscv::register::time;
 
-const NANOS_PER_TICK: u64 = crate::time::NANOS_PER_SEC / axconfig::TIMER_FREQUENCY as u64;
+const NANOS_PER_TICK: u64 = crate::time::NANOS_PER_SEC / axconfig::devices::TIMER_FREQUENCY as u64;
 /// RTC wall time offset in nanoseconds at monotonic time base.
 static mut RTC_EPOCHOFFSET_NANOS: u64 = 0;
 
@@ -37,12 +37,12 @@ pub fn set_oneshot_timer(deadline_ns: u64) {
 
 pub(super) fn init_early() {
     #[cfg(feature = "rtc")]
-    if axconfig::RTC_PADDR != 0 {
+    if axconfig::devices::RTC_PADDR != 0 {
         use crate::mem::phys_to_virt;
         use memory_addr::PhysAddr;
         use riscv_goldfish::Rtc;
 
-        const GOLDFISH_BASE: PhysAddr = pa!(axconfig::RTC_PADDR);
+        const GOLDFISH_BASE: PhysAddr = pa!(axconfig::devices::RTC_PADDR);
         // Get the current time in microseconds since the epoch (1970-01-01) from the riscv RTC.
         // Subtract the timer ticks to get the actual time when ArceOS was booted.
         let epoch_time_nanos =

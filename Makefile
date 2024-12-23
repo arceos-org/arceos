@@ -46,6 +46,7 @@ BLK ?= n
 NET ?= n
 GRAPHIC ?= n
 BUS ?= pci
+ACCEL ?=
 
 DISK_IMG ?= disk.img
 QEMU_LOG ?= n
@@ -69,63 +70,28 @@ else
   APP_TYPE := c
 endif
 
-# Architecture and platform
-ifneq ($(filter $(MAKECMDGOALS),unittest unittest_no_fail_fast),)
-  PLATFORM_NAME :=
-else ifneq ($(PLATFORM),)
-  # `PLATFORM` is specified, override the `ARCH` variables
-  builtin_platforms := $(patsubst platforms/%.toml,%,$(wildcard platforms/*))
-  ifneq ($(filter $(PLATFORM),$(builtin_platforms)),)
-    # builtin platform
-    PLATFORM_NAME := $(PLATFORM)
-    _arch := $(word 1,$(subst -, ,$(PLATFORM)))
-  else ifneq ($(wildcard $(PLATFORM)),)
-    # custom platform, read the "platform" field from the toml file
-    PLATFORM_NAME := $(shell cat $(PLATFORM) | sed -n 's/^platform = "\([a-z0-9A-Z_\-]*\)"/\1/p')
-    _arch := $(shell cat $(PLATFORM) | sed -n 's/^arch = "\([a-z0-9A-Z_\-]*\)"/\1/p')
-  else
-    $(error "PLATFORM" must be one of "$(builtin_platforms)" or a valid path to a toml file)
-  endif
-  ifeq ($(origin ARCH),command line)
-    ifneq ($(ARCH),$(_arch))
-      $(error "ARCH=$(ARCH)" is not compatible with "PLATFORM=$(PLATFORM)")
-    endif
-  endif
-  ARCH := $(_arch)
-endif
-
-ifeq ($(ARCH), x86_64)
-  # Don't enable kvm for WSL/WSL2.
-  ACCEL ?= $(if $(findstring -microsoft, $(shell uname -r | tr '[:upper:]' '[:lower:]')),n,y)
-  PLATFORM_NAME ?= x86_64-qemu-q35
-else ifeq ($(ARCH), riscv64)
-  ACCEL ?= n
-  PLATFORM_NAME ?= riscv64-qemu-virt
-else ifeq ($(ARCH), aarch64)
-  ACCEL ?= n
-  PLATFORM_NAME ?= aarch64-qemu-virt
-else
-  $(error "ARCH" must be one of "x86_64", "riscv64", or "aarch64")
-endif
-
 # Feature parsing
 include scripts/make/features.mk
+# Platform resolving
+include scripts/make/platform.mk
 
 # Target
 ifeq ($(ARCH), x86_64)
   TARGET := x86_64-unknown-none
-else ifeq ($(ARCH), riscv64)
-  TARGET := riscv64gc-unknown-none-elf
 else ifeq ($(ARCH), aarch64)
   ifeq ($(findstring fp_simd,$(FEATURES)),)
     TARGET := aarch64-unknown-none-softfloat
   else
     TARGET := aarch64-unknown-none
   endif
+else ifeq ($(ARCH), riscv64)
+  TARGET := riscv64gc-unknown-none-elf
+else
+  $(error "ARCH" must be one of "x86_64", "riscv64", or "aarch64")
 endif
 
 export AX_ARCH=$(ARCH)
-export AX_PLATFORM=$(PLATFORM_NAME)
+export AX_PLATFORM=$(PLAT_NAME)
 export AX_SMP=$(SMP)
 export AX_MODE=$(MODE)
 export AX_LOG=$(LOG)
@@ -148,21 +114,32 @@ GDB ?= gdb-multiarch
 OUT_DIR ?= $(APP)
 
 APP_NAME := $(shell basename $(APP))
-LD_SCRIPT := $(TARGET_DIR)/$(TARGET)/$(MODE)/linker_$(PLATFORM_NAME).lds
-OUT_ELF := $(OUT_DIR)/$(APP_NAME)_$(PLATFORM_NAME).elf
-OUT_BIN := $(OUT_DIR)/$(APP_NAME)_$(PLATFORM_NAME).bin
+LD_SCRIPT := $(TARGET_DIR)/$(TARGET)/$(MODE)/linker_$(PLAT_NAME).lds
+OUT_ELF := $(OUT_DIR)/$(APP_NAME)_$(PLAT_NAME).elf
+OUT_BIN := $(OUT_DIR)/$(APP_NAME)_$(PLAT_NAME).bin
 
 all: build
 
+prepare:
+	cargo install cargo-binutils
+	cargo install --git https://github.com/arceos-org/axconfig-gen.git
+
 include scripts/make/utils.mk
+include scripts/make/config.mk
 include scripts/make/build.mk
 include scripts/make/qemu.mk
 include scripts/make/test.mk
-ifeq ($(PLATFORM_NAME), aarch64-raspi4)
+ifeq ($(PLAT_NAME), aarch64-raspi4)
   include scripts/make/raspi4.mk
-else ifeq ($(PLATFORM_NAME), aarch64-bsta1000b)
+else ifeq ($(PLAT_NAME), aarch64-bsta1000b)
   include scripts/make/bsta1000b-fada.mk
 endif
+
+defconfig:
+	$(call defconfig)
+
+oldconfig:
+	$(call oldconfig)
 
 build: $(OUT_DIR) $(OUT_BIN)
 

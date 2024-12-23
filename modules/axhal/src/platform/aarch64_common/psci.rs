@@ -2,6 +2,8 @@
 
 #![allow(dead_code)]
 
+use axconfig::devices::PSCI_METHOD;
+
 pub const PSCI_0_2_FN_BASE: u32 = 0x84000000;
 pub const PSCI_0_2_64BIT: u32 = 0x40000000;
 pub const PSCI_0_2_FN_CPU_SUSPEND: u32 = PSCI_0_2_FN_BASE + 1;
@@ -79,10 +81,10 @@ fn psci_hvc_call(func: u32, arg0: usize, arg1: usize, arg2: usize) -> usize {
 }
 
 fn psci_call(func: u32, arg0: usize, arg1: usize, arg2: usize) -> Result<(), PsciError> {
-    let ret = match axconfig::PSCI_METHOD {
+    let ret = match PSCI_METHOD {
         "smc" => arm_smccc_smc(func, arg0, arg1, arg2),
         "hvc" => psci_hvc_call(func, arg0, arg1, arg2),
-        _ => panic!("Unknown PSCI method: {}", axconfig::PSCI_METHOD),
+        _ => panic!("Unknown PSCI method: {}", PSCI_METHOD),
     };
     if ret == 0 {
         Ok(())

@@ -8,12 +8,8 @@
 
 #![no_std]
 
-#[rustfmt::skip]
 mod config {
-    include!(concat!(env!("OUT_DIR"), "/config.rs"));
+    axconfig_gen_macros::include_configs!("../../.axconfig.toml");
 }
 
 pub use config::*;
-
-/// End address of the whole physical memory.
-pub const PHYS_MEMORY_END: usize = PHYS_MEMORY_BASE + PHYS_MEMORY_SIZE;

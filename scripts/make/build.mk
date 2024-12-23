@@ -9,11 +9,14 @@ else
   rust_elf := $(TARGET_DIR)/$(TARGET)/$(MODE)/$(rust_package)
 endif
 
-ifneq ($(filter $(MAKECMDGOALS),doc doc_check_missing),)  # run `cargo doc`
+ifneq ($(filter $(MAKECMDGOALS),doc doc_check_missing),)
+  # run `make doc`
   RUSTFLAGS := $(RUSTFLAGS_WITHOUT_LINK_ARG)
-  $(if $(V), $(info RUSTDOCFLAGS: "$(RUSTDOCFLAGS)"))
+  $(if $(V), $(info RUSTFLAGS: "$(RUSTFLAGS)") $(info RUSTDOCFLAGS: "$(RUSTDOCFLAGS)"))
+  export RUSTFLAGS
   export RUSTDOCFLAGS
-else ifeq ($(filter $(MAKECMDGOALS),clippy unittest unittest_no_fail_fast),) # not run `cargo test` or `cargo clippy`
+else ifeq ($(filter $(MAKECMDGOALS),prepare defconfig oldconfig clippy unittest unittest_no_fail_fast),)
+  # not run make with the above goals
   ifneq ($(V),)
     $(info APP: "$(APP)")
     $(info APP_TYPE: "$(APP_TYPE)")
@@ -28,13 +31,12 @@ else ifeq ($(filter $(MAKECMDGOALS),clippy unittest unittest_no_fail_fast),) # n
   else
     RUSTFLAGS := $(RUSTFLAGS_WITH_LINK_ARG)
   endif
+  $(if $(V), $(info RUSTFLAGS: "$(RUSTFLAGS)"))
+  export RUSTFLAGS
 endif
 
-$(if $(V), $(info RUSTFLAGS: "$(RUSTFLAGS)"))
-export RUSTFLAGS
-
-_cargo_build:
-	@printf "    $(GREEN_C)Building$(END_C) App: $(APP_NAME), Arch: $(ARCH), Platform: $(PLATFORM_NAME), App type: $(APP_TYPE)\n"
+_cargo_build: oldconfig
+	@printf "    $(GREEN_C)Building$(END_C) App: $(APP_NAME), Arch: $(ARCH), Platform: $(PLAT_NAME), App type: $(APP_TYPE)\n"
 ifeq ($(APP_TYPE), rust)
 	$(call cargo_build,$(APP),$(AX_FEAT) $(LIB_FEAT) $(APP_FEAT))
 	@cp $(rust_elf) $(OUT_ELF)

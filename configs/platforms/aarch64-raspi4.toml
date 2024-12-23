@@ -1,3 +1,7 @@
+#
+# Platform configs
+#
+[platform]
 # Architecture identifier.
 arch = "aarch64"
 # Platform identifier.
