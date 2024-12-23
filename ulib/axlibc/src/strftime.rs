@@ -97,19 +97,12 @@ impl<T: Write> Write for CountingWriter<T> {
     }
 }
 
-#[inline]
-fn c_char_as_u8(c: c_char) -> u8 {
-    #[allow(clippy::unnecessary_cast)]
-    {
-        c as u8
-    }
-}
-
 unsafe fn strftime_inner<W: WriteByte>(
     w: W,
     format: *const c_char,
     t: *const ctypes::tm,
 ) -> ctypes::size_t {
+    #[allow(clippy::unnecessary_cast)]
     pub unsafe fn inner_strftime<W: WriteByte>(
         w: &mut W,
         mut format: *const c_char,
@@ -172,20 +165,20 @@ unsafe fn strftime_inner<W: WriteByte>(
         ];
 
         while *format != 0 {
-            if c_char_as_u8(*format) != b'%' {
-                w!(byte c_char_as_u8(*format));
+            if *format as u8 != b'%' {
+                w!(byte *format as u8);
                 format = format.offset(1);
                 continue;
             }
 
             format = format.offset(1);
 
-            if c_char_as_u8(*format) == b'E' || c_char_as_u8(*format) == b'O' {
+            if *format as u8 == b'E' || *format as u8 == b'O' {
                 // Ignore because these do nothing without locale
                 format = format.offset(1);
             }
 
-            match c_char_as_u8(*format) {
+            match *format as u8 {
                 b'%' => w!(byte b'%'),
                 b'n' => w!(byte b'\n'),
                 b't' => w!(byte b'\t'),
