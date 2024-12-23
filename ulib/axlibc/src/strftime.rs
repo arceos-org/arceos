@@ -166,7 +166,7 @@ unsafe fn strftime_inner<W: WriteByte>(
 
         while *format != 0 {
             if *format as u8 != b'%' {
-                w!(byte *format as u8);
+                w!(byte * format as u8);
                 format = format.offset(1);
                 continue;
             }
