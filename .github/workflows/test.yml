@@ -33,7 +33,6 @@ jobs:
         toolchain: ${{ env.rust-toolchain }}
         components: rust-src
     - uses: Swatinem/rust-cache@v2
-    - run: make prepare
     - uses: ./.github/workflows/actions/setup-qemu
       with:
         qemu-version: ${{ env.qemu-version }}

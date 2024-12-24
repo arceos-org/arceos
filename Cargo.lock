@@ -236,7 +236,7 @@ dependencies = [
 [[package]]
 name = "axconfig-gen"
 version = "0.1.0"
-source = "git+https://github.com/arceos-org/axconfig-gen.git#551dbf6cf7759464883e2288cfe66b6d78729808"
+source = "git+https://github.com/arceos-org/axconfig-gen.git#ee91673546942d31140ec212e771be54e5b5478c"
 dependencies = [
  "clap",
  "toml_edit",
@@ -245,7 +245,7 @@ dependencies = [
 [[package]]
 name = "axconfig-gen-macros"
 version = "0.1.0"
-source = "git+https://github.com/arceos-org/axconfig-gen.git#551dbf6cf7759464883e2288cfe66b6d78729808"
+source = "git+https://github.com/arceos-org/axconfig-gen.git#ee91673546942d31140ec212e771be54e5b5478c"
 dependencies = [
  "axconfig-gen",
  "proc-macro2",

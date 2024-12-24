@@ -20,13 +20,7 @@ pub fn sys_sysconf(name: c_int) -> c_long {
     #[cfg(not(feature = "alloc"))]
     let (phys_pages, avail_pages) = {
         let mem_size = axconfig::platform::PHYS_MEMORY_SIZE;
-        unsafe extern "C" {
-            fn _ekernel();
-        }
-        (
-            mem_size / PAGE_SIZE_4K,
-            (mem_size - _ekernel as usize) / PAGE_SIZE_4K,
-        )
+        (mem_size / PAGE_SIZE_4K, mem_size / PAGE_SIZE_4K) // FIXME
     };
 
     syscall_body!(sys_sysconf, {

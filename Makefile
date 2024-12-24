@@ -40,6 +40,8 @@ APP ?= $(A)
 FEATURES ?=
 APP_FEATURES ?=
 TARGET_DIR ?= $(PWD)/target
+EXTRA_CONFIG ?=
+OUT_CONFIG ?= $(PWD)/.axconfig.toml
 
 # QEMU options
 BLK ?= n
@@ -99,6 +101,13 @@ export AX_TARGET=$(TARGET)
 export AX_IP=$(IP)
 export AX_GW=$(GW)
 
+ifneq ($(filter $(MAKECMDGOALS),unittest unittest_no_fail_fast),)
+  # When running unit tests, set `AX_CONFIG_PATH` to empty for dummy config
+  unexport AX_CONFIG_PATH
+else
+  export AX_CONFIG_PATH=$(OUT_CONFIG)
+endif
+
 # Binutils
 CROSS_COMPILE ?= $(ARCH)-linux-musl-
 CC := $(CROSS_COMPILE)gcc
@@ -120,25 +129,20 @@ OUT_BIN := $(OUT_DIR)/$(APP_NAME)_$(PLAT_NAME).bin
 
 all: build
 
-prepare:
-	cargo install cargo-binutils
-	cargo install --git https://github.com/arceos-org/axconfig-gen.git
-
 include scripts/make/utils.mk
 include scripts/make/config.mk
 include scripts/make/build.mk
 include scripts/make/qemu.mk
-include scripts/make/test.mk
 ifeq ($(PLAT_NAME), aarch64-raspi4)
   include scripts/make/raspi4.mk
 else ifeq ($(PLAT_NAME), aarch64-bsta1000b)
   include scripts/make/bsta1000b-fada.mk
 endif
 
-defconfig:
+defconfig: _axconfig-gen
 	$(call defconfig)
 
-oldconfig:
+oldconfig: _axconfig-gen
 	$(call oldconfig)
 
 build: $(OUT_DIR) $(OUT_BIN)
@@ -160,17 +164,17 @@ debug: build
 	  -ex 'continue' \
 	  -ex 'disp /16i $$pc'
 
-clippy:
+clippy: oldconfig
 ifeq ($(origin ARCH), command line)
 	$(call cargo_clippy,--target $(TARGET))
 else
 	$(call cargo_clippy)
 endif
 
-doc:
+doc: oldconfig
 	$(call cargo_doc)
 
-doc_check_missing:
+doc_check_missing: oldconfig
 	$(call cargo_doc)
 
 fmt:
@@ -200,4 +204,7 @@ clean_c::
 	rm -rf ulib/axlibc/build_*
 	rm -rf $(app-objs)
 
-.PHONY: all build disasm run justrun debug clippy fmt fmt_c test test_no_fail_fast clean clean_c doc disk_image
+.PHONY: all defconfig oldconfig \
+	build disasm run justrun debug \
+	clippy doc doc_check_missing fmt fmt_c unittest unittest_no_fail_fast \
+	disk_img clean clean_c

@@ -17,8 +17,8 @@ build_args := \
   $(build_args-$(MODE)) \
   $(verbose)
 
-RUSTFLAGS_WITHOUT_LINK_ARG := -A unsafe_op_in_unsafe_fn
-RUSTFLAGS_WITH_LINK_ARG := $(RUSTFLAGS_WITHOUT_LINK_ARG) -C link-arg=-T$(LD_SCRIPT) -C link-arg=-no-pie -C link-arg=-znostart-stop-gc
+RUSTFLAGS:= -A unsafe_op_in_unsafe_fn
+RUSTFLAGS_LINK_ARGS := -C link-arg=-T$(LD_SCRIPT) -C link-arg=-no-pie -C link-arg=-znostart-stop-gc
 RUSTDOCFLAGS := -Z unstable-options --enable-index-page -D rustdoc::broken_intra_doc_links
 
 ifeq ($(MAKECMDGOALS), doc_check_missing)
@@ -46,4 +46,9 @@ define cargo_doc
   $(foreach p,$(all_packages), \
     $(call run_cmd,cargo rustdoc,--all-features -p $(p) $(verbose))
   )
+endef
+
+define unit_test
+  $(call run_cmd,cargo test,-p axfs $(1) --features "myfs" $(verbose) -- --nocapture)
+  $(call run_cmd,cargo test,--workspace $(1) $(verbose) -- --nocapture)
 endef

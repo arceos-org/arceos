@@ -1,8 +1,6 @@
 # Architecture and platform resolving
 
-ifneq ($(filter $(MAKECMDGOALS),unittest unittest_no_fail_fast),)
-  PLAT_NAME :=
-else ifeq ($(PLATFORM),)
+ifeq ($(PLATFORM),)
   # `PLATFORM` is not specified, use the default platform for each architecture
   ifeq ($(ARCH), x86_64)
     PLAT_NAME := x86_64-qemu-q35
@@ -10,18 +8,23 @@ else ifeq ($(PLATFORM),)
     PLAT_NAME := aarch64-qemu-virt
   else ifeq ($(ARCH), riscv64)
     PLAT_NAME := riscv64-qemu-virt
+  else
+    $(error "ARCH" must be one of "x86_64", "riscv64", or "aarch64")
   endif
+  PLAT_CONFIG := configs/platforms/$(PLAT_NAME).toml
 else ifneq ($(PLATFORM),)
   # `PLATFORM` is specified, override the `ARCH` variables
   builtin_platforms := $(patsubst configs/platforms/%.toml,%,$(wildcard configs/platforms/*))
   ifneq ($(filter $(PLATFORM),$(builtin_platforms)),)
     # builtin platform
-    PLAT_NAME := $(PLATFORM)
     _arch := $(word 1,$(subst -, ,$(PLATFORM)))
+    PLAT_NAME := $(PLATFORM)
+    PLAT_CONFIG := configs/platforms/$(PLAT_NAME).toml
   else ifneq ($(wildcard $(PLATFORM)),)
     # custom platform, read the "arch" and "plat-name" fields from the toml file
-    PLAT_NAME := $(patsubst "%",%,$(shell axconfig-gen $(PLATFORM) -r platform.plat-name))
     _arch :=  $(patsubst "%",%,$(shell axconfig-gen $(PLATFORM) -r platform.arch))
+    PLAT_NAME := $(patsubst "%",%,$(shell axconfig-gen $(PLATFORM) -r platform.plat-name))
+    PLAT_CONFIG := $(PLATFORM)
   else
     $(error "PLATFORM" must be one of "$(builtin_platforms)" or a valid path to a toml file)
   endif
