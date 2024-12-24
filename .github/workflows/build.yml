@@ -8,6 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        arch: [x86_64, riscv64, aarch64]
         rust-toolchain: [nightly, nightly-2024-12-12]
     env:
       RUSTUP_TOOLCHAIN: ${{ matrix.rust-toolchain }}
@@ -20,21 +21,17 @@ jobs:
         targets: x86_64-unknown-none, riscv64gc-unknown-none-elf, aarch64-unknown-none, aarch64-unknown-none-softfloat
     - name: Check rust version
       run: rustc --version --verbose
-    - name: Clippy for the default target
-      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make clippy
-    - name: Clippy for x86_64
-      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make clippy ARCH=x86_64
-    - name: Clippy for riscv64
-      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make clippy ARCH=riscv64
-    - name: Clippy for aarch64
-      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make clippy ARCH=aarch64
     - name: Check code format
+      if: ${{ matrix.arch == 'x86_64' }}
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: cargo fmt --all -- --check
+    - name: Clippy for the default target
+      if: ${{ matrix.arch == 'x86_64' }}
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make clippy
+    - name: Clippy for ${{ matrix.arch }}
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make clippy ARCH=${{ matrix.arch }}
 
   build:
     runs-on: ${{ matrix.os }}

@@ -136,7 +136,6 @@ include scripts/make/utils.mk
 include scripts/make/config.mk
 include scripts/make/build.mk
 include scripts/make/qemu.mk
-include scripts/make/test.mk
 ifeq ($(PLAT_NAME), aarch64-raspi4)
   include scripts/make/raspi4.mk
 else ifeq ($(PLAT_NAME), aarch64-bsta1000b)
@@ -168,17 +167,17 @@ debug: build
 	  -ex 'continue' \
 	  -ex 'disp /16i $$pc'
 
-clippy:
+clippy: oldconfig
 ifeq ($(origin ARCH), command line)
 	$(call cargo_clippy,--target $(TARGET))
 else
 	$(call cargo_clippy)
 endif
 
-doc:
+doc: oldconfig
 	$(call cargo_doc)
 
-doc_check_missing:
+doc_check_missing: oldconfig
 	$(call cargo_doc)
 
 fmt:

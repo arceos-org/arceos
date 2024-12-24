@@ -11,12 +11,15 @@ endif
 
 ifneq ($(filter $(MAKECMDGOALS),doc doc_check_missing),)
   # run `make doc`
-  RUSTFLAGS := $(RUSTFLAGS_WITHOUT_LINK_ARG)
   $(if $(V), $(info RUSTFLAGS: "$(RUSTFLAGS)") $(info RUSTDOCFLAGS: "$(RUSTDOCFLAGS)"))
   export RUSTFLAGS
   export RUSTDOCFLAGS
-else ifeq ($(filter $(MAKECMDGOALS),prepare defconfig oldconfig clippy unittest unittest_no_fail_fast),)
-  # not run make with the above goals
+else ifneq ($(filter $(MAKECMDGOALS),unittest unittest_no_fail_fast),)
+  # run `make unittest`
+  $(if $(V), $(info RUSTFLAGS: "$(RUSTFLAGS)"))
+  export RUSTFLAGS
+else ifeq ($(filter $(MAKECMDGOALS),defconfig oldconfig clippy),)
+  # run `make build`... (not the above goals)
   ifneq ($(V),)
     $(info APP: "$(APP)")
     $(info APP_TYPE: "$(APP_TYPE)")
@@ -26,10 +29,9 @@ else ifeq ($(filter $(MAKECMDGOALS),prepare defconfig oldconfig clippy unittest 
     $(info app features: "$(APP_FEAT)")
   endif
   ifeq ($(APP_TYPE), c)
-    RUSTFLAGS := $(RUSTFLAGS_WITHOUT_LINK_ARG)
     $(if $(V), $(info CFLAGS: "$(CFLAGS)") $(info LDFLAGS: "$(LDFLAGS)"))
-  else
-    RUSTFLAGS := $(RUSTFLAGS_WITH_LINK_ARG)
+  else ifeq ($(APP_TYPE), rust)
+    RUSTFLAGS += $(RUSTFLAGS_LINK_ARGS)
   endif
   $(if $(V), $(info RUSTFLAGS: "$(RUSTFLAGS)"))
   export RUSTFLAGS
