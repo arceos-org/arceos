@@ -5,7 +5,7 @@ mod idt;
 #[cfg(target_os = "none")]
 mod trap;
 
-use core::arch::asm;
+use core::{arch::asm, ptr::NonNull};
 
 use memory_addr::{MemoryAddr, PhysAddr, VirtAddr};
 use x86::{controlregs, msr, tlb};
@@ -115,4 +115,16 @@ pub fn read_thread_pointer() -> usize {
 #[inline]
 pub unsafe fn write_thread_pointer(fs_base: usize) {
     unsafe { msr::wrmsr(msr::IA32_FS_BASE, fs_base as u64) }
+}
+
+/// Invalidate data cache
+#[inline]
+pub fn dcache_invalidate_range(addr: NonNull<u8>, size: usize) {
+    unimplemented!()
+}
+
+/// Flush data cache
+#[inline]
+pub fn dcache_flush_range(addr: NonNull<u8>, size: usize) {
+    unimplemented!()
 }
