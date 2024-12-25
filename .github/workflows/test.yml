@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 env:
   qemu-version: 8.2.0
-  rust-toolchain: nightly-2024-12-12
+  rust-toolchain: nightly-2024-12-25
   arceos-apps: '57c8074'
 
 jobs:
@@ -16,6 +16,7 @@ jobs:
       with:
         toolchain: ${{ env.rust-toolchain }}
         components: rust-src
+    - uses: Swatinem/rust-cache@v2
     - name: Run unit tests
       run: make unittest_no_fail_fast
 

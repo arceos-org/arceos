@@ -1,8 +1,6 @@
 use core::arch::naked_asm;
 use memory_addr::VirtAddr;
 
-include_asm_marcos!();
-
 /// General registers of RISC-V.
 #[allow(missing_docs)]
 #[repr(C)]
@@ -123,6 +121,7 @@ impl TaskContext {
 #[naked]
 unsafe extern "C" fn context_switch(_current_task: &mut TaskContext, _next_task: &TaskContext) {
     naked_asm!(
+        include_asm_marcos!(),
         "
         // save old context (callee-saved registers)
         STR     ra, a0, 0
