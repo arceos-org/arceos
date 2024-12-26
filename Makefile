@@ -18,6 +18,7 @@
 #     - `NET`: Enable network devices (virtio-net)
 #     - `GRAPHIC`: Enable display devices and graphic output (virtio-gpu)
 #     - `BUS`: Device bus type: mmio, pci
+#     - `MEM`: Memory size (default is 128M)
 #     - `DISK_IMG`: Path to the virtual disk image
 #     - `ACCEL`: Enable hardware acceleration (KVM on linux)
 #     - `QEMU_LOG`: Enable QEMU logging (log file is "qemu.log")
@@ -51,6 +52,7 @@ BLK ?= n
 NET ?= n
 GRAPHIC ?= n
 BUS ?= pci
+MEM ?= 128M
 ACCEL ?=
 
 DISK_IMG ?= disk.img

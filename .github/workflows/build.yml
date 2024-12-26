@@ -100,25 +100,13 @@ jobs:
       run: make PLATFORM=x86_64-pc-oslab A=examples/helloworld
     - name: Build httpclient for x86_64-pc-oslab
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=x86_64-pc-oslab A=examples/httpclient FEATURES=driver-ixgbe
+      run: make PLATFORM=x86_64-pc-oslab A=examples/httpclient FEATURES=page-alloc-4g,driver-ixgbe
     - name: Build httpserver for x86_64-pc-oslab
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=x86_64-pc-oslab A=examples/httpserver FEATURES=driver-ixgbe
+      run: make PLATFORM=x86_64-pc-oslab A=examples/httpserver FEATURES=page-alloc-4g,driver-ixgbe
     - name: Build shell for x86_64-pc-oslab
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=x86_64-pc-oslab A=examples/shell
-    - name: Build helloworld for x86_64-pc-oslab
-      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=x86_64-pc-oslab A=examples/helloworld
-    - name: Build httpclient for x86_64-pc-oslab
-      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=x86_64-pc-oslab A=examples/httpclient FEATURES=driver-ixgbe
-    - name: Build httpserver for x86_64-pc-oslab
-      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=x86_64-pc-oslab A=examples/httpserver FEATURES=driver-ixgbe
-    - name: Build shell for x86_64-pc-oslab
-      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=x86_64-pc-oslab A=examples/shell
+      run: make PLATFORM=x86_64-pc-oslab A=examples/shell FEATURES=page-alloc-4g,driver-ramdisk
 
     - run: make PLATFORM=aarch64-raspi4 defconfig
     - name: Build helloworld for aarch64-raspi4
@@ -126,7 +114,7 @@ jobs:
       run: make PLATFORM=aarch64-raspi4 SMP=4 A=examples/helloworld
     - name: Build shell for aarch64-raspi4
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=aarch64-raspi4 SMP=4 A=examples/shell FEATURES=driver-bcm2835-sdhci BUS=mmio
+      run: make PLATFORM=aarch64-raspi4 SMP=4 A=examples/shell FEATURES=page-alloc-4g,driver-bcm2835-sdhci BUS=mmio
 
     - run: make PLATFORM=aarch64-bsta1000b defconfig
     - name: Build helloworld for aarch64-bsta1000b
@@ -147,8 +135,8 @@ jobs:
       run: make PLATFORM=x86_64-pc-oslab A=examples/helloworld-c
     - name: Build httpclient-c for x86_64-pc-oslab
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=x86_64-pc-oslab A=examples/httpclient-c
+      run: make PLATFORM=x86_64-pc-oslab A=examples/httpclient-c FEATURES=page-alloc-4g,driver-ixgbe
     - name: Build httpserver-c for x86_64-pc-oslab
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=x86_64-pc-oslab A=examples/httpserver-c
+      run: make PLATFORM=x86_64-pc-oslab A=examples/httpserver-c FEATURES=page-alloc-4g,driver-ixgbe
 

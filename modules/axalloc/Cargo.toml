@@ -10,10 +10,12 @@ repository = "https://github.com/arceos-org/arceos/tree/main/modules/axalloc"
 documentation = "https://arceos-org.github.io/arceos/axalloc/index.html"
 
 [features]
-default = ["tlsf"]
+default = ["tlsf", "allocator/page-alloc-256m"]
 tlsf = ["allocator/tlsf"]
 slab = ["allocator/slab"]
 buddy = ["allocator/buddy"]
+page-alloc-64g = ["allocator/page-alloc-64g"] # Support up to 64G memory capacity
+page-alloc-4g = ["allocator/page-alloc-4g"] # Support up to 4G memory capacity
 
 [dependencies]
 log = "=0.4.21"

@@ -17,17 +17,17 @@ phys-memory-size = 0x8000_0000  # uint
 # Base physical address of the kernel image.
 kernel-base-paddr = 0x20_0000   # uint
 # Base virtual address of the kernel image.
-kernel-base-vaddr = "0xffff_ff80_0020_0000"     # uint
+kernel-base-vaddr = "0xffff_8000_0020_0000"     # uint
 # Linear mapping offset, for quick conversions between physical and virtual
 # addresses.
-phys-virt-offset = "0xffff_ff80_0000_0000"      # uint
+phys-virt-offset = "0xffff_8000_0000_0000"      # uint
 # Offset of bus address and phys address. some boards, the bus address is
 # different from the physical address.
 phys-bus-offset = 0                             # uint
 # Kernel address space base.
-kernel-aspace-base = "0xffff_ff80_0000_0000"    # uint
+kernel-aspace-base = "0xffff_8000_0000_0000"    # uint
 # Kernel address space size.
-kernel-aspace-size = "0x0000_007f_ffff_f000"    # uint
+kernel-aspace-size = "0x0000_7fff_ffff_f000"    # uint
 
 #
 # Device specifications
