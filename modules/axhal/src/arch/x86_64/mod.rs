@@ -80,7 +80,7 @@ pub unsafe fn write_page_table_root(root_paddr: PhysAddr) {
     let old_root = read_page_table_root();
     trace!("set page table root: {:#x} => {:#x}", old_root, root_paddr);
     if old_root != root_paddr {
-        controlregs::cr3_write(root_paddr.as_usize() as _)
+        unsafe { controlregs::cr3_write(root_paddr.as_usize() as _) }
     }
 }
 

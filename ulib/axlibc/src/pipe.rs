@@ -7,7 +7,7 @@ use crate::utils::e;
 /// Create a pipe
 ///
 /// Return 0 if succeed
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn pipe(fd: *mut c_int) -> c_int {
     let fds = unsafe { core::slice::from_raw_parts_mut(fd, 2) };
     e(sys_pipe(fds))

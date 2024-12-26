@@ -1,13 +1,13 @@
 use alloc::{boxed::Box, string::String, sync::Arc};
 use core::ops::Deref;
-use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU64, AtomicU8, Ordering};
+use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU8, AtomicU64, Ordering};
 use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 
 #[cfg(feature = "preempt")]
 use core::sync::atomic::AtomicUsize;
 
 use kspin::SpinNoIrq;
-use memory_addr::{align_up_4k, VirtAddr};
+use memory_addr::{VirtAddr, align_up_4k};
 
 use axhal::arch::TaskContext;
 #[cfg(feature = "tls")]

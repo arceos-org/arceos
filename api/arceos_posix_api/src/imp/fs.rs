@@ -6,7 +6,7 @@ use axfs::fops::OpenOptions;
 use axio::{PollState, SeekFrom};
 use axsync::Mutex;
 
-use super::fd_ops::{get_file_like, FileLike};
+use super::fd_ops::{FileLike, get_file_like};
 use crate::{ctypes, utils::char_ptr_to_str};
 
 pub struct File {
@@ -183,6 +183,7 @@ pub unsafe fn sys_lstat(path: *const c_char, buf: *mut ctypes::stat) -> ctypes::
 }
 
 /// Get the path of the current directory.
+#[allow(clippy::unnecessary_cast)] // `c_char` is either `i8` or `u8`
 pub fn sys_getcwd(buf: *mut c_char, size: usize) -> *mut c_char {
     debug!("sys_getcwd <= {:#x} {}", buf as usize, size);
     syscall_body!(sys_getcwd, {

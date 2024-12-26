@@ -1,5 +1,5 @@
 use alloc::vec::Vec;
-use axerrno::{ax_err_type, AxError, AxResult};
+use axerrno::{AxError, AxResult, ax_err_type};
 use core::net::IpAddr;
 
 use smoltcp::iface::SocketHandle;
@@ -7,7 +7,7 @@ use smoltcp::socket::dns::{self, GetQueryResultError, StartQueryError};
 use smoltcp::wire::DnsQueryType;
 
 use super::addr::into_core_ipaddr;
-use super::{SocketSetWrapper, ETH0, SOCKET_SET};
+use super::{ETH0, SOCKET_SET, SocketSetWrapper};
 
 /// A DNS socket.
 struct DnsSocket {

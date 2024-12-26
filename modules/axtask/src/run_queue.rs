@@ -50,6 +50,7 @@ percpu_static! {
 /// initialized before being accessed to ensure safe usage.
 static mut RUN_QUEUES: [MaybeUninit<&'static mut AxRunQueue>; axconfig::SMP] =
     [ARRAY_REPEAT_VALUE; axconfig::SMP];
+#[allow(clippy::declare_interior_mutable_const)] // It's ok because it's used only for initialization `RUN_QUEUES`.
 const ARRAY_REPEAT_VALUE: MaybeUninit<&'static mut AxRunQueue> = MaybeUninit::uninit();
 
 /// Returns a reference to the current run queue in [`CurrentRunQueueRef`].
@@ -200,7 +201,7 @@ pub(crate) struct AxRunQueueRef<'a, G: BaseGuard> {
     _phantom: core::marker::PhantomData<G>,
 }
 
-impl<'a, G: BaseGuard> Drop for AxRunQueueRef<'a, G> {
+impl<G: BaseGuard> Drop for AxRunQueueRef<'_, G> {
     fn drop(&mut self) {
         G::release(self.state);
     }
@@ -218,14 +219,14 @@ pub(crate) struct CurrentRunQueueRef<'a, G: BaseGuard> {
     _phantom: core::marker::PhantomData<G>,
 }
 
-impl<'a, G: BaseGuard> Drop for CurrentRunQueueRef<'a, G> {
+impl<G: BaseGuard> Drop for CurrentRunQueueRef<'_, G> {
     fn drop(&mut self) {
         G::release(self.state);
     }
 }
 
 /// Management operations for run queue, including adding tasks, unblocking tasks, etc.
-impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
+impl<G: BaseGuard> AxRunQueueRef<'_, G> {
     /// Adds a task to the scheduler.
     ///
     /// This function is used to add a new task to the scheduler.
@@ -268,7 +269,7 @@ impl<'a, G: BaseGuard> AxRunQueueRef<'a, G> {
 }
 
 /// Core functions of run queue.
-impl<'a, G: BaseGuard> CurrentRunQueueRef<'a, G> {
+impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
     #[cfg(feature = "irq")]
     pub fn scheduler_timer_tick(&mut self) {
         let curr = &self.current_task;

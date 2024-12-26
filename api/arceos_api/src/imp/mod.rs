@@ -41,7 +41,7 @@ mod stdio {
 
 mod time {
     pub use axhal::time::{
-        monotonic_time as ax_monotonic_time, wall_time as ax_wall_time, TimeValue as AxTimeValue,
+        TimeValue as AxTimeValue, monotonic_time as ax_monotonic_time, wall_time as ax_wall_time,
     };
 }
 

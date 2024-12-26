@@ -10,6 +10,7 @@ else
 endif
 
 ifneq ($(filter $(MAKECMDGOALS),doc doc_check_missing),)  # run `cargo doc`
+  RUSTFLAGS := $(RUSTFLAGS_WITHOUT_LINK_ARG)
   $(if $(V), $(info RUSTDOCFLAGS: "$(RUSTDOCFLAGS)"))
   export RUSTDOCFLAGS
 else ifeq ($(filter $(MAKECMDGOALS),clippy unittest unittest_no_fail_fast),) # not run `cargo test` or `cargo clippy`
@@ -22,12 +23,15 @@ else ifeq ($(filter $(MAKECMDGOALS),clippy unittest unittest_no_fail_fast),) # n
     $(info app features: "$(APP_FEAT)")
   endif
   ifeq ($(APP_TYPE), c)
+    RUSTFLAGS := $(RUSTFLAGS_WITHOUT_LINK_ARG)
     $(if $(V), $(info CFLAGS: "$(CFLAGS)") $(info LDFLAGS: "$(LDFLAGS)"))
   else
-    $(if $(V), $(info RUSTFLAGS: "$(RUSTFLAGS)"))
-    export RUSTFLAGS
+    RUSTFLAGS := $(RUSTFLAGS_WITH_LINK_ARG)
   endif
 endif
+
+$(if $(V), $(info RUSTFLAGS: "$(RUSTFLAGS)"))
+export RUSTFLAGS
 
 _cargo_build:
 	@printf "    $(GREEN_C)Building$(END_C) App: $(APP_NAME), Arch: $(ARCH), Platform: $(PLATFORM_NAME), App type: $(APP_TYPE)\n"

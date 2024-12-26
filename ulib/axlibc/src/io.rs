@@ -7,7 +7,7 @@ use crate::{ctypes, utils::e};
 /// Read data from the file indicated by `fd`.
 ///
 /// Return the read size if success.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn read(fd: c_int, buf: *mut c_void, count: usize) -> ctypes::ssize_t {
     e(sys_read(fd, buf, count) as _) as _
 }
@@ -15,14 +15,14 @@ pub unsafe extern "C" fn read(fd: c_int, buf: *mut c_void, count: usize) -> ctyp
 /// Write data to the file indicated by `fd`.
 ///
 /// Return the written size if success.
-#[no_mangle]
+#[unsafe(no_mangle)]
 #[cfg(not(test))]
 pub unsafe extern "C" fn write(fd: c_int, buf: *const c_void, count: usize) -> ctypes::ssize_t {
     e(sys_write(fd, buf, count) as _) as _
 }
 
 /// Write a vector.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn writev(
     fd: c_int,
     iov: *const ctypes::iovec,

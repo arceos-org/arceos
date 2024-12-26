@@ -20,10 +20,10 @@ pub struct DirWrapper<'a>(Dir<'a, Disk, NullTimeProvider, LossyOemCpConverter>);
 
 unsafe impl Sync for FatFileSystem {}
 unsafe impl Send for FatFileSystem {}
-unsafe impl<'a> Send for FileWrapper<'a> {}
-unsafe impl<'a> Sync for FileWrapper<'a> {}
-unsafe impl<'a> Send for DirWrapper<'a> {}
-unsafe impl<'a> Sync for DirWrapper<'a> {}
+unsafe impl Send for FileWrapper<'_> {}
+unsafe impl Sync for FileWrapper<'_> {}
+unsafe impl Send for DirWrapper<'_> {}
+unsafe impl Sync for DirWrapper<'_> {}
 
 impl FatFileSystem {
     #[cfg(feature = "use-ramdisk")]
@@ -67,7 +67,7 @@ impl VfsNodeOps for FileWrapper<'static> {
 
     fn get_attr(&self) -> VfsResult<VfsNodeAttr> {
         let size = self.0.lock().seek(SeekFrom::End(0)).map_err(as_vfs_err)?;
-        let blocks = (size + BLOCK_SIZE as u64 - 1) / BLOCK_SIZE as u64;
+        let blocks = size.div_ceil(BLOCK_SIZE as u64);
         // FAT fs doesn't support permissions, we just set everything to 755
         let perm = VfsNodePerm::from_bits_truncate(0o755);
         Ok(VfsNodeAttr::new(perm, VfsNodeType::File, size, blocks))

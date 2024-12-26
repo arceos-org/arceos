@@ -134,7 +134,7 @@ Examples are given below and in the [app-helloworld](https://github.com/arceos-o
 
 3. Call library functions from `axstd` in your code, just like the Rust [std](https://doc.rust-lang.org/std/) library.
     
-    Remember to annotate the `main` function with `#[no_mangle]` (see this [example](examples/helloworld/src/main.rs)).
+    Remember to annotate the `main` function with `#[unsafe(no_mangle)]` (see this [example](examples/helloworld/src/main.rs)).
 
 4. Build your application with ArceOS, by running the `make` command in the application directory:
 

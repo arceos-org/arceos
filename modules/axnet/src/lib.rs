@@ -18,7 +18,6 @@
 //! [smoltcp]: https://github.com/smoltcp-rs/smoltcp
 
 #![no_std]
-#![feature(new_uninit)]
 
 #[macro_use]
 extern crate log;
@@ -36,7 +35,7 @@ pub use self::net_impl::UdpSocket;
 pub use self::net_impl::{bench_receive, bench_transmit};
 pub use self::net_impl::{dns_query, poll_interfaces};
 
-use axdriver::{prelude::*, AxDeviceContainer};
+use axdriver::{AxDeviceContainer, prelude::*};
 
 /// Initializes the network subsystem by NIC devices.
 pub fn init_network(mut net_devs: AxDeviceContainer<AxNetDevice>) {
