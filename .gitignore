@@ -8,4 +8,4 @@
 *.bin
 qemu.log
 rusty-tags.vi
-/.project.toml
+/.project*

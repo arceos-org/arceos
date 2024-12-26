@@ -46,3 +46,6 @@ ticks-per-sec = "100"
 
 # Number of CPUs
 smp = "1"
+
+# CPU Hardware ID list
+cpu-id-list = []
