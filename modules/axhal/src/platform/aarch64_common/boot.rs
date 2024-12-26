@@ -105,7 +105,7 @@ unsafe fn init_boot_page_table() {
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.boot")]
 unsafe extern "C" fn _start() -> ! {
-    core::arch::asm!(
+    core::arch::naked_asm!(
         "
     // code0/code1
     nop
@@ -130,15 +130,14 @@ unsafe extern "C" fn _start() -> ! {
 
     // Another reserved field at the end of the header
     .byte 0, 0, 0, 0
-      ",
-        options(noreturn),
+      "
     )
 }
 
 /// The earliest entry point for the primary CPU.
 #[naked]
-#[no_mangle]
-#[link_section = ".text.boot"]
+#[unsafe(no_mangle)]
+#[unsafe(link_section = ".text.boot")]
 unsafe extern "C" fn _start_entry() -> ! {
     // PC = 0x8_0000
     // X0 = dtb
