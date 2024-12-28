@@ -236,7 +236,8 @@ dependencies = [
 [[package]]
 name = "axconfig-gen"
 version = "0.1.0"
-source = "git+https://github.com/arceos-org/axconfig-gen.git#ee91673546942d31140ec212e771be54e5b5478c"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ffa518605969ff8f4ebce2cdc3b6090345152c14987ec540601335effbf36d5"
 dependencies = [
  "clap",
  "toml_edit",
@@ -245,7 +246,8 @@ dependencies = [
 [[package]]
 name = "axconfig-gen-macros"
 version = "0.1.0"
-source = "git+https://github.com/arceos-org/axconfig-gen.git#ee91673546942d31140ec212e771be54e5b5478c"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "92110c7e7a5633d7fb8a402393c91c326ad6d19710bb9cfa5ab4095e63c25948"
 dependencies = [
  "axconfig-gen",
  "proc-macro2",

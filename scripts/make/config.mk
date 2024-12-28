@@ -25,7 +25,7 @@ endif
 
 _axconfig-gen:
 ifeq ($(shell axconfig-gen --version 2>/dev/null),)
-	$(call run_cmd,RUSTFLAGS="" cargo,install --git https://github.com/arceos-org/axconfig-gen.git)
+	$(call run_cmd,RUSTFLAGS="" cargo,install axconfig-gen)
 endif
 
 .PHONY: _axconfig-gen
