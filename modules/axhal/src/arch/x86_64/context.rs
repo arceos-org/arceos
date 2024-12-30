@@ -196,7 +196,7 @@ impl TaskContext {
 #[naked]
 unsafe extern "C" fn context_switch(_current_stack: &mut u64, _next_stack: &u64) {
     naked_asm!(
-        "
+        ".code64
         push    rbp
         push    rbx
         push    r12

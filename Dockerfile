@@ -4,7 +4,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends libclang-dev qemu-system wget make \
     && rm -rf /var/lib/apt/lists/*
 
-RUN cargo install cargo-binutils
+RUN cargo install cargo-binutils axconfig-gen
 
 RUN wget https://musl.cc/aarch64-linux-musl-cross.tgz \
     && wget https://musl.cc/riscv64-linux-musl-cross.tgz \

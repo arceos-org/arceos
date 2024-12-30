@@ -3,7 +3,7 @@ name: Build & Deploy docs
 on: [push, pull_request]
 
 env:
-  rust-toolchain: nightly-2024-12-12
+  rust-toolchain: nightly-2024-12-25
 
 jobs:
   doc:
@@ -19,6 +19,7 @@ jobs:
     - uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: ${{ env.rust-toolchain }}
+    - uses: Swatinem/rust-cache@v2
     - name: Build docs
       continue-on-error: ${{ github.ref != env.default-branch && github.event_name != 'pull_request' }}
       run: make doc_check_missing

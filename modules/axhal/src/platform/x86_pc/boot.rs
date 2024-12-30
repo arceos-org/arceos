@@ -3,7 +3,7 @@ use core::arch::global_asm;
 use x86_64::registers::control::{Cr0Flags, Cr4Flags};
 use x86_64::registers::model_specific::EferFlags;
 
-use axconfig::{PHYS_VIRT_OFFSET, TASK_STACK_SIZE};
+use axconfig::{TASK_STACK_SIZE, plat::PHYS_VIRT_OFFSET};
 
 /// Flags set in the ’flags’ member of the multiboot header.
 ///

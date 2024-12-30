@@ -9,6 +9,5 @@ homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/modules/axconfig"
 documentation = "https://arceos-org.github.io/arceos/axconfig/index.html"
 
-[build-dependencies]
-toml_edit = "0.22"
-serde = "1.0"
+[dependencies]
+axconfig-gen-macros = { version = "0.1.0", features = ["nightly"] }

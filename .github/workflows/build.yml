@@ -8,7 +8,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust-toolchain: [nightly, nightly-2024-12-12]
+        arch: [x86_64, riscv64, aarch64]
+        rust-toolchain: [nightly, nightly-2024-12-25]
     env:
       RUSTUP_TOOLCHAIN: ${{ matrix.rust-toolchain }}
     steps:
@@ -18,23 +19,20 @@ jobs:
         toolchain: ${{ matrix.rust-toolchain }}
         components: rust-src, clippy, rustfmt
         targets: x86_64-unknown-none, riscv64gc-unknown-none-elf, aarch64-unknown-none, aarch64-unknown-none-softfloat
+    - uses: Swatinem/rust-cache@v2
     - name: Check rust version
       run: rustc --version --verbose
-    - name: Clippy for the default target
-      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make clippy
-    - name: Clippy for x86_64
-      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make clippy ARCH=x86_64
-    - name: Clippy for riscv64
-      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make clippy ARCH=riscv64
-    - name: Clippy for aarch64
-      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make clippy ARCH=aarch64
     - name: Check code format
+      if: ${{ matrix.arch == 'x86_64' }}
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: cargo fmt --all -- --check
+    - name: Clippy for the default target
+      if: ${{ matrix.arch == 'x86_64' }}
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make clippy
+    - name: Clippy for ${{ matrix.arch }}
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make clippy ARCH=${{ matrix.arch }}
 
   build:
     runs-on: ${{ matrix.os }}
@@ -43,7 +41,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         arch: [x86_64, riscv64, aarch64]
-        rust-toolchain: [nightly, nightly-2024-12-12]
+        rust-toolchain: [nightly, nightly-2024-12-25]
     env:
       RUSTUP_TOOLCHAIN: ${{ matrix.rust-toolchain }}
     steps:
@@ -87,7 +85,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        rust-toolchain: [nightly, nightly-2024-12-12]
+        rust-toolchain: [nightly, nightly-2024-12-25]
     steps:
     - uses: actions/checkout@v4
     - uses: dtolnay/rust-toolchain@stable
@@ -102,42 +100,43 @@ jobs:
       run: make PLATFORM=x86_64-pc-oslab A=examples/helloworld
     - name: Build httpclient for x86_64-pc-oslab
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=x86_64-pc-oslab A=examples/httpclient FEATURES=driver-ixgbe
+      run: make PLATFORM=x86_64-pc-oslab A=examples/httpclient FEATURES=page-alloc-4g,driver-ixgbe
     - name: Build httpserver for x86_64-pc-oslab
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=x86_64-pc-oslab A=examples/httpserver FEATURES=driver-ixgbe
+      run: make PLATFORM=x86_64-pc-oslab A=examples/httpserver FEATURES=page-alloc-4g,driver-ixgbe
     - name: Build shell for x86_64-pc-oslab
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=x86_64-pc-oslab A=examples/shell
-    - name: Build helloworld for x86_64-pc-oslab
-      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=x86_64-pc-oslab A=examples/helloworld
-    - name: Build httpclient for x86_64-pc-oslab
-      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=x86_64-pc-oslab A=examples/httpclient FEATURES=driver-ixgbe
-    - name: Build httpserver for x86_64-pc-oslab
-      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=x86_64-pc-oslab A=examples/httpserver FEATURES=driver-ixgbe
-    - name: Build shell for x86_64-pc-oslab
-      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=x86_64-pc-oslab A=examples/shell
+      run: make PLATFORM=x86_64-pc-oslab A=examples/shell FEATURES=page-alloc-4g,driver-ramdisk
+
+    - run: make PLATFORM=aarch64-raspi4 defconfig
     - name: Build helloworld for aarch64-raspi4
-      run: make PLATFORM=aarch64-raspi4 A=examples/helloworld
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=aarch64-raspi4 SMP=4 A=examples/helloworld
     - name: Build shell for aarch64-raspi4
-      run: make PLATFORM=aarch64-raspi4 A=examples/shell FEATURES=driver-bcm2835-sdhci
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=aarch64-raspi4 SMP=4 A=examples/shell FEATURES=page-alloc-4g,driver-bcm2835-sdhci BUS=mmio
+
+    - run: make PLATFORM=aarch64-bsta1000b defconfig
     - name: Build helloworld for aarch64-bsta1000b
-      run: make PLATFORM=aarch64-bsta1000b A=examples/helloworld
-    
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=aarch64-bsta1000b A=examples/helloworld SMP=8
+
+    - run: make PLATFORM=aarch64-phytium-pi defconfig
+    - name: Build helloworld for aarch64-phytium-pi
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=aarch64-phytium-pi A=examples/helloworld SMP=4
+
     - uses: ./.github/workflows/actions/setup-musl
       with:
         arch: x86_64
+    - run: make PLATFORM=x86_64-pc-oslab defconfig
     - name: Build helloworld-c for x86_64-pc-oslab
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLATFORM=x86_64-pc-oslab A=examples/helloworld-c
     - name: Build httpclient-c for x86_64-pc-oslab
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=x86_64-pc-oslab A=examples/httpclient-c
+      run: make PLATFORM=x86_64-pc-oslab A=examples/httpclient-c FEATURES=page-alloc-4g,driver-ixgbe
     - name: Build httpserver-c for x86_64-pc-oslab
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=x86_64-pc-oslab A=examples/httpserver-c
+      run: make PLATFORM=x86_64-pc-oslab A=examples/httpserver-c FEATURES=page-alloc-4g,driver-ixgbe
 

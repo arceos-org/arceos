@@ -2,6 +2,8 @@
 
 use core::fmt;
 
+use axconfig::plat::{PHYS_MEMORY_BASE, PHYS_MEMORY_SIZE, PHYS_VIRT_OFFSET};
+
 #[doc(no_inline)]
 pub use memory_addr::{MemoryAddr, PAGE_SIZE_4K, PhysAddr, VirtAddr};
 
@@ -50,11 +52,9 @@ pub struct MemRegion {
 /// [`PHYS_VIRT_OFFSET`], that maps all the physical memory to the virtual
 /// space at the address plus the offset. So we have
 /// `paddr = vaddr - PHYS_VIRT_OFFSET`.
-///
-/// [`PHYS_VIRT_OFFSET`]: axconfig::PHYS_VIRT_OFFSET
 #[inline]
 pub const fn virt_to_phys(vaddr: VirtAddr) -> PhysAddr {
-    pa!(vaddr.as_usize() - axconfig::PHYS_VIRT_OFFSET)
+    pa!(vaddr.as_usize() - PHYS_VIRT_OFFSET)
 }
 
 /// Converts a physical address to a virtual address.
@@ -63,11 +63,9 @@ pub const fn virt_to_phys(vaddr: VirtAddr) -> PhysAddr {
 /// [`PHYS_VIRT_OFFSET`], that maps all the physical memory to the virtual
 /// space at the address plus the offset. So we have
 /// `vaddr = paddr + PHYS_VIRT_OFFSET`.
-///
-/// [`PHYS_VIRT_OFFSET`]: axconfig::PHYS_VIRT_OFFSET
 #[inline]
 pub const fn phys_to_virt(paddr: PhysAddr) -> VirtAddr {
-    va!(paddr.as_usize() + axconfig::PHYS_VIRT_OFFSET)
+    va!(paddr.as_usize() + PHYS_VIRT_OFFSET)
 }
 
 /// Returns an iterator over all physical memory regions.
@@ -115,7 +113,7 @@ fn kernel_image_regions() -> impl Iterator<Item = MemRegion> {
 /// Returns the default MMIO memory regions (from [`axconfig::MMIO_REGIONS`]).
 #[allow(dead_code)]
 pub(crate) fn default_mmio_regions() -> impl Iterator<Item = MemRegion> {
-    axconfig::MMIO_REGIONS.iter().map(|reg| MemRegion {
+    axconfig::devices::MMIO_REGIONS.iter().map(|reg| MemRegion {
         paddr: reg.0.into(),
         size: reg.1,
         flags: MemRegionFlags::RESERVED
@@ -130,7 +128,7 @@ pub(crate) fn default_mmio_regions() -> impl Iterator<Item = MemRegion> {
 #[allow(dead_code)]
 pub(crate) fn default_free_regions() -> impl Iterator<Item = MemRegion> {
     let start = virt_to_phys((_ekernel as usize).into()).align_up_4k();
-    let end = pa!(axconfig::PHYS_MEMORY_END).align_down_4k();
+    let end = pa!(PHYS_MEMORY_BASE + PHYS_MEMORY_SIZE).align_down_4k();
     core::iter::once(MemRegion {
         paddr: start,
         size: end.as_usize() - start.as_usize(),
