@@ -1,9 +1,21 @@
-use crate::mem::MemRegion;
+use crate::mem::{MemRegion, MemRegionFlags};
 use page_table_entry::{GenericPTE, MappingFlags, aarch64::A64PTE};
 
+/// Returns (a1000b only) memory regions.
+pub(crate) fn default_a1000b_regions() -> impl Iterator<Item = MemRegion> {
+    [MemRegion {
+        paddr: pa!(0x80000000),
+        size: 0x70000000,
+        flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
+        name: "reserved memory",
+    }]
+    .into_iter()
+}
 /// Returns platform-specific memory regions.
 pub(crate) fn platform_regions() -> impl Iterator<Item = MemRegion> {
-    crate::mem::default_free_regions().chain(crate::mem::default_mmio_regions())
+    crate::mem::default_free_regions()
+        .chain(default_a1000b_regions())
+        .chain(crate::mem::default_mmio_regions())
 }
 
 pub(crate) unsafe fn init_boot_page_table(
@@ -29,6 +41,21 @@ pub(crate) unsafe fn init_boot_page_table(
     // 1G block, normal memory
     boot_pt_l1[2] = A64PTE::new_page(
         pa!(0x80000000),
+        MappingFlags::READ | MappingFlags::WRITE | MappingFlags::EXECUTE,
+        true,
+    );
+    boot_pt_l1[3] = A64PTE::new_page(
+        pa!(0xc0000000),
+        MappingFlags::READ | MappingFlags::WRITE | MappingFlags::EXECUTE,
+        true,
+    );
+    boot_pt_l1[6] = A64PTE::new_page(
+        pa!(0x180000000),
+        MappingFlags::READ | MappingFlags::WRITE | MappingFlags::EXECUTE,
+        true,
+    );
+    boot_pt_l1[7] = A64PTE::new_page(
+        pa!(0x1C0000000),
         MappingFlags::READ | MappingFlags::WRITE | MappingFlags::EXECUTE,
         true,
     );

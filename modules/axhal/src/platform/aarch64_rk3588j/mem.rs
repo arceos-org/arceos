@@ -8,7 +8,7 @@ pub(crate) fn default_rk3588j_regions() -> impl Iterator<Item = MemRegion> {
             paddr: PhysAddr::from(0x9400000),
             size: 0xe6c00000,
             flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
-            name: "free memory",
+            name: "reserved memory",
         },
         MemRegion {
             paddr: PhysAddr::from(0x1f0000000),

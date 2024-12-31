@@ -19,7 +19,10 @@ pub mod time {
     pub use crate::platform::aarch64_common::generic_timer::*;
 }
 
-unsafe extern "C" {
+use crate::mp::CPU_HWID;
+use crate::mp::MAX_HARTS;
+
+extern "C" {
     fn exception_vector_base();
     fn rust_main(cpu_id: usize, dtb: usize);
     #[cfg(feature = "smp")]
@@ -36,7 +39,19 @@ pub(crate) unsafe extern "C" fn rust_entry(cpu_id: usize, dtb: usize) {
 }
 
 #[cfg(feature = "smp")]
-pub(crate) unsafe extern "C" fn rust_entry_secondary(cpu_id: usize) {
+pub(crate) unsafe extern "C" fn rust_entry_secondary(cpu_hwid: usize) {
+    let mut cpu_id = cpu_hwid;
+    let mut map_success = false;
+    for index in 0..MAX_HARTS {
+        if cpu_id == CPU_HWID[index] {
+            cpu_id = index;
+            map_success = true;
+            break;
+        }
+    }
+    if !map_success {
+        panic!("CPU{} not found", cpu_id);
+    }
     crate::arch::set_exception_vector_base(exception_vector_base as usize);
     crate::cpu::init_secondary(cpu_id);
     rust_main_secondary(cpu_id);
