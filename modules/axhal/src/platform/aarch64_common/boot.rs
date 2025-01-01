@@ -1,6 +1,6 @@
 use aarch64_cpu::{asm, asm::barrier, registers::*};
 use core::ptr::addr_of_mut;
-use page_table_entry::aarch64::{MemAttr, A64PTE};
+use page_table_entry::aarch64::{A64PTE, MemAttr};
 use tock_registers::interfaces::{ReadWriteable, Readable, Writeable};
 
 use axconfig::{TASK_STACK_SIZE, plat::PHYS_VIRT_OFFSET};

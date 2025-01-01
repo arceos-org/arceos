@@ -1,5 +1,5 @@
 use crate::mem::{MemRegion, MemRegionFlags, PhysAddr};
-use page_table_entry::{aarch64::A64PTE, GenericPTE, MappingFlags};
+use page_table_entry::{GenericPTE, MappingFlags, aarch64::A64PTE};
 
 /// Returns (rk3588j only) memory regions.
 pub(crate) fn default_rk3588j_regions() -> impl Iterator<Item = MemRegion> {

@@ -22,7 +22,7 @@ pub mod time {
 use crate::mp::CPU_HWID;
 use crate::mp::MAX_HARTS;
 
-extern "C" {
+unsafe extern "C" {
     fn exception_vector_base();
     fn rust_main(cpu_id: usize, dtb: usize);
     #[cfg(feature = "smp")]

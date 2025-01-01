@@ -7,13 +7,13 @@ use tock_registers::interfaces::{ReadWriteable, Readable, Writeable};
 
 use axconfig::TASK_STACK_SIZE;
 
-#[link_section = ".bss.stack"]
+#[unsafe(link_section = ".bss.stack")]
 static mut BOOT_STACK: [u8; TASK_STACK_SIZE] = [0; TASK_STACK_SIZE];
 
-#[link_section = ".data.boot_page_table"]
+#[unsafe(link_section = ".data.boot_page_table")]
 static mut BOOT_PT_L0: [A64PTE; 512] = [A64PTE::empty(); 512];
 
-#[link_section = ".data.boot_page_table"]
+#[unsafe(link_section = ".data.boot_page_table")]
 static mut BOOT_PT_L1: [A64PTE; 512] = [A64PTE::empty(); 512];
 
 unsafe fn switch_to_el2() {
@@ -126,12 +126,13 @@ unsafe fn cache_invalidate(cache_level: usize) {
 
 /// The earliest entry point for the primary CPU.
 #[naked]
-#[no_mangle]
-#[link_section = ".text.boot"]
+#[unsafe(no_mangle)]
+#[unsafe(link_section = ".text.boot")]
 unsafe extern "C" fn _start() -> ! {
-    // PC = 0x8_0000
-    // X0 = dtb
-    core::arch::asm!("
+    unsafe {
+        // PC = 0x8_0000
+        // X0 = dtb
+        core::arch::naked_asm!("
         // save DTB pointer
         mov     x20, x0             
              
@@ -166,26 +167,27 @@ unsafe extern "C" fn _start() -> ! {
         ldr     x8, ={entry}
         blr     x8
         b      .",
-        cache_invalidate = sym cache_invalidate,
-        init_boot_page_table = sym init_boot_page_table,
-        init_mmu_el2 = sym init_mmu_el2,
-        switch_to_el2 = sym switch_to_el2,
-        enable_fp = sym enable_fp,
-        boot_stack = sym BOOT_STACK,
-        boot_stack_size = const TASK_STACK_SIZE,
-        phys_virt_offset = const axconfig::PHYS_VIRT_OFFSET,
-        entry = sym crate::platform::rust_entry,
-        options(noreturn),
-    );
+            cache_invalidate = sym cache_invalidate,
+            init_boot_page_table = sym init_boot_page_table,
+            init_mmu_el2 = sym init_mmu_el2,
+            switch_to_el2 = sym switch_to_el2,
+            enable_fp = sym enable_fp,
+            boot_stack = sym BOOT_STACK,
+            boot_stack_size = const TASK_STACK_SIZE,
+            phys_virt_offset = const axconfig::plat::PHYS_VIRT_OFFSET,
+            entry = sym crate::platform::rust_entry,
+        );
+    }
 }
 
 /// The earliest entry point for the secondary CPUs.
 #[cfg(feature = "smp")]
 #[naked]
-#[no_mangle]
-#[link_section = ".text.boot"]
+#[unsafe(no_mangle)]
+#[unsafe(link_section = ".text.boot")]
 unsafe extern "C" fn _start_secondary() -> ! {
-    core::arch::asm!("
+    unsafe {
+        core::arch::naked_asm!("
         mrs     x19, mpidr_el1
         and     x19, x19, #0xffffff     // get current CPU id
 
@@ -201,11 +203,11 @@ unsafe extern "C" fn _start_secondary() -> ! {
         ldr     x8, ={entry}
         blr     x8
         b      .",
-        switch_to_el2 = sym switch_to_el2,
-        init_mmu_el2 = sym init_mmu_el2,
-        enable_fp = sym enable_fp,
-        phys_virt_offset = const axconfig::PHYS_VIRT_OFFSET,
-        entry = sym crate::platform::rust_entry_secondary,
-        options(noreturn),
-    )
+            switch_to_el2 = sym switch_to_el2,
+            init_mmu_el2 = sym init_mmu_el2,
+            enable_fp = sym enable_fp,
+            phys_virt_offset = const axconfig::plat::PHYS_VIRT_OFFSET,
+            entry = sym crate::platform::rust_entry_secondary,
+        )
+    }
 }

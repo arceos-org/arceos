@@ -40,6 +40,7 @@ mmio-regions = [
     [0xfec0_0000, 0x1000],      # IO APIC
     [0xfed0_0000, 0x1000],      # HPET
     [0xfee0_0000, 0x1000],      # Local APIC
+    [0x380000000000, 0x4000]    # PCI devices
 ]                               # [(uint, uint)]
 # VirtIO MMIO regions with format (`base_paddr`, `size`).
 virtio-mmio-regions = []        # [(uint, uint)]
