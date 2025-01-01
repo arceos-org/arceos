@@ -67,7 +67,7 @@ unsafe fn init_mmu_el2() {
     TCR_EL2.write(TCR_EL2::PS::Bits_40 + tcr_flags0);
     barrier::isb(barrier::SY);
 
-    let root_paddr = PhysAddr::from(BOOT_PT_L0.as_ptr() as usize).as_usize() as _;
+    let root_paddr = PhysAddr::from(&raw const BOOT_PT_L0 as usize).as_usize() as _;
     TTBR0_EL2.set(root_paddr);
 
     // Flush the entire TLB
