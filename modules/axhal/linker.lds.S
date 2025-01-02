@@ -76,6 +76,8 @@ SECTIONS
     }
 
     _ekernel = .;
+    
+    _kernel_size = _ekernel - _skernel;
 
 	/DISCARD/ : {
         *(.comment) *(.gnu*) *(.note*) *(.eh_frame*)
