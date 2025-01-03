@@ -1,6 +1,7 @@
 #[macro_use]
 mod macros;
 
+mod cache;
 mod context;
 mod trap;
 
@@ -9,6 +10,7 @@ use riscv::asm;
 use riscv::register::{satp, sstatus, stvec};
 
 pub use self::context::{GeneralRegisters, TaskContext, TrapFrame};
+pub use cache::*;
 
 /// Allows the current CPU to respond to interrupts.
 #[inline]
