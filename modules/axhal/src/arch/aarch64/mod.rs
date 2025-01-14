@@ -1,5 +1,7 @@
 mod context;
-pub(crate) mod trap;
+
+#[cfg(target_os = "none")]
+mod trap;
 
 use core::arch::asm;
 

@@ -25,7 +25,7 @@ pub mod misc {
     }
 }
 
-extern "C" {
+unsafe extern "C" {
     fn exception_vector_base();
     fn rust_main(cpu_id: usize, dtb: usize);
     #[cfg(feature = "smp")]
@@ -71,7 +71,7 @@ pub fn platform_init_secondary() {
 }
 
 fn cpu_hard_id_to_logic_id(hard_id: usize) -> usize {
-    axconfig::CPU_ID_LIST
+    axconfig::devices::CPU_ID_LIST
         .iter()
         .position(|&x| x == hard_id)
         .unwrap()

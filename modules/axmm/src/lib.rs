@@ -33,8 +33,8 @@ fn paging_err_to_ax_err(err: PagingError) -> AxError {
 /// Creates a new address space for kernel itself.
 pub fn new_kernel_aspace() -> AxResult<AddrSpace> {
     let mut aspace = AddrSpace::new_empty(
-        va!(axconfig::KERNEL_ASPACE_BASE),
-        axconfig::KERNEL_ASPACE_SIZE,
+        va!(axconfig::plat::KERNEL_ASPACE_BASE),
+        axconfig::plat::KERNEL_ASPACE_SIZE,
     )?;
     for r in axhal::mem::memory_regions() {
         aspace.map_linear(phys_to_virt(r.paddr), r.paddr, r.size, r.flags.into())?;

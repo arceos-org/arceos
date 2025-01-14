@@ -4,9 +4,8 @@ use riscv::register::stval;
 
 use super::TrapFrame;
 
-include_asm_marcos!();
-
 core::arch::global_asm!(
+    include_asm_marcos!(),
     include_str!("trap.S"),
     trapframe_size = const core::mem::size_of::<TrapFrame>(),
 );

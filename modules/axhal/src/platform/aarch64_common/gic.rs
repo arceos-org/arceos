@@ -1,5 +1,6 @@
 use crate::{irq::IrqHandler, mem::phys_to_virt};
 use arm_gicv2::{GicCpuInterface, GicDistributor, InterruptType, translate_irq};
+use axconfig::devices::{GICC_PADDR, GICD_PADDR, UART_IRQ};
 use kspin::SpinNoIrq;
 use memory_addr::PhysAddr;
 
@@ -10,10 +11,10 @@ pub const MAX_IRQ_COUNT: usize = 1024;
 pub const TIMER_IRQ_NUM: usize = translate_irq(14, InterruptType::PPI).unwrap();
 
 /// The UART IRQ number.
-pub const UART_IRQ_NUM: usize = translate_irq(axconfig::UART_IRQ, InterruptType::SPI).unwrap();
+pub const UART_IRQ_NUM: usize = translate_irq(UART_IRQ, InterruptType::SPI).unwrap();
 
-const GICD_BASE: PhysAddr = pa!(axconfig::GICD_PADDR);
-const GICC_BASE: PhysAddr = pa!(axconfig::GICC_PADDR);
+const GICD_BASE: PhysAddr = pa!(GICD_PADDR);
+const GICC_BASE: PhysAddr = pa!(GICC_PADDR);
 
 static GICD: SpinNoIrq<GicDistributor> =
     SpinNoIrq::new(GicDistributor::new(phys_to_virt(GICD_BASE).as_mut_ptr()));

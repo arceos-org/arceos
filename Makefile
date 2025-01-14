@@ -6,6 +6,9 @@
 #     - `MODE`: Build mode: release, debug
 #     - `LOG:` Logging level: warn, error, info, debug, trace
 #     - `V`: Verbose level: (empty), 1, 2
+#     - `TARGET_DIR`: Artifact output directory (cargo target directory)
+#     - `EXTRA_CONFIG`: Extra config specification file
+#     - `OUT_CONFIG`: Final config file that takes effect
 # * App options:
 #     - `A` or `APP`: Path to the application
 #     - `FEATURES`: Features os ArceOS modules to be enabled.
@@ -15,6 +18,7 @@
 #     - `NET`: Enable network devices (virtio-net)
 #     - `GRAPHIC`: Enable display devices and graphic output (virtio-gpu)
 #     - `BUS`: Device bus type: mmio, pci
+#     - `MEM`: Memory size (default is 128M)
 #     - `DISK_IMG`: Path to the virtual disk image
 #     - `ACCEL`: Enable hardware acceleration (KVM on linux)
 #     - `QEMU_LOG`: Enable QEMU logging (log file is "qemu.log")
@@ -33,19 +37,23 @@ SMP ?= 1
 MODE ?= release
 LOG ?= warn
 V ?=
+TARGET_DIR ?= $(PWD)/target
+EXTRA_CONFIG ?=
+OUT_CONFIG ?= $(PWD)/.axconfig.toml
 
 # App options
 A ?= examples/helloworld
 APP ?= $(A)
 FEATURES ?=
 APP_FEATURES ?=
-TARGET_DIR ?= $(PWD)/target
 
 # QEMU options
 BLK ?= n
 NET ?= n
 GRAPHIC ?= n
 BUS ?= pci
+MEM ?= 128M
+ACCEL ?=
 
 DISK_IMG ?= disk.img
 QEMU_LOG ?= n
@@ -69,69 +77,41 @@ else
   APP_TYPE := c
 endif
 
-# Architecture and platform
-ifneq ($(filter $(MAKECMDGOALS),unittest unittest_no_fail_fast),)
-  PLATFORM_NAME :=
-else ifneq ($(PLATFORM),)
-  # `PLATFORM` is specified, override the `ARCH` variables
-  builtin_platforms := $(patsubst platforms/%.toml,%,$(wildcard platforms/*))
-  ifneq ($(filter $(PLATFORM),$(builtin_platforms)),)
-    # builtin platform
-    PLATFORM_NAME := $(PLATFORM)
-    _arch := $(word 1,$(subst -, ,$(PLATFORM)))
-  else ifneq ($(wildcard $(PLATFORM)),)
-    # custom platform, read the "platform" field from the toml file
-    PLATFORM_NAME := $(shell cat $(PLATFORM) | sed -n 's/^platform = "\([a-z0-9A-Z_\-]*\)"/\1/p')
-    _arch := $(shell cat $(PLATFORM) | sed -n 's/^arch = "\([a-z0-9A-Z_\-]*\)"/\1/p')
-  else
-    $(error "PLATFORM" must be one of "$(builtin_platforms)" or a valid path to a toml file)
-  endif
-  ifeq ($(origin ARCH),command line)
-    ifneq ($(ARCH),$(_arch))
-      $(error "ARCH=$(ARCH)" is not compatible with "PLATFORM=$(PLATFORM)")
-    endif
-  endif
-  ARCH := $(_arch)
-endif
-
-ifeq ($(ARCH), x86_64)
-  # Don't enable kvm for WSL/WSL2.
-  ACCEL ?= $(if $(findstring -microsoft, $(shell uname -r | tr '[:upper:]' '[:lower:]')),n,y)
-  PLATFORM_NAME ?= x86_64-qemu-q35
-else ifeq ($(ARCH), riscv64)
-  ACCEL ?= n
-  PLATFORM_NAME ?= riscv64-qemu-virt
-else ifeq ($(ARCH), aarch64)
-  ACCEL ?= n
-  PLATFORM_NAME ?= aarch64-qemu-virt
-else
-  $(error "ARCH" must be one of "x86_64", "riscv64", or "aarch64")
-endif
-
 # Feature parsing
 include scripts/make/features.mk
+# Platform resolving
+include scripts/make/platform.mk
 
 # Target
 ifeq ($(ARCH), x86_64)
   TARGET := x86_64-unknown-none
-else ifeq ($(ARCH), riscv64)
-  TARGET := riscv64gc-unknown-none-elf
 else ifeq ($(ARCH), aarch64)
   ifeq ($(findstring fp_simd,$(FEATURES)),)
     TARGET := aarch64-unknown-none-softfloat
   else
     TARGET := aarch64-unknown-none
   endif
+else ifeq ($(ARCH), riscv64)
+  TARGET := riscv64gc-unknown-none-elf
+else
+  $(error "ARCH" must be one of "x86_64", "riscv64", or "aarch64")
 endif
 
 export AX_ARCH=$(ARCH)
-export AX_PLATFORM=$(PLATFORM_NAME)
+export AX_PLATFORM=$(PLAT_NAME)
 export AX_SMP=$(SMP)
 export AX_MODE=$(MODE)
 export AX_LOG=$(LOG)
 export AX_TARGET=$(TARGET)
 export AX_IP=$(IP)
 export AX_GW=$(GW)
+
+ifneq ($(filter $(MAKECMDGOALS),unittest unittest_no_fail_fast),)
+  # When running unit tests, set `AX_CONFIG_PATH` to empty for dummy config
+  unexport AX_CONFIG_PATH
+else
+  export AX_CONFIG_PATH=$(OUT_CONFIG)
+endif
 
 # Binutils
 CROSS_COMPILE ?= $(ARCH)-linux-musl-
@@ -148,21 +128,27 @@ GDB ?= gdb-multiarch
 OUT_DIR ?= $(APP)
 
 APP_NAME := $(shell basename $(APP))
-LD_SCRIPT := $(TARGET_DIR)/$(TARGET)/$(MODE)/linker_$(PLATFORM_NAME).lds
-OUT_ELF := $(OUT_DIR)/$(APP_NAME)_$(PLATFORM_NAME).elf
-OUT_BIN := $(OUT_DIR)/$(APP_NAME)_$(PLATFORM_NAME).bin
+LD_SCRIPT := $(TARGET_DIR)/$(TARGET)/$(MODE)/linker_$(PLAT_NAME).lds
+OUT_ELF := $(OUT_DIR)/$(APP_NAME)_$(PLAT_NAME).elf
+OUT_BIN := $(OUT_DIR)/$(APP_NAME)_$(PLAT_NAME).bin
 
 all: build
 
 include scripts/make/utils.mk
+include scripts/make/config.mk
 include scripts/make/build.mk
 include scripts/make/qemu.mk
-include scripts/make/test.mk
-ifeq ($(PLATFORM_NAME), aarch64-raspi4)
+ifeq ($(PLAT_NAME), aarch64-raspi4)
   include scripts/make/raspi4.mk
-else ifeq ($(PLATFORM_NAME), aarch64-bsta1000b)
+else ifeq ($(PLAT_NAME), aarch64-bsta1000b)
   include scripts/make/bsta1000b-fada.mk
 endif
+
+defconfig: _axconfig-gen
+	$(call defconfig)
+
+oldconfig: _axconfig-gen
+	$(call oldconfig)
 
 build: $(OUT_DIR) $(OUT_BIN)
 
@@ -183,17 +169,17 @@ debug: build
 	  -ex 'continue' \
 	  -ex 'disp /16i $$pc'
 
-clippy:
+clippy: oldconfig
 ifeq ($(origin ARCH), command line)
 	$(call cargo_clippy,--target $(TARGET))
 else
 	$(call cargo_clippy)
 endif
 
-doc:
+doc: oldconfig
 	$(call cargo_doc)
 
-doc_check_missing:
+doc_check_missing: oldconfig
 	$(call cargo_doc)
 
 fmt:
@@ -216,11 +202,14 @@ else
 endif
 
 clean: clean_c
-	rm -rf $(APP)/*.bin $(APP)/*.elf
+	rm -rf $(APP)/*.bin $(APP)/*.elf $(OUT_CONFIG)
 	cargo clean
 
 clean_c::
 	rm -rf ulib/axlibc/build_*
 	rm -rf $(app-objs)
 
-.PHONY: all build disasm run justrun debug clippy fmt fmt_c test test_no_fail_fast clean clean_c doc disk_image
+.PHONY: all defconfig oldconfig \
+	build disasm run justrun debug \
+	clippy doc doc_check_missing fmt fmt_c unittest unittest_no_fail_fast \
+	disk_img clean clean_c
