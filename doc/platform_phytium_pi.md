@@ -33,7 +33,19 @@ We can ignore select dtb step by pressing `enter` directly. ArceOS dose not supp
 
 Then the cmdline will wait for you to put board power on or reset.
 
-You can modify config in `.project.toml` to change the default behavior.
+`Ctrl+C` to exit.
+
+Modify config in `.project.toml` to change platform for phytium pi.
+
+Find `shell=[[ ... "make A=examples/helloworld ARCH=aarch64"  ]]`, add `PLATFORM` like:
+
+ `"make A=examples/helloworld PLATFORM=aarch64-phytium-pi"`.
+
+Find `elf = "examples/helloworld/helloworld_aarch64-qemu-virt.elf"` and change to:
+
+`elf = "examples/helloworld/helloworld_aarch64-phytium-pi.elf"`.
+
+Then run `ostool run uboot` again. When see `等待 U-Boot 启动...` , put board power on or reset.
 
 If everything goes well, you will see the following output:
 
