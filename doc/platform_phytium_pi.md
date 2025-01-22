@@ -29,7 +29,7 @@ ostool run uboot
 
 ![select](./figures/phytium_select_dtb.png)
 
-We can ignore select dtb step by pressing `enter` directly. ArceOS dose not support dtb yet.
+`dtb` path is `tools/phytium_pi/phytiumpi_firefly.dtb`
 
 Then the cmdline will wait for you to put board power on or reset.
 

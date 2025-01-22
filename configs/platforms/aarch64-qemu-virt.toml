@@ -15,9 +15,9 @@ phys-memory-base = 0x4000_0000      # uint
 # Size of the whole physical memory. (128M)
 phys-memory-size = 0x800_0000       # uint
 # Base physical address of the kernel image.
-kernel-base-paddr = 0x4008_0000     # uint
+kernel-base-paddr = 0x4020_0000     # uint
 # Base virtual address of the kernel image.
-kernel-base-vaddr = "0xffff_0000_4008_0000"     # uint
+kernel-base-vaddr = "0xffff_0000_4020_0000"     # uint
 # Linear mapping offset, for quick conversions between physical and virtual
 # addresses.
 phys-virt-offset = "0xffff_0000_0000_0000"      # uint
