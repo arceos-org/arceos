@@ -128,3 +128,49 @@ cfg_if::cfg_if! {
         }
     }
 }
+
+cfg_if::cfg_if! {
+    if #[cfg(net_dev = "fxmac")]{
+        use axalloc::global_allocator;
+        use axhal::mem::{phys_to_virt, virt_to_phys};
+        const PAGE_SIZE: usize = 4096;
+
+        #[unsafe(no_mangle)]
+        pub fn virt_to_phys_fxmac(addr: usize) -> usize {
+            virt_to_phys(addr.into()).into()
+        }
+
+        #[unsafe(no_mangle)]
+        pub fn phys_to_virt_fxmac(addr: usize) -> usize {
+            phys_to_virt(addr.into()).into()
+        }
+
+        #[unsafe(no_mangle)]
+        pub fn dma_alloc_coherent_fxmac(pages: usize) -> (usize, usize) {
+            let vaddr = if let Ok(start_vaddr) = global_allocator().alloc_pages(pages, PAGE_SIZE) {
+                start_vaddr
+            } else {
+                error!("failed to alloc pages");
+                return (0, 0);
+            };
+            let paddr = virt_to_phys((vaddr).into());
+            debug!("alloc pages @ vaddr={:#x}, paddr={:#x}", vaddr, paddr);
+            (vaddr, paddr.as_usize())
+        }
+
+        #[unsafe(no_mangle)]
+        fn dma_free_coherent_fxmac(vaddr: usize, pages: usize) {
+            global_allocator().dealloc_pages(vaddr, pages);
+        }
+
+        register_net_driver!(FXmacDriver, axdriver_net::fxmac::FXmacNic);
+
+        pub struct FXmacDriver;
+        impl DriverProbe for FXmacDriver {
+            fn probe_global() -> Option<AxDeviceEnum> {
+                info!("fxmac for phytiumpi probe global");
+                axdriver_net::fxmac::FXmacNic::init(0).ok().map(AxDeviceEnum::from_net)
+            }
+        }
+    }
+}
