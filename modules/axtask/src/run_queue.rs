@@ -10,7 +10,7 @@ use kspin::SpinRaw;
 use lazyinit::LazyInit;
 use scheduler::BaseScheduler;
 
-use axhal::cpu::this_cpu_id;
+use axhal::percpu::this_cpu_id;
 
 use crate::task::{CurrentTask, TaskState};
 use crate::wait_queue::WaitQueueGuard;
@@ -363,7 +363,7 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
             unsafe {
                 EXITED_TASKS.current_ref_mut_raw().clear();
             }
-            axhal::misc::terminate();
+            axhal::power::system_off();
         } else {
             curr.set_state(TaskState::Exited);
 

@@ -13,54 +13,30 @@ documentation = "https://arceos-org.github.io/arceos/axhal/index.html"
 smp = []
 fp_simd = ["axcpu/fp_simd"]
 paging = ["axalloc", "page_table_multiarch"]
-irq = []
+irq = ["linkme"]
 tls = ["axcpu/tls"]
-rtc = ["x86_rtc", "riscv_goldfish", "arm_pl031"]
+rtc = []
 uspace = ["paging", "axcpu/uspace"]
 default = []
 
 [dependencies]
 log = "=0.4.21"
 cfg-if = "1.0"
-linkme = "0.3.33"
-bitflags = "2.9"
-static_assertions = "1.1.0"
 kernel_guard = "0.1"
-kspin = "0.1"
-int_ratio = "0.1.1"
 lazyinit = "0.2"
 percpu = "0.2"
+heapless = "0.8"
 memory_addr = "0.3"
-handler_table = "0.1"
-page_table_entry = "0.5"
+linkme = { version = "0.3.33", optional = true }
 page_table_multiarch = { version = "0.5", optional = true }
 axcpu = { git = "https://github.com/arceos-org/axcpu.git" }
+axplat = { git = "https://github.com/arceos-org/axhal_crates.git" }
 axlog = { workspace = true }
 axconfig = { workspace = true }
 axalloc = { workspace = true, optional = true }
 
-[target.'cfg(target_arch = "x86_64")'.dependencies]
-x86 = "0.52"
-x86_64 = "0.15"
-x2apic = "0.4"
-raw-cpuid = "11.5"
-x86_rtc = { version = "0.1", optional = true }
-
-[target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]
-riscv = "0.13"
-sbi-rt = { version = "0.0.3", features = ["legacy"] }
-riscv_goldfish = { version = "0.1", optional = true }
-
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 aarch64-cpu = "10.0"
-arm_gicv2 = "0.1"
-arm_pl011 = "0.1"
-arm_pl031 = { version = "0.2", optional = true }
-dw_apb_uart = "0.1"
-
-[target.'cfg(target_arch = "loongarch64")'.dependencies]
-loongArch64 = "0.2.5"
-ns16550a = "0.5.0"
 
 [build-dependencies]
 axconfig = { workspace = true }

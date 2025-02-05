@@ -157,7 +157,7 @@ pub fn set_current_affinity(cpumask: AxCpuMask) -> bool {
         // After setting the affinity, we need to check if current cpu matches
         // the affinity. If not, we need to migrate the task to the correct CPU.
         #[cfg(feature = "smp")]
-        if !cpumask.get(axhal::cpu::this_cpu_id()) {
+        if !cpumask.get(axhal::percpu::this_cpu_id()) {
             const MIGRATION_TASK_STACK_SIZE: usize = 4096;
             // Spawn a new migration task for migrating.
             let migration_task = TaskInner::new(
@@ -170,7 +170,10 @@ pub fn set_current_affinity(cpumask: AxCpuMask) -> bool {
             // Migrate the current task to the correct CPU using the migration task.
             current_run_queue::<NoPreemptIrqSave>().migrate_current(migration_task);
 
-            assert!(cpumask.get(axhal::cpu::this_cpu_id()), "Migration failed");
+            assert!(
+                cpumask.get(axhal::percpu::this_cpu_id()),
+                "Migration failed"
+            );
         }
         true
     }

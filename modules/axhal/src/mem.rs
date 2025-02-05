@@ -1,50 +1,18 @@
 //! Physical memory management.
 
-use core::fmt;
+use axconfig::plat::PHYS_VIRT_OFFSET;
+use heapless::Vec;
+use lazyinit::LazyInit;
 
-use axconfig::plat::{PHYS_MEMORY_BASE, PHYS_MEMORY_SIZE, PHYS_VIRT_OFFSET};
+use axplat::mem::{check_sorted_ranges_overlap, ranges_difference};
 
-#[doc(no_inline)]
-pub use memory_addr::{MemoryAddr, PAGE_SIZE_4K, PhysAddr, VirtAddr};
+pub use axplat::mem::{MemRegionFlags, PhysMemRegion};
+pub use axplat::mem::{mmio_ranges, phys_ram_ranges, reserved_phys_ram_ranges, total_ram_size};
+pub use memory_addr::{PAGE_SIZE_4K, PhysAddr, PhysAddrRange, VirtAddr, VirtAddrRange, pa, va};
 
-bitflags::bitflags! {
-    /// The flags of a physical memory region.
-    pub struct MemRegionFlags: usize {
-        /// Readable.
-        const READ          = 1 << 0;
-        /// Writable.
-        const WRITE         = 1 << 1;
-        /// Executable.
-        const EXECUTE       = 1 << 2;
-        /// Device memory. (e.g., MMIO regions)
-        const DEVICE        = 1 << 4;
-        /// Uncachable memory. (e.g., framebuffer)
-        const UNCACHED      = 1 << 5;
-        /// Reserved memory, do not use for allocation.
-        const RESERVED      = 1 << 6;
-        /// Free memory for allocation.
-        const FREE          = 1 << 7;
-    }
-}
+const MAX_REGIONS: usize = 128;
 
-impl fmt::Debug for MemRegionFlags {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Debug::fmt(&self.0, f)
-    }
-}
-
-/// A physical memory region.
-#[derive(Debug)]
-pub struct MemRegion {
-    /// The start physical address of the region.
-    pub paddr: PhysAddr,
-    /// The size in bytes of the region.
-    pub size: usize,
-    /// The region flags, see [`MemRegionFlags`].
-    pub flags: MemRegionFlags,
-    /// The region name, used for identification.
-    pub name: &'static str,
-}
+static ALL_MEM_REGIONS: LazyInit<Vec<PhysMemRegion, MAX_REGIONS>> = LazyInit::new();
 
 /// Converts a virtual address to a physical address.
 ///
@@ -69,81 +37,97 @@ pub const fn phys_to_virt(paddr: PhysAddr) -> VirtAddr {
 }
 
 /// Returns an iterator over all physical memory regions.
-pub fn memory_regions() -> impl Iterator<Item = MemRegion> {
-    kernel_image_regions().chain(crate::platform::mem::platform_regions())
-}
-
-/// Returns the memory regions of the kernel image (code and data sections).
-fn kernel_image_regions() -> impl Iterator<Item = MemRegion> {
-    [
-        MemRegion {
-            paddr: virt_to_phys((_stext as usize).into()),
-            size: _etext as usize - _stext as usize,
-            flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::EXECUTE,
-            name: ".text",
-        },
-        MemRegion {
-            paddr: virt_to_phys((_srodata as usize).into()),
-            size: _erodata as usize - _srodata as usize,
-            flags: MemRegionFlags::RESERVED | MemRegionFlags::READ,
-            name: ".rodata",
-        },
-        MemRegion {
-            paddr: virt_to_phys((_sdata as usize).into()),
-            size: _edata as usize - _sdata as usize,
-            flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
-            name: ".data .tdata .tbss .percpu",
-        },
-        MemRegion {
-            paddr: virt_to_phys((boot_stack as usize).into()),
-            size: boot_stack_top as usize - boot_stack as usize,
-            flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
-            name: "boot stack",
-        },
-        MemRegion {
-            paddr: virt_to_phys((_sbss as usize).into()),
-            size: _ebss as usize - _sbss as usize,
-            flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
-            name: ".bss",
-        },
-    ]
-    .into_iter()
-}
-
-/// Returns the default MMIO memory regions (from [`axconfig::MMIO_REGIONS`]).
-#[allow(dead_code)]
-pub(crate) fn default_mmio_regions() -> impl Iterator<Item = MemRegion> {
-    axconfig::devices::MMIO_REGIONS.iter().map(|reg| MemRegion {
-        paddr: reg.0.into(),
-        size: reg.1,
-        flags: MemRegionFlags::RESERVED
-            | MemRegionFlags::DEVICE
-            | MemRegionFlags::READ
-            | MemRegionFlags::WRITE,
-        name: "mmio",
-    })
-}
-
-/// Returns the default free memory regions (kernel image end to physical memory end).
-#[allow(dead_code)]
-pub(crate) fn default_free_regions() -> impl Iterator<Item = MemRegion> {
-    let start = virt_to_phys((_ekernel as usize).into()).align_up_4k();
-    let end = pa!(PHYS_MEMORY_BASE + PHYS_MEMORY_SIZE).align_down_4k();
-    core::iter::once(MemRegion {
-        paddr: start,
-        size: end.as_usize() - start.as_usize(),
-        flags: MemRegionFlags::FREE | MemRegionFlags::READ | MemRegionFlags::WRITE,
-        name: "free memory",
-    })
+pub fn memory_regions() -> impl Iterator<Item = PhysMemRegion> {
+    ALL_MEM_REGIONS.iter().cloned()
 }
 
 /// Fills the `.bss` section with zeros.
-#[allow(dead_code)]
-pub(crate) fn clear_bss() {
+///
+/// It requires the symbols `_sbss` and `_ebss` to be defined in the linker script.
+///
+/// # Safety
+///
+/// This function is unsafe because it writes `.bss` section directly.
+pub unsafe fn clear_bss() {
     unsafe {
         core::slice::from_raw_parts_mut(_sbss as usize as *mut u8, _ebss as usize - _sbss as usize)
             .fill(0);
     }
+}
+
+/// Initializes physical memory regions.
+pub fn init() {
+    let mut all_regions = Vec::new();
+    let mut push = |r: PhysMemRegion| {
+        if r.size > 0 {
+            all_regions.push(r).expect("too many memory regions");
+        }
+    };
+
+    // Push regions in kernel image
+    push(PhysMemRegion {
+        paddr: virt_to_phys((_stext as usize).into()),
+        size: _etext as usize - _stext as usize,
+        flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::EXECUTE,
+        name: ".text",
+    });
+    push(PhysMemRegion {
+        paddr: virt_to_phys((_srodata as usize).into()),
+        size: _erodata as usize - _srodata as usize,
+        flags: MemRegionFlags::RESERVED | MemRegionFlags::READ,
+        name: ".rodata",
+    });
+    push(PhysMemRegion {
+        paddr: virt_to_phys((_sdata as usize).into()),
+        size: _edata as usize - _sdata as usize,
+        flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
+        name: ".data .tdata .tbss .percpu",
+    });
+    push(PhysMemRegion {
+        paddr: virt_to_phys((boot_stack as usize).into()),
+        size: boot_stack_top as usize - boot_stack as usize,
+        flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
+        name: "boot stack",
+    });
+    push(PhysMemRegion {
+        paddr: virt_to_phys((_sbss as usize).into()),
+        size: _ebss as usize - _sbss as usize,
+        flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
+        name: ".bss",
+    });
+
+    // Push MMIO & reserved regions
+    for &(start, size) in mmio_ranges() {
+        push(PhysMemRegion::new_mmio(start, size, "mmio"));
+    }
+    for &(start, size) in reserved_phys_ram_ranges() {
+        push(PhysMemRegion::new_reserved(start, size, "reserved"));
+    }
+
+    // Combine kernel image range and reserved ranges
+    let kernel_start = virt_to_phys(va!(_skernel as usize)).as_usize();
+    let kernel_size = _ekernel as usize - _skernel as usize;
+    let mut reserved_ranges = reserved_phys_ram_ranges()
+        .iter()
+        .cloned()
+        .chain(core::iter::once((kernel_start, kernel_size))) // kernel image range is also reserved
+        .collect::<Vec<_, MAX_REGIONS>>();
+
+    // Remove all reserved ranges from RAM ranges, and push the remaining as free memory
+    reserved_ranges.sort_unstable_by_key(|&(start, _size)| start);
+    ranges_difference(phys_ram_ranges(), &reserved_ranges, |(start, size)| {
+        push(PhysMemRegion::new_ram(start, size, "free memory"));
+    })
+    .inspect_err(|(a, b)| error!("Reserved memory region {:#x?} overlaps with {:#x?}", a, b))
+    .unwrap();
+
+    // Check overlapping
+    all_regions.sort_unstable_by_key(|r| r.paddr);
+    check_sorted_ranges_overlap(all_regions.iter().map(|r| (r.paddr.into(), r.size)))
+        .inspect_err(|(a, b)| error!("Physical memory region {:#x?} overlaps with {:#x?}", a, b))
+        .unwrap();
+
+    ALL_MEM_REGIONS.init_once(all_regions);
 }
 
 unsafe extern "C" {
@@ -155,6 +139,7 @@ unsafe extern "C" {
     fn _edata();
     fn _sbss();
     fn _ebss();
+    fn _skernel();
     fn _ekernel();
     fn boot_stack();
     fn boot_stack_top();

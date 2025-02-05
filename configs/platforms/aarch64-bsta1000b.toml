@@ -33,8 +33,8 @@ kernel-aspace-size = "0x0000_ffff_ffff_f000"    # uint
 # Device specifications
 #
 [devices]
-# MMIO regions with format (`base_paddr`, `size`).
-mmio-regions = [
+# MMIO ranges with format (`base_paddr`, `size`).
+mmio-ranges = [
     [0x20008000, 0x1000],   # uart8250 UART0
     [0x32000000, 0x8000],   # arm,gic-400
     [0x32011000, 0x1000],   # CPU CSR
@@ -42,8 +42,8 @@ mmio-regions = [
     [0x70035000, 0x1000],   # CRM reg
     [0x70038000, 0x1000],   # aon pinmux
 ]                           # [(uint, uint)]
-# VirtIO MMIO regions with format (`base_paddr`, `size`).
-virtio-mmio-regions = []    # [(uint, uint)]
+# VirtIO MMIO ranges with format (`base_paddr`, `size`).
+virtio-mmio-ranges = []     # [(uint, uint)]
 
 # UART Address
 uart-paddr = 0x2000_8000        # uint

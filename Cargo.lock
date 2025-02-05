@@ -185,33 +185,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "arm_gicv2"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "47d25e73c949c69f75d1b9dba39c5475523403b31eb8c2fdc99da4dc33bc1aca"
-dependencies = [
- "tock-registers 0.8.1",
-]
-
-[[package]]
-name = "arm_pl011"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "efcf6afca4502993a737ba1e00952d1321078689da92bf7aab27d4e5756c0bec"
-dependencies = [
- "tock-registers 0.8.1",
-]
-
-[[package]]
-name = "arm_pl031"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13696b1c2b59992f4223e0ae5bb173c81c63039367ca90eee845346ad2a13421"
-dependencies = [
- "chrono",
-]
-
-[[package]]
 name = "atomic-polyfill"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -286,7 +259,7 @@ dependencies = [
  "static_assertions",
  "tock-registers 0.9.0",
  "x86",
- "x86_64 0.15.2",
+ "x86_64",
 ]
 
 [[package]]
@@ -475,38 +448,20 @@ name = "axhal"
 version = "0.1.0"
 dependencies = [
  "aarch64-cpu 10.0.0",
- "arm_gicv2",
- "arm_pl011",
- "arm_pl031",
  "axalloc",
  "axconfig",
  "axcpu",
  "axlog",
- "bitflags 2.9.1",
+ "axplat",
  "cfg-if",
- "dw_apb_uart",
- "handler_table",
- "int_ratio",
+ "heapless 0.8.0",
  "kernel_guard",
- "kspin",
  "lazyinit",
  "linkme",
  "log",
- "loongArch64",
  "memory_addr",
- "ns16550a",
- "page_table_entry",
  "page_table_multiarch",
  "percpu",
- "raw-cpuid 11.5.0",
- "riscv 0.13.0",
- "riscv_goldfish",
- "sbi-rt",
- "static_assertions",
- "x2apic",
- "x86",
- "x86_64 0.15.2",
- "x86_rtc",
 ]
 
 [[package]]
@@ -584,6 +539,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "axplat"
+version = "0.1.0"
+source = "git+https://github.com/arceos-org/axhal_crates.git#070bb972d1321fd64f87c099dd9c84ac3ad81cb4"
+dependencies = [
+ "axplat-macros",
+ "bitflags 2.9.1",
+ "crate_interface",
+ "handler_table",
+ "memory_addr",
+]
+
+[[package]]
+name = "axplat-macros"
+version = "0.1.0"
+source = "git+https://github.com/arceos-org/axhal_crates.git#070bb972d1321fd64f87c099dd9c84ac3ad81cb4"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.98",
+]
+
+[[package]]
 name = "axruntime"
 version = "0.1.0"
 dependencies = [
@@ -596,6 +573,7 @@ dependencies = [
  "axlog",
  "axmm",
  "axnet",
+ "axplat",
  "axtask",
  "chrono",
  "crate_interface",
@@ -683,12 +661,6 @@ dependencies = [
  "shlex",
  "syn 2.0.98",
 ]
-
-[[package]]
-name = "bit"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b645c5c09a7d4035949cfce1a915785aaad6f17800c35fda8a8c311c491f284"
 
 [[package]]
 name = "bit_field"
@@ -942,15 +914,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dw_apb_uart"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f93d496c8faa9dc676ebfa225432e1e3b57645c9268ead889286546f6d39356d"
-dependencies = [
- "tock-registers 0.8.1",
-]
-
-[[package]]
 name = "either"
 version = "1.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1030,6 +993,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "hash32"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47d60b12902ba28e2730cd37e95b8c9223af2808df9e902d4df49588d1470606"
+dependencies = [
+ "byteorder",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1042,9 +1014,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cdc6457c0eb62c71aac4bc17216026d8410337c4126773b9c5daba343f17964f"
 dependencies = [
  "atomic-polyfill",
- "hash32",
+ "hash32 0.2.1",
  "rustc_version",
  "spin",
+ "stable_deref_trait",
+]
+
+[[package]]
+name = "heapless"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0bfb9eb618601c89945a70e254898da93b13be0388091d42117462b265bb3fad"
+dependencies = [
+ "hash32 0.3.1",
  "stable_deref_trait",
 ]
 
@@ -1086,12 +1068,6 @@ dependencies = [
  "equivalent",
  "hashbrown",
 ]
-
-[[package]]
-name = "int_ratio"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd361c344145620f0c02e56200ca3e3a45203121447376519a9070e546b2916f"
 
 [[package]]
 name = "is_terminal_polyfill"
@@ -1276,12 +1252,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ns16550a"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3cd8abe9e54bce27659507b94f355c9334378ab15da332b6986b3583ebf7228"
-
-[[package]]
 name = "num-traits"
 version = "0.2.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1305,7 +1275,7 @@ dependencies = [
  "aarch64-cpu 10.0.0",
  "bitflags 2.9.1",
  "memory_addr",
- "x86_64 0.15.2",
+ "x86_64",
 ]
 
 [[package]]
@@ -1455,15 +1425,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "raw-cpuid"
-version = "11.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6df7ab838ed27997ba19a4664507e6f82b41fe6e20be42929332156e5e85146"
-dependencies = [
- "bitflags 2.9.1",
-]
-
-[[package]]
 name = "regex"
 version = "1.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1535,12 +1496,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8188909339ccc0c68cfb5a04648313f09621e8b87dc03095454f1a11f6c5d436"
 
 [[package]]
-name = "riscv_goldfish"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07aac72f95e774476db82916d79f2d303191310393830573c1ab5c821b21660a"
-
-[[package]]
 name = "rlsf"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1572,21 +1527,6 @@ name = "rustversion"
 version = "1.0.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f7c45b9784283f1b2e7fb61b42047c2fd678ef0960d4f6f1eba131594cc369d4"
-
-[[package]]
-name = "sbi-rt"
-version = "0.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7fbaa69be1eedc61c426e6d489b2260482e928b465360576900d52d496a58bd0"
-dependencies = [
- "sbi-spec",
-]
-
-[[package]]
-name = "sbi-spec"
-version = "0.0.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6e36312fb5ddc10d08ecdc65187402baba4ac34585cb9d1b78522ae2358d890"
 
 [[package]]
 name = "scheduler"
@@ -1631,7 +1571,7 @@ dependencies = [
  "byteorder",
  "cfg-if",
  "defmt",
- "heapless",
+ "heapless 0.7.17",
  "log",
  "managed",
 ]
@@ -1974,19 +1914,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "x2apic"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cbcd582541cbb8ef1dfc24a3c849a64ff074b1b512af723ad90056558d424602"
-dependencies = [
- "bit",
- "bitflags 1.3.2",
- "paste",
- "raw-cpuid 10.7.0",
- "x86_64 0.14.13",
-]
-
-[[package]]
 name = "x86"
 version = "0.52.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1994,19 +1921,7 @@ checksum = "2781db97787217ad2a2845c396a5efe286f87467a5810836db6d74926e94a385"
 dependencies = [
  "bit_field",
  "bitflags 1.3.2",
- "raw-cpuid 10.7.0",
-]
-
-[[package]]
-name = "x86_64"
-version = "0.14.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c101112411baafbb4bf8d33e4c4a80ab5b02d74d2612331c61e8192fc9710491"
-dependencies = [
- "bit_field",
- "bitflags 2.9.1",
- "rustversion",
- "volatile 0.4.6",
+ "raw-cpuid",
 ]
 
 [[package]]
@@ -2019,16 +1934,6 @@ dependencies = [
  "bitflags 2.9.1",
  "rustversion",
  "volatile 0.4.6",
-]
-
-[[package]]
-name = "x86_rtc"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1a42420da20c01d82e5d42231570efa3b9e16a5515eaaf9ee4e964f49cc1313"
-dependencies = [
- "cfg-if",
- "x86_64 0.15.2",
 ]
 
 [[package]]
