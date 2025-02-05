@@ -7,9 +7,9 @@ const HALT_ADDR: *mut u8 = phys_to_virt(pa!(axconfig::devices::GED_PADDR)).as_mu
 pub fn terminate() -> ! {
     info!("Shutting down...");
     unsafe { HALT_ADDR.write_volatile(0x34) };
-    crate::arch::halt();
+    axcpu::asm::halt();
     warn!("It should shutdown!");
     loop {
-        crate::arch::halt();
+        axcpu::asm::halt();
     }
 }

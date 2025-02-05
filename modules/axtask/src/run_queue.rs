@@ -525,7 +525,7 @@ impl AxRunQueue {
         // Make sure that IRQs are disabled by kernel guard or other means.
         #[cfg(all(not(test), feature = "irq"))] // Note: irq is faked under unit tests.
         assert!(
-            !axhal::arch::irqs_enabled(),
+            !axhal::asm::irqs_enabled(),
             "IRQs must be disabled during scheduling"
         );
         trace!(

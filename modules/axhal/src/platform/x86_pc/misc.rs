@@ -20,9 +20,9 @@ pub fn terminate() -> ! {
         PortWriteOnly::new(0x604).write(0x2000u16)
     };
 
-    crate::arch::halt();
+    axcpu::asm::halt();
     warn!("It should shutdown!");
     loop {
-        crate::arch::halt();
+        axcpu::asm::halt();
     }
 }

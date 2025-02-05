@@ -261,12 +261,12 @@ fn init_interrupt() {
     });
 
     // Enable IRQs before starting app
-    axhal::arch::enable_irqs();
+    axhal::asm::enable_irqs();
 }
 
 #[cfg(all(feature = "tls", not(feature = "multitask")))]
 fn init_tls() {
     let main_tls = axhal::tls::TlsArea::alloc();
-    unsafe { axhal::arch::write_thread_pointer(main_tls.tls_ptr() as usize) };
+    unsafe { axhal::asm::write_thread_pointer(main_tls.tls_ptr() as usize) };
     core::mem::forget(main_tls);
 }

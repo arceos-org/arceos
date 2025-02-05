@@ -1,5 +1,3 @@
-use riscv::register::satp;
-
 use axconfig::{TASK_STACK_SIZE, plat::PHYS_VIRT_OFFSET};
 
 #[unsafe(link_section = ".bss.stack")]
@@ -21,9 +19,10 @@ unsafe fn init_boot_page_table() {
 }
 
 unsafe fn init_mmu() {
-    let page_table_root = &raw const BOOT_PT_SV39 as usize;
-    satp::set(satp::Mode::Sv39, 0, page_table_root >> 12);
-    riscv::asm::sfence_vma_all();
+    unsafe {
+        axcpu::asm::write_kernel_page_table(pa!(&raw const BOOT_PT_SV39 as usize));
+        axcpu::asm::flush_tlb(None);
+    }
 }
 
 /// The earliest entry point for the primary CPU.

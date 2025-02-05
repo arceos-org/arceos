@@ -26,12 +26,16 @@ fn try_write_bytes(bytes: &[u8]) -> usize {
 /// Writes bytes to the console from input u8 slice.
 pub fn write_bytes(bytes: &[u8]) {
     let mut write_len = 0;
+    let mut buf = [0; MAX_RW_SIZE];
     while write_len < bytes.len() {
-        let len = try_write_bytes(&bytes[write_len..]);
-        if len == 0 {
+        let n = buf.len().min(bytes.len() - write_len);
+        if n == 0 {
             break;
         }
-        write_len += len;
+        // `bytes` can be from user space, copy it into a kernel buffer
+        // to correctly use `virt_to_phys`.
+        buf[..n].copy_from_slice(&bytes[write_len..write_len + n]);
+        write_len += try_write_bytes(&buf[..n]);
     }
 }
 
