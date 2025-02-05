@@ -34,15 +34,15 @@ kernel-aspace-size = "0x0000_ffff_ffff_f000"    # uint
 # Device specifications
 #
 [devices]
-# MMIO regions with format (`base_paddr`, `size`).
-mmio-regions = [
+# MMIO ranges with format (`base_paddr`, `size`).
+mmio-ranges = [
     [0x100E_0000, 0x0000_1000],         # GED
     [0x1FE0_0000, 0x0000_1000],         # UART
     [0x2000_0000, 0x1000_0000],         # PCI
     [0x4000_0000, 0x0002_0000],         # PCI RANGES
 ]           # [(uint, uint)]
-# VirtIO MMIO regions with format (`base_paddr`, `size`).
-virtio-mmio-regions = []    # [(uint, uint)]
+# VirtIO MMIO ranges with format (`base_paddr`, `size`).
+virtio-mmio-ranges = []     # [(uint, uint)]
 # Base physical address of the PCIe ECAM space.
 pci-ecam-base = 0x2000_0000             # uint
 # End PCI bus number.

@@ -1,14 +1,14 @@
 # Architecture identifier.
-arch = "x86_64"                 # str
+arch = "x86_64"     # str
 # Platform identifier.
-platform = "x86_64-qemu-q35"    # str
+platform = "x86-pc" # str
 
 #
 # Platform configs
 #
 [plat]
-# Platform family.
-family = "x86-pc"               # str
+# Platform family (deprecated).
+family = "" # str
 
 # Base address of the whole physical memory.
 phys-memory-base = 0            # uint
@@ -28,21 +28,23 @@ phys-bus-offset = 0                             # uint
 kernel-aspace-base = "0xffff_8000_0000_0000"    # uint
 # Kernel address space size.
 kernel-aspace-size = "0x0000_7fff_ffff_f000"    # uint
+# Stack size on bootstrapping. (256K)
+boot-stack-size = 0x40000                       # uint
 
 #
 # Device specifications
 #
 [devices]
-# MMIO regions with format (`base_paddr`, `size`).
-mmio-regions = [
+# MMIO ranges with format (`base_paddr`, `size`).
+mmio-ranges = [
     [0xb000_0000, 0x1000_0000], # PCI config space
     [0xfe00_0000, 0xc0_0000],   # PCI devices
     [0xfec0_0000, 0x1000],      # IO APIC
     [0xfed0_0000, 0x1000],      # HPET
     [0xfee0_0000, 0x1000],      # Local APIC
 ]                               # [(uint, uint)]
-# VirtIO MMIO regions with format (`base_paddr`, `size`).
-virtio-mmio-regions = []        # [(uint, uint)]
+# VirtIO MMIO ranges with format (`base_paddr`, `size`).
+virtio-mmio-ranges = []        # [(uint, uint)]
 # Base physical address of the PCIe ECAM space (should read from ACPI 'MCFG' table).
 pci-ecam-base = 0xb000_0000     # uint
 # End PCI bus number.
@@ -50,5 +52,7 @@ pci-bus-end = 0xff              # uint
 # PCI device memory ranges (not used on x86).
 pci-ranges = []                 # [(uint, uint)]
 
-# Timer interrupt frequencyin Hz. (4.0GHz)
+# Timer interrupt frequency in Hz. (4.0GHz)
 timer-frequency = 4_000_000_000     # uint
+# Timer interrupt num.
+timer-irq = 0xf0                    # uint

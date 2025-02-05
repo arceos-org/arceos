@@ -26,7 +26,6 @@
 
 #![no_std]
 #![feature(doc_auto_cfg)]
-#![feature(sync_unsafe_cell)]
 
 #[allow(unused_imports)]
 #[macro_use]
@@ -35,8 +34,6 @@ extern crate log;
 #[allow(unused_imports)]
 #[macro_use]
 extern crate memory_addr;
-
-mod platform;
 
 pub mod cpu;
 pub mod mem;
@@ -53,18 +50,20 @@ pub mod paging;
 
 /// Console input and output.
 pub mod console {
-    pub use super::platform::console::*;
+    pub use axplat::console::{read_bytes, write_bytes};
 }
 
-/// Miscellaneous operation, e.g. terminate the system.
-pub mod misc {
-    pub use super::platform::misc::*;
+/// CPU power management.
+pub mod power {
+    #[cfg(feature = "smp")]
+    pub use axplat::power::cpu_boot;
+    pub use axplat::power::system_off;
 }
 
-/// Multi-core operations.
-#[cfg(feature = "smp")]
-pub mod mp {
-    pub use super::platform::mp::*;
+/// Trap handling.
+pub mod trap {
+    pub use axcpu::trap::{IRQ, PAGE_FAULT};
+    pub use axcpu::trap::{PageFaultFlags, register_trap_handler};
 }
 
 /// CPU register states for context switching.
@@ -80,8 +79,22 @@ pub mod context {
     pub use axcpu::{TaskContext, TrapFrame};
 }
 
-pub use self::platform::platform_init;
-pub use axcpu::{asm, trap};
+pub use axcpu::asm;
+pub use axplat::init::{platform_init, platform_init_secondary};
 
-#[cfg(feature = "smp")]
-pub use self::platform::platform_init_secondary;
+/// Initializes CPU local data structures for the primary core.
+pub fn cpu_init(cpu_id: usize) {
+    self::cpu::init_primary(cpu_id);
+}
+
+/// Initializes CPU local data structures for secondary cores.
+pub fn cpu_init_secondary(cpu_id: usize) {
+    self::cpu::init_secondary(cpu_id);
+}
+
+/// Initializes physical memory regions.
+///
+/// This function should be called only once and only on the primary core.
+pub fn mem_init() {
+    self::mem::init();
+}

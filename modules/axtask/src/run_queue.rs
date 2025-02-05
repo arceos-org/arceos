@@ -363,7 +363,7 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
             unsafe {
                 EXITED_TASKS.current_ref_mut_raw().clear();
             }
-            axhal::misc::terminate();
+            axhal::power::system_off();
         } else {
             curr.set_state(TaskState::Exited);
 

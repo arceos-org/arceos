@@ -28,13 +28,18 @@ phys-bus-offset = 0                             # uint
 kernel-aspace-base = "0xffff_0000_0000_0000"    # uint
 # Kernel address space size.
 kernel-aspace-size = "0x0000_ffff_ffff_f000"    # uint
+# Stack size on bootstrapping. (256K)
+boot-stack-size = 0x40000                       # uint
+
+# PSCI
+psci-method = "hvc"             # str
 
 #
 # Device specifications
 #
 [devices]
-# MMIO regions with format (`base_paddr`, `size`).
-mmio-regions = [
+# MMIO ranges with format (`base_paddr`, `size`).
+mmio-ranges = [
     [0x0900_0000, 0x1000],      # PL011 UART
     [0x0910_0000, 0x1000],      # PL031 RTC
     [0x0800_0000, 0x2_0000],    # GICv2
@@ -42,8 +47,8 @@ mmio-regions = [
     [0x1000_0000, 0x2eff_0000],     # PCI memory ranges (ranges 1: 32-bit MMIO space)
     [0x40_1000_0000, 0x1000_0000],  # PCI config space
 ]                                   # [(uint, uint)]
-# VirtIO MMIO regions with format (`base_paddr`, `size`).
-virtio-mmio-regions = [
+# VirtIO MMIO ranges with format (`base_paddr`, `size`).
+virtio-mmio-ranges = [
     [0x0a00_0000, 0x200],
     [0x0a00_0200, 0x200],
     [0x0a00_0400, 0x200],
@@ -89,16 +94,15 @@ pci-ranges = [
 ]                               # [(uint, uint)]
 # UART Address
 uart-paddr = 0x0900_0000        # uint
-# UART IRQ number
-uart-irq = 1                    # uint
+# UART IRQ number (SPI, 1)
+uart-irq = 0x21                 # uint
+# Timer interrupt num (PPI, physical).
+timer-irq = 0x1e                # uint
 
 # GIC CPU Interface base address
 gicc-paddr = 0x0801_0000        # uint
 # GIC Distributor base address
 gicd-paddr = 0x0800_0000        # uint
-
-# PSCI
-psci-method = "hvc"             # str
 
 # pl031@9010000 {
 #     clock-names = "apb_pclk";
