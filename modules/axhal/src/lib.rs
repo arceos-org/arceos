@@ -38,10 +38,6 @@ extern crate memory_addr;
 
 mod platform;
 
-#[macro_use]
-pub mod trap;
-
-pub mod arch;
 pub mod cpu;
 pub mod mem;
 pub mod time;
@@ -71,7 +67,21 @@ pub mod mp {
     pub use super::platform::mp::*;
 }
 
+/// CPU register states for context switching.
+///
+/// There are three types of context:
+///
+/// - [`TaskContext`][axcpu::TaskContext]: The context of a task.
+/// - [`TrapFrame`][axcpu::TrapFrame]: The context of an interrupt or an exception.
+/// - [`UspaceContext`][axcpu::uspace::UspaceContext]: The context for user/kernel mode switching.
+pub mod context {
+    #[cfg(feature = "uspace")]
+    pub use axcpu::uspace::UspaceContext;
+    pub use axcpu::{TaskContext, TrapFrame};
+}
+
 pub use self::platform::platform_init;
+pub use axcpu::{asm, trap};
 
 #[cfg(feature = "smp")]
 pub use self::platform::platform_init_secondary;

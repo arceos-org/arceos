@@ -4,18 +4,15 @@ use crate::irq::IrqHandler;
 use lazyinit::LazyInit;
 use riscv::register::sie;
 
-/// `Interrupt` bit in `scause`
-pub(super) const INTC_IRQ_BASE: usize = 1 << (usize::BITS - 1);
-
 /// Supervisor software interrupt in `scause`
 #[allow(unused)]
-pub(super) const S_SOFT: usize = INTC_IRQ_BASE + 1;
+pub(super) const S_SOFT: usize = 1;
 
 /// Supervisor timer interrupt in `scause`
-pub(super) const S_TIMER: usize = INTC_IRQ_BASE + 5;
+pub(super) const S_TIMER: usize = 5;
 
 /// Supervisor external interrupt in `scause`
-pub(super) const S_EXT: usize = INTC_IRQ_BASE + 9;
+pub(super) const S_EXT: usize = 9;
 
 static TIMER_HANDLER: LazyInit<IrqHandler> = LazyInit::new();
 
@@ -55,7 +52,7 @@ pub fn register_handler(scause: usize, handler: IrqHandler) -> bool {
         } else {
             false
         },
-        @EXT => crate::irq::register_handler_common(scause & !INTC_IRQ_BASE, handler),
+        @EXT => crate::irq::register_handler_common(scause, handler),
     )
 }
 
