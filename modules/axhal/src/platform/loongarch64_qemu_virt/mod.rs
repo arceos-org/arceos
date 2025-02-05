@@ -27,6 +27,7 @@ unsafe extern "C" {
 /// This function will be called after assembly boot stage.
 unsafe extern "C" fn rust_entry(cpu_id: usize) {
     crate::mem::clear_bss();
+    axcpu::init::init_trap();
     super::console::init_early();
     crate::cpu::init_primary(cpu_id);
     super::time::init_primary();
@@ -40,6 +41,7 @@ unsafe extern "C" fn rust_entry(cpu_id: usize) {
 #[cfg(feature = "smp")]
 /// The entry point for the second core.
 pub(crate) extern "C" fn rust_entry_secondary(cpu_id: usize) {
+    axcpu::init::init_trap();
     crate::cpu::init_secondary(cpu_id);
     super::time::init_percpu();
 

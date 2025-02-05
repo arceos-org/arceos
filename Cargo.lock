@@ -268,6 +268,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "axcpu"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ea9dc46b06e0ab4514685da0a2b90fb0b9af6bd8bd3b631beef45e3aca2a71b5"
+dependencies = [
+ "aarch64-cpu 10.0.0",
+ "cfg-if",
+ "lazyinit",
+ "linkme",
+ "log",
+ "loongArch64",
+ "memory_addr",
+ "page_table_entry",
+ "page_table_multiarch",
+ "percpu",
+ "riscv 0.13.0",
+ "static_assertions",
+ "tock-registers 0.9.0",
+ "x86",
+ "x86_64 0.15.2",
+]
+
+[[package]]
 name = "axdisplay"
 version = "0.1.0"
 dependencies = [
@@ -458,6 +481,7 @@ dependencies = [
  "arm_pl031",
  "axalloc",
  "axconfig",
+ "axcpu",
  "axlog",
  "bitflags 2.9.1",
  "cfg-if",
@@ -480,7 +504,6 @@ dependencies = [
  "riscv_goldfish",
  "sbi-rt",
  "static_assertions",
- "tock-registers 0.9.0",
  "x2apic",
  "x86",
  "x86_64 0.15.2",
