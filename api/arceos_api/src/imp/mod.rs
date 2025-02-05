@@ -50,5 +50,5 @@ pub use self::stdio::*;
 pub use self::task::*;
 pub use self::time::*;
 
-pub use axhal::misc::terminate as ax_terminate;
+pub use axhal::power::system_off as ax_terminate;
 pub use axio::PollState as AxPollState;

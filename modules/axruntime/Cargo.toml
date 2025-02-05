@@ -35,6 +35,7 @@ axfs = { workspace = true, optional = true }
 axnet = { workspace = true, optional = true }
 axdisplay = { workspace = true, optional = true }
 axtask = { workspace = true, optional = true }
+axplat = { git = "https://github.com/arceos-org/axhal_crates.git" }
 
 crate_interface = "0.1"
 percpu = { version = "0.2", optional = true }

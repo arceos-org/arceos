@@ -3,6 +3,7 @@ use core::fmt;
 use axerrno::{AxError, AxResult, ax_err};
 use axhal::mem::phys_to_virt;
 use axhal::paging::{MappingFlags, PageTable};
+use axhal::trap::PageFaultFlags;
 use memory_addr::{
     MemoryAddr, PAGE_SIZE_4K, PageIter4K, PhysAddr, VirtAddr, VirtAddrRange, is_aligned_4k,
 };
@@ -287,7 +288,7 @@ impl AddrSpace {
     ///
     /// Returns `true` if the page fault is handled successfully (not a real
     /// fault).
-    pub fn handle_page_fault(&mut self, vaddr: VirtAddr, access_flags: MappingFlags) -> bool {
+    pub fn handle_page_fault(&mut self, vaddr: VirtAddr, access_flags: PageFaultFlags) -> bool {
         if !self.va_range.contains(vaddr) {
             return false;
         }

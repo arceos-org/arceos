@@ -18,7 +18,7 @@ pub fn start_secondary_cpus(primary_cpu_id: usize) {
             }));
 
             debug!("starting CPU {}...", i);
-            axhal::mp::start_secondary_cpu(i, stack_top);
+            axhal::power::cpu_boot(i, stack_top.as_usize());
             logic_cpu_id += 1;
 
             while ENTERED_CPUS.load(Ordering::Acquire) <= logic_cpu_id {
@@ -28,18 +28,21 @@ pub fn start_secondary_cpus(primary_cpu_id: usize) {
     }
 }
 
-/// The main entry point of the ArceOS runtime for secondary CPUs.
+/// The main entry point of the ArceOS runtime for secondary cores.
 ///
-/// It is called from the bootstrapping code in [axhal].
-#[unsafe(no_mangle)]
-pub extern "C" fn rust_main_secondary(cpu_id: usize) -> ! {
+/// It is called from the bootstrapping code in the specific platform crate.
+#[axplat::secondary_main]
+pub fn rust_main_secondary(cpu_id: usize) -> ! {
+    axhal::init_percpu_secondary(cpu_id);
+    axhal::init_early_secondary(cpu_id);
+
     ENTERED_CPUS.fetch_add(1, Ordering::Release);
-    info!("Secondary CPU {:x} started.", cpu_id);
+    info!("Secondary CPU {} started.", cpu_id);
 
     #[cfg(feature = "paging")]
     axmm::init_memory_management_secondary();
 
-    axhal::platform_init_secondary();
+    axhal::init_later_secondary(cpu_id);
 
     #[cfg(feature = "multitask")]
     axtask::init_scheduler_secondary();
