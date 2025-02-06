@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["init_memory_management","init_memory_management_secondary","kernel_aspace","kernel_page_table_root","new_kernel_aspace"],"struct":["AddrSpace"]};
