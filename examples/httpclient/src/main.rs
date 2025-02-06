@@ -11,7 +11,7 @@ use std::net::{TcpStream, ToSocketAddrs};
 #[cfg(feature = "dns")]
 const DEST: &str = "ident.me:80";
 #[cfg(not(feature = "dns"))]
-const DEST: &str = "49.12.234.183:80";
+const DEST: &str = "65.108.151.63:80";
 
 const REQUEST: &str = "\
 GET / HTTP/1.1\r\n\
