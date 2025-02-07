@@ -2,13 +2,13 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Barrier, Mutex};
 use std::thread;
 
-use axns::{AxResource, def_resource};
+use axns::{ResArc, def_resource};
 
 use self::imp::thread_init_namespace;
 
 def_resource! {
-    static FOO: AxResource<AtomicUsize> = AxResource::new();
-    static BAR: AxResource<Mutex<String>> = AxResource::new();
+    static FOO: ResArc<AtomicUsize> = ResArc::new();
+    static BAR: ResArc<Mutex<String>> = ResArc::new();
 }
 
 static BARRIER: Barrier = Barrier::new(3);

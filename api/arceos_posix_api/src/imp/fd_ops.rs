@@ -3,7 +3,7 @@ use core::ffi::c_int;
 
 use axerrno::{LinuxError, LinuxResult};
 use axio::PollState;
-use axns::{AxResource, def_resource};
+use axns::{ResArc, def_resource};
 use flatten_objects::FlattenObjects;
 use spin::RwLock;
 
@@ -23,7 +23,7 @@ pub trait FileLike: Send + Sync {
 
 def_resource! {
     #[allow(non_camel_case_types)]
-    pub(crate) static FD_TABLE: AxResource<RwLock<FlattenObjects<Arc<dyn FileLike>, AX_FILE_LIMIT>>> = AxResource::new();
+    pub(crate) static FD_TABLE: ResArc<RwLock<FlattenObjects<Arc<dyn FileLike>, AX_FILE_LIMIT>>> = ResArc::new();
 }
 
 pub fn get_file_like(fd: c_int) -> LinuxResult<Arc<dyn FileLike>> {
@@ -121,4 +121,23 @@ pub fn sys_fcntl(fd: c_int, cmd: c_int, arg: usize) -> c_int {
             }
         }
     })
+}
+
+#[ctor_bare::register_ctor]
+#[cfg(feature = "fd")]
+fn init_stdio() {
+    use crate::imp::fd_ops::FD_TABLE;
+    use crate::imp::stdio::{stdin, stdout};
+    use alloc::sync::Arc;
+    let mut fd_table = flatten_objects::FlattenObjects::new();
+    fd_table
+        .add_at(0, Arc::new(stdin()) as _)
+        .unwrap_or_else(|_| panic!()); // stdin
+    fd_table
+        .add_at(1, Arc::new(stdout()) as _)
+        .unwrap_or_else(|_| panic!()); // stdout
+    fd_table
+        .add_at(2, Arc::new(stdout()) as _)
+        .unwrap_or_else(|_| panic!()); // stderr
+    FD_TABLE.init_new(spin::RwLock::new(fd_table));
 }

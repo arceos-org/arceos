@@ -113,9 +113,9 @@ impl Drop for AxNamespace {
 ///
 /// It provides methods to lazily initialize the resource of the current thread,
 /// or to share the resource with other threads.
-pub struct AxResource<T>(LazyInit<Arc<T>>);
+pub struct ResArc<T>(LazyInit<Arc<T>>);
 
-impl<T> AxResource<T> {
+impl<T> ResArc<T> {
     /// Creates a new uninitialized resource.
     pub const fn new() -> Self {
         Self(LazyInit::new())
@@ -142,7 +142,7 @@ impl<T> AxResource<T> {
     }
 }
 
-impl<T> Deref for AxResource<T> {
+impl<T> Deref for ResArc<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -150,7 +150,7 @@ impl<T> Deref for AxResource<T> {
     }
 }
 
-impl<T: fmt::Debug> fmt::Debug for AxResource<T> {
+impl<T: fmt::Debug> fmt::Debug for ResArc<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.0.fmt(f)
     }
@@ -195,11 +195,11 @@ pub unsafe fn current_namespace_base() -> *mut u8 {
 /// # Example
 ///
 /// ```
-/// use axns::AxResource;
+/// use axns::ResArc;
 ///
 /// axns::def_resource! {
 ///     static FOO: u32 = 42;
-///     static BAR: AxResource<String> = AxResource::new();
+///     static BAR: ResArc<String> = ResArc::new();
 /// }
 ///
 /// BAR.init_new("hello world".to_string());
@@ -209,10 +209,10 @@ pub unsafe fn current_namespace_base() -> *mut u8 {
 /// mod imp {
 ///     use axns::{AxNamespace, AxNamespaceIf};
 ///
-///     struct AxResourceImpl;
+///     struct ResArcImpl;
 ///
 ///     #[crate_interface::impl_interface]
-///     impl AxNamespaceIf for AxResourceImpl {
+///     impl AxNamespaceIf for ResArcImpl {
 ///         fn current_namespace_base() -> *mut u8 {
 ///             AxNamespace::global().base()
 ///         }

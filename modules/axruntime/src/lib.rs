@@ -183,10 +183,10 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         init_tls();
     }
 
+    ctor_bare::call_ctors();
+
     info!("Primary CPU {} init OK.", cpu_id);
     INITED_CPUS.fetch_add(1, Ordering::Relaxed);
-
-    ctor_bare::call_ctors();
 
     while !is_init_ok() {
         core::hint::spin_loop();

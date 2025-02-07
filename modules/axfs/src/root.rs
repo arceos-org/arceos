@@ -5,7 +5,7 @@
 use alloc::{string::String, sync::Arc, vec::Vec};
 use axerrno::{AxError, AxResult, ax_err};
 use axfs_vfs::{VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsNodeType, VfsOps, VfsResult};
-use axns::{AxResource, def_resource};
+use axns::{ResArc, def_resource};
 use axsync::Mutex;
 use lazyinit::LazyInit;
 
@@ -13,9 +13,9 @@ use crate::{api::FileType, fs, mounts};
 
 def_resource! {
     #[allow(non_camel_case_types)]
-    static CURRENT_DIR_PATH: AxResource<Mutex<String>> = AxResource::new();
+    static CURRENT_DIR_PATH: ResArc<Mutex<String>> = ResArc::new();
     #[allow(non_camel_case_types)]
-    static CURRENT_DIR: AxResource<Mutex<VfsNodeRef>> = AxResource::new();
+    static CURRENT_DIR: ResArc<Mutex<VfsNodeRef>> = ResArc::new();
 }
 
 struct MountPoint {
