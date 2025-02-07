@@ -39,5 +39,6 @@ axtask = { workspace = true, optional = true }
 crate_interface = "0.1"
 percpu = { version = "0.2", optional = true }
 kernel_guard = { version = "0.1", optional = true }
+ctor_bare = "0.2"
 
 chrono = { version = "0.4.38", default-features = false }

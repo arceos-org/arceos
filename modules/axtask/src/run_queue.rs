@@ -613,13 +613,14 @@ pub(crate) fn migrate_entry(migrated_task: AxTaskRef) {
 /// Clear the `on_cpu` field of previous task running on this CPU.
 #[cfg(feature = "smp")]
 pub(crate) unsafe fn clear_prev_task_on_cpu() {
-    PREV_TASK
-        .current_ref_raw()
-        .upgrade()
-        .expect("Invalid prev_task pointer or prev_task has been dropped")
-        .set_on_cpu(false);
+    unsafe {
+        PREV_TASK
+            .current_ref_raw()
+            .upgrade()
+            .expect("Invalid prev_task pointer or prev_task has been dropped")
+            .set_on_cpu(false);
+    }
 }
-
 pub(crate) fn init() {
     let cpu_id = this_cpu_id();
 

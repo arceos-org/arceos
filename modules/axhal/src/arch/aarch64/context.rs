@@ -118,41 +118,43 @@ impl UspaceContext {
     ///
     /// This function is unsafe because it changes processor mode and the stack.
     #[inline(never)]
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub unsafe fn enter_uspace(&self, kstack_top: VirtAddr) -> ! {
         super::disable_irqs();
         // We do not handle traps that occur at the current exception level,
         // so the kstack ptr(`sp_el1`) will not change during running in user space.
         // Then we don't need to save the `sp_el1` to the taskctx.
-        asm!(
-            "
-            mov     sp, x1
-            ldp     x30, x9, [x0, 30 * 8]
-            ldp     x10, x11, [x0, 32 * 8]
-            msr     sp_el0, x9
-            msr     elr_el1, x10
-            msr     spsr_el1, x11
+        unsafe {
+            core::arch::asm!(
+                "
+                mov     sp, x1
+                ldp     x30, x9, [x0, 30 * 8]
+                ldp     x10, x11, [x0, 32 * 8]
+                msr     sp_el0, x9
+                msr     elr_el1, x10
+                msr     spsr_el1, x11
 
-            ldp     x28, x29, [x0, 28 * 8]
-            ldp     x26, x27, [x0, 26 * 8]
-            ldp     x24, x25, [x0, 24 * 8]
-            ldp     x22, x23, [x0, 22 * 8]
-            ldp     x20, x21, [x0, 20 * 8]
-            ldp     x18, x19, [x0, 18 * 8]
-            ldp     x16, x17, [x0, 16 * 8]
-            ldp     x14, x15, [x0, 14 * 8]
-            ldp     x12, x13, [x0, 12 * 8]
-            ldp     x10, x11, [x0, 10 * 8]
-            ldp     x8, x9, [x0, 8 * 8]
-            ldp     x6, x7, [x0, 6 * 8]
-            ldp     x4, x5, [x0, 4 * 8]
-            ldp     x2, x3, [x0, 2 * 8]
-            ldp     x0, x1, [x0]
-            eret",
-            in("x0") &self.0,
-            in("x1") kstack_top.as_usize() ,
-            options(noreturn),
-        )
+                ldp     x28, x29, [x0, 28 * 8]
+                ldp     x26, x27, [x0, 26 * 8]
+                ldp     x24, x25, [x0, 24 * 8]
+                ldp     x22, x23, [x0, 22 * 8]
+                ldp     x20, x21, [x0, 20 * 8]
+                ldp     x18, x19, [x0, 18 * 8]
+                ldp     x16, x17, [x0, 16 * 8]
+                ldp     x14, x15, [x0, 14 * 8]
+                ldp     x12, x13, [x0, 12 * 8]
+                ldp     x10, x11, [x0, 10 * 8]
+                ldp     x8, x9, [x0, 8 * 8]
+                ldp     x6, x7, [x0, 6 * 8]
+                ldp     x4, x5, [x0, 4 * 8]
+                ldp     x2, x3, [x0, 2 * 8]
+                ldp     x0, x1, [x0]
+                eret",
+                in("x0") &self.0,
+                in("x1") kstack_top.as_usize() ,
+                options(noreturn),
+            )
+        }
     }
 }
 

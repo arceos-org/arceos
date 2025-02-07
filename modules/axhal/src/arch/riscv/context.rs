@@ -150,8 +150,7 @@ impl UspaceContext {
     /// # Safety
     ///
     /// This function is unsafe because it changes processor mode and the stack.
-    #[inline(never)]
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub unsafe fn enter_uspace(&self, kstack_top: VirtAddr) -> ! {
         use riscv::register::{sepc, sscratch};
 
@@ -160,24 +159,28 @@ impl UspaceContext {
         sepc::write(self.0.sepc);
         // Address of the top of the kernel stack after saving the trap frame.
         let kernel_trap_addr = kstack_top.as_usize() - core::mem::size_of::<TrapFrame>();
-        asm!("
-            mv      sp, {tf}
-            
-            STR     gp, {kernel_trap_addr}, 2
-            LDR     gp, sp, 2
+        unsafe {
+            core::arch::asm!(
+                include_asm_macros!(),
+                "
+                mv      sp, {tf}
 
-            STR     tp, {kernel_trap_addr}, 3
-            LDR     tp, sp, 3
+                STR     gp, {kernel_trap_addr}, 2
+                LDR     gp, sp, 2
 
-            LDR     t0, sp, 32
-            csrw    sstatus, t0
-            POP_GENERAL_REGS
-            LDR     sp, sp, 1
-            sret",
-            tf = in(reg) &(self.0),
-            kernel_trap_addr = in(reg) kernel_trap_addr,
-            options(noreturn),
-        )
+                STR     tp, {kernel_trap_addr}, 3
+                LDR     tp, sp, 3
+
+                LDR     t0, sp, 32
+                csrw    sstatus, t0
+                POP_GENERAL_REGS
+                LDR     sp, sp, 1
+                sret",
+                tf = in(reg) &(self.0),
+                kernel_trap_addr = in(reg) kernel_trap_addr,
+                options(noreturn),
+            )
+        }
     }
 }
 
@@ -281,7 +284,7 @@ impl TaskContext {
 #[naked]
 unsafe extern "C" fn context_switch(_current_task: &mut TaskContext, _next_task: &TaskContext) {
     naked_asm!(
-        include_asm_marcos!(),
+        include_asm_macros!(),
         "
         // save old context (callee-saved registers)
         STR     ra, a0, 0

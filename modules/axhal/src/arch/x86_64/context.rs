@@ -1,6 +1,5 @@
 use core::{arch::naked_asm, fmt};
 use memory_addr::VirtAddr;
-
 /// Saved registers when a trap (interrupt or exception) occurs.
 #[allow(missing_docs)]
 #[repr(C)]
@@ -85,6 +84,8 @@ impl UspaceContext {
     /// Creates a new context with the given entry point, user stack pointer,
     /// and the argument.
     pub fn new(entry: usize, ustack_top: VirtAddr, arg0: usize) -> Self {
+        use crate::arch::GdtStruct;
+        use x86_64::registers::rflags::RFlags;
         Self(TrapFrame {
             rdi: arg0 as _,
             rip: entry as _,
@@ -102,6 +103,7 @@ impl UspaceContext {
     /// It copies almost all registers except `CS` and `SS` which need to be
     /// set to the user segment selectors.
     pub const fn from(tf: &TrapFrame) -> Self {
+        use crate::arch::GdtStruct;
         let mut tf = *tf;
         tf.cs = GdtStruct::UCODE64_SELECTOR.0 as _;
         tf.ss = GdtStruct::UDATA_SELECTOR.0 as _;
@@ -146,29 +148,31 @@ impl UspaceContext {
     pub unsafe fn enter_uspace(&self, kstack_top: VirtAddr) -> ! {
         super::disable_irqs();
         assert_eq!(super::tss_get_rsp0(), kstack_top);
-        core::arch::asm!("
-            mov     rsp, {tf}
-            pop     rax
-            pop     rcx
-            pop     rdx
-            pop     rbx
-            pop     rbp
-            pop     rsi
-            pop     rdi
-            pop     r8
-            pop     r9
-            pop     r10
-            pop     r11
-            pop     r12
-            pop     r13
-            pop     r14
-            pop     r15
-            add     rsp, 16     // skip vector, error_code
-            swapgs
-            iretq",
-            tf = in(reg) &self.0,
-            options(noreturn),
-        )
+        unsafe {
+            core::arch::asm!("
+                mov     rsp, {tf}
+                pop     rax
+                pop     rcx
+                pop     rdx
+                pop     rbx
+                pop     rbp
+                pop     rsi
+                pop     rdi
+                pop     r8
+                pop     r9
+                pop     r10
+                pop     r11
+                pop     r12
+                pop     r13
+                pop     r14
+                pop     r15
+                add     rsp, 16     // skip vector, error_code
+                swapgs
+                iretq",
+                tf = in(reg) &self.0,
+                options(noreturn),
+            )
+        }
     }
 }
 
@@ -277,7 +281,7 @@ pub struct TaskContext {
     pub ext_state: ExtendedState,
     /// The `CR3` register value, i.e., the page table root.
     #[cfg(feature = "uspace")]
-    pub cr3: PhysAddr,
+    pub cr3: memory_addr::PhysAddr,
 }
 
 impl TaskContext {
@@ -311,13 +315,10 @@ impl TaskContext {
             // is executed), (stack pointer + 8) should be 16-byte aligned.
             let frame_ptr = (kstack_top.as_mut_ptr() as *mut u64).sub(1);
             let frame_ptr = (frame_ptr as *mut ContextSwitchFrame).sub(1);
-            core::ptr::write(
-                frame_ptr,
-                ContextSwitchFrame {
-                    rip: entry as _,
-                    ..Default::default()
-                },
-            );
+            core::ptr::write(frame_ptr, ContextSwitchFrame {
+                rip: entry as _,
+                ..Default::default()
+            });
             self.rsp = frame_ptr as u64;
         }
         self.kstack_top = kstack_top;
@@ -331,7 +332,7 @@ impl TaskContext {
     ///
     /// [1]: crate::paging::kernel_page_table_root
     #[cfg(feature = "uspace")]
-    pub fn set_page_table_root(&mut self, cr3: PhysAddr) {
+    pub fn set_page_table_root(&mut self, cr3: memory_addr::PhysAddr) {
         self.cr3 = cr3;
     }
 
@@ -368,23 +369,24 @@ impl TaskContext {
 unsafe extern "C" fn context_switch(_current_stack: &mut u64, _next_stack: &u64) {
     unsafe {
         naked_asm!(
-            ".code64
-        push    rbp
-        push    rbx
-        push    r12
-        push    r13
-        push    r14
-        push    r15
-        mov     [rdi], rsp
+            "
+            .code64
+            push    rbp
+            push    rbx
+            push    r12
+            push    r13
+            push    r14
+            push    r15
+            mov     [rdi], rsp
 
-        mov     rsp, [rsi]
-        pop     r15
-        pop     r14
-        pop     r13
-        pop     r12
-        pop     rbx
-        pop     rbp
-        ret",
+            mov     rsp, [rsi]
+            pop     r15
+            pop     r14
+            pop     r13
+            pop     r12
+            pop     rbx
+            pop     rbp
+            ret",
         )
     }
 }

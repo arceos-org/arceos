@@ -5,7 +5,7 @@ use x86_64::structures::tss::TaskStateSegment;
 
 use super::{GdtStruct, TrapFrame};
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 #[percpu::def_percpu]
 static USER_RSP_OFFSET: usize = 0;
 
@@ -14,14 +14,14 @@ core::arch::global_asm!(
     tss_rsp0_offset = const core::mem::offset_of!(TaskStateSegment, privilege_stack_table),
 );
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub(super) fn x86_syscall_handler(tf: &mut TrapFrame) {
     tf.rax = crate::trap::handle_syscall(tf, tf.rax as usize) as u64;
 }
 
 /// Initializes syscall support and setups the syscall handler.
 pub fn init_syscall() {
-    extern "C" {
+    unsafe extern "C" {
         fn syscall_entry();
     }
     unsafe {
