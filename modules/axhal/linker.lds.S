@@ -24,6 +24,15 @@ SECTIONS
         . = ALIGN(4K);
         _erodata = .;
     }
+    
+    .init_array : ALIGN(4K) {
+        _sinit_array = .;
+        __init_array_start = .;
+        *(.init_array .init_array.*)
+        __init_array_end = .;
+        . = ALIGN(4K);
+        _einit_array = .;
+    }
 
     .data : ALIGN(4K) {
         _sdata = .;
@@ -89,5 +98,6 @@ SECTIONS {
     linkm2_PAGE_FAULT : { *(linkm2_PAGE_FAULT) }
     linkme_SYSCALL : { *(linkme_SYSCALL) }
     linkm2_SYSCALL : { *(linkm2_SYSCALL) }
+    axns_resource : { *(axns_resource) }
 }
 INSERT AFTER .tbss;

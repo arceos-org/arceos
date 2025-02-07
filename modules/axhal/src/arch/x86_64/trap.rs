@@ -29,13 +29,8 @@ fn handle_page_fault(tf: &TrapFrame) {
     }
 }
 
-<<<<<<< HEAD
 #[unsafe(no_mangle)]
-fn x86_trap_handler(tf: &TrapFrame) {
-=======
-#[no_mangle]
 fn x86_trap_handler(tf: &mut TrapFrame) {
->>>>>>> 4f0c0a4 ([hal]: Add UspaceContext to enter user space on x86_64)
     match tf.vector as u8 {
         PAGE_FAULT_VECTOR => handle_page_fault(tf),
         BREAKPOINT_VECTOR => debug!("#BP @ {:#x} ", tf.rip),

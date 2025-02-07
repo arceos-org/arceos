@@ -144,7 +144,7 @@ pub unsafe fn write_thread_pointer(tpidr_el0: usize) {
 ///
 /// On AArch64, it sets the exception vector base address (`VBAR_EL1`) and `TTBR0_EL1`.
 pub fn cpu_init() {
-    extern "C" {
+    unsafe extern "C" {
         fn exception_vector_base();
     }
     set_exception_vector_base(exception_vector_base as usize);

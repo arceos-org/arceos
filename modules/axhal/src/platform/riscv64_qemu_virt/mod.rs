@@ -12,7 +12,6 @@ pub mod irq;
 pub mod mp;
 
 unsafe extern "C" {
-    fn trap_vector_base();
     fn rust_main(cpu_id: usize, dtb: usize);
     #[cfg(feature = "smp")]
     fn rust_main_secondary(cpu_id: usize);

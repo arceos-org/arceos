@@ -114,7 +114,7 @@ pub unsafe fn write_thread_pointer(tp: usize) {
 ///
 /// On RISC-V, it sets the trap vector base address.
 pub fn cpu_init() {
-    extern "C" {
+    unsafe extern "C" {
         fn trap_vector_base();
     }
     set_trap_vector_base(trap_vector_base as usize);

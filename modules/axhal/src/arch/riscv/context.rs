@@ -151,7 +151,7 @@ impl UspaceContext {
     ///
     /// This function is unsafe because it changes processor mode and the stack.
     #[inline(never)]
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub unsafe fn enter_uspace(&self, kstack_top: VirtAddr) -> ! {
         use riscv::register::{sepc, sscratch};
 
@@ -160,7 +160,8 @@ impl UspaceContext {
         sepc::write(self.0.sepc);
         // Address of the top of the kernel stack after saving the trap frame.
         let kernel_trap_addr = kstack_top.as_usize() - core::mem::size_of::<TrapFrame>();
-        asm!("
+        unsafe {
+            core::arch::asm!("
             mv      sp, {tf}
             
             STR     gp, {kernel_trap_addr}, 2
@@ -174,10 +175,11 @@ impl UspaceContext {
             POP_GENERAL_REGS
             LDR     sp, sp, 1
             sret",
-            tf = in(reg) &(self.0),
-            kernel_trap_addr = in(reg) kernel_trap_addr,
-            options(noreturn),
-        )
+                tf = in(reg) &(self.0),
+                kernel_trap_addr = in(reg) kernel_trap_addr,
+                options(noreturn),
+            )
+        }
     }
 }
 

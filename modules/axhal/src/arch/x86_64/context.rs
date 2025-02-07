@@ -2,7 +2,6 @@
 
 use core::{arch::naked_asm, fmt};
 use memory_addr::VirtAddr;
-
 /// Saved registers when a trap (interrupt or exception) occurs.
 #[allow(missing_docs)]
 #[repr(C)]
@@ -87,6 +86,8 @@ impl UspaceContext {
     /// Creates a new context with the given entry point, user stack pointer,
     /// and the argument.
     pub fn new(entry: usize, ustack_top: VirtAddr, arg0: usize) -> Self {
+        use crate::arch::GdtStruct;
+        use x86_64::registers::rflags::RFlags;
         Self(TrapFrame {
             rdi: arg0 as _,
             rip: entry as _,
@@ -104,6 +105,7 @@ impl UspaceContext {
     /// It copies almost all registers except `CS` and `SS` which need to be
     /// set to the user segment selectors.
     pub const fn from(tf: &TrapFrame) -> Self {
+        use crate::arch::GdtStruct;
         let mut tf = *tf;
         tf.cs = GdtStruct::UCODE64_SELECTOR.0 as _;
         tf.ss = GdtStruct::UDATA_SELECTOR.0 as _;
@@ -148,7 +150,8 @@ impl UspaceContext {
     pub unsafe fn enter_uspace(&self, kstack_top: VirtAddr) -> ! {
         super::disable_irqs();
         assert_eq!(super::tss_get_rsp0(), kstack_top);
-        asm!("
+        unsafe {
+            core::arch::asm!("
             mov     rsp, {tf}
             pop     rax
             pop     rcx
@@ -168,9 +171,10 @@ impl UspaceContext {
             add     rsp, 16     // skip vector, error_code
             swapgs
             iretq",
-            tf = in(reg) &self.0,
-            options(noreturn),
-        )
+                tf = in(reg) &self.0,
+                options(noreturn),
+            )
+        }
     }
 }
 
@@ -279,7 +283,7 @@ pub struct TaskContext {
     pub ext_state: ExtendedState,
     /// The `CR3` register value, i.e., the page table root.
     #[cfg(feature = "uspace")]
-    pub cr3: PhysAddr,
+    pub cr3: memory_addr::PhysAddr,
 }
 
 impl TaskContext {
@@ -330,7 +334,7 @@ impl TaskContext {
     ///
     /// [1]: crate::paging::kernel_page_table_root
     #[cfg(feature = "uspace")]
-    pub fn set_page_table_root(&mut self, cr3: PhysAddr) {
+    pub fn set_page_table_root(&mut self, cr3: memory_addr::PhysAddr) {
         self.cr3 = cr3;
     }
 

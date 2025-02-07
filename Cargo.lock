@@ -172,10 +172,12 @@ dependencies = [
  "axio",
  "axlog",
  "axnet",
+ "axns",
  "axruntime",
  "axsync",
  "axtask",
  "bindgen",
+ "ctor_bare",
  "flatten_objects",
  "lazy_static",
  "spin",
@@ -400,6 +402,7 @@ dependencies = [
  "axfs_ramfs",
  "axfs_vfs",
  "axio",
+ "axns",
  "axsync",
  "axtask",
  "cap_access",
@@ -546,6 +549,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "axns"
+version = "0.1.0"
+dependencies = [
+ "axns",
+ "crate_interface",
+ "lazyinit",
+]
+
+[[package]]
 name = "axruntime"
 version = "0.1.0"
 dependencies = [
@@ -561,6 +573,7 @@ dependencies = [
  "axtask",
  "chrono",
  "crate_interface",
+ "ctor_bare",
  "kernel_guard",
  "percpu",
 ]
@@ -851,6 +864,26 @@ name = "critical-section"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "790eea4361631c5e7d22598ecd5723ff611904e3344ce8720784c93e3d83d40b"
+
+[[package]]
+name = "ctor_bare"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e4e5ae3c454dc1efb0e5821dc17344539849391b2de18c89596ea563f1909f93"
+dependencies = [
+ "ctor_bare_macros",
+]
+
+[[package]]
+name = "ctor_bare_macros"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a49d5cd78b1c748184d41407b14a58af8403c13328ff2b9f49b0a418c24e3ff"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.98",
+]
 
 [[package]]
 name = "defmt"

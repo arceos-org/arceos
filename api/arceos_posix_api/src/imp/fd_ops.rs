@@ -3,10 +3,10 @@ use core::ffi::c_int;
 
 use axerrno::{LinuxError, LinuxResult};
 use axio::PollState;
+use axns::{AxResource, def_resource};
 use flatten_objects::FlattenObjects;
 use spin::RwLock;
 
-use super::stdio::{stdin, stdout};
 use crate::ctypes;
 
 pub const AX_FILE_LIMIT: usize = 1024;
@@ -21,14 +21,9 @@ pub trait FileLike: Send + Sync {
     fn set_nonblocking(&self, nonblocking: bool) -> LinuxResult;
 }
 
-lazy_static::lazy_static! {
-    static ref FD_TABLE: RwLock<FlattenObjects<Arc<dyn FileLike>, AX_FILE_LIMIT>> = {
-        let mut fd_table = FlattenObjects::new();
-        fd_table.add_at(0, Arc::new(stdin()) as _).unwrap_or_else(|_| panic!()); // stdin
-        fd_table.add_at(1, Arc::new(stdout()) as _).unwrap_or_else(|_| panic!()); // stdout
-        fd_table.add_at(2, Arc::new(stdout()) as _).unwrap_or_else(|_| panic!()); // stderr
-        RwLock::new(fd_table)
-    };
+def_resource! {
+    #[allow(non_camel_case_types)]
+    pub(crate) static FD_TABLE: AxResource<RwLock<FlattenObjects<Arc<dyn FileLike>, AX_FILE_LIMIT>>> = AxResource::new();
 }
 
 pub fn get_file_like(fd: c_int) -> LinuxResult<Arc<dyn FileLike>> {
