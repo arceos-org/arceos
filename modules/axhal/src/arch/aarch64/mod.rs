@@ -1,3 +1,4 @@
+mod cache;
 mod context;
 
 #[cfg(target_os = "none")]
@@ -10,6 +11,7 @@ use memory_addr::{PhysAddr, VirtAddr};
 use tock_registers::interfaces::{Readable, Writeable};
 
 pub use self::context::{FpState, TaskContext, TrapFrame};
+pub use cache::*;
 
 /// Allows the current CPU to respond to interrupts.
 #[inline]
@@ -110,12 +112,6 @@ pub fn flush_icache_all() {
 #[inline]
 pub fn set_exception_vector_base(vbar_el1: usize) {
     VBAR_EL1.set(vbar_el1 as _);
-}
-
-/// Flushes the data cache line (64 bytes) at the given virtual address
-#[inline]
-pub fn flush_dcache_line(vaddr: VirtAddr) {
-    unsafe { asm!("dc ivac, {0:x}; dsb sy; isb", in(reg) vaddr.as_usize()) };
 }
 
 /// Reads the thread pointer of the current CPU.
