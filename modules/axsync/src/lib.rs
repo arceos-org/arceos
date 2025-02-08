@@ -4,6 +4,10 @@
 //!
 //! - [`Mutex`]: A mutual exclusion primitive.
 //! - mod [`spin`]: spinlocks imported from the [`kspin`] crate.
+//! - [`Barrier`]: A barrier enables multiple threads to wait for each other.
+//! - [`Condvar`]: A condition variable enables threads to wait until a particular.
+//! - [`RwLock`]: A reader-writer lock.
+//! - [`Semaphore`]: A semaphore is a synchronization primitive that controls access to a shared resource.
 //!
 //! # Cargo Features
 //!
@@ -16,13 +20,35 @@
 
 pub use kspin as spin;
 
-#[cfg(feature = "multitask")]
-mod mutex;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "multitask")] {
+        mod barrier;
+        mod condvar;
+        mod mutex;
+        mod semaphore;
 
-#[cfg(feature = "multitask")]
-#[doc(cfg(feature = "multitask"))]
-pub use self::mutex::{Mutex, MutexGuard};
+        pub use self::barrier::{Barrier, BarrierWaitResult};
+        pub use self::condvar::{Condvar, WaitTimeoutResult};
+        #[doc(cfg(feature = "multitask"))]
+        pub use self::mutex::{Mutex, MutexGuard};
+        pub use semaphore::{Semaphore, SemaphoreGuard};
+    } else {
+        #[doc(cfg(not(feature = "multitask")))]
+        pub use kspin::{SpinNoIrq as Mutex, SpinNoIrqGuard as MutexGuard};
+    }
+}
 
-#[cfg(not(feature = "multitask"))]
-#[doc(cfg(not(feature = "multitask")))]
-pub use kspin::{SpinNoIrq as Mutex, SpinNoIrqGuard as MutexGuard};
+mod rwlock;
+pub use self::rwlock::{
+    MappedRwLockReadGuard, MappedRwLockWriteGuard, RwLock, RwLockReadGuard, RwLockWriteGuard,
+};
+
+#[cfg(test)]
+mod tests {
+    use std::sync::{Mutex, Once};
+
+    /// Used for initializing the only global scheduler for test environment.
+    pub static INIT: Once = Once::new();
+    /// Used for serializing the tests in this crate.
+    pub static SEQ: Mutex<()> = Mutex::new(());
+}
