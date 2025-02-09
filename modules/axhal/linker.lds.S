@@ -24,13 +24,6 @@ SECTIONS
         . = ALIGN(4K);
         _erodata = .;
     }
-    
-    .init_array : ALIGN(4K) {
-        __init_array_start = .;
-        *(.init_array .init_array.*)
-        __init_array_end = .;
-        . = ALIGN(4K);
-    }
 
     .data : ALIGN(4K) {
         _sdata = .;
@@ -45,6 +38,13 @@ SECTIONS
         _stdata = .;
         *(.tdata .tdata.*)
         _etdata = .;
+    }
+
+    .init_array : ALIGN(4K) {
+        __init_array_start = .;
+        *(.init_array .init_array.*)
+        __init_array_end = .;
+        . = ALIGN(4K);
     }
 
     .tbss : ALIGN(0x10) {

@@ -152,25 +152,25 @@ impl UspaceContext {
         assert_eq!(super::tss_get_rsp0(), kstack_top);
         unsafe {
             core::arch::asm!("
-            mov     rsp, {tf}
-            pop     rax
-            pop     rcx
-            pop     rdx
-            pop     rbx
-            pop     rbp
-            pop     rsi
-            pop     rdi
-            pop     r8
-            pop     r9
-            pop     r10
-            pop     r11
-            pop     r12
-            pop     r13
-            pop     r14
-            pop     r15
-            add     rsp, 16     // skip vector, error_code
-            swapgs
-            iretq",
+                mov     rsp, {tf}
+                pop     rax
+                pop     rcx
+                pop     rdx
+                pop     rbx
+                pop     rbp
+                pop     rsi
+                pop     rdi
+                pop     r8
+                pop     r9
+                pop     r10
+                pop     r11
+                pop     r12
+                pop     r13
+                pop     r14
+                pop     r15
+                add     rsp, 16     // skip vector, error_code
+                swapgs
+                iretq",
                 tf = in(reg) &self.0,
                 options(noreturn),
             )
@@ -371,23 +371,24 @@ impl TaskContext {
 unsafe extern "C" fn context_switch(_current_stack: &mut u64, _next_stack: &u64) {
     unsafe {
         naked_asm!(
-            ".code64
-        push    rbp
-        push    rbx
-        push    r12
-        push    r13
-        push    r14
-        push    r15
-        mov     [rdi], rsp
+            "
+            .code64
+            push    rbp
+            push    rbx
+            push    r12
+            push    r13
+            push    r14
+            push    r15
+            mov     [rdi], rsp
 
-        mov     rsp, [rsi]
-        pop     r15
-        pop     r14
-        pop     r13
-        pop     r12
-        pop     rbx
-        pop     rbp
-        ret",
+            mov     rsp, [rsi]
+            pop     r15
+            pop     r14
+            pop     r13
+            pop     r12
+            pop     rbx
+            pop     rbp
+            ret",
         )
     }
 }

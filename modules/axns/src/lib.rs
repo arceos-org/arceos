@@ -223,7 +223,7 @@ pub unsafe fn current_namespace_base() -> *mut u8 {
 macro_rules! def_resource {
     ( $( $(#[$attr:meta])* $vis:vis static $name:ident: $ty:ty = $default:expr; )+ ) => {
         $(
-            $(#[$attr])*
+            #[allow(non_camel_case_types)]
             $vis struct $name { __value: () }
 
             impl $name {

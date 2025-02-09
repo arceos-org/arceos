@@ -6,7 +6,7 @@ use riscv::register::{scause, stval};
 use super::TrapFrame;
 
 core::arch::global_asm!(
-    include_asm_marcos!(),
+    include_asm_macros!(),
     include_str!("trap.S"),
     trapframe_size = const core::mem::size_of::<TrapFrame>(),
 );

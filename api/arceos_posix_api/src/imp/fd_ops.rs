@@ -22,7 +22,6 @@ pub trait FileLike: Send + Sync {
 }
 
 def_resource! {
-    #[allow(non_camel_case_types)]
     pub(crate) static FD_TABLE: ResArc<RwLock<FlattenObjects<Arc<dyn FileLike>, AX_FILE_LIMIT>>> = ResArc::new();
 }
 
