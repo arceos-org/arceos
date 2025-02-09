@@ -26,12 +26,10 @@ SECTIONS
     }
     
     .init_array : ALIGN(4K) {
-        _sinit_array = .;
         __init_array_start = .;
         *(.init_array .init_array.*)
         __init_array_end = .;
         . = ALIGN(4K);
-        _einit_array = .;
     }
 
     .data : ALIGN(4K) {

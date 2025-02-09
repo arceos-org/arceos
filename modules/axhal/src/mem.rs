@@ -89,8 +89,9 @@ fn kernel_image_regions() -> impl Iterator<Item = MemRegion> {
             name: ".rodata",
         },
         MemRegion {
-            paddr: virt_to_phys((_sinit_array as usize).into()),
-            size: _einit_array as usize - _sinit_array as usize,
+            paddr: virt_to_phys((__init_array_start as usize).into()).align_down_4k(),
+            size: VirtAddr::from_usize(__init_array_end as usize).align_up_4k()
+                - VirtAddr::from_usize(__init_array_start as usize).align_down_4k(),
             flags: MemRegionFlags::RESERVED | MemRegionFlags::READ,
             name: ".init_array",
         },
@@ -157,8 +158,8 @@ unsafe extern "C" {
     fn _etext();
     fn _srodata();
     fn _erodata();
-    fn _sinit_array();
-    fn _einit_array();
+    fn __init_array_start();
+    fn __init_array_end();
     fn _sdata();
     fn _edata();
     fn _sbss();

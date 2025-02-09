@@ -29,7 +29,7 @@ net = ["dep:axnet", "axfeat/net", "fd"]
 pipe = ["fd"]
 select = ["fd"]
 epoll = ["fd"]
-uspace = ["axns/thread-local", "axfs/thread-local", "smp", "irq", "fs", "multitask", "net", "pipe", "select", "epoll"]
+uspace = ["axns/thread-local"]
 
 [dependencies]
 # ArceOS modules

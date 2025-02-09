@@ -10,7 +10,6 @@ repository = "https://github.com/arceos-org/arceos/tree/main/modules/axfs"
 documentation = "https://arceos-org.github.io/arceos/axfs/index.html"
 
 [features]
-thread-local = ["axns/thread-local"]
 devfs = ["dep:axfs_devfs"]
 ramfs = ["dep:axfs_ramfs"]
 procfs = ["dep:axfs_ramfs"]
