@@ -12,9 +12,7 @@ use lazyinit::LazyInit;
 use crate::{api::FileType, fs, mounts};
 
 def_resource! {
-    #[allow(non_camel_case_types)]
     static CURRENT_DIR_PATH: ResArc<Mutex<String>> = ResArc::new();
-    #[allow(non_camel_case_types)]
     static CURRENT_DIR: ResArc<Mutex<VfsNodeRef>> = ResArc::new();
 }
 

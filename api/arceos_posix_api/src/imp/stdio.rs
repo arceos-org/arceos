@@ -16,10 +16,6 @@ fn console_read_bytes(buf: &mut [u8]) -> AxResult<usize> {
 }
 
 fn console_write_bytes(buf: &[u8]) -> AxResult<usize> {
-    #[cfg(feature = "uspace")]
-    // We need to copy the buffer to the kernel space because SBI can't access user space.
-    axhal::console::write_bytes(buf.to_vec().as_slice());
-    #[cfg(not(feature = "uspace"))]
     axhal::console::write_bytes(buf);
     Ok(buf.len())
 }

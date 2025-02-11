@@ -53,5 +53,5 @@ axdriver = { workspace = true, features = ["block", "ramdisk"] }
 axdriver_block = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.0", features = ["ramdisk"] }
 axsync = { workspace = true, features = ["multitask"] }
 axtask = { workspace = true, features = ["test"] }
-axns = { workspace = true, features = ["thread-local"] }
+axns = { workspace = true, features = [] }
 crate_interface = "0.1"

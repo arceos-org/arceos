@@ -8,6 +8,7 @@ use flatten_objects::FlattenObjects;
 use spin::RwLock;
 
 use crate::ctypes;
+use crate::imp::stdio::{stdin, stdout};
 
 pub const AX_FILE_LIMIT: usize = 1024;
 
@@ -123,11 +124,7 @@ pub fn sys_fcntl(fd: c_int, cmd: c_int, arg: usize) -> c_int {
 }
 
 #[ctor_bare::register_ctor]
-#[cfg(feature = "fd")]
 fn init_stdio() {
-    use crate::imp::fd_ops::FD_TABLE;
-    use crate::imp::stdio::{stdin, stdout};
-    use alloc::sync::Arc;
     let mut fd_table = flatten_objects::FlattenObjects::new();
     fd_table
         .add_at(0, Arc::new(stdin()) as _)
