@@ -11,7 +11,6 @@ use axfs::fops::{Disk, MyFileSystemIf};
 use axfs_ramfs::RamFileSystem;
 use axfs_vfs::VfsOps;
 use axio::{Result, Write};
-use axns::{AxNamespace, AxNamespaceIf};
 
 struct MyFileSystemIfImpl;
 
@@ -40,14 +39,6 @@ fn create_init_files() -> Result<()> {
     fs::create_dir("/./very/long/path")?;
     fs::write(".//very/long/path/test.txt", "Rust is cool!\n")?;
     Ok(())
-}
-
-struct AxNamespaceImpl;
-#[crate_interface::impl_interface]
-impl AxNamespaceIf for AxNamespaceImpl {
-    fn current_namespace_base() -> *mut u8 {
-        AxNamespace::global().base()
-    }
 }
 
 #[test]
