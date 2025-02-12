@@ -11,7 +11,6 @@ use axfs::fops::{Disk, MyFileSystemIf};
 use axfs_ramfs::RamFileSystem;
 use axfs_vfs::VfsOps;
 use axio::{Result, Write};
-use axns::{AxNamespace, AxNamespaceIf};
 
 struct MyFileSystemIfImpl;
 
@@ -42,18 +41,9 @@ fn create_init_files() -> Result<()> {
     Ok(())
 }
 
-struct AxNamespaceImpl;
-#[crate_interface::impl_interface]
-impl AxNamespaceIf for AxNamespaceImpl {
-    fn current_namespace_base() -> *mut u8 {
-        AxNamespace::global().base()
-    }
-}
-
 #[test]
 fn test_ramfs() {
     println!("Testing ramfs ...");
-
     axtask::init_scheduler(); // call this to use `axsync::Mutex`.
     axfs::init_filesystems(AxDeviceContainer::from_one(RamDisk::default())); // dummy disk, actually not used.
 
