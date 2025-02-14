@@ -498,14 +498,18 @@ impl CurrentTask {
         #[cfg(feature = "tls")]
         axhal::arch::write_thread_pointer(init_task.tls.tls_ptr() as usize);
         let ptr = Arc::into_raw(init_task);
-        axhal::cpu::set_current_task_ptr(ptr);
+        unsafe {
+            axhal::cpu::set_current_task_ptr(ptr);
+        }
     }
 
     pub(crate) unsafe fn set_current(prev: Self, next: AxTaskRef) {
         let Self(arc) = prev;
         ManuallyDrop::into_inner(arc); // `call Arc::drop()` to decrease prev task reference count.
         let ptr = Arc::into_raw(next);
-        axhal::cpu::set_current_task_ptr(ptr);
+        unsafe {
+            axhal::cpu::set_current_task_ptr(ptr);
+        }
     }
 }
 

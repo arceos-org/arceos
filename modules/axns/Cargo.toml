@@ -1,0 +1,24 @@
+[package]
+name = "axns"
+version.workspace = true
+edition.workspace = true
+authors = ["Yuekai Jia <equation618@gmail.com>"]
+description = "ArceOS namespaces to control system resource sharing between threads"
+license.workspace = true
+homepage.workspace = true
+repository = "https://github.com/arceos-org/arceos/tree/main/modules/axns"
+documentation = "https://arceos-org.github.io/arceos/axns/index.html"
+
+[features]
+default = []
+
+# Each thread has its individual namespace field, instead of using the global
+# namespace.
+thread-local = []
+
+[dependencies]
+lazyinit = "0.2"
+crate_interface = "0.1"
+
+[dev-dependencies]
+axns = { workspace = true, features = ["thread-local"] }

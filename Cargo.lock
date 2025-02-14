@@ -172,10 +172,12 @@ dependencies = [
  "axio",
  "axlog",
  "axnet",
+ "axns",
  "axruntime",
  "axsync",
  "axtask",
  "bindgen",
+ "ctor_bare",
  "flatten_objects",
  "lazy_static",
  "spin",
@@ -400,6 +402,7 @@ dependencies = [
  "axfs_ramfs",
  "axfs_vfs",
  "axio",
+ "axns",
  "axsync",
  "axtask",
  "cap_access",
@@ -516,6 +519,7 @@ dependencies = [
 name = "axmm"
 version = "0.1.0"
 dependencies = [
+ "axalloc",
  "axconfig",
  "axerrno",
  "axhal",
@@ -523,6 +527,7 @@ dependencies = [
  "lazyinit",
  "log",
  "memory_addr",
+ "memory_set",
 ]
 
 [[package]]
@@ -544,6 +549,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "axns"
+version = "0.1.0"
+dependencies = [
+ "axns",
+ "crate_interface",
+ "lazyinit",
+]
+
+[[package]]
 name = "axruntime"
 version = "0.1.0"
 dependencies = [
@@ -559,6 +573,7 @@ dependencies = [
  "axtask",
  "chrono",
  "crate_interface",
+ "ctor_bare",
  "kernel_guard",
  "percpu",
 ]
@@ -849,6 +864,26 @@ name = "critical-section"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "790eea4361631c5e7d22598ecd5723ff611904e3344ce8720784c93e3d83d40b"
+
+[[package]]
+name = "ctor_bare"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e4e5ae3c454dc1efb0e5821dc17344539849391b2de18c89596ea563f1909f93"
+dependencies = [
+ "ctor_bare_macros",
+]
+
+[[package]]
+name = "ctor_bare_macros"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a49d5cd78b1c748184d41407b14a58af8403c13328ff2b9f49b0a418c24e3ff"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.98",
+]
 
 [[package]]
 name = "defmt"
@@ -1200,6 +1235,15 @@ name = "memory_addr"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6f769efcf10b9dfb4c913bebb409cda77b1a3f072b249bf5465e250bcb30eb49"
+
+[[package]]
+name = "memory_set"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "335675b7ab07460f532d3b2b557313be73037fdf81b65464d8c0d8bd90d2fbf9"
+dependencies = [
+ "memory_addr",
+]
 
 [[package]]
 name = "minimal-lexical"

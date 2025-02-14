@@ -9,6 +9,8 @@ use aarch64_cpu::registers::{DAIF, TPIDR_EL0, TTBR0_EL1, TTBR1_EL1, VBAR_EL1};
 use memory_addr::{PhysAddr, VirtAddr};
 use tock_registers::interfaces::{Readable, Writeable};
 
+#[cfg(feature = "uspace")]
+pub use self::context::UspaceContext;
 pub use self::context::{FpState, TaskContext, TrapFrame};
 
 /// Allows the current CPU to respond to interrupts.
@@ -136,4 +138,15 @@ pub fn read_thread_pointer() -> usize {
 #[inline]
 pub unsafe fn write_thread_pointer(tpidr_el0: usize) {
     TPIDR_EL0.set(tpidr_el0 as _)
+}
+
+/// Initializes CPU states on the current CPU.
+///
+/// On AArch64, it sets the exception vector base address (`VBAR_EL1`) and `TTBR0_EL1`.
+pub fn cpu_init() {
+    unsafe extern "C" {
+        fn exception_vector_base();
+    }
+    set_exception_vector_base(exception_vector_base as usize);
+    unsafe { write_page_table_root0(0.into()) }; // disable low address access in EL1
 }
