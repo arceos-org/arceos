@@ -525,10 +525,10 @@ pub unsafe fn sys_freeaddrinfo(res: *mut ctypes::addrinfo) {
         return;
     }
     let aibuf_ptr = res as *mut ctypes::aibuf;
-    let len = (*aibuf_ptr).ref_ as usize;
-    assert!((*aibuf_ptr).slot == 0);
+    let len = unsafe { *aibuf_ptr }.ref_ as usize;
+    assert!(unsafe { *aibuf_ptr }.slot == 0);
     assert!(len > 0);
-    let vec = Vec::from_raw_parts(aibuf_ptr, len, len); // TODO: lock
+    let vec = unsafe { Vec::from_raw_parts(aibuf_ptr, len, len) }; // TODO: lock
     drop(vec);
 }
 

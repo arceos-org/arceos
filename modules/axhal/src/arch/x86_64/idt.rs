@@ -1,10 +1,13 @@
 use core::fmt;
 
+use lazyinit::LazyInit;
 use x86_64::addr::VirtAddr;
 use x86_64::structures::DescriptorTablePointer;
 use x86_64::structures::idt::{Entry, HandlerFunc, InterruptDescriptorTable};
 
 const NUM_INT: usize = 256;
+
+static IDT: LazyInit<IdtStruct> = LazyInit::new();
 
 /// A wrapper of the Interrupt Descriptor Table (IDT).
 #[repr(transparent)]
@@ -33,7 +36,11 @@ impl IdtStruct {
         };
         for i in 0..NUM_INT {
             #[allow(clippy::missing_transmute_annotations)]
-            entries[i].set_handler_fn(unsafe { core::mem::transmute(ENTRIES[i]) });
+            let opt = entries[i].set_handler_fn(unsafe { core::mem::transmute(ENTRIES[i]) });
+            if i == 0x3 || i == 0x80 {
+                // enable user space breakpoints and legacy int 0x80 syscall
+                opt.set_privilege_level(x86_64::PrivilegeLevel::Ring3);
+            }
         }
         idt
     }
@@ -65,4 +72,10 @@ impl fmt::Debug for IdtStruct {
             .field("table", &self.table)
             .finish()
     }
+}
+
+/// Initializes the global IDT and loads it into the current CPU.
+pub fn init_idt() {
+    IDT.call_once(IdtStruct::new);
+    unsafe { IDT.load() };
 }

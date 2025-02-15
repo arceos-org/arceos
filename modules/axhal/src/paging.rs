@@ -1,6 +1,7 @@
 //! Page table manipulation.
 
 use axalloc::global_allocator;
+use lazyinit::LazyInit;
 use page_table_multiarch::PagingHandler;
 
 use crate::mem::{MemRegionFlags, PAGE_SIZE_4K, PhysAddr, VirtAddr, phys_to_virt, virt_to_phys};
@@ -63,4 +64,24 @@ cfg_if::cfg_if! {
         /// The architecture-specific page table.
         pub type PageTable = page_table_multiarch::aarch64::A64PageTable<PagingHandlerImpl>;
     }
+}
+
+static KERNEL_PAGE_TABLE_ROOT: LazyInit<PhysAddr> = LazyInit::new();
+
+/// Saves the root physical address of the kernel page table, which may be used
+/// on context switch.
+pub fn set_kernel_page_table_root(root_paddr: PhysAddr) {
+    KERNEL_PAGE_TABLE_ROOT.call_once(|| root_paddr);
+    unsafe { crate::arch::write_page_table_root(root_paddr) };
+}
+
+/// Get the root physical address of the kernel page table.
+///
+/// # Panics
+///
+/// It must be called after [`set_kernel_page_table_root`], otherwise it will panic.
+pub fn kernel_page_table_root() -> PhysAddr {
+    *KERNEL_PAGE_TABLE_ROOT
+        .get()
+        .expect("kernel page table not initialized")
 }

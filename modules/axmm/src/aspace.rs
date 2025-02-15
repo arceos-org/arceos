@@ -1,19 +1,20 @@
 use core::fmt;
 
 use axerrno::{AxError, AxResult, ax_err};
-use axhal::{
-    mem::phys_to_virt,
-    paging::{MappingFlags, PageTable},
-};
+use axhal::mem::phys_to_virt;
+use axhal::paging::{MappingFlags, PageTable};
 use memory_addr::{
-    MemoryAddr, PAGE_SIZE_4K, PageIter4K, PhysAddr, VirtAddr, VirtAddrRange, is_aligned_4k, pa,
+    MemoryAddr, PAGE_SIZE_4K, PageIter4K, PhysAddr, VirtAddr, VirtAddrRange, is_aligned_4k,
 };
+use memory_set::{MemoryArea, MemorySet};
 
-use crate::paging_err_to_ax_err;
+use crate::backend::Backend;
+use crate::mapping_err_to_ax_err;
 
 /// The virtual memory address space.
 pub struct AddrSpace {
     va_range: VirtAddrRange,
+    areas: MemorySet<Backend>,
     pt: PageTable,
 }
 
@@ -53,14 +54,43 @@ impl AddrSpace {
     pub(crate) fn new_empty(base: VirtAddr, size: usize) -> AxResult<Self> {
         Ok(Self {
             va_range: VirtAddrRange::from_start_size(base, size),
+            areas: MemorySet::new(),
             pt: PageTable::try_new().map_err(|_| AxError::NoMemory)?,
         })
     }
 
+    /// Copies page table mappings from another address space.
+    ///
+    /// It copies the page table entries only rather than the memory regions,
+    /// usually used to copy a portion of the kernel space mapping to the
+    /// user space.
+    ///
+    /// Returns an error if the two address spaces overlap.
+    pub fn copy_mappings_from(&mut self, other: &AddrSpace) -> AxResult {
+        if self.va_range.overlaps(other.va_range) {
+            return ax_err!(InvalidInput, "address space overlap");
+        }
+        self.pt.copy_from(&other.pt, other.base(), other.size());
+        Ok(())
+    }
+
+    /// Finds a free area that can accommodate the given size.
+    ///
+    /// The search starts from the given hint address, and the area should be within the given limit range.
+    ///
+    /// Returns the start address of the free area. Returns None if no such area is found.
+    pub fn find_free_area(
+        &self,
+        hint: VirtAddr,
+        size: usize,
+        limit: VirtAddrRange,
+    ) -> Option<VirtAddr> {
+        self.areas.find_free_area(hint, size, limit)
+    }
+
     /// Add a new linear mapping.
     ///
-    /// The mapping is linear, i.e., `start_vaddr` is mapped to `start_paddr`,
-    /// and `start_vaddr + size` is mapped to `start_paddr + size`.
+    /// See [`Backend`] for more details about the mapping backends.
     ///
     /// The `flags` parameter indicates the mapping permissions and attributes.
     ///
@@ -81,17 +111,39 @@ impl AddrSpace {
         }
 
         let offset = start_vaddr.as_usize() - start_paddr.as_usize();
-        self.pt
-            .map_region(
-                start_vaddr,
-                |va| pa!(va.as_usize() - offset),
-                size,
-                flags,
-                false, // allow_huge
-                false, // flush_tlb_by_page
-            )
-            .map_err(paging_err_to_ax_err)?
-            .flush_all();
+        let area = MemoryArea::new(start_vaddr, size, flags, Backend::new_linear(offset));
+        self.areas
+            .map(area, &mut self.pt, false)
+            .map_err(mapping_err_to_ax_err)?;
+        Ok(())
+    }
+
+    /// Add a new allocation mapping.
+    ///
+    /// See [`Backend`] for more details about the mapping backends.
+    ///
+    /// The `flags` parameter indicates the mapping permissions and attributes.
+    ///
+    /// Returns an error if the address range is out of the address space or not
+    /// aligned.
+    pub fn map_alloc(
+        &mut self,
+        start: VirtAddr,
+        size: usize,
+        flags: MappingFlags,
+        populate: bool,
+    ) -> AxResult {
+        if !self.contains_range(start, size) {
+            return ax_err!(InvalidInput, "address out of range");
+        }
+        if !start.is_aligned_4k() || !is_aligned_4k(size) {
+            return ax_err!(InvalidInput, "address not aligned");
+        }
+
+        let area = MemoryArea::new(start, size, flags, Backend::new_alloc(populate));
+        self.areas
+            .map(area, &mut self.pt, false)
+            .map_err(mapping_err_to_ax_err)?;
         Ok(())
     }
 
@@ -107,10 +159,9 @@ impl AddrSpace {
             return ax_err!(InvalidInput, "address not aligned");
         }
 
-        self.pt
-            .unmap_region(start, size, true)
-            .map_err(paging_err_to_ax_err)?
-            .ignore();
+        self.areas
+            .unmap(start, size, &mut self.pt)
+            .map_err(mapping_err_to_ax_err)?;
         Ok(())
     }
 
@@ -184,11 +235,38 @@ impl AddrSpace {
             return ax_err!(InvalidInput, "address not aligned");
         }
 
+        // TODO
         self.pt
             .protect_region(start, size, flags, true)
-            .map_err(paging_err_to_ax_err)?
+            .map_err(|_| AxError::BadState)?
             .ignore();
         Ok(())
+    }
+
+    /// Removes all mappings in the address space.
+    pub fn clear(&mut self) {
+        self.areas.clear(&mut self.pt).unwrap();
+    }
+
+    /// Handles a page fault at the given address.
+    ///
+    /// `access_flags` indicates the access type that caused the page fault.
+    ///
+    /// Returns `true` if the page fault is handled successfully (not a real
+    /// fault).
+    pub fn handle_page_fault(&mut self, vaddr: VirtAddr, access_flags: MappingFlags) -> bool {
+        if !self.va_range.contains(vaddr) {
+            return false;
+        }
+        if let Some(area) = self.areas.find(vaddr) {
+            let orig_flags = area.flags();
+            if orig_flags.contains(access_flags) {
+                return area
+                    .backend()
+                    .handle_page_fault(vaddr, orig_flags, &mut self.pt);
+            }
+        }
+        false
     }
 }
 
@@ -197,6 +275,13 @@ impl fmt::Debug for AddrSpace {
         f.debug_struct("AddrSpace")
             .field("va_range", &self.va_range)
             .field("page_table_root", &self.pt.root_paddr())
+            .field("areas", &self.areas)
             .finish()
+    }
+}
+
+impl Drop for AddrSpace {
+    fn drop(&mut self) {
+        self.clear();
     }
 }
