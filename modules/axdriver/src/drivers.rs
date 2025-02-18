@@ -132,35 +132,36 @@ cfg_if::cfg_if! {
 cfg_if::cfg_if! {
     if #[cfg(net_dev = "fxmac")]{
         use axalloc::global_allocator;
-        use axhal::mem::{phys_to_virt, virt_to_phys};
-        const PAGE_SIZE: usize = 4096;
 
-        #[unsafe(no_mangle)]
-        pub fn virt_to_phys_fxmac(addr: usize) -> usize {
-            virt_to_phys(addr.into()).into()
-        }
+        #[crate_interface::impl_interface]
+        impl axdriver_net::fxmac::KernelFunc for FXmacDriver{
+            fn virt_to_phys(addr: usize) -> usize {
+                axhal::mem::virt_to_phys(addr.into()).into()
+            }
 
-        #[unsafe(no_mangle)]
-        pub fn phys_to_virt_fxmac(addr: usize) -> usize {
-            phys_to_virt(addr.into()).into()
-        }
+            fn phys_to_virt(addr: usize) -> usize {
+                axhal::mem::phys_to_virt(addr.into()).into()
+            }
 
-        #[unsafe(no_mangle)]
-        pub fn dma_alloc_coherent_fxmac(pages: usize) -> (usize, usize) {
-            let vaddr = if let Ok(start_vaddr) = global_allocator().alloc_pages(pages, PAGE_SIZE) {
-                start_vaddr
-            } else {
-                error!("failed to alloc pages");
-                return (0, 0);
-            };
-            let paddr = virt_to_phys((vaddr).into());
-            debug!("alloc pages @ vaddr={:#x}, paddr={:#x}", vaddr, paddr);
-            (vaddr, paddr.as_usize())
-        }
+            fn dma_alloc_coherent(pages: usize) -> (usize, usize) {
+                let vaddr = if let Ok(start_vaddr) = global_allocator().alloc_pages(pages, 4096) {
+                    start_vaddr
+                } else {
+                    error!("failed to alloc pages");
+                    return (0, 0);
+                };
+                let paddr = axhal::mem::virt_to_phys((vaddr).into());
+                debug!("alloc pages @ vaddr={:#x}, paddr={:#x}", vaddr, paddr);
+                (vaddr, paddr.as_usize())
+            }
 
-        #[unsafe(no_mangle)]
-        fn dma_free_coherent_fxmac(vaddr: usize, pages: usize) {
-            global_allocator().dealloc_pages(vaddr, pages);
+            fn dma_free_coherent(vaddr: usize, pages: usize) {
+                global_allocator().dealloc_pages(vaddr, pages);
+            }
+
+            fn dma_request_irq(_irq: usize, _handler: fn()) {
+                warn!("unimplemented dma_request_irq for fxmax");
+            }
         }
 
         register_net_driver!(FXmacDriver, axdriver_net::fxmac::FXmacNic);

@@ -67,3 +67,7 @@ axdma = { path = "modules/axdma" }
 
 [profile.release]
 lto = true
+
+[patch."https://github.com/arceos-org/axdriver_crates.git"]
+axdriver_base = { git = "https://github.com/elliott10/axdriver_crates", rev = "52266c70" }
+axdriver_net = { git = "https://github.com/elliott10/axdriver_crates", rev = "52266c70" }
