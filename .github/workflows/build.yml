@@ -121,6 +121,8 @@ jobs:
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLATFORM=aarch64-bsta1000b A=examples/helloworld SMP=8
 
+    - name: Install u-boot-tools for aarch64-phytium-pi
+      run: sudo apt update; sudo apt install -y u-boot-tools
     - run: make PLATFORM=aarch64-phytium-pi defconfig
     - name: Build helloworld for aarch64-phytium-pi
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
