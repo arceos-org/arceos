@@ -21,6 +21,9 @@ else ifeq ($(ARCH), aarch64)
   else
     machine := virt
   endif
+else ifeq ($(ARCH), loongarch64)
+  machine := virt
+  override MEM := 1G
 endif
 
 qemu_args-x86_64 := \
@@ -36,6 +39,9 @@ qemu_args-aarch64 := \
   -cpu cortex-a72 \
   -machine $(machine) \
   -kernel $(OUT_BIN)
+
+qemu_args-loongarch64 := \
+  -kernel $(OUT_ELF)
 
 qemu_args-y := -m $(MEM) -smp $(SMP) $(qemu_args-$(ARCH))
 
