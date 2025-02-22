@@ -3,7 +3,7 @@ name: Build & Deploy docs
 on: [push, pull_request]
 
 env:
-  rust-toolchain: nightly-2024-12-25
+  rust-toolchain: nightly-2025-01-18
 
 jobs:
   doc:

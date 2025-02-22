@@ -46,7 +46,7 @@ impl VfsOps for Ext4FileSystem {
     // mount()
 
     fn root_dir(&self) -> VfsNodeRef {
-        debug!("Get root_dir");
+        trace!("Get root_dir");
         //let root_dir = unsafe { (*self.root.get()).as_ref().unwrap() };
         Arc::clone(&self.root)
     }
@@ -250,7 +250,7 @@ impl VfsNodeOps for FileWrapper {
     /// Lookup the node with given `path` in the directory.
     /// Return the node if found.
     fn lookup(self: Arc<Self>, path: &str) -> VfsResult<VfsNodeRef> {
-        debug!("lookup ext4fs: {:?}, {}", self.0.lock().get_path(), path);
+        trace!("lookup ext4fs: {:?}, {}", self.0.lock().get_path(), path);
 
         let fpath = self.path_deal_with(path);
         let fpath = fpath.as_str();
@@ -261,10 +261,10 @@ impl VfsNodeOps for FileWrapper {
         /////////
         let mut file = self.0.lock();
         if file.check_inode_exist(fpath, InodeTypes::EXT4_DE_DIR) {
-            debug!("lookup new DIR FileWrapper");
+            trace!("lookup new DIR FileWrapper");
             Ok(Arc::new(Self::new(fpath, InodeTypes::EXT4_DE_DIR)))
         } else if file.check_inode_exist(fpath, InodeTypes::EXT4_DE_REG_FILE) {
-            debug!("lookup new FILE FileWrapper");
+            trace!("lookup new FILE FileWrapper");
             Ok(Arc::new(Self::new(fpath, InodeTypes::EXT4_DE_REG_FILE)))
         } else {
             Err(VfsError::NotFound)
@@ -329,7 +329,7 @@ impl VfsNodeOps for FileWrapper {
 impl Drop for FileWrapper {
     fn drop(&mut self) {
         let mut file = self.0.lock();
-        debug!("Drop struct FileWrapper {:?}", file.get_path());
+        trace!("Drop struct FileWrapper {:?}", file.get_path());
         file.file_close().expect("failed to close fd");
         drop(file); // todo
     }
@@ -340,7 +340,7 @@ impl KernelDevOp for Disk {
     type DevType = Disk;
 
     fn read(dev: &mut Disk, mut buf: &mut [u8]) -> Result<usize, i32> {
-        debug!("READ block device buf={}", buf.len());
+        trace!("READ block device buf={}", buf.len());
         let mut read_len = 0;
         while !buf.is_empty() {
             match dev.read_one(buf) {
@@ -353,11 +353,11 @@ impl KernelDevOp for Disk {
                 Err(_e) => return Err(-1),
             }
         }
-        debug!("READ rt len={}", read_len);
+        trace!("READ rt len={}", read_len);
         Ok(read_len)
     }
     fn write(dev: &mut Self::DevType, mut buf: &[u8]) -> Result<usize, i32> {
-        debug!("WRITE block device buf={}", buf.len());
+        trace!("WRITE block device buf={}", buf.len());
         let mut write_len = 0;
         while !buf.is_empty() {
             match dev.write_one(buf) {
@@ -369,7 +369,7 @@ impl KernelDevOp for Disk {
                 Err(_e) => return Err(-1),
             }
         }
-        debug!("WRITE rt len={}", write_len);
+        trace!("WRITE rt len={}", write_len);
         Ok(write_len)
     }
     fn flush(_dev: &mut Self::DevType) -> Result<usize, i32> {
@@ -377,7 +377,7 @@ impl KernelDevOp for Disk {
     }
     fn seek(dev: &mut Disk, off: i64, whence: i32) -> Result<i64, i32> {
         let size = dev.size();
-        debug!(
+        trace!(
             "SEEK block device size:{}, pos:{}, offset={}, whence={}",
             size,
             &dev.position(),
