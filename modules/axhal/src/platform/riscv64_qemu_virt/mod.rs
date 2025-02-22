@@ -20,6 +20,8 @@ unsafe extern "C" {
 unsafe extern "C" fn rust_entry(cpu_id: usize, dtb: usize) {
     crate::mem::clear_bss();
     crate::cpu::init_primary(cpu_id);
+    #[cfg(feature = "uspace")]
+    riscv::register::sstatus::set_sum();
     self::time::init_early();
     rust_main(cpu_id, dtb);
 }

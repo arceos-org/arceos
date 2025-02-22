@@ -15,15 +15,17 @@ pub struct FatFileSystem {
     root_dir: UnsafeCell<Option<VfsNodeRef>>,
 }
 
-pub struct FileWrapper<'a>(Mutex<File<'a, Disk, NullTimeProvider, LossyOemCpConverter>>);
-pub struct DirWrapper<'a>(Dir<'a, Disk, NullTimeProvider, LossyOemCpConverter>);
+pub struct FileWrapper<'a, IO: IoTrait>(Mutex<File<'a, IO, NullTimeProvider, LossyOemCpConverter>>);
+pub struct DirWrapper<'a, IO: IoTrait>(Dir<'a, IO, NullTimeProvider, LossyOemCpConverter>);
+
+pub trait IoTrait: Read + Write + Seek {}
 
 unsafe impl Sync for FatFileSystem {}
 unsafe impl Send for FatFileSystem {}
-unsafe impl Send for FileWrapper<'_> {}
-unsafe impl Sync for FileWrapper<'_> {}
-unsafe impl Send for DirWrapper<'_> {}
-unsafe impl Sync for DirWrapper<'_> {}
+unsafe impl<'a, IO: IoTrait> Send for FileWrapper<'a, IO> {}
+unsafe impl<'a, IO: IoTrait> Sync for FileWrapper<'a, IO> {}
+unsafe impl<'a, IO: IoTrait> Send for DirWrapper<'a, IO> {}
+unsafe impl<'a, IO: IoTrait> Sync for DirWrapper<'a, IO> {}
 
 impl FatFileSystem {
     #[cfg(feature = "use-ramdisk")]
@@ -53,21 +55,25 @@ impl FatFileSystem {
         unsafe { *self.root_dir.get() = Some(Self::new_dir(self.inner.root_dir())) }
     }
 
-    fn new_file(file: File<'_, Disk, NullTimeProvider, LossyOemCpConverter>) -> Arc<FileWrapper> {
+    fn new_file<IO: IoTrait>(
+        file: File<'_, IO, NullTimeProvider, LossyOemCpConverter>,
+    ) -> Arc<FileWrapper<IO>> {
         Arc::new(FileWrapper(Mutex::new(file)))
     }
 
-    fn new_dir(dir: Dir<'_, Disk, NullTimeProvider, LossyOemCpConverter>) -> Arc<DirWrapper> {
+    fn new_dir<IO: IoTrait>(
+        dir: Dir<'_, IO, NullTimeProvider, LossyOemCpConverter>,
+    ) -> Arc<DirWrapper<IO>> {
         Arc::new(DirWrapper(dir))
     }
 }
 
-impl VfsNodeOps for FileWrapper<'static> {
+impl<IO: IoTrait> VfsNodeOps for FileWrapper<'static, IO> {
     axfs_vfs::impl_vfs_non_dir_default! {}
 
     fn get_attr(&self) -> VfsResult<VfsNodeAttr> {
         let size = self.0.lock().seek(SeekFrom::End(0)).map_err(as_vfs_err)?;
-        let blocks = size.div_ceil(BLOCK_SIZE as u64);
+        let blocks = (size + BLOCK_SIZE as u64 - 1) / BLOCK_SIZE as u64;
         // FAT fs doesn't support permissions, we just set everything to 755
         let perm = VfsNodePerm::from_bits_truncate(0o755);
         Ok(VfsNodeAttr::new(perm, VfsNodeType::File, size, blocks))
@@ -92,7 +98,7 @@ impl VfsNodeOps for FileWrapper<'static> {
     }
 }
 
-impl VfsNodeOps for DirWrapper<'static> {
+impl<IO: IoTrait> VfsNodeOps for DirWrapper<'static, IO> {
     axfs_vfs::impl_vfs_dir_default! {}
 
     fn get_attr(&self) -> VfsResult<VfsNodeAttr> {
@@ -209,6 +215,8 @@ impl fatfs::IoBase for Disk {
     type Error = ();
 }
 
+impl IoTrait for Disk {}
+
 impl Read for Disk {
     fn read(&mut self, mut buf: &mut [u8]) -> Result<usize, Self::Error> {
         let mut read_len = 0;
@@ -264,7 +272,7 @@ impl Seek for Disk {
     }
 }
 
-const fn as_vfs_err(err: fatfs::Error<()>) -> VfsError {
+fn as_vfs_err<E>(err: fatfs::Error<E>) -> VfsError {
     use fatfs::Error::*;
     match err {
         AlreadyExists => VfsError::AlreadyExists,
@@ -279,5 +287,85 @@ const fn as_vfs_err(err: fatfs::Error<()>) -> VfsError {
         WriteZero => VfsError::WriteZero,
         Io(_) => VfsError::Io,
         _ => VfsError::Io,
+    }
+}
+
+impl Clone for FileWrapper<'static, Disk> {
+    fn clone(&self) -> Self {
+        let file = self.0.lock();
+        let cloned_file = file.clone();
+        Self(Mutex::new(cloned_file))
+    }
+}
+
+pub struct FatFileSystemFromFile {
+    inner: fatfs::FileSystem<FileWrapper<'static, Disk>, NullTimeProvider, LossyOemCpConverter>,
+    root_dir: UnsafeCell<Option<VfsNodeRef>>,
+}
+
+unsafe impl Sync for FatFileSystemFromFile {}
+unsafe impl Send for FatFileSystemFromFile {}
+
+#[allow(unused)]
+impl FatFileSystemFromFile {
+    pub fn new(file: FileWrapper<'static, Disk>) -> Self {
+        let inner = fatfs::FileSystem::new(file, fatfs::FsOptions::new())
+            .expect("failed to initialize FAT filesystem");
+        Self {
+            inner,
+            root_dir: UnsafeCell::new(None),
+        }
+    }
+
+    pub fn init(&'static self) {
+        // must be called before later operations
+        unsafe { *self.root_dir.get() = Some(FatFileSystem::new_dir(self.inner.root_dir())) }
+    }
+}
+
+impl VfsOps for FatFileSystemFromFile {
+    fn root_dir(&self) -> VfsNodeRef {
+        let root_dir = unsafe { (*self.root_dir.get()).as_ref().unwrap() };
+        root_dir.clone()
+    }
+}
+
+impl<'a> fatfs::IoBase for FileWrapper<'a, Disk> {
+    type Error = ();
+}
+
+impl<'a> IoTrait for FileWrapper<'a, Disk> {}
+
+impl<'a> fatfs::Read for FileWrapper<'a, Disk> {
+    fn read(&mut self, buf: &mut [u8]) -> Result<usize, Self::Error> {
+        let mut file = self.0.lock();
+        file.read(buf)
+            .inspect_err(|e| error!("read error: {e:?}"))
+            .map_err(|_| ())
+    }
+}
+
+impl<'a> fatfs::Write for FileWrapper<'a, Disk> {
+    fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Error> {
+        let mut file = self.0.lock();
+        file.write(buf)
+            .inspect_err(|e| error!("write error: {e:?}"))
+            .map_err(|_| ())
+    }
+
+    fn flush(&mut self) -> Result<(), Self::Error> {
+        let mut file = self.0.lock();
+        file.flush()
+            .inspect_err(|e| error!("flush error: {e:?}"))
+            .map_err(|_| ())
+    }
+}
+
+impl<'a> fatfs::Seek for FileWrapper<'a, Disk> {
+    fn seek(&mut self, pos: fatfs::SeekFrom) -> Result<u64, Self::Error> {
+        let mut file = self.0.lock();
+        file.seek(pos)
+            .inspect_err(|e| error!("seek error: {e:?}"))
+            .map_err(|_| ())
     }
 }

@@ -90,3 +90,17 @@ pub unsafe fn sys_nanosleep(req: *const ctypes::timespec, rem: *mut ctypes::time
         Ok(0)
     })
 }
+
+/// Get current system time and store in specific struct
+pub unsafe fn sys_get_time_of_day(ts: *mut ctypes::timeval) -> c_int {
+    syscall_body!(sys_get_time_of_day, {
+        let current_us = axhal::time::monotonic_time_nanos() as usize / 1000;
+        unsafe {
+            *ts = ctypes::timeval {
+                tv_sec: (current_us / 1_000_000) as i64,
+                tv_usec: (current_us % 1_000_000) as i64,
+            }
+        }
+        Ok(0)
+    })
+}

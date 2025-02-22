@@ -22,6 +22,18 @@ jobs:
     - uses: Swatinem/rust-cache@v2
     - name: Check rust version
       run: rustc --version --verbose
+    - uses: ./.github/workflows/actions/setup-musl
+      with:
+        arch: x86_64
+    - uses: ./.github/workflows/actions/setup-musl
+      with:
+        arch: riscv64
+    - uses: ./.github/workflows/actions/setup-musl
+      with:
+        arch: aarch64
+    - uses: ./.github/workflows/actions/setup-musl
+      with:
+        arch: loongarch64
     - name: Check code format
       if: ${{ matrix.arch == 'x86_64' }}
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
