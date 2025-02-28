@@ -142,6 +142,8 @@ ifeq ($(PLAT_NAME), aarch64-raspi4)
   include scripts/make/raspi4.mk
 else ifeq ($(PLAT_NAME), aarch64-bsta1000b)
   include scripts/make/bsta1000b-fada.mk
+else ifeq ($(PLAT_NAME), aarch64-phytium-pi)
+  include scripts/make/phytium-pi.mk
 endif
 
 defconfig: _axconfig-gen

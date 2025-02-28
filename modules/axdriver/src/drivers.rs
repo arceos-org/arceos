@@ -132,9 +132,10 @@ cfg_if::cfg_if! {
 cfg_if::cfg_if! {
     if #[cfg(net_dev = "fxmac")]{
         use axalloc::global_allocator;
+        use axhal::mem::PAGE_SIZE_4K;
 
         #[crate_interface::impl_interface]
-        impl axdriver_net::fxmac::KernelFunc for FXmacDriver{
+        impl axdriver_net::fxmac::KernelFunc for FXmacDriver {
             fn virt_to_phys(addr: usize) -> usize {
                 axhal::mem::virt_to_phys(addr.into()).into()
             }
@@ -144,9 +145,7 @@ cfg_if::cfg_if! {
             }
 
             fn dma_alloc_coherent(pages: usize) -> (usize, usize) {
-                let vaddr = if let Ok(start_vaddr) = global_allocator().alloc_pages(pages, 4096) {
-                    start_vaddr
-                } else {
+                let Ok(vaddr) = global_allocator().alloc_pages(pages, PAGE_SIZE_4K) else {
                     error!("failed to alloc pages");
                     return (0, 0);
                 };
