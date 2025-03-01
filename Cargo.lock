@@ -314,13 +314,13 @@ dependencies = [
 
 [[package]]
 name = "axdriver_base"
-version = "0.1.0"
-source = "git+https://github.com/elliott10/axdriver_crates?rev=52266c70#52266c7032ea9c49c806ab1f5bf06ab98e94efd6"
+version = "0.1.1"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?rev=2596b571#2596b5717226b48da453dc9ac383bd7e6625ab7d"
 
 [[package]]
 name = "axdriver_block"
-version = "0.1.0"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.0#78686a7e70c9203ba29e425929c393fbb7eca208"
+version = "0.1.1"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?rev=2596b571#2596b5717226b48da453dc9ac383bd7e6625ab7d"
 dependencies = [
  "axdriver_base",
  "bcm2835-sdhci",
@@ -329,16 +329,16 @@ dependencies = [
 
 [[package]]
 name = "axdriver_display"
-version = "0.1.0"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.0#78686a7e70c9203ba29e425929c393fbb7eca208"
+version = "0.1.1"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?rev=2596b571#2596b5717226b48da453dc9ac383bd7e6625ab7d"
 dependencies = [
  "axdriver_base",
 ]
 
 [[package]]
 name = "axdriver_net"
-version = "0.1.0"
-source = "git+https://github.com/elliott10/axdriver_crates?rev=52266c70#52266c7032ea9c49c806ab1f5bf06ab98e94efd6"
+version = "0.1.1"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?rev=2596b571#2596b5717226b48da453dc9ac383bd7e6625ab7d"
 dependencies = [
  "axdriver_base",
  "fxmac_rs",
@@ -349,16 +349,16 @@ dependencies = [
 
 [[package]]
 name = "axdriver_pci"
-version = "0.1.0"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.0#78686a7e70c9203ba29e425929c393fbb7eca208"
+version = "0.1.1"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?rev=2596b571#2596b5717226b48da453dc9ac383bd7e6625ab7d"
 dependencies = [
  "virtio-drivers",
 ]
 
 [[package]]
 name = "axdriver_virtio"
-version = "0.1.0"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.0#78686a7e70c9203ba29e425929c393fbb7eca208"
+version = "0.1.1"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?rev=2596b571#2596b5717226b48da453dc9ac383bd7e6625ab7d"
 dependencies = [
  "axdriver_base",
  "axdriver_block",
@@ -977,7 +977,7 @@ dependencies = [
 [[package]]
 name = "fxmac_rs"
 version = "0.2.0"
-source = "git+https://github.com/elliott10/fxmac_rs.git?rev=638b02fa#638b02faea0d1178fdd967f9e356f2e7f496c3f2"
+source = "git+https://github.com/elliott10/fxmac_rs.git?rev=0dbc3916#0dbc3916d5d5a0086916deda0c4c2dd8651c69ce"
 dependencies = [
  "aarch64-cpu 10.0.0",
  "crate_interface",

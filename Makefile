@@ -9,6 +9,7 @@
 #     - `TARGET_DIR`: Artifact output directory (cargo target directory)
 #     - `EXTRA_CONFIG`: Extra config specification file
 #     - `OUT_CONFIG`: Final config file that takes effect
+#     - `UIMAGE`: To generate U-Boot image
 # * App options:
 #     - `A` or `APP`: Path to the application
 #     - `FEATURES`: Features os ArceOS modules to be enabled.
@@ -40,6 +41,7 @@ V ?=
 TARGET_DIR ?= $(PWD)/target
 EXTRA_CONFIG ?=
 OUT_CONFIG ?= $(PWD)/.axconfig.toml
+UIMAGE ?= n
 
 # App options
 A ?= examples/helloworld
@@ -130,7 +132,13 @@ OUT_DIR ?= $(APP)
 APP_NAME := $(shell basename $(APP))
 LD_SCRIPT := $(TARGET_DIR)/$(TARGET)/$(MODE)/linker_$(PLAT_NAME).lds
 OUT_ELF := $(OUT_DIR)/$(APP_NAME)_$(PLAT_NAME).elf
-OUT_BIN := $(OUT_DIR)/$(APP_NAME)_$(PLAT_NAME).bin
+OUT_BIN := $(patsubst %.elf,%.bin,$(OUT_ELF))
+OUT_UIMG := $(patsubst %.elf,%.uimg,$(OUT_ELF))
+ifeq ($(UIMAGE), y)
+  FINAL_IMG := $(OUT_UIMG)
+else
+  FINAL_IMG := $(OUT_BIN)
+endif
 
 all: build
 
@@ -142,8 +150,6 @@ ifeq ($(PLAT_NAME), aarch64-raspi4)
   include scripts/make/raspi4.mk
 else ifeq ($(PLAT_NAME), aarch64-bsta1000b)
   include scripts/make/bsta1000b-fada.mk
-else ifeq ($(PLAT_NAME), aarch64-phytium-pi)
-  include scripts/make/phytium-pi.mk
 endif
 
 defconfig: _axconfig-gen
@@ -152,7 +158,7 @@ defconfig: _axconfig-gen
 oldconfig: _axconfig-gen
 	$(call oldconfig)
 
-build: $(OUT_DIR) $(OUT_BIN)
+build: $(OUT_DIR) $(FINAL_IMG)
 
 disasm:
 	$(OBJDUMP) $(OUT_ELF) | less

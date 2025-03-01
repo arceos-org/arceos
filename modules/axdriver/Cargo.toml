@@ -36,12 +36,12 @@ default = ["bus-pci"]
 log = "=0.4.21"
 cfg-if = "1.0"
 crate_interface = "0.1.4"
-axdriver_base = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.0" }
-axdriver_block = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.0", optional = true }
-axdriver_net = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.0", optional = true }
-axdriver_display = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.0", optional = true }
-axdriver_pci = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.0", optional = true }
-axdriver_virtio = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.0", optional = true }
+axdriver_base = { git = "https://github.com/arceos-org/axdriver_crates.git", rev = "2596b571" }
+axdriver_block = { git = "https://github.com/arceos-org/axdriver_crates.git", rev = "2596b571", optional = true }
+axdriver_net = { git = "https://github.com/arceos-org/axdriver_crates.git", rev = "2596b571", optional = true }
+axdriver_display = { git = "https://github.com/arceos-org/axdriver_crates.git", rev = "2596b571", optional = true }
+axdriver_pci = { git = "https://github.com/arceos-org/axdriver_crates.git", rev = "2596b571", optional = true }
+axdriver_virtio = { git = "https://github.com/arceos-org/axdriver_crates.git", rev = "2596b571", optional = true }
 axalloc = { workspace = true, optional = true }
 axhal = { workspace = true, optional = true }
 axconfig = { workspace = true, optional = true }
