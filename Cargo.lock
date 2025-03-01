@@ -588,6 +588,7 @@ dependencies = [
  "axerrno",
  "axfeat",
  "axio",
+ "axsync",
  "kspin",
 ]
 
@@ -595,8 +596,10 @@ dependencies = [
 name = "axsync"
 version = "0.1.0"
 dependencies = [
+ "axhal",
  "axsync",
  "axtask",
+ "cfg-if",
  "kspin",
  "rand",
 ]
