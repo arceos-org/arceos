@@ -52,4 +52,18 @@ $(OUT_DIR):
 $(OUT_BIN): _cargo_build $(OUT_ELF)
 	$(call run_cmd,$(OBJCOPY),$(OUT_ELF) --strip-all -O binary $@)
 
+ifeq ($(ARCH), aarch64)
+  uimg_arch := arm64
+else ifeq ($(ARCH), riscv64)
+  uimg_arch := riscv
+else
+  uimg_arch := $(ARCH)
+endif
+
+$(OUT_UIMG): $(OUT_BIN)
+	$(call run_cmd,mkimage,\
+		-A $(uimg_arch) -O linux -T kernel -C none \
+		-a $(subst _,,$(shell axconfig-gen "$(OUT_CONFIG)" -r plat.kernel-base-paddr)) \
+		-d $(OUT_BIN) $@)
+
 .PHONY: _cargo_build

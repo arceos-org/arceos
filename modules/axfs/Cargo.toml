@@ -33,7 +33,7 @@ axfs_ramfs = { version = "0.1", optional = true }
 crate_interface = { version = "0.1", optional = true }
 axsync = { workspace = true }
 axdriver = { workspace = true, features = ["block"] }
-axdriver_block = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.0" }
+axdriver_block = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2" }
 axns = { workspace = true }
 
 [dependencies.fatfs]
@@ -50,6 +50,6 @@ features = [ # no std
 
 [dev-dependencies]
 axdriver = { workspace = true, features = ["block", "ramdisk"] }
-axdriver_block = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.0", features = ["ramdisk"] }
+axdriver_block = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2", features = ["ramdisk"] }
 axsync = { workspace = true, features = ["multitask"] }
 axtask = { workspace = true, features = ["test"] }

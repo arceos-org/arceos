@@ -308,18 +308,19 @@ dependencies = [
  "axdriver_virtio",
  "axhal",
  "cfg-if",
+ "crate_interface",
  "log",
 ]
 
 [[package]]
 name = "axdriver_base"
-version = "0.1.0"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.0#78686a7e70c9203ba29e425929c393fbb7eca208"
+version = "0.1.2"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2#84eb2170f865e6fa29b78995a86f4fcdcede63df"
 
 [[package]]
 name = "axdriver_block"
-version = "0.1.0"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.0#78686a7e70c9203ba29e425929c393fbb7eca208"
+version = "0.1.2"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2#84eb2170f865e6fa29b78995a86f4fcdcede63df"
 dependencies = [
  "axdriver_base",
  "bcm2835-sdhci",
@@ -328,18 +329,19 @@ dependencies = [
 
 [[package]]
 name = "axdriver_display"
-version = "0.1.0"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.0#78686a7e70c9203ba29e425929c393fbb7eca208"
+version = "0.1.2"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2#84eb2170f865e6fa29b78995a86f4fcdcede63df"
 dependencies = [
  "axdriver_base",
 ]
 
 [[package]]
 name = "axdriver_net"
-version = "0.1.0"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.0#78686a7e70c9203ba29e425929c393fbb7eca208"
+version = "0.1.2"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2#84eb2170f865e6fa29b78995a86f4fcdcede63df"
 dependencies = [
  "axdriver_base",
+ "fxmac_rs",
  "ixgbe-driver",
  "log",
  "spin",
@@ -347,16 +349,16 @@ dependencies = [
 
 [[package]]
 name = "axdriver_pci"
-version = "0.1.0"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.0#78686a7e70c9203ba29e425929c393fbb7eca208"
+version = "0.1.2"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2#84eb2170f865e6fa29b78995a86f4fcdcede63df"
 dependencies = [
  "virtio-drivers",
 ]
 
 [[package]]
 name = "axdriver_virtio"
-version = "0.1.0"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.0#78686a7e70c9203ba29e425929c393fbb7eca208"
+version = "0.1.2"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2#84eb2170f865e6fa29b78995a86f4fcdcede63df"
 dependencies = [
  "axdriver_base",
  "axdriver_block",
@@ -471,7 +473,7 @@ dependencies = [
  "page_table_entry",
  "page_table_multiarch",
  "percpu",
- "raw-cpuid 11.3.0",
+ "raw-cpuid 11.4.0",
  "riscv",
  "riscv_goldfish",
  "sbi-rt",
@@ -728,9 +730,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.2.12"
+version = "1.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "755717a7de9ec452bf7f3f1a3099085deabd7f2962b861dae91ecd7a365903d2"
+checksum = "be714c154be609ec7f5dad223a33bf1482fff90472de28f7362806e6d4832b8c"
 dependencies = [
  "shlex",
 ]
@@ -752,16 +754,16 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "chrono"
-version = "0.4.39"
+version = "0.4.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e36cc9d416881d2e24f9a963be5fb1cd90966419ac844274161d10488b3e825"
+checksum = "1a7964611d71df112cb1730f2ee67324fcf4d0fc6606acbbe9bfe06df124637c"
 dependencies = [
  "android-tzdata",
  "iana-time-zone",
  "js-sys",
  "num-traits",
  "wasm-bindgen",
- "windows-targets",
+ "windows-link",
 ]
 
 [[package]]
@@ -777,9 +779,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.5.28"
+version = "4.5.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e77c3243bd94243c03672cb5154667347c457ca271254724f9f393aee1c05ff"
+checksum = "027bb0d98429ae334a8698531da7077bdf906419543a35a55c2cb1b66437d767"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -787,9 +789,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.5.27"
+version = "4.5.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b26884eb4b57140e4d2d93652abfa49498b938b3c9179f9fc487b0acc3edad7"
+checksum = "5589e0cba072e0f3d23791efac0fd8627b49c829c196a492e88168e6a669d863"
 dependencies = [
  "anstream",
  "anstyle",
@@ -928,9 +930,9 @@ dependencies = [
 
 [[package]]
 name = "either"
-version = "1.13.0"
+version = "1.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60b1af1c220855b6ceac025d3f6ecdd2b7c4894bfe9cd9bda4fbb4bc7c0d4cf0"
+checksum = "b7914353092ddf589ad78f25c5c1c21b7f80b0ff8621e7c814c3485b5306da9d"
 
 [[package]]
 name = "embedded-hal"
@@ -940,9 +942,9 @@ checksum = "361a90feb7004eca4019fb28352a9465666b24f840f5c3cddf0ff13920590b89"
 
 [[package]]
 name = "equivalent"
-version = "1.0.1"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
+checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
 name = "errno"
@@ -970,6 +972,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f593e2a150ea7985fb62614fac12bb1dec8d91ea3a92bc2cbd07746b289645a3"
 dependencies = [
  "bitmaps",
+]
+
+[[package]]
+name = "fxmac_rs"
+version = "0.2.0"
+source = "git+https://github.com/elliott10/fxmac_rs.git?rev=0dbc3916#0dbc3916d5d5a0086916deda0c4c2dd8651c69ce"
+dependencies = [
+ "aarch64-cpu 10.0.0",
+ "crate_interface",
+ "log",
 ]
 
 [[package]]
@@ -1157,9 +1169,9 @@ checksum = "3861aac8febbb038673bf945ee47ac67940ca741b94d1bb3ff6066af2a181338"
 
 [[package]]
 name = "libc"
-version = "0.2.169"
+version = "0.2.170"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5aba8db14291edd000dfcc4d620c7ebfb122c613afb886ca8803fa4e128a20a"
+checksum = "875b3680cb2f8f71bdcf9a30f38d48282f5d3c95cbf9b3fa57269bb5d5c06828"
 
 [[package]]
 name = "libloading"
@@ -1272,15 +1284,15 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.20.2"
+version = "1.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1261fe7e33c73b354eab43b1273a57c8f967d0391e80353e51f764ac02cf6775"
+checksum = "945462a4b81e43c4e3ba96bd7b49d834c6f61198356aa858733bc4acf3cbe62e"
 
 [[package]]
 name = "page_table_entry"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "937b855b31ff3fa1274a5a4dfc1e57f124d26321adfa80ba03cdcc65921e8718"
+checksum = "0b7039b1db5420d516c32402278da050658e51654edc7c714cec38f3c7419f92"
 dependencies = [
  "aarch64-cpu 10.0.0",
  "bitflags 2.8.0",
@@ -1290,9 +1302,9 @@ dependencies = [
 
 [[package]]
 name = "page_table_multiarch"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12a26475e53be3cb87fcf9decd20e871bb78d7c4ba12fb03de79683d21ff3dad"
+checksum = "8f98a4ffa67766fc6b1419b0a6651edc07b86536e28819dba76abf302b617bfd"
 dependencies = [
  "log",
  "memory_addr",
@@ -1431,9 +1443,9 @@ dependencies = [
 
 [[package]]
 name = "raw-cpuid"
-version = "11.3.0"
+version = "11.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6928fa44c097620b706542d428957635951bade7143269085389d42c8a4927e"
+checksum = "529468c1335c1c03919960dfefdb1b3648858c20d7ec2d0663e728e4a717efbc"
 dependencies = [
  "bitflags 2.8.0",
 ]
@@ -1720,9 +1732,9 @@ checksum = "0dd7358ecb8fc2f8d014bf86f6f638ce72ba252a2c3a2572f2a795f1d23efb41"
 
 [[package]]
 name = "toml_edit"
-version = "0.22.23"
+version = "0.22.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02a8b472d1a3d7c18e2d61a489aee3453fd9031c33e4f55bd533f4a7adca1bee"
+checksum = "17b4795ff5edd201c7cd6dca065ae59972ce77d1b80fa0a84d94950ece7d1474"
 dependencies = [
  "indexmap",
  "toml_datetime",
@@ -1731,9 +1743,9 @@ dependencies = [
 
 [[package]]
 name = "unicode-ident"
-version = "1.0.16"
+version = "1.0.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a210d160f08b701c8721ba1c726c11662f877ea6b7094007e1ca9a1041945034"
+checksum = "00e2473a93778eb0bad35909dff6a10d28e63f792f16ed15e404fca9d5eeedbe"
 
 [[package]]
 name = "unicode-width"
@@ -1862,6 +1874,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "windows-link"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6dccfd733ce2b1753b03b6d3c65edf020262ea35e20ccdf3e288043e6dd620e3"
+
+[[package]]
 name = "windows-sys"
 version = "0.59.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1936,9 +1954,9 @@ checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
 
 [[package]]
 name = "winnow"
-version = "0.7.1"
+version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86e376c75f4f43f44db463cf729e0d3acbf954d13e22c51e26e4c264b4ab545f"
+checksum = "0e7f4ea97f6f78012141bcdb6a216b2609f0979ada50b20ca5b52dde2eac2bb1"
 dependencies = [
  "memchr",
 ]

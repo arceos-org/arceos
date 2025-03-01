@@ -14,4 +14,4 @@ log = "=0.4.21"
 lazyinit = "0.2"
 axdriver = { workspace = true, features = ["display"] }
 axsync = { workspace = true }
-axdriver_display = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.0" }
+axdriver_display = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2" }

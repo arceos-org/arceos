@@ -85,4 +85,4 @@ gicd-paddr = 0x3088_0000        # uint
 psci-method = "smc"             # str
 
 # CPU Hardware ID list
-cpu-id-list = [0x0, 0x100, 0x200, 0x201]
+cpu-id-list = [0x200, 0x201, 0x00, 0x100]
