@@ -9,6 +9,8 @@ typedef unsigned long __jmp_buf[22];
 typedef unsigned long __jmp_buf[26];
 #elif defined(__x86_64__)
 typedef unsigned long __jmp_buf[8];
+#elif defined(__loongarch__)
+typedef unsigned long __jmp_buf[21];
 #endif
 
 typedef struct __jmp_buf_tag {
