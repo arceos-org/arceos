@@ -93,8 +93,10 @@ else ifeq ($(ARCH), aarch64)
   endif
 else ifeq ($(ARCH), riscv64)
   TARGET := riscv64gc-unknown-none-elf
+else ifeq ($(ARCH), loongarch64)
+  TARGET := loongarch64-unknown-none
 else
-  $(error "ARCH" must be one of "x86_64", "riscv64", or "aarch64")
+  $(error "ARCH" must be one of "x86_64", "riscv64", "aarch64" or "loongarch64")
 endif
 
 export AX_ARCH=$(ARCH)

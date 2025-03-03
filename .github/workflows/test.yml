@@ -3,7 +3,7 @@ name: Test CI
 on: [push, pull_request]
 
 env:
-  qemu-version: 8.2.0
+  qemu-version: 9.2.1
   rust-toolchain: nightly-2024-12-25
   arceos-apps: '855106c'
 
@@ -26,7 +26,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        arch: [x86_64, riscv64, aarch64]
+        arch: [x86_64, riscv64, aarch64, loongarch64]
     steps:
     - uses: actions/checkout@v4
     - uses: dtolnay/rust-toolchain@stable

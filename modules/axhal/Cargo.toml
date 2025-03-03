@@ -13,7 +13,7 @@ documentation = "https://arceos-org.github.io/arceos/axhal/index.html"
 smp = []
 alloc = []
 fp_simd = []
-paging = ["axalloc", "page_table_multiarch"]
+paging = ["axalloc"]
 irq = []
 tls = ["alloc"]
 rtc = ["x86_rtc", "riscv_goldfish", "arm_pl031"]
@@ -34,7 +34,7 @@ percpu = "0.2"
 memory_addr = "0.3"
 handler_table = "0.1"
 page_table_entry = "0.5"
-page_table_multiarch = { version = "0.5", optional = true }
+page_table_multiarch = "0.5"
 axlog = { workspace = true }
 axconfig = { workspace = true }
 axalloc = { workspace = true, optional = true }
@@ -58,6 +58,10 @@ arm_gicv2 = "0.1"
 arm_pl011 = "0.1"
 arm_pl031 = { version = "0.2", optional = true }
 dw_apb_uart = "0.1"
+
+[target.'cfg(target_arch = "loongarch64")'.dependencies]
+loongArch64 = "0.2.4"
+ns16550a = "0.4.0"
 
 [build-dependencies]
 axconfig = { workspace = true }
