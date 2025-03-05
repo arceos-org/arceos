@@ -12,8 +12,8 @@ ArceOS was inspired a lot by [Unikraft](https://github.com/unikraft/unikraft).
 
 ## Features & TODOs
 
-* [x] Architecture: x86_64, riscv64, aarch64
-* [x] Platform: QEMU pc-q35 (x86_64), virt (riscv64/aarch64)
+* [x] Architecture: x86_64, riscv64, aarch64, loongarch64
+* [x] Platform: QEMU pc-q35 (x86_64), virt (riscv64/aarch64/loongarch64)
 * [x] Multi-thread
 * [x] FIFO/RR/CFS scheduler
 * [x] VirtIO net/blk/gpu drivers
@@ -78,12 +78,14 @@ Download & install [musl](https://musl.cc) toolchains:
 wget https://musl.cc/aarch64-linux-musl-cross.tgz
 wget https://musl.cc/riscv64-linux-musl-cross.tgz
 wget https://musl.cc/x86_64-linux-musl-cross.tgz
+wget https://github.com/LoongsonLab/oscomp-toolchains-for-oskernel/releases/download/loongarch64-linux-musl-cross-gcc-13.2.0/loongarch64-linux-musl-cross.tgz
 # install
 tar zxf aarch64-linux-musl-cross.tgz
 tar zxf riscv64-linux-musl-cross.tgz
 tar zxf x86_64-linux-musl-cross.tgz
+tar zxf loongarch64-linux-musl-cross.tgz
 # exec below command in bash OR add below info in ~/.bashrc
-export PATH=`pwd`/x86_64-linux-musl-cross/bin:`pwd`/aarch64-linux-musl-cross/bin:`pwd`/riscv64-linux-musl-cross/bin:$PATH
+export PATH=`pwd`/x86_64-linux-musl-cross/bin:`pwd`/aarch64-linux-musl-cross/bin:`pwd`/riscv64-linux-musl-cross/bin:`pwd`/loongarch64-linux-musl-cross/bin:$PATH
 ```
 
 Other systems and arch please refer to [Qemu Download](https://www.qemu.org/download/#linux)
@@ -97,7 +99,7 @@ make A=path/to/app ARCH=<arch> LOG=<log>
 
 Where `path/to/app` is the relative path to the application. Examples applications can be found in the [examples](examples/) directory or the [arceos-apps](https://github.com/arceos-org/arceos-apps) repository.
 
-`<arch>` should be one of `riscv64`, `aarch64`, `x86_64`.
+`<arch>` should be one of `riscv64`, `aarch64`, `x86_64`, `loongarch64`.
 
 `<log>` should be one of `off`, `error`, `warn`, `info`, `debug`, `trace`.
 
