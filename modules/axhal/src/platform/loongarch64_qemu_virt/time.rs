@@ -1,9 +1,7 @@
-use core::cell::LazyCell;
-
+use lazyinit::LazyInit;
 use loongArch64::time::Time;
 
-const NANOS_PER_TICK: LazyCell<u64> =
-    LazyCell::new(|| crate::time::NANOS_PER_SEC / loongArch64::time::get_timer_freq() as u64);
+static NANOS_PER_TICK: LazyInit<u64> = LazyInit::new();
 
 /// RTC wall time offset in nanoseconds at monotonic time base.
 static mut RTC_EPOCHOFFSET_NANOS: u64 = 0;
@@ -57,4 +55,9 @@ pub(super) fn init_percpu() {
         tcfg::set_en(true);
         super::irq::set_enable(super::irq::TIMER_IRQ_NUM, true);
     }
+}
+
+pub(super) fn init_primary() {
+    NANOS_PER_TICK
+        .init_once(crate::time::NANOS_PER_SEC / loongArch64::time::get_timer_freq() as u64);
 }

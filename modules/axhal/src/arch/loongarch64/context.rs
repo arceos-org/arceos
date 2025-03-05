@@ -150,7 +150,7 @@ impl UspaceContext {
     /// This function is unsafe because it changes processor mode and the stack.
     #[unsafe(no_mangle)]
     pub unsafe fn enter_uspace(&self, kstack_top: VirtAddr) -> ! {
-        use loongArch64::register::{CpuMode, era, prmd};
+        use loongArch64::register::era;
 
         super::disable_irqs();
         era::set_pc(self.get_ip());

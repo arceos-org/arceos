@@ -23,7 +23,6 @@ macro_rules! include_asm_macros {
         .equ LA_CSR_DMW0,          0x180
         .equ LA_CSR_DMW1,          0x181
 
-
         .equ KSAVE_KSP,            0x30
         .equ KSAVE_TEMP,           0x31
         .equ KSAVE_R21,            0x32
