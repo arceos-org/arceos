@@ -26,7 +26,6 @@ impl Backend {
     }
 
     pub(crate) fn map_alloc(
-        &self,
         start: VirtAddr,
         size: usize,
         flags: MappingFlags,
@@ -62,7 +61,6 @@ impl Backend {
     }
 
     pub(crate) fn unmap_alloc(
-        &self,
         start: VirtAddr,
         size: usize,
         pt: &mut PageTable,
@@ -86,7 +84,6 @@ impl Backend {
     }
 
     pub(crate) fn handle_page_fault_alloc(
-        &self,
         vaddr: VirtAddr,
         orig_flags: MappingFlags,
         pt: &mut PageTable,
