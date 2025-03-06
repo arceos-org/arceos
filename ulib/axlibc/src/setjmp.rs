@@ -106,10 +106,57 @@ pub unsafe extern "C" fn setjmp(_buf: *mut ctypes::__jmp_buf_tag) {
         li a0, 0
         ret",
     );
+    #[cfg(all(target_arch = "loongarch64", feature = "fp_simd"))]
+    core::arch::naked_asm!(
+        "
+        st.d     $ra, $a0, 0
+        st.d     $sp, $a0, 1 * 8
+        st.d     $s0, $a0, 2 * 8
+        st.d     $s1, $a0, 3 * 8
+        st.d     $s2, $a0, 4 * 8
+        st.d     $s3, $a0, 5 * 8
+        st.d     $s4, $a0, 6 * 8
+        st.d     $s5, $a0, 7 * 8
+        st.d     $s6, $a0, 8 * 8
+        st.d     $s7, $a0, 9 * 8
+        st.d     $s8, $a0, 10 * 8
+        st.d     $fp, $a0, 11 * 8
+        st.d     $r1, $a0, 12 * 8
+        fst.d    $f24, $a0, 13 * 8
+        fst.d    $f25, $a0, 14 * 8
+        fst.d    $f26, $a0, 15 * 8
+        fst.d    $f27, $a0, 16 * 8
+        fst.d    $f28, $a0, 17 * 8
+        fst.d    $f29, $a0, 18 * 8
+        fst.d    $f30, $a0, 19 * 8
+        fst.d    $f31, $a0, 20 * 8
+        li.w  $a0, 0
+        ret",
+    );
+    #[cfg(all(target_arch = "loongarch64", not(feature = "fp_simd")))]
+    core::arch::naked_asm!(
+        "
+        st.d     $ra, $a0, 0
+        st.d     $sp, $a0, 1 * 8
+        st.d     $s0, $a0, 2 * 8
+        st.d     $s1, $a0, 3 * 8
+        st.d     $s2, $a0, 4 * 8
+        st.d     $s3, $a0, 5 * 8
+        st.d     $s4, $a0, 6 * 8
+        st.d     $s5, $a0, 7 * 8
+        st.d     $s6, $a0, 8 * 8
+        st.d     $s7, $a0, 9 * 8
+        st.d     $s8, $a0, 10 * 8
+        st.d     $fp, $a0, 11 * 8
+        st.d     $r1, $a0, 12 * 8
+        li.w  $a0, 0
+        ret",
+    );
     #[cfg(not(any(
         target_arch = "aarch64",
         target_arch = "x86_64",
-        target_arch = "riscv64"
+        target_arch = "riscv64",
+        target_arch = "loongarch64"
     )))]
     core::arch::naked_asm!("ret")
 }
@@ -224,5 +271,54 @@ pub unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) 
         seqz a0, a1
         add a0, a0, a1
         ret",
+    );
+
+    #[cfg(all(target_arch = "loongarch64", feature = "fp_simd"))]
+    core::arch::naked_asm!(
+        "
+        ld.d     $ra, $a1, 0
+        ld.d     $s0, $a1, 2 * 8
+        ld.d     $s1, $a1, 3 * 8
+        ld.d     $s2, $a1, 4 * 8
+        ld.d     $s3, $a1, 5 * 8
+        ld.d     $s4, $a1, 6 * 8
+        ld.d     $s5, $a1, 7 * 8
+        ld.d     $s6, $a1, 8 * 8
+        ld.d     $s7, $a1, 9 * 8
+        ld.d     $s8, $a1, 10 * 8
+        ld.d     $fp, $a1, 11 * 8
+        ld.d     $sp, $a1, 1 * 8
+        ld.d     $r21, $a1, 12 * 8
+        fld.d    $f24, $a0, 13 * 8
+        fld.d    $f25, $a0, 14 * 8
+        fld.d    $f26, $a0, 15 * 8
+        fld.d    $f27, $a0, 16 * 8
+        fld.d    $f28, $a0, 17 * 8
+        fld.d    $f29, $a0, 18 * 8
+        fld.d    $f30, $a0, 19 * 8
+        fld.d    $f31, $a0, 20 * 8
+        sltui    $a0, $a1, 1
+        add.d    $a0, $a0, $a1
+        jirl     $zero,$ra, 0"
+    );
+    #[cfg(all(target_arch = "loongarch64", not(feature = "fp_simd")))]
+    core::arch::naked_asm!(
+        "
+        ld.d     $ra, $a1, 0
+        ld.d     $s0, $a1, 2 * 8
+        ld.d     $s1, $a1, 3 * 8
+        ld.d     $s2, $a1, 4 * 8
+        ld.d     $s3, $a1, 5 * 8
+        ld.d     $s4, $a1, 6 * 8
+        ld.d     $s5, $a1, 7 * 8
+        ld.d     $s6, $a1, 8 * 8
+        ld.d     $s7, $a1, 9 * 8
+        ld.d     $s8, $a1, 10 * 8
+        ld.d     $fp, $a1, 11 * 8
+        ld.d     $sp, $a1, 1 * 8
+        ld.d     $r21, $a1, 12 * 8
+        sltui    $a0, $a1, 1
+        add.d    $a0, $a0, $a1
+        jirl     $zero,$ra, 0",
     );
 }

@@ -25,7 +25,7 @@ runs:
       sudo apt-get update && sudo apt-get install -y ninja-build libslirp-dev libglib2.0-dev
       wget https://download.qemu.org/$QEMU_PATH.tar.xz && tar -xJf $QEMU_PATH.tar.xz
       cd $QEMU_PATH \
-        && ./configure --prefix=$PREFIX --target-list=x86_64-softmmu,riscv64-softmmu,aarch64-softmmu --enable-slirp \
+        && ./configure --prefix=$PREFIX --target-list=x86_64-softmmu,riscv64-softmmu,aarch64-softmmu,loongarch64-softmmu --enable-slirp \
         && make -j > /dev/null 2>&1 \
         && make install
   - uses: actions/cache/save@v4
@@ -44,3 +44,4 @@ runs:
       qemu-system-x86_64 --version
       qemu-system-aarch64 --version
       qemu-system-riscv64 --version
+      qemu-system-loongarch64 --version

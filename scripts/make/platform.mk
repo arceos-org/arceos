@@ -8,8 +8,10 @@ ifeq ($(PLATFORM),)
     PLAT_NAME := aarch64-qemu-virt
   else ifeq ($(ARCH), riscv64)
     PLAT_NAME := riscv64-qemu-virt
+  else ifeq ($(ARCH), loongarch64)
+    PLAT_NAME := loongarch64-qemu-virt
   else
-    $(error "ARCH" must be one of "x86_64", "riscv64", or "aarch64")
+    $(error "ARCH" must be one of "x86_64", "riscv64", "aarch64" or "loongarch64")
   endif
   PLAT_CONFIG := configs/platforms/$(PLAT_NAME).toml
 else
