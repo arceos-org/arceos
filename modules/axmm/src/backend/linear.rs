@@ -10,7 +10,6 @@ impl Backend {
     }
 
     pub(crate) fn map_linear(
-        &self,
         start: VirtAddr,
         size: usize,
         flags: MappingFlags,
@@ -32,7 +31,6 @@ impl Backend {
     }
 
     pub(crate) fn unmap_linear(
-        &self,
         start: VirtAddr,
         size: usize,
         pt: &mut PageTable,
