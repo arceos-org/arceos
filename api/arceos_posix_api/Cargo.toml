@@ -48,7 +48,7 @@ axns = { workspace = true, optional = true }
 # Other crates
 axio = "0.1"
 axerrno = "0.1"
-flatten_objects = { git = "https://github.com/AsakuraMizu/flatten_objects.git", rev = "5b6820b" }
+flatten_objects = { git = "https://github.com/arceos-org/flatten_objects.git", rev = "8da6573" }
 static_assertions = "1.1.0"
 spin = { version = "0.9" }
 lazy_static = { version = "1.5", features = ["spin_no_std"] }

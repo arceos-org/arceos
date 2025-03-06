@@ -972,7 +972,7 @@ dependencies = [
 [[package]]
 name = "flatten_objects"
 version = "0.2.2"
-source = "git+https://github.com/AsakuraMizu/flatten_objects.git?rev=5b6820b#5b6820bb80d718461e8d51b8188165b054ff0e29"
+source = "git+https://github.com/arceos-org/flatten_objects.git?rev=8da6573#8da65738b333b87abf1a2db35a6a9df532a4d3ae"
 dependencies = [
  "bitmaps",
 ]
