@@ -31,9 +31,8 @@ impl FD_TABLE {
     pub fn copy_inner(&self) -> RwLock<FlattenObjects<Arc<dyn FileLike>, AX_FILE_LIMIT>> {
         let table = self.read();
         let mut new_table = FlattenObjects::new();
-        let count = table.count();
-        for i in 0..count {
-            let _ = new_table.add_at(i, table.get(i).unwrap().clone());
+        for id in table.ids() {
+            let _ = new_table.add_at(id, table.get(id).unwrap().clone());
         }
         RwLock::new(new_table)
     }

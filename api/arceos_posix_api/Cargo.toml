@@ -48,11 +48,11 @@ axns = { workspace = true, optional = true }
 # Other crates
 axio = "0.1"
 axerrno = "0.1"
-flatten_objects = "0.2"
+flatten_objects = { git = "https://github.com/AsakuraMizu/flatten_objects.git", rev = "5b6820b" }
 static_assertions = "1.1.0"
 spin = { version = "0.9" }
 lazy_static = { version = "1.5", features = ["spin_no_std"] }
 ctor_bare = "0.2"
 
 [build-dependencies]
-bindgen ={ version = "0.69" }
+bindgen = { version = "0.69" }

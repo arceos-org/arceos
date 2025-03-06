@@ -8,8 +8,6 @@ use alloc::string::{String, ToString};
 use axerrno::{AxError, AxResult};
 use axfs::api::{canonicalize, current_dir};
 
-use super::fd_ops::FD_TABLE;
-
 /// 一个规范化的文件路径表示
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
 pub struct FilePath(String);
@@ -343,22 +341,12 @@ fn handle_empty_path(dir_fd: isize) -> AxResult<String> {
         return Ok(String::from("."));
     }
 
-    let fd_table = FD_TABLE.write();
-    if dir_fd >= fd_table.count() as isize || dir_fd < 0 {
-        axlog::warn!("文件描述符索引超出范围");
-        return Err(AxError::InvalidInput);
-    }
     super::fs::Directory::from_fd(dir_fd as i32)
         .map(|dir| dir.path().to_string())
         .map_err(|_| AxError::NotFound)
 }
 
 fn handle_relative_path(dir_fd: isize, path: &str) -> AxResult<String> {
-    let fd_table = FD_TABLE.write();
-    if dir_fd >= fd_table.count() as isize || dir_fd < 0 {
-        axlog::warn!("文件描述符索引超出范围");
-        return Err(AxError::InvalidInput);
-    }
     match super::fs::Directory::from_fd(dir_fd as i32) {
         Ok(dir) => {
             // 假设目录路径以 '/' 结尾，无需手动添加

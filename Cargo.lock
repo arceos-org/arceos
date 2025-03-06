@@ -972,8 +972,7 @@ dependencies = [
 [[package]]
 name = "flatten_objects"
 version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a44a8ee8095192119780ad867a02cfb86c44f3cebd16b7161d84e1fb8e26482"
+source = "git+https://github.com/AsakuraMizu/flatten_objects.git?rev=5b6820b#5b6820bb80d718461e8d51b8188165b054ff0e29"
 dependencies = [
  "bitmaps",
 ]
