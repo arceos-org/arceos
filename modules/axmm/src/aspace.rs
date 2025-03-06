@@ -1,16 +1,15 @@
 use core::fmt;
 
-use alloc::vec;
 use axerrno::{AxError, AxResult, ax_err};
 use axhal::mem::phys_to_virt;
-use axhal::paging::{MappingFlags, PageTable};
+use axhal::paging::{MappingFlags, PageTable, PagingError};
 use memory_addr::{
     MemoryAddr, PAGE_SIZE_4K, PageIter4K, PhysAddr, VirtAddr, VirtAddrRange, is_aligned_4k,
 };
 use memory_set::{MemoryArea, MemorySet};
 
 use crate::backend::Backend;
-use crate::{KERNEL_ASPACE, mapping_err_to_ax_err};
+use crate::mapping_err_to_ax_err;
 
 /// The virtual memory address space.
 pub struct AddrSpace {
@@ -163,7 +162,7 @@ impl AddrSpace {
                     let count = (area.end().min(end) - start).align_up_4k() / PAGE_SIZE_4K;
                     for i in 0..count {
                         let addr = start + i * PAGE_SIZE_4K;
-                        area_backend.handle_page_fault_alloc(
+                        Backend::handle_page_fault_alloc(
                             addr,
                             area.flags(),
                             &mut self.pt,
@@ -345,56 +344,51 @@ impl AddrSpace {
     ///
     /// 如果发生错误，新创建的 MemorySet 将被丢弃并返回错误。
     pub fn clone_or_err(&mut self) -> AxResult<Self> {
-        // 由于要克隆的这个地址空间可能是用户空间，而用户空间在一开始创建时不会在MemorySet中管理内核区域，而是直接把相关的页表项复制到了新页表中，所以在MemorySet中没有内核区域，需要另外处理。
-        let mut new_pt = PageTable::try_new().map_err(|_| AxError::NoMemory)?;
-        // 如果不是 ARMv8 架构，将内核部分复制到用户页表中。
-        if !cfg!(target_arch = "aarch64") && !cfg!(target_arch = "loongarch64") {
-            // ARMv8 使用一个单独的页表 (TTBR0_EL1) 用于用户空间，不需要将内核部分复制到用户页表中。
-            let kernel_aspace = KERNEL_ASPACE.lock();
-            new_pt.copy_from(
-                &kernel_aspace.pt,
-                kernel_aspace.base(),
-                kernel_aspace.size(),
-            );
-        }
+        let mut new_aspace = crate::new_user_aspace(self.base(), self.size())?;
 
-        // 创建一个新的 MemorySet 并将原始区域映射到新的页表中。
-        let mut new_areas = MemorySet::new();
-        let mut buf = vec![0u8; PAGE_SIZE_4K];
         for area in self.areas.iter() {
-            let new_area = MemoryArea::new(
-                area.start(),
-                area.size(),
-                area.flags(),
-                area.backend().clone(),
-            );
-            new_areas
-                .map(new_area, &mut new_pt, false)
+            let backend = area.backend();
+            // 将原始区域映射到新的页表中。
+            let new_area =
+                MemoryArea::new(area.start(), area.size(), area.flags(), backend.clone());
+            new_aspace
+                .areas
+                .map(new_area, &mut new_aspace.pt, false)
                 .map_err(mapping_err_to_ax_err)?;
             // 将原区域的数据复制到新区域中。
-            buf.resize(buf.capacity().max(area.size()), 0);
-            self.read(area.start(), &mut buf).inspect_err(|_| {
-                new_areas.clear(&mut new_pt).unwrap();
-            })?;
-            Self::process_area_data_with_page_table(
-                &new_pt,
-                &self.va_range,
-                area.start(),
-                area.size(),
-                |dst, offset, write_size| unsafe {
+            for vaddr in
+                PageIter4K::new(area.start(), area.end()).expect("Failed to create page iterator")
+            {
+                let addr = match self.pt.query(vaddr) {
+                    Ok((paddr, _, _)) => paddr,
+                    // If the page is not mapped, skip it.
+                    Err(PagingError::NotMapped) => continue,
+                    Err(_) => return Err(AxError::BadAddress),
+                };
+                let new_addr = match new_aspace.pt.query(vaddr) {
+                    Ok((paddr, _, _)) => paddr,
+                    // If the page is not mapped, try map it.
+                    Err(PagingError::NotMapped) => {
+                        if !backend.handle_page_fault(vaddr, area.flags(), &mut new_aspace.pt) {
+                            return Err(AxError::NoMemory);
+                        }
+                        match new_aspace.pt.query(vaddr) {
+                            Ok((paddr, _, _)) => paddr,
+                            Err(_) => return Err(AxError::BadAddress),
+                        }
+                    }
+                    Err(_) => return Err(AxError::BadAddress),
+                };
+                unsafe {
                     core::ptr::copy_nonoverlapping(
-                        buf.as_ptr().add(offset),
-                        dst.as_mut_ptr(),
-                        write_size,
-                    );
-                },
-            )?;
+                        phys_to_virt(addr).as_ptr(),
+                        phys_to_virt(new_addr).as_mut_ptr(),
+                        PAGE_SIZE_4K,
+                    )
+                };
+            }
         }
-        Ok(Self {
-            va_range: self.va_range,
-            areas: new_areas,
-            pt: new_pt,
-        })
+        Ok(new_aspace)
     }
 }
 
