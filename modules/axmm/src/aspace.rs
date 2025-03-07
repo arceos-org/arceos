@@ -368,22 +368,20 @@ impl AddrSpace {
         false
     }
 
-    /// 克隆 AddrSpace。这将创建一个新的页表，并将旧页表中的所有区域（包括内核区域）映射到新的页表中，但仅将用户区域的映射到新的 MemorySet 中。
-    ///
-    /// 如果发生错误，新创建的 MemorySet 将被丢弃并返回错误。
+    /// Clone a [`AddrSpace`] by re-mapping all [`MemoryArea`]s in a new page table and copying data in user space.
     pub fn clone_or_err(&mut self) -> AxResult<Self> {
         let mut new_aspace = crate::new_user_aspace(self.base(), self.size())?;
 
         for area in self.areas.iter() {
             let backend = area.backend();
-            // 将原始区域映射到新的页表中。
+            // Remap the memory area in the new address space.
             let new_area =
                 MemoryArea::new(area.start(), area.size(), area.flags(), backend.clone());
             new_aspace
                 .areas
                 .map(new_area, &mut new_aspace.pt, false)
                 .map_err(mapping_err_to_ax_err)?;
-            // 将原区域的数据复制到新区域中。
+            // Copy data from old memory area to new memory area.
             for vaddr in
                 PageIter4K::new(area.start(), area.end()).expect("Failed to create page iterator")
             {
