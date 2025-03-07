@@ -329,15 +329,12 @@ impl AddrSpace {
         access_flags: MappingFlags,
     ) -> bool {
         for area in self.areas.iter() {
-            if area.end() <= range.start {
-                continue;
-            }
             if area.start() > range.start {
                 return false;
             }
 
             // This area overlaps with the memory region
-            if area.flags().contains(access_flags) {
+            if !area.flags().contains(access_flags) {
                 return false;
             }
 
