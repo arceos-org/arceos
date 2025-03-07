@@ -20,7 +20,3 @@ lazyinit = "0.2"
 memory_addr = "0.3"
 kspin = "0.1"
 memory_set = "0.3"
-
-[patch.crates-io]
-memory_addr = { git = "https://github.com/Mivik/axmm_crates.git", rev = "45ac2ac" }
-memory_set = { git = "https://github.com/Mivik/axmm_crates.git", rev = "45ac2ac" }

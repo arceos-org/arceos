@@ -1265,15 +1265,15 @@ checksum = "78ca9ab1a0babb1e7d5695e3530886289c18cf2f87ec19a575a0abdce112e3a3"
 
 [[package]]
 name = "memory_addr"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f769efcf10b9dfb4c913bebb409cda77b1a3f072b249bf5465e250bcb30eb49"
+checksum = "5438b8df0f13e16e1f46140de247695a95952a5a4479e47197a8711bf1063373"
 
 [[package]]
 name = "memory_set"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "335675b7ab07460f532d3b2b557313be73037fdf81b65464d8c0d8bd90d2fbf9"
+checksum = "a4552d02c866c57e8b06b919ea8c2f8f398cad245b8f6aac726657bc972d663d"
 dependencies = [
  "memory_addr",
 ]
