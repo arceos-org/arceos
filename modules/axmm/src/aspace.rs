@@ -329,6 +329,9 @@ impl AddrSpace {
         access_flags: MappingFlags,
     ) -> bool {
         for area in self.areas.iter() {
+            if area.end() <= range.start {
+                continue;
+            }
             if area.start() > range.start {
                 return false;
             }
