@@ -74,6 +74,16 @@ impl AddrSpace {
         Ok(())
     }
 
+    fn validate_region(&self, start: VirtAddr, size: usize) -> AxResult {
+        if !self.contains_range(start, size) {
+            return ax_err!(InvalidInput, "address out of range");
+        }
+        if !start.is_aligned_4k() || !is_aligned_4k(size) {
+            return ax_err!(InvalidInput, "address not aligned");
+        }
+        Ok(())
+    }
+
     /// Finds a free area that can accommodate the given size.
     ///
     /// The search starts from the given hint address, and the area should be within the given limit range.
@@ -103,10 +113,8 @@ impl AddrSpace {
         size: usize,
         flags: MappingFlags,
     ) -> AxResult {
-        if !self.contains_range(start_vaddr, size) {
-            return ax_err!(InvalidInput, "address out of range");
-        }
-        if !start_vaddr.is_aligned_4k() || !start_paddr.is_aligned_4k() || !is_aligned_4k(size) {
+        self.validate_region(start_vaddr, size)?;
+        if !start_paddr.is_aligned_4k() {
             return ax_err!(InvalidInput, "address not aligned");
         }
 
@@ -133,12 +141,7 @@ impl AddrSpace {
         flags: MappingFlags,
         populate: bool,
     ) -> AxResult {
-        if !self.contains_range(start, size) {
-            return ax_err!(InvalidInput, "address out of range");
-        }
-        if !start.is_aligned_4k() || !is_aligned_4k(size) {
-            return ax_err!(InvalidInput, "address not aligned");
-        }
+        self.validate_region(start, size)?;
 
         let area = MemoryArea::new(start, size, flags, Backend::new_alloc(populate));
         self.areas
@@ -147,36 +150,44 @@ impl AddrSpace {
         Ok(())
     }
 
-    /// Add a new zero-initialized allocation mapping.
-    pub fn alloc_for_lazy(&mut self, start: VirtAddr, size: usize) -> AxResult {
-        let end = (start + size).align_up_4k();
-        let mut start = start.align_down_4k();
-        let size = end - start;
-        if !self.contains_range(start, size) {
-            return ax_err!(InvalidInput, "address out of range");
-        }
+    /// Populates the area with physical frames, returning false if the area
+    /// contains unmapped area.
+    pub fn populate_area(&mut self, mut start: VirtAddr, size: usize) -> AxResult {
+        self.validate_region(start, size)?;
+        let end = start + size;
+
         while let Some(area) = self.areas.find(start) {
-            let area_backend = area.backend();
-            if let Backend::Alloc { populate } = area_backend {
-                if !*populate {
-                    let count = (area.end().min(end) - start).align_up_4k() / PAGE_SIZE_4K;
-                    for i in 0..count {
-                        let addr = start + i * PAGE_SIZE_4K;
-                        Backend::handle_page_fault_alloc(
-                            addr,
-                            area.flags(),
-                            &mut self.pt,
-                            *populate,
-                        );
-                    }
+            let backend = area.backend();
+            if let Backend::Alloc { populate } = backend {
+                // Area is already populated.
+                if *populate {
+                    continue;
+                }
+                for addr in PageIter4K::new(start, area.end().min(end)).unwrap() {
+                    match self.pt.query(addr) {
+                        Ok(_) => {}
+                        // If the page is not mapped, try map it.
+                        Err(PagingError::NotMapped) => {
+                            if !backend.handle_page_fault(addr, area.flags(), &mut self.pt) {
+                                return Err(AxError::NoMemory);
+                            }
+                        }
+                        Err(_) => return Err(AxError::BadAddress),
+                    };
                 }
             }
             start = area.end();
             assert!(start.is_aligned_4k());
+            if start >= end {
+                break;
+            }
         }
+
         if start < end {
-            ax_err!(InvalidInput, "address out of range")?;
+            // If the area is not fully mapped, we return ENOMEM.
+            return ax_err!(NoMemory);
         }
+
         Ok(())
     }
 
@@ -299,18 +310,13 @@ impl AddrSpace {
     /// Returns an error if the address range is out of the address space or not
     /// aligned.
     pub fn protect(&mut self, start: VirtAddr, size: usize, flags: MappingFlags) -> AxResult {
-        if !self.contains_range(start, size) {
-            return ax_err!(InvalidInput, "address out of range");
-        }
-        if !start.is_aligned_4k() || !is_aligned_4k(size) {
-            return ax_err!(InvalidInput, "address not aligned");
-        }
+        // Populate the area first, which also checks the address range for us.
+        self.populate_area(start, size)?;
 
-        // TODO
-        self.pt
-            .protect_region(start, size, flags, true)
-            .map_err(|_| AxError::BadState)?
-            .ignore();
+        self.areas
+            .protect(start, size, |_| Some(flags), &mut self.pt)
+            .map_err(mapping_err_to_ax_err)?;
+
         Ok(())
     }
 
