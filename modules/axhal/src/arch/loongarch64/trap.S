@@ -27,6 +27,8 @@
     csrwr   $r21, KSAVE_R21
     LDD     $tp,  $sp, 2
     LDD     $r21, $sp, 21
+    addi.d  $t1,  $sp, {trapframe_size}
+    csrwr   $t1,  KSAVE_KSP // save kernel sp
 .endif
 
     LDD     $t1,  $sp, 33       // era
