@@ -159,21 +159,19 @@ impl AddrSpace {
         while let Some(area) = self.areas.find(start) {
             let backend = area.backend();
             if let Backend::Alloc { populate } = backend {
-                // Area is already populated.
-                if *populate {
-                    continue;
-                }
-                for addr in PageIter4K::new(start, area.end().min(end)).unwrap() {
-                    match self.pt.query(addr) {
-                        Ok(_) => {}
-                        // If the page is not mapped, try map it.
-                        Err(PagingError::NotMapped) => {
-                            if !backend.handle_page_fault(addr, area.flags(), &mut self.pt) {
-                                return Err(AxError::NoMemory);
+                if !*populate {
+                    for addr in PageIter4K::new(start, area.end().min(end)).unwrap() {
+                        match self.pt.query(addr) {
+                            Ok(_) => {}
+                            // If the page is not mapped, try map it.
+                            Err(PagingError::NotMapped) => {
+                                if !backend.handle_page_fault(addr, area.flags(), &mut self.pt) {
+                                    return Err(AxError::NoMemory);
+                                }
                             }
-                        }
-                        Err(_) => return Err(AxError::BadAddress),
-                    };
+                            Err(_) => return Err(AxError::BadAddress),
+                        };
+                    }
                 }
             }
             start = area.end();
@@ -196,12 +194,7 @@ impl AddrSpace {
     /// Returns an error if the address range is out of the address space or not
     /// aligned.
     pub fn unmap(&mut self, start: VirtAddr, size: usize) -> AxResult {
-        if !self.contains_range(start, size) {
-            return ax_err!(InvalidInput, "address out of range");
-        }
-        if !start.is_aligned_4k() || !is_aligned_4k(size) {
-            return ax_err!(InvalidInput, "address not aligned");
-        }
+        self.validate_region(start, size)?;
 
         self.areas
             .unmap(start, size, &mut self.pt)
