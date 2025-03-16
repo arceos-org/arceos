@@ -35,7 +35,7 @@ pub struct Directory {
 }
 
 /// Options and flags which can be used to configure how a file is opened.
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct OpenOptions {
     // generic
     read: bool,
@@ -177,9 +177,7 @@ impl File {
         };
 
         let attr = node.get_attr()?;
-        if attr.is_dir()
-            && (opts.create || opts.create_new || opts.write || opts.append || opts.truncate)
-        {
+        if attr.is_dir() {
             return ax_err!(IsADirectory);
         }
         let access_cap = opts.into();
@@ -303,13 +301,17 @@ impl Directory {
             return ax_err!(NotADirectory);
         }
         let access_cap = opts.into();
-        if !perm_to_cap(attr.perm()).contains(access_cap) {
+        let cap = perm_to_cap(attr.perm());
+        if !cap.contains(access_cap) {
             return ax_err!(PermissionDenied);
         }
 
         node.open()?;
         Ok(Self {
-            node: WithCap::new(node, access_cap),
+            // Here we use `cap` as capability instead of `access_cap` to allow the user to manipulate the directory
+            // without explicitly setting [`OpenOptions::execute`], but without requiring execute access even for
+            // directories that don't have this permission.
+            node: WithCap::new(node, cap),
             entry_idx: 0,
         })
     }

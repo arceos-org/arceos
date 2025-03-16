@@ -56,7 +56,7 @@ pub fn write<C: AsRef<[u8]>>(path: &str, contents: C) -> io::Result<()> {
 /// Given a path, query the file system to get information about a file,
 /// directory, etc.
 pub fn metadata(path: &str) -> io::Result<Metadata> {
-    File::open(path)?.metadata()
+    crate::root::lookup(None, path)?.get_attr().map(Metadata)
 }
 
 /// Creates a new, empty directory at the provided path.

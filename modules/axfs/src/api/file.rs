@@ -17,17 +17,11 @@ pub struct File {
 }
 
 /// Metadata information about a file.
-pub struct Metadata(fops::FileAttr);
+pub struct Metadata(pub(super) fops::FileAttr);
 
 /// Options and flags which can be used to configure how a file is opened.
-#[derive(Clone, Debug)]
+#[derive(Default, Clone, Debug)]
 pub struct OpenOptions(fops::OpenOptions);
-
-impl Default for OpenOptions {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 impl OpenOptions {
     /// Creates a blank new set of options ready for configuration.

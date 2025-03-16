@@ -201,8 +201,7 @@ fn test_devfs_ramfs() -> Result<()> {
 
     // stat /dev
     let dname = "/dev";
-    let dir = File::open(dname)?;
-    let md = dir.metadata()?;
+    let md = fs::metadata(dname)?;
     println!("metadata of {:?}: {:?}", dname, md);
     assert_eq!(md.file_type(), FileType::Dir);
     assert!(!md.is_file());
@@ -210,8 +209,7 @@ fn test_devfs_ramfs() -> Result<()> {
 
     // stat /dev/foo/bar
     let fname = ".//.///././/./dev///.///./foo//././bar";
-    let file = File::open(fname)?;
-    let md = file.metadata()?;
+    let md = fs::metadata(fname)?;
     println!("metadata of {:?}: {:?}", fname, md);
     assert_eq!(md.file_type(), FileType::CharDevice);
     assert!(!md.is_dir());

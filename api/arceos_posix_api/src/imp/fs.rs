@@ -129,16 +129,11 @@ pub fn sys_open(filename: *const c_char, flags: c_int, mode: ctypes::mode_t) -> 
     let filename = char_ptr_to_str(filename);
     debug!("sys_open <= {:?} {:#o} {:#o}", filename, flags, mode);
     syscall_body!(sys_open, {
-        let options = flags_to_options(flags, mode);
-        if options.has_directory() {
-            return Directory::from_path(filename?.into(), &options)
-                .and_then(Directory::add_to_fd_table);
-        }
         add_file_or_directory_fd(
             axfs::fops::File::open,
             axfs::fops::Directory::open_dir,
             filename?,
-            &options,
+            &flags_to_options(flags, mode),
         )
     })
 }
@@ -165,8 +160,6 @@ pub fn sys_openat(
         dirfd, filename, flags, mode
     );
 
-    let options = flags_to_options(flags, mode);
-
     if filename.starts_with('/') || dirfd == AT_FDCWD as _ {
         return sys_open(filename.as_ptr() as _, flags, mode);
     }
@@ -176,7 +169,7 @@ pub fn sys_openat(
             |filename, options| dir.inner.lock().open_file_at(filename, options),
             |filename, options| dir.inner.lock().open_dir_at(filename, options),
             filename,
-            &options,
+            &flags_to_options(flags, mode),
         )
     }) {
         Ok(fd) => fd,
@@ -200,17 +193,21 @@ where
     F: FnOnce(&str, &OpenOptions) -> Result<axfs::fops::File, E>,
     D: FnOnce(&str, &OpenOptions) -> Result<axfs::fops::Directory, E>,
 {
-    open_file(filename, options)
-        .map_err(Into::into)
-        .map(|f| File::new(f, filename.into()))
-        .and_then(File::add_to_fd_table)
-        .or_else(|e| match e {
-            LinuxError::EISDIR => open_dir(filename, options)
-                .map_err(Into::into)
-                .map(|d| Directory::new(d, filename.into()))
-                .and_then(Directory::add_to_fd_table),
-            _ => Err(e),
-        })
+    if !options.has_directory() {
+        match open_file(filename, options)
+            .map_err(Into::into)
+            .and_then(|f| File::new(f, filename.into()).add_to_fd_table())
+        {
+            Err(LinuxError::EISDIR) => {}
+            r => return r,
+        }
+    }
+
+    Directory::new(
+        open_dir(filename, options).map_err(Into::into)?,
+        filename.to_string(),
+    )
+    .add_to_fd_table()
 }
 
 /// Set the position of the file indicated by `fd`.
@@ -325,12 +322,6 @@ impl Directory {
             inner: Mutex::new(inner),
             path,
         }
-    }
-
-    fn from_path(path: String, options: &OpenOptions) -> LinuxResult<Self> {
-        axfs::fops::Directory::open_dir(&path, options)
-            .map_err(Into::into)
-            .map(|d| Self::new(d, path))
     }
 
     fn add_to_fd_table(self) -> LinuxResult<c_int> {
