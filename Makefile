@@ -51,6 +51,7 @@ A ?= examples/helloworld
 APP ?= $(A)
 FEATURES ?=
 APP_FEATURES ?=
+NO_AXSTD ?= n
 
 # QEMU options
 BLK ?= n
@@ -78,8 +79,10 @@ endif
 
 ifneq ($(wildcard $(APP)/Cargo.toml),)
   APP_TYPE := rust
+  AX_LIB ?= axstd
 else
   APP_TYPE := c
+  AX_LIB ?= axlibc
 endif
 
 .DEFAULT_GOAL := all
@@ -87,6 +90,7 @@ endif
 ifneq ($(filter $(or $(MAKECMDGOALS), $(.DEFAULT_GOAL)), all build run justrun debug defconfig oldconfig),)
 # Install dependencies
 include scripts/make/deps.mk
+
 # Platform resolving
 include scripts/make/platform.mk
 # Configuration generation

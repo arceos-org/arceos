@@ -13,14 +13,17 @@
 
 ifeq ($(APP_TYPE),c)
   ax_feat_prefix := axfeat/
-  lib_feat_prefix := axlibc/
   lib_features := fp-simd irq alloc multitask fs net fd pipe select epoll
 else
-  # TODO: it's better to use `axfeat/` as `ax_feat_prefix`, but all apps need to have `axfeat` as a dependency
-  ax_feat_prefix := axstd/
-  lib_feat_prefix := axstd/
+  ifeq ($(NO_AXSTD),y)
+    ax_feat_prefix := axfeat/
+  else
+    ax_feat_prefix := axstd/
+  endif
   lib_features :=
 endif
+
+lib_feat_prefix := $(AX_LIB)/
 
 override FEATURES := $(shell echo $(FEATURES) | tr ',' ' ')
 
