@@ -46,5 +46,8 @@ jobs:
         make disk_img
         git clone https://github.com/arceos-org/arceos-apps.git
         cd arceos-apps && git reset --hard ${{ env.arceos-apps }} && cd ..
+        echo '[patch.crates-io]' >> arceos-apps/Cargo.toml
+        echo 'page_table_multiarch = { git = "https://github.com/Mivik/page_table_multiarch.git", rev = "19ededd" }' >> arceos-apps/Cargo.toml
+        echo 'page_table_entry = { git = "https://github.com/Mivik/page_table_multiarch.git", rev = "19ededd" }' >> arceos-apps/Cargo.toml
         make -C arceos-apps chaxroot AX_ROOT=$(pwd)
         make -C arceos-apps test ARCH=${{ matrix.arch }}
