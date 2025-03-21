@@ -29,6 +29,8 @@ unsafe extern "C" fn rust_entry(cpu_id: usize, dtb: usize) {
 #[cfg(feature = "smp")]
 unsafe extern "C" fn rust_entry_secondary(cpu_id: usize) {
     crate::cpu::init_secondary(cpu_id);
+    #[cfg(feature = "uspace")]
+    riscv::register::sstatus::set_sum();
     rust_main_secondary(cpu_id);
 }
 
