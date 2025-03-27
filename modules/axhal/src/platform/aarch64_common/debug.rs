@@ -9,14 +9,24 @@ static SEND: SpinNoIrq<Option<Sender>> = SpinNoIrq::new(None);
 static RECV: SpinNoIrq<Option<Receiver>> = SpinNoIrq::new(None);
 
 /// Initializes the console with dtb address and va offset func.
+pub fn test_uart(dtb: usize) -> Option<()> {
+    let mut uart = any_uart::init(NonNull::new(dtb as _)?, |paddr| paddr as _)?;
+    let mut tx = uart.tx.take()?;
+    let _ = tx.write_str_blocking("Booting up...\r\n");
+    Some(())
+}
+
+/// Initializes the console with dtb address and va offset func.
 pub fn init(dtb: usize) -> Option<()> {
     let mut uart = any_uart::init(
         NonNull::new(phys_to_virt(dtb.into()).as_mut_ptr())?,
         |paddr| phys_to_virt(paddr.into()).as_mut_ptr(),
     )?;
+    let mut tx = uart.tx.take()?;
+    let _ = tx.write_str_blocking("ABC\r\n");
 
-    SEND.lock().replace(uart.tx.take().unwrap());
-    RECV.lock().replace(uart.rx.take().unwrap());
+    SEND.lock().replace(tx);
+    RECV.lock().replace(uart.rx.take()?);
 
     Some(())
 }

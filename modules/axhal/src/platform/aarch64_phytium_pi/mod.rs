@@ -33,12 +33,12 @@ unsafe extern "C" {
 
 pub(crate) unsafe extern "C" fn rust_entry(cpu_id: usize, dtb: usize) {
     crate::mem::clear_bss();
-    let cpu_id = cpu_hard_id_to_logic_id(cpu_id);
-    // crate::arch::write_page_table_root0(0.into()); // disable low address access
-    crate::cpu::init_primary(cpu_id);
     super::aarch64_common::debug::init(dtb);
+    let cpu_id = cpu_hard_id_to_logic_id(cpu_id);
+    unsafe { crate::arch::write_page_table_root0(0.into()) }; // disable low address access
+    crate::cpu::init_primary(cpu_id);
     super::aarch64_common::generic_timer::init_early();
-    rust_main(cpu_id, dtb);
+    unsafe { rust_main(cpu_id, dtb) };
 }
 
 #[cfg(feature = "smp")]
