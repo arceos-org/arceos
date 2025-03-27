@@ -99,6 +99,8 @@ impl UspaceContext {
     pub fn new(entry: usize, ustack_top: VirtAddr, arg0: usize) -> Self {
         const SPIE: usize = 1 << 5;
         const SUM: usize = 1 << 18;
+        // enable floating point unit for user space
+        const FS: usize = 1 << 13;
         Self(TrapFrame {
             regs: GeneralRegisters {
                 a0: arg0,
@@ -106,7 +108,7 @@ impl UspaceContext {
                 ..Default::default()
             },
             sepc: entry,
-            sstatus: SPIE | SUM,
+            sstatus: SPIE | SUM | FS,
         })
     }
 
