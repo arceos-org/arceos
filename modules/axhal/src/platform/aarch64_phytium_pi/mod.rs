@@ -9,7 +9,7 @@ pub mod irq {
 }
 
 pub mod console {
-    pub use crate::platform::aarch64_common::pl011::*;
+    pub use crate::platform::aarch64_common::debug::*;
 }
 
 pub mod time {
@@ -34,9 +34,9 @@ unsafe extern "C" {
 pub(crate) unsafe extern "C" fn rust_entry(cpu_id: usize, dtb: usize) {
     crate::mem::clear_bss();
     let cpu_id = cpu_hard_id_to_logic_id(cpu_id);
-    crate::arch::write_page_table_root0(0.into()); // disable low address access
+    // crate::arch::write_page_table_root0(0.into()); // disable low address access
     crate::cpu::init_primary(cpu_id);
-    super::aarch64_common::pl011::init_early();
+    super::aarch64_common::debug::init(dtb);
     super::aarch64_common::generic_timer::init_early();
     rust_main(cpu_id, dtb);
 }
@@ -56,7 +56,6 @@ pub fn platform_init() {
     #[cfg(feature = "irq")]
     super::aarch64_common::gic::init_primary();
     super::aarch64_common::generic_timer::init_percpu();
-    super::aarch64_common::pl011::init();
 }
 
 /// Initializes the platform devices for secondary CPUs.

@@ -55,9 +55,9 @@ riscv_goldfish = { version = "0.1", optional = true }
 aarch64-cpu = "10.0"
 tock-registers = "0.9"
 arm_gicv2 = "0.1"
-arm_pl011 = "0.1"
 arm_pl031 = { version = "0.2", optional = true }
 dw_apb_uart = "0.1"
+any-uart = "0.2"
 
 [target.'cfg(target_arch = "loongarch64")'.dependencies]
 loongArch64 = "0.2.4"
