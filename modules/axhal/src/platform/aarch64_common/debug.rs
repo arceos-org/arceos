@@ -8,7 +8,7 @@ use crate::mem::phys_to_virt;
 static SEND: SpinNoIrq<Option<Sender>> = SpinNoIrq::new(None);
 static RECV: SpinNoIrq<Option<Receiver>> = SpinNoIrq::new(None);
 
-/// Initializes the console with dtb address and va offset func.
+/// Test the console with dtb address.
 pub fn test_uart(dtb: usize) -> Option<()> {
     let mut uart = any_uart::init(NonNull::new(dtb as _)?, |paddr| paddr as _)?;
     let mut tx = uart.tx.take()?;
@@ -16,16 +16,14 @@ pub fn test_uart(dtb: usize) -> Option<()> {
     Some(())
 }
 
-/// Initializes the console with dtb address and va offset func.
+/// Initializes the console with dtb address.
 pub fn init(dtb: usize) -> Option<()> {
     let mut uart = any_uart::init(
         NonNull::new(phys_to_virt(dtb.into()).as_mut_ptr())?,
         |paddr| phys_to_virt(paddr.into()).as_mut_ptr(),
     )?;
-    let mut tx = uart.tx.take()?;
-    let _ = tx.write_str_blocking("ABC\r\n");
 
-    SEND.lock().replace(tx);
+    SEND.lock().replace(uart.tx.take()?);
     RECV.lock().replace(uart.rx.take()?);
 
     Some(())
