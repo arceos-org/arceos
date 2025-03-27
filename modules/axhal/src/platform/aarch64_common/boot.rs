@@ -5,8 +5,6 @@ use tock_registers::interfaces::{ReadWriteable, Readable, Writeable};
 
 use axconfig::{TASK_STACK_SIZE, plat::PHYS_VIRT_OFFSET};
 
-use crate::console::test_uart;
-
 #[unsafe(link_section = ".bss.stack")]
 static mut BOOT_STACK: [u8; TASK_STACK_SIZE] = [0; TASK_STACK_SIZE];
 
@@ -161,8 +159,6 @@ unsafe extern "C" fn _start_primary() -> ! {
 
             bl      {switch_to_el1}         // switch to EL1
             bl      {enable_fp}             // enable fp/neon
-            mov     x0, x20
-            bl      {test_uart}
             bl      {init_boot_page_table}
             bl      {init_mmu}              // setup MMU
 
@@ -178,7 +174,6 @@ unsafe extern "C" fn _start_primary() -> ! {
             init_boot_page_table = sym init_boot_page_table,
             init_mmu = sym init_mmu,
             enable_fp = sym enable_fp,
-            test_uart = sym test_uart,
             boot_stack = sym BOOT_STACK,
             boot_stack_size = const TASK_STACK_SIZE,
             phys_virt_offset = const PHYS_VIRT_OFFSET,

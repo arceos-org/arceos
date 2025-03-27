@@ -8,14 +8,6 @@ use crate::mem::phys_to_virt;
 static SEND: SpinNoIrq<Option<Sender>> = SpinNoIrq::new(None);
 static RECV: SpinNoIrq<Option<Receiver>> = SpinNoIrq::new(None);
 
-/// Test the console with dtb address.
-pub fn test_uart(dtb: usize) -> Option<()> {
-    let mut uart = any_uart::init(NonNull::new(dtb as _)?, |paddr| paddr as _)?;
-    let mut tx = uart.tx.take()?;
-    let _ = tx.write_str_blocking("Booting up...\r\n");
-    Some(())
-}
-
 /// Initializes the console with dtb address.
 pub fn init(dtb: usize) -> Option<()> {
     let mut uart = any_uart::init(
