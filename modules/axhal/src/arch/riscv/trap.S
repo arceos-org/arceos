@@ -31,10 +31,18 @@
     csrw    sscratch, t0
 .endif
 
+    // restore sepc
     LDR     t0, sp, 31
-    LDR     t1, sp, 32
     csrw    sepc, t0
-    csrw    sstatus, t1
+    // restore sstatus, but don't change FS
+    LDR     t0, sp, 32              // t0 = sstatus to restore
+    csrr    t1, sstatus             // t1 = current sstatus
+    li      t2, 0x6000              // t2 = mask for FS
+    and     t1, t1, t2              // t1 = current FS
+    not     t2, t2                  // t2 = ~(mask for FS)
+    and     t0, t0, t2              // t0 = sstatus to restore(cleared FS)
+    or      t0, t0, t1              // t0 = sstatus to restore with current FS
+    csrw    sstatus, t0             // restore sstatus
 
     POP_GENERAL_REGS
     LDR     sp, sp, 1                   // load sp from tf.regs.sp
