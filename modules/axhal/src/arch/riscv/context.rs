@@ -81,9 +81,19 @@ impl TrapFrame {
         self.regs.a0
     }
 
+    /// Sets the 0th syscall argument.
+    pub const fn set_arg0(&mut self, a0: usize) {
+        self.regs.a0 = a0;
+    }
+
     /// Gets the 1st syscall argument.
     pub const fn arg1(&self) -> usize {
         self.regs.a1
+    }
+
+    /// Sets the 1th syscall argument.
+    pub const fn set_arg1(&mut self, a1: usize) {
+        self.regs.a1 = a1;
     }
 
     /// Gets the 2nd syscall argument.
@@ -91,9 +101,19 @@ impl TrapFrame {
         self.regs.a2
     }
 
+    /// Sets the 2nd syscall argument.
+    pub const fn set_arg2(&mut self, a2: usize) {
+        self.regs.a2 = a2;
+    }
+
     /// Gets the 3rd syscall argument.
     pub const fn arg3(&self) -> usize {
         self.regs.a3
+    }
+
+    /// Sets the 3rd syscall argument.
+    pub const fn set_arg3(&mut self, a3: usize) {
+        self.regs.a3 = a3;
     }
 
     /// Gets the 4th syscall argument.
@@ -101,9 +121,54 @@ impl TrapFrame {
         self.regs.a4
     }
 
+    /// Sets the 4th syscall argument.
+    pub const fn set_arg4(&mut self, a4: usize) {
+        self.regs.a4 = a4;
+    }
+
     /// Gets the 5th syscall argument.
     pub const fn arg5(&self) -> usize {
         self.regs.a5
+    }
+
+    /// Sets the 5th syscall argument.
+    pub const fn set_arg5(&mut self, a5: usize) {
+        self.regs.a5 = a5;
+    }
+
+    /// Gets the instruction pointer.
+    pub const fn ip(&self) -> usize {
+        self.sepc
+    }
+
+    /// Sets the instruction pointer.
+    pub const fn set_ip(&mut self, pc: usize) {
+        self.sepc = pc;
+    }
+
+    /// Gets the stack pointer.
+    pub const fn sp(&self) -> usize {
+        self.regs.sp
+    }
+
+    /// Sets the stack pointer.
+    pub const fn set_sp(&mut self, sp: usize) {
+        self.regs.sp = sp;
+    }
+
+    /// Gets the return value register.
+    pub const fn retval(&self) -> usize {
+        self.regs.a0
+    }
+
+    /// Sets the return value register.
+    pub const fn set_retval(&mut self, a0: usize) {
+        self.regs.a0 = a0;
+    }
+
+    /// Sets the return address.
+    pub const fn set_ra(&mut self, ra: usize) {
+        self.regs.ra = ra;
     }
 }
 
@@ -150,31 +215,6 @@ impl UspaceContext {
         Self(*trap_frame)
     }
 
-    /// Gets the instruction pointer.
-    pub const fn get_ip(&self) -> usize {
-        self.0.sepc
-    }
-
-    /// Gets the stack pointer.
-    pub const fn get_sp(&self) -> usize {
-        self.0.regs.sp
-    }
-
-    /// Sets the instruction pointer.
-    pub const fn set_ip(&mut self, pc: usize) {
-        self.0.sepc = pc;
-    }
-
-    /// Sets the stack pointer.
-    pub const fn set_sp(&mut self, sp: usize) {
-        self.0.regs.sp = sp;
-    }
-
-    /// Sets the return value register.
-    pub const fn set_retval(&mut self, a0: usize) {
-        self.0.regs.a0 = a0;
-    }
-
     /// Enters user space.
     ///
     /// It restores the user registers and jumps to the user entry point
@@ -216,6 +256,22 @@ impl UspaceContext {
                 options(noreturn),
             )
         }
+    }
+}
+
+#[cfg(feature = "uspace")]
+impl core::ops::Deref for UspaceContext {
+    type Target = TrapFrame;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[cfg(feature = "uspace")]
+impl core::ops::DerefMut for UspaceContext {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
@@ -285,6 +341,16 @@ impl TaskContext {
     pub fn init(&mut self, entry: usize, kstack_top: VirtAddr, tls_area: VirtAddr) {
         self.sp = kstack_top.as_usize();
         self.ra = entry;
+        self.tp = tls_area.as_usize();
+    }
+
+    /// Gets the TLS area.
+    pub fn tls(&self) -> VirtAddr {
+        VirtAddr::from(self.tp)
+    }
+
+    /// Sets the TLS area.
+    pub fn set_tls(&mut self, tls_area: VirtAddr) {
         self.tp = tls_area.as_usize();
     }
 

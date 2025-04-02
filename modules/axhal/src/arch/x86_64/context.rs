@@ -39,9 +39,19 @@ impl TrapFrame {
         self.rdi as _
     }
 
+    /// Sets the 0th syscall argument.
+    pub const fn set_arg0(&mut self, rdi: usize) {
+        self.rdi = rdi as _;
+    }
+
     /// Gets the 1st syscall argument.
     pub const fn arg1(&self) -> usize {
         self.rsi as _
+    }
+
+    /// Sets the 1st syscall argument.
+    pub const fn set_arg1(&mut self, rsi: usize) {
+        self.rsi = rsi as _;
     }
 
     /// Gets the 2nd syscall argument.
@@ -49,9 +59,19 @@ impl TrapFrame {
         self.rdx as _
     }
 
+    /// Sets the 2nd syscall argument.
+    pub const fn set_arg2(&mut self, rdx: usize) {
+        self.rdx = rdx as _;
+    }
+
     /// Gets the 3rd syscall argument.
     pub const fn arg3(&self) -> usize {
         self.r10 as _
+    }
+
+    /// Sets the 3rd syscall argument.
+    pub const fn set_arg3(&mut self, r10: usize) {
+        self.r10 = r10 as _;
     }
 
     /// Gets the 4th syscall argument.
@@ -59,14 +79,66 @@ impl TrapFrame {
         self.r8 as _
     }
 
+    /// Sets the 4th syscall argument.
+    pub const fn set_arg4(&mut self, r8: usize) {
+        self.r8 = r8 as _;
+    }
+
     /// Gets the 5th syscall argument.
     pub const fn arg5(&self) -> usize {
         self.r9 as _
     }
 
+    /// Sets the 5th syscall argument.
+    pub const fn set_arg5(&mut self, r9: usize) {
+        self.r9 = r9 as _;
+    }
+
     /// Whether the trap is from userspace.
     pub const fn is_user(&self) -> bool {
         self.cs & 0b11 == 3
+    }
+
+    /// Gets the instruction pointer.
+    pub const fn ip(&self) -> usize {
+        self.rip as _
+    }
+
+    /// Sets the instruction pointer.
+    pub const fn set_ip(&mut self, rip: usize) {
+        self.rip = rip as _;
+    }
+
+    /// Gets the stack pointer.
+    pub const fn sp(&self) -> usize {
+        self.rsp as _
+    }
+
+    /// Sets the stack pointer.
+    pub const fn set_sp(&mut self, rsp: usize) {
+        self.rsp = rsp as _;
+    }
+
+    /// Gets the return value register.
+    pub const fn retval(&self) -> usize {
+        self.rax as _
+    }
+
+    /// Sets the return value register.
+    pub const fn set_retval(&mut self, rax: usize) {
+        self.rax = rax as _;
+    }
+
+    /// Push the return address.
+    ///
+    /// On x86_64, return address is stored in stack, so we need to modify the
+    /// stack in order to change the return address. This function uses a
+    /// separate name (rather than `set_ra`) to avoid confusion and misuse.
+    pub fn push_ra(&mut self, addr: usize) {
+        self.rsp -= 8;
+        unsafe {
+            core::ptr::write(self.rsp as *mut usize, addr);
+        }
     }
 }
 
@@ -110,31 +182,6 @@ impl UspaceContext {
         Self(tf)
     }
 
-    /// Gets the instruction pointer.
-    pub const fn get_ip(&self) -> usize {
-        self.0.rip as _
-    }
-
-    /// Gets the stack pointer.
-    pub const fn get_sp(&self) -> usize {
-        self.0.rsp as _
-    }
-
-    /// Sets the instruction pointer.
-    pub const fn set_ip(&mut self, rip: usize) {
-        self.0.rip = rip as _;
-    }
-
-    /// Sets the stack pointer.
-    pub const fn set_sp(&mut self, rsp: usize) {
-        self.0.rsp = rsp as _;
-    }
-
-    /// Sets the return value register.
-    pub const fn set_retval(&mut self, rax: usize) {
-        self.0.rax = rax as _;
-    }
-
     /// Enters user space.
     ///
     /// It restores the user registers and jumps to the user entry point
@@ -173,6 +220,22 @@ impl UspaceContext {
                 options(noreturn),
             )
         }
+    }
+}
+
+#[cfg(feature = "uspace")]
+impl core::ops::Deref for UspaceContext {
+    type Target = TrapFrame;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[cfg(feature = "uspace")]
+impl core::ops::DerefMut for UspaceContext {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
@@ -322,6 +385,16 @@ impl TaskContext {
             self.rsp = frame_ptr as u64;
         }
         self.kstack_top = kstack_top;
+        self.fs_base = tls_area.as_usize();
+    }
+
+    /// Gets the TLS area.
+    pub fn tls(&self) -> VirtAddr {
+        VirtAddr::from(self.fs_base)
+    }
+
+    /// Sets the TLS area.
+    pub fn set_tls(&mut self, tls_area: VirtAddr) {
         self.fs_base = tls_area.as_usize();
     }
 
