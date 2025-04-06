@@ -45,7 +45,7 @@ unsafe extern "C" {
 ///   consistent. Each namespace has its own resources, which may be unique or
 ///   shared between threads by the [`Arc`] wrapper.
 pub struct AxNamespace {
-    base: *mut u8,
+    base: usize,
     alloc: bool,
 }
 
@@ -53,7 +53,7 @@ impl AxNamespace {
     /// Returns the base address of the namespace, which points to the start of
     /// all resources.
     pub const fn base(&self) -> *mut u8 {
-        self.base
+        self.base as *mut u8
     }
 
     /// Returns the size of the namespace (size of all resources).
@@ -69,7 +69,7 @@ impl AxNamespace {
     /// Returns the global namespace.
     pub fn global() -> Self {
         Self {
-            base: __start_axns_resource as *mut u8,
+            base: __start_axns_resource as usize,
             alloc: false,
         }
     }
@@ -92,7 +92,7 @@ impl AxNamespace {
             let src = __start_axns_resource as *const u8;
             unsafe { core::ptr::copy_nonoverlapping(src, dst, size) };
             dst
-        };
+        } as usize;
         Self { base, alloc: true }
     }
 }
@@ -101,9 +101,10 @@ impl Drop for AxNamespace {
     fn drop(&mut self) {
         if self.alloc {
             let size = Self::section_size();
-            if size != 0 && !self.base.is_null() {
+            let base = self.base();
+            if size != 0 && !base.is_null() {
                 let layout = Layout::from_size_align(size, 64).unwrap();
-                unsafe { alloc::alloc::dealloc(self.base, layout) };
+                unsafe { alloc::alloc::dealloc(base, layout) };
             }
         }
     }
