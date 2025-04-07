@@ -4,10 +4,9 @@ use linkme::distributed_slice as def_trap_handler;
 use memory_addr::VirtAddr;
 use page_table_entry::MappingFlags;
 
-#[cfg(feature = "uspace")]
-use crate::arch::TrapFrame;
-
 pub use linkme::distributed_slice as register_trap_handler;
+
+use crate::arch::TrapFrame;
 
 /// A slice of IRQ handler functions.
 #[def_trap_handler]
@@ -20,7 +19,11 @@ pub static PAGE_FAULT: [fn(VirtAddr, MappingFlags, bool) -> bool];
 /// A slice of syscall handler functions.
 #[cfg(feature = "uspace")]
 #[def_trap_handler]
-pub static SYSCALL: [fn(&TrapFrame, usize) -> isize];
+pub static SYSCALL: [fn(&mut TrapFrame, usize) -> isize];
+
+/// A slice of callbacks to be invoked after a trap.
+#[linkme::distributed_slice]
+pub static POST_TRAP: [fn(&mut TrapFrame, bool)];
 
 #[allow(unused_macros)]
 macro_rules! handle_trap {
@@ -38,8 +41,15 @@ macro_rules! handle_trap {
     }}
 }
 
+#[unsafe(no_mangle)]
+pub(crate) fn post_trap_callback(tf: &mut TrapFrame, from_user: bool) {
+    for cb in crate::trap::POST_TRAP.iter() {
+        cb(tf, from_user);
+    }
+}
+
 /// Call the external syscall handler.
 #[cfg(feature = "uspace")]
-pub(crate) fn handle_syscall(tf: &TrapFrame, syscall_num: usize) -> isize {
+pub(crate) fn handle_syscall(tf: &mut TrapFrame, syscall_num: usize) -> isize {
     SYSCALL[0](tf, syscall_num)
 }
