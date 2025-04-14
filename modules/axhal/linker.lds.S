@@ -11,8 +11,6 @@ SECTIONS
     .text : ALIGN(4K) {
         _stext = .;
         *(.text.boot)
-        . = ALIGN(4K);
-        *(.text.signal_trampoline)
         *(.text .text.*)
         . = ALIGN(4K);
         _etext = .;
@@ -98,8 +96,6 @@ SECTIONS {
     linkm2_PAGE_FAULT : { *(linkm2_PAGE_FAULT) }
     linkme_SYSCALL : { *(linkme_SYSCALL) }
     linkm2_SYSCALL : { *(linkm2_SYSCALL) }
-    linkme_POST_TRAP : { *(linkme_POST_TRAP) }
-    linkm2_POST_TRAP : { *(linkm2_POST_TRAP) }
     axns_resource : { *(axns_resource) }
 }
 INSERT AFTER .tbss;

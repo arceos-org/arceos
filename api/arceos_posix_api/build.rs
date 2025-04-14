@@ -53,7 +53,6 @@ typedef struct {{
             "clockid_t",
             "rlimit",
             "aibuf",
-            "siginfo_t",
         ];
         let allow_vars = [
             "CLOCK_.*",

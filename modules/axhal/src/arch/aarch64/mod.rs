@@ -150,5 +150,3 @@ pub fn cpu_init() {
     set_exception_vector_base(exception_vector_base as usize);
     unsafe { write_page_table_root0(0.into()) }; // disable low address access in EL1
 }
-
-core::arch::global_asm!(include_str!("signal.S"));

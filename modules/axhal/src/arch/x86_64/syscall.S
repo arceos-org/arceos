@@ -30,10 +30,6 @@ syscall_entry:
     mov     rdi, rsp
     call    x86_syscall_handler
 
-    mov     rdi, rsp
-    mov     rsi, 1 // is_user
-    call    post_trap_callback
-
     pop     rax
     pop     rcx
     pop     rdx

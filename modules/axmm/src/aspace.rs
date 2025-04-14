@@ -394,10 +394,6 @@ impl AddrSpace {
                 .areas
                 .map(new_area, &mut new_aspace.pt, false)
                 .map_err(mapping_err_to_ax_err)?;
-
-            if matches!(backend, Backend::Linear { .. }) {
-                continue;
-            }
             // Copy data from old memory area to new memory area.
             for vaddr in
                 PageIter4K::new(area.start(), area.end()).expect("Failed to create page iterator")

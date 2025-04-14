@@ -133,5 +133,3 @@ pub fn cpu_init() {
     #[cfg(feature = "uspace")]
     init_syscall();
 }
-
-core::arch::global_asm!(include_str!("signal.S"));

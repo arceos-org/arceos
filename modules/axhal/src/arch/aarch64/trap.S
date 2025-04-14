@@ -63,20 +63,18 @@
     b       .Lexception_return
 .endm
 
-.macro HANDLE_SYNC, source
+.macro HANDLE_SYNC
 .p2align 7
     SAVE_REGS
     mov     x0, sp
-    mov     x1, \source
     bl      handle_sync_exception
     b       .Lexception_return
 .endm
 
-.macro HANDLE_IRQ, source
+.macro HANDLE_IRQ
 .p2align 7
     SAVE_REGS
     mov     x0, sp
-    mov     x1, \source
     bl      handle_irq_exception
     b       .Lexception_return
 .endm
@@ -92,14 +90,14 @@ exception_vector_base:
     INVALID_EXCP 3 0
 
     // current EL, with SP_ELx
-    HANDLE_SYNC 1
-    HANDLE_IRQ 1
+    HANDLE_SYNC
+    HANDLE_IRQ
     INVALID_EXCP 2 1
     INVALID_EXCP 3 1
 
     // lower EL, aarch64
-    HANDLE_SYNC 2
-    HANDLE_IRQ 2
+    HANDLE_SYNC
+    HANDLE_IRQ
     INVALID_EXCP 2 2
     INVALID_EXCP 3 2
 

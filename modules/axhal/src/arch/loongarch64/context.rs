@@ -118,14 +118,14 @@ impl TrapFrame {
         self.era
     }
 
-    /// Gets the stack pointer.
-    pub const fn sp(&self) -> usize {
-        self.regs.sp
-    }
-
     /// Sets the instruction pointer.
     pub const fn set_ip(&mut self, pc: usize) {
         self.era = pc;
+    }
+
+    /// Gets the stack pointer.
+    pub const fn sp(&self) -> usize {
+        self.regs.sp
     }
 
     /// Sets the stack pointer.
@@ -193,7 +193,7 @@ impl UspaceContext {
         use loongArch64::register::era;
 
         super::disable_irqs();
-        era::set_pc(self.0.ip());
+        era::set_pc(self.ip());
 
         unsafe {
             core::arch::asm!(

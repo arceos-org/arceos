@@ -119,5 +119,3 @@ pub fn cpu_init() {
     }
     set_trap_vector_base(trap_vector_base as usize);
 }
-
-core::arch::global_asm!(include_str!("signal.S"));

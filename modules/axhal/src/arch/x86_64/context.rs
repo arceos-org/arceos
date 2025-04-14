@@ -104,14 +104,14 @@ impl TrapFrame {
         self.rip as _
     }
 
-    /// Gets the stack pointer.
-    pub const fn sp(&self) -> usize {
-        self.rsp as _
-    }
-
     /// Sets the instruction pointer.
     pub const fn set_ip(&mut self, rip: usize) {
         self.rip = rip as _;
+    }
+
+    /// Gets the stack pointer.
+    pub const fn sp(&self) -> usize {
+        self.rsp as _
     }
 
     /// Sets the stack pointer.
