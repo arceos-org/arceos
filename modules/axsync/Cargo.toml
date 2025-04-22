@@ -15,6 +15,7 @@ default = []
 
 [dependencies]
 kspin = "0.1"
+lock_api = { version = "0.4", default-features = false }
 axtask = { workspace = true }
 
 [dev-dependencies]

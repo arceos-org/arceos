@@ -603,6 +603,7 @@ dependencies = [
  "axsync",
  "axtask",
  "kspin",
+ "lock_api",
  "rand",
 ]
 
