@@ -5,6 +5,9 @@ mod idt;
 #[cfg(feature = "uspace")]
 mod syscall;
 
+#[cfg(feature = "uspace")]
+mod tls;
+
 #[cfg(target_os = "none")]
 mod trap;
 

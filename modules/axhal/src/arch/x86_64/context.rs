@@ -21,6 +21,10 @@ pub struct TrapFrame {
     pub r14: u64,
     pub r15: u64,
 
+    // Set by `tls.rs`
+    pub fs_base: u64,
+    pub __pad: u64,
+
     // Pushed by `trap.S`
     pub vector: u64,
     pub error_code: u64,
@@ -140,6 +144,16 @@ impl TrapFrame {
             core::ptr::write(self.rsp as *mut usize, addr);
         }
     }
+
+    /// Gets the TLS area.
+    pub const fn tls(&self) -> usize {
+        self.fs_base as _
+    }
+
+    /// Sets the TLS area.
+    pub const fn set_tls(&mut self, tls_area: usize) {
+        self.fs_base = tls_area as _;
+    }
 }
 
 /// Context to enter user space.
@@ -195,6 +209,7 @@ impl UspaceContext {
     pub unsafe fn enter_uspace(&self, kstack_top: VirtAddr) -> ! {
         super::disable_irqs();
         assert_eq!(super::tss_get_rsp0(), kstack_top);
+        super::tls::switch_to_user_fs_base(&self.0);
         unsafe {
             core::arch::asm!("
                 mov     rsp, {tf}
@@ -213,7 +228,7 @@ impl UspaceContext {
                 pop     r13
                 pop     r14
                 pop     r15
-                add     rsp, 16     // skip vector, error_code
+                add     rsp, 32     // skip fs_base, vector, error_code
                 swapgs
                 iretq",
                 tf = in(reg) &self.0,
@@ -315,7 +330,7 @@ impl fmt::Debug for ExtendedState {
 ///
 /// - Callee-saved registers
 /// - Stack pointer register
-/// - Thread pointer register (for thread-local storage, currently unsupported)
+/// - Thread pointer register (for kernel space thread-local storage)
 /// - FP/SIMD registers
 ///
 /// On context switch, current task saves its context from CPU to memory,
@@ -334,9 +349,11 @@ pub struct TaskContext {
     pub kstack_top: VirtAddr,
     /// `RSP` after all callee-saved registers are pushed.
     pub rsp: u64,
-    /// Thread Local Storage (TLS).
+    /// Thread pointer (FS segment base address)
     pub fs_base: usize,
-    /// The `gs_base` register value.
+    /// User space Thread pointer (GS segment base address)
+    ///
+    /// During task switching, it is written to `KernelGSBase` MSR.
     #[cfg(feature = "uspace")]
     pub gs_base: usize,
     /// Extended states, i.e., FP/SIMD states.
@@ -388,16 +405,6 @@ impl TaskContext {
         self.fs_base = tls_area.as_usize();
     }
 
-    /// Gets the TLS area.
-    pub fn tls(&self) -> VirtAddr {
-        VirtAddr::from(self.fs_base)
-    }
-
-    /// Sets the TLS area.
-    pub fn set_tls(&mut self, tls_area: VirtAddr) {
-        self.fs_base = tls_area.as_usize();
-    }
-
     /// Changes the page table root (`CR3` register for x86_64).
     ///
     /// If not set, the kernel page table root is used (obtained by
@@ -419,7 +426,7 @@ impl TaskContext {
             self.ext_state.save();
             next_ctx.ext_state.restore();
         }
-        #[cfg(any(feature = "tls", feature = "uspace"))]
+        #[cfg(any(feature = "tls"))]
         unsafe {
             self.fs_base = super::read_thread_pointer();
             super::write_thread_pointer(next_ctx.fs_base);

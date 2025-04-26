@@ -8,7 +8,8 @@ syscall_entry:
     sub     rsp, 8                                  // skip user ss
     push    gs:[offset __PERCPU_USER_RSP_OFFSET]    // user rsp
     push    r11                                     // rflags
-    mov     [rsp - 2 * 8], rcx                      // rip
+    push    {ucode64}                               // cs
+    push    rcx                                     // rip
     sub     rsp, 4 * 8                              // skip until general registers
 
     push    r15
@@ -46,7 +47,7 @@ syscall_entry:
     pop     r14
     pop     r15
 
-    add     rsp, 7 * 8
+    add     rsp, 9 * 8
     mov     rcx, [rsp - 5 * 8]  // rip
     mov     r11, [rsp - 3 * 8]  // rflags
     mov     rsp, [rsp - 2 * 8]  // user rsp

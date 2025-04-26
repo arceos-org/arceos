@@ -1,5 +1,5 @@
 .macro SAVE_REGS
-    sub     sp, sp, 34 * 8
+    sub     sp, sp, {trapframe_size}
     stp     x0, x1, [sp]
     stp     x2, x3, [sp, 2 * 8]
     stp     x4, x5, [sp, 4 * 8]
@@ -15,13 +15,19 @@
     stp     x24, x25, [sp, 24 * 8]
     stp     x26, x27, [sp, 26 * 8]
     stp     x28, x29, [sp, 28 * 8]
+    str     x30, [sp, 30 * 8]
 
     mrs     x9, sp_el0
-    mrs     x10, elr_el1
-    mrs     x11, spsr_el1
-    stp     x30, x9, [sp, 30 * 8]
-    stp     x10, x11, [sp, 32 * 8]
-    
+    mrs     x10, tpidr_el0
+    mrs     x11, elr_el1
+    mrs     x12, spsr_el1
+    stp     x9, x10, [sp, 31 * 8]
+    stp     x11, x12, [sp, 33 * 8]
+
+    # restore kernel tpidr_el0
+    mrs     x1, tpidrro_el0
+    msr     tpidr_el0, x1
+
     # We may have interrupted userspace, or a guest, or exit-from or 
     # return-to either of those. So we can't trust sp_el0, and need to
     # restore it.
@@ -29,12 +35,18 @@
 .endm
 
 .macro RESTORE_REGS
-    ldp     x10, x11, [sp, 32 * 8]
-    ldp     x30, x9, [sp, 30 * 8]
-    msr     sp_el0, x9
-    msr     elr_el1, x10
-    msr     spsr_el1, x11
+    # backup kernel tpidr_el0
+    mrs     x1, tpidr_el0
+    msr     tpidrro_el0, x1
 
+    ldp     x11, x12, [sp, 33 * 8]
+    ldp     x9, x10, [sp, 31 * 8]
+    msr     sp_el0, x9
+    msr     tpidr_el0, x10
+    msr     elr_el1, x11
+    msr     spsr_el1, x12
+
+    ldr     x30, [sp, 30 * 8]
     ldp     x28, x29, [sp, 28 * 8]
     ldp     x26, x27, [sp, 26 * 8]
     ldp     x24, x25, [sp, 24 * 8]
@@ -50,7 +62,7 @@
     ldp     x4, x5, [sp, 4 * 8]
     ldp     x2, x3, [sp, 2 * 8]
     ldp     x0, x1, [sp]
-    add     sp, sp, 34 * 8
+    add     sp, sp, {trapframe_size}
 .endm
 
 .macro INVALID_EXCP, kind, source

@@ -55,7 +55,7 @@ pub struct TrapFrame {
 impl TrapFrame {
     /// Gets the 0th syscall argument.
     pub const fn arg0(&self) -> usize {
-        self.regs.a0 as _
+        self.regs.a0
     }
 
     /// Sets the 0th syscall argument.
@@ -65,7 +65,7 @@ impl TrapFrame {
 
     /// Gets the 1st syscall argument.
     pub const fn arg1(&self) -> usize {
-        self.regs.a1 as _
+        self.regs.a1
     }
 
     /// Sets the 1st syscall argument.
@@ -75,7 +75,7 @@ impl TrapFrame {
 
     /// Gets the 2nd syscall argument.
     pub const fn arg2(&self) -> usize {
-        self.regs.a2 as _
+        self.regs.a2
     }
 
     /// Sets the 2nd syscall argument.
@@ -85,7 +85,7 @@ impl TrapFrame {
 
     /// Gets the 3rd syscall argument.
     pub const fn arg3(&self) -> usize {
-        self.regs.a3 as _
+        self.regs.a3
     }
 
     /// Sets the 3rd syscall argument.
@@ -95,7 +95,7 @@ impl TrapFrame {
 
     /// Gets the 4th syscall argument.
     pub const fn arg4(&self) -> usize {
-        self.regs.a4 as _
+        self.regs.a4
     }
 
     /// Sets the 4th syscall argument.
@@ -105,7 +105,7 @@ impl TrapFrame {
 
     /// Gets the 5th syscall argument.
     pub const fn arg5(&self) -> usize {
-        self.regs.a5 as _
+        self.regs.a5
     }
 
     /// Sets the 5th syscall argument.
@@ -135,7 +135,7 @@ impl TrapFrame {
 
     /// Gets the return value register.
     pub const fn retval(&self) -> usize {
-        self.regs.a0 as _
+        self.regs.a0
     }
 
     /// Sets the return value register.
@@ -146,6 +146,16 @@ impl TrapFrame {
     /// Sets the return address.
     pub const fn set_ra(&mut self, ra: usize) {
         self.regs.ra = ra;
+    }
+
+    /// Gets the TLS area.
+    pub const fn tls(&self) -> usize {
+        self.regs.tp
+    }
+
+    /// Sets the TLS area.
+    pub const fn set_tls(&mut self, tls_area: usize) {
+        self.regs.tp = tls_area;
     }
 }
 
@@ -242,7 +252,7 @@ impl core::ops::DerefMut for UspaceContext {
 ///
 /// - Callee-saved registers
 /// - Stack pointer register
-/// - Thread pointer register (for thread-local storage, currently unsupported)
+/// - Thread pointer register (for kernel space thread-local storage)
 /// - FP/SIMD registers
 ///
 /// On context switch, current task saves its context from CPU to memory,
@@ -275,16 +285,6 @@ impl TaskContext {
     pub fn init(&mut self, entry: usize, kstack_top: VirtAddr, tls_area: VirtAddr) {
         self.sp = kstack_top.as_usize();
         self.ra = entry;
-        self.tp = tls_area.as_usize();
-    }
-
-    /// Gets the TLS area.
-    pub fn tls(&self) -> VirtAddr {
-        VirtAddr::from(self.tp)
-    }
-
-    /// Sets the TLS area.
-    pub fn set_tls(&mut self, tls_area: VirtAddr) {
         self.tp = tls_area.as_usize();
     }
 
