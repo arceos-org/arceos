@@ -1,0 +1,35 @@
+[package]
+name = "axembassy"
+version.workspace = true
+edition.workspace = true
+authors = ["nostalgia <lv15623448685@gmail.com>"]
+license.workspace = true
+homepage.workspace = true
+
+[features]
+driver = [
+	"dep:embassy-time-driver",
+	"dep:embassy-time-queue-utils",
+	"dep:kspin",
+	"dep:percpu",
+	"axhal/irq",
+]
+executor = ["dep:embassy-executor"]
+futures = ["dep:embassy-futures"]
+
+default = ["driver", "executor", "futures"]
+
+[dependencies]
+axconfig = { workspace = true }
+axhal = { workspace = true, features = ["irq"] }
+
+embassy-time-driver = { version = "0.2.0", optional = true }
+embassy-time-queue-utils = { version = "0.1.0", optional = true }
+embassy-executor = { version = "0.7.0", features = [
+	"nightly",
+	"executor-thread",
+], optional = true }
+embassy-futures = { version = "0.1.1", optional = true }
+
+kspin = { version = "0.1", optional = true }
+percpu = { version = "0.2", optional = true }

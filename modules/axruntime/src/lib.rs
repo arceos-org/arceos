@@ -240,25 +240,96 @@ fn init_interrupt() {
     const PERIODIC_INTERVAL_NANOS: u64 =
         axhal::time::NANOS_PER_SEC / axconfig::TICKS_PER_SEC as u64;
 
-    #[percpu::def_percpu]
-    static NEXT_DEADLINE: u64 = 0;
+    #[cfg(not(feature = "embassy-timer"))]
+    {
+        #[percpu::def_percpu]
+        static NEXT_DEADLINE: u64 = 0;
 
-    fn update_timer() {
-        let now_ns = axhal::time::monotonic_time_nanos();
-        // Safety: we have disabled preemption in IRQ handler.
-        let mut deadline = unsafe { NEXT_DEADLINE.read_current_raw() };
-        if now_ns >= deadline {
-            deadline = now_ns + PERIODIC_INTERVAL_NANOS;
+        fn update_timer() {
+            let now_ns = axhal::time::monotonic_time_nanos();
+            // Safety: we have disabled preemption in IRQ handler.
+            let mut deadline = unsafe { NEXT_DEADLINE.read_current_raw() };
+            if now_ns >= deadline {
+                deadline = now_ns + PERIODIC_INTERVAL_NANOS;
+            }
+            unsafe { NEXT_DEADLINE.write_current_raw(deadline + PERIODIC_INTERVAL_NANOS) };
+            axhal::time::set_oneshot_timer(deadline);
         }
-        unsafe { NEXT_DEADLINE.write_current_raw(deadline + PERIODIC_INTERVAL_NANOS) };
-        axhal::time::set_oneshot_timer(deadline);
+
+        axhal::irq::register_handler(TIMER_IRQ_NUM, || {
+            update_timer();
+            #[cfg(feature = "multitask")]
+            axtask::on_timer_tick();
+        });
     }
 
-    axhal::irq::register_handler(TIMER_IRQ_NUM, || {
-        update_timer();
-        #[cfg(feature = "multitask")]
-        axtask::on_timer_tick();
-    });
+    #[cfg(feature = "embassy-timer")]
+    {
+        use axembassy::time_driver::{AxDriver, ticks_to_nanos};
+
+        static AX_DRIVER: AxDriver = AxDriver::new();
+
+        #[percpu::def_percpu]
+        static NANOS_NEXT_SCHED: SpinNoIrq<u64> = SpinNoIrq::new(0);
+        AX_DERIVER.runtime_init(PERIODIC_INTERVAL_NANOS, &NANOS_NEXT_SCHED);
+
+        /// Timer interrupt handler merged with embassy
+        ///
+        /// Integrate both embassy and task scheduler:
+        /// - Record schedule time to call `axtask::on_timer_tick()`
+        /// - Set the next timer alarm by comparing the next embassy timer and the next scheduler tick repeatedly until works.
+        pub fn embassy_update_timer() {
+            let queue_guard = AX_DRIVER.queue.lock();
+            let _queue = queue_guard.borrow_mut();
+
+            let ticks_now = AX_DRIVER.now();
+            let nanos_now = time::monotonic_time_nanos();
+
+            let ticks_next_at = queue_guard.borrow_mut().next_expiration(ticks_now);
+
+            let mut sched_lock = unsafe { NANOS_NEXT_SCHED.current_ref_mut_raw().lock() };
+            let periodic_lock = AX_DRIVER.periodic_interval_nanos.lock();
+
+            let mut nanos_next_sched = *sched_lock;
+            if nanos_now >= nanos_next_sched {
+                #[cfg(feature = "multitask")]
+                axtask::on_timer_tick();
+
+                let periodic = *periodic_lock;
+                while nanos_next_sched <= nanos_now {
+                    nanos_next_sched += periodic;
+                }
+                *sched_lock = nanos_next_sched;
+            }
+
+            let nanos_next_at = if ticks_next_at == u64::MAX {
+                u64::MAX
+            } else {
+                ticks_to_nanos(ticks_next_at)
+            };
+
+            let nanos_earlier = core::cmp::min(nanos_next_sched, nanos_next_at);
+            let mut nanos_try = nanos_earlier;
+            while nanos_try != u64::MAX {
+                if AX_DRIVER.set_alarm_at(nanos_try) {
+                    break;
+                }
+
+                // Setting failed
+                let ticks_next_failure = queue_guard.borrow_mut().next_expiration(AX_DRIVER.now());
+                let nanos_next_failure = if ticks_next_failure == u64::MAX {
+                    u64::MAX
+                } else {
+                    ticks_to_nanos(ticks_next_failure)
+                };
+
+                let sched_failure_lock = unsafe { NANOS_NEXT_SCHED.current_ref_raw().lock() };
+                let nanos_sched_failure = *sched_failure_lock;
+                nanos_try = core::cmp::min(nanos_next_failure, nanos_sched_failure);
+            }
+        }
+        axhal::irq::register_handler(TIMER_IRQ_NUM, embassy_update_timer);
+    }
 
     // Enable IRQs before starting app
     axhal::arch::enable_irqs();

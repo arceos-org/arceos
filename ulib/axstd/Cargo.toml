@@ -45,6 +45,9 @@ sched_fifo = ["axfeat/sched_fifo"]
 sched_rr = ["axfeat/sched_rr"]
 sched_cfs = ["axfeat/sched_cfs"]
 
+# Embassy Timer
+embassy-timer = ["axfeat/embassy-timer"]
+
 # File system
 fs = ["arceos_api/fs", "axfeat/fs"]
 myfs = ["arceos_api/myfs", "axfeat/myfs"]

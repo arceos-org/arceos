@@ -368,6 +368,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "axembassy"
+version = "0.1.0"
+dependencies = [
+ "axconfig",
+ "axhal",
+ "embassy-executor",
+ "embassy-futures",
+ "embassy-time-driver",
+ "embassy-time-queue-utils",
+ "kspin",
+ "percpu",
+]
+
+[[package]]
 name = "axerrno"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -383,6 +397,7 @@ dependencies = [
  "axalloc",
  "axdisplay",
  "axdriver",
+ "axembassy",
  "axfs",
  "axhal",
  "axlog",
@@ -569,6 +584,7 @@ dependencies = [
  "axconfig",
  "axdisplay",
  "axdriver",
+ "axembassy",
  "axfs",
  "axhal",
  "axlog",

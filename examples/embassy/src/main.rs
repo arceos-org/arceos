@@ -7,11 +7,9 @@
 extern crate axstd as std;
 
 use embassy_futures::yield_now;
-use embassy_time::{Duration, MockDriver};
 use std::boxed::Box;
 
 mod executor;
-mod timer;
 
 fn tick(sec: u64, f: fn()) -> embassy_executor::SpawnToken<impl Sized> {
     let task = Box::leak(Box::new(embassy_executor::raw::TaskStorage::new()));
