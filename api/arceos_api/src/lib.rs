@@ -122,6 +122,7 @@ pub mod task {
         pub type AxTaskHandle;
         pub type AxWaitQueueHandle;
         pub type AxCpuMask;
+        pub type AxFutex;
     }
 
     define_api! {
@@ -175,6 +176,10 @@ pub mod task {
         /// The maximum number of tasks to wake up is specified by `count`. If
         /// `count` is `u32::MAX`, it will wake up all tasks in the wait queue.
         pub fn ax_wait_queue_wake(wq: &AxWaitQueueHandle, count: u32);
+
+        pub fn ax_futex_wake(futex: &AxFutex);
+        pub fn ax_futex_wake_all(futex: &AxFutex);
+        pub fn ax_futex_wait(futex: &AxFutex, expected: u32, timeout: Option<core::time::Duration>) -> bool;
     }
 }
 

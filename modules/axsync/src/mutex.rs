@@ -167,6 +167,14 @@ impl<T: ?Sized + fmt::Debug> fmt::Debug for Mutex<T> {
     }
 }
 
+impl<'a, T: ?Sized> MutexGuard<'a, T> {
+    #[inline(always)]
+    pub fn mutex(&self) -> &'a Mutex<T> {
+        let m = self.lock;
+        &*m
+    }
+}
+
 impl<T: ?Sized> Deref for MutexGuard<'_, T> {
     type Target = T;
     #[inline(always)]
