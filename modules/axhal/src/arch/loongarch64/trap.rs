@@ -69,4 +69,6 @@ fn loongarch64_trap_handler(tf: &mut TrapFrame, from_user: bool) {
             );
         }
     }
+
+    crate::trap::post_trap_callback(tf, from_user);
 }

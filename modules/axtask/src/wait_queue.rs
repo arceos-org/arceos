@@ -1,5 +1,6 @@
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
+use alloc::vec::Vec;
 
 use kernel_guard::{NoOp, NoPreemptIrqSave};
 use kspin::{SpinNoIrq, SpinNoIrqGuard};
@@ -200,6 +201,20 @@ impl WaitQueue {
         } else {
             false
         }
+    }
+
+    /// Requeues at most `count` tasks in the wait queue to the target wait queue.
+    ///
+    /// Returns the number of tasks requeued.
+    pub fn requeue(&self, count: usize, target: &WaitQueue) -> usize {
+        let tasks: Vec<_> = {
+            let mut wq = self.queue.lock();
+            let count = count.min(wq.len());
+            wq.drain(..count).collect()
+        };
+        let mut wq = target.queue.lock();
+        wq.extend(tasks);
+        count
     }
 }
 

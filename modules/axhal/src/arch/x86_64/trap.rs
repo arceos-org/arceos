@@ -58,6 +58,7 @@ fn x86_trap_handler(tf: &mut TrapFrame) {
             );
         }
     }
+    crate::trap::post_trap_callback(tf, tf.is_user());
     #[cfg(feature = "uspace")]
     super::tls::switch_to_user_fs_base(tf);
 }
