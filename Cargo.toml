@@ -30,7 +30,7 @@ members = [
     "examples/httpserver",
     "examples/httpserver",
     "examples/shell",
-    "examples/embassy",
+    "examples/embassy-user",
 ]
 
 [workspace.package]

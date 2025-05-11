@@ -13,6 +13,7 @@ use scheduler::BaseScheduler;
 use axhal::cpu::this_cpu_id;
 
 use crate::task::{CurrentTask, TaskState};
+use crate::task_registry::unregister_task;
 use crate::wait_queue::WaitQueueGuard;
 use crate::{AxCpuMask, AxTaskRef, Scheduler, TaskInner, WaitQueue};
 
@@ -357,6 +358,11 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
         debug!("task exit: {}, exit_code={}", curr.id_name(), exit_code);
         assert!(curr.is_running(), "task is not running: {:?}", curr.state());
         assert!(!curr.is_idle());
+
+        let task_id = curr.id().as_u64();
+        unregister_task(task_id);
+        debug!("task {} unregistered", task_id);
+
         if curr.is_init() {
             // Safety: it is called from `current_run_queue::<NoPreemptIrqSave>().exit_current(exit_code)`,
             // which disabled IRQs and preemption.
@@ -416,6 +422,19 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
         // see `unblock_task()` for details.
 
         debug!("task block: {}", curr.id_name());
+        self.inner.resched();
+    }
+    
+    pub fn park_current_task(&mut self) {
+        let curr = &self.current_task;
+        assert!(curr.is_running());
+        assert!(!curr.is_idle());
+
+        // Ensure preemption is disabled
+        #[cfg(feature = "preempt")]
+        assert!(curr.can_preempt(1));
+        
+        curr.set_state(TaskState::Blocked);
         self.inner.resched();
     }
 

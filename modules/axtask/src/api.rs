@@ -10,10 +10,13 @@ pub(crate) use crate::run_queue::{current_run_queue, select_run_queue};
 pub use crate::task::{CurrentTask, TaskId, TaskInner};
 #[doc(cfg(feature = "multitask"))]
 pub use crate::task_ext::{TaskExtMut, TaskExtRef};
+use crate::task_registry::{register_task, unregister_task};
 #[doc(cfg(feature = "multitask"))]
 pub use crate::wait_queue::WaitQueue;
 #[doc(cfg(feature = "multitask"))]
 pub use crate::wait_queues::{Futex,futex_wait,futex_wake,futex_wake_all};
+#[doc(cfg(feature = "multitask"))]
+pub use crate::task_registry::{find_task_by_id, unpark_task, park_current_task};
 
 /// The reference type of a task.
 pub type AxTaskRef = Arc<AxTask>;
@@ -105,6 +108,7 @@ pub fn on_timer_tick() {
 pub fn spawn_task(task: TaskInner) -> AxTaskRef {
     let task_ref = task.into_arc();
     select_run_queue::<NoPreemptIrqSave>(&task_ref).add_task(task_ref.clone());
+    register_task(task_ref.clone());
     task_ref
 }
 

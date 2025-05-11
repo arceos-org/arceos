@@ -1,13 +1,17 @@
 use axhal::arch;
 use core::marker::PhantomData;
 use core::sync::atomic::{AtomicBool, Ordering};
-use embassy_executor::raw;
+use embassy_executor::{Spawner, raw};
 
 static SIGNAL_WORK_THREAD_MODE: AtomicBool = AtomicBool::new(false);
 
 #[unsafe(export_name = "__pender")]
 fn __pender(_context: *mut ()) {
     SIGNAL_WORK_THREAD_MODE.store(true, Ordering::SeqCst);
+}
+
+pub fn signal_executor() {
+    __pender(core::ptr::null_mut());
 }
 
 pub struct Executor {
@@ -36,5 +40,9 @@ impl Executor {
                 }
             };
         }
+    }
+
+    pub fn spawner(&'static mut self) -> Spawner {
+        self.inner.spawner()
     }
 }
