@@ -206,14 +206,16 @@ impl WaitQueue {
     /// Requeues at most `count` tasks in the wait queue to the target wait queue.
     ///
     /// Returns the number of tasks requeued.
-    pub fn requeue(&self, count: usize, target: &WaitQueue) -> usize {
+    pub fn requeue(&self, mut count: usize, target: &WaitQueue) -> usize {
         let tasks: Vec<_> = {
             let mut wq = self.queue.lock();
-            let count = count.min(wq.len());
+            count = count.min(wq.len());
             wq.drain(..count).collect()
         };
-        let mut wq = target.queue.lock();
-        wq.extend(tasks);
+        if !tasks.is_empty() {
+            let mut wq = target.queue.lock();
+            wq.extend(tasks);
+        }
         count
     }
 
