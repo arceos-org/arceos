@@ -216,6 +216,16 @@ impl WaitQueue {
         wq.extend(tasks);
         count
     }
+
+    /// Returns the number of tasks in the wait queue.
+    pub fn len(&self) -> usize {
+        self.queue.lock().len()
+    }
+
+    /// Returns true if the wait queue is empty.
+    pub fn is_empty(&self) -> bool {
+        self.queue.lock().is_empty()
+    }
 }
 
 fn unblock_one_task(task: AxTaskRef, resched: bool) {
