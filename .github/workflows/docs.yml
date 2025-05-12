@@ -20,6 +20,9 @@ jobs:
       with:
         toolchain: ${{ env.rust-toolchain }}
     - uses: Swatinem/rust-cache@v2
+    - uses: ./.github/workflows/actions/setup-musl
+      with:
+        arch: x86_64
     - name: Build docs
       continue-on-error: ${{ github.ref != env.default-branch && github.event_name != 'pull_request' }}
       run: make doc_check_missing
