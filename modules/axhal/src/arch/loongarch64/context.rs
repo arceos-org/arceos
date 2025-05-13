@@ -280,6 +280,10 @@ unsafe extern "C" fn save_fp_registers(_fp_status: &mut FpStatus) {
         include_fp_asm_macros!(),
         "
         PUSH_FLOAT_REGS $a0
+        addi.d  $t8, $a0, 256
+        SAVE_FCC $t8
+        addi.d  $t8, $a0, 264
+        SAVE_FCSR $t8
         ret
         "
     )
@@ -292,6 +296,10 @@ unsafe extern "C" fn restore_fp_registers(_fp_status: &FpStatus) {
         include_fp_asm_macros!(),
         "
         POP_FLOAT_REGS $a0
+        addi.d  $t8, $a0, 256
+        RESTORE_FCC $t8
+        addi.d  $t8, $a0, 264
+        RESTORE_FCSR $t8
         ret
         "
     )
