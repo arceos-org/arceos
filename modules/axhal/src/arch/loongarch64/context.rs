@@ -1,4 +1,5 @@
 use core::arch::naked_asm;
+use core::mem::offset_of;
 use memory_addr::VirtAddr;
 
 /// General registers of Loongarch64.
@@ -47,8 +48,8 @@ pub struct GeneralRegisters {
 pub struct FpStatus {
     /// the state of the LoongArch64 Floating-Point Unit (FPU)
     pub fp: [u64; 32],
-    pub fcc: usize,  // 条件标志寄存器
-    pub fcsr: usize, // FCSR0寄存器
+    pub fcc: [u8; 8], // 条件标志寄存器
+    pub fcsr: usize,  // FCSR0寄存器
 }
 
 /// Saved registers when a trap (interrupt or exception) occurs.
@@ -341,33 +342,37 @@ impl TaskContext {
 
 #[cfg(feature = "fp_simd")]
 #[naked]
-unsafe extern "C" fn save_fp_registers(_fp_status: &mut FpStatus) {
+unsafe extern "C" fn save_fp_registers(fp_status: &mut FpStatus) {
     naked_asm!(
         include_fp_asm_macros!(),
         "
         PUSH_FLOAT_REGS $a0
-        addi.d  $t8, $a0, 256
+        addi.d $t8, $a0, {fcc_offset}
         SAVE_FCC $t8
-        addi.d  $t8, $a0, 264
+        addi.d $t8, $a0, {fcsr_offset}
         SAVE_FCSR $t8
         ret
-        "
+        ",
+        fcc_offset = const offset_of!(FpStatus, fcc),
+        fcsr_offset = const offset_of!(FpStatus, fcsr),
     )
 }
 
 #[cfg(feature = "fp_simd")]
 #[naked]
-unsafe extern "C" fn restore_fp_registers(_fp_status: &FpStatus) {
+unsafe extern "C" fn restore_fp_registers(fp_status: &FpStatus) {
     naked_asm!(
         include_fp_asm_macros!(),
         "
         POP_FLOAT_REGS $a0
-        addi.d  $t8, $a0, 256
+        addi.d $t8, $a0, {fcc_offset}
         RESTORE_FCC $t8
-        addi.d  $t8, $a0, 264
+        addi.d $t8, $a0, {fcsr_offset}
         RESTORE_FCSR $t8
         ret
-        "
+        ",
+        fcc_offset = const offset_of!(FpStatus, fcc),
+        fcsr_offset = const offset_of!(FpStatus, fcsr),
     )
 }
 

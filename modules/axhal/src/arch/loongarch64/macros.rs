@@ -84,52 +84,55 @@ macro_rules! include_fp_asm_macros {
         .ifndef FP_MACROS_FLAG
         .equ FP_MACROS_FLAG, 1
 
-        .macro SAVE_FCSR, base
-            movfcsr2gr $t0, $fcsr0
-            st.d $t0, \base, 0*8
-        .endm
         .macro SAVE_FCC, base
-            movcf2gr $t0, $fcc0
-            movcf2gr $t1, $fcc1
-            movcf2gr $t2, $fcc2
-            movcf2gr $t3, $fcc3
-            movcf2gr $t4, $fcc4
-            movcf2gr $t5, $fcc5
-            movcf2gr $t6, $fcc6
-            movcf2gr $t7, $fcc7
-            st.d $t0, \base, 0
-            st.d $t1, \base, 1
-            st.d $t2, \base, 2
-            st.d $t3, \base, 3
-            st.d $t4, \base, 4
-            st.d $t5, \base, 5
-            st.d $t6, \base, 6
-            st.d $t7, \base, 7
+            movcf2gr    $t0, $fcc0
+            move        $t1, $t0
+            movcf2gr    $t0, $fcc1
+            bstrins.d   $t1, $t0, 15, 8
+            movcf2gr    $t0, $fcc2
+            bstrins.d   $t1, $t0, 23, 16
+            movcf2gr    $t0, $fcc3
+            bstrins.d   $t1, $t0, 31, 24
+            movcf2gr    $t0, $fcc4
+            bstrins.d   $t1, $t0, 39, 32
+            movcf2gr    $t0, $fcc5
+            bstrins.d   $t1, $t0, 47, 40
+            movcf2gr    $t0, $fcc6
+            bstrins.d   $t1, $t0, 55, 48
+            movcf2gr    $t0, $fcc7
+            bstrins.d   $t1, $t0, 63, 56
+            st.d        $t1, \base, 0
+        .endm
+
+        .macro RESTORE_FCC, base
+            ld.d	    $t0, \base, 0
+            bstrpick.d	$t1, $t0, 7, 0
+            movgr2cf	$fcc0, $t1
+            bstrpick.d	$t1, $t0, 15, 8
+            movgr2cf	$fcc1, $t1
+            bstrpick.d	$t1, $t0, 23, 16
+            movgr2cf	$fcc2, $t1
+            bstrpick.d	$t1, $t0, 31, 24
+            movgr2cf	$fcc3, $t1
+            bstrpick.d	$t1, $t0, 39, 32
+            movgr2cf	$fcc4, $t1
+            bstrpick.d	$t1, $t0, 47, 40
+            movgr2cf	$fcc5, $t1
+            bstrpick.d	$t1, $t0, 55, 48
+            movgr2cf	$fcc6, $t1
+            bstrpick.d	$t1, $t0, 63, 56
+            movgr2cf	$fcc7, $t1
+        .endm
+
+        .macro SAVE_FCSR, base
+            movfcsr2gr	$t0, $fcsr0
+            st.w        $t0, \base, 0
         .endm
 
         .macro RESTORE_FCSR, base
-            movgr2fcsr $fcsr0, $t0
-            ld.d $t0, \base, 0*8
+            ld.w        $t0, \base, 0
+            movgr2fcsr	$fcsr0, $t0
         .endm
-        .macro RESTORE_FCC, base
-            ld.d $t0, \base, 0
-            ld.d $t1, \base, 1
-            ld.d $t2, \base, 2
-            ld.d $t3, \base, 3
-            ld.d $t4, \base, 4
-            ld.d $t5, \base, 5
-            ld.d $t6, \base, 6
-            ld.d $t7, \base, 7
-            movgr2cf $fcc0, $t0
-            movgr2cf $fcc1, $t1
-            movgr2cf $fcc2, $t2
-            movgr2cf $fcc3, $t3
-            movgr2cf $fcc4, $t4
-            movgr2cf $fcc5, $t5
-            movgr2cf $fcc6, $t6
-            movgr2cf $fcc7, $t7
-        .endm
-
 
         // LoongArch64 specific floating point macros
         .macro PUSH_POP_FLOAT_REGS, op, base_reg
