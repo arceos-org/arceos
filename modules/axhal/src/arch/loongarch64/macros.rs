@@ -76,3 +76,115 @@ macro_rules! include_asm_macros {
         .endif"
     };
 }
+
+#[cfg(feature = "fp_simd")]
+macro_rules! include_fp_asm_macros {
+    () => {
+        concat!(
+            include_asm_macros!(), // Changed from __asm_macros!
+            r#"
+            .ifndef FP_MACROS_FLAG
+            .equ FP_MACROS_FLAG, 1
+
+            .macro FSTD fr, base_reg, off
+                fst.d   \fr, \base_reg, \off*8
+            .endm
+            .macro FLDD fr, base_reg, off
+                fld.d   \fr, \base_reg, \off*8
+            .endm
+
+            .macro SAVE_FCSR, base
+                movfcsr2gr $t0, $fcsr0
+                st.d $t0, \base, 0*8
+            .endm
+            .macro SAVE_FCC, base
+                movcf2gr $t0, $fcc0
+                movcf2gr $t1, $fcc1
+                movcf2gr $t2, $fcc2
+                movcf2gr $t3, $fcc3
+                movcf2gr $t4, $fcc4
+                movcf2gr $t5, $fcc5
+                movcf2gr $t6, $fcc6
+                movcf2gr $t7, $fcc7
+                st.d $t0, \base, 0
+                st.d $t1, \base, 1
+                st.d $t2, \base, 2
+                st.d $t3, \base, 3
+                st.d $t4, \base, 4
+                st.d $t5, \base, 5
+                st.d $t6, \base, 6
+                st.d $t7, \base, 7
+            .endm
+
+            .macro RESTORE_FCSR, base
+                movgr2fcsr $fcsr0, $t0
+                ld.d $t0, \base, 0*8
+            .endm
+            .macro RESTORE_FCC, base
+                ld.d $t0, \base, 0
+                ld.d $t1, \base, 1
+                ld.d $t2, \base, 2
+                ld.d $t3, \base, 3
+                ld.d $t4, \base, 4
+                ld.d $t5, \base, 5
+                ld.d $t6, \base, 6
+                ld.d $t7, \base, 7
+                movgr2cf $fcc0, $t0
+                movgr2cf $fcc1, $t1
+                movgr2cf $fcc2, $t2
+                movgr2cf $fcc3, $t3
+                movgr2cf $fcc4, $t4
+                movgr2cf $fcc5, $t5
+                movgr2cf $fcc6, $t6
+                movgr2cf $fcc7, $t7
+            .endm
+
+
+            // LoongArch64 specific floating point macros
+            .macro PUSH_POP_FLOAT_REGS, op, base_reg
+                \op $f0,  \base_reg, 0*8
+                \op $f1,  \base_reg, 1*8
+                \op $f2,  \base_reg, 2*8
+                \op $f3,  \base_reg, 3*8
+                \op $f4,  \base_reg, 4*8
+                \op $f5,  \base_reg, 5*8
+                \op $f6,  \base_reg, 6*8
+                \op $f7,  \base_reg, 7*8
+                \op $f8,  \base_reg, 8*8
+                \op $f9,  \base_reg, 9*8
+                \op $f10, \base_reg, 10*8
+                \op $f11, \base_reg, 11*8
+                \op $f12, \base_reg, 12*8
+                \op $f13, \base_reg, 13*8
+                \op $f14, \base_reg, 14*8
+                \op $f15, \base_reg, 15*8
+                \op $f16, \base_reg, 16*8
+                \op $f17, \base_reg, 17*8
+                \op $f18, \base_reg, 18*8
+                \op $f19, \base_reg, 19*8
+                \op $f20, \base_reg, 20*8
+                \op $f21, \base_reg, 21*8
+                \op $f22, \base_reg, 22*8
+                \op $f23, \base_reg, 23*8
+                \op $f24, \base_reg, 24*8
+                \op $f25, \base_reg, 25*8
+                \op $f26, \base_reg, 26*8
+                \op $f27, \base_reg, 27*8
+                \op $f28, \base_reg, 28*8
+                \op $f29, \base_reg, 29*8
+                \op $f30, \base_reg, 30*8
+                \op $f31, \base_reg, 31*8
+            .endm
+
+            .macro PUSH_FLOAT_REGS, base_reg
+                PUSH_POP_FLOAT_REGS fst.d, \base_reg
+            .endm
+
+            .macro POP_FLOAT_REGS, base_reg
+                PUSH_POP_FLOAT_REGS fld.d, \base_reg
+            .endm
+
+            .endif"#
+        )
+    };
+}

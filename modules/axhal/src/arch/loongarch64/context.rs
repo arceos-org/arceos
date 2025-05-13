@@ -40,6 +40,28 @@ pub struct GeneralRegisters {
     pub s8: usize,
 }
 
+/// Floating-point registers of LoongArch64.
+#[cfg(feature = "fp_simd")]
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct FpStatus {
+    /// the state of the LoongArch64 Floating-Point Unit (FPU)
+    pub fp: [u64; 32],
+    pub fcc: usize,  // 条件标志寄存器
+    pub fcsr: usize, // FCSR0寄存器,
+}
+
+#[cfg(feature = "fp_simd")]
+impl Default for FpStatus {
+    fn default() -> Self {
+        Self {
+            fp: [0; 32],
+            fcc: 0,
+            fcsr: 0, // 默认不启用浮点例外,舍入模式为RNE
+        }
+    }
+}
+
 /// Saved registers when a trap (interrupt or exception) occurs.
 #[repr(C)]
 #[derive(Debug, Default, Clone, Copy)]
@@ -206,6 +228,9 @@ pub struct TaskContext {
     #[cfg(feature = "uspace")]
     /// user page table root
     pub pgdl: usize,
+    #[cfg(feature = "fp_simd")]
+    /// Floating Point Status
+    pub fp_status: FpStatus,
 }
 
 impl TaskContext {
@@ -246,8 +271,61 @@ impl TaskContext {
                 unsafe { super::write_page_table_root0(pa!(next_ctx.pgdl)) };
             }
         }
+
+        #[cfg(feature = "fp_simd")]
+        {
+            unsafe {
+                save_fp_registers(
+                    &mut self.fp_status.fp,
+                    &mut self.fp_status.fcc,
+                    &mut self.fp_status.fcsr,
+                );
+                restore_fp_registers(
+                    &next_ctx.fp_status.fp,
+                    &next_ctx.fp_status.fcc,
+                    &next_ctx.fp_status.fcsr,
+                );
+            }
+        }
+
         unsafe { context_switch(self, next_ctx) }
     }
+}
+
+#[cfg(feature = "fp_simd")]
+#[unsafe(naked)]
+unsafe extern "C" fn save_fp_registers(
+    _fp_registers: &mut [u64; 32],
+    _fcc: &mut usize,
+    _fcsr: &mut usize,
+) {
+    naked_asm!(
+        include_fp_asm_macros!(), // $f24 - $f31
+        "
+        // save old fr context (callee-saved registers)
+        PUSH_FLOAT_REGS $a0
+        // save fcc and fcsr
+        SAVE_FCC $a1
+        SAVE_FCSR $a2
+        ret
+        "
+    )
+}
+
+#[cfg(feature = "fp_simd")]
+#[unsafe(naked)]
+unsafe extern "C" fn restore_fp_registers(_fp_registers: &[u64; 32], _fcc: &usize, _fcsr: &usize) {
+    naked_asm!(
+        include_fp_asm_macros!(), // $f24 - $f31
+        "
+        // restore new context
+        POP_FLOAT_REGS $a0
+        // restore fcc and fcsr
+        RESTORE_FCC $a1
+        RESTORE_FCSR $a2
+        ret
+        "
+    )
 }
 
 #[unsafe(naked)]
