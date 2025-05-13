@@ -81,17 +81,10 @@ macro_rules! include_asm_macros {
 macro_rules! include_fp_asm_macros {
     () => {
         concat!(
-            include_asm_macros!(), // Changed from __asm_macros!
+            include_asm_macros!(),
             r#"
             .ifndef FP_MACROS_FLAG
             .equ FP_MACROS_FLAG, 1
-
-            .macro FSTD fr, base_reg, off
-                fst.d   \fr, \base_reg, \off*8
-            .endm
-            .macro FLDD fr, base_reg, off
-                fld.d   \fr, \base_reg, \off*8
-            .endm
 
             .macro SAVE_FCSR, base
                 movfcsr2gr $t0, $fcsr0
@@ -178,10 +171,18 @@ macro_rules! include_fp_asm_macros {
 
             .macro PUSH_FLOAT_REGS, base_reg
                 PUSH_POP_FLOAT_REGS fst.d, \base_reg
+                addi.d  $t8, \base_reg, 256
+                SAVE_FCC $t8
+                addi.d  $t8, \base_reg, 264
+                SAVE_FCSR $t8
             .endm
 
             .macro POP_FLOAT_REGS, base_reg
                 PUSH_POP_FLOAT_REGS fld.d, \base_reg
+                addi.d  $t8, \base_reg, 256
+                RESTORE_FCC $t8
+                addi.d  $t8, \base_reg, 264
+                RESTORE_FCSR $t8
             .endm
 
             .endif"#
