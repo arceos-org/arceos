@@ -22,6 +22,8 @@ pub(super) fn handle_syscall(tf: &mut TrapFrame) {
 #[unsafe(no_mangle)]
 fn x86_syscall_handler(tf: &mut TrapFrame) {
     super::tls::switch_to_kernel_fs_base(tf);
+    #[cfg(target_os = "none")]
+    super::trap::unmask_interrupts_for_exception(tf);
     handle_syscall(tf);
     crate::trap::post_trap_callback(tf, true);
     super::tls::switch_to_user_fs_base(tf);

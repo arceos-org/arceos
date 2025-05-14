@@ -36,8 +36,13 @@ fn handle_page_fault(tf: &TrapFrame, mut access_flags: MappingFlags, is_user: bo
 #[unsafe(no_mangle)]
 fn loongarch64_trap_handler(tf: &mut TrapFrame, from_user: bool) {
     let estat = estat::read();
+    let trap = estat.cause();
 
-    match estat.cause() {
+    if matches!(trap, Trap::Exception(_)) {
+        unmask_interrupts_for_exception(tf);
+    }
+
+    match trap {
         #[cfg(feature = "uspace")]
         Trap::Exception(Exception::Syscall) => {
             tf.era += 4;
@@ -71,4 +76,23 @@ fn loongarch64_trap_handler(tf: &mut TrapFrame, from_user: bool) {
     }
 
     crate::trap::post_trap_callback(tf, from_user);
+}
+
+// Interrupt unmasking function for exception handling.
+// NOTE: It must be invoked after the switch to kernel mode has finished
+//
+// If interrupts were enabled before the exception (`PIE` bit in `PRMD` is set),
+// re-enable interrupts before handling the exception.
+//
+// On loongarch64, when an exception is triggered, records the old value of
+// `IE` domain in `CSR.CRMD` in `PIE` domain in `PRMD`. When the `ERTN`
+// instruction is executed to return from the exception handler, the hardware
+// restores the value of the `PIE` domain to the `IE` domain of `CSR.CRMD`.
+fn unmask_interrupts_for_exception(tf: &TrapFrame) {
+    const PIE: usize = 1 << 2;
+    if tf.prmd & PIE == PIE {
+        super::enable_irqs();
+    } else {
+        debug!("Interrupts were disabled before exception");
+    }
 }

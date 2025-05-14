@@ -33,6 +33,9 @@ fn handle_page_fault(tf: &TrapFrame) {
 fn x86_trap_handler(tf: &mut TrapFrame) {
     #[cfg(feature = "uspace")]
     super::tls::switch_to_kernel_fs_base(tf);
+    if !matches!(tf.vector as u8, IRQ_VECTOR_START..=IRQ_VECTOR_END) {
+        unmask_interrupts_for_exception(tf);
+    }
     match tf.vector as u8 {
         PAGE_FAULT_VECTOR => handle_page_fault(tf),
         BREAKPOINT_VECTOR => debug!("#BP @ {:#x} ", tf.rip),
@@ -93,5 +96,20 @@ fn err_code_to_flags(err_code: u64) -> Result<MappingFlags, u64> {
             flags |= MappingFlags::EXECUTE;
         }
         Ok(flags)
+    }
+}
+
+// Interrupt unmasking function for exception handling.
+// NOTE: It must be invoked after the switch to kernel mode has finished
+//
+// If interrupts were enabled before the exception (`IF` bit in `RFlags`
+// is set), re-enable interrupts before handling the exception.
+pub(super) fn unmask_interrupts_for_exception(tf: &TrapFrame) {
+    use x86_64::registers::rflags::RFlags;
+    const IF: u64 = RFlags::INTERRUPT_FLAG.bits();
+    if tf.rflags & IF == IF {
+        super::enable_irqs();
+    } else {
+        debug!("Interrupts were disabled before exception");
     }
 }
