@@ -1,4 +1,6 @@
 use core::arch::naked_asm;
+#[cfg(feature = "fp_simd")]
+use core::mem::offset_of;
 use memory_addr::VirtAddr;
 
 /// General registers of Loongarch64.
@@ -38,6 +40,19 @@ pub struct GeneralRegisters {
     pub s6: usize,
     pub s7: usize,
     pub s8: usize,
+}
+
+/// Floating-point registers of LoongArch64.
+#[cfg(feature = "fp_simd")]
+#[repr(C)]
+#[derive(Debug, Default, Clone, Copy)]
+pub struct FpStatus {
+    /// Floating-point registers (f0-f31)
+    pub fp: [u64; 32],
+    /// Floating-point Condition Code register
+    pub fcc: [u8; 8],
+    /// Floating-point Control and Status register
+    pub fcsr: usize,
 }
 
 /// Saved registers when a trap (interrupt or exception) occurs.
@@ -272,6 +287,9 @@ pub struct TaskContext {
     #[cfg(feature = "uspace")]
     /// user page table root
     pub pgdl: usize,
+    #[cfg(feature = "fp_simd")]
+    /// Floating Point Status
+    pub fp_status: FpStatus,
 }
 
 impl TaskContext {
@@ -312,8 +330,48 @@ impl TaskContext {
                 unsafe { super::write_page_table_root0(pa!(next_ctx.pgdl)) };
             }
         }
+        #[cfg(feature = "fp_simd")]
+        unsafe {
+            save_fp_registers(&mut self.fp_status);
+            restore_fp_registers(&next_ctx.fp_status);
+        }
+
         unsafe { context_switch(self, next_ctx) }
     }
+}
+
+#[cfg(feature = "fp_simd")]
+#[naked]
+unsafe extern "C" fn save_fp_registers(fp_status: &mut FpStatus) {
+    naked_asm!(
+        include_fp_asm_macros!(),
+        "
+        PUSH_FLOAT_REGS $a0
+        addi.d $t8, $a0, {fcc_offset}
+        SAVE_FCC $t8
+        addi.d $t8, $a0, {fcsr_offset}
+        SAVE_FCSR $t8
+        ret",
+        fcc_offset = const offset_of!(FpStatus, fcc),
+        fcsr_offset = const offset_of!(FpStatus, fcsr),
+    )
+}
+
+#[cfg(feature = "fp_simd")]
+#[naked]
+unsafe extern "C" fn restore_fp_registers(fp_status: &FpStatus) {
+    naked_asm!(
+        include_fp_asm_macros!(),
+        "
+        POP_FLOAT_REGS $a0
+        addi.d $t8, $a0, {fcc_offset}
+        RESTORE_FCC $t8
+        addi.d $t8, $a0, {fcsr_offset}
+        RESTORE_FCSR $t8
+        ret",
+        fcc_offset = const offset_of!(FpStatus, fcc),
+        fcsr_offset = const offset_of!(FpStatus, fcsr),
+    )
 }
 
 #[naked]
