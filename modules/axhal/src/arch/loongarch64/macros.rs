@@ -105,33 +105,33 @@ macro_rules! include_fp_asm_macros {
         .endm
 
         .macro RESTORE_FCC, base
-            ld.d	    $t0, \base, 0
-            bstrpick.d	$t1, $t0, 7, 0
-            movgr2cf	$fcc0, $t1
-            bstrpick.d	$t1, $t0, 15, 8
-            movgr2cf	$fcc1, $t1
-            bstrpick.d	$t1, $t0, 23, 16
-            movgr2cf	$fcc2, $t1
-            bstrpick.d	$t1, $t0, 31, 24
-            movgr2cf	$fcc3, $t1
-            bstrpick.d	$t1, $t0, 39, 32
-            movgr2cf	$fcc4, $t1
-            bstrpick.d	$t1, $t0, 47, 40
-            movgr2cf	$fcc5, $t1
-            bstrpick.d	$t1, $t0, 55, 48
-            movgr2cf	$fcc6, $t1
-            bstrpick.d	$t1, $t0, 63, 56
-            movgr2cf	$fcc7, $t1
+            ld.d        $t0, \base, 0
+            bstrpick.d  $t1, $t0, 7, 0
+            movgr2cf    $fcc0, $t1
+            bstrpick.d  $t1, $t0, 15, 8
+            movgr2cf    $fcc1, $t1
+            bstrpick.d  $t1, $t0, 23, 16
+            movgr2cf    $fcc2, $t1
+            bstrpick.d  $t1, $t0, 31, 24
+            movgr2cf    $fcc3, $t1
+            bstrpick.d  $t1, $t0, 39, 32
+            movgr2cf    $fcc4, $t1
+            bstrpick.d  $t1, $t0, 47, 40
+            movgr2cf    $fcc5, $t1
+            bstrpick.d  $t1, $t0, 55, 48
+            movgr2cf    $fcc6, $t1
+            bstrpick.d  $t1, $t0, 63, 56
+            movgr2cf    $fcc7, $t1
         .endm
 
         .macro SAVE_FCSR, base
-            movfcsr2gr	$t0, $fcsr0
+            movfcsr2gr  $t0, $fcsr0
             st.w        $t0, \base, 0
         .endm
 
         .macro RESTORE_FCSR, base
             ld.w        $t0, \base, 0
-            movgr2fcsr	$fcsr0, $t0
+            movgr2fcsr  $fcsr0, $t0
         .endm
 
         // LoongArch64 specific floating point macros
