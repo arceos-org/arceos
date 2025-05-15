@@ -31,6 +31,7 @@ members = [
     "examples/httpserver",
     "examples/shell",
     "examples/embassy-user",
+    "examples/embassy-local",
 ]
 
 [workspace.package]

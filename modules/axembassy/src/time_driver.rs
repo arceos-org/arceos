@@ -9,8 +9,6 @@ use embassy_time_driver::TICK_HZ;
 use embassy_time_driver::{Driver, time_driver_impl};
 use embassy_time_queue_utils::Queue;
 
-use crate::executor::signal_executor;
-
 pub struct AxDriverAPI;
 
 impl AxDriverAPI {
@@ -115,6 +113,7 @@ pub fn embassy_update_timer() {
     let nanos_now = time::monotonic_time_nanos();
 
     let ticks_next_at = queue.next_expiration(ticks_now);
+    drop(queue);
 
     let mut sched_lock = unsafe { NANOS_NEXT_SCHED.current_ref_mut_raw().lock() };
     let periodic_lock = AX_DRIVER.periodic_interval_nanos.lock();
@@ -161,6 +160,10 @@ pub fn embassy_update_timer() {
     };
     
     if timer_tick || schedule_tick {
-        signal_executor();
+        #[cfg(feature="executor")]
+        {
+            use crate::executor::signal_executor;
+            signal_executor();
+        }
     }
 }

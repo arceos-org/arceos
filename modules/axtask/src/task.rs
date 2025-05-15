@@ -33,6 +33,8 @@ pub(crate) enum TaskState {
     Blocked = 3,
     /// Task is exited and waiting for being dropped.
     Exited = 4,
+    /// Task is an asynchronous task, waiting for even completion to be unparked.
+    Parked = 5,
 }
 
 /// The inner task structure.

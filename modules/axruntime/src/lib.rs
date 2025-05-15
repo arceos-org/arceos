@@ -271,7 +271,7 @@ fn init_interrupt() {
 
     #[cfg(feature = "embassy-timer")]
     {
-        use axembassy::{AxDriverAPI,embassy_update_timer,init};
+        use axembassy::{AxDriverAPI,embassy_update_timer};
         
         AxDriverAPI::runtime_init(PERIODIC_INTERVAL_NANOS);
         axhal::irq::register_handler(TIMER_IRQ_NUM, embassy_update_timer);
