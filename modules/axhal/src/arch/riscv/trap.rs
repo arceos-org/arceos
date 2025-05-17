@@ -46,7 +46,7 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
         // interrupt is enabled
         let vaddr = va!(stval::read());
         if scause.is_exception() {
-            unmask_interrupts_for_exception(tf);
+            unmask_irqs(tf);
         }
         match cause {
             #[cfg(feature = "uspace")]
@@ -72,6 +72,7 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
             }
         }
         crate::trap::post_trap_callback(tf, from_user);
+        mask_irqs();
     } else {
         panic!(
             "Unknown trap {:?} @ {:#x}:\n{:#x?}",
@@ -91,11 +92,15 @@ fn riscv_trap_handler(tf: &mut TrapFrame, from_user: bool) {
 // On riscv64, when an exception occurs, `sstatus.SIE` is set to zero to mask
 // the interrupt and the old value of `SIE` is stored in SPIE. Recover `SIE`
 // according to `SPIE` when using `sret`.
-fn unmask_interrupts_for_exception(tf: &TrapFrame) {
+fn unmask_irqs(tf: &TrapFrame) {
     const PIE: usize = 1 << 5;
     if tf.sstatus & PIE == PIE {
         super::enable_irqs();
     } else {
         debug!("Interrupts were disabled before exception");
     }
+}
+
+fn mask_irqs() {
+    super::disable_irqs();
 }

@@ -39,7 +39,7 @@ fn loongarch64_trap_handler(tf: &mut TrapFrame, from_user: bool) {
     let trap = estat.cause();
 
     if matches!(trap, Trap::Exception(_)) {
-        unmask_interrupts_for_exception(tf);
+        unmask_irqs(tf);
     }
 
     match trap {
@@ -74,8 +74,8 @@ fn loongarch64_trap_handler(tf: &mut TrapFrame, from_user: bool) {
             );
         }
     }
-
     crate::trap::post_trap_callback(tf, from_user);
+    mask_irqs();
 }
 
 // Interrupt unmasking function for exception handling.
@@ -88,11 +88,15 @@ fn loongarch64_trap_handler(tf: &mut TrapFrame, from_user: bool) {
 // `IE` domain in `CSR.CRMD` in `PIE` domain in `PRMD`. When the `ERTN`
 // instruction is executed to return from the exception handler, the hardware
 // restores the value of the `PIE` domain to the `IE` domain of `CSR.CRMD`.
-fn unmask_interrupts_for_exception(tf: &TrapFrame) {
+fn unmask_irqs(tf: &TrapFrame) {
     const PIE: usize = 1 << 2;
     if tf.prmd & PIE == PIE {
         super::enable_irqs();
     } else {
         debug!("Interrupts were disabled before exception");
     }
+}
+
+fn mask_irqs() {
+    super::disable_irqs();
 }
