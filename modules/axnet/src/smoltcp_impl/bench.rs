@@ -6,6 +6,7 @@ const GB: usize = 1000 * MB;
 const MB: usize = 1000 * KB;
 const KB: usize = 1000;
 
+#[allow(unused)]
 impl DeviceWrapper {
     pub fn bench_transmit_bandwidth(&mut self) {
         // 10 Gb

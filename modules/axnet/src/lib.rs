@@ -1,4 +1,4 @@
-//! [ArceOS](https://github.com/arceos-org/arceos) network module.
+//! [ArceOS](https://github.com/rcore-os/arceos) network module.
 //!
 //! It provides unified networking primitives for TCP/UDP communication
 //! using various underlying network stacks. Currently, only [smoltcp] is
@@ -30,12 +30,11 @@ cfg_if::cfg_if! {
     }
 }
 
-pub use self::net_impl::TcpSocket;
-pub use self::net_impl::UdpSocket;
-pub use self::net_impl::{bench_receive, bench_transmit};
-pub use self::net_impl::{dns_query, poll_interfaces};
-
 use axdriver::{AxDeviceContainer, prelude::*};
+
+pub use self::net_impl::{
+    TcpSocket, UdpSocket, add_membership, bench_receive, bench_transmit, dns_query, poll_interfaces,
+};
 
 /// Initializes the network subsystem by NIC devices.
 pub fn init_network(mut net_devs: AxDeviceContainer<AxNetDevice>) {

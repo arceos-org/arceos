@@ -33,7 +33,9 @@ rev = "21a2f82"
 default-features = false
 features = [
     "alloc", "log",   # no std
+    "multicast",
     "medium-ethernet",
+    "medium-ip",
     "proto-ipv4",
     "proto-ipv6",
     "socket-raw", "socket-icmp", "socket-udp", "socket-tcp", "socket-dns",
