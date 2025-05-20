@@ -18,6 +18,6 @@ kspin = "0.1"
 axtask = { workspace = true }
 
 [dev-dependencies]
-rand = "0.8"
+rand = "0.9"
 axsync = { workspace = true, features = ["multitask"] }
 axtask = { workspace = true, features = ["test"] }

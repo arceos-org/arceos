@@ -46,66 +46,62 @@ unsafe fn init_mmu() {
 /// The earliest entry point for the primary CPU.
 ///
 /// We can't use bl to jump to higher address, so we use jirl to jump to higher address.
-#[naked]
+#[unsafe(naked)]
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.boot")]
 unsafe extern "C" fn _start() -> ! {
-    unsafe {
-        core::arch::naked_asm!("
-            ori         $t0, $zero, 0x1     # CSR_DMW1_PLV0
-            lu52i.d     $t0, $t0, -2048     # UC, PLV0, 0x8000 xxxx xxxx xxxx
-            csrwr       $t0, 0x180          # LOONGARCH_CSR_DMWIN0
-            ori         $t0, $zero, 0x11    # CSR_DMW1_MAT | CSR_DMW1_PLV0
-            lu52i.d     $t0, $t0, -1792     # CA, PLV0, 0x9000 xxxx xxxx xxxx
-            csrwr       $t0, 0x181          # LOONGARCH_CSR_DMWIN1
+    core::arch::naked_asm!("
+        ori         $t0, $zero, 0x1     # CSR_DMW1_PLV0
+        lu52i.d     $t0, $t0, -2048     # UC, PLV0, 0x8000 xxxx xxxx xxxx
+        csrwr       $t0, 0x180          # LOONGARCH_CSR_DMWIN0
+        ori         $t0, $zero, 0x11    # CSR_DMW1_MAT | CSR_DMW1_PLV0
+        lu52i.d     $t0, $t0, -1792     # CA, PLV0, 0x9000 xxxx xxxx xxxx
+        csrwr       $t0, 0x181          # LOONGARCH_CSR_DMWIN1
 
-            # Setup Stack
-            la.global   $sp, {boot_stack}
-            li.d        $t0, {boot_stack_size}
-            add.d       $sp, $sp, $t0       # setup boot stack
+        # Setup Stack
+        la.global   $sp, {boot_stack}
+        li.d        $t0, {boot_stack_size}
+        add.d       $sp, $sp, $t0       # setup boot stack
 
-            # Init MMU
-            bl          {init_boot_page_table}
-            bl          {init_mmu}          # setup boot page table and enabel MMU
+        # Init MMU
+        bl          {init_boot_page_table}
+        bl          {init_mmu}          # setup boot page table and enabel MMU
 
-            csrrd       $a0, 0x20           # cpuid
-            la.global   $t0, {entry}
-            jirl        $zero, $t0, 0",
-            boot_stack_size = const TASK_STACK_SIZE,
-            boot_stack = sym BOOT_STACK,
-            init_boot_page_table = sym init_boot_page_table,
-            init_mmu = sym init_mmu,
-            entry = sym super::rust_entry,
-        )
-    }
+        csrrd       $a0, 0x20           # cpuid
+        la.global   $t0, {entry}
+        jirl        $zero, $t0, 0",
+        boot_stack_size = const TASK_STACK_SIZE,
+        boot_stack = sym BOOT_STACK,
+        init_boot_page_table = sym init_boot_page_table,
+        init_mmu = sym init_mmu,
+        entry = sym super::rust_entry,
+    )
 }
 
 /// The earliest entry point for secondary CPUs.
 #[cfg(feature = "smp")]
-#[naked]
+#[unsafe(naked)]
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.boot")]
 unsafe extern "C" fn _start_secondary() -> ! {
-    unsafe {
-        core::arch::naked_asm!("
-            ori          $t0, $zero, 0x1     # CSR_DMW1_PLV0
-            lu52i.d      $t0, $t0, -2048     # UC, PLV0, 0x8000 xxxx xxxx xxxx
-            csrwr        $t0, 0x180          # LOONGARCH_CSR_DMWIN0
-            ori          $t0, $zero, 0x11    # CSR_DMW1_MAT | CSR_DMW1_PLV0
-            lu52i.d      $t0, $t0, -1792     # CA, PLV0, 0x9000 xxxx xxxx xxxx
-            csrwr        $t0, 0x181          # LOONGARCH_CSR_DMWIN1
-            la.abs       $t0, {sm_boot_stack_top}
-            ld.d         $sp, $t0,0          # read boot stack top
+    core::arch::naked_asm!("
+        ori          $t0, $zero, 0x1     # CSR_DMW1_PLV0
+        lu52i.d      $t0, $t0, -2048     # UC, PLV0, 0x8000 xxxx xxxx xxxx
+        csrwr        $t0, 0x180          # LOONGARCH_CSR_DMWIN0
+        ori          $t0, $zero, 0x11    # CSR_DMW1_MAT | CSR_DMW1_PLV0
+        lu52i.d      $t0, $t0, -1792     # CA, PLV0, 0x9000 xxxx xxxx xxxx
+        csrwr        $t0, 0x181          # LOONGARCH_CSR_DMWIN1
+        la.abs       $t0, {sm_boot_stack_top}
+        ld.d         $sp, $t0,0          # read boot stack top
 
-            # Init MMU
-            bl           {init_mmu}          # setup boot page table and enabel MMU
+        # Init MMU
+        bl           {init_mmu}          # setup boot page table and enabel MMU
 
-            csrrd        $a0, 0x20                  # cpuid
-            la.global    $t0, {entry}
-            jirl         $zero, $t0, 0",
-            sm_boot_stack_top = sym super::mp::SMP_BOOT_STACK_TOP,
-            init_mmu = sym init_mmu,
-            entry = sym super::rust_entry_secondary,
-        )
-    }
+        csrrd        $a0, 0x20                  # cpuid
+        la.global    $t0, {entry}
+        jirl         $zero, $t0, 0",
+        sm_boot_stack_top = sym super::mp::SMP_BOOT_STACK_TOP,
+        init_mmu = sym init_mmu,
+        entry = sym super::rust_entry_secondary,
+    )
 }

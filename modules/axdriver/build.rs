@@ -5,7 +5,7 @@ const DISPLAY_DEV_FEATURES: &[&str] = &["virtio-gpu"];
 fn make_cfg_values(str_list: &[&str]) -> String {
     str_list
         .iter()
-        .map(|s| format!("{:?}", s))
+        .map(|s| format!("{s:?}"))
         .collect::<Vec<_>>()
         .join(", ")
 }

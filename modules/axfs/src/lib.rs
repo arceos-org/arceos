@@ -5,16 +5,16 @@
 //! # Cargo Features
 //!
 //! - `fatfs`: Use [FAT] as the main filesystem and mount it on `/`. This feature
-//!    is **enabled** by default.
+//!   is **enabled** by default.
 //! - `devfs`: Mount [`axfs_devfs::DeviceFileSystem`] on `/dev`. This feature is
-//!    **enabled** by default.
+//!   **enabled** by default.
 //! - `ramfs`: Mount [`axfs_ramfs::RamFileSystem`] on `/tmp`. This feature is
-//!    **enabled** by default.
+//!   **enabled** by default.
 //! - `myfs`: Allow users to define their custom filesystems to override the
-//!    default. In this case, [`MyFileSystemIf`] is required to be implemented
-//!    to create and initialize other filesystems. This feature is **disabled** by
-//!    by default, but it will override other filesystem selection features if
-//!    both are enabled.
+//!   default. In this case, [`MyFileSystemIf`] is required to be implemented
+//!   to create and initialize other filesystems. This feature is **disabled** by
+//!   by default, but it will override other filesystem selection features if
+//!   both are enabled.
 //!
 //! [FAT]: https://en.wikipedia.org/wiki/File_Allocation_Table
 //! [`MyFileSystemIf`]: fops::MyFileSystemIf
