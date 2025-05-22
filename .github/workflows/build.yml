@@ -20,6 +20,8 @@ jobs:
         components: rust-src, clippy, rustfmt
         targets: x86_64-unknown-none, riscv64gc-unknown-none-elf, aarch64-unknown-none-softfloat, loongarch64-unknown-none-softfloat
     - uses: Swatinem/rust-cache@v2
+      with:
+        cache-targets: false
     - name: Check rust version
       run: rustc --version --verbose
     - name: Check code format
@@ -52,6 +54,8 @@ jobs:
         components: rust-src, llvm-tools
         targets: x86_64-unknown-none, riscv64gc-unknown-none-elf, aarch64-unknown-none-softfloat, loongarch64-unknown-none-softfloat
     - uses: Swatinem/rust-cache@v2
+      with:
+        cache-targets: false
     - run: cargo install cargo-binutils
     - name: Build helloworld
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
@@ -94,6 +98,8 @@ jobs:
         components: rust-src, llvm-tools
         targets: x86_64-unknown-none, riscv64gc-unknown-none-elf, aarch64-unknown-none-softfloat, loongarch64-unknown-none-softfloat
     - uses: Swatinem/rust-cache@v2
+      with:
+        cache-targets: false
     - run: cargo install cargo-binutils
     - name: Build helloworld for x86_64-pc-oslab
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
