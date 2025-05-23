@@ -76,11 +76,12 @@ typedef struct {{
         impl bindgen::callbacks::ParseCallbacks for MyCallbacks {
             fn include_file(&self, fname: &str) {
                 if !fname.contains("ax_pthread_mutex.h") {
-                    println!("cargo:rerun-if-changed={}", fname);
+                    println!("cargo:rerun-if-changed={fname}");
                 }
             }
         }
 
+        let target = std::env::var("TARGET").unwrap();
         let mut builder = bindgen::Builder::default()
             .header(in_file)
             .clang_arg("-I./../../ulib/axlibc/include")
@@ -88,6 +89,10 @@ typedef struct {{
             .derive_default(true)
             .size_t_is_usize(false)
             .use_core();
+        if let Some(llvm_target) = target.strip_suffix("-softfloat") {
+            // remove "-softfloat" suffix for some targets
+            builder = builder.clang_arg(format!("--target={llvm_target}"));
+        }
         for ty in allow_types {
             builder = builder.allowlist_type(ty);
         }

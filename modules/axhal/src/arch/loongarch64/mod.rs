@@ -204,6 +204,8 @@ pub unsafe fn write_thread_pointer(tp: usize) {
 pub fn cpu_init() {
     #[cfg(feature = "fp_simd")]
     loongArch64::register::euen::set_fpe(true);
+    #[cfg(feature = "fp_simd")]
+    loongArch64::register::euen::set_sxe(true);
 
     unsafe extern "C" {
         fn exception_entry_base();

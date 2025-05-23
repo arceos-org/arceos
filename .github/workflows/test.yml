@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 env:
   qemu-version: 9.2.1
-  rust-toolchain: nightly-2024-12-25
+  rust-toolchain: nightly-2025-05-20
   arceos-apps: 'c8d8fe4'
 
 jobs:
@@ -16,7 +16,6 @@ jobs:
       with:
         toolchain: ${{ env.rust-toolchain }}
         components: rust-src
-    - uses: Swatinem/rust-cache@v2
     - name: Run unit tests
       run: make unittest_no_fail_fast
 
@@ -34,6 +33,8 @@ jobs:
         toolchain: ${{ env.rust-toolchain }}
         components: rust-src
     - uses: Swatinem/rust-cache@v2
+      with:
+        cache-targets: false
     - run: cargo install cargo-binutils
     - uses: ./.github/workflows/actions/setup-qemu
       with:

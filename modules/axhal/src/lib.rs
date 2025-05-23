@@ -11,8 +11,8 @@
 //! - `aarch64-qemu-virt`: QEMU virt machine with AArch64 ISA.
 //! - `aarch64-raspi`: Raspberry Pi with AArch64 ISA.
 //! - `dummy`: If none of the above platform is selected, the dummy platform
-//!    will be used. In this platform, most of the operations are no-op or
-//!    `unimplemented!()`. This platform is mainly used for [cargo test].
+//!   will be used. In this platform, most of the operations are no-op or
+//!   `unimplemented!()`. This platform is mainly used for [cargo test].
 //!
 //! # Cargo Features
 //!
@@ -25,7 +25,6 @@
 //! [cargo test]: https://doc.rust-lang.org/cargo/guide/tests.html
 
 #![no_std]
-#![feature(naked_functions)]
 #![feature(doc_auto_cfg)]
 #![feature(sync_unsafe_cell)]
 

@@ -23,8 +23,8 @@ default = []
 [dependencies]
 log = "=0.4.21"
 cfg-if = "1.0"
-linkme = "0.3.31"
-bitflags = "2.8"
+linkme = "0.3.33"
+bitflags = "2.9"
 static_assertions = "1.1.0"
 kernel_guard = "0.1"
 kspin = "0.1"
@@ -43,11 +43,11 @@ axalloc = { workspace = true, optional = true }
 x86 = "0.52"
 x86_64 = "0.15"
 x2apic = "0.4"
-raw-cpuid = "11.3"
+raw-cpuid = "11.5"
 x86_rtc = { version = "0.1", optional = true }
 
 [target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]
-riscv = "0.12"
+riscv = "0.13"
 sbi-rt = { version = "0.0.3", features = ["legacy"] }
 riscv_goldfish = { version = "0.1", optional = true }
 
@@ -60,8 +60,8 @@ arm_pl031 = { version = "0.2", optional = true }
 dw_apb_uart = "0.1"
 
 [target.'cfg(target_arch = "loongarch64")'.dependencies]
-loongArch64 = "0.2.4"
-ns16550a = "0.4.0"
+loongArch64 = "0.2.5"
+ns16550a = "0.5.0"
 
 [build-dependencies]
 axconfig = { workspace = true }
