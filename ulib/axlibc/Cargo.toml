@@ -57,4 +57,4 @@ axio = "0.1"
 axerrno = "0.1"
 
 [build-dependencies]
-bindgen ={ version = "0.69" }
+bindgen ={ version = "0.71" }

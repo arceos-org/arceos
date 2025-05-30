@@ -29,7 +29,7 @@ pub fn unpark_task(id: u64, resched: bool) {
     if let Some(task) = find_task_by_id(id) {
         select_run_queue::<NoPreemptIrqSave>(&task).unpark_task(task, resched);
     } else {
-        debug!("Attempt to unpark non-existent task {}", id);
+/*         debug!("Attempt to unpark non-existent task {}", id); */
     }
 }
 

@@ -83,8 +83,7 @@ impl<T: ?Sized> Mutex<T> {
                 Err(owner_id) => {
                     assert_ne!(
                         owner_id, current_id,
-                        "Thread({}) tried to acquire mutex it already owns.",
-                        current_id,
+                        "Thread({current_id}) tried to acquire mutex it already owns.",
                     );
                     // Wait until the lock looks unlocked before retrying
                     api::ax_wait_queue_wait_until(&self.wq, || !self.is_locked(), None);
@@ -129,8 +128,7 @@ impl<T: ?Sized> Mutex<T> {
         let current_id = api::ax_current_task_id();
         assert_eq!(
             owner_id, current_id,
-            "Thread({}) tried to release mutex it doesn't own",
-            current_id,
+            "Thread({current_id}) tried to release mutex it doesn't own",
         );
         // wake up one waiting thread.
         api::ax_wait_queue_wake(&self.wq, 1);

@@ -246,37 +246,35 @@ fn init_interrupt() {
     const PERIODIC_INTERVAL_NANOS: u64 =
         axhal::time::NANOS_PER_SEC / axconfig::TICKS_PER_SEC as u64;
 
-    #[cfg(not(feature = "embassy-timer"))]
-    {
-        #[percpu::def_percpu]
-        static NEXT_DEADLINE: u64 = 0;
+    #[percpu::def_percpu]
+    static NEXT_DEADLINE: u64 = 0;
 
-        fn update_timer() {
-            let now_ns = axhal::time::monotonic_time_nanos();
-            // Safety: we have disabled preemption in IRQ handler.
-            let mut deadline = unsafe { NEXT_DEADLINE.read_current_raw() };
-            if now_ns >= deadline {
-                deadline = now_ns + PERIODIC_INTERVAL_NANOS;
-            }
-            unsafe { NEXT_DEADLINE.write_current_raw(deadline + PERIODIC_INTERVAL_NANOS) };
-            axhal::time::set_oneshot_timer(deadline);
+    fn update_timer() {
+        let now_ns = axhal::time::monotonic_time_nanos();
+        // Safety: we have disabled preemption in IRQ handler.
+        let mut deadline = unsafe { NEXT_DEADLINE.read_current_raw() };
+        while now_ns >= deadline {
+            deadline = now_ns + PERIODIC_INTERVAL_NANOS;
         }
-
-        axhal::irq::register_handler(TIMER_IRQ_NUM, || {
-            update_timer();
-            #[cfg(feature = "multitask")]
-            axtask::on_timer_tick();
-        });
+        use axembassy::AxDriverAPI;
+        #[cfg(feature = "embassy-timer")]
+        {
+            let next_expired = AxDriverAPI::next_expiration(PERIODIC_INTERVAL_NANOS);
+            if deadline >= next_expired {
+                deadline = next_expired;
+            }
+        }
+        unsafe { NEXT_DEADLINE.write_current_raw(deadline + PERIODIC_INTERVAL_NANOS) };
+        axhal::time::set_oneshot_timer(deadline);
     }
 
-    #[cfg(feature = "embassy-timer")]
-    {
-        use axembassy::{AxDriverAPI,embassy_update_timer};
-        
-        AxDriverAPI::runtime_init(PERIODIC_INTERVAL_NANOS);
-        axhal::irq::register_handler(TIMER_IRQ_NUM, embassy_update_timer);
-        info!("Embassy timer driver initialized.");
-    }
+    axhal::irq::register_handler(TIMER_IRQ_NUM, || {
+        update_timer();
+        #[cfg(feature = "multitask")]
+        axtask::on_timer_tick();
+        #[cfg(feature = "embassy-timer")]
+        axembassy::signal_executor();
+    });
 
     // Enable IRQs before starting app
     axhal::arch::enable_irqs();

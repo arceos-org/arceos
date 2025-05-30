@@ -44,9 +44,9 @@ fn main() {
     for i in 1..4 {
         println!("spawned thread {}", i);
         thread::spawn(move || {
-            for j in 0..10 {
+            for j in 0..5{
                 println!("spawn tick {}: {}", i, j);
-                sleep(Duration::from_millis(500 * i as u64));
+                sleep(Duration::from_millis(1000 * i as u64));
             }
             println!("spawned thread {} finished", i);
         });
