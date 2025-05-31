@@ -413,6 +413,8 @@ dependencies = [
  "fatfs",
  "lazyinit",
  "log",
+ "lwext4_rust",
+ "spin",
 ]
 
 [[package]]
@@ -1209,6 +1211,14 @@ checksum = "7c9f0d275c70310e2a9d2fc23250c5ac826a73fa828a5f256401f85c5c554283"
 dependencies = [
  "bit_field",
  "bitflags 2.9.1",
+]
+
+[[package]]
+name = "lwext4_rust"
+version = "0.2.0"
+source = "git+https://github.com/Azure-stars/lwext4_rust.git#d1561e971c37555428695b12b869ec938af5a058"
+dependencies = [
+ "log",
 ]
 
 [[package]]

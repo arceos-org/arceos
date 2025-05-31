@@ -8,12 +8,31 @@ use axfs_vfs::{VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsNodeType, VfsOps, VfsResu
 use axns::{ResArc, def_resource};
 use axsync::Mutex;
 use lazyinit::LazyInit;
+use spin::RwLock;
 
-use crate::{api::FileType, fs, mounts};
+use crate::{
+    api::FileType,
+    fs::{self},
+    mounts,
+};
 
 def_resource! {
-    static CURRENT_DIR_PATH: ResArc<Mutex<String>> = ResArc::new();
-    static CURRENT_DIR: ResArc<Mutex<VfsNodeRef>> = ResArc::new();
+    pub static CURRENT_DIR_PATH: ResArc<Mutex<String>> = ResArc::new();
+    pub static CURRENT_DIR: ResArc<Mutex<VfsNodeRef>> = ResArc::new();
+}
+
+impl CURRENT_DIR_PATH {
+    /// Return a copy of the inner path.
+    pub fn copy_inner(&self) -> Mutex<String> {
+        Mutex::new(self.lock().clone())
+    }
+}
+
+impl CURRENT_DIR {
+    /// Return a copy of the CURRENT_DIR_NODE.
+    pub fn copy_inner(&self) -> Mutex<VfsNodeRef> {
+        Mutex::new(self.lock().clone())
+    }
 }
 
 struct MountPoint {
@@ -23,7 +42,7 @@ struct MountPoint {
 
 struct RootDirectory {
     main_fs: Arc<dyn VfsOps>,
-    mounts: Vec<MountPoint>,
+    mounts: RwLock<Vec<MountPoint>>,
 }
 
 static ROOT_DIR: LazyInit<Arc<RootDirectory>> = LazyInit::new();
@@ -44,33 +63,33 @@ impl RootDirectory {
     pub const fn new(main_fs: Arc<dyn VfsOps>) -> Self {
         Self {
             main_fs,
-            mounts: Vec::new(),
+            mounts: RwLock::new(Vec::new()),
         }
     }
 
-    pub fn mount(&mut self, path: &'static str, fs: Arc<dyn VfsOps>) -> AxResult {
+    pub fn mount(&self, path: &'static str, fs: Arc<dyn VfsOps>) -> AxResult {
         if path == "/" {
             return ax_err!(InvalidInput, "cannot mount root filesystem");
         }
         if !path.starts_with('/') {
             return ax_err!(InvalidInput, "mount path must start with '/'");
         }
-        if self.mounts.iter().any(|mp| mp.path == path) {
+        if self.mounts.read().iter().any(|mp| mp.path == path) {
             return ax_err!(InvalidInput, "mount point already exists");
         }
         // create the mount point in the main filesystem if it does not exist
         self.main_fs.root_dir().create(path, FileType::Dir)?;
         fs.mount(path, self.main_fs.root_dir().lookup(path)?)?;
-        self.mounts.push(MountPoint::new(path, fs));
+        self.mounts.write().push(MountPoint::new(path, fs));
         Ok(())
     }
 
-    pub fn _umount(&mut self, path: &str) {
-        self.mounts.retain(|mp| mp.path != path);
+    pub fn _umount(&self, path: &str) {
+        self.mounts.write().retain(|mp| mp.path != path);
     }
 
     pub fn contains(&self, path: &str) -> bool {
-        self.mounts.iter().any(|mp| mp.path == path)
+        self.mounts.read().iter().any(|mp| mp.path == path)
     }
 
     fn lookup_mounted_fs<F, T>(&self, path: &str, f: F) -> AxResult<T>
@@ -88,7 +107,7 @@ impl RootDirectory {
 
         // Find the filesystem that has the longest mounted path match
         // TODO: more efficient, e.g. trie
-        for (i, mp) in self.mounts.iter().enumerate() {
+        for (i, mp) in self.mounts.read().iter().enumerate() {
             // skip the first '/'
             if path.starts_with(&mp.path[1..]) && mp.path.len() - 1 > max_len {
                 max_len = mp.path.len() - 1;
@@ -99,7 +118,7 @@ impl RootDirectory {
         if max_len == 0 {
             f(self.main_fs.clone(), path) // not matched any mount point
         } else {
-            f(self.mounts[idx].fs.clone(), &path[max_len..]) // matched at `idx`
+            f(self.mounts.read()[idx].fs.clone(), &path[max_len..]) // matched at `idx`
         }
     }
 }
@@ -150,6 +169,10 @@ pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
     cfg_if::cfg_if! {
         if #[cfg(feature = "myfs")] { // override the default filesystem
             let main_fs = fs::myfs::new_myfs(disk);
+        } else if #[cfg(feature = "lwext4_rs")] {
+            static EXT4_FS: LazyInit<Arc<fs::lwext4_rust::Ext4FileSystem>> = LazyInit::new();
+            EXT4_FS.init_once(Arc::new(fs::lwext4_rust::Ext4FileSystem::new(disk)));
+            let main_fs = EXT4_FS.clone();
         } else if #[cfg(feature = "fatfs")] {
             static FAT_FS: LazyInit<Arc<fs::fatfs::FatFileSystem>> = LazyInit::new();
             FAT_FS.init_once(Arc::new(fs::fatfs::FatFileSystem::new(disk)));
@@ -158,7 +181,7 @@ pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
         }
     }
 
-    let mut root_dir = RootDirectory::new(main_fs);
+    let root_dir = RootDirectory::new(main_fs);
 
     #[cfg(feature = "devfs")]
     root_dir
@@ -183,7 +206,9 @@ pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
         .expect("fail to mount sysfs at /sys");
 
     ROOT_DIR.init_once(Arc::new(root_dir));
+    info!("rootfs initialized");
     CURRENT_DIR.init_new(Mutex::new(ROOT_DIR.clone()));
+    info!("test");
     CURRENT_DIR_PATH.init_new(Mutex::new("/".into()));
 }
 

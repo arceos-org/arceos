@@ -40,8 +40,11 @@ impl Disk {
     pub fn read_one(&mut self, buf: &mut [u8]) -> DevResult<usize> {
         let read_size = if self.offset == 0 && buf.len() >= BLOCK_SIZE {
             // whole block
-            self.dev
-                .read_block(self.block_id, &mut buf[0..BLOCK_SIZE])?;
+            let mut data = [0u8; BLOCK_SIZE];
+            self.dev.read_block(self.block_id, &mut data)?;
+            buf[0..BLOCK_SIZE].copy_from_slice(&data);
+            // self.dev
+            //     .read_block(self.block_id, &mut buf[0..BLOCK_SIZE])?;
             self.block_id += 1;
             BLOCK_SIZE
         } else {
@@ -88,5 +91,29 @@ impl Disk {
             count
         };
         Ok(write_size)
+    }
+
+    /// Read a single block starting from the specified offset.
+    #[allow(unused)]
+    pub fn read_offset(&mut self, offset: usize) -> [u8; BLOCK_SIZE] {
+        let block_id = offset / BLOCK_SIZE;
+        let mut block_data = [0u8; BLOCK_SIZE];
+        self.dev
+            .read_block(block_id as u64, &mut block_data)
+            .unwrap();
+        block_data
+    }
+
+    /// Write single block starting from the specified offset.
+    #[allow(unused)]
+    pub fn write_offset(&mut self, offset: usize, buf: &[u8]) -> DevResult<usize> {
+        assert!(
+            buf.len() == BLOCK_SIZE,
+            "Buffer length must be equal to BLOCK_SIZE"
+        );
+        assert!(offset % BLOCK_SIZE == 0);
+        let block_id = offset / BLOCK_SIZE;
+        self.dev.write_block(block_id as u64, buf).unwrap();
+        Ok(buf.len())
     }
 }
