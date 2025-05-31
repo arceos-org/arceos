@@ -7,26 +7,14 @@ use log::{debug, info};
 
 #[percpu::def_percpu]
 static SIGNAL_WORK_THREAD_MODE: AtomicBool = AtomicBool::new(false);
-#[percpu::def_percpu]
-static EXECUTOR_TASK_ID: AtomicU64 = AtomicU64::new(u64::MAX);
 
 #[unsafe(export_name = "__pender")]
 fn __pender(_context: *mut ()) {
     SIGNAL_WORK_THREAD_MODE.with_current(|m| {
         m.store(true, Ordering::SeqCst);
     });
-}
-
-/// Unpark executor if there is a pending signal
-pub fn signal_executor() {
-    if unsafe {
-        SIGNAL_WORK_THREAD_MODE
-            .current_ref_raw()
-            .load(Ordering::Acquire)
-    } {
-        let task_id = EXECUTOR_TASK_ID.with_current(|m| m.load(Ordering::Acquire));
-        unpark_task(task_id, true);
-    }
+    let task_id = _context as u64;
+    unpark_task(task_id, true);
 }
 
 pub struct Executor {
@@ -35,18 +23,22 @@ pub struct Executor {
 }
 
 impl Executor {
+    /// Create a new executor and initialize context with current task id
     pub fn new() -> Self {
+        let cur_id = axtask::current().id().as_u64();
         Self {
-            inner: raw::Executor::new(core::ptr::null_mut()),
+            inner: raw::Executor::new(cur_id as *mut ()),
             not_send: PhantomData,
         }
     }
 
+    /// Runs the executor.
+    ///
+    /// The `init` closure is called with a [`Spawner`] that spawns tasks on
+    /// this executor. Use it to spawn the initial task(s). After `init` returns,
+    /// the executor starts running the tasks.
+    ///
     pub fn run(&'static mut self, init: impl FnOnce(embassy_executor::Spawner)) -> ! {
-        let cur_id = axtask::current().id().as_u64();
-        EXECUTOR_TASK_ID.with_current(|m| {
-            m.store(cur_id, Ordering::SeqCst);
-        });
         init(self.inner.spawner());
 
         loop {
@@ -59,13 +51,8 @@ impl Executor {
                     });
                 } else {
                     park_current_task();
-                    debug!("park current task");
                 }
             };
         }
-    }
-
-    pub fn spawner(&'static mut self) -> Spawner {
-        self.inner.spawner()
     }
 }

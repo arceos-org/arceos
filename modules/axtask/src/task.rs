@@ -31,10 +31,11 @@ pub(crate) enum TaskState {
     /// Task is blocked (in the wait queue or timer list),
     /// and it has finished its scheduling process, it can be wake up by `notify()` on any run queue safely.
     Blocked = 3,
+    /// Task is Suspended,
+    /// Not in wait queue.
+    Parked = 4,
     /// Task is exited and waiting for being dropped.
-    Exited = 4,
-    /// Task is an asynchronous task, waiting for even completion to be unparked.
-    Parked = 5,
+    Exited = 5,
 }
 
 /// The inner task structure.

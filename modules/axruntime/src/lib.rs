@@ -153,6 +153,9 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     #[cfg(feature = "multitask")]
     axtask::init_scheduler();
 
+    #[cfg(feature = "embassy-timer")]
+    axembassy::spawn_init();
+
     #[cfg(any(feature = "fs", feature = "net", feature = "display"))]
     {
         #[allow(unused_variables)]
@@ -272,8 +275,6 @@ fn init_interrupt() {
         update_timer();
         #[cfg(feature = "multitask")]
         axtask::on_timer_tick();
-        #[cfg(feature = "embassy-timer")]
-        axembassy::signal_executor();
     });
 
     // Enable IRQs before starting app

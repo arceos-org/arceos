@@ -451,7 +451,8 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
         debug!("task block: {}", curr.id_name());
         self.inner.resched();
     }
-    
+
+    /// Park the current task, and reschedule.
     pub fn park_current_task(&mut self) {
         let curr = &self.current_task;
         assert!(curr.is_running());
@@ -460,7 +461,7 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
         // Ensure preemption is disabled
         #[cfg(feature = "preempt")]
         assert!(curr.can_preempt(1));
-        
+
         curr.set_state(TaskState::Parked);
         self.inner.resched();
     }
@@ -682,12 +683,29 @@ pub(crate) fn init() {
     // Put the subsequent execution into the `main` task.
     let main_task = TaskInner::new_init("main".into()).into_arc();
     main_task.set_state(TaskState::Running);
-    debug!("main task registered: {}, id {}", main_task.id_name(), main_task.id().as_u64());
     register_task(main_task.clone());
+    debug!(
+        "main task registered: {}, id {}",
+        main_task.id_name(),
+        main_task.id().as_u64()
+    );
     unsafe { CurrentTask::init_current(main_task) }
+
+    // // Pub the embassy executor into the `async` task.
+    // let async_task =
+    //     TaskInner::new(axembassy::init, "async".into(), IDLE_TASK_STACK_SIZE).into_arc();
+    // async_task.set_state(TaskState::Running);
+    // register_task(async_task.clone());
+    // debug!(
+    //     "embassy async task registered: {}, id {}",
+    //     async_task.id_name(),
+    //     async_task.id().as_u64()
+    // );
 
     RUN_QUEUE.with_current(|rq| {
         rq.init_once(AxRunQueue::new(cpu_id));
+        // let rq_ = rq.get().unwrap();
+        // rq_.scheduler.lock().add_task(async_task);
     });
     unsafe {
         RUN_QUEUES[cpu_id].write(RUN_QUEUE.current_ref_mut_raw());

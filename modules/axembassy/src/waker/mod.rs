@@ -6,7 +6,6 @@ use core::{
     task::{Context, Poll, RawWaker, RawWakerVTable, Waker},
 };
 
-use crate::executor::signal_executor;
 use axtask::{AxTaskRef, TaskId, current, park_current_task, unpark_task};
 use kspin::SpinNoIrq;
 
@@ -42,12 +41,12 @@ unsafe fn clone(_data: *const ()) -> RawWaker {
 
 unsafe fn wake(_data: *const ()) {
     // Call Executor pender function
-    signal_executor();
+    // signal_executor();
 }
 
 unsafe fn wake_by_ref(_data: *const ()) {
     // Call Executor pender function
-    signal_executor();
+    // signal_executor();
 }
 
 unsafe fn drop(_data: *const ()) {
