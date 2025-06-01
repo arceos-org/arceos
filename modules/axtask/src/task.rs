@@ -14,6 +14,7 @@ use axhal::arch::TaskContext;
 use axhal::tls::TlsArea;
 
 use crate::task_ext::AxTaskExt;
+use crate::task_registry::register_task;
 use crate::{AxCpuMask, AxTask, AxTaskRef, WaitQueue};
 
 /// A unique identifier for a thread.
@@ -99,7 +100,8 @@ impl From<u8> for TaskState {
             1 => Self::Running,
             2 => Self::Ready,
             3 => Self::Blocked,
-            4 => Self::Exited,
+            4 => Self::Parked,
+            5 => Self::Exited,
             _ => unreachable!(),
         }
     }

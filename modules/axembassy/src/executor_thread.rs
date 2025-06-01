@@ -1,11 +1,19 @@
+use axtask::{park_current_task, unpark_task};
+use core::marker::PhantomData;
 use core::sync::atomic::{AtomicBool, Ordering};
+use core::u64;
 use embassy_executor::raw;
 
+#[percpu::def_percpu]
 static SIGNAL_WORK_THREAD_MODE: AtomicBool = AtomicBool::new(false);
 
 #[unsafe(export_name = "__pender")]
 fn __pender(_context: *mut ()) {
-    SIGNAL_WORK_THREAD_MODE.store(true, Ordering::SeqCst);
+    SIGNAL_WORK_THREAD_MODE.with_current(|m| {
+        m.store(true, Ordering::SeqCst);
+    });
+    let id = _context as u64;
+    unpark_task(id, true);
 }
 
 pub struct Executor {
@@ -16,8 +24,9 @@ pub struct Executor {
 impl Executor {
     /// Create a new executor and initialize context with current task id
     pub fn new() -> Self {
+        let cur_id = axtask::current().id().as_u64();
         Self {
-            inner: raw::Executor::new(core::ptr::null_mut()),
+            inner: raw::Executor::new(cur_id as *mut ()),
             not_send: PhantomData,
         }
     }
@@ -34,10 +43,13 @@ impl Executor {
         loop {
             unsafe {
                 self.inner.poll();
-                if SIGNAL_WORK_THREAD_MODE.load(Ordering::SeqCst) {
-                    SIGNAL_WORK_THREAD_MODE.store(false, Ordering::SeqCst);
+                let to_poll = SIGNAL_WORK_THREAD_MODE.with_current(|m| m.load(Ordering::Acquire));
+                if to_poll {
+                    SIGNAL_WORK_THREAD_MODE.with_current(|m| {
+                        m.store(false, Ordering::SeqCst);
+                    });
                 } else {
-                    axhal::arch::wait_for_irqs();
+                    park_current_task();
                 }
             };
         }

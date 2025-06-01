@@ -1,0 +1,26 @@
+[package]
+name = "axasync"
+version.workspace = true
+edition.workspace = true
+authors = [""]
+description = "ArceOS user library with an interface similar to rust std"
+license.workspace = true
+homepage.workspace = true
+repository = "https://github.com/arceos-org/arceos/tree/main/ulib/axasync"
+
+[features]
+default = []
+
+single = ["axfeat/async-single", "arceos_api/async-single"]
+thread = ["axfeat/async-thread", "arceos_api/async-thread"]
+
+[dependencies]
+axfeat = { workspace = true }
+arceos_api = { workspace = true }
+
+embassy-executor = { git = "https://github.com/embassy-rs/embassy", branch = "main", default-features = false, optional = true }
+embassy-futures = { version = "0.1.1", optional = true }
+embassy-sync = { version = "0.7.0", optional = true }
+
+cfg-if = "1.0.0"
+static_cell = "2.1.0"

@@ -1,3 +1,5 @@
+use core::fmt;
+
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
 
@@ -199,6 +201,16 @@ impl WaitQueue {
             true
         } else {
             false
+        }
+    }
+}
+
+impl fmt::Debug for WaitQueue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let wq = self.queue.lock();
+        match wq.front() {
+            Some(task) => task.fmt(f),
+            None => f.write_str("empty"),
         }
     }
 }

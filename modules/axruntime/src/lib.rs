@@ -151,10 +151,10 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     axhal::platform_init();
 
     #[cfg(feature = "multitask")]
-    axtask::init_scheduler();
-
-    #[cfg(feature = "embassy-timer")]
-    axembassy::spawn_init();
+    {
+        axtask::init_scheduler();
+        axembassy::init_spawn();
+    }
 
     #[cfg(any(feature = "fs", feature = "net", feature = "display"))]
     {
@@ -195,13 +195,14 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         core::hint::spin_loop();
     }
 
-    // #[cfg(feature = "embassy-timer")]
-    // {
-    //     use axembassy::init;
-    //     init();
-    // }
-
-    unsafe { main() };
+    unsafe {
+        #[cfg(feature = "multitask")]
+        {
+            // park main task to let embassy task initialize first
+            axtask::park_current_task()
+        }
+        main()
+    };
 
     #[cfg(feature = "multitask")]
     axtask::exit(0);

@@ -386,6 +386,40 @@ pub mod io {
     }
 }
 
+/// Embassy runtime.
+pub mod embassy_async {
+    use core::future::Future;
+
+    define_api_type! {
+        @cfg "async-thread";
+        pub type AxExecutor;
+        pub type AxSpawner;
+        pub type AxSendSpawner;
+    }
+    
+    define_api! {
+        @cfg "async-thread";
+        pub fn ax_spawner() -> AxSendSpawner;
+    }
+
+    #[cfg(feature = "async-thread")]
+    pub fn ax_block_on<F: Future>(fut: F) -> F::Output {
+        crate::imp::ax_block_on(fut)
+    }
+
+    #[allow(unused_variables)]
+    #[cfg(all(feature = "dummy-if-not-enabled", not(feature = "async-thread")))]
+    pub fn ax_block_on<F: Future>(fut: F) -> F::Output {
+        unimplemented!(stringify!(ax_block_on))
+    }
+
+    define_api_type! {
+        @cfg "async-single";
+        pub type AxExecutor;
+        pub type AxSpawner;
+    }
+}
+
 /// Re-exports of ArceOS modules.
 ///
 /// You should prefer to use other APIs rather than these modules. The modules
@@ -396,7 +430,6 @@ pub mod modules {
     pub use axlog;
     pub use axruntime;
     pub use axsync;
-    pub use axembassy;
 
     #[cfg(feature = "alloc")]
     pub use axalloc;
@@ -406,6 +439,8 @@ pub mod modules {
     pub use axdma;
     #[cfg(any(feature = "fs", feature = "net", feature = "display"))]
     pub use axdriver;
+    #[cfg(any(feature = "async-thread", feature = "async-single"))]
+    pub use axembassy;
     #[cfg(feature = "fs")]
     pub use axfs;
     #[cfg(feature = "paging")]

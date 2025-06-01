@@ -22,6 +22,7 @@ members = [
     "api/arceos_api",
     "api/arceos_posix_api",
 
+    "ulib/axasync",
     "ulib/axstd",
     "ulib/axlibc",
 
@@ -30,7 +31,6 @@ members = [
     "examples/httpserver",
     "examples/httpserver",
     "examples/shell",
-    "examples/embassy-user",
     "examples/embassy-local",
 ]
 
@@ -46,6 +46,7 @@ keywords = ["arceos", "kernel"]
 categories = ["os", "no-std"]
 
 [workspace.dependencies]
+axasync = { path = "ulib/axasync" }
 axstd = { path = "ulib/axstd" }
 axlibc = { path = "ulib/axlibc" }
 

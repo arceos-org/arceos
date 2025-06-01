@@ -43,8 +43,18 @@ sched_fifo = ["axtask/sched_fifo"]
 sched_rr = ["axtask/sched_rr", "irq"]
 sched_cfs = ["axtask/sched_cfs", "irq"]
 
-# Embassy Timer
-embassy-timer = ["axembassy/driver", "axruntime/embassy-timer"]
+# Embassy asynchronous runtime with multithread support
+async-thread = [
+	"axembassy/driver",
+	"axembassy/executor-thread",
+	"axruntime/embassy-timer",
+]
+# Embassy asynchronous runtime depended on irq with single thread support
+async-single = [
+	"axembassy/driver",
+	"axembassy/executor-single",
+	"axruntime/embassy-timer",
+]
 
 # File system
 fs = [

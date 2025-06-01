@@ -1,5 +1,3 @@
-#![deny(missing_docs)]
-
 use core::{
     cell::OnceCell,
     pin::Pin,
@@ -39,10 +37,6 @@ fn wake(ctx: *const ()) {
 static VTABLE: RawWakerVTable =
     RawWakerVTable::new(|ctx| RawWaker::new(ctx, &VTABLE), wake, wake, wake);
 
-/// Blocks the current task until the given future is ready.
-/// 
-/// # Panics
-/// 
 /// Panics if not called in a thread task
 pub fn block_on<F: Future>(mut fut: F) -> F::Output {
     let mut fut = unsafe { Pin::new_unchecked(&mut fut) };

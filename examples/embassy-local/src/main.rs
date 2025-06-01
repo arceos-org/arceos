@@ -6,36 +6,42 @@
 #[cfg(feature = "axstd")]
 extern crate axstd as std;
 
-use embassy_futures::yield_now;
-use std::Executor;
+use axasync::spawner;
 use std::time::Duration;
 use std::{
     boxed::Box,
     thread::{self, sleep},
 };
 
-fn tick(_sec: u64, busy_nano: u64) -> embassy_executor::SpawnToken<impl Sized> {
+fn busy_work() {
+    for _ in 0..1000 {
+        let mut x = 0;
+        for _ in 0..1000 {
+            x += 1;
+        }
+    }
+}
+
+fn tick_raw(_sec: u64, busy_nano: u64) -> embassy_executor::SpawnToken<impl Sized> {
     let task = Box::leak(Box::new(embassy_executor::raw::TaskStorage::new()));
     task.spawn(move || async move {
         for i in 0..10 {
-            println!("embassy tick {}/s :{}", _sec, i);
-            for _ in 0..busy_nano {
-                // Simulate some busy work
-                let _ = (0..1000).fold(0, |acc, x| acc + x);
-            }
+            println!("embassy tick: {}/s, {} times", _sec * i, i);
+            busy_work();
             embassy_time::Timer::after_secs(_sec).await;
         }
         panic!("tick finished");
     })
 }
 
-fn idle() -> embassy_executor::SpawnToken<impl Sized> {
-    let task = Box::leak(Box::new(embassy_executor::raw::TaskStorage::new()));
-    task.spawn(move || async move {
-        loop {
-            yield_now().await;
-        }
-    })
+#[embassy_executor::task]
+async fn tick(_sec: u64, busy_nano: u64) {
+    for i in 0..10 {
+        println!("embassy tick: {}/s, {} times", _sec * i, i);
+        busy_work();
+        embassy_time::Timer::after_secs(_sec).await;
+    }
+    panic!("tick finished");
 }
 
 #[cfg_attr(feature = "axstd", unsafe(no_mangle))]
@@ -44,16 +50,15 @@ fn main() {
     for i in 1..4 {
         println!("spawned thread {}", i);
         thread::spawn(move || {
-            for j in 0..5{
-                println!("spawn tick {}: {}", i, j);
+            for j in 0..5 {
+                println!("thread {} tick: {}/s {} times", i, j * i, j);
                 sleep(Duration::from_millis(1000 * i as u64));
             }
-            println!("spawned thread {} finished", i);
+            println!("thread {} finished", i);
         });
     }
-    let exec = Box::leak(Box::new(Executor::new()));
-    exec.run(|s| {
-        // s.spawn(idle()).unwrap();
-        s.spawn(tick(1, 0)).unwrap();
-    });
+
+    spawner().spawn(tick(1, 0)).unwrap();
+    // Avoid
+    sleep(Duration::from_millis(1000 * 15 as u64));
 }
