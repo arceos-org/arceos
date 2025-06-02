@@ -6,40 +6,30 @@
 #[cfg(feature = "axstd")]
 extern crate axstd as std;
 
-use axasync::spawner;
+use axasync::executor::spawner;
+use axasync::time::Timer;
+use core::hint::black_box;
 use std::time::Duration;
-use std::{
-    boxed::Box,
-    thread::{self, sleep},
-};
+use std::thread::{self, sleep};
 
-fn busy_work() {
-    for _ in 0..1000 {
+fn busy_work(nano: u64) -> u64 {
+    let mut total = 0;
+    for _ in 0..nano {
         let mut x = 0;
-        for _ in 0..1000 {
+        for _ in 0..nano {
             x += 1;
         }
+        total = black_box(total + x);
     }
-}
-
-fn tick_raw(_sec: u64, busy_nano: u64) -> embassy_executor::SpawnToken<impl Sized> {
-    let task = Box::leak(Box::new(embassy_executor::raw::TaskStorage::new()));
-    task.spawn(move || async move {
-        for i in 0..10 {
-            println!("embassy tick: {}/s, {} times", _sec * i, i);
-            busy_work();
-            embassy_time::Timer::after_secs(_sec).await;
-        }
-        panic!("tick finished");
-    })
+    total
 }
 
 #[embassy_executor::task]
 async fn tick(_sec: u64, busy_nano: u64) {
     for i in 0..10 {
         println!("embassy tick: {}/s, {} times", _sec * i, i);
-        busy_work();
-        embassy_time::Timer::after_secs(_sec).await;
+        busy_work(busy_nano);
+        Timer::after_secs(_sec).await;
     }
     panic!("tick finished");
 }
@@ -59,6 +49,6 @@ fn main() {
     }
 
     spawner().spawn(tick(1, 0)).unwrap();
-    // Avoid
+    // Avoid shut down immediately
     sleep(Duration::from_millis(1000 * 15 as u64));
 }

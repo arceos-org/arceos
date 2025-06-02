@@ -1,0 +1,10 @@
+[package]
+name = "embassy-thread"
+authors = ["nostalgia <lv15623448685@gmail.com>"]
+edition.workspace = true
+
+[dependencies]
+axstd = { workspace = true, features = ["multitask"], optional = true }
+axasync = { workspace = true, features = ["thread", "time"] }
+
+embassy-executor = { git = "https://github.com/embassy-rs/embassy", branch = "main", default-features = false }

@@ -2,10 +2,36 @@
 #![feature(doc_cfg)]
 #![feature(doc_auto_cfg)]
 
-use arceos_api::embassy_async as api;
+#[cfg(any(feature = "thread", feature = "single"))]
+pub mod executor {
+    use arceos_api::embassy_async as api;
+
+    pub use api::AxExecutor as Executor;
+    pub use embassy_executor::*;
+
+    #[cfg(feature = "thread")]
+    pub use api::{ax_block_on as block_on, ax_spawner as spawner};
+}
 
 #[cfg(any(feature = "thread", feature = "single"))]
-pub use api::{AxExecutor as Executor, AxSpawner as Spawner};
+pub use embassy_executor;
 
-#[cfg(feature = "thread")]
-pub use api::{AxSendSpawner as SendSpawner, ax_block_on as block_on, ax_spawner as spawner};
+#[cfg(feature = "time")]
+pub mod time {
+    pub use embassy_time::*;
+}
+
+#[cfg(feature = "sync")]
+pub mod sync {
+    pub use embassy_sync::*;
+}
+
+pub mod cell {
+    pub use static_cell::{ConstStaticCell, StaticCell};
+}
+
+#[cfg(not(any(feature = "thread", feature = "single")))]
+compile_error!(r#"must select one of "executor-thread" or "executor-single""#);
+
+#[cfg(all(feature = "thread", feature = "single"))]
+compile_error!(r#"feature "executor-thread" and "executor-single" are mutually exclusive"#);

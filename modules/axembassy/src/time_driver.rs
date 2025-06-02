@@ -66,23 +66,23 @@ impl AxDriver {
             let nanos_period = *self.periodic_interval_nanos.lock();
             if nanos_next_interval < nanos_period {
                 // only set timer if it is less than the periodic interval
-                set_oneshot_timer(ticks_to_nanos(ticks_next_at));
+                set_oneshot_timer(nanos_next_at);
             }
         }
     }
 
     /// Dequeue expired timer and return nanos of next expiration
     pub fn next_expiration(&self, period: u64) -> u64 {
-        let queue_guard = AX_DRIVER.queue.lock();
+        let queue_guard = self.queue.lock();
         let mut queue = queue_guard.borrow_mut();
         if *self.periodic_interval_nanos.lock() == 0 {
             *self.periodic_interval_nanos.lock() = period;
         }
 
-        let ticks_now = AX_DRIVER.now();
+        let ticks_now = self.now();
 
         let ticks_next_expired = queue.next_expiration(ticks_now);
-        let nanos_next_expired = nanos_to_ticks(ticks_next_expired);
+        let nanos_next_expired = ticks_to_nanos(ticks_next_expired);
         nanos_next_expired
     }
 }

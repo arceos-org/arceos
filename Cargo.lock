@@ -247,8 +247,9 @@ dependencies = [
  "axfeat",
  "cfg-if",
  "embassy-executor",
- "embassy-futures 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "embassy-sync 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "embassy-futures",
+ "embassy-sync",
+ "embassy-time",
  "static_cell",
 ]
 
@@ -390,8 +391,8 @@ dependencies = [
  "axtask",
  "cfg-if",
  "embassy-executor",
- "embassy-futures 0.1.1 (git+https://github.com/embassy-rs/embassy?branch=main)",
- "embassy-sync 0.7.0 (git+https://github.com/embassy-rs/embassy?branch=main)",
+ "embassy-futures",
+ "embassy-sync",
  "embassy-time-driver",
  "embassy-time-queue-utils",
  "kspin",
@@ -1045,36 +1046,15 @@ dependencies = [
 [[package]]
 name = "embassy-futures"
 version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f878075b9794c1e4ac788c95b728f26aa6366d32eeb10c7051389f898f7d067"
-
-[[package]]
-name = "embassy-futures"
-version = "0.1.1"
 source = "git+https://github.com/embassy-rs/embassy?branch=main#c637ee7d79552d9b9bfa0c0f4199372975acc343"
 
 [[package]]
-name = "embassy-local"
+name = "embassy-single"
 version = "0.0.0"
 dependencies = [
  "axasync",
  "axstd",
  "embassy-executor",
- "embassy-time",
-]
-
-[[package]]
-name = "embassy-sync"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cef1a8a1ea892f9b656de0295532ac5d8067e9830d49ec75076291fd6066b136"
-dependencies = [
- "cfg-if",
- "critical-section",
- "embedded-io-async",
- "futures-sink",
- "futures-util",
- "heapless 0.8.0",
 ]
 
 [[package]]
@@ -1088,6 +1068,15 @@ dependencies = [
  "futures-sink",
  "futures-util",
  "heapless 0.8.0",
+]
+
+[[package]]
+name = "embassy-thread"
+version = "0.0.0"
+dependencies = [
+ "axasync",
+ "axstd",
+ "embassy-executor",
 ]
 
 [[package]]

@@ -7,22 +7,22 @@ cfg_if::cfg_if! {
         extern crate alloc;
         extern crate log;
 
+        mod asynch;
         pub mod delegate;
-        pub mod asynch;
 
         #[cfg(feature = "executor-thread")]
         mod executor_thread;
-        #[cfg(feature = "executor-single")]
-        mod executor;
-
         #[cfg(feature = "executor-thread")]
         pub use crate::executor_thread::Executor;
+        #[cfg(feature = "executor-thread")]
+        pub use crate::asynch::{spawner,block_on,Spawner,SendSpawner};
+
+        #[cfg(feature = "executor-single")]
+        mod executor;
         #[cfg(feature = "executor-single")]
         pub use crate::executor::Executor;
-
-        pub use crate::asynch::{Spawner, SendSpawner};
-        #[cfg(feature = "executor-thread")]
-        pub use crate::asynch::{spawner,block_on};
+        #[cfg(feature = "executor-single")]
+        pub use crate::asynch::Spawner;
 
         #[cfg(feature = "executor-thread")]
         pub fn init_spawn() {

@@ -1,4 +1,5 @@
 use core::sync::atomic::{AtomicBool, Ordering};
+use core::marker::PhantomData;
 use embassy_executor::raw;
 
 static SIGNAL_WORK_THREAD_MODE: AtomicBool = AtomicBool::new(false);
@@ -34,6 +35,7 @@ impl Executor {
         loop {
             unsafe {
                 self.inner.poll();
+
                 if SIGNAL_WORK_THREAD_MODE.load(Ordering::SeqCst) {
                     SIGNAL_WORK_THREAD_MODE.store(false, Ordering::SeqCst);
                 } else {

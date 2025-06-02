@@ -31,7 +31,8 @@ members = [
     "examples/httpserver",
     "examples/httpserver",
     "examples/shell",
-    "examples/embassy-local",
+    "examples/embassy-thread", 
+    "examples/embassy-single",
 ]
 
 [workspace.package]

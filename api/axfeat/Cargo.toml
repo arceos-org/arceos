@@ -48,12 +48,16 @@ async-thread = [
 	"axembassy/driver",
 	"axembassy/executor-thread",
 	"axruntime/embassy-timer",
+	"multitask",
+	"irq",
 ]
 # Embassy asynchronous runtime depended on irq with single thread support
 async-single = [
 	"axembassy/driver",
 	"axembassy/executor-single",
 	"axruntime/embassy-timer",
+	"alloc",
+	"irq",
 ]
 
 # File system
