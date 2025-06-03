@@ -21,6 +21,7 @@ jobs:
         toolchain: ${{ env.rust-toolchain }}
     - uses: Swatinem/rust-cache@v2
       with:
+        shared-key: cargo-bin-cache
         cache-targets: false
     - name: Build docs
       continue-on-error: ${{ github.ref != env.default-branch && github.event_name != 'pull_request' }}
