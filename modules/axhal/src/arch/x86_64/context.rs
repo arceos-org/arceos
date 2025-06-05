@@ -395,10 +395,13 @@ impl TaskContext {
             // is executed), (stack pointer + 8) should be 16-byte aligned.
             let frame_ptr = (kstack_top.as_mut_ptr() as *mut u64).sub(1);
             let frame_ptr = (frame_ptr as *mut ContextSwitchFrame).sub(1);
-            core::ptr::write(frame_ptr, ContextSwitchFrame {
-                rip: entry as _,
-                ..Default::default()
-            });
+            core::ptr::write(
+                frame_ptr,
+                ContextSwitchFrame {
+                    rip: entry as _,
+                    ..Default::default()
+                },
+            );
             self.rsp = frame_ptr as u64;
         }
         self.kstack_top = kstack_top;
@@ -445,28 +448,26 @@ impl TaskContext {
     }
 }
 
-#[naked]
+#[unsafe(naked)]
 unsafe extern "C" fn context_switch(_current_stack: &mut u64, _next_stack: &u64) {
-    unsafe {
-        naked_asm!(
-            "
-            .code64
-            push    rbp
-            push    rbx
-            push    r12
-            push    r13
-            push    r14
-            push    r15
-            mov     [rdi], rsp
+    naked_asm!(
+        "
+        .code64
+        push    rbp
+        push    rbx
+        push    r12
+        push    r13
+        push    r14
+        push    r15
+        mov     [rdi], rsp
 
-            mov     rsp, [rsi]
-            pop     r15
-            pop     r14
-            pop     r13
-            pop     r12
-            pop     rbx
-            pop     rbp
-            ret",
-        )
-    }
+        mov     rsp, [rsi]
+        pop     r15
+        pop     r14
+        pop     r13
+        pop     r12
+        pop     rbx
+        pop     rbp
+        ret",
+    )
 }

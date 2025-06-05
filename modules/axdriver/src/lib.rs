@@ -40,12 +40,12 @@
 //! - `dyn`: use the dynamic device model (see above).
 //! - `bus-mmio`: use device tree to probe all MMIO devices.
 //! - `bus-pci`: use PCI bus to probe all PCI devices. This feature is
-//!    enabeld by default.
+//!   enabled by default.
 //! - `virtio`: use VirtIO devices. This is enabled if any of `virtio-blk`,
 //!   `virtio-net` or `virtio-gpu` is enabled.
 //! - `net`: use network devices. This is enabled if any feature of network
-//!    devices is selected. If this feature is enabled without any network device
-//!    features, a dummy struct is used for [`AxNetDevice`].
+//!   devices is selected. If this feature is enabled without any network device
+//!   features, a dummy struct is used for [`AxNetDevice`].
 //! - `block`: use block storage devices. Similar to the `net` feature.
 //! - `display`: use graphics display devices. Similar to the `net` feature.
 //!

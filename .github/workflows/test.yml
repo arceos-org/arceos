@@ -3,8 +3,8 @@ name: Test CI
 on: [push, pull_request]
 
 env:
-  qemu-version: 9.2.1
-  rust-toolchain: nightly-2025-01-18
+  qemu-version: 9.2.4
+  rust-toolchain: nightly-2025-05-20
   arceos-apps: 'c8d8fe4'
 
 jobs:
@@ -16,7 +16,6 @@ jobs:
       with:
         toolchain: ${{ env.rust-toolchain }}
         components: rust-src
-    - uses: Swatinem/rust-cache@v2
     - name: Run unit tests
       run: make unittest_no_fail_fast
 
@@ -34,11 +33,15 @@ jobs:
         toolchain: ${{ env.rust-toolchain }}
         components: rust-src
     - uses: Swatinem/rust-cache@v2
-    - run: cargo install cargo-binutils
-    - uses: ./.github/workflows/actions/setup-qemu
       with:
-        qemu-version: ${{ env.qemu-version }}
-    - uses: ./.github/workflows/actions/setup-musl
+        shared-key: cargo-bin-cache
+        cache-targets: false
+    - run: cargo install cargo-binutils
+    - uses: arceos-org/setup-qemu@v1
+      with:
+        version: ${{ env.qemu-version }}
+        arch_list: x86_64,aarch64,riscv64,loongarch64
+    - uses: arceos-org/setup-musl@v1
       with:
         arch: ${{ matrix.arch }}
     - name: Run app tests

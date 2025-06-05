@@ -424,7 +424,7 @@ impl TaskContext {
 }
 
 #[cfg(feature = "fp_simd")]
-#[naked]
+#[unsafe(naked)]
 unsafe extern "C" fn save_fp_registers(_fp_registers: &mut [u64; 32]) {
     naked_asm!(
         include_fp_asm_macros!(),
@@ -438,7 +438,7 @@ unsafe extern "C" fn save_fp_registers(_fp_registers: &mut [u64; 32]) {
 }
 
 #[cfg(feature = "fp_simd")]
-#[naked]
+#[unsafe(naked)]
 unsafe extern "C" fn restore_fp_registers(_fp_registers: &[u64; 32]) {
     naked_asm!(
         include_fp_asm_macros!(),
@@ -452,7 +452,7 @@ unsafe extern "C" fn restore_fp_registers(_fp_registers: &[u64; 32]) {
 }
 
 #[cfg(feature = "fp_simd")]
-#[naked]
+#[unsafe(naked)]
 unsafe extern "C" fn clear_fp_registers() {
     naked_asm!(
         include_fp_asm_macros!(),
@@ -463,7 +463,7 @@ unsafe extern "C" fn clear_fp_registers() {
     )
 }
 
-#[naked]
+#[unsafe(naked)]
 unsafe extern "C" fn context_switch(_current_task: &mut TaskContext, _next_task: &TaskContext) {
     naked_asm!(
         include_asm_macros!(),

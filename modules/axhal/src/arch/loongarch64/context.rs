@@ -341,7 +341,7 @@ impl TaskContext {
 }
 
 #[cfg(feature = "fp_simd")]
-#[naked]
+#[unsafe(naked)]
 unsafe extern "C" fn save_fp_registers(fp_status: &mut FpStatus) {
     naked_asm!(
         include_fp_asm_macros!(),
@@ -358,7 +358,7 @@ unsafe extern "C" fn save_fp_registers(fp_status: &mut FpStatus) {
 }
 
 #[cfg(feature = "fp_simd")]
-#[naked]
+#[unsafe(naked)]
 unsafe extern "C" fn restore_fp_registers(fp_status: &FpStatus) {
     naked_asm!(
         include_fp_asm_macros!(),
@@ -374,41 +374,39 @@ unsafe extern "C" fn restore_fp_registers(fp_status: &FpStatus) {
     )
 }
 
-#[naked]
+#[unsafe(naked)]
 unsafe extern "C" fn context_switch(_current_task: &mut TaskContext, _next_task: &TaskContext) {
-    unsafe {
-        naked_asm!(
-            include_asm_macros!(),
-            "
-            // save old context (callee-saved registers)
-            STD     $ra, $a0, 0
-            STD     $sp, $a0, 1
-            STD     $s0, $a0, 2
-            STD     $s1, $a0, 3
-            STD     $s2, $a0, 4
-            STD     $s3, $a0, 5
-            STD     $s4, $a0, 6
-            STD     $s5, $a0, 7
-            STD     $s6, $a0, 8
-            STD     $s7, $a0, 9
-            STD     $s8, $a0, 10
-            STD     $fp, $a0, 11
+    naked_asm!(
+        include_asm_macros!(),
+        "
+        // save old context (callee-saved registers)
+        STD     $ra, $a0, 0
+        STD     $sp, $a0, 1
+        STD     $s0, $a0, 2
+        STD     $s1, $a0, 3
+        STD     $s2, $a0, 4
+        STD     $s3, $a0, 5
+        STD     $s4, $a0, 6
+        STD     $s5, $a0, 7
+        STD     $s6, $a0, 8
+        STD     $s7, $a0, 9
+        STD     $s8, $a0, 10
+        STD     $fp, $a0, 11
 
-            // restore new context
-            LDD     $fp, $a1, 11
-            LDD     $s8, $a1, 10
-            LDD     $s7, $a1, 9
-            LDD     $s6, $a1, 8
-            LDD     $s5, $a1, 7
-            LDD     $s4, $a1, 6
-            LDD     $s3, $a1, 5
-            LDD     $s2, $a1, 4
-            LDD     $s1, $a1, 3
-            LDD     $s0, $a1, 2
-            LDD     $sp, $a1, 1
-            LDD     $ra, $a1, 0
+        // restore new context
+        LDD     $fp, $a1, 11
+        LDD     $s8, $a1, 10
+        LDD     $s7, $a1, 9
+        LDD     $s6, $a1, 8
+        LDD     $s5, $a1, 7
+        LDD     $s4, $a1, 6
+        LDD     $s3, $a1, 5
+        LDD     $s2, $a1, 4
+        LDD     $s1, $a1, 3
+        LDD     $s0, $a1, 2
+        LDD     $sp, $a1, 1
+        LDD     $ra, $a1, 0
 
-            ret",
-        )
-    }
+        ret",
+    )
 }

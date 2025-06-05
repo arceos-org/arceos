@@ -34,6 +34,8 @@ ifeq ($(findstring fp_simd,$(FEATURES)),)
     CFLAGS += -mno-sse
   else ifeq ($(ARCH), aarch64)
     CFLAGS += -mgeneral-regs-only
+  else ifeq ($(ARCH), loongarch64)
+    CFLAGS += -msoft-float
   endif
 else
   ifneq ($(filter $(ARCH),riscv64 aarch64),)

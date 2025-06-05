@@ -1,6 +1,6 @@
 [toolchain]
 profile = "minimal"
-channel = "nightly-2025-01-18"
+channel = "nightly-2025-05-20"
 components = ["rust-src", "llvm-tools", "rustfmt", "clippy"]
 targets = [
     "x86_64-unknown-none",
@@ -8,4 +8,5 @@ targets = [
     "aarch64-unknown-none",
     "aarch64-unknown-none-softfloat",
     "loongarch64-unknown-none",
+    "loongarch64-unknown-none-softfloat",
 ]
