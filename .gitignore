@@ -1,5 +1,5 @@
 /target
-examples/*/target
+examples/**/target
 /.vscode
 .DS_Store
 *.asm

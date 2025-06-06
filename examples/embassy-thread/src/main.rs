@@ -103,7 +103,7 @@ async fn async_tick(id: u64, millis: u64, busy_iters: u64) {
 
 fn thread_tick(id: u64, millis: u64, busy_iters: u64) {
     task_loop! {
-        task_type: "NATIVE_THREAD",
+        task_type: "NATIVE_THREAD_REPORT",
         id:id,
         sleep: |millis| sleep(Duration::from_millis(millis)),
         millis:millis,
@@ -114,11 +114,14 @@ fn thread_tick(id: u64, millis: u64, busy_iters: u64) {
 
 const NUM_THREADS: u64 = 5;
 const NUM_TASKS: u64 = 5;
+// const NUM_ITERS_THREADS: u64 = 0;
+// const NUM_ITERS_THREADS: u64 = 1_000;
 // const NUM_ITERS_THREADS: u64 = 1_000_000;
-const NUM_ITERS_THREADS: u64 = 0;
-// const NUM_ITERS_TASKS: u64 = 1000;
-// const NUM_ITERS_TASKS: u64 = 1000_000;
-const NUM_ITERS_TASKS: u64 = 0;
+const NUM_ITERS_THREADS: u64 = 100_000_000;
+// const NUM_ITERS_TASKS: u64 = 0;
+// const NUM_ITERS_TASKS: u64 = 1_000;
+// const NUM_ITERS_TASKS: u64 = 1_000_000;
+const NUM_ITERS_TASKS: u64 = 100_000_000;
 
 #[cfg_attr(feature = "axstd", unsafe(no_mangle))]
 fn main() {
