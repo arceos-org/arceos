@@ -8,3 +8,4 @@ axstd = { workspace = true, features = ["multitask"], optional = true }
 axasync = { workspace = true, features = ["thread", "time"] }
 
 embassy-executor = { git = "https://github.com/embassy-rs/embassy", branch = "main", default-features = false }
+log = "=0.4.21"

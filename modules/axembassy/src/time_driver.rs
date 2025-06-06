@@ -8,10 +8,6 @@ use embassy_time_driver::TICK_HZ;
 use embassy_time_driver::{Driver, time_driver_impl};
 use embassy_time_queue_utils::Queue;
 
-/// Next scheduler tick
-#[percpu::def_percpu]
-static NANOS_NEXT_SCHED: SpinNoIrq<u64> = SpinNoIrq::new(0);
-
 /// Manipulation of Global `AxDriver`
 pub struct AxDriverAPI;
 

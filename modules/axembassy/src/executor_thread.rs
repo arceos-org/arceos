@@ -43,8 +43,8 @@ impl Executor {
         loop {
             unsafe {
                 self.inner.poll();
-                let to_poll = SIGNAL_WORK_THREAD_MODE.with_current(|m| m.load(Ordering::Acquire));
-                if to_poll {
+                let polled = SIGNAL_WORK_THREAD_MODE.with_current(|m| m.load(Ordering::Acquire));
+                if polled {
                     SIGNAL_WORK_THREAD_MODE.with_current(|m| {
                         m.store(false, Ordering::SeqCst);
                     });

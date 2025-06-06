@@ -1077,6 +1077,7 @@ dependencies = [
  "axasync",
  "axstd",
  "embassy-executor",
+ "log",
 ]
 
 [[package]]

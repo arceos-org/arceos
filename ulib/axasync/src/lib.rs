@@ -8,13 +8,11 @@ pub mod executor {
 
     pub use api::AxExecutor as Executor;
     pub use embassy_executor::*;
+    pub use embassy_futures::*;
 
     #[cfg(feature = "thread")]
     pub use api::{ax_block_on as block_on, ax_spawner as spawner};
 }
-
-#[cfg(any(feature = "thread", feature = "single"))]
-pub use embassy_executor;
 
 #[cfg(feature = "time")]
 pub mod time {
