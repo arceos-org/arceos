@@ -31,6 +31,9 @@ fp-simd = ["axfeat/fp-simd"]
 # Interrupts
 irq = ["arceos_posix_api/irq", "axfeat/irq"]
 
+# Custom platforms
+myplat = ["axfeat/myplat"]
+
 # Memory
 alloc = ["arceos_posix_api/alloc"]
 tls = ["alloc", "axfeat/tls"]

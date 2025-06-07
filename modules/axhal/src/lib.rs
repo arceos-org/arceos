@@ -38,6 +38,15 @@ extern crate log;
 #[macro_use]
 extern crate memory_addr;
 
+cfg_if::cfg_if! {
+    if #[cfg(not(feature = "myplat"))] {
+        #[cfg(target_arch = "x86_64")]
+        extern crate axplat_x86_pc;
+        #[cfg(target_arch = "aarch64")]
+        extern crate axplat_aarch64_qemu_virt;
+    }
+}
+
 pub mod mem;
 pub mod percpu;
 pub mod time;

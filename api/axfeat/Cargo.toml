@@ -21,6 +21,9 @@ fp-simd = ["axhal/fp-simd"]
 # Interrupts
 irq = ["axhal/irq", "axruntime/irq", "axtask?/irq"]
 
+# Custom platforms
+myplat = ["axhal/myplat"]
+
 # Memory
 alloc = ["axalloc", "axruntime/alloc"]
 alloc-tlsf = ["axalloc/tlsf"]

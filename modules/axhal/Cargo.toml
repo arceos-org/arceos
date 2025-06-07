@@ -10,13 +10,14 @@ repository = "https://github.com/arceos-org/arceos/tree/main/modules/axhal"
 documentation = "https://arceos-org.github.io/arceos/axhal/index.html"
 
 [features]
-smp = []
-fp-simd = ["axcpu/fp-simd"]
+smp = ["axplat-x86-pc/smp", "axplat-aarch64-qemu-virt/smp"]
+irq = ["linkme", "axplat-x86-pc/irq", "axplat-aarch64-qemu-virt/irq"]
+fp-simd = ["axcpu/fp-simd", "axplat-x86-pc/fp-simd", "axplat-aarch64-qemu-virt/fp-simd"]
+rtc = ["axplat-x86-pc/rtc", "axplat-aarch64-qemu-virt/rtc"]
 paging = ["axalloc", "page_table_multiarch"]
-irq = ["linkme"]
 tls = ["axcpu/tls"]
-rtc = []
 uspace = ["paging", "axcpu/uspace"]
+myplat = []
 default = []
 
 [dependencies]
@@ -35,8 +36,12 @@ axlog = { workspace = true }
 axconfig = { workspace = true }
 axalloc = { workspace = true, optional = true }
 
+[target.'cfg(target_arch = "x86_64")'.dependencies]
+axplat-x86-pc = { git = "https://github.com/arceos-org/axhal_crates.git" }
+
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 aarch64-cpu = "10.0"
+axplat-aarch64-qemu-virt = { git = "https://github.com/arceos-org/axhal_crates.git" }
 
 [build-dependencies]
 axconfig = { workspace = true }
