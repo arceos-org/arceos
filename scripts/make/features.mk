@@ -33,6 +33,10 @@ ifeq ($(APP_TYPE), c)
   endif
 endif
 
+ifeq ($(findstring ext4fs,$(FEATURES)),ext4fs)
+  override FEATURES += fp_simd
+endif
+
 override FEATURES := $(strip $(FEATURES))
 
 ax_feat :=
