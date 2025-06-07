@@ -42,11 +42,6 @@ mmio-regions = [
 # VirtIO MMIO regions with format (`base_paddr`, `size`).
 virtio-mmio-regions = []        # [(uint, uint)]
 
-# UART Address
-uart-paddr = 0xFE20_1000        # uint
-# UART IRQ number
-uart-irq = 0x79                 # uint
-
 # GIC CPU Interface base address
 gicc-paddr = 0xFF84_2000        # uint
 # GIC Distributor base address

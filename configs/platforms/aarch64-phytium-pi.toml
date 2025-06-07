@@ -70,10 +70,6 @@ pci-ranges = [
     [0x5800_0000, 0x2800_0000],         # 32-bit MMIO space
     [0x10_0000_0000, 0x10_0000_0000],   # 64-bit MMIO space
 ]                                       # [(uint, uint)]
-# UART Address
-uart-paddr = 0x2800_D000        # uint
-# UART IRQ number
-uart-irq = 0x54                 # uint
 
 # GIC CPU Interface base address
 gicc-paddr = 0x3080_0000        # uint
