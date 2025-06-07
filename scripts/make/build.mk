@@ -51,6 +51,10 @@ $(OUT_DIR):
 
 $(OUT_BIN): _cargo_build $(OUT_ELF)
 	$(call run_cmd,$(OBJCOPY),$(OUT_ELF) --strip-all -O binary $@)
+	@if [ ! -s $(OUT_BIN) ]; then \
+		echo 'Empty kernel image "$(notdir $(FINAL_IMG))" is built, please check your build configuration'; \
+		exit 1; \
+	fi
 
 ifeq ($(ARCH), aarch64)
   uimg_arch := arm64

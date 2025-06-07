@@ -185,6 +185,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "arm_gicv2"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47d25e73c949c69f75d1b9dba39c5475523403b31eb8c2fdc99da4dc33bc1aca"
+dependencies = [
+ "tock-registers 0.8.1",
+]
+
+[[package]]
+name = "arm_pl011"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "efcf6afca4502993a737ba1e00952d1321078689da92bf7aab27d4e5756c0bec"
+dependencies = [
+ "tock-registers 0.8.1",
+]
+
+[[package]]
+name = "arm_pl031"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "13696b1c2b59992f4223e0ae5bb173c81c63039367ca90eee845346ad2a13421"
+dependencies = [
+ "chrono",
+]
+
+[[package]]
 name = "atomic-polyfill"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -259,7 +286,7 @@ dependencies = [
  "static_assertions",
  "tock-registers 0.9.0",
  "x86",
- "x86_64",
+ "x86_64 0.15.2",
 ]
 
 [[package]]
@@ -453,6 +480,8 @@ dependencies = [
  "axcpu",
  "axlog",
  "axplat",
+ "axplat-aarch64-qemu-virt",
+ "axplat-x86-pc",
  "cfg-if",
  "heapless 0.8.0",
  "kernel_guard",
@@ -551,6 +580,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "axplat-aarch64-common"
+version = "0.1.0"
+source = "git+https://github.com/arceos-org/axhal_crates.git#070bb972d1321fd64f87c099dd9c84ac3ad81cb4"
+dependencies = [
+ "aarch64-cpu 10.0.0",
+ "arm_gicv2",
+ "arm_pl011",
+ "arm_pl031",
+ "axcpu",
+ "axplat",
+ "int_ratio",
+ "kspin",
+ "lazyinit",
+ "log",
+ "memory_addr",
+ "page_table_entry",
+]
+
+[[package]]
+name = "axplat-aarch64-qemu-virt"
+version = "0.1.0"
+source = "git+https://github.com/arceos-org/axhal_crates.git#070bb972d1321fd64f87c099dd9c84ac3ad81cb4"
+dependencies = [
+ "axconfig-gen-macros",
+ "axcpu",
+ "axplat",
+ "axplat-aarch64-common",
+ "log",
+ "memory_addr",
+ "page_table_entry",
+]
+
+[[package]]
 name = "axplat-macros"
 version = "0.1.0"
 source = "git+https://github.com/arceos-org/axhal_crates.git#070bb972d1321fd64f87c099dd9c84ac3ad81cb4"
@@ -558,6 +620,31 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.98",
+]
+
+[[package]]
+name = "axplat-x86-pc"
+version = "0.1.0"
+source = "git+https://github.com/arceos-org/axhal_crates.git#070bb972d1321fd64f87c099dd9c84ac3ad81cb4"
+dependencies = [
+ "axconfig-gen-macros",
+ "axcpu",
+ "axplat",
+ "bitflags 2.9.1",
+ "heapless 0.8.0",
+ "int_ratio",
+ "kspin",
+ "lazyinit",
+ "log",
+ "memory_addr",
+ "multiboot",
+ "percpu",
+ "raw-cpuid 11.5.0",
+ "uart_16550",
+ "x2apic",
+ "x86",
+ "x86_64 0.15.2",
+ "x86_rtc",
 ]
 
 [[package]]
@@ -661,6 +748,12 @@ dependencies = [
  "shlex",
  "syn 2.0.98",
 ]
+
+[[package]]
+name = "bit"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2b645c5c09a7d4035949cfce1a915785aaad6f17800c35fda8a8c311c491f284"
 
 [[package]]
 name = "bit_field"
@@ -1070,6 +1163,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "int_ratio"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bd361c344145620f0c02e56200ca3e3a45203121447376519a9070e546b2916f"
+
+[[package]]
 name = "is_terminal_polyfill"
 version = "1.70.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1242,6 +1341,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 
 [[package]]
+name = "multiboot"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f87ad3b7b7bcf5da525c22221e3eb3a020cd68b2d55ae62f629c15e8bc3bd56e"
+dependencies = [
+ "paste",
+]
+
+[[package]]
 name = "nom"
 version = "7.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1275,7 +1383,7 @@ dependencies = [
  "aarch64-cpu 10.0.0",
  "bitflags 2.9.1",
  "memory_addr",
- "x86_64",
+ "x86_64 0.15.2",
 ]
 
 [[package]]
@@ -1422,6 +1530,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c297679cb867470fa8c9f67dbba74a78d78e3e98d7cf2b08d6d71540f797332"
 dependencies = [
  "bitflags 1.3.2",
+]
+
+[[package]]
+name = "raw-cpuid"
+version = "11.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6df7ab838ed27997ba19a4664507e6f82b41fe6e20be42929332156e5e85146"
+dependencies = [
+ "bitflags 2.9.1",
 ]
 
 [[package]]
@@ -1694,6 +1811,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "uart_16550"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e492212ac378a5e00da953718dafb1340d9fbaf4f27d6f3c5cab03d931d1c049"
+dependencies = [
+ "bitflags 2.9.1",
+ "rustversion",
+ "x86",
+]
+
+[[package]]
 name = "unicode-ident"
 version = "1.0.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1914,6 +2042,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "x2apic"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cbcd582541cbb8ef1dfc24a3c849a64ff074b1b512af723ad90056558d424602"
+dependencies = [
+ "bit",
+ "bitflags 1.3.2",
+ "paste",
+ "raw-cpuid 10.7.0",
+ "x86_64 0.14.13",
+]
+
+[[package]]
 name = "x86"
 version = "0.52.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1921,7 +2062,19 @@ checksum = "2781db97787217ad2a2845c396a5efe286f87467a5810836db6d74926e94a385"
 dependencies = [
  "bit_field",
  "bitflags 1.3.2",
- "raw-cpuid",
+ "raw-cpuid 10.7.0",
+]
+
+[[package]]
+name = "x86_64"
+version = "0.14.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c101112411baafbb4bf8d33e4c4a80ab5b02d74d2612331c61e8192fc9710491"
+dependencies = [
+ "bit_field",
+ "bitflags 2.9.1",
+ "rustversion",
+ "volatile 0.4.6",
 ]
 
 [[package]]
@@ -1934,6 +2087,16 @@ dependencies = [
  "bitflags 2.9.1",
  "rustversion",
  "volatile 0.4.6",
+]
+
+[[package]]
+name = "x86_rtc"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d1a42420da20c01d82e5d42231570efa3b9e16a5515eaaf9ee4e964f49cc1313"
+dependencies = [
+ "cfg-if",
+ "x86_64 0.15.2",
 ]
 
 [[package]]
