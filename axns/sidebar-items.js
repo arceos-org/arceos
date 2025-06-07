@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["current_namespace_base"],"macro":["def_resource"],"struct":["AxNamespace","ResArc"],"trait":["AxNamespaceIf"]};
