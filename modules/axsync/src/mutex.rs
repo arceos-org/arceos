@@ -30,6 +30,7 @@ unsafe impl lock_api::RawMutex for RawMutex {
 
     type GuardMarker = lock_api::GuardSend;
 
+    #[inline(always)]
     fn lock(&self) {
         let current_id = current().id().as_u64();
         loop {
@@ -56,6 +57,7 @@ unsafe impl lock_api::RawMutex for RawMutex {
         }
     }
 
+    #[inline(always)]
     fn try_lock(&self) -> bool {
         let current_id = current().id().as_u64();
         // The reason for using a strong compare_exchange is explained here:
@@ -65,6 +67,7 @@ unsafe impl lock_api::RawMutex for RawMutex {
             .is_ok()
     }
 
+    #[inline(always)]
     unsafe fn unlock(&self) {
         let owner_id = self.owner_id.swap(0, Ordering::Release);
         assert_eq!(
@@ -76,6 +79,7 @@ unsafe impl lock_api::RawMutex for RawMutex {
         self.wq.notify_one(true);
     }
 
+    #[inline(always)]
     fn is_locked(&self) -> bool {
         self.owner_id.load(Ordering::Relaxed) != 0
     }
