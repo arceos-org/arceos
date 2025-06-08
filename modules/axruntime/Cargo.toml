@@ -13,7 +13,7 @@ documentation = "https://arceos-org.github.io/arceos/axruntime/index.html"
 default = []
 
 smp = ["axhal/smp", "axtask?/smp"]
-irq = ["axhal/irq", "axtask?/irq", "percpu", "kernel_guard"]
+irq = ["axhal/irq", "axtask?/irq", "percpu"]
 tls = ["axhal/tls", "axtask?/tls"]
 alloc = ["axalloc"]
 paging = ["axhal/paging", "axmm"]
@@ -39,7 +39,6 @@ axplat = { git = "https://github.com/arceos-org/axhal_crates.git" }
 
 crate_interface = "0.1"
 percpu = { version = "0.2", optional = true }
-kernel_guard = { version = "0.1", optional = true }
 ctor_bare = "0.2"
 
 chrono = { version = "0.4.38", default-features = false }

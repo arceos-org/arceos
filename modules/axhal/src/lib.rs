@@ -39,11 +39,16 @@ extern crate log;
 extern crate memory_addr;
 
 cfg_if::cfg_if! {
-    if #[cfg(not(feature = "myplat"))] {
+    if #[cfg(feature = "myplat")] {
+        // link the custom platform crate in your application.
+    } else if #[cfg(target_os = "none")] {
         #[cfg(target_arch = "x86_64")]
         extern crate axplat_x86_pc;
         #[cfg(target_arch = "aarch64")]
         extern crate axplat_aarch64_qemu_virt;
+    } else {
+        // Link the dummy platform implementation to pass cargo test.
+        mod dummy;
     }
 }
 
