@@ -43,6 +43,7 @@ d88P     888 888      "Y8888P  "Y8888   "Y88888P"   "Y8888P"
 "#;
 
 unsafe extern "C" {
+    /// Application's entry point.
     fn main();
 }
 
@@ -101,7 +102,7 @@ fn is_init_ok() -> bool {
 ///
 /// In multi-core environment, this function is called on the primary core, and
 /// secondary cores call [`rust_main_secondary`].
-#[axplat::main]
+#[cfg_attr(not(test), axplat::main)]
 pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
     unsafe { axhal::mem::clear_bss() };
     axhal::init_percpu(cpu_id);

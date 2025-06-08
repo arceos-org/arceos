@@ -665,7 +665,6 @@ dependencies = [
  "chrono",
  "crate_interface",
  "ctor_bare",
- "kernel_guard",
  "percpu",
 ]
 
