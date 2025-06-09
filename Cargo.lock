@@ -114,6 +114,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "arceos-helloworld-myplat"
+version = "0.1.0"
+dependencies = [
+ "axplat-aarch64-qemu-virt",
+ "axplat-aarch64-raspi",
+ "axplat-x86-pc",
+ "axstd",
+ "cfg-if",
+]
+
+[[package]]
 name = "arceos-httpclient"
 version = "0.1.0"
 dependencies = [
@@ -603,6 +614,21 @@ name = "axplat-aarch64-qemu-virt"
 version = "0.1.0"
 source = "git+https://github.com/arceos-org/axhal_crates.git#070bb972d1321fd64f87c099dd9c84ac3ad81cb4"
 dependencies = [
+ "axconfig-gen-macros",
+ "axcpu",
+ "axplat",
+ "axplat-aarch64-common",
+ "log",
+ "memory_addr",
+ "page_table_entry",
+]
+
+[[package]]
+name = "axplat-aarch64-raspi"
+version = "0.1.0"
+source = "git+https://github.com/arceos-org/axhal_crates.git#070bb972d1321fd64f87c099dd9c84ac3ad81cb4"
+dependencies = [
+ "aarch64-cpu 10.0.0",
  "axconfig-gen-macros",
  "axcpu",
  "axplat",

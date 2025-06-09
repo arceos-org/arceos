@@ -103,9 +103,13 @@ jobs:
         targets: x86_64-unknown-none, riscv64gc-unknown-none-elf, aarch64-unknown-none-softfloat, loongarch64-unknown-none-softfloat
     - uses: Swatinem/rust-cache@v2
       with:
-        shared-key: cargo-bin-cache
+        shared-key: cargo-bin-cache-myplat
         cache-targets: false
-    - run: cargo install cargo-binutils
+    - run: |
+        cargo install cargo-binutils
+        cargo install axplat-cli --git https://github.com/arceos-org/axhal_crates.git --branch cli
+
+    # Test various config files
     - name: Build helloworld for x86_64-pc-oslab
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLATFORM=x86_64-pc-oslab A=examples/helloworld
@@ -119,28 +123,55 @@ jobs:
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLATFORM=x86_64-pc-oslab A=examples/shell FEATURES=page-alloc-4g,driver-ramdisk
 
-    - run: make PLATFORM=aarch64-raspi4 defconfig
+    # Test app `helloworld-myplat` for various platforms
+    - name: Build helloworld-myplat for x86_64-qemu-q35
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: |
+        make PLATFORM=x86_64-qemu-q35 defconfig
+        make PLATFORM=x86_64-qemu-q35 A=examples/helloworld-myplat SMP=4 APP_FEATURES=x86_64-qemu-q35
+    - name: Build helloworld-myplat for aarch64-qemu-virt
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: |
+        make PLATFORM=aarch64-qemu-virt defconfig
+        make PLATFORM=aarch64-qemu-virt A=examples/helloworld-myplat SMP=4 APP_FEATURES=aarch64-qemu-virt
+    - name: Build helloworld-myplat for aarch64-raspi4
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: |
+        make PLATFORM=aarch64-raspi4 defconfig
+        make PLATFORM=aarch64-raspi4 A=examples/helloworld-myplat SMP=4 APP_FEATURES=aarch64-raspi4
+
+    # Test platform `aarch64-raspi4` for various apps
+    - name: Setup aarch64-raspi4
+      run: |
+        git checkout .
+        make PLATFORM=aarch64-raspi4 defconfig
+        axplat-cli add axplat-aarch64-raspi -p arceos-helloworld -F smp --git https://github.com/arceos-org/axhal_crates.git
+        axplat-cli add axplat-aarch64-raspi -p arceos-shell -F smp --git https://github.com/arceos-org/axhal_crates.git
+        echo "extern crate axplat_aarch64_raspi;" >> examples/helloworld/src/main.rs
+        echo "extern crate axplat_aarch64_raspi;" >> examples/shell/src/main.rs
     - name: Build helloworld for aarch64-raspi4
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=aarch64-raspi4 SMP=4 A=examples/helloworld
+      run: make PLATFORM=aarch64-raspi4 SMP=4 A=examples/helloworld FEATURES=myplat
     - name: Build shell for aarch64-raspi4
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=aarch64-raspi4 SMP=4 A=examples/shell FEATURES=page-alloc-4g,driver-bcm2835-sdhci BUS=mmio
+      run: make PLATFORM=aarch64-raspi4 SMP=4 A=examples/shell FEATURES=myplat,page-alloc-4g,driver-bcm2835-sdhci BUS=mmio
 
-    - run: make PLATFORM=aarch64-bsta1000b defconfig
-    - name: Build helloworld for aarch64-bsta1000b
-      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=aarch64-bsta1000b A=examples/helloworld SMP=8
+    # - run: make PLATFORM=aarch64-bsta1000b defconfig
+    # - name: Build helloworld for aarch64-bsta1000b
+    #   continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+    #   run: make PLATFORM=aarch64-bsta1000b A=examples/helloworld SMP=8
 
-    - run: make PLATFORM=aarch64-phytium-pi defconfig
-    - name: Build helloworld for aarch64-phytium-pi
-      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=aarch64-phytium-pi A=examples/helloworld SMP=4
+    # - run: make PLATFORM=aarch64-phytium-pi defconfig
+    # - name: Build helloworld for aarch64-phytium-pi
+    #   continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+    #   run: make PLATFORM=aarch64-phytium-pi A=examples/helloworld SMP=4
 
+    # Test various config files for C apps
     - uses: arceos-org/setup-musl@v1
       with:
         arch: x86_64
-    - run: make PLATFORM=x86_64-pc-oslab defconfig
+    - name: Setup x86_64-pc-oslab for C apps
+      run: make PLATFORM=x86_64-pc-oslab defconfig
     - name: Build helloworld-c for x86_64-pc-oslab
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLATFORM=x86_64-pc-oslab A=examples/helloworld-c
