@@ -69,12 +69,16 @@ pub struct TaskInner {
     exit_code: AtomicI32,
     wait_for_exit: WaitQueue,
 
-    kstack: Option<TaskStack>,
+    kstack: UnsafeCell<Option<TaskStack>>,
     ctx: UnsafeCell<TaskContext>,
     task_ext: AxTaskExt,
 
     #[cfg(feature = "tls")]
     tls: TlsArea,
+
+    /// The future of coroutine task.
+    pub(crate) future:
+        UnsafeCell<Option<core::pin::Pin<Box<dyn Future<Output = ()> + Send + 'static>>>>,
 }
 
 impl TaskId {
@@ -122,10 +126,24 @@ impl TaskInner {
 
         t.entry = Some(Box::into_raw(Box::new(entry)));
         t.ctx_mut().init(task_entry as usize, kstack.top(), tls);
-        t.kstack = Some(kstack);
+        t.kstack = UnsafeCell::new(Some(kstack));
         if t.name == "idle" {
             t.is_idle = true;
         }
+        t
+    }
+
+    /// Create a new task with the given future.
+    pub fn new_f<F>(future: F, name: String) -> Self
+    where
+        F: Future<Output = ()> + Send + 'static,
+    {
+        let mut t = Self::new_common(TaskId::new(), name);
+        debug!("new task: {}", t.id_name());
+        t.future = UnsafeCell::new(Some(Box::pin(async {
+            future.await;
+            crate::exit_f(0).await
+        })));
         t
     }
 
@@ -150,6 +168,16 @@ impl TaskInner {
     pub fn join(&self) -> Option<i32> {
         self.wait_for_exit
             .wait_until(|| self.state() == TaskState::Exited);
+        Some(self.exit_code.load(Ordering::Acquire))
+    }
+
+    /// Wait for the task to exit, and return the exit code.
+    ///
+    /// It will return immediately if the task has already exited (but not dropped).
+    pub async fn join_f(&self) -> Option<i32> {
+        self.wait_for_exit
+            .wait_until_f(|| self.state() == TaskState::Exited)
+            .await;
         Some(self.exit_code.load(Ordering::Acquire))
     }
 
@@ -187,9 +215,34 @@ impl TaskInner {
     /// Returns the top address of the kernel stack.
     #[inline]
     pub const fn kernel_stack_top(&self) -> Option<VirtAddr> {
-        match &self.kstack {
+        match unsafe { &*self.kstack.get() } {
             Some(s) => Some(s.top()),
             None => None,
+        }
+    }
+
+    /// Get the mut ref about the `kstack` field.
+    const fn kernel_stack(&self) -> &mut Option<TaskStack> {
+        unsafe { &mut *self.kstack.get() }
+    }
+
+    /// Once the `kstack` field is None, the task is a coroutine.
+    /// The `kstack` and the `ctx` will be set up,
+    /// so the next coroutine will start at `coroutine_schedule` function.
+    ///
+    /// This function is only used before switching task.
+    pub(crate) fn set_kstack(&self) {
+        let kstack = self.kernel_stack();
+        if kstack.is_none() && !self.is_init && !self.is_idle {
+            let stack = alloc_stack_for_coroutine();
+            let kstack_top = stack.top();
+            *kstack = Some(stack);
+            let ctx = unsafe { &mut *self.ctx_mut_ptr() };
+            #[cfg(feature = "tls")]
+            let tls = VirtAddr::from(self.tls.tls_ptr() as usize);
+            #[cfg(not(feature = "tls"))]
+            let tls = VirtAddr::from(0);
+            ctx.init(coroutine_schedule as usize, kstack_top, tls);
         }
     }
 
@@ -234,11 +287,12 @@ impl TaskInner {
             preempt_disable_count: AtomicUsize::new(0),
             exit_code: AtomicI32::new(0),
             wait_for_exit: WaitQueue::new(),
-            kstack: None,
+            kstack: UnsafeCell::new(None),
             ctx: UnsafeCell::new(TaskContext::new()),
             task_ext: AxTaskExt::empty(),
             #[cfg(feature = "tls")]
             tls: TlsArea::alloc(),
+            future: UnsafeCell::new(None),
         }
     }
 
@@ -534,4 +588,81 @@ extern "C" fn task_entry() -> ! {
         unsafe { Box::from_raw(entry)() };
     }
     crate::exit(0);
+}
+
+#[percpu::def_percpu]
+static COROUTINE_STACK_POOL: alloc::vec::Vec<TaskStack> = alloc::vec::Vec::new();
+
+/// Alloc a stack for running a coroutine.
+/// If the `COROUTINE_STACK_POOL` is empty,
+/// it will alloc a new stack on the allocator.
+fn alloc_stack_for_coroutine() -> TaskStack {
+    unsafe {
+        COROUTINE_STACK_POOL
+            .current_ref_mut_raw()
+            .pop()
+            .unwrap_or_else(|| {
+                let stack = TaskStack::alloc(axconfig::TASK_STACK_SIZE);
+                stack
+            })
+    }
+}
+
+/// Recycle the stack after the coroutine running to a certain stage.
+fn recycle_stack_of_coroutine(kstack: TaskStack) {
+    unsafe {
+        COROUTINE_STACK_POOL.current_ref_mut_raw().push(kstack);
+    }
+}
+
+/// The function about coroutine scheduling.
+pub(crate) extern "C" fn coroutine_schedule() {
+    use core::task::{Context, Waker};
+    loop {
+        #[cfg(feature = "smp")]
+        unsafe {
+            // Clear the prev task on CPU before running the task entry function.
+            crate::run_queue::clear_prev_task_on_cpu();
+        }
+        // Enable irq (if feature "irq" is enabled) before running the task entry function.
+        #[cfg(feature = "irq")]
+        axhal::arch::enable_irqs();
+        let waker = Waker::noop();
+        let mut cx = Context::from_waker(&waker);
+        let curr = crate::current();
+        let future = unsafe { &mut *curr.future.get() }
+            .as_mut()
+            .expect("The task should be a coroutine.");
+        let _res = future.as_mut().poll(&mut cx);
+        assert!(!curr.is_running());
+        // Make sure that IRQs are disabled by kernel guard or other means.
+        #[cfg(all(not(test), feature = "irq"))] // Note: irq is faked under unit tests.
+        assert!(
+            !axhal::arch::irqs_enabled(),
+            "IRQs must be disabled during scheduling"
+        );
+        let prev_task = curr;
+        // pick the kstack of prev_task
+        let kstack = prev_task
+            .kernel_stack()
+            .take()
+            .expect("The kernel stack should be taken out after running.");
+        let next_task = crate::current();
+        if next_task.kernel_stack().is_none() && !next_task.is_init() && !next_task.is_idle() {
+            // Pass the `kstack` to the next coroutine task.
+            *next_task.kernel_stack() = Some(kstack);
+        } else {
+            unsafe {
+                let prev_ctx_ptr = prev_task.ctx_mut_ptr();
+                let next_ctx_ptr = next_task.ctx_mut_ptr();
+                // Recycle the `kstack` before switching to the next thread task.
+                recycle_stack_of_coroutine(kstack);
+                // After switching to the thread task, it will restore to the `switch_to` function.
+                // The prev task will be cleaned in the `switch_to` function.
+                // The irq_state will be restore by dropping the `current_run_queue`.
+                (*prev_ctx_ptr).switch_to(&*next_ctx_ptr);
+                panic!("Shoule never reach here.");
+            }
+        }
+    }
 }
