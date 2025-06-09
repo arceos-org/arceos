@@ -23,6 +23,7 @@ members = [
 
     "ulib/axstd",
     "ulib/axlibc",
+    "ulib/axasync-std",
 
     "examples/helloworld",
     "examples/httpclient",
@@ -44,6 +45,7 @@ categories = ["os", "no-std"]
 
 [workspace.dependencies]
 axstd = { path = "ulib/axstd" }
+axasync-std = { path = "ulib/axasync-std" }
 axlibc = { path = "ulib/axlibc" }
 
 arceos_api = { path = "api/arceos_api" }

@@ -239,6 +239,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "axasync-std"
+version = "0.1.0"
+dependencies = [
+ "arceos_api",
+ "axerrno",
+ "axio",
+]
+
+[[package]]
 name = "axconfig"
 version = "0.1.0"
 dependencies = [

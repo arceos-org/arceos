@@ -1,0 +1,18 @@
+[package]
+name = "axasync-std"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+authors = ["Fangliang Zhao <1491657576@qq.com>"]
+description = "ArceOS user library with an async interface"
+
+
+[dependencies]
+arceos_api = { workspace = true }
+axerrno = "0.1"
+axio = "0.1"
