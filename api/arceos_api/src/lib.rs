@@ -141,7 +141,48 @@ pub mod task {
     }
 
     define_api! {
+        /// Current coroutine task is going to sleep, it will be woken up at the given deadline.
+        ///
+        /// If the feature `multitask` is not enabled, it uses busy-wait instead
+        pub async fn ax_sleep_until_f(deadline: crate::time::AxTimeValue);
+        /// Current coroutine task gives up the CPU time voluntarily, and switches to another
+        /// ready task.
+        ///
+        /// If the feature `multitask` is not enabled, it does nothing.
+        pub async fn ax_yield_now_f();
+
+        /// Exits the current coroutine task with the given exit code.
+        pub async fn ax_exit_f(exit_code: i32);
+    }
+
+    define_api! {
         @cfg "multitask";
+
+        /// Waits for the given task to exit, and returns its exit code (the
+        /// argument of [`ax_exit`]).
+        pub async fn ax_wait_for_exit_f(task: AxTaskHandle) -> Option<i32>;
+        /// Blocks the current task and put it into the wait queue, until
+        /// other tasks notify the wait queue, or the the given duration has
+        /// elapsed (if specified).
+        pub async fn ax_wait_queue_wait_f(wq: &AxWaitQueueHandle, timeout: Option<core::time::Duration>) -> bool;
+        /// Blocks the current task and put it into the wait queue, until the
+        /// given condition becomes true, or the the given duration has elapsed
+        /// (if specified).
+        pub async fn ax_wait_queue_wait_until_f(
+            wq: &AxWaitQueueHandle,
+            until_condition: impl Fn() -> bool,
+            timeout: Option<core::time::Duration>,
+        ) -> bool;
+    }
+
+    define_api! {
+        @cfg "multitask";
+
+        /// Spawns a new task with the given entry point and other arguments.
+        pub fn ax_spawn_f(
+            f: impl core::future::Future<Output = ()> + Send + 'static,
+            name: alloc::string::String,
+        ) -> AxTaskHandle;
 
         /// Returns the current task's ID.
         pub fn ax_current_task_id() -> u64;
