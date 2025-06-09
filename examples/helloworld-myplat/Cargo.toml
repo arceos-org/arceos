@@ -1,0 +1,21 @@
+[package]
+name = "arceos-helloworld-myplat"
+version = "0.1.0"
+edition.workspace = true
+authors = ["Yuekai Jia <equation618@gmail.com>"]
+
+[features]
+x86_64-qemu-q35 = ["dep:axplat-x86-pc"]
+aarch64-raspi4 = ["dep:axplat-aarch64-raspi"]
+aarch64-qemu-virt = ["dep:axplat-aarch64-qemu-virt"]
+
+[dependencies]
+cfg-if = "1.0"
+axstd = { workspace = true, features = ["myplat"], optional = true }
+
+[target.'cfg(target_arch = "x86_64")'.dependencies]
+axplat-x86-pc = { git = "https://github.com/arceos-org/axhal_crates.git", version = "0.1.0", features = ["smp", "irq"], optional = true }
+
+[target.'cfg(target_arch = "aarch64")'.dependencies]
+axplat-aarch64-qemu-virt = { git = "https://github.com/arceos-org/axhal_crates.git", version = "0.1.0", features = ["smp", "irq"], optional = true }
+axplat-aarch64-raspi = { git = "https://github.com/arceos-org/axhal_crates.git", version = "0.1.0", features = ["smp", "irq"], optional = true }
