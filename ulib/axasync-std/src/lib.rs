@@ -6,6 +6,8 @@
 #![feature(doc_cfg)]
 #![feature(doc_auto_cfg)]
 
+#[macro_use]
+mod macros;
 pub mod task;
 
 mod io {

@@ -36,3 +36,8 @@ pub async fn sleep(dur: core::time::Duration) {
 pub async fn sleep_until(deadline: arceos_api::time::AxTimeValue) {
     api::ax_sleep_until_f(deadline).await;
 }
+
+#[doc(hidden)]
+pub mod _api {
+    pub use arceos_api::task::ax_yield_now;
+}
