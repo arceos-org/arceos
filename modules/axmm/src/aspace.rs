@@ -266,7 +266,7 @@ impl AddrSpace {
             }
 
             // This area overlaps with the memory region
-            if area.flags().contains(access_flags) {
+            if !area.flags().contains(access_flags) {
                 return false;
             }
 
