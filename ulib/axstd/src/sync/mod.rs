@@ -12,7 +12,7 @@ mod mutex;
 
 #[cfg(feature = "multitask")]
 #[doc(cfg(feature = "multitask"))]
-pub use self::mutex::{Mutex, MutexGuard};
+pub use self::mutex::{Mutex, MutexGuard, RawMutex};
 
 #[cfg(not(feature = "multitask"))]
 #[doc(cfg(not(feature = "multitask")))]
