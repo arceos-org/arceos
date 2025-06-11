@@ -54,7 +54,7 @@ macro_rules! block_on {
 /// The yield operation can be defined through a `trait`
 /// which is as the same as the implementation in
 /// [`axlog`](https://github.com/arceos-org/arceos/tree/main/modules/axlog) crate.
-
+///
 /// Examples:
 /// ```rust
 /// fn main() {
