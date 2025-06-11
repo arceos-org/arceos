@@ -29,6 +29,8 @@ phys-bus-offset = 0                             # uint
 kernel-aspace-base = "0xffff_0000_0000_0000"    # uint
 # Kernel address space size.
 kernel-aspace-size = "0x0000_ffff_ffff_f000"    # uint
+# Stack size on bootstrapping. (256K)
+boot-stack-size = 0x40000                       # uint
 
 #
 # Device specifications
@@ -42,7 +44,7 @@ mmio-ranges = [
     [0x4000_0000, 0x0002_0000],         # PCI RANGES
 ]           # [(uint, uint)]
 # VirtIO MMIO ranges with format (`base_paddr`, `size`).
-virtio-mmio-ranges = []     # [(uint, uint)]
+virtio-mmio-ranges = []    # [(uint, uint)]
 # Base physical address of the PCIe ECAM space.
 pci-ecam-base = 0x2000_0000             # uint
 # End PCI bus number.
@@ -75,3 +77,5 @@ uart-paddr = 0x1FE001E0                 # uint
 
 # Timer interrupt frequency in Hz.
 timer-frequency = 100_000_000           # uint
+# Timer interrupt number.
+timer-irq = 11                          # uint

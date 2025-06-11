@@ -28,6 +28,14 @@ phys-bus-offset = 0                             # uint
 kernel-aspace-base = "0xffff_0000_0000_0000"    # uint
 # Kernel address space size.
 kernel-aspace-size = "0x0000_ffff_ffff_f000"    # uint
+# Stack size on bootstrapping. (256K)
+boot-stack-size = 0x40000                       # uint
+
+# PSCI
+psci-method = "smc"     # str
+
+# CPU Hardware ID list
+cpu-id-list = [0x00, 0x100, 0x200, 0x300, 0x400, 0x500, 0x600, 0x700]
 
 #
 # Device specifications
@@ -43,12 +51,14 @@ mmio-ranges = [
     [0x70038000, 0x1000],   # aon pinmux
 ]                           # [(uint, uint)]
 # VirtIO MMIO ranges with format (`base_paddr`, `size`).
-virtio-mmio-ranges = []     # [(uint, uint)]
+virtio-mmio-ranges = []    # [(uint, uint)]
 
 # UART Address
 uart-paddr = 0x2000_8000        # uint
-# UART IRQ number
-uart-irq = 0xd5                 # uint
+# UART IRQ number (SPI, 0xd5)
+uart-irq = 0xf5                 # uint
+# Timer interrupt num (PPI, physical timer).
+timer-irq = 0x1e                # uint
 
 # GIC CPU Interface base address
 gicc-paddr = 0x3200_2000        # uint
@@ -60,9 +70,3 @@ cpu-csr-base = 0x3201_1000          # uint
 a1000base-topcrm = 0x3300_2000      # uint
 a1000base-safetycrm = 0x7003_5000   # uint
 a1000base-aoncfg = 0x7003_8000      # uint
-
-# PSCI
-psci-method = "smc"     # str
-
-# RTC (PL031) Address (Need to read from DTB).
-rtc-paddr = 0x0         # uint

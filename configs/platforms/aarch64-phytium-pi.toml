@@ -28,6 +28,14 @@ phys-bus-offset = 0                             # uint
 kernel-aspace-base = "0xffff_0000_0000_0000"    # uint
 # Kernel address space size.
 kernel-aspace-size = "0x0000_ffff_ffff_f000"    # uint
+# Stack size on bootstrapping. (256K)
+boot-stack-size = 0x40000                       # uint
+
+# PSCI
+psci-method = "smc"             # str
+
+# CPU Hardware ID list
+cpu-id-list = [0x200, 0x201, 0x00, 0x100]
 
 #
 # Device specifications
@@ -59,7 +67,7 @@ mmio-ranges = [
     [0x000_2803_9000, 0x1000],  # GPIO5
 ]                               # [(uint, uint)]
 # VirtIO MMIO ranges with format (`base_paddr`, `size`).
-virtio-mmio-ranges = []         # [(uint, uint)]
+virtio-mmio-ranges = []        # [(uint, uint)]
 # Base physical address of the PCIe ECAM space.
 pci-ecam-base = 0x4000_0000     # uint
 # End PCI bus number.
@@ -72,17 +80,13 @@ pci-ranges = [
 ]                                       # [(uint, uint)]
 # UART Address
 uart-paddr = 0x2800_D000        # uint
-# UART IRQ number
-uart-irq = 0x54                 # uint
+# UART IRQ number (SPI, 0x54)
+uart-irq = 0x74                 # uint
+# Timer interrupt num (PPI, physical timer).
+timer-irq = 0x1e                # uint
 
 # GIC CPU Interface base address
 gicc-paddr = 0x3080_0000        # uint
 # GIC Distributor base address
 # (TODO: gicv3 dosen't support yet, there is no gicd and need a gicr address)
 gicd-paddr = 0x3088_0000        # uint
-
-# PSCI
-psci-method = "smc"             # str
-
-# CPU Hardware ID list
-cpu-id-list = [0x200, 0x201, 0x00, 0x100]

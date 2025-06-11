@@ -139,6 +139,30 @@ jobs:
       run: |
         make PLATFORM=aarch64-raspi4 defconfig
         make PLATFORM=aarch64-raspi4 A=examples/helloworld-myplat SMP=4 APP_FEATURES=aarch64-raspi4
+    - name: Build helloworld-myplat for aarch64-bsta1000b
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: |
+        make PLATFORM=aarch64-bsta1000b defconfig
+        make PLATFORM=aarch64-bsta1000b A=examples/helloworld-myplat SMP=8 APP_FEATURES=aarch64-bsta1000b
+      
+    - name: Build helloworld-myplat for aarch64-phytium-pi
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: |
+        make PLATFORM=aarch64-phytium-pi defconfig
+        make PLATFORM=aarch64-phytium-pi A=examples/helloworld-myplat SMP=4 APP_FEATURES=aarch64-phytium-pi
+
+    - name: Build helloworld-myplat for loongarch64-qemu-virt
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: |
+        make PLATFORM=loongarch64-qemu-virt defconfig
+        make PLATFORM=loongarch64-qemu-virt A=examples/helloworld-myplat SMP=4 APP_FEATURES=loongarch64-qemu-virt
+      
+    - name: Build helloworld-myplat for riscv64-qemu-virt
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: |
+        make PLATFORM=riscv64-qemu-virt defconfig
+        make PLATFORM=riscv64-qemu-virt A=examples/helloworld-myplat SMP=4 APP_FEATURES=riscv64-qemu-virt
+      
 
     # Test platform `aarch64-raspi4` for various apps
     - name: Setup aarch64-raspi4
@@ -156,15 +180,37 @@ jobs:
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLATFORM=aarch64-raspi4 SMP=4 A=examples/shell FEATURES=myplat,page-alloc-4g,driver-bcm2835-sdhci BUS=mmio
 
-    # - run: make PLATFORM=aarch64-bsta1000b defconfig
-    # - name: Build helloworld for aarch64-bsta1000b
-    #   continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-    #   run: make PLATFORM=aarch64-bsta1000b A=examples/helloworld SMP=8
+    # Test platform `aarch64-bsta1000b` for various apps
+    - name: Setup aarch64-bsta1000b
+      run: |
+        git checkout .
+        make PLATFORM=aarch64-bsta1000b defconfig
+        axplat-cli add axplat-aarch64-bsta1000b -p arceos-helloworld -F smp --git https://github.com/arceos-org/axhal_crates.git
+        axplat-cli add axplat-aarch64-bsta1000b -p arceos-shell -F smp --git https://github.com/arceos-org/axhal_crates.git
+        echo "extern crate axplat_aarch64_bsta1000b;" >> examples/helloworld/src/main.rs
+        echo "extern crate axplat_aarch64_bsta1000b;" >> examples/shell/src/main.rs
+    - name: Build helloworld for aarch64-bsta1000b
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=aarch64-bsta1000b SMP=8 A=examples/helloworld FEATURES=myplat
+    - name: Build shell for aarch64-bsta1000b
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=aarch64-bsta1000b SMP=8 A=examples/shell FEATURES=myplat,page-alloc-4g,driver-bcm2835-sdhci BUS=mmio
 
-    # - run: make PLATFORM=aarch64-phytium-pi defconfig
-    # - name: Build helloworld for aarch64-phytium-pi
-    #   continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-    #   run: make PLATFORM=aarch64-phytium-pi A=examples/helloworld SMP=4
+    # Test platform `aarch64-phytium-pi` for various apps
+    - name: Setup aarch64-phytium-pi
+      run: |
+        git checkout .
+        make PLATFORM=aarch64-phytium-pi defconfig
+        axplat-cli add axplat-aarch64-phytium-pi -p arceos-helloworld -F smp --git https://github.com/arceos-org/axhal_crates.git
+        axplat-cli add axplat-aarch64-phytium-pi -p arceos-shell -F smp --git https://github.com/arceos-org/axhal_crates.git
+        echo "extern crate axplat_aarch64_phytium_pi;" >> examples/helloworld/src/main.rs
+        echo "extern crate axplat_aarch64_phytium_pi;" >> examples/shell/src/main.rs
+    - name: Build helloworld for aarch64-phytium-pi
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=aarch64-phytium-pi SMP=4 A=examples/helloworld FEATURES=myplat
+    - name: Build shell for aarch64-phytium-pi
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=aarch64-phytium-pi SMP=4 A=examples/shell FEATURES=myplat,page-alloc-4g,driver-bcm2835-sdhci BUS=mmio
 
     # Test various config files for C apps
     - uses: arceos-org/setup-musl@v1

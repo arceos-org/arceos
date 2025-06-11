@@ -43,6 +43,10 @@ cfg_if::cfg_if! {
         extern crate axplat_x86_pc;
         #[cfg(target_arch = "aarch64")]
         extern crate axplat_aarch64_qemu_virt;
+        #[cfg(target_arch = "riscv64")]
+        extern crate axplat_riscv64_qemu_virt;
+        #[cfg(target_arch = "loongarch64")]
+        extern crate axplat_loongarch64_qemu_virt;
     } else {
         // Link the dummy platform implementation to pass cargo test.
         mod dummy;

@@ -48,8 +48,8 @@ virtio-mmio-ranges = []         # [(uint, uint)]
 uart-paddr = 0xFE20_1000        # uint
 # UART IRQ number (SPI, 0x79)
 uart-irq = 0x99                 # uint
-# Timer interrupt num (PPI, physical).
-timer-irq = 0x1e                # uint
+# Timer interrupt num (PPI, physical timer)
+timer-irq = 30                  # uint
 
 # GIC CPU Interface base address
 gicc-paddr = 0xFF84_2000        # uint

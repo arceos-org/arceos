@@ -8,6 +8,10 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 x86_64-qemu-q35 = ["dep:axplat-x86-pc"]
 aarch64-raspi4 = ["dep:axplat-aarch64-raspi"]
 aarch64-qemu-virt = ["dep:axplat-aarch64-qemu-virt"]
+aarch64-bsta1000b = ["dep:axplat-aarch64-bsta1000b"]
+aarch64-phytium-pi = ["dep:axplat-aarch64-phytium-pi"]
+riscv64-qemu-virt = ["dep:axplat-riscv64-qemu-virt"]
+loongarch64-qemu-virt = ["dep:axplat-loongarch64-qemu-virt"]
 
 [dependencies]
 cfg-if = "1.0"
@@ -19,3 +23,11 @@ axplat-x86-pc = { git = "https://github.com/arceos-org/axhal_crates.git", versio
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 axplat-aarch64-qemu-virt = { git = "https://github.com/arceos-org/axhal_crates.git", version = "0.1.0", features = ["smp", "irq"], optional = true }
 axplat-aarch64-raspi = { git = "https://github.com/arceos-org/axhal_crates.git", version = "0.1.0", features = ["smp", "irq"], optional = true }
+axplat-aarch64-bsta1000b = { git = "https://github.com/arceos-org/axhal_crates.git", version = "0.1.0", features = ["smp", "irq"], optional = true }
+axplat-aarch64-phytium-pi = { git = "https://github.com/arceos-org/axhal_crates.git", version = "0.1.0", features = ["smp", "irq"], optional = true }
+
+[target.'cfg(target_arch = "riscv64")'.dependencies]
+axplat-riscv64-qemu-virt = { git = "https://github.com/arceos-org/axhal_crates.git", version = "0.1.0", features = ["smp", "irq"], optional = true }
+
+[target.'cfg(target_arch = "loongarch64")'.dependencies]
+axplat-loongarch64-qemu-virt = { git = "https://github.com/arceos-org/axhal_crates.git", version = "0.1.0", features = ["smp", "irq"], optional = true }

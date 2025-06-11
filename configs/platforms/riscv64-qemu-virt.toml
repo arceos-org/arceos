@@ -28,6 +28,8 @@ phys-bus-offset = 0                             # uint
 kernel-aspace-base = "0xffff_ffc0_0000_0000"    # uint
 # Kernel address space size.
 kernel-aspace-size = "0x0000_003f_ffff_f000"    # uint
+# Stack size on bootstrapping. (256K)
+boot-stack-size = 0x40000                       # uint
 
 #
 # Device specifications
@@ -66,6 +68,8 @@ pci-ranges = [
 
 # Timer interrupt frequency in Hz.
 timer-frequency = 10_000_000        # uint
+# Timer interrupt num.
+timer-irq = "0x8000_0000_0000_0005" # uint
 
 # rtc@101000 {
 #     interrupts = <0x0b>;

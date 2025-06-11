@@ -95,9 +95,9 @@ pci-ranges = [
 # UART Address
 uart-paddr = 0x0900_0000        # uint
 # UART IRQ number (SPI, 1)
-uart-irq = 0x21                 # uint
-# Timer interrupt num (PPI, physical).
-timer-irq = 0x1e                # uint
+uart-irq = 33                   # uint
+# Timer interrupt num (PPI, physical timer).
+timer-irq = 30                  # uint
 
 # GIC CPU Interface base address
 gicc-paddr = 0x0801_0000        # uint
