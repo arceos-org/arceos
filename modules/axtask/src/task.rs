@@ -222,8 +222,9 @@ impl TaskInner {
     }
 
     /// Get the mut ref about the `kstack` field.
-    const fn kernel_stack(&self) -> &mut Option<TaskStack> {
-        unsafe { &mut *self.kstack.get() }
+    #[inline]
+    const unsafe fn kernel_stack(&self) -> *mut Option<TaskStack> {
+        self.kstack.get()
     }
 
     /// Once the `kstack` field is None, the task is a coroutine.
@@ -232,7 +233,7 @@ impl TaskInner {
     ///
     /// This function is only used before switching task.
     pub(crate) fn set_kstack(&self) {
-        let kstack = self.kernel_stack();
+        let kstack = unsafe { &mut *self.kernel_stack() };
         if kstack.is_none() && !self.is_init && !self.is_idle {
             let stack = alloc_stack_for_coroutine();
             let kstack_top = stack.top();
@@ -601,10 +602,7 @@ fn alloc_stack_for_coroutine() -> TaskStack {
         COROUTINE_STACK_POOL
             .current_ref_mut_raw()
             .pop()
-            .unwrap_or_else(|| {
-                let stack = TaskStack::alloc(axconfig::TASK_STACK_SIZE);
-                stack
-            })
+            .unwrap_or_else(|| TaskStack::alloc(axconfig::TASK_STACK_SIZE))
     }
 }
 
@@ -628,7 +626,7 @@ pub(crate) extern "C" fn coroutine_schedule() {
         #[cfg(feature = "irq")]
         axhal::arch::enable_irqs();
         let waker = Waker::noop();
-        let mut cx = Context::from_waker(&waker);
+        let mut cx = Context::from_waker(waker);
         let curr = crate::current();
         let future = unsafe { &mut *curr.future.get() }
             .as_mut()
@@ -643,14 +641,14 @@ pub(crate) extern "C" fn coroutine_schedule() {
         );
         let prev_task = curr;
         // pick the kstack of prev_task
-        let kstack = prev_task
-            .kernel_stack()
+        let kstack = unsafe { &mut *prev_task.kernel_stack() }
             .take()
             .expect("The kernel stack should be taken out after running.");
         let next_task = crate::current();
-        if next_task.kernel_stack().is_none() && !next_task.is_init() && !next_task.is_idle() {
+        let next_kstack = unsafe { &mut *next_task.kernel_stack() };
+        if next_kstack.is_none() && !next_task.is_init() && !next_task.is_idle() {
             // Pass the `kstack` to the next coroutine task.
-            *next_task.kernel_stack() = Some(kstack);
+            *next_kstack = Some(kstack);
         } else {
             unsafe {
                 let prev_ctx_ptr = prev_task.ctx_mut_ptr();
