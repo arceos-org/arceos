@@ -4,6 +4,7 @@ use axplat::impl_plat_interface;
 
 use axplat::console::ConsoleIf;
 use axplat::init::InitIf;
+#[cfg(feature = "irq")]
 use axplat::irq::{IrqHandler, IrqIf};
 use axplat::mem::{MemIf, RawRange};
 use axplat::power::PowerIf;
@@ -14,16 +15,19 @@ struct DummyConsole;
 struct DummyMem;
 struct DummyTime;
 struct DummyPower;
+#[cfg(feature = "irq")]
 struct DummyIrq;
 
 #[impl_plat_interface]
 impl InitIf for DummyInit {
     fn init_early(_cpu_id: usize, _arg: usize) {}
 
+    #[cfg(feature = "smp")]
     fn init_early_secondary(_cpu_id: usize) {}
 
     fn init_later(_cpu_id: usize, _arg: usize) {}
 
+    #[cfg(feature = "smp")]
     fn init_later_secondary(_cpu_id: usize) {}
 }
 
@@ -51,6 +55,14 @@ impl MemIf for DummyMem {
     fn mmio_ranges() -> &'static [RawRange] {
         &[]
     }
+
+    fn phys_to_virt(_paddr: memory_addr::PhysAddr) -> memory_addr::VirtAddr {
+        va!(0)
+    }
+
+    fn virt_to_phys(_vaddr: memory_addr::VirtAddr) -> memory_addr::PhysAddr {
+        pa!(0)
+    }
 }
 
 #[impl_plat_interface]
@@ -71,11 +83,13 @@ impl TimeIf for DummyTime {
         0
     }
 
+    #[cfg(feature = "irq")]
     fn set_oneshot_timer(_deadline_ns: u64) {}
 }
 
 #[impl_plat_interface]
 impl PowerIf for DummyPower {
+    #[cfg(feature = "smp")]
     fn cpu_boot(_cpu_id: usize, _stack_top_paddr: usize) {}
 
     fn system_off() -> ! {
@@ -83,6 +97,7 @@ impl PowerIf for DummyPower {
     }
 }
 
+#[cfg(feature = "irq")]
 #[impl_plat_interface]
 impl IrqIf for DummyIrq {
     fn set_enable(_irq: usize, _enabled: bool) {}

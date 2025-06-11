@@ -17,7 +17,7 @@ pub use crate::wait_queue::WaitQueue;
 pub type AxTaskRef = Arc<AxTask>;
 
 /// The wrapper type for [`cpumask::CpuMask`] with SMP configuration.
-pub type AxCpuMask = cpumask::CpuMask<{ axconfig::SMP }>;
+pub type AxCpuMask = cpumask::CpuMask<{ axconfig::plat::CPU_NUM }>;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "sched-rr")] {

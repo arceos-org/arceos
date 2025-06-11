@@ -89,7 +89,7 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 static INITED_CPUS: AtomicUsize = AtomicUsize::new(0);
 
 fn is_init_ok() -> bool {
-    INITED_CPUS.load(Ordering::Acquire) == axconfig::SMP
+    INITED_CPUS.load(Ordering::Acquire) == axconfig::plat::CPU_NUM
 }
 
 /// The main entry point of the ArceOS runtime.
@@ -123,7 +123,7 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
         option_env!("AX_TARGET").unwrap_or(""),
         option_env!("AX_MODE").unwrap_or(""),
         option_env!("AX_LOG").unwrap_or(""),
-        axconfig::SMP,
+        axconfig::plat::CPU_NUM,
     );
     #[cfg(feature = "rtc")]
     ax_println!(

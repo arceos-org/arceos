@@ -15,7 +15,7 @@ pub fn sys_sysconf(name: c_int) -> c_long {
             // Page size
             ctypes::_SC_PAGE_SIZE => Ok(PAGE_SIZE_4K),
             // Number of processors in use
-            ctypes::_SC_NPROCESSORS_ONLN => Ok(axconfig::SMP),
+            ctypes::_SC_NPROCESSORS_ONLN => Ok(axconfig::plat::CPU_NUM),
             // Total physical pages
             ctypes::_SC_PHYS_PAGES => Ok(axhal::mem::total_ram_size() / PAGE_SIZE_4K),
             // Avaliable physical pages

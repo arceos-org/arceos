@@ -26,6 +26,11 @@ impl RawMutex {
 }
 
 unsafe impl lock_api::RawMutex for RawMutex {
+    /// Initial value for an unlocked mutex.
+    ///
+    /// A “non-constant” const item is a legacy way to supply an initialized value to downstream
+    /// static items. Can hopefully be replaced with `const fn new() -> Self` at some point.
+    #[allow(clippy::declare_interior_mutable_const)]
     const INIT: Self = RawMutex::new();
 
     type GuardMarker = lock_api::GuardSend;

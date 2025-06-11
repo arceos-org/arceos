@@ -1,40 +1,20 @@
 //! Physical memory management.
 
-use axconfig::plat::PHYS_VIRT_OFFSET;
 use heapless::Vec;
 use lazyinit::LazyInit;
 
 use axplat::mem::{check_sorted_ranges_overlap, ranges_difference};
 
 pub use axplat::mem::{MemRegionFlags, PhysMemRegion};
-pub use axplat::mem::{mmio_ranges, phys_ram_ranges, reserved_phys_ram_ranges, total_ram_size};
+pub use axplat::mem::{
+    mmio_ranges, phys_ram_ranges, phys_to_virt, reserved_phys_ram_ranges, total_ram_size,
+    virt_to_phys,
+};
 pub use memory_addr::{PAGE_SIZE_4K, PhysAddr, PhysAddrRange, VirtAddr, VirtAddrRange, pa, va};
 
 const MAX_REGIONS: usize = 128;
 
 static ALL_MEM_REGIONS: LazyInit<Vec<PhysMemRegion, MAX_REGIONS>> = LazyInit::new();
-
-/// Converts a virtual address to a physical address.
-///
-/// It assumes that there is a linear mapping with the offset
-/// [`PHYS_VIRT_OFFSET`], that maps all the physical memory to the virtual
-/// space at the address plus the offset. So we have
-/// `paddr = vaddr - PHYS_VIRT_OFFSET`.
-#[inline]
-pub const fn virt_to_phys(vaddr: VirtAddr) -> PhysAddr {
-    pa!(vaddr.as_usize() - PHYS_VIRT_OFFSET)
-}
-
-/// Converts a physical address to a virtual address.
-///
-/// It assumes that there is a linear mapping with the offset
-/// [`PHYS_VIRT_OFFSET`], that maps all the physical memory to the virtual
-/// space at the address plus the offset. So we have
-/// `vaddr = paddr + PHYS_VIRT_OFFSET`.
-#[inline]
-pub const fn phys_to_virt(paddr: PhysAddr) -> VirtAddr {
-    va!(paddr.as_usize() + PHYS_VIRT_OFFSET)
-}
 
 /// Returns an iterator over all physical memory regions.
 pub fn memory_regions() -> impl Iterator<Item = PhysMemRegion> {

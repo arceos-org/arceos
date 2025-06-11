@@ -86,7 +86,7 @@ impl AddrSpace {
         size: usize,
         limit: VirtAddrRange,
     ) -> Option<VirtAddr> {
-        self.areas.find_free_area(hint, size, limit)
+        self.areas.find_free_area(hint, size, limit, PAGE_SIZE_4K)
     }
 
     /// Add a new linear mapping.

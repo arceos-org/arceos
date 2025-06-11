@@ -118,7 +118,7 @@ impl DmaAllocator {
     }
 }
 
-const fn virt_to_bus(addr: VirtAddr) -> BusAddr {
+fn virt_to_bus(addr: VirtAddr) -> BusAddr {
     let paddr = virt_to_phys(addr);
     phys_to_bus(paddr)
 }

@@ -24,7 +24,7 @@ fn gen_linker_script(arch: &str, platform: &str) -> Result<()> {
         "%KERNEL_BASE%",
         &format!("{:#x}", axconfig::plat::KERNEL_BASE_VADDR),
     );
-    let ld_content = ld_content.replace("%SMP%", &format!("{}", axconfig::SMP));
+    let ld_content = ld_content.replace("%CPU_NUM%", &format!("{}", axconfig::plat::CPU_NUM));
 
     // target/<target_triple>/<mode>/build/axhal-xxxx/out
     let out_dir = std::env::var("OUT_DIR").unwrap();

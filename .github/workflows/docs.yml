@@ -26,7 +26,7 @@ jobs:
         shared-key: cargo-bin-cache
         cache-targets: false
     - name: Build docs
-      run: make doc_check_missing
+      run: make doc_check_missing ARCH=${{ matrix.os == 'macos-latest' && 'aarch64' || 'x86_64' }}
     - name: Deploy to Github Pages
       if: ${{ github.ref == env.default-branch && matrix.os == 'ubuntu-latest' }}
       uses: JamesIves/github-pages-deploy-action@v4

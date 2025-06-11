@@ -1,8 +1,9 @@
 # Available arguments:
 # * General options:
-#     - `ARCH`: Target architecture: x86_64, riscv64, aarch64
-#     - `PLATFORM`: Target platform in the `platforms` directory
-#     - `SMP`: Number of CPUs
+#     - `ARCH`: Target architecture: x86_64, riscv64, aarch64, loongarch64
+#     - `MYPLAT`: Package name of the target platform crate.
+#     - `PLAT_CONFIG`: Path to the platform configuration file.
+#     - `SMP`: Number of CPUs. If not set, use the default value from platform config.
 #     - `MODE`: Build mode: release, debug
 #     - `LOG:` Logging level: warn, error, info, debug, trace
 #     - `V`: Verbose level: (empty), 1, 2
@@ -34,8 +35,9 @@
 
 # General options
 ARCH ?= x86_64
-PLATFORM ?=
-SMP ?= 1
+MYPLAT ?=
+PLAT_CONFIG ?=
+SMP ?=
 MODE ?= release
 LOG ?= warn
 V ?=
@@ -80,10 +82,16 @@ else
   APP_TYPE := c
 endif
 
-# Feature parsing
-include scripts/make/features.mk
+ifeq ($(filter $(MAKECMDGOALS),unittest unittest_no_fail_fast clippy fmt fmt_c disk_img clean clean_c),)
+# Install dependencies
+include scripts/make/deps.mk
 # Platform resolving
 include scripts/make/platform.mk
+# Configuration generation
+include scripts/make/config.mk
+# Feature parsing
+include scripts/make/features.mk
+endif
 
 # Target
 ifeq ($(ARCH), x86_64)
@@ -100,14 +108,13 @@ endif
 
 export AX_ARCH=$(ARCH)
 export AX_PLATFORM=$(PLAT_NAME)
-export AX_SMP=$(SMP)
 export AX_MODE=$(MODE)
 export AX_LOG=$(LOG)
 export AX_TARGET=$(TARGET)
 export AX_IP=$(IP)
 export AX_GW=$(GW)
 
-ifneq ($(filter $(MAKECMDGOALS),unittest unittest_no_fail_fast),)
+ifneq ($(filter $(MAKECMDGOALS),unittest unittest_no_fail_fast clippy),)
   # When running unit tests, set `AX_CONFIG_PATH` to empty for dummy config
   unexport AX_CONFIG_PATH
 else
@@ -142,7 +149,6 @@ endif
 all: build
 
 include scripts/make/utils.mk
-include scripts/make/config.mk
 include scripts/make/build.mk
 include scripts/make/qemu.mk
 ifeq ($(PLAT_NAME), aarch64-raspi4)
@@ -151,10 +157,10 @@ else ifeq ($(PLAT_NAME), aarch64-bsta1000b)
   include scripts/make/bsta1000b-fada.mk
 endif
 
-defconfig: _axconfig-gen
+defconfig:
 	$(call defconfig)
 
-oldconfig: _axconfig-gen
+oldconfig:
 	$(call oldconfig)
 
 build: $(OUT_DIR) $(FINAL_IMG)
@@ -176,7 +182,7 @@ debug: build
 	  -ex 'continue' \
 	  -ex 'disp /16i $$pc'
 
-clippy: oldconfig
+clippy:
 ifeq ($(origin ARCH), command line)
 	$(call cargo_clippy,--target $(TARGET))
 else

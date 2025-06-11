@@ -248,10 +248,14 @@ fn do_pwd(_args: &str) {
 fn do_uname(_args: &str) {
     let arch = option_env!("AX_ARCH").unwrap_or("");
     let platform = option_env!("AX_PLATFORM").unwrap_or("");
-    let smp = match option_env!("AX_SMP") {
-        None | Some("1") => "",
-        _ => " SMP",
+    #[cfg(feature = "axstd")]
+    let smp = if std::thread::available_parallelism().unwrap().get() == 1 {
+        ""
+    } else {
+        " SMP"
     };
+    #[cfg(not(feature = "axstd"))]
+    let smp = "";
     let version = option_env!("CARGO_PKG_VERSION").unwrap_or("0.1.0");
     println!(
         "ArceOS {ver}{smp} {arch} {plat}",

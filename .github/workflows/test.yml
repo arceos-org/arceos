@@ -5,7 +5,7 @@ on: [push, pull_request]
 env:
   qemu-version: 9.2.4
   rust-toolchain: nightly-2025-05-20
-  arceos-apps: '3cd1465'
+  arceos-apps: '910aba3'
 
 jobs:
   unit-test:
@@ -36,7 +36,6 @@ jobs:
       with:
         shared-key: cargo-bin-cache
         cache-targets: false
-    - run: cargo install cargo-binutils
     - uses: arceos-org/setup-qemu@v1
       with:
         version: ${{ env.qemu-version }}
