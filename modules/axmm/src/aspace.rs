@@ -51,7 +51,7 @@ impl AddrSpace {
     }
 
     /// Creates a new empty address space.
-    pub(crate) fn new_empty(base: VirtAddr, size: usize) -> AxResult<Self> {
+    pub fn new_empty(base: VirtAddr, size: usize) -> AxResult<Self> {
         Ok(Self {
             va_range: VirtAddrRange::from_start_size(base, size),
             areas: MemorySet::new(),
@@ -65,12 +65,33 @@ impl AddrSpace {
     /// usually used to copy a portion of the kernel space mapping to the
     /// user space.
     ///
+    /// Note that on dropping, the copied PTEs will also be cleared, which could
+    /// taint the original page table. For workaround, you can use
+    /// [`AddrSpace::clear_mappings`].
+    ///
     /// Returns an error if the two address spaces overlap.
     pub fn copy_mappings_from(&mut self, other: &AddrSpace) -> AxResult {
         if self.va_range.overlaps(other.va_range) {
             return ax_err!(InvalidInput, "address space overlap");
         }
         self.pt.copy_from(&other.pt, other.base(), other.size());
+        Ok(())
+    }
+
+    /// Clears the page table mappings in the given address range.
+    ///
+    /// This should be used in pair with [`AddrSpace::copy_mappings_from`].
+    pub fn clear_mappings(&mut self, range: VirtAddrRange) {
+        self.pt.clear_copy_range(range.start, range.size());
+    }
+
+    fn validate_region(&self, start: VirtAddr, size: usize) -> AxResult {
+        if !self.contains_range(start, size) {
+            return ax_err!(InvalidInput, "address out of range");
+        }
+        if !start.is_aligned_4k() || !is_aligned_4k(size) {
+            return ax_err!(InvalidInput, "address not aligned");
+        }
         Ok(())
     }
 
@@ -304,7 +325,7 @@ impl AddrSpace {
 
     /// Clone a [`AddrSpace`] by re-mapping all [`MemoryArea`]s in a new page table and copying data in user space.
     pub fn clone_or_err(&mut self) -> AxResult<Self> {
-        let mut new_aspace = crate::new_user_aspace(self.base(), self.size())?;
+        let mut new_aspace = Self::new_empty(self.base(), self.size())?;
 
         for area in self.areas.iter() {
             let backend = area.backend();
