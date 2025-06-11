@@ -600,6 +600,7 @@ dependencies = [
  "axfeat",
  "axio",
  "kspin",
+ "lock_api",
 ]
 
 [[package]]
