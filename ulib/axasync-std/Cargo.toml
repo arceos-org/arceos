@@ -13,6 +13,6 @@ description = "ArceOS user library with an async interface"
 
 
 [dependencies]
-arceos_api = { workspace = true }
+arceos_api = { workspace = true, features = ["multitask"] }
 axerrno = "0.1"
 axio = "0.1"
