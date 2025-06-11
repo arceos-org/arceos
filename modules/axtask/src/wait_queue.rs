@@ -203,9 +203,16 @@ impl WaitQueue {
         }
     }
 
-    /// Requeues at most `count` tasks in the wait queue to the target wait queue.
+    /// Transfers up to `count` tasks from this wait queue to another wait queue.
     ///
-    /// Returns the number of tasks requeued.
+    /// Note: If the current wait queue contains fewer than `count` tasks, all available tasks will be moved.
+    ///
+    /// ## Arguments
+    /// * `count` - The maximum number of tasks to be moved.
+    /// * `target` - The target wait queue to which tasks will be moved.
+    ///
+    /// ## Returns
+    /// The number of tasks actually requeued.  
     pub fn requeue(&self, mut count: usize, target: &WaitQueue) -> usize {
         let tasks: Vec<_> = {
             let mut wq = self.queue.lock();
