@@ -284,11 +284,15 @@ pub struct TaskContext {
     pub cr3: memory_addr::PhysAddr,
 }
 
-impl TaskContext {
+impl Default for TaskContext {
     ///The default() of the TaskContext , just for pass the CI check
     fn default() -> Self {
         Self::new()
     }
+}
+
+impl TaskContext {
+
     /// Creates a dummy context for a new task.
     ///
     /// Note the context is not initialized, it will be filled by [`switch_to`]
