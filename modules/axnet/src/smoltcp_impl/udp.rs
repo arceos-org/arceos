@@ -160,7 +160,8 @@ impl UdpSocket {
             let (len, meta) = socket
                 .recv_slice(buf)
                 .map_err(|_| ax_err_type!(BadState, "socket recv() failed"))?;
-            if !remote_endpoint.addr.is_unspecified() && remote_endpoint.addr != meta.endpoint.addr {
+            if !remote_endpoint.addr.is_unspecified() && remote_endpoint.addr != meta.endpoint.addr
+            {
                 return Err(AxError::WouldBlock);
             }
             if remote_endpoint.port != 0 && remote_endpoint.port != meta.endpoint.port {

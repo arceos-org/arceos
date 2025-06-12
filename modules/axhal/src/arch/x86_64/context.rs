@@ -285,6 +285,10 @@ pub struct TaskContext {
 }
 
 impl TaskContext {
+    ///The default() of the TaskContext , just for pass the CI check
+    fn default() -> Self {
+        Self::new()
+    }
     /// Creates a dummy context for a new task.
     ///
     /// Note the context is not initialized, it will be filled by [`switch_to`]
