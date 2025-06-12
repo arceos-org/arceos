@@ -292,7 +292,6 @@ impl Default for TaskContext {
 }
 
 impl TaskContext {
-
     /// Creates a dummy context for a new task.
     ///
     /// Note the context is not initialized, it will be filled by [`switch_to`]
