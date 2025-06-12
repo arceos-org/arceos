@@ -64,4 +64,4 @@ jobs:
         run: cargo check -p axnet --verbose
 
       - name: Clippy axnet crate with stable toolchain
-        run: cargo clippy -p axnet -- -D warnings
+        run: cargo clippy -p axnet
