@@ -167,6 +167,7 @@ impl InterfaceWrapper {
         let mut iface = self.iface.lock();
         match gateway {
             IpAddress::Ipv4(v4) => iface.routes_mut().add_default_ipv4_route(v4).unwrap(),
+            IpAddress::Ipv6(v6) => iface.routes_mut().add_default_ipv6_route(v6).unwrap(),
         };
     }
 
@@ -245,9 +246,6 @@ struct AxNetRxToken<'a>(&'a RefCell<AxNetDevice>, NetBufPtr);
 struct AxNetTxToken<'a>(&'a RefCell<AxNetDevice>);
 
 impl RxToken for AxNetRxToken<'_> {
-    fn preprocess(&self, sockets: &mut SocketSet<'_>) {
-        snoop_tcp_packet(self.1.packet(), sockets).ok();
-    }
 
     fn consume<R, F>(self, f: F) -> R
     where

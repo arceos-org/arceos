@@ -10,7 +10,7 @@ use smoltcp::iface::SocketHandle;
 use smoltcp::socket::udp::{self, BindError, SendError};
 use smoltcp::wire::{IpEndpoint, IpListenEndpoint};
 
-use super::addr::{UNSPECIFIED_ENDPOINT, from_core_sockaddr, into_core_sockaddr, is_unspecified};
+use super::addr::{UNSPECIFIED_ENDPOINT, from_core_sockaddr, into_core_sockaddr};
 use super::{SOCKET_SET, SocketSetWrapper};
 
 /// A UDP socket that provides POSIX-like APIs.
@@ -85,7 +85,7 @@ impl UdpSocket {
 
         let local_endpoint = from_core_sockaddr(local_addr);
         let endpoint = IpListenEndpoint {
-            addr: (!is_unspecified(local_endpoint.addr)).then_some(local_endpoint.addr),
+            addr: (!local_endpoint.addr.is_unspecified()).then_some(local_endpoint.addr),
             port: local_endpoint.port,
         };
         SOCKET_SET.with_socket_mut::<udp::Socket, _, _>(self.handle, |socket| {
@@ -160,7 +160,7 @@ impl UdpSocket {
             let (len, meta) = socket
                 .recv_slice(buf)
                 .map_err(|_| ax_err_type!(BadState, "socket recv() failed"))?;
-            if !is_unspecified(remote_endpoint.addr) && remote_endpoint.addr != meta.endpoint.addr {
+            if !remote_endpoint.addr.is_unspecified() && remote_endpoint.addr != meta.endpoint.addr {
                 return Err(AxError::WouldBlock);
             }
             if remote_endpoint.port != 0 && remote_endpoint.port != meta.endpoint.port {
