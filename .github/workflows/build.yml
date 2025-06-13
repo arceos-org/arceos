@@ -10,7 +10,6 @@ jobs:
       matrix:
         arch: [x86_64, riscv64, aarch64, loongarch64]
         rust-toolchain: [nightly, nightly-2025-05-20]
-        # 添加架构到目标三元组的映射
         include:
           - arch: x86_64
             target_triple: x86_64-unknown-linux-musl
@@ -25,7 +24,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    # 关键修复：安装 musl 工具链的位置提前
     - uses: arceos-org/setup-musl@v1
       with:
         arch: ${{ matrix.arch }}
