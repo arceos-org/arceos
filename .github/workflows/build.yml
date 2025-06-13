@@ -10,29 +10,56 @@ jobs:
       matrix:
         arch: [x86_64, riscv64, aarch64, loongarch64]
         rust-toolchain: [nightly, nightly-2025-05-20]
+        # 添加架构到目标三元组的映射
+        include:
+          - arch: x86_64
+            target_triple: x86_64-unknown-linux-musl
+          - arch: riscv64
+            target_triple: riscv64gc-unknown-linux-musl
+          - arch: aarch64
+            target_triple: aarch64-unknown-linux-musl
+          - arch: loongarch64
+            target_triple: loongarch64-unknown-linux-musl
     env:
       RUSTUP_TOOLCHAIN: ${{ matrix.rust-toolchain }}
     steps:
     - uses: actions/checkout@v4
+    
+    # 关键修复：安装 musl 工具链的位置提前
+    - uses: arceos-org/setup-musl@v1
+      with:
+        arch: ${{ matrix.arch }}
+    
+    - name: Set musl toolchain environment
+      run: |
+        echo "CC=${{ matrix.arch }}-linux-musl-gcc" >> $GITHUB_ENV
+        echo "CXX=${{ matrix.arch }}-linux-musl-g++" >> $GITHUB_ENV
+        echo "CARGO_TARGET_${{ matrix.target_triple }}_LINKER=${{ matrix.arch }}-linux-musl-gcc" >> $GITHUB_ENV
+    
     - uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: ${{ matrix.rust-toolchain }}
         components: rust-src, clippy, rustfmt
         targets: x86_64-unknown-none, riscv64gc-unknown-none-elf, aarch64-unknown-none-softfloat, loongarch64-unknown-none-softfloat
+    
     - uses: Swatinem/rust-cache@v2
       with:
         shared-key: cargo-bin-cache
         cache-targets: false
+    
     - name: Check rust version
       run: rustc --version --verbose
+    
     - name: Check code format
       if: ${{ matrix.arch == 'x86_64' }}
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: cargo fmt --all -- --check
+    
     - name: Clippy for the default target
       if: ${{ matrix.arch == 'x86_64' }}
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make clippy
+    
     - name: Clippy for ${{ matrix.arch }}
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make clippy ARCH=${{ matrix.arch }}
@@ -45,42 +72,74 @@ jobs:
         os: [ubuntu-latest]
         arch: [x86_64, riscv64, aarch64, loongarch64]
         rust-toolchain: [nightly, nightly-2025-05-20]
+
+        include:
+          - arch: x86_64
+            target_triple: x86_64-unknown-linux-musl
+          - arch: riscv64
+            target_triple: riscv64gc-unknown-linux-musl
+          - arch: aarch64
+            target_triple: aarch64-unknown-linux-musl
+          - arch: loongarch64
+            target_triple: loongarch64-unknown-linux-musl
     env:
       RUSTUP_TOOLCHAIN: ${{ matrix.rust-toolchain }}
     steps:
     - uses: actions/checkout@v4
+    
+    - uses: arceos-org/setup-musl@v1
+      with:
+        arch: ${{ matrix.arch }}
+    
+    - name: Set musl toolchain environment
+      run: |
+        echo "CC=${{ matrix.arch }}-linux-musl-gcc" >> $GITHUB_ENV
+        echo "CXX=${{ matrix.arch }}-linux-musl-g++" >> $GITHUB_ENV
+        echo "CARGO_TARGET_${{ matrix.target_triple }}_LINKER=${{ matrix.arch }}-linux-musl-gcc" >> $GITHUB_ENV
+        echo "CARGO_TARGET_${{ matrix.target_triple }}_RUSTFLAGS=-C target-feature=+crt-static" >> $GITHUB_ENV
+    
     - uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: ${{ matrix.rust-toolchain }}
         components: rust-src, llvm-tools
         targets: x86_64-unknown-none, riscv64gc-unknown-none-elf, aarch64-unknown-none-softfloat, loongarch64-unknown-none-softfloat
+    
     - uses: Swatinem/rust-cache@v2
       with:
         shared-key: cargo-bin-cache
         cache-targets: false
+    
     - run: cargo install cargo-binutils
+    
+    - name: Configure lwext4_rust build
+      run: |
+        echo "CMAKE_TOOLCHAIN_FILE=$GITHUB_WORKSPACE/c/lwext4/toolchain/musl-generic.cmake" >> $GITHUB_ENV
+        echo "LWEXT4_CMAKE_ARGS=-DCMAKE_C_COMPILER=$(which ${{ matrix.arch }}-linux-musl-gcc)" >> $GITHUB_ENV
+    
     - name: Build helloworld
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=examples/helloworld
+    
     - name: Build httpclient
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=examples/httpclient
+    
     - name: Build httpserver
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=examples/httpserver
+    
     - name: Build shell
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=examples/shell
-
-    - uses: arceos-org/setup-musl@v1
-      with:
-        arch: ${{ matrix.arch }}
+    
     - name: Build helloworld-c
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=examples/helloworld-c
+    
     - name: Build httpclient-c
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=examples/httpclient-c
+    
     - name: Build httpserver-c
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make ARCH=${{ matrix.arch }} A=examples/httpserver-c
@@ -96,57 +155,80 @@ jobs:
       RUSTUP_TOOLCHAIN: ${{ matrix.rust-toolchain }}
     steps:
     - uses: actions/checkout@v4
+    
+    - uses: arceos-org/setup-musl@v1
+      with:
+        arch: x86_64
+    
+    - name: Set musl toolchain for x86_64
+      run: |
+        echo "CC=x86_64-linux-musl-gcc" >> $GITHUB_ENV
+        echo "CXX=x86_64-linux-musl-g++" >> $GITHUB_ENV
+        echo "CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=x86_64-linux-musl-gcc" >> $GITHUB_ENV
+        echo "CMAKE_TOOLCHAIN_FILE=$GITHUB_WORKSPACE/c/lwext4/toolchain/musl-generic.cmake" >> $GITHUB_ENV
+        echo "LWEXT4_CMAKE_ARGS=-DCMAKE_C_COMPILER=$(which x86_64-linux-musl-gcc)" >> $GITHUB_ENV
+    
     - uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: ${{ matrix.rust-toolchain }}
         components: rust-src, llvm-tools
         targets: x86_64-unknown-none, riscv64gc-unknown-none-elf, aarch64-unknown-none-softfloat, loongarch64-unknown-none-softfloat
+    
     - uses: Swatinem/rust-cache@v2
       with:
         shared-key: cargo-bin-cache
         cache-targets: false
+    
     - run: cargo install cargo-binutils
+    
     - name: Build helloworld for x86_64-pc-oslab
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLATFORM=x86_64-pc-oslab A=examples/helloworld
+    
     - name: Build httpclient for x86_64-pc-oslab
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLATFORM=x86_64-pc-oslab A=examples/httpclient FEATURES=page-alloc-4g,driver-ixgbe
+    
     - name: Build httpserver for x86_64-pc-oslab
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLATFORM=x86_64-pc-oslab A=examples/httpserver FEATURES=page-alloc-4g,driver-ixgbe
+    
     - name: Build shell for x86_64-pc-oslab
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLATFORM=x86_64-pc-oslab A=examples/shell FEATURES=page-alloc-4g,driver-ramdisk
-
+    
     - run: make PLATFORM=aarch64-raspi4 defconfig
+    
     - name: Build helloworld for aarch64-raspi4
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLATFORM=aarch64-raspi4 SMP=4 A=examples/helloworld
+    
     - name: Build shell for aarch64-raspi4
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLATFORM=aarch64-raspi4 SMP=4 A=examples/shell FEATURES=page-alloc-4g,driver-bcm2835-sdhci BUS=mmio
-
+    
     - run: make PLATFORM=aarch64-bsta1000b defconfig
+    
     - name: Build helloworld for aarch64-bsta1000b
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLATFORM=aarch64-bsta1000b A=examples/helloworld SMP=8
-
+    
     - run: make PLATFORM=aarch64-phytium-pi defconfig
+    
     - name: Build helloworld for aarch64-phytium-pi
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLATFORM=aarch64-phytium-pi A=examples/helloworld SMP=4
-
-    - uses: arceos-org/setup-musl@v1
-      with:
-        arch: x86_64
+    
     - run: make PLATFORM=x86_64-pc-oslab defconfig
+    
     - name: Build helloworld-c for x86_64-pc-oslab
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLATFORM=x86_64-pc-oslab A=examples/helloworld-c
+    
     - name: Build httpclient-c for x86_64-pc-oslab
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLATFORM=x86_64-pc-oslab A=examples/httpclient-c FEATURES=page-alloc-4g,driver-ixgbe
+    
     - name: Build httpserver-c for x86_64-pc-oslab
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLATFORM=x86_64-pc-oslab A=examples/httpserver-c FEATURES=page-alloc-4g,driver-ixgbe
