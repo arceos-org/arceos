@@ -49,6 +49,9 @@ pub struct AxNamespace {
     alloc: bool,
 }
 
+unsafe impl Send for AxNamespace {}
+unsafe impl Sync for AxNamespace {}
+
 impl AxNamespace {
     /// Returns the base address of the namespace, which points to the start of
     /// all resources.
@@ -101,9 +104,10 @@ impl Drop for AxNamespace {
     fn drop(&mut self) {
         if self.alloc {
             let size = Self::section_size();
-            if size != 0 && !self.base.is_null() {
+            let base = self.base();
+            if size != 0 && !base.is_null() {
                 let layout = Layout::from_size_align(size, 64).unwrap();
-                unsafe { alloc::alloc::dealloc(self.base, layout) };
+                unsafe { alloc::alloc::dealloc(base, layout) };
             }
         }
     }
