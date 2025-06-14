@@ -1,0 +1,65 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="The ArceOS Standard Library"><title>axstd - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-0ce1a80b.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="axstd" data-themes="" data-resource-suffix="" data-rustdoc-version="1.89.0-nightly (60dabef95 2025-05-19)" data-channel="nightly" data-search-js="search-f7877310.js" data-settings-js="settings-5514c975.js" ><script src="../static.files/storage-4e99c027.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-7ef8a74a.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../axstd/index.html">axstd</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#the-arceos-standard-library" title="The ArceOS Standard Library">The ArceOS Standard Library</a><ul><li><a href="#cargo-features" title="Cargo Features">Cargo Features</a></li></ul></li></ul><h3><a href="#reexports">Crate Items</a></h3><ul class="block"><li><a href="#reexports" title="Re-exports">Re-exports</a></li><li><a href="#modules" title="Modules">Modules</a></li><li><a href="#macros" title="Macros">Macros</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1>Crate <span>axstd</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/axstd/lib.rs.html#1-77">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h2 id="the-arceos-standard-library"><a class="doc-anchor" href="#the-arceos-standard-library">§</a>The ArceOS Standard Library</h2>
+<p>The <a href="https://github.com/arceos-org/arceos">ArceOS</a> Standard Library is a mini-std library, with an interface similar
+to rust <a href="https://doc.rust-lang.org/nightly/std/index.html" title="mod std">std</a>, but calling the functions directly in ArceOS modules, instead
+of using libc and system calls.</p>
+<p>These features are exactly the same as those in <a href="../axfeat/index.html" title="mod axfeat">axfeat</a>, they are used to
+provide users with the selection of features in axfeat, without import
+<a href="../axfeat/index.html" title="mod axfeat">axfeat</a> additionally:</p>
+<h3 id="cargo-features"><a class="doc-anchor" href="#cargo-features">§</a>Cargo Features</h3>
+<ul>
+<li>CPU
+<ul>
+<li><code>smp</code>: Enable SMP (symmetric multiprocessing) support.</li>
+<li><code>fp_simd</code>: Enable floating point and SIMD support.</li>
+</ul>
+</li>
+<li>Interrupts:
+<ul>
+<li><code>irq</code>: Enable interrupt handling support.</li>
+</ul>
+</li>
+<li>Memory
+<ul>
+<li><code>alloc</code>: Enable dynamic memory allocation.</li>
+<li><code>alloc-tlsf</code>: Use the TLSF allocator.</li>
+<li><code>alloc-slab</code>: Use the slab allocator.</li>
+<li><code>alloc-buddy</code>: Use the buddy system allocator.</li>
+<li><code>paging</code>: Enable page table manipulation.</li>
+<li><code>tls</code>: Enable thread-local storage.</li>
+</ul>
+</li>
+<li>Task management
+<ul>
+<li><code>multitask</code>: Enable multi-threading support.</li>
+<li><code>sched_fifo</code>: Use the FIFO cooperative scheduler.</li>
+<li><code>sched_rr</code>: Use the Round-robin preemptive scheduler.</li>
+<li><code>sched_cfs</code>: Use the Completely Fair Scheduler (CFS) preemptive scheduler.</li>
+</ul>
+</li>
+<li>Upperlayer stacks
+<ul>
+<li><code>fs</code>: Enable file system support.</li>
+<li><code>myfs</code>: Allow users to define their custom filesystems to override the default.</li>
+<li><code>net</code>: Enable networking support.</li>
+<li><code>dns</code>: Enable DNS lookup support.</li>
+<li><code>display</code>: Enable graphics support.</li>
+</ul>
+</li>
+<li>Device drivers
+<ul>
+<li><code>bus-mmio</code>: Use device tree to probe all MMIO devices.</li>
+<li><code>bus-pci</code>: Use PCI bus to probe all PCI devices.</li>
+<li><code>driver-ramdisk</code>: Use the RAM disk to emulate the block device.</li>
+<li><code>driver-ixgbe</code>: Enable the Intel 82599 10Gbit NIC driver.</li>
+<li><code>driver-bcm2835-sdhci</code>: Enable the BCM2835 SDHCI driver (Raspberry Pi SD card).</li>
+</ul>
+</li>
+<li>Logging
+<ul>
+<li><code>log-level-off</code>: Disable all logging.</li>
+<li><code>log-level-error</code>, <code>log-level-warn</code>, <code>log-level-info</code>, <code>log-level-debug</code>,
+<code>log-level-trace</code>: Keep logging only at the specified level or higher.</li>
+</ul>
+</li>
+</ul>
+</div></details><h2 id="reexports" class="section-header">Re-exports<a href="#reexports" class="anchor">§</a></h2><dl class="item-table reexports"><dt id="reexport.boxed"><code>pub use alloc::<a class="mod" href="https://doc.rust-lang.org/nightly/alloc/boxed/index.html" title="mod alloc::boxed">boxed</a>;</code><wbr><span class="stab portability" title="Available on crate feature `alloc` only"><code>alloc</code></span></dt><dt id="reexport.collections"><code>pub use alloc::<a class="mod" href="https://doc.rust-lang.org/nightly/alloc/collections/index.html" title="mod alloc::collections">collections</a>;</code><wbr><span class="stab portability" title="Available on crate feature `alloc` only"><code>alloc</code></span></dt><dt id="reexport.format"><code>pub use alloc::<a class="macro" href="https://doc.rust-lang.org/nightly/alloc/macro.format.html" title="macro alloc::format">format</a>;</code><wbr><span class="stab portability" title="Available on crate feature `alloc` only"><code>alloc</code></span></dt><dt id="reexport.string"><code>pub use alloc::<a class="mod" href="https://doc.rust-lang.org/nightly/alloc/string/index.html" title="mod alloc::string">string</a>;</code><wbr><span class="stab portability" title="Available on crate feature `alloc` only"><code>alloc</code></span></dt><dt id="reexport.vec"><code>pub use alloc::<a class="mod" href="https://doc.rust-lang.org/nightly/alloc/vec/index.html" title="mod alloc::vec">vec</a>;</code><wbr><span class="stab portability" title="Available on crate feature `alloc` only"><code>alloc</code></span></dt><dt id="reexport.vec-1"><code>pub use alloc::<a class="macro" href="https://doc.rust-lang.org/nightly/alloc/macro.vec.html" title="macro alloc::vec">vec</a>;</code><wbr><span class="stab portability" title="Available on crate feature `alloc` only"><code>alloc</code></span></dt><dt id="reexport.arch"><code>pub use core::<a class="mod" href="https://doc.rust-lang.org/nightly/core/arch/index.html" title="mod core::arch">arch</a>;</code></dt><dt id="reexport.cell"><code>pub use core::<a class="mod" href="https://doc.rust-lang.org/nightly/core/cell/index.html" title="mod core::cell">cell</a>;</code></dt><dt id="reexport.cmp"><code>pub use core::<a class="mod" href="https://doc.rust-lang.org/nightly/core/cmp/index.html" title="mod core::cmp">cmp</a>;</code></dt><dt id="reexport.hint"><code>pub use core::<a class="mod" href="https://doc.rust-lang.org/nightly/core/hint/index.html" title="mod core::hint">hint</a>;</code></dt><dt id="reexport.marker"><code>pub use core::<a class="mod" href="https://doc.rust-lang.org/nightly/core/marker/index.html" title="mod core::marker">marker</a>;</code></dt><dt id="reexport.mem"><code>pub use core::<a class="mod" href="https://doc.rust-lang.org/nightly/core/mem/index.html" title="mod core::mem">mem</a>;</code></dt><dt id="reexport.ops"><code>pub use core::<a class="mod" href="https://doc.rust-lang.org/nightly/core/ops/index.html" title="mod core::ops">ops</a>;</code></dt><dt id="reexport.ptr"><code>pub use core::<a class="mod" href="https://doc.rust-lang.org/nightly/core/ptr/index.html" title="mod core::ptr">ptr</a>;</code></dt><dt id="reexport.slice"><code>pub use core::<a class="mod" href="https://doc.rust-lang.org/nightly/core/slice/index.html" title="mod core::slice">slice</a>;</code></dt><dt id="reexport.str"><code>pub use core::<a class="mod" href="https://doc.rust-lang.org/nightly/core/str/index.html" title="mod core::str">str</a>;</code></dt></dl><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><dl class="item-table"><dt><a class="mod" href="env/index.html" title="mod axstd::env">env</a></dt><dd>Inspection and manipulation of the process’s environment.</dd><dt><a class="mod" href="fs/index.html" title="mod axstd::fs">fs</a><wbr><span class="stab portability" title="Available on crate feature `fs` only"><code>fs</code></span></dt><dd>Filesystem manipulation operations.</dd><dt><a class="mod" href="io/index.html" title="mod axstd::io">io</a></dt><dd>Traits, helpers, and type definitions for core I/O functionality.</dd><dt><a class="mod" href="net/index.html" title="mod axstd::net">net</a><wbr><span class="stab portability" title="Available on crate feature `net` only"><code>net</code></span></dt><dd>Networking primitives for TCP/UDP communication.</dd><dt><a class="mod" href="os/index.html" title="mod axstd::os">os</a></dt><dd>OS-specific functionality.</dd><dt><a class="mod" href="process/index.html" title="mod axstd::process">process</a></dt><dd>A module for working with processes.</dd><dt><a class="mod" href="sync/index.html" title="mod axstd::sync">sync</a></dt><dd>Useful synchronization primitives.</dd><dt><a class="mod" href="thread/index.html" title="mod axstd::thread">thread</a></dt><dd>Native threads.</dd><dt><a class="mod" href="time/index.html" title="mod axstd::time">time</a></dt><dd>Temporal quantification.</dd></dl><h2 id="macros" class="section-header">Macros<a href="#macros" class="anchor">§</a></h2><dl class="item-table"><dt><a class="macro" href="macro.print.html" title="macro axstd::print">print</a></dt><dd>Prints to the standard output.</dd><dt><a class="macro" href="macro.println.html" title="macro axstd::println">println</a></dt><dd>Prints to the standard output, with a newline.</dd></dl></section></div></main></body></html>
