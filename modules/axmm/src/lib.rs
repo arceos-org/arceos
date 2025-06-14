@@ -16,7 +16,7 @@ use axerrno::{AxError, AxResult};
 use axhal::mem::phys_to_virt;
 use kspin::SpinNoIrq;
 use lazyinit::LazyInit;
-use memory_addr::{PhysAddr, VirtAddr, va};
+use memory_addr::{PhysAddr, va};
 use memory_set::MappingError;
 
 static KERNEL_ASPACE: LazyInit<SpinNoIrq<AddrSpace>> = LazyInit::new();
@@ -38,18 +38,6 @@ pub fn new_kernel_aspace() -> AxResult<AddrSpace> {
     )?;
     for r in axhal::mem::memory_regions() {
         aspace.map_linear(phys_to_virt(r.paddr), r.paddr, r.size, r.flags.into())?;
-    }
-    Ok(aspace)
-}
-
-/// Creates a new address space for user processes.
-pub fn new_user_aspace(base: VirtAddr, size: usize) -> AxResult<AddrSpace> {
-    let mut aspace = AddrSpace::new_empty(base, size)?;
-    if !cfg!(target_arch = "aarch64") && !cfg!(target_arch = "loongarch64") {
-        // ARMv8 (aarch64) and LoongArch64 use separate page tables for user space
-        // (aarch64: TTBR0_EL1, LoongArch64: PGDL), so there is no need to copy the
-        // kernel portion to the user page table.
-        aspace.copy_mappings_from(&kernel_aspace().lock())?;
     }
     Ok(aspace)
 }
