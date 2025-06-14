@@ -548,7 +548,7 @@ dependencies = [
  "cfg-if",
  "lazyinit",
  "log",
- "smoltcp",
+ "smoltcp 0.12.0",
  "spin",
 ]
 
@@ -1009,6 +1009,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "hash32"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47d60b12902ba28e2730cd37e95b8c9223af2808df9e902d4df49588d1470606"
+dependencies = [
+ "byteorder",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1021,9 +1030,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cdc6457c0eb62c71aac4bc17216026d8410337c4126773b9c5daba343f17964f"
 dependencies = [
  "atomic-polyfill",
- "hash32",
+ "hash32 0.2.1",
  "rustc_version",
  "spin",
+ "stable_deref_trait",
+]
+
+[[package]]
+name = "heapless"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0bfb9eb618601c89945a70e254898da93b13be0388091d42117462b265bb3fad"
+dependencies = [
+ "hash32 0.3.1",
  "stable_deref_trait",
 ]
 
@@ -1095,7 +1114,7 @@ dependencies = [
  "bit_field",
  "core_detect",
  "log",
- "smoltcp",
+ "smoltcp 0.10.0",
  "volatile 0.3.0",
 ]
 
@@ -1610,7 +1629,22 @@ dependencies = [
  "byteorder",
  "cfg-if",
  "defmt",
- "heapless",
+ "heapless 0.7.17",
+ "log",
+ "managed",
+]
+
+[[package]]
+name = "smoltcp"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dad095989c1533c1c266d9b1e8d70a1329dd3723c3edac6d03bbd67e7bf6f4bb"
+dependencies = [
+ "bitflags 1.3.2",
+ "byteorder",
+ "cfg-if",
+ "defmt",
+ "heapless 0.8.0",
  "log",
  "managed",
 ]
