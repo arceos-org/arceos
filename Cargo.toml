@@ -25,6 +25,7 @@ members = [
     "ulib/axlibc",
 
     "examples/helloworld",
+    "examples/helloworld-myplat",
     "examples/httpclient",
     "examples/httpserver",
     "examples/httpserver",
