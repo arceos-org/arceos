@@ -75,9 +75,13 @@ endif
 
 ifneq ($(wildcard $(APP)/Cargo.toml),)
   APP_TYPE := rust
+  AX_LIB ?= axstd
 else
   APP_TYPE := c
+  AX_LIB ?= axlibc
 endif
+
+NO_AXSTD ?= n
 
 # Feature parsing
 include scripts/make/features.mk
