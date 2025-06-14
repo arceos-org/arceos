@@ -20,6 +20,14 @@ macro_rules! define_api_type {
 }
 
 macro_rules! define_api {
+    ($( $(#[$attr:meta])* $vis:vis async fn $name:ident( $($arg:ident : $type:ty),* $(,)? ) $( -> $ret:ty )? ; )+) => {
+        $(
+            $(#[$attr])*
+            $vis async fn $name( $($arg : $type),* ) $( -> $ret )? {
+                $crate::imp::$name( $($arg),* ).await
+            }
+        )+
+    };
     ($( $(#[$attr:meta])* $vis:vis fn $name:ident( $($arg:ident : $type:ty),* $(,)? ) $( -> $ret:ty )? ; )+) => {
         $(
             $(#[$attr])*
@@ -51,6 +59,25 @@ macro_rules! define_api {
             #[cfg(all(feature = "dummy-if-not-enabled", not(feature = $feature)))]
             $(#[$attr])*
             $vis fn $name( $($arg : $type),* ) $( -> $ret )? {
+                unimplemented!(stringify!($name))
+            }
+        )+
+    };
+    (
+        @cfg $feature:literal;
+        $( $(#[$attr:meta])* $vis:vis async fn $name:ident( $($arg:ident : $type:ty),* $(,)? ) $( -> $ret:ty )? ; )+
+    ) => {
+        $(
+            #[cfg(feature = $feature)]
+            $(#[$attr])*
+            $vis async fn $name( $($arg : $type),* ) $( -> $ret )? {
+                $crate::imp::$name( $($arg),* ).await
+            }
+
+            #[allow(unused_variables)]
+            #[cfg(all(feature = "dummy-if-not-enabled", not(feature = $feature)))]
+            $(#[$attr])*
+            $vis async fn $name( $($arg : $type),* ) $( -> $ret )? {
                 unimplemented!(stringify!($name))
             }
         )+
