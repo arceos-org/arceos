@@ -11,6 +11,10 @@ static __AX_TASK_EXT_SIZE: usize = 0;
 #[linkage = "weak"]
 static __AX_TASK_EXT_ALIGN: usize = 0;
 
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+fn __ax_task_ext_drop(_data: *mut u8) {}
+
 /// A wrapper of pointer to the task extended data.
 pub(crate) struct AxTaskExt {
     ptr: *mut u8,
@@ -102,7 +106,12 @@ impl AxTaskExt {
 impl Drop for AxTaskExt {
     fn drop(&mut self) {
         if !self.ptr.is_null() {
-            let layout = Layout::from_size_align(Self::size(), 0x10).unwrap();
+            unsafe extern "C" {
+                fn __ax_task_ext_drop(data: *mut u8);
+            }
+            unsafe { __ax_task_ext_drop(self.ptr) };
+
+            let layout = Layout::from_size_align(Self::size(), Self::align()).unwrap();
             unsafe { alloc::alloc::dealloc(self.ptr, layout) };
         }
     }
@@ -163,6 +172,11 @@ macro_rules! def_task_ext {
 
         #[unsafe(no_mangle)]
         static __AX_TASK_EXT_ALIGN: usize = ::core::mem::align_of::<$task_ext_struct>();
+
+        #[unsafe(no_mangle)]
+        fn __ax_task_ext_drop(data: *mut u8) {
+            unsafe { core::ptr::drop_in_place(data as *mut $task_ext_struct) };
+        }
 
         impl $crate::TaskExtRef<$task_ext_struct> for $crate::TaskInner {
             fn task_ext(&self) -> &$task_ext_struct {
