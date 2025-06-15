@@ -44,15 +44,15 @@ impl MappingBackend for Backend {
     type PageTable = PageTable;
     fn map(&self, start: VirtAddr, size: usize, flags: MappingFlags, pt: &mut PageTable) -> bool {
         match *self {
-            Self::Linear { pa_va_offset } => self.map_linear(start, size, flags, pt, pa_va_offset),
-            Self::Alloc { populate } => self.map_alloc(start, size, flags, pt, populate),
+            Self::Linear { pa_va_offset } => Self::map_linear(start, size, flags, pt, pa_va_offset),
+            Self::Alloc { populate } => Self::map_alloc(start, size, flags, pt, populate),
         }
     }
 
     fn unmap(&self, start: VirtAddr, size: usize, pt: &mut PageTable) -> bool {
         match *self {
-            Self::Linear { pa_va_offset } => self.unmap_linear(start, size, pt, pa_va_offset),
-            Self::Alloc { populate } => self.unmap_alloc(start, size, pt, populate),
+            Self::Linear { pa_va_offset } => Self::unmap_linear(start, size, pt, pa_va_offset),
+            Self::Alloc { populate } => Self::unmap_alloc(start, size, pt, populate),
         }
     }
 
@@ -80,7 +80,7 @@ impl Backend {
         match *self {
             Self::Linear { .. } => false, // Linear mappings should not trigger page faults.
             Self::Alloc { populate } => {
-                self.handle_page_fault_alloc(vaddr, orig_flags, page_table, populate)
+                Self::handle_page_fault_alloc(vaddr, orig_flags, page_table, populate)
             }
         }
     }
