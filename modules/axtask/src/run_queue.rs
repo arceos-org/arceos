@@ -1,9 +1,12 @@
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
-use core::mem::MaybeUninit;
-
 #[cfg(feature = "smp")]
 use alloc::sync::Weak;
+
+use core::future::Future;
+use core::mem::MaybeUninit;
+use core::pin::Pin;
+use core::task::{Context, Poll};
 
 use kernel_guard::BaseGuard;
 use kspin::SpinRaw;
@@ -548,6 +551,8 @@ impl AxRunQueue {
         unsafe {
             let prev_ctx_ptr = prev_task.ctx_mut_ptr();
             let next_ctx_ptr = next_task.ctx_mut_ptr();
+            // If the next task is a coroutine, this will set the kstack and ctx.
+            next_task.set_kstack();
 
             // Store the weak pointer of **prev_task** in percpu variable `PREV_TASK`.
             #[cfg(feature = "smp")]
@@ -568,6 +573,67 @@ impl AxRunQueue {
             // to indicate that it has finished its scheduling process and no longer running on this CPU.
             #[cfg(feature = "smp")]
             clear_prev_task_on_cpu();
+        }
+    }
+
+    /// Core reschedule subroutine.
+    /// Pick the next task to run and switch to it.
+    /// This function is only used in `YieldFuture`, `ExitFuture`,
+    /// `SleepUntilFuture` and `BlockedReschedFuture`.
+    fn resched_f(&mut self) -> Poll<()> {
+        let next_task = self
+            .scheduler
+            .lock()
+            .pick_next_task()
+            .unwrap_or_else(|| unsafe {
+                // Safety: IRQs must be disabled at this time.
+                IDLE_TASK.current_ref_raw().get_unchecked().clone()
+            });
+        assert!(
+            next_task.is_ready(),
+            "next {} is not ready: {:?}",
+            next_task.id_name(),
+            next_task.state()
+        );
+        let prev_task = crate::current();
+        // Make sure that IRQs are disabled by kernel guard or other means.
+        #[cfg(all(not(test), feature = "irq"))] // Note: irq is faked under unit tests.
+        assert!(
+            !axhal::arch::irqs_enabled(),
+            "IRQs must be disabled during scheduling"
+        );
+        trace!(
+            "context switch: {} -> {}",
+            prev_task.id_name(),
+            next_task.id_name()
+        );
+        #[cfg(feature = "preempt")]
+        next_task.set_preempt_pending(false);
+        next_task.set_state(TaskState::Running);
+        if prev_task.ptr_eq(&next_task) {
+            return Poll::Ready(());
+        }
+
+        // Claim the task as running, we do this before switching to it
+        // such that any running task will have this set.
+        #[cfg(feature = "smp")]
+        next_task.set_on_cpu(true);
+
+        unsafe {
+            // Store the weak pointer of **prev_task** in percpu variable `PREV_TASK`.
+            #[cfg(feature = "smp")]
+            {
+                *PREV_TASK.current_ref_mut_raw() = Arc::downgrade(prev_task.as_task_ref());
+            }
+
+            // The strong reference count of `prev_task` will be decremented by 1,
+            // but won't be dropped until `gc_entry()` is called.
+            assert!(Arc::strong_count(prev_task.as_task_ref()) > 1);
+            assert!(Arc::strong_count(&next_task) >= 1);
+
+            // Directly change the `CurrentTask` and return `Pending`.
+            CurrentTask::set_current(prev_task, next_task);
+            Poll::Pending
         }
     }
 }
@@ -663,4 +729,253 @@ pub(crate) fn init_secondary() {
     unsafe {
         RUN_QUEUES[cpu_id].write(RUN_QUEUE.current_ref_mut_raw());
     }
+}
+
+/// The `YieldFuture` used when yielding the current task and reschedule.
+/// When polling this future, the current task will be put into the run queue
+/// with `Ready` state and reschedule to the next task on the run queue.
+///
+/// The polling operation is as the same as the
+/// `current_run_queue::<NoPreemptIrqSave>().yield_current()` function.
+///
+/// SAFETY:
+/// Due to this future is constructed with `current_run_queue::<NoPreemptIrqSave>()`,
+/// the operation about manipulating the RunQueue and the switching to next task is
+/// safe(The `IRQ` and `Preempt` are disabled).
+pub(crate) struct YieldFuture<'a, G: BaseGuard> {
+    current_run_queue: CurrentRunQueueRef<'a, G>,
+    flag: bool,
+}
+
+impl<'a, G: BaseGuard> YieldFuture<'a, G> {
+    pub(crate) fn new() -> Self {
+        Self {
+            current_run_queue: current_run_queue::<G>(),
+            flag: false,
+        }
+    }
+}
+
+impl<'a, G: BaseGuard> Unpin for YieldFuture<'a, G> {}
+
+impl<'a, G: BaseGuard> Future for YieldFuture<'a, G> {
+    type Output = ();
+    fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let Self {
+            current_run_queue,
+            flag,
+        } = self.get_mut();
+        if !(*flag) {
+            *flag = !*flag;
+            let curr = &current_run_queue.current_task;
+            trace!("task yield: {}", curr.id_name());
+            assert!(curr.is_running());
+            current_run_queue
+                .inner
+                .put_task_with_state(curr.clone(), TaskState::Running, false);
+            current_run_queue.inner.resched_f()
+        } else {
+            Poll::Ready(())
+        }
+    }
+}
+
+/// Due not manually release the `current_run_queue.state`,
+/// otherwise it will cause double release.
+impl<'a, G: BaseGuard> Drop for YieldFuture<'a, G> {
+    fn drop(&mut self) {}
+}
+
+/// The `ExitFuture` used when exiting the current task
+/// with the specified exit code, which is always return `Poll::Pending`.
+///
+/// The polling operation is as the same as the
+/// `current_run_queue::<NoPreemptIrqSave>().exit_current()` function.
+///
+/// SAFETY: as the same as the `YieldFuture`. However, It wrap the `CurrentRunQueueRef`
+/// with `ManuallyDrop`, otherwise the `IRQ` and `Preempt` state of other
+/// tasks(maybe `main` or `gc` task) which recycle the exited task(which used this future)
+/// will be error due to automatically drop the `CurrentRunQueueRef.
+/// The `CurrentRunQueueRef` should never be drop.
+pub(crate) struct ExitFuture<'a, G: BaseGuard> {
+    current_run_queue: core::mem::ManuallyDrop<CurrentRunQueueRef<'a, G>>,
+    exit_code: i32,
+}
+
+impl<'a, G: BaseGuard> ExitFuture<'a, G> {
+    pub(crate) fn new(exit_code: i32) -> Self {
+        Self {
+            current_run_queue: core::mem::ManuallyDrop::new(current_run_queue::<G>()),
+            exit_code,
+        }
+    }
+}
+
+impl<'a, G: BaseGuard> Unpin for ExitFuture<'a, G> {}
+
+impl<'a, G: BaseGuard> Future for ExitFuture<'a, G> {
+    type Output = ();
+    fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let Self {
+            current_run_queue,
+            exit_code,
+        } = self.get_mut();
+        let exit_code = *exit_code;
+        let curr = &current_run_queue.current_task;
+        debug!("task exit: {}, exit_code={}", curr.id_name(), exit_code);
+        assert!(curr.is_running(), "task is not running: {:?}", curr.state());
+        assert!(!curr.is_idle());
+        curr.set_state(TaskState::Exited);
+
+        // Notify the joiner task.
+        curr.notify_exit(exit_code);
+
+        // Safety: it is called from `current_run_queue::<NoPreemptIrqSave>().exit_current(exit_code)`,
+        // which disabled IRQs and preemption.
+        unsafe {
+            // Push current task to the `EXITED_TASKS` list, which will be consumed by the GC task.
+            EXITED_TASKS.current_ref_mut_raw().push_back(curr.clone());
+            // Wake up the GC task to drop the exited tasks.
+            WAIT_FOR_EXIT.current_ref_mut_raw().notify_one(false);
+        }
+
+        assert!(current_run_queue.inner.resched_f().is_pending());
+        Poll::Pending
+    }
+}
+
+#[cfg(feature = "irq")]
+pub(crate) struct SleepUntilFuture<'a, G: BaseGuard> {
+    current_run_queue: CurrentRunQueueRef<'a, G>,
+    deadline: axhal::time::TimeValue,
+    flag: bool,
+}
+
+#[cfg(feature = "irq")]
+impl<'a, G: BaseGuard> SleepUntilFuture<'a, G> {
+    pub fn new(deadline: axhal::time::TimeValue) -> Self {
+        Self {
+            current_run_queue: current_run_queue::<G>(),
+            deadline,
+            flag: false,
+        }
+    }
+}
+
+#[cfg(feature = "irq")]
+impl<'a, G: BaseGuard> Unpin for SleepUntilFuture<'a, G> {}
+
+#[cfg(feature = "irq")]
+impl<'a, G: BaseGuard> Future for SleepUntilFuture<'a, G> {
+    type Output = ();
+    fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let Self {
+            current_run_queue,
+            deadline,
+            flag,
+        } = self.get_mut();
+        if !(*flag) {
+            *flag = !*flag;
+            let deadline = *deadline;
+            let curr = &current_run_queue.current_task;
+            debug!("task sleep: {}, deadline={:?}", curr.id_name(), deadline);
+            assert!(curr.is_running());
+            assert!(!curr.is_idle());
+
+            let now = axhal::time::wall_time();
+            if now < deadline {
+                crate::timers::set_alarm_wakeup(deadline, curr.clone());
+                curr.set_state(TaskState::Blocked);
+                assert!(current_run_queue.inner.resched_f().is_pending());
+                Poll::Pending
+            } else {
+                Poll::Ready(())
+            }
+        } else {
+            Poll::Ready(())
+        }
+    }
+}
+
+#[cfg(feature = "irq")]
+impl<'a, G: BaseGuard> Drop for SleepUntilFuture<'a, G> {
+    fn drop(&mut self) {}
+}
+
+/// The `BlockedReschedFuture` used when blocking the current task.
+///
+/// When polling this future, current task will be put into the wait queue and reschedule,
+/// the state of current task will be marked as `Blocked`, set the `in_wait_queue` flag as true.
+/// Note:
+///     1. When polling this future, the wait queue is locked.
+///     2. When polling this future, the current task is in the running state.
+///     3. When polling this future, the current task is not the idle task.
+///     4. The lock of the wait queue will be released explicitly after current task is pushed into it.
+///
+/// SAFETY:
+/// as the same as the `YieldFuture`. Due to the `WaitQueueGuard` is not implemented
+/// the `Send` trait, this future must hold the reference about the `WaitQueue` instead
+/// of the `WaitQueueGuard`.
+pub(crate) struct BlockedReschedFuture<'a, G: BaseGuard> {
+    current_run_queue: CurrentRunQueueRef<'a, G>,
+    wq: &'a WaitQueue,
+    flag: bool,
+}
+
+impl<'a, G: BaseGuard> BlockedReschedFuture<'a, G> {
+    pub fn new(current_run_queue: CurrentRunQueueRef<'a, G>, wq: &'a WaitQueue) -> Self {
+        Self {
+            current_run_queue,
+            wq,
+            flag: false,
+        }
+    }
+}
+
+impl<'a, G: BaseGuard> Unpin for BlockedReschedFuture<'a, G> {}
+
+impl<'a, G: BaseGuard> Future for BlockedReschedFuture<'a, G> {
+    type Output = ();
+    fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let Self {
+            current_run_queue,
+            wq,
+            flag,
+        } = self.get_mut();
+        if !(*flag) {
+            *flag = !*flag;
+            let mut wq_guard = wq.queue.lock();
+            let curr = &current_run_queue.current_task;
+            assert!(curr.is_running());
+            assert!(!curr.is_idle());
+            // we must not block current task with preemption disabled.
+            // Current expected preempt count is 2.
+            // 1 for `NoPreemptIrqSave`, 1 for wait queue's `SpinNoIrq`.
+            #[cfg(feature = "preempt")]
+            assert!(curr.can_preempt(2));
+
+            // Mark the task as blocked, this has to be done before adding it to the wait queue
+            // while holding the lock of the wait queue.
+            curr.set_state(TaskState::Blocked);
+            curr.set_in_wait_queue(true);
+
+            wq_guard.push_back(curr.clone());
+            // Drop the lock of wait queue explictly.
+            drop(wq_guard);
+
+            // Current task's state has been changed to `Blocked` and added to the wait queue.
+            // Note that the state may have been set as `Ready` in `unblock_task()`,
+            // see `unblock_task()` for details.
+
+            debug!("task block: {}", curr.id_name());
+            assert!(current_run_queue.inner.resched_f().is_pending());
+            Poll::Pending
+        } else {
+            Poll::Ready(())
+        }
+    }
+}
+
+impl<'a, G: BaseGuard> Drop for BlockedReschedFuture<'a, G> {
+    fn drop(&mut self) {}
 }
