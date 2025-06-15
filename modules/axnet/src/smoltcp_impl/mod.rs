@@ -260,6 +260,9 @@ impl RxToken for AxNetRxToken<'_> {
         self.0.borrow_mut().recycle_rx_buffer(rx_buf).unwrap();
         result
     }
+    fn preprocess(&self, sockets: &mut SocketSet<'_>) {
+        snoop_tcp_packet(self.1.packet(), sockets).ok();
+    }
 }
 impl TxToken for AxNetTxToken<'_> {
     fn consume<R, F>(self, len: usize, f: F) -> R
