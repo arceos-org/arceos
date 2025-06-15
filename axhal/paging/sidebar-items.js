@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["kernel_page_table_root","set_kernel_page_table_root"],"struct":["PagingHandlerImpl"],"type":["PageTable"]};
