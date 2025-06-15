@@ -10,7 +10,7 @@ use smoltcp::iface::SocketHandle;
 use smoltcp::socket::tcp::{self, ConnectError, State};
 use smoltcp::wire::{IpEndpoint, IpListenEndpoint};
 
-use super::addr::{UNSPECIFIED_ENDPOINT, from_core_sockaddr, into_core_sockaddr, is_unspecified};
+use super::addr::{UNSPECIFIED_ENDPOINT, from_core_sockaddr, into_core_sockaddr};
 use super::{ETH0, LISTEN_TABLE, SOCKET_SET, SocketSetWrapper};
 
 // State transitions:
@@ -411,7 +411,7 @@ impl TcpSocket {
             get_ephemeral_port()?
         };
         assert_ne!(port, 0);
-        let addr = if !is_unspecified(local_addr.addr) {
+        let addr = if !local_addr.addr.is_unspecified() {
             Some(local_addr.addr)
         } else {
             None
