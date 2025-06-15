@@ -89,19 +89,11 @@ include scripts/make/platform.mk
 ifeq ($(ARCH), x86_64)
   TARGET := x86_64-unknown-none
 else ifeq ($(ARCH), aarch64)
-  ifeq ($(findstring fp_simd,$(FEATURES)),)
-    TARGET := aarch64-unknown-none-softfloat
-  else
-    TARGET := aarch64-unknown-none
-  endif
+  TARGET := aarch64-unknown-none-softfloat
 else ifeq ($(ARCH), riscv64)
   TARGET := riscv64gc-unknown-none-elf
 else ifeq ($(ARCH), loongarch64)
-  ifeq ($(findstring fp_simd,$(FEATURES)),)
-    TARGET := loongarch64-unknown-none-softfloat
-  else
-    TARGET := loongarch64-unknown-none
-  endif
+  TARGET := loongarch64-unknown-none-softfloat
 else
   $(error "ARCH" must be one of "x86_64", "riscv64", "aarch64" or "loongarch64")
 endif
