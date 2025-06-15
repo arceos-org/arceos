@@ -293,7 +293,7 @@ unsafe extern "C" fn context_switch(_current_task: &mut TaskContext, _next_task:
 #[cfg(feature = "fp_simd")]
 unsafe extern "C" fn fpstate_switch(_current_fpstate: &mut FpState, _next_fpstate: &FpState) {
     naked_asm!(
-        "
+        ".arch armv8
         // save fp/neon context
         mrs     x9, fpcr
         mrs     x10, fpsr

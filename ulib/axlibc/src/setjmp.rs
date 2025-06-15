@@ -8,7 +8,7 @@ use crate::ctypes;
 pub unsafe extern "C" fn setjmp(_buf: *mut ctypes::__jmp_buf_tag) {
     #[cfg(all(target_arch = "aarch64", feature = "fp_simd"))]
     core::arch::naked_asm!(
-        "
+        ".arch armv8
         stp x19, x20, [x0,#0]
         stp x21, x22, [x0,#16]
         stp x23, x24, [x0,#32]
@@ -167,7 +167,8 @@ pub unsafe extern "C" fn setjmp(_buf: *mut ctypes::__jmp_buf_tag) {
 pub unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) -> ! {
     #[cfg(all(target_arch = "aarch64", feature = "fp_simd"))]
     core::arch::naked_asm!(
-        "ldp x19, x20, [x0,#0]
+        ".arch armv8
+        ldp x19, x20, [x0,#0]
         ldp x21, x22, [x0,#16]
         ldp x23, x24, [x0,#32]
         ldp x25, x26, [x0,#48]
