@@ -284,7 +284,6 @@ pub struct TaskContext {
     pub cr3: memory_addr::PhysAddr,
 }
 
-
 impl TaskContext {
     /// Creates a dummy context for a new task.
     ///
