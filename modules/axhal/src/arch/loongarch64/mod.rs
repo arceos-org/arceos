@@ -202,7 +202,7 @@ pub unsafe fn write_thread_pointer(tp: usize) {
 
 /// Initializes CPU states on the current CPU.
 pub fn cpu_init() {
-    #[cfg(feature = "fp_simd")]
+    #[cfg(feature = "fp-simd")]
     loongArch64::register::euen::set_fpe(true);
 
     unsafe extern "C" {

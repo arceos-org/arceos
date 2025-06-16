@@ -23,7 +23,7 @@ default = []
 smp = ["axfeat/smp", "kspin/smp"]
 
 # Floating point/SIMD
-fp_simd = ["axfeat/fp_simd"]
+fp-simd = ["axfeat/fp-simd"]
 
 # Interrupts
 irq = ["arceos_api/irq", "axfeat/irq"]

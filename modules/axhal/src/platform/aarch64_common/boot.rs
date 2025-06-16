@@ -96,7 +96,7 @@ unsafe fn init_mmu() {
 }
 
 unsafe fn enable_fp() {
-    if cfg!(feature = "fp_simd") {
+    if cfg!(feature = "fp-simd") {
         CPACR_EL1.write(CPACR_EL1::FPEN::TrapNothing);
         barrier::isb(barrier::SY);
     }

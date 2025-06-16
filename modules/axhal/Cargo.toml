@@ -12,7 +12,7 @@ documentation = "https://arceos-org.github.io/arceos/axhal/index.html"
 [features]
 smp = []
 alloc = []
-fp_simd = []
+fp-simd = []
 paging = ["axalloc"]
 irq = []
 tls = ["alloc"]

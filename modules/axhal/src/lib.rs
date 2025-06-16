@@ -17,7 +17,7 @@
 //! # Cargo Features
 //!
 //! - `smp`: Enable SMP (symmetric multiprocessing) support.
-//! - `fp_simd`: Enable floating-point and SIMD support.
+//! - `fp-simd`: Enable floating-point and SIMD support.
 //! - `paging`: Enable page table manipulation.
 //! - `irq`: Enable interrupt handling support.
 //!

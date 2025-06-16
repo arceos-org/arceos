@@ -16,7 +16,7 @@ default = []
 smp = ["axhal/smp", "axruntime/smp", "axtask?/smp", "kspin/smp"]
 
 # Floating point/SIMD
-fp_simd = ["axhal/fp_simd"]
+fp-simd = ["axhal/fp-simd"]
 
 # Interrupts
 irq = ["axhal/irq", "axruntime/irq", "axtask?/irq"]
