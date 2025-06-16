@@ -41,9 +41,9 @@ tls = ["axfeat/tls"]
 
 # Multi-threading and scheduler
 multitask = ["arceos_api/multitask", "axfeat/multitask"]
-sched_fifo = ["axfeat/sched_fifo"]
-sched_rr = ["axfeat/sched_rr"]
-sched_cfs = ["axfeat/sched_cfs"]
+sched-fifo = ["axfeat/sched-fifo"]
+sched-rr = ["axfeat/sched-rr"]
+sched-cfs = ["axfeat/sched-cfs"]
 
 # File system
 fs = ["arceos_api/fs", "axfeat/fs"]

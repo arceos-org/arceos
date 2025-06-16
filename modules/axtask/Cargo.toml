@@ -29,9 +29,9 @@ tls = ["axhal/tls"]
 preempt = ["irq", "percpu?/preempt", "kernel_guard/preempt"]
 smp = ["kspin/smp"]
 
-sched_fifo = ["multitask"]
-sched_rr = ["multitask", "preempt"]
-sched_cfs = ["multitask", "preempt"]
+sched-fifo = ["multitask"]
+sched-rr = ["multitask", "preempt"]
+sched-cfs = ["multitask", "preempt"]
 
 test = ["percpu?/sp-naive"]
 
