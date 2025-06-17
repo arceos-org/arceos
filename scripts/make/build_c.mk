@@ -31,7 +31,7 @@ else ifeq ($(ARCH), loongarch64)
   CFLAGS += -msoft-float
 endif
 
-ifeq ($(findstring fp_simd,$(FEATURES)),)
+ifeq ($(findstring fp-simd,$(FEATURES)),)
   ifeq ($(ARCH), x86_64)
     CFLAGS += -mno-sse
   else ifeq ($(ARCH), aarch64)

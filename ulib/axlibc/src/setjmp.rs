@@ -6,7 +6,7 @@ use crate::ctypes;
 #[unsafe(naked)]
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn setjmp(_buf: *mut ctypes::__jmp_buf_tag) {
-    #[cfg(all(target_arch = "aarch64", feature = "fp_simd"))]
+    #[cfg(all(target_arch = "aarch64", feature = "fp-simd"))]
     core::arch::naked_asm!(
         ".arch armv8
         stp x19, x20, [x0,#0]
@@ -24,7 +24,7 @@ pub unsafe extern "C" fn setjmp(_buf: *mut ctypes::__jmp_buf_tag) {
         mov x0, #0
         ret",
     );
-    #[cfg(all(target_arch = "aarch64", not(feature = "fp_simd")))]
+    #[cfg(all(target_arch = "aarch64", not(feature = "fp-simd")))]
     core::arch::naked_asm!(
         "
         stp x19, x20, [x0,#0]
@@ -53,7 +53,7 @@ pub unsafe extern "C" fn setjmp(_buf: *mut ctypes::__jmp_buf_tag) {
         xor rax, rax
         ret",
     );
-    #[cfg(all(target_arch = "riscv64", feature = "fp_simd"))]
+    #[cfg(all(target_arch = "riscv64", feature = "fp-simd"))]
     core::arch::naked_asm!(
         "sd s0,    0(a0)
         sd s1,    8(a0)
@@ -86,7 +86,7 @@ pub unsafe extern "C" fn setjmp(_buf: *mut ctypes::__jmp_buf_tag) {
         li a0, 0
         ret",
     );
-    #[cfg(all(target_arch = "riscv64", not(feature = "fp_simd")))]
+    #[cfg(all(target_arch = "riscv64", not(feature = "fp-simd")))]
     core::arch::naked_asm!(
         "sd s0,    0(a0)
         sd s1,    8(a0)
@@ -106,7 +106,7 @@ pub unsafe extern "C" fn setjmp(_buf: *mut ctypes::__jmp_buf_tag) {
         li a0, 0
         ret",
     );
-    #[cfg(all(target_arch = "loongarch64", feature = "fp_simd"))]
+    #[cfg(all(target_arch = "loongarch64", feature = "fp-simd"))]
     core::arch::naked_asm!(
         "
         st.d     $ra, $a0, 0
@@ -133,7 +133,7 @@ pub unsafe extern "C" fn setjmp(_buf: *mut ctypes::__jmp_buf_tag) {
         li.w  $a0, 0
         ret",
     );
-    #[cfg(all(target_arch = "loongarch64", not(feature = "fp_simd")))]
+    #[cfg(all(target_arch = "loongarch64", not(feature = "fp-simd")))]
     core::arch::naked_asm!(
         "
         st.d     $ra, $a0, 0
@@ -165,7 +165,7 @@ pub unsafe extern "C" fn setjmp(_buf: *mut ctypes::__jmp_buf_tag) {
 #[unsafe(naked)]
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) -> ! {
-    #[cfg(all(target_arch = "aarch64", feature = "fp_simd"))]
+    #[cfg(all(target_arch = "aarch64", feature = "fp-simd"))]
     core::arch::naked_asm!(
         ".arch armv8
         ldp x19, x20, [x0,#0]
@@ -185,7 +185,7 @@ pub unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) 
         csinc w0, w1, wzr, ne
         br x30",
     );
-    #[cfg(all(target_arch = "aarch64", not(feature = "fp_simd")))]
+    #[cfg(all(target_arch = "aarch64", not(feature = "fp-simd")))]
     core::arch::naked_asm!(
         "ldp x19, x20, [x0,#0]
         ldp x21, x22, [x0,#16]
@@ -218,7 +218,7 @@ pub unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) 
         mov rdx, [rdi + 56]
         jmp rdx",
     );
-    #[cfg(all(target_arch = "riscv64", feature = "fp_simd"))]
+    #[cfg(all(target_arch = "riscv64", feature = "fp-simd"))]
     core::arch::naked_asm!(
         "ld s0,    0(a0)
         ld s1,    8(a0)
@@ -252,7 +252,7 @@ pub unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) 
         add a0, a0, a1
         ret",
     );
-    #[cfg(all(target_arch = "riscv64", not(feature = "fp_simd")))]
+    #[cfg(all(target_arch = "riscv64", not(feature = "fp-simd")))]
     core::arch::naked_asm!(
         "ld s0,    0(a0)
         ld s1,    8(a0)
@@ -274,7 +274,7 @@ pub unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) 
         ret",
     );
 
-    #[cfg(all(target_arch = "loongarch64", feature = "fp_simd"))]
+    #[cfg(all(target_arch = "loongarch64", feature = "fp-simd"))]
     core::arch::naked_asm!(
         "
         ld.d     $ra, $a1, 0
@@ -302,7 +302,7 @@ pub unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) 
         add.d    $a0, $a0, $a1
         jirl     $zero,$ra, 0"
     );
-    #[cfg(all(target_arch = "loongarch64", not(feature = "fp_simd")))]
+    #[cfg(all(target_arch = "loongarch64", not(feature = "fp-simd")))]
     core::arch::naked_asm!(
         "
         ld.d     $ra, $a1, 0
