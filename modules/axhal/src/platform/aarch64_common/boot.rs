@@ -103,7 +103,12 @@ unsafe fn enable_fp() {
 }
 
 unsafe fn init_boot_page_table() {
-    crate::platform::mem::init_boot_page_table(addr_of_mut!(BOOT_PT_L0), addr_of_mut!(BOOT_PT_L1));
+    unsafe {
+        crate::platform::mem::init_boot_page_table(
+            addr_of_mut!(BOOT_PT_L0),
+            addr_of_mut!(BOOT_PT_L1),
+        )
+    };
 }
 
 /// Kernel entry point with Linux image header.
