@@ -361,13 +361,13 @@ impl TaskInner {
     #[inline]
     #[cfg(feature = "preempt")]
     pub(crate) fn disable_preempt(&self) {
-        self.preempt_disable_count.fetch_add(1, Ordering::Relaxed);
+        self.preempt_disable_count.fetch_add(1, Ordering::Release);
     }
 
     #[inline]
     #[cfg(feature = "preempt")]
     pub(crate) fn enable_preempt(&self, resched: bool) {
-        if self.preempt_disable_count.fetch_sub(1, Ordering::Relaxed) == 1 && resched {
+        if self.preempt_disable_count.fetch_sub(1, Ordering::Release) == 1 && resched {
             // If current task is pending to be preempted, do rescheduling.
             Self::current_check_preempt_pending();
         }

@@ -33,7 +33,7 @@ pub fn start_secondary_cpus(primary_cpu_id: usize) {
 /// It is called from the bootstrapping code in [axhal].
 #[unsafe(no_mangle)]
 pub extern "C" fn rust_main_secondary(cpu_id: usize) -> ! {
-    ENTERED_CPUS.fetch_add(1, Ordering::Relaxed);
+    ENTERED_CPUS.fetch_add(1, Ordering::Release);
     info!("Secondary CPU {:x} started.", cpu_id);
 
     #[cfg(feature = "paging")]
@@ -45,7 +45,7 @@ pub extern "C" fn rust_main_secondary(cpu_id: usize) -> ! {
     axtask::init_scheduler_secondary();
 
     info!("Secondary CPU {:x} init OK.", cpu_id);
-    super::INITED_CPUS.fetch_add(1, Ordering::Relaxed);
+    super::INITED_CPUS.fetch_add(1, Ordering::Release);
 
     while !super::is_init_ok() {
         core::hint::spin_loop();

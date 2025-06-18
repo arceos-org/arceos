@@ -21,13 +21,13 @@ use crate::{AxTaskRef, CurrentTask, current_run_queue, select_run_queue};
 /// axtask::init_scheduler();
 /// // spawn a new task that updates `VALUE` and notifies the main task
 /// axtask::spawn(|| {
-///     assert_eq!(VALUE.load(Ordering::Relaxed), 0);
-///     VALUE.fetch_add(1, Ordering::Relaxed);
+///     assert_eq!(VALUE.load(Ordering::Acquire), 0);
+///     VALUE.fetch_add(1, Ordering::Release);
 ///     WQ.notify_one(true); // wake up the main task
 /// });
 ///
 /// WQ.wait(); // block until `notify()` is called
-/// assert_eq!(VALUE.load(Ordering::Relaxed), 1);
+/// assert_eq!(VALUE.load(Ordering::Acquire), 1);
 /// ```
 pub struct WaitQueue {
     queue: SpinNoIrq<VecDeque<AxTaskRef>>,
