@@ -80,7 +80,7 @@ pub struct TaskInner {
 impl TaskId {
     fn new() -> Self {
         static ID_COUNTER: AtomicU64 = AtomicU64::new(1);
-        Self(ID_COUNTER.fetch_add(1, Ordering::Release))
+        Self(ID_COUNTER.fetch_add(1, Ordering::Relaxed))
     }
 
     /// Convert the task ID to a `u64`.

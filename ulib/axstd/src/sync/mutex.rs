@@ -79,7 +79,7 @@ unsafe impl lock_api::RawMutex for RawMutex {
 
     #[inline(always)]
     fn is_locked(&self) -> bool {
-        self.owner_id.load(Ordering::Acquire) != 0
+        self.owner_id.load(Ordering::Relaxed) != 0
     }
 }
 
