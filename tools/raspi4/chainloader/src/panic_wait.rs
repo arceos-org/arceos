@@ -31,8 +31,8 @@ fn panic_prevent_reenter() {
 
     static PANIC_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
 
-    if !PANIC_IN_PROGRESS.load(Ordering::Relaxed) {
-        PANIC_IN_PROGRESS.store(true, Ordering::Relaxed);
+    if !PANIC_IN_PROGRESS.load(Ordering::Acquire) {
+        PANIC_IN_PROGRESS.store(true, Ordering::Release);
 
         return;
     }

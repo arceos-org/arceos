@@ -59,13 +59,13 @@ fn driver_gpio() -> Result<(), &'static str> {
 /// See child function calls.
 pub unsafe fn init() -> Result<(), &'static str> {
     static INIT_DONE: AtomicBool = AtomicBool::new(false);
-    if INIT_DONE.load(Ordering::Relaxed) {
+    if INIT_DONE.load(Ordering::Acquire) {
         return Err("Init already done");
     }
 
     driver_uart()?;
     driver_gpio()?;
 
-    INIT_DONE.store(true, Ordering::Relaxed);
+    INIT_DONE.store(true, Ordering::Release);
     Ok(())
 }
