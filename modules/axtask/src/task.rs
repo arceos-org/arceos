@@ -9,7 +9,7 @@ use core::sync::atomic::AtomicUsize;
 use kspin::SpinNoIrq;
 use memory_addr::{VirtAddr, align_up_4k};
 
-use axhal::arch::TaskContext;
+use axhal::context::TaskContext;
 #[cfg(feature = "tls")]
 use axhal::tls::TlsArea;
 
@@ -361,13 +361,13 @@ impl TaskInner {
     #[inline]
     #[cfg(feature = "preempt")]
     pub(crate) fn disable_preempt(&self) {
-        self.preempt_disable_count.fetch_add(1, Ordering::Relaxed);
+        self.preempt_disable_count.fetch_add(1, Ordering::Release);
     }
 
     #[inline]
     #[cfg(feature = "preempt")]
     pub(crate) fn enable_preempt(&self, resched: bool) {
-        if self.preempt_disable_count.fetch_sub(1, Ordering::Relaxed) == 1 && resched {
+        if self.preempt_disable_count.fetch_sub(1, Ordering::Release) == 1 && resched {
             // If current task is pending to be preempted, do rescheduling.
             Self::current_check_preempt_pending();
         }
@@ -496,7 +496,7 @@ impl CurrentTask {
     pub(crate) unsafe fn init_current(init_task: AxTaskRef) {
         assert!(init_task.is_init());
         #[cfg(feature = "tls")]
-        axhal::arch::write_thread_pointer(init_task.tls.tls_ptr() as usize);
+        axhal::asm::write_thread_pointer(init_task.tls.tls_ptr() as usize);
         let ptr = Arc::into_raw(init_task);
         unsafe {
             axhal::cpu::set_current_task_ptr(ptr);
@@ -528,7 +528,7 @@ extern "C" fn task_entry() -> ! {
     }
     // Enable irq (if feature "irq" is enabled) before running the task entry function.
     #[cfg(feature = "irq")]
-    axhal::arch::enable_irqs();
+    axhal::asm::enable_irqs();
     let task = crate::current();
     if let Some(entry) = task.entry {
         unsafe { Box::from_raw(entry)() };

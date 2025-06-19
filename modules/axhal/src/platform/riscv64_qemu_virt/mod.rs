@@ -19,6 +19,7 @@ unsafe extern "C" {
 
 unsafe extern "C" fn rust_entry(cpu_id: usize, dtb: usize) {
     crate::mem::clear_bss();
+    axcpu::init::init_trap();
     crate::cpu::init_primary(cpu_id);
     self::time::init_early();
     rust_main(cpu_id, dtb);
@@ -26,6 +27,7 @@ unsafe extern "C" fn rust_entry(cpu_id: usize, dtb: usize) {
 
 #[cfg(feature = "smp")]
 unsafe extern "C" fn rust_entry_secondary(cpu_id: usize) {
+    axcpu::init::init_trap();
     crate::cpu::init_secondary(cpu_id);
     rust_main_secondary(cpu_id);
 }

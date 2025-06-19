@@ -1,5 +1,6 @@
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
+use alloc::vec::Vec;
 
 use kernel_guard::{NoOp, NoPreemptIrqSave};
 use kspin::{SpinNoIrq, SpinNoIrqGuard};
@@ -20,13 +21,13 @@ use crate::{AxTaskRef, CurrentTask, current_run_queue, select_run_queue};
 /// axtask::init_scheduler();
 /// // spawn a new task that updates `VALUE` and notifies the main task
 /// axtask::spawn(|| {
-///     assert_eq!(VALUE.load(Ordering::Relaxed), 0);
-///     VALUE.fetch_add(1, Ordering::Relaxed);
+///     assert_eq!(VALUE.load(Ordering::Acquire), 0);
+///     VALUE.fetch_add(1, Ordering::Release);
 ///     WQ.notify_one(true); // wake up the main task
 /// });
 ///
 /// WQ.wait(); // block until `notify()` is called
-/// assert_eq!(VALUE.load(Ordering::Relaxed), 1);
+/// assert_eq!(VALUE.load(Ordering::Acquire), 1);
 /// ```
 pub struct WaitQueue {
     queue: SpinNoIrq<VecDeque<AxTaskRef>>,
@@ -200,6 +201,39 @@ impl WaitQueue {
         } else {
             false
         }
+    }
+
+    /// Transfers up to `count` tasks from this wait queue to another wait queue.
+    ///
+    /// Note: If the current wait queue contains fewer than `count` tasks, all available tasks will be moved.
+    ///
+    /// ## Arguments
+    /// * `count` - The maximum number of tasks to be moved.
+    /// * `target` - The target wait queue to which tasks will be moved.
+    ///
+    /// ## Returns
+    /// The number of tasks actually requeued.  
+    pub fn requeue(&self, mut count: usize, target: &WaitQueue) -> usize {
+        let tasks: Vec<_> = {
+            let mut wq = self.queue.lock();
+            count = count.min(wq.len());
+            wq.drain(..count).collect()
+        };
+        if !tasks.is_empty() {
+            let mut wq = target.queue.lock();
+            wq.extend(tasks);
+        }
+        count
+    }
+
+    /// Returns the number of tasks in the wait queue.
+    pub fn len(&self) -> usize {
+        self.queue.lock().len()
+    }
+
+    /// Returns true if the wait queue is empty.
+    pub fn is_empty(&self) -> bool {
+        self.queue.lock().is_empty()
     }
 }
 
