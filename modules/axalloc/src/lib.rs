@@ -11,6 +11,8 @@
 extern crate log;
 extern crate alloc;
 
+#[cfg(feature = "buddy-page")]
+mod buddy_page;
 mod page;
 
 use allocator::{AllocResult, BaseAllocator, BitmapPageAllocator, ByteAllocator, PageAllocator};
@@ -36,31 +38,65 @@ cfg_if::cfg_if! {
     }
 }
 
-/// The global allocator used by ArceOS.
-///
-/// It combines a [`ByteAllocator`] and a [`PageAllocator`] into a simple
-/// two-level allocator: firstly tries allocate from the byte allocator, if
-/// there is no memory, asks the page allocator for more memory and adds it to
-/// the byte allocator.
-///
-/// Currently, [`TlsfByteAllocator`] is used as the byte allocator, while
-/// [`BitmapPageAllocator`] is used as the page allocator.
-///
-/// [`TlsfByteAllocator`]: allocator::TlsfByteAllocator
-pub struct GlobalAllocator {
-    balloc: SpinNoIrq<DefaultByteAllocator>,
-    palloc: SpinNoIrq<BitmapPageAllocator<PAGE_SIZE>>,
+cfg_if::cfg_if! {
+    if #[cfg(feature = "buddy-page")] {
+        /// Global Memory Allocator Structure
+        ///
+        /// Combines a byte-level allocator and a page-level allocator
+        /// to support memory allocation at different granularities:
+        /// 1. Byte allocator (`balloc`) handles small memory requests
+        /// 2. Buddy page allocator (`palloc`) handles full-page memory requests
+        /// Byte-level memory allocator (wrapped in a spinlock)
+        /// - Uses `SpinNoIrq` to ensure thread safety and disable interrupts
+        /// - Responsible for allocating memory blocks smaller than a page (e.g., structs, arrays, etc.)
+        /// Page-level memory allocator (uses the buddy algorithm)
+        /// - `PAGE_SIZE` specifies the page size (typically 4096 bytes)
+        /// - Buddy algorithm feature: reduces fragmentation by splitting/merging blocks in powers of two
+        /// - Suitable for allocating full pages, improving efficiency for large memory allocations
+        use buddy_page::BuddyPageAllocator;
+        pub struct GlobalAllocator {
+            balloc: SpinNoIrq<DefaultByteAllocator>,
+            palloc: SpinNoIrq<BuddyPageAllocator<PAGE_SIZE>>,
+        }
+
+        impl GlobalAllocator {
+            /// Creates an empty [`GlobalAllocator`].
+            pub const fn new() -> Self {
+                Self {
+                    balloc: SpinNoIrq::new(DefaultByteAllocator::new()),
+                    palloc: SpinNoIrq::new(BuddyPageAllocator::new()),
+                }
+            }
+        }
+    } else {
+        /// The global allocator used by ArceOS.
+        ///
+        /// It combines a [`ByteAllocator`] and a [`PageAllocator`] into a simple
+        /// two-level allocator: firstly tries allocate from the byte allocator, if
+        /// there is no memory, asks the page allocator for more memory and adds it to
+        /// the byte allocator.
+        ///
+        /// Currently, [`TlsfByteAllocator`] is used as the byte allocator, while
+        /// [`BitmapPageAllocator`] is used as the page allocator.
+        ///
+        /// [`TlsfByteAllocator`]: allocator::TlsfByteAllocator
+        pub struct GlobalAllocator {
+            balloc: SpinNoIrq<DefaultByteAllocator>,
+            palloc: SpinNoIrq<BitmapPageAllocator<PAGE_SIZE>>,
+        }
+        impl GlobalAllocator {
+            /// Creates an empty [`GlobalAllocator`].
+            pub const fn new() -> Self {
+                Self {
+                    balloc: SpinNoIrq::new(DefaultByteAllocator::new()),
+                    palloc: SpinNoIrq::new(BitmapPageAllocator::new()),
+                }
+            }
+        }
+    }
 }
 
 impl GlobalAllocator {
-    /// Creates an empty [`GlobalAllocator`].
-    pub const fn new() -> Self {
-        Self {
-            balloc: SpinNoIrq::new(DefaultByteAllocator::new()),
-            palloc: SpinNoIrq::new(BitmapPageAllocator::new()),
-        }
-    }
-
     /// Returns the name of the allocator.
     pub const fn name(&self) -> &'static str {
         cfg_if::cfg_if! {
@@ -230,4 +266,124 @@ pub fn global_add_memory(start_vaddr: usize, size: usize) -> AllocResult {
         start_vaddr + size
     );
     GLOBAL_ALLOCATOR.add_memory(start_vaddr, size)
+}
+
+/// Benchmark tests comparing BitmapPageAllocator and BuddyPageAllocator    
+#[cfg(test)]
+mod benchmark_tests {
+    use super::*;
+    #[cfg(feature = "buddy-page")]
+    use crate::buddy_page::BuddyPageAllocator;
+    use alloc::vec::Vec; // Import Vec from alloc
+
+    const LARGE_SIZE: usize = 64 * 1024 * 1024; // 64MB  
+    const PAGE_SIZE: usize = 4096;
+
+    /// Test large page fragmentation comparison  
+    #[test]
+    #[cfg(feature = "buddy-page")]
+    fn test_large_page_fragmentation_comparison() {
+        // Test BitmapPageAllocator
+        let mut bitmap_allocator = BitmapPageAllocator::<PAGE_SIZE>::new();
+        bitmap_allocator.init(0, LARGE_SIZE);
+
+        let bitmap_fragmentation = measure_fragmentation(&mut bitmap_allocator);
+
+        // Test BuddyPageAllocator
+        let mut buddy_allocator = BuddyPageAllocator::<PAGE_SIZE>::new();
+        buddy_allocator.init(0, LARGE_SIZE);
+
+        let buddy_fragmentation = measure_fragmentation(&mut buddy_allocator);
+
+        // Use log macros instead of println
+        info!(
+            "Bitmap allocator fragmentation: {:.2}%",
+            bitmap_fragmentation
+        );
+        info!("Buddy allocator fragmentation: {:.2}%", buddy_fragmentation);
+    }
+
+    /// Test large page allocation performance  
+    #[test]
+    #[cfg(feature = "buddy-page")]
+    fn test_large_page_allocation_benchmark() {
+        let allocation_sizes = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]; // pages  
+
+        for &size in &allocation_sizes {
+            let bitmap_ops = benchmark_allocator_performance_bitmap(size);
+            let buddy_ops = benchmark_allocator_performance_buddy(size);
+
+            info!("Size: {} pages", size);
+            info!("  Bitmap successful ops: {}", bitmap_ops);
+            info!("  Buddy successful ops:  {}", buddy_ops);
+        }
+    }
+
+    fn measure_fragmentation<T: PageAllocator>(allocator: &mut T) -> f64 {
+        let total_pages = allocator.total_pages();
+        let mut allocated_addrs = Vec::new();
+
+        // Allocate various sized blocks to create fragmentation
+        for i in 0..100 {
+            let size = 1 << (i % 8); // 1, 2, 4, 8, 16, 32, 64, 128 pages  
+            if let Ok(addr) = allocator.alloc_pages(size, PAGE_SIZE) {
+                allocated_addrs.push((addr, size));
+            }
+        }
+
+        // Free half the blocks to create fragmentation
+        for (i, &(addr, size)) in allocated_addrs.iter().enumerate() {
+            if i % 2 == 0 {
+                allocator.dealloc_pages(addr, size);
+            }
+        }
+
+        // Try to allocate large blocks to test fragmentation
+        let mut successful_large_allocs = 0;
+        let large_block_size = 64; // 64 pages  
+
+        for _ in 0..10 {
+            if allocator.alloc_pages(large_block_size, PAGE_SIZE).is_ok() {
+                successful_large_allocs += 1;
+            }
+        }
+
+        // Fragmentation = (failed large allocations / total attempts) * 100
+        (10 - successful_large_allocs) as f64 / 10.0 * 100.0
+    }
+
+    fn benchmark_allocator_performance_bitmap(pages: usize) -> usize {
+        let mut allocator = BitmapPageAllocator::<PAGE_SIZE>::new();
+        allocator.init(0, LARGE_SIZE);
+
+        let mut successful_operations = 0;
+
+        // Execute 1000 allocation/deallocation operations
+        for _ in 0..1000 {
+            if let Ok(addr) = allocator.alloc_pages(pages, PAGE_SIZE) {
+                allocator.dealloc_pages(addr, pages);
+                successful_operations += 1;
+            }
+        }
+
+        successful_operations
+    }
+
+    #[cfg(feature = "buddy-page")]
+    fn benchmark_allocator_performance_buddy(pages: usize) -> usize {
+        let mut allocator = BuddyPageAllocator::<PAGE_SIZE>::new();
+        allocator.init(0, LARGE_SIZE);
+
+        let mut successful_operations = 0;
+
+        // Execute 1000 allocation/deallocation operations
+        for _ in 0..1000 {
+            if let Ok(addr) = allocator.alloc_pages(pages, PAGE_SIZE) {
+                allocator.dealloc_pages(addr, pages);
+                successful_operations += 1;
+            }
+        }
+
+        successful_operations
+    }
 }
