@@ -5,11 +5,16 @@
 //! [`GlobalAllocator`] is defined with the `#[global_allocator]` attribute, to
 //! be registered as the standard library’s default allocator.
 
-#![no_std]
+#![cfg_attr(not(test), no_std)]
 
 #[macro_use]
 extern crate log;
 extern crate alloc;
+
+#[cfg(feature = "buddy-page")]
+mod buddy_page;
+#[cfg(test)]
+mod tests;
 
 mod page;
 
@@ -36,31 +41,65 @@ cfg_if::cfg_if! {
     }
 }
 
-/// The global allocator used by ArceOS.
-///
-/// It combines a [`ByteAllocator`] and a [`PageAllocator`] into a simple
-/// two-level allocator: firstly tries allocate from the byte allocator, if
-/// there is no memory, asks the page allocator for more memory and adds it to
-/// the byte allocator.
-///
-/// Currently, [`TlsfByteAllocator`] is used as the byte allocator, while
-/// [`BitmapPageAllocator`] is used as the page allocator.
-///
-/// [`TlsfByteAllocator`]: allocator::TlsfByteAllocator
-pub struct GlobalAllocator {
-    balloc: SpinNoIrq<DefaultByteAllocator>,
-    palloc: SpinNoIrq<BitmapPageAllocator<PAGE_SIZE>>,
+cfg_if::cfg_if! {
+    if #[cfg(feature = "buddy-page")] {
+        /// Global Memory Allocator Structure
+        ///
+        /// Combines a byte-level allocator and a page-level allocator
+        /// to support memory allocation at different granularities:
+        /// 1. Byte allocator (`balloc`) handles small memory requests
+        /// 2. Buddy page allocator (`palloc`) handles full-page memory requests
+        /// Byte-level memory allocator (wrapped in a spinlock)
+        /// - Uses `SpinNoIrq` to ensure thread safety and disable interrupts
+        /// - Responsible for allocating memory blocks smaller than a page (e.g., structs, arrays, etc.)
+        /// Page-level memory allocator (uses the buddy algorithm)
+        /// - `PAGE_SIZE` specifies the page size (typically 4096 bytes)
+        /// - Buddy algorithm feature: reduces fragmentation by splitting/merging blocks in powers of two
+        /// - Suitable for allocating full pages, improving efficiency for large memory allocations
+        use buddy_page::BuddyPageAllocator;
+        pub struct GlobalAllocator {
+            balloc: SpinNoIrq<DefaultByteAllocator>,
+            palloc: SpinNoIrq<BuddyPageAllocator<PAGE_SIZE>>,
+        }
+
+        impl GlobalAllocator {
+            /// Creates an empty [`GlobalAllocator`].
+            pub const fn new() -> Self {
+                Self {
+                    balloc: SpinNoIrq::new(DefaultByteAllocator::new()),
+                    palloc: SpinNoIrq::new(BuddyPageAllocator::new()),
+                }
+            }
+        }
+    } else {
+        /// The global allocator used by ArceOS.
+        ///
+        /// It combines a [`ByteAllocator`] and a [`PageAllocator`] into a simple
+        /// two-level allocator: firstly tries allocate from the byte allocator, if
+        /// there is no memory, asks the page allocator for more memory and adds it to
+        /// the byte allocator.
+        ///
+        /// Currently, [`TlsfByteAllocator`] is used as the byte allocator, while
+        /// [`BitmapPageAllocator`] is used as the page allocator.
+        ///
+        /// [`TlsfByteAllocator`]: allocator::TlsfByteAllocator
+        pub struct GlobalAllocator {
+            balloc: SpinNoIrq<DefaultByteAllocator>,
+            palloc: SpinNoIrq<BitmapPageAllocator<PAGE_SIZE>>,
+        }
+        impl GlobalAllocator {
+            /// Creates an empty [`GlobalAllocator`].
+            pub const fn new() -> Self {
+                Self {
+                    balloc: SpinNoIrq::new(DefaultByteAllocator::new()),
+                    palloc: SpinNoIrq::new(BitmapPageAllocator::new()),
+                }
+            }
+        }
+    }
 }
 
 impl GlobalAllocator {
-    /// Creates an empty [`GlobalAllocator`].
-    pub const fn new() -> Self {
-        Self {
-            balloc: SpinNoIrq::new(DefaultByteAllocator::new()),
-            palloc: SpinNoIrq::new(BitmapPageAllocator::new()),
-        }
-    }
-
     /// Returns the name of the allocator.
     pub const fn name(&self) -> &'static str {
         cfg_if::cfg_if! {
