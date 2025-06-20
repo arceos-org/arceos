@@ -252,7 +252,7 @@ impl RxToken for AxNetRxToken<'_> {
 
     fn consume<R, F>(self, f: F) -> R
     where
-        F: FnOnce(&mut [u8]) -> R,
+        F: FnOnce(&[u8]) -> R,
     {
         let mut rx_buf = self.1;
         trace!(
@@ -260,7 +260,7 @@ impl RxToken for AxNetRxToken<'_> {
             rx_buf.packet_len(),
             rx_buf.packet()
         );
-        let result = f(rx_buf.packet_mut());
+        let result = f(rx_buf.packet());
         self.0.borrow_mut().recycle_rx_buffer(rx_buf).unwrap();
         result
     }
