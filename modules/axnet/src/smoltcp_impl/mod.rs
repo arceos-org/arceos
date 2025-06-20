@@ -246,9 +246,13 @@ struct AxNetRxToken<'a>(&'a RefCell<AxNetDevice>, NetBufPtr);
 struct AxNetTxToken<'a>(&'a RefCell<AxNetDevice>);
 
 impl RxToken for AxNetRxToken<'_> {
+    fn preprocess(&self, sockets: &mut SocketSet<'_>) {
+        snoop_tcp_packet(self.1.packet(), sockets).ok();
+    }
+
     fn consume<R, F>(self, f: F) -> R
     where
-        F: FnOnce(&[u8]) -> R,
+        F: FnOnce(&mut [u8]) -> R,
     {
         let mut rx_buf = self.1;
         trace!(
@@ -256,12 +260,9 @@ impl RxToken for AxNetRxToken<'_> {
             rx_buf.packet_len(),
             rx_buf.packet()
         );
-        let result = f(rx_buf.packet());
+        let result = f(rx_buf.packet_mut());
         self.0.borrow_mut().recycle_rx_buffer(rx_buf).unwrap();
         result
-    }
-    fn preprocess(&self, sockets: &mut SocketSet<'_>) {
-        snoop_tcp_packet(self.1.packet(), sockets).ok();
     }
 }
 impl TxToken for AxNetTxToken<'_> {
