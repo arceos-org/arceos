@@ -36,5 +36,5 @@ pub fn sys_exit(exit_code: c_int) -> ! {
     #[cfg(feature = "multitask")]
     axtask::exit(exit_code);
     #[cfg(not(feature = "multitask"))]
-    axhal::misc::terminate();
+    axhal::power::system_off();
 }

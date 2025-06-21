@@ -6,6 +6,7 @@ mod multi;
 pub use multi::*;
 
 use arceos_api::task as api;
+use core::num::NonZero;
 
 /// Current thread gives up the CPU time voluntarily, and switches to another
 /// ready thread.
@@ -38,4 +39,13 @@ pub fn sleep(dur: core::time::Duration) {
 /// instead.
 pub fn sleep_until(deadline: arceos_api::time::AxTimeValue) {
     api::ax_sleep_until(deadline);
+}
+
+/// Returns an estimate of the default amount of parallelism a program should use.
+///
+/// Here we directly return the number of available logical CPUs, representing
+/// the theoretical maximum parallelism.
+pub fn available_parallelism() -> crate::io::Result<NonZero<usize>> {
+    NonZero::new(arceos_api::modules::axconfig::plat::CPU_NUM)
+        .ok_or_else(|| panic!("No available CPUs found, cannot determine parallelism"))
 }

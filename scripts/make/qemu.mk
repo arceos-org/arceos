@@ -92,9 +92,9 @@ ifeq ($(ACCEL),)
   ifneq ($(findstring -microsoft, $(shell uname -r | tr '[:upper:]' '[:lower:]')),)
     ACCEL := n  # Don't enable kvm for WSL/WSL2
   else ifeq ($(ARCH), x86_64)
-    ACCEL := $(if $(findstring x86_64, $(shell uname -m)),y,n)
+    ACCEL := $(if $(filter $(shell uname -m),x86_64),y,n)
   else ifeq ($(ARCH), aarch64)
-    ACCEL := $(if $(findstring arm64, $(shell uname -m)),y,n)
+    ACCEL := $(if $(filter $(shell uname -m),arm64 aarch64),y,n)
   else
     ACCEL := n
   endif
