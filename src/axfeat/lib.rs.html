@@ -1,0 +1,40 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `api/axfeat/src/lib.rs`."><title>lib.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-0ce1a80b.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="axfeat" data-themes="" data-resource-suffix="" data-rustdoc-version="1.89.0-nightly (60dabef95 2025-05-19)" data-channel="nightly" data-search-js="search-f7877310.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-4e99c027.js"></script><script defer src="../../static.files/src-script-63605ae7.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-7ef8a74a.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">axfeat/</div>lib.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-2"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Top-level feature selection for [ArceOS].
+<a href=#2 id=2 data-nosnippet>2</a>//!
+<a href=#3 id=3 data-nosnippet>3</a>//! # Cargo Features
+<a href=#4 id=4 data-nosnippet>4</a>//!
+<a href=#5 id=5 data-nosnippet>5</a>//! - CPU
+<a href=#6 id=6 data-nosnippet>6</a>//!     - `smp`: Enable SMP (symmetric multiprocessing) support.
+<a href=#7 id=7 data-nosnippet>7</a>//!     - `fp-simd`: Enable floating point and SIMD support.
+<a href=#8 id=8 data-nosnippet>8</a>//! - Interrupts:
+<a href=#9 id=9 data-nosnippet>9</a>//!     - `irq`: Enable interrupt handling support.
+<a href=#10 id=10 data-nosnippet>10</a>//! - Memory
+<a href=#11 id=11 data-nosnippet>11</a>//!     - `alloc`: Enable dynamic memory allocation.
+<a href=#12 id=12 data-nosnippet>12</a>//!     - `alloc-tlsf`: Use the TLSF allocator.
+<a href=#13 id=13 data-nosnippet>13</a>//!     - `alloc-slab`: Use the slab allocator.
+<a href=#14 id=14 data-nosnippet>14</a>//!     - `alloc-buddy`: Use the buddy system allocator.
+<a href=#15 id=15 data-nosnippet>15</a>//!     - `paging`: Enable page table manipulation.
+<a href=#16 id=16 data-nosnippet>16</a>//!     - `tls`: Enable thread-local storage.
+<a href=#17 id=17 data-nosnippet>17</a>//! - Task management
+<a href=#18 id=18 data-nosnippet>18</a>//!     - `multitask`: Enable multi-threading support.
+<a href=#19 id=19 data-nosnippet>19</a>//!     - `sched-fifo`: Use the FIFO cooperative scheduler.
+<a href=#20 id=20 data-nosnippet>20</a>//!     - `sched-rr`: Use the Round-robin preemptive scheduler.
+<a href=#21 id=21 data-nosnippet>21</a>//!     - `sched-cfs`: Use the Completely Fair Scheduler (CFS) preemptive scheduler.
+<a href=#22 id=22 data-nosnippet>22</a>//! - Upperlayer stacks (fs, net, display)
+<a href=#23 id=23 data-nosnippet>23</a>//!     - `fs`: Enable file system support.
+<a href=#24 id=24 data-nosnippet>24</a>//!     - `myfs`: Allow users to define their custom filesystems to override the default.
+<a href=#25 id=25 data-nosnippet>25</a>//!     - `net`: Enable networking support.
+<a href=#26 id=26 data-nosnippet>26</a>//!     - `display`: Enable graphics support.
+<a href=#27 id=27 data-nosnippet>27</a>//! - Device drivers
+<a href=#28 id=28 data-nosnippet>28</a>//!     - `bus-mmio`: Use device tree to probe all MMIO devices.
+<a href=#29 id=29 data-nosnippet>29</a>//!     - `bus-pci`: Use PCI bus to probe all PCI devices.
+<a href=#30 id=30 data-nosnippet>30</a>//!     - `driver-ramdisk`: Use the RAM disk to emulate the block device.
+<a href=#31 id=31 data-nosnippet>31</a>//!     - `driver-ixgbe`: Enable the Intel 82599 10Gbit NIC driver.
+<a href=#32 id=32 data-nosnippet>32</a>//!     - `driver-bcm2835-sdhci`: Enable the BCM2835 SDHCI driver (Raspberry Pi SD card).
+<a href=#33 id=33 data-nosnippet>33</a>//! - Logging
+<a href=#34 id=34 data-nosnippet>34</a>//!     - `log-level-off`: Disable all logging.
+<a href=#35 id=35 data-nosnippet>35</a>//!     - `log-level-error`, `log-level-warn`, `log-level-info`, `log-level-debug`,
+<a href=#36 id=36 data-nosnippet>36</a>//!       `log-level-trace`: Keep logging only at the specified level or higher.
+<a href=#37 id=37 data-nosnippet>37</a>//!
+<a href=#38 id=38 data-nosnippet>38</a>//! [ArceOS]: https://github.com/arceos-org/arceos
+<a href=#39 id=39 data-nosnippet>39</a>
+<a href=#40 id=40 data-nosnippet>40</a></span><span class="attr">#![no_std]</span></code></pre></div></section></main></body></html>
