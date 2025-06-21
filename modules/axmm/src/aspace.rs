@@ -252,11 +252,13 @@ impl AddrSpace {
     ///
     /// Returns `true` if the memory region given by `range` is all mapped and
     /// has proper permission flags (i.e. containing `access_flags`).
-    pub fn check_region_access(
+    pub fn can_access_range(
         &self,
-        mut range: VirtAddrRange,
+        start: VirtAddr,
+        size: usize,
         access_flags: MappingFlags,
     ) -> bool {
+        let mut range = VirtAddrRange::from_start_size(start, size);
         for area in self.areas.iter() {
             if area.end() <= range.start {
                 continue;
