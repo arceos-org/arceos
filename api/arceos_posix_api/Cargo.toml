@@ -55,4 +55,4 @@ lazy_static = { version = "1.5", features = ["spin_no_std"] }
 ctor_bare = "0.2"
 
 [build-dependencies]
-bindgen ={ version = "0.71" }
+bindgen = { version = "0.71" }
