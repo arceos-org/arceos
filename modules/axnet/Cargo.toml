@@ -27,15 +27,16 @@ axdriver = { workspace = true, features = ["net"] }
 axdriver_net = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2" }
 
 [dependencies.smoltcp]
-git = "https://github.com/rcore-os/smoltcp.git"
-rev = "2ade274"
+git = "https://github.com/a6d9a6m/smoltcp.git"
+rev = "8e7e4da300f6d93b59f0df03fafc92cae8ea4d70"
 default-features = false
 features = [
-  "alloc", "log",   # no std
-  "medium-ethernet",
-  "proto-ipv4",
-  "socket-raw", "socket-icmp", "socket-udp", "socket-tcp", "socket-dns",
-  # "fragmentation-buffer-size-65536", "proto-ipv4-fragmentation",
-  # "reassembly-buffer-size-65536", "reassembly-buffer-count-32",
-  # "assembler-max-segment-count-32",
+    "alloc", "log",   # no std
+    "medium-ethernet",
+    "proto-ipv4",
+    "proto-ipv6",
+    "socket-raw", "socket-icmp", "socket-udp", "socket-tcp", "socket-dns",
+    # "fragmentation-buffer-size-65536", "proto-ipv4-fragmentation",
+    # "reassembly-buffer-size-65536", "reassembly-buffer-count-32",
+    # "assembler-max-segment-count-32",
 ]
