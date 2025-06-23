@@ -624,7 +624,7 @@ pub(crate) extern "C" fn coroutine_schedule() {
         }
         // Enable irq (if feature "irq" is enabled) before running the task entry function.
         #[cfg(feature = "irq")]
-        axhal::arch::enable_irqs();
+        axhal::asm::enable_irqs();
         let waker = Waker::noop();
         let mut cx = Context::from_waker(waker);
         let curr = crate::current();
@@ -636,7 +636,7 @@ pub(crate) extern "C" fn coroutine_schedule() {
         // Make sure that IRQs are disabled by kernel guard or other means.
         #[cfg(all(not(test), feature = "irq"))] // Note: irq is faked under unit tests.
         assert!(
-            !axhal::arch::irqs_enabled(),
+            !axhal::asm::irqs_enabled(),
             "IRQs must be disabled during scheduling"
         );
         let prev_task = curr;
