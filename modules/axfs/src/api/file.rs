@@ -1,5 +1,4 @@
-use alloc::vec::Vec;
-use axio::{Result, SeekFrom, default_read_to_end, prelude::*};
+use axio::{Result, SeekFrom, prelude::*};
 use core::fmt;
 
 use crate::fops;
@@ -174,14 +173,6 @@ impl File {
 impl Read for File {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
         self.inner.read(buf)
-    }
-
-    fn read_to_end(&mut self, buf: &mut Vec<u8>) -> Result<usize> {
-        default_read_to_end(
-            self,
-            buf,
-            self.metadata().ok().map(|metadata| metadata.size() as _),
-        )
     }
 }
 
