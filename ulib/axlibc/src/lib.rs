@@ -4,7 +4,7 @@
 //!
 //! - CPU
 //!     - `smp`: Enable SMP (symmetric multiprocessing) support.
-//!     - `fp_simd`: Enable floating point and SIMD support.
+//!     - `fp-simd`: Enable floating point and SIMD support.
 //! - Interrupts:
 //!     - `irq`: Enable interrupt handling support.
 //! - Memory
@@ -64,7 +64,7 @@ mod pipe;
 mod pthread;
 #[cfg(feature = "alloc")]
 mod strftime;
-#[cfg(feature = "fp_simd")]
+#[cfg(feature = "fp-simd")]
 mod strtod;
 
 mod errno;
@@ -120,5 +120,5 @@ pub use self::io_mpx::select;
 #[cfg(feature = "epoll")]
 pub use self::io_mpx::{epoll_create, epoll_ctl, epoll_wait};
 
-#[cfg(feature = "fp_simd")]
+#[cfg(feature = "fp-simd")]
 pub use self::strtod::{strtod, strtof};

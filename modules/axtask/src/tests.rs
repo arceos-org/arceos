@@ -17,9 +17,9 @@ fn test_sched_fifo() {
     for i in 0..NUM_TASKS {
         axtask::spawn_raw(
             move || {
-                println!("sched_fifo: Hello, task {}! ({})", i, current().id_name());
+                println!("sched-fifo: Hello, task {}! ({})", i, current().id_name());
                 axtask::yield_now();
-                let order = FINISHED_TASKS.fetch_add(1, Ordering::Relaxed);
+                let order = FINISHED_TASKS.fetch_add(1, Ordering::Release);
                 assert_eq!(order, i); // FIFO scheduler
             },
             format!("T{}", i),
@@ -27,7 +27,7 @@ fn test_sched_fifo() {
         );
     }
 
-    while FINISHED_TASKS.load(Ordering::Relaxed) < NUM_TASKS {
+    while FINISHED_TASKS.load(Ordering::Acquire) < NUM_TASKS {
         axtask::yield_now();
     }
 }
@@ -55,10 +55,10 @@ fn test_fp_state_switch() {
 
             println!("fp_state_switch: Float {} = {}", i, value);
             assert!((value - float).abs() < 1e-9);
-            FINISHED_TASKS.fetch_add(1, Ordering::Relaxed);
+            FINISHED_TASKS.fetch_add(1, Ordering::Release);
         });
     }
-    while FINISHED_TASKS.load(Ordering::Relaxed) < NUM_TASKS {
+    while FINISHED_TASKS.load(Ordering::Acquire) < NUM_TASKS {
         axtask::yield_now();
     }
 }
@@ -76,22 +76,22 @@ fn test_wait_queue() {
 
     for _ in 0..NUM_TASKS {
         axtask::spawn(move || {
-            COUNTER.fetch_add(1, Ordering::Relaxed);
+            COUNTER.fetch_add(1, Ordering::Release);
             println!("wait_queue: task {:?} started", current().id());
             WQ1.notify_one(true); // WQ1.wait_until()
             WQ2.wait();
 
             assert!(!current().in_wait_queue());
 
-            COUNTER.fetch_sub(1, Ordering::Relaxed);
+            COUNTER.fetch_sub(1, Ordering::Release);
             println!("wait_queue: task {:?} finished", current().id());
             WQ1.notify_one(true); // WQ1.wait_until()
         });
     }
 
     println!("task {:?} is waiting for tasks to start...", current().id());
-    WQ1.wait_until(|| COUNTER.load(Ordering::Relaxed) == NUM_TASKS);
-    assert_eq!(COUNTER.load(Ordering::Relaxed), NUM_TASKS);
+    WQ1.wait_until(|| COUNTER.load(Ordering::Acquire) == NUM_TASKS);
+    assert_eq!(COUNTER.load(Ordering::Acquire), NUM_TASKS);
     assert!(!current().in_wait_queue());
     WQ2.notify_all(true); // WQ2.wait()
 
@@ -99,8 +99,8 @@ fn test_wait_queue() {
         "task {:?} is waiting for tasks to finish...",
         current().id()
     );
-    WQ1.wait_until(|| COUNTER.load(Ordering::Relaxed) == 0);
-    assert_eq!(COUNTER.load(Ordering::Relaxed), 0);
+    WQ1.wait_until(|| COUNTER.load(Ordering::Acquire) == 0);
+    assert_eq!(COUNTER.load(Ordering::Acquire), 0);
     assert!(!current().in_wait_queue());
 }
 
