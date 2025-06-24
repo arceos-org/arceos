@@ -2,7 +2,7 @@ use core::fmt;
 
 use axerrno::{AxError, AxResult, ax_err};
 use axhal::mem::phys_to_virt;
-use axhal::paging::{MappingFlags, PageTable, PagingError};
+use axhal::paging::{MappingFlags, PageTable};
 use memory_addr::{
     MemoryAddr, PAGE_SIZE_4K, PageIter4K, PhysAddr, VirtAddr, VirtAddrRange, is_aligned_4k,
 };
@@ -74,7 +74,7 @@ impl AddrSpace {
         Ok(())
     }
 
-    fn validate_region(&self, start: VirtAddr, size: usize) -> AxResult {
+    fn validate_range(&self, start: VirtAddr, size: usize) -> AxResult {
         if !self.contains_range(start, size) {
             return ax_err!(InvalidInput, "address out of range");
         }
@@ -113,7 +113,7 @@ impl AddrSpace {
         size: usize,
         flags: MappingFlags,
     ) -> AxResult {
-        self.validate_region(start_vaddr, size)?;
+        self.validate_range(start_vaddr, size)?;
         if !start_paddr.is_aligned_4k() {
             return ax_err!(InvalidInput, "address not aligned");
         }
@@ -141,7 +141,7 @@ impl AddrSpace {
         flags: MappingFlags,
         populate: bool,
     ) -> AxResult {
-        self.validate_region(start, size)?;
+        self.validate_range(start, size)?;
 
         let area = MemoryArea::new(start, size, flags, Backend::new_alloc(populate));
         self.areas
@@ -150,51 +150,12 @@ impl AddrSpace {
         Ok(())
     }
 
-    /// Populates the area with physical frames, returning false if the area
-    /// contains unmapped area.
-    pub fn populate_area(&mut self, mut start: VirtAddr, size: usize) -> AxResult {
-        self.validate_region(start, size)?;
-        let end = start + size;
-
-        while let Some(area) = self.areas.find(start) {
-            let backend = area.backend();
-            if let Backend::Alloc { populate } = backend {
-                if !*populate {
-                    for addr in PageIter4K::new(start, area.end().min(end)).unwrap() {
-                        match self.pt.query(addr) {
-                            Ok(_) => {}
-                            // If the page is not mapped, try map it.
-                            Err(PagingError::NotMapped) => {
-                                if !backend.handle_page_fault(addr, area.flags(), &mut self.pt) {
-                                    return Err(AxError::NoMemory);
-                                }
-                            }
-                            Err(_) => return Err(AxError::BadAddress),
-                        };
-                    }
-                }
-            }
-            start = area.end();
-            assert!(start.is_aligned_4k());
-            if start >= end {
-                break;
-            }
-        }
-
-        if start < end {
-            // If the area is not fully mapped, we return ENOMEM.
-            return ax_err!(NoMemory);
-        }
-
-        Ok(())
-    }
-
     /// Removes mappings within the specified virtual address range.
     ///
     /// Returns an error if the address range is out of the address space or not
     /// aligned.
     pub fn unmap(&mut self, start: VirtAddr, size: usize) -> AxResult {
-        self.validate_region(start, size)?;
+        self.validate_range(start, size)?;
 
         self.areas
             .unmap(start, size, &mut self.pt)
@@ -265,8 +226,7 @@ impl AddrSpace {
     /// Returns an error if the address range is out of the address space or not
     /// aligned.
     pub fn protect(&mut self, start: VirtAddr, size: usize, flags: MappingFlags) -> AxResult {
-        // Populate the area first, which also checks the address range for us.
-        self.populate_area(start, size)?;
+        self.validate_range(start, size)?;
 
         self.areas
             .protect(start, size, |_| Some(flags), &mut self.pt)
