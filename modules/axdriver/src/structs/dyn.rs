@@ -1,7 +1,10 @@
 #![allow(unused_imports)]
 
+use core::{ops::Deref, ptr::NonNull};
+
 use crate::prelude::*;
 use alloc::{boxed::Box, vec, vec::Vec};
+use rdrive::register::{DriverRegister, DriverRegisterSlice};
 
 /// The unified type of the NIC devices.
 #[cfg(feature = "net")]
@@ -82,4 +85,20 @@ impl<D> Default for AxDeviceContainer<D> {
     fn default() -> Self {
         Self(Default::default())
     }
+}
+
+pub fn probe_all_devices() -> Vec<super::AxDeviceEnum> {
+    rdrive::probe_all(true).unwrap();
+    #[allow(unused_mut)]
+    let mut devices = Vec::new();
+    #[cfg(feature = "block")]
+    {
+        let ls = rdrive::get_list::<rdrive::driver::Block>();
+        for dev in ls {
+            devices.push(super::AxDeviceEnum::from_block(
+                crate::dyn_drivers::blk::Block::from(dev),
+            ));
+        }
+    }
+    devices
 }

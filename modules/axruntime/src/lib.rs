@@ -147,6 +147,9 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     #[cfg(feature = "paging")]
     axmm::init_memory_management();
 
+    #[cfg(feature = "driver-dyn")]
+    axdriver::setup(dtb, iomap);
+
     info!("Initialize platform devices...");
     axhal::platform_init();
 
@@ -269,4 +272,21 @@ fn init_tls() {
     let main_tls = axhal::tls::TlsArea::alloc();
     unsafe { axhal::asm::write_thread_pointer(main_tls.tls_ptr() as usize) };
     core::mem::forget(main_tls);
+}
+
+#[cfg(feature = "driver-dyn")]
+fn iomap(addr: axhal::mem::PhysAddr, size: usize) -> axerrno::AxResult<axhal::mem::VirtAddr> {
+    let virt = axhal::mem::phys_to_virt(addr);
+    #[cfg(feature = "paging")]
+    {
+        use axhal::paging::MappingFlags;
+
+        axmm::kernel_aspace().lock().map_linear(
+            virt,
+            addr,
+            size,
+            MappingFlags::DEVICE | MappingFlags::READ | MappingFlags::WRITE,
+        )?;
+    }
+    Ok(virt)
 }

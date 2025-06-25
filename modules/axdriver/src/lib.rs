@@ -67,6 +67,7 @@ extern crate alloc;
 #[macro_use]
 mod macros;
 
+#[cfg(not(feature = "dyn"))]
 mod bus;
 mod drivers;
 mod dummy;
@@ -77,6 +78,12 @@ mod virtio;
 
 #[cfg(feature = "ixgbe")]
 mod ixgbe;
+
+#[cfg(feature = "dyn")]
+mod dyn_drivers;
+
+#[cfg(feature = "dyn")]
+pub use dyn_drivers::{IoMapFunc, setup};
 
 pub mod prelude;
 
@@ -119,18 +126,25 @@ impl AllDevices {
 
     /// Probes all supported devices.
     fn probe(&mut self) {
-        for_each_drivers!(type Driver, {
-            if let Some(dev) = Driver::probe_global() {
-                info!(
-                    "registered a new {:?} device: {:?}",
-                    dev.device_type(),
-                    dev.device_name(),
-                );
-                self.add_device(dev);
-            }
-        });
+        #[cfg(feature = "dyn")]
+        for dev in structs::probe_all_devices() {
+            self.add_device(dev);
+        }
+        #[cfg(not(feature = "dyn"))]
+        {
+            for_each_drivers!(type Driver, {
+                if let Some(dev) = Driver::probe_global() {
+                    info!(
+                        "registered a new {:?} device: {:?}",
+                        dev.device_type(),
+                        dev.device_name(),
+                    );
+                    self.add_device(dev);
+                }
+            });
 
-        self.probe_bus_devices();
+            self.probe_bus_devices();
+        }
     }
 
     /// Adds one device into the corresponding container, according to its device category.
