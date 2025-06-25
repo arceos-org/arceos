@@ -17,6 +17,7 @@ irq = ["axhal/irq", "axtask?/irq", "percpu"]
 tls = ["axhal/tls", "axtask?/tls"]
 alloc = ["axalloc"]
 paging = ["axhal/paging", "axmm"]
+driver-dyn = ["axdriver/dyn"]
 
 multitask = ["axtask/multitask"]
 fs = ["axdriver", "axfs"]
@@ -36,6 +37,7 @@ axnet = { workspace = true, optional = true }
 axdisplay = { workspace = true, optional = true }
 axtask = { workspace = true, optional = true }
 axplat = "0.1"
+axerrno = "0.1"
 
 crate_interface = "0.1"
 percpu = { version = "0.2", optional = true }

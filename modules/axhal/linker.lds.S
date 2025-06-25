@@ -36,6 +36,11 @@ SECTIONS
         _sdata = .;
         *(.data.boot_page_table)
         . = ALIGN(4K);
+
+        __sdriver_register = .;
+        KEEP(*(.driver.register*))
+        __edriver_register = .;
+
         *(.data .data.*)
         *(.sdata .sdata.*)
         *(.got .got.*)
