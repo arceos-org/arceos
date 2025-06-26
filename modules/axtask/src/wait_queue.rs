@@ -89,9 +89,9 @@ impl WaitQueue {
     ///
     /// Note that even other tasks notify this task, it will not wake up until
     /// the condition becomes true.
-    pub fn wait_until<F>(&self, condition: F)
+    pub fn wait_until<F>(&self, mut condition: F)
     where
-        F: Fn() -> bool,
+        F: FnMut() -> bool,
     {
         let curr = crate::current();
         loop {
@@ -135,9 +135,9 @@ impl WaitQueue {
     /// Note that even other tasks notify this task, it will not wake up until
     /// the above conditions are met.
     #[cfg(feature = "irq")]
-    pub fn wait_timeout_until<F>(&self, dur: core::time::Duration, condition: F) -> bool
+    pub fn wait_timeout_until<F>(&self, dur: core::time::Duration, mut condition: F) -> bool
     where
-        F: Fn() -> bool,
+        F: FnMut() -> bool,
     {
         let curr = crate::current();
         let deadline = axhal::time::wall_time() + dur;
@@ -190,6 +190,22 @@ impl WaitQueue {
         while self.notify_one(resched) {
             // loop until the wait queue is empty
         }
+    }
+
+    /// Wakes all tasks in the wait queue if the condition is met.
+    ///
+    /// If `resched` is true, the current task will be preempted when the
+    /// preemption is enabled.
+    pub fn notify_all_if(&self, resched: bool, mut pred: impl FnMut(&AxTaskRef) -> bool) {
+        let mut wq = self.queue.lock();
+        wq.retain(|task| {
+            if pred(task) {
+                unblock_one_task(task.clone(), resched);
+                false
+            } else {
+                true
+            }
+        });
     }
 
     /// Wake up the given task in the wait queue.
