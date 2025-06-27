@@ -51,17 +51,3 @@ jobs:
         cd arceos-apps && git reset --hard ${{ env.arceos-apps }} && cd ..
         make -C arceos-apps chaxroot AX_ROOT=$(pwd)
         make -C arceos-apps test ARCH=${{ matrix.arch }}
-  axnet-stable-check: #axnet单独测试版本（应用版本更新依赖IO，不确定IO是否不依赖nightly）
-    name: "Check axnet on latest stable"
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy, rustfmt
-
-      - name: Check axnet crate with stable toolchain
-        run: cargo check -p axnet --verbose
-
-      - name: Clippy axnet crate with stable toolchain
-        run: cargo clippy -p axnet

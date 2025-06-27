@@ -27,8 +27,8 @@ axdriver = { workspace = true, features = ["net"] }
 axdriver_net = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2" }
 
 [dependencies.smoltcp]
-git = "https://github.com/a6d9a6m/smoltcp.git"
-rev = "8e7e4da300f6d93b59f0df03fafc92cae8ea4d70"
+git = "https://github.com/rcore-os/smoltcp.git"
+rev = "7e3c61e"
 default-features = false
 features = [
     "alloc", "log",   # no std
