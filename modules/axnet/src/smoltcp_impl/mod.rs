@@ -265,6 +265,7 @@ impl RxToken for AxNetRxToken<'_> {
         result
     }
 }
+
 impl TxToken for AxNetTxToken<'_> {
     fn consume<R, F>(self, len: usize, f: F) -> R
     where
@@ -278,6 +279,7 @@ impl TxToken for AxNetTxToken<'_> {
         ret
     }
 }
+
 fn snoop_tcp_packet(buf: &[u8], sockets: &mut SocketSet<'_>) -> Result<(), smoltcp::wire::Error> {
     use smoltcp::wire::{EthernetFrame, IpProtocol, Ipv4Packet, TcpPacket};
 
