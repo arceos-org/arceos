@@ -88,7 +88,7 @@ impl VfsNodeOps for FileWrapper<'static> {
     fn truncate(&self, size: u64) -> VfsResult {
         let mut file = self.0.lock();
         let current_size = file.seek(SeekFrom::End(0)).map_err(as_vfs_err)?;
-        
+
         if size <= current_size {
             // If the target size is smaller than the current size,
             // perform a standard truncation operation
