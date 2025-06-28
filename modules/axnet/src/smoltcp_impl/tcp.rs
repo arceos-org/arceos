@@ -24,6 +24,7 @@ const STATE_BUSY: u8 = 1;
 const STATE_CONNECTING: u8 = 2;
 const STATE_CONNECTED: u8 = 3;
 const STATE_LISTENING: u8 = 4;
+const DEFAULT_MSS: usize = 536;
 
 /// A TCP socket that provides POSIX-like APIs.
 ///
@@ -343,6 +344,55 @@ impl TcpSocket {
                 writable: false,
             }),
         }
+    }
+
+    /// Checks if Nagle's algorithm is enabled for this TCP socket.
+    #[inline]
+    pub fn nagle_enabled(&self) -> bool {
+        let handle = unsafe { self.handle.get().read().unwrap() };
+        SOCKET_SET.with_socket::<tcp::Socket, _, _>(handle, |socket| socket.nagle_enabled())
+    }
+
+    /// Enables or disables Nagle's algorithm for this TCP socket.
+    #[inline]
+    pub fn set_nagle_enabled(&self, enabled: bool) {
+        let handle = unsafe { self.handle.get().read().unwrap() };
+        SOCKET_SET.with_socket_mut::<tcp::Socket, _, _>(handle, |socket| {
+            socket.set_nagle_enabled(enabled);
+        });
+    }
+
+    /// Gets the Maximum Segment Size (MSS) of the remote peer.
+    /// In the future, if the user sets TCP_MAXSEG via sys_setsockopt,
+    /// it should return the value set by set_remote_mss,
+    /// otherwise it will return DEFAULT_MSS. But it is not used yet.
+    #[inline]
+    pub fn get_remote_mss(&self) -> usize {
+        DEFAULT_MSS
+    }
+
+    /// Returns the maximum capacity of the receive buffer in bytes.
+    #[inline]
+    pub fn recv_capacity(&self) -> usize {
+        info!("TCP socket: recv_capacity called");
+        let handle = unsafe { self.handle.get().read() }
+            .unwrap_or_else(|| SOCKET_SET.add(SocketSetWrapper::new_tcp_socket()));
+        SOCKET_SET.with_socket::<tcp::Socket, _, _>(handle, |socket| {
+            info!("TCP socket: recv_capacity={}", socket.recv_capacity());
+            socket.recv_capacity()
+        })
+    }
+
+    /// Returns the maximum capacity of the send buffer in bytes.
+    #[inline]
+    pub fn send_capacity(&self) -> usize {
+        info!("TCP socket: send_capacity called");
+        let handle = unsafe { self.handle.get().read() }
+            .unwrap_or_else(|| SOCKET_SET.add(SocketSetWrapper::new_tcp_socket()));
+        SOCKET_SET.with_socket::<tcp::Socket, _, _>(handle, |socket| {
+            info!("TCP socket: send_capacity={}", socket.send_capacity());
+            socket.send_capacity()
+        })
     }
 }
 
