@@ -11,7 +11,7 @@ use-ramfs = ["axstd/myfs", "dep:axfs_vfs", "dep:axfs_ramfs", "dep:crate_interfac
 default = []
 
 [dependencies]
-axfs_vfs = { git = "https://github.com/arceos-org/axfs_crates.git", rev = "155130301c91df11a9529a06e236bb915aa2bf1c", optional = true }
-axfs_ramfs = { git = "https://github.com/arceos-org/axfs_crates.git", rev = "155130301c91df11a9529a06e236bb915aa2bf1c", optional = true }
+axfs_vfs = { version = "0.1", optional = true }
+axfs_ramfs = { version = "0.1", optional = true }
 crate_interface = { version = "0.1", optional = true }
 axstd = { workspace = true, features = ["alloc", "fs"], optional = true }
