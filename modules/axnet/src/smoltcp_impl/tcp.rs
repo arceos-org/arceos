@@ -348,14 +348,19 @@ impl TcpSocket {
 
     /// Checks if Nagle's algorithm is enabled for this TCP socket.
     #[inline]
-    pub fn nagle_enabled(&self) -> bool {
-        let handle = unsafe { self.handle.get().read().unwrap() };
-        SOCKET_SET.with_socket::<tcp::Socket, _, _>(handle, |socket| socket.nagle_enabled())
+    pub fn nodelay(&self) -> AxResult<bool> {
+        let handle = unsafe { self.handle.get().read() };
+        match handle {
+            Some(h) => {
+                Ok(SOCKET_SET.with_socket::<tcp::Socket, _, _>(h, |socket| socket.nagle_enabled()))
+            }
+            None => ax_err!(NotConnected, "socket is not connected"),
+        }
     }
 
     /// Enables or disables Nagle's algorithm for this TCP socket.
     #[inline]
-    pub fn set_nagle_enabled(&self, enabled: bool) {
+    pub fn set_nodelay(&self, enabled: bool) {
         let handle = unsafe { self.handle.get().read().unwrap() };
         SOCKET_SET.with_socket_mut::<tcp::Socket, _, _>(handle, |socket| {
             socket.set_nagle_enabled(enabled);
@@ -374,25 +379,31 @@ impl TcpSocket {
     /// Returns the maximum capacity of the receive buffer in bytes.
     #[inline]
     pub fn recv_capacity(&self) -> usize {
-        info!("TCP socket: recv_capacity called");
-        let handle = unsafe { self.handle.get().read() }
-            .unwrap_or_else(|| SOCKET_SET.add(SocketSetWrapper::new_tcp_socket()));
-        SOCKET_SET.with_socket::<tcp::Socket, _, _>(handle, |socket| {
-            info!("TCP socket: recv_capacity={}", socket.recv_capacity());
-            socket.recv_capacity()
-        })
+        let handle = unsafe { self.handle.get().read() };
+        match handle {
+            Some(h) => {
+                SOCKET_SET.with_socket::<tcp::Socket, _, _>(h, |socket| socket.recv_capacity())
+            }
+            None => {
+                warn!("TCP socket: recv_capacity called on uninitialized socket");
+                0
+            }
+        }
     }
 
     /// Returns the maximum capacity of the send buffer in bytes.
     #[inline]
     pub fn send_capacity(&self) -> usize {
-        info!("TCP socket: send_capacity called");
-        let handle = unsafe { self.handle.get().read() }
-            .unwrap_or_else(|| SOCKET_SET.add(SocketSetWrapper::new_tcp_socket()));
-        SOCKET_SET.with_socket::<tcp::Socket, _, _>(handle, |socket| {
-            info!("TCP socket: send_capacity={}", socket.send_capacity());
-            socket.send_capacity()
-        })
+        let handle = unsafe { self.handle.get().read() };
+        match handle {
+            Some(h) => {
+                SOCKET_SET.with_socket::<tcp::Socket, _, _>(h, |socket| socket.send_capacity())
+            }
+            None => {
+                warn!("TCP socket: send_capacity called on uninitialized socket");
+                0
+            }
+        }
     }
 }
 
