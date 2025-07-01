@@ -87,8 +87,26 @@ impl VfsNodeOps for FileWrapper<'static> {
 
     fn truncate(&self, size: u64) -> VfsResult {
         let mut file = self.0.lock();
-        file.seek(SeekFrom::Start(size)).map_err(as_vfs_err)?; // TODO: more efficient
-        file.truncate().map_err(as_vfs_err)
+        let current_size = file.seek(SeekFrom::End(0)).map_err(as_vfs_err)?;
+
+        if size <= current_size {
+            // If the target size is smaller than the current size,
+            // perform a standard truncation operation
+            file.seek(SeekFrom::Start(size)).map_err(as_vfs_err)?; // TODO: more efficient
+            file.truncate().map_err(as_vfs_err)
+        } else {
+            // Calculate the number of bytes to fill
+            let mut zeros_needed = size - current_size;
+            // Create a buffer of zeros
+            let zeros = [0u8; 4096];
+            while zeros_needed > 0 {
+                let to_write = core::cmp::min(zeros_needed, zeros.len() as u64);
+                let write_buf = &zeros[..to_write as usize];
+                file.write(write_buf).map_err(as_vfs_err)?;
+                zeros_needed -= to_write;
+            }
+            Ok(())
+        }
     }
 }
 
