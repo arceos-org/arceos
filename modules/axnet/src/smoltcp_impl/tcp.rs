@@ -10,7 +10,7 @@ use smoltcp::iface::SocketHandle;
 use smoltcp::socket::tcp::{self, ConnectError, State};
 use smoltcp::wire::{IpEndpoint, IpListenEndpoint};
 
-use super::addr::{UNSPECIFIED_ENDPOINT, from_core_sockaddr, into_core_sockaddr};
+use super::addr::{UNSPECIFIED_ENDPOINT};
 use super::{ETH0, LISTEN_TABLE, SOCKET_SET, SocketSetWrapper};
 
 // State transitions:
@@ -78,7 +78,7 @@ impl TcpSocket {
     pub fn local_addr(&self) -> AxResult<SocketAddr> {
         match self.get_state() {
             STATE_CONNECTED | STATE_LISTENING => {
-                Ok(into_core_sockaddr(unsafe { self.local_addr.get().read() }))
+                Ok(unsafe { self.local_addr.get().read() }.into())
             }
             _ => Err(AxError::NotConnected),
         }
@@ -90,7 +90,7 @@ impl TcpSocket {
     pub fn peer_addr(&self) -> AxResult<SocketAddr> {
         match self.get_state() {
             STATE_CONNECTED | STATE_LISTENING => {
-                Ok(into_core_sockaddr(unsafe { self.peer_addr.get().read() }))
+                Ok(unsafe { self.peer_addr.get().read() }.into())
             }
             _ => Err(AxError::NotConnected),
         }
@@ -125,7 +125,7 @@ impl TcpSocket {
                 .unwrap_or_else(|| SOCKET_SET.add(SocketSetWrapper::new_tcp_socket()));
 
             // TODO: check remote addr unreachable
-            let remote_endpoint = from_core_sockaddr(remote_addr);
+            let remote_endpoint = remote_addr.into();
             let bound_endpoint = self.bound_endpoint()?;
             let iface = &ETH0.iface;
             let (local_endpoint, remote_endpoint) = SOCKET_SET
@@ -192,7 +192,7 @@ impl TcpSocket {
                 if old != UNSPECIFIED_ENDPOINT {
                     return ax_err!(InvalidInput, "socket bind() failed: already bound");
                 }
-                self.local_addr.get().write(from_core_sockaddr(local_addr));
+                self.local_addr.get().write(local_addr.into());
             }
             Ok(())
         })

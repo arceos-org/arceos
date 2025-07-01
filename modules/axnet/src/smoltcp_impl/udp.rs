@@ -10,7 +10,7 @@ use smoltcp::iface::SocketHandle;
 use smoltcp::socket::udp::{self, BindError, SendError};
 use smoltcp::wire::{IpEndpoint, IpListenEndpoint};
 
-use super::addr::{UNSPECIFIED_ENDPOINT, from_core_sockaddr, into_core_sockaddr};
+use super::addr::{UNSPECIFIED_ENDPOINT};
 use super::{SOCKET_SET, SocketSetWrapper};
 
 /// A UDP socket that provides POSIX-like APIs.
@@ -39,7 +39,7 @@ impl UdpSocket {
     /// [`Err(NotConnected)`](AxError::NotConnected) if not connected.
     pub fn local_addr(&self) -> AxResult<SocketAddr> {
         match self.local_addr.try_read() {
-            Some(addr) => addr.map(into_core_sockaddr).ok_or(AxError::NotConnected),
+            Some(addr) => addr.map(Into::into).ok_or(AxError::NotConnected),
             None => Err(AxError::NotConnected),
         }
     }
@@ -47,7 +47,7 @@ impl UdpSocket {
     /// Returns the remote address and port, or
     /// [`Err(NotConnected)`](AxError::NotConnected) if not connected.
     pub fn peer_addr(&self) -> AxResult<SocketAddr> {
-        self.remote_endpoint().map(into_core_sockaddr)
+        self.remote_endpoint().map(Into::into)
     }
 
     /// Returns whether this socket is in nonblocking mode.
@@ -83,7 +83,7 @@ impl UdpSocket {
             return ax_err!(InvalidInput, "socket bind() failed: already bound");
         }
 
-        let local_endpoint = from_core_sockaddr(local_addr);
+        let local_endpoint = local_addr.into();
         let endpoint = IpListenEndpoint {
             addr: (!local_endpoint.addr.is_unspecified()).then_some(local_endpoint.addr),
             port: local_endpoint.port,
@@ -106,14 +106,14 @@ impl UdpSocket {
         if remote_addr.port() == 0 || remote_addr.ip().is_unspecified() {
             return ax_err!(InvalidInput, "socket send_to() failed: invalid address");
         }
-        self.send_impl(buf, from_core_sockaddr(remote_addr))
+        self.send_impl(buf, remote_addr.into())
     }
 
     /// Receives a single datagram message on the socket. On success, returns
     /// the number of bytes read and the origin.
     pub fn recv_from(&self, buf: &mut [u8]) -> AxResult<(usize, SocketAddr)> {
         self.recv_impl(|socket| match socket.recv_slice(buf) {
-            Ok((len, meta)) => Ok((len, into_core_sockaddr(meta.endpoint))),
+            Ok((len, meta)) => Ok((len, meta.endpoint.into())),
             Err(_) => ax_err!(BadState, "socket recv_from() failed"),
         })
     }
@@ -122,7 +122,7 @@ impl UdpSocket {
     /// the queue. On success, returns the number of bytes read and the origin.
     pub fn peek_from(&self, buf: &mut [u8]) -> AxResult<(usize, SocketAddr)> {
         self.recv_impl(|socket| match socket.peek_slice(buf) {
-            Ok((len, meta)) => Ok((len, into_core_sockaddr(meta.endpoint))),
+            Ok((len, meta)) => Ok((len, meta.endpoint.into())),
             Err(_) => ax_err!(BadState, "socket recv_from() failed"),
         })
     }
@@ -138,10 +138,10 @@ impl UdpSocket {
         let mut self_peer_addr = self.peer_addr.write();
 
         if self.local_addr.read().is_none() {
-            self.bind(into_core_sockaddr(UNSPECIFIED_ENDPOINT))?;
+            self.bind(UNSPECIFIED_ENDPOINT.into())?;
         }
 
-        *self_peer_addr = Some(from_core_sockaddr(addr));
+        *self_peer_addr = Some(addr.into());
         debug!("UDP socket {}: connected to {}", self.handle, addr);
         Ok(())
     }
