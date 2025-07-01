@@ -24,7 +24,6 @@ const STATE_BUSY: u8 = 1;
 const STATE_CONNECTING: u8 = 2;
 const STATE_CONNECTED: u8 = 3;
 const STATE_LISTENING: u8 = 4;
-const DEFAULT_MSS: usize = 536;
 
 /// A TCP socket that provides POSIX-like APIs.
 ///
