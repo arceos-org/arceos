@@ -367,15 +367,6 @@ impl TcpSocket {
         });
     }
 
-    /// Gets the Maximum Segment Size (MSS) of the remote peer.
-    /// In the future, if the user sets TCP_MAXSEG via sys_setsockopt,
-    /// it should return the value set by set_remote_mss,
-    /// otherwise it will return DEFAULT_MSS. But it is not used yet.
-    #[inline]
-    pub fn get_remote_mss(&self) -> usize {
-        DEFAULT_MSS
-    }
-
     /// Returns the maximum capacity of the receive buffer in bytes.
     #[inline]
     pub fn recv_capacity(&self) -> usize {
