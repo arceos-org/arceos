@@ -186,7 +186,7 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     ctor_bare::call_ctors();
 
     info!("Primary CPU {} init OK.", cpu_id);
-    INITED_CPUS.fetch_add(1, Ordering::Relaxed);
+    INITED_CPUS.fetch_add(1, Ordering::Release);
 
     while !is_init_ok() {
         core::hint::spin_loop();
@@ -261,12 +261,12 @@ fn init_interrupt() {
     });
 
     // Enable IRQs before starting app
-    axhal::arch::enable_irqs();
+    axhal::asm::enable_irqs();
 }
 
 #[cfg(all(feature = "tls", not(feature = "multitask")))]
 fn init_tls() {
     let main_tls = axhal::tls::TlsArea::alloc();
-    unsafe { axhal::arch::write_thread_pointer(main_tls.tls_ptr() as usize) };
+    unsafe { axhal::asm::write_thread_pointer(main_tls.tls_ptr() as usize) };
     core::mem::forget(main_tls);
 }

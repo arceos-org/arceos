@@ -1,8 +1,5 @@
 use axconfig::TASK_STACK_SIZE;
-use loongArch64::register::{crmd, pgdh, pgdl};
 use page_table_entry::{GenericPTE, MappingFlags, loongarch64::LA64PTE};
-
-use crate::arch::flush_tlb;
 
 #[unsafe(link_section = ".bss.stack")]
 static mut BOOT_STACK: [u8; TASK_STACK_SIZE] = [0; TASK_STACK_SIZE];
@@ -33,14 +30,22 @@ unsafe fn init_boot_page_table() {
     }
 }
 
-unsafe fn init_mmu() {
-    crate::arch::init_tlb();
+fn enable_fp_simd() {
+    // FP/SIMD needs to be enabled early, as the compiler may generate SIMD
+    // instructions in the bootstrapping code to speed up the operations
+    // like `memset` and `memcpy`.
+    #[cfg(feature = "fp-simd")]
+    {
+        axcpu::asm::enable_fp();
+        axcpu::asm::enable_lsx();
+    }
+}
 
-    let paddr = crate::mem::virt_to_phys(va!(&raw const BOOT_PT_L0 as usize));
-    pgdh::set_base(paddr.as_usize());
-    pgdl::set_base(0);
-    flush_tlb(None);
-    crmd::set_pg(true);
+fn init_mmu() {
+    axcpu::init::init_mmu(
+        crate::mem::virt_to_phys(va!(&raw const BOOT_PT_L0 as usize)),
+        axconfig::plat::PHYS_VIRT_OFFSET,
+    );
 }
 
 /// The earliest entry point for the primary CPU.
@@ -64,14 +69,16 @@ unsafe extern "C" fn _start() -> ! {
         add.d       $sp, $sp, $t0       # setup boot stack
 
         # Init MMU
+        bl          {enable_fp_simd}    # enable FP/SIMD instructions
         bl          {init_boot_page_table}
-        bl          {init_mmu}          # setup boot page table and enabel MMU
+        bl          {init_mmu}          # setup boot page table and enable MMU
 
         csrrd       $a0, 0x20           # cpuid
         la.global   $t0, {entry}
         jirl        $zero, $t0, 0",
         boot_stack_size = const TASK_STACK_SIZE,
         boot_stack = sym BOOT_STACK,
+        enable_fp_simd = sym enable_fp_simd,
         init_boot_page_table = sym init_boot_page_table,
         init_mmu = sym init_mmu,
         entry = sym super::rust_entry,
@@ -95,12 +102,14 @@ unsafe extern "C" fn _start_secondary() -> ! {
         ld.d         $sp, $t0,0          # read boot stack top
 
         # Init MMU
-        bl           {init_mmu}          # setup boot page table and enabel MMU
+        bl           {enable_fp_simd}    # enable FP/SIMD instructions
+        bl           {init_mmu}          # setup boot page table and enable MMU
 
         csrrd        $a0, 0x20                  # cpuid
         la.global    $t0, {entry}
         jirl         $zero, $t0, 0",
         sm_boot_stack_top = sym super::mp::SMP_BOOT_STACK_TOP,
+        enable_fp_simd = sym enable_fp_simd,
         init_mmu = sym init_mmu,
         entry = sym super::rust_entry_secondary,
     )

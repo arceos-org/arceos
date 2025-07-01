@@ -248,6 +248,39 @@ impl AddrSpace {
         self.areas.clear(&mut self.pt).unwrap();
     }
 
+    /// Checks whether an access to the specified memory region is valid.
+    ///
+    /// Returns `true` if the memory region given by `range` is all mapped and
+    /// has proper permission flags (i.e. containing `access_flags`).
+    pub fn can_access_range(
+        &self,
+        start: VirtAddr,
+        size: usize,
+        access_flags: MappingFlags,
+    ) -> bool {
+        let mut range = VirtAddrRange::from_start_size(start, size);
+        for area in self.areas.iter() {
+            if area.end() <= range.start {
+                continue;
+            }
+            if area.start() > range.start {
+                return false;
+            }
+
+            // This area overlaps with the memory region
+            if !area.flags().contains(access_flags) {
+                return false;
+            }
+
+            range.start = area.end();
+            if range.is_empty() {
+                return true;
+            }
+        }
+
+        false
+    }
+
     /// Handles a page fault at the given address.
     ///
     /// `access_flags` indicates the access type that caused the page fault.

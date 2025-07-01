@@ -7,7 +7,6 @@ unsafe extern "C" {
 }
 
 #[unsafe(naked)]
-#[unsafe(link_section = ".text.boot")]
 unsafe extern "C" fn modify_stack_and_start() {
     core::arch::naked_asm!("
         ldr     x21, ={secondary_boot_stack}    // the secondary CPU hasn't set the TTBR1
@@ -31,11 +30,11 @@ pub fn start_secondary_cpu(cpu_id: usize, stack_top: PhysAddr) {
         let spintable_vaddr = phys_to_virt(CPU_SPIN_TABLE[cpu_id]);
         let release_ptr = spintable_vaddr.as_mut_ptr() as *mut usize;
         release_ptr.write_volatile(entry_paddr);
-        crate::arch::flush_dcache_line(spintable_vaddr);
+        axcpu::asm::flush_dcache_line(spintable_vaddr);
 
         // set the boot stack of the given secondary CPU
         SECONDARY_STACK_TOP = stack_top.as_usize();
-        crate::arch::flush_dcache_line(va!(core::ptr::addr_of!(SECONDARY_STACK_TOP) as usize));
+        axcpu::asm::flush_dcache_line(va!(core::ptr::addr_of!(SECONDARY_STACK_TOP) as usize));
     }
     aarch64_cpu::asm::sev();
 }

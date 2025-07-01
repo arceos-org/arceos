@@ -23,7 +23,7 @@ const CR0: u64 = Cr0Flags::PROTECTED_MODE_ENABLE.bits()
     | Cr0Flags::PAGING.bits();
 const CR4: u64 = Cr4Flags::PHYSICAL_ADDRESS_EXTENSION.bits()
     | Cr4Flags::PAGE_GLOBAL.bits()
-    | if cfg!(feature = "fp_simd") {
+    | if cfg!(feature = "fp-simd") {
         Cr4Flags::OSFXSR.bits() | Cr4Flags::OSXMMEXCPT_ENABLE.bits()
     } else {
         0
