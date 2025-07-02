@@ -10,7 +10,7 @@ use smoltcp::iface::SocketHandle;
 use smoltcp::socket::udp::{self, BindError, SendError};
 use smoltcp::wire::{IpEndpoint, IpListenEndpoint};
 
-use super::addr::{UNSPECIFIED_ENDPOINT};
+use super::addr::UNSPECIFIED_ENDPOINT;
 use super::{SOCKET_SET, SocketSetWrapper};
 
 /// A UDP socket that provides POSIX-like APIs.

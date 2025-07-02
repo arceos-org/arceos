@@ -10,7 +10,7 @@ use smoltcp::iface::SocketHandle;
 use smoltcp::socket::tcp::{self, ConnectError, State};
 use smoltcp::wire::{IpEndpoint, IpListenEndpoint};
 
-use super::addr::{UNSPECIFIED_ENDPOINT};
+use super::addr::UNSPECIFIED_ENDPOINT;
 use super::{ETH0, LISTEN_TABLE, SOCKET_SET, SocketSetWrapper};
 
 // State transitions:
