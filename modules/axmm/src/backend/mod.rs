@@ -69,7 +69,7 @@ impl MappingBackend for Backend {
         new_flags: Self::Flags,
         pt: &mut Self::PageTable,
     ) -> bool {
-        pt.protect_region(start, size, new_flags, true)
+        pt.protect_region(start, size, new_flags, true, true)
             .map(|tlb| tlb.ignore())
             .is_ok()
     }

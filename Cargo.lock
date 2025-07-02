@@ -1228,8 +1228,7 @@ checksum = "a4895175b425cb1f87721b59f0f286c2092bd4af812243672510e1ac53e2e0ad"
 [[package]]
 name = "page_table_entry"
 version = "0.5.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba811ef8ca8fb33d776e128624cb4fe25c9804cab96f83b822d4322431e6dd5a"
+source = "git+https://github.com/Starry-Mix-THU/page_table_multiarch.git?rev=e76ba3c#e76ba3c4f2512ff8925d2d16ae8deabcb44b70bb"
 dependencies = [
  "aarch64-cpu 10.0.0",
  "bitflags 2.9.1",
@@ -1240,8 +1239,7 @@ dependencies = [
 [[package]]
 name = "page_table_multiarch"
 version = "0.5.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "98cb76e21ce462270afd83b331599d5b83f876c2a98c0a70382b20d73e1da6be"
+source = "git+https://github.com/Starry-Mix-THU/page_table_multiarch.git?rev=e76ba3c#e76ba3c4f2512ff8925d2d16ae8deabcb44b70bb"
 dependencies = [
  "bitmaps",
  "log",
