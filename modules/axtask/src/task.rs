@@ -55,7 +55,7 @@ pub struct TaskInner {
     is_idle: bool,
     is_init: bool,
 
-    entry: Option<*mut dyn FnOnce()>,
+    entry: Option<Box<dyn FnOnce() -> !>>,
     state: AtomicU8,
 
     /// CPU affinity mask.
@@ -126,7 +126,7 @@ impl TaskInner {
     /// Create a new task with the given entry function and stack size.
     pub fn new<F>(entry: F, name: String, stack_size: usize) -> Self
     where
-        F: FnOnce() + Send + 'static,
+        F: FnOnce() -> ! + Send + 'static,
     {
         let mut t = Self::new_common(TaskId::new(), name);
         debug!("new task: {}", t.id_name());
@@ -137,7 +137,7 @@ impl TaskInner {
         #[cfg(not(feature = "tls"))]
         let tls = VirtAddr::from(0);
 
-        t.entry = Some(Box::into_raw(Box::new(entry)));
+        t.entry = Some(Box::new(entry));
         t.ctx_mut().init(task_entry as usize, kstack.top(), tls);
         t.kstack = Some(kstack);
         if t.name() == "idle" {
@@ -546,8 +546,13 @@ extern "C" fn task_entry() -> ! {
     #[cfg(feature = "irq")]
     axhal::asm::enable_irqs();
     let task = crate::current();
-    if let Some(entry) = task.entry {
-        unsafe { Box::from_raw(entry)() };
+    if let Some(entry) = &task.entry {
+        // FIXME: take and drop it
+        unsafe {
+            let ptr = &raw const **entry;
+            Box::from_raw(ptr.cast_mut())()
+        }
+    } else {
+        crate::exit(0);
     }
-    crate::exit(0);
 }

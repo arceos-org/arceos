@@ -22,6 +22,7 @@ fn test_sched_fifo() {
                 axtask::yield_now();
                 let order = FINISHED_TASKS.fetch_add(1, Ordering::Release);
                 assert_eq!(order, i); // FIFO scheduler
+                axtask::exit(0);
             },
             format!("T{i}"),
             0x1000,
@@ -57,6 +58,7 @@ fn test_fp_state_switch() {
             println!("fp_state_switch: Float {i} = {value}");
             assert!((value - float).abs() < 1e-9);
             FINISHED_TASKS.fetch_add(1, Ordering::Release);
+            axtask::exit(0);
         });
     }
     while FINISHED_TASKS.load(Ordering::Acquire) < NUM_TASKS {
@@ -87,6 +89,7 @@ fn test_wait_queue() {
             COUNTER.fetch_sub(1, Ordering::Release);
             println!("wait_queue: task {:?} finished", current().id());
             WQ1.notify_one(true); // WQ1.wait_until()
+            axtask::exit(0);
         });
     }
 

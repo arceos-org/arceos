@@ -608,7 +608,7 @@ impl AxRunQueue {
     }
 }
 
-fn gc_entry() {
+fn gc_entry() -> ! {
     loop {
         // Drop all exited tasks and recycle resources.
         let n = EXITED_TASKS.with_current(|exited_tasks| exited_tasks.len());
@@ -616,13 +616,16 @@ fn gc_entry() {
             // Do not do the slow drops in the critical section.
             let task = EXITED_TASKS.with_current(|exited_tasks| exited_tasks.pop_front());
             if let Some(task) = task {
-                if Arc::strong_count(&task) == 1 {
-                    // If I'm the last holder of the task, drop it immediately.
-                    drop(task);
-                } else {
-                    // Otherwise (e.g, `switch_to` is not compeleted, held by the
-                    // joiner, etc), push it back and wait for them to drop first.
-                    EXITED_TASKS.with_current(|exited_tasks| exited_tasks.push_back(task));
+                match Arc::try_unwrap(task) {
+                    Ok(task) => {
+                        // If I'm the last holder of the task, drop it immediately.
+                        drop(task);
+                    }
+                    Err(task) => {
+                        // Otherwise (e.g, `switch_to` is not compeleted, held by the
+                        // joiner, etc), push it back and wait for them to drop first.
+                        EXITED_TASKS.with_current(|exited_tasks| exited_tasks.push_back(task));
+                    }
                 }
             }
         }

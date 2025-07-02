@@ -26,21 +26,22 @@ impl RawMutex {
 }
 
 unsafe impl lock_api::RawMutex for RawMutex {
+    type GuardMarker = lock_api::GuardSend;
+
     /// Initial value for an unlocked mutex.
     ///
-    /// A “non-constant” const item is a legacy way to supply an initialized value to downstream
-    /// static items. Can hopefully be replaced with `const fn new() -> Self` at some point.
+    /// A “non-constant” const item is a legacy way to supply an initialized
+    /// value to downstream static items. Can hopefully be replaced with
+    /// `const fn new() -> Self` at some point.
     #[allow(clippy::declare_interior_mutable_const)]
     const INIT: Self = RawMutex::new();
-
-    type GuardMarker = lock_api::GuardSend;
 
     #[inline(always)]
     fn lock(&self) {
         let current_id = current().id().as_u64();
         loop {
-            // Can fail to lock even if the spinlock is not locked. May be more efficient than `try_lock`
-            // when called in a loop.
+            // Can fail to lock even if the spinlock is not locked. May be more efficient
+            // than `try_lock` when called in a loop.
             match self.owner_id.compare_exchange_weak(
                 0,
                 current_id,
@@ -97,9 +98,11 @@ pub type MutexGuard<'a, T> = lock_api::MutexGuard<'a, RawMutex, T>;
 
 #[cfg(test)]
 mod tests {
-    use crate::Mutex;
-    use axtask as thread;
     use std::sync::Once;
+
+    use axtask as thread;
+
+    use crate::Mutex;
 
     static INIT: Once = Once::new();
 
@@ -118,7 +121,7 @@ mod tests {
         const NUM_ITERS: u32 = 10_000;
         static M: Mutex<u32> = Mutex::new(0);
 
-        fn inc(delta: u32) {
+        fn inc(delta: u32) -> ! {
             for _ in 0..NUM_ITERS {
                 let mut val = M.lock();
                 *val += delta;
@@ -126,6 +129,7 @@ mod tests {
                 drop(val);
                 may_interrupt();
             }
+            thread::exit(0);
         }
 
         for _ in 0..NUM_TASKS {

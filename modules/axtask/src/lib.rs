@@ -29,6 +29,7 @@
 #![feature(doc_cfg)]
 #![feature(doc_auto_cfg)]
 #![feature(linkage)]
+#![feature(never_type)]
 
 #[cfg(test)]
 mod tests;
