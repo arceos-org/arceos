@@ -129,7 +129,7 @@ impl AddrSpace {
             return ax_err!(InvalidInput, "address not aligned");
         }
 
-        let offset = start_vaddr.as_usize() - start_paddr.as_usize();
+        let offset = start_vaddr.as_usize().wrapping_sub(start_paddr.as_usize());
         let area = MemoryArea::new(start_vaddr, size, flags, Backend::new_linear(offset));
         self.areas
             .map(area, &mut self.pt, false)

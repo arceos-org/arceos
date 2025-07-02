@@ -18,7 +18,7 @@ impl Linear {
     }
 
     fn pa(&self, va: VirtAddr) -> PhysAddr {
-        PhysAddr::from(va.as_usize() - self.offset)
+        PhysAddr::from(va.as_usize().wrapping_sub(self.offset))
     }
 
     pub(crate) fn map(
