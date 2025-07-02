@@ -235,7 +235,7 @@ dependencies = [
  "cfg-if",
  "kspin",
  "log",
- "memory_addr 0.3.2",
+ "memory_addr",
 ]
 
 [[package]]
@@ -279,7 +279,7 @@ dependencies = [
  "linkme",
  "log",
  "loongArch64",
- "memory_addr 0.3.2",
+ "memory_addr",
  "page_table_entry",
  "page_table_multiarch",
  "percpu",
@@ -313,7 +313,7 @@ dependencies = [
  "axmm",
  "kspin",
  "log",
- "memory_addr 0.3.2",
+ "memory_addr",
 ]
 
 [[package]]
@@ -494,7 +494,7 @@ dependencies = [
  "linkme",
  "log",
  "loongArch64",
- "memory_addr 0.3.2",
+ "memory_addr",
  "ns16550a",
  "page_table_entry",
  "page_table_multiarch",
@@ -553,7 +553,7 @@ dependencies = [
  "kspin",
  "lazyinit",
  "log",
- "memory_addr 0.3.2",
+ "memory_addr",
  "memory_set",
 ]
 
@@ -642,7 +642,7 @@ dependencies = [
  "kspin",
  "lazyinit",
  "log",
- "memory_addr 0.3.2",
+ "memory_addr",
  "percpu",
  "rand",
  "scheduler",
@@ -1282,18 +1282,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5438b8df0f13e16e1f46140de247695a95952a5a4479e47197a8711bf1063373"
 
 [[package]]
-name = "memory_addr"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d4054cba279515fa87761b101d857333ce06391dbe8f18a11347204a7111416"
-
-[[package]]
 name = "memory_set"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4552d02c866c57e8b06b919ea8c2f8f398cad245b8f6aac726657bc972d663d"
 dependencies = [
- "memory_addr 0.3.2",
+ "memory_addr",
 ]
 
 [[package]]
@@ -1341,26 +1335,26 @@ checksum = "a4895175b425cb1f87721b59f0f286c2092bd4af812243672510e1ac53e2e0ad"
 
 [[package]]
 name = "page_table_entry"
-version = "0.5.4"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64fa3fe054790f010fff07d6f2fb862f3cf859c1236939c4883becf0cbe26a49"
+checksum = "c097d641745a066856a26eed6e486d4430bb3e32c94f1203ea09c63239b360a0"
 dependencies = [
  "aarch64-cpu 10.0.0",
  "bitflags 2.9.1",
- "memory_addr 0.4.0",
+ "memory_addr",
  "x86_64 0.15.2",
 ]
 
 [[package]]
 name = "page_table_multiarch"
-version = "0.5.4"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b1cf99d0b15854d486e45ad4af3c1fb7c2f28a7c5aa6b049f33060184bdc4e0"
+checksum = "4647889585d29762d747be0916d6d28db72967a697d142be86f187a6b496832a"
 dependencies = [
  "log",
- "memory_addr 0.4.0",
+ "memory_addr",
  "page_table_entry",
- "riscv 0.14.0",
+ "riscv 0.12.1",
  "x86",
 ]
 
@@ -1537,6 +1531,18 @@ checksum = "2b15c43186be67a4fd63bee50d0303afffcef381492ebe2c5d87f324e1b8815c"
 
 [[package]]
 name = "riscv"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5ea8ff73d3720bdd0a97925f0bf79ad2744b6da8ff36be3840c48ac81191d7a7"
+dependencies = [
+ "critical-section",
+ "embedded-hal",
+ "paste",
+ "riscv-pac",
+]
+
+[[package]]
+name = "riscv"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "afa3cdbeccae4359f6839a00e8b77e5736caa200ba216caf38d24e4c16e2b586"
@@ -1545,18 +1551,6 @@ dependencies = [
  "embedded-hal",
  "paste",
  "riscv-macros",
- "riscv-pac",
-]
-
-[[package]]
-name = "riscv"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f1671c79a01a149fe000af2429ce9ccc8e58cdecda72672355d50e5536b363c"
-dependencies = [
- "critical-section",
- "embedded-hal",
- "paste",
  "riscv-pac",
 ]
 

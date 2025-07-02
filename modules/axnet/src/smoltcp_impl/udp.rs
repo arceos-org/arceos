@@ -83,7 +83,7 @@ impl UdpSocket {
             return ax_err!(InvalidInput, "socket bind() failed: already bound");
         }
 
-        let local_endpoint = local_addr.into();
+        let local_endpoint = IpEndpoint::from(local_addr);
         let endpoint = IpListenEndpoint {
             addr: (!local_endpoint.addr.is_unspecified()).then_some(local_endpoint.addr),
             port: local_endpoint.port,
@@ -106,14 +106,14 @@ impl UdpSocket {
         if remote_addr.port() == 0 || remote_addr.ip().is_unspecified() {
             return ax_err!(InvalidInput, "socket send_to() failed: invalid address");
         }
-        self.send_impl(buf, remote_addr.into())
+        self.send_impl(buf, IpEndpoint::from(remote_addr))
     }
 
     /// Receives a single datagram message on the socket. On success, returns
     /// the number of bytes read and the origin.
     pub fn recv_from(&self, buf: &mut [u8]) -> AxResult<(usize, SocketAddr)> {
         self.recv_impl(|socket| match socket.recv_slice(buf) {
-            Ok((len, meta)) => Ok((len, meta.endpoint.into())),
+            Ok((len, meta)) => Ok((len, SocketAddr::from(meta.endpoint))),
             Err(_) => ax_err!(BadState, "socket recv_from() failed"),
         })
     }
@@ -122,7 +122,7 @@ impl UdpSocket {
     /// the queue. On success, returns the number of bytes read and the origin.
     pub fn peek_from(&self, buf: &mut [u8]) -> AxResult<(usize, SocketAddr)> {
         self.recv_impl(|socket| match socket.peek_slice(buf) {
-            Ok((len, meta)) => Ok((len, meta.endpoint.into())),
+            Ok((len, meta)) => Ok((len, SocketAddr::from(meta.endpoint))),
             Err(_) => ax_err!(BadState, "socket recv_from() failed"),
         })
     }
@@ -138,10 +138,10 @@ impl UdpSocket {
         let mut self_peer_addr = self.peer_addr.write();
 
         if self.local_addr.read().is_none() {
-            self.bind(UNSPECIFIED_ENDPOINT.into())?;
+            self.bind(SocketAddr::from(UNSPECIFIED_ENDPOINT))?;
         }
 
-        *self_peer_addr = Some(addr.into());
+        *self_peer_addr = Some(IpEndpoint::from(addr));
         debug!("UDP socket {}: connected to {}", self.handle, addr);
         Ok(())
     }
