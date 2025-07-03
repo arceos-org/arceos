@@ -1,7 +1,5 @@
-use axtask::{park_current_task, unpark_task};
 use core::marker::PhantomData;
 use core::sync::atomic::{AtomicBool, Ordering};
-use core::u64;
 use embassy_executor::raw;
 
 #[percpu::def_percpu]
@@ -12,8 +10,6 @@ fn __pender(_context: *mut ()) {
     SIGNAL_WORK_THREAD_MODE.with_current(|m| {
         m.store(true, Ordering::SeqCst);
     });
-    let id = _context as u64;
-    unpark_task(id, true);
 }
 
 pub struct Executor {
@@ -49,7 +45,8 @@ impl Executor {
                         m.store(false, Ordering::SeqCst);
                     });
                 } else {
-                    park_current_task();
+                    // park_current_task();
+                    axtask::yield_now();
                 }
             };
         }

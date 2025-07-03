@@ -157,6 +157,7 @@ impl<T> Delegate<T> {
         }
     }
 
+    /// lend
     pub async fn lend<'a, 'b: 'a>(&'a self, target: &'b mut T) -> Result<(), DelegateError> {
         use DelegateError::*;
         use DelegateState::*;
@@ -182,11 +183,28 @@ impl<T> Delegate<T> {
         Ok(())
     }
 
+    /// lend and reset
+    pub async fn lend_new<'a, 'b: 'a>(&'a self, target: &'b mut T) -> Result<(), DelegateError> {
+        match self.lend(target).await {
+            Ok(()) => {
+                self.reset();
+                Ok(())
+            }
+            Err(e) => Err(e),
+        }
+    }
+
     pub async fn with<U>(&self, func: impl FnOnce(&mut T) -> U) -> Result<U, DelegateError> {
         use DelegateError::*;
         use DelegateState::*;
 
         let data = self.send.wait().await;
+        let sp = Spawner::for_current_executor().await;
+        let res = {
+            let ptr = unsafe { data.get(sp).unwrap().as_mut().unwrap() };
+            func(ptr)
+        };
+
         match self.state.compare_exchange(
             Lent as u8,
             Consumed as u8,
@@ -196,12 +214,6 @@ impl<T> Delegate<T> {
             Ok(_) => {}
             Err(_) => return Err(WithInvalid),
         }
-
-        let sp = Spawner::for_current_executor().await;
-        let res = {
-            let ptr = unsafe { data.get(sp).unwrap().as_mut().unwrap() };
-            func(ptr)
-        };
 
         self.reply.signal(());
         Ok(res)

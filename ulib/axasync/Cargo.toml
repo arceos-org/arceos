@@ -11,8 +11,21 @@ repository = "https://github.com/arceos-org/arceos/tree/main/ulib/axasync"
 [features]
 default = []
 
-single = ["axfeat/async-single", "arceos_api/async-single","dep:embassy-executor"]
-thread = ["axfeat/async-thread", "arceos_api/async-thread","dep:embassy-executor"]
+preempt = [
+	"axfeat/async-preempt",
+	"arceos_api/async-preempt",
+	"thread",
+]
+thread = [
+	"axfeat/async-thread",
+	"arceos_api/async-thread",
+	"dep:embassy-executor",
+]
+single = [
+	"axfeat/async-single",
+	"arceos_api/async-single",
+	"dep:embassy-executor",
+]
 
 time = ["dep:embassy-time"]
 sync = ["dep:embassy-sync"]
@@ -24,7 +37,7 @@ arceos_api = { workspace = true }
 embassy-executor = { git = "https://github.com/embassy-rs/embassy", branch = "main", default-features = false, optional = true }
 embassy-futures = { git = "https://github.com/embassy-rs/embassy", branch = "main" }
 embassy-sync = { git = "https://github.com/embassy-rs/embassy", branch = "main", optional = true }
-embassy-time = { git = "https://github.com/embassy-rs/embassy", branch = "main",optional = true }
+embassy-time = { git = "https://github.com/embassy-rs/embassy", branch = "main", optional = true }
 
 cfg-if = "1.0.0"
 static_cell = "2.1.0"

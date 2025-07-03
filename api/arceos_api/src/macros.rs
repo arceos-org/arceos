@@ -108,6 +108,10 @@ macro_rules! cfg_task {
     ($($item:item)*) => { _cfg_common!{ "multitask" $($item)* } }
 }
 
+macro_rules! cfg_async_preempt {
+    ($($item:item)*) => { _cfg_common!{ "async-preempt" $($item)* } }
+}
+
 macro_rules! cfg_async_thread {
     ($($item:item)*) => { _cfg_common!{ "async-thread" $($item)* } }
 }

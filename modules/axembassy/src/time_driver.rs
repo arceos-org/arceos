@@ -1,4 +1,5 @@
 use core::cell::RefCell;
+use core::sync::atomic::{AtomicU64,Ordering};
 use core::task;
 
 use axhal::time::{self, NANOS_PER_SEC, set_oneshot_timer};
@@ -28,7 +29,7 @@ fn nanos_to_ticks(nanos: u64) -> u64 {
 struct AxDriver {
     queue: SpinNoIrq<RefCell<Queue>>,
     // static period interval
-    periodic_interval_nanos: SpinNoIrq<u64>,
+    period_nanos: AtomicU64,
 }
 
 time_driver_impl!(static AX_DRIVER: AxDriver = AxDriver::new());
@@ -37,7 +38,7 @@ impl AxDriver {
     pub const fn new() -> Self {
         AxDriver {
             queue: SpinNoIrq::new(RefCell::new(Queue::new())),
-            periodic_interval_nanos: SpinNoIrq::new(0),
+            period_nanos: AtomicU64::new(0),
         }
     }
 
@@ -59,7 +60,7 @@ impl AxDriver {
             let ticks_next_at = queue.next_expiration(self.now());
             let nanos_next_at = ticks_to_nanos(ticks_next_at);
             let nanos_next_interval = nanos_next_at - Self::nanos_now();
-            let nanos_period = *self.periodic_interval_nanos.lock();
+            let nanos_period = self.period_nanos.load(Ordering::Relaxed);
             if nanos_next_interval < nanos_period {
                 // only set timer if it is less than the periodic interval
                 set_oneshot_timer(nanos_next_at);
@@ -71,9 +72,7 @@ impl AxDriver {
     pub fn next_expiration(&self, period: u64) -> u64 {
         let queue_guard = self.queue.lock();
         let mut queue = queue_guard.borrow_mut();
-        if *self.periodic_interval_nanos.lock() == 0 {
-            *self.periodic_interval_nanos.lock() = period;
-        }
+        self.period_nanos.store(period, Ordering::Release);
 
         let ticks_now = self.now();
 

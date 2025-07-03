@@ -53,7 +53,7 @@ pub fn futex_wait(futex: &Futex, expected: u32, timeout: Option<Duration>) -> bo
             }
             #[cfg(not(feature = "irq"))]
             {
-                panic!("wait_timeout is not supported in this configuration");
+                panic!("wait_timeout is not supported in without irq feature");
             }
         }
         None => {

@@ -396,11 +396,16 @@ pub mod embassy_async {
         pub type AxSpawner;
         pub type AxSendSpawner;
     }
-    
+
     define_api! {
         @cfg "async-thread";
         pub fn ax_spawner() -> AxSendSpawner;
     }
+
+    #[cfg(feature = "async-preempt")]
+    pub use crate::imp::AxPrioFuture;
+    #[cfg(all(feature = "dummy-if-not-enabled", not(feature = "async-thread")))]
+    pub struct AxPrioFuture;
 
     #[cfg(feature = "async-thread")]
     pub fn ax_block_on<F: Future>(fut: F) -> F::Output {
@@ -439,7 +444,11 @@ pub mod modules {
     pub use axdma;
     #[cfg(any(feature = "fs", feature = "net", feature = "display"))]
     pub use axdriver;
-    #[cfg(any(feature = "async-thread", feature = "async-single"))]
+    #[cfg(any(
+        feature = "async-thread",
+        feature = "async-single",
+        feature = "async-preempt"
+    ))]
     pub use axembassy;
     #[cfg(feature = "fs")]
     pub use axfs;

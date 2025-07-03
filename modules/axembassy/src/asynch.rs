@@ -4,21 +4,52 @@ use core::{
     task::{Context, Poll, RawWaker, RawWakerVTable, Waker},
 };
 
-use axtask::{park_current_task, unpark_task};
-use kspin::SpinNoIrq;
+use axsync::Mutex;
+use axtask::yield_now;
 
 pub use embassy_executor::{SendSpawner, Spawner};
 
-pub(crate) static SPAWNER: SpinNoIrq<OnceCell<SendSpawner>> = SpinNoIrq::new(OnceCell::new());
+pub(crate) static SPAWNER: Mutex<OnceCell<SendSpawner>> = Mutex::new(OnceCell::new());
 
-/// Get a spawner for the system executor.
-///
+fn init_spawn() {
+    use axtask::spawn_raw;
+    spawn_raw(init, "async".into(), axconfig::TASK_STACK_SIZE);
+}
+
+fn init() {
+    use crate::executor_thread::Executor;
+    use static_cell::StaticCell;
+
+    static EXECUTOR: StaticCell<Executor> = StaticCell::new();
+    EXECUTOR
+        .init_with(Executor::new)
+        .run(|sp| sp.must_spawn(init_task()));
+}
+
+#[embassy_executor::task]
+async fn init_task() {
+    use crate::asynch;
+
+    let spawner = asynch::Spawner::for_current_executor().await;
+    asynch::set_spawner(spawner.make_send());
+    log::info!("Initialize spawner... ");
+}
+
 /// # Panics
 ///
 /// Panics if the system executor is not initialized.
 pub fn spawner() -> SendSpawner {
     let sp = SPAWNER.lock();
-    *sp.get().unwrap()
+    if let Some(inner) = sp.get() {
+        *inner
+    } else {
+        drop(sp);
+        init_spawn();
+        yield_now();
+        // initialize the spawner if not
+        let sp = SPAWNER.lock();
+        *sp.get().expect("Reinitialize the spawner failed")
+    }
 }
 
 /// Set the spawner for the system executor.
@@ -30,8 +61,8 @@ pub(crate) fn set_spawner(spawner: SendSpawner) {
 }
 
 fn wake(ctx: *const ()) {
-    let id = ctx as u64;
-    unpark_task(id, true);
+    // let id = ctx as u64;
+    // unpark_task(id, true);
 }
 
 static VTABLE: RawWakerVTable =
@@ -50,6 +81,6 @@ pub fn block_on<F: Future>(mut fut: F) -> F::Output {
         if let Poll::Ready(res) = fut.as_mut().poll(&mut ctx) {
             return res;
         }
-        park_current_task();
+        yield_now();
     }
 }

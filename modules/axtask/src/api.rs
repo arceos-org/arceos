@@ -11,13 +11,9 @@ pub use crate::task::{CurrentTask, TaskId, TaskInner};
 #[doc(cfg(feature = "multitask"))]
 pub use crate::task_ext::{TaskExtMut, TaskExtRef};
 #[doc(cfg(feature = "multitask"))]
-pub use crate::task_registry::{find_task_by_id, park_current_task, unpark_task};
-#[doc(cfg(feature = "multitask"))]
 pub use crate::wait_queue::WaitQueue;
 #[doc(cfg(feature = "multitask"))]
 pub use crate::wait_queues::{Futex, futex_wait, futex_wake, futex_wake_all};
-
-pub static THREAD_START_EVENT: crate::events::Event = crate::events::Event::new();
 
 /// The reference type of a task.
 pub type AxTaskRef = Arc<AxTask>;
@@ -210,13 +206,19 @@ pub fn exit(exit_code: i32) -> ! {
     current_run_queue::<NoPreemptIrqSave>().exit_current(exit_code)
 }
 
+/// Park the current task.
+pub fn park_current_task() {
+    let mut cur_rq = current_run_queue::<NoPreemptIrqSave>();
+    cur_rq.park_current_task();
+}
+
 /// The idle task routine.
 ///
 /// It runs an infinite loop that keeps calling [`yield_now()`].
 pub fn run_idle() -> ! {
     loop {
         yield_now();
-        debug!("idle task: waiting for IRQs...");
+        // debug!("idle task: waiting for IRQs...");
         #[cfg(feature = "irq")]
         axhal::arch::wait_for_irqs();
     }

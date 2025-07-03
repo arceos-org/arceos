@@ -6,5 +6,3 @@ edition.workspace = true
 [dependencies]
 axstd = { workspace = true, optional = true }
 axasync = { workspace = true, features = ["single", "time"] }
-
-embassy-executor = { git = "https://github.com/embassy-rs/embassy", branch = "main", default-features = false }

@@ -23,7 +23,7 @@ fn busy_work(nano: u64) -> u64 {
     total
 }
 
-#[embassy_executor::task(pool_size = 4)]
+#[axasync::executor::task(pool_size = 4)]
 async fn tick(_sec: u64, busy_nano: u64) {
     for i in 0..10 {
         println!("embassy tick {}: {}/s, {}", _sec, _sec * i, i);

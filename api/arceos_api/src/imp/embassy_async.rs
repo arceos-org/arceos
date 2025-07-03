@@ -14,3 +14,7 @@ cfg_async_thread! {
         axembassy::block_on(fut)
     }
 }
+
+cfg_async_preempt! {
+    pub use axembassy::PrioFuture as AxPrioFuture;
+}

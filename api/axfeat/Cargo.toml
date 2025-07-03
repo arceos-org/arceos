@@ -43,6 +43,8 @@ sched_fifo = ["axtask/sched_fifo"]
 sched_rr = ["axtask/sched_rr", "irq"]
 sched_cfs = ["axtask/sched_cfs", "irq"]
 
+# Embassy asynchronous runtime with multithread support and preemption
+async-preempt = ["async-thread", "axembassy/executor-preempt"]
 # Embassy asynchronous runtime with multithread support
 async-thread = [
 	"axembassy/driver",

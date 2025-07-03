@@ -14,7 +14,6 @@ use axhal::arch::TaskContext;
 use axhal::tls::TlsArea;
 
 use crate::task_ext::AxTaskExt;
-use crate::task_registry::register_task;
 use crate::{AxCpuMask, AxTask, AxTaskRef, WaitQueue};
 
 /// A unique identifier for a thread.
@@ -32,11 +31,8 @@ pub(crate) enum TaskState {
     /// Task is blocked (in the wait queue or timer list),
     /// and it has finished its scheduling process, it can be wake up by `notify()` on any run queue safely.
     Blocked = 3,
-    /// Task is Suspended,
-    /// Not in wait queue.
-    Parked = 4,
     /// Task is exited and waiting for being dropped.
-    Exited = 5,
+    Exited = 4,
 }
 
 /// The inner task structure.
@@ -100,8 +96,7 @@ impl From<u8> for TaskState {
             1 => Self::Running,
             2 => Self::Ready,
             3 => Self::Blocked,
-            4 => Self::Parked,
-            5 => Self::Exited,
+            4 => Self::Exited,
             _ => unreachable!(),
         }
     }

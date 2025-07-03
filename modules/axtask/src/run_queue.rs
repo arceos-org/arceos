@@ -13,7 +13,6 @@ use scheduler::BaseScheduler;
 use axhal::cpu::this_cpu_id;
 
 use crate::task::{CurrentTask, TaskState};
-use crate::task_registry::{register_task, unregister_task};
 use crate::wait_queue::WaitQueueGuard;
 use crate::{AxCpuMask, AxTaskRef, Scheduler, TaskInner, WaitQueue};
 
@@ -238,8 +237,6 @@ impl<G: BaseGuard> AxRunQueueRef<'_, G> {
             self.inner.cpu_id
         );
         assert!(task.is_ready());
-        // Register task in registry.
-        register_task(task.clone());
         self.inner.scheduler.lock().add_task(task);
     }
 
@@ -263,33 +260,6 @@ impl<G: BaseGuard> AxRunQueueRef<'_, G> {
             debug!("task unblock: {} on run_queue {}", task_id_name, cpu_id);
             // Note: when the task is unblocked on another CPU's run queue,
             // we just ingore the `resched` flag.
-            if resched && cpu_id == this_cpu_id() {
-                #[cfg(feature = "preempt")]
-                crate::current().set_preempt_pending(true);
-            }
-        }
-    }
-
-    /// Unpark one task by inserting it into the run queue.
-    ///
-    /// This function does nothing if the task is not in [`TaskState::Parked`],
-    /// which means the task is already unparked by other cores.
-    pub fn unpark_task(&mut self, task: AxTaskRef, resched: bool) {
-        let task_id_name = task.id_name();
-        // Try to change the state of the task from `Parked` to `Ready`,
-        // if successful, the task will be put into this run queue,
-        // otherwise, the task is already unblocked by other cores.
-        // Note:
-        // target task can not be insert into the run queue until it finishes its scheduling process.
-        if self
-            .inner
-            .put_task_with_state(task, TaskState::Parked, resched)
-        {
-            // Since now, the task to be unblocked is in the `Ready` state.
-            let cpu_id = self.inner.cpu_id;
-            debug!("task unpark: {} on run_queue {}", task_id_name, cpu_id);
-            // Note: when the task is unblocked on another CPU's run queue,
-            // we just ignore the `resched` flag.
             if resched && cpu_id == this_cpu_id() {
                 #[cfg(feature = "preempt")]
                 crate::current().set_preempt_pending(true);
@@ -387,10 +357,6 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
         debug!("task exit: {}, exit_code={}", curr.id_name(), exit_code);
         assert!(curr.is_running(), "task is not running: {:?}", curr.state());
         assert!(!curr.is_idle());
-
-        let task_id = curr.id().as_u64();
-        unregister_task(task_id);
-        debug!("task {} unregistered", task_id);
 
         if curr.is_init() {
             // Safety: it is called from `current_run_queue::<NoPreemptIrqSave>().exit_current(exit_code)`,
@@ -681,12 +647,10 @@ pub(crate) fn init() {
     IDLE_TASK.with_current(|i| {
         i.init_once(idle_task.into_arc());
     });
-
+    
     // Put the subsequent execution into the `main` task.
     let main_task = TaskInner::new_init("main".into()).into_arc();
     main_task.set_state(TaskState::Running);
-    // Register main task due to `add_task` isn't called.
-    register_task(main_task.clone());
     debug!(
         "main task registered: {}, id {}",
         main_task.id_name(),

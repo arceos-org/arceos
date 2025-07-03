@@ -23,6 +23,7 @@ display = ["dep:axdisplay", "dep:axdriver", "axfeat/display"]
 
 myfs = ["axfeat/myfs"]
 
+async-preempt = ["async-thread", "axfeat/async-preempt"]
 async-thread = ["dep:axembassy", "axfeat/async-thread"]
 async-single = ["dep:axembassy", "axfeat/async-single"]
 

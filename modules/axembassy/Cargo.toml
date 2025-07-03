@@ -13,26 +13,24 @@ driver = [
 	"dep:percpu",
 	"axhal/irq",
 ]
-# executor is thread dependent
-executor-thread = [
+embassy-utils = [
 	"dep:embassy-executor",
 	"dep:embassy-futures",
 	"dep:embassy-sync",
-	"axtask/multitask",
 ]
 
-executor-single = [
-	"dep:embassy-executor",
-	"dep:embassy-futures",
-	"dep:embassy-sync",
-	"axhal/irq",
-]
+# executor is in thread interaction 
+executor-preempt = ["executor-thread"]
+executor-thread = ["embassy-utils", "axtask/multitask", "dep:axsync"]
+
+executor-single = ["embassy-utils", "axhal/irq"]
 
 default = ["driver"]
 
 [dependencies]
 axconfig = { workspace = true }
 axhal = { workspace = true, features = ["irq"] }
+axsync = { workspace = true, features = ["multitask"], optional = true }
 axtask = { workspace = true }
 
 embassy-time-driver = { git = "https://github.com/embassy-rs/embassy", branch = "main", optional = true, features = [
