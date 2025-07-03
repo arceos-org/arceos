@@ -1,7 +1,7 @@
 //! Platform-specific operations.
 
 cfg_if::cfg_if! {
-    if #[cfg(target_arch = "aarch64")]{
+    if #[cfg(all(target_arch = "aarch64", target_os = "none"))]{
         mod aarch64_common;
     }
 }

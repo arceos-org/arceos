@@ -38,11 +38,10 @@ jobs:
       run: make clippy ARCH=${{ matrix.arch }}
 
   build:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
         arch: [x86_64, riscv64, aarch64, loongarch64]
         rust-toolchain: [nightly, nightly-2025-05-20]
     env:
@@ -86,11 +85,10 @@ jobs:
       run: make ARCH=${{ matrix.arch }} A=examples/httpserver-c
 
   build-for-other-platforms:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
         rust-toolchain: [nightly, nightly-2025-05-20]
     env:
       RUSTUP_TOOLCHAIN: ${{ matrix.rust-toolchain }}
@@ -151,3 +149,53 @@ jobs:
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLATFORM=x86_64-pc-oslab A=examples/httpserver-c FEATURES=page-alloc-4g,driver-ixgbe
 
+  # Necessary checks for macOS builds
+  build-for-macos:
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rust-toolchain: [nightly, nightly-2025-05-20]
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: ${{ matrix.rust-toolchain }}
+        components: rust-src, clippy
+        targets: x86_64-unknown-none
+    - uses: Swatinem/rust-cache@v2
+      with:
+        shared-key: cargo-bin-cache
+        cache-targets: false
+    - name: Clippy for the default target
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make clippy
+
+    - run: cargo install cargo-binutils
+    - name: Build helloworld
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make A=examples/helloworld
+
+    # Test for other platforms
+    - run: make PLATFORM=x86_64-pc-oslab defconfig
+    - name: Build helloworld for x86_64-pc-oslab
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=x86_64-pc-oslab A=examples/helloworld
+    - name: Build shell for x86_64-pc-oslab
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=x86_64-pc-oslab A=examples/shell FEATURES=page-alloc-4g,driver-ramdisk
+
+    - run: make PLATFORM=aarch64-raspi4 defconfig
+    - name: Build helloworld for aarch64-raspi4
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=aarch64-raspi4 SMP=4 A=examples/helloworld
+
+    - run: make PLATFORM=aarch64-bsta1000b defconfig
+    - name: Build helloworld for aarch64-bsta1000b
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=aarch64-bsta1000b A=examples/helloworld SMP=8
+
+    - run: make PLATFORM=aarch64-phytium-pi defconfig
+    - name: Build helloworld for aarch64-phytium-pi
+      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
+      run: make PLATFORM=aarch64-phytium-pi A=examples/helloworld SMP=4
