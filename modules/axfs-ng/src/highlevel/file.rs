@@ -374,37 +374,18 @@ impl<M: RawMutex> File<M> {
     }
 }
 
-fn vfs_error_to_axio(err: VfsError) -> axio::Error {
-    match err {
-        VfsError::EEXIST => axio::Error::AlreadyExists,
-        VfsError::ENOTEMPTY => axio::Error::DirectoryNotEmpty,
-        VfsError::EINVAL => axio::Error::InvalidInput,
-        VfsError::EISDIR => axio::Error::IsADirectory,
-        VfsError::ENOMEM => axio::Error::NoMemory,
-        VfsError::ENOTDIR => axio::Error::NotADirectory,
-        VfsError::ENOENT => axio::Error::NotFound,
-        VfsError::EBADF => axio::Error::PermissionDenied,
-        VfsError::ENOSPC => axio::Error::StorageFull,
-        VfsError::ENOSYS | VfsError::EOPNOTSUPP => axio::Error::Unsupported,
-        _ => axio::Error::Io,
-    }
-}
-
 impl<M: RawMutex> axio::Read for File<M> {
     fn read(&mut self, buf: &mut [u8]) -> axio::Result<usize> {
-        self.read_at(buf, self.position)
-            .inspect(|n| {
-                self.position += *n as u64;
-            })
-            .map_err(vfs_error_to_axio)
+        self.read_at(buf, self.position).inspect(|n| {
+            self.position += *n as u64;
+        })
     }
 }
 
 impl<M: RawMutex> axio::Write for File<M> {
     fn write(&mut self, buf: &[u8]) -> axio::Result<usize> {
         if self.flags.contains(FileFlags::APPEND) {
-            self.access(FileFlags::WRITE)
-                .map_err(vfs_error_to_axio)?
+            self.access(FileFlags::WRITE)?
                 .append(buf)
                 .map(|(written, offset)| {
                     self.position = offset;
@@ -415,7 +396,6 @@ impl<M: RawMutex> axio::Write for File<M> {
                 self.position += *n as u64;
             })
         }
-        .map_err(vfs_error_to_axio)
     }
 
     fn flush(&mut self) -> axio::Result {
@@ -425,25 +405,22 @@ impl<M: RawMutex> axio::Write for File<M> {
 
 impl<M: RawMutex> axio::Seek for File<M> {
     fn seek(&mut self, pos: SeekFrom) -> axio::Result<u64> {
-        let new_pos = (|| {
-            Ok(match pos {
-                SeekFrom::Start(pos) => pos,
-                SeekFrom::End(off) => {
-                    let size = self.access(FileFlags::empty())?.len()?;
-                    size.checked_add_signed(off)
-                        .ok_or(VfsError::EINVAL)?
-                        .clamp(0, size)
-                }
-                SeekFrom::Current(off) => {
-                    let size = self.access(FileFlags::empty())?.len()?;
-                    self.position
-                        .checked_add_signed(off)
-                        .ok_or(VfsError::EINVAL)?
-                        .clamp(0, size)
-                }
-            })
-        })()
-        .map_err(vfs_error_to_axio)?;
+        let new_pos = match pos {
+            SeekFrom::Start(pos) => pos,
+            SeekFrom::End(off) => {
+                let size = self.access(FileFlags::empty())?.len()?;
+                size.checked_add_signed(off)
+                    .ok_or(VfsError::EINVAL)?
+                    .clamp(0, size)
+            }
+            SeekFrom::Current(off) => {
+                let size = self.access(FileFlags::empty())?.len()?;
+                self.position
+                    .checked_add_signed(off)
+                    .ok_or(VfsError::EINVAL)?
+                    .clamp(0, size)
+            }
+        };
         self.position = new_pos;
         Ok(new_pos)
     }

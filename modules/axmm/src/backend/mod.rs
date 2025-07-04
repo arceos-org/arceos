@@ -1,7 +1,7 @@
 //! Memory mapping backends.
 use ::alloc::sync::Arc;
 use axalloc::global_allocator;
-use axerrno::{AxError, AxResult};
+use axerrno::{LinuxError, LinuxResult};
 use axhal::{
     mem::{phys_to_virt, virt_to_phys},
     paging::{MappingFlags, PageTable, PagingError, PagingResult},
@@ -107,11 +107,11 @@ impl Backend {
         size: usize,
         flags: MappingFlags,
         pt: &mut PageTable,
-    ) -> AxResult {
+    ) -> LinuxResult {
         match self.populate_strict(start, size, flags, pt) {
             Ok(()) | Err(PagingError::AlreadyMapped) => Ok(()),
-            Err(PagingError::NoMemory) => Err(AxError::NoMemory),
-            Err(_) => Err(AxError::BadAddress),
+            Err(PagingError::NoMemory) => Err(LinuxError::ENOMEM),
+            Err(_) => Err(LinuxError::EFAULT),
         }
     }
 

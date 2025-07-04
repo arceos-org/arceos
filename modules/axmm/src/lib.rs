@@ -10,7 +10,7 @@ extern crate alloc;
 mod aspace;
 mod backend;
 
-use axerrno::{AxError, AxResult};
+use axerrno::{LinuxError, LinuxResult};
 use axhal::{
     mem::{MemRegionFlags, phys_to_virt},
     paging::MappingFlags,
@@ -27,12 +27,11 @@ pub use self::{
 
 static KERNEL_ASPACE: LazyInit<SpinNoIrq<AddrSpace>> = LazyInit::new();
 
-fn mapping_err_to_ax_err(err: MappingError) -> AxError {
+fn mapping_err_to_ax_err(err: MappingError) -> LinuxError {
     warn!("Mapping error: {:?}", err);
     match err {
-        MappingError::InvalidParam => AxError::InvalidInput,
-        MappingError::AlreadyExists => AxError::AlreadyExists,
-        MappingError::BadState => AxError::BadState,
+        MappingError::InvalidParam | MappingError::AlreadyExists => LinuxError::EINVAL,
+        MappingError::BadState => LinuxError::EFAULT,
     }
 }
 
@@ -57,7 +56,7 @@ fn reg_flag_to_map_flag(f: MemRegionFlags) -> MappingFlags {
 }
 
 /// Creates a new address space for kernel itself.
-pub fn new_kernel_aspace() -> AxResult<AddrSpace> {
+pub fn new_kernel_aspace() -> LinuxResult<AddrSpace> {
     let mut aspace = AddrSpace::new_empty(
         va!(axconfig::plat::KERNEL_ASPACE_BASE),
         axconfig::plat::KERNEL_ASPACE_SIZE,

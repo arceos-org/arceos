@@ -1,7 +1,7 @@
-use alloc::{boxed::Box, collections::VecDeque};
-use core::ops::{Deref, DerefMut};
+use alloc::{boxed::Box, collections::VecDeque, sync::Arc};
+use core::ops::DerefMut;
 
-use axerrno::{AxError, AxResult, ax_err};
+use axerrno::{LinuxError, LinuxResult};
 use axsync::Mutex;
 use smoltcp::{
     iface::{SocketHandle, SocketSet},
@@ -44,7 +44,7 @@ impl Drop for ListenTableEntry {
 }
 
 pub struct ListenTable {
-    tcp: Box<[Mutex<Option<Box<ListenTableEntry>>>]>,
+    tcp: Box<[Arc<Mutex<Option<Box<ListenTableEntry>>>>]>,
 }
 
 impl ListenTable {
@@ -52,7 +52,7 @@ impl ListenTable {
         let tcp = unsafe {
             let mut buf = Box::new_uninit_slice(PORT_NUM);
             for i in 0..PORT_NUM {
-                buf[i].write(Mutex::new(None));
+                buf[i].write(Arc::default());
             }
             buf.assume_init()
         };
@@ -63,7 +63,7 @@ impl ListenTable {
         self.tcp[port as usize].lock().is_none()
     }
 
-    pub fn listen(&self, listen_endpoint: IpListenEndpoint) -> AxResult {
+    pub fn listen(&self, listen_endpoint: IpListenEndpoint) -> LinuxResult {
         let port = listen_endpoint.port;
         assert_ne!(port, 0);
         let mut entry = self.tcp[port as usize].lock();
@@ -71,7 +71,8 @@ impl ListenTable {
             *entry = Some(Box::new(ListenTableEntry::new(listen_endpoint)));
             Ok(())
         } else {
-            ax_err!(AddrInUse, "socket listen() failed")
+            warn!("socket already listening on port {port}");
+            Err(LinuxError::EADDRINUSE)
         }
     }
 
@@ -80,39 +81,48 @@ impl ListenTable {
         *self.tcp[port as usize].lock() = None;
     }
 
-    pub fn can_accept(&self, port: u16) -> AxResult<bool> {
-        if let Some(entry) = self.tcp[port as usize].lock().deref() {
+    fn listen_entry(&self, port: u16) -> Arc<Mutex<Option<Box<ListenTableEntry>>>> {
+        self.tcp[port as usize].clone()
+    }
+
+    pub fn can_accept(&self, port: u16) -> LinuxResult<bool> {
+        if let Some(entry) = self.listen_entry(port).lock().as_ref() {
             Ok(entry.syn_queue.iter().any(|&handle| is_connected(handle)))
         } else {
-            ax_err!(InvalidInput, "socket accept() failed: not listen")
+            warn!("accept before listen");
+            Err(LinuxError::EINVAL)
         }
     }
 
-    pub fn accept(&self, port: u16) -> AxResult<(SocketHandle, (IpEndpoint, IpEndpoint))> {
-        if let Some(entry) = self.tcp[port as usize].lock().deref_mut() {
-            let syn_queue: &mut VecDeque<SocketHandle> = &mut entry.syn_queue;
-            let idx = syn_queue
-                .iter()
-                .enumerate()
-                .find_map(|(idx, &handle)| is_connected(handle).then_some(idx))
-                .ok_or(AxError::WouldBlock)?; // wait for connection
-            if idx > 0 {
-                warn!(
-                    "slow SYN queue enumeration: index = {}, len = {}!",
-                    idx,
-                    syn_queue.len()
-                );
-            }
-            let handle = syn_queue.swap_remove_front(idx).unwrap();
-            // If the connection is reset, return ConnectionReset error
-            // Otherwise, return the handle and the address tuple
-            if is_closed(handle) {
-                ax_err!(ConnectionReset, "socket accept() failed: connection reset")
-            } else {
-                Ok((handle, get_addr_tuple(handle)))
-            }
+    pub fn accept(&self, port: u16) -> LinuxResult<(SocketHandle, (IpEndpoint, IpEndpoint))> {
+        let entry = self.listen_entry(port);
+        let mut table = entry.lock();
+        let Some(entry) = table.deref_mut() else {
+            warn!("accept before listen");
+            return Err(LinuxError::EINVAL);
+        };
+
+        let syn_queue: &mut VecDeque<SocketHandle> = &mut entry.syn_queue;
+        let idx = syn_queue
+            .iter()
+            .enumerate()
+            .find_map(|(idx, &handle)| is_connected(handle).then_some(idx))
+            .ok_or(LinuxError::EAGAIN)?; // wait for connection
+        if idx > 0 {
+            warn!(
+                "slow SYN queue enumeration: index = {}, len = {}!",
+                idx,
+                syn_queue.len()
+            );
+        }
+        let handle = syn_queue.swap_remove_front(idx).unwrap();
+        // If the connection is reset, return ConnectionReset error
+        // Otherwise, return the handle and the address tuple
+        if is_closed(handle) {
+            warn!("accept failed: connection reset");
+            Err(LinuxError::ECONNRESET)
         } else {
-            ax_err!(InvalidInput, "socket accept() failed: not listen")
+            Ok((handle, get_addr_tuple(handle)))
         }
     }
 
@@ -122,7 +132,7 @@ impl ListenTable {
         dst: IpEndpoint,
         sockets: &mut SocketSet<'_>,
     ) {
-        if let Some(entry) = self.tcp[dst.port as usize].lock().deref_mut() {
+        if let Some(entry) = self.listen_entry(dst.port).lock().deref_mut() {
             if !entry.can_accept(dst.addr) {
                 // not listening on this address
                 return;

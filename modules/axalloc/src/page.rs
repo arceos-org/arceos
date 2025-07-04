@@ -1,5 +1,5 @@
 use allocator::AllocError;
-use axerrno::{AxError, AxResult};
+use axerrno::{LinuxError, LinuxResult};
 use memory_addr::{PhysAddr, VirtAddr};
 
 use crate::{PAGE_SIZE, global_allocator};
@@ -15,7 +15,7 @@ pub struct GlobalPage {
 
 impl GlobalPage {
     /// Allocate one 4K-sized page.
-    pub fn alloc() -> AxResult<Self> {
+    pub fn alloc() -> LinuxResult<Self> {
         global_allocator()
             .alloc_pages(1, PAGE_SIZE)
             .map(|vaddr| Self {
@@ -26,14 +26,14 @@ impl GlobalPage {
     }
 
     /// Allocate one 4K-sized page and fill with zero.
-    pub fn alloc_zero() -> AxResult<Self> {
+    pub fn alloc_zero() -> LinuxResult<Self> {
         let mut p = Self::alloc()?;
         p.zero();
         Ok(p)
     }
 
     /// Allocate contiguous 4K-sized pages.
-    pub fn alloc_contiguous(num_pages: usize, align_pow2: usize) -> AxResult<Self> {
+    pub fn alloc_contiguous(num_pages: usize, align_pow2: usize) -> LinuxResult<Self> {
         global_allocator()
             .alloc_pages(num_pages, align_pow2)
             .map(|vaddr| Self {
@@ -98,11 +98,11 @@ impl Drop for GlobalPage {
     }
 }
 
-const fn alloc_err_to_ax_err(e: AllocError) -> AxError {
+const fn alloc_err_to_ax_err(e: AllocError) -> LinuxError {
     match e {
         AllocError::InvalidParam | AllocError::MemoryOverlap | AllocError::NotAllocated => {
-            AxError::InvalidInput
+            LinuxError::EINVAL
         }
-        AllocError::NoMemory => AxError::NoMemory,
+        AllocError::NoMemory => LinuxError::ENOMEM,
     }
 }
