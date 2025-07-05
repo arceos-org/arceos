@@ -125,13 +125,12 @@ impl TcpSocket {
                 .unwrap_or_else(|| SOCKET_SET.add(SocketSetWrapper::new_tcp_socket()));
 
             // TODO: check remote addr unreachable
-            let remote_endpoint = SocketAddr::from(remote_addr);
             let bound_endpoint = self.bound_endpoint()?;
             let iface = &ETH0.iface;
             let (local_endpoint, remote_endpoint) = SOCKET_SET
                 .with_socket_mut::<tcp::Socket, _, _>(handle, |socket| {
                     socket
-                        .connect(iface.lock().context(), remote_endpoint, bound_endpoint)
+                        .connect(iface.lock().context(), remote_addr, bound_endpoint)
                         .or_else(|e| match e {
                             ConnectError::InvalidState => {
                                 ax_err!(BadState, "socket connect() failed")

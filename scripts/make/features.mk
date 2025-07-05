@@ -38,6 +38,12 @@ override FEATURES := $(strip $(FEATURES))
 ax_feat :=
 lib_feat :=
 
+ifneq ($(MYPLAT),)
+  ax_feat += myplat
+else
+  ax_feat += defplat
+endif
+
 ifneq ($(filter $(LOG),off error warn info debug trace),)
   ax_feat += log-level-$(LOG)
 else

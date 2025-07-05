@@ -13,10 +13,11 @@ pub use self::aspace::AddrSpace;
 pub use self::backend::Backend;
 
 use axerrno::{AxError, AxResult};
-use axhal::mem::phys_to_virt;
+use axhal::mem::{MemRegionFlags, phys_to_virt};
+use axhal::paging::MappingFlags;
 use kspin::SpinNoIrq;
 use lazyinit::LazyInit;
-use memory_addr::{PhysAddr, VirtAddr, va};
+use memory_addr::{MemoryAddr, PhysAddr, VirtAddr, va};
 use memory_set::MappingError;
 
 static KERNEL_ASPACE: LazyInit<SpinNoIrq<AddrSpace>> = LazyInit::new();
@@ -30,6 +31,26 @@ fn mapping_err_to_ax_err(err: MappingError) -> AxError {
     }
 }
 
+fn reg_flag_to_map_flag(f: MemRegionFlags) -> MappingFlags {
+    let mut ret = MappingFlags::empty();
+    if f.contains(MemRegionFlags::READ) {
+        ret |= MappingFlags::READ;
+    }
+    if f.contains(MemRegionFlags::WRITE) {
+        ret |= MappingFlags::WRITE;
+    }
+    if f.contains(MemRegionFlags::EXECUTE) {
+        ret |= MappingFlags::EXECUTE;
+    }
+    if f.contains(MemRegionFlags::DEVICE) {
+        ret |= MappingFlags::DEVICE;
+    }
+    if f.contains(MemRegionFlags::UNCACHED) {
+        ret |= MappingFlags::UNCACHED;
+    }
+    ret
+}
+
 /// Creates a new address space for kernel itself.
 pub fn new_kernel_aspace() -> AxResult<AddrSpace> {
     let mut aspace = AddrSpace::new_empty(
@@ -37,7 +58,15 @@ pub fn new_kernel_aspace() -> AxResult<AddrSpace> {
         axconfig::plat::KERNEL_ASPACE_SIZE,
     )?;
     for r in axhal::mem::memory_regions() {
-        aspace.map_linear(phys_to_virt(r.paddr), r.paddr, r.size, r.flags.into())?;
+        // mapped range should contain the whole region if it is not aligned.
+        let start = r.paddr.align_down_4k();
+        let end = (r.paddr + r.size).align_up_4k();
+        aspace.map_linear(
+            phys_to_virt(start),
+            start,
+            end - start,
+            reg_flag_to_map_flag(r.flags),
+        )?;
     }
     Ok(aspace)
 }

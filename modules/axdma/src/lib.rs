@@ -44,7 +44,7 @@ pub const fn phys_to_bus(paddr: PhysAddr) -> BusAddr {
 /// allocator, which can potentially cause memory leaks or other issues if not
 /// used correctly.
 pub unsafe fn alloc_coherent(layout: Layout) -> AllocResult<DMAInfo> {
-    ALLOCATOR.lock().alloc_coherent(layout)
+    unsafe { ALLOCATOR.lock().alloc_coherent(layout) }
 }
 
 /// Frees coherent memory previously allocated.
@@ -61,7 +61,7 @@ pub unsafe fn alloc_coherent(layout: Layout) -> AllocResult<DMAInfo> {
 /// This function is unsafe because it directly interacts with the global allocator,
 /// which can potentially cause memory leaks or other issues if not used correctly.
 pub unsafe fn dealloc_coherent(dma: DMAInfo, layout: Layout) {
-    ALLOCATOR.lock().dealloc_coherent(dma, layout)
+    unsafe { ALLOCATOR.lock().dealloc_coherent(dma, layout) }
 }
 
 /// A bus memory address.

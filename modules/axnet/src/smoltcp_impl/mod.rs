@@ -254,7 +254,7 @@ impl RxToken for AxNetRxToken<'_> {
     where
         F: FnOnce(&[u8]) -> R,
     {
-        let mut rx_buf = self.1;
+        let rx_buf = self.1;
         trace!(
             "RECV {} bytes: {:02X?}",
             rx_buf.packet_len(),

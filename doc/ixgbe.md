@@ -5,13 +5,16 @@ You need to specify the platform that owns this network card. For example, we de
 You can use the following command to compile an 'httpserver' app application:
 
 ```shell
-make A=apps/net/httpserver PLATFORM=x86_64-pc-oslab FEATURES=driver-ixgbe
+make PLAT_CONFIG=$(pwd)/configs/custom/x86_64-pc-oslab.toml defconfig
+make A=examples/httpserver PLAT_CONFIG=$(pwd)/configs/custom/x86_64-pc-oslab.toml FEATURES=driver-ixgbe
 ```
 
 You can also use the following command to start the iperf application:
 
 ```shell
-make A=apps/c/iperf PLATFORM=x86_64-pc-oslab FEATURES=driver-ixgbe,driver-ramdisk
+git clone https://github.com/arceos-org/arceos-apps.git
+make PLAT_CONFIG=$(pwd)/configs/custom/x86_64-pc-oslab.toml defconfig
+make A=arceos-apps/c/iperf PLAT_CONFIG=$(pwd)/configs/custom/x86_64-pc-oslab.toml FEATURES=driver-ixgbe,driver-ramdisk
 ```
 
 ## Use ixgbe NIC in QEMU with PCI passthrough
@@ -35,7 +38,7 @@ make A=apps/c/iperf PLATFORM=x86_64-pc-oslab FEATURES=driver-ixgbe,driver-ramdis
 3. Build and run ArceOS:
 
     ```shell
-    make A=apps/net/httpserver FEATURES=driver-ixgbe VFIO_PCI=02:00.0 IP=x.x.x.x GW=x.x.x.x run
+    make A=examples/httpserver FEATURES=driver-ixgbe VFIO_PCI=02:00.0 IP=x.x.x.x GW=x.x.x.x run
     ```
 
 4. If no longer in use, bind the NIC back to the `ixgbe` driver:

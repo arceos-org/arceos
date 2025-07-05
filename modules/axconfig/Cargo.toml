@@ -10,4 +10,4 @@ repository = "https://github.com/arceos-org/arceos/tree/main/modules/axconfig"
 documentation = "https://arceos-org.github.io/arceos/axconfig/index.html"
 
 [dependencies]
-axconfig-gen-macros = { version = "0.1.0", features = ["nightly"] }
+axconfig-macros = "0.2"
