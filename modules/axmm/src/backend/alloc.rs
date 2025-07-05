@@ -26,7 +26,6 @@ impl Backend {
     }
 
     pub(crate) fn map_alloc(
-        &self,
         start: VirtAddr,
         size: usize,
         flags: MappingFlags,
@@ -51,18 +50,13 @@ impl Backend {
                     }
                 }
             }
-            true
         } else {
-            // Map to a empty entry for on-demand mapping.
-            let flags = MappingFlags::empty();
-            pt.map_region(start, |_| 0.into(), size, flags, false, false)
-                .map(|tlb| tlb.ignore())
-                .is_ok()
+            // create mapping entries on demand later in `handle_page_fault_alloc`.
         }
+        true
     }
 
     pub(crate) fn unmap_alloc(
-        &self,
         start: VirtAddr,
         size: usize,
         pt: &mut PageTable,
@@ -86,7 +80,6 @@ impl Backend {
     }
 
     pub(crate) fn handle_page_fault_alloc(
-        &self,
         vaddr: VirtAddr,
         orig_flags: MappingFlags,
         pt: &mut PageTable,
@@ -97,9 +90,9 @@ impl Backend {
         } else if let Some(frame) = alloc_frame(true) {
             // Allocate a physical frame lazily and map it to the fault address.
             // `vaddr` does not need to be aligned. It will be automatically
-            // aligned during `pt.remap` regardless of the page size.
-            pt.remap(vaddr, frame, orig_flags)
-                .map(|(_, tlb)| tlb.flush())
+            // aligned during `pt.map` regardless of the page size.
+            pt.map(vaddr, frame, PageSize::Size4K, orig_flags)
+                .map(|tlb| tlb.flush())
                 .is_ok()
         } else {
             false

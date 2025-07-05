@@ -2,7 +2,7 @@ use core::fmt;
 
 use axerrno::{AxError, AxResult, ax_err};
 use axhal::mem::phys_to_virt;
-use axhal::paging::{MappingFlags, PageTable};
+use axhal::paging::{MappingFlags, PageTable, PagingError};
 use memory_addr::{
     MemoryAddr, PAGE_SIZE_4K, PageIter4K, PhysAddr, VirtAddr, VirtAddrRange, is_aligned_4k,
 };
@@ -144,6 +144,39 @@ impl AddrSpace {
         self.areas
             .map(area, &mut self.pt, false)
             .map_err(mapping_err_to_ax_err)?;
+        Ok(())
+    }
+
+    /// Add a new zero-initialized allocation mapping.
+    pub fn alloc_for_lazy(&mut self, start: VirtAddr, size: usize) -> AxResult {
+        let end = (start + size).align_up_4k();
+        let mut start = start.align_down_4k();
+        let size = end - start;
+        if !self.contains_range(start, size) {
+            return ax_err!(InvalidInput, "address out of range");
+        }
+        while let Some(area) = self.areas.find(start) {
+            let area_backend = area.backend();
+            if let Backend::Alloc { populate } = area_backend {
+                if !*populate {
+                    let count = (area.end().min(end) - start).align_up_4k() / PAGE_SIZE_4K;
+                    for i in 0..count {
+                        let addr = start + i * PAGE_SIZE_4K;
+                        Backend::handle_page_fault_alloc(
+                            addr,
+                            area.flags(),
+                            &mut self.pt,
+                            *populate,
+                        );
+                    }
+                }
+            }
+            start = area.end();
+            assert!(start.is_aligned_4k());
+        }
+        if start < end {
+            ax_err!(InvalidInput, "address out of range")?;
+        }
         Ok(())
     }
 
@@ -300,6 +333,60 @@ impl AddrSpace {
             }
         }
         false
+    }
+
+    /// Clone a [`AddrSpace`] by re-mapping all [`MemoryArea`]s in a new page table and copying data in user space.
+    pub fn clone_or_err(&mut self) -> AxResult<Self> {
+        let mut new_aspace = crate::new_user_aspace(self.base(), self.size())?;
+
+        for area in self.areas.iter() {
+            let backend = area.backend();
+            // Remap the memory area in the new address space.
+            let new_area =
+                MemoryArea::new(area.start(), area.size(), area.flags(), backend.clone());
+            new_aspace
+                .areas
+                .map(new_area, &mut new_aspace.pt, false)
+                .map_err(mapping_err_to_ax_err)?;
+
+            if matches!(backend, Backend::Linear { .. }) {
+                continue;
+            }
+
+            // Copy data from old memory area to new memory area.
+            for vaddr in
+                PageIter4K::new(area.start(), area.end()).expect("Failed to create page iterator")
+            {
+                let addr = match self.pt.query(vaddr) {
+                    Ok((paddr, _, _)) => paddr,
+                    // If the page is not mapped, skip it.
+                    Err(PagingError::NotMapped) => continue,
+                    Err(_) => return Err(AxError::BadAddress),
+                };
+                let new_addr = match new_aspace.pt.query(vaddr) {
+                    Ok((paddr, _, _)) => paddr,
+                    // If the page is not mapped, try map it.
+                    Err(PagingError::NotMapped) => {
+                        if !backend.handle_page_fault(vaddr, area.flags(), &mut new_aspace.pt) {
+                            return Err(AxError::NoMemory);
+                        }
+                        match new_aspace.pt.query(vaddr) {
+                            Ok((paddr, _, _)) => paddr,
+                            Err(_) => return Err(AxError::BadAddress),
+                        }
+                    }
+                    Err(_) => return Err(AxError::BadAddress),
+                };
+                unsafe {
+                    core::ptr::copy_nonoverlapping(
+                        phys_to_virt(addr).as_ptr(),
+                        phys_to_virt(new_addr).as_mut_ptr(),
+                        PAGE_SIZE_4K,
+                    )
+                };
+            }
+        }
+        Ok(new_aspace)
     }
 }
 
