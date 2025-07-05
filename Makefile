@@ -82,7 +82,9 @@ else
   APP_TYPE := c
 endif
 
-ifeq ($(filter $(MAKECMDGOALS),unittest unittest_no_fail_fast clippy fmt fmt_c disk_img clean clean_c),)
+.DEFAULT_GOAL := all
+
+ifneq ($(filter $(or $(MAKECMDGOALS), $(.DEFAULT_GOAL)), all build run justrun debug defconfig oldconfig),)
 # Install dependencies
 include scripts/make/deps.mk
 # Platform resolving
@@ -114,8 +116,9 @@ export AX_TARGET=$(TARGET)
 export AX_IP=$(IP)
 export AX_GW=$(GW)
 
-ifneq ($(filter $(MAKECMDGOALS),unittest unittest_no_fail_fast clippy),)
-  # When running unit tests, set `AX_CONFIG_PATH` to empty for dummy config
+ifneq ($(filter $(MAKECMDGOALS),unittest unittest_no_fail_fast clippy doc doc_check_missing),)
+  # When running unit tests or other tests unrelated to a specific platform,
+  # set `AX_CONFIG_PATH` to empty for dummy config
   unexport AX_CONFIG_PATH
 else
   export AX_CONFIG_PATH=$(OUT_CONFIG)
@@ -189,10 +192,10 @@ else
 	$(call cargo_clippy)
 endif
 
-doc: oldconfig
+doc:
 	$(call cargo_doc)
 
-doc_check_missing: oldconfig
+doc_check_missing:
 	$(call cargo_doc)
 
 fmt:
