@@ -180,7 +180,14 @@ Examples are given below and in the [app-helloworld](https://github.com/arceos-o
 
 ## How to build ArceOS for specific platforms and devices
 
-Set the `MYPLAT` variable when run `make`:
+You need to manually link your application with the appropriate platform packages:
+
+```rs
+// Add this line to your application (for raspi4 platform)
+extern crate axplat_aarch64_raspi;
+```
+
+Then set the `MYPLAT` variable when run `make`:
 
 ```bash
 # Build helloworld for raspi4

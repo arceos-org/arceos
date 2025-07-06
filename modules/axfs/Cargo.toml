@@ -38,7 +38,7 @@ axns = { workspace = true }
 
 [dependencies.fatfs]
 git = "https://github.com/rafalh/rust-fatfs"
-rev = "85f06e0"
+rev = "4eccb50"
 optional = true
 default-features = false
 features = [ # no std
