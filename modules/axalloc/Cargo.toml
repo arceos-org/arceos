@@ -21,6 +21,6 @@ page-alloc-4g = ["allocator/page-alloc-4g"] # Support up to 4G memory capacity
 log = "=0.4.21"
 cfg-if = "1.0"
 kspin = "0.1"
-memory_addr = "0.3"
+memory_addr = "0.4"
 axerrno = "0.1"
 allocator = { git = "https://github.com/arceos-org/allocator.git", tag ="v0.1.1", features = ["bitmap"] }
