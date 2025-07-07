@@ -382,6 +382,7 @@ dependencies = [
  "crate_interface",
  "lazyinit",
  "log",
+ "memory_addr",
  "rdrive",
 ]
 

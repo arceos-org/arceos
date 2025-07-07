@@ -36,7 +36,7 @@ fn probe_gic(info: FdtInfo<'_>, dev: PlatformDevice) -> Result<(), OnProbeError>
         gicr_reg.size.unwrap_or(0x1000),
     )?;
 
-    let gic = Gic::new(gicd, gicr, Default::default());
+    let gic = Gic::new(gicd, gicr);
 
     dev.register_intc(gic);
 

@@ -2,8 +2,9 @@ use core::{error::Error, ops::Deref, ptr::NonNull};
 
 use alloc::{boxed::Box, format, string::ToString};
 use axerrno::{AxError, AxResult};
-use axhal::mem::{MemoryAddr, PhysAddr, VirtAddr, phys_to_virt};
+use axhal::mem::{PhysAddr, VirtAddr, phys_to_virt};
 use lazyinit::LazyInit;
+use memory_addr::MemoryAddr;
 use rdrive::register::{DriverRegister, DriverRegisterSlice};
 
 mod intc;
