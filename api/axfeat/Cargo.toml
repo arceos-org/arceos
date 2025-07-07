@@ -56,6 +56,7 @@ display = ["alloc", "paging", "axdriver/virtio-gpu", "dep:axdisplay", "axruntime
 rtc = ["axhal/rtc", "axruntime/rtc"]
 
 # Device drivers
+driver-dyn = ["axruntime/driver-dyn","axdriver?/dyn"]
 bus-mmio = ["axdriver?/bus-mmio"]
 bus-pci = ["axdriver?/bus-pci"]
 driver-ramdisk = ["axdriver?/ramdisk", "axfs?/use-ramdisk"]

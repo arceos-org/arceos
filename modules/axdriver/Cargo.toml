@@ -10,7 +10,7 @@ repository = "https://github.com/arceos-org/arceos/tree/main/modules/axdriver"
 documentation = "https://arceos-org.github.io/arceos/axdriver/index.html"
 
 [features]
-dyn = []
+dyn = ["dep:rdrive", "dep:arm-gic-driver"]
 bus-mmio = []
 bus-pci = ["dep:axdriver_pci", "dep:axhal", "dep:axconfig"]
 net = ["axdriver_net"]
@@ -46,3 +46,10 @@ axalloc = { workspace = true, optional = true }
 axhal = { workspace = true, optional = true }
 axconfig = { workspace = true, optional = true }
 axdma = { workspace = true, optional = true }
+rdrive = { version = "0.15", optional = true }
+axerrno = "0.1"
+lazyinit = "0.2"
+memory_addr = "0.4"
+
+[target.'cfg(target_arch = "aarch64")'.dependencies]
+arm-gic-driver = { version = "0.14", optional = true }
