@@ -420,20 +420,6 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
         self.inner.resched();
     }
 
-    /// Park the current task, and reschedule.
-    pub fn park_current_task(&mut self) {
-        let curr = &self.current_task;
-        assert!(curr.is_running());
-        assert!(!curr.is_idle());
-
-        // Ensure preemption is disabled
-        #[cfg(feature = "preempt")]
-        assert!(curr.can_preempt(1));
-
-        curr.set_state(TaskState::Parked);
-        self.inner.resched();
-    }
-
     #[cfg(feature = "irq")]
     pub fn sleep_until(&mut self, deadline: axhal::time::TimeValue) {
         let curr = &self.current_task;

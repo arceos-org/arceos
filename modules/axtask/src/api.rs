@@ -206,12 +206,6 @@ pub fn exit(exit_code: i32) -> ! {
     current_run_queue::<NoPreemptIrqSave>().exit_current(exit_code)
 }
 
-/// Park the current task.
-pub fn park_current_task() {
-    let mut cur_rq = current_run_queue::<NoPreemptIrqSave>();
-    cur_rq.park_current_task();
-}
-
 /// The idle task routine.
 ///
 /// It runs an infinite loop that keeps calling [`yield_now()`].

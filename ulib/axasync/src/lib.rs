@@ -6,8 +6,6 @@
 pub mod executor {
     use arceos_api::embassy_async as api;
 
-    pub use embassy_executor::{main, task};
-
     pub use api::AxExecutor as Executor;
     pub use embassy_executor::*;
     pub use embassy_futures::*;

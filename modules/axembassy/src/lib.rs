@@ -1,3 +1,25 @@
+//! [ArceOS](https://github.com/arceos-org/arceos) embassy integration
+//!
+//! This module provides embassy asynchronous runtime integration, including
+//! time driver, and executor with single-thread, multi-thread, preemptive(partially)
+//! which are configurable by cargo features.
+//!
+//! # Cargo Features
+//!
+//! - `driver`: Enable time driver support. If it's enabled, time driver is used.
+//!   Usually used by `axruntime` module in `irq` initiation.
+//! - `executor-single`: Use the [single-thread executor][1]. It also enables the
+//!   related utils modules.
+//! - `executor-thread`: Use the [multi-thread executor][2]. It also enables the
+//!   related utils modules and enables the `multitask` feature if it is enabled.
+//! - `executor-preempt`: Use the [preemptive executor][3]. It also enables the
+//!   related utils modules and enables the `executor-thread` feature if it is
+//!   enabled.
+//!
+//! [1]: single-thread executor
+//! [2]: multi-thread executor(`spawner`, `block_on`)
+//! [3]: preemptive executor(`PrioFuture`)
+
 #![cfg_attr(not(test), no_std)]
 #![feature(doc_cfg)]
 #![feature(doc_auto_cfg)]
@@ -7,30 +29,21 @@ cfg_if::cfg_if! {
         extern crate alloc;
         extern crate log;
 
+        mod asynch;
         pub mod delegate;
 
-        #[cfg(feature = "executor-thread")]
-        mod executor_thread;
-        #[cfg(feature = "executor-thread")]
-        mod asynch;
-        #[cfg(feature = "executor-thread")]
-        mod executor_thread_exports {
-            pub use crate::executor_thread::Executor;
-            pub use crate::asynch::{spawner,block_on,Spawner,SendSpawner};
-            #[cfg(feature = "executor-preempt")]
-            pub use crate::preempt::PrioFuture;
-        }
-        #[cfg(feature = "executor-thread")]
-        pub use executor_thread_exports::*;
-
-        #[cfg(feature = "executor-single")]
         mod executor;
-        #[cfg(feature = "executor-single")]
         mod executor_exports {
             pub use crate::executor::Executor;
             pub use crate::asynch::Spawner;
+
+            #[cfg(feature = "executor-thread")]
+            pub use crate::asynch::{spawner,block_on,SendSpawner};
+
+            #[cfg(feature = "executor-preempt")]
+            pub use crate::preempt::PrioFuture;
         }
-        #[cfg(feature = "executor-single")]
+
         pub use executor_exports::*;
     }
 }

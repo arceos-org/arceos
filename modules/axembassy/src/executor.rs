@@ -1,12 +1,23 @@
-use core::sync::atomic::{AtomicBool, Ordering};
 use core::marker::PhantomData;
+use core::sync::atomic::{AtomicBool, Ordering};
 use embassy_executor::raw;
 
-static SIGNAL_WORK_THREAD_MODE: AtomicBool = AtomicBool::new(false);
+#[cfg(feature = "executor-single")]
+static SIGNAL_SINGLE: AtomicBool = AtomicBool::new(false);
+
+#[cfg(feature = "executor-thread")]
+#[percpu::def_percpu]
+static SINGAL_THREAD: AtomicBool = AtomicBool::new(false);
 
 #[unsafe(export_name = "__pender")]
 fn __pender(_context: *mut ()) {
-    SIGNAL_WORK_THREAD_MODE.store(true, Ordering::SeqCst);
+    #[cfg(feature = "executor-single")]
+    SIGNAL_SINGLE.store(true, Ordering::SeqCst);
+
+    #[cfg(feature = "executor-thread")]
+    SINGAL_THREAD.with_current(|m| {
+        m.store(true, Ordering::SeqCst);
+    });
 }
 
 pub struct Executor {
@@ -36,10 +47,26 @@ impl Executor {
             unsafe {
                 self.inner.poll();
 
-                if SIGNAL_WORK_THREAD_MODE.load(Ordering::SeqCst) {
-                    SIGNAL_WORK_THREAD_MODE.store(false, Ordering::SeqCst);
-                } else {
-                    axhal::arch::wait_for_irqs();
+                #[cfg(feature = "executor-single")]
+                {
+                    if SIGNAL_SINGLE.load(Ordering::SeqCst) {
+                        SIGNAL_SINGLE.store(false, Ordering::SeqCst);
+                    } else {
+                        axhal::arch::wait_for_irqs();
+                    }
+                }
+
+                #[cfg(feature = "executor-thread")]
+                {
+                    let polled = SINGAL_THREAD.with_current(|m| m.load(Ordering::Acquire));
+                    if polled {
+                        SINGAL_THREAD.with_current(|m| {
+                            m.store(false, Ordering::Release);
+                        });
+                    } else {
+                        // park_current_task();
+                        axtask::yield_now();
+                    }
                 }
             };
         }

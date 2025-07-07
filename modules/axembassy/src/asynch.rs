@@ -9,6 +9,7 @@ use axtask::yield_now;
 
 pub use embassy_executor::{SendSpawner, Spawner};
 
+/// Global spawner for multi-thread executor
 pub(crate) static SPAWNER: Mutex<OnceCell<SendSpawner>> = Mutex::new(OnceCell::new());
 
 fn init_spawn() {
@@ -17,7 +18,7 @@ fn init_spawn() {
 }
 
 fn init() {
-    use crate::executor_thread::Executor;
+    use crate::executor::Executor;
     use static_cell::StaticCell;
 
     static EXECUTOR: StaticCell<Executor> = StaticCell::new();
@@ -60,7 +61,7 @@ pub(crate) fn set_spawner(spawner: SendSpawner) {
     let _ = sp.set(spawner);
 }
 
-fn wake(ctx: *const ()) {
+fn wake(_ctx: *const ()) {
     // let id = ctx as u64;
     // unpark_task(id, true);
 }

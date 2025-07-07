@@ -148,6 +148,9 @@ unsafe impl<T> Sync for Delegate<T> {}
 
 impl<T> Delegate<T> {
     #[must_use]
+    /// Creates a new `Delegate`
+    /// 
+    /// **NOT** thread safe and only executor safe
     pub const fn new() -> Self {
         Self {
             send: Signal::new(),
@@ -157,7 +160,8 @@ impl<T> Delegate<T> {
         }
     }
 
-    /// lend
+    /// lend target `T` to other task in the same executor 
+    /// with lifetime longer than delegate itself
     pub async fn lend<'a, 'b: 'a>(&'a self, target: &'b mut T) -> Result<(), DelegateError> {
         use DelegateError::*;
         use DelegateState::*;
@@ -183,7 +187,10 @@ impl<T> Delegate<T> {
         Ok(())
     }
 
-    /// lend and reset
+    /// lend target `T` to other task in the same executor
+    /// with lifetime longer than delegate itself
+    /// 
+    /// reset state afterwards for reuse
     pub async fn lend_new<'a, 'b: 'a>(&'a self, target: &'b mut T) -> Result<(), DelegateError> {
         match self.lend(target).await {
             Ok(()) => {
@@ -194,6 +201,8 @@ impl<T> Delegate<T> {
         }
     }
 
+    /// Returns a mutable reference to the inner value lent 
+    /// by other task in the same executor
     pub async fn with<U>(&self, func: impl FnOnce(&mut T) -> U) -> Result<U, DelegateError> {
         use DelegateError::*;
         use DelegateState::*;
@@ -219,6 +228,7 @@ impl<T> Delegate<T> {
         Ok(res)
     }
 
+    /// Reset the delegate to reuse
     pub fn reset(&self) {
         use DelegateState::*;
 
