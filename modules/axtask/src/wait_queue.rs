@@ -1,7 +1,7 @@
 use alloc::{collections::VecDeque, sync::Arc, vec::Vec};
 
 use kernel_guard::{NoOp, NoPreemptIrqSave};
-use kspin::{SpinNoIrq, SpinNoIrqGuard};
+use kspin::SpinNoIrq;
 
 use crate::{AxTaskRef, CurrentTask, current_run_queue, select_run_queue};
 
@@ -10,7 +10,6 @@ use crate::{AxTaskRef, CurrentTask, current_run_queue, select_run_queue};
 /// # Examples
 ///
 /// ```
-/// 
 /// use core::sync::atomic::{AtomicU32, Ordering};
 ///
 /// use axtask::WaitQueue;
@@ -32,8 +31,6 @@ use crate::{AxTaskRef, CurrentTask, current_run_queue, select_run_queue};
 pub struct WaitQueue {
     queue: SpinNoIrq<VecDeque<AxTaskRef>>,
 }
-
-pub(crate) type WaitQueueGuard<'a> = SpinNoIrqGuard<'a, VecDeque<AxTaskRef>>;
 
 impl WaitQueue {
     /// Creates an empty wait queue.
@@ -80,7 +77,9 @@ impl WaitQueue {
     /// Blocks the current task and put it into the wait queue, until other task
     /// notifies it.
     pub fn wait(&self) {
-        current_run_queue::<NoPreemptIrqSave>().blocked_resched(self.queue.lock());
+        let mut rq = current_run_queue::<NoPreemptIrqSave>();
+        let mut queue = self.queue.lock();
+        rq.blocked_resched(move |curr| queue.push_back(curr));
         self.cancel_events(crate::current(), false);
     }
 
@@ -96,11 +95,11 @@ impl WaitQueue {
         let curr = crate::current();
         loop {
             let mut rq = current_run_queue::<NoPreemptIrqSave>();
-            let wq = self.queue.lock();
+            let mut wq = self.queue.lock();
             if condition() {
                 break;
             }
-            rq.blocked_resched(wq);
+            rq.blocked_resched(move |curr| wq.push_back(curr));
             // Preemption may occur here.
         }
         self.cancel_events(curr, false);
@@ -120,7 +119,8 @@ impl WaitQueue {
         );
         crate::timers::set_alarm_wakeup(deadline, curr.clone());
 
-        rq.blocked_resched(self.queue.lock());
+        let mut queue = self.queue.lock();
+        rq.blocked_resched(move |curr| queue.push_back(curr));
 
         let timeout = curr.in_wait_queue(); // still in the wait queue, must have timed out
 
@@ -154,13 +154,13 @@ impl WaitQueue {
             if axhal::time::wall_time() >= deadline {
                 break;
             }
-            let wq = self.queue.lock();
+            let mut wq = self.queue.lock();
             if condition() {
                 timeout = false;
                 break;
             }
 
-            rq.blocked_resched(wq);
+            rq.blocked_resched(move |curr| wq.push_back(curr));
             // Preemption may occur here.
         }
         // Always try to remove the task from the timer list.

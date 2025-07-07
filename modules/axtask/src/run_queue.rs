@@ -12,7 +12,6 @@ use scheduler::BaseScheduler;
 use crate::{
     AxCpuMask, AxTaskRef, Scheduler, TaskInner, WaitQueue,
     task::{CurrentTask, TaskState},
-    wait_queue::WaitQueueGuard,
 };
 
 macro_rules! percpu_static {
@@ -415,30 +414,36 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
     ///        task.
     ///     4. The lock of the wait queue will be released explicitly after
     ///        current task is pushed into it.
-    pub fn blocked_resched(&mut self, mut wq_guard: WaitQueueGuard) {
+    pub fn blocked_resched(&mut self, before_block: impl FnOnce(AxTaskRef)) {
         let curr = &self.current_task;
         assert!(curr.is_running());
         assert!(!curr.is_idle());
+
         // we must not block current task with preemption disabled.
         // Current expected preempt count is 2.
         // 1 for `NoPreemptIrqSave`, 1 for wait queue's `SpinNoIrq`.
-        #[cfg(feature = "preempt")]
-        assert!(curr.can_preempt(2));
+        // #[cfg(feature = "preempt")]
+        // assert!(curr.can_preempt(2));
 
         // Mark the task as blocked, this has to be done before adding it to the wait
         // queue while holding the lock of the wait queue.
         curr.set_state(TaskState::Blocked);
         curr.set_in_wait_queue(true);
 
-        wq_guard.push_back(curr.clone());
-        // Drop the lock of wait queue explictly.
-        drop(wq_guard);
+        before_block(curr.clone());
 
         // Current task's state has been changed to `Blocked` and added to the wait
         // queue. Note that the state may have been set as `Ready` in
         // `unblock_task()`, see `unblock_task()` for details.
 
         debug!("task block: {}", curr.id_name());
+        #[cfg(feature = "preempt")]
+        {
+            // TODO(mivik): magic little hack. why?
+            assert!(curr.can_preempt(1));
+            curr.disable_preempt();
+            curr.enable_preempt(true);
+        }
         self.inner.resched();
     }
 

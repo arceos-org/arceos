@@ -1230,6 +1230,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6045ea39e8d2862506c0dff6c65d068da362335df698bb1634033492740d2170"
 
 [[package]]
+name = "intrusive-collections"
+version = "0.9.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "189d0897e4cbe8c75efedf3502c18c887b05046e59d28404d4d8e46cbc4d1e86"
+dependencies = [
+ "memoffset",
+]
+
+[[package]]
 name = "is_terminal_polyfill"
 version = "1.70.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1333,11 +1342,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "linked_list"
-version = "0.1.0"
-source = "git+https://github.com/arceos-org/linked_list.git?tag=v0.1.0#34c8db301882cecfeb56df0f7c89978dbc62f49a"
-
-[[package]]
 name = "linkme"
 version = "0.3.33"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1404,6 +1408,15 @@ name = "memchr"
 version = "2.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32a282da65faaf38286cf3be983213fcf1d2e2a58700e808f83f4ea9a4804bc0"
+
+[[package]]
+name = "memoffset"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "488016bfae457b036d996092f6cb448677611ce4449e970ceaf42695203f218a"
+dependencies = [
+ "autocfg",
+]
 
 [[package]]
 name = "memory_addr"
@@ -1792,10 +1805,10 @@ checksum = "e6e36312fb5ddc10d08ecdc65187402baba4ac34585cb9d1b78522ae2358d890"
 
 [[package]]
 name = "scheduler"
-version = "0.1.0"
-source = "git+https://github.com/arceos-org/scheduler.git?tag=v0.1.0#c8d25d9aed146dca28dc8987afd229b52c20361a"
+version = "0.2.1"
+source = "git+https://github.com/Starry-Mix-THU/scheduler.git?rev=3bc2f73#3bc2f731050029583f2f6c5bfb85df8871bf1b41"
 dependencies = [
- "linked_list",
+ "intrusive-collections",
 ]
 
 [[package]]
