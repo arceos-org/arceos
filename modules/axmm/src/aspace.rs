@@ -3,6 +3,7 @@ use core::fmt;
 use axerrno::{AxError, AxResult, ax_err};
 use axhal::mem::phys_to_virt;
 use axhal::paging::{MappingFlags, PageTable};
+use axhal::trap::PageFaultFlags;
 use memory_addr::{
     MemoryAddr, PAGE_SIZE_4K, PageIter4K, PhysAddr, VirtAddr, VirtAddrRange, is_aligned_4k,
 };
@@ -85,7 +86,7 @@ impl AddrSpace {
         size: usize,
         limit: VirtAddrRange,
     ) -> Option<VirtAddr> {
-        self.areas.find_free_area(hint, size, limit)
+        self.areas.find_free_area(hint, size, limit, PAGE_SIZE_4K)
     }
 
     /// Add a new linear mapping.
@@ -248,13 +249,46 @@ impl AddrSpace {
         self.areas.clear(&mut self.pt).unwrap();
     }
 
+    /// Checks whether an access to the specified memory region is valid.
+    ///
+    /// Returns `true` if the memory region given by `range` is all mapped and
+    /// has proper permission flags (i.e. containing `access_flags`).
+    pub fn can_access_range(
+        &self,
+        start: VirtAddr,
+        size: usize,
+        access_flags: MappingFlags,
+    ) -> bool {
+        let mut range = VirtAddrRange::from_start_size(start, size);
+        for area in self.areas.iter() {
+            if area.end() <= range.start {
+                continue;
+            }
+            if area.start() > range.start {
+                return false;
+            }
+
+            // This area overlaps with the memory region
+            if !area.flags().contains(access_flags) {
+                return false;
+            }
+
+            range.start = area.end();
+            if range.is_empty() {
+                return true;
+            }
+        }
+
+        false
+    }
+
     /// Handles a page fault at the given address.
     ///
     /// `access_flags` indicates the access type that caused the page fault.
     ///
     /// Returns `true` if the page fault is handled successfully (not a real
     /// fault).
-    pub fn handle_page_fault(&mut self, vaddr: VirtAddr, access_flags: MappingFlags) -> bool {
+    pub fn handle_page_fault(&mut self, vaddr: VirtAddr, access_flags: PageFaultFlags) -> bool {
         if !self.va_range.contains(vaddr) {
             return false;
         }

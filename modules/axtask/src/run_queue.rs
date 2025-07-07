@@ -10,7 +10,7 @@ use kspin::SpinRaw;
 use lazyinit::LazyInit;
 use scheduler::BaseScheduler;
 
-use axhal::cpu::this_cpu_id;
+use axhal::percpu::this_cpu_id;
 
 use crate::task::{CurrentTask, TaskState};
 use crate::wait_queue::WaitQueueGuard;
@@ -48,8 +48,8 @@ percpu_static! {
 /// Access to this variable is marked as `unsafe` because it contains `MaybeUninit` references,
 /// which require careful handling to avoid undefined behavior. The array should be fully
 /// initialized before being accessed to ensure safe usage.
-static mut RUN_QUEUES: [MaybeUninit<&'static mut AxRunQueue>; axconfig::SMP] =
-    [ARRAY_REPEAT_VALUE; axconfig::SMP];
+static mut RUN_QUEUES: [MaybeUninit<&'static mut AxRunQueue>; axconfig::plat::CPU_NUM] =
+    [ARRAY_REPEAT_VALUE; axconfig::plat::CPU_NUM];
 #[allow(clippy::declare_interior_mutable_const)] // It's ok because it's used only for initialization `RUN_QUEUES`.
 const ARRAY_REPEAT_VALUE: MaybeUninit<&'static mut AxRunQueue> = MaybeUninit::uninit();
 
@@ -94,7 +94,7 @@ pub(crate) fn current_run_queue<G: BaseGuard>() -> CurrentRunQueueRef<'static, G
 /// This function will panic if `cpu_mask` is empty, indicating that there are no available CPUs for task execution.
 ///
 #[cfg(feature = "smp")]
-// The modulo operation is safe here because `axconfig::SMP` is always greater than 1 with "smp" enabled.
+// The modulo operation is safe here because `axconfig::plat::CPU_NUM` is always greater than 1 with "smp" enabled.
 #[allow(clippy::modulo_one)]
 #[inline]
 fn select_run_queue_index(cpumask: AxCpuMask) -> usize {
@@ -105,7 +105,7 @@ fn select_run_queue_index(cpumask: AxCpuMask) -> usize {
 
     // Round-robin selection of the run queue index.
     loop {
-        let index = RUN_QUEUE_INDEX.fetch_add(1, Ordering::SeqCst) % axconfig::SMP;
+        let index = RUN_QUEUE_INDEX.fetch_add(1, Ordering::SeqCst) % axconfig::plat::CPU_NUM;
         if cpumask.get(index) {
             return index;
         }
@@ -259,7 +259,7 @@ impl<G: BaseGuard> AxRunQueueRef<'_, G> {
             let cpu_id = self.inner.cpu_id;
             debug!("task unblock: {} on run_queue {}", task_id_name, cpu_id);
             // Note: when the task is unblocked on another CPU's run queue,
-            // we just ingore the `resched` flag.
+            // we just ingnore the `resched` flag.
             if resched && cpu_id == this_cpu_id() {
                 #[cfg(feature = "preempt")]
                 crate::current().set_preempt_pending(true);
@@ -357,14 +357,13 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
         debug!("task exit: {}, exit_code={}", curr.id_name(), exit_code);
         assert!(curr.is_running(), "task is not running: {:?}", curr.state());
         assert!(!curr.is_idle());
-
         if curr.is_init() {
             // Safety: it is called from `current_run_queue::<NoPreemptIrqSave>().exit_current(exit_code)`,
             // which disabled IRQs and preemption.
             unsafe {
                 EXITED_TASKS.current_ref_mut_raw().clear();
             }
-            axhal::misc::terminate();
+            axhal::power::system_off();
         } else {
             curr.set_state(TaskState::Exited);
 
@@ -526,7 +525,7 @@ impl AxRunQueue {
         // Make sure that IRQs are disabled by kernel guard or other means.
         #[cfg(all(not(test), feature = "irq"))] // Note: irq is faked under unit tests.
         assert!(
-            !axhal::arch::irqs_enabled(),
+            !axhal::asm::irqs_enabled(),
             "IRQs must be disabled during scheduling"
         );
         trace!(
@@ -633,15 +632,10 @@ pub(crate) fn init() {
     IDLE_TASK.with_current(|i| {
         i.init_once(idle_task.into_arc());
     });
-    
+
     // Put the subsequent execution into the `main` task.
     let main_task = TaskInner::new_init("main".into()).into_arc();
     main_task.set_state(TaskState::Running);
-    debug!(
-        "main task registered: {}, id {}",
-        main_task.id_name(),
-        main_task.id().as_u64()
-    );
     unsafe { CurrentTask::init_current(main_task) }
 
     RUN_QUEUE.with_current(|rq| {

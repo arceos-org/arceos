@@ -2,21 +2,21 @@
 arch = "unknown"            # str
 # Platform identifier.
 platform = "dummy"          # str
+# Platform package.
+package = "dummy"           # str
 # Stack size of each task.
 task-stack-size = 0x40000   # uint
 # Number of timer ticks per second (Hz). A timer tick may contain several timer
 # interrupts.
 ticks-per-sec = 100         # uint
-# Number of CPUs
-smp = 1                     # uint
 
 #
 # Platform configs
 #
 [plat]
 # Platform family.
-family = "dummy"            # str
-
+# Number of CPUs
+cpu-num = 1                 # uint
 # Base address of the whole physical memory.
 phys-memory-base = 0        # uint
 # Size of the whole physical memory.
@@ -42,13 +42,15 @@ kernel-aspace-size = 0      # uint
 # Device specifications
 #
 [devices]
-# MMIO regions with format (`base_paddr`, `size`).
-mmio-regions = []           # [(uint, uint)]
-# VirtIO MMIO regions with format (`base_paddr`, `size`).
-virtio-mmio-regions = []    # [(uint, uint)]
+# MMIO ranges with format (`base_paddr`, `size`).
+mmio-ranges = []            # [(uint, uint)]
+# VirtIO MMIO ranges with format (`base_paddr`, `size`).
+virtio-mmio-ranges = []     # [(uint, uint)]
 # Base physical address of the PCIe ECAM space.
 pci-ecam-base = 0           # uint
 # End PCI bus number.
 pci-bus-end = 0             # uint
 # PCI device memory ranges.
 pci-ranges = []             # [(uint, uint)]
+# Timer interrupt num.
+timer-irq = 0               # uint

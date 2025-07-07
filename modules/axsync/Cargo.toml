@@ -16,7 +16,8 @@ multitask = ["axtask/multitask"]
 
 [dependencies]
 kspin = "0.1"
-axtask = { workspace = true, features = ["irq", "multitask"] }
+lock_api = { version = "0.4", default-features = false }
+axtask = { workspace = true }
 
 [dev-dependencies]
 rand = "0.9"

@@ -16,9 +16,9 @@
 //!   related utils modules and enables the `executor-thread` feature if it is
 //!   enabled.
 //!
-//! [1]: single-thread executor
-//! [2]: multi-thread executor(`spawner`, `block_on`)
-//! [3]: preemptive executor(`PrioFuture`)
+//! [1]: crate::executor::Executor
+//! [2]: crate::asynch::spawner
+//! [3]: crate::preempt::PrioFuture
 
 #![cfg_attr(not(test), no_std)]
 #![feature(doc_cfg)]
@@ -29,16 +29,22 @@ cfg_if::cfg_if! {
         extern crate alloc;
         extern crate log;
 
+        mod delegate;
+        #[cfg(feature= "executor-thread")]
         mod asynch;
-        pub mod delegate;
+        #[cfg(feature= "executor-preempt")]
+        mod preempt;
 
         mod executor;
         mod executor_exports {
             pub use crate::executor::Executor;
-            pub use crate::asynch::Spawner;
+            pub use crate::delegate::{Delegate, SameExecutorCell};
+            pub use embassy_executor::Spawner;
 
             #[cfg(feature = "executor-thread")]
-            pub use crate::asynch::{spawner,block_on,SendSpawner};
+            pub use crate::asynch::{spawner,block_on};
+            #[cfg(feature = "executor-thread")]
+            pub use embassy_executor::SendSpawner;
 
             #[cfg(feature = "executor-preempt")]
             pub use crate::preempt::PrioFuture;
@@ -48,18 +54,16 @@ cfg_if::cfg_if! {
     }
 }
 
-mod preempt;
-
 #[cfg(feature = "driver")]
 mod time_driver;
 
 #[cfg(feature = "driver")]
 pub use crate::time_driver::AxDriverAPI;
 
-#[cfg(all(
-    any(feature = "executor-thread", feature = "executor-preempt"),
-    feature = "executor-single"
-))]
-compile_error!(
-    "feature `executor-thread`/`executor-preempt` and `executor-single` are mutually exclusive"
-);
+// #[cfg(all(
+//     any(feature = "executor-thread", feature = "executor-preempt"),
+//     feature = "executor-single"
+// ))]
+// compile_error!(
+//     "feature `executor-thread`/`executor-preempt` and `executor-single` are mutually exclusive"
+// );

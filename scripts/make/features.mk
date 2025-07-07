@@ -14,7 +14,7 @@
 ifeq ($(APP_TYPE),c)
   ax_feat_prefix := axfeat/
   lib_feat_prefix := axlibc/
-  lib_features := fp_simd irq alloc multitask fs net fd pipe select epoll
+  lib_features := fp-simd irq alloc multitask fs net fd pipe select epoll
 else
   # TODO: it's better to use `axfeat/` as `ax_feat_prefix`, but all apps need to have `axfeat` as a dependency
   ax_feat_prefix := axstd/
@@ -37,6 +37,12 @@ override FEATURES := $(strip $(FEATURES))
 
 ax_feat :=
 lib_feat :=
+
+ifneq ($(MYPLAT),)
+  ax_feat += myplat
+else
+  ax_feat += defplat
+endif
 
 ifneq ($(filter $(LOG),off error warn info debug trace),)
   ax_feat += log-level-$(LOG)

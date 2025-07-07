@@ -23,10 +23,14 @@ default = []
 smp = ["axfeat/smp", "kspin/smp"]
 
 # Floating point/SIMD
-fp_simd = ["axfeat/fp_simd"]
+fp-simd = ["axfeat/fp-simd"]
 
 # Interrupts
 irq = ["arceos_api/irq", "axfeat/irq"]
+
+# Custom or default platforms
+myplat = ["axfeat/myplat"]
+defplat = ["axfeat/defplat"]
 
 # Memory
 alloc = ["arceos_api/alloc", "axfeat/alloc", "axio/alloc"]
@@ -41,9 +45,9 @@ tls = ["axfeat/tls"]
 
 # Multi-threading and scheduler
 multitask = ["arceos_api/multitask", "axfeat/multitask"]
-sched_fifo = ["axfeat/sched_fifo"]
-sched_rr = ["axfeat/sched_rr"]
-sched_cfs = ["axfeat/sched_cfs"]
+sched-fifo = ["axfeat/sched-fifo"]
+sched-rr = ["axfeat/sched-rr"]
+sched-cfs = ["axfeat/sched-cfs"]
 
 # File system
 fs = ["arceos_api/fs", "axfeat/fs"]
@@ -81,3 +85,4 @@ arceos_api = { workspace = true }
 axio = "0.1"
 axerrno = "0.1"
 kspin = "0.1"
+lock_api = { version = "0.4", default-features = false }

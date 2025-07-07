@@ -7,7 +7,7 @@ use core::{
 use axsync::Mutex;
 use axtask::yield_now;
 
-pub use embassy_executor::{SendSpawner, Spawner};
+use embassy_executor::{SendSpawner, Spawner};
 
 /// Global spawner for multi-thread executor
 pub(crate) static SPAWNER: Mutex<OnceCell<SendSpawner>> = Mutex::new(OnceCell::new());

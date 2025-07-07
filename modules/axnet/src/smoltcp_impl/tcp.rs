@@ -10,7 +10,7 @@ use smoltcp::iface::SocketHandle;
 use smoltcp::socket::tcp::{self, ConnectError, State};
 use smoltcp::wire::{IpEndpoint, IpListenEndpoint};
 
-use super::addr::{UNSPECIFIED_ENDPOINT, from_core_sockaddr, into_core_sockaddr, is_unspecified};
+use super::addr::UNSPECIFIED_ENDPOINT;
 use super::{ETH0, LISTEN_TABLE, SOCKET_SET, SocketSetWrapper};
 
 // State transitions:
@@ -78,7 +78,7 @@ impl TcpSocket {
     pub fn local_addr(&self) -> AxResult<SocketAddr> {
         match self.get_state() {
             STATE_CONNECTED | STATE_LISTENING => {
-                Ok(into_core_sockaddr(unsafe { self.local_addr.get().read() }))
+                Ok(SocketAddr::from(unsafe { self.local_addr.get().read() }))
             }
             _ => Err(AxError::NotConnected),
         }
@@ -90,7 +90,7 @@ impl TcpSocket {
     pub fn peer_addr(&self) -> AxResult<SocketAddr> {
         match self.get_state() {
             STATE_CONNECTED | STATE_LISTENING => {
-                Ok(into_core_sockaddr(unsafe { self.peer_addr.get().read() }))
+                Ok(SocketAddr::from(unsafe { self.peer_addr.get().read() }))
             }
             _ => Err(AxError::NotConnected),
         }
@@ -125,13 +125,12 @@ impl TcpSocket {
                 .unwrap_or_else(|| SOCKET_SET.add(SocketSetWrapper::new_tcp_socket()));
 
             // TODO: check remote addr unreachable
-            let remote_endpoint = from_core_sockaddr(remote_addr);
             let bound_endpoint = self.bound_endpoint()?;
             let iface = &ETH0.iface;
             let (local_endpoint, remote_endpoint) = SOCKET_SET
                 .with_socket_mut::<tcp::Socket, _, _>(handle, |socket| {
                     socket
-                        .connect(iface.lock().context(), remote_endpoint, bound_endpoint)
+                        .connect(iface.lock().context(), remote_addr, bound_endpoint)
                         .or_else(|e| match e {
                             ConnectError::InvalidState => {
                                 ax_err!(BadState, "socket connect() failed")
@@ -192,7 +191,7 @@ impl TcpSocket {
                 if old != UNSPECIFIED_ENDPOINT {
                     return ax_err!(InvalidInput, "socket bind() failed: already bound");
                 }
-                self.local_addr.get().write(from_core_sockaddr(local_addr));
+                self.local_addr.get().write(IpEndpoint::from(local_addr));
             }
             Ok(())
         })
@@ -344,6 +343,49 @@ impl TcpSocket {
             }),
         }
     }
+
+    /// Checks if Nagle's algorithm is enabled for this TCP socket.
+    #[inline]
+    pub fn nodelay(&self) -> AxResult<bool> {
+        if let Some(h) = unsafe { self.handle.get().read() } {
+            Ok(SOCKET_SET.with_socket::<tcp::Socket, _, _>(h, |socket| socket.nagle_enabled()))
+        } else {
+            ax_err!(NotConnected, "socket is not connected")
+        }
+    }
+
+    /// Enables or disables Nagle's algorithm for this TCP socket.
+    #[inline]
+    pub fn set_nodelay(&self, enabled: bool) -> AxResult<()> {
+        if let Some(h) = unsafe { self.handle.get().read() } {
+            SOCKET_SET.with_socket_mut::<tcp::Socket, _, _>(h, |socket| {
+                socket.set_nagle_enabled(enabled);
+            });
+            Ok(())
+        } else {
+            ax_err!(NotConnected, "socket is not connected")
+        }
+    }
+
+    /// Returns the maximum capacity of the receive buffer in bytes.
+    #[inline]
+    pub fn recv_capacity(&self) -> AxResult<usize> {
+        if let Some(h) = unsafe { self.handle.get().read() } {
+            Ok(SOCKET_SET.with_socket::<tcp::Socket, _, _>(h, |socket| socket.recv_capacity()))
+        } else {
+            ax_err!(NotConnected, "socket is not connected")
+        }
+    }
+
+    /// Returns the maximum capacity of the send buffer in bytes.
+    #[inline]
+    pub fn send_capacity(&self) -> AxResult<usize> {
+        if let Some(h) = unsafe { self.handle.get().read() } {
+            Ok(SOCKET_SET.with_socket::<tcp::Socket, _, _>(h, |socket| socket.send_capacity()))
+        } else {
+            ax_err!(NotConnected, "socket is not connected")
+        }
+    }
 }
 
 /// Private methods
@@ -411,7 +453,7 @@ impl TcpSocket {
             get_ephemeral_port()?
         };
         assert_ne!(port, 0);
-        let addr = if !is_unspecified(local_addr.addr) {
+        let addr = if !local_addr.addr.is_unspecified() {
             Some(local_addr.addr)
         } else {
             None

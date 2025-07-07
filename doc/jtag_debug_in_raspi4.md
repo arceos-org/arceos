@@ -91,7 +91,7 @@ but theoretically, you can use whatever you want.
     [start4.elf](https://raw.githubusercontent.com/raspberrypi/firmware/master/boot/start4.elf), 
     [fixup4.dat](https://github.com/raspberrypi/firmware/raw/master/boot/fixup4.dat), 
     [bcm2711-rpi-4-b.dtb](https://raw.githubusercontent.com/raspberrypi/firmware/master/boot/bcm2711-rpi-4-b.dtb)
-    5. just run `make A=apps/helloworld PLATFORM=aarch64-raspi4 chainboot`, then should display this image.
+    5. just run `make A=examples/helloworld MYPLAT=axplat-aarch64-raspi chainboot`, then should display this image.
 
     <table>
     <thead> <tr>
@@ -165,7 +165,7 @@ but theoretically, you can use whatever you want.
 
 ### Start Debugging
 
-    1. just run `make A=apps/helloworld PLATFORM=aarch64-raspi4 chainboot` and Power up the board., then should display this image.
+    1. just run `make A=examples/helloworld MYPLAT=axplat-aarch64-raspi chainboot` and Power up the board., then should display this image.
 
     ```
     Minipush 1.0
@@ -202,11 +202,11 @@ but theoretically, you can use whatever you want.
     *the following guidelines is basically like previous datasheets, In fact, if you're a senior developer, skip the following. XD*
     3. My personal suggestions is using zellij, but you could choice what ever you want.
     4. A: Keeping this miniload running (just don't terminate it) in terminal A.
-    5. B: run `make A=apps/helloworld PLATFORM=aarch64-raspi4 openocd`, 
+    5. B: run `make A=examples/helloworld MYPLAT=axplat-aarch64-raspi openocd`, 
     the windows should display following, but it doesn't matter, we don't need to care about this.
 
     ```
-    $ make A=apps/helloworld PLATFORM=aarch64-raspi4 openocd  
+    $ make A=examples/helloworld MYPLAT=axplat-aarch64-raspi openocd  
 
     Launching OpenOCD
     [sudo] password for jacky: 
@@ -241,7 +241,7 @@ but theoretically, you can use whatever you want.
 
     ```
 
-    6. C: run `make A=apps/helloworld PLATFORM=aarch64-raspi4 gdb` in terminal C.
+    6. C: run `make A=examples/helloworld MYPLAT=axplat-aarch64-raspi gdb` in terminal C.
     7. You are now in GDB, but just don't start your debug immediately.
     Because the use of minipush script, we could simple push our image to board before power up the board.
     Like a double-edged sword. It also constrains our behavior, 

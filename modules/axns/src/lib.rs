@@ -23,13 +23,9 @@ extern crate alloc;
 
 use alloc::sync::Arc;
 use core::{alloc::Layout, fmt, ops::Deref};
-
 use lazyinit::LazyInit;
 
-unsafe extern "C" {
-    fn __start_axns_resource();
-    fn __stop_axns_resource();
-}
+pub mod link;
 
 /// A namespace that contains all user-defined resources.
 ///
@@ -49,6 +45,9 @@ pub struct AxNamespace {
     alloc: bool,
 }
 
+unsafe impl Send for AxNamespace {}
+unsafe impl Sync for AxNamespace {}
+
 impl AxNamespace {
     /// Returns the base address of the namespace, which points to the start of
     /// all resources.
@@ -63,13 +62,13 @@ impl AxNamespace {
 
     /// Returns the size of the `axns_resource` section.
     fn section_size() -> usize {
-        __stop_axns_resource as usize - __start_axns_resource as usize
+        link::section_end() as usize - link::section_start() as usize
     }
 
     /// Returns the global namespace.
     pub fn global() -> Self {
         Self {
-            base: __start_axns_resource as *mut u8,
+            base: link::section_start() as *mut u8,
             alloc: false,
         }
     }
@@ -89,7 +88,7 @@ impl AxNamespace {
         } else {
             let layout = Layout::from_size_align(size, 64).unwrap();
             let dst = unsafe { alloc::alloc::alloc(layout) };
-            let src = __start_axns_resource as *const u8;
+            let src = link::section_start();
             unsafe { core::ptr::copy_nonoverlapping(src, dst, size) };
             dst
         };
@@ -101,9 +100,10 @@ impl Drop for AxNamespace {
     fn drop(&mut self) {
         if self.alloc {
             let size = Self::section_size();
-            if size != 0 && !self.base.is_null() {
+            let base = self.base();
+            if size != 0 && !base.is_null() {
                 let layout = Layout::from_size_align(size, 64).unwrap();
-                unsafe { alloc::alloc::dealloc(self.base, layout) };
+                unsafe { alloc::alloc::dealloc(base, layout) };
             }
         }
     }
@@ -229,14 +229,9 @@ macro_rules! def_resource {
 
             impl $name {
                 unsafe fn deref_from_base(&self, ns_base: *mut u8) -> &$ty {
-                    unsafe extern {
-                        fn __start_axns_resource();
-                    }
+                    $crate::def_static_resource!(RES, $ty, $default);
 
-                    #[unsafe(link_section = "axns_resource")]
-                    static RES: $ty = $default;
-
-                    let offset = &RES as *const _ as usize - __start_axns_resource as usize;
+                    let offset = &RES as *const _ as *const u8 as usize - $crate::link::section_start() as usize;
                     let ptr = unsafe{ ns_base.add(offset) } as *const _;
                     unsafe{ &*ptr }
                 }

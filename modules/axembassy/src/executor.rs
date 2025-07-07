@@ -20,6 +20,7 @@ fn __pender(_context: *mut ()) {
     });
 }
 
+/// An executor based on the [embassy_executor](https://docs.rs/embassy-executor/latest/embassy_executor/) crate
 pub struct Executor {
     inner: raw::Executor,
     not_send: PhantomData<*mut ()>,
@@ -36,7 +37,7 @@ impl Executor {
 
     /// Runs the executor.
     ///
-    /// The `init` closure is called with a [`Spawner`] that spawns tasks on
+    /// The `init` closure is called with a [`embassy_executor::Spawner`] that spawns tasks on
     /// this executor. Use it to spawn the initial task(s). After `init` returns,
     /// the executor starts running the tasks.
     ///
@@ -52,7 +53,7 @@ impl Executor {
                     if SIGNAL_SINGLE.load(Ordering::SeqCst) {
                         SIGNAL_SINGLE.store(false, Ordering::SeqCst);
                     } else {
-                        axhal::arch::wait_for_irqs();
+                        axhal::asm::wait_for_irqs();
                     }
                 }
 

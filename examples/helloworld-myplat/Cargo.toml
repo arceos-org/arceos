@@ -1,0 +1,33 @@
+[package]
+name = "arceos-helloworld-myplat"
+version = "0.1.0"
+edition.workspace = true
+authors = ["Yuekai Jia <equation618@gmail.com>"]
+
+[features]
+x86-pc = ["dep:axplat-x86-pc"]
+aarch64-raspi4 = ["dep:axplat-aarch64-raspi"]
+aarch64-qemu-virt = ["dep:axplat-aarch64-qemu-virt"]
+aarch64-bsta1000b = ["dep:axplat-aarch64-bsta1000b"]
+aarch64-phytium-pi = ["dep:axplat-aarch64-phytium-pi"]
+riscv64-qemu-virt = ["dep:axplat-riscv64-qemu-virt"]
+loongarch64-qemu-virt = ["dep:axplat-loongarch64-qemu-virt"]
+
+[dependencies]
+cfg-if = "1.0"
+axstd = { workspace = true, features = ["myplat"], optional = true }
+
+[target.'cfg(target_arch = "x86_64")'.dependencies]
+axplat-x86-pc = { version = "0.1", features = ["smp", "irq"], optional = true }
+
+[target.'cfg(target_arch = "aarch64")'.dependencies]
+axplat-aarch64-qemu-virt = { version = "0.1", features = ["smp", "irq"], optional = true }
+axplat-aarch64-raspi = { version = "0.1", features = ["smp", "irq"], optional = true }
+axplat-aarch64-bsta1000b = { version = "0.1", features = ["smp", "irq"], optional = true }
+axplat-aarch64-phytium-pi = { version = "0.1", features = ["smp", "irq"], optional = true }
+
+[target.'cfg(target_arch = "riscv64")'.dependencies]
+axplat-riscv64-qemu-virt = { version = "0.1", features = ["smp", "irq"], optional = true }
+
+[target.'cfg(target_arch = "loongarch64")'.dependencies]
+axplat-loongarch64-qemu-virt = { version = "0.1", features = ["smp", "irq"], optional = true }

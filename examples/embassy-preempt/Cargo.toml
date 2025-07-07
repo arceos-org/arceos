@@ -15,10 +15,9 @@ iter-delay = []
 [dependencies]
 axstd = { workspace = true, features = [
 	"multitask",
-	"sched_cfs",
+	"sched-cfs",
 	"alloc",
 ], optional = true }
 axasync = { workspace = true, features = ["preempt", "time"] }
-
 embassy-executor = { git = "https://github.com/embassy-rs/embassy", branch = "main", default-features = false }
 log = "=0.4.21"

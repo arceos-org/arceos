@@ -29,9 +29,9 @@ tls = ["axhal/tls"]
 preempt = ["irq", "percpu?/preempt", "kernel_guard/preempt"]
 smp = ["kspin/smp"]
 
-sched_fifo = ["multitask"]
-sched_rr = ["multitask", "preempt"]
-sched_cfs = ["multitask", "preempt"]
+sched-fifo = ["multitask"]
+sched-rr = ["multitask", "preempt"]
+sched-cfs = ["multitask", "preempt"]
 
 test = ["percpu?/sp-naive"]
 
@@ -43,7 +43,7 @@ axconfig = { workspace = true, optional = true }
 percpu = { version = "0.2", optional = true }
 kspin = { version = "0.1", optional = true }
 lazyinit = { version = "0.2", optional = true }
-memory_addr = { version = "0.3", optional = true }
+memory_addr = { version = "0.4", optional = true }
 timer_list = { version = "0.1", optional = true }
 kernel_guard = { version = "0.1", optional = true }
 crate_interface = { version = "0.1", optional = true }
@@ -52,5 +52,5 @@ scheduler = { git = "https://github.com/arceos-org/scheduler.git", tag = "v0.1.0
 
 [dev-dependencies]
 rand = "0.9"
-axhal = { workspace = true, features = ["fp_simd"] }
+axhal = { workspace = true, features = ["fp-simd"] }
 axtask = { workspace = true, features = ["test", "multitask"] }

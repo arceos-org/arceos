@@ -1,6 +1,6 @@
+mod embassy_async;
 mod mem;
 mod task;
-mod embassy_async;
 
 cfg_fs! {
     mod fs;
@@ -46,11 +46,11 @@ mod time {
     };
 }
 
+pub use self::embassy_async::*;
 pub use self::mem::*;
 pub use self::stdio::*;
 pub use self::task::*;
 pub use self::time::*;
-pub use self::embassy_async::*;
 
-pub use axhal::misc::terminate as ax_terminate;
+pub use axhal::power::system_off as ax_terminate;
 pub use axio::PollState as AxPollState;

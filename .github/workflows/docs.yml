@@ -7,8 +7,10 @@ env:
 
 jobs:
   doc:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
       fail-fast: false
     permissions:
       contents: write
@@ -21,12 +23,12 @@ jobs:
         toolchain: ${{ env.rust-toolchain }}
     - uses: Swatinem/rust-cache@v2
       with:
+        shared-key: cargo-bin-cache
         cache-targets: false
     - name: Build docs
-      continue-on-error: ${{ github.ref != env.default-branch && github.event_name != 'pull_request' }}
-      run: make doc_check_missing
+      run: make doc_check_missing ARCH=${{ matrix.os == 'macos-latest' && 'aarch64' || 'x86_64' }}
     - name: Deploy to Github Pages
-      if: ${{ github.ref == env.default-branch }}
+      if: ${{ github.ref == env.default-branch && matrix.os == 'ubuntu-latest' }}
       uses: JamesIves/github-pages-deploy-action@v4
       with:
         single-commit: true

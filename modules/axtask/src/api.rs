@@ -19,14 +19,14 @@ pub use crate::wait_queues::{Futex, futex_wait, futex_wake, futex_wake_all};
 pub type AxTaskRef = Arc<AxTask>;
 
 /// The wrapper type for [`cpumask::CpuMask`] with SMP configuration.
-pub type AxCpuMask = cpumask::CpuMask<{ axconfig::SMP }>;
+pub type AxCpuMask = cpumask::CpuMask<{ axconfig::plat::CPU_NUM }>;
 
 cfg_if::cfg_if! {
-    if #[cfg(feature = "sched_rr")] {
+    if #[cfg(feature = "sched-rr")] {
         const MAX_TIME_SLICE: usize = 5;
         pub(crate) type AxTask = scheduler::RRTask<TaskInner, MAX_TIME_SLICE>;
         pub(crate) type Scheduler = scheduler::RRScheduler<TaskInner, MAX_TIME_SLICE>;
-    } else if #[cfg(feature = "sched_cfs")] {
+    } else if #[cfg(feature = "sched-cfs")] {
         pub(crate) type AxTask = scheduler::CFSTask<TaskInner>;
         pub(crate) type Scheduler = scheduler::CFScheduler<TaskInner>;
     } else {
@@ -159,7 +159,7 @@ pub fn set_current_affinity(cpumask: AxCpuMask) -> bool {
         // After setting the affinity, we need to check if current cpu matches
         // the affinity. If not, we need to migrate the task to the correct CPU.
         #[cfg(feature = "smp")]
-        if !cpumask.get(axhal::cpu::this_cpu_id()) {
+        if !cpumask.get(axhal::percpu::this_cpu_id()) {
             const MIGRATION_TASK_STACK_SIZE: usize = 4096;
             // Spawn a new migration task for migrating.
             let migration_task = TaskInner::new(
@@ -172,7 +172,10 @@ pub fn set_current_affinity(cpumask: AxCpuMask) -> bool {
             // Migrate the current task to the correct CPU using the migration task.
             current_run_queue::<NoPreemptIrqSave>().migrate_current(migration_task);
 
-            assert!(cpumask.get(axhal::cpu::this_cpu_id()), "Migration failed");
+            assert!(
+                cpumask.get(axhal::percpu::this_cpu_id()),
+                "Migration failed"
+            );
         }
         true
     }
@@ -214,6 +217,6 @@ pub fn run_idle() -> ! {
         yield_now();
         // debug!("idle task: waiting for IRQs...");
         #[cfg(feature = "irq")]
-        axhal::arch::wait_for_irqs();
+        axhal::asm::wait_for_irqs();
     }
 }

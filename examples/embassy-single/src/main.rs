@@ -1,3 +1,4 @@
+//! The embassy single-thread executor.
 #![feature(impl_trait_in_assoc_type)]
 #![cfg_attr(feature = "axstd", no_std)]
 #![cfg_attr(feature = "axstd", no_main)]

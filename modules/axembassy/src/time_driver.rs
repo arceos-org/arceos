@@ -1,5 +1,5 @@
 use core::cell::RefCell;
-use core::sync::atomic::{AtomicU64,Ordering};
+use core::sync::atomic::{AtomicU64, Ordering};
 use core::task;
 
 use axhal::time::{self, NANOS_PER_SEC, set_oneshot_timer};
@@ -13,6 +13,7 @@ use embassy_time_queue_utils::Queue;
 pub struct AxDriverAPI;
 
 impl AxDriverAPI {
+    /// Dequeue expired timer and return nanos of next expiration
     pub fn next_expiration(period: u64) -> u64 {
         AX_DRIVER.next_expiration(period)
     }

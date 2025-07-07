@@ -1,43 +1,54 @@
-
 extern crate alloc;
 
-use arceos_api::task::{AxFutex,ax_futex_wait, ax_futex_wake, ax_futex_wake_all};
+use arceos_api::task::{AxFutex, ax_futex_wait, ax_futex_wake, ax_futex_wake_all};
 use core::time::Duration;
 
 use crate::sync::MutexGuard;
 
+/// A condition variable used for synchronizing threads based on a shared condition.
 pub struct Condvar {
-    // The value of this atomic is simply incremented on every notification.
-    // This is used by `.wait()` to not miss any notifications after
-    // unlocking the mutex and before waiting for notifications.
     futex: AxFutex,
 }
 
 impl Condvar {
-    #[inline]
+    /// Creates a new [`Condvar`].
+    #[inline(always)]
     pub const fn new() -> Self {
         Self {
             futex: AxFutex::new(0),
         }
     }
 
+    /// Notifies one waiting thread.
+    ///
+    /// If there are multiple threads waiting on this condition variable,
+    /// only one of them will be woken up. The specific thread chosen is
+    /// up to the scheduler's policy for the underlying `WaitQueue`.
     pub fn notify_one(&self) {
         self.futex
             .fetch_add(1, core::sync::atomic::Ordering::Relaxed);
         ax_futex_wake(&self.futex);
     }
 
+    /// Notifies all waiting threads.
+    ///
+    /// All threads currently waiting on this condition variable will be woken up.
     pub fn notify_all(&self) {
         self.futex
             .fetch_add(1, core::sync::atomic::Ordering::Relaxed);
         ax_futex_wake_all(&self.futex);
     }
 
+    /// Atomically unlocks the provided mutex guard and waits for a notification
+    /// on this condition variable.
     pub fn wait<'a, T>(&self, guard: MutexGuard<'a, T>) -> MutexGuard<'a, T> {
         // wait with no timeout should always return the guard
-        self.wait_optional_timeout(guard, None).expect("Condvar::wait with no timeout should not return None on timeout")
+        self.wait_optional_timeout(guard, None)
+            .expect("Condvar::wait with no timeout should not return None on timeout")
     }
-    
+
+    /// Atomically unlocks the provided mutex guard and waits for a notification
+    /// on this condition variable, with a specified timeout.
     pub fn wait_timeout<'a, T>(
         &self,
         guard: MutexGuard<'a, T>,
@@ -46,14 +57,14 @@ impl Condvar {
         self.wait_optional_timeout(guard, Some(timeout))
     }
 
-
+    #[inline(always)]
     fn wait_optional_timeout<'a, T>(
         &self,
         guard: MutexGuard<'a, T>,
         timeout: Option<Duration>,
     ) -> Option<MutexGuard<'a, T>> {
         let expected = self.futex.load(core::sync::atomic::Ordering::Relaxed);
-        let mutex = guard.mutex();
+        let mutex = lock_api::MutexGuard::mutex(&guard);
 
         let suc = ax_futex_wait(&self.futex, expected, timeout);
 
@@ -66,4 +77,3 @@ impl Condvar {
         }
     }
 }
-

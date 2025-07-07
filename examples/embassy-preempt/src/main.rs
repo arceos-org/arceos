@@ -1,3 +1,7 @@
+//! The embassy preemptive executor.
+//!
+//! A comparation between embassy and native threads.
+//!
 #![feature(impl_trait_in_assoc_type)]
 #![feature(type_alias_impl_trait)]
 #![cfg_attr(feature = "axstd", no_std)]
@@ -263,7 +267,7 @@ fn main() {
         thread::spawn(move || {
             #[cfg(feature = "atomic-sum")]
             {
-                thread_add(i, (i % 20 + 1), NUM_ITERS, th_iters);
+                thread_add(i, i % 20 + 1, NUM_ITERS, th_iters);
             }
             #[cfg(feature = "iter-delay")]
             {
@@ -278,7 +282,7 @@ fn main() {
             #[cfg(feature = "atomic-sum")]
             {
                 let high_prio_iters = high_prio_iters.clone();
-                spawner().must_spawn(prio_add_high(i, (i % 20 + 1), NUM_ITERS, high_prio_iters));
+                spawner().must_spawn(prio_add_high(i, i % 20 + 1, NUM_ITERS, high_prio_iters));
             }
             #[cfg(feature = "iter-delay")]
             {
@@ -292,7 +296,7 @@ fn main() {
             let low_prio_iters = low_prio_iters.clone();
             spawner().must_spawn(prio_add_low(
                 i + NUM_HIGH_TASKS,
-                (i % 20 + 1),
+                i % 20 + 1,
                 NUM_ITERS,
                 low_prio_iters,
             ));

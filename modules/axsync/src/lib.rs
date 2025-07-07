@@ -17,16 +17,16 @@
 pub use kspin as spin;
 
 #[cfg(feature = "multitask")]
-mod mutex;
-#[cfg(feature = "multitask")]
 mod condvar;
+#[cfg(feature = "multitask")]
+mod mutex;
 
 #[cfg(feature = "multitask")]
 #[doc(cfg(feature = "multitask"))]
-pub use self::mutex::{Mutex, MutexGuard};
+pub use self::condvar::Condvar;
 #[cfg(feature = "multitask")]
 #[doc(cfg(feature = "multitask"))]
-pub use self::condvar::Condvar;
+pub use self::mutex::{Mutex, MutexGuard, RawMutex};
 
 #[cfg(not(feature = "multitask"))]
 #[doc(cfg(not(feature = "multitask")))]

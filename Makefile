@@ -1,8 +1,9 @@
 # Available arguments:
 # * General options:
-#     - `ARCH`: Target architecture: x86_64, riscv64, aarch64
-#     - `PLATFORM`: Target platform in the `platforms` directory
-#     - `SMP`: Number of CPUs
+#     - `ARCH`: Target architecture: x86_64, riscv64, aarch64, loongarch64
+#     - `MYPLAT`: Package name of the target platform crate.
+#     - `PLAT_CONFIG`: Path to the platform configuration file.
+#     - `SMP`: Number of CPUs. If not set, use the default value from platform config.
 #     - `MODE`: Build mode: release, debug
 #     - `LOG:` Logging level: warn, error, info, debug, trace
 #     - `V`: Verbose level: (empty), 1, 2
@@ -10,6 +11,7 @@
 #     - `EXTRA_CONFIG`: Extra config specification file
 #     - `OUT_CONFIG`: Final config file that takes effect
 #     - `UIMAGE`: To generate U-Boot image
+#     - `LD_SCRIPT`: Use a custom linker script file.
 # * App options:
 #     - `A` or `APP`: Path to the application
 #     - `FEATURES`: Features os ArceOS modules to be enabled.
@@ -33,8 +35,9 @@
 
 # General options
 ARCH ?= x86_64
-PLATFORM ?=
-SMP ?= 1
+MYPLAT ?=
+PLAT_CONFIG ?=
+SMP ?=
 MODE ?= release
 LOG ?= warn
 V ?=
@@ -79,43 +82,43 @@ else
   APP_TYPE := c
 endif
 
-# Feature parsing
-include scripts/make/features.mk
+.DEFAULT_GOAL := all
+
+ifneq ($(filter $(or $(MAKECMDGOALS), $(.DEFAULT_GOAL)), all build run justrun debug defconfig oldconfig),)
+# Install dependencies
+include scripts/make/deps.mk
 # Platform resolving
 include scripts/make/platform.mk
+# Configuration generation
+include scripts/make/config.mk
+# Feature parsing
+include scripts/make/features.mk
+endif
 
 # Target
 ifeq ($(ARCH), x86_64)
   TARGET := x86_64-unknown-none
 else ifeq ($(ARCH), aarch64)
-  ifeq ($(findstring fp_simd,$(FEATURES)),)
-    TARGET := aarch64-unknown-none-softfloat
-  else
-    TARGET := aarch64-unknown-none
-  endif
+  TARGET := aarch64-unknown-none-softfloat
 else ifeq ($(ARCH), riscv64)
   TARGET := riscv64gc-unknown-none-elf
 else ifeq ($(ARCH), loongarch64)
-  ifeq ($(findstring fp_simd,$(FEATURES)),)
-    TARGET := loongarch64-unknown-none-softfloat
-  else
-    TARGET := loongarch64-unknown-none
-  endif
+  TARGET := loongarch64-unknown-none-softfloat
 else
   $(error "ARCH" must be one of "x86_64", "riscv64", "aarch64" or "loongarch64")
 endif
 
 export AX_ARCH=$(ARCH)
 export AX_PLATFORM=$(PLAT_NAME)
-export AX_SMP=$(SMP)
 export AX_MODE=$(MODE)
 export AX_LOG=$(LOG)
 export AX_TARGET=$(TARGET)
 export AX_IP=$(IP)
 export AX_GW=$(GW)
 
-ifneq ($(filter $(MAKECMDGOALS),unittest unittest_no_fail_fast),)
-  # When running unit tests, set `AX_CONFIG_PATH` to empty for dummy config
+ifneq ($(filter $(MAKECMDGOALS),unittest unittest_no_fail_fast clippy doc doc_check_missing),)
+  # When running unit tests or other tests unrelated to a specific platform,
+  # set `AX_CONFIG_PATH` to empty for dummy config
   unexport AX_CONFIG_PATH
 else
   export AX_CONFIG_PATH=$(OUT_CONFIG)
@@ -134,9 +137,9 @@ GDB ?= gdb-multiarch
 
 # Paths
 OUT_DIR ?= $(APP)
+LD_SCRIPT ?= $(TARGET_DIR)/$(TARGET)/$(MODE)/linker_$(PLAT_NAME).lds
 
 APP_NAME := $(shell basename $(APP))
-LD_SCRIPT := $(TARGET_DIR)/$(TARGET)/$(MODE)/linker_$(PLAT_NAME).lds
 OUT_ELF := $(OUT_DIR)/$(APP_NAME)_$(PLAT_NAME).elf
 OUT_BIN := $(patsubst %.elf,%.bin,$(OUT_ELF))
 OUT_UIMG := $(patsubst %.elf,%.uimg,$(OUT_ELF))
@@ -149,7 +152,6 @@ endif
 all: build
 
 include scripts/make/utils.mk
-include scripts/make/config.mk
 include scripts/make/build.mk
 include scripts/make/qemu.mk
 ifeq ($(PLAT_NAME), aarch64-raspi4)
@@ -158,10 +160,10 @@ else ifeq ($(PLAT_NAME), aarch64-bsta1000b)
   include scripts/make/bsta1000b-fada.mk
 endif
 
-defconfig: _axconfig-gen
+defconfig:
 	$(call defconfig)
 
-oldconfig: _axconfig-gen
+oldconfig:
 	$(call oldconfig)
 
 build: $(OUT_DIR) $(FINAL_IMG)
@@ -183,17 +185,17 @@ debug: build
 	  -ex 'continue' \
 	  -ex 'disp /16i $$pc'
 
-clippy: oldconfig
+clippy:
 ifeq ($(origin ARCH), command line)
 	$(call cargo_clippy,--target $(TARGET))
 else
 	$(call cargo_clippy)
 endif
 
-doc: oldconfig
+doc:
 	$(call cargo_doc)
 
-doc_check_missing: oldconfig
+doc_check_missing:
 	$(call cargo_doc)
 
 fmt:

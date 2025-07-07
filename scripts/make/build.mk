@@ -18,12 +18,13 @@ else ifneq ($(filter $(MAKECMDGOALS),unittest unittest_no_fail_fast),)
   # run `make unittest`
   $(if $(V), $(info RUSTFLAGS: "$(RUSTFLAGS)"))
   export RUSTFLAGS
-else ifeq ($(filter $(MAKECMDGOALS),defconfig oldconfig clippy),)
-  # run `make build`... (not the above goals)
+else ifneq ($(filter $(or $(MAKECMDGOALS), $(.DEFAULT_GOAL)), all build run justrun debug),)
+  # run `make build` and other above goals
   ifneq ($(V),)
     $(info APP: "$(APP)")
     $(info APP_TYPE: "$(APP_TYPE)")
     $(info FEATURES: "$(FEATURES)")
+    $(info PLAT_CONFIG: "$(PLAT_CONFIG)")
     $(info arceos features: "$(AX_FEAT)")
     $(info lib features: "$(LIB_FEAT)")
     $(info app features: "$(APP_FEAT)")
@@ -51,6 +52,10 @@ $(OUT_DIR):
 
 $(OUT_BIN): _cargo_build $(OUT_ELF)
 	$(call run_cmd,$(OBJCOPY),$(OUT_ELF) --strip-all -O binary $@)
+	@if [ ! -s $(OUT_BIN) ]; then \
+		echo 'Empty kernel image "$(notdir $(FINAL_IMG))" is built, please check your build configuration'; \
+		exit 1; \
+	fi
 
 ifeq ($(ARCH), aarch64)
   uimg_arch := arm64

@@ -4,7 +4,7 @@
 //!
 //! - CPU
 //!     - `smp`: Enable SMP (symmetric multiprocessing) support.
-//!     - `fp_simd`: Enable floating point and SIMD support.
+//!     - `fp-simd`: Enable floating point and SIMD support.
 //! - Interrupts:
 //!     - `irq`: Enable interrupt handling support.
 //! - Memory
@@ -16,9 +16,9 @@
 //!     - `tls`: Enable thread-local storage.
 //! - Task management
 //!     - `multitask`: Enable multi-threading support.
-//!     - `sched_fifo`: Use the FIFO cooperative scheduler.
-//!     - `sched_rr`: Use the Round-robin preemptive scheduler.
-//!     - `sched_cfs`: Use the Completely Fair Scheduler (CFS) preemptive scheduler.
+//!     - `sched-fifo`: Use the FIFO cooperative scheduler.
+//!     - `sched-rr`: Use the Round-robin preemptive scheduler.
+//!     - `sched-cfs`: Use the Completely Fair Scheduler (CFS) preemptive scheduler.
 //! - Upperlayer stacks (fs, net, display)
 //!     - `fs`: Enable file system support.
 //!     - `myfs`: Allow users to define their custom filesystems to override the default.
@@ -37,6 +37,7 @@
 //! - Embassy runtime
 //! 	- `async-thread`: Enable Embassy asynchronous runtime with multithread support.
 //!		- `async-single`: Enable Embassy asynchronous runtime depenended on irq with single thread.
+//!
 //! [ArceOS]: https://github.com/arceos-org/arceos
 
 #![no_std]

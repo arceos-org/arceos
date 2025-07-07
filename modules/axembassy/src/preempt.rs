@@ -1,3 +1,5 @@
+extern crate alloc;
+
 use alloc::collections::BTreeMap;
 use axsync::Mutex;
 use core::{
@@ -58,6 +60,7 @@ impl Prio {
     /// Converts Prio to `UserPrio` (u8).
     ///
     /// Returns `None` if the priority overflows `UserPrio`.
+    #[allow(dead_code)]
     pub const fn as_user_prio(&self) -> Option<UserPrio> {
         let prio = self.0.div_euclid(Prio::SCALING_FACTOR);
         if prio > MIN_USER_PRIO as u64 {
@@ -111,11 +114,13 @@ impl FutureId {
         Self(ID_COUNTER.fetch_add(1, Ordering::Relaxed))
     }
     /// Convert the task ID to a `u64`.
+    #[allow(dead_code)]
     pub const fn as_u64(&self) -> u64 {
         self.0
     }
 }
 
+/// A future with a user priority.
 pub struct PrioFuture<F> {
     inner: F,
     id: FutureId,

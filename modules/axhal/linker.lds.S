@@ -61,7 +61,7 @@ SECTIONS
         _percpu_load_start = .;
         *(.percpu .percpu.*)
         _percpu_load_end = .;
-        . = _percpu_load_start + ALIGN(64) * %SMP%;
+        . = _percpu_load_start + ALIGN(64) * %CPU_NUM%;
     }
     . = _percpu_end;
 

@@ -26,10 +26,14 @@ default = []
 smp = ["arceos_posix_api/smp"]
 
 # Floating point/SIMD
-fp_simd = ["axfeat/fp_simd"]
+fp-simd = ["axfeat/fp-simd"]
 
 # Interrupts
 irq = ["arceos_posix_api/irq", "axfeat/irq"]
+
+# Custom or default platforms
+myplat = ["axfeat/myplat"]
+defplat = ["axfeat/defplat"]
 
 # Memory
 alloc = ["arceos_posix_api/alloc"]
@@ -57,4 +61,4 @@ axio = "0.1"
 axerrno = "0.1"
 
 [build-dependencies]
-bindgen ={ version = "0.71" }
+bindgen = { version = "0.71" }
