@@ -154,7 +154,7 @@ dependencies = [
 
 [[package]]
 name = "arceos_api"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "axalloc",
  "axconfig",
@@ -176,7 +176,7 @@ dependencies = [
 
 [[package]]
 name = "arceos_posix_api"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "axalloc",
  "axconfig",
@@ -243,7 +243,7 @@ checksum = "c08606f8c3cbf4ce6ec8e28fb0014a2c086708fe954eaa885384a6165172e7e8"
 
 [[package]]
 name = "axalloc"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "allocator",
  "axerrno",
@@ -255,7 +255,7 @@ dependencies = [
 
 [[package]]
 name = "axconfig"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "axconfig-macros",
 ]
@@ -307,7 +307,7 @@ dependencies = [
 
 [[package]]
 name = "axdisplay"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "axdriver",
  "axdriver_display",
@@ -318,7 +318,7 @@ dependencies = [
 
 [[package]]
 name = "axdma"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "allocator",
  "axalloc",
@@ -333,7 +333,7 @@ dependencies = [
 
 [[package]]
 name = "axdriver"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "axalloc",
  "axconfig",
@@ -416,7 +416,7 @@ dependencies = [
 
 [[package]]
 name = "axfeat"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "axalloc",
  "axdisplay",
@@ -433,7 +433,7 @@ dependencies = [
 
 [[package]]
 name = "axfs"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "axdriver",
  "axdriver_block",
@@ -488,7 +488,7 @@ dependencies = [
 
 [[package]]
 name = "axhal"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "aarch64-cpu 10.0.0",
  "axalloc",
@@ -522,7 +522,7 @@ dependencies = [
 
 [[package]]
 name = "axlibc"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "arceos_posix_api",
  "axerrno",
@@ -533,7 +533,7 @@ dependencies = [
 
 [[package]]
 name = "axlog"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "axlog",
  "cfg-if",
@@ -545,7 +545,7 @@ dependencies = [
 
 [[package]]
 name = "axmm"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "axalloc",
  "axconfig",
@@ -560,7 +560,7 @@ dependencies = [
 
 [[package]]
 name = "axnet"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "axdriver",
  "axdriver_net",
@@ -578,7 +578,7 @@ dependencies = [
 
 [[package]]
 name = "axns"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "axns",
  "crate_interface",
@@ -749,7 +749,7 @@ dependencies = [
 
 [[package]]
 name = "axruntime"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "axalloc",
  "axconfig",
@@ -779,7 +779,7 @@ dependencies = [
 
 [[package]]
 name = "axstd"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "arceos_api",
  "axerrno",
@@ -791,7 +791,7 @@ dependencies = [
 
 [[package]]
 name = "axsync"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "axsync",
  "axtask",
@@ -802,7 +802,7 @@ dependencies = [
 
 [[package]]
 name = "axtask"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "axconfig",
  "axhal",
