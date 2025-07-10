@@ -4,13 +4,15 @@ use alloc::{collections::VecDeque, sync::Arc};
 use core::mem::MaybeUninit;
 
 use axhal::percpu::this_cpu_id;
+use event_listener::Event;
 use kernel_guard::BaseGuard;
 use kspin::SpinRaw;
 use lazyinit::LazyInit;
 use scheduler::BaseScheduler;
 
 use crate::{
-    AxCpuMask, AxTaskRef, Scheduler, TaskInner, WaitQueue,
+    AxCpuMask, AxTaskRef, Scheduler, TaskInner,
+    future::block_on,
     task::{CurrentTask, TaskState},
 };
 
@@ -30,7 +32,7 @@ macro_rules! percpu_static {
 percpu_static! {
     RUN_QUEUE: LazyInit<AxRunQueue> = LazyInit::new(),
     EXITED_TASKS: VecDeque<AxTaskRef> = VecDeque::new(),
-    WAIT_FOR_EXIT: WaitQueue = WaitQueue::new(),
+    WAIT_FOR_EXIT: Event = Event::new(),
     IDLE_TASK: LazyInit<AxTaskRef> = LazyInit::new(),
     /// Stores the weak reference to the previous task that is running on this CPU.
     #[cfg(feature = "smp")]
@@ -395,7 +397,7 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
                 // GC task.
                 EXITED_TASKS.current_ref_mut_raw().push_back(curr.clone());
                 // Wake up the GC task to drop the exited tasks.
-                WAIT_FOR_EXIT.current_ref_mut_raw().notify_one(false);
+                WAIT_FOR_EXIT.current_ref_mut_raw().notify_relaxed(1);
             }
 
             // Schedule to next task.
@@ -428,7 +430,6 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
         // Mark the task as blocked, this has to be done before adding it to the wait
         // queue while holding the lock of the wait queue.
         curr.set_state(TaskState::Blocked);
-        curr.set_in_wait_queue(true);
 
         before_block(curr.clone());
 
@@ -474,7 +475,12 @@ impl AxRunQueue {
     /// Create a new run queue for the specified CPU.
     /// The run queue is initialized with a per-CPU gc task in its scheduler.
     fn new(cpu_id: usize) -> Self {
-        let gc_task = TaskInner::new(gc_entry, "gc".into(), axconfig::TASK_STACK_SIZE).into_arc();
+        let gc_task = TaskInner::new(
+            || block_on(gc_entry()),
+            "gc".into(),
+            axconfig::TASK_STACK_SIZE,
+        )
+        .into_arc();
         // gc task should be pinned to the current CPU.
         gc_task.set_cpumask(AxCpuMask::one_shot(cpu_id));
 
@@ -613,7 +619,7 @@ impl AxRunQueue {
     }
 }
 
-fn gc_entry() -> ! {
+async fn gc_entry() -> ! {
     loop {
         // Drop all exited tasks and recycle resources.
         let n = EXITED_TASKS.with_current(|exited_tasks| exited_tasks.len());
@@ -634,11 +640,11 @@ fn gc_entry() -> ! {
                 }
             }
         }
-        // Note: we cannot block current task with preemption disabled,
-        // use `current_ref_raw` to get the `WAIT_FOR_EXIT`'s reference here to avoid
-        // the use of `NoPreemptGuard`. Since gc task is pinned to the current
-        // CPU, there is no affection if the gc task is preempted during the process.
-        unsafe { WAIT_FOR_EXIT.current_ref_raw() }.wait();
+        // Note: we cannot block current task with preemption disabled, use
+        // `current_ref_raw` to get the `WAIT_FOR_EXIT`'s reference here to avoid the
+        // use of `NoPreemptGuard`. Since gc task is pinned to the current CPU, there is
+        // no affection if the gc task is preempted during the process.
+        unsafe { WAIT_FOR_EXIT.current_ref_raw() }.listen().await;
     }
 }
 

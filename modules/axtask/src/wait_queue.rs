@@ -1,7 +1,7 @@
 use alloc::{collections::VecDeque, sync::Arc, vec::Vec};
 
 use kernel_guard::{NoOp, NoPreemptIrqSave};
-use kspin::SpinNoIrq;
+use kspin::{BaseSpinLockGuard, SpinNoIrq};
 
 use crate::{AxTaskRef, CurrentTask, current_run_queue, select_run_queue};
 
@@ -47,6 +47,15 @@ impl WaitQueue {
         }
     }
 
+    fn before_block(
+        mut guard: BaseSpinLockGuard<NoPreemptIrqSave, VecDeque<AxTaskRef>>,
+    ) -> impl FnOnce(AxTaskRef) {
+        move |curr| {
+            curr.set_in_wait_queue(true);
+            guard.push_back(curr);
+        }
+    }
+
     /// Cancel events by removing the task from the wait queue.
     /// If `from_timer_list` is true, try to remove the task from the timer
     /// list.
@@ -78,8 +87,7 @@ impl WaitQueue {
     /// notifies it.
     pub fn wait(&self) {
         let mut rq = current_run_queue::<NoPreemptIrqSave>();
-        let mut queue = self.queue.lock();
-        rq.blocked_resched(move |curr| queue.push_back(curr));
+        rq.blocked_resched(Self::before_block(self.queue.lock()));
         self.cancel_events(crate::current(), false);
     }
 
@@ -95,11 +103,11 @@ impl WaitQueue {
         let curr = crate::current();
         loop {
             let mut rq = current_run_queue::<NoPreemptIrqSave>();
-            let mut wq = self.queue.lock();
+            let wq = self.queue.lock();
             if condition() {
                 break;
             }
-            rq.blocked_resched(move |curr| wq.push_back(curr));
+            rq.blocked_resched(Self::before_block(wq));
             // Preemption may occur here.
         }
         self.cancel_events(curr, false);
@@ -119,8 +127,7 @@ impl WaitQueue {
         );
         crate::timers::set_alarm_wakeup(deadline, curr.clone());
 
-        let mut queue = self.queue.lock();
-        rq.blocked_resched(move |curr| queue.push_back(curr));
+        rq.blocked_resched(Self::before_block(self.queue.lock()));
 
         let timeout = curr.in_wait_queue(); // still in the wait queue, must have timed out
 
@@ -154,13 +161,13 @@ impl WaitQueue {
             if axhal::time::wall_time() >= deadline {
                 break;
             }
-            let mut wq = self.queue.lock();
+            let wq = self.queue.lock();
             if condition() {
                 timeout = false;
                 break;
             }
 
-            rq.blocked_resched(move |curr| wq.push_back(curr));
+            rq.blocked_resched(Self::before_block(wq));
             // Preemption may occur here.
         }
         // Always try to remove the task from the timer list.
@@ -222,7 +229,7 @@ impl WaitQueue {
         }
     }
 
-    /// Transfers up to `count` tasks from this wait queue to another wait
+    /// Requeues at most `count` tasks in the wait queue to the target wait
     /// queue.
     ///
     /// Note: If the current wait queue contains fewer than `count` tasks, all

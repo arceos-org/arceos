@@ -2,7 +2,8 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use axtask::{WaitQueue, current};
+use axtask::{current, future::block_on};
+use event_listener::Event;
 
 /// A [`lock_api::RawMutex`] implementation.
 ///
@@ -10,7 +11,7 @@ use axtask::{WaitQueue, current};
 /// wait queue. When the mutex is unlocked, all tasks waiting on the queue
 /// will be woken up.
 pub struct RawMutex {
-    wq: WaitQueue,
+    event: Event,
     owner_id: AtomicU64,
 }
 
@@ -19,7 +20,7 @@ impl RawMutex {
     #[inline(always)]
     pub const fn new() -> Self {
         Self {
-            wq: WaitQueue::new(),
+            event: Event::new(),
             owner_id: AtomicU64::new(0),
         }
     }
@@ -57,7 +58,14 @@ unsafe impl lock_api::RawMutex for RawMutex {
                         current().id_name()
                     );
                     // Wait until the lock looks unlocked before retrying
-                    self.wq.wait_until(|| !self.is_locked());
+                    block_on(async {
+                        loop {
+                            self.event.listen().await;
+                            if !self.is_locked() {
+                                break;
+                            }
+                        }
+                    });
                 }
             }
         }
@@ -82,7 +90,7 @@ unsafe impl lock_api::RawMutex for RawMutex {
             "{} tried to release mutex it doesn't own",
             current().id_name()
         );
-        self.wq.notify_one(true);
+        self.event.notify_relaxed(1);
     }
 
     #[inline(always)]

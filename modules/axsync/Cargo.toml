@@ -15,6 +15,7 @@ default = []
 
 [dependencies]
 axtask = { workspace = true }
+event-listener = { workspace = true }
 kspin = { workspace = true }
 lock_api = { version = "0.4", default-features = false }
 
