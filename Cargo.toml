@@ -54,7 +54,7 @@ axsync = { path = "modules/axsync" }
 axtask = { path = "modules/axtask" }
 axdma = { path = "modules/axdma" }
 
-allocator = { git = "https://github.com/arceos-org/allocator.git", tag = "v0.1.1" }
+allocator = { git = "https://github.com/Starry-Mix-THU/allocator.git", rev = "d5feebd" }
 axcpu = "0.2"
 axerrno = "0.1"
 axfs-ng-vfs = { git = "https://github.com/Starry-Mix-THU/axfs-ng-vfs", rev = "0247038" }

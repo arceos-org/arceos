@@ -32,7 +32,7 @@ dependencies = [
 [[package]]
 name = "allocator"
 version = "0.1.1"
-source = "git+https://github.com/arceos-org/allocator.git?tag=v0.1.1#1d5b7a1b4fd8db4c9c9cea4e6012d15d42e2bf40"
+source = "git+https://github.com/Starry-Mix-THU/allocator.git?rev=d5feebd#d5feebd4837eecbef13536d5f409f31bb87f550b"
 dependencies = [
  "bitmap-allocator",
  "buddy_system_allocator",

@@ -4,6 +4,7 @@ config_args := \
   configs/defconfig.toml $(PLAT_CONFIG) $(EXTRA_CONFIG) \
   -w 'arch="$(ARCH)"' \
   -w 'platform="$(PLAT_NAME)"' \
+  -w 'plat.phys-memory-size=$(shell numfmt --from=iec $(MEM))' \
   -o "$(OUT_CONFIG)"
 
 ifneq ($(SMP),)

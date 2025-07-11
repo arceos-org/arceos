@@ -9,16 +9,21 @@
 
 #[macro_use]
 extern crate log;
+
 extern crate alloc;
 
 mod page;
 
+use core::{
+    alloc::{GlobalAlloc, Layout},
+    ptr::NonNull,
+};
+
 use allocator::{AllocResult, BaseAllocator, BitmapPageAllocator, ByteAllocator, PageAllocator};
-use core::alloc::{GlobalAlloc, Layout};
-use core::ptr::NonNull;
 use kspin::SpinNoIrq;
 
 const PAGE_SIZE: usize = 0x1000;
+
 const MIN_HEAP_SIZE: usize = 0x8000; // 32 K
 
 pub use page::GlobalPage;
@@ -102,8 +107,9 @@ impl GlobalAllocator {
     /// It firstly tries to allocate from the byte allocator. If there is no
     /// memory, it asks the page allocator for more memory and adds it to the
     /// byte allocator.
-    pub fn alloc(&self, layout: Layout) -> AllocResult<NonNull<u8>> {
-        // simple two-level allocator: if no heap memory, allocate from the page allocator.
+    fn alloc(&self, layout: Layout) -> AllocResult<NonNull<u8>> {
+        // simple two-level allocator: if no heap memory, allocate from the page
+        // allocator.
         let mut balloc = self.balloc.lock();
         loop {
             if let Ok(ptr) = balloc.alloc(layout) {
@@ -114,13 +120,28 @@ impl GlobalAllocator {
                     .max(layout.size())
                     .next_power_of_two()
                     .max(PAGE_SIZE);
-                let heap_ptr = self.alloc_pages(expand_size / PAGE_SIZE, PAGE_SIZE)?;
-                debug!(
-                    "expand heap memory: [{:#x}, {:#x})",
-                    heap_ptr,
-                    heap_ptr + expand_size
-                );
-                balloc.add_memory(heap_ptr, expand_size)?;
+
+                let mut try_size = expand_size;
+                let min_size = PAGE_SIZE.max(layout.size());
+                loop {
+                    let heap_ptr = match self.alloc_pages(try_size / PAGE_SIZE, PAGE_SIZE) {
+                        Ok(ptr) => ptr,
+                        Err(err) => {
+                            try_size /= 2;
+                            if try_size < min_size {
+                                return Err(err);
+                            }
+                            continue;
+                        }
+                    };
+                    debug!(
+                        "expand heap memory: [{:#x}, {:#x})",
+                        heap_ptr,
+                        heap_ptr + try_size
+                    );
+                    balloc.add_memory(heap_ptr, try_size)?;
+                    break;
+                }
             }
         }
     }
