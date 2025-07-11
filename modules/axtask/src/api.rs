@@ -1,20 +1,25 @@
 //! Task APIs for multi-task configuration.
 
-use alloc::{string::String, sync::Arc};
+use alloc::{
+    string::String,
+    sync::{Arc, Weak},
+};
 
 use kernel_guard::NoPreemptIrqSave;
 
 pub(crate) use crate::run_queue::{current_run_queue, select_run_queue};
 
-#[doc(cfg(feature = "multitask"))]
-pub use crate::task::{CurrentTask, TaskId, TaskInner};
-#[doc(cfg(feature = "multitask"))]
-pub use crate::task_ext::{TaskExtMut, TaskExtRef};
-#[doc(cfg(feature = "multitask"))]
-pub use crate::wait_queue::WaitQueue;
+pub use crate::{
+    task::{CurrentTask, TaskId, TaskInner, TaskState},
+    task_ext::{TaskExtMut, TaskExtRef},
+    wait_queue::WaitQueue,
+};
 
 /// The reference type of a task.
 pub type AxTaskRef = Arc<AxTask>;
+
+/// The weak reference type of a task.
+pub type WeakAxTaskRef = Weak<AxTask>;
 
 /// The wrapper type for [`cpumask::CpuMask`] with SMP configuration.
 pub type AxCpuMask = cpumask::CpuMask<{ axconfig::plat::CPU_NUM }>;
