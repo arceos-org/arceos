@@ -1,3 +1,4 @@
+use alloc::sync::Arc;
 use core::fmt;
 
 use axerrno::{AxError, AxResult, ax_err};
@@ -11,7 +12,10 @@ use memory_addr::{
 };
 use memory_set::{MemoryArea, MemorySet};
 
-use crate::{backend::Backend, mapping_err_to_ax_err};
+use crate::{
+    backend::{Backend, SharedPages},
+    mapping_err_to_ax_err,
+};
 
 /// The virtual memory address space.
 pub struct AddrSpace {
@@ -100,6 +104,10 @@ impl AddrSpace {
         self.areas.find_free_area(hint, size, limit, PAGE_SIZE_4K)
     }
 
+    pub fn find_area(&self, vaddr: VirtAddr) -> Option<&MemoryArea<Backend>> {
+        self.areas.find(vaddr)
+    }
+
     /// Add a new linear mapping.
     ///
     /// See [`Backend`] for more details about the mapping backends.
@@ -151,6 +159,34 @@ impl AddrSpace {
             .map(area, &mut self.pt, false)
             .map_err(mapping_err_to_ax_err)?;
         Ok(())
+    }
+
+    /// Add a new shared mapping.
+    ///
+    /// See [`Backend`] for more details about the mapping backends.
+    ///
+    /// The `flags` parameter indicates the mapping permissions and attributes.
+    ///
+    /// Returns an error if the address range is out of the address space or not
+    /// aligned.
+    pub fn map_shared(
+        &mut self,
+        start: VirtAddr,
+        size: usize,
+        flags: MappingFlags,
+        pages: Option<Arc<SharedPages>>,
+    ) -> AxResult<Arc<SharedPages>> {
+        self.validate_region(start, size)?;
+
+        let pages = pages
+            .or_else(|| SharedPages::new(size / PAGE_SIZE_4K))
+            .ok_or(AxError::NoMemory)?;
+
+        let area = MemoryArea::new(start, size, flags, Backend::new_shared(pages.clone()));
+        self.areas
+            .map(area, &mut self.pt, false)
+            .map_err(mapping_err_to_ax_err)?;
+        Ok(pages)
     }
 
     /// Populates the area with physical frames, returning false if the area

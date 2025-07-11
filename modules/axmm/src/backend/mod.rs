@@ -1,12 +1,33 @@
 //! Memory mapping backends.
-
+use ::alloc::sync::Arc;
+use axalloc::global_allocator;
 use axerrno::{AxError, AxResult};
-use axhal::paging::{MappingFlags, PageTable, PagingError, PagingResult};
-use memory_addr::VirtAddr;
+use axhal::{
+    mem::{phys_to_virt, virt_to_phys},
+    paging::{MappingFlags, PageTable, PagingError, PagingResult},
+};
+use memory_addr::{PAGE_SIZE_4K, PhysAddr, VirtAddr};
 use memory_set::MappingBackend;
 
 mod alloc;
 mod linear;
+mod shared;
+
+pub use shared::SharedPages;
+
+fn alloc_frame(zeroed: bool) -> Option<PhysAddr> {
+    let vaddr = VirtAddr::from(global_allocator().alloc_pages(1, PAGE_SIZE_4K).ok()?);
+    if zeroed {
+        unsafe { core::ptr::write_bytes(vaddr.as_mut_ptr(), 0, PAGE_SIZE_4K) };
+    }
+    let paddr = virt_to_phys(vaddr);
+    Some(paddr)
+}
+
+fn dealloc_frame(frame: PhysAddr) {
+    let vaddr = phys_to_virt(frame);
+    global_allocator().dealloc_pages(vaddr.as_usize(), 1);
+}
 
 /// A unified enum type for different memory mapping backends.
 #[derive(Clone)]
@@ -17,6 +38,7 @@ pub enum Backend {
     /// Lazy mappings. The target physical frames are obtained from the global
     /// allocator.
     Alloc(alloc::Alloc),
+    Shared(shared::Shared),
 }
 
 impl MappingBackend for Backend {
@@ -28,6 +50,7 @@ impl MappingBackend for Backend {
         match self {
             Self::Linear(linear) => linear.map(start, size, flags, pt),
             Self::Alloc(alloc) => alloc.map(start, size, flags, pt),
+            Self::Shared(shared) => shared.map(start, flags, pt),
         }
     }
 
@@ -35,6 +58,7 @@ impl MappingBackend for Backend {
         match self {
             Self::Linear(linear) => linear.unmap(start, size, pt),
             Self::Alloc(alloc) => alloc.unmap(start, size, pt),
+            Self::Shared(shared) => shared.unmap(start, pt),
         }
     }
 
@@ -60,6 +84,10 @@ impl Backend {
         Self::Alloc(alloc::Alloc::new(populate))
     }
 
+    pub(crate) fn new_shared(pages: Arc<SharedPages>) -> Self {
+        Self::Shared(shared::Shared { pages })
+    }
+
     pub(crate) fn populate_strict(
         &self,
         start: VirtAddr,
@@ -68,7 +96,7 @@ impl Backend {
         pt: &mut PageTable,
     ) -> PagingResult {
         match self {
-            Self::Linear(_) => Err(PagingError::AlreadyMapped),
+            Self::Linear(_) | Self::Shared(_) => Err(PagingError::AlreadyMapped),
             Self::Alloc(alloc) => alloc.populate(start, size, flags, pt),
         }
     }
@@ -89,5 +117,12 @@ impl Backend {
 
     pub(crate) fn needs_copying(&self) -> bool {
         matches!(self, Self::Alloc(_))
+    }
+
+    pub fn pages(&self) -> Option<Arc<SharedPages>> {
+        match self {
+            Self::Shared(shared) => Some(shared.pages.clone()),
+            _ => None,
+        }
     }
 }

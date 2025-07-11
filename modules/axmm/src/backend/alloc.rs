@@ -1,23 +1,7 @@
-use axalloc::global_allocator;
-use axhal::{
-    mem::{phys_to_virt, virt_to_phys},
-    paging::{MappingFlags, PageSize, PageTable, PagingError, PagingResult},
-};
-use memory_addr::{PAGE_SIZE_4K, PageIter4K, PhysAddr, VirtAddr};
+use axhal::paging::{MappingFlags, PageSize, PageTable, PagingError, PagingResult};
+use memory_addr::{PageIter4K, VirtAddr};
 
-fn alloc_frame(zeroed: bool) -> Option<PhysAddr> {
-    let vaddr = VirtAddr::from(global_allocator().alloc_pages(1, PAGE_SIZE_4K).ok()?);
-    if zeroed {
-        unsafe { core::ptr::write_bytes(vaddr.as_mut_ptr(), 0, PAGE_SIZE_4K) };
-    }
-    let paddr = virt_to_phys(vaddr);
-    Some(paddr)
-}
-
-fn dealloc_frame(frame: PhysAddr) {
-    let vaddr = phys_to_virt(frame);
-    global_allocator().dealloc_pages(vaddr.as_usize(), 1);
-}
+use super::{alloc_frame, dealloc_frame};
 
 /// Allocation mapping backend.
 ///
@@ -53,13 +37,13 @@ impl Alloc {
         if self.populate {
             // allocate all possible physical frames for populated mapping.
             for addr in PageIter4K::new(start, start + size).unwrap() {
-                if let Some(frame) = alloc_frame(true) {
-                    if let Ok(tlb) = pt.map(addr, frame, PageSize::Size4K, flags) {
-                        tlb.ignore(); // TLB flush on map is unnecessary, as there are no outdated mappings.
-                    } else {
-                        return false;
-                    }
-                }
+                let Some(frame) = alloc_frame(true) else {
+                    return false;
+                };
+                let Ok(tlb) = pt.map(addr, frame, PageSize::Size4K, flags) else {
+                    return false;
+                };
+                tlb.ignore(); // TLB flush on map is unnecessary, as there are no outdated mappings.
             }
         } else {
             // create mapping entries on demand later in
