@@ -35,6 +35,7 @@ rev = "21a2f82"
 default-features = false
 features = [
     "alloc", "log",   # no std
+    "async",
     "multicast",
     "medium-ethernet",
     "medium-ip",

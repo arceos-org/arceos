@@ -1,5 +1,5 @@
 use alloc::vec;
-use core::net::SocketAddr;
+use core::{net::SocketAddr, task::Poll};
 
 use axerrno::{LinuxError, LinuxResult, ax_err, bail};
 use axio::PollState;
@@ -161,22 +161,26 @@ impl SocketOps for UdpSocket {
         if self.local_addr.read().is_none() {
             bail!(ENOTCONN);
         }
-        self.general.block_on(self.general.send_timeout(), || {
-            self.with_smol_socket(|socket| {
-                if !socket.is_open() {
-                    // not connected
-                    bail!(ENOTCONN);
-                } else if !socket.can_send() {
-                    return Err(LinuxError::EAGAIN);
-                }
-
-                socket.send_slice(buf, remote_addr).map_err(|e| match e {
-                    smol::SendError::BufferFull => ax_err!(EAGAIN),
-                    smol::SendError::Unaddressable => ax_err!(ECONNREFUSED, "unaddressable"),
-                })?;
-                Ok(buf.len())
+        self.general
+            .block_on(self.general.send_timeout(), |context| {
+                self.with_smol_socket(|socket| {
+                    Poll::Ready(if !socket.is_open() {
+                        // not connected
+                        Err(ax_err!(ENOTCONN))
+                    } else if !socket.can_send() {
+                        socket.register_send_waker(context.waker());
+                        return Poll::Pending;
+                    } else {
+                        socket.send_slice(buf, remote_addr).map_err(|e| match e {
+                            smol::SendError::BufferFull => ax_err!(EAGAIN),
+                            smol::SendError::Unaddressable => {
+                                ax_err!(ECONNREFUSED, "unaddressable")
+                            }
+                        })?;
+                        Ok(buf.len())
+                    })
+                })
             })
-        })
     }
 
     fn recv(
@@ -198,55 +202,58 @@ impl SocketOps for UdpSocket {
             None => ExpectedRemote::Expecting(self.remote_endpoint()?),
         };
 
-        self.general.block_on(self.general.recv_timeout(), || {
-            self.with_smol_socket(|socket| {
-                if !socket.is_open() {
-                    // not bound
-                    bail!(ENOTCONN);
-                } else if !socket.can_recv() {
-                    return Err(LinuxError::EAGAIN);
-                }
-
-                let result = if flags.contains(RecvFlags::PEEK) {
-                    socket.peek().map(|(data, meta)| (data, *meta))
-                } else {
-                    socket.recv()
-                };
-                match result {
-                    Ok((src, meta)) => {
-                        match &mut expected_remote {
-                            ExpectedRemote::Any(remote_addr) => {
-                                **remote_addr = meta.endpoint.into();
-                            }
-                            ExpectedRemote::Expecting(expected) => {
-                                if (!expected.addr.is_unspecified()
-                                    && expected.addr != meta.endpoint.addr)
-                                    || (expected.port != 0 && expected.port != meta.endpoint.port)
-                                {
-                                    return Err(LinuxError::EAGAIN);
-                                }
-                            }
-                        }
-
-                        let read = src.len().min(buf.len());
-                        buf[..read].copy_from_slice(&src[..read]);
-                        if read < src.len() {
-                            warn!("UDP message truncated: {} -> {} bytes", src.len(), read);
-                        }
-
-                        Ok(if flags.contains(RecvFlags::TRUNCATE) {
-                            src.len()
+        self.general
+            .block_on(self.general.recv_timeout(), |context| {
+                self.with_smol_socket(|socket| {
+                    Poll::Ready(if !socket.is_open() {
+                        // not bound
+                        Err(ax_err!(ENOTCONN))
+                    } else if !socket.can_recv() {
+                        socket.register_recv_waker(context.waker());
+                        return Poll::Pending;
+                    } else {
+                        let result = if flags.contains(RecvFlags::PEEK) {
+                            socket.peek().map(|(data, meta)| (data, *meta))
                         } else {
-                            read
-                        })
-                    }
-                    Err(smol::RecvError::Exhausted) => Err(LinuxError::EAGAIN),
-                    Err(smol::RecvError::Truncated) => {
-                        unreachable!("UDP socket recv never returns Err(Truncated)")
-                    }
-                }
+                            socket.recv()
+                        };
+                        match result {
+                            Ok((src, meta)) => {
+                                match &mut expected_remote {
+                                    ExpectedRemote::Any(remote_addr) => {
+                                        **remote_addr = meta.endpoint.into();
+                                    }
+                                    ExpectedRemote::Expecting(expected) => {
+                                        if (!expected.addr.is_unspecified()
+                                            && expected.addr != meta.endpoint.addr)
+                                            || (expected.port != 0
+                                                && expected.port != meta.endpoint.port)
+                                        {
+                                            return Poll::Ready(Err(LinuxError::EAGAIN));
+                                        }
+                                    }
+                                }
+
+                                let read = src.len().min(buf.len());
+                                buf[..read].copy_from_slice(&src[..read]);
+                                if read < src.len() {
+                                    warn!("UDP message truncated: {} -> {} bytes", src.len(), read);
+                                }
+
+                                Ok(if flags.contains(RecvFlags::TRUNCATE) {
+                                    src.len()
+                                } else {
+                                    read
+                                })
+                            }
+                            Err(smol::RecvError::Exhausted) => Err(LinuxError::EAGAIN),
+                            Err(smol::RecvError::Truncated) => {
+                                unreachable!("UDP socket recv never returns Err(Truncated)")
+                            }
+                        }
+                    })
+                })
             })
-        })
     }
 
     fn local_addr(&self) -> LinuxResult<SocketAddr> {
