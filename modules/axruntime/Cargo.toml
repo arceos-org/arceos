@@ -19,7 +19,7 @@ alloc = ["axalloc"]
 paging = ["axhal/paging", "axmm"]
 
 multitask = ["axtask/multitask"]
-fs = ["axdriver", "axfs"]
+fs = ["axdriver", "axfs-ng", "axfs-ng-vfs"]
 net = ["axdriver", "axnet"]
 display = ["axdriver", "axdisplay"]
 rtc = ["dep:chrono"]
@@ -29,13 +29,15 @@ axalloc = { workspace = true, optional = true }
 axconfig = { workspace = true }
 axdisplay = { workspace = true, optional = true }
 axdriver = { workspace = true, optional = true }
-axfs = { workspace = true, optional = true }
+axfs-ng = { workspace = true, optional = true }
 axhal = { workspace = true }
 axlog = { workspace = true }
 axmm = { workspace = true, optional = true }
 axnet = { workspace = true, optional = true }
 axtask = { workspace = true, optional = true }
+axsync = { workspace = true }
 
+axfs-ng-vfs = { workspace = true, optional = true }
 axplat = { workspace = true }
 chrono = { workspace = true, optional = true }
 crate_interface = { workspace = true }

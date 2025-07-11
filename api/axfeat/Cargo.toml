@@ -43,8 +43,8 @@ sched-rr = ["axtask/sched-rr", "irq"]
 sched-cfs = ["axtask/sched-cfs", "irq"]
 
 # File system
-fs = ["alloc", "paging", "axdriver/virtio-blk", "dep:axfs", "axruntime/fs"] # TODO: try to remove "paging"
-myfs = ["axfs?/myfs"]
+fs = ["alloc", "paging", "axdriver/virtio-blk", "dep:axfs-ng", "axruntime/fs"] # TODO: try to remove "paging"
+lwext4_rs = ["axfs-ng/ext4"]
 
 # Networking
 net = ["alloc", "paging", "axdriver/virtio-net", "dep:axnet", "axruntime/net"]
@@ -58,7 +58,7 @@ rtc = ["axhal/rtc", "axruntime/rtc"]
 # Device drivers
 bus-mmio = ["axdriver?/bus-mmio"]
 bus-pci = ["axdriver?/bus-pci"]
-driver-ramdisk = ["axdriver?/ramdisk", "axfs?/use-ramdisk"]
+driver-ramdisk = ["axdriver?/ramdisk"]
 driver-ixgbe = ["axdriver?/ixgbe"]
 driver-fxmac = ["axdriver?/fxmac"] # fxmac ethernet driver for PhytiumPi
 driver-bcm2835-sdhci = ["axdriver?/bcm2835-sdhci"]
@@ -75,7 +75,7 @@ log-level-trace = ["axlog/log-level-trace"]
 axalloc = { workspace = true, optional = true }
 axdisplay = { workspace = true, optional = true }
 axdriver = { workspace = true, optional = true }
-axfs = { workspace = true, optional = true }
+axfs-ng = { workspace = true, optional = true }
 axhal = { workspace = true }
 axlog = { workspace = true }
 axnet = { workspace = true, optional = true }

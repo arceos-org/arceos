@@ -6,7 +6,7 @@ members = [
     "modules/axconfig",
     "modules/axdisplay",
     "modules/axdriver",
-    "modules/axfs",
+    "modules/axfs-ng",
     "modules/axhal",
     "modules/axlog",
     "modules/axmm",
@@ -43,7 +43,7 @@ axalloc = { path = "modules/axalloc" }
 axconfig = { path = "modules/axconfig" }
 axdisplay = { path = "modules/axdisplay" }
 axdriver = { path = "modules/axdriver" }
-axfs = { path = "modules/axfs" }
+axfs-ng = { path = "modules/axfs-ng" }
 axhal = { path = "modules/axhal" }
 axlog = { path = "modules/axlog" }
 axmm = { path = "modules/axmm" }
@@ -56,9 +56,10 @@ axdma = { path = "modules/axdma" }
 
 allocator = { git = "https://github.com/arceos-org/allocator.git", tag = "v0.1.1" }
 axcpu = "0.2"
-axplat = "0.1"
 axerrno = "0.1"
+axfs-ng-vfs = { git = "https://github.com/Starry-Mix-THU/axfs-ng-vfs", rev = "0247038" }
 axio = "0.1.1"
+axplat = "0.1"
 bindgen = "0.72"
 cfg-if = "1.0"
 chrono = { version = "0.4", default-features = false }
