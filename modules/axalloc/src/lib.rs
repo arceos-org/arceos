@@ -199,17 +199,128 @@ impl GlobalAllocator {
     }
 }
 
+#[cfg(feature = "tracking")]
+mod tracking {
+    use alloc::collections::btree_map::BTreeMap;
+    use core::{alloc::Layout, ops::Range};
+
+    use axbacktrace::Backtrace;
+    use kspin::SpinNoIrq;
+
+    #[percpu::def_percpu]
+    pub(crate) static IN_GLOBAL_ALLOCATOR: bool = false;
+
+    /// Metadata for each allocation made by the global allocator.
+    #[derive(Debug)]
+    pub struct AllocationInfo {
+        pub layout: Layout,
+        pub backtrace: Backtrace,
+        pub generation: u64,
+    }
+
+    pub(crate) struct GlobalState {
+        // pub map: HashMap<usize, AllocationInfo, FixedState>,
+        pub map: BTreeMap<usize, AllocationInfo>,
+        pub generation: u64,
+    }
+
+    pub(crate) static STATE: SpinNoIrq<GlobalState> = SpinNoIrq::new(GlobalState {
+        map: BTreeMap::new(),
+        generation: 0,
+    });
+
+    pub(crate) fn with_state<R>(f: impl FnOnce(Option<&mut GlobalState>) -> R) -> R {
+        IN_GLOBAL_ALLOCATOR.with_current(|in_global| {
+            if *in_global {
+                f(None)
+            } else {
+                *in_global = true;
+                let mut state = STATE.lock();
+                let result = f(Some(&mut state));
+                *in_global = false;
+                result
+            }
+        })
+    }
+
+    /// Returns the current generation of the global allocator.
+    ///
+    /// The generation is incremented every time a new allocation is made. It
+    /// can be utilized to track the changes in the allocation state over time.
+    ///
+    /// See [`new_allocations_since`].
+    pub fn current_generation() -> u64 {
+        STATE.lock().generation
+    }
+
+    /// Visits all allocations made by the global allocator within the given
+    /// generation range.
+    pub fn allocations_in(range: Range<u64>, visitor: impl FnMut(&AllocationInfo)) {
+        with_state(|state| {
+            state
+                .unwrap()
+                .map
+                .values()
+                .filter(move |info| range.contains(&info.generation))
+                .for_each(visitor)
+        });
+    }
+}
+
+#[cfg(feature = "tracking")]
+pub use tracking::*;
+
 unsafe impl GlobalAlloc for GlobalAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        if let Ok(ptr) = GlobalAllocator::alloc(self, layout) {
-            ptr.as_ptr()
-        } else {
-            alloc::alloc::handle_alloc_error(layout)
+        let inner = move || {
+            if let Ok(ptr) = GlobalAllocator::alloc(self, layout) {
+                ptr.as_ptr()
+            } else {
+                alloc::alloc::handle_alloc_error(layout)
+            }
+        };
+
+        #[cfg(feature = "tracking")]
+        {
+            tracking::with_state(|state| match state {
+                None => inner(),
+                Some(state) => {
+                    let ptr = inner();
+                    let generation = state.generation;
+                    state.generation += 1;
+                    state.map.insert(
+                        ptr as usize,
+                        tracking::AllocationInfo {
+                            layout,
+                            backtrace: axbacktrace::Backtrace::capture(),
+                            generation,
+                        },
+                    );
+                    ptr
+                }
+            })
         }
+
+        #[cfg(not(feature = "tracking"))]
+        inner()
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        GlobalAllocator::dealloc(self, NonNull::new(ptr).expect("dealloc null ptr"), layout)
+        let ptr = NonNull::new(ptr).expect("dealloc null ptr");
+        let inner = || GlobalAllocator::dealloc(self, ptr, layout);
+
+        #[cfg(feature = "tracking")]
+        tracking::with_state(|state| match state {
+            None => inner(),
+            Some(state) => {
+                let address = ptr.as_ptr() as usize;
+                state.map.remove(&address);
+                inner()
+            }
+        });
+
+        #[cfg(not(feature = "tracking"))]
+        inner();
     }
 }
 

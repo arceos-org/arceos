@@ -57,6 +57,10 @@ ifeq ($(BUS),mmio)
   ax_feat += bus-mmio
 endif
 
+ifeq ($(BACKTRACE),y)
+  ax_feat += backtrace
+endif
+
 ifeq ($(shell test $(SMP) -gt 1; echo $$?),0)
   lib_feat += smp
 endif

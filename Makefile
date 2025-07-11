@@ -40,6 +40,7 @@ PLAT_CONFIG ?=
 SMP ?=
 MODE ?= release
 LOG ?= warn
+BACKTRACE ?= n
 V ?=
 TARGET_DIR ?= $(PWD)/target
 EXTRA_CONFIG ?=
@@ -119,6 +120,7 @@ export AX_LOG=$(LOG)
 export AX_TARGET=$(TARGET)
 export AX_IP=$(IP)
 export AX_GW=$(GW)
+export AX_BACKTRACE=$(BACKTRACE)
 
 ifneq ($(filter $(MAKECMDGOALS),unittest unittest_no_fail_fast clippy doc doc_check_missing),)
   # When running unit tests or other tests unrelated to a specific platform,

@@ -33,6 +33,9 @@ else ifneq ($(filter $(or $(MAKECMDGOALS), $(.DEFAULT_GOAL)), all build run just
     $(if $(V), $(info CFLAGS: "$(CFLAGS)") $(info LDFLAGS: "$(LDFLAGS)"))
   else ifeq ($(APP_TYPE), rust)
     RUSTFLAGS += $(RUSTFLAGS_LINK_ARGS)
+    ifeq ($(BACKTRACE), y)
+      RUSTFLAGS += -C force-frame-pointers -C debuginfo=2 -C strip=none
+    endif
   endif
   $(if $(V), $(info RUSTFLAGS: "$(RUSTFLAGS)"))
   export RUSTFLAGS
@@ -46,12 +49,16 @@ ifeq ($(APP_TYPE), rust)
 else ifeq ($(APP_TYPE), c)
 	$(call cargo_build,ulib/axlibc,$(AX_FEAT) $(LIB_FEAT))
 endif
+ifeq ($(BACKTRACE), y)
+	$(call run_cmd,RUSTFLAGS= cargo run --release --bin backtrace-helper,$(OUT_ELF))
+	$(call run_cmd,$(OBJCOPY),$(OUT_ELF) --strip-all)
+endif
 
 $(OUT_DIR):
 	$(call run_cmd,mkdir,-p $@)
 
 $(OUT_BIN): _cargo_build $(OUT_ELF)
-	$(call run_cmd,$(OBJCOPY),$(OUT_ELF) --strip-all -O binary $@)
+	$(call run_cmd,$(OBJCOPY),$(OUT_ELF) -O binary $@)
 	@if [ ! -s $(OUT_BIN) ]; then \
 		echo 'Empty kernel image "$(notdir $(FINAL_IMG))" is built, please check your build configuration'; \
 		exit 1; \
