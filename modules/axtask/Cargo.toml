@@ -20,10 +20,11 @@ multitask = [
     "dep:memory_addr",
     "dep:scheduler",
     "dep:timer_list",
-    "kernel_guard",
+    "dep:kernel_guard",
     "dep:crate_interface",
     "dep:cpumask",
 ]
+task-ext = ["dep:extern-trait"]
 irq = []
 tls = ["axhal/tls"]
 preempt = ["irq", "percpu?/preempt", "kernel_guard/preempt"]
@@ -41,7 +42,8 @@ axhal = { workspace = true }
 
 cfg-if = { workspace = true }
 cpumask = { version = "0.1", optional = true }
-crate_interface = { workspace = true, optional = true }
+crate_interface = { version = "0.1", optional = true }
+extern-trait = { version = "0.2", optional = true }
 kernel_guard = { workspace = true, optional = true }
 kspin = { workspace = true, optional = true }
 lazyinit = { workspace = true, optional = true }

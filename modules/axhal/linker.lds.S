@@ -98,6 +98,6 @@ SECTIONS {
     linkm2_SYSCALL : { *(linkm2_SYSCALL) }
     linkme_POST_TRAP : { *(linkme_POST_TRAP) }
     linkm2_POST_TRAP : { *(linkm2_POST_TRAP) }
-    axns_resource : { *(axns_resource) }
+    scope_local : { *(scope_local) }
 }
 INSERT AFTER .tbss;

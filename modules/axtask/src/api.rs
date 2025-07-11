@@ -8,10 +8,10 @@ use alloc::{
 use kernel_guard::NoPreemptIrqSave;
 
 pub(crate) use crate::run_queue::{current_run_queue, select_run_queue};
-
+#[cfg(feature = "task-ext")]
+pub use crate::task::{TaskExt, TaskExtProxy};
 pub use crate::{
     task::{CurrentTask, TaskId, TaskInner, TaskState},
-    task_ext::{TaskExtMut, TaskExtRef},
     wait_queue::WaitQueue,
 };
 
@@ -97,6 +97,7 @@ pub fn init_scheduler_secondary() {
 #[cfg(feature = "irq")]
 #[doc(cfg(feature = "irq"))]
 pub fn on_timer_tick() {
+
     use kernel_guard::NoOp;
     crate::timers::check_events();
     // Since irq and preemption are both disabled here,
@@ -137,8 +138,8 @@ where
 /// Set the priority for current task.
 ///
 /// The range of the priority is dependent on the underlying scheduler. For
-/// example, in the [CFS] scheduler, the priority is the nice value, ranging from
-/// -20 to 19.
+/// example, in the [CFS] scheduler, the priority is the nice value, ranging
+/// from -20 to 19.
 ///
 /// Returns `true` if the priority is set successfully.
 ///

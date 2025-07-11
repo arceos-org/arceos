@@ -41,5 +41,5 @@ axfs-ng-vfs = { workspace = true, optional = true }
 axplat = { workspace = true }
 chrono = { workspace = true, optional = true }
 crate_interface = { workspace = true }
-ctor_bare = { workspace = true }
+indoc = "2"
 percpu = { workspace = true, optional = true }

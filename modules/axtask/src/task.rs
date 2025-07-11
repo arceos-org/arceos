@@ -1,19 +1,21 @@
 use alloc::{boxed::Box, string::String, sync::Arc};
-use core::ops::Deref;
-use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU8, AtomicU64, Ordering};
-use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
-
 #[cfg(feature = "preempt")]
 use core::sync::atomic::AtomicUsize;
-
-use kspin::SpinNoIrq;
-use memory_addr::{VirtAddr, align_up_4k};
+use core::{
+    alloc::Layout,
+    cell::UnsafeCell,
+    fmt,
+    ops::Deref,
+    ptr::NonNull,
+    sync::atomic::{AtomicBool, AtomicI32, AtomicU8, AtomicU64, Ordering},
+};
 
 use axhal::context::TaskContext;
 #[cfg(feature = "tls")]
 use axhal::tls::TlsArea;
+use kspin::SpinNoIrq;
+use memory_addr::{VirtAddr, align_up_4k};
 
-use crate::task_ext::AxTaskExt;
 use crate::{AxCpuMask, AxTask, AxTaskRef, WaitQueue};
 
 /// A unique identifier for a thread.
@@ -27,12 +29,23 @@ pub enum TaskState {
     /// Task is running on some CPU.
     Running = 1,
     /// Task is ready to run on some scheduler's ready queue.
-    Ready = 2,
+    Ready   = 2,
     /// Task is blocked (in the wait queue or timer list),
-    /// and it has finished its scheduling process, it can be wake up by `notify()` on any run queue safely.
+    /// and it has finished its scheduling process, it can be wake up by
+    /// `notify()` on any run queue safely.
     Blocked = 3,
     /// Task is exited and waiting for being dropped.
-    Exited = 4,
+    Exited  = 4,
+}
+
+/// User-defined task extended data.
+/// # Safety
+/// See [`extern_trait`].
+#[cfg(feature = "task-ext")]
+#[extern_trait::extern_trait(pub TaskExtProxy)]
+pub unsafe trait TaskExt {
+    fn on_enter(&self) {}
+    fn on_leave(&self) {}
 }
 
 /// The inner task structure.
@@ -56,8 +69,9 @@ pub struct TaskInner {
     on_cpu: AtomicBool,
 
     /// A ticket ID used to identify the timer event.
-    /// Set by `set_timer_ticket()` when creating a timer event in `set_alarm_wakeup()`,
-    /// expired by setting it as zero in `timer_ticket_expired()`, which is called by `cancel_events()`.
+    /// Set by `set_timer_ticket()` when creating a timer event in
+    /// `set_alarm_wakeup()`, expired by setting it as zero in
+    /// `timer_ticket_expired()`, which is called by `cancel_events()`.
     #[cfg(feature = "irq")]
     timer_ticket_id: AtomicU64,
 
@@ -71,7 +85,9 @@ pub struct TaskInner {
 
     kstack: Option<TaskStack>,
     ctx: UnsafeCell<TaskContext>,
-    task_ext: AxTaskExt,
+
+    #[cfg(feature = "task-ext")]
+    task_ext: Option<TaskExtProxy>,
 
     #[cfg(feature = "tls")]
     tls: TlsArea,
@@ -103,6 +119,7 @@ impl From<u8> for TaskState {
 }
 
 unsafe impl Send for TaskInner {}
+
 unsafe impl Sync for TaskInner {}
 
 impl TaskInner {
@@ -151,36 +168,24 @@ impl TaskInner {
 
     /// Wait for the task to exit, and return the exit code.
     ///
-    /// It will return immediately if the task has already exited (but not dropped).
+    /// It will return immediately if the task has already exited (but not
+    /// dropped).
     pub fn join(&self) -> Option<i32> {
         self.wait_for_exit
             .wait_until(|| self.state() == TaskState::Exited);
         Some(self.exit_code.load(Ordering::Acquire))
     }
 
-    /// Returns the pointer to the user-defined task extended data.
-    ///
-    /// # Safety
-    ///
-    /// The caller should not access the pointer directly, use [`TaskExtRef::task_ext`]
-    /// or [`TaskExtMut::task_ext_mut`] instead.
-    ///
-    /// [`TaskExtRef::task_ext`]: crate::task_ext::TaskExtRef::task_ext
-    /// [`TaskExtMut::task_ext_mut`]: crate::task_ext::TaskExtMut::task_ext_mut
-    pub unsafe fn task_ext_ptr(&self) -> *mut u8 {
-        self.task_ext.as_ptr()
+    /// Returns a reference to the task extended data.
+    #[cfg(feature = "task-ext")]
+    pub fn task_ext(&self) -> Option<&TaskExtProxy> {
+        self.task_ext.as_ref()
     }
 
-    /// Initialize the user-defined task extended data.
-    ///
-    /// Returns a reference to the task extended data if it has not been
-    /// initialized yet (empty), otherwise returns [`None`].
-    pub fn init_task_ext<T: Sized>(&mut self, data: T) -> Option<&T> {
-        if self.task_ext.is_empty() {
-            self.task_ext.write(data).map(|data| &*data)
-        } else {
-            None
-        }
+    /// Returns a mutable reference to the task extended data.
+    #[cfg(feature = "task-ext")]
+    pub fn task_ext_mut(&mut self) -> &mut Option<TaskExtProxy> {
+        &mut self.task_ext
     }
 
     /// Returns a mutable reference to the task context.
@@ -241,7 +246,8 @@ impl TaskInner {
             wait_for_exit: WaitQueue::new(),
             kstack: None,
             ctx: UnsafeCell::new(TaskContext::new()),
-            task_ext: AxTaskExt::empty(),
+            #[cfg(feature = "task-ext")]
+            task_ext: None,
             #[cfg(feature = "tls")]
             tls: TlsArea::alloc(),
         }
@@ -281,8 +287,8 @@ impl TaskInner {
     }
 
     /// Transition the task state from `current_state` to `new_state`,
-    /// Returns `true` if the current state is `current_state` and the state is successfully set to `new_state`,
-    /// otherwise returns `false`.
+    /// Returns `true` if the current state is `current_state` and the state is
+    /// successfully set to `new_state`, otherwise returns `false`.
     #[inline]
     pub(crate) fn transition_state(&self, current_state: TaskState, new_state: TaskState) -> bool {
         self.state
@@ -407,8 +413,9 @@ impl TaskInner {
     ///
     /// It is used to protect the task from being moved to a different run queue
     /// while it has not finished its scheduling process.
-    /// The `on_cpu field is set to `true` when the task is preparing to run on a CPU,
-    /// and it is set to `false` when the task has finished its scheduling process in `clear_prev_task_on_cpu()`.
+    /// The `on_cpu field is set to `true` when the task is preparing to run on
+    /// a CPU, and it is set to `false` when the task has finished its
+    /// scheduling process in `clear_prev_task_on_cpu()`.
     #[cfg(feature = "smp")]
     #[inline]
     pub(crate) fn on_cpu(&self) -> bool {
@@ -501,7 +508,9 @@ impl CurrentTask {
     pub(crate) unsafe fn init_current(init_task: AxTaskRef) {
         assert!(init_task.is_init());
         #[cfg(feature = "tls")]
-        axhal::asm::write_thread_pointer(init_task.tls.tls_ptr() as usize);
+        unsafe {
+            axhal::asm::write_thread_pointer(init_task.tls.tls_ptr() as usize)
+        };
         let ptr = Arc::into_raw(init_task);
         unsafe {
             axhal::percpu::set_current_task_ptr(ptr);
@@ -520,6 +529,7 @@ impl CurrentTask {
 
 impl Deref for CurrentTask {
     type Target = TaskInner;
+
     fn deref(&self) -> &Self::Target {
         self.0.deref()
     }
@@ -531,7 +541,8 @@ extern "C" fn task_entry() -> ! {
         // Clear the prev task on CPU before running the task entry function.
         crate::run_queue::clear_prev_task_on_cpu();
     }
-    // Enable irq (if feature "irq" is enabled) before running the task entry function.
+    // Enable irq (if feature "irq" is enabled) before running the task entry
+    // function.
     #[cfg(feature = "irq")]
     axhal::asm::enable_irqs();
     let task = crate::current();

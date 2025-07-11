@@ -4,6 +4,7 @@ use std::sync::{Mutex, Once};
 use crate::{WaitQueue, api as axtask, current};
 
 static INIT: Once = Once::new();
+
 static SERIAL: Mutex<()> = Mutex::new(());
 
 #[test]
@@ -22,7 +23,7 @@ fn test_sched_fifo() {
                 let order = FINISHED_TASKS.fetch_add(1, Ordering::Release);
                 assert_eq!(order, i); // FIFO scheduler
             },
-            format!("T{}", i),
+            format!("T{i}"),
             0x1000,
         );
     }
@@ -39,9 +40,9 @@ fn test_fp_state_switch() {
 
     const NUM_TASKS: usize = 5;
     const FLOATS: [f64; NUM_TASKS] = [
-        3.141592653589793,
-        2.718281828459045,
-        -1.4142135623730951,
+        core::f64::consts::PI,
+        core::f64::consts::E,
+        -core::f64::consts::SQRT_2,
         0.0,
         0.618033988749895,
     ];
@@ -53,7 +54,7 @@ fn test_fp_state_switch() {
             axtask::yield_now();
             value -= i as f64;
 
-            println!("fp_state_switch: Float {} = {}", i, value);
+            println!("fp_state_switch: Float {i} = {value}");
             assert!((value - float).abs() < 1e-9);
             FINISHED_TASKS.fetch_add(1, Ordering::Release);
         });
@@ -119,12 +120,12 @@ fn test_task_join() {
                 axtask::yield_now();
                 axtask::exit(i as _);
             },
-            format!("T{}", i),
+            format!("T{i}"),
             0x1000,
         ));
     }
 
-    for i in 0..NUM_TASKS {
-        assert_eq!(tasks[i].join(), Some(i as _));
+    for (i, task) in tasks.into_iter().enumerate() {
+        assert_eq!(task.join(), Some(i as _));
     }
 }

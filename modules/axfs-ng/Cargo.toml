@@ -15,7 +15,6 @@ std = ["lwext4_rust?/std"]
 [dependencies]
 axdriver = { workspace = true, features = ["block"] }
 axio = { workspace = true, features = ["alloc"] }
-axns = { workspace = true }
 axsync = { workspace = true }
 
 axerrno = { workspace = true }
@@ -25,6 +24,7 @@ cfg-if = { workspace = true }
 chrono = { workspace = true }
 lock_api = { workspace = true }
 log = { workspace = true }
+scope-local = { workspace = true }
 slab = { version = "0.4.9", default-features = false }
 spin = { workspace = true, features = ["lock_api"] }
 

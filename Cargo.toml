@@ -12,7 +12,6 @@ members = [
     "modules/axmm",
     "modules/axdma",
     "modules/axnet",
-    "modules/axns",
     "modules/axruntime",
     "modules/axsync",
     "modules/axtask",
@@ -48,7 +47,6 @@ axhal = { path = "modules/axhal" }
 axlog = { path = "modules/axlog" }
 axmm = { path = "modules/axmm" }
 axnet = { path = "modules/axnet" }
-axns = { path = "modules/axns" }
 axruntime = { path = "modules/axruntime" }
 axsync = { path = "modules/axsync" }
 axtask = { path = "modules/axtask" }
@@ -64,7 +62,6 @@ bindgen = "0.72"
 cfg-if = "1.0"
 chrono = { version = "0.4", default-features = false }
 crate_interface = "0.1.4"
-ctor_bare = "0.2"
 kernel_guard = "0.1"
 kspin = "0.1"
 lazyinit = "0.2"
@@ -76,6 +73,7 @@ page_table_entry = "0.5"
 page_table_multiarch = "0.5"
 percpu = "0.2"
 rand = "0.9"
+scope-local = "0.1"
 spin = "0.9"
 
 [profile.release]

@@ -1,6 +1,4 @@
-use alloc::collections::VecDeque;
-use alloc::sync::Arc;
-use alloc::vec::Vec;
+use alloc::{collections::VecDeque, sync::Arc, vec::Vec};
 
 use kernel_guard::{NoOp, NoPreemptIrqSave};
 use kspin::{SpinNoIrq, SpinNoIrqGuard};
@@ -12,8 +10,10 @@ use crate::{AxTaskRef, CurrentTask, current_run_queue, select_run_queue};
 /// # Examples
 ///
 /// ```
-/// use axtask::WaitQueue;
+/// 
 /// use core::sync::atomic::{AtomicU32, Ordering};
+///
+/// use axtask::WaitQueue;
 ///
 /// static VALUE: AtomicU32 = AtomicU32::new(0);
 /// static WQ: WaitQueue = WaitQueue::new();
@@ -51,7 +51,8 @@ impl WaitQueue {
     }
 
     /// Cancel events by removing the task from the wait queue.
-    /// If `from_timer_list` is true, try to remove the task from the timer list.
+    /// If `from_timer_list` is true, try to remove the task from the timer
+    /// list.
     fn cancel_events(&self, curr: CurrentTask, _from_timer_list: bool) {
         // A task can be wake up only one events (timer or `notify()`), remove
         // the event from another queue.
@@ -68,9 +69,11 @@ impl WaitQueue {
             curr.timer_ticket_expired();
             // Note:
             //  this task is still not removed from timer list of target CPU,
-            //  which may cause some redundant timer events because it still needs to
-            //  go through the process of expiring an event from the timer list and invoking the callback.
-            //  (it can be considered a lazy-removal strategy, it will be ignored when it is about to take effect.)
+            //  which may cause some redundant timer events because it still
+            // needs to  go through the process of expiring an event
+            // from the timer list and invoking the callback.
+            //  (it can be considered a lazy-removal strategy, it will be
+            // ignored when it is about to take effect.)
         }
     }
 
@@ -103,8 +106,8 @@ impl WaitQueue {
         self.cancel_events(curr, false);
     }
 
-    /// Blocks the current task and put it into the wait queue, until other tasks
-    /// notify it, or the given duration has elapsed.
+    /// Blocks the current task and put it into the wait queue, until other
+    /// tasks notify it, or the given duration has elapsed.
     #[cfg(feature = "irq")]
     pub fn wait_timeout(&self, dur: core::time::Duration) -> bool {
         let mut rq = current_run_queue::<NoPreemptIrqSave>();
@@ -203,9 +206,11 @@ impl WaitQueue {
         }
     }
 
-    /// Transfers up to `count` tasks from this wait queue to another wait queue.
+    /// Transfers up to `count` tasks from this wait queue to another wait
+    /// queue.
     ///
-    /// Note: If the current wait queue contains fewer than `count` tasks, all available tasks will be moved.
+    /// Note: If the current wait queue contains fewer than `count` tasks, all
+    /// available tasks will be moved.
     ///
     /// ## Arguments
     /// * `count` - The maximum number of tasks to be moved.

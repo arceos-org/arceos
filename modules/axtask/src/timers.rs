@@ -1,10 +1,9 @@
 use core::sync::atomic::{AtomicU64, Ordering};
 
+use axhal::time::wall_time;
 use kernel_guard::NoOp;
 use lazyinit::LazyInit;
 use timer_list::{TimeValue, TimerEvent, TimerList};
-
-use axhal::time::wall_time;
 
 use crate::{AxTaskRef, select_run_queue};
 

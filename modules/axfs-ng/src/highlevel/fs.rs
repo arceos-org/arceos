@@ -2,6 +2,7 @@ use alloc::{
     borrow::{Cow, ToOwned},
     collections::vec_deque::VecDeque,
     string::String,
+    sync::Arc,
     vec::Vec,
 };
 
@@ -16,14 +17,16 @@ use super::{File, FileFlags};
 
 pub const SYMLINKS_MAX: usize = 40;
 
-axns::def_resource! {
-    pub static FS_CONTEXT: axns::ResArc<axsync::Mutex<FsContext<axsync::RawMutex>>> = axns::ResArc::new();
-}
+pub static ROOT_FS_CONTEXT: spin::Once<FsContext<axsync::RawMutex>> = spin::Once::new();
 
-impl FS_CONTEXT {
-    pub fn copy_inner(&self) -> axsync::Mutex<FsContext<axsync::RawMutex>> {
-        axsync::Mutex::new(self.lock().clone())
-    }
+scope_local::scope_local! {
+    pub static FS_CONTEXT: Arc<axsync::Mutex<FsContext<axsync::RawMutex>>> =
+        Arc::new(axsync::Mutex::new(
+            ROOT_FS_CONTEXT
+                .get()
+                .expect("Root FS context not initialized")
+                .clone(),
+        ));
 }
 
 pub struct ReadDirEntry {

@@ -1,20 +1,19 @@
-use alloc::collections::VecDeque;
-use alloc::sync::Arc;
-use core::mem::MaybeUninit;
-
 #[cfg(feature = "smp")]
 use alloc::sync::Weak;
+use alloc::{collections::VecDeque, sync::Arc};
+use core::mem::MaybeUninit;
 
+use axhal::percpu::this_cpu_id;
 use kernel_guard::BaseGuard;
 use kspin::SpinRaw;
 use lazyinit::LazyInit;
 use scheduler::BaseScheduler;
 
-use axhal::percpu::this_cpu_id;
-
-use crate::task::{CurrentTask, TaskState};
-use crate::wait_queue::WaitQueueGuard;
-use crate::{AxCpuMask, AxTaskRef, Scheduler, TaskInner, WaitQueue};
+use crate::{
+    AxCpuMask, AxTaskRef, Scheduler, TaskInner, WaitQueue,
+    task::{CurrentTask, TaskState},
+    wait_queue::WaitQueueGuard,
+};
 
 macro_rules! percpu_static {
     ($(
@@ -41,15 +40,18 @@ percpu_static! {
 
 /// An array of references to run queues, one for each CPU, indexed by cpu_id.
 ///
-/// This static variable holds references to the run queues for each CPU in the system.
+/// This static variable holds references to the run queues for each CPU in the
+/// system.
 ///
 /// # Safety
 ///
-/// Access to this variable is marked as `unsafe` because it contains `MaybeUninit` references,
-/// which require careful handling to avoid undefined behavior. The array should be fully
-/// initialized before being accessed to ensure safe usage.
+/// Access to this variable is marked as `unsafe` because it contains
+/// `MaybeUninit` references, which require careful handling to avoid undefined
+/// behavior. The array should be fully initialized before being accessed to
+/// ensure safe usage.
 static mut RUN_QUEUES: [MaybeUninit<&'static mut AxRunQueue>; axconfig::plat::CPU_NUM] =
     [ARRAY_REPEAT_VALUE; axconfig::plat::CPU_NUM];
+
 #[allow(clippy::declare_interior_mutable_const)] // It's ok because it's used only for initialization `RUN_QUEUES`.
 const ARRAY_REPEAT_VALUE: MaybeUninit<&'static mut AxRunQueue> = MaybeUninit::uninit();
 
@@ -78,12 +80,14 @@ pub(crate) fn current_run_queue<G: BaseGuard>() -> CurrentRunQueueRef<'static, G
 
 /// Selects the run queue index based on a CPU set bitmap and load balancing.
 ///
-/// This function filters the available run queues based on the provided `cpumask` and
-/// selects the run queue index for the next task. The selection is based on a round-robin algorithm.
+/// This function filters the available run queues based on the provided
+/// `cpumask` and selects the run queue index for the next task. The selection
+/// is based on a round-robin algorithm.
 ///
 /// ## Arguments
 ///
-/// * `cpumask` - A bitmap representing the CPUs that are eligible for task execution.
+/// * `cpumask` - A bitmap representing the CPUs that are eligible for task
+///   execution.
 ///
 /// ## Returns
 ///
@@ -91,10 +95,11 @@ pub(crate) fn current_run_queue<G: BaseGuard>() -> CurrentRunQueueRef<'static, G
 ///
 /// ## Panics
 ///
-/// This function will panic if `cpu_mask` is empty, indicating that there are no available CPUs for task execution.
-///
+/// This function will panic if `cpu_mask` is empty, indicating that there are
+/// no available CPUs for task execution.
 #[cfg(feature = "smp")]
-// The modulo operation is safe here because `axconfig::plat::CPU_NUM` is always greater than 1 with "smp" enabled.
+// The modulo operation is safe here because `axconfig::plat::CPU_NUM` is always greater than 1 with
+// "smp" enabled.
 #[allow(clippy::modulo_one)]
 #[inline]
 fn select_run_queue_index(cpumask: AxCpuMask) -> usize {
@@ -112,10 +117,11 @@ fn select_run_queue_index(cpumask: AxCpuMask) -> usize {
     }
 }
 
-/// Retrieves a `'static` reference to the run queue corresponding to the given index.
+/// Retrieves a `'static` reference to the run queue corresponding to the given
+/// index.
 ///
-/// This function asserts that the provided index is within the range of available CPUs
-/// and returns a reference to the corresponding run queue.
+/// This function asserts that the provided index is within the range of
+/// available CPUs and returns a reference to the corresponding run queue.
 ///
 /// ## Arguments
 ///
@@ -128,7 +134,6 @@ fn select_run_queue_index(cpumask: AxCpuMask) -> usize {
 /// ## Panics
 ///
 /// This function will panic if the index is out of bounds.
-///
 #[cfg(feature = "smp")]
 #[inline]
 fn get_run_queue(index: usize) -> &'static mut AxRunQueue {
@@ -137,8 +142,10 @@ fn get_run_queue(index: usize) -> &'static mut AxRunQueue {
 
 /// Selects the appropriate run queue for the provided task.
 ///
-/// * In a single-core system, this function always returns a reference to the global run queue.
-/// * In a multi-core system, this function selects the run queue based on the task's CPU affinity and load balance.
+/// * In a single-core system, this function always returns a reference to the
+///   global run queue.
+/// * In a multi-core system, this function selects the run queue based on the
+///   task's CPU affinity and load balance.
 ///
 /// ## Arguments
 ///
@@ -146,13 +153,15 @@ fn get_run_queue(index: usize) -> &'static mut AxRunQueue {
 ///
 /// ## Returns
 ///
-/// * [`AxRunQueueRef`] - a static reference to the selected [`AxRunQueue`] (current or remote).
+/// * [`AxRunQueueRef`] - a static reference to the selected [`AxRunQueue`]
+///   (current or remote).
 ///
 /// ## TODO
 ///
-/// 1. Implement better load balancing across CPUs for more efficient task distribution.
-/// 2. Use a more generic load balancing algorithm that can be customized or replaced.
-///
+/// 1. Implement better load balancing across CPUs for more efficient task
+///    distribution.
+/// 2. Use a more generic load balancing algorithm that can be customized or
+///    replaced.
 #[inline]
 pub(crate) fn select_run_queue<G: BaseGuard>(task: &AxTaskRef) -> AxRunQueueRef<'static, G> {
     let irq_state = G::acquire();
@@ -168,7 +177,8 @@ pub(crate) fn select_run_queue<G: BaseGuard>(task: &AxTaskRef) -> AxRunQueueRef<
     }
     #[cfg(feature = "smp")]
     {
-        // When SMP is enabled, select the run queue based on the task's CPU affinity and load balance.
+        // When SMP is enabled, select the run queue based on the task's CPU affinity
+        // and load balance.
         let index = select_run_queue_index(task.cpumask());
         AxRunQueueRef {
             inner: get_run_queue(index),
@@ -183,8 +193,8 @@ pub(crate) struct AxRunQueue {
     /// The ID of the CPU this run queue is associated with.
     cpu_id: usize,
     /// The core scheduler of this run queue.
-    /// Since irq and preempt are preserved by the kernel guard hold by `AxRunQueueRef`,
-    /// we just use a simple raw spin lock here.
+    /// Since irq and preempt are preserved by the kernel guard hold by
+    /// `AxRunQueueRef`, we just use a simple raw spin lock here.
     scheduler: SpinRaw<Scheduler>,
 }
 
@@ -192,9 +202,9 @@ pub(crate) struct AxRunQueue {
 ///
 /// Note:
 /// [`AxRunQueueRef`] is used to get a reference to the run queue on current CPU
-/// or a remote CPU, which is used to add tasks to the run queue or unblock tasks.
-/// If you want to perform scheduling operations on the current run queue,
-/// see [`CurrentRunQueueRef`].
+/// or a remote CPU, which is used to add tasks to the run queue or unblock
+/// tasks. If you want to perform scheduling operations on the current run
+/// queue, see [`CurrentRunQueueRef`].
 pub(crate) struct AxRunQueueRef<'a, G: BaseGuard> {
     inner: &'a mut AxRunQueue,
     state: G::State,
@@ -210,8 +220,8 @@ impl<G: BaseGuard> Drop for AxRunQueueRef<'_, G> {
 /// A reference to the current run queue with specific guard.
 ///
 /// Note:
-/// [`CurrentRunQueueRef`] is used to get a reference to the run queue on current CPU,
-/// in which scheduling operations can be performed.
+/// [`CurrentRunQueueRef`] is used to get a reference to the run queue on
+/// current CPU, in which scheduling operations can be performed.
 pub(crate) struct CurrentRunQueueRef<'a, G: BaseGuard> {
     inner: &'a mut AxRunQueue,
     current_task: CurrentTask,
@@ -225,7 +235,8 @@ impl<G: BaseGuard> Drop for CurrentRunQueueRef<'_, G> {
     }
 }
 
-/// Management operations for run queue, including adding tasks, unblocking tasks, etc.
+/// Management operations for run queue, including adding tasks, unblocking
+/// tasks, etc.
 impl<G: BaseGuard> AxRunQueueRef<'_, G> {
     /// Adds a task to the scheduler.
     ///
@@ -250,7 +261,8 @@ impl<G: BaseGuard> AxRunQueueRef<'_, G> {
         // if successful, the task will be put into this run queue,
         // otherwise, the task is already unblocked by other cores.
         // Note:
-        // target task can not be insert into the run queue until it finishes its scheduling process.
+        // target task can not be insert into the run queue until it finishes its
+        // scheduling process.
         if self
             .inner
             .put_task_with_state(task, TaskState::Blocked, resched)
@@ -280,8 +292,8 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
     }
 
     /// Yield the current task and reschedule.
-    /// This function will put the current task into this run queue with `Ready` state,
-    /// and reschedule to the next task on this run queue.
+    /// This function will put the current task into this run queue with `Ready`
+    /// state, and reschedule to the next task on this run queue.
     pub fn yield_current(&mut self) {
         let curr = &self.current_task;
         trace!("task yield: {}", curr.id_name());
@@ -293,13 +305,16 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
         self.inner.resched();
     }
 
-    /// Migrate the current task to a new run queue matching its CPU affinity and reschedule.
-    /// This function will spawn a new `migration_task` to perform the migration, which will set
-    /// current task to `Ready` state and select a proper run queue for it according to its CPU affinity,
-    /// switch to the migration task immediately after migration task is prepared.
+    /// Migrate the current task to a new run queue matching its CPU affinity
+    /// and reschedule. This function will spawn a new `migration_task` to
+    /// perform the migration, which will set current task to `Ready` state
+    /// and select a proper run queue for it according to its CPU affinity,
+    /// switch to the migration task immediately after migration task is
+    /// prepared.
     ///
-    /// Note: the ownership if migrating task (which is current task) is handed over to the migration task,
-    /// before the migration task inserted it into the target run queue.
+    /// Note: the ownership if migrating task (which is current task) is handed
+    /// over to the migration task, before the migration task inserted it
+    /// into the target run queue.
     #[cfg(feature = "smp")]
     pub fn migrate_current(&mut self, migration_task: AxTaskRef) {
         let curr = &self.current_task;
@@ -310,7 +325,8 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
         // but, do not put current task to the scheduler of this run queue.
         curr.set_state(TaskState::Ready);
 
-        // Call `switch_to` to reschedule to the migration task that performs the migration directly.
+        // Call `switch_to` to reschedule to the migration task that performs the
+        // migration directly.
         self.inner.switch_to(crate::current(), migration_task);
     }
 
@@ -318,7 +334,8 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
     /// This function is used to preempt the current task and reschedule
     /// to next task on current run queue.
     ///
-    /// This function is called by `current_check_preempt_pending` with IRQs and preemption disabled.
+    /// This function is called by `current_check_preempt_pending` with IRQs and
+    /// preemption disabled.
     ///
     /// Note:
     /// preemption may happened in `enable_preempt`, which is called
@@ -358,7 +375,8 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
         assert!(curr.is_running(), "task is not running: {:?}", curr.state());
         assert!(!curr.is_idle());
         if curr.is_init() {
-            // Safety: it is called from `current_run_queue::<NoPreemptIrqSave>().exit_current(exit_code)`,
+            // Safety: it is called from
+            // `current_run_queue::<NoPreemptIrqSave>().exit_current(exit_code)`,
             // which disabled IRQs and preemption.
             unsafe {
                 EXITED_TASKS.current_ref_mut_raw().clear();
@@ -370,10 +388,12 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
             // Notify the joiner task.
             curr.notify_exit(exit_code);
 
-            // Safety: it is called from `current_run_queue::<NoPreemptIrqSave>().exit_current(exit_code)`,
+            // Safety: it is called from
+            // `current_run_queue::<NoPreemptIrqSave>().exit_current(exit_code)`,
             // which disabled IRQs and preemption.
             unsafe {
-                // Push current task to the `EXITED_TASKS` list, which will be consumed by the GC task.
+                // Push current task to the `EXITED_TASKS` list, which will be consumed by the
+                // GC task.
                 EXITED_TASKS.current_ref_mut_raw().push_back(curr.clone());
                 // Wake up the GC task to drop the exited tasks.
                 WAIT_FOR_EXIT.current_ref_mut_raw().notify_one(false);
@@ -385,13 +405,16 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
         unreachable!("task exited!");
     }
 
-    /// Block the current task, put current task into the wait queue and reschedule.
-    /// Mark the state of current task as `Blocked`, set the `in_wait_queue` flag as true.
-    /// Note:
+    /// Block the current task, put current task into the wait queue and
+    /// reschedule. Mark the state of current task as `Blocked`, set the
+    /// `in_wait_queue` flag as true. Note:
     ///     1. The caller must hold the lock of the wait queue.
-    ///     2. The caller must ensure that the current task is in the running state.
-    ///     3. The caller must ensure that the current task is not the idle task.
-    ///     4. The lock of the wait queue will be released explicitly after current task is pushed into it.
+    ///     2. The caller must ensure that the current task is in the running
+    ///        state.
+    ///     3. The caller must ensure that the current task is not the idle
+    ///        task.
+    ///     4. The lock of the wait queue will be released explicitly after
+    ///        current task is pushed into it.
     pub fn blocked_resched(&mut self, mut wq_guard: WaitQueueGuard) {
         let curr = &self.current_task;
         assert!(curr.is_running());
@@ -402,8 +425,8 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
         #[cfg(feature = "preempt")]
         assert!(curr.can_preempt(2));
 
-        // Mark the task as blocked, this has to be done before adding it to the wait queue
-        // while holding the lock of the wait queue.
+        // Mark the task as blocked, this has to be done before adding it to the wait
+        // queue while holding the lock of the wait queue.
         curr.set_state(TaskState::Blocked);
         curr.set_in_wait_queue(true);
 
@@ -411,9 +434,9 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
         // Drop the lock of wait queue explictly.
         drop(wq_guard);
 
-        // Current task's state has been changed to `Blocked` and added to the wait queue.
-        // Note that the state may have been set as `Ready` in `unblock_task()`,
-        // see `unblock_task()` for details.
+        // Current task's state has been changed to `Blocked` and added to the wait
+        // queue. Note that the state may have been set as `Ready` in
+        // `unblock_task()`, see `unblock_task()` for details.
 
         debug!("task block: {}", curr.id_name());
         self.inner.resched();
@@ -463,8 +486,8 @@ impl AxRunQueue {
     ///
     /// If `preempt`, keep current task's time slice, otherwise reset it.
     ///
-    /// Returns `true` if the target task is put into this run queue successfully,
-    /// otherwise `false`.
+    /// Returns `true` if the target task is put into this run queue
+    /// successfully, otherwise `false`.
     fn put_task_with_state(
         &mut self,
         task: AxTaskRef,
@@ -545,6 +568,18 @@ impl AxRunQueue {
         #[cfg(feature = "smp")]
         next_task.set_on_cpu(true);
 
+        #[cfg(feature = "task-ext")]
+        {
+            use crate::TaskExt;
+
+            if let Some(ext) = prev_task.task_ext() {
+                ext.on_leave()
+            }
+            if let Some(ext) = next_task.task_ext() {
+                ext.on_enter()
+            }
+        }
+
         unsafe {
             let prev_ctx_ptr = prev_task.ctx_mut_ptr();
             let next_ctx_ptr = next_task.ctx_mut_ptr();
@@ -564,8 +599,9 @@ impl AxRunQueue {
 
             (*prev_ctx_ptr).switch_to(&*next_ctx_ptr);
 
-            // Current it's **next_task** running on this CPU, clear the `prev_task`'s `on_cpu` field
-            // to indicate that it has finished its scheduling process and no longer running on this CPU.
+            // Current it's **next_task** running on this CPU, clear the `prev_task`'s
+            // `on_cpu` field to indicate that it has finished its scheduling
+            // process and no longer running on this CPU.
             #[cfg(feature = "smp")]
             clear_prev_task_on_cpu();
         }
@@ -591,8 +627,9 @@ fn gc_entry() {
             }
         }
         // Note: we cannot block current task with preemption disabled,
-        // use `current_ref_raw` to get the `WAIT_FOR_EXIT`'s reference here to avoid the use of `NoPreemptGuard`.
-        // Since gc task is pinned to the current CPU, there is no affection if the gc task is preempted during the process.
+        // use `current_ref_raw` to get the `WAIT_FOR_EXIT`'s reference here to avoid
+        // the use of `NoPreemptGuard`. Since gc task is pinned to the current
+        // CPU, there is no affection if the gc task is preempted during the process.
         unsafe { WAIT_FOR_EXIT.current_ref_raw() }.wait();
     }
 }
@@ -621,6 +658,7 @@ pub(crate) unsafe fn clear_prev_task_on_cpu() {
             .set_on_cpu(false);
     }
 }
+
 pub(crate) fn init() {
     let cpu_id = this_cpu_id();
 
