@@ -1,4 +1,4 @@
-use alloc::{boxed::Box, string::String, sync::Arc};
+use alloc::{boxed::Box, string::String, sync::Arc, task::Wake};
 #[cfg(feature = "preempt")]
 use core::sync::atomic::AtomicUsize;
 use core::{
@@ -13,10 +13,11 @@ use core::{
 use axhal::context::TaskContext;
 #[cfg(feature = "tls")]
 use axhal::tls::TlsArea;
+use kernel_guard::NoPreemptIrqSave;
 use kspin::SpinNoIrq;
 use memory_addr::{VirtAddr, align_up_4k};
 
-use crate::{AxCpuMask, AxTask, AxTaskRef, WaitQueue};
+use crate::{AxCpuMask, AxTask, AxTaskRef, WaitQueue, select_run_queue};
 
 /// A unique identifier for a thread.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -532,6 +533,31 @@ impl Deref for CurrentTask {
 
     fn deref(&self) -> &Self::Target {
         self.0.deref()
+    }
+}
+
+pub(crate) struct AxWaker {
+    task: AxTaskRef,
+}
+
+impl AxWaker {
+    pub fn new(task: AxTaskRef) -> Self {
+        Self { task }
+    }
+
+    #[inline]
+    pub fn wake(&self) {
+        select_run_queue::<NoPreemptIrqSave>(&self.task).unblock_task(self.task.clone(), true);
+    }
+}
+
+impl Wake for AxWaker {
+    fn wake(self: Arc<Self>) {
+        self.wake_by_ref();
+    }
+
+    fn wake_by_ref(self: &Arc<Self>) {
+        AxWaker::wake(self)
     }
 }
 

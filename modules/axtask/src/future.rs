@@ -1,4 +1,4 @@
-use alloc::{sync::Arc, task::Wake};
+use alloc::sync::Arc;
 use core::{
     pin::{Pin, pin},
     task::{Context, Poll, Waker},
@@ -8,26 +8,14 @@ use core::{
 use kernel_guard::NoPreemptIrqSave;
 use pin_project::pin_project;
 
-use crate::{AxTaskRef, current, current_run_queue, select_run_queue};
-
-struct AxWaker(AxTaskRef);
-impl Wake for AxWaker {
-    fn wake(self: Arc<Self>) {
-        self.wake_by_ref();
-    }
-
-    fn wake_by_ref(self: &Arc<Self>) {
-        self.0.set_in_wait_queue(false);
-        select_run_queue::<NoPreemptIrqSave>(&self.0).unblock_task(self.0.clone(), true)
-    }
-}
+use crate::{current, current_run_queue, task::AxWaker};
 
 /// Blocks the current task until the given future is resolved.
 pub fn block_on<F: IntoFuture>(fut: F) -> F::Output {
     let mut fut = pin!(fut.into_future());
 
     let curr = current();
-    let waker = Waker::from(Arc::new(AxWaker(curr.clone())));
+    let waker = Waker::from(Arc::new(AxWaker::new(curr.clone())));
     let mut context = Context::from_waker(&waker);
     loop {
         match fut.as_mut().poll(&mut context) {
