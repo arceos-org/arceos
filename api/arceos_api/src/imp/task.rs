@@ -38,7 +38,7 @@ pub fn ax_exit(_exit_code: i32) -> ! {
     #[cfg(feature = "multitask")]
     axtask::exit(_exit_code);
     #[cfg(not(feature = "multitask"))]
-    axhal::misc::terminate();
+    crate::sys::ax_terminate();
 }
 
 pub async fn ax_exit_f(_exit_code: i32) {

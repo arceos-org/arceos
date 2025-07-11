@@ -6,7 +6,6 @@ use smoltcp::iface::SocketHandle;
 use smoltcp::socket::dns::{self, GetQueryResultError, StartQueryError};
 use smoltcp::wire::DnsQueryType;
 
-use super::addr::into_core_ipaddr;
 use super::{ETH0, SOCKET_SET, SocketSetWrapper};
 
 /// A DNS socket.
@@ -64,7 +63,7 @@ impl DnsSocket {
                 Ok(n) => {
                     let mut res = Vec::with_capacity(n.capacity());
                     for ip in n {
-                        res.push(into_core_ipaddr(ip))
+                        res.push(IpAddr::from(ip))
                     }
                     return Ok(res);
                 }

@@ -523,7 +523,7 @@ pub struct CurrentTask(ManuallyDrop<AxTaskRef>);
 
 impl CurrentTask {
     pub(crate) fn try_get() -> Option<Self> {
-        let ptr: *const super::AxTask = axhal::cpu::current_task_ptr();
+        let ptr: *const super::AxTask = axhal::percpu::current_task_ptr();
         if !ptr.is_null() {
             Some(Self(unsafe { ManuallyDrop::new(AxTaskRef::from_raw(ptr)) }))
         } else {
@@ -554,7 +554,7 @@ impl CurrentTask {
         axhal::asm::write_thread_pointer(init_task.tls.tls_ptr() as usize);
         let ptr = Arc::into_raw(init_task);
         unsafe {
-            axhal::cpu::set_current_task_ptr(ptr);
+            axhal::percpu::set_current_task_ptr(ptr);
         }
     }
 
@@ -563,7 +563,7 @@ impl CurrentTask {
         ManuallyDrop::into_inner(arc); // `call Arc::drop()` to decrease prev task reference count.
         let ptr = Arc::into_raw(next);
         unsafe {
-            axhal::cpu::set_current_task_ptr(ptr);
+            axhal::percpu::set_current_task_ptr(ptr);
         }
     }
 }

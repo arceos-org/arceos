@@ -1,4 +1,4 @@
-//! CPU-related operations.
+//! CPU-local data structures.
 
 #[percpu::def_percpu]
 static CPU_ID: usize = 0;
