@@ -68,3 +68,6 @@ axdma = { path = "modules/axdma" }
 
 [profile.release]
 lto = true
+
+[patch.crates-io]
+axcpu = { git = "https://github.com/Starry-Mix-THU/axcpu.git", rev = "b00d5a5" }
