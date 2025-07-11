@@ -14,14 +14,14 @@ default = []
 copy = ["page_table_multiarch/copy-from"]
 
 [dependencies]
-axhal = { workspace = true, features = ["paging"] }
 axalloc = { workspace = true }
 axconfig = { workspace = true }
+axhal = { workspace = true, features = ["paging"] }
 
-log = "=0.4.21"
-axerrno = "0.1"
-lazyinit = "0.2"
-memory_addr = "0.4"
-kspin = "0.1"
-memory_set = "0.4"
-page_table_multiarch = { version = "0.5", optional = true }
+axerrno = { workspace = true }
+kspin = { workspace = true }
+lazyinit = { workspace = true }
+log = { workspace = true }
+memory_addr = { workspace = true }
+memory_set = { workspace = true }
+page_table_multiarch = { workspace = true, optional = true }

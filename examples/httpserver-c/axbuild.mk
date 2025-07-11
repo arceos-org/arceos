@@ -1,1 +1,0 @@
-app-objs := httpserver.o

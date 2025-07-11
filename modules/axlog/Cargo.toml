@@ -10,7 +10,7 @@ repository = "https://github.com/arceos-org/arceos/tree/main/modules/axlog"
 documentation = "https://arceos-org.github.io/arceos/axlog/index.html"
 
 [features]
-std = ["dep:chrono"]
+std = ["dep:chrono", "chrono/clock"]
 log-level-off = ["log/max_level_off"]
 log-level-error = ["log/max_level_error"]
 log-level-warn = ["log/max_level_warn"]
@@ -20,11 +20,11 @@ log-level-trace = ["log/max_level_trace"]
 default = []
 
 [dependencies]
-cfg-if = "1.0"
-log = "=0.4.21"
-kspin = "0.1"
-crate_interface = "0.1"
-chrono = { version = "0.4", optional = true }
+cfg-if = { workspace = true }
+chrono = { workspace = true, optional = true }
+crate_interface = { workspace = true }
+kspin = { workspace = true }
+log = { workspace = true }
 
 [dev-dependencies]
 axlog = { workspace = true, features = ["std"] }

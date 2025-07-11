@@ -72,14 +72,15 @@ log-level-debug = ["axlog/log-level-debug"]
 log-level-trace = ["axlog/log-level-trace"]
 
 [dependencies]
-axruntime = { workspace = true }
-axhal = { workspace = true }
-axlog = { workspace = true }
 axalloc = { workspace = true, optional = true }
+axdisplay = { workspace = true, optional = true }
 axdriver = { workspace = true, optional = true }
 axfs = { workspace = true, optional = true }
+axhal = { workspace = true }
+axlog = { workspace = true }
 axnet = { workspace = true, optional = true }
-axdisplay = { workspace = true, optional = true }
+axruntime = { workspace = true }
 axsync = { workspace = true, optional = true }
 axtask = { workspace = true, optional = true }
-kspin = { version = "0.1", optional = true }
+
+kspin = { workspace = true, optional = true }
