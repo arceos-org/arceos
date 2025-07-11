@@ -116,6 +116,16 @@ where
     spawn_task(TaskInner::new(f, name, stack_size))
 }
 
+/// Spawns a new coroutine task with the given future and name.
+///
+/// Returns the task reference.
+pub fn spawn_raw_f<F>(f: F, name: String) -> AxTaskRef
+where
+    F: Future<Output = ()> + Send + 'static,
+{
+    spawn_task(TaskInner::new_f(f, name))
+}
+
 /// Spawns a new task with the default parameters.
 ///
 /// The default task name is an empty string. The default task stack size is
@@ -127,6 +137,18 @@ where
     F: FnOnce() + Send + 'static,
 {
     spawn_raw(f, "".into(), axconfig::TASK_STACK_SIZE)
+}
+
+/// Spawns a new coroutine task with the default parameters.
+///
+/// The default task name is an empty string.
+///
+/// Returns the task reference.
+pub fn spawn_f<F>(f: F) -> AxTaskRef
+where
+    F: Future<Output = ()> + Send + 'static,
+{
+    spawn_raw_f(f, "".into())
 }
 
 /// Set the priority for current task.
@@ -185,6 +207,20 @@ pub fn yield_now() {
     current_run_queue::<NoPreemptIrqSave>().yield_current()
 }
 
+/// Current coroutine task gives up the CPU time voluntarily, and switches to another
+/// ready task.
+#[inline]
+pub async fn yield_now_f() {
+    crate::run_queue::YieldFuture::<NoPreemptIrqSave>::new().await;
+}
+
+/// Current coroutine task is going to sleep for the given duration.
+///
+/// If the feature `irq` is not enabled, it uses busy-wait instead.
+pub async fn sleep_f(dur: core::time::Duration) {
+    sleep_until_f(axhal::time::wall_time() + dur).await;
+}
+
 /// Current task is going to sleep for the given duration.
 ///
 /// If the feature `irq` is not enabled, it uses busy-wait instead.
@@ -202,9 +238,24 @@ pub fn sleep_until(deadline: axhal::time::TimeValue) {
     axhal::time::busy_wait_until(deadline);
 }
 
+/// Current coroutine task is going to sleep, it will be woken up at the given deadline.
+///
+/// If the feature `irq` is not enabled, it uses busy-wait instead.
+pub async fn sleep_until_f(deadline: axhal::time::TimeValue) {
+    #[cfg(feature = "irq")]
+    crate::run_queue::SleepUntilFuture::<NoPreemptIrqSave>::new(deadline).await;
+    #[cfg(not(feature = "irq"))]
+    axhal::time::busy_wait_until(deadline);
+}
+
 /// Exits the current task.
 pub fn exit(exit_code: i32) -> ! {
     current_run_queue::<NoPreemptIrqSave>().exit_current(exit_code)
+}
+
+/// Exits the current coroutine task.
+pub async fn exit_f(exit_code: i32) {
+    crate::run_queue::ExitFuture::<NoPreemptIrqSave>::new(exit_code).await;
 }
 
 /// The idle task routine.

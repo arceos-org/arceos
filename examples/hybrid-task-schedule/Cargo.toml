@@ -1,0 +1,21 @@
+[package]
+name = "hybrid-task-schedule"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+axstd = { workspace = true, features = [
+    "alloc",
+    "multitask",
+    "net",
+    "irq",
+], optional = true }
+axasync-std = { workspace = true }
+rand = { version = "0.9.1", default-features = false, features = ["small_rng"] }
