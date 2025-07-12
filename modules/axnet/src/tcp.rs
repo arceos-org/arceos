@@ -329,29 +329,36 @@ impl SocketOps for TcpSocket {
                 bound_endpoint, remote_endpoint
             );
 
+            let connect = move |context: &mut smoltcp::iface::Context| {
+                with_smol_socket(handle, |socket| {
+                    socket
+                        .connect(context, remote_endpoint, bound_endpoint)
+                        .map_err(|e| match e {
+                            smol::ConnectError::InvalidState => {
+                                ax_err!(EISCONN, "already conncted")
+                            }
+                            smol::ConnectError::Unaddressable => {
+                                ax_err!(ECONNREFUSED, "unaddressable")
+                            }
+                        })?;
+                    Ok::<(IpEndpoint, IpEndpoint), LinuxError>((
+                        socket.local_endpoint().unwrap(),
+                        socket.remote_endpoint().unwrap(),
+                    ))
+                })
+            };
+
             warn!("Temporarily net bridge used");
-            let iface = if match remote_endpoint.addr {
+            let (local_endpoint, remote_endpoint) = if match remote_endpoint.addr {
                 IpAddress::Ipv4(addr) => addr.is_loopback(),
                 IpAddress::Ipv6(addr) => addr.is_loopback(),
             } {
-                super::LOOPBACK.get().unwrap()
+                connect(super::LOOPBACK.inner().lock().context())
             } else {
                 info!("Use eth net");
-                &super::ETH0.iface
-            };
+                connect(super::ETH0.inner().lock().context())
+            }?;
 
-            let (local_endpoint, remote_endpoint) = with_smol_socket(handle, |socket| {
-                socket
-                    .connect(iface.lock().context(), remote_endpoint, bound_endpoint)
-                    .map_err(|e| match e {
-                        smol::ConnectError::InvalidState => ax_err!(EISCONN, "already conncted"),
-                        smol::ConnectError::Unaddressable => ax_err!(ECONNREFUSED, "unaddressable"),
-                    })?;
-                Ok::<(IpEndpoint, IpEndpoint), LinuxError>((
-                    socket.local_endpoint().unwrap(),
-                    socket.remote_endpoint().unwrap(),
-                ))
-            })?;
             unsafe {
                 // SAFETY: no other threads can read or write these fields as we
                 // have changed the state to `BUSY`.
@@ -408,10 +415,10 @@ impl SocketOps for TcpSocket {
         let local_port = unsafe { self.local_addr.get().read().port };
         self.general
             .block_on(None, |_context| {
-                Poll::Ready(LISTEN_TABLE.accept(local_port).and_then(
+                Poll::Ready(LISTEN_TABLE.accept(local_port).map(
                     |(handle, (local_addr, peer_addr))| {
                         debug!("accepted connection from {}, {}", handle, peer_addr);
-                        Ok(TcpSocket::new_connected(handle, local_addr, peer_addr))
+                        TcpSocket::new_connected(handle, local_addr, peer_addr)
                     },
                 ))
             })
@@ -420,9 +427,9 @@ impl SocketOps for TcpSocket {
 
     fn send(&self, buf: &[u8], _to: Option<SocketAddr>, _flags: SendFlags) -> LinuxResult<usize> {
         if self.is_connecting() {
-            return Err(ax_err!(EAGAIN)).into();
+            return Err(ax_err!(EAGAIN));
         } else if !self.is_connected() {
-            return Err(ax_err!(ENOTCONN)).into();
+            return Err(ax_err!(ENOTCONN));
         }
 
         // SAFETY: `self.handle` should be initialized in a connected socket.

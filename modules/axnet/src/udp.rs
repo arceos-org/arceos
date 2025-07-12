@@ -172,7 +172,7 @@ impl SocketOps for UdpSocket {
                         return Poll::Pending;
                     } else {
                         socket.send_slice(buf, remote_addr).map_err(|e| match e {
-                            smol::SendError::BufferFull => ax_err!(EAGAIN),
+                            smol::SendError::BufferFull => LinuxError::EAGAIN,
                             smol::SendError::Unaddressable => {
                                 ax_err!(ECONNREFUSED, "unaddressable")
                             }

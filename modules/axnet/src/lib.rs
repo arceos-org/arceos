@@ -30,12 +30,9 @@ mod udp;
 mod wrapper;
 
 use axdriver::{AxDeviceContainer, prelude::*};
-use axsync::Mutex;
 use lazyinit::LazyInit;
 use smoltcp::{
-    iface::Interface,
     phy::Medium,
-    time::Instant,
     wire::{EthernetAddress, IpAddress, IpCidr},
 };
 pub use socket::*;
@@ -44,10 +41,10 @@ pub use udp::*;
 pub use wrapper::poll_interfaces;
 
 use crate::{
-    consts::IP_PREFIX,
+    consts::{IP_PREFIX, RANDOM_SEED},
     listen_table::ListenTable,
     loopback::LoopbackDev,
-    wrapper::{InterfaceWrapper, SocketSetWrapper},
+    wrapper::{DeviceWrapper, InterfaceWrapper, SocketSetWrapper},
 };
 
 #[doc(hidden)]
@@ -58,10 +55,8 @@ pub mod __priv {
 static LISTEN_TABLE: LazyInit<ListenTable> = LazyInit::new();
 static SOCKET_SET: LazyInit<SocketSetWrapper> = LazyInit::new();
 
-static LOOPBACK_DEV: LazyInit<Mutex<LoopbackDev>> = LazyInit::new();
-static LOOPBACK: LazyInit<Mutex<Interface>> = LazyInit::new();
-
-static ETH0: LazyInit<InterfaceWrapper> = LazyInit::new();
+static LOOPBACK: LazyInit<InterfaceWrapper<LoopbackDev>> = LazyInit::new();
+static ETH0: LazyInit<InterfaceWrapper<DeviceWrapper>> = LazyInit::new();
 
 /// Initializes the network subsystem by NIC devices.
 pub fn init_network(mut net_devs: AxDeviceContainer<AxNetDevice>) {
@@ -70,20 +65,22 @@ pub fn init_network(mut net_devs: AxDeviceContainer<AxNetDevice>) {
     let dev = net_devs.take_one().expect("No NIC device found!");
     info!("  use NIC 0: {:?}", dev.device_name());
 
-    let mut device = LoopbackDev::new(Medium::Ip);
+    let device = LoopbackDev::new(Medium::Ip);
     let config = smoltcp::iface::Config::new(smoltcp::wire::HardwareAddress::Ip);
-
-    let mut iface = Interface::new(config, &mut device, Instant::from_micros_const(0));
-    iface.update_ip_addrs(|ip_addrs| {
+    let iface = InterfaceWrapper::new("lo", device, config);
+    iface.inner().lock().update_ip_addrs(|ip_addrs| {
         ip_addrs
             .push(IpCidr::new(IpAddress::v4(127, 0, 0, 1), 8))
             .unwrap();
     });
-    LOOPBACK.init_once(Mutex::new(iface));
-    LOOPBACK_DEV.init_once(Mutex::new(device));
+    LOOPBACK.init_once(iface);
 
     let ether_addr = EthernetAddress(dev.mac_address().0);
-    let eth0 = InterfaceWrapper::new("eth0", dev, ether_addr);
+    let mut config =
+        smoltcp::iface::Config::new(smoltcp::wire::HardwareAddress::Ethernet(ether_addr));
+    // TODO(mivik): random seed
+    config.random_seed = RANDOM_SEED;
+    let eth0 = InterfaceWrapper::new("eth0", DeviceWrapper::new(dev), config);
 
     let ip = consts::IP.parse().expect("invalid IP address");
     let gateway = consts::GATEWAY.parse().expect("invalid gateway IP address");
@@ -92,7 +89,7 @@ pub fn init_network(mut net_devs: AxDeviceContainer<AxNetDevice>) {
 
     ETH0.init_once(eth0);
     info!("created net interface {:?}:", ETH0.name());
-    info!("  ether:    {}", ETH0.ethernet_address());
+    info!("  ether:    {}", ether_addr);
     info!("  ip:       {}/{}", ip, IP_PREFIX);
     info!("  gateway:  {}", gateway);
 

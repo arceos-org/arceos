@@ -1,34 +1,91 @@
 use alloc::vec;
-use core::{cell::RefCell, ops::DerefMut};
+use core::cell::RefCell;
 
 use axdriver::AxNetDevice;
 use axdriver_net::{DevError, NetBufPtr, NetDriverOps};
 use axerrno::{LinuxError, LinuxResult};
-use axhal::time::{NANOS_PER_MICROS, monotonic_time_nanos};
+use axhal::time::{NANOS_PER_MICROS, wall_time_nanos};
 use axsync::Mutex;
 use smoltcp::{
     iface::{Interface, SocketHandle, SocketSet},
     phy::{Device, DeviceCapabilities, Medium, RxToken, TxToken},
     socket::{AnySocket, Socket},
     time::Instant,
-    wire::{EthernetAddress, HardwareAddress, IpAddress, IpCidr},
+    wire::{IpAddress, IpCidr},
 };
 
-use crate::{LISTEN_TABLE, LOOPBACK, LOOPBACK_DEV, SOCKET_SET, consts::RANDOM_SEED};
+use crate::{ETH0, LISTEN_TABLE, LOOPBACK, SOCKET_SET};
 
-pub(crate) struct SocketSetWrapper<'a>(Mutex<SocketSet<'a>>);
-
-struct DeviceWrapper {
+pub(crate) struct DeviceWrapper {
     inner: RefCell<AxNetDevice>, /* use `RefCell` is enough since it's wrapped in `Mutex` in
                                   * `InterfaceWrapper`. */
 }
+impl DeviceWrapper {
+    pub fn new(inner: AxNetDevice) -> Self {
+        Self {
+            inner: RefCell::new(inner),
+        }
+    }
+}
 
-pub(crate) struct InterfaceWrapper {
+fn now() -> Instant {
+    Instant::from_micros_const((wall_time_nanos() / NANOS_PER_MICROS) as i64)
+}
+
+pub(crate) struct InterfaceWrapper<D> {
     name: &'static str,
-    ether_addr: EthernetAddress,
-    dev: Mutex<DeviceWrapper>,
+    device: Mutex<D>,
     pub iface: Mutex<Interface>,
 }
+
+impl<D> InterfaceWrapper<D>
+where
+    D: Device,
+{
+    pub fn new(name: &'static str, mut device: D, config: smoltcp::iface::Config) -> Self {
+        let iface = Mutex::new(Interface::new(config, &mut device, now()));
+        Self {
+            name,
+            device: Mutex::new(device),
+            iface,
+        }
+    }
+
+    pub fn name(&self) -> &'static str {
+        self.name
+    }
+
+    pub fn device(&self) -> &Mutex<D> {
+        &self.device
+    }
+
+    pub fn inner(&self) -> &Mutex<Interface> {
+        &self.iface
+    }
+
+    pub fn setup_ip_addr(&self, ip: IpAddress, prefix_len: u8) {
+        let mut iface = self.iface.lock();
+        iface.update_ip_addrs(|ip_addrs| {
+            ip_addrs.push(IpCidr::new(ip, prefix_len)).unwrap();
+        });
+    }
+
+    pub fn setup_gateway(&self, gateway: IpAddress) {
+        let mut iface = self.iface.lock();
+        match gateway {
+            IpAddress::Ipv4(v4) => iface.routes_mut().add_default_ipv4_route(v4).unwrap(),
+            IpAddress::Ipv6(v6) => iface.routes_mut().add_default_ipv6_route(v6).unwrap(),
+        };
+    }
+
+    pub fn poll(&self, sockets: &Mutex<SocketSet<'_>>) {
+        let mut iface = self.iface.lock();
+        let mut sockets = sockets.lock();
+        iface.poll(now(), &mut *self.device.lock(), &mut sockets);
+    }
+}
+
+pub(crate) struct SocketSetWrapper<'a>(Mutex<SocketSet<'a>>);
 
 impl<'a> SocketSetWrapper<'a> {
     pub fn new() -> Self {
@@ -83,77 +140,13 @@ impl<'a> SocketSetWrapper<'a> {
 
     pub fn poll_interfaces(&self) {
         // TODO(mivik): poll delay
-        LOOPBACK.lock().poll(
-            Instant::from_micros_const((monotonic_time_nanos() / NANOS_PER_MICROS) as i64),
-            LOOPBACK_DEV.lock().deref_mut(),
-            &mut self.0.lock(),
-        );
+        LOOPBACK.poll(&self.0);
+        ETH0.poll(&self.0);
     }
 
     pub fn remove(&self, handle: SocketHandle) {
         self.0.lock().remove(handle);
         debug!("socket {}: destroyed", handle);
-    }
-}
-
-#[allow(unused)]
-impl InterfaceWrapper {
-    pub fn new(name: &'static str, dev: AxNetDevice, ether_addr: EthernetAddress) -> Self {
-        let mut config = smoltcp::iface::Config::new(HardwareAddress::Ethernet(ether_addr));
-        // TODO(mivik): random seed
-        config.random_seed = RANDOM_SEED;
-
-        let mut dev = DeviceWrapper::new(dev);
-        let iface = Mutex::new(Interface::new(config, &mut dev, Self::current_time()));
-        Self {
-            name,
-            ether_addr,
-            dev: Mutex::new(dev),
-            iface,
-        }
-    }
-
-    fn current_time() -> Instant {
-        Instant::from_micros_const((monotonic_time_nanos() / NANOS_PER_MICROS) as i64)
-    }
-
-    pub fn name(&self) -> &str {
-        self.name
-    }
-
-    pub fn ethernet_address(&self) -> EthernetAddress {
-        self.ether_addr
-    }
-
-    pub fn setup_ip_addr(&self, ip: IpAddress, prefix_len: u8) {
-        let mut iface = self.iface.lock();
-        iface.update_ip_addrs(|ip_addrs| {
-            ip_addrs.push(IpCidr::new(ip, prefix_len)).unwrap();
-        });
-    }
-
-    pub fn setup_gateway(&self, gateway: IpAddress) {
-        let mut iface = self.iface.lock();
-        match gateway {
-            IpAddress::Ipv4(v4) => iface.routes_mut().add_default_ipv4_route(v4).unwrap(),
-            IpAddress::Ipv6(v6) => iface.routes_mut().add_default_ipv6_route(v6).unwrap(),
-        };
-    }
-
-    pub fn poll(&self, sockets: &Mutex<SocketSet>) {
-        let mut dev = self.dev.lock();
-        let mut iface = self.iface.lock();
-        let mut sockets = sockets.lock();
-        let timestamp = Self::current_time();
-        iface.poll(timestamp, dev.deref_mut(), &mut sockets);
-    }
-}
-
-impl DeviceWrapper {
-    fn new(inner: AxNetDevice) -> Self {
-        Self {
-            inner: RefCell::new(inner),
-        }
     }
 }
 
@@ -211,8 +204,8 @@ impl Device for DeviceWrapper {
     }
 }
 
-struct AxNetRxToken<'a>(&'a RefCell<AxNetDevice>, NetBufPtr);
-struct AxNetTxToken<'a>(&'a RefCell<AxNetDevice>);
+pub(crate) struct AxNetRxToken<'a>(&'a RefCell<AxNetDevice>, NetBufPtr);
+pub(crate) struct AxNetTxToken<'a>(&'a RefCell<AxNetDevice>);
 
 impl<'a> RxToken for AxNetRxToken<'a> {
     fn preprocess(&self, sockets: &mut SocketSet<'_>) {
@@ -279,5 +272,5 @@ pub fn poll_interfaces() {
 
 /// Add multicast_addr to the loopback device.
 pub fn add_membership(multicast_addr: IpAddress, _interface_addr: IpAddress) {
-    let _ = LOOPBACK.lock().join_multicast_group(multicast_addr);
+    let _ = LOOPBACK.iface.lock().join_multicast_group(multicast_addr);
 }

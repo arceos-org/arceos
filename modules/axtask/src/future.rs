@@ -35,12 +35,17 @@ pub fn sleep(duration: Duration) -> Sleep {
 
 /// Waits until `deadline` is reached.
 pub fn sleep_until(deadline: Duration) -> Sleep {
+    if deadline <= axhal::time::wall_time() {
+        return Sleep { polled: true };
+    }
+
     let curr = current();
     crate::timers::set_alarm_wakeup(deadline, curr.clone());
     Sleep { polled: false }
 }
 
 /// Future returned by `sleep` and `sleep_until`.
+#[must_use = "futures do nothing unless you `.await` or poll them"]
 pub struct Sleep {
     polled: bool,
 }
@@ -74,6 +79,7 @@ pub fn timeout_at<F: IntoFuture>(fut: F, deadline: Duration) -> Timeout<F::IntoF
 }
 
 /// Future returned by `timeout` and `timeout_at`.
+#[must_use = "futures do nothing unless you `.await` or poll them"]
 #[pin_project]
 pub struct Timeout<F> {
     #[pin]

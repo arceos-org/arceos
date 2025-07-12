@@ -6,7 +6,7 @@ use core::{
 };
 
 use axerrno::{LinuxError, LinuxResult};
-use axhal::time::monotonic_time;
+use axhal::time::wall_time;
 use axtask::future::block_on;
 
 use crate::{
@@ -64,7 +64,7 @@ impl GeneralOptions {
                 Poll::Pending => Err(LinuxError::EAGAIN),
             }
         } else {
-            let deadline = timeout.map(|t| monotonic_time() + t);
+            let deadline = timeout.map(|t| wall_time() + t);
             block_on(poll_fn(|context| {
                 loop {
                     SOCKET_SET.poll_interfaces();
@@ -73,7 +73,7 @@ impl GeneralOptions {
                             // The inner function does not block but the waker
                             // is not used (otherwise it should return
                             // Poll::Pending), so we need to poll it again.
-                            if deadline.is_some_and(|d| monotonic_time() >= d) {
+                            if deadline.is_some_and(|d| wall_time() >= d) {
                                 return Poll::Ready(Err(LinuxError::ETIMEDOUT));
                             }
                             axtask::yield_now();
