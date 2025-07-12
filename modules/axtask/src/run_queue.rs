@@ -5,10 +5,10 @@ use core::mem::MaybeUninit;
 #[cfg(feature = "smp")]
 use alloc::sync::Weak;
 
+use axsched::BaseScheduler;
 use kernel_guard::BaseGuard;
 use kspin::SpinRaw;
 use lazyinit::LazyInit;
-use scheduler::BaseScheduler;
 
 use axhal::percpu::this_cpu_id;
 

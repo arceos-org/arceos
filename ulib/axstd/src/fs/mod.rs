@@ -43,7 +43,7 @@ pub fn metadata(path: &str) -> io::Result<Metadata> {
 }
 
 /// Returns an iterator over the entries within a directory.
-pub fn read_dir(path: &str) -> io::Result<ReadDir> {
+pub fn read_dir(path: &str) -> io::Result<ReadDir<'_>> {
     ReadDir::new(path)
 }
 
