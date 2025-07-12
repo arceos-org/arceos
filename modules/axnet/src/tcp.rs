@@ -18,7 +18,7 @@ use smoltcp::{
 
 use super::{LISTEN_TABLE, SOCKET_SET};
 use crate::{
-    RecvFlags, SendFlags, ShutdownKind, Socket, SocketOps,
+    RecvFlags, SendFlags, Shutdown, Socket, SocketOps,
     consts::{TCP_RX_BUF_LEN, TCP_TX_BUF_LEN, UNSPECIFIED_ENDPOINT_V4},
     general::GeneralOptions,
     options::{Configurable, GetSocketOption, SetSocketOption},
@@ -353,9 +353,11 @@ impl SocketOps for TcpSocket {
                 IpAddress::Ipv4(addr) => addr.is_loopback(),
                 IpAddress::Ipv6(addr) => addr.is_loopback(),
             } {
+                self.general.set_externally_driven(false);
                 connect(super::LOOPBACK.inner().lock().context())
             } else {
                 info!("Use eth net");
+                self.general.set_externally_driven(true);
                 connect(super::ETH0.inner().lock().context())
             }?;
 
@@ -522,8 +524,8 @@ impl SocketOps for TcpSocket {
         }
     }
 
-    fn shutdown(&self, _kind: ShutdownKind) -> LinuxResult<()> {
-        // TODO(mivik): shutdown kind
+    fn shutdown(&self, _how: Shutdown) -> LinuxResult<()> {
+        // TODO(mivik): shutdown
 
         // stream
         self.update_state(STATE_CONNECTED, STATE_CLOSED, || {
@@ -559,7 +561,7 @@ impl SocketOps for TcpSocket {
 
 impl Drop for TcpSocket {
     fn drop(&mut self) {
-        self.shutdown(ShutdownKind::default()).ok();
+        self.shutdown(Shutdown::Both).ok();
         // Safe because we have mut reference to `self`.
         if let Some(handle) = unsafe { self.handle.get().read() } {
             SOCKET_SET.remove(handle);

@@ -46,19 +46,10 @@ pub struct RecvOptions {
 
 /// Kind of shutdown operation to perform on a socket.
 #[derive(Debug, Clone, Copy)]
-pub struct ShutdownKind {
-    /// Whether to close the read side of the socket.
-    read: bool,
-    /// Whether to close the write side of the socket.
-    write: bool,
-}
-impl Default for ShutdownKind {
-    fn default() -> Self {
-        Self {
-            read: true,
-            write: true,
-        }
-    }
+pub enum Shutdown {
+    Read,
+    Write,
+    Both,
 }
 
 /// Operations that can be performed on a socket.
@@ -97,7 +88,7 @@ pub trait SocketOps: Configurable {
     fn poll(&self) -> LinuxResult<PollState>;
 
     /// Shutdown the socket, closing the connection.
-    fn shutdown(&self, kind: ShutdownKind) -> LinuxResult<()>;
+    fn shutdown(&self, how: Shutdown) -> LinuxResult<()>;
 }
 
 /// Network socket abstraction.

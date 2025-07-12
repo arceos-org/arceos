@@ -14,7 +14,7 @@ use smoltcp::{
     wire::{IpAddress, IpCidr},
 };
 
-use crate::{ETH0, LISTEN_TABLE, LOOPBACK, SOCKET_SET};
+use crate::{LISTEN_TABLE, LOOPBACK, SOCKET_SET};
 
 pub(crate) struct DeviceWrapper {
     inner: RefCell<AxNetDevice>, /* use `RefCell` is enough since it's wrapped in `Mutex` in
@@ -78,9 +78,9 @@ where
         };
     }
 
-    pub fn poll(&self, sockets: &Mutex<SocketSet<'_>>) {
+    pub fn poll(&self, sockets: &SocketSetWrapper) {
         let mut iface = self.iface.lock();
-        let mut sockets = sockets.lock();
+        let mut sockets = sockets.0.lock();
         iface.poll(now(), &mut *self.device.lock(), &mut sockets);
     }
 }
@@ -140,8 +140,8 @@ impl<'a> SocketSetWrapper<'a> {
 
     pub fn poll_interfaces(&self) {
         // TODO(mivik): poll delay
-        LOOPBACK.poll(&self.0);
-        ETH0.poll(&self.0);
+        LOOPBACK.poll(self);
+        // ETH0.poll(self);
     }
 
     pub fn remove(&self, handle: SocketHandle) {

@@ -13,7 +13,7 @@ use smoltcp::{
 use spin::RwLock;
 
 use crate::{
-    RecvFlags, SOCKET_SET, SendFlags, ShutdownKind, SocketOps,
+    RecvFlags, SOCKET_SET, SendFlags, Shutdown, SocketOps,
     consts::{UDP_RX_BUF_LEN, UDP_TX_BUF_LEN, UNSPECIFIED_ENDPOINT_V4},
     general::GeneralOptions,
     options::{Configurable, GetSocketOption, SetSocketOption},
@@ -27,6 +27,7 @@ pub(crate) fn new_udp_socket() -> smol::Socket<'static> {
     )
 }
 
+// TODO(mivik): externally driven UDP socket
 /// A UDP socket that provides POSIX-like APIs.
 pub struct UdpSocket {
     handle: SocketHandle,
@@ -282,8 +283,8 @@ impl SocketOps for UdpSocket {
         })
     }
 
-    fn shutdown(&self, _kind: ShutdownKind) -> LinuxResult<()> {
-        // TODO(mivik): shutdown kind
+    fn shutdown(&self, _how: Shutdown) -> LinuxResult<()> {
+        // TODO(mivik): shutdown
         SOCKET_SET.poll_interfaces();
 
         self.with_smol_socket(|socket| {
@@ -296,7 +297,7 @@ impl SocketOps for UdpSocket {
 
 impl Drop for UdpSocket {
     fn drop(&mut self) {
-        self.shutdown(ShutdownKind::default()).ok();
+        self.shutdown(Shutdown::Both).ok();
         SOCKET_SET.remove(self.handle);
     }
 }

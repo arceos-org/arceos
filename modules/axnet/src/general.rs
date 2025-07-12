@@ -10,7 +10,7 @@ use axhal::time::wall_time;
 use axtask::future::block_on;
 
 use crate::{
-    SOCKET_SET,
+    ETH0, LOOPBACK, SOCKET_SET,
     options::{Configurable, GetSocketOption, SetSocketOption},
 };
 
@@ -23,6 +23,14 @@ pub(crate) struct GeneralOptions {
 
     send_timeout_nanos: AtomicU64,
     recv_timeout_nanos: AtomicU64,
+
+    /// Whether the socket is externally driven (e.g., by a network interface).
+    ///
+    /// This means new data can be received without between two consecutive
+    /// calls to `poll_interfaces` (without our intervention between them). This
+    /// is not true for loopback devices since they are always driven internally
+    /// by kernel.
+    externally_driven: AtomicBool,
 }
 impl GeneralOptions {
     pub const fn new() -> Self {
@@ -32,6 +40,8 @@ impl GeneralOptions {
 
             send_timeout_nanos: AtomicU64::new(0),
             recv_timeout_nanos: AtomicU64::new(0),
+
+            externally_driven: AtomicBool::new(false),
         }
     }
 
@@ -53,6 +63,10 @@ impl GeneralOptions {
         (nanos > 0).then(|| Duration::from_nanos(nanos))
     }
 
+    pub fn set_externally_driven(&self, driven: bool) {
+        self.externally_driven.store(driven, Ordering::Release);
+    }
+
     pub fn block_on<F, T>(&self, timeout: Option<Duration>, mut f: F) -> LinuxResult<T>
     where
         F: FnMut(&mut Context) -> Poll<LinuxResult<T>>,
@@ -66,8 +80,14 @@ impl GeneralOptions {
         } else {
             let deadline = timeout.map(|t| wall_time() + t);
             block_on(poll_fn(|context| {
+                let externally_driven = self.externally_driven.load(Ordering::Acquire);
                 loop {
-                    SOCKET_SET.poll_interfaces();
+                    // TODO: fix this
+                    if externally_driven {
+                        ETH0.poll(&SOCKET_SET);
+                    } else {
+                        LOOPBACK.poll(&SOCKET_SET);
+                    }
                     match f(context) {
                         Poll::Ready(Err(LinuxError::EAGAIN)) => {
                             // The inner function does not block but the waker
@@ -81,6 +101,10 @@ impl GeneralOptions {
                         }
                         Poll::Ready(result) => break Poll::Ready(result),
                         Poll::Pending => {
+                            if self.externally_driven.load(Ordering::Acquire) {
+                                axtask::yield_now();
+                                continue;
+                            }
                             break Poll::Pending;
                         }
                     }
