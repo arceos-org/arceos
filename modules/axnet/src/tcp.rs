@@ -1,0 +1,575 @@
+use alloc::vec;
+use core::{
+    cell::UnsafeCell,
+    net::SocketAddr,
+    sync::atomic::{AtomicU8, Ordering},
+};
+
+use axerrno::{LinuxError, LinuxResult, ax_err, bail};
+use axio::PollState;
+use axsync::Mutex;
+use smoltcp::{
+    iface::SocketHandle,
+    socket::tcp as smol,
+    time::Duration,
+    wire::{IpAddress, IpEndpoint, IpListenEndpoint},
+};
+
+use super::{LISTEN_TABLE, SOCKET_SET};
+use crate::{
+    RecvFlags, SendFlags, ShutdownKind, Socket, SocketOps,
+    consts::{TCP_RX_BUF_LEN, TCP_TX_BUF_LEN, UNSPECIFIED_ENDPOINT_V4},
+    general::GeneralOptions,
+    options::{Configurable, GetSocketOption, SetSocketOption},
+};
+
+// State transitions:
+// CLOSED -(connect)-> BUSY -> CONNECTING -> CONNECTED -(shutdown)-> BUSY ->
+// CLOSED       |
+//       |-(listen)-> BUSY -> LISTENING -(shutdown)-> BUSY -> CLOSED
+//       |
+//        -(bind)-> BUSY -> CLOSED
+const STATE_CLOSED: u8 = 0;
+const STATE_BUSY: u8 = 1;
+const STATE_CONNECTING: u8 = 2;
+const STATE_CONNECTED: u8 = 3;
+const STATE_LISTENING: u8 = 4;
+
+pub(crate) fn new_tcp_socket() -> smol::Socket<'static> {
+    smol::Socket::new(
+        smol::SocketBuffer::new(vec![0; TCP_RX_BUF_LEN]),
+        smol::SocketBuffer::new(vec![0; TCP_TX_BUF_LEN]),
+    )
+}
+
+fn with_smol_socket<R>(handle: SocketHandle, f: impl FnOnce(&mut smol::Socket) -> R) -> R {
+    SOCKET_SET.with_socket_mut::<smol::Socket, _, _>(handle, f)
+}
+
+/// A TCP socket that provides POSIX-like APIs.
+pub struct TcpSocket {
+    state: AtomicU8,
+    handle: UnsafeCell<Option<SocketHandle>>,
+    local_addr: UnsafeCell<IpEndpoint>,
+    peer_addr: UnsafeCell<IpEndpoint>,
+
+    general: GeneralOptions,
+}
+
+unsafe impl Sync for TcpSocket {}
+
+impl TcpSocket {
+    /// Creates a new TCP socket.
+    pub const fn new() -> Self {
+        Self {
+            state: AtomicU8::new(STATE_CLOSED),
+            handle: UnsafeCell::new(None),
+            local_addr: UnsafeCell::new(UNSPECIFIED_ENDPOINT_V4),
+            peer_addr: UnsafeCell::new(UNSPECIFIED_ENDPOINT_V4),
+
+            general: GeneralOptions::new(),
+        }
+    }
+
+    /// Creates a new TCP socket that is already connected.
+    const fn new_connected(
+        handle: SocketHandle,
+        local_addr: IpEndpoint,
+        peer_addr: IpEndpoint,
+    ) -> Self {
+        Self {
+            state: AtomicU8::new(STATE_CONNECTED),
+            handle: UnsafeCell::new(Some(handle)),
+            local_addr: UnsafeCell::new(local_addr),
+            peer_addr: UnsafeCell::new(peer_addr),
+
+            general: GeneralOptions::new(),
+        }
+    }
+}
+
+/// Private methods
+impl TcpSocket {
+    #[inline]
+    fn get_state(&self) -> u8 {
+        self.state.load(Ordering::Acquire)
+    }
+
+    #[inline]
+    fn set_state(&self, state: u8) {
+        self.state.store(state, Ordering::Release);
+    }
+
+    /// Update the state of the socket atomically.
+    ///
+    /// If the current state is `expect`, it first changes the state to
+    /// `STATE_BUSY`, then calls the given function. If the function returns
+    /// `Ok`, it changes the state to `new`, otherwise it changes the state
+    /// back to `expect`.
+    ///
+    /// It returns `Ok` if the current state is `expect`, otherwise it returns
+    /// the current state in `Err`.
+    fn update_state<F, T>(&self, expect: u8, new: u8, f: F) -> Result<LinuxResult<T>, u8>
+    where
+        F: FnOnce() -> LinuxResult<T>,
+    {
+        match self
+            .state
+            .compare_exchange(expect, STATE_BUSY, Ordering::Acquire, Ordering::Acquire)
+        {
+            Ok(_) => {
+                let res = f();
+                if res.is_ok() {
+                    self.set_state(new);
+                } else {
+                    self.set_state(expect);
+                }
+                Ok(res)
+            }
+            Err(old) => Err(old),
+        }
+    }
+
+    #[inline]
+    fn is_connecting(&self) -> bool {
+        self.get_state() == STATE_CONNECTING
+    }
+
+    #[inline]
+    /// Whether the socket is connected.
+    pub fn is_connected(&self) -> bool {
+        self.get_state() == STATE_CONNECTED
+    }
+
+    #[inline]
+    /// Whether the socket is closed.
+    pub fn is_closed(&self) -> bool {
+        self.get_state() == STATE_CLOSED
+    }
+
+    #[inline]
+    fn is_listening(&self) -> bool {
+        self.get_state() == STATE_LISTENING
+    }
+
+    fn bound_endpoint(&self) -> LinuxResult<IpListenEndpoint> {
+        // SAFETY: no other threads can read or write `self.local_addr`.
+        let local_addr = unsafe { self.local_addr.get().read() };
+        let port = if local_addr.port != 0 {
+            local_addr.port
+        } else {
+            get_ephemeral_port()?
+        };
+        assert_ne!(port, 0);
+        let addr = if !local_addr.addr.is_unspecified() {
+            Some(local_addr.addr)
+        } else {
+            None
+        };
+        Ok(IpListenEndpoint { addr, port })
+    }
+
+    fn poll_connect(&self) -> LinuxResult<PollState> {
+        // SAFETY: `self.handle` should be initialized above.
+        let handle = unsafe { self.handle.get().read().unwrap() };
+        let writable = with_smol_socket(handle, |socket| match socket.state() {
+            smol::State::SynSent => false, // wait for connection
+            smol::State::Established => {
+                self.set_state(STATE_CONNECTED); // connected
+                debug!(
+                    "TCP socket {}: connected to {}",
+                    handle,
+                    socket.remote_endpoint().unwrap(),
+                );
+                true
+            }
+            _ => {
+                unsafe {
+                    self.local_addr.get().write(UNSPECIFIED_ENDPOINT_V4);
+                    self.peer_addr.get().write(UNSPECIFIED_ENDPOINT_V4);
+                }
+                self.set_state(STATE_CLOSED); // connection failed
+                true
+            }
+        });
+        Ok(PollState {
+            readable: false,
+            writable,
+        })
+    }
+
+    fn poll_stream(&self) -> LinuxResult<PollState> {
+        // SAFETY: `self.handle` should be initialized in a connected socket.
+        let handle = unsafe { self.handle.get().read().unwrap() };
+        with_smol_socket(handle, |socket| {
+            Ok(PollState {
+                readable: !socket.may_recv() || socket.can_recv(),
+                writable: !socket.may_send() || socket.can_send(),
+            })
+        })
+    }
+
+    fn poll_listener(&self) -> LinuxResult<PollState> {
+        // SAFETY: `self.local_addr` should be initialized in a listening socket.
+        let local_addr = unsafe { self.local_addr.get().read() };
+        Ok(PollState {
+            readable: LISTEN_TABLE.can_accept(local_addr.port)?,
+            writable: false,
+        })
+    }
+}
+
+impl Configurable for TcpSocket {
+    fn get_option_inner(&self, option: &mut GetSocketOption) -> LinuxResult<bool> {
+        use GetSocketOption as O;
+
+        if self.general.get_option_inner(option)? {
+            return Ok(true);
+        }
+
+        let handle = unsafe { self.handle.get().read() };
+        match option {
+            O::NoDelay(no_delay) => {
+                **no_delay = handle.is_some_and(|handle| {
+                    with_smol_socket(handle, |socket| !socket.nagle_enabled())
+                });
+            }
+            O::KeepAlive(keep_alive) => {
+                **keep_alive = handle.is_some_and(|handle| {
+                    with_smol_socket(handle, |socket| socket.keep_alive().is_some())
+                });
+            }
+            O::MaxSegment(max_segment) => {
+                // TODO(mivik): get actual MSS
+                **max_segment = 1460;
+            }
+            O::SendBuffer(size) => {
+                **size = TCP_TX_BUF_LEN;
+            }
+            O::ReceiveBuffer(size) => {
+                **size = TCP_RX_BUF_LEN;
+            }
+            _ => return Ok(false),
+        }
+        Ok(true)
+    }
+
+    fn set_option_inner(&self, option: SetSocketOption) -> LinuxResult<bool> {
+        use SetSocketOption as O;
+
+        if self.general.set_option_inner(option)? {
+            return Ok(true);
+        }
+
+        let Some(handle) = (unsafe { self.handle.get().read() }) else {
+            return Err(LinuxError::ENOTCONN);
+        };
+        match option {
+            O::NoDelay(no_delay) => {
+                with_smol_socket(handle, |socket| {
+                    socket.set_nagle_enabled(!no_delay);
+                });
+            }
+            O::KeepAlive(keep_alive) => {
+                with_smol_socket(handle, |socket| {
+                    socket.set_keep_alive(keep_alive.then(|| Duration::from_secs(75)));
+                });
+            }
+            _ => return Ok(false),
+        }
+        Ok(true)
+    }
+}
+impl SocketOps for TcpSocket {
+    fn bind(&self, mut local_addr: SocketAddr) -> LinuxResult<()> {
+        self.update_state(STATE_CLOSED, STATE_CLOSED, || {
+            // TODO: check addr is available
+            if local_addr.port() == 0 {
+                local_addr.set_port(get_ephemeral_port()?);
+            }
+            // SAFETY: no other threads can read or write `self.local_addr` as we
+            // have changed the state to `BUSY`.
+            unsafe {
+                let old = self.local_addr.get().read();
+                if old != UNSPECIFIED_ENDPOINT_V4 {
+                    return Err(LinuxError::EINVAL);
+                }
+                self.local_addr.get().write(local_addr.into());
+            }
+            let local_endpoint = IpEndpoint::from(local_addr);
+            let bound_endpoint = self.bound_endpoint()?;
+            let handle = unsafe { self.handle.get().read() }
+                .unwrap_or_else(|| SOCKET_SET.add(new_tcp_socket()));
+            debug!("TCP socket {}: binding to {}", handle, local_addr);
+            with_smol_socket(handle, |socket| {
+                socket.set_bound_endpoint(bound_endpoint);
+            });
+
+            if !self.general.reuse_address() {
+                SOCKET_SET.bind_check(local_endpoint.addr, local_endpoint.port)?;
+            }
+            Ok(())
+        })
+        .map_err(|_| ax_err!(EINVAL, "already bound"))?
+    }
+
+    fn connect(&self, remote_addr: SocketAddr) -> LinuxResult<()> {
+        self.update_state(STATE_CLOSED, STATE_CONNECTING, || {
+            // SAFETY: no other threads can read or write these fields.
+            let handle = unsafe { self.handle.get().read() }
+                .unwrap_or_else(|| SOCKET_SET.add(new_tcp_socket()));
+
+            // // TODO: check remote addr unreachable
+            // let (bound_endpoint, remote_endpoint) = self.get_endpoint_pair(remote_addr)?;
+            let remote_endpoint = IpEndpoint::from(remote_addr);
+            let bound_endpoint = self.bound_endpoint()?;
+            info!(
+                "TCP connection from {} to {}",
+                bound_endpoint, remote_endpoint
+            );
+
+            warn!("Temporarily net bridge used");
+            let iface = if match remote_endpoint.addr {
+                IpAddress::Ipv4(addr) => addr.is_loopback(),
+                IpAddress::Ipv6(addr) => addr.is_loopback(),
+            } {
+                super::LOOPBACK.get().unwrap()
+            } else {
+                info!("Use eth net");
+                &super::ETH0.iface
+            };
+
+            let (local_endpoint, remote_endpoint) = with_smol_socket(handle, |socket| {
+                socket
+                    .connect(iface.lock().context(), remote_endpoint, bound_endpoint)
+                    .map_err(|e| match e {
+                        smol::ConnectError::InvalidState => ax_err!(EISCONN, "already conncted"),
+                        smol::ConnectError::Unaddressable => ax_err!(ECONNREFUSED, "unaddressable"),
+                    })?;
+                Ok::<(IpEndpoint, IpEndpoint), LinuxError>((
+                    socket.local_endpoint().unwrap(),
+                    socket.remote_endpoint().unwrap(),
+                ))
+            })?;
+            unsafe {
+                // SAFETY: no other threads can read or write these fields as we
+                // have changed the state to `BUSY`.
+                self.local_addr.get().write(local_endpoint);
+                self.peer_addr.get().write(remote_endpoint);
+                self.handle.get().write(Some(handle));
+            }
+            Ok(())
+        })
+        .map_err(|state| {
+            if state == STATE_CONNECTING {
+                LinuxError::EINPROGRESS
+            } else {
+                // TODO(mivik): error code
+                ax_err!(EISCONN, "already connected")
+            }
+        })??;
+
+        // HACK: yield() to let server to listen
+        axtask::yield_now();
+
+        // Here our state must be `CONNECTING`, and only one thread can run here.
+        self.general.block_on(None, || {
+            let PollState { writable, .. } = self.poll_connect()?;
+            if !writable {
+                Err(LinuxError::EAGAIN)
+            } else if self.get_state() == STATE_CONNECTED {
+                Ok(())
+            } else {
+                bail!(ECONNREFUSED, "connection refused");
+            }
+        })
+    }
+
+    fn listen(&self) -> LinuxResult<()> {
+        self.update_state(STATE_CLOSED, STATE_LISTENING, || {
+            let bound_endpoint = self.bound_endpoint()?;
+            unsafe {
+                (*self.local_addr.get()).port = bound_endpoint.port;
+            }
+            LISTEN_TABLE.listen(bound_endpoint)?;
+            debug!("listening on {}", bound_endpoint);
+            Ok(())
+        })
+        .unwrap_or(Ok(())) // ignore simultaneous `listen`s.
+    }
+
+    fn accept(&self) -> LinuxResult<Socket> {
+        if !self.is_listening() {
+            bail!(EINVAL, "not listening");
+        }
+
+        // SAFETY: `self.local_addr` should be initialized after `bind()`.
+        let local_port = unsafe { self.local_addr.get().read().port };
+        self.general
+            .block_on(None, || {
+                let (handle, (local_addr, peer_addr)) = LISTEN_TABLE.accept(local_port)?;
+                debug!("accepted connection from {}, {}", handle, peer_addr);
+                Ok(TcpSocket::new_connected(handle, local_addr, peer_addr))
+            })
+            .map(Socket::Tcp)
+    }
+
+    fn send(&self, buf: &[u8], _to: Option<SocketAddr>, _flags: SendFlags) -> LinuxResult<usize> {
+        if self.is_connecting() {
+            bail!(EAGAIN);
+        } else if !self.is_connected() {
+            bail!(ENOTCONN);
+        }
+
+        // SAFETY: `self.handle` should be initialized in a connected socket.
+        let handle = unsafe { self.handle.get().read().unwrap() };
+        self.general.block_on(self.general.send_timeout(), || {
+            with_smol_socket(handle, |socket| {
+                if !socket.is_active() || !socket.may_send() {
+                    // closed by remote
+                    bail!(ECONNRESET, "connection reset by peer");
+                } else if !socket.can_send() {
+                    return Err(LinuxError::EAGAIN);
+                }
+                // connected, and the tx buffer is not full
+                let len = socket
+                    .send_slice(buf)
+                    .map_err(|_| ax_err!(ENOTCONN, "not connected?"))?;
+                Ok(len)
+            })
+        })
+    }
+
+    fn recv(
+        &self,
+        buf: &mut [u8],
+        _from: Option<&mut SocketAddr>,
+        flags: RecvFlags,
+    ) -> LinuxResult<usize> {
+        if self.is_connecting() {
+            bail!(EAGAIN);
+        } else if !self.is_connected() {
+            bail!(ENOTCONN, "not connected");
+        }
+
+        // SAFETY: `self.handle` should be initialized in a connected socket.
+        let handle = unsafe { self.handle.get().read().unwrap() };
+        self.general.block_on(self.general.recv_timeout(), || {
+            with_smol_socket(handle, |socket| {
+                if socket.recv_queue() > 0 {
+                    if flags.contains(RecvFlags::PEEK) {
+                        socket.peek_slice(buf)
+                    } else {
+                        socket.recv_slice(buf)
+                    }
+                    .map_err(|_| ax_err!(ENOTCONN, "not connected?"))
+                } else if !socket.is_active() {
+                    // not open
+                    bail!(ECONNREFUSED, "connection refused");
+                } else if !socket.may_recv() {
+                    // connection closed
+                    Ok(0)
+                } else {
+                    // no more data
+                    Err(LinuxError::EAGAIN)
+                }
+            })
+        })
+    }
+
+    fn local_addr(&self) -> LinuxResult<SocketAddr> {
+        // 为了通过测例，已经`bind`但未`listen`的socket也可以返回地址
+        match self.get_state() {
+            STATE_CONNECTED | STATE_LISTENING | STATE_CLOSED => {
+                Ok(unsafe { self.local_addr.get().read() }.into())
+            }
+            _ => Err(LinuxError::ENOTCONN),
+        }
+    }
+
+    fn peer_addr(&self) -> LinuxResult<SocketAddr> {
+        match self.get_state() {
+            STATE_CONNECTED | STATE_LISTENING => Ok(unsafe { self.peer_addr.get().read() }.into()),
+            _ => Err(LinuxError::ENOTCONN),
+        }
+    }
+
+    fn poll(&self) -> LinuxResult<PollState> {
+        match self.get_state() {
+            STATE_CONNECTING => self.poll_connect(),
+            STATE_CONNECTED => self.poll_stream(),
+            STATE_LISTENING => self.poll_listener(),
+            _ => Ok(PollState {
+                readable: false,
+                writable: false,
+            }),
+        }
+    }
+
+    fn shutdown(&self, _kind: ShutdownKind) -> LinuxResult<()> {
+        // TODO(mivik): shutdown kind
+
+        // stream
+        self.update_state(STATE_CONNECTED, STATE_CLOSED, || {
+            // SAFETY: `self.handle` should be initialized in a connected socket, and
+            // no other threads can read or write it.
+            let handle = unsafe { self.handle.get().read().unwrap() };
+            with_smol_socket(handle, |socket| {
+                debug!("TCP socket {}: shutting down", handle);
+                socket.close();
+            });
+            unsafe { self.local_addr.get().write(UNSPECIFIED_ENDPOINT_V4) }; // clear bound address
+            SOCKET_SET.poll_interfaces();
+            Ok(())
+        })
+        .unwrap_or(Ok(()))?;
+
+        // listener
+        self.update_state(STATE_LISTENING, STATE_CLOSED, || {
+            // SAFETY: `self.local_addr` should be initialized in a listening socket,
+            // and no other threads can read or write it.
+            let local_port = unsafe { self.local_addr.get().read().port };
+            unsafe { self.local_addr.get().write(UNSPECIFIED_ENDPOINT_V4) }; // clear bound address
+            LISTEN_TABLE.unlisten(local_port);
+            SOCKET_SET.poll_interfaces();
+            Ok(())
+        })
+        .unwrap_or(Ok(()))?;
+
+        // ignore for other states
+        Ok(())
+    }
+}
+
+impl Drop for TcpSocket {
+    fn drop(&mut self) {
+        self.shutdown(ShutdownKind::default()).ok();
+        // Safe because we have mut reference to `self`.
+        if let Some(handle) = unsafe { self.handle.get().read() } {
+            SOCKET_SET.remove(handle);
+        }
+    }
+}
+
+fn get_ephemeral_port() -> LinuxResult<u16> {
+    const PORT_START: u16 = 0xc000;
+    const PORT_END: u16 = 0xffff;
+    static CURR: Mutex<u16> = Mutex::new(PORT_START);
+
+    let mut curr = CURR.lock();
+    let mut tries = 0;
+    // TODO: more robust
+    while tries <= PORT_END - PORT_START {
+        let port = *curr;
+        if *curr == PORT_END {
+            *curr = PORT_START;
+        } else {
+            *curr += 1;
+        }
+        if LISTEN_TABLE.can_listen(port) {
+            return Ok(port);
+        }
+        tries += 1;
+    }
+    bail!(EADDRINUSE, "no available ports");
+}

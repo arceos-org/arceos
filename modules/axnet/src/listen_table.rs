@@ -1,15 +1,18 @@
-use alloc::{boxed::Box, collections::VecDeque, sync::Arc};
+use alloc::{boxed::Box, collections::VecDeque, sync::Arc, vec};
 use core::ops::DerefMut;
 
 use axerrno::{LinuxError, LinuxResult};
 use axsync::Mutex;
 use smoltcp::{
     iface::{SocketHandle, SocketSet},
-    socket::tcp::{self, State},
+    socket::tcp::{self, SocketBuffer, State},
     wire::{IpAddress, IpEndpoint, IpListenEndpoint},
 };
 
-use super::{LISTEN_QUEUE_SIZE, SOCKET_SET, SocketSetWrapper};
+use crate::{
+    SOCKET_SET,
+    consts::{LISTEN_QUEUE_SIZE, TCP_RX_BUF_LEN, TCP_TX_BUF_LEN},
+};
 
 const PORT_NUM: usize = 65536;
 
@@ -142,7 +145,11 @@ impl ListenTable {
                 warn!("SYN queue overflow!");
                 return;
             }
-            let mut socket = SocketSetWrapper::new_tcp_socket();
+
+            let mut socket = smoltcp::socket::tcp::Socket::new(
+                SocketBuffer::new(vec![0; TCP_RX_BUF_LEN]),
+                SocketBuffer::new(vec![0; TCP_TX_BUF_LEN]),
+            );
             if socket.listen(entry.listen_endpoint).is_ok() {
                 let handle = sockets.add(socket);
                 debug!(

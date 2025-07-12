@@ -472,7 +472,9 @@ dependencies = [
  "axio",
  "axsync",
  "axtask",
+ "bitflags 2.9.1",
  "cfg-if",
+ "enum_dispatch",
  "lazyinit",
  "log",
  "smoltcp 0.12.0",
@@ -1002,6 +1004,18 @@ name = "embedded-hal"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "361a90feb7004eca4019fb28352a9465666b24f840f5c3cddf0ff13920590b89"
+
+[[package]]
+name = "enum_dispatch"
+version = "0.3.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa18ce2bc66555b3218614519ac839ddb759a7d6720732f979ef8d13be147ecd"
+dependencies = [
+ "once_cell",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.104",
+]
 
 [[package]]
 name = "env_filter"
