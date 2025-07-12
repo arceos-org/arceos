@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Error","SeekFrom"],"fn":["stdin","stdout"],"mod":["prelude"],"struct":["BufReader","Stdin","StdinLock","Stdout","StdoutLock"],"trait":["BufRead","Read","Seek","Write"],"type":["Result"]};
