@@ -317,7 +317,9 @@ impl AddrSpace {
         size: usize,
         access_flags: MappingFlags,
     ) -> bool {
-        let mut range = VirtAddrRange::from_start_size(start, size);
+        let Some(mut range) = VirtAddrRange::try_from_start_size(start, size) else {
+            return false;
+        };
         for area in self.areas.iter() {
             if area.end() <= range.start {
                 continue;
