@@ -6,6 +6,7 @@ members = [
     "modules/axconfig",
     "modules/axdisplay",
     "modules/axdriver",
+    "modules/axembassy",
     "modules/axfs",
     "modules/axhal",
     "modules/axlog",
@@ -21,6 +22,7 @@ members = [
     "api/arceos_api",
     "api/arceos_posix_api",
 
+    "ulib/axasync",
     "ulib/axstd",
     "ulib/axlibc",
 
@@ -30,6 +32,8 @@ members = [
     "examples/httpserver",
     "examples/httpserver",
     "examples/shell",
+    "examples/embassy-single",
+    "examples/embassy-preempt",
 ]
 
 [workspace.package]
@@ -44,6 +48,7 @@ keywords = ["arceos", "kernel"]
 categories = ["os", "no-std"]
 
 [workspace.dependencies]
+axasync = { path = "ulib/axasync" }
 axstd = { path = "ulib/axstd" }
 axlibc = { path = "ulib/axlibc" }
 
@@ -55,6 +60,7 @@ axalloc = { path = "modules/axalloc" }
 axconfig = { path = "modules/axconfig" }
 axdisplay = { path = "modules/axdisplay" }
 axdriver = { path = "modules/axdriver" }
+axembassy = { path = "modules/axembassy" }
 axfs = { path = "modules/axfs" }
 axhal = { path = "modules/axhal" }
 axlog = { path = "modules/axlog" }

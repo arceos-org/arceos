@@ -1,20 +1,19 @@
 #![allow(unused_macros)]
 
 macro_rules! define_api_type {
-    ($( $(#[$attr:meta])* $vis:vis type $name:ident; )+) => {
+    ($( $(#[$attr:meta])* $vis:vis type $name:ident $(<$($generic:tt)*>)? ; )+) => {
         $(
             $vis use $crate::imp::$name;
         )+
     };
-    ( @cfg $feature:literal; $( $(#[$attr:meta])* $vis:vis type $name:ident; )+ ) => {
+    ( @cfg $feature:literal; $( $(#[$attr:meta])* $vis:vis type $name:ident $(<$($generic:tt)*>)? ; )+ ) => {
         $(
             #[cfg(feature = $feature)]
             $(#[$attr])*
             $vis use $crate::imp::$name;
-
             #[cfg(all(feature = "dummy-if-not-enabled", not(feature = $feature)))]
             $(#[$attr])*
-            $vis struct $name;
+            $vis struct $name $(<$($generic)*>)? $(where $($generic)*: {})?;
         )+
     };
 }
@@ -107,4 +106,25 @@ macro_rules! cfg_display {
 
 macro_rules! cfg_task {
     ($($item:item)*) => { _cfg_common!{ "multitask" $($item)* } }
+}
+
+macro_rules! cfg_async_preempt {
+    ($($item:item)*) => { _cfg_common!{ "async-preempt" $($item)* } }
+}
+
+macro_rules! cfg_async_thread {
+    ($($item:item)*) => { _cfg_common!{ "async-thread" $($item)* } }
+}
+
+macro_rules! cfg_async_single {
+    ($($item:item)*) => { _cfg_common!{ "async-single" $($item)* } }
+}
+
+macro_rules! cfg_async {
+    ($($item:item)*) => {
+        $(
+            #[cfg(any(feature = "async-thread", feature = "async-single"))]
+            $item
+        )*
+    }
 }

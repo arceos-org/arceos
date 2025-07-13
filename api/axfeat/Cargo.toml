@@ -30,8 +30,8 @@ alloc = ["axalloc", "axruntime/alloc"]
 alloc-tlsf = ["axalloc/tlsf"]
 alloc-slab = ["axalloc/slab"]
 alloc-buddy = ["axalloc/buddy"]
-page-alloc-64g = ["axalloc/page-alloc-64g"] # up to 64G memory capacity
-page-alloc-4g = ["axalloc/page-alloc-4g"] # up to 4G memory capacity
+page-alloc-64g = ["axalloc/page-alloc-64g"]                  # up to 64G memory capacity
+page-alloc-4g = ["axalloc/page-alloc-4g"]                    # up to 4G memory capacity
 paging = ["alloc", "axhal/paging", "axruntime/paging"]
 tls = ["alloc", "axhal/tls", "axruntime/tls", "axtask?/tls"]
 dma = ["alloc", "paging"]
@@ -42,15 +42,46 @@ sched-fifo = ["axtask/sched-fifo"]
 sched-rr = ["axtask/sched-rr", "irq"]
 sched-cfs = ["axtask/sched-cfs", "irq"]
 
+# Embassy asynchronous runtime with multithread support and preemption
+async-preempt = ["async-thread", "axembassy/executor-preempt"]
+# Embassy asynchronous runtime with multithread support
+async-thread = [
+	"axembassy/driver",
+	"axembassy/executor-thread",
+	"axruntime/embassy-timer",
+	"multitask",
+	"irq",
+]
+# Embassy asynchronous runtime depended on irq with single thread support
+async-single = [
+	"axembassy/driver",
+	"axembassy/executor-single",
+	"axruntime/embassy-timer",
+	"alloc",
+	"irq",
+]
+
 # File system
-fs = ["alloc", "paging", "axdriver/virtio-blk", "dep:axfs", "axruntime/fs"] # TODO: try to remove "paging"
+fs = [
+	"alloc",
+	"paging",
+	"axdriver/virtio-blk",
+	"dep:axfs",
+	"axruntime/fs",
+] # TODO: try to remove "paging"
 myfs = ["axfs?/myfs"]
 
 # Networking
 net = ["alloc", "paging", "axdriver/virtio-net", "dep:axnet", "axruntime/net"]
 
 # Display
-display = ["alloc", "paging", "axdriver/virtio-gpu", "dep:axdisplay", "axruntime/display"]
+display = [
+	"alloc",
+	"paging",
+	"axdriver/virtio-gpu",
+	"dep:axdisplay",
+	"axruntime/display",
+]
 
 # Real Time Clock (RTC) Driver.
 rtc = ["axhal/rtc", "axruntime/rtc"]
@@ -60,7 +91,7 @@ bus-mmio = ["axdriver?/bus-mmio"]
 bus-pci = ["axdriver?/bus-pci"]
 driver-ramdisk = ["axdriver?/ramdisk", "axfs?/use-ramdisk"]
 driver-ixgbe = ["axdriver?/ixgbe"]
-driver-fxmac = ["axdriver?/fxmac"] # fxmac ethernet driver for PhytiumPi
+driver-fxmac = ["axdriver?/fxmac"]                          # fxmac ethernet driver for PhytiumPi
 driver-bcm2835-sdhci = ["axdriver?/bcm2835-sdhci"]
 
 # Logging
@@ -82,4 +113,5 @@ axnet = { workspace = true, optional = true }
 axdisplay = { workspace = true, optional = true }
 axsync = { workspace = true, optional = true }
 axtask = { workspace = true, optional = true }
+axembassy = { workspace = true, optional = true }
 kspin = { version = "0.1", optional = true }

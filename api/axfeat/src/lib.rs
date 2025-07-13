@@ -34,6 +34,9 @@
 //!     - `log-level-off`: Disable all logging.
 //!     - `log-level-error`, `log-level-warn`, `log-level-info`, `log-level-debug`,
 //!       `log-level-trace`: Keep logging only at the specified level or higher.
+//! - Embassy runtime
+//! 	- `async-thread`: Enable Embassy asynchronous runtime with multithread support.
+//!		- `async-single`: Enable Embassy asynchronous runtime depenended on irq with single thread.
 //!
 //! [ArceOS]: https://github.com/arceos-org/arceos
 

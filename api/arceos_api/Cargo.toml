@@ -23,6 +23,10 @@ display = ["dep:axdisplay", "dep:axdriver", "axfeat/display"]
 
 myfs = ["axfeat/myfs"]
 
+async-preempt = ["async-thread", "axfeat/async-preempt"]
+async-thread = ["dep:axembassy", "axfeat/async-thread"]
+async-single = ["dep:axembassy", "axfeat/async-single"]
+
 # Use dummy functions if the feature is not enabled
 dummy-if-not-enabled = []
 
@@ -43,3 +47,4 @@ axdriver = { workspace = true, optional = true }
 axfs = { workspace = true, optional = true }
 axnet = { workspace = true, optional = true }
 axdisplay = { workspace = true, optional = true }
+axembassy = { workspace = true, optional = true }
