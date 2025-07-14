@@ -205,6 +205,9 @@ impl<M: RawMutex + Send + Sync + 'static> DirNodeOps<M> for Inode<M> {
             }
         };
         let mut fs = self.fs.lock();
+        if fs.lookup(self.ino, name).is_ok() {
+            return Err(VfsError::EEXIST);
+        }
         let ino = fs
             .create(self.ino, name, inode_type, permission.bits() as _)
             .map_err(into_vfs_err)?;
