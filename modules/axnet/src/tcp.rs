@@ -13,15 +13,16 @@ use smoltcp::{
     iface::SocketHandle,
     socket::tcp as smol,
     time::Duration,
-    wire::{IpAddress, IpEndpoint, IpListenEndpoint},
+    wire::{IpEndpoint, IpListenEndpoint},
 };
 
 use super::{LISTEN_TABLE, SOCKET_SET};
 use crate::{
-    RecvFlags, SendFlags, Shutdown, Socket, SocketOps,
+    RecvFlags, SERVICE, SendFlags, Shutdown, Socket, SocketOps,
     consts::{TCP_RX_BUF_LEN, TCP_TX_BUF_LEN, UNSPECIFIED_ENDPOINT_V4},
     general::GeneralOptions,
     options::{Configurable, GetSocketOption, SetSocketOption},
+    poll_interfaces,
 };
 
 // State transitions:
@@ -43,14 +44,10 @@ pub(crate) fn new_tcp_socket() -> smol::Socket<'static> {
     )
 }
 
-fn with_smol_socket<R>(handle: SocketHandle, f: impl FnOnce(&mut smol::Socket) -> R) -> R {
-    SOCKET_SET.with_socket_mut::<smol::Socket, _, _>(handle, f)
-}
-
 /// A TCP socket that provides POSIX-like APIs.
 pub struct TcpSocket {
     state: AtomicU8,
-    handle: UnsafeCell<Option<SocketHandle>>,
+    handle: SocketHandle,
     local_addr: UnsafeCell<IpEndpoint>,
     peer_addr: UnsafeCell<IpEndpoint>,
 
@@ -61,10 +58,10 @@ unsafe impl Sync for TcpSocket {}
 
 impl TcpSocket {
     /// Creates a new TCP socket.
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             state: AtomicU8::new(STATE_CLOSED),
-            handle: UnsafeCell::new(None),
+            handle: SOCKET_SET.add(new_tcp_socket()),
             local_addr: UnsafeCell::new(UNSPECIFIED_ENDPOINT_V4),
             peer_addr: UnsafeCell::new(UNSPECIFIED_ENDPOINT_V4),
 
@@ -73,14 +70,10 @@ impl TcpSocket {
     }
 
     /// Creates a new TCP socket that is already connected.
-    const fn new_connected(
-        handle: SocketHandle,
-        local_addr: IpEndpoint,
-        peer_addr: IpEndpoint,
-    ) -> Self {
+    fn new_connected(handle: SocketHandle, local_addr: IpEndpoint, peer_addr: IpEndpoint) -> Self {
         Self {
             state: AtomicU8::new(STATE_CONNECTED),
-            handle: UnsafeCell::new(Some(handle)),
+            handle,
             local_addr: UnsafeCell::new(local_addr),
             peer_addr: UnsafeCell::new(peer_addr),
 
@@ -153,6 +146,10 @@ impl TcpSocket {
         self.get_state() == STATE_LISTENING
     }
 
+    fn with_smol_socket<R>(&self, f: impl FnOnce(&mut smol::Socket) -> R) -> R {
+        SOCKET_SET.with_socket_mut::<smol::Socket, _, _>(self.handle, f)
+    }
+
     fn bound_endpoint(&self) -> LinuxResult<IpListenEndpoint> {
         // SAFETY: no other threads can read or write `self.local_addr`.
         let local_addr = unsafe { self.local_addr.get().read() };
@@ -171,15 +168,13 @@ impl TcpSocket {
     }
 
     fn poll_connect(&self) -> LinuxResult<PollState> {
-        // SAFETY: `self.handle` should be initialized above.
-        let handle = unsafe { self.handle.get().read().unwrap() };
-        let writable = with_smol_socket(handle, |socket| match socket.state() {
+        let writable = self.with_smol_socket(|socket| match socket.state() {
             smol::State::SynSent => false, // wait for connection
             smol::State::Established => {
                 self.set_state(STATE_CONNECTED); // connected
                 debug!(
                     "TCP socket {}: connected to {}",
-                    handle,
+                    self.handle,
                     socket.remote_endpoint().unwrap(),
                 );
                 true
@@ -200,9 +195,7 @@ impl TcpSocket {
     }
 
     fn poll_stream(&self) -> LinuxResult<PollState> {
-        // SAFETY: `self.handle` should be initialized in a connected socket.
-        let handle = unsafe { self.handle.get().read().unwrap() };
-        with_smol_socket(handle, |socket| {
+        self.with_smol_socket(|socket| {
             Ok(PollState {
                 readable: !socket.may_recv() || socket.can_recv(),
                 writable: !socket.may_send() || socket.can_send(),
@@ -228,17 +221,12 @@ impl Configurable for TcpSocket {
             return Ok(true);
         }
 
-        let handle = unsafe { self.handle.get().read() };
         match option {
             O::NoDelay(no_delay) => {
-                **no_delay = handle.is_some_and(|handle| {
-                    with_smol_socket(handle, |socket| !socket.nagle_enabled())
-                });
+                **no_delay = self.with_smol_socket(|socket| !socket.nagle_enabled());
             }
             O::KeepAlive(keep_alive) => {
-                **keep_alive = handle.is_some_and(|handle| {
-                    with_smol_socket(handle, |socket| socket.keep_alive().is_some())
-                });
+                **keep_alive = self.with_smol_socket(|socket| socket.keep_alive().is_some());
             }
             O::MaxSegment(max_segment) => {
                 // TODO(mivik): get actual MSS
@@ -262,17 +250,14 @@ impl Configurable for TcpSocket {
             return Ok(true);
         }
 
-        let Some(handle) = (unsafe { self.handle.get().read() }) else {
-            return Err(LinuxError::ENOTCONN);
-        };
         match option {
             O::NoDelay(no_delay) => {
-                with_smol_socket(handle, |socket| {
+                self.with_smol_socket(|socket| {
                     socket.set_nagle_enabled(!no_delay);
                 });
             }
             O::KeepAlive(keep_alive) => {
-                with_smol_socket(handle, |socket| {
+                self.with_smol_socket(|socket| {
                     socket.set_keep_alive(keep_alive.then(|| Duration::from_secs(75)));
                 });
             }
@@ -288,6 +273,11 @@ impl SocketOps for TcpSocket {
             if local_addr.port() == 0 {
                 local_addr.set_port(get_ephemeral_port()?);
             }
+            let local_endpoint = IpEndpoint::from(local_addr);
+            if !self.general.reuse_address() {
+                SOCKET_SET.bind_check(local_endpoint.addr, local_endpoint.port)?;
+            }
+
             // SAFETY: no other threads can read or write `self.local_addr` as we
             // have changed the state to `BUSY`.
             unsafe {
@@ -297,18 +287,11 @@ impl SocketOps for TcpSocket {
                 }
                 self.local_addr.get().write(local_addr.into());
             }
-            let local_endpoint = IpEndpoint::from(local_addr);
             let bound_endpoint = self.bound_endpoint()?;
-            let handle = unsafe { self.handle.get().read() }
-                .unwrap_or_else(|| SOCKET_SET.add(new_tcp_socket()));
-            debug!("TCP socket {}: binding to {}", handle, local_addr);
-            with_smol_socket(handle, |socket| {
+            self.with_smol_socket(|socket| {
                 socket.set_bound_endpoint(bound_endpoint);
             });
-
-            if !self.general.reuse_address() {
-                SOCKET_SET.bind_check(local_endpoint.addr, local_endpoint.port)?;
-            }
+            debug!("TCP socket {}: binding to {}", self.handle, local_addr);
             Ok(())
         })
         .map_err(|_| ax_err!(EINVAL, "already bound"))?
@@ -316,57 +299,48 @@ impl SocketOps for TcpSocket {
 
     fn connect(&self, remote_addr: SocketAddr) -> LinuxResult<()> {
         self.update_state(STATE_CLOSED, STATE_CONNECTING, || {
-            // SAFETY: no other threads can read or write these fields.
-            let handle = unsafe { self.handle.get().read() }
-                .unwrap_or_else(|| SOCKET_SET.add(new_tcp_socket()));
-
-            // // TODO: check remote addr unreachable
+            // TODO: check remote addr unreachable
             // let (bound_endpoint, remote_endpoint) = self.get_endpoint_pair(remote_addr)?;
             let remote_endpoint = IpEndpoint::from(remote_addr);
-            let bound_endpoint = self.bound_endpoint()?;
+            let mut bound_endpoint = self.bound_endpoint()?;
+            if bound_endpoint.addr.is_none() {
+                bound_endpoint.addr =
+                    Some(SERVICE.lock().get_source_address(&remote_endpoint.addr));
+            }
             info!(
                 "TCP connection from {} to {}",
                 bound_endpoint, remote_endpoint
             );
 
-            let connect = move |context: &mut smoltcp::iface::Context| {
-                with_smol_socket(handle, |socket| {
-                    socket
-                        .connect(context, remote_endpoint, bound_endpoint)
-                        .map_err(|e| match e {
-                            smol::ConnectError::InvalidState => {
-                                ax_err!(EISCONN, "already conncted")
-                            }
-                            smol::ConnectError::Unaddressable => {
-                                ax_err!(ECONNREFUSED, "unaddressable")
-                            }
-                        })?;
-                    Ok::<(IpEndpoint, IpEndpoint), LinuxError>((
-                        socket.local_endpoint().unwrap(),
-                        socket.remote_endpoint().unwrap(),
-                    ))
-                })
-            };
+            self.general
+                .set_externally_driven(SERVICE.lock().is_external(&remote_endpoint.addr));
 
-            warn!("Temporarily net bridge used");
-            let (local_endpoint, remote_endpoint) = if match remote_endpoint.addr {
-                IpAddress::Ipv4(addr) => addr.is_loopback(),
-                IpAddress::Ipv6(addr) => addr.is_loopback(),
-            } {
-                self.general.set_externally_driven(false);
-                connect(super::LOOPBACK.inner().lock().context())
-            } else {
-                info!("Use eth net");
-                self.general.set_externally_driven(true);
-                connect(super::ETH0.inner().lock().context())
-            }?;
+            let (local_endpoint, remote_endpoint) = self.with_smol_socket(|socket| {
+                socket
+                    .connect(
+                        crate::SERVICE.lock().iface.context(),
+                        remote_endpoint,
+                        bound_endpoint,
+                    )
+                    .map_err(|e| match e {
+                        smol::ConnectError::InvalidState => {
+                            ax_err!(EISCONN, "already conncted")
+                        }
+                        smol::ConnectError::Unaddressable => {
+                            ax_err!(ECONNREFUSED, "unaddressable")
+                        }
+                    })?;
+                Ok::<(IpEndpoint, IpEndpoint), LinuxError>((
+                    socket.local_endpoint().unwrap(),
+                    socket.remote_endpoint().unwrap(),
+                ))
+            })?;
 
             unsafe {
                 // SAFETY: no other threads can read or write these fields as we
                 // have changed the state to `BUSY`.
                 self.local_addr.get().write(local_endpoint);
                 self.peer_addr.get().write(remote_endpoint);
-                self.handle.get().write(Some(handle));
             }
             Ok(())
         })
@@ -435,13 +409,11 @@ impl SocketOps for TcpSocket {
         }
 
         // SAFETY: `self.handle` should be initialized in a connected socket.
-        let handle = unsafe { self.handle.get().read().unwrap() };
         self.general
             .block_on(self.general.send_timeout(), |context| {
-                with_smol_socket(handle, |socket| {
-                    Poll::Ready(if !socket.is_active() || !socket.may_send() {
-                        // closed by remote
-                        Err(ax_err!(ECONNRESET, "connection reset by peer"))
+                self.with_smol_socket(|socket| {
+                    Poll::Ready(if !socket.is_active() {
+                        Err(LinuxError::ENOTCONN)
                     } else if !socket.can_send() {
                         socket.register_send_waker(context.waker());
                         return Poll::Pending;
@@ -468,28 +440,23 @@ impl SocketOps for TcpSocket {
             bail!(ENOTCONN, "not connected");
         }
 
-        // SAFETY: `self.handle` should be initialized in a connected socket.
-        let handle = unsafe { self.handle.get().read().unwrap() };
         self.general
             .block_on(self.general.recv_timeout(), |context| {
-                with_smol_socket(handle, |socket| {
-                    Poll::Ready(if socket.recv_queue() > 0 {
+                self.with_smol_socket(|socket| {
+                    Poll::Ready(if !socket.is_active() {
+                        Err(LinuxError::ENOTCONN)
+                    } else if !socket.may_recv() {
+                        Ok(0)
+                    } else if socket.recv_queue() == 0 {
+                        socket.register_recv_waker(context.waker());
+                        return Poll::Pending;
+                    } else {
                         if flags.contains(RecvFlags::PEEK) {
                             socket.peek_slice(buf)
                         } else {
                             socket.recv_slice(buf)
                         }
                         .map_err(|_| ax_err!(ENOTCONN, "not connected?"))
-                    } else if !socket.is_active() {
-                        // not open
-                        Err(ax_err!(ECONNREFUSED, "connection refused"))
-                    } else if !socket.may_recv() {
-                        // connection closed
-                        Ok(0)
-                    } else {
-                        // no more data
-                        socket.register_recv_waker(context.waker());
-                        return Poll::Pending;
                     })
                 })
             })
@@ -529,15 +496,12 @@ impl SocketOps for TcpSocket {
 
         // stream
         self.update_state(STATE_CONNECTED, STATE_CLOSED, || {
-            // SAFETY: `self.handle` should be initialized in a connected socket, and
-            // no other threads can read or write it.
-            let handle = unsafe { self.handle.get().read().unwrap() };
-            with_smol_socket(handle, |socket| {
-                debug!("TCP socket {}: shutting down", handle);
+            self.with_smol_socket(|socket| {
+                debug!("TCP socket {}: shutting down", self.handle);
                 socket.close();
             });
             unsafe { self.local_addr.get().write(UNSPECIFIED_ENDPOINT_V4) }; // clear bound address
-            SOCKET_SET.poll_interfaces();
+            poll_interfaces();
             Ok(())
         })
         .unwrap_or(Ok(()))?;
@@ -549,7 +513,7 @@ impl SocketOps for TcpSocket {
             let local_port = unsafe { self.local_addr.get().read().port };
             unsafe { self.local_addr.get().write(UNSPECIFIED_ENDPOINT_V4) }; // clear bound address
             LISTEN_TABLE.unlisten(local_port);
-            SOCKET_SET.poll_interfaces();
+            poll_interfaces();
             Ok(())
         })
         .unwrap_or(Ok(()))?;
@@ -562,10 +526,7 @@ impl SocketOps for TcpSocket {
 impl Drop for TcpSocket {
     fn drop(&mut self) {
         self.shutdown(Shutdown::Both).ok();
-        // Safe because we have mut reference to `self`.
-        if let Some(handle) = unsafe { self.handle.get().read() } {
-            SOCKET_SET.remove(handle);
-        }
+        SOCKET_SET.remove(self.handle);
     }
 }
 

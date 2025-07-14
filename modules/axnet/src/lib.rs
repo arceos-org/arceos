@@ -20,31 +20,34 @@ extern crate log;
 extern crate alloc;
 
 mod consts;
+mod device;
 mod general;
 mod listen_table;
-mod loopback;
 pub mod options;
+mod router;
+mod service;
 mod socket;
 mod tcp;
 mod udp;
 mod wrapper;
 
+use alloc::{borrow::ToOwned, boxed::Box};
+
 use axdriver::{AxDeviceContainer, prelude::*};
+use axsync::Mutex;
 use lazyinit::LazyInit;
-use smoltcp::{
-    phy::Medium,
-    wire::{EthernetAddress, IpAddress, IpCidr},
-};
+use smoltcp::wire::{EthernetAddress, Ipv4Address, Ipv4Cidr};
 pub use socket::*;
 pub use tcp::*;
 pub use udp::*;
-pub use wrapper::poll_interfaces;
 
 use crate::{
-    consts::{IP_PREFIX, RANDOM_SEED},
+    consts::{GATEWAY, IP, IP_PREFIX},
+    device::{EthernetDevice, LoopbackDevice},
     listen_table::ListenTable,
-    loopback::LoopbackDev,
-    wrapper::{DeviceWrapper, InterfaceWrapper, SocketSetWrapper},
+    router::{Router, Rule},
+    service::Service,
+    wrapper::SocketSetWrapper,
 };
 
 #[doc(hidden)]
@@ -55,8 +58,7 @@ pub mod __priv {
 static LISTEN_TABLE: LazyInit<ListenTable> = LazyInit::new();
 static SOCKET_SET: LazyInit<SocketSetWrapper> = LazyInit::new();
 
-static LOOPBACK: LazyInit<InterfaceWrapper<LoopbackDev>> = LazyInit::new();
-static ETH0: LazyInit<InterfaceWrapper<DeviceWrapper>> = LazyInit::new();
+static SERVICE: LazyInit<Mutex<Service>> = LazyInit::new();
 
 /// Initializes the network subsystem by NIC devices.
 pub fn init_network(mut net_devs: AxDeviceContainer<AxNetDevice>) {
@@ -65,34 +67,47 @@ pub fn init_network(mut net_devs: AxDeviceContainer<AxNetDevice>) {
     let dev = net_devs.take_one().expect("No NIC device found!");
     info!("  use NIC 0: {:?}", dev.device_name());
 
-    let device = LoopbackDev::new(Medium::Ip);
-    let config = smoltcp::iface::Config::new(smoltcp::wire::HardwareAddress::Ip);
-    let iface = InterfaceWrapper::new("lo", device, config);
-    iface.inner().lock().update_ip_addrs(|ip_addrs| {
-        ip_addrs
-            .push(IpCidr::new(IpAddress::v4(127, 0, 0, 1), 8))
-            .unwrap();
+    let eth0_address = EthernetAddress(dev.mac_address().0);
+
+    let lo_ip = Ipv4Cidr::new(Ipv4Address::new(127, 0, 0, 1), 8);
+    let eth0_ip = Ipv4Cidr::new(IP.parse().expect("Invalid IPv4 address"), IP_PREFIX);
+
+    let mut router = Router::new();
+    let lo_dev = router.add_device(Box::new(LoopbackDevice::new()));
+    let eth0_dev = router.add_device(Box::new(EthernetDevice::new(
+        "eth0".to_owned(),
+        dev,
+        eth0_ip,
+    )));
+
+    router.add_rule(Rule::new(
+        lo_ip.into(),
+        None,
+        lo_dev,
+        lo_ip.address().into(),
+    ));
+    router.add_rule(Rule::new(
+        Ipv4Cidr::new(Ipv4Address::UNSPECIFIED, 0).into(),
+        Some(GATEWAY.parse().expect("Invalid gateway address")),
+        eth0_dev,
+        eth0_ip.address().into(),
+    ));
+
+    let mut service = Service::new(router);
+    service.iface.update_ip_addrs(|ip_addrs| {
+        ip_addrs.push(lo_ip.into()).unwrap();
+        ip_addrs.push(eth0_ip.into()).unwrap();
     });
-    LOOPBACK.init_once(iface);
+    SERVICE.init_once(Mutex::new(service));
 
-    let ether_addr = EthernetAddress(dev.mac_address().0);
-    let mut config =
-        smoltcp::iface::Config::new(smoltcp::wire::HardwareAddress::Ethernet(ether_addr));
-    // TODO(mivik): random seed
-    config.random_seed = RANDOM_SEED;
-    let eth0 = InterfaceWrapper::new("eth0", DeviceWrapper::new(dev), config);
-
-    let ip = consts::IP.parse().expect("invalid IP address");
-    let gateway = consts::GATEWAY.parse().expect("invalid gateway IP address");
-    eth0.setup_ip_addr(ip, consts::IP_PREFIX);
-    eth0.setup_gateway(gateway);
-
-    ETH0.init_once(eth0);
-    info!("created net interface {:?}:", ETH0.name());
-    info!("  ether:    {}", ether_addr);
-    info!("  ip:       {}/{}", ip, IP_PREFIX);
-    info!("  gateway:  {}", gateway);
+    info!("eth0:");
+    info!("  mac:  {}", eth0_address);
+    info!("  ip:   {}", eth0_ip);
 
     SOCKET_SET.init_once(SocketSetWrapper::new());
     LISTEN_TABLE.init_once(ListenTable::new());
+}
+
+pub fn poll_interfaces() {
+    SERVICE.lock().poll(&mut SOCKET_SET.0.lock());
 }

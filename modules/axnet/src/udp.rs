@@ -6,17 +6,19 @@ use axio::PollState;
 use axsync::Mutex;
 use smoltcp::{
     iface::SocketHandle,
-    socket::udp as smol,
+    phy::PacketMeta,
+    socket::udp::{self as smol, UdpMetadata},
     storage::PacketMetadata,
-    wire::{IpEndpoint, IpListenEndpoint},
+    wire::{IpAddress, IpEndpoint, IpListenEndpoint},
 };
 use spin::RwLock;
 
 use crate::{
-    RecvFlags, SOCKET_SET, SendFlags, Shutdown, SocketOps,
+    RecvFlags, SERVICE, SOCKET_SET, SendFlags, Shutdown, SocketOps,
     consts::{UDP_RX_BUF_LEN, UDP_TX_BUF_LEN, UNSPECIFIED_ENDPOINT_V4},
     general::GeneralOptions,
     options::{Configurable, GetSocketOption, SetSocketOption},
+    poll_interfaces,
 };
 
 pub(crate) fn new_udp_socket() -> smol::Socket<'static> {
@@ -27,12 +29,11 @@ pub(crate) fn new_udp_socket() -> smol::Socket<'static> {
     )
 }
 
-// TODO(mivik): externally driven UDP socket
 /// A UDP socket that provides POSIX-like APIs.
 pub struct UdpSocket {
     handle: SocketHandle,
     local_addr: RwLock<Option<IpEndpoint>>,
-    peer_addr: RwLock<Option<IpEndpoint>>,
+    peer_addr: RwLock<Option<(IpEndpoint, IpAddress)>>,
 
     general: GeneralOptions,
 }
@@ -43,12 +44,16 @@ impl UdpSocket {
     pub fn new() -> Self {
         let socket = new_udp_socket();
         let handle = SOCKET_SET.add(socket);
+
+        // TODO(mivik): control externally driven
+        let general = GeneralOptions::new();
+        general.set_externally_driven(true);
         Self {
             handle,
             local_addr: RwLock::new(None),
             peer_addr: RwLock::new(None),
 
-            general: GeneralOptions::new(),
+            general,
         }
     }
 
@@ -56,7 +61,7 @@ impl UdpSocket {
         SOCKET_SET.with_socket_mut::<smol::Socket, _, _>(self.handle, f)
     }
 
-    fn remote_endpoint(&self) -> LinuxResult<IpEndpoint> {
+    fn remote_endpoint(&self) -> LinuxResult<(IpEndpoint, IpAddress)> {
         match self.peer_addr.try_read() {
             Some(addr) => addr.ok_or(LinuxError::ENOTCONN),
             None => Err(LinuxError::ENOTCONN),
@@ -145,14 +150,20 @@ impl SocketOps for UdpSocket {
             self.bind(UNSPECIFIED_ENDPOINT_V4.into())?;
         }
 
-        *guard = Some(remote_addr.into());
+        let remote_addr = IpEndpoint::from(remote_addr);
+        let src = SERVICE.lock().get_source_address(&remote_addr.addr);
+        *guard = Some((remote_addr, src));
         debug!("UDP socket {}: connected to {}", self.handle, remote_addr);
         Ok(())
     }
 
     fn send(&self, buf: &[u8], to: Option<SocketAddr>, _flags: SendFlags) -> LinuxResult<usize> {
-        let remote_addr = match to {
-            Some(addr) => addr.into(),
+        let (remote_addr, source_addr) = match to {
+            Some(addr) => {
+                let addr = IpEndpoint::from(addr);
+                let src = SERVICE.lock().get_source_address(&addr.addr);
+                (addr, src)
+            }
             None => self.remote_endpoint()?,
         };
         if remote_addr.port == 0 || remote_addr.addr.is_unspecified() {
@@ -172,12 +183,21 @@ impl SocketOps for UdpSocket {
                         socket.register_send_waker(context.waker());
                         return Poll::Pending;
                     } else {
-                        socket.send_slice(buf, remote_addr).map_err(|e| match e {
-                            smol::SendError::BufferFull => LinuxError::EAGAIN,
-                            smol::SendError::Unaddressable => {
-                                ax_err!(ECONNREFUSED, "unaddressable")
-                            }
-                        })?;
+                        socket
+                            .send_slice(
+                                buf,
+                                UdpMetadata {
+                                    endpoint: remote_addr,
+                                    local_address: Some(source_addr),
+                                    meta: PacketMeta::default(),
+                                },
+                            )
+                            .map_err(|e| match e {
+                                smol::SendError::BufferFull => LinuxError::EAGAIN,
+                                smol::SendError::Unaddressable => {
+                                    ax_err!(ECONNREFUSED, "unaddressable")
+                                }
+                            })?;
                         Ok(buf.len())
                     })
                 })
@@ -200,7 +220,7 @@ impl SocketOps for UdpSocket {
         }
         let mut expected_remote = match from {
             Some(addr) => ExpectedRemote::Any(addr),
-            None => ExpectedRemote::Expecting(self.remote_endpoint()?),
+            None => ExpectedRemote::Expecting(self.remote_endpoint()?.0),
         };
 
         self.general
@@ -265,7 +285,7 @@ impl SocketOps for UdpSocket {
     }
 
     fn peer_addr(&self) -> LinuxResult<SocketAddr> {
-        self.remote_endpoint().map(Into::into)
+        self.remote_endpoint().map(|it| it.0.into())
     }
 
     fn poll(&self) -> LinuxResult<PollState> {
@@ -285,7 +305,7 @@ impl SocketOps for UdpSocket {
 
     fn shutdown(&self, _how: Shutdown) -> LinuxResult<()> {
         // TODO(mivik): shutdown
-        SOCKET_SET.poll_interfaces();
+        poll_interfaces();
 
         self.with_smol_socket(|socket| {
             debug!("UDP socket {}: shutting down", self.handle);

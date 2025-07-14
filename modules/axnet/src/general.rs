@@ -10,8 +10,8 @@ use axhal::time::wall_time;
 use axtask::future::block_on;
 
 use crate::{
-    ETH0, LOOPBACK, SOCKET_SET,
     options::{Configurable, GetSocketOption, SetSocketOption},
+    poll_interfaces,
 };
 
 /// General options for all sockets.
@@ -82,12 +82,7 @@ impl GeneralOptions {
             block_on(poll_fn(|context| {
                 let externally_driven = self.externally_driven.load(Ordering::Acquire);
                 loop {
-                    // TODO: fix this
-                    if externally_driven {
-                        ETH0.poll(&SOCKET_SET);
-                    } else {
-                        LOOPBACK.poll(&SOCKET_SET);
-                    }
+                    poll_interfaces();
                     match f(context) {
                         Poll::Ready(Err(LinuxError::EAGAIN)) => {
                             // The inner function does not block but the waker
@@ -101,7 +96,7 @@ impl GeneralOptions {
                         }
                         Poll::Ready(result) => break Poll::Ready(result),
                         Poll::Pending => {
-                            if self.externally_driven.load(Ordering::Acquire) {
+                            if externally_driven {
                                 axtask::yield_now();
                                 continue;
                             }
