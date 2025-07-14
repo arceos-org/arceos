@@ -2,16 +2,15 @@
 
 #![allow(unused_imports, dead_code)]
 
-use crate::AxDeviceEnum;
+use axalloc::UsageKind;
 use axdriver_base::DeviceType;
-
-#[cfg(feature = "virtio")]
-use crate::virtio::{self, VirtIoDevMeta};
-
 #[cfg(feature = "bus-pci")]
 use axdriver_pci::{DeviceFunction, DeviceFunctionInfo, PciRoot};
 
 pub use super::dummy::*;
+use crate::AxDeviceEnum;
+#[cfg(feature = "virtio")]
+use crate::virtio::{self, VirtIoDevMeta};
 
 pub trait DriverProbe {
     fn probe_global() -> Option<AxDeviceEnum> {
@@ -145,7 +144,7 @@ cfg_if::cfg_if! {
             }
 
             fn dma_alloc_coherent(pages: usize) -> (usize, usize) {
-                let Ok(vaddr) = global_allocator().alloc_pages(pages, PAGE_SIZE_4K) else {
+                let Ok(vaddr) = global_allocator().alloc_pages(pages, PAGE_SIZE_4K, UsageKind::Dma) else {
                     error!("failed to alloc pages");
                     return (0, 0);
                 };
@@ -155,7 +154,7 @@ cfg_if::cfg_if! {
             }
 
             fn dma_free_coherent(vaddr: usize, pages: usize) {
-                global_allocator().dealloc_pages(vaddr, pages);
+                global_allocator().dealloc_pages(vaddr, pages, UsageKind::Dma);
             }
 
             fn dma_request_irq(_irq: usize, _handler: fn()) {

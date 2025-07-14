@@ -1,7 +1,7 @@
 use core::{alloc::Layout, ptr::NonNull};
 
 use allocator::{AllocError, AllocResult, BaseAllocator, ByteAllocator};
-use axalloc::{DefaultByteAllocator, global_allocator};
+use axalloc::{DefaultByteAllocator, UsageKind, global_allocator};
 use axhal::{mem::virt_to_phys, paging::MappingFlags};
 use kspin::SpinNoIrq;
 use log::{debug, error};
@@ -25,9 +25,9 @@ impl DmaAllocator {
     /// Allocate arbitrary number of bytes. Returns the left bound of the
     /// allocated region.
     ///
-    /// It firstly tries to allocate from the coherent byte allocator. If there is no
-    /// memory, it asks the global page allocator for more memory and adds it to the
-    /// byte allocator.
+    /// It firstly tries to allocate from the coherent byte allocator. If there
+    /// is no memory, it asks the global page allocator for more memory and
+    /// adds it to the byte allocator.
     pub unsafe fn alloc_coherent(&mut self, layout: Layout) -> AllocResult<DMAInfo> {
         if layout.size() >= PAGE_SIZE_4K {
             self.alloc_coherent_pages(layout)
@@ -54,7 +54,8 @@ impl DmaAllocator {
                 // 4 pages or available pages.
                 let num_pages = 4.min(available_pages);
                 let expand_size = num_pages * PAGE_SIZE_4K;
-                let vaddr_raw = global_allocator().alloc_pages(num_pages, PAGE_SIZE_4K)?;
+                let vaddr_raw =
+                    global_allocator().alloc_pages(num_pages, PAGE_SIZE_4K, UsageKind::Dma)?;
                 let vaddr = va!(vaddr_raw);
                 self.update_flags(
                     vaddr,
@@ -71,8 +72,11 @@ impl DmaAllocator {
 
     fn alloc_coherent_pages(&mut self, layout: Layout) -> AllocResult<DMAInfo> {
         let num_pages = layout_pages(&layout);
-        let vaddr_raw =
-            global_allocator().alloc_pages(num_pages, PAGE_SIZE_4K.max(layout.align()))?;
+        let vaddr_raw = global_allocator().alloc_pages(
+            num_pages,
+            PAGE_SIZE_4K.max(layout.align()),
+            UsageKind::Dma,
+        )?;
         let vaddr = va!(vaddr_raw);
         self.update_flags(
             vaddr,
@@ -106,7 +110,7 @@ impl DmaAllocator {
         if layout.size() >= PAGE_SIZE_4K {
             let num_pages = layout_pages(&layout);
             let virt_raw = dma.cpu_addr.as_ptr() as usize;
-            global_allocator().dealloc_pages(virt_raw, num_pages);
+            global_allocator().dealloc_pages(virt_raw, num_pages, UsageKind::Dma);
             let _ = self.update_flags(
                 va!(virt_raw),
                 num_pages,

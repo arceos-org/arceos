@@ -1,6 +1,6 @@
 //! Memory mapping backends.
 use ::alloc::sync::Arc;
-use axalloc::global_allocator;
+use axalloc::{UsageKind, global_allocator};
 use axerrno::{LinuxError, LinuxResult};
 use axhal::{
     mem::{phys_to_virt, virt_to_phys},
@@ -16,7 +16,11 @@ mod shared;
 pub use shared::SharedPages;
 
 fn alloc_frame(zeroed: bool) -> Option<PhysAddr> {
-    let vaddr = VirtAddr::from(global_allocator().alloc_pages(1, PAGE_SIZE_4K).ok()?);
+    let vaddr = VirtAddr::from(
+        global_allocator()
+            .alloc_pages(1, PAGE_SIZE_4K, UsageKind::UserMem)
+            .ok()?,
+    );
     if zeroed {
         unsafe { core::ptr::write_bytes(vaddr.as_mut_ptr(), 0, PAGE_SIZE_4K) };
     }
@@ -26,7 +30,7 @@ fn alloc_frame(zeroed: bool) -> Option<PhysAddr> {
 
 fn dealloc_frame(frame: PhysAddr) {
     let vaddr = phys_to_virt(frame);
-    global_allocator().dealloc_pages(vaddr.as_usize(), 1);
+    global_allocator().dealloc_pages(vaddr.as_usize(), 1, UsageKind::UserMem);
 }
 
 /// A unified enum type for different memory mapping backends.

@@ -2,7 +2,7 @@ use allocator::AllocError;
 use axerrno::{LinuxError, LinuxResult};
 use memory_addr::{PhysAddr, VirtAddr};
 
-use crate::{PAGE_SIZE, global_allocator};
+use crate::{PAGE_SIZE, UsageKind, global_allocator};
 
 /// A RAII wrapper of contiguous 4K-sized pages.
 ///
@@ -17,7 +17,7 @@ impl GlobalPage {
     /// Allocate one 4K-sized page.
     pub fn alloc() -> LinuxResult<Self> {
         global_allocator()
-            .alloc_pages(1, PAGE_SIZE)
+            .alloc_pages(1, PAGE_SIZE, UsageKind::Global)
             .map(|vaddr| Self {
                 start_vaddr: vaddr.into(),
                 num_pages: 1,
@@ -35,7 +35,7 @@ impl GlobalPage {
     /// Allocate contiguous 4K-sized pages.
     pub fn alloc_contiguous(num_pages: usize, align_pow2: usize) -> LinuxResult<Self> {
         global_allocator()
-            .alloc_pages(num_pages, align_pow2)
+            .alloc_pages(num_pages, align_pow2, UsageKind::Global)
             .map(|vaddr| Self {
                 start_vaddr: vaddr.into(),
                 num_pages,
@@ -94,7 +94,11 @@ impl GlobalPage {
 
 impl Drop for GlobalPage {
     fn drop(&mut self) {
-        global_allocator().dealloc_pages(self.start_vaddr.into(), self.num_pages);
+        global_allocator().dealloc_pages(
+            self.start_vaddr.into(),
+            self.num_pages,
+            UsageKind::Global,
+        );
     }
 }
 
