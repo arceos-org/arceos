@@ -45,6 +45,8 @@ impl<T: Fn() + 'static> From<T> for MulticastCallback {
 
 /// An IPI event that is sent from a source CPU to the target CPU.
 pub struct IPIEvent {
+    /// The source CPU ID that sent the IPI event.
     pub src_cpu_id: usize,
+    /// The callback function that will be called when the IPI event is handled.
     pub callback: Callback,
 }

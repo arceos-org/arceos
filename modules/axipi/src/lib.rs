@@ -53,6 +53,7 @@ pub fn send_ipi_event_to_all<T: Into<MulticastCallback>>(callback: T) {
     axhal::irq::send_ipi_all_others(IPI_IRQ_NUM);
 }
 
+/// The handler for IPI events. It retrieves the events from the queue and calls the corresponding callbacks.
 pub fn ipi_handler() {
     while let Some((src_cpu_id, callback)) = unsafe { IPI_EVENT_QUEUE.current_ref_mut_raw() }
         .lock()
