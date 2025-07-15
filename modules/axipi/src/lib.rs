@@ -36,7 +36,7 @@ pub fn send_ipi_event_to_one<T: Into<Callback>>(dest_cpu: usize, callback: T) {
     unsafe { IPI_EVENT_QUEUE.remote_ref_raw(dest_cpu) }
         .lock()
         .push(this_cpu_id(), callback.into());
-    axhal::irq::send_sgi_one(dest_cpu, IPI_IRQ_NUM);
+    axhal::irq::send_ipi_one(dest_cpu, IPI_IRQ_NUM);
 }
 
 /// Sends an IPI event to all processors except the current one.
@@ -50,7 +50,7 @@ pub fn send_ipi_event_to_all<T: Into<MulticastCallback>>(callback: T) {
                 .push(current_cpu_id, callback.clone().into_unicast());
         }
     }
-    axhal::irq::send_sgi_all(IPI_IRQ_NUM);
+    axhal::irq::send_ipi_all_others(IPI_IRQ_NUM);
 }
 
 pub fn ipi_handler() {
