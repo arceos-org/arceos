@@ -241,6 +241,9 @@ impl Configurable for TcpSocket {
             O::ReceiveBuffer(size) => {
                 **size = TCP_RX_BUF_LEN;
             }
+            O::TcpInfo(_) => {
+                // TODO(mivik): implement TCP_INFO
+            }
             _ => return Ok(false),
         }
         Ok(true)
@@ -447,8 +450,6 @@ impl SocketOps for TcpSocket {
     ) -> LinuxResult<usize> {
         if self.is_connecting() {
             bail!(EAGAIN);
-        } else if !self.is_connected() {
-            bail!(ENOTCONN, "not connected");
         }
 
         self.general
@@ -496,7 +497,7 @@ impl SocketOps for TcpSocket {
     fn poll(&self) -> LinuxResult<PollState> {
         match self.get_state() {
             STATE_CONNECTING => self.poll_connect(),
-            STATE_CONNECTED => self.poll_stream(),
+            STATE_CONNECTED | STATE_CLOSED => self.poll_stream(),
             STATE_LISTENING => self.poll_listener(),
             _ => Ok(PollState {
                 readable: false,

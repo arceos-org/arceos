@@ -7,7 +7,7 @@ use core::{
 
 use axerrno::{LinuxError, LinuxResult};
 use axhal::time::wall_time;
-use axtask::future::block_on;
+use axtask::{current, future::block_on};
 
 use crate::{
     options::{Configurable, GetSocketOption, SetSocketOption},
@@ -81,7 +81,11 @@ impl GeneralOptions {
             let deadline = timeout.map(|t| wall_time() + t);
             block_on(poll_fn(|context| {
                 let externally_driven = self.externally_driven.load(Ordering::Acquire);
+                let curr = current();
                 loop {
+                    if curr.is_interrupted() {
+                        return Poll::Ready(Err(LinuxError::EINTR));
+                    }
                     poll_interfaces();
                     match f(context) {
                         Poll::Ready(Err(LinuxError::EAGAIN)) => {

@@ -85,6 +85,6 @@ spin = "0.9"
 lto = true
 
 [patch.crates-io]
-axcpu = { git = "https://github.com/Starry-Mix-THU/axcpu.git", rev = "d6ab3ec" }
+axcpu = { git = "https://github.com/Starry-Mix-THU/axcpu.git", rev = "1bffa97" }
 page_table_entry = { git = "https://github.com/Starry-Mix-THU/page_table_multiarch.git", rev = "438e930" }
 page_table_multiarch = { git = "https://github.com/Starry-Mix-THU/page_table_multiarch.git", rev = "438e930" }

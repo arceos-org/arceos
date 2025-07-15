@@ -191,9 +191,10 @@ impl SocketOps for UdpSocket {
                         socket.register_send_waker(context.waker());
                         return Poll::Pending;
                     } else {
+                        let src_len = src.remaining();
                         let mut buf = socket
                             .send(
-                                src.remaining(),
+                                src_len,
                                 UdpMetadata {
                                     endpoint: remote_addr,
                                     local_address: Some(source_addr),
@@ -208,7 +209,7 @@ impl SocketOps for UdpSocket {
                             })?;
                         buf.put(src);
                         assert!(buf.is_empty());
-                        Ok(buf.len())
+                        Ok(src_len)
                     })
                 })
             })

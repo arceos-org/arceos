@@ -64,6 +64,8 @@ pub struct TaskInner {
 
     /// Mark whether the task is in the wait queue.
     in_wait_queue: AtomicBool,
+    /// Used to indicate whether the task is interrupted by a signal.
+    interrupted: AtomicBool,
 
     /// Used to indicate whether the task is running on a CPU.
     #[cfg(feature = "smp")]
@@ -235,6 +237,7 @@ impl TaskInner {
             // By default, the task is allowed to run on all CPUs.
             cpumask: SpinNoIrq::new(AxCpuMask::full()),
             in_wait_queue: AtomicBool::new(false),
+            interrupted: AtomicBool::new(false),
             #[cfg(feature = "irq")]
             timer_ticket_id: AtomicU64::new(0),
             #[cfg(feature = "smp")]
@@ -330,6 +333,16 @@ impl TaskInner {
     #[inline]
     pub(crate) fn set_in_wait_queue(&self, in_wait_queue: bool) {
         self.in_wait_queue.store(in_wait_queue, Ordering::Release);
+    }
+
+    #[inline]
+    pub fn is_interrupted(&self) -> bool {
+        self.interrupted.load(Ordering::Acquire)
+    }
+
+    #[inline]
+    pub fn set_interrupted(&self, interrupted: bool) {
+        self.interrupted.store(interrupted, Ordering::Release);
     }
 
     /// Returns task's current timer ticket ID.

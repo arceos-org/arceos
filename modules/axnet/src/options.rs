@@ -41,6 +41,7 @@ define_options! {
     // --- TCP level options (TCP_*) ----
     NoDelay(bool),
     MaxSegment(usize),
+    TcpInfo(()),
 
     // ---- IP level options (IP_*) ----
     Ttl(u8),
