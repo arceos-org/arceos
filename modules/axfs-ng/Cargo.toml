@@ -30,7 +30,7 @@ spin = { workspace = true, features = ["lock_api"] }
 
 [dependencies.lwext4_rust]
 git = "https://github.com/Starry-Mix-THU/lwext4_rust"
-rev = "edc0a9e"
+rev = "f08d61e"
 default-features = false
 optional = true
 
