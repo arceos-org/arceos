@@ -1,7 +1,7 @@
 use alloc::{sync::Arc, vec::Vec};
 use core::ops::Deref;
 
-use axhal::paging::{MappingFlags, PageSize, PageTable};
+use axhal::paging::{MappingFlags, PageSize, PageTable, PagingResult};
 use memory_addr::{PAGE_SIZE_4K, PhysAddr, VirtAddr};
 
 use super::{alloc_frame, dealloc_frame};
@@ -42,7 +42,12 @@ pub struct Shared {
 }
 
 impl Shared {
-    pub(crate) fn map(&self, start: VirtAddr, flags: MappingFlags, pt: &mut PageTable) -> bool {
+    pub(crate) fn map(
+        &self,
+        start: VirtAddr,
+        flags: MappingFlags,
+        pt: &mut PageTable,
+    ) -> PagingResult {
         debug!(
             "Shared::map [{:#x}, {:#x}) {:?}",
             start,
@@ -52,16 +57,12 @@ impl Shared {
         // allocate all possible physical frames for populated mapping.
         for (i, frame) in self.pages.iter().enumerate() {
             let addr = start + i * PAGE_SIZE_4K;
-            if let Ok(tlb) = pt.map(addr, *frame, PageSize::Size4K, flags) {
-                tlb.flush();
-            } else {
-                return false;
-            }
+            pt.map(addr, *frame, PageSize::Size4K, flags)?;
         }
-        true
+        Ok(())
     }
 
-    pub(crate) fn unmap(&self, start: VirtAddr, pt: &mut PageTable) -> bool {
+    pub(crate) fn unmap(&self, start: VirtAddr, pt: &mut PageTable) -> PagingResult {
         debug!(
             "Shared::unmap [{:#x}, {:#x})",
             start,
@@ -69,17 +70,8 @@ impl Shared {
         );
         for i in 0..self.pages.len() {
             let addr = start + i * PAGE_SIZE_4K;
-            if let Ok((_, page_size, tlb)) = pt.unmap(addr) {
-                // Deallocate the physical frame if there is a mapping in the
-                // page table.
-                if page_size.is_huge() {
-                    return false;
-                }
-                tlb.flush();
-            } else {
-                // Deallocation is needn't if the page is not mapped.
-            }
+            pt.unmap(addr)?;
         }
-        true
+        Ok(())
     }
 }

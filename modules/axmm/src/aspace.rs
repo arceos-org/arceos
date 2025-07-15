@@ -180,7 +180,7 @@ impl AddrSpace {
 
         let pages = pages
             .or_else(|| SharedPages::new(size / PAGE_SIZE_4K))
-            .ok_or(LinuxError::EINVAL)?;
+            .ok_or(LinuxError::ENOMEM)?;
 
         let area = MemoryArea::new(start, size, flags, Backend::new_shared(pages.clone()));
         self.areas

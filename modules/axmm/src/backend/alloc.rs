@@ -26,7 +26,7 @@ impl Alloc {
         size: usize,
         flags: MappingFlags,
         pt: &mut PageTable,
-    ) -> bool {
+    ) -> PagingResult {
         debug!(
             "Alloc::map [{:#x}, {:#x}) {:?} (populate={})",
             start,
@@ -37,37 +37,24 @@ impl Alloc {
         if self.populate {
             // allocate all possible physical frames for populated mapping.
             for addr in PageIter4K::new(start, start + size).unwrap() {
-                let Some(frame) = alloc_frame(true) else {
-                    return false;
-                };
-                let Ok(tlb) = pt.map(addr, frame, PageSize::Size4K, flags) else {
-                    return false;
-                };
-                tlb.ignore(); // TLB flush on map is unnecessary, as there are no outdated mappings.
+                let frame = alloc_frame(true).ok_or(PagingError::NoMemory)?;
+                pt.map(addr, frame, PageSize::Size4K, flags)?;
             }
-        } else {
-            // create mapping entries on demand later in
-            // `handle_page_fault`.
         }
-        true
+        Ok(())
     }
 
-    pub(crate) fn unmap(&self, start: VirtAddr, size: usize, pt: &mut PageTable) -> bool {
+    pub(crate) fn unmap(&self, start: VirtAddr, size: usize, pt: &mut PageTable) -> PagingResult {
         debug!("Alloc::unmap [{:#x}, {:#x})", start, start + size);
         for addr in PageIter4K::new(start, start + size).unwrap() {
-            if let Ok((frame, page_size, tlb)) = pt.unmap(addr) {
-                // Deallocate the physical frame if there is a mapping in the
-                // page table.
-                if page_size.is_huge() {
-                    return false;
-                }
-                tlb.flush();
+            if let Ok((frame, _)) = pt.unmap(addr) {
+                // Deallocate the physical frame if there is a mapping in the page table.
                 dealloc_frame(frame);
             } else {
                 // Deallocation is needn't if the page is not mapped.
             }
         }
-        true
+        Ok(())
     }
 
     pub(crate) fn populate(
@@ -84,15 +71,11 @@ impl Alloc {
             match pt.query(addr) {
                 Ok(_) => {}
                 Err(PagingError::NotMapped) => {
-                    if let Some(frame) = alloc_frame(true) {
-                        // Allocate a physical frame lazily and map it to the fault address.
-                        // `vaddr` does not need to be aligned. It will be automatically
-                        // aligned during `pt.remap` regardless of the page size.
-                        pt.map(addr, frame, PageSize::Size4K, flags)
-                            .map(|tlb| tlb.flush())?;
-                    } else {
-                        return Err(PagingError::NoMemory);
-                    }
+                    let frame = alloc_frame(true).ok_or(PagingError::NoMemory)?;
+                    // Allocate a physical frame lazily and map it to the fault address.
+                    // `vaddr` does not need to be aligned. It will be automatically
+                    // aligned during `pt.remap` regardless of the page size.
+                    pt.map(addr, frame, PageSize::Size4K, flags)?;
                 }
                 Err(e) => return Err(e),
             }

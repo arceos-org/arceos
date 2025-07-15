@@ -56,6 +56,7 @@ impl MappingBackend for Backend {
             Self::Alloc(alloc) => alloc.map(start, size, flags, pt),
             Self::Shared(shared) => shared.map(start, flags, pt),
         }
+        .is_ok()
     }
 
     fn unmap(&self, start: VirtAddr, size: usize, pt: &mut PageTable) -> bool {
@@ -64,6 +65,7 @@ impl MappingBackend for Backend {
             Self::Alloc(alloc) => alloc.unmap(start, size, pt),
             Self::Shared(shared) => shared.unmap(start, pt),
         }
+        .is_ok()
     }
 
     fn protect(
@@ -73,9 +75,7 @@ impl MappingBackend for Backend {
         new_flags: Self::Flags,
         pt: &mut Self::PageTable,
     ) -> bool {
-        pt.protect_region(start, size, new_flags, true, true)
-            .map(|tlb| tlb.ignore())
-            .is_ok()
+        pt.protect_region(start, size, new_flags).is_ok()
     }
 }
 

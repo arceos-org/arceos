@@ -1,4 +1,4 @@
-use axhal::paging::{MappingFlags, PageTable};
+use axhal::paging::{MappingFlags, PageTable, PagingResult};
 use memory_addr::{PhysAddr, VirtAddr};
 
 /// Linear mapping backend.
@@ -27,7 +27,7 @@ impl Linear {
         size: usize,
         flags: MappingFlags,
         pt: &mut PageTable,
-    ) -> bool {
+    ) -> PagingResult {
         debug!(
             "Linear::map [{:#x}, {:#x}) -> [{:#x}, {:#x}) {:?}",
             start,
@@ -36,15 +36,11 @@ impl Linear {
             self.pa(start + size),
             flags
         );
-        pt.map_region(start, |va| self.pa(va), size, flags, false, false)
-            .map(|tlb| tlb.ignore()) // TLB flush on map is unnecessary, as there are no outdated mappings.
-            .is_ok()
+        pt.map_region(start, |va| self.pa(va), size, flags, false)
     }
 
-    pub(crate) fn unmap(&self, start: VirtAddr, size: usize, pt: &mut PageTable) -> bool {
+    pub(crate) fn unmap(&self, start: VirtAddr, size: usize, pt: &mut PageTable) -> PagingResult {
         debug!("Linear::unmap [{:#x}, {:#x})", start, start + size);
-        pt.unmap_region(start, size, true)
-            .map(|tlb| tlb.ignore()) // flush each page on unmap, do not flush the entire TLB.
-            .is_ok()
+        pt.unmap_region(start, size)
     }
 }
