@@ -1,7 +1,10 @@
 use core::{net::SocketAddr, time::Duration};
 
 use axerrno::{LinuxError, LinuxResult};
-use axio::{PollState, Read, Write};
+use axio::{
+    PollState, Read, Write,
+    buf::{Buf, BufMut},
+};
 use bitflags::bitflags;
 use enum_dispatch::enum_dispatch;
 
@@ -70,11 +73,16 @@ pub trait SocketOps: Configurable {
     }
 
     /// Send data to the socket, optionally to a specific address.
-    fn send(&self, buf: &[u8], to: Option<SocketAddr>, flags: SendFlags) -> LinuxResult<usize>;
+    fn send(
+        &self,
+        src: &mut impl Buf,
+        to: Option<SocketAddr>,
+        flags: SendFlags,
+    ) -> LinuxResult<usize>;
     /// Receive data from the socket.
     fn recv(
         &self,
-        buf: &mut [u8],
+        dst: &mut impl BufMut,
         from: Option<&mut SocketAddr>,
         flags: RecvFlags,
     ) -> LinuxResult<usize>;
@@ -99,14 +107,14 @@ pub enum Socket {
 }
 
 impl Read for Socket {
-    fn read(&mut self, buf: &mut [u8]) -> LinuxResult<usize> {
-        self.recv(buf, None, RecvFlags::empty())
+    fn read(&mut self, mut buf: &mut [u8]) -> LinuxResult<usize> {
+        self.recv(&mut buf, None, RecvFlags::empty())
     }
 }
 
 impl Write for Socket {
-    fn write(&mut self, buf: &[u8]) -> LinuxResult<usize> {
-        self.send(buf, None, SendFlags::empty())
+    fn write(&mut self, mut buf: &[u8]) -> LinuxResult<usize> {
+        self.send(&mut buf, None, SendFlags::empty())
     }
 
     fn flush(&mut self) -> LinuxResult {

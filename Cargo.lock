@@ -428,7 +428,7 @@ dependencies = [
 [[package]]
 name = "axio"
 version = "0.1.1"
-source = "git+https://github.com/Starry-Mix-THU/axio.git?rev=e662ff6#e662ff684804519fc95df45d95bd77abc3decb88"
+source = "git+https://github.com/Starry-Mix-THU/axio.git?rev=b9dbe7c#b9dbe7ccc0d1f52e712aa99b8f1852fe82dd19c0"
 dependencies = [
  "axerrno",
 ]

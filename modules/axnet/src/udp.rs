@@ -2,7 +2,10 @@ use alloc::vec;
 use core::{net::SocketAddr, task::Poll};
 
 use axerrno::{LinuxError, LinuxResult, ax_err, bail};
-use axio::PollState;
+use axio::{
+    PollState,
+    buf::{Buf, BufMut},
+};
 use axsync::Mutex;
 use smoltcp::{
     iface::SocketHandle,
@@ -157,7 +160,12 @@ impl SocketOps for UdpSocket {
         Ok(())
     }
 
-    fn send(&self, buf: &[u8], to: Option<SocketAddr>, _flags: SendFlags) -> LinuxResult<usize> {
+    fn send(
+        &self,
+        src: &mut impl Buf,
+        to: Option<SocketAddr>,
+        _flags: SendFlags,
+    ) -> LinuxResult<usize> {
         let (remote_addr, source_addr) = match to {
             Some(addr) => {
                 let addr = IpEndpoint::from(addr);
@@ -183,9 +191,9 @@ impl SocketOps for UdpSocket {
                         socket.register_send_waker(context.waker());
                         return Poll::Pending;
                     } else {
-                        socket
-                            .send_slice(
-                                buf,
+                        let mut buf = socket
+                            .send(
+                                src.remaining(),
                                 UdpMetadata {
                                     endpoint: remote_addr,
                                     local_address: Some(source_addr),
@@ -198,6 +206,8 @@ impl SocketOps for UdpSocket {
                                     ax_err!(ECONNREFUSED, "unaddressable")
                                 }
                             })?;
+                        buf.put(src);
+                        assert!(buf.is_empty());
                         Ok(buf.len())
                     })
                 })
@@ -206,7 +216,7 @@ impl SocketOps for UdpSocket {
 
     fn recv(
         &self,
-        buf: &mut [u8],
+        dst: &mut impl BufMut,
         from: Option<&mut SocketAddr>,
         flags: RecvFlags,
     ) -> LinuxResult<usize> {
@@ -255,8 +265,7 @@ impl SocketOps for UdpSocket {
                                     }
                                 }
 
-                                let read = src.len().min(buf.len());
-                                buf[..read].copy_from_slice(&src[..read]);
+                                let read = dst.put(&mut &*src);
                                 if read < src.len() {
                                     warn!("UDP message truncated: {} -> {} bytes", src.len(), read);
                                 }
