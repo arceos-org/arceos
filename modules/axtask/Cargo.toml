@@ -16,7 +16,6 @@ multitask = [
     "dep:axconfig",
     "dep:cpumask",
     "dep:crate_interface",
-    "dep:event-listener",
     "dep:futures",
     "dep:kernel_guard",
     "dep:kspin",
@@ -46,7 +45,6 @@ axhal = { workspace = true }
 cfg-if = { workspace = true }
 cpumask = { version = "0.1", optional = true }
 crate_interface = { version = "0.1", optional = true }
-event-listener = { workspace = true, optional = true }
 extern-trait = { version = "0.2", optional = true }
 futures = { workspace = true, optional = true }
 kernel_guard = { workspace = true, optional = true }

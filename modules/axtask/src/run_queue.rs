@@ -1,10 +1,10 @@
 #[cfg(feature = "smp")]
 use alloc::sync::Weak;
 use alloc::{collections::VecDeque, sync::Arc};
-use core::mem::MaybeUninit;
+use core::{mem::MaybeUninit, task::Poll};
 
 use axhal::percpu::this_cpu_id;
-use event_listener::Event;
+use futures::{future::poll_fn, task::AtomicWaker};
 use kernel_guard::BaseGuard;
 use kspin::SpinRaw;
 use lazyinit::LazyInit;
@@ -32,7 +32,7 @@ macro_rules! percpu_static {
 percpu_static! {
     RUN_QUEUE: LazyInit<AxRunQueue> = LazyInit::new(),
     EXITED_TASKS: VecDeque<AxTaskRef> = VecDeque::new(),
-    WAIT_FOR_EXIT: Event = Event::new(),
+    WAIT_FOR_EXIT: AtomicWaker = AtomicWaker::new(),
     IDLE_TASK: LazyInit<AxTaskRef> = LazyInit::new(),
     /// Stores the weak reference to the previous task that is running on this CPU.
     #[cfg(feature = "smp")]
@@ -397,7 +397,7 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
                 // GC task.
                 EXITED_TASKS.current_ref_mut_raw().push_back(curr.clone());
                 // Wake up the GC task to drop the exited tasks.
-                WAIT_FOR_EXIT.current_ref_mut_raw().notify_relaxed(1);
+                WAIT_FOR_EXIT.current_ref_mut_raw().wake();
             }
 
             // Schedule to next task.
@@ -619,8 +619,8 @@ impl AxRunQueue {
     }
 }
 
-async fn gc_entry() -> ! {
-    loop {
+fn gc_entry() -> impl Future<Output = !> {
+    poll_fn(|cx| {
         // Drop all exited tasks and recycle resources.
         let n = EXITED_TASKS.with_current(|exited_tasks| exited_tasks.len());
         for _ in 0..n {
@@ -644,8 +644,9 @@ async fn gc_entry() -> ! {
         // `current_ref_raw` to get the `WAIT_FOR_EXIT`'s reference here to avoid the
         // use of `NoPreemptGuard`. Since gc task is pinned to the current CPU, there is
         // no affection if the gc task is preempted during the process.
-        unsafe { WAIT_FOR_EXIT.current_ref_raw() }.listen().await;
-    }
+        unsafe { WAIT_FOR_EXIT.current_ref_raw() }.register(cx.waker());
+        Poll::Pending
+    })
 }
 
 /// The task routine for migrating the current task to the correct CPU.
