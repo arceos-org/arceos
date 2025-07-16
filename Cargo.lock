@@ -177,7 +177,7 @@ dependencies = [
 [[package]]
 name = "axbacktrace"
 version = "0.1.0"
-source = "git+https://github.com/Starry-Mix-THU/axbacktrace.git?rev=05cef40#05cef40caf35a2ad5e107a54d297912d390b3fce"
+source = "git+https://github.com/Starry-Mix-THU/axbacktrace.git?rev=322f6da#322f6dab0e7e3f51f7d29731e7eeca6435e5028e"
 dependencies = [
  "addr2line",
  "cfg-if",
@@ -219,7 +219,7 @@ dependencies = [
 [[package]]
 name = "axcpu"
 version = "0.2.2"
-source = "git+https://github.com/Starry-Mix-THU/axcpu.git?rev=1bffa97#1bffa97315842fb393271005802ef79f59bff5bd"
+source = "git+https://github.com/Starry-Mix-THU/axcpu.git?rev=bf39540#bf39540769a7296f43164b7ccff64482b27df824"
 dependencies = [
  "aarch64-cpu 10.0.0",
  "axbacktrace",
