@@ -8,10 +8,10 @@ use core::mem::MaybeUninit;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 
+use axsched::BaseScheduler;
 use kernel_guard::BaseGuard;
 use kspin::SpinRaw;
 use lazyinit::LazyInit;
-use scheduler::BaseScheduler;
 
 use axhal::percpu::this_cpu_id;
 

@@ -18,7 +18,7 @@ multitask = [
     "dep:kspin",
     "dep:lazyinit",
     "dep:memory_addr",
-    "dep:scheduler",
+    "dep:axsched",
     "dep:timer_list",
     "kernel_guard",
     "dep:crate_interface",
@@ -48,7 +48,7 @@ timer_list = { version = "0.1", optional = true }
 kernel_guard = { version = "0.1", optional = true }
 crate_interface = { version = "0.1", optional = true }
 cpumask = { version = "0.1", optional = true }
-scheduler = { git = "https://github.com/arceos-org/scheduler.git", tag = "v0.1.0", optional = true }
+axsched = { version = "0.3", optional = true }
 
 [dev-dependencies]
 rand = "0.9"

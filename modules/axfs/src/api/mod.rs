@@ -10,7 +10,7 @@ use alloc::{string::String, vec::Vec};
 use axio::{self as io, prelude::*};
 
 /// Returns an iterator over the entries within a directory.
-pub fn read_dir(path: &str) -> io::Result<ReadDir> {
+pub fn read_dir(path: &str) -> io::Result<ReadDir<'_>> {
     ReadDir::new(path)
 }
 

@@ -104,6 +104,7 @@ pub mod context {
 
 pub use axcpu::asm;
 pub use axplat::init::{init_early, init_later};
+
 #[cfg(feature = "smp")]
 pub use axplat::init::{init_early_secondary, init_later_secondary};
 
@@ -119,6 +120,7 @@ pub fn init_percpu(cpu_id: usize) {
 ///
 /// This function should be called as early as possible, as other initializations
 /// may acess the CPU-local data.
+#[cfg(feature = "smp")]
 pub fn init_percpu_secondary(cpu_id: usize) {
     self::percpu::init_secondary(cpu_id);
 }
