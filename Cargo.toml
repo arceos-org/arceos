@@ -67,6 +67,7 @@ chrono = { version = "0.4", default-features = false }
 crate_interface = "0.1.4"
 enum_dispatch = "0.3.13"
 futures = { version = "0.3.31", default-features = false, features = ["alloc"] }
+hashbrown = "0.15.4"
 kernel_guard = "0.1"
 kspin = "0.1"
 lazyinit = "0.2"

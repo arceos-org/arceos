@@ -278,11 +278,12 @@ impl GlobalAllocator {
 
 #[cfg(feature = "tracking")]
 mod tracking {
-    use alloc::collections::btree_map::BTreeMap;
     use core::{alloc::Layout, ops::Range};
 
     use axbacktrace::Backtrace;
+    use hashbrown::HashMap;
     use kspin::SpinNoIrq;
+    use lazy_static::lazy_static;
 
     #[percpu::def_percpu]
     pub(crate) static IN_GLOBAL_ALLOCATOR: bool = false;
@@ -297,14 +298,16 @@ mod tracking {
 
     pub(crate) struct GlobalState {
         // pub map: HashMap<usize, AllocationInfo, FixedState>,
-        pub map: BTreeMap<usize, AllocationInfo>,
+        pub map: HashMap<usize, AllocationInfo>,
         pub generation: u64,
     }
 
-    pub(crate) static STATE: SpinNoIrq<GlobalState> = SpinNoIrq::new(GlobalState {
-        map: BTreeMap::new(),
-        generation: 0,
-    });
+    lazy_static! {
+        static ref STATE: SpinNoIrq<GlobalState> = SpinNoIrq::new(GlobalState {
+            map: HashMap::new(),
+            generation: 0,
+        });
+    }
 
     pub(crate) fn with_state<R>(f: impl FnOnce(Option<&mut GlobalState>) -> R) -> R {
         IN_GLOBAL_ALLOCATOR.with_current(|in_global| {

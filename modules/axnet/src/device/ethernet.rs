@@ -1,7 +1,8 @@
-use alloc::{collections::btree_map::BTreeMap, string::String, vec};
+use alloc::{string::String, vec};
 
 use axdriver::AxNetDevice;
 use axdriver_net::{DevError, NetDriverOps};
+use hashbrown::HashMap;
 use smoltcp::{
     storage::{PacketBuffer, PacketMetadata},
     time::{Duration, Instant},
@@ -26,7 +27,7 @@ struct Neighbor {
 pub struct EthernetDevice {
     name: String,
     inner: AxNetDevice,
-    neighbors: BTreeMap<IpAddress, Option<Neighbor>>,
+    neighbors: HashMap<IpAddress, Option<Neighbor>>,
     ip: Ipv4Cidr,
 
     pending_packets: PacketBuffer<'static, IpAddress>,
@@ -46,7 +47,7 @@ impl EthernetDevice {
         Self {
             name,
             inner,
-            neighbors: BTreeMap::new(),
+            neighbors: HashMap::new(),
             ip,
 
             pending_packets,

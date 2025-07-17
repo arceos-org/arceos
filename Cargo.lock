@@ -54,6 +54,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "allocator-api2"
+version = "0.2.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
+
+[[package]]
 name = "android-tzdata"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -168,7 +174,9 @@ dependencies = [
  "axbacktrace",
  "axerrno",
  "cfg-if",
+ "hashbrown",
  "kspin",
+ "lazy_static",
  "log",
  "memory_addr",
  "percpu",
@@ -478,6 +486,7 @@ dependencies = [
  "bitflags 2.9.1",
  "cfg-if",
  "enum_dispatch",
+ "hashbrown",
  "lazyinit",
  "log",
  "smoltcp 0.12.0",
@@ -1237,6 +1246,8 @@ version = "0.15.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5971ac85611da7067dbfcabef3c70ebb5606018acd9e2a3903a0da507521e0d5"
 dependencies = [
+ "allocator-api2",
+ "equivalent",
  "foldhash",
 ]
 
