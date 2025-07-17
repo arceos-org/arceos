@@ -23,7 +23,7 @@ axbacktrace = { workspace = true, optional = true }
 
 allocator = { workspace = true, features = ["bitmap"] }
 hashbrown = { workspace = true }
-lazy_static = { version = "1.5", features = ["spin_no_std"] }
+lazy_static = { workspace = true }
 axerrno = { workspace = true }
 cfg-if = { workspace = true }
 kspin = { workspace = true }
