@@ -18,7 +18,7 @@ impl Wake for AxWaker {
     }
 
     fn wake_by_ref(self: &Arc<Self>) {
-        select_run_queue::<NoPreemptIrqSave>(&self.0).unblock_task(self.0.clone(), true);
+        select_run_queue::<NoPreemptIrqSave>(&self.0).unblock_task(self.0.clone(), false);
     }
 }
 
