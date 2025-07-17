@@ -14,12 +14,15 @@ default = []
 copy = ["page_table_multiarch/copy-from"]
 
 [dependencies]
+allocator = { workspace = true }
 axalloc = { workspace = true }
 axconfig = { workspace = true }
 axhal = { workspace = true, features = ["paging"] }
 
 axerrno = { workspace = true }
+enum_dispatch = { workspace = true }
 kspin = { workspace = true }
+lazy_static = { version = "1.5", features = ["spin_no_std"] }
 lazyinit = { workspace = true }
 log = { workspace = true }
 memory_addr = { workspace = true }

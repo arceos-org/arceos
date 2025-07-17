@@ -24,7 +24,7 @@ axerrno = { workspace = true }
 axio = { workspace = true }
 bitflags = "2.9.1"
 cfg-if = { workspace = true }
-enum_dispatch = "0.3.13"
+enum_dispatch = { workspace = true }
 lazyinit = { workspace = true }
 log = { workspace = true }
 spin = { workspace = true }

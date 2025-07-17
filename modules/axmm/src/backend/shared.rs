@@ -1,21 +1,36 @@
 use alloc::{sync::Arc, vec::Vec};
 use core::ops::Deref;
 
-use axhal::paging::{MappingFlags, PageSize, PageTable, PagingResult};
-use memory_addr::{PAGE_SIZE_4K, PhysAddr, VirtAddr};
+use axerrno::LinuxResult;
+use axhal::paging::{MappingFlags, PageSize, PageTable};
+use memory_addr::{MemoryAddr, PhysAddr, VirtAddr, VirtAddrRange};
 
 use super::{alloc_frame, dealloc_frame};
+use crate::{
+    Backend,
+    backend::{BackendOps, pages_in, paging_to_linux_error},
+};
 
-pub struct SharedPages(Vec<PhysAddr>);
-
+pub struct SharedPages {
+    pub phys_pages: Vec<PhysAddr>,
+    pub size: PageSize,
+}
 impl SharedPages {
-    pub fn new(n: usize) -> Option<Arc<Self>> {
-        // Deallocate frames if allocation fails.
-        let mut pages = SharedPages(Vec::with_capacity(n));
-        for _ in 0..n {
-            pages.0.push(alloc_frame(true)?);
-        }
-        Some(Arc::new(pages))
+    pub fn new(size: usize, page_size: PageSize) -> LinuxResult<Self> {
+        Ok(Self {
+            phys_pages: (0..number_of_pages(size, page_size))
+                .map(|_| alloc_frame(true, page_size))
+                .collect::<LinuxResult<_>>()?,
+            size: page_size,
+        })
+    }
+
+    pub fn len(&self) -> usize {
+        self.phys_pages.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.phys_pages.is_empty()
     }
 }
 
@@ -23,55 +38,82 @@ impl Deref for SharedPages {
     type Target = [PhysAddr];
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.phys_pages
     }
 }
 
 impl Drop for SharedPages {
     fn drop(&mut self) {
-        for &frame in &self.0 {
-            dealloc_frame(frame);
+        for frame in &self.phys_pages {
+            dealloc_frame(*frame, self.size);
         }
     }
+}
+
+fn number_of_pages(size: usize, page_size: PageSize) -> usize {
+    size >> (page_size as usize).trailing_zeros()
 }
 
 // FIXME: This implementation does not allow map or unmap partial ranges.
 #[derive(Clone)]
-pub struct Shared {
-    pub(crate) pages: Arc<SharedPages>,
+pub struct SharedBackend {
+    start: VirtAddr,
+    pages: Arc<SharedPages>,
+}
+impl SharedBackend {
+    pub fn pages(&self) -> &Arc<SharedPages> {
+        &self.pages
+    }
+
+    fn pages_starting_from(&self, start: VirtAddr) -> &[PhysAddr] {
+        debug_assert!(start.is_aligned(self.pages.size));
+        let start_index = number_of_pages(start - self.start, self.pages.size);
+        &self.pages[start_index..]
+    }
 }
 
-impl Shared {
-    pub(crate) fn map(
+impl BackendOps for SharedBackend {
+    fn page_size(&self) -> PageSize {
+        self.pages.size
+    }
+
+    fn map(
         &self,
-        start: VirtAddr,
+        range: VirtAddrRange,
         flags: MappingFlags,
         pt: &mut PageTable,
-    ) -> PagingResult {
-        debug!(
-            "Shared::map [{:#x}, {:#x}) {:?}",
-            start,
-            start + self.pages.len() * PAGE_SIZE_4K,
-            flags
-        );
-        // allocate all possible physical frames for populated mapping.
-        for (i, frame) in self.pages.iter().enumerate() {
-            let addr = start + i * PAGE_SIZE_4K;
-            pt.map(addr, *frame, PageSize::Size4K, flags)?;
+    ) -> LinuxResult<()> {
+        debug!("Shared::map: {:?} {:?}", range, flags);
+        for (vaddr, paddr) in
+            pages_in(range, self.pages.size)?.zip(self.pages_starting_from(range.start))
+        {
+            pt.map(vaddr, *paddr, self.pages.size, flags)
+                .map_err(paging_to_linux_error)?;
         }
         Ok(())
     }
 
-    pub(crate) fn unmap(&self, start: VirtAddr, pt: &mut PageTable) -> PagingResult {
-        debug!(
-            "Shared::unmap [{:#x}, {:#x})",
-            start,
-            start + self.pages.len() * PAGE_SIZE_4K
-        );
-        for i in 0..self.pages.len() {
-            let addr = start + i * PAGE_SIZE_4K;
-            pt.unmap(addr)?;
+    fn unmap(&self, range: VirtAddrRange, pt: &mut PageTable) -> LinuxResult<()> {
+        debug!("unmap_shared: {:?}", range);
+        for vaddr in pages_in(range, self.pages.size)? {
+            pt.unmap(vaddr).map_err(paging_to_linux_error)?;
         }
         Ok(())
+    }
+
+    fn clone_map(
+        &self,
+        _range: VirtAddrRange,
+        _flags: MappingFlags,
+        _old_pt: &mut PageTable,
+        _new_pt: &mut PageTable,
+    ) -> LinuxResult<Backend> {
+        Ok(Backend::Shared(self.clone()))
+    }
+}
+
+impl Backend {
+    pub fn new_shared(start: VirtAddr, pages: Arc<SharedPages>) -> Self {
+        Self::Shared(SharedBackend { start, pages })
     }
 }

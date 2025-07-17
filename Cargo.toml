@@ -65,6 +65,7 @@ bindgen = "0.72"
 cfg-if = "1.0"
 chrono = { version = "0.4", default-features = false }
 crate_interface = "0.1.4"
+enum_dispatch = "0.3.13"
 futures = { version = "0.3.31", default-features = false, features = ["alloc"] }
 kernel_guard = "0.1"
 kspin = "0.1"
@@ -85,5 +86,5 @@ lto = true
 
 [patch.crates-io]
 axcpu = { git = "https://github.com/Starry-Mix-THU/axcpu.git", rev = "bf39540" }
-page_table_entry = { git = "https://github.com/Starry-Mix-THU/page_table_multiarch.git", rev = "438e930" }
-page_table_multiarch = { git = "https://github.com/Starry-Mix-THU/page_table_multiarch.git", rev = "438e930" }
+page_table_entry = { git = "https://github.com/Starry-Mix-THU/page_table_multiarch.git", rev = "85a85f1" }
+page_table_multiarch = { git = "https://github.com/Starry-Mix-THU/page_table_multiarch.git", rev = "85a85f1" }

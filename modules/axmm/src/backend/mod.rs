@@ -1,48 +1,118 @@
 //! Memory mapping backends.
-use ::alloc::sync::Arc;
+use allocator::AllocError;
 use axalloc::{UsageKind, global_allocator};
 use axerrno::{LinuxError, LinuxResult};
 use axhal::{
     mem::{phys_to_virt, virt_to_phys},
-    paging::{MappingFlags, PageTable, PagingError, PagingResult},
+    paging::{MappingFlags, PageTable, PagingError},
 };
-use memory_addr::{PAGE_SIZE_4K, PhysAddr, VirtAddr};
+use enum_dispatch::enum_dispatch;
+use memory_addr::{PAGE_SIZE_4K, PhysAddr, VirtAddr, VirtAddrRange};
 use memory_set::MappingBackend;
 
-mod alloc;
-mod linear;
-mod shared;
+pub mod alloc;
+pub mod linear;
+pub mod shared;
 
+use page_table_multiarch::PageSize;
 pub use shared::SharedPages;
 
-fn alloc_frame(zeroed: bool) -> Option<PhysAddr> {
-    let vaddr = VirtAddr::from(
-        global_allocator()
-            .alloc_pages(1, PAGE_SIZE_4K, UsageKind::UserMem)
-            .ok()?,
-    );
-    if zeroed {
-        unsafe { core::ptr::write_bytes(vaddr.as_mut_ptr(), 0, PAGE_SIZE_4K) };
+use crate::{page_info::frame_table, page_iter::PageIterWrapper};
+
+fn alloc_to_linux_error(err: AllocError) -> LinuxError {
+    warn!("Allocation error: {:?}", err);
+    match err {
+        AllocError::NoMemory => LinuxError::ENOMEM,
+        _ => LinuxError::EINVAL,
     }
-    let paddr = virt_to_phys(vaddr);
-    Some(paddr)
 }
 
-fn dealloc_frame(frame: PhysAddr) {
+fn alloc_frame(zeroed: bool, size: PageSize) -> LinuxResult<PhysAddr> {
+    let page_size = size as usize;
+    let num_pages = page_size / PAGE_SIZE_4K;
+    let vaddr = VirtAddr::from(
+        global_allocator()
+            .alloc_pages(num_pages, page_size, UsageKind::UserMem)
+            .map_err(alloc_to_linux_error)?,
+    );
+    if zeroed {
+        unsafe { core::ptr::write_bytes(vaddr.as_mut_ptr(), 0, page_size) };
+    }
+    let paddr = virt_to_phys(vaddr);
+
+    frame_table().inc_ref(paddr);
+
+    Ok(paddr)
+}
+
+fn dealloc_frame(frame: PhysAddr, align: PageSize) {
+    if frame_table().dec_ref(frame) > 1 {
+        return;
+    }
+
     let vaddr = phys_to_virt(frame);
-    global_allocator().dealloc_pages(vaddr.as_usize(), 1, UsageKind::UserMem);
+    let page_size: usize = align.into();
+    let num_pages = page_size / PAGE_SIZE_4K;
+    global_allocator().dealloc_pages(vaddr.as_usize(), num_pages, UsageKind::UserMem);
+}
+
+fn paging_to_linux_error(err: PagingError) -> LinuxError {
+    warn!("Paging error: {:?}", err);
+    match err {
+        PagingError::NoMemory => LinuxError::ENOMEM,
+        _ => LinuxError::EINVAL,
+    }
+}
+
+fn pages_in(range: VirtAddrRange, align: PageSize) -> LinuxResult<PageIterWrapper> {
+    PageIterWrapper::new(range.start, range.end, align).ok_or(LinuxError::EINVAL)
+}
+
+#[enum_dispatch]
+pub trait BackendOps {
+    /// Returns the page size of the backend.
+    fn page_size(&self) -> PageSize;
+
+    /// Map a memory region.
+    fn map(&self, range: VirtAddrRange, flags: MappingFlags, pt: &mut PageTable)
+    -> LinuxResult<()>;
+
+    /// Unmap a memory region.
+    fn unmap(&self, range: VirtAddrRange, pt: &mut PageTable) -> LinuxResult<()>;
+
+    /// Populate a memory region. Returns number of pages populated.
+    fn populate(
+        &self,
+        _range: VirtAddrRange,
+        _flags: MappingFlags,
+        _access_flags: MappingFlags,
+        _pt: &mut PageTable,
+    ) -> LinuxResult<usize> {
+        Ok(0)
+    }
+
+    /// Duplicates this mapping for use in a different page table.
+    ///
+    /// This differs from `clone`, which is designed for splitting a mapping
+    /// within the same table.
+    ///
+    /// [`BackendOps::map`] will be latter called to the returned backend.
+    fn clone_map(
+        &self,
+        range: VirtAddrRange,
+        flags: MappingFlags,
+        old_pt: &mut PageTable,
+        new_pt: &mut PageTable,
+    ) -> LinuxResult<Backend>;
 }
 
 /// A unified enum type for different memory mapping backends.
 #[derive(Clone)]
+#[enum_dispatch(BackendOps)]
 pub enum Backend {
-    /// Linear mappings. The target physical frames are contiguous and their
-    /// addresses should be known when creating the mapping.
-    Linear(linear::Linear),
-    /// Lazy mappings. The target physical frames are obtained from the global
-    /// allocator.
-    Alloc(alloc::Alloc),
-    Shared(shared::Shared),
+    Linear(linear::LinearBackend),
+    Alloc(alloc::AllocBackend),
+    Shared(shared::SharedBackend),
 }
 
 impl MappingBackend for Backend {
@@ -51,21 +121,23 @@ impl MappingBackend for Backend {
     type PageTable = PageTable;
 
     fn map(&self, start: VirtAddr, size: usize, flags: MappingFlags, pt: &mut PageTable) -> bool {
-        match self {
-            Self::Linear(linear) => linear.map(start, size, flags, pt),
-            Self::Alloc(alloc) => alloc.map(start, size, flags, pt),
-            Self::Shared(shared) => shared.map(start, flags, pt),
+        let range = VirtAddrRange::from_start_size(start, size);
+        if let Err(err) = BackendOps::map(self, range, flags, pt) {
+            warn!("Failed to map area: {:?}", err);
+            false
+        } else {
+            true
         }
-        .is_ok()
     }
 
     fn unmap(&self, start: VirtAddr, size: usize, pt: &mut PageTable) -> bool {
-        match self {
-            Self::Linear(linear) => linear.unmap(start, size, pt),
-            Self::Alloc(alloc) => alloc.unmap(start, size, pt),
-            Self::Shared(shared) => shared.unmap(start, pt),
+        let range = VirtAddrRange::from_start_size(start, size);
+        if let Err(err) = BackendOps::unmap(self, range, pt) {
+            warn!("Failed to unmap area: {:?}", err);
+            false
+        } else {
+            true
         }
-        .is_ok()
     }
 
     fn protect(
@@ -76,57 +148,5 @@ impl MappingBackend for Backend {
         pt: &mut Self::PageTable,
     ) -> bool {
         pt.protect_region(start, size, new_flags).is_ok()
-    }
-}
-
-impl Backend {
-    pub(crate) fn new_linear(offset: usize) -> Self {
-        Self::Linear(linear::Linear::new(offset))
-    }
-
-    pub(crate) fn new_alloc(populate: bool) -> Self {
-        Self::Alloc(alloc::Alloc::new(populate))
-    }
-
-    pub(crate) fn new_shared(pages: Arc<SharedPages>) -> Self {
-        Self::Shared(shared::Shared { pages })
-    }
-
-    pub(crate) fn populate_strict(
-        &self,
-        start: VirtAddr,
-        size: usize,
-        flags: MappingFlags,
-        pt: &mut PageTable,
-    ) -> PagingResult {
-        match self {
-            Self::Linear(_) | Self::Shared(_) => Err(PagingError::AlreadyMapped),
-            Self::Alloc(alloc) => alloc.populate(start, size, flags, pt),
-        }
-    }
-
-    pub(crate) fn populate_safe(
-        &self,
-        start: VirtAddr,
-        size: usize,
-        flags: MappingFlags,
-        pt: &mut PageTable,
-    ) -> LinuxResult {
-        match self.populate_strict(start, size, flags, pt) {
-            Ok(()) | Err(PagingError::AlreadyMapped) => Ok(()),
-            Err(PagingError::NoMemory) => Err(LinuxError::ENOMEM),
-            Err(_) => Err(LinuxError::EFAULT),
-        }
-    }
-
-    pub(crate) fn needs_copying(&self) -> bool {
-        matches!(self, Self::Alloc(_))
-    }
-
-    pub fn pages(&self) -> Option<Arc<SharedPages>> {
-        match self {
-            Self::Shared(shared) => Some(shared.pages.clone()),
-            _ => None,
-        }
     }
 }

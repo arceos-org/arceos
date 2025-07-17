@@ -449,11 +449,14 @@ dependencies = [
 name = "axmm"
 version = "0.1.0"
 dependencies = [
+ "allocator",
  "axalloc",
  "axconfig",
  "axerrno",
  "axhal",
+ "enum_dispatch",
  "kspin",
+ "lazy_static",
  "lazyinit",
  "log",
  "memory_addr",
@@ -1421,6 +1424,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "lazy_static"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
+dependencies = [
+ "spin",
+]
+
+[[package]]
 name = "lazyinit"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1601,7 +1613,7 @@ checksum = "a4895175b425cb1f87721b59f0f286c2092bd4af812243672510e1ac53e2e0ad"
 [[package]]
 name = "page_table_entry"
 version = "0.5.5"
-source = "git+https://github.com/Starry-Mix-THU/page_table_multiarch.git?rev=438e930#438e930f01dc35e580fbb1fbb63dee9428f07651"
+source = "git+https://github.com/Starry-Mix-THU/page_table_multiarch.git?rev=85a85f1#85a85f15df484d13077d60f9dedf456ca41c1458"
 dependencies = [
  "aarch64-cpu 10.0.0",
  "bitflags 2.9.1",
@@ -1612,7 +1624,7 @@ dependencies = [
 [[package]]
 name = "page_table_multiarch"
 version = "0.5.5"
-source = "git+https://github.com/Starry-Mix-THU/page_table_multiarch.git?rev=438e930#438e930f01dc35e580fbb1fbb63dee9428f07651"
+source = "git+https://github.com/Starry-Mix-THU/page_table_multiarch.git?rev=85a85f1#85a85f15df484d13077d60f9dedf456ca41c1458"
 dependencies = [
  "bitmaps",
  "log",

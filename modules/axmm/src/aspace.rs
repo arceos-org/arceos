@@ -4,16 +4,17 @@ use core::fmt;
 use axerrno::{LinuxError, LinuxResult, bail};
 use axhal::{
     mem::phys_to_virt,
-    paging::{MappingFlags, PageTable, PagingError},
+    paging::{MappingFlags, PageTable},
     trap::PageFaultFlags,
 };
 use memory_addr::{
     MemoryAddr, PAGE_SIZE_4K, PageIter4K, PhysAddr, VirtAddr, VirtAddrRange, is_aligned_4k,
 };
 use memory_set::{MemoryArea, MemorySet};
+use page_table_multiarch::PageSize;
 
 use crate::{
-    backend::{Backend, SharedPages},
+    backend::{Backend, BackendOps, SharedPages},
     mapping_err_to_ax_err,
 };
 
@@ -151,10 +152,11 @@ impl AddrSpace {
         size: usize,
         flags: MappingFlags,
         populate: bool,
+        page_size: PageSize,
     ) -> LinuxResult {
         self.validate_region(start, size)?;
 
-        let area = MemoryArea::new(start, size, flags, Backend::new_alloc(populate));
+        let area = MemoryArea::new(start, size, flags, Backend::new_alloc(populate, page_size));
         self.areas
             .map(area, &mut self.pt, false)
             .map_err(mapping_err_to_ax_err)?;
@@ -175,14 +177,21 @@ impl AddrSpace {
         size: usize,
         flags: MappingFlags,
         pages: Option<Arc<SharedPages>>,
+        page_size: PageSize,
     ) -> LinuxResult<Arc<SharedPages>> {
         self.validate_region(start, size)?;
 
-        let pages = pages
-            .or_else(|| SharedPages::new(size / PAGE_SIZE_4K))
-            .ok_or(LinuxError::ENOMEM)?;
+        let pages = match pages {
+            Some(pages) => pages,
+            None => Arc::new(SharedPages::new(size, page_size)?),
+        };
 
-        let area = MemoryArea::new(start, size, flags, Backend::new_shared(pages.clone()));
+        let area = MemoryArea::new(
+            start,
+            size,
+            flags,
+            Backend::new_shared(start, pages.clone()),
+        );
         self.areas
             .map(area, &mut self.pt, false)
             .map_err(mapping_err_to_ax_err)?;
@@ -191,17 +200,19 @@ impl AddrSpace {
 
     /// Populates the area with physical frames, returning false if the area
     /// contains unmapped area.
-    pub fn populate_area(&mut self, mut start: VirtAddr, size: usize) -> LinuxResult {
+    pub fn populate_area(
+        &mut self,
+        mut start: VirtAddr,
+        size: usize,
+        access_flags: MappingFlags,
+    ) -> LinuxResult {
         self.validate_region(start, size)?;
         let end = start + size;
 
         while let Some(area) = self.areas.find(start) {
-            area.backend().populate_safe(
-                start,
-                area.size().min(end - start),
-                area.flags(),
-                &mut self.pt,
-            )?;
+            let range = VirtAddrRange::new(start, area.end().min(end));
+            area.backend()
+                .populate(range, area.flags(), access_flags, &mut self.pt)?;
             start = area.end();
             assert!(start.is_aligned_4k());
             if start >= end {
@@ -355,16 +366,23 @@ impl AddrSpace {
         if let Some(area) = self.areas.find(vaddr) {
             let flags = area.flags();
             if flags.contains(access_flags) {
-                return area
-                    .backend()
-                    .populate_strict(vaddr.align_down_4k(), PAGE_SIZE_4K, flags, &mut self.pt)
-                    .inspect_err(|e| {
-                        info!(
-                            "Failed to handle page fault at {:#x} ({:?}): {:?}",
-                            vaddr, access_flags, e
-                        );
-                    })
-                    .is_ok();
+                let page_size = area.backend().page_size();
+                return match area.backend().populate(
+                    VirtAddrRange::from_start_size(vaddr.align_down(page_size), page_size as _),
+                    flags,
+                    access_flags,
+                    &mut self.pt,
+                ) {
+                    Ok(0) => {
+                        warn!("No pages populated for {vaddr:?} ({flags:?})");
+                        false
+                    }
+                    Err(err) => {
+                        warn!("Failed to populate pages for {vaddr:?} ({flags:?}): {err}");
+                        false
+                    }
+                    _ => true,
+                };
             }
         }
         false
@@ -379,41 +397,18 @@ impl AddrSpace {
         let mut new_aspace = Self::new_empty(self.base(), self.size())?;
 
         for area in self.areas.iter() {
-            let backend = area.backend();
-            let new_area =
-                MemoryArea::new(area.start(), area.size(), area.flags(), backend.clone());
+            let new_backend = area.backend().clone_map(
+                area.va_range(),
+                area.flags(),
+                &mut self.pt,
+                &mut new_aspace.pt,
+            )?;
+
+            let new_area = MemoryArea::new(area.start(), area.size(), area.flags(), new_backend);
             new_aspace
                 .areas
                 .map(new_area, &mut new_aspace.pt, false)
                 .map_err(mapping_err_to_ax_err)?;
-
-            if !backend.needs_copying() {
-                continue;
-            }
-
-            for vaddr in PageIter4K::new(area.start(), area.end()).unwrap() {
-                let paddr = match self.pt.query(vaddr) {
-                    Ok((paddr, ..)) => paddr,
-                    // If the page is not mapped, skip it.
-                    Err(PagingError::NotMapped) => continue,
-                    Err(_) => return Err(LinuxError::EFAULT),
-                };
-                area.backend().populate_safe(
-                    vaddr,
-                    PAGE_SIZE_4K,
-                    area.flags(),
-                    &mut new_aspace.pt,
-                )?;
-                let (new_paddr, ..) = new_aspace.pt.query(vaddr).map_err(|_| LinuxError::EFAULT)?;
-
-                unsafe {
-                    core::ptr::copy_nonoverlapping(
-                        phys_to_virt(paddr).as_ptr(),
-                        phys_to_virt(new_paddr).as_mut_ptr(),
-                        PAGE_SIZE_4K,
-                    )
-                };
-            }
         }
 
         Ok(new_aspace)
