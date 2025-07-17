@@ -4,14 +4,13 @@ use core::fmt;
 use axerrno::{LinuxError, LinuxResult, bail};
 use axhal::{
     mem::phys_to_virt,
-    paging::{MappingFlags, PageTable},
+    paging::{MappingFlags, PageSize, PageTable},
     trap::PageFaultFlags,
 };
 use memory_addr::{
     MemoryAddr, PAGE_SIZE_4K, PageIter4K, PhysAddr, VirtAddr, VirtAddrRange, is_aligned_4k,
 };
 use memory_set::{MemoryArea, MemorySet};
-use page_table_multiarch::PageSize;
 
 use crate::{
     backend::{Backend, BackendOps, SharedPages},

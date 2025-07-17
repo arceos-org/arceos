@@ -1,7 +1,6 @@
 use axerrno::LinuxResult;
-use axhal::paging::{MappingFlags, PageTable};
+use axhal::paging::{MappingFlags, PageSize, PageTable};
 use memory_addr::{PhysAddr, PhysAddrRange, VirtAddr, VirtAddrRange};
-use page_table_multiarch::PageSize;
 
 use crate::{
     Backend,

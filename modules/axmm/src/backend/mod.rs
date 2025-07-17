@@ -4,7 +4,7 @@ use axalloc::{UsageKind, global_allocator};
 use axerrno::{LinuxError, LinuxResult};
 use axhal::{
     mem::{phys_to_virt, virt_to_phys},
-    paging::{MappingFlags, PageTable, PagingError},
+    paging::{MappingFlags, PageSize, PageTable, PagingError},
 };
 use enum_dispatch::enum_dispatch;
 use memory_addr::{PAGE_SIZE_4K, PhysAddr, VirtAddr, VirtAddrRange};
@@ -14,7 +14,6 @@ pub mod alloc;
 pub mod linear;
 pub mod shared;
 
-use page_table_multiarch::PageSize;
 pub use shared::SharedPages;
 
 use crate::{page_info::frame_table, page_iter::PageIterWrapper};
