@@ -390,19 +390,22 @@ dependencies = [
  "fatfs",
  "lock_api",
  "log",
+ "lru",
  "lwext4_rust",
  "scope-local",
  "slab",
  "spin",
+ "weak-map",
 ]
 
 [[package]]
 name = "axfs-ng-vfs"
 version = "0.1.0"
-source = "git+https://github.com/Starry-Mix-THU/axfs-ng-vfs.git?rev=bb1710c#bb1710cbbb6b207b039a5f83706a194fe8c2096e"
+source = "git+https://github.com/Starry-Mix-THU/axfs-ng-vfs.git?rev=134977a#134977ae6c700ebe220bb28726f46614c491c0c3"
 dependencies = [
  "axerrno",
  "bitflags 2.9.1",
+ "hashbrown",
  "inherit-methods-macro",
  "lock_api",
  "log",
@@ -1512,6 +1515,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "lru"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "86ea4e65087ff52f3862caff188d489f1fab49a0cb09e01b2e3f1a617b10aaed"
+dependencies = [
+ "hashbrown",
+]
+
+[[package]]
 name = "lwext4_rust"
 version = "0.2.0"
 source = "git+https://github.com/Starry-Mix-THU/lwext4_rust?rev=f08d61e#f08d61e5e065beffa3f052ca3b613e4e6d0ebfd9"
@@ -2311,6 +2323,12 @@ checksum = "1a05d73b933a847d6cccdda8f838a22ff101ad9bf93e33684f39c1f5f0eece3d"
 dependencies = [
  "unicode-ident",
 ]
+
+[[package]]
+name = "weak-map"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "209bc3ff6d982801239e57fa3b8b3505d4fc41102d1d162cca38b325297fe77b"
 
 [[package]]
 name = "windows-core"

@@ -54,6 +54,10 @@ impl<M: RawMutex + 'static> FilesystemOps<M> for Ext4Filesystem<M> {
         self.root_dir.get().unwrap().clone()
     }
 
+    fn is_cacheable(&self) -> bool {
+        true
+    }
+
     fn stat(&self) -> VfsResult<StatFs> {
         let mut fs = self.lock();
         let stat = fs.stat().map_err(into_vfs_err)?;

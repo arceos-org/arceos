@@ -10,10 +10,10 @@ use axfs_ng_vfs::{
     Location, Metadata, NodePermission, NodeType, VfsError, VfsResult,
     path::{Component, Components, Path, PathBuf},
 };
-use axio::{Read, Write};
+use axio::Read;
 use lock_api::RawMutex;
 
-use super::{File, FileFlags};
+use super::File;
 
 pub const SYMLINKS_MAX: usize = 40;
 
@@ -51,6 +51,19 @@ impl<M> Clone for FsContext<M> {
     }
 }
 
+impl FsContext<axsync::RawMutex> {
+    /// Reads the entire contents of a file into a bytes vector.
+    pub fn read(&self, path: impl AsRef<Path>) -> VfsResult<Vec<u8>> {
+        let mut buf = Vec::new();
+        File::open(self, path.as_ref())?.read_to_end(&mut buf)?;
+        Ok(buf)
+    }
+
+    /// Reads the entire contents of a file into a string.
+    pub fn read_to_string(&self, path: impl AsRef<Path>) -> VfsResult<String> {
+        String::from_utf8(self.read(path)?).map_err(|_| VfsError::EINVAL)
+    }
+}
 impl<M: RawMutex> FsContext<M> {
     pub fn new(root_dir: Location<M>) -> Self {
         Self {
@@ -200,25 +213,6 @@ impl<M: RawMutex> FsContext<M> {
         } else {
             Err(VfsError::EEXIST)
         }
-    }
-
-    /// Reads the entire contents of a file into a bytes vector.
-    pub fn read(&self, path: impl AsRef<Path>) -> VfsResult<Vec<u8>> {
-        let file = self.resolve(path.as_ref())?;
-        let mut buf = Vec::new();
-        File::new(file, FileFlags::READ).read_to_end(&mut buf)?;
-        Ok(buf)
-    }
-
-    /// Reads the entire contents of a file into a string.
-    pub fn read_to_string(&self, path: impl AsRef<Path>) -> VfsResult<String> {
-        String::from_utf8(self.read(path)?).map_err(|_| VfsError::EINVAL)
-    }
-
-    /// Writes the entire contents of a bytes vector into a file.
-    pub fn write(&self, path: impl AsRef<Path>, data: impl AsRef<[u8]>) -> VfsResult<()> {
-        File::create(self, path.as_ref())?.write_all(data.as_ref())?;
-        Ok(())
     }
 
     /// Retrieves metadata for the file.

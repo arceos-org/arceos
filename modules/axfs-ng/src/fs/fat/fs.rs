@@ -77,6 +77,10 @@ impl<M: RawMutex + Send + Sync> FilesystemOps<M> for FatFilesystem<M> {
         self.root_dir.lock().clone().unwrap()
     }
 
+    fn is_cacheable(&self) -> bool {
+        true
+    }
+
     fn stat(&self) -> VfsResult<StatFs> {
         let fs = self.inner.lock();
         let stats = fs.inner.stats().map_err(into_vfs_err)?;

@@ -1,8 +1,17 @@
-use core::fmt;
+use alloc::{
+    boxed::Box,
+    sync::{Arc, Weak},
+    vec::Vec,
+};
+use core::{fmt, num::NonZeroUsize, ops::Range};
 
-use axfs_ng_vfs::{FileNode, Location, Metadata, NodePermission, VfsError, VfsResult, path::Path};
+use axfs_ng_vfs::{FileNode, Location, NodePermission, VfsError, VfsResult, path::Path};
 use axio::SeekFrom;
+use axsync::Mutex;
 use lock_api::RawMutex;
+use log::warn;
+use lru::LruCache;
+use weak_map::WeakMap;
 
 use super::FsContext;
 
@@ -17,12 +26,12 @@ bitflags::bitflags! {
 }
 
 /// Results returned by [`OpenOptions::open`].
-pub enum OpenResult<M> {
+pub enum OpenResult<M: RawMutex> {
     File(File<M>),
     Dir(Location<M>),
 }
 
-impl<M> OpenResult<M> {
+impl<M: RawMutex> OpenResult<M> {
     pub fn into_file(self) -> VfsResult<File<M>> {
         match self {
             Self::File(file) => Ok(file),
@@ -34,13 +43,6 @@ impl<M> OpenResult<M> {
         match self {
             Self::Dir(dir) => Ok(dir),
             Self::File(_) => Err(VfsError::ENOTDIR),
-        }
-    }
-
-    pub fn into_location(self) -> Location<M> {
-        match self {
-            Self::File(file) => file.inner,
-            Self::Dir(dir) => dir,
         }
     }
 }
@@ -58,9 +60,9 @@ pub struct OpenOptions {
     create_new: bool,
     directory: bool,
     no_follow: bool,
+    direct: bool,
     user: Option<(u32, u32)>,
     // system-specific
-    custom_flags: i32,
     mode: u32,
 }
 
@@ -78,9 +80,9 @@ impl OpenOptions {
             create_new: false,
             directory: false,
             no_follow: false,
+            direct: false,
             user: None,
             // system-specific
-            custom_flags: 0,
             mode: 0o666,
         }
     }
@@ -139,15 +141,15 @@ impl OpenOptions {
         self
     }
 
-    /// Sets the user and group id to open the file with.
-    pub fn user(&mut self, uid: u32, gid: u32) -> &mut Self {
-        self.user = Some((uid, gid));
+    /// Sets the option to open the file with direct I/O.\
+    pub fn direct(&mut self, direct: bool) -> &mut Self {
+        self.direct = direct;
         self
     }
 
-    /// Pass custom flags to the flags argument of open.
-    pub fn custom_flags(&mut self, flags: i32) -> &mut Self {
-        self.custom_flags = flags;
+    /// Sets the user and group id to open the file with.
+    pub fn user(&mut self, uid: u32, gid: u32) -> &mut Self {
+        self.user = Some((uid, gid));
         self
     }
 
@@ -157,15 +159,19 @@ impl OpenOptions {
         self
     }
 
-    pub fn open<M: RawMutex>(
+    pub fn open(
         &self,
-        context: &FsContext<M>,
+        context: &FsContext<axsync::RawMutex>,
         path: impl AsRef<Path>,
-    ) -> VfsResult<OpenResult<M>> {
+    ) -> VfsResult<OpenResult<axsync::RawMutex>> {
         self._open(context, path.as_ref())
     }
 
-    fn _open<M: RawMutex>(&self, context: &FsContext<M>, path: &Path) -> VfsResult<OpenResult<M>> {
+    fn _open(
+        &self,
+        context: &FsContext<axsync::RawMutex>,
+        path: &Path,
+    ) -> VfsResult<OpenResult<axsync::RawMutex>> {
         if !self.is_valid() {
             return Err(VfsError::EINVAL);
         }
@@ -208,7 +214,13 @@ impl OpenOptions {
         Ok(if loc.is_dir() {
             OpenResult::Dir(loc)
         } else {
-            OpenResult::File(File::new(loc, flags))
+            // TODO(mivik): is this correct?
+            let backend = if loc.filesystem().is_cacheable() && !self.direct {
+                FileBackend::new_cached(loc)
+            } else {
+                FileBackend::new_direct(loc)
+            };
+            OpenResult::File(File::new(backend, flags))
         })
     }
 
@@ -262,8 +274,8 @@ impl fmt::Debug for OpenOptions {
             create_new,
             directory,
             no_follow,
+            direct,
             user,
-            custom_flags,
             mode,
         } = self;
         f.debug_struct("OpenOptions")
@@ -276,38 +288,293 @@ impl fmt::Debug for OpenOptions {
             .field("create_new", create_new)
             .field("directory", directory)
             .field("no_follow", no_follow)
+            .field("direct", direct)
             .field("user", user)
-            .field("custom_flags", custom_flags)
             .field("mode", mode)
             .finish()
     }
 }
 
-/// Provides `std::fs::File`-like interface.
-pub struct File<M> {
-    inner: Location<M>,
-    pub(crate) flags: FileFlags,
+const PAGE_SIZE: usize = 4096;
 
-    position: u64,
+struct PageCache {
+    data: Box<[u8; PAGE_SIZE]>,
+    dirty: bool,
+}
+impl PageCache {
+    fn new() -> Self {
+        let mut data = Box::new_uninit();
+        unsafe {
+            core::ptr::write_bytes(data.as_mut_ptr(), 0, 1);
+        }
+        Self {
+            data: unsafe { data.assume_init() },
+            dirty: false,
+        }
+    }
+}
+impl Drop for PageCache {
+    fn drop(&mut self) {
+        if self.dirty {
+            warn!("dirty page dropped without flushing");
+        }
+    }
 }
 
-impl<M: RawMutex> File<M> {
-    pub(crate) fn new(inner: Location<M>, flags: FileFlags) -> Self {
+/// Map of all cached files.
+///
+/// For direct file, we don't need to ensure
+static CACHED_FILE_TABLE: Mutex<WeakMap<usize, Weak<CachedFile<axsync::RawMutex>>>> =
+    Mutex::new(WeakMap::new());
+
+pub struct CachedFile<M: RawMutex> {
+    inner: Location<M>,
+    page_cache: Mutex<LruCache<u32, PageCache>>,
+}
+
+impl<M: RawMutex> CachedFile<M> {
+    pub fn new(inner: Location<M>) -> Self {
         Self {
             inner,
-            flags,
-            position: 0,
+            // TODO(mivik): tune this value
+            page_cache: Mutex::new(LruCache::new(NonZeroUsize::new(64).unwrap())),
         }
     }
 
-    pub fn open(context: &FsContext<M>, path: impl AsRef<Path>) -> VfsResult<Self> {
+    fn evict_cache(file: &FileNode<M>, pn: u32, mut page: PageCache) -> VfsResult<()> {
+        if page.dirty {
+            let page_start = pn as u64 * PAGE_SIZE as u64;
+            let len = (file.len()? - page_start).min(PAGE_SIZE as u64) as usize;
+            file.write_at(&page.data[..len], page_start)?;
+            page.dirty = false;
+        }
+        Ok(())
+    }
+
+    fn with_pages_or_else<T>(
+        &self,
+        range: Range<u64>,
+        mut initial: T,
+        page_before: impl FnOnce(&FileNode<M>) -> VfsResult<()>,
+        mut page_each: impl FnMut(T, &mut PageCache, Range<usize>) -> VfsResult<T>,
+    ) -> VfsResult<T> {
+        let file = self.inner.entry().as_file()?;
+        page_before(file)?;
+        let start_page = (range.start / PAGE_SIZE as u64) as u32;
+        let end_page = range.end.div_ceil(PAGE_SIZE as u64) as u32;
+        let mut page_offset = (range.start % PAGE_SIZE as u64) as usize;
+        for pn in start_page..end_page {
+            let page_start = pn as u64 * PAGE_SIZE as u64;
+
+            let mut guard = self.page_cache.lock();
+            let page = if let Some(page) = guard.get_mut(&pn) {
+                page
+            } else {
+                if guard.len() == guard.cap().get() {
+                    // Cache is full, remove the least recently used page
+                    if let Some((pn, page)) = guard.pop_lru() {
+                        Self::evict_cache(file, pn, page)?;
+                    }
+                }
+
+                // Page not in cache, read it
+                let mut page = PageCache::new();
+                file.read_at(page.data.as_mut(), page_start)?;
+                guard.put(pn, page);
+                guard.get_mut(&pn).unwrap()
+            };
+
+            initial = page_each(
+                initial,
+                page,
+                page_offset..(range.end - page_start).min(PAGE_SIZE as u64) as usize,
+            )?;
+            page_offset = 0;
+        }
+
+        Ok(initial)
+    }
+
+    pub fn read_at(&self, buf: &mut [u8], offset: u64) -> VfsResult<usize> {
+        let len = self.inner.len()?;
+        let end = (offset + buf.len() as u64).min(len);
+        if end <= offset {
+            return Ok(0);
+        }
+        self.with_pages_or_else(
+            offset..end,
+            (buf, 0),
+            |_| Ok(()),
+            |(buf, read), page, range| {
+                let len = range.end - range.start;
+                buf[..len].copy_from_slice(&page.data[range.start..range.end]);
+                Ok((&mut buf[len..], read + len))
+            },
+        )
+        .map(|(_, read)| read)
+    }
+
+    pub fn write_at(&self, buf: &[u8], offset: u64) -> VfsResult<usize> {
+        let end = offset + buf.len() as u64;
+        self.with_pages_or_else(
+            offset..end,
+            (buf, 0),
+            |file| {
+                if end > file.len()? {
+                    file.set_len(end)?;
+                }
+                Ok(())
+            },
+            |(buf, written), page, range| {
+                let len = range.end - range.start;
+                page.data[range.start..range.end].copy_from_slice(&buf[..len]);
+                page.dirty = true;
+                Ok((&buf[len..], written + len))
+            },
+        )
+        .map(|(_, written)| written)
+    }
+
+    pub fn set_len(&self, len: u64) -> VfsResult<()> {
+        let file = self.inner.entry().as_file()?;
+        let old_len = file.len()?;
+        file.set_len(len)?;
+
+        let old_last_page = (old_len / PAGE_SIZE as u64) as u32;
+        let new_last_page = (len / PAGE_SIZE as u64) as u32;
+        if old_len < len {
+            // The file was extended, we need to evict the last page
+            let mut guard = self.page_cache.lock();
+            if let Some(page) = guard.pop(&old_last_page) {
+                Self::evict_cache(file, old_last_page, page)?;
+            }
+        } else if old_last_page > new_last_page {
+            // For truncating, we need to remove all pages that are beyond the
+            // new length
+            // TODO(mivik): can this be more efficient?
+            let mut guard = self.page_cache.lock();
+            let keys = guard
+                .iter()
+                .map(|(k, _)| *k)
+                .filter(|it| *it > new_last_page)
+                .collect::<Vec<_>>();
+            for pn in keys {
+                if let Some(page) = guard.pop(&pn) {
+                    Self::evict_cache(file, pn, page)?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    pub fn sync(&self, data_only: bool) -> VfsResult<()> {
+        let file = self.inner.entry().as_file()?;
+        let mut guard = self.page_cache.lock();
+        while let Some((pn, page)) = guard.pop_lru() {
+            Self::evict_cache(file, pn, page)?;
+        }
+        file.sync(data_only)?;
+        Ok(())
+    }
+
+    pub fn location(&self) -> &Location<M> {
+        &self.inner
+    }
+}
+
+impl<M: RawMutex> Drop for CachedFile<M> {
+    fn drop(&mut self) {
+        if let Err(err) = self.sync(false) {
+            warn!("Failed to sync file on drop: {err:?}");
+        }
+    }
+}
+
+/// Low-level interface for file operations.
+pub enum FileBackend<M: RawMutex> {
+    Cached(Arc<CachedFile<M>>),
+    Direct(Location<M>),
+}
+impl<M: RawMutex> Clone for FileBackend<M> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Cached(cached) => Self::Cached(Arc::clone(cached)),
+            Self::Direct(loc) => Self::Direct(loc.clone()),
+        }
+    }
+}
+impl FileBackend<axsync::RawMutex> {
+    pub(crate) fn new_cached(location: Location<axsync::RawMutex>) -> Self {
+        let key = location.entry().as_ptr();
+        let mut guard = CACHED_FILE_TABLE.lock();
+        let file = guard.get(&key).unwrap_or_else(|| {
+            let file = Arc::new(CachedFile::new(location.clone()));
+            guard.insert(key, &file);
+            file
+        });
+        Self::Cached(file)
+    }
+}
+impl<M: RawMutex> FileBackend<M> {
+    pub(crate) fn new_direct(location: Location<M>) -> Self {
+        Self::Direct(location)
+    }
+
+    pub fn read_at(&self, buf: &mut [u8], offset: u64) -> VfsResult<usize> {
+        match self {
+            Self::Cached(cached) => cached.read_at(buf, offset),
+            Self::Direct(loc) => loc.entry().as_file()?.read_at(buf, offset),
+        }
+    }
+
+    pub fn write_at(&self, buf: &[u8], offset: u64) -> VfsResult<usize> {
+        match self {
+            Self::Cached(cached) => cached.write_at(buf, offset),
+            Self::Direct(loc) => loc.entry().as_file()?.write_at(buf, offset),
+        }
+    }
+
+    pub fn location(&self) -> &Location<M> {
+        match self {
+            Self::Cached(cached) => cached.location(),
+            Self::Direct(loc) => loc,
+        }
+    }
+
+    pub fn sync(&self, data_only: bool) -> VfsResult<()> {
+        match self {
+            Self::Cached(cached) => cached.sync(data_only),
+            Self::Direct(loc) => loc.entry().as_file()?.sync(data_only),
+        }
+    }
+
+    pub fn set_len(&self, len: u64) -> VfsResult<()> {
+        match self {
+            Self::Cached(cached) => cached.set_len(len),
+            Self::Direct(loc) => loc.entry().as_file()?.set_len(len),
+        }
+    }
+}
+
+/// Provides `std::fs::File`-like interface.
+pub struct File<M: RawMutex> {
+    inner: FileBackend<M>,
+    flags: FileFlags,
+    position: u64,
+}
+
+impl File<axsync::RawMutex> {
+    pub fn open(context: &FsContext<axsync::RawMutex>, path: impl AsRef<Path>) -> VfsResult<Self> {
         OpenOptions::new()
             .read(true)
             .open(context, path.as_ref())
             .and_then(OpenResult::into_file)
     }
 
-    pub fn create(context: &FsContext<M>, path: impl AsRef<Path>) -> VfsResult<Self> {
+    pub fn create(
+        context: &FsContext<axsync::RawMutex>,
+        path: impl AsRef<Path>,
+    ) -> VfsResult<Self> {
         OpenOptions::new()
             .write(true)
             .create(true)
@@ -315,37 +582,26 @@ impl<M: RawMutex> File<M> {
             .open(context, path.as_ref())
             .and_then(OpenResult::into_file)
     }
-
-    pub fn access(&self, cap: FileFlags) -> VfsResult<&FileNode<M>> {
-        if self.flags.contains(cap) {
-            self.inner.entry().as_file()
-        } else {
-            Err(VfsError::EBADF)
+}
+impl<M: RawMutex> File<M> {
+    pub(crate) fn new(inner: FileBackend<M>, flags: FileFlags) -> Self {
+        Self {
+            inner,
+            flags,
+            position: 0,
         }
     }
 
-    pub fn inner(&self) -> &Location<M> {
+    pub fn access(&self, flags: FileFlags) -> VfsResult<&FileBackend<M>> {
+        if self.flags.contains(flags) {
+            Ok(&self.inner)
+        } else {
+            Err(VfsError::EPERM)
+        }
+    }
+
+    pub fn backend(&self) -> &FileBackend<M> {
         &self.inner
-    }
-
-    /// Attempts to sync OS-internal file content and metadata to disk.
-    ///
-    /// If `data_only` is `true`, only the file data is synced, not the
-    /// metadata.
-    pub fn sync(&self, data_only: bool) -> VfsResult<()> {
-        self.inner.sync(data_only)
-    }
-
-    /// Truncates or extends the underlying file, updating the size of this file
-    /// to become `size`.
-    pub fn set_len(&self, size: u64) -> VfsResult<()> {
-        self.access(FileFlags::WRITE)?.set_len(size)
-    }
-
-    /// Queries metadata about the underlying file.
-    pub fn metadata(&self) -> VfsResult<Metadata> {
-        self.access(FileFlags::READ)?;
-        self.inner.metadata()
     }
 
     /// Reads a number of bytes starting from a given offset.
@@ -357,20 +613,13 @@ impl<M: RawMutex> File<M> {
     pub fn write_at(&mut self, buf: &[u8], offset: u64) -> VfsResult<usize> {
         self.access(FileFlags::WRITE)?.write_at(buf, offset)
     }
-}
 
-impl<M: RawMutex> File<M> {
-    /// Writes a number of bytes starting from the current position.
-    pub fn write(&mut self, buf: &[u8]) -> VfsResult<usize> {
-        if self.flags.contains(FileFlags::APPEND) {
-            let (written, offset) = self.access(FileFlags::WRITE)?.append(buf)?;
-            self.position = offset;
-            Ok(written)
-        } else {
-            let n = self.write_at(buf, self.position)?;
-            self.position += n as u64;
-            Ok(n)
-        }
+    /// Attempts to sync OS-internal file content and metadata to disk.
+    ///
+    /// If `data_only` is `true`, only the file data is synced, not the
+    /// metadata.
+    pub fn sync(&mut self, data_only: bool) -> VfsResult<()> {
+        self.inner.sync(data_only)
     }
 }
 
@@ -385,12 +634,11 @@ impl<M: RawMutex> axio::Read for File<M> {
 impl<M: RawMutex> axio::Write for File<M> {
     fn write(&mut self, buf: &[u8]) -> axio::Result<usize> {
         if self.flags.contains(FileFlags::APPEND) {
-            self.access(FileFlags::WRITE)?
-                .append(buf)
-                .map(|(written, offset)| {
-                    self.position = offset;
-                    written
-                })
+            let file = self.access(FileFlags::WRITE)?;
+            let len = file.location().len()?;
+            file.write_at(buf, len).inspect(|n| {
+                self.position = len + *n as u64;
+            })
         } else {
             self.write_at(buf, self.position).inspect(|n| {
                 self.position += *n as u64;
@@ -408,13 +656,13 @@ impl<M: RawMutex> axio::Seek for File<M> {
         let new_pos = match pos {
             SeekFrom::Start(pos) => pos,
             SeekFrom::End(off) => {
-                let size = self.access(FileFlags::empty())?.len()?;
+                let size = self.access(FileFlags::empty())?.location().len()?;
                 size.checked_add_signed(off)
                     .ok_or(VfsError::EINVAL)?
                     .clamp(0, size)
             }
             SeekFrom::Current(off) => {
-                let size = self.access(FileFlags::empty())?.len()?;
+                let size = self.access(FileFlags::empty())?.location().len()?;
                 self.position
                     .checked_add_signed(off)
                     .ok_or(VfsError::EINVAL)?

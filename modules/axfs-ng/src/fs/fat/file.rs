@@ -13,6 +13,7 @@ use super::{
     fs::FatFilesystem,
     util::{file_metadata, into_vfs_err, update_file_metadata},
 };
+use crate::fs::fat::fs::FatFilesystemInner;
 
 pub struct FatFileNode<M: RawMutex + 'static> {
     fs: Arc<FatFilesystem<M>>,
@@ -29,6 +30,21 @@ impl<M: RawMutex + Send + Sync + 'static> FatFileNode<M> {
             inode,
         }))
     }
+}
+
+fn grow_file(fs: &FatFilesystemInner, file: &mut ff::File<'static>, len: u64) -> VfsResult<()> {
+    // rust-fatfs does not support growing files directly. We need to
+    // pad with zeros manually.
+    let mut pos = file.seek(SeekFrom::End(0)).map_err(into_vfs_err)?;
+    let block_size = fs.inner.bytes_per_sector() as usize;
+    let block = vec![0; block_size];
+
+    while pos < len {
+        let write = (block_size - (pos as usize & (block_size - 1))).min((len - pos) as usize);
+        file.write(&block[0..write]).map_err(into_vfs_err)?;
+        pos += write as u64;
+    }
+    Ok(())
 }
 
 unsafe impl<M: RawMutex + 'static> Send for FatFileNode<M> {}
@@ -96,6 +112,9 @@ impl<M: RawMutex + Send + Sync + 'static> FileNodeOps<M> for FatFileNode<M> {
     fn write_at(&self, mut buf: &[u8], offset: u64) -> VfsResult<usize> {
         let fs = self.fs.lock();
         let file = self.inner.borrow_mut(&fs);
+        if offset > file.size().unwrap_or(0) as u64 {
+            grow_file(&fs, file, offset)?;
+        }
         file.seek(SeekFrom::Start(offset)).map_err(into_vfs_err)?;
 
         let mut written = 0;
@@ -124,19 +143,7 @@ impl<M: RawMutex + Send + Sync + 'static> FileNodeOps<M> for FatFileNode<M> {
             file.seek(SeekFrom::Start(len)).map_err(into_vfs_err)?;
             file.truncate().map_err(into_vfs_err)
         } else {
-            // rust-fatfs does not support growing files directly. We need to
-            // pad with zeros manually.
-            let mut pos = file.seek(SeekFrom::End(0)).map_err(into_vfs_err)?;
-            let block_size = fs.inner.bytes_per_sector() as usize;
-            let block = vec![0; block_size];
-
-            while pos < len {
-                let write =
-                    (block_size - (pos as usize & (block_size - 1))).min((len - pos) as usize);
-                file.write(&block[0..write]).map_err(into_vfs_err)?;
-                pos += write as u64;
-            }
-            Ok(())
+            grow_file(&fs, file, len)
         }
     }
 
