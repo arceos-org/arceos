@@ -172,10 +172,10 @@ impl TaskInner {
     ///
     /// It will return immediately if the task has already exited (but not
     /// dropped).
-    pub fn join(&self) -> Option<i32> {
+    pub fn join(&self) -> i32 {
         self.wait_for_exit
             .wait_until(|| self.state() == TaskState::Exited);
-        Some(self.exit_code.load(Ordering::Acquire))
+        self.exit_code.load(Ordering::Acquire)
     }
 
     /// Returns a reference to the task extended data.
@@ -510,11 +510,11 @@ impl CurrentTask {
         &self.0
     }
 
-    pub(crate) fn clone(&self) -> AxTaskRef {
+    pub fn clone(&self) -> AxTaskRef {
         self.0.deref().clone()
     }
 
-    pub(crate) fn ptr_eq(&self, other: &AxTaskRef) -> bool {
+    pub fn ptr_eq(&self, other: &AxTaskRef) -> bool {
         Arc::ptr_eq(&self.0, other)
     }
 
