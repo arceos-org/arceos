@@ -5,18 +5,21 @@ use core::{
     alloc::Layout,
     cell::UnsafeCell,
     fmt,
+    future::poll_fn,
     ops::Deref,
     ptr::NonNull,
     sync::atomic::{AtomicBool, AtomicI32, AtomicU8, AtomicU64, Ordering},
+    task::Poll,
 };
 
 use axhal::context::TaskContext;
 #[cfg(feature = "tls")]
 use axhal::tls::TlsArea;
+use futures::task::AtomicWaker;
 use kspin::SpinNoIrq;
 use memory_addr::{VirtAddr, align_up_4k};
 
-use crate::{AxCpuMask, AxTask, AxTaskRef, WaitQueue};
+use crate::{AxCpuMask, AxTask, AxTaskRef, future::block_on};
 
 /// A unique identifier for a thread.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -83,7 +86,7 @@ pub struct TaskInner {
     preempt_disable_count: AtomicUsize,
 
     exit_code: AtomicI32,
-    wait_for_exit: WaitQueue,
+    wait_for_exit: AtomicWaker,
 
     kstack: Option<TaskStack>,
     ctx: UnsafeCell<TaskContext>,
@@ -173,9 +176,13 @@ impl TaskInner {
     /// It will return immediately if the task has already exited (but not
     /// dropped).
     pub fn join(&self) -> i32 {
-        self.wait_for_exit
-            .wait_until(|| self.state() == TaskState::Exited);
-        self.exit_code.load(Ordering::Acquire)
+        block_on(poll_fn(|cx| {
+            if self.state() == TaskState::Exited {
+                return Poll::Ready(self.exit_code.load(Ordering::Acquire));
+            }
+            self.wait_for_exit.register(cx.waker());
+            Poll::Pending
+        }))
     }
 
     /// Returns a reference to the task extended data.
@@ -246,7 +253,7 @@ impl TaskInner {
             #[cfg(feature = "preempt")]
             preempt_disable_count: AtomicUsize::new(0),
             exit_code: AtomicI32::new(0),
-            wait_for_exit: WaitQueue::new(),
+            wait_for_exit: AtomicWaker::new(),
             kstack: None,
             ctx: UnsafeCell::new(TaskContext::new()),
             #[cfg(feature = "task-ext")]
@@ -412,9 +419,10 @@ impl TaskInner {
     }
 
     /// Notify all tasks that join on this task.
-    pub(crate) fn notify_exit(&self, exit_code: i32) {
+    pub(crate) fn exit(&self, exit_code: i32) {
+        self.set_state(TaskState::Exited);
         self.exit_code.store(exit_code, Ordering::Release);
-        self.wait_for_exit.notify_all(false);
+        self.wait_for_exit.wake();
     }
 
     #[inline]

@@ -384,10 +384,7 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
             }
             axhal::power::system_off();
         } else {
-            curr.set_state(TaskState::Exited);
-
-            // Notify the joiner task.
-            curr.notify_exit(exit_code);
+            curr.exit(exit_code);
 
             // Safety: it is called from
             // `current_run_queue::<NoPreemptIrqSave>().exit_current(exit_code)`,

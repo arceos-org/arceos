@@ -129,6 +129,6 @@ fn test_task_join() {
     }
 
     for (i, task) in tasks.into_iter().enumerate() {
-        assert_eq!(task.join(), Some(i as _));
+        assert_eq!(task.join(), i as _);
     }
 }
