@@ -13,15 +13,19 @@ ext4 = ["dep:lwext4_rust"]
 std = ["lwext4_rust?/std"]
 
 [dependencies]
+axalloc = { workspace = true }
 axdriver = { workspace = true, features = ["block"] }
+axhal = { workspace = true }
 axio = { workspace = true, features = ["alloc"] }
 axsync = { workspace = true }
 
+allocator = { workspace = true }
 axerrno = { workspace = true }
 axfs-ng-vfs = { workspace = true }
 bitflags = "2.9.0"
 cfg-if = { workspace = true }
 chrono = { workspace = true }
+intrusive-collections = "0.9.7"
 lock_api = { workspace = true }
 log = { workspace = true }
 lru = "0.16.0"

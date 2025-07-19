@@ -1,39 +1,48 @@
+use alloc::boxed::Box;
+use core::slice;
+
 use axerrno::{LinuxError, LinuxResult};
+use axfs_ng_vfs::Location;
 use axhal::{
     mem::phys_to_virt,
     paging::{MappingFlags, PageSize, PageTable, PagingError},
 };
+use axsync::RawMutex;
 use memory_addr::{PhysAddr, VirtAddr, VirtAddrRange};
 
 use crate::{
-    Backend,
+    AddrSpace, Backend,
     backend::{BackendOps, alloc_frame, dealloc_frame, pages_in, paging_to_linux_error},
     page_info::frame_table,
 };
 
-/// Allocation mapping backend.
+/// Copy-on-write mapping backend.
 ///
-/// If `populate` is `true`, all physical frames are allocated when the
-/// mapping is created, and no page faults are triggered during the memory
-/// access. Otherwise, the physical frames are allocated on demand (by
-/// handling page faults).
+/// This corresponds to the `MAP_PRIVATE` flag.
 #[derive(Clone)]
-pub struct AllocBackend {
-    populate: bool,
+pub struct CowBackend {
+    start: VirtAddr,
     size: PageSize,
+    file: Option<(Location<RawMutex>, usize)>,
 }
 
-impl AllocBackend {
+impl CowBackend {
     fn alloc_new_at(
         &self,
         vaddr: VirtAddr,
         flags: MappingFlags,
         pt: &mut PageTable,
     ) -> LinuxResult<()> {
-        // Allocate a physical frame lazily and map it to the fault address.
-        // `vaddr` does not need to be aligned. It will be automatically aligned
-        // during `pt.map` regardless of the page size.
         let frame = alloc_frame(true, self.size)?;
+        frame_table().inc_ref(frame);
+        if let Some((file, offset)) = &self.file {
+            let buf = unsafe {
+                slice::from_raw_parts_mut(phys_to_virt(frame).as_mut_ptr(), self.size as _)
+            };
+            file.entry()
+                .as_file()?
+                .read_at(buf, (vaddr - self.start) as u64 + *offset as u64)?;
+        }
         pt.map(vaddr, frame, self.size, flags)
             .map_err(paging_to_linux_error)?;
         Ok(())
@@ -56,16 +65,17 @@ impl AllocBackend {
             // Allocates the new page and copies the contents of the original page,
             // remapping the virtual address to the physical address of the new page.
             2.. => {
+                frame_table().dec_ref(paddr);
+
                 let new_frame = alloc_frame(false, self.size)?;
+                frame_table().inc_ref(new_frame);
                 unsafe {
                     core::ptr::copy_nonoverlapping(
                         phys_to_virt(paddr).as_ptr(),
                         phys_to_virt(new_frame).as_mut_ptr(),
                         self.size as _,
-                    )
-                };
-
-                dealloc_frame(paddr, self.size);
+                    );
+                }
 
                 pt.remap(vaddr, new_frame, flags)
                     .map_err(paging_to_linux_error)?;
@@ -76,7 +86,7 @@ impl AllocBackend {
     }
 }
 
-impl BackendOps for AllocBackend {
+impl BackendOps for CowBackend {
     fn page_size(&self) -> PageSize {
         self.size
     }
@@ -85,28 +95,19 @@ impl BackendOps for AllocBackend {
         &self,
         range: VirtAddrRange,
         flags: MappingFlags,
-        pt: &mut PageTable,
+        _pt: &mut PageTable,
     ) -> LinuxResult<()> {
-        debug!(
-            "Alloc::map: {range:?} {flags:?} (populate={})",
-            self.populate
-        );
-        if !self.populate {
-            return Ok(());
-        }
-        for addr in pages_in(range, self.size)? {
-            let frame = alloc_frame(true, self.size)?;
-            pt.map(addr, frame, self.size, flags)
-                .map_err(paging_to_linux_error)?;
-        }
+        debug!("Cow::map: {range:?} {flags:?}",);
         Ok(())
     }
 
     fn unmap(&self, range: VirtAddrRange, pt: &mut PageTable) -> LinuxResult<()> {
-        debug!("unmap_alloc: {range:?}",);
+        debug!("Cow::unmap: {range:?}");
         for addr in pages_in(range, self.size)? {
-            if let Ok((frame, _page_size)) = pt.unmap(addr) {
-                dealloc_frame(frame, self.size);
+            if let Ok((frame, _flags, _page_size)) = pt.unmap(addr) {
+                if frame_table().dec_ref(frame) == 1 {
+                    dealloc_frame(frame, self.size);
+                }
             } else {
                 // Deallocation is needn't if the page is not allocated.
             }
@@ -120,7 +121,7 @@ impl BackendOps for AllocBackend {
         flags: MappingFlags,
         access_flags: MappingFlags,
         pt: &mut PageTable,
-    ) -> LinuxResult<usize> {
+    ) -> LinuxResult<(usize, Option<Box<dyn FnOnce(&mut AddrSpace)>>)> {
         let mut pages = 0;
         for addr in pages_in(range, self.size)? {
             match pt.query(addr) {
@@ -128,25 +129,19 @@ impl BackendOps for AllocBackend {
                     if access_flags.contains(MappingFlags::WRITE)
                         && !page_flags.contains(MappingFlags::WRITE)
                     {
-                        // If the page is mapped but not writable, we need to
-                        // handle the COW fault.
                         self.handle_cow_fault(addr, paddr, flags, pt)?;
                         pages += 1;
                     }
                 }
                 // If the page is not mapped, try map it.
                 Err(PagingError::NotMapped) => {
-                    assert!(
-                        !self.populate,
-                        "populated backend should not have unpopulated pages"
-                    );
                     self.alloc_new_at(addr, flags, pt)?;
                     pages += 1;
                 }
                 Err(_) => return Err(LinuxError::EFAULT),
             }
         }
-        Ok(pages)
+        Ok((pages, None))
     }
 
     fn clone_map(
@@ -157,11 +152,6 @@ impl BackendOps for AllocBackend {
         new_pt: &mut PageTable,
     ) -> LinuxResult<Backend> {
         let cow_flags = flags - MappingFlags::WRITE;
-
-        // Forcing `populate = false` is to prevent the subsequent
-        // `new_aspace.areas.map` from mapping page table entries for the
-        // virtual addresses.
-        let new_backend = Backend::new_alloc(false, self.size);
 
         for vaddr in pages_in(range, self.size)? {
             // Copy data from old memory area to new memory area.
@@ -186,12 +176,20 @@ impl BackendOps for AllocBackend {
             };
         }
 
-        Ok(new_backend)
+        Ok(Backend::Cow(self.clone()))
     }
 }
 
 impl Backend {
-    pub fn new_alloc(populate: bool, size: PageSize) -> Self {
-        Self::Alloc(AllocBackend { populate, size })
+    pub fn new_cow(
+        start: VirtAddr,
+        size: PageSize,
+        file: Option<(Location<RawMutex>, usize)>,
+    ) -> Self {
+        Self::Cow(CowBackend { start, size, file })
+    }
+
+    pub fn new_alloc(start: VirtAddr, size: PageSize) -> Self {
+        Self::new_cow(start, size, None)
     }
 }

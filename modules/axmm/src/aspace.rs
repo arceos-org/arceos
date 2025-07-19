@@ -1,10 +1,9 @@
-use alloc::sync::Arc;
 use core::fmt;
 
 use axerrno::{LinuxError, LinuxResult, bail};
 use axhal::{
     mem::phys_to_virt,
-    paging::{MappingFlags, PageSize, PageTable},
+    paging::{MappingFlags, PageTable},
     trap::PageFaultFlags,
 };
 use memory_addr::{
@@ -13,8 +12,8 @@ use memory_addr::{
 use memory_set::{MemoryArea, MemorySet};
 
 use crate::{
-    backend::{Backend, BackendOps, SharedPages},
-    mapping_err_to_ax_err,
+    backend::{Backend, BackendOps},
+    mapping_to_linux_error,
 };
 
 /// The virtual memory address space.
@@ -43,6 +42,11 @@ impl AddrSpace {
     /// Returns the reference to the inner page table.
     pub const fn page_table(&self) -> &PageTable {
         &self.pt
+    }
+
+    /// Returns a mutable reference to the inner page table.
+    pub const fn page_table_mut(&mut self) -> &mut PageTable {
+        &mut self.pt
     }
 
     /// Returns the root physical address of the inner page table.
@@ -133,68 +137,28 @@ impl AddrSpace {
         let area = MemoryArea::new(start_vaddr, size, flags, Backend::new_linear(offset));
         self.areas
             .map(area, &mut self.pt, false)
-            .map_err(mapping_err_to_ax_err)?;
+            .map_err(mapping_to_linux_error)?;
         Ok(())
     }
 
-    /// Add a new allocation mapping.
-    ///
-    /// See [`Backend`] for more details about the mapping backends.
-    ///
-    /// The `flags` parameter indicates the mapping permissions and attributes.
-    ///
-    /// Returns an error if the address range is out of the address space or not
-    /// aligned.
-    pub fn map_alloc(
+    pub fn map(
         &mut self,
         start: VirtAddr,
         size: usize,
         flags: MappingFlags,
         populate: bool,
-        page_size: PageSize,
-    ) -> LinuxResult {
+        backend: Backend,
+    ) -> LinuxResult<()> {
         self.validate_region(start, size)?;
 
-        let area = MemoryArea::new(start, size, flags, Backend::new_alloc(populate, page_size));
+        let area = MemoryArea::new(start, size, flags, backend);
         self.areas
             .map(area, &mut self.pt, false)
-            .map_err(mapping_err_to_ax_err)?;
+            .map_err(mapping_to_linux_error)?;
+        if populate {
+            self.populate_area(start, size, flags)?;
+        }
         Ok(())
-    }
-
-    /// Add a new shared mapping.
-    ///
-    /// See [`Backend`] for more details about the mapping backends.
-    ///
-    /// The `flags` parameter indicates the mapping permissions and attributes.
-    ///
-    /// Returns an error if the address range is out of the address space or not
-    /// aligned.
-    pub fn map_shared(
-        &mut self,
-        start: VirtAddr,
-        size: usize,
-        flags: MappingFlags,
-        pages: Option<Arc<SharedPages>>,
-        page_size: PageSize,
-    ) -> LinuxResult<Arc<SharedPages>> {
-        self.validate_region(start, size)?;
-
-        let pages = match pages {
-            Some(pages) => pages,
-            None => Arc::new(SharedPages::new(size, page_size)?),
-        };
-
-        let area = MemoryArea::new(
-            start,
-            size,
-            flags,
-            Backend::new_shared(start, pages.clone()),
-        );
-        self.areas
-            .map(area, &mut self.pt, false)
-            .map_err(mapping_err_to_ax_err)?;
-        Ok(pages)
     }
 
     /// Populates the area with physical frames, returning false if the area
@@ -236,7 +200,7 @@ impl AddrSpace {
 
         self.areas
             .unmap(start, size, &mut self.pt)
-            .map_err(mapping_err_to_ax_err)?;
+            .map_err(mapping_to_linux_error)?;
         Ok(())
     }
 
@@ -307,7 +271,7 @@ impl AddrSpace {
 
         self.areas
             .protect(start, size, |_| Some(flags), &mut self.pt)
-            .map_err(mapping_err_to_ax_err)?;
+            .map_err(mapping_to_linux_error)?;
 
         Ok(())
     }
@@ -372,7 +336,10 @@ impl AddrSpace {
                     access_flags,
                     &mut self.pt,
                 ) {
-                    Ok(0) => {
+                    Ok((0, callback)) => {
+                        if let Some(cb) = callback {
+                            cb(self);
+                        }
                         warn!("No pages populated for {vaddr:?} ({flags:?})");
                         false
                     }
@@ -380,7 +347,12 @@ impl AddrSpace {
                         warn!("Failed to populate pages for {vaddr:?} ({flags:?}): {err}");
                         false
                     }
-                    _ => true,
+                    Ok((_, callback)) => {
+                        if let Some(cb) = callback {
+                            cb(self);
+                        }
+                        true
+                    }
                 };
             }
         }
@@ -407,7 +379,7 @@ impl AddrSpace {
             new_aspace
                 .areas
                 .map(new_area, &mut new_aspace.pt, false)
-                .map_err(mapping_err_to_ax_err)?;
+                .map_err(mapping_to_linux_error)?;
         }
 
         Ok(new_aspace)

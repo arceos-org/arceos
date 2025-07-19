@@ -47,17 +47,18 @@ cfg_if::cfg_if! {
 pub enum UsageKind {
     RustHeap,
     UserMem,
+    PageCache,
     PageTable,
     Dma,
     Global,
 }
 
 #[derive(Clone, Copy)]
-pub struct UsageStats([usize; 5]);
+pub struct UsageStats([usize; 6]);
 
 impl UsageStats {
     const fn new() -> Self {
-        Self([0; 5])
+        Self([0; 6])
     }
 
     fn alloc(&mut self, kind: UsageKind, size: usize) {
@@ -75,6 +76,7 @@ impl fmt::Debug for UsageStats {
         for kind in [
             UsageKind::RustHeap,
             UsageKind::UserMem,
+            UsageKind::PageCache,
             UsageKind::PageTable,
             UsageKind::Dma,
             UsageKind::Global,
@@ -83,6 +85,7 @@ impl fmt::Debug for UsageStats {
                 match kind {
                     UsageKind::RustHeap => "Rust Heap",
                     UsageKind::UserMem => "User Memory",
+                    UsageKind::PageCache => "Page Cache",
                     UsageKind::PageTable => "Page Table",
                     UsageKind::Dma => "Dma",
                     UsageKind::Global => "Global",

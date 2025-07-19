@@ -10,7 +10,7 @@ use axfs_ng_vfs::{
     Location, Metadata, NodePermission, NodeType, VfsError, VfsResult,
     path::{Component, Components, Path, PathBuf},
 };
-use axio::Read;
+use axio::{Read, Write};
 use lock_api::RawMutex;
 
 use super::File;
@@ -62,6 +62,13 @@ impl FsContext<axsync::RawMutex> {
     /// Reads the entire contents of a file into a string.
     pub fn read_to_string(&self, path: impl AsRef<Path>) -> VfsResult<String> {
         String::from_utf8(self.read(path)?).map_err(|_| VfsError::EINVAL)
+    }
+
+    /// Writes the contents of a bytes vector to a file.
+    pub fn write(&self, path: impl AsRef<Path>, buf: impl AsRef<[u8]>) -> VfsResult<()> {
+        let mut file = File::create(self, path.as_ref())?;
+        file.write_all(buf.as_ref())?;
+        Ok(())
     }
 }
 impl<M: RawMutex> FsContext<M> {

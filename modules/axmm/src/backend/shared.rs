@@ -7,8 +7,7 @@ use memory_addr::{MemoryAddr, PhysAddr, VirtAddr, VirtAddrRange};
 
 use super::{alloc_frame, dealloc_frame};
 use crate::{
-    Backend,
-    backend::{BackendOps, pages_in, paging_to_linux_error},
+    backend::{divide_page, pages_in, paging_to_linux_error, BackendOps}, Backend
 };
 
 pub struct SharedPages {
@@ -18,7 +17,7 @@ pub struct SharedPages {
 impl SharedPages {
     pub fn new(size: usize, page_size: PageSize) -> LinuxResult<Self> {
         Ok(Self {
-            phys_pages: (0..number_of_pages(size, page_size))
+            phys_pages: (0..divide_page(size, page_size))
                 .map(|_| alloc_frame(true, page_size))
                 .collect::<LinuxResult<_>>()?,
             size: page_size,
@@ -50,10 +49,6 @@ impl Drop for SharedPages {
     }
 }
 
-fn number_of_pages(size: usize, page_size: PageSize) -> usize {
-    size >> (page_size as usize).trailing_zeros()
-}
-
 // FIXME: This implementation does not allow map or unmap partial ranges.
 #[derive(Clone)]
 pub struct SharedBackend {
@@ -67,7 +62,7 @@ impl SharedBackend {
 
     fn pages_starting_from(&self, start: VirtAddr) -> &[PhysAddr] {
         debug_assert!(start.is_aligned(self.pages.size));
-        let start_index = number_of_pages(start - self.start, self.pages.size);
+        let start_index = divide_page(start - self.start, self.pages.size);
         &self.pages[start_index..]
     }
 }
@@ -94,7 +89,7 @@ impl BackendOps for SharedBackend {
     }
 
     fn unmap(&self, range: VirtAddrRange, pt: &mut PageTable) -> LinuxResult<()> {
-        debug!("unmap_shared: {:?}", range);
+        debug!("Shared::unmap: {:?}", range);
         for vaddr in pages_in(range, self.pages.size)? {
             pt.unmap(vaddr).map_err(paging_to_linux_error)?;
         }

@@ -1,4 +1,5 @@
 //! Memory mapping backends.
+use ::alloc::boxed::Box;
 use allocator::AllocError;
 use axalloc::{UsageKind, global_allocator};
 use axerrno::{LinuxError, LinuxResult};
@@ -10,13 +11,19 @@ use enum_dispatch::enum_dispatch;
 use memory_addr::{PAGE_SIZE_4K, PhysAddr, VirtAddr, VirtAddrRange};
 use memory_set::MappingBackend;
 
-pub mod alloc;
+pub mod cow;
+pub mod file;
 pub mod linear;
 pub mod shared;
 
 pub use shared::SharedPages;
 
-use crate::{page_info::frame_table, page_iter::PageIterWrapper};
+use crate::{AddrSpace, page_iter::PageIterWrapper};
+
+fn divide_page(size: usize, page_size: PageSize) -> usize {
+    assert!(page_size.is_aligned(size), "unaligned");
+    size >> (page_size as usize).trailing_zeros()
+}
 
 fn alloc_to_linux_error(err: AllocError) -> LinuxError {
     warn!("Allocation error: {:?}", err);
@@ -39,16 +46,10 @@ fn alloc_frame(zeroed: bool, size: PageSize) -> LinuxResult<PhysAddr> {
     }
     let paddr = virt_to_phys(vaddr);
 
-    frame_table().inc_ref(paddr);
-
     Ok(paddr)
 }
 
 fn dealloc_frame(frame: PhysAddr, align: PageSize) {
-    if frame_table().dec_ref(frame) > 1 {
-        return;
-    }
-
     let vaddr = phys_to_virt(frame);
     let page_size: usize = align.into();
     let num_pages = page_size / PAGE_SIZE_4K;
@@ -79,6 +80,16 @@ pub trait BackendOps {
     /// Unmap a memory region.
     fn unmap(&self, range: VirtAddrRange, pt: &mut PageTable) -> LinuxResult<()>;
 
+    /// Called before a memory region is protected.
+    fn on_protect(
+        &self,
+        _range: VirtAddrRange,
+        _new_flags: MappingFlags,
+        _pt: &mut PageTable,
+    ) -> LinuxResult<()> {
+        Ok(())
+    }
+
     /// Populate a memory region. Returns number of pages populated.
     fn populate(
         &self,
@@ -86,8 +97,8 @@ pub trait BackendOps {
         _flags: MappingFlags,
         _access_flags: MappingFlags,
         _pt: &mut PageTable,
-    ) -> LinuxResult<usize> {
-        Ok(0)
+    ) -> LinuxResult<(usize, Option<Box<dyn FnOnce(&mut AddrSpace)>>)> {
+        Ok((0, None))
     }
 
     /// Duplicates this mapping for use in a different page table.
@@ -110,8 +121,9 @@ pub trait BackendOps {
 #[enum_dispatch(BackendOps)]
 pub enum Backend {
     Linear(linear::LinearBackend),
-    Alloc(alloc::AllocBackend),
+    Cow(cow::CowBackend),
     Shared(shared::SharedBackend),
+    File(file::FileBackend),
 }
 
 impl MappingBackend for Backend {

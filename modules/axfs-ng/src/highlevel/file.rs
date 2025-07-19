@@ -5,9 +5,13 @@ use alloc::{
 };
 use core::{fmt, num::NonZeroUsize, ops::Range};
 
+use allocator::AllocError;
+use axalloc::{UsageKind, global_allocator};
 use axfs_ng_vfs::{FileNode, Location, NodePermission, VfsError, VfsResult, path::Path};
+use axhal::mem::{PhysAddr, VirtAddr, virt_to_phys};
 use axio::SeekFrom;
 use axsync::Mutex;
+use intrusive_collections::{LinkedList, LinkedListAtomicLink, intrusive_adapter};
 use lock_api::RawMutex;
 use log::warn;
 use lru::LruCache;
@@ -215,7 +219,11 @@ impl OpenOptions {
             OpenResult::Dir(loc)
         } else {
             // TODO(mivik): is this correct?
-            let backend = if loc.filesystem().is_cacheable() && !self.direct {
+
+            // For tmpfs we must enforce non-direct I/O because it relies
+            // entirely on page cache.
+            let direct = self.direct && loc.filesystem().name() != "tmpfs";
+            let backend = if loc.filesystem().is_cacheable() && !direct {
                 FileBackend::new_cached(loc)
             } else {
                 FileBackend::new_direct(loc)
@@ -297,20 +305,37 @@ impl fmt::Debug for OpenOptions {
 
 const PAGE_SIZE: usize = 4096;
 
-struct PageCache {
-    data: Box<[u8; PAGE_SIZE]>,
+pub struct PageCache {
+    addr: VirtAddr,
     dirty: bool,
 }
 impl PageCache {
-    fn new() -> Self {
-        let mut data = Box::new_uninit();
-        unsafe {
-            core::ptr::write_bytes(data.as_mut_ptr(), 0, 1);
-        }
-        Self {
-            data: unsafe { data.assume_init() },
+    fn new() -> VfsResult<Self> {
+        let addr = global_allocator()
+            .alloc_pages(1, PAGE_SIZE, UsageKind::PageCache)
+            .map_err(|err| {
+                warn!("Failed to allocate page cache: {:?}", err);
+                match err {
+                    AllocError::NoMemory => VfsError::ENOMEM,
+                    _ => VfsError::EINVAL,
+                }
+            })?;
+        Ok(Self {
+            addr: addr.into(),
             dirty: false,
-        }
+        })
+    }
+
+    pub fn paddr(&self) -> PhysAddr {
+        virt_to_phys(self.addr)
+    }
+
+    pub fn mark_dirty(&mut self) {
+        self.dirty = true;
+    }
+
+    pub fn data(&mut self) -> &mut [u8] {
+        unsafe { core::slice::from_raw_parts_mut(self.addr.as_mut_ptr(), PAGE_SIZE) }
     }
 }
 impl Drop for PageCache {
@@ -327,9 +352,16 @@ impl Drop for PageCache {
 static CACHED_FILE_TABLE: Mutex<WeakMap<usize, Weak<CachedFile<axsync::RawMutex>>>> =
     Mutex::new(WeakMap::new());
 
+struct EvictListener {
+    listener: Box<dyn Fn(u32, &PageCache) + Send + Sync>,
+    link: LinkedListAtomicLink,
+}
+intrusive_adapter!(EvictListenerAdapter = Box<EvictListener>: EvictListener { link: LinkedListAtomicLink });
+
 pub struct CachedFile<M: RawMutex> {
     inner: Location<M>,
     page_cache: Mutex<LruCache<u32, PageCache>>,
+    evict_listeners: Mutex<LinkedList<EvictListenerAdapter>>,
 }
 
 impl<M: RawMutex> CachedFile<M> {
@@ -338,28 +370,99 @@ impl<M: RawMutex> CachedFile<M> {
             inner,
             // TODO(mivik): tune this value
             page_cache: Mutex::new(LruCache::new(NonZeroUsize::new(64).unwrap())),
+            evict_listeners: Mutex::new(LinkedList::default()),
         }
     }
 
-    fn evict_cache(file: &FileNode<M>, pn: u32, mut page: PageCache) -> VfsResult<()> {
+    pub fn new_unbounded(inner: Location<M>) -> Self {
+        Self {
+            inner,
+            page_cache: Mutex::new(LruCache::unbounded()),
+            evict_listeners: Mutex::new(LinkedList::default()),
+        }
+    }
+
+    pub fn add_evict_listener<F>(&self, listener: F) -> usize
+    where
+        F: Fn(u32, &PageCache) + Send + Sync + 'static,
+    {
+        let pointer = Box::new(EvictListener {
+            listener: Box::new(listener),
+            link: LinkedListAtomicLink::new(),
+        });
+        let handle = pointer.as_ref() as *const EvictListener as usize;
+        self.evict_listeners.lock().push_back(pointer);
+        handle
+    }
+
+    pub unsafe fn remove_evict_listener(&self, handle: usize) {
+        let mut guard = self.evict_listeners.lock();
+        let mut cursor = unsafe { guard.cursor_mut_from_ptr(handle as *const EvictListener) };
+        cursor.remove();
+    }
+
+    fn evict_cache(&self, file: &FileNode<M>, pn: u32, page: &mut PageCache) -> VfsResult<()> {
+        for listener in self.evict_listeners.lock().iter() {
+            (listener.listener)(pn, &page);
+        }
         if page.dirty {
             let page_start = pn as u64 * PAGE_SIZE as u64;
             let len = (file.len()? - page_start).min(PAGE_SIZE as u64) as usize;
-            file.write_at(&page.data[..len], page_start)?;
+            file.write_at(&page.data()[..len], page_start)?;
             page.dirty = false;
         }
         Ok(())
     }
 
-    fn with_pages_or_else<T>(
+    fn page_or_insert<'a>(
+        &self,
+        file: &FileNode<M>,
+        cache: &'a mut LruCache<u32, PageCache>,
+        pn: u32,
+    ) -> VfsResult<(&'a mut PageCache, Option<(u32, PageCache)>)> {
+        // TODO: Matching the result of `get_mut` confuses compiler. See
+        // https://users.rust-lang.org/t/return-do-not-release-mutable-borrow/55757.
+        if cache.contains(&pn) {
+            return Ok((cache.get_mut(&pn).unwrap(), None));
+        }
+        let mut evicted = None;
+        if cache.len() == cache.cap().get() {
+            // Cache is full, remove the least recently used page
+            if let Some((pn, mut page)) = cache.pop_lru() {
+                self.evict_cache(file, pn, &mut page)?;
+                evicted = Some((pn, page));
+            }
+        }
+
+        // Page not in cache, read it
+        let mut page = PageCache::new()?;
+        file.read_at(page.data(), pn as u64 * PAGE_SIZE as u64)?;
+        cache.put(pn, page);
+        Ok((cache.get_mut(&pn).unwrap(), evicted))
+    }
+
+    pub fn with_page<R>(&self, pn: u32, f: impl FnOnce(Option<&mut PageCache>) -> R) -> R {
+        f(self.page_cache.lock().get_mut(&pn))
+    }
+
+    pub fn with_page_or_insert<R>(
+        &self,
+        pn: u32,
+        f: impl FnOnce(&mut PageCache, Option<(u32, PageCache)>) -> VfsResult<R>,
+    ) -> VfsResult<R> {
+        let mut guard = self.page_cache.lock();
+        let (page, evicted) = self.page_or_insert(self.inner.entry().as_file()?, &mut guard, pn)?;
+        f(page, evicted)
+    }
+
+    fn with_pages<T>(
         &self,
         range: Range<u64>,
-        mut initial: T,
-        page_before: impl FnOnce(&FileNode<M>) -> VfsResult<()>,
+        page_initial: impl FnOnce(&FileNode<M>) -> VfsResult<T>,
         mut page_each: impl FnMut(T, &mut PageCache, Range<usize>) -> VfsResult<T>,
     ) -> VfsResult<T> {
         let file = self.inner.entry().as_file()?;
-        page_before(file)?;
+        let mut initial = page_initial(file)?;
         let start_page = (range.start / PAGE_SIZE as u64) as u32;
         let end_page = range.end.div_ceil(PAGE_SIZE as u64) as u32;
         let mut page_offset = (range.start % PAGE_SIZE as u64) as usize;
@@ -367,22 +470,7 @@ impl<M: RawMutex> CachedFile<M> {
             let page_start = pn as u64 * PAGE_SIZE as u64;
 
             let mut guard = self.page_cache.lock();
-            let page = if let Some(page) = guard.get_mut(&pn) {
-                page
-            } else {
-                if guard.len() == guard.cap().get() {
-                    // Cache is full, remove the least recently used page
-                    if let Some((pn, page)) = guard.pop_lru() {
-                        Self::evict_cache(file, pn, page)?;
-                    }
-                }
-
-                // Page not in cache, read it
-                let mut page = PageCache::new();
-                file.read_at(page.data.as_mut(), page_start)?;
-                guard.put(pn, page);
-                guard.get_mut(&pn).unwrap()
-            };
+            let page = self.page_or_insert(file, &mut guard, pn)?.0;
 
             initial = page_each(
                 initial,
@@ -401,13 +489,12 @@ impl<M: RawMutex> CachedFile<M> {
         if end <= offset {
             return Ok(0);
         }
-        self.with_pages_or_else(
+        self.with_pages(
             offset..end,
-            (buf, 0),
-            |_| Ok(()),
+            |_| Ok((buf, 0)),
             |(buf, read), page, range| {
                 let len = range.end - range.start;
-                buf[..len].copy_from_slice(&page.data[range.start..range.end]);
+                buf[..len].copy_from_slice(&page.data()[range.start..range.end]);
                 Ok((&mut buf[len..], read + len))
             },
         )
@@ -416,18 +503,17 @@ impl<M: RawMutex> CachedFile<M> {
 
     pub fn write_at(&self, buf: &[u8], offset: u64) -> VfsResult<usize> {
         let end = offset + buf.len() as u64;
-        self.with_pages_or_else(
+        self.with_pages(
             offset..end,
-            (buf, 0),
             |file| {
                 if end > file.len()? {
                     file.set_len(end)?;
                 }
-                Ok(())
+                Ok((buf, 0))
             },
             |(buf, written), page, range| {
                 let len = range.end - range.start;
-                page.data[range.start..range.end].copy_from_slice(&buf[..len]);
+                page.data()[range.start..range.end].copy_from_slice(&buf[..len]);
                 page.dirty = true;
                 Ok((&buf[len..], written + len))
             },
@@ -445,8 +531,8 @@ impl<M: RawMutex> CachedFile<M> {
         if old_len < len {
             // The file was extended, we need to evict the last page
             let mut guard = self.page_cache.lock();
-            if let Some(page) = guard.pop(&old_last_page) {
-                Self::evict_cache(file, old_last_page, page)?;
+            if let Some(mut page) = guard.pop(&old_last_page) {
+                self.evict_cache(file, old_last_page, &mut page)?;
             }
         } else if old_last_page > new_last_page {
             // For truncating, we need to remove all pages that are beyond the
@@ -459,8 +545,8 @@ impl<M: RawMutex> CachedFile<M> {
                 .filter(|it| *it > new_last_page)
                 .collect::<Vec<_>>();
             for pn in keys {
-                if let Some(page) = guard.pop(&pn) {
-                    Self::evict_cache(file, pn, page)?;
+                if let Some(mut page) = guard.pop(&pn) {
+                    self.evict_cache(file, pn, &mut page)?;
                 }
             }
         }
@@ -470,8 +556,8 @@ impl<M: RawMutex> CachedFile<M> {
     pub fn sync(&self, data_only: bool) -> VfsResult<()> {
         let file = self.inner.entry().as_file()?;
         let mut guard = self.page_cache.lock();
-        while let Some((pn, page)) = guard.pop_lru() {
-            Self::evict_cache(file, pn, page)?;
+        while let Some((pn, mut page)) = guard.pop_lru() {
+            self.evict_cache(file, pn, &mut page)?;
         }
         file.sync(data_only)?;
         Ok(())
@@ -508,7 +594,12 @@ impl FileBackend<axsync::RawMutex> {
         let key = location.entry().as_ptr();
         let mut guard = CACHED_FILE_TABLE.lock();
         let file = guard.get(&key).unwrap_or_else(|| {
-            let file = Arc::new(CachedFile::new(location.clone()));
+            let cache = if location.filesystem().name() == "tmpfs" {
+                CachedFile::new_unbounded(location.clone())
+            } else {
+                CachedFile::new(location.clone())
+            };
+            let file = Arc::new(cache);
             guard.insert(key, &file);
             file
         });
@@ -552,6 +643,13 @@ impl<M: RawMutex> FileBackend<M> {
         match self {
             Self::Cached(cached) => cached.set_len(len),
             Self::Direct(loc) => loc.entry().as_file()?.set_len(len),
+        }
+    }
+
+    pub fn into_cached(self) -> Option<Arc<CachedFile<M>>> {
+        match self {
+            Self::Cached(cached) => Some(cached),
+            Self::Direct(_) => None,
         }
     }
 }
@@ -598,6 +696,10 @@ impl<M: RawMutex> File<M> {
         } else {
             Err(VfsError::EPERM)
         }
+    }
+
+    pub fn flags(&self) -> FileFlags {
+        self.flags
     }
 
     pub fn backend(&self) -> &FileBackend<M> {
