@@ -32,7 +32,6 @@ lru = "0.16.0"
 scope-local = { workspace = true }
 slab = { version = "0.4.9", default-features = false }
 spin = { workspace = true, features = ["lock_api"] }
-weak-map = "0.1.1"
 
 [dependencies.lwext4_rust]
 git = "https://github.com/Starry-Mix-THU/lwext4_rust"

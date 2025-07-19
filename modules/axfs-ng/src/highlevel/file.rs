@@ -1,8 +1,4 @@
-use alloc::{
-    boxed::Box,
-    sync::{Arc, Weak},
-    vec::Vec,
-};
+use alloc::{boxed::Box, sync::Arc, vec::Vec};
 use core::{fmt, num::NonZeroUsize, ops::Range};
 
 use allocator::AllocError;
@@ -15,7 +11,6 @@ use intrusive_collections::{LinkedList, LinkedListAtomicLink, intrusive_adapter}
 use lock_api::RawMutex;
 use log::warn;
 use lru::LruCache;
-use weak_map::WeakMap;
 
 use super::FsContext;
 
@@ -346,12 +341,6 @@ impl Drop for PageCache {
     }
 }
 
-/// Map of all cached files.
-///
-/// For direct file, we don't need to ensure
-static CACHED_FILE_TABLE: Mutex<WeakMap<usize, Weak<CachedFile<axsync::RawMutex>>>> =
-    Mutex::new(WeakMap::new());
-
 struct EvictListener {
     listener: Box<dyn Fn(u32, &PageCache) + Send + Sync>,
     link: LinkedListAtomicLink,
@@ -362,6 +351,28 @@ pub struct CachedFile<M: RawMutex> {
     inner: Location<M>,
     page_cache: Mutex<LruCache<u32, PageCache>>,
     evict_listeners: Mutex<LinkedList<EvictListenerAdapter>>,
+}
+
+impl CachedFile<axsync::RawMutex> {
+    pub fn get_or_create(location: &Location<axsync::RawMutex>) -> Arc<Self> {
+        let mut guard = location.user_data();
+        match guard.as_ref() {
+            Some(arc) => arc
+                .clone()
+                .downcast()
+                .expect("user data should be CachedFile"),
+            None => {
+                let cache = if location.filesystem().name() == "tmpfs" {
+                    CachedFile::new_unbounded(location.clone())
+                } else {
+                    CachedFile::new(location.clone())
+                };
+                let cache = Arc::new(cache);
+                *guard = Some(cache.clone() as _);
+                cache
+            }
+        }
+    }
 }
 
 impl<M: RawMutex> CachedFile<M> {
@@ -591,19 +602,7 @@ impl<M: RawMutex> Clone for FileBackend<M> {
 }
 impl FileBackend<axsync::RawMutex> {
     pub(crate) fn new_cached(location: Location<axsync::RawMutex>) -> Self {
-        let key = location.entry().as_ptr();
-        let mut guard = CACHED_FILE_TABLE.lock();
-        let file = guard.get(&key).unwrap_or_else(|| {
-            let cache = if location.filesystem().name() == "tmpfs" {
-                CachedFile::new_unbounded(location.clone())
-            } else {
-                CachedFile::new(location.clone())
-            };
-            let file = Arc::new(cache);
-            guard.insert(key, &file);
-            file
-        });
-        Self::Cached(file)
+        Self::Cached(CachedFile::get_or_create(&location))
     }
 }
 impl<M: RawMutex> FileBackend<M> {

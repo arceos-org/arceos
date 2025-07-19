@@ -398,13 +398,12 @@ dependencies = [
  "scope-local",
  "slab",
  "spin",
- "weak-map",
 ]
 
 [[package]]
 name = "axfs-ng-vfs"
 version = "0.1.0"
-source = "git+https://github.com/Starry-Mix-THU/axfs-ng-vfs.git?rev=134977a#134977ae6c700ebe220bb28726f46614c491c0c3"
+source = "git+https://github.com/Starry-Mix-THU/axfs-ng-vfs.git?rev=839602d#839602df0d6fa07af1bdf9fa32010b7c0be4f2fb"
 dependencies = [
  "axerrno",
  "bitflags 2.9.1",
@@ -2329,12 +2328,6 @@ checksum = "1a05d73b933a847d6cccdda8f838a22ff101ad9bf93e33684f39c1f5f0eece3d"
 dependencies = [
  "unicode-ident",
 ]
-
-[[package]]
-name = "weak-map"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "209bc3ff6d982801239e57fa3b8b3505d4fc41102d1d162cca38b325297fe77b"
 
 [[package]]
 name = "windows-core"
