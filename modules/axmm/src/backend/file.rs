@@ -2,10 +2,9 @@ use alloc::{boxed::Box, sync::Arc, vec::Vec};
 
 use axerrno::{LinuxError, LinuxResult};
 use axfs_ng::{CachedFile, FileFlags};
-use axhal::paging::{MappingFlags, PageSize, PageTable};
+use axhal::paging::{MappingFlags, PageSize, PageTable, PagingError};
 use axsync::{Mutex, RawMutex};
 use memory_addr::{PAGE_SIZE_4K, VirtAddr, VirtAddrRange};
-use page_table_multiarch::PagingError;
 
 use crate::{
     AddrSpace, Backend,
