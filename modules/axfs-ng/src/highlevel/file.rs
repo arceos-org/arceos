@@ -338,6 +338,7 @@ impl Drop for PageCache {
         if self.dirty {
             warn!("dirty page dropped without flushing");
         }
+        global_allocator().dealloc_pages(self.addr.as_usize(), 1, UsageKind::PageCache);
     }
 }
 
