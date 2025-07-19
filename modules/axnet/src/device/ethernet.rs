@@ -297,31 +297,37 @@ impl Device for EthernetDevice {
             return;
         }
 
-        match self.neighbors.get(&next_hop) {
-            Some(Some(neighbor)) if neighbor.expires_at > timestamp => {
-                Self::send_to(
-                    &mut self.inner,
-                    neighbor.hardware_address,
-                    packet.len(),
-                    |buf| buf.copy_from_slice(packet),
-                    EthernetProtocol::Ipv4,
-                );
-            }
-            other => {
-                // Only send ARP request if we haven't already requested it
-                if other.is_none() {
-                    self.request_arp(next_hop);
-                }
-                if self.pending_packets.is_full() {
-                    warn!("Pending packets buffer is full, dropping packet");
+        let need_request = match self.neighbors.get(&next_hop) {
+            Some(Some(neighbor)) => {
+                if neighbor.expires_at > timestamp {
+                    Self::send_to(
+                        &mut self.inner,
+                        neighbor.hardware_address,
+                        packet.len(),
+                        |buf| buf.copy_from_slice(packet),
+                        EthernetProtocol::Ipv4,
+                    );
                     return;
+                } else {
+                    true
                 }
-                let Ok(dst_buffer) = self.pending_packets.enqueue(packet.len(), next_hop) else {
-                    warn!("Failed to enqueue packet in pending packets buffer");
-                    return;
-                };
-                dst_buffer.copy_from_slice(packet);
             }
+            // Request already sent
+            Some(None) => false,
+            None => true,
+        };
+        // Only send ARP request if we haven't already requested it
+        if need_request {
+            self.request_arp(next_hop);
         }
+        if self.pending_packets.is_full() {
+            warn!("Pending packets buffer is full, dropping packet");
+            return;
+        }
+        let Ok(dst_buffer) = self.pending_packets.enqueue(packet.len(), next_hop) else {
+            warn!("Failed to enqueue packet in pending packets buffer");
+            return;
+        };
+        dst_buffer.copy_from_slice(packet);
     }
 }
