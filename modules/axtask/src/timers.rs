@@ -1,7 +1,9 @@
+use alloc::{boxed::Box, vec::Vec};
 use core::sync::atomic::{AtomicU64, Ordering};
 
 use axhal::time::wall_time;
-use kernel_guard::NoOp;
+use kernel_guard::{NoOp, NoPreemptIrqSave};
+use kspin::SpinRaw;
 use lazyinit::LazyInit;
 use timer_list::{TimeValue, TimerEvent, TimerList};
 
@@ -42,9 +44,23 @@ pub fn set_alarm_wakeup(deadline: TimeValue, task: AxTaskRef) {
     })
 }
 
+static TIMER_CALLBACKS: SpinRaw<Vec<Box<dyn Fn(TimeValue) + Send + Sync>>> =
+    SpinRaw::new(Vec::new());
+
+pub fn register_timer_callback<F>(callback: F)
+where
+    F: Fn(TimeValue) + Send + Sync + 'static,
+{
+    let _g = NoPreemptIrqSave::new();
+    TIMER_CALLBACKS.lock().push(Box::new(callback));
+}
+
 pub fn check_events() {
+    let now = wall_time();
+    for callback in TIMER_CALLBACKS.lock().iter() {
+        callback(now);
+    }
     loop {
-        let now = wall_time();
         let event = unsafe {
             // Safety: IRQs are disabled at this time.
             TIMER_LIST.current_ref_mut_raw()
