@@ -595,10 +595,12 @@ impl<M: RawMutex> CachedFile<M> {
         let old_last_page = (old_len / PAGE_SIZE as u64) as u32;
         let new_last_page = (len / PAGE_SIZE as u64) as u32;
         if old_len < len {
-            // The file was extended, we need to evict the last page
             let mut guard = self.shared.page_cache.lock();
-            if let Some(mut page) = guard.pop(&old_last_page) {
-                self.evict_cache(file, old_last_page, &mut page)?;
+            if let Some(page) = guard.get_mut(&old_last_page) {
+                let page_start = old_last_page as u64 * PAGE_SIZE as u64;
+                let old_page_offset = (old_len - page_start) as usize;
+                let new_page_offset = (len - page_start).min(PAGE_SIZE as u64) as usize;
+                page.data()[old_page_offset..new_page_offset].fill(0);
             }
         } else if old_last_page > new_last_page {
             // For truncating, we need to remove all pages that are beyond the
@@ -612,7 +614,9 @@ impl<M: RawMutex> CachedFile<M> {
                 .collect::<Vec<_>>();
             for pn in keys {
                 if let Some(mut page) = guard.pop(&pn) {
-                    self.evict_cache(file, pn, &mut page)?;
+                    if !self.in_memory {
+                        self.evict_cache(file, pn, &mut page)?;
+                    }
                 }
             }
         }
@@ -620,6 +624,9 @@ impl<M: RawMutex> CachedFile<M> {
     }
 
     pub fn sync(&self, data_only: bool) -> VfsResult<()> {
+        if self.in_memory {
+            return Ok(());
+        }
         let file = self.inner.entry().as_file()?;
         let mut guard = self.shared.page_cache.lock();
         while let Some((pn, mut page)) = guard.pop_lru() {
