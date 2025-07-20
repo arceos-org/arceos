@@ -2,7 +2,7 @@ use alloc::{boxed::Box, sync::Arc};
 use core::slice;
 
 use axerrno::{LinuxError, LinuxResult};
-use axfs_ng_vfs::Location;
+use axfs_ng::FileBackend;
 use axhal::{
     mem::phys_to_virt,
     paging::{MappingFlags, PageSize, PageTable, PagingError},
@@ -23,7 +23,7 @@ use crate::{
 pub struct CowBackend {
     start: VirtAddr,
     size: PageSize,
-    file: Option<(Location<RawMutex>, usize)>,
+    file: Option<(FileBackend<RawMutex>, usize)>,
 }
 
 impl CowBackend {
@@ -39,9 +39,7 @@ impl CowBackend {
             let buf = unsafe {
                 slice::from_raw_parts_mut(phys_to_virt(frame).as_mut_ptr(), self.size as _)
             };
-            file.entry()
-                .as_file()?
-                .read_at(buf, (vaddr - self.start) as u64 + *offset as u64)?;
+            file.read_at(buf, (vaddr - self.start) as u64 + *offset as u64)?;
         }
         pt.map(vaddr, frame, self.size, flags)
             .map_err(paging_to_linux_error)?;
@@ -185,7 +183,7 @@ impl Backend {
     pub fn new_cow(
         start: VirtAddr,
         size: PageSize,
-        file: Option<(Location<RawMutex>, usize)>,
+        file: Option<(FileBackend<RawMutex>, usize)>,
     ) -> Self {
         Self::Cow(CowBackend { start, size, file })
     }
