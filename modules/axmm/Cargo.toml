@@ -21,6 +21,7 @@ axfs-ng = { workspace = true }
 axfs-ng-vfs = { workspace = true }
 axhal = { workspace = true, features = ["paging"] }
 axsync = { workspace = true }
+axtask = { workspace = true }
 
 axerrno = { workspace = true }
 enum_dispatch = { workspace = true }

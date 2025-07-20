@@ -3,11 +3,13 @@ use core::ops::Deref;
 
 use axerrno::LinuxResult;
 use axhal::paging::{MappingFlags, PageSize, PageTable};
+use axsync::Mutex;
 use memory_addr::{MemoryAddr, PhysAddr, VirtAddr, VirtAddrRange};
 
 use super::{alloc_frame, dealloc_frame};
 use crate::{
-    backend::{divide_page, pages_in, paging_to_linux_error, BackendOps}, Backend
+    AddrSpace, Backend,
+    backend::{BackendOps, divide_page, pages_in, paging_to_linux_error},
 };
 
 pub struct SharedPages {
@@ -102,6 +104,7 @@ impl BackendOps for SharedBackend {
         _flags: MappingFlags,
         _old_pt: &mut PageTable,
         _new_pt: &mut PageTable,
+        _new_aspace: &Arc<Mutex<AddrSpace>>,
     ) -> LinuxResult<Backend> {
         Ok(Backend::Shared(self.clone()))
     }

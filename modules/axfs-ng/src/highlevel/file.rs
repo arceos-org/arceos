@@ -1,4 +1,8 @@
-use alloc::{boxed::Box, sync::Arc, vec::Vec};
+use alloc::{
+    boxed::Box,
+    sync::{Arc, Weak},
+    vec::Vec,
+};
 use core::{fmt, num::NonZeroUsize, ops::Range};
 
 use allocator::AllocError;
@@ -348,50 +352,94 @@ struct EvictListener {
 }
 intrusive_adapter!(EvictListenerAdapter = Box<EvictListener>: EvictListener { link: LinkedListAtomicLink });
 
-pub struct CachedFile<M: RawMutex> {
-    inner: Location<M>,
+struct CachedFileShared {
     page_cache: Mutex<LruCache<u32, PageCache>>,
     evict_listeners: Mutex<LinkedList<EvictListenerAdapter>>,
 }
-
-impl CachedFile<axsync::RawMutex> {
-    pub fn get_or_create(location: &Location<axsync::RawMutex>) -> Arc<Self> {
-        let mut guard = location.user_data();
-        match guard.as_ref() {
-            Some(arc) => arc
-                .clone()
-                .downcast()
-                .expect("user data should be CachedFile"),
-            None => {
-                let cache = if location.filesystem().name() == "tmpfs" {
-                    CachedFile::new_unbounded(location.clone())
-                } else {
-                    CachedFile::new(location.clone())
-                };
-                let cache = Arc::new(cache);
-                *guard = Some(cache.clone() as _);
-                cache
-            }
-        }
-    }
-}
-
-impl<M: RawMutex> CachedFile<M> {
-    pub fn new(inner: Location<M>) -> Self {
+impl CachedFileShared {
+    pub fn new() -> Self {
         Self {
-            inner,
-            // TODO(mivik): tune this value
             page_cache: Mutex::new(LruCache::new(NonZeroUsize::new(64).unwrap())),
             evict_listeners: Mutex::new(LinkedList::default()),
         }
     }
 
-    pub fn new_unbounded(inner: Location<M>) -> Self {
+    pub fn new_unbounded() -> Self {
         Self {
-            inner,
             page_cache: Mutex::new(LruCache::unbounded()),
             evict_listeners: Mutex::new(LinkedList::default()),
         }
+    }
+}
+
+pub struct CachedFile<M: RawMutex> {
+    inner: Location<M>,
+    shared: Arc<CachedFileShared>,
+    in_memory: bool,
+}
+impl<M: RawMutex> Clone for CachedFile<M> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+            shared: self.shared.clone(),
+            in_memory: self.in_memory,
+        }
+    }
+}
+
+enum FileUserData {
+    Weak(Weak<CachedFileShared>),
+    Strong(Arc<CachedFileShared>),
+}
+impl FileUserData {
+    pub fn get(&self) -> Option<Arc<CachedFileShared>> {
+        match self {
+            FileUserData::Weak(weak) => weak.upgrade(),
+            FileUserData::Strong(strong) => Some(strong.clone()),
+        }
+    }
+}
+
+impl CachedFile<axsync::RawMutex> {
+    pub fn get_or_create(location: Location<axsync::RawMutex>) -> Self {
+        let in_memory = location.filesystem().name() == "tmpfs";
+
+        let mut guard = location.user_data();
+        let shared = if let Some(shared) = guard.as_ref().and_then(|data| {
+            data.downcast_ref::<FileUserData>()
+                .expect("user data should be FileUserData")
+                .get()
+        }) {
+            shared
+        } else {
+            let (shared, user_data) = if in_memory {
+                let shared = Arc::new(CachedFileShared::new_unbounded());
+                (shared.clone(), FileUserData::Strong(shared))
+            } else {
+                let shared = Arc::new(CachedFileShared::new());
+                let user_data = FileUserData::Weak(Arc::downgrade(&shared));
+                (shared, user_data)
+            };
+            *guard = Some(Box::new(user_data));
+            shared
+        };
+        drop(guard);
+
+        Self {
+            inner: location,
+            shared,
+            in_memory,
+        }
+    }
+}
+
+impl<M: RawMutex> CachedFile<M> {
+    pub fn ptr_eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.shared, &other.shared)
+    }
+
+    pub fn in_memory(&self) -> bool {
+        self.in_memory
     }
 
     pub fn add_evict_listener<F>(&self, listener: F) -> usize
@@ -403,18 +451,18 @@ impl<M: RawMutex> CachedFile<M> {
             link: LinkedListAtomicLink::new(),
         });
         let handle = pointer.as_ref() as *const EvictListener as usize;
-        self.evict_listeners.lock().push_back(pointer);
+        self.shared.evict_listeners.lock().push_back(pointer);
         handle
     }
 
     pub unsafe fn remove_evict_listener(&self, handle: usize) {
-        let mut guard = self.evict_listeners.lock();
+        let mut guard = self.shared.evict_listeners.lock();
         let mut cursor = unsafe { guard.cursor_mut_from_ptr(handle as *const EvictListener) };
         cursor.remove();
     }
 
     fn evict_cache(&self, file: &FileNode<M>, pn: u32, page: &mut PageCache) -> VfsResult<()> {
-        for listener in self.evict_listeners.lock().iter() {
+        for listener in self.shared.evict_listeners.lock().iter() {
             (listener.listener)(pn, &page);
         }
         if page.dirty {
@@ -448,13 +496,17 @@ impl<M: RawMutex> CachedFile<M> {
 
         // Page not in cache, read it
         let mut page = PageCache::new()?;
-        file.read_at(page.data(), pn as u64 * PAGE_SIZE as u64)?;
+        if self.in_memory {
+            page.data().fill(0);
+        } else {
+            file.read_at(page.data(), pn as u64 * PAGE_SIZE as u64)?;
+        }
         cache.put(pn, page);
         Ok((cache.get_mut(&pn).unwrap(), evicted))
     }
 
     pub fn with_page<R>(&self, pn: u32, f: impl FnOnce(Option<&mut PageCache>) -> R) -> R {
-        f(self.page_cache.lock().get_mut(&pn))
+        f(self.shared.page_cache.lock().get_mut(&pn))
     }
 
     pub fn with_page_or_insert<R>(
@@ -462,7 +514,7 @@ impl<M: RawMutex> CachedFile<M> {
         pn: u32,
         f: impl FnOnce(&mut PageCache, Option<(u32, PageCache)>) -> VfsResult<R>,
     ) -> VfsResult<R> {
-        let mut guard = self.page_cache.lock();
+        let mut guard = self.shared.page_cache.lock();
         let (page, evicted) = self.page_or_insert(self.inner.entry().as_file()?, &mut guard, pn)?;
         f(page, evicted)
     }
@@ -481,7 +533,7 @@ impl<M: RawMutex> CachedFile<M> {
         for pn in start_page..end_page {
             let page_start = pn as u64 * PAGE_SIZE as u64;
 
-            let mut guard = self.page_cache.lock();
+            let mut guard = self.shared.page_cache.lock();
             let page = self.page_or_insert(file, &mut guard, pn)?.0;
 
             initial = page_each(
@@ -526,7 +578,9 @@ impl<M: RawMutex> CachedFile<M> {
             |(buf, written), page, range| {
                 let len = range.end - range.start;
                 page.data()[range.start..range.end].copy_from_slice(&buf[..len]);
-                page.dirty = true;
+                if !self.in_memory {
+                    page.dirty = true;
+                }
                 Ok((&buf[len..], written + len))
             },
         )
@@ -542,7 +596,7 @@ impl<M: RawMutex> CachedFile<M> {
         let new_last_page = (len / PAGE_SIZE as u64) as u32;
         if old_len < len {
             // The file was extended, we need to evict the last page
-            let mut guard = self.page_cache.lock();
+            let mut guard = self.shared.page_cache.lock();
             if let Some(mut page) = guard.pop(&old_last_page) {
                 self.evict_cache(file, old_last_page, &mut page)?;
             }
@@ -550,7 +604,7 @@ impl<M: RawMutex> CachedFile<M> {
             // For truncating, we need to remove all pages that are beyond the
             // new length
             // TODO(mivik): can this be more efficient?
-            let mut guard = self.page_cache.lock();
+            let mut guard = self.shared.page_cache.lock();
             let keys = guard
                 .iter()
                 .map(|(k, _)| *k)
@@ -567,7 +621,7 @@ impl<M: RawMutex> CachedFile<M> {
 
     pub fn sync(&self, data_only: bool) -> VfsResult<()> {
         let file = self.inner.entry().as_file()?;
-        let mut guard = self.page_cache.lock();
+        let mut guard = self.shared.page_cache.lock();
         while let Some((pn, mut page)) = guard.pop_lru() {
             self.evict_cache(file, pn, &mut page)?;
         }
@@ -582,6 +636,11 @@ impl<M: RawMutex> CachedFile<M> {
 
 impl<M: RawMutex> Drop for CachedFile<M> {
     fn drop(&mut self) {
+        if Arc::strong_count(&self.shared) > 1 {
+            // If there are other references to this cached file, we don't
+            // need to drop it.
+            return;
+        }
         if let Err(err) = self.sync(false) {
             warn!("Failed to sync file on drop: {err:?}");
         }
@@ -590,20 +649,20 @@ impl<M: RawMutex> Drop for CachedFile<M> {
 
 /// Low-level interface for file operations.
 pub enum FileBackend<M: RawMutex> {
-    Cached(Arc<CachedFile<M>>),
+    Cached(CachedFile<M>),
     Direct(Location<M>),
 }
 impl<M: RawMutex> Clone for FileBackend<M> {
     fn clone(&self) -> Self {
         match self {
-            Self::Cached(cached) => Self::Cached(Arc::clone(cached)),
+            Self::Cached(cached) => Self::Cached(cached.clone()),
             Self::Direct(loc) => Self::Direct(loc.clone()),
         }
     }
 }
 impl FileBackend<axsync::RawMutex> {
     pub(crate) fn new_cached(location: Location<axsync::RawMutex>) -> Self {
-        Self::Cached(CachedFile::get_or_create(&location))
+        Self::Cached(CachedFile::get_or_create(location))
     }
 }
 impl<M: RawMutex> FileBackend<M> {
@@ -646,7 +705,7 @@ impl<M: RawMutex> FileBackend<M> {
         }
     }
 
-    pub fn into_cached(self) -> Option<Arc<CachedFile<M>>> {
+    pub fn into_cached(self) -> Option<CachedFile<M>> {
         match self {
             Self::Cached(cached) => Some(cached),
             Self::Direct(_) => None,

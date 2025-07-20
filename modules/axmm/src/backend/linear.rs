@@ -1,9 +1,12 @@
+use alloc::sync::Arc;
+
 use axerrno::LinuxResult;
 use axhal::paging::{MappingFlags, PageSize, PageTable};
+use axsync::Mutex;
 use memory_addr::{PhysAddr, PhysAddrRange, VirtAddr, VirtAddrRange};
 
 use crate::{
-    Backend,
+    AddrSpace, Backend,
     backend::{BackendOps, paging_to_linux_error},
 };
 
@@ -53,6 +56,7 @@ impl BackendOps for LinearBackend {
         _flags: MappingFlags,
         _old_pt: &mut PageTable,
         _new_pt: &mut PageTable,
+        _new_aspace: &Arc<Mutex<AddrSpace>>,
     ) -> LinuxResult<Backend> {
         Ok(Backend::Linear(self.clone()))
     }

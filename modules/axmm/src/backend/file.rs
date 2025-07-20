@@ -1,4 +1,5 @@
 use alloc::{boxed::Box, sync::Arc, vec::Vec};
+use core::sync::atomic::{AtomicUsize, Ordering};
 
 use axerrno::{LinuxError, LinuxResult};
 use axfs_ng::{CachedFile, FileFlags};
@@ -11,37 +12,67 @@ use crate::{
     backend::{BackendOps, pages_in, paging_to_linux_error},
 };
 
-/// File-backed mapping backend.
-pub struct FileBackend {
+struct Inner {
     start: VirtAddr,
-    cache: Arc<CachedFile<RawMutex>>,
+    cache: CachedFile<RawMutex>,
     flags: FileFlags,
     offset_page: u32,
-    handle: Option<usize>,
+    handle: AtomicUsize,
 }
-impl Clone for FileBackend {
-    fn clone(&self) -> Self {
-        Self {
-            start: self.start,
-            cache: self.cache.clone(),
-            flags: self.flags,
-            offset_page: self.offset_page,
-            // We only need one evict listener for multiple mappings within one
-            // address space
-            handle: None,
-        }
-    }
-}
-impl Drop for FileBackend {
+impl Drop for Inner {
     fn drop(&mut self) {
-        if let Some(handle) = self.handle.take() {
+        let handle = self.handle.load(Ordering::Acquire);
+        if handle != 0 {
             unsafe {
                 self.cache.remove_evict_listener(handle);
             }
         }
     }
 }
+impl Inner {
+    pub fn register_listener(self: &Arc<Self>, aspace: Arc<Mutex<AddrSpace>>) -> usize {
+        self.cache.add_evict_listener({
+            let this = Arc::downgrade(self);
+            move |pn, _page| {
+                let Some(this) = this.upgrade() else {
+                    return;
+                };
+                let Some(mut aspace) = aspace.try_lock() else {
+                    // This can happen during the populate process, when new pages
+                    // are being populated and old pages are being evicted. In this
+                    // case, we delegate the unmapping to the populate process.
+                    return;
+                };
+                this.on_evict(pn, &mut aspace);
+            }
+        })
+    }
 
+    fn on_evict(self: &Arc<Self>, pn: u32, aspace: &mut AddrSpace) {
+        let Some(pn) = pn.checked_sub(self.offset_page) else {
+            return;
+        };
+        let vaddr = self.start + pn as usize * PageSize::Size4K as usize;
+        if !aspace.find_area(vaddr).is_some_and(
+            |it| matches!(it.backend(), Backend::File(file) if Arc::ptr_eq(&file.0, self)),
+        ) {
+            // Ignore if the page is not controlled by this file mapping.
+            return;
+        }
+
+        let pt = aspace.page_table_mut();
+        match pt.unmap(vaddr) {
+            Ok(_) | Err(PagingError::NotMapped) => {}
+            Err(err) => {
+                warn!("Failed to unmap page {:?}: {:?}", vaddr, err);
+            }
+        }
+    }
+}
+
+/// File-backed mapping backend.
+#[derive(Clone)]
+pub struct FileBackend(Arc<Inner>);
 impl FileBackend {
     fn check_flags(&self, flags: MappingFlags) -> LinuxResult<()> {
         let mut required_flags = FileFlags::empty();
@@ -52,7 +83,7 @@ impl FileBackend {
             required_flags |= FileFlags::WRITE;
         }
 
-        if !self.flags.contains(required_flags) {
+        if !self.0.flags.contains(required_flags) {
             return Err(LinuxError::EACCES);
         }
         Ok(())
@@ -104,7 +135,7 @@ impl BackendOps for FileBackend {
     ) -> LinuxResult<(usize, Option<Box<dyn FnOnce(&mut AddrSpace)>>)> {
         let mut pages = 0;
         let mut to_be_evicted = Vec::new();
-        let start_page = ((range.start - self.start) / PAGE_SIZE_4K) as u32 + self.offset_page;
+        let start_page = ((range.start - self.0.start) / PAGE_SIZE_4K) as u32 + self.0.offset_page;
         for (i, addr) in pages_in(range, PageSize::Size4K)?.enumerate() {
             let pn = start_page + i as u32;
             match pt.query(addr) {
@@ -112,8 +143,11 @@ impl BackendOps for FileBackend {
                     if access_flags.contains(MappingFlags::WRITE)
                         && !page_flags.contains(MappingFlags::WRITE)
                     {
-                        self.cache.with_page(pn, |page| {
-                            page.expect("page should be present").mark_dirty();
+                        let in_memory = self.0.cache.in_memory();
+                        self.0.cache.with_page(pn, |page| {
+                            if !in_memory {
+                                page.expect("page should be present").mark_dirty();
+                            }
                             pt.remap(addr, paddr, flags)
                                 .map_err(paging_to_linux_error)?;
                             pages += 1;
@@ -123,17 +157,20 @@ impl BackendOps for FileBackend {
                 }
                 // If the page is not mapped, try map it.
                 Err(PagingError::NotMapped) => {
-                    self.cache.with_page_or_insert(pn, |page, evicted| {
+                    let map_flags = if self.0.cache.in_memory() {
+                        // For in memory files, we don't need to (and also
+                        // musn't) mark them dirty, so we can use the original
+                        // flags.
+                        flags
+                    } else {
+                        flags - MappingFlags::WRITE
+                    };
+                    self.0.cache.with_page_or_insert(pn, |page, evicted| {
                         if let Some((pn, _)) = evicted {
                             to_be_evicted.push(pn);
                         }
-                        pt.map(
-                            addr,
-                            page.paddr(),
-                            PageSize::Size4K,
-                            flags - MappingFlags::WRITE,
-                        )
-                        .map_err(paging_to_linux_error)?;
+                        pt.map(addr, page.paddr(), PageSize::Size4K, map_flags)
+                            .map_err(paging_to_linux_error)?;
                         pages += 1;
                         Ok(())
                     })?;
@@ -146,14 +183,12 @@ impl BackendOps for FileBackend {
             if to_be_evicted.is_empty() {
                 None
             } else {
-                let cache = self.cache.clone();
+                let inner = self.0.clone();
                 Some(Box::new(move |aspace: &mut AddrSpace| {
-                    let start = range.start;
                     for pn in to_be_evicted {
-                        on_evict(aspace, start, &cache, pn);
+                        inner.on_evict(pn, aspace);
                     }
-                })
-                    as Box<dyn FnOnce(&mut AddrSpace) + 'static>)
+                }))
             },
         ))
     }
@@ -164,56 +199,37 @@ impl BackendOps for FileBackend {
         _flags: MappingFlags,
         _old_pt: &mut PageTable,
         _new_pt: &mut PageTable,
+        new_aspace: &Arc<Mutex<AddrSpace>>,
     ) -> LinuxResult<Backend> {
-        Ok(Backend::File(self.clone()))
-    }
-}
-
-fn on_evict(aspace: &mut AddrSpace, start: VirtAddr, cache: &Arc<CachedFile<RawMutex>>, pn: u32) {
-    let vaddr = start + pn as usize * PageSize::Size4K as usize;
-    if !aspace.find_area(vaddr).is_some_and(
-        |it| matches!(it.backend(), Backend::File(file) if Arc::ptr_eq(&file.cache, cache)),
-    ) {
-        // Ignore if the page is not controlled by this file mapping.
-        return;
-    }
-
-    let pt = aspace.page_table_mut();
-    match pt.unmap(vaddr) {
-        Ok(_) | Err(PagingError::NotMapped) => {}
-        Err(err) => {
-            warn!("Failed to unmap page {:?}: {:?}", vaddr, err);
-        }
+        let inner = Arc::new(Inner {
+            start: self.0.start,
+            cache: self.0.cache.clone(),
+            flags: self.0.flags,
+            offset_page: self.0.offset_page,
+            handle: AtomicUsize::new(0),
+        });
+        inner.register_listener(new_aspace.clone());
+        Ok(Backend::File(FileBackend(inner)))
     }
 }
 
 impl Backend {
     pub fn new_file(
         start: VirtAddr,
-        cache: Arc<CachedFile<RawMutex>>,
+        cache: CachedFile<RawMutex>,
         flags: FileFlags,
         offset: usize,
         aspace: Arc<Mutex<AddrSpace>>,
     ) -> Self {
-        let handle = cache.add_evict_listener({
-            let cache = cache.clone();
-            move |pn, _page| {
-                let Some(mut aspace) = aspace.try_lock() else {
-                    // This can happen during the populate process, when new pages
-                    // are being populated and old pages are being evicted. In this
-                    // case, we delegate the unmapping to the populate process.
-                    return;
-                };
-                on_evict(&mut aspace, start, &cache, pn);
-            }
-        });
-        let offset_page = offset / PAGE_SIZE_4K;
-        Self::File(FileBackend {
+        let offset_page = (offset / PAGE_SIZE_4K) as u32;
+        let inner = Arc::new(Inner {
             start,
             cache,
             flags,
-            offset_page: offset_page as u32,
-            handle: Some(handle),
-        })
+            offset_page,
+            handle: AtomicUsize::new(0),
+        });
+        inner.register_listener(aspace);
+        Self::File(FileBackend(inner))
     }
 }

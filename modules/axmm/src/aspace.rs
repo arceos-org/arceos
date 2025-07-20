@@ -1,4 +1,5 @@
-use core::fmt;
+use alloc::sync::Arc;
+use core::{fmt, ops::DerefMut};
 
 use axerrno::{LinuxError, LinuxResult, bail};
 use axhal::{
@@ -6,6 +7,7 @@ use axhal::{
     paging::{MappingFlags, PageTable},
     trap::PageFaultFlags,
 };
+use axsync::Mutex;
 use memory_addr::{
     MemoryAddr, PAGE_SIZE_4K, PageIter4K, PhysAddr, VirtAddr, VirtAddrRange, is_aligned_4k,
 };
@@ -364,23 +366,29 @@ impl AddrSpace {
     /// This method creates a new empty address space with the same base and
     /// size, then iterates over all memory areas in the original address
     /// space to copy or share their mappings into the new one.
-    pub fn try_clone(&mut self) -> LinuxResult<Self> {
-        let mut new_aspace = Self::new_empty(self.base(), self.size())?;
+    pub fn try_clone(&mut self) -> LinuxResult<Arc<Mutex<Self>>> {
+        let new_aspace = Arc::new(Mutex::new(Self::new_empty(self.base(), self.size())?));
+        let new_aspace_clone = new_aspace.clone();
+
+        let mut guard = new_aspace.lock();
 
         for area in self.areas.iter() {
             let new_backend = area.backend().clone_map(
                 area.va_range(),
                 area.flags(),
                 &mut self.pt,
-                &mut new_aspace.pt,
+                &mut guard.pt,
+                &new_aspace_clone,
             )?;
 
             let new_area = MemoryArea::new(area.start(), area.size(), area.flags(), new_backend);
-            new_aspace
+            let aspace = guard.deref_mut();
+            aspace
                 .areas
-                .map(new_area, &mut new_aspace.pt, false)
+                .map(new_area, &mut aspace.pt, false)
                 .map_err(mapping_to_linux_error)?;
         }
+        drop(guard);
 
         Ok(new_aspace)
     }

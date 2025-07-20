@@ -1,4 +1,6 @@
 //! Memory mapping backends.
+use alloc::sync::Arc;
+
 use ::alloc::boxed::Box;
 use allocator::AllocError;
 use axalloc::{UsageKind, global_allocator};
@@ -7,6 +9,7 @@ use axhal::{
     mem::{phys_to_virt, virt_to_phys},
     paging::{MappingFlags, PageSize, PageTable, PagingError},
 };
+use axsync::Mutex;
 use enum_dispatch::enum_dispatch;
 use memory_addr::{PAGE_SIZE_4K, PhysAddr, VirtAddr, VirtAddrRange};
 use memory_set::MappingBackend;
@@ -113,6 +116,7 @@ pub trait BackendOps {
         flags: MappingFlags,
         old_pt: &mut PageTable,
         new_pt: &mut PageTable,
+        new_aspace: &Arc<Mutex<AddrSpace>>,
     ) -> LinuxResult<Backend>;
 }
 

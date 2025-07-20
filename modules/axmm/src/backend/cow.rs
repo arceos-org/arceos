@@ -1,4 +1,4 @@
-use alloc::boxed::Box;
+use alloc::{boxed::Box, sync::Arc};
 use core::slice;
 
 use axerrno::{LinuxError, LinuxResult};
@@ -7,7 +7,7 @@ use axhal::{
     mem::phys_to_virt,
     paging::{MappingFlags, PageSize, PageTable, PagingError},
 };
-use axsync::RawMutex;
+use axsync::{Mutex, RawMutex};
 use memory_addr::{PhysAddr, VirtAddr, VirtAddrRange};
 
 use crate::{
@@ -150,6 +150,7 @@ impl BackendOps for CowBackend {
         flags: MappingFlags,
         old_pt: &mut PageTable,
         new_pt: &mut PageTable,
+        _new_aspace: &Arc<Mutex<AddrSpace>>,
     ) -> LinuxResult<Backend> {
         let cow_flags = flags - MappingFlags::WRITE;
 
