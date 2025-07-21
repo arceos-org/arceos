@@ -83,10 +83,7 @@ pub mod power {
 
 /// Trap handling.
 pub mod trap {
-    #[cfg(feature = "uspace")]
-    pub use axcpu::trap::SYSCALL;
-    pub use axcpu::trap::{IRQ, PAGE_FAULT, PRE_TRAP, POST_TRAP};
-    pub use axcpu::trap::{PageFaultFlags, register_trap_handler};
+    pub use axcpu::trap::{IRQ, PAGE_FAULT, PageFaultFlags, register_trap_handler};
 }
 
 /// CPU register states for context switching.
@@ -94,12 +91,17 @@ pub mod trap {
 /// There are three types of context:
 ///
 /// - [`TaskContext`][axcpu::TaskContext]: The context of a task.
-/// - [`TrapFrame`][axcpu::TrapFrame]: The context of an interrupt or an exception.
-/// - [`UspaceContext`][axcpu::uspace::UspaceContext]: The context for user/kernel mode switching.
+/// - [`TrapFrame`][axcpu::TrapFrame]: The context of an interrupt or an
+///   exception.
+/// - [`UserContext`][axcpu::uspace::UserContext]: The context for user mode.
 pub mod context {
-    #[cfg(feature = "uspace")]
-    pub use axcpu::uspace::UspaceContext;
     pub use axcpu::{TaskContext, TrapFrame};
+}
+
+/// User mode support.
+#[cfg(feature = "uspace")]
+pub mod uspace {
+    pub use axcpu::{trap::ReturnReason, uspace::UserContext};
 }
 
 pub use axcpu::asm;
@@ -109,16 +111,16 @@ pub use axplat::init::{init_early_secondary, init_later_secondary};
 
 /// Initializes CPU-local data structures for the primary core.
 ///
-/// This function should be called as early as possible, as other initializations
-/// may acess the CPU-local data.
+/// This function should be called as early as possible, as other
+/// initializations may acess the CPU-local data.
 pub fn init_percpu(cpu_id: usize) {
     self::percpu::init_primary(cpu_id);
 }
 
 /// Initializes CPU-local data structures for secondary cores.
 ///
-/// This function should be called as early as possible, as other initializations
-/// may acess the CPU-local data.
+/// This function should be called as early as possible, as other
+/// initializations may acess the CPU-local data.
 pub fn init_percpu_secondary(cpu_id: usize) {
     self::percpu::init_secondary(cpu_id);
 }
