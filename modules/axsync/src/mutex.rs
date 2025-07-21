@@ -137,7 +137,6 @@ mod tests {
                 drop(val);
                 may_interrupt();
             }
-            thread::exit(0);
         }
 
         for _ in 0..NUM_TASKS {

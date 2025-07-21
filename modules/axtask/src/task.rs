@@ -3,7 +3,7 @@ use alloc::{boxed::Box, string::String, sync::Arc};
 use core::sync::atomic::AtomicUsize;
 use core::{
     alloc::Layout,
-    cell::UnsafeCell,
+    cell::{Cell, UnsafeCell},
     fmt,
     future::poll_fn,
     ops::Deref,
@@ -58,7 +58,7 @@ pub struct TaskInner {
     is_idle: bool,
     is_init: bool,
 
-    entry: Option<Box<dyn FnOnce() -> !>>,
+    entry: Cell<Option<Box<dyn FnOnce()>>>,
     state: AtomicU8,
 
     /// CPU affinity mask.
@@ -131,7 +131,7 @@ impl TaskInner {
     /// Create a new task with the given entry function and stack size.
     pub fn new<F>(entry: F, name: String, stack_size: usize) -> Self
     where
-        F: FnOnce() -> ! + Send + 'static,
+        F: FnOnce() + Send + 'static,
     {
         let mut t = Self::new_common(TaskId::new(), name);
         debug!("new task: {}", t.id_name());
@@ -142,7 +142,7 @@ impl TaskInner {
         #[cfg(not(feature = "tls"))]
         let tls = VirtAddr::from(0);
 
-        t.entry = Some(Box::new(entry));
+        t.entry = Cell::new(Some(Box::new(entry)));
         t.ctx_mut().init(task_entry as usize, kstack.top(), tls);
         t.kstack = Some(kstack);
         if t.name() == "idle" {
@@ -238,7 +238,7 @@ impl TaskInner {
             name: SpinNoIrq::new(name),
             is_idle: false,
             is_init: false,
-            entry: None,
+            entry: Cell::new(None),
             state: AtomicU8::new(TaskState::Ready as u8),
             // By default, the task is allowed to run on all CPUs.
             cpumask: SpinNoIrq::new(AxCpuMask::full()),
@@ -567,13 +567,8 @@ extern "C" fn task_entry() -> ! {
     #[cfg(feature = "irq")]
     axhal::asm::enable_irqs();
     let task = crate::current();
-    if let Some(entry) = &task.entry {
-        // FIXME: take and drop it
-        unsafe {
-            let ptr = &raw const **entry;
-            Box::from_raw(ptr.cast_mut())()
-        }
-    } else {
-        crate::exit(0);
+    if let Some(entry) = task.entry.take() {
+        entry()
     }
+    crate::exit(0)
 }

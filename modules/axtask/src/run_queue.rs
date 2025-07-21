@@ -616,7 +616,7 @@ impl AxRunQueue {
     }
 }
 
-fn gc_entry() -> impl Future<Output = !> {
+async fn gc_entry() -> ! {
     poll_fn(|cx| {
         // Drop all exited tasks and recycle resources.
         let n = EXITED_TASKS.with_current(|exited_tasks| exited_tasks.len());
@@ -644,6 +644,7 @@ fn gc_entry() -> impl Future<Output = !> {
         unsafe { WAIT_FOR_EXIT.current_ref_raw() }.register(cx.waker());
         Poll::Pending
     })
+    .await
 }
 
 /// The task routine for migrating the current task to the correct CPU.
