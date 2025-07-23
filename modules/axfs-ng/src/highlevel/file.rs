@@ -162,48 +162,9 @@ impl OpenOptions {
         self
     }
 
-    pub fn open(
-        &self,
-        context: &FsContext<axsync::RawMutex>,
-        path: impl AsRef<Path>,
-    ) -> VfsResult<OpenResult<axsync::RawMutex>> {
-        self._open(context, path.as_ref())
-    }
-
-    fn _open(
-        &self,
-        context: &FsContext<axsync::RawMutex>,
-        path: &Path,
-    ) -> VfsResult<OpenResult<axsync::RawMutex>> {
-        if !self.is_valid() {
-            return Err(VfsError::EINVAL);
-        }
+    fn _open(&self, loc: Location<axsync::RawMutex>) -> VfsResult<OpenResult<axsync::RawMutex>> {
         let flags = self.to_flags()?;
 
-        let loc = match context.resolve_parent(path.as_ref()) {
-            Ok((parent, name)) => {
-                let mut loc = parent.open_file(
-                    &name,
-                    &axfs_ng_vfs::OpenOptions {
-                        create: self.create,
-                        create_new: self.create_new,
-                        permission: NodePermission::from_bits_truncate(self.mode as _),
-                        user: self.user,
-                    },
-                )?;
-                if !self.no_follow {
-                    loc = context
-                        .with_current_dir(parent)?
-                        .try_resolve_symlink(loc, &mut 0)?;
-                }
-                loc
-            }
-            Err(VfsError::EINVAL) => {
-                // root directory
-                context.root_dir().clone()
-            }
-            Err(err) => return Err(err),
-        };
         if self.directory {
             if flags.contains(FileFlags::WRITE) {
                 return Err(VfsError::EISDIR);
@@ -229,6 +190,52 @@ impl OpenOptions {
             };
             OpenResult::File(File::new(backend, flags))
         })
+    }
+
+    pub fn open_loc(
+        &self,
+        loc: Location<axsync::RawMutex>,
+    ) -> VfsResult<OpenResult<axsync::RawMutex>> {
+        if !self.is_valid() {
+            return Err(VfsError::EINVAL);
+        }
+        self._open(loc)
+    }
+
+    pub fn open(
+        &self,
+        context: &FsContext<axsync::RawMutex>,
+        path: impl AsRef<Path>,
+    ) -> VfsResult<OpenResult<axsync::RawMutex>> {
+        if !self.is_valid() {
+            return Err(VfsError::EINVAL);
+        }
+
+        let loc = match context.resolve_parent(path.as_ref()) {
+            Ok((parent, name)) => {
+                let mut loc = parent.open_file(
+                    &name,
+                    &axfs_ng_vfs::OpenOptions {
+                        create: self.create,
+                        create_new: self.create_new,
+                        permission: NodePermission::from_bits_truncate(self.mode as _),
+                        user: self.user,
+                    },
+                )?;
+                if !self.no_follow {
+                    loc = context
+                        .with_current_dir(parent)?
+                        .try_resolve_symlink(loc, &mut 0)?;
+                }
+                loc
+            }
+            Err(VfsError::EINVAL) => {
+                // root directory
+                context.root_dir().clone()
+            }
+            Err(err) => return Err(err),
+        };
+        self._open(loc)
     }
 
     pub(crate) fn to_flags(&self) -> VfsResult<FileFlags> {
@@ -308,6 +315,7 @@ pub struct PageCache {
     addr: VirtAddr,
     dirty: bool,
 }
+
 impl PageCache {
     fn new() -> VfsResult<Self> {
         let addr = global_allocator()
@@ -337,6 +345,7 @@ impl PageCache {
         unsafe { core::slice::from_raw_parts_mut(self.addr.as_mut_ptr(), PAGE_SIZE) }
     }
 }
+
 impl Drop for PageCache {
     fn drop(&mut self) {
         if self.dirty {
@@ -350,12 +359,14 @@ struct EvictListener {
     listener: Box<dyn Fn(u32, &PageCache) + Send + Sync>,
     link: LinkedListAtomicLink,
 }
+
 intrusive_adapter!(EvictListenerAdapter = Box<EvictListener>: EvictListener { link: LinkedListAtomicLink });
 
 struct CachedFileShared {
     page_cache: Mutex<LruCache<u32, PageCache>>,
     evict_listeners: Mutex<LinkedList<EvictListenerAdapter>>,
 }
+
 impl CachedFileShared {
     pub fn new() -> Self {
         Self {
@@ -377,6 +388,7 @@ pub struct CachedFile<M: RawMutex> {
     shared: Arc<CachedFileShared>,
     in_memory: bool,
 }
+
 impl<M: RawMutex> Clone for CachedFile<M> {
     fn clone(&self) -> Self {
         Self {
@@ -391,6 +403,7 @@ enum FileUserData {
     Weak(Weak<CachedFileShared>),
     Strong(Arc<CachedFileShared>),
 }
+
 impl FileUserData {
     pub fn get(&self) -> Option<Arc<CachedFileShared>> {
         match self {
@@ -659,6 +672,7 @@ pub enum FileBackend<M: RawMutex> {
     Cached(CachedFile<M>),
     Direct(Location<M>),
 }
+
 impl<M: RawMutex> Clone for FileBackend<M> {
     fn clone(&self) -> Self {
         match self {
@@ -667,11 +681,13 @@ impl<M: RawMutex> Clone for FileBackend<M> {
         }
     }
 }
+
 impl FileBackend<axsync::RawMutex> {
     pub(crate) fn new_cached(location: Location<axsync::RawMutex>) -> Self {
         Self::Cached(CachedFile::get_or_create(location))
     }
 }
+
 impl<M: RawMutex> FileBackend<M> {
     pub(crate) fn new_direct(location: Location<M>) -> Self {
         Self::Direct(location)
@@ -747,6 +763,7 @@ impl File<axsync::RawMutex> {
             .and_then(OpenResult::into_file)
     }
 }
+
 impl<M: RawMutex> File<M> {
     pub(crate) fn new(inner: FileBackend<M>, flags: FileFlags) -> Self {
         Self {

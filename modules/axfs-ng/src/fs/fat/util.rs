@@ -114,7 +114,6 @@ pub fn update_file_metadata(file: &mut ff::File, update: MetadataUpdate) {
 }
 
 pub fn into_vfs_err<E>(err: fatfs::Error<E>) -> VfsError {
-
     use fatfs::Error::*;
     match err {
         AlreadyExists => VfsError::EEXIST,

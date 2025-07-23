@@ -71,6 +71,7 @@ impl FsContext<axsync::RawMutex> {
         Ok(())
     }
 }
+
 impl<M: RawMutex> FsContext<M> {
     pub fn new(root_dir: Location<M>) -> Self {
         Self {
