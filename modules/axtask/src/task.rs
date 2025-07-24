@@ -1,6 +1,6 @@
 use alloc::{boxed::Box, string::String, sync::Arc};
 use core::ops::Deref;
-use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU32, AtomicU64, AtomicU8, Ordering};
+use core::sync::atomic::{AtomicBool, AtomicI32, AtomicU8, AtomicU32, AtomicU64, Ordering};
 use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
 
 #[cfg(feature = "preempt")]
@@ -52,7 +52,6 @@ pub struct TaskInner {
     in_wait_queue: AtomicBool,
 
     /// Used to indicate the CPU ID where the task is running or will run.
-    #[cfg(feature = "smp")]
     cpu_id: AtomicU32,
     /// Used to indicate whether the task is running on a CPU.
     #[cfg(feature = "smp")]
@@ -196,6 +195,14 @@ impl TaskInner {
         }
     }
 
+    /// Returns the CPU ID where the task is running or will run.
+    ///
+    /// Note: the task may not be running on the CPU, it just exists in the run queue.
+    #[inline]
+    pub fn cpu_id(&self) -> u32 {
+        self.cpu_id.load(Ordering::Acquire)
+    }
+
     /// Gets the cpu affinity mask of the task.
     ///
     /// Returns the cpu affinity mask of the task in type [`AxCpuMask`].
@@ -229,7 +236,6 @@ impl TaskInner {
             in_wait_queue: AtomicBool::new(false),
             #[cfg(feature = "irq")]
             timer_ticket_id: AtomicU64::new(0),
-            #[cfg(feature = "smp")]
             cpu_id: AtomicU32::new(0),
             #[cfg(feature = "smp")]
             on_cpu: AtomicBool::new(false),
@@ -403,17 +409,11 @@ impl TaskInner {
         self.ctx.get()
     }
 
+    /// Set the CPU ID where the task is running or will run.
     #[cfg(feature = "smp")]
-    pub fn set_cpu_id(&self, cpu_id: u32) {
+    #[inline]
+    pub(crate) fn set_cpu_id(&self, cpu_id: u32) {
         self.cpu_id.store(cpu_id, Ordering::Release);
-    }
-
-    /// Returns the CPU ID where the task is running or will run.
-    ///
-    /// Note: the task may not be running on the CPU, it just exists in the run queue.
-    #[cfg(feature = "smp")]
-    pub fn cpu_id(&self) -> u32 {
-        self.cpu_id.load(Ordering::Acquire)
     }
 
     /// Returns whether the task is running on a CPU.
@@ -423,7 +423,8 @@ impl TaskInner {
     /// The `on_cpu field is set to `true` when the task is preparing to run on a CPU,
     /// and it is set to `false` when the task has finished its scheduling process in `clear_prev_task_on_cpu()`.
     #[cfg(feature = "smp")]
-    pub fn on_cpu(&self) -> bool {
+    #[inline]
+    pub(crate) fn on_cpu(&self) -> bool {
         self.on_cpu.load(Ordering::Acquire)
     }
 
