@@ -311,6 +311,7 @@ impl fmt::Debug for OpenOptions {
 
 const PAGE_SIZE: usize = 4096;
 
+#[derive(Debug)]
 pub struct PageCache {
     addr: VirtAddr,
     dirty: bool,
@@ -766,10 +767,15 @@ impl File<axsync::RawMutex> {
 
 impl<M: RawMutex> File<M> {
     pub(crate) fn new(inner: FileBackend<M>, flags: FileFlags) -> Self {
+        let position = if flags.contains(FileFlags::APPEND) {
+            inner.location().len().unwrap_or_default()
+        } else {
+            0
+        };
         Self {
             inner,
             flags,
-            position: 0,
+            position,
         }
     }
 
@@ -818,17 +824,9 @@ impl<M: RawMutex> axio::Read for File<M> {
 
 impl<M: RawMutex> axio::Write for File<M> {
     fn write(&mut self, buf: &[u8]) -> axio::Result<usize> {
-        if self.flags.contains(FileFlags::APPEND) {
-            let file = self.access(FileFlags::WRITE)?;
-            let len = file.location().len()?;
-            file.write_at(buf, len).inspect(|n| {
-                self.position = len + *n as u64;
-            })
-        } else {
-            self.write_at(buf, self.position).inspect(|n| {
-                self.position += *n as u64;
-            })
-        }
+        self.write_at(buf, self.position).inspect(|n| {
+            self.position += *n as u64;
+        })
     }
 
     fn flush(&mut self) -> axio::Result {
@@ -842,17 +840,12 @@ impl<M: RawMutex> axio::Seek for File<M> {
             SeekFrom::Start(pos) => pos,
             SeekFrom::End(off) => {
                 let size = self.access(FileFlags::empty())?.location().len()?;
-                size.checked_add_signed(off)
-                    .ok_or(VfsError::EINVAL)?
-                    .clamp(0, size)
+                size.checked_add_signed(off).ok_or(VfsError::EINVAL)?
             }
-            SeekFrom::Current(off) => {
-                let size = self.access(FileFlags::empty())?.location().len()?;
-                self.position
-                    .checked_add_signed(off)
-                    .ok_or(VfsError::EINVAL)?
-                    .clamp(0, size)
-            }
+            SeekFrom::Current(off) => self
+                .position
+                .checked_add_signed(off)
+                .ok_or(VfsError::EINVAL)?,
         };
         self.position = new_pos;
         Ok(new_pos)
