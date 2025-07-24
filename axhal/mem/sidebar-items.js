@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["PAGE_SIZE_4K"],"fn":["clear_bss","init","memory_regions","mmio_ranges","phys_ram_ranges","phys_to_virt","reserved_phys_ram_ranges","total_ram_size","virt_to_phys"],"macro":["pa","va"],"struct":["MemRegionFlags","PhysAddr","PhysMemRegion","VirtAddr"],"type":["PhysAddrRange","VirtAddrRange"]};
