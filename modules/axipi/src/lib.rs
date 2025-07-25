@@ -10,8 +10,8 @@ use lazyinit::LazyInit;
 
 use kspin::SpinNoIrq;
 
-use axhal::cpu::this_cpu_id;
-use axhal::irq::IPI_IRQ_NUM;
+use axhal::irq::{IpiTarget, IPI_IRQ};
+use axhal::percpu::this_cpu_id;
 
 mod event;
 mod queue;
@@ -30,27 +30,35 @@ pub fn init() {
 }
 
 /// Sends an IPI event to the processor(s) specified by `dest_cpu`.
-pub fn send_ipi_event_to_one<T: Into<Callback>>(dest_cpu: usize, callback: T) {
-    warn!("Send IPI event to CPU {}", dest_cpu);
+pub fn send_ipi_one<T: Into<Callback>>(dest_cpu: usize, callback: T) {
+    info!("Send IPI event to CPU {}", dest_cpu);
 
     unsafe { IPI_EVENT_QUEUE.remote_ref_raw(dest_cpu) }
         .lock()
         .push(this_cpu_id(), callback.into());
-    axhal::irq::send_ipi_one(dest_cpu, IPI_IRQ_NUM);
+    axhal::irq::send_ipi(IPI_IRQ, None, Some(dest_cpu), None, IpiTarget::Specific);
 }
 
 /// Sends an IPI event to all processors except the current one.
-pub fn send_ipi_event_to_all<T: Into<MulticastCallback>>(callback: T) {
+pub fn send_ipi_allothers<T: Into<MulticastCallback>>(callback: T) {
+    info!("Send IPI event to all other CPUs");
     let current_cpu_id = this_cpu_id();
+    let cpu_num = axconfig::plat::CPU_NUM;
     let callback = callback.into();
-    for cpu_id in 0..axconfig::SMP {
+    for cpu_id in 0..cpu_num {
         if cpu_id != current_cpu_id {
             unsafe { IPI_EVENT_QUEUE.remote_ref_raw(cpu_id) }
                 .lock()
                 .push(current_cpu_id, callback.clone().into_unicast());
         }
     }
-    axhal::irq::send_ipi_all_others(IPI_IRQ_NUM);
+    axhal::irq::send_ipi(
+        IPI_IRQ,
+        Some(current_cpu_id),
+        None,
+        Some(cpu_num),
+        IpiTarget::AllOthers,
+    );
 }
 
 /// The handler for IPI events. It retrieves the events from the queue and calls the corresponding callbacks.
@@ -59,7 +67,7 @@ pub fn ipi_handler() {
         .lock()
         .pop_one()
     {
-        warn!("Received IPI event from CPU {}", src_cpu_id);
+        debug!("Received IPI event from CPU {}", src_cpu_id);
         callback.call();
     }
 }
