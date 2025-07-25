@@ -57,3 +57,5 @@ pci-ranges = []                 # [(uint, uint)]
 timer-frequency = 4_000_000_000     # uint
 # Timer interrupt num.
 timer-irq = 0xf0                    # uint
+# IPI interrupt num
+ipi-irq = 0xf3                      # uint

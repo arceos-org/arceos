@@ -392,8 +392,6 @@ pub mod modules {
     pub use axruntime;
     pub use axsync;
 
-    #[cfg(feature = "ipi")]
-    pub use axipi;
     #[cfg(feature = "alloc")]
     pub use axalloc;
     #[cfg(feature = "display")]

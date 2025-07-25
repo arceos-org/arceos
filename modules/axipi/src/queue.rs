@@ -1,16 +1,16 @@
 use alloc::collections::VecDeque;
 
-use crate::{Callback, IPIEvent};
+use crate::event::{Callback, IpiEvent};
 
 /// A queue of IPI events.
 ///
 /// It internally uses a `VecDeque` to store the events, make it
 /// possible to pop these events using FIFO order.
-pub struct IPIEventQueue {
-    events: VecDeque<IPIEvent>,
+pub struct IpiEventQueue {
+    events: VecDeque<IpiEvent>,
 }
 
-impl IPIEventQueue {
+impl IpiEventQueue {
     /// Create a new empty timer list.
     pub fn new() -> Self {
         Self {
@@ -27,7 +27,7 @@ impl IPIEventQueue {
 
     /// Push a new event into the queue.
     pub fn push(&mut self, src_cpu_id: usize, callback: Callback) {
-        self.events.push_back(IPIEvent {
+        self.events.push_back(IpiEvent {
             src_cpu_id,
             callback,
         });
@@ -46,7 +46,7 @@ impl IPIEventQueue {
     }
 }
 
-impl Default for IPIEventQueue {
+impl Default for IpiEventQueue {
     fn default() -> Self {
         Self::new()
     }

@@ -21,7 +21,6 @@ multitask = ["axtask/multitask", "axsync/multitask", "axfeat/multitask"]
 fs = ["dep:axfs", "dep:axdriver", "axfeat/fs"]
 net = ["dep:axnet", "dep:axdriver", "axfeat/net"]
 display = ["dep:axdisplay", "dep:axdriver", "axfeat/display"]
-ipi = ["dep:axipi", "axfeat/ipi"]
 
 myfs = ["axfeat/myfs"]
 
