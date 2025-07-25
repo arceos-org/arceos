@@ -16,7 +16,7 @@ default = []
 log = "=0.4.21"
 lazyinit = { version = "0.2" }
 
-percpu = { version = "0.1.5" }
+percpu = { version = "0.2.0" }
 kspin = { version = "0.1" }
 
 axhal = { workspace = true, features = ["ipi"] }

@@ -36,7 +36,8 @@ axfs = { workspace = true, optional = true }
 axnet = { workspace = true, optional = true }
 axdisplay = { workspace = true, optional = true }
 axtask = { workspace = true, optional = true }
-axplat = "0.1"
+# wait for the PR merged and released on crates.io, modify this to axplat =  "0.2"
+axplat = { git = "https://github.com/arceos-hypervisor/axplat_crates.git", branch = "ipi"}
 axipi = { workspace = true, optional = true }
 
 crate_interface = "0.1"
