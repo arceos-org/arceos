@@ -629,6 +629,8 @@ impl<M: RawMutex> CachedFile<M> {
             for pn in keys {
                 if let Some(mut page) = guard.pop(&pn) {
                     if !self.in_memory {
+                        // Don't write back pages since they're discarded
+                        page.dirty = false;
                         self.evict_cache(file, pn, &mut page)?;
                     }
                 }
