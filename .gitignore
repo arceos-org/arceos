@@ -1,5 +1,7 @@
 /target
+examples/**/target
 /.vscode
+/**/.vscode
 .DS_Store
 *.asm
 *.img

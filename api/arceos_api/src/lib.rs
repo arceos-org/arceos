@@ -122,6 +122,7 @@ pub mod task {
         pub type AxTaskHandle;
         pub type AxWaitQueueHandle;
         pub type AxCpuMask;
+        pub type AxFutex;
     }
 
     define_api! {
@@ -175,6 +176,12 @@ pub mod task {
         /// The maximum number of tasks to wake up is specified by `count`. If
         /// `count` is `u32::MAX`, it will wake up all tasks in the wait queue.
         pub fn ax_wait_queue_wake(wq: &AxWaitQueueHandle, count: u32);
+        /// Wakes up a single task that is currently waiting on the given `Futex`.
+        pub fn ax_futex_wake(futex: &AxFutex);
+        /// Wakes up all tasks that are currently waiting on the given `Futex`.
+        pub fn ax_futex_wake_all(futex: &AxFutex);
+        /// Attempts to wait on a `Futex` until its value is no longer `expected`.
+        pub fn ax_futex_wait(futex: &AxFutex, expected: u32, timeout: Option<core::time::Duration>) -> bool;
     }
 }
 
@@ -381,6 +388,55 @@ pub mod io {
     }
 }
 
+/// Embassy runtime.
+pub mod embassy_async {
+    use core::future::Future;
+
+    #[cfg(any(feature = "async-single", feature = "async-thread"))]
+    pub use crate::imp::AxExecutor;
+    #[cfg(all(
+        feature = "dummy-if-not-enabled",
+        not(any(feature = "async-single", feature = "async-thread"))
+    ))]
+    pub struct AxExecutor;
+
+    #[cfg(any(feature = "async-single", feature = "async-thread"))]
+    pub use crate::imp::AxSpawner;
+    #[cfg(all(
+        feature = "dummy-if-not-enabled",
+        not(any(feature = "async-single", feature = "async-thread"))
+    ))]
+    pub struct AxSpawner;
+
+    define_api_type! {
+        @cfg "async-thread";
+        pub type AxSendSpawner;
+    }
+
+    define_api! {
+        @cfg "async-thread";
+        /// Returns a global spawner.
+        pub fn ax_spawner() -> AxSendSpawner;
+    }
+
+    #[cfg(feature = "async-thread")]
+    /// Blocks the current task until the future completes.
+    pub fn ax_block_on<F: Future>(fut: F) -> F::Output {
+        crate::imp::ax_block_on(fut)
+    }
+
+    #[allow(unused_variables)]
+    #[cfg(all(feature = "dummy-if-not-enabled", not(feature = "async-thread")))]
+    pub fn ax_block_on<F: Future>(fut: F) -> F::Output {
+        unimplemented!(stringify!(ax_block_on))
+    }
+
+    #[cfg(feature = "async-preempt")]
+    pub use crate::imp::AxPrioFuture;
+    #[cfg(all(feature = "dummy-if-not-enabled", not(feature = "async-thread")))]
+    pub struct AxPrioFuture;
+}
+
 /// Re-exports of ArceOS modules.
 ///
 /// You should prefer to use other APIs rather than these modules. The modules
@@ -400,6 +456,12 @@ pub mod modules {
     pub use axdma;
     #[cfg(any(feature = "fs", feature = "net", feature = "display"))]
     pub use axdriver;
+    #[cfg(any(
+        feature = "async-thread",
+        feature = "async-single",
+        feature = "async-preempt"
+    ))]
+    pub use axembassy;
     #[cfg(feature = "fs")]
     pub use axfs;
     #[cfg(feature = "paging")]

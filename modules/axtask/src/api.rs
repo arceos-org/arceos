@@ -12,6 +12,8 @@ pub use crate::task::{CurrentTask, TaskId, TaskInner};
 pub use crate::task_ext::{TaskExtMut, TaskExtRef};
 #[doc(cfg(feature = "multitask"))]
 pub use crate::wait_queue::WaitQueue;
+#[doc(cfg(feature = "multitask"))]
+pub use crate::wait_queues::{Futex, futex_wait, futex_wake, futex_wake_all};
 
 /// The reference type of a task.
 pub type AxTaskRef = Arc<AxTask>;
@@ -213,7 +215,7 @@ pub fn exit(exit_code: i32) -> ! {
 pub fn run_idle() -> ! {
     loop {
         yield_now();
-        debug!("idle task: waiting for IRQs...");
+        // debug!("idle task: waiting for IRQs...");
         #[cfg(feature = "irq")]
         axhal::asm::wait_for_irqs();
     }

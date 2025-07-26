@@ -10,8 +10,9 @@ repository = "https://github.com/arceos-org/arceos/tree/main/modules/axsync"
 documentation = "https://arceos-org.github.io/arceos/axsync/index.html"
 
 [features]
-multitask = ["axtask/multitask"]
 default = []
+
+multitask = ["axtask/multitask"]
 
 [dependencies]
 kspin = "0.1"
