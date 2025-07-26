@@ -7,6 +7,7 @@ pub use ethernet::*;
 pub use loopback::*;
 
 pub trait Device: Send + Sync {
+    #[allow(unused)]
     fn name(&self) -> &str;
 
     fn recv(&mut self, buffer: &mut PacketBuffer<()>, timestamp: Instant) -> bool;
