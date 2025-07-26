@@ -75,6 +75,16 @@ impl AddrSpace {
         Ok(())
     }
 
+    fn validate_range(&self, start: VirtAddr, size: usize) -> AxResult {
+        if !self.contains_range(start, size) {
+            return ax_err!(InvalidInput, "address out of range");
+        }
+        if !start.is_aligned_4k() || !is_aligned_4k(size) {
+            return ax_err!(InvalidInput, "address not aligned");
+        }
+        Ok(())
+    }
+
     /// Finds a free area that can accommodate the given size.
     ///
     /// The search starts from the given hint address, and the area should be within the given limit range.
@@ -104,10 +114,8 @@ impl AddrSpace {
         size: usize,
         flags: MappingFlags,
     ) -> AxResult {
-        if !self.contains_range(start_vaddr, size) {
-            return ax_err!(InvalidInput, "address out of range");
-        }
-        if !start_vaddr.is_aligned_4k() || !start_paddr.is_aligned_4k() || !is_aligned_4k(size) {
+        self.validate_range(start_vaddr, size)?;
+        if !start_paddr.is_aligned_4k() {
             return ax_err!(InvalidInput, "address not aligned");
         }
 
@@ -134,12 +142,7 @@ impl AddrSpace {
         flags: MappingFlags,
         populate: bool,
     ) -> AxResult {
-        if !self.contains_range(start, size) {
-            return ax_err!(InvalidInput, "address out of range");
-        }
-        if !start.is_aligned_4k() || !is_aligned_4k(size) {
-            return ax_err!(InvalidInput, "address not aligned");
-        }
+        self.validate_range(start, size)?;
 
         let area = MemoryArea::new(start, size, flags, Backend::new_alloc(populate));
         self.areas
@@ -153,12 +156,7 @@ impl AddrSpace {
     /// Returns an error if the address range is out of the address space or not
     /// aligned.
     pub fn unmap(&mut self, start: VirtAddr, size: usize) -> AxResult {
-        if !self.contains_range(start, size) {
-            return ax_err!(InvalidInput, "address out of range");
-        }
-        if !start.is_aligned_4k() || !is_aligned_4k(size) {
-            return ax_err!(InvalidInput, "address not aligned");
-        }
+        self.validate_range(start, size)?;
 
         self.areas
             .unmap(start, size, &mut self.pt)
@@ -229,18 +227,12 @@ impl AddrSpace {
     /// Returns an error if the address range is out of the address space or not
     /// aligned.
     pub fn protect(&mut self, start: VirtAddr, size: usize, flags: MappingFlags) -> AxResult {
-        if !self.contains_range(start, size) {
-            return ax_err!(InvalidInput, "address out of range");
-        }
-        if !start.is_aligned_4k() || !is_aligned_4k(size) {
-            return ax_err!(InvalidInput, "address not aligned");
-        }
+        self.validate_range(start, size)?;
 
-        // TODO
-        self.pt
-            .protect_region(start, size, flags, true)
-            .map_err(|_| AxError::BadState)?
-            .ignore();
+        self.areas
+            .protect(start, size, |_| Some(flags), &mut self.pt)
+            .map_err(mapping_err_to_ax_err)?;
+
         Ok(())
     }
 
