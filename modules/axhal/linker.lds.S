@@ -127,10 +127,6 @@ SECTIONS {
     linkm2_PAGE_FAULT : { *(linkm2_PAGE_FAULT) }
     linkme_SYSCALL : { *(linkme_SYSCALL) }
     linkm2_SYSCALL : { *(linkm2_SYSCALL) }
-    linkme_PRE_TRAP : { *(linkme_PRE_TRAP) }
-    linkm2_PRE_TRAP : { *(linkm2_PRE_TRAP) }
-    linkme_POST_TRAP : { *(linkme_POST_TRAP) }
-    linkm2_POST_TRAP : { *(linkm2_POST_TRAP) }
     scope_local : { *(scope_local) }
 }
 INSERT AFTER .tbss;
