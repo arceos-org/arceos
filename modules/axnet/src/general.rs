@@ -6,7 +6,7 @@ use core::{
 };
 
 use axerrno::{LinuxError, LinuxResult};
-use axtask::future::try_block_on;
+use axtask::future::try_block_on_no_restart;
 
 use crate::{
     options::{Configurable, GetSocketOption, SetSocketOption},
@@ -102,16 +102,11 @@ impl GeneralOptions {
                     }
                 })
             };
-            let result = if let Some(timeout) = timeout {
-                try_block_on(async move {
-                    axtask::future::timeout(fut, timeout)
-                        .await
-                        .ok_or(LinuxError::ETIMEDOUT)?
-                })
-            } else {
-                try_block_on(fut)
-            };
-            result.transpose().unwrap_or(Err(LinuxError::EINTR))
+            try_block_on_no_restart(async move {
+                axtask::future::timeout_opt(fut, timeout)
+                    .await
+                    .ok_or(LinuxError::ETIMEDOUT)?
+            })
         }
     }
 }

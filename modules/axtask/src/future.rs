@@ -93,6 +93,17 @@ pub fn try_block_on<F: IntoFuture<Output = LinuxResult<R>>, R>(fut: F) -> LinuxR
     }
 }
 
+/// No restart version of [`try_block_on`].
+///
+/// The difference is that this function will always return `Err(EINTR)` when
+/// interrupted, no matter whether the signal says the task can be restarted or
+/// not.
+pub fn try_block_on_no_restart<F: IntoFuture<Output = LinuxResult<R>>, R>(
+    fut: F,
+) -> LinuxResult<R> {
+    try_block_on(fut).and_then(|opt| opt.ok_or(LinuxError::EINTR))
+}
+
 /// Waits until `duration` has elapsed.
 pub fn sleep(duration: Duration) -> Sleep {
     sleep_until(axhal::time::wall_time() + duration)
@@ -126,7 +137,7 @@ impl Future for Sleep {
     }
 }
 
-/// Requires a Future to complete before the specified duration has elapsed.
+/// Requires a `Future` to complete before the specified duration has elapsed.
 pub fn timeout<F: IntoFuture>(fut: F, duration: Duration) -> Timeout<F::IntoFuture> {
     Timeout {
         inner: fut.into_future(),
@@ -139,6 +150,19 @@ pub fn timeout_at<F: IntoFuture>(fut: F, deadline: Duration) -> Timeout<F::IntoF
     Timeout {
         inner: fut.into_future(),
         delay: sleep_until(deadline),
+    }
+}
+
+/// Requires a `Future` to complete before the optional duration has elapsed.
+pub fn timeout_opt<F: IntoFuture>(fut: F, duration: Option<Duration>) -> Timeout<F::IntoFuture> {
+    Timeout {
+        inner: fut.into_future(),
+        delay: duration.map_or_else(
+            || Sleep {
+                deadline: Duration::MAX,
+            },
+            sleep,
+        ),
     }
 }
 
