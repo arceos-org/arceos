@@ -8,8 +8,8 @@ use memory_addr::{MemoryAddr, PhysAddr, VirtAddr, VirtAddrRange};
 
 use super::{alloc_frame, dealloc_frame};
 use crate::{
-    AddrSpace, Backend,
-    backend::{BackendOps, divide_page, pages_in, paging_to_linux_error},
+    AddrSpace,
+    backend::{Backend, BackendOps, divide_page, pages_in, paging_to_linux_error},
 };
 
 pub struct SharedPages {

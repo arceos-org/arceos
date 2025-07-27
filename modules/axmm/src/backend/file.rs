@@ -1,4 +1,8 @@
-use alloc::{boxed::Box, sync::Arc, vec::Vec};
+use alloc::{
+    boxed::Box,
+    sync::{Arc, Weak},
+    vec::Vec,
+};
 use core::sync::atomic::{AtomicUsize, Ordering};
 
 use axerrno::{LinuxError, LinuxResult};
@@ -8,18 +12,20 @@ use axsync::{Mutex, RawMutex};
 use memory_addr::{PAGE_SIZE_4K, VirtAddr, VirtAddrRange};
 
 use crate::{
-    AddrSpace, Backend,
-    backend::{BackendOps, pages_in, paging_to_linux_error},
+    AddrSpace,
+    backend::{Backend, BackendOps, pages_in, paging_to_linux_error},
 };
 
-struct Inner {
+#[doc(hidden)]
+pub struct FileBackendInner {
     start: VirtAddr,
     cache: CachedFile<RawMutex>,
     flags: FileFlags,
     offset_page: u32,
     handle: AtomicUsize,
+    futex_handle: Arc<()>,
 }
-impl Drop for Inner {
+impl Drop for FileBackendInner {
     fn drop(&mut self) {
         let handle = self.handle.load(Ordering::Acquire);
         if handle != 0 {
@@ -29,7 +35,7 @@ impl Drop for Inner {
         }
     }
 }
-impl Inner {
+impl FileBackendInner {
     pub fn register_listener(self: &Arc<Self>, aspace: Arc<Mutex<AddrSpace>>) -> usize {
         self.cache.add_evict_listener({
             let this = Arc::downgrade(self);
@@ -72,7 +78,7 @@ impl Inner {
 
 /// File-backed mapping backend.
 #[derive(Clone)]
-pub struct FileBackend(Arc<Inner>);
+pub struct FileBackend(Arc<FileBackendInner>);
 impl FileBackend {
     fn check_flags(&self, flags: MappingFlags) -> LinuxResult<()> {
         let mut required_flags = FileFlags::empty();
@@ -87,6 +93,10 @@ impl FileBackend {
             return Err(LinuxError::EACCES);
         }
         Ok(())
+    }
+
+    pub fn futex_handle(&self) -> Weak<()> {
+        Arc::downgrade(&self.0.futex_handle)
     }
 }
 
@@ -201,12 +211,13 @@ impl BackendOps for FileBackend {
         _new_pt: &mut PageTable,
         new_aspace: &Arc<Mutex<AddrSpace>>,
     ) -> LinuxResult<Backend> {
-        let inner = Arc::new(Inner {
+        let inner = Arc::new(FileBackendInner {
             start: self.0.start,
             cache: self.0.cache.clone(),
             flags: self.0.flags,
             offset_page: self.0.offset_page,
             handle: AtomicUsize::new(0),
+            futex_handle: self.0.futex_handle.clone(),
         });
         inner.register_listener(new_aspace.clone());
         Ok(Backend::File(FileBackend(inner)))
@@ -222,12 +233,13 @@ impl Backend {
         aspace: Arc<Mutex<AddrSpace>>,
     ) -> Self {
         let offset_page = (offset / PAGE_SIZE_4K) as u32;
-        let inner = Arc::new(Inner {
+        let inner = Arc::new(FileBackendInner {
             start,
             cache,
             flags,
             offset_page,
             handle: AtomicUsize::new(0),
+            futex_handle: Arc::new(()),
         });
         inner.register_listener(aspace);
         Self::File(FileBackend(inner))

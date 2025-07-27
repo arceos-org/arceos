@@ -11,8 +11,8 @@ use axsync::{Mutex, RawMutex};
 use memory_addr::{PhysAddr, VirtAddr, VirtAddrRange};
 
 use crate::{
-    AddrSpace, Backend,
-    backend::{BackendOps, alloc_frame, dealloc_frame, pages_in, paging_to_linux_error},
+    AddrSpace,
+    backend::{Backend, BackendOps, alloc_frame, dealloc_frame, pages_in, paging_to_linux_error},
     page_info::frame_table,
 };
 

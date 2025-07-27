@@ -6,8 +6,8 @@ use axsync::Mutex;
 use memory_addr::{PhysAddr, PhysAddrRange, VirtAddr, VirtAddrRange};
 
 use crate::{
-    AddrSpace, Backend,
-    backend::{BackendOps, paging_to_linux_error},
+    AddrSpace,
+    backend::{Backend, BackendOps, paging_to_linux_error},
 };
 
 /// Linear mapping backend.

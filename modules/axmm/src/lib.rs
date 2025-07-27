@@ -8,7 +8,7 @@ extern crate log;
 extern crate alloc;
 
 mod aspace;
-mod backend;
+pub mod backend;
 mod page_info;
 mod page_iter;
 
@@ -22,10 +22,7 @@ use lazyinit::LazyInit;
 use memory_addr::{MemoryAddr, PhysAddr, va};
 use memory_set::MappingError;
 
-pub use self::{
-    aspace::AddrSpace,
-    backend::{Backend, SharedPages},
-};
+pub use self::aspace::AddrSpace;
 
 static KERNEL_ASPACE: LazyInit<SpinNoIrq<AddrSpace>> = LazyInit::new();
 
