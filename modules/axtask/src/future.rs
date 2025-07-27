@@ -1,16 +1,18 @@
 use alloc::{sync::Arc, task::Wake};
 use core::{
     pin::{Pin, pin},
+    sync::atomic::{AtomicBool, Ordering},
     task::{Context, Poll, Waker},
     time::Duration,
 };
 
+use axerrno::{LinuxError, LinuxResult};
 use kernel_guard::NoPreemptIrqSave;
 use pin_project::pin_project;
 
 use crate::{AxTaskRef, current, current_run_queue, select_run_queue};
 
-pub(crate) struct AxWaker(AxTaskRef);
+struct AxWaker(AxTaskRef, Arc<AtomicBool>);
 
 impl Wake for AxWaker {
     fn wake(self: Arc<Self>) {
@@ -18,24 +20,75 @@ impl Wake for AxWaker {
     }
 
     fn wake_by_ref(self: &Arc<Self>) {
+        self.1.store(true, Ordering::Release);
         select_run_queue::<NoPreemptIrqSave>(&self.0).unblock_task(self.0.clone(), false);
     }
 }
 
 /// Blocks the current task until the given future is resolved.
+///
+/// Note that this doesn't handle interruption and is not recommended for direct
+/// use in most cases.
+///
+/// See also [`try_block_on`].
 pub fn block_on<F: IntoFuture>(fut: F) -> F::Output {
     let mut fut = pin!(fut.into_future());
 
     let curr = current();
-    let waker = Waker::from(Arc::new(AxWaker(curr.clone())));
+    let woke = Arc::new(AtomicBool::new(false));
+    let waker = Waker::from(Arc::new(AxWaker(curr.clone(), Arc::clone(&woke))));
     let mut context = Context::from_waker(&waker);
     loop {
+        woke.store(false, Ordering::Release);
         match fut.as_mut().poll(&mut context) {
             Poll::Pending => {
-                let mut rq = current_run_queue::<NoPreemptIrqSave>();
-                rq.blocked_resched(|_| {});
+                if !woke.load(Ordering::Acquire) {
+                    let mut rq = current_run_queue::<NoPreemptIrqSave>();
+                    rq.blocked_resched(|_| {});
+                } else {
+                    // Immediately woken
+                    crate::yield_now();
+                }
             }
             Poll::Ready(output) => break output,
+        }
+    }
+}
+
+/// Blocks the current task until the given future is resolved.
+///
+/// Returns:
+/// - `Ok(Some(value))` if the future resolved successfully.
+/// - `Err(err)` if the future resolved with an error.
+/// - `Err(EINTR)` if the task was interrupted and cannot be restarted.
+/// - `Ok(None)` if the task was interrupted but can be restarted.
+pub fn try_block_on<F: IntoFuture<Output = LinuxResult<R>>, R>(fut: F) -> LinuxResult<Option<R>> {
+    let mut fut = pin!(fut.into_future());
+
+    let curr = current();
+    let woke = Arc::new(AtomicBool::new(false));
+    let waker = Waker::from(Arc::new(AxWaker(curr.clone(), Arc::clone(&woke))));
+    let mut context = Context::from_waker(&waker);
+    loop {
+        woke.store(false, Ordering::Release);
+        match fut.as_mut().poll(&mut context) {
+            Poll::Pending => {
+                if !woke.load(Ordering::Acquire) {
+                    curr.register_interrupt_waker(context.waker());
+                    let mut rq = current_run_queue::<NoPreemptIrqSave>();
+                    rq.blocked_resched(|_| {});
+                } else {
+                    crate::yield_now();
+                }
+                if let Some(restart) = curr.interrupt_state() {
+                    return if restart {
+                        Ok(None)
+                    } else {
+                        Err(LinuxError::EINTR)
+                    };
+                }
+            }
+            Poll::Ready(output) => return output.map(Some),
         }
     }
 }
@@ -47,30 +100,28 @@ pub fn sleep(duration: Duration) -> Sleep {
 
 /// Waits until `deadline` is reached.
 pub fn sleep_until(deadline: Duration) -> Sleep {
-    if deadline <= axhal::time::wall_time() {
-        return Sleep { polled: true };
+    if deadline > axhal::time::wall_time() {
+        let curr = current();
+        crate::timers::set_alarm_wakeup(deadline, curr.clone());
     }
 
-    let curr = current();
-    crate::timers::set_alarm_wakeup(deadline, curr.clone());
-    Sleep { polled: false }
+    Sleep { deadline }
 }
 
 /// Future returned by `sleep` and `sleep_until`.
 #[must_use = "futures do nothing unless you `.await` or poll them"]
 pub struct Sleep {
-    polled: bool,
+    deadline: Duration,
 }
 
 impl Future for Sleep {
     type Output = ();
 
-    fn poll(mut self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
-        if self.polled {
-            Poll::Ready(())
-        } else {
-            self.polled = true;
+    fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
+        if axhal::time::wall_time() < self.deadline {
             Poll::Pending
+        } else {
+            Poll::Ready(())
         }
     }
 }

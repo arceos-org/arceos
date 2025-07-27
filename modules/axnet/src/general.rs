@@ -6,8 +6,7 @@ use core::{
 };
 
 use axerrno::{LinuxError, LinuxResult};
-use axhal::time::wall_time;
-use axtask::{current, future::block_on};
+use axtask::future::try_block_on;
 
 use crate::{
     options::{Configurable, GetSocketOption, SetSocketOption},
@@ -69,7 +68,7 @@ impl GeneralOptions {
 
     pub fn block_on<F, T>(&self, timeout: Option<Duration>, mut f: F) -> LinuxResult<T>
     where
-        F: FnMut(&mut Context) -> Poll<LinuxResult<T>>,
+        F: FnMut(&mut Context) -> Poll<LinuxResult<T>> + Unpin,
     {
         if self.nonblocking() {
             let mut context = Context::from_waker(Waker::noop());
@@ -78,37 +77,41 @@ impl GeneralOptions {
                 Poll::Pending => Err(LinuxError::EAGAIN),
             }
         } else {
-            let deadline = timeout.map(|t| wall_time() + t);
-            block_on(poll_fn(|context| {
+            // Linux manual:
+            // The following interfaces are never restarted after being
+            //    interrupted by a signal handler, regardless of the use of
+            //    SA_RESTART; they always fail with the error EINTR when interrupted
+            //    by a signal handler:
+            // ... socket interfaces, when a timeout has been set.
+            let fut = {
                 let externally_driven = self.externally_driven.load(Ordering::Acquire);
-                let curr = current();
-                loop {
-                    if curr.is_interrupted() {
-                        return Poll::Ready(Err(LinuxError::EINTR));
-                    }
+                poll_fn(move |context| {
                     poll_interfaces();
                     match f(context) {
                         Poll::Ready(Err(LinuxError::EAGAIN)) => {
-                            // The inner function does not block but the waker
-                            // is not used (otherwise it should return
-                            // Poll::Pending), so we need to poll it again.
-                            if deadline.is_some_and(|d| wall_time() >= d) {
-                                return Poll::Ready(Err(LinuxError::ETIMEDOUT));
-                            }
-                            axtask::yield_now();
-                            continue;
+                            context.waker().wake_by_ref();
+                            Poll::Pending
                         }
-                        Poll::Ready(result) => break Poll::Ready(result),
+                        Poll::Ready(result) => return Poll::Ready(result),
                         Poll::Pending => {
                             if externally_driven {
-                                axtask::yield_now();
-                                continue;
+                                context.waker().wake_by_ref();
                             }
-                            break Poll::Pending;
+                            return Poll::Pending;
                         }
                     }
-                }
-            }))
+                })
+            };
+            let result = if let Some(timeout) = timeout {
+                try_block_on(async move {
+                    axtask::future::timeout(fut, timeout)
+                        .await
+                        .ok_or(LinuxError::ETIMEDOUT)?
+                })
+            } else {
+                try_block_on(fut)
+            };
+            result.transpose().unwrap_or(Err(LinuxError::EINTR))
         }
     }
 }

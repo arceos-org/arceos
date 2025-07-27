@@ -9,7 +9,7 @@ use core::{
     ops::Deref,
     ptr::NonNull,
     sync::atomic::{AtomicBool, AtomicI32, AtomicU8, AtomicU64, Ordering},
-    task::Poll,
+    task::{Poll, Waker},
 };
 
 use axhal::context::TaskContext;
@@ -66,8 +66,15 @@ pub struct TaskInner {
 
     /// Mark whether the task is in the wait queue.
     in_wait_queue: AtomicBool,
-    /// Used to indicate whether the task is interrupted by a signal.
-    interrupted: AtomicBool,
+
+    /// Interruption state (0 = not interrupted, 1 = interrupted, 2 =
+    /// interrupted with SA_RESTART).
+    interruption: AtomicU8,
+    /// Waker used to wake up the task when signal interruption occurs.
+    ///
+    /// We're fine to use [`AtomicWaker`] here because at most one waker will be
+    /// registered within a task.
+    interrupt_waker: AtomicWaker,
 
     /// Used to indicate whether the task is running on a CPU.
     #[cfg(feature = "smp")]
@@ -243,7 +250,8 @@ impl TaskInner {
             // By default, the task is allowed to run on all CPUs.
             cpumask: SpinNoIrq::new(AxCpuMask::full()),
             in_wait_queue: AtomicBool::new(false),
-            interrupted: AtomicBool::new(false),
+            interruption: AtomicU8::new(0),
+            interrupt_waker: AtomicWaker::new(),
             #[cfg(feature = "irq")]
             timer_ticket_id: AtomicU64::new(0),
             #[cfg(feature = "smp")]
@@ -341,14 +349,29 @@ impl TaskInner {
         self.in_wait_queue.store(in_wait_queue, Ordering::Release);
     }
 
-    #[inline]
-    pub fn is_interrupted(&self) -> bool {
-        self.interrupted.load(Ordering::Acquire)
+    pub fn register_interrupt_waker(&self, waker: &Waker) {
+        self.interrupt_waker.register(waker);
     }
 
-    #[inline]
-    pub fn set_interrupted(&self, interrupted: bool) {
-        self.interrupted.store(interrupted, Ordering::Release);
+    pub fn interrupt(&self, restart: bool) {
+        self.interruption
+            .store(if restart { 2 } else { 1 }, Ordering::Release);
+        self.interrupt_waker.wake();
+    }
+
+    /// Fetches the last interruption state.
+    ///
+    /// Returns `None` if the task has not been interrupted, and `Some(restart)`
+    /// if it has. If `restart` is `true`, syscalls are allowed to be restarted
+    /// automatically.
+    #[must_use]
+    pub fn interrupt_state(&self) -> Option<bool> {
+        match self.interruption.swap(0, Ordering::AcqRel) {
+            0 => None,
+            1 => Some(false),
+            2 => Some(true),
+            _ => unreachable!(),
+        }
     }
 
     /// Returns task's current timer ticket ID.

@@ -363,16 +363,17 @@ impl SocketOps for TcpSocket {
         axtask::yield_now();
 
         // Here our state must be `CONNECTING`, and only one thread can run here.
-        self.general.block_on(None, |_context| {
-            let PollState { writable, .. } = self.poll_connect()?;
-            Poll::Ready(if !writable {
-                Err(LinuxError::EAGAIN)
-            } else if self.get_state() == STATE_CONNECTED {
-                Ok(())
-            } else {
-                Err(ax_err!(ECONNREFUSED, "connection refused"))
+        self.general
+            .block_on(self.general.send_timeout(), |_context| {
+                let PollState { writable, .. } = self.poll_connect()?;
+                Poll::Ready(if !writable {
+                    Err(LinuxError::EAGAIN)
+                } else if self.get_state() == STATE_CONNECTED {
+                    Ok(())
+                } else {
+                    Err(ax_err!(ECONNREFUSED, "connection refused"))
+                })
             })
-        })
     }
 
     fn listen(&self) -> LinuxResult<()> {
@@ -396,7 +397,7 @@ impl SocketOps for TcpSocket {
         // SAFETY: `self.local_addr` should be initialized after `bind()`.
         let local_port = unsafe { self.local_addr.get().read().port };
         self.general
-            .block_on(None, |_context| {
+            .block_on(self.general.recv_timeout(), |_context| {
                 Poll::Ready(LISTEN_TABLE.accept(local_port).map(
                     |(handle, (local_addr, peer_addr))| {
                         debug!("accepted connection from {}, {}", handle, peer_addr);

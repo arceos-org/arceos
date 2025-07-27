@@ -40,6 +40,7 @@ test = ["percpu?/sp-naive"]
 
 [dependencies]
 axconfig = { workspace = true, optional = true }
+axerrno = { workspace = true }
 axhal = { workspace = true }
 
 cfg-if = { workspace = true }
