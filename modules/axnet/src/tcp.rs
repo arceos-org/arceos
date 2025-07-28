@@ -1,7 +1,6 @@
 use alloc::vec;
 use core::{
     cell::UnsafeCell,
-    net::SocketAddr,
     sync::atomic::{AtomicU8, Ordering},
     task::Poll,
 };
@@ -21,7 +20,7 @@ use smoltcp::{
 
 use super::{LISTEN_TABLE, SOCKET_SET};
 use crate::{
-    RecvFlags, SERVICE, SendFlags, Shutdown, Socket, SocketOps,
+    RecvFlags, SERVICE, SendFlags, Shutdown, Socket, SocketAddrEx, SocketOps,
     consts::{TCP_RX_BUF_LEN, TCP_TX_BUF_LEN, UNSPECIFIED_ENDPOINT_V4},
     general::GeneralOptions,
     options::{Configurable, GetSocketOption, SetSocketOption},
@@ -273,7 +272,8 @@ impl Configurable for TcpSocket {
     }
 }
 impl SocketOps for TcpSocket {
-    fn bind(&self, mut local_addr: SocketAddr) -> LinuxResult<()> {
+    fn bind(&self, local_addr: SocketAddrEx) -> LinuxResult<()> {
+        let mut local_addr = local_addr.into_ip()?;
         self.update_state(STATE_CLOSED, STATE_CLOSED, || {
             // TODO: check addr is available
             if local_addr.port() == 0 {
@@ -303,7 +303,8 @@ impl SocketOps for TcpSocket {
         .map_err(|_| ax_err!(EINVAL, "already bound"))?
     }
 
-    fn connect(&self, remote_addr: SocketAddr) -> LinuxResult<()> {
+    fn connect(&self, remote_addr: SocketAddrEx) -> LinuxResult<()> {
+        let remote_addr = remote_addr.into_ip()?;
         self.update_state(STATE_CLOSED, STATE_CONNECTING, || {
             // TODO: check remote addr unreachable
             // let (bound_endpoint, remote_endpoint) = self.get_endpoint_pair(remote_addr)?;
@@ -411,7 +412,7 @@ impl SocketOps for TcpSocket {
     fn send(
         &self,
         src: &mut impl Buf,
-        _to: Option<SocketAddr>,
+        _to: Option<SocketAddrEx>,
         _flags: SendFlags,
     ) -> LinuxResult<usize> {
         if self.is_connecting() {
@@ -446,7 +447,7 @@ impl SocketOps for TcpSocket {
     fn recv(
         &self,
         dst: &mut impl BufMut,
-        _from: Option<&mut SocketAddr>,
+        _from: Option<&mut SocketAddrEx>,
         flags: RecvFlags,
     ) -> LinuxResult<usize> {
         if self.is_connecting() {
@@ -478,19 +479,21 @@ impl SocketOps for TcpSocket {
             })
     }
 
-    fn local_addr(&self) -> LinuxResult<SocketAddr> {
+    fn local_addr(&self) -> LinuxResult<SocketAddrEx> {
         // 为了通过测例，已经`bind`但未`listen`的socket也可以返回地址
         match self.get_state() {
-            STATE_CONNECTED | STATE_LISTENING | STATE_CLOSED => {
-                Ok(unsafe { self.local_addr.get().read() }.into())
-            }
+            STATE_CONNECTED | STATE_LISTENING | STATE_CLOSED => Ok(SocketAddrEx::Ip(
+                unsafe { self.local_addr.get().read() }.into(),
+            )),
             _ => Err(LinuxError::ENOTCONN),
         }
     }
 
-    fn peer_addr(&self) -> LinuxResult<SocketAddr> {
+    fn peer_addr(&self) -> LinuxResult<SocketAddrEx> {
         match self.get_state() {
-            STATE_CONNECTED | STATE_LISTENING => Ok(unsafe { self.peer_addr.get().read() }.into()),
+            STATE_CONNECTED | STATE_LISTENING => Ok(SocketAddrEx::Ip(
+                unsafe { self.peer_addr.get().read() }.into(),
+            )),
             _ => Err(LinuxError::ENOTCONN),
         }
     }

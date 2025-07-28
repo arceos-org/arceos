@@ -27,8 +27,9 @@ pub mod options;
 mod router;
 mod service;
 mod socket;
-mod tcp;
-mod udp;
+pub mod tcp;
+pub mod udp;
+pub mod unix;
 mod wrapper;
 
 use alloc::{borrow::ToOwned, boxed::Box};
@@ -38,8 +39,6 @@ use axsync::Mutex;
 use lazyinit::LazyInit;
 use smoltcp::wire::{EthernetAddress, Ipv4Address, Ipv4Cidr};
 pub use socket::*;
-pub use tcp::*;
-pub use udp::*;
 
 use crate::{
     consts::{GATEWAY, IP, IP_PREFIX},
@@ -49,11 +48,6 @@ use crate::{
     service::Service,
     wrapper::SocketSetWrapper,
 };
-
-#[doc(hidden)]
-pub mod __priv {
-    pub use axerrno::LinuxError;
-}
 
 static LISTEN_TABLE: LazyInit<ListenTable> = LazyInit::new();
 static SOCKET_SET: LazyInit<SocketSetWrapper> = LazyInit::new();

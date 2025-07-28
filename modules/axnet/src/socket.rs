@@ -12,7 +12,29 @@ use crate::{
     options::{Configurable, GetSocketOption, SetSocketOption},
     tcp::TcpSocket,
     udp::UdpSocket,
+    unix::UnixSocketAddr,
 };
+
+#[derive(Clone, Debug)]
+pub enum SocketAddrEx {
+    Ip(SocketAddr),
+    Unix(UnixSocketAddr),
+}
+impl SocketAddrEx {
+    pub fn into_ip(self) -> LinuxResult<SocketAddr> {
+        match self {
+            SocketAddrEx::Ip(addr) => Ok(addr),
+            SocketAddrEx::Unix(_) => Err(LinuxError::EAFNOSUPPORT),
+        }
+    }
+
+    pub fn into_unix(self) -> LinuxResult<UnixSocketAddr> {
+        match self {
+            SocketAddrEx::Ip(_) => Err(LinuxError::EAFNOSUPPORT),
+            SocketAddrEx::Unix(addr) => Ok(addr),
+        }
+    }
+}
 
 bitflags! {
     /// Flags for sending data to a socket.
@@ -59,9 +81,9 @@ pub enum Shutdown {
 #[enum_dispatch]
 pub trait SocketOps: Configurable {
     /// Binds an unbound socket to the given address and port.
-    fn bind(&self, local_addr: SocketAddr) -> LinuxResult<()>;
+    fn bind(&self, local_addr: SocketAddrEx) -> LinuxResult<()>;
     /// Connects the socket to a remote address.
-    fn connect(&self, remote_addr: SocketAddr) -> LinuxResult<()>;
+    fn connect(&self, remote_addr: SocketAddrEx) -> LinuxResult<()>;
 
     /// Starts listening on the bound address and port.
     fn listen(&self) -> LinuxResult<()> {
@@ -76,21 +98,21 @@ pub trait SocketOps: Configurable {
     fn send(
         &self,
         src: &mut impl Buf,
-        to: Option<SocketAddr>,
+        to: Option<SocketAddrEx>,
         flags: SendFlags,
     ) -> LinuxResult<usize>;
     /// Receive data from the socket.
     fn recv(
         &self,
         dst: &mut impl BufMut,
-        from: Option<&mut SocketAddr>,
+        from: Option<&mut SocketAddrEx>,
         flags: RecvFlags,
     ) -> LinuxResult<usize>;
 
     /// Get the local endpoint of the socket.
-    fn local_addr(&self) -> LinuxResult<SocketAddr>;
+    fn local_addr(&self) -> LinuxResult<SocketAddrEx>;
     /// Get the remote endpoint of the socket.
-    fn peer_addr(&self) -> LinuxResult<SocketAddr>;
+    fn peer_addr(&self) -> LinuxResult<SocketAddrEx>;
 
     /// Poll the socket for readiness.
     fn poll(&self) -> LinuxResult<PollState>;

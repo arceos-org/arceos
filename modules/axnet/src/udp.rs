@@ -1,5 +1,5 @@
 use alloc::vec;
-use core::{net::SocketAddr, task::Poll};
+use core::task::Poll;
 
 use axerrno::{LinuxError, LinuxResult, ax_err, bail};
 use axio::{
@@ -17,7 +17,7 @@ use smoltcp::{
 use spin::RwLock;
 
 use crate::{
-    RecvFlags, SERVICE, SOCKET_SET, SendFlags, Shutdown, SocketOps,
+    RecvFlags, SERVICE, SOCKET_SET, SendFlags, Shutdown, SocketAddrEx, SocketOps,
     consts::{UDP_RX_BUF_LEN, UDP_TX_BUF_LEN, UNSPECIFIED_ENDPOINT_V4},
     general::GeneralOptions,
     options::{Configurable, GetSocketOption, SetSocketOption},
@@ -114,7 +114,8 @@ impl Configurable for UdpSocket {
     }
 }
 impl SocketOps for UdpSocket {
-    fn bind(&self, mut local_addr: SocketAddr) -> LinuxResult<()> {
+    fn bind(&self, local_addr: SocketAddrEx) -> LinuxResult<()> {
+        let mut local_addr = local_addr.into_ip()?;
         let mut guard = self.local_addr.write();
 
         if local_addr.port() == 0 {
@@ -147,10 +148,11 @@ impl SocketOps for UdpSocket {
         Ok(())
     }
 
-    fn connect(&self, remote_addr: SocketAddr) -> LinuxResult<()> {
+    fn connect(&self, remote_addr: SocketAddrEx) -> LinuxResult<()> {
+        let remote_addr = remote_addr.into_ip()?;
         let mut guard = self.peer_addr.write();
         if self.local_addr.read().is_none() {
-            self.bind(UNSPECIFIED_ENDPOINT_V4.into())?;
+            self.bind(SocketAddrEx::Ip(UNSPECIFIED_ENDPOINT_V4.into()))?;
         }
 
         let remote_addr = IpEndpoint::from(remote_addr);
@@ -163,12 +165,12 @@ impl SocketOps for UdpSocket {
     fn send(
         &self,
         src: &mut impl Buf,
-        to: Option<SocketAddr>,
+        to: Option<SocketAddrEx>,
         _flags: SendFlags,
     ) -> LinuxResult<usize> {
         let (remote_addr, source_addr) = match to {
             Some(addr) => {
-                let addr = IpEndpoint::from(addr);
+                let addr = IpEndpoint::from(addr.into_ip()?);
                 let src = SERVICE.lock().get_source_address(&addr.addr);
                 (addr, src)
             }
@@ -218,7 +220,7 @@ impl SocketOps for UdpSocket {
     fn recv(
         &self,
         dst: &mut impl BufMut,
-        from: Option<&mut SocketAddr>,
+        from: Option<&mut SocketAddrEx>,
         flags: RecvFlags,
     ) -> LinuxResult<usize> {
         if self.local_addr.read().is_none() {
@@ -226,7 +228,7 @@ impl SocketOps for UdpSocket {
         }
 
         enum ExpectedRemote<'a> {
-            Any(&'a mut SocketAddr),
+            Any(&'a mut SocketAddrEx),
             Expecting(IpEndpoint),
         }
         let mut expected_remote = match from {
@@ -253,7 +255,7 @@ impl SocketOps for UdpSocket {
                             Ok((src, meta)) => {
                                 match &mut expected_remote {
                                     ExpectedRemote::Any(remote_addr) => {
-                                        **remote_addr = meta.endpoint.into();
+                                        **remote_addr = SocketAddrEx::Ip(meta.endpoint.into());
                                     }
                                     ExpectedRemote::Expecting(expected) => {
                                         if (!expected.addr.is_unspecified()
@@ -287,15 +289,20 @@ impl SocketOps for UdpSocket {
             })
     }
 
-    fn local_addr(&self) -> LinuxResult<SocketAddr> {
+    fn local_addr(&self) -> LinuxResult<SocketAddrEx> {
         match self.local_addr.try_read() {
-            Some(addr) => addr.map(Into::into).ok_or(LinuxError::ENOTCONN),
+            Some(addr) => addr
+                .map(Into::into)
+                .map(SocketAddrEx::Ip)
+                .ok_or(LinuxError::ENOTCONN),
             None => Err(LinuxError::ENOTCONN),
         }
     }
 
-    fn peer_addr(&self) -> LinuxResult<SocketAddr> {
-        self.remote_endpoint().map(|it| it.0.into())
+    fn peer_addr(&self) -> LinuxResult<SocketAddrEx> {
+        self.remote_endpoint()
+            .map(|it| it.0.into())
+            .map(SocketAddrEx::Ip)
     }
 
     fn poll(&self) -> LinuxResult<PollState> {
