@@ -1,5 +1,3 @@
-use smoltcp::wire::{IpAddress, IpEndpoint};
-
 macro_rules! env_or_default {
     ($key:literal) => {
         match option_env!($key) {
@@ -21,6 +19,5 @@ pub const UDP_RX_BUF_LEN: usize = 64 * 1024;
 pub const UDP_TX_BUF_LEN: usize = 64 * 1024;
 pub const LISTEN_QUEUE_SIZE: usize = 512;
 
-pub const UNSPECIFIED_ENDPOINT_V4: IpEndpoint = IpEndpoint::new(IpAddress::v4(0, 0, 0, 0), 0);
 pub const SOCKET_BUFFER_SIZE: usize = 64;
 pub const ETHERNET_MAX_PENDING_PACKETS: usize = 32;

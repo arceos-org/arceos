@@ -1,5 +1,8 @@
 use alloc::vec;
-use core::task::Poll;
+use core::{
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    task::Poll,
+};
 
 use axerrno::{LinuxError, LinuxResult, ax_err, bail};
 use axio::{
@@ -18,7 +21,7 @@ use spin::RwLock;
 
 use crate::{
     RecvFlags, SERVICE, SOCKET_SET, SendFlags, Shutdown, SocketAddrEx, SocketOps,
-    consts::{UDP_RX_BUF_LEN, UDP_TX_BUF_LEN, UNSPECIFIED_ENDPOINT_V4},
+    consts::{UDP_RX_BUF_LEN, UDP_TX_BUF_LEN},
     general::GeneralOptions,
     options::{Configurable, GetSocketOption, SetSocketOption},
     poll_interfaces,
@@ -152,7 +155,10 @@ impl SocketOps for UdpSocket {
         let remote_addr = remote_addr.into_ip()?;
         let mut guard = self.peer_addr.write();
         if self.local_addr.read().is_none() {
-            self.bind(SocketAddrEx::Ip(UNSPECIFIED_ENDPOINT_V4.into()))?;
+            self.bind(SocketAddrEx::Ip(SocketAddr::new(
+                IpAddr::V4(Ipv4Addr::UNSPECIFIED),
+                0,
+            )))?;
         }
 
         let remote_addr = IpEndpoint::from(remote_addr);

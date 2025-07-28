@@ -1,5 +1,5 @@
 use alloc::{boxed::Box, collections::VecDeque, sync::Arc, vec};
-use core::ops::DerefMut;
+use core::{net::Ipv4Addr, ops::DerefMut};
 
 use axerrno::{LinuxError, LinuxResult};
 use axsync::Mutex;
@@ -26,14 +26,6 @@ impl ListenTableEntry {
         Self {
             listen_endpoint,
             syn_queue: VecDeque::with_capacity(LISTEN_QUEUE_SIZE),
-        }
-    }
-
-    #[inline]
-    fn can_accept(&self, dst: IpAddress) -> bool {
-        match self.listen_endpoint.addr {
-            Some(addr) => addr == dst,
-            None => true,
         }
     }
 }
@@ -97,7 +89,7 @@ impl ListenTable {
         }
     }
 
-    pub fn accept(&self, port: u16) -> LinuxResult<(SocketHandle, (IpEndpoint, IpEndpoint))> {
+    pub fn accept(&self, port: u16) -> LinuxResult<SocketHandle> {
         let entry = self.listen_entry(port);
         let mut table = entry.lock();
         let Some(entry) = table.deref_mut() else {
@@ -125,7 +117,7 @@ impl ListenTable {
             warn!("accept failed: connection reset");
             Err(LinuxError::ECONNRESET)
         } else {
-            Ok((handle, get_addr_tuple(handle)))
+            Ok(handle)
         }
     }
 
@@ -136,10 +128,7 @@ impl ListenTable {
         sockets: &mut SocketSet<'_>,
     ) {
         if let Some(entry) = self.listen_entry(dst.port).lock().deref_mut() {
-            if !entry.can_accept(dst.addr) {
-                // not listening on this address
-                return;
-            }
+            // TODO(mivik): accept address check
             if entry.syn_queue.len() >= LISTEN_QUEUE_SIZE {
                 // SYN queue is full, drop the packet
                 warn!("SYN queue overflow!");
@@ -150,14 +139,19 @@ impl ListenTable {
                 SocketBuffer::new(vec![0; TCP_RX_BUF_LEN]),
                 SocketBuffer::new(vec![0; TCP_TX_BUF_LEN]),
             );
-            if socket.listen(entry.listen_endpoint).is_ok() {
-                let handle = sockets.add(socket);
-                debug!(
-                    "TCP socket {}: prepare for connection {} -> {}",
-                    handle, src, entry.listen_endpoint
-                );
-                entry.syn_queue.push_back(handle);
+            if let Err(err) = socket.listen(IpListenEndpoint {
+                addr: Some(IpAddress::Ipv4(Ipv4Addr::LOCALHOST)),
+                port: dst.port,
+            }) {
+                warn!("Failed to listen on {}: {:?}", entry.listen_endpoint, err);
+                return;
             }
+            let handle = sockets.add(socket);
+            debug!(
+                "TCP socket {}: prepare for connection {} -> {}",
+                handle, src, entry.listen_endpoint
+            );
+            entry.syn_queue.push_back(handle);
         }
     }
 }
@@ -171,13 +165,4 @@ fn is_connected(handle: SocketHandle) -> bool {
 fn is_closed(handle: SocketHandle) -> bool {
     SOCKET_SET
         .with_socket::<tcp::Socket, _, _>(handle, |socket| matches!(socket.state(), State::Closed))
-}
-
-fn get_addr_tuple(handle: SocketHandle) -> (IpEndpoint, IpEndpoint) {
-    SOCKET_SET.with_socket::<tcp::Socket, _, _>(handle, |socket| {
-        (
-            socket.local_endpoint().unwrap(),
-            socket.remote_endpoint().unwrap(),
-        )
-    })
 }
