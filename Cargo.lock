@@ -2681,7 +2681,3 @@ dependencies = [
  "quote",
  "syn 2.0.104",
 ]
-
-[[patch.unused]]
-name = "axio"
-version = "0.1.1"
