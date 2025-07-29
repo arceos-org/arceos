@@ -90,4 +90,3 @@ lto = true
 axcpu = { git = "https://github.com/Starry-Mix-THU/axcpu.git", rev = "e62544b" }
 page_table_entry = { git = "https://github.com/Starry-Mix-THU/page_table_multiarch.git", rev = "e5c69f9" }
 page_table_multiarch = { git = "https://github.com/Starry-Mix-THU/page_table_multiarch.git", rev = "e5c69f9" }
-axio.path = "/home/mivik/Misc/axio"
