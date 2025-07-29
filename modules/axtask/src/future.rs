@@ -98,9 +98,7 @@ pub fn try_block_on<F: IntoFuture<Output = LinuxResult<R>>, R>(fut: F) -> LinuxR
 /// The difference is that this function will always return `Err(EINTR)` when
 /// interrupted, no matter whether the signal says the task can be restarted or
 /// not.
-pub fn try_block_on_no_restart<F: IntoFuture<Output = LinuxResult<R>>, R>(
-    fut: F,
-) -> LinuxResult<R> {
+pub fn block_on_interruptible<F: IntoFuture<Output = LinuxResult<R>>, R>(fut: F) -> LinuxResult<R> {
     try_block_on(fut).and_then(|opt| opt.ok_or(LinuxError::EINTR))
 }
 

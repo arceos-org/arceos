@@ -12,7 +12,7 @@ use crate::{
     options::{Configurable, GetSocketOption, SetSocketOption},
     tcp::TcpSocket,
     udp::UdpSocket,
-    unix::UnixSocketAddr,
+    unix::{UnixSocket, UnixSocketAddr},
 };
 
 #[derive(Clone, Debug)]
@@ -126,6 +126,7 @@ pub trait SocketOps: Configurable {
 pub enum Socket {
     Udp(UdpSocket),
     Tcp(TcpSocket),
+    Unix(UnixSocket),
 }
 
 impl Read for Socket {

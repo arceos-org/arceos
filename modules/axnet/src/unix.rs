@@ -1,9 +1,27 @@
-use alloc::sync::Arc;
+pub(crate) mod dgram;
+pub(crate) mod stream;
 
+use alloc::{boxed::Box, sync::Arc};
+
+use async_trait::async_trait;
 use axerrno::{LinuxError, LinuxResult};
-use axsync::spin::SpinNoIrq;
+use axfs_ng::{FS_CONTEXT, OpenOptions};
+use axfs_ng_vfs::NodeType;
+use axio::{
+    PollState,
+    buf::{Buf, BufMut},
+};
+use axsync::Mutex;
+use axtask::future::block_on_interruptible;
+pub use dgram::DgramTransport;
+use hashbrown::HashMap;
+use lazy_static::lazy_static;
+pub use stream::StreamTransport;
 
-use crate::{Socket, SocketAddrEx, SocketOps};
+use crate::{
+    RecvFlags, SendFlags, Shutdown, Socket, SocketAddrEx, SocketOps,
+    options::{Configurable, GetSocketOption, SetSocketOption},
+};
 
 #[derive(Clone, Debug)]
 pub enum UnixSocketAddr {
@@ -12,12 +30,192 @@ pub enum UnixSocketAddr {
     Path(Arc<str>),
 }
 
-enum Transport {
-    Tcp {},
-    Udp {},
+/// Abstract transport trait for Unix sockets.
+#[async_trait]
+pub trait Transport: Configurable + Send + Sync {
+    fn bind(&self, slot: &BindSlot) -> LinuxResult<()>;
+    fn connect(&self, slot: &BindSlot, local_addr: &UnixSocketAddr) -> LinuxResult<()>;
+
+    async fn accept(&self) -> LinuxResult<(Box<dyn Transport>, UnixSocketAddr)>;
+
+    fn send(
+        &self,
+        src: &mut dyn Buf,
+        to: Option<UnixSocketAddr>,
+        flags: SendFlags,
+    ) -> LinuxResult<usize>;
+    fn recv(&self, dst: &mut dyn BufMut, flags: RecvFlags) -> LinuxResult<usize>;
+
+    fn poll(&self) -> LinuxResult<PollState>;
+
+    fn make_pair() -> LinuxResult<(Self, Self)>
+    where
+        Self: Sized;
+}
+
+#[derive(Default)]
+pub struct BindSlot {
+    stream: Mutex<Option<stream::Bind>>,
+    dgram: Mutex<Option<dgram::Bind>>,
+}
+
+lazy_static! {
+    static ref ABSTRACT_BINDS: Mutex<HashMap<Arc<[u8]>, BindSlot>> = Mutex::new(HashMap::new());
+}
+
+pub(crate) fn with_slot<R>(
+    addr: &UnixSocketAddr,
+    f: impl FnOnce(&BindSlot) -> LinuxResult<R>,
+) -> LinuxResult<R> {
+    match addr {
+        UnixSocketAddr::Unnamed => Err(LinuxError::EINVAL),
+        UnixSocketAddr::Abstract(name) => {
+            let binds = ABSTRACT_BINDS.lock();
+            if let Some(slot) = binds.get(name) {
+                f(slot)
+            } else {
+                Err(LinuxError::ENOENT)
+            }
+        }
+        UnixSocketAddr::Path(path) => {
+            let loc = FS_CONTEXT.lock().resolve(path.as_ref())?;
+            if loc.metadata()?.node_type != NodeType::Socket {
+                return Err(LinuxError::ENOTSOCK);
+            }
+            f(loc
+                .user_data()
+                .as_ref()
+                .ok_or(LinuxError::ECONNREFUSED)?
+                .downcast_ref::<BindSlot>()
+                .ok_or(LinuxError::ENOTSOCK)?)
+        }
+    }
+}
+fn with_slot_or_insert<R>(
+    addr: &UnixSocketAddr,
+    f: impl FnOnce(&BindSlot) -> LinuxResult<R>,
+) -> LinuxResult<R> {
+    match addr {
+        UnixSocketAddr::Unnamed => Err(LinuxError::EINVAL),
+        UnixSocketAddr::Abstract(name) => {
+            let mut binds = ABSTRACT_BINDS.lock();
+            f(binds.entry(name.clone()).or_default())
+        }
+        UnixSocketAddr::Path(path) => {
+            let loc = OpenOptions::new()
+                .write(true)
+                .create(true)
+                .node_type(NodeType::Socket)
+                .open(&*FS_CONTEXT.lock(), path.as_ref())?
+                .into_location();
+            if loc.metadata()?.node_type != NodeType::Socket {
+                return Err(LinuxError::ENOTSOCK);
+            }
+            let mut user_data = loc.user_data();
+            let data = user_data.get_or_insert_with(|| Box::new(BindSlot::default()));
+            f(data
+                .downcast_ref::<BindSlot>()
+                .ok_or(LinuxError::ENOTSOCK)?)
+        }
+    }
 }
 
 pub struct UnixSocket {
-    transport: Transport,
-    local_addr: SpinNoIrq<Option<SocketAddrEx>>,
+    transport: Box<dyn Transport>,
+    local_addr: Mutex<UnixSocketAddr>,
+    remote_addr: Mutex<UnixSocketAddr>,
+}
+impl UnixSocket {
+    pub fn new(transport: impl Transport + 'static) -> Self {
+        Self {
+            transport: Box::new(transport),
+            local_addr: Mutex::new(UnixSocketAddr::Unnamed),
+            remote_addr: Mutex::new(UnixSocketAddr::Unnamed),
+        }
+    }
+}
+impl Configurable for UnixSocket {
+    fn get_option_inner(&self, opt: &mut GetSocketOption) -> LinuxResult<bool> {
+        self.transport.get_option_inner(opt)
+    }
+
+    fn set_option_inner(&self, opt: SetSocketOption) -> LinuxResult<bool> {
+        self.transport.set_option_inner(opt)
+    }
+}
+impl SocketOps for UnixSocket {
+    fn bind(&self, local_addr: SocketAddrEx) -> LinuxResult<()> {
+        let local_addr = local_addr.into_unix()?;
+        let mut guard = self.local_addr.lock();
+        if matches!(&*guard, UnixSocketAddr::Unnamed) {
+            with_slot_or_insert(&local_addr, |slot| self.transport.bind(slot))?;
+            *guard = local_addr;
+        } else {
+            return Err(LinuxError::EINVAL);
+        }
+        Ok(())
+    }
+
+    fn connect(&self, remote_addr: SocketAddrEx) -> LinuxResult<()> {
+        let remote_addr = remote_addr.into_unix()?;
+        let local_addr = self.local_addr.lock().clone();
+        let mut guard = self.remote_addr.lock();
+        if matches!(&*guard, UnixSocketAddr::Unnamed) {
+            with_slot(&remote_addr, |slot| {
+                self.transport.connect(slot, &local_addr)
+            })?;
+            *guard = remote_addr;
+        } else {
+            return Err(LinuxError::EINVAL);
+        }
+        Ok(())
+    }
+
+    fn listen(&self) -> LinuxResult<()> {
+        Ok(())
+    }
+
+    fn accept(&self) -> LinuxResult<Socket> {
+        let (transport, peer_addr) = block_on_interruptible(self.transport.accept())?;
+        Ok(Socket::Unix(Self {
+            transport,
+            local_addr: Mutex::new(self.local_addr.lock().clone()),
+            remote_addr: Mutex::new(peer_addr),
+        }))
+    }
+
+    fn send(
+        &self,
+        src: &mut impl Buf,
+        to: Option<SocketAddrEx>,
+        flags: SendFlags,
+    ) -> LinuxResult<usize> {
+        let to = to.map(|addr| addr.into_unix()).transpose()?;
+        self.transport.send(src, to, flags)
+    }
+
+    fn recv(
+        &self,
+        dst: &mut impl BufMut,
+        _from: Option<&mut SocketAddrEx>,
+        flags: RecvFlags,
+    ) -> LinuxResult<usize> {
+        self.transport.recv(dst, flags)
+    }
+
+    fn local_addr(&self) -> LinuxResult<SocketAddrEx> {
+        Ok(SocketAddrEx::Unix(self.local_addr.lock().clone()))
+    }
+
+    fn peer_addr(&self) -> LinuxResult<SocketAddrEx> {
+        Ok(SocketAddrEx::Unix(self.remote_addr.lock().clone()))
+    }
+
+    fn poll(&self) -> LinuxResult<PollState> {
+        self.transport.poll()
+    }
+
+    fn shutdown(&self, _how: Shutdown) -> LinuxResult<()> {
+        Ok(())
+    }
 }

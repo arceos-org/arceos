@@ -7,7 +7,7 @@ use core::{fmt, num::NonZeroUsize, ops::Range};
 
 use allocator::AllocError;
 use axalloc::{UsageKind, global_allocator};
-use axfs_ng_vfs::{FileNode, Location, NodePermission, VfsError, VfsResult, path::Path};
+use axfs_ng_vfs::{FileNode, Location, NodePermission, NodeType, VfsError, VfsResult, path::Path};
 use axhal::mem::{PhysAddr, VirtAddr, virt_to_phys};
 use axio::SeekFrom;
 use axsync::Mutex;
@@ -50,6 +50,13 @@ impl<M: RawMutex> OpenResult<M> {
             Self::File(_) => Err(VfsError::ENOTDIR),
         }
     }
+
+    pub fn into_location(self) -> Location<M> {
+        match self {
+            Self::File(file) => file.location().clone(),
+            Self::Dir(dir) => dir,
+        }
+    }
 }
 
 /// Options and flags which can be used to configure how a file is opened.
@@ -67,6 +74,7 @@ pub struct OpenOptions {
     direct: bool,
     user: Option<(u32, u32)>,
     path: bool,
+    node_type: NodeType,
     // system-specific
     mode: u32,
 }
@@ -87,6 +95,7 @@ impl OpenOptions {
             direct: false,
             user: None,
             path: false,
+            node_type: NodeType::RegularFile,
             // system-specific
             mode: 0o666,
         }
@@ -101,12 +110,6 @@ impl OpenOptions {
     /// Sets the option for write access.
     pub fn write(&mut self, write: bool) -> &mut Self {
         self.write = write;
-        self
-    }
-
-    /// Sets the option for path only access.
-    pub fn path(&mut self, path: bool) -> &mut Self {
-        self.path = path;
         self
     }
 
@@ -158,6 +161,20 @@ impl OpenOptions {
         self
     }
 
+    /// Sets the option for path only access.
+    pub fn path(&mut self, path: bool) -> &mut Self {
+        self.path = path;
+        self
+    }
+
+    /// Sets the node type for the file.
+    ///
+    /// This will only be used if the file is created.
+    pub fn node_type(&mut self, node_type: NodeType) -> &mut Self {
+        self.node_type = node_type;
+        self
+    }
+
     /// Sets the mode bits that a new file will be created with.
     pub fn mode(&mut self, mode: u32) -> &mut Self {
         self.mode = mode;
@@ -181,10 +198,16 @@ impl OpenOptions {
             OpenResult::Dir(loc)
         } else {
             // TODO(mivik): is this correct?
+            let non_cacheable_type = matches!(
+                loc.metadata()?.node_type,
+                NodeType::CharacterDevice | NodeType::Fifo | NodeType::Socket
+            );
 
             // For tmpfs we must enforce non-direct I/O because it relies
             // entirely on page cache.
-            let direct = self.path || (self.direct && loc.filesystem().name() != "tmpfs");
+            let direct = non_cacheable_type
+                || self.path
+                || (self.direct && loc.filesystem().name() != "tmpfs");
             let backend = if !direct && loc.filesystem().is_cacheable() {
                 FileBackend::new_cached(loc)
             } else {
@@ -220,6 +243,7 @@ impl OpenOptions {
                     &axfs_ng_vfs::OpenOptions {
                         create: self.create,
                         create_new: self.create_new,
+                        node_type: self.node_type,
                         permission: NodePermission::from_bits_truncate(self.mode as _),
                         user: self.user,
                     },
@@ -296,6 +320,7 @@ impl fmt::Debug for OpenOptions {
             direct,
             user,
             path,
+            node_type,
             mode,
         } = self;
         f.debug_struct("OpenOptions")
@@ -310,6 +335,7 @@ impl fmt::Debug for OpenOptions {
             .field("direct", direct)
             .field("user", user)
             .field("path", path)
+            .field("node_type", node_type)
             .field("mode", mode)
             .finish()
     }

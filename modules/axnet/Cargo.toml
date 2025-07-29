@@ -21,14 +21,21 @@ axtask = { workspace = true }
 
 axdriver_net = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2" }
 axerrno = { workspace = true }
+axfs-ng = { workspace = true }
+axfs-ng-vfs = { workspace = true }
 axio = { workspace = true }
 bitflags = "2.9.1"
 cfg-if = { workspace = true }
 enum_dispatch = { workspace = true }
 hashbrown = { workspace = true }
 lazyinit = { workspace = true }
+lazy_static = { workspace = true }
 log = { workspace = true }
 spin = { workspace = true }
+ringbuf = { version = "0.4.8", default-features = false, features = ["alloc"] }
+async-channel = { version = "2.5.0", default-features = false }
+event-listener = { version = "5.4.0", default-features = false }
+async-trait = "0.1.88"
 
 [dependencies.smoltcp]
 git = "https://github.com/Starry-Mix-THU/smoltcp.git"

@@ -6,7 +6,7 @@ use core::{
 };
 
 use axerrno::{LinuxError, LinuxResult};
-use axtask::future::try_block_on_no_restart;
+use axtask::future::block_on_interruptible;
 
 use crate::{
     options::{Configurable, GetSocketOption, SetSocketOption},
@@ -102,7 +102,7 @@ impl GeneralOptions {
                     }
                 })
             };
-            try_block_on_no_restart(async move {
+            block_on_interruptible(async move {
                 axtask::future::timeout_opt(fut, timeout)
                     .await
                     .ok_or(LinuxError::ETIMEDOUT)?

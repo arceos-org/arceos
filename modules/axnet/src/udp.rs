@@ -7,7 +7,7 @@ use core::{
 use axerrno::{LinuxError, LinuxResult, ax_err, bail};
 use axio::{
     PollState,
-    buf::{Buf, BufMut},
+    buf::{Buf, BufMut, BufMutExt},
 };
 use axsync::Mutex;
 use smoltcp::{
