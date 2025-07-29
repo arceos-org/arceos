@@ -20,7 +20,7 @@ use smoltcp::{
 use spin::RwLock;
 
 use crate::{
-    RecvFlags, SERVICE, SOCKET_SET, SendFlags, Shutdown, SocketAddrEx, SocketOps,
+    RecvFlags, RecvOptions, SERVICE, SOCKET_SET, SendOptions, Shutdown, SocketAddrEx, SocketOps,
     consts::{UDP_RX_BUF_LEN, UDP_TX_BUF_LEN},
     general::GeneralOptions,
     options::{Configurable, GetSocketOption, SetSocketOption},
@@ -168,13 +168,8 @@ impl SocketOps for UdpSocket {
         Ok(())
     }
 
-    fn send(
-        &self,
-        src: &mut impl Buf,
-        to: Option<SocketAddrEx>,
-        _flags: SendFlags,
-    ) -> LinuxResult<usize> {
-        let (remote_addr, source_addr) = match to {
+    fn send(&self, src: &mut impl Buf, options: SendOptions) -> LinuxResult<usize> {
+        let (remote_addr, source_addr) = match options.to {
             Some(addr) => {
                 let addr = IpEndpoint::from(addr.into_ip()?);
                 let src = SERVICE.lock().get_source_address(&addr.addr);
@@ -223,12 +218,7 @@ impl SocketOps for UdpSocket {
             })
     }
 
-    fn recv(
-        &self,
-        dst: &mut impl BufMut,
-        from: Option<&mut SocketAddrEx>,
-        flags: RecvFlags,
-    ) -> LinuxResult<usize> {
+    fn recv(&self, dst: &mut impl BufMut, options: RecvOptions) -> LinuxResult<usize> {
         if self.local_addr.read().is_none() {
             bail!(ENOTCONN);
         }
@@ -237,7 +227,7 @@ impl SocketOps for UdpSocket {
             Any(&'a mut SocketAddrEx),
             Expecting(IpEndpoint),
         }
-        let mut expected_remote = match from {
+        let mut expected_remote = match options.from {
             Some(addr) => ExpectedRemote::Any(addr),
             None => ExpectedRemote::Expecting(self.remote_endpoint()?.0),
         };
@@ -252,7 +242,7 @@ impl SocketOps for UdpSocket {
                         socket.register_recv_waker(context.waker());
                         return Poll::Pending;
                     } else {
-                        let result = if flags.contains(RecvFlags::PEEK) {
+                        let result = if options.flags.contains(RecvFlags::PEEK) {
                             socket.peek().map(|(data, meta)| (data, *meta))
                         } else {
                             socket.recv()
@@ -279,7 +269,7 @@ impl SocketOps for UdpSocket {
                                     warn!("UDP message truncated: {} -> {} bytes", src.len(), read);
                                 }
 
-                                Ok(if flags.contains(RecvFlags::TRUNCATE) {
+                                Ok(if options.flags.contains(RecvFlags::TRUNCATE) {
                                     src.len()
                                 } else {
                                     read

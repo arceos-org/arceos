@@ -15,7 +15,7 @@ use ringbuf::{
 };
 
 use crate::{
-    RecvFlags, SendFlags,
+    RecvOptions, SendOptions,
     options::{Configurable, GetSocketOption, SetSocketOption},
     unix::{Transport, UnixSocketAddr},
 };
@@ -87,7 +87,7 @@ impl Configurable for StreamTransport {
 }
 #[async_trait]
 impl Transport for StreamTransport {
-    fn bind(&self, slot: &super::BindSlot) -> LinuxResult<()> {
+    fn bind(&self, slot: &super::BindSlot, _local_addr: &UnixSocketAddr) -> LinuxResult<()> {
         let mut slot = slot.stream.lock();
         if slot.is_some() {
             return Err(LinuxError::EADDRINUSE);
@@ -132,13 +132,8 @@ impl Transport for StreamTransport {
         ))
     }
 
-    fn send(
-        &self,
-        src: &mut dyn Buf,
-        to: Option<UnixSocketAddr>,
-        _flags: SendFlags,
-    ) -> LinuxResult<usize> {
-        if to.is_some() {
+    fn send(&self, src: &mut dyn Buf, options: SendOptions) -> LinuxResult<usize> {
+        if options.to.is_some() {
             return Err(LinuxError::EINVAL);
         }
         let mut total = 0;
@@ -180,7 +175,7 @@ impl Transport for StreamTransport {
         Ok(total)
     }
 
-    fn recv(&self, dst: &mut dyn BufMut, _flags: RecvFlags) -> LinuxResult<usize> {
+    fn recv(&self, dst: &mut dyn BufMut, _options: RecvOptions) -> LinuxResult<usize> {
         loop {
             let mut guard = self.channel.lock();
             let Some(chan) = guard.as_mut() else {

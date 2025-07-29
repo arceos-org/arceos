@@ -19,7 +19,7 @@ use lazy_static::lazy_static;
 pub use stream::StreamTransport;
 
 use crate::{
-    RecvFlags, SendFlags, Shutdown, Socket, SocketAddrEx, SocketOps,
+    RecvOptions, SendOptions, Shutdown, Socket, SocketAddrEx, SocketOps,
     options::{Configurable, GetSocketOption, SetSocketOption},
 };
 
@@ -33,18 +33,13 @@ pub enum UnixSocketAddr {
 /// Abstract transport trait for Unix sockets.
 #[async_trait]
 pub trait Transport: Configurable + Send + Sync {
-    fn bind(&self, slot: &BindSlot) -> LinuxResult<()>;
+    fn bind(&self, slot: &BindSlot, local_addr: &UnixSocketAddr) -> LinuxResult<()>;
     fn connect(&self, slot: &BindSlot, local_addr: &UnixSocketAddr) -> LinuxResult<()>;
 
     async fn accept(&self) -> LinuxResult<(Box<dyn Transport>, UnixSocketAddr)>;
 
-    fn send(
-        &self,
-        src: &mut dyn Buf,
-        to: Option<UnixSocketAddr>,
-        flags: SendFlags,
-    ) -> LinuxResult<usize>;
-    fn recv(&self, dst: &mut dyn BufMut, flags: RecvFlags) -> LinuxResult<usize>;
+    fn send(&self, src: &mut dyn Buf, options: SendOptions) -> LinuxResult<usize>;
+    fn recv(&self, dst: &mut dyn BufMut, options: RecvOptions<'_>) -> LinuxResult<usize>;
 
     fn poll(&self) -> LinuxResult<PollState>;
 
@@ -148,7 +143,7 @@ impl SocketOps for UnixSocket {
         let local_addr = local_addr.into_unix()?;
         let mut guard = self.local_addr.lock();
         if matches!(&*guard, UnixSocketAddr::Unnamed) {
-            with_slot_or_insert(&local_addr, |slot| self.transport.bind(slot))?;
+            with_slot_or_insert(&local_addr, |slot| self.transport.bind(slot, &local_addr))?;
             *guard = local_addr;
         } else {
             return Err(LinuxError::EINVAL);
@@ -184,23 +179,12 @@ impl SocketOps for UnixSocket {
         }))
     }
 
-    fn send(
-        &self,
-        src: &mut impl Buf,
-        to: Option<SocketAddrEx>,
-        flags: SendFlags,
-    ) -> LinuxResult<usize> {
-        let to = to.map(|addr| addr.into_unix()).transpose()?;
-        self.transport.send(src, to, flags)
+    fn send(&self, src: &mut impl Buf, options: SendOptions) -> LinuxResult<usize> {
+        self.transport.send(src, options)
     }
 
-    fn recv(
-        &self,
-        dst: &mut impl BufMut,
-        _from: Option<&mut SocketAddrEx>,
-        flags: RecvFlags,
-    ) -> LinuxResult<usize> {
-        self.transport.recv(dst, flags)
+    fn recv(&self, dst: &mut impl BufMut, options: RecvOptions<'_>) -> LinuxResult<usize> {
+        self.transport.recv(dst, options)
     }
 
     fn local_addr(&self) -> LinuxResult<SocketAddrEx> {

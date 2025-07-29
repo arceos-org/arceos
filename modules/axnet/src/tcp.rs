@@ -20,7 +20,8 @@ use smoltcp::{
 
 use super::{LISTEN_TABLE, SOCKET_SET};
 use crate::{
-    RecvFlags, SERVICE, SendFlags, Shutdown, Socket, SocketAddrEx, SocketOps,
+    RecvFlags, RecvOptions, SERVICE, SendOptions, Shutdown, Socket, SocketAddrEx,
+    SocketOps,
     consts::{TCP_RX_BUF_LEN, TCP_TX_BUF_LEN},
     general::GeneralOptions,
     options::{Configurable, GetSocketOption, SetSocketOption},
@@ -404,12 +405,7 @@ impl SocketOps for TcpSocket {
             .map(Socket::Tcp)
     }
 
-    fn send(
-        &self,
-        src: &mut impl Buf,
-        _to: Option<SocketAddrEx>,
-        _flags: SendFlags,
-    ) -> LinuxResult<usize> {
+    fn send(&self, src: &mut impl Buf, _options: SendOptions) -> LinuxResult<usize> {
         if self.is_connecting() {
             return Err(ax_err!(EAGAIN));
         } else if !self.is_connected() {
@@ -439,12 +435,7 @@ impl SocketOps for TcpSocket {
             })
     }
 
-    fn recv(
-        &self,
-        dst: &mut impl BufMut,
-        _from: Option<&mut SocketAddrEx>,
-        flags: RecvFlags,
-    ) -> LinuxResult<usize> {
+    fn recv(&self, dst: &mut impl BufMut, options: RecvOptions<'_>) -> LinuxResult<usize> {
         if self.is_connecting() {
             bail!(EAGAIN);
         }
@@ -460,7 +451,7 @@ impl SocketOps for TcpSocket {
                         socket.register_recv_waker(context.waker());
                         return Poll::Pending;
                     } else {
-                        if flags.contains(RecvFlags::PEEK) {
+                        if options.flags.contains(RecvFlags::PEEK) {
                             socket.peek_slice(dst.chunk_mut())
                         } else {
                             socket.recv(|buf| {

@@ -1,4 +1,9 @@
-use core::{net::SocketAddr, time::Duration};
+use alloc::{boxed::Box, vec::Vec};
+use core::{
+    any::Any,
+    fmt::{self, Debug},
+    net::SocketAddr,
+};
 
 use axerrno::{LinuxError, LinuxResult};
 use axio::{
@@ -40,7 +45,7 @@ bitflags! {
     /// Flags for sending data to a socket.
     ///
     /// See [`SocketOps::send`].
-    #[derive(Debug, Clone, Copy)]
+    #[derive(Default, Debug, Clone, Copy)]
     pub struct SendFlags: u32 {
     }
 }
@@ -49,7 +54,7 @@ bitflags! {
     /// Flags for receiving data from a socket.
     ///
     /// See [`SocketOps::recv`].
-    #[derive(Debug, Clone, Copy)]
+    #[derive(Default, Debug, Clone, Copy)]
     pub struct RecvFlags: u32 {
         /// Receive data without removing it from the queue.
         const PEEK = 0x01;
@@ -60,13 +65,34 @@ bitflags! {
     }
 }
 
+pub type CMsgData = Box<dyn Any + Send + Sync>;
+
+/// Options for sending data to a socket.
+///
+/// See [`SocketOps::send`].
+#[derive(Default, Debug)]
+pub struct SendOptions {
+    pub to: Option<SocketAddrEx>,
+    pub flags: SendFlags,
+    pub cmsg: Vec<CMsgData>,
+}
+
 /// Options for receiving data from a socket.
 ///
 /// See [`SocketOps::recv`].
-#[derive(Debug, Clone)]
-pub struct RecvOptions {
-    /// Timeout for receiving data in ticks.
-    pub timeout: Option<Duration>,
+#[derive(Default)]
+pub struct RecvOptions<'a> {
+    pub from: Option<&'a mut SocketAddrEx>,
+    pub flags: RecvFlags,
+    pub cmsg: Option<&'a mut Vec<CMsgData>>,
+}
+impl Debug for RecvOptions<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("RecvOptions")
+            .field("from", &self.from)
+            .field("flags", &self.flags)
+            .finish()
+    }
 }
 
 /// Kind of shutdown operation to perform on a socket.
@@ -95,19 +121,9 @@ pub trait SocketOps: Configurable {
     }
 
     /// Send data to the socket, optionally to a specific address.
-    fn send(
-        &self,
-        src: &mut impl Buf,
-        to: Option<SocketAddrEx>,
-        flags: SendFlags,
-    ) -> LinuxResult<usize>;
+    fn send(&self, src: &mut impl Buf, options: SendOptions) -> LinuxResult<usize>;
     /// Receive data from the socket.
-    fn recv(
-        &self,
-        dst: &mut impl BufMut,
-        from: Option<&mut SocketAddrEx>,
-        flags: RecvFlags,
-    ) -> LinuxResult<usize>;
+    fn recv(&self, dst: &mut impl BufMut, options: RecvOptions<'_>) -> LinuxResult<usize>;
 
     /// Get the local endpoint of the socket.
     fn local_addr(&self) -> LinuxResult<SocketAddrEx>;
@@ -131,13 +147,13 @@ pub enum Socket {
 
 impl Read for Socket {
     fn read(&mut self, mut buf: &mut [u8]) -> LinuxResult<usize> {
-        self.recv(&mut buf, None, RecvFlags::empty())
+        self.recv(&mut buf, RecvOptions::default())
     }
 }
 
 impl Write for Socket {
     fn write(&mut self, mut buf: &[u8]) -> LinuxResult<usize> {
-        self.send(&mut buf, None, SendFlags::empty())
+        self.send(&mut buf, SendOptions::default())
     }
 
     fn flush(&mut self) -> LinuxResult {
