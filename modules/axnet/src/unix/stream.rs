@@ -17,7 +17,7 @@ use ringbuf::{
 use crate::{
     RecvOptions, SendOptions,
     options::{Configurable, GetSocketOption, SetSocketOption},
-    unix::{Transport, UnixSocketAddr},
+    unix::{Transport, TransportOps, UnixSocketAddr},
 };
 
 fn new_uni_channel() -> (HeapProd<u8>, HeapCons<u8>) {
@@ -74,6 +74,19 @@ impl StreamTransport {
             conn_rx: Mutex::new(None),
         }
     }
+
+    pub fn new_pair() -> (Self, Self) {
+        let (chan1, chan2) = new_channels();
+        let transport1 = StreamTransport {
+            channel: Mutex::new(Some(chan1)),
+            conn_rx: Mutex::new(None),
+        };
+        let transport2 = StreamTransport {
+            channel: Mutex::new(Some(chan2)),
+            conn_rx: Mutex::new(None),
+        };
+        (transport1, transport2)
+    }
 }
 
 impl Configurable for StreamTransport {
@@ -86,7 +99,7 @@ impl Configurable for StreamTransport {
     }
 }
 #[async_trait]
-impl Transport for StreamTransport {
+impl TransportOps for StreamTransport {
     fn bind(&self, slot: &super::BindSlot, _local_addr: &UnixSocketAddr) -> LinuxResult<()> {
         let mut slot = slot.stream.lock();
         if slot.is_some() {
@@ -117,22 +130,22 @@ impl Transport for StreamTransport {
         Ok(())
     }
 
-    async fn accept(&self) -> LinuxResult<(Box<dyn super::Transport>, UnixSocketAddr)> {
+    async fn accept(&self) -> LinuxResult<(Transport, UnixSocketAddr)> {
         let mut guard = self.conn_rx.lock();
         let Some(rx) = guard.as_mut() else {
             return Err(LinuxError::ENOTCONN);
         };
         let (channel, peer_addr) = rx.recv().await.map_err(|_| LinuxError::ECONNRESET)?;
         Ok((
-            Box::new(StreamTransport {
+            Transport::Stream(StreamTransport {
                 channel: Mutex::new(Some(channel)),
                 conn_rx: Mutex::new(None),
-            }) as Box<dyn super::Transport>,
+            }),
             peer_addr,
         ))
     }
 
-    fn send(&self, src: &mut dyn Buf, options: SendOptions) -> LinuxResult<usize> {
+    fn send(&self, src: &mut impl Buf, options: SendOptions) -> LinuxResult<usize> {
         if options.to.is_some() {
             return Err(LinuxError::EINVAL);
         }
@@ -178,7 +191,7 @@ impl Transport for StreamTransport {
         Ok(total)
     }
 
-    fn recv(&self, dst: &mut dyn BufMut, _options: RecvOptions) -> LinuxResult<usize> {
+    fn recv(&self, dst: &mut impl BufMut, _options: RecvOptions) -> LinuxResult<usize> {
         loop {
             let mut guard = self.channel.lock();
             let Some(chan) = guard.as_mut() else {
@@ -229,18 +242,5 @@ impl Transport for StreamTransport {
         } else {
             Err(LinuxError::ENOTCONN)
         }
-    }
-
-    fn make_pair() -> LinuxResult<(Self, Self)> {
-        let (chan1, chan2) = new_channels();
-        let transport1 = StreamTransport {
-            channel: Mutex::new(Some(chan1)),
-            conn_rx: Mutex::new(None),
-        };
-        let transport2 = StreamTransport {
-            channel: Mutex::new(Some(chan2)),
-            conn_rx: Mutex::new(None),
-        };
-        Ok((transport1, transport2))
     }
 }

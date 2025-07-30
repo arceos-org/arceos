@@ -14,6 +14,7 @@ use axio::{
 use axsync::Mutex;
 use axtask::future::block_on_interruptible;
 pub use dgram::DgramTransport;
+use enum_dispatch::enum_dispatch;
 use hashbrown::HashMap;
 use lazy_static::lazy_static;
 pub use stream::StreamTransport;
@@ -32,20 +33,23 @@ pub enum UnixSocketAddr {
 
 /// Abstract transport trait for Unix sockets.
 #[async_trait]
-pub trait Transport: Configurable + Send + Sync {
+#[enum_dispatch]
+pub trait TransportOps: Configurable + Send + Sync {
     fn bind(&self, slot: &BindSlot, local_addr: &UnixSocketAddr) -> LinuxResult<()>;
     fn connect(&self, slot: &BindSlot, local_addr: &UnixSocketAddr) -> LinuxResult<()>;
 
-    async fn accept(&self) -> LinuxResult<(Box<dyn Transport>, UnixSocketAddr)>;
+    async fn accept(&self) -> LinuxResult<(Transport, UnixSocketAddr)>;
 
-    fn send(&self, src: &mut dyn Buf, options: SendOptions) -> LinuxResult<usize>;
-    fn recv(&self, dst: &mut dyn BufMut, options: RecvOptions<'_>) -> LinuxResult<usize>;
+    fn send(&self, src: &mut impl Buf, options: SendOptions) -> LinuxResult<usize>;
+    fn recv(&self, dst: &mut impl BufMut, options: RecvOptions<'_>) -> LinuxResult<usize>;
 
     fn poll(&self) -> LinuxResult<PollState>;
+}
 
-    fn make_pair() -> LinuxResult<(Self, Self)>
-    where
-        Self: Sized;
+#[enum_dispatch(Configurable, TransportOps)]
+pub enum Transport {
+    Stream(StreamTransport),
+    Dgram(DgramTransport),
 }
 
 #[derive(Default)]
@@ -116,14 +120,14 @@ fn with_slot_or_insert<R>(
 }
 
 pub struct UnixSocket {
-    transport: Box<dyn Transport>,
+    transport: Transport,
     local_addr: Mutex<UnixSocketAddr>,
     remote_addr: Mutex<UnixSocketAddr>,
 }
 impl UnixSocket {
-    pub fn new(transport: impl Transport + 'static) -> Self {
+    pub fn new(transport: impl Into<Transport>) -> Self {
         Self {
-            transport: Box::new(transport),
+            transport: transport.into(),
             local_addr: Mutex::new(UnixSocketAddr::Unnamed),
             remote_addr: Mutex::new(UnixSocketAddr::Unnamed),
         }

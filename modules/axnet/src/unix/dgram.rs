@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use axerrno::{LinuxError, LinuxResult};
 use axio::{
     PollState,
-    buf::{Buf, BufMut},
+    buf::{Buf, BufMut, BufMutExt},
 };
 use axsync::Mutex;
 use axtask::future::block_on_interruptible;
@@ -13,7 +13,7 @@ use spin::RwLock;
 use crate::{
     CMsgData, RecvFlags, RecvOptions, SendOptions, SocketAddrEx,
     options::{Configurable, GetSocketOption, SetSocketOption},
-    unix::{Transport, UnixSocketAddr, with_slot},
+    unix::{Transport, TransportOps, UnixSocketAddr, with_slot},
 };
 
 const UDP_MAX_PAYLOAD_SIZE: usize = 65507;
@@ -51,6 +51,22 @@ impl DgramTransport {
             local_addr: RwLock::new(UnixSocketAddr::Unnamed),
         }
     }
+
+    pub fn new_pair() -> (Self, Self) {
+        let (tx1, rx1) = async_channel::unbounded();
+        let (tx2, rx2) = async_channel::unbounded();
+        let transport1 = DgramTransport {
+            data_rx: Mutex::new(Some(rx1)),
+            connected: RwLock::new(Some(Channel { data_tx: tx2 })),
+            local_addr: RwLock::new(UnixSocketAddr::Unnamed),
+        };
+        let transport2 = DgramTransport {
+            data_rx: Mutex::new(Some(rx2)),
+            connected: RwLock::new(Some(Channel { data_tx: tx1 })),
+            local_addr: RwLock::new(UnixSocketAddr::Unnamed),
+        };
+        (transport1, transport2)
+    }
 }
 
 impl Configurable for DgramTransport {
@@ -63,7 +79,7 @@ impl Configurable for DgramTransport {
     }
 }
 #[async_trait]
-impl Transport for DgramTransport {
+impl TransportOps for DgramTransport {
     fn bind(&self, slot: &super::BindSlot, local_addr: &UnixSocketAddr) -> LinuxResult<()> {
         let mut slot = slot.dgram.lock();
         if slot.is_some() {
@@ -95,11 +111,11 @@ impl Transport for DgramTransport {
         Ok(())
     }
 
-    async fn accept(&self) -> LinuxResult<(Box<dyn super::Transport>, UnixSocketAddr)> {
+    async fn accept(&self) -> LinuxResult<(Transport, UnixSocketAddr)> {
         Err(LinuxError::EINVAL)
     }
 
-    fn send(&self, src: &mut dyn Buf, options: SendOptions) -> LinuxResult<usize> {
+    fn send(&self, src: &mut impl Buf, options: SendOptions) -> LinuxResult<usize> {
         let mut message = Vec::new();
         loop {
             let chunk = src.chunk();
@@ -141,7 +157,7 @@ impl Transport for DgramTransport {
         Ok(len)
     }
 
-    fn recv(&self, dst: &mut dyn BufMut, options: RecvOptions) -> LinuxResult<usize> {
+    fn recv(&self, dst: &mut impl BufMut, options: RecvOptions) -> LinuxResult<usize> {
         let mut guard = self.data_rx.lock();
         let Some(rx) = guard.as_mut() else {
             return Err(LinuxError::ENOTCONN);
@@ -151,17 +167,7 @@ impl Transport for DgramTransport {
             let Ok(Packet { data, cmsg, sender }) = rx.recv().await else {
                 return Ok(0);
             };
-            let mut read = 0;
-            loop {
-                let chunk = dst.chunk_mut();
-                let len = chunk.len().min(data.len() - read);
-                if len == 0 {
-                    break;
-                }
-
-                chunk[..len].copy_from_slice(&data[read..read + len]);
-                read += len;
-            }
+            let read = dst.put(&mut &*data);
             if read < data.len() {
                 warn!("UDP message truncated: {} -> {} bytes", data.len(), read);
             }
@@ -186,21 +192,5 @@ impl Transport for DgramTransport {
             readable: true,
             writable: true,
         })
-    }
-
-    fn make_pair() -> LinuxResult<(Self, Self)> {
-        let (tx1, rx1) = async_channel::unbounded();
-        let (tx2, rx2) = async_channel::unbounded();
-        let transport1 = DgramTransport {
-            data_rx: Mutex::new(Some(rx1)),
-            connected: RwLock::new(Some(Channel { data_tx: tx2 })),
-            local_addr: RwLock::new(UnixSocketAddr::Unnamed),
-        };
-        let transport2 = DgramTransport {
-            data_rx: Mutex::new(Some(rx2)),
-            connected: RwLock::new(Some(Channel { data_tx: tx1 })),
-            local_addr: RwLock::new(UnixSocketAddr::Unnamed),
-        };
-        Ok((transport1, transport2))
     }
 }
