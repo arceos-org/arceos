@@ -633,6 +633,7 @@ async fn gc_entry() -> ! {
                         // Otherwise (e.g, `switch_to` is not compeleted, held by the
                         // joiner, etc), push it back and wait for them to drop first.
                         EXITED_TASKS.with_current(|exited_tasks| exited_tasks.push_back(task));
+                        cx.waker().wake_by_ref();
                     }
                 }
             }

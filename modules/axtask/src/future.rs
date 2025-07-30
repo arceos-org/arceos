@@ -10,9 +10,9 @@ use axerrno::{LinuxError, LinuxResult};
 use kernel_guard::NoPreemptIrqSave;
 use pin_project::pin_project;
 
-use crate::{AxTaskRef, current, current_run_queue, select_run_queue};
+use crate::{WeakAxTaskRef, current, current_run_queue, select_run_queue};
 
-struct AxWaker(AxTaskRef, Arc<AtomicBool>);
+struct AxWaker(WeakAxTaskRef, Arc<AtomicBool>);
 
 impl Wake for AxWaker {
     fn wake(self: Arc<Self>) {
@@ -20,8 +20,10 @@ impl Wake for AxWaker {
     }
 
     fn wake_by_ref(self: &Arc<Self>) {
-        self.1.store(true, Ordering::Release);
-        select_run_queue::<NoPreemptIrqSave>(&self.0).unblock_task(self.0.clone(), false);
+        if let Some(task) = self.0.upgrade() {
+            self.1.store(true, Ordering::Release);
+            select_run_queue::<NoPreemptIrqSave>(&task).unblock_task(task.clone(), false);
+        }
     }
 }
 
@@ -35,8 +37,11 @@ pub fn block_on<F: IntoFuture>(fut: F) -> F::Output {
     let mut fut = pin!(fut.into_future());
 
     let curr = current();
+    // It's necessary to keep a strong reference to the current task
+    // to prevent it from being dropped while blocking.
+    let task = curr.clone();
     let woke = Arc::new(AtomicBool::new(false));
-    let waker = Waker::from(Arc::new(AxWaker(curr.clone(), Arc::clone(&woke))));
+    let waker = Waker::from(Arc::new(AxWaker(Arc::downgrade(&task), Arc::clone(&woke))));
     let mut context = Context::from_waker(&waker);
     loop {
         woke.store(false, Ordering::Release);
@@ -66,8 +71,9 @@ pub fn try_block_on<F: IntoFuture<Output = LinuxResult<R>>, R>(fut: F) -> LinuxR
     let mut fut = pin!(fut.into_future());
 
     let curr = current();
+    let task = curr.clone();
     let woke = Arc::new(AtomicBool::new(false));
-    let waker = Waker::from(Arc::new(AxWaker(curr.clone(), Arc::clone(&woke))));
+    let waker = Waker::from(Arc::new(AxWaker(Arc::downgrade(&task), Arc::clone(&woke))));
     let mut context = Context::from_waker(&waker);
     loop {
         woke.store(false, Ordering::Release);
