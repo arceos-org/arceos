@@ -142,6 +142,9 @@ impl Transport for StreamTransport {
             let Some(chan) = guard.as_mut() else {
                 return Err(LinuxError::ENOTCONN);
             };
+            if !chan.tx.read_is_held() {
+                return Err(LinuxError::EPIPE);
+            }
 
             let chunk = src.chunk();
             if chunk.is_empty() {
@@ -181,6 +184,9 @@ impl Transport for StreamTransport {
             let Some(chan) = guard.as_mut() else {
                 return Err(LinuxError::ENOTCONN);
             };
+            if !chan.rx.write_is_held() {
+                return Ok(0);
+            }
 
             let chunk = dst.chunk_mut();
             if chunk.is_empty() {

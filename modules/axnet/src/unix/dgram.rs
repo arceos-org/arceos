@@ -125,7 +125,7 @@ impl Transport for DgramTransport {
                 if let Some(bind) = slot.dgram.lock().as_ref() {
                     bind.data_tx
                         .try_send(packet)
-                        .expect("unbound channel cant fail");
+                        .map_err(|_| LinuxError::EPIPE)?;
                     Ok(())
                 } else {
                     Err(LinuxError::ENOTCONN)
@@ -134,7 +134,7 @@ impl Transport for DgramTransport {
         } else if let Some(chan) = connected.as_ref() {
             chan.data_tx
                 .try_send(packet)
-                .expect("unbound channel cant fail");
+                .map_err(|_| LinuxError::EPIPE)?;
         } else {
             return Err(LinuxError::ENOTCONN);
         }
@@ -148,8 +148,9 @@ impl Transport for DgramTransport {
         };
 
         block_on_interruptible(async {
-            let Packet { data, cmsg, sender } =
-                rx.recv().await.map_err(|_| LinuxError::ECONNRESET)?;
+            let Ok(Packet { data, cmsg, sender }) = rx.recv().await else {
+                return Ok(0);
+            };
             let mut read = 0;
             loop {
                 let chunk = dst.chunk_mut();
