@@ -111,4 +111,12 @@ impl IrqIf for DummyIrq {
     }
 
     fn handle(_irq: usize) {}
+
+    fn get_ipi_irq_num() -> usize {
+        0
+    }
+
+    fn send_ipi_one(_dest_cpu_id: usize, _irq_num: usize) {}
+
+    fn send_ipi_all_others(_irq_num: usize, _src_cpu_id: usize, _cpu_num: usize) {}
 }
