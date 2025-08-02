@@ -53,18 +53,17 @@ impl CowBackend {
         flags: MappingFlags,
         pt: &mut PageTable,
     ) -> LinuxResult<()> {
-        match frame_table().ref_count(paddr) {
+        match frame_table().dec_ref(paddr) {
             0 => unreachable!(),
             // There is only one AddrSpace reference to the page,
             // so there is no need to copy it.
             1 => {
+                frame_table().inc_ref(paddr);
                 pt.protect(vaddr, flags).map_err(paging_to_linux_error)?;
             }
             // Allocates the new page and copies the contents of the original page,
             // remapping the virtual address to the physical address of the new page.
             2.. => {
-                frame_table().dec_ref(paddr);
-
                 let new_frame = alloc_frame(false, self.size)?;
                 frame_table().inc_ref(new_frame);
                 unsafe {
@@ -102,7 +101,8 @@ impl BackendOps for CowBackend {
     fn unmap(&self, range: VirtAddrRange, pt: &mut PageTable) -> LinuxResult<()> {
         debug!("Cow::unmap: {range:?}");
         for addr in pages_in(range, self.size)? {
-            if let Ok((frame, _flags, _page_size)) = pt.unmap(addr) {
+            if let Ok((frame, _flags, page_size)) = pt.unmap(addr) {
+                assert_eq!(page_size, self.size);
                 if frame_table().dec_ref(frame) == 1 {
                     dealloc_frame(frame, self.size);
                 }
@@ -123,7 +123,8 @@ impl BackendOps for CowBackend {
         let mut pages = 0;
         for addr in pages_in(range, self.size)? {
             match pt.query(addr) {
-                Ok((paddr, page_flags, _)) => {
+                Ok((paddr, page_flags, page_size)) => {
+                    assert_eq!(self.size, page_size);
                     if access_flags.contains(MappingFlags::WRITE)
                         && !page_flags.contains(MappingFlags::WRITE)
                     {
@@ -156,6 +157,7 @@ impl BackendOps for CowBackend {
             // Copy data from old memory area to new memory area.
             match old_pt.query(vaddr) {
                 Ok((paddr, _, page_size)) => {
+                    assert_eq!(page_size, self.size);
                     // If the page is mapped in the old page table:
                     // - Update its permissions in the old page table using `flags`.
                     // - Map the same physical page into the new page table at the same
@@ -166,7 +168,7 @@ impl BackendOps for CowBackend {
                         .protect(vaddr, cow_flags)
                         .map_err(paging_to_linux_error)?;
                     new_pt
-                        .map(vaddr, paddr, page_size, cow_flags)
+                        .map(vaddr, paddr, self.size, cow_flags)
                         .map_err(paging_to_linux_error)?;
                 }
                 // If the page is not mapped, skip it.

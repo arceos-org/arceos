@@ -20,7 +20,7 @@ lazy_static! {
     static ref FRAME_INFO_TABLE: FrameInfoTable = FrameInfoTable::default();
 }
 
-pub(crate) fn frame_table() -> &'static FrameInfoTable {
+pub fn frame_table() -> &'static FrameInfoTable {
     &FRAME_INFO_TABLE
 }
 
@@ -30,7 +30,7 @@ pub(crate) struct FrameInfo {
     ref_count: AtomicU8,
 }
 
-pub(crate) struct FrameInfoTable {
+pub struct FrameInfoTable {
     data: Box<[FrameInfo; MAX_FRAME_NUM]>,
 }
 
@@ -74,11 +74,5 @@ impl FrameInfoTable {
     ///   it must be the starting physical address.
     pub fn dec_ref(&self, paddr: PhysAddr) -> usize {
         self.info(paddr).ref_count.fetch_sub(1, Ordering::AcqRel) as usize
-    }
-
-    /// Returns the reference count of the frame associated with a physical
-    /// address.
-    pub fn ref_count(&self, paddr: PhysAddr) -> usize {
-        self.info(paddr).ref_count.load(Ordering::Acquire) as usize
     }
 }

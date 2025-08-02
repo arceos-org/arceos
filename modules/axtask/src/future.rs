@@ -267,7 +267,7 @@ impl<'a, P: Pollable> Poller<'a, P> {
                 }),
                 self.timeout,
             )
-            .map(|opt| opt.ok_or(LinuxError::EINTR)?),
+            .map(|opt| opt.ok_or(LinuxError::ETIMEDOUT)?),
         )
     }
 }

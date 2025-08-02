@@ -36,11 +36,16 @@ impl Drop for FileBackendInner {
     }
 }
 impl FileBackendInner {
-    pub fn register_listener(self: &Arc<Self>, aspace: Arc<Mutex<AddrSpace>>) -> usize {
+    pub fn register_listener(self: &Arc<Self>, aspace: &Arc<Mutex<AddrSpace>>) -> usize {
+        let aspace = Arc::downgrade(aspace);
         self.cache.add_evict_listener({
             let this = Arc::downgrade(self);
             move |pn, _page| {
                 let Some(this) = this.upgrade() else {
+                    return;
+                };
+                let Some(aspace) = aspace.upgrade() else {
+                    // The address space has been dropped, nothing to do.
                     return;
                 };
                 let Some(mut aspace) = aspace.try_lock() else {
@@ -219,7 +224,7 @@ impl BackendOps for FileBackend {
             handle: AtomicUsize::new(0),
             futex_handle: self.0.futex_handle.clone(),
         });
-        inner.register_listener(new_aspace.clone());
+        inner.register_listener(new_aspace);
         Ok(Backend::File(FileBackend(inner)))
     }
 }
@@ -230,7 +235,7 @@ impl Backend {
         cache: CachedFile<RawMutex>,
         flags: FileFlags,
         offset: usize,
-        aspace: Arc<Mutex<AddrSpace>>,
+        aspace: &Arc<Mutex<AddrSpace>>,
     ) -> Self {
         let offset_page = (offset / PAGE_SIZE_4K) as u32;
         let inner = Arc::new(FileBackendInner {

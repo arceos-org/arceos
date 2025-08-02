@@ -192,23 +192,6 @@ pub fn yield_now() {
     current_run_queue::<NoPreemptIrqSave>().yield_current()
 }
 
-/// Current task is going to sleep for the given duration.
-///
-/// If the feature `irq` is not enabled, it uses busy-wait instead.
-pub fn sleep(dur: core::time::Duration) {
-    sleep_until(axhal::time::wall_time() + dur);
-}
-
-/// Current task is going to sleep, it will be woken up at the given deadline.
-///
-/// If the feature `irq` is not enabled, it uses busy-wait instead.
-pub fn sleep_until(deadline: axhal::time::TimeValue) {
-    #[cfg(feature = "irq")]
-    current_run_queue::<NoPreemptIrqSave>().sleep_until(deadline);
-    #[cfg(not(feature = "irq"))]
-    axhal::time::busy_wait_until(deadline);
-}
-
 /// Exits the current task.
 pub fn exit(exit_code: i32) -> ! {
     current_run_queue::<NoPreemptIrqSave>().exit_current(exit_code)

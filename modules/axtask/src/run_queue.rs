@@ -445,21 +445,6 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
         self.inner.resched();
     }
 
-    #[cfg(feature = "irq")]
-    pub fn sleep_until(&mut self, deadline: axhal::time::TimeValue) {
-        let curr = &self.current_task;
-        debug!("task sleep: {}, deadline={:?}", curr.id_name(), deadline);
-        assert!(curr.is_running());
-        assert!(!curr.is_idle());
-
-        let now = axhal::time::wall_time();
-        if now < deadline {
-            let _ticket = crate::timers::set_alarm_wakeup(deadline, curr.as_task_ref());
-            curr.set_state(TaskState::Blocked);
-            self.inner.resched();
-        }
-    }
-
     pub fn set_current_priority(&mut self, prio: isize) -> bool {
         self.inner
             .scheduler
