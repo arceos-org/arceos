@@ -284,7 +284,7 @@ impl Device for EthernetDevice {
         }
     }
 
-    fn send(&mut self, next_hop: IpAddress, packet: &[u8], timestamp: Instant) {
+    fn send(&mut self, next_hop: IpAddress, packet: &[u8], timestamp: Instant) -> bool {
         if next_hop.is_broadcast() || self.ip.broadcast().map(IpAddress::Ipv4) == Some(next_hop) {
             Self::send_to(
                 &mut self.inner,
@@ -293,7 +293,7 @@ impl Device for EthernetDevice {
                 |buf| buf.copy_from_slice(packet),
                 EthernetProtocol::Ipv4,
             );
-            return;
+            return false;
         }
 
         let need_request = match self.neighbors.get(&next_hop) {
@@ -306,7 +306,7 @@ impl Device for EthernetDevice {
                         |buf| buf.copy_from_slice(packet),
                         EthernetProtocol::Ipv4,
                     );
-                    return;
+                    return false;
                 } else {
                     true
                 }
@@ -321,12 +321,13 @@ impl Device for EthernetDevice {
         }
         if self.pending_packets.is_full() {
             warn!("Pending packets buffer is full, dropping packet");
-            return;
+            return false;
         }
         let Ok(dst_buffer) = self.pending_packets.enqueue(packet.len(), next_hop) else {
             warn!("Failed to enqueue packet in pending packets buffer");
-            return;
+            return false;
         };
         dst_buffer.copy_from_slice(packet);
+        false
     }
 }

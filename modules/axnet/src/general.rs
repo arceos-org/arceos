@@ -1,20 +1,22 @@
+use alloc::sync::Arc;
 use core::{
-    future::poll_fn,
     sync::atomic::{AtomicBool, AtomicU64, Ordering},
-    task::{Context, Poll, Waker},
+    task::Waker,
     time::Duration,
 };
 
-use axerrno::{LinuxError, LinuxResult};
-use axtask::future::block_on_interruptible;
+use axerrno::LinuxResult;
+use axio::PollSet;
 
-use crate::{
-    options::{Configurable, GetSocketOption, SetSocketOption},
-    poll_interfaces,
-};
+use crate::options::{Configurable, GetSocketOption, SetSocketOption};
 
 /// General options for all sockets.
 pub(crate) struct GeneralOptions {
+    pub poll_rx: Arc<PollSet>,
+    pub poll_tx: Arc<PollSet>,
+    pub poll_rx_waker: Waker,
+    pub poll_tx_waker: Waker,
+
     /// Whether the socket is non-blocking.
     nonblock: AtomicBool,
     /// Whether the socket should reuse the address.
@@ -32,8 +34,17 @@ pub(crate) struct GeneralOptions {
     externally_driven: AtomicBool,
 }
 impl GeneralOptions {
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
+        let poll_rx = Arc::new(PollSet::new());
+        let poll_tx = Arc::new(PollSet::new());
+        let poll_rx_waker = Waker::from(poll_rx.clone());
+        let poll_tx_waker = Waker::from(poll_tx.clone());
         Self {
+            poll_rx,
+            poll_tx,
+            poll_rx_waker,
+            poll_tx_waker,
+
             nonblock: AtomicBool::new(false),
             reuse_address: AtomicBool::new(false),
 
@@ -66,48 +77,8 @@ impl GeneralOptions {
         self.externally_driven.store(driven, Ordering::Release);
     }
 
-    pub fn block_on<F, T>(&self, timeout: Option<Duration>, mut f: F) -> LinuxResult<T>
-    where
-        F: FnMut(&mut Context) -> Poll<LinuxResult<T>> + Unpin,
-    {
-        if self.nonblocking() {
-            let mut context = Context::from_waker(Waker::noop());
-            match f(&mut context) {
-                Poll::Ready(result) => result,
-                Poll::Pending => Err(LinuxError::EAGAIN),
-            }
-        } else {
-            // Linux manual:
-            // The following interfaces are never restarted after being
-            //    interrupted by a signal handler, regardless of the use of
-            //    SA_RESTART; they always fail with the error EINTR when interrupted
-            //    by a signal handler:
-            // ... socket interfaces, when a timeout has been set.
-            let fut = {
-                let externally_driven = self.externally_driven.load(Ordering::Acquire);
-                poll_fn(move |context| {
-                    poll_interfaces();
-                    match f(context) {
-                        Poll::Ready(Err(LinuxError::EAGAIN)) => {
-                            context.waker().wake_by_ref();
-                            Poll::Pending
-                        }
-                        Poll::Ready(result) => return Poll::Ready(result),
-                        Poll::Pending => {
-                            if externally_driven {
-                                context.waker().wake_by_ref();
-                            }
-                            return Poll::Pending;
-                        }
-                    }
-                })
-            };
-            block_on_interruptible(async move {
-                axtask::future::timeout_opt(fut, timeout)
-                    .await
-                    .ok_or(LinuxError::ETIMEDOUT)?
-            })
-        }
+    pub fn externally_driven(&self) -> bool {
+        self.externally_driven.load(Ordering::Acquire)
     }
 }
 impl Configurable for GeneralOptions {

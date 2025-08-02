@@ -125,7 +125,7 @@ impl WaitQueue {
             curr.id_name(),
             deadline
         );
-        crate::timers::set_alarm_wakeup(deadline, curr.clone());
+        crate::timers::set_alarm_wakeup(deadline, curr.as_task_ref());
 
         rq.blocked_resched(Self::before_block(self.queue.lock()));
 
@@ -153,7 +153,7 @@ impl WaitQueue {
             curr.id_name(),
             deadline
         );
-        crate::timers::set_alarm_wakeup(deadline, curr.clone());
+        crate::timers::set_alarm_wakeup(deadline, curr.as_task_ref());
 
         let mut timeout = true;
         loop {

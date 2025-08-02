@@ -39,14 +39,18 @@ impl Device for LoopbackDevice {
         })
     }
 
-    fn send(&mut self, next_hop: IpAddress, packet: &[u8], _timestamp: Instant) {
+    fn send(&mut self, next_hop: IpAddress, packet: &[u8], _timestamp: Instant) -> bool {
         match self.buffer.enqueue(packet.len(), ()) {
-            Ok(tx_buf) => tx_buf.copy_from_slice(packet),
+            Ok(tx_buf) => {
+                tx_buf.copy_from_slice(packet);
+                true
+            }
             Err(_) => {
                 warn!(
                     "Loopback device buffer is full, dropping packet to {}",
                     next_hop
                 );
+                false
             }
         }
     }

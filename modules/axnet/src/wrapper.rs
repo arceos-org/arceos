@@ -2,22 +2,30 @@ use alloc::vec;
 
 use axerrno::{LinuxError, LinuxResult};
 use axsync::Mutex;
+use event_listener::Event;
 use smoltcp::{
     iface::{SocketHandle, SocketSet},
     socket::{AnySocket, Socket},
     wire::IpAddress,
 };
 
-pub(crate) struct SocketSetWrapper<'a>(pub Mutex<SocketSet<'a>>);
+pub(crate) struct SocketSetWrapper<'a> {
+    pub inner: Mutex<SocketSet<'a>>,
+    pub new_socket: Event,
+}
 
 impl<'a> SocketSetWrapper<'a> {
     pub fn new() -> Self {
-        Self(Mutex::new(SocketSet::new(vec![])))
+        Self {
+            inner: Mutex::new(SocketSet::new(vec![])),
+            new_socket: Event::new(),
+        }
     }
 
     pub fn add<T: AnySocket<'a>>(&self, socket: T) -> SocketHandle {
-        let handle = self.0.lock().add(socket);
+        let handle = self.inner.lock().add(socket);
         debug!("socket {}: created", handle);
+        self.new_socket.notify(1);
         handle
     }
 
@@ -25,7 +33,7 @@ impl<'a> SocketSetWrapper<'a> {
     where
         F: FnOnce(&T) -> R,
     {
-        let set = self.0.lock();
+        let set = self.inner.lock();
         let socket = set.get(handle);
         f(socket)
     }
@@ -34,7 +42,7 @@ impl<'a> SocketSetWrapper<'a> {
     where
         F: FnOnce(&mut T) -> R,
     {
-        let mut set = self.0.lock();
+        let mut set = self.inner.lock();
         let socket = set.get_mut(handle);
         f(socket)
     }
@@ -45,7 +53,7 @@ impl<'a> SocketSetWrapper<'a> {
         }
 
         // TODO(mivik): optimize
-        let mut sockets = self.0.lock();
+        let mut sockets = self.inner.lock();
         for (_, socket) in sockets.iter_mut() {
             match socket {
                 Socket::Tcp(s) => {
@@ -66,7 +74,7 @@ impl<'a> SocketSetWrapper<'a> {
     }
 
     pub fn remove(&self, handle: SocketHandle) {
-        self.0.lock().remove(handle);
+        self.inner.lock().remove(handle);
         debug!("socket {}: destroyed", handle);
     }
 }

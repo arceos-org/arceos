@@ -1,4 +1,4 @@
-use alloc::{boxed::Box, vec::Vec};
+use alloc::{boxed::Box, sync::Arc, vec::Vec};
 use core::sync::atomic::{AtomicU64, Ordering};
 
 use axhal::time::wall_time;
@@ -7,7 +7,7 @@ use kspin::SpinRaw;
 use lazyinit::LazyInit;
 use timer_list::{TimeValue, TimerEvent, TimerList};
 
-use crate::{AxTaskRef, select_run_queue};
+use crate::{AxTaskRef, WeakAxTaskRef, select_run_queue};
 
 static TIMER_TICKET_ID: AtomicU64 = AtomicU64::new(1);
 
@@ -17,30 +17,40 @@ percpu_static! {
 
 struct TaskWakeupEvent {
     ticket_id: u64,
-    task: AxTaskRef,
+    task: WeakAxTaskRef,
 }
 
 impl TimerEvent for TaskWakeupEvent {
     fn callback(self, _now: TimeValue) {
+        let Some(task) = self.task.upgrade() else {
+            // Task has been dropped, just return.
+            return;
+        };
         // Ignore the timer event if timeout was set but not triggered
         // (wake up by `WaitQueue::notify()`).
         // Judge if this timer event is still valid by checking the ticket ID.
-        if self.task.timer_ticket() != self.ticket_id {
+        if task.timer_ticket() != self.ticket_id {
             // Timer ticket ID is not matched.
             // Just ignore this timer event and return.
             return;
         }
 
         // Timer ticket match.
-        select_run_queue::<NoOp>(&self.task).unblock_task(self.task, true)
+        select_run_queue::<NoOp>(&task).unblock_task(task, true)
     }
 }
 
-pub fn set_alarm_wakeup(deadline: TimeValue, task: AxTaskRef) {
+pub fn set_alarm_wakeup(deadline: TimeValue, task: &AxTaskRef) {
     TIMER_LIST.with_current(|timer_list| {
         let ticket_id = TIMER_TICKET_ID.fetch_add(1, Ordering::AcqRel);
         task.set_timer_ticket(ticket_id);
-        timer_list.set(deadline, TaskWakeupEvent { ticket_id, task });
+        timer_list.set(
+            deadline,
+            TaskWakeupEvent {
+                ticket_id,
+                task: Arc::downgrade(task),
+            },
+        );
     })
 }
 

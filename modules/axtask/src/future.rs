@@ -1,5 +1,6 @@
 use alloc::{sync::Arc, task::Wake};
 use core::{
+    future::poll_fn,
     pin::{Pin, pin},
     sync::atomic::{AtomicBool, Ordering},
     task::{Context, Poll, Waker},
@@ -7,6 +8,8 @@ use core::{
 };
 
 use axerrno::{LinuxError, LinuxResult};
+use axio::{IoEvents, Pollable};
+use futures::FutureExt;
 use kernel_guard::NoPreemptIrqSave;
 use pin_project::pin_project;
 
@@ -117,7 +120,7 @@ pub fn sleep(duration: Duration) -> Sleep {
 pub fn sleep_until(deadline: Duration) -> Sleep {
     if deadline > axhal::time::wall_time() {
         let curr = current();
-        crate::timers::set_alarm_wakeup(deadline, curr.clone());
+        crate::timers::set_alarm_wakeup(deadline, curr.as_task_ref());
     }
 
     Sleep { deadline }
@@ -170,6 +173,19 @@ pub fn timeout_opt<F: IntoFuture>(fut: F, duration: Option<Duration>) -> Timeout
     }
 }
 
+/// Requires a `Future` to complete before the optional instant in time.
+pub fn timeout_at_opt<F: IntoFuture>(fut: F, deadline: Option<Duration>) -> Timeout<F::IntoFuture> {
+    Timeout {
+        inner: fut.into_future(),
+        delay: deadline.map_or_else(
+            || Sleep {
+                deadline: Duration::MAX,
+            },
+            sleep_until,
+        ),
+    }
+}
+
 /// Future returned by `timeout` and `timeout_at`.
 #[must_use = "futures do nothing unless you `.await` or poll them"]
 #[pin_project]
@@ -202,5 +218,56 @@ impl<F: Future> Future for Timeout<F> {
                 }
             }
         }
+    }
+}
+
+pub struct Poller<'a, P> {
+    pollable: &'a P,
+    events: IoEvents,
+    non_blocking: bool,
+    timeout: Option<Duration>,
+}
+impl<'a, P: Pollable> Poller<'a, P> {
+    pub fn new(pollable: &'a P, events: IoEvents) -> Self {
+        Poller {
+            pollable,
+            events,
+            non_blocking: false,
+            timeout: None,
+        }
+    }
+
+    pub fn non_blocking(mut self, non_blocking: bool) -> Self {
+        self.non_blocking = non_blocking;
+        self
+    }
+
+    pub fn timeout(mut self, timeout: Option<Duration>) -> Self {
+        self.timeout = timeout;
+        self
+    }
+
+    pub fn poll<T>(self, mut f: impl FnMut() -> LinuxResult<T>) -> LinuxResult<T> {
+        block_on_interruptible(
+            timeout_opt(
+                poll_fn(move |cx| match f() {
+                    Ok(value) => Poll::Ready(Ok(value)),
+                    Err(LinuxError::EAGAIN) => {
+                        if self.non_blocking {
+                            return Poll::Ready(Err(LinuxError::EAGAIN));
+                        }
+                        self.pollable.register(cx, self.events);
+                        match f() {
+                            Ok(value) => Poll::Ready(Ok(value)),
+                            Err(LinuxError::EAGAIN) => Poll::Pending,
+                            Err(e) => Poll::Ready(Err(e)),
+                        }
+                    }
+                    Err(e) => Poll::Ready(Err(e)),
+                }),
+                self.timeout,
+            )
+            .map(|opt| opt.ok_or(LinuxError::EINTR)?),
+        )
     }
 }

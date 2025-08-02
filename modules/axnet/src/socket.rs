@@ -3,11 +3,12 @@ use core::{
     any::Any,
     fmt::{self, Debug},
     net::SocketAddr,
+    task::Context,
 };
 
 use axerrno::{LinuxError, LinuxResult};
 use axio::{
-    PollState, Read, Write,
+    IoEvents, Pollable, Read, Write,
     buf::{Buf, BufMut},
 };
 use bitflags::bitflags;
@@ -102,6 +103,15 @@ pub enum Shutdown {
     Write,
     Both,
 }
+impl Shutdown {
+    pub fn has_read(&self) -> bool {
+        matches!(self, Shutdown::Read | Shutdown::Both)
+    }
+
+    pub fn has_write(&self) -> bool {
+        matches!(self, Shutdown::Write | Shutdown::Both)
+    }
+}
 
 /// Operations that can be performed on a socket.
 #[enum_dispatch]
@@ -130,9 +140,6 @@ pub trait SocketOps: Configurable {
     /// Get the remote endpoint of the socket.
     fn peer_addr(&self) -> LinuxResult<SocketAddrEx>;
 
-    /// Poll the socket for readiness.
-    fn poll(&self) -> LinuxResult<PollState>;
-
     /// Shutdown the socket, closing the connection.
     fn shutdown(&self, how: Shutdown) -> LinuxResult<()>;
 }
@@ -159,5 +166,23 @@ impl Write for Socket {
     fn flush(&mut self) -> LinuxResult {
         // TODO(mivik): flush
         Ok(())
+    }
+}
+
+impl Pollable for Socket {
+    fn poll(&self) -> IoEvents {
+        match self {
+            Socket::Tcp(tcp) => tcp.poll(),
+            Socket::Udp(udp) => udp.poll(),
+            Socket::Unix(unix) => unix.poll(),
+        }
+    }
+
+    fn register(&self, context: &mut Context<'_>, events: IoEvents) {
+        match self {
+            Socket::Tcp(tcp) => tcp.register(context, events),
+            Socket::Udp(udp) => udp.register(context, events),
+            Socket::Unix(unix) => unix.register(context, events),
+        }
     }
 }

@@ -45,7 +45,7 @@ use crate::{
     device::{EthernetDevice, LoopbackDevice},
     listen_table::ListenTable,
     router::{Router, Rule},
-    service::Service,
+    service::{Service},
     wrapper::SocketSetWrapper,
 };
 
@@ -112,5 +112,5 @@ pub fn init_network(mut net_devs: AxDeviceContainer<AxNetDevice>) {
 }
 
 pub fn poll_interfaces() {
-    SERVICE.lock().poll(&mut SOCKET_SET.0.lock());
+    while SERVICE.lock().poll(&mut SOCKET_SET.inner.lock()) {}
 }

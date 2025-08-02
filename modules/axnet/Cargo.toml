@@ -17,6 +17,7 @@ smoltcp = []
 default = ["smoltcp"]
 
 [dependencies]
+axconfig = { workspace = true }
 axdriver = { workspace = true, features = ["net"] }
 axhal = { workspace = true }
 axsync = { workspace = true }

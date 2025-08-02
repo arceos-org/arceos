@@ -1,13 +1,15 @@
-use alloc::{boxed::Box, vec::Vec};
+use alloc::{boxed::Box, sync::Arc, vec::Vec};
+use core::task::Context;
 
+use async_channel::TryRecvError;
 use async_trait::async_trait;
 use axerrno::{LinuxError, LinuxResult};
 use axio::{
-    PollState,
+    IoEvents, PollSet, Pollable,
     buf::{Buf, BufMut, BufMutExt},
 };
 use axsync::Mutex;
-use axtask::future::block_on_interruptible;
+use axtask::future::Poller;
 use spin::RwLock;
 
 use crate::{
@@ -26,22 +28,28 @@ struct Packet {
 
 struct Channel {
     data_tx: async_channel::Sender<Packet>,
+    poll_update: Arc<PollSet>,
 }
 
 pub struct Bind {
     data_tx: async_channel::Sender<Packet>,
+    poll_update: Arc<PollSet>,
 }
 impl Bind {
     fn connect(&self) -> Channel {
         let tx = self.data_tx.clone();
-        Channel { data_tx: tx }
+        Channel {
+            data_tx: tx,
+            poll_update: self.poll_update.clone(),
+        }
     }
 }
 
 pub struct DgramTransport {
-    data_rx: Mutex<Option<async_channel::Receiver<Packet>>>,
+    data_rx: Mutex<Option<(async_channel::Receiver<Packet>, Arc<PollSet>)>>,
     connected: RwLock<Option<Channel>>,
     local_addr: RwLock<UnixSocketAddr>,
+    poll_state: Arc<PollSet>,
 }
 impl DgramTransport {
     pub fn new() -> Self {
@@ -49,21 +57,32 @@ impl DgramTransport {
             data_rx: Mutex::new(None),
             connected: RwLock::new(None),
             local_addr: RwLock::new(UnixSocketAddr::Unnamed),
+            poll_state: Arc::default(),
         }
     }
 
     pub fn new_pair() -> (Self, Self) {
         let (tx1, rx1) = async_channel::unbounded();
         let (tx2, rx2) = async_channel::unbounded();
+        let poll1 = Arc::new(PollSet::new());
+        let poll2 = Arc::new(PollSet::new());
         let transport1 = DgramTransport {
-            data_rx: Mutex::new(Some(rx1)),
-            connected: RwLock::new(Some(Channel { data_tx: tx2 })),
+            data_rx: Mutex::new(Some((rx1, poll1.clone()))),
+            connected: RwLock::new(Some(Channel {
+                data_tx: tx2,
+                poll_update: poll2.clone(),
+            })),
             local_addr: RwLock::new(UnixSocketAddr::Unnamed),
+            poll_state: Arc::default(),
         };
         let transport2 = DgramTransport {
-            data_rx: Mutex::new(Some(rx2)),
-            connected: RwLock::new(Some(Channel { data_tx: tx1 })),
+            data_rx: Mutex::new(Some((rx2, poll2))),
+            connected: RwLock::new(Some(Channel {
+                data_tx: tx1,
+                poll_update: poll1,
+            })),
             local_addr: RwLock::new(UnixSocketAddr::Unnamed),
+            poll_state: Arc::default(),
         };
         (transport1, transport2)
     }
@@ -90,9 +109,14 @@ impl TransportOps for DgramTransport {
             return Err(LinuxError::EINVAL);
         }
         let (tx, rx) = async_channel::unbounded();
-        *slot = Some(Bind { data_tx: tx });
-        *guard = Some(rx);
+        let poll_update = Arc::new(PollSet::new());
+        *slot = Some(Bind {
+            data_tx: tx,
+            poll_update: poll_update.clone(),
+        });
+        *guard = Some((rx, poll_update));
         self.local_addr.write().clone_from(local_addr);
+        self.poll_state.wake();
         Ok(())
     }
 
@@ -108,6 +132,7 @@ impl TransportOps for DgramTransport {
                 .ok_or(LinuxError::ENOTCONN)?
                 .connect(),
         );
+        self.poll_state.wake();
         Ok(())
     }
 
@@ -142,6 +167,7 @@ impl TransportOps for DgramTransport {
                     bind.data_tx
                         .try_send(packet)
                         .map_err(|_| LinuxError::EPIPE)?;
+                    bind.poll_update.wake();
                     Ok(())
                 } else {
                     Err(LinuxError::ENOTCONN)
@@ -151,31 +177,38 @@ impl TransportOps for DgramTransport {
             chan.data_tx
                 .try_send(packet)
                 .map_err(|_| LinuxError::EPIPE)?;
+            chan.poll_update.wake();
         } else {
             return Err(LinuxError::ENOTCONN);
         }
         Ok(len)
     }
 
-    fn recv(&self, dst: &mut impl BufMut, options: RecvOptions) -> LinuxResult<usize> {
-        let mut guard = self.data_rx.lock();
-        let Some(rx) = guard.as_mut() else {
-            return Err(LinuxError::ENOTCONN);
-        };
+    fn recv(&self, dst: &mut impl BufMut, mut options: RecvOptions) -> LinuxResult<usize> {
+        Poller::new(self, IoEvents::IN).poll(move || {
+            let mut guard = self.data_rx.lock();
+            let Some((rx, _)) = guard.as_mut() else {
+                return Err(LinuxError::ENOTCONN);
+            };
 
-        block_on_interruptible(async {
-            let Ok(Packet { data, cmsg, sender }) = rx.recv().await else {
-                return Ok(0);
+            let Packet { data, cmsg, sender } = match rx.try_recv() {
+                Ok(packet) => packet,
+                Err(TryRecvError::Empty) => {
+                    return Err(LinuxError::EAGAIN);
+                }
+                Err(TryRecvError::Closed) => {
+                    return Ok(0);
+                }
             };
             let read = dst.put(&mut &*data);
             if read < data.len() {
                 warn!("UDP message truncated: {} -> {} bytes", data.len(), read);
             }
 
-            if let Some(from) = options.from {
-                *from = SocketAddrEx::Unix(sender);
+            if let Some(from) = options.from.as_mut() {
+                **from = SocketAddrEx::Unix(sender);
             }
-            if let Some(dst) = options.cmsg {
+            if let Some(dst) = options.cmsg.as_mut() {
                 dst.extend(cmsg);
             }
 
@@ -186,11 +219,30 @@ impl TransportOps for DgramTransport {
             })
         })
     }
+}
 
-    fn poll(&self) -> LinuxResult<PollState> {
-        Ok(PollState {
-            readable: true,
-            writable: true,
-        })
+impl Pollable for DgramTransport {
+    fn poll(&self) -> IoEvents {
+        let mut events = IoEvents::OUT;
+        if let Some((rx, _)) = self.data_rx.lock().as_ref() {
+            events.set(IoEvents::IN, !rx.is_empty());
+        }
+        events
+    }
+
+    fn register(&self, context: &mut Context<'_>, events: IoEvents) {
+        if let Some((_, poll)) = self.data_rx.lock().as_ref() {
+            if events.contains(IoEvents::IN) {
+                poll.register(context.waker());
+            }
+        }
+    }
+}
+
+impl Drop for DgramTransport {
+    fn drop(&mut self) {
+        if let Some(chan) = self.connected.write().take() {
+            chan.poll_update.wake();
+        }
     }
 }

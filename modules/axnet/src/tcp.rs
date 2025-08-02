@@ -2,15 +2,16 @@ use alloc::vec;
 use core::{
     net::{Ipv4Addr, SocketAddr},
     sync::atomic::{AtomicU8, Ordering},
-    task::Poll,
+    task::Context,
 };
 
 use axerrno::{LinuxError, LinuxResult, ax_err, bail};
 use axio::{
-    PollState,
+    IoEvents, Pollable,
     buf::{Buf, BufMut, BufMutExt},
 };
 use axsync::Mutex;
+use axtask::future::Poller;
 use smoltcp::{
     iface::SocketHandle,
     socket::tcp as smol,
@@ -20,39 +21,34 @@ use smoltcp::{
 
 use super::{LISTEN_TABLE, SOCKET_SET};
 use crate::{
-    RecvFlags, RecvOptions, SERVICE, SendOptions, Shutdown, Socket, SocketAddrEx,
-    SocketOps,
+    RecvFlags, RecvOptions, SERVICE, SendOptions, Shutdown, Socket, SocketAddrEx, SocketOps,
     consts::{TCP_RX_BUF_LEN, TCP_TX_BUF_LEN},
     general::GeneralOptions,
     options::{Configurable, GetSocketOption, SetSocketOption},
     poll_interfaces,
 };
 
-// State transitions:
-// CLOSED -(connect)-> BUSY -> CONNECTING -> CONNECTED -(shutdown)-> BUSY ->
-// CLOSED       |
-//       |-(listen)-> BUSY -> LISTENING -(shutdown)-> BUSY -> CLOSED
-//       |
-//        -(bind)-> BUSY -> CLOSED
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum State {
-    Closed,
+    Idle,
     Busy,
     Connecting,
     Connected,
     Listening,
+    Closed,
 }
 impl TryFrom<u8> for State {
     type Error = ();
 
     fn try_from(value: u8) -> Result<Self, ()> {
         Ok(match value {
-            0 => State::Closed,
+            0 => State::Idle,
             1 => State::Busy,
             2 => State::Connecting,
             3 => State::Connected,
             4 => State::Listening,
+            5 => State::Closed,
             _ => return Err(()),
         })
     }
@@ -75,23 +71,33 @@ impl StateLock {
         self.0.store(state as u8, Ordering::Release);
     }
 
-    fn transit(&self, expect: State, new: State) -> Result<StateGuard, State> {
+    fn lock(&self, expect: State) -> Result<StateGuard, State> {
         match self.0.compare_exchange(
             expect as u8,
             State::Busy as u8,
             Ordering::Acquire,
             Ordering::Acquire,
         ) {
-            Ok(_) => Ok(StateGuard(self, new as u8)),
+            Ok(_) => Ok(StateGuard(self, expect as u8)),
             Err(old) => Err(old.try_into().expect("invalid state")),
         }
     }
 }
 
+#[must_use]
 struct StateGuard<'a>(&'a StateLock, u8);
-impl Drop for StateGuard<'_> {
-    fn drop(&mut self) {
-        self.0.0.store(self.1, Ordering::Release);
+impl StateGuard<'_> {
+    pub fn transit<R>(self, new: State, f: impl FnOnce() -> LinuxResult<R>) -> LinuxResult<R> {
+        match f() {
+            Ok(result) => {
+                self.0.0.store(new as u8, Ordering::Release);
+                Ok(result)
+            }
+            Err(err) => {
+                self.0.0.store(self.1, Ordering::Release);
+                Err(err)
+            }
+        }
     }
 }
 
@@ -116,7 +122,7 @@ impl TcpSocket {
     /// Creates a new TCP socket.
     pub fn new() -> Self {
         Self {
-            state: StateLock::new(State::Closed),
+            state: StateLock::new(State::Idle),
             handle: SOCKET_SET.add(new_tcp_socket()),
 
             general: GeneralOptions::new(),
@@ -141,23 +147,6 @@ impl TcpSocket {
     }
 
     #[inline]
-    fn is_connecting(&self) -> bool {
-        self.state() == State::Connecting
-    }
-
-    #[inline]
-    /// Whether the socket is connected.
-    pub fn is_connected(&self) -> bool {
-        self.state() == State::Connected
-    }
-
-    #[inline]
-    /// Whether the socket is closed.
-    pub fn is_closed(&self) -> bool {
-        self.state() == State::Closed
-    }
-
-    #[inline]
     fn is_listening(&self) -> bool {
         self.state() == State::Listening
     }
@@ -174,7 +163,8 @@ impl TcpSocket {
         Ok(endpoint)
     }
 
-    fn poll_connect(&self) -> LinuxResult<PollState> {
+    fn poll_connect(&self) -> IoEvents {
+        let mut events = IoEvents::empty();
         let writable = self.with_smol_socket(|socket| match socket.state() {
             smol::State::SynSent => false, // wait for connection
             smol::State::Established => {
@@ -191,26 +181,28 @@ impl TcpSocket {
                 true
             }
         });
-        Ok(PollState {
-            readable: false,
-            writable,
-        })
+        events.set(IoEvents::OUT, writable);
+        events
     }
 
-    fn poll_stream(&self) -> LinuxResult<PollState> {
+    fn poll_stream(&self) -> IoEvents {
+        let mut events = IoEvents::empty();
         self.with_smol_socket(|socket| {
-            Ok(PollState {
-                readable: !socket.may_recv() || socket.can_recv(),
-                writable: !socket.may_send() || socket.can_send(),
-            })
-        })
+            events.set(IoEvents::IN, !socket.may_recv() || socket.can_recv());
+            events.set(IoEvents::OUT, !socket.may_send() || socket.can_send());
+        });
+        events
     }
 
-    fn poll_listener(&self) -> LinuxResult<PollState> {
-        Ok(PollState {
-            readable: LISTEN_TABLE.can_accept(self.bound_endpoint()?.port)?,
-            writable: false,
-        })
+    fn poll_listener(&self) -> IoEvents {
+        let mut events = IoEvents::empty();
+        events.set(
+            IoEvents::IN,
+            LISTEN_TABLE
+                .can_accept(self.bound_endpoint().unwrap().port)
+                .unwrap(),
+        );
+        events
     }
 }
 
@@ -273,42 +265,41 @@ impl Configurable for TcpSocket {
 impl SocketOps for TcpSocket {
     fn bind(&self, local_addr: SocketAddrEx) -> LinuxResult<()> {
         let mut local_addr = local_addr.into_ip()?;
-        let _guard = self
-            .state
-            .transit(State::Closed, State::Closed)
-            .map_err(|_| ax_err!(EINVAL, "already bound"))?;
+        self.state
+            .lock(State::Idle)
+            .map_err(|_| ax_err!(EINVAL, "already"))?
+            .transit(State::Idle, || {
+                // TODO: check addr is available
+                if local_addr.port() == 0 {
+                    local_addr.set_port(get_ephemeral_port()?);
+                }
+                if !self.general.reuse_address() {
+                    SOCKET_SET.bind_check(local_addr.ip().into(), local_addr.port())?;
+                }
 
-        // TODO: check addr is available
-        if local_addr.port() == 0 {
-            local_addr.set_port(get_ephemeral_port()?);
-        }
-        if !self.general.reuse_address() {
-            SOCKET_SET.bind_check(local_addr.ip().into(), local_addr.port())?;
-        }
-
-        self.with_smol_socket(|socket| {
-            if socket.get_bound_endpoint().port != 0 {
-                return Err(LinuxError::EINVAL);
-            }
-            socket.set_bound_endpoint(IpListenEndpoint {
-                addr: if local_addr.ip().is_unspecified() {
-                    None
-                } else {
-                    Some(local_addr.ip().into())
-                },
-                port: local_addr.port(),
-            });
-            Ok(())
-        })?;
-        debug!("TCP socket {}: binding to {}", self.handle, local_addr);
-        Ok(())
+                self.with_smol_socket(|socket| {
+                    if socket.get_bound_endpoint().port != 0 {
+                        return Err(LinuxError::EINVAL);
+                    }
+                    socket.set_bound_endpoint(IpListenEndpoint {
+                        addr: if local_addr.ip().is_unspecified() {
+                            None
+                        } else {
+                            Some(local_addr.ip().into())
+                        },
+                        port: local_addr.port(),
+                    });
+                    Ok(())
+                })?;
+                debug!("TCP socket {}: binding to {}", self.handle, local_addr);
+                Ok(())
+            })
     }
 
     fn connect(&self, remote_addr: SocketAddrEx) -> LinuxResult<()> {
         let remote_addr = remote_addr.into_ip()?;
-        let guard = self
-            .state
-            .transit(State::Closed, State::Connecting)
+        self.state
+            .lock(State::Idle)
             .map_err(|state| {
                 if state == State::Connecting {
                     LinuxError::EINPROGRESS
@@ -316,68 +307,73 @@ impl SocketOps for TcpSocket {
                     // TODO(mivik): error code
                     ax_err!(EISCONN, "already connected")
                 }
+            })?
+            .transit(State::Connecting, || {
+                // TODO: check remote addr unreachable
+                // let (bound_endpoint, remote_endpoint) = self.get_endpoint_pair(remote_addr)?;
+                let remote_endpoint = IpEndpoint::from(remote_addr);
+                let mut bound_endpoint =
+                    self.with_smol_socket(|socket| socket.get_bound_endpoint());
+                if bound_endpoint.addr.is_none() {
+                    bound_endpoint.addr =
+                        Some(SERVICE.lock().get_source_address(&remote_endpoint.addr));
+                }
+                if bound_endpoint.port == 0 {
+                    bound_endpoint.port = get_ephemeral_port()?;
+                }
+                info!(
+                    "TCP connection from {} to {}",
+                    bound_endpoint, remote_endpoint
+                );
+
+                self.general
+                    .set_externally_driven(SERVICE.lock().is_external(&remote_endpoint.addr));
+
+                self.with_smol_socket(|socket| {
+                    socket.set_bound_endpoint(bound_endpoint);
+                    socket
+                        .connect(
+                            crate::SERVICE.lock().iface.context(),
+                            remote_endpoint,
+                            bound_endpoint,
+                        )
+                        .map_err(|e| match e {
+                            smol::ConnectError::InvalidState => {
+                                ax_err!(EISCONN, "already conncted")
+                            }
+                            smol::ConnectError::Unaddressable => {
+                                ax_err!(ECONNREFUSED, "unaddressable")
+                            }
+                        })?;
+                    Ok(())
+                })
             })?;
-        // TODO: check remote addr unreachable
-        // let (bound_endpoint, remote_endpoint) = self.get_endpoint_pair(remote_addr)?;
-        let remote_endpoint = IpEndpoint::from(remote_addr);
-        let mut bound_endpoint = self.with_smol_socket(|socket| socket.get_bound_endpoint());
-        if bound_endpoint.addr.is_none() {
-            bound_endpoint.addr = Some(SERVICE.lock().get_source_address(&remote_endpoint.addr));
-        }
-        if bound_endpoint.port == 0 {
-            bound_endpoint.port = get_ephemeral_port()?;
-        }
-        info!(
-            "TCP connection from {} to {}",
-            bound_endpoint, remote_endpoint
-        );
-
-        self.general
-            .set_externally_driven(SERVICE.lock().is_external(&remote_endpoint.addr));
-
-        self.with_smol_socket(|socket| {
-            socket.set_bound_endpoint(bound_endpoint);
-            socket
-                .connect(
-                    crate::SERVICE.lock().iface.context(),
-                    remote_endpoint,
-                    bound_endpoint,
-                )
-                .map_err(|e| match e {
-                    smol::ConnectError::InvalidState => {
-                        ax_err!(EISCONN, "already conncted")
-                    }
-                    smol::ConnectError::Unaddressable => {
-                        ax_err!(ECONNREFUSED, "unaddressable")
-                    }
-                })?;
-            Ok(())
-        })?;
-
-        drop(guard);
-
-        // HACK: yield() to let server to listen
-        axtask::yield_now();
 
         // Here our state must be `CONNECTING`, and only one thread can run here.
-        self.general
-            .block_on(self.general.send_timeout(), |_context| {
-                let PollState { writable, .. } = self.poll_connect()?;
-                Poll::Ready(if !writable {
+        Poller::new(self, IoEvents::OUT)
+            .non_blocking(self.general.nonblocking())
+            .timeout(self.general.send_timeout())
+            .poll(|| {
+                poll_interfaces();
+                let events = self.poll_connect();
+                if !events.contains(IoEvents::OUT) {
                     Err(LinuxError::EAGAIN)
                 } else if self.state() == State::Connected {
                     Ok(())
                 } else {
                     Err(ax_err!(ECONNREFUSED, "connection refused"))
-                })
+                }
             })
     }
 
     fn listen(&self) -> LinuxResult<()> {
-        if let Ok(_guard) = self.state.transit(State::Closed, State::Listening) {
-            let bound_endpoint = self.with_smol_socket(|socket| socket.get_bound_endpoint());
-            LISTEN_TABLE.listen(bound_endpoint)?;
-            debug!("listening on {}", bound_endpoint);
+        if let Ok(guard) = self.state.lock(State::Idle) {
+            guard.transit(State::Listening, || {
+                let bound_endpoint = self.with_smol_socket(|socket| socket.get_bound_endpoint());
+                LISTEN_TABLE.listen(bound_endpoint, &self.general.poll_rx)?;
+                debug!("listening on {}", bound_endpoint);
+                Ok(())
+            })?;
         } else {
             // ignore simultaneous `listen`s.
         }
@@ -390,37 +386,34 @@ impl SocketOps for TcpSocket {
         }
 
         let bound_port = self.bound_endpoint()?.port;
-        self.general
-            .block_on(self.general.recv_timeout(), |_context| {
-                Poll::Ready(LISTEN_TABLE.accept(bound_port).map(|handle| {
+        Poller::new(self, IoEvents::IN)
+            .non_blocking(self.general.nonblocking())
+            .timeout(self.general.recv_timeout())
+            .poll(|| {
+                poll_interfaces();
+                LISTEN_TABLE.accept(bound_port).map(|handle| {
                     let socket = TcpSocket::new_connected(handle);
                     debug!(
                         "accepted connection from {}, {}",
                         handle,
                         socket.with_smol_socket(|socket| socket.remote_endpoint().unwrap())
                     );
-                    socket
-                }))
+                    Socket::Tcp(socket)
+                })
             })
-            .map(Socket::Tcp)
     }
 
     fn send(&self, src: &mut impl Buf, _options: SendOptions) -> LinuxResult<usize> {
-        if self.is_connecting() {
-            return Err(ax_err!(EAGAIN));
-        } else if !self.is_connected() {
-            return Err(ax_err!(ENOTCONN));
-        }
-
         // SAFETY: `self.handle` should be initialized in a connected socket.
-        self.general
-            .block_on(self.general.send_timeout(), |context| {
+        Poller::new(self, IoEvents::OUT)
+            .non_blocking(self.general.nonblocking())
+            .timeout(self.general.send_timeout())
+            .poll(|| {
                 self.with_smol_socket(|socket| {
-                    Poll::Ready(if !socket.is_active() {
+                    if !socket.is_active() {
                         Err(LinuxError::ENOTCONN)
                     } else if !socket.can_send() {
-                        socket.register_send_waker(context.waker());
-                        return Poll::Pending;
+                        Err(LinuxError::EAGAIN)
                     } else {
                         // connected, and the tx buffer is not full
                         let len = socket
@@ -430,26 +423,24 @@ impl SocketOps for TcpSocket {
                             })
                             .map_err(|_| ax_err!(ENOTCONN, "not connected?"))?;
                         Ok(len)
-                    })
+                    }
                 })
             })
     }
 
     fn recv(&self, dst: &mut impl BufMut, options: RecvOptions<'_>) -> LinuxResult<usize> {
-        if self.is_connecting() {
-            bail!(EAGAIN);
-        }
-
-        self.general
-            .block_on(self.general.recv_timeout(), |context| {
+        Poller::new(self, IoEvents::IN)
+            .non_blocking(self.general.nonblocking())
+            .timeout(self.general.recv_timeout())
+            .poll(|| {
+                poll_interfaces();
                 self.with_smol_socket(|socket| {
-                    Poll::Ready(if !socket.is_active() {
+                    if !socket.is_active() {
                         Err(LinuxError::ENOTCONN)
                     } else if !socket.may_recv() {
                         Ok(0)
                     } else if socket.recv_queue() == 0 {
-                        socket.register_recv_waker(context.waker());
-                        return Poll::Pending;
+                        Err(LinuxError::EAGAIN)
                     } else {
                         if options.flags.contains(RecvFlags::PEEK) {
                             socket.peek_slice(dst.chunk_mut())
@@ -460,7 +451,7 @@ impl SocketOps for TcpSocket {
                             })
                         }
                         .map_err(|_| ax_err!(ENOTCONN, "not connected?"))
-                    })
+                    }
                 })
             })
     }
@@ -485,38 +476,69 @@ impl SocketOps for TcpSocket {
         })
     }
 
-    fn poll(&self) -> LinuxResult<PollState> {
-        match self.state() {
-            State::Connecting => self.poll_connect(),
-            State::Connected | State::Closed => self.poll_stream(),
-            State::Listening => self.poll_listener(),
-            _ => Ok(PollState {
-                readable: false,
-                writable: false,
-            }),
-        }
-    }
-
-    fn shutdown(&self, _how: Shutdown) -> LinuxResult<()> {
+    fn shutdown(&self, how: Shutdown) -> LinuxResult<()> {
         // TODO(mivik): shutdown
 
         // stream
-        if let Ok(_guard) = self.state.transit(State::Connected, State::Closed) {
-            self.with_smol_socket(|socket| {
-                debug!("TCP socket {}: shutting down", self.handle);
-                socket.close();
-            });
-            poll_interfaces();
+        if let Ok(guard) = self.state.lock(State::Connected) {
+            guard.transit(State::Closed, || {
+                if how.has_write() {
+                    self.with_smol_socket(|socket| {
+                        debug!("TCP socket {}: shutting down", self.handle);
+                        socket.close();
+                    });
+                }
+                poll_interfaces();
+                Ok(())
+            })?;
         }
 
         // listener
-        if let Ok(_guard) = self.state.transit(State::Listening, State::Closed) {
-            LISTEN_TABLE.unlisten(self.bound_endpoint()?.port);
-            poll_interfaces();
+        if let Ok(guard) = self.state.lock(State::Listening) {
+            guard.transit(State::Closed, || {
+                LISTEN_TABLE.unlisten(self.bound_endpoint()?.port);
+                poll_interfaces();
+                Ok(())
+            })?;
         }
 
         // ignore for other states
         Ok(())
+    }
+}
+
+impl Pollable for TcpSocket {
+    fn poll(&self) -> IoEvents {
+        poll_interfaces();
+        match self.state() {
+            State::Connecting => self.poll_connect(),
+            State::Connected | State::Idle | State::Closed => self.poll_stream(),
+            State::Listening => self.poll_listener(),
+            State::Busy => IoEvents::empty(),
+        }
+    }
+
+    fn register(&self, context: &mut Context<'_>, events: IoEvents) {
+        if self.general.externally_driven() {
+            context.waker().wake_by_ref();
+            return;
+        }
+        if events.contains(IoEvents::IN) {
+            self.general.poll_rx.register(context.waker());
+            self.with_smol_socket(|socket| socket.register_recv_waker(&self.general.poll_rx_waker));
+            if self.is_listening() {
+                LISTEN_TABLE
+                    .register_recv_waker(
+                        self.bound_endpoint().unwrap().port,
+                        &self.general.poll_rx_waker,
+                    )
+                    .unwrap();
+            }
+        }
+        if events.contains(IoEvents::OUT) {
+            self.general.poll_tx.register(context.waker());
+            self.with_smol_socket(|socket| socket.register_send_waker(&self.general.poll_tx_waker));
+        }
     }
 }
 
@@ -526,6 +548,8 @@ impl Drop for TcpSocket {
             warn!("TCP socket {}: shutdown failed: {}", self.handle, err);
         }
         SOCKET_SET.remove(self.handle);
+        // This is crucial for the close messages to be sent.
+        poll_interfaces();
     }
 }
 

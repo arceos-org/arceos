@@ -1,11 +1,12 @@
 use alloc::{borrow::ToOwned, string::String, sync::Arc};
-use core::any::Any;
+use core::{any::Any, task::Context};
 
 use axfs_ng_vfs::{
     DeviceId, DirEntry, DirEntrySink, DirNode, DirNodeOps, FileNode, FileNodeOps, FilesystemOps,
     Metadata, MetadataUpdate, NodeOps, NodePermission, NodeType, Reference, VfsError, VfsResult,
     WeakDirEntry,
 };
+use axio::{IoEvents, Pollable};
 use lock_api::RawMutex;
 use lwext4_rust::{FileAttr, InodeType};
 
@@ -159,6 +160,14 @@ impl<M: RawMutex + Send + Sync + 'static> FileNodeOps<M> for Inode<M> {
             .set_symlink(self.ino, target.as_bytes())
             .map_err(into_vfs_err)
     }
+}
+
+impl<M: RawMutex + 'static> Pollable for Inode<M> {
+    fn poll(&self) -> IoEvents {
+        IoEvents::IN | IoEvents::OUT
+    }
+
+    fn register(&self, _context: &mut Context<'_>, _events: IoEvents) {}
 }
 
 impl<M: RawMutex + Send + Sync + 'static> DirNodeOps<M> for Inode<M> {

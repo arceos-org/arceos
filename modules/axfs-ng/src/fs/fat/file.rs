@@ -1,10 +1,11 @@
 use alloc::{sync::Arc, vec};
-use core::{any::Any, mem, ops::Deref};
+use core::{any::Any, mem, ops::Deref, task::Context};
 
 use axfs_ng_vfs::{
     FileNode, FileNodeOps, FilesystemOps, Metadata, MetadataUpdate, NodeOps, NodeType, VfsError,
     VfsResult,
 };
+use axio::{IoEvents, Pollable};
 use fatfs::{Read, Seek, SeekFrom, Write};
 use lock_api::RawMutex;
 
@@ -150,6 +151,13 @@ impl<M: RawMutex + Send + Sync + 'static> FileNodeOps<M> for FatFileNode<M> {
     fn set_symlink(&self, _target: &str) -> VfsResult<()> {
         Err(VfsError::EPERM)
     }
+}
+impl<M: RawMutex + 'static> Pollable for FatFileNode<M> {
+    fn poll(&self) -> IoEvents {
+        IoEvents::IN | IoEvents::OUT
+    }
+
+    fn register(&self, _context: &mut Context<'_>, _events: IoEvents) {}
 }
 
 impl<M: RawMutex + 'static> Drop for FatFileNode<M> {

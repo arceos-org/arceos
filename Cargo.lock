@@ -448,9 +448,10 @@ dependencies = [
 [[package]]
 name = "axfs-ng-vfs"
 version = "0.1.0"
-source = "git+https://github.com/Starry-Mix-THU/axfs-ng-vfs.git?rev=0aeb6d9#0aeb6d9db73936092fe8bfb0c21a9dae1dc40ea1"
+source = "git+https://github.com/Starry-Mix-THU/axfs-ng-vfs.git?rev=fac4f98#fac4f98f17b3d817f47c06c0b09f09e0b68ccd06"
 dependencies = [
  "axerrno",
+ "axio",
  "bitflags 2.9.1",
  "hashbrown",
  "inherit-methods-macro",
@@ -486,9 +487,10 @@ dependencies = [
 [[package]]
 name = "axio"
 version = "0.1.1"
-source = "git+https://github.com/Starry-Mix-THU/axio.git?rev=446f398#446f3982e704b44738c62eaef888f286fb7b46cd"
+source = "git+https://github.com/Starry-Mix-THU/axio.git?rev=a069a3d#a069a3d4b0b7e2daa7d13908d9238958699b1a31"
 dependencies = [
  "axerrno",
+ "bitflags 2.9.1",
 ]
 
 [[package]]
@@ -532,6 +534,7 @@ version = "0.1.0"
 dependencies = [
  "async-channel",
  "async-trait",
+ "axconfig",
  "axdriver",
  "axerrno",
  "axfs-ng",
@@ -713,6 +716,7 @@ dependencies = [
  "axconfig",
  "axerrno",
  "axhal",
+ "axio",
  "axtask",
  "cfg-if",
  "cpumask",

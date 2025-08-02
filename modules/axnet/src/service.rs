@@ -5,7 +5,7 @@ use smoltcp::{
     wire::{HardwareAddress, IpAddress},
 };
 
-use crate::router::Router;
+use crate::{router::Router};
 
 fn now() -> Instant {
     Instant::from_micros_const((wall_time_nanos() / NANOS_PER_MICROS) as i64)
@@ -23,12 +23,12 @@ impl Service {
         Self { iface, router }
     }
 
-    pub fn poll(&mut self, sockets: &mut SocketSet) {
+    pub fn poll(&mut self, sockets: &mut SocketSet) -> bool {
         let timestamp = now();
 
         self.router.poll(timestamp);
         self.iface.poll(timestamp, &mut self.router, sockets);
-        self.router.dispatch(timestamp);
+        self.router.dispatch(timestamp)
     }
 
     pub fn get_source_address(&self, dst_addr: &IpAddress) -> IpAddress {

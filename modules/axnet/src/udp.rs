@@ -1,15 +1,16 @@
 use alloc::vec;
 use core::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
-    task::Poll,
+    task::Context,
 };
 
 use axerrno::{LinuxError, LinuxResult, ax_err, bail};
 use axio::{
-    PollState,
+    IoEvents, Pollable,
     buf::{Buf, BufMut, BufMutExt},
 };
 use axsync::Mutex;
+use axtask::future::Poller;
 use smoltcp::{
     iface::SocketHandle,
     phy::PacketMeta,
@@ -182,17 +183,22 @@ impl SocketOps for UdpSocket {
         }
 
         if self.local_addr.read().is_none() {
-            bail!(ENOTCONN);
+            self.bind(SocketAddrEx::Ip(SocketAddr::new(
+                IpAddr::V4(Ipv4Addr::UNSPECIFIED),
+                0,
+            )))?;
         }
-        self.general
-            .block_on(self.general.send_timeout(), |context| {
+        Poller::new(self, IoEvents::OUT)
+            .non_blocking(self.general.nonblocking())
+            .timeout(self.general.send_timeout())
+            .poll(|| {
+                poll_interfaces();
                 self.with_smol_socket(|socket| {
-                    Poll::Ready(if !socket.is_open() {
+                    if !socket.is_open() {
                         // not connected
                         Err(ax_err!(ENOTCONN))
                     } else if !socket.can_send() {
-                        socket.register_send_waker(context.waker());
-                        return Poll::Pending;
+                        Err(LinuxError::EAGAIN)
                     } else {
                         let src_len = src.remaining();
                         let mut buf = socket
@@ -213,7 +219,7 @@ impl SocketOps for UdpSocket {
                         buf.put(src);
                         assert!(buf.is_empty());
                         Ok(src_len)
-                    })
+                    }
                 })
             })
     }
@@ -232,15 +238,17 @@ impl SocketOps for UdpSocket {
             None => ExpectedRemote::Expecting(self.remote_endpoint()?.0),
         };
 
-        self.general
-            .block_on(self.general.recv_timeout(), |context| {
+        Poller::new(self, IoEvents::IN)
+            .non_blocking(self.general.nonblocking())
+            .timeout(self.general.recv_timeout())
+            .poll(|| {
+                poll_interfaces();
                 self.with_smol_socket(|socket| {
-                    Poll::Ready(if !socket.is_open() {
+                    if !socket.is_open() {
                         // not bound
                         Err(ax_err!(ENOTCONN))
                     } else if !socket.can_recv() {
-                        socket.register_recv_waker(context.waker());
-                        return Poll::Pending;
+                        Err(LinuxError::EAGAIN)
                     } else {
                         let result = if options.flags.contains(RecvFlags::PEEK) {
                             socket.peek().map(|(data, meta)| (data, *meta))
@@ -259,7 +267,7 @@ impl SocketOps for UdpSocket {
                                             || (expected.port != 0
                                                 && expected.port != meta.endpoint.port)
                                         {
-                                            return Poll::Ready(Err(LinuxError::EAGAIN));
+                                            return Err(LinuxError::EAGAIN);
                                         }
                                     }
                                 }
@@ -280,7 +288,7 @@ impl SocketOps for UdpSocket {
                                 unreachable!("UDP socket recv never returns Err(Truncated)")
                             }
                         }
-                    })
+                    }
                 })
             })
     }
@@ -301,21 +309,6 @@ impl SocketOps for UdpSocket {
             .map(SocketAddrEx::Ip)
     }
 
-    fn poll(&self) -> LinuxResult<PollState> {
-        if self.local_addr.read().is_none() {
-            return Ok(PollState {
-                readable: false,
-                writable: false,
-            });
-        }
-        self.with_smol_socket(|socket| {
-            Ok(PollState {
-                readable: socket.can_recv(),
-                writable: socket.can_send(),
-            })
-        })
-    }
-
     fn shutdown(&self, _how: Shutdown) -> LinuxResult<()> {
         // TODO(mivik): shutdown
         poll_interfaces();
@@ -325,6 +318,37 @@ impl SocketOps for UdpSocket {
             socket.close();
         });
         Ok(())
+    }
+}
+
+impl Pollable for UdpSocket {
+    fn poll(&self) -> IoEvents {
+        poll_interfaces();
+        if self.local_addr.read().is_none() {
+            return IoEvents::empty();
+        }
+
+        let mut events = IoEvents::empty();
+        self.with_smol_socket(|socket| {
+            events.set(IoEvents::IN, socket.can_recv());
+            events.set(IoEvents::OUT, socket.can_send());
+        });
+        events
+    }
+
+    fn register(&self, context: &mut Context<'_>, events: IoEvents) {
+        if self.general.externally_driven() {
+            context.waker().wake_by_ref();
+            return;
+        }
+        if events.contains(IoEvents::IN) {
+            self.general.poll_rx.register(context.waker());
+            self.with_smol_socket(|socket| socket.register_recv_waker(&self.general.poll_rx_waker));
+        }
+        if events.contains(IoEvents::OUT) {
+            self.general.poll_tx.register(context.waker());
+            self.with_smol_socket(|socket| socket.register_send_waker(&self.general.poll_tx_waker));
+        }
     }
 }
 

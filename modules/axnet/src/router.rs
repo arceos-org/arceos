@@ -98,7 +98,8 @@ impl Router {
         }
     }
 
-    pub fn dispatch(&mut self, timestamp: Instant) {
+    pub fn dispatch(&mut self, timestamp: Instant) -> bool {
+        let mut poll_next = false;
         while let Ok(((), packet)) = self.tx_buffer.dequeue() {
             match IpVersion::of_packet(packet).expect("got invalid IP packet") {
                 IpVersion::Ipv4 => {
@@ -108,7 +109,7 @@ impl Router {
                     if packet.dst_addr().is_broadcast() {
                         let buf = packet.into_inner();
                         for dev in &mut self.devices {
-                            dev.send(dst_addr, buf, timestamp);
+                            poll_next |= dev.send(dst_addr, buf, timestamp);
                         }
                     } else {
                         let Some(rule) = self.table.lookup(&dst_addr) else {
@@ -119,7 +120,7 @@ impl Router {
 
                         let next_hop = rule.via.unwrap_or(dst_addr);
                         let dev = &mut self.devices[rule.dev];
-                        dev.send(next_hop, packet.into_inner(), timestamp);
+                        poll_next |= dev.send(next_hop, packet.into_inner(), timestamp);
                     }
                 }
                 IpVersion::Ipv6 => {
@@ -129,7 +130,7 @@ impl Router {
                     if packet.dst_addr().is_multicast() {
                         let buf = packet.into_inner();
                         for dev in &mut self.devices {
-                            dev.send(dst_addr, buf, timestamp);
+                            poll_next |= dev.send(dst_addr, buf, timestamp);
                         }
                     } else {
                         let Some(rule) = self.table.lookup(&dst_addr) else {
@@ -140,11 +141,12 @@ impl Router {
 
                         let next_hop = rule.via.unwrap_or(dst_addr);
                         let dev = &mut self.devices[rule.dev];
-                        dev.send(next_hop, packet.into_inner(), timestamp);
+                        poll_next |= dev.send(next_hop, packet.into_inner(), timestamp);
                     }
                 }
             }
         }
+        poll_next
     }
 }
 

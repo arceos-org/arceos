@@ -2,23 +2,23 @@ pub(crate) mod dgram;
 pub(crate) mod stream;
 
 use alloc::{boxed::Box, sync::Arc};
+use core::task::Context;
 
 use async_trait::async_trait;
 use axerrno::{LinuxError, LinuxResult};
 use axfs_ng::{FS_CONTEXT, OpenOptions};
 use axfs_ng_vfs::NodeType;
 use axio::{
-    PollState,
+    IoEvents, Pollable,
     buf::{Buf, BufMut},
 };
 use axsync::Mutex;
 use axtask::future::block_on_interruptible;
-pub use dgram::DgramTransport;
 use enum_dispatch::enum_dispatch;
 use hashbrown::HashMap;
 use lazy_static::lazy_static;
-pub use stream::StreamTransport;
 
+pub use self::{dgram::DgramTransport, stream::StreamTransport};
 use crate::{
     RecvOptions, SendOptions, Shutdown, Socket, SocketAddrEx, SocketOps,
     options::{Configurable, GetSocketOption, SetSocketOption},
@@ -34,7 +34,7 @@ pub enum UnixSocketAddr {
 /// Abstract transport trait for Unix sockets.
 #[async_trait]
 #[enum_dispatch]
-pub trait TransportOps: Configurable + Send + Sync {
+pub trait TransportOps: Configurable + Pollable + Send + Sync {
     fn bind(&self, slot: &BindSlot, local_addr: &UnixSocketAddr) -> LinuxResult<()>;
     fn connect(&self, slot: &BindSlot, local_addr: &UnixSocketAddr) -> LinuxResult<()>;
 
@@ -42,14 +42,27 @@ pub trait TransportOps: Configurable + Send + Sync {
 
     fn send(&self, src: &mut impl Buf, options: SendOptions) -> LinuxResult<usize>;
     fn recv(&self, dst: &mut impl BufMut, options: RecvOptions<'_>) -> LinuxResult<usize>;
-
-    fn poll(&self) -> LinuxResult<PollState>;
 }
 
 #[enum_dispatch(Configurable, TransportOps)]
 pub enum Transport {
     Stream(StreamTransport),
     Dgram(DgramTransport),
+}
+impl Pollable for Transport {
+    fn poll(&self) -> IoEvents {
+        match self {
+            Transport::Stream(stream) => stream.poll(),
+            Transport::Dgram(dgram) => dgram.poll(),
+        }
+    }
+
+    fn register(&self, context: &mut core::task::Context<'_>, events: IoEvents) {
+        match self {
+            Transport::Stream(stream) => stream.register(context, events),
+            Transport::Dgram(dgram) => dgram.register(context, events),
+        }
+    }
 }
 
 #[derive(Default)]
@@ -199,11 +212,17 @@ impl SocketOps for UnixSocket {
         Ok(SocketAddrEx::Unix(self.remote_addr.lock().clone()))
     }
 
-    fn poll(&self) -> LinuxResult<PollState> {
+    fn shutdown(&self, _how: Shutdown) -> LinuxResult<()> {
+        Ok(())
+    }
+}
+
+impl Pollable for UnixSocket {
+    fn poll(&self) -> IoEvents {
         self.transport.poll()
     }
 
-    fn shutdown(&self, _how: Shutdown) -> LinuxResult<()> {
-        Ok(())
+    fn register(&self, context: &mut Context<'_>, events: IoEvents) {
+        self.transport.register(context, events);
     }
 }
