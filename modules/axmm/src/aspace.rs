@@ -58,8 +58,7 @@ impl AddrSpace {
 
     /// Checks if the address space contains the given address range.
     pub fn contains_range(&self, start: VirtAddr, size: usize) -> bool {
-        self.va_range
-            .contains_range(VirtAddrRange::from_start_size(start, size))
+        self.va_range.contains(start) && (self.va_range.end - start) >= size
     }
 
     /// Creates a new empty address space.
