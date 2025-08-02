@@ -86,7 +86,7 @@ impl AddrSpace {
 
     fn validate_region(&self, start: VirtAddr, size: usize) -> LinuxResult {
         if !self.contains_range(start, size) {
-            bail!(EINVAL, "address out of range");
+            bail!(ENOMEM, "address out of range");
         }
         if !start.is_aligned_4k() || !is_aligned_4k(size) {
             bail!(EINVAL, "address is not aligned");
