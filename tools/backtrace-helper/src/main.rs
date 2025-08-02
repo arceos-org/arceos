@@ -1,59 +1,69 @@
+#![feature(exit_status_error)]
+
 use std::{
     collections::BTreeMap,
     fs::{self, File},
     io::BufWriter,
+    process::Command,
 };
 
 use object::{
+    Object, ObjectSection,
     build::elf::{Builder, SectionData},
+    read::elf::ElfFile64,
     write::StreamingBuffer,
 };
 
-const DEBUG_SECTIONS: &[&str] = &[
-    "debug_abbrev",
-    "debug_addr",
-    "debug_aranges",
-    "debug_info",
-    "debug_line",
-    "debug_line_str",
-    "debug_ranges",
-    "debug_rnglists",
-    "debug_str",
-    "debug_str_offsets",
+const DEBUG_SECTIONS: &[&[u8]] = &[
+    b"debug_abbrev",
+    b"debug_addr",
+    b"debug_aranges",
+    b"debug_info",
+    b"debug_line",
+    b"debug_line_str",
+    b"debug_ranges",
+    b"debug_rnglists",
+    b"debug_str",
+    b"debug_str_offsets",
 ];
 
 fn main() {
     let input = std::env::args().nth(1).expect("No input file provided");
+    let objcopy = std::env::var("OBJCOPY").unwrap_or("llvm-objcopy".to_owned());
+
+    let mut sections: BTreeMap<&[u8], &[u8]> = BTreeMap::new();
 
     let data = fs::read(&input).expect("Failed to read file");
-    let mut builder = Builder::read(data.as_slice()).expect("Failed to parse ELF");
+    let elf: ElfFile64 = ElfFile64::parse(data.as_slice()).expect("Failed to parse ELF file");
 
-    let mut sections: BTreeMap<&str, SectionData> = BTreeMap::new();
-
-    for sec in builder.sections.iter_mut() {
-        let Some(name) = DEBUG_SECTIONS
-            .iter()
-            .find(|&name| sec.name.as_slice() == format!(".{name}").as_bytes())
-        else {
+    for sec in elf.sections() {
+        let Ok(name) = sec.name_bytes() else {
             continue;
         };
-        sections.insert(name, sec.data.clone());
+        if name[0] != b'.' || !DEBUG_SECTIONS.contains(&&name[1..]) {
+            continue;
+        }
+        sections.insert(&name[1..], sec.data().expect("Failed to get section data"));
     }
 
+    // `object` cannot remove sections correctly, so we have to use `objcopy`.
+    Command::new(objcopy)
+        .arg(&input)
+        .arg("--strip-debug")
+        .status()
+        .expect("Failed to run objcopy")
+        .exit_ok()
+        .expect("objcopy failed");
+
+    let data = fs::read(&input).expect("Failed to read file");
+    let mut builder = Builder::read(data.as_slice()).expect("Failed to parse ELF file");
+
     for sec in builder.sections.iter_mut() {
-        let Some(name) = DEBUG_SECTIONS
-            .iter()
-            .find(|&name| sec.name.as_slice() == name.as_bytes())
-        else {
-            continue;
-        };
-        sec.name.to_mut().insert(0, b'.');
-        if let Some(data) = sections.remove(name) {
-            sec.data = data;
+        if let Some(data) = sections.remove(&*sec.name) {
+            sec.name.to_mut().insert(0, b'.');
+            sec.data = SectionData::Data(data.into());
         }
     }
-
-    builder.delete_orphans();
 
     let writer = BufWriter::new(
         File::options()

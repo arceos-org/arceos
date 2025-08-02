@@ -1,7 +1,6 @@
 use alloc::{string::String, vec};
 
-use axdriver::AxNetDevice;
-use axdriver_net::{DevError, NetDriverOps};
+use axdriver::prelude::*;
 use hashbrown::HashMap;
 use smoltcp::{
     storage::{PacketBuffer, PacketMetadata},

@@ -2,7 +2,6 @@
 
 #![allow(unused_imports, dead_code)]
 
-use axalloc::UsageKind;
 use axdriver_base::DeviceType;
 #[cfg(feature = "bus-pci")]
 use axdriver_pci::{DeviceFunction, DeviceFunctionInfo, PciRoot};
@@ -52,15 +51,44 @@ register_display_driver!(
 
 cfg_if::cfg_if! {
     if #[cfg(block_dev = "ramdisk")] {
+        use axdriver_block::ramdisk::RamDisk;
+
         pub struct RamDiskDriver;
-        register_block_driver!(RamDiskDriver, axdriver_block::ramdisk::RamDisk);
+        register_block_driver!(RamDiskDriver, RamDisk);
+
+        #[macro_export]
+        macro_rules! include_initrd {
+            ($path:literal) => {
+                core::arch::global_asm!(
+                    concat!(
+                        ".section .data
+                        .global initrd_start
+                        .global initrd_end
+                        .p2align 12
+                        initrd_start:
+                        .incbin \"",
+                        $path,
+                        "\"
+                        initrd_end:"
+                    )
+                );
+            }
+        }
 
         impl DriverProbe for RamDiskDriver {
             fn probe_global() -> Option<AxDeviceEnum> {
-                // TODO: format RAM disk
-                Some(AxDeviceEnum::from_block(
-                    axdriver_block::ramdisk::RamDisk::new(0x100_0000), // 16 MiB
-                ))
+                unsafe extern "C" {
+                    fn initrd_start();
+                    fn initrd_end();
+                }
+
+                let initrd = unsafe {
+                    RamDisk::new(
+                        initrd_start as usize,
+                        initrd_end as usize - initrd_start as usize,
+                    )
+                };
+                Some(AxDeviceEnum::from_block(initrd))
             }
         }
     }
@@ -130,7 +158,7 @@ cfg_if::cfg_if! {
 
 cfg_if::cfg_if! {
     if #[cfg(net_dev = "fxmac")]{
-        use axalloc::global_allocator;
+        use axalloc::{UsageKind, global_allocator};
         use axhal::mem::PAGE_SIZE_4K;
 
         #[crate_interface::impl_interface]

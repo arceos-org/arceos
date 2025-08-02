@@ -19,12 +19,14 @@
 //!   time by corresponding cargo features. For example, [`AxNetDevice`] will be
 //!   an alias of [`VirtioNetDev`] if the `virtio-net` feature is enabled. This
 //!   model provides the best performance as it avoids dynamic dispatch. But on
-//!   limitation, only one device instance is supported for each device category.
+//!   limitation, only one device instance is supported for each device
+//!   category.
 //! - **Dynamic**: All device instance is using [trait objects] and wrapped in a
-//!   `Box<dyn Trait>`. For example, [`AxNetDevice`] will be [`Box<dyn NetDriverOps>`].
-//!   When call a method provided by the device, it uses [dynamic dispatch][dyn]
-//!   that may introduce a little overhead. But on the other hand, it is more
-//!   flexible, multiple instances of each device category are supported.
+//!   `Box<dyn Trait>`. For example, [`AxNetDevice`] will be [`Box<dyn
+//!   NetDriverOps>`]. When call a method provided by the device, it uses
+//!   [dynamic dispatch][dyn] that may introduce a little overhead. But on the
+//!   other hand, it is more flexible, multiple instances of each device
+//!   category are supported.
 //!
 //! # Supported Devices
 //!
@@ -39,8 +41,8 @@
 //!
 //! - `dyn`: use the dynamic device model (see above).
 //! - `bus-mmio`: use device tree to probe all MMIO devices.
-//! - `bus-pci`: use PCI bus to probe all PCI devices. This feature is
-//!   enabled by default.
+//! - `bus-pci`: use PCI bus to probe all PCI devices. This feature is enabled
+//!   by default.
 //! - `virtio`: use VirtIO devices. This is enabled if any of `virtio-blk`,
 //!   `virtio-net` or `virtio-gpu` is enabled.
 //! - `net`: use network devices. This is enabled if any feature of network
@@ -82,14 +84,13 @@ pub mod prelude;
 
 #[allow(unused_imports)]
 use self::prelude::*;
-pub use self::structs::{AxDeviceContainer, AxDeviceEnum};
-
 #[cfg(feature = "block")]
 pub use self::structs::AxBlockDevice;
 #[cfg(feature = "display")]
 pub use self::structs::AxDisplayDevice;
 #[cfg(feature = "net")]
 pub use self::structs::AxNetDevice;
+pub use self::structs::{AxDeviceContainer, AxDeviceEnum};
 
 /// A structure that contains all device drivers, organized by their category.
 #[derive(Default)]
@@ -130,10 +131,12 @@ impl AllDevices {
             }
         });
 
+        #[cfg(any(bus = "pci", bus = "mmio"))]
         self.probe_bus_devices();
     }
 
-    /// Adds one device into the corresponding container, according to its device category.
+    /// Adds one device into the corresponding container, according to its
+    /// device category.
     #[allow(dead_code)]
     fn add_device(&mut self, dev: AxDeviceEnum) {
         match dev {
@@ -147,7 +150,8 @@ impl AllDevices {
     }
 }
 
-/// Probes and initializes all device drivers, returns the [`AllDevices`] struct.
+/// Probes and initializes all device drivers, returns the [`AllDevices`]
+/// struct.
 pub fn init_drivers() -> AllDevices {
     info!("Initialize device drivers...");
     info!("  device model: {}", AllDevices::device_model());

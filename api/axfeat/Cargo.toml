@@ -43,14 +43,15 @@ sched-rr = ["axtask/sched-rr", "irq"]
 sched-cfs = ["axtask/sched-cfs", "irq"]
 
 # File system
-fs = ["alloc", "paging", "axdriver/virtio-blk", "dep:axfs-ng", "axruntime/fs"] # TODO: try to remove "paging"
-lwext4_rs = ["axfs-ng/ext4"]
+fs = ["alloc", "paging", "dep:axfs-ng", "axruntime/fs"] # TODO: try to remove "paging"
+fat = ["axfs-ng/fat"]
+ext4 = ["axfs-ng/ext4"]
 
 # Networking
-net = ["alloc", "paging", "axdriver/virtio-net", "dep:axnet", "axruntime/net"]
+net = ["alloc", "paging", "dep:axnet", "axruntime/net"]
 
 # Display
-display = ["alloc", "paging", "axdriver/virtio-gpu", "dep:axdisplay", "axruntime/display"]
+display = ["alloc", "paging", "dep:axdisplay", "axruntime/display"]
 
 # Real Time Clock (RTC) Driver.
 rtc = ["axhal/rtc", "axruntime/rtc"]
@@ -58,10 +59,13 @@ rtc = ["axhal/rtc", "axruntime/rtc"]
 # Device drivers
 bus-mmio = ["axdriver?/bus-mmio"]
 bus-pci = ["axdriver?/bus-pci"]
-driver-ramdisk = ["axdriver?/ramdisk"]
-driver-ixgbe = ["axdriver?/ixgbe"]
-driver-fxmac = ["axdriver?/fxmac"] # fxmac ethernet driver for PhytiumPi
-driver-bcm2835-sdhci = ["axdriver?/bcm2835-sdhci"]
+driver-virtio-blk = ["axdriver/virtio-blk"]
+driver-virtio-net = ["axdriver/virtio-net"]
+driver-virtio-gpu = ["axdriver/virtio-gpu"]
+driver-ramdisk = ["axdriver/ramdisk"]
+driver-ixgbe = ["axdriver/ixgbe"]
+driver-fxmac = ["axdriver/fxmac"] # fxmac ethernet driver for PhytiumPi
+driver-bcm2835-sdhci = ["axdriver/bcm2835-sdhci"]
 
 # Logging
 log-level-off = ["axlog/log-level-off"]

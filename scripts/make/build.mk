@@ -51,14 +51,13 @@ else ifeq ($(APP_TYPE), c)
 endif
 ifeq ($(BACKTRACE), y)
 	$(call run_cmd,RUSTFLAGS= cargo run --release --bin backtrace-helper,$(OUT_ELF))
-	$(call run_cmd,$(OBJCOPY),$(OUT_ELF) --strip-all)
 endif
 
 $(OUT_DIR):
 	$(call run_cmd,mkdir,-p $@)
 
 $(OUT_BIN): _cargo_build $(OUT_ELF)
-	$(call run_cmd,$(OBJCOPY),$(OUT_ELF) -O binary $@)
+	$(call run_cmd,$(OBJCOPY),$(OUT_ELF) -O binary --strip-all $@)
 	@if [ ! -s $(OUT_BIN) ]; then \
 		echo 'Empty kernel image "$(notdir $(FINAL_IMG))" is built, please check your build configuration'; \
 		exit 1; \

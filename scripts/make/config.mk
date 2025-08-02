@@ -4,15 +4,15 @@ config_args := \
   configs/defconfig.toml $(PLAT_CONFIG) $(EXTRA_CONFIG) \
   -w 'arch="$(ARCH)"' \
   -w 'platform="$(PLAT_NAME)"' \
-  -w 'plat.phys-memory-size=$(shell numfmt --from=iec $(MEM))' \
   -o "$(OUT_CONFIG)"
 
-ifneq ($(SMP),)
-  config_args += -w 'plat.cpu-num=$(SMP)'
-else
-  SMP := $(shell axconfig-gen $(PLAT_CONFIG) -r plat.cpu-num 2>/dev/null)
-  ifeq ($(SMP),)
-    $(error "`plat.cpu-num` is not defined in the platform configuration file")
+ifeq ($(MYPLAT),)
+  # Only change these options if targeting QEMU
+  config_args += -w 'plat.phys-memory-size=$(shell numfmt --from=iec $(MEM))'
+  ifneq ($(SMP),)
+    config_args += -w 'plat.cpu-num=$(SMP)'
+  else
+    SMP := $(shell axconfig-gen $(PLAT_CONFIG) -r plat.cpu-num 2>/dev/null)
   endif
 endif
 
@@ -31,4 +31,3 @@ else
          $(error "ARCH" or "MYPLAT" has been changed, please run "make defconfig" again))
   endef
 endif
-

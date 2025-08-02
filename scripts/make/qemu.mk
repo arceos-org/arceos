@@ -7,7 +7,9 @@ ifeq ($(BUS), mmio)
 else ifeq ($(BUS), pci)
   vdev-suffix := pci
 else
-  $(error "BUS" must be one of "mmio" or "pci")
+  BLK := n
+  NET := n
+  GRAPHIC := n
 endif
 
 ifeq ($(ARCH), x86_64)

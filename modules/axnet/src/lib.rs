@@ -58,45 +58,54 @@ static SERVICE: LazyInit<Mutex<Service>> = LazyInit::new();
 pub fn init_network(mut net_devs: AxDeviceContainer<AxNetDevice>) {
     info!("Initialize network subsystem...");
 
-    let dev = net_devs.take_one().expect("No NIC device found!");
-    info!("  use NIC 0: {:?}", dev.device_name());
-
-    let eth0_address = EthernetAddress(dev.mac_address().0);
-
-    let lo_ip = Ipv4Cidr::new(Ipv4Address::new(127, 0, 0, 1), 8);
-    let eth0_ip = Ipv4Cidr::new(IP.parse().expect("Invalid IPv4 address"), IP_PREFIX);
-
     let mut router = Router::new();
     let lo_dev = router.add_device(Box::new(LoopbackDevice::new()));
-    let eth0_dev = router.add_device(Box::new(EthernetDevice::new(
-        "eth0".to_owned(),
-        dev,
-        eth0_ip,
-    )));
 
+    let lo_ip = Ipv4Cidr::new(Ipv4Address::new(127, 0, 0, 1), 8);
     router.add_rule(Rule::new(
         lo_ip.into(),
         None,
         lo_dev,
         lo_ip.address().into(),
     ));
-    router.add_rule(Rule::new(
-        Ipv4Cidr::new(Ipv4Address::UNSPECIFIED, 0).into(),
-        Some(GATEWAY.parse().expect("Invalid gateway address")),
-        eth0_dev,
-        eth0_ip.address().into(),
-    ));
+
+    let eth0_ip = if let Some(dev) = net_devs.take_one() {
+        info!("  use NIC 0: {:?}", dev.device_name());
+
+        let eth0_address = EthernetAddress(dev.mac_address().0);
+        let eth0_ip = Ipv4Cidr::new(IP.parse().expect("Invalid IPv4 address"), IP_PREFIX);
+
+        let eth0_dev = router.add_device(Box::new(EthernetDevice::new(
+            "eth0".to_owned(),
+            dev,
+            eth0_ip,
+        )));
+
+        router.add_rule(Rule::new(
+            Ipv4Cidr::new(Ipv4Address::UNSPECIFIED, 0).into(),
+            Some(GATEWAY.parse().expect("Invalid gateway address")),
+            eth0_dev,
+            eth0_ip.address().into(),
+        ));
+
+        info!("eth0:");
+        info!("  mac:  {}", eth0_address);
+        info!("  ip:   {}", eth0_ip);
+
+        Some(eth0_ip)
+    } else {
+        warn!("No NIC device found!");
+        None
+    };
 
     let mut service = Service::new(router);
     service.iface.update_ip_addrs(|ip_addrs| {
         ip_addrs.push(lo_ip.into()).unwrap();
-        ip_addrs.push(eth0_ip.into()).unwrap();
+        if let Some(eth0_ip) = eth0_ip {
+            ip_addrs.push(eth0_ip.into()).unwrap();
+        }
     });
     SERVICE.init_once(Mutex::new(service));
-
-    info!("eth0:");
-    info!("  mac:  {}", eth0_address);
-    info!("  ip:   {}", eth0_ip);
 
     SOCKET_SET.init_once(SocketSetWrapper::new());
     LISTEN_TABLE.init_once(ListenTable::new());

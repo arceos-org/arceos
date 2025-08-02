@@ -55,14 +55,18 @@ endif
 
 ifeq ($(BUS),mmio)
   ax_feat += bus-mmio
+else ifeq ($(BUS),pci)
+  ax_feat += bus-pci
 endif
 
 ifeq ($(BACKTRACE),y)
   ax_feat += backtrace
 endif
 
-ifeq ($(shell test $(SMP) -gt 1; echo $$?),0)
-  lib_feat += smp
+ifneq ($(SMP),)
+  ifneq ($(SMP),1)
+    lib_feat += smp
+  endif
 endif
 
 ax_feat += $(filter-out $(lib_features),$(FEATURES))

@@ -88,8 +88,14 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 
 static INITED_CPUS: AtomicUsize = AtomicUsize::new(0);
 
+#[cfg(feature = "smp")]
 fn is_init_ok() -> bool {
     INITED_CPUS.load(Ordering::Acquire) == axconfig::plat::CPU_NUM
+}
+
+#[cfg(not(feature = "smp"))]
+fn is_init_ok() -> bool {
+    true
 }
 
 /// The main entry point of the ArceOS runtime.

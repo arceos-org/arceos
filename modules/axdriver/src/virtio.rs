@@ -14,6 +14,8 @@ cfg_if! {
         type VirtIoTransport = axdriver_virtio::PciTransport;
     } else if #[cfg(bus =  "mmio")] {
         type VirtIoTransport = axdriver_virtio::MmioTransport;
+    } else {
+        type VirtIoTransport = axdriver_virtio::DummyTransport;
     }
 }
 

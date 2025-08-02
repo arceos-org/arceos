@@ -338,22 +338,20 @@ impl AddrSpace {
                     access_flags,
                     &mut self.pt,
                 ) {
-                    Ok((0, callback)) => {
+                    Ok((n, callback)) => {
                         if let Some(cb) = callback {
                             cb(self);
                         }
-                        warn!("No pages populated for {vaddr:?} ({flags:?})");
-                        false
+                        if n == 0 {
+                            warn!("No pages populated for {vaddr:?} ({flags:?})");
+                            false
+                        } else {
+                            true
+                        }
                     }
                     Err(err) => {
                         warn!("Failed to populate pages for {vaddr:?} ({flags:?}): {err}");
                         false
-                    }
-                    Ok((_, callback)) => {
-                        if let Some(cb) = callback {
-                            cb(self);
-                        }
-                        true
                     }
                 };
             }
