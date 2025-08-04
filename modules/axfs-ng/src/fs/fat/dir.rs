@@ -5,7 +5,6 @@ use axfs_ng_vfs::{
     DeviceId, DirEntry, DirEntrySink, DirNode, DirNodeOps, FilesystemOps, Metadata, MetadataUpdate,
     NodeOps, NodePermission, NodeType, Reference, VfsError, VfsResult, WeakDirEntry,
 };
-use lock_api::RawMutex;
 
 use super::{
     FsRef, ff,
@@ -14,20 +13,15 @@ use super::{
     util::{file_metadata, into_vfs_err},
 };
 
-pub struct FatDirNode<M: RawMutex + 'static> {
-    fs: Arc<FatFilesystem<M>>,
+pub struct FatDirNode {
+    fs: Arc<FatFilesystem>,
     pub(crate) inner: FsRef<ff::Dir<'static>>,
     inode: u64,
-    this: WeakDirEntry<M>,
+    this: WeakDirEntry,
 }
 
-impl<M: RawMutex + Send + Sync + 'static> FatDirNode<M> {
-    pub fn new(
-        fs: Arc<FatFilesystem<M>>,
-        dir: ff::Dir,
-        inode: u64,
-        this: WeakDirEntry<M>,
-    ) -> DirNode<M> {
+impl FatDirNode {
+    pub fn new(fs: Arc<FatFilesystem>, dir: ff::Dir, inode: u64, this: WeakDirEntry) -> DirNode {
         DirNode::new(Arc::new(Self {
             fs,
             // SAFETY: FsRef guarantees correct lifetime
@@ -37,12 +31,7 @@ impl<M: RawMutex + Send + Sync + 'static> FatDirNode<M> {
         }))
     }
 
-    fn create_entry(
-        &self,
-        entry: ff::DirEntry,
-        name: impl Into<String>,
-        inode: u64,
-    ) -> DirEntry<M> {
+    fn create_entry(&self, entry: ff::DirEntry, name: impl Into<String>, inode: u64) -> DirEntry {
         let reference = Reference::new(self.this.upgrade(), name.into());
         if entry.is_file() {
             DirEntry::new_file(
@@ -59,11 +48,11 @@ impl<M: RawMutex + Send + Sync + 'static> FatDirNode<M> {
     }
 }
 
-unsafe impl<M: RawMutex + 'static> Send for FatDirNode<M> {}
+unsafe impl Send for FatDirNode {}
 
-unsafe impl<M: RawMutex + 'static> Sync for FatDirNode<M> {}
+unsafe impl Sync for FatDirNode {}
 
-impl<M: RawMutex + Send + Sync + 'static> NodeOps<M> for FatDirNode<M> {
+impl NodeOps for FatDirNode {
     fn inode(&self) -> u64 {
         self.inode
     }
@@ -100,7 +89,7 @@ impl<M: RawMutex + Send + Sync + 'static> NodeOps<M> for FatDirNode<M> {
         Ok(())
     }
 
-    fn filesystem(&self) -> &dyn FilesystemOps<M> {
+    fn filesystem(&self) -> &dyn FilesystemOps {
         self.fs.deref()
     }
 
@@ -113,7 +102,7 @@ impl<M: RawMutex + Send + Sync + 'static> NodeOps<M> for FatDirNode<M> {
     }
 }
 
-impl<M: RawMutex + Send + Sync + 'static> DirNodeOps<M> for FatDirNode<M> {
+impl DirNodeOps for FatDirNode {
     fn read_dir(&self, offset: u64, sink: &mut dyn DirEntrySink) -> VfsResult<usize> {
         let mut fs = self.fs.lock();
         let dir = self.inner.borrow(&fs);
@@ -145,7 +134,7 @@ impl<M: RawMutex + Send + Sync + 'static> DirNodeOps<M> for FatDirNode<M> {
         Ok(count as usize)
     }
 
-    fn lookup(&self, name: &str) -> VfsResult<DirEntry<M>> {
+    fn lookup(&self, name: &str) -> VfsResult<DirEntry> {
         let mut fs = self.fs.lock();
         let dir = self.inner.borrow(&fs);
         dir.iter()
@@ -159,7 +148,7 @@ impl<M: RawMutex + Send + Sync + 'static> DirNodeOps<M> for FatDirNode<M> {
         name: &str,
         node_type: NodeType,
         _permission: NodePermission,
-    ) -> VfsResult<DirEntry<M>> {
+    ) -> VfsResult<DirEntry> {
         let mut fs = self.fs.lock();
         let dir = self.inner.borrow(&fs);
         let reference = Reference::new(self.this.upgrade(), name.to_ascii_lowercase());
@@ -187,7 +176,7 @@ impl<M: RawMutex + Send + Sync + 'static> DirNodeOps<M> for FatDirNode<M> {
         }
     }
 
-    fn link(&self, _name: &str, _node: &DirEntry<M>) -> VfsResult<DirEntry<M>> {
+    fn link(&self, _name: &str, _node: &DirEntry) -> VfsResult<DirEntry> {
         //  EPERM  The filesystem containing oldpath and newpath does not
         //         support the creation of hard links.
         Err(VfsError::EPERM)
@@ -199,7 +188,7 @@ impl<M: RawMutex + Send + Sync + 'static> DirNodeOps<M> for FatDirNode<M> {
         dir.remove(name).map_err(into_vfs_err)
     }
 
-    fn rename(&self, src_name: &str, dst_dir: &DirNode<M>, dst_name: &str) -> VfsResult<()> {
+    fn rename(&self, src_name: &str, dst_dir: &DirNode, dst_name: &str) -> VfsResult<()> {
         let fs = self.fs.lock();
         let dst_dir: Arc<Self> = dst_dir.downcast().map_err(|_| VfsError::EINVAL)?;
 
@@ -220,7 +209,7 @@ impl<M: RawMutex + Send + Sync + 'static> DirNodeOps<M> for FatDirNode<M> {
     }
 }
 
-impl<M: RawMutex + 'static> Drop for FatDirNode<M> {
+impl Drop for FatDirNode {
     fn drop(&mut self) {
         self.fs.lock().release_inode(self.inode);
     }

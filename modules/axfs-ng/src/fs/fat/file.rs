@@ -7,7 +7,6 @@ use axfs_ng_vfs::{
 };
 use axio::{IoEvents, Pollable};
 use fatfs::{Read, Seek, SeekFrom, Write};
-use lock_api::RawMutex;
 
 use super::{
     FsRef, ff,
@@ -16,14 +15,14 @@ use super::{
 };
 use crate::fs::fat::fs::FatFilesystemInner;
 
-pub struct FatFileNode<M: RawMutex + 'static> {
-    fs: Arc<FatFilesystem<M>>,
+pub struct FatFileNode {
+    fs: Arc<FatFilesystem>,
     inner: FsRef<ff::File<'static>>,
     inode: u64,
 }
 
-impl<M: RawMutex + Send + Sync + 'static> FatFileNode<M> {
-    pub fn new(fs: Arc<FatFilesystem<M>>, file: ff::File, inode: u64) -> FileNode<M> {
+impl FatFileNode {
+    pub fn new(fs: Arc<FatFilesystem>, file: ff::File, inode: u64) -> FileNode {
         FileNode::new(Arc::new(Self {
             fs,
             // SAFETY: FsRef guarantees correct lifetime
@@ -48,11 +47,11 @@ fn grow_file(fs: &FatFilesystemInner, file: &mut ff::File<'static>, len: u64) ->
     Ok(())
 }
 
-unsafe impl<M: RawMutex + 'static> Send for FatFileNode<M> {}
+unsafe impl Send for FatFileNode {}
 
-unsafe impl<M: RawMutex + 'static> Sync for FatFileNode<M> {}
+unsafe impl Sync for FatFileNode {}
 
-impl<M: RawMutex + Send + Sync + 'static> NodeOps<M> for FatFileNode<M> {
+impl NodeOps for FatFileNode {
     fn inode(&self) -> u64 {
         self.inode
     }
@@ -72,7 +71,7 @@ impl<M: RawMutex + Send + Sync + 'static> NodeOps<M> for FatFileNode<M> {
         Ok(())
     }
 
-    fn filesystem(&self) -> &dyn FilesystemOps<M> {
+    fn filesystem(&self) -> &dyn FilesystemOps {
         self.fs.deref()
     }
 
@@ -93,7 +92,7 @@ impl<M: RawMutex + Send + Sync + 'static> NodeOps<M> for FatFileNode<M> {
     }
 }
 
-impl<M: RawMutex + Send + Sync + 'static> FileNodeOps<M> for FatFileNode<M> {
+impl FileNodeOps for FatFileNode {
     fn read_at(&self, mut buf: &mut [u8], offset: u64) -> VfsResult<usize> {
         let fs = self.fs.lock();
         let file = self.inner.borrow_mut(&fs);
@@ -152,7 +151,8 @@ impl<M: RawMutex + Send + Sync + 'static> FileNodeOps<M> for FatFileNode<M> {
         Err(VfsError::EPERM)
     }
 }
-impl<M: RawMutex + 'static> Pollable for FatFileNode<M> {
+
+impl Pollable for FatFileNode {
     fn poll(&self) -> IoEvents {
         IoEvents::IN | IoEvents::OUT
     }
@@ -160,7 +160,7 @@ impl<M: RawMutex + 'static> Pollable for FatFileNode<M> {
     fn register(&self, _context: &mut Context<'_>, _events: IoEvents) {}
 }
 
-impl<M: RawMutex + 'static> Drop for FatFileNode<M> {
+impl Drop for FatFileNode {
     fn drop(&mut self) {
         self.fs.lock().release_inode(self.inode);
     }

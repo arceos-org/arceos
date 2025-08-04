@@ -3,19 +3,17 @@ use alloc::{
     sync::{Arc, Weak},
     vec::Vec,
 };
-use core::{fmt, num::NonZeroUsize, ops::Range};
+use core::{num::NonZeroUsize, ops::Range};
 
 use allocator::AllocError;
 use axalloc::{UsageKind, global_allocator};
 use axfs_ng_vfs::{FileNode, Location, NodePermission, NodeType, VfsError, VfsResult, path::Path};
 use axhal::mem::{PhysAddr, VirtAddr, virt_to_phys};
 use axio::SeekFrom;
-use axsync::Mutex;
 use intrusive_collections::{LinkedList, LinkedListAtomicLink, intrusive_adapter};
-use lock_api::RawMutex;
 use log::warn;
 use lru::LruCache;
-use spin::RwLock;
+use spin::{Mutex, RwLock};
 
 use super::FsContext;
 
@@ -31,27 +29,27 @@ bitflags::bitflags! {
 }
 
 /// Results returned by [`OpenOptions::open`].
-pub enum OpenResult<M: RawMutex> {
-    File(File<M>),
-    Dir(Location<M>),
+pub enum OpenResult {
+    File(File),
+    Dir(Location),
 }
 
-impl<M: RawMutex> OpenResult<M> {
-    pub fn into_file(self) -> VfsResult<File<M>> {
+impl OpenResult {
+    pub fn into_file(self) -> VfsResult<File> {
         match self {
             Self::File(file) => Ok(file),
             Self::Dir(_) => Err(VfsError::EISDIR),
         }
     }
 
-    pub fn into_dir(self) -> VfsResult<Location<M>> {
+    pub fn into_dir(self) -> VfsResult<Location> {
         match self {
             Self::Dir(dir) => Ok(dir),
             Self::File(_) => Err(VfsError::ENOTDIR),
         }
     }
 
-    pub fn into_location(self) -> Location<M> {
+    pub fn into_location(self) -> Location {
         match self {
             Self::File(file) => file.location().clone(),
             Self::Dir(dir) => dir,
@@ -60,7 +58,7 @@ impl<M: RawMutex> OpenResult<M> {
 }
 
 /// Options and flags which can be used to configure how a file is opened.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct OpenOptions {
     // generic
     read: bool,
@@ -181,7 +179,7 @@ impl OpenOptions {
         self
     }
 
-    fn _open(&self, loc: Location<axsync::RawMutex>) -> VfsResult<OpenResult<axsync::RawMutex>> {
+    fn _open(&self, loc: Location) -> VfsResult<OpenResult> {
         let flags = self.to_flags()?;
 
         if self.directory {
@@ -217,21 +215,14 @@ impl OpenOptions {
         })
     }
 
-    pub fn open_loc(
-        &self,
-        loc: Location<axsync::RawMutex>,
-    ) -> VfsResult<OpenResult<axsync::RawMutex>> {
+    pub fn open_loc(&self, loc: Location) -> VfsResult<OpenResult> {
         if !self.is_valid() {
             return Err(VfsError::EINVAL);
         }
         self._open(loc)
     }
 
-    pub fn open(
-        &self,
-        context: &FsContext<axsync::RawMutex>,
-        path: impl AsRef<Path>,
-    ) -> VfsResult<OpenResult<axsync::RawMutex>> {
+    pub fn open(&self, context: &FsContext, path: impl AsRef<Path>) -> VfsResult<OpenResult> {
         if !self.is_valid() {
             return Err(VfsError::EINVAL);
         }
@@ -303,41 +294,6 @@ impl OpenOptions {
 impl Default for OpenOptions {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-impl fmt::Debug for OpenOptions {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let OpenOptions {
-            read,
-            write,
-            append,
-            truncate,
-            create,
-            create_new,
-            directory,
-            no_follow,
-            direct,
-            user,
-            path,
-            node_type,
-            mode,
-        } = self;
-        f.debug_struct("OpenOptions")
-            .field("read", read)
-            .field("write", write)
-            .field("append", append)
-            .field("truncate", truncate)
-            .field("create", create)
-            .field("create_new", create_new)
-            .field("directory", directory)
-            .field("no_follow", no_follow)
-            .field("direct", direct)
-            .field("user", user)
-            .field("path", path)
-            .field("node_type", node_type)
-            .field("mode", mode)
-            .finish()
     }
 }
 
@@ -416,8 +372,8 @@ impl CachedFileShared {
     }
 }
 
-pub struct CachedFile<M: RawMutex> {
-    inner: Location<M>,
+pub struct CachedFile {
+    inner: Location,
     shared: Arc<CachedFileShared>,
     in_memory: bool,
     /// Only one thread can append to the file at a time, while multiple writers
@@ -425,7 +381,7 @@ pub struct CachedFile<M: RawMutex> {
     append_lock: RwLock<()>,
 }
 
-impl<M: RawMutex> Clone for CachedFile<M> {
+impl Clone for CachedFile {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
@@ -450,8 +406,8 @@ impl FileUserData {
     }
 }
 
-impl CachedFile<axsync::RawMutex> {
-    pub fn get_or_create(location: Location<axsync::RawMutex>) -> Self {
+impl CachedFile {
+    pub fn get_or_create(location: Location) -> Self {
         let in_memory = location.filesystem().name() == "tmpfs";
 
         let mut guard = location.user_data();
@@ -482,9 +438,7 @@ impl CachedFile<axsync::RawMutex> {
             append_lock: RwLock::new(()),
         }
     }
-}
 
-impl<M: RawMutex> CachedFile<M> {
     pub fn ptr_eq(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.shared, &other.shared)
     }
@@ -512,7 +466,7 @@ impl<M: RawMutex> CachedFile<M> {
         cursor.remove();
     }
 
-    fn evict_cache(&self, file: &FileNode<M>, pn: u32, page: &mut PageCache) -> VfsResult<()> {
+    fn evict_cache(&self, file: &FileNode, pn: u32, page: &mut PageCache) -> VfsResult<()> {
         for listener in self.shared.evict_listeners.lock().iter() {
             (listener.listener)(pn, &page);
         }
@@ -527,7 +481,7 @@ impl<M: RawMutex> CachedFile<M> {
 
     fn page_or_insert<'a>(
         &self,
-        file: &FileNode<M>,
+        file: &FileNode,
         cache: &'a mut LruCache<u32, PageCache>,
         pn: u32,
     ) -> VfsResult<(&'a mut PageCache, Option<(u32, PageCache)>)> {
@@ -573,7 +527,7 @@ impl<M: RawMutex> CachedFile<M> {
     fn with_pages<T>(
         &self,
         range: Range<u64>,
-        page_initial: impl FnOnce(&FileNode<M>) -> VfsResult<T>,
+        page_initial: impl FnOnce(&FileNode) -> VfsResult<T>,
         mut page_each: impl FnMut(T, &mut PageCache, Range<usize>) -> VfsResult<T>,
     ) -> VfsResult<T> {
         let file = self.inner.entry().as_file()?;
@@ -702,12 +656,12 @@ impl<M: RawMutex> CachedFile<M> {
         Ok(())
     }
 
-    pub fn location(&self) -> &Location<M> {
+    pub fn location(&self) -> &Location {
         &self.inner
     }
 }
 
-impl<M: RawMutex> Drop for CachedFile<M> {
+impl Drop for CachedFile {
     fn drop(&mut self) {
         if Arc::strong_count(&self.shared) > 1 {
             // If there are other references to this cached file, we don't
@@ -721,29 +675,19 @@ impl<M: RawMutex> Drop for CachedFile<M> {
 }
 
 /// Low-level interface for file operations.
-pub enum FileBackend<M: RawMutex> {
-    Cached(CachedFile<M>),
-    Direct(Location<M>),
+#[derive(Clone)]
+pub enum FileBackend {
+    Cached(CachedFile),
+    Direct(Location),
 }
 
-impl<M: RawMutex> Clone for FileBackend<M> {
-    fn clone(&self) -> Self {
-        match self {
-            Self::Cached(cached) => Self::Cached(cached.clone()),
-            Self::Direct(loc) => Self::Direct(loc.clone()),
-        }
-    }
-}
-
-impl FileBackend<axsync::RawMutex> {
-    pub(crate) fn new_cached(location: Location<axsync::RawMutex>) -> Self {
-        Self::Cached(CachedFile::get_or_create(location))
-    }
-}
-
-impl<M: RawMutex> FileBackend<M> {
-    pub(crate) fn new_direct(location: Location<M>) -> Self {
+impl FileBackend {
+    pub(crate) fn new_direct(location: Location) -> Self {
         Self::Direct(location)
+    }
+
+    pub(crate) fn new_cached(location: Location) -> Self {
+        Self::Cached(CachedFile::get_or_create(location))
     }
 
     pub fn read_at(&self, buf: &mut [u8], offset: u64) -> VfsResult<usize> {
@@ -767,7 +711,7 @@ impl<M: RawMutex> FileBackend<M> {
         }
     }
 
-    pub fn location(&self) -> &Location<M> {
+    pub fn location(&self) -> &Location {
         match self {
             Self::Cached(cached) => cached.location(),
             Self::Direct(loc) => loc,
@@ -788,7 +732,7 @@ impl<M: RawMutex> FileBackend<M> {
         }
     }
 
-    pub fn into_cached(self) -> Option<CachedFile<M>> {
+    pub fn into_cached(self) -> Option<CachedFile> {
         match self {
             Self::Cached(cached) => Some(cached),
             Self::Direct(_) => None,
@@ -797,35 +741,14 @@ impl<M: RawMutex> FileBackend<M> {
 }
 
 /// Provides `std::fs::File`-like interface.
-pub struct File<M: RawMutex> {
-    inner: FileBackend<M>,
+pub struct File {
+    inner: FileBackend,
     flags: FileFlags,
     position: u64,
 }
 
-impl File<axsync::RawMutex> {
-    pub fn open(context: &FsContext<axsync::RawMutex>, path: impl AsRef<Path>) -> VfsResult<Self> {
-        OpenOptions::new()
-            .read(true)
-            .open(context, path.as_ref())
-            .and_then(OpenResult::into_file)
-    }
-
-    pub fn create(
-        context: &FsContext<axsync::RawMutex>,
-        path: impl AsRef<Path>,
-    ) -> VfsResult<Self> {
-        OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(context, path.as_ref())
-            .and_then(OpenResult::into_file)
-    }
-}
-
-impl<M: RawMutex> File<M> {
-    pub(crate) fn new(inner: FileBackend<M>, flags: FileFlags) -> Self {
+impl File {
+    pub(crate) fn new(inner: FileBackend, flags: FileFlags) -> Self {
         let position = if flags.contains(FileFlags::APPEND) {
             inner.location().len().unwrap_or_default()
         } else {
@@ -838,7 +761,23 @@ impl<M: RawMutex> File<M> {
         }
     }
 
-    pub fn access(&self, flags: FileFlags) -> VfsResult<&FileBackend<M>> {
+    pub fn open(context: &FsContext, path: impl AsRef<Path>) -> VfsResult<Self> {
+        OpenOptions::new()
+            .read(true)
+            .open(context, path.as_ref())
+            .and_then(OpenResult::into_file)
+    }
+
+    pub fn create(context: &FsContext, path: impl AsRef<Path>) -> VfsResult<Self> {
+        OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(context, path.as_ref())
+            .and_then(OpenResult::into_file)
+    }
+
+    pub fn access(&self, flags: FileFlags) -> VfsResult<&FileBackend> {
         if self.flags.contains(flags) && !self.is_path() {
             Ok(&self.inner)
         } else {
@@ -854,12 +793,12 @@ impl<M: RawMutex> File<M> {
         self.flags
     }
 
-    pub fn backend(&self) -> VfsResult<&FileBackend<M>> {
+    pub fn backend(&self) -> VfsResult<&FileBackend> {
         self.access(FileFlags::empty())?;
         Ok(&self.inner)
     }
 
-    pub fn location(&self) -> &Location<M> {
+    pub fn location(&self) -> &Location {
         self.inner.location()
     }
 
@@ -883,7 +822,7 @@ impl<M: RawMutex> File<M> {
     }
 }
 
-impl<M: RawMutex> axio::Read for File<M> {
+impl axio::Read for File {
     fn read(&mut self, buf: &mut [u8]) -> axio::Result<usize> {
         self.read_at(buf, self.position).inspect(|n| {
             self.position += *n as u64;
@@ -891,7 +830,7 @@ impl<M: RawMutex> axio::Read for File<M> {
     }
 }
 
-impl<M: RawMutex> axio::Write for File<M> {
+impl axio::Write for File {
     fn write(&mut self, buf: &[u8]) -> axio::Result<usize> {
         if let Ok(f) = self.access(FileFlags::APPEND) {
             f.append(buf).map(|(written, new_size)| {
@@ -911,7 +850,7 @@ impl<M: RawMutex> axio::Write for File<M> {
     }
 }
 
-impl<M: RawMutex> axio::Seek for File<M> {
+impl axio::Seek for File {
     fn seek(&mut self, pos: SeekFrom) -> axio::Result<u64> {
         self.access(FileFlags::empty())?;
         let new_pos = match pos {

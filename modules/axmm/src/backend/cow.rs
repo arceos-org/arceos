@@ -7,7 +7,7 @@ use axhal::{
     mem::phys_to_virt,
     paging::{MappingFlags, PageSize, PageTable, PagingError},
 };
-use axsync::{Mutex, RawMutex};
+use axsync::Mutex;
 use memory_addr::{PhysAddr, VirtAddr, VirtAddrRange};
 
 use crate::{
@@ -23,7 +23,7 @@ use crate::{
 pub struct CowBackend {
     start: VirtAddr,
     size: PageSize,
-    file: Option<(FileBackend<RawMutex>, usize)>,
+    file: Option<(FileBackend, usize)>,
 }
 
 impl CowBackend {
@@ -182,11 +182,7 @@ impl BackendOps for CowBackend {
 }
 
 impl Backend {
-    pub fn new_cow(
-        start: VirtAddr,
-        size: PageSize,
-        file: Option<(FileBackend<RawMutex>, usize)>,
-    ) -> Self {
+    pub fn new_cow(start: VirtAddr, size: PageSize, file: Option<(FileBackend, usize)>) -> Self {
         Self::Cow(CowBackend { start, size, file })
     }
 

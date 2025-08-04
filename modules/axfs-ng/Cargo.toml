@@ -26,16 +26,16 @@ bitflags = "2.9.0"
 cfg-if = { workspace = true }
 chrono = { workspace = true }
 intrusive-collections = "0.9.7"
-lock_api = { workspace = true }
+kspin = { workspace = true }
 log = { workspace = true }
 lru = "0.16.0"
 scope-local = { workspace = true }
 slab = { version = "0.4.9", default-features = false }
-spin = { workspace = true, features = ["lock_api"] }
+spin = { workspace = true }
 
 [dependencies.lwext4_rust]
 git = "https://github.com/Starry-Mix-THU/lwext4_rust"
-rev = "252bb5f"
+rev = "7088e08"
 default-features = false
 optional = true
 
@@ -48,7 +48,4 @@ features = ["alloc", "lfn", "log_level_trace", "unicode"]
 
 [dev-dependencies]
 axdriver = { workspace = true, features = ["block", "ramdisk"] }
-axdriver_block = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2", features = [
-    "ramdisk",
-] }
 env_logger = "0.11.8"

@@ -7,7 +7,6 @@ use axfs_ng_vfs::{
     WeakDirEntry,
 };
 use axio::{IoEvents, Pollable};
-use lock_api::RawMutex;
 use lwext4_rust::{FileAttr, InodeType};
 
 use super::{
@@ -15,22 +14,18 @@ use super::{
     util::{LwExt4Filesystem, into_vfs_err, into_vfs_type},
 };
 
-pub struct Inode<M> {
-    fs: Arc<Ext4Filesystem<M>>,
+pub struct Inode {
+    fs: Arc<Ext4Filesystem>,
     ino: u32,
-    this: Option<WeakDirEntry<M>>,
+    this: Option<WeakDirEntry>,
 }
 
-impl<M: RawMutex + Send + Sync + 'static> Inode<M> {
-    pub(crate) fn new(
-        fs: Arc<Ext4Filesystem<M>>,
-        ino: u32,
-        this: Option<WeakDirEntry<M>>,
-    ) -> Arc<Self> {
+impl Inode {
+    pub(crate) fn new(fs: Arc<Ext4Filesystem>, ino: u32, this: Option<WeakDirEntry>) -> Arc<Self> {
         Arc::new(Self { fs, ino, this })
     }
 
-    fn create_entry(&self, entry: &lwext4_rust::DirEntry, name: impl Into<String>) -> DirEntry<M> {
+    fn create_entry(&self, entry: &lwext4_rust::DirEntry, name: impl Into<String>) -> DirEntry {
         let reference = Reference::new(
             self.this.as_ref().and_then(WeakDirEntry::upgrade),
             name.into(),
@@ -49,14 +44,14 @@ impl<M: RawMutex + Send + Sync + 'static> Inode<M> {
         }
     }
 
-    fn lookup_locked(&self, fs: &mut LwExt4Filesystem, name: &str) -> VfsResult<DirEntry<M>> {
+    fn lookup_locked(&self, fs: &mut LwExt4Filesystem, name: &str) -> VfsResult<DirEntry> {
         let mut result = fs.lookup(self.ino, name).map_err(into_vfs_err)?;
         let entry = result.entry();
         Ok(self.create_entry(&entry, name))
     }
 }
 
-impl<M: RawMutex + Send + Sync + 'static> NodeOps<M> for Inode<M> {
+impl NodeOps for Inode {
     fn inode(&self) -> u64 {
         self.ino as _
     }
@@ -113,7 +108,7 @@ impl<M: RawMutex + Send + Sync + 'static> NodeOps<M> for Inode<M> {
             .map_err(into_vfs_err)
     }
 
-    fn filesystem(&self) -> &dyn FilesystemOps<M> {
+    fn filesystem(&self) -> &dyn FilesystemOps {
         &*self.fs
     }
 
@@ -126,7 +121,7 @@ impl<M: RawMutex + Send + Sync + 'static> NodeOps<M> for Inode<M> {
     }
 }
 
-impl<M: RawMutex + Send + Sync + 'static> FileNodeOps<M> for Inode<M> {
+impl FileNodeOps for Inode {
     fn read_at(&self, buf: &mut [u8], offset: u64) -> VfsResult<usize> {
         self.fs
             .lock()
@@ -162,7 +157,7 @@ impl<M: RawMutex + Send + Sync + 'static> FileNodeOps<M> for Inode<M> {
     }
 }
 
-impl<M: RawMutex + 'static> Pollable for Inode<M> {
+impl Pollable for Inode {
     fn poll(&self) -> IoEvents {
         IoEvents::IN | IoEvents::OUT
     }
@@ -170,7 +165,7 @@ impl<M: RawMutex + 'static> Pollable for Inode<M> {
     fn register(&self, _context: &mut Context<'_>, _events: IoEvents) {}
 }
 
-impl<M: RawMutex + Send + Sync + 'static> DirNodeOps<M> for Inode<M> {
+impl DirNodeOps for Inode {
     fn read_dir(&self, offset: u64, sink: &mut dyn DirEntrySink) -> VfsResult<usize> {
         let mut fs = self.fs.lock();
         let mut reader = fs.read_dir(self.ino, offset).map_err(into_vfs_err)?;
@@ -190,7 +185,7 @@ impl<M: RawMutex + Send + Sync + 'static> DirNodeOps<M> for Inode<M> {
         Ok(count)
     }
 
-    fn lookup(&self, name: &str) -> VfsResult<DirEntry<M>> {
+    fn lookup(&self, name: &str) -> VfsResult<DirEntry> {
         let mut fs = self.fs.lock();
         self.lookup_locked(&mut fs, name)
     }
@@ -200,7 +195,7 @@ impl<M: RawMutex + Send + Sync + 'static> DirNodeOps<M> for Inode<M> {
         name: &str,
         node_type: NodeType,
         permission: NodePermission,
-    ) -> VfsResult<DirEntry<M>> {
+    ) -> VfsResult<DirEntry> {
         let inode_type = match node_type {
             NodeType::Fifo => InodeType::Fifo,
             NodeType::CharacterDevice => InodeType::CharacterDevice,
@@ -238,7 +233,7 @@ impl<M: RawMutex + Send + Sync + 'static> DirNodeOps<M> for Inode<M> {
         })
     }
 
-    fn link(&self, name: &str, node: &DirEntry<M>) -> VfsResult<DirEntry<M>> {
+    fn link(&self, name: &str, node: &DirEntry) -> VfsResult<DirEntry> {
         let mut fs = self.fs.lock();
         fs.link(self.ino, name, node.inode() as _)
             .map_err(into_vfs_err)?;
@@ -249,7 +244,7 @@ impl<M: RawMutex + Send + Sync + 'static> DirNodeOps<M> for Inode<M> {
         self.fs.lock().unlink(self.ino, name).map_err(into_vfs_err)
     }
 
-    fn rename(&self, src_name: &str, dst_dir: &DirNode<M>, dst_name: &str) -> VfsResult<()> {
+    fn rename(&self, src_name: &str, dst_dir: &DirNode, dst_name: &str) -> VfsResult<()> {
         let dst_dir: Arc<Self> = dst_dir.downcast().map_err(|_| VfsError::EINVAL)?;
         self.fs
             .lock()

@@ -8,7 +8,7 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 use axerrno::{LinuxError, LinuxResult};
 use axfs_ng::{CachedFile, FileFlags};
 use axhal::paging::{MappingFlags, PageSize, PageTable, PagingError};
-use axsync::{Mutex, RawMutex};
+use axsync::Mutex;
 use memory_addr::{PAGE_SIZE_4K, VirtAddr, VirtAddrRange};
 
 use crate::{
@@ -19,7 +19,7 @@ use crate::{
 #[doc(hidden)]
 pub struct FileBackendInner {
     start: VirtAddr,
-    cache: CachedFile<RawMutex>,
+    cache: CachedFile,
     flags: FileFlags,
     offset_page: u32,
     handle: AtomicUsize,
@@ -232,7 +232,7 @@ impl BackendOps for FileBackend {
 impl Backend {
     pub fn new_file(
         start: VirtAddr,
-        cache: CachedFile<RawMutex>,
+        cache: CachedFile,
         flags: FileFlags,
         offset: usize,
         aspace: &Arc<Mutex<AddrSpace>>,

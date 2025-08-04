@@ -5,7 +5,7 @@ use axdriver::AxBlockDevice;
 use axfs_ng_vfs::{
     DirEntry, Filesystem, FilesystemOps, Reference, StatFs, VfsResult, path::MAX_NAME_LEN,
 };
-use lock_api::{Mutex, MutexGuard, RawMutex};
+use kspin::{SpinNoPreempt as Mutex, SpinNoPreemptGuard as MutexGuard};
 use slab::Slab;
 
 use super::{dir::FatDirNode, ff, util::into_vfs_err};
@@ -27,13 +27,13 @@ impl FatFilesystemInner {
     }
 }
 
-pub struct FatFilesystem<M> {
-    inner: Mutex<M, FatFilesystemInner>,
-    root_dir: Mutex<M, Option<DirEntry<M>>>,
+pub struct FatFilesystem {
+    inner: Mutex<FatFilesystemInner>,
+    root_dir: Mutex<Option<DirEntry>>,
 }
 
-impl<M: RawMutex + Send + Sync + 'static> FatFilesystem<M> {
-    pub fn new(dev: AxBlockDevice) -> Filesystem<M> {
+impl FatFilesystem {
+    pub fn new(dev: AxBlockDevice) -> Filesystem {
         let mut inner = FatFilesystemInner {
             inner: ff::FileSystem::new(SeekableDisk::new(dev), fatfs::FsOptions::new())
                 .expect("failed to initialize FAT filesystem"),
@@ -62,18 +62,18 @@ impl<M: RawMutex + Send + Sync + 'static> FatFilesystem<M> {
     }
 }
 
-impl<M: RawMutex> FatFilesystem<M> {
-    pub(crate) fn lock(&self) -> MutexGuard<M, FatFilesystemInner> {
+impl FatFilesystem {
+    pub(crate) fn lock(&self) -> MutexGuard<FatFilesystemInner> {
         self.inner.lock()
     }
 }
 
-impl<M: RawMutex + Send + Sync> FilesystemOps<M> for FatFilesystem<M> {
+impl FilesystemOps for FatFilesystem {
     fn name(&self) -> &str {
         "vfat"
     }
 
-    fn root_dir(&self) -> DirEntry<M> {
+    fn root_dir(&self) -> DirEntry {
         self.root_dir.lock().clone().unwrap()
     }
 

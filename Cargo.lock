@@ -436,6 +436,7 @@ dependencies = [
  "env_logger",
  "fatfs",
  "intrusive-collections",
+ "kspin",
  "lock_api",
  "log",
  "lru",
@@ -448,14 +449,15 @@ dependencies = [
 [[package]]
 name = "axfs-ng-vfs"
 version = "0.1.0"
-source = "git+https://github.com/Starry-Mix-THU/axfs-ng-vfs.git?rev=fac4f98#fac4f98f17b3d817f47c06c0b09f09e0b68ccd06"
+source = "git+https://github.com/Starry-Mix-THU/axfs-ng-vfs.git?rev=e5ff62a#e5ff62a599f74a3bd01c08694fc8b0cf7fa63efb"
 dependencies = [
  "axerrno",
  "axio",
  "bitflags 2.9.1",
+ "cfg-if",
  "hashbrown",
  "inherit-methods-macro",
- "lock_api",
+ "kspin",
  "log",
 ]
 

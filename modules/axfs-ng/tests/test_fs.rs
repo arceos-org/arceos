@@ -1,3 +1,5 @@
+// FIXME: The test is broken after we changed the ramdisk implementation!
+
 #![allow(unused)]
 
 use std::collections::HashSet;

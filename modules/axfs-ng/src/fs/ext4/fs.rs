@@ -5,7 +5,7 @@ use axdriver::AxBlockDevice;
 use axfs_ng_vfs::{
     DirEntry, DirNode, Filesystem, FilesystemOps, Reference, StatFs, VfsResult, path::MAX_NAME_LEN,
 };
-use lock_api::{Mutex, MutexGuard, RawMutex};
+use kspin::{SpinNoPreempt as Mutex, SpinNoPreemptGuard as MutexGuard};
 use lwext4_rust::ffi::EXT4_ROOT_INO;
 
 use super::{
@@ -13,16 +13,13 @@ use super::{
     util::{LwExt4Filesystem, into_vfs_err},
 };
 
-pub struct Ext4Filesystem<M> {
-    inner: Mutex<M, LwExt4Filesystem>,
-    root_dir: OnceCell<DirEntry<M>>,
+pub struct Ext4Filesystem {
+    inner: Mutex<LwExt4Filesystem>,
+    root_dir: OnceCell<DirEntry>,
 }
 
-impl<M: RawMutex> Ext4Filesystem<M> {
-    pub fn new(dev: AxBlockDevice) -> VfsResult<Filesystem<M>>
-    where
-        M: Send + Sync + 'static,
-    {
+impl Ext4Filesystem {
+    pub fn new(dev: AxBlockDevice) -> VfsResult<Filesystem> {
         let ext4 = lwext4_rust::Ext4Filesystem::new(Ext4Disk(dev)).map_err(into_vfs_err)?;
 
         let fs = Arc::new(Self {
@@ -36,21 +33,21 @@ impl<M: RawMutex> Ext4Filesystem<M> {
         Ok(Filesystem::new(fs))
     }
 
-    pub(crate) fn lock(&self) -> MutexGuard<M, LwExt4Filesystem> {
+    pub(crate) fn lock(&self) -> MutexGuard<LwExt4Filesystem> {
         self.inner.lock()
     }
 }
 
-unsafe impl<M> Send for Ext4Filesystem<M> {}
+unsafe impl Send for Ext4Filesystem {}
 
-unsafe impl<M> Sync for Ext4Filesystem<M> {}
+unsafe impl Sync for Ext4Filesystem {}
 
-impl<M: RawMutex + 'static> FilesystemOps<M> for Ext4Filesystem<M> {
+impl FilesystemOps for Ext4Filesystem {
     fn name(&self) -> &str {
         "ext4"
     }
 
-    fn root_dir(&self) -> DirEntry<M> {
+    fn root_dir(&self) -> DirEntry {
         self.root_dir.get().unwrap().clone()
     }
 

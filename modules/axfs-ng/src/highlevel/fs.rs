@@ -11,17 +11,18 @@ use axfs_ng_vfs::{
     path::{Component, Components, Path, PathBuf},
 };
 use axio::{Read, Write};
-use lock_api::RawMutex;
+use axsync::Mutex;
+use spin::Once;
 
 use super::File;
 
 pub const SYMLINKS_MAX: usize = 40;
 
-pub static ROOT_FS_CONTEXT: spin::Once<FsContext<axsync::RawMutex>> = spin::Once::new();
+pub static ROOT_FS_CONTEXT: Once<FsContext> = Once::new();
 
 scope_local::scope_local! {
-    pub static FS_CONTEXT: Arc<axsync::Mutex<FsContext<axsync::RawMutex>>> =
-        Arc::new(axsync::Mutex::new(
+    pub static FS_CONTEXT: Arc<Mutex<FsContext>> =
+        Arc::new(Mutex::new(
             ROOT_FS_CONTEXT
                 .get()
                 .expect("Root FS context not initialized")
@@ -37,64 +38,35 @@ pub struct ReadDirEntry {
 }
 
 /// Provides `std::fs`-like interface.
-pub struct FsContext<M> {
-    root_dir: Location<M>,
-    current_dir: Location<M>,
+#[derive(Debug, Clone)]
+pub struct FsContext {
+    root_dir: Location,
+    current_dir: Location,
 }
 
-impl<M> Clone for FsContext<M> {
-    fn clone(&self) -> Self {
-        Self {
-            root_dir: self.root_dir.clone(),
-            current_dir: self.current_dir.clone(),
-        }
-    }
-}
-
-impl FsContext<axsync::RawMutex> {
-    /// Reads the entire contents of a file into a bytes vector.
-    pub fn read(&self, path: impl AsRef<Path>) -> VfsResult<Vec<u8>> {
-        let mut buf = Vec::new();
-        File::open(self, path.as_ref())?.read_to_end(&mut buf)?;
-        Ok(buf)
-    }
-
-    /// Reads the entire contents of a file into a string.
-    pub fn read_to_string(&self, path: impl AsRef<Path>) -> VfsResult<String> {
-        String::from_utf8(self.read(path)?).map_err(|_| VfsError::EINVAL)
-    }
-
-    /// Writes the contents of a bytes vector to a file.
-    pub fn write(&self, path: impl AsRef<Path>, buf: impl AsRef<[u8]>) -> VfsResult<()> {
-        let mut file = File::create(self, path.as_ref())?;
-        file.write_all(buf.as_ref())?;
-        Ok(())
-    }
-}
-
-impl<M: RawMutex> FsContext<M> {
-    pub fn new(root_dir: Location<M>) -> Self {
+impl FsContext {
+    pub fn new(root_dir: Location) -> Self {
         Self {
             root_dir: root_dir.clone(),
             current_dir: root_dir,
         }
     }
 
-    pub fn root_dir(&self) -> &Location<M> {
+    pub fn root_dir(&self) -> &Location {
         &self.root_dir
     }
 
-    pub fn current_dir(&self) -> &Location<M> {
+    pub fn current_dir(&self) -> &Location {
         &self.current_dir
     }
 
-    pub fn set_current_dir(&mut self, current_dir: Location<M>) -> VfsResult<()> {
+    pub fn set_current_dir(&mut self, current_dir: Location) -> VfsResult<()> {
         current_dir.check_is_dir()?;
         self.current_dir = current_dir;
         Ok(())
     }
 
-    pub fn with_current_dir(&self, current_dir: Location<M>) -> VfsResult<Self> {
+    pub fn with_current_dir(&self, current_dir: Location) -> VfsResult<Self> {
         current_dir.check_is_dir()?;
         Ok(Self {
             root_dir: self.root_dir.clone(),
@@ -106,9 +78,9 @@ impl<M: RawMutex> FsContext<M> {
     /// assumes that `loc` is a child of current directory).
     pub fn try_resolve_symlink(
         &self,
-        loc: Location<M>,
+        loc: Location,
         follow_count: &mut usize,
-    ) -> VfsResult<Location<M>> {
+    ) -> VfsResult<Location> {
         if loc.node_type() != NodeType::Symlink {
             return Ok(loc);
         }
@@ -123,12 +95,7 @@ impl<M: RawMutex> FsContext<M> {
         self.resolve_components(PathBuf::from(target).components(), follow_count)
     }
 
-    fn lookup(
-        &self,
-        dir: &Location<M>,
-        name: &str,
-        follow_count: &mut usize,
-    ) -> VfsResult<Location<M>> {
+    fn lookup(&self, dir: &Location, name: &str, follow_count: &mut usize) -> VfsResult<Location> {
         let loc = dir.lookup_no_follow(name)?;
         self.with_current_dir(dir.clone())?
             .try_resolve_symlink(loc, follow_count)
@@ -138,7 +105,7 @@ impl<M: RawMutex> FsContext<M> {
         &self,
         components: Components,
         follow_count: &mut usize,
-    ) -> VfsResult<Location<M>> {
+    ) -> VfsResult<Location> {
         let mut dir = self.current_dir.clone();
         for comp in components {
             match comp {
@@ -161,7 +128,7 @@ impl<M: RawMutex> FsContext<M> {
         &self,
         path: &'a Path,
         follow_count: &mut usize,
-    ) -> VfsResult<(Location<M>, Option<&'a str>)> {
+    ) -> VfsResult<(Location, Option<&'a str>)> {
         let entry_name = path.file_name();
         let mut components = path.components();
         if entry_name.is_some() {
@@ -173,7 +140,7 @@ impl<M: RawMutex> FsContext<M> {
     }
 
     /// Resolves a path starting from `current_dir`.
-    pub fn resolve(&self, path: impl AsRef<Path>) -> VfsResult<Location<M>> {
+    pub fn resolve(&self, path: impl AsRef<Path>) -> VfsResult<Location> {
         let mut follow_count = 0;
         let (dir, name) = self.resolve_inner(path.as_ref(), &mut follow_count)?;
         match name {
@@ -183,7 +150,7 @@ impl<M: RawMutex> FsContext<M> {
     }
 
     /// Resolves a path starting from `current_dir` not following symlinks.
-    pub fn resolve_no_follow(&self, path: impl AsRef<Path>) -> VfsResult<Location<M>> {
+    pub fn resolve_no_follow(&self, path: impl AsRef<Path>) -> VfsResult<Location> {
         let (dir, name) = self.resolve_inner(path.as_ref(), &mut 0)?;
         match name {
             Some(name) => dir.lookup_no_follow(name),
@@ -196,7 +163,7 @@ impl<M: RawMutex> FsContext<M> {
     ///
     /// Returns `(parent_dir, entry_name)`, where `entry_name` is the name of
     /// the entry.
-    pub fn resolve_parent<'a>(&self, path: &'a Path) -> VfsResult<(Location<M>, Cow<'a, str>)> {
+    pub fn resolve_parent<'a>(&self, path: &'a Path) -> VfsResult<(Location, Cow<'a, str>)> {
         let (dir, name) = self.resolve_inner(path, &mut 0)?;
         if let Some(name) = name {
             Ok((dir, Cow::Borrowed(name)))
@@ -214,7 +181,7 @@ impl<M: RawMutex> FsContext<M> {
     /// exists. Note that, it does not perform an actual check to ensure the
     /// entry's non-existence. It simply raises an error if the entry name is
     /// not present in the path.
-    pub fn resolve_nonexistent<'a>(&self, path: &'a Path) -> VfsResult<(Location<M>, &'a str)> {
+    pub fn resolve_nonexistent<'a>(&self, path: &'a Path) -> VfsResult<(Location, &'a str)> {
         let (dir, name) = self.resolve_inner(path, &mut 0)?;
         if let Some(name) = name {
             Ok((dir, name))
@@ -228,8 +195,27 @@ impl<M: RawMutex> FsContext<M> {
         self.resolve(path)?.metadata()
     }
 
+    /// Reads the entire contents of a file into a bytes vector.
+    pub fn read(&self, path: impl AsRef<Path>) -> VfsResult<Vec<u8>> {
+        let mut buf = Vec::new();
+        File::open(self, path.as_ref())?.read_to_end(&mut buf)?;
+        Ok(buf)
+    }
+
+    /// Reads the entire contents of a file into a string.
+    pub fn read_to_string(&self, path: impl AsRef<Path>) -> VfsResult<String> {
+        String::from_utf8(self.read(path)?).map_err(|_| VfsError::EINVAL)
+    }
+
+    /// Writes the contents of a bytes vector to a file.
+    pub fn write(&self, path: impl AsRef<Path>, buf: impl AsRef<[u8]>) -> VfsResult<()> {
+        let mut file = File::create(self, path.as_ref())?;
+        file.write_all(buf.as_ref())?;
+        Ok(())
+    }
+
     /// Returns an iterator over the entries in a directory.
-    pub fn read_dir(&self, path: impl AsRef<Path>) -> VfsResult<ReadDir<M>> {
+    pub fn read_dir(&self, path: impl AsRef<Path>) -> VfsResult<ReadDir> {
         let dir = self.resolve(path)?;
         Ok(ReadDir {
             dir,
@@ -266,11 +252,7 @@ impl<M: RawMutex> FsContext<M> {
     }
 
     /// Creates a new, empty directory at the provided path.
-    pub fn create_dir(
-        &self,
-        path: impl AsRef<Path>,
-        mode: NodePermission,
-    ) -> VfsResult<Location<M>> {
+    pub fn create_dir(&self, path: impl AsRef<Path>, mode: NodePermission) -> VfsResult<Location> {
         let (dir, name) = self.resolve_nonexistent(path.as_ref())?;
         dir.create(name, NodeType::Directory, mode)
     }
@@ -280,7 +262,7 @@ impl<M: RawMutex> FsContext<M> {
         &self,
         old_path: impl AsRef<Path>,
         new_path: impl AsRef<Path>,
-    ) -> VfsResult<Location<M>> {
+    ) -> VfsResult<Location> {
         let old = self.resolve(old_path.as_ref())?;
         let (new_dir, new_name) = self.resolve_nonexistent(new_path.as_ref())?;
         new_dir.link(new_name, &old)
@@ -291,7 +273,7 @@ impl<M: RawMutex> FsContext<M> {
         &self,
         target: impl AsRef<str>,
         link_path: impl AsRef<Path>,
-    ) -> VfsResult<Location<M>> {
+    ) -> VfsResult<Location> {
         let (dir, name) = self.resolve_nonexistent(link_path.as_ref())?;
         if dir.lookup_no_follow(name).is_ok() {
             return Err(VfsError::EEXIST);
@@ -308,19 +290,19 @@ impl<M: RawMutex> FsContext<M> {
 }
 
 /// Iterator returned by [`FsContext::read_dir`].
-pub struct ReadDir<M> {
-    dir: Location<M>,
+pub struct ReadDir {
+    dir: Location,
     buf: VecDeque<ReadDirEntry>,
     offset: u64,
     ended: bool,
 }
 
-impl<M> ReadDir<M> {
+impl ReadDir {
     // TODO: tune this
     pub const BUF_SIZE: usize = 128;
 }
 
-impl<M: RawMutex> Iterator for ReadDir<M> {
+impl Iterator for ReadDir {
     type Item = VfsResult<ReadDirEntry>;
 
     fn next(&mut self) -> Option<Self::Item> {
