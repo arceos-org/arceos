@@ -275,7 +275,6 @@ name = "axdisplay"
 version = "0.1.0"
 dependencies = [
  "axdriver",
- "axdriver_display 0.1.2 (git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2)",
  "axsync",
  "lazyinit",
  "log",
@@ -302,9 +301,9 @@ dependencies = [
  "axalloc",
  "axconfig",
  "axdma",
- "axdriver_base 0.1.2 (git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=6168df5)",
- "axdriver_block 0.1.2 (git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=6168df5)",
- "axdriver_display 0.1.2 (git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=6168df5)",
+ "axdriver_base",
+ "axdriver_block",
+ "axdriver_display",
  "axdriver_net",
  "axdriver_pci",
  "axdriver_virtio",
@@ -317,28 +316,14 @@ dependencies = [
 [[package]]
 name = "axdriver_base"
 version = "0.1.2"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2#84eb2170f865e6fa29b78995a86f4fcdcede63df"
-
-[[package]]
-name = "axdriver_base"
-version = "0.1.2"
 source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=6168df5#6168df500eae7def141d4310668be78e9c7256cf"
-
-[[package]]
-name = "axdriver_block"
-version = "0.1.2"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2#84eb2170f865e6fa29b78995a86f4fcdcede63df"
-dependencies = [
- "axdriver_base 0.1.2 (git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2)",
- "log",
-]
 
 [[package]]
 name = "axdriver_block"
 version = "0.1.2"
 source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=6168df5#6168df500eae7def141d4310668be78e9c7256cf"
 dependencies = [
- "axdriver_base 0.1.2 (git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=6168df5)",
+ "axdriver_base",
  "bcm2835-sdhci",
  "log",
 ]
@@ -346,17 +331,9 @@ dependencies = [
 [[package]]
 name = "axdriver_display"
 version = "0.1.2"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2#84eb2170f865e6fa29b78995a86f4fcdcede63df"
-dependencies = [
- "axdriver_base 0.1.2 (git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2)",
-]
-
-[[package]]
-name = "axdriver_display"
-version = "0.1.2"
 source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=6168df5#6168df500eae7def141d4310668be78e9c7256cf"
 dependencies = [
- "axdriver_base 0.1.2 (git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=6168df5)",
+ "axdriver_base",
 ]
 
 [[package]]
@@ -364,7 +341,7 @@ name = "axdriver_net"
 version = "0.1.2"
 source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=6168df5#6168df500eae7def141d4310668be78e9c7256cf"
 dependencies = [
- "axdriver_base 0.1.2 (git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=6168df5)",
+ "axdriver_base",
  "fxmac_rs",
  "ixgbe-driver",
  "log",
@@ -384,9 +361,9 @@ name = "axdriver_virtio"
 version = "0.1.2"
 source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=6168df5#6168df500eae7def141d4310668be78e9c7256cf"
 dependencies = [
- "axdriver_base 0.1.2 (git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=6168df5)",
- "axdriver_block 0.1.2 (git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=6168df5)",
- "axdriver_display 0.1.2 (git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=6168df5)",
+ "axdriver_base",
+ "axdriver_block",
+ "axdriver_display",
  "axdriver_net",
  "virtio-drivers",
 ]
@@ -424,7 +401,6 @@ dependencies = [
  "allocator",
  "axalloc",
  "axdriver",
- "axdriver_block 0.1.2 (git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2)",
  "axerrno",
  "axfs-ng-vfs",
  "axhal",
@@ -437,7 +413,6 @@ dependencies = [
  "fatfs",
  "intrusive-collections",
  "kspin",
- "lock_api",
  "log",
  "lru",
  "lwext4_rust",
@@ -449,7 +424,7 @@ dependencies = [
 [[package]]
 name = "axfs-ng-vfs"
 version = "0.1.0"
-source = "git+https://github.com/Starry-Mix-THU/axfs-ng-vfs.git?rev=e5ff62a#e5ff62a599f74a3bd01c08694fc8b0cf7fa63efb"
+source = "git+https://github.com/Starry-Mix-THU/axfs-ng-vfs.git?rev=e7cf4fd#e7cf4fddddd29eb0a518aee3f6212549f89a37f5"
 dependencies = [
  "axerrno",
  "axio",
@@ -1600,10 +1575,9 @@ dependencies = [
 [[package]]
 name = "lwext4_rust"
 version = "0.2.0"
-source = "git+https://github.com/Starry-Mix-THU/lwext4_rust?rev=252bb5f#252bb5f7638002f7b2f22068fd02b640158f2de5"
+source = "git+https://github.com/Starry-Mix-THU/lwext4_rust?rev=7088e08#7088e0891f144180b94a937dd0ed01153df14475"
 dependencies = [
  "bindgen",
- "lock_api",
  "log",
 ]
 

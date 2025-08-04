@@ -7,9 +7,6 @@
 #[macro_use]
 extern crate log;
 
-#[doc(no_inline)]
-pub use axdriver_display::DisplayInfo;
-
 use axdriver::{AxDeviceContainer, prelude::*};
 use axsync::Mutex;
 use lazyinit::LazyInit;
