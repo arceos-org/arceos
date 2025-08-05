@@ -20,8 +20,10 @@ use crate::{
     unix::{Transport, TransportOps, UnixSocketAddr},
 };
 
+const BUF_SIZE: usize = 64 * 1024;
+
 fn new_uni_channel() -> (HeapProd<u8>, HeapCons<u8>) {
-    let rb = HeapRb::new(1024 * 1024);
+    let rb = HeapRb::new(BUF_SIZE);
     rb.split()
 }
 fn new_channels() -> (Channel, Channel) {
@@ -101,8 +103,16 @@ impl StreamTransport {
 }
 
 impl Configurable for StreamTransport {
-    fn get_option_inner(&self, _opt: &mut GetSocketOption) -> LinuxResult<bool> {
-        Ok(false)
+    fn get_option_inner(&self, opt: &mut GetSocketOption) -> LinuxResult<bool> {
+        use GetSocketOption as O;
+
+        match opt {
+            O::SendBuffer(size) => {
+                **size = BUF_SIZE;
+            }
+            _ => return Ok(false),
+        }
+        Ok(true)
     }
 
     fn set_option_inner(&self, _opt: SetSocketOption) -> LinuxResult<bool> {
