@@ -13,5 +13,6 @@ documentation = "https://arceos-org.github.io/arceos/axdisplay/index.html"
 axdriver = { workspace = true, features = ["display"] }
 axsync = { workspace = true }
 
+axdriver_display = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "6168df5" }
 lazyinit = { workspace = true }
 log = { workspace = true }

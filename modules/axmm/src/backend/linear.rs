@@ -17,12 +17,12 @@ use crate::{
 /// address `vaddr` is mapped to the physical address `vaddr - pa_va_offset`.
 #[derive(Clone)]
 pub struct LinearBackend {
-    offset: usize,
+    offset: isize,
 }
 
 impl LinearBackend {
     fn pa(&self, va: VirtAddr) -> PhysAddr {
-        PhysAddr::from(va.as_usize().wrapping_sub(self.offset))
+        PhysAddr::from((va.as_usize() as isize - self.offset) as usize)
     }
 }
 
@@ -63,7 +63,7 @@ impl BackendOps for LinearBackend {
 }
 
 impl Backend {
-    pub fn new_linear(offset: usize) -> Self {
+    pub fn new_linear(offset: isize) -> Self {
         Self::Linear(LinearBackend { offset })
     }
 }

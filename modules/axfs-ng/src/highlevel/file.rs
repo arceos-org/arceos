@@ -731,13 +731,6 @@ impl FileBackend {
             Self::Direct(loc) => loc.entry().as_file()?.set_len(len),
         }
     }
-
-    pub fn into_cached(self) -> Option<CachedFile> {
-        match self {
-            Self::Cached(cached) => Some(cached),
-            Self::Direct(_) => None,
-        }
-    }
 }
 
 /// Provides `std::fs::File`-like interface.
