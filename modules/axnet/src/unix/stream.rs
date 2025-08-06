@@ -1,5 +1,8 @@
 use alloc::boxed::Box;
-use core::{convert::Infallible, task::Context};
+use core::{
+    convert::Infallible,
+    task::Context,
+};
 
 use async_trait::async_trait;
 use axerrno::{LinuxError, LinuxResult};
@@ -16,6 +19,7 @@ use ringbuf::{
 
 use crate::{
     RecvOptions, SendOptions,
+    general::GeneralOptions,
     options::{Configurable, GetSocketOption, SetSocketOption},
     unix::{Transport, TransportOps, UnixSocketAddr},
 };
@@ -67,6 +71,7 @@ impl Bind {
     }
 }
 
+#[derive(Default)]
 pub struct StreamTransport {
     channel: Mutex<Option<Channel>>,
     conn_rx: Mutex<
@@ -76,28 +81,22 @@ pub struct StreamTransport {
         )>,
     >,
     poll_state: PollSet,
+    general: GeneralOptions,
 }
 impl StreamTransport {
-    pub fn new() -> Self {
+    fn new(channel: Option<Channel>) -> Self {
         StreamTransport {
-            channel: Mutex::new(None),
+            channel: Mutex::new(channel),
             conn_rx: Mutex::new(None),
             poll_state: PollSet::new(),
+            general: GeneralOptions::default(),
         }
     }
 
     pub fn new_pair() -> (Self, Self) {
         let (chan1, chan2) = new_channels();
-        let transport1 = StreamTransport {
-            channel: Mutex::new(Some(chan1)),
-            conn_rx: Mutex::new(None),
-            poll_state: PollSet::new(),
-        };
-        let transport2 = StreamTransport {
-            channel: Mutex::new(Some(chan2)),
-            conn_rx: Mutex::new(None),
-            poll_state: PollSet::new(),
-        };
+        let transport1 = StreamTransport::new(Some(chan1));
+        let transport2 = StreamTransport::new(Some(chan2));
         (transport1, transport2)
     }
 }
@@ -105,6 +104,10 @@ impl StreamTransport {
 impl Configurable for StreamTransport {
     fn get_option_inner(&self, opt: &mut GetSocketOption) -> LinuxResult<bool> {
         use GetSocketOption as O;
+
+        if self.general.get_option_inner(opt)? {
+            return Ok(true);
+        }
 
         match opt {
             O::SendBuffer(size) => {
@@ -115,8 +118,8 @@ impl Configurable for StreamTransport {
         Ok(true)
     }
 
-    fn set_option_inner(&self, _opt: SetSocketOption) -> LinuxResult<bool> {
-        Ok(false)
+    fn set_option_inner(&self, opt: SetSocketOption) -> LinuxResult<bool> {
+        self.general.set_option_inner(opt)
     }
 }
 #[async_trait]
@@ -164,11 +167,7 @@ impl TransportOps for StreamTransport {
         };
         let (channel, peer_addr) = rx.recv().await.map_err(|_| LinuxError::ECONNRESET)?;
         Ok((
-            Transport::Stream(StreamTransport {
-                channel: Mutex::new(Some(channel)),
-                conn_rx: Mutex::new(None),
-                poll_state: PollSet::new(),
-            }),
+            Transport::Stream(StreamTransport::new(Some(channel))),
             peer_addr,
         ))
     }
@@ -178,7 +177,7 @@ impl TransportOps for StreamTransport {
             return Err(LinuxError::EINVAL);
         }
         let mut total = 0;
-        Poller::new(self, IoEvents::OUT).poll(|| {
+        self.general.send_poller(self).poll(|| {
             let mut guard = self.channel.lock();
             let Some(chan) = guard.as_mut() else {
                 return Err(LinuxError::ENOTCONN);

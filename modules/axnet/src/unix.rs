@@ -24,8 +24,9 @@ use crate::{
     options::{Configurable, GetSocketOption, SetSocketOption},
 };
 
-#[derive(Clone, Debug)]
+#[derive(Default, Clone, Debug)]
 pub enum UnixSocketAddr {
+    #[default]
     Unnamed,
     Abstract(Arc<[u8]>),
     Path(Arc<str>),

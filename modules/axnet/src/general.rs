@@ -6,7 +6,8 @@ use core::{
 };
 
 use axerrno::LinuxResult;
-use axio::PollSet;
+use axio::{IoEvents, PollSet, Pollable};
+use axtask::future::Poller;
 
 use crate::options::{Configurable, GetSocketOption, SetSocketOption};
 
@@ -32,6 +33,11 @@ pub(crate) struct GeneralOptions {
     /// is not true for loopback devices since they are always driven internally
     /// by kernel.
     externally_driven: AtomicBool,
+}
+impl Default for GeneralOptions {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 impl GeneralOptions {
     pub fn new() -> Self {
@@ -79,6 +85,18 @@ impl GeneralOptions {
 
     pub fn externally_driven(&self) -> bool {
         self.externally_driven.load(Ordering::Acquire)
+    }
+
+    pub fn send_poller<'a, P: Pollable>(&self, pollable: &'a P) -> Poller<'a, P> {
+        Poller::new(pollable, IoEvents::OUT)
+            .non_blocking(self.nonblocking())
+            .timeout(self.send_timeout())
+    }
+
+    pub fn recv_poller<'a, P: Pollable>(&self, pollable: &'a P) -> Poller<'a, P> {
+        Poller::new(pollable, IoEvents::IN)
+            .non_blocking(self.nonblocking())
+            .timeout(self.recv_timeout())
     }
 }
 impl Configurable for GeneralOptions {

@@ -11,7 +11,6 @@ use axio::{
     buf::{Buf, BufMut, BufMutExt},
 };
 use axsync::Mutex;
-use axtask::future::Poller;
 use smoltcp::{
     iface::SocketHandle,
     socket::tcp as smol,
@@ -350,20 +349,17 @@ impl SocketOps for TcpSocket {
             })?;
 
         // Here our state must be `CONNECTING`, and only one thread can run here.
-        Poller::new(self, IoEvents::OUT)
-            .non_blocking(self.general.nonblocking())
-            .timeout(self.general.send_timeout())
-            .poll(|| {
-                poll_interfaces();
-                let events = self.poll_connect();
-                if !events.contains(IoEvents::OUT) {
-                    Err(LinuxError::EAGAIN)
-                } else if self.state() == State::Connected {
-                    Ok(())
-                } else {
-                    Err(ax_err!(ECONNREFUSED, "connection refused"))
-                }
-            })
+        self.general.send_poller(self).poll(|| {
+            poll_interfaces();
+            let events = self.poll_connect();
+            if !events.contains(IoEvents::OUT) {
+                Err(LinuxError::EAGAIN)
+            } else if self.state() == State::Connected {
+                Ok(())
+            } else {
+                Err(ax_err!(ECONNREFUSED, "connection refused"))
+            }
+        })
     }
 
     fn listen(&self) -> LinuxResult<()> {
@@ -386,74 +382,65 @@ impl SocketOps for TcpSocket {
         }
 
         let bound_port = self.bound_endpoint()?.port;
-        Poller::new(self, IoEvents::IN)
-            .non_blocking(self.general.nonblocking())
-            .timeout(self.general.recv_timeout())
-            .poll(|| {
-                poll_interfaces();
-                LISTEN_TABLE.accept(bound_port).map(|handle| {
-                    let socket = TcpSocket::new_connected(handle);
-                    debug!(
-                        "accepted connection from {}, {}",
-                        handle,
-                        socket.with_smol_socket(|socket| socket.remote_endpoint().unwrap())
-                    );
-                    Socket::Tcp(socket)
-                })
+        self.general.recv_poller(self).poll(|| {
+            poll_interfaces();
+            LISTEN_TABLE.accept(bound_port).map(|handle| {
+                let socket = TcpSocket::new_connected(handle);
+                debug!(
+                    "accepted connection from {}, {}",
+                    handle,
+                    socket.with_smol_socket(|socket| socket.remote_endpoint().unwrap())
+                );
+                Socket::Tcp(socket)
             })
+        })
     }
 
     fn send(&self, src: &mut impl Buf, _options: SendOptions) -> LinuxResult<usize> {
         // SAFETY: `self.handle` should be initialized in a connected socket.
-        Poller::new(self, IoEvents::OUT)
-            .non_blocking(self.general.nonblocking())
-            .timeout(self.general.send_timeout())
-            .poll(|| {
-                self.with_smol_socket(|socket| {
-                    if !socket.is_active() {
-                        Err(LinuxError::ENOTCONN)
-                    } else if !socket.can_send() {
-                        Err(LinuxError::EAGAIN)
-                    } else {
-                        // connected, and the tx buffer is not full
-                        let len = socket
-                            .send(|mut buffer| {
-                                let len = buffer.put(src);
-                                (len, len)
-                            })
-                            .map_err(|_| ax_err!(ENOTCONN, "not connected?"))?;
-                        Ok(len)
-                    }
-                })
+        self.general.send_poller(self).poll(|| {
+            self.with_smol_socket(|socket| {
+                if !socket.is_active() {
+                    Err(LinuxError::ENOTCONN)
+                } else if !socket.can_send() {
+                    Err(LinuxError::EAGAIN)
+                } else {
+                    // connected, and the tx buffer is not full
+                    let len = socket
+                        .send(|mut buffer| {
+                            let len = buffer.put(src);
+                            (len, len)
+                        })
+                        .map_err(|_| ax_err!(ENOTCONN, "not connected?"))?;
+                    Ok(len)
+                }
             })
+        })
     }
 
     fn recv(&self, dst: &mut impl BufMut, options: RecvOptions<'_>) -> LinuxResult<usize> {
-        Poller::new(self, IoEvents::IN)
-            .non_blocking(self.general.nonblocking())
-            .timeout(self.general.recv_timeout())
-            .poll(|| {
-                poll_interfaces();
-                self.with_smol_socket(|socket| {
-                    if !socket.is_active() {
-                        Err(LinuxError::ENOTCONN)
-                    } else if !socket.may_recv() {
-                        Ok(0)
-                    } else if socket.recv_queue() == 0 {
-                        Err(LinuxError::EAGAIN)
+        self.general.recv_poller(self).poll(|| {
+            poll_interfaces();
+            self.with_smol_socket(|socket| {
+                if !socket.is_active() {
+                    Err(LinuxError::ENOTCONN)
+                } else if !socket.may_recv() {
+                    Ok(0)
+                } else if socket.recv_queue() == 0 {
+                    Err(LinuxError::EAGAIN)
+                } else {
+                    if options.flags.contains(RecvFlags::PEEK) {
+                        socket.peek_slice(dst.chunk_mut())
                     } else {
-                        if options.flags.contains(RecvFlags::PEEK) {
-                            socket.peek_slice(dst.chunk_mut())
-                        } else {
-                            socket.recv(|buf| {
-                                let len = dst.put(&mut &*buf);
-                                (len, len)
-                            })
-                        }
-                        .map_err(|_| ax_err!(ENOTCONN, "not connected?"))
+                        socket.recv(|buf| {
+                            let len = dst.put(&mut &*buf);
+                            (len, len)
+                        })
                     }
-                })
+                    .map_err(|_| ax_err!(ENOTCONN, "not connected?"))
+                }
             })
+        })
     }
 
     fn local_addr(&self) -> LinuxResult<SocketAddrEx> {

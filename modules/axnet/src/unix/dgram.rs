@@ -1,5 +1,8 @@
 use alloc::{boxed::Box, sync::Arc, vec::Vec};
-use core::task::Context;
+use core::{
+    sync::atomic::{AtomicBool, Ordering},
+    task::Context,
+};
 
 use async_channel::TryRecvError;
 use async_trait::async_trait;
@@ -45,19 +48,25 @@ impl Bind {
     }
 }
 
+#[derive(Default)]
 pub struct DgramTransport {
     data_rx: Mutex<Option<(async_channel::Receiver<Packet>, Arc<PollSet>)>>,
     connected: RwLock<Option<Channel>>,
     local_addr: RwLock<UnixSocketAddr>,
     poll_state: Arc<PollSet>,
+    nonblock: AtomicBool,
 }
 impl DgramTransport {
-    pub fn new() -> Self {
+    fn new_connected(
+        data_rx: (async_channel::Receiver<Packet>, Arc<PollSet>),
+        connected: Channel,
+    ) -> Self {
         DgramTransport {
-            data_rx: Mutex::new(None),
-            connected: RwLock::new(None),
+            data_rx: Mutex::new(Some(data_rx)),
+            connected: RwLock::new(Some(connected)),
             local_addr: RwLock::new(UnixSocketAddr::Unnamed),
             poll_state: Arc::default(),
+            nonblock: AtomicBool::new(false),
         }
     }
 
@@ -66,35 +75,47 @@ impl DgramTransport {
         let (tx2, rx2) = async_channel::unbounded();
         let poll1 = Arc::new(PollSet::new());
         let poll2 = Arc::new(PollSet::new());
-        let transport1 = DgramTransport {
-            data_rx: Mutex::new(Some((rx1, poll1.clone()))),
-            connected: RwLock::new(Some(Channel {
+        let transport1 = DgramTransport::new_connected(
+            (rx1, poll1.clone()),
+            Channel {
                 data_tx: tx2,
                 poll_update: poll2.clone(),
-            })),
-            local_addr: RwLock::new(UnixSocketAddr::Unnamed),
-            poll_state: Arc::default(),
-        };
-        let transport2 = DgramTransport {
-            data_rx: Mutex::new(Some((rx2, poll2))),
-            connected: RwLock::new(Some(Channel {
+            },
+        );
+        let transport2 = DgramTransport::new_connected(
+            (rx2, poll2.clone()),
+            Channel {
                 data_tx: tx1,
-                poll_update: poll1,
-            })),
-            local_addr: RwLock::new(UnixSocketAddr::Unnamed),
-            poll_state: Arc::default(),
-        };
+                poll_update: poll1.clone(),
+            },
+        );
         (transport1, transport2)
     }
 }
 
 impl Configurable for DgramTransport {
-    fn get_option_inner(&self, _opt: &mut GetSocketOption) -> LinuxResult<bool> {
-        Ok(false)
+    fn get_option_inner(&self, opt: &mut GetSocketOption) -> LinuxResult<bool> {
+        use GetSocketOption as O;
+
+        match opt {
+            O::NonBlocking(nonblock) => {
+                **nonblock = self.nonblock.load(Ordering::Acquire);
+            }
+            _ => return Ok(false),
+        }
+        Ok(true)
     }
 
     fn set_option_inner(&self, _opt: SetSocketOption) -> LinuxResult<bool> {
-        Ok(false)
+        use SetSocketOption as O;
+
+        match _opt {
+            O::NonBlocking(nonblock) => {
+                self.nonblock.store(*nonblock, Ordering::Release);
+            }
+            _ => return Ok(false),
+        }
+        Ok(true)
     }
 }
 #[async_trait]

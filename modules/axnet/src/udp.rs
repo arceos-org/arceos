@@ -10,7 +10,6 @@ use axio::{
     buf::{Buf, BufMut, BufMutExt},
 };
 use axsync::Mutex;
-use axtask::future::Poller;
 use smoltcp::{
     iface::SocketHandle,
     phy::PacketMeta,
@@ -188,40 +187,37 @@ impl SocketOps for UdpSocket {
                 0,
             )))?;
         }
-        Poller::new(self, IoEvents::OUT)
-            .non_blocking(self.general.nonblocking())
-            .timeout(self.general.send_timeout())
-            .poll(|| {
-                poll_interfaces();
-                self.with_smol_socket(|socket| {
-                    if !socket.is_open() {
-                        // not connected
-                        Err(ax_err!(ENOTCONN))
-                    } else if !socket.can_send() {
-                        Err(LinuxError::EAGAIN)
-                    } else {
-                        let src_len = src.remaining();
-                        let mut buf = socket
-                            .send(
-                                src_len,
-                                UdpMetadata {
-                                    endpoint: remote_addr,
-                                    local_address: Some(source_addr),
-                                    meta: PacketMeta::default(),
-                                },
-                            )
-                            .map_err(|e| match e {
-                                smol::SendError::BufferFull => LinuxError::EAGAIN,
-                                smol::SendError::Unaddressable => {
-                                    ax_err!(ECONNREFUSED, "unaddressable")
-                                }
-                            })?;
-                        buf.put(src);
-                        assert!(buf.is_empty());
-                        Ok(src_len)
-                    }
-                })
+        self.general.send_poller(self).poll(|| {
+            poll_interfaces();
+            self.with_smol_socket(|socket| {
+                if !socket.is_open() {
+                    // not connected
+                    Err(ax_err!(ENOTCONN))
+                } else if !socket.can_send() {
+                    Err(LinuxError::EAGAIN)
+                } else {
+                    let src_len = src.remaining();
+                    let mut buf = socket
+                        .send(
+                            src_len,
+                            UdpMetadata {
+                                endpoint: remote_addr,
+                                local_address: Some(source_addr),
+                                meta: PacketMeta::default(),
+                            },
+                        )
+                        .map_err(|e| match e {
+                            smol::SendError::BufferFull => LinuxError::EAGAIN,
+                            smol::SendError::Unaddressable => {
+                                ax_err!(ECONNREFUSED, "unaddressable")
+                            }
+                        })?;
+                    buf.put(src);
+                    assert!(buf.is_empty());
+                    Ok(src_len)
+                }
             })
+        })
     }
 
     fn recv(&self, dst: &mut impl BufMut, options: RecvOptions) -> LinuxResult<usize> {
@@ -238,59 +234,56 @@ impl SocketOps for UdpSocket {
             None => ExpectedRemote::Expecting(self.remote_endpoint()?.0),
         };
 
-        Poller::new(self, IoEvents::IN)
-            .non_blocking(self.general.nonblocking())
-            .timeout(self.general.recv_timeout())
-            .poll(|| {
-                poll_interfaces();
-                self.with_smol_socket(|socket| {
-                    if !socket.is_open() {
-                        // not bound
-                        Err(ax_err!(ENOTCONN))
-                    } else if !socket.can_recv() {
-                        Err(LinuxError::EAGAIN)
+        self.general.recv_poller(self).poll(|| {
+            poll_interfaces();
+            self.with_smol_socket(|socket| {
+                if !socket.is_open() {
+                    // not bound
+                    Err(ax_err!(ENOTCONN))
+                } else if !socket.can_recv() {
+                    Err(LinuxError::EAGAIN)
+                } else {
+                    let result = if options.flags.contains(RecvFlags::PEEK) {
+                        socket.peek().map(|(data, meta)| (data, *meta))
                     } else {
-                        let result = if options.flags.contains(RecvFlags::PEEK) {
-                            socket.peek().map(|(data, meta)| (data, *meta))
-                        } else {
-                            socket.recv()
-                        };
-                        match result {
-                            Ok((src, meta)) => {
-                                match &mut expected_remote {
-                                    ExpectedRemote::Any(remote_addr) => {
-                                        **remote_addr = SocketAddrEx::Ip(meta.endpoint.into());
-                                    }
-                                    ExpectedRemote::Expecting(expected) => {
-                                        if (!expected.addr.is_unspecified()
-                                            && expected.addr != meta.endpoint.addr)
-                                            || (expected.port != 0
-                                                && expected.port != meta.endpoint.port)
-                                        {
-                                            return Err(LinuxError::EAGAIN);
-                                        }
+                        socket.recv()
+                    };
+                    match result {
+                        Ok((src, meta)) => {
+                            match &mut expected_remote {
+                                ExpectedRemote::Any(remote_addr) => {
+                                    **remote_addr = SocketAddrEx::Ip(meta.endpoint.into());
+                                }
+                                ExpectedRemote::Expecting(expected) => {
+                                    if (!expected.addr.is_unspecified()
+                                        && expected.addr != meta.endpoint.addr)
+                                        || (expected.port != 0
+                                            && expected.port != meta.endpoint.port)
+                                    {
+                                        return Err(LinuxError::EAGAIN);
                                     }
                                 }
-
-                                let read = dst.put(&mut &*src);
-                                if read < src.len() {
-                                    warn!("UDP message truncated: {} -> {} bytes", src.len(), read);
-                                }
-
-                                Ok(if options.flags.contains(RecvFlags::TRUNCATE) {
-                                    src.len()
-                                } else {
-                                    read
-                                })
                             }
-                            Err(smol::RecvError::Exhausted) => Err(LinuxError::EAGAIN),
-                            Err(smol::RecvError::Truncated) => {
-                                unreachable!("UDP socket recv never returns Err(Truncated)")
+
+                            let read = dst.put(&mut &*src);
+                            if read < src.len() {
+                                warn!("UDP message truncated: {} -> {} bytes", src.len(), read);
                             }
+
+                            Ok(if options.flags.contains(RecvFlags::TRUNCATE) {
+                                src.len()
+                            } else {
+                                read
+                            })
+                        }
+                        Err(smol::RecvError::Exhausted) => Err(LinuxError::EAGAIN),
+                        Err(smol::RecvError::Truncated) => {
+                            unreachable!("UDP socket recv never returns Err(Truncated)")
                         }
                     }
-                })
+                }
             })
+        })
     }
 
     fn local_addr(&self) -> LinuxResult<SocketAddrEx> {
