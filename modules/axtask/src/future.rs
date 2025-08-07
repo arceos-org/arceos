@@ -248,6 +248,19 @@ impl<'a, P: Pollable> Poller<'a, P> {
     }
 
     pub fn poll<T>(self, mut f: impl FnMut() -> LinuxResult<T>) -> LinuxResult<T> {
+        if self.timeout.is_some_and(|it| it.as_micros() == 0) {
+            return match f() {
+                Ok(value) => Ok(value),
+                Err(LinuxError::EAGAIN) => {
+                    if self.non_blocking {
+                        Err(LinuxError::EAGAIN)
+                    } else {
+                        Err(LinuxError::ETIMEDOUT)
+                    }
+                }
+                Err(e) => Err(e),
+            };
+        }
         block_on_interruptible(
             timeout_opt(
                 poll_fn(move |cx| match f() {

@@ -1,13 +1,13 @@
 use alloc::vec;
 use core::{
     net::{Ipv4Addr, SocketAddr},
-    sync::atomic::{AtomicU8, Ordering},
+    sync::atomic::{AtomicBool, AtomicU8, Ordering},
     task::Context,
 };
 
 use axerrno::{LinuxError, LinuxResult, ax_err, bail};
 use axio::{
-    IoEvents, Pollable,
+    IoEvents, PollSet, Pollable,
     buf::{Buf, BufMut, BufMutExt},
 };
 use axsync::Mutex;
@@ -113,6 +113,8 @@ pub struct TcpSocket {
     handle: SocketHandle,
 
     general: GeneralOptions,
+    rx_closed: AtomicBool,
+    poll_rx_closed: PollSet,
 }
 
 unsafe impl Sync for TcpSocket {}
@@ -125,6 +127,8 @@ impl TcpSocket {
             handle: SOCKET_SET.add(new_tcp_socket()),
 
             general: GeneralOptions::new(),
+            rx_closed: AtomicBool::new(false),
+            poll_rx_closed: PollSet::new(),
         }
     }
 
@@ -135,6 +139,8 @@ impl TcpSocket {
             handle,
 
             general: GeneralOptions::new(),
+            rx_closed: AtomicBool::new(false),
+            poll_rx_closed: PollSet::new(),
         }
     }
 }
@@ -187,7 +193,11 @@ impl TcpSocket {
     fn poll_stream(&self) -> IoEvents {
         let mut events = IoEvents::empty();
         self.with_smol_socket(|socket| {
-            events.set(IoEvents::IN, !socket.may_recv() || socket.can_recv());
+            events.set(
+                IoEvents::IN,
+                !self.rx_closed.load(Ordering::Acquire)
+                    && (!socket.may_recv() || socket.can_recv()),
+            );
             events.set(IoEvents::OUT, !socket.may_send() || socket.can_send());
         });
         events
@@ -419,6 +429,9 @@ impl SocketOps for TcpSocket {
     }
 
     fn recv(&self, dst: &mut impl BufMut, options: RecvOptions<'_>) -> LinuxResult<usize> {
+        if self.rx_closed.load(Ordering::Acquire) {
+            return Err(LinuxError::ENOTCONN);
+        }
         self.general.recv_poller(self).poll(|| {
             poll_interfaces();
             self.with_smol_socket(|socket| {
@@ -465,6 +478,10 @@ impl SocketOps for TcpSocket {
 
     fn shutdown(&self, how: Shutdown) -> LinuxResult<()> {
         // TODO(mivik): shutdown
+        if how.has_read() {
+            self.rx_closed.store(true, Ordering::Release);
+            self.poll_rx_closed.wake();
+        }
 
         // stream
         if let Ok(guard) = self.state.lock(State::Connected) {
@@ -497,12 +514,14 @@ impl SocketOps for TcpSocket {
 impl Pollable for TcpSocket {
     fn poll(&self) -> IoEvents {
         poll_interfaces();
-        match self.state() {
+        let mut events = match self.state() {
             State::Connecting => self.poll_connect(),
             State::Connected | State::Idle | State::Closed => self.poll_stream(),
             State::Listening => self.poll_listener(),
             State::Busy => IoEvents::empty(),
-        }
+        };
+        events.set(IoEvents::RDHUP, self.rx_closed.load(Ordering::Acquire));
+        events
     }
 
     fn register(&self, context: &mut Context<'_>, events: IoEvents) {
@@ -525,6 +544,9 @@ impl Pollable for TcpSocket {
         if events.contains(IoEvents::OUT) {
             self.general.poll_tx.register(context.waker());
             self.with_smol_socket(|socket| socket.register_send_waker(&self.general.poll_tx_waker));
+        }
+        if events.contains(IoEvents::RDHUP) {
+            self.poll_rx_closed.register(context.waker());
         }
     }
 }

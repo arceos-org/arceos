@@ -1,5 +1,9 @@
 use alloc::boxed::Box;
-use core::{convert::Infallible, task::Context};
+use core::{
+    convert::Infallible,
+    sync::atomic::{AtomicBool, Ordering},
+    task::Context,
+};
 
 use async_trait::async_trait;
 use axerrno::{LinuxError, LinuxResult};
@@ -15,7 +19,7 @@ use ringbuf::{
 };
 
 use crate::{
-    RecvOptions, SendOptions,
+    RecvOptions, SendOptions, Shutdown,
     general::GeneralOptions,
     options::{Configurable, GetSocketOption, SetSocketOption, UnixCredentials},
     unix::{Transport, TransportOps, UnixSocketAddr},
@@ -90,6 +94,8 @@ pub struct StreamTransport {
     poll_state: PollSet,
     general: GeneralOptions,
     pid: u32,
+    rx_closed: AtomicBool,
+    tx_closed: AtomicBool,
 }
 impl StreamTransport {
     pub fn new(pid: u32) -> Self {
@@ -103,6 +109,8 @@ impl StreamTransport {
             poll_state: PollSet::new(),
             general: GeneralOptions::default(),
             pid,
+            rx_closed: AtomicBool::new(false),
+            tx_closed: AtomicBool::new(false),
         }
     }
 
@@ -223,9 +231,13 @@ impl TransportOps for StreamTransport {
                 return Err(LinuxError::EPIPE);
             }
 
-            total += src
+            let written = src
                 .read_with::<Infallible>(|chunk| Ok(chan.tx.push_slice(chunk)))
                 .map_err(|err| match err {})?;
+            total += written;
+            if written > 0 {
+                chan.poll_update.wake();
+            }
 
             if src.chunk().is_empty() {
                 Ok(total)
@@ -245,6 +257,9 @@ impl TransportOps for StreamTransport {
             let read = dst
                 .fill_with::<Infallible>(|chunk| Ok(chan.rx.pop_slice(chunk)))
                 .map_err(|err| match err {})?;
+            if read > 0 {
+                chan.poll_update.wake();
+            }
 
             if dst.chunk_mut().is_empty() || !chan.rx.write_is_held() {
                 Ok(read)
@@ -253,17 +268,41 @@ impl TransportOps for StreamTransport {
             }
         })
     }
+
+    fn shutdown(&self, how: Shutdown) -> LinuxResult<()> {
+        if how.has_read() {
+            self.rx_closed.store(true, Ordering::Release);
+            self.poll_state.wake();
+        }
+        if how.has_write() {
+            self.tx_closed.store(true, Ordering::Release);
+            self.poll_state.wake();
+        }
+        if self.rx_closed.load(Ordering::Acquire) && self.tx_closed.load(Ordering::Acquire) {
+            if let Some(chan) = self.channel.lock().take() {
+                chan.poll_update.wake();
+            }
+        }
+        Ok(())
+    }
 }
 
 impl Pollable for StreamTransport {
     fn poll(&self) -> IoEvents {
         let mut events = IoEvents::empty();
         if let Some(chan) = self.channel.lock().as_ref() {
-            events.set(IoEvents::IN, chan.rx.occupied_len() > 0);
-            events.set(IoEvents::OUT, chan.tx.vacant_len() > 0);
+            events.set(
+                IoEvents::IN,
+                !self.rx_closed.load(Ordering::Acquire) && chan.rx.occupied_len() > 0,
+            );
+            events.set(
+                IoEvents::OUT,
+                !self.tx_closed.load(Ordering::Acquire) && chan.tx.vacant_len() > 0,
+            );
         } else if let Some((conn_tx, _)) = self.conn_rx.lock().as_ref() {
             events.set(IoEvents::IN, conn_tx.len() > 0);
         }
+        events.set(IoEvents::RDHUP, self.rx_closed.load(Ordering::Acquire));
         events
     }
 

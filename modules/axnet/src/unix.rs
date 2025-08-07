@@ -43,6 +43,10 @@ pub trait TransportOps: Configurable + Pollable + Send + Sync {
 
     fn send(&self, src: &mut impl Buf, options: SendOptions) -> LinuxResult<usize>;
     fn recv(&self, dst: &mut impl BufMut, options: RecvOptions<'_>) -> LinuxResult<usize>;
+
+    fn shutdown(&self, _how: Shutdown) -> LinuxResult<()> {
+        Ok(())
+    }
 }
 
 #[enum_dispatch(Configurable, TransportOps)]
@@ -213,8 +217,8 @@ impl SocketOps for UnixSocket {
         Ok(SocketAddrEx::Unix(self.remote_addr.lock().clone()))
     }
 
-    fn shutdown(&self, _how: Shutdown) -> LinuxResult<()> {
-        Ok(())
+    fn shutdown(&self, how: Shutdown) -> LinuxResult<()> {
+        self.transport.shutdown(how)
     }
 }
 
