@@ -275,7 +275,6 @@ name = "axdisplay"
 version = "0.1.0"
 dependencies = [
  "axdriver",
- "axdriver_display",
  "axsync",
  "lazyinit",
  "log",
@@ -317,22 +316,24 @@ dependencies = [
 [[package]]
 name = "axdriver_base"
 version = "0.1.2"
-source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=6168df5#6168df500eae7def141d4310668be78e9c7256cf"
+source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=afaf002#afaf002c0dbe6f51d40d32dc3fe13fb9c1ef3398"
 
 [[package]]
 name = "axdriver_block"
 version = "0.1.2"
-source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=6168df5#6168df500eae7def141d4310668be78e9c7256cf"
+source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=afaf002#afaf002c0dbe6f51d40d32dc3fe13fb9c1ef3398"
 dependencies = [
  "axdriver_base",
  "bcm2835-sdhci",
+ "gpt_disk_io",
  "log",
+ "simple-sdmmc",
 ]
 
 [[package]]
 name = "axdriver_display"
 version = "0.1.2"
-source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=6168df5#6168df500eae7def141d4310668be78e9c7256cf"
+source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=afaf002#afaf002c0dbe6f51d40d32dc3fe13fb9c1ef3398"
 dependencies = [
  "axdriver_base",
 ]
@@ -340,7 +341,7 @@ dependencies = [
 [[package]]
 name = "axdriver_net"
 version = "0.1.2"
-source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=6168df5#6168df500eae7def141d4310668be78e9c7256cf"
+source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=afaf002#afaf002c0dbe6f51d40d32dc3fe13fb9c1ef3398"
 dependencies = [
  "axdriver_base",
  "fxmac_rs",
@@ -352,7 +353,7 @@ dependencies = [
 [[package]]
 name = "axdriver_pci"
 version = "0.1.2"
-source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=6168df5#6168df500eae7def141d4310668be78e9c7256cf"
+source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=afaf002#afaf002c0dbe6f51d40d32dc3fe13fb9c1ef3398"
 dependencies = [
  "virtio-drivers",
 ]
@@ -360,7 +361,7 @@ dependencies = [
 [[package]]
 name = "axdriver_virtio"
 version = "0.1.2"
-source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=6168df5#6168df500eae7def141d4310668be78e9c7256cf"
+source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=afaf002#afaf002c0dbe6f51d40d32dc3fe13fb9c1ef3398"
 dependencies = [
  "axdriver_base",
  "axdriver_block",
@@ -763,6 +764,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dc827186963e592360843fb5ba4b973e145841266c1357f7180c43526f2e5b61"
 
 [[package]]
+name = "bitfield-struct"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3ca019570363e800b05ad4fd890734f28ac7b72f563ad8a35079efb793616f8"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.104",
+]
+
+[[package]]
 name = "bitflags"
 version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -800,6 +812,26 @@ name = "bumpalo"
 version = "3.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "46c5e41b57b8bba42a04676d81cb89e9ee8e859a1a66f80a5a72e1cb76b34d43"
+
+[[package]]
+name = "bytemuck"
+version = "1.23.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c76a5792e44e4abe34d3abf15636779261d45a7450612059293d1d2cfc63422"
+dependencies = [
+ "bytemuck_derive",
+]
+
+[[package]]
+name = "bytemuck_derive"
+version = "1.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4f154e572231cb6ba2bd1176980827e3d5dc04cc183a75dea38109fbdd672d29"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.104",
+]
 
 [[package]]
 name = "byteorder"
@@ -961,6 +993,21 @@ dependencies = [
  "quote",
  "syn 2.0.104",
 ]
+
+[[package]]
+name = "crc"
+version = "3.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9710d3b3739c2e349eb44fe848ad0b7c8cb1e42bd87ee49371df2f7acaf3e675"
+dependencies = [
+ "crc-catalog",
+]
+
+[[package]]
+name = "crc-catalog"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "19d374276b40fb8bbdee95aef7c7fa6b5316ec764510eb64b8dd0e2ed0d7e7f5"
 
 [[package]]
 name = "crc32fast"
@@ -1268,6 +1315,28 @@ name = "glob"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8d1add55171497b4705a648c6b583acafb01d58050a51727785f0b2c8e0a2b2"
+
+[[package]]
+name = "gpt_disk_io"
+version = "0.16.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb194b955ba40423510e4342a077df49c70a599cf692cd0e30a86a32d8a9c7b1"
+dependencies = [
+ "bytemuck",
+ "gpt_disk_types",
+]
+
+[[package]]
+name = "gpt_disk_types"
+version = "0.16.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3972298dc4cef533492b66bdd75747133618917f44885a11dc8abd24c4e3f1f0"
+dependencies = [
+ "bytemuck",
+ "crc",
+ "ucs2",
+ "uguid",
+]
 
 [[package]]
 name = "handler_table"
@@ -2087,6 +2156,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
+name = "simple-sdmmc"
+version = "0.1.0"
+source = "git+https://github.com/Starry-Mix-THU/simple-sdmmc.git?rev=db64be9#db64be91d8b5b0cae5c33f8e13e41a010233a306"
+dependencies = [
+ "bitfield-struct",
+ "log",
+ "volatile 0.6.1",
+]
+
+[[package]]
 name = "slab"
 version = "0.4.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2270,6 +2349,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "ucs2"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "df79298e11f316400c57ec268f3c2c29ac3c4d4777687955cd3d4f3a35ce7eba"
+dependencies = [
+ "bit_field",
+]
+
+[[package]]
+name = "uguid"
+version = "2.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c8352f8c05e47892e7eaf13b34abd76a7f4aeaf817b716e88789381927f199c"
+dependencies = [
+ "bytemuck",
+]
+
+[[package]]
 name = "unicode-ident"
 version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2315,6 +2412,26 @@ name = "volatile"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "442887c63f2c839b346c192d047a7c87e73d0689c9157b00b53dcc27dd5ea793"
+
+[[package]]
+name = "volatile"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af8ca9a5d4debca0633e697c88269395493cebf2e10db21ca2dbde37c1356452"
+dependencies = [
+ "volatile-macro",
+]
+
+[[package]]
+name = "volatile-macro"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "65c67ce935f3b4329e473ecaff7bab444fcdc3d1d19f8bae61fabfa90b84f93e"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.104",
+]
 
 [[package]]
 name = "wasi"

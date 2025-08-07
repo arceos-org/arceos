@@ -95,9 +95,29 @@ cfg_if::cfg_if! {
 }
 
 cfg_if::cfg_if! {
+    if #[cfg(block_dev = "sdmmc-gpt")] {
+        use axdriver_block::{gpt::GptPartitionDev, sdmmc::SdMmcDriver};
+        use axhal::mem::phys_to_virt;
+
+        pub struct SdMmcGptDriver;
+        register_block_driver!(SdMmcGptDriver, GptPartitionDev<SdMmcDriver>);
+
+        impl DriverProbe for SdMmcGptDriver {
+            fn probe_global() -> Option<AxDeviceEnum> {
+                let root = "root".parse().unwrap();
+                let sdmmc = unsafe { SdMmcDriver::new(phys_to_virt(0x1602_0000.into()).into()) };
+                GptPartitionDev::try_new(sdmmc, |_, part| part.name == root)
+                    .ok()
+                    .map(AxDeviceEnum::from_block)
+            }
+        }
+    }
+}
+
+cfg_if::cfg_if! {
     if #[cfg(block_dev = "bcm2835-sdhci")]{
         pub struct BcmSdhciDriver;
-        register_block_driver!(MmckDriver, axdriver_block::bcm2835sdhci::SDHCIDriver);
+        register_block_driver!(BcmSdhciDriver, axdriver_block::bcm2835sdhci::SDHCIDriver);
 
         impl DriverProbe for BcmSdhciDriver {
             fn probe_global() -> Option<AxDeviceEnum> {

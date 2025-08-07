@@ -29,6 +29,7 @@ virtio-net = ["net", "virtio", "axdriver_virtio/net"]
 virtio-gpu = ["display", "virtio", "axdriver_virtio/gpu"]
 ramdisk = ["block", "axdriver_block/ramdisk"]
 bcm2835-sdhci = ["block", "axdriver_block/bcm2835-sdhci"]
+sdmmc-gpt = ["block", "axdriver_block/sdmmc", "axdriver_block/gpt", "dep:axhal"]
 ixgbe = ["net", "axdriver_net/ixgbe", "dep:axalloc", "dep:axhal", "dep:axdma"]
 fxmac = ["net", "axdriver_net/fxmac", "dep:axalloc", "dep:axhal", "dep:axdma"]
 # more devices example: e1000 = ["net", "axdriver_net/e1000"]
@@ -39,12 +40,12 @@ axconfig = { workspace = true, optional = true }
 axdma = { workspace = true, optional = true }
 axhal = { workspace = true, optional = true }
 
-axdriver_base = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "6168df5" }
-axdriver_block = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "6168df5", optional = true }
-axdriver_display = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "6168df5", optional = true }
-axdriver_net = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "6168df5", optional = true }
-axdriver_pci = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "6168df5", optional = true }
-axdriver_virtio = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "6168df5", optional = true }
+axdriver_base = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "afaf002" }
+axdriver_block = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "afaf002", optional = true }
+axdriver_display = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "afaf002", optional = true }
+axdriver_net = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "afaf002", optional = true }
+axdriver_pci = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "afaf002", optional = true }
+axdriver_virtio = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "afaf002", optional = true }
 cfg-if = { workspace = true }
 crate_interface = { workspace = true }
 log = { workspace = true }
