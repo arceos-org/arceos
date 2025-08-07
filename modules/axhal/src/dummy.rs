@@ -5,7 +5,7 @@ use axplat::impl_plat_interface;
 use axplat::console::ConsoleIf;
 use axplat::init::InitIf;
 #[cfg(feature = "irq")]
-use axplat::irq::{IrqHandler, IrqIf};
+use axplat::irq::{IpiTarget, IrqHandler, IrqIf};
 use axplat::mem::{MemIf, RawRange};
 use axplat::power::PowerIf;
 use axplat::time::TimeIf;
@@ -111,4 +111,13 @@ impl IrqIf for DummyIrq {
     }
 
     fn handle(_irq: usize) {}
+
+    fn send_ipi(
+        irq_num: usize,
+        src_cpu_id: Option<usize>,
+        dest_cpu_id: Option<usize>,
+        cpu_num: Option<usize>,
+        target: IpiTarget,
+    ) {
+    }
 }
