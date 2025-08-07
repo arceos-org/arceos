@@ -1,5 +1,5 @@
 [package]
-name = "backtrace-helper"
+name = "elf-helper"
 publish = false
 version.workspace = true
 edition.workspace = true

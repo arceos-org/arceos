@@ -62,8 +62,12 @@ fn main() {
         if let Some(data) = sections.remove(&*sec.name) {
             sec.name.to_mut().insert(0, b'.');
             sec.data = SectionData::Data(data.into());
+        } else if DEBUG_SECTIONS.contains(&&*sec.name) {
+            sec.delete = true;
         }
     }
+
+    builder.delete_orphans();
 
     let writer = BufWriter::new(
         File::options()
