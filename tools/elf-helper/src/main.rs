@@ -29,7 +29,6 @@ const DEBUG_SECTIONS: &[&[u8]] = &[
 
 fn main() {
     let input = std::env::args().nth(1).expect("No input file provided");
-    let objcopy = std::env::var("OBJCOPY").unwrap_or("llvm-objcopy".to_owned());
 
     let mut sections: BTreeMap<&[u8], &[u8]> = BTreeMap::new();
 
@@ -47,7 +46,7 @@ fn main() {
     }
 
     // `object` cannot remove sections correctly, so we have to use `objcopy`.
-    Command::new(objcopy)
+    Command::new("rust-objcopy")
         .arg(&input)
         .arg("--strip-debug")
         .status()
