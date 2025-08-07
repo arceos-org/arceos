@@ -1,8 +1,5 @@
 use alloc::{boxed::Box, sync::Arc, vec::Vec};
-use core::{
-    sync::atomic::{AtomicBool, Ordering},
-    task::Context,
-};
+use core::task::Context;
 
 use async_channel::TryRecvError;
 use async_trait::async_trait;
@@ -12,12 +9,12 @@ use axio::{
     buf::{Buf, BufMut, BufMutExt},
 };
 use axsync::Mutex;
-use axtask::future::Poller;
 use spin::RwLock;
 
 use crate::{
     CMsgData, RecvFlags, RecvOptions, SendOptions, SocketAddrEx,
-    options::{Configurable, GetSocketOption, SetSocketOption},
+    general::GeneralOptions,
+    options::{Configurable, GetSocketOption, SetSocketOption, UnixCredentials},
     unix::{Transport, TransportOps, UnixSocketAddr, with_slot},
 };
 
@@ -48,29 +45,42 @@ impl Bind {
     }
 }
 
-#[derive(Default)]
 pub struct DgramTransport {
     data_rx: Mutex<Option<(async_channel::Receiver<Packet>, Arc<PollSet>)>>,
     connected: RwLock<Option<Channel>>,
     local_addr: RwLock<UnixSocketAddr>,
     poll_state: Arc<PollSet>,
-    nonblock: AtomicBool,
+    general: GeneralOptions,
+    pid: u32,
 }
 impl DgramTransport {
+    pub fn new(pid: u32) -> Self {
+        DgramTransport {
+            data_rx: Mutex::new(None),
+            connected: RwLock::new(None),
+            local_addr: RwLock::new(UnixSocketAddr::Unnamed),
+            poll_state: Arc::default(),
+            general: GeneralOptions::default(),
+            pid,
+        }
+    }
+
     fn new_connected(
         data_rx: (async_channel::Receiver<Packet>, Arc<PollSet>),
         connected: Channel,
+        pid: u32,
     ) -> Self {
         DgramTransport {
             data_rx: Mutex::new(Some(data_rx)),
             connected: RwLock::new(Some(connected)),
             local_addr: RwLock::new(UnixSocketAddr::Unnamed),
             poll_state: Arc::default(),
-            nonblock: AtomicBool::new(false),
+            general: GeneralOptions::default(),
+            pid,
         }
     }
 
-    pub fn new_pair() -> (Self, Self) {
+    pub fn new_pair(pid: u32) -> (Self, Self) {
         let (tx1, rx1) = async_channel::unbounded();
         let (tx2, rx2) = async_channel::unbounded();
         let poll1 = Arc::new(PollSet::new());
@@ -81,6 +91,7 @@ impl DgramTransport {
                 data_tx: tx2,
                 poll_update: poll2.clone(),
             },
+            pid,
         );
         let transport2 = DgramTransport::new_connected(
             (rx2, poll2.clone()),
@@ -88,6 +99,7 @@ impl DgramTransport {
                 data_tx: tx1,
                 poll_update: poll1.clone(),
             },
+            pid,
         );
         (transport1, transport2)
     }
@@ -97,22 +109,32 @@ impl Configurable for DgramTransport {
     fn get_option_inner(&self, opt: &mut GetSocketOption) -> LinuxResult<bool> {
         use GetSocketOption as O;
 
+        if self.general.get_option_inner(opt)? {
+            return Ok(true);
+        }
+
         match opt {
-            O::NonBlocking(nonblock) => {
-                **nonblock = self.nonblock.load(Ordering::Acquire);
+            O::PassCredentials(_) => {}
+            O::PeerCredentials(cred) => {
+                // Datagram sockets are stateless and do not have a peer, so we
+                // return the credentials of the process that created the
+                // socket.
+                **cred = UnixCredentials::new(self.pid);
             }
             _ => return Ok(false),
         }
         Ok(true)
     }
 
-    fn set_option_inner(&self, _opt: SetSocketOption) -> LinuxResult<bool> {
+    fn set_option_inner(&self, opt: SetSocketOption) -> LinuxResult<bool> {
         use SetSocketOption as O;
 
-        match _opt {
-            O::NonBlocking(nonblock) => {
-                self.nonblock.store(*nonblock, Ordering::Release);
-            }
+        if self.general.set_option_inner(opt)? {
+            return Ok(true);
+        }
+
+        match opt {
+            O::PassCredentials(_) => {}
             _ => return Ok(false),
         }
         Ok(true)
@@ -206,7 +228,7 @@ impl TransportOps for DgramTransport {
     }
 
     fn recv(&self, dst: &mut impl BufMut, mut options: RecvOptions) -> LinuxResult<usize> {
-        Poller::new(self, IoEvents::IN).poll(move || {
+        self.general.recv_poller(self).poll(move || {
             let mut guard = self.data_rx.lock();
             let Some((rx, _)) = guard.as_mut() else {
                 return Err(LinuxError::ENOTCONN);

@@ -26,6 +26,24 @@ macro_rules! define_options {
     };
 }
 
+/// Corresponds to `struct ucred` in Linux.
+#[repr(C)]
+#[derive(Default, Debug, Clone)]
+pub struct UnixCredentials {
+    pub pid: u32,
+    pub uid: u32,
+    pub gid: u32,
+}
+impl UnixCredentials {
+    pub fn new(pid: u32) -> Self {
+        UnixCredentials {
+            pid,
+            uid: 0,
+            gid: 0,
+        }
+    }
+}
+
 define_options! {
     // ---- Socket level options (SO_*) ----
     ReuseAddress(bool),
@@ -37,6 +55,8 @@ define_options! {
     SendTimeout(Duration),
     ReceiveTimeout(Duration),
     SendBufferForce(usize),
+    PassCredentials(bool),
+    PeerCredentials(UnixCredentials),
 
     // --- TCP level options (TCP_*) ----
     NoDelay(bool),

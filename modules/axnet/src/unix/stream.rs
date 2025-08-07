@@ -1,8 +1,5 @@
 use alloc::boxed::Box;
-use core::{
-    convert::Infallible,
-    task::Context,
-};
+use core::{convert::Infallible, task::Context};
 
 use async_trait::async_trait;
 use axerrno::{LinuxError, LinuxResult};
@@ -20,7 +17,7 @@ use ringbuf::{
 use crate::{
     RecvOptions, SendOptions,
     general::GeneralOptions,
-    options::{Configurable, GetSocketOption, SetSocketOption},
+    options::{Configurable, GetSocketOption, SetSocketOption, UnixCredentials},
     unix::{Transport, TransportOps, UnixSocketAddr},
 };
 
@@ -30,7 +27,7 @@ fn new_uni_channel() -> (HeapProd<u8>, HeapCons<u8>) {
     let rb = HeapRb::new(BUF_SIZE);
     rb.split()
 }
-fn new_channels() -> (Channel, Channel) {
+fn new_channels(pid: u32) -> (Channel, Channel) {
     let (client_tx, server_rx) = new_uni_channel();
     let (server_tx, client_rx) = new_uni_channel();
     let poll_update = Arc::new(PollSet::new());
@@ -39,11 +36,13 @@ fn new_channels() -> (Channel, Channel) {
             tx: client_tx,
             rx: client_rx,
             poll_update: poll_update.clone(),
+            peer_pid: pid,
         },
         Channel {
             tx: server_tx,
             rx: server_rx,
             poll_update,
+            peer_pid: pid,
         },
     )
 }
@@ -53,50 +52,64 @@ struct Channel {
     rx: HeapCons<u8>,
     // TODO: granularity
     poll_update: Arc<PollSet>,
+    peer_pid: u32,
 }
 
 pub struct Bind {
     /// New connections are sent to this channel.
-    conn_tx: async_channel::Sender<(Channel, UnixSocketAddr)>,
+    conn_tx: async_channel::Sender<ConnRequest>,
     poll_new_conn: Arc<PollSet>,
+    pid: u32,
 }
 impl Bind {
-    fn connect(&self, local_addr: UnixSocketAddr) -> LinuxResult<Channel> {
-        let (client_chan, server_chan) = new_channels();
+    fn connect(&self, local_addr: UnixSocketAddr, pid: u32) -> LinuxResult<Channel> {
+        let (mut client_chan, mut server_chan) = new_channels(0);
+        client_chan.peer_pid = self.pid;
+        server_chan.peer_pid = pid;
         self.conn_tx
-            .try_send((server_chan, local_addr))
+            .try_send(ConnRequest {
+                channel: server_chan,
+                addr: local_addr,
+                pid,
+            })
             .map_err(|_| LinuxError::ECONNREFUSED)?;
         self.poll_new_conn.wake();
         Ok(client_chan)
     }
 }
 
-#[derive(Default)]
+struct ConnRequest {
+    channel: Channel,
+    addr: UnixSocketAddr,
+    pid: u32,
+}
+
 pub struct StreamTransport {
     channel: Mutex<Option<Channel>>,
-    conn_rx: Mutex<
-        Option<(
-            async_channel::Receiver<(Channel, UnixSocketAddr)>,
-            Arc<PollSet>,
-        )>,
-    >,
+    conn_rx: Mutex<Option<(async_channel::Receiver<ConnRequest>, Arc<PollSet>)>>,
     poll_state: PollSet,
     general: GeneralOptions,
+    pid: u32,
 }
 impl StreamTransport {
-    fn new(channel: Option<Channel>) -> Self {
+    pub fn new(pid: u32) -> Self {
+        StreamTransport::new_channel(None, pid)
+    }
+
+    fn new_channel(channel: Option<Channel>, pid: u32) -> Self {
         StreamTransport {
             channel: Mutex::new(channel),
             conn_rx: Mutex::new(None),
             poll_state: PollSet::new(),
             general: GeneralOptions::default(),
+            pid,
         }
     }
 
-    pub fn new_pair() -> (Self, Self) {
-        let (chan1, chan2) = new_channels();
-        let transport1 = StreamTransport::new(Some(chan1));
-        let transport2 = StreamTransport::new(Some(chan2));
+    pub fn new_pair(pid: u32) -> (Self, Self) {
+        let (chan1, chan2) = new_channels(pid);
+        let transport1 = StreamTransport::new_channel(Some(chan1), pid);
+        let transport2 = StreamTransport::new_channel(Some(chan2), pid);
         (transport1, transport2)
     }
 }
@@ -113,13 +126,32 @@ impl Configurable for StreamTransport {
             O::SendBuffer(size) => {
                 **size = BUF_SIZE;
             }
+            O::PassCredentials(_) => {}
+            O::PeerCredentials(cred) => {
+                let peer_pid = self
+                    .channel
+                    .lock()
+                    .as_ref()
+                    .map_or(self.pid, |chan| chan.peer_pid);
+                **cred = UnixCredentials::new(peer_pid);
+            }
             _ => return Ok(false),
         }
         Ok(true)
     }
 
     fn set_option_inner(&self, opt: SetSocketOption) -> LinuxResult<bool> {
-        self.general.set_option_inner(opt)
+        use SetSocketOption as O;
+
+        if self.general.set_option_inner(opt)? {
+            return Ok(true);
+        }
+
+        match opt {
+            O::PassCredentials(_) => {}
+            _ => return Ok(false),
+        }
+        Ok(true)
     }
 }
 #[async_trait]
@@ -138,6 +170,7 @@ impl TransportOps for StreamTransport {
         *slot = Some(Bind {
             conn_tx: tx,
             poll_new_conn: poll.clone(),
+            pid: self.pid,
         });
         *guard = Some((rx, poll));
         self.poll_state.wake();
@@ -154,7 +187,7 @@ impl TransportOps for StreamTransport {
                 .lock()
                 .as_ref()
                 .ok_or(LinuxError::ENOTCONN)?
-                .connect(local_addr.clone())?,
+                .connect(local_addr.clone(), self.pid)?,
         );
         self.poll_state.wake();
         Ok(())
@@ -165,9 +198,13 @@ impl TransportOps for StreamTransport {
         let Some((rx, _)) = guard.as_mut() else {
             return Err(LinuxError::ENOTCONN);
         };
-        let (channel, peer_addr) = rx.recv().await.map_err(|_| LinuxError::ECONNRESET)?;
+        let ConnRequest {
+            channel,
+            addr: peer_addr,
+            pid,
+        } = rx.recv().await.map_err(|_| LinuxError::ECONNRESET)?;
         Ok((
-            Transport::Stream(StreamTransport::new(Some(channel))),
+            Transport::Stream(StreamTransport::new_channel(Some(channel), pid)),
             peer_addr,
         ))
     }
