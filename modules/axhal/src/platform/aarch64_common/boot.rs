@@ -101,13 +101,13 @@ unsafe fn init_boot_page_table() {
 }
 
 /// The earliest entry point for the primary CPU.
-#[naked]
+#[unsafe(naked)]
 #[no_mangle]
 #[link_section = ".text.boot"]
 unsafe extern "C" fn _start() -> ! {
     // PC = 0x8_0000
     // X0 = dtb
-    core::arch::asm!("
+    core::arch::naked_asm!("
         mrs     x19, mpidr_el1
         and     x19, x19, #0xffffff     // get current CPU id
         mov     x20, x0                 // save DTB pointer
@@ -137,7 +137,6 @@ unsafe extern "C" fn _start() -> ! {
         boot_stack_size = const TASK_STACK_SIZE,
         phys_virt_offset = const axconfig::PHYS_VIRT_OFFSET,
         entry = sym crate::platform::rust_entry,
-        options(noreturn),
     )
 }
 

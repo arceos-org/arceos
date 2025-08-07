@@ -25,9 +25,6 @@
 //! [cargo test]: https://doc.rust-lang.org/cargo/guide/tests.html
 
 #![no_std]
-#![feature(asm_const)]
-#![feature(naked_functions)]
-#![feature(const_option)]
 #![feature(doc_auto_cfg)]
 
 #[allow(unused_imports)]
