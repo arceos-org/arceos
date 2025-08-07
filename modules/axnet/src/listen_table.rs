@@ -4,7 +4,7 @@ use alloc::{
     sync::{Arc, Weak},
     vec,
 };
-use core::{net::Ipv4Addr, ops::DerefMut, task::Waker};
+use core::{ops::DerefMut, task::Waker};
 
 use axerrno::{LinuxError, LinuxResult};
 use axio::PollSet;
@@ -12,7 +12,7 @@ use axsync::Mutex;
 use smoltcp::{
     iface::{SocketHandle, SocketSet},
     socket::tcp::{self, SocketBuffer, State},
-    wire::{IpAddress, IpEndpoint, IpListenEndpoint},
+    wire::{IpEndpoint, IpListenEndpoint},
 };
 
 use crate::{
@@ -165,7 +165,7 @@ impl ListenTable {
                 SocketBuffer::new(vec![0; TCP_TX_BUF_LEN]),
             );
             if let Err(err) = socket.listen(IpListenEndpoint {
-                addr: Some(IpAddress::Ipv4(Ipv4Addr::LOCALHOST)),
+                addr: None,
                 port: dst.port,
             }) {
                 warn!("Failed to listen on {}: {:?}", entry.listen_endpoint, err);

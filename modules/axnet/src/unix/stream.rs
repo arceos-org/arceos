@@ -258,9 +258,6 @@ impl TransportOps for StreamTransport {
                 .map_err(|err| match err {})?;
             if read > 0 {
                 chan.poll_update.wake();
-            }
-
-            if dst.chunk_mut().is_empty() || !chan.rx.write_is_held() {
                 Ok(read)
             } else {
                 Err(LinuxError::EAGAIN)
