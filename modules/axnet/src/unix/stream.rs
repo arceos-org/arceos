@@ -1,4 +1,4 @@
-use alloc::boxed::Box;
+use alloc::{boxed::Box, sync::Arc};
 use core::{
     convert::Infallible,
     sync::atomic::{AtomicBool, Ordering},
@@ -12,9 +12,8 @@ use axio::{
     buf::{Buf, BufExt, BufMut, BufMutExt},
 };
 use axsync::Mutex;
-use axtask::future::Poller;
 use ringbuf::{
-    Arc, HeapCons, HeapProd, HeapRb,
+    HeapCons, HeapProd, HeapRb,
     traits::{Consumer, Observer, Producer, Split},
 };
 
@@ -248,7 +247,7 @@ impl TransportOps for StreamTransport {
     }
 
     fn recv(&self, dst: &mut impl BufMut, _options: RecvOptions) -> LinuxResult<usize> {
-        Poller::new(self, IoEvents::IN).poll(|| {
+        self.general.recv_poller(self).poll(|| {
             let mut guard = self.channel.lock();
             let Some(chan) = guard.as_mut() else {
                 return Err(LinuxError::ENOTCONN);
