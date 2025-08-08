@@ -12,6 +12,7 @@ use memory_addr::{
     MemoryAddr, PAGE_SIZE_4K, PageIter4K, PhysAddr, VirtAddr, VirtAddrRange, is_aligned_4k,
 };
 use memory_set::{MemoryArea, MemorySet};
+use page_table_multiarch::PageTableModifyExt;
 
 use crate::{
     backend::{Backend, BackendOps},
@@ -79,7 +80,7 @@ impl AddrSpace {
     /// Returns an error if the two address spaces overlap.
     #[cfg(feature = "copy")]
     pub fn copy_mappings_from(&mut self, other: &AddrSpace) -> LinuxResult {
-        self.pt.copy_from(&other.pt, other.base(), other.size());
+        self.pt.modify().copy_from(&other.pt, other.base(), other.size());
         Ok(())
     }
 
@@ -173,10 +174,11 @@ impl AddrSpace {
         self.validate_region(start, size)?;
         let end = start + size;
 
+        let mut modify = self.pt.modify();
         while let Some(area) = self.areas.find(start) {
             let range = VirtAddrRange::new(start, area.end().min(end));
             area.backend()
-                .populate(range, area.flags(), access_flags, &mut self.pt)?;
+                .populate(range, area.flags(), access_flags, &mut modify)?;
             start = area.end();
             assert!(start.is_aligned_4k());
             if start >= end {
@@ -331,12 +333,13 @@ impl AddrSpace {
             let flags = area.flags();
             if flags.contains(access_flags) {
                 let page_size = area.backend().page_size();
-                return match area.backend().populate(
+                let populate_result = area.backend().populate(
                     VirtAddrRange::from_start_size(vaddr.align_down(page_size), page_size as _),
                     flags,
                     access_flags,
-                    &mut self.pt,
-                ) {
+                    &mut self.pt.modify(),
+                );
+                return match populate_result {
                     Ok((n, callback)) => {
                         if let Some(cb) = callback {
                             cb(self);
@@ -369,12 +372,13 @@ impl AddrSpace {
 
         let mut guard = new_aspace.lock();
 
+        let mut self_modify = self.pt.modify();
         for area in self.areas.iter() {
             let new_backend = area.backend().clone_map(
                 area.va_range(),
                 area.flags(),
-                &mut self.pt,
-                &mut guard.pt,
+                &mut self_modify,
+                &mut guard.pt.modify(),
                 &new_aspace_clone,
             )?;
 

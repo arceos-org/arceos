@@ -5,7 +5,7 @@ use axerrno::{LinuxError, LinuxResult};
 use axfs_ng::FileBackend;
 use axhal::{
     mem::phys_to_virt,
-    paging::{MappingFlags, PageSize, PageTable, PagingError},
+    paging::{MappingFlags, PageSize, PageTableModify, PagingError},
 };
 use axsync::Mutex;
 use memory_addr::{PhysAddr, VirtAddr, VirtAddrRange};
@@ -32,7 +32,7 @@ impl CowBackend {
         &self,
         vaddr: VirtAddr,
         flags: MappingFlags,
-        pt: &mut PageTable,
+        pt: &mut PageTableModify,
     ) -> LinuxResult<()> {
         let frame = alloc_frame(true, self.size)?;
         if !self.read_only {
@@ -65,7 +65,7 @@ impl CowBackend {
         vaddr: VirtAddr,
         paddr: PhysAddr,
         flags: MappingFlags,
-        pt: &mut PageTable,
+        pt: &mut PageTableModify,
     ) -> LinuxResult<()> {
         match frame_table().dec_ref(paddr) {
             0 => unreachable!(),
@@ -106,13 +106,13 @@ impl BackendOps for CowBackend {
         &self,
         range: VirtAddrRange,
         flags: MappingFlags,
-        _pt: &mut PageTable,
+        _pt: &mut PageTableModify,
     ) -> LinuxResult<()> {
         debug!("Cow::map: {range:?} {flags:?}",);
         Ok(())
     }
 
-    fn unmap(&self, range: VirtAddrRange, pt: &mut PageTable) -> LinuxResult<()> {
+    fn unmap(&self, range: VirtAddrRange, pt: &mut PageTableModify) -> LinuxResult<()> {
         debug!("Cow::unmap: {range:?}");
         for addr in pages_in(range, self.size)? {
             if let Ok((frame, _flags, page_size)) = pt.unmap(addr) {
@@ -132,7 +132,7 @@ impl BackendOps for CowBackend {
         range: VirtAddrRange,
         flags: MappingFlags,
         access_flags: MappingFlags,
-        pt: &mut PageTable,
+        pt: &mut PageTableModify,
     ) -> LinuxResult<(usize, Option<Box<dyn FnOnce(&mut AddrSpace)>>)> {
         let mut pages = 0;
         for addr in pages_in(range, self.size)? {
@@ -162,8 +162,8 @@ impl BackendOps for CowBackend {
         &self,
         range: VirtAddrRange,
         flags: MappingFlags,
-        old_pt: &mut PageTable,
-        new_pt: &mut PageTable,
+        old_pt: &mut PageTableModify,
+        new_pt: &mut PageTableModify,
         _new_aspace: &Arc<Mutex<AddrSpace>>,
     ) -> LinuxResult<Backend> {
         if self.read_only {

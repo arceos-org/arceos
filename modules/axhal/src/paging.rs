@@ -2,9 +2,9 @@
 
 use axalloc::{UsageKind, global_allocator};
 use memory_addr::{PAGE_SIZE_4K, PhysAddr, VirtAddr};
-use page_table_multiarch::PagingHandler;
 #[doc(no_inline)]
 pub use page_table_multiarch::{MappingFlags, PageSize, PagingError, PagingResult};
+use page_table_multiarch::{PageTableModifyExt, PagingHandler};
 
 use crate::mem::{phys_to_virt, virt_to_phys};
 
@@ -45,3 +45,5 @@ cfg_if::cfg_if! {
         pub type PageTable = page_table_multiarch::loongarch64::LA64PageTable<PagingHandlerImpl>;
     }
 }
+
+pub type PageTableModify<'a> = <PageTable as PageTableModifyExt>::Modify<'a>;

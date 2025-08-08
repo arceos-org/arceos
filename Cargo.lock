@@ -152,6 +152,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "arrayvec"
+version = "0.7.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7c02d123df017efcdfbd739ef81735b36c5ba83ec3c59c80a9d7ecc718f92e50"
+
+[[package]]
 name = "async-channel"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1754,7 +1760,7 @@ checksum = "a4895175b425cb1f87721b59f0f286c2092bd4af812243672510e1ac53e2e0ad"
 [[package]]
 name = "page_table_entry"
 version = "0.5.5"
-source = "git+https://github.com/Starry-Mix-THU/page_table_multiarch.git?rev=58483ba#58483ba2ed52e4a7b3cfa910d9722da0708c3725"
+source = "git+https://github.com/Starry-Mix-THU/page_table_multiarch.git?rev=f8d668b#f8d668b7fd75892bb538d4778e9412334d68be4c"
 dependencies = [
  "aarch64-cpu 10.0.0",
  "bitflags 2.9.1",
@@ -1765,8 +1771,9 @@ dependencies = [
 [[package]]
 name = "page_table_multiarch"
 version = "0.5.5"
-source = "git+https://github.com/Starry-Mix-THU/page_table_multiarch.git?rev=58483ba#58483ba2ed52e4a7b3cfa910d9722da0708c3725"
+source = "git+https://github.com/Starry-Mix-THU/page_table_multiarch.git?rev=f8d668b#f8d668b7fd75892bb538d4778e9412334d68be4c"
 dependencies = [
+ "arrayvec",
  "bitmaps",
  "log",
  "memory_addr",
