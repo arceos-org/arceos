@@ -23,7 +23,8 @@ use crate::{
 pub struct CowBackend {
     start: VirtAddr,
     size: PageSize,
-    file: Option<(FileBackend, usize)>,
+    file: Option<(FileBackend, u64, Option<u64>)>,
+    read_only: bool,
 }
 
 impl CowBackend {
@@ -34,12 +35,25 @@ impl CowBackend {
         pt: &mut PageTable,
     ) -> LinuxResult<()> {
         let frame = alloc_frame(true, self.size)?;
-        frame_table().inc_ref(frame);
-        if let Some((file, offset)) = &self.file {
+        if !self.read_only {
+            frame_table().inc_ref(frame);
+        }
+        if let Some((file, file_start, file_end)) = &self.file {
             let buf = unsafe {
                 slice::from_raw_parts_mut(phys_to_virt(frame).as_mut_ptr(), self.size as _)
             };
-            file.read_at(buf, (vaddr - self.start) as u64 + *offset as u64)?;
+            // vaddr can be smaller than self.start (at most 1 page) due to
+            // non-aligned mappings, we need to keep the gap clean.
+            let start = self.start.as_usize().saturating_sub(vaddr.as_usize());
+            assert!(start < self.size as _);
+
+            let file_start =
+                *file_start + vaddr.as_usize().saturating_sub(self.start.as_usize()) as u64;
+            let max_read = file_end
+                .map_or(u64::MAX, |end| end.saturating_sub(file_start))
+                .min((buf.len() - start) as u64) as usize;
+
+            file.read_at(&mut buf[start..start + max_read], file_start)?;
         }
         pt.map(vaddr, frame, self.size, flags)
             .map_err(paging_to_linux_error)?;
@@ -128,6 +142,7 @@ impl BackendOps for CowBackend {
                     if access_flags.contains(MappingFlags::WRITE)
                         && !page_flags.contains(MappingFlags::WRITE)
                     {
+                        assert!(!self.read_only);
                         self.handle_cow_fault(addr, paddr, flags, pt)?;
                         pages += 1;
                     }
@@ -151,6 +166,9 @@ impl BackendOps for CowBackend {
         new_pt: &mut PageTable,
         _new_aspace: &Arc<Mutex<AddrSpace>>,
     ) -> LinuxResult<Backend> {
+        if self.read_only {
+            return Ok(Backend::Cow(self.clone()));
+        }
         let cow_flags = flags - MappingFlags::WRITE;
 
         for vaddr in pages_in(range, self.size)? {
@@ -182,11 +200,21 @@ impl BackendOps for CowBackend {
 }
 
 impl Backend {
-    pub fn new_cow(start: VirtAddr, size: PageSize, file: Option<(FileBackend, usize)>) -> Self {
-        Self::Cow(CowBackend { start, size, file })
+    pub fn new_cow(
+        start: VirtAddr,
+        size: PageSize,
+        file: Option<(FileBackend, u64, Option<u64>)>,
+        read_only: bool,
+    ) -> Self {
+        Self::Cow(CowBackend {
+            start,
+            size,
+            file,
+            read_only,
+        })
     }
 
     pub fn new_alloc(start: VirtAddr, size: PageSize) -> Self {
-        Self::new_cow(start, size, None)
+        Self::new_cow(start, size, None, false)
     }
 }
