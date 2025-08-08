@@ -281,12 +281,18 @@ impl GlobalAllocator {
 
 #[cfg(feature = "tracking")]
 mod tracking {
-    use core::{alloc::Layout, ops::Range};
+    use core::{
+        alloc::Layout,
+        ops::Range,
+        sync::atomic::{AtomicBool, Ordering},
+    };
 
     use axbacktrace::Backtrace;
     use hashbrown::HashMap;
     use kspin::SpinNoIrq;
     use lazy_static::lazy_static;
+
+    pub(crate) static TRACKING_ENABLED: AtomicBool = AtomicBool::new(false);
 
     #[percpu::def_percpu]
     pub(crate) static IN_GLOBAL_ALLOCATOR: bool = false;
@@ -312,9 +318,24 @@ mod tracking {
         });
     }
 
+    /// Enables allocation tracking.
+    pub fn enable_tracking() {
+        TRACKING_ENABLED.store(true, Ordering::SeqCst);
+    }
+
+    /// Disables allocation tracking.
+    pub fn disable_tracking() {
+        TRACKING_ENABLED.store(false, Ordering::SeqCst);
+    }
+
+    /// Returns whether allocation tracking is enabled.
+    pub fn tracking_enabled() -> bool {
+        TRACKING_ENABLED.load(Ordering::SeqCst)
+    }
+
     pub(crate) fn with_state<R>(f: impl FnOnce(Option<&mut GlobalState>) -> R) -> R {
         IN_GLOBAL_ALLOCATOR.with_current(|in_global| {
-            if *in_global {
+            if *in_global || !tracking_enabled() {
                 f(None)
             } else {
                 *in_global = true;
