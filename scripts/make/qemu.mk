@@ -52,6 +52,8 @@ qemu_args-$(BLK) += \
   -device virtio-blk-$(vdev-suffix),drive=disk0 \
   -drive id=disk0,if=none,format=raw,file=$(DISK_IMG)
 
+qemu_args-$(ICOUNT) += -icount shift=1
+
 qemu_args-$(NET) += \
   -device virtio-net-$(vdev-suffix),netdev=net0
 
