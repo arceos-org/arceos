@@ -12,7 +12,6 @@ use memory_addr::{
     MemoryAddr, PAGE_SIZE_4K, PageIter4K, PhysAddr, VirtAddr, VirtAddrRange, is_aligned_4k,
 };
 use memory_set::{MemoryArea, MemorySet};
-use page_table_multiarch::PageTableModifyExt;
 
 use crate::{
     backend::{Backend, BackendOps},
@@ -80,7 +79,9 @@ impl AddrSpace {
     /// Returns an error if the two address spaces overlap.
     #[cfg(feature = "copy")]
     pub fn copy_mappings_from(&mut self, other: &AddrSpace) -> LinuxResult {
-        self.pt.modify().copy_from(&other.pt, other.base(), other.size());
+        self.pt
+            .to_mut()
+            .copy_from(&other.pt, other.base(), other.size());
         Ok(())
     }
 
@@ -174,7 +175,7 @@ impl AddrSpace {
         self.validate_region(start, size)?;
         let end = start + size;
 
-        let mut modify = self.pt.modify();
+        let mut modify = self.pt.to_mut();
         while let Some(area) = self.areas.find(start) {
             let range = VirtAddrRange::new(start, area.end().min(end));
             area.backend()
@@ -337,7 +338,7 @@ impl AddrSpace {
                     VirtAddrRange::from_start_size(vaddr.align_down(page_size), page_size as _),
                     flags,
                     access_flags,
-                    &mut self.pt.modify(),
+                    &mut self.pt.to_mut(),
                 );
                 return match populate_result {
                     Ok((n, callback)) => {
@@ -372,13 +373,13 @@ impl AddrSpace {
 
         let mut guard = new_aspace.lock();
 
-        let mut self_modify = self.pt.modify();
+        let mut self_modify = self.pt.to_mut();
         for area in self.areas.iter() {
             let new_backend = area.backend().clone_map(
                 area.va_range(),
                 area.flags(),
                 &mut self_modify,
-                &mut guard.pt.modify(),
+                &mut guard.pt.to_mut(),
                 &new_aspace_clone,
             )?;
 

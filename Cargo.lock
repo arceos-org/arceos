@@ -1760,7 +1760,7 @@ checksum = "a4895175b425cb1f87721b59f0f286c2092bd4af812243672510e1ac53e2e0ad"
 [[package]]
 name = "page_table_entry"
 version = "0.5.5"
-source = "git+https://github.com/Starry-Mix-THU/page_table_multiarch.git?rev=f8d668b#f8d668b7fd75892bb538d4778e9412334d68be4c"
+source = "git+https://github.com/Starry-Mix-THU/page_table_multiarch.git?rev=4edb821#4edb8217a12dd033409d8ac48f7adae5a89babfa"
 dependencies = [
  "aarch64-cpu 10.0.0",
  "bitflags 2.9.1",
@@ -1771,7 +1771,7 @@ dependencies = [
 [[package]]
 name = "page_table_multiarch"
 version = "0.5.5"
-source = "git+https://github.com/Starry-Mix-THU/page_table_multiarch.git?rev=f8d668b#f8d668b7fd75892bb538d4778e9412334d68be4c"
+source = "git+https://github.com/Starry-Mix-THU/page_table_multiarch.git?rev=4edb821#4edb8217a12dd033409d8ac48f7adae5a89babfa"
 dependencies = [
  "arrayvec",
  "bitmaps",

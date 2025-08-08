@@ -6,13 +6,12 @@ use axalloc::{UsageKind, global_allocator};
 use axerrno::{LinuxError, LinuxResult};
 use axhal::{
     mem::{phys_to_virt, virt_to_phys},
-    paging::{MappingFlags, PageSize, PageTable, PageTableModify, PagingError},
+    paging::{MappingFlags, PageSize, PageTable, PageTableMut, PagingError},
 };
 use axsync::Mutex;
 use enum_dispatch::enum_dispatch;
 use memory_addr::{PAGE_SIZE_4K, PhysAddr, VirtAddr, VirtAddrRange};
 use memory_set::MappingBackend;
-use page_table_multiarch::PageTableModifyExt;
 
 pub mod cow;
 pub mod file;
@@ -81,18 +80,18 @@ pub trait BackendOps {
         &self,
         range: VirtAddrRange,
         flags: MappingFlags,
-        pt: &mut PageTableModify,
+        pt: &mut PageTableMut,
     ) -> LinuxResult<()>;
 
     /// Unmap a memory region.
-    fn unmap(&self, range: VirtAddrRange, pt: &mut PageTableModify) -> LinuxResult<()>;
+    fn unmap(&self, range: VirtAddrRange, pt: &mut PageTableMut) -> LinuxResult<()>;
 
     /// Called before a memory region is protected.
     fn on_protect(
         &self,
         _range: VirtAddrRange,
         _new_flags: MappingFlags,
-        _pt: &mut PageTableModify,
+        _pt: &mut PageTableMut,
     ) -> LinuxResult<()> {
         Ok(())
     }
@@ -103,7 +102,7 @@ pub trait BackendOps {
         _range: VirtAddrRange,
         _flags: MappingFlags,
         _access_flags: MappingFlags,
-        _pt: &mut PageTableModify,
+        _pt: &mut PageTableMut,
     ) -> LinuxResult<(usize, Option<Box<dyn FnOnce(&mut AddrSpace)>>)> {
         Ok((0, None))
     }
@@ -118,8 +117,8 @@ pub trait BackendOps {
         &self,
         range: VirtAddrRange,
         flags: MappingFlags,
-        old_pt: &mut PageTableModify,
-        new_pt: &mut PageTableModify,
+        old_pt: &mut PageTableMut,
+        new_pt: &mut PageTableMut,
         new_aspace: &Arc<Mutex<AddrSpace>>,
     ) -> LinuxResult<Backend>;
 }
@@ -141,7 +140,7 @@ impl MappingBackend for Backend {
 
     fn map(&self, start: VirtAddr, size: usize, flags: MappingFlags, pt: &mut PageTable) -> bool {
         let range = VirtAddrRange::from_start_size(start, size);
-        if let Err(err) = BackendOps::map(self, range, flags, &mut pt.modify()) {
+        if let Err(err) = BackendOps::map(self, range, flags, &mut pt.to_mut()) {
             warn!("Failed to map area: {:?}", err);
             false
         } else {
@@ -151,7 +150,7 @@ impl MappingBackend for Backend {
 
     fn unmap(&self, start: VirtAddr, size: usize, pt: &mut PageTable) -> bool {
         let range = VirtAddrRange::from_start_size(start, size);
-        if let Err(err) = BackendOps::unmap(self, range, &mut pt.modify()) {
+        if let Err(err) = BackendOps::unmap(self, range, &mut pt.to_mut()) {
             warn!("Failed to unmap area: {:?}", err);
             false
         } else {
@@ -166,6 +165,6 @@ impl MappingBackend for Backend {
         new_flags: Self::Flags,
         pt: &mut Self::PageTable,
     ) -> bool {
-        pt.modify().protect_region(start, size, new_flags).is_ok()
+        pt.to_mut().protect_region(start, size, new_flags).is_ok()
     }
 }

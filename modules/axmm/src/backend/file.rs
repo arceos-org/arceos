@@ -7,10 +7,9 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 
 use axerrno::{LinuxError, LinuxResult};
 use axfs_ng::{CachedFile, FileFlags};
-use axhal::paging::{MappingFlags, PageSize, PageTableModify, PagingError};
+use axhal::paging::{MappingFlags, PageSize, PageTableMut, PagingError};
 use axsync::Mutex;
 use memory_addr::{PAGE_SIZE_4K, VirtAddr, VirtAddrRange};
-use page_table_multiarch::PageTableModifyExt;
 
 use crate::{
     AddrSpace,
@@ -73,7 +72,7 @@ impl FileBackendInner {
         }
 
         let pt = aspace.page_table_mut();
-        match pt.modify().unmap(vaddr) {
+        match pt.to_mut().unmap(vaddr) {
             Ok(_) | Err(PagingError::NotMapped) => {}
             Err(err) => {
                 warn!("Failed to unmap page {:?}: {:?}", vaddr, err);
@@ -115,12 +114,12 @@ impl BackendOps for FileBackend {
         &self,
         _range: VirtAddrRange,
         flags: MappingFlags,
-        _pt: &mut PageTableModify,
+        _pt: &mut PageTableMut,
     ) -> LinuxResult<()> {
         self.check_flags(flags)
     }
 
-    fn unmap(&self, range: VirtAddrRange, pt: &mut PageTableModify) -> LinuxResult<()> {
+    fn unmap(&self, range: VirtAddrRange, pt: &mut PageTableMut) -> LinuxResult<()> {
         for addr in pages_in(range, PageSize::Size4K)? {
             match pt.unmap(addr) {
                 Ok(_) | Err(PagingError::NotMapped) => {}
@@ -137,7 +136,7 @@ impl BackendOps for FileBackend {
         &self,
         _range: VirtAddrRange,
         new_flags: MappingFlags,
-        _pt: &mut PageTableModify,
+        _pt: &mut PageTableMut,
     ) -> LinuxResult<()> {
         self.check_flags(new_flags)
     }
@@ -147,7 +146,7 @@ impl BackendOps for FileBackend {
         range: VirtAddrRange,
         flags: MappingFlags,
         access_flags: MappingFlags,
-        pt: &mut PageTableModify,
+        pt: &mut PageTableMut,
     ) -> LinuxResult<(usize, Option<Box<dyn FnOnce(&mut AddrSpace)>>)> {
         let mut pages = 0;
         let mut to_be_evicted = Vec::new();
@@ -213,8 +212,8 @@ impl BackendOps for FileBackend {
         &self,
         _range: VirtAddrRange,
         _flags: MappingFlags,
-        _old_pt: &mut PageTableModify,
-        _new_pt: &mut PageTableModify,
+        _old_pt: &mut PageTableMut,
+        _new_pt: &mut PageTableMut,
         new_aspace: &Arc<Mutex<AddrSpace>>,
     ) -> LinuxResult<Backend> {
         let inner = Arc::new(FileBackendInner {

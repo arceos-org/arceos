@@ -2,7 +2,7 @@ use alloc::{sync::Arc, vec::Vec};
 use core::ops::Deref;
 
 use axerrno::LinuxResult;
-use axhal::paging::{MappingFlags, PageSize, PageTableModify};
+use axhal::paging::{MappingFlags, PageSize, PageTableMut};
 use axsync::Mutex;
 use memory_addr::{MemoryAddr, PhysAddr, VirtAddr, VirtAddrRange};
 
@@ -78,7 +78,7 @@ impl BackendOps for SharedBackend {
         &self,
         range: VirtAddrRange,
         flags: MappingFlags,
-        pt: &mut PageTableModify,
+        pt: &mut PageTableMut,
     ) -> LinuxResult<()> {
         debug!("Shared::map: {:?} {:?}", range, flags);
         for (vaddr, paddr) in
@@ -90,7 +90,7 @@ impl BackendOps for SharedBackend {
         Ok(())
     }
 
-    fn unmap(&self, range: VirtAddrRange, pt: &mut PageTableModify) -> LinuxResult<()> {
+    fn unmap(&self, range: VirtAddrRange, pt: &mut PageTableMut) -> LinuxResult<()> {
         debug!("Shared::unmap: {:?}", range);
         for vaddr in pages_in(range, self.pages.size)? {
             pt.unmap(vaddr).map_err(paging_to_linux_error)?;
@@ -102,8 +102,8 @@ impl BackendOps for SharedBackend {
         &self,
         _range: VirtAddrRange,
         _flags: MappingFlags,
-        _old_pt: &mut PageTableModify,
-        _new_pt: &mut PageTableModify,
+        _old_pt: &mut PageTableMut,
+        _new_pt: &mut PageTableMut,
         _new_aspace: &Arc<Mutex<AddrSpace>>,
     ) -> LinuxResult<Backend> {
         Ok(Backend::Shared(self.clone()))

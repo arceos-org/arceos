@@ -1,7 +1,7 @@
 use alloc::sync::Arc;
 
 use axerrno::LinuxResult;
-use axhal::paging::{MappingFlags, PageSize, PageTableModify};
+use axhal::paging::{MappingFlags, PageSize, PageTableMut};
 use axsync::Mutex;
 use memory_addr::{PhysAddr, PhysAddrRange, VirtAddr, VirtAddrRange};
 
@@ -35,7 +35,7 @@ impl BackendOps for LinearBackend {
         &self,
         range: VirtAddrRange,
         flags: MappingFlags,
-        pt: &mut PageTableModify,
+        pt: &mut PageTableMut,
     ) -> LinuxResult<()> {
         let pa_range = PhysAddrRange::from_start_size(self.pa(range.start), range.size());
         debug!("Linear::map: {range:?} -> {pa_range:?} {flags:?}");
@@ -43,7 +43,7 @@ impl BackendOps for LinearBackend {
             .map_err(paging_to_linux_error)
     }
 
-    fn unmap(&self, range: VirtAddrRange, pt: &mut PageTableModify) -> LinuxResult<()> {
+    fn unmap(&self, range: VirtAddrRange, pt: &mut PageTableMut) -> LinuxResult<()> {
         let pa_range = PhysAddrRange::from_start_size(self.pa(range.start), range.size());
         debug!("Linear::unmap: {range:?} -> {pa_range:?}");
         pt.unmap_region(range.start, range.size())
@@ -54,8 +54,8 @@ impl BackendOps for LinearBackend {
         &self,
         _range: VirtAddrRange,
         _flags: MappingFlags,
-        _old_pt: &mut PageTableModify,
-        _new_pt: &mut PageTableModify,
+        _old_pt: &mut PageTableMut,
+        _new_pt: &mut PageTableMut,
         _new_aspace: &Arc<Mutex<AddrSpace>>,
     ) -> LinuxResult<Backend> {
         Ok(Backend::Linear(self.clone()))
