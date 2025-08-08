@@ -1,7 +1,6 @@
 //! Memory mapping backends.
-use alloc::sync::Arc;
+use alloc::{boxed::Box, sync::Arc};
 
-use ::alloc::boxed::Box;
 use allocator::AllocError;
 use axalloc::{UsageKind, global_allocator};
 use axerrno::{LinuxError, LinuxResult};
@@ -13,13 +12,13 @@ use axsync::Mutex;
 use enum_dispatch::enum_dispatch;
 use memory_addr::{PAGE_SIZE_4K, PhysAddr, VirtAddr, VirtAddrRange};
 use memory_set::MappingBackend;
+use page_table_multiarch::PageTableModifyExt;
 
 pub mod cow;
 pub mod file;
 pub mod linear;
 pub mod shared;
 
-use page_table_multiarch::PageTableModifyExt;
 pub use shared::SharedPages;
 
 use crate::{AddrSpace, page_iter::PageIterWrapper};

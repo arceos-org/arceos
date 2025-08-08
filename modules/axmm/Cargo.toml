@@ -31,4 +31,4 @@ lazyinit = { workspace = true }
 log = { workspace = true }
 memory_addr = { workspace = true }
 memory_set = { workspace = true }
-page_table_multiarch = { workspace = true, optional = true }
+page_table_multiarch = { workspace = true }
