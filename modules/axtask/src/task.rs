@@ -80,13 +80,6 @@ pub struct TaskInner {
     #[cfg(feature = "smp")]
     on_cpu: AtomicBool,
 
-    /// A ticket ID used to identify the timer event.
-    /// Set by `set_timer_ticket()` when creating a timer event in
-    /// `set_alarm_wakeup()`, expired by setting it as zero in
-    /// `timer_ticket_expired()`, which is called by `cancel_events()`.
-    #[cfg(feature = "irq")]
-    timer_ticket_id: AtomicU64,
-
     #[cfg(feature = "preempt")]
     need_resched: AtomicBool,
     #[cfg(feature = "preempt")]
@@ -252,8 +245,6 @@ impl TaskInner {
             in_wait_queue: AtomicBool::new(false),
             interruption: AtomicU8::new(0),
             interrupt_waker: AtomicWaker::new(),
-            #[cfg(feature = "irq")]
-            timer_ticket_id: AtomicU64::new(0),
             #[cfg(feature = "smp")]
             on_cpu: AtomicBool::new(false),
             #[cfg(feature = "preempt")]
@@ -372,32 +363,6 @@ impl TaskInner {
             2 => Some(true),
             _ => unreachable!(),
         }
-    }
-
-    /// Returns task's current timer ticket ID.
-    #[inline]
-    #[cfg(feature = "irq")]
-    pub(crate) fn timer_ticket(&self) -> u64 {
-        self.timer_ticket_id.load(Ordering::Acquire)
-    }
-
-    /// Set the timer ticket ID.
-    #[inline]
-    #[cfg(feature = "irq")]
-    pub(crate) fn set_timer_ticket(&self, timer_ticket_id: u64) {
-        // CAN NOT set timer_ticket_id to 0,
-        // because 0 is used to indicate the timer event is expired.
-        assert!(timer_ticket_id != 0);
-        self.timer_ticket_id
-            .store(timer_ticket_id, Ordering::Release);
-    }
-
-    /// Expire timer ticket ID by setting it to 0,
-    /// it can be used to identify one timer event is triggered or expired.
-    #[inline]
-    #[cfg(feature = "irq")]
-    pub(crate) fn timer_ticket_expired(&self) {
-        self.timer_ticket_id.store(0, Ordering::Release);
     }
 
     #[inline]
@@ -536,11 +501,6 @@ impl CurrentTask {
         Self::try_get().expect("current task is uninitialized")
     }
 
-    /// Converts [`CurrentTask`] to [`AxTaskRef`].
-    pub fn as_task_ref(&self) -> &AxTaskRef {
-        &self.0
-    }
-
     pub fn clone(&self) -> AxTaskRef {
         self.0.deref().clone()
     }
@@ -572,7 +532,7 @@ impl CurrentTask {
 }
 
 impl Deref for CurrentTask {
-    type Target = TaskInner;
+    type Target = AxTaskRef;
 
     fn deref(&self) -> &Self::Target {
         self.0.deref()

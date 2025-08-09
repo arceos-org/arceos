@@ -16,6 +16,7 @@ multitask = [
     "dep:axconfig",
     "dep:cpumask",
     "dep:crate_interface",
+    "dep:foldhash",
     "dep:futures",
     "dep:kernel_guard",
     "dep:kspin",
@@ -23,8 +24,9 @@ multitask = [
     "dep:memory_addr",
     "dep:percpu",
     "dep:pin-project",
+    "dep:priority-queue",
     "dep:scheduler",
-    "dep:timer_list",
+    "dep:spin",
 ]
 task-ext = ["dep:extern-trait"]
 irq = []
@@ -48,6 +50,7 @@ cfg-if = { workspace = true }
 cpumask = { version = "0.1", optional = true }
 crate_interface = { version = "0.1", optional = true }
 extern-trait = { version = "0.2", optional = true }
+foldhash = { version = "0.1", default-features = false, optional = true }
 futures = { workspace = true, optional = true }
 kernel_guard = { workspace = true, optional = true }
 kspin = { workspace = true, optional = true }
@@ -56,8 +59,9 @@ log = { workspace = true }
 memory_addr = { workspace = true, optional = true }
 percpu = { workspace = true, optional = true }
 pin-project = { version = "1.1.10", optional = true }
+priority-queue = { version = "2.5", default-features = false, optional = true }
 scheduler = { git = "https://github.com/Starry-Mix-THU/scheduler.git", rev = "3bc2f73", optional = true }
-timer_list = { version = "0.1", optional = true }
+spin = { workspace = true, optional = true }
 
 [dev-dependencies]
 axhal = { workspace = true, features = ["fp-simd"] }

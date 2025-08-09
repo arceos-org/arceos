@@ -120,7 +120,7 @@ pub fn sleep(duration: Duration) -> Sleep {
 pub fn sleep_until(deadline: Duration) -> Sleep {
     if deadline > axhal::time::wall_time() {
         let curr = current();
-        crate::timers::set_alarm_wakeup(deadline, curr.as_task_ref());
+        crate::timers::set_alarm_wakeup(deadline, &curr);
     }
 
     Sleep { deadline }

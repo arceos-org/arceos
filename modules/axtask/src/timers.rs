@@ -1,58 +1,17 @@
 use alloc::{boxed::Box, sync::Arc, vec::Vec};
-use core::sync::atomic::{AtomicU64, Ordering};
+use core::{
+    cmp::Reverse,
+    hash::{Hash, Hasher},
+};
 
-use axhal::time::wall_time;
+use axhal::time::{TimeValue, wall_time};
+use foldhash::fast::RandomState;
 use kernel_guard::{NoOp, NoPreemptIrqSave};
-use kspin::SpinRaw;
-use lazyinit::LazyInit;
-use timer_list::{TimeValue, TimerEvent, TimerList};
+use kspin::{SpinNoIrq, SpinRaw};
+use priority_queue::PriorityQueue;
+use spin::Lazy;
 
 use crate::{AxTaskRef, WeakAxTaskRef, select_run_queue};
-
-static TIMER_TICKET_ID: AtomicU64 = AtomicU64::new(1);
-
-percpu_static! {
-    TIMER_LIST: LazyInit<TimerList<TaskWakeupEvent>> = LazyInit::new(),
-}
-
-struct TaskWakeupEvent {
-    ticket_id: u64,
-    task: WeakAxTaskRef,
-}
-
-impl TimerEvent for TaskWakeupEvent {
-    fn callback(self, _now: TimeValue) {
-        let Some(task) = self.task.upgrade() else {
-            // Task has been dropped, just return.
-            return;
-        };
-        // Ignore the timer event if timeout was set but not triggered
-        // (wake up by `WaitQueue::notify()`).
-        // Judge if this timer event is still valid by checking the ticket ID.
-        if task.timer_ticket() != self.ticket_id {
-            // Timer ticket ID is not matched.
-            // Just ignore this timer event and return.
-            return;
-        }
-
-        // Timer ticket match.
-        select_run_queue::<NoOp>(&task).unblock_task(task, true)
-    }
-}
-
-pub fn set_alarm_wakeup(deadline: TimeValue, task: &AxTaskRef) {
-    TIMER_LIST.with_current(|timer_list| {
-        let ticket_id = TIMER_TICKET_ID.fetch_add(1, Ordering::AcqRel);
-        task.set_timer_ticket(ticket_id);
-        timer_list.set(
-            deadline,
-            TaskWakeupEvent {
-                ticket_id,
-                task: Arc::downgrade(task),
-            },
-        );
-    })
-}
 
 static TIMER_CALLBACKS: SpinRaw<Vec<Box<dyn Fn(TimeValue) + Send + Sync>>> =
     SpinRaw::new(Vec::new());
@@ -65,27 +24,54 @@ where
     TIMER_CALLBACKS.lock().push(Box::new(callback));
 }
 
+struct TaskPtr(WeakAxTaskRef);
+
+impl TaskPtr {
+    fn new(task: &AxTaskRef) -> Self {
+        TaskPtr(Arc::downgrade(task))
+    }
+
+    fn upgrade(&self) -> Option<AxTaskRef> {
+        self.0.upgrade()
+    }
+}
+
+impl PartialEq for TaskPtr {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.ptr_eq(&other.0)
+    }
+}
+
+impl Eq for TaskPtr {}
+
+impl Hash for TaskPtr {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.as_ptr().hash(state);
+    }
+}
+
+static TIMER_LIST: Lazy<SpinNoIrq<PriorityQueue<TaskPtr, Reverse<TimeValue>, RandomState>>> =
+    Lazy::new(|| SpinNoIrq::new(PriorityQueue::with_default_hasher()));
+
+pub fn set_alarm_wakeup(deadline: TimeValue, task: &AxTaskRef) {
+    TIMER_LIST
+        .lock()
+        .push(TaskPtr::new(task), Reverse(deadline));
+}
+
+pub fn clear_alarm_wakeup(task: &AxTaskRef) {
+    TIMER_LIST.lock().remove(&TaskPtr::new(task));
+}
+
 pub fn check_events() {
     let now = wall_time();
     for callback in TIMER_CALLBACKS.lock().iter() {
         callback(now);
     }
-    loop {
-        let event = unsafe {
-            // Safety: IRQs are disabled at this time.
-            TIMER_LIST.current_ref_mut_raw()
-        }
-        .expire_one(now);
-        if let Some((_deadline, event)) = event {
-            event.callback(now);
-        } else {
-            break;
+    let mut timer_list = TIMER_LIST.lock();
+    while let Some((task_ptr, _)) = timer_list.pop_if(|_, Reverse(deadline)| *deadline < now) {
+        if let Some(task) = task_ptr.upgrade() {
+            select_run_queue::<NoOp>(&task).unblock_task(task, true);
         }
     }
-}
-
-pub fn init() {
-    TIMER_LIST.with_current(|timer_list| {
-        timer_list.init_once(TimerList::new());
-    });
 }

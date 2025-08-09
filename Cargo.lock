@@ -707,6 +707,7 @@ dependencies = [
  "cpumask",
  "crate_interface",
  "extern-trait",
+ "foldhash",
  "futures",
  "kernel_guard",
  "kspin",
@@ -715,9 +716,10 @@ dependencies = [
  "memory_addr",
  "percpu",
  "pin-project",
+ "priority-queue",
  "rand",
  "scheduler",
- "timer_list",
+ "spin",
 ]
 
 [[package]]
@@ -1879,6 +1881,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "priority-queue"
+version = "2.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5676d703dda103cbb035b653a9f11448c0a7216c7926bd35fcb5865475d0c970"
+dependencies = [
+ "autocfg",
+ "equivalent",
+ "indexmap",
+]
+
+[[package]]
 name = "proc-macro-error-attr2"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2301,12 +2314,6 @@ dependencies = [
  "quote",
  "syn 2.0.104",
 ]
-
-[[package]]
-name = "timer_list"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "158b52ace9609dd94f4af338f4828ff23b600d9160def8c001f2c73885521936"
 
 [[package]]
 name = "tock-registers"
