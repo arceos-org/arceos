@@ -19,11 +19,8 @@ page-alloc-4g = ["allocator/page-alloc-4g"] # Support up to 4G memory capacity
 tracking = ["dep:percpu", "dep:axbacktrace"]
 
 [dependencies]
-axbacktrace = { workspace = true, optional = true }
-
 allocator = { workspace = true, features = ["bitmap"] }
-hashbrown = { workspace = true }
-lazy_static = { workspace = true }
+axbacktrace = { workspace = true, optional = true }
 axerrno = { workspace = true }
 cfg-if = { workspace = true }
 kspin = { workspace = true }

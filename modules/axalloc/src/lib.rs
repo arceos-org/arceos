@@ -281,6 +281,7 @@ impl GlobalAllocator {
 
 #[cfg(feature = "tracking")]
 mod tracking {
+    use alloc::collections::btree_map::BTreeMap;
     use core::{
         alloc::Layout,
         ops::Range,
@@ -288,9 +289,7 @@ mod tracking {
     };
 
     use axbacktrace::Backtrace;
-    use hashbrown::HashMap;
     use kspin::SpinNoIrq;
-    use lazy_static::lazy_static;
 
     pub(crate) static TRACKING_ENABLED: AtomicBool = AtomicBool::new(false);
 
@@ -306,17 +305,15 @@ mod tracking {
     }
 
     pub(crate) struct GlobalState {
-        // pub map: HashMap<usize, AllocationInfo, FixedState>,
-        pub map: HashMap<usize, AllocationInfo>,
+        // FIXME: don't know why using HashMap causes crash
+        pub map: BTreeMap<usize, AllocationInfo>,
         pub generation: u64,
     }
 
-    lazy_static! {
-        static ref STATE: SpinNoIrq<GlobalState> = SpinNoIrq::new(GlobalState {
-            map: HashMap::new(),
-            generation: 0,
-        });
-    }
+    static STATE: SpinNoIrq<GlobalState> = SpinNoIrq::new(GlobalState {
+        map: BTreeMap::new(),
+        generation: 0,
+    });
 
     /// Enables allocation tracking.
     pub fn enable_tracking() {
