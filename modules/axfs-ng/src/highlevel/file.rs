@@ -7,7 +7,9 @@ use core::{num::NonZeroUsize, ops::Range};
 
 use allocator::AllocError;
 use axalloc::{UsageKind, global_allocator};
-use axfs_ng_vfs::{FileNode, Location, NodePermission, NodeType, VfsError, VfsResult, path::Path};
+use axfs_ng_vfs::{
+    FileNode, Location, NodeFlags, NodePermission, NodeType, VfsError, VfsResult, path::Path,
+};
 use axhal::mem::{PhysAddr, VirtAddr, virt_to_phys};
 use axio::SeekFrom;
 use intrusive_collections::{LinkedList, LinkedListAtomicLink, intrusive_adapter};
@@ -201,12 +203,11 @@ impl OpenOptions {
                 NodeType::CharacterDevice | NodeType::Fifo | NodeType::Socket
             );
 
-            // For tmpfs we must enforce non-direct I/O because it relies
-            // entirely on page cache.
             let direct = non_cacheable_type
                 || self.path
-                || (self.direct && loc.filesystem().name() != "tmpfs");
-            let backend = if !direct && loc.filesystem().is_cacheable() {
+                || self.direct
+                || loc.flags().contains(NodeFlags::NON_CACHEABLE);
+            let backend = if !direct || loc.flags().contains(NodeFlags::ALWAYS_CACHE) {
                 FileBackend::new_cached(loc)
             } else {
                 FileBackend::new_direct(loc)
@@ -737,15 +738,19 @@ impl FileBackend {
 pub struct File {
     inner: FileBackend,
     flags: FileFlags,
-    position: u64,
+    position: Option<Mutex<u64>>,
 }
 
 impl File {
     pub(crate) fn new(inner: FileBackend, flags: FileFlags) -> Self {
-        let position = if flags.contains(FileFlags::APPEND) {
-            inner.location().len().unwrap_or_default()
+        let position = if inner.location().flags().contains(NodeFlags::STREAM) {
+            None
         } else {
-            0
+            Some(Mutex::new(if flags.contains(FileFlags::APPEND) {
+                inner.location().len().unwrap_or_default()
+            } else {
+                0
+            }))
         };
         Self {
             inner,
@@ -796,12 +801,12 @@ impl File {
     }
 
     /// Reads a number of bytes starting from a given offset.
-    pub fn read_at(&mut self, buf: &mut [u8], offset: u64) -> VfsResult<usize> {
+    pub fn read_at(&self, buf: &mut [u8], offset: u64) -> VfsResult<usize> {
         self.access(FileFlags::READ)?.read_at(buf, offset)
     }
 
     /// Writes a number of bytes starting from a given offset.
-    pub fn write_at(&mut self, buf: &[u8], offset: u64) -> VfsResult<usize> {
+    pub fn write_at(&self, buf: &[u8], offset: u64) -> VfsResult<usize> {
         self.access(FileFlags::WRITE)?.write_at(buf, offset)
     }
 
@@ -809,31 +814,41 @@ impl File {
     ///
     /// If `data_only` is `true`, only the file data is synced, not the
     /// metadata.
-    pub fn sync(&mut self, data_only: bool) -> VfsResult<()> {
+    pub fn sync(&self, data_only: bool) -> VfsResult<()> {
         self.access(FileFlags::empty())?;
         self.inner.sync(data_only)
     }
 }
 
-impl axio::Read for File {
+impl<'a> axio::Read for &'a File {
     fn read(&mut self, buf: &mut [u8]) -> axio::Result<usize> {
-        self.read_at(buf, self.position).inspect(|n| {
-            self.position += *n as u64;
-        })
+        if let Some(pos) = self.position.as_ref() {
+            let mut pos = pos.lock();
+            self.read_at(buf, *pos).inspect(|n| {
+                *pos += *n as u64;
+            })
+        } else {
+            self.read_at(buf, 0)
+        }
     }
 }
 
-impl axio::Write for File {
+impl<'a> axio::Write for &'a File {
     fn write(&mut self, buf: &[u8]) -> axio::Result<usize> {
-        if let Ok(f) = self.access(FileFlags::APPEND) {
-            f.append(buf).map(|(written, new_size)| {
-                self.position = new_size;
-                written
-            })
+        if let Some(pos) = self.position.as_ref() {
+            let mut pos = pos.lock();
+            if let Ok(f) = self.access(FileFlags::APPEND) {
+                f.append(buf).map(|(written, new_size)| {
+                    *pos = new_size;
+                    written
+                })
+            } else {
+                self.write_at(buf, *pos).inspect(|n| {
+                    *pos += *n as u64;
+                })
+            }
         } else {
-            self.write_at(buf, self.position).inspect(|n| {
-                self.position += *n as u64;
-            })
+            self.write_at(buf, 0)
         }
     }
 
@@ -843,21 +858,24 @@ impl axio::Write for File {
     }
 }
 
-impl axio::Seek for File {
+impl<'a> axio::Seek for &'a File {
     fn seek(&mut self, pos: SeekFrom) -> axio::Result<u64> {
         self.access(FileFlags::empty())?;
-        let new_pos = match pos {
-            SeekFrom::Start(pos) => pos,
-            SeekFrom::End(off) => {
-                let size = self.access(FileFlags::empty())?.location().len()?;
-                size.checked_add_signed(off).ok_or(VfsError::EINVAL)?
-            }
-            SeekFrom::Current(off) => self
-                .position
-                .checked_add_signed(off)
-                .ok_or(VfsError::EINVAL)?,
-        };
-        self.position = new_pos;
-        Ok(new_pos)
+
+        if let Some(guard) = self.position.as_ref() {
+            let mut guard = guard.lock();
+            let new_pos = match pos {
+                SeekFrom::Start(pos) => pos,
+                SeekFrom::End(off) => {
+                    let size = self.access(FileFlags::empty())?.location().len()?;
+                    size.checked_add_signed(off).ok_or(VfsError::EINVAL)?
+                }
+                SeekFrom::Current(off) => guard.checked_add_signed(off).ok_or(VfsError::EINVAL)?,
+            };
+            *guard = new_pos;
+            Ok(new_pos)
+        } else {
+            Ok(0)
+        }
     }
 }

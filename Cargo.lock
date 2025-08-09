@@ -432,7 +432,7 @@ dependencies = [
 [[package]]
 name = "axfs-ng-vfs"
 version = "0.1.0"
-source = "git+https://github.com/Starry-Mix-THU/axfs-ng-vfs.git?rev=e7cf4fd#e7cf4fddddd29eb0a518aee3f6212549f89a37f5"
+source = "git+https://github.com/Starry-Mix-THU/axfs-ng-vfs.git?rev=29a7ad4#29a7ad49ef9934123754b9dba5e1f4f72e89aa50"
 dependencies = [
  "axerrno",
  "axio",

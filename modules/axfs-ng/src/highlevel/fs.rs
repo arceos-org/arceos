@@ -198,7 +198,8 @@ impl FsContext {
     /// Reads the entire contents of a file into a bytes vector.
     pub fn read(&self, path: impl AsRef<Path>) -> VfsResult<Vec<u8>> {
         let mut buf = Vec::new();
-        File::open(self, path.as_ref())?.read_to_end(&mut buf)?;
+        let file = File::open(self, path.as_ref())?;
+        (&file).read_to_end(&mut buf)?;
         Ok(buf)
     }
 
@@ -209,8 +210,8 @@ impl FsContext {
 
     /// Writes the contents of a bytes vector to a file.
     pub fn write(&self, path: impl AsRef<Path>, buf: impl AsRef<[u8]>) -> VfsResult<()> {
-        let mut file = File::create(self, path.as_ref())?;
-        file.write_all(buf.as_ref())?;
+        let file = File::create(self, path.as_ref())?;
+        (&file).write_all(buf.as_ref())?;
         Ok(())
     }
 
