@@ -26,7 +26,6 @@ axtask = { workspace = true }
 axerrno = { workspace = true }
 enum_dispatch = { workspace = true }
 kspin = { workspace = true }
-lazy_static = { workspace = true }
 lazyinit = { workspace = true }
 log = { workspace = true }
 memory_addr = { workspace = true }

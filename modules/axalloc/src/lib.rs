@@ -53,12 +53,21 @@ pub enum UsageKind {
     Global,
 }
 
+const ALL_KINDS: &[UsageKind] = &[
+    UsageKind::RustHeap,
+    UsageKind::UserMem,
+    UsageKind::PageCache,
+    UsageKind::PageTable,
+    UsageKind::Dma,
+    UsageKind::Global,
+];
+
 #[derive(Clone, Copy)]
-pub struct UsageStats([usize; 6]);
+pub struct UsageStats([usize; ALL_KINDS.len()]);
 
 impl UsageStats {
     const fn new() -> Self {
-        Self([0; 6])
+        Self([0; ALL_KINDS.len()])
     }
 
     fn alloc(&mut self, kind: UsageKind, size: usize) {
@@ -73,14 +82,7 @@ impl UsageStats {
 impl fmt::Debug for UsageStats {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut d = f.debug_struct("UsageStats");
-        for kind in [
-            UsageKind::RustHeap,
-            UsageKind::UserMem,
-            UsageKind::PageCache,
-            UsageKind::PageTable,
-            UsageKind::Dma,
-            UsageKind::Global,
-        ] {
+        for &kind in ALL_KINDS {
             d.field(
                 match kind {
                     UsageKind::RustHeap => "Rust Heap",

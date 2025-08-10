@@ -503,7 +503,6 @@ dependencies = [
  "axtask",
  "enum_dispatch",
  "kspin",
- "lazy_static",
  "lazyinit",
  "log",
  "memory_addr",

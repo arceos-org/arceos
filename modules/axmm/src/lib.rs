@@ -9,7 +9,6 @@ extern crate alloc;
 
 mod aspace;
 pub mod backend;
-mod page_info;
 mod page_iter;
 
 use axerrno::{LinuxError, LinuxResult};

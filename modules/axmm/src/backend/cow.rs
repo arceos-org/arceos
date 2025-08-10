@@ -1,4 +1,4 @@
-use alloc::{boxed::Box, sync::Arc};
+use alloc::{boxed::Box, collections::btree_map::BTreeMap, sync::Arc};
 use core::slice;
 
 use axerrno::{LinuxError, LinuxResult};
@@ -8,13 +8,35 @@ use axhal::{
     paging::{MappingFlags, PageSize, PageTableMut, PagingError},
 };
 use axsync::Mutex;
+use kspin::SpinNoIrq;
 use memory_addr::{PhysAddr, VirtAddr, VirtAddrRange};
 
 use crate::{
     AddrSpace,
     backend::{Backend, BackendOps, alloc_frame, dealloc_frame, pages_in, paging_to_linux_error},
-    page_info::frame_table,
 };
+
+static FRAME_TABLE: SpinNoIrq<BTreeMap<PhysAddr, u8>> = SpinNoIrq::new(BTreeMap::new());
+
+fn inc_frame_ref(paddr: PhysAddr) {
+    let mut table = FRAME_TABLE.lock();
+    *table.entry(paddr).or_insert(0) += 1;
+}
+
+fn dec_frame_ref(paddr: PhysAddr) -> usize {
+    let mut table = FRAME_TABLE.lock();
+    if let Some(count) = table.get_mut(&paddr) {
+        let prev = *count;
+        if prev == 1 {
+            table.remove(&paddr);
+        } else {
+            *count -= 1;
+        }
+        prev as usize
+    } else {
+        0
+    }
+}
 
 /// Copy-on-write mapping backend.
 ///
@@ -24,7 +46,6 @@ pub struct CowBackend {
     start: VirtAddr,
     size: PageSize,
     file: Option<(FileBackend, u64, Option<u64>)>,
-    read_only: bool,
 }
 
 impl CowBackend {
@@ -35,9 +56,8 @@ impl CowBackend {
         pt: &mut PageTableMut,
     ) -> LinuxResult<()> {
         let frame = alloc_frame(true, self.size)?;
-        if !self.read_only {
-            frame_table().inc_ref(frame);
-        }
+        inc_frame_ref(frame);
+
         if let Some((file, file_start, file_end)) = &self.file {
             let buf = unsafe {
                 slice::from_raw_parts_mut(phys_to_virt(frame).as_mut_ptr(), self.size as _)
@@ -67,19 +87,19 @@ impl CowBackend {
         flags: MappingFlags,
         pt: &mut PageTableMut,
     ) -> LinuxResult<()> {
-        match frame_table().dec_ref(paddr) {
+        match dec_frame_ref(paddr) {
             0 => unreachable!(),
             // There is only one AddrSpace reference to the page,
             // so there is no need to copy it.
             1 => {
-                frame_table().inc_ref(paddr);
+                inc_frame_ref(paddr);
                 pt.protect(vaddr, flags).map_err(paging_to_linux_error)?;
             }
             // Allocates the new page and copies the contents of the original page,
             // remapping the virtual address to the physical address of the new page.
             2.. => {
                 let new_frame = alloc_frame(false, self.size)?;
-                frame_table().inc_ref(new_frame);
+                inc_frame_ref(new_frame);
                 unsafe {
                     core::ptr::copy_nonoverlapping(
                         phys_to_virt(paddr).as_ptr(),
@@ -117,7 +137,9 @@ impl BackendOps for CowBackend {
         for addr in pages_in(range, self.size)? {
             if let Ok((frame, _flags, page_size)) = pt.unmap(addr) {
                 assert_eq!(page_size, self.size);
-                if frame_table().dec_ref(frame) == 1 {
+                let c = dec_frame_ref(frame);
+                debug!("Cow::unmap: {addr:?} frame: {frame:?} refcount: {c}");
+                if c == 1 {
                     dealloc_frame(frame, self.size);
                 }
             } else {
@@ -142,7 +164,6 @@ impl BackendOps for CowBackend {
                     if access_flags.contains(MappingFlags::WRITE)
                         && !page_flags.contains(MappingFlags::WRITE)
                     {
-                        assert!(!self.read_only);
                         self.handle_cow_fault(addr, paddr, flags, pt)?;
                         pages += 1;
                     }
@@ -166,9 +187,6 @@ impl BackendOps for CowBackend {
         new_pt: &mut PageTableMut,
         _new_aspace: &Arc<Mutex<AddrSpace>>,
     ) -> LinuxResult<Backend> {
-        if self.read_only {
-            return Ok(Backend::Cow(self.clone()));
-        }
         let cow_flags = flags - MappingFlags::WRITE;
 
         for vaddr in pages_in(range, self.size)? {
@@ -180,7 +198,7 @@ impl BackendOps for CowBackend {
                     // - Update its permissions in the old page table using `flags`.
                     // - Map the same physical page into the new page table at the same
                     // virtual address, with the same page size and `flags`.
-                    frame_table().inc_ref(paddr);
+                    inc_frame_ref(paddr);
 
                     old_pt
                         .protect(vaddr, cow_flags)
@@ -203,18 +221,22 @@ impl Backend {
     pub fn new_cow(
         start: VirtAddr,
         size: PageSize,
-        file: Option<(FileBackend, u64, Option<u64>)>,
-        read_only: bool,
+        file: FileBackend,
+        file_start: u64,
+        file_end: Option<u64>,
     ) -> Self {
         Self::Cow(CowBackend {
             start,
             size,
-            file,
-            read_only,
+            file: Some((file, file_start, file_end)),
         })
     }
 
     pub fn new_alloc(start: VirtAddr, size: PageSize) -> Self {
-        Self::new_cow(start, size, None, false)
+        Self::Cow(CowBackend {
+            start,
+            size,
+            file: None,
+        })
     }
 }
