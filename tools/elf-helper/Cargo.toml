@@ -1,9 +1,0 @@
-[package]
-name = "elf-helper"
-publish = false
-version.workspace = true
-edition.workspace = true
-authors = ["Asakura Mizu <asakuramizu111@gmail.com>"]
-
-[dependencies]
-object = { version = "0.37.1", default-features = false, features = ["build"] }

@@ -49,7 +49,7 @@ ifeq ($(APP_TYPE), rust)
 else ifeq ($(APP_TYPE), c)
 	$(call cargo_build,ulib/axlibc,$(AX_FEAT) $(LIB_FEAT))
 endif
-	$(call run_cmd,RUSTFLAGS= cargo run --release --bin elf-helper,$(OUT_ELF))
+	$(call run_cmd,./scripts/make/dwarf.sh,$(OUT_ELF) $(OBJCOPY))
 
 $(OUT_DIR):
 	$(call run_cmd,mkdir,-p $@)

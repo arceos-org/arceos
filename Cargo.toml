@@ -17,8 +17,6 @@ members = [
     "modules/axtask",
 
     "api/axfeat",
-
-    "tools/elf-helper",
 ]
 
 [workspace.package]
