@@ -60,11 +60,10 @@
 #![feature(doc_auto_cfg)]
 #![feature(associated_type_defaults)]
 
+extern crate alloc;
+
 #[macro_use]
 extern crate log;
-
-#[cfg(feature = "dyn")]
-extern crate alloc;
 
 #[macro_use]
 mod macros;

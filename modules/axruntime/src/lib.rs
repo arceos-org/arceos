@@ -198,6 +198,9 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
 
         #[cfg(feature = "fs")]
         {
+            #[allow(unused_imports)]
+            use axdriver::prelude::BaseDriverOps;
+
             axfs_ng::ROOT_FS_CONTEXT.call_once(|| {
                 let dev = all_devices
                     .block
