@@ -2,9 +2,7 @@ use alloc::{borrow::ToOwned, string::String, sync::Arc};
 use core::{any::Any, task::Context};
 
 use axfs_ng_vfs::{
-    DeviceId, DirEntry, DirEntrySink, DirNode, DirNodeOps, FileNode, FileNodeOps, FilesystemOps,
-    Metadata, MetadataUpdate, NodeOps, NodePermission, NodeType, Reference, VfsError, VfsResult,
-    WeakDirEntry,
+    DeviceId, DirEntry, DirEntrySink, DirNode, DirNodeOps, FileNode, FileNodeOps, FilesystemOps, Metadata, MetadataUpdate, NodeFlags, NodeOps, NodePermission, NodeType, Reference, VfsError, VfsResult, WeakDirEntry
 };
 use axio::{IoEvents, Pollable};
 use lwext4_rust::{FileAttr, InodeType};
@@ -118,6 +116,10 @@ impl NodeOps for Inode {
 
     fn into_any(self: Arc<Self>) -> Arc<dyn Any + Send + Sync> {
         self
+    }
+
+    fn flags(&self) -> NodeFlags {
+        NodeFlags::BLOCKING
     }
 }
 

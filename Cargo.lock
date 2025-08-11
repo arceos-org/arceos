@@ -308,6 +308,7 @@ dependencies = [
  "axdriver_base",
  "axdriver_block",
  "axdriver_display",
+ "axdriver_input",
  "axdriver_net",
  "axdriver_pci",
  "axdriver_virtio",
@@ -320,12 +321,12 @@ dependencies = [
 [[package]]
 name = "axdriver_base"
 version = "0.1.2"
-source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=afaf002#afaf002c0dbe6f51d40d32dc3fe13fb9c1ef3398"
+source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=cfb3455#cfb3455593d1db1c132d3de4ad74d71707d1b461"
 
 [[package]]
 name = "axdriver_block"
 version = "0.1.2"
-source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=afaf002#afaf002c0dbe6f51d40d32dc3fe13fb9c1ef3398"
+source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=cfb3455#cfb3455593d1db1c132d3de4ad74d71707d1b461"
 dependencies = [
  "axdriver_base",
  "bcm2835-sdhci",
@@ -337,15 +338,24 @@ dependencies = [
 [[package]]
 name = "axdriver_display"
 version = "0.1.2"
-source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=afaf002#afaf002c0dbe6f51d40d32dc3fe13fb9c1ef3398"
+source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=cfb3455#cfb3455593d1db1c132d3de4ad74d71707d1b461"
 dependencies = [
  "axdriver_base",
 ]
 
 [[package]]
+name = "axdriver_input"
+version = "0.1.2"
+source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=cfb3455#cfb3455593d1db1c132d3de4ad74d71707d1b461"
+dependencies = [
+ "axdriver_base",
+ "strum",
+]
+
+[[package]]
 name = "axdriver_net"
 version = "0.1.2"
-source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=afaf002#afaf002c0dbe6f51d40d32dc3fe13fb9c1ef3398"
+source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=cfb3455#cfb3455593d1db1c132d3de4ad74d71707d1b461"
 dependencies = [
  "axdriver_base",
  "fxmac_rs",
@@ -357,7 +367,7 @@ dependencies = [
 [[package]]
 name = "axdriver_pci"
 version = "0.1.2"
-source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=afaf002#afaf002c0dbe6f51d40d32dc3fe13fb9c1ef3398"
+source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=cfb3455#cfb3455593d1db1c132d3de4ad74d71707d1b461"
 dependencies = [
  "virtio-drivers",
 ]
@@ -365,12 +375,14 @@ dependencies = [
 [[package]]
 name = "axdriver_virtio"
 version = "0.1.2"
-source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=afaf002#afaf002c0dbe6f51d40d32dc3fe13fb9c1ef3398"
+source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=cfb3455#cfb3455593d1db1c132d3de4ad74d71707d1b461"
 dependencies = [
  "axdriver_base",
  "axdriver_block",
  "axdriver_display",
+ "axdriver_input",
  "axdriver_net",
+ "log",
  "virtio-drivers",
 ]
 
@@ -430,7 +442,7 @@ dependencies = [
 [[package]]
 name = "axfs-ng-vfs"
 version = "0.1.0"
-source = "git+https://github.com/Starry-Mix-THU/axfs-ng-vfs.git?rev=29a7ad4#29a7ad49ef9934123754b9dba5e1f4f72e89aa50"
+source = "git+https://github.com/Starry-Mix-THU/axfs-ng-vfs.git?rev=dd08e16#dd08e16d2a618a9a80a543405a10860127433260"
 dependencies = [
  "axerrno",
  "axio",
@@ -465,6 +477,16 @@ dependencies = [
  "memory_addr",
  "page_table_multiarch",
  "percpu",
+]
+
+[[package]]
+name = "axinput"
+version = "0.1.0"
+dependencies = [
+ "axdriver",
+ "axsync",
+ "lazyinit",
+ "log",
 ]
 
 [[package]]
@@ -667,6 +689,7 @@ dependencies = [
  "axfs-ng",
  "axfs-ng-vfs",
  "axhal",
+ "axinput",
  "axlog",
  "axmm",
  "axnet",
@@ -2228,6 +2251,27 @@ name = "strsim"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
+
+[[package]]
+name = "strum"
+version = "0.27.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af23d6f6c1a224baef9d3f61e287d2761385a5b88fdab4eb4c6f11aeb54c4bcf"
+dependencies = [
+ "strum_macros",
+]
+
+[[package]]
+name = "strum_macros"
+version = "0.27.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7695ce3845ea4b33927c055a39dc438a45b059f7c1b3d91d38d10355fb8cbca7"
+dependencies = [
+ "heck",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.104",
+]
 
 [[package]]
 name = "svgbobdoc"

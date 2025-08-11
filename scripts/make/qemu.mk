@@ -57,6 +57,9 @@ qemu_args-$(ICOUNT) += -icount shift=1
 qemu_args-$(NET) += \
   -device virtio-net-$(vdev-suffix),netdev=net0
 
+qemu_args-$(INPUT) += \
+  -device virtio-mouse-pci -device virtio-keyboard-pci
+
 ifeq ($(NET_DEV), user)
   qemu_args-$(NET) += -netdev user,id=net0,hostfwd=tcp::5555-:5555,hostfwd=udp::5555-:5555
 else ifeq ($(NET_DEV), tap)

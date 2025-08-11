@@ -3,7 +3,7 @@ use core::{any::Any, mem, ops::Deref, time::Duration};
 
 use axfs_ng_vfs::{
     DeviceId, DirEntry, DirEntrySink, DirNode, DirNodeOps, FilesystemOps, Metadata, MetadataUpdate,
-    NodeOps, NodePermission, NodeType, Reference, VfsError, VfsResult, WeakDirEntry,
+    NodeFlags, NodeOps, NodePermission, NodeType, Reference, VfsError, VfsResult, WeakDirEntry,
 };
 
 use super::{
@@ -99,6 +99,10 @@ impl NodeOps for FatDirNode {
 
     fn into_any(self: Arc<Self>) -> Arc<dyn Any + Send + Sync> {
         self
+    }
+
+    fn flags(&self) -> NodeFlags {
+        NodeFlags::BLOCKING
     }
 }
 

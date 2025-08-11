@@ -22,6 +22,7 @@ multitask = ["axtask/multitask"]
 fs = ["axdriver", "axfs-ng", "axfs-ng-vfs"]
 net = ["axdriver", "axnet"]
 display = ["axdriver", "axdisplay"]
+input = ["axdriver", "axinput"]
 rtc = ["dep:chrono"]
 
 [dependencies]
@@ -29,6 +30,7 @@ axalloc = { workspace = true, optional = true }
 axbacktrace = { workspace = true }
 axconfig = { workspace = true }
 axdisplay = { workspace = true, optional = true }
+axinput = { workspace = true, optional = true }
 axdriver = { workspace = true, optional = true }
 axfs-ng = { workspace = true, optional = true }
 axhal = { workspace = true }

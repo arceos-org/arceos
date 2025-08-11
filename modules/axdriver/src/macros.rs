@@ -26,6 +26,14 @@ macro_rules! register_display_driver {
     };
 }
 
+macro_rules! register_input_driver {
+    ($driver_type:ty, $device_type:ty) => {
+        /// The unified type of the NIC devices.
+        #[cfg(not(feature = "dyn"))]
+        pub type AxInputDevice = $device_type;
+    };
+}
+
 macro_rules! for_each_drivers {
     (type $drv_type:ident, $code:block) => {{
         #[allow(unused_imports)]
@@ -47,6 +55,11 @@ macro_rules! for_each_drivers {
         #[cfg(display_dev = "virtio-gpu")]
         {
             type $drv_type = <virtio::VirtIoGpu as VirtIoDevMeta>::Driver;
+            $code
+        }
+        #[cfg(input_dev = "virtio-input")]
+        {
+            type $drv_type = <virtio::VirtIoInput as VirtIoDevMeta>::Driver;
             $code
         }
         #[cfg(block_dev = "ramdisk")]

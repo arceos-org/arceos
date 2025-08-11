@@ -49,6 +49,12 @@ register_display_driver!(
     <virtio::VirtIoGpu as VirtIoDevMeta>::Device
 );
 
+#[cfg(input_dev = "virtio-input")]
+register_input_driver!(
+    <virtio::VirtIoInput as VirtIoDevMeta>::Driver,
+    <virtio::VirtIoInput as VirtIoDevMeta>::Device
+);
+
 cfg_if::cfg_if! {
     if #[cfg(block_dev = "ramdisk")] {
         use axdriver_block::ramdisk::RamDisk;

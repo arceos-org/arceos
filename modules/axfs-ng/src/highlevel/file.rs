@@ -3,7 +3,7 @@ use alloc::{
     sync::{Arc, Weak},
     vec::Vec,
 };
-use core::{num::NonZeroUsize, ops::Range};
+use core::{num::NonZeroUsize, ops::Range, task::Context};
 
 use allocator::AllocError;
 use axalloc::{UsageKind, global_allocator};
@@ -11,7 +11,7 @@ use axfs_ng_vfs::{
     FileNode, Location, NodeFlags, NodePermission, NodeType, VfsError, VfsResult, path::Path,
 };
 use axhal::mem::{PhysAddr, VirtAddr, virt_to_phys};
-use axio::SeekFrom;
+use axio::{IoEvents, Pollable, SeekFrom};
 use intrusive_collections::{LinkedList, LinkedListAtomicLink, intrusive_adapter};
 use log::warn;
 use lru::LruCache;
@@ -877,5 +877,15 @@ impl<'a> axio::Seek for &'a File {
         } else {
             Ok(0)
         }
+    }
+}
+
+impl Pollable for File {
+    fn poll(&self) -> IoEvents {
+        self.inner.location().poll()
+    }
+
+    fn register(&self, context: &mut Context<'_>, events: IoEvents) {
+        self.inner.location().register(context, events)
     }
 }

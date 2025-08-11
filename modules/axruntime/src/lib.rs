@@ -198,8 +198,6 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
 
         #[cfg(feature = "fs")]
         {
-            use axdriver::prelude::*;
-
             axfs_ng::ROOT_FS_CONTEXT.call_once(|| {
                 let dev = all_devices
                     .block
@@ -217,6 +215,9 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
 
         #[cfg(feature = "display")]
         axdisplay::init_display(all_devices.display);
+
+        #[cfg(feature = "input")]
+        axinput::init_input(all_devices.input);
     }
 
     #[cfg(feature = "smp")]

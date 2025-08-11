@@ -8,6 +8,7 @@ members = [
     "modules/axdriver",
     "modules/axfs-ng",
     "modules/axhal",
+    "modules/axinput",
     "modules/axlog",
     "modules/axmm",
     "modules/axdma",
@@ -44,6 +45,7 @@ axdisplay = { path = "modules/axdisplay" }
 axdriver = { path = "modules/axdriver" }
 axfs-ng = { path = "modules/axfs-ng" }
 axhal = { path = "modules/axhal" }
+axinput = { path = "modules/axinput" }
 axlog = { path = "modules/axlog" }
 axmm = { path = "modules/axmm" }
 axnet = { path = "modules/axnet" }
@@ -56,7 +58,7 @@ allocator = { git = "https://github.com/Starry-Mix-THU/allocator.git", rev = "d5
 axbacktrace = { git = "https://github.com/Starry-Mix-THU/axbacktrace.git", rev = "322f6da" }
 axcpu = "0.2"
 axerrno = { git = "https://github.com/Starry-Mix-THU/axerrno.git", rev = "f5d8f86" }
-axfs-ng-vfs = { git = "https://github.com/Starry-Mix-THU/axfs-ng-vfs.git", rev = "29a7ad4" }
+axfs-ng-vfs = { git = "https://github.com/Starry-Mix-THU/axfs-ng-vfs.git", rev = "dd08e16" }
 axio = { git = "https://github.com/Starry-Mix-THU/axio.git", rev = "a069a3d" }
 axplat = "0.1"
 bindgen = "0.72"

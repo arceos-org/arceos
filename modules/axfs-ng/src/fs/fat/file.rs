@@ -2,8 +2,8 @@ use alloc::{sync::Arc, vec};
 use core::{any::Any, mem, ops::Deref, task::Context};
 
 use axfs_ng_vfs::{
-    FileNode, FileNodeOps, FilesystemOps, Metadata, MetadataUpdate, NodeOps, NodeType, VfsError,
-    VfsResult,
+    FileNode, FileNodeOps, FilesystemOps, Metadata, MetadataUpdate, NodeFlags, NodeOps, NodeType,
+    VfsError, VfsResult,
 };
 use axio::{IoEvents, Pollable};
 use fatfs::{Read, Seek, SeekFrom, Write};
@@ -89,6 +89,10 @@ impl NodeOps for FatFileNode {
 
     fn into_any(self: Arc<Self>) -> Arc<dyn Any + Send + Sync> {
         self
+    }
+
+    fn flags(&self) -> NodeFlags {
+        NodeFlags::BLOCKING
     }
 }
 

@@ -2,7 +2,7 @@ mod fs;
 mod inode;
 mod util;
 
-use axdriver::{AxBlockDevice, prelude::*};
+use axdriver::AxBlockDevice;
 pub use fs::*;
 pub use inode::*;
 use lwext4_rust::{BlockDevice, EXT4_DEV_BSIZE, Ext4Error, Ext4Result, ffi::EIO};

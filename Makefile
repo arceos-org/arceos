@@ -58,6 +58,7 @@ NO_AXSTD ?= n
 BLK ?= n
 NET ?= n
 GRAPHIC ?= n
+INPUT ?= n
 DEBUG ?= n
 BUS ?= pci
 MEM ?= 128M
