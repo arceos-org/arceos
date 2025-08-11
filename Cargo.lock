@@ -442,7 +442,7 @@ dependencies = [
 [[package]]
 name = "axfs-ng-vfs"
 version = "0.1.0"
-source = "git+https://github.com/Starry-Mix-THU/axfs-ng-vfs.git?rev=dd08e16#dd08e16d2a618a9a80a543405a10860127433260"
+source = "git+https://github.com/Starry-Mix-THU/axfs-ng-vfs.git?rev=7889c9e#7889c9e71d733124bc2696ca9e79dd0ededfa1c5"
 dependencies = [
  "axerrno",
  "axio",
@@ -452,6 +452,7 @@ dependencies = [
  "inherit-methods-macro",
  "kspin",
  "log",
+ "smallvec",
 ]
 
 [[package]]
@@ -2190,6 +2191,12 @@ source = "git+https://github.com/arceos-org/slab_allocator.git?tag=v0.3.1#3c1349
 dependencies = [
  "buddy_system_allocator",
 ]
+
+[[package]]
+name = "smallvec"
+version = "1.15.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "67b1b7a3b5fe4f1376887184045fcf45c69e92af734b7aaddc05fb777b6fbd03"
 
 [[package]]
 name = "smoltcp"

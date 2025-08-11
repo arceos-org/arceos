@@ -101,10 +101,9 @@ pub(crate) fn with_slot<R>(
             }
             f(loc
                 .user_data()
-                .as_ref()
+                .get::<BindSlot>()
                 .ok_or(LinuxError::ECONNREFUSED)?
-                .downcast_ref::<BindSlot>()
-                .ok_or(LinuxError::ENOTSOCK)?)
+                .as_ref())
         }
     }
 }
@@ -128,11 +127,10 @@ fn with_slot_or_insert<R>(
             if loc.metadata()?.node_type != NodeType::Socket {
                 return Err(LinuxError::ENOTSOCK);
             }
-            let mut user_data = loc.user_data();
-            let data = user_data.get_or_insert_with(|| Box::new(BindSlot::default()));
-            f(data
-                .downcast_ref::<BindSlot>()
-                .ok_or(LinuxError::ENOTSOCK)?)
+            f(loc
+                .user_data()
+                .get_or_insert_with(|| BindSlot::default())
+                .as_ref())
         }
     }
 }

@@ -412,11 +412,7 @@ impl CachedFile {
         let in_memory = location.filesystem().name() == "tmpfs";
 
         let mut guard = location.user_data();
-        let shared = if let Some(shared) = guard.as_ref().and_then(|data| {
-            data.downcast_ref::<FileUserData>()
-                .expect("user data should be FileUserData")
-                .get()
-        }) {
+        let shared = if let Some(shared) = guard.get::<FileUserData>().and_then(|it| it.get()) {
             shared
         } else {
             let (shared, user_data) = if in_memory {
@@ -427,7 +423,7 @@ impl CachedFile {
                 let user_data = FileUserData::Weak(Arc::downgrade(&shared));
                 (shared, user_data)
             };
-            *guard = Some(Box::new(user_data));
+            guard.insert(user_data);
             shared
         };
         drop(guard);
