@@ -107,9 +107,7 @@
 //! 2. Once finished with architectural setup, the arch code calls `kernel_init()`.
 
 #![allow(clippy::upper_case_acronyms)]
-#![feature(asm_const)]
 #![feature(format_args_nl)]
-#![feature(panic_info_message)]
 #![feature(trait_alias)]
 #![no_main]
 #![no_std]
@@ -130,12 +128,12 @@ mod synchronization;
 /// - The init calls in this function must appear in the correct order.
 unsafe fn kernel_init() -> ! {
     // Initialize the BSP driver subsystem.
-    if let Err(x) = bsp::driver::init() {
+    if let Err(x) = unsafe { bsp::driver::init() } {
         panic!("Error initializing BSP driver subsystem: {}", x);
     }
 
     // Initialize all device drivers.
-    driver::driver_manager().init_drivers();
+    unsafe { driver::driver_manager().init_drivers() };
     // println! is usable from here on.
 
     // Transition from unsafe to safe.
