@@ -42,11 +42,13 @@ pub mod interface {
     /// Console statistics.
     pub trait Statistics {
         /// Return the number of characters written.
+        #[allow(dead_code)]
         fn chars_written(&self) -> usize {
             0
         }
 
         /// Return the number of characters read.
+        #[allow(dead_code)]
         fn chars_read(&self) -> usize {
             0
         }
