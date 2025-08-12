@@ -69,4 +69,8 @@ impl FilesystemOps for Ext4Filesystem {
             mount_flags: 0,
         })
     }
+
+    fn flush(&self) -> VfsResult<()> {
+        self.inner.lock().flush().map_err(into_vfs_err)
+    }
 }

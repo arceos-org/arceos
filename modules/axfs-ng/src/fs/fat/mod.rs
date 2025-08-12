@@ -30,7 +30,7 @@ impl fatfs::Write for SeekableDisk {
     }
 
     fn flush(&mut self) -> Result<(), Self::Error> {
-        Ok(())
+        SeekableDisk::flush(self).map_err(|_| ())
     }
 }
 
