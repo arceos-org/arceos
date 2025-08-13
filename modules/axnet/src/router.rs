@@ -62,7 +62,7 @@ impl RouteTable {
 pub struct Router {
     rx_buffer: PacketBuffer,
     tx_buffer: PacketBuffer,
-    devices: Vec<Box<dyn Device>>,
+    pub(crate) devices: Vec<Box<dyn Device>>,
     pub(crate) table: RouteTable,
 }
 impl Router {

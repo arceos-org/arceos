@@ -1,6 +1,9 @@
+use core::task::Waker;
+
 use alloc::{string::String, vec};
 
 use axdriver::prelude::*;
+use axhal::irq::register_irq_waker;
 use hashbrown::HashMap;
 use smoltcp::{
     storage::{PacketBuffer, PacketMetadata},
@@ -329,5 +332,11 @@ impl Device for EthernetDevice {
         };
         dst_buffer.copy_from_slice(packet);
         false
+    }
+
+    fn register_waker(&self, waker: &Waker) {
+        if let Some(irq) = self.inner.irq_number() {
+            register_irq_waker(irq, waker);
+        }
     }
 }

@@ -1,11 +1,13 @@
+use core::task::Waker;
+
 use axhal::time::{NANOS_PER_MICROS, wall_time_nanos};
 use smoltcp::{
     iface::{Interface, SocketSet},
     time::Instant,
-    wire::{HardwareAddress, IpAddress},
+    wire::{HardwareAddress, IpAddress, IpListenEndpoint},
 };
 
-use crate::{router::Router};
+use crate::router::Router;
 
 fn now() -> Instant {
     Instant::from_micros_const((wall_time_nanos() / NANOS_PER_MICROS) as i64)
@@ -38,11 +40,20 @@ impl Service {
         rule.src
     }
 
-    // TODO(mivik): replace this method
-    pub fn is_external(&self, dst_addr: &IpAddress) -> bool {
-        self.router
-            .table
-            .lookup(dst_addr)
-            .is_none_or(|it| it.dev > 0)
+    pub fn device_mask_for(&self, endpoint: &IpListenEndpoint) -> u32 {
+        match endpoint.addr {
+            Some(addr) => {
+                self.router.table.lookup(&addr).map_or(0, |it| 1u32 << it.dev)
+            }
+            None => u32::MAX,
+        }
+    }
+
+    pub fn register_device_waker(&self, mask: u32, waker: &Waker) {
+        for (i, device) in self.router.devices.iter().enumerate() {
+            if mask & (1 << i) != 0 {
+                device.register_waker(waker);
+            }
+        }
     }
 }

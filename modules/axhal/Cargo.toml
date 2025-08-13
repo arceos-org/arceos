@@ -30,10 +30,12 @@ axconfig = { workspace = true }
 axlog = { workspace = true }
 
 axcpu = { workspace = true }
+axio = { workspace = true }
 axplat = { workspace = true }
 cfg-if = { workspace = true }
 heapless = "0.8"
 kernel_guard = { workspace = true }
+kspin = { workspace = true }
 lazyinit = { workspace = true }
 linkme = { version = "0.3.33", optional = true }
 log = { workspace = true }

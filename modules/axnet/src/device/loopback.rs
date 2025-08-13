@@ -1,5 +1,7 @@
 use alloc::vec;
+use core::task::Waker;
 
+use axio::PollSet;
 use smoltcp::{
     storage::{PacketBuffer, PacketMetadata},
     time::Instant,
@@ -13,6 +15,7 @@ use crate::{
 
 pub struct LoopbackDevice {
     buffer: PacketBuffer<'static, ()>,
+    poll: PollSet,
 }
 impl LoopbackDevice {
     pub fn new() -> Self {
@@ -20,7 +23,7 @@ impl LoopbackDevice {
             vec![PacketMetadata::EMPTY; SOCKET_BUFFER_SIZE],
             vec![0u8; STANDARD_MTU * SOCKET_BUFFER_SIZE],
         );
-        Self { buffer }
+        Self { buffer, poll: PollSet::new() }
     }
 }
 
@@ -43,6 +46,7 @@ impl Device for LoopbackDevice {
         match self.buffer.enqueue(packet.len(), ()) {
             Ok(tx_buf) => {
                 tx_buf.copy_from_slice(packet);
+                self.poll.wake();
                 true
             }
             Err(_) => {
@@ -53,5 +57,9 @@ impl Device for LoopbackDevice {
                 false
             }
         }
+    }
+
+    fn register_waker(&self, waker: &Waker) {
+        self.poll.register(waker);
     }
 }

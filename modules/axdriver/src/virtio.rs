@@ -26,7 +26,7 @@ pub trait VirtIoDevMeta {
     type Device: BaseDriverOps;
     type Driver = VirtIoDriver<Self>;
 
-    fn try_new(transport: VirtIoTransport) -> DevResult<AxDeviceEnum>;
+    fn try_new(transport: VirtIoTransport, irq: u32) -> DevResult<AxDeviceEnum>;
 }
 
 cfg_if! {
@@ -37,8 +37,8 @@ cfg_if! {
             const DEVICE_TYPE: DeviceType = DeviceType::Net;
             type Device = axdriver_virtio::VirtIoNetDev<VirtIoHalImpl, VirtIoTransport, 64>;
 
-            fn try_new(transport: VirtIoTransport) -> DevResult<AxDeviceEnum> {
-                Ok(AxDeviceEnum::from_net(Self::Device::try_new(transport)?))
+            fn try_new(transport: VirtIoTransport, irq: u32) -> DevResult<AxDeviceEnum> {
+                Ok(AxDeviceEnum::from_net(Self::Device::try_new(transport, irq)?))
             }
         }
     }
@@ -52,7 +52,7 @@ cfg_if! {
             const DEVICE_TYPE: DeviceType = DeviceType::Block;
             type Device = axdriver_virtio::VirtIoBlkDev<VirtIoHalImpl, VirtIoTransport>;
 
-            fn try_new(transport: VirtIoTransport) -> DevResult<AxDeviceEnum> {
+            fn try_new(transport: VirtIoTransport, _irq: u32) -> DevResult<AxDeviceEnum> {
                 Ok(AxDeviceEnum::from_block(Self::Device::try_new(transport)?))
             }
         }
@@ -67,7 +67,7 @@ cfg_if! {
             const DEVICE_TYPE: DeviceType = DeviceType::Display;
             type Device = axdriver_virtio::VirtIoGpuDev<VirtIoHalImpl, VirtIoTransport>;
 
-            fn try_new(transport: VirtIoTransport) -> DevResult<AxDeviceEnum> {
+            fn try_new(transport: VirtIoTransport, _irq: u32) -> DevResult<AxDeviceEnum> {
                 Ok(AxDeviceEnum::from_display(Self::Device::try_new(transport)?))
             }
         }
@@ -82,7 +82,7 @@ cfg_if! {
             const DEVICE_TYPE: DeviceType = DeviceType::Input;
             type Device = axdriver_virtio::VirtIoInputDev<VirtIoHalImpl, VirtIoTransport>;
 
-            fn try_new(transport: VirtIoTransport) -> DevResult<AxDeviceEnum> {
+            fn try_new(transport: VirtIoTransport, _irq: u32) -> DevResult<AxDeviceEnum> {
                 Ok(AxDeviceEnum::from_input(Self::Device::try_new(transport)?))
             }
         }
@@ -133,11 +133,11 @@ impl<D: VirtIoDevMeta> DriverProbe for VirtIoDriver<D> {
             _ => return None,
         }
 
-        if let Some((ty, transport)) =
+        if let Some((ty, transport, irq)) =
             axdriver_virtio::probe_pci_device::<VirtIoHalImpl>(root, bdf, dev_info)
         {
             if ty == D::DEVICE_TYPE {
-                match D::try_new(transport) {
+                match D::try_new(transport, irq) {
                     Ok(dev) => return Some(dev),
                     Err(e) => {
                         warn!(

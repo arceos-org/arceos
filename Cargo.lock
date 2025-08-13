@@ -321,12 +321,12 @@ dependencies = [
 [[package]]
 name = "axdriver_base"
 version = "0.1.2"
-source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=cfb3455#cfb3455593d1db1c132d3de4ad74d71707d1b461"
+source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=229dffb#229dffb2e9ec4db1b1a47110a6352a212f2ee52c"
 
 [[package]]
 name = "axdriver_block"
 version = "0.1.2"
-source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=cfb3455#cfb3455593d1db1c132d3de4ad74d71707d1b461"
+source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=229dffb#229dffb2e9ec4db1b1a47110a6352a212f2ee52c"
 dependencies = [
  "axdriver_base",
  "bcm2835-sdhci",
@@ -338,7 +338,7 @@ dependencies = [
 [[package]]
 name = "axdriver_display"
 version = "0.1.2"
-source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=cfb3455#cfb3455593d1db1c132d3de4ad74d71707d1b461"
+source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=229dffb#229dffb2e9ec4db1b1a47110a6352a212f2ee52c"
 dependencies = [
  "axdriver_base",
 ]
@@ -346,7 +346,7 @@ dependencies = [
 [[package]]
 name = "axdriver_input"
 version = "0.1.2"
-source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=cfb3455#cfb3455593d1db1c132d3de4ad74d71707d1b461"
+source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=229dffb#229dffb2e9ec4db1b1a47110a6352a212f2ee52c"
 dependencies = [
  "axdriver_base",
  "strum",
@@ -355,7 +355,7 @@ dependencies = [
 [[package]]
 name = "axdriver_net"
 version = "0.1.2"
-source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=cfb3455#cfb3455593d1db1c132d3de4ad74d71707d1b461"
+source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=229dffb#229dffb2e9ec4db1b1a47110a6352a212f2ee52c"
 dependencies = [
  "axdriver_base",
  "fxmac_rs",
@@ -367,7 +367,7 @@ dependencies = [
 [[package]]
 name = "axdriver_pci"
 version = "0.1.2"
-source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=cfb3455#cfb3455593d1db1c132d3de4ad74d71707d1b461"
+source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=229dffb#229dffb2e9ec4db1b1a47110a6352a212f2ee52c"
 dependencies = [
  "virtio-drivers",
 ]
@@ -375,7 +375,7 @@ dependencies = [
 [[package]]
 name = "axdriver_virtio"
 version = "0.1.2"
-source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=cfb3455#cfb3455593d1db1c132d3de4ad74d71707d1b461"
+source = "git+https://github.com/Starry-Mix-THU/axdriver_crates.git?rev=229dffb#229dffb2e9ec4db1b1a47110a6352a212f2ee52c"
 dependencies = [
  "axdriver_base",
  "axdriver_block",
@@ -442,7 +442,7 @@ dependencies = [
 [[package]]
 name = "axfs-ng-vfs"
 version = "0.1.0"
-source = "git+https://github.com/Starry-Mix-THU/axfs-ng-vfs.git?rev=7889c9e#7889c9e71d733124bc2696ca9e79dd0ededfa1c5"
+source = "git+https://github.com/Starry-Mix-THU/axfs-ng-vfs.git?rev=8a549b7#8a549b73c6e97e658f2fe77b102d2ccc40d71fb8"
 dependencies = [
  "axerrno",
  "axio",
@@ -463,6 +463,7 @@ dependencies = [
  "axalloc",
  "axconfig",
  "axcpu",
+ "axio",
  "axlog",
  "axplat",
  "axplat-aarch64-qemu-virt",
@@ -472,6 +473,7 @@ dependencies = [
  "cfg-if",
  "heapless 0.8.0",
  "kernel_guard",
+ "kspin",
  "lazyinit",
  "linkme",
  "log",
@@ -493,7 +495,7 @@ dependencies = [
 [[package]]
 name = "axio"
 version = "0.1.1"
-source = "git+https://github.com/Starry-Mix-THU/axio.git?rev=a069a3d#a069a3d4b0b7e2daa7d13908d9238958699b1a31"
+source = "git+https://github.com/Starry-Mix-THU/axio.git?rev=098eb64#098eb64d19979e64a36281cb0f26a07caef1728c"
 dependencies = [
  "axerrno",
  "bitflags 2.9.1",
@@ -1658,7 +1660,7 @@ dependencies = [
 [[package]]
 name = "lwext4_rust"
 version = "0.2.0"
-source = "git+https://github.com/Starry-Mix-THU/lwext4_rust?rev=1f3faa0#1f3faa053a3ea5f43b5db0e3013a30e917fbd5a7"
+source = "git+https://github.com/Starry-Mix-THU/lwext4_rust?rev=564bc64#564bc641f70129bd3a46e247603a5bc84e77f4d6"
 dependencies = [
  "bindgen",
  "log",

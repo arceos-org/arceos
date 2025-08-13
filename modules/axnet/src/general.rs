@@ -1,23 +1,17 @@
-use alloc::sync::Arc;
 use core::{
-    sync::atomic::{AtomicBool, AtomicU64, Ordering},
+    sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering},
     task::Waker,
     time::Duration,
 };
 
 use axerrno::LinuxResult;
-use axio::{IoEvents, PollSet, Pollable};
+use axio::{IoEvents, Pollable};
 use axtask::future::Poller;
 
-use crate::options::{Configurable, GetSocketOption, SetSocketOption};
+use crate::{options::{Configurable, GetSocketOption, SetSocketOption}, SERVICE};
 
 /// General options for all sockets.
 pub(crate) struct GeneralOptions {
-    pub poll_rx: Arc<PollSet>,
-    pub poll_tx: Arc<PollSet>,
-    pub poll_rx_waker: Waker,
-    pub poll_tx_waker: Waker,
-
     /// Whether the socket is non-blocking.
     nonblock: AtomicBool,
     /// Whether the socket should reuse the address.
@@ -26,13 +20,7 @@ pub(crate) struct GeneralOptions {
     send_timeout_nanos: AtomicU64,
     recv_timeout_nanos: AtomicU64,
 
-    /// Whether the socket is externally driven (e.g., by a network interface).
-    ///
-    /// This means new data can be received without between two consecutive
-    /// calls to `poll_interfaces` (without our intervention between them). This
-    /// is not true for loopback devices since they are always driven internally
-    /// by kernel.
-    externally_driven: AtomicBool,
+    device_mask: AtomicU32,
 }
 impl Default for GeneralOptions {
     fn default() -> Self {
@@ -41,23 +29,14 @@ impl Default for GeneralOptions {
 }
 impl GeneralOptions {
     pub fn new() -> Self {
-        let poll_rx = Arc::new(PollSet::new());
-        let poll_tx = Arc::new(PollSet::new());
-        let poll_rx_waker = Waker::from(poll_rx.clone());
-        let poll_tx_waker = Waker::from(poll_tx.clone());
         Self {
-            poll_rx,
-            poll_tx,
-            poll_rx_waker,
-            poll_tx_waker,
-
             nonblock: AtomicBool::new(false),
             reuse_address: AtomicBool::new(false),
 
             send_timeout_nanos: AtomicU64::new(0),
             recv_timeout_nanos: AtomicU64::new(0),
 
-            externally_driven: AtomicBool::new(false),
+            device_mask: AtomicU32::new(0),
         }
     }
 
@@ -79,12 +58,18 @@ impl GeneralOptions {
         (nanos > 0).then(|| Duration::from_nanos(nanos))
     }
 
-    pub fn set_externally_driven(&self, driven: bool) {
-        self.externally_driven.store(driven, Ordering::Release);
+    pub fn set_device_mask(&self, mask: u32) {
+        self.device_mask.store(mask, Ordering::Release);
     }
 
-    pub fn externally_driven(&self) -> bool {
-        self.externally_driven.load(Ordering::Acquire)
+    pub fn device_mask(&self) -> u32 {
+        self.device_mask.load(Ordering::Acquire)
+    }
+
+    pub fn register_device_waker(&self, waker: &Waker) {
+        SERVICE
+            .lock()
+            .register_device_waker(self.device_mask(), waker);
     }
 
     pub fn send_poller<'a, P: Pollable>(&self, pollable: &'a P) -> Poller<'a, P> {

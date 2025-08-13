@@ -1,13 +1,7 @@
-use alloc::{
-    boxed::Box,
-    collections::VecDeque,
-    sync::{Arc, Weak},
-    vec,
-};
-use core::{ops::DerefMut, task::Waker};
+use alloc::{boxed::Box, collections::VecDeque, sync::Arc, vec};
+use core::ops::DerefMut;
 
 use axerrno::{LinuxError, LinuxResult};
-use axio::PollSet;
 use axsync::Mutex;
 use smoltcp::{
     iface::{SocketHandle, SocketSet},
@@ -25,15 +19,13 @@ const PORT_NUM: usize = 65536;
 struct ListenTableEntry {
     listen_endpoint: IpListenEndpoint,
     syn_queue: VecDeque<SocketHandle>,
-    poll: Weak<PollSet>,
 }
 
 impl ListenTableEntry {
-    pub fn new(listen_endpoint: IpListenEndpoint, poll: Weak<PollSet>) -> Self {
+    pub fn new(listen_endpoint: IpListenEndpoint) -> Self {
         Self {
             listen_endpoint,
             syn_queue: VecDeque::with_capacity(LISTEN_QUEUE_SIZE),
-            poll,
         }
     }
 }
@@ -66,15 +58,12 @@ impl ListenTable {
         self.tcp[port as usize].lock().is_none()
     }
 
-    pub fn listen(&self, listen_endpoint: IpListenEndpoint, poll: &Arc<PollSet>) -> LinuxResult {
+    pub fn listen(&self, listen_endpoint: IpListenEndpoint) -> LinuxResult {
         let port = listen_endpoint.port;
         assert_ne!(port, 0);
         let mut entry = self.tcp[port as usize].lock();
         if entry.is_none() {
-            *entry = Some(Box::new(ListenTableEntry::new(
-                listen_endpoint,
-                Arc::downgrade(poll),
-            )));
+            *entry = Some(Box::new(ListenTableEntry::new(listen_endpoint)));
             Ok(())
         } else {
             warn!("socket already listening on port {port}");
@@ -94,20 +83,6 @@ impl ListenTable {
     pub fn can_accept(&self, port: u16) -> LinuxResult<bool> {
         if let Some(entry) = self.listen_entry(port).lock().as_ref() {
             Ok(entry.syn_queue.iter().any(|&handle| is_connected(handle)))
-        } else {
-            warn!("accept before listen");
-            Err(LinuxError::EINVAL)
-        }
-    }
-
-    pub fn register_recv_waker(&self, port: u16, waker: &Waker) -> LinuxResult<()> {
-        if let Some(entry) = self.listen_entry(port).lock().as_ref() {
-            for &handle in &entry.syn_queue {
-                SOCKET_SET.with_socket_mut::<tcp::Socket, _, _>(handle, |socket| {
-                    socket.register_recv_waker(waker);
-                });
-            }
-            Ok(())
         } else {
             warn!("accept before listen");
             Err(LinuxError::EINVAL)
@@ -177,9 +152,6 @@ impl ListenTable {
                 handle, src, entry.listen_endpoint
             );
             entry.syn_queue.push_back(handle);
-            if let Some(poll) = entry.poll.upgrade() {
-                poll.wake();
-            }
         }
     }
 }

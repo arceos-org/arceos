@@ -51,15 +51,12 @@ impl UdpSocket {
         let socket = new_udp_socket();
         let handle = SOCKET_SET.add(socket);
 
-        // TODO(mivik): control externally driven
-        let general = GeneralOptions::new();
-        general.set_externally_driven(true);
         Self {
             handle,
             local_addr: RwLock::new(None),
             peer_addr: RwLock::new(None),
 
-            general,
+            general: GeneralOptions::new(),
         }
     }
 
@@ -145,6 +142,8 @@ impl SocketOps for UdpSocket {
                 smol::BindError::Unaddressable => ax_err!(ECONNREFUSED, "unaddressable"),
             })
         })?;
+        self.general
+            .set_device_mask(SERVICE.lock().device_mask_for(&endpoint));
 
         *guard = Some(local_endpoint);
         info!("UDP socket {}: bound on {}", self.handle, endpoint);
@@ -330,17 +329,8 @@ impl Pollable for UdpSocket {
     }
 
     fn register(&self, context: &mut Context<'_>, events: IoEvents) {
-        if self.general.externally_driven() {
-            context.waker().wake_by_ref();
-            return;
-        }
-        if events.contains(IoEvents::IN) {
-            self.general.poll_rx.register(context.waker());
-            self.with_smol_socket(|socket| socket.register_recv_waker(&self.general.poll_rx_waker));
-        }
-        if events.contains(IoEvents::OUT) {
-            self.general.poll_tx.register(context.waker());
-            self.with_smol_socket(|socket| socket.register_send_waker(&self.general.poll_tx_waker));
+        if events.intersects(IoEvents::IN | IoEvents::OUT) {
+            self.general.register_device_waker(context.waker());
         }
     }
 }

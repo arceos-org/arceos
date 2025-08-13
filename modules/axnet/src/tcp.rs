@@ -134,14 +134,20 @@ impl TcpSocket {
 
     /// Creates a new TCP socket that is already connected.
     fn new_connected(handle: SocketHandle) -> Self {
-        Self {
+        let result = Self {
             state: StateLock::new(State::Connected),
             handle,
 
             general: GeneralOptions::new(),
             rx_closed: AtomicBool::new(false),
             poll_rx_closed: PollSet::new(),
-        }
+        };
+        result.with_smol_socket(|socket| {
+            result
+                .general
+                .set_device_mask(SERVICE.lock().device_mask_for(&socket.get_bound_endpoint()));
+        });
+        result
     }
 }
 
@@ -290,14 +296,17 @@ impl SocketOps for TcpSocket {
                     if socket.get_bound_endpoint().port != 0 {
                         return Err(LinuxError::EINVAL);
                     }
-                    socket.set_bound_endpoint(IpListenEndpoint {
+                    let endpoint = IpListenEndpoint {
                         addr: if local_addr.ip().is_unspecified() {
                             None
                         } else {
                             Some(local_addr.ip().into())
                         },
                         port: local_addr.port(),
-                    });
+                    };
+                    socket.set_bound_endpoint(endpoint);
+                    self.general
+                        .set_device_mask(SERVICE.lock().device_mask_for(&endpoint));
                     Ok(())
                 })?;
                 debug!("TCP socket {}: binding to {}", self.handle, local_addr);
@@ -335,11 +344,10 @@ impl SocketOps for TcpSocket {
                     bound_endpoint, remote_endpoint
                 );
 
-                self.general
-                    .set_externally_driven(SERVICE.lock().is_external(&remote_endpoint.addr));
-
                 self.with_smol_socket(|socket| {
                     socket.set_bound_endpoint(bound_endpoint);
+                    self.general
+                        .set_device_mask(SERVICE.lock().device_mask_for(&bound_endpoint));
                     socket
                         .connect(
                             crate::SERVICE.lock().iface.context(),
@@ -357,6 +365,9 @@ impl SocketOps for TcpSocket {
                     Ok(())
                 })
             })?;
+
+        // Hack: let the server listen
+        axtask::yield_now();
 
         // Here our state must be `CONNECTING`, and only one thread can run here.
         self.general.send_poller(self).poll(|| {
@@ -376,7 +387,7 @@ impl SocketOps for TcpSocket {
         if let Ok(guard) = self.state.lock(State::Idle) {
             guard.transit(State::Listening, || {
                 let bound_endpoint = self.with_smol_socket(|socket| socket.get_bound_endpoint());
-                LISTEN_TABLE.listen(bound_endpoint, &self.general.poll_rx)?;
+                LISTEN_TABLE.listen(bound_endpoint)?;
                 debug!("listening on {}", bound_endpoint);
                 Ok(())
             })?;
@@ -525,25 +536,8 @@ impl Pollable for TcpSocket {
     }
 
     fn register(&self, context: &mut Context<'_>, events: IoEvents) {
-        if self.general.externally_driven() {
-            context.waker().wake_by_ref();
-            return;
-        }
-        if events.contains(IoEvents::IN) {
-            self.general.poll_rx.register(context.waker());
-            self.with_smol_socket(|socket| socket.register_recv_waker(&self.general.poll_rx_waker));
-            if self.is_listening() {
-                LISTEN_TABLE
-                    .register_recv_waker(
-                        self.bound_endpoint().unwrap().port,
-                        &self.general.poll_rx_waker,
-                    )
-                    .unwrap();
-            }
-        }
-        if events.contains(IoEvents::OUT) {
-            self.general.poll_tx.register(context.waker());
-            self.with_smol_socket(|socket| socket.register_send_waker(&self.general.poll_tx_waker));
+        if events.intersects(IoEvents::IN | IoEvents::OUT | IoEvents::RDHUP) {
+            self.general.register_device_waker(context.waker());
         }
         if events.contains(IoEvents::RDHUP) {
             self.poll_rx_closed.register(context.waker());

@@ -1,3 +1,5 @@
+use core::task::Waker;
+
 use smoltcp::{storage::PacketBuffer, time::Instant, wire::IpAddress};
 
 mod ethernet;
@@ -17,4 +19,6 @@ pub trait Device: Send + Sync {
     /// operation. This is true for loopback devices and can be used to speed
     /// up packet processing.
     fn send(&mut self, next_hop: IpAddress, packet: &[u8], timestamp: Instant) -> bool;
+
+    fn register_waker(&self, waker: &Waker);
 }
