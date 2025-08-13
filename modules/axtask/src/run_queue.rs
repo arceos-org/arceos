@@ -603,31 +603,36 @@ impl AxRunQueue {
 
 async fn gc_entry() -> ! {
     poll_fn(|cx| {
-        // Drop all exited tasks and recycle resources.
-        let n = EXITED_TASKS.with_current(|exited_tasks| exited_tasks.len());
-        for _ in 0..n {
-            // Do not do the slow drops in the critical section.
-            let task = EXITED_TASKS.with_current(|exited_tasks| exited_tasks.pop_front());
-            if let Some(task) = task {
-                match Arc::try_unwrap(task) {
-                    Ok(task) => {
-                        // If I'm the last holder of the task, drop it immediately.
-                        drop(task);
-                    }
-                    Err(task) => {
-                        // Otherwise (e.g, `switch_to` is not compeleted, held by the
-                        // joiner, etc), push it back and wait for them to drop first.
-                        EXITED_TASKS.with_current(|exited_tasks| exited_tasks.push_back(task));
-                        cx.waker().wake_by_ref();
+        loop {
+            // Drop all exited tasks and recycle resources.
+            let n = EXITED_TASKS.with_current(|exited_tasks| exited_tasks.len());
+            for _ in 0..n {
+                // Do not do the slow drops in the critical section.
+                let task = EXITED_TASKS.with_current(|exited_tasks| exited_tasks.pop_front());
+                if let Some(task) = task {
+                    match Arc::try_unwrap(task) {
+                        Ok(task) => {
+                            // If I'm the last holder of the task, drop it immediately.
+                            drop(task);
+                        }
+                        Err(task) => {
+                            // Otherwise (e.g, `switch_to` is not compeleted, held by the
+                            // joiner, etc), push it back and wait for them to drop first.
+                            EXITED_TASKS.with_current(|exited_tasks| exited_tasks.push_back(task));
+                        }
                     }
                 }
             }
+            unsafe { WAIT_FOR_EXIT.current_ref_raw() }.register(cx.waker());
+
+            // New tasks might be added during the above section, recheck it to
+            // prevent us from sleeping indefinitely.
+            if EXITED_TASKS.with_current(|exited_tasks| exited_tasks.is_empty()) {
+                break;
+            }
+
+            crate::yield_now();
         }
-        // Note: we cannot block current task with preemption disabled, use
-        // `current_ref_raw` to get the `WAIT_FOR_EXIT`'s reference here to avoid the
-        // use of `NoPreemptGuard`. Since gc task is pinned to the current CPU, there is
-        // no affection if the gc task is preempted during the process.
-        unsafe { WAIT_FOR_EXIT.current_ref_raw() }.register(cx.waker());
         Poll::Pending
     })
     .await
