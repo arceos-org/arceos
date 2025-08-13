@@ -137,9 +137,7 @@ impl BackendOps for CowBackend {
         for addr in pages_in(range, self.size)? {
             if let Ok((frame, _flags, page_size)) = pt.unmap(addr) {
                 assert_eq!(page_size, self.size);
-                let c = dec_frame_ref(frame);
-                debug!("Cow::unmap: {addr:?} frame: {frame:?} refcount: {c}");
-                if c == 1 {
+                if dec_frame_ref(frame) == 1 {
                     dealloc_frame(frame, self.size);
                 }
             } else {
