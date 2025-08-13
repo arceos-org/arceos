@@ -42,13 +42,13 @@ axconfig = { workspace = true, optional = true }
 axdma = { workspace = true, optional = true }
 axhal = { workspace = true, optional = true }
 
-axdriver_base = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "229dffb" }
-axdriver_block = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "229dffb", optional = true }
-axdriver_display = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "229dffb", optional = true }
-axdriver_input = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "229dffb", optional = true }
-axdriver_net = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "229dffb", optional = true }
-axdriver_pci = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "229dffb", optional = true }
-axdriver_virtio = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "229dffb", optional = true }
+axdriver_base = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "60dbbb6" }
+axdriver_block = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "60dbbb6", optional = true }
+axdriver_display = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "60dbbb6", optional = true }
+axdriver_input = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "60dbbb6", optional = true }
+axdriver_net = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "60dbbb6", optional = true }
+axdriver_pci = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "60dbbb6", optional = true }
+axdriver_virtio = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "60dbbb6", optional = true }
 cfg-if = { workspace = true }
 crate_interface = { workspace = true }
 log = { workspace = true }
