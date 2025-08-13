@@ -1,3 +1,4 @@
+mod embassy_async;
 mod mem;
 mod task;
 
@@ -45,6 +46,7 @@ mod time {
     };
 }
 
+pub use self::embassy_async::*;
 pub use self::mem::*;
 pub use self::stdio::*;
 pub use self::task::*;

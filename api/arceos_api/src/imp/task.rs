@@ -26,6 +26,21 @@ pub fn ax_exit(_exit_code: i32) -> ! {
 cfg_task! {
     use core::time::Duration;
 
+    /// A handle to a futex.
+    pub type AxFutex = axtask::Futex;
+
+    pub fn ax_futex_wake(futex: &AxFutex) {
+        axtask::futex_wake(futex);
+    }
+
+    pub fn ax_futex_wake_all(futex: &AxFutex) {
+        axtask::futex_wake_all(futex);
+    }
+
+    pub fn ax_futex_wait(futex: &AxFutex, expected: u32, timeout: Option<Duration>) -> bool {
+        axtask::futex_wait(futex, expected, timeout)
+    }
+
     /// A handle to a task.
     pub struct AxTaskHandle {
         inner: axtask::AxTaskRef,

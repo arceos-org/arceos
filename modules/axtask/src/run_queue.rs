@@ -259,7 +259,7 @@ impl<G: BaseGuard> AxRunQueueRef<'_, G> {
             let cpu_id = self.inner.cpu_id;
             debug!("task unblock: {} on run_queue {}", task_id_name, cpu_id);
             // Note: when the task is unblocked on another CPU's run queue,
-            // we just ingiore the `resched` flag.
+            // we just ingnore the `resched` flag.
             if resched && cpu_id == this_cpu_id() {
                 #[cfg(feature = "preempt")]
                 crate::current().set_preempt_pending(true);

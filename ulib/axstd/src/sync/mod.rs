@@ -8,8 +8,13 @@ pub use core::sync::atomic;
 pub use alloc::sync::{Arc, Weak};
 
 #[cfg(feature = "multitask")]
+mod condvar;
+#[cfg(feature = "multitask")]
 mod mutex;
 
+#[cfg(feature = "multitask")]
+#[doc(cfg(feature = "multitask"))]
+pub use self::condvar::Condvar;
 #[cfg(feature = "multitask")]
 #[doc(cfg(feature = "multitask"))]
 pub use self::mutex::{Mutex, MutexGuard, RawMutex};

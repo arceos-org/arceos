@@ -1,0 +1,50 @@
+[package]
+name = "axembassy"
+version.workspace = true
+edition.workspace = true
+authors = ["nostalgia <lv15623448685@gmail.com>"]
+license.workspace = true
+homepage.workspace = true
+
+[features]
+driver = [
+	"dep:embassy-time-driver",
+	"dep:embassy-time-queue-utils",
+	"dep:percpu",
+	"axhal/irq",
+]
+embassy-utils = [
+	"dep:embassy-executor",
+	"dep:embassy-futures",
+	"dep:embassy-sync",
+]
+
+# executor is in thread interaction 
+executor-preempt = ["executor-thread"]
+executor-thread = ["embassy-utils", "axtask/multitask", "dep:axsync"]
+
+executor-single = ["embassy-utils", "axhal/irq"]
+
+default = ["driver"]
+
+[dependencies]
+axconfig = { workspace = true }
+axhal = { workspace = true, features = ["irq"] }
+axsync = { workspace = true, features = ["multitask"], optional = true }
+axtask = { workspace = true }
+
+embassy-time-driver = { git = "https://github.com/embassy-rs/embassy", branch = "main", optional = true, features = [
+	# annotate explicitly
+	# wait to be improved
+	"tick-hz-100",
+] }
+embassy-time-queue-utils = { git = "https://github.com/embassy-rs/embassy", branch = "main", optional = true }
+embassy-executor = { git = "https://github.com/embassy-rs/embassy", branch = "main", default-features = false, optional = true }
+embassy-futures = { git = "https://github.com/embassy-rs/embassy", branch = "main", optional = true }
+embassy-sync = { git = "https://github.com/embassy-rs/embassy", branch = "main", optional = true }
+
+percpu = { version = "0.2", optional = true }
+cfg-if = "1.0"
+log = "=0.4.21"
+static_cell = "2.1.0"
+kspin = "0.1"
