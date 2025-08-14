@@ -1,7 +1,7 @@
 use core::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Mutex, Once};
 
-use crate::{WaitQueue, api as axtask, current};
+use crate::{api as axtask, current};
 
 static INIT: Once = Once::new();
 
@@ -65,50 +65,6 @@ fn test_fp_state_switch() {
     while FINISHED_TASKS.load(Ordering::Acquire) < NUM_TASKS {
         axtask::yield_now();
     }
-}
-
-#[test]
-fn test_wait_queue() {
-    let _lock = SERIAL.lock();
-    INIT.call_once(axtask::init_scheduler);
-
-    const NUM_TASKS: usize = 10;
-
-    static WQ1: WaitQueue = WaitQueue::new();
-    static WQ2: WaitQueue = WaitQueue::new();
-    static COUNTER: AtomicUsize = AtomicUsize::new(0);
-
-    for _ in 0..NUM_TASKS {
-        axtask::spawn(
-            move || {
-                COUNTER.fetch_add(1, Ordering::Release);
-                println!("wait_queue: task {:?} started", current().id());
-                WQ1.notify_one(true); // WQ1.wait_until()
-                WQ2.wait();
-
-                assert!(!current().in_wait_queue());
-
-                COUNTER.fetch_sub(1, Ordering::Release);
-                println!("wait_queue: task {:?} finished", current().id());
-                WQ1.notify_one(true); // WQ1.wait_until()
-            },
-            "".into(),
-        );
-    }
-
-    println!("task {:?} is waiting for tasks to start...", current().id());
-    WQ1.wait_until(|| COUNTER.load(Ordering::Acquire) == NUM_TASKS);
-    assert_eq!(COUNTER.load(Ordering::Acquire), NUM_TASKS);
-    assert!(!current().in_wait_queue());
-    WQ2.notify_all(true); // WQ2.wait()
-
-    println!(
-        "task {:?} is waiting for tasks to finish...",
-        current().id()
-    );
-    WQ1.wait_until(|| COUNTER.load(Ordering::Acquire) == 0);
-    assert_eq!(COUNTER.load(Ordering::Acquire), 0);
-    assert!(!current().in_wait_queue());
 }
 
 #[test]

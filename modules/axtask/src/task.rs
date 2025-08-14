@@ -64,9 +64,6 @@ pub struct TaskInner {
     /// CPU affinity mask.
     cpumask: SpinNoIrq<AxCpuMask>,
 
-    /// Mark whether the task is in the wait queue.
-    in_wait_queue: AtomicBool,
-
     /// Interruption state (0 = not interrupted, 1 = interrupted, 2 =
     /// interrupted with SA_RESTART).
     interruption: AtomicU8,
@@ -242,7 +239,6 @@ impl TaskInner {
             state: AtomicU8::new(TaskState::Ready as u8),
             // By default, the task is allowed to run on all CPUs.
             cpumask: SpinNoIrq::new(AxCpuMask::full()),
-            in_wait_queue: AtomicBool::new(false),
             interruption: AtomicU8::new(0),
             interrupt_waker: AtomicWaker::new(),
             #[cfg(feature = "smp")]
@@ -328,16 +324,6 @@ impl TaskInner {
     #[inline]
     pub(crate) const fn is_idle(&self) -> bool {
         self.is_idle
-    }
-
-    #[inline]
-    pub(crate) fn in_wait_queue(&self) -> bool {
-        self.in_wait_queue.load(Ordering::Acquire)
-    }
-
-    #[inline]
-    pub(crate) fn set_in_wait_queue(&self, in_wait_queue: bool) {
-        self.in_wait_queue.store(in_wait_queue, Ordering::Release);
     }
 
     pub fn register_interrupt_waker(&self, waker: &Waker) {

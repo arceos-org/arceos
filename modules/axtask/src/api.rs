@@ -8,14 +8,11 @@ use alloc::{
 use kernel_guard::NoPreemptIrqSave;
 
 pub(crate) use crate::run_queue::{current_run_queue, select_run_queue};
+pub use crate::task::{CurrentTask, TaskId, TaskInner, TaskState};
 #[cfg(feature = "task-ext")]
 pub use crate::task::{TaskExt, TaskExtProxy};
 #[cfg(feature = "irq")]
 pub use crate::timers::register_timer_callback;
-pub use crate::{
-    task::{CurrentTask, TaskId, TaskInner, TaskState},
-    wait_queue::WaitQueue,
-};
 
 /// The reference type of a task.
 pub type AxTaskRef = Arc<AxTask>;

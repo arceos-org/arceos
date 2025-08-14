@@ -10,8 +10,7 @@
 //!   management and scheduling is used, as well as more task-related APIs.
 //!   Otherwise, only a few APIs with naive implementation is available.
 //! - `irq`: Interrupts are enabled. If this feature is enabled, timer-based
-//!   APIs can be used, such as [`sleep`], [`sleep_until`], and
-//!   [`WaitQueue::wait_timeout`].
+//!   APIs can be used, such as [`sleep`], [`sleep_until`].
 //! - `preempt`: Enable preemptive scheduling.
 //! - `sched-fifo`: Use the [FIFO cooperative scheduler][1]. It also enables the
 //!   `multitask` feature if it is enabled. This feature is enabled by default,
@@ -43,7 +42,6 @@ cfg_if::cfg_if! {
         mod run_queue;
         mod task;
         mod api;
-        mod wait_queue;
 
         pub mod future;
 
