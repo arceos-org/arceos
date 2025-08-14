@@ -55,7 +55,7 @@ axtask = { path = "modules/axtask" }
 axdma = { path = "modules/axdma" }
 
 allocator = { git = "https://github.com/Starry-Mix-THU/allocator.git", rev = "d5feebd" }
-axbacktrace = { git = "https://github.com/Starry-Mix-THU/axbacktrace.git", rev = "322f6da" }
+axbacktrace = "0.1"
 axcpu = "0.2"
 axerrno = { git = "https://github.com/Starry-Mix-THU/axerrno.git", rev = "f5d8f86" }
 axfs-ng-vfs = { git = "https://github.com/Starry-Mix-THU/axfs-ng-vfs.git", rev = "8a549b7" }
@@ -87,6 +87,7 @@ spin = "0.9"
 lto = true
 
 [patch.crates-io]
-axcpu = { git = "https://github.com/Starry-Mix-THU/axcpu.git", rev = "e62544b" }
+axbacktrace = { git = "https://github.com/Starry-Mix-THU/axbacktrace.git", rev = "322f6da" }
+axcpu = { git = "https://github.com/Starry-Mix-THU/axcpu.git", rev = "bc08547" }
 page_table_entry = { git = "https://github.com/Starry-Mix-THU/page_table_multiarch.git", rev = "4edb821" }
 page_table_multiarch = { git = "https://github.com/Starry-Mix-THU/page_table_multiarch.git", rev = "4edb821" }
