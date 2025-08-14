@@ -88,6 +88,6 @@ lto = true
 
 [patch.crates-io]
 axbacktrace = { git = "https://github.com/Starry-Mix-THU/axbacktrace.git", rev = "322f6da" }
-axcpu = { git = "https://github.com/Starry-Mix-THU/axcpu.git", rev = "7357d66" }
+axcpu = { git = "https://github.com/Starry-Mix-THU/axcpu.git", rev = "2a01987" }
 page_table_entry = { git = "https://github.com/Starry-Mix-THU/page_table_multiarch.git", rev = "4edb821" }
 page_table_multiarch = { git = "https://github.com/Starry-Mix-THU/page_table_multiarch.git", rev = "4edb821" }

@@ -140,8 +140,8 @@ mod tests {
         }
 
         for _ in 0..NUM_TASKS {
-            thread::spawn(|| inc(1));
-            thread::spawn(|| inc(2));
+            thread::spawn(|| inc(1), "".into());
+            thread::spawn(|| inc(2), "".into());
         }
 
         println!("spawn OK");

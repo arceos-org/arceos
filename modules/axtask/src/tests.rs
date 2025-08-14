@@ -49,15 +49,18 @@ fn test_fp_state_switch() {
     static FINISHED_TASKS: AtomicUsize = AtomicUsize::new(0);
 
     for (i, float) in FLOATS.iter().enumerate() {
-        axtask::spawn(move || {
-            let mut value = float + i as f64;
-            axtask::yield_now();
-            value -= i as f64;
+        axtask::spawn(
+            move || {
+                let mut value = float + i as f64;
+                axtask::yield_now();
+                value -= i as f64;
 
-            println!("fp_state_switch: Float {i} = {value}");
-            assert!((value - float).abs() < 1e-9);
-            FINISHED_TASKS.fetch_add(1, Ordering::Release);
-        });
+                println!("fp_state_switch: Float {i} = {value}");
+                assert!((value - float).abs() < 1e-9);
+                FINISHED_TASKS.fetch_add(1, Ordering::Release);
+            },
+            "".into(),
+        );
     }
     while FINISHED_TASKS.load(Ordering::Acquire) < NUM_TASKS {
         axtask::yield_now();
@@ -76,18 +79,21 @@ fn test_wait_queue() {
     static COUNTER: AtomicUsize = AtomicUsize::new(0);
 
     for _ in 0..NUM_TASKS {
-        axtask::spawn(move || {
-            COUNTER.fetch_add(1, Ordering::Release);
-            println!("wait_queue: task {:?} started", current().id());
-            WQ1.notify_one(true); // WQ1.wait_until()
-            WQ2.wait();
+        axtask::spawn(
+            move || {
+                COUNTER.fetch_add(1, Ordering::Release);
+                println!("wait_queue: task {:?} started", current().id());
+                WQ1.notify_one(true); // WQ1.wait_until()
+                WQ2.wait();
 
-            assert!(!current().in_wait_queue());
+                assert!(!current().in_wait_queue());
 
-            COUNTER.fetch_sub(1, Ordering::Release);
-            println!("wait_queue: task {:?} finished", current().id());
-            WQ1.notify_one(true); // WQ1.wait_until()
-        });
+                COUNTER.fetch_sub(1, Ordering::Release);
+                println!("wait_queue: task {:?} finished", current().id());
+                WQ1.notify_one(true); // WQ1.wait_until()
+            },
+            "".into(),
+        );
     }
 
     println!("task {:?} is waiting for tasks to start...", current().id());

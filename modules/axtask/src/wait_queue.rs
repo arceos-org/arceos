@@ -240,7 +240,7 @@ impl WaitQueue {
     /// * `target` - The target wait queue to which tasks will be moved.
     ///
     /// ## Returns
-    /// The number of tasks actually requeued.  
+    /// The number of tasks actually requeued.
     pub fn requeue(&self, mut count: usize, target: &WaitQueue) -> usize {
         let tasks: Vec<_> = {
             let mut wq = self.queue.lock();

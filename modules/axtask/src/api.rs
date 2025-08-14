@@ -125,11 +125,11 @@ where
 /// [`axconfig::TASK_STACK_SIZE`].
 ///
 /// Returns the task reference.
-pub fn spawn<F>(f: F) -> AxTaskRef
+pub fn spawn<F>(f: F, name: String) -> AxTaskRef
 where
     F: FnOnce() + Send + 'static,
 {
-    spawn_raw(f, "".into(), axconfig::TASK_STACK_SIZE)
+    spawn_raw(f, name, axconfig::TASK_STACK_SIZE)
 }
 
 /// Set the priority for current task.
