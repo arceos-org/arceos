@@ -254,7 +254,7 @@ dependencies = [
 [[package]]
 name = "axcpu"
 version = "0.2.2"
-source = "git+https://github.com/Starry-Mix-THU/axcpu.git?rev=bc08547#bc085471818c5e853b22b61793c0ccb531e9b62a"
+source = "git+https://github.com/Starry-Mix-THU/axcpu.git?rev=7357d66#7357d667910df7e5b1dc665cf960b0ca447b3e53"
 dependencies = [
  "aarch64-cpu 10.0.0",
  "axbacktrace",
@@ -442,7 +442,7 @@ dependencies = [
 [[package]]
 name = "axfs-ng-vfs"
 version = "0.1.0"
-source = "git+https://github.com/Starry-Mix-THU/axfs-ng-vfs.git?rev=8a549b7#8a549b73c6e97e658f2fe77b102d2ccc40d71fb8"
+source = "git+https://github.com/Starry-Mix-THU/axfs-ng-vfs.git?rev=b67d591#b67d59190d0348a43a9f1bcf14f58a734b3ea57f"
 dependencies = [
  "axerrno",
  "axio",
@@ -495,7 +495,7 @@ dependencies = [
 [[package]]
 name = "axio"
 version = "0.1.1"
-source = "git+https://github.com/Starry-Mix-THU/axio.git?rev=098eb64#098eb64d19979e64a36281cb0f26a07caef1728c"
+source = "git+https://github.com/Starry-Mix-THU/axio.git?rev=7c1ac3a#7c1ac3adda0dc6651e763e74ee4f4e89abea05e6"
 dependencies = [
  "axerrno",
  "bitflags 2.9.1",
