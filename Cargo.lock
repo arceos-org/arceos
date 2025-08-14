@@ -1660,7 +1660,7 @@ dependencies = [
 [[package]]
 name = "lwext4_rust"
 version = "0.2.0"
-source = "git+https://github.com/Starry-Mix-THU/lwext4_rust?rev=564bc64#564bc641f70129bd3a46e247603a5bc84e77f4d6"
+source = "git+https://github.com/Starry-Mix-THU/lwext4_rust?rev=b6132d8#b6132d8fff01d62d307fde8086894781c10218af"
 dependencies = [
  "bindgen",
  "log",

@@ -35,7 +35,7 @@ spin = { workspace = true }
 
 [dependencies.lwext4_rust]
 git = "https://github.com/Starry-Mix-THU/lwext4_rust"
-rev = "564bc64"
+rev = "b6132d8"
 default-features = false
 optional = true
 
