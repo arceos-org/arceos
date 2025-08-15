@@ -71,7 +71,7 @@ pub mod paging;
 
 /// Console input and output.
 pub mod console {
-    pub use axplat::console::{enable_rx_interrupt, read_bytes, write_bytes};
+    pub use axplat::console::{get_console_irq, read_bytes, write_bytes};
 }
 
 /// CPU power management.
