@@ -208,15 +208,10 @@ impl<F: Future> Future for Timeout<F> {
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.project();
 
-        match this.inner.poll(cx) {
-            Poll::Ready(output) => Poll::Ready(Some(output)),
-            Poll::Pending => {
-                if this.delay.poll(cx).is_ready() {
-                    Poll::Ready(None)
-                } else {
-                    Poll::Pending
-                }
-            }
+        if this.delay.poll(cx).is_ready() {
+            Poll::Ready(None)
+        } else {
+            this.inner.poll(cx).map(Some)
         }
     }
 }
