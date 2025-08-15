@@ -2,7 +2,9 @@ use alloc::{borrow::ToOwned, string::String, sync::Arc};
 use core::{any::Any, task::Context};
 
 use axfs_ng_vfs::{
-    DeviceId, DirEntry, DirEntrySink, DirNode, DirNodeOps, FileNode, FileNodeOps, FilesystemOps, Metadata, MetadataUpdate, NodeFlags, NodeOps, NodePermission, NodeType, Reference, VfsError, VfsResult, WeakDirEntry
+    DeviceId, DirEntry, DirEntrySink, DirNode, DirNodeOps, FileNode, FileNodeOps, FilesystemOps,
+    Metadata, MetadataUpdate, NodeFlags, NodeOps, NodePermission, NodeType, Reference, VfsError,
+    VfsResult, WeakDirEntry,
 };
 use axio::{IoEvents, Pollable};
 use lwext4_rust::{FileAttr, InodeType};
@@ -46,6 +48,14 @@ impl Inode {
         let mut result = fs.lookup(self.ino, name).map_err(into_vfs_err)?;
         let entry = result.entry();
         Ok(self.create_entry(&entry, name))
+    }
+
+    fn update_ctime_locked(&self, fs: &mut LwExt4Filesystem, ino: u32) -> VfsResult<()> {
+        fs.with_inode_ref(ino, |ino| {
+            ino.update_ctime();
+            Ok(())
+        })
+        .map_err(into_vfs_err)
     }
 }
 
@@ -93,6 +103,7 @@ impl NodeOps for Inode {
             if let Some(mtime) = update.mtime {
                 inode.set_mtime(&mtime);
             }
+            inode.update_ctime();
             Ok(())
         })
         .map_err(into_vfs_err)?;
@@ -217,6 +228,8 @@ impl DirNodeOps for Inode {
         let ino = fs
             .create(self.ino, name, inode_type, permission.bits() as _)
             .map_err(into_vfs_err)?;
+        self.update_ctime_locked(&mut fs, ino)?;
+
         let reference = Reference::new(
             self.this.as_ref().and_then(WeakDirEntry::upgrade),
             name.to_owned(),
@@ -239,6 +252,7 @@ impl DirNodeOps for Inode {
         let mut fs = self.fs.lock();
         fs.link(self.ino, name, node.inode() as _)
             .map_err(into_vfs_err)?;
+        self.update_ctime_locked(&mut fs, node.inode() as _)?;
         self.lookup_locked(&mut fs, name)
     }
 
@@ -248,9 +262,8 @@ impl DirNodeOps for Inode {
 
     fn rename(&self, src_name: &str, dst_dir: &DirNode, dst_name: &str) -> VfsResult<()> {
         let dst_dir: Arc<Self> = dst_dir.downcast().map_err(|_| VfsError::EINVAL)?;
-        self.fs
-            .lock()
-            .rename(self.ino, src_name, dst_dir.ino, dst_name)
+        let mut fs = self.fs.lock();
+        fs.rename(self.ino, src_name, dst_dir.ino, dst_name)
             .map_err(into_vfs_err)
     }
 }

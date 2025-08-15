@@ -10,6 +10,7 @@ homepage.workspace = true
 default = ["fat"]
 fat = ["dep:fatfs"]
 ext4 = ["dep:lwext4_rust"]
+times = []
 std = ["lwext4_rust?/std"]
 
 [dependencies]
@@ -35,7 +36,7 @@ spin = { workspace = true }
 
 [dependencies.lwext4_rust]
 git = "https://github.com/Starry-Mix-THU/lwext4_rust"
-rev = "b6132d8"
+rev = "43d771a"
 default-features = false
 optional = true
 

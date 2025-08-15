@@ -4,6 +4,8 @@ use alloc::{
     vec::Vec,
 };
 use core::{num::NonZeroUsize, ops::Range, task::Context};
+#[cfg(feature = "times")]
+use core::sync::atomic::{AtomicU8, Ordering};
 
 use allocator::AllocError;
 use axalloc::{UsageKind, global_allocator};
@@ -735,6 +737,8 @@ pub struct File {
     inner: FileBackend,
     flags: FileFlags,
     position: Option<Mutex<u64>>,
+    #[cfg(feature = "times")]
+    access_flags: AtomicU8,
 }
 
 impl File {
@@ -752,6 +756,8 @@ impl File {
             inner,
             flags,
             position,
+            #[cfg(feature = "times")]
+            access_flags: AtomicU8::new(0),
         }
     }
 
@@ -818,6 +824,10 @@ impl File {
 
 impl<'a> axio::Read for &'a File {
     fn read(&mut self, buf: &mut [u8]) -> axio::Result<usize> {
+        #[cfg(feature = "times")]
+        {
+            self.access_flags.fetch_or(1, Ordering::AcqRel);
+        }
         if let Some(pos) = self.position.as_ref() {
             let mut pos = pos.lock();
             self.read_at(buf, *pos).inspect(|n| {
@@ -831,6 +841,10 @@ impl<'a> axio::Read for &'a File {
 
 impl<'a> axio::Write for &'a File {
     fn write(&mut self, buf: &[u8]) -> axio::Result<usize> {
+        #[cfg(feature = "times")]
+        {
+            self.access_flags.fetch_or(3, Ordering::AcqRel);
+        }
         if let Some(pos) = self.position.as_ref() {
             let mut pos = pos.lock();
             if let Ok(f) = self.access(FileFlags::APPEND) {
@@ -883,5 +897,24 @@ impl Pollable for File {
 
     fn register(&self, context: &mut Context<'_>, events: IoEvents) {
         self.inner.location().register(context, events)
+    }
+}
+
+#[cfg(feature = "times")]
+impl Drop for File {
+    fn drop(&mut self) {
+        let flags = self.access_flags.load(Ordering::Acquire);
+        if flags != 0 {
+            let mut update = axfs_ng_vfs::MetadataUpdate::default();
+            if flags & 1 != 0 {
+                update.atime = Some(axhal::time::wall_time());
+            }
+            if flags & 2 != 0 {
+                update.mtime = Some(axhal::time::wall_time());
+            }
+            if let Err(err) = self.inner.location().update_metadata(update) {
+                warn!("Failed to update file times on drop: {err:?}");
+            }
+        }
     }
 }

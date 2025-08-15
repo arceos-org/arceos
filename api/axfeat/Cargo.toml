@@ -36,6 +36,8 @@ paging = ["alloc", "axhal/paging", "axruntime/paging"]
 tls = ["alloc", "axhal/tls", "axruntime/tls", "axtask?/tls"]
 dma = ["alloc", "paging"]
 
+fs-times = ["axfs-ng/times"]
+
 # Multi-threading and scheduler
 multitask = ["alloc", "axtask/multitask", "axsync/multitask", "axruntime/multitask"]
 sched-fifo = ["axtask/sched-fifo"]
