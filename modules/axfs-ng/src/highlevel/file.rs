@@ -3,9 +3,9 @@ use alloc::{
     sync::{Arc, Weak},
     vec::Vec,
 };
-use core::{num::NonZeroUsize, ops::Range, task::Context};
 #[cfg(feature = "times")]
 use core::sync::atomic::{AtomicU8, Ordering};
+use core::{num::NonZeroUsize, ops::Range, task::Context};
 
 use allocator::AllocError;
 use axalloc::{UsageKind, global_allocator};
@@ -742,7 +742,7 @@ pub struct File {
 }
 
 impl File {
-    pub(crate) fn new(inner: FileBackend, flags: FileFlags) -> Self {
+    pub fn new(inner: FileBackend, flags: FileFlags) -> Self {
         let position = if inner.location().flags().contains(NodeFlags::STREAM) {
             None
         } else {
