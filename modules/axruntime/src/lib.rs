@@ -171,10 +171,9 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
             end: _etext.as_ptr() as usize,
         };
 
-        use axconfig::plat::{PHYS_MEMORY_BASE, PHYS_MEMORY_SIZE, PHYS_VIRT_OFFSET};
         let fp_range = Range {
             start: _edata.as_ptr() as usize,
-            end: PHYS_MEMORY_BASE + PHYS_MEMORY_SIZE + PHYS_VIRT_OFFSET,
+            end: usize::MAX,
         };
 
         axbacktrace::init(ip_range, fp_range);
