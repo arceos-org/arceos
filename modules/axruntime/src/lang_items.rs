@@ -2,7 +2,7 @@ use core::panic::PanicInfo;
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    error!("{}", info);
-    error!("{}", axbacktrace::Backtrace::capture());
+    ax_println!("{}", info);
+    ax_println!("{}", axbacktrace::Backtrace::capture());
     axhal::power::system_off()
 }

@@ -354,7 +354,7 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
         // the preemption permission.
         let can_preempt = curr.can_preempt(1);
 
-        debug!(
+        trace!(
             "current task is to be preempted: {}, allow={}",
             curr.id_name(),
             can_preempt
