@@ -70,6 +70,11 @@ SECTIONS
         *(.data .data.*)
         *(.sdata .sdata.*)
         *(.got .got.*)
+
+        . = ALIGN(0x10);
+        _ex_table_start = .;
+        KEEP(*(__ex_table))
+        _ex_table_end = .;
     }
 
     .tdata : ALIGN(0x10) {

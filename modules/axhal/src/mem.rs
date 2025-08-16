@@ -1,15 +1,12 @@
 //! Physical memory management.
 
+pub use axplat::mem::{
+    MemRegionFlags, PhysMemRegion, mmio_ranges, phys_ram_ranges, phys_to_virt,
+    reserved_phys_ram_ranges, total_ram_size, virt_to_phys,
+};
+use axplat::mem::{check_sorted_ranges_overlap, ranges_difference};
 use heapless::Vec;
 use lazyinit::LazyInit;
-
-use axplat::mem::{check_sorted_ranges_overlap, ranges_difference};
-
-pub use axplat::mem::{MemRegionFlags, PhysMemRegion};
-pub use axplat::mem::{
-    mmio_ranges, phys_ram_ranges, phys_to_virt, reserved_phys_ram_ranges, total_ram_size,
-    virt_to_phys,
-};
 pub use memory_addr::{PAGE_SIZE_4K, PhysAddr, PhysAddrRange, VirtAddr, VirtAddrRange, pa, va};
 
 const MAX_REGIONS: usize = 128;
@@ -23,7 +20,8 @@ pub fn memory_regions() -> impl Iterator<Item = PhysMemRegion> {
 
 /// Fills the `.bss` section with zeros.
 ///
-/// It requires the symbols `_sbss` and `_ebss` to be defined in the linker script.
+/// It requires the symbols `_sbss` and `_ebss` to be defined in the linker
+/// script.
 ///
 /// # Safety
 ///
@@ -93,7 +91,8 @@ pub fn init() {
         .chain(core::iter::once((kernel_start, kernel_size))) // kernel image range is also reserved
         .collect::<Vec<_, MAX_REGIONS>>();
 
-    // Remove all reserved ranges from RAM ranges, and push the remaining as free memory
+    // Remove all reserved ranges from RAM ranges, and push the remaining as free
+    // memory
     reserved_ranges.sort_unstable_by_key(|&(start, _size)| start);
     ranges_difference(phys_ram_ranges(), &reserved_ranges, |(start, size)| {
         push(PhysMemRegion::new_ram(start, size, "free memory"));
