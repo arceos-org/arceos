@@ -36,6 +36,9 @@ else ifneq ($(filter $(or $(MAKECMDGOALS), $(.DEFAULT_GOAL)), all build run just
     ifeq ($(BACKTRACE), y)
       RUSTFLAGS += -C force-frame-pointers -C debuginfo=2 -C strip=none
     endif
+    ifeq ($(ARCH), loongarch64)
+      RUSTFLAGS += -C target-feature=-ual
+    endif
   endif
   $(if $(V), $(info RUSTFLAGS: "$(RUSTFLAGS)"))
   export RUSTFLAGS
