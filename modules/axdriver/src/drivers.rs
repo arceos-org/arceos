@@ -58,42 +58,16 @@ register_input_driver!(
 cfg_if::cfg_if! {
     if #[cfg(block_dev = "ramdisk")] {
         use axdriver_block::ramdisk::RamDisk;
+        use axhal::mem::phys_to_virt;
 
         pub struct RamDiskDriver;
         register_block_driver!(RamDiskDriver, RamDisk);
 
-        #[macro_export]
-        macro_rules! include_initrd {
-            ($path:literal) => {
-                core::arch::global_asm!(
-                    concat!(
-                        ".section .data
-                        .global initrd_start
-                        .global initrd_end
-                        .p2align 12
-                        initrd_start:
-                        .incbin \"",
-                        $path,
-                        "\"
-                        initrd_end:"
-                    )
-                );
-            }
-        }
-
         impl DriverProbe for RamDiskDriver {
             fn probe_global() -> Option<AxDeviceEnum> {
-                unsafe extern "C" {
-                    fn initrd_start();
-                    fn initrd_end();
-                }
-
-                let initrd = unsafe {
-                    RamDisk::new(
-                        initrd_start as usize,
-                        initrd_end as usize - initrd_start as usize,
-                    )
-                };
+                // FIXME: this configuration is specific to 2k1000la!
+                let initrd =
+                    unsafe { RamDisk::new(phys_to_virt(0xc000_0000.into()).into(), 0x4000_0000) };
                 Some(AxDeviceEnum::from_block(initrd))
             }
         }
@@ -110,6 +84,7 @@ cfg_if::cfg_if! {
 
         impl DriverProbe for SdMmcGptDriver {
             fn probe_global() -> Option<AxDeviceEnum> {
+                // FIXME: this configuration is specific to vf2!
                 let root = "root".parse().unwrap();
                 let sdmmc = unsafe { SdMmcDriver::new(phys_to_virt(0x1602_0000.into()).into()) };
                 GptPartitionDev::try_new(sdmmc, |_, part| part.name == root)
