@@ -95,6 +95,8 @@ endif
 
 qemu_args-$(DEBUG) += -s -S
 
+qemu_args-y += $(QEMU_ARGS)
+
 ifeq ($(ACCEL),)
   ifneq ($(findstring -microsoft, $(shell uname -r | tr '[:upper:]' '[:lower:]')),)
     ACCEL := n  # Don't enable kvm for WSL/WSL2
