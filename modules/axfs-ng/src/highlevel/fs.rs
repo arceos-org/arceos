@@ -3,18 +3,14 @@ use alloc::{
     collections::vec_deque::VecDeque,
     string::String,
     sync::Arc,
-    vec::Vec,
 };
 
 use axfs_ng_vfs::{
     Location, Metadata, NodePermission, NodeType, VfsError, VfsResult,
     path::{Component, Components, Path, PathBuf},
 };
-use axio::{Read, Write};
 use axsync::Mutex;
 use spin::Once;
-
-use super::File;
 
 pub const SYMLINKS_MAX: usize = 40;
 
@@ -193,26 +189,6 @@ impl FsContext {
     /// Retrieves metadata for the file.
     pub fn metadata(&self, path: impl AsRef<Path>) -> VfsResult<Metadata> {
         self.resolve(path)?.metadata()
-    }
-
-    /// Reads the entire contents of a file into a bytes vector.
-    pub fn read(&self, path: impl AsRef<Path>) -> VfsResult<Vec<u8>> {
-        let mut buf = Vec::new();
-        let file = File::open(self, path.as_ref())?;
-        (&file).read_to_end(&mut buf)?;
-        Ok(buf)
-    }
-
-    /// Reads the entire contents of a file into a string.
-    pub fn read_to_string(&self, path: impl AsRef<Path>) -> VfsResult<String> {
-        String::from_utf8(self.read(path)?).map_err(|_| VfsError::EINVAL)
-    }
-
-    /// Writes the contents of a bytes vector to a file.
-    pub fn write(&self, path: impl AsRef<Path>, buf: impl AsRef<[u8]>) -> VfsResult<()> {
-        let file = File::create(self, path.as_ref())?;
-        (&file).write_all(buf.as_ref())?;
-        Ok(())
     }
 
     /// Returns an iterator over the entries in a directory.

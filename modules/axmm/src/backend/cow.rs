@@ -73,7 +73,7 @@ impl CowBackend {
                 .map_or(u64::MAX, |end| end.saturating_sub(file_start))
                 .min((buf.len() - start) as u64) as usize;
 
-            file.read_at(&mut buf[start..start + max_read], file_start)?;
+            file.read_at(&mut &mut buf[start..start + max_read], file_start)?;
         }
         pt.map(vaddr, frame, self.size, flags)
             .map_err(paging_to_linux_error)?;

@@ -1,5 +1,6 @@
 #![no_std]
 #![allow(clippy::new_ret_no_self)]
+#![feature(maybe_uninit_slice)]
 
 extern crate alloc;
 

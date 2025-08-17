@@ -5,10 +5,7 @@ use core::{
 };
 
 use axerrno::{LinuxError, LinuxResult, ax_err, bail};
-use axio::{
-    IoEvents, Pollable,
-    buf::{Buf, BufMut, BufMutExt},
-};
+use axio::{Buf, BufMut, IoEvents, Pollable};
 use axsync::Mutex;
 use smoltcp::{
     iface::SocketHandle,
@@ -195,10 +192,9 @@ impl SocketOps for UdpSocket {
                 } else if !socket.can_send() {
                     Err(LinuxError::EAGAIN)
                 } else {
-                    let src_len = src.remaining();
-                    let mut buf = socket
+                    let buf = socket
                         .send(
-                            src_len,
+                            src.remaining(),
                             UdpMetadata {
                                 endpoint: remote_addr,
                                 local_address: Some(source_addr),
@@ -211,9 +207,9 @@ impl SocketOps for UdpSocket {
                                 ax_err!(ECONNREFUSED, "unaddressable")
                             }
                         })?;
-                    buf.put(src);
-                    assert!(buf.is_empty());
-                    Ok(src_len)
+                    let read = src.read(buf)?;
+                    assert_eq!(read, buf.len());
+                    Ok(read)
                 }
             })
         })
@@ -264,7 +260,7 @@ impl SocketOps for UdpSocket {
                                 }
                             }
 
-                            let read = dst.put(&mut &*src);
+                            let read = dst.write(src)?;
                             if read < src.len() {
                                 warn!("UDP message truncated: {} -> {} bytes", src.len(), read);
                             }

@@ -13,7 +13,7 @@ use axfs_ng_vfs::{
     FileNode, Location, NodeFlags, NodePermission, NodeType, VfsError, VfsResult, path::Path,
 };
 use axhal::mem::{PhysAddr, VirtAddr, virt_to_phys};
-use axio::{IoEvents, Pollable, SeekFrom};
+use axio::{Buf, BufMut, IoEvents, Pollable, SeekFrom};
 use intrusive_collections::{LinkedList, LinkedListAtomicLink, intrusive_adapter};
 use log::warn;
 use lru::LruCache;
@@ -551,52 +551,50 @@ impl CachedFile {
         Ok(initial)
     }
 
-    pub fn read_at(&self, buf: &mut [u8], offset: u64) -> VfsResult<usize> {
+    pub fn read_at(&self, dst: &mut impl BufMut, offset: u64) -> VfsResult<usize> {
         let len = self.inner.len()?;
-        let end = (offset + buf.len() as u64).min(len);
+        let end = (offset + dst.remaining_mut() as u64).min(len);
         if end <= offset {
             return Ok(0);
         }
         self.with_pages(
             offset..end,
-            |_| Ok((buf, 0)),
-            |(buf, read), page, range| {
+            |_| Ok(0),
+            |read, page, range| {
                 let len = range.end - range.start;
-                buf[..len].copy_from_slice(&page.data()[range.start..range.end]);
-                Ok((&mut buf[len..], read + len))
+                dst.write(&page.data()[range.start..range.end])?;
+                Ok(read + len)
             },
         )
-        .map(|(_, read)| read)
     }
 
-    fn write_at_locked(&self, buf: &[u8], offset: u64) -> VfsResult<usize> {
-        let end = offset + buf.len() as u64;
+    fn write_at_locked(&self, buf: &mut impl Buf, offset: u64) -> VfsResult<usize> {
+        let end = offset + buf.remaining() as u64;
         self.with_pages(
             offset..end,
             |file| {
                 if end > file.len()? {
                     file.set_len(end)?;
                 }
-                Ok((buf, 0))
+                Ok(0)
             },
-            |(buf, written), page, range| {
+            |written, page, range| {
                 let len = range.end - range.start;
-                page.data()[range.start..range.end].copy_from_slice(&buf[..len]);
+                buf.read(&mut page.data()[range.start..range.end])?;
                 if !self.in_memory {
                     page.dirty = true;
                 }
-                Ok((&buf[len..], written + len))
+                Ok(written + len)
             },
         )
-        .map(|(_, written)| written)
     }
 
-    pub fn write_at(&self, buf: &[u8], offset: u64) -> VfsResult<usize> {
+    pub fn write_at(&self, buf: &mut impl Buf, offset: u64) -> VfsResult<usize> {
         let _guard = self.append_lock.read();
         self.write_at_locked(buf, offset)
     }
 
-    pub fn append(&self, buf: &[u8]) -> VfsResult<(usize, u64)> {
+    pub fn append(&self, buf: &mut impl Buf) -> VfsResult<(usize, u64)> {
         let _guard = self.append_lock.write();
         let file = self.inner.entry().as_file()?;
         let len = file.len()?;
@@ -689,24 +687,41 @@ impl FileBackend {
         Self::Cached(CachedFile::get_or_create(location))
     }
 
-    pub fn read_at(&self, buf: &mut [u8], offset: u64) -> VfsResult<usize> {
+    pub fn read_at(&self, dst: &mut impl BufMut, mut offset: u64) -> VfsResult<usize> {
         match self {
-            Self::Cached(cached) => cached.read_at(buf, offset),
-            Self::Direct(loc) => loc.entry().as_file()?.read_at(buf, offset),
+            Self::Cached(cached) => cached.read_at(dst, offset),
+            Self::Direct(loc) => dst.fill(|buf| {
+                loc.entry().as_file()?.read_at(buf, offset).inspect(|read| {
+                    offset += *read as u64;
+                })
+            }),
         }
     }
 
-    pub fn write_at(&self, buf: &[u8], offset: u64) -> VfsResult<usize> {
+    pub fn write_at(&self, src: &mut impl Buf, mut offset: u64) -> VfsResult<usize> {
         match self {
-            Self::Cached(cached) => cached.write_at(buf, offset),
-            Self::Direct(loc) => loc.entry().as_file()?.write_at(buf, offset),
+            Self::Cached(cached) => cached.write_at(src, offset),
+            Self::Direct(loc) => src.consume(|buf| {
+                loc.entry()
+                    .as_file()?
+                    .write_at(buf, offset)
+                    .inspect(|written| {
+                        offset += *written as u64;
+                    })
+            }),
         }
     }
 
-    pub fn append(&self, buf: &[u8]) -> VfsResult<(usize, u64)> {
+    pub fn append(&self, src: &mut impl Buf) -> VfsResult<(usize, u64)> {
         match self {
-            Self::Cached(cached) => cached.append(buf),
-            Self::Direct(loc) => loc.entry().as_file()?.append(buf),
+            Self::Cached(cached) => cached.append(src),
+            Self::Direct(loc) => {
+                let mut buffer = Box::<[u8]>::new_uninit_slice(src.remaining());
+                src.read(unsafe { buffer.assume_init_mut() })?;
+                loc.entry()
+                    .as_file()?
+                    .append(unsafe { buffer.assume_init_ref() })
+            }
         }
     }
 
@@ -803,13 +818,13 @@ impl File {
     }
 
     /// Reads a number of bytes starting from a given offset.
-    pub fn read_at(&self, buf: &mut [u8], offset: u64) -> VfsResult<usize> {
-        self.access(FileFlags::READ)?.read_at(buf, offset)
+    pub fn read_at(&self, dst: &mut impl BufMut, offset: u64) -> VfsResult<usize> {
+        self.access(FileFlags::READ)?.read_at(dst, offset)
     }
 
     /// Writes a number of bytes starting from a given offset.
-    pub fn write_at(&self, buf: &[u8], offset: u64) -> VfsResult<usize> {
-        self.access(FileFlags::WRITE)?.write_at(buf, offset)
+    pub fn write_at(&self, src: &mut impl Buf, offset: u64) -> VfsResult<usize> {
+        self.access(FileFlags::WRITE)?.write_at(src, offset)
     }
 
     /// Attempts to sync OS-internal file content and metadata to disk.
@@ -820,27 +835,23 @@ impl File {
         self.access(FileFlags::empty())?;
         self.inner.sync(data_only)
     }
-}
 
-impl<'a> axio::Read for &'a File {
-    fn read(&mut self, buf: &mut [u8]) -> axio::Result<usize> {
+    pub fn read(&self, dst: &mut impl BufMut) -> axio::Result<usize> {
         #[cfg(feature = "times")]
         {
             self.access_flags.fetch_or(1, Ordering::AcqRel);
         }
         if let Some(pos) = self.position.as_ref() {
             let mut pos = pos.lock();
-            self.read_at(buf, *pos).inspect(|n| {
+            self.read_at(dst, *pos).inspect(|n| {
                 *pos += *n as u64;
             })
         } else {
-            self.read_at(buf, 0)
+            self.read_at(dst, 0)
         }
     }
-}
 
-impl<'a> axio::Write for &'a File {
-    fn write(&mut self, buf: &[u8]) -> axio::Result<usize> {
+    pub fn write(&self, src: &mut impl Buf) -> axio::Result<usize> {
         #[cfg(feature = "times")]
         {
             self.access_flags.fetch_or(3, Ordering::AcqRel);
@@ -848,21 +859,21 @@ impl<'a> axio::Write for &'a File {
         if let Some(pos) = self.position.as_ref() {
             let mut pos = pos.lock();
             if let Ok(f) = self.access(FileFlags::APPEND) {
-                f.append(buf).map(|(written, new_size)| {
+                f.append(src).map(|(written, new_size)| {
                     *pos = new_size;
                     written
                 })
             } else {
-                self.write_at(buf, *pos).inspect(|n| {
+                self.write_at(src, *pos).inspect(|n| {
                     *pos += *n as u64;
                 })
             }
         } else {
-            self.write_at(buf, 0)
+            self.write_at(src, 0)
         }
     }
 
-    fn flush(&mut self) -> axio::Result {
+    pub fn flush(&self) -> axio::Result {
         self.access(FileFlags::empty())?;
         Ok(())
     }

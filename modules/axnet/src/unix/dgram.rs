@@ -4,10 +4,7 @@ use core::task::Context;
 use async_channel::TryRecvError;
 use async_trait::async_trait;
 use axerrno::{LinuxError, LinuxResult};
-use axio::{
-    IoEvents, PollSet, Pollable,
-    buf::{Buf, BufMut, BufMutExt},
-};
+use axio::{Buf, BufMut, IoEvents, PollSet, Pollable};
 use axsync::Mutex;
 use spin::RwLock;
 
@@ -17,8 +14,6 @@ use crate::{
     options::{Configurable, GetSocketOption, SetSocketOption, UnixCredentials},
     unix::{Transport, TransportOps, UnixSocketAddr, with_slot},
 };
-
-const UDP_MAX_PAYLOAD_SIZE: usize = 65507;
 
 struct Packet {
     data: Vec<u8>,
@@ -185,16 +180,7 @@ impl TransportOps for DgramTransport {
 
     fn send(&self, src: &mut impl Buf, options: SendOptions) -> LinuxResult<usize> {
         let mut message = Vec::new();
-        loop {
-            let chunk = src.chunk();
-            let len = chunk.len().min(UDP_MAX_PAYLOAD_SIZE - message.len());
-            if len == 0 {
-                break;
-            }
-
-            message.extend_from_slice(&chunk[..len]);
-            src.advance(len);
-        }
+        src.read_to_end(&mut message)?;
         let len = message.len();
         let packet = Packet {
             data: message,
@@ -243,9 +229,9 @@ impl TransportOps for DgramTransport {
                     return Ok(0);
                 }
             };
-            let read = dst.put(&mut &*data);
-            if read < data.len() {
-                warn!("UDP message truncated: {} -> {} bytes", data.len(), read);
+            let count = dst.write(&data)?;
+            if count < data.len() {
+                warn!("UDP message truncated: {} -> {} bytes", data.len(), count);
             }
 
             if let Some(from) = options.from.as_mut() {
@@ -258,7 +244,7 @@ impl TransportOps for DgramTransport {
             Ok(if options.flags.contains(RecvFlags::TRUNCATE) {
                 data.len()
             } else {
-                read
+                count
             })
         })
     }

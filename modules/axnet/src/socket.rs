@@ -7,10 +7,7 @@ use core::{
 };
 
 use axerrno::{LinuxError, LinuxResult};
-use axio::{
-    IoEvents, Pollable, Read, Write,
-    buf::{Buf, BufMut},
-};
+use axio::{Buf, BufMut, IoEvents, Pollable};
 use bitflags::bitflags;
 use enum_dispatch::enum_dispatch;
 
@@ -150,23 +147,6 @@ pub enum Socket {
     Udp(UdpSocket),
     Tcp(TcpSocket),
     Unix(UnixSocket),
-}
-
-impl Read for Socket {
-    fn read(&mut self, mut buf: &mut [u8]) -> LinuxResult<usize> {
-        self.recv(&mut buf, RecvOptions::default())
-    }
-}
-
-impl Write for Socket {
-    fn write(&mut self, mut buf: &[u8]) -> LinuxResult<usize> {
-        self.send(&mut buf, SendOptions::default())
-    }
-
-    fn flush(&mut self) -> LinuxResult {
-        // TODO(mivik): flush
-        Ok(())
-    }
 }
 
 impl Pollable for Socket {

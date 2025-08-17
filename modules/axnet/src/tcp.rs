@@ -6,10 +6,7 @@ use core::{
 };
 
 use axerrno::{LinuxError, LinuxResult, ax_err, bail};
-use axio::{
-    IoEvents, PollSet, Pollable,
-    buf::{Buf, BufMut, BufMutExt},
-};
+use axio::{Buf, BufMut, IoEvents, PollSet, Pollable};
 use axsync::Mutex;
 use smoltcp::{
     iface::SocketHandle,
@@ -428,11 +425,12 @@ impl SocketOps for TcpSocket {
                 } else {
                     // connected, and the tx buffer is not full
                     let len = socket
-                        .send(|mut buffer| {
-                            let len = buffer.put(src);
-                            (len, len)
+                        .send(|buffer| {
+                            let result = src.read(buffer);
+                            let len = result.unwrap_or(0);
+                            (len, result)
                         })
-                        .map_err(|_| ax_err!(ENOTCONN, "not connected?"))?;
+                        .map_err(|_| ax_err!(ENOTCONN, "not connected?"))??;
                     Ok(len)
                 }
             })
@@ -454,14 +452,20 @@ impl SocketOps for TcpSocket {
                     Err(LinuxError::EAGAIN)
                 } else {
                     if options.flags.contains(RecvFlags::PEEK) {
-                        socket.peek_slice(dst.chunk_mut())
+                        dst.write(
+                            socket
+                                .peek(dst.remaining_mut())
+                                .map_err(|_| ax_err!(ENOTCONN, "not connected?"))?,
+                        )
                     } else {
-                        socket.recv(|buf| {
-                            let len = dst.put(&mut &*buf);
-                            (len, len)
-                        })
+                        socket
+                            .recv(|buf| {
+                                let result = dst.write(buf);
+                                let len = result.unwrap_or(0);
+                                (len, result)
+                            })
+                            .map_err(|_| ax_err!(ENOTCONN, "not connected?"))?
                     }
-                    .map_err(|_| ax_err!(ENOTCONN, "not connected?"))
                 }
             })
         })

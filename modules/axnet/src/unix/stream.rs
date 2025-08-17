@@ -1,16 +1,12 @@
 use alloc::{boxed::Box, sync::Arc};
 use core::{
-    convert::Infallible,
     sync::atomic::{AtomicBool, Ordering},
     task::Context,
 };
 
 use async_trait::async_trait;
 use axerrno::{LinuxError, LinuxResult};
-use axio::{
-    IoEvents, PollSet, Pollable,
-    buf::{Buf, BufExt, BufMut, BufMutExt},
-};
+use axio::{Buf, BufMut, IoEvents, PollSet, Pollable};
 use axsync::Mutex;
 use ringbuf::{
     HeapCons, HeapProd, HeapRb,
@@ -220,7 +216,9 @@ impl TransportOps for StreamTransport {
         if options.to.is_some() {
             return Err(LinuxError::EINVAL);
         }
+        let size = src.remaining();
         let mut total = 0;
+        let non_blocking = self.general.nonblocking();
         self.general.send_poller(self).poll(|| {
             let mut guard = self.channel.lock();
             let Some(chan) = guard.as_mut() else {
@@ -230,15 +228,21 @@ impl TransportOps for StreamTransport {
                 return Err(LinuxError::EPIPE);
             }
 
-            let written = src
-                .read_with::<Infallible>(|chunk| Ok(chan.tx.push_slice(chunk)))
-                .map_err(|err| match err {})?;
-            total += written;
-            if written > 0 {
+            let count = {
+                let (left, right) = chan.tx.vacant_slices_mut();
+                let mut count = src.read(unsafe { left.assume_init_mut() })?;
+                if count >= left.len() {
+                    count += src.read(unsafe { right.assume_init_mut() })?;
+                }
+                unsafe { chan.tx.advance_write_index(count) };
+                count
+            };
+            total += count;
+            if count > 0 {
                 chan.poll_update.wake();
             }
 
-            if src.chunk().is_empty() {
+            if count == size || non_blocking {
                 Ok(total)
             } else {
                 Err(LinuxError::EAGAIN)
@@ -253,12 +257,18 @@ impl TransportOps for StreamTransport {
                 return Err(LinuxError::ENOTCONN);
             };
 
-            let read = dst
-                .fill_with::<Infallible>(|chunk| Ok(chan.rx.pop_slice(chunk)))
-                .map_err(|err| match err {})?;
-            if read > 0 {
+            let count = {
+                let (left, right) = chan.rx.as_slices();
+                let mut count = dst.write(left)?;
+                if count >= left.len() {
+                    count += dst.write(right)?;
+                }
+                unsafe { chan.rx.advance_read_index(count) };
+                count
+            };
+            if count > 0 {
                 chan.poll_update.wake();
-                Ok(read)
+                Ok(count)
             } else {
                 Err(LinuxError::EAGAIN)
             }

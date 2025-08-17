@@ -58,8 +58,8 @@ allocator = { git = "https://github.com/Starry-Mix-THU/allocator.git", rev = "d5
 axbacktrace = "0.1"
 axcpu = "0.2"
 axerrno = { git = "https://github.com/Starry-Mix-THU/axerrno.git", rev = "f5d8f86" }
-axfs-ng-vfs = { git = "https://github.com/Starry-Mix-THU/axfs-ng-vfs.git", rev = "b67d591" }
-axio = { git = "https://github.com/Starry-Mix-THU/axio.git", rev = "7c1ac3a" }
+axfs-ng-vfs = { git = "https://github.com/Starry-Mix-THU/axfs-ng-vfs.git", rev = "60491ba" }
+axio = { git = "https://github.com/Starry-Mix-THU/axio.git", rev = "4ececd3" }
 axplat = "0.1"
 bindgen = "0.72"
 cfg-if = "1.0"
