@@ -26,7 +26,7 @@ pub trait VirtIoDevMeta {
     type Device: BaseDriverOps;
     type Driver = VirtIoDriver<Self>;
 
-    fn try_new(transport: VirtIoTransport, irq:  Option<u32>) -> DevResult<AxDeviceEnum>;
+    fn try_new(transport: VirtIoTransport, irq: Option<u32>) -> DevResult<AxDeviceEnum>;
 }
 
 cfg_if! {

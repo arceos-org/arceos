@@ -8,7 +8,10 @@ use axerrno::LinuxResult;
 use axio::{IoEvents, Pollable};
 use axtask::future::Poller;
 
-use crate::{options::{Configurable, GetSocketOption, SetSocketOption}, SERVICE};
+use crate::{
+    SERVICE,
+    options::{Configurable, GetSocketOption, SetSocketOption},
+};
 
 /// General options for all sockets.
 pub(crate) struct GeneralOptions {
@@ -66,10 +69,10 @@ impl GeneralOptions {
         self.device_mask.load(Ordering::Acquire)
     }
 
-    pub fn register_device_waker(&self, waker: &Waker) {
+    pub fn register_waker(&self, waker: &Waker) {
         SERVICE
             .lock()
-            .register_device_waker(self.device_mask(), waker);
+            .register_waker(self.device_mask(), waker);
     }
 
     pub fn send_poller<'a, P: Pollable>(&self, pollable: &'a P) -> Poller<'a, P> {

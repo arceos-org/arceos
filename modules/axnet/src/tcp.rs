@@ -417,6 +417,7 @@ impl SocketOps for TcpSocket {
     fn send(&self, src: &mut impl Buf, _options: SendOptions) -> LinuxResult<usize> {
         // SAFETY: `self.handle` should be initialized in a connected socket.
         self.general.send_poller(self).poll(|| {
+            poll_interfaces();
             self.with_smol_socket(|socket| {
                 if !socket.is_active() {
                     Err(LinuxError::ENOTCONN)
@@ -541,7 +542,7 @@ impl Pollable for TcpSocket {
 
     fn register(&self, context: &mut Context<'_>, events: IoEvents) {
         if events.intersects(IoEvents::IN | IoEvents::OUT | IoEvents::RDHUP) {
-            self.general.register_device_waker(context.waker());
+            self.general.register_waker(context.waker());
         }
         if events.contains(IoEvents::RDHUP) {
             self.poll_rx_closed.register(context.waker());
