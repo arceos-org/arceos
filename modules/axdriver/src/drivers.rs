@@ -3,6 +3,8 @@
 #![allow(unused_imports, dead_code)]
 
 use axdriver_base::DeviceType;
+use axdriver_block::BlockDriverOps;
+use axdriver_net::BaseDriverOps;
 #[cfg(feature = "bus-pci")]
 use axdriver_pci::{DeviceFunction, DeviceFunctionInfo, PciRoot};
 
@@ -90,6 +92,105 @@ cfg_if::cfg_if! {
                 GptPartitionDev::try_new(sdmmc, |_, part| part.name == root)
                     .ok()
                     .map(AxDeviceEnum::from_block)
+            }
+        }
+    }
+}
+
+cfg_if::cfg_if! {
+    if #[cfg(block_dev = "ahci-gpt")] {
+        use axdriver_base::{DevResult, DevError};
+        use axdriver_block::gpt::GptPartitionDev;
+        use axhal::mem::phys_to_virt;
+
+        pub struct AhciDriver(ahci_driver::ahci_device);
+
+        unsafe impl Send for AhciDriver {}
+        unsafe impl Sync for AhciDriver {}
+
+        impl BaseDriverOps for AhciDriver {
+            fn device_name(&self) -> &str {
+                "ahci"
+            }
+
+            fn device_type(&self) -> DeviceType {
+                DeviceType::Block
+            }
+        }
+
+        impl BlockDriverOps for AhciDriver {
+            fn block_size(&self) -> usize {
+                512
+            }
+
+            fn num_blocks(&self) -> u64 {
+                // FIXME: this configuration is not reusable!
+                250069680
+            }
+
+            fn read_block(&mut self, block_id: u64, buf: &mut [u8]) -> DevResult {
+                let res = ahci_driver::ahci_sata_read_common(&self.0, block_id, 1, buf.as_mut_ptr());
+                if res == 0 {
+                    Err(DevError::Io)
+                } else {
+                    Ok(())
+                }
+            }
+
+            fn write_block(&mut self, block_id: u64, buf: &[u8]) -> DevResult {
+                let res = ahci_driver::ahci_sata_write_common(&self.0, block_id, 1, buf.as_ptr().cast_mut());
+                if res == 0 {
+                    Err(DevError::Io)
+                } else {
+                    Ok(())
+                }
+            }
+
+            fn flush(&mut self) -> DevResult {
+                Ok(())
+            }
+        }
+
+        pub struct AhciGptDriver;
+        register_block_driver!(AhciGptDriver, GptPartitionDev<AhciDriver>);
+
+        impl DriverProbe for AhciGptDriver {
+            fn probe_global() -> Option<AxDeviceEnum> {
+                let mut dev = ahci_driver::ahci_device::default();
+                ahci_driver::ahci_init(&mut dev);
+                let dev = AhciDriver(dev);
+                GptPartitionDev::try_new(dev, |_, _| true)
+                    .ok()
+                    .map(AxDeviceEnum::from_block)
+            }
+        }
+
+        #[unsafe(no_mangle)]
+        unsafe extern "C" fn ahci_printf(fmt: *const u8, mut args: ...) -> i32 {
+            use printf_compat::{format, output};
+
+            let mut s = alloc::string::String::new();
+            let bytes_written = unsafe { format(fmt as _, args.as_va_list(), output::fmt_write(&mut s)) };
+            trace!("ahci_driver: {}", s.trim());
+
+            bytes_written
+        }
+
+        #[unsafe(no_mangle)]
+        extern "C" fn ahci_phys_to_uncached(pa: u64) -> u64 {
+            axhal::mem::phys_to_virt((pa as usize).into()).as_usize() as _
+        }
+
+        #[unsafe(no_mangle)]
+        extern "C" fn ahci_virt_to_phys(va: u64) -> u64 {
+            axhal::mem::virt_to_phys((va as usize).into()).as_usize() as _
+        }
+
+        #[unsafe(no_mangle)]
+        extern "C" fn ahci_mdelay(ms: u64) {
+            let start = axhal::time::wall_time_nanos();
+            while axhal::time::wall_time_nanos() - start < ms * 1_000_000 {
+                core::hint::spin_loop();
             }
         }
     }

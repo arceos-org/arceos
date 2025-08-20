@@ -59,6 +59,7 @@
 #![no_std]
 #![feature(doc_auto_cfg)]
 #![feature(associated_type_defaults)]
+#![feature(c_variadic)]
 
 extern crate alloc;
 

@@ -72,6 +72,11 @@ macro_rules! for_each_drivers {
             type $drv_type = crate::drivers::SdMmcGptDriver;
             $code
         }
+        #[cfg(block_dev = "ahci-gpt")]
+        {
+            type $drv_type = crate::drivers::AhciGptDriver;
+            $code
+        }
         #[cfg(block_dev = "bcm2835-sdhci")]
         {
             type $drv_type = crate::drivers::BcmSdhciDriver;
