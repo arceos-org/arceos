@@ -136,6 +136,8 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
     info!("Logging is enabled.");
     info!("Primary CPU {} started, arg = {:#x}.", cpu_id, arg);
 
+    axhal::init_bootarg(arg);
+
     axhal::mem::init();
     info!("Found physcial memory regions:");
     for r in axhal::mem::memory_regions() {
