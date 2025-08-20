@@ -23,7 +23,9 @@ use memory_set::MappingError;
 static KERNEL_ASPACE: LazyInit<SpinNoIrq<AddrSpace>> = LazyInit::new();
 
 fn mapping_err_to_ax_err(err: MappingError) -> AxError {
-    warn!("Mapping error: {:?}", err);
+    if !matches!(err, MappingError::AlreadyExists) {
+        warn!("Mapping error: {err:?}");
+    }
     match err {
         MappingError::InvalidParam => AxError::InvalidInput,
         MappingError::AlreadyExists => AxError::AlreadyExists,
