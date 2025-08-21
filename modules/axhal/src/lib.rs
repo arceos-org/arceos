@@ -125,17 +125,16 @@ pub fn init_percpu_secondary(cpu_id: usize) {
     self::percpu::init_secondary(cpu_id);
 }
 
-use core::sync::atomic::{AtomicUsize, Ordering};
-static BOOT_ARG: AtomicUsize = AtomicUsize::new(0);
+static mut BOOT_ARG: Option<usize> = None;
 
 /// Initializes boot argument.
 /// This is typically the device tree blob address passed from the bootloader.
-pub fn init_bootarg(arg: usize) {
-    BOOT_ARG.store(arg, Ordering::Release); 
+pub unsafe fn init_bootarg(arg: usize) {
+    BOOT_ARG = Some(arg);
 }
 
 /// Returns the boot argument.
 /// This is typically the device tree blob address passed from the bootloader.
-pub fn get_bootarg() -> usize {
-    BOOT_ARG.load(Ordering::Acquire)
+pub unsafe fn get_bootarg() -> usize {
+    BOOT_ARG.expect("BOOT_ARG has not been initialized")
 }
