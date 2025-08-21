@@ -4,6 +4,7 @@
 #include <endian.h>
 #include <limits.h>
 #include <stddef.h>
+#include <sys/uio.h>
 
 typedef unsigned socklen_t;
 typedef unsigned short sa_family_t;
