@@ -134,7 +134,7 @@ pub fn init_bootarg(arg: usize) {
     BOOT_ARG.store(arg, Ordering::Release); 
 }
 
-/// returns the boot argument.
+/// Returns the boot argument.
 /// This is typically the device tree blob address passed from the bootloader.
 pub fn get_bootarg() -> usize {
     BOOT_ARG.load(Ordering::Acquire)
