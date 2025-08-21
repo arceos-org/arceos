@@ -17,6 +17,7 @@ irq = ["axhal/irq", "axtask?/irq", "percpu"]
 tls = ["axhal/tls", "axtask?/tls"]
 alloc = ["axalloc"]
 paging = ["axhal/paging", "axmm"]
+ipi = ["dep:axipi"]
 
 multitask = ["axtask/multitask"]
 fs = ["axdriver", "axfs"]
@@ -35,7 +36,8 @@ axfs = { workspace = true, optional = true }
 axnet = { workspace = true, optional = true }
 axdisplay = { workspace = true, optional = true }
 axtask = { workspace = true, optional = true }
-axplat = "0.1"
+axipi = { workspace = true, optional = true }
+axplat = "0.2"
 
 crate_interface = "0.1"
 percpu = { version = "0.2", optional = true }

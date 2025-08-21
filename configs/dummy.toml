@@ -54,3 +54,5 @@ pci-bus-end = 0             # uint
 pci-ranges = []             # [(uint, uint)]
 # Timer interrupt num.
 timer-irq = 0               # uint
+# IPI interrupt num
+ipi-irq = 0                 # uint

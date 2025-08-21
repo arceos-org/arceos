@@ -402,6 +402,8 @@ pub mod modules {
     pub use axdriver;
     #[cfg(feature = "fs")]
     pub use axfs;
+    #[cfg(feature = "ipi")]
+    pub use axipi;
     #[cfg(feature = "paging")]
     pub use axmm;
     #[cfg(feature = "net")]
