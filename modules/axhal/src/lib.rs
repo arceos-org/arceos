@@ -124,3 +124,10 @@ pub fn init_percpu(cpu_id: usize) {
 pub fn init_percpu_secondary(cpu_id: usize) {
     self::percpu::init_secondary(cpu_id);
 }
+
+
+/// Returns the boot argument.
+/// This is typically the device tree blob address passed from the bootloader.
+pub fn get_bootarg() -> usize {
+    axplat::init::BOOT_ARG.get().expect("bootarg not initialized").clone()
+}
