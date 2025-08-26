@@ -103,7 +103,7 @@ pub mod context {
 }
 
 pub use axcpu::asm;
-pub use axplat::init::{init_early, init_later};
+pub use axplat::init::init_later;
 
 #[cfg(feature = "smp")]
 pub use axplat::init::{init_early_secondary, init_later_secondary};
@@ -123,4 +123,21 @@ pub fn init_percpu(cpu_id: usize) {
 #[cfg(feature = "smp")]
 pub fn init_percpu_secondary(cpu_id: usize) {
     self::percpu::init_secondary(cpu_id);
+}
+
+use lazyinit::LazyInit;
+
+static BOOT_ARG: LazyInit<usize> = LazyInit::new();
+
+/// Initializes the platform and boot argument.
+/// This function should be called as early as possible.
+pub fn init_early(cpu_id: usize, arg: usize) {
+    BOOT_ARG.init_once(arg);
+    axplat::init::init_early(cpu_id, arg);
+}
+
+/// Returns the boot argument.
+/// This is typically the device tree blob address passed from the bootloader.
+pub fn get_bootarg() -> usize {
+    *BOOT_ARG
 }
