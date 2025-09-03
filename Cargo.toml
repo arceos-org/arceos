@@ -102,6 +102,3 @@ page_table_multiarch = "0.5"
 percpu = "0.2"
 rand = "0.9"
 spin = "0.10"
-
-[profile.release]
-lto = true
