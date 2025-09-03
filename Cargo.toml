@@ -83,9 +83,6 @@ rand = "0.9"
 scope-local = "0.1"
 spin = "0.9"
 
-[profile.release]
-lto = true
-
 [patch.crates-io]
 axbacktrace = { git = "https://github.com/Starry-Mix-THU/axbacktrace.git", rev = "322f6da" }
 axcpu = { git = "https://github.com/Starry-Mix-THU/axcpu.git", rev = "e706e23" }

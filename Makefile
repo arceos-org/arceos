@@ -42,6 +42,7 @@ MODE ?= release
 LOG ?= warn
 BACKTRACE ?= n
 V ?=
+LTO ?=
 TARGET_DIR ?= $(PWD)/target
 EXTRA_CONFIG ?=
 OUT_CONFIG ?= $(PWD)/.axconfig.toml
