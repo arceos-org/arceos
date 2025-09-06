@@ -35,13 +35,13 @@ slab = { version = "0.4.9", default-features = false }
 spin = { workspace = true }
 
 [dependencies.lwext4_rust]
-git = "https://github.com/Starry-Mix-THU/lwext4_rust"
-rev = "43d771a"
+git = "https://github.com/Starry-OS/lwext4_rust.git"
+rev = "033fa2c"
 default-features = false
 optional = true
 
 [dependencies.fatfs]
-git = "https://github.com/Starry-Mix-THU/rust-fatfs"
+git = "https://github.com/Starry-OS/rust-fatfs.git"
 rev = "2685439"
 default-features = false
 optional = true

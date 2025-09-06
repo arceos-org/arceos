@@ -54,12 +54,12 @@ axsync = { path = "modules/axsync" }
 axtask = { path = "modules/axtask" }
 axdma = { path = "modules/axdma" }
 
-allocator = { git = "https://github.com/Starry-Mix-THU/allocator.git", rev = "d5feebd" }
+allocator = { git = "https://github.com/Starry-OS/allocator.git", rev = "d5feebd" }
 axbacktrace = "0.1"
 axcpu = "0.2"
-axerrno = { git = "https://github.com/Starry-Mix-THU/axerrno.git", rev = "f5d8f86" }
-axfs-ng-vfs = { git = "https://github.com/Starry-Mix-THU/axfs-ng-vfs.git", rev = "60491ba" }
-axio = { git = "https://github.com/Starry-Mix-THU/axio.git", rev = "4ececd3" }
+axerrno = "0.1"
+axfs-ng-vfs = { git = "https://github.com/Starry-OS/axfs-ng-vfs.git", rev = "efe5ed8" }
+axio = "0.1"
 axplat = "0.1"
 bindgen = "0.72"
 cfg-if = "1.0"
@@ -84,7 +84,9 @@ scope-local = "0.1"
 spin = "0.9"
 
 [patch.crates-io]
-axbacktrace = { git = "https://github.com/Starry-Mix-THU/axbacktrace.git", rev = "322f6da" }
-axcpu = { git = "https://github.com/Starry-Mix-THU/axcpu.git", rev = "e706e23" }
-page_table_entry = { git = "https://github.com/Starry-Mix-THU/page_table_multiarch.git", rev = "4edb821" }
-page_table_multiarch = { git = "https://github.com/Starry-Mix-THU/page_table_multiarch.git", rev = "4edb821" }
+axbacktrace = { git = "https://github.com/Starry-OS/axbacktrace.git", rev = "322f6da" }
+axcpu = { git = "https://github.com/Starry-OS/axcpu.git", rev = "dfaa046" }
+axerrno = { git = "https://github.com/Starry-OS/axerrno.git", rev = "f5d8f86" }
+axio = { git = "https://github.com/Starry-OS/axio.git", rev = "d1242e2" }
+page_table_entry = { git = "https://github.com/Starry-OS/page_table_multiarch.git", rev = "4edb821" }
+page_table_multiarch = { git = "https://github.com/Starry-OS/page_table_multiarch.git", rev = "4edb821" }

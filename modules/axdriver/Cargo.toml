@@ -50,15 +50,15 @@ axconfig = { workspace = true, optional = true }
 axdma = { workspace = true, optional = true }
 axhal = { workspace = true, optional = true }
 
-axdriver_base = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "60dbbb6" }
-axdriver_block = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "60dbbb6", optional = true }
-axdriver_display = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "60dbbb6", optional = true }
-axdriver_input = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "60dbbb6", optional = true }
-axdriver_net = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "60dbbb6", optional = true }
-axdriver_pci = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "60dbbb6", optional = true }
-axdriver_virtio = { git = "https://github.com/Starry-Mix-THU/axdriver_crates.git", rev = "60dbbb6", optional = true }
+axdriver_base = { git = "https://github.com/Starry-OS/axdriver_crates.git", rev = "6ddb55b" }
+axdriver_block = { git = "https://github.com/Starry-OS/axdriver_crates.git", rev = "6ddb55b", optional = true }
+axdriver_display = { git = "https://github.com/Starry-OS/axdriver_crates.git", rev = "6ddb55b", optional = true }
+axdriver_input = { git = "https://github.com/Starry-OS/axdriver_crates.git", rev = "6ddb55b", optional = true }
+axdriver_net = { git = "https://github.com/Starry-OS/axdriver_crates.git", rev = "6ddb55b", optional = true }
+axdriver_pci = { git = "https://github.com/Starry-OS/axdriver_crates.git", rev = "6ddb55b", optional = true }
+axdriver_virtio = { git = "https://github.com/Starry-OS/axdriver_crates.git", rev = "6ddb55b", optional = true }
 cfg-if = { workspace = true }
 crate_interface = { workspace = true }
 log = { workspace = true }
-ahci_driver = { git = "https://github.com/Starry-Mix-THU/ahci_driver.git", rev = "beaa9c8", optional = true }
+ahci_driver = { git = "https://github.com/Starry-OS/ahci_driver.git", rev = "beaa9c8", optional = true }
 printf-compat = { git = "https://github.com/lights0123/printf-compat.git", rev = "5f5c9cc", default-features = false, optional = true }

@@ -41,17 +41,22 @@ event-listener = { version = "5.4.0", default-features = false }
 async-trait = "0.1.88"
 
 [dependencies.smoltcp]
-git = "https://github.com/Starry-Mix-THU/smoltcp.git"
+git = "https://github.com/Starry-OS/smoltcp.git"
 rev = "7401a54"
 default-features = false
 features = [
-  "alloc", "log",   # no std
+  "alloc",
+  "log",             # no std
   "async",
   "medium-ethernet",
   "medium-ip",
   "proto-ipv4",
   "proto-ipv6",
-  "socket-raw", "socket-icmp", "socket-udp", "socket-tcp", "socket-dns",
+  "socket-raw",
+  "socket-icmp",
+  "socket-udp",
+  "socket-tcp",
+  "socket-dns",
   # "fragmentation-buffer-size-65536", "proto-ipv4-fragmentation",
   # "reassembly-buffer-size-65536", "reassembly-buffer-count-32",
   # "assembler-max-segment-count-32",
