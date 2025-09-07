@@ -26,7 +26,9 @@ pub use self::aspace::AddrSpace;
 static KERNEL_ASPACE: LazyInit<SpinNoIrq<AddrSpace>> = LazyInit::new();
 
 fn mapping_to_linux_error(err: MappingError) -> LinuxError {
-    warn!("Mapping error: {:?}", err);
+    if !matches!(err, MappingError::AlreadyExists) {
+        warn!("Mapping error: {err:?}");
+    }
     match err {
         MappingError::InvalidParam => LinuxError::EINVAL,
         MappingError::AlreadyExists => LinuxError::EEXIST,

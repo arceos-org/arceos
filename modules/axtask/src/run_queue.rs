@@ -4,11 +4,11 @@ use alloc::{collections::VecDeque, sync::Arc};
 use core::{mem::MaybeUninit, task::Poll};
 
 use axhal::percpu::this_cpu_id;
+use axsched::BaseScheduler;
 use futures::{future::poll_fn, task::AtomicWaker};
 use kernel_guard::BaseGuard;
 use kspin::SpinRaw;
 use lazyinit::LazyInit;
-use scheduler::BaseScheduler;
 
 use crate::{
     AxCpuMask, AxTaskRef, Scheduler, TaskInner,
@@ -510,6 +510,8 @@ impl AxRunQueue {
                 }
             }
             // TODO: priority
+            #[cfg(feature = "smp")]
+            task.set_cpu_id(self.cpu_id as _);
             self.scheduler.lock().put_prev_task(task, preempt);
             true
         } else {

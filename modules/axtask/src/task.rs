@@ -8,7 +8,7 @@ use core::{
     future::poll_fn,
     ops::Deref,
     ptr::NonNull,
-    sync::atomic::{AtomicBool, AtomicI32, AtomicU8, AtomicU64, Ordering},
+    sync::atomic::{AtomicBool, AtomicI32, AtomicU8, AtomicU32, AtomicU64, Ordering},
     task::{Poll, Waker},
 };
 
@@ -73,6 +73,8 @@ pub struct TaskInner {
     /// registered within a task.
     interrupt_waker: AtomicWaker,
 
+    /// Used to indicate the CPU ID where the task is running or will run.
+    cpu_id: AtomicU32,
     /// Used to indicate whether the task is running on a CPU.
     #[cfg(feature = "smp")]
     on_cpu: AtomicBool,
@@ -209,6 +211,15 @@ impl TaskInner {
         }
     }
 
+    /// Returns the CPU ID where the task is running or will run.
+    ///
+    /// Note: the task may not be running on the CPU, it just exists in the run
+    /// queue.
+    #[inline]
+    pub fn cpu_id(&self) -> u32 {
+        self.cpu_id.load(Ordering::Acquire)
+    }
+
     /// Gets the cpu affinity mask of the task.
     ///
     /// Returns the cpu affinity mask of the task in type [`AxCpuMask`].
@@ -241,6 +252,7 @@ impl TaskInner {
             cpumask: SpinNoIrq::new(AxCpuMask::full()),
             interruption: AtomicU8::new(0),
             interrupt_waker: AtomicWaker::new(),
+            cpu_id: AtomicU32::new(0),
             #[cfg(feature = "smp")]
             on_cpu: AtomicBool::new(false),
             #[cfg(feature = "preempt")]
@@ -402,6 +414,13 @@ impl TaskInner {
     #[inline]
     pub(crate) const unsafe fn ctx_mut_ptr(&self) -> *mut TaskContext {
         self.ctx.get()
+    }
+
+    /// Set the CPU ID where the task is running or will run.
+    #[cfg(feature = "smp")]
+    #[inline]
+    pub(crate) fn set_cpu_id(&self, cpu_id: u32) {
+        self.cpu_id.store(cpu_id, Ordering::Release);
     }
 
     /// Returns whether the task is running on a CPU.

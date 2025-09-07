@@ -17,6 +17,7 @@ irq = ["axhal/irq", "axtask?/irq", "percpu"]
 tls = ["axhal/tls", "axtask?/tls"]
 alloc = ["axalloc"]
 paging = ["axhal/paging", "axmm"]
+ipi = ["dep:axipi"]
 
 multitask = ["axtask/multitask"]
 fs = ["axdriver", "axfs-ng", "axfs-ng-vfs"]
@@ -34,11 +35,11 @@ axinput = { workspace = true, optional = true }
 axdriver = { workspace = true, optional = true }
 axfs-ng = { workspace = true, optional = true }
 axhal = { workspace = true }
+axipi = { workspace = true, optional = true }
 axlog = { workspace = true }
 axmm = { workspace = true, optional = true }
 axnet = { workspace = true, optional = true }
 axtask = { workspace = true, optional = true }
-axsync = { workspace = true }
 
 axfs-ng-vfs = { workspace = true, optional = true }
 axplat = { workspace = true }

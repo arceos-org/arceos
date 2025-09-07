@@ -9,7 +9,7 @@ RUN apt-get update \
         pkg-config libglib2.0-dev git libslirp-dev \
     && rm -rf /var/lib/apt/lists/*
 
-RUN cargo install cargo-binutils axconfig-gen
+RUN cargo install cargo-binutils axconfig-gen cargo-axplat
 
 COPY rust-toolchain.toml /rust-toolchain.toml
 
@@ -25,15 +25,15 @@ RUN wget https://musl.cc/aarch64-linux-musl-cross.tgz \
     && tar zxf loongarch64-linux-musl-cross.tgz \
     && rm -f *.tgz
 
-RUN wget https://download.qemu.org/qemu-9.2.1.tar.xz \
-    && tar xf qemu-9.2.1.tar.xz \
-    && cd qemu-9.2.1 \
-    && ./configure --prefix=/qemu-bin-9.2.1 \
+RUN wget https://download.qemu.org/qemu-9.2.4.tar.xz \
+    && tar xf qemu-9.2.4.tar.xz \
+    && cd qemu-9.2.4 \
+    && ./configure --prefix=/qemu-bin-9.2.4 \
         --target-list=loongarch64-softmmu,riscv64-softmmu,aarch64-softmmu,x86_64-softmmu \
         --enable-gcov --enable-debug --enable-slirp \
     && make -j$(nproc) \
     && make install
-RUN rm -rf qemu-9.2.1 qemu-9.2.1.tar.xz
+RUN rm -rf qemu-9.2.4 qemu-9.2.4.tar.xz
 
 ENV PATH="/x86_64-linux-musl-cross/bin:/aarch64-linux-musl-cross/bin:/riscv64-linux-musl-cross/bin:/loongarch64-linux-musl-cross/bin:$PATH"
-ENV PATH="/qemu-bin-9.2.1/bin:$PATH"
+ENV PATH="/qemu-bin-9.2.4/bin:$PATH"

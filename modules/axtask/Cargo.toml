@@ -14,6 +14,7 @@ default = []
 
 multitask = [
     "dep:axconfig",
+    "dep:axsched",
     "dep:cpumask",
     "dep:crate_interface",
     "dep:foldhash",
@@ -25,7 +26,6 @@ multitask = [
     "dep:percpu",
     "dep:pin-project",
     "dep:priority-queue",
-    "dep:scheduler",
     "dep:spin",
 ]
 task-ext = ["dep:extern-trait"]
@@ -46,6 +46,7 @@ axerrno = { workspace = true }
 axio = { workspace = true }
 axhal = { workspace = true }
 
+axsched = { git = "https://github.com/Starry-OS/axsched.git", rev = "2076c9b", optional = true }
 cfg-if = { workspace = true }
 cpumask = { version = "0.1", optional = true }
 crate_interface = { version = "0.1", optional = true }
@@ -60,7 +61,6 @@ memory_addr = { workspace = true, optional = true }
 percpu = { workspace = true, optional = true }
 pin-project = { version = "1.1.10", optional = true }
 priority-queue = { version = "2.5", default-features = false, optional = true }
-scheduler = { git = "https://github.com/Starry-Mix-THU/scheduler.git", rev = "3bc2f73", optional = true }
 spin = { workspace = true, optional = true }
 
 [dev-dependencies]

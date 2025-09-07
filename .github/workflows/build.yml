@@ -19,10 +19,6 @@ jobs:
         toolchain: ${{ matrix.rust-toolchain }}
         components: rust-src, clippy, rustfmt
         targets: x86_64-unknown-none, riscv64gc-unknown-none-elf, aarch64-unknown-none-softfloat, loongarch64-unknown-none-softfloat
-    - uses: Swatinem/rust-cache@v2
-      with:
-        shared-key: cargo-bin-cache
-        cache-targets: false
     - name: Check rust version
       run: rustc --version --verbose
     - name: Check code format
@@ -55,7 +51,7 @@ jobs:
         targets: x86_64-unknown-none, riscv64gc-unknown-none-elf, aarch64-unknown-none-softfloat, loongarch64-unknown-none-softfloat
     - uses: Swatinem/rust-cache@v2
       with:
-        shared-key: cargo-bin-cache
+        shared-key: cargo-bin-cache-${{ matrix.rust-toolchain }}
         cache-targets: false
     - name: Build helloworld
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
@@ -100,10 +96,10 @@ jobs:
         targets: x86_64-unknown-none, riscv64gc-unknown-none-elf, aarch64-unknown-none-softfloat, loongarch64-unknown-none-softfloat
     - uses: Swatinem/rust-cache@v2
       with:
-        shared-key: cargo-bin-cache
+        shared-key: cargo-bin-cache-${{ matrix.rust-toolchain }}
         cache-targets: false
 
-    # Test various config files
+    # Test custom config file
     - name: Build helloworld for x86_64-pc-oslab
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLAT_CONFIG=$(pwd)/configs/custom/x86_64-pc-oslab.toml A=examples/helloworld
@@ -140,27 +136,23 @@ jobs:
       run: |
         make MYPLAT=axplat-aarch64-bsta1000b defconfig
         make MYPLAT=axplat-aarch64-bsta1000b A=examples/helloworld-myplat APP_FEATURES=aarch64-bsta1000b
-      
     - name: Build helloworld-myplat for aarch64-phytium-pi
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: |
         make MYPLAT=axplat-aarch64-phytium-pi defconfig
         make MYPLAT=axplat-aarch64-phytium-pi A=examples/helloworld-myplat APP_FEATURES=aarch64-phytium-pi
-
     - name: Build helloworld-myplat for loongarch64-qemu-virt
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: |
         make ARCH=loongarch64 defconfig
         make ARCH=loongarch64 A=examples/helloworld-myplat SMP=4 APP_FEATURES=loongarch64-qemu-virt
         make MYPLAT=axplat-loongarch64-qemu-virt A=examples/helloworld-myplat SMP=4 APP_FEATURES=loongarch64-qemu-virt
-      
     - name: Build helloworld-myplat for riscv64-qemu-virt
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: |
         make ARCH=riscv64 defconfig
         make ARCH=riscv64 A=examples/helloworld-myplat SMP=4 APP_FEATURES=riscv64-qemu-virt
         make MYPLAT=axplat-riscv64-qemu-virt A=examples/helloworld-myplat SMP=4 APP_FEATURES=riscv64-qemu-virt
-      
 
     # Test platform `aarch64-raspi4` for various apps
     - name: Setup aarch64-raspi4
@@ -210,7 +202,7 @@ jobs:
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make MYPLAT=axplat-aarch64-phytium-pi A=examples/shell FEATURES=page-alloc-4g,driver-ramdisk BUS=mmio
 
-    # Test various config files for C apps
+    # Test custom config file for C apps
     - uses: arceos-org/setup-musl@v1
       with:
         arch: x86_64
@@ -233,22 +225,23 @@ jobs:
       fail-fast: false
       matrix:
         rust-toolchain: [nightly, nightly-2025-05-20]
+    env:
+      RUSTUP_TOOLCHAIN: ${{ matrix.rust-toolchain }}
     steps:
     - uses: actions/checkout@v4
     - uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: ${{ matrix.rust-toolchain }}
-        components: rust-src, clippy
+        components: rust-src, clippy, llvm-tools
         targets: x86_64-unknown-none
     - uses: Swatinem/rust-cache@v2
       with:
-        shared-key: cargo-bin-cache
+        shared-key: cargo-bin-cache-${{ matrix.rust-toolchain }}
         cache-targets: false
     - name: Clippy for the default target
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make clippy
 
-    - run: cargo install cargo-binutils
     - name: Build helloworld
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make A=examples/helloworld

@@ -20,9 +20,9 @@
 //! - `sched-cfs`: Use the [Completely Fair Scheduler][3]. It also enables the
 //!   the `multitask` and `preempt` features if it is enabled.
 //!
-//! [1]: scheduler::FifoScheduler
-//! [2]: scheduler::RRScheduler
-//! [3]: scheduler::CFScheduler
+//! [1]: axsched::FifoScheduler
+//! [2]: axsched::RRScheduler
+//! [3]: axsched::CFScheduler
 
 #![cfg_attr(not(test), no_std)]
 #![feature(doc_cfg)]
