@@ -18,6 +18,7 @@ page-alloc-64g = [
     "allocator/page-alloc-64g",
 ] # Support up to 64G memory capacity
 page-alloc-4g = ["allocator/page-alloc-4g"] # Support up to 4G memory capacity
+level-1 = []
 
 [dependencies]
 allocator = { workspace = true, features = ["bitmap"] }
