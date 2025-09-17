@@ -6,6 +6,12 @@ config_args := \
   -w 'platform="$(PLAT_NAME)"' \
   -o "$(OUT_CONFIG)"
 
+ifneq ($(MEM),)
+  config_args += -w 'plat.phys-memory-size=$(shell ./scripts/make/strtosz.py $(MEM))'
+else
+  MEM := $(shell axconfig-gen $(PLAT_CONFIG) -r plat.phys-memory-size 2>/dev/null | tr -d _ | xargs printf "%dB")
+endif
+
 ifneq ($(SMP),)
   config_args += -w 'plat.cpu-num=$(SMP)'
 else
@@ -30,4 +36,3 @@ else
          $(error "ARCH" or "MYPLAT" has been changed, please run "make defconfig" again))
   endef
 endif
-

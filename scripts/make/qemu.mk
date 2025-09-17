@@ -17,13 +17,11 @@ else ifeq ($(ARCH), riscv64)
 else ifeq ($(ARCH), aarch64)
   ifeq ($(PLAT_NAME), aarch64-raspi4)
     machine := raspi4b
-    override MEM := 2G
   else
     machine := virt
   endif
 else ifeq ($(ARCH), loongarch64)
   machine := virt
-  override MEM := 1G
 endif
 
 qemu_args-x86_64 := \
