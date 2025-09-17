@@ -110,14 +110,14 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
 
     ax_println!("{}", LOGO);
     ax_println!(
-        "\
-        arch = {}\n\
-        platform = {}\n\
-        target = {}\n\
-        build_mode = {}\n\
-        log_level = {}\n\
-        smp = {}\n\
-        ",
+        indoc::indoc! {"
+            arch = {}
+            platform = {}
+            target = {}
+            build_mode = {}
+            log_level = {}
+            smp = {}
+        "},
         axconfig::ARCH,
         axconfig::PLATFORM,
         option_env!("AX_TARGET").unwrap_or(""),
