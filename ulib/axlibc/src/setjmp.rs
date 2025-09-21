@@ -55,7 +55,8 @@ pub unsafe extern "C" fn setjmp(_buf: *mut ctypes::__jmp_buf_tag) {
     );
     #[cfg(all(target_arch = "riscv64", feature = "fp-simd"))]
     core::arch::naked_asm!(
-        "sd s0,    0(a0)
+        ".attribute arch, \"rv64gc\"
+        sd s0,    0(a0)
         sd s1,    8(a0)
         sd s2,    16(a0)
         sd s3,    24(a0)
