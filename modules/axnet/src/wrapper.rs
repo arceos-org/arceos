@@ -1,6 +1,6 @@
 use alloc::vec;
 
-use axerrno::{LinuxError, LinuxResult};
+use axerrno::{AxError, AxResult};
 use axsync::Mutex;
 use event_listener::Event;
 use smoltcp::{
@@ -47,7 +47,7 @@ impl<'a> SocketSetWrapper<'a> {
         f(socket)
     }
 
-    pub fn bind_check(&self, addr: IpAddress, port: u16) -> LinuxResult {
+    pub fn bind_check(&self, addr: IpAddress, port: u16) -> AxResult {
         if port == 0 {
             return Ok(());
         }
@@ -59,12 +59,12 @@ impl<'a> SocketSetWrapper<'a> {
                 Socket::Tcp(s) => {
                     let local_addr = s.get_bound_endpoint();
                     if local_addr.addr == Some(addr) && local_addr.port == port {
-                        return Err(LinuxError::EADDRINUSE);
+                        return Err(AxError::AddressInUse);
                     }
                 }
                 Socket::Udp(s) => {
                     if s.endpoint().addr == Some(addr) && s.endpoint().port == port {
-                        return Err(LinuxError::EADDRINUSE);
+                        return Err(AxError::AddressInUse);
                     }
                 }
                 _ => continue,

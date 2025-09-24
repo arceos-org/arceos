@@ -5,7 +5,7 @@ use core::{
 };
 
 use async_trait::async_trait;
-use axerrno::{LinuxError, LinuxResult};
+use axerrno::{AxError, AxResult};
 use axio::{Buf, BufMut, IoEvents, PollSet, Pollable};
 use axsync::Mutex;
 use ringbuf::{
@@ -61,7 +61,7 @@ pub struct Bind {
     pid: u32,
 }
 impl Bind {
-    fn connect(&self, local_addr: UnixSocketAddr, pid: u32) -> LinuxResult<Channel> {
+    fn connect(&self, local_addr: UnixSocketAddr, pid: u32) -> AxResult<Channel> {
         let (mut client_chan, mut server_chan) = new_channels(0);
         client_chan.peer_pid = self.pid;
         server_chan.peer_pid = pid;
@@ -71,7 +71,7 @@ impl Bind {
                 addr: local_addr,
                 pid,
             })
-            .map_err(|_| LinuxError::ECONNREFUSED)?;
+            .map_err(|_| AxError::ConnectionRefused)?;
         self.poll_new_conn.wake();
         Ok(client_chan)
     }
@@ -118,7 +118,7 @@ impl StreamTransport {
 }
 
 impl Configurable for StreamTransport {
-    fn get_option_inner(&self, opt: &mut GetSocketOption) -> LinuxResult<bool> {
+    fn get_option_inner(&self, opt: &mut GetSocketOption) -> AxResult<bool> {
         use GetSocketOption as O;
 
         if self.general.get_option_inner(opt)? {
@@ -143,7 +143,7 @@ impl Configurable for StreamTransport {
         Ok(true)
     }
 
-    fn set_option_inner(&self, opt: SetSocketOption) -> LinuxResult<bool> {
+    fn set_option_inner(&self, opt: SetSocketOption) -> AxResult<bool> {
         use SetSocketOption as O;
 
         if self.general.set_option_inner(opt)? {
@@ -159,14 +159,14 @@ impl Configurable for StreamTransport {
 }
 #[async_trait]
 impl TransportOps for StreamTransport {
-    fn bind(&self, slot: &super::BindSlot, _local_addr: &UnixSocketAddr) -> LinuxResult<()> {
+    fn bind(&self, slot: &super::BindSlot, _local_addr: &UnixSocketAddr) -> AxResult<()> {
         let mut slot = slot.stream.lock();
         if slot.is_some() {
-            return Err(LinuxError::EADDRINUSE);
+            return Err(AxError::AddressInUse);
         }
         let mut guard = self.conn_rx.lock();
         if guard.is_some() {
-            return Err(LinuxError::EINVAL);
+            return Err(AxError::InvalidInput);
         }
         let (tx, rx) = async_channel::unbounded();
         let poll = Arc::new(PollSet::new());
@@ -180,41 +180,41 @@ impl TransportOps for StreamTransport {
         Ok(())
     }
 
-    fn connect(&self, slot: &super::BindSlot, local_addr: &UnixSocketAddr) -> LinuxResult<()> {
+    fn connect(&self, slot: &super::BindSlot, local_addr: &UnixSocketAddr) -> AxResult<()> {
         let mut guard = self.channel.lock();
         if guard.is_some() {
-            return Err(LinuxError::EISCONN);
+            return Err(AxError::AlreadyConnected);
         }
         *guard = Some(
             slot.stream
                 .lock()
                 .as_ref()
-                .ok_or(LinuxError::ENOTCONN)?
+                .ok_or(AxError::NotConnected)?
                 .connect(local_addr.clone(), self.pid)?,
         );
         self.poll_state.wake();
         Ok(())
     }
 
-    async fn accept(&self) -> LinuxResult<(Transport, UnixSocketAddr)> {
+    async fn accept(&self) -> AxResult<(Transport, UnixSocketAddr)> {
         let mut guard = self.conn_rx.lock();
         let Some((rx, _)) = guard.as_mut() else {
-            return Err(LinuxError::ENOTCONN);
+            return Err(AxError::NotConnected);
         };
         let ConnRequest {
             channel,
             addr: peer_addr,
             pid,
-        } = rx.recv().await.map_err(|_| LinuxError::ECONNRESET)?;
+        } = rx.recv().await.map_err(|_| AxError::ConnectionReset)?;
         Ok((
             Transport::Stream(StreamTransport::new_channel(Some(channel), pid)),
             peer_addr,
         ))
     }
 
-    fn send(&self, src: &mut impl Buf, options: SendOptions) -> LinuxResult<usize> {
+    fn send(&self, src: &mut impl Buf, options: SendOptions) -> AxResult<usize> {
         if options.to.is_some() {
-            return Err(LinuxError::EINVAL);
+            return Err(AxError::InvalidInput);
         }
         let size = src.remaining();
         let mut total = 0;
@@ -222,10 +222,10 @@ impl TransportOps for StreamTransport {
         self.general.send_poller(self).poll(|| {
             let mut guard = self.channel.lock();
             let Some(chan) = guard.as_mut() else {
-                return Err(LinuxError::ENOTCONN);
+                return Err(AxError::NotConnected);
             };
             if !chan.tx.read_is_held() {
-                return Err(LinuxError::EPIPE);
+                return Err(AxError::BrokenPipe);
             }
 
             let count = {
@@ -245,16 +245,16 @@ impl TransportOps for StreamTransport {
             if count == size || non_blocking {
                 Ok(total)
             } else {
-                Err(LinuxError::EAGAIN)
+                Err(AxError::WouldBlock)
             }
         })
     }
 
-    fn recv(&self, dst: &mut impl BufMut, _options: RecvOptions) -> LinuxResult<usize> {
+    fn recv(&self, dst: &mut impl BufMut, _options: RecvOptions) -> AxResult<usize> {
         self.general.recv_poller(self).poll(|| {
             let mut guard = self.channel.lock();
             let Some(chan) = guard.as_mut() else {
-                return Err(LinuxError::ENOTCONN);
+                return Err(AxError::NotConnected);
             };
 
             let count = {
@@ -270,12 +270,12 @@ impl TransportOps for StreamTransport {
                 chan.poll_update.wake();
                 Ok(count)
             } else {
-                Err(LinuxError::EAGAIN)
+                Err(AxError::WouldBlock)
             }
         })
     }
 
-    fn shutdown(&self, how: Shutdown) -> LinuxResult<()> {
+    fn shutdown(&self, how: Shutdown) -> AxResult<()> {
         if how.has_read() {
             self.rx_closed.store(true, Ordering::Release);
             self.poll_state.wake();

@@ -185,7 +185,7 @@ impl DirNodeOps for Inode {
         let mut count = 0;
         while let Some(entry) = reader.current() {
             let name = core::str::from_utf8(entry.name())
-                .map_err(|_| VfsError::EINVAL)?
+                .map_err(|_| VfsError::InvalidData)?
                 .to_owned();
             let ino = entry.ino() as u64;
             let node_type = into_vfs_type(entry.inode_type());
@@ -218,12 +218,12 @@ impl DirNodeOps for Inode {
             NodeType::Symlink => InodeType::Symlink,
             NodeType::Socket => InodeType::Socket,
             NodeType::Unknown => {
-                return Err(VfsError::EINVAL);
+                return Err(VfsError::InvalidData);
             }
         };
         let mut fs = self.fs.lock();
         if fs.lookup(self.ino, name).is_ok() {
-            return Err(VfsError::EEXIST);
+            return Err(VfsError::AlreadyExists);
         }
         let ino = fs
             .create(self.ino, name, inode_type, permission.bits() as _)
@@ -261,7 +261,7 @@ impl DirNodeOps for Inode {
     }
 
     fn rename(&self, src_name: &str, dst_dir: &DirNode, dst_name: &str) -> VfsResult<()> {
-        let dst_dir: Arc<Self> = dst_dir.downcast().map_err(|_| VfsError::EINVAL)?;
+        let dst_dir: Arc<Self> = dst_dir.downcast().map_err(|_| VfsError::InvalidInput)?;
         let mut fs = self.fs.lock();
         fs.rename(self.ino, src_name, dst_dir.ino, dst_name)
             .map_err(into_vfs_err)

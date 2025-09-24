@@ -81,12 +81,12 @@ impl FsContext {
             return Ok(loc);
         }
         if *follow_count >= SYMLINKS_MAX {
-            return Err(VfsError::ELOOP);
+            return Err(VfsError::FilesystemLoop);
         }
         *follow_count += 1;
         let target = loc.read_link()?;
         if target.is_empty() {
-            return Err(VfsError::ENOENT);
+            return Err(VfsError::NotFound);
         }
         self.resolve_components(PathBuf::from(target).components(), follow_count)
     }
@@ -166,7 +166,7 @@ impl FsContext {
         } else if let Some(parent) = dir.parent() {
             Ok((parent, Cow::Owned(dir.name().to_owned())))
         } else {
-            Err(VfsError::EINVAL)
+            Err(VfsError::InvalidInput)
         }
     }
 
@@ -182,7 +182,7 @@ impl FsContext {
         if let Some(name) = name {
             Ok((dir, name))
         } else {
-            Err(VfsError::EEXIST)
+            Err(VfsError::InvalidInput)
         }
     }
 
@@ -207,7 +207,7 @@ impl FsContext {
         let entry = self.resolve_no_follow(path.as_ref())?;
         entry
             .parent()
-            .ok_or(VfsError::EISDIR)?
+            .ok_or(VfsError::IsADirectory)?
             .unlink(entry.name(), false)
     }
 
@@ -216,7 +216,7 @@ impl FsContext {
         let entry = self.resolve_no_follow(path.as_ref())?;
         entry
             .parent()
-            .ok_or(VfsError::EBUSY)?
+            .ok_or(VfsError::ResourceBusy)?
             .unlink(entry.name(), true)
     }
 
@@ -253,7 +253,7 @@ impl FsContext {
     ) -> VfsResult<Location> {
         let (dir, name) = self.resolve_nonexistent(link_path.as_ref())?;
         if dir.lookup_no_follow(name).is_ok() {
-            return Err(VfsError::EEXIST);
+            return Err(VfsError::AlreadyExists);
         }
         let symlink = dir.create(name, NodeType::Symlink, NodePermission::default())?;
         symlink.entry().as_file()?.set_symlink(target.as_ref())?;

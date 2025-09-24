@@ -144,7 +144,7 @@ impl DirNodeOps for FatDirNode {
         dir.iter()
             .find_map(|entry| entry.ok().filter(|it| it.eq_name(name)))
             .map(|entry| self.create_entry(entry, name.to_ascii_lowercase(), fs.alloc_inode()))
-            .ok_or(VfsError::ENOENT)
+            .ok_or(VfsError::NotFound)
     }
 
     fn create(
@@ -176,14 +176,14 @@ impl DirNodeOps for FatDirNode {
                     )
                 })
                 .map_err(into_vfs_err),
-            _ => Err(VfsError::EINVAL),
+            _ => Err(VfsError::InvalidInput),
         }
     }
 
     fn link(&self, _name: &str, _node: &DirEntry) -> VfsResult<DirEntry> {
         //  EPERM  The filesystem containing oldpath and newpath does not
         //         support the creation of hard links.
-        Err(VfsError::EPERM)
+        Err(VfsError::PermissionDenied)
     }
 
     fn unlink(&self, name: &str) -> VfsResult<()> {
@@ -194,7 +194,7 @@ impl DirNodeOps for FatDirNode {
 
     fn rename(&self, src_name: &str, dst_dir: &DirNode, dst_name: &str) -> VfsResult<()> {
         let fs = self.fs.lock();
-        let dst_dir: Arc<Self> = dst_dir.downcast().map_err(|_| VfsError::EINVAL)?;
+        let dst_dir: Arc<Self> = dst_dir.downcast().map_err(|_| VfsError::InvalidInput)?;
 
         let dir = self.inner.borrow(&fs);
 

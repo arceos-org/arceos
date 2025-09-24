@@ -152,7 +152,7 @@ impl FileNodeOps for FatFileNode {
     }
 
     fn set_symlink(&self, _target: &str) -> VfsResult<()> {
-        Err(VfsError::EPERM)
+        Err(VfsError::PermissionDenied)
     }
 }
 

@@ -5,7 +5,7 @@ use core::{
     task::Context,
 };
 
-use axerrno::{LinuxError, LinuxResult, ax_err, bail};
+use axerrno::{AxError, AxResult, ax_bail, ax_err_type};
 use axio::{Buf, BufMut, IoEvents, PollSet, Pollable};
 use axsync::Mutex;
 use smoltcp::{
@@ -83,7 +83,7 @@ impl StateLock {
 #[must_use]
 struct StateGuard<'a>(&'a StateLock, u8);
 impl StateGuard<'_> {
-    pub fn transit<R>(self, new: State, f: impl FnOnce() -> LinuxResult<R>) -> LinuxResult<R> {
+    pub fn transit<R>(self, new: State, f: impl FnOnce() -> AxResult<R>) -> AxResult<R> {
         match f() {
             Ok(result) => {
                 self.0.0.store(new as u8, Ordering::Release);
@@ -163,10 +163,10 @@ impl TcpSocket {
         SOCKET_SET.with_socket_mut::<smol::Socket, _, _>(self.handle, f)
     }
 
-    fn bound_endpoint(&self) -> LinuxResult<IpListenEndpoint> {
+    fn bound_endpoint(&self) -> AxResult<IpListenEndpoint> {
         let endpoint = self.with_smol_socket(|socket| socket.get_bound_endpoint());
         if endpoint.port == 0 {
-            bail!(EINVAL, "not bound");
+            ax_bail!(InvalidInput, "not bound");
         }
         Ok(endpoint)
     }
@@ -219,7 +219,7 @@ impl TcpSocket {
 }
 
 impl Configurable for TcpSocket {
-    fn get_option_inner(&self, option: &mut GetSocketOption) -> LinuxResult<bool> {
+    fn get_option_inner(&self, option: &mut GetSocketOption) -> AxResult<bool> {
         use GetSocketOption as O;
 
         if self.general.get_option_inner(option)? {
@@ -251,7 +251,7 @@ impl Configurable for TcpSocket {
         Ok(true)
     }
 
-    fn set_option_inner(&self, option: SetSocketOption) -> LinuxResult<bool> {
+    fn set_option_inner(&self, option: SetSocketOption) -> AxResult<bool> {
         use SetSocketOption as O;
 
         if self.general.set_option_inner(option)? {
@@ -275,11 +275,11 @@ impl Configurable for TcpSocket {
     }
 }
 impl SocketOps for TcpSocket {
-    fn bind(&self, local_addr: SocketAddrEx) -> LinuxResult<()> {
+    fn bind(&self, local_addr: SocketAddrEx) -> AxResult {
         let mut local_addr = local_addr.into_ip()?;
         self.state
             .lock(State::Idle)
-            .map_err(|_| ax_err!(EINVAL, "already"))?
+            .map_err(|_| ax_err_type!(InvalidInput, "already bound"))?
             .transit(State::Idle, || {
                 // TODO: check addr is available
                 if local_addr.port() == 0 {
@@ -291,7 +291,7 @@ impl SocketOps for TcpSocket {
 
                 self.with_smol_socket(|socket| {
                     if socket.get_bound_endpoint().port != 0 {
-                        return Err(LinuxError::EINVAL);
+                        return Err(AxError::InvalidInput);
                     }
                     let endpoint = IpListenEndpoint {
                         addr: if local_addr.ip().is_unspecified() {
@@ -311,16 +311,16 @@ impl SocketOps for TcpSocket {
             })
     }
 
-    fn connect(&self, remote_addr: SocketAddrEx) -> LinuxResult<()> {
+    fn connect(&self, remote_addr: SocketAddrEx) -> AxResult {
         let remote_addr = remote_addr.into_ip()?;
         self.state
             .lock(State::Idle)
             .map_err(|state| {
                 if state == State::Connecting {
-                    LinuxError::EINPROGRESS
+                    AxError::InProgress
                 } else {
                     // TODO(mivik): error code
-                    ax_err!(EISCONN, "already connected")
+                    ax_err_type!(AlreadyConnected)
                 }
             })?
             .transit(State::Connecting, || {
@@ -353,10 +353,10 @@ impl SocketOps for TcpSocket {
                         )
                         .map_err(|e| match e {
                             smol::ConnectError::InvalidState => {
-                                ax_err!(EISCONN, "already conncted")
+                                ax_err_type!(AlreadyConnected)
                             }
                             smol::ConnectError::Unaddressable => {
-                                ax_err!(ECONNREFUSED, "unaddressable")
+                                ax_err_type!(ConnectionRefused, "unaddressable")
                             }
                         })?;
                     Ok(())
@@ -371,16 +371,16 @@ impl SocketOps for TcpSocket {
             poll_interfaces();
             let events = self.poll_connect();
             if !events.contains(IoEvents::OUT) {
-                Err(LinuxError::EAGAIN)
+                Err(AxError::WouldBlock)
             } else if self.state() == State::Connected {
                 Ok(())
             } else {
-                Err(ax_err!(ECONNREFUSED, "connection refused"))
+                Err(ax_err_type!(ConnectionRefused, "connection refused"))
             }
         })
     }
 
-    fn listen(&self) -> LinuxResult<()> {
+    fn listen(&self) -> AxResult {
         if let Ok(guard) = self.state.lock(State::Idle) {
             guard.transit(State::Listening, || {
                 let bound_endpoint = self.with_smol_socket(|socket| socket.get_bound_endpoint());
@@ -394,9 +394,9 @@ impl SocketOps for TcpSocket {
         Ok(())
     }
 
-    fn accept(&self) -> LinuxResult<Socket> {
+    fn accept(&self) -> AxResult<Socket> {
         if !self.is_listening() {
-            bail!(EINVAL, "not listening");
+            ax_bail!(InvalidInput, "not listening");
         }
 
         let bound_port = self.bound_endpoint()?.port;
@@ -414,15 +414,15 @@ impl SocketOps for TcpSocket {
         })
     }
 
-    fn send(&self, src: &mut impl Buf, _options: SendOptions) -> LinuxResult<usize> {
+    fn send(&self, src: &mut impl Buf, _options: SendOptions) -> AxResult<usize> {
         // SAFETY: `self.handle` should be initialized in a connected socket.
         self.general.send_poller(self).poll(|| {
             poll_interfaces();
             self.with_smol_socket(|socket| {
                 if !socket.is_active() {
-                    Err(LinuxError::ENOTCONN)
+                    Err(AxError::NotConnected)
                 } else if !socket.can_send() {
-                    Err(LinuxError::EAGAIN)
+                    Err(AxError::WouldBlock)
                 } else {
                     // connected, and the tx buffer is not full
                     let len = socket
@@ -431,32 +431,32 @@ impl SocketOps for TcpSocket {
                             let len = result.unwrap_or(0);
                             (len, result)
                         })
-                        .map_err(|_| ax_err!(ENOTCONN, "not connected?"))??;
+                        .map_err(|_| ax_err_type!(NotConnected, "not connected?"))??;
                     Ok(len)
                 }
             })
         })
     }
 
-    fn recv(&self, dst: &mut impl BufMut, options: RecvOptions<'_>) -> LinuxResult<usize> {
+    fn recv(&self, dst: &mut impl BufMut, options: RecvOptions<'_>) -> AxResult<usize> {
         if self.rx_closed.load(Ordering::Acquire) {
-            return Err(LinuxError::ENOTCONN);
+            return Err(AxError::NotConnected);
         }
         self.general.recv_poller(self).poll(|| {
             poll_interfaces();
             self.with_smol_socket(|socket| {
                 if !socket.is_active() {
-                    Err(LinuxError::ENOTCONN)
+                    Err(AxError::NotConnected)
                 } else if !socket.may_recv() {
                     Ok(0)
                 } else if socket.recv_queue() == 0 {
-                    Err(LinuxError::EAGAIN)
+                    Err(AxError::WouldBlock)
                 } else {
                     if options.flags.contains(RecvFlags::PEEK) {
                         dst.write(
                             socket
                                 .peek(dst.remaining_mut())
-                                .map_err(|_| ax_err!(ENOTCONN, "not connected?"))?,
+                                .map_err(|_| ax_err_type!(NotConnected, "not connected?"))?,
                         )
                     } else {
                         socket
@@ -465,14 +465,14 @@ impl SocketOps for TcpSocket {
                                 let len = result.unwrap_or(0);
                                 (len, result)
                             })
-                            .map_err(|_| ax_err!(ENOTCONN, "not connected?"))?
+                            .map_err(|_| ax_err_type!(NotConnected, "not connected?"))?
                     }
                 }
             })
         })
     }
 
-    fn local_addr(&self) -> LinuxResult<SocketAddrEx> {
+    fn local_addr(&self) -> AxResult<SocketAddrEx> {
         self.with_smol_socket(|socket| {
             let endpoint = socket.get_bound_endpoint();
             Ok(SocketAddrEx::Ip(SocketAddr::new(
@@ -484,15 +484,18 @@ impl SocketOps for TcpSocket {
         })
     }
 
-    fn peer_addr(&self) -> LinuxResult<SocketAddrEx> {
+    fn peer_addr(&self) -> AxResult<SocketAddrEx> {
         self.with_smol_socket(|socket| {
             Ok(SocketAddrEx::Ip(
-                socket.remote_endpoint().ok_or(LinuxError::ENOTCONN)?.into(),
+                socket
+                    .remote_endpoint()
+                    .ok_or(AxError::NotConnected)?
+                    .into(),
             ))
         })
     }
 
-    fn shutdown(&self, how: Shutdown) -> LinuxResult<()> {
+    fn shutdown(&self, how: Shutdown) -> AxResult {
         // TODO(mivik): shutdown
         if how.has_read() {
             self.rx_closed.store(true, Ordering::Release);
@@ -561,7 +564,7 @@ impl Drop for TcpSocket {
     }
 }
 
-fn get_ephemeral_port() -> LinuxResult<u16> {
+fn get_ephemeral_port() -> AxResult<u16> {
     const PORT_START: u16 = 0xc000;
     const PORT_END: u16 = 0xffff;
     static CURR: Mutex<u16> = Mutex::new(PORT_START);
@@ -581,5 +584,5 @@ fn get_ephemeral_port() -> LinuxResult<u16> {
         }
         tries += 1;
     }
-    bail!(EADDRINUSE, "no available ports");
+    ax_bail!(AddressInUse, "no available ports");
 }

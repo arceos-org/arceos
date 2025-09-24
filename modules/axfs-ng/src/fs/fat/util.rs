@@ -116,14 +116,15 @@ pub fn update_file_metadata(file: &mut ff::File, update: MetadataUpdate) {
 pub fn into_vfs_err<E>(err: fatfs::Error<E>) -> VfsError {
     use fatfs::Error::*;
     match err {
-        AlreadyExists => VfsError::EEXIST,
-        CorruptedFileSystem => VfsError::EINVAL,
-        DirectoryIsNotEmpty => VfsError::ENOTEMPTY,
-        InvalidFileNameLength => VfsError::ENAMETOOLONG,
-        InvalidInput | UnsupportedFileNameCharacter => VfsError::EINVAL,
-        NotEnoughSpace => VfsError::ENOSPC,
-        NotFound => VfsError::ENOENT,
-        UnexpectedEof | WriteZero => VfsError::EIO,
-        _ => VfsError::EIO,
+        AlreadyExists => VfsError::AlreadyExists,
+        CorruptedFileSystem => VfsError::InvalidData,
+        DirectoryIsNotEmpty => VfsError::DirectoryNotEmpty,
+        InvalidFileNameLength => VfsError::NameTooLong,
+        InvalidInput => VfsError::InvalidInput,
+        UnsupportedFileNameCharacter => VfsError::InvalidData,
+        NotEnoughSpace => VfsError::StorageFull,
+        NotFound => VfsError::NotFound,
+        UnexpectedEof | WriteZero => VfsError::Io,
+        _ => VfsError::Io,
     }
 }

@@ -1,7 +1,7 @@
 use alloc::{boxed::Box, collections::VecDeque, sync::Arc, vec};
 use core::ops::DerefMut;
 
-use axerrno::{LinuxError, LinuxResult};
+use axerrno::{AxError, AxResult};
 use axsync::Mutex;
 use smoltcp::{
     iface::{SocketHandle, SocketSet},
@@ -58,7 +58,7 @@ impl ListenTable {
         self.tcp[port as usize].lock().is_none()
     }
 
-    pub fn listen(&self, listen_endpoint: IpListenEndpoint) -> LinuxResult {
+    pub fn listen(&self, listen_endpoint: IpListenEndpoint) -> AxResult {
         let port = listen_endpoint.port;
         assert_ne!(port, 0);
         let mut entry = self.tcp[port as usize].lock();
@@ -67,7 +67,7 @@ impl ListenTable {
             Ok(())
         } else {
             warn!("socket already listening on port {port}");
-            Err(LinuxError::EADDRINUSE)
+            Err(AxError::AddressInUse)
         }
     }
 
@@ -80,21 +80,21 @@ impl ListenTable {
         self.tcp[port as usize].clone()
     }
 
-    pub fn can_accept(&self, port: u16) -> LinuxResult<bool> {
+    pub fn can_accept(&self, port: u16) -> AxResult<bool> {
         if let Some(entry) = self.listen_entry(port).lock().as_ref() {
             Ok(entry.syn_queue.iter().any(|&handle| is_connected(handle)))
         } else {
             warn!("accept before listen");
-            Err(LinuxError::EINVAL)
+            Err(AxError::InvalidInput)
         }
     }
 
-    pub fn accept(&self, port: u16) -> LinuxResult<SocketHandle> {
+    pub fn accept(&self, port: u16) -> AxResult<SocketHandle> {
         let entry = self.listen_entry(port);
         let mut table = entry.lock();
         let Some(entry) = table.deref_mut() else {
             warn!("accept before listen");
-            return Err(LinuxError::EINVAL);
+            return Err(AxError::InvalidInput);
         };
 
         let syn_queue: &mut VecDeque<SocketHandle> = &mut entry.syn_queue;
@@ -102,7 +102,7 @@ impl ListenTable {
             .iter()
             .enumerate()
             .find_map(|(idx, &handle)| is_connected(handle).then_some(idx))
-            .ok_or(LinuxError::EAGAIN)?; // wait for connection
+            .ok_or(AxError::WouldBlock)?; // wait for connection
         if idx > 0 {
             warn!(
                 "slow SYN queue enumeration: index = {}, len = {}!",
@@ -115,7 +115,7 @@ impl ListenTable {
         // Otherwise, return the handle and the address tuple
         if is_closed(handle) {
             warn!("accept failed: connection reset");
-            Err(LinuxError::ECONNRESET)
+            Err(AxError::ConnectionReset)
         } else {
             Ok(handle)
         }

@@ -1,13 +1,13 @@
 use alloc::sync::Arc;
 
-use axerrno::LinuxResult;
+use axerrno::AxResult;
 use axhal::paging::{MappingFlags, PageSize, PageTableMut};
 use axsync::Mutex;
 use memory_addr::{PhysAddr, PhysAddrRange, VirtAddr, VirtAddrRange};
 
 use crate::{
     AddrSpace,
-    backend::{Backend, BackendOps, paging_to_linux_error},
+    backend::{Backend, BackendOps, paging_to_ax_error},
 };
 
 /// Linear mapping backend.
@@ -31,23 +31,18 @@ impl BackendOps for LinearBackend {
         PageSize::Size4K
     }
 
-    fn map(
-        &self,
-        range: VirtAddrRange,
-        flags: MappingFlags,
-        pt: &mut PageTableMut,
-    ) -> LinuxResult<()> {
+    fn map(&self, range: VirtAddrRange, flags: MappingFlags, pt: &mut PageTableMut) -> AxResult {
         let pa_range = PhysAddrRange::from_start_size(self.pa(range.start), range.size());
         debug!("Linear::map: {range:?} -> {pa_range:?} {flags:?}");
         pt.map_region(range.start, |va| self.pa(va), range.size(), flags, false)
-            .map_err(paging_to_linux_error)
+            .map_err(paging_to_ax_error)
     }
 
-    fn unmap(&self, range: VirtAddrRange, pt: &mut PageTableMut) -> LinuxResult<()> {
+    fn unmap(&self, range: VirtAddrRange, pt: &mut PageTableMut) -> AxResult {
         let pa_range = PhysAddrRange::from_start_size(self.pa(range.start), range.size());
         debug!("Linear::unmap: {range:?} -> {pa_range:?}");
         pt.unmap_region(range.start, range.size())
-            .map_err(paging_to_linux_error)
+            .map_err(paging_to_ax_error)
     }
 
     fn clone_map(
@@ -57,7 +52,7 @@ impl BackendOps for LinearBackend {
         _old_pt: &mut PageTableMut,
         _new_pt: &mut PageTableMut,
         _new_aspace: &Arc<Mutex<AddrSpace>>,
-    ) -> LinuxResult<Backend> {
+    ) -> AxResult<Backend> {
         Ok(Backend::Linear(self.clone()))
     }
 }

@@ -1,7 +1,7 @@
 use alloc::{boxed::Box, collections::btree_map::BTreeMap, sync::Arc};
 use core::slice;
 
-use axerrno::{LinuxError, LinuxResult};
+use axerrno::{AxError, AxResult};
 use axfs_ng::FileBackend;
 use axhal::{
     mem::phys_to_virt,
@@ -13,7 +13,7 @@ use memory_addr::{PhysAddr, VirtAddr, VirtAddrRange};
 
 use crate::{
     AddrSpace,
-    backend::{Backend, BackendOps, alloc_frame, dealloc_frame, pages_in, paging_to_linux_error},
+    backend::{Backend, BackendOps, alloc_frame, dealloc_frame, pages_in, paging_to_ax_error},
 };
 
 static FRAME_TABLE: SpinNoIrq<BTreeMap<PhysAddr, u8>> = SpinNoIrq::new(BTreeMap::new());
@@ -54,7 +54,7 @@ impl CowBackend {
         vaddr: VirtAddr,
         flags: MappingFlags,
         pt: &mut PageTableMut,
-    ) -> LinuxResult<()> {
+    ) -> AxResult {
         let frame = alloc_frame(true, self.size)?;
         inc_frame_ref(frame);
 
@@ -76,7 +76,7 @@ impl CowBackend {
             file.read_at(&mut &mut buf[start..start + max_read], file_start)?;
         }
         pt.map(vaddr, frame, self.size, flags)
-            .map_err(paging_to_linux_error)?;
+            .map_err(paging_to_ax_error)?;
         Ok(())
     }
 
@@ -86,14 +86,14 @@ impl CowBackend {
         paddr: PhysAddr,
         flags: MappingFlags,
         pt: &mut PageTableMut,
-    ) -> LinuxResult<()> {
+    ) -> AxResult {
         match dec_frame_ref(paddr) {
             0 => unreachable!(),
             // There is only one AddrSpace reference to the page,
             // so there is no need to copy it.
             1 => {
                 inc_frame_ref(paddr);
-                pt.protect(vaddr, flags).map_err(paging_to_linux_error)?;
+                pt.protect(vaddr, flags).map_err(paging_to_ax_error)?;
             }
             // Allocates the new page and copies the contents of the original page,
             // remapping the virtual address to the physical address of the new page.
@@ -109,7 +109,7 @@ impl CowBackend {
                 }
 
                 pt.remap(vaddr, new_frame, flags)
-                    .map_err(paging_to_linux_error)?;
+                    .map_err(paging_to_ax_error)?;
             }
         }
 
@@ -122,17 +122,12 @@ impl BackendOps for CowBackend {
         self.size
     }
 
-    fn map(
-        &self,
-        range: VirtAddrRange,
-        flags: MappingFlags,
-        _pt: &mut PageTableMut,
-    ) -> LinuxResult<()> {
+    fn map(&self, range: VirtAddrRange, flags: MappingFlags, _pt: &mut PageTableMut) -> AxResult {
         debug!("Cow::map: {range:?} {flags:?}",);
         Ok(())
     }
 
-    fn unmap(&self, range: VirtAddrRange, pt: &mut PageTableMut) -> LinuxResult<()> {
+    fn unmap(&self, range: VirtAddrRange, pt: &mut PageTableMut) -> AxResult {
         debug!("Cow::unmap: {range:?}");
         for addr in pages_in(range, self.size)? {
             if let Ok((frame, _flags, page_size)) = pt.unmap(addr) {
@@ -153,7 +148,7 @@ impl BackendOps for CowBackend {
         flags: MappingFlags,
         access_flags: MappingFlags,
         pt: &mut PageTableMut,
-    ) -> LinuxResult<(usize, Option<Box<dyn FnOnce(&mut AddrSpace)>>)> {
+    ) -> AxResult<(usize, Option<Box<dyn FnOnce(&mut AddrSpace)>>)> {
         let mut pages = 0;
         for addr in pages_in(range, self.size)? {
             match pt.query(addr) {
@@ -171,7 +166,7 @@ impl BackendOps for CowBackend {
                     self.alloc_new_at(addr, flags, pt)?;
                     pages += 1;
                 }
-                Err(_) => return Err(LinuxError::EFAULT),
+                Err(_) => return Err(AxError::BadAddress),
             }
         }
         Ok((pages, None))
@@ -184,7 +179,7 @@ impl BackendOps for CowBackend {
         old_pt: &mut PageTableMut,
         new_pt: &mut PageTableMut,
         _new_aspace: &Arc<Mutex<AddrSpace>>,
-    ) -> LinuxResult<Backend> {
+    ) -> AxResult<Backend> {
         let cow_flags = flags - MappingFlags::WRITE;
 
         for vaddr in pages_in(range, self.size)? {
@@ -200,14 +195,14 @@ impl BackendOps for CowBackend {
 
                     old_pt
                         .protect(vaddr, cow_flags)
-                        .map_err(paging_to_linux_error)?;
+                        .map_err(paging_to_ax_error)?;
                     new_pt
                         .map(vaddr, paddr, self.size, cow_flags)
-                        .map_err(paging_to_linux_error)?;
+                        .map_err(paging_to_ax_error)?;
                 }
                 // If the page is not mapped, skip it.
                 Err(PagingError::NotMapped) => {}
-                Err(_) => return Err(LinuxError::EFAULT),
+                Err(_) => return Err(AxError::BadAddress),
             };
         }
 

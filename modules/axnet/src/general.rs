@@ -4,7 +4,7 @@ use core::{
     time::Duration,
 };
 
-use axerrno::LinuxResult;
+use axerrno::AxResult;
 use axio::{IoEvents, Pollable};
 use axtask::future::Poller;
 
@@ -88,7 +88,7 @@ impl GeneralOptions {
     }
 }
 impl Configurable for GeneralOptions {
-    fn get_option_inner(&self, option: &mut GetSocketOption) -> LinuxResult<bool> {
+    fn get_option_inner(&self, option: &mut GetSocketOption) -> AxResult<bool> {
         use GetSocketOption as O;
         match option {
             O::Error(error) => {
@@ -112,7 +112,7 @@ impl Configurable for GeneralOptions {
         Ok(true)
     }
 
-    fn set_option_inner(&self, option: SetSocketOption) -> LinuxResult<bool> {
+    fn set_option_inner(&self, option: SetSocketOption) -> AxResult<bool> {
         use SetSocketOption as O;
 
         match option {

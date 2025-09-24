@@ -3,7 +3,7 @@ use core::task::Context;
 
 use async_channel::TryRecvError;
 use async_trait::async_trait;
-use axerrno::{LinuxError, LinuxResult};
+use axerrno::{AxError, AxResult};
 use axio::{Buf, BufMut, IoEvents, PollSet, Pollable};
 use axsync::Mutex;
 use spin::RwLock;
@@ -101,7 +101,7 @@ impl DgramTransport {
 }
 
 impl Configurable for DgramTransport {
-    fn get_option_inner(&self, opt: &mut GetSocketOption) -> LinuxResult<bool> {
+    fn get_option_inner(&self, opt: &mut GetSocketOption) -> AxResult<bool> {
         use GetSocketOption as O;
 
         if self.general.get_option_inner(opt)? {
@@ -121,7 +121,7 @@ impl Configurable for DgramTransport {
         Ok(true)
     }
 
-    fn set_option_inner(&self, opt: SetSocketOption) -> LinuxResult<bool> {
+    fn set_option_inner(&self, opt: SetSocketOption) -> AxResult<bool> {
         use SetSocketOption as O;
 
         if self.general.set_option_inner(opt)? {
@@ -137,14 +137,14 @@ impl Configurable for DgramTransport {
 }
 #[async_trait]
 impl TransportOps for DgramTransport {
-    fn bind(&self, slot: &super::BindSlot, local_addr: &UnixSocketAddr) -> LinuxResult<()> {
+    fn bind(&self, slot: &super::BindSlot, local_addr: &UnixSocketAddr) -> AxResult {
         let mut slot = slot.dgram.lock();
         if slot.is_some() {
-            return Err(LinuxError::EADDRINUSE);
+            return Err(AxError::AddressInUse);
         }
         let mut guard = self.data_rx.lock();
         if guard.is_some() {
-            return Err(LinuxError::EINVAL);
+            return Err(AxError::InvalidInput);
         }
         let (tx, rx) = async_channel::unbounded();
         let poll_update = Arc::new(PollSet::new());
@@ -158,27 +158,27 @@ impl TransportOps for DgramTransport {
         Ok(())
     }
 
-    fn connect(&self, slot: &super::BindSlot, _local_addr: &UnixSocketAddr) -> LinuxResult<()> {
+    fn connect(&self, slot: &super::BindSlot, _local_addr: &UnixSocketAddr) -> AxResult {
         let mut guard = self.connected.write();
         if guard.is_some() {
-            return Err(LinuxError::EISCONN);
+            return Err(AxError::AlreadyConnected);
         }
         *guard = Some(
             slot.dgram
                 .lock()
                 .as_ref()
-                .ok_or(LinuxError::ENOTCONN)?
+                .ok_or(AxError::NotConnected)?
                 .connect(),
         );
         self.poll_state.wake();
         Ok(())
     }
 
-    async fn accept(&self) -> LinuxResult<(Transport, UnixSocketAddr)> {
-        Err(LinuxError::EINVAL)
+    async fn accept(&self) -> AxResult<(Transport, UnixSocketAddr)> {
+        Err(AxError::InvalidInput)
     }
 
-    fn send(&self, src: &mut impl Buf, options: SendOptions) -> LinuxResult<usize> {
+    fn send(&self, src: &mut impl Buf, options: SendOptions) -> AxResult<usize> {
         let mut message = Vec::new();
         src.read_to_end(&mut message)?;
         let len = message.len();
@@ -195,35 +195,35 @@ impl TransportOps for DgramTransport {
                 if let Some(bind) = slot.dgram.lock().as_ref() {
                     bind.data_tx
                         .try_send(packet)
-                        .map_err(|_| LinuxError::EPIPE)?;
+                        .map_err(|_| AxError::BrokenPipe)?;
                     bind.poll_update.wake();
                     Ok(())
                 } else {
-                    Err(LinuxError::ENOTCONN)
+                    Err(AxError::NotConnected)
                 }
             })?;
         } else if let Some(chan) = connected.as_ref() {
             chan.data_tx
                 .try_send(packet)
-                .map_err(|_| LinuxError::EPIPE)?;
+                .map_err(|_| AxError::BrokenPipe)?;
             chan.poll_update.wake();
         } else {
-            return Err(LinuxError::ENOTCONN);
+            return Err(AxError::NotConnected);
         }
         Ok(len)
     }
 
-    fn recv(&self, dst: &mut impl BufMut, mut options: RecvOptions) -> LinuxResult<usize> {
+    fn recv(&self, dst: &mut impl BufMut, mut options: RecvOptions) -> AxResult<usize> {
         self.general.recv_poller(self).poll(move || {
             let mut guard = self.data_rx.lock();
             let Some((rx, _)) = guard.as_mut() else {
-                return Err(LinuxError::ENOTCONN);
+                return Err(AxError::NotConnected);
             };
 
             let Packet { data, cmsg, sender } = match rx.try_recv() {
                 Ok(packet) => packet,
                 Err(TryRecvError::Empty) => {
-                    return Err(LinuxError::EAGAIN);
+                    return Err(AxError::WouldBlock);
                 }
                 Err(TryRecvError::Closed) => {
                     return Ok(0);

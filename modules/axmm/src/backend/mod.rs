@@ -3,7 +3,7 @@ use alloc::{boxed::Box, sync::Arc};
 
 use allocator::AllocError;
 use axalloc::{UsageKind, global_allocator};
-use axerrno::{LinuxError, LinuxResult};
+use axerrno::{AxError, AxResult};
 use axhal::{
     mem::{phys_to_virt, virt_to_phys},
     paging::{MappingFlags, PageSize, PageTable, PageTableMut, PagingError},
@@ -27,15 +27,15 @@ fn divide_page(size: usize, page_size: PageSize) -> usize {
     size >> (page_size as usize).trailing_zeros()
 }
 
-fn alloc_to_linux_error(err: AllocError) -> LinuxError {
+fn alloc_to_linux_error(err: AllocError) -> AxError {
     warn!("Allocation error: {:?}", err);
     match err {
-        AllocError::NoMemory => LinuxError::ENOMEM,
-        _ => LinuxError::EINVAL,
+        AllocError::NoMemory => AxError::NoMemory,
+        _ => AxError::InvalidInput,
     }
 }
 
-fn alloc_frame(zeroed: bool, size: PageSize) -> LinuxResult<PhysAddr> {
+fn alloc_frame(zeroed: bool, size: PageSize) -> AxResult<PhysAddr> {
     let page_size = size as usize;
     let num_pages = page_size / PAGE_SIZE_4K;
     let vaddr = VirtAddr::from(
@@ -58,16 +58,16 @@ fn dealloc_frame(frame: PhysAddr, align: PageSize) {
     global_allocator().dealloc_pages(vaddr.as_usize(), num_pages, UsageKind::UserMem);
 }
 
-fn paging_to_linux_error(err: PagingError) -> LinuxError {
+fn paging_to_ax_error(err: PagingError) -> AxError {
     warn!("Paging error: {:?}", err);
     match err {
-        PagingError::NoMemory => LinuxError::ENOMEM,
-        _ => LinuxError::EINVAL,
+        PagingError::NoMemory => AxError::NoMemory,
+        _ => AxError::InvalidInput,
     }
 }
 
-fn pages_in(range: VirtAddrRange, align: PageSize) -> LinuxResult<PageIterWrapper> {
-    PageIterWrapper::new(range.start, range.end, align).ok_or(LinuxError::EINVAL)
+fn pages_in(range: VirtAddrRange, align: PageSize) -> AxResult<PageIterWrapper> {
+    PageIterWrapper::new(range.start, range.end, align).ok_or(AxError::InvalidInput)
 }
 
 #[enum_dispatch]
@@ -76,15 +76,10 @@ pub trait BackendOps {
     fn page_size(&self) -> PageSize;
 
     /// Map a memory region.
-    fn map(
-        &self,
-        range: VirtAddrRange,
-        flags: MappingFlags,
-        pt: &mut PageTableMut,
-    ) -> LinuxResult<()>;
+    fn map(&self, range: VirtAddrRange, flags: MappingFlags, pt: &mut PageTableMut) -> AxResult;
 
     /// Unmap a memory region.
-    fn unmap(&self, range: VirtAddrRange, pt: &mut PageTableMut) -> LinuxResult<()>;
+    fn unmap(&self, range: VirtAddrRange, pt: &mut PageTableMut) -> AxResult;
 
     /// Called before a memory region is protected.
     fn on_protect(
@@ -92,7 +87,7 @@ pub trait BackendOps {
         _range: VirtAddrRange,
         _new_flags: MappingFlags,
         _pt: &mut PageTableMut,
-    ) -> LinuxResult<()> {
+    ) -> AxResult {
         Ok(())
     }
 
@@ -103,7 +98,7 @@ pub trait BackendOps {
         _flags: MappingFlags,
         _access_flags: MappingFlags,
         _pt: &mut PageTableMut,
-    ) -> LinuxResult<(usize, Option<Box<dyn FnOnce(&mut AddrSpace)>>)> {
+    ) -> AxResult<(usize, Option<Box<dyn FnOnce(&mut AddrSpace)>>)> {
         Ok((0, None))
     }
 
@@ -120,7 +115,7 @@ pub trait BackendOps {
         old_pt: &mut PageTableMut,
         new_pt: &mut PageTableMut,
         new_aspace: &Arc<Mutex<AddrSpace>>,
-    ) -> LinuxResult<Backend>;
+    ) -> AxResult<Backend>;
 }
 
 /// A unified enum type for different memory mapping backends.

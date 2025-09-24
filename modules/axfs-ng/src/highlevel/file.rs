@@ -42,14 +42,14 @@ impl OpenResult {
     pub fn into_file(self) -> VfsResult<File> {
         match self {
             Self::File(file) => Ok(file),
-            Self::Dir(_) => Err(VfsError::EISDIR),
+            Self::Dir(_) => Err(VfsError::IsADirectory),
         }
     }
 
     pub fn into_dir(self) -> VfsResult<Location> {
         match self {
             Self::Dir(dir) => Ok(dir),
-            Self::File(_) => Err(VfsError::ENOTDIR),
+            Self::File(_) => Err(VfsError::NotADirectory),
         }
     }
 
@@ -188,7 +188,7 @@ impl OpenOptions {
 
         if self.directory {
             if flags.contains(FileFlags::WRITE) {
-                return Err(VfsError::EISDIR);
+                return Err(VfsError::IsADirectory);
             }
             loc.check_is_dir()?;
         }
@@ -220,14 +220,14 @@ impl OpenOptions {
 
     pub fn open_loc(&self, loc: Location) -> VfsResult<OpenResult> {
         if !self.is_valid() {
-            return Err(VfsError::EINVAL);
+            return Err(VfsError::InvalidInput);
         }
         self._open(loc)
     }
 
     pub fn open(&self, context: &FsContext, path: impl AsRef<Path>) -> VfsResult<OpenResult> {
         if !self.is_valid() {
-            return Err(VfsError::EINVAL);
+            return Err(VfsError::InvalidInput);
         }
 
         let loc = match context.resolve_parent(path.as_ref()) {
@@ -249,7 +249,7 @@ impl OpenOptions {
                 }
                 loc
             }
-            Err(VfsError::EINVAL) => {
+            Err(VfsError::InvalidInput) => {
                 // root directory
                 context.root_dir().clone()
             }
@@ -265,7 +265,7 @@ impl OpenOptions {
             (true, true, false) => FileFlags::READ | FileFlags::WRITE,
             (false, _, true) => FileFlags::WRITE | FileFlags::APPEND,
             (true, _, true) => FileFlags::READ | FileFlags::WRITE | FileFlags::APPEND,
-            (false, false, false) => return Err(VfsError::EINVAL),
+            (false, false, false) => return Err(VfsError::InvalidInput),
         } | if self.path {
             FileFlags::PATH
         } else {
@@ -315,8 +315,8 @@ impl PageCache {
             .map_err(|err| {
                 warn!("Failed to allocate page cache: {:?}", err);
                 match err {
-                    AllocError::NoMemory => VfsError::ENOMEM,
-                    _ => VfsError::EINVAL,
+                    AllocError::NoMemory => VfsError::NoMemory,
+                    _ => VfsError::InvalidInput,
                 }
             })?;
         Ok(Self {
@@ -796,7 +796,7 @@ impl File {
         if self.flags.contains(flags) && !self.is_path() {
             Ok(&self.inner)
         } else {
-            Err(VfsError::EBADF)
+            Err(VfsError::BadFileDescriptor)
         }
     }
 
@@ -889,9 +889,11 @@ impl<'a> axio::Seek for &'a File {
                 SeekFrom::Start(pos) => pos,
                 SeekFrom::End(off) => {
                     let size = self.access(FileFlags::empty())?.location().len()?;
-                    size.checked_add_signed(off).ok_or(VfsError::EINVAL)?
+                    size.checked_add_signed(off).ok_or(VfsError::InvalidInput)?
                 }
-                SeekFrom::Current(off) => guard.checked_add_signed(off).ok_or(VfsError::EINVAL)?,
+                SeekFrom::Current(off) => guard
+                    .checked_add_signed(off)
+                    .ok_or(VfsError::InvalidInput)?,
             };
             *guard = new_pos;
             Ok(new_pos)

@@ -7,7 +7,7 @@ use core::{
     time::Duration,
 };
 
-use axerrno::{LinuxError, LinuxResult};
+use axerrno::{AxError, AxResult};
 use axio::{IoEvents, Pollable};
 use futures::FutureExt;
 use kernel_guard::NoPreemptIrqSave;
@@ -70,7 +70,7 @@ pub fn block_on<F: IntoFuture>(fut: F) -> F::Output {
 /// - `Err(err)` if the future resolved with an error.
 /// - `Err(EINTR)` if the task was interrupted and cannot be restarted.
 /// - `Ok(None)` if the task was interrupted but can be restarted.
-pub fn try_block_on<F: IntoFuture<Output = LinuxResult<R>>, R>(fut: F) -> LinuxResult<Option<R>> {
+pub fn try_block_on<F: IntoFuture<Output = AxResult<R>>, R>(fut: F) -> AxResult<Option<R>> {
     let mut fut = pin!(fut.into_future());
 
     let curr = current();
@@ -93,7 +93,7 @@ pub fn try_block_on<F: IntoFuture<Output = LinuxResult<R>>, R>(fut: F) -> LinuxR
                     return if restart {
                         Ok(None)
                     } else {
-                        Err(LinuxError::EINTR)
+                        Err(AxError::Interrupted)
                     };
                 }
             }
@@ -107,8 +107,8 @@ pub fn try_block_on<F: IntoFuture<Output = LinuxResult<R>>, R>(fut: F) -> LinuxR
 /// The difference is that this function will always return `Err(EINTR)` when
 /// interrupted, no matter whether the signal says the task can be restarted or
 /// not.
-pub fn block_on_interruptible<F: IntoFuture<Output = LinuxResult<R>>, R>(fut: F) -> LinuxResult<R> {
-    try_block_on(fut).and_then(|opt| opt.ok_or(LinuxError::EINTR))
+pub fn block_on_interruptible<F: IntoFuture<Output = AxResult<R>>, R>(fut: F) -> AxResult<R> {
+    try_block_on(fut).and_then(|opt| opt.ok_or(AxError::Interrupted))
 }
 
 /// Waits until `duration` has elapsed.
@@ -242,15 +242,15 @@ impl<'a, P: Pollable> Poller<'a, P> {
         self
     }
 
-    pub fn poll<T>(self, mut f: impl FnMut() -> LinuxResult<T>) -> LinuxResult<T> {
+    pub fn poll<T>(self, mut f: impl FnMut() -> AxResult<T>) -> AxResult<T> {
         if self.timeout.is_some_and(|it| it.as_micros() == 0) {
             return match f() {
                 Ok(value) => Ok(value),
-                Err(LinuxError::EAGAIN) => {
+                Err(AxError::WouldBlock) => {
                     if self.non_blocking {
-                        Err(LinuxError::EAGAIN)
+                        Err(AxError::WouldBlock)
                     } else {
-                        Err(LinuxError::ETIMEDOUT)
+                        Err(AxError::TimedOut)
                     }
                 }
                 Err(e) => Err(e),
@@ -260,14 +260,14 @@ impl<'a, P: Pollable> Poller<'a, P> {
             timeout_opt(
                 poll_fn(move |cx| match f() {
                     Ok(value) => Poll::Ready(Ok(value)),
-                    Err(LinuxError::EAGAIN) => {
+                    Err(AxError::WouldBlock) => {
                         if self.non_blocking {
-                            return Poll::Ready(Err(LinuxError::EAGAIN));
+                            return Poll::Ready(Err(AxError::WouldBlock));
                         }
                         self.pollable.register(cx, self.events);
                         match f() {
                             Ok(value) => Poll::Ready(Ok(value)),
-                            Err(LinuxError::EAGAIN) => Poll::Pending,
+                            Err(AxError::WouldBlock) => Poll::Pending,
                             Err(e) => Poll::Ready(Err(e)),
                         }
                     }
@@ -275,7 +275,7 @@ impl<'a, P: Pollable> Poller<'a, P> {
                 }),
                 self.timeout,
             )
-            .map(|opt| opt.ok_or(LinuxError::ETIMEDOUT)?),
+            .map(|opt| opt.ok_or(AxError::TimedOut)?),
         )
     }
 }

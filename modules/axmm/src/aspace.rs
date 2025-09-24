@@ -1,7 +1,7 @@
 use alloc::sync::Arc;
 use core::{fmt, ops::DerefMut};
 
-use axerrno::{LinuxError, LinuxResult, bail};
+use axerrno::{AxError, AxResult, ax_bail};
 use axhal::{
     mem::phys_to_virt,
     paging::{MappingFlags, PageTable},
@@ -15,7 +15,7 @@ use memory_set::{MemoryArea, MemorySet};
 
 use crate::{
     backend::{Backend, BackendOps},
-    mapping_to_linux_error,
+    mapping_to_ax_error,
 };
 
 /// The virtual memory address space.
@@ -62,11 +62,11 @@ impl AddrSpace {
     }
 
     /// Creates a new empty address space.
-    pub fn new_empty(base: VirtAddr, size: usize) -> LinuxResult<Self> {
+    pub fn new_empty(base: VirtAddr, size: usize) -> AxResult<Self> {
         Ok(Self {
             va_range: VirtAddrRange::from_start_size(base, size),
             areas: MemorySet::new(),
-            pt: PageTable::try_new().map_err(|_| LinuxError::ENOMEM)?,
+            pt: PageTable::try_new().map_err(|_| AxError::NoMemory)?,
         })
     }
 
@@ -78,19 +78,19 @@ impl AddrSpace {
     ///
     /// Returns an error if the two address spaces overlap.
     #[cfg(feature = "copy")]
-    pub fn copy_mappings_from(&mut self, other: &AddrSpace) -> LinuxResult {
+    pub fn copy_mappings_from(&mut self, other: &AddrSpace) -> AxResult {
         self.pt
             .to_mut()
             .copy_from(&other.pt, other.base(), other.size());
         Ok(())
     }
 
-    fn validate_region(&self, start: VirtAddr, size: usize) -> LinuxResult {
+    fn validate_region(&self, start: VirtAddr, size: usize) -> AxResult {
         if !self.contains_range(start, size) {
-            bail!(ENOMEM, "address out of range");
+            ax_bail!(NoMemory, "address out of range");
         }
         if !start.is_aligned_4k() || !is_aligned_4k(size) {
-            bail!(EINVAL, "address is not aligned");
+            ax_bail!(InvalidInput, "address is not aligned");
         }
         Ok(())
     }
@@ -129,18 +129,18 @@ impl AddrSpace {
         start_paddr: PhysAddr,
         size: usize,
         flags: MappingFlags,
-    ) -> LinuxResult {
+    ) -> AxResult {
         self.validate_region(start_vaddr, size)?;
 
         if !start_paddr.is_aligned_4k() {
-            bail!(EINVAL, "address is not aligned");
+            ax_bail!(InvalidInput, "address is not aligned");
         }
 
         let offset = start_vaddr.as_usize() as isize - start_paddr.as_usize() as isize;
         let area = MemoryArea::new(start_vaddr, size, flags, Backend::new_linear(offset));
         self.areas
             .map(area, &mut self.pt, false)
-            .map_err(mapping_to_linux_error)?;
+            .map_err(mapping_to_ax_error)?;
         Ok(())
     }
 
@@ -151,13 +151,13 @@ impl AddrSpace {
         flags: MappingFlags,
         populate: bool,
         backend: Backend,
-    ) -> LinuxResult<()> {
+    ) -> AxResult {
         self.validate_region(start, size)?;
 
         let area = MemoryArea::new(start, size, flags, backend);
         self.areas
             .map(area, &mut self.pt, false)
-            .map_err(mapping_to_linux_error)?;
+            .map_err(mapping_to_ax_error)?;
         if populate {
             self.populate_area(start, size, flags)?;
         }
@@ -171,7 +171,7 @@ impl AddrSpace {
         mut start: VirtAddr,
         size: usize,
         access_flags: MappingFlags,
-    ) -> LinuxResult {
+    ) -> AxResult {
         self.validate_region(start, size)?;
         let end = start + size;
 
@@ -189,7 +189,7 @@ impl AddrSpace {
 
         if start < end {
             // If the area is not fully mapped, we return ENOMEM.
-            bail!(ENOMEM);
+            ax_bail!(NoMemory);
         }
 
         Ok(())
@@ -199,24 +199,24 @@ impl AddrSpace {
     ///
     /// Returns an error if the address range is out of the address space or not
     /// aligned.
-    pub fn unmap(&mut self, start: VirtAddr, size: usize) -> LinuxResult {
+    pub fn unmap(&mut self, start: VirtAddr, size: usize) -> AxResult {
         self.validate_region(start, size)?;
 
         self.areas
             .unmap(start, size, &mut self.pt)
-            .map_err(mapping_to_linux_error)?;
+            .map_err(mapping_to_ax_error)?;
         Ok(())
     }
 
     /// To process data in this area with the given function.
     ///
     /// Now it supports reading and writing data in the given interval.
-    fn process_area_data<F>(&self, start: VirtAddr, size: usize, mut f: F) -> LinuxResult
+    fn process_area_data<F>(&self, start: VirtAddr, size: usize, mut f: F) -> AxResult
     where
         F: FnMut(VirtAddr, usize, usize),
     {
         if !self.contains_range(start, size) {
-            bail!(EINVAL, "address out of range");
+            ax_bail!(InvalidInput, "address out of range");
         }
         let mut cnt = 0;
         // If start is aligned to 4K, start_align_down will be equal to start_align_up.
@@ -224,7 +224,7 @@ impl AddrSpace {
         for vaddr in PageIter4K::new(start.align_down_4k(), end_align_up)
             .expect("Failed to create page iterator")
         {
-            let (mut paddr, ..) = self.pt.query(vaddr).map_err(|_| LinuxError::EFAULT)?;
+            let (mut paddr, ..) = self.pt.query(vaddr).map_err(|_| AxError::BadAddress)?;
 
             let mut copy_size = (size - cnt).min(PAGE_SIZE_4K);
 
@@ -248,7 +248,7 @@ impl AddrSpace {
     ///
     /// * `start` - The start virtual address to read.
     /// * `buf` - The buffer to store the data.
-    pub fn read(&self, start: VirtAddr, buf: &mut [u8]) -> LinuxResult {
+    pub fn read(&self, start: VirtAddr, buf: &mut [u8]) -> AxResult {
         self.process_area_data(start, buf.len(), |src, offset, read_size| unsafe {
             core::ptr::copy_nonoverlapping(src.as_ptr(), buf.as_mut_ptr().add(offset), read_size);
         })
@@ -260,7 +260,7 @@ impl AddrSpace {
     ///
     /// * `start_vaddr` - The start virtual address to write.
     /// * `buf` - The buffer to write to the address space.
-    pub fn write(&self, start: VirtAddr, buf: &[u8]) -> LinuxResult {
+    pub fn write(&self, start: VirtAddr, buf: &[u8]) -> AxResult {
         self.process_area_data(start, buf.len(), |dst, offset, write_size| unsafe {
             core::ptr::copy_nonoverlapping(buf.as_ptr().add(offset), dst.as_mut_ptr(), write_size);
         })
@@ -270,12 +270,12 @@ impl AddrSpace {
     ///
     /// Returns an error if the address range is out of the address space or not
     /// aligned.
-    pub fn protect(&mut self, start: VirtAddr, size: usize, flags: MappingFlags) -> LinuxResult {
+    pub fn protect(&mut self, start: VirtAddr, size: usize, flags: MappingFlags) -> AxResult {
         self.validate_region(start, size)?;
 
         self.areas
             .protect(start, size, |_| Some(flags), &mut self.pt)
-            .map_err(mapping_to_linux_error)?;
+            .map_err(mapping_to_ax_error)?;
 
         Ok(())
     }
@@ -367,7 +367,7 @@ impl AddrSpace {
     /// This method creates a new empty address space with the same base and
     /// size, then iterates over all memory areas in the original address
     /// space to copy or share their mappings into the new one.
-    pub fn try_clone(&mut self) -> LinuxResult<Arc<Mutex<Self>>> {
+    pub fn try_clone(&mut self) -> AxResult<Arc<Mutex<Self>>> {
         let new_aspace = Arc::new(Mutex::new(Self::new_empty(self.base(), self.size())?));
         let new_aspace_clone = new_aspace.clone();
 
@@ -388,7 +388,7 @@ impl AddrSpace {
             aspace
                 .areas
                 .map(new_area, &mut aspace.pt, false)
-                .map_err(mapping_to_linux_error)?;
+                .map_err(mapping_to_ax_error)?;
         }
         drop(guard);
 

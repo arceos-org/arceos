@@ -4,7 +4,7 @@ use core::{
     task::Context,
 };
 
-use axerrno::{LinuxError, LinuxResult, ax_err, bail};
+use axerrno::{AxError, AxResult, ax_bail, ax_err_type};
 use axio::{Buf, BufMut, IoEvents, Pollable};
 use axsync::Mutex;
 use smoltcp::{
@@ -61,16 +61,16 @@ impl UdpSocket {
         SOCKET_SET.with_socket_mut::<smol::Socket, _, _>(self.handle, f)
     }
 
-    fn remote_endpoint(&self) -> LinuxResult<(IpEndpoint, IpAddress)> {
+    fn remote_endpoint(&self) -> AxResult<(IpEndpoint, IpAddress)> {
         match self.peer_addr.try_read() {
-            Some(addr) => addr.ok_or(LinuxError::ENOTCONN),
-            None => Err(LinuxError::ENOTCONN),
+            Some(addr) => addr.ok_or(AxError::NotConnected),
+            None => Err(AxError::NotConnected),
         }
     }
 }
 
 impl Configurable for UdpSocket {
-    fn get_option_inner(&self, option: &mut GetSocketOption) -> LinuxResult<bool> {
+    fn get_option_inner(&self, option: &mut GetSocketOption) -> AxResult<bool> {
         use GetSocketOption as O;
 
         if self.general.get_option_inner(option)? {
@@ -93,7 +93,7 @@ impl Configurable for UdpSocket {
         Ok(true)
     }
 
-    fn set_option_inner(&self, option: SetSocketOption) -> LinuxResult<bool> {
+    fn set_option_inner(&self, option: SetSocketOption) -> AxResult<bool> {
         use SetSocketOption as O;
 
         if self.general.set_option_inner(option)? {
@@ -111,7 +111,7 @@ impl Configurable for UdpSocket {
     }
 }
 impl SocketOps for UdpSocket {
-    fn bind(&self, local_addr: SocketAddrEx) -> LinuxResult<()> {
+    fn bind(&self, local_addr: SocketAddrEx) -> AxResult {
         let mut local_addr = local_addr.into_ip()?;
         let mut guard = self.local_addr.write();
 
@@ -119,7 +119,7 @@ impl SocketOps for UdpSocket {
             local_addr.set_port(get_ephemeral_port()?);
         }
         if guard.is_some() {
-            bail!(EINVAL, "already bound");
+            ax_bail!(InvalidInput, "already bound");
         }
 
         let local_endpoint = IpEndpoint::from(local_addr);
@@ -135,8 +135,8 @@ impl SocketOps for UdpSocket {
 
         self.with_smol_socket(|socket| {
             socket.bind(endpoint).map_err(|e| match e {
-                smol::BindError::InvalidState => ax_err!(EINVAL, "already bound"),
-                smol::BindError::Unaddressable => ax_err!(ECONNREFUSED, "unaddressable"),
+                smol::BindError::InvalidState => ax_err_type!(InvalidInput, "already bound"),
+                smol::BindError::Unaddressable => ax_err_type!(ConnectionRefused, "unaddressable"),
             })
         })?;
         self.general
@@ -147,7 +147,7 @@ impl SocketOps for UdpSocket {
         Ok(())
     }
 
-    fn connect(&self, remote_addr: SocketAddrEx) -> LinuxResult<()> {
+    fn connect(&self, remote_addr: SocketAddrEx) -> AxResult {
         let remote_addr = remote_addr.into_ip()?;
         let mut guard = self.peer_addr.write();
         if self.local_addr.read().is_none() {
@@ -164,7 +164,7 @@ impl SocketOps for UdpSocket {
         Ok(())
     }
 
-    fn send(&self, src: &mut impl Buf, options: SendOptions) -> LinuxResult<usize> {
+    fn send(&self, src: &mut impl Buf, options: SendOptions) -> AxResult<usize> {
         let (remote_addr, source_addr) = match options.to {
             Some(addr) => {
                 let addr = IpEndpoint::from(addr.into_ip()?);
@@ -174,7 +174,7 @@ impl SocketOps for UdpSocket {
             None => self.remote_endpoint()?,
         };
         if remote_addr.port == 0 || remote_addr.addr.is_unspecified() {
-            bail!(EINVAL, "invalid address");
+            ax_bail!(InvalidInput, "invalid address");
         }
 
         if self.local_addr.read().is_none() {
@@ -188,9 +188,9 @@ impl SocketOps for UdpSocket {
             self.with_smol_socket(|socket| {
                 if !socket.is_open() {
                     // not connected
-                    Err(ax_err!(ENOTCONN))
+                    Err(ax_err_type!(NotConnected))
                 } else if !socket.can_send() {
-                    Err(LinuxError::EAGAIN)
+                    Err(AxError::WouldBlock)
                 } else {
                     let buf = socket
                         .send(
@@ -202,9 +202,9 @@ impl SocketOps for UdpSocket {
                             },
                         )
                         .map_err(|e| match e {
-                            smol::SendError::BufferFull => LinuxError::EAGAIN,
+                            smol::SendError::BufferFull => AxError::WouldBlock,
                             smol::SendError::Unaddressable => {
-                                ax_err!(ECONNREFUSED, "unaddressable")
+                                ax_err_type!(ConnectionRefused, "unaddressable")
                             }
                         })?;
                     let read = src.read(buf)?;
@@ -215,9 +215,9 @@ impl SocketOps for UdpSocket {
         })
     }
 
-    fn recv(&self, dst: &mut impl BufMut, options: RecvOptions) -> LinuxResult<usize> {
+    fn recv(&self, dst: &mut impl BufMut, options: RecvOptions) -> AxResult<usize> {
         if self.local_addr.read().is_none() {
-            bail!(ENOTCONN);
+            ax_bail!(NotConnected);
         }
 
         enum ExpectedRemote<'a> {
@@ -234,9 +234,9 @@ impl SocketOps for UdpSocket {
             self.with_smol_socket(|socket| {
                 if !socket.is_open() {
                     // not bound
-                    Err(ax_err!(ENOTCONN))
+                    Err(ax_err_type!(NotConnected))
                 } else if !socket.can_recv() {
-                    Err(LinuxError::EAGAIN)
+                    Err(AxError::WouldBlock)
                 } else {
                     let result = if options.flags.contains(RecvFlags::PEEK) {
                         socket.peek().map(|(data, meta)| (data, *meta))
@@ -255,7 +255,7 @@ impl SocketOps for UdpSocket {
                                         || (expected.port != 0
                                             && expected.port != meta.endpoint.port)
                                     {
-                                        return Err(LinuxError::EAGAIN);
+                                        return Err(AxError::WouldBlock);
                                     }
                                 }
                             }
@@ -271,7 +271,7 @@ impl SocketOps for UdpSocket {
                                 read
                             })
                         }
-                        Err(smol::RecvError::Exhausted) => Err(LinuxError::EAGAIN),
+                        Err(smol::RecvError::Exhausted) => Err(AxError::WouldBlock),
                         Err(smol::RecvError::Truncated) => {
                             unreachable!("UDP socket recv never returns Err(Truncated)")
                         }
@@ -281,23 +281,23 @@ impl SocketOps for UdpSocket {
         })
     }
 
-    fn local_addr(&self) -> LinuxResult<SocketAddrEx> {
+    fn local_addr(&self) -> AxResult<SocketAddrEx> {
         match self.local_addr.try_read() {
             Some(addr) => addr
                 .map(Into::into)
                 .map(SocketAddrEx::Ip)
-                .ok_or(LinuxError::ENOTCONN),
-            None => Err(LinuxError::ENOTCONN),
+                .ok_or(AxError::NotConnected),
+            None => Err(AxError::NotConnected),
         }
     }
 
-    fn peer_addr(&self) -> LinuxResult<SocketAddrEx> {
+    fn peer_addr(&self) -> AxResult<SocketAddrEx> {
         self.remote_endpoint()
             .map(|it| it.0.into())
             .map(SocketAddrEx::Ip)
     }
 
-    fn shutdown(&self, _how: Shutdown) -> LinuxResult<()> {
+    fn shutdown(&self, _how: Shutdown) -> AxResult {
         // TODO(mivik): shutdown
         poll_interfaces();
 
@@ -338,7 +338,7 @@ impl Drop for UdpSocket {
     }
 }
 
-fn get_ephemeral_port() -> LinuxResult<u16> {
+fn get_ephemeral_port() -> AxResult<u16> {
     const PORT_START: u16 = 0xc000;
     const PORT_END: u16 = 0xffff;
     static CURR: Mutex<u16> = Mutex::new(PORT_START);

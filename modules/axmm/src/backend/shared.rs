@@ -1,7 +1,7 @@
 use alloc::{sync::Arc, vec::Vec};
 use core::ops::Deref;
 
-use axerrno::LinuxResult;
+use axerrno::AxResult;
 use axhal::paging::{MappingFlags, PageSize, PageTableMut};
 use axsync::Mutex;
 use memory_addr::{MemoryAddr, PhysAddr, VirtAddr, VirtAddrRange};
@@ -9,7 +9,7 @@ use memory_addr::{MemoryAddr, PhysAddr, VirtAddr, VirtAddrRange};
 use super::{alloc_frame, dealloc_frame};
 use crate::{
     AddrSpace,
-    backend::{Backend, BackendOps, divide_page, pages_in, paging_to_linux_error},
+    backend::{Backend, BackendOps, divide_page, pages_in, paging_to_ax_error},
 };
 
 pub struct SharedPages {
@@ -17,11 +17,11 @@ pub struct SharedPages {
     pub size: PageSize,
 }
 impl SharedPages {
-    pub fn new(size: usize, page_size: PageSize) -> LinuxResult<Self> {
+    pub fn new(size: usize, page_size: PageSize) -> AxResult<Self> {
         Ok(Self {
             phys_pages: (0..divide_page(size, page_size))
                 .map(|_| alloc_frame(true, page_size))
-                .collect::<LinuxResult<_>>()?,
+                .collect::<AxResult<_>>()?,
             size: page_size,
         })
     }
@@ -74,26 +74,21 @@ impl BackendOps for SharedBackend {
         self.pages.size
     }
 
-    fn map(
-        &self,
-        range: VirtAddrRange,
-        flags: MappingFlags,
-        pt: &mut PageTableMut,
-    ) -> LinuxResult<()> {
+    fn map(&self, range: VirtAddrRange, flags: MappingFlags, pt: &mut PageTableMut) -> AxResult {
         debug!("Shared::map: {:?} {:?}", range, flags);
         for (vaddr, paddr) in
             pages_in(range, self.pages.size)?.zip(self.pages_starting_from(range.start))
         {
             pt.map(vaddr, *paddr, self.pages.size, flags)
-                .map_err(paging_to_linux_error)?;
+                .map_err(paging_to_ax_error)?;
         }
         Ok(())
     }
 
-    fn unmap(&self, range: VirtAddrRange, pt: &mut PageTableMut) -> LinuxResult<()> {
+    fn unmap(&self, range: VirtAddrRange, pt: &mut PageTableMut) -> AxResult {
         debug!("Shared::unmap: {:?}", range);
         for vaddr in pages_in(range, self.pages.size)? {
-            pt.unmap(vaddr).map_err(paging_to_linux_error)?;
+            pt.unmap(vaddr).map_err(paging_to_ax_error)?;
         }
         Ok(())
     }
@@ -105,7 +100,7 @@ impl BackendOps for SharedBackend {
         _old_pt: &mut PageTableMut,
         _new_pt: &mut PageTableMut,
         _new_aspace: &Arc<Mutex<AddrSpace>>,
-    ) -> LinuxResult<Backend> {
+    ) -> AxResult<Backend> {
         Ok(Backend::Shared(self.clone()))
     }
 }

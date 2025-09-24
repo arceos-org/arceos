@@ -5,7 +5,7 @@ use alloc::{boxed::Box, sync::Arc};
 use core::task::Context;
 
 use async_trait::async_trait;
-use axerrno::{LinuxError, LinuxResult};
+use axerrno::{AxError, AxResult};
 use axfs_ng::{FS_CONTEXT, OpenOptions};
 use axfs_ng_vfs::NodeType;
 use axio::{Buf, BufMut, IoEvents, Pollable};
@@ -33,15 +33,15 @@ pub enum UnixSocketAddr {
 #[async_trait]
 #[enum_dispatch]
 pub trait TransportOps: Configurable + Pollable + Send + Sync {
-    fn bind(&self, slot: &BindSlot, local_addr: &UnixSocketAddr) -> LinuxResult<()>;
-    fn connect(&self, slot: &BindSlot, local_addr: &UnixSocketAddr) -> LinuxResult<()>;
+    fn bind(&self, slot: &BindSlot, local_addr: &UnixSocketAddr) -> AxResult;
+    fn connect(&self, slot: &BindSlot, local_addr: &UnixSocketAddr) -> AxResult;
 
-    async fn accept(&self) -> LinuxResult<(Transport, UnixSocketAddr)>;
+    async fn accept(&self) -> AxResult<(Transport, UnixSocketAddr)>;
 
-    fn send(&self, src: &mut impl Buf, options: SendOptions) -> LinuxResult<usize>;
-    fn recv(&self, dst: &mut impl BufMut, options: RecvOptions<'_>) -> LinuxResult<usize>;
+    fn send(&self, src: &mut impl Buf, options: SendOptions) -> AxResult<usize>;
+    fn recv(&self, dst: &mut impl BufMut, options: RecvOptions<'_>) -> AxResult<usize>;
 
-    fn shutdown(&self, _how: Shutdown) -> LinuxResult<()> {
+    fn shutdown(&self, _how: Shutdown) -> AxResult {
         Ok(())
     }
 }
@@ -79,37 +79,37 @@ lazy_static! {
 
 pub(crate) fn with_slot<R>(
     addr: &UnixSocketAddr,
-    f: impl FnOnce(&BindSlot) -> LinuxResult<R>,
-) -> LinuxResult<R> {
+    f: impl FnOnce(&BindSlot) -> AxResult<R>,
+) -> AxResult<R> {
     match addr {
-        UnixSocketAddr::Unnamed => Err(LinuxError::EINVAL),
+        UnixSocketAddr::Unnamed => Err(AxError::InvalidInput),
         UnixSocketAddr::Abstract(name) => {
             let binds = ABSTRACT_BINDS.lock();
             if let Some(slot) = binds.get(name) {
                 f(slot)
             } else {
-                Err(LinuxError::ENOENT)
+                Err(AxError::NotFound)
             }
         }
         UnixSocketAddr::Path(path) => {
             let loc = FS_CONTEXT.lock().resolve(path.as_ref())?;
             if loc.metadata()?.node_type != NodeType::Socket {
-                return Err(LinuxError::ENOTSOCK);
+                return Err(AxError::NotASocket);
             }
             f(loc
                 .user_data()
                 .get::<BindSlot>()
-                .ok_or(LinuxError::ECONNREFUSED)?
+                .ok_or(AxError::ConnectionRefused)?
                 .as_ref())
         }
     }
 }
 fn with_slot_or_insert<R>(
     addr: &UnixSocketAddr,
-    f: impl FnOnce(&BindSlot) -> LinuxResult<R>,
-) -> LinuxResult<R> {
+    f: impl FnOnce(&BindSlot) -> AxResult<R>,
+) -> AxResult<R> {
     match addr {
-        UnixSocketAddr::Unnamed => Err(LinuxError::EINVAL),
+        UnixSocketAddr::Unnamed => Err(AxError::InvalidInput),
         UnixSocketAddr::Abstract(name) => {
             let mut binds = ABSTRACT_BINDS.lock();
             f(binds.entry(name.clone()).or_default())
@@ -122,7 +122,7 @@ fn with_slot_or_insert<R>(
                 .open(&*FS_CONTEXT.lock(), path.as_ref())?
                 .into_location();
             if loc.metadata()?.node_type != NodeType::Socket {
-                return Err(LinuxError::ENOTSOCK);
+                return Err(AxError::NotASocket);
             }
             f(loc
                 .user_data()
@@ -147,28 +147,28 @@ impl UnixSocket {
     }
 }
 impl Configurable for UnixSocket {
-    fn get_option_inner(&self, opt: &mut GetSocketOption) -> LinuxResult<bool> {
+    fn get_option_inner(&self, opt: &mut GetSocketOption) -> AxResult<bool> {
         self.transport.get_option_inner(opt)
     }
 
-    fn set_option_inner(&self, opt: SetSocketOption) -> LinuxResult<bool> {
+    fn set_option_inner(&self, opt: SetSocketOption) -> AxResult<bool> {
         self.transport.set_option_inner(opt)
     }
 }
 impl SocketOps for UnixSocket {
-    fn bind(&self, local_addr: SocketAddrEx) -> LinuxResult<()> {
+    fn bind(&self, local_addr: SocketAddrEx) -> AxResult {
         let local_addr = local_addr.into_unix()?;
         let mut guard = self.local_addr.lock();
         if matches!(&*guard, UnixSocketAddr::Unnamed) {
             with_slot_or_insert(&local_addr, |slot| self.transport.bind(slot, &local_addr))?;
             *guard = local_addr;
         } else {
-            return Err(LinuxError::EINVAL);
+            return Err(AxError::InvalidInput);
         }
         Ok(())
     }
 
-    fn connect(&self, remote_addr: SocketAddrEx) -> LinuxResult<()> {
+    fn connect(&self, remote_addr: SocketAddrEx) -> AxResult {
         let remote_addr = remote_addr.into_unix()?;
         let local_addr = self.local_addr.lock().clone();
         let mut guard = self.remote_addr.lock();
@@ -178,16 +178,16 @@ impl SocketOps for UnixSocket {
             })?;
             *guard = remote_addr;
         } else {
-            return Err(LinuxError::EINVAL);
+            return Err(AxError::InvalidInput);
         }
         Ok(())
     }
 
-    fn listen(&self) -> LinuxResult<()> {
+    fn listen(&self) -> AxResult {
         Ok(())
     }
 
-    fn accept(&self) -> LinuxResult<Socket> {
+    fn accept(&self) -> AxResult<Socket> {
         let (transport, peer_addr) = block_on_interruptible(self.transport.accept())?;
         Ok(Socket::Unix(Self {
             transport,
@@ -196,23 +196,23 @@ impl SocketOps for UnixSocket {
         }))
     }
 
-    fn send(&self, src: &mut impl Buf, options: SendOptions) -> LinuxResult<usize> {
+    fn send(&self, src: &mut impl Buf, options: SendOptions) -> AxResult<usize> {
         self.transport.send(src, options)
     }
 
-    fn recv(&self, dst: &mut impl BufMut, options: RecvOptions<'_>) -> LinuxResult<usize> {
+    fn recv(&self, dst: &mut impl BufMut, options: RecvOptions<'_>) -> AxResult<usize> {
         self.transport.recv(dst, options)
     }
 
-    fn local_addr(&self) -> LinuxResult<SocketAddrEx> {
+    fn local_addr(&self) -> AxResult<SocketAddrEx> {
         Ok(SocketAddrEx::Unix(self.local_addr.lock().clone()))
     }
 
-    fn peer_addr(&self) -> LinuxResult<SocketAddrEx> {
+    fn peer_addr(&self) -> AxResult<SocketAddrEx> {
         Ok(SocketAddrEx::Unix(self.remote_addr.lock().clone()))
     }
 
-    fn shutdown(&self, how: Shutdown) -> LinuxResult<()> {
+    fn shutdown(&self, how: Shutdown) -> AxResult {
         self.transport.shutdown(how)
     }
 }

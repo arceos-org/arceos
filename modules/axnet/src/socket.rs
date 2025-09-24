@@ -6,7 +6,7 @@ use core::{
     task::Context,
 };
 
-use axerrno::{LinuxError, LinuxResult};
+use axerrno::{AxError, AxResult, LinuxError};
 use axio::{Buf, BufMut, IoEvents, Pollable};
 use bitflags::bitflags;
 use enum_dispatch::enum_dispatch;
@@ -24,16 +24,16 @@ pub enum SocketAddrEx {
     Unix(UnixSocketAddr),
 }
 impl SocketAddrEx {
-    pub fn into_ip(self) -> LinuxResult<SocketAddr> {
+    pub fn into_ip(self) -> AxResult<SocketAddr> {
         match self {
             SocketAddrEx::Ip(addr) => Ok(addr),
-            SocketAddrEx::Unix(_) => Err(LinuxError::EAFNOSUPPORT),
+            SocketAddrEx::Unix(_) => Err(AxError::Other(LinuxError::EAFNOSUPPORT)),
         }
     }
 
-    pub fn into_unix(self) -> LinuxResult<UnixSocketAddr> {
+    pub fn into_unix(self) -> AxResult<UnixSocketAddr> {
         match self {
-            SocketAddrEx::Ip(_) => Err(LinuxError::EAFNOSUPPORT),
+            SocketAddrEx::Ip(_) => Err(AxError::Other(LinuxError::EAFNOSUPPORT)),
             SocketAddrEx::Unix(addr) => Ok(addr),
         }
     }
@@ -114,31 +114,31 @@ impl Shutdown {
 #[enum_dispatch]
 pub trait SocketOps: Configurable {
     /// Binds an unbound socket to the given address and port.
-    fn bind(&self, local_addr: SocketAddrEx) -> LinuxResult<()>;
+    fn bind(&self, local_addr: SocketAddrEx) -> AxResult;
     /// Connects the socket to a remote address.
-    fn connect(&self, remote_addr: SocketAddrEx) -> LinuxResult<()>;
+    fn connect(&self, remote_addr: SocketAddrEx) -> AxResult;
 
     /// Starts listening on the bound address and port.
-    fn listen(&self) -> LinuxResult<()> {
-        Err(LinuxError::EOPNOTSUPP)
+    fn listen(&self) -> AxResult {
+        Err(AxError::OperationNotSupported)
     }
     /// Accepts a connection on a listening socket, returning a new socket.
-    fn accept(&self) -> LinuxResult<Socket> {
-        Err(LinuxError::EOPNOTSUPP)
+    fn accept(&self) -> AxResult<Socket> {
+        Err(AxError::OperationNotSupported)
     }
 
     /// Send data to the socket, optionally to a specific address.
-    fn send(&self, src: &mut impl Buf, options: SendOptions) -> LinuxResult<usize>;
+    fn send(&self, src: &mut impl Buf, options: SendOptions) -> AxResult<usize>;
     /// Receive data from the socket.
-    fn recv(&self, dst: &mut impl BufMut, options: RecvOptions<'_>) -> LinuxResult<usize>;
+    fn recv(&self, dst: &mut impl BufMut, options: RecvOptions<'_>) -> AxResult<usize>;
 
     /// Get the local endpoint of the socket.
-    fn local_addr(&self) -> LinuxResult<SocketAddrEx>;
+    fn local_addr(&self) -> AxResult<SocketAddrEx>;
     /// Get the remote endpoint of the socket.
-    fn peer_addr(&self) -> LinuxResult<SocketAddrEx>;
+    fn peer_addr(&self) -> AxResult<SocketAddrEx>;
 
     /// Shutdown the socket, closing the connection.
-    fn shutdown(&self, how: Shutdown) -> LinuxResult<()>;
+    fn shutdown(&self, how: Shutdown) -> AxResult;
 }
 
 /// Network socket abstraction.

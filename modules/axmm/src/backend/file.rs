@@ -5,7 +5,7 @@ use alloc::{
 };
 use core::sync::atomic::{AtomicUsize, Ordering};
 
-use axerrno::{LinuxError, LinuxResult};
+use axerrno::{AxError, AxResult};
 use axfs_ng::{CachedFile, FileFlags};
 use axhal::paging::{MappingFlags, PageSize, PageTableMut, PagingError};
 use axsync::Mutex;
@@ -13,7 +13,7 @@ use memory_addr::{PAGE_SIZE_4K, VirtAddr, VirtAddrRange};
 
 use crate::{
     AddrSpace,
-    backend::{Backend, BackendOps, pages_in, paging_to_linux_error},
+    backend::{Backend, BackendOps, pages_in, paging_to_ax_error},
 };
 
 #[doc(hidden)]
@@ -85,7 +85,7 @@ impl FileBackendInner {
 #[derive(Clone)]
 pub struct FileBackend(Arc<FileBackendInner>);
 impl FileBackend {
-    fn check_flags(&self, flags: MappingFlags) -> LinuxResult<()> {
+    fn check_flags(&self, flags: MappingFlags) -> AxResult {
         let mut required_flags = FileFlags::empty();
         if flags.contains(MappingFlags::READ) {
             required_flags |= FileFlags::READ;
@@ -95,7 +95,7 @@ impl FileBackend {
         }
 
         if !self.0.flags.contains(required_flags) {
-            return Err(LinuxError::EACCES);
+            return Err(AxError::PermissionDenied);
         }
         Ok(())
     }
@@ -110,22 +110,17 @@ impl BackendOps for FileBackend {
         PageSize::Size4K
     }
 
-    fn map(
-        &self,
-        _range: VirtAddrRange,
-        flags: MappingFlags,
-        _pt: &mut PageTableMut,
-    ) -> LinuxResult<()> {
+    fn map(&self, _range: VirtAddrRange, flags: MappingFlags, _pt: &mut PageTableMut) -> AxResult {
         self.check_flags(flags)
     }
 
-    fn unmap(&self, range: VirtAddrRange, pt: &mut PageTableMut) -> LinuxResult<()> {
+    fn unmap(&self, range: VirtAddrRange, pt: &mut PageTableMut) -> AxResult {
         for addr in pages_in(range, PageSize::Size4K)? {
             match pt.unmap(addr) {
                 Ok(_) | Err(PagingError::NotMapped) => {}
                 Err(err) => {
                     warn!("Failed to unmap page {:?}: {:?}", addr, err);
-                    return Err(paging_to_linux_error(err));
+                    return Err(paging_to_ax_error(err));
                 }
             }
         }
@@ -137,7 +132,7 @@ impl BackendOps for FileBackend {
         _range: VirtAddrRange,
         new_flags: MappingFlags,
         _pt: &mut PageTableMut,
-    ) -> LinuxResult<()> {
+    ) -> AxResult {
         self.check_flags(new_flags)
     }
 
@@ -147,7 +142,7 @@ impl BackendOps for FileBackend {
         flags: MappingFlags,
         access_flags: MappingFlags,
         pt: &mut PageTableMut,
-    ) -> LinuxResult<(usize, Option<Box<dyn FnOnce(&mut AddrSpace)>>)> {
+    ) -> AxResult<(usize, Option<Box<dyn FnOnce(&mut AddrSpace)>>)> {
         let mut pages = 0;
         let mut to_be_evicted = Vec::new();
         let start_page = ((range.start - self.0.start) / PAGE_SIZE_4K) as u32 + self.0.offset_page;
@@ -163,8 +158,7 @@ impl BackendOps for FileBackend {
                             if !in_memory {
                                 page.expect("page should be present").mark_dirty();
                             }
-                            pt.remap(addr, paddr, flags)
-                                .map_err(paging_to_linux_error)?;
+                            pt.remap(addr, paddr, flags).map_err(paging_to_ax_error)?;
                             pages += 1;
                             Ok(())
                         })?;
@@ -185,12 +179,12 @@ impl BackendOps for FileBackend {
                             to_be_evicted.push(pn);
                         }
                         pt.map(addr, page.paddr(), PageSize::Size4K, map_flags)
-                            .map_err(paging_to_linux_error)?;
+                            .map_err(paging_to_ax_error)?;
                         pages += 1;
                         Ok(())
                     })?;
                 }
-                Err(_) => return Err(LinuxError::EFAULT),
+                Err(_) => return Err(AxError::BadAddress),
             }
         }
         Ok((
@@ -215,7 +209,7 @@ impl BackendOps for FileBackend {
         _old_pt: &mut PageTableMut,
         _new_pt: &mut PageTableMut,
         new_aspace: &Arc<Mutex<AddrSpace>>,
-    ) -> LinuxResult<Backend> {
+    ) -> AxResult<Backend> {
         let inner = Arc::new(FileBackendInner {
             start: self.0.start,
             cache: self.0.cache.clone(),
