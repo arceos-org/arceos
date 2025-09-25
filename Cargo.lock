@@ -264,7 +264,7 @@ dependencies = [
 [[package]]
 name = "axcpu"
 version = "0.2.2"
-source = "git+https://github.com/Starry-OS/axcpu.git?rev=dfaa046#dfaa0463c7f3f37d691c9d1395a054567b64f540"
+source = "git+https://github.com/Starry-OS/axcpu.git?rev=f046e84#f046e84ac197bc4fb64c37d1f2a2111eca9e8214"
 dependencies = [
  "aarch64-cpu 10.0.0",
  "axbacktrace",
@@ -401,7 +401,7 @@ dependencies = [
 [[package]]
 name = "axerrno"
 version = "0.1.0"
-source = "git+https://github.com/Starry-OS/axerrno.git?rev=f5d8f86#f5d8f863ea70b85758ffe81be233629dcfe86ec6"
+source = "git+https://github.com/Starry-OS/axerrno.git?rev=58be232#58be2329defe833cd2684d54e3e19a6f077d3ed2"
 dependencies = [
  "log",
 ]
@@ -455,7 +455,7 @@ dependencies = [
 [[package]]
 name = "axfs-ng-vfs"
 version = "0.1.0"
-source = "git+https://github.com/Starry-OS/axfs-ng-vfs.git?rev=efe5ed8#efe5ed8a4061eb8be5267c5b321963403240812c"
+source = "git+https://github.com/Starry-OS/axfs-ng-vfs.git?rev=e3e83d6#e3e83d621094f520602a17ad91223aa9e3ea243e"
 dependencies = [
  "axerrno",
  "axio",
@@ -508,7 +508,7 @@ dependencies = [
 [[package]]
 name = "axio"
 version = "0.1.1"
-source = "git+https://github.com/Starry-OS/axio.git?rev=d1242e2#d1242e2e19e94c19694ff879a22a025341ca1d38"
+source = "git+https://github.com/Starry-OS/axio.git?rev=e11ca75#e11ca75f23189d3a8df7987eafd73015b95fb225"
 dependencies = [
  "axerrno",
  "bitflags 2.9.4",
@@ -1817,7 +1817,7 @@ checksum = "a4895175b425cb1f87721b59f0f286c2092bd4af812243672510e1ac53e2e0ad"
 [[package]]
 name = "page_table_entry"
 version = "0.5.5"
-source = "git+https://github.com/Starry-OS/page_table_multiarch.git?rev=4edb821#4edb8217a12dd033409d8ac48f7adae5a89babfa"
+source = "git+https://github.com/Starry-OS/page_table_multiarch.git?rev=3f697c8#3f697c8c876432f42d5429a5b8d130889213ff6e"
 dependencies = [
  "aarch64-cpu 10.0.0",
  "bitflags 2.9.4",
@@ -1828,7 +1828,7 @@ dependencies = [
 [[package]]
 name = "page_table_multiarch"
 version = "0.5.5"
-source = "git+https://github.com/Starry-OS/page_table_multiarch.git?rev=4edb821#4edb8217a12dd033409d8ac48f7adae5a89babfa"
+source = "git+https://github.com/Starry-OS/page_table_multiarch.git?rev=3f697c8#3f697c8c876432f42d5429a5b8d130889213ff6e"
 dependencies = [
  "arrayvec",
  "bitmaps",

@@ -100,12 +100,7 @@ pub mod context {
 
 /// User mode support.
 #[cfg(feature = "uspace")]
-pub mod uspace {
-    pub use axcpu::{
-        trap::{ExceptionKind, ReturnReason},
-        uspace::UserContext,
-    };
-}
+pub use axcpu::uspace;
 
 pub use axcpu::asm;
 pub use axplat::init::init_later;
