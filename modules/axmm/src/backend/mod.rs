@@ -1,7 +1,8 @@
 //! Memory mapping backends.
 
-use axhal::paging::{MappingFlags, PageTable};
-use memory_addr::VirtAddr;
+use axerrno::{AxError, AxResult};
+use axhal::paging::{MappingFlags, PageTable, PagingError};
+use memory_addr::{MemoryAddr, PageIter4K, VirtAddr};
 use memory_set::MappingBackend;
 
 mod alloc;
@@ -63,6 +64,17 @@ impl MappingBackend for Backend {
         new_flags: Self::Flags,
         page_table: &mut Self::PageTable,
     ) -> bool {
+        match *self {
+            Self::Linear { .. } => {}
+            Self::Alloc { populate } => {
+                if !populate {
+                    if let Err(_) = &self.populate_area(start, size, new_flags, page_table) {
+                        return false;
+                    };
+                }
+            }
+        }
+
         page_table
             .protect_region(start, size, new_flags, true)
             .map(|tlb| tlb.ignore())
@@ -83,5 +95,30 @@ impl Backend {
                 self.handle_page_fault_alloc(vaddr, orig_flags, page_table, populate)
             }
         }
+    }
+
+    /// Populates the area with physical frames
+    pub fn populate_area(
+        &self,
+        start: VirtAddr,
+        size: usize,
+        flags: MappingFlags,
+        pt: &mut PageTable,
+    ) -> AxResult {
+        let end = start + size;
+        for addr in PageIter4K::new(start, end).unwrap() {
+            match pt.query(addr) {
+                Ok(_) => {}
+                // If the page is not mapped, try map it.
+                Err(PagingError::NotMapped) => {
+                    if !self.handle_page_fault(addr, flags, pt) {
+                        return Err(AxError::NoMemory);
+                    }
+                }
+                Err(_) => return Err(AxError::BadAddress),
+            };
+        }
+        assert!(end.is_aligned_4k());
+        Ok(())
     }
 }
