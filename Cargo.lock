@@ -222,7 +222,7 @@ dependencies = [
 [[package]]
 name = "axbacktrace"
 version = "0.1.0"
-source = "git+https://github.com/Starry-OS/axbacktrace.git?rev=322f6da#322f6dab0e7e3f51f7d29731e7eeca6435e5028e"
+source = "git+https://github.com/Starry-OS/axbacktrace.git#09c22b6a969d27b39c5b1cdc3c31b35165059d12"
 dependencies = [
  "addr2line",
  "cfg-if",
@@ -264,7 +264,7 @@ dependencies = [
 [[package]]
 name = "axcpu"
 version = "0.2.2"
-source = "git+https://github.com/Starry-OS/axcpu.git?rev=f046e84#f046e84ac197bc4fb64c37d1f2a2111eca9e8214"
+source = "git+https://github.com/Starry-OS/axcpu.git#53455db3978450785e38b983e2da1a1fd1d2a685"
 dependencies = [
  "aarch64-cpu 10.0.0",
  "axbacktrace",
@@ -333,12 +333,12 @@ dependencies = [
 [[package]]
 name = "axdriver_base"
 version = "0.1.2"
-source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=6ddb55b#6ddb55b90f66b30c911334b99db8e47791f263a7"
+source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=b707728#b70772886bf92212accd9bab05a5517d778a685d"
 
 [[package]]
 name = "axdriver_block"
 version = "0.1.2"
-source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=6ddb55b#6ddb55b90f66b30c911334b99db8e47791f263a7"
+source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=b707728#b70772886bf92212accd9bab05a5517d778a685d"
 dependencies = [
  "axdriver_base",
  "bcm2835-sdhci",
@@ -350,7 +350,7 @@ dependencies = [
 [[package]]
 name = "axdriver_display"
 version = "0.1.2"
-source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=6ddb55b#6ddb55b90f66b30c911334b99db8e47791f263a7"
+source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=b707728#b70772886bf92212accd9bab05a5517d778a685d"
 dependencies = [
  "axdriver_base",
 ]
@@ -358,7 +358,7 @@ dependencies = [
 [[package]]
 name = "axdriver_input"
 version = "0.1.2"
-source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=6ddb55b#6ddb55b90f66b30c911334b99db8e47791f263a7"
+source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=b707728#b70772886bf92212accd9bab05a5517d778a685d"
 dependencies = [
  "axdriver_base",
  "strum",
@@ -367,7 +367,7 @@ dependencies = [
 [[package]]
 name = "axdriver_net"
 version = "0.1.2"
-source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=6ddb55b#6ddb55b90f66b30c911334b99db8e47791f263a7"
+source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=b707728#b70772886bf92212accd9bab05a5517d778a685d"
 dependencies = [
  "axdriver_base",
  "fxmac_rs",
@@ -379,7 +379,7 @@ dependencies = [
 [[package]]
 name = "axdriver_pci"
 version = "0.1.2"
-source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=6ddb55b#6ddb55b90f66b30c911334b99db8e47791f263a7"
+source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=b707728#b70772886bf92212accd9bab05a5517d778a685d"
 dependencies = [
  "virtio-drivers",
 ]
@@ -387,7 +387,7 @@ dependencies = [
 [[package]]
 name = "axdriver_virtio"
 version = "0.1.2"
-source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=6ddb55b#6ddb55b90f66b30c911334b99db8e47791f263a7"
+source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=b707728#b70772886bf92212accd9bab05a5517d778a685d"
 dependencies = [
  "axdriver_base",
  "axdriver_block",
@@ -401,7 +401,7 @@ dependencies = [
 [[package]]
 name = "axerrno"
 version = "0.1.0"
-source = "git+https://github.com/Starry-OS/axerrno.git?rev=58be232#58be2329defe833cd2684d54e3e19a6f077d3ed2"
+source = "git+https://github.com/Starry-OS/axerrno.git#3713143115fac57d6a15f5390c7af03553c5c7ad"
 dependencies = [
  "log",
 ]
@@ -508,10 +508,11 @@ dependencies = [
 [[package]]
 name = "axio"
 version = "0.1.1"
-source = "git+https://github.com/Starry-OS/axio.git?rev=e11ca75#e11ca75f23189d3a8df7987eafd73015b95fb225"
+source = "git+https://github.com/Starry-OS/axio.git#f7a2dfe7999af74ac3c7dd1f48b7769f71baf12a"
 dependencies = [
  "axerrno",
  "bitflags 2.9.4",
+ "spin 0.10.0",
 ]
 
 [[package]]
@@ -1817,7 +1818,7 @@ checksum = "a4895175b425cb1f87721b59f0f286c2092bd4af812243672510e1ac53e2e0ad"
 [[package]]
 name = "page_table_entry"
 version = "0.5.5"
-source = "git+https://github.com/Starry-OS/page_table_multiarch.git?rev=3f697c8#3f697c8c876432f42d5429a5b8d130889213ff6e"
+source = "git+https://github.com/Starry-OS/page_table_multiarch.git#3f697c8c876432f42d5429a5b8d130889213ff6e"
 dependencies = [
  "aarch64-cpu 10.0.0",
  "bitflags 2.9.4",
@@ -1828,7 +1829,7 @@ dependencies = [
 [[package]]
 name = "page_table_multiarch"
 version = "0.5.5"
-source = "git+https://github.com/Starry-OS/page_table_multiarch.git?rev=3f697c8#3f697c8c876432f42d5429a5b8d130889213ff6e"
+source = "git+https://github.com/Starry-OS/page_table_multiarch.git#3f697c8c876432f42d5429a5b8d130889213ff6e"
 dependencies = [
  "arrayvec",
  "bitmaps",
