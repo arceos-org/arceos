@@ -64,13 +64,7 @@ pub struct TaskInner {
     /// CPU affinity mask.
     cpumask: SpinNoIrq<AxCpuMask>,
 
-    /// Interruption state (0 = not interrupted, 1 = interrupted, 2 =
-    /// interrupted with SA_RESTART).
-    interruption: AtomicU8,
-    /// Waker used to wake up the task when signal interruption occurs.
-    ///
-    /// We're fine to use [`AtomicWaker`] here because at most one waker will be
-    /// registered within a task.
+    interrupted: AtomicBool,
     interrupt_waker: AtomicWaker,
 
     /// Used to indicate the CPU ID where the task is running or will run.
@@ -236,6 +230,25 @@ impl TaskInner {
     pub fn set_cpumask(&self, cpumask: AxCpuMask) {
         *self.cpumask.lock() = cpumask
     }
+
+    /// Registers a waker to be woken when the task is interrupted.
+    #[inline]
+    pub fn on_interrupt(&self, waker: &Waker) {
+        self.interrupt_waker.register(waker);
+    }
+
+    /// Interrupts the task.
+    #[inline]
+    pub fn interrupt(&self) {
+        self.interrupted.store(true, Ordering::Release);
+        self.interrupt_waker.wake();
+    }
+
+    /// Returns whether the task is interrupted, and clears the interrupt state.
+    #[inline]
+    pub fn interrupted(&self) -> bool {
+        self.interrupted.swap(false, Ordering::AcqRel)
+    }
 }
 
 // private methods
@@ -250,7 +263,7 @@ impl TaskInner {
             state: AtomicU8::new(TaskState::Ready as u8),
             // By default, the task is allowed to run on all CPUs.
             cpumask: SpinNoIrq::new(AxCpuMask::full()),
-            interruption: AtomicU8::new(0),
+            interrupted: AtomicBool::new(false),
             interrupt_waker: AtomicWaker::new(),
             cpu_id: AtomicU32::new(0),
             #[cfg(feature = "smp")]
@@ -336,31 +349,6 @@ impl TaskInner {
     #[inline]
     pub(crate) const fn is_idle(&self) -> bool {
         self.is_idle
-    }
-
-    pub fn register_interrupt_waker(&self, waker: &Waker) {
-        self.interrupt_waker.register(waker);
-    }
-
-    pub fn interrupt(&self, restart: bool) {
-        self.interruption
-            .store(if restart { 2 } else { 1 }, Ordering::Release);
-        self.interrupt_waker.wake();
-    }
-
-    /// Fetches the last interruption state.
-    ///
-    /// Returns `None` if the task has not been interrupted, and `Some(restart)`
-    /// if it has. If `restart` is `true`, syscalls are allowed to be restarted
-    /// automatically.
-    #[must_use]
-    pub fn interrupt_state(&self) -> Option<bool> {
-        match self.interruption.swap(0, Ordering::AcqRel) {
-            0 => None,
-            1 => Some(false),
-            2 => Some(true),
-            _ => unreachable!(),
-        }
     }
 
     #[inline]

@@ -10,7 +10,7 @@ use axfs_ng::{FS_CONTEXT, OpenOptions};
 use axfs_ng_vfs::NodeType;
 use axio::{Buf, BufMut, IoEvents, Pollable};
 use axsync::Mutex;
-use axtask::future::block_on_interruptible;
+use axtask::future::{block_on, interruptible};
 use enum_dispatch::enum_dispatch;
 use hashbrown::HashMap;
 use lazy_static::lazy_static;
@@ -188,7 +188,7 @@ impl SocketOps for UnixSocket {
     }
 
     fn accept(&self) -> AxResult<Socket> {
-        let (transport, peer_addr) = block_on_interruptible(self.transport.accept())?;
+        let (transport, peer_addr) = block_on(interruptible(self.transport.accept()))??;
         Ok(Socket::Unix(Self {
             transport,
             local_addr: Mutex::new(self.local_addr.lock().clone()),

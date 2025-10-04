@@ -17,7 +17,6 @@ multitask = [
     "dep:axsched",
     "dep:cpumask",
     "dep:crate_interface",
-    "dep:foldhash",
     "dep:futures",
     "dep:kernel_guard",
     "dep:kspin",
@@ -25,8 +24,8 @@ multitask = [
     "dep:memory_addr",
     "dep:percpu",
     "dep:pin-project",
-    "dep:priority-queue",
     "dep:spin",
+    "dep:weak-map",
 ]
 task-ext = ["dep:extern-trait"]
 irq = []
@@ -51,7 +50,6 @@ cfg-if = { workspace = true }
 cpumask = { version = "0.1", optional = true }
 crate_interface = { version = "0.1", optional = true }
 extern-trait = { version = "0.2", optional = true }
-foldhash = { version = "0.1", default-features = false, optional = true }
 futures = { workspace = true, optional = true }
 kernel_guard = { workspace = true, optional = true }
 kspin = { workspace = true, optional = true }
@@ -59,9 +57,9 @@ lazyinit = { workspace = true, optional = true }
 log = { workspace = true }
 memory_addr = { workspace = true, optional = true }
 percpu = { workspace = true, optional = true }
-pin-project = { version = "1.1.10", optional = true }
-priority-queue = { version = "2.5", default-features = false, optional = true }
+pin-project = { version = "1.1", optional = true }
 spin = { workspace = true, optional = true }
+weak-map = { version = "0.1", optional = true }
 
 [dev-dependencies]
 axhal = { workspace = true, features = ["fp-simd"] }

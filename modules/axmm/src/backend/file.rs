@@ -160,7 +160,7 @@ impl BackendOps for FileBackend {
                             }
                             pt.remap(addr, paddr, flags).map_err(paging_to_ax_error)?;
                             pages += 1;
-                            Ok(())
+                            AxResult::Ok(())
                         })?;
                     }
                 }
