@@ -7,7 +7,8 @@ use core::{
 };
 
 use axerrno::{AxError, AxResult, LinuxError};
-use axio::{Buf, BufMut, IoEvents, Pollable};
+use axio::{Buf, BufMut};
+use axpoll::{IoEvents, Pollable};
 use bitflags::bitflags;
 use enum_dispatch::enum_dispatch;
 

@@ -4,7 +4,8 @@ use core::task::Context;
 use async_channel::TryRecvError;
 use async_trait::async_trait;
 use axerrno::{AxError, AxResult};
-use axio::{Buf, BufMut, IoEvents, PollSet, Pollable};
+use axio::{Buf, BufMut};
+use axpoll::{IoEvents, PollSet, Pollable};
 use axsync::Mutex;
 use spin::RwLock;
 

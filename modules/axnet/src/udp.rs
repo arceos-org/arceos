@@ -5,7 +5,8 @@ use core::{
 };
 
 use axerrno::{AxError, AxResult, ax_bail, ax_err_type};
-use axio::{Buf, BufMut, IoEvents, Pollable};
+use axio::{Buf, BufMut};
+use axpoll::{IoEvents, Pollable};
 use axsync::Mutex;
 use smoltcp::{
     iface::SocketHandle,

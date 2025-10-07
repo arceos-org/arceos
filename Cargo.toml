@@ -60,9 +60,10 @@ allocator = { git = "https://github.com/Starry-OS/allocator.git", rev = "d5feebd
 axbacktrace = "0.1"
 axcpu = "0.2"
 axerrno = "0.1"
-axfs-ng-vfs = { git = "https://github.com/Starry-OS/axfs-ng-vfs.git", rev = "e3e83d6" }
+axfs-ng-vfs = "0.1"
 axio = "0.1"
 axplat = "0.2"
+axpoll = "0.1"
 bindgen = "0.72"
 cfg-if = "1.0"
 chrono = { version = "0.4", default-features = false }
@@ -89,6 +90,8 @@ spin = "0.10"
 axbacktrace = { git = "https://github.com/Starry-OS/axbacktrace.git" }
 axcpu = { git = "https://github.com/Starry-OS/axcpu.git" }
 axerrno = { git = "https://github.com/Starry-OS/axerrno.git" }
+axfs-ng-vfs = { git = "https://github.com/Starry-OS/axfs-ng-vfs.git" }
 axio = { git = "https://github.com/Starry-OS/axio.git" }
+axpoll = { git = "https://github.com/Starry-OS/axpoll.git" }
 page_table_entry = { git = "https://github.com/Starry-OS/page_table_multiarch.git" }
 page_table_multiarch = { git = "https://github.com/Starry-OS/page_table_multiarch.git" }

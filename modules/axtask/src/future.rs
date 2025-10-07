@@ -10,7 +10,7 @@ use core::{
 
 use axerrno::{AxError, AxResult};
 use axhal::time::TimeValue;
-use axio::{IoEvents, Pollable};
+use axpoll::{IoEvents, Pollable};
 use futures::FutureExt;
 use kernel_guard::NoPreemptIrqSave;
 use pin_project::pin_project;

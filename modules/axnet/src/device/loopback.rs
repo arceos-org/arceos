@@ -1,7 +1,7 @@
 use alloc::vec;
 use core::task::Waker;
 
-use axio::PollSet;
+use axpoll::PollSet;
 use smoltcp::{
     storage::{PacketBuffer, PacketMetadata},
     time::Instant,
@@ -23,7 +23,10 @@ impl LoopbackDevice {
             vec![PacketMetadata::EMPTY; SOCKET_BUFFER_SIZE],
             vec![0u8; STANDARD_MTU * SOCKET_BUFFER_SIZE],
         );
-        Self { buffer, poll: PollSet::new() }
+        Self {
+            buffer,
+            poll: PollSet::new(),
+        }
     }
 }
 

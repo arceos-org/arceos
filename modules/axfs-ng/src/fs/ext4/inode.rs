@@ -6,7 +6,7 @@ use axfs_ng_vfs::{
     Metadata, MetadataUpdate, NodeFlags, NodeOps, NodePermission, NodeType, Reference, VfsError,
     VfsResult, WeakDirEntry,
 };
-use axio::{IoEvents, Pollable};
+use axpoll::{IoEvents, Pollable};
 use lwext4_rust::{FileAttr, InodeType};
 
 use super::{

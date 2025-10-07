@@ -5,10 +5,10 @@ use core::task::Waker;
 #[cfg(feature = "ipi")]
 pub use axconfig::devices::IPI_IRQ;
 use axcpu::trap::{IRQ, register_trap_handler};
-use axio::PollSet;
 #[cfg(feature = "ipi")]
 pub use axplat::irq::{IpiTarget, send_ipi};
 pub use axplat::irq::{handle, register, set_enable, unregister};
+use axpoll::PollSet;
 
 static POLL_TABLE: [PollSet; 0x30] = [const { PollSet::new() }; 0x30];
 fn poll_handler(irq: usize) {

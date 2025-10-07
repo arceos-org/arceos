@@ -13,7 +13,8 @@ use axfs_ng_vfs::{
     FileNode, Location, NodeFlags, NodePermission, NodeType, VfsError, VfsResult, path::Path,
 };
 use axhal::mem::{PhysAddr, VirtAddr, virt_to_phys};
-use axio::{Buf, BufMut, IoEvents, Pollable, SeekFrom};
+use axio::{Buf, BufMut, SeekFrom};
+use axpoll::{IoEvents, Pollable};
 use intrusive_collections::{LinkedList, LinkedListAtomicLink, intrusive_adapter};
 use log::warn;
 use lru::LruCache;

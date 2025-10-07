@@ -41,10 +41,10 @@ test = ["percpu?/sp-naive"]
 
 [dependencies]
 axconfig = { workspace = true, optional = true }
-axerrno = { workspace = true }
-axio = { workspace = true }
 axhal = { workspace = true }
 
+axerrno = { workspace = true }
+axpoll = { workspace = true }
 axsched = { git = "https://github.com/Starry-OS/axsched.git", rev = "2076c9b", optional = true }
 cfg-if = { workspace = true }
 cpumask = { version = "0.1", optional = true }
