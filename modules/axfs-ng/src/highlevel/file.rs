@@ -880,6 +880,22 @@ impl File {
     }
 }
 
+impl<'a> axio::Read for &'a File {
+    fn read(&mut self, mut buf: &mut [u8]) -> axio::Result<usize> {
+        (*self).read(&mut buf)
+    }
+}
+
+impl<'a> axio::Write for &'a File {
+    fn write(&mut self, mut buf: &[u8]) -> axio::Result<usize> {
+        (*self).write(&mut buf)
+    }
+
+    fn flush(&mut self) -> axio::Result {
+        (*self).flush()
+    }
+}
+
 impl<'a> axio::Seek for &'a File {
     fn seek(&mut self, pos: SeekFrom) -> axio::Result<u64> {
         self.access(FileFlags::empty())?;
