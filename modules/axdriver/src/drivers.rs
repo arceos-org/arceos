@@ -3,7 +3,9 @@
 #![allow(unused_imports, dead_code)]
 
 use axdriver_base::DeviceType;
+#[cfg(feature = "block")]
 use axdriver_block::BlockDriverOps;
+#[cfg(feature = "net")]
 use axdriver_net::BaseDriverOps;
 #[cfg(feature = "bus-pci")]
 use axdriver_pci::{DeviceFunction, DeviceFunctionInfo, PciRoot};
@@ -55,6 +57,12 @@ register_display_driver!(
 register_input_driver!(
     <virtio::VirtIoInput as VirtIoDevMeta>::Driver,
     <virtio::VirtIoInput as VirtIoDevMeta>::Device
+);
+
+#[cfg(vsock_dev = "virtio-socket")]
+register_socket_driver!(
+    <virtio::VirtIoSocket as VirtIoDevMeta>::Driver,
+    <virtio::VirtIoSocket as VirtIoDevMeta>::Device
 );
 
 cfg_if::cfg_if! {

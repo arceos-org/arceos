@@ -90,6 +90,8 @@ pub use self::structs::AxBlockDevice;
 pub use self::structs::AxDisplayDevice;
 #[cfg(feature = "net")]
 pub use self::structs::AxNetDevice;
+#[cfg(feature = "vsock")]
+pub use self::structs::AxVsocketDevice;
 pub use self::structs::{AxDeviceContainer, AxDeviceEnum};
 
 /// A structure that contains all device drivers, organized by their category.
@@ -107,6 +109,8 @@ pub struct AllDevices {
     /// All input device drivers.
     #[cfg(feature = "input")]
     pub input: AxDeviceContainer<AxInputDevice>,
+    #[cfg(feature = "vsock")]
+    pub vsock: AxDeviceContainer<AxVsocketDevice>,
 }
 
 impl AllDevices {
@@ -151,6 +155,8 @@ impl AllDevices {
             AxDeviceEnum::Display(dev) => self.display.push(dev),
             #[cfg(feature = "input")]
             AxDeviceEnum::Input(dev) => self.input.push(dev),
+            #[cfg(feature = "vsock")]
+            AxDeviceEnum::Vsock(dev) => self.vsock.push(dev),
         }
     }
 }
@@ -194,6 +200,15 @@ pub fn init_drivers() -> AllDevices {
         for (i, dev) in all_devs.input.iter().enumerate() {
             assert_eq!(dev.device_type(), DeviceType::Input);
             debug!("  input device {}: {:?}", i, dev.device_name());
+        }
+    }
+
+    #[cfg(feature = "vsock")]
+    {
+        debug!("number of vsock devices: {}", all_devs.vsock.len());
+        for (i, dev) in all_devs.vsock.iter().enumerate() {
+            assert_eq!(dev.device_type(), DeviceType::Vsock);
+            debug!("  vsock device {}: {:?}", i, dev.device_name());
         }
     }
 

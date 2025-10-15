@@ -20,6 +20,7 @@ block = ["axdriver_block"]
 display = ["axdriver_display"]
 input = ["axdriver_input"]
 net = ["axdriver_net"]
+vsock = ["axdriver_vsock"]
 
 # Enabled by features `virtio-*`
 virtio = ["axdriver_virtio", "dep:axalloc", "dep:axhal", "dep:axconfig"]
@@ -29,6 +30,7 @@ virtio-blk = ["block", "virtio", "axdriver_virtio/block"]
 virtio-gpu = ["display", "virtio", "axdriver_virtio/gpu"]
 virtio-input = ["input", "virtio", "axdriver_virtio/input"]
 virtio-net = ["net", "virtio", "axdriver_virtio/net"]
+virtio-socket = ["vsock", "virtio", "axdriver_virtio/socket"]
 bcm2835-sdhci = ["block", "axdriver_block/bcm2835-sdhci"]
 ramdisk = ["block", "axdriver_block/ramdisk", "dep:axhal", "dep:axconfig"]
 sdmmc-gpt = ["block", "axdriver_block/sdmmc", "axdriver_block/gpt", "dep:axhal"]
@@ -50,13 +52,15 @@ axconfig = { workspace = true, optional = true }
 axdma = { workspace = true, optional = true }
 axhal = { workspace = true, optional = true }
 
-axdriver_base = { git = "https://github.com/Starry-OS/axdriver_crates.git", rev = "a887828" }
-axdriver_block = { git = "https://github.com/Starry-OS/axdriver_crates.git", rev = "a887828", optional = true }
-axdriver_display = { git = "https://github.com/Starry-OS/axdriver_crates.git", rev = "a887828", optional = true }
-axdriver_input = { git = "https://github.com/Starry-OS/axdriver_crates.git", rev = "a887828", optional = true }
-axdriver_net = { git = "https://github.com/Starry-OS/axdriver_crates.git", rev = "a887828", optional = true }
-axdriver_pci = { git = "https://github.com/Starry-OS/axdriver_crates.git", rev = "a887828", optional = true }
-axdriver_virtio = { git = "https://github.com/Starry-OS/axdriver_crates.git", rev = "a887828", optional = true }
+axdriver_base = { git = "https://github.com/Starry-OS/axdriver_crates.git", rev = "da21e8c" }
+axdriver_block = { git = "https://github.com/Starry-OS/axdriver_crates.git", rev = "da21e8c", optional = true }
+axdriver_display = { git = "https://github.com/Starry-OS/axdriver_crates.git", rev = "da21e8c", optional = true }
+axdriver_input = { git = "https://github.com/Starry-OS/axdriver_crates.git", rev = "da21e8c", optional = true }
+axdriver_net = { git = "https://github.com/Starry-OS/axdriver_crates.git", rev = "da21e8c", optional = true }
+axdriver_pci = { git = "https://github.com/Starry-OS/axdriver_crates.git", rev = "da21e8c", optional = true }
+axdriver_vsock = { git = "https://github.com/Starry-OS/axdriver_crates.git", rev = "da21e8c", optional = true }
+axdriver_virtio = { git = "https://github.com/Starry-OS/axdriver_crates.git", rev = "da21e8c", optional = true }
+
 cfg-if = { workspace = true }
 crate_interface = { workspace = true }
 log = { workspace = true }

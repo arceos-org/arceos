@@ -15,3 +15,8 @@ pub use {
 };
 #[cfg(feature = "net")]
 pub use {crate::structs::AxNetDevice, axdriver_net::NetDriverOps};
+#[cfg(feature = "vsock")]
+pub use {
+    crate::structs::AxVsocketDevice, axdriver_vsock::VsockDriverEvent,
+    axdriver_vsock::VsockDriverOps,
+};
