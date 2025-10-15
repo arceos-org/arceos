@@ -52,12 +52,14 @@ ext4 = ["axfs-ng/ext4"]
 
 # Networking
 net = ["alloc", "paging", "dep:axnet", "axruntime/net"]
+vsock = ["net", "axruntime/vsock"]
 
 # Display
 display = ["alloc", "paging", "dep:axdisplay", "axruntime/display"]
 
 # Input
 input = ["alloc", "paging", "dep:axdisplay", "axruntime/input"]
+
 
 # Real Time Clock (RTC) Driver.
 rtc = ["axhal/rtc", "axruntime/rtc"]
@@ -67,6 +69,7 @@ bus-mmio = ["axdriver?/bus-mmio"]
 bus-pci = ["axdriver?/bus-pci"]
 driver-virtio-blk = ["axdriver/virtio-blk"]
 driver-virtio-net = ["axdriver/virtio-net"]
+driver-virtio-socket = ["axdriver/virtio-socket"]
 driver-virtio-gpu = ["axdriver/virtio-gpu"]
 driver-virtio-input = ["axdriver/virtio-input"]
 driver-ramdisk = ["axdriver/ramdisk"]

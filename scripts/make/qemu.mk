@@ -60,6 +60,9 @@ qemu_args-$(NET) += \
 qemu_args-$(INPUT) += \
   -device virtio-mouse-pci -device virtio-keyboard-pci
 
+qemu_args-$(VSOCK) += \
+  -device vhost-vsock-pci,id=virtiosocket0,guest-cid=103
+
 ifeq ($(NET_DEV), user)
   qemu_args-$(NET) += -netdev user,id=net0,hostfwd=tcp::5555-:5555,hostfwd=udp::5555-:5555
 else ifeq ($(NET_DEV), tap)
