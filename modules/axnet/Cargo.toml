@@ -18,7 +18,7 @@ default = ["smoltcp"]
 
 [dependencies]
 axconfig = { workspace = true }
-axdriver = { workspace = true, features = ["net"] }
+axdriver = { workspace = true, features = ["net", "vsock"] }
 axhal = { workspace = true }
 axsync = { workspace = true }
 axtask = { workspace = true }

@@ -1,7 +1,7 @@
 use alloc::vec;
 use core::{
     net::{Ipv4Addr, SocketAddr},
-    sync::atomic::{AtomicBool, AtomicU8, Ordering},
+    sync::atomic::{AtomicBool, Ordering},
     task::Context,
 };
 
@@ -23,80 +23,8 @@ use crate::{
     general::GeneralOptions,
     options::{Configurable, GetSocketOption, SetSocketOption},
     poll_interfaces,
+    state::*,
 };
-
-#[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum State {
-    Idle,
-    Busy,
-    Connecting,
-    Connected,
-    Listening,
-    Closed,
-}
-impl TryFrom<u8> for State {
-    type Error = ();
-
-    fn try_from(value: u8) -> Result<Self, ()> {
-        Ok(match value {
-            0 => State::Idle,
-            1 => State::Busy,
-            2 => State::Connecting,
-            3 => State::Connected,
-            4 => State::Listening,
-            5 => State::Closed,
-            _ => return Err(()),
-        })
-    }
-}
-
-struct StateLock(AtomicU8);
-impl StateLock {
-    fn new(state: State) -> Self {
-        Self(AtomicU8::new(state as u8))
-    }
-
-    fn get(&self) -> State {
-        self.0
-            .load(Ordering::Acquire)
-            .try_into()
-            .expect("invalid state")
-    }
-
-    fn set(&self, state: State) {
-        self.0.store(state as u8, Ordering::Release);
-    }
-
-    fn lock(&self, expect: State) -> Result<StateGuard, State> {
-        match self.0.compare_exchange(
-            expect as u8,
-            State::Busy as u8,
-            Ordering::Acquire,
-            Ordering::Acquire,
-        ) {
-            Ok(_) => Ok(StateGuard(self, expect as u8)),
-            Err(old) => Err(old.try_into().expect("invalid state")),
-        }
-    }
-}
-
-#[must_use]
-struct StateGuard<'a>(&'a StateLock, u8);
-impl StateGuard<'_> {
-    pub fn transit<R>(self, new: State, f: impl FnOnce() -> AxResult<R>) -> AxResult<R> {
-        match f() {
-            Ok(result) => {
-                self.0.0.store(new as u8, Ordering::Release);
-                Ok(result)
-            }
-            Err(err) => {
-                self.0.0.store(self.1, Ordering::Release);
-                Err(err)
-            }
-        }
-    }
-}
 
 pub(crate) fn new_tcp_socket() -> smol::Socket<'static> {
     smol::Socket::new(

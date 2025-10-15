@@ -28,9 +28,11 @@ pub mod options;
 mod router;
 mod service;
 mod socket;
+pub(crate) mod state;
 pub mod tcp;
 pub mod udp;
 pub mod unix;
+pub mod vsock;
 mod wrapper;
 
 use alloc::{borrow::ToOwned, boxed::Box};
@@ -43,10 +45,10 @@ pub use socket::*;
 
 use crate::{
     consts::{GATEWAY, IP, IP_PREFIX},
-    device::{EthernetDevice, LoopbackDevice},
+    device::{EthernetDevice, LoopbackDevice, register_vsock_device},
     listen_table::ListenTable,
     router::{Router, Rule},
-    service::{Service},
+    service::Service,
     wrapper::SocketSetWrapper,
 };
 
@@ -110,6 +112,19 @@ pub fn init_network(mut net_devs: AxDeviceContainer<AxNetDevice>) {
 
     SOCKET_SET.init_once(SocketSetWrapper::new());
     LISTEN_TABLE.init_once(ListenTable::new());
+}
+
+/// Init vsock subsystem by vsock devices.
+pub fn init_vsock(mut socket_devs: AxDeviceContainer<AxVsocketDevice>) {
+    info!("Initialize vsock subsystem...");
+    if let Some(dev) = socket_devs.take_one() {
+        info!("  use vsock 0: {:?}", dev.device_name());
+        if let Err(e) = register_vsock_device(dev) {
+            warn!("Failed to initialize vsock device: {:?}", e);
+        }
+    } else {
+        warn!("No vsock device found!");
+    }
 }
 
 pub fn poll_interfaces() {

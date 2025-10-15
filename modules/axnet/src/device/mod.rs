@@ -4,9 +4,11 @@ use smoltcp::{storage::PacketBuffer, time::Instant, wire::IpAddress};
 
 mod ethernet;
 mod loopback;
+mod vsock;
 
 pub use ethernet::*;
 pub use loopback::*;
+pub use vsock::*;
 
 pub trait Device: Send + Sync {
     #[allow(unused)]
