@@ -6,6 +6,8 @@ pub use crate::drivers::AxDisplayDevice;
 pub use crate::drivers::AxInputDevice;
 #[cfg(feature = "net")]
 pub use crate::drivers::AxNetDevice;
+#[cfg(feature = "vsock")]
+pub use crate::drivers::AxVsockDevice;
 
 impl super::AxDeviceEnum {
     /// Constructs a network device.
@@ -30,5 +32,11 @@ impl super::AxDeviceEnum {
     #[cfg(feature = "input")]
     pub const fn from_input(dev: AxInputDevice) -> Self {
         Self::Input(dev)
+    }
+
+    /// Constructs a socket device.
+    #[cfg(feature = "vsock")]
+    pub const fn from_vsock(dev: AxVsockDevice) -> Self {
+        Self::Vsock(dev)
     }
 }

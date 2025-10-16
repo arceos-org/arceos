@@ -19,6 +19,7 @@
 # * QEMU options:
 #     - `BLK`: Enable storage devices (virtio-blk)
 #     - `NET`: Enable network devices (virtio-net)
+#     - `VSOCK`: Enable vsock devices (virtio-vsock)
 #     - `GRAPHIC`: Enable display devices and graphic output (virtio-gpu)
 #     - `BUS`: Device bus type: mmio, pci
 #     - `MEM`: Memory size (default is 128M)
@@ -58,6 +59,7 @@ NO_AXSTD ?= n
 # QEMU options
 BLK ?= n
 NET ?= n
+VSOCK ?= n
 GRAPHIC ?= n
 INPUT ?= n
 DEBUG ?= n

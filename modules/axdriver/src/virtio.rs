@@ -60,6 +60,21 @@ cfg_if! {
 }
 
 cfg_if! {
+    if #[cfg(vsock_dev = "virtio-socket")] {
+        pub struct VirtIoSocket;
+
+        impl VirtIoDevMeta for VirtIoSocket {
+            const DEVICE_TYPE: DeviceType = DeviceType::Vsock;
+            type Device = axdriver_virtio::VirtIoSocketDev<VirtIoHalImpl, VirtIoTransport>;
+
+            fn try_new(transport: VirtIoTransport, _irq:  Option<u32>) -> DevResult<AxDeviceEnum> {
+                Ok(AxDeviceEnum::from_vsock(Self::Device::try_new(transport)?))
+            }
+        }
+    }
+}
+
+cfg_if! {
     if #[cfg(display_dev = "virtio-gpu")] {
         pub struct VirtIoGpu;
 
@@ -130,6 +145,7 @@ impl<D: VirtIoDevMeta> DriverProbe for VirtIoDriver<D> {
             (DeviceType::Block, 0x1001) | (DeviceType::Block, 0x1042) => {}
             (DeviceType::Display, 0x1050) => {}
             (DeviceType::Input, 0x1052) => {}
+            (DeviceType::Vsock, 0x1053) => {}
             _ => return None,
         }
 

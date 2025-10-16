@@ -22,6 +22,8 @@ pub enum AxDeviceEnum {
     /// Graphic input device.
     #[cfg(feature = "input")]
     Input(AxInputDevice),
+    #[cfg(feature = "vsock")]
+    Vsock(AxVsockDevice),
 }
 
 impl BaseDriverOps for AxDeviceEnum {
@@ -37,6 +39,8 @@ impl BaseDriverOps for AxDeviceEnum {
             Self::Display(_) => DeviceType::Display,
             #[cfg(feature = "input")]
             Self::Input(_) => DeviceType::Input,
+            #[cfg(feature = "vsock")]
+            Self::Vsock(_) => DeviceType::Vsock,
             _ => unreachable!(),
         }
     }
@@ -53,6 +57,8 @@ impl BaseDriverOps for AxDeviceEnum {
             Self::Display(dev) => dev.device_name(),
             #[cfg(feature = "input")]
             Self::Input(dev) => dev.device_name(),
+            #[cfg(feature = "vsock")]
+            Self::Vsock(dev) => dev.device_name(),
             _ => unreachable!(),
         }
     }

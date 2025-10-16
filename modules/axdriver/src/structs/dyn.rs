@@ -16,6 +16,10 @@ pub type AxDisplayDevice = Box<dyn DisplayDriverOps>;
 #[cfg(feature = "input")]
 pub type AxInputDevice = Box<dyn InputDriverOps>;
 
+/// The unified type of the socket devices.
+#[cfg(feature = "vsock")]
+pub type AxVsockDevice = Box<dyn VsockDriverOps>;
+
 impl super::AxDeviceEnum {
     /// Constructs a network device.
     #[cfg(feature = "net")]

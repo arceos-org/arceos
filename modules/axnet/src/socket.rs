@@ -19,23 +19,42 @@ use crate::{
     unix::{UnixSocket, UnixSocketAddr},
 };
 
+#[cfg(feature = "vsock")]
+use crate::vsock::{VsockSocket, VsockAddr};
+
 #[derive(Clone, Debug)]
 pub enum SocketAddrEx {
     Ip(SocketAddr),
     Unix(UnixSocketAddr),
+    #[cfg(feature = "vsock")]
+    Vsock(VsockAddr),
 }
+
 impl SocketAddrEx {
     pub fn into_ip(self) -> AxResult<SocketAddr> {
         match self {
             SocketAddrEx::Ip(addr) => Ok(addr),
             SocketAddrEx::Unix(_) => Err(AxError::Other(LinuxError::EAFNOSUPPORT)),
+            #[cfg(feature = "vsock")]
+            SocketAddrEx::Vsock(_) => Err(AxError::Other(LinuxError::EAFNOSUPPORT)),
         }
     }
 
     pub fn into_unix(self) -> AxResult<UnixSocketAddr> {
         match self {
-            SocketAddrEx::Ip(_) => Err(AxError::Other(LinuxError::EAFNOSUPPORT)),
             SocketAddrEx::Unix(addr) => Ok(addr),
+            SocketAddrEx::Ip(_) => Err(AxError::Other(LinuxError::EAFNOSUPPORT)),
+            #[cfg(feature = "vsock")]
+            SocketAddrEx::Vsock(_) => Err(AxError::Other(LinuxError::EAFNOSUPPORT)),
+        }
+    }
+
+    #[cfg(feature = "vsock")]
+    pub fn into_vsock(self) -> AxResult<VsockAddr> {
+        match self {
+            SocketAddrEx::Ip(_) => Err(AxError::Other(LinuxError::EAFNOSUPPORT)),
+            SocketAddrEx::Unix(_) => Err(AxError::Other(LinuxError::EAFNOSUPPORT)),
+            SocketAddrEx::Vsock(addr) => Ok(addr),
         }
     }
 }
@@ -148,6 +167,8 @@ pub enum Socket {
     Udp(UdpSocket),
     Tcp(TcpSocket),
     Unix(UnixSocket),
+    #[cfg(feature = "vsock")]
+    Vsock(VsockSocket),
 }
 
 impl Pollable for Socket {
@@ -156,6 +177,8 @@ impl Pollable for Socket {
             Socket::Tcp(tcp) => tcp.poll(),
             Socket::Udp(udp) => udp.poll(),
             Socket::Unix(unix) => unix.poll(),
+            #[cfg(feature = "vsock")]
+            Socket::Vsock(vsock) => vsock.poll(),
         }
     }
 
@@ -164,6 +187,8 @@ impl Pollable for Socket {
             Socket::Tcp(tcp) => tcp.register(context, events),
             Socket::Udp(udp) => udp.register(context, events),
             Socket::Unix(unix) => unix.register(context, events),
+            #[cfg(feature = "vsock")]
+            Socket::Vsock(vsock) => vsock.register(context, events),
         }
     }
 }
