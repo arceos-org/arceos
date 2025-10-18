@@ -33,14 +33,12 @@ virtio-net = ["net", "virtio", "axdriver_virtio/net"]
 virtio-socket = ["vsock", "virtio", "axdriver_virtio/socket"]
 bcm2835-sdhci = ["block", "axdriver_block/bcm2835-sdhci"]
 ramdisk = ["block", "axdriver_block/ramdisk", "dep:axhal", "dep:axconfig"]
-sdmmc-gpt = ["block", "axdriver_block/sdmmc", "axdriver_block/gpt", "dep:axhal"]
-ahci-gpt = [
+sdmmc-gpt = [
     "block",
-    "axdriver_block",
+    "axdriver_block/sdmmc",
     "axdriver_block/gpt",
     "dep:axhal",
-    "dep:ahci_driver",
-    "dep:printf-compat",
+    "dep:axconfig",
 ]
 ixgbe = ["net", "axdriver_net/ixgbe", "dep:axalloc", "dep:axhal", "dep:axdma"]
 fxmac = ["net", "axdriver_net/fxmac", "dep:axalloc", "dep:axhal", "dep:axdma"]
@@ -64,5 +62,3 @@ axdriver_virtio = { git = "https://github.com/Starry-OS/axdriver_crates.git", re
 cfg-if = { workspace = true }
 crate_interface = { workspace = true }
 log = { workspace = true }
-ahci_driver = { git = "https://github.com/Starry-OS/ahci_driver.git", rev = "beaa9c8", optional = true }
-printf-compat = { git = "https://github.com/lights0123/printf-compat.git", rev = "5f5c9cc", default-features = false, optional = true }

@@ -13,9 +13,7 @@ repository = "https://github.com/arceos-org/arceos/tree/main/modules/axnet"
 documentation = "https://arceos-org.github.io/arceos/axnet/index.html"
 
 [features]
-smoltcp = []
 vsock = ["axdriver/vsock"]
-default = ["smoltcp"]
 
 [dependencies]
 axconfig = { workspace = true }
