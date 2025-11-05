@@ -13,10 +13,7 @@ use memory_addr::{
 };
 use memory_set::{MemoryArea, MemorySet};
 
-use crate::{
-    backend::{Backend, BackendOps},
-    mapping_to_ax_error,
-};
+use crate::backend::{Backend, BackendOps};
 
 /// The virtual memory address space.
 pub struct AddrSpace {
@@ -138,9 +135,7 @@ impl AddrSpace {
 
         let offset = start_vaddr.as_usize() as isize - start_paddr.as_usize() as isize;
         let area = MemoryArea::new(start_vaddr, size, flags, Backend::new_linear(offset));
-        self.areas
-            .map(area, &mut self.pt, false)
-            .map_err(mapping_to_ax_error)?;
+        self.areas.map(area, &mut self.pt, false)?;
         Ok(())
     }
 
@@ -155,9 +150,7 @@ impl AddrSpace {
         self.validate_region(start, size)?;
 
         let area = MemoryArea::new(start, size, flags, backend);
-        self.areas
-            .map(area, &mut self.pt, false)
-            .map_err(mapping_to_ax_error)?;
+        self.areas.map(area, &mut self.pt, false)?;
         if populate {
             self.populate_area(start, size, flags)?;
         }
@@ -202,9 +195,7 @@ impl AddrSpace {
     pub fn unmap(&mut self, start: VirtAddr, size: usize) -> AxResult {
         self.validate_region(start, size)?;
 
-        self.areas
-            .unmap(start, size, &mut self.pt)
-            .map_err(mapping_to_ax_error)?;
+        self.areas.unmap(start, size, &mut self.pt)?;
         Ok(())
     }
 
@@ -274,8 +265,7 @@ impl AddrSpace {
         self.validate_region(start, size)?;
 
         self.areas
-            .protect(start, size, |_| Some(flags), &mut self.pt)
-            .map_err(mapping_to_ax_error)?;
+            .protect(start, size, |_| Some(flags), &mut self.pt)?;
 
         Ok(())
     }
@@ -385,10 +375,7 @@ impl AddrSpace {
 
             let new_area = MemoryArea::new(area.start(), area.size(), area.flags(), new_backend);
             let aspace = guard.deref_mut();
-            aspace
-                .areas
-                .map(new_area, &mut aspace.pt, false)
-                .map_err(mapping_to_ax_error)?;
+            aspace.areas.map(new_area, &mut aspace.pt, false)?;
         }
         drop(guard);
 

@@ -14,7 +14,6 @@ default = []
 copy = ["page_table_multiarch/copy-from"]
 
 [dependencies]
-allocator = { workspace = true }
 axalloc = { workspace = true }
 axconfig = { workspace = true }
 axfs-ng = { workspace = true }
@@ -29,5 +28,5 @@ kspin = { workspace = true }
 lazyinit = { workspace = true }
 log = { workspace = true }
 memory_addr = { workspace = true }
-memory_set = { workspace = true }
+memory_set = { git = "https://github.com/Starry-OS/axmm_crates.git", rev = "5554d9b" }
 page_table_multiarch = { workspace = true, optional = true }

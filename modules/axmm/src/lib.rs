@@ -11,7 +11,7 @@ mod aspace;
 pub mod backend;
 mod page_iter;
 
-use axerrno::{AxError, LinuxResult};
+use axerrno::LinuxResult;
 use axhal::{
     mem::{MemRegionFlags, phys_to_virt},
     paging::MappingFlags,
@@ -19,22 +19,10 @@ use axhal::{
 use kspin::SpinNoIrq;
 use lazyinit::LazyInit;
 use memory_addr::{MemoryAddr, PhysAddr, va};
-use memory_set::MappingError;
 
 pub use self::aspace::AddrSpace;
 
 static KERNEL_ASPACE: LazyInit<SpinNoIrq<AddrSpace>> = LazyInit::new();
-
-fn mapping_to_ax_error(err: MappingError) -> AxError {
-    if !matches!(err, MappingError::AlreadyExists) {
-        warn!("Mapping error: {err:?}");
-    }
-    match err {
-        MappingError::InvalidParam => AxError::InvalidInput,
-        MappingError::AlreadyExists => AxError::AlreadyExists,
-        MappingError::BadState => AxError::BadState,
-    }
-}
 
 fn reg_flag_to_map_flag(f: MemRegionFlags) -> MappingFlags {
     let mut ret = MappingFlags::empty();

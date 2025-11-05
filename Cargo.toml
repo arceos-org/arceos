@@ -56,7 +56,7 @@ axtask = { path = "modules/axtask" }
 axdma = { path = "modules/axdma" }
 axipi = { path = "modules/axipi" }
 
-allocator = { git = "https://github.com/Starry-OS/allocator.git", rev = "d5feebd" }
+allocator = { git = "https://github.com/Starry-OS/allocator.git", rev = "918365e" }
 axbacktrace = "0.1"
 axcpu = "0.2"
 axerrno = "0.1"
@@ -78,7 +78,6 @@ lazyinit = "0.2"
 lock_api = { version = "0.4", default-features = false }
 log = "0.4"
 memory_addr = "0.4"
-memory_set = "0.4"
 page_table_entry = "0.5"
 page_table_multiarch = "0.5"
 percpu = "0.2"

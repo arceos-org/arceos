@@ -44,8 +44,9 @@ dependencies = [
 [[package]]
 name = "allocator"
 version = "0.1.1"
-source = "git+https://github.com/Starry-OS/allocator.git?rev=d5feebd#d5feebd4837eecbef13536d5f409f31bb87f550b"
+source = "git+https://github.com/Starry-OS/allocator.git?rev=918365e#918365ebdd9c0a542df4b5a86ab36a2244440617"
 dependencies = [
+ "axerrno",
  "bitmap-allocator",
  "buddy_system_allocator",
  "cfg-if",
@@ -434,7 +435,6 @@ dependencies = [
 name = "axfs-ng"
 version = "0.1.0"
 dependencies = [
- "allocator",
  "axalloc",
  "axdriver",
  "axerrno",
@@ -549,7 +549,6 @@ dependencies = [
 name = "axmm"
 version = "0.2.0"
 dependencies = [
- "allocator",
  "axalloc",
  "axconfig",
  "axerrno",
@@ -1771,9 +1770,9 @@ checksum = "3d4054cba279515fa87761b101d857333ce06391dbe8f18a11347204a7111416"
 [[package]]
 name = "memory_set"
 version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7d47cbc25a4d00427f9070fd768eaf907f19c903fb72b547b19db2d56b9408e"
+source = "git+https://github.com/Starry-OS/axmm_crates.git?rev=5554d9b#5554d9b1a21aa5ee67317eb15a7146336f318b01"
 dependencies = [
+ "axerrno",
  "memory_addr",
 ]
 

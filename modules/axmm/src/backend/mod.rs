@@ -1,7 +1,6 @@
 //! Memory mapping backends.
 use alloc::{boxed::Box, sync::Arc};
 
-use allocator::AllocError;
 use axalloc::{UsageKind, global_allocator};
 use axerrno::{AxError, AxResult};
 use axhal::{
@@ -27,22 +26,11 @@ fn divide_page(size: usize, page_size: PageSize) -> usize {
     size >> (page_size as usize).trailing_zeros()
 }
 
-fn alloc_to_linux_error(err: AllocError) -> AxError {
-    warn!("Allocation error: {:?}", err);
-    match err {
-        AllocError::NoMemory => AxError::NoMemory,
-        _ => AxError::InvalidInput,
-    }
-}
-
 fn alloc_frame(zeroed: bool, size: PageSize) -> AxResult<PhysAddr> {
     let page_size = size as usize;
     let num_pages = page_size / PAGE_SIZE_4K;
-    let vaddr = VirtAddr::from(
-        global_allocator()
-            .alloc_pages(num_pages, page_size, UsageKind::UserMem)
-            .map_err(alloc_to_linux_error)?,
-    );
+    let vaddr =
+        VirtAddr::from(global_allocator().alloc_pages(num_pages, page_size, UsageKind::UserMem)?);
     if zeroed {
         unsafe { core::ptr::write_bytes(vaddr.as_mut_ptr(), 0, page_size) };
     }
