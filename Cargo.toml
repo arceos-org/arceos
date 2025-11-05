@@ -76,7 +76,7 @@ kspin = "0.1"
 lazy_static = { version = "1.5", features = ["spin_no_std"] }
 lazyinit = "0.2"
 lock_api = { version = "0.4", default-features = false }
-log = "=0.4.21"
+log = "0.4"
 memory_addr = "0.4"
 memory_set = "0.4"
 page_table_entry = "0.5"
