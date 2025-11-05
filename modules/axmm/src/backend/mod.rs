@@ -6,7 +6,7 @@ use axalloc::{UsageKind, global_allocator};
 use axerrno::{AxError, AxResult};
 use axhal::{
     mem::{phys_to_virt, virt_to_phys},
-    paging::{MappingFlags, PageSize, PageTable, PageTableMut, PagingError},
+    paging::{MappingFlags, PageSize, PageTable, PageTableMut},
 };
 use axsync::Mutex;
 use enum_dispatch::enum_dispatch;
@@ -56,14 +56,6 @@ fn dealloc_frame(frame: PhysAddr, align: PageSize) {
     let page_size: usize = align.into();
     let num_pages = page_size / PAGE_SIZE_4K;
     global_allocator().dealloc_pages(vaddr.as_usize(), num_pages, UsageKind::UserMem);
-}
-
-fn paging_to_ax_error(err: PagingError) -> AxError {
-    warn!("Paging error: {:?}", err);
-    match err {
-        PagingError::NoMemory => AxError::NoMemory,
-        _ => AxError::InvalidInput,
-    }
 }
 
 fn pages_in(range: VirtAddrRange, align: PageSize) -> AxResult<PageIterWrapper> {
@@ -135,7 +127,7 @@ impl MappingBackend for Backend {
 
     fn map(&self, start: VirtAddr, size: usize, flags: MappingFlags, pt: &mut PageTable) -> bool {
         let range = VirtAddrRange::from_start_size(start, size);
-        if let Err(err) = BackendOps::map(self, range, flags, &mut pt.to_mut()) {
+        if let Err(err) = BackendOps::map(self, range, flags, &mut pt.modify()) {
             warn!("Failed to map area: {:?}", err);
             false
         } else {
@@ -145,7 +137,7 @@ impl MappingBackend for Backend {
 
     fn unmap(&self, start: VirtAddr, size: usize, pt: &mut PageTable) -> bool {
         let range = VirtAddrRange::from_start_size(start, size);
-        if let Err(err) = BackendOps::unmap(self, range, &mut pt.to_mut()) {
+        if let Err(err) = BackendOps::unmap(self, range, &mut pt.modify()) {
             warn!("Failed to unmap area: {:?}", err);
             false
         } else {
@@ -160,6 +152,6 @@ impl MappingBackend for Backend {
         new_flags: Self::Flags,
         pt: &mut Self::PageTable,
     ) -> bool {
-        pt.to_mut().protect_region(start, size, new_flags).is_ok()
+        pt.modify().protect_region(start, size, new_flags).is_ok()
     }
 }

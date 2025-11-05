@@ -9,7 +9,7 @@ use memory_addr::{MemoryAddr, PhysAddr, VirtAddr, VirtAddrRange};
 use super::{alloc_frame, dealloc_frame};
 use crate::{
     AddrSpace,
-    backend::{Backend, BackendOps, divide_page, pages_in, paging_to_ax_error},
+    backend::{Backend, BackendOps, divide_page, pages_in},
 };
 
 pub struct SharedPages {
@@ -79,8 +79,7 @@ impl BackendOps for SharedBackend {
         for (vaddr, paddr) in
             pages_in(range, self.pages.size)?.zip(self.pages_starting_from(range.start))
         {
-            pt.map(vaddr, *paddr, self.pages.size, flags)
-                .map_err(paging_to_ax_error)?;
+            pt.map(vaddr, *paddr, self.pages.size, flags)?;
         }
         Ok(())
     }
@@ -88,7 +87,7 @@ impl BackendOps for SharedBackend {
     fn unmap(&self, range: VirtAddrRange, pt: &mut PageTableMut) -> AxResult {
         debug!("Shared::unmap: {:?}", range);
         for vaddr in pages_in(range, self.pages.size)? {
-            pt.unmap(vaddr).map_err(paging_to_ax_error)?;
+            pt.unmap(vaddr)?;
         }
         Ok(())
     }

@@ -80,7 +80,7 @@ impl AddrSpace {
     #[cfg(feature = "copy")]
     pub fn copy_mappings_from(&mut self, other: &AddrSpace) -> AxResult {
         self.pt
-            .to_mut()
+            .modify()
             .copy_from(&other.pt, other.base(), other.size());
         Ok(())
     }
@@ -175,7 +175,7 @@ impl AddrSpace {
         self.validate_region(start, size)?;
         let end = start + size;
 
-        let mut modify = self.pt.to_mut();
+        let mut modify = self.pt.modify();
         while let Some(area) = self.areas.find(start) {
             let range = VirtAddrRange::new(start, area.end().min(end));
             area.backend()
@@ -338,7 +338,7 @@ impl AddrSpace {
                     VirtAddrRange::from_start_size(vaddr.align_down(page_size), page_size as _),
                     flags,
                     access_flags,
-                    &mut self.pt.to_mut(),
+                    &mut self.pt.modify(),
                 );
                 return match populate_result {
                     Ok((n, callback)) => {
@@ -373,13 +373,13 @@ impl AddrSpace {
 
         let mut guard = new_aspace.lock();
 
-        let mut self_modify = self.pt.to_mut();
+        let mut self_modify = self.pt.modify();
         for area in self.areas.iter() {
             let new_backend = area.backend().clone_map(
                 area.va_range(),
                 area.flags(),
                 &mut self_modify,
-                &mut guard.pt.to_mut(),
+                &mut guard.pt.modify(),
                 &new_aspace_clone,
             )?;
 
