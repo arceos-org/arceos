@@ -24,7 +24,7 @@ axerrno = { workspace = true }
 axfs-ng-vfs = { workspace = true }
 axio = { workspace = true, features = ["alloc"] }
 axpoll = { workspace = true }
-bitflags = "2.9.0"
+bitflags = "2.10"
 cfg-if = { workspace = true }
 chrono = { workspace = true }
 intrusive-collections = "0.9.7"

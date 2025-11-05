@@ -87,11 +87,9 @@ scope-local = "0.1"
 spin = "0.10"
 
 [patch.crates-io]
-axbacktrace = { git = "https://github.com/Starry-OS/axbacktrace.git" }
 axcpu = { git = "https://github.com/Starry-OS/axcpu.git" }
 axerrno = { git = "https://github.com/Starry-OS/axerrno.git" }
 axfs-ng-vfs = { git = "https://github.com/Starry-OS/axfs-ng-vfs.git" }
 axio = { git = "https://github.com/Starry-OS/axio.git" }
-axpoll = { git = "https://github.com/Starry-OS/axpoll.git" }
 page_table_entry = { git = "https://github.com/Starry-OS/page_table_multiarch.git" }
 page_table_multiarch = { git = "https://github.com/Starry-OS/page_table_multiarch.git" }
