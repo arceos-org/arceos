@@ -67,7 +67,7 @@ impl ListenTable {
             Ok(())
         } else {
             warn!("socket already listening on port {port}");
-            Err(AxError::AddressInUse)
+            Err(AxError::AddrInUse)
         }
     }
 

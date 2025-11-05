@@ -59,12 +59,12 @@ impl<'a> SocketSetWrapper<'a> {
                 Socket::Tcp(s) => {
                     let local_addr = s.get_bound_endpoint();
                     if local_addr.addr == Some(addr) && local_addr.port == port {
-                        return Err(AxError::AddressInUse);
+                        return Err(AxError::AddrInUse);
                     }
                 }
                 Socket::Udp(s) => {
                     if s.endpoint().addr == Some(addr) && s.endpoint().port == port {
-                        return Err(AxError::AddressInUse);
+                        return Err(AxError::AddrInUse);
                     }
                 }
                 _ => continue,

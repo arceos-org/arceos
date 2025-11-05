@@ -71,11 +71,7 @@ pub struct Connection {
 }
 
 impl Connection {
-    fn new(
-        local_addr: VsockAddr,
-        peer_addr: Option<VsockAddr>,
-        state: ConnectionState,
-    ) -> Self {
+    fn new(local_addr: VsockAddr, peer_addr: Option<VsockAddr>, state: ConnectionState) -> Self {
         let rb = HeapRb::<u8>::new(VSOCK_RX_BUFFER_SIZE);
         let (rx_producer, rx_consumer) = rb.split();
         Self {
@@ -329,7 +325,7 @@ impl VsockConnectionManager {
             }
 
             if self.next_ephemeral_port == start {
-                ax_bail!(AddressInUse, "no available ports");
+                ax_bail!(AddrInUse, "no available ports");
             }
         }
     }
@@ -337,7 +333,7 @@ impl VsockConnectionManager {
     /// create a listen queue
     pub fn listen(&mut self, local_addr: VsockAddr) -> AxResult<()> {
         if self.listen_queues.contains_key(&local_addr.port) {
-            ax_bail!(AddressInUse, "port already in use");
+            ax_bail!(AddrInUse, "port already in use");
         }
 
         let queue = Arc::new(Mutex::new(ListenQueue::new(local_addr)));
@@ -414,11 +410,7 @@ impl VsockConnectionManager {
     }
 
     /// handle a new connection request (by driver event)
-    pub fn on_connection_request(
-        &mut self,
-        local_port: u32,
-        peer_addr: VsockAddr,
-    ) -> AxResult<()> {
+    pub fn on_connection_request(&mut self, local_port: u32, peer_addr: VsockAddr) -> AxResult<()> {
         let queue = self
             .listen_queues
             .get(&local_port)
@@ -542,7 +534,8 @@ pub struct VsockStats {
     pub total_dropped_bytes: usize,
 }
 
-pub static VSOCK_CONN_MANAGER: Mutex<VsockConnectionManager> = Mutex::new(VsockConnectionManager::new());
+pub static VSOCK_CONN_MANAGER: Mutex<VsockConnectionManager> =
+    Mutex::new(VsockConnectionManager::new());
 
 /// for debug
 #[allow(dead_code)]

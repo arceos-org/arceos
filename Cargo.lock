@@ -33,11 +33,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ahci_driver"
-version = "0.1.0"
-source = "git+https://github.com/Starry-OS/ahci_driver.git?rev=beaa9c8#beaa9c8a183518da9f29363f3619dc53161450e4"
-
-[[package]]
 name = "aho-corasick"
 version = "1.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -136,7 +131,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f251a1a74133f802b55eaf5e340107b0024457aa9b2ac3c72074501bfa8509a5"
 dependencies = [
  "aarch64-cpu 10.0.0",
- "bitflags 2.9.4",
+ "bitflags 2.10.0",
  "enum_dispatch",
  "log",
  "paste",
@@ -222,14 +217,15 @@ dependencies = [
 [[package]]
 name = "axbacktrace"
 version = "0.1.0"
-source = "git+https://github.com/Starry-OS/axbacktrace.git#09c22b6a969d27b39c5b1cdc3c31b35165059d12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ac82d77c48f98335e4f9b546ef69356d429ee7e9933560bb55696f498a1a26dc"
 dependencies = [
  "addr2line",
  "cfg-if",
  "gimli",
  "log",
  "paste",
- "spin 0.9.8",
+ "spin 0.10.0",
 ]
 
 [[package]]
@@ -312,7 +308,6 @@ dependencies = [
 name = "axdriver"
 version = "0.2.0"
 dependencies = [
- "ahci_driver",
  "axalloc",
  "axconfig",
  "axdma",
@@ -323,22 +318,22 @@ dependencies = [
  "axdriver_net",
  "axdriver_pci",
  "axdriver_virtio",
+ "axdriver_vsock",
  "axhal",
  "cfg-if",
  "crate_interface",
  "log",
- "printf-compat",
 ]
 
 [[package]]
 name = "axdriver_base"
 version = "0.1.2"
-source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=b707728#b70772886bf92212accd9bab05a5517d778a685d"
+source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=a263470#a2634709194f2fd595a52b660d7d43df7c32570e"
 
 [[package]]
 name = "axdriver_block"
 version = "0.1.2"
-source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=b707728#b70772886bf92212accd9bab05a5517d778a685d"
+source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=a263470#a2634709194f2fd595a52b660d7d43df7c32570e"
 dependencies = [
  "axdriver_base",
  "bcm2835-sdhci",
@@ -350,7 +345,7 @@ dependencies = [
 [[package]]
 name = "axdriver_display"
 version = "0.1.2"
-source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=b707728#b70772886bf92212accd9bab05a5517d778a685d"
+source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=a263470#a2634709194f2fd595a52b660d7d43df7c32570e"
 dependencies = [
  "axdriver_base",
 ]
@@ -358,7 +353,7 @@ dependencies = [
 [[package]]
 name = "axdriver_input"
 version = "0.1.2"
-source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=b707728#b70772886bf92212accd9bab05a5517d778a685d"
+source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=a263470#a2634709194f2fd595a52b660d7d43df7c32570e"
 dependencies = [
  "axdriver_base",
  "strum",
@@ -367,7 +362,7 @@ dependencies = [
 [[package]]
 name = "axdriver_net"
 version = "0.1.2"
-source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=b707728#b70772886bf92212accd9bab05a5517d778a685d"
+source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=a263470#a2634709194f2fd595a52b660d7d43df7c32570e"
 dependencies = [
  "axdriver_base",
  "fxmac_rs",
@@ -379,7 +374,7 @@ dependencies = [
 [[package]]
 name = "axdriver_pci"
 version = "0.1.2"
-source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=b707728#b70772886bf92212accd9bab05a5517d778a685d"
+source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=a263470#a2634709194f2fd595a52b660d7d43df7c32570e"
 dependencies = [
  "virtio-drivers",
 ]
@@ -387,15 +382,25 @@ dependencies = [
 [[package]]
 name = "axdriver_virtio"
 version = "0.1.2"
-source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=b707728#b70772886bf92212accd9bab05a5517d778a685d"
+source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=a263470#a2634709194f2fd595a52b660d7d43df7c32570e"
 dependencies = [
  "axdriver_base",
  "axdriver_block",
  "axdriver_display",
  "axdriver_input",
  "axdriver_net",
+ "axdriver_vsock",
  "log",
  "virtio-drivers",
+]
+
+[[package]]
+name = "axdriver_vsock"
+version = "0.1.2"
+source = "git+https://github.com/Starry-OS/axdriver_crates.git?rev=a263470#a2634709194f2fd595a52b660d7d43df7c32570e"
+dependencies = [
+ "axdriver_base",
+ "log",
 ]
 
 [[package]]
@@ -436,8 +441,9 @@ dependencies = [
  "axfs-ng-vfs",
  "axhal",
  "axio",
+ "axpoll",
  "axsync",
- "bitflags 2.9.4",
+ "bitflags 2.10.0",
  "cfg-if",
  "chrono",
  "env_logger",
@@ -455,17 +461,17 @@ dependencies = [
 [[package]]
 name = "axfs-ng-vfs"
 version = "0.1.0"
-source = "git+https://github.com/Starry-OS/axfs-ng-vfs.git?rev=e3e83d6#e3e83d621094f520602a17ad91223aa9e3ea243e"
+source = "git+https://github.com/Starry-OS/axfs-ng-vfs.git#d6f470f0c739395abe649534b87b28ca92195999"
 dependencies = [
  "axerrno",
- "axio",
- "bitflags 2.9.4",
+ "axpoll",
+ "bitflags 2.10.0",
  "cfg-if",
  "hashbrown",
  "inherit-methods-macro",
- "kspin",
  "log",
  "smallvec",
+ "spin 0.10.0",
 ]
 
 [[package]]
@@ -476,13 +482,13 @@ dependencies = [
  "axalloc",
  "axconfig",
  "axcpu",
- "axio",
  "axlog",
  "axplat",
  "axplat-aarch64-qemu-virt",
  "axplat-loongarch64-qemu-virt",
  "axplat-riscv64-qemu-virt",
  "axplat-x86-pc",
+ "axpoll",
  "cfg-if",
  "heapless 0.8.0",
  "kernel_guard",
@@ -511,7 +517,7 @@ version = "0.1.1"
 source = "git+https://github.com/Starry-OS/axio.git#f7a2dfe7999af74ac3c7dd1f48b7769f71baf12a"
 dependencies = [
  "axerrno",
- "bitflags 2.9.4",
+ "bitflags 2.10.0",
  "spin 0.10.0",
 ]
 
@@ -574,9 +580,10 @@ dependencies = [
  "axfs-ng-vfs",
  "axhal",
  "axio",
+ "axpoll",
  "axsync",
  "axtask",
- "bitflags 2.9.4",
+ "bitflags 2.10.0",
  "cfg-if",
  "enum_dispatch",
  "event-listener",
@@ -596,7 +603,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f4de04c54b63bf2ca1ff202733d2516da49d7779649cdb2f9c4ecf22909e6810"
 dependencies = [
  "axplat-macros",
- "bitflags 2.9.4",
+ "bitflags 2.10.0",
  "const-str",
  "crate_interface",
  "handler_table",
@@ -691,7 +698,7 @@ dependencies = [
  "axconfig-macros",
  "axcpu",
  "axplat",
- "bitflags 2.9.4",
+ "bitflags 2.10.0",
  "heapless 0.9.1",
  "int_ratio",
  "kspin",
@@ -705,6 +712,17 @@ dependencies = [
  "x86",
  "x86_64",
  "x86_rtc",
+]
+
+[[package]]
+name = "axpoll"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d06a0cf7cffe0e87c338f41d59bd0a05fa75cf9c4799b4107fa0fc6cf27d8d23"
+dependencies = [
+ "bitflags 2.10.0",
+ "linux-raw-sys",
+ "spin 0.10.0",
 ]
 
 [[package]]
@@ -759,7 +777,7 @@ dependencies = [
  "axconfig",
  "axerrno",
  "axhal",
- "axio",
+ "axpoll",
  "axsched",
  "axtask",
  "cfg-if",
@@ -802,10 +820,10 @@ version = "0.72.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "993776b509cfb49c750f11b8f07a46fa23e0a1386ffc01fb1e7d343efc387895"
 dependencies = [
- "bitflags 2.9.4",
+ "bitflags 2.10.0",
  "cexpr",
  "clang-sys",
- "itertools 0.13.0",
+ "itertools",
  "log",
  "prettyplease",
  "proc-macro2",
@@ -847,9 +865,9 @@ checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
 name = "bitflags"
-version = "2.9.4"
+version = "2.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2261d10cca569e4643e526d8dc2e62e433cc8aba21ab764233731f8d369bf394"
+checksum = "812e12b5285cc515a9c72a5c1d3b6d46a19dac5acfef5265968c166106e31dd3"
 
 [[package]]
 name = "bitmap-allocator"
@@ -1252,7 +1270,7 @@ name = "fatfs"
 version = "0.4.0"
 source = "git+https://github.com/Starry-OS/rust-fatfs.git?rev=2685439#2685439e679cc832a67fd21340258b7c018c0f33"
 dependencies = [
- "bitflags 2.9.4",
+ "bitflags 2.10.0",
  "log",
 ]
 
@@ -1549,15 +1567,6 @@ checksum = "7943c866cc5cd64cbc25b2e01621d07fa8eb2a1a23160ee81ce38704e97b8ecf"
 
 [[package]]
 name = "itertools"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "284f18f85651fe11e8a991b2adb42cb078325c996ed026d994719efcfca1d54b"
-dependencies = [
- "either",
-]
-
-[[package]]
-name = "itertools"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
@@ -1683,6 +1692,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "linux-raw-sys"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "df1d3c3b53da64cf5760482273a98e575c651a67eec7f77df96b5b642de8f039"
+
+[[package]]
 name = "lock_api"
 version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1705,7 +1720,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c9f0d275c70310e2a9d2fc23250c5ac826a73fa828a5f256401f85c5c554283"
 dependencies = [
  "bit_field",
- "bitflags 2.9.4",
+ "bitflags 2.10.0",
 ]
 
 [[package]]
@@ -1820,7 +1835,7 @@ version = "0.5.5"
 source = "git+https://github.com/Starry-OS/page_table_multiarch.git#3f697c8c876432f42d5429a5b8d130889213ff6e"
 dependencies = [
  "aarch64-cpu 10.0.0",
- "bitflags 2.9.4",
+ "bitflags 2.10.0",
  "memory_addr",
  "x86_64",
 ]
@@ -1936,15 +1951,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "printf-compat"
-version = "0.1.1"
-source = "git+https://github.com/lights0123/printf-compat.git?rev=5f5c9cc#5f5c9cc363f047411a0dccb37e0efb452ffb61d9"
-dependencies = [
- "bitflags 1.3.2",
- "itertools 0.9.0",
-]
-
-[[package]]
 name = "proc-macro-error-attr2"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2034,7 +2040,7 @@ version = "11.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "498cd0dc59d73224351ee52a95fee0f1a617a2eae0e7d9d720cc622c73a54186"
 dependencies = [
- "bitflags 2.9.4",
+ "bitflags 2.10.0",
 ]
 
 [[package]]
@@ -2438,7 +2444,7 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94d293f51425981fdb1b766beae254dbb711a17e8c4b549dc69b9b7ee0d478d5"
 dependencies = [
- "bitflags 2.9.4",
+ "bitflags 2.10.0",
  "rustversion",
  "x86",
 ]
@@ -2485,7 +2491,7 @@ version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aa40e09453618c7a927c08c5a990497a2954da7c2aaa6c65e0d4f0fc975f6114"
 dependencies = [
- "bitflags 2.9.4",
+ "bitflags 2.10.0",
  "log",
  "zerocopy 0.7.35",
 ]
@@ -2781,7 +2787,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0f042214de98141e9c8706e8192b73f56494087cc55ebec28ce10f26c5c364ae"
 dependencies = [
  "bit_field",
- "bitflags 2.9.4",
+ "bitflags 2.10.0",
  "rustversion",
  "volatile 0.4.6",
 ]
