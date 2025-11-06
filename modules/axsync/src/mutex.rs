@@ -57,6 +57,11 @@ unsafe impl lock_api::RawMutex for RawMutex {
                         "{} tried to acquire mutex it already owns.",
                         current().id_name()
                     );
+                    // Handle spurious failure: if compare_exchange_weak failed but the lock
+                    // is actually unlocked, skip block_on to avoid deadlock (no one will wake us).
+                    if !self.is_locked() {
+                        continue;
+                    }
                     // Wait until the lock looks unlocked before retrying
                     block_on(async {
                         loop {
