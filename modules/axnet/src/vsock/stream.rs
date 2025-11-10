@@ -222,12 +222,13 @@ impl VsockTransportOps for VsockStreamTransport {
         self.general.recv_poller(self).poll(|| {
             let mut conn_guard = conn.lock();
 
-            if conn_guard.state() != ConnectionState::Connected {
-                return Err(AxError::NotConnected);
-            }
-
             if conn_guard.rx_closed() && conn_guard.rx_buffer_used() == 0 {
                 return Ok(0); // EOF
+            }
+
+            // should allow read when connection is closed, to read remaining data
+            if !matches!(conn_guard.state(), ConnectionState::Connected | ConnectionState::Closed) {
+                return Err(AxError::NotConnected);
             }
 
             if conn_guard.rx_buffer_used() == 0 {
@@ -328,7 +329,7 @@ impl Pollable for VsockStreamTransport {
                     );
                 }
             }
-            ConnectionState::Connected => {
+            ConnectionState::Connected | ConnectionState::Closed => {
                 events.set(IoEvents::IN, conn.rx_buffer_used() > 0 || conn.rx_closed());
                 events.set(IoEvents::OUT, !conn.tx_closed());
             }
