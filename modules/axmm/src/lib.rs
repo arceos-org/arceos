@@ -104,4 +104,7 @@ pub fn init_memory_management() {
 /// Initializes kernel paging for secondary CPUs.
 pub fn init_memory_management_secondary() {
     unsafe { axhal::asm::write_kernel_page_table(kernel_page_table_root()) };
+    // flush all tlb on architectures that require it (skip x86_64)
+    #[cfg(not(target_arch = "x86_64"))]
+    axhal::asm::flush_tlb(None);
 }
