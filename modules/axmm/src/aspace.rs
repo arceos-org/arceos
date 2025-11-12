@@ -13,10 +13,7 @@ use memory_addr::{
 };
 use memory_set::{MemoryArea, MemorySet};
 
-use crate::{
-    backend::{Backend, BackendOps},
-    mapping_to_ax_error,
-};
+use crate::backend::{Backend, BackendOps};
 
 /// The virtual memory address space.
 pub struct AddrSpace {
@@ -80,7 +77,7 @@ impl AddrSpace {
     #[cfg(feature = "copy")]
     pub fn copy_mappings_from(&mut self, other: &AddrSpace) -> AxResult {
         self.pt
-            .to_mut()
+            .modify()
             .copy_from(&other.pt, other.base(), other.size());
         Ok(())
     }
@@ -138,9 +135,7 @@ impl AddrSpace {
 
         let offset = start_vaddr.as_usize() as isize - start_paddr.as_usize() as isize;
         let area = MemoryArea::new(start_vaddr, size, flags, Backend::new_linear(offset));
-        self.areas
-            .map(area, &mut self.pt, false)
-            .map_err(mapping_to_ax_error)?;
+        self.areas.map(area, &mut self.pt, false)?;
         Ok(())
     }
 
@@ -155,9 +150,7 @@ impl AddrSpace {
         self.validate_region(start, size)?;
 
         let area = MemoryArea::new(start, size, flags, backend);
-        self.areas
-            .map(area, &mut self.pt, false)
-            .map_err(mapping_to_ax_error)?;
+        self.areas.map(area, &mut self.pt, false)?;
         if populate {
             self.populate_area(start, size, flags)?;
         }
@@ -175,7 +168,7 @@ impl AddrSpace {
         self.validate_region(start, size)?;
         let end = start + size;
 
-        let mut modify = self.pt.to_mut();
+        let mut modify = self.pt.modify();
         while let Some(area) = self.areas.find(start) {
             let range = VirtAddrRange::new(start, area.end().min(end));
             area.backend()
@@ -202,9 +195,7 @@ impl AddrSpace {
     pub fn unmap(&mut self, start: VirtAddr, size: usize) -> AxResult {
         self.validate_region(start, size)?;
 
-        self.areas
-            .unmap(start, size, &mut self.pt)
-            .map_err(mapping_to_ax_error)?;
+        self.areas.unmap(start, size, &mut self.pt)?;
         Ok(())
     }
 
@@ -274,8 +265,7 @@ impl AddrSpace {
         self.validate_region(start, size)?;
 
         self.areas
-            .protect(start, size, |_| Some(flags), &mut self.pt)
-            .map_err(mapping_to_ax_error)?;
+            .protect(start, size, |_| Some(flags), &mut self.pt)?;
 
         Ok(())
     }
@@ -338,7 +328,7 @@ impl AddrSpace {
                     VirtAddrRange::from_start_size(vaddr.align_down(page_size), page_size as _),
                     flags,
                     access_flags,
-                    &mut self.pt.to_mut(),
+                    &mut self.pt.modify(),
                 );
                 return match populate_result {
                     Ok((n, callback)) => {
@@ -373,22 +363,19 @@ impl AddrSpace {
 
         let mut guard = new_aspace.lock();
 
-        let mut self_modify = self.pt.to_mut();
+        let mut self_modify = self.pt.modify();
         for area in self.areas.iter() {
             let new_backend = area.backend().clone_map(
                 area.va_range(),
                 area.flags(),
                 &mut self_modify,
-                &mut guard.pt.to_mut(),
+                &mut guard.pt.modify(),
                 &new_aspace_clone,
             )?;
 
             let new_area = MemoryArea::new(area.start(), area.size(), area.flags(), new_backend);
             let aspace = guard.deref_mut();
-            aspace
-                .areas
-                .map(new_area, &mut aspace.pt, false)
-                .map_err(mapping_to_ax_error)?;
+            aspace.areas.map(new_area, &mut aspace.pt, false)?;
         }
         drop(guard);
 

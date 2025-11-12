@@ -513,5 +513,5 @@ fn get_ephemeral_port() -> AxResult<u16> {
         }
         tries += 1;
     }
-    ax_bail!(AddressInUse, "no available ports");
+    ax_bail!(AddrInUse, "no available ports");
 }

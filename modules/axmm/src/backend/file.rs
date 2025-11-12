@@ -13,7 +13,7 @@ use memory_addr::{PAGE_SIZE_4K, VirtAddr, VirtAddrRange};
 
 use crate::{
     AddrSpace,
-    backend::{Backend, BackendOps, pages_in, paging_to_ax_error},
+    backend::{Backend, BackendOps, pages_in},
 };
 
 #[doc(hidden)]
@@ -72,7 +72,7 @@ impl FileBackendInner {
         }
 
         let pt = aspace.page_table_mut();
-        match pt.to_mut().unmap(vaddr) {
+        match pt.modify().unmap(vaddr) {
             Ok(_) | Err(PagingError::NotMapped) => {}
             Err(err) => {
                 warn!("Failed to unmap page {:?}: {:?}", vaddr, err);
@@ -120,7 +120,7 @@ impl BackendOps for FileBackend {
                 Ok(_) | Err(PagingError::NotMapped) => {}
                 Err(err) => {
                     warn!("Failed to unmap page {:?}: {:?}", addr, err);
-                    return Err(paging_to_ax_error(err));
+                    return Err(err.into());
                 }
             }
         }
@@ -158,7 +158,7 @@ impl BackendOps for FileBackend {
                             if !in_memory {
                                 page.expect("page should be present").mark_dirty();
                             }
-                            pt.remap(addr, paddr, flags).map_err(paging_to_ax_error)?;
+                            pt.remap(addr, paddr, flags)?;
                             pages += 1;
                             AxResult::Ok(())
                         })?;
@@ -178,8 +178,7 @@ impl BackendOps for FileBackend {
                         if let Some((pn, _)) = evicted {
                             to_be_evicted.push(pn);
                         }
-                        pt.map(addr, page.paddr(), PageSize::Size4K, map_flags)
-                            .map_err(paging_to_ax_error)?;
+                        pt.map(addr, page.paddr(), PageSize::Size4K, map_flags)?;
                         pages += 1;
                         Ok(())
                     })?;

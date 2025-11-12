@@ -13,7 +13,7 @@ use memory_addr::{PhysAddr, VirtAddr, VirtAddrRange};
 
 use crate::{
     AddrSpace,
-    backend::{Backend, BackendOps, alloc_frame, dealloc_frame, pages_in, paging_to_ax_error},
+    backend::{Backend, BackendOps, alloc_frame, dealloc_frame, pages_in},
 };
 
 static FRAME_TABLE: SpinNoIrq<BTreeMap<PhysAddr, u8>> = SpinNoIrq::new(BTreeMap::new());
@@ -75,8 +75,7 @@ impl CowBackend {
 
             file.read_at(&mut &mut buf[start..start + max_read], file_start)?;
         }
-        pt.map(vaddr, frame, self.size, flags)
-            .map_err(paging_to_ax_error)?;
+        pt.map(vaddr, frame, self.size, flags)?;
         Ok(())
     }
 
@@ -93,7 +92,7 @@ impl CowBackend {
             // so there is no need to copy it.
             1 => {
                 inc_frame_ref(paddr);
-                pt.protect(vaddr, flags).map_err(paging_to_ax_error)?;
+                pt.protect(vaddr, flags)?;
             }
             // Allocates the new page and copies the contents of the original page,
             // remapping the virtual address to the physical address of the new page.
@@ -108,8 +107,7 @@ impl CowBackend {
                     );
                 }
 
-                pt.remap(vaddr, new_frame, flags)
-                    .map_err(paging_to_ax_error)?;
+                pt.remap(vaddr, new_frame, flags)?;
             }
         }
 
@@ -193,12 +191,8 @@ impl BackendOps for CowBackend {
                     // virtual address, with the same page size and `flags`.
                     inc_frame_ref(paddr);
 
-                    old_pt
-                        .protect(vaddr, cow_flags)
-                        .map_err(paging_to_ax_error)?;
-                    new_pt
-                        .map(vaddr, paddr, self.size, cow_flags)
-                        .map_err(paging_to_ax_error)?;
+                    old_pt.protect(vaddr, cow_flags)?;
+                    new_pt.map(vaddr, paddr, self.size, cow_flags)?;
                 }
                 // If the page is not mapped, skip it.
                 Err(PagingError::NotMapped) => {}

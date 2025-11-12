@@ -163,7 +163,7 @@ impl TransportOps for StreamTransport {
     fn bind(&self, slot: &super::BindSlot, _local_addr: &UnixSocketAddr) -> AxResult<()> {
         let mut slot = slot.stream.lock();
         if slot.is_some() {
-            return Err(AxError::AddressInUse);
+            return Err(AxError::AddrInUse);
         }
         let mut guard = self.conn_rx.lock();
         if guard.is_some() {

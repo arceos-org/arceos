@@ -7,7 +7,6 @@ use alloc::{
 use core::sync::atomic::{AtomicU8, Ordering};
 use core::{num::NonZeroUsize, ops::Range, task::Context};
 
-use allocator::AllocError;
 use axalloc::{UsageKind, global_allocator};
 use axfs_ng_vfs::{
     FileNode, Location, NodeFlags, NodePermission, NodeType, VfsError, VfsResult, path::Path,
@@ -313,12 +312,8 @@ impl PageCache {
     fn new() -> VfsResult<Self> {
         let addr = global_allocator()
             .alloc_pages(1, PAGE_SIZE, UsageKind::PageCache)
-            .map_err(|err| {
+            .inspect_err(|err| {
                 warn!("Failed to allocate page cache: {:?}", err);
-                match err {
-                    AllocError::NoMemory => VfsError::NoMemory,
-                    _ => VfsError::InvalidInput,
-                }
             })?;
         Ok(Self {
             addr: addr.into(),

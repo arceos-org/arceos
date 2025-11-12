@@ -141,7 +141,7 @@ impl TransportOps for DgramTransport {
     fn bind(&self, slot: &super::BindSlot, local_addr: &UnixSocketAddr) -> AxResult {
         let mut slot = slot.dgram.lock();
         if slot.is_some() {
-            return Err(AxError::AddressInUse);
+            return Err(AxError::AddrInUse);
         }
         let mut guard = self.data_rx.lock();
         if guard.is_some() {

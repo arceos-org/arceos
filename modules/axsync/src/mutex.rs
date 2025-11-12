@@ -2,8 +2,8 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use axtask::{current, future::block_on};
-use event_listener::Event;
+use axtask::{current, future::block_on, yield_now};
+use event_listener::{Event, listener};
 
 /// A [`lock_api::RawMutex`] implementation.
 ///
@@ -26,6 +26,26 @@ impl RawMutex {
     }
 }
 
+struct Spin(u32);
+
+impl Spin {
+    #[inline]
+    fn spin(&mut self) -> bool {
+        if self.0 >= 10 {
+            return false;
+        }
+        self.0 += 1;
+        if self.0 <= 3 {
+            for _ in 0..(1 << self.0) {
+                core::hint::spin_loop();
+            }
+        } else {
+            yield_now();
+        }
+        true
+    }
+}
+
 unsafe impl lock_api::RawMutex for RawMutex {
     type GuardMarker = lock_api::GuardSend;
 
@@ -40,34 +60,44 @@ unsafe impl lock_api::RawMutex for RawMutex {
     #[inline(always)]
     fn lock(&self) {
         let current_id = current().id().as_u64();
+        let mut spin = Spin(0);
+        let mut owner_id = self.owner_id.load(Ordering::Relaxed);
+
         loop {
-            // Can fail to lock even if the spinlock is not locked. May be more efficient
-            // than `try_lock` when called in a loop.
-            match self.owner_id.compare_exchange_weak(
-                0,
+            assert_ne!(
+                owner_id,
                 current_id,
-                Ordering::Acquire,
-                Ordering::Relaxed,
-            ) {
-                Ok(_) => break,
-                Err(owner_id) => {
-                    assert_ne!(
-                        owner_id,
-                        current_id,
-                        "{} tried to acquire mutex it already owns.",
-                        current().id_name()
-                    );
-                    // Wait until the lock looks unlocked before retrying
-                    block_on(async {
-                        loop {
-                            self.event.listen().await;
-                            if !self.is_locked() {
-                                break;
-                            }
-                        }
-                    });
+                "{} tried to acquire mutex it already owns.",
+                current().id_name()
+            );
+
+            if owner_id == 0 {
+                match self.owner_id.compare_exchange_weak(
+                    owner_id,
+                    current_id,
+                    Ordering::Acquire,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(_) => break,
+                    Err(x) => owner_id = x,
                 }
+                continue;
             }
+
+            if spin.spin() {
+                owner_id = self.owner_id.load(Ordering::Relaxed);
+                continue;
+            }
+
+            listener!(self.event => listener);
+
+            owner_id = self.owner_id.load(Ordering::Relaxed);
+            if owner_id == 0 {
+                continue;
+            }
+
+            block_on(listener);
+            owner_id = self.owner_id.load(Ordering::Relaxed);
         }
     }
 
@@ -90,7 +120,7 @@ unsafe impl lock_api::RawMutex for RawMutex {
             "{} tried to release mutex it doesn't own",
             current().id_name()
         );
-        self.event.notify_relaxed(1);
+        self.event.notify(1);
     }
 
     #[inline(always)]
