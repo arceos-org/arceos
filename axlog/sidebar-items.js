@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["init","print_fmt","set_max_level"],"macro":["ax_print","ax_println","debug","error","info","trace","warn"],"trait":["LogIf"]};

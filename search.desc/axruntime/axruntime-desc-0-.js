@@ -1,0 +1,1 @@
+searchState.loadedDescShard("axruntime", 0, "Runtime library of ArceOS.\nThe main entry point of the ArceOS runtime.\nThe main entry point of the ArceOS runtime for secondary …")

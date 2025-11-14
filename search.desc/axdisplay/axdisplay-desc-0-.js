@@ -1,0 +1,1 @@
+searchState.loadedDescShard("axdisplay", 0, "ArceOS graphics module.\nFlushes the framebuffer, i.e. show on the screen.\nGets the framebuffer information.\nInitializes the graphics subsystem by underlayer devices.")

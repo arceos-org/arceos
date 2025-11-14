@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["create_dir","create_dir_all","metadata","read","read_dir","read_to_string","remove_dir","remove_file","rename","write"],"struct":["DirBuilder","DirEntry","File","Metadata","OpenOptions","ReadDir"],"type":["FileType","Permissions"]};
