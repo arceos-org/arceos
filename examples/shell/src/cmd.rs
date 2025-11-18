@@ -84,7 +84,7 @@ fn do_ls(args: &str) {
         let file_type_char = file_type_to_char(file_type);
         let rwx = file_perm_to_rwx(metadata.permissions().mode());
         let rwx = core::str::from_utf8(&rwx).unwrap();
-        println!("{}{} {:>8} {}", file_type_char, rwx, size, entry);
+        println!("{file_type_char}{rwx} {size:>8} {entry}");
         Ok(())
     }
 
@@ -95,7 +95,7 @@ fn do_ls(args: &str) {
         }
 
         if print_name {
-            println!("{}:", name);
+            println!("{name}:");
         }
         let mut entries = fs::read_dir(name)?
             .filter_map(|e| e.ok())
@@ -176,7 +176,7 @@ fn do_echo(args: &str) {
             print_err!("echo", fname, e);
         }
     } else {
-        println!("{}", args)
+        println!("{args}")
     }
 }
 
@@ -257,19 +257,13 @@ fn do_uname(_args: &str) {
     #[cfg(not(feature = "axstd"))]
     let smp = "";
     let version = option_env!("CARGO_PKG_VERSION").unwrap_or("0.1.0");
-    println!(
-        "ArceOS {ver}{smp} {arch} {plat}",
-        ver = version,
-        smp = smp,
-        arch = arch,
-        plat = platform,
-    );
+    println!("ArceOS {version}{smp} {arch} {platform}");
 }
 
 fn do_help(_args: &str) {
     println!("Available commands:");
     for (name, _) in CMD_TABLE {
-        println!("  {}", name);
+        println!("  {name}");
     }
 }
 
@@ -288,7 +282,7 @@ pub fn run_cmd(line: &[u8]) {
                 return;
             }
         }
-        println!("{}: command not found", cmd);
+        println!("{cmd}: command not found");
     }
 }
 
