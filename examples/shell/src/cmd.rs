@@ -83,7 +83,7 @@ fn do_ls(args: &str) {
         let file_type = metadata.file_type();
         let file_type_char = file_type_to_char(file_type);
         let rwx = file_perm_to_rwx(metadata.permissions().mode());
-        let rwx = unsafe { core::str::from_utf8_unchecked(&rwx) };
+        let rwx = core::str::from_utf8(&rwx).unwrap();
         println!("{}{} {:>8} {}", file_type_char, rwx, size, entry);
         Ok(())
     }
@@ -279,7 +279,7 @@ fn do_exit(_args: &str) {
 }
 
 pub fn run_cmd(line: &[u8]) {
-    let line_str = unsafe { core::str::from_utf8_unchecked(line) };
+    let line_str = core::str::from_utf8(line).unwrap();
     let (cmd, args) = split_whitespace(line_str);
     if !cmd.is_empty() {
         for (name, func) in CMD_TABLE {
