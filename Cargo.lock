@@ -317,6 +317,7 @@ version = "0.2.0"
 dependencies = [
  "axdriver",
  "axdriver_display",
+ "axhal",
  "axsync",
  "lazyinit",
  "log",
@@ -448,6 +449,7 @@ dependencies = [
  "axfs_devfs",
  "axfs_ramfs",
  "axfs_vfs",
+ "axhal",
  "axio",
  "axns",
  "axsync",
@@ -814,6 +816,7 @@ dependencies = [
 name = "axsync"
 version = "0.2.0"
 dependencies = [
+ "axhal",
  "axsync",
  "axtask",
  "kspin",
