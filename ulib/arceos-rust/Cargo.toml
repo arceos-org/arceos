@@ -1,0 +1,80 @@
+[package]
+name = "arceos-rust"
+description = "Rust std support for ArceOS"
+authors = [
+    "eternalcomet <mydragonos@outlook.com>"
+]
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+build = "build.rs"
+
+[lib]
+
+[features]
+default = [
+    "fp-simd",
+    "tls",
+    "defplat",
+]
+
+# Multicore
+smp = []
+
+# Floating point/SIMD
+fp-simd = []
+
+# Interrupts
+irq = []
+ipi = []
+
+# Custom or default platforms
+myplat = []
+defplat = []
+
+# Memory
+alloc = []
+alloc-tlsf = []
+alloc-slab = []
+alloc-buddy = []
+page-alloc-64g = [] # Support up to 64G memory capacity
+page-alloc-4g = [] # Support up to 4G memory capacity
+paging = []
+dma = []
+tls = []
+
+# Multi-threading and scheduler
+multitask = []
+sched-fifo = []
+sched-rr = []
+sched-cfs = []
+
+# File system
+fs = []
+
+# Networking
+net = []
+dns = []
+
+# Display
+display = []
+
+# Real Time Clock (RTC) Driver.
+rtc = []
+
+# Device drivers
+bus-mmio = []
+bus-pci = []
+driver-ramdisk = []
+driver-ixgbe = []
+driver-fxmac = []
+driver-bcm2835-sdhci = []
+
+# Logging
+log-level-off = []
+log-level-error = []
+log-level-warn = []
+log-level-info = []
+log-level-debug = []
+log-level-trace = []

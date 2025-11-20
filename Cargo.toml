@@ -27,6 +27,8 @@ members = [
 
     "ulib/axstd",
     "ulib/axlibc",
+    "ulib/arceos-rust",
+    "ulib/arceos-rust/lib",
 
     "examples/helloworld",
     "examples/helloworld-myplat",
@@ -75,6 +77,8 @@ categories = ["os", "no-std"]
 [workspace.dependencies]
 axstd = { version = "=0.3.0-preview.3", path = "ulib/axstd" }
 axlibc = { version = "=0.3.0-preview.3", path = "ulib/axlibc" }
+
+arceos-rust = { path = "ulib/arceos-rust", default-features = false }
 
 arceos_api = { version = "=0.3.0-preview.3", path = "api/arceos_api" }
 arceos_posix_api = { version = "=0.3.0-preview.3", path = "api/arceos_posix_api" }

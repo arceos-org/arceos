@@ -1,0 +1,89 @@
+[package]
+name = "arceos-rust-interface"
+version = "1.0.0"
+edition = "2024"
+authors = [
+    "eternalcomet <mydragonos@outlook.com>"
+]
+description = "Arceos ABI definitions"
+license.workspace = true
+homepage.workspace = true
+
+[lib]
+crate-type = ["staticlib"]
+
+[features]
+default = [
+    "fp-simd",
+    "tls",
+    "defplat",
+]
+
+# Multicore
+smp = ["axfeat/smp", "kspin/smp"]
+
+# Floating point/SIMD
+fp-simd = ["axfeat/fp-simd"]
+
+# Interrupts
+irq = ["arceos_api/irq", "axfeat/irq"]
+ipi = ["arceos_api/ipi", "axfeat/ipi"]
+
+# Custom or default platforms
+myplat = ["axfeat/myplat"]
+defplat = ["axfeat/defplat"]
+
+# Memory
+alloc = ["arceos_api/alloc", "axfeat/alloc", "axio/alloc"]
+alloc-tlsf = ["axfeat/alloc-tlsf"]
+alloc-slab = ["axfeat/alloc-slab"]
+alloc-buddy = ["axfeat/alloc-buddy"]
+page-alloc-64g = ["axfeat/page-alloc-64g"] # Support up to 64G memory capacity
+page-alloc-4g = ["axfeat/page-alloc-4g"] # Support up to 4G memory capacity
+paging = ["axfeat/paging"]
+dma = ["arceos_api/dma", "axfeat/dma"]
+tls = ["axfeat/tls"]
+
+# Multi-threading and scheduler
+multitask = ["arceos_api/multitask", "axfeat/multitask"]
+sched-fifo = ["axfeat/sched-fifo"]
+sched-rr = ["axfeat/sched-rr"]
+sched-cfs = ["axfeat/sched-cfs"]
+
+# File system
+fs = ["arceos_api/fs", "axfeat/fs"]
+
+# Networking
+net = ["arceos_api/net", "axfeat/net"]
+dns = []
+
+# Display
+display = ["arceos_api/display", "axfeat/display"]
+
+# Real Time Clock (RTC) Driver.
+rtc = ["axfeat/rtc"]
+
+# Device drivers
+bus-mmio = ["axfeat/bus-mmio"]
+bus-pci = ["axfeat/bus-pci"]
+driver-ramdisk = ["axfeat/driver-ramdisk"]
+driver-ixgbe = ["axfeat/driver-ixgbe"]
+driver-fxmac = ["axfeat/driver-fxmac"]
+driver-bcm2835-sdhci = ["axfeat/driver-bcm2835-sdhci"]
+
+# Logging
+log-level-off = []
+log-level-error = []
+log-level-warn = []
+log-level-info = []
+log-level-debug = []
+log-level-trace = []
+
+[dependencies]
+axfeat = { workspace = true }
+arceos_posix_api = { workspace = true }
+arceos_api = { workspace = true, features = ["alloc"] }
+axruntime = { workspace = true }
+axio = "0.1"
+kspin = "0.1"
+rand = { version =  "0.9.2", default-features = false, features = ["small_rng"] }
