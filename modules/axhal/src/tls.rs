@@ -108,7 +108,7 @@ impl TlsArea {
         let area_base = unsafe { alloc::alloc::alloc_zeroed(layout) };
 
         let tls_load_base = _stdata as *mut u8;
-        let tls_load_size = _etbss as usize - _stdata as usize;
+        let tls_load_size = _etdata as usize - _stdata as usize;
         unsafe {
             // copy data from .tbdata section
             core::ptr::copy_nonoverlapping(
