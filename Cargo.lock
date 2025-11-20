@@ -218,6 +218,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "arceos-std-helloworld"
+version = "0.1.0"
+dependencies = [
+ "arceos-rust",
+]
+
+[[package]]
 name = "arceos_api"
 version = "0.3.0-preview.3"
 dependencies = [

@@ -35,6 +35,7 @@ members = [
     "examples/httpclient",
     "examples/httpserver",
     "examples/shell",
+    "examples/std/helloworld",
 ]
 default-members = [
     "modules/axalloc",
