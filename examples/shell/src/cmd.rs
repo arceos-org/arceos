@@ -1,3 +1,4 @@
+use core::str;
 use std::fs::{self, File, FileType};
 use std::io::{self, prelude::*};
 use std::{string::String, vec::Vec};
@@ -69,7 +70,10 @@ const fn file_perm_to_rwx(mode: u32) -> [u8; 9] {
 }
 
 fn do_ls(args: &str) {
-    let current_dir = std::env::current_dir().unwrap();
+    let current_dir = match std::env::current_dir() {
+        Ok(current_dir) => current_dir,
+        Err(err) => return println!("Failed to access the current directory: {err}"),
+    };
     let args = if args.is_empty() {
         path_to_str(&current_dir)
     } else {
@@ -83,7 +87,16 @@ fn do_ls(args: &str) {
         let file_type = metadata.file_type();
         let file_type_char = file_type_to_char(file_type);
         let rwx = file_perm_to_rwx(metadata.permissions().mode());
-        let rwx = core::str::from_utf8(&rwx).unwrap();
+        let Ok(rwx) = str::from_utf8(&rwx) else {
+            #[cfg(feature = "axstd")]
+            let err = io::Error::InvalidData;
+            #[cfg(not(feature = "axstd"))]
+            let err = io::Error::new(
+                io::ErrorKind::InvalidData,
+                "The rwx value is not utf8 encoded.",
+            );
+            return Err(err);
+        };
         println!("{file_type_char}{rwx} {size:>8} {entry}");
         Ok(())
     }
@@ -241,15 +254,20 @@ fn do_cd(mut args: &str) {
 }
 
 fn do_pwd(_args: &str) {
-    let pwd = std::env::current_dir().unwrap();
-    println!("{}", path_to_str(&pwd));
+    match std::env::current_dir() {
+        Ok(pwd) => println!("{}", path_to_str(&pwd)),
+        Err(err) => println!("Failed to access the current directory: {err}"),
+    }
 }
 
 fn do_uname(_args: &str) {
     let arch = option_env!("AX_ARCH").unwrap_or("");
     let platform = option_env!("AX_PLATFORM").unwrap_or("");
     #[cfg(feature = "axstd")]
-    let smp = if std::thread::available_parallelism().unwrap().get() == 1 {
+    let smp = if std::thread::available_parallelism()
+        .map(|n| n.get() == 1)
+        .unwrap_or(true)
+    {
         ""
     } else {
         " SMP"
@@ -273,7 +291,10 @@ fn do_exit(_args: &str) {
 }
 
 pub fn run_cmd(line: &[u8]) {
-    let line_str = core::str::from_utf8(line).unwrap();
+    let Ok(line_str) = str::from_utf8(line) else {
+        println!("Please enter a valid utf-8 string as the command.");
+        return;
+    };
     let (cmd, args) = split_whitespace(line_str);
     if !cmd.is_empty() {
         for (name, func) in CMD_TABLE {
