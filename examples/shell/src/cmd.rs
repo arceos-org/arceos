@@ -87,16 +87,7 @@ fn do_ls(args: &str) {
         let file_type = metadata.file_type();
         let file_type_char = file_type_to_char(file_type);
         let rwx = file_perm_to_rwx(metadata.permissions().mode());
-        let Ok(rwx) = str::from_utf8(&rwx) else {
-            #[cfg(feature = "axstd")]
-            let err = io::Error::InvalidData;
-            #[cfg(not(feature = "axstd"))]
-            let err = io::Error::new(
-                io::ErrorKind::InvalidData,
-                "The rwx value is not utf8 encoded.",
-            );
-            return Err(err);
-        };
+        let rwx = str::from_utf8(&rwx).unwrap();
         println!("{file_type_char}{rwx} {size:>8} {entry}");
         Ok(())
     }
