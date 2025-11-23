@@ -13,11 +13,8 @@ build = "build.rs"
 [lib]
 
 [features]
-default = [
-    "fp-simd",
-    "tls",
-    "defplat",
-]
+# Default features are specified in `lib/Cargo.toml`
+default = []
 
 # Multicore
 smp = []
@@ -51,6 +48,7 @@ sched-rr = []
 sched-cfs = []
 
 # File system
+fd = []
 fs = []
 
 # Networking

@@ -98,6 +98,12 @@ fn compile_foo_project(lib_dir: &PathBuf, out_dir: &PathBuf, config_path: &PathB
     command.env("AX_TARGET", &target);
     command.env("AX_MODE", profile);
     command.env("AX_CONFIG_PATH", config_path);
+    if env::var("AX_IP").is_err() {
+        command.env("AX_IP", "10.0.2.15");
+    }
+    if env::var("AX_GW").is_err() {
+        command.env("AX_GW", "10.0.2.2");
+    }
     command
         .current_dir(lib_dir)
         .arg("build")

@@ -17,6 +17,7 @@ default = [
     "fp-simd",
     "tls",
     "defplat",
+    "fd",
 ]
 
 # Multicore
@@ -51,10 +52,11 @@ sched-rr = ["axfeat/sched-rr"]
 sched-cfs = ["axfeat/sched-cfs"]
 
 # File system
+fd = ["arceos_posix_api/fd"]
 fs = ["arceos_api/fs", "axfeat/fs"]
 
 # Networking
-net = ["arceos_api/net", "axfeat/net"]
+net = ["arceos_api/net", "arceos_posix_api/net", "axfeat/net"]
 dns = []
 
 # Display
@@ -86,4 +88,4 @@ arceos_api = { workspace = true, features = ["alloc"] }
 axruntime = { workspace = true }
 axio = "0.1"
 kspin = "0.1"
-rand = { version =  "0.9.2", default-features = false, features = ["small_rng"] }
+rand = { version = "0.9.2", default-features = false, features = ["small_rng"] }

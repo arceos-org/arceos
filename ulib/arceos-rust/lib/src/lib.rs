@@ -2,8 +2,9 @@
 extern crate alloc;
 
 mod syscall;
+mod interface;
 
-use arceos_api::modules::axlog::{ax_println, debug, info};
+use arceos_api::modules::axlog::{debug, info};
 pub use axruntime;
 
 unsafe extern "C" {
