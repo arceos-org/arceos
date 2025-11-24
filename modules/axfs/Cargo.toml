@@ -35,6 +35,7 @@ axsync = { workspace = true }
 axdriver = { workspace = true, features = ["block"] }
 axdriver_block = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2" }
 axns = { workspace = true }
+axhal = { workspace = true, optional = true }
 
 [dependencies.fatfs]
 git = "https://github.com/rafalh/rust-fatfs"
