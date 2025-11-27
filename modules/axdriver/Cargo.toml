@@ -49,3 +49,4 @@ axhal = { workspace = true, optional = true }
 cfg-if.workspace = true
 crate_interface.workspace = true
 log.workspace = true
+smallvec = { version = "1.15", features = ["const_generics", "union"] }
