@@ -9,7 +9,7 @@ const IMG_PATH: &str = "resources/fat16.img";
 
 fn make_disk() -> std::io::Result<RamDisk> {
     let path = std::env::current_dir()?.join(IMG_PATH);
-    println!("Loading disk image from {:?} ...", path);
+    println!("Loading disk image from {path:?} ...");
     let data = std::fs::read(path)?;
     println!("size = {} bytes", data.len());
     Ok(RamDisk::from(&data))

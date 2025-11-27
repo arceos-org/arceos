@@ -92,7 +92,7 @@ impl FdSets {
                         }
                     }
                     Err(e) => {
-                        debug!("    except: {} {:?}", fd, e);
+                        debug!("    except: {fd} {e:?}");
                         if except_bits & bit != 0 {
                             unsafe { set_fd_set(res_except_fds, fd) };
                             res_num += 1;

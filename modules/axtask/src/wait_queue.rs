@@ -35,6 +35,12 @@ pub struct WaitQueue {
 
 pub(crate) type WaitQueueGuard<'a> = SpinNoIrqGuard<'a, VecDeque<AxTaskRef>>;
 
+impl Default for WaitQueue {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WaitQueue {
     /// Creates an empty wait queue.
     pub const fn new() -> Self {

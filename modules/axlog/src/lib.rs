@@ -133,7 +133,7 @@ impl Write for Logger {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         cfg_if::cfg_if! {
             if #[cfg(feature = "std")] {
-                std::print!("{}", s);
+                std::print!("{s}");
             } else {
                 call_interface!(LogIf::console_write_str, s);
             }

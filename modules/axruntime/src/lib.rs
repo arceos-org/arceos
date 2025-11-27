@@ -136,7 +136,7 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
     axlog::init();
     axlog::set_max_level(option_env!("AX_LOG").unwrap_or("")); // no effect if set `log-level-*` features
     info!("Logging is enabled.");
-    info!("Primary CPU {} started, arg = {:#x}.", cpu_id, arg);
+    info!("Primary CPU {cpu_id} started, arg = {arg:#x}.");
 
     axhal::mem::init();
     info!("Found physcial memory regions:");
@@ -216,7 +216,7 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
 
     ctor_bare::call_ctors();
 
-    info!("Primary CPU {} init OK.", cpu_id);
+    info!("Primary CPU {cpu_id} init OK.");
     INITED_CPUS.fetch_add(1, Ordering::Release);
 
     while !is_init_ok() {

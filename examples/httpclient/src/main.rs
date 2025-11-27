@@ -21,7 +21,7 @@ Accept: */*\r\n\
 
 fn client() -> io::Result<()> {
     for addr in DEST.to_socket_addrs()? {
-        println!("dest: {} ({})", DEST, addr);
+        println!("dest: {DEST} ({addr})");
     }
 
     let mut stream = TcpStream::connect(DEST)?;
@@ -29,7 +29,7 @@ fn client() -> io::Result<()> {
     let mut buf = [0; 2048];
     let n = stream.read(&mut buf)?;
     let response = core::str::from_utf8(&buf[..n]).unwrap();
-    println!("{}", response); // longer response need to handle tcp package problems.
+    println!("{response}"); // longer response need to handle tcp package problems.
     Ok(())
 }
 

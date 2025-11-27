@@ -74,7 +74,7 @@ impl ListenTable {
     }
 
     pub fn unlisten(&self, port: u16) {
-        debug!("TCP socket unlisten on {}", port);
+        debug!("TCP socket unlisten on {port}");
         *self.tcp[port as usize].lock() = None;
     }
 

@@ -18,7 +18,7 @@ pub fn start_secondary_cpus(primary_cpu_id: usize) {
                 SECONDARY_BOOT_STACK[logic_cpu_id].as_ptr_range().end as usize
             }));
 
-            debug!("starting CPU {}...", i);
+            debug!("starting CPU {i}...");
             axhal::power::cpu_boot(i, stack_top.as_usize());
             logic_cpu_id += 1;
 
@@ -38,7 +38,7 @@ pub fn rust_main_secondary(cpu_id: usize) -> ! {
     axhal::init_early_secondary(cpu_id);
 
     ENTERED_CPUS.fetch_add(1, Ordering::Release);
-    info!("Secondary CPU {} started.", cpu_id);
+    info!("Secondary CPU {cpu_id} started.");
 
     #[cfg(feature = "paging")]
     axmm::init_memory_management_secondary();
@@ -51,7 +51,7 @@ pub fn rust_main_secondary(cpu_id: usize) -> ! {
     #[cfg(feature = "ipi")]
     axipi::init();
 
-    info!("Secondary CPU {:x} init OK.", cpu_id);
+    info!("Secondary CPU {cpu_id:x} init OK.");
     super::INITED_CPUS.fetch_add(1, Ordering::Release);
 
     while !super::is_init_ok() {

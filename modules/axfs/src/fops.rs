@@ -123,7 +123,7 @@ impl File {
     }
 
     fn _open_at(dir: Option<&VfsNodeRef>, path: &str, opts: &OpenOptions) -> AxResult<Self> {
-        debug!("open file: {} {:?}", path, opts);
+        debug!("open file: {path} {opts:?}");
         if !opts.is_valid() {
             return ax_err!(InvalidInput);
         }
@@ -260,7 +260,7 @@ impl Directory {
     }
 
     fn _open_dir_at(dir: Option<&VfsNodeRef>, path: &str, opts: &OpenOptions) -> AxResult<Self> {
-        debug!("open dir: {}", path);
+        debug!("open dir: {path}");
         if !opts.read {
             return ax_err!(InvalidInput);
         }

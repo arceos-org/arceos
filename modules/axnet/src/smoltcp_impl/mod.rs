@@ -97,7 +97,7 @@ impl<'a> SocketSetWrapper<'a> {
 
     pub fn add<T: AnySocket<'a>>(&self, socket: T) -> SocketHandle {
         let handle = self.0.lock().add(socket);
-        debug!("socket {}: created", handle);
+        debug!("socket {handle}: created");
         handle
     }
 
@@ -125,7 +125,7 @@ impl<'a> SocketSetWrapper<'a> {
 
     pub fn remove(&self, handle: SocketHandle) {
         self.0.lock().remove(handle);
-        debug!("socket {}: destroyed", handle);
+        debug!("socket {handle}: destroyed");
     }
 }
 
@@ -201,7 +201,7 @@ impl Device for DeviceWrapper {
     fn receive(&mut self, _timestamp: Instant) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
         let mut dev = self.inner.borrow_mut();
         if let Err(e) = dev.recycle_tx_buffers() {
-            warn!("recycle_tx_buffers failed: {:?}", e);
+            warn!("recycle_tx_buffers failed: {e:?}");
             return None;
         }
 
@@ -212,7 +212,7 @@ impl Device for DeviceWrapper {
             Ok(buf) => buf,
             Err(err) => {
                 if !matches!(err, DevError::Again) {
-                    warn!("receive failed: {:?}", err);
+                    warn!("receive failed: {err:?}");
                 }
                 return None;
             }
@@ -223,7 +223,7 @@ impl Device for DeviceWrapper {
     fn transmit(&mut self, _timestamp: Instant) -> Option<Self::TxToken<'_>> {
         let mut dev = self.inner.borrow_mut();
         if let Err(e) = dev.recycle_tx_buffers() {
-            warn!("recycle_tx_buffers failed: {:?}", e);
+            warn!("recycle_tx_buffers failed: {e:?}");
             return None;
         }
         if dev.can_transmit() {
@@ -332,6 +332,6 @@ pub(crate) fn init(net_dev: AxNetDevice) {
 
     info!("created net interface {:?}:", ETH0.name());
     info!("  ether:    {}", ETH0.ethernet_address());
-    info!("  ip:       {}/{}", ip, IP_PREFIX);
-    info!("  gateway:  {}", gateway);
+    info!("  ip:       {ip}/{IP_PREFIX}");
+    info!("  gateway:  {gateway}");
 }

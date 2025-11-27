@@ -98,13 +98,13 @@ pub fn init() {
     ranges_difference(phys_ram_ranges(), &reserved_ranges, |(start, size)| {
         push(PhysMemRegion::new_ram(start, size, "free memory"));
     })
-    .inspect_err(|(a, b)| error!("Reserved memory region {:#x?} overlaps with {:#x?}", a, b))
+    .inspect_err(|(a, b)| error!("Reserved memory region {a:#x?} overlaps with {b:#x?}"))
     .unwrap();
 
     // Check overlapping
     all_regions.sort_unstable_by_key(|r| r.paddr);
     check_sorted_ranges_overlap(all_regions.iter().map(|r| (r.paddr.into(), r.size)))
-        .inspect_err(|(a, b)| error!("Physical memory region {:#x?} overlaps with {:#x?}", a, b))
+        .inspect_err(|(a, b)| error!("Physical memory region {a:#x?} overlaps with {b:#x?}"))
         .unwrap();
 
     ALL_MEM_REGIONS.init_once(all_regions);

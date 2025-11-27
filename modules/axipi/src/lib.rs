@@ -29,7 +29,7 @@ pub fn init() {
 
 /// Executes a callback on the specified destination CPU via IPI.
 pub fn run_on_cpu<T: Into<Callback>>(dest_cpu: usize, callback: T) {
-    info!("Send IPI event to CPU {}", dest_cpu);
+    info!("Send IPI event to CPU {dest_cpu}");
     if dest_cpu == this_cpu_id() {
         // Execute callback on current CPU immediately
         callback.into().call();
@@ -74,7 +74,7 @@ pub fn ipi_handler() {
         .lock()
         .pop_one()
     {
-        debug!("Received IPI event from CPU {}", src_cpu_id);
+        debug!("Received IPI event from CPU {src_cpu_id}");
         callback.call();
     }
 }

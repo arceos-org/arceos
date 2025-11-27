@@ -195,7 +195,7 @@ impl From<ctypes::sockaddr_in> for SocketAddrV4 {
 }
 
 fn into_sockaddr(addr: SocketAddr) -> (ctypes::sockaddr, ctypes::socklen_t) {
-    debug!("    Sockaddr: {}", addr);
+    debug!("    Sockaddr: {addr}");
     match addr {
         SocketAddr::V4(addr) => (
             unsafe { *(&ctypes::sockaddr_in::from(addr) as *const _ as *const ctypes::sockaddr) },
@@ -230,7 +230,7 @@ fn from_sockaddr(
 ///
 /// Return the socket file descriptor.
 pub fn sys_socket(domain: c_int, socktype: c_int, protocol: c_int) -> c_int {
-    debug!("sys_socket <= {} {} {}", domain, socktype, protocol);
+    debug!("sys_socket <= {domain} {socktype} {protocol}");
     let (domain, socktype, protocol) = (domain as u32, socktype as u32, protocol as u32);
     syscall_body!(sys_socket, {
         match (domain, socktype, protocol) {
@@ -393,7 +393,7 @@ pub fn sys_listen(
     socket_fd: c_int,
     backlog: c_int, // currently not used
 ) -> c_int {
-    debug!("sys_listen <= {} {}", socket_fd, backlog);
+    debug!("sys_listen <= {socket_fd} {backlog}");
     syscall_body!(sys_listen, {
         Socket::from_fd(socket_fd)?.listen()?;
         Ok(0)
@@ -434,7 +434,7 @@ pub fn sys_shutdown(
     socket_fd: c_int,
     flag: c_int, // currently not used
 ) -> c_int {
-    debug!("sys_shutdown <= {} {}", socket_fd, flag);
+    debug!("sys_shutdown <= {socket_fd} {flag}");
     syscall_body!(sys_shutdown, {
         Socket::from_fd(socket_fd)?.shutdown()?;
         Ok(0)
@@ -455,7 +455,7 @@ pub unsafe fn sys_getaddrinfo(
 ) -> c_int {
     let name = char_ptr_to_str(nodename);
     let port = char_ptr_to_str(servname);
-    debug!("sys_getaddrinfo <= {:?} {:?}", name, port);
+    debug!("sys_getaddrinfo <= {name:?} {port:?}");
     syscall_body!(sys_getaddrinfo, {
         if nodename.is_null() && servname.is_null() {
             return Ok(0);

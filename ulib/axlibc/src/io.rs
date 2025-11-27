@@ -1,6 +1,6 @@
 use core::ffi::{c_int, c_void};
 
-use arceos_posix_api::{sys_read, sys_write, sys_writev};
+use arceos_posix_api::{sys_read, sys_writev};
 
 use crate::{ctypes, utils::e};
 
@@ -18,7 +18,7 @@ pub unsafe extern "C" fn read(fd: c_int, buf: *mut c_void, count: usize) -> ctyp
 #[unsafe(no_mangle)]
 #[cfg(not(test))]
 pub unsafe extern "C" fn write(fd: c_int, buf: *const c_void, count: usize) -> ctypes::ssize_t {
-    e(sys_write(fd, buf, count) as _) as _
+    e(arceos_posix_api::sys_write(fd, buf, count) as _) as _
 }
 
 /// Write a vector.
@@ -28,5 +28,5 @@ pub unsafe extern "C" fn writev(
     iov: *const ctypes::iovec,
     iocnt: c_int,
 ) -> ctypes::ssize_t {
-    e(sys_writev(fd, iov, iocnt) as _) as _
+    unsafe { e(sys_writev(fd, iov, iocnt) as _) as _ }
 }

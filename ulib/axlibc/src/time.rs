@@ -6,7 +6,7 @@ use crate::{ctypes, utils::e};
 /// Get clock time since booting
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn clock_gettime(clk: ctypes::clockid_t, ts: *mut ctypes::timespec) -> c_int {
-    e(sys_clock_gettime(clk, ts))
+    unsafe { e(sys_clock_gettime(clk, ts)) }
 }
 
 /// Sleep some nanoseconds
@@ -17,5 +17,5 @@ pub unsafe extern "C" fn nanosleep(
     req: *const ctypes::timespec,
     rem: *mut ctypes::timespec,
 ) -> c_int {
-    e(sys_nanosleep(req, rem))
+    unsafe { e(sys_nanosleep(req, rem)) }
 }

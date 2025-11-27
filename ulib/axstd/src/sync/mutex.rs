@@ -25,6 +25,12 @@ impl RawMutex {
     }
 }
 
+impl Default for RawMutex {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 unsafe impl lock_api::RawMutex for RawMutex {
     /// Initial value for an unlocked mutex.
     ///

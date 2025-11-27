@@ -124,6 +124,12 @@ impl Builder {
     }
 }
 
+impl Default for Builder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Gets a handle to the thread that invokes it.
 pub fn current() -> Thread {
     let id = api::ax_current_task_id();

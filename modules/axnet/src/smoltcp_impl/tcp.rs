@@ -45,6 +45,12 @@ pub struct TcpSocket {
 
 unsafe impl Sync for TcpSocket {}
 
+impl Default for TcpSocket {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TcpSocket {
     /// Creates a new TCP socket.
     pub const fn new() -> Self {
@@ -207,7 +213,7 @@ impl TcpSocket {
                 (*self.local_addr.get()).port = bound_endpoint.port;
             }
             LISTEN_TABLE.listen(bound_endpoint)?;
-            debug!("TCP socket listening on {}", bound_endpoint);
+            debug!("TCP socket listening on {bound_endpoint}");
             Ok(())
         })
         .unwrap_or(Ok(())) // ignore simultaneous `listen`s.
@@ -228,7 +234,7 @@ impl TcpSocket {
         let local_port = unsafe { self.local_addr.get().read().port };
         self.block_on(|| {
             let (handle, (local_addr, peer_addr)) = LISTEN_TABLE.accept(local_port)?;
-            debug!("TCP socket accepted a new connection {}", peer_addr);
+            debug!("TCP socket accepted a new connection {peer_addr}");
             Ok(TcpSocket::new_connected(handle, local_addr, peer_addr))
         })
     }
@@ -241,7 +247,7 @@ impl TcpSocket {
             // no other threads can read or write it.
             let handle = unsafe { self.handle.get().read().unwrap() };
             SOCKET_SET.with_socket_mut::<tcp::Socket, _, _>(handle, |socket| {
-                debug!("TCP socket {}: shutting down", handle);
+                debug!("TCP socket {handle}: shutting down");
                 socket.close();
             });
             unsafe { self.local_addr.get().write(UNSPECIFIED_ENDPOINT) }; // clear bound address

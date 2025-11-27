@@ -51,7 +51,7 @@ mod imp {
     use lazyinit::LazyInit;
 
     thread_local! {
-        static NS: LazyInit<AxNamespace> = LazyInit::new();
+        static NS: LazyInit<AxNamespace> = const { LazyInit::new() };
     }
 
     struct AxNamespaceImpl;

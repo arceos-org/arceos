@@ -77,7 +77,7 @@ impl RootDirectory {
     where
         F: FnOnce(Arc<dyn VfsOps>, &str) -> AxResult<T>,
     {
-        debug!("lookup at root: {}", path);
+        debug!("lookup at root: {path}");
         let path = path.trim_matches('/');
         if let Some(rest) = path.strip_prefix("./") {
             return self.lookup_mounted_fs(rest, f);

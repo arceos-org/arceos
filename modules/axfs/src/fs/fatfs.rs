@@ -130,7 +130,7 @@ impl VfsNodeOps for DirWrapper<'static> {
     }
 
     fn lookup(self: Arc<Self>, path: &str) -> VfsResult<VfsNodeRef> {
-        debug!("lookup at fatfs: {}", path);
+        debug!("lookup at fatfs: {path}");
         let path = path.trim_matches('/');
         if path.is_empty() || path == "." {
             return Ok(self.clone());
@@ -150,7 +150,7 @@ impl VfsNodeOps for DirWrapper<'static> {
     }
 
     fn create(&self, path: &str, ty: VfsNodeType) -> VfsResult {
-        debug!("create {:?} at fatfs: {}", ty, path);
+        debug!("create {ty:?} at fatfs: {path}");
         let path = path.trim_matches('/');
         if path.is_empty() || path == "." {
             return Ok(());
@@ -173,7 +173,7 @@ impl VfsNodeOps for DirWrapper<'static> {
     }
 
     fn remove(&self, path: &str) -> VfsResult {
-        debug!("remove at fatfs: {}", path);
+        debug!("remove at fatfs: {path}");
         let path = path.trim_matches('/');
         assert!(!path.is_empty()); // already check at `root.rs`
         if let Some(rest) = path.strip_prefix("./") {
@@ -205,10 +205,7 @@ impl VfsNodeOps for DirWrapper<'static> {
 
     fn rename(&self, src_path: &str, dst_path: &str) -> VfsResult {
         // `src_path` and `dst_path` should in the same mounted fs
-        debug!(
-            "rename at fatfs, src_path: {}, dst_path: {}",
-            src_path, dst_path
-        );
+        debug!("rename at fatfs, src_path: {src_path}, dst_path: {dst_path}");
 
         self.0
             .rename(src_path, &self.0, dst_path)

@@ -77,7 +77,7 @@ pub fn init_memory_management() {
     info!("Initialize virtual memory management...");
 
     let kernel_aspace = new_kernel_aspace().expect("failed to initialize kernel address space");
-    debug!("kernel address space init OK: {:#x?}", kernel_aspace);
+    debug!("kernel address space init OK: {kernel_aspace:#x?}");
     KERNEL_ASPACE.init_once(SpinNoIrq::new(kernel_aspace));
     unsafe { axhal::asm::write_kernel_page_table(kernel_page_table_root()) };
 }

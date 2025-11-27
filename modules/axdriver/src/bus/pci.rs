@@ -94,7 +94,7 @@ impl AllDevices {
 
         for bus in 0..=axconfig::devices::PCI_BUS_END as u8 {
             for (bdf, dev_info) in root.enumerate_bus(bus) {
-                debug!("PCI {}: {}", bdf, dev_info);
+                debug!("PCI {bdf}: {dev_info}");
                 if dev_info.header_type != HeaderType::Standard {
                     continue;
                 }
@@ -111,10 +111,7 @@ impl AllDevices {
                             continue; // skip to the next device
                         }
                     }),
-                    Err(e) => warn!(
-                        "failed to enable PCI device at {}({}): {:?}",
-                        bdf, dev_info, e
-                    ),
+                    Err(e) => warn!("failed to enable PCI device at {bdf}({dev_info}): {e:?}"),
                 }
             }
         }

@@ -8,7 +8,7 @@ const PAGE_SIZE_4K: usize = 4096;
 ///
 /// Notice: currently only support what unikraft covers
 pub fn sys_sysconf(name: c_int) -> c_long {
-    debug!("sys_sysconf <= {}", name);
+    debug!("sys_sysconf <= {name}");
 
     syscall_body!(sys_sysconf, {
         match name as u32 {

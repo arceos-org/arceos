@@ -32,10 +32,7 @@ impl DeviceWrapper {
                 let mb = (((send_bytes - past_send_bytes) * 8) % GB) / MB;
                 let gib = (send_bytes - past_send_bytes) / GB;
                 let mib = ((send_bytes - past_send_bytes) % GB) / MB;
-                info!(
-                    "Transmit: {}.{:03}GBytes, Bandwidth: {}.{:03}Gbits/sec.",
-                    gib, mib, gb, mb
-                );
+                info!("Transmit: {gib}.{mib:03}GBytes, Bandwidth: {gb}.{mb:03}Gbits/sec.");
                 past_time = current_time;
                 past_send_bytes = send_bytes;
             }
@@ -62,10 +59,7 @@ impl DeviceWrapper {
                 let mb = (((receive_bytes - past_receive_bytes) * 8) % GB) / MB;
                 let gib = (receive_bytes - past_receive_bytes) / GB;
                 let mib = ((receive_bytes - past_receive_bytes) % GB) / MB;
-                info!(
-                    "Receive: {}.{:03}GBytes, Bandwidth: {}.{:03}Gbits/sec.",
-                    gib, mib, gb, mb
-                );
+                info!("Receive: {gib}.{mib:03}GBytes, Bandwidth: {gb}.{mb:03}Gbits/sec.");
                 past_time = current_time;
                 past_receive_bytes = receive_bytes;
             }

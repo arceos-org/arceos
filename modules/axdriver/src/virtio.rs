@@ -118,17 +118,13 @@ impl<D: VirtIoDevMeta> DriverProbe for VirtIoDriver<D> {
 
         if let Some((ty, transport)) =
             axdriver_virtio::probe_pci_device::<VirtIoHalImpl>(root, bdf, dev_info)
+            && ty == D::DEVICE_TYPE
         {
-            if ty == D::DEVICE_TYPE {
-                match D::try_new(transport) {
-                    Ok(dev) => return Some(dev),
-                    Err(e) => {
-                        warn!(
-                            "failed to initialize PCI device at {}({}): {:?}",
-                            bdf, dev_info, e
-                        );
-                        return None;
-                    }
+            match D::try_new(transport) {
+                Ok(dev) => return Some(dev),
+                Err(e) => {
+                    warn!("failed to initialize PCI device at {bdf}({dev_info}): {e:?}");
+                    return None;
                 }
             }
         }

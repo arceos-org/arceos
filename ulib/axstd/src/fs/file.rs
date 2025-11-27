@@ -70,6 +70,12 @@ impl OpenOptions {
     }
 }
 
+impl Default for OpenOptions {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Metadata {
     /// Returns the file type for this metadata.
     pub const fn file_type(&self) -> FileType {

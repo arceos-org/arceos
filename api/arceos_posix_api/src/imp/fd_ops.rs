@@ -49,7 +49,7 @@ pub fn close_file_like(fd: c_int) -> LinuxResult {
 
 /// Close a file by `fd`.
 pub fn sys_close(fd: c_int) -> c_int {
-    debug!("sys_close <= {}", fd);
+    debug!("sys_close <= {fd}");
     if (0..=2).contains(&fd) {
         return 0; // stdin, stdout, stderr
     }
@@ -64,7 +64,7 @@ fn dup_fd(old_fd: c_int) -> LinuxResult<c_int> {
 
 /// Duplicate a file descriptor.
 pub fn sys_dup(old_fd: c_int) -> c_int {
-    debug!("sys_dup <= {}", old_fd);
+    debug!("sys_dup <= {old_fd}");
     syscall_body!(sys_dup, dup_fd(old_fd))
 }
 
@@ -72,7 +72,7 @@ pub fn sys_dup(old_fd: c_int) -> c_int {
 ///
 /// TODO: `dup2` should forcibly close new_fd if it is already opened.
 pub fn sys_dup2(old_fd: c_int, new_fd: c_int) -> c_int {
-    debug!("sys_dup2 <= old_fd: {}, new_fd: {}", old_fd, new_fd);
+    debug!("sys_dup2 <= old_fd: {old_fd}, new_fd: {new_fd}");
     syscall_body!(sys_dup2, {
         if old_fd == new_fd {
             let r = sys_fcntl(old_fd, ctypes::F_GETFD as _, 0);
@@ -100,7 +100,7 @@ pub fn sys_dup2(old_fd: c_int, new_fd: c_int) -> c_int {
 ///
 /// TODO: `SET/GET` command is ignored, hard-code stdin/stdout
 pub fn sys_fcntl(fd: c_int, cmd: c_int, arg: usize) -> c_int {
-    debug!("sys_fcntl <= fd: {} cmd: {} arg: {}", fd, cmd, arg);
+    debug!("sys_fcntl <= fd: {fd} cmd: {cmd} arg: {arg}");
     syscall_body!(sys_fcntl, {
         match cmd as u32 {
             ctypes::F_DUPFD => dup_fd(fd),
@@ -116,7 +116,7 @@ pub fn sys_fcntl(fd: c_int, cmd: c_int, arg: usize) -> c_int {
                 Ok(0)
             }
             _ => {
-                warn!("unsupported fcntl parameters: cmd {}", cmd);
+                warn!("unsupported fcntl parameters: cmd {cmd}");
                 Ok(0)
             }
         }

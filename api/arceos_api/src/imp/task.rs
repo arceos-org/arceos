@@ -55,6 +55,12 @@ cfg_task! {
         }
     }
 
+    impl Default for AxWaitQueueHandle {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
     pub fn ax_current_task_id() -> u64 {
         axtask::current().id().as_u64()
     }

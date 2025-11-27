@@ -108,7 +108,7 @@ fn flags_to_options(flags: c_int, _mode: ctypes::mode_t) -> OpenOptions {
 /// has the maximum number of files open.
 pub fn sys_open(filename: *const c_char, flags: c_int, mode: ctypes::mode_t) -> c_int {
     let filename = char_ptr_to_str(filename);
-    debug!("sys_open <= {:?} {:#o} {:#o}", filename, flags, mode);
+    debug!("sys_open <= {filename:?} {flags:#o} {mode:#o}");
     syscall_body!(sys_open, {
         let options = flags_to_options(flags, mode);
         let file = axfs::fops::File::open(filename?, &options)?;
@@ -120,7 +120,7 @@ pub fn sys_open(filename: *const c_char, flags: c_int, mode: ctypes::mode_t) -> 
 ///
 /// Return its position after seek.
 pub fn sys_lseek(fd: c_int, offset: ctypes::off_t, whence: c_int) -> ctypes::off_t {
-    debug!("sys_lseek <= {} {} {}", fd, offset, whence);
+    debug!("sys_lseek <= {fd} {offset} {whence}");
     syscall_body!(sys_lseek, {
         let pos = match whence {
             0 => SeekFrom::Start(offset as _),
@@ -211,7 +211,7 @@ pub fn sys_rename(old: *const c_char, new: *const c_char) -> c_int {
     syscall_body!(sys_rename, {
         let old_path = char_ptr_to_str(old)?;
         let new_path = char_ptr_to_str(new)?;
-        debug!("sys_rename <= old: {:?}, new: {:?}", old_path, new_path);
+        debug!("sys_rename <= old: {old_path:?}, new: {new_path:?}");
         axfs::api::rename(old_path, new_path)?;
         Ok(0)
     })

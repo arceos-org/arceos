@@ -115,6 +115,12 @@ impl Drop for AxNamespace {
 /// or to share the resource with other threads.
 pub struct ResArc<T>(LazyInit<Arc<T>>);
 
+impl<T> Default for ResArc<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T> ResArc<T> {
     /// Creates a new uninitialized resource.
     pub const fn new() -> Self {
