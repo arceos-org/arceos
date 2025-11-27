@@ -61,6 +61,7 @@ GRAPHIC ?= n
 BUS ?= pci
 MEM ?= 128M
 ACCEL ?=
+ICOUNT ?= n
 QEMU_ARGS ?=
 
 DISK_IMG ?= disk.img
