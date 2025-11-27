@@ -41,6 +41,7 @@ SMP ?=
 MODE ?= release
 LOG ?= warn
 V ?=
+DWARF ?=
 LTO ?=
 TARGET_DIR ?= $(PWD)/target
 EXTRA_CONFIG ?=

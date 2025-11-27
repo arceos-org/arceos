@@ -29,6 +29,8 @@ SECTIONS
         __init_array_end = .;
     }
 
+    %DWARF%
+
     . = ALIGN(4K);
     _erodata = .;
 
@@ -84,7 +86,7 @@ SECTIONS
 
     _ekernel = .;
 
-	/DISCARD/ : {
+    /DISCARD/ : {
         *(.comment) *(.gnu*) *(.note*) *(.eh_frame*)
     }
 }

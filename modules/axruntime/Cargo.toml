@@ -27,6 +27,7 @@ rtc = []
 
 [dependencies]
 axalloc = { workspace = true, optional = true }
+axbacktrace.workspace = true
 axconfig.workspace = true
 axdisplay = { workspace = true, optional = true }
 axdriver = { workspace = true, optional = true }

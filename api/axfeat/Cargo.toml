@@ -89,8 +89,12 @@ log-level-info = ["axlog/log-level-info"]
 log-level-debug = ["axlog/log-level-debug"]
 log-level-trace = ["axlog/log-level-trace"]
 
+# Backtrace
+dwarf = ["alloc", "axbacktrace/dwarf"]
+
 [dependencies]
 axalloc = { workspace = true, optional = true }
+axbacktrace.workspace = true
 axdisplay = { workspace = true, optional = true }
 axdriver = { workspace = true, optional = true }
 axfs = { workspace = true, optional = true }

@@ -38,8 +38,8 @@ alloc = ["arceos_api/alloc", "axfeat/alloc", "axio/alloc"]
 alloc-tlsf = ["axfeat/alloc-tlsf"]
 alloc-slab = ["axfeat/alloc-slab"]
 alloc-buddy = ["axfeat/alloc-buddy"]
-page-alloc-64g = ["axfeat/page-alloc-64g"] # Support up to 64G memory capacity
-page-alloc-4g = ["axfeat/page-alloc-4g"] # Support up to 4G memory capacity
+page-alloc-64g = ["axfeat/page-alloc-64g"]                 # Support up to 64G memory capacity
+page-alloc-4g = ["axfeat/page-alloc-4g"]                   # Support up to 4G memory capacity
 paging = ["axfeat/paging"]
 dma = ["arceos_api/dma", "axfeat/dma"]
 tls = ["axfeat/tls"]
@@ -79,6 +79,8 @@ log-level-warn = ["axfeat/log-level-warn"]
 log-level-info = ["axfeat/log-level-info"]
 log-level-debug = ["axfeat/log-level-debug"]
 log-level-trace = ["axfeat/log-level-trace"]
+
+dwarf = ["axfeat/dwarf"]
 
 [dependencies]
 arceos_api.workspace = true

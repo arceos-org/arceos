@@ -25,6 +25,13 @@ ifeq ($(MODE), release)
   CFLAGS += -O3
 endif
 
+ifeq ($(DWARF), y)
+  CFLAGS += -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -g
+  ifeq ($(ARCH), x86_64)
+    LDFLAGS += -znorelro
+  endif
+endif
+
 ifeq ($(ARCH), riscv64)
   CFLAGS += -march=rv64gc -mabi=lp64d -mcmodel=medany
 else ifeq ($(ARCH), loongarch64)

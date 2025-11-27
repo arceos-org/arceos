@@ -34,6 +34,9 @@ else ifneq ($(filter $(or $(MAKECMDGOALS), $(.DEFAULT_GOAL)), all build run just
   else ifeq ($(APP_TYPE), rust)
     RUSTFLAGS += $(RUSTFLAGS_LINK_ARGS)
   endif
+  ifeq ($(DWARF), y)
+    RUSTFLAGS += -C force-frame-pointers -C debuginfo=2 -C strip=none
+  endif
   $(if $(V), $(info RUSTFLAGS: "$(RUSTFLAGS)"))
   export RUSTFLAGS
   ifeq ($(LTO), y)
@@ -54,7 +57,12 @@ endif
 $(OUT_DIR):
 	$(call run_cmd,mkdir,-p $@)
 
-$(OUT_BIN): _cargo_build $(OUT_ELF)
+_dwarf: $(OUT_ELF)
+ifeq ($(DWARF), y)
+	$(call run_cmd,./scripts/make/dwarf.sh,$(OUT_ELF) $(OBJCOPY))
+endif
+
+$(OUT_BIN): _cargo_build $(OUT_ELF) _dwarf
 	$(call run_cmd,$(OBJCOPY),$(OUT_ELF) --strip-all -O binary $@)
 	@if [ ! -s $(OUT_BIN) ]; then \
 		echo 'Empty kernel image "$(notdir $(FINAL_IMG))" is built, please check your build configuration'; \
@@ -75,4 +83,4 @@ $(OUT_UIMG): $(OUT_BIN)
 		-a $(subst _,,$(shell axconfig-gen "$(OUT_CONFIG)" -r plat.kernel-base-paddr)) \
 		-d $(OUT_BIN) $@)
 
-.PHONY: _cargo_build
+.PHONY: _cargo_build _dwarf
