@@ -58,10 +58,9 @@ ipi = ["irq"]
 axalloc = { workspace = true, optional = true }
 axconfig.workspace = true
 axcpu = { git = "https://github.com/arceos-org/axcpu.git", tag = "dev-v03" }
-axlog.workspace = true
 axplat.workspace = true
 cfg-if.workspace = true
-heapless = "0.8"
+heapless = "0.9"
 kernel_guard.workspace = true
 lazyinit.workspace = true
 linkme = { version = "0.3.33", optional = true }
@@ -74,7 +73,6 @@ percpu.workspace = true
 axplat-x86-pc = { workspace = true, optional = true }
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
-aarch64-cpu = "10.0"
 axplat-aarch64-qemu-virt = { workspace = true, optional = true }
 
 [target.'cfg(target_arch = "riscv64")'.dependencies]

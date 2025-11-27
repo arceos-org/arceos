@@ -51,6 +51,5 @@ percpu = { workspace = true, optional = true }
 timer_list = { version = "0.1", optional = true }
 
 [dev-dependencies]
-rand = "0.9"
 axhal = { workspace = true, features = ["fp-simd"] }
 axtask = { workspace = true, features = ["test", "multitask"] }

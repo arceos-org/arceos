@@ -105,7 +105,7 @@ mod tests {
 
     fn may_interrupt() {
         // simulate interrupts
-        if rand::random::<u32>() % 3 == 0 {
+        if fastrand::u8(0..3) == 0 {
             thread::yield_now();
         }
     }
