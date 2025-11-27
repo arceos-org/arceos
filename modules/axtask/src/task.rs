@@ -224,6 +224,11 @@ impl TaskInner {
 // private methods
 impl TaskInner {
     fn new_common(id: TaskId, name: String) -> Self {
+        let mut cpumask = AxCpuMask::new();
+        for cpu_id in 0..crate::api::active_cpu_num() {
+            cpumask.set(cpu_id, true);
+        }
+
         Self {
             id,
             name,
@@ -232,7 +237,7 @@ impl TaskInner {
             entry: None,
             state: AtomicU8::new(TaskState::Ready as u8),
             // By default, the task is allowed to run on all CPUs.
-            cpumask: SpinNoIrq::new(AxCpuMask::full()),
+            cpumask: SpinNoIrq::new(cpumask),
             in_wait_queue: AtomicBool::new(false),
             #[cfg(feature = "irq")]
             timer_ticket_id: AtomicU64::new(0),

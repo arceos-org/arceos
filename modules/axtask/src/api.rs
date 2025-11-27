@@ -1,5 +1,7 @@
 //! Task APIs for multi-task configuration.
 
+use core::sync::atomic::AtomicUsize;
+
 use alloc::{string::String, sync::Arc};
 
 use kernel_guard::NoPreemptIrqSave;
@@ -18,6 +20,8 @@ pub type AxTaskRef = Arc<AxTask>;
 
 /// The wrapper type for [`cpumask::CpuMask`] with SMP configuration.
 pub type AxCpuMask = cpumask::CpuMask<{ axconfig::plat::CPU_NUM }>;
+
+static CPU_NUM: AtomicUsize = AtomicUsize::new(1);
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "sched-rr")] {
@@ -70,13 +74,22 @@ pub fn current() -> CurrentTask {
 
 /// Initializes the task scheduler (for the primary CPU).
 pub fn init_scheduler() {
-    info!("Initialize scheduling...");
+    init_scheduler_with_cpu_num(axconfig::plat::CPU_NUM);
+}
 
+/// Initializes the task scheduler with cpu_num (for the primary CPU).
+pub fn init_scheduler_with_cpu_num(cpu_num: usize) {
+    info!("Initialize scheduling...");
+    CPU_NUM.store(cpu_num, core::sync::atomic::Ordering::Relaxed);
     crate::run_queue::init();
     #[cfg(feature = "irq")]
     crate::timers::init();
 
     info!("  use {} scheduler.", Scheduler::scheduler_name());
+}
+
+pub(crate) fn active_cpu_num() -> usize {
+    CPU_NUM.load(core::sync::atomic::Ordering::Relaxed)
 }
 
 /// Initializes the task scheduler for secondary CPUs.
