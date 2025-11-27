@@ -10,6 +10,7 @@ repository = "https://github.com/arceos-org/arceos/tree/main/modules/axmm"
 documentation = "https://arceos-org.github.io/arceos/axmm/index.html"
 
 [features]
+copy = ["page_table_multiarch/copy-from"]
 
 [dependencies]
 axalloc.workspace = true
@@ -21,3 +22,4 @@ lazyinit.workspace = true
 log.workspace = true
 memory_addr.workspace = true
 memory_set = { version = "0.4", features = ["axerrno"] }
+page_table_multiarch = { workspace = true, optional = true }

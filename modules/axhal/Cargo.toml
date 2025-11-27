@@ -67,9 +67,7 @@ lazyinit.workspace = true
 linkme = { version = "0.3.33", optional = true }
 log.workspace = true
 memory_addr.workspace = true
-page_table_multiarch = { workspace = true, features = [
-    "copy-from",
-], optional = true }
+page_table_multiarch = { workspace = true, optional = true }
 percpu.workspace = true
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]

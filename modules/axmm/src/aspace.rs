@@ -66,6 +66,7 @@ impl AddrSpace {
     /// user space.
     ///
     /// Returns an error if the two address spaces overlap.
+    #[cfg(feature = "copy")]
     pub fn copy_mappings_from(&mut self, other: &AddrSpace) -> AxResult {
         if self.va_range.overlaps(other.va_range) {
             return ax_err!(InvalidInput, "address space overlap");
