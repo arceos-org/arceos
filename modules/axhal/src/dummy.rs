@@ -1,14 +1,15 @@
 //! Dummy implementation of platform-related interfaces defined in [`axplat`].
 
-use axplat::impl_plat_interface;
-
-use axplat::console::ConsoleIf;
-use axplat::init::InitIf;
 #[cfg(feature = "irq")]
 use axplat::irq::{IpiTarget, IrqHandler, IrqIf};
-use axplat::mem::{MemIf, RawRange};
-use axplat::power::PowerIf;
-use axplat::time::TimeIf;
+use axplat::{
+    console::ConsoleIf,
+    impl_plat_interface,
+    init::InitIf,
+    mem::{MemIf, RawRange},
+    power::PowerIf,
+    time::TimeIf,
+};
 
 struct DummyInit;
 struct DummyConsole;
@@ -40,6 +41,11 @@ impl ConsoleIf for DummyConsole {
     fn read_bytes(_bytes: &mut [u8]) -> usize {
         unimplemented!()
     }
+
+    #[cfg(feature = "irq")]
+    fn irq_num() -> Option<usize> {
+        None
+    }
 }
 
 #[impl_plat_interface]
@@ -63,6 +69,10 @@ impl MemIf for DummyMem {
     fn virt_to_phys(_vaddr: memory_addr::VirtAddr) -> memory_addr::PhysAddr {
         pa!(0)
     }
+
+    fn kernel_aspace() -> (memory_addr::VirtAddr, usize) {
+        (va!(0), 0)
+    }
 }
 
 #[impl_plat_interface]
@@ -80,6 +90,11 @@ impl TimeIf for DummyTime {
     }
 
     fn epochoffset_nanos() -> u64 {
+        0
+    }
+
+    #[cfg(feature = "irq")]
+    fn irq_num() -> usize {
         0
     }
 
@@ -110,7 +125,9 @@ impl IrqIf for DummyIrq {
         None
     }
 
-    fn handle(_irq: usize) {}
+    fn handle(_irq: usize) -> Option<usize> {
+        None
+    }
 
     fn send_ipi(_irq: usize, _target: IpiTarget) {}
 }

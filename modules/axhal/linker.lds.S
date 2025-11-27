@@ -41,6 +41,11 @@ SECTIONS
         *(.data .data.*)
         *(.sdata .sdata.*)
         *(.got .got.*)
+
+        . = ALIGN(0x10);
+        _ex_table_start = .;
+        KEEP(*(__ex_table))
+        _ex_table_end = .;
     }
 
     .tdata : ALIGN(0x10) {
@@ -96,8 +101,6 @@ SECTIONS {
     linkm2_IRQ : { *(linkm2_IRQ) }
     linkme_PAGE_FAULT : { *(linkme_PAGE_FAULT) }
     linkm2_PAGE_FAULT : { *(linkm2_PAGE_FAULT) }
-    linkme_SYSCALL : { *(linkme_SYSCALL) }
-    linkm2_SYSCALL : { *(linkm2_SYSCALL) }
     axns_resource : { *(axns_resource) }
 }
 INSERT AFTER .tbss;

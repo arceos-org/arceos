@@ -57,7 +57,7 @@ ipi = ["irq"]
 [dependencies]
 axalloc = { workspace = true, optional = true }
 axconfig.workspace = true
-axcpu = "0.2"
+axcpu = { git = "https://github.com/arceos-org/axcpu.git", tag = "dev-v03" }
 axlog.workspace = true
 axplat.workspace = true
 cfg-if.workspace = true

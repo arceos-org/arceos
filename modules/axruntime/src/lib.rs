@@ -105,7 +105,7 @@ fn is_init_ok() -> bool {
 #[cfg_attr(not(test), axplat::main)]
 pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
     unsafe { axhal::mem::clear_bss() };
-    axhal::init_percpu(cpu_id);
+    axhal::percpu::init_primary(cpu_id);
     axhal::init_early(cpu_id, arg);
 
     ax_println!("{}", LOGO);
@@ -283,7 +283,7 @@ fn init_interrupt() {
         axhal::time::set_oneshot_timer(deadline);
     }
 
-    axhal::irq::register(axconfig::devices::TIMER_IRQ, || {
+    axhal::irq::register(axhal::time::irq_num(), || {
         update_timer();
         #[cfg(feature = "multitask")]
         axtask::on_timer_tick();

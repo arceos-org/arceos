@@ -40,7 +40,7 @@ qemu_args-aarch64 := \
 
 qemu_args-loongarch64 := \
   -machine $(machine) \
-  -kernel $(OUT_ELF)
+  -kernel $(FINAL_IMG)
 
 qemu_args-y := -m $(MEM) -smp $(SMP) $(qemu_args-$(ARCH))
 

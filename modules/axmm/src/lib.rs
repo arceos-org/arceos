@@ -17,7 +17,7 @@ use axhal::mem::{MemRegionFlags, phys_to_virt};
 use axhal::paging::MappingFlags;
 use kspin::SpinNoIrq;
 use lazyinit::LazyInit;
-use memory_addr::{MemoryAddr, PhysAddr, va};
+use memory_addr::{MemoryAddr, PhysAddr};
 
 static KERNEL_ASPACE: LazyInit<SpinNoIrq<AddrSpace>> = LazyInit::new();
 
@@ -43,10 +43,8 @@ fn reg_flag_to_map_flag(f: MemRegionFlags) -> MappingFlags {
 
 /// Creates a new address space for kernel itself.
 pub fn new_kernel_aspace() -> AxResult<AddrSpace> {
-    let mut aspace = AddrSpace::new_empty(
-        va!(axconfig::plat::KERNEL_ASPACE_BASE),
-        axconfig::plat::KERNEL_ASPACE_SIZE,
-    )?;
+    let (base, size) = axhal::mem::kernel_aspace();
+    let mut aspace = AddrSpace::new_empty(base, size)?;
     for r in axhal::mem::memory_regions() {
         // mapped range should contain the whole region if it is not aligned.
         let start = r.paddr.align_down_4k();

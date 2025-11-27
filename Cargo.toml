@@ -79,14 +79,14 @@ axdriver_pci = { git = "https://github.com/arceos-org/axdriver_crates.git", tag 
 axdriver_virtio = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2" }
 axerrno = "0.1"
 axio = "0.1"
-axplat = "0.2"
-axplat-aarch64-bsta1000b = "0.2"
-axplat-aarch64-phytium-pi = "0.2"
-axplat-aarch64-qemu-virt = "0.2"
-axplat-aarch64-raspi = "0.2"
-axplat-loongarch64-qemu-virt = "0.2"
-axplat-riscv64-qemu-virt = "0.2"
-axplat-x86-pc = "0.2"
+axplat = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
+axplat-aarch64-bsta1000b = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
+axplat-aarch64-phytium-pi = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
+axplat-aarch64-qemu-virt = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
+axplat-aarch64-raspi = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
+axplat-loongarch64-qemu-virt = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
+axplat-riscv64-qemu-virt = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
+axplat-x86-pc = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
 bindgen = "0.72"
 cfg-if = "1.0"
 chrono = { version = "0.4", default-features = false }

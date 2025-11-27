@@ -159,8 +159,8 @@ jobs:
       run: |
         git checkout .
         make MYPLAT=axplat-aarch64-raspi defconfig
-        cargo axplat add axplat-aarch64-raspi -p arceos-helloworld -F smp --git https://github.com/arceos-org/axhal_crates.git
-        cargo axplat add axplat-aarch64-raspi -p arceos-shell -F smp --git https://github.com/arceos-org/axhal_crates.git
+        cargo axplat add axplat-aarch64-raspi -p arceos-helloworld -F smp --git https://github.com/arceos-org/axplat_crates.git --tag dev-v03
+        cargo axplat add axplat-aarch64-raspi -p arceos-shell -F smp --git https://github.com/arceos-org/axplat_crates.git --tag dev-v03
         echo "extern crate axplat_aarch64_raspi;" >> examples/helloworld/src/main.rs
         echo "extern crate axplat_aarch64_raspi;" >> examples/shell/src/main.rs
     - name: Build helloworld for aarch64-raspi4
@@ -175,8 +175,8 @@ jobs:
       run: |
         git checkout .
         make MYPLAT=axplat-aarch64-bsta1000b defconfig
-        cargo axplat add axplat-aarch64-bsta1000b -p arceos-helloworld -F smp --git https://github.com/arceos-org/axhal_crates.git
-        cargo axplat add axplat-aarch64-bsta1000b -p arceos-shell -F smp --git https://github.com/arceos-org/axhal_crates.git
+        cargo axplat add axplat-aarch64-bsta1000b -p arceos-helloworld -F smp --git https://github.com/arceos-org/axplat_crates.git --tag dev-v03
+        cargo axplat add axplat-aarch64-bsta1000b -p arceos-shell -F smp --git https://github.com/arceos-org/axplat_crates.git --tag dev-v03
         echo "extern crate axplat_aarch64_bsta1000b;" >> examples/helloworld/src/main.rs
         echo "extern crate axplat_aarch64_bsta1000b;" >> examples/shell/src/main.rs
     - name: Build helloworld for aarch64-bsta1000b
@@ -191,8 +191,8 @@ jobs:
       run: |
         git checkout .
         make MYPLAT=axplat-aarch64-phytium-pi defconfig
-        cargo axplat add axplat-aarch64-phytium-pi -p arceos-helloworld -F smp --git https://github.com/arceos-org/axhal_crates.git
-        cargo axplat add axplat-aarch64-phytium-pi -p arceos-shell -F smp --git https://github.com/arceos-org/axhal_crates.git
+        cargo axplat add axplat-aarch64-phytium-pi -p arceos-helloworld -F smp --git https://github.com/arceos-org/axplat_crates.git --tag dev-v03
+        cargo axplat add axplat-aarch64-phytium-pi -p arceos-shell -F smp --git https://github.com/arceos-org/axplat_crates.git --tag dev-v03
         echo "extern crate axplat_aarch64_phytium_pi;" >> examples/helloworld/src/main.rs
         echo "extern crate axplat_aarch64_phytium_pi;" >> examples/shell/src/main.rs
     - name: Build helloworld for aarch64-phytium-pi
