@@ -131,7 +131,7 @@ cfg_if::cfg_if! {
 
 cfg_if::cfg_if! {
     if #[cfg(net_dev = "fxmac")]{
-        use axalloc::global_allocator;
+        use axalloc::{UsageKind, global_allocator};
         use axhal::mem::PAGE_SIZE_4K;
 
         #[crate_interface::impl_interface]
@@ -145,7 +145,8 @@ cfg_if::cfg_if! {
             }
 
             fn dma_alloc_coherent(pages: usize) -> (usize, usize) {
-                let Ok(vaddr) = global_allocator().alloc_pages(pages, PAGE_SIZE_4K) else {
+                let Ok(vaddr) = global_allocator().alloc_pages(pages, PAGE_SIZE_4K, UsageKind::Dma)
+                else {
                     error!("failed to alloc pages");
                     return (0, 0);
                 };
@@ -155,11 +156,11 @@ cfg_if::cfg_if! {
             }
 
             fn dma_free_coherent(vaddr: usize, pages: usize) {
-                global_allocator().dealloc_pages(vaddr, pages);
+                global_allocator().dealloc_pages(vaddr, pages, UsageKind::Dma);
             }
 
             fn dma_request_irq(_irq: usize, _handler: fn()) {
-                warn!("unimplemented dma_request_irq for fxmax");
+                warn!("unimplemented dma_request_irq for fxmac");
             }
         }
 
@@ -169,7 +170,9 @@ cfg_if::cfg_if! {
         impl DriverProbe for FXmacDriver {
             fn probe_global() -> Option<AxDeviceEnum> {
                 info!("fxmac for phytiumpi probe global");
-                axdriver_net::fxmac::FXmacNic::init(0).ok().map(AxDeviceEnum::from_net)
+                axdriver_net::fxmac::FXmacNic::init(0)
+                    .ok()
+                    .map(AxDeviceEnum::from_net)
             }
         }
     }

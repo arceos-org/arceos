@@ -262,6 +262,7 @@ dependencies = [
  "kspin",
  "log",
  "memory_addr",
+ "strum",
 ]
 
 [[package]]
