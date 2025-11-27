@@ -1,5 +1,4 @@
-use allocator::AllocError;
-use axerrno::{AxError, AxResult};
+use axerrno::AxResult;
 use memory_addr::{PhysAddr, VirtAddr};
 
 use crate::{PAGE_SIZE, global_allocator};
@@ -16,13 +15,11 @@ pub struct GlobalPage {
 impl GlobalPage {
     /// Allocate one 4K-sized page.
     pub fn alloc() -> AxResult<Self> {
-        global_allocator()
-            .alloc_pages(1, PAGE_SIZE)
-            .map(|vaddr| Self {
-                start_vaddr: vaddr.into(),
-                num_pages: 1,
-            })
-            .map_err(alloc_err_to_ax_err)
+        let vaddr = global_allocator().alloc_pages(1, PAGE_SIZE)?;
+        Ok(Self {
+            start_vaddr: vaddr.into(),
+            num_pages: 1,
+        })
     }
 
     /// Allocate one 4K-sized page and fill with zero.
@@ -34,13 +31,11 @@ impl GlobalPage {
 
     /// Allocate contiguous 4K-sized pages.
     pub fn alloc_contiguous(num_pages: usize, align_pow2: usize) -> AxResult<Self> {
-        global_allocator()
-            .alloc_pages(num_pages, align_pow2)
-            .map(|vaddr| Self {
-                start_vaddr: vaddr.into(),
-                num_pages,
-            })
-            .map_err(alloc_err_to_ax_err)
+        let vaddr = global_allocator().alloc_pages(num_pages, align_pow2)?;
+        Ok(Self {
+            start_vaddr: vaddr.into(),
+            num_pages,
+        })
     }
 
     /// Get the start virtual address of this page.
@@ -95,14 +90,5 @@ impl GlobalPage {
 impl Drop for GlobalPage {
     fn drop(&mut self) {
         global_allocator().dealloc_pages(self.start_vaddr.into(), self.num_pages);
-    }
-}
-
-const fn alloc_err_to_ax_err(e: AllocError) -> AxError {
-    match e {
-        AllocError::InvalidParam | AllocError::MemoryOverlap | AllocError::NotAllocated => {
-            AxError::InvalidInput
-        }
-        AllocError::NoMemory => AxError::NoMemory,
     }
 }

@@ -31,9 +31,10 @@ dependencies = [
 
 [[package]]
 name = "allocator"
-version = "0.1.1"
-source = "git+https://github.com/arceos-org/allocator.git?tag=v0.1.1#1d5b7a1b4fd8db4c9c9cea4e6012d15d42e2bf40"
+version = "0.1.2"
+source = "git+https://github.com/arceos-org/allocator.git?tag=v0.1.2#922e72a7e4dfb7ffc4b67d242d38f8361ebd13ac"
 dependencies = [
+ "axerrno",
  "bitmap-allocator",
  "buddy_system_allocator",
  "cfg-if",

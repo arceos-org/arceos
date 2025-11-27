@@ -114,13 +114,28 @@ impl GlobalAllocator {
                     .max(layout.size())
                     .next_power_of_two()
                     .max(PAGE_SIZE);
-                let heap_ptr = self.alloc_pages(expand_size / PAGE_SIZE, PAGE_SIZE)?;
-                debug!(
-                    "expand heap memory: [{:#x}, {:#x})",
-                    heap_ptr,
-                    heap_ptr + expand_size
-                );
-                balloc.add_memory(heap_ptr, expand_size)?;
+
+                let mut try_size = expand_size;
+                let min_size = PAGE_SIZE.max(layout.size());
+                loop {
+                    let heap_ptr = match self.alloc_pages(try_size / PAGE_SIZE, PAGE_SIZE) {
+                        Ok(ptr) => ptr,
+                        Err(err) => {
+                            try_size /= 2;
+                            if try_size < min_size {
+                                return Err(err);
+                            }
+                            continue;
+                        }
+                    };
+                    debug!(
+                        "expand heap memory: [{:#x}, {:#x})",
+                        heap_ptr,
+                        heap_ptr + try_size
+                    );
+                    balloc.add_memory(heap_ptr, try_size)?;
+                    break;
+                }
             }
         }
     }
