@@ -10,49 +10,80 @@ repository = "https://github.com/arceos-org/arceos/tree/main/modules/axhal"
 documentation = "https://arceos-org.github.io/arceos/axhal/index.html"
 
 [features]
-smp = ["axplat-x86-pc?/smp", "axplat-aarch64-qemu-virt?/smp", "axplat-riscv64-qemu-virt?/smp", "axplat-loongarch64-qemu-virt?/smp", "axplat/smp"]
-irq = ["linkme", "axplat-x86-pc?/irq", "axplat-aarch64-qemu-virt?/irq", "axplat-riscv64-qemu-virt?/irq", "axplat-loongarch64-qemu-virt?/irq", "axplat/irq"]
-fp-simd = ["axcpu/fp-simd", "axplat-x86-pc?/fp-simd", "axplat-aarch64-qemu-virt?/fp-simd", "axplat-riscv64-qemu-virt?/fp-simd", "axplat-loongarch64-qemu-virt?/fp-simd"]
-rtc = ["axplat-x86-pc?/rtc", "axplat-aarch64-qemu-virt?/rtc", "axplat-riscv64-qemu-virt?/rtc", "axplat-loongarch64-qemu-virt?/rtc"]
-paging = ["axalloc", "page_table_multiarch"]
+smp = [
+    "axplat-x86-pc?/smp",
+    "axplat-aarch64-qemu-virt?/smp",
+    "axplat-riscv64-qemu-virt?/smp",
+    "axplat-loongarch64-qemu-virt?/smp",
+    "axplat/smp",
+]
+irq = [
+    "dep:linkme",
+    "axplat-x86-pc?/irq",
+    "axplat-aarch64-qemu-virt?/irq",
+    "axplat-riscv64-qemu-virt?/irq",
+    "axplat-loongarch64-qemu-virt?/irq",
+    "axplat/irq",
+]
+fp-simd = [
+    "axcpu/fp-simd",
+    "axplat-x86-pc?/fp-simd",
+    "axplat-aarch64-qemu-virt?/fp-simd",
+    "axplat-riscv64-qemu-virt?/fp-simd",
+    "axplat-loongarch64-qemu-virt?/fp-simd",
+]
+rtc = [
+    "axplat-x86-pc?/rtc",
+    "axplat-aarch64-qemu-virt?/rtc",
+    "axplat-riscv64-qemu-virt?/rtc",
+    "axplat-loongarch64-qemu-virt?/rtc",
+]
+paging = ["dep:axalloc", "dep:page_table_multiarch"]
 tls = ["axcpu/tls"]
 uspace = ["paging", "axcpu/uspace"]
 
 # Custom or default platforms
 myplat = []
-defplat = ["dep:axplat-x86-pc", "dep:axplat-aarch64-qemu-virt", "dep:axplat-riscv64-qemu-virt", "dep:axplat-loongarch64-qemu-virt"]
+defplat = [
+    "dep:axplat-x86-pc",
+    "dep:axplat-aarch64-qemu-virt",
+    "dep:axplat-riscv64-qemu-virt",
+    "dep:axplat-loongarch64-qemu-virt",
+]
 
 default = []
 ipi = ["irq"]
 
 [dependencies]
-log = "=0.4.21"
-cfg-if = "1.0"
-kernel_guard = "0.1"
-lazyinit = "0.2"
-percpu = "0.2"
-heapless = "0.8"
-memory_addr = "0.4"
-linkme = { version = "0.3.33", optional = true }
-page_table_multiarch = { version = "0.5", features = ["copy-from"], optional = true }
-axcpu = "0.2"
-axplat = "0.2"
-axlog = { workspace = true }
-axconfig = { workspace = true }
 axalloc = { workspace = true, optional = true }
+axconfig.workspace = true
+axcpu = "0.2"
+axlog.workspace = true
+axplat.workspace = true
+cfg-if.workspace = true
+heapless = "0.8"
+kernel_guard.workspace = true
+lazyinit.workspace = true
+linkme = { version = "0.3.33", optional = true }
+log.workspace = true
+memory_addr.workspace = true
+page_table_multiarch = { workspace = true, features = [
+    "copy-from",
+], optional = true }
+percpu.workspace = true
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
-axplat-x86-pc = { version = "0.2", optional = true }
+axplat-x86-pc = { workspace = true, optional = true }
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 aarch64-cpu = "10.0"
-axplat-aarch64-qemu-virt = { version = "0.2", optional = true }
+axplat-aarch64-qemu-virt = { workspace = true, optional = true }
 
 [target.'cfg(target_arch = "riscv64")'.dependencies]
-axplat-riscv64-qemu-virt = { version = "0.2", optional = true }
+axplat-riscv64-qemu-virt = { workspace = true, optional = true }
 
 [target.'cfg(target_arch = "loongarch64")'.dependencies]
-axplat-loongarch64-qemu-virt = { version = "0.2", optional = true }
+axplat-loongarch64-qemu-virt = { workspace = true, optional = true }
 
 [build-dependencies]
-axconfig = { workspace = true }
+axconfig.workspace = true

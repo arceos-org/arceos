@@ -81,9 +81,9 @@ log-level-debug = ["axfeat/log-level-debug"]
 log-level-trace = ["axfeat/log-level-trace"]
 
 [dependencies]
-axfeat = { workspace = true }
-arceos_api = { workspace = true }
-axio = "0.1"
-axerrno = "0.1"
-kspin = "0.1"
-lock_api = { version = "0.4", default-features = false }
+arceos_api.workspace = true
+axerrno.workspace = true
+axfeat.workspace = true
+axio.workspace = true
+kspin.workspace = true
+lock_api.workspace = true

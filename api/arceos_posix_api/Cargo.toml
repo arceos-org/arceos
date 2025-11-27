@@ -33,26 +33,26 @@ uspace = ["axns/thread-local"]
 
 [dependencies]
 # ArceOS modules
-axfeat = { workspace = true }
-axruntime = { workspace = true }
-axconfig = { workspace = true }
-axlog = { workspace = true }
-axhal = { workspace = true }
-axsync = { workspace = true }
 axalloc = { workspace = true, optional = true }
-axtask = { workspace = true, optional = true }
+axconfig.workspace = true
+axfeat.workspace = true
 axfs = { workspace = true, optional = true }
+axhal.workspace = true
+axlog.workspace = true
 axnet = { workspace = true, optional = true }
 axns = { workspace = true, optional = true }
+axruntime.workspace = true
+axsync.workspace = true
+axtask = { workspace = true, optional = true }
 
 # Other crates
-axio = "0.1"
-axerrno = "0.1"
+axerrno.workspace = true
+axio.workspace = true
+ctor_bare.workspace = true
 flatten_objects = "0.2"
+lazy_static.workspace = true
+spin.workspace = true
 static_assertions = "1.1.0"
-spin = { version = "0.10" }
-lazy_static = { version = "1.5", features = ["spin_no_std"] }
-ctor_bare = "0.2"
 
 [build-dependencies]
-bindgen ={ version = "0.72" }
+bindgen.workspace = true

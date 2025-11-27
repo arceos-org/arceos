@@ -13,34 +13,32 @@ documentation = "https://arceos-org.github.io/arceos/axruntime/index.html"
 default = []
 
 smp = ["axhal/smp", "axtask?/smp"]
-irq = ["axhal/irq", "axtask?/irq", "percpu"]
+irq = ["axhal/irq", "axtask?/irq", "dep:percpu"]
 tls = ["axhal/tls", "axtask?/tls"]
-alloc = ["axalloc"]
-paging = ["axhal/paging", "axmm"]
+alloc = ["dep:axalloc"]
+paging = ["axhal/paging", "dep:axmm"]
 ipi = ["dep:axipi"]
 
 multitask = ["axtask/multitask"]
-fs = ["axdriver", "axfs"]
-net = ["axdriver", "axnet"]
-display = ["axdriver", "axdisplay"]
+fs = ["dep:axdriver", "dep:axfs"]
+net = ["dep:axdriver", "dep:axnet"]
+display = ["dep:axdriver", "dep:axdisplay"]
 rtc = []
 
 [dependencies]
-axhal = { workspace = true }
-axlog = { workspace = true }
-axconfig = { workspace = true }
 axalloc = { workspace = true, optional = true }
-axmm = { workspace = true, optional = true }
+axconfig.workspace = true
+axdisplay = { workspace = true, optional = true }
 axdriver = { workspace = true, optional = true }
 axfs = { workspace = true, optional = true }
-axnet = { workspace = true, optional = true }
-axdisplay = { workspace = true, optional = true }
-axtask = { workspace = true, optional = true }
+axhal.workspace = true
 axipi = { workspace = true, optional = true }
-axplat = "0.2"
-
-crate_interface = "0.1"
-percpu = { version = "0.2", optional = true }
-ctor_bare = "0.2"
-
-chrono = { version = "0.4.38", default-features = false }
+axlog.workspace = true
+axmm = { workspace = true, optional = true }
+axnet = { workspace = true, optional = true }
+axplat = { workspace = true }
+axtask = { workspace = true, optional = true }
+chrono.workspace = true
+crate_interface.workspace = true
+ctor_bare.workspace = true
+percpu = { workspace = true, optional = true }

@@ -12,13 +12,12 @@ documentation = "https://arceos-org.github.io/arceos/axmm/index.html"
 [features]
 
 [dependencies]
+axalloc.workspace = true
+axconfig.workspace = true
+axerrno.workspace = true
 axhal = { workspace = true, features = ["paging"] }
-axalloc = { workspace = true }
-axconfig = { workspace = true }
-
-log = "=0.4.21"
-axerrno = "0.1"
-lazyinit = "0.2"
-memory_addr = "0.4"
-kspin = "0.1"
+kspin.workspace = true
+lazyinit.workspace = true
+log.workspace = true
+memory_addr.workspace = true
 memory_set = "0.4"

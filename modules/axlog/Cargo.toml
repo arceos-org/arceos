@@ -20,11 +20,11 @@ log-level-trace = ["log/max_level_trace"]
 default = []
 
 [dependencies]
-cfg-if = "1.0"
-log = "=0.4.21"
-kspin = "0.1"
-crate_interface = "0.1"
-chrono = { version = "0.4", optional = true }
+cfg-if.workspace = true
+chrono = { workspace = true, default-features = true, optional = true }
+crate_interface.workspace = true
+kspin.workspace = true
+log.workspace = true
 
 [dev-dependencies]
 axlog = { workspace = true, features = ["std"] }

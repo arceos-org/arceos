@@ -28,20 +28,20 @@ myfs = ["axfeat/myfs"]
 dummy-if-not-enabled = []
 
 [dependencies]
-axio = "0.1"
-axerrno = "0.1"
-axfeat = { workspace = true }
-axruntime = { workspace = true }
-axconfig = { workspace = true }
-axlog = { workspace = true }
-axhal = { workspace = true }
-axsync = { workspace = true }
 axalloc = { workspace = true, optional = true }
-axmm = { workspace = true, optional = true }
-axdma = { workspace = true, optional = true }
-axtask = { workspace = true, optional = true }
-axdriver = { workspace = true, optional = true }
-axfs = { workspace = true, optional = true }
-axnet = { workspace = true, optional = true }
+axconfig.workspace = true
 axdisplay = { workspace = true, optional = true }
+axdma = { workspace = true, optional = true }
+axdriver = { workspace = true, optional = true }
+axerrno.workspace = true
+axfeat.workspace = true
+axfs = { workspace = true, optional = true }
+axhal.workspace = true
+axio.workspace = true
 axipi = { workspace = true, optional = true }
+axlog.workspace = true
+axmm = { workspace = true, optional = true }
+axnet = { workspace = true, optional = true }
+axruntime.workspace = true
+axsync.workspace = true
+axtask = { workspace = true, optional = true }

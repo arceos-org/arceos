@@ -55,10 +55,10 @@ select = ["arceos_posix_api/select"]
 epoll = ["arceos_posix_api/epoll"]
 
 [dependencies]
-axfeat = { workspace = true }
-arceos_posix_api = { workspace = true }
-axio = "0.1"
-axerrno = "0.1"
+arceos_posix_api.workspace = true
+axerrno.workspace = true
+axfeat.workspace = true
+axio.workspace = true
 
 [build-dependencies]
-bindgen = { version = "0.72" }
+bindgen.workspace = true

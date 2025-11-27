@@ -2,7 +2,10 @@
 name = "axdriver"
 version.workspace = true
 edition.workspace = true
-authors = ["Yuekai Jia <equation618@gmail.com>", "ChengXiang Qi <kuangjux@outlook.com>"]
+authors = [
+    "Yuekai Jia <equation618@gmail.com>",
+    "ChengXiang Qi <kuangjux@outlook.com>",
+]
 description = "ArceOS device drivers"
 license.workspace = true
 homepage.workspace = true
@@ -13,12 +16,12 @@ documentation = "https://arceos-org.github.io/arceos/axdriver/index.html"
 dyn = []
 bus-mmio = []
 bus-pci = ["dep:axdriver_pci", "dep:axhal", "dep:axconfig"]
-net = ["axdriver_net"]
-block = ["axdriver_block"]
-display = ["axdriver_display"]
+net = ["dep:axdriver_net"]
+block = ["dep:axdriver_block"]
+display = ["dep:axdriver_display"]
 
 # Enabled by features `virtio-*`
-virtio = ["axdriver_virtio", "dep:axalloc", "dep:axhal", "dep:axconfig"]
+virtio = ["dep:axdriver_virtio", "dep:axalloc", "dep:axhal", "dep:axconfig"]
 
 # various types of drivers
 virtio-blk = ["block", "virtio", "axdriver_virtio/block"]
@@ -33,16 +36,16 @@ fxmac = ["net", "axdriver_net/fxmac", "dep:axalloc", "dep:axhal", "dep:axdma"]
 default = ["bus-pci"]
 
 [dependencies]
-log = "=0.4.21"
-cfg-if = "1.0"
-crate_interface = "0.1.4"
-axdriver_base = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2" }
-axdriver_block = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2", optional = true }
-axdriver_net = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2", optional = true }
-axdriver_display = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2", optional = true }
-axdriver_pci = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2", optional = true }
-axdriver_virtio = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2", optional = true }
 axalloc = { workspace = true, optional = true }
-axhal = { workspace = true, optional = true }
 axconfig = { workspace = true, optional = true }
 axdma = { workspace = true, optional = true }
+axdriver_base.workspace = true
+axdriver_block = { workspace = true, optional = true }
+axdriver_display = { workspace = true, optional = true }
+axdriver_net = { workspace = true, optional = true }
+axdriver_pci = { workspace = true, optional = true }
+axdriver_virtio = { workspace = true, optional = true }
+axhal = { workspace = true, optional = true }
+cfg-if.workspace = true
+crate_interface.workspace = true
+log.workspace = true

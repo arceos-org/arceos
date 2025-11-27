@@ -21,20 +21,20 @@ use-ramdisk = []
 default = ["devfs", "ramfs", "fatfs", "procfs", "sysfs"]
 
 [dependencies]
-log = "=0.4.21"
-cfg-if = "1.0"
-lazyinit = "0.2"
-cap_access = "0.1"
-axio = { version = "0.1", features = ["alloc"] }
-axerrno = "0.1"
-axfs_vfs = "0.1"
+axdriver = { workspace = true, features = ["block"] }
+axdriver_block.workspace = true
+axerrno.workspace = true
 axfs_devfs = { version = "0.1", optional = true }
 axfs_ramfs = { version = "0.1", optional = true }
-crate_interface = { version = "0.1", optional = true }
-axsync = { workspace = true }
-axdriver = { workspace = true, features = ["block"] }
-axdriver_block = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2" }
-axns = { workspace = true }
+axfs_vfs = "0.1"
+axio = { workspace = true, features = ["alloc"] }
+axns.workspace = true
+axsync.workspace = true
+cap_access = "0.1"
+cfg-if.workspace = true
+crate_interface = { workspace = true, optional = true }
+lazyinit.workspace = true
+log.workspace = true
 
 [dependencies.fatfs]
 git = "https://github.com/rafalh/rust-fatfs"
@@ -50,6 +50,6 @@ features = [ # no std
 
 [dev-dependencies]
 axdriver = { workspace = true, features = ["block", "ramdisk"] }
-axdriver_block = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2", features = ["ramdisk"] }
+axdriver_block = { workspace = true, features = ["ramdisk"] }
 axsync = { workspace = true, features = ["multitask"] }
 axtask = { workspace = true, features = ["test"] }

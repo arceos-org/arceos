@@ -10,8 +10,8 @@ repository = "https://github.com/arceos-org/arceos/tree/main/modules/axdisplay"
 documentation = "https://arceos-org.github.io/arceos/axdisplay/index.html"
 
 [dependencies]
-log = "=0.4.21"
-lazyinit = "0.2"
 axdriver = { workspace = true, features = ["display"] }
-axsync = { workspace = true }
-axdriver_display = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2" }
+axdriver_display.workspace = true
+axsync.workspace = true
+lazyinit.workspace = true
+log.workspace = true

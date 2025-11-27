@@ -13,9 +13,9 @@ documentation = "https://arceos-org.github.io/arceos/axipi/index.html"
 default = []
 
 [dependencies]
-log = "=0.4.21"
-kspin = { version = "0.1" }
-percpu = { version = "0.2.0" }
-lazyinit = { version = "0.2" }
-axconfig = { workspace = true }
+axconfig.workspace = true
 axhal = { workspace = true, features = ["ipi"] }
+kspin.workspace = true
+lazyinit.workspace = true
+log.workspace = true
+percpu.workspace = true
