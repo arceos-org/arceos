@@ -6,10 +6,7 @@ use axsync::Mutex;
 use core::ffi::c_int;
 use core::mem::{ManuallyDrop, size_of};
 
-static_assertions::const_assert_eq!(
-    size_of::<ctypes::pthread_mutex_t>(),
-    size_of::<PthreadMutex>()
-);
+const _: () = assert!(size_of::<ctypes::pthread_mutex_t>() == size_of::<PthreadMutex>());
 
 #[repr(C)]
 pub struct PthreadMutex(Mutex<()>);

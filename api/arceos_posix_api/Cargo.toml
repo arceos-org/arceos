@@ -52,7 +52,6 @@ ctor_bare.workspace = true
 flatten_objects = "0.2"
 lazy_static.workspace = true
 spin.workspace = true
-static_assertions = "1.1.0"
 
 [build-dependencies]
 bindgen.workspace = true

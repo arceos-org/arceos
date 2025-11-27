@@ -203,7 +203,6 @@ dependencies = [
  "flatten_objects",
  "lazy_static",
  "spin 0.10.0",
- "static_assertions",
 ]
 
 [[package]]
