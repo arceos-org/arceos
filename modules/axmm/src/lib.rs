@@ -12,26 +12,14 @@ mod backend;
 pub use self::aspace::AddrSpace;
 pub use self::backend::Backend;
 
-use axerrno::{AxError, AxResult};
+use axerrno::AxResult;
 use axhal::mem::{MemRegionFlags, phys_to_virt};
 use axhal::paging::MappingFlags;
 use kspin::SpinNoIrq;
 use lazyinit::LazyInit;
 use memory_addr::{MemoryAddr, PhysAddr, VirtAddr, va};
-use memory_set::MappingError;
 
 static KERNEL_ASPACE: LazyInit<SpinNoIrq<AddrSpace>> = LazyInit::new();
-
-fn mapping_err_to_ax_err(err: MappingError) -> AxError {
-    if !matches!(err, MappingError::AlreadyExists) {
-        warn!("Mapping error: {err:?}");
-    }
-    match err {
-        MappingError::InvalidParam => AxError::InvalidInput,
-        MappingError::AlreadyExists => AxError::AlreadyExists,
-        MappingError::BadState => AxError::BadState,
-    }
-}
 
 fn reg_flag_to_map_flag(f: MemRegionFlags) -> MappingFlags {
     let mut ret = MappingFlags::empty();

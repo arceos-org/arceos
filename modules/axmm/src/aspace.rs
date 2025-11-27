@@ -10,7 +10,6 @@ use memory_addr::{
 use memory_set::{MemoryArea, MemorySet};
 
 use crate::backend::Backend;
-use crate::mapping_err_to_ax_err;
 
 /// The virtual memory address space.
 pub struct AddrSpace {
@@ -113,9 +112,7 @@ impl AddrSpace {
 
         let offset = start_vaddr.as_usize() - start_paddr.as_usize();
         let area = MemoryArea::new(start_vaddr, size, flags, Backend::new_linear(offset));
-        self.areas
-            .map(area, &mut self.pt, false)
-            .map_err(mapping_err_to_ax_err)?;
+        self.areas.map(area, &mut self.pt, false)?;
         Ok(())
     }
 
@@ -142,9 +139,7 @@ impl AddrSpace {
         }
 
         let area = MemoryArea::new(start, size, flags, Backend::new_alloc(populate));
-        self.areas
-            .map(area, &mut self.pt, false)
-            .map_err(mapping_err_to_ax_err)?;
+        self.areas.map(area, &mut self.pt, false)?;
         Ok(())
     }
 
@@ -160,9 +155,7 @@ impl AddrSpace {
             return ax_err!(InvalidInput, "address not aligned");
         }
 
-        self.areas
-            .unmap(start, size, &mut self.pt)
-            .map_err(mapping_err_to_ax_err)?;
+        self.areas.unmap(start, size, &mut self.pt)?;
         Ok(())
     }
 
