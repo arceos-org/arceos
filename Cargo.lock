@@ -257,11 +257,13 @@ name = "axalloc"
 version = "0.2.0"
 dependencies = [
  "allocator",
+ "axbacktrace",
  "axerrno 0.1.2",
  "cfg-if",
  "kspin",
  "log",
  "memory_addr",
+ "percpu",
  "strum",
 ]
 

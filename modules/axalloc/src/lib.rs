@@ -11,8 +11,6 @@
 extern crate log;
 extern crate alloc;
 
-mod page;
-
 use core::{
     alloc::{GlobalAlloc, Layout},
     fmt,
@@ -27,7 +25,13 @@ use strum::{IntoStaticStr, VariantArray};
 const PAGE_SIZE: usize = 0x1000;
 const MIN_HEAP_SIZE: usize = 0x8000; // 32 K
 
+mod page;
 pub use page::GlobalPage;
+
+#[cfg(feature = "tracking")]
+mod tracking;
+#[cfg(feature = "tracking")]
+pub use tracking::*;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "slab")] {
@@ -374,15 +378,55 @@ impl GlobalAllocator {
 
 unsafe impl GlobalAlloc for GlobalAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        if let Ok(ptr) = GlobalAllocator::alloc(self, layout) {
-            ptr.as_ptr()
-        } else {
-            alloc::alloc::handle_alloc_error(layout)
+        let inner = move || {
+            if let Ok(ptr) = GlobalAllocator::alloc(self, layout) {
+                ptr.as_ptr()
+            } else {
+                alloc::alloc::handle_alloc_error(layout)
+            }
+        };
+
+        #[cfg(feature = "tracking")]
+        {
+            tracking::with_state(|state| match state {
+                None => inner(),
+                Some(state) => {
+                    let ptr = inner();
+                    let generation = state.generation;
+                    state.generation += 1;
+                    state.map.insert(
+                        ptr as usize,
+                        tracking::AllocationInfo {
+                            layout,
+                            backtrace: axbacktrace::Backtrace::capture(),
+                            generation,
+                        },
+                    );
+                    ptr
+                }
+            })
         }
+
+        #[cfg(not(feature = "tracking"))]
+        inner()
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        GlobalAllocator::dealloc(self, NonNull::new(ptr).expect("dealloc null ptr"), layout)
+        let ptr = NonNull::new(ptr).expect("dealloc null ptr");
+        let inner = || GlobalAllocator::dealloc(self, ptr, layout);
+
+        #[cfg(feature = "tracking")]
+        tracking::with_state(|state| match state {
+            None => inner(),
+            Some(state) => {
+                let address = ptr.as_ptr() as usize;
+                state.map.remove(&address);
+                inner()
+            }
+        });
+
+        #[cfg(not(feature = "tracking"))]
+        inner();
     }
 }
 
