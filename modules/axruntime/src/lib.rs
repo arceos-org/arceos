@@ -236,27 +236,29 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
 
 #[cfg(feature = "alloc")]
 fn init_allocator() {
-    use axhal::mem::{MemRegionFlags, memory_regions, phys_to_virt};
+    use axhal::mem::{MemRegionFlags, memory_regions, phys_to_virt, virt_to_phys};
 
     info!("Initialize global memory allocator...");
     info!("  use {} allocator.", axalloc::global_allocator().name());
 
-    let mut max_region_size = 0;
-    let mut max_region_paddr = 0.into();
-    for r in memory_regions() {
-        if r.flags.contains(MemRegionFlags::FREE) && r.size > max_region_size {
-            max_region_size = r.size;
-            max_region_paddr = r.paddr;
-        }
+    let free_regions = || memory_regions().filter(|r| r.flags.contains(MemRegionFlags::FREE));
+
+    unsafe extern "C" {
+        safe static _ekernel: [u8; 0];
     }
-    for r in memory_regions() {
-        if r.flags.contains(MemRegionFlags::FREE) && r.paddr == max_region_paddr {
-            axalloc::global_init(phys_to_virt(r.paddr).as_usize(), r.size);
-            break;
-        }
-    }
-    for r in memory_regions() {
-        if r.flags.contains(MemRegionFlags::FREE) && r.paddr != max_region_paddr {
+    let kernel_end_paddr = virt_to_phys(_ekernel.as_ptr().addr().into());
+
+    let init_region = free_regions()
+        // First try to find a free memory region after the kernel image
+        .find(|r| r.paddr >= kernel_end_paddr)
+        // Otherwise just use the largest free memory region
+        .or_else(|| free_regions().max_by_key(|r| r.size))
+        .expect("no free memory region found!!");
+
+    axalloc::global_init(phys_to_virt(init_region.paddr).as_usize(), init_region.size);
+
+    for r in free_regions() {
+        if r.paddr != init_region.paddr {
             axalloc::global_add_memory(phys_to_virt(r.paddr).as_usize(), r.size)
                 .expect("add heap memory region failed");
         }
