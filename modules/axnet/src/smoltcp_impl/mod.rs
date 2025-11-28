@@ -10,7 +10,6 @@ use core::cell::RefCell;
 use core::ops::DerefMut;
 
 use axdriver::prelude::*;
-use axdriver_net::{DevError, NetBufPtr};
 use axhal::time::{NANOS_PER_MICROS, wall_time_nanos};
 use axsync::Mutex;
 use lazyinit::LazyInit;

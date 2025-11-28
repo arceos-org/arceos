@@ -665,7 +665,6 @@ name = "axnet"
 version = "0.2.0"
 dependencies = [
  "axdriver",
- "axdriver_net",
  "axerrno 0.1.2",
  "axhal",
  "axio",

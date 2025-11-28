@@ -18,7 +18,6 @@ default = ["smoltcp"]
 
 [dependencies]
 axdriver = { workspace = true, features = ["net"] }
-axdriver_net.workspace = true
 axerrno.workspace = true
 axhal.workspace = true
 axio.workspace = true
