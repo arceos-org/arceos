@@ -8,7 +8,7 @@
 extern crate log;
 
 #[doc(no_inline)]
-pub use axdriver_display::DisplayInfo;
+pub use axdriver::prelude::DisplayInfo;
 
 use axdriver::{AxDeviceContainer, prelude::*};
 use axsync::Mutex;
@@ -20,9 +20,17 @@ static MAIN_DISPLAY: LazyInit<Mutex<AxDisplayDevice>> = LazyInit::new();
 pub fn init_display(mut display_devs: AxDeviceContainer<AxDisplayDevice>) {
     info!("Initialize graphics subsystem...");
 
-    let dev = display_devs.take_one().expect("No graphics device found!");
-    info!("  use graphics device 0: {:?}", dev.device_name());
-    MAIN_DISPLAY.init_once(Mutex::new(dev));
+    if let Some(dev) = display_devs.take_one() {
+        info!("  use graphics device 0: {:?}", dev.device_name());
+        MAIN_DISPLAY.init_once(Mutex::new(dev));
+    } else {
+        warn!("  no graphics device found!");
+    }
+}
+
+/// Checks if there is a display device.
+pub fn has_display() -> bool {
+    MAIN_DISPLAY.is_inited()
 }
 
 /// Gets the framebuffer information.

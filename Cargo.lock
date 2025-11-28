@@ -366,7 +366,6 @@ name = "axdisplay"
 version = "0.2.0"
 dependencies = [
  "axdriver",
- "axdriver_display",
  "axsync",
  "lazyinit",
  "log",
