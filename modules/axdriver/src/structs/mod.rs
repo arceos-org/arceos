@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+
 use core::ops::{Deref, DerefMut};
 
 use axdriver_base::{BaseDriverOps, DeviceType};

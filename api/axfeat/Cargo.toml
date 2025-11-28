@@ -19,7 +19,7 @@ smp = ["axhal/smp", "axruntime/smp", "axtask?/smp", "kspin/smp"]
 fp-simd = ["axhal/fp-simd"]
 
 # Interrupts
-irq = ["axhal/irq", "axruntime/irq", "axtask?/irq"]
+irq = ["axhal/irq", "axruntime/irq", "axtask?/irq", "axdriver?/irq"]
 ipi = ["irq", "dep:axipi", "axhal/ipi", "axruntime/ipi"]
 
 # Custom or default platforms
@@ -81,6 +81,8 @@ driver-ramdisk = ["axdriver?/ramdisk", "axfs?/use-ramdisk"]
 driver-ixgbe = ["axdriver?/ixgbe"]
 driver-fxmac = ["axdriver?/fxmac"]                          # fxmac ethernet driver for PhytiumPi
 driver-bcm2835-sdhci = ["axdriver?/bcm2835-sdhci"]
+
+driver-dyn = ["paging", "axruntime/driver-dyn", "axdriver/dyn"]
 
 # Logging
 log-level-off = ["axlog/log-level-off"]

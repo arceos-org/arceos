@@ -13,7 +13,6 @@ repository = "https://github.com/arceos-org/arceos/tree/main/modules/axdriver"
 documentation = "https://arceos-org.github.io/arceos/axdriver/index.html"
 
 [features]
-dyn = []
 bus-mmio = []
 bus-pci = ["dep:axdriver_pci", "dep:axhal", "dep:axconfig"]
 net = ["dep:axdriver_net"]
@@ -33,6 +32,22 @@ ixgbe = ["net", "axdriver_net/ixgbe", "dep:axalloc", "dep:axhal", "dep:axdma"]
 fxmac = ["net", "axdriver_net/fxmac", "dep:axalloc", "dep:axhal", "dep:axdma"]
 # more devices example: e1000 = ["net", "axdriver_net/e1000"]
 
+irq = []
+dyn = [
+    "dep:arm-gic-driver",
+    "arm-gic-driver?/rdif",
+    "dep:axerrno",
+    "dep:axhal",
+    "dep:axklib",
+    "dep:axmm",
+    "dep:dma-api",
+    "dep:memory_addr",
+    "dep:rdif-block",
+    "dep:rdif-intc",
+    "dep:rdrive",
+    "dep:spin",
+]
+
 default = ["bus-pci"]
 
 [dependencies]
@@ -45,8 +60,20 @@ axdriver_display = { workspace = true, optional = true }
 axdriver_net = { workspace = true, optional = true }
 axdriver_pci = { workspace = true, optional = true }
 axdriver_virtio = { workspace = true, optional = true }
+axerrno = { workspace = true, optional = true }
 axhal = { workspace = true, optional = true }
+axklib = { workspace = true, optional = true }
+axmm = { workspace = true, optional = true }
 cfg-if.workspace = true
 crate_interface.workspace = true
+dma-api = { version = "0.5", features = ["alloc"], optional = true }
 log.workspace = true
+memory_addr = { workspace = true, optional = true }
+rdif-block = { version = "0.6.2", optional = true }
+rdif-intc = { version = "0.12", optional = true }
+rdrive = { version = "0.18", optional = true }
 smallvec = { version = "1.15", features = ["const_generics", "union"] }
+spin = { version = "0.10", optional = true }
+
+[target.'cfg(target_arch = "aarch64")'.dependencies]
+arm-gic-driver = { version = "0.15", optional = true }

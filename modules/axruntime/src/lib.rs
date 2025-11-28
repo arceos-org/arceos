@@ -178,6 +178,9 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
     #[cfg(feature = "paging")]
     axmm::init_memory_management();
 
+    #[cfg(feature = "driver-dyn")]
+    axdriver::setup(arg);
+
     info!("Initialize platform devices...");
     axhal::init_later(cpu_id, arg);
 

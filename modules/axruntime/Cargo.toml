@@ -24,6 +24,7 @@ fs = ["dep:axdriver", "dep:axfs"]
 net = ["dep:axdriver", "dep:axnet"]
 display = ["dep:axdriver", "dep:axdisplay"]
 rtc = []
+driver-dyn = ["axdriver/dyn"]
 
 [dependencies]
 axalloc = { workspace = true, optional = true }

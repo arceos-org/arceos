@@ -1,6 +1,5 @@
 use alloc::boxed::Box;
 
-#[allow(unused_imports)]
 use crate::prelude::*;
 
 /// The unified type of the NIC devices.
