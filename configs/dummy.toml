@@ -56,3 +56,6 @@ pci-ranges = []             # [(uint, uint)]
 timer-irq = 0               # uint
 # IPI interrupt num
 ipi-irq = 0                 # uint
+
+# SDMMC controller physical address.
+sdmmc-paddr = 0             # uint

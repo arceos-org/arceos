@@ -68,14 +68,34 @@ cfg_if::cfg_if! {
 }
 
 cfg_if::cfg_if! {
+    if #[cfg(block_dev = "sdmmc")] {
+        pub struct SdMmcDriver;
+        register_block_driver!(SdMmcDriver, axdriver_block::sdmmc::SdMmcDriver);
+
+        impl DriverProbe for SdMmcDriver {
+            fn probe_global() -> Option<AxDeviceEnum> {
+                let sdmmc = unsafe {
+                    axdriver_block::sdmmc::SdMmcDriver::new(
+                        axhal::mem::phys_to_virt(axconfig::devices::SDMMC_PADDR.into()).into(),
+                    )
+                };
+                Some(AxDeviceEnum::from_block(sdmmc))
+            }
+        }
+    }
+}
+
+cfg_if::cfg_if! {
     if #[cfg(block_dev = "bcm2835-sdhci")]{
         pub struct BcmSdhciDriver;
-        register_block_driver!(MmckDriver, axdriver_block::bcm2835sdhci::SDHCIDriver);
+        register_block_driver!(BcmSdhciDriver, axdriver_block::bcm2835sdhci::SDHCIDriver);
 
         impl DriverProbe for BcmSdhciDriver {
             fn probe_global() -> Option<AxDeviceEnum> {
                 debug!("mmc probe");
-                axdriver_block::bcm2835sdhci::SDHCIDriver::try_new().ok().map(AxDeviceEnum::from_block)
+                axdriver_block::bcm2835sdhci::SDHCIDriver::try_new()
+                    .ok()
+                    .map(AxDeviceEnum::from_block)
             }
         }
     }
@@ -84,46 +104,42 @@ cfg_if::cfg_if! {
 cfg_if::cfg_if! {
     if #[cfg(net_dev = "ixgbe")] {
         use crate::ixgbe::IxgbeHalImpl;
-        use axhal::mem::phys_to_virt;
         pub struct IxgbeDriver;
         register_net_driver!(IxgbeDriver, axdriver_net::ixgbe::IxgbeNic<IxgbeHalImpl, 1024, 1>);
         impl DriverProbe for IxgbeDriver {
             #[cfg(bus = "pci")]
             fn probe_pci(
-                    root: &mut axdriver_pci::PciRoot,
-                    bdf: axdriver_pci::DeviceFunction,
-                    dev_info: &axdriver_pci::DeviceFunctionInfo,
-                ) -> Option<crate::AxDeviceEnum> {
-                    use axdriver_net::ixgbe::{INTEL_82599, INTEL_VEND, IxgbeNic};
-                    if dev_info.vendor_id == INTEL_VEND && dev_info.device_id == INTEL_82599 {
-                        // Intel 10Gb Network
-                        info!("ixgbe PCI device found at {:?}", bdf);
+                root: &mut axdriver_pci::PciRoot,
+                bdf: axdriver_pci::DeviceFunction,
+                dev_info: &axdriver_pci::DeviceFunctionInfo,
+            ) -> Option<crate::AxDeviceEnum> {
+                use axdriver_net::ixgbe::{INTEL_82599, INTEL_VEND, IxgbeNic};
+                if dev_info.vendor_id == INTEL_VEND && dev_info.device_id == INTEL_82599 {
+                    // Intel 10Gb Network
+                    info!("ixgbe PCI device found at {:?}", bdf);
 
-                        // Initialize the device
-                        // These can be changed according to the requirments specified in the ixgbe init function.
-                        const QN: u16 = 1;
-                        const QS: usize = 1024;
-                        let bar_info = root.bar_info(bdf, 0).unwrap();
-                        match bar_info {
-                            axdriver_pci::BarInfo::Memory {
-                                address,
-                                size,
-                                ..
-                            } => {
-                                let ixgbe_nic = IxgbeNic::<IxgbeHalImpl, QS, QN>::init(
-                                    phys_to_virt((address as usize).into()).into(),
-                                    size as usize
-                                )
-                                .expect("failed to initialize ixgbe device");
-                                return Some(AxDeviceEnum::from_net(ixgbe_nic));
-                            }
-                            axdriver_pci::BarInfo::IO { .. } => {
-                                error!("ixgbe: BAR0 is of I/O type");
-                                return None;
-                            }
+                    // Initialize the device
+                    // These can be changed according to the requirments specified in the ixgbe init
+                    // function.
+                    const QN: u16 = 1;
+                    const QS: usize = 1024;
+                    let bar_info = root.bar_info(bdf, 0).unwrap();
+                    match bar_info {
+                        axdriver_pci::BarInfo::Memory { address, size, .. } => {
+                            let ixgbe_nic = IxgbeNic::<IxgbeHalImpl, QS, QN>::init(
+                                axhal::mem::phys_to_virt((address as usize).into()).into(),
+                                size as usize,
+                            )
+                            .expect("failed to initialize ixgbe device");
+                            return Some(AxDeviceEnum::from_net(ixgbe_nic));
+                        }
+                        axdriver_pci::BarInfo::IO { .. } => {
+                            error!("ixgbe: BAR0 is of I/O type");
+                            return None;
                         }
                     }
-                    None
+                }
+                None
             }
         }
     }
@@ -160,7 +176,7 @@ cfg_if::cfg_if! {
             }
 
             fn dma_request_irq(_irq: usize, _handler: fn()) {
-                warn!("unimplemented dma_request_irq for fxmac");
+                warn!("unimplemented dma_request_irq for fxmax");
             }
         }
 

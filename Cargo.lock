@@ -430,6 +430,7 @@ dependencies = [
  "axdriver_base",
  "bcm2835-sdhci",
  "log",
+ "simple-sdmmc",
 ]
 
 [[package]]
@@ -980,6 +981,17 @@ name = "bit_field"
 version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e4b40c7323adcfc0a41c4b88143ed58346ff65a288fc144329c5c45e05d70c6"
+
+[[package]]
+name = "bitfield-struct"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3ca019570363e800b05ad4fd890734f28ac7b72f563ad8a35079efb793616f8"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.111",
+]
 
 [[package]]
 name = "bitflags"
@@ -2203,6 +2215,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
+name = "simple-sdmmc"
+version = "0.1.0"
+source = "git+https://github.com/Starry-OS/simple-sdmmc.git?rev=9e6420c#9e6420c3bcaa67d4c3a6ecd2b24a2e7ee9118f9b"
+dependencies = [
+ "bitfield-struct",
+ "log",
+ "volatile 0.6.1",
+]
+
+[[package]]
 name = "slab_allocator"
 version = "0.3.1"
 source = "git+https://github.com/arceos-org/slab_allocator.git?tag=v0.3.1#3c13499d664ccd36f66786985b753340aea57f5a"
@@ -2490,6 +2512,26 @@ name = "volatile"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "442887c63f2c839b346c192d047a7c87e73d0689c9157b00b53dcc27dd5ea793"
+
+[[package]]
+name = "volatile"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af8ca9a5d4debca0633e697c88269395493cebf2e10db21ca2dbde37c1356452"
+dependencies = [
+ "volatile-macro",
+]
+
+[[package]]
+name = "volatile-macro"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "65c67ce935f3b4329e473ecaff7bab444fcdc3d1d19f8bae61fabfa90b84f93e"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.111",
+]
 
 [[package]]
 name = "wasm-bindgen"

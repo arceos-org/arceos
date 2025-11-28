@@ -1,5 +1,5 @@
 const NET_DEV_FEATURES: &[&str] = &["fxmac", "ixgbe", "virtio-net"];
-const BLOCK_DEV_FEATURES: &[&str] = &["ramdisk", "bcm2835-sdhci", "virtio-blk"];
+const BLOCK_DEV_FEATURES: &[&str] = &["ramdisk", "sdmmc", "bcm2835-sdhci", "virtio-blk"];
 const DISPLAY_DEV_FEATURES: &[&str] = &["virtio-gpu"];
 
 fn make_cfg_values(str_list: &[&str]) -> String {
