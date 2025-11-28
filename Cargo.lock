@@ -420,12 +420,12 @@ dependencies = [
 [[package]]
 name = "axdriver_base"
 version = "0.1.2"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2#84eb2170f865e6fa29b78995a86f4fcdcede63df"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=dev-v01#cada10715c1f4c08b63d5d60345d2bedbc39bcd8"
 
 [[package]]
 name = "axdriver_block"
 version = "0.1.2"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2#84eb2170f865e6fa29b78995a86f4fcdcede63df"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=dev-v01#cada10715c1f4c08b63d5d60345d2bedbc39bcd8"
 dependencies = [
  "axdriver_base",
  "bcm2835-sdhci",
@@ -435,7 +435,7 @@ dependencies = [
 [[package]]
 name = "axdriver_display"
 version = "0.1.2"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2#84eb2170f865e6fa29b78995a86f4fcdcede63df"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=dev-v01#cada10715c1f4c08b63d5d60345d2bedbc39bcd8"
 dependencies = [
  "axdriver_base",
 ]
@@ -443,7 +443,7 @@ dependencies = [
 [[package]]
 name = "axdriver_net"
 version = "0.1.2"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2#84eb2170f865e6fa29b78995a86f4fcdcede63df"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=dev-v01#cada10715c1f4c08b63d5d60345d2bedbc39bcd8"
 dependencies = [
  "axdriver_base",
  "fxmac_rs",
@@ -455,7 +455,7 @@ dependencies = [
 [[package]]
 name = "axdriver_pci"
 version = "0.1.2"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2#84eb2170f865e6fa29b78995a86f4fcdcede63df"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=dev-v01#cada10715c1f4c08b63d5d60345d2bedbc39bcd8"
 dependencies = [
  "virtio-drivers",
 ]
@@ -463,12 +463,13 @@ dependencies = [
 [[package]]
 name = "axdriver_virtio"
 version = "0.1.2"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2#84eb2170f865e6fa29b78995a86f4fcdcede63df"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=dev-v01#cada10715c1f4c08b63d5d60345d2bedbc39bcd8"
 dependencies = [
  "axdriver_base",
  "axdriver_block",
  "axdriver_display",
  "axdriver_net",
+ "log",
  "virtio-drivers",
 ]
 

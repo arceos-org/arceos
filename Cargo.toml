@@ -71,12 +71,12 @@ allocator = { git = "https://github.com/arceos-org/allocator.git", tag = "v0.1.2
     "axerrno",
 ] }
 axbacktrace = "0.1"
-axdriver_base = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2" }
-axdriver_block = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2" }
-axdriver_display = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2" }
-axdriver_net = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2" }
-axdriver_pci = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2" }
-axdriver_virtio = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2" }
+axdriver_base = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "dev-v01" }
+axdriver_block = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "dev-v01" }
+axdriver_display = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "dev-v01" }
+axdriver_net = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "dev-v01" }
+axdriver_pci = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "dev-v01" }
+axdriver_virtio = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "dev-v01" }
 axerrno = "0.1"
 axio = "0.1"
 # FIXME: use arceos-hypervisor/axklib!
