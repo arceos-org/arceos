@@ -88,6 +88,21 @@ cfg_if! {
     }
 }
 
+cfg_if! {
+    if #[cfg(vsock_dev = "virtio-socket")] {
+        pub struct VirtIoSocket;
+
+        impl VirtIoDevMeta for VirtIoSocket {
+            const DEVICE_TYPE: DeviceType = DeviceType::Vsock;
+            type Device = axdriver_virtio::VirtIoSocketDev<VirtIoHalImpl, VirtIoTransport>;
+
+            fn try_new(transport: VirtIoTransport, _irq:  Option<usize>) -> DevResult<AxDeviceEnum> {
+                Ok(AxDeviceEnum::from_vsock(Self::Device::try_new(transport)?))
+            }
+        }
+    }
+}
+
 /// A common driver for all VirtIO devices that implements [`DriverProbe`].
 pub struct VirtIoDriver<D: VirtIoDevMeta + ?Sized>(PhantomData<D>);
 
@@ -129,6 +144,7 @@ impl<D: VirtIoDevMeta> DriverProbe for VirtIoDriver<D> {
             (DeviceType::Block, 0x1001) | (DeviceType::Block, 0x1042) => {}
             (DeviceType::Input, 0x1052) => {}
             (DeviceType::Display, 0x1050) => {}
+            (DeviceType::Vsock, 0x1053) => {}
             _ => return None,
         }
 

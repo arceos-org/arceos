@@ -24,6 +24,7 @@ fs = ["dep:axdriver", "dep:axfs"]
 net = ["dep:axdriver", "dep:axnet"]
 display = ["dep:axdriver", "dep:axdisplay"]
 input = ["dep:axdriver", "dep:axinput"]
+vsock = ["net", "dep:axdriver"]
 rtc = []
 driver-dyn = ["axdriver/dyn"]
 

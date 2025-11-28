@@ -401,6 +401,7 @@ dependencies = [
  "axdriver_net",
  "axdriver_pci",
  "axdriver_virtio",
+ "axdriver_vsock",
  "axerrno 0.1.2",
  "axhal",
  "axklib",
@@ -480,8 +481,18 @@ dependencies = [
  "axdriver_display",
  "axdriver_input",
  "axdriver_net",
+ "axdriver_vsock",
  "log",
  "virtio-drivers",
+]
+
+[[package]]
+name = "axdriver_vsock"
+version = "0.1.2"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=dev-v01#cada10715c1f4c08b63d5d60345d2bedbc39bcd8"
+dependencies = [
+ "axdriver_base",
+ "log",
 ]
 
 [[package]]

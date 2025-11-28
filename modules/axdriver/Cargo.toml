@@ -19,6 +19,7 @@ net = ["dep:axdriver_net"]
 block = ["dep:axdriver_block"]
 display = ["dep:axdriver_display"]
 input = ["dep:axdriver_input"]
+vsock = ["axdriver_vsock"]
 
 # Enabled by features `virtio-*`
 virtio = ["dep:axdriver_virtio", "dep:axalloc", "dep:axhal", "dep:axconfig"]
@@ -28,6 +29,7 @@ virtio-blk = ["block", "virtio", "axdriver_virtio/block"]
 virtio-net = ["net", "virtio", "axdriver_virtio/net"]
 virtio-gpu = ["display", "virtio", "axdriver_virtio/gpu"]
 virtio-input = ["input", "virtio", "axdriver_virtio/input"]
+virtio-socket = ["vsock", "virtio", "axdriver_virtio/socket"]
 ramdisk = ["block", "axdriver_block/ramdisk"]
 bcm2835-sdhci = ["block", "axdriver_block/bcm2835-sdhci"]
 sdmmc = ["block", "axdriver_block/sdmmc", "dep:axhal", "dep:axconfig"]
@@ -64,6 +66,7 @@ axdriver_input = { workspace = true, optional = true }
 axdriver_net = { workspace = true, optional = true }
 axdriver_pci = { workspace = true, optional = true }
 axdriver_virtio = { workspace = true, optional = true }
+axdriver_vsock = { workspace = true, optional = true }
 axerrno = { workspace = true, optional = true }
 axhal = { workspace = true, optional = true }
 axklib = { workspace = true, optional = true }

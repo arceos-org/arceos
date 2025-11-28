@@ -57,6 +57,12 @@ register_input_driver!(
     <virtio::VirtIoInput as VirtIoDevMeta>::Device
 );
 
+#[cfg(vsock_dev = "virtio-socket")]
+register_vsock_driver!(
+    <virtio::VirtIoSocket as VirtIoDevMeta>::Driver,
+    <virtio::VirtIoSocket as VirtIoDevMeta>::Device
+);
+
 cfg_if::cfg_if! {
     if #[cfg(block_dev = "ramdisk")] {
         pub struct RamDiskDriver;

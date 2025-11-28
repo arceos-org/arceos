@@ -14,6 +14,9 @@ pub type AxDisplayDevice = Box<dyn DisplayDriverOps>;
 /// The unified type of the input devices.
 #[cfg(feature = "input")]
 pub type AxInputDevice = Box<dyn InputDriverOps>;
+/// The unified type of the vsock devices.
+#[cfg(feature = "vsock")]
+pub type AxVsockDevice = Box<dyn VsockDriverOps>;
 
 impl super::AxDeviceEnum {
     /// Constructs a network device.
@@ -38,5 +41,11 @@ impl super::AxDeviceEnum {
     #[cfg(feature = "input")]
     pub fn from_input(dev: impl InputDriverOps + 'static) -> Self {
         Self::Input(Box::new(dev))
+    }
+
+    /// Constructs a vsock device.
+    #[cfg(feature = "vsock")]
+    pub fn from_vsock(dev: impl VsockDriverOps + 'static) -> Self {
+        Self::Vsock(Box::new(dev))
     }
 }

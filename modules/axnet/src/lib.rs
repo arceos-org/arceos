@@ -48,3 +48,15 @@ pub fn init_network(mut net_devs: AxDeviceContainer<AxNetDevice>) {
         warn!("  No network device found!");
     }
 }
+
+/// Initializes vsock devices.
+#[cfg(feature = "vsock")]
+pub fn init_vsock(mut vsock_devs: AxDeviceContainer<AxVsockDevice>) {
+    info!("Initialize vsock subsystem...");
+    if let Some(dev) = vsock_devs.take_one() {
+        info!("  use vsock 0: {:?}", dev.device_name());
+        warn!("  vsock not implemented yet!");
+    } else {
+        warn!("  No vsock device found!");
+    }
+}

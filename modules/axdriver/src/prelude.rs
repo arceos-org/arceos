@@ -15,4 +15,12 @@ pub use {
     axdriver_input::{Event, EventType, InputDeviceId, InputDriverOps},
 };
 #[cfg(feature = "net")]
-pub use {crate::structs::AxNetDevice, axdriver_net::NetDriverOps};
+pub use {
+    crate::structs::AxNetDevice,
+    axdriver_net::{NetBufPtr, NetDriverOps},
+};
+#[cfg(feature = "vsock")]
+pub use {
+    crate::structs::AxVsockDevice,
+    axdriver_vsock::{VsockAddr, VsockConnId, VsockDriverEvent, VsockDriverOps},
+};

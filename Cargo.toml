@@ -80,6 +80,7 @@ axdriver_input = { git = "https://github.com/arceos-org/axdriver_crates.git", ta
 axdriver_net = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "dev-v01" }
 axdriver_pci = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "dev-v01" }
 axdriver_virtio = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "dev-v01" }
+axdriver_vsock = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "dev-v01" }
 axerrno = "0.1"
 axio = "0.1"
 # FIXME: use arceos-hypervisor/axklib!

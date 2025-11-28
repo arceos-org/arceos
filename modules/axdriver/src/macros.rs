@@ -34,6 +34,14 @@ macro_rules! register_input_driver {
     };
 }
 
+macro_rules! register_vsock_driver {
+    ($driver_type:ty, $device_type:ty) => {
+        /// The unified type of the NIC devices.
+        #[cfg(not(feature = "dyn"))]
+        pub type AxVsockDevice = $device_type;
+    };
+}
+
 macro_rules! for_each_drivers {
     (type $drv_type:ident, $code:block) => {{
         #[allow(unused_imports)]
@@ -60,6 +68,11 @@ macro_rules! for_each_drivers {
         #[cfg(input_dev = "virtio-input")]
         {
             type $drv_type = <virtio::VirtIoInput as VirtIoDevMeta>::Driver;
+            $code
+        }
+        #[cfg(vsock_dev = "virtio-socket")]
+        {
+            type $drv_type = <virtio::VirtIoSocket as VirtIoDevMeta>::Driver;
             $code
         }
         #[cfg(block_dev = "ramdisk")]

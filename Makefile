@@ -60,6 +60,7 @@ BLK ?= n
 NET ?= n
 GRAPHIC ?= n
 INPUT ?= n
+VSOCK ?= n
 BUS ?= pci
 MEM ?=
 ACCEL ?=

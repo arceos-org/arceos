@@ -15,6 +15,7 @@ documentation = "https://arceos-org.github.io/arceos/axnet/index.html"
 [features]
 smoltcp = ["dep:smoltcp"]
 default = ["smoltcp"]
+vsock = ["axdriver/vsock"]
 
 [dependencies]
 axdriver = { workspace = true, features = ["net"] }

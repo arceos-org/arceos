@@ -83,6 +83,9 @@ endif
 qemu_args-$(INPUT) += \
   -device virtio-mouse-pci -device virtio-keyboard-pci
 
+qemu_args-$(VSOCK) += \
+  -device vhost-vsock-pci,id=virtiosocket0,guest-cid=103
+
 ifeq ($(QEMU_LOG), y)
   qemu_args-y += -D qemu.log -d in_asm,int,mmu,pcall,cpu_reset,guest_errors
 endif

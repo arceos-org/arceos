@@ -135,3 +135,50 @@ cfg_if! {
         }
     }
 }
+
+cfg_if! {
+    if #[cfg(vsock_dev = "dummy")] {
+        pub struct DummyVsockDev;
+        pub struct DummyVsockDriver;
+        register_vsock_driver!(DummyVsockDriver, DummyVsockDev);
+
+        impl BaseDriverOps for DummyVsockDev {
+            fn device_type(&self) -> DeviceType {
+                DeviceType::Vsock
+            }
+            fn device_name(&self) -> &str {
+                "dummy-vsock"
+            }
+        }
+
+        impl VsockDriverOps for DummyVsockDev {
+            fn guest_cid(&self) -> u64 {
+                unimplemented!()
+            }
+            fn listen(&mut self, _src_port: u32) {
+                unimplemented!()
+            }
+            fn connect(&mut self, _cid: VsockConnId) -> DevResult<()> {
+                Err(DevError::Unsupported)
+            }
+            fn send(&mut self, _cid: VsockConnId, _buf: &[u8]) -> DevResult<usize> {
+                Err(DevError::Unsupported)
+            }
+            fn recv(&mut self, _cid: VsockConnId, _buf: &mut [u8]) -> DevResult<usize> {
+                Err(DevError::Unsupported)
+            }
+            fn recv_avail(&mut self, _cid: VsockConnId) -> DevResult<usize> {
+                Err(DevError::Unsupported)
+            }
+            fn disconnect(&mut self, _cid: VsockConnId) -> DevResult<()> {
+                Err(DevError::Unsupported)
+            }
+            fn abort(&mut self, _cid: VsockConnId) -> DevResult<()> {
+                Err(DevError::Unsupported)
+            }
+            fn poll_event(&mut self, _buf: &mut [u8]) -> DevResult<Option<VsockDriverEvent>> {
+                Err(DevError::Unsupported)
+            }
+        }
+    }
+}
