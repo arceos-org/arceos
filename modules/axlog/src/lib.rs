@@ -18,13 +18,6 @@
 //!
 //! - `std`: Use in the `std` environment. If it is enabled, you can use console
 //!   output without implementing the [`LogIf`] trait. This is disabled by default.
-//! - `log-level-off`: Disable all logging. If it is enabled, all log macros
-//!   (e.g. [`info!`]) will be optimized out to a no-op in compilation time.
-//! - `log-level-error`: Set the maximum log level to `error`. Any macro
-//!   with a level lower than [`error!`] (e.g, [`warn!`], [`info!`], ...) will be
-//!   optimized out to a no-op.
-//! - `log-level-warn`, `log-level-info`, `log-level-debug`, `log-level-trace`:
-//!   Similar to `log-level-error`.
 //!
 //! # Examples
 //!

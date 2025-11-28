@@ -11,12 +11,6 @@ documentation = "https://arceos-org.github.io/arceos/axlog/index.html"
 
 [features]
 std = ["dep:chrono"]
-log-level-off = ["log/max_level_off"]
-log-level-error = ["log/max_level_error"]
-log-level-warn = ["log/max_level_warn"]
-log-level-info = ["log/max_level_info"]
-log-level-debug = ["log/max_level_debug"]
-log-level-trace = ["log/max_level_trace"]
 default = []
 
 [dependencies]

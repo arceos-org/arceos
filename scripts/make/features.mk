@@ -47,9 +47,7 @@ else
   ax_feat += defplat
 endif
 
-ifneq ($(filter $(LOG),off error warn info debug trace),)
-  ax_feat += log-level-$(LOG)
-else
+ifeq ($(filter $(LOG),off error warn info debug trace),)
   $(error "LOG" must be one of "off", "error", "warn", "info", "debug", "trace")
 endif
 

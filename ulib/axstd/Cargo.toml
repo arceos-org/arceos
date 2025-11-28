@@ -74,14 +74,7 @@ driver-fxmac = ["axfeat/driver-fxmac"]
 driver-bcm2835-sdhci = ["axfeat/driver-bcm2835-sdhci"]
 driver-dyn = ["axfeat/driver-dyn"]
 
-# Logging
-log-level-off = ["axfeat/log-level-off"]
-log-level-error = ["axfeat/log-level-error"]
-log-level-warn = ["axfeat/log-level-warn"]
-log-level-info = ["axfeat/log-level-info"]
-log-level-debug = ["axfeat/log-level-debug"]
-log-level-trace = ["axfeat/log-level-trace"]
-
+# Backtrace
 dwarf = ["axfeat/dwarf"]
 
 [dependencies]

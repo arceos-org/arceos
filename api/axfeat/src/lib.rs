@@ -31,10 +31,6 @@
 //!     - `driver-ramdisk`: Use the RAM disk to emulate the block device.
 //!     - `driver-ixgbe`: Enable the Intel 82599 10Gbit NIC driver.
 //!     - `driver-bcm2835-sdhci`: Enable the BCM2835 SDHCI driver (Raspberry Pi SD card).
-//! - Logging
-//!     - `log-level-off`: Disable all logging.
-//!     - `log-level-error`, `log-level-warn`, `log-level-info`, `log-level-debug`,
-//!       `log-level-trace`: Keep logging only at the specified level or higher.
 //!
 //! [ArceOS]: https://github.com/arceos-org/arceos
 
