@@ -4,6 +4,8 @@ fn main() {
     fn gen_pthread_mutex(out_file: &str) -> std::io::Result<()> {
         // TODO: Generate size and initial content automatically.
         let (mutex_size, mutex_init) = if cfg!(feature = "multitask") {
+            println!("cargo:rerun-if-env-changed=CARGO_FEATURE_MULTITASK");
+            println!("cargo:rerun-if-env-changed=CARGO_FEATURE_SMP");
             if cfg!(feature = "smp") {
                 // core::mem::transmute::<_, [usize; 6]>(axsync::Mutex::new(()))
                 (6, "{0, 0, 8, 0, 0, 0}")
