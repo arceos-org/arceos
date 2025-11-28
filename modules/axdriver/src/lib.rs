@@ -110,6 +110,9 @@ pub struct AllDevices {
     /// All graphics device drivers.
     #[cfg(feature = "display")]
     pub display: AxDeviceContainer<AxDisplayDevice>,
+    /// All input device drivers.
+    #[cfg(feature = "input")]
+    pub input: AxDeviceContainer<AxInputDevice>,
 }
 
 impl AllDevices {
@@ -157,6 +160,8 @@ impl AllDevices {
             AxDeviceEnum::Block(dev) => self.block.push(dev),
             #[cfg(feature = "display")]
             AxDeviceEnum::Display(dev) => self.display.push(dev),
+            #[cfg(feature = "input")]
+            AxDeviceEnum::Input(dev) => self.input.push(dev),
         }
     }
 }
@@ -191,6 +196,14 @@ pub fn init_drivers() -> AllDevices {
         for (i, dev) in all_devs.display.iter().enumerate() {
             assert_eq!(dev.device_type(), DeviceType::Display);
             debug!("  graphics device {}: {:?}", i, dev.device_name());
+        }
+    }
+    #[cfg(feature = "input")]
+    {
+        debug!("number of input devices: {}", all_devs.input.len());
+        for (i, dev) in all_devs.input.iter().enumerate() {
+            assert_eq!(dev.device_type(), DeviceType::Input);
+            debug!("  input device {}: {:?}", i, dev.device_name());
         }
     }
 

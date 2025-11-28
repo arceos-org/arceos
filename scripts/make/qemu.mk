@@ -80,6 +80,9 @@ ifeq ($(GRAPHIC), n)
   qemu_args-y += -nographic
 endif
 
+qemu_args-$(INPUT) += \
+  -device virtio-mouse-pci -device virtio-keyboard-pci
+
 ifeq ($(QEMU_LOG), y)
   qemu_args-y += -D qemu.log -d in_asm,int,mmu,pcall,cpu_reset,guest_errors
 endif

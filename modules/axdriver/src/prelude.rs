@@ -9,5 +9,10 @@ pub use {
     crate::structs::AxDisplayDevice,
     axdriver_display::{DisplayDriverOps, DisplayInfo},
 };
+#[cfg(feature = "input")]
+pub use {
+    crate::structs::AxInputDevice,
+    axdriver_input::{Event, EventType, InputDeviceId, InputDriverOps},
+};
 #[cfg(feature = "net")]
 pub use {crate::structs::AxNetDevice, axdriver_net::NetDriverOps};

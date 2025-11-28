@@ -71,6 +71,15 @@ display = [
     "axruntime/display",
 ]
 
+# Input
+input = [
+    "alloc",
+    "paging",
+    "axdriver/virtio-input",
+    "dep:axinput",
+    "axruntime/input",
+]
+
 # Real Time Clock (RTC) Driver.
 rtc = ["axhal/rtc", "axruntime/rtc"]
 
@@ -95,6 +104,7 @@ axdisplay = { workspace = true, optional = true }
 axdriver = { workspace = true, optional = true }
 axfs = { workspace = true, optional = true }
 axhal.workspace = true
+axinput = { workspace = true, optional = true }
 axipi = { workspace = true, optional = true }
 axlog.workspace = true
 axnet = { workspace = true, optional = true }

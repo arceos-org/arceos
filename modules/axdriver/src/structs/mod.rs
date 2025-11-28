@@ -23,6 +23,9 @@ pub enum AxDeviceEnum {
     /// Graphic display device.
     #[cfg(feature = "display")]
     Display(AxDisplayDevice),
+    /// Graphic input device.
+    #[cfg(feature = "input")]
+    Input(AxInputDevice),
 }
 
 impl BaseDriverOps for AxDeviceEnum {
@@ -36,6 +39,8 @@ impl BaseDriverOps for AxDeviceEnum {
             Self::Block(_) => DeviceType::Block,
             #[cfg(feature = "display")]
             Self::Display(_) => DeviceType::Display,
+            #[cfg(feature = "input")]
+            Self::Input(_) => DeviceType::Input,
             _ => unreachable!(),
         }
     }
@@ -50,6 +55,8 @@ impl BaseDriverOps for AxDeviceEnum {
             Self::Block(dev) => dev.device_name(),
             #[cfg(feature = "display")]
             Self::Display(dev) => dev.device_name(),
+            #[cfg(feature = "input")]
+            Self::Input(dev) => dev.device_name(),
             _ => unreachable!(),
         }
     }

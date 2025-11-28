@@ -73,6 +73,21 @@ cfg_if! {
     }
 }
 
+cfg_if! {
+    if #[cfg(input_dev = "virtio-input")] {
+        pub struct VirtIoInput;
+
+        impl VirtIoDevMeta for VirtIoInput {
+            const DEVICE_TYPE: DeviceType = DeviceType::Input;
+            type Device = axdriver_virtio::VirtIoInputDev<VirtIoHalImpl, VirtIoTransport>;
+
+            fn try_new(transport: VirtIoTransport, _irq: Option<usize>) -> DevResult<AxDeviceEnum> {
+                Ok(AxDeviceEnum::from_input(Self::Device::try_new(transport)?))
+            }
+        }
+    }
+}
+
 /// A common driver for all VirtIO devices that implements [`DriverProbe`].
 pub struct VirtIoDriver<D: VirtIoDevMeta + ?Sized>(PhantomData<D>);
 
@@ -112,6 +127,7 @@ impl<D: VirtIoDevMeta> DriverProbe for VirtIoDriver<D> {
         match (D::DEVICE_TYPE, dev_info.device_id) {
             (DeviceType::Net, 0x1000) | (DeviceType::Net, 0x1041) => {}
             (DeviceType::Block, 0x1001) | (DeviceType::Block, 0x1042) => {}
+            (DeviceType::Input, 0x1052) => {}
             (DeviceType::Display, 0x1050) => {}
             _ => return None,
         }

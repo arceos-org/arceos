@@ -100,3 +100,38 @@ cfg_if! {
         }
     }
 }
+
+cfg_if! {
+    if #[cfg(input_dev = "dummy")] {
+        pub struct DummyInputDev;
+        pub struct DummyInputDriver;
+        register_input_driver!(DummyInputDriver, DummyInputDev);
+
+        impl BaseDriverOps for DummyInputDev {
+            fn device_type(&self) -> DeviceType {
+                DeviceType::Input
+            }
+            fn device_name(&self) -> &str {
+                "dummy-input"
+            }
+        }
+
+        impl InputDriverOps for DummyInputDev {
+            fn device_id(&self) -> InputDeviceId {
+                InputDeviceId { bus_type: 0, vendor: 0, product: 0, version: 0 }
+            }
+            fn physical_location(&self) -> &str {
+                "dummy"
+            }
+            fn unique_id(&self) -> &str {
+                "dummy"
+            }
+            fn get_event_bits(&mut self, _ty: EventType, _out: &mut [u8]) -> DevResult<bool> {
+                Err(DevError::Unsupported)
+            }
+            fn read_event(&mut self) -> DevResult<Event> {
+                Err(DevError::Unsupported)
+            }
+        }
+    }
+}

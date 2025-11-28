@@ -23,6 +23,7 @@ multitask = ["axtask/multitask"]
 fs = ["dep:axdriver", "dep:axfs"]
 net = ["dep:axdriver", "dep:axnet"]
 display = ["dep:axdriver", "dep:axdisplay"]
+input = ["dep:axdriver", "dep:axinput"]
 rtc = []
 driver-dyn = ["axdriver/dyn"]
 
@@ -32,6 +33,7 @@ axbacktrace.workspace = true
 axconfig.workspace = true
 axdisplay = { workspace = true, optional = true }
 axdriver = { workspace = true, optional = true }
+axinput = { workspace = true, optional = true }
 axfs = { workspace = true, optional = true }
 axhal.workspace = true
 axipi = { workspace = true, optional = true }

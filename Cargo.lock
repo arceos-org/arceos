@@ -397,6 +397,7 @@ dependencies = [
  "axdriver_base",
  "axdriver_block",
  "axdriver_display",
+ "axdriver_input",
  "axdriver_net",
  "axdriver_pci",
  "axdriver_virtio",
@@ -441,6 +442,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "axdriver_input"
+version = "0.1.2"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=dev-v01#cada10715c1f4c08b63d5d60345d2bedbc39bcd8"
+dependencies = [
+ "axdriver_base",
+ "strum",
+]
+
+[[package]]
 name = "axdriver_net"
 version = "0.1.2"
 source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=dev-v01#cada10715c1f4c08b63d5d60345d2bedbc39bcd8"
@@ -468,6 +478,7 @@ dependencies = [
  "axdriver_base",
  "axdriver_block",
  "axdriver_display",
+ "axdriver_input",
  "axdriver_net",
  "log",
  "virtio-drivers",
@@ -503,6 +514,7 @@ dependencies = [
  "axdriver",
  "axfs",
  "axhal",
+ "axinput",
  "axipi",
  "axlog",
  "axnet",
@@ -588,6 +600,16 @@ dependencies = [
  "memory_addr",
  "page_table_multiarch",
  "percpu",
+]
+
+[[package]]
+name = "axinput"
+version = "0.2.0"
+dependencies = [
+ "axdriver",
+ "axsync",
+ "lazyinit",
+ "log",
 ]
 
 [[package]]
@@ -855,6 +877,7 @@ dependencies = [
  "axdriver",
  "axfs",
  "axhal",
+ "axinput",
  "axipi",
  "axlog",
  "axmm",
