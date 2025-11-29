@@ -1,0 +1,60 @@
+name: Docker Build Test
+
+on:
+  push:
+    paths:
+      - 'Dockerfile'
+  pull_request:
+    paths:
+      - 'Dockerfile'
+
+jobs:
+  build-base:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and Export
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          outputs: type=docker,dest=/tmp/arceos.tar
+          tags: arceos:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: docker-image
+          path: /tmp/arceos.tar
+          retention-days: 1
+  docker-build-and-run:
+    needs: build-base
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86_64, riscv64, aarch64, loongarch64]
+        app: 
+          - examples/helloworld
+          - examples/httpclient
+          - examples/httpserver
+          - examples/shell
+          - examples/helloworld-c
+          - examples/httpclient-c
+          - examples/httpserver-c
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: /tmp
+      - name: Load Image
+        run: docker load --input /tmp/arceos.tar
+      - name: Test Docker Image
+        run: |
+          docker run --rm \
+          -v ${{ github.workspace }}:/workspace \
+          -w /workspace \
+          arceos:latest \
+          make ARCH=${{ matrix.arch }} A=${{ matrix.app }}
