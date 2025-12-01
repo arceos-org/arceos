@@ -25,9 +25,17 @@ pub mod config {
 
 /// POSIX C types.
 #[rustfmt::skip]
-#[path = "./ctypes_gen.rs"]
-#[allow(dead_code, non_snake_case, non_camel_case_types, non_upper_case_globals, clippy::upper_case_acronyms, missing_docs)]
-pub mod ctypes;
+#[allow(nonstandard_style, dead_code, missing_docs)]
+pub mod ctypes_gen;
+
+#[cfg(not(feature = "use-hermit-types"))]
+pub use self::ctypes_gen as ctypes;
+
+#[cfg(feature = "use-hermit-types")]
+mod hermit_abi;
+
+#[cfg(feature = "use-hermit-types")]
+pub use hermit_abi::hermit_types as ctypes;
 
 #[cfg(feature = "fd")]
 pub use imp::fd_ops::{sys_close, sys_dup, sys_dup2, sys_fcntl};

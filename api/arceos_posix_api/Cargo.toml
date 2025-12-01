@@ -19,6 +19,8 @@ include = ["src/**/*.rs", "Cargo.toml", "build.rs", "ctypes.h"]
 [features]
 default = []
 
+use-hermit-types = []
+
 smp = ["axfeat/smp"]
 irq = ["axfeat/irq"]
 alloc = ["dep:axalloc", "axfeat/alloc"]

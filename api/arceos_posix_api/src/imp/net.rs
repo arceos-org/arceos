@@ -174,7 +174,7 @@ impl FileLike for Socket {
 impl From<SocketAddrV4> for ctypes::sockaddr_in {
     fn from(addr: SocketAddrV4) -> ctypes::sockaddr_in {
         ctypes::sockaddr_in {
-            sin_family: ctypes::AF_INET as u16,
+            sin_family: ctypes::AF_INET as _,
             sin_port: addr.port().to_be(),
             sin_addr: ctypes::in_addr {
                 // `s_addr` is stored as BE on all machines and the array is in BE order.
@@ -182,6 +182,7 @@ impl From<SocketAddrV4> for ctypes::sockaddr_in {
                 s_addr: u32::from_ne_bytes(addr.ip().octets()),
             },
             sin_zero: [0; 8],
+            .. Default::default()
         }
     }
 }
@@ -218,7 +219,7 @@ fn from_sockaddr(
     }
 
     let mid = unsafe { *(addr as *const ctypes::sockaddr_in) };
-    if mid.sin_family != ctypes::AF_INET as u16 {
+    if mid.sin_family != ctypes::AF_INET as _ {
         return Err(LinuxError::EINVAL);
     }
 
