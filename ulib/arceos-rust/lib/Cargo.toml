@@ -83,7 +83,7 @@ log-level-trace = []
 
 [dependencies]
 axfeat = { workspace = true }
-arceos_posix_api = { workspace = true }
+arceos_posix_api = { workspace = true, features = ["use-hermit-types"] }
 arceos_api = { workspace = true, features = ["alloc"] }
 axruntime = { workspace = true }
 axio = "0.1"
