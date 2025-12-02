@@ -43,6 +43,7 @@ pub struct TcpSocket {
     local_addr: UnsafeCell<IpEndpoint>,
     peer_addr: UnsafeCell<IpEndpoint>,
     nonblock: AtomicBool,
+    reuse_addr: AtomicBool,
 }
 
 unsafe impl Sync for TcpSocket {}
@@ -62,6 +63,7 @@ impl TcpSocket {
             local_addr: UnsafeCell::new(UNSPECIFIED_ENDPOINT),
             peer_addr: UnsafeCell::new(UNSPECIFIED_ENDPOINT),
             nonblock: AtomicBool::new(false),
+            reuse_addr: AtomicBool::new(false),
         }
     }
 
@@ -77,6 +79,7 @@ impl TcpSocket {
             local_addr: UnsafeCell::new(local_addr),
             peer_addr: UnsafeCell::new(peer_addr),
             nonblock: AtomicBool::new(false),
+            reuse_addr: AtomicBool::new(false),
         }
     }
 
@@ -119,6 +122,18 @@ impl TcpSocket {
     #[inline]
     pub fn set_nonblocking(&self, nonblocking: bool) {
         self.nonblock.store(nonblocking, Ordering::Release);
+    }
+
+    /// Returns whether SO_REUSEADDR behavior is enabled.
+    #[inline]
+    pub fn is_reuse_addr(&self) -> bool {
+        self.reuse_addr.load(Ordering::Acquire)
+    }
+
+    /// Enables or disables SO_REUSEADDR behavior.
+    #[inline]
+    pub fn set_reuseaddr(&self, reuse: bool) {
+        self.reuse_addr.store(reuse, Ordering::Release);
     }
 
     /// Connects to the given address and port.

@@ -12,6 +12,7 @@ use axsync::Mutex;
 
 use super::fd_ops::FileLike;
 use crate::{ctypes, utils::char_ptr_to_str};
+use crate::ctypes::{SOL_SOCKET, SO_REUSEADDR};
 
 pub enum Socket {
     Udp(Mutex<UdpSocket>),
@@ -125,6 +126,16 @@ impl Socket {
                 let tcpsocket = tcpsocket.lock();
                 tcpsocket.peer_addr()?;
                 tcpsocket.shutdown()?;
+                Ok(())
+            }
+        }
+    }
+
+    fn set_reuseaddr(&self, reuse: bool) -> LinuxResult {
+        match self {
+            Socket::Udp(_) => Err(LinuxError::ENOPROTOOPT),
+            Socket::Tcp(tcpsocket) => {
+                tcpsocket.lock().set_reuseaddr(reuse);
                 Ok(())
             }
         }
@@ -580,3 +591,38 @@ pub unsafe fn sys_getpeername(
         Ok(0)
     })
 }
+
+pub unsafe fn sys_setsockopt(
+    socket_fd: c_int,
+    level: c_int,
+    optname: c_int,
+    optval: *const c_void,
+    optlen: ctypes::socklen_t,
+) -> c_int {
+    debug!(
+        "sys_setsockopt <= {} {} {} {:#x} {}",
+        socket_fd, level, optname, optval as usize, optlen
+    );
+    syscall_body!(sys_setsockopt, {
+        if optval.is_null() {
+            return Err(LinuxError::EFAULT);
+        }
+        let socket = Socket::from_fd(socket_fd)?;
+        match level {
+            SOL_SOCKET => match optname {
+                SO_REUSEADDR => {
+                    if optlen < size_of::<c_int>() as u32 {
+                        return Err(LinuxError::EINVAL);
+                    }
+                    let flag = unsafe { *(optval as *const c_int) };
+                    socket.set_reuseaddr(flag != 0)?;
+                    Ok(0)
+                }
+                _ => Err(LinuxError::ENOPROTOOPT),
+            },
+            _ => Err(LinuxError::ENOPROTOOPT),
+        }
+    })
+}
+
+
