@@ -109,3 +109,18 @@ pub fn sys_setsockopt(
     );
     unsafe { arceos_posix_api::sys_setsockopt(socket_fd, level, optname, optval, optlen) }
 }
+
+#[unsafe(no_mangle)]
+pub fn sys_getpeername(socket_fd: i32, addr: *mut sockaddr, addrlen: *mut socklen_t) -> i32 {
+    info!(
+        "[sys_getpeername] socket_fd: {}, addrlen: {:p}",
+        socket_fd, addrlen
+    );
+    unsafe { arceos_posix_api::sys_getpeername(socket_fd, addr, addrlen) }
+}
+
+#[unsafe(no_mangle)]
+pub fn sys_shutdown(socket_fd: i32, how: i32) -> i32 {
+    info!("[sys_shutdown] socket_fd: {}, how: {}", socket_fd, how);
+    arceos_posix_api::sys_shutdown(socket_fd, how)
+}

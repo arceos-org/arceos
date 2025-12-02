@@ -1,6 +1,31 @@
-use alloc::string::ToString;
-use arceos_api::task::ax_spawn;
+use alloc::format;
+use alloc::vec::Vec;
+use arceos_api::modules::axlog::warn;
+use arceos_api::task::{AxTaskHandle, ax_spawn, ax_wait_for_exit, ax_yield_now};
 use arceos_posix_api::ctypes::Tid;
+use core::sync::atomic::{AtomicU64, Ordering};
+use kspin::SpinNoIrq;
+
+const DEFAULT_STACK_SIZE: usize = arceos_api::config::TASK_STACK_SIZE;
+
+static TASK_TABLE: SpinNoIrq<Vec<(u64, AxTaskHandle)>> = SpinNoIrq::new(Vec::new());
+static NEXT_TID: AtomicU64 = AtomicU64::new(1);
+
+fn insert_task(handle: AxTaskHandle) -> u64 {
+    let tid = NEXT_TID.fetch_add(1, Ordering::Relaxed);
+    let mut guard = TASK_TABLE.lock();
+    guard.push((tid, handle));
+    tid
+}
+
+fn take_task(tid: u64) -> Option<AxTaskHandle> {
+    let mut guard = TASK_TABLE.lock();
+    if let Some(index) = guard.iter().position(|(id, _)| *id == tid) {
+        Some(guard.swap_remove(index).1)
+    } else {
+        None
+    }
+}
 
 /// spawn a new thread with user-specified stack size
 ///
@@ -22,12 +47,34 @@ pub fn sys_spawn2(
     stack_size: usize,
     _core_id: isize,
 ) -> Tid {
-    let task = ax_spawn(
+    let actual_stack = if stack_size == 0 { DEFAULT_STACK_SIZE } else { stack_size };
+    let name = format!("hermit-thread-{}", NEXT_TID.load(Ordering::Relaxed));
+    let handle = ax_spawn(
         move || {
             func(arg);
         },
-        (func as usize).to_string(),
-        stack_size,
+        name,
+        actual_stack,
     );
-    task.id() as _
+    insert_task(handle) as Tid
+}
+
+/// Wait for a thread to finish.
+#[cfg(feature = "multitask")]
+#[unsafe(no_mangle)]
+pub fn sys_join(tid: Tid) -> i32 {
+    match take_task(tid as u64) {
+        Some(handle) => ax_wait_for_exit(handle).unwrap_or(0),
+        None => {
+            warn!("[sys_join] Unknown tid {}", tid);
+            -1
+        }
+    }
+}
+
+/// Yield the current thread.
+#[cfg(feature = "multitask")]
+#[unsafe(no_mangle)]
+pub fn sys_yield() {
+    ax_yield_now();
 }
