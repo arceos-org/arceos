@@ -4,7 +4,7 @@ FROM rust:slim-trixie
 # RUN sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list.d/debian.sources
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libclang-20-dev wget make python3 \
+    && apt-get install -y --no-install-recommends libclang-19-dev wget make python3 \
         xz-utils python3-venv ninja-build bzip2 meson \
         pkg-config libglib2.0-dev git libslirp-dev \
     && rm -rf /var/lib/apt/lists/*
