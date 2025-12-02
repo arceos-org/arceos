@@ -26,19 +26,6 @@ pub fn sys_futex_wake(address: *mut u32, count: i32) -> i32 {
 }
 
 #[unsafe(no_mangle)]
-pub fn sys_abort() -> ! {
-    info!("called sys_abort");
-    ax_terminate()
-}
-
-#[unsafe(no_mangle)]
-pub fn sys_exit(code: i32) -> ! {
-    info!("called sys_exit with code {}", code);
-    ax_println!("[ArceOS] Process exited with code {}", code);
-    ax_terminate()
-}
-
-#[unsafe(no_mangle)]
 pub fn sys_read_entropy(buf: *mut u8, len: usize, flags: u32) -> isize {
     // TODO: flags are currently ignored
     info!("called sys_read_entropy");
