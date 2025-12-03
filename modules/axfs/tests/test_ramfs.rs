@@ -46,8 +46,12 @@ fn test_ramfs() {
     println!("Testing ramfs ...");
 
     axtask::init_scheduler(); // call this to use `axsync::Mutex`.
-    axfs::init_filesystems(AxDeviceContainer::from_one(RamDisk::default())); // dummy disk, actually not used.
 
+    // dummy disk, actually not used.
+    #[cfg(feature = "dyn")]
+    axfs::init_filesystems(AxDeviceContainer::from_one(Box::new(RamDisk::default()))); 
+    #[cfg(not(feature = "dyn"))]
+    axfs::init_filesystems(AxDeviceContainer::from_one(RamDisk::default()));
     if let Err(e) = create_init_files() {
         log::warn!("failed to create init files: {:?}", e);
     }

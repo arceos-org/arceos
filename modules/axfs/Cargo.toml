@@ -18,6 +18,7 @@ ext4fs = ["dep:lwext4_rust"]
 fatfs = ["dep:fatfs"]
 myfs = ["dep:crate_interface"]
 use-ramdisk = []
+dyn = ["axdriver/dyn"]
 
 default = ["devfs", "ramfs", "fatfs", "procfs", "sysfs"]
 
