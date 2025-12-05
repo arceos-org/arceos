@@ -98,6 +98,7 @@ fn compile_foo_project(lib_dir: &PathBuf, out_dir: &PathBuf, config_path: &PathB
     command.env("AX_TARGET", &target);
     command.env("AX_MODE", profile);
     command.env("AX_CONFIG_PATH", config_path);
+    command.env("AX_LOG", get_log_level(&features));
     if env::var("AX_IP").is_err() {
         command.env("AX_IP", "10.0.2.15");
     }
@@ -172,4 +173,14 @@ fn get_platform() -> &'static str {
         "loongarch64" => "loongarch64-qemu-virt",
         _ => panic!("Unsupported architecture: {}", arch),
     }
+}
+
+fn get_log_level(feature_list: &str) -> &str {
+    let mut level = "off";
+    for feature in feature_list.split(',') {
+        if feature.starts_with("log-level-") {
+            level = &feature["log-level-".len()..];
+        }
+    }
+    level
 }
