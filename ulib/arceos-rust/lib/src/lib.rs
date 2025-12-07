@@ -12,6 +12,12 @@ unsafe extern "C" {
 
 #[unsafe(no_mangle)]
 pub fn __app_main() {
+    // keep `linkme` symbols from being optimized out
+    #[cfg(feature = "irq")]
+    {
+        use arceos_api::modules::axhal::irq::irq_handler;
+        core::hint::black_box(irq_handler as * const ());
+    }
     info!("Starting application...");
     // call the runtime entry point with zeroed arguments
     const ARGC: i32 = 1;
