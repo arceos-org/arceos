@@ -102,10 +102,10 @@ SECTIONS
 }
 
 SECTIONS {
-    linkme_IRQ : { *(linkme_IRQ) }
-    linkm2_IRQ : { *(linkm2_IRQ) }
-    linkme_PAGE_FAULT : { *(linkme_PAGE_FAULT) }
-    linkm2_PAGE_FAULT : { *(linkm2_PAGE_FAULT) }
-    scope_local : { *(scope_local) }
+    linkme_IRQ : { KEEP(*(linkme_IRQ)) }
+    linkm2_IRQ : { KEEP(*(linkm2_IRQ)) }
+    linkme_PAGE_FAULT : { KEEP(*(linkme_PAGE_FAULT)) }
+    linkm2_PAGE_FAULT : { KEEP(*(linkm2_PAGE_FAULT)) }
+    scope_local : { KEEP(*(scope_local)) }
 }
 INSERT AFTER .tbss;
