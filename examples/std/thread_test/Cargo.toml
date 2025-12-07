@@ -1,0 +1,8 @@
+[package]
+name = "arceos-std-thread_test"
+version = "0.1.0"
+edition.workspace = true
+authors = ["eternalcomet <mydragonos@outlook.com>"]
+
+[target.'cfg(target_os = "hermit")'.dependencies]
+arceos-rust = { workspace = true, default-features = true, features = ["multitask", "log-level-off", "irq"] }

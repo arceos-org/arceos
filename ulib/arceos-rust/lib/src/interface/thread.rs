@@ -68,7 +68,7 @@ pub fn sys_spawn2(
 #[unsafe(no_mangle)]
 pub fn sys_join(tid: Tid) -> i32 {
     match take_task(tid as u64) {
-        Some(handle) => ax_wait_for_exit(handle).unwrap_or(0),
+        Some(handle) => ax_wait_for_exit(handle),
         None => {
             warn!("[sys_join] Unknown tid {}", tid);
             -1
