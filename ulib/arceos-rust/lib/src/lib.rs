@@ -1,7 +1,6 @@
 #![no_std]
 extern crate alloc;
 
-mod syscall;
 mod interface;
 
 use arceos_api::modules::axlog::{debug, info};
