@@ -111,25 +111,28 @@ impl WaitQueue {
     }
 
     /// Wakes up one task in the wait queue, usually the first one.
+    /// This function should not be called in a loop, use `notify_many` instead.
     ///
-    /// If `resched` is true, the current task will be preempted when the
-    /// preemption is enabled.
+    /// If `resched` is true, the current task will yield.
     pub fn notify_one(&self, resched: bool) -> bool {
-        let n = self.event.notify(1);
+        self.notify_many(1, resched) == 1
+    }
+
+    /// Wakes up to `count` tasks in the wait queue.
+    ///
+    /// If `resched` is true, the current task will yield.
+    pub fn notify_many(&self, count: usize, resched: bool) -> usize {
+        let n = self.event.notify(count);
         if resched {
             crate::yield_now();
         }
-        n > 0
+        n
     }
 
     /// Wakes all tasks in the wait queue.
     ///
-    /// If `resched` is true, the current task will be preempted when the
-    /// preemption is enabled.
+    /// If `resched` is true, the current task will yield.
     pub fn notify_all(&self, resched: bool) {
-        self.event.notify(usize::MAX);
-        if resched {
-            crate::yield_now();
-        }
+        self.notify_many(usize::MAX, resched);
     }
 }
