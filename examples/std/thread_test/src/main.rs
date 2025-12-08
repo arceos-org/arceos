@@ -213,6 +213,7 @@ fn test_barrier_synchronization() {
 // 7. 线程恐慌处理
 fn test_thread_panic() {
     println!("7. 线程恐慌处理:");
+    println!("Unikernel环境下使用panic_abort模式，不支持恐慌捕获，因此会导致程序终止。");
 
     let handle = thread::spawn(|| {
         println!("恐慌线程: 即将恐慌...");
