@@ -39,3 +39,22 @@ pub fn sys_usleep(usec: u64) {
     #[cfg(not(feature = "multitask"))]
     arceos_api::modules::axhal::time::busy_wait(duration);
 }
+
+/// dummy implementation of futex wait
+#[cfg(not(feature = "multitask"))]
+#[unsafe(no_mangle)]
+pub fn sys_futex_wait(
+    address: *mut u32,
+    expected: u32,
+    timeout: *const timespec,
+    flags: u32,
+) -> i32 {
+    0
+}
+
+/// dummy implementation of futex wake
+#[cfg(not(feature = "multitask"))]
+#[unsafe(no_mangle)]
+pub fn sys_futex_wake(address: *mut u32, count: i32) -> i32 {
+    0
+}

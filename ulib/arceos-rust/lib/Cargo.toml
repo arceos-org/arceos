@@ -86,6 +86,7 @@ axfeat = { workspace = true }
 arceos_posix_api = { workspace = true, features = ["use-hermit-types"] }
 arceos_api = { workspace = true, features = ["alloc"] }
 axruntime = { workspace = true }
+axerrno = "0.2"
 axio = "0.1"
 kspin = "0.1"
 rand = { version = "0.9.2", default-features = false, features = ["small_rng"] }

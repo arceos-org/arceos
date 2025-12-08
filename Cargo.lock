@@ -203,6 +203,7 @@ version = "1.0.0"
 dependencies = [
  "arceos_api",
  "arceos_posix_api",
+ "axerrno 0.2.2",
  "axfeat",
  "axio 0.1.2",
  "axruntime",
