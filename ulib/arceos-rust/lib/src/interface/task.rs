@@ -1,7 +1,8 @@
 #[cfg(feature = "multitask")]
 use crate::interface::thread::take_task;
-use arceos_api::modules::axlog::{ax_println, info};
+use arceos_api::modules::axlog::info;
 use arceos_api::sys::ax_terminate;
+use arceos_api::task::ax_exit;
 
 #[unsafe(no_mangle)]
 pub fn sys_abort() -> ! {
@@ -16,6 +17,5 @@ pub fn sys_exit(code: i32) -> ! {
     info!("called sys_exit with code {}", code);
     #[cfg(feature = "multitask")]
     take_task(arceos_api::task::ax_current_task_id());
-    ax_println!("[ArceOS] Process exited with code {}", code);
-    ax_terminate()
+    ax_exit(code)
 }
