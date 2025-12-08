@@ -1,7 +1,7 @@
 use arceos_api::modules::axhal::time::wall_time_nanos;
-use arceos_api::modules::axlog::info;
 use arceos_posix_api::ctypes::{clockid_t, timespec};
 use core::time::Duration;
+use log::info;
 use rand::prelude::SmallRng;
 use rand::{RngCore, SeedableRng};
 
@@ -22,7 +22,10 @@ pub fn sys_read_entropy(buf: *mut u8, len: usize, _flags: u32) -> isize {
 
 #[unsafe(no_mangle)]
 pub fn sys_clock_gettime(clockid: clockid_t, tp: *mut timespec) -> i32 {
-    info!("called sys_clock_gettime with clockid {}, tp {:p}", clockid, tp);
+    info!(
+        "called sys_clock_gettime with clockid {}, tp {:p}",
+        clockid, tp
+    );
     unsafe { arceos_posix_api::sys_clock_gettime(clockid, tp) }
 }
 

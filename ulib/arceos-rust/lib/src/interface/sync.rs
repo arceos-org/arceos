@@ -1,13 +1,13 @@
 use crate::err;
 use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
-use arceos_api::modules::axlog::{info, trace};
 use arceos_api::modules::axsync::Mutex;
 use arceos_api::modules::axtask::WaitQueue;
 use arceos_api::task::ax_yield_now;
 use arceos_posix_api::ctypes::timespec;
 use axerrno::LinuxError;
 use core::time::Duration;
+use log::{info, trace};
 
 static FUTEX_TABLE: Mutex<BTreeMap<usize, Arc<WaitQueue>>> = Mutex::new(BTreeMap::new());
 

@@ -1,5 +1,5 @@
-use arceos_api::modules::axlog::info;
 use arceos_posix_api::ctypes::iovec;
+use log::info;
 
 #[unsafe(no_mangle)]
 pub fn sys_write(fd: i32, buf: *const u8, count: usize) -> isize {

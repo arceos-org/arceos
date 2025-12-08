@@ -1,8 +1,8 @@
 #[cfg(feature = "multitask")]
 use crate::interface::thread::take_task;
-use arceos_api::modules::axlog::info;
 use arceos_api::sys::ax_terminate;
 use arceos_api::task::ax_exit;
+use log::info;
 
 #[unsafe(no_mangle)]
 pub fn sys_abort() -> ! {

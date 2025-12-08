@@ -1,5 +1,5 @@
 use core::alloc::Layout;
-use arceos_api::modules::axlog::{error, info};
+use log::{error, info};
 
 #[unsafe(no_mangle)]
 pub fn sys_malloc(size: usize, align: usize) -> *mut u8 {
@@ -17,7 +17,10 @@ pub fn sys_free(ptr: *mut u8, size: usize, align: usize) {
     if let Ok(layout) = Layout::from_size_align(size, align) {
         unsafe { alloc::alloc::dealloc(ptr, layout) }
     } else {
-        error!("sys_free called with invalid layout: size {}, align {}", size, align);
+        error!(
+            "sys_free called with invalid layout: size {}, align {}",
+            size, align
+        );
     }
 }
 

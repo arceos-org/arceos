@@ -1,10 +1,10 @@
 use alloc::collections::BTreeMap;
 use alloc::format;
-use arceos_api::modules::axlog::{info, warn};
 use arceos_api::modules::axsync::Mutex;
 use arceos_api::task::{ax_spawn, ax_wait_for_exit, ax_yield_now, AxTaskHandle};
 use arceos_posix_api::ctypes::Tid;
 use core::sync::atomic::{AtomicU64, Ordering};
+use log::{info, warn};
 
 const DEFAULT_STACK_SIZE: usize = arceos_api::config::TASK_STACK_SIZE;
 

@@ -21,7 +21,7 @@ pub fn __app_main() {
     #[cfg(feature = "irq")]
     {
         use arceos_api::modules::axhal::irq::irq_handler;
-        core::hint::black_box(irq_handler as * const ());
+        core::hint::black_box(irq_handler as *const ());
     }
     info!("Starting application...");
     // call the runtime entry point with zeroed arguments
