@@ -241,6 +241,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "arceos-std-io_test"
+version = "0.1.0"
+dependencies = [
+ "arceos-rust",
+]
+
+[[package]]
 name = "arceos-std-thread_test"
 version = "0.1.0"
 dependencies = [
