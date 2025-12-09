@@ -108,6 +108,8 @@ else ifeq ($(ARCH), riscv64)
   TARGET := riscv64gc-unknown-none-elf
 else ifeq ($(ARCH), loongarch64)
   TARGET := loongarch64-unknown-none-softfloat
+else ifeq ($(ARCH), arm)
+  TARGET := armv7a-none-eabi
 else
   $(error "ARCH" must be one of "x86_64", "riscv64", "aarch64" or "loongarch64")
 endif

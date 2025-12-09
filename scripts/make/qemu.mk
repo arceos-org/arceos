@@ -21,6 +21,8 @@ else ifeq ($(ARCH), aarch64)
   else
     machine := virt
   endif
+else ifeq ($(ARCH), arm)
+  machine := virt,gic-version=3
 else ifeq ($(ARCH), loongarch64)
   machine := virt
   override MEM := 1G
@@ -43,6 +45,11 @@ qemu_args-aarch64 := \
 qemu_args-loongarch64 := \
   -machine $(machine) \
   -kernel $(OUT_ELF)
+
+qemu_args-arm := \
+  -machine $(machine) \
+  -cpu cortex-a15 \
+  -kernel $(FINAL_IMG)
 
 qemu_args-y := -m $(MEM) -smp $(SMP) $(qemu_args-$(ARCH))
 

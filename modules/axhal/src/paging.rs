@@ -25,6 +25,18 @@ impl PagingHandler for PagingHandlerImpl {
         global_allocator().dealloc_pages(phys_to_virt(paddr).as_usize(), num)
     }
 
+    fn alloc_frame_contiguous(num_pages: usize, align_pow2: usize) -> Option<PhysAddr> {
+        global_allocator()
+            .alloc_pages(num_pages, align_pow2)
+            .map(|vaddr| virt_to_phys(vaddr.into()))
+            .ok()
+    }
+
+    fn dealloc_frame_contiguous(paddr: PhysAddr, num_pages: usize) {
+        let vaddr = phys_to_virt(paddr);
+        global_allocator().dealloc_pages(vaddr.as_usize(), num_pages)
+    }
+
     #[inline]
     fn phys_to_virt(paddr: PhysAddr) -> VirtAddr {
         phys_to_virt(paddr)
@@ -44,5 +56,8 @@ cfg_if::cfg_if! {
     } else if #[cfg(target_arch = "loongarch64")] {
         /// The architecture-specific page table.
         pub type PageTable = page_table_multiarch::loongarch64::LA64PageTable<PagingHandlerImpl>;
+    } else if #[cfg(target_arch = "arm")] {
+        /// The architecture-specific page table.
+        pub type PageTable = page_table_multiarch::arm::A32PageTable<PagingHandlerImpl>;
     }
 }
