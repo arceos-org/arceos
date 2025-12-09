@@ -72,6 +72,11 @@ pub fn current_task_ptr<T>() -> *const T {
             }
         }
     }
+    #[cfg(target_arch = "arm")]
+    unsafe {
+        let _guard = kernel_guard::IrqSave::new();
+        CURRENT_TASK_PTR.read_current_raw() as _
+    }
 }
 
 /// Sets the pointer to the current task with preemption-safety.
@@ -104,6 +109,11 @@ pub unsafe fn set_current_task_ptr<T>(ptr: *const T) {
             CURRENT_TASK_PTR.write_current_raw(ptr as usize);
             cache_current_task_ptr(ptr);
         }
+    }
+    #[cfg(target_arch = "arm")]
+    {
+        let _guard = kernel_guard::IrqSave::new();
+        unsafe { CURRENT_TASK_PTR.write_current_raw(ptr as usize) }
     }
 }
 
