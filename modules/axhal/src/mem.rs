@@ -30,8 +30,9 @@ pub fn memory_regions() -> impl Iterator<Item = PhysMemRegion> {
 /// This function is unsafe because it writes `.bss` section directly.
 pub unsafe fn clear_bss() {
     unsafe {
-        core::slice::from_raw_parts_mut(_sbss as usize as *mut u8, _ebss as usize - _sbss as usize)
-            .fill(0);
+        let sbss = _sbss as *const () as usize;
+        let ebss = _ebss as *const () as usize;
+        core::slice::from_raw_parts_mut(sbss as *mut u8, ebss - sbss).fill(0);
     }
 }
 
@@ -44,34 +45,44 @@ pub fn init() {
         }
     };
 
+    let stext = _stext as *const() as usize;
+    let etext = _etext as *const() as usize;
     // Push regions in kernel image
     push(PhysMemRegion {
-        paddr: virt_to_phys((_stext as usize).into()),
-        size: _etext as usize - _stext as usize,
+        paddr: virt_to_phys((stext).into()),
+        size: etext - stext,
         flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::EXECUTE,
         name: ".text",
     });
+    let srodata = _srodata as *const() as usize;
+    let erodata = _erodata as *const() as usize;
     push(PhysMemRegion {
-        paddr: virt_to_phys((_srodata as usize).into()),
-        size: _erodata as usize - _srodata as usize,
+        paddr: virt_to_phys((srodata).into()),
+        size: erodata - srodata,
         flags: MemRegionFlags::RESERVED | MemRegionFlags::READ,
         name: ".rodata",
     });
+    let sdata = _sdata as *const() as usize;
+    let edata = _edata as *const() as usize;
     push(PhysMemRegion {
-        paddr: virt_to_phys((_sdata as usize).into()),
-        size: _edata as usize - _sdata as usize,
+        paddr: virt_to_phys((sdata).into()),
+        size: edata - sdata,
         flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
         name: ".data .tdata .tbss .percpu",
     });
+    let boot_stack = boot_stack as *const() as usize;
+    let boot_stack_top = boot_stack_top as *const() as usize;
     push(PhysMemRegion {
-        paddr: virt_to_phys((boot_stack as usize).into()),
-        size: boot_stack_top as usize - boot_stack as usize,
+        paddr: virt_to_phys((boot_stack).into()),
+        size: boot_stack_top - boot_stack,
         flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
         name: "boot stack",
     });
+    let sbss = _sbss as *const() as usize;
+    let ebss = _ebss as *const() as usize;
     push(PhysMemRegion {
-        paddr: virt_to_phys((_sbss as usize).into()),
-        size: _ebss as usize - _sbss as usize,
+        paddr: virt_to_phys((sbss).into()),
+        size: ebss - sbss,
         flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
         name: ".bss",
     });
@@ -85,8 +96,10 @@ pub fn init() {
     }
 
     // Combine kernel image range and reserved ranges
-    let kernel_start = virt_to_phys(va!(_skernel as usize)).as_usize();
-    let kernel_size = _ekernel as usize - _skernel as usize;
+    let skernel = _skernel as *const() as usize;
+    let ekernel = _ekernel as *const() as usize;
+    let kernel_start = virt_to_phys(va!(skernel)).as_usize();
+    let kernel_size = ekernel - skernel;
     let mut reserved_ranges = reserved_phys_ram_ranges()
         .iter()
         .cloned()
