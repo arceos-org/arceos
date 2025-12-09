@@ -57,7 +57,7 @@ pub fn init() {
     let srodata = _srodata as *const() as usize;
     let erodata = _erodata as *const() as usize;
     push(PhysMemRegion {
-        paddr: virt_to_phys((srodata).into()),
+        paddr: virt_to_phys(srodata.into()),
         size: erodata - srodata,
         flags: MemRegionFlags::RESERVED | MemRegionFlags::READ,
         name: ".rodata",
