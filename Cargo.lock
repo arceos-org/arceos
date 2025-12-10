@@ -603,6 +603,7 @@ dependencies = [
  "axplat-riscv64-qemu-virt",
  "axplat-x86-pc",
  "cfg-if",
+ "fdt-parser",
  "heapless 0.9.2",
  "kernel_guard",
  "lazyinit",

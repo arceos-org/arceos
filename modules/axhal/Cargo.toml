@@ -68,6 +68,7 @@ log.workspace = true
 memory_addr.workspace = true
 page_table_multiarch = { workspace = true, optional = true }
 percpu.workspace = true
+fdt-parser = "0.4"
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 axplat-x86-pc = { workspace = true, optional = true }
