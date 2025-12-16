@@ -116,9 +116,9 @@ pub fn init_early(cpu_id: usize, arg: usize) {
     axplat::init::init_early(cpu_id, arg);
 }
 
-#[macro_export]
 macro_rules! addr_of_sym {
     ($e:ident) => {
         $e as *const () as usize
     };
 }
+pub(crate) use addr_of_sym;
