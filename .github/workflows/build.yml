@@ -9,7 +9,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [x86_64, riscv64, aarch64, loongarch64]
-        rust-toolchain: [nightly, nightly-2025-05-20]
+        rust-toolchain: [nightly, nightly-2025-12-12]
     env:
       RUSTUP_TOOLCHAIN: ${{ matrix.rust-toolchain }}
     steps:
@@ -39,7 +39,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [x86_64, riscv64, aarch64, loongarch64]
-        rust-toolchain: [nightly, nightly-2025-05-20]
+        rust-toolchain: [nightly, nightly-2025-12-12]
     env:
       RUSTUP_TOOLCHAIN: ${{ matrix.rust-toolchain }}
     steps:
@@ -84,7 +84,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust-toolchain: [nightly, nightly-2025-05-20]
+        rust-toolchain: [nightly, nightly-2025-12-12]
     env:
       RUSTUP_TOOLCHAIN: ${{ matrix.rust-toolchain }}
     steps:
@@ -224,7 +224,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust-toolchain: [nightly, nightly-2025-05-20]
+        rust-toolchain: [nightly, nightly-2025-12-12]
     env:
       RUSTUP_TOOLCHAIN: ${{ matrix.rust-toolchain }}
     steps:
