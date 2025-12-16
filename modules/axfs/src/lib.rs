@@ -20,7 +20,7 @@
 //! [`MyFileSystemIf`]: fops::MyFileSystemIf
 
 #![cfg_attr(all(not(test), not(doc)), no_std)]
-#![feature(doc_auto_cfg)]
+#![feature(doc_cfg)]
 
 #[macro_use]
 extern crate log;

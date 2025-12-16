@@ -28,7 +28,7 @@
 //! [cargo test]: https://doc.rust-lang.org/cargo/guide/tests.html
 
 #![no_std]
-#![feature(doc_auto_cfg)]
+#![feature(doc_cfg)]
 
 #[allow(unused_imports)]
 #[macro_use]
@@ -114,4 +114,11 @@ pub use axplat::init::{init_early_secondary, init_later_secondary};
 pub fn init_early(cpu_id: usize, arg: usize) {
     dtb::init(arg);
     axplat::init::init_early(cpu_id, arg);
+}
+
+#[macro_export]
+macro_rules! addr_of_sym {
+    ($e:ident) => {
+        $e as *const () as usize
+    };
 }

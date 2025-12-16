@@ -58,7 +58,8 @@ fn driver_registers() -> impl Deref<Target = [DriverRegister]> {
     }
 
     unsafe {
-        let len = __edriver_register as usize - __sdriver_register as usize;
+        let len =
+            __edriver_register as *const () as usize - __sdriver_register as *const () as usize;
 
         if len == 0 {
             return DriverRegisterSlice::empty();

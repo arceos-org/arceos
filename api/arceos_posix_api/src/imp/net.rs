@@ -505,8 +505,7 @@ pub unsafe fn sys_getaddrinfo(
                 _ => panic!("IPv6 is not supported"),
             };
             out.push(buf);
-            out[i].ai.ai_addr =
-                unsafe { core::ptr::addr_of_mut!(out[i].sa.sin) as *mut ctypes::sockaddr };
+            out[i].ai.ai_addr = core::ptr::addr_of_mut!(out[i].sa.sin) as *mut ctypes::sockaddr;
             if i > 0 {
                 out[i - 1].ai.ai_next = core::ptr::addr_of_mut!(out[i].ai);
             }

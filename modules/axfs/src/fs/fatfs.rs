@@ -53,11 +53,13 @@ impl FatFileSystem {
         unsafe { *self.root_dir.get() = Some(Self::new_dir(self.inner.root_dir())) }
     }
 
-    fn new_file(file: File<'_, Disk, NullTimeProvider, LossyOemCpConverter>) -> Arc<FileWrapper> {
+    fn new_file(
+        file: File<'_, Disk, NullTimeProvider, LossyOemCpConverter>,
+    ) -> Arc<FileWrapper<'_>> {
         Arc::new(FileWrapper(Mutex::new(file)))
     }
 
-    fn new_dir(dir: Dir<'_, Disk, NullTimeProvider, LossyOemCpConverter>) -> Arc<DirWrapper> {
+    fn new_dir(dir: Dir<'_, Disk, NullTimeProvider, LossyOemCpConverter>) -> Arc<DirWrapper<'_>> {
         Arc::new(DirWrapper(dir))
     }
 }

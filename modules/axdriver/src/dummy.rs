@@ -88,7 +88,7 @@ cfg_if! {
             fn info(&self) -> axdriver_display::DisplayInfo {
                 unreachable!()
             }
-            fn fb(&self) -> axdriver_display::FrameBuffer {
+            fn fb(&self) -> axdriver_display::FrameBuffer<'_> {
                 unreachable!()
             }
             fn need_flush(&self) -> bool {

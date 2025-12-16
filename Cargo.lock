@@ -626,9 +626,9 @@ dependencies = [
 
 [[package]]
 name = "axio"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30aa258a37c25c5e9d3ff45ec80e728ff7c499586e3e40719daf7908f10fd5bd"
+checksum = "23e797ff4cfd17460c7b8742222a2cadd72a2f4966f0057d36b5925fabf534f7"
 dependencies = [
  "axerrno 0.1.2",
 ]

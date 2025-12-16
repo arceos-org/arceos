@@ -56,6 +56,8 @@ use memory_addr::align_up;
 use core::alloc::Layout;
 use core::ptr::NonNull;
 
+use crate::addr_of_sym;
+
 const TLS_ALIGN: usize = 0x10;
 
 cfg_if::cfg_if! {
@@ -107,9 +109,9 @@ impl TlsArea {
         let layout = Layout::from_size_align(tls_area_size(), TLS_ALIGN).unwrap();
         let area_base = unsafe { alloc::alloc::alloc_zeroed(layout) };
 
-        let tls_load_base = _stdata as *mut u8;
-        let tls_load_size = _etdata as usize - _stdata as usize;
         unsafe {
+            let tls_load_base = _stdata as *mut u8;
+            let tls_load_size = (_etdata as *mut u8).offset_from_unsigned(_stdata as *mut u8);
             // copy data from .tbdata section
             core::ptr::copy_nonoverlapping(
                 tls_load_base,
@@ -128,7 +130,7 @@ impl TlsArea {
 }
 
 fn static_tls_size() -> usize {
-    align_up(_etbss as usize - _stdata as usize, TLS_ALIGN)
+    align_up(addr_of_sym!(_etbss) - addr_of_sym!(_stdata), TLS_ALIGN)
 }
 
 fn static_tls_offset() -> usize {
