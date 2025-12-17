@@ -108,13 +108,3 @@ page_table_multiarch = "0.5"
 percpu = "0.2"
 scope-local = "0.1"
 spin = "0.10"
-
-# [patch."https://github.com/arceos-org/axplat_crates.git"]
-# axplat = { git = "https://github.com/arceos-org/axplat_crates.git", branch = "feat/cpu_num" }
-# axplat-aarch64-bsta1000b = { git = "https://github.com/arceos-org/axplat_crates.git", branch = "feat/cpu_num" }
-# axplat-aarch64-phytium-pi = { git = "https://github.com/arceos-org/axplat_crates.git", branch = "feat/cpu_num" }
-# axplat-aarch64-qemu-virt = { git = "https://github.com/arceos-org/axplat_crates.git", branch = "feat/cpu_num" }
-# axplat-aarch64-raspi = { git = "https://github.com/arceos-org/axplat_crates.git", branch = "feat/cpu_num" }
-# axplat-loongarch64-qemu-virt = { git = "https://github.com/arceos-org/axplat_crates.git", branch = "feat/cpu_num" }
-# axplat-riscv64-qemu-virt = { git = "https://github.com/arceos-org/axplat_crates.git", branch = "feat/cpu_num" }
-# axplat-x86-pc = { git = "https://github.com/arceos-org/axplat_crates.git", branch = "feat/cpu_num" }

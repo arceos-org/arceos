@@ -111,7 +111,6 @@ impl PowerIf for DummyPower {
         unimplemented!()
     }
 
-    #[cfg(feature = "smp")]
     fn cpu_num() -> usize {
         1
     }
