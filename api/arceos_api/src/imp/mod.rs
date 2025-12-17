@@ -39,6 +39,11 @@ mod stdio {
     }
 }
 
+mod sys {
+    pub use axhal::cpu_num as ax_get_cpu_num;
+    pub use axhal::power::system_off as ax_terminate;
+}
+
 mod time {
     pub use axhal::time::{
         TimeValue as AxTimeValue, monotonic_time as ax_monotonic_time, wall_time as ax_wall_time,
@@ -47,8 +52,8 @@ mod time {
 
 pub use self::mem::*;
 pub use self::stdio::*;
+pub use self::sys::*;
 pub use self::task::*;
 pub use self::time::*;
 
-pub use axhal::power::system_off as ax_terminate;
 pub use axio::PollState as AxPollState;

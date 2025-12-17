@@ -1,3 +1,6 @@
+# Maximum CPU number supported.
+max-cpu-num = 8             # uint
+
 # Stack size of each task.
 task-stack-size = 0x40000   # uint
 

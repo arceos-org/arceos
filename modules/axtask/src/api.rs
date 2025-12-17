@@ -32,9 +32,7 @@ pub type AxTaskRef = Arc<AxTask>;
 pub type WeakAxTaskRef = Weak<AxTask>;
 
 /// The wrapper type for [`cpumask::CpuMask`] with SMP configuration.
-pub type AxCpuMask = cpumask::CpuMask<{ axconfig::plat::CPU_NUM }>;
-
-static CPU_NUM: AtomicUsize = AtomicUsize::new(1);
+pub type AxCpuMask = cpumask::CpuMask<{ axconfig::MAX_CPU_NUM }>;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "sched-rr")] {
@@ -87,21 +85,36 @@ pub fn current() -> CurrentTask {
 
 /// Initializes the task scheduler (for the primary CPU).
 pub fn init_scheduler() {
-    init_scheduler_with_cpu_num(axconfig::plat::CPU_NUM);
-}
-
-/// Initializes the task scheduler with cpu_num (for the primary CPU).
-pub fn init_scheduler_with_cpu_num(cpu_num: usize) {
     info!("Initialize scheduling...");
-    CPU_NUM.store(cpu_num, core::sync::atomic::Ordering::Relaxed);
 
+    // Initialize the cpu count information.
+    init_cpu_mask_full();
+
+    // Initialize the run queue.
     crate::run_queue::init();
 
     info!("  use {} scheduler.", Scheduler::scheduler_name());
 }
 
-pub(crate) fn active_cpu_num() -> usize {
-    CPU_NUM.load(core::sync::atomic::Ordering::Relaxed)
+/// The full CPU mask of the system.
+static CPU_MASK_FULL: lazy_init::Lazy<AxCpuMask> = lazy_init::Lazy::new();
+
+/// Gets the cpu count information and initializes related data structures.
+fn init_cpu_mask_full() {
+    let cpu_num = axhal::cpu_num();
+    let mut cpumask = AxCpuMask::new();
+    for cpu_id in 0..cpu_num {
+        cpumask.set(cpu_id, true);
+    }
+
+    CPU_MASK_FULL.get_or_init(|| cpumask);
+}
+
+pub(crate) fn cpu_mask_full() -> AxCpuMask {
+    CPU_MASK_FULL
+        .get()
+        .expect("CPU mask not initialized")
+        .clone()
 }
 
 /// Initializes the task scheduler for secondary CPUs.

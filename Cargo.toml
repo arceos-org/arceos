@@ -108,3 +108,7 @@ page_table_multiarch = "0.5"
 percpu = "0.2"
 scope-local = "0.1"
 spin = "0.10"
+
+[patch."https://github.com/arceos-org/axplat_crates.git"]
+axplat = { path = "../axplat_crates/axplat" }
+axplat-x86-pc = { path = "../axplat_crates/platforms/axplat-x86-pc" }

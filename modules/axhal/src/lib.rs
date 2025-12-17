@@ -108,6 +108,8 @@ pub use axplat::init::init_later;
 #[cfg(feature = "smp")]
 pub use axplat::init::{init_early_secondary, init_later_secondary};
 
+use core::sync::atomic::{AtomicUsize, Ordering};
+
 use lazyinit::LazyInit;
 
 static BOOT_ARG: LazyInit<usize> = LazyInit::new();
@@ -123,4 +125,58 @@ pub fn init_early(cpu_id: usize, arg: usize) {
 /// This is typically the device tree blob address passed from the bootloader.
 pub fn get_bootarg() -> usize {
     *BOOT_ARG
+}
+
+/// The number of CPUs in the system. Based on the number declared by the
+/// platform crate and limited by the configured maximum CPU number.
+///
+/// Defaults to 1 for non-SMP builds.
+static CPU_NUM: AtomicUsize = AtomicUsize::new(1);
+
+/// Gets the number of CPUs running in the system. It's the smaller one between
+/// the platform-declared CPU number [`axplat::power::cpu_num`] and the
+/// configured maximum CPU number `axconfig::plat::MAX_CPU_NUM`.
+///
+/// This value is determined during the BSP initialization phase.
+pub fn cpu_num() -> usize {
+    // Relaxed is used here for best performance, as this value is only set
+    // once during initialization and never changed afterwards.
+    //
+    // The BSP will always see the correct value because `CPU_NUM` is set by
+    // itself.
+    //
+    // All APs will read `CPU_NUM` with `Acquire` once they are started,
+    // ensuring they see the correct value. Then they can use `Relaxed` for
+    // subsequent reads.
+    CPU_NUM.load(Ordering::Relaxed)
+}
+
+/// Initializes the CPU number information.
+pub fn init_cpu_num() {
+    let plat_cpu_num = axplat::power::cpu_num();
+    let max_cpu_num = axconfig::MAX_CPU_NUM;
+    let cpu_num = plat_cpu_num.min(max_cpu_num);
+
+    info!(
+        "{} CPUs detected by platform, max supported is {}. {} will be used.",
+        plat_cpu_num, max_cpu_num, cpu_num
+    );
+
+    if plat_cpu_num > max_cpu_num {
+        warn!(
+            "platform declares more CPUs ({plat_cpu_num}) than supported max ({max_cpu_num}), only \
+            the first {max_cpu_num} CPUs will be used."
+        );
+    }
+
+    CPU_NUM.store(cpu_num, Ordering::Release);
+}
+
+/// Initializes the CPU number information for secondary CPUs.
+///
+/// Used to ensure the correct value of `CPU_NUM` is visible to secondary CPUs.
+#[cfg(feature = "smp")]
+pub fn init_cpu_num_secondary() {
+    // Ensure the correct value of CPU_NUM is visible to secondary CPUs.
+    let _ = CPU_NUM.load(Ordering::Acquire);
 }

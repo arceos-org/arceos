@@ -17,7 +17,9 @@ ifneq ($(SMP),)
 else
   SMP := $(shell axconfig-gen $(PLAT_CONFIG) -r plat.cpu-num 2>/dev/null)
   ifeq ($(SMP),)
-    $(error "`plat.cpu-num` is not defined in the platform configuration file")
+    $(error "`plat.cpu-num` is not defined in the platform configuration file, \
+        if the platform supports runtime CPU number detection, please set a \
+        dummy value (>1) in the platform config file")
   endif
 endif
 

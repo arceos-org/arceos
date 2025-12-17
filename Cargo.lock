@@ -186,6 +186,7 @@ dependencies = [
  "axlog",
  "axmm",
  "axnet",
+ "axplat",
  "axruntime",
  "axsync",
  "axtask",
@@ -713,7 +714,6 @@ dependencies = [
 [[package]]
 name = "axplat"
 version = "0.3.0"
-source = "git+https://github.com/arceos-org/axplat_crates.git?tag=dev-v03#0df0713b1c20eafaeebdc6b0e194b2985e857949"
 dependencies = [
  "axplat-macros",
  "bitflags 2.10.0",
@@ -819,7 +819,6 @@ dependencies = [
 [[package]]
 name = "axplat-macros"
 version = "0.1.0"
-source = "git+https://github.com/arceos-org/axplat_crates.git?tag=dev-v03#0df0713b1c20eafaeebdc6b0e194b2985e857949"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -847,7 +846,6 @@ dependencies = [
 [[package]]
 name = "axplat-x86-pc"
 version = "0.3.0"
-source = "git+https://github.com/arceos-org/axplat_crates.git?tag=dev-v03#0df0713b1c20eafaeebdc6b0e194b2985e857949"
 dependencies = [
  "axconfig-macros",
  "axcpu",

@@ -32,6 +32,9 @@ pub mod sys {
     define_api! {
         /// Shutdown the whole system and all CPUs.
         pub fn ax_terminate() -> !;
+
+        /// Returns the number of CPUs in the system.
+        pub fn ax_get_cpu_num() -> usize;
     }
 }
 

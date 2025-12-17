@@ -42,6 +42,7 @@ axipi = { workspace = true, optional = true }
 axlog.workspace = true
 axmm = { workspace = true, optional = true }
 axnet = { workspace = true, optional = true }
+axplat = { workspace = true }
 axruntime.workspace = true
 axsync.workspace = true
 axtask = { workspace = true, optional = true }
