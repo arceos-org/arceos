@@ -95,7 +95,7 @@ pub fn init_scheduler() {
 }
 
 /// The full CPU mask of the system.
-static CPU_MASK_FULL: lazyinit::Lazy<AxCpuMask> = lazyinit::Lazy::new();
+static CPU_MASK_FULL: lazyinit::LazyInit<AxCpuMask> = lazyinit::LazyInit::new();
 
 /// Gets the cpu count information and initializes related data structures.
 fn init_cpu_mask_full() {
@@ -105,7 +105,7 @@ fn init_cpu_mask_full() {
         cpumask.set(cpu_id, true);
     }
 
-    CPU_MASK_FULL.get_or_init(|| cpumask);
+    CPU_MASK_FULL.call_once(|| cpumask);
 }
 
 pub(crate) fn cpu_mask_full() -> AxCpuMask {
