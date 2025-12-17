@@ -68,8 +68,8 @@ fn calc_wday(year: c_int, month: c_int, day: c_int) -> c_int {
     
     let w = (day as i64 + (13 * (m + 1)) / 5 + y + y / 4 + c / 4 - 2 * c) % 7;
     
-    // Convert to Sunday = 0
-    ((w + 6) % 7) as c_int
+    // Convert to Sunday = 0, handling negative values
+    (((w + 6) % 7 + 7) % 7) as c_int
 }
 
 /// Calculate the day of the year (0-365).
@@ -184,10 +184,11 @@ pub unsafe extern "C" fn mktime(t: *mut ctypes::tm) -> ctypes::time_t {
         (*t).tm_yday = yday;
         
         // For tm_isdst: A negative value causes mktime to attempt to determine DST status.
-        // Since we don't have timezone information, we set it to -1 to indicate unknown.
+        // Since we don't have timezone information, we ensure it's set to -1 (unknown).
         // A proper implementation would need timezone database support.
+        // Note: If already negative, this ensures it's exactly -1; if non-negative, we preserve it.
         if (*t).tm_isdst < 0 {
-            (*t).tm_isdst = -1; // Unknown
+            (*t).tm_isdst = -1;
         }
     }
     
