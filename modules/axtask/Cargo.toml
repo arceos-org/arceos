@@ -55,7 +55,7 @@ futures-util = { version = "0.3", default-features = false, optional = true, fea
 ] }
 kernel_guard = { workspace = true, optional = true }
 kspin = { workspace = true, optional = true }
-lazyinit = { workspace = true, optional = true }
+lazyinit = { workspace = true }
 log.workspace = true
 memory_addr = { workspace = true, optional = true }
 percpu = { workspace = true, optional = true }

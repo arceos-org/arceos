@@ -1,7 +1,5 @@
 //! Task APIs for multi-task configuration.
 
-use core::sync::atomic::AtomicUsize;
-
 use alloc::{
     string::String,
     sync::{Arc, Weak},
