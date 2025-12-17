@@ -22,7 +22,6 @@ multitask = [
     "dep:futures-util",
     "dep:kernel_guard",
     "dep:kspin",
-    "dep:lazyinit",
     "dep:memory_addr",
     "dep:percpu",
 ]
