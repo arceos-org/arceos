@@ -4,8 +4,6 @@ arch = "unknown"            # str
 platform = "dummy"          # str
 # Platform package.
 package = "dummy"           # str
-# Maximum CPU number supported.
-max-cpu-num = 8             # uint
 # Stack size of each task.
 task-stack-size = 0x40000   # uint
 # Number of timer ticks per second (Hz). A timer tick may contain several timer
@@ -17,8 +15,9 @@ ticks-per-sec = 100         # uint
 #
 [plat]
 # Platform family.
-# Number of CPUs
-cpu-num = 1                 # uint
+# Maximum number of CPUs. For platforms that does not support runtime CPU
+# detection, it's also the number of CPUs to boot.
+max-cpu-num = 1             # uint
 # Base address of the whole physical memory.
 phys-memory-base = 0        # uint
 # Size of the whole physical memory.

@@ -1,6 +1,6 @@
 use core::sync::atomic::{AtomicUsize, Ordering};
 
-use axconfig::{MAX_CPU_NUM, TASK_STACK_SIZE};
+use axconfig::{TASK_STACK_SIZE, plat::MAX_CPU_NUM};
 use axhal::mem::{VirtAddr, virt_to_phys};
 
 #[unsafe(link_section = ".bss.stack")]

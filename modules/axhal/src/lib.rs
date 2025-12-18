@@ -168,7 +168,7 @@ pub fn init_cpu_num() {
     #[cfg(feature = "smp")]
     {
         let plat_cpu_num = axplat::power::cpu_num();
-        let max_cpu_num = axconfig::MAX_CPU_NUM;
+        let max_cpu_num = axconfig::plat::MAX_CPU_NUM;
         let cpu_num = plat_cpu_num.min(max_cpu_num);
 
         info!(
