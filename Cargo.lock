@@ -186,7 +186,6 @@ dependencies = [
  "axlog",
  "axmm",
  "axnet",
- "axplat",
  "axruntime",
  "axsync",
  "axtask",
@@ -714,7 +713,7 @@ dependencies = [
 [[package]]
 name = "axplat"
 version = "0.3.0"
-source = "git+https://github.com/arceos-org/axplat_crates.git?branch=feat%2Fcpu_num#c2f79999d9d4fb1a94f43019cfe7f1ee6bf05260"
+source = "git+https://github.com/arceos-org/axplat_crates.git?branch=feat%2Fcpu_num#ab7ec0d05b9800e61722459a3309a3674fce1b39"
 dependencies = [
  "axplat-macros",
  "bitflags 2.10.0",
@@ -729,7 +728,7 @@ dependencies = [
 [[package]]
 name = "axplat-aarch64-bsta1000b"
 version = "0.3.0"
-source = "git+https://github.com/arceos-org/axplat_crates.git?branch=feat%2Fcpu_num#c2f79999d9d4fb1a94f43019cfe7f1ee6bf05260"
+source = "git+https://github.com/arceos-org/axplat_crates.git?branch=feat%2Fcpu_num#ab7ec0d05b9800e61722459a3309a3674fce1b39"
 dependencies = [
  "axconfig-macros",
  "axcpu",
@@ -744,7 +743,7 @@ dependencies = [
 [[package]]
 name = "axplat-aarch64-peripherals"
 version = "0.3.0"
-source = "git+https://github.com/arceos-org/axplat_crates.git?branch=feat%2Fcpu_num#c2f79999d9d4fb1a94f43019cfe7f1ee6bf05260"
+source = "git+https://github.com/arceos-org/axplat_crates.git?branch=feat%2Fcpu_num#ab7ec0d05b9800e61722459a3309a3674fce1b39"
 dependencies = [
  "aarch64-cpu 10.0.0",
  "arm-gic-driver",
@@ -763,7 +762,7 @@ dependencies = [
 [[package]]
 name = "axplat-aarch64-phytium-pi"
 version = "0.3.0"
-source = "git+https://github.com/arceos-org/axplat_crates.git?branch=feat%2Fcpu_num#c2f79999d9d4fb1a94f43019cfe7f1ee6bf05260"
+source = "git+https://github.com/arceos-org/axplat_crates.git?branch=feat%2Fcpu_num#ab7ec0d05b9800e61722459a3309a3674fce1b39"
 dependencies = [
  "axconfig-macros",
  "axcpu",
@@ -776,7 +775,7 @@ dependencies = [
 [[package]]
 name = "axplat-aarch64-qemu-virt"
 version = "0.3.0"
-source = "git+https://github.com/arceos-org/axplat_crates.git?branch=feat%2Fcpu_num#c2f79999d9d4fb1a94f43019cfe7f1ee6bf05260"
+source = "git+https://github.com/arceos-org/axplat_crates.git?branch=feat%2Fcpu_num#ab7ec0d05b9800e61722459a3309a3674fce1b39"
 dependencies = [
  "axconfig-macros",
  "axcpu",
@@ -789,7 +788,7 @@ dependencies = [
 [[package]]
 name = "axplat-aarch64-raspi"
 version = "0.3.0"
-source = "git+https://github.com/arceos-org/axplat_crates.git?branch=feat%2Fcpu_num#c2f79999d9d4fb1a94f43019cfe7f1ee6bf05260"
+source = "git+https://github.com/arceos-org/axplat_crates.git?branch=feat%2Fcpu_num#ab7ec0d05b9800e61722459a3309a3674fce1b39"
 dependencies = [
  "aarch64-cpu 10.0.0",
  "axconfig-macros",
@@ -803,7 +802,7 @@ dependencies = [
 [[package]]
 name = "axplat-loongarch64-qemu-virt"
 version = "0.3.0"
-source = "git+https://github.com/arceos-org/axplat_crates.git?branch=feat%2Fcpu_num#c2f79999d9d4fb1a94f43019cfe7f1ee6bf05260"
+source = "git+https://github.com/arceos-org/axplat_crates.git?branch=feat%2Fcpu_num#ab7ec0d05b9800e61722459a3309a3674fce1b39"
 dependencies = [
  "axconfig-macros",
  "axcpu",
@@ -820,7 +819,7 @@ dependencies = [
 [[package]]
 name = "axplat-macros"
 version = "0.1.0"
-source = "git+https://github.com/arceos-org/axplat_crates.git?branch=feat%2Fcpu_num#c2f79999d9d4fb1a94f43019cfe7f1ee6bf05260"
+source = "git+https://github.com/arceos-org/axplat_crates.git?branch=feat%2Fcpu_num#ab7ec0d05b9800e61722459a3309a3674fce1b39"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -830,7 +829,7 @@ dependencies = [
 [[package]]
 name = "axplat-riscv64-qemu-virt"
 version = "0.3.0"
-source = "git+https://github.com/arceos-org/axplat_crates.git?branch=feat%2Fcpu_num#c2f79999d9d4fb1a94f43019cfe7f1ee6bf05260"
+source = "git+https://github.com/arceos-org/axplat_crates.git?branch=feat%2Fcpu_num#ab7ec0d05b9800e61722459a3309a3674fce1b39"
 dependencies = [
  "axconfig-macros",
  "axcpu",
@@ -848,7 +847,7 @@ dependencies = [
 [[package]]
 name = "axplat-x86-pc"
 version = "0.3.0"
-source = "git+https://github.com/arceos-org/axplat_crates.git?branch=feat%2Fcpu_num#c2f79999d9d4fb1a94f43019cfe7f1ee6bf05260"
+source = "git+https://github.com/arceos-org/axplat_crates.git?branch=feat%2Fcpu_num#ab7ec0d05b9800e61722459a3309a3674fce1b39"
 dependencies = [
  "axconfig-macros",
  "axcpu",
