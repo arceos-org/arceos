@@ -108,7 +108,7 @@ pub use axplat::init::init_later;
 #[cfg(feature = "smp")]
 pub use axplat::init::{init_early_secondary, init_later_secondary};
 #[cfg(feature = "smp")]
-use core::sync::atomic::{AtomicUsize, Ordering};
+use core::sync::atomic::{AtomicUsize, Ordering, fence};
 
 use lazyinit::LazyInit;
 
@@ -129,8 +129,6 @@ pub fn get_bootarg() -> usize {
 
 /// The number of CPUs in the system. Based on the number declared by the
 /// platform crate and limited by the configured maximum CPU number.
-///
-/// Defaults to 1 for non-SMP builds.
 #[cfg(feature = "smp")]
 static CPU_NUM: AtomicUsize = AtomicUsize::new(1);
 
@@ -152,9 +150,9 @@ pub fn cpu_num() -> usize {
         // The BSP will always see the correct value because `CPU_NUM` is set by
         // itself.
         //
-        // All APs will read `CPU_NUM` with `Acquire` once they are started,
-        // ensuring they see the correct value. Then they can use `Relaxed` for
-        // subsequent reads.
+        // All APs will see the correct value because `init_cpu_num_secondary`
+        // is called during their initialization, which contains a fence to
+        // ensure visibility of the correct value.
         CPU_NUM.load(Ordering::Relaxed)
     }
     #[cfg(not(feature = "smp"))]
@@ -183,12 +181,10 @@ pub fn init_cpu_num() {
             );
         }
 
-        CPU_NUM.store(cpu_num, Ordering::Release);
+        fence(Ordering::SeqCst);
+        CPU_NUM.store(cpu_num, Ordering::Relaxed);
     }
-    #[cfg(not(feature = "smp"))]
-    {
-        // No-op for non-SMP builds.
-    }
+    // No-op for non-SMP builds.
 }
 
 /// Initializes the CPU number information for secondary CPUs.
@@ -196,6 +192,6 @@ pub fn init_cpu_num() {
 /// Used to ensure the correct value of `CPU_NUM` is visible to secondary CPUs.
 #[cfg(feature = "smp")]
 pub fn init_cpu_num_secondary() {
-    // Ensure the correct value of CPU_NUM is visible to secondary CPUs.
-    let _ = CPU_NUM.load(Ordering::Acquire);
+    CPU_NUM.load(Ordering::Relaxed);
+    fence(Ordering::SeqCst)
 }
