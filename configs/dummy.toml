@@ -15,7 +15,7 @@ ticks-per-sec = 100         # uint
 #
 [plat]
 # Platform family.
-# Maximum number of CPUs. For platforms that does not support runtime CPU
+# Maximum number of CPUs. For platforms that do not support runtime CPU number
 # detection, it's also the number of CPUs to boot.
 max-cpu-num = 1             # uint
 # Base address of the whole physical memory.
