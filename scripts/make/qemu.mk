@@ -22,7 +22,7 @@ else ifeq ($(ARCH), aarch64)
     machine := virt
   endif
 else ifeq ($(ARCH), arm)
-  machine := virt,gic-version=3
+  machine := virt,gic-version=2
 else ifeq ($(ARCH), loongarch64)
   machine := virt
   override MEM := 1G
