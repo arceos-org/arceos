@@ -108,7 +108,7 @@ pub use axplat::init::init_later;
 #[cfg(feature = "smp")]
 pub use axplat::init::{init_early_secondary, init_later_secondary};
 #[cfg(feature = "smp")]
-use core::sync::atomic::{AtomicUsize, Ordering, fence};
+use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 use lazyinit::LazyInit;
 
@@ -132,6 +132,10 @@ pub fn get_bootarg() -> usize {
 #[cfg(feature = "smp")]
 static CPU_NUM: AtomicUsize = AtomicUsize::new(1);
 
+/// Indicates whether the CPU number has been initialized.
+#[cfg(feature = "smp")]
+static CPU_NUM_OK: AtomicBool = AtomicBool::new(false);
+
 /// Gets the number of CPUs running in the system.
 ///
 /// When SMP is disabled, this function always returns 1.
@@ -150,9 +154,7 @@ pub fn cpu_num() -> usize {
         // The BSP will always see the correct value because `CPU_NUM` is set by
         // itself.
         //
-        // All APs will see the correct value because `init_cpu_num_secondary`
-        // is called during their initialization, which contains a fence to
-        // ensure visibility of the correct value.
+        // All APs will see the correct value because of `CPU_NUM_OK`.
         CPU_NUM.load(Ordering::Relaxed)
     }
     #[cfg(not(feature = "smp"))]
@@ -178,8 +180,8 @@ pub fn init_cpu_num() {
             );
         }
 
-        fence(Ordering::SeqCst);
         CPU_NUM.store(cpu_num, Ordering::Relaxed);
+        CPU_NUM_OK.store(true, Ordering::Release);
     }
     // No-op for non-SMP builds.
 }
@@ -189,6 +191,7 @@ pub fn init_cpu_num() {
 /// Used to ensure the correct value of `CPU_NUM` is visible to secondary CPUs.
 #[cfg(feature = "smp")]
 pub fn init_cpu_num_secondary() {
-    CPU_NUM.load(Ordering::Relaxed);
-    fence(Ordering::SeqCst)
+    while !CPU_NUM_OK.load(Ordering::Acquire) {
+        core::hint::spin_loop();
+    }
 }
