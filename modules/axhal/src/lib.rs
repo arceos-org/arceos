@@ -108,7 +108,7 @@ pub use axplat::init::init_later;
 #[cfg(feature = "smp")]
 pub use axplat::init::{init_early_secondary, init_later_secondary};
 #[cfg(feature = "smp")]
-use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use core::sync::atomic::{AtomicUsize, Ordering};
 
 /// Initializes CPU-local data structures for the primary core.
 ///
@@ -153,7 +153,7 @@ static CPU_NUM: AtomicUsize = AtomicUsize::new(1);
 ///
 /// When SMP is disabled, this function always returns 1.
 ///
-/// When SMP is enabled, It's the smaller one between the platform-declared CPU
+/// When SMP is enabled, it's the smaller one between the platform-declared CPU
 /// number [`axplat::power::cpu_num`] and the configured maximum CPU number
 /// `axconfig::plat::MAX_CPU_NUM`.
 ///

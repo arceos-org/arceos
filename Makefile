@@ -4,8 +4,8 @@
 #     - `MYPLAT`: Package name of the target platform crate.
 #     - `PLAT_CONFIG`: Path to the platform configuration file.
 #     - `SMP`: Override maximum CPU number specified in the platform config. For
-# 		statically configured platforms, this is also the number of CPUs to boot
-#		and for platforms with runtime CPU detection, this is the upper limit of
+#       statically configured platforms, this is also the number of CPUs to boot
+#       and for platforms with runtime CPU detection, this is the upper limit of
 #       CPUs.
 #     - `MODE`: Build mode: release, debug
 #     - `LOG:` Logging level: warn, error, info, debug, trace
