@@ -36,6 +36,10 @@ extern crate log;
 
 #[allow(unused_imports)]
 #[macro_use]
+extern crate axlog;
+
+#[allow(unused_imports)]
+#[macro_use]
 extern crate memory_addr;
 
 cfg_if::cfg_if! {
@@ -187,6 +191,7 @@ pub fn init_cpu_num() {
         let cpu_num = plat_cpu_num.min(max_cpu_num);
 
         info!("CPU number: max = {max_cpu_num}, platform = {plat_cpu_num}, use = {cpu_num}",);
+        ax_println!("smp = {}", cpu_num); // for test purposes
 
         if plat_cpu_num > max_cpu_num {
             warn!(
@@ -197,5 +202,8 @@ pub fn init_cpu_num() {
 
         CPU_NUM.store(cpu_num, Ordering::Release);
     }
-    // No-op for non-SMP builds.
+    #[cfg(not(feature = "smp"))]
+    {
+        ax_println!("smp = 1"); // for test purposes
+    }
 }
