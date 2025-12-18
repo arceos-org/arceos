@@ -38,8 +38,6 @@ pub fn rust_main_secondary(cpu_id: usize) -> ! {
     axhal::percpu::init_secondary(cpu_id);
     axhal::init_early_secondary(cpu_id);
 
-    axhal::init_cpu_num_secondary();
-
     ENTERED_CPUS.fetch_add(1, Ordering::Release);
     info!("Secondary CPU {cpu_id} started.");
 
