@@ -18,16 +18,16 @@ cfg-if = "1.0"
 axstd = { workspace = true, features = ["myplat"], optional = true }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
-axplat-x86-pc = { version = "0.2", features = ["smp", "irq"], optional = true }
+axplat-x86-pc = { version = "0.3", features = ["smp", "irq"], optional = true }
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
-axplat-aarch64-qemu-virt = { version = "0.2", features = ["smp", "irq"], optional = true }
-axplat-aarch64-raspi = { version = "0.2", features = ["smp", "irq"], optional = true }
-axplat-aarch64-bsta1000b = { version = "0.2", features = ["smp", "irq"], optional = true }
-axplat-aarch64-phytium-pi = { version = "0.2", features = ["smp", "irq"], optional = true }
+axplat-aarch64-qemu-virt = { version = "0.3", features = ["smp", "irq"], optional = true }
+axplat-aarch64-raspi = { version = "0.3", features = ["smp", "irq"], optional = true }
+axplat-aarch64-bsta1000b = { version = "0.3", features = ["smp", "irq"], optional = true }
+axplat-aarch64-phytium-pi = { version = "0.3", features = ["smp", "irq"], optional = true }
 
 [target.'cfg(target_arch = "riscv64")'.dependencies]
-axplat-riscv64-qemu-virt = { version = "0.2", features = ["smp", "irq"], optional = true }
+axplat-riscv64-qemu-virt = { version = "0.3", features = ["smp", "irq"], optional = true }
 
 [target.'cfg(target_arch = "loongarch64")'.dependencies]
-axplat-loongarch64-qemu-virt = { version = "0.2", features = ["smp", "irq"], optional = true }
+axplat-loongarch64-qemu-virt = { version = "0.3", features = ["smp", "irq"], optional = true }
