@@ -37,7 +37,7 @@ axnet = { workspace = true, optional = true }
 axdisplay = { workspace = true, optional = true }
 axtask = { workspace = true, optional = true }
 axipi = { workspace = true, optional = true }
-axplat = "0.2"
+axplat = "0.3"
 
 crate_interface = "0.1"
 percpu = { version = "0.2", optional = true }

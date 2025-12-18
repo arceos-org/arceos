@@ -16,7 +16,6 @@ multitask = [
     "dep:axconfig",
     "dep:percpu",
     "dep:kspin",
-    "dep:lazyinit",
     "dep:memory_addr",
     "dep:axsched",
     "dep:timer_list",

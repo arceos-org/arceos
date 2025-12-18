@@ -224,6 +224,8 @@ impl TaskInner {
 // private methods
 impl TaskInner {
     fn new_common(id: TaskId, name: String) -> Self {
+        let cpumask = crate::api::cpu_mask_full();
+
         Self {
             id,
             name,
@@ -232,7 +234,7 @@ impl TaskInner {
             entry: None,
             state: AtomicU8::new(TaskState::Ready as u8),
             // By default, the task is allowed to run on all CPUs.
-            cpumask: SpinNoIrq::new(AxCpuMask::full()),
+            cpumask,
             in_wait_queue: AtomicBool::new(false),
             #[cfg(feature = "irq")]
             timer_ticket_id: AtomicU64::new(0),

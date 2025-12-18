@@ -1,19 +1,20 @@
 use core::sync::atomic::{AtomicUsize, Ordering};
 
-use axconfig::{TASK_STACK_SIZE, plat::CPU_NUM};
+use axconfig::{TASK_STACK_SIZE, plat::MAX_CPU_NUM};
 use axhal::mem::{VirtAddr, virt_to_phys};
 
 #[unsafe(link_section = ".bss.stack")]
-static mut SECONDARY_BOOT_STACK: [[u8; TASK_STACK_SIZE]; CPU_NUM - 1] =
-    [[0; TASK_STACK_SIZE]; CPU_NUM - 1];
+static mut SECONDARY_BOOT_STACK: [[u8; TASK_STACK_SIZE]; MAX_CPU_NUM - 1] =
+    [[0; TASK_STACK_SIZE]; MAX_CPU_NUM - 1];
 
 static ENTERED_CPUS: AtomicUsize = AtomicUsize::new(1);
 
 #[allow(clippy::absurd_extreme_comparisons)]
 pub fn start_secondary_cpus(primary_cpu_id: usize) {
     let mut logic_cpu_id = 0;
-    for i in 0..CPU_NUM {
-        if i != primary_cpu_id && logic_cpu_id < CPU_NUM - 1 {
+    let cpu_num = axhal::cpu_num();
+    for i in 0..cpu_num {
+        if i != primary_cpu_id && logic_cpu_id < cpu_num - 1 {
             let stack_top = virt_to_phys(VirtAddr::from(unsafe {
                 SECONDARY_BOOT_STACK[logic_cpu_id].as_ptr_range().end as usize
             }));

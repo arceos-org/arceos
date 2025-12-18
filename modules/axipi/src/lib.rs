@@ -45,7 +45,7 @@ pub fn run_on_cpu<T: Into<Callback>>(dest_cpu: usize, callback: T) {
 pub fn run_on_each_cpu<T: Into<MulticastCallback>>(callback: T) {
     info!("Send IPI event to all other CPUs");
     let current_cpu_id = this_cpu_id();
-    let cpu_num = axconfig::plat::CPU_NUM;
+    let cpu_num = axhal::cpu_num();
     let callback = callback.into();
 
     // Execute callback on current CPU immediately

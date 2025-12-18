@@ -36,23 +36,23 @@ memory_addr = "0.4"
 linkme = { version = "0.3.33", optional = true }
 page_table_multiarch = { version = "0.5", features = ["copy-from"], optional = true }
 axcpu = "0.2"
-axplat = "0.2"
+axplat = "0.3"
 axlog = { workspace = true }
 axconfig = { workspace = true }
 axalloc = { workspace = true, optional = true }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
-axplat-x86-pc = { version = "0.2", optional = true }
+axplat-x86-pc = { version = "0.3", optional = true }
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 aarch64-cpu = "10.0"
-axplat-aarch64-qemu-virt = { version = "0.2", optional = true }
+axplat-aarch64-qemu-virt = { version = "0.3", optional = true }
 
 [target.'cfg(target_arch = "riscv64")'.dependencies]
-axplat-riscv64-qemu-virt = { version = "0.2", optional = true }
+axplat-riscv64-qemu-virt = { version = "0.3", optional = true }
 
 [target.'cfg(target_arch = "loongarch64")'.dependencies]
-axplat-loongarch64-qemu-virt = { version = "0.2", optional = true }
+axplat-loongarch64-qemu-virt = { version = "0.3", optional = true }
 
 [build-dependencies]
 axconfig = { workspace = true }

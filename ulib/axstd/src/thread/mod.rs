@@ -46,6 +46,6 @@ pub fn sleep_until(deadline: arceos_api::time::AxTimeValue) {
 /// Here we directly return the number of available logical CPUs, representing
 /// the theoretical maximum parallelism.
 pub fn available_parallelism() -> crate::io::Result<NonZero<usize>> {
-    NonZero::new(arceos_api::modules::axconfig::plat::CPU_NUM)
+    NonZero::new(arceos_api::sys::ax_get_cpu_num())
         .ok_or_else(|| panic!("No available CPUs found, cannot determine parallelism"))
 }
