@@ -17,12 +17,8 @@ ifneq ($(SMP),)
 else
   SMP := $(shell axconfig-gen $(PLAT_CONFIG) -r plat.max-cpu-num 2>/dev/null)
   ifeq ($(SMP),)
-  # default to 1
-    SMP := 1 
-    config_args += -w 'plat.max-cpu-num=1'
-  # or keep this check to enforce explicit specification
-  #     $(error "`plat.max-cpu-num` is not defined in the platform configuration file, \
-  #         this option must be specified even for platforms with runtime CPU detection.")
+    $(error "`plat.max-cpu-num` is not defined in the platform configuration file, \
+      this option must be specified even for platforms with runtime CPU detection.")
   endif
 endif
 

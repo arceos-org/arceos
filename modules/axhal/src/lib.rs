@@ -169,15 +169,12 @@ pub fn init_cpu_num() {
         let max_cpu_num = axconfig::plat::MAX_CPU_NUM;
         let cpu_num = plat_cpu_num.min(max_cpu_num);
 
-        info!(
-            "{} CPUs detected by platform, max supported is {}. {} will be used.",
-            plat_cpu_num, max_cpu_num, cpu_num
-        );
+        info!("CPU number: max = {max_cpu_num}, platform = {plat_cpu_num}, use = {cpu_num}",);
 
         if plat_cpu_num > max_cpu_num {
             warn!(
-                "platform declares more CPUs ({plat_cpu_num}) than supported max ({max_cpu_num}), only \
-                the first {max_cpu_num} CPUs will be used."
+                "platform declares more CPUs ({plat_cpu_num}) than configured max ({max_cpu_num}), \
+                only the first {max_cpu_num} CPUs will be used."
             );
         }
 
