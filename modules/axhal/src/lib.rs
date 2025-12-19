@@ -165,15 +165,15 @@ static CPU_NUM: AtomicUsize = AtomicUsize::new(1);
 pub fn cpu_num() -> usize {
     #[cfg(feature = "smp")]
     {
-        // Relaxed is used here for best performance, as this value is only set
-        // once during initialization and never changed afterwards.
-        //
         // The BSP will always see the correct value because `CPU_NUM` is set by
         // itself.
         //
         // All APs will see the correct value because it is written with
         // `Ordering::Release` and read with `Ordering::Acquire`, ensuring
         // memory visibility.
+        //
+        // Acquire may result in a performance penalty, but this function is not
+        // expected to be called frequently in normal operation.
         CPU_NUM.load(Ordering::Acquire)
     }
     #[cfg(not(feature = "smp"))]
