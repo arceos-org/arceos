@@ -156,8 +156,6 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
     info!("Initialize platform devices...");
     axhal::init_later(cpu_id, arg);
 
-    axhal::init_cpu_num();
-
     #[cfg(feature = "multitask")]
     axtask::init_scheduler();
 
