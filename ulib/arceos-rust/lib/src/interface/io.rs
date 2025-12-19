@@ -1,4 +1,5 @@
 use arceos_posix_api::ctypes::iovec;
+use core::ffi::c_char;
 use log::info;
 
 #[unsafe(no_mangle)]
@@ -18,4 +19,24 @@ pub fn sys_writev(fd: i32, iov: *const iovec, iovcnt: usize) -> isize {
 pub fn sys_close(fd: i32) -> i32 {
     info!("called sys_close");
     arceos_posix_api::sys_close(fd) as _
+}
+
+#[unsafe(no_mangle)]
+pub fn sys_read(fd: i32, buf: *mut u8, len: usize) -> isize {
+    info!("called sys_read");
+    arceos_posix_api::sys_read(fd, buf as _, len)
+}
+
+#[cfg(feature = "fs")]
+#[unsafe(no_mangle)]
+pub fn sys_lseek(fd: i32, offset: isize, whence: i32) -> isize {
+    info!("called sys_lseek");
+    arceos_posix_api::sys_lseek(fd, offset as _, whence) as _
+}
+
+#[cfg(feature = "fs")]
+#[unsafe(no_mangle)]
+pub fn sys_open(name: *const c_char, flags: i32, mode: i32) -> i32 {
+    info!("called sys_open");
+    arceos_posix_api::sys_open(name, flags, mode as _)
 }

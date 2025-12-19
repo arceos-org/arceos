@@ -1,3 +1,5 @@
+#[cfg(feature = "fs")]
+mod fs;
 mod io;
 mod mem;
 #[cfg(feature = "net")]
