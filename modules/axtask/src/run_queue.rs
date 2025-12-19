@@ -105,8 +105,9 @@ fn select_run_queue_index(cpumask: AxCpuMask) -> usize {
     assert!(!cpumask.is_empty(), "No available CPU for task execution");
 
     // Round-robin selection of the run queue index.
+    let cpu_num = axhal::cpu_num();
     loop {
-        let index = RUN_QUEUE_INDEX.fetch_add(1, Ordering::SeqCst) % axhal::cpu_num();
+        let index = RUN_QUEUE_INDEX.fetch_add(1, Ordering::SeqCst) % cpu_num;
         if cpumask.get(index) {
             return index;
         }
