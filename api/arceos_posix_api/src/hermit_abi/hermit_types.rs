@@ -6,6 +6,8 @@ use crate::ctypes_gen;
 pub type ssize_t = isize;
 pub type size_t = usize;
 
+pub use crate::ctypes_gen::{mode_t, off_t};
+
 /// A thread handle type
 pub type Tid = u32;
 
@@ -36,15 +38,16 @@ pub const CLOCK_MONOTONIC: clockid_t = 4;
 pub const STDIN_FILENO: c_int = 0;
 pub const STDOUT_FILENO: c_int = 1;
 pub const STDERR_FILENO: c_int = 2;
-pub const O_RDONLY: i32 = 0o0;
-pub const O_WRONLY: i32 = 0o1;
-pub const O_RDWR: i32 = 0o2;
-pub const O_CREAT: i32 = 0o100;
-pub const O_EXCL: i32 = 0o200;
-pub const O_TRUNC: i32 = 0o1000;
-pub const O_APPEND: i32 = 0o2000;
-pub const O_NONBLOCK: i32 = 0o4000;
-pub const O_DIRECTORY: i32 = 0o200000;
+pub const O_RDONLY: u32 = 0o0;
+pub const O_WRONLY: u32 = 0o1;
+pub const O_RDWR: u32 = 0o2;
+pub const O_CREAT: u32 = 0o100;
+pub const O_EXCL: u32 = 0o200;
+pub const O_TRUNC: u32 = 0o1000;
+pub const O_APPEND: u32 = 0o2000;
+pub const O_NONBLOCK: u32 = 0o4000;
+pub const O_DIRECTORY: u32 = 0o200000;
+pub const O_EXEC: u32 = crate::ctypes_gen::O_EXEC;
 pub const F_DUPFD: u32 = 0;
 pub const F_GETFD: u32 = 1;
 pub const F_SETFD: u32 = 2;
