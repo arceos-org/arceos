@@ -68,6 +68,7 @@ fn basic_file_operations() -> io::Result<()> {
     // 写入UTF-8字符串
     let utf8_str = "包含UTF-8中文字符的字符串\n";
     file.write_all(utf8_str.as_bytes())?;
+    drop(file);
 
     // 读取二进制数据
     let binary_data = fs::read("test_write.txt")?;
@@ -97,6 +98,7 @@ fn append_to_file() -> io::Result<()> {
     file.write_all(b"First appended line\n")?;
     file.write_all(b"Second appended line\n")?;
     file.write_all("第三行追加内容(UTF-8)\n".as_bytes())?;
+    drop(file);
 
     // 读取验证
     let content = fs::read_to_string(filename)?;
