@@ -18,18 +18,33 @@ struct MemoryControlBlock {
 
 const CTRL_BLK_SIZE: usize = core::mem::size_of::<MemoryControlBlock>();
 
+// ISO C requires malloc to return a pointer suitably aligned for any object type
+// with fundamental alignment. On most 64-bit architectures (x86_64, aarch64, riscv64,
+// loongarch64), max_align_t has an alignment of 16 bytes.
+#[cfg(target_pointer_width = "64")]
+const MALLOC_ALIGNMENT: usize = 16;
+
+#[cfg(target_pointer_width = "32")]
+const MALLOC_ALIGNMENT: usize = 8;
+
 /// Allocate memory and return the memory address.
 ///
-/// Returns 0 on failure (the current implementation does not trigger an exception)
+/// Returns NULL on failure per ISO C standard.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn malloc(size: ctypes::size_t) -> *mut c_void {
-    // Allocate `(actual length) + 8`. The lowest 8 Bytes are stored in the actual allocated space size.
-    // This is because free(uintptr_t) has only one parameter representing the address,
-    // So we need to save in advance to know the size of the memory space that needs to be released
-    let layout = Layout::from_size_align(size + CTRL_BLK_SIZE, 8).unwrap();
+    // Allocate `(actual length) + CTRL_BLK_SIZE`. The first CTRL_BLK_SIZE bytes store
+    // the actual allocated space size. This is because free(uintptr_t) has only one
+    // parameter representing the address, so we need to save in advance to know the
+    // size of the memory space that needs to be released.
+    let layout = match Layout::from_size_align(size + CTRL_BLK_SIZE, MALLOC_ALIGNMENT) {
+        Ok(layout) => layout,
+        Err(_) => return core::ptr::null_mut(),
+    };
     unsafe {
         let ptr = alloc(layout).cast::<MemoryControlBlock>();
-        assert!(!ptr.is_null(), "malloc failed");
+        if ptr.is_null() {
+            return core::ptr::null_mut();
+        }
         ptr.write(MemoryControlBlock { size });
         ptr.add(1).cast()
     }
@@ -50,7 +65,7 @@ pub unsafe extern "C" fn free(ptr: *mut c_void) {
     unsafe {
         let ptr = ptr.sub(1);
         let size = ptr.read().size;
-        let layout = Layout::from_size_align(size + CTRL_BLK_SIZE, 8).unwrap();
+        let layout = Layout::from_size_align(size + CTRL_BLK_SIZE, MALLOC_ALIGNMENT).unwrap();
         dealloc(ptr.cast(), layout)
     }
 }
