@@ -36,6 +36,7 @@ page-alloc-4g = ["axalloc/page-alloc-4g"] # up to 4G memory capacity
 paging = ["alloc", "axhal/paging", "axruntime/paging"]
 tls = ["alloc", "axhal/tls", "axruntime/tls", "axtask?/tls"]
 dma = ["alloc", "paging"]
+page-alloc-buddy = ["axalloc/buddy-page"] 
 
 # Multi-threading and scheduler
 multitask = ["alloc", "axtask/multitask", "axsync/multitask", "axruntime/multitask"]
