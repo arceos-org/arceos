@@ -67,5 +67,17 @@ axtask = { path = "modules/axtask" }
 axdma = { path = "modules/axdma" }
 axipi = { path = "modules/axipi" }
 
+axcpu = "0.2"
+axplat = "0.3.0"
+
+memory_addr = "0.4"
+page_table_entry = { git = "https://github.com/luodeb/page_table_multiarch.git" }
+
 [profile.release]
 lto = true
+
+[patch.crates-io]
+axcpu ={ path = "crates/axcpu" }
+page_table_entry ={ git = "https://github.com/luodeb/page_table_multiarch.git" }
+page_table_multiarch ={ git = "https://github.com/luodeb/page_table_multiarch.git" }
+axplat-arm-qemu-virt = { path = "crates/axplat_crates/platforms/axplat-arm-qemu-virt" }

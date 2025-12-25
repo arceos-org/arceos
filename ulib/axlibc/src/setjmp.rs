@@ -322,4 +322,11 @@ pub unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) 
         add.d    $a0, $a0, $a1
         jirl     $zero,$ra, 0",
     );
+    #[cfg(not(any(
+        target_arch = "aarch64",
+        target_arch = "x86_64",
+        target_arch = "riscv64",
+        target_arch = "loongarch64"
+    )))]
+    core::arch::naked_asm!("ret")
 }
