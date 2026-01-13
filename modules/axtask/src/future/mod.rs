@@ -6,11 +6,11 @@ use core::{
     fmt,
     future::poll_fn,
     pin::pin,
-    sync::atomic::{AtomicBool, Ordering},
     task::{Context, Poll, Waker},
 };
 
-use kernel_guard::NoPreemptIrqSave;
+use kspin::SpinNoIrq;
+use kernel_guard::{NoPreemptIrqSave};
 
 use crate::{AxTaskRef, WeakAxTaskRef, current, current_run_queue, select_run_queue};
 
@@ -22,14 +22,14 @@ pub use time::*;
 
 struct AxWaker {
     task: WeakAxTaskRef,
-    woke: AtomicBool,
+    woke: SpinNoIrq<bool>,
 }
 
 impl AxWaker {
     fn new(task: &AxTaskRef) -> Arc<Self> {
         Arc::new(AxWaker {
             task: Arc::downgrade(task),
-            woke: AtomicBool::new(false),
+            woke: SpinNoIrq::new(false),
         })
     }
 }
@@ -41,7 +41,7 @@ impl Wake for AxWaker {
 
     fn wake_by_ref(self: &Arc<Self>) {
         if let Some(task) = self.task.upgrade() {
-            self.woke.store(true, Ordering::Release);
+            *self.woke.lock() = true;
             select_run_queue::<NoPreemptIrqSave>(&task).unblock_task(task, false);
         }
     }
@@ -59,19 +59,20 @@ pub fn block_on<F: IntoFuture>(f: F) -> F::Output {
     // to prevent it from being dropped while blocking.
     let task = curr.clone();
 
-    let waker = AxWaker::new(&task);
-    let woke = &waker.woke;
-    let waker = Waker::from(waker.clone());
+    let axwaker = AxWaker::new(&task);
+    let waker = Waker::from(axwaker.clone());
     let mut cx = Context::from_waker(&waker);
 
     loop {
-        woke.store(false, Ordering::Release);
         match fut.as_mut().poll(&mut cx) {
             Poll::Pending => {
-                if !woke.load(Ordering::Acquire) {
-                    current_run_queue::<NoPreemptIrqSave>().blocked_resched();
+                let mut rq = current_run_queue::<NoPreemptIrqSave>();
+                let woke = axwaker.woke.lock();
+                if !*woke {
+                    rq.blocked_resched(woke);
                 } else {
                     // Immediately woken
+                    drop(woke);
                     crate::yield_now();
                 }
             }

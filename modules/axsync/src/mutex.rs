@@ -97,13 +97,13 @@ unsafe impl lock_api::RawMutex for RawMutex {
 
             listener!(self.event => listener);
 
-            owner_id = self.owner_id.load(Ordering::Relaxed);
+            owner_id = self.owner_id.load(Ordering::Acquire);
             if owner_id == 0 {
                 continue;
             }
 
             block_on(listener);
-            owner_id = self.owner_id.load(Ordering::Relaxed);
+            owner_id = self.owner_id.load(Ordering::Acquire);
         }
     }
 

@@ -14,9 +14,10 @@ use axfs_ng_vfs::{
 use axhal::mem::{PhysAddr, VirtAddr, virt_to_phys};
 use axio::{SeekFrom, prelude::*};
 use axpoll::{IoEvents, Pollable};
+use axsync::Mutex;
 use intrusive_collections::{LinkedList, LinkedListAtomicLink, intrusive_adapter};
 use lru::LruCache;
-use spin::{Mutex, RwLock};
+use spin::RwLock;
 
 use super::FsContext;
 
