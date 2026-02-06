@@ -17,22 +17,24 @@ irq = ["axhal/irq", "axtask?/irq", "dep:percpu"]
 tls = ["axhal/tls", "axtask?/tls"]
 alloc = ["dep:axalloc"]
 paging = ["axhal/paging", "dep:axmm"]
+dma = ["paging", "dep:axdma"]
 ipi = ["dep:axipi"]
 
 multitask = ["axtask/multitask"]
-fs = ["dep:axdriver", "dep:axfs"]
+fs = ["dep:axdriver", "dep:axfs", "axmm?/fs"]
 net = ["dep:axdriver", "dep:axnet"]
 display = ["dep:axdriver", "dep:axdisplay"]
 input = ["dep:axdriver", "dep:axinput"]
 vsock = ["net", "dep:axdriver"]
 rtc = []
-driver-dyn = ["axdriver/dyn"]
+driver-dyn = ["axdriver/dyn", "paging"]
 
 [dependencies]
 axalloc = { workspace = true, optional = true }
 axbacktrace.workspace = true
 axconfig.workspace = true
 axdisplay = { workspace = true, optional = true }
+axdma = { workspace = true, optional = true }
 axdriver = { workspace = true, optional = true }
 axinput = { workspace = true, optional = true }
 axfs = { workspace = true, optional = true }

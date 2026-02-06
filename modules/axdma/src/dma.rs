@@ -3,6 +3,7 @@ use core::{alloc::Layout, ptr::NonNull};
 use allocator::{AllocError, AllocResult, BaseAllocator, ByteAllocator};
 use axalloc::{DefaultByteAllocator, UsageKind, global_allocator};
 use axhal::{mem::virt_to_phys, paging::MappingFlags};
+use crate_interface::call_interface;
 use kspin::SpinNoIrq;
 use log::{debug, error};
 use memory_addr::{PAGE_SIZE_4K, VirtAddr, va};
@@ -95,14 +96,11 @@ impl DmaAllocator {
         num_pages: usize,
         flags: MappingFlags,
     ) -> AllocResult<()> {
-        let expand_size = num_pages * PAGE_SIZE_4K;
-        axmm::kernel_aspace()
-            .lock()
-            .protect(vaddr, expand_size, flags)
-            .map_err(|e| {
-                error!("change table flag fail: {e:?}");
-                AllocError::NoMemory
-            })
+        let size = num_pages * PAGE_SIZE_4K;
+        call_interface!(DmaProtectIf::protect_memory(vaddr, size, flags)).map_err(|e| {
+            error!("change table flag fail: {e:?}");
+            AllocError::NoMemory
+        })
     }
 
     /// Gives back the allocated region to the byte allocator.

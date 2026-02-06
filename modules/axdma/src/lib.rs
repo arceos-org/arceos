@@ -9,9 +9,24 @@ mod dma;
 use core::{alloc::Layout, ptr::NonNull};
 
 use allocator::AllocResult;
-use memory_addr::PhysAddr;
+use axhal::paging::MappingFlags;
+use memory_addr::{PhysAddr, VirtAddr};
 
 use self::dma::ALLOCATOR;
+
+/// Extern interfaces that must be implemented in other crates to provide
+/// memory protection for DMA regions.
+#[crate_interface::def_interface]
+pub trait DmaProtectIf {
+    /// Updates the page table flags for the given virtual memory region.
+    ///
+    /// This is used to set memory regions as uncached for DMA coherence.
+    fn protect_memory(
+        vaddr: VirtAddr,
+        size: usize,
+        flags: MappingFlags,
+    ) -> Result<(), axerrno::AxError>;
+}
 
 /// Converts a physical address to a bus address.
 ///

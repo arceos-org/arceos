@@ -84,6 +84,37 @@ impl axlog::LogIf for LogIfImpl {
     }
 }
 
+#[cfg(feature = "dma")]
+struct DmaProtectIfImpl;
+
+#[cfg(feature = "dma")]
+#[crate_interface::impl_interface]
+impl axdma::DmaProtectIf for DmaProtectIfImpl {
+    fn protect_memory(
+        vaddr: memory_addr::VirtAddr,
+        size: usize,
+        flags: axhal::paging::MappingFlags,
+    ) -> Result<(), axerrno::AxError> {
+        axmm::kernel_aspace()
+            .lock()
+            .protect(vaddr, size, flags)
+    }
+}
+
+#[cfg(feature = "driver-dyn")]
+struct IoMapIfImpl;
+
+#[cfg(feature = "driver-dyn")]
+#[crate_interface::impl_interface]
+impl axdriver::dyn_drivers::klib::IoMapIf for IoMapIfImpl {
+    fn iomap(
+        paddr: memory_addr::PhysAddr,
+        size: usize,
+    ) -> Result<memory_addr::VirtAddr, axerrno::AxError> {
+        axmm::iomap(paddr, size)
+    }
+}
+
 use core::sync::atomic::{AtomicUsize, Ordering};
 
 static INITED_CPUS: AtomicUsize = AtomicUsize::new(0);

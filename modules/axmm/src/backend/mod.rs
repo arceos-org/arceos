@@ -12,7 +12,9 @@ use enum_dispatch::enum_dispatch;
 use memory_addr::{DynPageIter, PAGE_SIZE_4K, PhysAddr, VirtAddr, VirtAddrRange};
 use memory_set::MappingBackend;
 
+#[cfg(feature = "fs")]
 pub mod cow;
+#[cfg(feature = "fs")]
 pub mod file;
 pub mod linear;
 pub mod shared;
@@ -107,8 +109,10 @@ pub trait BackendOps {
 #[enum_dispatch(BackendOps)]
 pub enum Backend {
     Linear(linear::LinearBackend),
+    #[cfg(feature = "fs")]
     Cow(cow::CowBackend),
     Shared(shared::SharedBackend),
+    #[cfg(feature = "fs")]
     File(file::FileBackend),
 }
 

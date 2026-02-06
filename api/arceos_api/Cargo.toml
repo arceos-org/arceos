@@ -18,7 +18,7 @@ alloc = ["dep:axalloc", "axfeat/alloc"]
 paging = ["dep:axmm", "axfeat/paging"]
 dma = ["dep:axdma", "axfeat/dma"]
 multitask = ["axtask/multitask", "axsync/multitask", "axfeat/multitask"]
-fs = ["dep:axfs", "dep:axdriver", "axfeat/fs"]
+fs = ["dep:axfs", "dep:axdriver", "axfeat/fs", "axmm?/fs"]
 net = ["dep:axnet", "dep:axdriver", "axfeat/net"]
 display = ["dep:axdisplay", "dep:axdriver", "axfeat/display"]
 

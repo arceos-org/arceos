@@ -11,14 +11,15 @@ documentation = "https://arceos-org.github.io/arceos/axmm/index.html"
 
 [features]
 default = []
+fs = ["dep:axfs", "dep:axfs-ng-vfs"]
 copy = ["page_table_multiarch/copy-from"]
 
 [dependencies]
 axalloc = { workspace = true }
 axconfig = { workspace = true }
 axerrno = { workspace = true }
-axfs = { workspace = true }
-axfs-ng-vfs = { workspace = true }
+axfs = { workspace = true, optional = true }
+axfs-ng-vfs = { workspace = true, optional = true }
 axhal = { workspace = true, features = ["paging"] }
 axsync = { workspace = true }
 axtask = { workspace = true }

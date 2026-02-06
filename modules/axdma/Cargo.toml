@@ -16,7 +16,7 @@ axalloc.workspace = true
 axconfig.workspace = true
 axerrno.workspace = true
 axhal = { workspace = true, features = ["paging"] }
-axmm.workspace = true
+crate_interface.workspace = true
 kspin.workspace = true
 log.workspace = true
 memory_addr.workspace = true
