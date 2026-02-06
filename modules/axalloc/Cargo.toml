@@ -8,21 +8,22 @@ license.workspace = true
 homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/modules/axalloc"
 documentation = "https://arceos-org.github.io/arceos/axalloc/index.html"
+readme = "README.md"
 
 [features]
-default = ["tlsf", "allocator/page-alloc-256m"]
-tlsf = ["allocator/tlsf"]
-slab = ["allocator/slab"]
-buddy = ["allocator/buddy"]
+default = ["tlsf", "axallocator/page-alloc-256m"]
+tlsf = ["axallocator/tlsf"]
+slab = ["axallocator/slab"]
+buddy = ["axallocator/buddy"]
 page-alloc-64g = [
-    "allocator/page-alloc-64g",
+    "axallocator/page-alloc-64g",
 ] # Support up to 64G memory capacity
-page-alloc-4g = ["allocator/page-alloc-4g"] # Support up to 4G memory capacity
+page-alloc-4g = ["axallocator/page-alloc-4g"] # Support up to 4G memory capacity
 level-1 = []
 tracking = ["dep:percpu", "dep:axbacktrace"]
 
 [dependencies]
-allocator = { workspace = true, features = ["bitmap"] }
+axallocator = { version = "0.1.3-preview.1", default-features = false, features = ["bitmap"] }
 axbacktrace = { workspace = true, optional = true }
 axerrno.workspace = true
 cfg-if.workspace = true

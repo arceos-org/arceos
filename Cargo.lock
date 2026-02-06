@@ -56,11 +56,7 @@ version = "0.1.2"
 source = "git+https://github.com/arceos-org/allocator.git?tag=v0.1.2#922e72a7e4dfb7ffc4b67d242d38f8361ebd13ac"
 dependencies = [
  "axerrno 0.1.2",
- "bitmap-allocator",
- "buddy_system_allocator",
  "cfg-if",
- "rlsf",
- "slab_allocator",
 ]
 
 [[package]]
@@ -173,7 +169,7 @@ dependencies = [
 
 [[package]]
 name = "arceos_api"
-version = "0.2.0"
+version = "0.2.1-preview.1"
 dependencies = [
  "axalloc",
  "axconfig",
@@ -196,7 +192,7 @@ dependencies = [
 
 [[package]]
 name = "arceos_posix_api"
-version = "0.2.0"
+version = "0.2.1-preview.1"
 dependencies = [
  "axalloc",
  "axconfig",
@@ -301,10 +297,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c08606f8c3cbf4ce6ec8e28fb0014a2c086708fe954eaa885384a6165172e7e8"
 
 [[package]]
-name = "axalloc"
-version = "0.2.0"
+name = "ax_slab_allocator"
+version = "0.3.2-preview.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "925fe9ce2492005f319efe39af520a1d53976aa6f473bd3ecdee2edd8382dbd3"
 dependencies = [
- "allocator",
+ "buddy_system_allocator",
+]
+
+[[package]]
+name = "axalloc"
+version = "0.2.1-preview.1"
+dependencies = [
+ "axallocator",
  "axbacktrace",
  "axerrno 0.2.2",
  "cfg-if",
@@ -313,6 +318,19 @@ dependencies = [
  "memory_addr",
  "percpu",
  "strum",
+]
+
+[[package]]
+name = "axallocator"
+version = "0.1.3-preview.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1af235e0e403b05aef675f5273ded7f54e79d78ffb358a7b46e950434c4e1fd8"
+dependencies = [
+ "ax_slab_allocator",
+ "bitmap-allocator",
+ "buddy_system_allocator",
+ "cfg-if",
+ "rlsf",
 ]
 
 [[package]]
@@ -331,7 +349,7 @@ dependencies = [
 
 [[package]]
 name = "axconfig"
-version = "0.2.0"
+version = "0.2.1-preview.1"
 dependencies = [
  "axconfig-macros",
 ]
@@ -383,7 +401,7 @@ dependencies = [
 
 [[package]]
 name = "axdisplay"
-version = "0.2.0"
+version = "0.2.1-preview.1"
 dependencies = [
  "axdriver",
  "axsync",
@@ -393,7 +411,7 @@ dependencies = [
 
 [[package]]
 name = "axdma"
-version = "0.2.0"
+version = "0.2.1-preview.1"
 dependencies = [
  "allocator",
  "axalloc",
@@ -408,7 +426,7 @@ dependencies = [
 
 [[package]]
 name = "axdriver"
-version = "0.2.0"
+version = "0.2.1-preview.1"
 dependencies = [
  "arm-gic-driver",
  "axalloc",
@@ -537,7 +555,7 @@ dependencies = [
 
 [[package]]
 name = "axfeat"
-version = "0.2.0"
+version = "0.2.1-preview.1"
 dependencies = [
  "axalloc",
  "axbacktrace",
@@ -557,7 +575,7 @@ dependencies = [
 
 [[package]]
 name = "axfs"
-version = "0.2.0"
+version = "0.2.1-preview.1"
 dependencies = [
  "axalloc",
  "axdriver",
@@ -601,7 +619,7 @@ dependencies = [
 
 [[package]]
 name = "axhal"
-version = "0.2.0"
+version = "0.2.1-preview.1"
 dependencies = [
  "axalloc",
  "axconfig",
@@ -625,7 +643,7 @@ dependencies = [
 
 [[package]]
 name = "axinput"
-version = "0.2.0"
+version = "0.2.1-preview.1"
 dependencies = [
  "axdriver",
  "axsync",
@@ -647,7 +665,7 @@ dependencies = [
 
 [[package]]
 name = "axipi"
-version = "0.2.0"
+version = "0.2.1-preview.1"
 dependencies = [
  "axconfig",
  "axhal",
@@ -669,7 +687,7 @@ dependencies = [
 
 [[package]]
 name = "axlibc"
-version = "0.2.0"
+version = "0.2.1-preview.1"
 dependencies = [
  "arceos_posix_api",
  "axerrno 0.2.2",
@@ -680,7 +698,7 @@ dependencies = [
 
 [[package]]
 name = "axlog"
-version = "0.2.0"
+version = "0.2.1-preview.1"
 dependencies = [
  "axlog",
  "cfg-if",
@@ -692,7 +710,7 @@ dependencies = [
 
 [[package]]
 name = "axmm"
-version = "0.2.0"
+version = "0.2.1-preview.1"
 dependencies = [
  "axalloc",
  "axconfig",
@@ -713,7 +731,7 @@ dependencies = [
 
 [[package]]
 name = "axnet"
-version = "0.2.0"
+version = "0.2.1-preview.1"
 dependencies = [
  "async-channel",
  "async-trait",
@@ -911,7 +929,7 @@ dependencies = [
 
 [[package]]
 name = "axruntime"
-version = "0.2.0"
+version = "0.2.1-preview.1"
 dependencies = [
  "axalloc",
  "axbacktrace",
@@ -946,7 +964,7 @@ dependencies = [
 
 [[package]]
 name = "axstd"
-version = "0.2.0"
+version = "0.2.1-preview.1"
 dependencies = [
  "arceos_api",
  "axerrno 0.2.2",
@@ -959,7 +977,7 @@ dependencies = [
 
 [[package]]
 name = "axsync"
-version = "0.2.0"
+version = "0.2.1-preview.1"
 dependencies = [
  "axsync",
  "axtask",
@@ -971,7 +989,7 @@ dependencies = [
 
 [[package]]
 name = "axtask"
-version = "0.2.0"
+version = "0.2.1-preview.1"
 dependencies = [
  "axconfig",
  "axerrno 0.2.2",
@@ -2606,14 +2624,6 @@ name = "slab"
 version = "0.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c790de23124f9ab44544d7ac05d60440adc586479ce501c1d6d7da3cd8c9cf5"
-
-[[package]]
-name = "slab_allocator"
-version = "0.3.1"
-source = "git+https://github.com/arceos-org/slab_allocator.git?tag=v0.3.1#3c13499d664ccd36f66786985b753340aea57f5a"
-dependencies = [
- "buddy_system_allocator",
-]
 
 [[package]]
 name = "smallvec"
