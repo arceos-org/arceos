@@ -8,6 +8,7 @@ license.workspace = true
 homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/modules/axhal"
 documentation = "https://arceos-org.github.io/arceos/axhal/index.html"
+readme = "README.md"
 
 [features]
 smp = [
@@ -55,10 +56,10 @@ default = []
 ipi = ["irq"]
 
 [dependencies]
-axalloc = { workspace = true, optional = true }
-axconfig.workspace = true
-axcpu = { git = "https://github.com/arceos-org/axcpu.git", tag = "dev-v03" }
-axplat.workspace = true
+axalloc = { version = "0.2.1-preview.1", optional = true }
+axconfig = { version = "0.2.1-preview.1" }
+axcpu = { version = "0.3.0-alpha.0" }
+axplat = { version = "0.3" }
 cfg-if.workspace = true
 heapless = "0.9"
 kernel_guard.workspace = true
@@ -66,21 +67,21 @@ lazyinit.workspace = true
 linkme = { version = "0.3.33", optional = true }
 log.workspace = true
 memory_addr.workspace = true
-page_table_multiarch = { workspace = true, optional = true }
+page_table_multiarch = { version = "0.5", optional = true, features = ["axerrno"] }
 percpu.workspace = true
 fdt-parser = "0.4"
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
-axplat-x86-pc = { workspace = true, optional = true }
+axplat-x86-pc = { version = "0.3", optional = true }
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
-axplat-aarch64-qemu-virt = { workspace = true, optional = true }
+axplat-aarch64-qemu-virt = { version = "0.3", optional = true }
 
 [target.'cfg(target_arch = "riscv64")'.dependencies]
-axplat-riscv64-qemu-virt = { workspace = true, optional = true }
+axplat-riscv64-qemu-virt = { version = "0.3", optional = true }
 
 [target.'cfg(target_arch = "loongarch64")'.dependencies]
-axplat-loongarch64-qemu-virt = { workspace = true, optional = true }
+axplat-loongarch64-qemu-virt = { version = "0.3", optional = true }
 
 [build-dependencies]
-axconfig.workspace = true
+axconfig = { version = "0.2.1-preview.1" }

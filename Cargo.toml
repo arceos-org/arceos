@@ -112,3 +112,16 @@ page_table_multiarch = { git = "https://github.com/arceos-org/page_table_multiar
 percpu = "0.2"
 scope-local = "0.1"
 spin = "0.10"
+
+# Local build: use path/git so make run works when axhal (and deps) use version for publish
+[patch.crates-io]
+axalloc = { path = "modules/axalloc" }
+axconfig = { path = "modules/axconfig" }
+axhal = { path = "modules/axhal" }
+axcpu = { git = "https://github.com/arceos-org/axcpu.git", tag = "dev-v03" }
+axplat = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
+axplat-x86-pc = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
+axplat-aarch64-qemu-virt = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
+axplat-riscv64-qemu-virt = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
+axplat-loongarch64-qemu-virt = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
+page_table_multiarch = { git = "https://github.com/arceos-org/page_table_multiarch.git", tag = "dev-v05" }

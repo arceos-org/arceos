@@ -390,7 +390,7 @@ dependencies = [
  "loongArch64",
  "memory_addr",
  "page_table_entry",
- "page_table_multiarch 0.5.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "page_table_multiarch",
  "percpu",
  "riscv",
  "static_assertions",
@@ -637,7 +637,7 @@ dependencies = [
  "linkme",
  "log",
  "memory_addr",
- "page_table_multiarch 0.5.7 (git+https://github.com/arceos-org/page_table_multiarch.git?tag=dev-v05)",
+ "page_table_multiarch",
  "percpu",
 ]
 
@@ -726,7 +726,7 @@ dependencies = [
  "log",
  "memory_addr",
  "memory_set",
- "page_table_multiarch 0.5.7 (git+https://github.com/arceos-org/page_table_multiarch.git?tag=dev-v05)",
+ "page_table_multiarch",
 ]
 
 [[package]]
@@ -2145,19 +2145,6 @@ dependencies = [
  "bitflags 2.10.0",
  "memory_addr",
  "x86_64",
-]
-
-[[package]]
-name = "page_table_multiarch"
-version = "0.5.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9fa11a21844255e14aa6688ef0eafb058d7be19338633024fb59417f1bfb07f8"
-dependencies = [
- "log",
- "memory_addr",
- "page_table_entry",
- "riscv",
- "x86",
 ]
 
 [[package]]

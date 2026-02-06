@@ -1,5 +1,9 @@
 //! CPU-local data structures.
 
+// Re-export platform percpu items only when a real platform is selected.
+// The `percpu` module in `axplat` is only available in newer (unpublished) versions;
+// the crates.io 0.3.0 release does not have it.
+#[cfg(any(feature = "defplat", feature = "myplat"))]
 pub use axplat::percpu::*;
 
 #[percpu::def_percpu]
