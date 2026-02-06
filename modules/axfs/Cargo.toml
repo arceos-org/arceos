@@ -36,14 +36,13 @@ slab = { version = "0.4.9", default-features = false }
 spin = { workspace = true }
 
 [dependencies.lwext4_rust]
-git = "https://github.com/Starry-OS/lwext4_rust.git"
-rev = "033fa2c"
+version = "0.3.1-preview.1"
 default-features = false
 optional = true
 
 [dependencies.fatfs]
-git = "https://github.com/Starry-OS/rust-fatfs.git"
-rev = "2685439"
+version = "0.4.1-preview.2"
+package = "starry-fatfs"
 default-features = false
 optional = true
 features = ["alloc", "lfn", "log_level_trace", "unicode"]

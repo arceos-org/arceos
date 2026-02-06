@@ -51,13 +51,13 @@ arceos_api = { path = "api/arceos_api" }
 arceos_posix_api = { path = "api/arceos_posix_api" }
 axfeat = { path = "api/axfeat" }
 
-axalloc = { path = "modules/axalloc" }
+axalloc = { version = "0.2.2-preview.1", path = "modules/axalloc" }
 axconfig = { path = "modules/axconfig" }
 axdisplay = { path = "modules/axdisplay" }
 axdma = { path = "modules/axdma" }
 axdriver = { version = "0.2.2-preview.1", path = "modules/axdriver" }
 axfs = { path = "modules/axfs" }
-axhal = { path = "modules/axhal" }
+axhal = { version = "0.2.2-preview.2", path = "modules/axhal" }
 axinput = { path = "modules/axinput" }
 axipi = { path = "modules/axipi" }
 axlog = { path = "modules/axlog" }

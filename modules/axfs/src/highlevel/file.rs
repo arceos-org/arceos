@@ -314,7 +314,8 @@ impl PageCache {
             .alloc_pages(1, PAGE_SIZE, UsageKind::PageCache)
             .inspect_err(|err| {
                 warn!("Failed to allocate page cache: {:?}", err);
-            })?;
+            })
+            .map_err(|_| VfsError::NoMemory)?;
         Ok(Self {
             addr: addr.into(),
             dirty: false,

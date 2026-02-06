@@ -580,7 +580,6 @@ dependencies = [
  "cfg-if",
  "chrono",
  "env_logger",
- "fatfs",
  "intrusive-collections",
  "kspin",
  "log",
@@ -589,6 +588,7 @@ dependencies = [
  "scope-local",
  "slab",
  "spin 0.10.0",
+ "starry-fatfs",
 ]
 
 [[package]]
@@ -1523,15 +1523,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37909eebbb50d72f9059c3b6d82c0463f2ff062c9e95845c43a6c9c0355411be"
 
 [[package]]
-name = "fatfs"
-version = "0.4.0"
-source = "git+https://github.com/Starry-OS/rust-fatfs.git?rev=2685439#2685439e679cc832a67fd21340258b7c018c0f33"
-dependencies = [
- "bitflags 2.10.0",
- "log",
-]
-
-[[package]]
 name = "fdt-parser"
 version = "0.4.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2018,8 +2009,9 @@ dependencies = [
 
 [[package]]
 name = "lwext4_rust"
-version = "0.2.0"
-source = "git+https://github.com/Starry-OS/lwext4_rust.git?rev=033fa2c#033fa2cc848c7495651b00af6695dc07de06d596"
+version = "0.3.1-preview.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8514d8134c84bf2f8d3b1a957675fdd7f9b88c0331e9244f46d8bb904b2a60c"
 dependencies = [
  "bindgen",
  "log",
@@ -2645,6 +2637,16 @@ name = "stable_deref_trait"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
+
+[[package]]
+name = "starry-fatfs"
+version = "0.4.1-preview.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3d994a3a25a5cc4a895b200bd00d8e757515f21f9c21647bd4e9a8e572a326f1"
+dependencies = [
+ "bitflags 2.10.0",
+ "log",
+]
 
 [[package]]
 name = "static_assertions"
