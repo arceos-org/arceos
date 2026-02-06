@@ -5,10 +5,11 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 homepage.workspace = true
-documentation.workspace = true
-repository.workspace = true
+documentation = "https://arceos-org.github.io/arceos/axinput/index.html"
+repository = "https://github.com/arceos-org/arceos/tree/main/modules/axinput"
 keywords.workspace = true
 categories.workspace = true
+description = "ArceOS input subsystem module"
 
 [dependencies]
 axdriver = { workspace = true, features = ["input"] }
