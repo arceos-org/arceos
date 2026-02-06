@@ -32,7 +32,11 @@ fn alloc_frame(zeroed: bool, size: PageSize) -> AxResult<PhysAddr> {
     let page_size = size as usize;
     let num_pages = page_size / PAGE_SIZE_4K;
     let vaddr =
-        VirtAddr::from(global_allocator().alloc_pages(num_pages, page_size, UsageKind::VirtMem)?);
+        VirtAddr::from(
+            global_allocator()
+                .alloc_pages(num_pages, page_size, UsageKind::VirtMem)
+                .map_err(|_| AxError::NoMemory)?,
+        );
     if zeroed {
         unsafe { core::ptr::write_bytes(vaddr.as_mut_ptr(), 0, page_size) };
     }

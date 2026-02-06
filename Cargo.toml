@@ -52,11 +52,11 @@ arceos_posix_api = { path = "api/arceos_posix_api" }
 axfeat = { path = "api/axfeat" }
 
 axalloc = { version = "0.2.2-preview.1", path = "modules/axalloc" }
-axconfig = { path = "modules/axconfig" }
+axconfig = { version = "0.2.2-preview.1", path = "modules/axconfig" }
 axdisplay = { path = "modules/axdisplay" }
 axdma = { path = "modules/axdma" }
 axdriver = { version = "0.2.2-preview.1", path = "modules/axdriver" }
-axfs = { path = "modules/axfs" }
+axfs = { version = "0.2.2-preview.1", path = "modules/axfs" }
 axhal = { version = "0.2.2-preview.2", path = "modules/axhal" }
 axinput = { path = "modules/axinput" }
 axipi = { path = "modules/axipi" }
@@ -65,7 +65,7 @@ axmm = { path = "modules/axmm" }
 axnet = { path = "modules/axnet" }
 axruntime = { path = "modules/axruntime" }
 axsync = { version = "0.2.2-preview.1", path = "modules/axsync" }
-axtask = { path = "modules/axtask" }
+axtask = { version = "0.2.2-preview.1", path = "modules/axtask" }
 
 allocator = { git = "https://github.com/arceos-org/allocator.git", tag = "v0.1.2", features = [
     "axerrno",
@@ -106,7 +106,7 @@ lazy_static = { version = "1.5", features = ["spin_no_std"] }
 lock_api = { version = "0.4", default-features = false }
 log = "0.4"
 memory_addr = "0.4"
-page_table_multiarch = { git = "https://github.com/arceos-org/page_table_multiarch.git", tag = "dev-v05", features = [
+page_table_multiarch = { version = "0.5", features = [
     "axerrno",
 ] }
 percpu = "0.2"
