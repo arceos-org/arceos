@@ -8,6 +8,7 @@ license.workspace = true
 homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/modules/axtask"
 documentation = "https://arceos-org.github.io/arceos/axtask/index.html"
+readme = "README.md"
 
 [features]
 default = []
@@ -39,9 +40,9 @@ sched-cfs = ["multitask", "preempt"]
 test = ["percpu?/sp-naive"]
 
 [dependencies]
-axconfig = { workspace = true, optional = true }
+axconfig = { version = "0.2.1-preview.1", optional = true }
 axerrno.workspace = true
-axhal.workspace = true
+axhal = { version = "0.2.1-preview.1" }
 axpoll = { workspace = true, optional = true }
 axsched = { version = "0.3", optional = true }
 cfg-if.workspace = true
@@ -61,5 +62,5 @@ memory_addr = { workspace = true, optional = true }
 percpu = { workspace = true, optional = true }
 
 [dev-dependencies]
-axhal = { workspace = true, features = ["fp-simd"] }
-axtask = { workspace = true, features = ["test", "multitask"] }
+axhal = { version = "0.2.1-preview.1", features = ["fp-simd"] }
+axtask = { path = ".", features = ["test", "multitask"] }
