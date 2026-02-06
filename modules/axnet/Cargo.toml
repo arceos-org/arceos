@@ -20,7 +20,7 @@ axconfig = { workspace = true }
 axdriver = { workspace = true, features = ["net"] }
 axhal = { workspace = true }
 axsync = { workspace = true }
-axtask = { workspace = true }
+axtask = { workspace = true, features = ["multitask", "irq"] }
 
 axerrno = { workspace = true }
 axfs = { workspace = true }
@@ -41,8 +41,8 @@ event-listener = { version = "5.4.0", default-features = false }
 async-trait = "0.1.88"
 
 [dependencies.smoltcp]
-git = "https://github.com/Starry-OS/smoltcp.git"
-rev = "7401a54"
+version = "0.12.1-preview.1"
+package = "starry-smoltcp"
 default-features = false
 features = [
   "alloc",

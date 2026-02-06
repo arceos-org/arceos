@@ -1,6 +1,6 @@
 [package]
 name = "axtask"
-version = "0.2.2-preview.1"
+version = "0.2.2-preview.3"
 edition.workspace = true
 authors = ["Yuekai Jia <equation618@gmail.com>"]
 description = "ArceOS task management module"
@@ -28,7 +28,7 @@ multitask = [
     "dep:percpu",
 ]
 task-ext = ["dep:extern-trait"]
-irq = []
+irq = ["axhal/irq"]
 tls = ["axhal/tls"]
 preempt = ["irq", "percpu?/preempt", "kernel_guard/preempt"]
 smp = ["kspin/smp"]

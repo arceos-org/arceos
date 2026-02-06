@@ -65,7 +65,7 @@ axmm = { path = "modules/axmm" }
 axnet = { path = "modules/axnet" }
 axruntime = { path = "modules/axruntime" }
 axsync = { version = "0.2.2-preview.1", path = "modules/axsync" }
-axtask = { version = "0.2.2-preview.1", path = "modules/axtask" }
+axtask = { version = "0.2.2-preview.3", path = "modules/axtask" }
 
 allocator = { git = "https://github.com/arceos-org/allocator.git", tag = "v0.1.2", features = [
     "axerrno",
