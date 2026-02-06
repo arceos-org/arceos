@@ -55,7 +55,7 @@ axalloc = { path = "modules/axalloc" }
 axconfig = { path = "modules/axconfig" }
 axdisplay = { path = "modules/axdisplay" }
 axdma = { path = "modules/axdma" }
-axdriver = { path = "modules/axdriver" }
+axdriver = { version = "0.2.2-preview.1", path = "modules/axdriver" }
 axfs = { path = "modules/axfs" }
 axhal = { path = "modules/axhal" }
 axinput = { path = "modules/axinput" }
@@ -64,7 +64,7 @@ axlog = { path = "modules/axlog" }
 axmm = { path = "modules/axmm" }
 axnet = { path = "modules/axnet" }
 axruntime = { path = "modules/axruntime" }
-axsync = { path = "modules/axsync" }
+axsync = { version = "0.2.2-preview.1", path = "modules/axsync" }
 axtask = { path = "modules/axtask" }
 
 allocator = { git = "https://github.com/arceos-org/allocator.git", tag = "v0.1.2", features = [
