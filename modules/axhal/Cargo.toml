@@ -1,6 +1,6 @@
 [package]
 name = "axhal"
-version = "0.2.2-preview.3"
+version = "0.2.2-preview.4"
 edition.workspace = true
 authors = ["Yuekai Jia <equation618@gmail.com>"]
 description = "ArceOS hardware abstraction layer, provides unified APIs for platform-specific operations"
@@ -58,8 +58,8 @@ ipi = ["irq"]
 [dependencies]
 axalloc = { version = "0.2.2-preview.1", optional = true }
 axconfig = { version = "0.2.2-preview.1" }
-axcpu = { version = "0.3.0-alpha.0" }
-axplat = { version = "0.3" }
+axcpu = { version = "0.3.0-preview.2" }
+axplat = { version = ">=0.3.0-preview.2, <0.3.0" }
 cfg-if.workspace = true
 heapless = "0.9"
 kernel_guard.workspace = true
@@ -72,16 +72,16 @@ percpu.workspace = true
 fdt-parser = "0.4"
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
-axplat-x86-pc = { version = "0.3", optional = true }
+axplat-x86-pc = { version = ">=0.3.0-preview.2, <0.3.0", optional = true }
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
-axplat-aarch64-qemu-virt = { version = "0.3", optional = true }
+axplat-aarch64-qemu-virt = { version = ">=0.3.0-preview.2, <0.3.0", optional = true }
 
 [target.'cfg(target_arch = "riscv64")'.dependencies]
-axplat-riscv64-qemu-virt = { version = "0.3", optional = true }
+axplat-riscv64-qemu-virt = { version = ">=0.3.0-preview.2, <0.3.0", optional = true }
 
 [target.'cfg(target_arch = "loongarch64")'.dependencies]
-axplat-loongarch64-qemu-virt = { version = "0.3", optional = true }
+axplat-loongarch64-qemu-virt = { version = ">=0.3.0-preview.2, <0.3.0", optional = true }
 
 [build-dependencies]
 axconfig = { version = "0.2.2-preview.1" }

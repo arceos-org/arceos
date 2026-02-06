@@ -57,13 +57,13 @@ axdisplay = { version = "0.2.2-preview.1", path = "modules/axdisplay" }
 axdma = { version = "0.2.2-preview.1", path = "modules/axdma" }
 axdriver = { version = "0.2.2-preview.1", path = "modules/axdriver" }
 axfs = { version = "0.2.2-preview.1", path = "modules/axfs" }
-axhal = { version = "0.2.2-preview.3", path = "modules/axhal" }
+axhal = { version = "0.2.2-preview.4", path = "modules/axhal" }
 axinput = { version = "0.2.2-preview.1", path = "modules/axinput" }
 axipi = { version = "0.2.2-preview.2", path = "modules/axipi" }
 axlog = { version = "0.2.2-preview.1", path = "modules/axlog" }
 axmm = { version = "0.2.2-preview.1", path = "modules/axmm" }
 axnet = { version = "0.2.2-preview.1", path = "modules/axnet" }
-axruntime = { version = "0.2.2-preview.1", path = "modules/axruntime" }
+axruntime = { version = "0.2.2-preview.2", path = "modules/axruntime" }
 axsync = { version = "0.2.2-preview.1", path = "modules/axsync" }
 axtask = { version = "0.2.2-preview.3", path = "modules/axtask" }
 
@@ -83,7 +83,7 @@ axerrno = "0.2"
 axfs-ng-vfs = "0.1"
 axio = "0.3.0-pre.1"
 axklib = { git = "https://github.com/arceos-hypervisor/axklib.git" } # FIXME: pin to a specific commit or tag
-axplat = "0.3"
+axplat = ">=0.3.0-preview.2, <0.3.0"
 axplat-aarch64-bsta1000b = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
 axplat-aarch64-phytium-pi = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
 axplat-aarch64-qemu-virt = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
@@ -122,10 +122,10 @@ axhal = { path = "modules/axhal" }
 axtask = { path = "modules/axtask" }
 axsync = { path = "modules/axsync" }
 axipi = { path = "modules/axipi" }
-axcpu = { git = "https://github.com/arceos-org/axcpu.git", tag = "dev-v03" }
-axplat = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
-axplat-x86-pc = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
-axplat-aarch64-qemu-virt = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
-axplat-riscv64-qemu-virt = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
-axplat-loongarch64-qemu-virt = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
+axcpu = { path = "../axcpu" }
+axplat = { path = "../axplat_crates/axplat" }
+axplat-x86-pc = { path = "../axplat_crates/platforms/axplat-x86-pc" }
+axplat-aarch64-qemu-virt = { path = "../axplat_crates/platforms/axplat-aarch64-qemu-virt" }
+axplat-riscv64-qemu-virt = { path = "../axplat_crates/platforms/axplat-riscv64-qemu-virt" }
+axplat-loongarch64-qemu-virt = { path = "../axplat_crates/platforms/axplat-loongarch64-qemu-virt" }
 page_table_multiarch = { git = "https://github.com/arceos-org/page_table_multiarch.git", tag = "dev-v05" }

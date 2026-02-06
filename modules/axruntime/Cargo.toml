@@ -1,6 +1,6 @@
 [package]
 name = "axruntime"
-version.workspace = true
+version = "0.2.2-preview.2"
 edition.workspace = true
 authors = ["Yuekai Jia <equation618@gmail.com>"]
 description = "Runtime library of ArceOS"
@@ -43,7 +43,7 @@ axipi = { workspace = true, optional = true }
 axlog.workspace = true
 axmm = { workspace = true, optional = true }
 axnet = { workspace = true, optional = true }
-axplat = { workspace = true }
+axplat = { version = ">=0.3.0-preview.2, <0.3.0" }
 axtask = { workspace = true, optional = true }
 chrono.workspace = true
 crate_interface.workspace = true
