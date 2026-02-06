@@ -179,7 +179,7 @@ dependencies = [
  "axerrno 0.2.2",
  "axfeat",
  "axfs",
- "axhal",
+ "axhal 0.2.2-preview.1",
  "axio",
  "axipi",
  "axlog",
@@ -187,7 +187,7 @@ dependencies = [
  "axnet",
  "axruntime",
  "axsync",
- "axtask",
+ "axtask 0.2.2-preview.1",
 ]
 
 [[package]]
@@ -199,13 +199,13 @@ dependencies = [
  "axerrno 0.2.2",
  "axfeat",
  "axfs",
- "axhal",
+ "axhal 0.2.2-preview.1",
  "axio",
  "axlog",
  "axnet",
  "axruntime",
  "axsync",
- "axtask",
+ "axtask 0.2.2-preview.1",
  "bindgen",
  "flatten_objects",
  "lazy_static",
@@ -417,7 +417,7 @@ dependencies = [
  "axalloc",
  "axconfig",
  "axerrno 0.2.2",
- "axhal",
+ "axhal 0.2.2-preview.1",
  "crate_interface",
  "kspin",
  "log",
@@ -441,7 +441,7 @@ dependencies = [
  "axdriver_virtio",
  "axdriver_vsock",
  "axerrno 0.2.2",
- "axhal",
+ "axhal 0.2.2-preview.1",
  "axklib",
  "cfg-if",
  "crate_interface",
@@ -562,14 +562,14 @@ dependencies = [
  "axdisplay",
  "axdriver",
  "axfs",
- "axhal",
+ "axhal 0.2.2-preview.1",
  "axinput",
  "axipi",
  "axlog",
  "axnet",
  "axruntime",
  "axsync",
- "axtask",
+ "axtask 0.2.2-preview.1",
  "kspin",
 ]
 
@@ -581,7 +581,7 @@ dependencies = [
  "axdriver",
  "axerrno 0.2.2",
  "axfs-ng-vfs",
- "axhal",
+ "axhal 0.2.2-preview.1",
  "axio",
  "axpoll",
  "axsync",
@@ -620,6 +620,25 @@ dependencies = [
 [[package]]
 name = "axhal"
 version = "0.2.1-preview.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c40e732d65e96154e1887a9e5532768e3b3d528d6ac8c160a42800399bc5bee8"
+dependencies = [
+ "axconfig",
+ "axcpu",
+ "axplat",
+ "cfg-if",
+ "fdt-parser",
+ "heapless 0.9.2",
+ "kernel_guard",
+ "lazyinit",
+ "log",
+ "memory_addr",
+ "percpu",
+]
+
+[[package]]
+name = "axhal"
+version = "0.2.2-preview.1"
 dependencies = [
  "axalloc",
  "axconfig",
@@ -665,10 +684,10 @@ dependencies = [
 
 [[package]]
 name = "axipi"
-version = "0.2.1-preview.1"
+version = "0.2.2-preview.1"
 dependencies = [
  "axconfig",
- "axhal",
+ "axhal 0.2.2-preview.1",
  "kspin",
  "lazyinit",
  "log",
@@ -717,9 +736,9 @@ dependencies = [
  "axerrno 0.2.2",
  "axfs",
  "axfs-ng-vfs",
- "axhal",
+ "axhal 0.2.2-preview.1",
  "axsync",
- "axtask",
+ "axtask 0.2.2-preview.1",
  "enum_dispatch",
  "kspin",
  "lazyinit",
@@ -740,11 +759,11 @@ dependencies = [
  "axerrno 0.2.2",
  "axfs",
  "axfs-ng-vfs",
- "axhal",
+ "axhal 0.2.2-preview.1",
  "axio",
  "axpoll",
  "axsync",
- "axtask",
+ "axtask 0.2.2-preview.1",
  "bitflags 2.10.0",
  "cfg-if",
  "enum_dispatch",
@@ -938,14 +957,14 @@ dependencies = [
  "axdma",
  "axdriver",
  "axfs",
- "axhal",
+ "axhal 0.2.2-preview.1",
  "axinput",
  "axipi",
  "axlog",
  "axmm",
  "axnet",
  "axplat",
- "axtask",
+ "axtask 0.2.2-preview.1",
  "chrono",
  "crate_interface",
  "ctor_bare",
@@ -980,7 +999,7 @@ name = "axsync"
 version = "0.2.1-preview.1"
 dependencies = [
  "axsync",
- "axtask",
+ "axtask 0.2.1-preview.1",
  "event-listener",
  "fastrand",
  "kspin",
@@ -990,13 +1009,37 @@ dependencies = [
 [[package]]
 name = "axtask"
 version = "0.2.1-preview.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aff38bb532d5c1354057ed28f5445a74d9e4d4ad12a7681d0e9e3cc9063e9fb5"
 dependencies = [
  "axconfig",
  "axerrno 0.2.2",
- "axhal",
+ "axhal 0.2.1-preview.1",
  "axpoll",
  "axsched",
- "axtask",
+ "cfg-if",
+ "cpumask",
+ "crate_interface",
+ "event-listener",
+ "futures-util",
+ "kernel_guard",
+ "kspin",
+ "lazyinit",
+ "log",
+ "memory_addr",
+ "percpu",
+]
+
+[[package]]
+name = "axtask"
+version = "0.2.2-preview.1"
+dependencies = [
+ "axconfig",
+ "axerrno 0.2.2",
+ "axhal 0.2.2-preview.1",
+ "axpoll",
+ "axsched",
+ "axtask 0.2.2-preview.1",
  "cfg-if",
  "cpumask",
  "crate_interface",

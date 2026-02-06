@@ -120,6 +120,7 @@ axconfig = { path = "modules/axconfig" }
 axhal = { path = "modules/axhal" }
 axtask = { path = "modules/axtask" }
 axsync = { path = "modules/axsync" }
+axipi = { path = "modules/axipi" }
 axcpu = { git = "https://github.com/arceos-org/axcpu.git", tag = "dev-v03" }
 axplat = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
 axplat-x86-pc = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }

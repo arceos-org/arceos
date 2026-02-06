@@ -1,6 +1,6 @@
 [package]
 name = "axipi"
-version.workspace = true
+version = "0.2.2-preview.1"
 edition.workspace = true
 authors = ["Keyang Hu <keyang.hu@qq.com>"]
 description = "ArceOS IPI management module"
@@ -8,13 +8,14 @@ license.workspace = true
 homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/modules/axipi"
 documentation = "https://arceos-org.github.io/arceos/axipi/index.html"
+readme = "README.md"
 
 [features]
 default = []
 
 [dependencies]
-axconfig.workspace = true
-axhal = { workspace = true, features = ["ipi"] }
+axconfig = { version = "0.2.1-preview.1" }
+axhal = { version = "0.2.2-preview.1", features = ["ipi"] }
 kspin.workspace = true
 lazyinit.workspace = true
 log.workspace = true
