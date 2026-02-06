@@ -8,19 +8,20 @@ license.workspace = true
 homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/modules/axsync"
 documentation = "https://arceos-org.github.io/arceos/axsync/index.html"
+readme = "README.md"
 
 [features]
 multitask = ["axtask/multitask"]
 default = []
 
 [dependencies]
-axtask.workspace = true
+axtask = { version = "0.2.1-preview.1" }
 event-listener.workspace = true
 kspin.workspace = true
 lock_api.workspace = true
 
 [dev-dependencies]
-axsync = { workspace = true, features = ["multitask"] }
-axtask = { workspace = true, features = ["test"] }
+axsync = { path = ".", features = ["multitask"] }
+axtask = { version = "0.2.1-preview.1", features = ["test"] }
 # FIXME: `rand` crate can not be used since https://github.com/google/zerocopy/pull/2574
 fastrand = "2.3"
