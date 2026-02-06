@@ -1,6 +1,6 @@
 [package]
 name = "axlog"
-version.workspace = true
+version = "0.2.2-preview.1"
 edition.workspace = true
 authors = ["Yuekai Jia <equation618@gmail.com>"]
 description = "Macros for multi-level formatted logging used by ArceOS"

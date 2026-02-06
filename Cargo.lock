@@ -51,15 +51,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "allocator"
-version = "0.1.2"
-source = "git+https://github.com/arceos-org/allocator.git?tag=v0.1.2#922e72a7e4dfb7ffc4b67d242d38f8361ebd13ac"
-dependencies = [
- "axerrno 0.1.2",
- "cfg-if",
-]
-
-[[package]]
 name = "allocator-api2"
 version = "0.2.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -169,7 +160,7 @@ dependencies = [
 
 [[package]]
 name = "arceos_api"
-version = "0.2.1-preview.1"
+version = "0.2.2-preview.1"
 dependencies = [
  "axalloc",
  "axconfig",
@@ -179,7 +170,7 @@ dependencies = [
  "axerrno 0.2.2",
  "axfeat",
  "axfs",
- "axhal 0.2.2-preview.1",
+ "axhal",
  "axio",
  "axipi",
  "axlog",
@@ -187,25 +178,25 @@ dependencies = [
  "axnet",
  "axruntime",
  "axsync",
- "axtask 0.2.2-preview.1",
+ "axtask",
 ]
 
 [[package]]
 name = "arceos_posix_api"
-version = "0.2.1-preview.1"
+version = "0.2.2-preview.1"
 dependencies = [
  "axalloc",
  "axconfig",
  "axerrno 0.2.2",
  "axfeat",
  "axfs",
- "axhal 0.2.2-preview.1",
+ "axhal",
  "axio",
  "axlog",
  "axnet",
  "axruntime",
  "axsync",
- "axtask 0.2.2-preview.1",
+ "axtask",
  "bindgen",
  "flatten_objects",
  "lazy_static",
@@ -307,7 +298,7 @@ dependencies = [
 
 [[package]]
 name = "axalloc"
-version = "0.2.1-preview.1"
+version = "0.2.2-preview.1"
 dependencies = [
  "axallocator",
  "axbacktrace",
@@ -349,7 +340,7 @@ dependencies = [
 
 [[package]]
 name = "axconfig"
-version = "0.2.1-preview.1"
+version = "0.2.2-preview.1"
 dependencies = [
  "axconfig-macros",
 ]
@@ -401,7 +392,7 @@ dependencies = [
 
 [[package]]
 name = "axdisplay"
-version = "0.2.1-preview.1"
+version = "0.2.2-preview.1"
 dependencies = [
  "axdriver",
  "axsync",
@@ -411,22 +402,23 @@ dependencies = [
 
 [[package]]
 name = "axdma"
-version = "0.2.1-preview.1"
+version = "0.2.2-preview.1"
 dependencies = [
- "allocator",
  "axalloc",
+ "axallocator",
  "axconfig",
  "axerrno 0.2.2",
- "axhal 0.2.2-preview.1",
+ "axhal",
  "crate_interface",
  "kspin",
  "log",
  "memory_addr",
+ "page_table_multiarch",
 ]
 
 [[package]]
 name = "axdriver"
-version = "0.2.1-preview.1"
+version = "0.2.2-preview.1"
 dependencies = [
  "arm-gic-driver",
  "axalloc",
@@ -441,7 +433,7 @@ dependencies = [
  "axdriver_virtio",
  "axdriver_vsock",
  "axerrno 0.2.2",
- "axhal 0.2.2-preview.1",
+ "axhal",
  "axklib",
  "cfg-if",
  "crate_interface",
@@ -555,33 +547,33 @@ dependencies = [
 
 [[package]]
 name = "axfeat"
-version = "0.2.1-preview.1"
+version = "0.2.2-preview.1"
 dependencies = [
  "axalloc",
  "axbacktrace",
  "axdisplay",
  "axdriver",
  "axfs",
- "axhal 0.2.2-preview.1",
+ "axhal",
  "axinput",
  "axipi",
  "axlog",
  "axnet",
  "axruntime",
  "axsync",
- "axtask 0.2.2-preview.1",
+ "axtask",
  "kspin",
 ]
 
 [[package]]
 name = "axfs"
-version = "0.2.1-preview.1"
+version = "0.2.2-preview.1"
 dependencies = [
  "axalloc",
  "axdriver",
  "axerrno 0.2.2",
  "axfs-ng-vfs",
- "axhal 0.2.2-preview.1",
+ "axhal",
  "axio",
  "axpoll",
  "axsync",
@@ -619,26 +611,7 @@ dependencies = [
 
 [[package]]
 name = "axhal"
-version = "0.2.1-preview.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c40e732d65e96154e1887a9e5532768e3b3d528d6ac8c160a42800399bc5bee8"
-dependencies = [
- "axconfig",
- "axcpu",
- "axplat",
- "cfg-if",
- "fdt-parser",
- "heapless 0.9.2",
- "kernel_guard",
- "lazyinit",
- "log",
- "memory_addr",
- "percpu",
-]
-
-[[package]]
-name = "axhal"
-version = "0.2.2-preview.1"
+version = "0.2.2-preview.2"
 dependencies = [
  "axalloc",
  "axconfig",
@@ -662,7 +635,7 @@ dependencies = [
 
 [[package]]
 name = "axinput"
-version = "0.2.1-preview.1"
+version = "0.2.2-preview.1"
 dependencies = [
  "axdriver",
  "axsync",
@@ -687,7 +660,7 @@ name = "axipi"
 version = "0.2.2-preview.1"
 dependencies = [
  "axconfig",
- "axhal 0.2.2-preview.1",
+ "axhal",
  "kspin",
  "lazyinit",
  "log",
@@ -706,7 +679,7 @@ dependencies = [
 
 [[package]]
 name = "axlibc"
-version = "0.2.1-preview.1"
+version = "0.2.2-preview.1"
 dependencies = [
  "arceos_posix_api",
  "axerrno 0.2.2",
@@ -717,7 +690,7 @@ dependencies = [
 
 [[package]]
 name = "axlog"
-version = "0.2.1-preview.1"
+version = "0.2.2-preview.1"
 dependencies = [
  "axlog",
  "cfg-if",
@@ -729,16 +702,16 @@ dependencies = [
 
 [[package]]
 name = "axmm"
-version = "0.2.1-preview.1"
+version = "0.2.2-preview.1"
 dependencies = [
  "axalloc",
  "axconfig",
  "axerrno 0.2.2",
  "axfs",
  "axfs-ng-vfs",
- "axhal 0.2.2-preview.1",
+ "axhal",
  "axsync",
- "axtask 0.2.2-preview.1",
+ "axtask",
  "enum_dispatch",
  "kspin",
  "lazyinit",
@@ -750,7 +723,7 @@ dependencies = [
 
 [[package]]
 name = "axnet"
-version = "0.2.1-preview.1"
+version = "0.2.2-preview.1"
 dependencies = [
  "async-channel",
  "async-trait",
@@ -759,11 +732,11 @@ dependencies = [
  "axerrno 0.2.2",
  "axfs",
  "axfs-ng-vfs",
- "axhal 0.2.2-preview.1",
+ "axhal",
  "axio",
  "axpoll",
  "axsync",
- "axtask 0.2.2-preview.1",
+ "axtask",
  "bitflags 2.10.0",
  "cfg-if",
  "enum_dispatch",
@@ -948,7 +921,7 @@ dependencies = [
 
 [[package]]
 name = "axruntime"
-version = "0.2.1-preview.1"
+version = "0.2.2-preview.1"
 dependencies = [
  "axalloc",
  "axbacktrace",
@@ -957,14 +930,14 @@ dependencies = [
  "axdma",
  "axdriver",
  "axfs",
- "axhal 0.2.2-preview.1",
+ "axhal",
  "axinput",
  "axipi",
  "axlog",
  "axmm",
  "axnet",
  "axplat",
- "axtask 0.2.2-preview.1",
+ "axtask",
  "chrono",
  "crate_interface",
  "ctor_bare",
@@ -983,7 +956,7 @@ dependencies = [
 
 [[package]]
 name = "axstd"
-version = "0.2.1-preview.1"
+version = "0.2.2-preview.1"
 dependencies = [
  "arceos_api",
  "axerrno 0.2.2",
@@ -996,10 +969,10 @@ dependencies = [
 
 [[package]]
 name = "axsync"
-version = "0.2.1-preview.1"
+version = "0.2.2-preview.1"
 dependencies = [
  "axsync",
- "axtask 0.2.1-preview.1",
+ "axtask",
  "event-listener",
  "fastrand",
  "kspin",
@@ -1008,38 +981,14 @@ dependencies = [
 
 [[package]]
 name = "axtask"
-version = "0.2.1-preview.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aff38bb532d5c1354057ed28f5445a74d9e4d4ad12a7681d0e9e3cc9063e9fb5"
-dependencies = [
- "axconfig",
- "axerrno 0.2.2",
- "axhal 0.2.1-preview.1",
- "axpoll",
- "axsched",
- "cfg-if",
- "cpumask",
- "crate_interface",
- "event-listener",
- "futures-util",
- "kernel_guard",
- "kspin",
- "lazyinit",
- "log",
- "memory_addr",
- "percpu",
-]
-
-[[package]]
-name = "axtask"
 version = "0.2.2-preview.1"
 dependencies = [
  "axconfig",
  "axerrno 0.2.2",
- "axhal 0.2.2-preview.1",
+ "axhal",
  "axpoll",
  "axsched",
- "axtask 0.2.2-preview.1",
+ "axtask",
  "cfg-if",
  "cpumask",
  "crate_interface",

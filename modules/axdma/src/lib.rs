@@ -8,8 +8,8 @@ mod dma;
 
 use core::{alloc::Layout, ptr::NonNull};
 
-use allocator::AllocResult;
-use axhal::paging::MappingFlags;
+use axallocator::AllocResult;
+use page_table_multiarch::MappingFlags;
 use memory_addr::{PhysAddr, VirtAddr};
 
 use self::dma::ALLOCATOR;

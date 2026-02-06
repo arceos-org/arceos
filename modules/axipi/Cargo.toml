@@ -14,7 +14,7 @@ readme = "README.md"
 default = []
 
 [dependencies]
-axconfig = { version = "0.2.1-preview.1" }
+axconfig = { version = "0.2.2-preview.1" }
 axhal = { version = "0.2.2-preview.1", features = ["ipi"] }
 kspin.workspace = true
 lazyinit.workspace = true

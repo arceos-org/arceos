@@ -40,7 +40,7 @@ sched-cfs = ["multitask", "preempt"]
 test = ["percpu?/sp-naive"]
 
 [dependencies]
-axconfig = { version = "0.2.1-preview.1", optional = true }
+axconfig = { version = "0.2.2-preview.1", optional = true }
 axerrno.workspace = true
 axhal = { version = "0.2.2-preview.1" }
 axpoll = { workspace = true, optional = true }

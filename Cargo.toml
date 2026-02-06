@@ -33,7 +33,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.2.1-preview.1"
+version = "0.2.2-preview.1"
 edition = "2024"
 authors = ["Yuekai Jia <equation618@gmail.com>", "Yu Chen <yuchen@tsinghua.edu.cn>"]
 license = "GPL-3.0-or-later OR Apache-2.0 OR MulanPSL-2.0"

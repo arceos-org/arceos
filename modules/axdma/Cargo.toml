@@ -3,6 +3,7 @@ name = "axdma"
 edition.workspace = true
 version.workspace = true
 authors = ["Zhour Rui <zrufo747@outlook.com>"]
+description = "ArceOS global DMA allocator"
 license.workspace = true
 homepage.workspace = true
 keywords.workspace = true
@@ -11,11 +12,12 @@ repository = "https://github.com/arceos-org/arceos/tree/main/modules/axdma"
 documentation = "https://arceos-org.github.io/arceos/axdma/index.html"
 
 [dependencies]
-allocator.workspace = true
-axalloc.workspace = true
-axconfig.workspace = true
+axallocator = { version = "0.1.3-preview.1", default-features = false }
+axalloc = { version = "0.2.2-preview.1" }
+axconfig = { version = "0.2.2-preview.1" }
 axerrno.workspace = true
-axhal = { workspace = true, features = ["paging"] }
+axhal = { version = "0.2.2-preview.2" }
+page_table_multiarch = { version = "0.5" }
 crate_interface.workspace = true
 kspin.workspace = true
 log.workspace = true

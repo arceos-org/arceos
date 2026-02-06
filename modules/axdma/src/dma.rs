@@ -1,8 +1,9 @@
 use core::{alloc::Layout, ptr::NonNull};
 
-use allocator::{AllocError, AllocResult, BaseAllocator, ByteAllocator};
+use axallocator::{AllocError, AllocResult, BaseAllocator, ByteAllocator};
 use axalloc::{DefaultByteAllocator, UsageKind, global_allocator};
-use axhal::{mem::virt_to_phys, paging::MappingFlags};
+use axhal::mem::virt_to_phys;
+use page_table_multiarch::MappingFlags;
 use crate_interface::call_interface;
 use kspin::SpinNoIrq;
 use log::{debug, error};
@@ -97,7 +98,7 @@ impl DmaAllocator {
         flags: MappingFlags,
     ) -> AllocResult<()> {
         let size = num_pages * PAGE_SIZE_4K;
-        call_interface!(DmaProtectIf::protect_memory(vaddr, size, flags)).map_err(|e| {
+        call_interface!(crate::DmaProtectIf::protect_memory(vaddr, size, flags)).map_err(|e| {
             error!("change table flag fail: {e:?}");
             AllocError::NoMemory
         })

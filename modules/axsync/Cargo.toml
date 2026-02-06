@@ -15,13 +15,13 @@ multitask = ["axtask/multitask"]
 default = []
 
 [dependencies]
-axtask = { version = "0.2.1-preview.1" }
+axtask = { version = "0.2.2-preview.1" }
 event-listener.workspace = true
 kspin.workspace = true
 lock_api.workspace = true
 
 [dev-dependencies]
 axsync = { path = ".", features = ["multitask"] }
-axtask = { version = "0.2.1-preview.1", features = ["test"] }
+axtask = { version = "0.2.2-preview.1", features = ["test"] }
 # FIXME: `rand` crate can not be used since https://github.com/google/zerocopy/pull/2574
 fastrand = "2.3"

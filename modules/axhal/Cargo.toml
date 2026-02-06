@@ -1,6 +1,6 @@
 [package]
 name = "axhal"
-version = "0.2.2-preview.1"
+version = "0.2.2-preview.2"
 edition.workspace = true
 authors = ["Yuekai Jia <equation618@gmail.com>"]
 description = "ArceOS hardware abstraction layer, provides unified APIs for platform-specific operations"
@@ -56,8 +56,8 @@ default = []
 ipi = ["irq"]
 
 [dependencies]
-axalloc = { version = "0.2.1-preview.1", optional = true }
-axconfig = { version = "0.2.1-preview.1" }
+axalloc = { version = "0.2.2-preview.1", optional = true }
+axconfig = { version = "0.2.2-preview.1" }
 axcpu = { version = "0.3.0-alpha.0" }
 axplat = { version = "0.3" }
 cfg-if.workspace = true
@@ -84,4 +84,4 @@ axplat-riscv64-qemu-virt = { version = "0.3", optional = true }
 axplat-loongarch64-qemu-virt = { version = "0.3", optional = true }
 
 [build-dependencies]
-axconfig = { version = "0.2.1-preview.1" }
+axconfig = { version = "0.2.2-preview.1" }
