@@ -71,14 +71,14 @@ allocator = { git = "https://github.com/arceos-org/allocator.git", tag = "v0.1.2
     "axerrno",
 ] }
 axbacktrace = "0.1"
-axdriver_base = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2-dev.0" }
-axdriver_block = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2-dev.0" }
-axdriver_display = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2-dev.0" }
-axdriver_input = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2-dev.0" }
-axdriver_net = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2-dev.0" }
-axdriver_pci = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2-dev.0" }
-axdriver_virtio = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2-dev.0" }
-axdriver_vsock = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2-dev.0" }
+axdriver_base = "0.1.4-preview.3"
+axdriver_block = "0.1.4-preview.3"
+axdriver_display = "0.1.4-preview.3"
+axdriver_input = "0.1.4-preview.3"
+axdriver_net = "0.1.4-preview.3"
+axdriver_pci = "0.1.4-preview.3"
+axdriver_virtio = "0.1.4-preview.3"
+axdriver_vsock = "0.1.4-preview.3"
 axerrno = "0.2"
 axfs-ng-vfs = "0.1"
 axio = "0.3.0-pre.1"
@@ -117,6 +117,7 @@ spin = "0.10"
 [patch.crates-io]
 axalloc = { path = "modules/axalloc" }
 axconfig = { path = "modules/axconfig" }
+axdma = { path = "modules/axdma" }
 axhal = { path = "modules/axhal" }
 axtask = { path = "modules/axtask" }
 axsync = { path = "modules/axsync" }

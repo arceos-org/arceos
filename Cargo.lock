@@ -273,15 +273,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "atomic-polyfill"
-version = "1.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8cf2bce30dfe09ef0bfaef228b9d414faaf7e563035494d7fe092dba54b300f4"
-dependencies = [
- "critical-section",
-]
-
-[[package]]
 name = "autocfg"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -449,13 +440,15 @@ dependencies = [
 
 [[package]]
 name = "axdriver_base"
-version = "0.1.2"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2-dev.0#e92cfa5582f7df6dd9df52a052df0ab4b3264710"
+version = "0.1.4-preview.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c4614d9e505dae224e4e4cb934c8fa916d77ecfb7b770a8bf8eac78bdeec3dba"
 
 [[package]]
 name = "axdriver_block"
-version = "0.1.2"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2-dev.0#e92cfa5582f7df6dd9df52a052df0ab4b3264710"
+version = "0.1.4-preview.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7cccf23999a9dff620ef87c08c571509d2e90cc9dc80f932381b0fd949f020f9"
 dependencies = [
  "axdriver_base",
  "bcm2835-sdhci",
@@ -466,16 +459,18 @@ dependencies = [
 
 [[package]]
 name = "axdriver_display"
-version = "0.1.2"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2-dev.0#e92cfa5582f7df6dd9df52a052df0ab4b3264710"
+version = "0.1.4-preview.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fcbd2fab37c37193bd21fcee061c96fe6a2850911a6a74a890018541e14ba92a"
 dependencies = [
  "axdriver_base",
 ]
 
 [[package]]
 name = "axdriver_input"
-version = "0.1.2"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2-dev.0#e92cfa5582f7df6dd9df52a052df0ab4b3264710"
+version = "0.1.4-preview.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5703515bf1f113d272f1e6f6b7043976fbbee66553e21360e07cc7ba75866838"
 dependencies = [
  "axdriver_base",
  "strum",
@@ -483,8 +478,9 @@ dependencies = [
 
 [[package]]
 name = "axdriver_net"
-version = "0.1.2"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2-dev.0#e92cfa5582f7df6dd9df52a052df0ab4b3264710"
+version = "0.1.4-preview.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dca0cded4fdabcf9176616b636d310a7179a89e31a6dd221d9ea7a6678ffaea4"
 dependencies = [
  "axdriver_base",
  "fxmac_rs",
@@ -495,16 +491,18 @@ dependencies = [
 
 [[package]]
 name = "axdriver_pci"
-version = "0.1.2"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2-dev.0#e92cfa5582f7df6dd9df52a052df0ab4b3264710"
+version = "0.1.4-preview.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "129bd3a5ad486d989e9bdc211c86fd8d50720462ef46e2b0013d333338d50e98"
 dependencies = [
  "virtio-drivers",
 ]
 
 [[package]]
 name = "axdriver_virtio"
-version = "0.1.2"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2-dev.0#e92cfa5582f7df6dd9df52a052df0ab4b3264710"
+version = "0.1.4-preview.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da6c36cc900745f3bab9de0dd8d5a2d5ac720a253937b3c5f3ab81bbb9c9e139"
 dependencies = [
  "axdriver_base",
  "axdriver_block",
@@ -518,8 +516,9 @@ dependencies = [
 
 [[package]]
 name = "axdriver_vsock"
-version = "0.1.2"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2-dev.0#e92cfa5582f7df6dd9df52a052df0ab4b3264710"
+version = "0.1.4-preview.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97c0344e1acedd21a1e2d4be29ed0827c4bcc205129b1332c17dbedd3db183c6"
 dependencies = [
  "axdriver_base",
  "log",
@@ -670,7 +669,8 @@ dependencies = [
 [[package]]
 name = "axklib"
 version = "0.2.0"
-source = "git+https://github.com/arceos-hypervisor/axklib.git#0cb1045714015acff11b7c6f531ee81be0e02924"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "beb4b4d3c013138ee687343370f891941524a3d03a36ca8e80c0bd7e17f5e756"
 dependencies = [
  "axerrno 0.1.2",
  "memory_addr",
@@ -746,7 +746,7 @@ dependencies = [
  "lazyinit",
  "log",
  "ringbuf",
- "smoltcp 0.12.0",
+ "smoltcp 0.12.0 (git+https://github.com/Starry-OS/smoltcp.git?rev=7401a54)",
  "spin 0.10.0",
 ]
 
@@ -1022,8 +1022,9 @@ checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
 name = "bcm2835-sdhci"
-version = "0.1.0"
-source = "git+https://github.com/lhw2002426/bcm2835-sdhci.git?rev=e974f16#e974f168efa72b470a01f61bdef32240c66f54fc"
+version = "0.1.1-preview.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7c8a95c5a17e6a90cbb3a3461e9682286ba60d6ddf97d8ca43b17b0df5a21357"
 dependencies = [
  "aarch64-cpu 9.4.0",
  "log",
@@ -1644,8 +1645,9 @@ dependencies = [
 
 [[package]]
 name = "fxmac_rs"
-version = "0.2.0"
-source = "git+https://github.com/elliott10/fxmac_rs.git?rev=0dbc3916#0dbc3916d5d5a0086916deda0c4c2dd8651c69ce"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9cc278a5f88871e3800ca269ddf40f6504d29d702f3b47375954b5a64d0cfd4f"
 dependencies = [
  "aarch64-cpu 10.0.0",
  "crate_interface",
@@ -1672,15 +1674,6 @@ name = "handler_table"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "702cb690200d6303c1e1992bc648f3f3bf9c1d6a27fcf50551c513d61f339c99"
-
-[[package]]
-name = "hash32"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0c35f58762feb77d74ebe43bdbc3210f09be9fe6742234d573bacc26ed92b67"
-dependencies = [
- "byteorder",
-]
 
 [[package]]
 name = "hash32"
@@ -1715,24 +1708,11 @@ dependencies = [
 
 [[package]]
 name = "heapless"
-version = "0.7.17"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cdc6457c0eb62c71aac4bc17216026d8410337c4126773b9c5daba343f17964f"
-dependencies = [
- "atomic-polyfill",
- "hash32 0.2.1",
- "rustc_version",
- "spin 0.9.8",
- "stable_deref_trait",
-]
-
-[[package]]
-name = "heapless"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0bfb9eb618601c89945a70e254898da93b13be0388091d42117462b265bb3fad"
 dependencies = [
- "hash32 0.3.1",
+ "hash32",
  "stable_deref_trait",
 ]
 
@@ -1742,7 +1722,7 @@ version = "0.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2af2455f757db2b292a9b1768c4b70186d443bcb3b316252d6b540aec1cd89ed"
 dependencies = [
- "hash32 0.3.1",
+ "hash32",
  "stable_deref_trait",
 ]
 
@@ -1845,13 +1825,14 @@ dependencies = [
 
 [[package]]
 name = "ixgbe-driver"
-version = "0.1.0"
-source = "git+https://github.com/KuangjuX/ixgbe-driver.git?rev=8e5eb74#8e5eb741299d7d95c373ec745e39a1473fe84563"
+version = "0.1.1-preview.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6441478ad4511427afdc51fd359366aa749a324f5529094d0612a6ed1c11e114"
 dependencies = [
  "bit_field",
  "core_detect",
  "log",
- "smoltcp 0.10.0",
+ "smoltcp 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "volatile 0.3.0",
 ]
 
@@ -2500,15 +2481,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "357703d41365b4b27c590e3ed91eabb1b663f07c4c084095e60cbed4362dff0d"
 
 [[package]]
-name = "rustc_version"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cfcb3a22ef46e85b45de6ee7e79d063319ebb6594faafcf1c225ea92ab6e9b92"
-dependencies = [
- "semver",
-]
-
-[[package]]
 name = "rustversion"
 version = "1.0.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2579,8 +2551,9 @@ checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
 name = "simple-ahci"
-version = "0.1.0"
-source = "git+https://github.com/Starry-OS/simple-ahci.git?rev=36d0979#36d0979fedb17c7846b78d1a63f944da31f96186"
+version = "0.1.1-preview.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e202ff0a10a30a13384768edcda5b00eeeafd7dda1784234662f43dba170e9b2"
 dependencies = [
  "bitfield-struct",
  "log",
@@ -2591,7 +2564,8 @@ dependencies = [
 [[package]]
 name = "simple-sdmmc"
 version = "0.1.0"
-source = "git+https://github.com/Starry-OS/simple-sdmmc.git?rev=9e6420c#9e6420c3bcaa67d4c3a6ecd2b24a2e7ee9118f9b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "833bc981c24e613cf9b95bbd2c5ade1a222d23274343c29486a6f65c41fc3390"
 dependencies = [
  "bitfield-struct",
  "log",
@@ -2612,14 +2586,15 @@ checksum = "67b1b7a3b5fe4f1376887184045fcf45c69e92af734b7aaddc05fb777b6fbd03"
 
 [[package]]
 name = "smoltcp"
-version = "0.10.0"
-source = "git+https://github.com/rcore-os/smoltcp.git?rev=2ade274#2ade2747abc4d779d0836154b0413d13ce16cd5b"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dad095989c1533c1c266d9b1e8d70a1329dd3723c3edac6d03bbd67e7bf6f4bb"
 dependencies = [
  "bitflags 1.3.2",
  "byteorder",
  "cfg-if",
  "defmt 0.3.100",
- "heapless 0.7.17",
+ "heapless 0.8.0",
  "log",
  "managed",
 ]
