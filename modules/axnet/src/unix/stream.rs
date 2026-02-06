@@ -198,9 +198,12 @@ impl TransportOps for StreamTransport {
     }
 
     async fn accept(&self) -> AxResult<(Transport, UnixSocketAddr)> {
-        let mut guard = self.conn_rx.lock();
-        let Some((rx, _)) = guard.as_mut() else {
-            return Err(AxError::NotConnected);
+        let rx = {
+            let guard = self.conn_rx.lock();
+            let Some((rx, _)) = guard.as_ref() else {
+                return Err(AxError::NotConnected);
+            };
+            rx.clone()
         };
         let ConnRequest {
             channel,
