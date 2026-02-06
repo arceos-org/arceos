@@ -3,8 +3,12 @@ name = "arceos-helloworld"
 version = "0.1.0"
 edition.workspace = true
 authors = ["Yuekai Jia <equation618@gmail.com>"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "A simple helloworld example for ArceOS"
+license.workspace = true
+homepage.workspace = true
+repository = "https://github.com/arceos-org/arceos/tree/main/examples/helloworld"
+keywords = ["arceos", "example"]
+categories = ["os", "no-std"]
 
 [dependencies]
 axstd = { workspace = true, optional = true }
