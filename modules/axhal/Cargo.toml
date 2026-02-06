@@ -1,6 +1,6 @@
 [package]
 name = "axhal"
-version.workspace = true
+version = "0.2.2-preview.1"
 edition.workspace = true
 authors = ["Yuekai Jia <equation618@gmail.com>"]
 description = "ArceOS hardware abstraction layer, provides unified APIs for platform-specific operations"

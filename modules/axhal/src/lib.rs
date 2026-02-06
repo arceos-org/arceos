@@ -72,8 +72,12 @@ pub mod paging;
 
 /// Console input and output.
 pub mod console {
-    #[cfg(feature = "irq")]
+    #[cfg(all(feature = "irq", any(feature = "defplat", feature = "myplat")))]
     pub use axplat::console::irq_num;
+    #[cfg(all(feature = "irq", not(any(feature = "defplat", feature = "myplat"))))]
+    pub fn irq_num() -> Option<usize> {
+        None
+    }
     pub use axplat::console::{read_bytes, write_bytes};
 }
 

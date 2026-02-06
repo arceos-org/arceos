@@ -6,4 +6,12 @@ pub use axplat::time::{
     monotonic_time_nanos, nanos_to_ticks, ticks_to_nanos, wall_time, wall_time_nanos,
 };
 #[cfg(feature = "irq")]
-pub use axplat::time::{irq_num, set_oneshot_timer};
+pub use axplat::time::set_oneshot_timer;
+
+// `irq_num` exists only in the git (unpublished) version of axplat, not in 0.3.0.
+#[cfg(all(feature = "irq", any(feature = "defplat", feature = "myplat")))]
+pub use axplat::time::irq_num;
+#[cfg(all(feature = "irq", not(any(feature = "defplat", feature = "myplat"))))]
+pub fn irq_num() -> usize {
+    0
+}

@@ -6,6 +6,14 @@
 #[cfg(any(feature = "defplat", feature = "myplat"))]
 pub use axplat::percpu::*;
 
+/// Stub for single-CPU / dummy platform when not using defplat/myplat (e.g. for crates that
+/// depend on axhal without a real platform, such as when building axipi for publish verification).
+#[cfg(not(any(feature = "defplat", feature = "myplat")))]
+#[inline]
+pub fn this_cpu_id() -> usize {
+    0
+}
+
 #[percpu::def_percpu]
 static CURRENT_TASK_PTR: usize = 0;
 
