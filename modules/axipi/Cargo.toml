@@ -1,6 +1,6 @@
 [package]
 name = "axipi"
-version = "0.2.2-preview.1"
+version = "0.2.2-preview.2"
 edition.workspace = true
 authors = ["Keyang Hu <keyang.hu@qq.com>"]
 description = "ArceOS IPI management module"

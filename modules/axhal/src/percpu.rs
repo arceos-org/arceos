@@ -14,6 +14,16 @@ pub fn this_cpu_id() -> usize {
     0
 }
 
+/// Stub: initializes percpu for the primary CPU (no-op without a real platform).
+#[cfg(not(any(feature = "defplat", feature = "myplat")))]
+#[inline]
+pub fn init_primary(_cpu_id: usize) {}
+
+/// Stub: initializes percpu for a secondary CPU (no-op without a real platform).
+#[cfg(not(any(feature = "defplat", feature = "myplat")))]
+#[inline]
+pub fn init_secondary(_cpu_id: usize) {}
+
 #[percpu::def_percpu]
 static CURRENT_TASK_PTR: usize = 0;
 

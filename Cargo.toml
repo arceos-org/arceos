@@ -53,16 +53,16 @@ axfeat = { path = "api/axfeat" }
 
 axalloc = { version = "0.2.2-preview.1", path = "modules/axalloc" }
 axconfig = { version = "0.2.2-preview.1", path = "modules/axconfig" }
-axdisplay = { path = "modules/axdisplay" }
-axdma = { path = "modules/axdma" }
+axdisplay = { version = "0.2.2-preview.1", path = "modules/axdisplay" }
+axdma = { version = "0.2.2-preview.1", path = "modules/axdma" }
 axdriver = { version = "0.2.2-preview.1", path = "modules/axdriver" }
 axfs = { version = "0.2.2-preview.1", path = "modules/axfs" }
-axhal = { version = "0.2.2-preview.2", path = "modules/axhal" }
-axinput = { path = "modules/axinput" }
-axipi = { path = "modules/axipi" }
-axlog = { path = "modules/axlog" }
-axmm = { path = "modules/axmm" }
-axnet = { path = "modules/axnet" }
+axhal = { version = "0.2.2-preview.3", path = "modules/axhal" }
+axinput = { version = "0.2.2-preview.1", path = "modules/axinput" }
+axipi = { version = "0.2.2-preview.2", path = "modules/axipi" }
+axlog = { version = "0.2.2-preview.1", path = "modules/axlog" }
+axmm = { version = "0.2.2-preview.1", path = "modules/axmm" }
+axnet = { version = "0.2.2-preview.1", path = "modules/axnet" }
 axruntime = { path = "modules/axruntime" }
 axsync = { version = "0.2.2-preview.1", path = "modules/axsync" }
 axtask = { version = "0.2.2-preview.3", path = "modules/axtask" }
@@ -83,7 +83,7 @@ axerrno = "0.2"
 axfs-ng-vfs = "0.1"
 axio = "0.3.0-pre.1"
 axklib = { git = "https://github.com/arceos-hypervisor/axklib.git" } # FIXME: pin to a specific commit or tag
-axplat = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
+axplat = "0.3"
 axplat-aarch64-bsta1000b = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
 axplat-aarch64-phytium-pi = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
 axplat-aarch64-qemu-virt = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
