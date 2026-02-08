@@ -360,7 +360,9 @@ dependencies = [
 
 [[package]]
 name = "axcpu"
-version = "0.3.0-preview.2"
+version = "0.3.0-preview.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5eeabf0939995cb9bcc17c8f7b49099eba7ce13fb811da1071186b584cad2656"
 dependencies = [
  "aarch64-cpu 10.0.0",
  "axbacktrace",
@@ -431,7 +433,7 @@ dependencies = [
 
 [[package]]
 name = "axdriver"
-version = "0.2.2-preview.1"
+version = "0.2.2-preview.2"
 dependencies = [
  "arm-gic-driver",
  "axalloc",
@@ -632,11 +634,11 @@ dependencies = [
 
 [[package]]
 name = "axhal"
-version = "0.2.2-preview.4"
+version = "0.2.2-preview.6"
 dependencies = [
  "axalloc",
  "axconfig",
- "axcpu 0.3.0-preview.2",
+ "axcpu 0.3.0-preview.3",
  "axplat 0.3.0-preview.2",
  "axplat-aarch64-qemu-virt 0.3.0-preview.2",
  "axplat-loongarch64-qemu-virt 0.3.0-preview.2",
@@ -775,8 +777,10 @@ dependencies = [
 [[package]]
 name = "axplat"
 version = "0.3.0-preview.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "92cadeaefb5b95b1617dd76c0b3e1191b73dcc295f42aad7716636027cab6151"
 dependencies = [
- "axplat-macros 0.1.0",
+ "axplat-macros 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "bitflags 2.10.0",
  "const-str",
  "crate_interface",
@@ -819,12 +823,14 @@ dependencies = [
 [[package]]
 name = "axplat-aarch64-peripherals"
 version = "0.3.0-preview.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a0b6662596b170e4b4d8cb396af4ab8f133ea14fda055a207a149f437eea285f"
 dependencies = [
  "aarch64-cpu 10.0.0",
  "arm-gic-driver",
  "arm_pl011",
  "arm_pl031",
- "axcpu 0.3.0-preview.2",
+ "axcpu 0.3.0-preview.3",
  "axplat 0.3.0-preview.2",
  "int_ratio",
  "kspin",
@@ -869,9 +875,11 @@ dependencies = [
 [[package]]
 name = "axplat-aarch64-qemu-virt"
 version = "0.3.0-preview.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8a846bef67308540f97d01ff64e13c0fbba111cb19a2ed9cc5055477ec021bf9"
 dependencies = [
  "axconfig-macros",
- "axcpu 0.3.0-preview.2",
+ "axcpu 0.3.0-preview.3",
  "axplat 0.3.0-preview.2",
  "axplat-aarch64-peripherals 0.3.0-preview.2",
  "log",
@@ -908,9 +916,11 @@ dependencies = [
 [[package]]
 name = "axplat-loongarch64-qemu-virt"
 version = "0.3.0-preview.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e6950cea16d394b76a2d0c6970be4a631ef4bb30db6fbe4994e488fbc9f5ab2f"
 dependencies = [
  "axconfig-macros",
- "axcpu 0.3.0-preview.2",
+ "axcpu 0.3.0-preview.3",
  "axplat 0.3.0-preview.2",
  "chrono",
  "kspin",
@@ -940,6 +950,8 @@ dependencies = [
 [[package]]
 name = "axplat-macros"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f90dfaee06a112fe4f810c60af1a86bc080af2172185b491cacc307b84dff748"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -959,9 +971,11 @@ dependencies = [
 [[package]]
 name = "axplat-riscv64-qemu-virt"
 version = "0.3.0-preview.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14f0ee11922a369bd9c3c4b555cc27d5a969aad1ef1f1ea63af82c80bdbd17c5"
 dependencies = [
  "axconfig-macros",
- "axcpu 0.3.0-preview.2",
+ "axcpu 0.3.0-preview.3",
  "axplat 0.3.0-preview.2",
  "kspin",
  "lazyinit",
@@ -993,9 +1007,11 @@ dependencies = [
 [[package]]
 name = "axplat-x86-pc"
 version = "0.3.0-preview.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "acbe66f46c561de269466a386b2b844a0ff05b51b1844c808a3eacb3ca90fe16"
 dependencies = [
  "axconfig-macros",
- "axcpu 0.3.0-preview.2",
+ "axcpu 0.3.0-preview.3",
  "axplat 0.3.0-preview.2",
  "bitflags 2.10.0",
  "heapless 0.9.2",
@@ -2242,8 +2258,9 @@ dependencies = [
 
 [[package]]
 name = "page_table_multiarch"
-version = "0.5.7"
-source = "git+https://github.com/arceos-org/page_table_multiarch.git?tag=dev-v05#4594a765e361bca2a8b6ef6773a37ae6d8539840"
+version = "0.5.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a012c0bb9b8b0c4887d0b90f37cf8164537b69bb5560ecdcf4ada0c3b64e3976"
 dependencies = [
  "arrayvec",
  "axerrno 0.1.2",

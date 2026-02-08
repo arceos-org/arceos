@@ -57,7 +57,7 @@ axdisplay = { version = "0.2.2-preview.1", path = "modules/axdisplay" }
 axdma = { version = "0.2.2-preview.1", path = "modules/axdma" }
 axdriver = { version = "0.2.2-preview.1", path = "modules/axdriver" }
 axfs = { version = "0.2.2-preview.1", path = "modules/axfs" }
-axhal = { version = "0.2.2-preview.4", path = "modules/axhal" }
+axhal = { version = "0.2.2-preview.6", path = "modules/axhal" }
 axinput = { version = "0.2.2-preview.1", path = "modules/axinput" }
 axipi = { version = "0.2.2-preview.2", path = "modules/axipi" }
 axlog = { version = "0.2.2-preview.1", path = "modules/axlog" }
@@ -122,10 +122,5 @@ axhal = { path = "modules/axhal" }
 axtask = { path = "modules/axtask" }
 axsync = { path = "modules/axsync" }
 axipi = { path = "modules/axipi" }
-axcpu = { path = "../axcpu" }
-axplat = { path = "../axplat_crates/axplat" }
-axplat-x86-pc = { path = "../axplat_crates/platforms/axplat-x86-pc" }
-axplat-aarch64-qemu-virt = { path = "../axplat_crates/platforms/axplat-aarch64-qemu-virt" }
-axplat-riscv64-qemu-virt = { path = "../axplat_crates/platforms/axplat-riscv64-qemu-virt" }
-axplat-loongarch64-qemu-virt = { path = "../axplat_crates/platforms/axplat-loongarch64-qemu-virt" }
-page_table_multiarch = { git = "https://github.com/arceos-org/page_table_multiarch.git", tag = "dev-v05" }
+# External path deps removed for publishing - use crates.io versions
+# axcpu, axplat, axplat-* already published on crates.io

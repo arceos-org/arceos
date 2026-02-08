@@ -41,6 +41,11 @@ impl ConsoleIf for DummyConsole {
     fn read_bytes(_bytes: &mut [u8]) -> usize {
         unimplemented!()
     }
+
+    #[cfg(feature = "irq")]
+    fn irq_num() -> Option<usize> {
+        None
+    }
 }
 
 #[impl_plat_interface]
@@ -89,6 +94,11 @@ impl TimeIf for DummyTime {
     }
 
     #[cfg(feature = "irq")]
+    fn irq_num() -> usize {
+        0
+    }
+
+    #[cfg(feature = "irq")]
     fn set_oneshot_timer(_deadline_ns: u64) {}
 }
 
@@ -115,7 +125,9 @@ impl IrqIf for DummyIrq {
         None
     }
 
-    fn handle(_irq: usize) {}
+    fn handle(_irq: usize) -> Option<usize> {
+        None
+    }
 
     fn send_ipi(_irq: usize, _target: IpiTarget) {}
 }
