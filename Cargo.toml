@@ -1,5 +1,5 @@
 [workspace]
-resolver = "2"
+resolver = "3"
 
 members = [
     "modules/axalloc",
@@ -33,7 +33,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.2.2-preview.1"
+version = "0.2.2-hv.1"
 edition = "2024"
 authors = ["Yuekai Jia <equation618@gmail.com>", "Yu Chen <yuchen@tsinghua.edu.cn>"]
 license = "GPL-3.0-or-later OR Apache-2.0 OR MulanPSL-2.0"
@@ -44,28 +44,28 @@ keywords = ["arceos", "kernel"]
 categories = ["os", "no-std"]
 
 [workspace.dependencies]
-axstd = { version = "0.2.2-preview.1", path = "ulib/axstd" }
-axlibc = { version = "0.2.2-preview.1", path = "ulib/axlibc" }
+axstd = { version = "0.2.2-hv.1", path = "ulib/axstd" }
+axlibc = { version = "0.2.2-hv.1", path = "ulib/axlibc" }
 
-arceos_api = { version = "0.2.2-preview.1", path = "api/arceos_api" }
-arceos_posix_api = { version = "0.2.2-preview.1", path = "api/arceos_posix_api" }
-axfeat = { version = "0.2.2-preview.1", path = "api/axfeat" }
+arceos_api = { version = "0.2.2-hv.1", path = "api/arceos_api" }
+arceos_posix_api = { version = "0.2.2-hv.1", path = "api/arceos_posix_api" }
+axfeat = { version = "0.2.2-hv.1", path = "api/axfeat" }
 
-axalloc = { version = "0.2.2-preview.1", path = "modules/axalloc" }
-axconfig = { version = "0.2.2-preview.1", path = "modules/axconfig" }
-axdisplay = { version = "0.2.2-preview.1", path = "modules/axdisplay" }
-axdma = { version = "0.2.2-preview.1", path = "modules/axdma" }
-axdriver = { version = "0.2.2-preview.1", path = "modules/axdriver" }
-axfs = { version = "0.2.2-preview.1", path = "modules/axfs" }
-axhal = { version = "0.2.2-preview.6", path = "modules/axhal" }
-axinput = { version = "0.2.2-preview.1", path = "modules/axinput" }
-axipi = { version = "0.2.2-preview.2", path = "modules/axipi" }
-axlog = { version = "0.2.2-preview.1", path = "modules/axlog" }
-axmm = { version = "0.2.2-preview.1", path = "modules/axmm" }
-axnet = { version = "0.2.2-preview.1", path = "modules/axnet" }
-axruntime = { version = "0.2.2-preview.2", path = "modules/axruntime" }
-axsync = { version = "0.2.2-preview.1", path = "modules/axsync" }
-axtask = { version = "0.2.2-preview.3", path = "modules/axtask" }
+axalloc = { version = "0.2.2-hv.1", path = "modules/axalloc" }
+axconfig = { version = "0.2.2-hv.1", path = "modules/axconfig" }
+axdisplay = { version = "0.2.2-hv.1", path = "modules/axdisplay" }
+axdma = { version = "0.2.2-hv.1", path = "modules/axdma" }
+axdriver = { version = "0.2.2-hv.1", path = "modules/axdriver" }
+axfs = { version = "0.2.2-hv.1", path = "modules/axfs" }
+axhal = { version = "0.2.2-hv.1", path = "modules/axhal" }
+axinput = { version = "0.2.2-hv.1", path = "modules/axinput" }
+axipi = { version = "0.2.2-hv.1", path = "modules/axipi" }
+axlog = { version = "0.2.2-hv.1", path = "modules/axlog" }
+axmm = { version = "0.2.2-hv.1", path = "modules/axmm" }
+axnet = { version = "0.2.2-hv.1", path = "modules/axnet" }
+axruntime = { version = "0.2.2-hv.1", path = "modules/axruntime" }
+axsync = { version = "0.2.2-hv.1", path = "modules/axsync" }
+axtask = { version = "0.2.2-hv.1", path = "modules/axtask" }
 
 allocator = { git = "https://github.com/arceos-org/allocator.git", tag = "v0.1.2", features = [
     "axerrno",
@@ -82,7 +82,7 @@ axdriver_vsock = "0.1.4-preview.3"
 axerrno = "0.2"
 axfs-ng-vfs = "0.1"
 axio = "0.3.0-pre.1"
-axklib = { git = "https://github.com/arceos-hypervisor/axklib.git" } # FIXME: pin to a specific commit or tag
+axklib = "0.2"
 axplat = ">=0.3.0-preview.2, <0.3.0"
 axplat-aarch64-bsta1000b = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
 axplat-aarch64-phytium-pi = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
@@ -112,15 +112,3 @@ page_table_multiarch = { version = "0.5", features = [
 percpu = "0.2"
 scope-local = "0.1"
 spin = "0.10"
-
-# Local build: use path/git so make run works when axhal (and deps) use version for publish
-[patch.crates-io]
-axalloc = { path = "modules/axalloc" }
-axconfig = { path = "modules/axconfig" }
-axdma = { path = "modules/axdma" }
-axhal = { path = "modules/axhal" }
-axtask = { path = "modules/axtask" }
-axsync = { path = "modules/axsync" }
-axipi = { path = "modules/axipi" }
-# External path deps removed for publishing - use crates.io versions
-# axcpu, axplat, axplat-* already published on crates.io
