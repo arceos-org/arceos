@@ -19,11 +19,6 @@ pub struct AddrSpace {
     pt: PageTable,
 }
 
-#[inline]
-fn page_fault_flags_to_mapping(flags: PageFaultFlags) -> MappingFlags {
-    MappingFlags::from_bits_truncate(flags.bits())
-}
-
 impl AddrSpace {
     /// Returns the address space base.
     pub const fn base(&self) -> VirtAddr {
@@ -301,7 +296,7 @@ impl AddrSpace {
         }
         if let Some(area) = self.areas.find(vaddr) {
             let orig_flags = area.flags();
-            let access_flags = page_fault_flags_to_mapping(access_flags);
+            let access_flags = MappingFlags::from_bits_truncate(access_flags.bits());
             if orig_flags.contains(access_flags) {
                 return area
                     .backend()
