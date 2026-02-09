@@ -64,8 +64,8 @@ impl MappingBackend for Backend {
         page_table: &mut Self::PageTable,
     ) -> bool {
         page_table
-            .protect_region(start, size, new_flags, true)
-            .map(|tlb| tlb.ignore())
+            .cursor()
+            .protect_region(start, size, new_flags)
             .is_ok()
     }
 }

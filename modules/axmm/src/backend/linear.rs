@@ -26,8 +26,8 @@ impl Backend {
             va_to_pa(start + size),
             flags
         );
-        pt.map_region(start, va_to_pa, size, flags, false, false)
-            .map(|tlb| tlb.ignore()) // TLB flush on map is unnecessary, as there are no outdated mappings.
+        pt.cursor()
+            .map_region(start, va_to_pa, size, flags, false)
             .is_ok()
     }
 
@@ -39,8 +39,6 @@ impl Backend {
         _pa_va_offset: usize,
     ) -> bool {
         debug!("unmap_linear: [{:#x}, {:#x})", start, start + size);
-        pt.unmap_region(start, size, true)
-            .map(|tlb| tlb.ignore()) // flush each page on unmap, do not flush the entire TLB.
-            .is_ok()
+        pt.cursor().unmap_region(start, size).is_ok()
     }
 }

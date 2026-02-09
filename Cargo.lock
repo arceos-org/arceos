@@ -233,6 +233,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "arrayvec"
+version = "0.7.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7c02d123df017efcdfbd739ef81735b36c5ba83ec3c59c80a9d7ecc718f92e50"
+
+[[package]]
 name = "atomic-polyfill"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -301,8 +307,8 @@ dependencies = [
  "log",
  "loongArch64",
  "memory_addr",
- "page_table_entry",
- "page_table_multiarch",
+ "page_table_entry 0.5.5",
+ "page_table_multiarch 0.5.5",
  "percpu",
  "riscv",
  "static_assertions",
@@ -514,7 +520,7 @@ dependencies = [
  "linkme",
  "log",
  "memory_addr",
- "page_table_multiarch",
+ "page_table_multiarch 0.6.0",
  "percpu",
 ]
 
@@ -632,7 +638,7 @@ dependencies = [
  "dw_apb_uart",
  "kspin",
  "log",
- "page_table_entry",
+ "page_table_entry 0.5.5",
 ]
 
 [[package]]
@@ -651,7 +657,7 @@ dependencies = [
  "kspin",
  "lazyinit",
  "log",
- "page_table_entry",
+ "page_table_entry 0.5.5",
  "spin 0.10.0",
 ]
 
@@ -666,7 +672,7 @@ dependencies = [
  "axplat",
  "axplat-aarch64-peripherals",
  "log",
- "page_table_entry",
+ "page_table_entry 0.5.5",
 ]
 
 [[package]]
@@ -680,7 +686,7 @@ dependencies = [
  "axplat",
  "axplat-aarch64-peripherals",
  "log",
- "page_table_entry",
+ "page_table_entry 0.5.5",
 ]
 
 [[package]]
@@ -695,7 +701,7 @@ dependencies = [
  "axplat",
  "axplat-aarch64-peripherals",
  "log",
- "page_table_entry",
+ "page_table_entry 0.5.5",
 ]
 
 [[package]]
@@ -713,7 +719,7 @@ dependencies = [
  "log",
  "loongArch64",
  "ns16550a",
- "page_table_entry",
+ "page_table_entry 0.5.5",
 ]
 
 [[package]]
@@ -1577,15 +1583,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "page_table_entry"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f199b41c77b82c8b7ccf3da749d550b78d0293067d3e12bc06c231511b31dc0"
+dependencies = [
+ "aarch64-cpu 10.0.0",
+ "bitflags 2.9.2",
+ "memory_addr",
+ "x86_64",
+]
+
+[[package]]
 name = "page_table_multiarch"
 version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "98cb76e21ce462270afd83b331599d5b83f876c2a98c0a70382b20d73e1da6be"
 dependencies = [
+ "log",
+ "memory_addr",
+ "page_table_entry 0.5.5",
+ "riscv",
+ "x86",
+]
+
+[[package]]
+name = "page_table_multiarch"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e58ff6be19a78285c51360f8107d031872f20ba5f9e04b0718efadd1ccaabced"
+dependencies = [
+ "arrayvec",
  "bitmaps",
  "log",
  "memory_addr",
- "page_table_entry",
+ "page_table_entry 0.6.0",
  "riscv",
  "x86",
 ]
