@@ -12,11 +12,11 @@ repository = "https://github.com/arceos-org/arceos/tree/main/modules/axdma"
 documentation = "https://arceos-org.github.io/arceos/axdma/index.html"
 
 [dependencies]
-axallocator = { version = "0.1.3-preview.1", default-features = false }
-axalloc = { version = "0.2.2-preview.1" }
-axconfig = { version = "0.2.2-preview.1" }
+axallocator.workspace = true
+axalloc.workspace = true
+axconfig.workspace = true
 axerrno.workspace = true
-axhal = { version = "0.2.2-preview.2" }
+axhal.workspace = true
 page_table_multiarch = { version = "0.5" }
 crate_interface.workspace = true
 kspin.workspace = true

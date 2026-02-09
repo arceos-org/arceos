@@ -1,6 +1,6 @@
 [package]
 name = "axruntime"
-version = "0.2.2-preview.2"
+version.workspace = true
 edition.workspace = true
 authors = ["Yuekai Jia <equation618@gmail.com>"]
 description = "Runtime library of ArceOS"

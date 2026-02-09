@@ -162,7 +162,7 @@ dependencies = [
 name = "arceos_api"
 version = "0.2.2-hv.1"
 dependencies = [
- "axalloc 0.2.2-preview.1",
+ "axalloc 0.2.2-hv.1",
  "axconfig 0.2.2-preview.1",
  "axdisplay",
  "axdma 0.2.2-hv.1",
@@ -185,7 +185,7 @@ dependencies = [
 name = "arceos_posix_api"
 version = "0.2.2-hv.1"
 dependencies = [
- "axalloc 0.2.2-preview.1",
+ "axalloc 0.2.2-hv.1",
  "axconfig 0.2.2-preview.1",
  "axerrno 0.2.2",
  "axfeat",
@@ -289,11 +289,12 @@ dependencies = [
 
 [[package]]
 name = "axalloc"
-version = "0.2.2-preview.1"
+version = "0.2.2-hv.1"
 dependencies = [
  "axallocator",
  "axbacktrace",
  "axerrno 0.2.2",
+ "buddy-slab-allocator",
  "cfg-if",
  "kspin",
  "log",
@@ -443,11 +444,11 @@ dependencies = [
 name = "axdma"
 version = "0.2.2-hv.1"
 dependencies = [
- "axalloc 0.2.2-preview.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "axalloc 0.2.2-hv.1",
  "axallocator",
- "axconfig 0.2.2-preview.2",
+ "axconfig 0.2.2-preview.1",
  "axerrno 0.2.2",
- "axhal 0.2.2-preview.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "axhal 0.2.2-preview.6",
  "crate_interface",
  "kspin",
  "log",
@@ -461,7 +462,7 @@ version = "0.2.2-preview.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "108e7bd8f32096de42ed9a2900d89eca6c2812f8c244a747837e71b9b8959e03"
 dependencies = [
- "axalloc 0.2.2-preview.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "axalloc 0.2.2-preview.1",
  "axallocator",
  "axconfig 0.2.2-preview.2",
  "axerrno 0.2.2",
@@ -478,7 +479,7 @@ name = "axdriver"
 version = "0.2.2-preview.2"
 dependencies = [
  "arm-gic-driver",
- "axalloc 0.2.2-preview.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "axalloc 0.2.2-preview.1",
  "axconfig 0.2.2-preview.2",
  "axdma 0.2.2-preview.1",
  "axdriver_base",
@@ -614,7 +615,7 @@ dependencies = [
 name = "axfeat"
 version = "0.2.2-hv.1"
 dependencies = [
- "axalloc 0.2.2-preview.1",
+ "axalloc 0.2.2-hv.1",
  "axbacktrace",
  "axdisplay",
  "axdriver",
@@ -634,7 +635,7 @@ dependencies = [
 name = "axfs"
 version = "0.2.2-hv.1"
 dependencies = [
- "axalloc 0.2.2-preview.1",
+ "axalloc 0.2.2-hv.1",
  "axdriver",
  "axerrno 0.2.2",
  "axfs-ng-vfs",
@@ -678,7 +679,7 @@ dependencies = [
 name = "axhal"
 version = "0.2.2-preview.6"
 dependencies = [
- "axalloc 0.2.2-preview.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "axalloc 0.2.2-preview.1",
  "axconfig 0.2.2-preview.2",
  "axcpu 0.3.0-preview.3",
  "axplat 0.3.0-preview.2",
@@ -794,7 +795,7 @@ dependencies = [
 name = "axmm"
 version = "0.2.2-hv.1"
 dependencies = [
- "axalloc 0.2.2-preview.1",
+ "axalloc 0.2.2-hv.1",
  "axconfig 0.2.2-preview.1",
  "axerrno 0.2.2",
  "axfs",
@@ -1131,9 +1132,9 @@ dependencies = [
 
 [[package]]
 name = "axruntime"
-version = "0.2.2-preview.2"
+version = "0.2.2-hv.1"
 dependencies = [
- "axalloc 0.2.2-preview.1",
+ "axalloc 0.2.2-hv.1",
  "axbacktrace",
  "axconfig 0.2.2-preview.1",
  "axdisplay",
@@ -1335,6 +1336,15 @@ name = "bitmaps"
 version = "3.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a1d084b0137aaa901caf9f1e8b21daa6aa24d41cd806e111335541eff9683bd6"
+
+[[package]]
+name = "buddy-slab-allocator"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "89ed53d25e32e23ad21aea7d98184b5f9ba9b822bdee2128e79b61168a55610e"
+dependencies = [
+ "cfg-if",
+]
 
 [[package]]
 name = "buddy_system_allocator"

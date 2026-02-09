@@ -52,7 +52,7 @@ arceos_posix_api = { version = "0.2.2-hv.1", path = "api/arceos_posix_api" }
 axfeat = { version = "0.2.2-hv.1", path = "api/axfeat" }
 
 axalloc = { version = "0.2.2-hv.1", path = "modules/axalloc" }
-axconfig = { version = "0.2.2-hv.1", path = "modules/axconfig" }
+axconfig = { version = "0.2.2-preview.1", path = "modules/axconfig" }
 axdisplay = { version = "0.2.2-hv.1", path = "modules/axdisplay" }
 axdma = { version = "0.2.2-hv.1", path = "modules/axdma" }
 axdriver = { version = "0.2.2-hv.1", path = "modules/axdriver" }
@@ -70,6 +70,7 @@ axtask = { version = "0.2.2-hv.1", path = "modules/axtask" }
 allocator = { git = "https://github.com/arceos-org/allocator.git", tag = "v0.1.2", features = [
     "axerrno",
 ] }
+axallocator = { version = "0.1.3-preview.1", default-features = false }
 axbacktrace = "0.1"
 axdriver_base = "0.1.4-preview.3"
 axdriver_block = "0.1.4-preview.3"
