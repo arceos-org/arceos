@@ -6,8 +6,6 @@ use core::task::Context;
 
 use async_trait::async_trait;
 use axerrno::{AxError, AxResult};
-use axfs::{FS_CONTEXT, OpenOptions};
-use axfs_ng_vfs::NodeType;
 use axio::{IoBuf, Read, Write};
 use axpoll::{IoEvents, Pollable};
 use axsync::Mutex;
@@ -92,16 +90,17 @@ pub(crate) fn with_slot<R>(
                 Err(AxError::NotFound)
             }
         }
-        UnixSocketAddr::Path(path) => {
-            let loc = FS_CONTEXT.lock().resolve(path.as_ref())?;
-            if loc.metadata()?.node_type != NodeType::Socket {
-                return Err(AxError::NotASocket);
-            }
-            f(loc
-                .user_data()
-                .get::<BindSlot>()
-                .ok_or(AxError::ConnectionRefused)?
-                .as_ref())
+        UnixSocketAddr::Path(_path) => {
+            todo!()
+            // let loc = FS_CONTEXT.lock().resolve(path.as_ref())?;
+            // if loc.metadata()?.node_type != NodeType::Socket {
+            //     return Err(AxError::NotASocket);
+            // }
+            // f(loc
+            //     .user_data()
+            //     .get::<BindSlot>()
+            //     .ok_or(AxError::ConnectionRefused)?
+            //     .as_ref())
         }
     }
 }
@@ -115,20 +114,21 @@ fn with_slot_or_insert<R>(
             let mut binds = ABSTRACT_BINDS.lock();
             f(binds.entry(name.clone()).or_default())
         }
-        UnixSocketAddr::Path(path) => {
-            let loc = OpenOptions::new()
-                .write(true)
-                .create(true)
-                .node_type(NodeType::Socket)
-                .open(&FS_CONTEXT.lock(), path.as_ref())?
-                .into_location();
-            if loc.metadata()?.node_type != NodeType::Socket {
-                return Err(AxError::NotASocket);
-            }
-            f(loc
-                .user_data()
-                .get_or_insert_with(BindSlot::default)
-                .as_ref())
+        UnixSocketAddr::Path(_path) => {
+            todo!()
+            // let loc = OpenOptions::new()
+            //     .write(true)
+            //     .create(true)
+            //     .node_type(NodeType::Socket)
+            //     .open(&FS_CONTEXT.lock(), path.as_ref())?
+            //     .into_location();
+            // if loc.metadata()?.node_type != NodeType::Socket {
+            //     return Err(AxError::NotASocket);
+            // }
+            // f(loc
+            //     .user_data()
+            //     .get_or_insert_with(BindSlot::default)
+            //     .as_ref())
         }
     }
 }
