@@ -57,7 +57,7 @@ axdisplay = { version = "0.2.2-hv.1", path = "modules/axdisplay" }
 axdma = { version = "0.2.2-hv.1", path = "modules/axdma" }
 axdriver = { version = "0.2.2-hv.1", path = "modules/axdriver" }
 axfs = { version = "0.2.2-hv.1", path = "modules/axfs" }
-axhal = { version = "0.2.2-hv.1", path = "modules/axhal" }
+axhal = { version = "=0.2.2-hv.1", path = "modules/axhal" }
 axinput = { version = "0.2.2-hv.1", path = "modules/axinput" }
 axipi = { version = "0.2.2-hv.1", path = "modules/axipi" }
 axlog = { version = "0.2.2-preview.1", path = "modules/axlog" }
