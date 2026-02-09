@@ -12,7 +12,7 @@ readme = "README.md"
 include = ["src/**/*", "build.rs", "dummy.toml", "Cargo.toml", "README.md"]
 
 [features]
-dyn = []
+
 
 [dependencies]
 axconfig-macros = "0.2"

@@ -8,11 +8,7 @@
 
 #![no_std]
 
-#[cfg(not(feature = "dyn"))]
-axconfig_macros::include_configs!(path_env = "AX_CONFIG_PATH", fallback = "dummy.toml");
+// axconfig_macros::include_configs!(path_env = "AX_CONFIG_PATH", fallback = "dummy.toml");
 
-#[cfg(feature = "dyn")]
 mod dyn_impl;
-
-#[cfg(feature = "dyn")]
 pub use dyn_impl::*;

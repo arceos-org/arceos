@@ -21,7 +21,7 @@ smp = ["axhal/smp", "axtask?/smp", "axplat-dyn/smp", "axplat-x86-qemu-q35/smp"]
 tls = ["axhal/tls", "axtask?/tls"]
 
 display = ["dep:axdriver", "dep:axdisplay"]
-driver-dyn = ["axdriver/dyn", "paging", "axconfig/dyn"]
+driver-dyn = ["axdriver/dyn", "paging"]
 fs = ["dep:axdriver", "dep:axfs", "axmm?/fs"]
 input = ["dep:axdriver", "dep:axinput"]
 multitask = ["axtask/multitask"]
