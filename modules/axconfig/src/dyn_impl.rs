@@ -6,16 +6,29 @@
 //! [ArceOS]: https://github.com/arceos-org/arceos
 //! [configs]: https://github.com/arceos-org/arceos/tree/main/configs
 
-#![no_std]
+include!(concat!(env!("OUT_DIR"), "/dyn_impl_gen.rs"));
 
 /// Architecture identifier.
-pub const ARCH: &str = "aarch64";
+pub const ARCH: &str = if cfg!(target_arch = "x86_64") {
+    "x86_64"
+} else if cfg!(target_arch = "aarch64") {
+    "aarch64"
+} else if cfg!(target_arch = "riscv64") {
+    "riscv64"
+} else if cfg!(target_arch = "loongarch64") {
+    "loongarch64"
+} else {
+    "unknown"
+};
+
 /// Platform package.
-pub const PACKAGE: &str = "axplat-aarch64-generic";
+pub const PACKAGE: &str = "axplat_dyn";
 /// Platform identifier.
-pub const PLATFORM: &str = "aarch64-generic";
+pub const PLATFORM: &str = "axplat_dyn";
+
 /// Stack size of each task.
-pub const TASK_STACK_SIZE: usize = 0x40000;
+pub const TASK_STACK_SIZE: usize = _TASK_STACK_SIZE;
+
 /// Number of timer ticks per second (Hz). A timer tick may contain several timer
 /// interrupts.
 pub const TICKS_PER_SEC: usize = 100;
@@ -23,14 +36,8 @@ pub const TICKS_PER_SEC: usize = 100;
 /// Device specifications
 ///
 pub mod devices {
-    /// MMIO regions with format (`base_paddr`, `size`).
-    pub const MMIO_REGIONS: &[(usize, usize)] = &[
-        (0xb000_0000, 0x1000_0000), // PCI config space
-        (0xfe00_0000, 0xc0_0000),   // PCI devices
-        (0xfec0_0000, 0x1000),      // IO APIC
-        (0xfed0_0000, 0x1000),      // HPET
-        (0xfee0_0000, 0x1000),      // Local APIC
-    ];
+    /// No need.
+    pub const MMIO_REGIONS: &[(usize, usize)] = &[];
     /// End PCI bus number.
     pub const PCI_BUS_END: usize = 0xff;
     /// Base physical address of the PCIe ECAM space.
@@ -50,7 +57,7 @@ pub mod devices {
 ///
 pub mod plat {
     /// Number of CPUs.
-    pub const CPU_NUM: usize = 16;
+    pub const CPU_NUM: usize = super::_CPU_MAX_NUM;
     /// Platform family (deprecated).
     pub const FAMILY: &str = "";
     /// Kernel address space base.
