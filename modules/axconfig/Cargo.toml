@@ -1,6 +1,6 @@
 [package]
 name = "axconfig"
-version = "0.2.2-preview.1"
+version = "0.2.2-preview.2"
 edition.workspace = true
 authors = ["Yuekai Jia <equation618@gmail.com>"]
 description = "Platform-specific constants and parameters for ArceOS"

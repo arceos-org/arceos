@@ -1,21 +1,18 @@
-#[cfg(feature = "fat")]
-mod fat;
+// Copyright 2025 The Axvisor Team
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-#[cfg(feature = "ext4")]
-mod ext4;
+pub mod ext4fs;
+pub mod fatfs;
 
-use axdriver::AxBlockDevice;
-use axfs_ng_vfs::{Filesystem, VfsResult};
-use cfg_if::cfg_if;
-
-pub fn new_default(dev: AxBlockDevice) -> VfsResult<Filesystem> {
-    cfg_if! {
-        if #[cfg(feature = "ext4")] {
-            ext4::Ext4Filesystem::new(dev)
-        } else if #[cfg(feature = "fat")] {
-            Ok(fat::FatFilesystem::new(dev))
-        } else {
-            panic!("No filesystem feature enabled");
-        }
-    }
-}
+pub use axfs_ramfs as ramfs;

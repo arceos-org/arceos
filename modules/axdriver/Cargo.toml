@@ -1,6 +1,6 @@
 [package]
 name = "axdriver"
-version = "0.2.2-preview.2"
+version.workspace = true
 edition.workspace = true
 authors = [
     "Yuekai Jia <equation618@gmail.com>",
@@ -58,9 +58,9 @@ dyn = [
 default = ["bus-pci"]
 
 [dependencies]
-axalloc = { version = "0.2.2-preview.1", optional = true }
-axconfig = { version = "0.2.2-preview.1", optional = true }
-axdma = { version = "0.2.2-preview.1", optional = true }
+axalloc = { workspace = true, optional = true }
+axconfig = { workspace = true, optional = true }
+axdma = { workspace = true, optional = true }
 axdriver_base.workspace = true
 axdriver_block = { workspace = true, optional = true }
 axdriver_display = { workspace = true, optional = true }
@@ -70,8 +70,8 @@ axdriver_pci = { workspace = true, optional = true }
 axdriver_virtio = { workspace = true, optional = true }
 axdriver_vsock = { workspace = true, optional = true }
 axerrno = { workspace = true, optional = true }
-axhal = { version = "0.2.2-preview.2", optional = true }
-axklib = { version = "0.2.0", optional = true }
+axhal = { workspace = true, optional = true }
+axklib = { workspace = true, optional = true }
 cfg-if.workspace = true
 crate_interface.workspace = true
 dma-api = { version = "0.5", features = ["alloc"], optional = true }

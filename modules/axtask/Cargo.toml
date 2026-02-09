@@ -1,6 +1,6 @@
 [package]
 name = "axtask"
-version = "0.2.2-preview.3"
+version.workspace = true
 edition.workspace = true
 authors = ["Yuekai Jia <equation618@gmail.com>"]
 description = "ArceOS task management module"
@@ -40,9 +40,9 @@ sched-cfs = ["multitask", "preempt"]
 test = ["percpu?/sp-naive"]
 
 [dependencies]
-axconfig = { version = "0.2.2-preview.1", optional = true }
+axconfig = { workspace = true, optional = true }
 axerrno.workspace = true
-axhal = { version = "0.2.2-preview.1" }
+axhal.workspace = true
 axpoll = { workspace = true, optional = true }
 axsched = { version = "0.3", optional = true }
 cfg-if.workspace = true
@@ -62,5 +62,5 @@ memory_addr = { workspace = true, optional = true }
 percpu = { workspace = true, optional = true }
 
 [dev-dependencies]
-axhal = { version = "0.2.2-preview.1", features = ["fp-simd"] }
+axhal = { workspace = true, features = ["fp-simd"] }
 axtask = { path = ".", features = ["test", "multitask"] }
