@@ -1,52 +1,61 @@
 [package]
-name = "axruntime"
-version.workspace = true
-edition.workspace = true
 authors = ["Yuekai Jia <equation618@gmail.com>"]
 description = "Runtime library of ArceOS"
-license.workspace = true
-homepage.workspace = true
-repository = "https://github.com/arceos-org/arceos/tree/main/modules/axruntime"
 documentation = "https://arceos-org.github.io/arceos/axruntime/index.html"
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+name = "axruntime"
+repository = "https://github.com/arceos-org/arceos/tree/main/modules/axruntime"
+version.workspace = true
 
 [features]
 default = []
 
-smp = ["axhal/smp", "axtask?/smp"]
-irq = ["axhal/irq", "axtask?/irq", "dep:percpu"]
-tls = ["axhal/tls", "axtask?/tls"]
 alloc = ["dep:axalloc"]
-paging = ["axhal/paging", "dep:axmm"]
 dma = ["paging", "dep:axdma"]
 ipi = ["dep:axipi"]
+irq = ["axhal/irq", "axtask?/irq", "dep:percpu", "axplat-dyn/irq", "axplat-x86-qemu-q35/irq"]
+paging = ["axhal/paging", "dep:axmm"]
+smp = ["axhal/smp", "axtask?/smp", "axplat-dyn/smp", "axplat-x86-qemu-q35/smp"]
+tls = ["axhal/tls", "axtask?/tls"]
 
-multitask = ["axtask/multitask"]
-fs = ["dep:axdriver", "dep:axfs", "axmm?/fs"]
-net = ["dep:axdriver", "dep:axnet"]
 display = ["dep:axdriver", "dep:axdisplay"]
-input = ["dep:axdriver", "dep:axinput"]
-vsock = ["net", "dep:axdriver"]
-rtc = []
 driver-dyn = ["axdriver/dyn", "paging"]
+fs = ["dep:axdriver", "dep:axfs", "axmm?/fs"]
+input = ["dep:axdriver", "dep:axinput"]
+multitask = ["axtask/multitask"]
+net = ["dep:axdriver", "dep:axnet"]
+rtc = []
+vsock = ["net", "dep:axdriver"]
 
 [dependencies]
-axalloc = { workspace = true, optional = true }
+axalloc = {workspace = true, optional = true}
 axbacktrace.workspace = true
 axconfig.workspace = true
-axdisplay = { workspace = true, optional = true }
-axdma = { workspace = true, optional = true }
-axdriver = { workspace = true, optional = true }
-axinput = { workspace = true, optional = true }
-axfs = { workspace = true, optional = true }
+axdisplay = {workspace = true, optional = true}
+axdma = {workspace = true, optional = true}
+axdriver = {workspace = true, optional = true}
+axfs = {workspace = true, optional = true}
 axhal.workspace = true
-axipi = { workspace = true, optional = true }
+axinput = {workspace = true, optional = true}
+axipi = {workspace = true, optional = true}
 axlog.workspace = true
-axmm = { workspace = true, optional = true }
-axnet = { workspace = true, optional = true }
-axplat = { version = ">=0.3.0-preview.2, <0.3.0" }
-axtask = { workspace = true, optional = true }
+axmm = {workspace = true, optional = true}
+axnet = {workspace = true, optional = true}
+axplat.workspace = true
+axtask = {workspace = true, optional = true}
+cfg-if = "1.0"
 chrono.workspace = true
 crate_interface.workspace = true
 ctor_bare.workspace = true
 indoc = "2"
-percpu = { workspace = true, optional = true }
+log.workspace = true
+percpu = {workspace = true, optional = true}
+
+[target.'cfg(target_arch = "x86_64")'.dependencies]
+axplat-x86-qemu-q35 = {version ="0.1.0-preview.1", default-features = false, features = ["reboot-on-system-off"]}
+
+[target.'cfg(target_arch = "aarch64")'.dependencies]
+axplat-dyn = "0.4"
+somehal = "0.4"

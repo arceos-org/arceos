@@ -742,7 +742,7 @@ impl Default for epoll_data {
     }
 }
 pub type epoll_data_t = epoll_data;
-#[repr(C, packed)]
+#[repr(C)]
 #[derive(Copy, Clone)]
 pub struct epoll_event {
     pub events: u32,
@@ -750,10 +750,10 @@ pub struct epoll_event {
 }
 #[allow(clippy::unnecessary_operation, clippy::identity_op)]
 const _: () = {
-    ["Size of epoll_event"][::core::mem::size_of::<epoll_event>() - 12usize];
-    ["Alignment of epoll_event"][::core::mem::align_of::<epoll_event>() - 1usize];
+    ["Size of epoll_event"][::core::mem::size_of::<epoll_event>() - 16usize];
+    ["Alignment of epoll_event"][::core::mem::align_of::<epoll_event>() - 8usize];
     ["Offset of field: epoll_event::events"][::core::mem::offset_of!(epoll_event, events) - 0usize];
-    ["Offset of field: epoll_event::data"][::core::mem::offset_of!(epoll_event, data) - 4usize];
+    ["Offset of field: epoll_event::data"][::core::mem::offset_of!(epoll_event, data) - 8usize];
 };
 impl Default for epoll_event {
     fn default() -> Self {
