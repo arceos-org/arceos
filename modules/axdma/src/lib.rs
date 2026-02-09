@@ -9,8 +9,8 @@ mod dma;
 use core::{alloc::Layout, ptr::NonNull};
 
 use axallocator::AllocResult;
-use page_table_multiarch::MappingFlags;
 use memory_addr::{PhysAddr, VirtAddr};
+use page_table_multiarch::MappingFlags;
 
 use self::dma::ALLOCATOR;
 

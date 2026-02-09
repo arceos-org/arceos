@@ -9,8 +9,8 @@ use core::{
     task::{Context, Poll, Waker},
 };
 
+use kernel_guard::NoPreemptIrqSave;
 use kspin::SpinNoIrq;
-use kernel_guard::{NoPreemptIrqSave};
 
 use crate::{AxTaskRef, WeakAxTaskRef, current, current_run_queue, select_run_queue};
 

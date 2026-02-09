@@ -32,7 +32,7 @@ use spin::Mutex;
 use crate::{
     api::FileType,
     mounts,
-    partition::{create_filesystem_for_partition, FilesystemType, PartitionInfo},
+    partition::{FilesystemType, PartitionInfo, create_filesystem_for_partition},
 };
 
 static CURRENT_DIR_PATH: Mutex<String> = Mutex::new(String::new());

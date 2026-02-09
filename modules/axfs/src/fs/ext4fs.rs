@@ -25,7 +25,7 @@ use axfs_vfs::{
 };
 use rsext4::{
     Ext4FileSystem as Rsext4FileSystem, Jbd2Dev,
-    api::{fs_mount, lseek, open, read_at, OpenFile},
+    api::{OpenFile, fs_mount, lseek, open, read_at},
     dir::{get_inode_with_num, mkdir},
     entries::classic_dir::list_entries,
     error::{BlockDevError, BlockDevResult},

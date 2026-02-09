@@ -111,13 +111,7 @@ typedef struct {{
 
     let axlibc_include = std::path::Path::new("../../ulib/axlibc/include");
     if axlibc_include.exists() {
-        gen_pthread_mutex(
-            axlibc_include
-                .join("ax_pthread_mutex.h")
-                .to_str()
-                .unwrap(),
-        )
-        .unwrap();
+        gen_pthread_mutex(axlibc_include.join("ax_pthread_mutex.h").to_str().unwrap()).unwrap();
         gen_c_to_rust_bindings("ctypes.h", "src/ctypes_gen.rs");
     } else {
         // During `cargo publish` verification, the external headers are not

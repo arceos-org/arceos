@@ -11,7 +11,7 @@ use alloc::sync::Weak;
 
 use axsched::BaseScheduler;
 use kernel_guard::BaseGuard;
-use kspin::{SpinRaw, SpinNoIrqGuard};
+use kspin::{SpinNoIrqGuard, SpinRaw};
 use lazyinit::LazyInit;
 
 use axhal::percpu::this_cpu_id;

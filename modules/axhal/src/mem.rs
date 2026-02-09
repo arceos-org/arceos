@@ -5,12 +5,12 @@ use lazyinit::LazyInit;
 
 use axplat::mem::{check_sorted_ranges_overlap, ranges_difference};
 
+pub use axplat::mem::kernel_aspace;
 pub use axplat::mem::{MemRegionFlags, PhysMemRegion};
 pub use axplat::mem::{
     mmio_ranges, phys_ram_ranges, phys_to_virt, reserved_phys_ram_ranges, total_ram_size,
     virt_to_phys,
 };
-pub use axplat::mem::kernel_aspace;
 pub use memory_addr::{PAGE_SIZE_4K, PhysAddr, PhysAddrRange, VirtAddr, VirtAddrRange, pa, va};
 
 use crate::addr_of_sym;

@@ -62,7 +62,7 @@ const LOGO: &str = r#"
 d88P     888 888      "Y8888P  "Y8888   "Y88888P"   "Y8888P"
 "#;
 
-unsafe extern {
+unsafe extern "C" {
     /// Application's entry point.
     fn main();
 }
