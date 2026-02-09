@@ -1,6 +1,6 @@
 [package]
 name = "axconfig"
-version = "0.2.2-preview.2"
+version.workspace = true
 edition.workspace = true
 authors = ["Yuekai Jia <equation618@gmail.com>"]
 description = "Platform-specific constants and parameters for ArceOS"
@@ -10,6 +10,9 @@ repository = "https://github.com/arceos-org/arceos/tree/main/modules/axconfig"
 documentation = "https://arceos-org.github.io/arceos/axconfig/index.html"
 readme = "README.md"
 include = ["src/**/*", "build.rs", "dummy.toml", "Cargo.toml", "README.md"]
+
+[features]
+dyn = []
 
 [dependencies]
 axconfig-macros = "0.2"
