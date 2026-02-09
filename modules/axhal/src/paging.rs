@@ -14,7 +14,7 @@ pub use page_table_multiarch::{MappingFlags, PageSize, PagingError, PagingResult
 pub struct PagingHandlerImpl;
 
 impl PagingHandler for PagingHandlerImpl {
-    fn alloc_frames(num: usize, align: usize)  -> Option<PhysAddr> {
+    fn alloc_frames(num: usize, align: usize) -> Option<PhysAddr> {
         global_allocator()
             .alloc_pages(num, align)
             .map(|vaddr| virt_to_phys(vaddr.into()))
