@@ -24,13 +24,13 @@ use axfs_vfs::{
     VfsResult,
 };
 use rsext4::{
+    Ext4FileSystem as Rsext4FileSystem, Jbd2Dev,
     api::{fs_mount, lseek, open, read_at, OpenFile},
     dir::{get_inode_with_num, mkdir},
     entries::classic_dir::list_entries,
     error::{BlockDevError, BlockDevResult},
     file::{delete_dir, mkfile, mv, truncate, unlink, write_file},
     loopfile::resolve_inode_block_allextend,
-    Ext4FileSystem as Rsext4FileSystem, Jbd2Dev,
 };
 use spin::Mutex;
 
@@ -56,13 +56,6 @@ unsafe impl Sync for Ext4FileSystemPartition {}
 unsafe impl Send for Ext4FileSystemPartition {}
 
 impl Ext4FileSystem {
-    #[cfg(feature = "use-ramdisk")]
-    #[allow(dead_code)]
-    pub fn new(mut disk: Disk) -> Self {
-        unimplemented!()
-    }
-
-    #[cfg(not(feature = "use-ramdisk"))]
     #[allow(dead_code)]
     pub fn new(disk: Disk) -> Self {
         info!(
@@ -201,9 +194,7 @@ impl VfsNodeOps for FileWrapper {
 
         trace!(
             "get_attr of {:?}, size: {}, blocks: {}",
-            self.path,
-            size,
-            blocks
+            self.path, size, blocks
         );
 
         Ok(VfsNodeAttr::new(perm, vtype, size, blocks))

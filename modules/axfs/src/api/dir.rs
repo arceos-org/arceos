@@ -156,9 +156,6 @@ impl DirBuilder {
     }
 
     fn create_dir_all(&self, _path: &str) -> Result<()> {
-        axerrno::ax_err!(
-            Unsupported,
-            "Recursive directory creation is not supported yet"
-        )
+        Err(axerrno::AxError::Unsupported.into())
     }
 }

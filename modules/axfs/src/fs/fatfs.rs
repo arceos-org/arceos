@@ -16,9 +16,9 @@ use alloc::boxed::Box;
 use alloc::sync::Arc;
 use core::cell::OnceCell;
 
+use axfatfs::{Dir, File, LossyOemCpConverter, NullTimeProvider, Read, Seek, SeekFrom, Write};
 use axfs_vfs::{VfsDirEntry, VfsError, VfsNodePerm, VfsResult};
 use axfs_vfs::{VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsNodeType, VfsOps};
-use axfatfs::{Dir, File, LossyOemCpConverter, NullTimeProvider, Read, Seek, SeekFrom, Write};
 use spin::Mutex;
 
 use crate::dev::{Disk, Partition};
@@ -114,21 +114,6 @@ unsafe impl Send for DirWrapper<'_> {}
 unsafe impl Sync for DirWrapper<'_> {}
 
 impl FatFileSystem {
-    #[cfg(feature = "use-ramdisk")]
-    #[allow(dead_code)]
-    pub fn new(mut disk: Disk) -> Self {
-        let opts = axfatfs::FormatVolumeOptions::new();
-        axfatfs::format_volume(&mut disk, opts).expect("failed to format volume");
-        let inner = axfatfs::FileSystem::new(disk, axfatfs::FsOptions::new())
-            .expect("failed to initialize FAT filesystem");
-
-        Self {
-            inner,
-            root_dir: OnceCell::new(),
-        }
-    }
-
-    #[cfg(not(feature = "use-ramdisk"))]
     #[allow(dead_code)]
     pub fn new(disk: Disk) -> Self {
         let disk_size = disk.size();
