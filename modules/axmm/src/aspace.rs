@@ -19,6 +19,11 @@ pub struct AddrSpace {
     pt: PageTable,
 }
 
+#[inline]
+fn page_fault_flags_to_mapping(flags: PageFaultFlags) -> MappingFlags {
+    MappingFlags::from_bits_truncate(flags.bits())
+}
+
 impl AddrSpace {
     /// Returns the address space base.
     pub const fn base(&self) -> VirtAddr {
