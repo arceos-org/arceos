@@ -80,7 +80,6 @@ impl Backend {
         _populate: bool,
     ) -> bool {
         debug!("unmap_alloc: [{:#x}, {:#x})", start, start + size);
-        let mut cursor = pt.cursor();
         for addr in PageIter4K::new(start, start + size).unwrap() {
             if let Ok((frame, _, page_size)) = pt.cursor().unmap(addr) {
                 // Deallocate the physical frame if there is a mapping in the
