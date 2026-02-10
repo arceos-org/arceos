@@ -11,22 +11,25 @@ repository = "https://github.com/arceos-org/arceos/tree/main/modules/axalloc"
 version.workspace = true
 
 [features]
-buddy = ["axallocator/buddy"]
 default = ["tlsf", "axallocator/page-alloc-256m"]
+axvisor = ["dep:buddy-slab-allocator"]
+buddy = ["dep:axallocator", "axallocator/buddy"]
+slab = ["dep:axallocator", "axallocator/slab"]
+tlsf = ["dep:axallocator", "axallocator/tlsf"]
 level-1 = []
-page-alloc-4g = ["axallocator/page-alloc-4g"] # Support up to 4G memory capacity
-page-alloc-64g = [
-  "axallocator/page-alloc-64g",
-] # Support up to 64G memory capacity
-slab = ["axallocator/slab"]
-tlsf = ["axallocator/tlsf"]
+page-alloc-4g = ["dep:axallocator", "axallocator/page-alloc-4g"]   # Support up to 4GB memory capacity (default: 256MB)
+page-alloc-64g = ["dep:axallocator", "axallocator/page-alloc-64g"] # Support up to 64GB memory capacity (default: 256MB)
 tracking = ["dep:percpu", "dep:axbacktrace"]
 
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "doc_cfg"]
+
 [dependencies]
-axallocator = {workspace = true, features = ["bitmap"]}
+axallocator = {workspace = true, features = ["bitmap"], optional = true}
 axbacktrace = {workspace = true, optional = true}
 axerrno.workspace = true
-buddy-slab-allocator = "0.1.1"
+buddy-slab-allocator = { version = "0.1.1", optional = true }
 cfg-if.workspace = true
 kspin.workspace = true
 log.workspace = true
