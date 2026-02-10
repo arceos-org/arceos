@@ -1,19 +1,38 @@
+// Copyright 2025 The Axvisor Team
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 use core::sync::atomic::{AtomicUsize, Ordering};
 
-use axconfig::{TASK_STACK_SIZE, plat::CPU_NUM};
+use axconfig::TASK_STACK_SIZE;
 use axhal::mem::{VirtAddr, virt_to_phys};
 
+use crate::cpu_count;
+
+const MAX_CPU_NUM: usize = 8;
+
 #[unsafe(link_section = ".bss.stack")]
-static mut SECONDARY_BOOT_STACK: [[u8; TASK_STACK_SIZE]; CPU_NUM - 1] =
-    [[0; TASK_STACK_SIZE]; CPU_NUM - 1];
+static mut SECONDARY_BOOT_STACK: [[u8; TASK_STACK_SIZE]; MAX_CPU_NUM - 1] =
+    [[0; TASK_STACK_SIZE]; MAX_CPU_NUM - 1];
 
 static ENTERED_CPUS: AtomicUsize = AtomicUsize::new(1);
 
 #[allow(clippy::absurd_extreme_comparisons)]
 pub fn start_secondary_cpus(primary_cpu_id: usize) {
+    let cpu_count = cpu_count();
     let mut logic_cpu_id = 0;
-    for i in 0..CPU_NUM {
-        if i != primary_cpu_id && logic_cpu_id < CPU_NUM - 1 {
+    for i in 0..cpu_count {
+        if i != primary_cpu_id && logic_cpu_id < cpu_count - 1 {
             let stack_top = virt_to_phys(VirtAddr::from(unsafe {
                 SECONDARY_BOOT_STACK[logic_cpu_id].as_ptr_range().end as usize
             }));

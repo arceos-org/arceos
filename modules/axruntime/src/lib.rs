@@ -1,3 +1,17 @@
+// Copyright 2025 The Axvisor Team
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! Runtime library of [ArceOS](https://github.com/arceos-org/arceos).
 //!
 //! Any application uses ArceOS should link this library. It does some
@@ -17,10 +31,16 @@
 //! All the features are optional and disabled by default.
 
 #![cfg_attr(not(test), no_std)]
-#![feature(doc_cfg)]
+#![allow(missing_abi)]
 
 #[macro_use]
 extern crate axlog;
+
+#[cfg(target_arch = "x86_64")]
+extern crate axplat_x86_qemu_q35;
+
+#[cfg(target_arch = "aarch64")]
+extern crate axplat_dyn;
 
 #[cfg(all(target_os = "none", not(test)))]
 mod lang_items;
@@ -42,7 +62,7 @@ const LOGO: &str = r#"
 d88P     888 888      "Y8888P  "Y8888   "Y88888P"   "Y8888P"
 "#;
 
-unsafe extern "C" {
+unsafe extern {
     /// Application's entry point.
     fn main();
 }
@@ -89,7 +109,7 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 static INITED_CPUS: AtomicUsize = AtomicUsize::new(0);
 
 fn is_init_ok() -> bool {
-    INITED_CPUS.load(Ordering::Acquire) == axconfig::plat::CPU_NUM
+    INITED_CPUS.load(Ordering::Acquire) == cpu_count()
 }
 
 /// The main entry point of the ArceOS runtime.
@@ -109,24 +129,18 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
     axhal::init_early(cpu_id, arg);
 
     ax_println!("{}", LOGO);
-    ax_println!(
-        indoc::indoc! {"
-            arch = {}
-            platform = {}
-            target = {}
-            build_mode = {}
-            log_level = {}
-            backtrace = {}
-            smp = {}
-        "},
-        axconfig::ARCH,
-        axconfig::PLATFORM,
-        option_env!("AX_TARGET").unwrap_or(""),
-        option_env!("AX_MODE").unwrap_or(""),
-        option_env!("AX_LOG").unwrap_or(""),
-        axbacktrace::is_enabled(),
-        axconfig::plat::CPU_NUM,
-    );
+    ax_println!("smp = {}", cpu_count());
+
+    // ax_println!(
+    //     "\
+    //     arch = {}\n\
+    //     platform = {}\n\
+    //     target = {}\n\
+    //     build_mode = {}\n\
+    //     smp = {}\n\
+    //     ",
+
+    // );
     #[cfg(feature = "rtc")]
     ax_println!(
         "Boot at {}\n",
@@ -134,7 +148,8 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
     );
 
     axlog::init();
-    axlog::set_max_level(option_env!("AX_LOG").unwrap_or("")); // no effect if set `log-level-*` features
+    log::set_max_level(log::LevelFilter::Trace);
+    // axlog::set_max_level("info"); // no effect if set `log-level-*` features
     info!("Logging is enabled.");
     info!("Primary CPU {cpu_id} started, arg = {arg:#x}.");
 
@@ -153,27 +168,13 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
     #[cfg(feature = "alloc")]
     init_allocator();
 
-    {
-        use core::ops::Range;
+    let (kernel_space_start, kernel_space_size) = axhal::mem::kernel_aspace();
 
-        unsafe extern "C" {
-            safe static _stext: [u8; 0];
-            safe static _etext: [u8; 0];
-            safe static _edata: [u8; 0];
-        }
-
-        let ip_range = Range {
-            start: _stext.as_ptr() as usize,
-            end: _etext.as_ptr() as usize,
-        };
-
-        let fp_range = Range {
-            start: _edata.as_ptr() as usize,
-            end: usize::MAX,
-        };
-
-        axbacktrace::init(ip_range, fp_range);
-    }
+    info!(
+        "kernel aspace: [{:#x?}, {:#x?})",
+        kernel_space_start,
+        kernel_space_start + kernel_space_size,
+    );
 
     #[cfg(feature = "paging")]
     axmm::init_memory_management();
@@ -193,18 +194,13 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
         let all_devices = axdriver::init_drivers();
 
         #[cfg(feature = "fs")]
-        axfs::init_filesystems(all_devices.block);
+        axfs::init_filesystems(all_devices.block, axhal::dtb::get_chosen_bootargs());
 
         #[cfg(feature = "net")]
         axnet::init_network(all_devices.net);
-        #[cfg(feature = "vsock")]
-        axnet::init_vsock(all_devices.vsock);
 
         #[cfg(feature = "display")]
         axdisplay::init_display(all_devices.display);
-
-        #[cfg(feature = "input")]
-        axinput::init_input(all_devices.input);
     }
 
     #[cfg(feature = "smp")]
@@ -249,24 +245,41 @@ fn init_allocator() {
     info!("Initialize global memory allocator...");
     info!("  use {} allocator.", axalloc::global_allocator().name());
 
-    let free_regions = || memory_regions().filter(|r| r.flags.contains(MemRegionFlags::FREE));
+    let mut max_region_size = 0;
+    let mut max_region_paddr = 0.into();
+    let mut use_next_free = false;
 
-    unsafe extern "C" {
-        safe static _ekernel: [u8; 0];
+    for r in memory_regions() {
+        if r.name == ".bss" {
+            use_next_free = true;
+        } else if r.flags.contains(MemRegionFlags::FREE) {
+            if use_next_free {
+                max_region_paddr = r.paddr;
+                break;
+            } else if r.size > max_region_size {
+                max_region_size = r.size;
+                max_region_paddr = r.paddr;
+            }
+        }
     }
-    let kernel_end_paddr = virt_to_phys(_ekernel.as_ptr().addr().into());
 
-    let init_region = free_regions()
-        // First try to find a free memory region after the kernel image
-        .find(|r| r.paddr >= kernel_end_paddr)
-        // Otherwise just use the largest free memory region
-        .or_else(|| free_regions().max_by_key(|r| r.size))
-        .expect("no free memory region found!!");
+    struct AddrTranslatorImpl;
+    impl axalloc::AddrTranslator for AddrTranslatorImpl {
+        fn virt_to_phys(&self, va: usize) -> Option<usize> {
+            Some(virt_to_phys(va.into()).as_usize())
+        }
+    }
 
-    axalloc::global_init(phys_to_virt(init_region.paddr).as_usize(), init_region.size);
+    static TRANSLATOR: AddrTranslatorImpl = AddrTranslatorImpl;
 
-    for r in free_regions() {
-        if r.paddr != init_region.paddr {
+    for r in memory_regions() {
+        if r.flags.contains(MemRegionFlags::FREE) && r.paddr == max_region_paddr {
+            axalloc::global_init(phys_to_virt(r.paddr).as_usize(), r.size, &TRANSLATOR);
+            break;
+        }
+    }
+    for r in memory_regions() {
+        if r.flags.contains(MemRegionFlags::FREE) && r.paddr != max_region_paddr {
             axalloc::global_add_memory(phys_to_virt(r.paddr).as_usize(), r.size)
                 .expect("add heap memory region failed");
         }
@@ -293,6 +306,7 @@ fn init_interrupt() {
         axhal::time::set_oneshot_timer(deadline);
     }
 
+    // axhal::irq::register(axconfig::devices::TIMER_IRQ, || {
     axhal::irq::register(axhal::time::irq_num(), || {
         update_timer();
         #[cfg(feature = "multitask")]
@@ -313,4 +327,35 @@ fn init_tls() {
     let main_tls = axhal::tls::TlsArea::alloc();
     unsafe { axhal::asm::write_thread_pointer(main_tls.tls_ptr() as usize) };
     core::mem::forget(main_tls);
+}
+
+fn smp() -> Option<usize> {
+    let mut smp = None;
+    let s = option_env!("AXVISOR_SMP");
+    if let Some(s) = s
+        && let Ok(n) = s.parse::<usize>()
+    {
+        smp = Some(n);
+    }
+    smp
+}
+
+pub fn cpu_count() -> usize {
+    let mut cpu_count;
+
+    cfg_if::cfg_if! {
+        if #[cfg(all(target_arch = "x86_64", target_os = "none"))] {
+            cpu_count = axplat_x86_qemu_q35::cpu_count()
+        } else if #[cfg(target_arch = "aarch64")] {
+            cpu_count = somehal::mem::cpu_id_list().count()
+        } else {
+            cpu_count = 1;
+        }
+    }
+
+    if let Some(smp) = smp() {
+        cpu_count = smp.min(cpu_count);
+    }
+
+    cpu_count
 }

@@ -1,61 +1,36 @@
 [package]
 name = "axfs"
-version.workspace = true
+description = "Axvisor filesystem module"
 edition.workspace = true
-authors = ["Yuekai Jia <equation618@gmail.com>"]
-description = "ArceOS filesystem module"
 license.workspace = true
-homepage.workspace = true
-repository = "https://github.com/arceos-org/arceos/tree/main/modules/axfs"
-documentation = "https://arceos-org.github.io/arceos/axfs/index.html"
+version.workspace = true
 
 [features]
-devfs = ["dep:axfs_devfs"]
-ramfs = ["dep:axfs_ramfs"]
-procfs = ["dep:axfs_ramfs"]
-sysfs = ["dep:axfs_ramfs"]
-ext4fs = ["dep:lwext4_rust"]
-fatfs = ["dep:fatfs"]
-myfs = ["dep:crate_interface"]
 use-ramdisk = []
 
-default = ["devfs", "ramfs", "fatfs", "procfs", "sysfs"]
-
 [dependencies]
-axdriver = { workspace = true, features = ["block"] }
-axdriver_block.workspace = true
-axerrno.workspace = true
-axfs_devfs = { version = "0.1", optional = true }
-axfs_ramfs = { version = "0.1", optional = true }
+axdriver = {workspace = true, features = ["block"]}
+axdriver_block = "0.1.4-preview.3"
+axerrno = "0.1"
+axfs_ramfs = {version = "0.1"}
 axfs_vfs = "0.1"
-axio = { workspace = true, features = ["alloc"] }
-axsync.workspace = true
+axio = {version = "0.2", features = ["alloc"]}
 cap_access = "0.1"
-cfg-if.workspace = true
-crate_interface = { workspace = true, optional = true }
-lazyinit.workspace = true
-log.workspace = true
-scope-local.workspace = true
+lazyinit = "0.2"
+spin = "0.9"
+log = "0.4"
+rsext4 = "0.1.0-pre.0"
 
-[dependencies.fatfs]
-git = "https://github.com/rafalh/rust-fatfs"
-rev = "4eccb50"
-optional = true
+[dependencies.axfatfs]
+version = "0.1.0-pre.0"
 default-features = false
-features = [ # no std
-    "alloc",
-    "lfn",
-    "log_level_trace",
-    "unicode",
+features = [
+  "alloc",
+  "lfn",
+  "log_level_trace",
+  "unicode",
 ]
 
-[dependencies.lwext4_rust]
-git = "https://github.com/Josen-B/lwext4_rust.git"
-rev = "99b3e5c"
-optional = true
-
 [dev-dependencies]
-axdriver = { workspace = true, features = ["block", "ramdisk"] }
-axdriver_block = { workspace = true, features = ["ramdisk"] }
-axsync = { workspace = true, features = ["multitask"] }
-axtask = { workspace = true, features = ["test"] }
+axdriver = {workspace = true, features = ["block", "ramdisk"]}
+axdriver_block = {version = "0.1.4-preview.3", features = ["ramdisk"]}

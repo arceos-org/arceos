@@ -1,5 +1,5 @@
 [workspace]
-resolver = "2"
+resolver = "3"
 
 members = [
     "modules/axalloc",
@@ -33,7 +33,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.2.0"
+version = "0.2.2-hv.4"
 edition = "2024"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
 license = "GPL-3.0-or-later OR Apache-2.0 OR MulanPSL-2.0"
@@ -44,45 +44,45 @@ keywords = ["arceos", "kernel"]
 categories = ["os", "no-std"]
 
 [workspace.dependencies]
-axstd = { path = "ulib/axstd" }
-axlibc = { path = "ulib/axlibc" }
+axstd = { version = "=0.2.2-hv.4", path = "ulib/axstd" }
+axlibc = { version = "=0.2.2-hv.4", path = "ulib/axlibc" }
 
-arceos_api = { path = "api/arceos_api" }
-arceos_posix_api = { path = "api/arceos_posix_api" }
-axfeat = { path = "api/axfeat" }
+arceos_api = { version = "=0.2.2-hv.4", path = "api/arceos_api" }
+arceos_posix_api = { version = "=0.2.2-hv.4", path = "api/arceos_posix_api" }
+axfeat = { version = "=0.2.2-hv.4", path = "api/axfeat" }
 
-axalloc = { path = "modules/axalloc" }
-axconfig = { path = "modules/axconfig" }
-axdisplay = { path = "modules/axdisplay" }
-axdma = { path = "modules/axdma" }
-axdriver = { path = "modules/axdriver" }
-axfs = { path = "modules/axfs" }
-axhal = { path = "modules/axhal" }
-axinput = { path = "modules/axinput" }
-axipi = { path = "modules/axipi" }
-axlog = { path = "modules/axlog" }
-axmm = { path = "modules/axmm" }
-axnet = { path = "modules/axnet" }
-axruntime = { path = "modules/axruntime" }
-axsync = { path = "modules/axsync" }
-axtask = { path = "modules/axtask" }
+axalloc = { version = "=0.2.2-hv.4", path = "modules/axalloc" }
+axconfig = { version = "=0.2.2-hv.4", path = "modules/axconfig" }
+axdisplay = { version = "=0.2.2-hv.4", path = "modules/axdisplay" }
+axdma = { version = "=0.2.2-hv.4", path = "modules/axdma" }
+axdriver = { version = "=0.2.2-hv.4", path = "modules/axdriver" }
+axfs = { version = "=0.2.2-hv.4", path = "modules/axfs" }
+axhal = { version = "=0.2.2-hv.4", path = "modules/axhal" }
+axinput = { version = "=0.2.2-hv.4", path = "modules/axinput" }
+axipi = { version = "=0.2.2-hv.4", path = "modules/axipi" }
+axlog = { version = "=0.2.2-hv.4", path = "modules/axlog" }
+axmm = { version = "=0.2.2-hv.4", path = "modules/axmm" }
+axnet = { version = "=0.2.2-hv.4", path = "modules/axnet" }
+axruntime = { version = "=0.2.2-hv.4", path = "modules/axruntime" }
+axsync = { version = "=0.2.2-hv.4", path = "modules/axsync" }
+axtask = { version = "=0.2.2-hv.4", path = "modules/axtask" }
 
-allocator = { git = "https://github.com/arceos-org/allocator.git", tag = "v0.1.2", features = [
+axallocator = { version = "0.1.3-preview.1", features = [
     "axerrno",
 ] }
 axbacktrace = "0.1"
-axdriver_base = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "dev-v01" }
-axdriver_block = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "dev-v01" }
-axdriver_display = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "dev-v01" }
-axdriver_input = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "dev-v01" }
-axdriver_net = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "dev-v01" }
-axdriver_pci = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "dev-v01" }
-axdriver_virtio = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "dev-v01" }
-axdriver_vsock = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "dev-v01" }
+axdriver_base = "0.1.4-preview.3"
+axdriver_block = "0.1.4-preview.3"
+axdriver_display = "0.1.4-preview.3"
+axdriver_input = "0.1.4-preview.3"
+axdriver_net = "0.1.4-preview.3"
+axdriver_pci = "0.1.4-preview.3"
+axdriver_virtio = "0.1.4-preview.3"
+axdriver_vsock = "0.1.4-preview.3"
 axerrno = "0.1"
 axio = "0.2"
-axklib = { git = "https://github.com/arceos-hypervisor/axklib.git" } # FIXME: pin to a specific commit or tag
-axplat = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
+axklib = "0.2"
+axplat = ">=0.3.0-preview.2, <0.3.0"
 axplat-aarch64-bsta1000b = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
 axplat-aarch64-phytium-pi = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
 axplat-aarch64-qemu-virt = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }

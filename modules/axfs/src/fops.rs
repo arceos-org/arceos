@@ -1,3 +1,17 @@
+// Copyright 2025 The Axvisor Team
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! Low-level filesystem operations.
 
 use axerrno::{AxError, AxResult, ax_err, ax_err_type};
@@ -5,11 +19,6 @@ use axfs_vfs::{VfsError, VfsNodeRef};
 use axio::SeekFrom;
 use cap_access::{Cap, WithCap};
 use core::fmt;
-
-#[cfg(feature = "myfs")]
-pub use crate::dev::Disk;
-#[cfg(feature = "myfs")]
-pub use crate::fs::myfs::MyFileSystemIf;
 
 /// Alias of [`axfs_vfs::VfsNodeType`].
 pub type FileType = axfs_vfs::VfsNodeType;
@@ -123,7 +132,7 @@ impl File {
     }
 
     fn _open_at(dir: Option<&VfsNodeRef>, path: &str, opts: &OpenOptions) -> AxResult<Self> {
-        debug!("open file: {path} {opts:?}");
+        debug!("open file: {} {:?}", path, opts);
         if !opts.is_valid() {
             return ax_err!(InvalidInput);
         }
@@ -260,7 +269,7 @@ impl Directory {
     }
 
     fn _open_dir_at(dir: Option<&VfsNodeRef>, path: &str, opts: &OpenOptions) -> AxResult<Self> {
-        debug!("open dir: {path}");
+        debug!("open dir: {}", path);
         if !opts.read {
             return ax_err!(InvalidInput);
         }

@@ -1,23 +1,57 @@
+// Copyright 2025 The Axvisor Team
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! Root directory of the filesystem
 //!
 //! TODO: it doesn't work very well if the mount points have containment relationships.
 
-use alloc::{string::String, sync::Arc, vec::Vec};
+use alloc::{
+    borrow::ToOwned,
+    collections::BTreeMap,
+    format,
+    string::{String, ToString},
+    sync::Arc,
+    vec::Vec,
+};
 use axerrno::{AxError, AxResult, ax_err};
-use axfs_vfs::{VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsNodeType, VfsOps, VfsResult};
-use axsync::Mutex;
+use axfs_vfs::{VfsDirEntry, VfsNodeAttr, VfsNodeOps, VfsNodeRef, VfsNodeType, VfsOps, VfsResult};
 use lazyinit::LazyInit;
-use scope_local::scope_local;
+use spin::Mutex;
 
-use crate::{api::FileType, fs, mounts};
+use crate::{
+    api::FileType,
+    mounts,
+    partition::{FilesystemType, PartitionInfo, create_filesystem_for_partition},
+};
+
+static CURRENT_DIR_PATH: Mutex<String> = Mutex::new(String::new());
+static CURRENT_DIR: LazyInit<Mutex<VfsNodeRef>> = LazyInit::new();
 
 struct MountPoint {
-    path: &'static str,
+    path: String,
     fs: Arc<dyn VfsOps>,
 }
 
+pub struct RootDirectory {
+    main_fs: Arc<dyn VfsOps>,
+    mounts: Vec<MountPoint>,
+}
+
+static ROOT_DIR: LazyInit<Arc<RootDirectory>> = LazyInit::new();
+
 impl MountPoint {
-    pub fn new(path: &'static str, fs: Arc<dyn VfsOps>) -> Self {
+    pub fn new(path: String, fs: Arc<dyn VfsOps>) -> Self {
         Self { path, fs }
     }
 }
@@ -28,13 +62,6 @@ impl Drop for MountPoint {
     }
 }
 
-struct RootDirectory {
-    main_fs: Arc<dyn VfsOps>,
-    mounts: Vec<MountPoint>,
-}
-
-static ROOT_DIR: LazyInit<Arc<RootDirectory>> = LazyInit::new();
-
 impl RootDirectory {
     pub const fn new(main_fs: Arc<dyn VfsOps>) -> Self {
         Self {
@@ -43,7 +70,7 @@ impl RootDirectory {
         }
     }
 
-    pub fn mount(&mut self, path: &'static str, fs: Arc<dyn VfsOps>) -> AxResult {
+    pub fn mount(&mut self, path: &str, fs: Arc<dyn VfsOps>) -> AxResult {
         if path == "/" {
             return ax_err!(InvalidInput, "cannot mount root filesystem");
         }
@@ -56,7 +83,7 @@ impl RootDirectory {
         // create the mount point in the main filesystem if it does not exist
         self.main_fs.root_dir().create(path, FileType::Dir)?;
         fs.mount(path, self.main_fs.root_dir().lookup(path)?)?;
-        self.mounts.push(MountPoint::new(path, fs));
+        self.mounts.push(MountPoint::new(path.to_owned(), fs));
         Ok(())
     }
 
@@ -72,29 +99,49 @@ impl RootDirectory {
     where
         F: FnOnce(Arc<dyn VfsOps>, &str) -> AxResult<T>,
     {
-        debug!("lookup at root: {path}");
+        debug!("lookup at root: {}", path);
+        let normalized_path = self.normalize_path(path);
+
+        // Find the best matching mount point
+        if let Some((mount_fs, rest_path)) = self.find_best_mount(&normalized_path) {
+            f(mount_fs, rest_path)
+        } else {
+            // No mount point matched, use main filesystem
+            f(self.main_fs.clone(), &normalized_path)
+        }
+    }
+
+    /// Normalize path by trimming leading '/' and handling './' prefix
+    fn normalize_path<'a>(&self, path: &'a str) -> &'a str {
         let path = path.trim_matches('/');
         if let Some(rest) = path.strip_prefix("./") {
-            return self.lookup_mounted_fs(rest, f);
+            rest
+        } else {
+            path
         }
+    }
 
-        let mut idx = 0;
+    /// Find the best matching mount point for the given path
+    /// Returns (filesystem, remaining_path) if a match is found
+    fn find_best_mount<'a>(&self, path: &'a str) -> Option<(Arc<dyn VfsOps>, &'a str)> {
+        let mut best_match = None;
         let mut max_len = 0;
 
-        // Find the filesystem that has the longest mounted path match
-        // TODO: more efficient, e.g. trie
         for (i, mp) in self.mounts.iter().enumerate() {
-            // skip the first '/'
-            if path.starts_with(&mp.path[1..]) && mp.path.len() - 1 > max_len {
+            // Skip the first '/' in mount path for comparison
+            let mount_path = &mp.path[1..];
+
+            if path.starts_with(mount_path) && mp.path.len() - 1 > max_len {
                 max_len = mp.path.len() - 1;
-                idx = i;
+                best_match = Some(i);
             }
         }
 
-        if max_len == 0 {
-            f(self.main_fs.clone(), path) // not matched any mount point
+        if let Some(idx) = best_match {
+            let rest_path = &path[max_len..];
+            Some((self.mounts[idx].fs.clone(), rest_path))
         } else {
-            f(self.mounts[idx].fs.clone(), &path[max_len..]) // matched at `idx`
+            None
         }
     }
 }
@@ -130,85 +177,281 @@ impl VfsNodeOps for RootDirectory {
         })
     }
 
-    fn rename(&self, src_path: &str, dst_path: &str) -> VfsResult {
-        self.lookup_mounted_fs(src_path, |fs, rest_path| {
-            if rest_path.is_empty() {
-                ax_err!(PermissionDenied) // cannot rename mount points
-            } else {
-                fs.root_dir().rename(rest_path, dst_path)
+    fn read_dir(&self, start_idx: usize, dirents: &mut [VfsDirEntry]) -> VfsResult<usize> {
+        let mut all_entries = Vec::new();
+
+        // Add mount points
+        for mp in &self.mounts {
+            let name = &mp.path[1..];
+            all_entries.push((name.to_string(), VfsNodeType::Dir));
+        }
+
+        // Add from main_fs
+        let mut main_dirents = Vec::with_capacity(64);
+        for _ in 0..64 {
+            main_dirents.push(VfsDirEntry::default());
+        }
+        let main_count = self.main_fs.root_dir().read_dir(0, &mut main_dirents)?;
+        for i in 0..main_count {
+            let name_bytes = main_dirents[i].name_as_bytes();
+            if let Ok(name_str) = core::str::from_utf8(name_bytes) {
+                if !name_str.is_empty() {
+                    let ty = main_dirents[i].entry_type();
+                    all_entries.push((name_str.to_string(), ty));
+                }
             }
-        })
+        }
+
+        // Unique
+        let mut unique = BTreeMap::new();
+        for (name, ty) in all_entries {
+            unique.insert(name, ty);
+        }
+
+        let unique_vec: Vec<_> = unique.into_iter().collect();
+        let mut count = 0;
+        for (name, ty) in unique_vec.iter().skip(start_idx) {
+            if count >= dirents.len() {
+                break;
+            }
+            dirents[count] = VfsDirEntry::new(name, *ty);
+            count += 1;
+        }
+        Ok(count)
     }
 }
 
-#[derive(Clone)]
-struct CurrentDir {
-    path: String,
-    node: VfsNodeRef,
+pub(crate) fn init_rootfs_with_ramfs() {
+    info!("Initializing root filesystem with ramfs");
+    let main_fs = mounts::ramfs();
+    let root_dir = RootDirectory::new(main_fs);
+    mount_virtual_fs(root_dir);
 }
 
-impl Default for CurrentDir {
-    fn default() -> Self {
-        Self {
-            path: String::from("/"),
-            node: ROOT_DIR.clone(),
+/// Find and create root filesystem from partitions
+fn find_root_filesystem(
+    disk: &Arc<crate::dev::Disk>,
+    partitions: &[PartitionInfo],
+    root_partition_index: Option<usize>,
+) -> (Option<Arc<dyn VfsOps>>, Option<usize>) {
+    // Try to use the specified partition index first
+    if let Some(index) = root_partition_index {
+        if let Some((fs, idx)) = try_use_specified_partition(disk, partitions, index) {
+            return (Some(fs), Some(idx));
+        }
+    }
+
+    // Fall back to first partition with supported filesystem
+    if let Some((fs, idx)) = find_first_supported_partition(disk, partitions) {
+        return (Some(fs), Some(idx));
+    }
+
+    (None, None)
+}
+
+/// Try to use the specified partition as root filesystem
+fn try_use_specified_partition(
+    disk: &Arc<crate::dev::Disk>,
+    partitions: &[PartitionInfo],
+    index: usize,
+) -> Option<(Arc<dyn VfsOps>, usize)> {
+    if index >= partitions.len() {
+        warn!(
+            "Specified partition index {} is out of range (total partitions: {})",
+            index,
+            partitions.len()
+        );
+        return None;
+    }
+
+    let partition = &partitions[index];
+    if partition.filesystem_type.is_none() {
+        warn!(
+            "Specified partition '{}' has no supported filesystem",
+            partition.name
+        );
+        return None;
+    }
+
+    match create_filesystem_for_partition((**disk).clone(), partition) {
+        Ok(fs) => {
+            info!(
+                "Using specified partition '{}' ({:?}) as root filesystem",
+                partition.name,
+                partition.filesystem_type.unwrap_or(FilesystemType::Unknown)
+            );
+            Some((fs, index))
+        }
+        Err(e) => {
+            warn!(
+                "Failed to create filesystem for specified partition '{}': {:?}",
+                partition.name, e
+            );
+            None
         }
     }
 }
 
-scope_local! {
-    static CURRENT_DIR: Mutex<CurrentDir> = Mutex::new(CurrentDir::default());
-}
-
-pub(crate) fn init_rootfs(disk: crate::dev::Disk) {
-    cfg_if::cfg_if! {
-        if #[cfg(feature = "myfs")] { // override the default filesystem
-            let main_fs = fs::myfs::new_myfs(disk);
-        } else if #[cfg(feature = "ext4fs")] {
-            static EXT4_FS: LazyInit<Arc<fs::ext4fs::Ext4FileSystem>> = LazyInit::new();
-            EXT4_FS.init_once(Arc::new(fs::ext4fs::Ext4FileSystem::new(disk)));
-            let main_fs = EXT4_FS.clone();
-        } else if #[cfg(feature = "fatfs")] {
-            static FAT_FS: LazyInit<Arc<fs::fatfs::FatFileSystem>> = LazyInit::new();
-            FAT_FS.init_once(Arc::new(fs::fatfs::FatFileSystem::new(disk)));
-            FAT_FS.init();
-            let main_fs = FAT_FS.clone();
+/// Find the first partition with a supported filesystem
+fn find_first_supported_partition(
+    disk: &Arc<crate::dev::Disk>,
+    partitions: &[PartitionInfo],
+) -> Option<(Arc<dyn VfsOps>, usize)> {
+    for (i, partition) in partitions.iter().enumerate() {
+        if partition.filesystem_type.is_some() {
+            match create_filesystem_for_partition((**disk).clone(), partition) {
+                Ok(fs) => {
+                    info!(
+                        "Using partition '{}' ({:?}) as root filesystem",
+                        partition.name,
+                        partition.filesystem_type.unwrap_or(FilesystemType::Unknown)
+                    );
+                    return Some((fs, i));
+                }
+                Err(e) => {
+                    warn!(
+                        "Failed to create filesystem for partition '{}': {:?}",
+                        partition.name, e
+                    );
+                }
+            }
         }
     }
+    None
+}
+
+/// Mount additional partitions (non-root partitions)
+fn mount_additional_partitions(
+    disk: &Arc<crate::dev::Disk>,
+    root_dir: &mut RootDirectory,
+    partitions: &[PartitionInfo],
+    root_partition_index: Option<usize>,
+) {
+    // Create /boot directory first if it doesn't exist
+    if let Err(e) = root_dir.main_fs.root_dir().create("/boot", FileType::Dir) {
+        warn!("Failed to create /boot directory: {:?}", e);
+    }
+
+    // Mount all non-root partitions
+    for (i, partition) in partitions.iter().enumerate() {
+        // Skip root partition
+        if Some(i) == root_partition_index {
+            continue;
+        }
+
+        // Only mount partitions with supported filesystems
+        if partition.filesystem_type.is_some() {
+            mount_single_partition(disk, root_dir, partition);
+        }
+    }
+}
+
+/// Mount a single partition
+fn mount_single_partition(
+    disk: &Arc<crate::dev::Disk>,
+    root_dir: &mut RootDirectory,
+    partition: &PartitionInfo,
+) {
+    match create_filesystem_for_partition((**disk).clone(), partition) {
+        Ok(fs) => {
+            // Determine mount path based on partition name
+            let mount_path = if partition.name.to_lowercase().contains("boot") {
+                String::from("/boot")
+            } else {
+                format!("/{}", partition.name)
+            };
+
+            info!(
+                "Mounting partition '{}' at '{}'",
+                partition.name, mount_path
+            );
+
+            // Create mount point directory in root filesystem
+            if let Err(e) = root_dir
+                .main_fs
+                .root_dir()
+                .create(&mount_path, FileType::Dir)
+            {
+                warn!("Failed to create mount point '{}': {:?}", mount_path, e);
+                return;
+            }
+
+            // Mount filesystem
+            if let Err(e) = root_dir.mount(&mount_path, fs) {
+                warn!(
+                    "Failed to mount partition '{}' at '{}': {:?}",
+                    partition.name, mount_path, e
+                );
+            }
+        }
+        Err(e) => {
+            warn!(
+                "Failed to create filesystem for partition '{}': {:?}",
+                partition.name, e
+            );
+        }
+    }
+}
+
+/// Initialize root filesystem with dynamic partition detection and specified root partition
+pub(crate) fn init_rootfs_with_partitions(
+    disk: Arc<crate::dev::Disk>,
+    partitions: Vec<PartitionInfo>,
+    root_partition_index: Option<usize>,
+) -> bool {
+    info!(
+        "Initializing root filesystem with {} partitions",
+        partitions.len()
+    );
+
+    // Find and create the root filesystem
+    let (main_fs, actual_root_partition_index) =
+        find_root_filesystem(&disk, &partitions, root_partition_index);
+
+    // If no supported filesystem found, fall back to ramfs
+    let main_fs = match main_fs {
+        Some(fs) => fs,
+        None => {
+            warn!("No supported filesystem found in partitions, mount ramfs as rootfs");
+            mounts::ramfs()
+        }
+    };
 
     let mut root_dir = RootDirectory::new(main_fs);
 
-    #[cfg(feature = "devfs")]
-    root_dir
-        .mount("/dev", mounts::devfs())
-        .expect("failed to mount devfs at /dev");
+    // Mount additional partitions
+    mount_additional_partitions(
+        &disk,
+        &mut root_dir,
+        &partitions,
+        actual_root_partition_index,
+    );
 
-    #[cfg(feature = "ramfs")]
-    root_dir
-        .mount("/tmp", mounts::ramfs())
-        .expect("failed to mount ramfs at /tmp");
+    mount_virtual_fs(root_dir);
+    true
+}
 
-    // Mount another ramfs as procfs
-    #[cfg(feature = "procfs")]
-    root_dir // should not fail
+pub fn mount_virtual_fs(mut root_dir: RootDirectory) {
+    // Mount virtual filesystems
+    if let Err(e) = root_dir
         .mount("/proc", mounts::procfs().unwrap())
-        .expect("fail to mount procfs at /proc");
+        .and_then(|_| root_dir.mount("/sys", mounts::sysfs().unwrap()))
+    {
+        panic!("Failed to mount virtual filesystems: {:?}", e);
+    }
 
-    // Mount another ramfs as sysfs
-    #[cfg(feature = "sysfs")]
-    root_dir // should not fail
-        .mount("/sys", mounts::sysfs().unwrap())
-        .expect("fail to mount sysfs at /sys");
-
-    ROOT_DIR.init_once(Arc::new(root_dir));
+    // Initialize global state
+    let root_dir = Arc::new(root_dir);
+    ROOT_DIR.init_once(root_dir.clone());
+    CURRENT_DIR.init_once(Mutex::new(ROOT_DIR.clone()));
+    *CURRENT_DIR_PATH.lock() = "/".into();
 }
 
 fn parent_node_of(dir: Option<&VfsNodeRef>, path: &str) -> VfsNodeRef {
     if path.starts_with('/') {
         ROOT_DIR.clone()
     } else {
-        dir.cloned()
-            .unwrap_or_else(|| CURRENT_DIR.lock().node.clone())
+        dir.cloned().unwrap_or_else(|| CURRENT_DIR.lock().clone())
     }
 }
 
@@ -216,7 +459,7 @@ pub(crate) fn absolute_path(path: &str) -> AxResult<String> {
     if path.starts_with('/') {
         Ok(axfs_vfs::path::canonicalize(path))
     } else {
-        let path = CURRENT_DIR.lock().path.clone() + path;
+        let path = CURRENT_DIR_PATH.lock().clone() + path;
         Ok(axfs_vfs::path::canonicalize(&path))
     }
 }
@@ -294,7 +537,7 @@ pub(crate) fn remove_dir(dir: Option<&VfsNodeRef>, path: &str) -> AxResult {
 }
 
 pub(crate) fn current_dir() -> AxResult<String> {
-    Ok(CURRENT_DIR.lock().path.clone())
+    Ok(CURRENT_DIR_PATH.lock().clone())
 }
 
 pub(crate) fn set_current_dir(path: &str) -> AxResult {
@@ -303,7 +546,8 @@ pub(crate) fn set_current_dir(path: &str) -> AxResult {
         abs_path += "/";
     }
     if abs_path == "/" {
-        *CURRENT_DIR.lock() = CurrentDir::default();
+        *CURRENT_DIR.lock() = ROOT_DIR.clone();
+        *CURRENT_DIR_PATH.lock() = "/".into();
         return Ok(());
     }
 
@@ -314,10 +558,8 @@ pub(crate) fn set_current_dir(path: &str) -> AxResult {
     } else if !attr.perm().owner_executable() {
         ax_err!(PermissionDenied)
     } else {
-        *CURRENT_DIR.lock() = CurrentDir {
-            path: abs_path,
-            node,
-        };
+        *CURRENT_DIR.lock() = node;
+        *CURRENT_DIR_PATH.lock() = abs_path;
         Ok(())
     }
 }
