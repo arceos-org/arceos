@@ -94,4 +94,5 @@ axerrno.workspace = true
 axfeat.workspace = true
 axio.workspace = true
 kspin.workspace = true
+lazyinit.workspace = true
 lock_api.workspace = true

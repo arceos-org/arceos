@@ -25,13 +25,13 @@ use axfs_vfs::{
 };
 use rsext4::{
     Ext4FileSystem as Rsext4FileSystem, Jbd2Dev,
+    api::{OpenFile, fs_mount, lseek, open, read_at},
+    dir::{get_inode_with_num, mkdir},
+    entries::classic_dir::list_entries,
+    error::{BlockDevError, BlockDevResult},
+    file::{delete_dir, mkfile, mv, truncate, unlink, write_file},
+    loopfile::resolve_inode_block_allextend,
 };
-use rsext4::api::{fs_mount, lseek, open, OpenFile, read_at};
-use rsext4::error::{BlockDevError, BlockDevResult};
-use rsext4::dir::{get_inode_with_num, mkdir};
-use rsext4::entries::classic_dir::list_entries;
-use rsext4::file::{delete_dir, mkfile, mv, truncate, unlink, write_file};
-use rsext4::loopfile::resolve_inode_block_allextend;
 use spin::Mutex;
 
 use crate::dev::{Disk, Partition};
@@ -56,13 +56,6 @@ unsafe impl Sync for Ext4FileSystemPartition {}
 unsafe impl Send for Ext4FileSystemPartition {}
 
 impl Ext4FileSystem {
-    #[cfg(feature = "use-ramdisk")]
-    #[allow(dead_code)]
-    pub fn new(mut disk: Disk) -> Self {
-        unimplemented!()
-    }
-
-    #[cfg(not(feature = "use-ramdisk"))]
     #[allow(dead_code)]
     pub fn new(disk: Disk) -> Self {
         info!(

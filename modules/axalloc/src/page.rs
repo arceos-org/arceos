@@ -1,4 +1,4 @@
-use axerrno::{AxError, AxResult};
+use axerrno::AxResult;
 use memory_addr::{PhysAddr, VirtAddr};
 
 use crate::{PAGE_SIZE, UsageKind, global_allocator};
@@ -17,7 +17,7 @@ impl GlobalPage {
     pub fn alloc() -> AxResult<Self> {
         let vaddr = global_allocator()
             .alloc_pages(1, PAGE_SIZE, UsageKind::Global)
-            .map_err(|_| axerrno::AxError::from(AxError::NoMemory))?;
+            .map_err(|_| axerrno::AxError::NoMemory)?;
         Ok(Self {
             start_vaddr: vaddr.into(),
             num_pages: 1,
@@ -35,7 +35,7 @@ impl GlobalPage {
     pub fn alloc_contiguous(num_pages: usize, alignment: usize) -> AxResult<Self> {
         let vaddr = global_allocator()
             .alloc_pages(num_pages, alignment, UsageKind::Global)
-            .map_err(|_| axerrno::AxError::from(AxError::NoMemory))?;
+            .map_err(|_| axerrno::AxError::NoMemory)?;
         Ok(Self {
             start_vaddr: vaddr.into(),
             num_pages,

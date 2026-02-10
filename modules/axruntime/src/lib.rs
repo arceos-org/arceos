@@ -263,21 +263,35 @@ fn init_allocator() {
         }
     }
 
-    struct AddrTranslatorImpl;
-    impl axalloc::AddrTranslator for AddrTranslatorImpl {
-        fn virt_to_phys(&self, va: usize) -> Option<usize> {
-            Some(virt_to_phys(va.into()).as_usize())
+    #[cfg(feature = "axvisor")]
+    {
+        struct AddrTranslatorImpl;
+        impl axalloc::AddrTranslator for AddrTranslatorImpl {
+            fn virt_to_phys(&self, va: usize) -> Option<usize> {
+                Some(virt_to_phys(va.into()).as_usize())
+            }
+        }
+
+        static TRANSLATOR: AddrTranslatorImpl = AddrTranslatorImpl;
+
+        for r in memory_regions() {
+            if r.flags.contains(MemRegionFlags::FREE) && r.paddr == max_region_paddr {
+                axalloc::global_init(phys_to_virt(r.paddr).as_usize(), r.size, &TRANSLATOR);
+                break;
+            }
         }
     }
 
-    static TRANSLATOR: AddrTranslatorImpl = AddrTranslatorImpl;
-
-    for r in memory_regions() {
-        if r.flags.contains(MemRegionFlags::FREE) && r.paddr == max_region_paddr {
-            axalloc::global_init(phys_to_virt(r.paddr).as_usize(), r.size, &TRANSLATOR);
-            break;
+    #[cfg(not(feature = "axvisor"))]
+    {
+        for r in memory_regions() {
+            if r.flags.contains(MemRegionFlags::FREE) && r.paddr == max_region_paddr {
+                axalloc::global_init(phys_to_virt(r.paddr).as_usize(), r.size);
+                break;
+            }
         }
     }
+
     for r in memory_regions() {
         if r.flags.contains(MemRegionFlags::FREE) && r.paddr != max_region_paddr {
             axalloc::global_add_memory(phys_to_virt(r.paddr).as_usize(), r.size)

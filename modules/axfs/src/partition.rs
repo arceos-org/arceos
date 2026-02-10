@@ -18,7 +18,7 @@
 //! filesystem types on each partition.
 
 use alloc::{format, string::String, sync::Arc, vec, vec::Vec};
-use axerrno::{AxResult, ax_err};
+use axerrno::{AxError, AxResult};
 use axfs_vfs::VfsOps;
 use log::{debug, info, warn};
 
@@ -139,12 +139,12 @@ fn parse_gpt_partitions(disk: &mut Disk) -> AxResult<Vec<PartitionInfo>> {
     let mut header_data = [0u8; 512];
     disk.set_position(512); // LBA 1
     if read_exact(disk, &mut header_data).is_err() {
-        return ax_err!(InvalidData, "Failed to read GPT header");
+        return Err(AxError::InvalidData);
     }
 
     // Check GPT signature
     if &header_data[0..8] != b"EFI PART" {
-        return ax_err!(InvalidData, "Invalid GPT signature");
+        return Err(AxError::InvalidData);
     }
 
     // Parse GPT header manually to avoid size mismatch
@@ -427,7 +427,7 @@ pub fn create_filesystem_for_partition(
         }
         Some(FilesystemType::Unknown) | None => {
             warn!("Unknown filesystem type for partition '{}'", partition.name);
-            ax_err!(Unsupported, "Unknown filesystem type")
+            Err(AxError::Unsupported)
         }
     }
 }
