@@ -13,6 +13,7 @@ documentation = "https://arceos-org.github.io/arceos/axruntime/index.html"
 default = []
 
 alloc = ["axalloc"]
+dma = ["paging"]
 driver-dyn = ["axdriver/dyn", "paging"]
 ipi = ["dep:axipi"]
 irq = ["axhal/irq", "axtask?/irq", "percpu"]
@@ -22,9 +23,11 @@ tls = ["axhal/tls", "axtask?/tls"]
 
 display = ["axdriver", "axdisplay"]
 fs = ["axdriver", "axfs"]
+input = ["axdriver", "axinput"]
 multitask = ["axtask/multitask"]
 net = ["axdriver", "axnet"]
 rtc = []
+vsock = ["net", "axdriver"]
 
 [dependencies]
 axalloc = {workspace = true, optional = true}
@@ -34,6 +37,7 @@ axdriver = {workspace = true, optional = true}
 axerrno = "0.1"
 axfs = {workspace = true, optional = true}
 axhal = {workspace = true}
+axinput = {workspace = true, optional = true}
 axipi = {workspace = true, optional = true}
 axlog = {workspace = true}
 axmm = {workspace = true, optional = true}
