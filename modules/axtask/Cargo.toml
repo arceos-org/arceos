@@ -8,6 +8,7 @@ license.workspace = true
 homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/modules/axtask"
 documentation = "https://arceos-org.github.io/arceos/axtask/index.html"
+readme = "README.md"
 
 [features]
 default = []
@@ -62,4 +63,4 @@ percpu = { workspace = true, optional = true }
 
 [dev-dependencies]
 axhal = { workspace = true, features = ["fp-simd"] }
-axtask = { workspace = true, features = ["test", "multitask"] }
+axtask = { path = ".", features = ["test", "multitask"] }

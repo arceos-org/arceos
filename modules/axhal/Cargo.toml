@@ -8,6 +8,7 @@ license.workspace = true
 homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/modules/axhal"
 documentation = "https://arceos-org.github.io/arceos/axhal/index.html"
+readme = "README.md"
 
 [features]
 smp = [
