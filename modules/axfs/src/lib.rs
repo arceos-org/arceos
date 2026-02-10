@@ -27,14 +27,25 @@ mod root;
 pub mod api;
 pub mod fops;
 
+#[cfg(feature = "fat")]
+mod disk;
+
+#[cfg(feature = "monolitic")]
+mod highlevel;
+#[cfg(feature = "monolitic")]
+mod monofs;
+#[cfg(feature = "monolitic")]
+pub use highlevel::*;
+
 use crate::partition::PartitionInfo;
 use alloc::{
     string::{String, ToString},
     sync::Arc,
     vec::Vec,
 };
-use axdriver::{AxDeviceContainer, prelude::*};
+use axdriver::{AxBlockDevice, AxDeviceContainer, prelude::*};
 
+#[cfg(not(feature = "monolitic"))]
 /// Initializes filesystems by block devices.
 pub fn init_filesystems(mut blk_devs: AxDeviceContainer<AxBlockDevice>, bootargs: Option<&str>) {
     info!("Initialize filesystems...");
@@ -59,6 +70,20 @@ pub fn init_filesystems(mut blk_devs: AxDeviceContainer<AxBlockDevice>, bootargs
             warn!("Failed to scan GPT partitions: {:?}", e);
         }
     }
+}
+
+#[cfg(feature = "monolitic")]
+pub fn init_filesystems(mut block_devs: AxDeviceContainer<AxBlockDevice>) {
+    info!("Initialize filesystem subsystem...");
+
+    let dev = block_devs.take_one().expect("No block device found!");
+    info!("  use block device 0: {:?}", dev.device_name());
+
+    let fs = monofs::new_default(dev).expect("Failed to initialize filesystem");
+    info!("  filesystem type: {:?}", fs.name());
+
+    let mp = axfs_ng_vfs::Mountpoint::new_root(&fs);
+    ROOT_FS_CONTEXT.call_once(|| FsContext::new(mp.root_location()));
 }
 
 /// Initialize filesystems with detected partitions

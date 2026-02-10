@@ -9,9 +9,10 @@ version.workspace = true
 
 [features]
 default = []
-ext4 = []
-fat = []
-std = []
+monolitic = []
+fat = ["dep:fatfs"]
+ext4 = ["dep:lwext4_rust"]
+std = ["lwext4_rust?/std"]
 times = []
 use-ramdisk = [] # TODO: init ramdisk
 
@@ -51,6 +52,18 @@ features = [
   "log_level_trace",
   "unicode",
 ]
+
+[dependencies.lwext4_rust]
+version = "0.3.1-preview.1"
+default-features = false
+optional = true
+
+[dependencies.fatfs]
+version = "0.4.1-preview.2"
+package = "starry-fatfs"
+default-features = false
+optional = true
+features = ["alloc", "lfn", "log_level_trace", "unicode"]
 
 [dev-dependencies]
 axdriver = {workspace = true, features = ["block", "ramdisk"]}
