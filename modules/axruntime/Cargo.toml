@@ -64,7 +64,7 @@ chrono = {version = "0.4.38", default-features = false}
 indoc = "2"
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
-axplat-x86-qemu-q35 = {version ="0.1.0-preview.1", default-features = false, features = ["reboot-on-system-off"], optional = true}
+axplat-x86-qemu-q35 = {version ="0.1.0-preview.1", default-features = false, features = ["reboot-on-system-off", "irq", "smp"], optional = true}
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 axplat-dyn = { version = "0.4", features = ["irq", "smp", "hv"], optional = true }
