@@ -25,5 +25,7 @@ fn main() {
             .expect("Couldn't write bindings!");
     }
 
-    gen_c_to_rust_bindings("ctypes.h", "src/libctypes_gen.rs");
+    let out_dir = std::env::var("OUT_DIR").unwrap();
+    let out_path = format!("{out_dir}/libctypes_gen.rs");
+    gen_c_to_rust_bindings("ctypes.h", &out_path);
 }
