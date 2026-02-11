@@ -21,7 +21,7 @@ kspin.workspace = true
 lock_api.workspace = true
 
 [dev-dependencies]
-axsync = { workspace = true, features = ["multitask"] }
+axsync = { path = ".", features = ["multitask"] }
 axtask = { workspace = true, features = ["test"] }
 # FIXME: `rand` crate can not be used since https://github.com/google/zerocopy/pull/2574
 fastrand = "2.3"

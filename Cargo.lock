@@ -784,7 +784,7 @@ dependencies = [
 
 [[package]]
 name = "axlog"
-version = "0.2.2-hv.4"
+version = "0.2.2-preview.1"
 dependencies = [
  "axlog",
  "cfg-if",

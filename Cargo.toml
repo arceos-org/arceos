@@ -60,7 +60,7 @@ axfs = { version = "=0.2.2-hv.4", path = "modules/axfs" }
 axhal = { version = "=0.2.2-hv.4", path = "modules/axhal" }
 axinput = { version = "=0.2.2-hv.4", path = "modules/axinput" }
 axipi = { version = "=0.2.2-hv.4", path = "modules/axipi" }
-axlog = { version = "=0.2.2-hv.4", path = "modules/axlog" }
+axlog = { version = "=0.2.2-preview.1", path = "modules/axlog" }
 axmm = { version = "=0.2.2-hv.4", path = "modules/axmm" }
 axnet = { version = "=0.2.2-hv.4", path = "modules/axnet" }
 axruntime = { version = "=0.2.2-hv.4", path = "modules/axruntime" }

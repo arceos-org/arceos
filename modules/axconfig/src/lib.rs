@@ -31,5 +31,5 @@ pub use driver_dyn_config::*;
 #[cfg(not(feature = "driver-dyn"))]
 axconfig_macros::include_configs!(
     path_env = "AX_CONFIG_PATH",
-    fallback = "../../configs/dummy.toml"
+    fallback = "dummy.toml"
 );
