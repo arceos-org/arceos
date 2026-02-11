@@ -429,7 +429,10 @@ pub fn create_filesystem_for_partition(
             }
             #[cfg(not(feature = "ext4"))]
             {
-                warn!("ext4 support is not enabled for partition '{}'", partition.name);
+                warn!(
+                    "ext4 support is not enabled for partition '{}'",
+                    partition.name
+                );
                 Err(AxError::Unsupported)
             }
         }
