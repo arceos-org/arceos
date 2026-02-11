@@ -109,6 +109,16 @@ typedef struct {{
             .expect("Couldn't write bindings!");
     }
 
-    gen_pthread_mutex("../../ulib/axlibc/include/ax_pthread_mutex.h").unwrap();
-    gen_c_to_rust_bindings("ctypes.h", "src/ctypes_gen.rs");
+    let axlibc_include = std::path::Path::new("../../ulib/axlibc/include");
+    if axlibc_include.exists() {
+        gen_pthread_mutex(axlibc_include.join("ax_pthread_mutex.h").to_str().unwrap()).unwrap();
+        gen_c_to_rust_bindings("ctypes.h", "src/ctypes_gen.rs");
+    } else {
+        // During `cargo publish` verification, the external headers are not
+        // available. Use the pre-generated ctypes_gen.rs shipped in the crate.
+        eprintln!(
+            "cargo:warning=axlibc include directory not found, \
+             skipping ctypes_gen.rs regeneration"
+        );
+    }
 }
