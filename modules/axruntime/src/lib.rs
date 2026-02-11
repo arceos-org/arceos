@@ -36,11 +36,14 @@
 #[macro_use]
 extern crate axlog;
 
-#[cfg(target_arch = "x86_64")]
+#[cfg(all(target_arch = "x86_64", feature = "driver-dyn"))]
 extern crate axplat_x86_qemu_q35;
 
-#[cfg(target_arch = "aarch64")]
+#[cfg(all(target_arch = "aarch64", feature = "driver-dyn"))]
 extern crate axplat_dyn;
+
+#[cfg(all(target_arch = "aarch64", feature = "driver-dyn"))]
+extern crate somehal;
 
 #[cfg(all(target_os = "none", not(test)))]
 mod lang_items;
@@ -62,7 +65,7 @@ const LOGO: &str = r#"
 d88P     888 888      "Y8888P  "Y8888   "Y88888P"   "Y8888P"
 "#;
 
-unsafe extern {
+unsafe extern "C" {
     /// Application's entry point.
     fn main();
 }
@@ -108,8 +111,16 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 
 static INITED_CPUS: AtomicUsize = AtomicUsize::new(0);
 
+#[cfg(feature = "driver-dyn")]
 fn is_init_ok() -> bool {
-    INITED_CPUS.load(Ordering::Acquire) == cpu_count()
+    let cpu_num = cpu_count();
+    INITED_CPUS.load(Ordering::Acquire) == cpu_num
+}
+
+#[cfg(not(feature = "driver-dyn"))]
+fn is_init_ok() -> bool {
+    let cpu_num = axconfig::plat::CPU_NUM;
+    INITED_CPUS.load(Ordering::Acquire) == cpu_num
 }
 
 /// The main entry point of the ArceOS runtime.
@@ -129,18 +140,29 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
     axhal::init_early(cpu_id, arg);
 
     ax_println!("{}", LOGO);
+    #[cfg(feature = "driver-dyn")]
     ax_println!("smp = {}", cpu_count());
 
-    // ax_println!(
-    //     "\
-    //     arch = {}\n\
-    //     platform = {}\n\
-    //     target = {}\n\
-    //     build_mode = {}\n\
-    //     smp = {}\n\
-    //     ",
+    #[cfg(not(feature = "driver-dyn"))]
+    ax_println!(
+        indoc::indoc! {"
+            arch = {}
+            platform = {}
+            target = {}
+            build_mode = {}
+            log_level = {}
+            backtrace = {}
+            smp = {}
+        "},
+        axconfig::ARCH,
+        axconfig::PLATFORM,
+        option_env!("AX_TARGET").unwrap_or(""),
+        option_env!("AX_MODE").unwrap_or(""),
+        option_env!("AX_LOG").unwrap_or(""),
+        axbacktrace::is_enabled(),
+        axconfig::plat::CPU_NUM,
+    );
 
-    // );
     #[cfg(feature = "rtc")]
     ax_println!(
         "Boot at {}\n",
@@ -343,6 +365,7 @@ fn init_tls() {
     core::mem::forget(main_tls);
 }
 
+#[cfg(feature = "driver-dyn")]
 fn smp() -> Option<usize> {
     let mut smp = None;
     let s = option_env!("AXVISOR_SMP");
@@ -354,6 +377,7 @@ fn smp() -> Option<usize> {
     smp
 }
 
+#[cfg(feature = "driver-dyn")]
 pub fn cpu_count() -> usize {
     let mut cpu_count;
 

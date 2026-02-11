@@ -22,7 +22,8 @@ axdriver = {workspace = true, features = ["block"]}
 axdriver_block = "0.1.4-preview.3"
 axerrno = {workspace = true}
 axfs-ng-vfs = {workspace = true}
-axfs_ramfs = {version = "0.1"}
+axfs_devfs = { version = "0.1" }
+axfs_ramfs = { version = "0.1" }
 axfs_vfs = "0.1"
 axhal = {workspace = true}
 axio = {workspace = true, features = ["alloc"]}

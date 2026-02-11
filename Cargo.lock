@@ -442,6 +442,7 @@ dependencies = [
  "axconfig",
  "axerrno 0.2.2",
  "axhal",
+ "axmm",
  "crate_interface",
  "kspin",
  "log",
@@ -626,6 +627,7 @@ dependencies = [
  "axerrno 0.2.2",
  "axfatfs",
  "axfs-ng-vfs",
+ "axfs_devfs",
  "axfs_ramfs",
  "axfs_vfs",
  "axhal",
@@ -665,6 +667,17 @@ dependencies = [
  "log",
  "smallvec",
  "spin 0.10.0",
+]
+
+[[package]]
+name = "axfs_devfs"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81b87ae981272ca8d5d8f106a4452c63f4b5ac36e17ee8f848ee1b250538b9f8"
+dependencies = [
+ "axfs_vfs",
+ "log",
+ "spin 0.9.8",
 ]
 
 [[package]]
@@ -1122,6 +1135,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "axplat-x86-qemu-q35"
+version = "0.1.0-preview.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "54251e2e2f1502d3e50c0b9bef4108595eee45ac88503dd8a8e6a3df9d74551e"
+dependencies = [
+ "axconfig-macros",
+ "axcpu 0.3.0-preview.3",
+ "axplat 0.3.0-preview.2",
+ "bitflags 2.10.0",
+ "heapless 0.9.2",
+ "int_ratio",
+ "kspin",
+ "lazyinit",
+ "log",
+ "multiboot",
+ "percpu",
+ "raw-cpuid 11.6.0",
+ "uart_16550",
+ "x2apic",
+ "x86",
+ "x86_64",
+]
+
+[[package]]
 name = "axpoll"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1137,6 +1174,7 @@ name = "axruntime"
 version = "0.2.2-hv.4"
 dependencies = [
  "axalloc",
+ "axbacktrace",
  "axconfig",
  "axdisplay",
  "axdriver",
@@ -1150,11 +1188,13 @@ dependencies = [
  "axnet",
  "axplat 0.3.0-preview.2",
  "axplat-dyn",
+ "axplat-x86-qemu-q35",
  "axtask",
  "cfg-if",
  "chrono",
  "crate_interface",
  "ctor_bare",
+ "indoc",
  "log",
  "percpu",
  "somehal",
@@ -2598,6 +2638,15 @@ dependencies = [
  "hashbrown 0.16.1",
  "serde",
  "serde_core",
+]
+
+[[package]]
+name = "indoc"
+version = "2.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "79cf5c93f93228cf8efb3ba362535fb11199ac548a09ce117c9b1adc3030d706"
+dependencies = [
+ "rustversion",
 ]
 
 [[package]]
@@ -4078,9 +4127,9 @@ dependencies = [
 
 [[package]]
 name = "somehal"
-version = "0.4.9"
+version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e60ad72042a8bde901931ae2891b9f70c02c01931001ab5d0cdb2c4301a2a47c"
+checksum = "13b5f763b9ab0ce9efd2d8eba9e5b457f93f6426ede68435fe9567cf7681f29d"
 dependencies = [
  "aarch64-cpu 10.0.0",
  "aarch64-cpu-ext",

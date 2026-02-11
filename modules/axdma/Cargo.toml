@@ -17,6 +17,7 @@ axalloc.workspace = true
 axconfig.workspace = true
 axerrno.workspace = true
 axhal.workspace = true
+axmm.workspace = true
 page_table_multiarch = { version = "0.5" }
 crate_interface.workspace = true
 kspin.workspace = true

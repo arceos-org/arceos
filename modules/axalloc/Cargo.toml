@@ -12,7 +12,7 @@ version.workspace = true
 
 [features]
 default = ["tlsf", "axallocator/page-alloc-256m"]
-axvisor = ["dep:buddy-slab-allocator"]
+hv = ["dep:buddy-slab-allocator"]
 buddy = ["dep:axallocator", "axallocator/buddy"]
 slab = ["dep:axallocator", "axallocator/slab"]
 tlsf = ["dep:axallocator", "axallocator/tlsf"]

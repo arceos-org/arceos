@@ -11,9 +11,7 @@
 extern crate log;
 extern crate alloc;
 
-use core::{
-    fmt,
-};
+use core::fmt;
 use strum::{IntoStaticStr, VariantArray};
 
 const PAGE_SIZE: usize = 0x1000;
@@ -79,22 +77,22 @@ impl fmt::Debug for Usages {
 
 // Select implementation based on features
 // When axvisor is enabled, use axvisor_impl (axallocator features are ignored)
-#[cfg(feature = "axvisor")]
+#[cfg(feature = "hv")]
 mod axvisor_impl;
-#[cfg(feature = "axvisor")]
+#[cfg(feature = "hv")]
 use axvisor_impl as imp;
 
 // When axvisor is not enabled, use default_impl with axallocator
-#[cfg(not(feature = "axvisor"))]
+#[cfg(not(feature = "hv"))]
 mod default_impl;
-#[cfg(not(feature = "axvisor"))]
+#[cfg(not(feature = "hv"))]
 use default_impl as imp;
 
 // Re-export types and functions from the implementation
-pub use imp::{GlobalAllocator, global_init, global_add_memory};
+pub use imp::{GlobalAllocator, global_add_memory, global_init};
 
-// Re-export AddrTranslator when using axvisor implementation
-#[cfg(feature = "axvisor")]
+// Re-export AddrTranslator when using hv implementation
+#[cfg(feature = "hv")]
 pub use imp::AddrTranslator;
 
 /// Returns the reference to the global allocator.

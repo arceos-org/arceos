@@ -13,14 +13,19 @@ documentation = "https://arceos-org.github.io/arceos/axruntime/index.html"
 default = []
 
 alloc = ["axalloc"]
-axvisor = ["axalloc/axvisor"]
+hv = ["axalloc/hv"]
 dma = ["paging"]
-driver-dyn = ["axdriver/dyn", "paging"]
+driver-dyn = ["driver-dyn-base", "driver-dyn-aarch64", "driver-dyn-x86_64"]
+driver-dyn-base = ["axdriver/dyn", "paging"]
 ipi = ["dep:axipi"]
 irq = ["axhal/irq", "axtask?/irq", "percpu"]
 paging = ["axhal/paging", "axmm"]
 smp = ["axhal/smp", "axtask?/smp"]
 tls = ["axhal/tls", "axtask?/tls"]
+
+# Platform-specific driver-dyn features
+driver-dyn-aarch64 = ["dep:axplat-dyn", "dep:somehal"]
+driver-dyn-x86_64 = ["dep:axplat-x86-qemu-q35"]
 
 display = ["axdriver", "axdisplay"]
 fs = ["axdriver", "axfs"]
@@ -32,6 +37,7 @@ vsock = ["net", "axdriver"]
 
 [dependencies]
 axalloc = {workspace = true, optional = true}
+axbacktrace = {workspace = true}
 axconfig = {workspace = true}
 axdisplay = {workspace = true, optional = true}
 axdriver = {workspace = true, optional = true}
@@ -55,9 +61,11 @@ cfg-if = "1.0"
 
 chrono = {version = "0.4.38", default-features = false}
 
-# [target.'cfg(target_arch = "x86_64")'.dependencies]
-# axplat-x86-qemu-q35 = {workspace = true}
+indoc = "2"
+
+[target.'cfg(target_arch = "x86_64")'.dependencies]
+axplat-x86-qemu-q35 = {version ="0.1.0-preview.1", default-features = false, features = ["reboot-on-system-off"], optional = true}
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
-axplat-dyn = { version = "0.4", features = ["irq", "smp", "hv"]}
-somehal = "0.4"
+axplat-dyn = { version = "0.4", features = ["irq", "smp", "hv"], optional = true }
+somehal = { version = "=0.4.5", optional = true }
