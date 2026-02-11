@@ -13,7 +13,7 @@ use super::{
     fs::FatFilesystem,
     util::{file_metadata, into_vfs_err, update_file_metadata},
 };
-use crate::fs::fat::fs::FatFilesystemInner;
+use crate::monofs::fat::FatFilesystemInner;
 
 pub struct FatFileNode {
     fs: Arc<FatFilesystem>,

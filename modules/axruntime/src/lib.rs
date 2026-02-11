@@ -285,7 +285,7 @@ fn init_allocator() {
         }
     }
 
-    #[cfg(feature = "axvisor")]
+    #[cfg(feature = "hv")]
     {
         struct AddrTranslatorImpl;
         impl axalloc::AddrTranslator for AddrTranslatorImpl {
@@ -304,7 +304,7 @@ fn init_allocator() {
         }
     }
 
-    #[cfg(not(feature = "axvisor"))]
+    #[cfg(not(feature = "hv"))]
     {
         for r in memory_regions() {
             if r.flags.contains(MemRegionFlags::FREE) && r.paddr == max_region_paddr {
@@ -377,6 +377,7 @@ fn smp() -> Option<usize> {
     smp
 }
 
+/// Returns the number of CPUs available on the system
 #[cfg(feature = "driver-dyn")]
 pub fn cpu_count() -> usize {
     let mut cpu_count;

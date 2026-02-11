@@ -18,8 +18,8 @@
 extern crate log;
 extern crate alloc;
 
-mod dev;
-mod fs;
+pub mod dev;
+pub mod fs;
 mod mounts;
 mod partition;
 mod root;
@@ -73,6 +73,7 @@ pub fn init_filesystems(mut blk_devs: AxDeviceContainer<AxBlockDevice>, bootargs
 }
 
 #[cfg(feature = "monolitic")]
+/// Initializes filesystems in monolithic mode.
 pub fn init_filesystems(mut block_devs: AxDeviceContainer<AxBlockDevice>) {
     info!("Initialize filesystem subsystem...");
 

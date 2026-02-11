@@ -415,15 +415,23 @@ pub fn create_filesystem_for_partition(
             Ok(Arc::new(fs))
         }
         Some(FilesystemType::Ext4) => {
-            info!(
-                "Creating ext4 filesystem for partition '{}'",
-                partition.name
-            );
-            // Create a partition wrapper
-            let partition_wrapper =
-                crate::dev::Partition::new(disk, partition.starting_lba, partition.ending_lba);
-            let fs = crate::fs::ext4fs::Ext4FileSystem::from_partition(partition_wrapper);
-            Ok(Arc::new(fs))
+            #[cfg(feature = "ext4")]
+            {
+                info!(
+                    "Creating ext4 filesystem for partition '{}'",
+                    partition.name
+                );
+                // Create a partition wrapper
+                let partition_wrapper =
+                    crate::dev::Partition::new(disk, partition.starting_lba, partition.ending_lba);
+                let fs = crate::fs::ext4fs::Ext4FileSystem::from_partition(partition_wrapper);
+                Ok(Arc::new(fs))
+            }
+            #[cfg(not(feature = "ext4"))]
+            {
+                warn!("ext4 support is not enabled for partition '{}'", partition.name);
+                Err(AxError::Unsupported)
+            }
         }
         Some(FilesystemType::Unknown) | None => {
             warn!("Unknown filesystem type for partition '{}'", partition.name);

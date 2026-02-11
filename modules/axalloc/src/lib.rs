@@ -91,6 +91,9 @@ use default_impl as imp;
 // Re-export types and functions from the implementation
 pub use imp::{GlobalAllocator, global_add_memory, global_init};
 
+// Re-export DefaultByteAllocator from both implementations
+pub use imp::DefaultByteAllocator;
+
 // Re-export AddrTranslator when using hv implementation
 #[cfg(feature = "hv")]
 pub use imp::AddrTranslator;

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! FAT filesystem implementation
+
 use alloc::boxed::Box;
 use alloc::sync::Arc;
 use core::cell::OnceCell;
@@ -25,6 +27,7 @@ use crate::dev::{Disk, Partition};
 
 const BLOCK_SIZE: usize = 512;
 
+/// FAT filesystem implementation
 pub struct FatFileSystem {
     inner: axfatfs::FileSystem<PartitionWrapper, NullTimeProvider, LossyOemCpConverter>,
     root_dir: OnceCell<VfsNodeRef>,
@@ -36,6 +39,7 @@ pub struct PartitionWrapper {
 }
 
 impl PartitionWrapper {
+    /// Creates a new partition wrapper
     pub fn new(partition: Partition) -> Self {
         Self { partition }
     }
@@ -101,9 +105,11 @@ impl axfatfs::Seek for PartitionWrapper {
     }
 }
 
+/// Wrapper for FAT file
 pub struct FileWrapper<'a>(
     Mutex<File<'a, PartitionWrapper, NullTimeProvider, LossyOemCpConverter>>,
 );
+/// Wrapper for FAT directory
 pub struct DirWrapper<'a>(Dir<'a, PartitionWrapper, NullTimeProvider, LossyOemCpConverter>);
 
 unsafe impl Sync for FatFileSystem {}
@@ -114,6 +120,7 @@ unsafe impl Send for DirWrapper<'_> {}
 unsafe impl Sync for DirWrapper<'_> {}
 
 impl FatFileSystem {
+    /// Creates a new FAT filesystem from a disk
     #[allow(dead_code)]
     pub fn new(disk: Disk) -> Self {
         let disk_size = disk.size();
@@ -137,6 +144,7 @@ impl FatFileSystem {
         }
     }
 
+    /// Initializes the FAT filesystem
     #[allow(dead_code)]
     pub fn init(&'static self) {
         // root_dir is already initialized in new(), so nothing to do here

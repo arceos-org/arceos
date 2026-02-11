@@ -15,7 +15,7 @@ default = []
 alloc = ["axalloc"]
 hv = ["axalloc/hv"]
 dma = ["paging"]
-driver-dyn = ["driver-dyn-base", "driver-dyn-aarch64", "driver-dyn-x86_64"]
+driver-dyn = ["driver-dyn-base", "driver-dyn-aarch64", "driver-dyn-x86_64", "axconfig/driver-dyn"]
 driver-dyn-base = ["axdriver/dyn", "paging"]
 ipi = ["dep:axipi"]
 irq = ["axhal/irq", "axtask?/irq", "percpu"]
@@ -68,4 +68,4 @@ axplat-x86-qemu-q35 = {version ="0.1.0-preview.1", default-features = false, fea
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 axplat-dyn = { version = "0.4", features = ["irq", "smp", "hv"], optional = true }
-somehal = { version = "=0.4.5", optional = true }
+somehal = { version = "0.4", optional = true }

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Block device abstraction for disk operations
+
 use alloc::sync::Arc;
 use axdriver::prelude::*;
 use spin::Mutex;

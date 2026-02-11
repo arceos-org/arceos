@@ -443,6 +443,7 @@ dependencies = [
  "axerrno 0.2.2",
  "axhal",
  "axmm",
+ "buddy-slab-allocator",
  "crate_interface",
  "kspin",
  "log",
@@ -644,7 +645,6 @@ dependencies = [
  "lazyinit",
  "log",
  "lru",
- "lwext4_rust",
  "rsext4",
  "scope-local",
  "slab",
@@ -2951,16 +2951,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a1dc47f592c06f33f8e3aea9591776ec7c9f9e4124778ff8a3c3b87159f7e593"
 dependencies = [
  "hashbrown 0.16.1",
-]
-
-[[package]]
-name = "lwext4_rust"
-version = "0.3.1-preview.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8514d8134c84bf2f8d3b1a957675fdd7f9b88c0331e9244f46d8bb904b2a60c"
-dependencies = [
- "bindgen",
- "log",
 ]
 
 [[package]]

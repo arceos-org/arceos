@@ -4,7 +4,7 @@
 //! address translation support.
 
 use super::{UsageKind, Usages};
-use buddy_slab_allocator::{AllocResult, PageAllocator};
+use buddy_slab_allocator::{AllocResult, PageAllocator, SlabByteAllocator};
 use core::{
     alloc::{GlobalAlloc, Layout},
     ptr::NonNull,
@@ -16,6 +16,9 @@ use kspin::SpinNoIrq;
 static GLOBAL_ALLOCATOR: GlobalAllocator = GlobalAllocator::new();
 
 pub use buddy_slab_allocator::AddrTranslator;
+
+/// The default byte allocator for axvisor mode.
+pub type DefaultByteAllocator = SlabByteAllocator;
 
 const PAGE_SIZE: usize = 0x1000;
 

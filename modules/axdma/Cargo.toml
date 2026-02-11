@@ -11,10 +11,15 @@ categories.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/modules/axdma"
 documentation = "https://arceos-org.github.io/arceos/axdma/index.html"
 
+[features]
+default = []
+hv = ["dep:buddy-slab-allocator"]
+
 [dependencies]
 axallocator.workspace = true
 axalloc.workspace = true
 axconfig.workspace = true
+buddy-slab-allocator = { version = "0.1.1", optional = true }
 axerrno.workspace = true
 axhal.workspace = true
 axmm.workspace = true
