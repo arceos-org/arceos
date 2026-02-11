@@ -74,7 +74,7 @@ pub fn init_filesystems(mut blk_devs: AxDeviceContainer<AxBlockDevice>, bootargs
 
 #[cfg(feature = "monolitic")]
 /// Initializes filesystems in monolithic mode.
-pub fn init_filesystems(mut block_devs: AxDeviceContainer<AxBlockDevice>) {
+pub fn init_filesystems(mut block_devs: AxDeviceContainer<AxBlockDevice>, _bootargs: Option<&str>) {
     info!("Initialize filesystem subsystem...");
 
     let dev = block_devs.take_one().expect("No block device found!");
