@@ -1,29 +1,26 @@
+// Copyright 2025 The Axvisor Team
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 use alloc::sync::Arc;
 use axfs_vfs::{VfsNodeType, VfsOps, VfsResult};
 
 use crate::fs;
 
-#[cfg(feature = "devfs")]
-pub(crate) fn devfs() -> Arc<fs::devfs::DeviceFileSystem> {
-    let null = fs::devfs::NullDev;
-    let zero = fs::devfs::ZeroDev;
-    let urandom = fs::devfs::UrandomDev::default();
-    let bar = fs::devfs::ZeroDev;
-    let devfs = fs::devfs::DeviceFileSystem::new();
-    let foo_dir = devfs.mkdir("foo");
-    devfs.add("null", Arc::new(null));
-    devfs.add("zero", Arc::new(zero));
-    devfs.add("urandom", Arc::new(urandom));
-    foo_dir.add("bar", Arc::new(bar));
-    Arc::new(devfs)
-}
-
-#[cfg(feature = "ramfs")]
 pub(crate) fn ramfs() -> Arc<fs::ramfs::RamFileSystem> {
     Arc::new(fs::ramfs::RamFileSystem::new())
 }
 
-#[cfg(feature = "procfs")]
 pub(crate) fn procfs() -> VfsResult<Arc<fs::ramfs::RamFileSystem>> {
     let procfs = fs::ramfs::RamFileSystem::new();
     let proc_root = procfs.root_dir();
@@ -49,7 +46,6 @@ pub(crate) fn procfs() -> VfsResult<Arc<fs::ramfs::RamFileSystem>> {
     Ok(Arc::new(procfs))
 }
 
-#[cfg(feature = "sysfs")]
 pub(crate) fn sysfs() -> VfsResult<Arc<fs::ramfs::RamFileSystem>> {
     let sysfs = fs::ramfs::RamFileSystem::new();
     let sys_root = sysfs.root_dir();

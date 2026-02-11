@@ -1,61 +1,72 @@
 [package]
+authors = ["Mivik <mivikq@gmail.com>"]
+description = "ArceOS filesystem module"
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
 name = "axfs"
 version.workspace = true
-edition.workspace = true
-authors = ["Yuekai Jia <equation618@gmail.com>"]
-description = "ArceOS filesystem module"
-license.workspace = true
-homepage.workspace = true
-repository = "https://github.com/arceos-org/arceos/tree/main/modules/axfs"
-documentation = "https://arceos-org.github.io/arceos/axfs/index.html"
 
 [features]
-devfs = ["dep:axfs_devfs"]
-ramfs = ["dep:axfs_ramfs"]
-procfs = ["dep:axfs_ramfs"]
-sysfs = ["dep:axfs_ramfs"]
-ext4fs = ["dep:lwext4_rust"]
-fatfs = ["dep:fatfs"]
-myfs = ["dep:crate_interface"]
-use-ramdisk = []
-
-default = ["devfs", "ramfs", "fatfs", "procfs", "sysfs"]
+default = []
+monolitic = []
+fat = ["dep:fatfs"]
+# ext4 = ["dep:lwext4_rust"]
+# std = ["lwext4_rust?/std"]
+times = []
+use-ramdisk = [] # TODO: init ramdisk
 
 [dependencies]
-axdriver = { workspace = true, features = ["block"] }
-axdriver_block.workspace = true
-axerrno.workspace = true
-axfs_devfs = { version = "0.1", optional = true }
-axfs_ramfs = { version = "0.1", optional = true }
+axalloc = {workspace = true}
+axdriver = {workspace = true, features = ["block"]}
+axdriver_block = "0.1.4-preview.3"
+axerrno = {workspace = true}
+axfs-ng-vfs = {workspace = true}
+axfs_devfs = { version = "0.1" }
+axfs_ramfs = { version = "0.1" }
 axfs_vfs = "0.1"
-axio = { workspace = true, features = ["alloc"] }
-axsync.workspace = true
+axhal = {workspace = true}
+axio = {workspace = true, features = ["alloc"]}
+axpoll = {workspace = true}
+axsync = {workspace = true}
+bitflags = "2.10"
 cap_access = "0.1"
-cfg-if.workspace = true
-crate_interface = { workspace = true, optional = true }
-lazyinit.workspace = true
-log.workspace = true
-scope-local.workspace = true
+cfg-if = {workspace = true}
+chrono = {workspace = true}
+intrusive-collections = "0.9.7"
+kspin = {workspace = true}
+lazyinit = "0.2"
+log = {workspace = true}
+lru = "0.16.0"
+rsext4 = "0.1.0-pre.0"
+scope-local = {workspace = true}
+slab = {version = "0.4.9", default-features = false}
+spin = {workspace = true}
 
-[dependencies.fatfs]
-git = "https://github.com/rafalh/rust-fatfs"
-rev = "4eccb50"
-optional = true
+[dependencies.axfatfs]
+version = "0.1.0-pre.0"
 default-features = false
-features = [ # no std
-    "alloc",
-    "lfn",
-    "log_level_trace",
-    "unicode",
+features = [
+  # no std
+  "alloc",
+  "lfn",
+  "log_level_trace",
+  "unicode",
 ]
 
-[dependencies.lwext4_rust]
-git = "https://github.com/Josen-B/lwext4_rust.git"
-rev = "99b3e5c"
+# [dependencies.lwext4_rust]
+# version = "0.3.1-preview.1"
+# default-features = false
+# optional = true
+
+[dependencies.fatfs]
+version = "0.4.1-preview.2"
+package = "starry-fatfs"
+default-features = false
 optional = true
+features = ["alloc", "lfn", "log_level_trace", "unicode"]
 
 [dev-dependencies]
-axdriver = { workspace = true, features = ["block", "ramdisk"] }
-axdriver_block = { workspace = true, features = ["ramdisk"] }
-axsync = { workspace = true, features = ["multitask"] }
-axtask = { workspace = true, features = ["test"] }
+axdriver = {workspace = true, features = ["block", "ramdisk"]}
+axdriver_block = {version = "0.1.4-preview.3", features = ["ramdisk"]}
+env_logger = "0.11.8"

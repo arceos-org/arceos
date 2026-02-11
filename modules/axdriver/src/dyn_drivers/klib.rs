@@ -12,6 +12,7 @@
 
 use core::time::Duration;
 
+use axerrno::AxErrorKind;
 use axklib::{AxResult, IrqHandler, Klib, PhysAddr, VirtAddr, impl_trait};
 
 struct KlibImpl;
@@ -23,7 +24,17 @@ impl_trait! {
         /// This function forwards the request to `axmm::iomap` and returns the
         /// resulting virtual address wrapped in an `AxResult`.
         fn mem_iomap(addr: PhysAddr, size: usize) -> AxResult<VirtAddr> {
-            axmm::iomap(addr, size)
+            // Convert from AxError (struct in axerrno 0.2) to AxErrorKind (enum used by axklib)
+            axmm::iomap(addr, size).map_err(|e| match AxErrorKind::try_from(e) {
+                Ok(kind) => kind,
+                Err(linux_err) => {
+                    // Convert LinuxError to AxErrorKind
+                    match AxErrorKind::try_from(linux_err) {
+                        Ok(kind) => kind,
+                        Err(_) => AxErrorKind::Io,
+                    }
+                }
+            })
         }
 
         /// Busy-wait for the given duration by calling into `axhal`.

@@ -194,8 +194,6 @@ pub mod fs {
         pub type AxSeekFrom;
         #[cfg(feature = "myfs")]
         pub type AxDisk;
-        #[cfg(feature = "myfs")]
-        pub type MyFileSystemIf;
     }
 
     define_api! {
