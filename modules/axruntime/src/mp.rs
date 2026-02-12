@@ -14,10 +14,8 @@
 
 use core::sync::atomic::{AtomicUsize, Ordering};
 
-use axconfig::TASK_STACK_SIZE;
+use axconfig::{TASK_STACK_SIZE, plat};
 use axhal::mem::{VirtAddr, virt_to_phys};
-
-use crate::cpu_count;
 
 const MAX_CPU_NUM: usize = 8;
 
@@ -27,9 +25,15 @@ static mut SECONDARY_BOOT_STACK: [[u8; TASK_STACK_SIZE]; MAX_CPU_NUM - 1] =
 
 static ENTERED_CPUS: AtomicUsize = AtomicUsize::new(1);
 
+#[cfg(feature = "driver-dyn")]
+use crate::cpu_count;
+
 #[allow(clippy::absurd_extreme_comparisons)]
 pub fn start_secondary_cpus(primary_cpu_id: usize) {
+    #[cfg(feature = "driver-dyn")]
     let cpu_count = cpu_count();
+    #[cfg(not(feature = "driver-dyn"))]
+    let cpu_count = plat::CPU_NUM;
     let mut logic_cpu_id = 0;
     for i in 0..cpu_count {
         if i != primary_cpu_id && logic_cpu_id < cpu_count - 1 {
