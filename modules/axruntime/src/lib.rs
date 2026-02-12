@@ -36,13 +36,13 @@
 #[macro_use]
 extern crate axlog;
 
-#[cfg(all(target_arch = "x86_64", feature = "driver-dyn"))]
+#[cfg(all(target_arch = "x86_64", feature = "plat-hv-x86_64"))]
 extern crate axplat_x86_qemu_q35;
 
-#[cfg(all(target_arch = "aarch64", feature = "driver-dyn"))]
+#[cfg(all(target_arch = "aarch64", feature = "plat-hv-aarch64"))]
 extern crate axplat_dyn;
 
-#[cfg(all(target_arch = "aarch64", feature = "driver-dyn"))]
+#[cfg(all(target_arch = "aarch64", feature = "plat-hv-aarch64"))]
 extern crate somehal;
 
 #[cfg(all(target_os = "none", not(test)))]
@@ -111,13 +111,13 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 
 static INITED_CPUS: AtomicUsize = AtomicUsize::new(0);
 
-#[cfg(feature = "driver-dyn")]
+#[cfg(any(feature = "plat-hv-x86_64", feature = "plat-hv-aarch64"))]
 fn is_init_ok() -> bool {
     let cpu_num = cpu_count();
     INITED_CPUS.load(Ordering::Acquire) == cpu_num
 }
 
-#[cfg(not(feature = "driver-dyn"))]
+#[cfg(not(any(feature = "plat-hv-x86_64", feature = "plat-hv-aarch64")))]
 fn is_init_ok() -> bool {
     let cpu_num = axconfig::plat::CPU_NUM;
     INITED_CPUS.load(Ordering::Acquire) == cpu_num
@@ -140,10 +140,10 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
     axhal::init_early(cpu_id, arg);
 
     ax_println!("{}", LOGO);
-    #[cfg(feature = "driver-dyn")]
-    ax_println!("smp = {}", cpu_count());
+    #[cfg(any(feature = "plat-hv-x86_64", feature = "plat-hv-aarch64"))]
+    ax_println!("smp = {}\n", cpu_count());
 
-    #[cfg(not(feature = "driver-dyn"))]
+    #[cfg(not(any(feature = "plat-hv-x86_64", feature = "plat-hv-aarch64")))]
     ax_println!(
         indoc::indoc! {"
             arch = {}
@@ -365,7 +365,7 @@ fn init_tls() {
     core::mem::forget(main_tls);
 }
 
-#[cfg(feature = "driver-dyn")]
+#[cfg(any(feature = "plat-hv-x86_64", feature = "plat-hv-aarch64"))]
 fn smp() -> Option<usize> {
     let mut smp = None;
     let s = option_env!("AXVISOR_SMP");
@@ -378,14 +378,14 @@ fn smp() -> Option<usize> {
 }
 
 /// Returns the number of CPUs available on the system
-#[cfg(feature = "driver-dyn")]
+#[cfg(any(feature = "plat-hv-x86_64", feature = "plat-hv-aarch64"))]
 pub fn cpu_count() -> usize {
     let mut cpu_count;
 
     cfg_if::cfg_if! {
-        if #[cfg(all(target_arch = "x86_64", target_os = "none"))] {
+        if #[cfg(all(target_arch = "x86_64", feature = "plat-hv-x86_64"))] {
             cpu_count = axplat_x86_qemu_q35::cpu_count()
-        } else if #[cfg(target_arch = "aarch64")] {
+        } else if #[cfg(all(target_arch = "aarch64", feature = "plat-hv-aarch64"))] {
             cpu_count = somehal::mem::cpu_id_list().count()
         } else {
             cpu_count = 1;

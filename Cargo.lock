@@ -188,7 +188,7 @@ dependencies = [
 
 [[package]]
 name = "arceos_api"
-version = "0.2.2-hv.4"
+version = "0.2.2-hv.5"
 dependencies = [
  "axalloc",
  "axconfig",
@@ -211,7 +211,7 @@ dependencies = [
 
 [[package]]
 name = "arceos_posix_api"
-version = "0.2.2-hv.4"
+version = "0.2.2-hv.5"
 dependencies = [
  "axalloc",
  "axconfig",
@@ -305,7 +305,7 @@ dependencies = [
 
 [[package]]
 name = "axalloc"
-version = "0.2.2-hv.4"
+version = "0.2.2-hv.5"
 dependencies = [
  "axallocator",
  "axbacktrace",
@@ -349,7 +349,7 @@ dependencies = [
 
 [[package]]
 name = "axconfig"
-version = "0.2.2-hv.4"
+version = "0.2.2-hv.5"
 dependencies = [
  "axconfig-macros",
 ]
@@ -425,7 +425,7 @@ dependencies = [
 
 [[package]]
 name = "axdisplay"
-version = "0.2.2-hv.4"
+version = "0.2.2-hv.5"
 dependencies = [
  "axdriver",
  "axsync",
@@ -435,7 +435,7 @@ dependencies = [
 
 [[package]]
 name = "axdma"
-version = "0.2.2-hv.4"
+version = "0.2.2-hv.5"
 dependencies = [
  "axalloc",
  "axallocator",
@@ -453,7 +453,7 @@ dependencies = [
 
 [[package]]
 name = "axdriver"
-version = "0.2.2-hv.4"
+version = "0.2.2-hv.5"
 dependencies = [
  "arm-gic-driver",
  "axalloc",
@@ -600,7 +600,7 @@ dependencies = [
 
 [[package]]
 name = "axfeat"
-version = "0.2.2-hv.4"
+version = "0.2.2-hv.5"
 dependencies = [
  "axalloc",
  "axbacktrace",
@@ -620,7 +620,7 @@ dependencies = [
 
 [[package]]
 name = "axfs"
-version = "0.2.2-hv.4"
+version = "0.2.2-hv.5"
 dependencies = [
  "axalloc",
  "axdriver",
@@ -645,6 +645,7 @@ dependencies = [
  "lazyinit",
  "log",
  "lru",
+ "lwext4_rust",
  "rsext4",
  "scope-local",
  "slab",
@@ -704,7 +705,7 @@ dependencies = [
 
 [[package]]
 name = "axhal"
-version = "0.2.2-hv.4"
+version = "0.2.2-hv.5"
 dependencies = [
  "axalloc",
  "axconfig",
@@ -728,7 +729,7 @@ dependencies = [
 
 [[package]]
 name = "axinput"
-version = "0.2.2-hv.4"
+version = "0.2.2-hv.5"
 dependencies = [
  "axdriver",
  "axsync",
@@ -750,7 +751,7 @@ dependencies = [
 
 [[package]]
 name = "axipi"
-version = "0.2.2-hv.4"
+version = "0.2.2-hv.5"
 dependencies = [
  "axconfig",
  "axhal",
@@ -773,7 +774,7 @@ dependencies = [
 
 [[package]]
 name = "axlibc"
-version = "0.2.2-hv.4"
+version = "0.2.2-hv.5"
 dependencies = [
  "arceos_posix_api",
  "axerrno 0.2.2",
@@ -796,7 +797,7 @@ dependencies = [
 
 [[package]]
 name = "axmm"
-version = "0.2.2-hv.4"
+version = "0.2.2-hv.5"
 dependencies = [
  "axalloc",
  "axconfig",
@@ -812,7 +813,7 @@ dependencies = [
 
 [[package]]
 name = "axnet"
-version = "0.2.2-hv.4"
+version = "0.2.2-hv.5"
 dependencies = [
  "axdriver",
  "axerrno 0.2.2",
@@ -1171,7 +1172,7 @@ dependencies = [
 
 [[package]]
 name = "axruntime"
-version = "0.2.2-hv.4"
+version = "0.2.2-hv.5"
 dependencies = [
  "axalloc",
  "axbacktrace",
@@ -1211,7 +1212,7 @@ dependencies = [
 
 [[package]]
 name = "axstd"
-version = "0.2.2-hv.4"
+version = "0.2.2-hv.5"
 dependencies = [
  "arceos_api",
  "axerrno 0.2.2",
@@ -1224,7 +1225,7 @@ dependencies = [
 
 [[package]]
 name = "axsync"
-version = "0.2.2-hv.4"
+version = "0.2.2-hv.5"
 dependencies = [
  "axsync",
  "axtask",
@@ -1236,7 +1237,7 @@ dependencies = [
 
 [[package]]
 name = "axtask"
-version = "0.2.2-hv.4"
+version = "0.2.2-hv.5"
 dependencies = [
  "axconfig",
  "axerrno 0.2.2",
@@ -2951,6 +2952,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a1dc47f592c06f33f8e3aea9591776ec7c9f9e4124778ff8a3c3b87159f7e593"
 dependencies = [
  "hashbrown 0.16.1",
+]
+
+[[package]]
+name = "lwext4_rust"
+version = "0.3.1-preview.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8514d8134c84bf2f8d3b1a957675fdd7f9b88c0331e9244f46d8bb904b2a60c"
+dependencies = [
+ "bindgen",
+ "log",
 ]
 
 [[package]]
