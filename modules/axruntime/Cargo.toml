@@ -15,17 +15,16 @@ default = []
 alloc = ["axalloc"]
 hv = ["axalloc/hv"]
 dma = ["paging"]
-driver-dyn = ["driver-dyn-base", "driver-dyn-aarch64", "driver-dyn-x86_64", "axconfig/driver-dyn"]
-driver-dyn-base = ["axdriver/dyn", "paging"]
+driver-dyn = ["axdriver/dyn", "paging"]
 ipi = ["dep:axipi"]
 irq = ["axhal/irq", "axtask?/irq", "percpu"]
 paging = ["axhal/paging", "axmm"]
 smp = ["axhal/smp", "axtask?/smp"]
 tls = ["axhal/tls", "axtask?/tls"]
 
-# Platform-specific driver-dyn features
-driver-dyn-aarch64 = ["dep:axplat-dyn", "dep:somehal"]
-driver-dyn-x86_64 = ["dep:axplat-x86-qemu-q35"]
+# Platform-specific features (optional, enable separately if needed)
+plat-hv-aarch64 = ["dep:axplat-dyn", "dep:somehal", "axconfig/driver-dyn"]
+plat-hv-x86_64 = ["dep:axplat-x86-qemu-q35", "axconfig/driver-dyn"]
 
 display = ["axdriver", "axdisplay"]
 fs = ["axdriver", "axfs"]
@@ -64,7 +63,7 @@ chrono = {version = "0.4.38", default-features = false}
 indoc = "2"
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
-axplat-x86-qemu-q35 = {version ="0.1.0-preview.1", default-features = false, features = ["reboot-on-system-off"], optional = true}
+axplat-x86-qemu-q35 = { version ="0.1.0-preview.1", default-features = false, features = ["reboot-on-system-off", "smp", "irq"], optional = true }
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 axplat-dyn = { version = "0.4", features = ["irq", "smp", "hv"], optional = true }
