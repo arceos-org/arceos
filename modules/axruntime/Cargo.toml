@@ -15,7 +15,12 @@ default = []
 alloc = ["axalloc"]
 hv = ["axalloc/hv"]
 dma = ["paging"]
-driver-dyn = ["driver-dyn-base", "driver-dyn-aarch64", "driver-dyn-x86_64", "axconfig/driver-dyn"]
+driver-dyn = [
+    "driver-dyn-base",
+    "driver-dyn-aarch64",
+    "driver-dyn-x86_64",
+    "axconfig/driver-dyn",
+]
 driver-dyn-base = ["axdriver/dyn", "paging"]
 ipi = ["dep:axipi"]
 irq = ["axhal/irq", "axtask?/irq", "percpu"]
@@ -24,7 +29,7 @@ smp = ["axhal/smp", "axtask?/smp"]
 tls = ["axhal/tls", "axtask?/tls"]
 
 # Platform-specific driver-dyn features
-driver-dyn-aarch64 = ["dep:axplat-dyn", "dep:somehal"]
+driver-dyn-aarch64 = ["dep:axplat-aarch64-dyn", "dep:somehal"]
 driver-dyn-x86_64 = ["dep:axplat-x86-qemu-q35"]
 
 display = ["axdriver", "axdisplay"]
@@ -36,36 +41,44 @@ rtc = []
 vsock = ["net", "axdriver"]
 
 [dependencies]
-axalloc = {workspace = true, optional = true}
-axbacktrace = {workspace = true}
-axconfig = {workspace = true}
-axdisplay = {workspace = true, optional = true}
-axdriver = {workspace = true, optional = true}
+axalloc = { workspace = true, optional = true }
+axbacktrace = { workspace = true }
+axconfig = { workspace = true }
+axdisplay = { workspace = true, optional = true }
+axdriver = { workspace = true, optional = true }
 axerrno.workspace = true
-axfs = {workspace = true, optional = true}
-axhal = {workspace = true}
-axinput = {workspace = true, optional = true}
-axipi = {workspace = true, optional = true}
-axlog = {workspace = true}
-axmm = {workspace = true, optional = true}
-axnet = {workspace = true, optional = true}
-axplat = {workspace = true}
-axtask = {workspace = true, optional = true}
+axfs = { workspace = true, optional = true }
+axhal = { workspace = true }
+axinput = { workspace = true, optional = true }
+axipi = { workspace = true, optional = true }
+axlog = { workspace = true }
+axmm = { workspace = true, optional = true }
+axnet = { workspace = true, optional = true }
+axplat = { workspace = true }
+axtask = { workspace = true, optional = true }
 
 log = "0.4"
 
 crate_interface = "0.1"
 ctor_bare = "0.2"
-percpu = {version = "0.2", optional = true}
+percpu = { version = "0.2", optional = true }
 cfg-if = "1.0"
 
-chrono = {version = "0.4.38", default-features = false}
+chrono = { version = "0.4.38", default-features = false }
 
 indoc = "2"
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
-axplat-x86-qemu-q35 = {version ="0.1.0-preview.1", default-features = false, features = ["reboot-on-system-off", "irq", "smp"], optional = true}
+axplat-x86-qemu-q35 = { git = "https://github.com/arceos-hypervisor/axvisor.git", branch = "fixci", default-features = false, features = [
+    "reboot-on-system-off",
+    "irq",
+    "smp",
+], optional = true }
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
-axplat-dyn = { version = "0.4", features = ["irq", "smp", "hv"], optional = true }
+axplat-aarch64-dyn = { git = "https://github.com/arceos-hypervisor/axplat-aarch64-dyn.git", branch = "publish", features = [
+    "irq",
+    "smp",
+    "hv",
+], optional = true }
 somehal = { version = "0.4", optional = true }

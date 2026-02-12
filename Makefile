@@ -3,7 +3,10 @@
 #     - `ARCH`: Target architecture: x86_64, riscv64, aarch64, loongarch64
 #     - `MYPLAT`: Package name of the target platform crate.
 #     - `PLAT_CONFIG`: Path to the platform configuration file.
-#     - `SMP`: Number of CPUs. If not set, use the default value from platform config.
+#     - `SMP`: Override maximum CPU number specified in the platform config. For
+#       statically configured platforms, this is also the number of CPUs to boot
+#       and for platforms with runtime CPU detection, this is the upper limit of
+#       CPUs.
 #     - `MODE`: Build mode: release, debug
 #     - `LOG:` Logging level: warn, error, info, debug, trace
 #     - `V`: Verbose level: (empty), 1, 2

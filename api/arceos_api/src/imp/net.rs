@@ -1,6 +1,6 @@
 use crate::io::AxPollState;
 use axerrno::AxResult;
-use axnet::{UdpSocket, TcpSocket};
+use axnet::{TcpSocket, UdpSocket};
 use core::net::{IpAddr, SocketAddr};
 
 /// A handle to a TCP socket.
@@ -89,11 +89,17 @@ pub fn ax_udp_bind(socket: &AxUdpSocketHandle, addr: SocketAddr) -> AxResult {
     socket.0.bind(addr)
 }
 
-pub fn ax_udp_recv_from(socket: &AxUdpSocketHandle, buf: &mut [u8]) -> AxResult<(usize, SocketAddr)> {
+pub fn ax_udp_recv_from(
+    socket: &AxUdpSocketHandle,
+    buf: &mut [u8],
+) -> AxResult<(usize, SocketAddr)> {
     socket.0.recv_from(buf)
 }
 
-pub fn ax_udp_peek_from(socket: &AxUdpSocketHandle, buf: &mut [u8]) -> AxResult<(usize, SocketAddr)> {
+pub fn ax_udp_peek_from(
+    socket: &AxUdpSocketHandle,
+    buf: &mut [u8],
+) -> AxResult<(usize, SocketAddr)> {
     socket.0.peek_from(buf)
 }
 

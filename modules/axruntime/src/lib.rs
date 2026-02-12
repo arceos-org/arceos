@@ -40,7 +40,7 @@ extern crate axlog;
 extern crate axplat_x86_qemu_q35;
 
 #[cfg(all(target_arch = "aarch64", feature = "driver-dyn"))]
-extern crate axplat_dyn;
+extern crate axplat_aarch64_dyn;
 
 #[cfg(all(target_arch = "aarch64", feature = "driver-dyn"))]
 extern crate somehal;
@@ -119,7 +119,7 @@ fn is_init_ok() -> bool {
 
 #[cfg(not(feature = "driver-dyn"))]
 fn is_init_ok() -> bool {
-    let cpu_num = axconfig::plat::CPU_NUM;
+    let cpu_num = axconfig::plat::MAX_CPU_NUM;
     INITED_CPUS.load(Ordering::Acquire) == cpu_num
 }
 
@@ -152,7 +152,6 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
             build_mode = {}
             log_level = {}
             backtrace = {}
-            smp = {}
         "},
         axconfig::ARCH,
         axconfig::PLATFORM,
@@ -160,7 +159,6 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
         option_env!("AX_MODE").unwrap_or(""),
         option_env!("AX_LOG").unwrap_or(""),
         axbacktrace::is_enabled(),
-        axconfig::plat::CPU_NUM,
     );
 
     #[cfg(feature = "rtc")]

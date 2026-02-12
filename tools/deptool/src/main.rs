@@ -1,4 +1,4 @@
-use deptool::{run, parse_cmd};
+use deptool::{parse_cmd, run};
 use std::process;
 
 fn main() {

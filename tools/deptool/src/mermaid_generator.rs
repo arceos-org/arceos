@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{parse_deps, cmd_parser::is_arceos_crate};
+use crate::{cmd_parser::is_arceos_crate, parse_deps};
 
 pub fn gen_mermaid_script(deps: &String, result: &mut String) {
     let deps_parsed = parse_deps(&deps);

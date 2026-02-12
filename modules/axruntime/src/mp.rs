@@ -14,10 +14,8 @@
 
 use core::sync::atomic::{AtomicUsize, Ordering};
 
-use axconfig::{TASK_STACK_SIZE, plat};
+use axconfig::{TASK_STACK_SIZE, plat::MAX_CPU_NUM};
 use axhal::mem::{VirtAddr, virt_to_phys};
-
-const MAX_CPU_NUM: usize = 8;
 
 #[unsafe(link_section = ".bss.stack")]
 static mut SECONDARY_BOOT_STACK: [[u8; TASK_STACK_SIZE]; MAX_CPU_NUM - 1] =
@@ -33,7 +31,7 @@ pub fn start_secondary_cpus(primary_cpu_id: usize) {
     #[cfg(feature = "driver-dyn")]
     let cpu_count = cpu_count();
     #[cfg(not(feature = "driver-dyn"))]
-    let cpu_count = plat::CPU_NUM;
+    let cpu_count = axconfig::plat::MAX_CPU_NUM;
     let mut logic_cpu_id = 0;
     for i in 0..cpu_count {
         if i != primary_cpu_id && logic_cpu_id < cpu_count - 1 {

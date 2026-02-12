@@ -41,7 +41,7 @@ pub mod devices {
 #[doc = ""]
 pub mod plat {
     #[doc = " Number of CPUs."]
-    pub const CPU_NUM: usize = 16;
+    pub const MAX_CPU_NUM: usize = 16;
     #[doc = " Platform family (deprecated)."]
     pub const FAMILY: &str = "";
     #[doc = " Kernel address space base."]

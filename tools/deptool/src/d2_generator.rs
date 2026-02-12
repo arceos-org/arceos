@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{parse_deps, cmd_parser::is_arceos_crate};
+use crate::{cmd_parser::is_arceos_crate, parse_deps};
 
 /// without further exploiting the feature of d2 graph, this is almost the same syntax with mermaid
 /// except that d2 use " -> ", instead of "-->"
