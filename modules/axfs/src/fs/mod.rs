@@ -14,7 +14,6 @@
 
 //! Filesystem implementations
 
-#[cfg(feature = "ext4")]
 pub mod ext4fs;
 
 pub mod fatfs;
