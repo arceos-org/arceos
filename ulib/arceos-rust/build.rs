@@ -46,7 +46,7 @@ fn main() {
     println!("cargo:rerun-if-changed=always");
 }
 
-fn generate_config(manifest_dir: &PathBuf, out_dir: &PathBuf) -> PathBuf {
+fn generate_config(manifest_dir: &Path, out_dir: &Path) -> PathBuf {
     let template = manifest_dir.join("defconfig.toml");
     let arch = get_arch();
     let platform = get_platform();
@@ -69,7 +69,7 @@ fn generate_config(manifest_dir: &PathBuf, out_dir: &PathBuf) -> PathBuf {
 
     let command = Command::new("axconfig-gen")
         .arg(&template)
-        .arg(&platform_config_path.trim())
+        .arg(platform_config_path.trim())
         .arg("-w")
         .arg(format!(r#"arch="{}""#, &arch))
         .arg("-w")
@@ -95,7 +95,7 @@ fn compile_foo_project(lib_dir: &PathBuf, out_dir: &PathBuf, config_path: &PathB
     let feature_list = features.replace(",", " ");
 
     let mut command = Command::new(cargo());
-    command.env("AX_TARGET", &target);
+    command.env("AX_TARGET", target);
     command.env("AX_MODE", profile);
     command.env("AX_CONFIG_PATH", config_path);
     command.env("AX_LOG", get_log_level(&features));
@@ -132,9 +132,7 @@ fn compile_foo_project(lib_dir: &PathBuf, out_dir: &PathBuf, config_path: &PathB
     }
 
     let build_type = if is_debug { "debug" } else { "release" };
-    let lib_path = out_dir.join(&target).join(build_type);
-
-    lib_path
+    out_dir.join(target).join(build_type)
 }
 
 fn cargo() -> String {
@@ -178,8 +176,8 @@ fn get_platform() -> &'static str {
 fn get_log_level(feature_list: &str) -> &str {
     let mut level = "off";
     for feature in feature_list.split(',') {
-        if feature.starts_with("log-level-") {
-            level = &feature["log-level-".len()..];
+        if let Some(stripped) = feature.strip_prefix("log-level-") {
+            level = stripped;
         }
     }
     level
