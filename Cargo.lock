@@ -21,6 +21,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "aarch64-cpu"
+version = "11.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "44171e22925ec72b63d86747bc3655c7849a5b8d865c980222128839f45ac034"
+dependencies = [
+ "tock-registers 0.10.1",
+]
+
+[[package]]
 name = "aarch64-cpu-ext"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -263,6 +272,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "arrayvec"
+version = "0.7.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7c02d123df017efcdfbd739ef81735b36c5ba83ec3c59c80a9d7ecc718f92e50"
+
+[[package]]
 name = "as-any"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -387,10 +402,10 @@ dependencies = [
  "log",
  "loongArch64",
  "memory_addr",
- "page_table_entry",
- "page_table_multiarch",
+ "page_table_entry 0.5.7",
+ "page_table_multiarch 0.5.7",
  "percpu",
- "riscv",
+ "riscv 0.14.0",
  "static_assertions",
  "tock-registers 0.9.0",
  "x86",
@@ -410,10 +425,10 @@ dependencies = [
  "log",
  "loongArch64",
  "memory_addr",
- "page_table_entry",
- "page_table_multiarch",
+ "page_table_entry 0.5.7",
+ "page_table_multiarch 0.5.7",
  "percpu",
- "riscv",
+ "riscv 0.14.0",
  "static_assertions",
  "tock-registers 0.9.0",
  "x86",
@@ -445,7 +460,7 @@ dependencies = [
  "kspin",
  "log",
  "memory_addr",
- "page_table_multiarch",
+ "page_table_multiarch 0.5.7",
 ]
 
 [[package]]
@@ -720,7 +735,7 @@ dependencies = [
  "linkme",
  "log",
  "memory_addr",
- "page_table_multiarch",
+ "page_table_multiarch 0.6.1",
  "percpu",
 ]
 
@@ -805,7 +820,7 @@ dependencies = [
  "log",
  "memory_addr",
  "memory_set",
- "page_table_multiarch",
+ "page_table_multiarch 0.6.1",
 ]
 
 [[package]]
@@ -868,7 +883,7 @@ dependencies = [
  "dw_apb_uart",
  "kspin",
  "log",
- "page_table_entry",
+ "page_table_entry 0.5.7",
 ]
 
 [[package]]
@@ -887,7 +902,7 @@ dependencies = [
  "kspin",
  "lazyinit",
  "log",
- "page_table_entry",
+ "page_table_entry 0.5.7",
  "spin 0.10.0",
 ]
 
@@ -906,7 +921,7 @@ dependencies = [
  "kspin",
  "lazyinit",
  "log",
- "page_table_entry",
+ "page_table_entry 0.5.7",
  "spin 0.10.0",
 ]
 
@@ -920,7 +935,7 @@ dependencies = [
  "axplat 0.3.0",
  "axplat-aarch64-peripherals 0.3.0",
  "log",
- "page_table_entry",
+ "page_table_entry 0.5.7",
 ]
 
 [[package]]
@@ -934,7 +949,7 @@ dependencies = [
  "axplat 0.3.0-preview.2",
  "axplat-aarch64-peripherals 0.3.0-preview.2",
  "log",
- "page_table_entry",
+ "page_table_entry 0.5.7",
 ]
 
 [[package]]
@@ -947,7 +962,7 @@ dependencies = [
  "axplat 0.3.0",
  "axplat-aarch64-peripherals 0.3.0",
  "log",
- "page_table_entry",
+ "page_table_entry 0.5.7",
 ]
 
 [[package]]
@@ -961,7 +976,7 @@ dependencies = [
  "axplat 0.3.0",
  "axplat-aarch64-peripherals 0.3.0",
  "log",
- "page_table_entry",
+ "page_table_entry 0.5.7",
 ]
 
 [[package]]
@@ -982,7 +997,7 @@ dependencies = [
  "lazyinit",
  "log",
  "memory_addr",
- "page_table_entry",
+ "page_table_entry 0.5.7",
  "paste",
  "percpu",
  "rdif-intc",
@@ -1007,7 +1022,7 @@ dependencies = [
  "lazyinit",
  "log",
  "loongArch64",
- "page_table_entry",
+ "page_table_entry 0.5.7",
  "uart_16550",
 ]
 
@@ -1023,7 +1038,7 @@ dependencies = [
  "lazyinit",
  "log",
  "loongArch64",
- "page_table_entry",
+ "page_table_entry 0.5.7",
  "uart_16550",
 ]
 
@@ -1060,7 +1075,7 @@ dependencies = [
  "kspin",
  "lazyinit",
  "log",
- "riscv",
+ "riscv 0.14.0",
  "riscv_goldfish",
  "riscv_plic",
  "sbi-rt",
@@ -1078,7 +1093,7 @@ dependencies = [
  "kspin",
  "lazyinit",
  "log",
- "riscv",
+ "riscv 0.14.0",
  "riscv_plic",
  "sbi-rt",
  "uart_16550",
@@ -3178,16 +3193,42 @@ dependencies = [
 ]
 
 [[package]]
+name = "page_table_entry"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8e9a63b9b86d32f64c3874a90936939281d045ef1751d0aca3d82d5e4e06b2ef"
+dependencies = [
+ "aarch64-cpu 11.2.0",
+ "bitflags 2.10.0",
+ "memory_addr",
+ "x86_64",
+]
+
+[[package]]
 name = "page_table_multiarch"
 version = "0.5.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9fa11a21844255e14aa6688ef0eafb058d7be19338633024fb59417f1bfb07f8"
 dependencies = [
+ "log",
+ "memory_addr",
+ "page_table_entry 0.5.7",
+ "riscv 0.14.0",
+ "x86",
+]
+
+[[package]]
+name = "page_table_multiarch"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "42c5b75d5d9bdbee44c827b0dd2766fa3d478a76b9c6735419228089d1b24536"
+dependencies = [
+ "arrayvec",
  "bitmaps",
  "log",
  "memory_addr",
- "page_table_entry",
- "riscv",
+ "page_table_entry 0.6.1",
+ "riscv 0.16.0",
  "x86",
 ]
 
@@ -3733,6 +3774,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "riscv"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9251433e48c39d2133cbaff3ae7809ce6a1ecbc8225ca7da33d96d10cf360582"
+dependencies = [
+ "critical-section",
+ "embedded-hal",
+ "paste",
+ "riscv-types",
+]
+
+[[package]]
 name = "riscv-macros"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3748,6 +3801,12 @@ name = "riscv-pac"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8188909339ccc0c68cfb5a04648313f09621e8b87dc03095454f1a11f6c5d436"
+
+[[package]]
+name = "riscv-types"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3f2ad9f15a07f4a0e1677124f9120ce7e83ab7e1ca7186af0ca9da529b62e80"
 
 [[package]]
 name = "riscv_goldfish"
