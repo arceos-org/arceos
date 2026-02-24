@@ -32,7 +32,7 @@ pub type AxTaskRef = Arc<AxTask>;
 pub type WeakAxTaskRef = Weak<AxTask>;
 
 /// The wrapper type for [`cpumask::CpuMask`] with SMP configuration.
-pub type AxCpuMask = cpumask::CpuMask<{ axconfig::plat::CPU_NUM }>;
+pub type AxCpuMask = cpumask::CpuMask<{ axconfig::plat::MAX_CPU_NUM }>;
 
 static CPU_NUM: AtomicUsize = AtomicUsize::new(1);
 
@@ -87,7 +87,7 @@ pub fn current() -> CurrentTask {
 
 /// Initializes the task scheduler (for the primary CPU).
 pub fn init_scheduler() {
-    init_scheduler_with_cpu_num(axconfig::plat::CPU_NUM);
+    init_scheduler_with_cpu_num(axconfig::plat::MAX_CPU_NUM);
 }
 
 /// Initializes the task scheduler with cpu_num (for the primary CPU).
