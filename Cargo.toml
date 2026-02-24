@@ -33,7 +33,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.2.2-hv.5"
+version = "0.2.2-hv.6"
 edition = "2024"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
 license = "GPL-3.0-or-later OR Apache-2.0 OR MulanPSL-2.0"
@@ -44,28 +44,28 @@ keywords = ["arceos", "kernel"]
 categories = ["os", "no-std"]
 
 [workspace.dependencies]
-axstd = { version = "=0.2.2-hv.5", path = "ulib/axstd" }
-axlibc = { version = "=0.2.2-hv.5", path = "ulib/axlibc" }
+axstd = { version = "=0.2.2-hv.6", path = "ulib/axstd" }
+axlibc = { version = "=0.2.2-hv.6", path = "ulib/axlibc" }
 
-arceos_api = { version = "=0.2.2-hv.5", path = "api/arceos_api" }
-arceos_posix_api = { version = "=0.2.2-hv.5", path = "api/arceos_posix_api" }
-axfeat = { version = "=0.2.2-hv.5", path = "api/axfeat" }
+arceos_api = { version = "=0.2.2-hv.6", path = "api/arceos_api" }
+arceos_posix_api = { version = "=0.2.2-hv.6", path = "api/arceos_posix_api" }
+axfeat = { version = "=0.2.2-hv.6", path = "api/axfeat" }
 
-axalloc = { version = "=0.2.2-hv.5", path = "modules/axalloc" }
-axconfig = { version = "=0.2.2-hv.5", path = "modules/axconfig" }
-axdisplay = { version = "=0.2.2-hv.5", path = "modules/axdisplay" }
-axdma = { version = "=0.2.2-hv.5", path = "modules/axdma" }
-axdriver = { version = "=0.2.2-hv.5", path = "modules/axdriver" }
-axfs = { version = "=0.2.2-hv.5", path = "modules/axfs" }
-axhal = { version = "=0.2.2-hv.5", path = "modules/axhal" }
-axinput = { version = "=0.2.2-hv.5", path = "modules/axinput" }
-axipi = { version = "=0.2.2-hv.5", path = "modules/axipi" }
+axalloc = { version = "=0.2.2-hv.6", path = "modules/axalloc" }
+axconfig = { version = "=0.2.2-hv.6", path = "modules/axconfig" }
+axdisplay = { version = "=0.2.2-hv.6", path = "modules/axdisplay" }
+axdma = { version = "=0.2.2-hv.6", path = "modules/axdma" }
+axdriver = { version = "=0.2.2-hv.6", path = "modules/axdriver" }
+axfs = { version = "=0.2.2-hv.6", path = "modules/axfs" }
+axhal = { version = "=0.2.2-hv.6", path = "modules/axhal" }
+axinput = { version = "=0.2.2-hv.6", path = "modules/axinput" }
+axipi = { version = "=0.2.2-hv.6", path = "modules/axipi" }
 axlog = { version = "=0.2.2-preview.1", path = "modules/axlog" }
-axmm = { version = "=0.2.2-hv.5", path = "modules/axmm" }
-axnet = { version = "=0.2.2-hv.5", path = "modules/axnet" }
-axruntime = { version = "=0.2.2-hv.5", path = "modules/axruntime" }
-axsync = { version = "=0.2.2-hv.5", path = "modules/axsync" }
-axtask = { version = "=0.2.2-hv.5", path = "modules/axtask" }
+axmm = { version = "=0.2.2-hv.6", path = "modules/axmm" }
+axnet = { version = "=0.2.2-hv.6", path = "modules/axnet" }
+axruntime = { version = "=0.2.2-hv.6", path = "modules/axruntime" }
+axsync = { version = "=0.2.2-hv.6", path = "modules/axsync" }
+axtask = { version = "=0.2.2-hv.6", path = "modules/axtask" }
 
 axallocator = { version = "0.1.3-preview.1", features = [
     "axerrno",
