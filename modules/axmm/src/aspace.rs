@@ -232,9 +232,9 @@ impl AddrSpace {
 
         // TODO
         self.pt
-            .protect_region(start, size, flags, true)
-            .map_err(|_| AxError::BadState)?
-            .ignore();
+            .cursor()
+            .protect_region(start, size, flags)
+            .map_err(|_| AxError::BadState)?;
         Ok(())
     }
 
