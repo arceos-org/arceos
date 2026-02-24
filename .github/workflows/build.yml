@@ -238,6 +238,9 @@ jobs:
         toolchain: ${{ matrix.rust-toolchain }}
         components: rust-src, clippy, llvm-tools
         targets: x86_64-unknown-none
+    - uses: arceos-org/setup-musl@v1
+      with:
+        arch: ${{ matrix.arch }}
     - uses: Swatinem/rust-cache@v2
       with:
         shared-key: cargo-bin-cache-${{ matrix.rust-toolchain }}

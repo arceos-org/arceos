@@ -22,7 +22,6 @@
 //!     - `sched-cfs`: Use the Completely Fair Scheduler (CFS) preemptive scheduler.
 //! - Upperlayer stacks (fs, net, display)
 //!     - `fs`: Enable file system support.
-//!     - `myfs`: Allow users to define their custom filesystems to override the default.
 //!     - `net`: Enable networking support.
 //!     - `display`: Enable graphics support.
 //! - Device drivers

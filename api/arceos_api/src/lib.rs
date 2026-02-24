@@ -192,8 +192,6 @@ pub mod fs {
         pub type AxFilePerm;
         pub type AxDirEntry;
         pub type AxSeekFrom;
-        #[cfg(feature = "myfs")]
-        pub type AxDisk;
     }
 
     define_api! {
