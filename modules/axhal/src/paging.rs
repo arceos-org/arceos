@@ -15,14 +15,22 @@ pub struct PagingHandlerImpl;
 
 impl PagingHandler for PagingHandlerImpl {
     fn alloc_frame() -> Option<PhysAddr> {
+        Self::alloc_frames(1, PAGE_SIZE_4K)
+    }
+
+    fn alloc_frames(num: usize, align: usize) -> Option<PhysAddr> {
         global_allocator()
-            .alloc_pages(1, PAGE_SIZE_4K, UsageKind::PageTable)
+            .alloc_pages(num, align, UsageKind::PageTable)
             .map(|vaddr| virt_to_phys(vaddr.into()))
             .ok()
     }
 
     fn dealloc_frame(paddr: PhysAddr) {
-        global_allocator().dealloc_pages(phys_to_virt(paddr).as_usize(), 1, UsageKind::PageTable);
+        Self::dealloc_frames(paddr, 1)
+    }
+
+    fn dealloc_frames(paddr: PhysAddr, num: usize) {
+        global_allocator().dealloc_pages(phys_to_virt(paddr).as_usize(), num, UsageKind::PageTable);
     }
 
     #[inline]
