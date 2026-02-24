@@ -25,6 +25,10 @@ jobs:
       if: ${{ matrix.arch == 'x86_64' }}
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: cargo fmt --all -- --check
+
+    - uses: arceos-org/setup-musl@v1
+      with:
+        arch: ${{ matrix.arch }}
     - name: Clippy for the default target
       if: ${{ matrix.arch == 'x86_64' }}
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
