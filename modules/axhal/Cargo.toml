@@ -58,7 +58,7 @@ ipi = ["irq"]
 [dependencies]
 axalloc = { workspace = true, optional = true }
 axconfig.workspace = true
-axcpu = { version = "0.3.0-preview.2" }
+axcpu = { version = "0.3.0-preview.5" }
 axplat.workspace = true
 cfg-if.workspace = true
 heapless = "0.9"
