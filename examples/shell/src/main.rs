@@ -17,9 +17,6 @@ fn path_to_str(path: &str) -> &str {
 
 mod cmd;
 
-#[cfg(feature = "use-ramfs")]
-mod ramfs;
-
 use std::io::prelude::*;
 
 const LF: u8 = b'\n';

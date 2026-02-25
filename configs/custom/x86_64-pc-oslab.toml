@@ -10,7 +10,7 @@ package = "axplat-x86-pc"       # str
 #
 [plat]
 # Number of CPUs.
-cpu-num = 8                     # uint
+max-cpu-num = 8                     # uint
 # Base address of the whole physical memory.
 phys-memory-base = 0            # uint
 # Size of the whole physical memory. (2G)

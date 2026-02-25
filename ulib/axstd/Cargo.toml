@@ -57,7 +57,6 @@ sched-cfs = ["axfeat/sched-cfs"]
 
 # File system
 fs = ["arceos_api/fs", "axfeat/fs"]
-myfs = ["arceos_api/myfs", "axfeat/fs"]
 ext4fs = ["arceos_api/fs", "axfeat/fs"]
 fatfs = ["arceos_api/fs", "axfeat/fs"]
 

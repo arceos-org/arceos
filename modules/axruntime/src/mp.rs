@@ -30,8 +30,8 @@ static mut SECONDARY_BOOT_STACK: [[u8; TASK_STACK_SIZE]; MAX_CPU_NUM - 1] =
 
 #[cfg(not(any(feature = "plat-hv-x86_64", feature = "plat-hv-aarch64")))]
 #[unsafe(link_section = ".bss.stack")]
-static mut SECONDARY_BOOT_STACK: [[u8; TASK_STACK_SIZE]; axconfig::plat::CPU_NUM - 1] =
-    [[0; TASK_STACK_SIZE]; axconfig::plat::CPU_NUM - 1];
+static mut SECONDARY_BOOT_STACK: [[u8; TASK_STACK_SIZE]; axconfig::plat::MAX_CPU_NUM - 1] =
+    [[0; TASK_STACK_SIZE]; axconfig::plat::MAX_CPU_NUM - 1];
 
 static ENTERED_CPUS: AtomicUsize = AtomicUsize::new(1);
 
@@ -40,7 +40,7 @@ pub fn start_secondary_cpus(primary_cpu_id: usize) {
     #[cfg(any(feature = "plat-hv-x86_64", feature = "plat-hv-aarch64"))]
     let cpu_count = cpu_count();
     #[cfg(not(any(feature = "plat-hv-x86_64", feature = "plat-hv-aarch64")))]
-    let cpu_count = axconfig::plat::CPU_NUM;
+    let cpu_count = axconfig::plat::MAX_CPU_NUM;
 
     let mut logic_cpu_id = 0;
     for i in 0..cpu_count {
