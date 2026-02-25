@@ -7,16 +7,7 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-use-ramfs = [
-    "axstd/myfs",
-    "dep:axfs_vfs",
-    "dep:axfs_ramfs",
-    "dep:crate_interface",
-]
 default = []
 
 [dependencies]
-axfs_vfs = { version = "0.1", optional = true }
-axfs_ramfs = { version = "0.1", optional = true }
-crate_interface = { workspace = true, optional = true }
 axstd = { workspace = true, features = ["alloc", "fs"], optional = true }

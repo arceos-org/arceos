@@ -71,7 +71,9 @@ impl AddrSpace {
         if self.va_range.overlaps(other.va_range) {
             return ax_err!(InvalidInput, "address space overlap");
         }
-        self.pt.copy_from(&other.pt, other.base(), other.size());
+        self.pt
+            .cursor()
+            .copy_from(&other.pt, other.base(), other.size());
         Ok(())
     }
 

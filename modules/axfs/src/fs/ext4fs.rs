@@ -35,8 +35,11 @@ use rsext4::{
 use spin::Mutex;
 
 use crate::dev::{Disk, Partition};
+
+/// Block size for ext4 filesystem operations
 pub const BLOCK_SIZE: usize = 4096;
 
+/// Ext4 filesystem implementation that works with a disk device
 #[allow(dead_code)]
 pub struct Ext4FileSystem {
     inner: Arc<Mutex<Jbd2Dev<Disk>>>,
@@ -56,6 +59,7 @@ unsafe impl Sync for Ext4FileSystemPartition {}
 unsafe impl Send for Ext4FileSystemPartition {}
 
 impl Ext4FileSystem {
+    /// Create a new ext4 filesystem from a disk device
     #[allow(dead_code)]
     pub fn new(disk: Disk) -> Self {
         info!(
@@ -111,12 +115,16 @@ impl VfsOps for Ext4FileSystemPartition {
     }
 }
 
+/// Inner state for ext4 filesystem, either backed by a full disk or a partition
 #[derive(Clone)]
 pub enum Ext4Inner {
+    /// Full disk device
     Disk(Arc<Mutex<Jbd2Dev<Disk>>>),
+    /// Partition device
     Partition(Arc<Mutex<Jbd2Dev<Partition>>>),
 }
 
+/// Wrapper for files and directories in the ext4 filesystem
 pub struct FileWrapper {
     path: String,
     file: Mutex<Option<OpenFile>>,

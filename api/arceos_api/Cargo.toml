@@ -22,7 +22,6 @@ fs = ["dep:axfs", "dep:axdriver", "axfeat/fs"]
 net = ["dep:axnet", "dep:axdriver", "axfeat/net"]
 display = ["dep:axdisplay", "dep:axdriver", "axfeat/display"]
 
-myfs = ["axfeat/fs"]
 
 # Use dummy functions if the feature is not enabled
 dummy-if-not-enabled = []

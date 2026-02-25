@@ -83,14 +83,14 @@ axerrno = "0.2"
 axfs-ng-vfs = "0.1"
 axio = "0.3.0-pre.1"
 axklib = "0.2"
-axplat = ">=0.3.0-preview.2, <0.3.0"
-axplat-aarch64-bsta1000b = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
-axplat-aarch64-phytium-pi = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
-axplat-aarch64-qemu-virt = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
-axplat-aarch64-raspi = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
-axplat-loongarch64-qemu-virt = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
-axplat-riscv64-qemu-virt = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
-axplat-x86-pc = { git = "https://github.com/arceos-org/axplat_crates.git", tag = "dev-v03" }
+axplat = "0.3.1-pre.1"
+axplat-aarch64-bsta1000b = "0.3.1-pre.1"
+axplat-aarch64-phytium-pi = "0.3.1-pre.1"
+axplat-aarch64-qemu-virt = "0.3.1-pre.1"
+axplat-aarch64-raspi = "0.3.1-pre.1"
+axplat-loongarch64-qemu-virt = "0.3.1-pre.1"
+axplat-riscv64-qemu-virt = "0.3.1-pre.1"
+axplat-x86-pc = "0.3.1-pre.1"
 axpoll = "0.1"
 bindgen = "0.72"
 cfg-if = "1.0"

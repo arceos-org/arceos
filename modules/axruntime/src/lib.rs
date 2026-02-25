@@ -40,7 +40,7 @@ extern crate axlog;
 extern crate axplat_x86_qemu_q35;
 
 #[cfg(all(target_arch = "aarch64", feature = "plat-hv-aarch64"))]
-extern crate axplat_dyn;
+extern crate axplat_aarch64_dyn;
 
 #[cfg(all(target_arch = "aarch64", feature = "plat-hv-aarch64"))]
 extern crate somehal;
@@ -119,7 +119,7 @@ fn is_init_ok() -> bool {
 
 #[cfg(not(any(feature = "plat-hv-x86_64", feature = "plat-hv-aarch64")))]
 fn is_init_ok() -> bool {
-    let cpu_num = axconfig::plat::CPU_NUM;
+    let cpu_num = axconfig::plat::MAX_CPU_NUM;
     INITED_CPUS.load(Ordering::Acquire) == cpu_num
 }
 
@@ -160,7 +160,7 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
         option_env!("AX_MODE").unwrap_or(""),
         option_env!("AX_LOG").unwrap_or(""),
         axbacktrace::is_enabled(),
-        axconfig::plat::CPU_NUM,
+        axconfig::plat::MAX_CPU_NUM,
     );
 
     #[cfg(feature = "rtc")]
@@ -384,7 +384,7 @@ pub fn cpu_count() -> usize {
 
     cfg_if::cfg_if! {
         if #[cfg(all(target_arch = "x86_64", feature = "plat-hv-x86_64"))] {
-            cpu_count = axplat_x86_qemu_q35::cpu_count()
+            cpu_count = crate::cpu_count()
         } else if #[cfg(all(target_arch = "aarch64", feature = "plat-hv-aarch64"))] {
             cpu_count = somehal::mem::cpu_id_list().count()
         } else {

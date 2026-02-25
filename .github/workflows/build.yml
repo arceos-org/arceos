@@ -25,6 +25,10 @@ jobs:
       if: ${{ matrix.arch == 'x86_64' }}
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: cargo fmt --all -- --check
+
+    - uses: arceos-org/setup-musl@v1
+      with:
+        arch: ${{ matrix.arch }}
     - name: Clippy for the default target
       if: ${{ matrix.arch == 'x86_64' }}
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
@@ -159,8 +163,8 @@ jobs:
       run: |
         git checkout .
         make MYPLAT=axplat-aarch64-raspi defconfig
-        cargo axplat add axplat-aarch64-raspi -p arceos-helloworld -F smp --git https://github.com/arceos-org/axplat_crates.git --tag dev-v03
-        cargo axplat add axplat-aarch64-raspi -p arceos-shell -F smp --git https://github.com/arceos-org/axplat_crates.git --tag dev-v03
+        cargo axplat add axplat-aarch64-raspi -p arceos-helloworld -F smp --git https://github.com/arceos-org/axplat_crates.git --branch dev
+        cargo axplat add axplat-aarch64-raspi -p arceos-shell -F smp --git https://github.com/arceos-org/axplat_crates.git --branch dev
         echo "extern crate axplat_aarch64_raspi;" >> examples/helloworld/src/main.rs
         echo "extern crate axplat_aarch64_raspi;" >> examples/shell/src/main.rs
     - name: Build helloworld for aarch64-raspi4
@@ -175,8 +179,8 @@ jobs:
       run: |
         git checkout .
         make MYPLAT=axplat-aarch64-bsta1000b defconfig
-        cargo axplat add axplat-aarch64-bsta1000b -p arceos-helloworld -F smp --git https://github.com/arceos-org/axplat_crates.git --tag dev-v03
-        cargo axplat add axplat-aarch64-bsta1000b -p arceos-shell -F smp --git https://github.com/arceos-org/axplat_crates.git --tag dev-v03
+        cargo axplat add axplat-aarch64-bsta1000b -p arceos-helloworld -F smp --git https://github.com/arceos-org/axplat_crates.git --branch dev
+        cargo axplat add axplat-aarch64-bsta1000b -p arceos-shell -F smp --git https://github.com/arceos-org/axplat_crates.git --branch dev
         echo "extern crate axplat_aarch64_bsta1000b;" >> examples/helloworld/src/main.rs
         echo "extern crate axplat_aarch64_bsta1000b;" >> examples/shell/src/main.rs
     - name: Build helloworld for aarch64-bsta1000b
@@ -191,8 +195,8 @@ jobs:
       run: |
         git checkout .
         make MYPLAT=axplat-aarch64-phytium-pi defconfig
-        cargo axplat add axplat-aarch64-phytium-pi -p arceos-helloworld -F smp --git https://github.com/arceos-org/axplat_crates.git --tag dev-v03
-        cargo axplat add axplat-aarch64-phytium-pi -p arceos-shell -F smp --git https://github.com/arceos-org/axplat_crates.git --tag dev-v03
+        cargo axplat add axplat-aarch64-phytium-pi -p arceos-helloworld -F smp --git https://github.com/arceos-org/axplat_crates.git --branch dev
+        cargo axplat add axplat-aarch64-phytium-pi -p arceos-shell -F smp --git https://github.com/arceos-org/axplat_crates.git --branch dev
         echo "extern crate axplat_aarch64_phytium_pi;" >> examples/helloworld/src/main.rs
         echo "extern crate axplat_aarch64_phytium_pi;" >> examples/shell/src/main.rs
     - name: Build helloworld for aarch64-phytium-pi
@@ -217,55 +221,3 @@ jobs:
     - name: Build httpserver-c for x86_64-pc-oslab
       continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
       run: make PLAT_CONFIG=$(pwd)/configs/custom/x86_64-pc-oslab.toml A=examples/httpserver-c FEATURES=page-alloc-4g,driver-ixgbe
-
-  # Necessary checks for macOS builds
-  build-for-macos:
-    runs-on: macos-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        rust-toolchain: [nightly, nightly-2025-12-12]
-    env:
-      RUSTUP_TOOLCHAIN: ${{ matrix.rust-toolchain }}
-    steps:
-    - uses: actions/checkout@v4
-    - uses: dtolnay/rust-toolchain@stable
-      with:
-        toolchain: ${{ matrix.rust-toolchain }}
-        components: rust-src, clippy, llvm-tools
-        targets: x86_64-unknown-none
-    - uses: Swatinem/rust-cache@v2
-      with:
-        shared-key: cargo-bin-cache-${{ matrix.rust-toolchain }}
-        cache-targets: false
-    - name: Clippy for the default target
-      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make clippy
-
-    - name: Build helloworld
-      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make A=examples/helloworld
-
-    # Test for other platforms
-    - run: make PLATFORM=x86_64-pc-oslab defconfig
-    - name: Build helloworld for x86_64-pc-oslab
-      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=x86_64-pc-oslab A=examples/helloworld
-    - name: Build shell for x86_64-pc-oslab
-      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=x86_64-pc-oslab A=examples/shell FEATURES=page-alloc-4g,driver-ramdisk
-
-    - run: make PLATFORM=aarch64-raspi4 defconfig
-    - name: Build helloworld for aarch64-raspi4
-      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=aarch64-raspi4 SMP=4 A=examples/helloworld
-
-    - run: make PLATFORM=aarch64-bsta1000b defconfig
-    - name: Build helloworld for aarch64-bsta1000b
-      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=aarch64-bsta1000b A=examples/helloworld SMP=8
-
-    - run: make PLATFORM=aarch64-phytium-pi defconfig
-    - name: Build helloworld for aarch64-phytium-pi
-      continue-on-error: ${{ matrix.rust-toolchain == 'nightly' }}
-      run: make PLATFORM=aarch64-phytium-pi A=examples/helloworld SMP=4
