@@ -865,8 +865,9 @@ dependencies = [
 
 [[package]]
 name = "axplat-aarch64-dyn"
-version = "0.4.0"
-source = "git+https://github.com/arceos-hypervisor/axplat-aarch64-dyn.git?branch=publish#8865df94b9ac715da1a07100b3c770dc17bd7ee6"
+version = "0.4.0-preview.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "00c30702543a376ceb4cd68affbd7131bcc6d7fea57ad62a6b3e93d23718d43a"
 dependencies = [
  "aarch64-cpu 10.0.0",
  "aarch64-cpu-ext",
@@ -1028,8 +1029,9 @@ dependencies = [
 
 [[package]]
 name = "axplat-x86-qemu-q35"
-version = "0.1.0"
-source = "git+https://github.com/arceos-hypervisor/axvisor.git?branch=fixci#151244ad8b8b0870da34cc48f79bff2e17b9a2ce"
+version = "0.1.0-preview.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "963915f93b45f211b6f45617b90b419a73a0d58f2425593ba7d93623cc13cd9c"
 dependencies = [
  "axconfig-macros",
  "axcpu",
