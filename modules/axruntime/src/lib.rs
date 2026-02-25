@@ -383,7 +383,7 @@ pub fn cpu_count() -> usize {
     let mut cpu_count;
 
     cfg_if::cfg_if! {
-        if #[cfg(all(target_arch = "x86_64", feature = "plat-hv-x86_64"))] {
+        if #[cfg(all(target_arch = "x86_64", feature = "plat-hv-x86_64", target_os = "none"))] {
             cpu_count = axplat_x86_qemu_q35::cpu_count()
         } else if #[cfg(all(target_arch = "aarch64", feature = "plat-hv-aarch64"))] {
             cpu_count = somehal::mem::cpu_id_list().count()
