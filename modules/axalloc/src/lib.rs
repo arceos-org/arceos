@@ -19,10 +19,9 @@ const PAGE_SIZE: usize = 0x1000;
 mod page;
 pub use page::GlobalPage;
 
+/// Tracking of memory usage, enabled with the `tracking` feature.
 #[cfg(feature = "tracking")]
-mod tracking;
-#[cfg(feature = "tracking")]
-pub use tracking::*;
+pub mod tracking;
 
 /// Kinds of memory usage for tracking.
 #[repr(u8)]

@@ -1,7 +1,7 @@
 //! Physical memory management.
 
 use heapless::Vec;
-use lazyinit::LazyInit;
+use spin::Lazy;
 
 use axplat::mem::{check_sorted_ranges_overlap, ranges_difference};
 
@@ -16,32 +16,7 @@ use crate::addr_of_sym;
 
 const MAX_REGIONS: usize = 128;
 
-static ALL_MEM_REGIONS: LazyInit<Vec<PhysMemRegion, MAX_REGIONS>> = LazyInit::new();
-
-/// Returns an iterator over all physical memory regions.
-pub fn memory_regions() -> impl Iterator<Item = PhysMemRegion> {
-    ALL_MEM_REGIONS.iter().cloned()
-}
-
-/// Fills the `.bss` section with zeros.
-///
-/// It requires the symbols `_sbss` and `_ebss` to be defined in the linker script.
-///
-/// # Safety
-///
-/// This function is unsafe because it writes `.bss` section directly.
-pub unsafe fn clear_bss() {
-    unsafe {
-        core::slice::from_raw_parts_mut(
-            _sbss as *mut u8,
-            (_ebss as *mut u8).offset_from_unsigned(_sbss as *mut u8),
-        )
-        .fill(0);
-    }
-}
-
-/// Initializes physical memory regions.
-pub fn init() {
+static ALL_MEM_REGIONS: Lazy<Vec<PhysMemRegion, MAX_REGIONS>> = Lazy::new(|| {
     let mut all_regions = Vec::new();
     let mut push = |r: PhysMemRegion| {
         if r.size > 0 {
@@ -112,7 +87,29 @@ pub fn init() {
         .inspect_err(|(a, b)| error!("Physical memory region {a:#x?} overlaps with {b:#x?}"))
         .unwrap();
 
-    ALL_MEM_REGIONS.init_once(all_regions);
+    all_regions
+});
+
+/// Returns an iterator over all physical memory regions.
+pub fn memory_regions() -> impl Iterator<Item = PhysMemRegion> {
+    ALL_MEM_REGIONS.iter().cloned()
+}
+
+/// Fills the `.bss` section with zeros.
+///
+/// It requires the symbols `_sbss` and `_ebss` to be defined in the linker script.
+///
+/// # Safety
+///
+/// This function is unsafe because it writes `.bss` section directly.
+pub unsafe fn clear_bss() {
+    unsafe {
+        core::slice::from_raw_parts_mut(
+            _sbss as *mut u8,
+            (_ebss as *mut u8).offset_from_unsigned(_sbss as *mut u8),
+        )
+        .fill(0);
+    }
 }
 
 unsafe extern "C" {

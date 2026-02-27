@@ -370,7 +370,7 @@ unsafe impl GlobalAlloc for GlobalAllocator {
 
         #[cfg(feature = "tracking")]
         {
-            super::with_tracking_state(|state| match state {
+            crate::tracking::with_state(|state| match state {
                 None => inner(),
                 Some(state) => {
                     let ptr = inner();
@@ -378,7 +378,7 @@ unsafe impl GlobalAlloc for GlobalAllocator {
                     state.generation += 1;
                     state.map.insert(
                         ptr as usize,
-                        super::AllocationInfo {
+                        crate::tracking::AllocationInfo {
                             layout,
                             backtrace: axbacktrace::Backtrace::capture(),
                             generation,
@@ -398,7 +398,7 @@ unsafe impl GlobalAlloc for GlobalAllocator {
         let inner = || GlobalAllocator::dealloc(self, ptr, layout);
 
         #[cfg(feature = "tracking")]
-        super::with_tracking_state(|state| match state {
+        crate::tracking::with_state(|state| match state {
             None => inner(),
             Some(state) => {
                 let address = ptr.as_ptr() as usize;
