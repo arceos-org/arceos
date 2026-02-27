@@ -96,7 +96,7 @@ driver-ixgbe = ["axdriver?/ixgbe"]
 driver-fxmac = ["axdriver?/fxmac"]                          # fxmac ethernet driver for PhytiumPi
 driver-bcm2835-sdhci = ["axdriver?/bcm2835-sdhci"]
 
-driver-dyn = ["paging", "axruntime/driver-dyn", "axdriver/dyn"]
+driver-dyn = ["paging", "axconfig/driver-dyn", "axruntime/driver-dyn", "axdriver/dyn"]
 
 # Backtrace
 dwarf = ["alloc", "axbacktrace/dwarf"]
@@ -104,6 +104,7 @@ dwarf = ["alloc", "axbacktrace/dwarf"]
 [dependencies]
 axalloc = { workspace = true, optional = true }
 axbacktrace.workspace = true
+axconfig = { workspace = true, optional = true }
 axdisplay = { workspace = true, optional = true }
 axdriver = { workspace = true, optional = true }
 axfs = { workspace = true, optional = true }

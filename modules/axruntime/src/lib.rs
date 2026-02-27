@@ -36,15 +36,6 @@
 #[macro_use]
 extern crate axlog;
 
-#[cfg(all(target_arch = "x86_64", feature = "plat-hv-x86_64"))]
-extern crate axplat_x86_qemu_q35;
-
-#[cfg(all(target_arch = "aarch64", feature = "plat-hv-aarch64"))]
-extern crate axplat_aarch64_dyn;
-
-#[cfg(all(target_arch = "aarch64", feature = "plat-hv-aarch64"))]
-extern crate somehal;
-
 #[cfg(all(target_os = "none", not(test)))]
 mod lang_items;
 
@@ -109,18 +100,11 @@ impl axlog::LogIf for LogIfImpl {
 
 use core::sync::atomic::{AtomicUsize, Ordering};
 
+/// Number of CPUs that have completed initialization.
 static INITED_CPUS: AtomicUsize = AtomicUsize::new(0);
 
-#[cfg(any(feature = "plat-hv-x86_64", feature = "plat-hv-aarch64"))]
 fn is_init_ok() -> bool {
-    let cpu_num = cpu_count();
-    INITED_CPUS.load(Ordering::Acquire) == cpu_num
-}
-
-#[cfg(not(any(feature = "plat-hv-x86_64", feature = "plat-hv-aarch64")))]
-fn is_init_ok() -> bool {
-    let cpu_num = axconfig::plat::MAX_CPU_NUM;
-    INITED_CPUS.load(Ordering::Acquire) == cpu_num
+    INITED_CPUS.load(Ordering::Acquire) == axhal::cpu_num()
 }
 
 /// The main entry point of the ArceOS runtime.
@@ -140,10 +124,6 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
     axhal::init_early(cpu_id, arg);
 
     ax_println!("{}", LOGO);
-    #[cfg(any(feature = "plat-hv-x86_64", feature = "plat-hv-aarch64"))]
-    ax_println!("smp = {}\n", cpu_count());
-
-    #[cfg(not(any(feature = "plat-hv-x86_64", feature = "plat-hv-aarch64")))]
     ax_println!(
         indoc::indoc! {"
             arch = {}
@@ -160,7 +140,7 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
         option_env!("AX_MODE").unwrap_or(""),
         option_env!("AX_LOG").unwrap_or(""),
         axbacktrace::is_enabled(),
-        axconfig::plat::MAX_CPU_NUM,
+        axhal::cpu_num()
     );
 
     #[cfg(feature = "rtc")]
@@ -175,7 +155,6 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
     info!("Logging is enabled.");
     info!("Primary CPU {cpu_id} started, arg = {arg:#x}.");
 
-    axhal::mem::init();
     info!("Found physcial memory regions:");
     for r in axhal::mem::memory_regions() {
         info!(
@@ -342,7 +321,6 @@ fn init_interrupt() {
         axhal::time::set_oneshot_timer(deadline);
     }
 
-    // axhal::irq::register(axconfig::devices::TIMER_IRQ, || {
     axhal::irq::register(axhal::time::irq_num(), || {
         update_timer();
         #[cfg(feature = "multitask")]
@@ -363,38 +341,4 @@ fn init_tls() {
     let main_tls = axhal::tls::TlsArea::alloc();
     unsafe { axhal::asm::write_thread_pointer(main_tls.tls_ptr() as usize) };
     core::mem::forget(main_tls);
-}
-
-#[cfg(any(feature = "plat-hv-x86_64", feature = "plat-hv-aarch64"))]
-fn smp() -> Option<usize> {
-    let mut smp = None;
-    let s = option_env!("AXVISOR_SMP");
-    if let Some(s) = s
-        && let Ok(n) = s.parse::<usize>()
-    {
-        smp = Some(n);
-    }
-    smp
-}
-
-/// Returns the number of CPUs available on the system
-#[cfg(any(feature = "plat-hv-x86_64", feature = "plat-hv-aarch64"))]
-pub fn cpu_count() -> usize {
-    let mut cpu_count;
-
-    cfg_if::cfg_if! {
-        if #[cfg(all(target_arch = "x86_64", feature = "plat-hv-x86_64", target_os = "none"))] {
-            cpu_count = axplat_x86_qemu_q35::cpu_count()
-        } else if #[cfg(all(target_arch = "aarch64", feature = "plat-hv-aarch64"))] {
-            cpu_count = somehal::mem::cpu_id_list().count()
-        } else {
-            cpu_count = 1;
-        }
-    }
-
-    if let Some(smp) = smp() {
-        cpu_count = smp.min(cpu_count);
-    }
-
-    cpu_count
 }

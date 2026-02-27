@@ -20,9 +20,7 @@ mod page;
 pub use page::GlobalPage;
 
 #[cfg(feature = "tracking")]
-mod tracking;
-#[cfg(feature = "tracking")]
-pub use tracking::*;
+pub mod tracking;
 
 /// Kinds of memory usage for tracking.
 #[repr(u8)]
