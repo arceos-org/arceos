@@ -5,8 +5,6 @@
 #[cfg(feature = "axstd")]
 extern crate axstd as std;
 
-extern crate axplat_arm_qemu_virt;
-
 #[cfg(not(feature = "axstd"))]
 fn path_to_str(path: &impl AsRef<std::ffi::OsStr>) -> &str {
     path.as_ref().to_str().unwrap()
