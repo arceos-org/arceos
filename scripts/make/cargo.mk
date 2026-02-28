@@ -41,16 +41,16 @@ endef
 clippy_args := -A unsafe_op_in_unsafe_fn
 
 define cargo_clippy
-  $(call run_cmd,cargo clippy,--all-features --workspace --exclude axlog $(1) $(verbose) -- $(clippy_args))
+  $(call run_cmd,cargo clippy,--workspace --exclude axlog --exclude axplat-dyn $(1) $(verbose) -- $(clippy_args))
   $(call run_cmd,cargo clippy,-p axlog $(1) $(verbose) -- $(clippy_args))
 endef
 
 all_packages := \
-  $(shell ls $(CURDIR)/modules) \
+  $(filter-out axplat-dyn,$(shell ls $(CURDIR)/modules)) \
   axfeat arceos_api axstd axlibc
 
 define cargo_doc
-  $(call run_cmd,cargo doc,--no-deps --all-features --workspace --exclude "arceos-*" $(verbose))
+  $(call run_cmd,cargo doc,--no-deps --all-features --workspace --exclude "arceos-*" --exclude axplat-dyn $(verbose))
   @# run twice to fix broken hyperlinks
   $(foreach p,$(all_packages), \
     $(call run_cmd,cargo rustdoc,--all-features -p $(p) $(verbose))
