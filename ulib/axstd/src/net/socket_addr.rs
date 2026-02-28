@@ -1,10 +1,10 @@
 extern crate alloc;
 
-use crate::io;
 use alloc::string::String;
+pub use core::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 use core::{iter, option, slice};
 
-pub use core::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
+use crate::io;
 
 /// A trait for objects which can be converted or resolved to one or more
 /// [`SocketAddr`] values.
@@ -38,6 +38,7 @@ pub trait ToSocketAddrs {
 
 impl ToSocketAddrs for SocketAddr {
     type Iter = option::IntoIter<SocketAddr>;
+
     fn to_socket_addrs(&self) -> io::Result<option::IntoIter<SocketAddr>> {
         Ok(Some(*self).into_iter())
     }
@@ -45,6 +46,7 @@ impl ToSocketAddrs for SocketAddr {
 
 impl ToSocketAddrs for SocketAddrV4 {
     type Iter = option::IntoIter<SocketAddr>;
+
     fn to_socket_addrs(&self) -> io::Result<option::IntoIter<SocketAddr>> {
         SocketAddr::V4(*self).to_socket_addrs()
     }
@@ -52,6 +54,7 @@ impl ToSocketAddrs for SocketAddrV4 {
 
 impl ToSocketAddrs for (IpAddr, u16) {
     type Iter = option::IntoIter<SocketAddr>;
+
     fn to_socket_addrs(&self) -> io::Result<option::IntoIter<SocketAddr>> {
         let (ip, port) = *self;
         SocketAddr::new(ip, port).to_socket_addrs()
@@ -60,6 +63,7 @@ impl ToSocketAddrs for (IpAddr, u16) {
 
 impl ToSocketAddrs for (Ipv4Addr, u16) {
     type Iter = option::IntoIter<SocketAddr>;
+
     fn to_socket_addrs(&self) -> io::Result<option::IntoIter<SocketAddr>> {
         let (ip, port) = *self;
         SocketAddrV4::new(ip, port).to_socket_addrs()
@@ -76,6 +80,7 @@ impl<'a> ToSocketAddrs for &'a [SocketAddr] {
 
 impl<T: ToSocketAddrs + ?Sized> ToSocketAddrs for &T {
     type Iter = T::Iter;
+
     fn to_socket_addrs(&self) -> io::Result<T::Iter> {
         (**self).to_socket_addrs()
     }
@@ -88,6 +93,7 @@ mod no_dns {
 
     impl ToSocketAddrs for (&str, u16) {
         type Iter = option::IntoIter<SocketAddr>;
+
         fn to_socket_addrs(&self) -> io::Result<option::IntoIter<SocketAddr>> {
             let (host, port) = *self;
             Ok(host
@@ -103,6 +109,7 @@ mod no_dns {
 
     impl ToSocketAddrs for str {
         type Iter = option::IntoIter<SocketAddr>;
+
         fn to_socket_addrs(&self) -> io::Result<option::IntoIter<SocketAddr>> {
             // parse as a regular SocketAddr first
             Ok(self.parse().ok().into_iter())
@@ -111,6 +118,7 @@ mod no_dns {
 
     impl ToSocketAddrs for (String, u16) {
         type Iter = option::IntoIter<SocketAddr>;
+
         fn to_socket_addrs(&self) -> io::Result<option::IntoIter<SocketAddr>> {
             (&*self.0, self.1).to_socket_addrs()
         }
@@ -118,6 +126,7 @@ mod no_dns {
 
     impl ToSocketAddrs for String {
         type Iter = option::IntoIter<SocketAddr>;
+
         fn to_socket_addrs(&self) -> io::Result<option::IntoIter<SocketAddr>> {
             (**self).to_socket_addrs()
         }
@@ -127,11 +136,13 @@ mod no_dns {
 #[cfg(feature = "dns")]
 #[doc(cfg(feature = "net"))]
 mod dns {
-    use super::*;
     use alloc::{vec, vec::Vec};
+
+    use super::*;
 
     impl ToSocketAddrs for (&str, u16) {
         type Iter = vec::IntoIter<SocketAddr>;
+
         fn to_socket_addrs(&self) -> io::Result<vec::IntoIter<SocketAddr>> {
             let (host, port) = *self;
 
@@ -176,6 +187,7 @@ mod dns {
 
     impl ToSocketAddrs for (String, u16) {
         type Iter = vec::IntoIter<SocketAddr>;
+
         fn to_socket_addrs(&self) -> io::Result<vec::IntoIter<SocketAddr>> {
             (&*self.0, self.1).to_socket_addrs()
         }
@@ -183,6 +195,7 @@ mod dns {
 
     impl ToSocketAddrs for String {
         type Iter = vec::IntoIter<SocketAddr>;
+
         fn to_socket_addrs(&self) -> io::Result<vec::IntoIter<SocketAddr>> {
             (**self).to_socket_addrs()
         }

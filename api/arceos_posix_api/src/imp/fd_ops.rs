@@ -7,8 +7,10 @@ use flatten_objects::FlattenObjects;
 use scope_local::scope_local;
 use spin::RwLock;
 
-use crate::ctypes;
-use crate::imp::stdio::{stdin, stdout};
+use crate::{
+    ctypes,
+    imp::stdio::{stdin, stdout},
+};
 
 pub const AX_FILE_LIMIT: usize = 1024;
 

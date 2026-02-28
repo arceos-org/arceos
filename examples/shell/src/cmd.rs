@@ -1,18 +1,20 @@
 use core::str;
-use std::fs::{self, File, FileType};
-use std::io::{self, prelude::*};
-use std::{string::String, vec::Vec};
-
 #[cfg(all(not(feature = "axstd"), unix))]
 use std::os::unix::fs::{FileTypeExt, PermissionsExt};
+use std::{
+    fs::{self, File, FileType},
+    io::{self, prelude::*},
+    string::String,
+    vec::Vec,
+};
 
 use crate::path_to_str;
 
 macro_rules! print_err {
-    ($cmd: literal, $msg: expr) => {
+    ($cmd:literal, $msg:expr) => {
         println!("{}: {}", $cmd, $msg);
     };
-    ($cmd: literal, $arg: expr, $err: expr) => {
+    ($cmd:literal, $arg:expr, $err:expr) => {
         println!("{}: {}: {}", $cmd, $arg, $err);
     };
 }

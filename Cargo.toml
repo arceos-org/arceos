@@ -17,6 +17,7 @@ members = [
     "modules/axruntime",
     "modules/axsync",
     "modules/axtask",
+    "modules/axplat-dyn",
 
     "api/axfeat",
     "api/arceos_api",
@@ -66,6 +67,7 @@ axnet = { version = "=0.2.2-hv.6", path = "modules/axnet" }
 axruntime = { version = "=0.2.2-hv.6", path = "modules/axruntime" }
 axsync = { version = "=0.2.2-hv.6", path = "modules/axsync" }
 axtask = { version = "=0.2.2-hv.6", path = "modules/axtask" }
+axplat-dyn = { version = "=0.2.2-hv.6",  path = "modules/axplat-dyn", default-features = false }
 
 axallocator = { version = "0.1.3-preview.1", features = [
     "axerrno",
@@ -82,15 +84,16 @@ axdriver_vsock = "0.1.4-preview.3"
 axerrno = "0.2"
 axfs-ng-vfs = "0.1"
 axio = "0.3.0-pre.1"
-axklib = "0.2"
-axplat = "0.3.1-pre.1"
-axplat-aarch64-bsta1000b = "0.3.1-pre.1"
-axplat-aarch64-phytium-pi = "0.3.1-pre.1"
-axplat-aarch64-qemu-virt = "0.3.1-pre.1"
-axplat-aarch64-raspi = "0.3.1-pre.1"
-axplat-loongarch64-qemu-virt = "0.3.1-pre.1"
-axplat-riscv64-qemu-virt = "0.3.1-pre.1"
-axplat-x86-pc = "0.3.1-pre.1"
+axklib = "0.3"
+axcpu = "0.3.0-preview.4"
+axplat = "0.3.1-pre.2"
+axplat-aarch64-bsta1000b = "0.3.1-pre.2"
+axplat-aarch64-phytium-pi = "0.3.1-pre.2"
+axplat-aarch64-qemu-virt = "0.3.1-pre.2"
+axplat-aarch64-raspi = "0.3.1-pre.2"
+axplat-loongarch64-qemu-virt = "0.3.1-pre.2"
+axplat-riscv64-qemu-virt = "0.3.1-pre.2"
+axplat-x86-pc = "0.3.1-pre.2"
 axpoll = "0.1"
 bindgen = "0.72"
 cfg-if = "1.0"
@@ -106,6 +109,7 @@ lock_api = { version = "0.4", default-features = false }
 log = "0.4"
 memory_addr = "0.4"
 page_table_multiarch = "0.6"
-percpu = "0.2"
+percpu = "0.2.3"
 scope-local = "0.1"
 spin = "0.10"
+

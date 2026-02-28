@@ -1,8 +1,9 @@
 #![allow(dead_code)]
 #![allow(unused_macros)]
 
-use axerrno::{LinuxError, LinuxResult};
 use core::ffi::{CStr, c_char};
+
+use axerrno::{LinuxError, LinuxResult};
 
 pub fn char_ptr_to_str<'a>(str: *const c_char) -> LinuxResult<&'a str> {
     if str.is_null() {

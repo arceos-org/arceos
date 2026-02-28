@@ -1,9 +1,14 @@
-use axerrno::LinuxError;
-use core::ffi::{c_int, c_long};
-use core::time::Duration;
+use core::{
+    ffi::{c_int, c_long},
+    time::Duration,
+};
 
-use crate::ctypes;
-use crate::ctypes::{CLOCK_MONOTONIC, CLOCK_REALTIME};
+use axerrno::LinuxError;
+
+use crate::{
+    ctypes,
+    ctypes::{CLOCK_MONOTONIC, CLOCK_REALTIME},
+};
 
 impl From<ctypes::timespec> for Duration {
     fn from(ts: ctypes::timespec) -> Self {

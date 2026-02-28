@@ -2,8 +2,7 @@
 
 mod stdio;
 
-pub use axio::prelude;
-pub use axio::{BufRead, BufReader, Error, Read, Seek, SeekFrom, Write};
+pub use axio::{BufRead, BufReader, Error, Read, Seek, SeekFrom, Write, prelude};
 
 #[doc(hidden)]
 pub use self::stdio::__print_impl;

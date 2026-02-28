@@ -29,12 +29,6 @@ pub mod config {
 #[allow(dead_code, non_snake_case, non_camel_case_types, non_upper_case_globals, clippy::upper_case_acronyms, missing_docs)]
 pub mod ctypes;
 
-pub use imp::io::{sys_read, sys_write, sys_writev};
-pub use imp::resources::{sys_getrlimit, sys_setrlimit};
-pub use imp::sys::sys_sysconf;
-pub use imp::task::{sys_exit, sys_getpid, sys_sched_yield};
-pub use imp::time::{sys_clock_gettime, sys_nanosleep};
-
 #[cfg(feature = "fd")]
 pub use imp::fd_ops::{sys_close, sys_dup, sys_dup2, sys_fcntl};
 #[cfg(feature = "fs")]
@@ -57,3 +51,10 @@ pub use imp::pthread::mutex::{
 };
 #[cfg(feature = "multitask")]
 pub use imp::pthread::{sys_pthread_create, sys_pthread_exit, sys_pthread_join, sys_pthread_self};
+pub use imp::{
+    io::{sys_read, sys_write, sys_writev},
+    resources::{sys_getrlimit, sys_setrlimit},
+    sys::sys_sysconf,
+    task::{sys_exit, sys_getpid, sys_sched_yield},
+    time::{sys_clock_gettime, sys_nanosleep},
+};

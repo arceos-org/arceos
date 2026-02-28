@@ -1,5 +1,6 @@
-use axerrno::LinuxError;
 use core::ffi::{c_char, c_int};
+
+use axerrno::LinuxError;
 
 /// The global errno variable.
 #[cfg_attr(feature = "tls", thread_local)]

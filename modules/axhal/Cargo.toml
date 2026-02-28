@@ -16,6 +16,7 @@ smp = [
     "axplat-aarch64-qemu-virt?/smp",
     "axplat-riscv64-qemu-virt?/smp",
     "axplat-loongarch64-qemu-virt?/smp",
+    "axplat-dyn?/smp",
     "axplat/smp",
 ]
 irq = [
@@ -25,6 +26,7 @@ irq = [
     "axplat-riscv64-qemu-virt?/irq",
     "axplat-loongarch64-qemu-virt?/irq",
     "axplat/irq",
+    "axplat-dyn?/irq",
 ]
 fp-simd = [
     "axcpu/fp-simd",
@@ -41,10 +43,11 @@ rtc = [
 ]
 paging = ["dep:axalloc", "dep:page_table_multiarch"]
 tls = ["axcpu/tls"]
-uspace = ["paging", "axcpu/uspace"]
+uspace = ["paging", "axcpu/uspace", "axplat-dyn?/uspace"]
 
 # Custom or default platforms
 myplat = []
+plat-dyn = ["axplat-dyn"]
 defplat = [
     "dep:axplat-x86-pc",
     "dep:axplat-aarch64-qemu-virt",
@@ -58,7 +61,7 @@ ipi = ["irq"]
 [dependencies]
 axalloc = { workspace = true, optional = true }
 axconfig.workspace = true
-axcpu = { version = "0.3.0-preview.5" }
+axcpu.workspace = true
 axplat.workspace = true
 cfg-if.workspace = true
 fdt-parser = "0.4"
@@ -70,6 +73,7 @@ memory_addr.workspace = true
 page_table_multiarch = { workspace = true, optional = true }
 percpu.workspace = true
 spin.workspace = true
+axplat-dyn = { workspace = true, optional = true}
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 axplat-x86-pc = { workspace = true, optional = true }

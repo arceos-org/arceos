@@ -7,8 +7,7 @@
 //! skipping the sys_brk step.
 
 use alloc::alloc::{alloc, dealloc};
-use core::alloc::Layout;
-use core::ffi::c_void;
+use core::{alloc::Layout, ffi::c_void};
 
 use crate::ctypes;
 

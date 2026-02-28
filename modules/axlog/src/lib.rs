@@ -43,14 +43,14 @@
 
 extern crate log;
 
-use core::fmt::{self, Write};
-use core::str::FromStr;
-
-use log::{Level, LevelFilter, Log, Metadata, Record};
+use core::{
+    fmt::{self, Write},
+    str::FromStr,
+};
 
 #[cfg(not(feature = "std"))]
 use crate_interface::call_interface;
-
+use log::{Level, LevelFilter, Log, Metadata, Record};
 pub use log::{debug, error, info, trace, warn};
 
 /// Prints to the console.
@@ -82,22 +82,22 @@ macro_rules! with_color {
 #[repr(u8)]
 #[allow(dead_code)]
 enum ColorCode {
-    Black = 30,
-    Red = 31,
-    Green = 32,
-    Yellow = 33,
-    Blue = 34,
-    Magenta = 35,
-    Cyan = 36,
-    White = 37,
-    BrightBlack = 90,
-    BrightRed = 91,
-    BrightGreen = 92,
-    BrightYellow = 93,
-    BrightBlue = 94,
+    Black         = 30,
+    Red           = 31,
+    Green         = 32,
+    Yellow        = 33,
+    Blue          = 34,
+    Magenta       = 35,
+    Cyan          = 36,
+    White         = 37,
+    BrightBlack   = 90,
+    BrightRed     = 91,
+    BrightGreen   = 92,
+    BrightYellow  = 93,
+    BrightBlue    = 94,
     BrightMagenta = 95,
-    BrightCyan = 96,
-    BrightWhite = 97,
+    BrightCyan    = 96,
+    BrightWhite   = 97,
 }
 
 /// Extern interfaces that must be implemented in other crates.

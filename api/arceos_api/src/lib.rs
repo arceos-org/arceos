@@ -261,8 +261,9 @@ pub mod fs {
 
 /// Networking primitives for TCP/UDP communication.
 pub mod net {
-    use crate::{AxResult, io::AxPollState};
     use core::net::{IpAddr, SocketAddr};
+
+    use crate::{AxResult, io::AxPollState};
 
     define_api_type! {
         @cfg "net";
@@ -382,14 +383,9 @@ pub mod io {
 /// You should prefer to use other APIs rather than these modules. The modules
 /// here should only be used if other APIs do not meet your requirements.
 pub mod modules {
-    pub use axconfig;
-    pub use axhal;
-    pub use axlog;
-    pub use axruntime;
-    pub use axsync;
-
     #[cfg(feature = "alloc")]
     pub use axalloc;
+    pub use axconfig;
     #[cfg(feature = "display")]
     pub use axdisplay;
     #[cfg(feature = "dma")]
@@ -398,12 +394,16 @@ pub mod modules {
     pub use axdriver;
     #[cfg(feature = "fs")]
     pub use axfs;
+    pub use axhal;
     #[cfg(feature = "ipi")]
     pub use axipi;
+    pub use axlog;
     #[cfg(feature = "paging")]
     pub use axmm;
     #[cfg(feature = "net")]
     pub use axnet;
+    pub use axruntime;
+    pub use axsync;
     #[cfg(feature = "multitask")]
     pub use axtask;
 }

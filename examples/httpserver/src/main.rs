@@ -13,9 +13,11 @@
 #[cfg(feature = "axstd")]
 extern crate axstd as std;
 
-use std::io::{self, prelude::*};
-use std::net::{TcpListener, TcpStream};
-use std::thread;
+use std::{
+    io::{self, prelude::*},
+    net::{TcpListener, TcpStream},
+    thread,
+};
 
 const LOCAL_IP: &str = "0.0.0.0";
 const LOCAL_PORT: u16 = 5555;
@@ -23,12 +25,8 @@ const LOCAL_PORT: u16 = 5555;
 macro_rules! header {
     () => {
         "\
-HTTP/1.1 200 OK\r\n\
-Content-Type: text/html\r\n\
-Content-Length: {}\r\n\
-Connection: close\r\n\
-\r\n\
-{}"
+                        HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: \
+         {}\r\nConnection: close\r\n\r\n{}"
     };
 }
 

@@ -6,9 +6,8 @@
 extern crate log;
 extern crate alloc;
 
-use core::mem;
-
 use alloc::vec::Vec;
+use core::mem;
 
 use axdriver::{AxDeviceContainer, prelude::*};
 use axsync::Mutex;

@@ -3,13 +3,14 @@
 mod dir;
 mod file;
 
-use crate::io::{self, prelude::*};
-
 #[cfg(feature = "alloc")]
 use alloc::{string::String, vec::Vec};
 
-pub use self::dir::{DirBuilder, DirEntry, ReadDir};
-pub use self::file::{File, FileType, Metadata, OpenOptions, Permissions};
+pub use self::{
+    dir::{DirBuilder, DirEntry, ReadDir},
+    file::{File, FileType, Metadata, OpenOptions, Permissions},
+};
+use crate::io::{self, prelude::*};
 
 /// Read the entire contents of a file into a bytes vector.
 #[cfg(feature = "alloc")]

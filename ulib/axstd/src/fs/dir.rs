@@ -3,10 +3,10 @@ extern crate alloc;
 use alloc::string::String;
 use core::fmt;
 
+use arceos_api::fs as api;
+
 use super::FileType;
 use crate::io::Result;
-
-use arceos_api::fs as api;
 
 /// Iterator over the entries in a directory.
 pub struct ReadDir<'a> {

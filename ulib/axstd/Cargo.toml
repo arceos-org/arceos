@@ -35,6 +35,7 @@ ipi = ["arceos_api/ipi", "axfeat/ipi"]
 # Custom or default platforms
 myplat = ["axfeat/myplat"]
 defplat = ["axfeat/defplat"]
+plat-dyn = ["axfeat/plat-dyn"]
 
 # Memory
 alloc = ["arceos_api/alloc", "axfeat/alloc", "axio/alloc"]
@@ -62,7 +63,6 @@ fatfs = ["arceos_api/fs", "axfeat/fs"]
 
 # Networking
 net = ["arceos_api/net", "axfeat/net"]
-vsock = ["axfeat/vsock"]
 dns = []
 
 # Display
@@ -82,7 +82,7 @@ driver-sdmmc = ["axfeat/driver-sdmmc"]
 driver-ixgbe = ["axfeat/driver-ixgbe"]
 driver-fxmac = ["axfeat/driver-fxmac"]
 driver-bcm2835-sdhci = ["axfeat/driver-bcm2835-sdhci"]
-driver-dyn = ["axfeat/driver-dyn"]
+driver-ahci = ["axfeat/driver-ahci"]
 
 # Backtrace
 dwarf = ["axfeat/dwarf"]
@@ -95,3 +95,4 @@ axio.workspace = true
 kspin.workspace = true
 lazyinit.workspace = true
 lock_api.workspace = true
+spin.workspace = true

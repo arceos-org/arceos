@@ -76,48 +76,41 @@ mod sys;
 mod time;
 mod unistd;
 
-#[cfg(not(test))]
-pub use self::io::write;
-pub use self::io::{read, writev};
-
-pub use self::errno::strerror;
-pub use self::mktime::mktime;
-pub use self::rand::{rand, random, srand};
-pub use self::resource::{getrlimit, setrlimit};
-pub use self::setjmp::{longjmp, setjmp};
-pub use self::sys::sysconf;
-pub use self::time::{clock_gettime, nanosleep};
-pub use self::unistd::{abort, exit, getpid};
-
-#[cfg(feature = "alloc")]
-pub use self::malloc::{free, malloc};
-#[cfg(feature = "alloc")]
-pub use self::strftime::strftime;
-
 #[cfg(feature = "fd")]
 pub use self::fd_ops::{ax_fcntl, close, dup, dup2, dup3};
-
 #[cfg(feature = "fs")]
 pub use self::fs::{ax_open, fstat, getcwd, lseek, lstat, rename, stat};
-
+#[cfg(not(test))]
+pub use self::io::write;
+#[cfg(feature = "select")]
+pub use self::io_mpx::select;
+#[cfg(feature = "epoll")]
+pub use self::io_mpx::{epoll_create, epoll_ctl, epoll_wait};
+#[cfg(feature = "alloc")]
+pub use self::malloc::{free, malloc};
 #[cfg(feature = "net")]
 pub use self::net::{
     accept, bind, connect, freeaddrinfo, getaddrinfo, getpeername, getsockname, listen, recv,
     recvfrom, send, sendto, shutdown, socket,
 };
-
+#[cfg(feature = "pipe")]
+pub use self::pipe::pipe;
 #[cfg(feature = "multitask")]
 pub use self::pthread::{pthread_create, pthread_exit, pthread_join, pthread_self};
 #[cfg(feature = "multitask")]
 pub use self::pthread::{pthread_mutex_init, pthread_mutex_lock, pthread_mutex_unlock};
-
-#[cfg(feature = "pipe")]
-pub use self::pipe::pipe;
-
-#[cfg(feature = "select")]
-pub use self::io_mpx::select;
-#[cfg(feature = "epoll")]
-pub use self::io_mpx::{epoll_create, epoll_ctl, epoll_wait};
-
+#[cfg(feature = "alloc")]
+pub use self::strftime::strftime;
 #[cfg(feature = "fp-simd")]
 pub use self::strtod::{strtod, strtof};
+pub use self::{
+    errno::strerror,
+    io::{read, writev},
+    mktime::mktime,
+    rand::{rand, random, srand},
+    resource::{getrlimit, setrlimit},
+    setjmp::{longjmp, setjmp},
+    sys::sysconf,
+    time::{clock_gettime, nanosleep},
+    unistd::{abort, exit, getpid},
+};

@@ -1,9 +1,9 @@
 //! Temporal quantification.
 
-use arceos_api::time::AxTimeValue;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
-
 pub use core::time::Duration;
+
+use arceos_api::time::AxTimeValue;
 
 /// A measurement of a monotonically nondecreasing clock.
 /// Opaque and useful only with [`Duration`].
