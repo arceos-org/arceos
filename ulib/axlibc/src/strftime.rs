@@ -25,6 +25,7 @@ impl Write for StringWriter {
         }
         Ok(buf.len())
     }
+
     fn flush(&mut self) -> axerrno::AxResult {
         Ok(())
     }

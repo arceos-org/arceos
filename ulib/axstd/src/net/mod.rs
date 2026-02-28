@@ -18,11 +18,13 @@ mod socket_addr;
 mod tcp;
 mod udp;
 
-pub use self::socket_addr::{IpAddr, Ipv4Addr, Ipv6Addr};
-pub use self::socket_addr::{SocketAddr, SocketAddrV4, SocketAddrV6, ToSocketAddrs};
-pub use self::tcp::{TcpListener, TcpStream};
-pub use self::udp::UdpSocket;
-
+pub use self::{
+    socket_addr::{
+        IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6, ToSocketAddrs,
+    },
+    tcp::{TcpListener, TcpStream},
+    udp::UdpSocket,
+};
 use crate::io;
 
 fn each_addr<A: ToSocketAddrs, F, T>(addr: A, mut f: F) -> io::Result<T>

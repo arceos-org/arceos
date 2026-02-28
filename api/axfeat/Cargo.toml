@@ -28,6 +28,7 @@ ipi = ["irq", "dep:axipi", "axhal/ipi", "axruntime/ipi"]
 # Custom or default platforms
 myplat = ["axhal/myplat"]
 defplat = ["axhal/defplat"]
+plat-dyn = ["axhal/plat-dyn", "paging", "axruntime/plat-dyn", "axdriver/dyn"]
 
 # Memory
 alloc = ["axalloc", "axruntime/alloc"]
@@ -64,7 +65,6 @@ fs = [
 
 # Networking
 net = ["alloc", "paging", "axdriver/virtio-net", "dep:axnet", "axruntime/net"]
-vsock = ["net", "axdriver/virtio-socket", "axruntime/vsock", "axnet/vsock"]
 
 # Display
 display = [
@@ -95,8 +95,7 @@ driver-sdmmc = ["axdriver?/sdmmc"]
 driver-ixgbe = ["axdriver?/ixgbe"]
 driver-fxmac = ["axdriver?/fxmac"]                          # fxmac ethernet driver for PhytiumPi
 driver-bcm2835-sdhci = ["axdriver?/bcm2835-sdhci"]
-
-driver-dyn = ["paging", "axconfig/driver-dyn", "axruntime/driver-dyn", "axdriver/dyn"]
+driver-ahci = ["axdriver?/ahci"]
 
 # Backtrace
 dwarf = ["alloc", "axbacktrace/dwarf"]

@@ -1,8 +1,9 @@
-use crate::{AllDevices, prelude::*};
 use axdriver_pci::{
     BarInfo, Cam, Command, DeviceFunction, HeaderType, MemoryBarType, PciRangeAllocator, PciRoot,
 };
 use axhal::mem::phys_to_virt;
+
+use crate::{AllDevices, prelude::*};
 
 const PCI_BAR_NUM: u8 = 6;
 

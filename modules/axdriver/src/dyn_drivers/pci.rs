@@ -1,10 +1,13 @@
 extern crate alloc;
 
-use crate::dyn_drivers::iomap;
 use memory_addr::MemoryAddr;
-use rdrive::probe::fdt::PciSpace;
-use rdrive::probe::pci::*;
-use rdrive::{PlatformDevice, module_driver, probe::OnProbeError, register::FdtInfo};
+use rdrive::{
+    PlatformDevice, module_driver,
+    probe::{OnProbeError, fdt::PciSpace, pci::*},
+    register::FdtInfo,
+};
+
+use crate::dyn_drivers::iomap;
 
 module_driver!(
     name: "Generic PCIe Controller Driver",

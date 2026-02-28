@@ -1,7 +1,8 @@
-use crate::io::{Result, SeekFrom, prelude::*};
 use core::fmt;
 
 use arceos_api::fs as api;
+
+use crate::io::{Result, SeekFrom, prelude::*};
 
 /// A structure representing a type of file with accessors for each file type.
 /// It is returned by [`Metadata::file_type`] method.

@@ -1,7 +1,7 @@
+use arceos_api::net::{self as api, AxUdpSocketHandle};
+
 use super::{SocketAddr, ToSocketAddrs};
 use crate::io;
-
-use arceos_api::net::{self as api, AxUdpSocketHandle};
 
 /// A UDP socket.
 pub struct UdpSocket(AxUdpSocketHandle);

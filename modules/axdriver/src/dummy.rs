@@ -3,8 +3,9 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use super::prelude::*;
 use cfg_if::cfg_if;
+
+use super::prelude::*;
 
 cfg_if! {
     if #[cfg(net_dev = "dummy")] {

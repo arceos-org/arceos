@@ -1,11 +1,12 @@
-use crate::ctypes;
-use axerrno::{LinuxError, LinuxResult};
 use core::ffi::{c_int, c_void};
 
-#[cfg(feature = "fd")]
-use crate::imp::fd_ops::get_file_like;
+use axerrno::{LinuxError, LinuxResult};
 #[cfg(not(feature = "fd"))]
 use axio::prelude::*;
+
+use crate::ctypes;
+#[cfg(feature = "fd")]
+use crate::imp::fd_ops::get_file_like;
 
 /// Read data from the file indicated by `fd`.
 ///

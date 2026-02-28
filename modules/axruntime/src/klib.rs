@@ -25,16 +25,7 @@ impl_trait! {
         /// resulting virtual address wrapped in an `AxResult`.
         fn mem_iomap(addr: PhysAddr, size: usize) -> AxResult<VirtAddr> {
             // Convert from AxError (struct in axerrno 0.2) to AxErrorKind (enum used by axklib)
-            axmm::iomap(addr, size).map_err(|e| match AxErrorKind::try_from(e) {
-                Ok(kind) => kind,
-                Err(linux_err) => {
-                    // Convert LinuxError to AxErrorKind
-                    match AxErrorKind::try_from(linux_err) {
-                        Ok(kind) => kind,
-                        Err(_) => AxErrorKind::Io,
-                    }
-                }
-            })
+            axmm::iomap(addr, size)
         }
 
         /// Busy-wait for the given duration by calling into `axhal`.

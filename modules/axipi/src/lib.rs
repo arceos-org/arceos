@@ -6,8 +6,10 @@
 extern crate log;
 extern crate alloc;
 
-use axhal::irq::{IPI_IRQ, IpiTarget};
-use axhal::percpu::this_cpu_id;
+use axhal::{
+    irq::{IPI_IRQ, IpiTarget},
+    percpu::this_cpu_id,
+};
 use kspin::SpinNoIrq;
 use lazyinit::LazyInit;
 

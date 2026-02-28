@@ -1,7 +1,9 @@
 use alloc::{sync::Arc, vec, vec::Vec};
-use core::ffi::{c_char, c_int, c_void};
-use core::mem::size_of;
-use core::net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4};
+use core::{
+    ffi::{c_char, c_int, c_void},
+    mem::size_of,
+    net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4},
+};
 
 use axerrno::{LinuxError, LinuxResult};
 use axio::PollState;
@@ -9,8 +11,7 @@ use axnet::{TcpSocket, UdpSocket};
 use axsync::Mutex;
 
 use super::fd_ops::FileLike;
-use crate::ctypes;
-use crate::utils::char_ptr_to_str;
+use crate::{ctypes, utils::char_ptr_to_str};
 
 pub enum Socket {
     Udp(Mutex<UdpSocket>),

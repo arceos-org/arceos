@@ -2,12 +2,13 @@
 
 extern crate alloc;
 
-use crate::io;
 use alloc::{string::String, sync::Arc};
 use core::{cell::UnsafeCell, num::NonZeroU64};
 
 use arceos_api::task::{self as api, AxTaskHandle};
 use axerrno::ax_err_type;
+
+use crate::io;
 
 /// A unique identifier for a running thread.
 #[derive(Eq, PartialEq, Clone, Copy, Debug)]

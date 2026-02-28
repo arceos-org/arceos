@@ -2,11 +2,11 @@
 
 #[cfg(feature = "multitask")]
 mod multi;
-#[cfg(feature = "multitask")]
-pub use multi::*;
+use core::num::NonZero;
 
 use arceos_api::task as api;
-use core::num::NonZero;
+#[cfg(feature = "multitask")]
+pub use multi::*;
 
 /// Current thread gives up the CPU time voluntarily, and switches to another
 /// ready thread.

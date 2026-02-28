@@ -142,9 +142,11 @@ pub type MutexGuard<'a, T> = lock_api::MutexGuard<'a, RawMutex, T>;
 
 #[cfg(test)]
 mod tests {
-    use crate::Mutex;
-    use axtask as thread;
     use std::sync::Once;
+
+    use axtask as thread;
+
+    use crate::Mutex;
 
     static INIT: Once = Once::new();
 

@@ -5,8 +5,10 @@
 #[cfg(feature = "axstd")]
 extern crate axstd as std;
 
-use std::io::{self, prelude::*};
-use std::net::{TcpStream, ToSocketAddrs};
+use std::{
+    io::{self, prelude::*},
+    net::{TcpStream, ToSocketAddrs},
+};
 
 #[cfg(feature = "dns")]
 const DEST: &str = "ident.me:80";
@@ -14,10 +16,7 @@ const DEST: &str = "ident.me:80";
 const DEST: &str = "65.108.151.63:80";
 
 const REQUEST: &str = "\
-GET / HTTP/1.1\r\n\
-Host: ident.me\r\n\
-Accept: */*\r\n\
-\r\n";
+GET / HTTP/1.1\r\nHost: ident.me\r\nAccept: */*\r\n\r\n";
 
 fn client() -> io::Result<()> {
     for addr in DEST.to_socket_addrs()? {

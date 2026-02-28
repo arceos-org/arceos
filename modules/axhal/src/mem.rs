@@ -1,16 +1,13 @@
 //! Physical memory management.
 
-use heapless::Vec;
-use spin::Lazy;
-
-use axplat::mem::{check_sorted_ranges_overlap, ranges_difference};
-
-pub use axplat::mem::{MemRegionFlags, PhysMemRegion};
 pub use axplat::mem::{
-    kernel_aspace, mmio_ranges, phys_ram_ranges, phys_to_virt, reserved_phys_ram_ranges,
-    total_ram_size, virt_to_phys,
+    MemRegionFlags, PhysMemRegion, kernel_aspace, mmio_ranges, phys_ram_ranges, phys_to_virt,
+    reserved_phys_ram_ranges, total_ram_size, virt_to_phys,
 };
+use axplat::mem::{check_sorted_ranges_overlap, ranges_difference};
+use heapless::Vec;
 pub use memory_addr::{PAGE_SIZE_4K, PhysAddr, PhysAddrRange, VirtAddr, VirtAddrRange, pa, va};
+use spin::Lazy;
 
 use crate::addr_of_sym;
 
@@ -24,54 +21,71 @@ static ALL_MEM_REGIONS: Lazy<Vec<PhysMemRegion, MAX_REGIONS>> = Lazy::new(|| {
         }
     };
 
-    // Push regions in kernel image
-    push(PhysMemRegion {
-        paddr: virt_to_phys(addr_of_sym!(_stext).into()),
-        size: addr_of_sym!(_etext) - addr_of_sym!(_stext),
-        flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::EXECUTE,
-        name: ".text",
-    });
-    push(PhysMemRegion {
-        paddr: virt_to_phys(addr_of_sym!(_srodata).into()),
-        size: addr_of_sym!(_erodata) - addr_of_sym!(_srodata),
-        flags: MemRegionFlags::RESERVED | MemRegionFlags::READ,
-        name: ".rodata",
-    });
-    push(PhysMemRegion {
-        paddr: virt_to_phys(addr_of_sym!(_sdata).into()),
-        size: addr_of_sym!(_edata) - addr_of_sym!(_sdata),
-        flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
-        name: ".data .tdata .tbss .percpu",
-    });
-    push(PhysMemRegion {
-        paddr: virt_to_phys(addr_of_sym!(boot_stack).into()),
-        size: addr_of_sym!(boot_stack_top) - addr_of_sym!(boot_stack),
-        flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
-        name: "boot stack",
-    });
-    push(PhysMemRegion {
-        paddr: virt_to_phys(addr_of_sym!(_sbss).into()),
-        size: addr_of_sym!(_ebss) - addr_of_sym!(_sbss),
-        flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
-        name: ".bss",
-    });
+    #[cfg(not(feature = "plat-dyn"))]
+    {
+        // Push regions in kernel image
+        push(PhysMemRegion {
+            paddr: virt_to_phys(addr_of_sym!(_stext).into()),
+            size: addr_of_sym!(_etext) - addr_of_sym!(_stext),
+            flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::EXECUTE,
+            name: ".text",
+        });
+        push(PhysMemRegion {
+            paddr: virt_to_phys(addr_of_sym!(_srodata).into()),
+            size: addr_of_sym!(_erodata) - addr_of_sym!(_srodata),
+            flags: MemRegionFlags::RESERVED | MemRegionFlags::READ,
+            name: ".rodata",
+        });
+        push(PhysMemRegion {
+            paddr: virt_to_phys(addr_of_sym!(_sdata).into()),
+            size: addr_of_sym!(_edata) - addr_of_sym!(_sdata),
+            flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
+            name: ".data .tdata .tbss .percpu",
+        });
+        push(PhysMemRegion {
+            paddr: virt_to_phys(addr_of_sym!(boot_stack).into()),
+            size: addr_of_sym!(boot_stack_top) - addr_of_sym!(boot_stack),
+            flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
+            name: "boot stack",
+        });
+        push(PhysMemRegion {
+            paddr: virt_to_phys(addr_of_sym!(_sbss).into()),
+            size: addr_of_sym!(_ebss) - addr_of_sym!(_sbss),
+            flags: MemRegionFlags::RESERVED | MemRegionFlags::READ | MemRegionFlags::WRITE,
+            name: ".bss",
+        });
+    }
 
     // Push MMIO & reserved regions
     for &(start, size) in mmio_ranges() {
         push(PhysMemRegion::new_mmio(start, size, "mmio"));
     }
     for &(start, size) in reserved_phys_ram_ranges() {
-        push(PhysMemRegion::new_reserved(start, size, "reserved"));
+        // push(PhysMemRegion::new_reserved(start, size, "reserved"));
+        push(PhysMemRegion {
+            paddr: PhysAddr::from_usize(start),
+            size,
+            flags: MemRegionFlags::RESERVED
+                | MemRegionFlags::READ
+                | MemRegionFlags::WRITE
+                | MemRegionFlags::EXECUTE,
+            name: "reserved",
+        })
     }
 
-    // Combine kernel image range and reserved ranges
-    let kernel_start = virt_to_phys(addr_of_sym!(_skernel).into()).as_usize();
-    let kernel_size = addr_of_sym!(_ekernel) - addr_of_sym!(_skernel);
     let mut reserved_ranges = reserved_phys_ram_ranges()
         .iter()
         .cloned()
-        .chain(core::iter::once((kernel_start, kernel_size))) // kernel image range is also reserved
         .collect::<Vec<_, MAX_REGIONS>>();
+    #[cfg(not(feature = "plat-dyn"))]
+    {
+        // Combine kernel image range and reserved ranges
+        let kernel_start = virt_to_phys(addr_of_sym!(_skernel).into()).as_usize();
+        let kernel_size = addr_of_sym!(_ekernel) - addr_of_sym!(_skernel);
+        reserved_ranges
+            .push((kernel_start, kernel_size))
+            .expect("too many memory regions"); // kernel image range is also reserved
+    }
 
     // Remove all reserved ranges from RAM ranges, and push the remaining as free memory
     reserved_ranges.sort_unstable_by_key(|&(start, _size)| start);

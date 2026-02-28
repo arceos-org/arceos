@@ -1,6 +1,7 @@
 extern crate alloc;
 
 use alloc::format;
+
 use axdriver_base::DeviceType;
 use axdriver_block::BlockDriverOps;
 use axdriver_virtio::MmioTransport;
@@ -10,9 +11,10 @@ use rdrive::{
 };
 
 use super::PlatformDeviceBlock;
-use crate::dyn_drivers::blk::maping_dev_err_to_blk_err;
-use crate::dyn_drivers::iomap;
-use crate::virtio::VirtIoHalImpl;
+use crate::{
+    dyn_drivers::{blk::maping_dev_err_to_blk_err, iomap},
+    virtio::VirtIoHalImpl,
+};
 
 type Device<T> = axdriver_virtio::VirtIoBlkDev<VirtIoHalImpl, T>;
 

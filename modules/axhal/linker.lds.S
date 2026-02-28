@@ -43,9 +43,9 @@ SECTIONS
         *(.got .got.*)
 
         . = ALIGN(0x10);
-        __sdriver_register = .;
+        _sdriver = .;
         KEEP(*(.driver.register*))
-        __edriver_register = .;
+        _edriver = .;
 
         . = ALIGN(0x10);
         _ex_table_start = .;
