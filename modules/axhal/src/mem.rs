@@ -6,8 +6,8 @@ pub use axplat::mem::{
 };
 use axplat::mem::{check_sorted_ranges_overlap, ranges_difference};
 use heapless::Vec;
-use spin::Lazy;
 pub use memory_addr::{PAGE_SIZE_4K, PhysAddr, PhysAddrRange, VirtAddr, VirtAddrRange, pa, va};
+use spin::Lazy;
 
 use crate::addr_of_sym;
 
