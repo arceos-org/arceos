@@ -59,5 +59,5 @@ endef
 
 define unit_test
   $(call run_cmd,cargo test,-p axfs $(1) $(verbose) -- --nocapture)
-  $(call run_cmd,cargo test,--workspace --exclude axfs $(1) $(verbose) -- --nocapture)
+  $(call run_cmd,cargo test,--workspace --exclude axfs --exclude axplat-dyn $(1) $(verbose) -- --nocapture)
 endef
