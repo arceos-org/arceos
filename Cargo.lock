@@ -336,7 +336,7 @@ dependencies = [
  "page_table_entry 0.5.5",
  "page_table_multiarch 0.5.5",
  "percpu",
- "riscv",
+ "riscv 0.14.0",
  "static_assertions",
  "tock-registers 0.10.1",
  "x86",
@@ -785,7 +785,7 @@ dependencies = [
  "axcpu",
  "axplat 0.2.0",
  "log",
- "riscv",
+ "riscv 0.14.0",
  "riscv_goldfish",
  "sbi-rt",
 ]
@@ -800,7 +800,7 @@ dependencies = [
  "axcpu",
  "axplat",
  "log",
- "riscv",
+ "riscv 0.14.0",
  "sbi-rt",
 ]
 

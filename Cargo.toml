@@ -78,6 +78,4 @@ lto = true
 
 [patch.crates-io]
 axcpu ={ path = "crates/axcpu" }
-page_table_entry ={ git = "https://github.com/luodeb/page_table_multiarch.git" }
-page_table_multiarch ={ git = "https://github.com/luodeb/page_table_multiarch.git" }
 axplat-arm-qemu-virt = { path = "crates/axplat_crates/platforms/axplat-arm-qemu-virt" }
