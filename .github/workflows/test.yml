@@ -3,7 +3,9 @@ name: Test CI
 on: [push, pull_request]
 
 env:
+  qemu-version: 10.2.1
   rust-toolchain: nightly-2025-12-12
+  arceos-apps: '000ca50a029396c9615b19f054b5e391282182d8'
 
 jobs:
   unit-test:
@@ -15,3 +17,39 @@ jobs:
         toolchain: ${{ env.rust-toolchain }}
     - name: Run unit tests
       run: make unittest_no_fail_fast
+
+  app-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        # TODO: add loongarch64, x86_64 after supports it
+        arch: [riscv64, aarch64]
+    env:
+      RUSTUP_TOOLCHAIN: nightly-2025-12-12
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: ${{ env.rust-toolchain }}
+        components: rust-src, llvm-tools
+        targets: x86_64-unknown-none, riscv64gc-unknown-none-elf, aarch64-unknown-none-softfloat, loongarch64-unknown-none-softfloat
+    - uses: Swatinem/rust-cache@v2
+      with:
+        shared-key: cargo-bin-cache-${{ env.rust-toolchain }}
+        cache-targets: false
+    - uses: arceos-org/setup-qemu@v1
+      with:
+        version: ${{ env.qemu-version }}
+        arch_list: x86_64,aarch64,riscv64,loongarch64
+    - uses: arceos-org/setup-musl@v1
+      with:
+        arch: ${{ matrix.arch }}
+    - name: Run app tests
+      run: |
+        make disk_img
+        git clone https://github.com/arceos-org/arceos-apps.git
+        cd arceos-apps && git reset --hard ${{ env.arceos-apps }} && cd ..
+        make -C arceos-apps chaxroot AX_ROOT=$(pwd)
+        make -C arceos-apps test ARCH=${{ matrix.arch }}
