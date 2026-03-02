@@ -73,10 +73,12 @@ memory_addr.workspace = true
 page_table_multiarch = { workspace = true, optional = true }
 percpu.workspace = true
 spin.workspace = true
-axplat-dyn = { workspace = true, optional = true}
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 axplat-x86-pc = { workspace = true, optional = true }
+
+[target.'cfg(target_os = "none")'.dependencies]
+axplat-dyn = { workspace = true, optional = true }
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 axplat-aarch64-qemu-virt = { workspace = true, optional = true }

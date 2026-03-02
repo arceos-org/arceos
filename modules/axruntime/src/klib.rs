@@ -12,7 +12,6 @@
 
 use core::time::Duration;
 
-use axerrno::AxErrorKind;
 use axklib::{AxResult, IrqHandler, Klib, PhysAddr, VirtAddr, impl_trait};
 
 struct KlibImpl;

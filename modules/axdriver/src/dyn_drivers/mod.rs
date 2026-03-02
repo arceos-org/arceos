@@ -20,7 +20,7 @@ pub mod blk;
 fn iomap(addr: PhysAddr, size: usize) -> Result<NonNull<u8>, OnProbeError> {
     axklib::mem::iomap(addr, size)
         .map_err(|e| match e {
-            AxErrorKind::NoMemory => OnProbeError::KError(rdrive::KError::NoMem),
+            AxError::NoMemory => OnProbeError::KError(rdrive::KError::NoMem),
             _ => OnProbeError::Other(alloc::format!("{e:?}").into()),
         })
         .map(|v| unsafe { NonNull::new_unchecked(v.as_mut_ptr()) })
