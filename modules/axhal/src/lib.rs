@@ -42,7 +42,7 @@ cfg_if::cfg_if! {
     if #[cfg(feature = "myplat")] {
         // link the custom platform crate in your application.
     }
-    else if #[cfg(feature = "plat-dyn")] {
+    else if #[cfg(plat_dyn)] {
         extern crate axplat_dyn;
     }
     else if #[cfg(all(target_os = "none", feature = "defplat"))] {

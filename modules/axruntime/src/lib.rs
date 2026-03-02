@@ -247,7 +247,7 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
 
 #[cfg(feature = "alloc")]
 fn init_allocator() {
-    use axhal::mem::{MemRegionFlags, memory_regions, phys_to_virt, virt_to_phys};
+    use axhal::mem::{MemRegionFlags, memory_regions, phys_to_virt};
 
     info!("Initialize global memory allocator...");
     info!("  use {} allocator.", axalloc::global_allocator().name());
@@ -275,7 +275,7 @@ fn init_allocator() {
         struct AddrTranslatorImpl;
         impl axalloc::AddrTranslator for AddrTranslatorImpl {
             fn virt_to_phys(&self, va: usize) -> Option<usize> {
-                Some(virt_to_phys(va.into()).as_usize())
+                Some(axhal::mem::virt_to_phys(va.into()).as_usize())
             }
         }
 

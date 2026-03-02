@@ -2,8 +2,17 @@ use std::io::Result;
 use std::path::Path;
 
 fn main() {
+    println!("cargo:rustc-check-cfg=cfg(plat_dyn)");
+
     let arch = std::env::var("CARGO_CFG_TARGET_ARCH").unwrap();
+    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+    let has_plat_dyn = std::env::var_os("CARGO_FEATURE_PLAT_DYN").is_some();
     let platform = axconfig::PLATFORM;
+
+    if has_plat_dyn && target_os == "none" {
+        println!("cargo:rustc-cfg=plat_dyn");
+    }
+
     if platform != "dummy" {
         gen_linker_script(&arch, platform).unwrap();
     }
