@@ -25,7 +25,7 @@ impl ConsoleIf for ConsoleIfImpl {
     /// Reads bytes from the console into the given mutable slice.
     ///
     /// Returns the number of bytes read.
-    fn read_bytes(bytes: &mut [u8]) -> usize {
+    fn read_bytes(_bytes: &mut [u8]) -> usize {
         todo!()
         // let mut read_len = 0;
         // while read_len < bytes.len() {

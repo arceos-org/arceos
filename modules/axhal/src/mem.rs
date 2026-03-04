@@ -9,6 +9,7 @@ use heapless::Vec;
 pub use memory_addr::{PAGE_SIZE_4K, PhysAddr, PhysAddrRange, VirtAddr, VirtAddrRange, pa, va};
 use spin::Lazy;
 
+#[allow(unused_imports)]
 use crate::addr_of_sym;
 
 const MAX_REGIONS: usize = 128;
@@ -126,6 +127,7 @@ pub unsafe fn clear_bss() {
     }
 }
 
+#[allow(dead_code)]
 unsafe extern "C" {
     fn _stext();
     fn _etext();
