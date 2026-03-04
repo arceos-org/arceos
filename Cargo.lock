@@ -393,9 +393,9 @@ dependencies = [
 
 [[package]]
 name = "axcpu"
-version = "0.3.0-preview.5"
+version = "0.3.0-preview.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf99fd0321a4e2a0eb1fb2a1a53ae47ea10a9c31a969545575ce302291934ea0"
+checksum = "61dc8203ac5b80e4aa613c1139b1c69b908aededadd1ae7c55b41da06084a2ad"
 dependencies = [
  "aarch64-cpu 11.2.0",
  "axbacktrace",
