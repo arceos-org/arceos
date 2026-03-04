@@ -1,9 +1,12 @@
-use crate::io::{self, BufReader, prelude::*};
-use crate::sync::{Mutex, MutexGuard};
-use lazyinit::LazyInit;
-
 #[cfg(feature = "alloc")]
 use alloc::{string::String, vec::Vec};
+
+use lazyinit::LazyInit;
+
+use crate::{
+    io::{self, BufReader, prelude::*},
+    sync::{Mutex, MutexGuard},
+};
 
 struct StdinRaw;
 struct StdoutRaw;

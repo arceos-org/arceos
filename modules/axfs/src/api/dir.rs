@@ -13,8 +13,9 @@
 // limitations under the License.
 
 use alloc::string::String;
-use axio::Result;
 use core::fmt;
+
+use axio::Result;
 
 use super::FileType;
 use crate::fops;

@@ -3,9 +3,11 @@ use core::ops::{Deref, DerefMut};
 
 use axerrno::{AxError, AxResult, ax_err};
 use axsync::Mutex;
-use smoltcp::iface::{SocketHandle, SocketSet};
-use smoltcp::socket::tcp::{self, State};
-use smoltcp::wire::{IpAddress, IpEndpoint, IpListenEndpoint};
+use smoltcp::{
+    iface::{SocketHandle, SocketSet},
+    socket::tcp::{self, State},
+    wire::{IpAddress, IpEndpoint, IpListenEndpoint},
+};
 
 use super::{LISTEN_QUEUE_SIZE, SOCKET_SET, SocketSetWrapper};
 

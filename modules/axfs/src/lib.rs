@@ -34,16 +34,17 @@ mod disk;
 mod highlevel;
 #[cfg(feature = "monolitic")]
 mod monofs;
-#[cfg(feature = "monolitic")]
-pub use highlevel::*;
-
-use crate::partition::PartitionInfo;
 use alloc::{
     string::{String, ToString},
     sync::Arc,
     vec::Vec,
 };
+
 use axdriver::{AxBlockDevice, AxDeviceContainer, prelude::*};
+#[cfg(feature = "monolitic")]
+pub use highlevel::*;
+
+use crate::partition::PartitionInfo;
 
 #[cfg(not(feature = "monolitic"))]
 /// Initializes filesystems by block devices.
@@ -120,7 +121,8 @@ fn format_guid_as_partuuid(guid: &[u8; 16]) -> alloc::string::String {
     // Linux PARTUUID format is little-endian for first 3 fields,
     // and big-endian for the rest
     alloc::format!(
-        "{:02X}{:02X}{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}",
+        "{:02X}{:02X}{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}{:02X}{:\
+         02X}{:02X}{:02X}",
         guid[3],
         guid[2],
         guid[1],

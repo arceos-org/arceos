@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axio::{Result, SeekFrom, prelude::*};
 use core::fmt;
+
+use axio::{Result, SeekFrom, prelude::*};
 
 use crate::fops;
 

@@ -6,13 +6,15 @@
 
 #![allow(dead_code)]
 
-use super::{UsageKind, Usages};
-use axallocator::{AllocResult, BaseAllocator, BitmapPageAllocator, ByteAllocator, PageAllocator};
 use core::{
     alloc::{GlobalAlloc, Layout},
     ptr::NonNull,
 };
+
+use axallocator::{AllocResult, BaseAllocator, BitmapPageAllocator, ByteAllocator, PageAllocator};
 use kspin::SpinNoIrq;
+
+use super::{UsageKind, Usages};
 
 /// The global allocator instance for standard mode.
 #[cfg_attr(all(target_os = "none", not(test)), global_allocator)]

@@ -17,11 +17,14 @@
 mod dir;
 mod file;
 
-pub use self::dir::{DirBuilder, DirEntry, ReadDir};
-pub use self::file::{File, FileType, Metadata, OpenOptions, Permissions};
-
 use alloc::{string::String, vec::Vec};
+
 use axio::{self as io, prelude::*};
+
+pub use self::{
+    dir::{DirBuilder, DirEntry, ReadDir},
+    file::{File, FileType, Metadata, OpenOptions, Permissions},
+};
 
 /// Returns an iterator over the entries within a directory.
 pub fn read_dir(path: &str) -> io::Result<ReadDir<'_>> {

@@ -1,9 +1,11 @@
 use core::fmt;
 
 use axerrno::{AxError, AxResult, ax_err};
-use axhal::mem::phys_to_virt;
-use axhal::paging::{MappingFlags, PageTable};
-use axhal::trap::PageFaultFlags;
+use axhal::{
+    mem::phys_to_virt,
+    paging::{MappingFlags, PageTable},
+    trap::PageFaultFlags,
+};
 use memory_addr::{
     MemoryAddr, PAGE_SIZE_4K, PageIter4K, PhysAddr, VirtAddr, VirtAddrRange, is_aligned_4k,
 };
@@ -178,7 +180,7 @@ impl AddrSpace {
         for vaddr in PageIter4K::new(start.align_down_4k(), end_align_up)
             .expect("Failed to create page iterator")
         {
-            let (mut paddr, _, _) = self.pt.query(vaddr).map_err(|_| AxError::BadAddress)?;
+            let (mut paddr, ..) = self.pt.query(vaddr).map_err(|_| AxError::BadAddress)?;
 
             let mut copy_size = (size - cnt).min(PAGE_SIZE_4K);
 

@@ -22,11 +22,16 @@ use std::{
 const LOCAL_IP: &str = "0.0.0.0";
 const LOCAL_PORT: u16 = 5555;
 
+#[rustfmt::skip]
 macro_rules! header {
     () => {
         "\
-                        HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: \
-         {}\r\nConnection: close\r\n\r\n{}"
+HTTP/1.1 200 OK\r\n\
+Content-Type: text/html\r\n\
+Content-Length: {}\r\n\
+Connection: close\r\n\
+\r\n\
+{}"
     };
 }
 

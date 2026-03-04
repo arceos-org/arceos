@@ -33,12 +33,12 @@ pub enum TaskState {
     /// Task is running on some CPU.
     Running = 1,
     /// Task is ready to run on some scheduler's ready queue.
-    Ready = 2,
+    Ready   = 2,
     /// Task is blocked (in the wait queue or timer list),
     /// and it has finished its scheduling process, it can be wake up by `notify()` on any run queue safely.
     Blocked = 3,
     /// Task is exited and waiting for being dropped.
-    Exited = 4,
+    Exited  = 4,
 }
 
 /// User-defined task extended data.

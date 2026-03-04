@@ -19,6 +19,7 @@ use alloc::{
     sync::Arc,
     vec::Vec,
 };
+
 use axfs_vfs::{
     VfsDirEntry, VfsError, VfsNodeAttr, VfsNodeOps, VfsNodePerm, VfsNodeRef, VfsNodeType, VfsOps,
     VfsResult,
@@ -156,7 +157,7 @@ impl FileWrapper {
         }
 
         if let Some(rest) = trim_path.strip_prefix("./") {
-            //if starts with "./"
+            // if starts with "./"
             return self.path_deal_with(rest);
         }
         let rest_p = trim_path.replace("//", "/");

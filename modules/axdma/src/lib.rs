@@ -8,12 +8,10 @@ mod dma;
 
 use core::{alloc::Layout, ptr::NonNull};
 
-#[cfg(feature = "hv")]
-use buddy_slab_allocator::AllocResult;
-
 #[cfg(not(feature = "hv"))]
 use axallocator::AllocResult;
-
+#[cfg(feature = "hv")]
+use buddy_slab_allocator::AllocResult;
 use memory_addr::PhysAddr;
 
 use self::dma::ALLOCATOR;

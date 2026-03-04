@@ -18,6 +18,7 @@
 //! filesystem types on each partition.
 
 use alloc::{format, string::String, sync::Arc, vec, vec::Vec};
+
 use axerrno::{AxError, AxResult};
 use axfs_vfs::VfsOps;
 use log::{debug, info, warn};
@@ -474,7 +475,8 @@ fn read_ext4_uuid(disk: &mut Disk, starting_lba: u64) -> Option<String> {
         // Convert UUID bytes to string format (8-4-4-4-12)
         // ext4 stores UUID as little-endian for the first 3 fields and big-endian for the last 2 fields
         let uuid_str = format!(
-            "{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
+            "{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:\
+             02x}{:02x}{:02x}",
             uuid_bytes[0],
             uuid_bytes[1],
             uuid_bytes[2],

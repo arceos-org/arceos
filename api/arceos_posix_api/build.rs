@@ -117,8 +117,7 @@ typedef struct {{
         // During `cargo publish` verification, the external headers are not
         // available. Use the pre-generated ctypes_gen.rs shipped in the crate.
         eprintln!(
-            "cargo:warning=axlibc include directory not found, \
-             skipping ctypes_gen.rs regeneration"
+            "cargo:warning=axlibc include directory not found, skipping ctypes_gen.rs regeneration"
         );
     }
 }
