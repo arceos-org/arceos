@@ -16,7 +16,7 @@ impl InitIf for InitIfImpl {
 
     /// Initializes the platform at the early stage for secondary cores.
     #[cfg(feature = "smp")]
-    fn init_early_secondary(cpu_id: usize) {
+    fn init_early_secondary(_cpu_id: usize) {
         axcpu::init::init_trap();
         somehal::timer::enable();
     }

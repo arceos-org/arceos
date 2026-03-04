@@ -276,7 +276,7 @@ fn parse_gpt_partitions(disk: &mut Disk) -> AxResult<Vec<PartitionInfo>> {
         };
 
         let partition = PartitionInfo {
-            index: i as u32,
+            index: i,
             name: name_str,
             partition_type_guid: entry.partition_type_guid,
             unique_partition_guid: entry.unique_partition_guid,
@@ -308,7 +308,7 @@ fn detect_filesystem_type(disk: &mut Disk, start_lba: u64) -> Option<FilesystemT
     // Set position to read from the specific LBA
     disk.set_position(start_lba * 512);
 
-    if let Err(_) = read_exact(disk, &mut boot_sector) {
+    if read_exact(disk, &mut boot_sector).is_err() {
         warn!("Failed to read boot sector at LBA {}", start_lba);
         // Restore position
         disk.set_position(original_position);
@@ -378,7 +378,7 @@ fn is_ext4_filesystem(disk: &mut Disk, start_lba: u64) -> bool {
     // Set position to read the superblock
     disk.set_position(superblock_offset);
 
-    let result = if let Err(_) = read_exact(disk, &mut superblock) {
+    let result = if read_exact(disk, &mut superblock).is_err() {
         warn!(
             "Failed to read ext4 superblock at offset {}",
             superblock_offset

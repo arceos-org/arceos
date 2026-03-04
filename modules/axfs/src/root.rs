@@ -149,36 +149,36 @@ impl VfsNodeOps for RootDirectory {
 
     fn lookup(self: Arc<Self>, path: &str) -> VfsResult<VfsNodeRef> {
         let normalized_path = self.normalize_path(path);
-        if let Some((mount_fs, rest_path)) = self.find_best_mount(&normalized_path) {
+        if let Some((mount_fs, rest_path)) = self.find_best_mount(normalized_path) {
             mount_fs.root_dir().lookup(rest_path)
         } else {
-            self.main_fs.root_dir().lookup(&normalized_path)
+            self.main_fs.root_dir().lookup(normalized_path)
         }
     }
 
     fn create(&self, path: &str, ty: VfsNodeType) -> VfsResult {
         let normalized_path = self.normalize_path(path);
-        if let Some((mount_fs, rest_path)) = self.find_best_mount(&normalized_path) {
+        if let Some((mount_fs, rest_path)) = self.find_best_mount(normalized_path) {
             if rest_path.is_empty() {
                 Ok(())
             } else {
                 mount_fs.root_dir().create(rest_path, ty)
             }
         } else {
-            self.main_fs.root_dir().create(&normalized_path, ty)
+            self.main_fs.root_dir().create(normalized_path, ty)
         }
     }
 
     fn remove(&self, path: &str) -> VfsResult {
         let normalized_path = self.normalize_path(path);
-        if let Some((mount_fs, rest_path)) = self.find_best_mount(&normalized_path) {
+        if let Some((mount_fs, rest_path)) = self.find_best_mount(normalized_path) {
             if rest_path.is_empty() {
                 Err(axfs_vfs::VfsError::PermissionDenied)
             } else {
                 mount_fs.root_dir().remove(rest_path)
             }
         } else {
-            self.main_fs.root_dir().remove(&normalized_path)
+            self.main_fs.root_dir().remove(normalized_path)
         }
     }
 
@@ -197,13 +197,13 @@ impl VfsNodeOps for RootDirectory {
             main_dirents.push(VfsDirEntry::default());
         }
         let main_count = self.main_fs.root_dir().read_dir(0, &mut main_dirents)?;
-        for i in 0..main_count {
-            let name_bytes = main_dirents[i].name_as_bytes();
-            if let Ok(name_str) = core::str::from_utf8(name_bytes) {
-                if !name_str.is_empty() {
-                    let ty = main_dirents[i].entry_type();
-                    all_entries.push((name_str.to_string(), ty));
-                }
+        for dirent in main_dirents.iter().take(main_count) {
+            let name_bytes = dirent.name_as_bytes();
+            if let Ok(name_str) = core::str::from_utf8(name_bytes)
+                && !name_str.is_empty()
+            {
+                let ty = dirent.entry_type();
+                all_entries.push((name_str.to_string(), ty));
             }
         }
 
@@ -240,10 +240,10 @@ fn find_root_filesystem(
     root_partition_index: Option<usize>,
 ) -> (Option<Arc<dyn VfsOps>>, Option<usize>) {
     // Try to use the specified partition index first
-    if let Some(index) = root_partition_index {
-        if let Some((fs, idx)) = try_use_specified_partition(disk, partitions, index) {
-            return (Some(fs), Some(idx));
-        }
+    if let Some(index) = root_partition_index
+        && let Some((fs, idx)) = try_use_specified_partition(disk, partitions, index)
+    {
+        return (Some(fs), Some(idx));
     }
 
     // Fall back to first partition with supported filesystem
@@ -493,7 +493,7 @@ pub(crate) fn create_file(dir: Option<&VfsNodeRef>, path: &str) -> AxResult<VfsN
     parent
         .create(path, VfsNodeType::File)
         .map_err(AxError::from)?;
-    Ok(parent.lookup(path).map_err(AxError::from)?)
+    parent.lookup(path).map_err(AxError::from)
 }
 
 pub(crate) fn create_dir(dir: Option<&VfsNodeRef>, path: &str) -> AxResult {
@@ -584,7 +584,7 @@ pub(crate) fn rename(old: &str, new: &str) -> AxResult {
         warn!("dst file already exist, now remove it");
         remove_file(None, new)?;
     }
-    Ok(parent_node_of(None, old)
+    parent_node_of(None, old)
         .rename(old, new)
-        .map_err(AxError::from)?)
+        .map_err(AxError::from)
 }
