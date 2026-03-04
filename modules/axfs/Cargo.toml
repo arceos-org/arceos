@@ -55,7 +55,7 @@ features = [
 ]
 
 [dependencies.lwext4_rust]
-version = "0.3.1-preview.1"
+version = "0.2"
 default-features = false
 optional = true
 

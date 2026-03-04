@@ -161,6 +161,7 @@ pub fn cpu_num() -> usize {
     }
 }
 
+#[allow(unused_macros)]
 macro_rules! addr_of_sym {
     ($e:ident) => {
         $e as *const () as usize

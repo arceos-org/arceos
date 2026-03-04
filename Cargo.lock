@@ -820,9 +820,9 @@ dependencies = [
 
 [[package]]
 name = "axplat"
-version = "0.3.1-pre.4"
+version = "0.3.1-pre.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f972b5688b51e8865a33f5282a8e481bfa3f1d1065e0877f8e33532a90680370"
+checksum = "b7e82da07eb9c931a90029d80ae487b4dd532cdf69d44ae692776bbd72e6708a"
 dependencies = [
  "axplat-macros",
  "bitflags 2.11.0",
@@ -836,9 +836,9 @@ dependencies = [
 
 [[package]]
 name = "axplat-aarch64-bsta1000b"
-version = "0.3.1-pre.4"
+version = "0.3.1-pre.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "333221f31778b4417160cf8223a736e726210d8c16789e859c25bae6a162a222"
+checksum = "ee3736769361d4aa023b3aaeaa84f790c0c7f2176508cc44b47455cf37cbd23f"
 dependencies = [
  "axconfig-macros",
  "axcpu",
@@ -852,9 +852,9 @@ dependencies = [
 
 [[package]]
 name = "axplat-aarch64-peripherals"
-version = "0.3.1-pre.4"
+version = "0.3.1-pre.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e2b95a4afcb0af021f7044d56684f88ef22f9d7d64a787b89654e1476803289"
+checksum = "6f3819d30fa3a4038c0f9ab7e122c8b3ba840b323ee3fc19e4dbabe22b4e56ac"
 dependencies = [
  "aarch64-cpu 11.2.0",
  "arm-gic-driver",
@@ -871,9 +871,9 @@ dependencies = [
 
 [[package]]
 name = "axplat-aarch64-phytium-pi"
-version = "0.3.1-pre.4"
+version = "0.3.1-pre.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "84b3ff9b467d90a40a78c5618930937de58182fb253e7a1590894f1dda12b4e0"
+checksum = "de57a5d00bab5c796ad9476406978376a94f21cd37344b70d84482852185c4f8"
 dependencies = [
  "axconfig-macros",
  "axcpu",
@@ -885,9 +885,9 @@ dependencies = [
 
 [[package]]
 name = "axplat-aarch64-qemu-virt"
-version = "0.3.1-pre.4"
+version = "0.3.1-pre.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04e3ca1ed89c348ca64b347a185409d1002195713a59f89ded6f78d97cab5927"
+checksum = "ccbc5793ffa4ae120815f3761bea658e0bafeba2d1a5f324cb457de8d41fbfa9"
 dependencies = [
  "axconfig-macros",
  "axcpu",
@@ -899,9 +899,9 @@ dependencies = [
 
 [[package]]
 name = "axplat-aarch64-raspi"
-version = "0.3.1-pre.4"
+version = "0.3.1-pre.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b81a87fb8a9473bc95208eaa0592efadf0aa937255cb82c185a1c2f21756ac2"
+checksum = "8e0a5744f8792592a019aa51424dd32cc361ebc0f70c40ce1e9a1cd8da5a90e4"
 dependencies = [
  "aarch64-cpu 11.2.0",
  "axconfig-macros",
@@ -931,9 +931,9 @@ dependencies = [
 
 [[package]]
 name = "axplat-loongarch64-qemu-virt"
-version = "0.3.1-pre.4"
+version = "0.3.1-pre.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1752817afe5b6e90d3c0824f14f02fd07115f3d07c915411afd87aa978fa204e"
+checksum = "e95a7a015c7ff23303f5807d1f28c31c15c09dd167f192757000f0ca201f29a8"
 dependencies = [
  "axconfig-macros",
  "axcpu",
@@ -960,9 +960,9 @@ dependencies = [
 
 [[package]]
 name = "axplat-riscv64-qemu-virt"
-version = "0.3.1-pre.4"
+version = "0.3.1-pre.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14a13b1ffa5ba4da587243119dd96aeafac90625e1c37d7b542d52ad6a600324"
+checksum = "7c9f0161378a2bd66773ed208a461ecf36b1c9aae977fbb75d51a271b2790fe8"
 dependencies = [
  "axconfig-macros",
  "axcpu",
@@ -979,9 +979,9 @@ dependencies = [
 
 [[package]]
 name = "axplat-x86-pc"
-version = "0.3.1-pre.4"
+version = "0.3.1-pre.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be02ad620dd705988d71af91c6a6865ae0c897a833ddebb6d458f6aa68bb1b4d"
+checksum = "02c2a75cf2d03a8a0ab223d124d434a80f03bb365b5bb616f019c4ac97288c96"
 dependencies = [
  "axconfig-macros",
  "axcpu",
@@ -1392,9 +1392,9 @@ checksum = "18f12cc9948ed9604230cdddc7c86e270f9401ccbe3c2e98a4378c5e7632212f"
 
 [[package]]
 name = "const_fn"
-version = "0.4.11"
+version = "0.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f8a2ca5ac02d09563609681103aada9e1777d54fc57a5acd7a41404f9c93b6e"
+checksum = "413d67b29ef1021b4d60f4aa1e925ca031751e213832b4b1d588fae623c05c60"
 
 [[package]]
 name = "convert_case"
@@ -2125,9 +2125,9 @@ dependencies = [
 
 [[package]]
 name = "jiff"
-version = "0.2.21"
+version = "0.2.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b3e3d65f018c6ae946ab16e80944b97096ed73c35b221d1c478a6c81d8f57940"
+checksum = "1a3546dc96b6d42c5f24902af9e2538e82e39ad350b0c766eb3fbf2d8f3d8359"
 dependencies = [
  "jiff-static",
  "log",
@@ -2138,9 +2138,9 @@ dependencies = [
 
 [[package]]
 name = "jiff-static"
-version = "0.2.21"
+version = "0.2.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a17c2b211d863c7fde02cbea8a3c1a439b98e109286554f2860bdded7ff83818"
+checksum = "2a8c8b344124222efd714b73bb41f8b5120b27a7cc1c75593a6ff768d9d05aa4"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2160,7 +2160,8 @@ dependencies = [
 [[package]]
 name = "kasm-aarch64"
 version = "0.2.0"
-source = "git+https://github.com/drivercraft/sparreal-os#f8dc5b93df30abb5a6ea7d1c4cbe0525dc862d64"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "791dc7a2b079d81b8e3615521fccbd75c0c9f068b53f7d891a2e300222c7cada"
 dependencies = [
  "darling 0.20.11",
  "proc-macro2",
@@ -2181,7 +2182,8 @@ dependencies = [
 [[package]]
 name = "kernutil"
 version = "0.2.0"
-source = "git+https://github.com/drivercraft/sparreal-os#f8dc5b93df30abb5a6ea7d1c4cbe0525dc862d64"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "baabe1075575d14a32c232dbe55699a2908326f0b2022243ae4a069ff02ccb9a"
 dependencies = [
  "heapless 0.9.2",
  "num-align",
@@ -2326,9 +2328,9 @@ dependencies = [
 
 [[package]]
 name = "lwext4_rust"
-version = "0.3.1-preview.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8514d8134c84bf2f8d3b1a957675fdd7f9b88c0331e9244f46d8bb904b2a60c"
+checksum = "b8518a02caf4803c6135450571d6af9bdb382880e5617adbd88c0e0eba237cbb"
 dependencies = [
  "bindgen",
  "log",
@@ -2385,8 +2387,9 @@ checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 
 [[package]]
 name = "mmio-api"
-version = "0.1.3"
-source = "git+https://github.com/drivercraft/sparreal-os#f8dc5b93df30abb5a6ea7d1c4cbe0525dc862d64"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d38dbaed06bee87e5596f6c27abc62315aa6344c7e5d0db8ee83de98be404283"
 dependencies = [
  "derive_more",
  "thiserror",
@@ -2446,8 +2449,9 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 
 [[package]]
 name = "page-table-generic"
-version = "0.7.0"
-source = "git+https://github.com/drivercraft/sparreal-os#f8dc5b93df30abb5a6ea7d1c4cbe0525dc862d64"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "062719187d8cadefaabc0c07c12bd486f8e88760fc02b756da3053f42dff0b4d"
 dependencies = [
  "bitflags 2.11.0",
  "heapless 0.9.2",
@@ -2516,9 +2520,9 @@ dependencies = [
 
 [[package]]
 name = "percpu"
-version = "0.2.3"
+version = "0.2.3-preview.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4099d82fafe5de80d486915dadfba68f99ea9eabe1ee4486711d8b77bc836484"
+checksum = "8c03ecfaf97c11a791d8b65e34a6353d012a735a5cbfebba34ee6668da16ce38"
 dependencies = [
  "cfg-if",
  "kernel_guard",
@@ -2529,9 +2533,9 @@ dependencies = [
 
 [[package]]
 name = "percpu_macros"
-version = "0.2.3"
+version = "0.2.3-preview.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "540e3aaec592d8a4d001d2023f6865509f909229a4194e7a9de1c808d1dc13a2"
+checksum = "6660d83b91174e6d39fae0cdf893889dcdbffda6e99664f8ee8a45fde6a6936c"
 dependencies = [
  "cfg-if",
  "proc-macro2",
@@ -2629,9 +2633,9 @@ dependencies = [
 
 [[package]]
 name = "quote"
-version = "1.0.44"
+version = "1.0.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21b2ebcf727b7760c461f091f9f0f539b77b8e87f2fd88131e7f1b433b3cece4"
+checksum = "41f2619966050689382d2b44f664f4bc593e129785a36d6ee376ddf37259b924"
 dependencies = [
  "proc-macro2",
 ]
@@ -2645,7 +2649,8 @@ checksum = "dc33ff2d4973d518d823d61aa239014831e521c75da58e3df4840d3f47749d09"
 [[package]]
 name = "ranges-ext"
 version = "0.6.1"
-source = "git+https://github.com/drivercraft/sparreal-os#f8dc5b93df30abb5a6ea7d1c4cbe0525dc862d64"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a7dbbaa030b3eec58088755e56d3acb775fc74f4726565eda8633a415bfc44e0"
 dependencies = [
  "heapless 0.9.2",
  "thiserror",
@@ -2698,9 +2703,9 @@ dependencies = [
 
 [[package]]
 name = "rdif-def"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c238eb44d86fabc99028adc973f896ce2202aeb6184cc8b89863f2d157d7ca06"
+checksum = "afb161fd5654843a0fc86866f3342f41622a589ecf4ebb33ec313a593fd235b4"
 dependencies = [
  "thiserror",
 ]
@@ -2929,9 +2934,9 @@ checksum = "e6e36312fb5ddc10d08ecdc65187402baba4ac34585cb9d1b78522ae2358d890"
 
 [[package]]
 name = "scope-local"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a7d5ed5013e6436fcd78f2bcd3892a6286ef9ce6c9b61504d4c4a08d6a40eab"
+checksum = "c80f3dd0611957c9384d8e5b076236a265e873b41dcae7ccc5d1ba4fe58e32ae"
 dependencies = [
  "percpu",
  "spin 0.10.0",
@@ -3055,8 +3060,9 @@ dependencies = [
 
 [[package]]
 name = "someboot"
-version = "0.1.3"
-source = "git+https://github.com/drivercraft/sparreal-os#f8dc5b93df30abb5a6ea7d1c4cbe0525dc862d64"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1d098355236a04942502f316661e06e8df92ac0e0db1c6c25922bab4b08e8317"
 dependencies = [
  "aarch64-cpu 11.2.0",
  "aarch64-cpu-ext",
@@ -3098,8 +3104,9 @@ dependencies = [
 
 [[package]]
 name = "somehal"
-version = "0.5.2"
-source = "git+https://github.com/drivercraft/sparreal-os#f8dc5b93df30abb5a6ea7d1c4cbe0525dc862d64"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b671ee11f1025589dfcf334ba3c5ee2094ad212ce614e8c630da559ceaca38e3"
 dependencies = [
  "aarch64-cpu 11.2.0",
  "anyhow",
@@ -3118,8 +3125,9 @@ dependencies = [
 
 [[package]]
 name = "somehal-macros"
-version = "0.1.0"
-source = "git+https://github.com/drivercraft/sparreal-os#f8dc5b93df30abb5a6ea7d1c4cbe0525dc862d64"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "38cc4ec03fa0bf03efcaf2b829371f3e08862df67be679009ff2ba6e87a3a7b8"
 dependencies = [
  "darling 0.21.3",
  "proc-macro2",

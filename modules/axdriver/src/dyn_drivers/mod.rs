@@ -1,15 +1,10 @@
 use alloc::vec::Vec;
-use core::{ops::Deref, ptr::NonNull};
+use core::ptr::NonNull;
 
 use axerrno::AxError;
-use axhal::mem::{PhysAddr, phys_to_virt};
-use rdrive::{
-    DeviceId, IrqConfig,
-    probe::OnProbeError,
-    register::{DriverRegister, DriverRegisterSlice},
-};
+use axhal::mem::PhysAddr;
+use rdrive::probe::OnProbeError;
 
-mod cache;
 mod pci;
 
 #[cfg(feature = "block")]
@@ -24,25 +19,6 @@ fn iomap(addr: PhysAddr, size: usize) -> Result<NonNull<u8>, OnProbeError> {
             _ => OnProbeError::Other(alloc::format!("{e:?}").into()),
         })
         .map(|v| unsafe { NonNull::new_unchecked(v.as_mut_ptr()) })
-}
-
-fn driver_registers() -> impl Deref<Target = [DriverRegister]> {
-    unsafe extern "C" {
-        fn _sdriver();
-        fn _edriver();
-    }
-
-    unsafe {
-        let len = _edriver as *const () as usize - _sdriver as *const () as usize;
-
-        if len == 0 {
-            return DriverRegisterSlice::empty();
-        }
-
-        let data = core::slice::from_raw_parts(_sdriver as _, len);
-
-        DriverRegisterSlice::from_raw(data)
-    }
 }
 
 pub fn probe_all_devices() -> Vec<super::AxDeviceEnum> {
