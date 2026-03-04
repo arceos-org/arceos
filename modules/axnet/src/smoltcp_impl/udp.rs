@@ -1,17 +1,19 @@
-use core::net::SocketAddr;
-use core::sync::atomic::{AtomicBool, Ordering};
+use core::{
+    net::SocketAddr,
+    sync::atomic::{AtomicBool, Ordering},
+};
 
 use axerrno::{AxError, AxResult, ax_err, ax_err_type};
 use axio::PollState;
 use axsync::Mutex;
+use smoltcp::{
+    iface::SocketHandle,
+    socket::udp::{self, BindError, SendError},
+    wire::{IpEndpoint, IpListenEndpoint},
+};
 use spin::RwLock;
 
-use smoltcp::iface::SocketHandle;
-use smoltcp::socket::udp::{self, BindError, SendError};
-use smoltcp::wire::{IpEndpoint, IpListenEndpoint};
-
-use super::addr::UNSPECIFIED_ENDPOINT;
-use super::{SOCKET_SET, SocketSetWrapper};
+use super::{SOCKET_SET, SocketSetWrapper, addr::UNSPECIFIED_ENDPOINT};
 
 /// A UDP socket that provides POSIX-like APIs.
 pub struct UdpSocket {

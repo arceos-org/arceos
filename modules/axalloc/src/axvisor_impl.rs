@@ -3,13 +3,15 @@
 //! This implementation is designed for virtualization scenarios and provides
 //! address translation support.
 
-use super::{UsageKind, Usages};
-use buddy_slab_allocator::{AllocResult, PageAllocator, SlabByteAllocator};
 use core::{
     alloc::{GlobalAlloc, Layout},
     ptr::NonNull,
 };
+
+use buddy_slab_allocator::{AllocResult, PageAllocator, SlabByteAllocator};
 use kspin::SpinNoIrq;
+
+use super::{UsageKind, Usages};
 
 /// The global allocator instance for axvisor mode.
 #[cfg_attr(all(target_os = "none", not(test)), global_allocator)]

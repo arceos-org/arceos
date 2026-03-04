@@ -14,11 +14,12 @@
 
 //! Low-level filesystem operations.
 
+use core::fmt;
+
 use axerrno::{AxError, AxResult, ax_err_type};
 use axfs_vfs::VfsNodeRef;
 use axio::SeekFrom;
 use cap_access::{Cap, WithCap};
-use core::fmt;
 
 /// Alias of [`axfs_vfs::VfsNodeType`].
 pub type FileType = axfs_vfs::VfsNodeType;
@@ -259,10 +260,9 @@ impl File {
 
     /// Gets the file attributes.
     pub fn get_attr(&self) -> AxResult<FileAttr> {
-        Ok(self
-            .access_node(Cap::empty())?
+        self.access_node(Cap::empty())?
             .get_attr()
-            .map_err(AxError::from)?)
+            .map_err(AxError::from)
     }
 }
 
@@ -382,7 +382,7 @@ impl fmt::Debug for OpenOptions {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut written = false;
         macro_rules! fmt_opt {
-            ($field: ident, $label: literal) => {
+            ($field:ident, $label:literal) => {
                 if self.$field {
                     if written {
                         write!(f, " | ")?;

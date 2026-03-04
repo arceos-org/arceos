@@ -3,11 +3,10 @@
 use axalloc::{UsageKind, global_allocator};
 use memory_addr::{PAGE_SIZE_4K, PhysAddr, VirtAddr};
 use page_table_multiarch::PagingHandler;
-
-use crate::mem::{phys_to_virt, virt_to_phys};
-
 #[doc(no_inline)]
 pub use page_table_multiarch::{MappingFlags, PageSize, PagingError, PagingResult};
+
+use crate::mem::{phys_to_virt, virt_to_phys};
 
 /// Implementation of [`PagingHandler`], to provide physical memory manipulation to
 /// the [page_table_multiarch] crate.

@@ -45,7 +45,7 @@ impl IrqIf for IrqIfImpl {
     /// It is called by the common interrupt handler. It should look up in the
     /// IRQ handler table and calls the corresponding handler. If necessary, it
     /// also acknowledges the interrupt controller after handling.
-    fn handle(irq_num: usize) -> Option<usize> {
+    fn handle(_irq_num: usize) -> Option<usize> {
         let irq = somehal::irq::irq_handler_raw();
         Some(irq.raw())
     }

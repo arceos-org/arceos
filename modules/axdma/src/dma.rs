@@ -1,13 +1,11 @@
 use core::{alloc::Layout, ptr::NonNull};
 
-#[cfg(feature = "hv")]
-use buddy_slab_allocator::{AllocError, AllocResult, ByteAllocator};
-
+use axalloc::{DefaultByteAllocator, UsageKind, global_allocator};
 #[cfg(not(feature = "hv"))]
 use axallocator::{AllocError, AllocResult, BaseAllocator, ByteAllocator};
-
-use axalloc::{DefaultByteAllocator, UsageKind, global_allocator};
 use axhal::{mem::virt_to_phys, paging::MappingFlags};
+#[cfg(feature = "hv")]
+use buddy_slab_allocator::{AllocError, AllocResult, ByteAllocator};
 use kspin::SpinNoIrq;
 use log::{debug, error};
 use memory_addr::{PAGE_SIZE_4K, VirtAddr, va};

@@ -1,20 +1,18 @@
+#[cfg(feature = "smp")]
+use alloc::sync::Weak;
 use alloc::{collections::VecDeque, sync::Arc};
 use core::{
     future::poll_fn,
     mem::MaybeUninit,
     task::{Context, Poll},
 };
-use futures_util::task::AtomicWaker;
 
-#[cfg(feature = "smp")]
-use alloc::sync::Weak;
-
+use axhal::percpu::this_cpu_id;
 use axsched::BaseScheduler;
+use futures_util::task::AtomicWaker;
 use kernel_guard::BaseGuard;
 use kspin::SpinRaw;
 use lazyinit::LazyInit;
-
-use axhal::percpu::this_cpu_id;
 
 use crate::{
     AxCpuMask, AxTaskRef, Scheduler, TaskInner,
@@ -98,7 +96,6 @@ pub(crate) fn current_run_queue<G: BaseGuard>() -> CurrentRunQueueRef<'static, G
 /// ## Panics
 ///
 /// This function will panic if `cpu_mask` is empty, indicating that there are no available CPUs for task execution.
-///
 #[cfg(feature = "smp")]
 // The modulo operation is safe here because `axconfig::plat::MAX_CPU_NUM` is always greater than 1 with "smp" enabled.
 #[allow(clippy::modulo_one)]
@@ -134,7 +131,6 @@ fn select_run_queue_index(cpumask: AxCpuMask) -> usize {
 /// ## Panics
 ///
 /// This function will panic if the index is out of bounds.
-///
 #[cfg(feature = "smp")]
 #[inline]
 fn get_run_queue(index: usize) -> &'static mut AxRunQueue {
@@ -158,7 +154,6 @@ fn get_run_queue(index: usize) -> &'static mut AxRunQueue {
 ///
 /// 1. Implement better load balancing across CPUs for more efficient task distribution.
 /// 2. Use a more generic load balancing algorithm that can be customized or replaced.
-///
 #[inline]
 pub(crate) fn select_run_queue<G: BaseGuard>(task: &AxTaskRef) -> AxRunQueueRef<'static, G> {
     let irq_state = G::acquire();

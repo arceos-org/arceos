@@ -1,17 +1,19 @@
-use core::cell::UnsafeCell;
-use core::net::SocketAddr;
-use core::sync::atomic::{AtomicBool, AtomicU8, Ordering};
+use core::{
+    cell::UnsafeCell,
+    net::SocketAddr,
+    sync::atomic::{AtomicBool, AtomicU8, Ordering},
+};
 
 use axerrno::{AxError, AxResult, ax_err, ax_err_type};
 use axio::PollState;
 use axsync::Mutex;
+use smoltcp::{
+    iface::SocketHandle,
+    socket::tcp::{self, ConnectError, State},
+    wire::{IpEndpoint, IpListenEndpoint},
+};
 
-use smoltcp::iface::SocketHandle;
-use smoltcp::socket::tcp::{self, ConnectError, State};
-use smoltcp::wire::{IpEndpoint, IpListenEndpoint};
-
-use super::addr::UNSPECIFIED_ENDPOINT;
-use super::{ETH0, LISTEN_TABLE, SOCKET_SET, SocketSetWrapper};
+use super::{ETH0, LISTEN_TABLE, SOCKET_SET, SocketSetWrapper, addr::UNSPECIFIED_ENDPOINT};
 
 // State transitions:
 // CLOSED -(connect)-> BUSY -> CONNECTING -> CONNECTED -(shutdown)-> BUSY -> CLOSED
