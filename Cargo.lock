@@ -202,7 +202,7 @@ dependencies = [
 
 [[package]]
 name = "arceos_api"
-version = "0.2.2-hv.6"
+version = "0.3.0-preview.1"
 dependencies = [
  "axalloc",
  "axconfig",
@@ -225,7 +225,7 @@ dependencies = [
 
 [[package]]
 name = "arceos_posix_api"
-version = "0.2.2-hv.6"
+version = "0.3.0-preview.1"
 dependencies = [
  "axalloc",
  "axconfig",
@@ -319,7 +319,7 @@ dependencies = [
 
 [[package]]
 name = "axalloc"
-version = "0.2.2-hv.6"
+version = "0.3.0-preview.1"
 dependencies = [
  "axallocator",
  "axbacktrace",
@@ -363,7 +363,7 @@ dependencies = [
 
 [[package]]
 name = "axconfig"
-version = "0.2.2-hv.6"
+version = "0.3.0-preview.1"
 dependencies = [
  "axconfig-macros",
  "const-str",
@@ -417,7 +417,7 @@ dependencies = [
 
 [[package]]
 name = "axdisplay"
-version = "0.2.2-hv.6"
+version = "0.3.0-preview.1"
 dependencies = [
  "axdriver",
  "axsync",
@@ -427,7 +427,7 @@ dependencies = [
 
 [[package]]
 name = "axdma"
-version = "0.2.2-hv.6"
+version = "0.3.0-preview.1"
 dependencies = [
  "axalloc",
  "axallocator",
@@ -444,7 +444,7 @@ dependencies = [
 
 [[package]]
 name = "axdriver"
-version = "0.2.2-hv.6"
+version = "0.3.0-preview.1"
 dependencies = [
  "axalloc",
  "axconfig",
@@ -588,7 +588,7 @@ dependencies = [
 
 [[package]]
 name = "axfeat"
-version = "0.2.2-hv.6"
+version = "0.3.0-preview.1"
 dependencies = [
  "axalloc",
  "axbacktrace",
@@ -609,7 +609,7 @@ dependencies = [
 
 [[package]]
 name = "axfs"
-version = "0.2.2-hv.6"
+version = "0.3.0-preview.1"
 dependencies = [
  "axalloc",
  "axdriver",
@@ -694,7 +694,7 @@ dependencies = [
 
 [[package]]
 name = "axhal"
-version = "0.2.2-hv.6"
+version = "0.3.0-preview.1"
 dependencies = [
  "axalloc",
  "axconfig",
@@ -719,7 +719,7 @@ dependencies = [
 
 [[package]]
 name = "axinput"
-version = "0.2.2-hv.6"
+version = "0.3.0-preview.1"
 dependencies = [
  "axdriver",
  "axsync",
@@ -741,7 +741,7 @@ dependencies = [
 
 [[package]]
 name = "axipi"
-version = "0.2.2-hv.6"
+version = "0.3.0-preview.1"
 dependencies = [
  "axconfig",
  "axhal",
@@ -764,7 +764,7 @@ dependencies = [
 
 [[package]]
 name = "axlibc"
-version = "0.2.2-hv.6"
+version = "0.3.0-preview.1"
 dependencies = [
  "arceos_posix_api",
  "axerrno 0.2.2",
@@ -775,7 +775,7 @@ dependencies = [
 
 [[package]]
 name = "axlog"
-version = "0.2.2-preview.1"
+version = "0.3.0-preview.1"
 dependencies = [
  "axlog",
  "cfg-if",
@@ -787,7 +787,7 @@ dependencies = [
 
 [[package]]
 name = "axmm"
-version = "0.2.2-hv.6"
+version = "0.3.0-preview.1"
 dependencies = [
  "axalloc",
  "axconfig",
@@ -803,7 +803,7 @@ dependencies = [
 
 [[package]]
 name = "axnet"
-version = "0.2.2-hv.6"
+version = "0.3.0-preview.1"
 dependencies = [
  "axdriver",
  "axerrno 0.2.2",
@@ -914,7 +914,7 @@ dependencies = [
 
 [[package]]
 name = "axplat-dyn"
-version = "0.2.2-hv.6"
+version = "0.3.0-preview.1"
 dependencies = [
  "anyhow",
  "axconfig-macros",
@@ -1015,7 +1015,7 @@ dependencies = [
 
 [[package]]
 name = "axruntime"
-version = "0.2.2-hv.6"
+version = "0.3.0-preview.1"
 dependencies = [
  "axalloc",
  "axbacktrace",
@@ -1053,7 +1053,7 @@ dependencies = [
 
 [[package]]
 name = "axstd"
-version = "0.2.2-hv.6"
+version = "0.3.0-preview.1"
 dependencies = [
  "arceos_api",
  "axerrno 0.2.2",
@@ -1067,7 +1067,7 @@ dependencies = [
 
 [[package]]
 name = "axsync"
-version = "0.2.2-hv.6"
+version = "0.3.0-preview.1"
 dependencies = [
  "axsync",
  "axtask",
@@ -1079,7 +1079,7 @@ dependencies = [
 
 [[package]]
 name = "axtask"
-version = "0.2.2-hv.6"
+version = "0.3.0-preview.1"
 dependencies = [
  "axconfig",
  "axerrno 0.2.2",
