@@ -43,9 +43,9 @@ dyn = [
     "dep:axerrno",
     "dep:axhal",
     "dep:axklib",
-    # "dep:dma-api",
     "dep:memory_addr",
-    "dep:rdif-block",
+    "dep:dma-api",
+    "dep:rd-block",
     "dep:rdrive",
     "dep:spin",
 ]
@@ -69,10 +69,10 @@ axhal = { workspace = true, optional = true }
 axklib = { workspace = true, optional = true }
 cfg-if.workspace = true
 crate_interface.workspace = true
-# dma-api = { version = "0.5", features = ["alloc"], optional = true }
+dma-api = { version = "0.7", optional = true }
 log.workspace = true
 memory_addr = { workspace = true, optional = true }
-rdif-block = { version = "0.6.2", optional = true }
-rdrive = { version = "0.18", optional = true }
+rd-block = { version = "0.1", optional = true }
+rdrive = { version = "0.19", optional = true }
 smallvec = { version = "1.15", features = ["const_generics", "union"] }
 spin = { version = "0.10", optional = true }

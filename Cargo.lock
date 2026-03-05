@@ -257,6 +257,20 @@ dependencies = [
  "enum_dispatch",
  "log",
  "paste",
+ "tock-registers 0.10.1",
+]
+
+[[package]]
+name = "arm-gic-driver"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0dda00d35b3c85f4e994746587c4579e63c0ba350b843fca96d6531b609292ae"
+dependencies = [
+ "aarch64-cpu 11.2.0",
+ "bitflags 2.11.0",
+ "enum_dispatch",
+ "log",
+ "paste",
  "rdif-intc",
  "tock-registers 0.10.1",
 ]
@@ -462,9 +476,10 @@ dependencies = [
  "axklib",
  "cfg-if",
  "crate_interface 0.1.4",
+ "dma-api 0.7.1",
  "log",
  "memory_addr",
- "rdif-block",
+ "rd-block",
  "rdrive",
  "smallvec",
  "spin 0.10.0",
@@ -644,15 +659,15 @@ dependencies = [
 
 [[package]]
 name = "axfs-ng-vfs"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf0d501c182116576111dc04ba89f48fea639b7080e0455393be5dbc41cfacef"
+checksum = "75b3fc5c71051e9ae0b29700aa6eb676b7dadb91be3415d2b374cc8d2a2d37c6"
 dependencies = [
  "axerrno 0.2.2",
  "axpoll",
  "bitflags 2.11.0",
  "cfg-if",
- "hashbrown 0.15.5",
+ "hashbrown",
  "inherit-methods-macro",
  "log",
  "smallvec",
@@ -857,7 +872,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6f3819d30fa3a4038c0f9ab7e122c8b3ba840b323ee3fc19e4dbabe22b4e56ac"
 dependencies = [
  "aarch64-cpu 11.2.0",
- "arm-gic-driver",
+ "arm-gic-driver 0.16.4",
  "arm_pl011",
  "arm_pl031",
  "axcpu",
@@ -1680,6 +1695,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "dma-api"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8e9ce2657334f873c12845789d5a4f1b34bef91fe531437284b8387d77bd925"
+dependencies = [
+ "aarch64-cpu-ext",
+ "cfg-if",
+ "derive_more",
+ "log",
+ "mbarrier",
+ "spin 0.10.0",
+ "thiserror",
+]
+
+[[package]]
 name = "dw_apb_uart"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1841,12 +1871,6 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
 name = "foldhash"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2"
-
-[[package]]
-name = "foldhash"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77ce24cb58228fbb8aa041425bb1050850ac19177686ea6e0f41a70416f56fdb"
@@ -1973,24 +1997,13 @@ dependencies = [
 
 [[package]]
 name = "hashbrown"
-version = "0.15.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9229cfe53dfd69f0609a49f65461bd93001ea1ef889cd5529dd176593f5338a1"
-dependencies = [
- "allocator-api2",
- "equivalent",
- "foldhash 0.1.5",
-]
-
-[[package]]
-name = "hashbrown"
 version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "841d1cc9bed7f9236f321df977030373f4a4163ae1a7dbfe1a51a2c1a51d9100"
 dependencies = [
  "allocator-api2",
  "equivalent",
- "foldhash 0.2.0",
+ "foldhash",
 ]
 
 [[package]]
@@ -2056,7 +2069,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7714e70437a7dc3ac8eb7e6f8df75fd8eb422675fc7678aff7364301092b1017"
 dependencies = [
  "equivalent",
- "hashbrown 0.16.1",
+ "hashbrown",
 ]
 
 [[package]]
@@ -2323,7 +2336,7 @@ version = "0.16.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a1dc47f592c06f33f8e3aea9591776ec7c9f9e4124778ff8a3c3b87159f7e593"
 dependencies = [
- "hashbrown 0.16.1",
+ "hashbrown",
 ]
 
 [[package]]
@@ -2505,9 +2518,9 @@ dependencies = [
 
 [[package]]
 name = "pcie"
-version = "0.4.5"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "225c81c0f672afbdd95e55abebe56541870e64e350eba9f7eabfb392112229ab"
+checksum = "98b1339d53c73a04833791fa907b60ff074b95cae8db9f94f3173ed2b30b5b6c"
 dependencies = [
  "bare-test-macros",
  "bit_field",
@@ -2675,6 +2688,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "rd-block"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c20952f27dc5aaf853e8c00026ba7f2633e149ce47f9a58115704b342756307"
+dependencies = [
+ "dma-api 0.7.1",
+ "futures",
+ "rdif-block",
+ "spin_on",
+]
+
+[[package]]
 name = "rdif-base"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2688,16 +2713,26 @@ dependencies = [
 ]
 
 [[package]]
-name = "rdif-block"
-version = "0.6.2"
+name = "rdif-base"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81ae1ba6c121eef2653dd2e0c88a209bb1d4d21e75e15cca71f19770ef327f81"
+checksum = "cda8c6ace8e0124ec777028cf86a56049f039c5d6f7a19b307a3f564b01ed858"
 dependencies = [
- "cfg-if",
- "dma-api",
- "futures",
- "rdif-base",
- "spin_on",
+ "as-any",
+ "async-trait",
+ "paste",
+ "rdif-def",
+ "thiserror",
+]
+
+[[package]]
+name = "rdif-block"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ea2a2573c1fb0af5daf596a32b9e10284f1fc018adfd0413e2213f35151ebff1"
+dependencies = [
+ "dma-api 0.7.1",
+ "rdif-base 0.8.0",
  "thiserror",
 ]
 
@@ -2712,22 +2747,22 @@ dependencies = [
 
 [[package]]
 name = "rdif-intc"
-version = "0.13.0"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12b79eba6783fb02dfb2a499a7f9da60b6c16b56c666b546d026e8fffc82c517"
+checksum = "25f3b9bf119dea83dcc7e4f0e2487d7635d373f55500bde982defa934dd17e9c"
 dependencies = [
  "cfg-if",
- "rdif-base",
+ "rdif-base 0.8.0",
 ]
 
 [[package]]
 name = "rdif-pcie"
-version = "0.1.4"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60c6e8dea6d432b2c03bc3f4238dc59a276aacac6f688a937351e7a313918738"
+checksum = "e4ab8ecf37d86123500a1d99519424b7dcf2489c0df6b62b56af9f436224259f"
 dependencies = [
  "pci_types",
- "rdif-base",
+ "rdif-base 0.8.0",
  "thiserror",
 ]
 
@@ -2740,22 +2775,22 @@ dependencies = [
  "bitflags 2.11.0",
  "futures",
  "heapless 0.9.2",
- "rdif-base",
+ "rdif-base 0.7.0",
  "spin 0.10.0",
  "thiserror",
 ]
 
 [[package]]
 name = "rdrive"
-version = "0.18.11"
+version = "0.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f28163d9cd26a17d444424168fde0f5f6f8b867cffdc7de617c2d0865eecf156"
+checksum = "ab4f7c92af8670536001b449bf8d27c67c22ff5f2391dd76ca2da9b5c5343f40"
 dependencies = [
  "fdt-parser",
  "log",
  "paste",
  "pcie",
- "rdif-base",
+ "rdif-base 0.8.0",
  "rdif-pcie",
  "rdrive-macros",
  "spin 0.10.0",
@@ -3047,7 +3082,7 @@ checksum = "20ad586f110c679176859fe111f2c3dd176b95bbe731e9b4c3d1c6382cb301c9"
 dependencies = [
  "bare-test-macros",
  "bitflags 2.11.0",
- "dma-api",
+ "dma-api 0.5.2",
  "enum_dispatch",
  "heapless 0.9.2",
  "log",
@@ -3060,9 +3095,9 @@ dependencies = [
 
 [[package]]
 name = "someboot"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d098355236a04942502f316661e06e8df92ac0e0db1c6c25922bab4b08e8317"
+checksum = "374257b9f5fdd9dadca39c3d1484d58e6760f6894bcb529e460814c30c8738aa"
 dependencies = [
  "aarch64-cpu 11.2.0",
  "aarch64-cpu-ext",
@@ -3104,13 +3139,13 @@ dependencies = [
 
 [[package]]
 name = "somehal"
-version = "0.5.3"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b671ee11f1025589dfcf334ba3c5ee2094ad212ce614e8c630da559ceaca38e3"
+checksum = "0959f802461a5c3458a5eff143d0622f3710946b3c47129e20be257fb9648bb4"
 dependencies = [
  "aarch64-cpu 11.2.0",
  "anyhow",
- "arm-gic-driver",
+ "arm-gic-driver 0.17.0",
  "kernutil",
  "log",
  "mmio-api",
