@@ -510,7 +510,7 @@ impl AxRunQueue {
 
     fn switch_to(&mut self, prev_task: CurrentTask, next_task: AxTaskRef) {
         // Make sure that IRQs are disabled by kernel guard or other means.
-        #[cfg(all(not(test), feature = "irq"))] // Note: irq is faked under unit tests.
+        #[cfg(all(target_os = "none", feature = "irq"))] // Note: irq is faked under unit tests.
         assert!(
             !axhal::asm::irqs_enabled(),
             "IRQs must be disabled during scheduling"
