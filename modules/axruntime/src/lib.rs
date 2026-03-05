@@ -216,18 +216,19 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
     #[cfg(feature = "multitask")]
     axtask::init_scheduler();
 
-    #[cfg(any(
-        feature = "fs",
-        feature = "net",
-        feature = "display",
-        feature = "input"
-    ))]
+    #[cfg(feature = "axdriver")]
     {
         #[allow(unused_variables)]
         let all_devices = axdriver::init_drivers();
 
-        #[cfg(feature = "fs")]
-        axfs::init_filesystems(all_devices.block, axhal::dtb::get_chosen_bootargs());
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "fs-ng")] {
+                axfs_ng::init_filesystems(all_devices.block);
+            } else
+            if #[cfg(feature = "fs")] {
+                axfs::init_filesystems(all_devices.block, axhal::dtb::get_chosen_bootargs());
+            }
+        }
 
         #[cfg(feature = "net")]
         axnet::init_network(all_devices.net);

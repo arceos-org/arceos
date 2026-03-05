@@ -62,6 +62,10 @@ fs = [
     "dep:axfs",
     "axruntime/fs",
 ] # TODO: try to remove "paging"
+fs-ng = ["fs", "axruntime/fs-ng"]
+fs-ng-ext4 = ["fs-ng", "axfs-ng/ext4"]
+fs-ng-fat = ["fs-ng", "axfs-ng/fat"]
+fs-ng-times = ["fs-ng", "axfs-ng/times"]
 
 # Networking
 net = ["alloc", "paging", "axdriver/virtio-net", "dep:axnet", "axruntime/net"]
@@ -107,6 +111,7 @@ axconfig = { workspace = true, optional = true }
 axdisplay = { workspace = true, optional = true }
 axdriver = { workspace = true, optional = true }
 axfs = { workspace = true, optional = true }
+axfs-ng = { workspace = true, optional = true }
 axhal.workspace = true
 axinput = { workspace = true, optional = true }
 axipi = { workspace = true, optional = true }

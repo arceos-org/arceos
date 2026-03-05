@@ -609,6 +609,7 @@ dependencies = [
  "axdisplay",
  "axdriver",
  "axfs",
+ "axfs-ng",
  "axhal",
  "axinput",
  "axipi",
@@ -624,31 +625,40 @@ dependencies = [
 name = "axfs"
 version = "0.3.0-preview.1"
 dependencies = [
- "axalloc",
  "axdriver",
- "axdriver_block",
  "axerrno 0.2.2",
  "axfatfs",
- "axfs-ng-vfs",
  "axfs_devfs",
  "axfs_ramfs",
  "axfs_vfs",
+ "axio",
+ "cap_access",
+ "lazyinit",
+ "log",
+ "rsext4",
+ "spin 0.10.0",
+]
+
+[[package]]
+name = "axfs-ng"
+version = "0.3.0-preview.1"
+dependencies = [
+ "axalloc",
+ "axdriver",
+ "axerrno 0.2.2",
+ "axfs-ng-vfs",
  "axhal",
  "axio",
  "axpoll",
  "axsync",
  "bitflags 2.11.0",
- "cap_access",
  "cfg-if",
  "chrono",
- "env_logger",
  "intrusive-collections",
  "kspin",
- "lazyinit",
  "log",
  "lru",
  "lwext4_rust",
- "rsext4",
  "scope-local",
  "slab",
  "spin 0.10.0",
@@ -1035,6 +1045,7 @@ dependencies = [
  "axdisplay",
  "axdriver",
  "axfs",
+ "axfs-ng",
  "axhal",
  "axinput",
  "axipi",
@@ -1044,6 +1055,7 @@ dependencies = [
  "axnet",
  "axplat",
  "axtask",
+ "cfg-if",
  "chrono",
  "crate_interface 0.1.4",
  "ctor_bare",
@@ -1749,29 +1761,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "env_filter"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a1c3cc8e57274ec99de65301228b537f1e4eedc1b8e0f9411c6caac8ae7308f"
-dependencies = [
- "log",
- "regex",
-]
-
-[[package]]
-name = "env_logger"
-version = "0.11.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2daee4ea451f429a58296525ddf28b45a3b64f1acf6587e2067437bb11e218d"
-dependencies = [
- "anstream",
- "anstyle",
- "env_filter",
- "jiff",
- "log",
-]
-
-[[package]]
 name = "equivalent"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2139,30 +2128,6 @@ dependencies = [
  "log",
  "smoltcp",
  "volatile 0.3.0",
-]
-
-[[package]]
-name = "jiff"
-version = "0.2.23"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a3546dc96b6d42c5f24902af9e2538e82e39ad350b0c766eb3fbf2d8f3d8359"
-dependencies = [
- "jiff-static",
- "log",
- "portable-atomic",
- "portable-atomic-util",
- "serde_core",
-]
-
-[[package]]
-name = "jiff-static"
-version = "0.2.23"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a8c8b344124222efd714b73bb41f8b5120b27a7cc1c75593a6ff768d9d05aa4"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.117",
 ]
 
 [[package]]
@@ -2575,21 +2540,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
-name = "portable-atomic"
-version = "1.13.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c33a9471896f1c69cecef8d20cbe2f7accd12527ce60845ff44c153bb2a21b49"
-
-[[package]]
-name = "portable-atomic-util"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a9db96d7fa8782dd8c15ce32ffe8680bbd1e978a43bf51a34d39483540495f5"
-dependencies = [
- "portable-atomic",
-]
-
-[[package]]
 name = "prettyplease"
 version = "0.2.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2994,26 +2944,6 @@ name = "semver"
 version = "1.0.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d767eb0aabc880b29956c35734170f26ed551a859dbd361d140cdbeca61ab1e2"
-
-[[package]]
-name = "serde_core"
-version = "1.0.228"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41d385c7d4ca58e59fc732af25c3983b67ac852c1a25000afe1175de458b67ad"
-dependencies = [
- "serde_derive",
-]
-
-[[package]]
-name = "serde_derive"
-version = "1.0.228"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d540f220d3187173da220f885ab66608367b6574e925011a9353e4badda91d79"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.117",
-]
 
 [[package]]
 name = "shlex"

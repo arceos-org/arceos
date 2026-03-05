@@ -1,47 +1,31 @@
 [package]
-authors = ["Mivik <mivikq@gmail.com>"]
-description = "ArceOS filesystem module"
-edition.workspace = true
-homepage.workspace = true
-license.workspace = true
 name = "axfs"
 version.workspace = true
+edition.workspace = true
+authors = ["Yuekai Jia <equation618@gmail.com>"]
+description = "ArceOS filesystem module"
+license.workspace = true
+homepage.workspace = true
+repository = "https://github.com/arceos-org/arceos/tree/main/modules/axfs"
+documentation = "https://arceos-org.github.io/arceos/axfs/index.html"
 
 [features]
 default = []
-monolitic = []
-fat = ["dep:fatfs"]
-ext4 = ["dep:lwext4_rust"]
-std = ["lwext4_rust?/std"]
 times = []
 use-ramdisk = [] # TODO: init ramdisk
 
 [dependencies]
-axalloc = {workspace = true}
-axdriver = {workspace = true, features = ["block"]}
-axdriver_block = "0.1.4-preview.3"
-axerrno = {workspace = true}
-axfs-ng-vfs = {workspace = true}
+axdriver = { workspace = true, features = ["block"] }
+axerrno = { workspace = true }
 axfs_devfs = { version = "0.1" }
 axfs_ramfs = { version = "0.1" }
 axfs_vfs = "0.1"
-axhal = {workspace = true}
-axio = {workspace = true, features = ["alloc"]}
-axpoll = {workspace = true}
-axsync = {workspace = true}
-bitflags = "2.10"
+axio = { workspace = true, features = ["alloc"] }
 cap_access = "0.1"
-cfg-if = {workspace = true}
-chrono = {workspace = true}
-intrusive-collections = "0.9.7"
-kspin = {workspace = true}
 lazyinit = "0.2"
-log = {workspace = true}
-lru = "0.16.0"
+log = { workspace = true }
 rsext4 = "0.1.0-pre.0"
-scope-local = {workspace = true}
-slab = {version = "0.4.9", default-features = false}
-spin = {workspace = true}
+spin = { workspace = true }
 
 [dependencies.axfatfs]
 version = "0.1.0-pre.0"
@@ -53,20 +37,3 @@ features = [
   "log_level_trace",
   "unicode",
 ]
-
-[dependencies.lwext4_rust]
-version = "0.2"
-default-features = false
-optional = true
-
-[dependencies.fatfs]
-version = "0.4.1-preview.2"
-package = "starry-fatfs"
-default-features = false
-optional = true
-features = ["alloc", "lfn", "log_level_trace", "unicode"]
-
-[dev-dependencies]
-axdriver = {workspace = true, features = ["block", "ramdisk"]}
-axdriver_block = {version = "0.1.4-preview.3", features = ["ramdisk"]}
-env_logger = "0.11.8"

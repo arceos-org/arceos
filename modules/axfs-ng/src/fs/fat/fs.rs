@@ -8,8 +8,7 @@ use axfs_ng_vfs::{
 use kspin::{SpinNoPreempt as Mutex, SpinNoPreemptGuard as MutexGuard};
 use slab::Slab;
 
-use super::{dir::FatDirNode, ff, util::into_vfs_err};
-use crate::disk::SeekableDisk;
+use super::{dir::FatDirNode, disk::SeekableDisk, ff, util::into_vfs_err};
 
 pub struct FatFilesystemInner {
     pub inner: ff::FileSystem,
@@ -33,7 +32,7 @@ pub struct FatFilesystem {
 }
 
 impl FatFilesystem {
-    pub fn new(dev: AxBlockDevice) -> Filesystem {
+    pub fn new(dev: AxBlockDevice) -> VfsResult<Filesystem> {
         let mut inner = FatFilesystemInner {
             inner: ff::FileSystem::new(SeekableDisk::new(dev), fatfs::FsOptions::new())
                 .expect("failed to initialize FAT filesystem"),
@@ -58,12 +57,12 @@ impl FatFilesystem {
             Reference::root(),
         );
         *result.root_dir.lock() = Some(root_dir);
-        Filesystem::new(result)
+        Ok(Filesystem::new(result))
     }
 }
 
 impl FatFilesystem {
-    pub(crate) fn lock(&self) -> MutexGuard<FatFilesystemInner> {
+    pub(crate) fn lock(&self) -> MutexGuard<'_, FatFilesystemInner> {
         self.inner.lock()
     }
 }

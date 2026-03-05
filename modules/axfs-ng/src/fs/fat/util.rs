@@ -1,39 +1,9 @@
-use alloc::string::String;
 use core::time::Duration;
 
 use axfs_ng_vfs::{DeviceId, Metadata, MetadataUpdate, NodePermission, NodeType, VfsError};
 use chrono::{DateTime, Datelike, NaiveDate, TimeZone, Timelike, Utc};
 
 use super::{ff, fs::FatFilesystemInner};
-
-#[derive(Clone)]
-pub struct CaseInsensitiveString(pub String);
-
-impl PartialEq for CaseInsensitiveString {
-    fn eq(&self, other: &Self) -> bool {
-        self.0
-            .bytes()
-            .map(|c| c.to_ascii_lowercase())
-            .eq(other.0.bytes().map(|c| c.to_ascii_lowercase()))
-    }
-}
-
-impl Eq for CaseInsensitiveString {}
-
-impl PartialOrd for CaseInsensitiveString {
-    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for CaseInsensitiveString {
-    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
-        self.0
-            .bytes()
-            .map(|c| c.to_ascii_lowercase())
-            .cmp(other.0.bytes().map(|c| c.to_ascii_lowercase()))
-    }
-}
 
 pub fn dos_to_unix(date: fatfs::DateTime) -> Duration {
     // let date: NaiveDateTime = date.into();

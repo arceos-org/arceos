@@ -8,6 +8,7 @@ members = [
     "modules/axdma",
     "modules/axdriver",
     "modules/axfs",
+    "modules/axfs-ng",
     "modules/axhal",
     "modules/axinput",
     "modules/axipi",
@@ -58,6 +59,7 @@ axdisplay = { version = "=0.3.0-preview.1", path = "modules/axdisplay" }
 axdma = { version = "=0.3.0-preview.1", path = "modules/axdma" }
 axdriver = { version = "=0.3.0-preview.1", path = "modules/axdriver" }
 axfs = { version = "=0.3.0-preview.1", path = "modules/axfs" }
+axfs-ng = { version = "=0.3.0-preview.1", path = "modules/axfs-ng" }
 axhal = { version = "=0.3.0-preview.1", path = "modules/axhal" }
 axinput = { version = "=0.3.0-preview.1", path = "modules/axinput" }
 axipi = { version = "=0.3.0-preview.1", path = "modules/axipi" }
