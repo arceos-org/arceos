@@ -1789,9 +1789,19 @@ dependencies = [
 
 [[package]]
 name = "extern-trait"
-version = "0.2.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba8f5038f5845165d06fe1453fe4130ad546d3314818bbda57e208e7b0cffe08"
+checksum = "cd3bc9641ace0d852a93f2699f342c935b825146acb63049b92d06e57aa9aebd"
+dependencies = [
+ "extern-trait-impl",
+ "typeid",
+]
+
+[[package]]
+name = "extern-trait-impl"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c89ddc8cd109db4196b4751cce7fc34380d55f095fcd5d634c708485fe4c820f"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3396,6 +3406,12 @@ dependencies = [
  "quote",
  "syn 2.0.117",
 ]
+
+[[package]]
+name = "typeid"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc7d623258602320d5c55d1bc22793b57daff0ec7efc270ea7d55ce1d5f5471c"
 
 [[package]]
 name = "uart_16550"
