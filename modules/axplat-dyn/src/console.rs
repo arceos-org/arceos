@@ -25,18 +25,17 @@ impl ConsoleIf for ConsoleIfImpl {
     /// Reads bytes from the console into the given mutable slice.
     ///
     /// Returns the number of bytes read.
-    fn read_bytes(_bytes: &mut [u8]) -> usize {
-        todo!()
-        // let mut read_len = 0;
-        // while read_len < bytes.len() {
-        //     if let Some(c) = somehal::console::getchar() {
-        //         bytes[read_len] = c;
-        //     } else {
-        //         break;
-        //     }
-        //     read_len += 1;
-        // }
-        // read_len
+    fn read_bytes(bytes: &mut [u8]) -> usize {
+        let mut read_len = 0;
+        while read_len < bytes.len() {
+            if let Some(c) = somehal::console::read_byte() {
+                bytes[read_len] = c;
+            } else {
+                break;
+            }
+            read_len += 1;
+        }
+        read_len
     }
 
     /// Returns the IRQ number for the console input interrupt.

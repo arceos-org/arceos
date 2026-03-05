@@ -1,15 +1,17 @@
 use axdriver_base::{BaseDriverOps, DevError, DevResult, DeviceType};
 use axdriver_block::BlockDriverOps;
-use rdif_block::BlkError;
+use rd_block::BlkError;
 use rdrive::Device;
 use spin::Mutex;
+
+use crate::dyn_drivers::DmaImpl;
 
 #[cfg(feature = "virtio-blk")]
 mod virtio;
 
 pub struct Block {
-    dev: Device<rdif_block::Block>,
-    queue: Mutex<rdif_block::CmdQueue>,
+    dev: Device<rd_block::Block>,
+    queue: Mutex<rd_block::CmdQueue>,
 }
 
 impl BaseDriverOps for Block {
@@ -60,8 +62,8 @@ impl BlockDriverOps for Block {
     }
 }
 
-impl From<Device<rdif_block::Block>> for Block {
-    fn from(base: Device<rdif_block::Block>) -> Self {
+impl From<Device<rd_block::Block>> for Block {
+    fn from(base: Device<rd_block::Block>) -> Self {
         let queue = base.lock().unwrap().create_queue().unwrap();
         Self {
             dev: base,
@@ -97,12 +99,12 @@ fn maping_dev_err_to_blk_err(err: DevError) -> BlkError {
 }
 
 pub trait PlatformDeviceBlock {
-    fn register_block<T: rdif_block::Interface>(self, dev: T);
+    fn register_block<T: rd_block::Interface>(self, dev: T);
 }
 
 impl PlatformDeviceBlock for rdrive::PlatformDevice {
-    fn register_block<T: rdif_block::Interface>(self, dev: T) {
-        let dev = rdif_block::Block::new(dev);
+    fn register_block<T: rd_block::Interface>(self, dev: T) {
+        let dev = rd_block::Block::new(dev, &DmaImpl);
         self.register(dev);
     }
 }

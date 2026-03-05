@@ -73,17 +73,13 @@ struct BlockQueue {
 }
 
 impl DriverGeneric for BlockDivce {
-    fn open(&mut self) -> Result<(), rdrive::KError> {
-        Ok(())
-    }
-
-    fn close(&mut self) -> Result<(), rdrive::KError> {
-        Ok(())
+    fn name(&self) -> &str {
+        "virtio-blk"
     }
 }
 
-impl rdif_block::Interface for BlockDivce {
-    fn create_queue(&mut self) -> Option<alloc::boxed::Box<dyn rdif_block::IQueue>> {
+impl rd_block::Interface for BlockDivce {
+    fn create_queue(&mut self) -> Option<alloc::boxed::Box<dyn rd_block::IQueue>> {
         self.dev
             .take()
             .map(|dev| alloc::boxed::Box::new(BlockQueue { raw: dev }) as _)
@@ -101,12 +97,12 @@ impl rdif_block::Interface for BlockDivce {
         false
     }
 
-    fn handle_irq(&mut self) -> rdif_block::Event {
-        rdif_block::Event::none()
+    fn handle_irq(&mut self) -> rd_block::Event {
+        rd_block::Event::none()
     }
 }
 
-impl rdif_block::IQueue for BlockQueue {
+impl rd_block::IQueue for BlockQueue {
     fn num_blocks(&self) -> usize {
         self.raw.num_blocks() as _
     }
@@ -119,8 +115,8 @@ impl rdif_block::IQueue for BlockQueue {
         0
     }
 
-    fn buff_config(&self) -> rdif_block::BuffConfig {
-        rdif_block::BuffConfig {
+    fn buff_config(&self) -> rd_block::BuffConfig {
+        rd_block::BuffConfig {
             dma_mask: u64::MAX,
             align: 0x1000,
             size: self.block_size(),
@@ -129,29 +125,26 @@ impl rdif_block::IQueue for BlockQueue {
 
     fn submit_request(
         &mut self,
-        request: rdif_block::Request<'_>,
-    ) -> Result<rdif_block::RequestId, rdif_block::BlkError> {
+        request: rd_block::Request<'_>,
+    ) -> Result<rd_block::RequestId, rd_block::BlkError> {
         let id = request.block_id;
         match request.kind {
-            rdif_block::RequestKind::Read(mut buffer) => {
+            rd_block::RequestKind::Read(mut buffer) => {
                 self.raw
                     .read_block(id as _, &mut buffer)
                     .map_err(maping_dev_err_to_blk_err)?;
-                Ok(rdif_block::RequestId::new(0))
+                Ok(rd_block::RequestId::new(0))
             }
-            rdif_block::RequestKind::Write(items) => {
+            rd_block::RequestKind::Write(items) => {
                 self.raw
                     .write_block(id as _, items)
                     .map_err(maping_dev_err_to_blk_err)?;
-                Ok(rdif_block::RequestId::new(0))
+                Ok(rd_block::RequestId::new(0))
             }
         }
     }
 
-    fn poll_request(
-        &mut self,
-        _request: rdif_block::RequestId,
-    ) -> Result<(), rdif_block::BlkError> {
+    fn poll_request(&mut self, _request: rd_block::RequestId) -> Result<(), rd_block::BlkError> {
         Ok(())
     }
 }

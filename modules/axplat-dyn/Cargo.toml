@@ -22,7 +22,7 @@ heapless = "0.9"
 spin = "0.10"
 anyhow = { version = "1", default-features = false }
 axplat.workspace = true
-somehal = "0.5"
+somehal = "0.6"
 log.workspace = true
 axconfig-macros = "0.2"
 percpu = { workspace = true, features = ["custom-base"] }
