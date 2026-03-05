@@ -107,7 +107,7 @@ lazy_static = { version = "1.5", features = ["spin_no_std"] }
 lock_api = { version = "0.4", default-features = false }
 log = "0.4"
 memory_addr = "0.4"
-page_table_multiarch = "0.6"
+page_table_multiarch = { version = "0.6", features = ["axerrno"] }
 percpu = "0.2.3-preview.1"
 scope-local = "0.1"
 spin = "0.10"

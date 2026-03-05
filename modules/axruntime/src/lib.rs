@@ -175,6 +175,27 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
     #[cfg(feature = "alloc")]
     init_allocator();
 
+    {
+        use core::ops::Range;
+
+        unsafe extern "C" {
+            safe static _stext: [u8; 0];
+            safe static _etext: [u8; 0];
+            safe static _edata: [u8; 0];
+        }
+
+        axbacktrace::init(
+            Range {
+                start: _stext.as_ptr() as usize,
+                end: _etext.as_ptr() as usize,
+            },
+            Range {
+                start: _edata.as_ptr() as usize,
+                end: usize::MAX,
+            },
+        );
+    }
+
     let (kernel_space_start, kernel_space_size) = axhal::mem::kernel_aspace();
 
     info!(
@@ -195,7 +216,12 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
     #[cfg(feature = "multitask")]
     axtask::init_scheduler();
 
-    #[cfg(any(feature = "fs", feature = "net", feature = "display"))]
+    #[cfg(any(
+        feature = "fs",
+        feature = "net",
+        feature = "display",
+        feature = "input"
+    ))]
     {
         #[allow(unused_variables)]
         let all_devices = axdriver::init_drivers();
@@ -205,9 +231,14 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
 
         #[cfg(feature = "net")]
         axnet::init_network(all_devices.net);
+        #[cfg(feature = "vsock")]
+        axnet::init_vsock(all_devices.vsock);
 
         #[cfg(feature = "display")]
         axdisplay::init_display(all_devices.display);
+
+        #[cfg(feature = "input")]
+        axinput::init_input(all_devices.input);
     }
 
     #[cfg(feature = "smp")]

@@ -2487,6 +2487,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "42c5b75d5d9bdbee44c827b0dd2766fa3d478a76b9c6735419228089d1b24536"
 dependencies = [
  "arrayvec",
+ "axerrno 0.1.2",
  "bitmaps",
  "log",
  "memory_addr",
