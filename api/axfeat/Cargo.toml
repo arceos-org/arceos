@@ -69,6 +69,8 @@ fs-ng-times = ["fs-ng", "axfs-ng/times"]
 
 # Networking
 net = ["alloc", "paging", "axdriver/virtio-net", "dep:axnet", "axruntime/net"]
+net-ng = ["net", "irq", "multitask", "axruntime/net-ng"]
+vsock = ["axruntime/vsock"]
 
 # Display
 display = [

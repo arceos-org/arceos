@@ -15,6 +15,7 @@ members = [
     "modules/axlog",
     "modules/axmm",
     "modules/axnet",
+    "modules/axnet-ng",
     "modules/axruntime",
     "modules/axsync",
     "modules/axtask",
@@ -66,10 +67,11 @@ axipi = { version = "=0.3.0-preview.1", path = "modules/axipi" }
 axlog = { version = "=0.3.0-preview.1", path = "modules/axlog" }
 axmm = { version = "=0.3.0-preview.1", path = "modules/axmm" }
 axnet = { version = "=0.3.0-preview.1", path = "modules/axnet" }
+axnet-ng = { version = "=0.3.0-preview.1", path = "modules/axnet-ng" }
+axplat-dyn = { version = "=0.3.0-preview.1", path = "modules/axplat-dyn", default-features = false }
 axruntime = { version = "=0.3.0-preview.1", path = "modules/axruntime" }
 axsync = { version = "=0.3.0-preview.1", path = "modules/axsync" }
 axtask = { version = "=0.3.0-preview.1", path = "modules/axtask" }
-axplat-dyn = { version = "=0.3.0-preview.1", path = "modules/axplat-dyn", default-features = false }
 
 axallocator = { version = "0.2", features = ["axerrno"] }
 axbacktrace = "0.1"

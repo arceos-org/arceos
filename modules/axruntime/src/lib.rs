@@ -230,10 +230,16 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
             }
         }
 
-        #[cfg(feature = "net")]
-        axnet::init_network(all_devices.net);
-        #[cfg(feature = "vsock")]
-        axnet::init_vsock(all_devices.vsock);
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "net-ng")] {
+                axnet_ng::init_network(all_devices.net);
+
+                #[cfg(feature = "vsock")]
+                axnet_ng::init_vsock(all_devices.vsock);
+            } else if #[cfg(feature = "net")] {
+                axnet::init_network(all_devices.net);
+            }
+        }
 
         #[cfg(feature = "display")]
         axdisplay::init_display(all_devices.display);

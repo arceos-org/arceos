@@ -17,7 +17,9 @@ dma = ["paging"]
 hv = ["axalloc/hv"]
 ipi = ["dep:axipi"]
 irq = ["axhal/irq", "axtask?/irq", "dep:percpu"]
+multitask = ["axtask/multitask"]
 paging = ["axhal/paging", "dep:axmm", "dep:axklib"]
+rtc = []
 smp = ["axhal/smp", "axtask?/smp"]
 tls = ["axhal/tls", "axtask?/tls"]
 
@@ -29,10 +31,9 @@ display = ["axdriver", "dep:axdisplay"]
 fs = ["axdriver", "dep:axfs"]
 fs-ng = ["axdriver", "dep:axfs-ng"]
 input = ["axdriver", "dep:axinput"]
-multitask = ["axtask/multitask"]
 net = ["axdriver", "dep:axnet"]
-rtc = []
-vsock = ["net", "axnet/vsock"]
+net-ng = ["axdriver", "dep:axnet-ng"]
+vsock = ["net-ng", "axnet-ng/vsock"]
 
 [dependencies]
 axalloc = { workspace = true, optional = true }
@@ -49,6 +50,7 @@ axklib = { workspace = true, optional = true }
 axlog = { workspace = true }
 axmm = { workspace = true, optional = true }
 axnet = { workspace = true, optional = true }
+axnet-ng = { workspace = true, optional = true }
 axplat = { workspace = true }
 axtask = { workspace = true, optional = true }
 cfg-if = { workspace = true }
