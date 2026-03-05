@@ -17,14 +17,14 @@ uspace = ["somehal/uspace"]
 hv = ["somehal/hv"]
 
 [dependencies]
-axerrno.workspace = true
-heapless = "0.9"
-spin = "0.10"
 anyhow = { version = "1", default-features = false }
-axplat.workspace = true
-somehal = "0.6"
-log.workspace = true
 axconfig-macros = "0.2"
+axcpu.workspace = true
+axerrno.workspace = true
+axklib.workspace = true
+axplat.workspace = true
+heapless = "0.9"
+log.workspace = true
 percpu = { workspace = true, features = ["custom-base"] }
-axklib = { workspace = true }
-axcpu = { workspace = true }
+somehal = "0.6"
+spin = "0.10"

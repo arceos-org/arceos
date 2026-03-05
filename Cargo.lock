@@ -324,11 +324,11 @@ checksum = "c08606f8c3cbf4ce6ec8e28fb0014a2c086708fe954eaa885384a6165172e7e8"
 
 [[package]]
 name = "ax_slab_allocator"
-version = "0.3.2-preview.1"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "925fe9ce2492005f319efe39af520a1d53976aa6f473bd3ecdee2edd8382dbd3"
+checksum = "6a04dda49054845b496a16f62a58614b1935ed2b4df0b91f9eea4179a5820f08"
 dependencies = [
- "buddy_system_allocator 0.10.0",
+ "buddy_system_allocator 0.12.0",
 ]
 
 [[package]]
@@ -349,9 +349,9 @@ dependencies = [
 
 [[package]]
 name = "axallocator"
-version = "0.1.3-preview.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1af235e0e403b05aef675f5273ded7f54e79d78ffb358a7b46e950434c4e1fd8"
+checksum = "3894f6027940d4b013f1d1f9e2e61b47a9e4a7dbf1a0ba10dd33e7bb265ea733"
 dependencies = [
  "ax_slab_allocator",
  "axerrno 0.1.2",
@@ -446,11 +446,9 @@ dependencies = [
  "axalloc",
  "axallocator",
  "axconfig",
- "axerrno 0.2.2",
  "axhal",
  "axmm",
  "buddy-slab-allocator",
- "crate_interface 0.1.4",
  "kspin",
  "log",
  "memory_addr",
@@ -805,7 +803,6 @@ name = "axmm"
 version = "0.3.0-preview.1"
 dependencies = [
  "axalloc",
- "axconfig",
  "axerrno 0.2.2",
  "axhal",
  "kspin",
@@ -1037,7 +1034,6 @@ dependencies = [
  "axconfig",
  "axdisplay",
  "axdriver",
- "axerrno 0.2.2",
  "axfs",
  "axhal",
  "axinput",
@@ -1048,12 +1044,10 @@ dependencies = [
  "axnet",
  "axplat",
  "axtask",
- "cfg-if",
  "chrono",
  "crate_interface 0.1.4",
  "ctor_bare",
  "indoc",
- "log",
  "percpu",
 ]
 
@@ -1230,10 +1224,11 @@ dependencies = [
 
 [[package]]
 name = "buddy-slab-allocator"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "89ed53d25e32e23ad21aea7d98184b5f9ba9b822bdee2128e79b61168a55610e"
+checksum = "0e10a1b61411589daf2647252449679e12ae5a07adef75d9f3eac1978b7d9986"
 dependencies = [
+ "axallocator",
  "cfg-if",
 ]
 

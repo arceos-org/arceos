@@ -36,25 +36,18 @@ axbacktrace = { workspace = true }
 axconfig = { workspace = true }
 axdisplay = { workspace = true, optional = true }
 axdriver = { workspace = true, optional = true }
-axerrno.workspace = true
 axfs = { workspace = true, optional = true }
 axhal = { workspace = true }
 axinput = { workspace = true, optional = true }
 axipi = { workspace = true, optional = true }
+axklib = { workspace = true, optional = true }
 axlog = { workspace = true }
 axmm = { workspace = true, optional = true }
 axnet = { workspace = true, optional = true }
 axplat = { workspace = true }
 axtask = { workspace = true, optional = true }
-
-log = "0.4"
-
-crate_interface = "0.1"
+chrono = { version = "0.4", default-features = false }
+crate_interface = { workspace = true }
 ctor_bare = "0.2"
-cfg-if = "1.0"
-
-chrono = { version = "0.4.38", default-features = false }
-
 indoc = "2"
 percpu = { workspace = true, optional = true }
-axklib = { workspace = true, optional = true }
