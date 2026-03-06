@@ -1,4 +1,5 @@
 mod dir;
+mod disk;
 mod ff;
 mod file;
 mod fs;
@@ -7,10 +8,9 @@ mod util;
 use core::cell::UnsafeCell;
 
 use fatfs::SeekFrom;
-pub use fs::FatFilesystem;
-use fs::FatFilesystemInner;
 
-use crate::disk::SeekableDisk;
+pub use self::fs::FatFilesystem;
+use self::{disk::SeekableDisk, fs::FatFilesystemInner};
 
 impl fatfs::IoBase for SeekableDisk {
     type Error = ();

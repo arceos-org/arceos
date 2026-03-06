@@ -5,12 +5,12 @@ use core::{
     fmt,
     future::poll_fn,
     pin::pin,
-    sync::atomic::{AtomicBool, Ordering},
     task::{Context, Poll, Waker},
 };
 
 use axerrno::AxError;
 use kernel_guard::NoPreemptIrqSave;
+use kspin::SpinNoIrq;
 
 use crate::{AxTaskRef, WeakAxTaskRef, current, current_run_queue, select_run_queue};
 
@@ -22,14 +22,14 @@ pub use time::*;
 
 struct AxWaker {
     task: WeakAxTaskRef,
-    woke: AtomicBool,
+    woke: SpinNoIrq<bool>,
 }
 
 impl AxWaker {
     fn new(task: &AxTaskRef) -> Arc<Self> {
         Arc::new(AxWaker {
             task: Arc::downgrade(task),
-            woke: AtomicBool::new(false),
+            woke: SpinNoIrq::new(false),
         })
     }
 }
@@ -41,8 +41,9 @@ impl Wake for AxWaker {
 
     fn wake_by_ref(self: &Arc<Self>) {
         if let Some(task) = self.task.upgrade() {
-            self.woke.store(true, Ordering::Release);
-            select_run_queue::<NoPreemptIrqSave>(&task).unblock_task(task, false);
+            let mut rq = select_run_queue::<NoPreemptIrqSave>(&task);
+            *self.woke.lock() = true;
+            rq.unblock_task(task, false);
         }
     }
 }
@@ -65,13 +66,16 @@ pub fn block_on<F: IntoFuture>(f: F) -> F::Output {
     let mut cx = Context::from_waker(&waker);
 
     loop {
-        woke.store(false, Ordering::Release);
+        *woke.lock() = false;
         match fut.as_mut().poll(&mut cx) {
             Poll::Pending => {
-                if !woke.load(Ordering::Acquire) {
-                    current_run_queue::<NoPreemptIrqSave>().blocked_resched();
+                let mut rq = current_run_queue::<NoPreemptIrqSave>();
+                let woke = woke.lock();
+                if !*woke {
+                    rq.blocked_resched(woke);
                 } else {
                     // Immediately woken
+                    drop(woke);
                     crate::yield_now();
                 }
             }

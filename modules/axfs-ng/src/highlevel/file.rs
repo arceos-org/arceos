@@ -22,32 +22,32 @@ use spin::RwLock;
 use super::FsContext;
 
 bitflags::bitflags! {
-    /// File access flags
+    /// Flags describing the access mode of an opened file.
     #[derive(Debug, Clone, Copy)]
     pub struct FileFlags: u8 {
-        /// Read permission
+        /// Read access.
         const READ = 1;
-        /// Write permission
+        /// Write access.
         const WRITE = 2;
-        /// Execute permission
+        /// Execute access.
         const EXECUTE = 4;
-        /// Append mode
+        /// Append mode — writes always go to the end of the file.
         const APPEND = 8;
-        /// Path flag
+        /// Path-only handle, no actual I/O is permitted.
         const PATH = 16;
     }
 }
 
 /// Results returned by [`OpenOptions::open`].
 pub enum OpenResult {
-    /// Opened file
+    /// The opened path is a regular file.
     File(File),
-    /// Opened directory
+    /// The opened path is a directory.
     Dir(Location),
 }
 
 impl OpenResult {
-    /// Converts this result into a file, returns error if it's a directory
+    /// Converts into a [`File`], returning an error if this is a directory.
     pub fn into_file(self) -> VfsResult<File> {
         match self {
             Self::File(file) => Ok(file),
@@ -55,7 +55,7 @@ impl OpenResult {
         }
     }
 
-    /// Converts this result into a directory location, returns error if it's a file
+    /// Converts into a [`Location`], returning an error if this is a file.
     pub fn into_dir(self) -> VfsResult<Location> {
         match self {
             Self::Dir(dir) => Ok(dir),
@@ -63,7 +63,7 @@ impl OpenResult {
         }
     }
 
-    /// Returns the location of this open result
+    /// Extracts the underlying [`Location`] regardless of variant.
     pub fn into_location(self) -> Location {
         match self {
             Self::File(file) => file.location().clone(),
@@ -229,7 +229,7 @@ impl OpenOptions {
         })
     }
 
-    /// Opens a file at the given location
+    /// Opens a file at the given [`Location`] using these options.
     pub fn open_loc(&self, loc: Location) -> VfsResult<OpenResult> {
         if !self.is_valid() {
             return Err(VfsError::InvalidInput);
@@ -237,7 +237,7 @@ impl OpenOptions {
         self._open(loc)
     }
 
-    /// Opens a file at the given path using the provided filesystem context
+    /// Opens a file at the given path relative to the provided [`FsContext`].
     pub fn open(&self, context: &FsContext, path: impl AsRef<Path>) -> VfsResult<OpenResult> {
         if !self.is_valid() {
             return Err(VfsError::InvalidInput);
@@ -315,7 +315,7 @@ impl Default for OpenOptions {
 
 const PAGE_SIZE: usize = 4096;
 
-/// A cached page of file data
+/// A single page-sized cache entry backed by a physical page.
 #[derive(Debug)]
 pub struct PageCache {
     addr: VirtAddr,
@@ -328,25 +328,24 @@ impl PageCache {
             .alloc_pages(1, PAGE_SIZE, UsageKind::PageCache)
             .inspect_err(|err| {
                 warn!("Failed to allocate page cache: {:?}", err);
-            })
-            .map_err(|_| VfsError::NoMemory)?;
+            })?;
         Ok(Self {
             addr: addr.into(),
             dirty: false,
         })
     }
 
-    /// Returns the physical address of this page cache
+    /// Returns the physical address of this page.
     pub fn paddr(&self) -> PhysAddr {
         virt_to_phys(self.addr)
     }
 
-    /// Marks this page cache as dirty (modified)
+    /// Marks this page as dirty so it will be flushed on eviction.
     pub fn mark_dirty(&mut self) {
         self.dirty = true;
     }
 
-    /// Returns the data slice of this page cache
+    /// Returns a mutable slice over the page data.
     pub fn data(&mut self) -> &mut [u8] {
         unsafe { core::slice::from_raw_parts_mut(self.addr.as_mut_ptr(), PAGE_SIZE) }
     }
@@ -361,8 +360,10 @@ impl Drop for PageCache {
     }
 }
 
+type EvictListenerFn = Box<dyn Fn(u32, &PageCache) + Send + Sync>;
+
 struct EvictListener {
-    listener: Box<dyn Fn(u32, &PageCache) + Send + Sync>,
+    listener: EvictListenerFn,
     link: LinkedListAtomicLink,
 }
 
@@ -389,7 +390,7 @@ impl CachedFileShared {
     }
 }
 
-/// A file with page cache support
+/// A file handle with an LRU page cache for buffered I/O.
 pub struct CachedFile {
     inner: Location,
     shared: Arc<CachedFileShared>,
@@ -425,7 +426,7 @@ impl FileUserData {
 }
 
 impl CachedFile {
-    /// Gets or creates a cached file for the given location
+    /// Returns an existing cached file for `location`, or creates a new one.
     pub fn get_or_create(location: Location) -> Self {
         let in_memory = location.filesystem().name() == "tmpfs";
 
@@ -454,17 +455,20 @@ impl CachedFile {
         }
     }
 
-    /// Checks if two CachedFile instances point to the same shared cache
+    /// Returns `true` if both handles refer to the same shared state.
     pub fn ptr_eq(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.shared, &other.shared)
     }
 
-    /// Returns true if this file is an in-memory file (e.g., tmpfs)
+    /// Returns `true` if this file is backed by an in-memory filesystem (e.g. tmpfs).
     pub fn in_memory(&self) -> bool {
         self.in_memory
     }
 
-    /// Adds a callback to be invoked when a page is evicted from the cache
+    /// Registers a listener that is called when a page is evicted from cache.
+    ///
+    /// Returns a handle that can later be passed to
+    /// [`remove_evict_listener`](Self::remove_evict_listener).
     pub fn add_evict_listener<F>(&self, listener: F) -> usize
     where
         F: Fn(u32, &PageCache) + Send + Sync + 'static,
@@ -478,7 +482,10 @@ impl CachedFile {
         handle
     }
 
-    /// Removes an eviction listener by handle
+    /// # Safety
+    /// The handle must be valid, that means:
+    /// - It must be returned by a previous call to `add_evict_listener` on the same `CachedFile`.
+    /// - It must not be removed by a previous call to `remove_evict_listener`.
     pub unsafe fn remove_evict_listener(&self, handle: usize) {
         let mut guard = self.shared.evict_listeners.lock();
         let mut cursor = unsafe { guard.cursor_mut_from_ptr(handle as *const EvictListener) };
@@ -531,12 +538,15 @@ impl CachedFile {
         Ok((cache.get_mut(&pn).unwrap(), evicted))
     }
 
-    /// Executes a callback with the specified page if it exists in cache
+    /// Invokes `f` with the cached page at `pn`, or `None` if it is not cached.
     pub fn with_page<R>(&self, pn: u32, f: impl FnOnce(Option<&mut PageCache>) -> R) -> R {
         f(self.shared.page_cache.lock().get_mut(&pn))
     }
 
-    /// Executes a callback with the specified page, inserting it if not cached
+    /// Invokes `f` with the cached page at `pn`, loading it from disk if absent.
+    ///
+    /// If loading the page causes an eviction, the evicted `(page_number, page)`
+    /// pair is also passed to `f`.
     pub fn with_page_or_insert<R>(
         &self,
         pn: u32,
@@ -575,7 +585,7 @@ impl CachedFile {
         Ok(initial)
     }
 
-    /// Reads data from the file at the specified offset
+    /// Reads data from the file at `offset` into `dst`.
     pub fn read_at(&self, mut dst: impl Write + IoBufMut, offset: u64) -> VfsResult<usize> {
         let len = self.inner.len()?;
         let end = (offset + dst.remaining_mut() as u64).min(len);
@@ -614,13 +624,13 @@ impl CachedFile {
         )
     }
 
-    /// Writes data to the file at the specified offset
+    /// Writes `buf` to the file at `offset`.
     pub fn write_at(&self, buf: impl Read + IoBuf, offset: u64) -> VfsResult<usize> {
         let _guard = self.append_lock.read();
         self.write_at_locked(buf, offset)
     }
 
-    /// Appends data to the end of the file, returning (bytes_written, new_offset)
+    /// Appends `buf` to the end of the file. Returns `(bytes_written, new_end)`.
     pub fn append(&self, buf: impl Read + IoBuf) -> VfsResult<(usize, u64)> {
         let _guard = self.append_lock.write();
         let file = self.inner.entry().as_file()?;
@@ -629,7 +639,7 @@ impl CachedFile {
             .map(|written| (written, len + written as u64))
     }
 
-    /// Sets the file size to the specified length
+    /// Truncates or extends the file to `len` bytes.
     pub fn set_len(&self, len: u64) -> VfsResult<()> {
         let file = self.inner.entry().as_file()?;
         let old_len = file.len()?;
@@ -668,7 +678,7 @@ impl CachedFile {
         Ok(())
     }
 
-    /// Syncs the file to storage
+    /// Flushes all cached pages back to disk.
     pub fn sync(&self, data_only: bool) -> VfsResult<()> {
         if self.in_memory {
             return Ok(());
@@ -682,7 +692,7 @@ impl CachedFile {
         Ok(())
     }
 
-    /// Returns the location of this file
+    /// Returns a reference to the underlying [`Location`].
     pub fn location(&self) -> &Location {
         &self.inner
     }
@@ -704,9 +714,9 @@ impl Drop for CachedFile {
 /// Low-level interface for file operations.
 #[derive(Clone)]
 pub enum FileBackend {
-    /// Cached file with page cache
+    /// File I/O goes through the page cache.
     Cached(CachedFile),
-    /// Direct file access without caching
+    /// File I/O bypasses the page cache and hits the VFS directly.
     Direct(Location),
 }
 
@@ -719,7 +729,7 @@ impl FileBackend {
         Self::Cached(CachedFile::get_or_create(location))
     }
 
-    /// Reads data from the file at the specified offset
+    /// Reads data from the file at `offset` into `dst`.
     pub fn read_at(&self, mut dst: impl Write + IoBufMut, mut offset: u64) -> VfsResult<usize> {
         match self {
             Self::Cached(cached) => cached.read_at(dst, offset),
@@ -731,7 +741,7 @@ impl FileBackend {
         }
     }
 
-    /// Writes data to the file at the specified offset
+    /// Writes `src` to the file at `offset`.
     pub fn write_at(&self, mut src: impl Read + IoBuf, mut offset: u64) -> VfsResult<usize> {
         match self {
             Self::Cached(cached) => cached.write_at(src, offset),
@@ -746,7 +756,7 @@ impl FileBackend {
         }
     }
 
-    /// Appends data to the end of the file
+    /// Appends `src` to the end of the file. Returns `(bytes_written, new_end)`.
     pub fn append(&self, mut src: impl Read + IoBuf) -> VfsResult<(usize, u64)> {
         match self {
             Self::Cached(cached) => cached.append(src),
@@ -763,7 +773,7 @@ impl FileBackend {
         }
     }
 
-    /// Returns the location of this file
+    /// Returns a reference to the underlying [`Location`].
     pub fn location(&self) -> &Location {
         match self {
             Self::Cached(cached) => cached.location(),
@@ -771,7 +781,7 @@ impl FileBackend {
         }
     }
 
-    /// Syncs the file to storage
+    /// Flushes cached data (and optionally metadata) to disk.
     pub fn sync(&self, data_only: bool) -> VfsResult<()> {
         match self {
             Self::Cached(cached) => cached.sync(data_only),
@@ -779,7 +789,7 @@ impl FileBackend {
         }
     }
 
-    /// Sets the file size to the specified length
+    /// Truncates or extends the file to `len` bytes.
     pub fn set_len(&self, len: u64) -> VfsResult<()> {
         match self {
             Self::Cached(cached) => cached.set_len(len),
@@ -798,7 +808,7 @@ pub struct File {
 }
 
 impl File {
-    /// Creates a new file with the given backend and flags
+    /// Creates a new [`File`] from a [`FileBackend`] and access flags.
     pub fn new(inner: FileBackend, flags: FileFlags) -> Self {
         let position = if inner.location().flags().contains(NodeFlags::STREAM) {
             None
@@ -818,7 +828,7 @@ impl File {
         }
     }
 
-    /// Opens a file at the given path
+    /// Opens an existing file for reading.
     pub fn open(context: &FsContext, path: impl AsRef<Path>) -> VfsResult<Self> {
         OpenOptions::new()
             .read(true)
@@ -826,7 +836,8 @@ impl File {
             .and_then(OpenResult::into_file)
     }
 
-    /// Creates a new file at the given path
+    /// Opens a file for writing, creating it if it does not exist and
+    /// truncating it if it does.
     pub fn create(context: &FsContext, path: impl AsRef<Path>) -> VfsResult<Self> {
         OpenOptions::new()
             .write(true)
@@ -836,7 +847,7 @@ impl File {
             .and_then(OpenResult::into_file)
     }
 
-    /// Checks if the file has the specified access flags
+    /// Checks that the file has the required `flags` and returns the backend.
     pub fn access(&self, flags: FileFlags) -> VfsResult<&FileBackend> {
         if self.flags.contains(flags) && !self.is_path() {
             Ok(&self.inner)
@@ -845,23 +856,23 @@ impl File {
         }
     }
 
-    /// Returns true if this file represents a path
+    /// Returns `true` if this is a path-only handle (no I/O permitted).
     pub fn is_path(&self) -> bool {
         self.flags.contains(FileFlags::PATH)
     }
 
-    /// Returns the file flags
+    /// Returns the access flags this file was opened with.
     pub fn flags(&self) -> FileFlags {
         self.flags
     }
 
-    /// Returns the file backend if access is allowed
+    /// Returns a reference to the underlying [`FileBackend`].
     pub fn backend(&self) -> VfsResult<&FileBackend> {
         self.access(FileFlags::empty())?;
         Ok(&self.inner)
     }
 
-    /// Returns the location of this file
+    /// Returns a reference to the underlying [`Location`].
     pub fn location(&self) -> &Location {
         self.inner.location()
     }
@@ -880,13 +891,12 @@ impl File {
     ///
     /// If `data_only` is `true`, only the file data is synced, not the
     /// metadata.
-    /// Syncs the file to storage
     pub fn sync(&self, data_only: bool) -> VfsResult<()> {
         self.access(FileFlags::empty())?;
         self.inner.sync(data_only)
     }
 
-    /// Reads data from the file
+    /// Reads data from the current position, advancing the cursor.
     pub fn read(&self, dst: impl Write + IoBufMut) -> axio::Result<usize> {
         #[cfg(feature = "times")]
         {
@@ -902,7 +912,7 @@ impl File {
         }
     }
 
-    /// Writes data to the file
+    /// Writes data at the current position (or appends), advancing the cursor.
     pub fn write(&self, src: impl Read + IoBuf) -> axio::Result<usize> {
         #[cfg(feature = "times")]
         {
@@ -925,7 +935,7 @@ impl File {
         }
     }
 
-    /// Flushes the file data to storage
+    /// Flushes any internally buffered data. Currently a no-op.
     pub fn flush(&self) -> axio::Result {
         self.access(FileFlags::empty())?;
         Ok(())

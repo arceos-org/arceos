@@ -12,23 +12,28 @@ documentation = "https://arceos-org.github.io/arceos/axruntime/index.html"
 [features]
 default = []
 
-hv = ["axalloc/hv"]
+alloc = ["dep:axalloc"]
 dma = ["paging"]
-driver-dyn = ["axdriver/dyn", "paging"]
+hv = ["axalloc/hv"]
 ipi = ["dep:axipi"]
-irq = ["axhal/irq", "axtask?/irq", "percpu"]
+irq = ["axhal/irq", "axtask?/irq", "dep:percpu"]
+multitask = ["axtask/multitask"]
+paging = ["axhal/paging", "dep:axmm", "dep:axklib"]
+rtc = []
 smp = ["axhal/smp", "axtask?/smp"]
 tls = ["axhal/tls", "axtask?/tls"]
-alloc = ["dep:axalloc"]
-paging = ["axhal/paging", "dep:axmm", "dep:axklib"]
 
-display = ["axdriver", "axdisplay"]
-fs = ["axdriver", "axfs"]
-input = ["axdriver", "axinput"]
-multitask = ["axtask/multitask"]
-net = ["axdriver", "axnet"]
-rtc = []
+driver-dyn = ["axdriver/dyn", "paging"]
 plat-dyn = ["axdriver/dyn"]
+
+axdriver = ["dep:axdriver"]
+display = ["axdriver", "dep:axdisplay"]
+fs = ["axdriver", "dep:axfs"]
+fs-ng = ["axdriver", "dep:axfs-ng"]
+input = ["axdriver", "dep:axinput"]
+net = ["axdriver", "dep:axnet"]
+net-ng = ["axdriver", "dep:axnet-ng"]
+vsock = ["net-ng", "axnet-ng/vsock"]
 
 [dependencies]
 axalloc = { workspace = true, optional = true }
@@ -36,25 +41,21 @@ axbacktrace = { workspace = true }
 axconfig = { workspace = true }
 axdisplay = { workspace = true, optional = true }
 axdriver = { workspace = true, optional = true }
-axerrno.workspace = true
 axfs = { workspace = true, optional = true }
+axfs-ng = { workspace = true, optional = true }
 axhal = { workspace = true }
 axinput = { workspace = true, optional = true }
 axipi = { workspace = true, optional = true }
+axklib = { workspace = true, optional = true }
 axlog = { workspace = true }
 axmm = { workspace = true, optional = true }
 axnet = { workspace = true, optional = true }
+axnet-ng = { workspace = true, optional = true }
 axplat = { workspace = true }
 axtask = { workspace = true, optional = true }
-
-log = "0.4"
-
-crate_interface = "0.1"
+cfg-if = { workspace = true }
+chrono = { version = "0.4", default-features = false }
+crate_interface = { workspace = true }
 ctor_bare = "0.2"
-cfg-if = "1.0"
-
-chrono = { version = "0.4.38", default-features = false }
-
 indoc = "2"
 percpu = { workspace = true, optional = true }
-axklib = { workspace = true, optional = true }

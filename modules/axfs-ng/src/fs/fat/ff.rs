@@ -2,7 +2,7 @@
 
 use fatfs::{DefaultTimeProvider, LossyOemCpConverter};
 
-use crate::disk::SeekableDisk;
+use super::disk::SeekableDisk;
 
 pub type FileSystem = fatfs::FileSystem<SeekableDisk, DefaultTimeProvider, LossyOemCpConverter>;
 

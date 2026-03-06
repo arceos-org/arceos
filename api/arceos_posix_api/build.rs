@@ -4,7 +4,7 @@ fn main() {
     fn gen_pthread_mutex(out_file: &str) -> std::io::Result<()> {
         // TODO: Generate size and initial content automatically.
         println!("cargo:rerun-if-env-changed=CARGO_FEATURE_MULTITASK");
-        let (mutex_size, mutex_init) = if cfg!(feature = "multitask") {
+        let (mutex_size, mutex_init) = if std::env::var("CARGO_FEATURE_MULTITASK").is_ok() {
             // core::mem::transmute::<_, [usize; 2]>(axsync::Mutex::new(()))
             (2, "{0, 0}")
         } else {

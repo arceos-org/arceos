@@ -14,7 +14,6 @@ copy = ["page_table_multiarch/copy-from"]
 
 [dependencies]
 axalloc.workspace = true
-axconfig.workspace = true
 axerrno.workspace = true
 axhal = { workspace = true, features = ["paging"] }
 kspin.workspace = true

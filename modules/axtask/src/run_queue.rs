@@ -11,7 +11,7 @@ use axhal::percpu::this_cpu_id;
 use axsched::BaseScheduler;
 use futures_util::task::AtomicWaker;
 use kernel_guard::BaseGuard;
-use kspin::SpinRaw;
+use kspin::{SpinNoIrqGuard, SpinRaw};
 use lazyinit::LazyInit;
 
 use crate::{
@@ -391,18 +391,20 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
     ///     2. The caller must ensure that the current task is in the running state.
     ///     3. The caller must ensure that the current task is not the idle task.
     ///     4. The lock of the wait queue will be released explicitly after current task is pushed into it.
-    pub fn blocked_resched(&mut self) {
+    pub fn blocked_resched(&mut self, mut woke: SpinNoIrqGuard<'_, bool>) {
         let curr = &self.current_task;
         assert!(curr.is_running());
         assert!(!curr.is_idle());
         // we must not block current task with preemption disabled.
-        // Current expected preempt count is 1 for `NoPreemptIrqSave`.
+        // Current expected preempt count is 2 for `NoPreemptIrqSave` and `woke`.
         #[cfg(feature = "preempt")]
-        assert!(curr.can_preempt(1));
+        assert!(curr.can_preempt(2));
 
         // Mark the task as blocked, this has to be done before adding it to the wait queue
         // while holding the lock of the wait queue.
         curr.set_state(TaskState::Blocked);
+        *woke = false;
+        drop(woke);
 
         // Current task's state has been changed to `Blocked` and added to the wait queue.
         // Note that the state may have been set as `Ready` in `unblock_task()`,
@@ -508,7 +510,7 @@ impl AxRunQueue {
 
     fn switch_to(&mut self, prev_task: CurrentTask, next_task: AxTaskRef) {
         // Make sure that IRQs are disabled by kernel guard or other means.
-        #[cfg(all(not(test), feature = "irq"))] // Note: irq is faked under unit tests.
+        #[cfg(all(target_os = "none", feature = "irq"))] // Note: irq is faked under unit tests.
         assert!(
             !axhal::asm::irqs_enabled(),
             "IRQs must be disabled during scheduling"

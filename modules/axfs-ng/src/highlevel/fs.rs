@@ -16,15 +16,14 @@ use spin::Once;
 
 use super::File;
 
-/// Maximum number of symlinks to follow
+/// Maximum number of symlinks that will be followed during path resolution.
 pub const SYMLINKS_MAX: usize = 40;
 
-/// Root filesystem context
+/// Global root filesystem context, initialized once during [`init_filesystems`](crate::init_filesystems).
 pub static ROOT_FS_CONTEXT: Once<FsContext> = Once::new();
 
-// Skip scope_local in doc mode as it doesn't work with rustdoc
-#[cfg(not(doc))]
 scope_local::scope_local! {
+    /// Task-local filesystem context, defaulting to a clone of [`ROOT_FS_CONTEXT`].
     pub static FS_CONTEXT: Arc<Mutex<FsContext>> =
         Arc::new(Mutex::new(
             ROOT_FS_CONTEXT
@@ -34,20 +33,15 @@ scope_local::scope_local! {
         ));
 }
 
-#[cfg(doc)]
-#[doc(hidden)]
-pub static FS_CONTEXT: Once<Arc<Mutex<FsContext>>> = Once::new();
-
-/// Entry for directory reading
-#[derive(Debug, Clone)]
+/// A single entry returned by [`FsContext::read_dir`].
 pub struct ReadDirEntry {
-    /// Entry name
+    /// Entry name (file or directory name, not the full path).
     pub name: String,
-    /// Inode number
+    /// Inode number.
     pub ino: u64,
-    /// Node type
+    /// Type of the node (file, directory, symlink, etc.).
     pub node_type: NodeType,
-    /// Offset in directory
+    /// Byte offset inside the directory (used for seeking).
     pub offset: u64,
 }
 
@@ -59,7 +53,7 @@ pub struct FsContext {
 }
 
 impl FsContext {
-    /// Creates a new filesystem context with the given root directory
+    /// Creates a new context with `root_dir` as both root and current directory.
     pub fn new(root_dir: Location) -> Self {
         Self {
             root_dir: root_dir.clone(),
@@ -67,24 +61,25 @@ impl FsContext {
         }
     }
 
-    /// Returns the root directory
+    /// Returns a reference to the root directory.
     pub fn root_dir(&self) -> &Location {
         &self.root_dir
     }
 
-    /// Returns the current directory
+    /// Returns a reference to the current working directory.
     pub fn current_dir(&self) -> &Location {
         &self.current_dir
     }
 
-    /// Sets the current directory
+    /// Changes the current working directory to `current_dir`.
     pub fn set_current_dir(&mut self, current_dir: Location) -> VfsResult<()> {
         current_dir.check_is_dir()?;
         self.current_dir = current_dir;
         Ok(())
     }
 
-    /// Creates a new context with a different current directory
+    /// Returns a new context that shares the same root but uses `current_dir` as
+    /// the working directory.
     pub fn with_current_dir(&self, current_dir: Location) -> VfsResult<Self> {
         current_dir.check_is_dir()?;
         Ok(Self {
@@ -321,7 +316,8 @@ pub struct ReadDir {
 }
 
 impl ReadDir {
-    /// Buffer size for directory entries
+    /// Maximum number of entries to buffer per `read_dir` syscall.
+    // TODO: tune this
     pub const BUF_SIZE: usize = 128;
 }
 
