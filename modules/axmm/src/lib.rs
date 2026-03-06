@@ -93,12 +93,18 @@ pub fn init_memory_management() {
     let kernel_aspace = new_kernel_aspace().expect("failed to initialize kernel address space");
     debug!("kernel address space init OK: {kernel_aspace:#x?}");
     KERNEL_ASPACE.init_once(SpinNoIrq::new(kernel_aspace));
-    unsafe { axhal::asm::write_kernel_page_table(kernel_page_table_root()) };
+    unsafe {
+        axhal::asm::write_kernel_page_table(kernel_page_table_root());
+        axhal::asm::flush_tlb(None);
+    }
 }
 
 /// Initializes kernel paging for secondary CPUs.
 pub fn init_memory_management_secondary() {
-    unsafe { axhal::asm::write_kernel_page_table(kernel_page_table_root()) };
+    unsafe {
+        axhal::asm::write_kernel_page_table(kernel_page_table_root());
+        axhal::asm::flush_tlb(None);
+    }
 }
 
 /// Maps a physical memory region to virtual address space for device access.

@@ -23,8 +23,7 @@ rtc = []
 smp = ["axhal/smp", "axtask?/smp"]
 tls = ["axhal/tls", "axtask?/tls"]
 
-driver-dyn = ["axdriver/dyn", "paging"]
-plat-dyn = ["axdriver/dyn"]
+plat-dyn = ["axdriver/dyn", "paging"]
 
 axdriver = ["dep:axdriver"]
 display = ["axdriver", "dep:axdisplay"]

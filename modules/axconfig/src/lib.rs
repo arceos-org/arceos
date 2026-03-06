@@ -22,11 +22,11 @@
 
 #![no_std]
 
-#[cfg(feature = "driver-dyn")]
+#[cfg(feature = "plat-dyn")]
 mod driver_dyn_config;
 
-#[cfg(feature = "driver-dyn")]
+#[cfg(feature = "plat-dyn")]
 pub use driver_dyn_config::*;
 
-#[cfg(not(feature = "driver-dyn"))]
+#[cfg(not(feature = "plat-dyn"))]
 axconfig_macros::include_configs!(path_env = "AX_CONFIG_PATH", fallback = "dummy.toml");
