@@ -14,7 +14,7 @@ default = ["smp", "irq"]
 smp = ["axplat/smp"]
 irq = ["axplat/irq"]
 uspace = ["somehal/uspace"]
-hv = ["somehal/hv"]
+hv = ["somehal/hv", "axcpu/arm-el2"]
 
 [dependencies]
 anyhow = { version = "1", default-features = false }

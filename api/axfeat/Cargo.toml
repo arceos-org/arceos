@@ -20,6 +20,7 @@ fp-simd = ["axhal/fp-simd"]
 
 # User space support
 uspace = ["axhal/uspace"]
+hv = ["axhal/hv"]
 
 # Interrupts
 irq = ["axhal/irq", "axruntime/irq", "axtask?/irq", "axdriver?/irq"]

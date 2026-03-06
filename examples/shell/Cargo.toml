@@ -10,4 +10,4 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 default = []
 
 [dependencies]
-axstd = { workspace = true, features = ["alloc", "fs"], optional = true }
+axstd = { workspace = true, features = ["alloc", "fs", "hv"], optional = true }

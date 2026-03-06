@@ -44,6 +44,7 @@ rtc = [
 paging = ["dep:axalloc", "dep:page_table_multiarch"]
 tls = ["axcpu/tls"]
 uspace = ["paging", "axcpu/uspace", "axplat-dyn?/uspace"]
+hv = ["paging", "axcpu/arm-el2", "percpu/arm-el2", "axplat-dyn?/hv"]
 
 # Custom or default platforms
 myplat = []
