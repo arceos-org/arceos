@@ -1,5 +1,4 @@
 #![no_std]
-#![no_main]
 #![cfg(not(any(windows, unix)))]
 
 extern crate somehal;
