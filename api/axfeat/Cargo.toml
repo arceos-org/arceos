@@ -7,7 +7,6 @@ description = "Top-level feature selection for ArceOS"
 license.workspace = true
 homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/api/axfeat"
-documentation = "https://arceos-org.github.io/arceos/axfeat/index.html"
 
 [features]
 default = []
@@ -29,7 +28,12 @@ ipi = ["irq", "dep:axipi", "axhal/ipi", "axruntime/ipi"]
 # Custom or default platforms
 myplat = ["axhal/myplat"]
 defplat = ["axhal/defplat"]
-plat-dyn = ["axhal/plat-dyn", "paging", "axruntime/plat-dyn", "axconfig/plat-dyn"]
+plat-dyn = [
+    "axhal/plat-dyn",
+    "paging",
+    "axruntime/plat-dyn",
+    "axconfig/plat-dyn",
+]
 
 # Memory
 alloc = ["axalloc", "axruntime/alloc"]

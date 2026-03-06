@@ -9,7 +9,6 @@ homepage.workspace = true
 keywords.workspace = true
 categories.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/modules/axdma"
-documentation = "https://arceos-org.github.io/arceos/axdma/index.html"
 
 [features]
 default = []

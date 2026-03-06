@@ -7,7 +7,6 @@ description = "Public APIs and types for ArceOS modules"
 license.workspace = true
 homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/api/arceos_api"
-documentation = "https://arceos-org.github.io/arceos/arceos_api/index.html"
 
 [features]
 default = []

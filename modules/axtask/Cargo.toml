@@ -7,8 +7,6 @@ description = "ArceOS task management module"
 license.workspace = true
 homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/modules/axtask"
-documentation = "https://arceos-org.github.io/arceos/axtask/index.html"
-readme = "README.md"
 
 [features]
 default = []

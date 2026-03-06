@@ -14,7 +14,6 @@ description = "ArceOS user program library for C apps"
 license.workspace = true
 homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/ulib/axlibc"
-documentation = "https://arceos-org.github.io/arceos/axlibc/index.html"
 
 [lib]
 crate-type = ["staticlib"]

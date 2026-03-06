@@ -7,7 +7,6 @@ description = "Runtime library of ArceOS"
 license.workspace = true
 homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/modules/axruntime"
-documentation = "https://arceos-org.github.io/arceos/axruntime/index.html"
 
 [features]
 default = []

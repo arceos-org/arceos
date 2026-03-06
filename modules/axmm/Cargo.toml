@@ -7,7 +7,6 @@ description = "ArceOS virtual memory management module"
 license.workspace = true
 homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/modules/axmm"
-documentation = "https://arceos-org.github.io/arceos/axmm/index.html"
 
 [features]
 copy = ["page_table_multiarch/copy-from"]

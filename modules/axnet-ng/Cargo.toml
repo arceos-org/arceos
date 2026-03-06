@@ -7,7 +7,6 @@ description = "ArceOS network module"
 license.workspace = true
 homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/modules/axnet"
-documentation = "https://arceos-org.github.io/arceos/axnet/index.html"
 
 [features]
 vsock = ["axdriver/vsock"]

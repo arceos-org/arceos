@@ -6,7 +6,6 @@ authors.workspace = true
 description = "Input device management for ArceOS"
 license.workspace = true
 homepage.workspace = true
-documentation.workspace = true
 repository.workspace = true
 keywords.workspace = true
 categories.workspace = true
