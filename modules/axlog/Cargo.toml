@@ -7,7 +7,6 @@ description = "Macros for multi-level formatted logging used by ArceOS"
 license.workspace = true
 homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/modules/axlog"
-documentation = "https://arceos-org.github.io/arceos/axlog/index.html"
 
 [features]
 std = ["dep:chrono"]

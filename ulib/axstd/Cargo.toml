@@ -14,7 +14,6 @@ description = "ArceOS user library with an interface similar to rust std"
 license.workspace = true
 homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/ulib/axstd"
-documentation = "https://arceos-org.github.io/arceos/axstd/index.html"
 
 [features]
 default = []

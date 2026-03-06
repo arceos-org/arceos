@@ -14,7 +14,6 @@ description = "POSIX-compatible APIs for ArceOS modules"
 license.workspace = true
 homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/api/arceos_posix_api"
-documentation = "https://arceos-org.github.io/arceos/arceos_posix_api/index.html"
 include = ["src/**/*.rs", "Cargo.toml", "build.rs", "ctypes.h"]
 
 [features]

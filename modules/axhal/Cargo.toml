@@ -7,8 +7,6 @@ description = "ArceOS hardware abstraction layer, provides unified APIs for plat
 license.workspace = true
 homepage.workspace = true
 repository = "https://github.com/arceos-org/arceos/tree/main/modules/axhal"
-documentation = "https://arceos-org.github.io/arceos/axhal/index.html"
-readme = "README.md"
 
 [features]
 smp = [
@@ -44,12 +42,7 @@ rtc = [
 paging = ["dep:axalloc", "dep:page_table_multiarch"]
 tls = ["axcpu/tls"]
 uspace = ["paging", "axcpu/uspace", "axplat-dyn?/uspace"]
-hv = [
-    "paging",
-    "axcpu/arm-el2",
-    "percpu/arm-el2",
-    "axplat-dyn?/hv",
-]
+hv = ["paging", "axcpu/arm-el2", "percpu/arm-el2", "axplat-dyn?/hv"]
 
 # Custom or default platforms
 myplat = []

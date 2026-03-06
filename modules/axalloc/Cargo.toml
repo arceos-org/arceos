@@ -1,14 +1,12 @@
 [package]
+name = "axalloc"
+version.workspace = true
+edition.workspace = true
 authors = ["Yuekai Jia <equation618@gmail.com>"]
 description = "ArceOS global memory allocator"
-documentation = "https://arceos-org.github.io/arceos/axalloc/index.html"
-edition.workspace = true
 homepage.workspace = true
 license.workspace = true
-name = "axalloc"
-readme = "README.md"
 repository = "https://github.com/arceos-org/arceos/tree/main/modules/axalloc"
-version.workspace = true
 
 [features]
 default = ["tlsf", "axallocator/page-alloc-256m"]
