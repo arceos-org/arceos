@@ -77,7 +77,6 @@ linkme = { version = "0.3.33", optional = true }
 log.workspace = true
 memory_addr.workspace = true
 page_table_multiarch = { workspace = true, optional = true }
-page_table_entry.workspace = true
 percpu.workspace = true
 spin.workspace = true
 
