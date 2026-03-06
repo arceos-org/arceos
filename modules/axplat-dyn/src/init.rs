@@ -27,9 +27,7 @@ impl InitIf for InitIfImpl {
     /// initialization (e.g, logging, memory management), and finalized the rest of
     /// platform configuration and initialization.
     fn init_later(_cpu_id: usize, _dtb: usize) {
-        debug!("init later for primary core");
         somehal::post_paging();
-        debug!("init later for primary core done");
         somehal::timer::irq_enable();
     }
 
