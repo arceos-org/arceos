@@ -29,7 +29,7 @@ ipi = ["irq", "dep:axipi", "axhal/ipi", "axruntime/ipi"]
 # Custom or default platforms
 myplat = ["axhal/myplat"]
 defplat = ["axhal/defplat"]
-plat-dyn = ["axhal/plat-dyn", "paging", "axruntime/plat-dyn"]
+plat-dyn = ["axhal/plat-dyn", "paging", "axruntime/plat-dyn", "axconfig/plat-dyn"]
 
 # Memory
 alloc = ["axalloc", "axruntime/alloc"]

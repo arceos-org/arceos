@@ -47,7 +47,6 @@ uspace = ["paging", "axcpu/uspace", "axplat-dyn?/uspace"]
 hv = [
     "paging",
     "axcpu/arm-el2",
-    "page_table_entry/arm-el2",
     "percpu/arm-el2",
     "axplat-dyn?/hv",
 ]
