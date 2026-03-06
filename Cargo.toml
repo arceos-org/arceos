@@ -34,6 +34,33 @@ members = [
     "examples/httpserver",
     "examples/shell",
 ]
+default-members = [
+    "modules/axalloc",
+    "modules/axconfig",
+    "modules/axdisplay",
+    "modules/axdma",
+    "modules/axdriver",
+    "modules/axfs",
+    "modules/axfs-ng",
+    "modules/axhal",
+    "modules/axinput",
+    "modules/axipi",
+    "modules/axlog",
+    "modules/axmm",
+    "modules/axnet",
+    "modules/axnet-ng",
+    "modules/axruntime",
+    "modules/axsync",
+    "modules/axtask",
+    "modules/axplat-dyn",
+
+    "api/axfeat",
+    "api/arceos_api",
+    "api/arceos_posix_api",
+
+    "ulib/axstd",
+    "ulib/axlibc",
+]
 
 [workspace.package]
 version = "0.3.0-preview.1"
