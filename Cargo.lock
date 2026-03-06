@@ -419,9 +419,9 @@ dependencies = [
 
 [[package]]
 name = "axcpu"
-version = "0.3.0-preview.6"
+version = "0.3.0-preview.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61dc8203ac5b80e4aa613c1139b1c69b908aededadd1ae7c55b41da06084a2ad"
+checksum = "c2c5c4f67041d8fee9de424f4e37e58b65ecf46489c1cbd80d9388b4bda5f592"
 dependencies = [
  "aarch64-cpu 11.2.0",
  "axbacktrace",
@@ -747,6 +747,7 @@ dependencies = [
  "linkme",
  "log",
  "memory_addr",
+ "page_table_entry",
  "page_table_multiarch",
  "percpu",
  "spin 0.10.0",
@@ -882,9 +883,9 @@ dependencies = [
 
 [[package]]
 name = "axplat"
-version = "0.3.1-pre.5"
+version = "0.3.1-pre.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b7e82da07eb9c931a90029d80ae487b4dd532cdf69d44ae692776bbd72e6708a"
+checksum = "29d8d929fe41fcb361cf784819041f942aba4bcd2d26b9a26305df84e26b206b"
 dependencies = [
  "axplat-macros",
  "bitflags 2.11.0",
@@ -898,9 +899,9 @@ dependencies = [
 
 [[package]]
 name = "axplat-aarch64-bsta1000b"
-version = "0.3.1-pre.5"
+version = "0.3.1-pre.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee3736769361d4aa023b3aaeaa84f790c0c7f2176508cc44b47455cf37cbd23f"
+checksum = "7c33f96885b0209325e13e0dc85c2850fb1761124d38b1e95cac9d8c81bb8b6a"
 dependencies = [
  "axconfig-macros",
  "axcpu",
@@ -914,9 +915,9 @@ dependencies = [
 
 [[package]]
 name = "axplat-aarch64-peripherals"
-version = "0.3.1-pre.5"
+version = "0.3.1-pre.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f3819d30fa3a4038c0f9ab7e122c8b3ba840b323ee3fc19e4dbabe22b4e56ac"
+checksum = "a744097da129e66068e4fff6758726c98bf329a7182dcc65712ac80daed581ed"
 dependencies = [
  "aarch64-cpu 11.2.0",
  "arm-gic-driver 0.16.4",
@@ -933,9 +934,9 @@ dependencies = [
 
 [[package]]
 name = "axplat-aarch64-phytium-pi"
-version = "0.3.1-pre.5"
+version = "0.3.1-pre.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de57a5d00bab5c796ad9476406978376a94f21cd37344b70d84482852185c4f8"
+checksum = "16647a6fbacbb7a8161ac0312da4df9a6d240d5bd0c31cd3dbde154a37897302"
 dependencies = [
  "axconfig-macros",
  "axcpu",
@@ -947,9 +948,9 @@ dependencies = [
 
 [[package]]
 name = "axplat-aarch64-qemu-virt"
-version = "0.3.1-pre.5"
+version = "0.3.1-pre.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ccbc5793ffa4ae120815f3761bea658e0bafeba2d1a5f324cb457de8d41fbfa9"
+checksum = "dff51219e3ff388368eec683f83b5a8184b3125bac709006f6ac22e435dc07e4"
 dependencies = [
  "axconfig-macros",
  "axcpu",
@@ -961,9 +962,9 @@ dependencies = [
 
 [[package]]
 name = "axplat-aarch64-raspi"
-version = "0.3.1-pre.5"
+version = "0.3.1-pre.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e0a5744f8792592a019aa51424dd32cc361ebc0f70c40ce1e9a1cd8da5a90e4"
+checksum = "ebe8b8fd371ab4a8428877333809c253d3794c192c4984292faf52df885b2878"
 dependencies = [
  "aarch64-cpu 11.2.0",
  "axconfig-macros",
@@ -993,9 +994,9 @@ dependencies = [
 
 [[package]]
 name = "axplat-loongarch64-qemu-virt"
-version = "0.3.1-pre.5"
+version = "0.3.1-pre.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e95a7a015c7ff23303f5807d1f28c31c15c09dd167f192757000f0ca201f29a8"
+checksum = "0bb9c67d904ccf30561a6239b67411058b215cb6d6a8d3ac737e7a51230b40bf"
 dependencies = [
  "axconfig-macros",
  "axcpu",
@@ -1022,9 +1023,9 @@ dependencies = [
 
 [[package]]
 name = "axplat-riscv64-qemu-virt"
-version = "0.3.1-pre.5"
+version = "0.3.1-pre.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c9f0161378a2bd66773ed208a461ecf36b1c9aae977fbb75d51a271b2790fe8"
+checksum = "08f91aff22afadd24807e34fb94fe4d0d2c8c5b86fb89dd6ff87a8093f812518"
 dependencies = [
  "axconfig-macros",
  "axcpu",
@@ -1041,9 +1042,9 @@ dependencies = [
 
 [[package]]
 name = "axplat-x86-pc"
-version = "0.3.1-pre.5"
+version = "0.3.1-pre.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02c2a75cf2d03a8a0ab223d124d434a80f03bb365b5bb616f019c4ac97288c96"
+checksum = "9df26719c444ca8302e9366b8dc5abe8735933ea756ff094e3ac5ce3b64c41a1"
 dependencies = [
  "axconfig-macros",
  "axcpu",
@@ -2804,9 +2805,9 @@ dependencies = [
 
 [[package]]
 name = "rdrive"
-version = "0.19.0"
+version = "0.19.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab4f7c92af8670536001b449bf8d27c67c22ff5f2391dd76ca2da9b5c5343f40"
+checksum = "b07b25da4361480c3ac22159f6b71ee712c4b6b3c82cb3fd20ad9b2fbe2a1d2e"
 dependencies = [
  "fdt-parser",
  "log",
@@ -3107,9 +3108,9 @@ dependencies = [
 
 [[package]]
 name = "someboot"
-version = "0.1.5"
+version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "374257b9f5fdd9dadca39c3d1484d58e6760f6894bcb529e460814c30c8738aa"
+checksum = "beca7da37e97c79fade1f8ee0ee1a186881cbc2364cb17593ad76cbe68545da9"
 dependencies = [
  "aarch64-cpu 11.2.0",
  "aarch64-cpu-ext",
@@ -3151,9 +3152,9 @@ dependencies = [
 
 [[package]]
 name = "somehal"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0959f802461a5c3458a5eff143d0622f3710946b3c47129e20be257fb9648bb4"
+checksum = "c14ce6607060f05f2b4f1a9bad3bd990169a32daba5a74424f894bef530a6987"
 dependencies = [
  "aarch64-cpu 11.2.0",
  "anyhow",
@@ -3677,9 +3678,9 @@ dependencies = [
 
 [[package]]
 name = "winnow"
-version = "0.7.14"
+version = "0.7.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a5364e9d77fcdeeaa6062ced926ee3381faa2ee02d3eb83a5c27a8825540829"
+checksum = "df79d97927682d2fd8adb29682d1140b343be4ac0f08fd68b7765d9c059d3945"
 dependencies = [
  "memchr",
 ]
