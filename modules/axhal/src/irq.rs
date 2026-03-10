@@ -21,8 +21,8 @@ pub fn register_irq_hook(hook: fn(usize)) -> bool {
         .compare_exchange(
             0,
             hook as *const () as usize,
-            Ordering::SeqCst,
-            Ordering::SeqCst,
+            Ordering::Release,
+            Ordering::Relaxed,
         )
         .is_ok()
 }
@@ -37,7 +37,7 @@ pub fn irq_handler(vector: usize) -> bool {
     let guard = kernel_guard::NoPreempt::new();
 
     if let Some(irq) = handle(vector) {
-        let hook = IRQ_HOOK.load(Ordering::SeqCst);
+        let hook = IRQ_HOOK.load(Ordering::Acquire);
         if hook != 0 {
             let hook = unsafe { core::mem::transmute::<usize, fn(usize)>(hook) };
             hook(irq);
