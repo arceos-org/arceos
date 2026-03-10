@@ -10,7 +10,7 @@ use crate::{AxDeviceEnum, drivers::DriverProbe};
 
 cfg_if! {
     if #[cfg(bus = "pci")] {
-        use axdriver_pci::{Cam, DeviceFunction, DeviceFunctionInfo, PciConfigAccess, PciRoot};
+        use axdriver_pci::{PciRoot, DeviceFunction, DeviceFunctionInfo};
         type VirtIoTransport = axdriver_virtio::PciTransport;
     } else if #[cfg(bus =  "mmio")] {
         type VirtIoTransport = axdriver_virtio::MmioTransport;
@@ -135,9 +135,6 @@ impl<D: VirtIoDevMeta> DriverProbe for VirtIoDriver<D> {
         bdf: DeviceFunction,
         dev_info: &DeviceFunctionInfo,
     ) -> Option<AxDeviceEnum> {
-        let base_vaddr = phys_to_virt(axconfig::devices::PCI_ECAM_BASE.into());
-        let mut config = unsafe { PciConfigAccess::new(base_vaddr.as_mut_ptr(), Cam::Ecam) };
-
         if dev_info.vendor_id != 0x1af4 {
             return None;
         }
@@ -151,7 +148,7 @@ impl<D: VirtIoDevMeta> DriverProbe for VirtIoDriver<D> {
         }
 
         if let Some((ty, transport, irq)) =
-            axdriver_virtio::probe_pci_device::<VirtIoHalImpl>(root, bdf, dev_info, &mut config)
+            axdriver_virtio::probe_pci_device::<VirtIoHalImpl>(root, bdf, dev_info)
             && ty == D::DEVICE_TYPE
         {
             match D::try_new(transport, Some(irq)) {
