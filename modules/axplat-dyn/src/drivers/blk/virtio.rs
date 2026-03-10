@@ -7,7 +7,7 @@ use axalloc::{UsageKind, global_allocator};
 use axdriver_base::DeviceType;
 use axdriver_block::BlockDriverOps;
 use axdriver_virtio::{BufferDirection, MmioTransport, PhysAddr as VirtIoPhysAddr, VirtIoHal};
-use axplat::mem::PhysAddr;
+use axplat::mem::{PhysAddr, phys_to_virt};
 use rdrive::{
     DriverGeneric, PlatformDevice, module_driver, probe::OnProbeError, register::FdtInfo,
 };
@@ -32,14 +32,15 @@ module_driver!(
 fn probe(info: FdtInfo<'_>, plat_dev: PlatformDevice) -> Result<(), OnProbeError> {
     let base_reg = info
         .node
-        .reg()
-        .and_then(|mut regs| regs.next())
+        .regs()
+        .into_iter()
+        .next()
         .ok_or(OnProbeError::other(alloc::format!(
             "[{}] has no reg",
             info.node.name()
         )))?;
 
-    let mmio_size = base_reg.size.unwrap_or(0x1000);
+    let mmio_size = base_reg.size.unwrap_or(0x1000) as usize;
     let mmio_base = PhysAddr::from_usize(base_reg.address as usize);
 
     let mmio_base = iomap(mmio_base, mmio_size)?.as_ptr();
@@ -186,8 +187,8 @@ unsafe impl VirtIoHal for VirtIoHalImpl {
     }
 
     #[inline]
-    unsafe fn mmio_phys_to_virt(paddr: VirtIoPhysAddr, size: usize) -> NonNull<u8> {
-        iomap((paddr as usize).into(), size).unwrap_or_else(|_| NonNull::dangling())
+    unsafe fn mmio_phys_to_virt(paddr: VirtIoPhysAddr, _size: usize) -> NonNull<u8> {
+        NonNull::new(phys_to_virt(paddr.into()).as_mut_ptr()).unwrap()
     }
 
     #[inline]

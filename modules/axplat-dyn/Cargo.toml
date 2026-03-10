@@ -28,11 +28,12 @@ axerrno.workspace = true
 axklib.workspace = true
 axplat.workspace = true
 dma-api = "0.7"
+fdt-edit = "0.2"
 heapless = "0.9"
 log.workspace = true
 memory_addr.workspace = true
 percpu = { workspace = true, features = ["custom-base"] }
 rd-block = "0.1"
-rdrive = "0.19"
+rdrive = "0.20"
 somehal = "0.6"
 spin = "0.10"
