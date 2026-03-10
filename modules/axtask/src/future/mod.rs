@@ -60,21 +60,28 @@ pub fn block_on<F: IntoFuture>(f: F) -> F::Output {
     // to prevent it from being dropped while blocking.
     let task = curr.clone();
 
-    let waker = AxWaker::new(&task);
-    let woke = &waker.woke;
-    let waker = Waker::from(waker.clone());
+    let axwaker = AxWaker::new(&task);
+    let waker = Waker::from(axwaker.clone());
     let mut cx = Context::from_waker(&waker);
 
     loop {
-        *woke.lock() = false;
         match fut.as_mut().poll(&mut cx) {
             Poll::Pending => {
                 let mut rq = current_run_queue::<NoPreemptIrqSave>();
-                let woke = woke.lock();
+                let mut woke = axwaker.woke.lock();
                 if !*woke {
+                    // blocked_resched() will set *woke = false and drop
+                    // the guard internally before rescheduling. When this
+                    // task is woken, woke will be set to true by the waker
+                    // and we'll re-enter the loop to poll again.
                     rq.blocked_resched(woke);
                 } else {
-                    // Immediately woken
+                    // ③ woke = true: waker fired between poll() returning
+                    // Pending and us acquiring the lock.
+                    // Clear under the current lock hold, then drop.
+                    // If an interrupt sets woke=true after drop(), the next
+                    // loop iteration will see it correctly.
+                    *woke = false;
                     drop(woke);
                     crate::yield_now();
                 }

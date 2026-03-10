@@ -41,7 +41,7 @@ pub async fn poll_io<P: Pollable, F: FnMut() -> AxResult<T>, T>(
 #[cfg(feature = "irq")]
 /// Registers a waker for the given IRQ number.
 pub fn register_irq_waker(irq: usize, waker: &core::task::Waker) {
-    use alloc::collections::{BTreeMap, btree_map::Entry};
+    use alloc::collections::BTreeMap;
 
     use axpoll::PollSet;
     use kspin::SpinNoIrq;
@@ -53,14 +53,9 @@ pub fn register_irq_waker(irq: usize, waker: &core::task::Waker) {
             s.wake();
         }
     }
+    axhal::irq::register_irq_hook(irq_hook);
 
-    match POLL_IRQ.lock().entry(irq) {
-        Entry::Vacant(e) => {
-            axhal::irq::register_irq_hook(irq_hook);
-            axhal::irq::set_enable(irq, true);
-            e.insert(PollSet::new())
-        }
-        Entry::Occupied(e) => e.into_mut(),
-    }
-    .register(waker);
+    POLL_IRQ.lock().entry(irq).or_default().register(waker);
+
+    axhal::irq::set_enable(irq, true);
 }
