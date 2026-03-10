@@ -1,5 +1,6 @@
 #![no_std]
 #![cfg(not(any(windows, unix)))]
+#![feature(used_with_arg)]
 
 extern crate somehal;
 
@@ -11,6 +12,7 @@ extern crate log;
 
 mod boot;
 mod console;
+pub mod drivers;
 mod generic_timer;
 mod init;
 #[cfg(feature = "irq")]

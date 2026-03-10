@@ -7,7 +7,7 @@ use rdrive::{
     register::FdtInfo,
 };
 
-use crate::dyn_drivers::iomap;
+use super::iomap;
 
 module_driver!(
     name: "Generic PCIe Controller Driver",

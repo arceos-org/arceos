@@ -38,16 +38,7 @@ fxmac = ["net", "axdriver_net/fxmac", "dep:axalloc", "dep:axhal", "dep:axdma"]
 # more devices example: e1000 = ["net", "axdriver_net/e1000"]
 
 irq = []
-dyn = [
-    "dep:axerrno",
-    "dep:axhal",
-    "dep:axklib",
-    "dep:memory_addr",
-    "dep:dma-api",
-    "dep:rd-block",
-    "dep:rdrive",
-    "dep:spin",
-]
+dyn = ["dep:axerrno", "dep:axplat-dyn"]
 
 default = ["bus-pci"]
 
@@ -65,13 +56,8 @@ axdriver_virtio = { workspace = true, optional = true }
 axdriver_vsock = { workspace = true, optional = true }
 axerrno = { workspace = true, optional = true }
 axhal = { workspace = true, optional = true }
-axklib = { workspace = true, optional = true }
 cfg-if.workspace = true
 crate_interface.workspace = true
-dma-api = { version = "0.7", optional = true }
 log.workspace = true
-memory_addr = { workspace = true, optional = true }
-rd-block = { version = "0.1", optional = true }
-rdrive = { version = "0.19", optional = true }
 smallvec = { version = "1.15", features = ["const_generics", "union"] }
-spin = { version = "0.10", optional = true }
+axplat-dyn = { workspace = true, optional = true }

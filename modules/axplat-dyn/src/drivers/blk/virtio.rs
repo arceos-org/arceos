@@ -1,20 +1,19 @@
 extern crate alloc;
 
 use alloc::format;
+use core::{marker::PhantomData, ptr::NonNull};
 
+use axalloc::{UsageKind, global_allocator};
 use axdriver_base::DeviceType;
 use axdriver_block::BlockDriverOps;
-use axdriver_virtio::MmioTransport;
-use axhal::mem::PhysAddr;
+use axdriver_virtio::{BufferDirection, MmioTransport, PhysAddr as VirtIoPhysAddr, VirtIoHal};
+use axplat::mem::PhysAddr;
 use rdrive::{
     DriverGeneric, PlatformDevice, module_driver, probe::OnProbeError, register::FdtInfo,
 };
 
 use super::PlatformDeviceBlock;
-use crate::{
-    dyn_drivers::{blk::maping_dev_err_to_blk_err, iomap},
-    virtio::VirtIoHalImpl,
-};
+use crate::drivers::iomap;
 
 type Device<T> = axdriver_virtio::VirtIoBlkDev<VirtIoHalImpl, T>;
 
@@ -146,5 +145,58 @@ impl rd_block::IQueue for BlockQueue {
 
     fn poll_request(&mut self, _request: rd_block::RequestId) -> Result<(), rd_block::BlkError> {
         Ok(())
+    }
+}
+
+fn maping_dev_err_to_blk_err(err: axdriver_base::DevError) -> rd_block::BlkError {
+    match err {
+        axdriver_base::DevError::Again => rd_block::BlkError::Retry,
+        axdriver_base::DevError::AlreadyExists => {
+            rd_block::BlkError::Other("Already exists".into())
+        }
+        axdriver_base::DevError::BadState => rd_block::BlkError::Other("Bad internal state".into()),
+        axdriver_base::DevError::InvalidParam => {
+            rd_block::BlkError::Other("Invalid parameter".into())
+        }
+        axdriver_base::DevError::Io => rd_block::BlkError::Other("I/O error".into()),
+        axdriver_base::DevError::NoMemory => rd_block::BlkError::NoMemory,
+        axdriver_base::DevError::ResourceBusy => rd_block::BlkError::Other("Resource busy".into()),
+        axdriver_base::DevError::Unsupported => rd_block::BlkError::NotSupported,
+    }
+}
+
+struct VirtIoHalImpl(PhantomData<()>);
+
+unsafe impl VirtIoHal for VirtIoHalImpl {
+    fn dma_alloc(pages: usize, _direction: BufferDirection) -> (VirtIoPhysAddr, NonNull<u8>) {
+        let vaddr = if let Ok(vaddr) = global_allocator().alloc_pages(pages, 0x1000, UsageKind::Dma)
+        {
+            vaddr
+        } else {
+            return (0, NonNull::dangling());
+        };
+        let paddr = somehal::mem::virt_to_phys(vaddr as *mut u8) as VirtIoPhysAddr;
+        let ptr = NonNull::new(vaddr as _).unwrap();
+        (paddr, ptr)
+    }
+
+    unsafe fn dma_dealloc(_paddr: VirtIoPhysAddr, vaddr: NonNull<u8>, pages: usize) -> i32 {
+        global_allocator().dealloc_pages(vaddr.as_ptr() as usize, pages, UsageKind::Dma);
+        0
+    }
+
+    #[inline]
+    unsafe fn mmio_phys_to_virt(paddr: VirtIoPhysAddr, size: usize) -> NonNull<u8> {
+        iomap((paddr as usize).into(), size).unwrap_or_else(|_| NonNull::dangling())
+    }
+
+    #[inline]
+    unsafe fn share(buffer: NonNull<[u8]>, _direction: BufferDirection) -> VirtIoPhysAddr {
+        let vaddr = buffer.as_ptr() as *mut u8 as usize;
+        somehal::mem::virt_to_phys(vaddr as *mut u8) as VirtIoPhysAddr
+    }
+
+    #[inline]
+    unsafe fn unshare(_paddr: VirtIoPhysAddr, _buffer: NonNull<[u8]>, _direction: BufferDirection) {
     }
 }

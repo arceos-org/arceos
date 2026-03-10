@@ -18,13 +18,21 @@ hv = ["somehal/hv", "axcpu/arm-el2"]
 
 [dependencies]
 anyhow = { version = "1", default-features = false }
+axalloc.workspace = true
 axconfig-macros = "0.2"
 axcpu.workspace = true
+axdriver_base.workspace = true
+axdriver_block.workspace = true
+axdriver_virtio = { workspace = true, features = ["block"] }
 axerrno.workspace = true
 axklib.workspace = true
 axplat.workspace = true
+dma-api = "0.7"
 heapless = "0.9"
 log.workspace = true
+memory_addr.workspace = true
 percpu = { workspace = true, features = ["custom-base"] }
+rd-block = "0.1"
+rdrive = "0.19"
 somehal = "0.6"
 spin = "0.10"
