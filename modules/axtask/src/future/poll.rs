@@ -57,9 +57,5 @@ pub fn register_irq_waker(irq: usize, waker: &core::task::Waker) {
 
     POLL_IRQ.lock().entry(irq).or_default().register(waker);
 
-    // With MSI-X (edge-triggered), enabling the IRQ here is safe: an
-    // edge-triggered interrupt fires once per assertion and does not re-fire
-    // while the line is held. There is no risk of a spurious wakeup loop
-    // during the poll phase.
     axhal::irq::set_enable(irq, true);
 }
