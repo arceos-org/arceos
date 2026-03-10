@@ -4,9 +4,8 @@ use rd_block::BlkError;
 use rdrive::Device;
 use spin::Mutex;
 
-use crate::dyn_drivers::DmaImpl;
+use super::DmaImpl;
 
-#[cfg(feature = "virtio-blk")]
 mod virtio;
 
 pub struct Block {
@@ -72,6 +71,17 @@ impl From<Device<rd_block::Block>> for Block {
     }
 }
 
+pub trait PlatformDeviceBlock {
+    fn register_block<T: rd_block::Interface>(self, dev: T);
+}
+
+impl PlatformDeviceBlock for rdrive::PlatformDevice {
+    fn register_block<T: rd_block::Interface>(self, dev: T) {
+        let dev = rd_block::Block::new(dev, &DmaImpl);
+        self.register(dev);
+    }
+}
+
 fn maping_blk_err_to_dev_err(err: BlkError) -> DevError {
     match err {
         BlkError::NotSupported => DevError::Unsupported,
@@ -82,29 +92,5 @@ fn maping_blk_err_to_dev_err(err: BlkError) -> DevError {
             error!("Block device error: {error}");
             DevError::Io
         }
-    }
-}
-
-fn maping_dev_err_to_blk_err(err: DevError) -> BlkError {
-    match err {
-        DevError::Again => BlkError::Retry,
-        DevError::AlreadyExists => BlkError::Other("Already exists".into()),
-        DevError::BadState => BlkError::Other("Bad internal state".into()),
-        DevError::InvalidParam => BlkError::Other("Invalid parameter".into()),
-        DevError::Io => BlkError::Other("I/O error".into()),
-        DevError::NoMemory => BlkError::NoMemory,
-        DevError::ResourceBusy => BlkError::Other("Resource busy".into()),
-        DevError::Unsupported => BlkError::NotSupported,
-    }
-}
-
-pub trait PlatformDeviceBlock {
-    fn register_block<T: rd_block::Interface>(self, dev: T);
-}
-
-impl PlatformDeviceBlock for rdrive::PlatformDevice {
-    fn register_block<T: rd_block::Interface>(self, dev: T) {
-        let dev = rd_block::Block::new(dev, &DmaImpl);
-        self.register(dev);
     }
 }

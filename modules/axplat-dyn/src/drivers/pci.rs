@@ -1,13 +1,11 @@
 extern crate alloc;
 
-use memory_addr::MemoryAddr;
+use fdt_edit::PciSpace;
 use rdrive::{
     PlatformDevice, module_driver,
-    probe::{OnProbeError, fdt::PciSpace, pci::*},
+    probe::{OnProbeError, fdt::NodeType, pci::*},
     register::FdtInfo,
 };
-
-use crate::dyn_drivers::iomap;
 
 module_driver!(
     name: "Generic PCIe Controller Driver",
@@ -22,23 +20,28 @@ module_driver!(
 );
 
 fn probe(info: FdtInfo<'_>, plat_dev: PlatformDevice) -> Result<(), OnProbeError> {
-    let node = info.node.into_pci().unwrap();
-    let mut pcie_regs = alloc::vec![];
-    for reg in node.node.reg().unwrap() {
+    let NodeType::Pci(node) = info.node else {
+        return Err(OnProbeError::NotMatch);
+    };
+
+    let regs = node.regs();
+    for reg in &regs {
         trace!(
             "pcie reg: {:#x}, bus: {:#x}",
             reg.address, reg.child_bus_address
         );
-        let end = (reg.address as usize + reg.size.unwrap_or_default()).align_up_4k();
-        let start = (reg.address as usize).align_down_4k();
-        let size = end - start;
-        pcie_regs.push(iomap(start.into(), size)?);
     }
 
-    let base_vaddr = pcie_regs[0];
-    let mut drv = new_driver_generic(base_vaddr);
+    let reg = regs
+        .first()
+        .ok_or_else(|| OnProbeError::other("PCIe controller has no regs"))?;
+    let mmio_base = reg.address as usize;
+    let mmio_size = reg.size.unwrap_or(0x1000) as usize;
+    let mut drv = new_driver_generic(mmio_base, mmio_size, &crate::boot::Kernel).map_err(|e| {
+        OnProbeError::other(alloc::format!("failed to create PCIe controller: {e:?}"))
+    })?;
 
-    for range in node.ranges().unwrap() {
+    for range in node.ranges().unwrap_or_default() {
         debug!("pcie range {range:?}");
         match range.space {
             PciSpace::Memory32 => {
