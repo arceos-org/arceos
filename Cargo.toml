@@ -30,6 +30,7 @@ members = [
     "examples/httpclient",
     "examples/httpserver",
     "examples/shell",
+    "crates/axcpu",
 ]
 
 [workspace.package]

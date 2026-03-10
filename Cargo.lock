@@ -335,7 +335,7 @@ dependencies = [
  "page_table_entry 0.6.1",
  "page_table_multiarch",
  "percpu",
- "riscv 0.14.0",
+ "riscv 0.16.0",
  "static_assertions",
  "tock-registers 0.10.1",
  "x86",
