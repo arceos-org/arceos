@@ -63,7 +63,7 @@ default-members = [
 ]
 
 [workspace.package]
-version = "0.3.0-preview.2"
+version = "0.3.0-preview.3"
 edition = "2024"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
 license = "GPL-3.0-or-later OR Apache-2.0 OR MulanPSL-2.0"
@@ -73,31 +73,31 @@ keywords = ["arceos", "kernel"]
 categories = ["os", "no-std"]
 
 [workspace.dependencies]
-axstd = { version = "=0.3.0-preview.2", path = "ulib/axstd" }
-axlibc = { version = "=0.3.0-preview.2", path = "ulib/axlibc" }
+axstd = { version = "=0.3.0-preview.3", path = "ulib/axstd" }
+axlibc = { version = "=0.3.0-preview.3", path = "ulib/axlibc" }
 
-arceos_api = { version = "=0.3.0-preview.2", path = "api/arceos_api" }
-arceos_posix_api = { version = "=0.3.0-preview.2", path = "api/arceos_posix_api" }
-axfeat = { version = "=0.3.0-preview.2", path = "api/axfeat" }
+arceos_api = { version = "=0.3.0-preview.3", path = "api/arceos_api" }
+arceos_posix_api = { version = "=0.3.0-preview.3", path = "api/arceos_posix_api" }
+axfeat = { version = "=0.3.0-preview.3", path = "api/axfeat" }
 
-axalloc = { version = "=0.3.0-preview.2", path = "modules/axalloc" }
-axconfig = { version = "=0.3.0-preview.2", path = "modules/axconfig" }
-axdisplay = { version = "=0.3.0-preview.2", path = "modules/axdisplay" }
-axdma = { version = "=0.3.0-preview.2", path = "modules/axdma" }
-axdriver = { version = "=0.3.0-preview.2", path = "modules/axdriver" }
-axfs = { version = "=0.3.0-preview.2", path = "modules/axfs" }
-axfs-ng = { version = "=0.3.0-preview.2", path = "modules/axfs-ng" }
-axhal = { version = "=0.3.0-preview.2", path = "modules/axhal" }
-axinput = { version = "=0.3.0-preview.2", path = "modules/axinput" }
-axipi = { version = "=0.3.0-preview.2", path = "modules/axipi" }
-axlog = { version = "=0.3.0-preview.2", path = "modules/axlog" }
-axmm = { version = "=0.3.0-preview.2", path = "modules/axmm" }
-axnet = { version = "=0.3.0-preview.2", path = "modules/axnet" }
-axnet-ng = { version = "=0.3.0-preview.2", path = "modules/axnet-ng" }
-axplat-dyn = { version = "=0.3.0-preview.2", path = "modules/axplat-dyn", default-features = false }
-axruntime = { version = "=0.3.0-preview.2", path = "modules/axruntime" }
-axsync = { version = "=0.3.0-preview.2", path = "modules/axsync" }
-axtask = { version = "=0.3.0-preview.2", path = "modules/axtask" }
+axalloc = { version = "=0.3.0-preview.3", path = "modules/axalloc" }
+axconfig = { version = "=0.3.0-preview.3", path = "modules/axconfig" }
+axdisplay = { version = "=0.3.0-preview.3", path = "modules/axdisplay" }
+axdma = { version = "=0.3.0-preview.3", path = "modules/axdma" }
+axdriver = { version = "=0.3.0-preview.3", path = "modules/axdriver" }
+axfs = { version = "=0.3.0-preview.3", path = "modules/axfs" }
+axfs-ng = { version = "=0.3.0-preview.3", path = "modules/axfs-ng" }
+axhal = { version = "=0.3.0-preview.3", path = "modules/axhal" }
+axinput = { version = "=0.3.0-preview.3", path = "modules/axinput" }
+axipi = { version = "=0.3.0-preview.3", path = "modules/axipi" }
+axlog = { version = "=0.3.0-preview.3", path = "modules/axlog" }
+axmm = { version = "=0.3.0-preview.3", path = "modules/axmm" }
+axnet = { version = "=0.3.0-preview.3", path = "modules/axnet" }
+axnet-ng = { version = "=0.3.0-preview.3", path = "modules/axnet-ng" }
+axplat-dyn = { version = "=0.3.0-preview.3", path = "modules/axplat-dyn", default-features = false }
+axruntime = { version = "=0.3.0-preview.3", path = "modules/axruntime" }
+axsync = { version = "=0.3.0-preview.3", path = "modules/axsync" }
+axtask = { version = "=0.3.0-preview.3", path = "modules/axtask" }
 
 axallocator = { version = "0.2", features = ["axerrno"] }
 axbacktrace = "0.1"
