@@ -76,6 +76,7 @@ pub fn rust_main_secondary(cpu_id: usize) -> ! {
     #[cfg(feature = "irq")]
     axhal::asm::enable_irqs();
 
+    #[cfg(feature = "irq")]
     axhal::time::set_oneshot_timer(100);
 
     #[cfg(all(feature = "tls", not(feature = "multitask")))]
