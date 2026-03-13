@@ -79,5 +79,5 @@ axplat-arm-peripherals = { version = "0.3.0", path = "crates/axplat_crates/platf
 lto = true
 
 [patch.crates-io]
-axcpu ={ path = "crates/axcpu" }
-axplat-arm-qemu-virt = { path = "crates/axplat_crates/platforms/axplat-arm-qemu-virt" }
+axcpu ={ git = "https://github.com/luodeb/axcpu.git" }
+axplat-arm-qemu-virt = { git = "https://github.com/luodeb/axplat_crates.git", branch = "arm32" }
