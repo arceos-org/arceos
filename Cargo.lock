@@ -549,7 +549,7 @@ dependencies = [
  "aarch64-cpu",
  "axalloc",
  "axconfig",
- "axcpu 0.2.2 (git+https://github.com/luodeb/axcpu.git)",
+ "axcpu",
  "axlog",
  "axplat 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "axplat-aarch64-qemu-virt",
@@ -738,7 +738,7 @@ dependencies = [
  "arm-gic-driver",
  "arm_pl011",
  "arm_pl031",
- "axcpu 0.2.2 (git+https://github.com/luodeb/axcpu.git)",
+ "axcpu",
  "axplat 0.3.0 (git+https://github.com/luodeb/axplat_crates.git?branch=arm32)",
  "int_ratio",
  "kspin",
@@ -753,7 +753,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d88ffe4bbb005114f442123e6958927831e44fd3f5f5232d45bc4458fd887f64"
 dependencies = [
  "axconfig-macros",
- "axcpu 0.2.2 (git+https://github.com/luodeb/axcpu.git)",
+ "axcpu",
  "axplat 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono",
  "kspin",
