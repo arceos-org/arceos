@@ -49,7 +49,7 @@ aarch64-cpu = "11.2"
 axplat-aarch64-qemu-virt = { version = "0.4", optional = true }
 
 [target.'cfg(target_arch = "arm")'.dependencies]
-axplat-arm-qemu-virt = { version = "0.3", optional = true }
+axplat-arm-qemu-virt = { git = "https://github.com/luodeb/axplat_crates.git", branch = "arm32",optional = true}
 
 [target.'cfg(target_arch = "riscv64")'.dependencies]
 axplat-riscv64-qemu-virt = { version = "0.4", optional = true }
