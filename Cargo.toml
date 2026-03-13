@@ -74,6 +74,7 @@ axplat = "0.3.0"
 memory_addr = "0.4"
 page_table_entry = { git = "https://github.com/luodeb/page_table_multiarch.git" }
 
+axplat-arm-peripherals = { version = "0.3.0", path = "crates/axplat_crates/platforms/axplat-arm-peripherals" }
 [profile.release]
 lto = true
 
