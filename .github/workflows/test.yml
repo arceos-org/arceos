@@ -24,7 +24,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        arch: [x86_64, riscv64, aarch64, loongarch64]
+        arch: [x86_64, riscv64, aarch64, loongarch64, arm]
     env:
       RUSTUP_TOOLCHAIN: nightly-2025-05-20
     steps:
@@ -33,7 +33,7 @@ jobs:
       with:
         toolchain: ${{ env.rust-toolchain }}
         components: rust-src, llvm-tools
-        targets: x86_64-unknown-none, riscv64gc-unknown-none-elf, aarch64-unknown-none-softfloat, loongarch64-unknown-none-softfloat
+        targets: x86_64-unknown-none, riscv64gc-unknown-none-elf, aarch64-unknown-none-softfloat, loongarch64-unknown-none-softfloat, armv7a-unknown-none
     - uses: Swatinem/rust-cache@v2
       with:
         shared-key: cargo-bin-cache-${{ env.rust-toolchain }}
@@ -41,7 +41,7 @@ jobs:
     - uses: arceos-org/setup-qemu@v1
       with:
         version: ${{ env.qemu-version }}
-        arch_list: x86_64,aarch64,riscv64,loongarch64
+        arch_list: x86_64,aarch64,riscv64,loongarch64,arm
     - uses: arceos-org/setup-musl@v1
       with:
         arch: ${{ matrix.arch }}
