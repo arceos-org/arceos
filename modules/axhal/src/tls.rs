@@ -62,6 +62,9 @@ cfg_if::cfg_if! {
     if #[cfg(target_arch = "x86_64")] {
         const TCB_SIZE: usize = 8; // to store TLS self pointer
         const GAP_ABOVE_TP: usize = 0;
+    } else if #[cfg(target_arch = "arm")] {
+        const TCB_SIZE: usize = 0;
+        const GAP_ABOVE_TP: usize = 0;
     } else if #[cfg(target_arch = "aarch64")] {
         const TCB_SIZE: usize = 0;
         const GAP_ABOVE_TP: usize = 16;
@@ -135,6 +138,7 @@ fn static_tls_offset() -> usize {
     if cfg!(target_arch = "x86_64") {
         0
     } else if cfg!(any(
+        target_arch = "arm",
         target_arch = "aarch64",
         target_arch = "riscv64",
         target_arch = "loongarch64"
@@ -149,6 +153,7 @@ fn tp_offset() -> usize {
     if cfg!(target_arch = "x86_64") {
         static_tls_size()
     } else if cfg!(any(
+        target_arch = "arm",
         target_arch = "aarch64",
         target_arch = "riscv64",
         target_arch = "loongarch64"
@@ -163,6 +168,7 @@ fn tls_area_size() -> usize {
     if cfg!(target_arch = "x86_64") {
         static_tls_size() + TCB_SIZE
     } else if cfg!(any(
+        target_arch = "arm",
         target_arch = "aarch64",
         target_arch = "riscv64",
         target_arch = "loongarch64"

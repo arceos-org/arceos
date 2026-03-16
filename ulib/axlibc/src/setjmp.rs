@@ -153,12 +153,16 @@ pub unsafe extern "C" fn setjmp(_buf: *mut ctypes::__jmp_buf_tag) {
         ret",
     );
     #[cfg(not(any(
+        target_arch = "arm",
         target_arch = "aarch64",
         target_arch = "x86_64",
         target_arch = "riscv64",
         target_arch = "loongarch64"
     )))]
-    core::arch::naked_asm!("ret")
+    core::arch::naked_asm!("ret");
+
+    #[cfg(target_arch = "arm")]
+    core::arch::naked_asm!("bx lr")
 }
 
 /// `longjmp` implementation
@@ -323,10 +327,14 @@ pub unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) 
         jirl     $zero,$ra, 0",
     );
     #[cfg(not(any(
+        target_arch = "arm",
         target_arch = "aarch64",
         target_arch = "x86_64",
         target_arch = "riscv64",
         target_arch = "loongarch64"
     )))]
-    core::arch::naked_asm!("ret")
+    core::arch::naked_asm!("ret");
+
+    #[cfg(target_arch = "arm")]
+    core::arch::naked_asm!("b .")
 }
