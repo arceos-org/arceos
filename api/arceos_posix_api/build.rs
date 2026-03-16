@@ -3,10 +3,19 @@ fn main() {
 
     fn gen_pthread_mutex(out_file: &str) -> std::io::Result<()> {
         // TODO: Generate size and initial content automatically.
+        let target_pointer_width = std::env::var("CARGO_CFG_TARGET_POINTER_WIDTH").unwrap();
         let (mutex_size, mutex_init) = if cfg!(feature = "multitask") {
             if cfg!(feature = "smp") {
-                // core::mem::transmute::<_, [usize; 6]>(axsync::Mutex::new(()))
-                (6, "{0, 0, 8, 0, 0, 0}")
+                if target_pointer_width == "32" {
+                    // core::mem::transmute::<_, [usize; 8]>(axsync::Mutex::new(()))
+                    (8, "{0, 0, 0, 0, 4, 0, 0, 0}")
+                } else {
+                    // core::mem::transmute::<_, [usize; 6]>(axsync::Mutex::new(()))
+                    (6, "{0, 0, 8, 0, 0, 0}")
+                }
+            } else if target_pointer_width == "32" {
+                // non-smp 32-bit width
+                (6, "{0, 0, 0, 4, 0, 0}")
             } else {
                 // core::mem::transmute::<_, [usize; 5]>(axsync::Mutex::new(()))
                 (5, "{0, 8, 0, 0, 0}")
@@ -25,7 +34,7 @@ fn main() {
             r#"
 typedef struct {{
     long __l[{mutex_size}];
-}} pthread_mutex_t;
+}} __attribute__((aligned(8))) pthread_mutex_t;
 
 #define PTHREAD_MUTEX_INITIALIZER {{ .__l = {mutex_init} }}
 "#
