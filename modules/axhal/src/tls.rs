@@ -64,7 +64,7 @@ cfg_if::cfg_if! {
         const GAP_ABOVE_TP: usize = 0;
     } else if #[cfg(target_arch = "arm")] {
         const TCB_SIZE: usize = 0;
-        const GAP_ABOVE_TP: usize = 0;
+        const GAP_ABOVE_TP: usize = 16;
     } else if #[cfg(target_arch = "aarch64")] {
         const TCB_SIZE: usize = 0;
         const GAP_ABOVE_TP: usize = 16;
