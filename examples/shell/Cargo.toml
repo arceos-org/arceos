@@ -8,8 +8,7 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 
 [features]
 use-ramfs = ["axstd/myfs", "dep:axfs_vfs", "dep:axfs_ramfs", "dep:crate_interface"]
-arm-qemu-virt = []
-default = ["use-ramfs"]
+default = []
 
 [dependencies]
 axfs_vfs = { version = "0.1", optional = true }
