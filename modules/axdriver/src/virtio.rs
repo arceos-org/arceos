@@ -11,10 +11,10 @@ use crate::{AxDeviceEnum, drivers::DriverProbe};
 
 cfg_if! {
     if #[cfg(bus = "pci")] {
-        use axdriver_pci::{PciRoot, DeviceFunction, DeviceFunctionInfo};
+        use axdriver_pci::{ConfigurationAccess, DeviceFunction, DeviceFunctionInfo, PciRoot};
         type VirtIoTransport = axdriver_virtio::PciTransport;
     } else if #[cfg(bus =  "mmio")] {
-        type VirtIoTransport = axdriver_virtio::MmioTransport;
+        type VirtIoTransport = axdriver_virtio::MmioTransport<'static>;
     }
 }
 
@@ -101,8 +101,8 @@ impl<D: VirtIoDevMeta> DriverProbe for VirtIoDriver<D> {
     }
 
     #[cfg(bus = "pci")]
-    fn probe_pci(
-        root: &mut PciRoot,
+    fn probe_pci<C: ConfigurationAccess>(
+        root: &mut PciRoot<C>,
         bdf: DeviceFunction,
         dev_info: &DeviceFunctionInfo,
     ) -> Option<AxDeviceEnum> {
@@ -116,8 +116,9 @@ impl<D: VirtIoDevMeta> DriverProbe for VirtIoDriver<D> {
             _ => return None,
         }
 
-        if let Some((ty, transport)) =
-            axdriver_virtio::probe_pci_device::<VirtIoHalImpl>(root, bdf, dev_info)
+        if let Some((ty, transport, irq)) =
+            axdriver_virtio::probe_pci_device::<VirtIoHalImpl, C>(root, bdf, dev_info)
+            && ty == D::DEVICE_TYPE
         {
             if ty == D::DEVICE_TYPE {
                 match D::try_new(transport) {
@@ -147,7 +148,7 @@ unsafe impl VirtIoHal for VirtIoHalImpl {
         };
         let paddr = virt_to_phys(vaddr.into());
         let ptr = NonNull::new(vaddr as _).unwrap();
-        (paddr.as_usize(), ptr)
+        (paddr.as_usize() as PhysAddr, ptr)
     }
 
     unsafe fn dma_dealloc(_paddr: PhysAddr, vaddr: NonNull<u8>, pages: usize) -> i32 {
@@ -157,13 +158,13 @@ unsafe impl VirtIoHal for VirtIoHalImpl {
 
     #[inline]
     unsafe fn mmio_phys_to_virt(paddr: PhysAddr, _size: usize) -> NonNull<u8> {
-        NonNull::new(phys_to_virt(paddr.into()).as_mut_ptr()).unwrap()
+        NonNull::new(phys_to_virt((paddr as usize).into()).as_mut_ptr()).unwrap()
     }
 
     #[inline]
     unsafe fn share(buffer: NonNull<[u8]>, _direction: BufferDirection) -> PhysAddr {
         let vaddr = buffer.as_ptr() as *mut u8 as usize;
-        virt_to_phys(vaddr.into()).into()
+        virt_to_phys(vaddr.into()).as_usize() as PhysAddr
     }
 
     #[inline]
