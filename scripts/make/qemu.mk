@@ -111,7 +111,7 @@ endif
 
 # Do not use KVM for debugging
 ifeq ($(shell uname), Darwin)
-#   qemu_args-$(ACCEL) += -cpu host -accel hvf
+  qemu_args-$(ACCEL) += -cpu host -accel hvf
 else ifneq ($(wildcard /dev/kvm),)
   qemu_args-$(ACCEL) += -cpu host -accel kvm
 endif

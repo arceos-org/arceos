@@ -1,6 +1,6 @@
 # Available arguments:
 # * General options:
-#     - `ARCH`: Target architecture: x86_64, riscv64, aarch64, loongarch64
+#     - `ARCH`: Target architecture: x86_64, riscv64, aarch64, loongarch64, arm
 #     - `MYPLAT`: Package name of the target platform crate.
 #     - `PLAT_CONFIG`: Path to the platform configuration file.
 #     - `SMP`: Override maximum CPU number specified in the platform config. For
@@ -60,7 +60,7 @@ BLK ?= n
 NET ?= n
 GRAPHIC ?= n
 BUS ?= pci
-MEM ?= 1G
+MEM ?= 128M
 ACCEL ?=
 QEMU_ARGS ?=
 
@@ -111,7 +111,7 @@ else ifeq ($(ARCH), loongarch64)
 else ifeq ($(ARCH), arm)
   TARGET := armv7a-none-eabi
 else
-  $(error "ARCH" must be one of "x86_64", "riscv64", "aarch64" or "loongarch64")
+  $(error "ARCH" must be one of "x86_64", "riscv64", "aarch64", "loongarch64" or "arm")
 endif
 
 export AX_ARCH=$(ARCH)
