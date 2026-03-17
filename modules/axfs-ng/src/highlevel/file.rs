@@ -326,8 +326,9 @@ impl PageCache {
     fn new() -> VfsResult<Self> {
         let addr = global_allocator()
             .alloc_pages(1, PAGE_SIZE, UsageKind::PageCache)
-            .inspect_err(|err| {
+            .map_err(|err| {
                 warn!("Failed to allocate page cache: {:?}", err);
+                VfsError::NoMemory
             })?;
         Ok(Self {
             addr: addr.into(),
