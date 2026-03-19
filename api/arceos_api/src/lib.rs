@@ -29,6 +29,8 @@ pub mod config {
 /// System operations.
 pub mod sys {
     define_api! {
+        /// Returns the number of available logical CPUs.
+        pub fn ax_get_cpu_num() -> usize;
         /// Shutdown the whole system and all CPUs.
         pub fn ax_terminate() -> !;
     }
