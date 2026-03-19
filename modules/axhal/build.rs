@@ -1,4 +1,6 @@
-use std::{io::Result, path::Path};
+use std::{io::Result, path::PathBuf};
+
+const LINKER_SCRIPT_NAME: &str = "linker.x";
 
 fn main() {
     println!("cargo:rustc-check-cfg=cfg(plat_dyn)");
@@ -18,7 +20,7 @@ fn main() {
 }
 
 fn gen_linker_script(arch: &str, platform: &str) -> Result<()> {
-    let fname = format!("linker_{platform}.lds");
+    let legacy_fname = format!("linker_{platform}.lds");
     let output_arch = if arch == "x86_64" {
         "i386:x86-64"
     } else if arch.contains("riscv") {
@@ -52,9 +54,17 @@ fn gen_linker_script(arch: &str, platform: &str) -> Result<()> {
     );
 
     // target/<target_triple>/<mode>/build/axhal-xxxx/out
-    let out_dir = std::env::var("OUT_DIR").unwrap();
-    // target/<target_triple>/<mode>/linker_xxxx.lds
-    let out_path = Path::new(&out_dir).join("../../..").join(fname);
-    std::fs::write(out_path, ld_content)?;
+    let out_dir = PathBuf::from(std::env::var("OUT_DIR").unwrap());
+    println!("cargo:rustc-link-search={}", out_dir.display());
+    println!("cargo:rustc-link-arg=-T{LINKER_SCRIPT_NAME}");
+
+    // target/<target_triple>/<mode>/build/axhal-xxxx/out/linker.x
+    std::fs::write(out_dir.join(LINKER_SCRIPT_NAME), &ld_content)?;
+
+    // Keep a stable copy under target/<target_triple>/<mode>/ for callers
+    // that still link outside Cargo build-script search paths.
+    let target_dir = out_dir.join("../../..");
+    std::fs::write(target_dir.join(LINKER_SCRIPT_NAME), &ld_content)?;
+    std::fs::write(target_dir.join(legacy_fname), ld_content)?;
     Ok(())
 }

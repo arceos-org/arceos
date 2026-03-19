@@ -147,7 +147,7 @@ GDB ?= gdb
 
 # Paths
 OUT_DIR ?= $(APP)
-LD_SCRIPT ?= $(TARGET_DIR)/$(TARGET)/$(MODE)/linker_$(PLAT_NAME).lds
+LD_SCRIPT ?= $(TARGET_DIR)/$(TARGET)/$(MODE)/linker.x
 
 APP_NAME := $(shell basename $(APP))
 OUT_ELF := $(OUT_DIR)/$(APP_NAME)_$(PLAT_NAME).elf
