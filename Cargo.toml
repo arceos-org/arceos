@@ -19,7 +19,6 @@ members = [
     "modules/axruntime",
     "modules/axsync",
     "modules/axtask",
-    "modules/axplat-dyn",
 
     "api/axfeat",
     "api/arceos_api",
@@ -52,7 +51,6 @@ default-members = [
     "modules/axruntime",
     "modules/axsync",
     "modules/axtask",
-    "modules/axplat-dyn",
 
     "api/axfeat",
     "api/arceos_api",
@@ -94,7 +92,7 @@ axlog = { version = "=0.3.0-preview.3", path = "modules/axlog" }
 axmm = { version = "=0.3.0-preview.3", path = "modules/axmm" }
 axnet = { version = "=0.3.0-preview.3", path = "modules/axnet" }
 axnet-ng = { version = "=0.3.0-preview.3", path = "modules/axnet-ng" }
-axplat-dyn = { version = "=0.3.0-preview.3", path = "modules/axplat-dyn", default-features = false }
+axplat-dyn = { version = "=0.3.0-preview.3", default-features = false }
 axruntime = { version = "=0.3.0-preview.3", path = "modules/axruntime" }
 axsync = { version = "=0.3.0-preview.3", path = "modules/axsync" }
 axtask = { version = "=0.3.0-preview.3", path = "modules/axtask" }

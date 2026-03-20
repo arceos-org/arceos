@@ -204,7 +204,7 @@ dependencies = [
 name = "arceos_api"
 version = "0.3.0-preview.3"
 dependencies = [
- "axalloc",
+ "axalloc 0.3.0-preview.3",
  "axconfig",
  "axdisplay",
  "axdma",
@@ -227,7 +227,7 @@ dependencies = [
 name = "arceos_posix_api"
 version = "0.3.0-preview.3"
 dependencies = [
- "axalloc",
+ "axalloc 0.3.0-preview.3",
  "axconfig",
  "axerrno 0.2.2",
  "axfeat",
@@ -360,6 +360,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "axalloc"
+version = "0.3.0-preview.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f5bb0695cfda0a651f3b44026899987c51c76063a9a807666f8f6b5e93a67966"
+dependencies = [
+ "axallocator",
+ "axerrno 0.2.2",
+ "cfg-if",
+ "kspin",
+ "log",
+ "memory_addr",
+ "strum",
+]
+
+[[package]]
 name = "axallocator"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -455,7 +470,7 @@ dependencies = [
 name = "axdma"
 version = "0.3.0-preview.3"
 dependencies = [
- "axalloc",
+ "axalloc 0.3.0-preview.3",
  "axallocator",
  "axconfig",
  "axhal",
@@ -470,7 +485,7 @@ dependencies = [
 name = "axdriver"
 version = "0.3.0-preview.3"
 dependencies = [
- "axalloc",
+ "axalloc 0.3.0-preview.3",
  "axconfig",
  "axdma",
  "axdriver_base",
@@ -610,7 +625,7 @@ dependencies = [
 name = "axfeat"
 version = "0.3.0-preview.3"
 dependencies = [
- "axalloc",
+ "axalloc 0.3.0-preview.3",
  "axbacktrace",
  "axconfig",
  "axdisplay",
@@ -650,7 +665,7 @@ dependencies = [
 name = "axfs-ng"
 version = "0.3.0-preview.3"
 dependencies = [
- "axalloc",
+ "axalloc 0.3.0-preview.3",
  "axdriver",
  "axerrno 0.2.2",
  "axfs-ng-vfs",
@@ -726,7 +741,7 @@ dependencies = [
 name = "axhal"
 version = "0.3.0-preview.3"
 dependencies = [
- "axalloc",
+ "axalloc 0.3.0-preview.3",
  "axconfig",
  "axcpu",
  "axplat",
@@ -819,7 +834,7 @@ dependencies = [
 name = "axmm"
 version = "0.3.0-preview.3"
 dependencies = [
- "axalloc",
+ "axalloc 0.3.0-preview.3",
  "axerrno 0.2.2",
  "axhal",
  "kspin",
@@ -972,9 +987,11 @@ dependencies = [
 [[package]]
 name = "axplat-dyn"
 version = "0.3.0-preview.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0e6762cfd943160d0baa8c2db303adc2b10d1dc3fb754bb8b6b364ac37c7ad2a"
 dependencies = [
  "anyhow",
- "axalloc",
+ "axalloc 0.3.0-preview.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "axconfig-macros",
  "axcpu",
  "axdriver_base",
@@ -1083,7 +1100,7 @@ dependencies = [
 name = "axruntime"
 version = "0.3.0-preview.3"
 dependencies = [
- "axalloc",
+ "axalloc 0.3.0-preview.3",
  "axbacktrace",
  "axconfig",
  "axdisplay",
