@@ -551,7 +551,7 @@ dependencies = [
  "axconfig",
  "axcpu",
  "axlog",
- "axplat 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "axplat 0.4.0",
  "axplat-aarch64-qemu-virt",
  "axplat-arm-qemu-virt",
  "axplat-loongarch64-qemu-virt",
@@ -661,7 +661,7 @@ version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f0aacd881a70f8ab32426ce1f2b235ae7d900745522aa5abfa9a7539fe6ab62"
 dependencies = [
- "axplat-macros 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "axplat-macros 0.1.0",
  "bitflags 2.11.0",
  "const-str",
  "crate_interface",
@@ -739,7 +739,7 @@ dependencies = [
  "arm_pl011",
  "arm_pl031",
  "axcpu",
- "axplat 0.3.0 (git+https://github.com/luodeb/axplat_crates.git?branch=arm32)",
+ "axplat 0.4.0",
  "int_ratio",
  "kspin",
  "lazyinit",
@@ -754,7 +754,7 @@ checksum = "d88ffe4bbb005114f442123e6958927831e44fd3f5f5232d45bc4458fd887f64"
 dependencies = [
  "axconfig-macros",
  "axcpu",
- "axplat 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "axplat 0.3.0",
  "chrono",
  "kspin",
  "lazyinit",
@@ -843,7 +843,7 @@ dependencies = [
  "axlog",
  "axmm",
  "axnet",
- "axplat 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "axplat 0.4.0",
  "axtask",
  "chrono",
  "crate_interface 0.1.4",
