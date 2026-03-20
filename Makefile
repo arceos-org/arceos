@@ -131,7 +131,11 @@ else
 endif
 
 # Binutils
-CROSS_COMPILE ?= $(ARCH)-linux-musl-
+ifeq ($(ARCH), arm)
+	CROSS_COMPILE ?= arm-linux-musleabi-
+else
+	CROSS_COMPILE ?= $(ARCH)-linux-musl-
+endif
 CC := $(CROSS_COMPILE)gcc
 AR := $(CROSS_COMPILE)ar
 RANLIB := $(CROSS_COMPILE)ranlib
