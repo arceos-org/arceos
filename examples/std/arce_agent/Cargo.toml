@@ -1,0 +1,18 @@
+[package]
+name = "arceos-std-arce_agent"
+version = "0.2.0"
+edition.workspace = true
+
+[dependencies]
+# minreq: minimal HTTP client, no TLS (we use a local HTTP proxy for HTTPS APIs)
+minreq = { version = "2", default-features = false }
+
+# serde + serde_json: JSON serialization for OpenAI API request/response types
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+log = "0.4"
+env_logger = "0.11"
+
+[target.'cfg(target_os = "hermit")'.dependencies]
+arceos-rust = { workspace = true, default-features = true, features = ["multitask", "net", "fs", "log-level-warn"] }

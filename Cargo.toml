@@ -41,6 +41,7 @@ members = [
     "examples/std/thread_test",
     "examples/std/io_test",
     "examples/std/tokio_test",
+    "examples/std/arce_agent",
 ]
 default-members = [
     "modules/axalloc",
