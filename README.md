@@ -10,6 +10,8 @@ ArceOS was inspired a lot by [Unikraft](https://github.com/unikraft/unikraft).
 
 🚧 Working In Progress.
 
+**For details about Rust standard library support, please refer to [std_support_readme.md](std_support_readme.md)**
+
 ## Features & TODOs
 
 * [x] Architecture: x86_64, riscv64, aarch64, loongarch64
@@ -38,6 +40,7 @@ docker build -t arceos -f Dockerfile .
 ```
 
 Create a container and build/run app:
+
 ```bash
 docker run -it -v $(pwd):/arceos -w /arceos arceos bash
 
@@ -46,6 +49,7 @@ make A=examples/helloworld ARCH=aarch64 run
 ```
 
 ### Manually Build and Run
+
 #### 1. Install Build Dependencies
 
 Install [cargo-binutils](https://github.com/rust-embedded/cargo-binutils) to use `rust-objcopy` and `rust-objdump` tools, and [axconfig-gen](https://github.com/arceos-org/axconfig-gen) for kernel configuration, and [cargo-axplat](https://github.com/arceos-org/axplat_crates/tree/dev/cargo-axplat) for platform configuration:
