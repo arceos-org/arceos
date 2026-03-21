@@ -1,6 +1,33 @@
+use core::{
+    ffi::c_char,
+    sync::atomic::{AtomicI32, Ordering},
+};
+
 use arceos_posix_api::ctypes::iovec;
-use core::ffi::c_char;
 use log::info;
+
+/// Global errno variable for the hermit ABI.
+///
+/// Hermit std's `io::Error::last_os_error()` calls `sys_get_errno()` to
+/// retrieve the last error. POSIX-style calls like `poll()` return -1 on
+/// error and store the actual error code here.
+pub(crate) static ERRNO: AtomicI32 = AtomicI32::new(0);
+
+/// Set the global errno value (used by POSIX-style wrappers like sys_poll).
+#[inline]
+pub(crate) fn set_errno(e: i32) {
+    ERRNO.store(e, Ordering::Relaxed);
+}
+
+/// Get the last error number from the thread local storage.
+///
+/// Called by hermit std's `io::Error::last_os_error()`.
+#[unsafe(no_mangle)]
+pub fn sys_get_errno() -> i32 {
+    let e = ERRNO.load(Ordering::Relaxed);
+    info!("called sys_get_errno => {}", e);
+    e
+}
 
 #[unsafe(no_mangle)]
 pub fn sys_write(fd: i32, buf: *const u8, count: usize) -> isize {

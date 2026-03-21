@@ -12,7 +12,6 @@ use axsync::Mutex;
 
 use super::fd_ops::FileLike;
 use crate::{ctypes, utils::char_ptr_to_str};
-use crate::ctypes::{SOL_SOCKET, SO_REUSEADDR};
 
 pub enum Socket {
     Udp(Mutex<UdpSocket>),
@@ -193,7 +192,7 @@ impl From<SocketAddrV4> for ctypes::sockaddr_in {
                 s_addr: u32::from_ne_bytes(addr.ip().octets()),
             },
             sin_zero: [0; 8],
-            .. Default::default()
+            ..Default::default()
         }
     }
 }
@@ -607,22 +606,71 @@ pub unsafe fn sys_setsockopt(
         if optval.is_null() {
             return Err(LinuxError::EFAULT);
         }
-        let socket = Socket::from_fd(socket_fd)?;
-        match level {
-            SOL_SOCKET => match optname {
-                SO_REUSEADDR => {
+        let _socket = Socket::from_fd(socket_fd)?;
+        if level == ctypes::SOL_SOCKET {
+            match optname {
+                ctypes::SO_REUSEADDR => {
                     if optlen < size_of::<c_int>() as u32 {
                         return Err(LinuxError::EINVAL);
                     }
                     let flag = unsafe { *(optval as *const c_int) };
-                    socket.set_reuseaddr(flag != 0)?;
+                    _socket.set_reuseaddr(flag != 0)?;
                     Ok(0)
                 }
-                _ => Err(LinuxError::ENOPROTOOPT),
-            },
-            _ => Err(LinuxError::ENOPROTOOPT),
+                // Accept and silently ignore timeouts — ArceOS's smoltcp
+                // stack does not track per-socket read/write timeouts, but
+                // hermit std calls setsockopt for these during
+                // set_read_timeout / set_write_timeout.
+                ctypes::SO_RCVTIMEO | ctypes::SO_SNDTIMEO => {
+                    debug!(
+                        "sys_setsockopt: ignoring SO_{}TIMEO for fd {}",
+                        if optname == ctypes::SO_RCVTIMEO {
+                            "RCV"
+                        } else {
+                            "SND"
+                        },
+                        socket_fd
+                    );
+                    Ok(0)
+                }
+                ctypes::SO_LINGER | ctypes::SO_KEEPALIVE => {
+                    debug!(
+                        "sys_setsockopt: ignoring option {:#x} for fd {}",
+                        optname, socket_fd
+                    );
+                    Ok(0)
+                }
+                _ => {
+                    warn!(
+                        "sys_setsockopt: unsupported SOL_SOCKET option {:#x}",
+                        optname
+                    );
+                    Err(LinuxError::ENOPROTOOPT)
+                }
+            }
+        } else if level == ctypes::IPPROTO_TCP as i32 {
+            match optname {
+                ctypes::TCP_NODELAY => {
+                    // Accept silently — smoltcp's Nagle is controlled
+                    // through TcpSocket::set_nagle_enabled, but we don't
+                    // expose it through setsockopt yet.
+                    debug!("sys_setsockopt: ignoring TCP_NODELAY for fd {}", socket_fd);
+                    Ok(0)
+                }
+                _ => {
+                    warn!(
+                        "sys_setsockopt: unsupported IPPROTO_TCP option {:#x}",
+                        optname
+                    );
+                    Err(LinuxError::ENOPROTOOPT)
+                }
+            }
+        } else {
+            warn!(
+                "sys_setsockopt: unsupported level {} option {:#x}",
+                level, optname
+            );
+            Err(LinuxError::ENOPROTOOPT)
         }
     })
 }
-
-

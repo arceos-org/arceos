@@ -30,6 +30,7 @@ fs = ["dep:axfs", "axfeat/fs", "fd"]
 net = ["dep:axnet", "axfeat/net", "fd"]
 pipe = ["fd"]
 select = ["fd"]
+poll = ["fd"]
 epoll = ["fd"]
 
 [dependencies]

@@ -389,10 +389,9 @@ pub const SEEK_CUR: i32 = 1;
 pub const SEEK_END: i32 = 2;
 
 /// imported ctypes
-/// rlimit
-pub use ctypes_gen::{rlimit, RLIMIT_DATA, RLIMIT_NOFILE, RLIMIT_STACK};
 /// sysconf
 pub use ctypes_gen::{
     _SC_AVPHYS_PAGES, _SC_NPROCESSORS_ONLN, _SC_OPEN_MAX, _SC_PAGE_SIZE, _SC_PHYS_PAGES,
 };
-
+/// rlimit
+pub use ctypes_gen::{RLIMIT_DATA, RLIMIT_NOFILE, RLIMIT_STACK, rlimit};

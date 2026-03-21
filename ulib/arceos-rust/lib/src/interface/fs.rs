@@ -1,9 +1,10 @@
-use crate::err;
-use arceos_posix_api::ctypes::stat;
-use arceos_posix_api::utils::char_ptr_to_str;
-use axerrno::AxErrorKind::IsADirectory;
 use core::ffi::c_char;
+
+use arceos_posix_api::{ctypes::stat, utils::char_ptr_to_str};
+use axerrno::AxError;
 use log::info;
+
+use crate::err;
 
 #[unsafe(no_mangle)]
 pub fn sys_stat(name: *const c_char, stat: *mut stat) -> i32 {
@@ -32,7 +33,10 @@ pub fn sys_unlink(name: *const c_char) -> i32 {
         Err(e) => return err(e),
     };
 
-    if let Err(IsADirectory) = arceos_api::fs::ax_remove_file(name) {
+    if let Err(e) = arceos_api::fs::ax_remove_file(name) {
+        if e != AxError::IsADirectory {
+            return err(e.into());
+        }
         if let Err(e) = arceos_api::fs::ax_remove_dir(name) {
             return err(e.into());
         }

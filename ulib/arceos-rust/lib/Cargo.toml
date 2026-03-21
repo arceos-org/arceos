@@ -56,7 +56,7 @@ fd = ["arceos_posix_api/fd"]
 fs = ["arceos_api/fs", "arceos_posix_api/fs", "axfeat/fs"]
 
 # Networking
-net = ["arceos_api/net", "arceos_posix_api/net", "axfeat/net"]
+net = ["arceos_api/net", "arceos_posix_api/net", "arceos_posix_api/poll", "axfeat/net"]
 dns = []
 
 # Display
