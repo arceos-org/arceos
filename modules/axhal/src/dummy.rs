@@ -1,6 +1,6 @@
 //! Dummy implementation of platform-related interfaces defined in [`axplat`].
 
-use axplat::impl_plat_interface;
+use axplat::impl_interface;
 
 use axplat::console::ConsoleIf;
 use axplat::init::InitIf;
@@ -18,7 +18,7 @@ struct DummyPower;
 #[cfg(feature = "irq")]
 struct DummyIrq;
 
-#[impl_plat_interface]
+#[impl_interface]
 impl InitIf for DummyInit {
     fn init_early(_cpu_id: usize, _arg: usize) {}
 
@@ -31,7 +31,7 @@ impl InitIf for DummyInit {
     fn init_later_secondary(_cpu_id: usize) {}
 }
 
-#[impl_plat_interface]
+#[impl_interface]
 impl ConsoleIf for DummyConsole {
     fn write_bytes(_bytes: &[u8]) {
         unimplemented!()
@@ -42,7 +42,7 @@ impl ConsoleIf for DummyConsole {
     }
 }
 
-#[impl_plat_interface]
+#[impl_interface]
 impl MemIf for DummyMem {
     fn phys_ram_ranges() -> &'static [RawRange] {
         &[]
@@ -65,7 +65,7 @@ impl MemIf for DummyMem {
     }
 }
 
-#[impl_plat_interface]
+#[impl_interface]
 impl TimeIf for DummyTime {
     fn current_ticks() -> u64 {
         0
@@ -87,7 +87,7 @@ impl TimeIf for DummyTime {
     fn set_oneshot_timer(_deadline_ns: u64) {}
 }
 
-#[impl_plat_interface]
+#[impl_interface]
 impl PowerIf for DummyPower {
     #[cfg(feature = "smp")]
     fn cpu_boot(_cpu_id: usize, _stack_top_paddr: usize) {}
@@ -102,7 +102,7 @@ impl PowerIf for DummyPower {
 }
 
 #[cfg(feature = "irq")]
-#[impl_plat_interface]
+#[impl_interface]
 impl IrqIf for DummyIrq {
     fn set_enable(_irq: usize, _enabled: bool) {}
 
