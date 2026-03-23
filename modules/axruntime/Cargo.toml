@@ -37,10 +37,10 @@ axnet = { workspace = true, optional = true }
 axdisplay = { workspace = true, optional = true }
 axtask = { workspace = true, optional = true }
 axipi = { workspace = true, optional = true }
-axplat = "0.3"
+axplat = "0.4"
 
 crate_interface = "0.1"
-percpu = { version = "0.2", optional = true }
+percpu = { version = "0.3", optional = true }
 ctor_bare = "0.2"
 
 chrono = { version = "0.4.38", default-features = false }

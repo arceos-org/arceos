@@ -109,7 +109,7 @@ pub unsafe fn set_current_task_ptr<T>(ptr: *const T) {
 
 #[allow(dead_code)]
 pub(crate) fn init_primary(cpu_id: usize) {
-    percpu::init();
+    percpu::init_in_place().expect("failed to initialize percpu area");
     percpu::init_percpu_reg(cpu_id);
     unsafe {
         CPU_ID.write_current_raw(cpu_id);

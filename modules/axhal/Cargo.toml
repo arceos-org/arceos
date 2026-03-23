@@ -30,13 +30,13 @@ log = "=0.4.21"
 cfg-if = "1.0"
 kernel_guard = "0.1"
 lazyinit = "0.2"
-percpu = "0.2"
+percpu = "0.3"
 heapless = "0.8"
 memory_addr = "0.4"
 linkme = { version = "0.3.33", optional = true }
 page_table_multiarch = { version = "0.6", features = ["copy-from"], optional = true }
 axcpu = "0.2"
-axplat = "0.3"
+axplat = "0.4"
 axlog = { workspace = true }
 axconfig = { workspace = true }
 axalloc = { workspace = true, optional = true }
