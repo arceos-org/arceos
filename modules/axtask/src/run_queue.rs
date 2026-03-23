@@ -260,7 +260,7 @@ impl<G: BaseGuard> AxRunQueueRef<'_, G> {
             let cpu_id = self.inner.cpu_id;
             debug!("task unblock: {task_id_name} on run_queue {cpu_id}");
             // Note: when the task is unblocked on another CPU's run queue,
-            // we just ingiore the `resched` flag.
+            // we just ignore the `resched` flag.
             if resched && cpu_id == this_cpu_id() {
                 #[cfg(feature = "preempt")]
                 crate::current().set_preempt_pending(true);
@@ -299,7 +299,7 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
     /// current task to `Ready` state and select a proper run queue for it according to its CPU affinity,
     /// switch to the migration task immediately after migration task is prepared.
     ///
-    /// Note: the ownership if migrating task (which is current task) is handed over to the migration task,
+    /// Note: the ownership of migrating task (which is current task) is handed over to the migration task,
     /// before the migration task inserted it into the target run queue.
     #[cfg(feature = "smp")]
     pub fn migrate_current(&mut self, migration_task: AxTaskRef) {

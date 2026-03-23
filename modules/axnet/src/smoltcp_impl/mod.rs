@@ -34,7 +34,7 @@ macro_rules! env_or_default {
 
 const IP: &str = env_or_default!("AX_IP");
 const GATEWAY: &str = env_or_default!("AX_GW");
-const DNS_SEVER: &str = "8.8.8.8";
+const DNS_SERVER: &str = "8.8.8.8";
 const IP_PREFIX: u8 = 24;
 
 const STANDARD_MTU: usize = 1500;
@@ -88,7 +88,7 @@ impl<'a> SocketSetWrapper<'a> {
     }
 
     pub fn new_dns_socket() -> socket::dns::Socket<'a> {
-        let server_addr = DNS_SEVER.parse().expect("invalid DNS server address");
+        let server_addr = DNS_SERVER.parse().expect("invalid DNS server address");
         socket::dns::Socket::new(&[server_addr], vec![])
     }
 

@@ -122,7 +122,7 @@ impl FileLike for Pipe {
                 }
                 drop(ring_buffer);
                 // Data not ready, wait for write end
-                crate::sys_sched_yield(); // TODO: use synconize primitive
+                crate::sys_sched_yield(); // TODO: use synchronization primitive
                 continue;
             }
             for _ in 0..loop_read {
@@ -147,7 +147,7 @@ impl FileLike for Pipe {
             if loop_write == 0 {
                 drop(ring_buffer);
                 // Buffer is full, wait for read end to consume
-                crate::sys_sched_yield(); // TODO: use synconize primitive
+                crate::sys_sched_yield(); // TODO: use synchronization primitive
                 continue;
             }
             for _ in 0..loop_write {
