@@ -46,6 +46,8 @@ impl Backend {
             for addr in PageIter4K::new(start, start + size).unwrap() {
                 if let Some(frame) = alloc_frame(true) {
                     if cursor.map(addr, frame, PageSize::Size4K, flags).is_err() {
+                        // Mapping failed; deallocate the just-allocated frame to avoid a leak.
+                        dealloc_frame(frame);
                         return false;
                     }
                 }
