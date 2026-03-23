@@ -73,7 +73,7 @@ impl UdpSocket {
 
     /// Binds an unbound socket to the given address and port.
     ///
-    /// It's must be called before [`send_to`](Self::send_to) and
+    /// It must be called before [`send_to`](Self::send_to) and
     /// [`recv_from`](Self::recv_from).
     pub fn bind(&self, mut local_addr: SocketAddr) -> AxResult {
         let mut self_local_addr = self.local_addr.write();
@@ -134,7 +134,7 @@ impl UdpSocket {
     /// data from the specified address.
     ///
     /// The local port will be generated automatically if the socket is not bound.
-    /// It's must be called before [`send`](Self::send) and
+    /// It must be called before [`send`](Self::send) and
     /// [`recv`](Self::recv).
     pub fn connect(&self, addr: SocketAddr) -> AxResult {
         let mut self_peer_addr = self.peer_addr.write();

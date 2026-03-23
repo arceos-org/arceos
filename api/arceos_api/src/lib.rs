@@ -107,7 +107,7 @@ pub mod mem {
 pub mod stdio {
     use core::fmt;
     define_api! {
-        /// Reads a slice of bytes from the console, returns the number of bytes written.
+        /// Reads a slice of bytes from the console, returns the number of bytes read.
         pub fn ax_console_read_bytes(buf: &mut [u8]) -> crate::AxResult<usize>;
         /// Writes a slice of bytes to the console, returns the number of bytes written.
         pub fn ax_console_write_bytes(buf: &[u8]) -> crate::AxResult<usize>;
@@ -161,11 +161,11 @@ pub mod task {
         /// Sets the cpu affinity of the current task.
         pub fn ax_set_current_affinity(cpumask: AxCpuMask) -> crate::AxResult;
         /// Blocks the current task and put it into the wait queue, until
-        /// other tasks notify the wait queue, or the the given duration has
+        /// other tasks notify the wait queue, or the given duration has
         /// elapsed (if specified).
         pub fn ax_wait_queue_wait(wq: &AxWaitQueueHandle, timeout: Option<core::time::Duration>) -> bool;
         /// Blocks the current task and put it into the wait queue, until the
-        /// given condition becomes true, or the the given duration has elapsed
+        /// given condition becomes true, or the given duration has elapsed
         /// (if specified).
         pub fn ax_wait_queue_wait_until(
             wq: &AxWaitQueueHandle,
@@ -251,7 +251,7 @@ pub mod fs {
         pub fn ax_remove_file(path: &str) -> AxResult;
         /// Rename a file or directory to a new name.
         ///
-        /// It will delete the original file if `old` already exists.
+        /// It will delete the original file if `new` already exists.
         pub fn ax_rename(old: &str, new: &str) -> AxResult;
 
         /// Returns the current working directory.

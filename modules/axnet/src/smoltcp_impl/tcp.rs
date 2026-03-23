@@ -182,7 +182,7 @@ impl TcpSocket {
     ///
     /// If the given port is 0, it generates one automatically.
     ///
-    /// It's must be called before [`listen`](Self::listen) and
+    /// It must be called before [`listen`](Self::listen) and
     /// [`accept`](Self::accept).
     pub fn bind(&self, mut local_addr: SocketAddr) -> AxResult {
         self.update_state(STATE_CLOSED, STATE_CLOSED, || {
@@ -567,5 +567,5 @@ fn get_ephemeral_port() -> AxResult<u16> {
         }
         tries += 1;
     }
-    ax_err!(AddrInUse, "no avaliable ports!")
+    ax_err!(AddrInUse, "no available ports!")
 }
