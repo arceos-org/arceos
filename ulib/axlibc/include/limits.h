@@ -1,7 +1,11 @@
 #ifndef __LIMITS__
 #define __LIMITS__
 
+#if __riscv_xlen == 64 || defined(__x86_64__) || defined(__aarch64__) || defined(__loongarch__)
 #define __LONG_MAX 0x7fffffffffffffffL
+#elif __riscv_xlen == 32 || defined(__i386__) || defined(__arm__)
+#define __LONG_MAX 0x7fffffffL
+#endif
 #define CHAR_BIT   8
 #define SCHAR_MIN  (-128)
 #define SCHAR_MAX  127
