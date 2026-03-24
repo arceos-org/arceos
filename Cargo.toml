@@ -71,5 +71,4 @@ axipi = { path = "modules/axipi" }
 lto = true
 
 [patch.crates-io]
-axcpu = { git = "https://github.com/arceos-org/axcpu", branch = "main" }
 axplat = { git = "https://github.com/arceos-org/axplat_crates", branch = "main" }
