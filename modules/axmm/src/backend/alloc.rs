@@ -111,7 +111,12 @@ impl Backend {
             // Allocate a physical frame lazily and map it to the fault address.
             // `vaddr` does not need to be aligned. It will be automatically
             // aligned during `pt.remap` regardless of the page size.
-            pt.cursor().remap(vaddr, frame, orig_flags).is_ok()
+            let res = pt.cursor().remap(vaddr, frame, orig_flags);
+            if let Err(e) = &res {
+                debug!("handle_page_fault_alloc: remap failed for {:#x}: {:?}", vaddr, e);
+                dealloc_frame(frame);
+            }
+            res.is_ok()
         } else {
             false
         }
