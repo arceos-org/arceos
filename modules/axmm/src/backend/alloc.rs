@@ -45,8 +45,23 @@ impl Backend {
             let mut cursor = pt.cursor();
             for addr in PageIter4K::new(start, start + size).unwrap() {
                 if let Some(frame) = alloc_frame(true) {
-                    if cursor.map(addr, frame, PageSize::Size4K, flags).is_err() {
-                        // Mapping failed; deallocate the just-allocated frame to avoid a leak.
+                    if cursor
+                        .map(addr, frame, PageSize::Size4K, flags)
+                        .is_err()
+                    {
+                        // Mapping failed; roll back any previously mapped pages in this range
+                        // and deallocate their frames to avoid leaks and partial mappings.
+                        for rollback_addr in PageIter4K::new(start, addr).unwrap() {
+                            if let Ok((mapped_frame, _, page_size)) =
+                                cursor.unmap(rollback_addr)
+                            {
+                                // We only expect 4K pages here, but avoid touching huge pages.
+                                if !page_size.is_huge() {
+                                    dealloc_frame(mapped_frame);
+                                }
+                            }
+                        }
+                        // Deallocate the just-allocated frame that failed to map.
                         dealloc_frame(frame);
                         return false;
                     }
