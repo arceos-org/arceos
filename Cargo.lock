@@ -500,7 +500,7 @@ dependencies = [
  "axhal",
  "axplat-dyn",
  "cfg-if",
- "crate_interface 0.1.4",
+ "crate_interface 0.3.0",
  "log",
  "smallvec",
 ]
@@ -825,7 +825,7 @@ dependencies = [
  "axlog",
  "cfg-if",
  "chrono",
- "crate_interface 0.1.4",
+ "crate_interface 0.3.0",
  "kspin",
  "log",
 ]
@@ -1119,7 +1119,7 @@ dependencies = [
  "axtask",
  "cfg-if",
  "chrono",
- "crate_interface 0.1.4",
+ "crate_interface 0.3.0",
  "ctor_bare",
  "indoc",
  "percpu",
@@ -1172,7 +1172,7 @@ dependencies = [
  "axtask",
  "cfg-if",
  "cpumask",
- "crate_interface 0.1.4",
+ "crate_interface 0.3.0",
  "event-listener",
  "extern-trait",
  "futures-util",
@@ -3773,3 +3773,7 @@ dependencies = [
  "quote",
  "syn 2.0.117",
 ]
+
+[[patch.unused]]
+name = "ostool"
+version = "0.10.0"

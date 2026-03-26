@@ -1,10 +1,10 @@
 use core::{alloc::Layout, ptr::NonNull};
 
 use axalloc::{DefaultByteAllocator, UsageKind, global_allocator};
-#[cfg(not(feature = "hv"))]
+#[cfg(not(feature = "buddy-slab"))]
 use axallocator::{AllocError, AllocResult, BaseAllocator, ByteAllocator};
 use axhal::{mem::virt_to_phys, paging::MappingFlags};
-#[cfg(feature = "hv")]
+#[cfg(feature = "buddy-slab")]
 use buddy_slab_allocator::{AllocError, AllocResult, ByteAllocator};
 use kspin::SpinNoIrq;
 use log::{debug, error};
@@ -40,9 +40,9 @@ impl DmaAllocator {
     }
 
     fn alloc_coherent_bytes(&mut self, layout: Layout) -> AllocResult<DMAInfo> {
-        #[cfg(feature = "hv")]
+        #[cfg(feature = "buddy-slab")]
         {
-            // In hv mode, SlabByteAllocator doesn't support add_memory
+            // In buddy-slab mode, SlabByteAllocator doesn't support add_memory
             // Try alloc directly, fail if no memory
             self.alloc.alloc(layout).map(|data| {
                 let cpu_addr = va!(data.as_ptr() as usize);
@@ -53,7 +53,7 @@ impl DmaAllocator {
             })
         }
 
-        #[cfg(not(feature = "hv"))]
+        #[cfg(not(feature = "buddy-slab"))]
         {
             let mut is_expanded = false;
             loop {

@@ -13,7 +13,7 @@ default = []
 
 alloc = ["dep:axalloc"]
 dma = ["paging"]
-hv = ["axalloc/hv"]
+buddy-slab = ["axalloc/buddy-slab"]
 ipi = ["dep:axipi"]
 irq = ["axhal/irq", "axtask?/irq", "dep:percpu"]
 multitask = ["axtask/multitask"]
@@ -22,7 +22,7 @@ rtc = []
 smp = ["axhal/smp", "axtask?/smp"]
 tls = ["axhal/tls", "axtask?/tls"]
 
-plat-dyn = ["axdriver/dyn", "paging"]
+plat-dyn = ["axdriver/dyn", "paging", "buddy-slab"]
 
 axdriver = ["dep:axdriver"]
 display = ["axdriver", "dep:axdisplay"]

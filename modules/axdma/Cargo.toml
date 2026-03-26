@@ -12,7 +12,7 @@ repository = "https://github.com/arceos-org/arceos/tree/main/modules/axdma"
 
 [features]
 default = []
-hv = ["dep:buddy-slab-allocator"]
+buddy-slab = ["dep:buddy-slab-allocator"]
 
 [dependencies]
 axalloc.workspace = true

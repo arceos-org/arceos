@@ -308,7 +308,7 @@ fn init_allocator() {
         }
     }
 
-    #[cfg(feature = "hv")]
+    #[cfg(feature = "buddy-slab")]
     {
         struct AddrTranslatorImpl;
         impl axalloc::AddrTranslator for AddrTranslatorImpl {
@@ -327,7 +327,7 @@ fn init_allocator() {
         }
     }
 
-    #[cfg(not(feature = "hv"))]
+    #[cfg(not(feature = "buddy-slab"))]
     {
         for r in memory_regions() {
             if r.flags.contains(MemRegionFlags::FREE) && r.paddr == max_region_paddr {

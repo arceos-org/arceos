@@ -77,18 +77,18 @@ impl fmt::Debug for Usages {
 
 // Select implementation based on features
 // When axvisor is enabled, use axvisor_impl (axallocator features are ignored)
-#[cfg(feature = "hv")]
+#[cfg(feature = "buddy-slab")]
 mod axvisor_impl;
-#[cfg(feature = "hv")]
+#[cfg(feature = "buddy-slab")]
 use axvisor_impl as imp;
 
 // When axvisor is not enabled, use default_impl with axallocator
-#[cfg(not(feature = "hv"))]
+#[cfg(not(feature = "buddy-slab"))]
 mod default_impl;
-#[cfg(not(feature = "hv"))]
+#[cfg(not(feature = "buddy-slab"))]
 use default_impl as imp;
-// Re-export AddrTranslator when using hv implementation
-#[cfg(feature = "hv")]
+// Re-export AddrTranslator when using buddy-slab implementation
+#[cfg(feature = "buddy-slab")]
 pub use imp::AddrTranslator;
 // Re-export DefaultByteAllocator from both implementations
 pub use imp::DefaultByteAllocator;
