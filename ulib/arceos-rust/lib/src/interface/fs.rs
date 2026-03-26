@@ -45,7 +45,7 @@ pub fn sys_unlink(name: *const c_char) -> i32 {
 }
 
 #[unsafe(no_mangle)]
-pub fn sys_mkdir(name: *const i8, _mode: u32) -> i32 {
+pub fn sys_mkdir(name: *const c_char, _mode: u32) -> i32 {
     let name = match char_ptr_to_str(name) {
         Ok(s) => s,
         Err(e) => return err(e),
