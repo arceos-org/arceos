@@ -1,6 +1,8 @@
 OUTPUT_ARCH(%ARCH%)
 
+PHYS_BASE = %KERNEL_BASE_PADDR%;
 BASE_ADDRESS = %KERNEL_BASE%;
+LOAD_OFFSET = BASE_ADDRESS - PHYS_BASE;
 
 ENTRY(_start)
 SECTIONS
@@ -8,7 +10,7 @@ SECTIONS
     . = BASE_ADDRESS;
     _skernel = .;
 
-    .text : ALIGN(4K) {
+    .text : AT(ADDR(.text) - LOAD_OFFSET) ALIGN(4K) {
         _stext = .;
         *(.text.boot)
         *(.text .text.*)
@@ -17,13 +19,13 @@ SECTIONS
     }
 
     _srodata = .;
-    .rodata : ALIGN(4K) {
+    .rodata : AT(ADDR(.rodata) - LOAD_OFFSET) ALIGN(4K) {
         *(.rodata .rodata.*)
         *(.srodata .srodata.*)
         *(.sdata2 .sdata2.*)
     }
 
-    .init_array : ALIGN(0x10) {
+    .init_array : AT(ADDR(.init_array) - LOAD_OFFSET) ALIGN(0x10) {
         __init_array_start = .;
         *(.init_array .init_array.*)
         __init_array_end = .;
@@ -34,7 +36,7 @@ SECTIONS
     . = ALIGN(4K);
     _erodata = .;
 
-    .data : ALIGN(4K) {
+    .data : AT(ADDR(.data) - LOAD_OFFSET) ALIGN(4K) {
         _sdata = .;
         *(.data.boot_page_table)
         . = ALIGN(4K);
@@ -53,13 +55,13 @@ SECTIONS
         _ex_table_end = .;
     }
 
-    .tdata : ALIGN(0x10) {
+    .tdata : AT(ADDR(.tdata) - LOAD_OFFSET) ALIGN(0x10) {
         _stdata = .;
         *(.tdata .tdata.*)
         _etdata = .;
     }
 
-    .tbss : ALIGN(0x10) {
+    .tbss : AT(ADDR(.tbss) - LOAD_OFFSET) ALIGN(0x10) {
         _stbss = .;
         *(.tbss .tbss.*)
         *(.tcommon)
@@ -69,7 +71,7 @@ SECTIONS
     . = ALIGN(4K);
     _percpu_start = .;
     _percpu_end = _percpu_start + SIZEOF(.percpu);
-    .percpu 0x0 : AT(_percpu_start) {
+    .percpu 0x0 : AT(_percpu_start - LOAD_OFFSET) {
         _percpu_load_start = .;
         *(.percpu .percpu.*)
         _percpu_load_end = .;
@@ -80,7 +82,7 @@ SECTIONS
     . = ALIGN(4K);
     _edata = .;
 
-    .bss : AT(.) ALIGN(4K) {
+    .bss : AT(ADDR(.bss) - LOAD_OFFSET) ALIGN(4K) {
         boot_stack = .;
         *(.bss.stack)
         . = ALIGN(4K);
