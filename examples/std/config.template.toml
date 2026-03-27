@@ -1,0 +1,117 @@
+# Template Cargo runner config for ArceOS std examples.
+#
+# Usage:
+# 1) Copy this file to: <example>/.cargo/config.toml.
+# 2) Modify qemu arguments according to features enabled.
+# 3) If feature `fs` is enabled, put disk.img in that example root.
+#
+# Notes for qemu arguments:
+# - `make A=... ARCH=... run` default is `BUS=pci` for all 4 arches:
+#     x86_64 / riscv64 / aarch64 / loongarch64
+#   so virtio devices use "-pci" suffix by default.
+# - If BUS=mmio, replace:
+#     virtio-net-pci -> virtio-net-device
+#     virtio-blk-pci -> virtio-blk-device
+# - For server examples, we use `hostfwd` to forward ports.
+# - Graphics mode:
+#     -device virtio-gpu-<pci|device> -vga none -serial mon:stdio
+# - Input devices:
+#     -device virtio-mouse-pci -device virtio-keyboard-pci
+# - Vsock:
+#     -device vhost-vsock-pci,id=virtiosocket0,guest-cid=103
+# - Netdev backends:
+#     user:   -netdev user,id=net0[,hostfwd=...]
+#     tap:    -netdev tap,id=net0,script=scripts/net/qemu-ifup.sh,downscript=no,vhost=<y|n>,vhostforce=<y|n>
+#     bridge: -netdev bridge,id=net0,br=virbr0
+# - Packet dump:
+#     -object filter-dump,id=dump0,netdev=net0,file=netdump.pcap
+# - VFIO passthrough:
+#     --device vfio-pci,host=<bus:dev.func>
+# - QEMU internal logging:
+#     -D qemu.log -d in_asm,int,mmu,pcall,cpu_reset,guest_errors
+# - Deterministic icount mode:
+#     -icount shift=1
+# - Acceleration:
+#     Linux: -cpu host -accel kvm
+#     macOS: -cpu host -accel hvf
+
+[target.riscv64gc-unknown-hermit]
+rustflags = [
+    "-C", "link-arg=-no-pie",
+    "-C", "link-arg=-Tlink.lds"
+]
+runner = [
+    "qemu-system-riscv64",
+    "-m", "128M", # RAM size
+    "-smp", "1", # Number of CPU cores
+    "-machine", "virt",
+    "-nographic",
+    # "-device", "virtio-net-pci,netdev=net0", # Network support (PCI)
+    # "-netdev", "user,id=net0", # Use user network
+    # "-netdev", "user,id=net0,hostfwd=tcp::5555-:5555,hostfwd=udp::5555-:5555", # Use user network, forwarding ports for server examples
+    # "-device", "virtio-blk-pci,drive=disk0", # Disk support (PCI)
+    # "-drive", "id=disk0,if=none,format=raw,file=./disk.img", # Use `disk.img` as disk image
+    "-kernel",
+]
+
+[target.x86_64-unknown-hermit]
+rustflags = [
+    "-C", "link-arg=-no-pie",
+    "-C", "link-arg=-Tlink.lds"
+]
+runner = [
+    "qemu-system-x86_64",
+    "-m", "128M", # RAM size
+    "-smp", "1", # Number of CPU cores
+    "-machine", "q35",
+    "-nographic",
+    # "-device", "virtio-net-pci,netdev=net0", # Network support (PCI)
+    # "-netdev", "user,id=net0", # Use user network
+    # "-netdev", "user,id=net0,hostfwd=tcp::5555-:5555,hostfwd=udp::5555-:5555", # Use user network, forwarding ports for server examples
+    # "-device", "virtio-blk-pci,drive=disk0", # Disk support (PCI)
+    # "-drive", "id=disk0,if=none,format=raw,file=./disk.img", # Use `disk.img` as disk image
+    "-kernel",
+]
+
+[target.aarch64-unknown-hermit]
+rustflags = [
+    "-C", "link-arg=-no-pie",
+    "-C", "link-arg=-Tlink.lds"
+]
+runner = [
+    "qemu-system-aarch64",
+    "-m", "128M", # RAM size
+    "-smp", "1", # Number of CPU cores
+    "-machine", "virt",
+    "-cpu", "cortex-a72",
+    "-nographic",
+    # "-device", "virtio-net-pci,netdev=net0", # Network support (PCI)
+    # "-netdev", "user,id=net0", # Use user network
+    # "-netdev", "user,id=net0,hostfwd=tcp::5555-:5555,hostfwd=udp::5555-:5555", # Use user network, forwarding ports for server examples
+    # "-device", "virtio-blk-pci,drive=disk0", # Disk support (PCI)
+    # "-drive", "id=disk0,if=none,format=raw,file=./disk.img", # Use `disk.img` as disk image
+    "-kernel",
+]
+
+[target.loongarch64-unknown-hermit]
+rustflags = [
+    "-C", "link-arg=-no-pie",
+    "-C", "link-arg=-Tlink.lds"
+]
+runner = [
+    "qemu-system-loongarch64",
+    "-m", "128M", # RAM size
+    "-smp", "1", # Number of CPU cores
+    "-machine", "virt",
+    "-nographic",
+    # "-device", "virtio-net-pci,netdev=net0", # Network support (PCI)
+    # "-netdev", "user,id=net0", # Use user network
+    # "-netdev", "user,id=net0,hostfwd=tcp::5555-:5555,hostfwd=udp::5555-:5555", # Use user network, forwarding ports for server examples
+    # "-device", "virtio-blk-pci,drive=disk0", # Disk support (PCI)
+    # "-drive", "id=disk0,if=none,format=raw,file=./disk.img", # Use `disk.img` as disk image
+    "-kernel",
+]
+
+[unstable]
+build-std = ["std", "panic_abort"]
+build-std-features = []
