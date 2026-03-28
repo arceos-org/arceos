@@ -1,0 +1,24 @@
+{
+  "llvm-target": "loongarch64-unknown-none",
+  "os": "hermit",
+  "arch": "loongarch64",
+  "abi": "softfloat",
+  "data-layout": "e-m:e-p:64:64-i64:64-i128:128-n32:64-S128",
+  "linker-flavor": "gnu-lld",
+  "linker": "rust-lld",
+  "features": "-f,-d",
+  "llvm-abiname": "lp64s",
+  "has-thread-local": true,
+  "tls-model": "initial-exec",
+  "code-model": "medium",
+  "relocation-model": "static",
+  "panic-strategy": "abort",
+  "max-atomic-width": 64,
+  "target-pointer-width": 64,
+  "metadata": {
+    "description": "LoongArch64 Hermit (fused from loong none + x86 hermit delta)",
+    "host_tools": false,
+    "std": true,
+    "tier": 3
+  }
+}

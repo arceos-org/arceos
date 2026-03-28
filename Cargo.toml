@@ -130,7 +130,7 @@ axplat-aarch64-bsta1000b = "0.3.1-pre.6"
 axplat-aarch64-phytium-pi = "0.3.1-pre.6"
 axplat-aarch64-qemu-virt = "0.3.1-pre.6"
 axplat-aarch64-raspi = "0.3.1-pre.6"
-axplat-loongarch64-qemu-virt = "0.3.1-pre.6"
+axplat-loongarch64-qemu-virt = { git = "https://github.com/arceos-org/axplat_crates/", rev = "fbfd02d" }
 axplat-riscv64-qemu-virt = "0.3.1-pre.6"
 axplat-x86-pc = "0.3.1-pre.6"
 axpoll = "0.1"
