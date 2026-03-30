@@ -45,16 +45,11 @@ impl Backend {
             let mut cursor = pt.cursor();
             for addr in PageIter4K::new(start, start + size).unwrap() {
                 if let Some(frame) = alloc_frame(true) {
-                    if cursor
-                        .map(addr, frame, PageSize::Size4K, flags)
-                        .is_err()
-                    {
+                    if cursor.map(addr, frame, PageSize::Size4K, flags).is_err() {
                         // Mapping failed; roll back any previously mapped pages in this range
                         // and deallocate their frames to avoid leaks and partial mappings.
                         for rollback_addr in PageIter4K::new(start, addr).unwrap() {
-                            if let Ok((mapped_frame, _, page_size)) =
-                                cursor.unmap(rollback_addr)
-                            {
+                            if let Ok((mapped_frame, _, page_size)) = cursor.unmap(rollback_addr) {
                                 // We only expect 4K pages here, but avoid touching huge pages.
                                 if !page_size.is_huge() {
                                     dealloc_frame(mapped_frame);
@@ -113,7 +108,10 @@ impl Backend {
             // aligned during `pt.remap` regardless of the page size.
             let res = pt.cursor().remap(vaddr, frame, orig_flags);
             if let Err(e) = &res {
-                debug!("handle_page_fault_alloc: remap failed for {:#x}: {:?}", vaddr, e);
+                debug!(
+                    "handle_page_fault_alloc: remap failed for {:#x}: {:?}",
+                    vaddr, e
+                );
                 dealloc_frame(frame);
             }
             res.is_ok()

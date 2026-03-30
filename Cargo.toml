@@ -69,6 +69,3 @@ axipi = { path = "modules/axipi" }
 
 [profile.release]
 lto = true
-
-[patch.crates-io]
-axplat = { git = "https://github.com/arceos-org/axplat_crates", branch = "main" }
