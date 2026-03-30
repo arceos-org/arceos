@@ -3773,7 +3773,3 @@ dependencies = [
  "quote",
  "syn 2.0.117",
 ]
-
-[[patch.unused]]
-name = "ostool"
-version = "0.11.1"

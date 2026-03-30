@@ -11,3 +11,4 @@ rusty-tags.vi
 /.project*
 /.axconfig.*
 /.cargo/axbuild-ostool.toml
+/.cargo/config.toml
