@@ -733,9 +733,9 @@ dependencies = [
 
 [[package]]
 name = "axplat-arm-peripherals"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bcc500acbd7ac91c3e81f96d5d8a29d8099e7420de58e39176bd97cad51123aa"
+checksum = "351a48d9cd0e0d8c5cfeab7c1870f96bbe68021d3530d256a5fe01870fe81291"
 dependencies = [
  "arm-gic-driver",
  "arm_pl011",
@@ -750,9 +750,9 @@ dependencies = [
 
 [[package]]
 name = "axplat-loongarch64-qemu-virt"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2101dfc263e7ed4c1bf6d0498abb35bae7fb85bdc08dbe3ec00a955cb402b090"
+checksum = "4057eb0c9016b3a42f8b2c4105771e67e497287f7ff7941a446dcba64fa84eb2"
 dependencies = [
  "axconfig-macros",
  "axcpu",
