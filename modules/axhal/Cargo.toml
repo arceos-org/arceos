@@ -28,7 +28,7 @@ ipi = ["irq"]
 [dependencies]
 log = "=0.4.21"
 cfg-if = "1.0"
-kernel_guard = "0.1"
+kernel_guard = "0.2"
 lazyinit = "0.2"
 percpu = "0.3"
 heapless = "0.8"
@@ -45,7 +45,7 @@ axalloc = { workspace = true, optional = true }
 axplat-x86-pc = { version = "0.4", optional = true }
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
-aarch64-cpu = "10.0"
+aarch64-cpu = "11.2"
 axplat-aarch64-qemu-virt = { version = "0.4", optional = true }
 
 [target.'cfg(target_arch = "riscv64")'.dependencies]

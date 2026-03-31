@@ -177,7 +177,7 @@ dependencies = [
  "axfs_ramfs",
  "axfs_vfs",
  "axstd",
- "crate_interface 0.1.4",
+ "crate_interface 0.3.0",
 ]
 
 [[package]]
@@ -393,7 +393,7 @@ dependencies = [
  "axdriver_virtio",
  "axhal",
  "cfg-if",
- "crate_interface 0.1.4",
+ "crate_interface 0.3.0",
  "log",
 ]
 
@@ -506,7 +506,7 @@ dependencies = [
  "axtask",
  "cap_access",
  "cfg-if",
- "crate_interface 0.1.4",
+ "crate_interface 0.3.0",
  "fatfs",
  "lazyinit",
  "log",
@@ -549,7 +549,7 @@ dependencies = [
 name = "axhal"
 version = "0.2.0"
 dependencies = [
- "aarch64-cpu 10.0.0",
+ "aarch64-cpu 11.2.0",
  "axalloc",
  "axconfig",
  "axcpu",
@@ -561,7 +561,7 @@ dependencies = [
  "axplat-x86-pc",
  "cfg-if",
  "heapless 0.8.0",
- "kernel_guard",
+ "kernel_guard 0.2.0",
  "lazyinit",
  "linkme",
  "log",
@@ -610,7 +610,7 @@ dependencies = [
  "axlog",
  "cfg-if",
  "chrono",
- "crate_interface 0.1.4",
+ "crate_interface 0.3.0",
  "kspin",
  "log",
 ]
@@ -653,7 +653,7 @@ name = "axns"
 version = "0.2.0"
 dependencies = [
  "axns",
- "crate_interface 0.1.4",
+ "crate_interface 0.3.0",
  "lazyinit",
 ]
 
@@ -834,7 +834,7 @@ dependencies = [
  "axplat",
  "axtask",
  "chrono",
- "crate_interface 0.1.4",
+ "crate_interface 0.3.0",
  "ctor_bare",
  "percpu",
 ]
@@ -881,8 +881,8 @@ dependencies = [
  "axtask",
  "cfg-if",
  "cpumask",
- "crate_interface 0.1.4",
- "kernel_guard",
+ "crate_interface 0.3.0",
+ "kernel_guard 0.2.0",
  "kspin",
  "lazyinit",
  "log",
@@ -1459,9 +1459,9 @@ dependencies = [
 
 [[package]]
 name = "js-sys"
-version = "0.3.92"
+version = "0.3.93"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc4c90f45aa2e6eacbe8645f77fdea542ac97a494bcd117a67df9ff4d611f995"
+checksum = "797146bb2677299a1eb6b7b50a890f4c361b29ef967addf5b2fa45dae1bb6d7d"
 dependencies = [
  "once_cell",
  "wasm-bindgen",
@@ -1478,13 +1478,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "kernel_guard"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bfacac34d77b445f5ad7522174fb0846fb82015c64b574fbe4be07b1b4eb6302"
+dependencies = [
+ "cfg-if",
+ "crate_interface 0.3.0",
+]
+
+[[package]]
 name = "kspin"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3d841fd3aeaa9a55871068f5c3ce48497a6dbcf14e20ca7784a9f68bfdb4c825"
 dependencies = [
  "cfg-if",
- "kernel_guard",
+ "kernel_guard 0.1.3",
 ]
 
 [[package]]
@@ -1709,7 +1719,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "93b6fe1254fea36c3e47e738d214915a2ec3fbdc9785319af0258b2373997e69"
 dependencies = [
  "cfg-if",
- "kernel_guard",
+ "kernel_guard 0.1.3",
  "percpu_macros",
  "x86",
 ]
@@ -2235,9 +2245,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen"
-version = "0.2.115"
+version = "0.2.116"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6523d69017b7633e396a89c5efab138161ed5aafcbc8d3e5c5a42ae38f50495a"
+checksum = "7dc0882f7b5bb01ae8c5215a1230832694481c1a4be062fd410e12ea3da5b631"
 dependencies = [
  "cfg-if",
  "once_cell",
@@ -2248,9 +2258,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-macro"
-version = "0.2.115"
+version = "0.2.116"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e3a6c758eb2f701ed3d052ff5737f5bfe6614326ea7f3bbac7156192dc32e67"
+checksum = "75973d3066e01d035dbedaad2864c398df42f8dd7b1ea057c35b8407c015b537"
 dependencies = [
  "quote",
  "wasm-bindgen-macro-support",
@@ -2258,9 +2268,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-macro-support"
-version = "0.2.115"
+version = "0.2.116"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "921de2737904886b52bcbb237301552d05969a6f9c40d261eb0533c8b055fedf"
+checksum = "91af5e4be765819e0bcfee7322c14374dc821e35e72fa663a830bbc7dc199eac"
 dependencies = [
  "bumpalo",
  "proc-macro2",
@@ -2271,9 +2281,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-shared"
-version = "0.2.115"
+version = "0.2.116"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a93e946af942b58934c604527337bad9ae33ba1d5c6900bbb41c2c07c2364a93"
+checksum = "c9bf0406a78f02f336bf1e451799cca198e8acde4ffa278f0fb20487b150a633"
 dependencies = [
  "unicode-ident",
 ]

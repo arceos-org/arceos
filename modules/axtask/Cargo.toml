@@ -44,8 +44,8 @@ kspin = { version = "0.1", optional = true }
 lazyinit = { version = "0.2" }
 memory_addr = { version = "0.4", optional = true }
 timer_list = { version = "0.1", optional = true }
-kernel_guard = { version = "0.1", optional = true }
-crate_interface = { version = "0.1", optional = true }
+kernel_guard = { version = "0.2", optional = true }
+crate_interface = { version = "0.3", optional = true }
 cpumask = { version = "0.1", optional = true }
 axsched = { version = "0.3", optional = true }
 
