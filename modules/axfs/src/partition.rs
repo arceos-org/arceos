@@ -260,9 +260,13 @@ fn parse_gpt_partitions(disk: &mut Disk) -> AxResult<Vec<PartitionInfo>> {
             name_str
         };
 
-        if name_str.is_empty() {
-            continue;
-        }
+        // Generate default name if partition name is empty
+        let name_str = if name_str.is_empty() {
+            warn!("Partition {} has no name, using default", i);
+            format!("partition_{}", i)
+        } else {
+            name_str
+        };
 
         // Detect filesystem type and read UUID in one go
         let (filesystem_type, filesystem_uuid) = {
@@ -288,8 +292,12 @@ fn parse_gpt_partitions(disk: &mut Disk) -> AxResult<Vec<PartitionInfo>> {
         };
 
         info!(
-            "Found GPT partition {}: '{}' ({} bytes) with filesystem: {:?}",
-            partition.index, partition.name, partition.size_bytes, partition.filesystem_type,
+            "Found GPT partition {}: '{}' ({} bytes) with filesystem: {:?}, UUID: {:?}",
+            partition.index,
+            partition.name,
+            partition.size_bytes,
+            partition.filesystem_type,
+            partition.filesystem_uuid,
         );
 
         partitions.push(partition);
