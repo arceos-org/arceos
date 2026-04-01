@@ -1,0 +1,147 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# 组件仓库 GitHub Actions 配置模板
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# 此文件用于子仓库，当子仓库有更新时通知主仓库进行 subtree pull 同步。
+#
+# 【使用步骤】
+# ─────────────────────────────────────────────────────────────────────────────
+# 1. 将此文件复制到子仓库的 .github/workflows/ 目录：
+#    cp scripts/push.yml <子仓库>/.github/workflows/push.yml
+#
+# 2. 在子仓库中配置 Secret：
+#    GitHub 仓库 → Settings → Secrets → Actions → New repository secret
+#    名称: PARENT_REPO_TOKEN
+#    值: 具有主仓库 repo 权限的 Personal Access Token
+#
+# 3. 修改下方 env 块中的一个变量（标注了「需要修改」的行）：
+#    PARENT_REPO  - 主仓库路径，例如 rcore-os/tgoskits
+#    （subtree 目录由主仓库自动从 git 历史中推断，无需手动指定）
+#
+# 【Token 权限要求】
+# ─────────────────────────────────────────────────────────────────────────────
+# PARENT_REPO_TOKEN 需要 Classic Personal Access Token，权限包括：
+#   - repo (Full control of private repositories)
+#   或
+#   - Fine-grained token: Contents (Read and Write)
+#
+# 【触发条件】
+# ─────────────────────────────────────────────────────────────────────────────
+# - 自动触发：推送到 dev 或 main 分支时
+# - 手动触发：Actions → Notify Parent Repository → Run workflow
+#
+# 【工作流程】
+# ─────────────────────────────────────────────────────────────────────────────
+# 子仓库 push → 触发此工作流 → 调用主仓库 API → 主仓库 subtree pull
+#
+# 【注意事项】
+# ─────────────────────────────────────────────────────────────────────────────
+# - 主仓库需要配置接收 repository_dispatch 事件的同步工作流
+# - 如果不需要子仓库到主仓库的同步，可以不使用此文件
+#
+# ═══════════════════════════════════════════════════════════════════════════════
+
+name: Notify Parent Repository
+
+# 当有新的推送时触发
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get repository info
+        id: repo
+        env:
+          GH_REPO_NAME: ${{ github.event.repository.name }}
+          GH_REF_NAME: ${{ github.ref_name }}
+          GH_SERVER_URL: ${{ github.server_url }}
+          GH_REPOSITORY: ${{ github.repository }}
+        run: |
+          # 直接使用 GitHub Actions 内置变量，通过 env 传入避免 shell 注入
+          COMPONENT="$GH_REPO_NAME"
+          BRANCH="$GH_REF_NAME"
+          # 构造标准 HTTPS URL，供主仓库按 URL 精确匹配 repos.list
+          REPO_URL="${GH_SERVER_URL}/${GH_REPOSITORY}"
+
+          echo "component=${COMPONENT}" >> $GITHUB_OUTPUT
+          echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
+          echo "repo_url=${REPO_URL}" >> $GITHUB_OUTPUT
+
+          echo "Component: ${COMPONENT}"
+          echo "Branch: ${BRANCH}"
+          echo "Repo URL: ${REPO_URL}"
+
+      - name: Notify parent repository
+        env:
+          # ── 需要修改 ──────────────────────────────────────────────────────────
+          PARENT_REPO: "rcore-os/tgoskits"       # 主仓库路径
+          # ── 无需修改 ──────────────────────────────────────────────────────────
+          DISPATCH_TOKEN: ${{ secrets.PARENT_REPO_TOKEN }}
+          # 将用户可控内容通过 env 传入，避免直接插值到 shell 脚本
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          GIT_ACTOR: ${{ github.actor }}
+          GIT_SHA: ${{ github.sha }}
+          STEP_COMPONENT: ${{ steps.repo.outputs.component }}
+          STEP_BRANCH: ${{ steps.repo.outputs.branch }}
+          STEP_REPO_URL: ${{ steps.repo.outputs.repo_url }}
+        run: |
+          COMPONENT="$STEP_COMPONENT"
+          BRANCH="$STEP_BRANCH"
+          REPO_URL="$STEP_REPO_URL"
+
+          echo "Notifying parent repository about update in ${COMPONENT}:${BRANCH}"
+
+          # 使用 jq 安全构建 JSON，避免 commit message 中任何特殊字符导致注入
+          PAYLOAD=$(jq -n \
+            --arg component "$COMPONENT" \
+            --arg branch    "$BRANCH" \
+            --arg repo_url  "$REPO_URL" \
+            --arg commit    "$GIT_SHA" \
+            --arg message   "$COMMIT_MESSAGE" \
+            --arg author    "$GIT_ACTOR" \
+            '{
+              event_type: "subtree-update",
+              client_payload: {
+                component: $component,
+                branch:    $branch,
+                repo_url:  $repo_url,
+                commit:    $commit,
+                message:   $message,
+                author:    $author
+              }
+            }')
+
+          curl --fail --show-error -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${DISPATCH_TOKEN}" \
+            https://api.github.com/repos/${PARENT_REPO}/dispatches \
+            -d "$PAYLOAD"
+
+          echo "Notification sent successfully"
+
+      - name: Create summary
+        env:
+          STEP_COMPONENT: ${{ steps.repo.outputs.component }}
+          STEP_BRANCH: ${{ steps.repo.outputs.branch }}
+          STEP_REPO_URL: ${{ steps.repo.outputs.repo_url }}
+          GIT_SHA: ${{ github.sha }}
+          GIT_ACTOR: ${{ github.actor }}
+        run: |
+          COMPONENT="$STEP_COMPONENT"
+          BRANCH="$STEP_BRANCH"
+          REPO_URL="$STEP_REPO_URL"
+
+          echo "## Notification Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Component**: ${COMPONENT}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${BRANCH}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Repo URL**: ${REPO_URL}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: \`${GIT_SHA}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Author**: ${GIT_ACTOR}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ✅ Notification sent" >> $GITHUB_STEP_SUMMARY
