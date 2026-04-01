@@ -96,6 +96,25 @@ cfg_if::cfg_if! {
 }
 
 cfg_if::cfg_if! {
+    if #[cfg(block_dev = "cvsd")] {
+        pub struct CvsdMmcDriver;
+        register_block_driver!(CvsdMmcDriver, axdriver_block::cvsd::CvsdDriver);
+
+        impl DriverProbe for CvsdMmcDriver {
+            fn probe_global() -> Option<AxDeviceEnum> {
+                let sdmmc = {
+                    axdriver_block::cvsd::CvsdDriver::new(
+                        axhal::mem::phys_to_virt(axconfig::devices::CVSD_PADDR.into()).into(),
+                        axhal::mem::phys_to_virt(axconfig::devices::SYSCON_PADDR.into()).into(),
+                        ).expect("CVSD init failed")
+                };
+                Some(AxDeviceEnum::from_block(sdmmc))
+            }
+        }
+    }
+}
+
+cfg_if::cfg_if! {
     if #[cfg(block_dev = "bcm2835-sdhci")]{
         pub struct BcmSdhciDriver;
         register_block_driver!(BcmSdhciDriver, axdriver_block::bcm2835sdhci::SDHCIDriver);
