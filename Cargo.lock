@@ -881,8 +881,8 @@ dependencies = [
  "axtask",
  "cfg-if",
  "cpumask",
- "crate_interface 0.3.0",
- "kernel_guard 0.2.0",
+ "crate_interface 0.1.4",
+ "kernel_guard 0.1.3",
  "kspin",
  "lazyinit",
  "log",
@@ -1714,9 +1714,9 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
 name = "percpu"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "93b6fe1254fea36c3e47e738d214915a2ec3fbdc9785319af0258b2373997e69"
+checksum = "f2a4c33508cf5a2e8ddccee074a1e5e7c2d5ca91341da8656268eb437bf4f8a2"
 dependencies = [
  "cfg-if",
  "kernel_guard 0.1.3",
