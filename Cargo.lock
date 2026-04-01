@@ -1726,11 +1726,10 @@ dependencies = [
 
 [[package]]
 name = "percpu_macros"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf0555054a19885a701a7b1680cd727cebbf3a50a2d129fdcc4caaaa08729237"
+checksum = "9d0188f16e062758e306b2f9fdd235c1e297f34e9423ab1f1ce11324dd5f2da1"
 dependencies = [
- "cfg-if",
  "proc-macro2",
  "quote",
  "syn 2.0.117",
