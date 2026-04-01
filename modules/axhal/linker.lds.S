@@ -106,6 +106,10 @@ SECTIONS {
     linkm2_IRQ : { KEEP(*(linkm2_IRQ)) }
     linkme_PAGE_FAULT : { KEEP(*(linkme_PAGE_FAULT)) }
     linkm2_PAGE_FAULT : { KEEP(*(linkm2_PAGE_FAULT)) }
+    linkme_BREAK_HANDLER : { KEEP(*(linkme_BREAK_HANDLER)) }
+    linkm2_BREAK_HANDLER : { KEEP(*(linkm2_BREAK_HANDLER)) }
+    linkme_DEBUG_HANDLER : { KEEP(*(linkme_DEBUG_HANDLER)) }
+    linkm2_DEBUG_HANDLER : { KEEP(*(linkm2_DEBUG_HANDLER)) }
     scope_local : { KEEP(*(scope_local)) }
 }
 INSERT AFTER .tbss;
