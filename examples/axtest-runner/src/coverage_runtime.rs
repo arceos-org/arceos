@@ -15,6 +15,105 @@ const INSTR_PROF_RAW_VERSION: u64 = 10;
 const VALUE_KIND_LAST: u64 = 2;
 const VARIANT_MASK_BYTE_COVERAGE: u64 = 1u64 << 60;
 
+#[derive(Copy, Clone)]
+struct Section {
+    start: usize,
+    end: usize,
+}
+
+impl Section {
+    #[inline(always)]
+    fn len(self) -> usize {
+        self.end.saturating_sub(self.start)
+    }
+}
+
+struct Layout {
+    data: Section,
+    counters: Section,
+    names: Section,
+    vnds: Section,
+    pad_before_counters: usize,
+    pad_after_counters: usize,
+    pad_after_bitmap: usize,
+    pad_after_names: usize,
+    version: u64,
+    counter_entry_size: usize,
+}
+
+impl Layout {
+    fn collect() -> Self {
+        let data = Section {
+            start: addr_of!(__start___llvm_prf_data) as usize,
+            end: addr_of!(__stop___llvm_prf_data) as usize,
+        };
+        let counters = Section {
+            start: addr_of!(__start___llvm_prf_cnts) as usize,
+            end: addr_of!(__stop___llvm_prf_cnts) as usize,
+        };
+        let names = Section {
+            start: addr_of!(__start___llvm_prf_names) as usize,
+            end: addr_of!(__stop___llvm_prf_names) as usize,
+        };
+        let vnds = Section {
+            start: addr_of!(__start___llvm_prf_vnds) as usize,
+            end: addr_of!(__stop___llvm_prf_vnds) as usize,
+        };
+
+        let version = INSTR_PROF_RAW_VERSION;
+        let counter_entry_size = counter_entry_size(version);
+        let pad_before_counters = align_up(data.len(), 8) - data.len();
+        let pad_after_counters = 0usize;
+        let pad_after_bitmap = 0usize;
+        let pad_after_names = align_up(names.len(), 8) - names.len();
+
+        Self {
+            data,
+            counters,
+            names,
+            vnds,
+            pad_before_counters,
+            pad_after_counters,
+            pad_after_bitmap,
+            pad_after_names,
+            version,
+            counter_entry_size,
+        }
+    }
+
+    fn total_size(&self) -> usize {
+        size_of::<RawHeader>()
+            + self.data.len()
+            + self.pad_before_counters
+            + self.counters.len()
+            + self.pad_after_counters
+            + self.pad_after_bitmap
+            + self.names.len()
+            + self.pad_after_names
+    }
+
+    fn header(&self) -> RawHeader {
+        RawHeader {
+            magic: INSTR_PROF_RAW_MAGIC_64,
+            version: self.version,
+            binary_ids_size: 0,
+            num_data: (self.data.len() / 64) as u64,
+            padding_bytes_before_counters: self.pad_before_counters as u64,
+            num_counters: self.counters.len().div_ceil(self.counter_entry_size) as u64,
+            padding_bytes_after_counters: self.pad_after_counters as u64,
+            num_bitmap_bytes: 0,
+            padding_bytes_after_bitmap_bytes: self.pad_after_bitmap as u64,
+            names_size: self.names.len() as u64,
+            counters_delta: self.counters.start.wrapping_sub(self.data.start) as u64,
+            bitmap_delta: 0,
+            names_delta: self.names.start as u64,
+            num_vtables: 0,
+            vnames_size: 0,
+            value_kind_last: VALUE_KIND_LAST,
+        }
+    }
+}
+
 #[repr(C)]
 struct RawHeader {
     magic: u64,
@@ -60,8 +159,36 @@ fn align_up(value: usize, align: usize) -> usize {
 }
 
 #[inline(always)]
-fn section_size(start: usize, end: usize) -> usize {
-    end.saturating_sub(start)
+fn write_u64_le(out: &mut [u8], offset: &mut usize, value: u64) -> Result<(), i32> {
+    if *offset + 8 > out.len() {
+        return Err(1);
+    }
+    out[*offset..*offset + 8].copy_from_slice(&value.to_le_bytes());
+    *offset += 8;
+    Ok(())
+}
+
+#[inline(always)]
+fn write_zeros(out: &mut [u8], offset: &mut usize, len: usize) -> Result<(), i32> {
+    if *offset + len > out.len() {
+        return Err(1);
+    }
+    out[*offset..*offset + len].fill(0);
+    *offset += len;
+    Ok(())
+}
+
+#[inline(always)]
+fn copy_section(out: &mut [u8], offset: &mut usize, section: Section) -> Result<(), i32> {
+    let len = section.len();
+    if *offset + len > out.len() {
+        return Err(1);
+    }
+    unsafe {
+        core::ptr::copy_nonoverlapping(section.start as *const u8, out.as_mut_ptr().add(*offset), len)
+    };
+    *offset += len;
+    Ok(())
 }
 
 #[inline(always)]
@@ -74,167 +201,66 @@ fn counter_entry_size(version: u64) -> usize {
 }
 
 /// Calculate the size of coverage data to be written
-#[unsafe(no_mangle)]
-pub extern "C" fn __llvm_profile_get_size_for_buffer() -> u64 {
-    let data_start = addr_of!(__start___llvm_prf_data) as usize;
-    let data_end = addr_of!(__stop___llvm_prf_data) as usize;
-    let cnts_start = addr_of!(__start___llvm_prf_cnts) as usize;
-    let cnts_end = addr_of!(__stop___llvm_prf_cnts) as usize;
-    let names_start = addr_of!(__start___llvm_prf_names) as usize;
-    let names_end = addr_of!(__stop___llvm_prf_names) as usize;
-
-    let data_size = section_size(data_start, data_end);
-    let cnts_size = section_size(cnts_start, cnts_end);
-    let names_size = section_size(names_start, names_end);
-
-    let pad_before_counters = align_up(data_size, 8) - data_size;
-    let pad_after_counters = 0usize;
-    let pad_after_bitmap = 0usize;
-    let pad_after_names = align_up(names_size, 8) - names_size;
-
-    let total = size_of::<RawHeader>()
-        + data_size
-        + pad_before_counters
-        + cnts_size
-        + pad_after_counters
-        + pad_after_bitmap
-        + names_size;
-    let total = total + pad_after_names;
-
-    total as u64
+pub fn llvm_profile_get_size_for_buffer() -> usize {
+    Layout::collect().total_size()
 }
 
 /// Write coverage data to a buffer
-#[unsafe(no_mangle)]
-pub extern "C" fn __llvm_profile_write_buffer(buffer: *mut u8) -> i32 {
+pub fn llvm_profile_write_buffer(buffer: *mut u8) -> i32 {
     if buffer.is_null() {
         return 1; // Error
     }
 
-    let data_start = addr_of!(__start___llvm_prf_data) as usize;
-    let data_end = addr_of!(__stop___llvm_prf_data) as usize;
-    let cnts_start = addr_of!(__start___llvm_prf_cnts) as usize;
-    let cnts_end = addr_of!(__stop___llvm_prf_cnts) as usize;
-    let names_start = addr_of!(__start___llvm_prf_names) as usize;
-    let names_end = addr_of!(__stop___llvm_prf_names) as usize;
-    let vnds_start = addr_of!(__start___llvm_prf_vnds) as usize;
-    let vnds_end = addr_of!(__stop___llvm_prf_vnds) as usize;
-
-    let data_size = section_size(data_start, data_end);
-    let cnts_size = section_size(cnts_start, cnts_end);
-    let names_size = section_size(names_start, names_end);
-    let vnds_size = section_size(vnds_start, vnds_end);
-    let version = INSTR_PROF_RAW_VERSION;
-    let ctr_size = counter_entry_size(version);
-
-    let pad_before_counters = align_up(data_size, 8) - data_size;
-    let pad_after_counters = 0usize;
-    let pad_after_bitmap = 0usize;
-    let pad_after_names = align_up(names_size, 8) - names_size;
-
-    let expected_size = __llvm_profile_get_size_for_buffer() as usize;
+    let layout = Layout::collect();
+    let expected_size = layout.total_size();
     let out = unsafe { core::slice::from_raw_parts_mut(buffer, expected_size) };
 
-    let header = RawHeader {
-        magic: INSTR_PROF_RAW_MAGIC_64,
-        version,
-        binary_ids_size: 0,
-        num_data: (data_size / 64) as u64,
-        padding_bytes_before_counters: pad_before_counters as u64,
-        num_counters: (cnts_size.div_ceil(ctr_size)) as u64,
-        padding_bytes_after_counters: pad_after_counters as u64,
-        num_bitmap_bytes: 0,
-        padding_bytes_after_bitmap_bytes: pad_after_bitmap as u64,
-        names_size: names_size as u64,
-        counters_delta: cnts_start.wrapping_sub(data_start) as u64,
-        bitmap_delta: 0,
-        names_delta: names_start as u64,
-        num_vtables: 0,
-        vnames_size: 0,
-        value_kind_last: VALUE_KIND_LAST,
-    };
+    let header = layout.header();
 
     let mut offset = 0usize;
 
-    macro_rules! write_u64 {
-        ($val:expr) => {{
-            if offset + 8 > out.len() {
-                return 1;
-            }
-            let bytes = ($val).to_le_bytes();
-            out[offset..offset + 8].copy_from_slice(&bytes);
-            offset += 8;
-        }};
+    for value in [
+        header.magic,
+        header.version,
+        header.binary_ids_size,
+        header.num_data,
+        header.padding_bytes_before_counters,
+        header.num_counters,
+        header.padding_bytes_after_counters,
+        header.num_bitmap_bytes,
+        header.padding_bytes_after_bitmap_bytes,
+        header.names_size,
+        header.counters_delta,
+        header.bitmap_delta,
+        header.names_delta,
+        header.num_vtables,
+        header.vnames_size,
+        header.value_kind_last,
+    ] {
+        if write_u64_le(out, &mut offset, value).is_err() {
+            return 1;
+        }
     }
 
-    write_u64!(header.magic);
-    write_u64!(header.version);
-    write_u64!(header.binary_ids_size);
-    write_u64!(header.num_data);
-    write_u64!(header.padding_bytes_before_counters);
-    write_u64!(header.num_counters);
-    write_u64!(header.padding_bytes_after_counters);
-    write_u64!(header.num_bitmap_bytes);
-    write_u64!(header.padding_bytes_after_bitmap_bytes);
-    write_u64!(header.names_size);
-    write_u64!(header.counters_delta);
-    write_u64!(header.bitmap_delta);
-    write_u64!(header.names_delta);
-    write_u64!(header.num_vtables);
-    write_u64!(header.vnames_size);
-    write_u64!(header.value_kind_last);
-
-    if offset + data_size > out.len() {
+    if copy_section(out, &mut offset, layout.data).is_err() {
         return 1;
     }
-    unsafe {
-        core::ptr::copy_nonoverlapping(
-            data_start as *const u8,
-            out.as_mut_ptr().add(offset),
-            data_size,
-        )
-    };
-    offset += data_size;
-
-    if offset + pad_before_counters > out.len() {
+    if write_zeros(out, &mut offset, layout.pad_before_counters).is_err() {
         return 1;
     }
-    out[offset..offset + pad_before_counters].fill(0);
-    offset += pad_before_counters;
-
-    if offset + cnts_size > out.len() {
+    if copy_section(out, &mut offset, layout.counters).is_err() {
         return 1;
     }
-    unsafe {
-        core::ptr::copy_nonoverlapping(
-            cnts_start as *const u8,
-            out.as_mut_ptr().add(offset),
-            cnts_size,
-        )
-    };
-    offset += cnts_size;
-
-    if offset + names_size > out.len() {
+    if copy_section(out, &mut offset, layout.names).is_err() {
         return 1;
     }
-    unsafe {
-        core::ptr::copy_nonoverlapping(
-            names_start as *const u8,
-            out.as_mut_ptr().add(offset),
-            names_size,
-        )
-    };
-    offset += names_size;
-
-    if offset + pad_after_names > out.len() {
+    if write_zeros(out, &mut offset, layout.pad_after_names).is_err() {
         return 1;
     }
-    out[offset..offset + pad_after_names].fill(0);
-    offset += pad_after_names;
 
     // Value profiling nodes are emitted in memory sections, but the raw format
     // stores serialized value records. Keep it empty when there is no value data.
-    if vnds_size != 0 {
+    if layout.vnds.len() != 0 {
         // vnds has data, but we do not serialize it directly into raw payload.
     }
 

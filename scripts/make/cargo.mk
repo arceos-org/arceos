@@ -24,6 +24,10 @@ ifeq ($(AX_TEST),y)
     # LLVM source-based coverage instrumentation for axtest runs.
     APP_FEATURES += axtest_cov
     RUSTFLAGS += -C instrument-coverage -Zno-profiler-runtime
+    ifeq ($(ARCH),x86_64)
+      # minicov's C runtime needs a large code model for high-half kernel addresses.
+      CFLAGS_x86_64_unknown_none += -mcmodel=large
+    endif
   endif
 endif
 # Recompute APP_FEAT after modifying APP_FEATURES

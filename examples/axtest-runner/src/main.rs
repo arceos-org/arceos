@@ -6,20 +6,18 @@ use axlog::ax_println;
 extern crate alloc;
 extern crate axstd;
 
+#[cfg(feature = "axtest_cov")]
 mod coverage_runtime;
 
+
+// TODO: Use `minicov = "0.3"`` to export.
 #[cfg(feature = "axtest_cov")]
 fn dump_coverage_profraw() {
     use crate::alloc::string::ToString;
     ax_println!("[COVERAGE] Starting coverage dump...");
-    unsafe extern "C" {
-        fn __llvm_profile_get_size_for_buffer() -> u64;
-        fn __llvm_profile_write_buffer(buffer: *mut u8) -> i32;
-    }
-
     const COV_PATH: &str = "/axtest_cov.profraw";
 
-    let size = unsafe { __llvm_profile_get_size_for_buffer() as usize };
+    let size =  crate::coverage_runtime::llvm_profile_get_size_for_buffer();
     ax_println!("[COVERAGE] Size for buffer: {}", size);
     if size == 0 {
         ax_println!("coverage buffer is empty");
@@ -27,7 +25,7 @@ fn dump_coverage_profraw() {
     }
 
     let mut buffer = alloc::vec![0u8; size];
-    let ret = unsafe { __llvm_profile_write_buffer(buffer.as_mut_ptr()) };
+    let ret = crate::coverage_runtime::llvm_profile_write_buffer(buffer.as_mut_ptr());
     ax_println!("[COVERAGE] Write buffer returned: {}", ret);
     if ret != 0 {
         ax_println!("failed to write coverage buffer, code: {}", ret);

@@ -9,17 +9,18 @@ authors = ["Debin <luodeb@outlook.com>"]
 [features]
 use-ramfs = ["axstd/myfs", "dep:axfs_vfs", "dep:axfs_ramfs", "dep:crate_interface"]
 axtest_cov = []
-default = ["axtest_cov"]
+default = []
 
 [dependencies]
 log = "0.4"
 axfs_vfs = { version = "0.1", optional = true }
 axfs_ramfs = { version = "0.1", optional = true }
 crate_interface = { version = "0.3", optional = true }
-axstd = { workspace = true, features = ["alloc", "fs", "multitask"] }
+axstd = { workspace = true, features = ["alloc", "fs", "multitask", "fp-simd"] }
 axlog = { workspace = true }
 axtest = { workspace = true }
 arceos_api = { workspace = true }
+# minicov = { version = "0.3", optional = true } # TODO: Compile error on riscv64
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(axtest)'] }
