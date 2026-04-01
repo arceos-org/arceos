@@ -16,7 +16,6 @@ crate-type = ["staticlib"]
 default = [
     "fp-simd",
     "tls",
-    "defplat",
     "fd",
 ]
 
@@ -81,6 +80,9 @@ log-level-info = []
 log-level-debug = []
 log-level-trace = []
 
+# Platforms
+axplat-riscv64-sg2002 = ["dep:axplat-riscv64-sg2002"]
+
 [dependencies]
 axfeat = { workspace = true }
 arceos_posix_api = { workspace = true, features = ["use-hermit-types"] }
@@ -91,3 +93,6 @@ axio = "0.1"
 kspin = "0.1"
 rand = { version = "0.9.2", default-features = false, features = ["small_rng"] }
 log = "0.4.29"
+
+# platform support
+axplat-riscv64-sg2002 = { workspace = true, optional = true }

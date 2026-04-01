@@ -1,6 +1,10 @@
 #![no_std]
 extern crate alloc;
 
+// platform dependencies
+#[cfg(feature = "axplat-riscv64-sg2002")]
+extern crate axplat_riscv64_sg2002;
+
 mod interface;
 
 use arceos_api::modules::axlog::{debug, info};

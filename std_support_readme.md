@@ -52,6 +52,8 @@ Supported targets used by examples:
 arceos-rust = { workspace = true, default-features = true, features = ["log-level-off"] }
 ```
 
+NOTE: `default-features = true` must be specified, or the build script will not receive `default` at `CARGO_CFG_FEATURE`.
+
 Then enable features based on your app:
 
 - `fs` for file system
@@ -128,3 +130,38 @@ cargo run --target ./loongarch64-unknown-hermit.json -Zjson-target-spec
 ```
 
 If you keep `target.loongarch64-unknown-hermit` in `.cargo/config.toml`, it applies only when target triple name matches exactly. For JSON-path target usage, use `target."cfg(...)"`/manual command line, or keep a dedicated local config for LoongArch.
+
+## Custom platform support
+
+1. Enable `bus-mmio` feature of `arceos-rust` if needed (depends on your platform).
+2. Set environment variable `AX_PLATFORM` to your custom platform name when building.
+3. Strip the artifact and make uboot image if needed. For example:
+
+    ```bash
+    rust-objcopy --strip-all -O binary <artifact> out.bin
+    mkimage -A riscv -O linux -T kernel -C none -a 0x80200000 -d out.bin out.uimg
+    ```
+   
+### Example: sg2002 platform support
+
+1. Create a crate `axplat_riscv64_sg2002` and implement platform related code here.
+2. Add platform related feature to crate `arceos-rust-interface`:
+    
+    ```toml
+    [features]
+    axplat-riscv64-sg2002 = ["dep:axplat-riscv64-sg2002"]
+    
+    [dependencies]
+    axplat-riscv64-sg2002 = { workspace = true, optional = true }
+    ```
+   
+3. Import platform crate if the feature is enabled:
+
+    ```rust
+    // lib.rs in `arceos-rust-interface`
+    #[cfg(feature = "axplat-riscv64-sg2002")]
+    extern crate axplat_riscv64_sg2002;
+    ```
+
+4. If user sets environment variable `AX_PLATFORM=riscv64-sg2002`, build script will automatically add feature `axplat-riscv64-sg2002`.
+5. This platform use mmio, so user should enable feature `bus-mmio`.
