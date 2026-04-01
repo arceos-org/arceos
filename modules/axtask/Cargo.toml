@@ -48,8 +48,12 @@ kernel_guard = { version = "0.1", optional = true }
 crate_interface = { version = "0.1", optional = true }
 cpumask = { version = "0.1", optional = true }
 axsched = { version = "0.3", optional = true }
+axtest = { workspace = true }
 
 [dev-dependencies]
 rand = "0.9"
 axhal = { workspace = true, features = ["fp-simd"] }
 axtask = { workspace = true, features = ["test", "multitask"] }
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(axtest)'] }

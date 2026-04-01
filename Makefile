@@ -19,6 +19,8 @@
 #     - `A` or `APP`: Path to the application
 #     - `FEATURES`: Features os ArceOS modules to be enabled.
 #     - `APP_FEATURES`: Features of (rust) apps to be enabled.
+#     - `AX_TEST`: Enable axtest cfg injection for Rust apps (`RUSTFLAGS += --cfg axtest`)
+#     - `AX_TEST_COV`: Enable LLVM coverage instrumentation for axtest Rust apps.
 # * QEMU options:
 #     - `BLK`: Enable storage devices (virtio-blk)
 #     - `NET`: Enable network devices (virtio-net)
@@ -54,6 +56,8 @@ A ?= examples/helloworld
 APP ?= $(A)
 FEATURES ?=
 APP_FEATURES ?=
+AX_TEST ?= n
+AX_TEST_COV ?= n
 
 # QEMU options
 BLK ?= n
@@ -88,7 +92,7 @@ endif
 
 .DEFAULT_GOAL := all
 
-ifneq ($(filter $(or $(MAKECMDGOALS), $(.DEFAULT_GOAL)), all build disasm run justrun debug defconfig oldconfig),)
+ifneq ($(filter $(or $(MAKECMDGOALS), $(.DEFAULT_GOAL)), all build disasm run justrun debug coverage print_out_elf defconfig oldconfig),)
 # Install dependencies
 include scripts/make/deps.mk
 # Platform resolving
@@ -180,6 +184,9 @@ run: build justrun
 justrun:
 	$(call run_qemu)
 
+coverage:
+	scripts/coverage/coverage-report.sh "$(DISK_IMG)" "$(OUT_ELF)" "$(PWD)/coverage_report"
+
 debug: build
 	$(call run_qemu_debug) &
 	sleep 1
@@ -230,6 +237,6 @@ clean_c::
 	rm -rf $(app-objs)
 
 .PHONY: all defconfig oldconfig \
-	build disasm run justrun debug \
+	build disasm run justrun debug coverage print_out_elf \
 	clippy doc doc_check_missing fmt fmt_c unittest unittest_no_fail_fast \
 	disk_img clean clean_c

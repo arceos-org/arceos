@@ -97,5 +97,9 @@ SECTIONS {
     linkme_SYSCALL : { *(linkme_SYSCALL) }
     linkm2_SYSCALL : { *(linkm2_SYSCALL) }
     axns_resource : { *(axns_resource) }
+    %AXTEST_SECTIONS%
+
+    %LLVM_PROFILE_SECTIONS%
+
 }
 INSERT AFTER .tbss;

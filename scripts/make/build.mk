@@ -36,6 +36,8 @@ else ifneq ($(filter $(or $(MAKECMDGOALS), $(.DEFAULT_GOAL)), all build run just
   endif
   $(if $(V), $(info RUSTFLAGS: "$(RUSTFLAGS)"))
   export RUSTFLAGS
+  export CFLAGS_x86_64_unknown_none
+  export CFLAGS_riscv64gc_unknown_none_elf
 endif
 
 _cargo_build: oldconfig
