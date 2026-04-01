@@ -829,6 +829,7 @@ dependencies = [
  "axhal",
  "axsched",
  "axtask",
+ "axtest",
  "cfg-if",
  "cpumask",
  "crate_interface 0.1.4",

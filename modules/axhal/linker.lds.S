@@ -97,69 +97,9 @@ SECTIONS {
     linkme_SYSCALL : { *(linkme_SYSCALL) }
     linkm2_SYSCALL : { *(linkm2_SYSCALL) }
     axns_resource : { *(axns_resource) }
-    
-    .axtest : ALIGN(8) {
-        __axtest_suites_start = .;
-        KEEP(*(.axtest))
-        __axtest_suites_end = .;
-    }
+    %AXTEST_SECTIONS%
 
-    /* LLVM profiling sections */
-    __llvm_prf_data : ALIGN(8) {
-        PROVIDE(__start___llvm_prf_data = .);
-        __llvm_prf_data_start = .;
-        KEEP(*(__llvm_prf_data))
-        PROVIDE(__stop___llvm_prf_data = .);
-        __llvm_prf_data_end = .;
-    }
-    
-    __llvm_prf_vnds : ALIGN(8) {
-        PROVIDE(__start___llvm_prf_vnds = .);
-        __llvm_prf_vnds_start = .;
-        KEEP(*(__llvm_prf_vnds))
-        PROVIDE(__stop___llvm_prf_vnds = .);
-        __llvm_prf_vnds_end = .;
-    }
-
-    __llvm_prf_vns : ALIGN(8) {
-        PROVIDE(__start___llvm_prf_vns = .);
-        KEEP(*(__llvm_prf_vns))
-        PROVIDE(__stop___llvm_prf_vns = .);
-    }
-
-    __llvm_prf_vtab : ALIGN(8) {
-        PROVIDE(__start___llvm_prf_vtab = .);
-        KEEP(*(__llvm_prf_vtab))
-        PROVIDE(__stop___llvm_prf_vtab = .);
-    }
-    
-    __llvm_prf_names : ALIGN(8) {
-        PROVIDE(__start___llvm_prf_names = .);
-        __llvm_prf_names_start = .;
-        KEEP(*(__llvm_prf_names))
-        PROVIDE(__stop___llvm_prf_names = .);
-        __llvm_prf_names_end = .;
-    }
-
-    __llvm_prf_bits : ALIGN(8) {
-        PROVIDE(__start___llvm_prf_bits = .);
-        KEEP(*(__llvm_prf_bits))
-        PROVIDE(__stop___llvm_prf_bits = .);
-    }
-    
-    __llvm_prf_cnts : ALIGN(8) {
-        PROVIDE(__start___llvm_prf_cnts = .);
-        __llvm_prf_cnts_start = .;
-        KEEP(*(__llvm_prf_cnts))
-        PROVIDE(__stop___llvm_prf_cnts = .);
-        __llvm_prf_cnts_end = .;
-    }
-
-    __llvm_orderfile : ALIGN(8) {
-        PROVIDE(__start___llvm_orderfile = .);
-        KEEP(*(__llvm_orderfile))
-        PROVIDE(__stop___llvm_orderfile = .);
-    }
+    %LLVM_PROFILE_SECTIONS%
 
 }
 INSERT AFTER .tbss;
