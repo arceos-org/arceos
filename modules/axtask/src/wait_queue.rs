@@ -1,9 +1,9 @@
-use core::time::Duration;
+use alloc::collections::VecDeque;
 
-use axhal::time::wall_time;
-use event_listener::{Event, listener};
+use kernel_guard::{NoOp, NoPreemptIrqSave};
+use kspin::{SpinNoIrq, SpinNoIrqGuard};
 
-use crate::future::{block_on, timeout_at};
+use crate::{AxTaskRef, CurrentTask, current_run_queue, select_run_queue};
 
 /// A queue to store sleeping tasks.
 ///
@@ -29,8 +29,10 @@ use crate::future::{block_on, timeout_at};
 /// assert_eq!(VALUE.load(Ordering::Acquire), 1);
 /// ```
 pub struct WaitQueue {
-    event: Event,
+    queue: SpinNoIrq<VecDeque<AxTaskRef>>,
 }
+
+pub(crate) type WaitQueueGuard<'a> = SpinNoIrqGuard<'a, VecDeque<AxTaskRef>>;
 
 impl Default for WaitQueue {
     fn default() -> Self {
@@ -42,15 +44,38 @@ impl WaitQueue {
     /// Creates an empty wait queue.
     pub const fn new() -> Self {
         Self {
-            event: Event::new(),
+            queue: SpinNoIrq::new(VecDeque::new()),
+        }
+    }
+
+    /// Cancel events by removing the task from the wait queue.
+    /// If `from_timer_list` is true, try to remove the task from the timer list.
+    fn cancel_events(&self, curr: CurrentTask, _from_timer_list: bool) {
+        // A task can be woken by only one event (timer or `notify()`), so remove it from the other queue.
+        if curr.in_wait_queue() {
+            // wake up by timer (timeout).
+            self.queue.lock().retain(|t| !curr.ptr_eq(t));
+            curr.set_in_wait_queue(false);
+        }
+
+        // Try to cancel a timer event from timer lists.
+        // Just mark task's current timer ticket ID as expired.
+        #[cfg(feature = "irq")]
+        if _from_timer_list {
+            curr.timer_ticket_expired();
+            // Note:
+            //  this task is still not removed from timer list of target CPU,
+            //  which may cause some redundant timer events because it still needs to
+            //  go through the process of expiring an event from the timer list and invoking the callback.
+            //  (it can be considered a lazy-removal strategy, it will be ignored when it is about to take effect.)
         }
     }
 
     /// Blocks the current task and put it into the wait queue, until other task
     /// notifies it.
     pub fn wait(&self) {
-        listener!(self.event => listener);
-        block_on(listener)
+        current_run_queue::<NoPreemptIrqSave>().blocked_resched(self.queue.lock());
+        self.cancel_events(crate::current(), false);
     }
 
     /// Blocks the current task and put it into the wait queue, until the given
@@ -58,32 +83,45 @@ impl WaitQueue {
     ///
     /// Note that even other tasks notify this task, it will not wake up until
     /// the condition becomes true.
-    pub fn wait_until<F>(&self, mut condition: F)
+    pub fn wait_until<F>(&self, condition: F)
     where
-        F: FnMut() -> bool,
+        F: Fn() -> bool,
     {
-        block_on(async {
-            loop {
-                if condition() {
-                    break;
-                }
-                listener!(self.event => listener);
-                if condition() {
-                    break;
-                }
-                listener.await;
+        let curr = crate::current();
+        loop {
+            let mut rq = current_run_queue::<NoPreemptIrqSave>();
+            let wq = self.queue.lock();
+            if condition() {
+                break;
             }
-        });
+
+            rq.blocked_resched(wq);
+            // Preemption may occur here.
+        }
+        self.cancel_events(curr, false);
     }
 
     /// Blocks the current task and put it into the wait queue, until other tasks
     /// notify it, or the given duration has elapsed.
-    pub fn wait_timeout(&self, dur: Duration) -> bool {
-        let deadline = wall_time() + dur;
-        block_on(async {
-            listener!(self.event => listener);
-            timeout_at(Some(deadline), listener).await.is_err()
-        })
+    #[cfg(feature = "irq")]
+    pub fn wait_timeout(&self, dur: core::time::Duration) -> bool {
+        let mut rq = current_run_queue::<NoPreemptIrqSave>();
+        let curr = crate::current();
+        let deadline = axhal::time::wall_time() + dur;
+        debug!(
+            "task wait_timeout: {} deadline={:?}",
+            curr.id_name(),
+            deadline
+        );
+        crate::timers::set_alarm_wakeup(deadline, curr.clone());
+
+        rq.blocked_resched(self.queue.lock());
+
+        let timeout = curr.in_wait_queue(); // still in the wait queue, must have timed out
+
+        // Always try to remove the task from the timer list.
+        self.cancel_events(curr, true);
+        timeout
     }
 
     /// Blocks the current task and put it into the wait queue, until the given
@@ -91,48 +129,93 @@ impl WaitQueue {
     ///
     /// Note that even other tasks notify this task, it will not wake up until
     /// the above conditions are met.
-    pub fn wait_timeout_until<F>(&self, dur: Duration, mut condition: F) -> bool
+    #[cfg(feature = "irq")]
+    pub fn wait_timeout_until<F>(&self, dur: core::time::Duration, condition: F) -> bool
     where
-        F: FnMut() -> bool,
+        F: Fn() -> bool,
     {
-        let deadline = wall_time() + dur;
-        block_on(async {
-            loop {
-                if condition() {
-                    return false;
-                }
-                if wall_time() >= deadline {
-                    return true;
-                }
-                listener!(self.event => listener);
-                let _ = timeout_at(Some(deadline), listener).await;
+        let curr = crate::current();
+        let deadline = axhal::time::wall_time() + dur;
+        debug!(
+            "task wait_timeout: {}, deadline={:?}",
+            curr.id_name(),
+            deadline
+        );
+        crate::timers::set_alarm_wakeup(deadline, curr.clone());
+
+        let mut timeout = true;
+        loop {
+            let mut rq = current_run_queue::<NoPreemptIrqSave>();
+            if axhal::time::wall_time() >= deadline {
+                break;
             }
-        })
+            let wq = self.queue.lock();
+            if condition() {
+                timeout = false;
+                break;
+            }
+
+            rq.blocked_resched(wq);
+            // Preemption may occur here.
+        }
+        // Always try to remove the task from the timer list.
+        self.cancel_events(curr, true);
+        timeout
     }
 
     /// Wakes up one task in the wait queue, usually the first one.
-    /// This function should not be called in a loop, use `notify_many` instead.
-    ///
-    /// If `resched` is true, the current task will yield.
+    /// If `resched` is true, the current task will be preempted when the
+    /// preemption is enabled.
     pub fn notify_one(&self, resched: bool) -> bool {
-        self.notify_many(1, resched) == 1
+        let mut wq = self.queue.lock();
+        if let Some(task) = wq.pop_front() {
+            unblock_one_task(task, resched);
+            true
+        } else {
+            false
+        }
     }
 
-    /// Wakes up to `count` tasks in the wait queue.
+    /// Wakes up one task in the wait queue and runs a callback on it.
     ///
-    /// If `resched` is true, the current task will yield.
-    pub fn notify_many(&self, count: usize, resched: bool) -> usize {
-        let n = self.event.notify(count);
-        if resched {
-            crate::yield_now();
+    /// The callback `func` is invoked while holding the wait-queue lock and
+    /// before the selected task is unblocked. It receives the task's ID as a
+    /// `u64` when a task is available, or `0` if the wait queue is empty.
+    /// This can be used for lock handoff or other bookkeeping associated with
+    /// the waking task.
+    ///
+    /// If `resched` is true, the current task will be preempted when the
+    /// preemption is enabled.
+    pub fn notify_one_with<F>(&self, resched: bool, func: F) -> bool
+    where
+        F: Fn(u64),
+    {
+        let mut wq = self.queue.lock();
+        if let Some(task) = wq.pop_front() {
+            func(task.id().as_u64());
+            unblock_one_task(task, resched);
+            true
+        } else {
+            func(0);
+            false
         }
-        n
     }
 
     /// Wakes all tasks in the wait queue.
     ///
     /// If `resched` is true, the current task will yield.
     pub fn notify_all(&self, resched: bool) {
-        self.notify_many(usize::MAX, resched);
+        while self.notify_one(resched) {
+            // loop until the wait queue is empty
+        }
     }
+}
+
+fn unblock_one_task(task: AxTaskRef, resched: bool) {
+    // Mark task as not in wait queue.
+    task.set_in_wait_queue(false);
+    // Select run queue by the CPU set of the task.
+    // Use `NoOp` kernel guard here because the function is called with holding the
+    // lock of wait queue, where the irq and preemption are disabled.
+    select_run_queue::<NoOp>(&task).unblock_task(task, resched)
 }

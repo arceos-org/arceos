@@ -5,8 +5,13 @@ fn main() {
         // TODO: Generate size and initial content automatically.
         println!("cargo:rerun-if-env-changed=CARGO_FEATURE_MULTITASK");
         let (mutex_size, mutex_init) = if std::env::var("CARGO_FEATURE_MULTITASK").is_ok() {
-            // core::mem::transmute::<_, [usize; 2]>(axsync::Mutex::new(()))
-            (2, "{0, 0}")
+            if cfg!(feature = "smp") {
+                // core::mem::transmute::<_, [usize; 6]>(axsync::Mutex::new(()))
+                (6, "{0, 0, 8, 0, 0, 0}")
+            } else {
+                // core::mem::transmute::<_, [usize; 5]>(axsync::Mutex::new(()))
+                (5, "{0, 8, 0, 0, 0}")
+            }
         } else {
             (1, "{0}")
         };

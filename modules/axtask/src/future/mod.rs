@@ -74,7 +74,7 @@ pub fn block_on<F: IntoFuture>(f: F) -> F::Output {
                     // the guard internally before rescheduling. When this
                     // task is woken, woke will be set to true by the waker
                     // and we'll re-enter the loop to poll again.
-                    rq.blocked_resched(woke);
+                    rq.future_blocked_resched(woke);
                 } else {
                     // ③ woke = true: waker fired between poll() returning
                     // Pending and us acquiring the lock.

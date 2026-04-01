@@ -2,16 +2,16 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use axtask::{current, future::block_on, yield_now};
-use event_listener::{Event, listener};
+use axtask::{WaitQueue, current};
 
 /// A [`lock_api::RawMutex`] implementation.
 ///
 /// When the mutex is locked, the current task will block and be put into the
-/// wait queue. When the mutex is unlocked, all tasks waiting on the queue
-/// will be woken up.
+/// wait queue. When the mutex is unlocked, ownership is handed off to at most
+/// one task waiting on the queue; if no tasks are waiting, the mutex simply
+/// becomes unlocked.
 pub struct RawMutex {
-    event: Event,
+    wq: WaitQueue,
     owner_id: AtomicU64,
 }
 
@@ -20,35 +20,20 @@ impl RawMutex {
     #[inline(always)]
     pub const fn new() -> Self {
         Self {
-            event: Event::new(),
+            wq: WaitQueue::new(),
             owner_id: AtomicU64::new(0),
         }
+    }
+
+    #[inline(always)]
+    fn is_owner(&self, owner_id: u64) -> bool {
+        self.owner_id.load(Ordering::Acquire) == owner_id
     }
 }
 
 impl Default for RawMutex {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-struct Spin(u32);
-
-impl Spin {
-    #[inline]
-    fn spin(&mut self) -> bool {
-        if self.0 >= 10 {
-            return false;
-        }
-        self.0 += 1;
-        if self.0 <= 3 {
-            for _ in 0..(1 << self.0) {
-                core::hint::spin_loop();
-            }
-        } else {
-            yield_now();
-        }
-        true
     }
 }
 
@@ -66,44 +51,31 @@ unsafe impl lock_api::RawMutex for RawMutex {
     #[inline(always)]
     fn lock(&self) {
         let current_id = current().id().as_u64();
-        let mut spin = Spin(0);
-        let mut owner_id = self.owner_id.load(Ordering::Relaxed);
 
         loop {
-            assert_ne!(
-                owner_id,
+            // Can fail to lock even if the spinlock is not locked. May be more efficient than `try_lock`
+            // when called in a loop.
+            match self.owner_id.compare_exchange_weak(
+                0,
                 current_id,
-                "{} tried to acquire mutex it already owns.",
-                current().id_name()
-            );
-
-            if owner_id == 0 {
-                match self.owner_id.compare_exchange_weak(
-                    owner_id,
-                    current_id,
-                    Ordering::Acquire,
-                    Ordering::Relaxed,
-                ) {
-                    Ok(_) => break,
-                    Err(x) => owner_id = x,
+                Ordering::Acquire,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => break,
+                Err(owner_id) => {
+                    assert_ne!(
+                        owner_id, current_id,
+                        "Thread({current_id}) tried to acquire mutex it already owns.",
+                    );
+                    // Wait until someone hands off lock to me or lock is released
+                    self.wq
+                        .wait_until(|| self.is_owner(current_id) || !self.is_locked());
+                    // This check is necessary: some newcomers may race with a wakened one.
+                    if self.is_owner(current_id) {
+                        break;
+                    }
                 }
-                continue;
             }
-
-            if spin.spin() {
-                owner_id = self.owner_id.load(Ordering::Relaxed);
-                continue;
-            }
-
-            listener!(self.event => listener);
-
-            owner_id = self.owner_id.load(Ordering::Acquire);
-            if owner_id == 0 {
-                continue;
-            }
-
-            block_on(listener);
-            owner_id = self.owner_id.load(Ordering::Acquire);
         }
     }
 
@@ -119,19 +91,21 @@ unsafe impl lock_api::RawMutex for RawMutex {
 
     #[inline(always)]
     unsafe fn unlock(&self) {
-        let owner_id = self.owner_id.swap(0, Ordering::Release);
+        let owner_id = self.owner_id.load(Ordering::Acquire);
+        let current_id = current().id().as_u64();
         assert_eq!(
-            owner_id,
-            current().id().as_u64(),
-            "{} tried to release mutex it doesn't own",
-            current().id_name()
+            owner_id, current_id,
+            "Thread({current_id}) tried to release mutex it doesn't own",
         );
-        self.event.notify(1);
+        // wake up one waiting thread.
+        self.wq.notify_one_with(true, |id: u64| {
+            self.owner_id.swap(id, Ordering::Release);
+        });
     }
 
     #[inline(always)]
     fn is_locked(&self) -> bool {
-        self.owner_id.load(Ordering::Relaxed) != 0
+        self.owner_id.load(Ordering::Acquire) != 0
     }
 }
 

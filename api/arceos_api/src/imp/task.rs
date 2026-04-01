@@ -143,4 +143,11 @@ cfg_task! {
             }
         }
     }
+
+    pub fn ax_wait_queue_wake_one_with<F>(wq: &AxWaitQueueHandle, func: F)
+    where
+        F: Fn(u64),
+    {
+        wq.0.notify_one_with(true, func);
+    }
 }

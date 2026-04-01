@@ -1,23 +1,18 @@
 #[cfg(feature = "smp")]
 use alloc::sync::Weak;
 use alloc::{collections::VecDeque, sync::Arc};
-use core::{
-    future::poll_fn,
-    mem::MaybeUninit,
-    task::{Context, Poll},
-};
+use core::mem::MaybeUninit;
 
 use axhal::percpu::this_cpu_id;
 use axsched::BaseScheduler;
-use futures_util::task::AtomicWaker;
 use kernel_guard::BaseGuard;
 use kspin::{SpinNoIrqGuard, SpinRaw};
 use lazyinit::LazyInit;
 
 use crate::{
-    AxCpuMask, AxTaskRef, Scheduler, TaskInner,
-    future::block_on,
+    AxCpuMask, AxTaskRef, Scheduler, TaskInner, WaitQueue,
     task::{CurrentTask, TaskState},
+    wait_queue::WaitQueueGuard,
 };
 
 macro_rules! percpu_static {
@@ -36,7 +31,7 @@ macro_rules! percpu_static {
 percpu_static! {
     RUN_QUEUE: LazyInit<AxRunQueue> = LazyInit::new(),
     EXITED_TASKS: VecDeque<AxTaskRef> = VecDeque::new(),
-    WAIT_FOR_EXIT: AtomicWaker = AtomicWaker::new(),
+    WAIT_FOR_EXIT: WaitQueue = WaitQueue::new(),
     IDLE_TASK: LazyInit<AxTaskRef> = LazyInit::new(),
     /// Stores the weak reference to the previous task that is running on this CPU.
     #[cfg(feature = "smp")]
@@ -366,6 +361,8 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
             }
             axhal::power::system_off();
         } else {
+            curr.set_state(TaskState::Exited);
+
             // Notify the joiner task.
             curr.notify_exit(exit_code);
 
@@ -375,7 +372,7 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
                 // Push current task to the `EXITED_TASKS` list, which will be consumed by the GC task.
                 EXITED_TASKS.current_ref_mut_raw().push_back(curr.clone());
                 // Wake up the GC task to drop the exited tasks.
-                WAIT_FOR_EXIT.current_ref_mut_raw().wake();
+                WAIT_FOR_EXIT.current_ref_mut_raw().notify_one(false);
             }
 
             // Schedule to next task.
@@ -391,7 +388,36 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
     ///     2. The caller must ensure that the current task is in the running state.
     ///     3. The caller must ensure that the current task is not the idle task.
     ///     4. The lock of the wait queue will be released explicitly after current task is pushed into it.
-    pub fn blocked_resched(&mut self, mut woke: SpinNoIrqGuard<'_, bool>) {
+    pub fn blocked_resched(&mut self, mut wq_guard: WaitQueueGuard) {
+        let curr = &self.current_task;
+        assert!(curr.is_running());
+        assert!(!curr.is_idle());
+        // we must not block current task with preemption disabled.
+        // Current expected preempt count is 2.
+        // 1 for `NoPreemptIrqSave`, 1 for wait queue's `SpinNoIrq`.
+        #[cfg(feature = "preempt")]
+        assert!(curr.can_preempt(2));
+
+        // Mark the task as blocked, this has to be done before adding it to the wait queue
+        // while holding the lock of the wait queue.
+        curr.set_state(TaskState::Blocked);
+        curr.set_in_wait_queue(true);
+
+        wq_guard.push_back(curr.clone());
+        // Drop the lock of wait queue explictly.
+        drop(wq_guard);
+
+        // Current task's state has been changed to `Blocked` and added to the wait queue.
+        // Note that the state may have been set as `Ready` in `unblock_task()`,
+        // see `unblock_task()` for details.
+
+        debug!("task block: {}", curr.id_name());
+        self.inner.resched();
+    }
+
+    /// Block the current task, put current task into the wait queue and reschedule.
+    /// This is special just for future.
+    pub fn future_blocked_resched(&mut self, mut woke: SpinNoIrqGuard<'_, bool>) {
         let curr = &self.current_task;
         assert!(curr.is_running());
         assert!(!curr.is_idle());
@@ -414,6 +440,21 @@ impl<G: BaseGuard> CurrentRunQueueRef<'_, G> {
         self.inner.resched();
     }
 
+    #[cfg(feature = "irq")]
+    pub fn sleep_until(&mut self, deadline: axhal::time::TimeValue) {
+        let curr = &self.current_task;
+        debug!("task sleep: {}, deadline={:?}", curr.id_name(), deadline);
+        assert!(curr.is_running());
+        assert!(!curr.is_idle());
+
+        let now = axhal::time::wall_time();
+        if now < deadline {
+            crate::timers::set_alarm_wakeup(deadline, curr.clone());
+            curr.set_state(TaskState::Blocked);
+            self.inner.resched();
+        }
+    }
+
     pub fn set_current_priority(&mut self, prio: isize) -> bool {
         self.inner
             .scheduler
@@ -426,12 +467,7 @@ impl AxRunQueue {
     /// Create a new run queue for the specified CPU.
     /// The run queue is initialized with a per-CPU gc task in its scheduler.
     fn new(cpu_id: usize) -> Self {
-        let gc_task = TaskInner::new(
-            || block_on(poll_fn(poll_gc)),
-            "gc".into(),
-            axconfig::TASK_STACK_SIZE,
-        )
-        .into_arc();
+        let gc_task = TaskInner::new(gc_entry, "gc".into(), axconfig::TASK_STACK_SIZE).into_arc();
         // gc task should be pinned to the current CPU.
         gc_task.set_cpumask(AxCpuMask::one_shot(cpu_id));
 
@@ -571,44 +607,42 @@ impl AxRunQueue {
     }
 }
 
-fn poll_gc(cx: &mut Context<'_>) -> Poll<()> {
+fn gc_entry() {
     loop {
         // Drop all exited tasks and recycle resources.
         let n = EXITED_TASKS.with_current(|exited_tasks| exited_tasks.len());
         for _ in 0..n {
             // Do not do the slow drops in the critical section.
-            let Some(task) = EXITED_TASKS.with_current(|exited_tasks| exited_tasks.pop_front())
-            else {
-                continue;
-            };
-            match Arc::try_unwrap(task) {
-                Ok(task) => {
+            let task = EXITED_TASKS.with_current(|exited_tasks| exited_tasks.pop_front());
+            if let Some(task) = task {
+                if Arc::strong_count(&task) == 1 {
                     // If I'm the last holder of the task, drop it immediately.
                     drop(task);
-                }
-                Err(task) => {
-                    // Otherwise (e.g, `switch_to` is not compeleted, held by the
+                } else {
+                    // Otherwise (e.g, `switch_to` is not completed, held by the
                     // joiner, etc), push it back and wait for them to drop first.
                     EXITED_TASKS.with_current(|exited_tasks| exited_tasks.push_back(task));
                 }
             }
         }
+        // Always wait with a timeout to:
+        // 1. Yield CPU to allow other tasks to complete `switch_to` and drop references
+        // 2. Handle the race condition where `notify_one` is called before the GC task enters wait,
+        //    causing the notification to be lost.
         // Note: we cannot block current task with preemption disabled,
-        // use `current_ref_raw` to get the `WAIT_FOR_EXIT`'s reference here to avoid
-        // the use of `NoPreemptGuard`. Since gc task is pinned to the current
-        // CPU, there is no affection if the gc task is preempted during the process.
-        unsafe { WAIT_FOR_EXIT.current_ref_raw() }.register(cx.waker());
-
-        // New tasks might be added during the above section, recheck it to
-        // prevent us from sleeping indefinitely.
-        if EXITED_TASKS.with_current(|exited_tasks| exited_tasks.is_empty()) {
-            break;
+        // use `current_ref_raw` to get the `WAIT_FOR_EXIT`'s reference here to avoid the use of `NoPreemptGuard`.
+        // Since gc task is pinned to the current CPU, there is no effect if the gc task is preempted during the process.
+        #[cfg(feature = "irq")]
+        unsafe {
+            let _timeout = WAIT_FOR_EXIT
+                .current_ref_raw()
+                .wait_timeout(core::time::Duration::from_millis(100));
         }
-
-        crate::yield_now();
+        #[cfg(not(feature = "irq"))]
+        unsafe {
+            WAIT_FOR_EXIT.current_ref_raw().wait();
+        }
     }
-
-    Poll::Pending
 }
 
 /// The task routine for migrating the current task to the correct CPU.
