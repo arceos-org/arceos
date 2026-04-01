@@ -149,7 +149,7 @@ dependencies = [
  "axfs_ramfs",
  "axfs_vfs",
  "axstd",
- "crate_interface",
+ "crate_interface 0.1.4",
 ]
 
 [[package]]
@@ -352,7 +352,7 @@ dependencies = [
  "axdriver_virtio",
  "axhal",
  "cfg-if",
- "crate_interface",
+ "crate_interface 0.1.4",
  "log",
 ]
 
@@ -454,7 +454,7 @@ dependencies = [
  "axtask",
  "cap_access",
  "cfg-if",
- "crate_interface",
+ "crate_interface 0.1.4",
  "fatfs",
  "lazyinit",
  "log",
@@ -557,7 +557,7 @@ dependencies = [
  "axlog",
  "cfg-if",
  "chrono",
- "crate_interface",
+ "crate_interface 0.1.4",
  "kspin",
  "log",
 ]
@@ -600,7 +600,7 @@ name = "axns"
 version = "0.2.0"
 dependencies = [
  "axns",
- "crate_interface",
+ "crate_interface 0.1.4",
  "lazyinit",
 ]
 
@@ -613,7 +613,7 @@ dependencies = [
  "axplat-macros",
  "bitflags 2.9.2",
  "const-str",
- "crate_interface",
+ "crate_interface 0.1.4",
  "handler_table",
  "kspin",
  "memory_addr",
@@ -784,7 +784,7 @@ dependencies = [
  "axplat",
  "axtask",
  "chrono",
- "crate_interface",
+ "crate_interface 0.1.4",
  "ctor_bare",
  "percpu",
 ]
@@ -831,7 +831,7 @@ dependencies = [
  "axtask",
  "cfg-if",
  "cpumask",
- "crate_interface",
+ "crate_interface 0.1.4",
  "kernel_guard",
  "kspin",
  "lazyinit",
@@ -840,6 +840,37 @@ dependencies = [
  "percpu",
  "rand",
  "timer_list",
+]
+
+[[package]]
+name = "axtest"
+version = "0.2.0"
+dependencies = [
+ "axlog",
+ "axtest_macros",
+]
+
+[[package]]
+name = "axtest-runner"
+version = "0.1.0"
+dependencies = [
+ "arceos_api",
+ "axfs_ramfs",
+ "axfs_vfs",
+ "axlog",
+ "axstd",
+ "axtest",
+ "crate_interface 0.3.0",
+ "log",
+]
+
+[[package]]
+name = "axtest_macros"
+version = "0.2.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.106",
 ]
 
 [[package]]
@@ -1085,6 +1116,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "crate_interface"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "51e5c7109dea31fc91ab584e99752baa997f76d46e49bab0a17b5e9679248df7"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.106",
+]
+
+[[package]]
 name = "critical-section"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1214,7 +1256,7 @@ version = "0.2.0"
 source = "git+https://github.com/elliott10/fxmac_rs.git?rev=0dbc3916#0dbc3916d5d5a0086916deda0c4c2dd8651c69ce"
 dependencies = [
  "aarch64-cpu 10.0.0",
- "crate_interface",
+ "crate_interface 0.1.4",
  "log",
 ]
 
@@ -1389,7 +1431,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "307e6be468f3d6b6d895e191f63c11602e4e76575ecca68325d8c8dbebe2870e"
 dependencies = [
  "cfg-if",
- "crate_interface",
+ "crate_interface 0.1.4",
 ]
 
 [[package]]

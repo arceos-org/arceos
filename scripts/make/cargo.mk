@@ -18,6 +18,16 @@ build_args := \
   $(verbose)
 
 RUSTFLAGS := -A unsafe_op_in_unsafe_fn
+ifeq ($(AX_TEST),y)
+  RUSTFLAGS += --cfg axtest
+  ifeq ($(AX_TEST_COV),y)
+    # LLVM source-based coverage instrumentation for axtest runs.
+    APP_FEATURES += axtest_cov
+    RUSTFLAGS += -C instrument-coverage -Zno-profiler-runtime
+  endif
+endif
+# Recompute APP_FEAT after modifying APP_FEATURES
+APP_FEAT := $(strip $(shell echo $(APP_FEATURES) | tr ',' ' '))
 RUSTFLAGS_LINK_ARGS := -C link-arg=-T$(LD_SCRIPT) -C link-arg=-no-pie -C link-arg=-znostart-stop-gc
 RUSTDOCFLAGS := -Z unstable-options --enable-index-page -D rustdoc::broken_intra_doc_links
 

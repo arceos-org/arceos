@@ -25,6 +25,7 @@ members = [
     "ulib/axstd",
     "ulib/axlibc",
 
+    "examples/axtest-runner",
     "examples/helloworld",
     "examples/helloworld-myplat",
     "examples/httpclient",
@@ -66,6 +67,8 @@ axsync = { path = "modules/axsync" }
 axtask = { path = "modules/axtask" }
 axdma = { path = "modules/axdma" }
 axipi = { path = "modules/axipi" }
+axtest = { path = "crates/axtest/axtest" }
+axtest_macros = { path = "crates/axtest/axtest_macros" }
 
 [profile.release]
 lto = true
