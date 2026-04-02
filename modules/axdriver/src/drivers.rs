@@ -4,7 +4,7 @@
 
 use axdriver_base::DeviceType;
 #[cfg(feature = "bus-pci")]
-use axdriver_pci::{DeviceFunction, DeviceFunctionInfo, PciRoot};
+use axdriver_pci::{ConfigurationAccess, DeviceFunction, DeviceFunctionInfo, PciRoot};
 
 pub use super::dummy::*;
 use crate::AxDeviceEnum;
@@ -22,8 +22,8 @@ pub trait DriverProbe {
     }
 
     #[cfg(bus = "pci")]
-    fn probe_pci(
-        _root: &mut PciRoot,
+    fn probe_pci<C: ConfigurationAccess>(
+        _root: &mut PciRoot<C>,
         _bdf: DeviceFunction,
         _dev_info: &DeviceFunctionInfo,
     ) -> Option<AxDeviceEnum> {
