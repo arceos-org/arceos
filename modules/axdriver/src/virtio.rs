@@ -116,7 +116,7 @@ impl<D: VirtIoDevMeta> DriverProbe for VirtIoDriver<D> {
             _ => return None,
         }
 
-        if let Some((ty, transport, irq)) =
+        if let Some((ty, transport, _irq)) =
             axdriver_virtio::probe_pci_device::<VirtIoHalImpl, C>(root, bdf, dev_info)
             && ty == D::DEVICE_TYPE
         {

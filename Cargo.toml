@@ -69,3 +69,14 @@ axipi = { path = "modules/axipi" }
 
 [profile.release]
 lto = true
+
+[patch.crates-io]
+kspin = { git = "https://github.com/arceos-org/kspin", branch = "debin/update_kernel_gaurd"}
+percpu = { git = "https://github.com/arceos-org/percpu", branch = "debin/update_kernel_gaurd"}
+fxmac_rs = { git = "https://github.com/elliott10/fxmac_rs", branch = "main" }
+axdriver_base = { git = "https://github.com/arceos-org/axdriver_crates.git", branch = "debin/update_virtio" }
+axdriver_block = { git = "https://github.com/arceos-org/axdriver_crates.git", branch = "debin/update_virtio" }
+axdriver_net = { git = "https://github.com/arceos-org/axdriver_crates.git", branch = "debin/update_virtio" }
+axdriver_display = { git = "https://github.com/arceos-org/axdriver_crates.git", branch = "debin/update_virtio" }
+axdriver_pci = { git = "https://github.com/arceos-org/axdriver_crates.git", branch = "debin/update_virtio" }
+axdriver_virtio = { git = "https://github.com/arceos-org/axdriver_crates.git", branch = "debin/update_virtio" }

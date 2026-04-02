@@ -1,7 +1,7 @@
 use crate::{AllDevices, prelude::*};
 use axdriver_pci::{
-    BarInfo, Cam, Command, ConfigurationAccess, DeviceFunction, HeaderType, MemoryBarType,
-    MmioCam, PciRangeAllocator, PciRoot,
+    BarInfo, Cam, Command, ConfigurationAccess, DeviceFunction, HeaderType, MemoryBarType, MmioCam,
+    PciRangeAllocator, PciRoot,
 };
 use axhal::mem::phys_to_virt;
 

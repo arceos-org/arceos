@@ -384,6 +384,7 @@ source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2#84eb2
 [[package]]
 name = "axdriver_base"
 version = "0.1.3"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=debin%2Fupdate_virtio#51829e410c0aebc84eed8a6dede8efd834457682"
 
 [[package]]
 name = "axdriver_block"
@@ -397,6 +398,7 @@ dependencies = [
 [[package]]
 name = "axdriver_block"
 version = "0.1.3"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=debin%2Fupdate_virtio#51829e410c0aebc84eed8a6dede8efd834457682"
 dependencies = [
  "axdriver_base 0.1.3",
  "bcm2835-sdhci",
@@ -414,6 +416,7 @@ dependencies = [
 [[package]]
 name = "axdriver_display"
 version = "0.1.3"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=debin%2Fupdate_virtio#51829e410c0aebc84eed8a6dede8efd834457682"
 dependencies = [
  "axdriver_base 0.1.3",
 ]
@@ -431,6 +434,7 @@ dependencies = [
 [[package]]
 name = "axdriver_net"
 version = "0.1.3"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=debin%2Fupdate_virtio#51829e410c0aebc84eed8a6dede8efd834457682"
 dependencies = [
  "axdriver_base 0.1.3",
  "fxmac_rs",
@@ -442,6 +446,7 @@ dependencies = [
 [[package]]
 name = "axdriver_pci"
 version = "0.1.3"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=debin%2Fupdate_virtio#51829e410c0aebc84eed8a6dede8efd834457682"
 dependencies = [
  "virtio-drivers",
 ]
@@ -449,6 +454,7 @@ dependencies = [
 [[package]]
 name = "axdriver_virtio"
 version = "0.1.3"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=debin%2Fupdate_virtio#51829e410c0aebc84eed8a6dede8efd834457682"
 dependencies = [
  "axdriver_base 0.1.3",
  "axdriver_block 0.1.3",
@@ -1267,12 +1273,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "361a90feb7004eca4019fb28352a9465666b24f840f5c3cddf0ff13920590b89"
 
 [[package]]
-name = "embedded-io"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "edd0f118536f44f5ccd48bcb8b111bdc3de888b58c74639dfb034a357d0f206d"
-
-[[package]]
 name = "enum_dispatch"
 version = "0.3.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1333,7 +1333,8 @@ checksum = "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2"
 
 [[package]]
 name = "fxmac_rs"
-version = "0.2.1"
+version = "0.2.0"
+source = "git+https://github.com/elliott10/fxmac_rs?branch=main#7d121c03db75a418174655b1f1222b900a590411"
 dependencies = [
  "aarch64-cpu",
  "crate_interface",
@@ -1521,6 +1522,7 @@ dependencies = [
 [[package]]
 name = "kspin"
 version = "0.1.1"
+source = "git+https://github.com/arceos-org/kspin?branch=debin%2Fupdate_kernel_gaurd#f1588f6955d33a04d721f34adb506ba39c59ac50"
 dependencies = [
  "cfg-if",
  "kernel_guard",
@@ -1750,6 +1752,7 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 [[package]]
 name = "percpu"
 version = "0.3.2"
+source = "git+https://github.com/arceos-org/percpu?branch=debin%2Fupdate_kernel_gaurd#c6a81ba7e65dc54b940084fc2db81a8b48548a1e"
 dependencies = [
  "cfg-if",
  "kernel_guard",
@@ -1760,6 +1763,7 @@ dependencies = [
 [[package]]
 name = "percpu_macros"
 version = "0.3.2"
+source = "git+https://github.com/arceos-org/percpu?branch=debin%2Fupdate_kernel_gaurd#c6a81ba7e65dc54b940084fc2db81a8b48548a1e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2264,11 +2268,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cfdc1c628cdd8ce7c3b9e65a8ed550d0338e9ef9f911e729666f1cce097de2f7"
 dependencies = [
  "bitflags 2.11.0",
- "embedded-io",
  "enumn",
  "log",
- "safe-mmio",
- "thiserror",
  "safe-mmio",
  "thiserror",
  "zerocopy",
