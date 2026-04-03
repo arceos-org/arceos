@@ -14,7 +14,7 @@ multitask = ["axtask/multitask"]
 default = []
 
 [dependencies]
-kspin = "0.1"
+kspin = "0.2"
 lock_api = { version = "0.4", default-features = false }
 axtask = { workspace = true }
 

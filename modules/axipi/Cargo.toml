@@ -14,8 +14,8 @@ default = []
 
 [dependencies]
 log = "0.4"
-kspin = { version = "0.1" }
-percpu = { version = "0.3" }
+kspin = { version = "0.2" }
+percpu = { version = "0.4" }
 lazyinit = { version = "0.2" }
 axconfig = { workspace = true }
 axhal = { workspace = true, features = ["ipi"] }

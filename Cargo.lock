@@ -165,7 +165,7 @@ dependencies = [
  "axfs_ramfs",
  "axfs_vfs",
  "axstd",
- "crate_interface",
+ "crate_interface 0.3.0",
 ]
 
 [[package]]
@@ -273,7 +273,7 @@ dependencies = [
  "allocator",
  "axerrno 0.1.2",
  "cfg-if",
- "kspin",
+ "kspin 0.2.0",
  "log",
  "memory_addr",
 ]
@@ -323,7 +323,7 @@ dependencies = [
  "memory_addr",
  "page_table_entry",
  "page_table_multiarch",
- "percpu",
+ "percpu 0.3.2",
  "riscv",
  "static_assertions",
  "tock-registers 0.10.1",
@@ -336,7 +336,7 @@ name = "axdisplay"
 version = "0.2.0"
 dependencies = [
  "axdriver",
- "axdriver_display 0.1.2",
+ "axdriver_display 0.1.3",
  "axsync",
  "lazyinit",
  "log",
@@ -352,7 +352,7 @@ dependencies = [
  "axerrno 0.1.2",
  "axhal",
  "axmm",
- "kspin",
+ "kspin 0.2.0",
  "log",
  "memory_addr",
 ]
@@ -364,79 +364,83 @@ dependencies = [
  "axalloc",
  "axconfig",
  "axdma",
- "axdriver_base 0.1.3",
- "axdriver_block 0.1.3",
- "axdriver_display 0.1.3",
- "axdriver_net 0.1.3",
+ "axdriver_base 0.2.0",
+ "axdriver_block 0.2.0",
+ "axdriver_display 0.2.0",
+ "axdriver_net 0.2.0",
  "axdriver_pci",
  "axdriver_virtio",
  "axhal",
  "cfg-if",
- "crate_interface",
+ "crate_interface 0.3.0",
  "log",
 ]
 
 [[package]]
 name = "axdriver_base"
-version = "0.1.2"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2#84eb2170f865e6fa29b78995a86f4fcdcede63df"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c5181ddf0445685c5e87c8f7f87f349beb64acaf8db70cb3968e759a4ed87aa7"
 
 [[package]]
 name = "axdriver_base"
-version = "0.1.3"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=debin%2Fupdate_virtio#51829e410c0aebc84eed8a6dede8efd834457682"
-
-[[package]]
-name = "axdriver_block"
-version = "0.1.2"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2#84eb2170f865e6fa29b78995a86f4fcdcede63df"
-dependencies = [
- "axdriver_base 0.1.2",
- "log",
-]
+version = "0.2.0"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=main#983e30d1df6dfc18293a0eb7eedf6b0b0aea0bb2"
 
 [[package]]
 name = "axdriver_block"
 version = "0.1.3"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=debin%2Fupdate_virtio#51829e410c0aebc84eed8a6dede8efd834457682"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "73368a1df084bef25147467ce3e466f9c98f1bd1e914220545b14cbd981d66f6"
 dependencies = [
  "axdriver_base 0.1.3",
+ "log",
+]
+
+[[package]]
+name = "axdriver_block"
+version = "0.2.0"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=main#983e30d1df6dfc18293a0eb7eedf6b0b0aea0bb2"
+dependencies = [
+ "axdriver_base 0.2.0",
  "bcm2835-sdhci",
  "log",
 ]
 
 [[package]]
 name = "axdriver_display"
-version = "0.1.2"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2#84eb2170f865e6fa29b78995a86f4fcdcede63df"
-dependencies = [
- "axdriver_base 0.1.2",
-]
-
-[[package]]
-name = "axdriver_display"
 version = "0.1.3"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=debin%2Fupdate_virtio#51829e410c0aebc84eed8a6dede8efd834457682"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8fcf21af646577b9b9c8298658b6ab9492e55fbf0784148908fb53d4b3ac191"
 dependencies = [
  "axdriver_base 0.1.3",
 ]
 
 [[package]]
-name = "axdriver_net"
-version = "0.1.2"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?tag=v0.1.2#84eb2170f865e6fa29b78995a86f4fcdcede63df"
+name = "axdriver_display"
+version = "0.2.0"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=main#983e30d1df6dfc18293a0eb7eedf6b0b0aea0bb2"
 dependencies = [
- "axdriver_base 0.1.2",
+ "axdriver_base 0.2.0",
+]
+
+[[package]]
+name = "axdriver_net"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14de7742c14add0f33b01477cd8a45e13fe73588adbaf0b175119f4716e2af12"
+dependencies = [
+ "axdriver_base 0.1.3",
  "log",
  "spin 0.9.8",
 ]
 
 [[package]]
 name = "axdriver_net"
-version = "0.1.3"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=debin%2Fupdate_virtio#51829e410c0aebc84eed8a6dede8efd834457682"
+version = "0.2.0"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=main#983e30d1df6dfc18293a0eb7eedf6b0b0aea0bb2"
 dependencies = [
- "axdriver_base 0.1.3",
+ "axdriver_base 0.2.0",
  "fxmac_rs",
  "ixgbe-driver",
  "log",
@@ -445,21 +449,21 @@ dependencies = [
 
 [[package]]
 name = "axdriver_pci"
-version = "0.1.3"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=debin%2Fupdate_virtio#51829e410c0aebc84eed8a6dede8efd834457682"
+version = "0.2.0"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=main#983e30d1df6dfc18293a0eb7eedf6b0b0aea0bb2"
 dependencies = [
  "virtio-drivers",
 ]
 
 [[package]]
 name = "axdriver_virtio"
-version = "0.1.3"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=debin%2Fupdate_virtio#51829e410c0aebc84eed8a6dede8efd834457682"
+version = "0.2.0"
+source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=main#983e30d1df6dfc18293a0eb7eedf6b0b0aea0bb2"
 dependencies = [
- "axdriver_base 0.1.3",
- "axdriver_block 0.1.3",
- "axdriver_display 0.1.3",
- "axdriver_net 0.1.3",
+ "axdriver_base 0.2.0",
+ "axdriver_block 0.2.0",
+ "axdriver_display 0.2.0",
+ "axdriver_net 0.2.0",
  "log",
  "virtio-drivers",
 ]
@@ -499,7 +503,7 @@ dependencies = [
  "axruntime",
  "axsync",
  "axtask",
- "kspin",
+ "kspin 0.2.0",
 ]
 
 [[package]]
@@ -507,7 +511,7 @@ name = "axfs"
 version = "0.2.0"
 dependencies = [
  "axdriver",
- "axdriver_block 0.1.2",
+ "axdriver_block 0.1.3",
  "axerrno 0.1.2",
  "axfs_devfs",
  "axfs_ramfs",
@@ -518,7 +522,7 @@ dependencies = [
  "axtask",
  "cap_access",
  "cfg-if",
- "crate_interface",
+ "crate_interface 0.3.0",
  "fatfs",
  "lazyinit",
  "log",
@@ -573,13 +577,13 @@ dependencies = [
  "axplat-x86-pc",
  "cfg-if",
  "heapless 0.8.0",
- "kernel_guard",
+ "kernel_guard 0.2.0",
  "lazyinit",
  "linkme",
  "log",
  "memory_addr",
  "page_table_multiarch",
- "percpu",
+ "percpu 0.4.0",
 ]
 
 [[package]]
@@ -598,10 +602,10 @@ version = "0.2.0"
 dependencies = [
  "axconfig",
  "axhal",
- "kspin",
+ "kspin 0.2.0",
  "lazyinit",
  "log",
- "percpu",
+ "percpu 0.4.0",
 ]
 
 [[package]]
@@ -622,8 +626,8 @@ dependencies = [
  "axlog",
  "cfg-if",
  "chrono",
- "crate_interface",
- "kspin",
+ "crate_interface 0.3.0",
+ "kspin 0.2.0",
  "log",
 ]
 
@@ -635,7 +639,7 @@ dependencies = [
  "axconfig",
  "axerrno 0.1.2",
  "axhal",
- "kspin",
+ "kspin 0.2.0",
  "lazyinit",
  "log",
  "memory_addr",
@@ -647,7 +651,7 @@ name = "axnet"
 version = "0.2.0"
 dependencies = [
  "axdriver",
- "axdriver_net 0.1.2",
+ "axdriver_net 0.1.3",
  "axerrno 0.1.2",
  "axhal",
  "axio",
@@ -665,7 +669,7 @@ name = "axns"
 version = "0.2.0"
 dependencies = [
  "axns",
- "crate_interface",
+ "crate_interface 0.3.0",
  "lazyinit",
 ]
 
@@ -678,9 +682,9 @@ dependencies = [
  "axplat-macros",
  "bitflags 2.11.0",
  "const-str",
- "crate_interface",
+ "crate_interface 0.3.0",
  "handler_table",
- "kspin",
+ "kspin 0.1.1",
  "memory_addr",
 ]
 
@@ -695,7 +699,7 @@ dependencies = [
  "axplat",
  "axplat-arm-peripherals",
  "dw_apb_uart",
- "kspin",
+ "kspin 0.1.1",
  "log",
  "page_table_entry",
 ]
@@ -755,7 +759,7 @@ dependencies = [
  "axcpu",
  "axplat",
  "int_ratio",
- "kspin",
+ "kspin 0.1.1",
  "lazyinit",
  "log",
 ]
@@ -770,7 +774,7 @@ dependencies = [
  "axcpu",
  "axplat",
  "chrono",
- "kspin",
+ "kspin 0.1.1",
  "lazyinit",
  "log",
  "loongArch64",
@@ -816,11 +820,11 @@ dependencies = [
  "bitflags 2.11.0",
  "heapless 0.9.2",
  "int_ratio",
- "kspin",
+ "kspin 0.1.1",
  "lazyinit",
  "log",
  "multiboot",
- "percpu",
+ "percpu 0.3.2",
  "raw-cpuid 11.6.0",
  "uart_16550",
  "x2apic",
@@ -846,9 +850,9 @@ dependencies = [
  "axplat",
  "axtask",
  "chrono",
- "crate_interface",
+ "crate_interface 0.3.0",
  "ctor_bare",
- "percpu",
+ "percpu 0.4.0",
 ]
 
 [[package]]
@@ -868,7 +872,7 @@ dependencies = [
  "axerrno 0.1.2",
  "axfeat",
  "axio",
- "kspin",
+ "kspin 0.2.0",
  "lock_api",
 ]
 
@@ -878,7 +882,7 @@ version = "0.2.0"
 dependencies = [
  "axsync",
  "axtask",
- "kspin",
+ "kspin 0.2.0",
  "lock_api",
  "rand",
 ]
@@ -893,13 +897,13 @@ dependencies = [
  "axtask",
  "cfg-if",
  "cpumask",
- "crate_interface",
- "kernel_guard",
- "kspin",
+ "crate_interface 0.3.0",
+ "kernel_guard 0.2.0",
+ "kspin 0.2.0",
  "lazyinit",
  "log",
  "memory_addr",
- "percpu",
+ "percpu 0.4.0",
  "timer_list",
 ]
 
@@ -1175,6 +1179,17 @@ dependencies = [
 
 [[package]]
 name = "crate_interface"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "70272a03a2cef15589bac05d3d15c023752f5f8f2da8be977d983a9d9e6250fb"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+]
+
+[[package]]
+name = "crate_interface"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51e5c7109dea31fc91ab584e99752baa997f76d46e49bab0a17b5e9679248df7"
@@ -1333,11 +1348,12 @@ checksum = "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2"
 
 [[package]]
 name = "fxmac_rs"
-version = "0.2.0"
-source = "git+https://github.com/elliott10/fxmac_rs?branch=main#7d121c03db75a418174655b1f1222b900a590411"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5f6af8570598291713ad5404af46a70143214c75a61389de319be6b14d524d82"
 dependencies = [
  "aarch64-cpu",
- "crate_interface",
+ "crate_interface 0.3.0",
  "log",
 ]
 
@@ -1511,21 +1527,42 @@ dependencies = [
 
 [[package]]
 name = "kernel_guard"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d10c55bedf6789bc3748e0d8756ee639df1ae25144fd3525ed311044bd9a739f"
+dependencies = [
+ "cfg-if",
+ "crate_interface 0.1.4",
+]
+
+[[package]]
+name = "kernel_guard"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bfacac34d77b445f5ad7522174fb0846fb82015c64b574fbe4be07b1b4eb6302"
 dependencies = [
  "cfg-if",
- "crate_interface",
+ "crate_interface 0.3.0",
 ]
 
 [[package]]
 name = "kspin"
 version = "0.1.1"
-source = "git+https://github.com/arceos-org/kspin?branch=debin%2Fupdate_kernel_gaurd#f1588f6955d33a04d721f34adb506ba39c59ac50"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3d841fd3aeaa9a55871068f5c3ce48497a6dbcf14e20ca7784a9f68bfdb4c825"
 dependencies = [
  "cfg-if",
- "kernel_guard",
+ "kernel_guard 0.1.3",
+]
+
+[[package]]
+name = "kspin"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6aeccb0b2a2babd189e98c42a8836dfc4996fabed4cdcdfdf296090c34fa75b4"
+dependencies = [
+ "cfg-if",
+ "kernel_guard 0.2.0",
 ]
 
 [[package]]
@@ -1752,18 +1789,42 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 [[package]]
 name = "percpu"
 version = "0.3.2"
-source = "git+https://github.com/arceos-org/percpu?branch=debin%2Fupdate_kernel_gaurd#c6a81ba7e65dc54b940084fc2db81a8b48548a1e"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f2a4c33508cf5a2e8ddccee074a1e5e7c2d5ca91341da8656268eb437bf4f8a2"
 dependencies = [
  "cfg-if",
- "kernel_guard",
- "percpu_macros",
+ "percpu_macros 0.3.2",
+ "x86",
+]
+
+[[package]]
+name = "percpu"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "53cf38d521e1c0c7d294e2653c4a93edb3b60ebb1bc529e2f19a647be8e36176"
+dependencies = [
+ "cfg-if",
+ "kernel_guard 0.2.0",
+ "percpu_macros 0.4.0",
  "x86",
 ]
 
 [[package]]
 name = "percpu_macros"
 version = "0.3.2"
-source = "git+https://github.com/arceos-org/percpu?branch=debin%2Fupdate_kernel_gaurd#c6a81ba7e65dc54b940084fc2db81a8b48548a1e"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9d0188f16e062758e306b2f9fdd235c1e297f34e9423ab1f1ce11324dd5f2da1"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+]
+
+[[package]]
+name = "percpu_macros"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb63182b558734ab0fc668b599d89ea97f0f176dabdaae4fdde8ce564644487e"
 dependencies = [
  "proc-macro2",
  "quote",

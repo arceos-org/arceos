@@ -30,7 +30,7 @@ log = "0.4"
 cfg-if = "1.0"
 kernel_guard = "0.2"
 lazyinit = "0.2"
-percpu = "0.3"
+percpu = "0.4"
 heapless = "0.8"
 memory_addr = "0.4"
 linkme = { version = "0.3.33", optional = true }

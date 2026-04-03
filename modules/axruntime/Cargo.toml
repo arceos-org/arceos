@@ -40,7 +40,7 @@ axipi = { workspace = true, optional = true }
 axplat = "0.4"
 
 crate_interface = "0.3"
-percpu = { version = "0.3", optional = true }
+percpu = { version = "0.4", optional = true }
 ctor_bare = "0.2"
 
 chrono = { version = "0.4.38", default-features = false }
