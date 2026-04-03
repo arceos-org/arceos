@@ -336,7 +336,7 @@ name = "axdisplay"
 version = "0.2.0"
 dependencies = [
  "axdriver",
- "axdriver_display 0.1.3",
+ "axdriver_display",
  "axsync",
  "lazyinit",
  "log",
@@ -364,10 +364,10 @@ dependencies = [
  "axalloc",
  "axconfig",
  "axdma",
- "axdriver_base 0.2.0",
- "axdriver_block 0.2.0",
- "axdriver_display 0.2.0",
- "axdriver_net 0.2.0",
+ "axdriver_base",
+ "axdriver_block",
+ "axdriver_display",
+ "axdriver_net",
  "axdriver_pci",
  "axdriver_virtio",
  "axhal",
@@ -378,61 +378,25 @@ dependencies = [
 
 [[package]]
 name = "axdriver_base"
-version = "0.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c5181ddf0445685c5e87c8f7f87f349beb64acaf8db70cb3968e759a4ed87aa7"
-
-[[package]]
-name = "axdriver_base"
 version = "0.2.0"
 source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=main#983e30d1df6dfc18293a0eb7eedf6b0b0aea0bb2"
-
-[[package]]
-name = "axdriver_block"
-version = "0.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "73368a1df084bef25147467ce3e466f9c98f1bd1e914220545b14cbd981d66f6"
-dependencies = [
- "axdriver_base 0.1.3",
- "log",
-]
 
 [[package]]
 name = "axdriver_block"
 version = "0.2.0"
 source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=main#983e30d1df6dfc18293a0eb7eedf6b0b0aea0bb2"
 dependencies = [
- "axdriver_base 0.2.0",
+ "axdriver_base",
  "bcm2835-sdhci",
  "log",
 ]
 
 [[package]]
 name = "axdriver_display"
-version = "0.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8fcf21af646577b9b9c8298658b6ab9492e55fbf0784148908fb53d4b3ac191"
-dependencies = [
- "axdriver_base 0.1.3",
-]
-
-[[package]]
-name = "axdriver_display"
 version = "0.2.0"
 source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=main#983e30d1df6dfc18293a0eb7eedf6b0b0aea0bb2"
 dependencies = [
- "axdriver_base 0.2.0",
-]
-
-[[package]]
-name = "axdriver_net"
-version = "0.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14de7742c14add0f33b01477cd8a45e13fe73588adbaf0b175119f4716e2af12"
-dependencies = [
- "axdriver_base 0.1.3",
- "log",
- "spin 0.9.8",
+ "axdriver_base",
 ]
 
 [[package]]
@@ -440,7 +404,7 @@ name = "axdriver_net"
 version = "0.2.0"
 source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=main#983e30d1df6dfc18293a0eb7eedf6b0b0aea0bb2"
 dependencies = [
- "axdriver_base 0.2.0",
+ "axdriver_base",
  "fxmac_rs",
  "ixgbe-driver",
  "log",
@@ -460,10 +424,10 @@ name = "axdriver_virtio"
 version = "0.2.0"
 source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=main#983e30d1df6dfc18293a0eb7eedf6b0b0aea0bb2"
 dependencies = [
- "axdriver_base 0.2.0",
- "axdriver_block 0.2.0",
- "axdriver_display 0.2.0",
- "axdriver_net 0.2.0",
+ "axdriver_base",
+ "axdriver_block",
+ "axdriver_display",
+ "axdriver_net",
  "log",
  "virtio-drivers",
 ]
@@ -511,7 +475,7 @@ name = "axfs"
 version = "0.2.0"
 dependencies = [
  "axdriver",
- "axdriver_block 0.1.3",
+ "axdriver_block",
  "axerrno 0.1.2",
  "axfs_devfs",
  "axfs_ramfs",
@@ -651,7 +615,7 @@ name = "axnet"
 version = "0.2.0"
 dependencies = [
  "axdriver",
- "axdriver_net 0.1.3",
+ "axdriver_net",
  "axerrno 0.1.2",
  "axhal",
  "axio",

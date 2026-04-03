@@ -69,3 +69,11 @@ axipi = { path = "modules/axipi" }
 
 [profile.release]
 lto = true
+
+[patch.crates-io]
+axdriver_base = { git = "https://github.com/arceos-org/axdriver_crates.git", branch = "main" }
+axdriver_block = { git = "https://github.com/arceos-org/axdriver_crates.git", branch = "main" }
+axdriver_net = { git = "https://github.com/arceos-org/axdriver_crates.git", branch = "main" }
+axdriver_display = { git = "https://github.com/arceos-org/axdriver_crates.git", branch = "main" }
+axdriver_pci = { git = "https://github.com/arceos-org/axdriver_crates.git", branch = "main" }
+axdriver_virtio = { git = "https://github.com/arceos-org/axdriver_crates.git", branch = "main" }
