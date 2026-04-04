@@ -89,8 +89,8 @@ cfg_if::cfg_if! {
         register_net_driver!(IxgbeDriver, axdriver_net::ixgbe::IxgbeNic<IxgbeHalImpl, 1024, 1>);
         impl DriverProbe for IxgbeDriver {
             #[cfg(bus = "pci")]
-            fn probe_pci(
-                    root: &mut axdriver_pci::PciRoot,
+            fn probe_pci<C: ConfigurationAccess>(
+                    root: &mut axdriver_pci::PciRoot<C>,
                     bdf: axdriver_pci::DeviceFunction,
                     dev_info: &axdriver_pci::DeviceFunctionInfo,
                 ) -> Option<crate::AxDeviceEnum> {
@@ -105,11 +105,11 @@ cfg_if::cfg_if! {
                         const QS: usize = 1024;
                         let bar_info = root.bar_info(bdf, 0).unwrap();
                         match bar_info {
-                            axdriver_pci::BarInfo::Memory {
+                            Some(axdriver_pci::BarInfo::Memory {
                                 address,
                                 size,
                                 ..
-                            } => {
+                            }) => {
                                 let ixgbe_nic = IxgbeNic::<IxgbeHalImpl, QS, QN>::init(
                                     phys_to_virt((address as usize).into()).into(),
                                     size as usize
@@ -117,8 +117,12 @@ cfg_if::cfg_if! {
                                 .expect("failed to initialize ixgbe device");
                                 return Some(AxDeviceEnum::from_net(ixgbe_nic));
                             }
-                            axdriver_pci::BarInfo::IO { .. } => {
+                            Some(axdriver_pci::BarInfo::IO { .. }) => {
                                 error!("ixgbe: BAR0 is of I/O type");
+                                return None;
+                            }
+                            None => {
+                                error!("ixgbe: BAR0 not present");
                                 return None;
                             }
                         }
