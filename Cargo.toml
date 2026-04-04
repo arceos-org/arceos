@@ -78,3 +78,4 @@ axplat-loongarch64-qemu-virt = { git = "https://github.com/arceos-org/axplat_cra
 axplat-arm-peripherals = { git = "https://github.com/arceos-org/axplat_crates", branch = "debin/update" }
 axfs_vfs ={ git = "https://github.com/arceos-org/axfs_crates.git", branch = "debin/update"}
 axio = { git = "https://github.com/arceos-org/axio.git", branch = "main" }
+axcpu = { git = "https://github.com/arceos-org/axcpu.git", branch = "debin/update" }

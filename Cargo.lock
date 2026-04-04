@@ -310,8 +310,7 @@ dependencies = [
 [[package]]
 name = "axcpu"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f107a5597e37751fd44e97b37e4625a5858c6808b2aa0df68eb4c87fd2452a7"
+source = "git+https://github.com/arceos-org/axcpu.git?branch=debin%2Fupdate#24c2b2506c69863e0a0b4f5457199ae25e3f60b3"
 dependencies = [
  "aarch32-cpu",
  "aarch64-cpu",
@@ -323,7 +322,7 @@ dependencies = [
  "memory_addr",
  "page_table_entry",
  "page_table_multiarch",
- "percpu 0.3.2",
+ "percpu",
  "riscv",
  "static_assertions",
  "tock-registers 0.10.1",
@@ -542,7 +541,7 @@ dependencies = [
  "log",
  "memory_addr",
  "page_table_multiarch",
- "percpu 0.4.0",
+ "percpu",
 ]
 
 [[package]]
@@ -565,7 +564,7 @@ dependencies = [
  "kspin",
  "lazyinit",
  "log",
- "percpu 0.4.0",
+ "percpu",
 ]
 
 [[package]]
@@ -778,7 +777,7 @@ dependencies = [
  "lazyinit",
  "log",
  "multiboot",
- "percpu 0.4.0",
+ "percpu",
  "raw-cpuid 11.6.0",
  "uart_16550",
  "x2apic",
@@ -806,7 +805,7 @@ dependencies = [
  "chrono",
  "crate_interface",
  "ctor_bare",
- "percpu 0.4.0",
+ "percpu",
 ]
 
 [[package]]
@@ -858,7 +857,7 @@ dependencies = [
  "lazyinit",
  "log",
  "memory_addr",
- "percpu 0.4.0",
+ "percpu",
  "timer_list",
 ]
 
@@ -1712,36 +1711,14 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
 name = "percpu"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2a4c33508cf5a2e8ddccee074a1e5e7c2d5ca91341da8656268eb437bf4f8a2"
-dependencies = [
- "cfg-if",
- "percpu_macros 0.3.2",
- "x86",
-]
-
-[[package]]
-name = "percpu"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "53cf38d521e1c0c7d294e2653c4a93edb3b60ebb1bc529e2f19a647be8e36176"
 dependencies = [
  "cfg-if",
  "kernel_guard",
- "percpu_macros 0.4.0",
+ "percpu_macros",
  "x86",
-]
-
-[[package]]
-name = "percpu_macros"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9d0188f16e062758e306b2f9fdd235c1e297f34e9423ab1f1ce11324dd5f2da1"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.117",
 ]
 
 [[package]]
