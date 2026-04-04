@@ -31,8 +31,23 @@ endef
 
 clippy_args := -A clippy::new_without_default -A unsafe_op_in_unsafe_fn
 
+axstd_feature_file := $(CURDIR)/ulib/axstd/Cargo.toml
+axstd_features_trace_only := $(shell awk '\
+  /^\[features\]$$/{in_features=1;next} \
+  /^\[/{if(in_features)exit} \
+  in_features && /^[[:space:]]*[A-Za-z0-9_-]+[[:space:]]*=/{ \
+  line=$$0; \
+  sub(/^[[:space:]]*/, "", line); \
+  split(line, parts, "="); \
+  key=parts[1]; \
+  sub(/[[:space:]]*$$/, "", key); \
+  if (key ~ /^log-level-/ && key != "log-level-trace") next; \
+  printf "%s ", key \
+  }' $(axstd_feature_file))
+
 define cargo_clippy
-  $(call run_cmd,cargo clippy,--all-features --workspace --exclude axlog $(1) $(verbose) -- $(clippy_args))
+  $(call run_cmd,cargo clippy,--all-features --workspace --exclude axlog --exclude axfeat --exclude axstd $(1) $(verbose) -- $(clippy_args))
+  $(call run_cmd,cargo clippy,-p axstd --features "$(strip $(axstd_features_trace_only))" $(1) $(verbose) -- $(clippy_args))
   $(call run_cmd,cargo clippy,-p axlog $(1) $(verbose) -- $(clippy_args))
 endef
 
