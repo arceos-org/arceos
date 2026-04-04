@@ -1,6 +1,7 @@
 use axerrno::AxResult;
 use axio::{BufReader, prelude::*};
 use axsync::Mutex;
+use lazyinit::LazyInit;
 
 #[cfg(feature = "fd")]
 use {alloc::sync::Arc, axerrno::LinuxError, axerrno::LinuxResult, axio::PollState};
@@ -92,7 +93,10 @@ impl Write for Stdout {
 
 /// Constructs a new handle to the standard input of the current process.
 pub fn stdin() -> Stdin {
-    static INSTANCE: Mutex<BufReader<StdinRaw>> = Mutex::new(BufReader::new(StdinRaw));
+    static INSTANCE: LazyInit<Mutex<BufReader<StdinRaw>>> = LazyInit::new();
+    if !INSTANCE.is_inited() {
+        INSTANCE.init_once(Mutex::new(BufReader::new(StdinRaw)));
+    }
     Stdin { inner: &INSTANCE }
 }
 
