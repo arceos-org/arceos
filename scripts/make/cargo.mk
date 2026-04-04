@@ -41,6 +41,7 @@ axstd_features_trace_only := $(shell awk '\
   split(line, parts, "="); \
   key=parts[1]; \
   sub(/[[:space:]]*$$/, "", key); \
+  if (key == "default") next; \
   if (key ~ /^log-level-/ && key != "log-level-trace") next; \
   printf "%s ", key \
   }' $(axstd_feature_file))
