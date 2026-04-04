@@ -27,6 +27,8 @@ endif
 
 ifeq ($(ARCH), riscv64)
   CFLAGS += -march=rv64gc -mabi=lp64d -mcmodel=medany
+else ifeq ($(ARCH), x86_64)
+  CFLAGS += -mcmodel=large
 else ifeq ($(ARCH), loongarch64)
   CFLAGS += -msoft-float
 endif
