@@ -379,12 +379,14 @@ dependencies = [
 [[package]]
 name = "axdriver_base"
 version = "0.2.0"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=main#983e30d1df6dfc18293a0eb7eedf6b0b0aea0bb2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "542f9ef3269979924aed3e80d0c810216033c695ccf7ac3392f420c03953fabe"
 
 [[package]]
 name = "axdriver_block"
 version = "0.2.0"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=main#983e30d1df6dfc18293a0eb7eedf6b0b0aea0bb2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "819201937013e71bb25deb23309ff14e1c33738684ce63cf621495c506d29658"
 dependencies = [
  "axdriver_base",
  "bcm2835-sdhci",
@@ -394,7 +396,8 @@ dependencies = [
 [[package]]
 name = "axdriver_display"
 version = "0.2.0"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=main#983e30d1df6dfc18293a0eb7eedf6b0b0aea0bb2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bcee56ad2f577329827000b40e08b0fc16a94faebb9e204db5c90326750a3575"
 dependencies = [
  "axdriver_base",
 ]
@@ -402,7 +405,8 @@ dependencies = [
 [[package]]
 name = "axdriver_net"
 version = "0.2.0"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=main#983e30d1df6dfc18293a0eb7eedf6b0b0aea0bb2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c66186545c1e37f43aba659c14be61857d43d37ce4f75ebac382cd276bf50619"
 dependencies = [
  "axdriver_base",
  "fxmac_rs",
@@ -414,7 +418,8 @@ dependencies = [
 [[package]]
 name = "axdriver_pci"
 version = "0.2.0"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=main#983e30d1df6dfc18293a0eb7eedf6b0b0aea0bb2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7c7f9b680051dd1a872378a27c3dfb115559448e0a662d11f13a82caca536e75"
 dependencies = [
  "virtio-drivers",
 ]
@@ -422,7 +427,8 @@ dependencies = [
 [[package]]
 name = "axdriver_virtio"
 version = "0.2.0"
-source = "git+https://github.com/arceos-org/axdriver_crates.git?branch=main#983e30d1df6dfc18293a0eb7eedf6b0b0aea0bb2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e65e667efb1cee96d441aae246bf827713d05e6bf46885b7aabb449c50e4a147"
 dependencies = [
  "axdriver_base",
  "axdriver_block",
