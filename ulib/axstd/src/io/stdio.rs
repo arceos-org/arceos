@@ -1,5 +1,6 @@
 use crate::io::{self, BufReader, prelude::*};
 use crate::sync::{Mutex, MutexGuard};
+use lazyinit::LazyInit;
 
 #[cfg(feature = "alloc")]
 use alloc::{string::String, vec::Vec};
@@ -150,7 +151,10 @@ impl Write for StdoutLock<'_> {
 
 /// Constructs a new handle to the standard input of the current process.
 pub fn stdin() -> Stdin {
-    static INSTANCE: Mutex<BufReader<StdinRaw>> = Mutex::new(BufReader::new(StdinRaw));
+    static INSTANCE: LazyInit<Mutex<BufReader<StdinRaw>>> = LazyInit::new();
+    if !INSTANCE.is_inited() {
+        INSTANCE.init_once(Mutex::new(BufReader::new(StdinRaw)));
+    }
     Stdin { inner: &INSTANCE }
 }
 

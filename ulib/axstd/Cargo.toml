@@ -83,7 +83,8 @@ log-level-trace = ["axfeat/log-level-trace"]
 [dependencies]
 axfeat = { workspace = true }
 arceos_api = { workspace = true }
-axio = "0.1"
-axerrno = "0.1"
+axio = "0.2"
+axerrno = "0.2"
+lazyinit = "0.2"
 kspin = "0.2"
 lock_api = { version = "0.4", default-features = false }
