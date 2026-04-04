@@ -12,7 +12,7 @@ fn make_disk() -> std::io::Result<RamDisk> {
     println!("Loading disk image from {:?} ...", path);
     let data = std::fs::read(path)?;
     println!("size = {} bytes", data.len());
-    Ok(RamDisk::from(&data))
+    Ok(RamDisk::copy_from_slice(&data))
 }
 
 #[test]
