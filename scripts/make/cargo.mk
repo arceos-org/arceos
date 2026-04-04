@@ -56,10 +56,13 @@ all_packages := \
   axfeat arceos_api axstd axlibc
 
 define cargo_doc
-  $(call run_cmd,cargo doc,--no-deps --all-features --workspace --exclude "arceos-*" $(verbose))
+  $(call run_cmd,cargo doc,--no-deps --all-features --workspace --exclude "arceos-*" --exclude axfeat --exclude axlog --exclude axstd $(verbose))
+  $(call run_cmd,cargo rustdoc,-p axfeat $(verbose))
+  $(call run_cmd,cargo rustdoc,-p axlog $(verbose))
+  $(call run_cmd,cargo rustdoc,-p axstd --features "$(strip $(axstd_features_trace_only))" $(verbose))
   @# run twice to fix broken hyperlinks
   $(foreach p,$(all_packages), \
-    $(call run_cmd,cargo rustdoc,--all-features -p $(p) $(verbose))
+    $(if $(filter axfeat axlog axstd,$(p)),,$(call run_cmd,cargo rustdoc,--all-features -p $(p) $(verbose)))
   )
 endef
 
