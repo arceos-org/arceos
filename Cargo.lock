@@ -584,7 +584,7 @@ name = "axlibc"
 version = "0.2.0"
 dependencies = [
  "arceos_posix_api",
- "axerrno 0.2.2",
+ "axerrno 0.1.2",
  "axfeat",
  "axio",
  "bindgen",
