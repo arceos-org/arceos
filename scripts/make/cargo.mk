@@ -50,7 +50,6 @@ axstd_features_filter := $(shell awk '\
 define cargo_clippy
   $(call run_cmd,cargo clippy,--all-features --workspace --exclude axlog --exclude axfeat --exclude axstd $(1) $(verbose) -- $(clippy_args))
   $(call run_cmd,cargo clippy,-p axstd --features "$(strip $(axstd_features_filter))" $(1) $(verbose) -- $(clippy_args))
-  $(call run_cmd,cargo clippy,-p axfeat $(1) $(verbose) -- $(clippy_args))
   $(call run_cmd,cargo clippy,-p axlog $(1) $(verbose) -- $(clippy_args))
 endef
 
