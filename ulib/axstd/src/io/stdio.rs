@@ -153,7 +153,7 @@ impl Write for StdoutLock<'_> {
 pub fn stdin() -> Stdin {
     static INSTANCE: LazyInit<Mutex<BufReader<StdinRaw>>> = LazyInit::new();
     INSTANCE.init_once(Mutex::new(BufReader::new(StdinRaw)));
-    
+
     Stdin { inner: &INSTANCE }
 }
 
