@@ -495,6 +495,7 @@ dependencies = [
 [[package]]
 name = "axcpu"
 version = "0.3.0-preview.8"
+source = "git+https://github.com/arceos-org/axcpu?rev=c19d87b#c19d87bca74e3039a510996ed5494c5942401efb"
 dependencies = [
  "aarch64-cpu 11.2.0",
  "axbacktrace",
@@ -508,30 +509,6 @@ dependencies = [
  "page_table_multiarch",
  "percpu",
  "riscv 0.16.0",
- "tock-registers 0.10.1",
- "x86",
- "x86_64",
-]
-
-[[package]]
-name = "axcpu"
-version = "0.3.0-preview.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "361edfc761188b19fb3d906b0b155942a6290068ee88d42f3b1f0ce31dcd099e"
-dependencies = [
- "aarch64-cpu 11.2.0",
- "axbacktrace",
- "cfg-if",
- "lazyinit",
- "linkme",
- "log",
- "loongArch64",
- "memory_addr",
- "page_table_entry",
- "page_table_multiarch",
- "percpu",
- "riscv 0.16.0",
- "static_assertions",
  "tock-registers 0.10.1",
  "x86",
  "x86_64",
@@ -570,7 +547,7 @@ dependencies = [
  "axconfig",
  "axdma",
  "axdriver_base",
- "axdriver_block 0.1.4-preview.3 (git+https://github.com/arceos-org/axdriver_crates?rev=54a7c05)",
+ "axdriver_block",
  "axdriver_display",
  "axdriver_input",
  "axdriver_net",
@@ -591,16 +568,6 @@ name = "axdriver_base"
 version = "0.1.4-preview.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4614d9e505dae224e4e4cb934c8fa916d77ecfb7b770a8bf8eac78bdeec3dba"
-
-[[package]]
-name = "axdriver_block"
-version = "0.1.4-preview.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7cccf23999a9dff620ef87c08c571509d2e90cc9dc80f932381b0fd949f020f9"
-dependencies = [
- "axdriver_base",
- "log",
-]
 
 [[package]]
 name = "axdriver_block"
@@ -663,7 +630,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "da6c36cc900745f3bab9de0dd8d5a2d5ac720a253937b3c5f3ab81bbb9c9e139"
 dependencies = [
  "axdriver_base",
- "axdriver_block 0.1.4-preview.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "axdriver_block",
  "axdriver_display",
  "axdriver_input",
  "axdriver_net",
@@ -719,7 +686,7 @@ dependencies = [
  "axalloc",
  "axbacktrace",
  "axconfig",
- "axcpu 0.3.0-preview.8",
+ "axcpu",
  "axdisplay",
  "axdriver",
  "axfs",
@@ -835,7 +802,7 @@ version = "0.3.0-preview.3"
 dependencies = [
  "axalloc",
  "axconfig",
- "axcpu 0.3.0-preview.8",
+ "axcpu",
  "axplat 0.3.1-pre.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "axplat-aarch64-qemu-virt",
  "axplat-dyn",
@@ -1030,7 +997,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c33f96885b0209325e13e0dc85c2850fb1761124d38b1e95cac9d8c81bb8b6a"
 dependencies = [
  "axconfig-macros",
- "axcpu 0.3.0-preview.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "axcpu",
  "axplat 0.3.1-pre.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "axplat-aarch64-peripherals",
  "dw_apb_uart 0.1.0",
@@ -1049,7 +1016,7 @@ dependencies = [
  "arm-gic-driver 0.16.4",
  "arm_pl011",
  "arm_pl031",
- "axcpu 0.3.0-preview.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "axcpu",
  "axplat 0.3.1-pre.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "int_ratio",
  "kspin",
@@ -1065,7 +1032,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "16647a6fbacbb7a8161ac0312da4df9a6d240d5bd0c31cd3dbde154a37897302"
 dependencies = [
  "axconfig-macros",
- "axcpu 0.3.0-preview.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "axcpu",
  "axplat 0.3.1-pre.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "axplat-aarch64-peripherals",
  "log",
@@ -1079,7 +1046,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dff51219e3ff388368eec683f83b5a8184b3125bac709006f6ac22e435dc07e4"
 dependencies = [
  "axconfig-macros",
- "axcpu 0.3.0-preview.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "axcpu",
  "axplat 0.3.1-pre.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "axplat-aarch64-peripherals",
  "log",
@@ -1094,7 +1061,7 @@ checksum = "ebe8b8fd371ab4a8428877333809c253d3794c192c4984292faf52df885b2878"
 dependencies = [
  "aarch64-cpu 11.2.0",
  "axconfig-macros",
- "axcpu 0.3.0-preview.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "axcpu",
  "axplat 0.3.1-pre.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "axplat-aarch64-peripherals",
  "log",
@@ -1108,9 +1075,9 @@ dependencies = [
  "anyhow",
  "axalloc",
  "axconfig-macros",
- "axcpu 0.3.0-preview.8",
+ "axcpu",
  "axdriver_base",
- "axdriver_block 0.1.4-preview.3 (git+https://github.com/arceos-org/axdriver_crates?rev=54a7c05)",
+ "axdriver_block",
  "axdriver_virtio",
  "axerrno 0.2.2",
  "axklib",
@@ -1133,7 +1100,7 @@ version = "0.3.1-pre.6"
 source = "git+https://github.com/arceos-org/axplat_crates/?rev=fbfd02d#fbfd02d1c60ba1adfef2587045ff2ac114fdd298"
 dependencies = [
  "axconfig-macros",
- "axcpu 0.3.0-preview.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "axcpu",
  "axplat 0.3.1-pre.6 (git+https://github.com/arceos-org/axplat_crates/?rev=fbfd02d)",
  "chrono",
  "kspin",
@@ -1172,7 +1139,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08f91aff22afadd24807e34fb94fe4d0d2c8c5b86fb89dd6ff87a8093f812518"
 dependencies = [
  "axconfig-macros",
- "axcpu 0.3.0-preview.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "axcpu",
  "axplat 0.3.1-pre.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "kspin",
  "lazyinit",
@@ -1189,7 +1156,7 @@ name = "axplat-riscv64-sg2002"
 version = "0.1.0"
 dependencies = [
  "axconfig-macros",
- "axcpu 0.3.0-preview.8",
+ "axcpu",
  "axplat 0.3.1-pre.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "dw_apb_uart 0.2.0",
  "kspin",
@@ -1206,7 +1173,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9df26719c444ca8302e9366b8dc5abe8735933ea756ff094e3ac5ce3b64c41a1"
 dependencies = [
  "axconfig-macros",
- "axcpu 0.3.0-preview.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "axcpu",
  "axplat 0.3.1-pre.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "bitflags 2.11.0",
  "heapless 0.9.2",
@@ -3584,12 +3551,6 @@ dependencies = [
  "log",
  "managed",
 ]
-
-[[package]]
-name = "static_assertions"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "strsim"

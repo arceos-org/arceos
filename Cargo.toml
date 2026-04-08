@@ -71,6 +71,8 @@ default-members = [
     "ulib/axlibc",
 ]
 
+exclude = ["local"]
+
 [workspace.package]
 version = "0.3.0-preview.3"
 edition = "2024"
@@ -124,7 +126,7 @@ axerrno = "0.2"
 axfs-ng-vfs = "0.1"
 axio = "0.3.0-pre.1"
 axklib = "0.3"
-axcpu = { path = "local/axcpu" }
+axcpu = "0.3.0-preview.7"
 axplat = "0.3.1-pre.6"
 axplat-aarch64-bsta1000b = "0.3.1-pre.6"
 axplat-aarch64-phytium-pi = "0.3.1-pre.6"
@@ -153,3 +155,7 @@ page_table_multiarch = { version = "0.6", features = ["axerrno"] }
 percpu = "0.2.3-preview.1"
 scope-local = "0.1"
 spin = "0.10"
+
+[patch.crates-io]
+axdriver_block = { git = "https://github.com/arceos-org/axdriver_crates", rev = "54a7c05" }
+axcpu = { git = "https://github.com/arceos-org/axcpu", rev = "c19d87b" }
