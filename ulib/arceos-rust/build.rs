@@ -23,8 +23,10 @@ fn main() {
     // build the ArceOS library
     let artifact_path = compile_foo_project(&lib_dir, &out_dir, &config_path);
     // rename symbols to avoid conflicts
-    let rename_list = lib_dir.join("symbol_rename.txt");
     let lib_file = artifact_path.join(format!("lib{}.a", LIB_NAME));
+
+    // Auto-generate rename list by extracting all ___rustc symbols
+    let rename_list = generate_rename_list(&lib_file);
     rename_symbols(&lib_file, &rename_list);
     // copy linker script
     let linker_script_path = artifact_path.join(format!("linker_{}.lds", get_platform()));
@@ -144,6 +146,54 @@ fn compile_foo_project(lib_dir: &PathBuf, out_dir: &PathBuf, config_path: &PathB
 
 fn cargo() -> String {
     env::var("CARGO").unwrap()
+}
+
+fn generate_rename_list(lib_path: &Path) -> PathBuf {
+    // Use rust-nm to extract all symbols from the library
+    let nm_output = Command::new("rust-nm")
+        .arg(lib_path)
+        .output()
+        .expect("Failed to run rust-nm. Please ensure llvm-tools-preview is installed.");
+
+    if !nm_output.status.success() {
+        panic!(
+            "rust-nm failed:\n{}",
+            String::from_utf8_lossy(&nm_output.stderr)
+        );
+    }
+
+    let symbols_output = String::from_utf8_lossy(&nm_output.stdout);
+
+    // Extract all unique symbols containing "___rustc" and generate rename pairs
+    let mut rename_pairs = std::collections::HashSet::new();
+    for line in symbols_output.lines() {
+        // nm output format: <address> <type> <symbol_name>
+        // Extract the last field (symbol name)
+        if let Some(symbol) = line.split_whitespace().last()
+            && symbol.contains("___rustc")
+        {
+            // Rename by appending "_1" suffix
+            rename_pairs.insert((symbol.to_string(), format!("{}_1", symbol)));
+        }
+    }
+
+    // Write rename list to a temporary file
+    let rename_list_path = lib_path.parent().unwrap().join("symbol_rename_auto.txt");
+    let mut file = std::fs::File::create(&rename_list_path)
+        .expect("Failed to create auto-generated rename list file");
+
+    use std::io::Write;
+    for (old_symbol, new_symbol) in &rename_pairs {
+        writeln!(file, "{} {}", old_symbol, new_symbol)
+            .expect("Failed to write to rename list file");
+    }
+
+    println!(
+        "cargo:warning=Auto-generated {} symbol rename rules",
+        rename_pairs.len()
+    );
+
+    rename_list_path
 }
 
 fn rename_symbols(lib_path: &Path, rename_list: &Path) {
