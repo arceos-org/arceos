@@ -68,3 +68,14 @@ pub mod time;
 pub mod fs;
 #[cfg(feature = "net")]
 pub mod net;
+
+#[unsafe(no_mangle)]
+pub fn __app_main() {
+    unsafe extern "C" {
+        /// Application's entry point.
+        fn main();
+    }
+    unsafe {
+        main();
+    }
+}

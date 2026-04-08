@@ -114,3 +114,14 @@ pub use self::{
     time::{clock_gettime, nanosleep},
     unistd::{abort, exit, getpid},
 };
+
+#[unsafe(no_mangle)]
+pub fn __app_main() {
+    unsafe extern "C" {
+        /// Application's entry point.
+        fn main();
+    }
+    unsafe {
+        main();
+    }
+}
