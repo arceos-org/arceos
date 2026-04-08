@@ -69,13 +69,3 @@ axipi = { path = "modules/axipi" }
 
 [profile.release]
 lto = true
-
-[patch.crates-io]
-axplat = { git = "https://github.com/arceos-org/axplat_crates", branch = "debin/update" }
-axplat-x86-pc = { git = "https://github.com/arceos-org/axplat_crates", branch = "debin/update" }
-axplat-aarch64-bsta1000b = { git = "https://github.com/arceos-org/axplat_crates", branch = "debin/update" }
-axplat-loongarch64-qemu-virt = { git = "https://github.com/arceos-org/axplat_crates", branch = "debin/update" }
-axplat-arm-peripherals = { git = "https://github.com/arceos-org/axplat_crates", branch = "debin/update" }
-axfs_vfs ={ git = "https://github.com/arceos-org/axfs_crates.git", branch = "debin/update"}
-axio = { git = "https://github.com/arceos-org/axio.git", branch = "main" }
-axcpu = { git = "https://github.com/arceos-org/axcpu.git", branch = "debin/update" }
