@@ -152,9 +152,8 @@ impl Write for StdoutLock<'_> {
 /// Constructs a new handle to the standard input of the current process.
 pub fn stdin() -> Stdin {
     static INSTANCE: LazyInit<Mutex<BufReader<StdinRaw>>> = LazyInit::new();
-    if !INSTANCE.is_inited() {
-        INSTANCE.init_once(Mutex::new(BufReader::new(StdinRaw)));
-    }
+    INSTANCE.init_once(Mutex::new(BufReader::new(StdinRaw)));
+    
     Stdin { inner: &INSTANCE }
 }
 
