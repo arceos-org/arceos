@@ -853,7 +853,6 @@ dependencies = [
  "axfeat",
  "axio",
  "kspin",
- "lazyinit",
  "lock_api",
 ]
 
