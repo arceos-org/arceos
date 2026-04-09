@@ -1,4 +1,4 @@
-use allocator::AllocError;
+use axallocator::AllocError;
 use axerrno::{AxError, AxResult};
 use memory_addr::{PhysAddr, VirtAddr};
 

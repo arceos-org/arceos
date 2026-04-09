@@ -17,7 +17,7 @@ axalloc = { workspace = true }
 axconfig = { workspace = true }
 
 log = "0.4"
-axerrno = "0.2"
+axerrno = "0.1"
 lazyinit = "0.2"
 memory_addr = "0.4"
 kspin = "0.2"

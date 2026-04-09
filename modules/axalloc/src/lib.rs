@@ -13,7 +13,7 @@ extern crate alloc;
 
 mod page;
 
-use allocator::{AllocResult, BaseAllocator, BitmapPageAllocator, ByteAllocator, PageAllocator};
+use axallocator::{AllocResult, BaseAllocator, BitmapPageAllocator, ByteAllocator, PageAllocator};
 use core::alloc::{GlobalAlloc, Layout};
 use core::ptr::NonNull;
 use kspin::SpinNoIrq;
@@ -26,13 +26,13 @@ pub use page::GlobalPage;
 cfg_if::cfg_if! {
     if #[cfg(feature = "slab")] {
         /// The default byte allocator.
-        pub type DefaultByteAllocator = allocator::SlabByteAllocator;
+        pub type DefaultByteAllocator = axallocator::SlabByteAllocator;
     } else if #[cfg(feature = "buddy")] {
         /// The default byte allocator.
-        pub type DefaultByteAllocator = allocator::BuddyByteAllocator;
+        pub type DefaultByteAllocator = axallocator::BuddyByteAllocator;
     } else if #[cfg(feature = "tlsf")] {
         /// The default byte allocator.
-        pub type DefaultByteAllocator = allocator::TlsfByteAllocator;
+        pub type DefaultByteAllocator = axallocator::TlsfByteAllocator;
     }
 }
 
@@ -46,7 +46,7 @@ cfg_if::cfg_if! {
 /// Currently, [`TlsfByteAllocator`] is used as the byte allocator, while
 /// [`BitmapPageAllocator`] is used as the page allocator.
 ///
-/// [`TlsfByteAllocator`]: allocator::TlsfByteAllocator
+/// [`TlsfByteAllocator`]: axallocator::TlsfByteAllocator
 pub struct GlobalAllocator {
     balloc: SpinNoIrq<DefaultByteAllocator>,
     palloc: SpinNoIrq<BitmapPageAllocator<PAGE_SIZE>>,

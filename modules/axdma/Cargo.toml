@@ -14,8 +14,8 @@ documentation = "https://arceos-org.github.io/arceos/axdma/index.html"
 log = "0.4"
 kspin = "0.2"
 memory_addr = "0.4"
-axerrno = "0.2"
-allocator = { git = "https://github.com/arceos-org/allocator.git", tag = "v0.1.1" }
+axerrno = "0.1"
+axallocator = { version = "0.2.0", features = ["bitmap"] }
 axalloc = { workspace = true }
 axmm = { workspace = true }
 axconfig = { workspace = true }
