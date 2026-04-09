@@ -200,7 +200,6 @@ dependencies = [
  "ctor_bare",
  "flatten_objects",
  "lazy_static",
- "lazyinit",
  "spin 0.10.0",
  "static_assertions",
 ]
