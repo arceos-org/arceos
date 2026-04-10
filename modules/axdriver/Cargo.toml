@@ -16,6 +16,7 @@ bus-mmio = []
 bus-pci = ["dep:axdriver_pci", "dep:axhal", "dep:axconfig"]
 net = ["dep:axdriver_net"]
 block = ["dep:axdriver_block"]
+mbr = ["dep:gpt_disk_io"]
 display = ["dep:axdriver_display"]
 input = ["dep:axdriver_input"]
 vsock = ["axdriver_vsock"]
@@ -32,6 +33,7 @@ virtio-socket = ["vsock", "virtio", "axdriver_virtio/socket"]
 ramdisk = ["block", "axdriver_block/ramdisk"]
 bcm2835-sdhci = ["block", "axdriver_block/bcm2835-sdhci"]
 sdmmc = ["block", "axdriver_block/sdmmc", "dep:axhal", "dep:axconfig"]
+cvsd = ["block", "mbr", "axdriver_block/cvsd", "dep:axhal", "dep:axconfig"]
 ahci = ["block", "axdriver_block/ahci", "dep:axhal", "dep:axconfig"]
 ixgbe = ["net", "axdriver_net/ixgbe", "dep:axalloc", "dep:axhal", "dep:axdma"]
 fxmac = ["net", "axdriver_net/fxmac", "dep:axalloc", "dep:axhal", "dep:axdma"]
@@ -61,3 +63,4 @@ crate_interface.workspace = true
 log.workspace = true
 smallvec = { version = "1.15", features = ["const_generics", "union"] }
 axplat-dyn = { workspace = true, optional = true }
+gpt_disk_io = { version = "0.16.2", optional = true }
