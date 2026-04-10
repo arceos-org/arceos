@@ -98,11 +98,15 @@ input = [
 # Real Time Clock (RTC) Driver.
 rtc = ["axhal/rtc", "axruntime/rtc"]
 
+# SD card driver for sg2002
+plat-sg2002 = ["driver-cvsd", "axcpu/xuantie-c9xx"]
+
 # Device drivers
 bus-mmio = ["axdriver?/bus-mmio"]
 bus-pci = ["axdriver?/bus-pci"]
 driver-ramdisk = ["axdriver?/ramdisk", "axfs?/use-ramdisk"]
 driver-sdmmc = ["axdriver?/sdmmc"]
+driver-cvsd = ["axdriver?/cvsd"]
 driver-ixgbe = ["axdriver?/ixgbe"]
 driver-fxmac = ["axdriver?/fxmac"]                          # fxmac ethernet driver for PhytiumPi
 driver-bcm2835-sdhci = ["axdriver?/bcm2835-sdhci"]
@@ -113,6 +117,7 @@ dwarf = ["alloc", "axbacktrace/dwarf"]
 
 [dependencies]
 axalloc = { workspace = true, optional = true }
+axcpu.workspace = true
 axbacktrace.workspace = true
 axconfig = { workspace = true, optional = true }
 axdisplay = { workspace = true, optional = true }
