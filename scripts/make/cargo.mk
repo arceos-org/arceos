@@ -31,25 +31,9 @@ endef
 
 clippy_args := -A clippy::new_without_default -A unsafe_op_in_unsafe_fn
 
-axstd_cargo_file := $(CURDIR)/ulib/axstd/Cargo.toml
-# Extract features from axstd's Cargo.toml, excluding "default" and "log-level-*" features except "log-level-trace"
-axstd_features_filter := $(shell awk '\
-  /^\[features\]$$/{in_features=1;next} \
-  /^\[/{if(in_features)exit} \
-  in_features && /^[[:space:]]*[A-Za-z0-9_-]+[[:space:]]*=/{ \
-  line=$$0; \
-  sub(/^[[:space:]]*/, "", line); \
-  split(line, parts, "="); \
-  key=parts[1]; \
-  sub(/[[:space:]]*$$/, "", key); \
-  if (key == "default") next; \
-  if (key ~ /^log-level-/ && key != "log-level-trace") next; \
-  printf "%s ", key \
-  }' $(axstd_cargo_file))
-
 define cargo_clippy
   $(call run_cmd,cargo clippy,--all-features --workspace --exclude axlog --exclude axfeat --exclude axstd $(1) $(verbose) -- $(clippy_args))
-  $(call run_cmd,cargo clippy,-p axstd --features "$(strip $(axstd_features_filter))" $(1) $(verbose) -- $(clippy_args))
+  $(call run_cmd,cargo clippy,-p axstd --features "_axstd_test_all" $(1) $(verbose) -- $(clippy_args))
   $(call run_cmd,cargo clippy,-p axlog $(1) $(verbose) -- $(clippy_args))
 endef
 
@@ -61,7 +45,7 @@ define cargo_doc
   $(call run_cmd,cargo doc,--no-deps --all-features --workspace --exclude "arceos-*" --exclude axfeat --exclude axlog --exclude axstd $(verbose))
   $(call run_cmd,cargo rustdoc,-p axfeat $(verbose))
   $(call run_cmd,cargo rustdoc,-p axlog $(verbose))
-  $(call run_cmd,cargo rustdoc,-p axstd --features "$(strip $(axstd_features_filter))" $(verbose))
+  $(call run_cmd,cargo rustdoc,-p axstd --features "_axstd_test_all" $(verbose))
   @# run twice to fix broken hyperlinks
   $(foreach p,$(all_packages), \
     $(if $(filter axfeat axlog axstd,$(p)),,$(call run_cmd,cargo rustdoc,--all-features -p $(p) $(verbose)))
