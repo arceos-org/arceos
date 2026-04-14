@@ -1,25 +1,26 @@
 use crate::{AllDevices, prelude::*};
 use axdriver_pci::{
-    BarInfo, Cam, Command, DeviceFunction, HeaderType, MemoryBarType, PciRangeAllocator, PciRoot,
+    BarInfo, Cam, Command, ConfigurationAccess, DeviceFunction, HeaderType, MemoryBarType, MmioCam,
+    PciRangeAllocator, PciRoot,
 };
 use axhal::mem::phys_to_virt;
 
 const PCI_BAR_NUM: u8 = 6;
 
 fn config_pci_device(
-    root: &mut PciRoot,
+    root: &mut PciRoot<impl ConfigurationAccess>,
     bdf: DeviceFunction,
     allocator: &mut Option<PciRangeAllocator>,
 ) -> DevResult {
     let mut bar = 0;
     while bar < PCI_BAR_NUM {
         let info = root.bar_info(bdf, bar).unwrap();
-        if let BarInfo::Memory {
+        if let Some(BarInfo::Memory {
             address_type,
             address,
             size,
             ..
-        } = info
+        }) = info
         {
             // if the BAR address is not assigned, call the allocator and assign it.
             if size > 0 && address == 0 {
@@ -39,17 +40,17 @@ fn config_pci_device(
         // read the BAR info again after assignment.
         let info = root.bar_info(bdf, bar).unwrap();
         match info {
-            BarInfo::IO { address, size } => {
+            Some(BarInfo::IO { address, size }) => {
                 if address > 0 && size > 0 {
                     debug!("  BAR {}: IO  [{:#x}, {:#x})", bar, address, address + size);
                 }
             }
-            BarInfo::Memory {
+            Some(BarInfo::Memory {
                 address_type,
                 prefetchable,
                 address,
                 size,
-            } => {
+            }) => {
                 if address > 0 && size > 0 {
                     debug!(
                         "  BAR {}: MEM [{:#x}, {:#x}){}{}",
@@ -65,10 +66,11 @@ fn config_pci_device(
                     );
                 }
             }
+            None => {}
         }
 
         bar += 1;
-        if info.takes_two_entries() {
+        if info.as_ref().is_some_and(BarInfo::takes_two_entries) {
             bar += 1;
         }
     }
@@ -85,7 +87,8 @@ fn config_pci_device(
 impl AllDevices {
     pub(crate) fn probe_bus_devices(&mut self) {
         let base_vaddr = phys_to_virt(axconfig::devices::PCI_ECAM_BASE.into());
-        let mut root = unsafe { PciRoot::new(base_vaddr.as_mut_ptr(), Cam::Ecam) };
+        let cam = unsafe { MmioCam::new(base_vaddr.as_mut_ptr(), Cam::Ecam) };
+        let mut root = PciRoot::new(cam);
 
         // PCI 32-bit MMIO space
         let mut allocator = axconfig::devices::PCI_RANGES

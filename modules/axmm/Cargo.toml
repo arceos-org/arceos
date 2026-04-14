@@ -16,9 +16,9 @@ axhal = { workspace = true, features = ["paging"] }
 axalloc = { workspace = true }
 axconfig = { workspace = true }
 
-log = "=0.4.21"
+log = "0.4"
 axerrno = "0.1"
 lazyinit = "0.2"
 memory_addr = "0.4"
-kspin = "0.1"
+kspin = "0.2"
 memory_set = "0.4"

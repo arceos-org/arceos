@@ -1,7 +1,7 @@
 use core::{alloc::Layout, ptr::NonNull};
 
-use allocator::{AllocError, AllocResult, BaseAllocator, ByteAllocator};
 use axalloc::{DefaultByteAllocator, global_allocator};
+use axallocator::{AllocError, AllocResult, BaseAllocator, ByteAllocator};
 use axhal::{mem::virt_to_phys, paging::MappingFlags};
 use kspin::SpinNoIrq;
 use log::{debug, error};

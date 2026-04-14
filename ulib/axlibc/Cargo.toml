@@ -57,7 +57,7 @@ epoll = ["arceos_posix_api/epoll"]
 [dependencies]
 axfeat = { workspace = true }
 arceos_posix_api = { workspace = true }
-axio = "0.1"
+axio = "0.2"
 axerrno = "0.1"
 
 [build-dependencies]

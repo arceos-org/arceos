@@ -8,7 +8,7 @@ mod dma;
 
 use core::{alloc::Layout, ptr::NonNull};
 
-use allocator::AllocResult;
+use axallocator::AllocResult;
 use memory_addr::PhysAddr;
 
 use self::dma::ALLOCATOR;

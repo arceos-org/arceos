@@ -80,10 +80,46 @@ log-level-info = ["axfeat/log-level-info"]
 log-level-debug = ["axfeat/log-level-debug"]
 log-level-trace = ["axfeat/log-level-trace"]
 
+# CI/clippy full feature set for axstd (exclude mutually exclusive log levels).
+_axstd_test_all = [
+    "smp",
+    "fp-simd",
+    "irq",
+    "ipi",
+    "myplat",
+    "defplat",
+    "alloc",
+    "alloc-tlsf",
+    "alloc-slab",
+    "alloc-buddy",
+    "page-alloc-64g",
+    "page-alloc-4g",
+    "paging",
+    "dma",
+    "tls",
+    "multitask",
+    "sched-fifo",
+    "sched-rr",
+    "sched-cfs",
+    "fs",
+    "myfs",
+    "net",
+    "dns",
+    "display",
+    "rtc",
+    "bus-mmio",
+    "bus-pci",
+    "driver-ramdisk",
+    "driver-ixgbe",
+    "driver-fxmac",
+    "driver-bcm2835-sdhci",
+    "log-level-trace",
+]
+
 [dependencies]
 axfeat = { workspace = true }
 arceos_api = { workspace = true }
-axio = "0.1"
+axio = "0.2"
 axerrno = "0.1"
-kspin = "0.1"
+kspin = "0.2"
 lock_api = { version = "0.4", default-features = false }

@@ -71,7 +71,9 @@ impl AddrSpace {
         if self.va_range.overlaps(other.va_range) {
             return ax_err!(InvalidInput, "address space overlap");
         }
-        self.pt.copy_from(&other.pt, other.base(), other.size());
+        self.pt
+            .cursor()
+            .copy_from(&other.pt, other.base(), other.size());
         Ok(())
     }
 
@@ -238,9 +240,9 @@ impl AddrSpace {
 
         // TODO
         self.pt
-            .protect_region(start, size, flags, true)
-            .map_err(|_| AxError::BadState)?
-            .ignore();
+            .cursor()
+            .protect_region(start, size, flags)
+            .map_err(|_| AxError::BadState)?;
         Ok(())
     }
 
@@ -294,6 +296,7 @@ impl AddrSpace {
         }
         if let Some(area) = self.areas.find(vaddr) {
             let orig_flags = area.flags();
+            let access_flags = MappingFlags::from_bits_truncate(access_flags.bits());
             if orig_flags.contains(access_flags) {
                 return area
                     .backend()

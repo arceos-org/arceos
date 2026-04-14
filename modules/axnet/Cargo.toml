@@ -14,17 +14,17 @@ smoltcp = []
 default = ["smoltcp"]
 
 [dependencies]
-log = "=0.4.21"
+log = "0.4"
 cfg-if = "1.0"
 spin = "0.10"
 lazyinit = "0.2"
 axerrno = "0.1"
-axio = "0.1"
+axio = "0.2"
 axhal = { workspace = true }
 axsync = { workspace = true }
 axtask = { workspace = true }
 axdriver = { workspace = true, features = ["net"] }
-axdriver_net = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2" }
+axdriver_net = "0.2"
 
 [dependencies.smoltcp]
 git = "https://github.com/rcore-os/smoltcp.git"

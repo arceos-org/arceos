@@ -42,21 +42,32 @@ impl Backend {
         );
         if populate {
             // allocate all possible physical frames for populated mapping.
+            let mut cursor = pt.cursor();
             for addr in PageIter4K::new(start, start + size).unwrap() {
-                if let Some(frame) = alloc_frame(true) {
-                    if let Ok(tlb) = pt.map(addr, frame, PageSize::Size4K, flags) {
-                        tlb.ignore(); // TLB flush on map is unnecessary, as there are no outdated mappings.
-                    } else {
-                        return false;
+                if let Some(frame) = alloc_frame(true)
+                    && cursor.map(addr, frame, PageSize::Size4K, flags).is_err()
+                {
+                    // Mapping failed; roll back any previously mapped pages in this range
+                    // and deallocate their frames to avoid leaks and partial mappings.
+                    for rollback_addr in PageIter4K::new(start, addr).unwrap() {
+                        if let Ok((mapped_frame, _, page_size)) = cursor.unmap(rollback_addr) {
+                            // We only expect 4K pages here, but avoid touching huge pages.
+                            if !page_size.is_huge() {
+                                dealloc_frame(mapped_frame);
+                            }
+                        }
                     }
+                    // Deallocate the just-allocated frame that failed to map.
+                    dealloc_frame(frame);
+                    return false;
                 }
             }
             true
         } else {
             // Map to a empty entry for on-demand mapping.
             let flags = MappingFlags::empty();
-            pt.map_region(start, |_| 0.into(), size, flags, false, false)
-                .map(|tlb| tlb.ignore())
+            pt.cursor()
+                .map_region(start, |_| 0.into(), size, flags, false)
                 .is_ok()
         }
     }
@@ -70,16 +81,13 @@ impl Backend {
     ) -> bool {
         debug!("unmap_alloc: [{:#x}, {:#x})", start, start + size);
         for addr in PageIter4K::new(start, start + size).unwrap() {
-            if let Ok((frame, page_size, tlb)) = pt.unmap(addr) {
+            if let Ok((frame, _, page_size)) = pt.cursor().unmap(addr) {
                 // Deallocate the physical frame if there is a mapping in the
                 // page table.
                 if page_size.is_huge() {
                     return false;
                 }
-                tlb.flush();
                 dealloc_frame(frame);
-            } else {
-                // Deallocation is needn't if the page is not mapped.
             }
         }
         true
@@ -98,9 +106,15 @@ impl Backend {
             // Allocate a physical frame lazily and map it to the fault address.
             // `vaddr` does not need to be aligned. It will be automatically
             // aligned during `pt.remap` regardless of the page size.
-            pt.remap(vaddr, frame, orig_flags)
-                .map(|(_, tlb)| tlb.flush())
-                .is_ok()
+            let res = pt.cursor().remap(vaddr, frame, orig_flags);
+            if let Err(e) = &res {
+                debug!(
+                    "handle_page_fault_alloc: remap failed for {:#x}: {:?}",
+                    vaddr, e
+                );
+                dealloc_frame(frame);
+            }
+            res.is_ok()
         } else {
             false
         }

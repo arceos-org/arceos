@@ -33,15 +33,15 @@ fxmac = ["net", "axdriver_net/fxmac", "dep:axalloc", "dep:axhal", "dep:axdma"]
 default = ["bus-pci"]
 
 [dependencies]
-log = "=0.4.21"
+log = "0.4"
 cfg-if = "1.0"
-crate_interface = "0.1.4"
-axdriver_base = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2" }
-axdriver_block = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2", optional = true }
-axdriver_net = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2", optional = true }
-axdriver_display = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2", optional = true }
-axdriver_pci = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2", optional = true }
-axdriver_virtio = { git = "https://github.com/arceos-org/axdriver_crates.git", tag = "v0.1.2", optional = true }
+crate_interface = "0.3"
+axdriver_base = { version = "0.2" }
+axdriver_block = { version = "0.2", optional = true }
+axdriver_net = { version = "0.2", optional = true }
+axdriver_display = { version = "0.2", optional = true }
+axdriver_pci = { version = "0.2", optional = true }
+axdriver_virtio = { version = "0.2", optional = true }
 axalloc = { workspace = true, optional = true }
 axhal = { workspace = true, optional = true }
 axconfig = { workspace = true, optional = true }

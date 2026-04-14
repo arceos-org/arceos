@@ -1,7 +1,7 @@
 //! Page table manipulation.
 
 use axalloc::global_allocator;
-use memory_addr::{PAGE_SIZE_4K, PhysAddr, VirtAddr};
+use memory_addr::{PhysAddr, VirtAddr};
 use page_table_multiarch::PagingHandler;
 
 use crate::mem::{phys_to_virt, virt_to_phys};
@@ -14,15 +14,15 @@ pub use page_table_multiarch::{MappingFlags, PageSize, PagingError, PagingResult
 pub struct PagingHandlerImpl;
 
 impl PagingHandler for PagingHandlerImpl {
-    fn alloc_frame() -> Option<PhysAddr> {
+    fn alloc_frames(num: usize, align: usize) -> Option<PhysAddr> {
         global_allocator()
-            .alloc_pages(1, PAGE_SIZE_4K)
+            .alloc_pages(num, align)
             .map(|vaddr| virt_to_phys(vaddr.into()))
             .ok()
     }
 
-    fn dealloc_frame(paddr: PhysAddr) {
-        global_allocator().dealloc_pages(phys_to_virt(paddr).as_usize(), 1)
+    fn dealloc_frames(paddr: PhysAddr, num: usize) {
+        global_allocator().dealloc_pages(phys_to_virt(paddr).as_usize(), num)
     }
 
     #[inline]

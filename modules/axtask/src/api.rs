@@ -98,10 +98,7 @@ fn init_cpu_mask_full() {
 }
 
 pub(crate) fn cpu_mask_full() -> AxCpuMask {
-    CPU_MASK_FULL
-        .get()
-        .expect("CPU mask not initialized")
-        .clone()
+    *CPU_MASK_FULL.get().expect("CPU mask not initialized")
 }
 
 /// Initializes the task scheduler for secondary CPUs.
