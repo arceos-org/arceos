@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["IPI_IRQ"],"enum":["IpiTarget"],"fn":["handle","irq_handler","register","send_ipi","set_enable","unregister"]};
