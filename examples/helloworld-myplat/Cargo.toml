@@ -28,7 +28,7 @@ axplat-aarch64-bsta1000b = { version = "0.4", features = ["smp", "irq"], optiona
 axplat-aarch64-phytium-pi = { version = "0.4", features = ["smp", "irq"], optional = true }
 
 [target.'cfg(target_arch = "arm")'.dependencies]
-axplat-arm-qemu-virt = { version = "0.3", features = ["smp", "irq"], optional = true }
+axplat-arm-qemu-virt = { version = "0.4", features = ["smp", "irq"], optional = true }
 
 [target.'cfg(target_arch = "riscv64")'.dependencies]
 axplat-riscv64-qemu-virt = { version = "0.4", features = ["smp", "irq"], optional = true }

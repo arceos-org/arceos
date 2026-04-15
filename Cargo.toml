@@ -67,7 +67,7 @@ axtask = { path = "modules/axtask" }
 axdma = { path = "modules/axdma" }
 axipi = { path = "modules/axipi" }
 
-axcpu = "0.2"
+axcpu = "0.3"
 axplat = "0.4"
 
 memory_addr = "0.4"
@@ -75,9 +75,3 @@ memory_addr = "0.4"
 axplat-arm-peripherals = { version = "0.3.0", path = "crates/axplat_crates/platforms/axplat-arm-peripherals" }
 [profile.release]
 lto = true
-
-[patch.crates-io]
-axcpu = { git = "https://github.com/luodeb/axcpu.git" }
-axplat = { git = "https://github.com/luodeb/axplat_crates.git", branch = "arm32" }
-axplat-x86-pc = { git = "https://github.com/luodeb/axplat_crates.git",  branch = "arm32" }
-axplat-arm-qemu-virt = { git = "https://github.com/luodeb/axplat_crates.git",  branch = "arm32" }
