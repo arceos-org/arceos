@@ -36,6 +36,8 @@ endif
 ifeq ($(findstring fp-simd,$(FEATURES)),)
   ifeq ($(ARCH), x86_64)
     CFLAGS += -mno-sse
+  else ifeq ($(ARCH), arm)
+    CFLAGS += -mfloat-abi=soft
   else ifeq ($(ARCH), aarch64)
     CFLAGS += -mgeneral-regs-only
   endif

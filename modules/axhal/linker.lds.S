@@ -32,7 +32,7 @@ SECTIONS
     . = ALIGN(4K);
     _erodata = .;
 
-    .data : ALIGN(4K) {
+    .data : ALIGN(16K) {
         _sdata = .;
         *(.data.boot_page_table)
         . = ALIGN(4K);

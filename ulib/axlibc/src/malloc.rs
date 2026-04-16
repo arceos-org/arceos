@@ -12,6 +12,7 @@ use core::ffi::c_void;
 
 use crate::ctypes;
 
+#[repr(align(8))]
 struct MemoryControlBlock {
     size: usize,
 }

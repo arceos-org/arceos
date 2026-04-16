@@ -3,17 +3,37 @@ fn main() {
 
     fn gen_pthread_mutex(out_file: &str) -> std::io::Result<()> {
         // TODO: Generate size and initial content automatically.
-        let (mutex_size, mutex_init) = if cfg!(feature = "multitask") {
+        let target_pointer_width = std::env::var("CARGO_CFG_TARGET_POINTER_WIDTH").unwrap();
+        let long_size = if target_pointer_width == "32" {
+            4
+        } else if target_pointer_width == "64" {
+            8
+        } else {
+            panic!("unsupported target pointer width: {target_pointer_width}");
+        };
+
+        let (mutex_size_bytes, mutex_init) = if cfg!(feature = "multitask") {
             if cfg!(feature = "smp") {
+                if target_pointer_width == "32" {
+                    // core::mem::transmute::<_, [usize; 8]>(axsync::Mutex::new(()))
+                    (32, "{0, 0, 0, 0, 4, 0, 0, 0}")
+                } else {
+                    // core::mem::transmute::<_, [usize; 6]>(axsync::Mutex::new(()))
+                    (48, "{0, 0, 8, 0, 0, 0}")
+                }
+            } else if target_pointer_width == "32" {
                 // core::mem::transmute::<_, [usize; 6]>(axsync::Mutex::new(()))
-                (6, "{0, 0, 8, 0, 0, 0}")
+                (24, "{0, 4, 0, 0, 0, 0}")
             } else {
                 // core::mem::transmute::<_, [usize; 5]>(axsync::Mutex::new(()))
-                (5, "{0, 8, 0, 0, 0}")
+                (40, "{0, 8, 0, 0, 0}")
             }
         } else {
-            (1, "{0}")
+            (long_size, "{0}")
         };
+
+        debug_assert_eq!(mutex_size_bytes % long_size, 0);
+        let mutex_long_count = mutex_size_bytes / long_size;
 
         let mut output = Vec::new();
         writeln!(
@@ -24,8 +44,8 @@ fn main() {
             output,
             r#"
 typedef struct {{
-    long __l[{mutex_size}];
-}} pthread_mutex_t;
+    long __l[{mutex_long_count}];
+}} __attribute__((aligned(8))) pthread_mutex_t;
 
 #define PTHREAD_MUTEX_INITIALIZER {{ .__l = {mutex_init} }}
 "#

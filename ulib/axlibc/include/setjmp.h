@@ -11,6 +11,8 @@ typedef unsigned long __jmp_buf[26];
 typedef unsigned long __jmp_buf[8];
 #elif defined(__loongarch__)
 typedef unsigned long __jmp_buf[21];
+#elif defined(__arm__)
+typedef unsigned long __jmp_buf[64];  /* r4-r14, d8-d15 (VFP) */
 #endif
 
 typedef struct __jmp_buf_tag {
