@@ -3,7 +3,10 @@ fn main() {
         match target {
             // Clang does not accept Rust's `riscv64gc` arch suffix in the target triple.
             "riscv64gc-unknown-none-elf" => "riscv64-unknown-elf".to_string(),
-            _ => target.strip_suffix("-softfloat").unwrap_or(target).to_string(),
+            _ => target
+                .strip_suffix("-softfloat")
+                .unwrap_or(target)
+                .to_string(),
         }
     }
 

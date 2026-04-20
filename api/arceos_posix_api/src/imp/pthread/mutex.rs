@@ -4,7 +4,7 @@ use axerrno::LinuxResult;
 use axsync::Mutex;
 
 use core::ffi::c_int;
-use core::mem::{ManuallyDrop, size_of, align_of};
+use core::mem::{ManuallyDrop, align_of, size_of};
 
 static_assertions::const_assert_eq!(
     size_of::<ctypes::pthread_mutex_t>(),
