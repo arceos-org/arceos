@@ -64,9 +64,9 @@ SECTIONS
         . = _percpu_load_start + ALIGN(64) * %CPU_NUM%;
     }
     . = _percpu_end;
+    _edata = .;
 
     . = ALIGN(4K);
-    _edata = .;
 
     .bss : AT(.) ALIGN(4K) {
         boot_stack = .;

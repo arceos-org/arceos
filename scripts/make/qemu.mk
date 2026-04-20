@@ -30,7 +30,7 @@ endif
 
 qemu_args-x86_64 := \
   -machine $(machine) \
-  -kernel $(OUT_ELF)
+  -kernel $(FINAL_IMG)
 
 qemu_args-riscv64 := \
   -machine $(machine) \
