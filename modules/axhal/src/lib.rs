@@ -28,7 +28,6 @@
 //! [cargo test]: https://doc.rust-lang.org/cargo/guide/tests.html
 
 #![no_std]
-#![feature(doc_auto_cfg)]
 
 #[allow(unused_imports)]
 #[macro_use]
