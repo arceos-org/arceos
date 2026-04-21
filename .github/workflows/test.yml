@@ -42,7 +42,7 @@ jobs:
       with:
         version: ${{ env.qemu-version }}
         arch_list: x86_64,aarch64,riscv64,loongarch64,arm
-    - uses: arceos-org/setup-musl@v1
+    - uses: arceos-org/setup-musl@v1.0.3
       with:
         arch: ${{ matrix.arch }}
     - name: Run app tests
