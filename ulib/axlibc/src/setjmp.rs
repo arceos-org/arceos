@@ -171,17 +171,16 @@ pub unsafe extern "C" fn setjmp(_buf: *mut ctypes::__jmp_buf_tag) {
         str r9, [r0, #20]
         str r10, [r0, #24]
         str r11, [r0, #28]
-        str r12, [r0, #32]
-        str sp, [r0, #36]
-        str lr, [r0, #40]
-        vstr d8, [r0, #44]
-        vstr d9, [r0, #52]
-        vstr d10, [r0, #60]
-        vstr d11, [r0, #68]
-        vstr d12, [r0, #76]
-        vstr d13, [r0, #84]
-        vstr d14, [r0, #92]
-        vstr d15, [r0, #100]
+        str sp, [r0, #32]
+        str lr, [r0, #36]
+        vstr d8, [r0, #40]
+        vstr d9, [r0, #48]
+        vstr d10, [r0, #56]
+        vstr d11, [r0, #64]
+        vstr d12, [r0, #72]
+        vstr d13, [r0, #80]
+        vstr d14, [r0, #88]
+        vstr d15, [r0, #96]
         mov r0, #0
         bx lr",
     );
@@ -196,9 +195,8 @@ pub unsafe extern "C" fn setjmp(_buf: *mut ctypes::__jmp_buf_tag) {
         str r9, [r0, #20]
         str r10, [r0, #24]
         str r11, [r0, #28]
-        str r12, [r0, #32]
-        str sp, [r0, #36]
-        str lr, [r0, #40]
+        str sp, [r0, #32]
+        str lr, [r0, #36]
         mov r0, #0
         bx lr",
     )
@@ -384,17 +382,16 @@ pub unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) 
         ldr r9, [r0, #20]
         ldr r10, [r0, #24]
         ldr r11, [r0, #28]
-        ldr r12, [r0, #32]
-        ldr sp, [r0, #36]
-        ldr lr, [r0, #40]
-        vldr d8, [r0, #44]
-        vldr d9, [r0, #52]
-        vldr d10, [r0, #60]
-        vldr d11, [r0, #68]
-        vldr d12, [r0, #76]
-        vldr d13, [r0, #84]
-        vldr d14, [r0, #92]
-        vldr d15, [r0, #100]
+        ldr sp, [r0, #32]
+        ldr lr, [r0, #36]
+        vldr d8, [r0, #40]
+        vldr d9, [r0, #48]
+        vldr d10, [r0, #56]
+        vldr d11, [r0, #64]
+        vldr d12, [r0, #72]
+        vldr d13, [r0, #80]
+        vldr d14, [r0, #88]
+        vldr d15, [r0, #96]
         cmp r1, #0
         moveq r0, #1
         movne r0, r1
@@ -411,9 +408,8 @@ pub unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) 
         ldr r9, [r0, #20]
         ldr r10, [r0, #24]
         ldr r11, [r0, #28]
-        ldr r12, [r0, #32]
-        ldr sp, [r0, #36]
-        ldr lr, [r0, #40]
+        ldr sp, [r0, #32]
+        ldr lr, [r0, #36]
         cmp r1, #0
         moveq r0, #1
         movne r0, r1
