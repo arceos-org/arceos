@@ -161,8 +161,47 @@ pub unsafe extern "C" fn setjmp(_buf: *mut ctypes::__jmp_buf_tag) {
     )))]
     core::arch::naked_asm!("ret");
 
-    #[cfg(target_arch = "arm")]
-    core::arch::naked_asm!("bx lr")
+    #[cfg(all(target_arch = "arm", feature = "fp-simd"))]
+    core::arch::naked_asm!(
+        "str r4, [r0, #0]
+        str r5, [r0, #4]
+        str r6, [r0, #8]
+        str r7, [r0, #12]
+        str r8, [r0, #16]
+        str r9, [r0, #20]
+        str r10, [r0, #24]
+        str r11, [r0, #28]
+        str r12, [r0, #32]
+        str sp, [r0, #36]
+        str lr, [r0, #40]
+        vstr d8, [r0, #44]
+        vstr d9, [r0, #52]
+        vstr d10, [r0, #60]
+        vstr d11, [r0, #68]
+        vstr d12, [r0, #76]
+        vstr d13, [r0, #84]
+        vstr d14, [r0, #92]
+        vstr d15, [r0, #100]
+        mov r0, #0
+        bx lr",
+    );
+
+    #[cfg(all(target_arch = "arm", not(feature = "fp-simd")))]
+    core::arch::naked_asm!(
+        "str r4, [r0, #0]
+        str r5, [r0, #4]
+        str r6, [r0, #8]
+        str r7, [r0, #12]
+        str r8, [r0, #16]
+        str r9, [r0, #20]
+        str r10, [r0, #24]
+        str r11, [r0, #28]
+        str r12, [r0, #32]
+        str sp, [r0, #36]
+        str lr, [r0, #40]
+        mov r0, #0
+        bx lr",
+    )
 }
 
 /// `longjmp` implementation
@@ -335,6 +374,49 @@ pub unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) 
     )))]
     core::arch::naked_asm!("ret");
 
-    #[cfg(target_arch = "arm")]
-    core::arch::naked_asm!("b .")
+    #[cfg(all(target_arch = "arm", feature = "fp-simd"))]
+    core::arch::naked_asm!(
+        "ldr r4, [r0, #0]
+        ldr r5, [r0, #4]
+        ldr r6, [r0, #8]
+        ldr r7, [r0, #12]
+        ldr r8, [r0, #16]
+        ldr r9, [r0, #20]
+        ldr r10, [r0, #24]
+        ldr r11, [r0, #28]
+        ldr r12, [r0, #32]
+        ldr sp, [r0, #36]
+        ldr lr, [r0, #40]
+        vldr d8, [r0, #44]
+        vldr d9, [r0, #52]
+        vldr d10, [r0, #60]
+        vldr d11, [r0, #68]
+        vldr d12, [r0, #76]
+        vldr d13, [r0, #84]
+        vldr d14, [r0, #92]
+        vldr d15, [r0, #100]
+        cmp r1, #0
+        moveq r0, #1
+        movne r0, r1
+        bx lr",
+    );
+
+    #[cfg(all(target_arch = "arm", not(feature = "fp-simd")))]
+    core::arch::naked_asm!(
+        "ldr r4, [r0, #0]
+        ldr r5, [r0, #4]
+        ldr r6, [r0, #8]
+        ldr r7, [r0, #12]
+        ldr r8, [r0, #16]
+        ldr r9, [r0, #20]
+        ldr r10, [r0, #24]
+        ldr r11, [r0, #28]
+        ldr r12, [r0, #32]
+        ldr sp, [r0, #36]
+        ldr lr, [r0, #40]
+        cmp r1, #0
+        moveq r0, #1
+        movne r0, r1
+        bx lr",
+    )
 }
