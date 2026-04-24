@@ -12,7 +12,11 @@ fn main() {
             panic!("unsupported target pointer width: {target_pointer_width}");
         };
 
-        let (mutex_size_bytes, mutex_init) = match (cfg!(feature = "multitask"), cfg!(feature = "smp"), target_pointer_width.as_str()) {
+        let (mutex_size_bytes, mutex_init) = match (
+            cfg!(feature = "multitask"),
+            cfg!(feature = "smp"),
+            target_pointer_width.as_str(),
+        ) {
             (true, true, "32") => {
                 // core::mem::transmute::<_, [usize; 8]>(axsync::Mutex::new(()))
                 (32, "{0, 0, 0, 0, 4, 0, 0, 0}")
