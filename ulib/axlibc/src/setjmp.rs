@@ -152,15 +152,6 @@ pub unsafe extern "C" fn setjmp(_buf: *mut ctypes::__jmp_buf_tag) {
         li.w  $a0, 0
         ret",
     );
-    #[cfg(not(any(
-        target_arch = "arm",
-        target_arch = "aarch64",
-        target_arch = "x86_64",
-        target_arch = "riscv64",
-        target_arch = "loongarch64"
-    )))]
-    core::arch::naked_asm!("ret");
-
     #[cfg(all(target_arch = "arm", feature = "fp-simd"))]
     core::arch::naked_asm!(
         "str r4, [r0, #0]
@@ -199,7 +190,16 @@ pub unsafe extern "C" fn setjmp(_buf: *mut ctypes::__jmp_buf_tag) {
         str lr, [r0, #36]
         mov r0, #0
         bx lr",
-    )
+    );
+
+    #[cfg(not(any(
+        target_arch = "aarch64",
+        target_arch = "x86_64",
+        target_arch = "riscv64",
+        target_arch = "loongarch64",
+        target_arch = "arm"
+    )))]
+    compile_error!("Unsupported target architecture for setjmp");
 }
 
 /// `longjmp` implementation
@@ -363,15 +363,6 @@ pub unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) 
         add.d    $a0, $a0, $a1
         jirl     $zero,$ra, 0",
     );
-    #[cfg(not(any(
-        target_arch = "arm",
-        target_arch = "aarch64",
-        target_arch = "x86_64",
-        target_arch = "riscv64",
-        target_arch = "loongarch64"
-    )))]
-    core::arch::naked_asm!("ret");
-
     #[cfg(all(target_arch = "arm", feature = "fp-simd"))]
     core::arch::naked_asm!(
         "ldr r4, [r0, #0]
@@ -414,5 +405,14 @@ pub unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) 
         moveq r0, #1
         movne r0, r1
         bx lr",
-    )
+    );
+
+    #[cfg(not(any(
+        target_arch = "aarch64",
+        target_arch = "x86_64",
+        target_arch = "riscv64",
+        target_arch = "loongarch64",
+        target_arch = "arm"
+    )))]
+    compile_error!("Unsupported target architecture for setjmp");
 }

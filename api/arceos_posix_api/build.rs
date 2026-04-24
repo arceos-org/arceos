@@ -12,24 +12,25 @@ fn main() {
             panic!("unsupported target pointer width: {target_pointer_width}");
         };
 
-        let (mutex_size_bytes, mutex_init) = if cfg!(feature = "multitask") {
-            if cfg!(feature = "smp") {
-                if target_pointer_width == "32" {
-                    // core::mem::transmute::<_, [usize; 8]>(axsync::Mutex::new(()))
-                    (32, "{0, 0, 0, 0, 4, 0, 0, 0}")
-                } else {
-                    // core::mem::transmute::<_, [usize; 6]>(axsync::Mutex::new(()))
-                    (48, "{0, 0, 8, 0, 0, 0}")
-                }
-            } else if target_pointer_width == "32" {
+        let (mutex_size_bytes, mutex_init) = match (cfg!(feature = "multitask"), cfg!(feature = "smp"), target_pointer_width.as_str()) {
+            (true, true, "32") => {
+                // core::mem::transmute::<_, [usize; 8]>(axsync::Mutex::new(()))
+                (32, "{0, 0, 0, 0, 4, 0, 0, 0}")
+            }
+            (true, true, "64") => {
+                // core::mem::transmute::<_, [usize; 6]>(axsync::Mutex::new(()))
+                (48, "{0, 0, 8, 0, 0, 0}")
+            }
+            (true, false, "32") => {
                 // core::mem::transmute::<_, [usize; 6]>(axsync::Mutex::new(()))
                 (24, "{0, 4, 0, 0, 0, 0}")
-            } else {
+            }
+            (true, false, "64") => {
                 // core::mem::transmute::<_, [usize; 5]>(axsync::Mutex::new(()))
                 (40, "{0, 8, 0, 0, 0}")
             }
-        } else {
-            (long_size, "{0}")
+            (false, _, _) => (long_size, "{0}"),
+            _ => panic!("unsupported target pointer width: {target_pointer_width}"),
         };
 
         debug_assert_eq!(mutex_size_bytes % long_size, 0);

@@ -1,5 +1,5 @@
 use axerrno::LinuxError;
-use core::ffi::{c_int, c_long};
+use core::ffi::{c_int, c_long, c_longlong};
 use core::time::Duration;
 
 use crate::ctypes;
@@ -29,7 +29,7 @@ impl From<Duration> for ctypes::timespec {
 impl From<Duration> for ctypes::timeval {
     fn from(d: Duration) -> Self {
         ctypes::timeval {
-            tv_sec: d.as_secs() as i64,
+            tv_sec: d.as_secs() as c_longlong,
             tv_usec: d.subsec_micros() as c_long,
         }
     }
