@@ -414,5 +414,5 @@ pub unsafe extern "C" fn longjmp(_buf: *mut ctypes::__jmp_buf_tag, _val: c_int) 
         target_arch = "loongarch64",
         target_arch = "arm"
     )))]
-    compile_error!("Unsupported target architecture for setjmp");
+    compile_error!("Unsupported target architecture for longjmp");
 }
