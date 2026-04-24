@@ -48,6 +48,21 @@ else
   endif
 endif
 
+ifeq ($(ARCH), arm)
+  # ARM32 commonly needs atomic runtime symbols at link time
+  # (e.g. __atomic_fetch_add_8), see:
+  # https://github.com/redis/redis/issues/6275
+  # https://github.com/redis/redis/pull/6975
+  libatomic := $(shell $(CC) -print-file-name=libatomic.a)
+  ifneq ($(libatomic),libatomic.a)
+    libgcc += $(libatomic)
+  endif
+  libgcc-path := $(shell $(CC) -print-libgcc-file-name)
+  ifneq ($(libgcc-path),)
+    libgcc += $(libgcc-path)
+  endif
+endif
+
 _check_need_rebuild: $(obj_dir)
 	@if [ "$(CFLAGS)" != "`cat $(last_cflags) 2>&1`" ]; then \
 		echo "CFLAGS changed, rebuild"; \
