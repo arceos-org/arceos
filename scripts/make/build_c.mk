@@ -53,13 +53,10 @@ ifeq ($(ARCH), arm)
   # (e.g. __atomic_fetch_add_8), see:
   # https://github.com/redis/redis/issues/6275
   # https://github.com/redis/redis/pull/6975
+  libgcc := $(shell $(CC) -print-libgcc-file-name)
   libatomic := $(shell $(CC) -print-file-name=libatomic.a)
   ifneq ($(libatomic),libatomic.a)
     libgcc += $(libatomic)
-  endif
-  libgcc-path := $(shell $(CC) -print-libgcc-file-name)
-  ifneq ($(libgcc-path),)
-    libgcc += $(libgcc-path)
   endif
 endif
 

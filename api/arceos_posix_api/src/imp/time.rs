@@ -20,7 +20,7 @@ impl From<ctypes::timeval> for Duration {
 impl From<Duration> for ctypes::timespec {
     fn from(d: Duration) -> Self {
         ctypes::timespec {
-            tv_sec: d.as_secs() as i64,
+            tv_sec: d.as_secs() as c_longlong,
             tv_nsec: d.subsec_nanos() as c_long,
         }
     }
