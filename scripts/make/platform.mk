@@ -29,8 +29,10 @@ ifeq ($(MYPLAT),)
     PLAT_PACKAGE := axplat-riscv64-qemu-virt
   else ifeq ($(ARCH), loongarch64)
     PLAT_PACKAGE := axplat-loongarch64-qemu-virt
+  else ifeq ($(ARCH), arm)
+    PLAT_PACKAGE := axplat-arm-qemu-virt
   else
-    $(error "ARCH" must be one of "x86_64", "riscv64", "aarch64" or "loongarch64")
+    $(error "ARCH" must be one of "x86_64", "riscv64", "aarch64", "loongarch64" or "arm")
   endif
   PLAT_CONFIG := $(strip $(call resolve_config))
   # We don't need to check whether `PLAT_CONFIG` is valid here, as the `PLAT_PACKAGE`

@@ -28,7 +28,6 @@
 //! [cargo test]: https://doc.rust-lang.org/cargo/guide/tests.html
 
 #![no_std]
-#![feature(doc_auto_cfg)]
 
 #[allow(unused_imports)]
 #[macro_use]
@@ -50,6 +49,8 @@ cfg_if::cfg_if! {
         extern crate axplat_x86_pc;
         #[cfg(target_arch = "aarch64")]
         extern crate axplat_aarch64_qemu_virt;
+        #[cfg(target_arch = "arm")]
+        extern crate axplat_arm_qemu_virt;
         #[cfg(target_arch = "riscv64")]
         extern crate axplat_riscv64_qemu_virt;
         #[cfg(target_arch = "loongarch64")]

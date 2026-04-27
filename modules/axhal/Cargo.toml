@@ -10,17 +10,17 @@ repository = "https://github.com/arceos-org/arceos/tree/main/modules/axhal"
 documentation = "https://arceos-org.github.io/arceos/axhal/index.html"
 
 [features]
-smp = ["axplat-x86-pc?/smp", "axplat-aarch64-qemu-virt?/smp", "axplat-riscv64-qemu-virt?/smp", "axplat-loongarch64-qemu-virt?/smp", "axplat/smp"]
-irq = ["linkme", "axplat-x86-pc?/irq", "axplat-aarch64-qemu-virt?/irq", "axplat-riscv64-qemu-virt?/irq", "axplat-loongarch64-qemu-virt?/irq", "axplat/irq"]
-fp-simd = ["axcpu/fp-simd", "axplat-x86-pc?/fp-simd", "axplat-aarch64-qemu-virt?/fp-simd", "axplat-riscv64-qemu-virt?/fp-simd", "axplat-loongarch64-qemu-virt?/fp-simd"]
-rtc = ["axplat-x86-pc?/rtc", "axplat-aarch64-qemu-virt?/rtc", "axplat-riscv64-qemu-virt?/rtc", "axplat-loongarch64-qemu-virt?/rtc"]
+smp = ["axplat-x86-pc?/smp", "axplat-aarch64-qemu-virt?/smp", "axplat-riscv64-qemu-virt?/smp", "axplat-loongarch64-qemu-virt?/smp", "axplat-arm-qemu-virt?/smp", "axplat/smp"]
+irq = ["linkme", "axplat-x86-pc?/irq", "axplat-aarch64-qemu-virt?/irq", "axplat-riscv64-qemu-virt?/irq", "axplat-loongarch64-qemu-virt?/irq",  "axplat-arm-qemu-virt?/irq", "axplat/irq"]
+fp-simd = ["axcpu/fp-simd", "axplat-x86-pc?/fp-simd", "axplat-aarch64-qemu-virt?/fp-simd", "axplat-riscv64-qemu-virt?/fp-simd", "axplat-loongarch64-qemu-virt?/fp-simd", "axplat-arm-qemu-virt?/fp-simd"]
+rtc = ["axplat-x86-pc?/rtc", "axplat-aarch64-qemu-virt?/rtc", "axplat-riscv64-qemu-virt?/rtc", "axplat-loongarch64-qemu-virt?/rtc", "axplat-arm-qemu-virt?/rtc"]
 paging = ["axalloc", "page_table_multiarch"]
 tls = ["axcpu/tls"]
 uspace = ["paging", "axcpu/uspace"]
 
 # Custom or default platforms
 myplat = []
-defplat = ["dep:axplat-x86-pc", "dep:axplat-aarch64-qemu-virt", "dep:axplat-riscv64-qemu-virt", "dep:axplat-loongarch64-qemu-virt"]
+defplat = ["dep:axplat-x86-pc", "dep:axplat-aarch64-qemu-virt", "dep:axplat-riscv64-qemu-virt", "dep:axplat-loongarch64-qemu-virt", "dep:axplat-arm-qemu-virt"]
 
 default = []
 ipi = ["irq"]
@@ -47,6 +47,9 @@ axplat-x86-pc = { version = "0.4", optional = true }
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 aarch64-cpu = "11.2"
 axplat-aarch64-qemu-virt = { version = "0.4", optional = true }
+
+[target.'cfg(target_arch = "arm")'.dependencies]
+axplat-arm-qemu-virt = { version = "0.4", optional = true }
 
 [target.'cfg(target_arch = "riscv64")'.dependencies]
 axplat-riscv64-qemu-virt = { version = "0.4", optional = true }

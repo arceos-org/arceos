@@ -36,6 +36,8 @@ endif
 ifeq ($(findstring fp-simd,$(FEATURES)),)
   ifeq ($(ARCH), x86_64)
     CFLAGS += -mno-sse
+  else ifeq ($(ARCH), arm)
+    CFLAGS += -mfloat-abi=soft
   else ifeq ($(ARCH), aarch64)
     CFLAGS += -mgeneral-regs-only
   endif
@@ -43,6 +45,18 @@ else
   ifneq ($(filter $(ARCH),riscv64 aarch64),)
     # for compiler-rt fallbacks like `__divtf3`, `__multf3`, ...
     libgcc := $(shell $(CC) -print-libgcc-file-name)
+  endif
+endif
+
+ifeq ($(ARCH), arm)
+  # ARM32 commonly needs atomic runtime symbols at link time
+  # (e.g. __atomic_fetch_add_8), see:
+  # https://github.com/redis/redis/issues/6275
+  # https://github.com/redis/redis/pull/6975
+  libgcc := $(shell $(CC) -print-libgcc-file-name)
+  libatomic := $(shell $(CC) -print-file-name=libatomic.a)
+  ifneq ($(libatomic),libatomic.a)
+    libgcc += $(libatomic)
   endif
 endif
 

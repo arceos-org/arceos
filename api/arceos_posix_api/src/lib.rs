@@ -4,7 +4,6 @@
 
 #![cfg_attr(all(not(test), not(doc)), no_std)]
 #![feature(doc_cfg)]
-#![feature(doc_auto_cfg)]
 #![allow(clippy::missing_safety_doc)]
 
 #[macro_use]
