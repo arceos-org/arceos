@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["current_task_ptr","set_current_task_ptr","this_cpu_id","this_cpu_is_bsp"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["current_dir","set_current_dir"]};

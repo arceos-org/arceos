@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["ax_current_task_id","ax_exit","ax_set_current_affinity","ax_set_current_priority","ax_sleep_until","ax_spawn","ax_wait_for_exit","ax_wait_queue_wait","ax_wait_queue_wait_until","ax_wait_queue_wake","ax_yield_now"],"struct":["AxTaskHandle","AxWaitQueueHandle"],"type":["AxCpuMask"]};

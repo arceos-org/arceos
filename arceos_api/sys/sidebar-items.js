@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["ax_get_cpu_num","ax_terminate"]};

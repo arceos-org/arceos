@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["init","ipi_handler","run_on_cpu","run_on_each_cpu"],"struct":["Callback","MulticastCallback"]};

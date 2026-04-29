@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["ax_alloc","ax_alloc_coherent","ax_dealloc","ax_dealloc_coherent"],"struct":["DMAInfo"]};

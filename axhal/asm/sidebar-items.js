@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["disable_irqs","enable_irqs","flush_tlb","halt","irqs_enabled","read_kernel_page_table","read_thread_pointer","read_user_page_table","wait_for_irqs","write_kernel_page_table","write_thread_pointer","write_user_page_table"]};

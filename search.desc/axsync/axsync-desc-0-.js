@@ -1,0 +1,1 @@
+searchState.loadedDescShard("axsync", 0, "ArceOS synchronization primitives.\nAn alias of <code>lock_api::Mutex</code>.\nAn alias of <code>lock_api::MutexGuard</code>.\nA <code>lock_api::RawMutex</code> implementation.\nReturns the argument unchanged.\nCalls <code>U::from(self)</code>.\nCreates a <code>RawMutex</code>.")
