@@ -7,4 +7,5 @@ targets = [
     "riscv64gc-unknown-none-elf",
     "aarch64-unknown-none-softfloat",
     "loongarch64-unknown-none-softfloat",
+    "armv7a-none-eabi",
 ]

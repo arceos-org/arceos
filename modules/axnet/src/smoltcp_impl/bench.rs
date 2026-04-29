@@ -2,16 +2,16 @@ use super::{AxNetRxToken, AxNetTxToken, STANDARD_MTU};
 use super::{DeviceWrapper, InterfaceWrapper};
 use smoltcp::phy::{Device, RxToken, TxToken};
 
-const GB: usize = 1000 * MB;
-const MB: usize = 1000 * KB;
-const KB: usize = 1000;
+const GB: u64 = 1000 * MB;
+const MB: u64 = 1000 * KB;
+const KB: u64 = 1000;
 
 impl DeviceWrapper {
     pub fn bench_transmit_bandwidth(&mut self) {
         // 10 Gb
-        const MAX_SEND_BYTES: usize = 10 * GB;
-        let mut send_bytes: usize = 0;
-        let mut past_send_bytes: usize = 0;
+        const MAX_SEND_BYTES: u64 = 10 * GB;
+        let mut send_bytes: u64 = 0;
+        let mut past_send_bytes: u64 = 0;
         let mut past_time = InterfaceWrapper::current_time();
 
         // Send bytes
@@ -23,7 +23,7 @@ impl DeviceWrapper {
                     tx_buf[12..14].copy_from_slice(&[0x08, 0x00]);
                     tx_buf[14..STANDARD_MTU].fill(1);
                 });
-                send_bytes += STANDARD_MTU;
+                send_bytes += STANDARD_MTU as u64;
             }
 
             let current_time = InterfaceWrapper::current_time();
@@ -44,15 +44,15 @@ impl DeviceWrapper {
 
     pub fn bench_receive_bandwidth(&mut self) {
         // 10 Gb
-        const MAX_RECEIVE_BYTES: usize = 10 * GB;
-        let mut receive_bytes: usize = 0;
-        let mut past_receive_bytes: usize = 0;
+        const MAX_RECEIVE_BYTES: u64 = 10 * GB;
+        let mut receive_bytes: u64 = 0;
+        let mut past_receive_bytes: u64 = 0;
         let mut past_time = InterfaceWrapper::current_time();
         // Receive bytes
         while receive_bytes < MAX_RECEIVE_BYTES {
             if let Some(rx_token) = self.receive(InterfaceWrapper::current_time()) {
                 AxNetRxToken::consume(rx_token.0, |rx_buf| {
-                    receive_bytes += rx_buf.len();
+                    receive_bytes += rx_buf.len() as u64;
                 });
             }
 

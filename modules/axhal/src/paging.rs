@@ -44,5 +44,8 @@ cfg_if::cfg_if! {
     } else if #[cfg(target_arch = "loongarch64")] {
         /// The architecture-specific page table.
         pub type PageTable = page_table_multiarch::loongarch64::LA64PageTable<PagingHandlerImpl>;
+    } else if #[cfg(target_arch = "arm")] {
+        /// The architecture-specific page table.
+        pub type PageTable = page_table_multiarch::arm::A32PageTable<PagingHandlerImpl>;
     }
 }

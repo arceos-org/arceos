@@ -41,7 +41,7 @@ typedef int64_t intmax_t;
 #if __riscv_xlen == 64 || defined(__x86_64__) || defined(__aarch64__) || defined(__loongarch__)
 typedef int64_t intptr_t;
 typedef uint64_t uintptr_t;
-#elif __riscv_xlen == 32 || defined(__i386__)
+#elif __riscv_xlen == 32 || defined(__i386__) || defined(__arm__)
 typedef int32_t intptr_t;
 typedef uint32_t uintptr_t;
 #endif
