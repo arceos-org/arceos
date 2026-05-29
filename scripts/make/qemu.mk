@@ -22,7 +22,12 @@ else ifeq ($(ARCH), aarch64)
     machine := virt
   endif
 else ifeq ($(ARCH), arm)
-  machine := virt,gic-version=2,highmem=off
+  ifeq ($(PLAT_NAME), arm-qemu-stm32)
+    machine := stm32vldiscovery
+    override MEM :=
+  else
+    machine := virt,gic-version=2,highmem=off
+  endif
 else ifeq ($(ARCH), loongarch64)
   machine := virt
   override MEM := 1G
@@ -51,7 +56,15 @@ qemu_args-arm := \
   -cpu cortex-a15 \
   -kernel $(FINAL_IMG)
 
-qemu_args-y := -m $(MEM) -smp $(SMP) $(qemu_args-$(ARCH))
+ifeq ($(PLAT_NAME), arm-qemu-stm32)
+  qemu_args-arm := \
+    -machine $(machine) \
+    -kernel $(FINAL_IMG) \
+    -semihosting-config enable=on,target=native \
+    -serial mon:stdio
+endif
+
+qemu_args-y := $(if $(MEM),-m $(MEM)) -smp $(SMP) $(qemu_args-$(ARCH))
 
 qemu_args-$(BLK) += \
   -device virtio-blk-$(vdev-suffix),drive=disk0 \

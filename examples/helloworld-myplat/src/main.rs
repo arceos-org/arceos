@@ -18,6 +18,8 @@ cfg_if::cfg_if! {
         extern crate axplat_loongarch64_qemu_virt;
     } else if #[cfg(all(target_arch = "arm", feature = "arm-qemu-virt"))] {
         extern crate axplat_arm_qemu_virt;
+    } else if #[cfg(all(target_arch = "arm", feature = "arm-qemu-stm32"))] {
+        extern crate axplat_arm_qemu_stm32;
     } else {
         #[cfg(target_os = "none")] // ignore in rust-analyzer & cargo test
         compile_error!("No platform crate linked!\n\nPlease add `extern crate <platform>` in your code.");

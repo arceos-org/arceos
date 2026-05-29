@@ -12,6 +12,9 @@ pub use axplat::mem::{
 };
 pub use memory_addr::{PAGE_SIZE_4K, PhysAddr, PhysAddrRange, VirtAddr, VirtAddrRange, pa, va};
 
+#[cfg(target_feature = "mclass")]
+const MAX_REGIONS: usize = 16;
+#[cfg(not(target_feature = "mclass"))]
 const MAX_REGIONS: usize = 128;
 
 static ALL_MEM_REGIONS: LazyInit<Vec<PhysMemRegion, MAX_REGIONS>> = LazyInit::new();
@@ -29,6 +32,12 @@ pub fn memory_regions() -> impl Iterator<Item = PhysMemRegion> {
 ///
 /// This function is unsafe because it writes `.bss` section directly.
 pub unsafe fn clear_bss() {
+    #[cfg(target_feature = "mclass")]
+    {
+        // Cortex-M platforms clear BSS in their reset handler, before Rust
+        // creates stack frames that may overlap the BSS area in tiny SRAM.
+    }
+    #[cfg(not(target_feature = "mclass"))]
     unsafe {
         core::slice::from_raw_parts_mut(_sbss as usize as *mut u8, _ebss as usize - _sbss as usize)
             .fill(0);
@@ -85,8 +94,16 @@ pub fn init() {
     }
 
     // Combine kernel image range and reserved ranges
-    let kernel_start = virt_to_phys(va!(_skernel as usize)).as_usize();
-    let kernel_size = _ekernel as usize - _skernel as usize;
+    #[cfg(target_feature = "mclass")]
+    let (kernel_start, kernel_size) = (
+        virt_to_phys(va!(_sdata as usize)).as_usize(),
+        _ekernel as usize - _sdata as usize,
+    );
+    #[cfg(not(target_feature = "mclass"))]
+    let (kernel_start, kernel_size) = (
+        virt_to_phys(va!(_skernel as usize)).as_usize(),
+        _ekernel as usize - _skernel as usize,
+    );
     let mut reserved_ranges = reserved_phys_ram_ranges()
         .iter()
         .cloned()

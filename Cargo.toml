@@ -69,3 +69,8 @@ axipi = { path = "modules/axipi" }
 
 [profile.release]
 lto = true
+
+[patch.crates-io]
+axplat-arm-qemu-stm32 = { path = "crates/axplat_crates/platforms/axplat-arm-qemu-stm32" }
+aarch32-cpu = { path = "crates/aarch32-cpu" }
+axcpu = { path = "crates/axcpu" }

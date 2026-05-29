@@ -109,7 +109,11 @@ else ifeq ($(ARCH), riscv64)
 else ifeq ($(ARCH), loongarch64)
   TARGET := loongarch64-unknown-none-softfloat
 else ifeq ($(ARCH), arm)
-  TARGET := armv7a-none-eabi
+  ifeq ($(PLAT_NAME), arm-qemu-stm32)
+    TARGET := thumbv7m-none-eabi
+  else
+    TARGET := armv7a-none-eabi
+  endif
 else
   $(error "ARCH" must be one of "x86_64", "riscv64", "aarch64", "loongarch64" or "arm")
 endif

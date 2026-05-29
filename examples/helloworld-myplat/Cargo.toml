@@ -13,6 +13,7 @@ aarch64-phytium-pi = ["dep:axplat-aarch64-phytium-pi"]
 riscv64-qemu-virt = ["dep:axplat-riscv64-qemu-virt"]
 loongarch64-qemu-virt = ["dep:axplat-loongarch64-qemu-virt"]
 arm-qemu-virt = ["dep:axplat-arm-qemu-virt"]
+arm-qemu-stm32 = ["dep:axplat-arm-qemu-stm32"]
 
 [dependencies]
 cfg-if = "1.0"
@@ -29,6 +30,7 @@ axplat-aarch64-phytium-pi = { version = "0.4", features = ["smp", "irq"], option
 
 [target.'cfg(target_arch = "arm")'.dependencies]
 axplat-arm-qemu-virt = { version = "0.4", features = ["smp", "irq"], optional = true }
+axplat-arm-qemu-stm32 = { version = "0.1", optional = true }
 
 [target.'cfg(target_arch = "riscv64")'.dependencies]
 axplat-riscv64-qemu-virt = { version = "0.4", features = ["smp", "irq"], optional = true }
