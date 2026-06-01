@@ -83,25 +83,6 @@ impl axlog::LogIf for LogIfImpl {
     }
 }
 
-#[cfg(target_feature = "mclass")]
-#[used]
-#[unsafe(no_mangle)]
-#[unsafe(link_section = ".data")]
-static _FORCE_KEEP_LOG_INTERFACES: [extern "Rust" fn(); 4] = [
-    unsafe { core::mem::transmute(__LogIf_console_write_str as *const ()) },
-    unsafe { core::mem::transmute(__LogIf_current_time as *const ()) },
-    unsafe { core::mem::transmute(__LogIf_current_cpu_id as *const ()) },
-    unsafe { core::mem::transmute(__LogIf_current_task_id as *const ()) },
-];
-
-#[cfg(target_feature = "mclass")]
-unsafe extern "Rust" {
-    fn __LogIf_console_write_str(s: &str);
-    fn __LogIf_current_time() -> core::time::Duration;
-    fn __LogIf_current_cpu_id() -> Option<usize>;
-    fn __LogIf_current_task_id() -> Option<u64>;
-}
-
 use core::sync::atomic::{AtomicUsize, Ordering};
 
 /// Number of CPUs that have completed initialization.
