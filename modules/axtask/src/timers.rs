@@ -1,4 +1,5 @@
-use core::sync::atomic::{AtomicU64, Ordering};
+use core::sync::atomic::Ordering;
+use portable_atomic::AtomicU64;
 
 use kernel_guard::NoOp;
 use lazyinit::LazyInit;

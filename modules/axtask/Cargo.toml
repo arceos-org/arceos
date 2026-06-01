@@ -48,6 +48,7 @@ kernel_guard = { version = "0.2", optional = true }
 crate_interface = { version = "0.3", optional = true }
 cpumask = { version = "0.1", optional = true }
 axsched = { version = "0.3", optional = true }
+portable-atomic = "1.13"
 
 [dev-dependencies]
 axhal = { workspace = true, features = ["fp-simd"] }

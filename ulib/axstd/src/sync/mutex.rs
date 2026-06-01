@@ -1,6 +1,7 @@
 //! A naïve sleeping mutex.
 
-use core::sync::atomic::{AtomicU64, Ordering};
+use core::sync::atomic::Ordering;
+use portable_atomic::AtomicU64;
 
 use arceos_api::task::{self as api, AxWaitQueueHandle};
 
