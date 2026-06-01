@@ -119,7 +119,14 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 /// This function should be called as early as possible, as other initializations
 /// may acess the CPU-local data.
 pub fn init_percpu(cpu_id: usize) {
-    self::percpu::init_primary(cpu_id);
+    #[cfg(target_feature = "mclass")]
+    {
+        let _ = cpu_id;
+    }
+    #[cfg(not(target_feature = "mclass"))]
+    {
+        self::percpu::init_primary(cpu_id);
+    }
 }
 
 /// Initializes CPU-local data structures for secondary cores.
