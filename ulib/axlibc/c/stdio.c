@@ -207,6 +207,8 @@ FILE *fopen(const char *filename, const char *mode)
     }
 
     f = (FILE *)malloc(sizeof(FILE));
+    if (!f)
+        return NULL;
 
     flags = __fmodeflags(mode);
     // TODO: currently mode is unused in ax_open

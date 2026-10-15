@@ -21,9 +21,17 @@ void srandom(unsigned int s)
 
 void *calloc(size_t m, size_t n)
 {
-    void *mem = malloc(m * n);
+    if (n && m > (size_t)-1 / n) {
+        errno = ENOMEM;
+        return NULL;
+    }
 
-    return memset(mem, 0, n * m);
+    size_t size = m * n;
+    void *mem = malloc(size);
+    if (!mem)
+        return NULL;
+
+    return memset(mem, 0, size);
 }
 
 void *realloc(void *memblock, size_t size)
@@ -31,11 +39,13 @@ void *realloc(void *memblock, size_t size)
     if (!memblock)
         return malloc(size);
 
-    size_t o_size = *(size_t *)(memblock - 8);
+    size_t o_size = *(size_t *)((char *)memblock - 8);
 
     void *mem = malloc(size);
+    if (!mem)
+        return NULL;
 
-    for (int i = 0; i < (o_size < size ? o_size : size); i++)
+    for (size_t i = 0; i < (o_size < size ? o_size : size); i++)
         ((char *)mem)[i] = ((char *)memblock)[i];
 
     free(memblock);
