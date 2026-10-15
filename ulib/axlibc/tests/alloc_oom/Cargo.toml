@@ -1,0 +1,14 @@
+[package]
+name = "arceos-oom-probe"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+# The bitmap's base is rounded down to 1 GiB. A larger bitmap accommodates
+# arbitrary host addresses; the probe's actual heap is still only 256 KiB.
+axalloc = { path = "../../../../modules/axalloc", features = ["page-alloc-4g"] }
+axallocator = "0.2.0"
+axerrno = "0.1"
+
+[workspace]

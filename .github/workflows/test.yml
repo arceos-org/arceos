@@ -17,6 +17,11 @@ jobs:
         toolchain: ${{ env.rust-toolchain }}
     - name: Run unit tests
       run: make unittest_no_fail_fast
+    - name: Check C allocation failure paths
+      run: |
+        python3 ulib/axlibc/tests/alloc_oom/run.py
+        python3 ulib/axlibc/tests/alloc_oom/run.py --release
+        sh ulib/axlibc/tests/alloc_oom/run_c_stdlib_tests.sh
 
   app-test:
     runs-on: ${{ matrix.os }}

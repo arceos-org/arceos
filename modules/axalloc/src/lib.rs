@@ -13,6 +13,9 @@ extern crate alloc;
 
 mod page;
 
+#[cfg(test)]
+mod tests;
+
 use axallocator::{AllocResult, BaseAllocator, BitmapPageAllocator, ByteAllocator, PageAllocator};
 use core::alloc::{GlobalAlloc, Layout};
 use core::ptr::NonNull;
@@ -198,10 +201,12 @@ impl GlobalAllocator {
 
 unsafe impl GlobalAlloc for GlobalAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        // Fallible callers (including C malloc) must be able to handle OOM.
+        // Infallible Rust allocations invoke their own allocation error handler.
         if let Ok(ptr) = GlobalAllocator::alloc(self, layout) {
             ptr.as_ptr()
         } else {
-            alloc::alloc::handle_alloc_error(layout)
+            core::ptr::null_mut()
         }
     }
 

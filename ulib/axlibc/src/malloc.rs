@@ -19,18 +19,30 @@ struct MemoryControlBlock {
 
 const CTRL_BLK_SIZE: usize = core::mem::size_of::<MemoryControlBlock>();
 
+fn malloc_error() -> *mut c_void {
+    crate::errno::set_errno(axerrno::LinuxError::ENOMEM as i32);
+    core::ptr::null_mut()
+}
+
 /// Allocate memory and return the memory address.
 ///
-/// Returns 0 on failure (the current implementation does not trigger an exception)
+/// Returns NULL and sets errno to ENOMEM on failure.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn malloc(size: ctypes::size_t) -> *mut c_void {
     // Allocate `(actual length) + 8`. The lowest 8 Bytes are stored in the actual allocated space size.
     // This is because free(uintptr_t) has only one parameter representing the address,
     // So we need to save in advance to know the size of the memory space that needs to be released
-    let layout = Layout::from_size_align(size + CTRL_BLK_SIZE, 8).unwrap();
+    let Some(total_size) = size.checked_add(CTRL_BLK_SIZE) else {
+        return malloc_error();
+    };
+    let Ok(layout) = Layout::from_size_align(total_size, 8) else {
+        return malloc_error();
+    };
     unsafe {
         let ptr = alloc(layout).cast::<MemoryControlBlock>();
-        assert!(!ptr.is_null(), "malloc failed");
+        if ptr.is_null() {
+            return malloc_error();
+        }
         ptr.write(MemoryControlBlock { size });
         ptr.add(1).cast()
     }

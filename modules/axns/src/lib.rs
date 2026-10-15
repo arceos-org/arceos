@@ -88,6 +88,9 @@ impl AxNamespace {
         } else {
             let layout = Layout::from_size_align(size, 64).unwrap();
             let dst = unsafe { alloc::alloc::alloc(layout) };
+            if dst.is_null() {
+                alloc::alloc::handle_alloc_error(layout);
+            }
             let src = link::section_start();
             unsafe { core::ptr::copy_nonoverlapping(src, dst, size) };
             dst

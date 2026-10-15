@@ -59,7 +59,11 @@ impl AxTaskExt {
             core::ptr::null_mut()
         } else {
             let layout = Layout::from_size_align(size, align).unwrap();
-            unsafe { alloc::alloc::alloc(layout) }
+            let ptr = unsafe { alloc::alloc::alloc(layout) };
+            if ptr.is_null() {
+                alloc::alloc::handle_alloc_error(layout);
+            }
+            ptr
         };
         Self { ptr }
     }
