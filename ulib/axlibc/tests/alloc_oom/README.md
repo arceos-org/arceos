@@ -26,6 +26,8 @@ It checks calloc multiplication overflow, allocation failure and zeroing;
 realloc failure preserving the original allocation; and successful copying
 and freeing. AddressSanitizer and UndefinedBehaviorSanitizer check memory use.
 The C fixture requires a 64-bit host, matching the existing 8-byte header ABI.
+A separate fixture compiles the real stdio implementation with axlibc's headers
+and checks that fopen preserves ENOMEM without opening a file when allocation fails.
 
 For an actual C application on a 128 MiB x86_64 guest:
 
